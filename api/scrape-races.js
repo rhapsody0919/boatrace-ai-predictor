@@ -36,13 +36,20 @@ async function getBeforeinfo(date, placeCd, raceNo) {
   try {
     const url = getUrl(date, placeCd, raceNo, 'beforeinfo');
 
+    // タイムアウト設定: 5秒
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(url, {
+      signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
       }
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
@@ -159,13 +166,20 @@ async function getTodayVenues() {
   try {
     const url = 'https://www.boatrace.jp/owpc/pc/race/index';
 
+    // タイムアウト設定: 5秒
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(url, {
+      signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
       }
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
@@ -253,7 +267,7 @@ export default async function handler(req, res) {
     const venuePromises = limitedVenues.map(async (placeCd) => {
       const venueRaces = [];
 
-      // 1Rから6Rまで並列取得
+      // 1RからMAX_RACESまで並列取得
       const racePromises = [];
       for (let raceNo = 1; raceNo <= MAX_RACES; raceNo++) {
         racePromises.push(getBeforeinfo(date, placeCd, raceNo));
