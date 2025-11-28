@@ -27,10 +27,9 @@ function App() {
         setLoading(true)
         setError(null)
 
-        // 本番環境とローカル開発環境でAPIエンドポイントを切り替え
-        const apiUrl = process.env.NODE_ENV === 'production'
-          ? '/api/scrape-races'
-          : 'http://localhost:3000/api/scrape-races'
+        // 静的JSONファイルから読み込み（GitHub Pages対応）
+        // ローカル開発時はpublic/data/races.json、本番はビルド後のdata/races.jsonから読み込み
+        const apiUrl = import.meta.env.BASE_URL + 'data/races.json'
 
         const response = await fetch(apiUrl)
 

@@ -1,0 +1,51 @@
+name: Scrape Race Data
+
+on:
+  schedule:
+    # JST 10:00-17:00 (UTC 1:00-8:00) に15分間隔で実行
+    # GitHub Actionsのcronは分・時・日・月・曜日の順
+    - cron: '*/15 1-8 * * *'
+
+  # 手動実行も可能
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create data directory
+        run: mkdir -p data
+
+      - name: Run scraper
+        run: node scripts/scrape-to-json.js
+        env:
+          TZ: 'Asia/Tokyo'
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code data/races.json || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push if changed
+        if: steps.git-check.outputs.changed == 'true'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/races.json
+          git commit -m "Update race data [automated] $(date +'%Y-%m-%d %H:%M:%S JST')"
+          git push
