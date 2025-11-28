@@ -192,16 +192,12 @@ async function main() {
     const allRaces = [];
 
     // 開催中のレース場のみ取得（並列処理で高速化）
-    const MAX_VENUES = 3; // タイムアウト対策: 最初の3会場のみ
-    const MAX_RACES = 3; // タイムアウト対策: 1-3Rのみ取得
+    const MAX_RACES = 12; // 通常は1Rから12Rまで
 
-    // 会場数を制限
-    const limitedVenues = todayVenues.slice(0, MAX_VENUES);
+    console.log(`Processing ${todayVenues.length} venues...`);
 
-    console.log(`Processing ${limitedVenues.length} venues (max ${MAX_VENUES})...`);
-
-    // 全会場のレースを並列で取得
-    const venuePromises = limitedVenues.map(async (placeCd) => {
+    // 全会場のレースを順次取得（会場ごとに並列）
+    for (const placeCd of todayVenues) {
       console.log(`Processing venue: ${VENUES[placeCd] || placeCd}`);
       const venueRaces = [];
 
@@ -220,29 +216,20 @@ async function main() {
         }
       });
 
-      // リクエスト間の遅延（1秒）
+      // 会場間の遅延（1秒）- レート制限対策
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // このレース場でデータが取得できた場合のみ返す
+      // このレース場でデータが取得できた場合のみ追加
       if (venueRaces.length > 0) {
-        return {
+        const venue = {
           placeCd: placeCd,
           placeName: VENUES[placeCd] || `レース場${placeCd}`,
           races: venueRaces
         };
-      }
-      return null;
-    });
-
-    const venueResults = await Promise.all(venuePromises);
-
-    // nullでない会場のみを追加
-    venueResults.forEach(venue => {
-      if (venue) {
         allRaces.push(venue);
         console.log(`✓ ${venue.placeName}: ${venue.races.length} races`);
       }
-    });
+    }
 
     console.log(`Successfully scraped ${allRaces.length} venues with race data`);
 
