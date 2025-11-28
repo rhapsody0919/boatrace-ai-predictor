@@ -191,13 +191,21 @@ async function getTodayVenues() {
 
     const venues = new Set();
 
+    // デバッグ: HTMLの長さを確認
+    console.log(`HTML length: ${html.length} characters`);
+    console.log(`First 500 chars: ${html.substring(0, 500)}`);
+
     // 開催中のレース場を抽出（raceindexへのリンクからjcdを取得）
-    $('a[href*="raceindex"]').each((i, elem) => {
+    const links = $('a[href*="raceindex"]');
+    console.log(`Found ${links.length} links with "raceindex"`);
+
+    links.each((i, elem) => {
       const href = $(elem).attr('href');
       if (href) {
         const match = href.match(/jcd=(\d+)/);
         if (match) {
           venues.add(parseInt(match[1]));
+          console.log(`Matched venue: ${match[1]} from href: ${href}`);
         }
       }
     });
