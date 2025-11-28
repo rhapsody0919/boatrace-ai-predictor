@@ -2,9 +2,9 @@ name: Scrape Race Data
 
 on:
   schedule:
-    # JST 10:00-17:00 (UTC 1:00-8:00) に15分間隔で実行
-    # GitHub Actionsのcronは分・時・日・月・曜日の順
-    - cron: '*/15 1-8 * * *'
+    # テスト中: 1時間間隔で24時間実行
+    # GitHub Actionsのcronは分・時・日・月・曜日の順（UTC時刻）
+    - cron: '0 * * * *'
 
   # 手動実行も可能
   workflow_dispatch:
