@@ -242,42 +242,47 @@ export default async function handler(req, res) {
 
     const allRaces = [];
 
-    // 開催中のレース場のみ取得
-    const MAX_CONCURRENT = 3; // 同時リクエスト数を制限
+    // 開催中のレース場のみ取得（並列処理で高速化）
+    const MAX_RACES = 6; // タイムアウト対策: 1-6Rのみ取得
 
-    for (const placeCd of todayVenues) {
+    // 全会場のレースを並列で取得
+    const venuePromises = todayVenues.map(async (placeCd) => {
       const venueRaces = [];
 
-      // 1Rから12Rまで取得（レース場によっては全てのレースが開催されていない場合もある）
-      for (let raceNo = 1; raceNo <= 12; raceNo += MAX_CONCURRENT) {
-        const promises = [];
-
-        for (let i = 0; i < MAX_CONCURRENT && (raceNo + i) <= 12; i++) {
-          promises.push(getBeforeinfo(date, placeCd, raceNo + i));
-        }
-
-        const results = await Promise.all(promises);
-
-        // nullでないデータのみを追加
-        results.forEach(result => {
-          if (result) {
-            venueRaces.push(result);
-          }
-        });
-
-        // レート制限のため少し待機
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // 1Rから6Rまで並列取得
+      const racePromises = [];
+      for (let raceNo = 1; raceNo <= MAX_RACES; raceNo++) {
+        racePromises.push(getBeforeinfo(date, placeCd, raceNo));
       }
 
-      // このレース場でデータが取得できた場合のみ追加
+      const results = await Promise.all(racePromises);
+
+      // nullでないデータのみを追加
+      results.forEach(result => {
+        if (result) {
+          venueRaces.push(result);
+        }
+      });
+
+      // このレース場でデータが取得できた場合のみ返す
       if (venueRaces.length > 0) {
-        allRaces.push({
+        return {
           placeCd: placeCd,
           placeName: VENUES[placeCd] || `レース場${placeCd}`,
           races: venueRaces
-        });
+        };
       }
-    }
+      return null;
+    });
+
+    const venueResults = await Promise.all(venuePromises);
+
+    // nullでない会場のみを追加
+    venueResults.forEach(venue => {
+      if (venue) {
+        allRaces.push(venue);
+      }
+    });
 
     // キャッシュを更新
     cache.data = allRaces;
