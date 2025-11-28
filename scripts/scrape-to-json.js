@@ -100,6 +100,88 @@ async function getBeforeinfo(date, placeCd, raceNo) {
   }
 }
 
+// 出走表から選手情報を取得する関数
+async function getRacelist(date, placeCd, raceNo) {
+  try {
+    const url = getUrl(date, placeCd, raceNo, 'racelist');
+
+    // タイムアウト設定: 5秒
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
+      }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
+      return null;
+    }
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+
+    const racers = [];
+
+    // 選手情報を取得（1号艇から6号艇まで）
+    $('.table1 tbody tr').each((index, row) => {
+      if (index >= 6) return; // 最大6艇まで
+
+      const $row = $(row);
+
+      // 選手名を取得
+      const name = $row.find('.is-fs14').first().text().trim();
+
+      // 級別を取得
+      const grade = $row.find('.is-fs11').first().text().trim();
+
+      // 全国勝率を取得
+      const $rateBody = $row.find('.table1_boatImage1').next();
+      const globalWinRate = parseFloat($rateBody.find('td').eq(0).text().trim()) || 0;
+
+      // 全国2連率を取得
+      const global2Rate = parseFloat($rateBody.find('td').eq(1).text().trim()) || 0;
+
+      // 当地勝率を取得
+      const localWinRate = parseFloat($rateBody.find('td').eq(2).text().trim()) || 0;
+
+      // 当地2連率を取得
+      const local2Rate = parseFloat($rateBody.find('td').eq(3).text().trim()) || 0;
+
+      // モーター2連率を取得
+      const motor2Rate = parseFloat($rateBody.find('td').eq(4).text().trim()) || 0;
+
+      // ボート2連率を取得
+      const boat2Rate = parseFloat($rateBody.find('td').eq(5).text().trim()) || 0;
+
+      racers.push({
+        lane: index + 1, // 1-6
+        name: name || '選手名不明',
+        grade: grade || '-',
+        globalWinRate: globalWinRate,
+        global2Rate: global2Rate,
+        localWinRate: localWinRate,
+        local2Rate: local2Rate,
+        motor2Rate: motor2Rate,
+        boat2Rate: boat2Rate,
+      });
+    });
+
+    return racers.length > 0 ? racers : null;
+
+  } catch (error) {
+    console.error(`Error fetching racelist for place ${placeCd}, race ${raceNo}:`, error.message);
+    return null;
+  }
+}
+
 // 今日の日付を取得 (YYYY-MM-DD形式)
 function getTodayDate() {
   const today = new Date();
@@ -201,18 +283,28 @@ async function main() {
       console.log(`Processing venue: ${VENUES[placeCd] || placeCd}`);
       const venueRaces = [];
 
-      // 1RからMAX_RACESまで並列取得
+      // 1RからMAX_RACESまで並列取得（beforeinfoとracelistの両方）
       const racePromises = [];
       for (let raceNo = 1; raceNo <= MAX_RACES; raceNo++) {
-        racePromises.push(getBeforeinfo(date, placeCd, raceNo));
+        racePromises.push(
+          Promise.all([
+            getBeforeinfo(date, placeCd, raceNo),
+            getRacelist(date, placeCd, raceNo)
+          ])
+        );
       }
 
       const results = await Promise.all(racePromises);
 
-      // nullでないデータのみを追加
-      results.forEach(result => {
-        if (result) {
-          venueRaces.push(result);
+      // nullでないデータのみを追加し、beforeinfoとracelistをマージ
+      results.forEach(([beforeinfo, racelist]) => {
+        if (beforeinfo) {
+          // beforeinfoとracelistを統合
+          const raceData = {
+            ...beforeinfo,
+            racers: racelist || [] // 選手情報を追加（取得できない場合は空配列）
+          };
+          venueRaces.push(raceData);
         }
       });
 

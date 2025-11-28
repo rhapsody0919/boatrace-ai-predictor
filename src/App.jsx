@@ -124,15 +124,38 @@ function App() {
   }
 
   const generatePlayers = () => {
-    const names = ['山田太郎', '鈴木次郎', '佐藤三郎', '田中四郎', '伊藤五郎', '渡辺六郎']
-    return names.map((name, idx) => ({
-      number: idx + 1,
-      name: name,
-      age: 25 + Math.floor(Math.random() * 20),
-      winRate: (Math.random() * 0.3 + 0.2).toFixed(3),
-      motorNumber: Math.floor(Math.random() * 100) + 1,
-      motorWinRate: (Math.random() * 0.2 + 0.3).toFixed(3),
-      aiScore: Math.floor(Math.random() * 40) + 60 - idx * 8,
+    // 実データから選手情報を取得
+    if (!selectedRace || !selectedRace.racers || selectedRace.racers.length === 0) {
+      // データがない場合はダミーデータを返す
+      const names = ['山田太郎', '鈴木次郎', '佐藤三郎', '田中四郎', '伊藤五郎', '渡辺六郎']
+      return names.map((name, idx) => ({
+        number: idx + 1,
+        name: name,
+        age: 25 + Math.floor(Math.random() * 20),
+        winRate: (Math.random() * 0.3 + 0.2).toFixed(3),
+        motorNumber: Math.floor(Math.random() * 100) + 1,
+        motorWinRate: (Math.random() * 0.2 + 0.3).toFixed(3),
+        aiScore: Math.floor(Math.random() * 40) + 60 - idx * 8,
+      })).sort((a, b) => b.aiScore - a.aiScore)
+    }
+
+    // 実データを使用
+    return selectedRace.racers.map((racer, idx) => ({
+      number: racer.lane,
+      name: racer.name,
+      grade: racer.grade,
+      winRate: racer.globalWinRate.toFixed(3),
+      localWinRate: racer.localWinRate.toFixed(3),
+      motor2Rate: racer.motor2Rate.toFixed(1),
+      boat2Rate: racer.boat2Rate.toFixed(1),
+      // AIスコアは勝率などから簡易計算（実際のAIは後で実装）
+      aiScore: Math.floor(
+        racer.globalWinRate * 100 +
+        racer.local2Rate * 50 +
+        racer.motor2Rate * 30 +
+        racer.boat2Rate * 20 -
+        idx * 5
+      ),
     })).sort((a, b) => b.aiScore - a.aiScore)
   }
 
