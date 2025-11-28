@@ -9,6 +9,10 @@ on:
   # 手動実行も可能
   workflow_dispatch:
 
+# Git へのプッシュ権限を設定
+permissions:
+  contents: write
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
