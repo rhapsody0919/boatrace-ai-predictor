@@ -11,6 +11,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "cheerio": "^1.1.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

@@ -8,105 +8,54 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isRealData, setIsRealData] = useState(false)
-
-  // サンプルレース場データ
-  const venues = [
-    { id: 1, name: '桐生', prefecture: '群馬' },
-    { id: 2, name: '戸田', prefecture: '埼玉' },
-    { id: 3, name: '江戸川', prefecture: '東京' },
-    { id: 4, name: '平和島', prefecture: '東京' },
-    { id: 5, name: '多摩川', prefecture: '東京' },
-    { id: 6, name: '浜名湖', prefecture: '静岡' },
-    { id: 7, name: '蒲郡', prefecture: '愛知' },
-    { id: 8, name: '常滑', prefecture: '愛知' },
-    { id: 9, name: '津', prefecture: '三重' },
-    { id: 10, name: 'びわこ', prefecture: '滋賀' },
-  ]
-
+  const [allVenuesData, setAllVenuesData] = useState([])
+  const [selectedVenueId, setSelectedVenueId] = useState(null)
   const [races, setRaces] = useState([])
 
   // レース場番号から名前へのマッピング
   const stadiumNames = {
     1: '桐生', 2: '戸田', 3: '江戸川', 4: '平和島', 5: '多摩川', 6: '浜名湖',
-    7: '蒲郡', 8: '常滑', 9: '津', 10: 'びわこ', 11: '住之江', 12: '尼崎',
-    13: '鳴門', 14: '丸亀', 15: '児島', 16: '宮島', 17: '徳山', 18: '下関',
-    19: '若松', 20: '芦屋', 21: '福岡', 22: '唐津', 23: '大村', 24: '桐生'
+    7: '蒲郡', 8: '常滑', 9: '津', 10: '三国', 11: 'びわこ', 12: '住之江',
+    13: '尼崎', 14: '鳴門', 15: '丸亀', 16: '児島', 17: '宮島', 18: '徳山',
+    19: '下関', 20: '若松', 21: '芦屋', 22: '福岡', 23: '唐津', 24: '大村'
   }
 
+  // 実際のAPIからデータを取得
   useEffect(() => {
-    // サンプルレースデータの生成（フォールバック用）
-    const generateRaces = () => {
-      return venues.slice(0, 5).map((venue, idx) => ({
-        id: idx + 1,
-        venue: venue.name,
-        raceNumber: Math.floor(Math.random() * 12) + 1,
-        startTime: `${14 + idx}:${(idx * 15) % 60}`,
-        weather: ['晴れ', '曇り', '雨'][Math.floor(Math.random() * 3)],
-        wave: Math.floor(Math.random() * 5) + 1,
-        wind: Math.floor(Math.random() * 8) + 1,
-      }))
-    }
-
-    // 実際のAPIからデータを取得
     const fetchRaceData = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        const response = await fetch('https://boatraceopenapi.github.io/results/v2/today.json')
+        // 本番環境とローカル開発環境でAPIエンドポイントを切り替え
+        const apiUrl = process.env.NODE_ENV === 'production'
+          ? '/api/scrape-races'
+          : 'http://localhost:3000/api/scrape-races'
+
+        const response = await fetch(apiUrl)
 
         if (!response.ok) {
-          throw new Error('APIからデータを取得できませんでした')
+          throw new Error('スクレイピングAPIからデータを取得できませんでした')
         }
 
-        const data = await response.json()
+        const result = await response.json()
 
-        // レース場ごとにグループ化し、各レース場から1つのレースを取得
-        const racesByStadium = {}
-        data.results.forEach(race => {
-          if (race.race_stadium_number && race.race_number) {
-            if (!racesByStadium[race.race_stadium_number]) {
-              racesByStadium[race.race_stadium_number] = []
-            }
-            racesByStadium[race.race_stadium_number].push(race)
-          }
-        })
+        if (!result.success || !result.data) {
+          throw new Error('有効なデータが取得できませんでした')
+        }
 
-        // 各レース場から最初のレースを1つずつ取得
-        const upcomingRaces = Object.entries(racesByStadium)
-          .slice(0, 10)
-          .map(([stadiumNumber, races]) => {
-            const race = races[0] // 各レース場の最初のレース
-            // レース番号から発走時刻を計算（1Rは10:30から、30分間隔）
-            const baseHour = 10
-            const baseMinute = 30
-            const totalMinutes = baseMinute + (race.race_number - 1) * 30
-            const hour = baseHour + Math.floor(totalMinutes / 60)
-            const minute = totalMinutes % 60
+        // レース場データを保存
+        setAllVenuesData(result.data)
+        setIsRealData(true)
 
-            return {
-              id: `${race.race_date}-${race.race_stadium_number}-${race.race_number}`,
-              venue: stadiumNames[parseInt(stadiumNumber)] || `場${stadiumNumber}`,
-              raceNumber: race.race_number,
-              startTime: `${hour}:${minute.toString().padStart(2, '0')}`,
-              weather: '晴れ',
-              wave: Math.floor(Math.random() * 5) + 1,
-              wind: Math.floor(Math.random() * 8) + 1,
-            }
-          })
-
-        if (upcomingRaces.length > 0) {
-          setRaces(upcomingRaces)
-          setIsRealData(true)
-        } else {
-          setRaces(generateRaces())
-          setIsRealData(false)
+        // 最初に開催されているレース場を自動選択
+        if (result.data.length > 0) {
+          setSelectedVenueId(result.data[0].placeCd)
         }
 
       } catch (err) {
         console.error('API取得エラー:', err)
         setError(err.message)
-        setRaces(generateRaces())
         setIsRealData(false)
       } finally {
         setLoading(false)
@@ -115,6 +64,40 @@ function App() {
 
     fetchRaceData()
   }, [])
+
+  // レース場選択時にレース一覧を更新
+  useEffect(() => {
+    if (selectedVenueId && allVenuesData.length > 0) {
+      const venueData = allVenuesData.find(v => v.placeCd === selectedVenueId)
+
+      if (venueData && venueData.races) {
+        // レースデータを表示用に変換
+        const formattedRaces = venueData.races.map(race => {
+          // レース番号から発走時刻を計算（1Rは10:30から、30分間隔）
+          const baseHour = 10
+          const baseMinute = 30
+          const totalMinutes = baseMinute + (race.raceNo - 1) * 30
+          const hour = baseHour + Math.floor(totalMinutes / 60)
+          const minute = totalMinutes % 60
+
+          return {
+            id: `${race.date}-${race.placeCd}-${race.raceNo}`,
+            venue: venueData.placeName,
+            raceNumber: race.raceNo,
+            startTime: `${hour}:${minute.toString().padStart(2, '0')}`,
+            weather: race.weather || '不明',
+            wave: race.waveHeight || 0,
+            wind: race.windVelocity || 0,
+            rawData: race // 元のデータも保持
+          }
+        })
+
+        setRaces(formattedRaces)
+      } else {
+        setRaces([])
+      }
+    }
+  }, [selectedVenueId, allVenuesData])
 
   const analyzeRace = (race) => {
     setSelectedRace(race)
@@ -199,44 +182,74 @@ function App() {
                 {error && (
                   <div style={{padding: '1rem', background: '#fff3cd', borderRadius: '8px', marginBottom: '1rem'}}>
                     <p style={{color: '#856404'}}>⚠️ {error}</p>
-                    <p style={{color: '#856404', fontSize: '0.9rem'}}>サンプルデータを表示しています</p>
+                    <p style={{color: '#856404', fontSize: '0.9rem'}}>データ取得に失敗しました</p>
                   </div>
                 )}
 
-                <div className="race-grid">
-              {races.map(race => (
-                <div key={race.id} className="race-card">
-                  <div className="race-card-header">
-                    <h3>{race.venue}</h3>
-                    <span className="race-number">{race.raceNumber}R</span>
+                {/* レース場選択ドロップダウン */}
+                {allVenuesData.length > 0 && (
+                  <div style={{marginBottom: '1.5rem'}}>
+                    <label htmlFor="venue-select" style={{
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: 'bold',
+                      color: '#334155'
+                    }}>
+                      レース場を選択:
+                    </label>
+                    <select
+                      id="venue-select"
+                      value={selectedVenueId || ''}
+                      onChange={(e) => setSelectedVenueId(parseInt(e.target.value))}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        fontSize: '1rem',
+                        borderRadius: '8px',
+                        border: '2px solid #e2e8f0',
+                        backgroundColor: 'white',
+                        color: '#1e293b',
+                        cursor: 'pointer',
+                        minWidth: '250px',
+                        outline: 'none'
+                      }}
+                    >
+                      {allVenuesData.map(venue => (
+                        <option key={venue.placeCd} value={venue.placeCd}>
+                          {venue.placeName} ({venue.races.length}レース)
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="race-info">
-                    <div className="info-item">
-                      <span className="label">発走時刻</span>
-                      <span className="value">{race.startTime}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="label">天候</span>
-                      <span className="value">{race.weather}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="label">波高</span>
-                      <span className="value">{race.wave}cm</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="label">風速</span>
-                      <span className="value">{race.wind}m</span>
-                    </div>
+                )}
+
+                {races.length === 0 && !error ? (
+                  <div style={{padding: '2rem', textAlign: 'center', color: '#64748b'}}>
+                    <p>本日、このレース場での開催はありません</p>
                   </div>
-                  <button
-                    className="predict-btn"
-                    onClick={() => analyzeRace(race)}
-                  >
-                    AI予想を見る
-                  </button>
-                </div>
-              ))}
-                </div>
+                ) : (
+                  <div className="race-grid">
+                    {races.map(race => (
+                      <div key={race.id} className="race-card">
+                        <div className="race-card-header">
+                          <h3>{race.venue}</h3>
+                          <span className="race-number">{race.raceNumber}R</span>
+                        </div>
+                        <div className="race-info">
+                          <div className="info-item">
+                            <span className="label">発走時刻</span>
+                            <span className="value">{race.startTime}</span>
+                          </div>
+                        </div>
+                        <button
+                          className="predict-btn"
+                          onClick={() => analyzeRace(race)}
+                        >
+                          AI予想を見る
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </section>
