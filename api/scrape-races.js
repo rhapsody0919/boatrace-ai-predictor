@@ -243,10 +243,14 @@ export default async function handler(req, res) {
     const allRaces = [];
 
     // 開催中のレース場のみ取得（並列処理で高速化）
-    const MAX_RACES = 6; // タイムアウト対策: 1-6Rのみ取得
+    const MAX_VENUES = 3; // タイムアウト対策: 最初の3会場のみ
+    const MAX_RACES = 3; // タイムアウト対策: 1-3Rのみ取得
+
+    // 会場数を制限
+    const limitedVenues = todayVenues.slice(0, MAX_VENUES);
 
     // 全会場のレースを並列で取得
-    const venuePromises = todayVenues.map(async (placeCd) => {
+    const venuePromises = limitedVenues.map(async (placeCd) => {
       const venueRaces = [];
 
       // 1Rから6Rまで並列取得
