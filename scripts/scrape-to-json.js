@@ -31,20 +31,13 @@ async function getBeforeinfo(date, placeCd, raceNo) {
   try {
     const url = getUrl(date, placeCd, raceNo, 'beforeinfo');
 
-    // タイムアウト設定: 5秒
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
     const response = await fetch(url, {
-      signal: controller.signal,
       headers: {
         'User-Agent': 'BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
       }
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
@@ -105,20 +98,13 @@ async function getRacelist(date, placeCd, raceNo) {
   try {
     const url = getUrl(date, placeCd, raceNo, 'racelist');
 
-    // タイムアウト設定: 5秒
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
     const response = await fetch(url, {
-      signal: controller.signal,
       headers: {
         'User-Agent': 'BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
       }
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
@@ -131,35 +117,39 @@ async function getRacelist(date, placeCd, raceNo) {
     const racers = [];
 
     // 選手情報を取得（1号艇から6号艇まで）
-    $('.table1 tbody tr').each((index, row) => {
+    $('.table1 tbody.is-fs12').each((index, tbody) => {
       if (index >= 6) return; // 最大6艇まで
 
-      const $row = $(row);
+      const $tbody = $(tbody);
 
       // 選手名を取得
-      const name = $row.find('.is-fs14').first().text().trim();
+      const name = $tbody.find('.is-fs18.is-fBold a').text().trim();
 
-      // 級別を取得
-      const grade = $row.find('.is-fs11').first().text().trim();
+      // 級別を取得（例: "4203 / B1" から "B1" を抽出）
+      const gradeText = $tbody.find('.is-fs11').first().text().trim();
+      const gradeMatch = gradeText.match(/\s*\/\s*([AB][12])/);
+      const grade = gradeMatch ? gradeMatch[1] : '-';
 
-      // 全国勝率を取得
-      const $rateBody = $row.find('.table1_boatImage1').next();
-      const globalWinRate = parseFloat($rateBody.find('td').eq(0).text().trim()) || 0;
+      // 統計データを取得（td.is-lineH2から）
+      const $stats = $tbody.find('td.is-lineH2');
 
-      // 全国2連率を取得
-      const global2Rate = parseFloat($rateBody.find('td').eq(1).text().trim()) || 0;
+      // 全国: 勝率<br>2連率<br>3連率
+      const globalStats = $stats.eq(1).text().trim().split('\n').map(s => s.trim()).filter(Boolean);
+      const globalWinRate = parseFloat(globalStats[0]) || 0;
+      const global2Rate = parseFloat(globalStats[1]) || 0;
 
-      // 当地勝率を取得
-      const localWinRate = parseFloat($rateBody.find('td').eq(2).text().trim()) || 0;
+      // 当地: 勝率<br>2連率<br>3連率
+      const localStats = $stats.eq(2).text().trim().split('\n').map(s => s.trim()).filter(Boolean);
+      const localWinRate = parseFloat(localStats[0]) || 0;
+      const local2Rate = parseFloat(localStats[1]) || 0;
 
-      // 当地2連率を取得
-      const local2Rate = parseFloat($rateBody.find('td').eq(3).text().trim()) || 0;
+      // モーター: 番号<br>2連率<br>3連率
+      const motorStats = $stats.eq(3).text().trim().split('\n').map(s => s.trim()).filter(Boolean);
+      const motor2Rate = parseFloat(motorStats[1]) || 0;
 
-      // モーター2連率を取得
-      const motor2Rate = parseFloat($rateBody.find('td').eq(4).text().trim()) || 0;
-
-      // ボート2連率を取得
-      const boat2Rate = parseFloat($rateBody.find('td').eq(5).text().trim()) || 0;
+      // ボート: 番号<br>2連率<br>3連率
+      const boatStats = $stats.eq(4).text().trim().split('\n').map(s => s.trim()).filter(Boolean);
+      const boat2Rate = parseFloat(boatStats[1]) || 0;
 
       racers.push({
         lane: index + 1, // 1-6
@@ -196,20 +186,13 @@ async function getTodayVenues() {
   try {
     const url = 'https://www.boatrace.jp/owpc/pc/race/index';
 
-    // タイムアウト設定: 5秒
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
     const response = await fetch(url, {
-      signal: controller.signal,
       headers: {
         'User-Agent': 'BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
       }
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
