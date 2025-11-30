@@ -2864,12 +2864,12 @@
       ]
     },
     {
-      "placeCd": 8,
-      "placeName": "常滑",
+      "placeCd": 7,
+      "placeName": "蒲郡",
       "races": [
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 1,
           "weather": "",
           "airTemp": null,
@@ -2877,11 +2877,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "谷川　　里江",
+              "grade": "B1",
+              "globalWinRate": 3.41,
+              "global2Rate": 13.51,
+              "localWinRate": 6.07,
+              "local2Rate": 45.68,
+              "motor2Rate": 51.72,
+              "boat2Rate": 30.26
+            },
+            {
+              "lane": 2,
+              "name": "三嶌　こころ",
+              "grade": "B1",
+              "globalWinRate": 2.81,
+              "global2Rate": 7.14,
+              "localWinRate": 2.13,
+              "local2Rate": 0,
+              "motor2Rate": 28.07,
+              "boat2Rate": 37.04
+            },
+            {
+              "lane": 3,
+              "name": "山下　　友貴",
+              "grade": "B1",
+              "globalWinRate": 5.46,
+              "global2Rate": 36.11,
+              "localWinRate": 5.27,
+              "local2Rate": 33.33,
+              "motor2Rate": 33.78,
+              "boat2Rate": 31.37
+            },
+            {
+              "lane": 4,
+              "name": "永井　　聖美",
+              "grade": "B1",
+              "globalWinRate": 5.27,
+              "global2Rate": 33.33,
+              "localWinRate": 6.22,
+              "local2Rate": 45.95,
+              "motor2Rate": 38.89,
+              "boat2Rate": 28.13
+            },
+            {
+              "lane": 5,
+              "name": "伊藤　　　栞",
+              "grade": "B2",
+              "globalWinRate": 2.72,
+              "global2Rate": 8.77,
+              "localWinRate": 1.3,
+              "local2Rate": 0,
+              "motor2Rate": 37.25,
+              "boat2Rate": 49.35
+            },
+            {
+              "lane": 6,
+              "name": "野田　　亜湖",
+              "grade": "B2",
+              "globalWinRate": 0.98,
+              "global2Rate": 0,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 40.74,
+              "boat2Rate": 36.54
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 2,
           "weather": "",
           "airTemp": null,
@@ -2889,11 +2956,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "本部　めぐみ",
+              "grade": "B1",
+              "globalWinRate": 3,
+              "global2Rate": 7.81,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 44.26,
+              "boat2Rate": 51.06
+            },
+            {
+              "lane": 2,
+              "name": "松田　　真実",
+              "grade": "B1",
+              "globalWinRate": 4.17,
+              "global2Rate": 22.22,
+              "localWinRate": 1.78,
+              "local2Rate": 5.56,
+              "motor2Rate": 54.39,
+              "boat2Rate": 27.59
+            },
+            {
+              "lane": 3,
+              "name": "加藤　　奈月",
+              "grade": "B1",
+              "globalWinRate": 4.35,
+              "global2Rate": 17.07,
+              "localWinRate": 3.89,
+              "local2Rate": 20.45,
+              "motor2Rate": 36.67,
+              "boat2Rate": 37.14
+            },
+            {
+              "lane": 4,
+              "name": "高木　　茉白",
+              "grade": "B2",
+              "globalWinRate": 2.53,
+              "global2Rate": 7.58,
+              "localWinRate": 1.56,
+              "local2Rate": 0,
+              "motor2Rate": 27.4,
+              "boat2Rate": 36.67
+            },
+            {
+              "lane": 5,
+              "name": "喜井　つかさ",
+              "grade": "A2",
+              "globalWinRate": 5.97,
+              "global2Rate": 40.22,
+              "localWinRate": 4.53,
+              "local2Rate": 26.32,
+              "motor2Rate": 43.28,
+              "boat2Rate": 36.62
+            },
+            {
+              "lane": 6,
+              "name": "渡邉　真奈美",
+              "grade": "B2",
+              "globalWinRate": 5.1,
+              "global2Rate": 36.62,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 37.88,
+              "boat2Rate": 45.07
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 3,
           "weather": "",
           "airTemp": null,
@@ -2901,11 +3035,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "長尾　　萌加",
+              "grade": "B1",
+              "globalWinRate": 4.79,
+              "global2Rate": 21.98,
+              "localWinRate": 2.63,
+              "local2Rate": 0,
+              "motor2Rate": 50,
+              "boat2Rate": 44.59
+            },
+            {
+              "lane": 2,
+              "name": "藤原　　菜希",
+              "grade": "A2",
+              "globalWinRate": 5.38,
+              "global2Rate": 34.95,
+              "localWinRate": 6,
+              "local2Rate": 50,
+              "motor2Rate": 50.91,
+              "boat2Rate": 40
+            },
+            {
+              "lane": 3,
+              "name": "間庭　　菜摘",
+              "grade": "B1",
+              "globalWinRate": 4.84,
+              "global2Rate": 19.57,
+              "localWinRate": 4.43,
+              "local2Rate": 14.29,
+              "motor2Rate": 33.82,
+              "boat2Rate": 37.1
+            },
+            {
+              "lane": 4,
+              "name": "中嶋　　世奈",
+              "grade": "B2",
+              "globalWinRate": 1.74,
+              "global2Rate": 0,
+              "localWinRate": 1.5,
+              "local2Rate": 0,
+              "motor2Rate": 29.58,
+              "boat2Rate": 43.75
+            },
+            {
+              "lane": 5,
+              "name": "笠野　友紀恵",
+              "grade": "B1",
+              "globalWinRate": 4.05,
+              "global2Rate": 17.46,
+              "localWinRate": 3.63,
+              "local2Rate": 11.29,
+              "motor2Rate": 38.96,
+              "boat2Rate": 40.58
+            },
+            {
+              "lane": 6,
+              "name": "安達　　美帆",
+              "grade": "B1",
+              "globalWinRate": 3.7,
+              "global2Rate": 15.71,
+              "localWinRate": 2.79,
+              "local2Rate": 14.29,
+              "motor2Rate": 38.1,
+              "boat2Rate": 30.99
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 4,
           "weather": "",
           "airTemp": null,
@@ -2913,11 +3114,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "鈴木　祐美子",
+              "grade": "B1",
+              "globalWinRate": 3.57,
+              "global2Rate": 9.43,
+              "localWinRate": 3.5,
+              "local2Rate": 11.11,
+              "motor2Rate": 30.65,
+              "boat2Rate": 35.19
+            },
+            {
+              "lane": 2,
+              "name": "沼田　　七華",
+              "grade": "B1",
+              "globalWinRate": 2.73,
+              "global2Rate": 0,
+              "localWinRate": 1.29,
+              "local2Rate": 0,
+              "motor2Rate": 37.68,
+              "boat2Rate": 37.5
+            },
+            {
+              "lane": 3,
+              "name": "根岸　　真優",
+              "grade": "B2",
+              "globalWinRate": 1.88,
+              "global2Rate": 2.99,
+              "localWinRate": 1.09,
+              "local2Rate": 0,
+              "motor2Rate": 35.48,
+              "boat2Rate": 36.21
+            },
+            {
+              "lane": 4,
+              "name": "水野　　望美",
+              "grade": "B1",
+              "globalWinRate": 5,
+              "global2Rate": 25.81,
+              "localWinRate": 5.22,
+              "local2Rate": 31.31,
+              "motor2Rate": 33.33,
+              "boat2Rate": 38.89
+            },
+            {
+              "lane": 5,
+              "name": "魚谷　　香織",
+              "grade": "A2",
+              "globalWinRate": 5.88,
+              "global2Rate": 40.45,
+              "localWinRate": 6.1,
+              "local2Rate": 41.38,
+              "motor2Rate": 28.07,
+              "boat2Rate": 29.82
+            },
+            {
+              "lane": 6,
+              "name": "新田　　芳美",
+              "grade": "B1",
+              "globalWinRate": 5.57,
+              "global2Rate": 32.79,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 36.23,
+              "boat2Rate": 33.33
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 5,
           "weather": "",
           "airTemp": null,
@@ -2925,11 +3193,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "稲生　　夏季",
+              "grade": "B1",
+              "globalWinRate": 4.99,
+              "global2Rate": 27.16,
+              "localWinRate": 2,
+              "local2Rate": 0,
+              "motor2Rate": 33.33,
+              "boat2Rate": 32.88
+            },
+            {
+              "lane": 2,
+              "name": "原田　　佑実",
+              "grade": "B1",
+              "globalWinRate": 5.52,
+              "global2Rate": 32,
+              "localWinRate": 6.1,
+              "local2Rate": 35,
+              "motor2Rate": 31.88,
+              "boat2Rate": 36.11
+            },
+            {
+              "lane": 3,
+              "name": "深見　亜由美",
+              "grade": "B2",
+              "globalWinRate": 4.56,
+              "global2Rate": 26.92,
+              "localWinRate": 5.48,
+              "local2Rate": 38.46,
+              "motor2Rate": 28.07,
+              "boat2Rate": 28.85
+            },
+            {
+              "lane": 4,
+              "name": "森田　　梨湖",
+              "grade": "B1",
+              "globalWinRate": 2.19,
+              "global2Rate": 3.13,
+              "localWinRate": 1.74,
+              "local2Rate": 5.26,
+              "motor2Rate": 42.42,
+              "boat2Rate": 28.33
+            },
+            {
+              "lane": 5,
+              "name": "野田　　亜湖",
+              "grade": "B2",
+              "globalWinRate": 0.98,
+              "global2Rate": 0,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 40.74,
+              "boat2Rate": 36.54
+            },
+            {
+              "lane": 6,
+              "name": "香川　　素子",
+              "grade": "A2",
+              "globalWinRate": 6.69,
+              "global2Rate": 50,
+              "localWinRate": 5.53,
+              "local2Rate": 26.32,
+              "motor2Rate": 48.28,
+              "boat2Rate": 32.31
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 6,
           "weather": "",
           "airTemp": null,
@@ -2937,11 +3272,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "深尾　　巴恵",
+              "grade": "B1",
+              "globalWinRate": 5.32,
+              "global2Rate": 32.26,
+              "localWinRate": 4.63,
+              "local2Rate": 31.58,
+              "motor2Rate": 29.85,
+              "boat2Rate": 28.89
+            },
+            {
+              "lane": 2,
+              "name": "小芦　るり華",
+              "grade": "A2",
+              "globalWinRate": 6.56,
+              "global2Rate": 46.6,
+              "localWinRate": 6.05,
+              "local2Rate": 45,
+              "motor2Rate": 43.33,
+              "boat2Rate": 40
+            },
+            {
+              "lane": 3,
+              "name": "井上　　未都",
+              "grade": "B1",
+              "globalWinRate": 4.7,
+              "global2Rate": 30.3,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 30,
+              "boat2Rate": 43.48
+            },
+            {
+              "lane": 4,
+              "name": "井澤　　聖奈",
+              "grade": "B2",
+              "globalWinRate": 1.48,
+              "global2Rate": 0,
+              "localWinRate": 1.25,
+              "local2Rate": 0,
+              "motor2Rate": 30.88,
+              "boat2Rate": 43.14
+            },
+            {
+              "lane": 5,
+              "name": "津田　　裕絵",
+              "grade": "B1",
+              "globalWinRate": 6.27,
+              "global2Rate": 44.87,
+              "localWinRate": 6.1,
+              "local2Rate": 30,
+              "motor2Rate": 35.21,
+              "boat2Rate": 47.76
+            },
+            {
+              "lane": 6,
+              "name": "三嶌　こころ",
+              "grade": "B1",
+              "globalWinRate": 2.81,
+              "global2Rate": 7.14,
+              "localWinRate": 2.13,
+              "local2Rate": 0,
+              "motor2Rate": 28.07,
+              "boat2Rate": 37.04
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 7,
           "weather": "",
           "airTemp": null,
@@ -2949,11 +3351,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "今井　　美亜",
+              "grade": "A2",
+              "globalWinRate": 5.89,
+              "global2Rate": 41.51,
+              "localWinRate": 5.2,
+              "local2Rate": 30,
+              "motor2Rate": 43.86,
+              "boat2Rate": 36.92
+            },
+            {
+              "lane": 2,
+              "name": "武藤　　綾子",
+              "grade": "B1",
+              "globalWinRate": 4.05,
+              "global2Rate": 22.58,
+              "localWinRate": 5.33,
+              "local2Rate": 11.11,
+              "motor2Rate": 33.33,
+              "boat2Rate": 46.27
+            },
+            {
+              "lane": 3,
+              "name": "本部　めぐみ",
+              "grade": "B1",
+              "globalWinRate": 3,
+              "global2Rate": 7.81,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 44.26,
+              "boat2Rate": 51.06
+            },
+            {
+              "lane": 4,
+              "name": "山田　　理央",
+              "grade": "A2",
+              "globalWinRate": 6.25,
+              "global2Rate": 47.06,
+              "localWinRate": 5.82,
+              "local2Rate": 27.27,
+              "motor2Rate": 39.06,
+              "boat2Rate": 29.41
+            },
+            {
+              "lane": 5,
+              "name": "永田　　　楽",
+              "grade": "B1",
+              "globalWinRate": 4.63,
+              "global2Rate": 27.55,
+              "localWinRate": 2.83,
+              "local2Rate": 13.89,
+              "motor2Rate": 42.86,
+              "boat2Rate": 36.23
+            },
+            {
+              "lane": 6,
+              "name": "中嶋　　世奈",
+              "grade": "B2",
+              "globalWinRate": 1.74,
+              "global2Rate": 0,
+              "localWinRate": 1.5,
+              "local2Rate": 0,
+              "motor2Rate": 29.58,
+              "boat2Rate": 43.75
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 8,
           "weather": "",
           "airTemp": null,
@@ -2961,11 +3430,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "藤原　　早菜",
+              "grade": "B1",
+              "globalWinRate": 6.26,
+              "global2Rate": 39.62,
+              "localWinRate": 2.83,
+              "local2Rate": 16.67,
+              "motor2Rate": 28,
+              "boat2Rate": 37.5
+            },
+            {
+              "lane": 2,
+              "name": "伊藤　　　栞",
+              "grade": "B2",
+              "globalWinRate": 2.72,
+              "global2Rate": 8.77,
+              "localWinRate": 1.3,
+              "local2Rate": 0,
+              "motor2Rate": 37.25,
+              "boat2Rate": 49.35
+            },
+            {
+              "lane": 3,
+              "name": "今井　　裕梨",
+              "grade": "A1",
+              "globalWinRate": 5.72,
+              "global2Rate": 44,
+              "localWinRate": 5.73,
+              "local2Rate": 37.5,
+              "motor2Rate": 43.55,
+              "boat2Rate": 47.76
+            },
+            {
+              "lane": 4,
+              "name": "渡邉　真奈美",
+              "grade": "B2",
+              "globalWinRate": 5.1,
+              "global2Rate": 36.62,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 37.88,
+              "boat2Rate": 45.07
+            },
+            {
+              "lane": 5,
+              "name": "根岸　　真優",
+              "grade": "B2",
+              "globalWinRate": 1.88,
+              "global2Rate": 2.99,
+              "localWinRate": 1.09,
+              "local2Rate": 0,
+              "motor2Rate": 35.48,
+              "boat2Rate": 36.21
+            },
+            {
+              "lane": 6,
+              "name": "間庭　　菜摘",
+              "grade": "B1",
+              "globalWinRate": 4.84,
+              "global2Rate": 19.57,
+              "localWinRate": 4.43,
+              "local2Rate": 14.29,
+              "motor2Rate": 33.82,
+              "boat2Rate": 37.1
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 9,
           "weather": "",
           "airTemp": null,
@@ -2973,11 +3509,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "山川　美由紀",
+              "grade": "B1",
+              "globalWinRate": 6.07,
+              "global2Rate": 40.54,
+              "localWinRate": 5,
+              "local2Rate": 27.27,
+              "motor2Rate": 60.66,
+              "boat2Rate": 36.73
+            },
+            {
+              "lane": 2,
+              "name": "森田　　梨湖",
+              "grade": "B1",
+              "globalWinRate": 2.19,
+              "global2Rate": 3.13,
+              "localWinRate": 1.74,
+              "local2Rate": 5.26,
+              "motor2Rate": 42.42,
+              "boat2Rate": 28.33
+            },
+            {
+              "lane": 3,
+              "name": "西村　　　歩",
+              "grade": "A2",
+              "globalWinRate": 5.83,
+              "global2Rate": 37.61,
+              "localWinRate": 4.85,
+              "local2Rate": 22.5,
+              "motor2Rate": 47.54,
+              "boat2Rate": 47.06
+            },
+            {
+              "lane": 4,
+              "name": "新田　　芳美",
+              "grade": "B1",
+              "globalWinRate": 5.57,
+              "global2Rate": 32.79,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 36.23,
+              "boat2Rate": 33.33
+            },
+            {
+              "lane": 5,
+              "name": "樋江井　　舞",
+              "grade": "B1",
+              "globalWinRate": 3.8,
+              "global2Rate": 11.36,
+              "localWinRate": 1.81,
+              "local2Rate": 0,
+              "motor2Rate": 44.07,
+              "boat2Rate": 49.18
+            },
+            {
+              "lane": 6,
+              "name": "山下　　友貴",
+              "grade": "B1",
+              "globalWinRate": 5.46,
+              "global2Rate": 36.11,
+              "localWinRate": 5.27,
+              "local2Rate": 33.33,
+              "motor2Rate": 33.78,
+              "boat2Rate": 31.37
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 10,
           "weather": "",
           "airTemp": null,
@@ -2985,11 +3588,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "豊田　　　結",
+              "grade": "A2",
+              "globalWinRate": 5.33,
+              "global2Rate": 35.53,
+              "localWinRate": 7,
+              "local2Rate": 51.85,
+              "motor2Rate": 34.33,
+              "boat2Rate": 32.73
+            },
+            {
+              "lane": 2,
+              "name": "大橋　栄里佳",
+              "grade": "B1",
+              "globalWinRate": 5.4,
+              "global2Rate": 36.14,
+              "localWinRate": 1.78,
+              "local2Rate": 0,
+              "motor2Rate": 30.43,
+              "boat2Rate": 30.91
+            },
+            {
+              "lane": 3,
+              "name": "鈴木　祐美子",
+              "grade": "B1",
+              "globalWinRate": 3.57,
+              "global2Rate": 9.43,
+              "localWinRate": 3.5,
+              "local2Rate": 11.11,
+              "motor2Rate": 30.65,
+              "boat2Rate": 35.19
+            },
+            {
+              "lane": 4,
+              "name": "津田　　裕絵",
+              "grade": "B1",
+              "globalWinRate": 6.27,
+              "global2Rate": 44.87,
+              "localWinRate": 6.1,
+              "local2Rate": 30,
+              "motor2Rate": 35.21,
+              "boat2Rate": 47.76
+            },
+            {
+              "lane": 5,
+              "name": "深見　亜由美",
+              "grade": "B2",
+              "globalWinRate": 4.56,
+              "global2Rate": 26.92,
+              "localWinRate": 5.48,
+              "local2Rate": 38.46,
+              "motor2Rate": 28.07,
+              "boat2Rate": 28.85
+            },
+            {
+              "lane": 6,
+              "name": "加藤　　奈月",
+              "grade": "B1",
+              "globalWinRate": 4.35,
+              "global2Rate": 17.07,
+              "localWinRate": 3.89,
+              "local2Rate": 20.45,
+              "motor2Rate": 36.67,
+              "boat2Rate": 37.14
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 11,
           "weather": "",
           "airTemp": null,
@@ -2997,11 +3667,78 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "山田　　理央",
+              "grade": "A2",
+              "globalWinRate": 6.25,
+              "global2Rate": 47.06,
+              "localWinRate": 5.82,
+              "local2Rate": 27.27,
+              "motor2Rate": 39.06,
+              "boat2Rate": 29.41
+            },
+            {
+              "lane": 2,
+              "name": "安達　　美帆",
+              "grade": "B1",
+              "globalWinRate": 3.7,
+              "global2Rate": 15.71,
+              "localWinRate": 2.79,
+              "local2Rate": 14.29,
+              "motor2Rate": 38.1,
+              "boat2Rate": 30.99
+            },
+            {
+              "lane": 3,
+              "name": "喜井　つかさ",
+              "grade": "A2",
+              "globalWinRate": 5.97,
+              "global2Rate": 40.22,
+              "localWinRate": 4.53,
+              "local2Rate": 26.32,
+              "motor2Rate": 43.28,
+              "boat2Rate": 36.62
+            },
+            {
+              "lane": 4,
+              "name": "谷川　　里江",
+              "grade": "B1",
+              "globalWinRate": 3.41,
+              "global2Rate": 13.51,
+              "localWinRate": 6.07,
+              "local2Rate": 45.68,
+              "motor2Rate": 51.72,
+              "boat2Rate": 30.26
+            },
+            {
+              "lane": 5,
+              "name": "原田　　佑実",
+              "grade": "B1",
+              "globalWinRate": 5.52,
+              "global2Rate": 32,
+              "localWinRate": 6.1,
+              "local2Rate": 35,
+              "motor2Rate": 31.88,
+              "boat2Rate": 36.11
+            },
+            {
+              "lane": 6,
+              "name": "井上　　未都",
+              "grade": "B1",
+              "globalWinRate": 4.7,
+              "global2Rate": 30.3,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 30,
+              "boat2Rate": 43.48
+            }
+          ]
         },
         {
           "date": "2025-12-01",
-          "placeCd": 8,
+          "placeCd": 7,
           "raceNo": 12,
           "weather": "",
           "airTemp": null,
@@ -3009,7 +3746,74 @@
           "windVelocity": null,
           "waterTemp": null,
           "waveHeight": null,
-          "racers": []
+          "racers": [
+            {
+              "lane": 1,
+              "name": "今井　　裕梨",
+              "grade": "A1",
+              "globalWinRate": 5.72,
+              "global2Rate": 44,
+              "localWinRate": 5.73,
+              "local2Rate": 37.5,
+              "motor2Rate": 43.55,
+              "boat2Rate": 47.76
+            },
+            {
+              "lane": 2,
+              "name": "香川　　素子",
+              "grade": "A2",
+              "globalWinRate": 6.69,
+              "global2Rate": 50,
+              "localWinRate": 5.53,
+              "local2Rate": 26.32,
+              "motor2Rate": 48.28,
+              "boat2Rate": 32.31
+            },
+            {
+              "lane": 3,
+              "name": "今井　　美亜",
+              "grade": "A2",
+              "globalWinRate": 5.89,
+              "global2Rate": 41.51,
+              "localWinRate": 5.2,
+              "local2Rate": 30,
+              "motor2Rate": 43.86,
+              "boat2Rate": 36.92
+            },
+            {
+              "lane": 4,
+              "name": "魚谷　　香織",
+              "grade": "A2",
+              "globalWinRate": 5.88,
+              "global2Rate": 40.45,
+              "localWinRate": 6.1,
+              "local2Rate": 41.38,
+              "motor2Rate": 28.07,
+              "boat2Rate": 29.82
+            },
+            {
+              "lane": 5,
+              "name": "小芦　るり華",
+              "grade": "A2",
+              "globalWinRate": 6.56,
+              "global2Rate": 46.6,
+              "localWinRate": 6.05,
+              "local2Rate": 45,
+              "motor2Rate": 43.33,
+              "boat2Rate": 40
+            },
+            {
+              "lane": 6,
+              "name": "藤原　　菜希",
+              "grade": "A2",
+              "globalWinRate": 5.38,
+              "global2Rate": 34.95,
+              "localWinRate": 6,
+              "local2Rate": 50,
+              "motor2Rate": 50.91,
+              "boat2Rate": 40
+            }
+          ]
         }
       ]
     },
@@ -4922,6 +5726,960 @@
       ]
     },
     {
+      "placeCd": 14,
+      "placeName": "鳴門",
+      "races": [
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 1,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "野長瀬　正孝",
+              "grade": "A1",
+              "globalWinRate": 6.21,
+              "global2Rate": 43.42,
+              "localWinRate": 5.52,
+              "local2Rate": 26.09,
+              "motor2Rate": 36.69,
+              "boat2Rate": 37.76
+            },
+            {
+              "lane": 2,
+              "name": "近藤　　稔也",
+              "grade": "B1",
+              "globalWinRate": 3.58,
+              "global2Rate": 12.82,
+              "localWinRate": 4.74,
+              "local2Rate": 29.37,
+              "motor2Rate": 35.42,
+              "boat2Rate": 23.42
+            },
+            {
+              "lane": 3,
+              "name": "屋良　　龍紀",
+              "grade": "B1",
+              "globalWinRate": 3.62,
+              "global2Rate": 16.9,
+              "localWinRate": 3.31,
+              "local2Rate": 12.5,
+              "motor2Rate": 30.67,
+              "boat2Rate": 41.73
+            },
+            {
+              "lane": 4,
+              "name": "加藤　　啓太",
+              "grade": "B1",
+              "globalWinRate": 4.09,
+              "global2Rate": 18.99,
+              "localWinRate": 4.45,
+              "local2Rate": 23.68,
+              "motor2Rate": 36.96,
+              "boat2Rate": 30.94
+            },
+            {
+              "lane": 5,
+              "name": "福田　　　理",
+              "grade": "B1",
+              "globalWinRate": 4.63,
+              "global2Rate": 26.92,
+              "localWinRate": 6.12,
+              "local2Rate": 38.46,
+              "motor2Rate": 40.44,
+              "boat2Rate": 22.82
+            },
+            {
+              "lane": 6,
+              "name": "甲斐　　貴大",
+              "grade": "B2",
+              "globalWinRate": 1,
+              "global2Rate": 0,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 31.33,
+              "boat2Rate": 31.69
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 2,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "丸尾　　義孝",
+              "grade": "A2",
+              "globalWinRate": 6.08,
+              "global2Rate": 41.74,
+              "localWinRate": 6.59,
+              "local2Rate": 48.77,
+              "motor2Rate": 38.24,
+              "boat2Rate": 29.23
+            },
+            {
+              "lane": 2,
+              "name": "川崎　　公靖",
+              "grade": "B1",
+              "globalWinRate": 4.78,
+              "global2Rate": 24.64,
+              "localWinRate": 3.37,
+              "local2Rate": 10,
+              "motor2Rate": 37.75,
+              "boat2Rate": 41.01
+            },
+            {
+              "lane": 3,
+              "name": "今泉　　　徹",
+              "grade": "B1",
+              "globalWinRate": 3.96,
+              "global2Rate": 16.44,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 35.51,
+              "boat2Rate": 33.1
+            },
+            {
+              "lane": 4,
+              "name": "山下　　心一",
+              "grade": "B2",
+              "globalWinRate": 2.64,
+              "global2Rate": 8.57,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 35.53,
+              "boat2Rate": 30.6
+            },
+            {
+              "lane": 5,
+              "name": "桑島　　和宏",
+              "grade": "A1",
+              "globalWinRate": 6.19,
+              "global2Rate": 43.27,
+              "localWinRate": 5.67,
+              "local2Rate": 22.22,
+              "motor2Rate": 23.39,
+              "boat2Rate": 33.33
+            },
+            {
+              "lane": 6,
+              "name": "梶山　　涼斗",
+              "grade": "B1",
+              "globalWinRate": 5.21,
+              "global2Rate": 28.75,
+              "localWinRate": 4.27,
+              "local2Rate": 16.67,
+              "motor2Rate": 21.43,
+              "boat2Rate": 36.17
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 3,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "佐藤　　博亮",
+              "grade": "A1",
+              "globalWinRate": 6.24,
+              "global2Rate": 46.85,
+              "localWinRate": 7.22,
+              "local2Rate": 46.88,
+              "motor2Rate": 38.78,
+              "boat2Rate": 26.71
+            },
+            {
+              "lane": 2,
+              "name": "市川　　美宏",
+              "grade": "B1",
+              "globalWinRate": 4.1,
+              "global2Rate": 16.67,
+              "localWinRate": 5,
+              "local2Rate": 50,
+              "motor2Rate": 26.9,
+              "boat2Rate": 27.78
+            },
+            {
+              "lane": 3,
+              "name": "小林　　孝彰",
+              "grade": "A2",
+              "globalWinRate": 5.75,
+              "global2Rate": 40.14,
+              "localWinRate": 6.15,
+              "local2Rate": 42.5,
+              "motor2Rate": 21.09,
+              "boat2Rate": 36.73
+            },
+            {
+              "lane": 4,
+              "name": "國弘　　翔平",
+              "grade": "B1",
+              "globalWinRate": 4.22,
+              "global2Rate": 20.48,
+              "localWinRate": 4.07,
+              "local2Rate": 14.81,
+              "motor2Rate": 34.29,
+              "boat2Rate": 32.86
+            },
+            {
+              "lane": 5,
+              "name": "鈴木　　雅希",
+              "grade": "A2",
+              "globalWinRate": 5.24,
+              "global2Rate": 33.64,
+              "localWinRate": 2.2,
+              "local2Rate": 0,
+              "motor2Rate": 36.05,
+              "boat2Rate": 32.62
+            },
+            {
+              "lane": 6,
+              "name": "日高　龍之介",
+              "grade": "B2",
+              "globalWinRate": 1.55,
+              "global2Rate": 0,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 21.71,
+              "boat2Rate": 32.62
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 4,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "宮脇　　遼太",
+              "grade": "A2",
+              "globalWinRate": 6.09,
+              "global2Rate": 42.7,
+              "localWinRate": 5.5,
+              "local2Rate": 40,
+              "motor2Rate": 35.81,
+              "boat2Rate": 39.29
+            },
+            {
+              "lane": 2,
+              "name": "荒井　　輝年",
+              "grade": "B1",
+              "globalWinRate": 5.35,
+              "global2Rate": 35.29,
+              "localWinRate": 6.08,
+              "local2Rate": 41.67,
+              "motor2Rate": 30,
+              "boat2Rate": 33.33
+            },
+            {
+              "lane": 3,
+              "name": "村岡　　　賢",
+              "grade": "B1",
+              "globalWinRate": 3.81,
+              "global2Rate": 9.41,
+              "localWinRate": 4.47,
+              "local2Rate": 21.05,
+              "motor2Rate": 25.98,
+              "boat2Rate": 34.31
+            },
+            {
+              "lane": 4,
+              "name": "葛原　　大陽",
+              "grade": "A1",
+              "globalWinRate": 6.53,
+              "global2Rate": 45.54,
+              "localWinRate": 6.49,
+              "local2Rate": 50,
+              "motor2Rate": 40,
+              "boat2Rate": 31.88
+            },
+            {
+              "lane": 5,
+              "name": "田中　太一郎",
+              "grade": "B1",
+              "globalWinRate": 4.43,
+              "global2Rate": 29.67,
+              "localWinRate": 4.4,
+              "local2Rate": 30,
+              "motor2Rate": 31.11,
+              "boat2Rate": 30.22
+            },
+            {
+              "lane": 6,
+              "name": "佐藤　　　悠",
+              "grade": "A2",
+              "globalWinRate": 5.67,
+              "global2Rate": 35.11,
+              "localWinRate": 4.54,
+              "local2Rate": 30.77,
+              "motor2Rate": 28.17,
+              "boat2Rate": 30.16
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 5,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "松下　　知幸",
+              "grade": "B1",
+              "globalWinRate": 4.2,
+              "global2Rate": 21.43,
+              "localWinRate": 4.76,
+              "local2Rate": 27.59,
+              "motor2Rate": 33.08,
+              "boat2Rate": 25
+            },
+            {
+              "lane": 2,
+              "name": "水摩　　　敦",
+              "grade": "A1",
+              "globalWinRate": 5.73,
+              "global2Rate": 38.14,
+              "localWinRate": 5.14,
+              "local2Rate": 25.71,
+              "motor2Rate": 32.64,
+              "boat2Rate": 30.5
+            },
+            {
+              "lane": 3,
+              "name": "三浦　洋次朗",
+              "grade": "A2",
+              "globalWinRate": 5.97,
+              "global2Rate": 41.67,
+              "localWinRate": 5.54,
+              "local2Rate": 37.5,
+              "motor2Rate": 39.85,
+              "boat2Rate": 32.31
+            },
+            {
+              "lane": 4,
+              "name": "吉永　　則雄",
+              "grade": "A1",
+              "globalWinRate": 7.04,
+              "global2Rate": 57.33,
+              "localWinRate": 6.14,
+              "local2Rate": 46.43,
+              "motor2Rate": 34.75,
+              "boat2Rate": 23.08
+            },
+            {
+              "lane": 5,
+              "name": "久永　　祥平",
+              "grade": "B1",
+              "globalWinRate": 5.71,
+              "global2Rate": 34.07,
+              "localWinRate": 4.18,
+              "local2Rate": 27.27,
+              "motor2Rate": 38.3,
+              "boat2Rate": 44.2
+            },
+            {
+              "lane": 6,
+              "name": "吉川　　颯汰",
+              "grade": "B2",
+              "globalWinRate": 1.38,
+              "global2Rate": 0,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 27.07,
+              "boat2Rate": 30.47
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 6,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "加藤　　啓太",
+              "grade": "B1",
+              "globalWinRate": 4.09,
+              "global2Rate": 18.99,
+              "localWinRate": 4.45,
+              "local2Rate": 23.68,
+              "motor2Rate": 36.96,
+              "boat2Rate": 30.94
+            },
+            {
+              "lane": 2,
+              "name": "赤坂　　俊輔",
+              "grade": "A1",
+              "globalWinRate": 6.42,
+              "global2Rate": 42.86,
+              "localWinRate": 7.59,
+              "local2Rate": 64.71,
+              "motor2Rate": 32.61,
+              "boat2Rate": 30.37
+            },
+            {
+              "lane": 3,
+              "name": "野中　　義生",
+              "grade": "B1",
+              "globalWinRate": 4.35,
+              "global2Rate": 24.32,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 28.95,
+              "boat2Rate": 41.13
+            },
+            {
+              "lane": 4,
+              "name": "浅見　　昌克",
+              "grade": "A2",
+              "globalWinRate": 5.99,
+              "global2Rate": 43.48,
+              "localWinRate": 5.88,
+              "local2Rate": 33.33,
+              "motor2Rate": 35.56,
+              "boat2Rate": 32.62
+            },
+            {
+              "lane": 5,
+              "name": "石井　　孝之",
+              "grade": "B1",
+              "globalWinRate": 3.97,
+              "global2Rate": 21.67,
+              "localWinRate": 4.13,
+              "local2Rate": 25,
+              "motor2Rate": 50,
+              "boat2Rate": 36.43
+            },
+            {
+              "lane": 6,
+              "name": "山下　　心一",
+              "grade": "B2",
+              "globalWinRate": 2.64,
+              "global2Rate": 8.57,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 35.53,
+              "boat2Rate": 30.6
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 7,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "今泉　　　徹",
+              "grade": "B1",
+              "globalWinRate": 3.96,
+              "global2Rate": 16.44,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 35.51,
+              "boat2Rate": 33.1
+            },
+            {
+              "lane": 2,
+              "name": "富永　　正人",
+              "grade": "B1",
+              "globalWinRate": 4.73,
+              "global2Rate": 25.37,
+              "localWinRate": 5.65,
+              "local2Rate": 41.18,
+              "motor2Rate": 33.11,
+              "boat2Rate": 38.41
+            },
+            {
+              "lane": 3,
+              "name": "西川　　拓利",
+              "grade": "B1",
+              "globalWinRate": 5.89,
+              "global2Rate": 43.18,
+              "localWinRate": 5.5,
+              "local2Rate": 31.25,
+              "motor2Rate": 34.42,
+              "boat2Rate": 38.69
+            },
+            {
+              "lane": 4,
+              "name": "中辻　　博訓",
+              "grade": "A1",
+              "globalWinRate": 6.72,
+              "global2Rate": 52.03,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 29.58,
+              "boat2Rate": 39.57
+            },
+            {
+              "lane": 5,
+              "name": "福田　　宗平",
+              "grade": "A2",
+              "globalWinRate": 6.38,
+              "global2Rate": 49.14,
+              "localWinRate": 6.8,
+              "local2Rate": 60,
+              "motor2Rate": 29.2,
+              "boat2Rate": 33.82
+            },
+            {
+              "lane": 6,
+              "name": "市川　　美宏",
+              "grade": "B1",
+              "globalWinRate": 4.1,
+              "global2Rate": 16.67,
+              "localWinRate": 5,
+              "local2Rate": 50,
+              "motor2Rate": 26.9,
+              "boat2Rate": 27.78
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 8,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "國弘　　翔平",
+              "grade": "B1",
+              "globalWinRate": 4.22,
+              "global2Rate": 20.48,
+              "localWinRate": 4.07,
+              "local2Rate": 14.81,
+              "motor2Rate": 34.29,
+              "boat2Rate": 32.86
+            },
+            {
+              "lane": 2,
+              "name": "田中　太一郎",
+              "grade": "B1",
+              "globalWinRate": 4.43,
+              "global2Rate": 29.67,
+              "localWinRate": 4.4,
+              "local2Rate": 30,
+              "motor2Rate": 31.11,
+              "boat2Rate": 30.22
+            },
+            {
+              "lane": 3,
+              "name": "渡邊　雄一郎",
+              "grade": "A1",
+              "globalWinRate": 6.55,
+              "global2Rate": 47.3,
+              "localWinRate": 6.61,
+              "local2Rate": 39.39,
+              "motor2Rate": 37.31,
+              "boat2Rate": 34.72
+            },
+            {
+              "lane": 4,
+              "name": "森安　　弘雅",
+              "grade": "A2",
+              "globalWinRate": 5.18,
+              "global2Rate": 30.39,
+              "localWinRate": 6.12,
+              "local2Rate": 47.06,
+              "motor2Rate": 24.83,
+              "boat2Rate": 40.85
+            },
+            {
+              "lane": 5,
+              "name": "屋良　　龍紀",
+              "grade": "B1",
+              "globalWinRate": 3.62,
+              "global2Rate": 16.9,
+              "localWinRate": 3.31,
+              "local2Rate": 12.5,
+              "motor2Rate": 30.67,
+              "boat2Rate": 41.73
+            },
+            {
+              "lane": 6,
+              "name": "神田　　達也",
+              "grade": "B1",
+              "globalWinRate": 5.01,
+              "global2Rate": 32.84,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 25,
+              "boat2Rate": 32.33
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 9,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "福田　　　理",
+              "grade": "B1",
+              "globalWinRate": 4.63,
+              "global2Rate": 26.92,
+              "localWinRate": 6.12,
+              "local2Rate": 38.46,
+              "motor2Rate": 40.44,
+              "boat2Rate": 22.82
+            },
+            {
+              "lane": 2,
+              "name": "仲　　　航太",
+              "grade": "A2",
+              "globalWinRate": 5.79,
+              "global2Rate": 43.43,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 34.03,
+              "boat2Rate": 31.21
+            },
+            {
+              "lane": 3,
+              "name": "佐藤　　　悠",
+              "grade": "A2",
+              "globalWinRate": 5.67,
+              "global2Rate": 35.11,
+              "localWinRate": 4.54,
+              "local2Rate": 30.77,
+              "motor2Rate": 28.17,
+              "boat2Rate": 30.16
+            },
+            {
+              "lane": 4,
+              "name": "水摩　　　敦",
+              "grade": "A1",
+              "globalWinRate": 5.73,
+              "global2Rate": 38.14,
+              "localWinRate": 5.14,
+              "local2Rate": 25.71,
+              "motor2Rate": 32.64,
+              "boat2Rate": 30.5
+            },
+            {
+              "lane": 5,
+              "name": "日高　龍之介",
+              "grade": "B2",
+              "globalWinRate": 1.55,
+              "global2Rate": 0,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 21.71,
+              "boat2Rate": 32.62
+            },
+            {
+              "lane": 6,
+              "name": "川崎　　公靖",
+              "grade": "B1",
+              "globalWinRate": 4.78,
+              "global2Rate": 24.64,
+              "localWinRate": 3.37,
+              "local2Rate": 10,
+              "motor2Rate": 37.75,
+              "boat2Rate": 41.01
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 10,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "小林　　孝彰",
+              "grade": "A2",
+              "globalWinRate": 5.75,
+              "global2Rate": 40.14,
+              "localWinRate": 6.15,
+              "local2Rate": 42.5,
+              "motor2Rate": 21.09,
+              "boat2Rate": 36.73
+            },
+            {
+              "lane": 2,
+              "name": "桑島　　和宏",
+              "grade": "A1",
+              "globalWinRate": 6.19,
+              "global2Rate": 43.27,
+              "localWinRate": 5.67,
+              "local2Rate": 22.22,
+              "motor2Rate": 23.39,
+              "boat2Rate": 33.33
+            },
+            {
+              "lane": 3,
+              "name": "石井　　孝之",
+              "grade": "B1",
+              "globalWinRate": 3.97,
+              "global2Rate": 21.67,
+              "localWinRate": 4.13,
+              "local2Rate": 25,
+              "motor2Rate": 50,
+              "boat2Rate": 36.43
+            },
+            {
+              "lane": 4,
+              "name": "杉山　　喜一",
+              "grade": "A2",
+              "globalWinRate": 5.09,
+              "global2Rate": 29.57,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 29.71,
+              "boat2Rate": 35.25
+            },
+            {
+              "lane": 5,
+              "name": "藤森　　拓海",
+              "grade": "B1",
+              "globalWinRate": 3.81,
+              "global2Rate": 18.06,
+              "localWinRate": 4.17,
+              "local2Rate": 16.67,
+              "motor2Rate": 25.35,
+              "boat2Rate": 34.04
+            },
+            {
+              "lane": 6,
+              "name": "荒井　　輝年",
+              "grade": "B1",
+              "globalWinRate": 5.35,
+              "global2Rate": 35.29,
+              "localWinRate": 6.08,
+              "local2Rate": 41.67,
+              "motor2Rate": 30,
+              "boat2Rate": 33.33
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 11,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "浅見　　昌克",
+              "grade": "A2",
+              "globalWinRate": 5.99,
+              "global2Rate": 43.48,
+              "localWinRate": 5.88,
+              "local2Rate": 33.33,
+              "motor2Rate": 35.56,
+              "boat2Rate": 32.62
+            },
+            {
+              "lane": 2,
+              "name": "福田　　宗平",
+              "grade": "A2",
+              "globalWinRate": 6.38,
+              "global2Rate": 49.14,
+              "localWinRate": 6.8,
+              "local2Rate": 60,
+              "motor2Rate": 29.2,
+              "boat2Rate": 33.82
+            },
+            {
+              "lane": 3,
+              "name": "丸尾　　義孝",
+              "grade": "A2",
+              "globalWinRate": 6.08,
+              "global2Rate": 41.74,
+              "localWinRate": 6.59,
+              "local2Rate": 48.77,
+              "motor2Rate": 38.24,
+              "boat2Rate": 29.23
+            },
+            {
+              "lane": 4,
+              "name": "野長瀬　正孝",
+              "grade": "A1",
+              "globalWinRate": 6.21,
+              "global2Rate": 43.42,
+              "localWinRate": 5.52,
+              "local2Rate": 26.09,
+              "motor2Rate": 36.69,
+              "boat2Rate": 37.76
+            },
+            {
+              "lane": 5,
+              "name": "宮脇　　遼太",
+              "grade": "A2",
+              "globalWinRate": 6.09,
+              "global2Rate": 42.7,
+              "localWinRate": 5.5,
+              "local2Rate": 40,
+              "motor2Rate": 35.81,
+              "boat2Rate": 39.29
+            },
+            {
+              "lane": 6,
+              "name": "三浦　洋次朗",
+              "grade": "A2",
+              "globalWinRate": 5.97,
+              "global2Rate": 41.67,
+              "localWinRate": 5.54,
+              "local2Rate": 37.5,
+              "motor2Rate": 39.85,
+              "boat2Rate": 32.31
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 14,
+          "raceNo": 12,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "中辻　　博訓",
+              "grade": "A1",
+              "globalWinRate": 6.72,
+              "global2Rate": 52.03,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 29.58,
+              "boat2Rate": 39.57
+            },
+            {
+              "lane": 2,
+              "name": "吉永　　則雄",
+              "grade": "A1",
+              "globalWinRate": 7.04,
+              "global2Rate": 57.33,
+              "localWinRate": 6.14,
+              "local2Rate": 46.43,
+              "motor2Rate": 34.75,
+              "boat2Rate": 23.08
+            },
+            {
+              "lane": 3,
+              "name": "佐藤　　博亮",
+              "grade": "A1",
+              "globalWinRate": 6.24,
+              "global2Rate": 46.85,
+              "localWinRate": 7.22,
+              "local2Rate": 46.88,
+              "motor2Rate": 38.78,
+              "boat2Rate": 26.71
+            },
+            {
+              "lane": 4,
+              "name": "赤坂　　俊輔",
+              "grade": "A1",
+              "globalWinRate": 6.42,
+              "global2Rate": 42.86,
+              "localWinRate": 7.59,
+              "local2Rate": 64.71,
+              "motor2Rate": 32.61,
+              "boat2Rate": 30.37
+            },
+            {
+              "lane": 5,
+              "name": "渡邊　雄一郎",
+              "grade": "A1",
+              "globalWinRate": 6.55,
+              "global2Rate": 47.3,
+              "localWinRate": 6.61,
+              "local2Rate": 39.39,
+              "motor2Rate": 37.31,
+              "boat2Rate": 34.72
+            },
+            {
+              "lane": 6,
+              "name": "葛原　　大陽",
+              "grade": "A1",
+              "globalWinRate": 6.53,
+              "global2Rate": 45.54,
+              "localWinRate": 6.49,
+              "local2Rate": 50,
+              "motor2Rate": 40,
+              "boat2Rate": 31.88
+            }
+          ]
+        }
+      ]
+    },
+    {
       "placeCd": 15,
       "placeName": "丸亀",
       "races": [
@@ -5870,6 +7628,960 @@
               "local2Rate": 23.28,
               "motor2Rate": 54.9,
               "boat2Rate": 29.49
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "placeCd": 17,
+      "placeName": "宮島",
+      "races": [
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 1,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "三浦　　敬太",
+              "grade": "A1",
+              "globalWinRate": 7.11,
+              "global2Rate": 56.31,
+              "localWinRate": 7.5,
+              "local2Rate": 70,
+              "motor2Rate": 54.84,
+              "boat2Rate": 26.67
+            },
+            {
+              "lane": 2,
+              "name": "東　　　健介",
+              "grade": "B1",
+              "globalWinRate": 4.18,
+              "global2Rate": 19.18,
+              "localWinRate": 4.72,
+              "local2Rate": 28.13,
+              "motor2Rate": 18.42,
+              "boat2Rate": 54.84
+            },
+            {
+              "lane": 3,
+              "name": "木幡　　純也",
+              "grade": "B1",
+              "globalWinRate": 4.37,
+              "global2Rate": 17.81,
+              "localWinRate": 4.25,
+              "local2Rate": 31.25,
+              "motor2Rate": 34.48,
+              "boat2Rate": 11.76
+            },
+            {
+              "lane": 4,
+              "name": "向井田　佑紀",
+              "grade": "B1",
+              "globalWinRate": 4.95,
+              "global2Rate": 29.29,
+              "localWinRate": 5.56,
+              "local2Rate": 37.86,
+              "motor2Rate": 29.63,
+              "boat2Rate": 43.9
+            },
+            {
+              "lane": 5,
+              "name": "岡崎　　凪汰",
+              "grade": "B2",
+              "globalWinRate": 2.31,
+              "global2Rate": 5.88,
+              "localWinRate": 1.56,
+              "local2Rate": 0,
+              "motor2Rate": 30,
+              "boat2Rate": 42.11
+            },
+            {
+              "lane": 6,
+              "name": "安部　　慎一",
+              "grade": "B1",
+              "globalWinRate": 4.7,
+              "global2Rate": 29.89,
+              "localWinRate": 3.05,
+              "local2Rate": 5.26,
+              "motor2Rate": 21.62,
+              "boat2Rate": 60.98
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 2,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "渡辺　　　豊",
+              "grade": "A2",
+              "globalWinRate": 4.48,
+              "global2Rate": 22.68,
+              "localWinRate": 6.29,
+              "local2Rate": 42.86,
+              "motor2Rate": 57.89,
+              "boat2Rate": 50
+            },
+            {
+              "lane": 2,
+              "name": "三川　　昂暁",
+              "grade": "A2",
+              "globalWinRate": 6.03,
+              "global2Rate": 38.94,
+              "localWinRate": 5.7,
+              "local2Rate": 40,
+              "motor2Rate": 30.77,
+              "boat2Rate": 25.93
+            },
+            {
+              "lane": 3,
+              "name": "佐藤　　駿介",
+              "grade": "B1",
+              "globalWinRate": 2.94,
+              "global2Rate": 9.26,
+              "localWinRate": 3.67,
+              "local2Rate": 22.22,
+              "motor2Rate": 17.86,
+              "boat2Rate": 15.79
+            },
+            {
+              "lane": 4,
+              "name": "森永　　　淳",
+              "grade": "A1",
+              "globalWinRate": 6.87,
+              "global2Rate": 58.18,
+              "localWinRate": 6.23,
+              "local2Rate": 40.91,
+              "motor2Rate": 25,
+              "boat2Rate": 28.57
+            },
+            {
+              "lane": 5,
+              "name": "森林　　　太",
+              "grade": "B1",
+              "globalWinRate": 3.93,
+              "global2Rate": 14.86,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 64.52,
+              "boat2Rate": 30
+            },
+            {
+              "lane": 6,
+              "name": "杉江　　浩明",
+              "grade": "B1",
+              "globalWinRate": 3.42,
+              "global2Rate": 15.05,
+              "localWinRate": 2.86,
+              "local2Rate": 14.29,
+              "motor2Rate": 33.33,
+              "boat2Rate": 42.86
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 3,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "妹尾　　忠幸",
+              "grade": "A2",
+              "globalWinRate": 6.29,
+              "global2Rate": 42.15,
+              "localWinRate": 6.89,
+              "local2Rate": 52.17,
+              "motor2Rate": 25.93,
+              "boat2Rate": 28.95
+            },
+            {
+              "lane": 2,
+              "name": "森作　　雄大",
+              "grade": "B1",
+              "globalWinRate": 5.41,
+              "global2Rate": 42.37,
+              "localWinRate": 6.6,
+              "local2Rate": 50,
+              "motor2Rate": 25.93,
+              "boat2Rate": 32.26
+            },
+            {
+              "lane": 3,
+              "name": "吉田　　一郎",
+              "grade": "A2",
+              "globalWinRate": 5.64,
+              "global2Rate": 32.11,
+              "localWinRate": 6.68,
+              "local2Rate": 52.63,
+              "motor2Rate": 30.56,
+              "boat2Rate": 34.15
+            },
+            {
+              "lane": 4,
+              "name": "川添　　英正",
+              "grade": "B1",
+              "globalWinRate": 4.78,
+              "global2Rate": 23.68,
+              "localWinRate": 5,
+              "local2Rate": 30.77,
+              "motor2Rate": 37.5,
+              "boat2Rate": 35
+            },
+            {
+              "lane": 5,
+              "name": "仲口　　博崇",
+              "grade": "A1",
+              "globalWinRate": 6.54,
+              "global2Rate": 51.2,
+              "localWinRate": 6.09,
+              "local2Rate": 54.55,
+              "motor2Rate": 35.71,
+              "boat2Rate": 26.32
+            },
+            {
+              "lane": 6,
+              "name": "尾道　　佳諭",
+              "grade": "B1",
+              "globalWinRate": 3.64,
+              "global2Rate": 17.11,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 28.95,
+              "boat2Rate": 36.36
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 4,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "長谷川　親王",
+              "grade": "B1",
+              "globalWinRate": 3.25,
+              "global2Rate": 7.94,
+              "localWinRate": 4.35,
+              "local2Rate": 23.08,
+              "motor2Rate": 36.84,
+              "boat2Rate": 31.58
+            },
+            {
+              "lane": 2,
+              "name": "永田　　啓二",
+              "grade": "A1",
+              "globalWinRate": 6.65,
+              "global2Rate": 54.03,
+              "localWinRate": 7.28,
+              "local2Rate": 70,
+              "motor2Rate": 20.59,
+              "boat2Rate": 27.03
+            },
+            {
+              "lane": 3,
+              "name": "牧原　　　崇",
+              "grade": "A2",
+              "globalWinRate": 5.44,
+              "global2Rate": 34.69,
+              "localWinRate": 5.34,
+              "local2Rate": 34.09,
+              "motor2Rate": 34.38,
+              "boat2Rate": 31.71
+            },
+            {
+              "lane": 4,
+              "name": "岡部　　貴司",
+              "grade": "B1",
+              "globalWinRate": 5,
+              "global2Rate": 30.11,
+              "localWinRate": 4.29,
+              "local2Rate": 24.44,
+              "motor2Rate": 37.93,
+              "boat2Rate": 33.33
+            },
+            {
+              "lane": 5,
+              "name": "清水　　攻二",
+              "grade": "A2",
+              "globalWinRate": 5.8,
+              "global2Rate": 37.89,
+              "localWinRate": 5.82,
+              "local2Rate": 42.11,
+              "motor2Rate": 48.39,
+              "boat2Rate": 39.47
+            },
+            {
+              "lane": 6,
+              "name": "西村　　仁吾",
+              "grade": "B2",
+              "globalWinRate": 1.17,
+              "global2Rate": 0,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 38.89,
+              "boat2Rate": 42.42
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 5,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "三好　　勇人",
+              "grade": "B1",
+              "globalWinRate": 5.82,
+              "global2Rate": 36.99,
+              "localWinRate": 6.12,
+              "local2Rate": 40,
+              "motor2Rate": 36.84,
+              "boat2Rate": 31.58
+            },
+            {
+              "lane": 2,
+              "name": "小坂　　尚哉",
+              "grade": "A1",
+              "globalWinRate": 6.4,
+              "global2Rate": 46.79,
+              "localWinRate": 7.2,
+              "local2Rate": 65,
+              "motor2Rate": 31.03,
+              "boat2Rate": 21.43
+            },
+            {
+              "lane": 3,
+              "name": "中井　　俊祐",
+              "grade": "B1",
+              "globalWinRate": 4.46,
+              "global2Rate": 24.64,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 24.14,
+              "boat2Rate": 33.33
+            },
+            {
+              "lane": 4,
+              "name": "山下　　和彦",
+              "grade": "A2",
+              "globalWinRate": 5.84,
+              "global2Rate": 40.82,
+              "localWinRate": 6.42,
+              "local2Rate": 42.11,
+              "motor2Rate": 11.43,
+              "boat2Rate": 43.33
+            },
+            {
+              "lane": 5,
+              "name": "伊藤　　紘章",
+              "grade": "B1",
+              "globalWinRate": 4.77,
+              "global2Rate": 29.73,
+              "localWinRate": 4.07,
+              "local2Rate": 26.67,
+              "motor2Rate": 26.47,
+              "boat2Rate": 31.43
+            },
+            {
+              "lane": 6,
+              "name": "八戸　　琉楓",
+              "grade": "B2",
+              "globalWinRate": 2.04,
+              "global2Rate": 3.51,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 7.14,
+              "boat2Rate": 35.9
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 6,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "鈴木　　勝博",
+              "grade": "A1",
+              "globalWinRate": 5.57,
+              "global2Rate": 36.73,
+              "localWinRate": 6.85,
+              "local2Rate": 58.82,
+              "motor2Rate": 28.95,
+              "boat2Rate": 41.18
+            },
+            {
+              "lane": 2,
+              "name": "松田　　隆司",
+              "grade": "B1",
+              "globalWinRate": 4.68,
+              "global2Rate": 26.6,
+              "localWinRate": 4.96,
+              "local2Rate": 32.65,
+              "motor2Rate": 27.03,
+              "boat2Rate": 41.46
+            },
+            {
+              "lane": 3,
+              "name": "赤峰　　和也",
+              "grade": "B1",
+              "globalWinRate": 4.25,
+              "global2Rate": 20.29,
+              "localWinRate": 4.41,
+              "local2Rate": 18.18,
+              "motor2Rate": 23.53,
+              "boat2Rate": 44.74
+            },
+            {
+              "lane": 4,
+              "name": "古田　　祐貴",
+              "grade": "A2",
+              "globalWinRate": 5.86,
+              "global2Rate": 36.21,
+              "localWinRate": 5.31,
+              "local2Rate": 31.03,
+              "motor2Rate": 32.43,
+              "boat2Rate": 33.33
+            },
+            {
+              "lane": 5,
+              "name": "東　　　健介",
+              "grade": "B1",
+              "globalWinRate": 4.18,
+              "global2Rate": 19.18,
+              "localWinRate": 4.72,
+              "local2Rate": 28.13,
+              "motor2Rate": 18.42,
+              "boat2Rate": 54.84
+            },
+            {
+              "lane": 6,
+              "name": "関口　　智久",
+              "grade": "A2",
+              "globalWinRate": 5.14,
+              "global2Rate": 24.68,
+              "localWinRate": 4.94,
+              "local2Rate": 17.65,
+              "motor2Rate": 59.52,
+              "boat2Rate": 30.77
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 7,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "半田　　尚也",
+              "grade": "B1",
+              "globalWinRate": 4.34,
+              "global2Rate": 17.81,
+              "localWinRate": 4.87,
+              "local2Rate": 26.5,
+              "motor2Rate": 43.59,
+              "boat2Rate": 38.46
+            },
+            {
+              "lane": 2,
+              "name": "杉江　　浩明",
+              "grade": "B1",
+              "globalWinRate": 3.42,
+              "global2Rate": 15.05,
+              "localWinRate": 2.86,
+              "local2Rate": 14.29,
+              "motor2Rate": 33.33,
+              "boat2Rate": 42.86
+            },
+            {
+              "lane": 3,
+              "name": "向井田　佑紀",
+              "grade": "B1",
+              "globalWinRate": 4.95,
+              "global2Rate": 29.29,
+              "localWinRate": 5.56,
+              "local2Rate": 37.86,
+              "motor2Rate": 29.63,
+              "boat2Rate": 43.9
+            },
+            {
+              "lane": 4,
+              "name": "岩永　　節也",
+              "grade": "B1",
+              "globalWinRate": 3.92,
+              "global2Rate": 11.29,
+              "localWinRate": 2.2,
+              "local2Rate": 0,
+              "motor2Rate": 11.11,
+              "boat2Rate": 33.33
+            },
+            {
+              "lane": 5,
+              "name": "宮内　　直哉",
+              "grade": "B1",
+              "globalWinRate": 4.12,
+              "global2Rate": 18.42,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 13.79,
+              "boat2Rate": 50
+            },
+            {
+              "lane": 6,
+              "name": "宮本　　琉正",
+              "grade": "B2",
+              "globalWinRate": 1.52,
+              "global2Rate": 0,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 25.93,
+              "boat2Rate": 27.78
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 8,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "佐藤　　駿介",
+              "grade": "B1",
+              "globalWinRate": 2.94,
+              "global2Rate": 9.26,
+              "localWinRate": 3.67,
+              "local2Rate": 22.22,
+              "motor2Rate": 17.86,
+              "boat2Rate": 15.79
+            },
+            {
+              "lane": 2,
+              "name": "長岡　　良也",
+              "grade": "A1",
+              "globalWinRate": 6.84,
+              "global2Rate": 52.14,
+              "localWinRate": 7.62,
+              "local2Rate": 66.67,
+              "motor2Rate": 34.48,
+              "boat2Rate": 46.67
+            },
+            {
+              "lane": 3,
+              "name": "安部　　慎一",
+              "grade": "B1",
+              "globalWinRate": 4.7,
+              "global2Rate": 29.89,
+              "localWinRate": 3.05,
+              "local2Rate": 5.26,
+              "motor2Rate": 21.62,
+              "boat2Rate": 60.98
+            },
+            {
+              "lane": 4,
+              "name": "沢田　　昭宏",
+              "grade": "A2",
+              "globalWinRate": 5.55,
+              "global2Rate": 36.36,
+              "localWinRate": 5.31,
+              "local2Rate": 30.77,
+              "motor2Rate": 43.59,
+              "boat2Rate": 21.05
+            },
+            {
+              "lane": 5,
+              "name": "久田　　　武",
+              "grade": "A2",
+              "globalWinRate": 5.1,
+              "global2Rate": 30.85,
+              "localWinRate": 6.18,
+              "local2Rate": 27.27,
+              "motor2Rate": 36.67,
+              "boat2Rate": 23.08
+            },
+            {
+              "lane": 6,
+              "name": "森作　　雄大",
+              "grade": "B1",
+              "globalWinRate": 5.41,
+              "global2Rate": 42.37,
+              "localWinRate": 6.6,
+              "local2Rate": 50,
+              "motor2Rate": 25.93,
+              "boat2Rate": 32.26
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 9,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "渡邉　　　翼",
+              "grade": "A2",
+              "globalWinRate": 5.52,
+              "global2Rate": 38.1,
+              "localWinRate": 5.92,
+              "local2Rate": 50,
+              "motor2Rate": 35,
+              "boat2Rate": 26.67
+            },
+            {
+              "lane": 2,
+              "name": "岡崎　　凪汰",
+              "grade": "B2",
+              "globalWinRate": 2.31,
+              "global2Rate": 5.88,
+              "localWinRate": 1.56,
+              "local2Rate": 0,
+              "motor2Rate": 30,
+              "boat2Rate": 42.11
+            },
+            {
+              "lane": 3,
+              "name": "渡辺　　　豊",
+              "grade": "A2",
+              "globalWinRate": 4.48,
+              "global2Rate": 22.68,
+              "localWinRate": 6.29,
+              "local2Rate": 42.86,
+              "motor2Rate": 57.89,
+              "boat2Rate": 50
+            },
+            {
+              "lane": 4,
+              "name": "長谷川　親王",
+              "grade": "B1",
+              "globalWinRate": 3.25,
+              "global2Rate": 7.94,
+              "localWinRate": 4.35,
+              "local2Rate": 23.08,
+              "motor2Rate": 36.84,
+              "boat2Rate": 31.58
+            },
+            {
+              "lane": 5,
+              "name": "川添　　英正",
+              "grade": "B1",
+              "globalWinRate": 4.78,
+              "global2Rate": 23.68,
+              "localWinRate": 5,
+              "local2Rate": 30.77,
+              "motor2Rate": 37.5,
+              "boat2Rate": 35
+            },
+            {
+              "lane": 6,
+              "name": "藤山　　翔大",
+              "grade": "A1",
+              "globalWinRate": 5.51,
+              "global2Rate": 40.96,
+              "localWinRate": 6.78,
+              "local2Rate": 44.44,
+              "motor2Rate": 23.08,
+              "boat2Rate": 33.33
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 10,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "森林　　　太",
+              "grade": "B1",
+              "globalWinRate": 3.93,
+              "global2Rate": 14.86,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 64.52,
+              "boat2Rate": 30
+            },
+            {
+              "lane": 2,
+              "name": "梶野　　学志",
+              "grade": "A1",
+              "globalWinRate": 6.11,
+              "global2Rate": 42.55,
+              "localWinRate": 7.1,
+              "local2Rate": 62.5,
+              "motor2Rate": 38.1,
+              "boat2Rate": 10.71
+            },
+            {
+              "lane": 3,
+              "name": "清水　　攻二",
+              "grade": "A2",
+              "globalWinRate": 5.8,
+              "global2Rate": 37.89,
+              "localWinRate": 5.82,
+              "local2Rate": 42.11,
+              "motor2Rate": 48.39,
+              "boat2Rate": 39.47
+            },
+            {
+              "lane": 4,
+              "name": "妹尾　　忠幸",
+              "grade": "A2",
+              "globalWinRate": 6.29,
+              "global2Rate": 42.15,
+              "localWinRate": 6.89,
+              "local2Rate": 52.17,
+              "motor2Rate": 25.93,
+              "boat2Rate": 28.95
+            },
+            {
+              "lane": 5,
+              "name": "中井　　俊祐",
+              "grade": "B1",
+              "globalWinRate": 4.46,
+              "global2Rate": 24.64,
+              "localWinRate": 0,
+              "local2Rate": 0,
+              "motor2Rate": 24.14,
+              "boat2Rate": 33.33
+            },
+            {
+              "lane": 6,
+              "name": "木幡　　純也",
+              "grade": "B1",
+              "globalWinRate": 4.37,
+              "global2Rate": 17.81,
+              "localWinRate": 4.25,
+              "local2Rate": 31.25,
+              "motor2Rate": 34.48,
+              "boat2Rate": 11.76
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 11,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "山下　　和彦",
+              "grade": "A2",
+              "globalWinRate": 5.84,
+              "global2Rate": 40.82,
+              "localWinRate": 6.42,
+              "local2Rate": 42.11,
+              "motor2Rate": 11.43,
+              "boat2Rate": 43.33
+            },
+            {
+              "lane": 2,
+              "name": "吉田　　一郎",
+              "grade": "A2",
+              "globalWinRate": 5.64,
+              "global2Rate": 32.11,
+              "localWinRate": 6.68,
+              "local2Rate": 52.63,
+              "motor2Rate": 30.56,
+              "boat2Rate": 34.15
+            },
+            {
+              "lane": 3,
+              "name": "関口　　智久",
+              "grade": "A2",
+              "globalWinRate": 5.14,
+              "global2Rate": 24.68,
+              "localWinRate": 4.94,
+              "local2Rate": 17.65,
+              "motor2Rate": 59.52,
+              "boat2Rate": 30.77
+            },
+            {
+              "lane": 4,
+              "name": "三浦　　敬太",
+              "grade": "A1",
+              "globalWinRate": 7.11,
+              "global2Rate": 56.31,
+              "localWinRate": 7.5,
+              "local2Rate": 70,
+              "motor2Rate": 54.84,
+              "boat2Rate": 26.67
+            },
+            {
+              "lane": 5,
+              "name": "三川　　昂暁",
+              "grade": "A2",
+              "globalWinRate": 6.03,
+              "global2Rate": 38.94,
+              "localWinRate": 5.7,
+              "local2Rate": 40,
+              "motor2Rate": 30.77,
+              "boat2Rate": 25.93
+            },
+            {
+              "lane": 6,
+              "name": "牧原　　　崇",
+              "grade": "A2",
+              "globalWinRate": 5.44,
+              "global2Rate": 34.69,
+              "localWinRate": 5.34,
+              "local2Rate": 34.09,
+              "motor2Rate": 34.38,
+              "boat2Rate": 31.71
+            }
+          ]
+        },
+        {
+          "date": "2025-12-01",
+          "placeCd": 17,
+          "raceNo": 12,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "racers": [
+            {
+              "lane": 1,
+              "name": "仲口　　博崇",
+              "grade": "A1",
+              "globalWinRate": 6.54,
+              "global2Rate": 51.2,
+              "localWinRate": 6.09,
+              "local2Rate": 54.55,
+              "motor2Rate": 35.71,
+              "boat2Rate": 26.32
+            },
+            {
+              "lane": 2,
+              "name": "森永　　　淳",
+              "grade": "A1",
+              "globalWinRate": 6.87,
+              "global2Rate": 58.18,
+              "localWinRate": 6.23,
+              "local2Rate": 40.91,
+              "motor2Rate": 25,
+              "boat2Rate": 28.57
+            },
+            {
+              "lane": 3,
+              "name": "鈴木　　勝博",
+              "grade": "A1",
+              "globalWinRate": 5.57,
+              "global2Rate": 36.73,
+              "localWinRate": 6.85,
+              "local2Rate": 58.82,
+              "motor2Rate": 28.95,
+              "boat2Rate": 41.18
+            },
+            {
+              "lane": 4,
+              "name": "永田　　啓二",
+              "grade": "A1",
+              "globalWinRate": 6.65,
+              "global2Rate": 54.03,
+              "localWinRate": 7.28,
+              "local2Rate": 70,
+              "motor2Rate": 20.59,
+              "boat2Rate": 27.03
+            },
+            {
+              "lane": 5,
+              "name": "小坂　　尚哉",
+              "grade": "A1",
+              "globalWinRate": 6.4,
+              "global2Rate": 46.79,
+              "localWinRate": 7.2,
+              "local2Rate": 65,
+              "motor2Rate": 31.03,
+              "boat2Rate": 21.43
+            },
+            {
+              "lane": 6,
+              "name": "長岡　　良也",
+              "grade": "A1",
+              "globalWinRate": 6.84,
+              "global2Rate": 52.14,
+              "localWinRate": 7.62,
+              "local2Rate": 66.67,
+              "motor2Rate": 34.48,
+              "boat2Rate": 46.67
             }
           ]
         }
@@ -6830,156 +9542,6 @@
       ]
     },
     {
-      "placeCd": 20,
-      "placeName": "若松",
-      "races": [
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 1,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 2,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 3,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 4,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 5,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 6,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 7,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 8,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 9,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 10,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 11,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 20,
-          "raceNo": 12,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        }
-      ]
-    },
-    {
       "placeCd": 21,
       "placeName": "芦屋",
       "races": [
@@ -7932,307 +10494,7 @@
           ]
         }
       ]
-    },
-    {
-      "placeCd": 22,
-      "placeName": "福岡",
-      "races": [
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 1,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 2,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 3,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 4,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 5,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 6,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 7,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 8,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 9,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 10,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 11,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 22,
-          "raceNo": 12,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        }
-      ]
-    },
-    {
-      "placeCd": 24,
-      "placeName": "大村",
-      "races": [
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 1,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 2,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 3,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 4,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 5,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 6,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 7,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 8,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 9,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 10,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 11,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        },
-        {
-          "date": "2025-12-01",
-          "placeCd": 24,
-          "raceNo": 12,
-          "weather": "",
-          "airTemp": null,
-          "windDirection": 0,
-          "windVelocity": null,
-          "waterTemp": null,
-          "waveHeight": null,
-          "racers": []
-        }
-      ]
     }
   ],
-  "scrapedAt": "2025-11-30T18:32:06.447Z"
+  "scrapedAt": "2025-11-30T19:19:17.983Z"
 }
