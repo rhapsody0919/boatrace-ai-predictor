@@ -93,6 +93,53 @@ async function getBeforeinfo(date, placeCd, raceNo) {
   }
 }
 
+// レース場の全レース発走時刻を取得する関数
+async function getRaceStartTimes(date, placeCd) {
+  try {
+    const ymd = date.replace(/-/g, '');
+    const jcd = placeCd < 10 ? `0${placeCd}` : `${placeCd}`;
+    const url = `https://www.boatrace.jp/owpc/pc/race/raceindex?jcd=${jcd}&hd=${ymd}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
+      return {};
+    }
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+
+    const startTimes = {};
+
+    // 時刻パターンに一致するtd要素を探す
+    let raceNo = 1;
+    $('td').each((index, td) => {
+      const time = $(td).text().trim();
+      if (time.match(/^\d{1,2}:\d{2}$/)) {
+        // 時刻形式にマッチしたらレース番号に対応付け
+        startTimes[raceNo] = time;
+        raceNo++;
+
+        // 最大12レースまで
+        if (raceNo > 12) return false;
+      }
+    });
+
+    return startTimes;
+
+  } catch (error) {
+    console.error(`Error fetching race start times for place ${placeCd}:`, error.message);
+    return {};
+  }
+}
+
 // 出走表から選手情報を取得する関数
 async function getRacelist(date, placeCd, raceNo) {
   try {
@@ -125,10 +172,19 @@ async function getRacelist(date, placeCd, raceNo) {
       // 選手名を取得
       const name = $tbody.find('.is-fs18.is-fBold a').text().trim();
 
+      // 級別と年齢を取得
+      // .is-fs11 には2つのdivがある: 1つ目が「4203 / B1」、2つ目が「地域/地域<br>年齢/体重」
+      const $fs11Divs = $tbody.find('.is-fs11');
+
       // 級別を取得（例: "4203 / B1" から "B1" を抽出）
-      const gradeText = $tbody.find('.is-fs11').first().text().trim();
+      const gradeText = $fs11Divs.eq(0).text().trim();
       const gradeMatch = gradeText.match(/\s*\/\s*([AB][12])/);
       const grade = gradeMatch ? gradeMatch[1] : '-';
+
+      // 年齢を取得（例: "群馬/栃木<br>49歳/54.1kg" から "49" を抽出）
+      const ageText = $fs11Divs.eq(1).text().trim();
+      const ageMatch = ageText.match(/(\d+)歳/);
+      const age = ageMatch ? parseInt(ageMatch[1]) : null;
 
       // 統計データを取得（td.is-lineH2から）
       const $stats = $tbody.find('td.is-lineH2');
@@ -145,21 +201,26 @@ async function getRacelist(date, placeCd, raceNo) {
 
       // モーター: 番号<br>2連率<br>3連率
       const motorStats = $stats.eq(3).text().trim().split('\n').map(s => s.trim()).filter(Boolean);
+      const motorNumber = parseInt(motorStats[0]) || null;
       const motor2Rate = parseFloat(motorStats[1]) || 0;
 
       // ボート: 番号<br>2連率<br>3連率
       const boatStats = $stats.eq(4).text().trim().split('\n').map(s => s.trim()).filter(Boolean);
+      const boatNumber = parseInt(boatStats[0]) || null;
       const boat2Rate = parseFloat(boatStats[1]) || 0;
 
       racers.push({
         lane: index + 1, // 1-6
         name: name || '選手名不明',
         grade: grade || '-',
+        age: age,
         globalWinRate: globalWinRate,
         global2Rate: global2Rate,
         localWinRate: localWinRate,
         local2Rate: local2Rate,
+        motorNumber: motorNumber,
         motor2Rate: motor2Rate,
+        boatNumber: boatNumber,
         boat2Rate: boat2Rate,
       });
     });
@@ -266,6 +327,9 @@ async function main() {
       console.log(`Processing venue: ${VENUES[placeCd] || placeCd}`);
       const venueRaces = [];
 
+      // まず、この会場の全レース発走時刻を取得
+      const startTimes = await getRaceStartTimes(date, placeCd);
+
       // 1RからMAX_RACESまで並列取得（beforeinfoとracelistの両方）
       const racePromises = [];
       for (let raceNo = 1; raceNo <= MAX_RACES; raceNo++) {
@@ -280,11 +344,13 @@ async function main() {
       const results = await Promise.all(racePromises);
 
       // nullでないデータのみを追加し、beforeinfoとracelistをマージ
-      results.forEach(([beforeinfo, racelist]) => {
+      results.forEach(([beforeinfo, racelist], index) => {
         if (beforeinfo) {
-          // beforeinfoとracelistを統合
+          const raceNo = index + 1;
+          // beforeinfoとracelistを統合し、発走時刻も追加
           const raceData = {
             ...beforeinfo,
+            startTime: startTimes[raceNo] || null, // 発走時刻を追加
             racers: racelist || [] // 選手情報を追加（取得できない場合は空配列）
           };
           venueRaces.push(raceData);

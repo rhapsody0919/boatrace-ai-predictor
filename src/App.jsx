@@ -44,6 +44,9 @@ function App() {
         }
 
         // レース場データを保存
+        console.log('📊 取得したデータ:', result.data)
+        console.log('📊 最初の会場のレース:', result.data[0]?.races)
+        console.log('📊 最初のレースのracers:', result.data[0]?.races[0]?.racers)
         setAllVenuesData(result.data)
         setIsRealData(true)
 
@@ -72,18 +75,11 @@ function App() {
       if (venueData && venueData.races) {
         // レースデータを表示用に変換
         const formattedRaces = venueData.races.map(race => {
-          // レース番号から発走時刻を計算（1Rは10:30から、30分間隔）
-          const baseHour = 10
-          const baseMinute = 30
-          const totalMinutes = baseMinute + (race.raceNo - 1) * 30
-          const hour = baseHour + Math.floor(totalMinutes / 60)
-          const minute = totalMinutes % 60
-
           return {
             id: `${race.date}-${race.placeCd}-${race.raceNo}`,
             venue: venueData.placeName,
             raceNumber: race.raceNo,
-            startTime: `${hour}:${minute.toString().padStart(2, '0')}`,
+            startTime: race.startTime || '未定', // スクレイピングした実際の発走時刻を使用
             weather: race.weather || '不明',
             wave: race.waveHeight || 0,
             wind: race.windVelocity || 0,
@@ -105,7 +101,7 @@ function App() {
 
     // AIによる予想をシミュレート
     setTimeout(() => {
-      const players = generatePlayers()
+      const players = generatePlayers(race)  // raceを直接渡す
       const aiPrediction = {
         topPick: players[0],
         recommended: players.slice(0, 3),
@@ -123,9 +119,17 @@ function App() {
     }, 2000)
   }
 
-  const generatePlayers = () => {
+  const generatePlayers = (race) => {
     // 実データから選手情報を取得
-    if (!selectedRace || !selectedRace.racers || selectedRace.racers.length === 0) {
+    // raceはフォーマット済みオブジェクトで、実データはrawDataに格納されている
+    console.log('🔍 race:', race)
+    console.log('🔍 race.rawData:', race?.rawData)
+    console.log('🔍 race.rawData.racers:', race?.rawData?.racers)
+
+    const racers = race?.rawData?.racers
+
+    if (!racers || racers.length === 0) {
+      console.log('⚠️ racers データがありません。ダミーデータを使用します。')
       // データがない場合はダミーデータを返す
       const names = ['山田太郎', '鈴木次郎', '佐藤三郎', '田中四郎', '伊藤五郎', '渡辺六郎']
       return names.map((name, idx) => ({
@@ -140,13 +144,17 @@ function App() {
     }
 
     // 実データを使用
-    return selectedRace.racers.map((racer, idx) => ({
+    return racers.map((racer, idx) => ({
       number: racer.lane,
       name: racer.name,
       grade: racer.grade,
+      age: racer.age,
       winRate: racer.globalWinRate.toFixed(3),
       localWinRate: racer.localWinRate.toFixed(3),
+      motorNumber: racer.motorNumber,
       motor2Rate: racer.motor2Rate.toFixed(1),
+      motorWinRate: racer.motor2Rate.toFixed(1), // 互換性のため
+      boatNumber: racer.boatNumber,
       boat2Rate: racer.boat2Rate.toFixed(1),
       // AIスコアは勝率などから簡易計算（実際のAIは後で実装）
       aiScore: Math.floor(
@@ -314,9 +322,10 @@ function App() {
                       <div className="player-details">
                         <h4>{prediction.topPick.name}</h4>
                         <div className="stats">
+                          <span>級別: {prediction.topPick.grade}</span>
                           <span>年齢: {prediction.topPick.age}歳</span>
                           <span>勝率: {prediction.topPick.winRate}</span>
-                          <span>モーター: {prediction.topPick.motorWinRate}</span>
+                          <span>モーター: {prediction.topPick.motorNumber} ({prediction.topPick.motor2Rate}%)</span>
                         </div>
                       </div>
                       <div className="ai-score">
@@ -342,6 +351,7 @@ function App() {
                         <tr>
                           <th>艇番</th>
                           <th>選手名</th>
+                          <th>級別</th>
                           <th>年齢</th>
                           <th>勝率</th>
                           <th>モーター</th>
@@ -353,9 +363,10 @@ function App() {
                           <tr key={player.number} className={player.number <= 3 ? 'recommended' : ''}>
                             <td><strong>{player.number}</strong></td>
                             <td>{player.name}</td>
-                            <td>{player.age}</td>
+                            <td>{player.grade}</td>
+                            <td>{player.age}歳</td>
                             <td>{player.winRate}</td>
-                            <td>{player.motorWinRate}</td>
+                            <td>{player.motorNumber} ({player.motor2Rate}%)</td>
                             <td><span className="score-badge">{player.aiScore}</span></td>
                           </tr>
                         ))}
