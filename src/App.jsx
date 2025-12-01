@@ -79,7 +79,7 @@ function App() {
             id: `${race.date}-${race.placeCd}-${race.raceNo}`,
             venue: venueData.placeName,
             raceNumber: race.raceNo,
-            startTime: race.startTime || '未定', // スクレイピングした実際の発走時刻を使用
+            startTime: race.startTime || '未定', // スクレイピングした締切予定時刻を使用
             weather: race.weather || '不明',
             wave: race.waveHeight || 0,
             wind: race.windVelocity || 0,
@@ -169,35 +169,21 @@ function App() {
 
   return (
     <div className="app">
-      {/* ヘッダー広告バナー */}
-      <div className="ad-banner header-ad">
-        <div className="ad-content">
-          📢 広告スペース (728x90) - ボートレース関連広告
-        </div>
-      </div>
-
       <header className="header">
-        <div className="logo">
-          <span className="logo-icon">🚤</span>
-          <h1>ボートレースAI予想</h1>
+        <div>
+          <div className="logo">
+            <span className="logo-icon">🚤</span>
+            <h1>ボートレースAI予想</h1>
+          </div>
+          <nav className="nav">
+            <button className="nav-btn active">今日のレース</button>
+            <button className="nav-btn">予想履歴</button>
+            <button className="nav-btn">統計</button>
+          </nav>
         </div>
-        <nav className="nav">
-          <button className="nav-btn active">今日のレース</button>
-          <button className="nav-btn">予想履歴</button>
-          <button className="nav-btn">統計</button>
-        </nav>
       </header>
 
       <div className="container">
-        {/* サイドバー広告 */}
-        <aside className="sidebar-ad">
-          <div className="ad-banner vertical-ad">
-            <div className="ad-content vertical">
-              📢<br/>広告<br/>スペース<br/>(160x600)
-            </div>
-          </div>
-        </aside>
-
         <main className="main-content">
           <section className="race-list-section">
             <h2>🏁 本日開催中のレース {isRealData && <span style={{fontSize: '0.8rem', color: '#22c55e', marginLeft: '1rem'}}>✓ 実データ</span>}</h2>
@@ -266,7 +252,7 @@ function App() {
                         </div>
                         <div className="race-info">
                           <div className="info-item">
-                            <span className="label">発走時刻</span>
+                            <span className="label">締切予定時刻</span>
                             <span className="value">{race.startTime}</span>
                           </div>
                         </div>
@@ -283,13 +269,6 @@ function App() {
               </>
             )}
           </section>
-
-          {/* 中央広告バナー */}
-          <div className="ad-banner content-ad">
-            <div className="ad-content">
-              📢 広告スペース (728x90) - レース場関連広告
-            </div>
-          </div>
 
           {selectedRace && (
             <section className="prediction-section">
@@ -378,22 +357,6 @@ function App() {
             </section>
           )}
         </main>
-
-        {/* サイドバー広告（右） */}
-        <aside className="sidebar-ad">
-          <div className="ad-banner vertical-ad">
-            <div className="ad-content vertical">
-              📢<br/>広告<br/>スペース<br/>(160x600)
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      {/* フッター広告バナー */}
-      <div className="ad-banner footer-ad">
-        <div className="ad-content">
-          📢 広告スペース (728x90) - ボート用品・グッズ広告
-        </div>
       </div>
 
       <footer className="footer">

@@ -93,7 +93,7 @@ async function getBeforeinfo(date, placeCd, raceNo) {
   }
 }
 
-// レース場の全レース発走時刻を取得する関数
+// レース場の全レース締切予定時刻を取得する関数
 async function getRaceStartTimes(date, placeCd) {
   try {
     const ymd = date.replace(/-/g, '');
@@ -347,10 +347,10 @@ async function main() {
       results.forEach(([beforeinfo, racelist], index) => {
         if (beforeinfo) {
           const raceNo = index + 1;
-          // beforeinfoとracelistを統合し、発走時刻も追加
+          // beforeinfoとracelistを統合し、締切予定時刻も追加
           const raceData = {
             ...beforeinfo,
-            startTime: startTimes[raceNo] || null, // 発走時刻を追加
+            startTime: startTimes[raceNo] || null, // 締切予定時刻を追加
             racers: racelist || [] // 選手情報を追加（取得できない場合は空配列）
           };
           venueRaces.push(raceData);
