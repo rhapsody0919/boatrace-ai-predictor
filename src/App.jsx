@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 
 function App() {
@@ -11,6 +11,7 @@ function App() {
   const [allVenuesData, setAllVenuesData] = useState([])
   const [selectedVenueId, setSelectedVenueId] = useState(null)
   const [races, setRaces] = useState([])
+  const predictionRef = useRef(null)
 
   // レース場番号から名前へのマッピング
   const stadiumNames = {
@@ -93,6 +94,16 @@ function App() {
       }
     }
   }, [selectedVenueId, allVenuesData])
+
+  // AI予想が完了したら自動的にスクロール
+  useEffect(() => {
+    if (prediction && !isAnalyzing && predictionRef.current) {
+      predictionRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }
+  }, [prediction, isAnalyzing])
 
   const analyzeRace = (race) => {
     setSelectedRace(race)
@@ -271,7 +282,7 @@ function App() {
           </section>
 
           {selectedRace && (
-            <section className="prediction-section">
+            <section ref={predictionRef} className="prediction-section">
               <h2>📊 AI予想結果 - {selectedRace.venue} {selectedRace.raceNumber}R</h2>
 
               {isAnalyzing ? (
