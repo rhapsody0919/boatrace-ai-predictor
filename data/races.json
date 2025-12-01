@@ -11,10 +11,10 @@
           "raceNo": 1,
           "weather": "晴",
           "airTemp": 11,
-          "windDirection": 12,
-          "windVelocity": 1,
+          "windDirection": 17,
+          "windVelocity": 0,
           "waterTemp": 11,
-          "waveHeight": 1,
+          "waveHeight": 0,
           "startTime": "15:21",
           "racers": [
             {
@@ -1089,8 +1089,8 @@
           "raceNo": 12,
           "weather": "晴",
           "airTemp": 11,
-          "windDirection": 12,
-          "windVelocity": 1,
+          "windDirection": 2,
+          "windVelocity": 2,
           "waterTemp": 11,
           "waveHeight": 1,
           "startTime": "20:40",
@@ -3557,8 +3557,8 @@
           "raceNo": 1,
           "weather": "晴",
           "airTemp": 12,
-          "windDirection": 1,
-          "windVelocity": 1,
+          "windDirection": 15,
+          "windVelocity": 2,
           "waterTemp": 12,
           "waveHeight": 1,
           "startTime": "15:19",
@@ -5921,8 +5921,8 @@
           "raceNo": 1,
           "weather": "晴",
           "airTemp": 15,
-          "windDirection": 13,
-          "windVelocity": 1,
+          "windDirection": 17,
+          "windVelocity": 0,
           "waterTemp": 14,
           "waveHeight": 1,
           "startTime": "15:28",
@@ -6999,8 +6999,8 @@
           "raceNo": 12,
           "weather": "晴",
           "airTemp": 15,
-          "windDirection": 13,
-          "windVelocity": 1,
+          "windDirection": 17,
+          "windVelocity": 0,
           "waterTemp": 14,
           "waveHeight": 1,
           "startTime": "20:45",
@@ -8286,9 +8286,9 @@
           "weather": "曇り",
           "airTemp": 14,
           "windDirection": 5,
-          "windVelocity": 1,
+          "windVelocity": 2,
           "waterTemp": 17,
-          "waveHeight": 1,
+          "waveHeight": 2,
           "startTime": "15:17",
           "racers": [
             {
@@ -13004,5 +13004,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-01T11:24:09.343Z"
+  "scrapedAt": "2025-12-01T12:51:59.841Z"
 }
