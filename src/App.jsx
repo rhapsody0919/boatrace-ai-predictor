@@ -178,6 +178,47 @@ function App() {
     })).sort((a, b) => b.aiScore - a.aiScore)
   }
 
+  // 統計的な注目ポイントを自動生成
+  const generateInsights = (players) => {
+    const insights = []
+
+    // 当地勝率が最も高い選手
+    const topLocalWinRate = [...players].sort((a, b) =>
+      parseFloat(b.localWinRate) - parseFloat(a.localWinRate)
+    )[0]
+
+    if (topLocalWinRate) {
+      insights.push(
+        `${topLocalWinRate.number}号艇の${topLocalWinRate.name}選手は` +
+        `当レース場での勝率が${topLocalWinRate.localWinRate}と最も高い`
+      )
+    }
+
+    // モーター2率が40%以上の選手
+    const goodMotors = players.filter(p => parseFloat(p.motor2Rate) > 40)
+    if (goodMotors.length > 0) {
+      const motorList = goodMotors.map(p =>
+        `${p.number}号艇（${p.motor2Rate}%）`
+      ).join('、')
+      insights.push(
+        `${motorList}のモーターは2連率が高く好調`
+      )
+    }
+
+    // 全国勝率が7.0以上の選手
+    const topRacers = players.filter(p => parseFloat(p.winRate) >= 7.0)
+    if (topRacers.length > 0) {
+      const racerList = topRacers.map(p =>
+        `${p.number}号艇（勝率${p.winRate}）`
+      ).join('、')
+      insights.push(
+        `${racerList}は全国勝率が高い実力者`
+      )
+    }
+
+    return insights
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -362,6 +403,84 @@ function App() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* 詳細データ分析セクション（新規追加） */}
+                  <div className="detailed-analysis">
+                    <h3>📊 詳細データ分析</h3>
+
+                    {/* 強化されたテーブル */}
+                    <div className="enhanced-table">
+                      <table className="players-table-detailed">
+                        <thead>
+                          <tr>
+                            <th>艇番</th>
+                            <th>選手名</th>
+                            <th>級別</th>
+                            <th>全国勝率</th>
+                            <th>当地勝率</th>
+                            <th>モーター番号</th>
+                            <th>モーター2率</th>
+                            <th>ボート番号</th>
+                            <th>ボート2率</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {prediction.allPlayers.map(player => (
+                            <tr key={player.number}>
+                              <td><strong>{player.number}</strong></td>
+                              <td>{player.name}</td>
+                              <td>{player.grade}</td>
+                              <td>{player.winRate}</td>
+                              <td>
+                                {player.localWinRate}
+                                {parseFloat(player.localWinRate) > 7.0 && <span className="fire">🔥</span>}
+                              </td>
+                              <td>{player.motorNumber}</td>
+                              <td>
+                                {player.motor2Rate}%
+                                {parseFloat(player.motor2Rate) > 40 && <span className="fire">🔥</span>}
+                              </td>
+                              <td>{player.boatNumber}</td>
+                              <td>{player.boat2Rate}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* 統計的な注目ポイント */}
+                    <div className="statistical-insights">
+                      <h4>📌 統計的な注目ポイント</h4>
+                      <ul>
+                        {generateInsights(prediction.allPlayers).map((insight, idx) => (
+                          <li key={idx}>{insight}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* データの見方（解説） */}
+                    <div className="data-guide">
+                      <h4>💡 データの見方</h4>
+                      <div className="guide-grid">
+                        <div className="guide-item">
+                          <strong>全国勝率</strong>
+                          <p>選手の全国での勝率。6.0以上でA級レベル。</p>
+                        </div>
+                        <div className="guide-item">
+                          <strong>当地勝率</strong>
+                          <p>このレース場での勝率。得意度を示す。</p>
+                        </div>
+                        <div className="guide-item">
+                          <strong>モーター2率</strong>
+                          <p>モーターの2連率。40%以上なら好機。</p>
+                        </div>
+                        <div className="guide-item">
+                          <strong>🔥マーク</strong>
+                          <p>特に優れた数値（平均より大きく上回る）。</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

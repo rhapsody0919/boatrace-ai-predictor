@@ -746,3 +746,216 @@ body {
     overflow-x: auto;
   }
 }
+
+/* =====================================================
+   詳細データ分析セクション（新規追加）
+   ===================================================== */
+.detailed-analysis {
+  margin-top: 2.5rem;
+  padding-top: 2.5rem;
+  border-top: 3px solid #E2E8F0;
+}
+
+.detailed-analysis h3 {
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-dark);
+  font-weight: 700;
+}
+
+/* 強化されたテーブル */
+.enhanced-table {
+  margin-bottom: 2rem;
+  overflow-x: auto;
+}
+
+.players-table-detailed {
+  width: 100%;
+  min-width: 800px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.players-table-detailed th {
+  background: linear-gradient(135deg, #334155 0%, #475569 100%);
+  color: white;
+  padding: 1rem 0.75rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.players-table-detailed th:first-child {
+  border-top-left-radius: 12px;
+}
+
+.players-table-detailed th:last-child {
+  border-top-right-radius: 12px;
+}
+
+.players-table-detailed td {
+  padding: 1rem 0.75rem;
+  text-align: center;
+  border-bottom: 1px solid #F1F5F9;
+  color: var(--text-dark);
+  font-size: 0.95rem;
+}
+
+.players-table-detailed tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.players-table-detailed tbody tr:hover {
+  background: #F8FAFC;
+}
+
+.players-table-detailed tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.fire {
+  margin-left: 0.25rem;
+  font-size: 1.1rem;
+}
+
+/* 統計的な注目ポイント */
+.statistical-insights {
+  margin: 2rem 0;
+  padding: 1.75rem;
+  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+  border-radius: 12px;
+  border-left: 5px solid var(--secondary-cyan);
+  box-shadow: 0 4px 12px rgba(0, 163, 163, 0.1);
+}
+
+.statistical-insights h4 {
+  color: var(--text-dark);
+  margin-bottom: 1.25rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.statistical-insights ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.statistical-insights li {
+  padding: 0.875rem 0;
+  color: var(--text-dark);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  border-bottom: 1px solid rgba(14, 165, 233, 0.1);
+}
+
+.statistical-insights li:last-child {
+  border-bottom: none;
+}
+
+.statistical-insights li:before {
+  content: '📊 ';
+  margin-right: 0.75rem;
+  font-size: 1.1rem;
+}
+
+/* データの見方（解説） */
+.data-guide {
+  margin-top: 2rem;
+  padding: 1.75rem;
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+  border-radius: 12px;
+  border-left: 5px solid var(--warning-yellow);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+}
+
+.data-guide h4 {
+  color: var(--text-dark);
+  margin-bottom: 1.25rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.guide-item {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.guide-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.guide-item strong {
+  display: block;
+  color: var(--accent-orange);
+  margin-bottom: 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.guide-item p {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* レスポンシブ対応（詳細データ分析） */
+@media (max-width: 768px) {
+  .detailed-analysis {
+    padding-top: 2rem;
+  }
+
+  .detailed-analysis h3 {
+    font-size: 1.4rem;
+  }
+
+  .enhanced-table {
+    margin-bottom: 1.5rem;
+  }
+
+  .players-table-detailed {
+    font-size: 0.85rem;
+    min-width: 700px;
+  }
+
+  .players-table-detailed th,
+  .players-table-detailed td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .statistical-insights,
+  .data-guide {
+    padding: 1.25rem;
+  }
+
+  .statistical-insights h4,
+  .data-guide h4 {
+    font-size: 1.2rem;
+  }
+
+  .statistical-insights li {
+    font-size: 0.95rem;
+  }
+
+  .guide-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
