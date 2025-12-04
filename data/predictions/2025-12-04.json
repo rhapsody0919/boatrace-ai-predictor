@@ -1,7 +1,7 @@
 {
   "date": "2025-12-04",
-  "generatedAt": "2025-12-04T07:27:13.011Z",
-  "updatedAt": "2025-12-04T07:27:13.011Z",
+  "generatedAt": "2025-12-04T08:36:21.545Z",
+  "updatedAt": "2025-12-04T08:36:21.545Z",
   "races": [
     {
       "raceId": "2025-12-04-01-01",
@@ -852,9 +852,9 @@
             "localWinRate": "0.00",
             "motorNumber": 20,
             "motor2Rate": "39.4",
-            "boatNumber": 67,
-            "boat2Rate": "0.0",
-            "aiScore": 1807
+            "boatNumber": 30,
+            "boat2Rate": "40.0",
+            "aiScore": 2607
           },
           {
             "number": 3,
@@ -10045,7 +10045,7 @@
       "venue": "丸亀",
       "venueCode": 15,
       "raceNumber": 6,
-      "startTime": "17:27",
+      "startTime": "17:28",
       "prediction": {
         "topPick": 4,
         "top3": [
