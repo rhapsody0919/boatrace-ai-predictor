@@ -33,23 +33,29 @@ jobs:
         run: npm ci
 
       - name: Create data directory
-        run: mkdir -p data
+        run: mkdir -p data data/predictions
 
       - name: Run scraper
         run: node scripts/scrape-to-json.js
         env:
           TZ: 'Asia/Tokyo'
 
+      - name: Generate predictions
+        run: node scripts/generate-predictions.js
+        env:
+          TZ: 'Asia/Tokyo'
+
       - name: Check for changes
         id: git-check
         run: |
-          git diff --exit-code data/races.json || echo "changed=true" >> $GITHUB_OUTPUT
+          git add -N data/predictions/*.json 2>/dev/null || true
+          git diff --exit-code data/ || echo "changed=true" >> $GITHUB_OUTPUT
 
       - name: Commit and push if changed
         if: steps.git-check.outputs.changed == 'true'
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/races.json
-          git commit -m "Update race data [automated] $(date +'%Y-%m-%d %H:%M:%S JST')"
+          git add data/races.json data/predictions/*.json
+          git commit -m "Update race data and predictions [automated] $(date +'%Y-%m-%d %H:%M:%S JST')"
           git push

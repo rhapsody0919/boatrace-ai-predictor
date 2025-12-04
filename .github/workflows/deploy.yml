@@ -40,11 +40,15 @@ jobs:
 
       - name: Copy data directory to dist
         run: |
-          mkdir -p dist/data
+          mkdir -p dist/data/predictions
           if [ -f data/races.json ]; then
             cp data/races.json dist/data/
           else
             echo '{"success":true,"data":[],"scrapedAt":"'$(date -Iseconds)'","message":"No data yet"}' > dist/data/races.json
+          fi
+          # Copy prediction files if they exist
+          if [ -d data/predictions ] && [ "$(ls -A data/predictions)" ]; then
+            cp data/predictions/*.json dist/data/predictions/ 2>/dev/null || true
           fi
 
       - name: Setup Pages
