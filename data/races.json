@@ -13011,7 +13011,7 @@
           "date": "2025-12-04",
           "placeCd": 24,
           "raceNo": 1,
-          "weather": "曇り",
+          "weather": "雨",
           "airTemp": 7,
           "windDirection": 15,
           "windVelocity": 1,
@@ -13991,7 +13991,7 @@
           "date": "2025-12-04",
           "placeCd": 24,
           "raceNo": 11,
-          "weather": "曇り",
+          "weather": "雨",
           "airTemp": 7,
           "windDirection": 15,
           "windVelocity": 1,
@@ -14089,7 +14089,7 @@
           "date": "2025-12-04",
           "placeCd": 24,
           "raceNo": 12,
-          "weather": "曇り",
+          "weather": "雨",
           "airTemp": 7,
           "windDirection": 15,
           "windVelocity": 1,
@@ -14186,5 +14186,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-04T12:53:47.936Z"
+  "scrapedAt": "2025-12-04T13:42:08.027Z"
 }
