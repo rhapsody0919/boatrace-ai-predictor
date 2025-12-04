@@ -105,29 +105,90 @@ function App() {
     }
   }, [prediction, isAnalyzing])
 
-  const analyzeRace = (race) => {
+  // 予想データをJSONファイルから読み込む
+  const loadPredictionData = async (race) => {
+    try {
+      // 日本時間で今日の日付を取得
+      const now = new Date()
+      const jstOffset = 9 * 60 // JST is UTC+9
+      const jstDate = new Date(now.getTime() + jstOffset * 60 * 1000)
+      const dateStr = jstDate.toISOString().split('T')[0]
+
+      // 予想データを読み込み
+      const predictionUrl = import.meta.env.BASE_URL + `data/predictions/${dateStr}.json`
+      const response = await fetch(predictionUrl)
+
+      if (!response.ok) {
+        throw new Error('予想データが見つかりません')
+      }
+
+      const predictionData = await response.json()
+
+      // レースIDを生成して該当する予想を探す
+      const raceId = `${race.rawData?.date || dateStr}-${String(race.rawData?.placeCd || 0).padStart(2, '0')}-${String(race.raceNumber).padStart(2, '0')}`
+      const racePrediction = predictionData.races.find(r => r.raceId === raceId)
+
+      if (!racePrediction) {
+        throw new Error(`レースID ${raceId} の予想が見つかりません`)
+      }
+
+      return racePrediction
+    } catch (error) {
+      console.error('❌ 予想データの読み込みエラー:', error)
+      return null
+    }
+  }
+
+  const analyzeRace = async (race) => {
     setSelectedRace(race)
     setIsAnalyzing(true)
     setPrediction(null)
 
-    // AIによる予想をシミュレート
-    setTimeout(() => {
-      const players = generatePlayers(race)  // raceを直接渡す
-      const aiPrediction = {
-        topPick: players[0],
-        recommended: players.slice(0, 3),
-        allPlayers: players,
-        confidence: Math.floor(Math.random() * 30) + 70,
-        reasoning: [
-          '過去10レースの勝率が高い',
-          'モーター成績が優秀',
-          '当該コースでの実績あり',
-          '気象条件が有利',
-        ]
+    try {
+      // JSONファイルから予想データを読み込み
+      const racePrediction = await loadPredictionData(race)
+
+      if (!racePrediction) {
+        // データがない場合は従来のロジックにフォールバック
+        console.warn('⚠️  予想データが見つからないため、リアルタイム計算を使用します')
+        setTimeout(() => {
+          const players = generatePlayers(race)
+          const aiPrediction = {
+            topPick: players[0],
+            recommended: players.slice(0, 3),
+            allPlayers: players,
+            confidence: Math.floor(Math.random() * 30) + 70,
+            reasoning: generateInsights(players)
+          }
+          setPrediction(aiPrediction)
+          setIsAnalyzing(false)
+        }, 2000)
+        return
       }
-      setPrediction(aiPrediction)
+
+      // 予想データをUIの形式に変換
+      setTimeout(() => {
+        const topPickPlayer = racePrediction.prediction.players.find(
+          p => p.number === racePrediction.prediction.topPick
+        )
+        const top3Players = racePrediction.prediction.top3.map(num =>
+          racePrediction.prediction.players.find(p => p.number === num)
+        )
+
+        const aiPrediction = {
+          topPick: topPickPlayer,
+          recommended: top3Players,
+          allPlayers: racePrediction.prediction.players,
+          confidence: racePrediction.prediction.confidence,
+          reasoning: racePrediction.prediction.reasoning
+        }
+        setPrediction(aiPrediction)
+        setIsAnalyzing(false)
+      }, 1000) // 読み込み演出のため1秒待機
+    } catch (error) {
+      console.error('❌ 予想の表示エラー:', error)
       setIsAnalyzing(false)
-    }, 2000)
+    }
   }
 
   const generatePlayers = (race) => {
