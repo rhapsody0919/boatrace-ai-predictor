@@ -959,3 +959,234 @@ body {
     gap: 1rem;
   }
 }
+
+/* レース結果セクション */
+.race-result {
+  margin-top: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+  border-radius: 16px;
+  border: 2px solid #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.race-result h4 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+}
+
+.result-podium {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.podium-item {
+  flex: 1;
+  max-width: 150px;
+  text-align: center;
+  padding: 2rem 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s;
+}
+
+.podium-item:hover {
+  transform: translateY(-4px);
+}
+
+.podium-item.first {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  border: 3px solid #daa520;
+}
+
+.podium-item.second {
+  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+  border: 3px solid #a9a9a9;
+}
+
+.podium-item.third {
+  background: linear-gradient(135deg, #cd7f32 0%, #e4a672 100%);
+  border: 3px solid #b8732c;
+}
+
+.podium-item .rank {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.podium-item .boat-number {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.podium-item.first .boat-number {
+  color: #854d0e;
+}
+
+.podium-item.second .boat-number {
+  color: #475569;
+}
+
+.podium-item.third .boat-number {
+  color: #78350f;
+}
+
+.accuracy-check {
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.check-item {
+  text-align: center;
+}
+
+.hit {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  color: white;
+  font-weight: bold;
+  font-size: 1.3rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.miss {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  color: white;
+  font-weight: bold;
+  font-size: 1.2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.top3-hit {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  color: white;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.comparison {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.comparison h5 {
+  font-size: 1.1rem;
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+  text-align: center;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.comparison-item {
+  text-align: center;
+}
+
+.comparison-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.comparison-value {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.boat-badge {
+  display: inline-block;
+  width: 45px;
+  height: 45px;
+  line-height: 45px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 8px;
+  background: #e2e8f0;
+  color: #1e293b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.boat-badge.gold {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  color: #854d0e;
+  border: 2px solid #daa520;
+}
+
+.boat-badge.silver {
+  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+  color: #475569;
+  border: 2px solid #a9a9a9;
+}
+
+.boat-badge.bronze {
+  background: linear-gradient(135deg, #cd7f32 0%, #e4a672 100%);
+  color: #78350f;
+  border: 2px solid #b8732c;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .result-podium {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .podium-item {
+    max-width: 100%;
+  }
+
+  .comparison-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .hit, .miss {
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+  }
+
+  .top3-hit {
+    font-size: 0.95rem;
+    padding: 0.6rem 1.2rem;
+  }
+}

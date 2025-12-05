@@ -481,6 +481,71 @@ function App() {
                     </table>
                   </div>
 
+                  {/* レース結果セクション */}
+                  {prediction.result && prediction.result.finished && (
+                    <div className="race-result">
+                      <h4>🏁 レース結果</h4>
+
+                      <div className="result-podium">
+                        <div className="podium-item first">
+                          <div className="rank">1着</div>
+                          <div className="boat-number">{prediction.result.rank1}</div>
+                        </div>
+                        <div className="podium-item second">
+                          <div className="rank">2着</div>
+                          <div className="boat-number">{prediction.result.rank2}</div>
+                        </div>
+                        <div className="podium-item third">
+                          <div className="rank">3着</div>
+                          <div className="boat-number">{prediction.result.rank3}</div>
+                        </div>
+                      </div>
+
+                      {/* 的中判定 */}
+                      <div className="accuracy-check">
+                        <div className="check-item">
+                          {prediction.topPick === prediction.result.rank1 ? (
+                            <div className="hit">✅ 本命的中！</div>
+                          ) : (
+                            <div className="miss">❌ 外れ（予想: {prediction.topPick}号艇 → 実際: {prediction.result.rank1}号艇）</div>
+                          )}
+                        </div>
+
+                        {/* トップ3的中判定 */}
+                        {prediction.top3.includes(prediction.result.rank1) &&
+                         prediction.top3.includes(prediction.result.rank2) &&
+                         prediction.top3.includes(prediction.result.rank3) && (
+                          <div className="check-item">
+                            <div className="top3-hit">🎯 トップ3的中（3連複）</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 予想と結果の比較 */}
+                      <div className="comparison">
+                        <h5>予想と結果の比較</h5>
+                        <div className="comparison-grid">
+                          <div className="comparison-item">
+                            <div className="comparison-label">AI予想トップ3</div>
+                            <div className="comparison-value">
+                              {prediction.top3.map((num, idx) => (
+                                <span key={idx} className="boat-badge">{num}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="comparison-item">
+                            <div className="comparison-label">実際の結果</div>
+                            <div className="comparison-value">
+                              <span className="boat-badge gold">{prediction.result.rank1}</span>
+                              <span className="boat-badge silver">{prediction.result.rank2}</span>
+                              <span className="boat-badge bronze">{prediction.result.rank3}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* 詳細データ分析セクション（新規追加） */}
                   <div className="detailed-analysis">
                     <h3>📊 詳細データ分析</h3>
