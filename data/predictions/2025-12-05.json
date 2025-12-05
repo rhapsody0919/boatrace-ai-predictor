@@ -1,7 +1,7 @@
 {
   "date": "2025-12-05",
-  "generatedAt": "2025-12-05T04:35:57.473Z",
-  "updatedAt": "2025-12-05T04:35:57.473Z",
+  "generatedAt": "2025-12-05T05:27:06.883Z",
+  "updatedAt": "2025-12-05T05:27:06.883Z",
   "races": [
     {
       "raceId": "2025-12-05-02-01",
@@ -3908,9 +3908,9 @@
             "localWinRate": "6.140",
             "motorNumber": 60,
             "motor2Rate": "23.5",
-            "boatNumber": 14,
-            "boat2Rate": "33.0",
-            "aiScore": 4197
+            "boatNumber": 50,
+            "boat2Rate": "26.7",
+            "aiScore": 4072
           }
         ],
         "reasoning": [
@@ -7511,7 +7511,7 @@
       "venue": "尼崎",
       "venueCode": 13,
       "raceNumber": 8,
-      "startTime": "14:11",
+      "startTime": "14:12",
       "prediction": {
         "topPick": 3,
         "top3": [
@@ -7623,7 +7623,7 @@
       "venue": "尼崎",
       "venueCode": 13,
       "raceNumber": 9,
-      "startTime": "14:41",
+      "startTime": "14:42",
       "prediction": {
         "topPick": 4,
         "top3": [
@@ -7735,7 +7735,7 @@
       "venue": "尼崎",
       "venueCode": 13,
       "raceNumber": 10,
-      "startTime": "15:10",
+      "startTime": "15:11",
       "prediction": {
         "topPick": 1,
         "top3": [
@@ -7846,7 +7846,7 @@
       "venue": "尼崎",
       "venueCode": 13,
       "raceNumber": 11,
-      "startTime": "15:38",
+      "startTime": "15:39",
       "prediction": {
         "topPick": 4,
         "top3": [
@@ -7958,7 +7958,7 @@
       "venue": "尼崎",
       "venueCode": 13,
       "raceNumber": 12,
-      "startTime": "16:05",
+      "startTime": "16:06",
       "prediction": {
         "topPick": 2,
         "top3": [
