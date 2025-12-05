@@ -14194,7 +14194,7 @@
           "placeCd": 24,
           "raceNo": 1,
           "weather": "晴",
-          "airTemp": 4,
+          "airTemp": 3,
           "windDirection": 1,
           "windVelocity": 1,
           "waterTemp": 15,
@@ -15368,5 +15368,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-05T13:38:23.707Z"
+  "scrapedAt": "2025-12-05T14:27:50.920Z"
 }
