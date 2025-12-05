@@ -45,6 +45,18 @@ jobs:
         env:
           TZ: 'Asia/Tokyo'
 
+      - name: Scrape race results
+        run: node scripts/scrape-results.js
+        env:
+          TZ: 'Asia/Tokyo'
+        continue-on-error: true
+
+      - name: Calculate accuracy
+        run: node scripts/calculate-accuracy.js
+        env:
+          TZ: 'Asia/Tokyo'
+        continue-on-error: true
+
       - name: Check for changes
         id: git-check
         run: |
