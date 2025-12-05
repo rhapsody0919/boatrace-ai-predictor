@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
+import AccuracyDashboard from './components/AccuracyDashboard'
 
 function App() {
+  const [activeTab, setActiveTab] = useState('races')
   const [selectedRace, setSelectedRace] = useState(null)
   const [prediction, setPrediction] = useState(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -289,15 +291,28 @@ function App() {
             <h1>ボートレースAI予想</h1>
           </div>
           <nav className="nav">
-            <button className="nav-btn active">今日のレース</button>
-            <button className="nav-btn">予想履歴</button>
-            <button className="nav-btn">統計</button>
+            <button
+              className={`nav-btn ${activeTab === 'races' ? 'active' : ''}`}
+              onClick={() => setActiveTab('races')}
+            >
+              今日のレース
+            </button>
+            <button
+              className={`nav-btn ${activeTab === 'accuracy' ? 'active' : ''}`}
+              onClick={() => setActiveTab('accuracy')}
+            >
+              的中率統計
+            </button>
           </nav>
         </div>
       </header>
 
       <div className="container">
         <main className="main-content">
+          {activeTab === 'accuracy' ? (
+            <AccuracyDashboard />
+          ) : (
+            <>
           <section className="race-list-section">
             <h2>🏁 本日開催中のレース {isRealData && <span style={{fontSize: '0.8rem', color: '#22c55e', marginLeft: '1rem'}}>✓ 実データ</span>}</h2>
 
@@ -546,6 +561,8 @@ function App() {
                 </div>
               )}
             </section>
+          )}
+            </>
           )}
         </main>
       </div>
