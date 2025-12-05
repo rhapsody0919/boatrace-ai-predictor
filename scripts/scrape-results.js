@@ -62,8 +62,9 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
     $('.is-w495 tbody tr').each((index, row) => {
       if (index < 3) {
         const $row = $(row);
-        const boatNumber = parseInt($row.find('.is-fs14').first().text().trim());
-        if (boatNumber) {
+        // Get the second column (boat number), not the first (rank)
+        const boatNumber = parseInt($row.find('td').eq(1).text().trim());
+        if (boatNumber && !isNaN(boatNumber)) {
           rankings.push(boatNumber);
         }
       }
