@@ -1,7 +1,7 @@
 {
   "date": "2025-12-05",
-  "generatedAt": "2025-12-05T03:25:13.756Z",
-  "updatedAt": "2025-12-05T03:25:13.756Z",
+  "generatedAt": "2025-12-05T04:35:57.473Z",
+  "updatedAt": "2025-12-05T04:35:57.473Z",
   "races": [
     {
       "raceId": "2025-12-05-02-01",
@@ -5947,7 +5947,7 @@
       "venue": "びわこ",
       "venueCode": 11,
       "raceNumber": 6,
-      "startTime": "12:46",
+      "startTime": "12:49",
       "prediction": {
         "topPick": 1,
         "top3": [
@@ -6059,7 +6059,7 @@
       "venue": "びわこ",
       "venueCode": 11,
       "raceNumber": 7,
-      "startTime": "13:13",
+      "startTime": "13:20",
       "prediction": {
         "topPick": 3,
         "top3": [
@@ -6171,7 +6171,7 @@
       "venue": "びわこ",
       "venueCode": 11,
       "raceNumber": 8,
-      "startTime": "13:44",
+      "startTime": "13:47",
       "prediction": {
         "topPick": 4,
         "top3": [
@@ -6283,7 +6283,7 @@
       "venue": "びわこ",
       "venueCode": 11,
       "raceNumber": 9,
-      "startTime": "14:16",
+      "startTime": "14:19",
       "prediction": {
         "topPick": 3,
         "top3": [
@@ -6396,7 +6396,7 @@
       "venue": "びわこ",
       "venueCode": 11,
       "raceNumber": 10,
-      "startTime": "14:45",
+      "startTime": "14:48",
       "prediction": {
         "topPick": 4,
         "top3": [
@@ -6480,9 +6480,9 @@
             "localWinRate": "0.000",
             "motorNumber": 35,
             "motor2Rate": "38.1",
-            "boatNumber": 29,
-            "boat2Rate": "36.7",
-            "aiScore": 2214
+            "boatNumber": 11,
+            "boat2Rate": "36.5",
+            "aiScore": 2209
           }
         ],
         "reasoning": [
@@ -6507,7 +6507,7 @@
       "venue": "びわこ",
       "venueCode": 11,
       "raceNumber": 11,
-      "startTime": "15:15",
+      "startTime": "15:18",
       "prediction": {
         "topPick": 2,
         "top3": [
@@ -6565,9 +6565,9 @@
             "localWinRate": "5.730",
             "motorNumber": 23,
             "motor2Rate": "32.6",
-            "boatNumber": 45,
-            "boat2Rate": "40.3",
-            "aiScore": 4096
+            "boatNumber": 67,
+            "boat2Rate": "39.7",
+            "aiScore": 4085
           },
           {
             "number": 5,
