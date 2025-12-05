@@ -33,8 +33,8 @@ function AccuracyDashboard() {
   if (loading) {
     return (
       <div className="accuracy-dashboard">
-        <h2>AI Prediction Accuracy</h2>
-        <div className="loading">Loading accuracy data...</div>
+        <h2>📊 AI予想的中率</h2>
+        <div className="loading">的中率データを読み込み中...</div>
       </div>
     )
   }
@@ -42,9 +42,9 @@ function AccuracyDashboard() {
   if (error || !summary) {
     return (
       <div className="accuracy-dashboard">
-        <h2>AI Prediction Accuracy</h2>
+        <h2>📊 AI予想的中率</h2>
         <div className="error-message">
-          Accuracy data not yet available. Results will be calculated after races finish.
+          的中率データはまだ利用できません。レース終了後に自動計算されます。
         </div>
       </div>
     )
@@ -55,33 +55,33 @@ function AccuracyDashboard() {
 
   return (
     <div className="accuracy-dashboard">
-      <h2>AI Prediction Accuracy</h2>
+      <h2>📊 AI予想的中率</h2>
 
       {!hasData ? (
         <div className="no-data-message">
-          No completed races yet. Check back after races finish!
+          まだレース結果がありません。レース終了後にご確認ください！
         </div>
       ) : (
         <>
           {/* Overall Stats */}
           <div className="stats-grid">
             <div className="stat-card overall">
-              <h3>Overall Performance</h3>
+              <h3>総合成績</h3>
               <div className="stat-main">
                 <div className="stat-value">{formatPercent(summary.overall.topPickHitRate)}</div>
-                <div className="stat-label">Top Pick Accuracy</div>
+                <div className="stat-label">本命的中率</div>
               </div>
               <div className="stat-details">
                 <div className="detail-item">
-                  <span className="detail-label">Total Races:</span>
-                  <span className="detail-value">{summary.overall.totalRaces}</span>
+                  <span className="detail-label">総レース数:</span>
+                  <span className="detail-value">{summary.overall.totalRaces}レース</span>
                 </div>
                 <div className="detail-item">
-                  <span className="detail-label">Hits:</span>
-                  <span className="detail-value">{summary.overall.topPickHits}</span>
+                  <span className="detail-label">的中数:</span>
+                  <span className="detail-value">{summary.overall.topPickHits}回</span>
                 </div>
                 <div className="detail-item">
-                  <span className="detail-label">Top 3 Accuracy:</span>
+                  <span className="detail-label">トップ3的中率:</span>
                   <span className="detail-value">{formatPercent(summary.overall.top3HitRate)}</span>
                 </div>
               </div>
@@ -90,18 +90,18 @@ function AccuracyDashboard() {
             {/* Yesterday */}
             {summary.yesterday.totalRaces > 0 && (
               <div className="stat-card yesterday">
-                <h3>Yesterday ({summary.yesterday.date})</h3>
+                <h3>前日 ({summary.yesterday.date})</h3>
                 <div className="stat-main">
                   <div className="stat-value">{formatPercent(summary.yesterday.topPickHitRate)}</div>
-                  <div className="stat-label">Top Pick Accuracy</div>
+                  <div className="stat-label">本命的中率</div>
                 </div>
                 <div className="stat-details">
                   <div className="detail-item">
-                    <span className="detail-label">Races:</span>
-                    <span className="detail-value">{summary.yesterday.totalRaces}</span>
+                    <span className="detail-label">レース数:</span>
+                    <span className="detail-value">{summary.yesterday.totalRaces}レース</span>
                   </div>
                   <div className="detail-item">
-                    <span className="detail-label">Top 3 Accuracy:</span>
+                    <span className="detail-label">トップ3的中率:</span>
                     <span className="detail-value">{formatPercent(summary.yesterday.top3HitRate)}</span>
                   </div>
                 </div>
@@ -111,18 +111,18 @@ function AccuracyDashboard() {
             {/* This Month */}
             {summary.thisMonth.totalRaces > 0 && (
               <div className="stat-card this-month">
-                <h3>This Month ({summary.thisMonth.year}/{summary.thisMonth.month})</h3>
+                <h3>今月 ({summary.thisMonth.year}年{summary.thisMonth.month}月)</h3>
                 <div className="stat-main">
                   <div className="stat-value">{formatPercent(summary.thisMonth.topPickHitRate)}</div>
-                  <div className="stat-label">Top Pick Accuracy</div>
+                  <div className="stat-label">本命的中率</div>
                 </div>
                 <div className="stat-details">
                   <div className="detail-item">
-                    <span className="detail-label">Races:</span>
-                    <span className="detail-value">{summary.thisMonth.totalRaces}</span>
+                    <span className="detail-label">レース数:</span>
+                    <span className="detail-value">{summary.thisMonth.totalRaces}レース</span>
                   </div>
                   <div className="detail-item">
-                    <span className="detail-label">Top 3 Accuracy:</span>
+                    <span className="detail-label">トップ3的中率:</span>
                     <span className="detail-value">{formatPercent(summary.thisMonth.top3HitRate)}</span>
                   </div>
                 </div>
@@ -132,15 +132,15 @@ function AccuracyDashboard() {
             {/* Last Month */}
             {summary.lastMonth.totalRaces > 0 && (
               <div className="stat-card last-month">
-                <h3>Last Month ({summary.lastMonth.year}/{summary.lastMonth.month})</h3>
+                <h3>先月 ({summary.lastMonth.year}年{summary.lastMonth.month}月)</h3>
                 <div className="stat-main">
                   <div className="stat-value">{formatPercent(summary.lastMonth.topPickHitRate)}</div>
-                  <div className="stat-label">Top Pick Accuracy</div>
+                  <div className="stat-label">本命的中率</div>
                 </div>
                 <div className="stat-details">
                   <div className="detail-item">
-                    <span className="detail-label">Races:</span>
-                    <span className="detail-value">{summary.lastMonth.totalRaces}</span>
+                    <span className="detail-label">レース数:</span>
+                    <span className="detail-value">{summary.lastMonth.totalRaces}レース</span>
                   </div>
                 </div>
               </div>
@@ -150,13 +150,13 @@ function AccuracyDashboard() {
           {/* Daily History */}
           {summary.dailyHistory && summary.dailyHistory.length > 0 && (
             <div className="daily-history">
-              <h3>Recent Performance</h3>
+              <h3>直近のパフォーマンス</h3>
               <div className="history-list">
                 {summary.dailyHistory.slice(-7).reverse().map((day) => (
                   <div key={day.date} className="history-item">
                     <div className="history-date">{day.date}</div>
                     <div className="history-stats">
-                      <span className="history-races">{day.totalRaces} races</span>
+                      <span className="history-races">{day.totalRaces}レース</span>
                       <span className="history-rate">{formatPercent(day.topPickHitRate)}</span>
                     </div>
                   </div>
@@ -167,11 +167,11 @@ function AccuracyDashboard() {
 
           {/* Info */}
           <div className="accuracy-info">
-            <h4>About Accuracy Metrics</h4>
+            <h4>💡 的中率について</h4>
             <ul>
-              <li><strong>Top Pick Accuracy:</strong> Percentage of races where our #1 prediction finished 1st</li>
-              <li><strong>Top 3 Accuracy:</strong> Percentage of races where our top 3 predictions included all podium finishers</li>
-              <li><strong>Data Updates:</strong> Accuracy is calculated automatically after races finish</li>
+              <li><strong>本命的中率:</strong> AI予想の本命（1位予想）が実際に1着になった割合</li>
+              <li><strong>トップ3的中率:</strong> AI予想のトップ3が実際の1-2-3着を全て含んでいた割合（3連複）</li>
+              <li><strong>データ更新:</strong> レース終了後、自動的に的中率が計算されます</li>
             </ul>
           </div>
         </>
