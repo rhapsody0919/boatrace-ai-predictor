@@ -63,30 +63,8 @@ function AccuracyDashboard() {
         </div>
       ) : (
         <>
-          {/* Overall Stats */}
+          {/* Performance Stats */}
           <div className="stats-grid">
-            <div className="stat-card overall">
-              <h3>総合成績</h3>
-              <div className="stat-main">
-                <div className="stat-value">{formatPercent(summary.overall.topPickHitRate)}</div>
-                <div className="stat-label">本命的中率</div>
-              </div>
-              <div className="stat-details">
-                <div className="detail-item">
-                  <span className="detail-label">総レース数:</span>
-                  <span className="detail-value">{summary.overall.totalRaces}レース</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">的中数:</span>
-                  <span className="detail-value">{summary.overall.topPickHits}回</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">トップ3的中率:</span>
-                  <span className="detail-value">{formatPercent(summary.overall.top3HitRate)}</span>
-                </div>
-              </div>
-            </div>
-
             {/* Yesterday */}
             {summary.yesterday.totalRaces > 0 && (
               <div className="stat-card yesterday">
@@ -141,6 +119,10 @@ function AccuracyDashboard() {
                   <div className="detail-item">
                     <span className="detail-label">レース数:</span>
                     <span className="detail-value">{summary.lastMonth.totalRaces}レース</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">トップ3的中率:</span>
+                    <span className="detail-value">{formatPercent(summary.lastMonth.top3HitRate)}</span>
                   </div>
                 </div>
               </div>
