@@ -1,7 +1,7 @@
 {
   "date": "2025-12-05",
-  "generatedAt": "2025-12-05T10:29:06.242Z",
-  "updatedAt": "2025-12-05T10:54:09.780Z",
+  "generatedAt": "2025-12-05T11:25:19.689Z",
+  "updatedAt": "2025-12-05T11:50:28.933Z",
   "races": [
     {
       "raceId": "2025-12-05-02-01",
@@ -107,7 +107,7 @@
         "rank1": 2,
         "rank2": 6,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:29:14.722Z"
+        "updatedAt": "2025-12-05T11:25:28.275Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -218,7 +218,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:29:25.469Z"
+        "updatedAt": "2025-12-05T11:25:38.116Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -330,7 +330,7 @@
         "rank1": 3,
         "rank2": 2,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:29:34.181Z"
+        "updatedAt": "2025-12-05T11:25:46.908Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -442,7 +442,7 @@
         "rank1": 2,
         "rank2": 3,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:29:42.882Z"
+        "updatedAt": "2025-12-05T11:25:55.637Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -554,7 +554,7 @@
         "rank1": 3,
         "rank2": 2,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:29:51.560Z"
+        "updatedAt": "2025-12-05T11:26:06.388Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -666,7 +666,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:30:02.264Z"
+        "updatedAt": "2025-12-05T11:26:16.110Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -778,7 +778,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:30:10.924Z"
+        "updatedAt": "2025-12-05T11:26:24.883Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -889,7 +889,7 @@
         "rank1": 5,
         "rank2": 2,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:30:19.608Z"
+        "updatedAt": "2025-12-05T11:26:35.604Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -1001,7 +1001,7 @@
         "rank1": 3,
         "rank2": 4,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:30:30.323Z"
+        "updatedAt": "2025-12-05T11:26:44.386Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -1113,7 +1113,7 @@
         "rank1": 4,
         "rank2": 3,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:30:40.000Z"
+        "updatedAt": "2025-12-05T11:26:54.098Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -1225,7 +1225,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:30:48.690Z"
+        "updatedAt": "2025-12-05T11:27:02.818Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -1337,7 +1337,7 @@
         "rank1": 2,
         "rank2": 4,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:30:57.369Z"
+        "updatedAt": "2025-12-05T11:27:12.573Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -1449,7 +1449,7 @@
         "rank1": 1,
         "rank2": 5,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:31:08.067Z"
+        "updatedAt": "2025-12-05T11:27:21.340Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -1561,7 +1561,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:31:18.769Z"
+        "updatedAt": "2025-12-05T11:27:32.097Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -1673,7 +1673,7 @@
         "rank1": 5,
         "rank2": 2,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:31:27.460Z"
+        "updatedAt": "2025-12-05T11:27:40.840Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -1785,7 +1785,7 @@
         "rank1": 6,
         "rank2": 2,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:31:36.167Z"
+        "updatedAt": "2025-12-05T11:27:49.579Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -1897,7 +1897,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:31:45.856Z"
+        "updatedAt": "2025-12-05T11:28:00.296Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -2009,7 +2009,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:31:55.514Z"
+        "updatedAt": "2025-12-05T11:28:09.121Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -2121,7 +2121,7 @@
         "rank1": 4,
         "rank2": 3,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:32:04.188Z"
+        "updatedAt": "2025-12-05T11:28:17.842Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -2233,7 +2233,7 @@
         "rank1": 5,
         "rank2": 3,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:32:13.859Z"
+        "updatedAt": "2025-12-05T11:28:27.589Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -2345,7 +2345,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:32:24.559Z"
+        "updatedAt": "2025-12-05T11:28:36.335Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -2453,16 +2453,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 5,
+        "rank3": 2,
+        "updatedAt": "2025-12-05T11:28:45.053Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -2794,7 +2794,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:33:03.208Z"
+        "updatedAt": "2025-12-05T11:29:14.385Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -2907,7 +2907,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:33:11.881Z"
+        "updatedAt": "2025-12-05T11:29:25.107Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -3020,7 +3020,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:33:20.536Z"
+        "updatedAt": "2025-12-05T11:29:35.953Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -3133,7 +3133,7 @@
         "rank1": 5,
         "rank2": 1,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:33:29.223Z"
+        "updatedAt": "2025-12-05T11:29:45.675Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -3246,7 +3246,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:33:39.925Z"
+        "updatedAt": "2025-12-05T11:29:56.417Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -3359,7 +3359,7 @@
         "rank1": 3,
         "rank2": 5,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:33:50.618Z"
+        "updatedAt": "2025-12-05T11:30:07.126Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -3472,7 +3472,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:34:00.273Z"
+        "updatedAt": "2025-12-05T11:30:16.951Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -3585,7 +3585,7 @@
         "rank1": 1,
         "rank2": 6,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:34:09.946Z"
+        "updatedAt": "2025-12-05T11:30:25.692Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -3698,7 +3698,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:34:20.605Z"
+        "updatedAt": "2025-12-05T11:30:34.435Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -3811,7 +3811,7 @@
         "rank1": 3,
         "rank2": 1,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:34:30.288Z"
+        "updatedAt": "2025-12-05T11:30:44.187Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -3924,7 +3924,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:34:41.000Z"
+        "updatedAt": "2025-12-05T11:30:54.895Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -4037,7 +4037,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:34:51.656Z"
+        "updatedAt": "2025-12-05T11:31:03.633Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -4148,7 +4148,7 @@
         "rank1": 1,
         "rank2": 5,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:35:02.348Z"
+        "updatedAt": "2025-12-05T11:31:13.403Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -4259,7 +4259,7 @@
         "rank1": 2,
         "rank2": 3,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:35:12.049Z"
+        "updatedAt": "2025-12-05T11:31:23.173Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -4371,7 +4371,7 @@
         "rank1": 3,
         "rank2": 1,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:35:20.723Z"
+        "updatedAt": "2025-12-05T11:31:31.929Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -4482,7 +4482,7 @@
         "rank1": 3,
         "rank2": 1,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:35:31.381Z"
+        "updatedAt": "2025-12-05T11:31:42.651Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -4594,7 +4594,7 @@
         "rank1": 5,
         "rank2": 1,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:35:41.037Z"
+        "updatedAt": "2025-12-05T11:31:53.386Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -4705,7 +4705,7 @@
         "rank1": 2,
         "rank2": 1,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:35:50.737Z"
+        "updatedAt": "2025-12-05T11:32:02.312Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -4817,7 +4817,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:36:01.395Z"
+        "updatedAt": "2025-12-05T11:32:12.100Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -4928,7 +4928,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:36:11.080Z"
+        "updatedAt": "2025-12-05T11:32:20.856Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -5039,7 +5039,7 @@
         "rank1": 1,
         "rank2": 5,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:36:20.736Z"
+        "updatedAt": "2025-12-05T11:32:30.604Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -5150,7 +5150,7 @@
         "rank1": 4,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:36:31.399Z"
+        "updatedAt": "2025-12-05T11:32:39.367Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -5261,7 +5261,7 @@
         "rank1": 2,
         "rank2": 1,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:36:40.098Z"
+        "updatedAt": "2025-12-05T11:32:50.269Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -5373,7 +5373,7 @@
         "rank1": 1,
         "rank2": 5,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:36:50.791Z"
+        "updatedAt": "2025-12-05T11:33:01.029Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -5485,7 +5485,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:37:00.471Z"
+        "updatedAt": "2025-12-05T11:33:09.783Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -5597,7 +5597,7 @@
         "rank1": 3,
         "rank2": 2,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:37:10.127Z"
+        "updatedAt": "2025-12-05T11:33:19.552Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -5709,7 +5709,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:37:19.795Z"
+        "updatedAt": "2025-12-05T11:33:29.320Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -5821,7 +5821,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:37:30.486Z"
+        "updatedAt": "2025-12-05T11:33:38.046Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -5934,7 +5934,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:37:39.192Z"
+        "updatedAt": "2025-12-05T11:33:48.815Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -6046,7 +6046,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:37:47.867Z"
+        "updatedAt": "2025-12-05T11:33:58.575Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -6158,7 +6158,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:37:57.562Z"
+        "updatedAt": "2025-12-05T11:34:08.288Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -6270,7 +6270,7 @@
         "rank1": 3,
         "rank2": 4,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:38:07.248Z"
+        "updatedAt": "2025-12-05T11:34:18.996Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -6383,7 +6383,7 @@
         "rank1": 3,
         "rank2": 4,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:38:17.949Z"
+        "updatedAt": "2025-12-05T11:34:28.724Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -6494,7 +6494,7 @@
         "rank1": 5,
         "rank2": 2,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:38:28.621Z"
+        "updatedAt": "2025-12-05T11:34:38.473Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -6606,7 +6606,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:38:38.320Z"
+        "updatedAt": "2025-12-05T11:34:49.230Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -6718,7 +6718,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:38:46.979Z"
+        "updatedAt": "2025-12-05T11:34:57.980Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -6830,7 +6830,7 @@
         "rank1": 4,
         "rank2": 3,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:38:56.654Z"
+        "updatedAt": "2025-12-05T11:35:06.732Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -6942,7 +6942,7 @@
         "rank1": 5,
         "rank2": 1,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:39:05.309Z"
+        "updatedAt": "2025-12-05T11:35:16.433Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -7053,7 +7053,7 @@
         "rank1": 3,
         "rank2": 4,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:39:14.965Z"
+        "updatedAt": "2025-12-05T11:35:25.144Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -7164,7 +7164,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:39:25.635Z"
+        "updatedAt": "2025-12-05T11:35:35.868Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -7276,7 +7276,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:39:36.332Z"
+        "updatedAt": "2025-12-05T11:35:44.651Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -7387,7 +7387,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:39:46.024Z"
+        "updatedAt": "2025-12-05T11:35:54.396Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -7498,7 +7498,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:39:54.700Z"
+        "updatedAt": "2025-12-05T11:36:03.147Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -7610,7 +7610,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:40:03.369Z"
+        "updatedAt": "2025-12-05T11:36:13.097Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -7722,7 +7722,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:40:12.062Z"
+        "updatedAt": "2025-12-05T11:36:23.811Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -7833,7 +7833,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:40:20.755Z"
+        "updatedAt": "2025-12-05T11:36:33.556Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -7945,7 +7945,7 @@
         "rank1": 5,
         "rank2": 3,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:40:31.432Z"
+        "updatedAt": "2025-12-05T11:36:44.257Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -8058,7 +8058,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:40:41.122Z"
+        "updatedAt": "2025-12-05T11:36:52.987Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -8169,7 +8169,7 @@
         "rank1": 2,
         "rank2": 3,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:40:50.821Z"
+        "updatedAt": "2025-12-05T11:37:02.699Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -8281,7 +8281,7 @@
         "rank1": 3,
         "rank2": 1,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:40:59.497Z"
+        "updatedAt": "2025-12-05T11:37:11.402Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -8393,7 +8393,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:41:09.165Z"
+        "updatedAt": "2025-12-05T11:37:20.274Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -8505,7 +8505,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:41:19.858Z"
+        "updatedAt": "2025-12-05T11:37:30.004Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -8616,7 +8616,7 @@
         "rank1": 3,
         "rank2": 1,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:41:28.517Z"
+        "updatedAt": "2025-12-05T11:37:40.769Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -8727,7 +8727,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:41:38.177Z"
+        "updatedAt": "2025-12-05T11:37:49.480Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -8839,7 +8839,7 @@
         "rank1": 4,
         "rank2": 1,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:41:47.849Z"
+        "updatedAt": "2025-12-05T11:37:58.189Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -8950,7 +8950,7 @@
         "rank1": 2,
         "rank2": 5,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:41:56.537Z"
+        "updatedAt": "2025-12-05T11:38:08.923Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -9061,7 +9061,7 @@
         "rank1": 4,
         "rank2": 1,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:42:07.229Z"
+        "updatedAt": "2025-12-05T11:38:19.666Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -9174,7 +9174,7 @@
         "rank1": 4,
         "rank2": 1,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:42:17.899Z"
+        "updatedAt": "2025-12-05T11:38:28.398Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -9285,7 +9285,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:42:28.590Z"
+        "updatedAt": "2025-12-05T11:38:39.139Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -9396,7 +9396,7 @@
         "rank1": 5,
         "rank2": 6,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:42:37.290Z"
+        "updatedAt": "2025-12-05T11:38:47.902Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -9508,7 +9508,7 @@
         "rank1": 3,
         "rank2": 1,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:42:46.988Z"
+        "updatedAt": "2025-12-05T11:38:57.654Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -9620,7 +9620,7 @@
         "rank1": 2,
         "rank2": 1,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:42:56.689Z"
+        "updatedAt": "2025-12-05T11:39:07.377Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -9731,7 +9731,7 @@
         "rank1": 3,
         "rank2": 1,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:43:05.348Z"
+        "updatedAt": "2025-12-05T11:39:18.117Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -9844,7 +9844,7 @@
         "rank1": 4,
         "rank2": 3,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:43:15.007Z"
+        "updatedAt": "2025-12-05T11:39:27.857Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -9956,7 +9956,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:43:24.697Z"
+        "updatedAt": "2025-12-05T11:39:37.562Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -10068,7 +10068,7 @@
         "rank1": 2,
         "rank2": 1,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:43:34.392Z"
+        "updatedAt": "2025-12-05T11:39:48.264Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -10181,7 +10181,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:43:43.064Z"
+        "updatedAt": "2025-12-05T11:39:56.985Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -10294,7 +10294,7 @@
         "rank1": 2,
         "rank2": 3,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:43:51.764Z"
+        "updatedAt": "2025-12-05T11:40:05.790Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -10405,7 +10405,7 @@
         "rank1": 5,
         "rank2": 2,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:44:01.441Z"
+        "updatedAt": "2025-12-05T11:40:15.494Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -10517,7 +10517,7 @@
         "rank1": 3,
         "rank2": 5,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:44:10.126Z"
+        "updatedAt": "2025-12-05T11:40:24.211Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -10626,16 +10626,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 6,
+        "updatedAt": "2025-12-05T11:40:32.969Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -10739,16 +10739,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 2,
+        "updatedAt": "2025-12-05T11:40:41.692Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -10855,7 +10855,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:44:41.174Z"
+        "updatedAt": "2025-12-05T11:40:50.430Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -10966,7 +10966,7 @@
         "rank1": 1,
         "rank2": 5,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:44:50.835Z"
+        "updatedAt": "2025-12-05T11:41:01.221Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -11078,7 +11078,7 @@
         "rank1": 2,
         "rank2": 1,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:45:01.544Z"
+        "updatedAt": "2025-12-05T11:41:11.998Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -11190,7 +11190,7 @@
         "rank1": 3,
         "rank2": 4,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:45:10.206Z"
+        "updatedAt": "2025-12-05T11:41:22.769Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -11302,7 +11302,7 @@
         "rank1": 2,
         "rank2": 1,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:45:20.914Z"
+        "updatedAt": "2025-12-05T11:41:31.576Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -11413,7 +11413,7 @@
         "rank1": 1,
         "rank2": 6,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:45:29.586Z"
+        "updatedAt": "2025-12-05T11:41:41.305Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -11526,7 +11526,7 @@
         "rank1": 1,
         "rank2": 6,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:45:40.298Z"
+        "updatedAt": "2025-12-05T11:41:52.050Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -11638,7 +11638,7 @@
         "rank1": 3,
         "rank2": 5,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:45:49.956Z"
+        "updatedAt": "2025-12-05T11:42:01.800Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -11749,7 +11749,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:45:58.629Z"
+        "updatedAt": "2025-12-05T11:42:12.515Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -11860,7 +11860,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:46:08.313Z"
+        "updatedAt": "2025-12-05T11:42:21.272Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -11972,7 +11972,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:46:18.011Z"
+        "updatedAt": "2025-12-05T11:42:31.049Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -12085,7 +12085,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:46:27.705Z"
+        "updatedAt": "2025-12-05T11:42:41.893Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -12197,7 +12197,7 @@
         "rank1": 4,
         "rank2": 5,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:46:37.400Z"
+        "updatedAt": "2025-12-05T11:42:51.647Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -12308,7 +12308,7 @@
         "rank1": 4,
         "rank2": 1,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:46:48.071Z"
+        "updatedAt": "2025-12-05T11:43:02.431Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -12421,7 +12421,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:46:57.785Z"
+        "updatedAt": "2025-12-05T11:43:13.417Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -12532,7 +12532,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:47:07.477Z"
+        "updatedAt": "2025-12-05T11:43:23.144Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -12644,7 +12644,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:47:18.129Z"
+        "updatedAt": "2025-12-05T11:43:31.926Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -12756,7 +12756,7 @@
         "rank1": 3,
         "rank2": 1,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:47:26.793Z"
+        "updatedAt": "2025-12-05T11:43:42.676Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -12868,7 +12868,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:47:35.467Z"
+        "updatedAt": "2025-12-05T11:43:51.424Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -12979,7 +12979,7 @@
         "rank1": 2,
         "rank2": 3,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:47:44.167Z"
+        "updatedAt": "2025-12-05T11:44:02.176Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -13090,7 +13090,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:47:54.858Z"
+        "updatedAt": "2025-12-05T11:44:10.936Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -13202,7 +13202,7 @@
         "rank1": 3,
         "rank2": 4,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:48:05.530Z"
+        "updatedAt": "2025-12-05T11:44:21.678Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -13314,7 +13314,7 @@
         "rank1": 3,
         "rank2": 2,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:48:15.205Z"
+        "updatedAt": "2025-12-05T11:44:32.406Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -13426,7 +13426,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:48:25.881Z"
+        "updatedAt": "2025-12-05T11:44:41.118Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -13537,7 +13537,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:48:35.542Z"
+        "updatedAt": "2025-12-05T11:44:50.835Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -13648,7 +13648,7 @@
         "rank1": 3,
         "rank2": 6,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:48:44.215Z"
+        "updatedAt": "2025-12-05T11:45:00.575Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -13760,7 +13760,7 @@
         "rank1": 2,
         "rank2": 3,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:48:54.876Z"
+        "updatedAt": "2025-12-05T11:45:09.317Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -13872,7 +13872,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:49:05.552Z"
+        "updatedAt": "2025-12-05T11:45:19.029Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -13984,7 +13984,7 @@
         "rank1": 2,
         "rank2": 1,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:49:15.221Z"
+        "updatedAt": "2025-12-05T11:45:27.734Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -14096,7 +14096,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:49:25.878Z"
+        "updatedAt": "2025-12-05T11:45:36.470Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -14208,7 +14208,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:49:34.557Z"
+        "updatedAt": "2025-12-05T11:45:47.210Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -14320,7 +14320,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:49:43.250Z"
+        "updatedAt": "2025-12-05T11:45:57.953Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -14432,7 +14432,7 @@
         "rank1": 3,
         "rank2": 1,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:49:53.941Z"
+        "updatedAt": "2025-12-05T11:46:07.676Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -14540,16 +14540,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 6,
+        "updatedAt": "2025-12-05T11:46:18.413Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -14651,16 +14651,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 4,
+        "updatedAt": "2025-12-05T11:46:28.133Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -14878,7 +14878,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:50:28.618Z"
+        "updatedAt": "2025-12-05T11:46:47.586Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -14990,7 +14990,7 @@
         "rank1": 2,
         "rank2": 5,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:50:37.277Z"
+        "updatedAt": "2025-12-05T11:46:57.299Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -15102,7 +15102,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:50:47.956Z"
+        "updatedAt": "2025-12-05T11:47:07.042Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -15214,7 +15214,7 @@
         "rank1": 1,
         "rank2": 5,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:50:56.635Z"
+        "updatedAt": "2025-12-05T11:47:17.764Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -15325,7 +15325,7 @@
         "rank1": 1,
         "rank2": 3,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:51:06.327Z"
+        "updatedAt": "2025-12-05T11:47:27.530Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -15436,7 +15436,7 @@
         "rank1": 4,
         "rank2": 2,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:51:15.027Z"
+        "updatedAt": "2025-12-05T11:47:38.251Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -15549,7 +15549,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 5,
-        "updatedAt": "2025-12-05T10:51:25.725Z"
+        "updatedAt": "2025-12-05T11:47:47.001Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -15660,7 +15660,7 @@
         "rank1": 1,
         "rank2": 2,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:51:36.399Z"
+        "updatedAt": "2025-12-05T11:47:56.715Z"
       },
       "accuracy": {
         "topPickHit": true,
@@ -15771,7 +15771,7 @@
         "rank1": 1,
         "rank2": 4,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:51:45.099Z"
+        "updatedAt": "2025-12-05T11:48:06.421Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -15883,7 +15883,7 @@
         "rank1": 1,
         "rank2": 5,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:51:55.757Z"
+        "updatedAt": "2025-12-05T11:48:15.184Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -15995,7 +15995,7 @@
         "rank1": 3,
         "rank2": 1,
         "rank3": 2,
-        "updatedAt": "2025-12-05T10:52:05.462Z"
+        "updatedAt": "2025-12-05T11:48:23.927Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -16107,7 +16107,7 @@
         "rank1": 3,
         "rank2": 4,
         "rank3": 6,
-        "updatedAt": "2025-12-05T10:52:15.145Z"
+        "updatedAt": "2025-12-05T11:48:33.660Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -16219,7 +16219,7 @@
         "rank1": 5,
         "rank2": 1,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:52:25.805Z"
+        "updatedAt": "2025-12-05T11:48:43.415Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -16331,7 +16331,7 @@
         "rank1": 2,
         "rank2": 3,
         "rank3": 1,
-        "updatedAt": "2025-12-05T10:52:35.469Z"
+        "updatedAt": "2025-12-05T11:48:52.162Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -16442,7 +16442,7 @@
         "rank1": 1,
         "rank2": 5,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:52:46.129Z"
+        "updatedAt": "2025-12-05T11:49:01.905Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -16553,7 +16553,7 @@
         "rank1": 1,
         "rank2": 5,
         "rank3": 4,
-        "updatedAt": "2025-12-05T10:52:55.829Z"
+        "updatedAt": "2025-12-05T11:49:10.636Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -16665,7 +16665,7 @@
         "rank1": 1,
         "rank2": 5,
         "rank3": 3,
-        "updatedAt": "2025-12-05T10:53:05.526Z"
+        "updatedAt": "2025-12-05T11:49:19.344Z"
       },
       "accuracy": {
         "topPickHit": false,
@@ -16772,16 +16772,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 5,
+        "rank3": 2,
+        "updatedAt": "2025-12-05T11:49:29.090Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -16884,16 +16884,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 3,
+        "updatedAt": "2025-12-05T11:49:38.837Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
