@@ -1,7 +1,7 @@
 {
   "date": "2025-12-06",
-  "generatedAt": "2025-12-05T23:24:58.059Z",
-  "updatedAt": "2025-12-05T23:48:25.461Z",
+  "generatedAt": "2025-12-06T01:45:38.828Z",
+  "updatedAt": "2025-12-06T02:08:56.492Z",
   "races": [
     {
       "raceId": "2025-12-06-02-01",
@@ -2791,16 +2791,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 4,
+        "rank2": 1,
+        "rank3": 2,
+        "updatedAt": "2025-12-06T01:49:43.205Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -4144,16 +4144,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 2,
+        "updatedAt": "2025-12-06T01:51:38.160Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -5486,16 +5486,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 5,
+        "updatedAt": "2025-12-06T01:53:36.602Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -5597,16 +5597,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 4,
+        "rank3": 6,
+        "updatedAt": "2025-12-06T01:53:45.403Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -5709,16 +5709,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 5,
+        "updatedAt": "2025-12-06T01:53:56.148Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -5734,7 +5734,7 @@
           3,
           1
         ],
-        "confidence": 92,
+        "confidence": 95,
         "players": [
           {
             "number": 6,
@@ -5745,9 +5745,9 @@
             "localWinRate": "6.600",
             "motorNumber": 35,
             "motor2Rate": "23.2",
-            "boatNumber": 34,
-            "boat2Rate": "31.9",
-            "aiScore": 4300
+            "boatNumber": 55,
+            "boat2Rate": "37.0",
+            "aiScore": 4404
           },
           {
             "number": 3,
@@ -5821,16 +5821,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 4,
+        "updatedAt": "2025-12-06T01:54:04.916Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -5932,16 +5932,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 3,
+        "rank2": 1,
+        "rank3": 5,
+        "updatedAt": "2025-12-06T01:54:15.712Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -6400,7 +6400,7 @@
         "top3": [
           3,
           2,
-          1
+          4
         ],
         "confidence": 72,
         "players": [
@@ -6431,6 +6431,19 @@
             "aiScore": 4424
           },
           {
+            "number": 4,
+            "name": "立具　　敬司",
+            "grade": "B1",
+            "age": 35,
+            "winRate": "4.910",
+            "localWinRate": "6.600",
+            "motorNumber": 35,
+            "motor2Rate": "23.2",
+            "boatNumber": 55,
+            "boat2Rate": "37.0",
+            "aiScore": 4414
+          },
+          {
             "number": 1,
             "name": "長野　　道臣",
             "grade": "B1",
@@ -6442,19 +6455,6 @@
             "boatNumber": 47,
             "boat2Rate": "38.8",
             "aiScore": 4398
-          },
-          {
-            "number": 4,
-            "name": "立具　　敬司",
-            "grade": "B1",
-            "age": 35,
-            "winRate": "4.910",
-            "localWinRate": "6.600",
-            "motorNumber": 35,
-            "motor2Rate": "23.2",
-            "boatNumber": 34,
-            "boat2Rate": "31.9",
-            "aiScore": 4310
           },
           {
             "number": 6,
@@ -6824,16 +6824,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 2,
+        "rank2": 1,
+        "rank3": 5,
+        "updatedAt": "2025-12-06T01:55:33.814Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -9515,16 +9515,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 4,
+        "updatedAt": "2025-12-06T01:59:15.324Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "top3Hit": true,
+        "top3Included": false
       }
     },
     {
@@ -9626,16 +9626,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 2,
+        "updatedAt": "2025-12-06T01:59:25.031Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -10857,16 +10857,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 4,
+        "updatedAt": "2025-12-06T02:01:16.830Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -10969,16 +10969,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 2,
+        "rank2": 3,
+        "rank3": 4,
+        "updatedAt": "2025-12-06T02:01:26.563Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -10986,7 +10986,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 3,
-      "startTime": "09:27",
+      "startTime": "09:30",
       "prediction": {
         "topPick": 6,
         "top3": [
@@ -11081,16 +11081,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 6,
+        "updatedAt": "2025-12-06T02:01:37.335Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -11098,7 +11098,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 4,
-      "startTime": "09:53",
+      "startTime": "09:56",
       "prediction": {
         "topPick": 2,
         "top3": [
@@ -11192,16 +11192,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 2,
+        "updatedAt": "2025-12-06T02:01:47.206Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -11209,7 +11209,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 5,
-      "startTime": "10:20",
+      "startTime": "10:23",
       "prediction": {
         "topPick": 3,
         "top3": [
@@ -11304,16 +11304,16 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 4,
+        "updatedAt": "2025-12-06T02:01:57.039Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -11321,7 +11321,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 6,
-      "startTime": "10:49",
+      "startTime": "10:52",
       "prediction": {
         "topPick": 6,
         "top3": [
