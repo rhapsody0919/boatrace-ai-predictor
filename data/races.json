@@ -13013,7 +13013,7 @@
           "raceNo": 1,
           "weather": "曇り",
           "airTemp": 9,
-          "windDirection": 3,
+          "windDirection": 1,
           "windVelocity": 1,
           "waterTemp": 14,
           "waveHeight": 1,
@@ -14186,5 +14186,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-06T13:32:36.909Z"
+  "scrapedAt": "2025-12-06T14:23:03.863Z"
 }
