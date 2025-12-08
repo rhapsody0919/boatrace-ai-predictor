@@ -7102,7 +7102,7 @@
           "placeCd": 15,
           "raceNo": 1,
           "weather": "曇り",
-          "airTemp": 15,
+          "airTemp": 13,
           "windDirection": 15,
           "windVelocity": 6,
           "waterTemp": 16,
@@ -7690,7 +7690,7 @@
           "placeCd": 15,
           "raceNo": 7,
           "weather": "曇り",
-          "airTemp": 15,
+          "airTemp": 13,
           "windDirection": 15,
           "windVelocity": 6,
           "waterTemp": 16,
@@ -7788,7 +7788,7 @@
           "placeCd": 15,
           "raceNo": 8,
           "weather": "曇り",
-          "airTemp": 15,
+          "airTemp": 13,
           "windDirection": 15,
           "windVelocity": 6,
           "waterTemp": 16,
@@ -7886,7 +7886,7 @@
           "placeCd": 15,
           "raceNo": 9,
           "weather": "曇り",
-          "airTemp": 15,
+          "airTemp": 13,
           "windDirection": 15,
           "windVelocity": 6,
           "waterTemp": 16,
@@ -7984,7 +7984,7 @@
           "placeCd": 15,
           "raceNo": 10,
           "weather": "曇り",
-          "airTemp": 15,
+          "airTemp": 13,
           "windDirection": 15,
           "windVelocity": 6,
           "waterTemp": 16,
@@ -8082,7 +8082,7 @@
           "placeCd": 15,
           "raceNo": 11,
           "weather": "曇り",
-          "airTemp": 15,
+          "airTemp": 13,
           "windDirection": 15,
           "windVelocity": 6,
           "waterTemp": 16,
@@ -8180,7 +8180,7 @@
           "placeCd": 15,
           "raceNo": 12,
           "weather": "曇り",
-          "airTemp": 15,
+          "airTemp": 13,
           "windDirection": 15,
           "windVelocity": 6,
           "waterTemp": 16,
@@ -10649,10 +10649,10 @@
           "raceNo": 1,
           "weather": "晴",
           "airTemp": 12,
-          "windDirection": 4,
-          "windVelocity": 2,
+          "windDirection": 2,
+          "windVelocity": 1,
           "waterTemp": 13,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "15:20",
           "racers": [
             {
@@ -11237,10 +11237,10 @@
           "raceNo": 7,
           "weather": "晴",
           "airTemp": 12,
-          "windDirection": 4,
-          "windVelocity": 2,
+          "windDirection": 2,
+          "windVelocity": 1,
           "waterTemp": 13,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "18:05",
           "racers": [
             {
@@ -11335,10 +11335,10 @@
           "raceNo": 8,
           "weather": "晴",
           "airTemp": 12,
-          "windDirection": 4,
-          "windVelocity": 2,
+          "windDirection": 2,
+          "windVelocity": 1,
           "waterTemp": 13,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "18:34",
           "racers": [
             {
@@ -11433,10 +11433,10 @@
           "raceNo": 9,
           "weather": "晴",
           "airTemp": 12,
-          "windDirection": 4,
-          "windVelocity": 2,
+          "windDirection": 2,
+          "windVelocity": 1,
           "waterTemp": 13,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "19:03",
           "racers": [
             {
@@ -11531,10 +11531,10 @@
           "raceNo": 10,
           "weather": "晴",
           "airTemp": 12,
-          "windDirection": 4,
-          "windVelocity": 2,
+          "windDirection": 2,
+          "windVelocity": 1,
           "waterTemp": 13,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "19:33",
           "racers": [
             {
@@ -11629,10 +11629,10 @@
           "raceNo": 11,
           "weather": "晴",
           "airTemp": 12,
-          "windDirection": 4,
-          "windVelocity": 2,
+          "windDirection": 2,
+          "windVelocity": 1,
           "waterTemp": 13,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "20:04",
           "racers": [
             {
@@ -11727,10 +11727,10 @@
           "raceNo": 12,
           "weather": "晴",
           "airTemp": 12,
-          "windDirection": 4,
-          "windVelocity": 2,
+          "windDirection": 2,
+          "windVelocity": 1,
           "waterTemp": 13,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "20:38",
           "racers": [
             {
@@ -13004,5 +13004,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-08T08:38:11.992Z"
+  "scrapedAt": "2025-12-08T09:34:47.242Z"
 }
