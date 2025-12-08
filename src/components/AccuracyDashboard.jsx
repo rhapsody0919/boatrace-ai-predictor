@@ -205,7 +205,7 @@ function AccuracyDashboard() {
                     <th style={{padding: '0.75rem', textAlign: 'center', color: '#0f172a', fontWeight: '700'}}>本命の平均配当<br/><span style={{fontSize: '0.8rem', color: '#64748b', fontWeight: '400'}}>(参考値)</span></th>
                     <th style={{padding: '0.75rem', textAlign: 'center', color: '#0f172a', fontWeight: '700'}}>必要な<br/>的中率</th>
                     <th style={{padding: '0.75rem', textAlign: 'center', color: '#0f172a', fontWeight: '700'}}>現在のAI<br/>的中率</th>
-                    <th style={{padding: '0.75rem', textAlign: 'center', color: '#0f172a', fontWeight: '700'}}>推定回収率<br/><span style={{fontSize: '0.8rem', color: '#64748b', fontWeight: '400'}}>(参考値)</span></th>
+                    <th style={{padding: '0.75rem', textAlign: 'center', color: '#0f172a', fontWeight: '700'}}>回収率<br/><span style={{fontSize: '0.8rem', color: '#64748b', fontWeight: '400'}}>(実際/推定)</span></th>
                     <th style={{padding: '0.75rem', textAlign: 'center', color: '#0f172a', fontWeight: '700'}}>評価</th>
                   </tr>
                 </thead>
@@ -215,7 +215,7 @@ function AccuracyDashboard() {
                     <td style={{padding: '0.75rem', textAlign: 'center', color: '#1e293b'}}>約3.0倍</td>
                     <td style={{padding: '0.75rem', textAlign: 'center', color: '#1e293b'}}>33%以上</td>
                     <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#3b82f6'}}>{summary.thisMonth.totalRaces > 0 ? formatPercent(summary.thisMonth.topPickHitRate) : '-'}</td>
-                    <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: summary.thisMonth.totalRaces > 0 && (3.0 * summary.thisMonth.topPickHitRate) >= 1.0 ? '#10b981' : summary.thisMonth.totalRaces > 0 && (3.0 * summary.thisMonth.topPickHitRate) >= 0.9 ? '#f59e0b' : '#ef4444'}}>{summary.thisMonth.totalRaces > 0 ? (3.0 * summary.thisMonth.topPickHitRate * 100).toFixed(1) + '%' : '-'}</td>
+                    <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: summary.overall.actualRecovery?.win?.totalInvestment > 0 ? (summary.overall.actualRecovery.win.recoveryRate >= 1.0 ? '#10b981' : summary.overall.actualRecovery.win.recoveryRate >= 0.9 ? '#f59e0b' : '#ef4444') : (summary.thisMonth.totalRaces > 0 && (3.0 * summary.thisMonth.topPickHitRate) >= 1.0 ? '#10b981' : summary.thisMonth.totalRaces > 0 && (3.0 * summary.thisMonth.topPickHitRate) >= 0.9 ? '#f59e0b' : '#ef4444')}}>{summary.overall.actualRecovery?.win?.totalInvestment > 0 ? (summary.overall.actualRecovery.win.recoveryRate * 100).toFixed(1) + '%' : (summary.thisMonth.totalRaces > 0 ? (3.0 * summary.thisMonth.topPickHitRate * 100).toFixed(1) + '%*' : '-')}</td>
                     <td style={{padding: '0.75rem', textAlign: 'center'}}>{summary.thisMonth.totalRaces > 0 && summary.thisMonth.topPickHitRate >= 0.33 ? '✅' : '❌'}</td>
                   </tr>
                   <tr style={{borderBottom: '1px solid #e2e8f0'}}>
@@ -223,7 +223,7 @@ function AccuracyDashboard() {
                     <td style={{padding: '0.75rem', textAlign: 'center', color: '#1e293b'}}>約1.5倍</td>
                     <td style={{padding: '0.75rem', textAlign: 'center', color: '#1e293b'}}>67%以上</td>
                     <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#3b82f6'}}>{summary.thisMonth.totalRaces > 0 ? formatPercent(summary.thisMonth.topPickPlaceRate) : '-'}</td>
-                    <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: summary.thisMonth.totalRaces > 0 && (1.5 * summary.thisMonth.topPickPlaceRate) >= 1.0 ? '#10b981' : summary.thisMonth.totalRaces > 0 && (1.5 * summary.thisMonth.topPickPlaceRate) >= 0.9 ? '#f59e0b' : '#ef4444'}}>{summary.thisMonth.totalRaces > 0 ? (1.5 * summary.thisMonth.topPickPlaceRate * 100).toFixed(1) + '%' : '-'}</td>
+                    <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: summary.overall.actualRecovery?.place?.totalInvestment > 0 ? (summary.overall.actualRecovery.place.recoveryRate >= 1.0 ? '#10b981' : summary.overall.actualRecovery.place.recoveryRate >= 0.9 ? '#f59e0b' : '#ef4444') : (summary.thisMonth.totalRaces > 0 && (1.5 * summary.thisMonth.topPickPlaceRate) >= 1.0 ? '#10b981' : summary.thisMonth.totalRaces > 0 && (1.5 * summary.thisMonth.topPickPlaceRate) >= 0.9 ? '#f59e0b' : '#ef4444')}}>{summary.overall.actualRecovery?.place?.totalInvestment > 0 ? (summary.overall.actualRecovery.place.recoveryRate * 100).toFixed(1) + '%' : (summary.thisMonth.totalRaces > 0 ? (1.5 * summary.thisMonth.topPickPlaceRate * 100).toFixed(1) + '%*' : '-')}</td>
                     <td style={{padding: '0.75rem', textAlign: 'center'}}>{summary.thisMonth.totalRaces > 0 && summary.thisMonth.topPickPlaceRate >= 0.67 ? '✅' : '❌'}</td>
                   </tr>
                   <tr style={{borderBottom: '1px solid #e2e8f0'}}>
@@ -231,7 +231,7 @@ function AccuracyDashboard() {
                     <td style={{padding: '0.75rem', textAlign: 'center', color: '#1e293b'}}>約15-20倍</td>
                     <td style={{padding: '0.75rem', textAlign: 'center', color: '#1e293b'}}>5-7%以上</td>
                     <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#3b82f6'}}>{summary.thisMonth.totalRaces > 0 ? formatPercent(summary.thisMonth.top3HitRate) : '-'}</td>
-                    <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: summary.thisMonth.totalRaces > 0 && (17.5 * summary.thisMonth.top3HitRate) >= 1.0 ? '#10b981' : summary.thisMonth.totalRaces > 0 && (17.5 * summary.thisMonth.top3HitRate) >= 0.9 ? '#f59e0b' : '#ef4444'}}>{summary.thisMonth.totalRaces > 0 ? (17.5 * summary.thisMonth.top3HitRate * 100).toFixed(1) + '%' : '-'}</td>
+                    <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: summary.overall.actualRecovery?.trifecta?.totalInvestment > 0 ? (summary.overall.actualRecovery.trifecta.recoveryRate >= 1.0 ? '#10b981' : summary.overall.actualRecovery.trifecta.recoveryRate >= 0.9 ? '#f59e0b' : '#ef4444') : (summary.thisMonth.totalRaces > 0 && (17.5 * summary.thisMonth.top3HitRate) >= 1.0 ? '#10b981' : summary.thisMonth.totalRaces > 0 && (17.5 * summary.thisMonth.top3HitRate) >= 0.9 ? '#f59e0b' : '#ef4444')}}>{summary.overall.actualRecovery?.trifecta?.totalInvestment > 0 ? (summary.overall.actualRecovery.trifecta.recoveryRate * 100).toFixed(1) + '%' : (summary.thisMonth.totalRaces > 0 ? (17.5 * summary.thisMonth.top3HitRate * 100).toFixed(1) + '%*' : '-')}</td>
                     <td style={{padding: '0.75rem', textAlign: 'center'}}>{summary.thisMonth.totalRaces > 0 && summary.thisMonth.top3HitRate >= 0.05 ? '✅' : '❌'}</td>
                   </tr>
                   <tr>
@@ -239,15 +239,16 @@ function AccuracyDashboard() {
                     <td style={{padding: '0.75rem', textAlign: 'center', color: '#1e293b'}}>約80-100倍</td>
                     <td style={{padding: '0.75rem', textAlign: 'center', color: '#1e293b'}}>1-1.25%以上</td>
                     <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#3b82f6'}}>{summary.thisMonth.totalRaces > 0 ? formatPercent(summary.thisMonth.top3IncludedRate) : '-'}</td>
-                    <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: summary.thisMonth.totalRaces > 0 && (90 * summary.thisMonth.top3IncludedRate) >= 1.0 ? '#10b981' : summary.thisMonth.totalRaces > 0 && (90 * summary.thisMonth.top3IncludedRate) >= 0.9 ? '#f59e0b' : '#ef4444'}}>{summary.thisMonth.totalRaces > 0 ? (90 * summary.thisMonth.top3IncludedRate * 100).toFixed(1) + '%' : '-'}</td>
+                    <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: summary.overall.actualRecovery?.trio?.totalInvestment > 0 ? (summary.overall.actualRecovery.trio.recoveryRate >= 1.0 ? '#10b981' : summary.overall.actualRecovery.trio.recoveryRate >= 0.9 ? '#f59e0b' : '#ef4444') : (summary.thisMonth.totalRaces > 0 && (90 * summary.thisMonth.top3IncludedRate) >= 1.0 ? '#10b981' : summary.thisMonth.totalRaces > 0 && (90 * summary.thisMonth.top3IncludedRate) >= 0.9 ? '#f59e0b' : '#ef4444')}}>{summary.overall.actualRecovery?.trio?.totalInvestment > 0 ? (summary.overall.actualRecovery.trio.recoveryRate * 100).toFixed(1) + '%' : (summary.thisMonth.totalRaces > 0 ? (90 * summary.thisMonth.top3IncludedRate * 100).toFixed(1) + '%*' : '-')}</td>
                     <td style={{padding: '0.75rem', textAlign: 'center'}}>{summary.thisMonth.totalRaces > 0 && summary.thisMonth.top3IncludedRate >= 0.01 ? '✅' : '❌'}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <p style={{fontSize: '0.85rem', color: '#1e293b', marginTop: '1rem', lineHeight: '1.6'}}>
-              <strong style={{color: '#0f172a'}}>注意:</strong> 競艇の控除率は約25%のため、完全ランダムに購入すると理論上の回収率は約75%です。
-              上記の「本命の平均配当」は一般的な傾向を示す参考値であり、実際のオッズはレースや人気によって大きく変動します。
+              <strong style={{color: '#0f172a'}}>回収率について:</strong> 実際の配当データがある場合は実回収率を表示し、データがない場合は推定値（*印付き）を表示します。
+              推定値は「平均配当 × 的中率」で計算した参考値です。
+              競艇の控除率は約25%のため、完全ランダムに購入すると理論上の回収率は約75%です。
               回収率100%超えを目指すには、的中率だけでなく、高配当を狙う戦略も重要です。
             </p>
           </div>
