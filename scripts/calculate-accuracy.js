@@ -21,6 +21,7 @@ function calculateRaceAccuracy(prediction, result) {
   if (!result || !result.finished) {
     return {
       topPickHit: null,
+      topPickPlace: null,
       top3Hit: null,
       top3Included: null,
     };
@@ -28,6 +29,13 @@ function calculateRaceAccuracy(prediction, result) {
 
   // Top pick hit (exact 1st place)
   const topPickHit = prediction.topPick === result.rank1;
+
+  // Top pick place (fukusho: top pick finishes in top 3)
+  const topPickPlace = (
+    prediction.topPick === result.rank1 ||
+    prediction.topPick === result.rank2 ||
+    prediction.topPick === result.rank3
+  );
 
   // Top 3 hit (3-tanpuku: top 3 includes all podium finishers)
   const top3Hit = (
@@ -45,6 +53,7 @@ function calculateRaceAccuracy(prediction, result) {
 
   return {
     topPickHit,
+    topPickPlace,
     top3Hit,
     top3Included,
   };
@@ -60,6 +69,8 @@ function calculateSummaryStats(races) {
       finishedRaces: 0,
       topPickHits: 0,
       topPickHitRate: 0,
+      topPickPlaces: 0,
+      topPickPlaceRate: 0,
       top3Hits: 0,
       top3HitRate: 0,
       top3IncludedHits: 0,
@@ -68,6 +79,7 @@ function calculateSummaryStats(races) {
   }
 
   const topPickHits = finishedRaces.filter(r => r.accuracy.topPickHit).length;
+  const topPickPlaces = finishedRaces.filter(r => r.accuracy.topPickPlace).length;
   const top3Hits = finishedRaces.filter(r => r.accuracy.top3Hit).length;
   const top3IncludedHits = finishedRaces.filter(r => r.accuracy.top3Included).length;
 
@@ -76,6 +88,8 @@ function calculateSummaryStats(races) {
     finishedRaces: finishedRaces.length,
     topPickHits,
     topPickHitRate: topPickHits / finishedRaces.length,
+    topPickPlaces,
+    topPickPlaceRate: topPickPlaces / finishedRaces.length,
     top3Hits,
     top3HitRate: top3Hits / finishedRaces.length,
     top3IncludedHits,
@@ -146,6 +160,7 @@ async function calculateAccuracy() {
           date: data.date,
           totalRaces: dayStats.totalRaces,
           topPickHitRate: dayStats.topPickHitRate,
+          topPickPlaceRate: dayStats.topPickPlaceRate,
           top3HitRate: dayStats.top3HitRate,
           top3IncludedRate: dayStats.top3IncludedRate,
         });
@@ -197,6 +212,8 @@ async function calculateAccuracy() {
         finishedRaces: overallStats.finishedRaces,
         topPickHits: overallStats.topPickHits,
         topPickHitRate: overallStats.topPickHitRate,
+        topPickPlaces: overallStats.topPickPlaces,
+        topPickPlaceRate: overallStats.topPickPlaceRate,
         top3Hits: overallStats.top3Hits,
         top3HitRate: overallStats.top3HitRate,
         top3IncludedHits: overallStats.top3IncludedHits,
@@ -206,6 +223,7 @@ async function calculateAccuracy() {
         date: yesterday,
         totalRaces: yesterdayStats.totalRaces,
         topPickHitRate: yesterdayStats.topPickHitRate,
+        topPickPlaceRate: yesterdayStats.topPickPlaceRate,
         top3HitRate: yesterdayStats.top3HitRate,
         top3IncludedRate: yesterdayStats.top3IncludedRate,
       },
@@ -214,6 +232,7 @@ async function calculateAccuracy() {
         month: thisMonth,
         totalRaces: thisMonthStats.totalRaces,
         topPickHitRate: thisMonthStats.topPickHitRate,
+        topPickPlaceRate: thisMonthStats.topPickPlaceRate,
         top3HitRate: thisMonthStats.top3HitRate,
         top3IncludedRate: thisMonthStats.top3IncludedRate,
       },
@@ -222,6 +241,7 @@ async function calculateAccuracy() {
         month: lastMonth,
         totalRaces: lastMonthStats.totalRaces,
         topPickHitRate: lastMonthStats.topPickHitRate,
+        topPickPlaceRate: lastMonthStats.topPickPlaceRate,
         top3HitRate: lastMonthStats.top3HitRate,
         top3IncludedRate: lastMonthStats.top3IncludedRate,
       },

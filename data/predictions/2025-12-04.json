@@ -1,7 +1,7 @@
 {
   "date": "2025-12-04",
   "generatedAt": "2025-12-04T08:34:41.324Z",
-  "updatedAt": "2025-12-08T03:49:02.789Z",
+  "updatedAt": "2025-12-08T05:25:49.421Z",
   "races": [
     {
       "raceId": "2025-12-04-01-01",
@@ -110,6 +110,7 @@
       },
       "accuracy": {
         "topPickHit": true,
+        "topPickPlace": true,
         "top3Hit": true,
         "top3Included": true
       }
@@ -221,6 +222,7 @@
       },
       "accuracy": {
         "topPickHit": true,
+        "topPickPlace": true,
         "top3Hit": true,
         "top3Included": true
       }
@@ -332,6 +334,7 @@
       },
       "accuracy": {
         "topPickHit": false,
+        "topPickPlace": true,
         "top3Hit": false,
         "top3Included": false
       }
@@ -444,6 +447,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -556,6 +560,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -668,6 +673,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -780,6 +786,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -891,6 +898,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -1003,6 +1011,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -1114,6 +1123,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -1226,6 +1236,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -1339,6 +1350,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -1451,6 +1463,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -1562,6 +1575,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -1674,6 +1688,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -1786,6 +1801,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -1898,6 +1914,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -2010,6 +2027,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -2122,6 +2140,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -2233,6 +2252,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -2345,6 +2365,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -2457,6 +2478,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -2569,6 +2591,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -2681,6 +2704,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -2793,6 +2817,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -2905,6 +2930,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -3017,6 +3043,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -3129,6 +3156,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -3241,6 +3269,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -3353,6 +3382,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -3465,6 +3495,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -3577,6 +3608,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -3689,6 +3721,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -3801,6 +3834,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -3913,6 +3947,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -4025,6 +4060,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -4138,6 +4174,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -4251,6 +4288,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -4364,6 +4402,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -4477,6 +4516,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -4590,6 +4630,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -4703,6 +4744,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -4816,6 +4858,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -4929,6 +4972,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -5042,6 +5086,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -5155,6 +5200,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -5268,6 +5314,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -5381,6 +5428,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -5493,6 +5541,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -5605,6 +5654,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -5717,6 +5767,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -5829,6 +5880,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -5941,6 +5993,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -6054,6 +6107,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -6166,6 +6220,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -6278,6 +6333,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -6389,6 +6445,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -6501,6 +6558,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -6613,6 +6671,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -6726,6 +6785,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -6838,6 +6898,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -6949,6 +7010,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -7060,6 +7122,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -7172,6 +7235,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -7284,6 +7348,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -7397,6 +7462,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -7509,6 +7575,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -7621,6 +7688,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -7733,6 +7801,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -7845,6 +7914,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -7956,6 +8026,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -8069,6 +8140,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -8180,6 +8252,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -8291,6 +8364,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -8402,6 +8476,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -8514,6 +8589,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -8625,6 +8701,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -8736,6 +8813,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -8848,6 +8926,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -8959,6 +9038,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -9070,6 +9150,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -9181,6 +9262,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -9292,6 +9374,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -9405,6 +9488,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -9517,6 +9601,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -9628,6 +9713,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -9740,6 +9826,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -9853,6 +9940,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -9966,6 +10054,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -10079,6 +10168,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -10191,6 +10281,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -10303,6 +10394,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -10415,6 +10507,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -10527,6 +10620,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -10639,6 +10733,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -10752,6 +10847,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -10864,6 +10960,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -10976,6 +11073,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -11087,6 +11185,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -11199,6 +11298,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -11312,6 +11412,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -11424,6 +11525,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -11535,6 +11637,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -11647,6 +11750,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -11758,6 +11862,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -11871,6 +11976,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -11983,6 +12089,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -12095,6 +12202,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -12207,6 +12315,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -12320,6 +12429,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -12432,6 +12542,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -12544,6 +12655,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -12655,6 +12767,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -12767,6 +12880,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -12879,6 +12993,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -12991,6 +13106,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -13104,6 +13220,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -13216,6 +13333,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -13328,6 +13446,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -13440,6 +13559,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -13552,6 +13672,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -13663,6 +13784,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -13775,6 +13897,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -13886,6 +14009,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -13998,6 +14122,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -14110,6 +14235,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -14222,6 +14348,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -14333,6 +14460,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -14445,6 +14573,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -14557,6 +14686,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -14670,6 +14800,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -14782,6 +14913,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -14894,6 +15026,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -15006,6 +15139,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -15118,6 +15252,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -15230,6 +15365,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -15341,6 +15477,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -15453,6 +15590,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -15565,6 +15703,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -15677,6 +15816,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -15789,6 +15929,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -15901,6 +16042,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -16013,6 +16155,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }
@@ -16124,6 +16267,7 @@
       },
       "accuracy": {
         "topPickHit": null,
+        "topPickPlace": null,
         "top3Hit": null,
         "top3Included": null
       }

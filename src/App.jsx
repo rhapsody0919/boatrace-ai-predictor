@@ -182,7 +182,9 @@ function App() {
           recommended: top3Players,
           allPlayers: racePrediction.prediction.players,
           confidence: racePrediction.prediction.confidence,
-          reasoning: racePrediction.prediction.reasoning
+          reasoning: racePrediction.prediction.reasoning,
+          top3: racePrediction.prediction.top3, // トップ3の艇番（number配列）
+          result: racePrediction.result // レース結果
         }
         setPrediction(aiPrediction)
         setIsAnalyzing(false)
@@ -503,22 +505,47 @@ function App() {
 
                       {/* 的中判定 */}
                       <div className="accuracy-check">
+                        {/* 単勝 */}
                         <div className="check-item">
-                          {prediction.topPick === prediction.result.rank1 ? (
-                            <div className="hit">✅ 本命的中！</div>
+                          {prediction.topPick.number === prediction.result.rank1 ? (
+                            <div className="hit">✅ 単勝的中！</div>
                           ) : (
-                            <div className="miss">❌ 外れ（予想: {prediction.topPick}号艇 → 実際: {prediction.result.rank1}号艇）</div>
+                            <div className="miss">❌ 単勝外れ（予想: {prediction.topPick.number}号艇 → 実際: {prediction.result.rank1}号艇）</div>
                           )}
                         </div>
 
-                        {/* トップ3的中判定 */}
-                        {prediction.top3.includes(prediction.result.rank1) &&
-                         prediction.top3.includes(prediction.result.rank2) &&
-                         prediction.top3.includes(prediction.result.rank3) && (
-                          <div className="check-item">
-                            <div className="top3-hit">🎯 トップ3的中（3連複）</div>
-                          </div>
-                        )}
+                        {/* 複勝 */}
+                        <div className="check-item">
+                          {(prediction.topPick.number === prediction.result.rank1 ||
+                            prediction.topPick.number === prediction.result.rank2 ||
+                            prediction.topPick.number === prediction.result.rank3) ? (
+                            <div className="hit">✅ 複勝的中！</div>
+                          ) : (
+                            <div className="miss">❌ 複勝外れ</div>
+                          )}
+                        </div>
+
+                        {/* 3連複 */}
+                        <div className="check-item">
+                          {prediction.top3.includes(prediction.result.rank1) &&
+                           prediction.top3.includes(prediction.result.rank2) &&
+                           prediction.top3.includes(prediction.result.rank3) ? (
+                            <div className="hit">✅ 3連複的中！</div>
+                          ) : (
+                            <div className="miss">❌ 3連複外れ</div>
+                          )}
+                        </div>
+
+                        {/* 3連単 */}
+                        <div className="check-item">
+                          {prediction.top3[0] === prediction.result.rank1 &&
+                           prediction.top3[1] === prediction.result.rank2 &&
+                           prediction.top3[2] === prediction.result.rank3 ? (
+                            <div className="hit">✅ 3連単的中！</div>
+                          ) : (
+                            <div className="miss">❌ 3連単外れ</div>
+                          )}
+                        </div>
                       </div>
 
                       {/* 予想と結果の比較 */}
