@@ -3,7 +3,13 @@ import './App.css'
 import AccuracyDashboard from './components/AccuracyDashboard'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('races')
+  // URLのハッシュから初期タブを決定
+  const getInitialTab = () => {
+    const hash = window.location.hash.slice(1) // '#' を除去
+    return hash === 'accuracy' ? 'accuracy' : 'races'
+  }
+
+  const [activeTab, setActiveTab] = useState(getInitialTab())
   const [selectedRace, setSelectedRace] = useState(null)
   const [prediction, setPrediction] = useState(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -21,6 +27,32 @@ function App() {
     7: '蒲郡', 8: '常滑', 9: '津', 10: '三国', 11: 'びわこ', 12: '住之江',
     13: '尼崎', 14: '鳴門', 15: '丸亀', 16: '児島', 17: '宮島', 18: '徳山',
     19: '下関', 20: '若松', 21: '芦屋', 22: '福岡', 23: '唐津', 24: '大村'
+  }
+
+  // ブラウザの戻る/進むボタンの処理
+  useEffect(() => {
+    const handlePopState = () => {
+      const hash = window.location.hash.slice(1)
+      setActiveTab(hash === 'accuracy' ? 'accuracy' : 'races')
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    window.addEventListener('hashchange', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('hashchange', handlePopState)
+    }
+  }, [])
+
+  // タブ切り替え関数（URLハッシュも更新）
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    // URLハッシュを更新（ブラウザ履歴に追加）
+    const newHash = tab === 'accuracy' ? '#accuracy' : '#races'
+    if (window.location.hash !== newHash) {
+      window.history.pushState(null, '', newHash)
+    }
   }
 
   // 実際のAPIからデータを取得
@@ -295,13 +327,13 @@ function App() {
           <nav className="nav">
             <button
               className={`nav-btn ${activeTab === 'races' ? 'active' : ''}`}
-              onClick={() => setActiveTab('races')}
+              onClick={() => handleTabChange('races')}
             >
               今日のレース
             </button>
             <button
               className={`nav-btn ${activeTab === 'accuracy' ? 'active' : ''}`}
-              onClick={() => setActiveTab('accuracy')}
+              onClick={() => handleTabChange('accuracy')}
             >
               的中率統計
             </button>
