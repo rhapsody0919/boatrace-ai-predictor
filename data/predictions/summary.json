@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-12-08T14:51:02.559Z",
+  "lastUpdated": "2025-12-08T15:47:32.798Z",
   "overall": {
     "totalRaces": 567,
     "finishedRaces": 567,
@@ -13,12 +13,12 @@
     "top3IncludedRate": 0.02821869488536155
   },
   "yesterday": {
-    "date": "2025-12-07",
+    "date": "2025-12-08",
     "totalRaces": 132,
-    "topPickHitRate": 0.2878787878787879,
-    "topPickPlaceRate": 0.6363636363636364,
-    "top3HitRate": 0.15151515151515152,
-    "top3IncludedRate": 0.045454545454545456
+    "topPickHitRate": 0.25757575757575757,
+    "topPickPlaceRate": 0.6060606060606061,
+    "top3HitRate": 0.12121212121212122,
+    "top3IncludedRate": 0.022727272727272728
   },
   "thisMonth": {
     "year": 2025,
