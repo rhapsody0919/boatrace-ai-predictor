@@ -60,6 +60,84 @@ function calculateRaceAccuracy(prediction, result) {
 }
 
 // Calculate summary statistics
+// Calculate actual recovery rate for a bet type
+function calculateActualRecovery(races, betType) {
+  let totalInvestment = 0;
+  let totalPayout = 0;
+  let hitCount = 0;
+
+  for (const race of races) {
+    // Only count races with finished results and payout data
+    if (!race.result?.finished || !race.result?.payouts || !race.prediction) {
+      continue;
+    }
+
+    const prediction = race.prediction;
+    const result = race.result;
+    const payouts = result.payouts;
+
+    // Investment: 100 yen per race
+    totalInvestment += 100;
+
+    if (betType === 'win') {
+      // Win bet: topPick must finish 1st
+      if (prediction.topPick === result.rank1) {
+        const payout = payouts.win[String(result.rank1)];
+        if (payout) {
+          totalPayout += payout;
+          hitCount++;
+        }
+      }
+    } else if (betType === 'place') {
+      // Place bet: topPick must finish in top 3
+      const topPick = prediction.topPick;
+      if (topPick === result.rank1 || topPick === result.rank2 || topPick === result.rank3) {
+        const payout = payouts.place[String(topPick)];
+        if (payout) {
+          totalPayout += payout;
+          hitCount++;
+        }
+      }
+    } else if (betType === 'trifecta') {
+      // Trifecta (3-tanpuku): bet on top 3 in any order
+      const sortedTop3 = [...prediction.top3].sort((a, b) => a - b);
+      const sortedResult = [result.rank1, result.rank2, result.rank3].sort((a, b) => a - b);
+
+      if (JSON.stringify(sortedTop3) === JSON.stringify(sortedResult)) {
+        // Find matching payout key (can be in various formats like "1-2-3" or "1=2=3")
+        const payoutKeys = Object.keys(payouts.trifecta);
+        for (const key of payoutKeys) {
+          const numbers = key.split(/[-=]/).map(Number).sort((a, b) => a - b);
+          if (JSON.stringify(numbers) === JSON.stringify(sortedResult)) {
+            totalPayout += payouts.trifecta[key];
+            hitCount++;
+            break;
+          }
+        }
+      }
+    } else if (betType === 'trio') {
+      // Trio (3-tantan): bet on top 3 in exact order
+      const predictedOrder = prediction.top3.join('-');
+      const resultOrder = `${result.rank1}-${result.rank2}-${result.rank3}`;
+
+      if (predictedOrder === resultOrder) {
+        const payout = payouts.trio[resultOrder];
+        if (payout) {
+          totalPayout += payout;
+          hitCount++;
+        }
+      }
+    }
+  }
+
+  return {
+    totalInvestment,
+    totalPayout,
+    hitCount,
+    recoveryRate: totalInvestment > 0 ? totalPayout / totalInvestment : 0
+  };
+}
+
 function calculateSummaryStats(races) {
   const finishedRaces = races.filter(r => r.result?.finished && r.accuracy);
 
@@ -75,6 +153,12 @@ function calculateSummaryStats(races) {
       top3HitRate: 0,
       top3IncludedHits: 0,
       top3IncludedRate: 0,
+      actualRecovery: {
+        win: { totalInvestment: 0, totalPayout: 0, hitCount: 0, recoveryRate: 0 },
+        place: { totalInvestment: 0, totalPayout: 0, hitCount: 0, recoveryRate: 0 },
+        trifecta: { totalInvestment: 0, totalPayout: 0, hitCount: 0, recoveryRate: 0 },
+        trio: { totalInvestment: 0, totalPayout: 0, hitCount: 0, recoveryRate: 0 }
+      }
     };
   }
 
@@ -82,6 +166,14 @@ function calculateSummaryStats(races) {
   const topPickPlaces = finishedRaces.filter(r => r.accuracy.topPickPlace).length;
   const top3Hits = finishedRaces.filter(r => r.accuracy.top3Hit).length;
   const top3IncludedHits = finishedRaces.filter(r => r.accuracy.top3Included).length;
+
+  // Calculate actual recovery rates for all bet types
+  const actualRecovery = {
+    win: calculateActualRecovery(races, 'win'),
+    place: calculateActualRecovery(races, 'place'),
+    trifecta: calculateActualRecovery(races, 'trifecta'),
+    trio: calculateActualRecovery(races, 'trio')
+  };
 
   return {
     totalRaces: finishedRaces.length,
@@ -94,6 +186,7 @@ function calculateSummaryStats(races) {
     top3HitRate: top3Hits / finishedRaces.length,
     top3IncludedHits,
     top3IncludedRate: top3IncludedHits / finishedRaces.length,
+    actualRecovery
   };
 }
 
@@ -218,6 +311,7 @@ async function calculateAccuracy() {
         top3HitRate: overallStats.top3HitRate,
         top3IncludedHits: overallStats.top3IncludedHits,
         top3IncludedRate: overallStats.top3IncludedRate,
+        actualRecovery: overallStats.actualRecovery,
       },
       yesterday: {
         date: yesterday,
