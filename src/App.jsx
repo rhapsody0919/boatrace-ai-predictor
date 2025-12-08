@@ -55,6 +55,31 @@ function App() {
     }
   }
 
+  // リトライ機能付きfetch関数
+  const fetchWithRetry = async (url, maxRetries = 3, retryDelay = 2000) => {
+    let lastError
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+        return response
+      } catch (error) {
+        lastError = error
+        console.warn(`取得失敗 (${i + 1}/${maxRetries}):`, error.message)
+
+        // 最後の試行でなければ待機してリトライ
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay))
+        }
+      }
+    }
+
+    throw lastError
+  }
+
   // 実際のAPIからデータを取得
   useEffect(() => {
     const fetchRaceData = async () => {
@@ -66,12 +91,7 @@ function App() {
         // ローカル開発時はpublic/data/races.json、本番はビルド後のdata/races.jsonから読み込み
         const apiUrl = import.meta.env.BASE_URL + 'data/races.json'
 
-        const response = await fetch(apiUrl)
-
-        if (!response.ok) {
-          throw new Error('スクレイピングAPIからデータを取得できませんでした')
-        }
-
+        const response = await fetchWithRetry(apiUrl)
         const result = await response.json()
 
         if (!result.success || !result.data) {
@@ -148,13 +168,9 @@ function App() {
       const jstDate = new Date(now.getTime() + jstOffset * 60 * 1000)
       const dateStr = jstDate.toISOString().split('T')[0]
 
-      // 予想データを読み込み
+      // 予想データを読み込み（リトライ機能付き）
       const predictionUrl = import.meta.env.BASE_URL + `data/predictions/${dateStr}.json`
-      const response = await fetch(predictionUrl)
-
-      if (!response.ok) {
-        throw new Error('予想データが見つかりません')
-      }
+      const response = await fetchWithRetry(predictionUrl, 2, 1000) // リトライ2回、1秒間隔
 
       const predictionData = await response.json()
 
@@ -183,20 +199,13 @@ function App() {
       const racePrediction = await loadPredictionData(race)
 
       if (!racePrediction) {
-        // データがない場合は従来のロジックにフォールバック
-        console.warn('⚠️  予想データが見つからないため、リアルタイム計算を使用します')
-        setTimeout(() => {
-          const players = generatePlayers(race)
-          const aiPrediction = {
-            topPick: players[0],
-            recommended: players.slice(0, 3),
-            allPlayers: players,
-            confidence: Math.floor(Math.random() * 30) + 70,
-            reasoning: generateInsights(players)
-          }
-          setPrediction(aiPrediction)
-          setIsAnalyzing(false)
-        }, 2000)
+        // データがない場合はエラーを表示
+        console.error('❌ 予想データが見つかりません')
+        setPrediction({
+          error: true,
+          errorMessage: 'このレースの予想データがまだ生成されていません。しばらくしてから再度お試しください。'
+        })
+        setIsAnalyzing(false)
         return
       }
 
@@ -237,18 +246,8 @@ function App() {
     const racers = race?.rawData?.racers
 
     if (!racers || racers.length === 0) {
-      console.log('⚠️ racers データがありません。ダミーデータを使用します。')
-      // データがない場合はダミーデータを返す
-      const names = ['山田太郎', '鈴木次郎', '佐藤三郎', '田中四郎', '伊藤五郎', '渡辺六郎']
-      return names.map((name, idx) => ({
-        number: idx + 1,
-        name: name,
-        age: 25 + Math.floor(Math.random() * 20),
-        winRate: (Math.random() * 0.3 + 0.2).toFixed(3),
-        motorNumber: Math.floor(Math.random() * 100) + 1,
-        motorWinRate: (Math.random() * 0.2 + 0.3).toFixed(3),
-        aiScore: Math.floor(Math.random() * 40) + 60 - idx * 8,
-      })).sort((a, b) => b.aiScore - a.aiScore)
+      console.error('❌ racers データがありません')
+      return null
     }
 
     // 実データを使用
@@ -358,9 +357,27 @@ function App() {
             ) : (
               <>
                 {error && (
-                  <div style={{padding: '1rem', background: '#fff3cd', borderRadius: '8px', marginBottom: '1rem'}}>
-                    <p style={{color: '#856404'}}>⚠️ {error}</p>
-                    <p style={{color: '#856404', fontSize: '0.9rem'}}>データ取得に失敗しました</p>
+                  <div style={{padding: '1.5rem', background: '#fff3cd', borderRadius: '8px', marginBottom: '1rem', border: '2px solid #ffc107'}}>
+                    <p style={{color: '#856404', fontWeight: 'bold', marginBottom: '0.5rem'}}>⚠️ データ取得エラー</p>
+                    <p style={{color: '#856404', marginBottom: '1rem'}}>{error}</p>
+                    <p style={{color: '#856404', fontSize: '0.9rem', marginBottom: '1rem'}}>
+                      データの取得に失敗しました。ネットワーク接続を確認するか、しばらくしてから再度お試しください。
+                    </p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        background: '#ffc107',
+                        color: '#000',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '1rem'
+                      }}
+                    >
+                      🔄 再読み込み
+                    </button>
                   </div>
                 )}
 
@@ -441,6 +458,33 @@ function App() {
                   <div className="spinner"></div>
                   <p>AIが分析中...</p>
                   <p className="analyzing-detail">過去データ、モーター性能、気象条件を解析しています</p>
+                </div>
+              ) : prediction && prediction.error ? (
+                <div className="prediction-error" style={{
+                  padding: '2rem',
+                  background: '#fff3cd',
+                  borderRadius: '12px',
+                  border: '2px solid #ffc107',
+                  textAlign: 'center'
+                }}>
+                  <div style={{fontSize: '3rem', marginBottom: '1rem'}}>⚠️</div>
+                  <h3 style={{color: '#856404', marginBottom: '1rem'}}>予想データが利用できません</h3>
+                  <p style={{color: '#856404', marginBottom: '1.5rem'}}>{prediction.errorMessage}</p>
+                  <button
+                    onClick={() => setPrediction(null)}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: '#ffc107',
+                      color: '#000',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    戻る
+                  </button>
                 </div>
               ) : prediction && (
                 <div className="prediction-result">
