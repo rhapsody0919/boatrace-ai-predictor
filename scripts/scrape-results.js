@@ -29,6 +29,81 @@ function getRaceResultUrl(venueCode, raceNo, dateStr) {
   return `https://www.boatrace.jp/owpc/pc/race/raceresult?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
 }
 
+// Scrape payout data
+function scrapePayouts($) {
+  const payouts = {
+    win: {},      // 単勝
+    place: {},    // 複勝
+    trifecta: {}, // 3連複
+    trio: {}      // 3連単
+  };
+
+  try {
+    // 払戻金テーブルを取得（.is-w495の3番目 = index 2）
+    const allTables = $('.is-w495');
+
+    const payoutTable = allTables.eq(2);
+
+    if (payoutTable.length === 0) {
+      return payouts;
+    }
+
+    const rows = payoutTable.find('tbody tr');
+
+    let currentType = '';
+
+    payoutTable.find('tbody tr').each((i, row) => {
+      const $row = $(row);
+      const cells = $row.find('td');
+
+      if (cells.length >= 2) {
+        const col0 = cells.eq(0).text().trim();
+        const col1 = cells.eq(1).text().trim();
+        const col2 = cells.length >= 3 ? cells.eq(2).text().trim() : '';
+
+        // 券種が記載されている場合
+        if (col0 && (col0 === '単勝' || col0 === '複勝' || col0 === '3連単' || col0 === '3連複' || col0 === '2連単' || col0 === '2連複' || col0 === '拡連複')) {
+          currentType = col0;
+        }
+
+        // パターン1: col2に配当がある場合（通常）
+        let payout = parseInt(col2.replace(/[^0-9]/g, ''));
+        let combo = col1;
+
+        // パターン2: col1に配当がある場合（複勝の2行目以降など）
+        if ((isNaN(payout) || payout === 0) && col1.includes('¥')) {
+          payout = parseInt(col1.replace(/[^0-9]/g, ''));
+          combo = col0;
+        }
+
+        if (!isNaN(payout) && payout > 0 && combo) {
+          // 組み合わせを正規化
+          const normalizedCombo = combo
+            .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+            .replace(/[→－−ー=]/g, '-')
+            .replace(/\s+/g, '');
+
+          if (currentType === '単勝') {
+            payouts.win[normalizedCombo] = payout;
+          } else if (currentType === '複勝') {
+            payouts.place[normalizedCombo] = payout;
+          } else if (currentType === '3連複') {
+            payouts.trifecta[normalizedCombo] = payout;
+          } else if (currentType === '3連単') {
+            payouts.trio[normalizedCombo] = payout;
+          }
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error(`  Payout scraping error: ${error.message}`);
+    // エラーが発生しても空のpayoutsを返して処理を続行
+  }
+
+  return payouts;
+}
+
 // Scrape race result
 async function scrapeRaceResult(venueCode, raceNo, dateStr) {
   const url = getRaceResultUrl(venueCode, raceNo, dateStr);
@@ -75,11 +150,15 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
       return null;
     }
 
+    // Get payout data
+    const payouts = scrapePayouts($);
+
     return {
       finished: true,
       rank1: rankings[0],
       rank2: rankings[1],
       rank3: rankings[2],
+      payouts: payouts,
       updatedAt: new Date().toISOString(),
     };
 
@@ -118,8 +197,14 @@ async function updatePredictionWithResults(dateStr = null) {
       const raceInfo = `${race.venue} R${race.raceNumber}`;
       process.stdout.write(`${raceInfo.padEnd(20)} `);
 
-      // Skip if already finished
-      if (race.result && race.result.finished) {
+      // Skip if already finished and has payout data
+      const hasPayouts = race.result?.payouts &&
+                         (Object.keys(race.result.payouts.win).length > 0 ||
+                          Object.keys(race.result.payouts.place).length > 0 ||
+                          Object.keys(race.result.payouts.trifecta).length > 0 ||
+                          Object.keys(race.result.payouts.trio).length > 0);
+
+      if (race.result && race.result.finished && hasPayouts) {
         console.log(`Already finished (${race.result.rank1}-${race.result.rank2}-${race.result.rank3})`);
         alreadyFinishedCount++;
         continue;
