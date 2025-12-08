@@ -1,14 +1,14 @@
 {
-  "lastUpdated": "2025-12-08T03:49:02.823Z",
+  "lastUpdated": "2025-12-08T05:00:22.186Z",
   "overall": {
-    "totalRaces": 476,
-    "finishedRaces": 476,
-    "topPickHits": 136,
-    "topPickHitRate": 0.2857142857142857,
-    "top3Hits": 62,
-    "top3HitRate": 0.13025210084033614,
-    "top3IncludedHits": 14,
-    "top3IncludedRate": 0.029411764705882353
+    "totalRaces": 495,
+    "finishedRaces": 495,
+    "topPickHits": 139,
+    "topPickHitRate": 0.2808080808080808,
+    "top3Hits": 64,
+    "top3HitRate": 0.1292929292929293,
+    "top3IncludedHits": 15,
+    "top3IncludedRate": 0.030303030303030304
   },
   "yesterday": {
     "date": "2025-12-07",
@@ -20,10 +20,10 @@
   "thisMonth": {
     "year": 2025,
     "month": 12,
-    "totalRaces": 476,
-    "topPickHitRate": 0.2857142857142857,
-    "top3HitRate": 0.13025210084033614,
-    "top3IncludedRate": 0.029411764705882353
+    "totalRaces": 495,
+    "topPickHitRate": 0.2808080808080808,
+    "top3HitRate": 0.1292929292929293,
+    "top3IncludedRate": 0.030303030303030304
   },
   "lastMonth": {
     "year": 2025,
@@ -64,10 +64,10 @@
     },
     {
       "date": "2025-12-08",
-      "totalRaces": 41,
-      "topPickHitRate": 0.3902439024390244,
-      "top3HitRate": 0.12195121951219512,
-      "top3IncludedRate": 0.024390243902439025
+      "totalRaces": 60,
+      "topPickHitRate": 0.31666666666666665,
+      "top3HitRate": 0.11666666666666667,
+      "top3IncludedRate": 0.03333333333333333
     }
   ]
 }
