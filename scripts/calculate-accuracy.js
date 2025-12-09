@@ -279,6 +279,14 @@ async function calculateAccuracy() {
     const yesterdayRaces = allRaces.filter(r => r.date === yesterday);
     const yesterdayStats = calculateSummaryStats(yesterdayRaces);
 
+    // Calculate yesterday's actual recovery rates
+    const yesterdayActualRecovery = {
+      win: calculateActualRecovery(yesterdayRaces, 'win'),
+      place: calculateActualRecovery(yesterdayRaces, 'place'),
+      trifecta: calculateActualRecovery(yesterdayRaces, 'trifecta'),
+      trio: calculateActualRecovery(yesterdayRaces, 'trio')
+    };
+
     // Calculate this month's stats
     const { year: thisYear, month: thisMonth } = getDateInfo(today);
     const thisMonthRaces = allRaces.filter(r => {
@@ -320,6 +328,7 @@ async function calculateAccuracy() {
         topPickPlaceRate: yesterdayStats.topPickPlaceRate,
         top3HitRate: yesterdayStats.top3HitRate,
         top3IncludedRate: yesterdayStats.top3IncludedRate,
+        actualRecovery: yesterdayActualRecovery,
       },
       thisMonth: {
         year: thisYear,
