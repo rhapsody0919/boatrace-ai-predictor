@@ -242,7 +242,6 @@ function AccuracyDashboard() {
                     <th style={{padding: '0.75rem', textAlign: 'center', color: '#0f172a', fontWeight: '700'}}>必要な<br/>的中率</th>
                     <th style={{padding: '0.75rem', textAlign: 'center', color: '#0f172a', fontWeight: '700'}}>前日のAI<br/>的中率</th>
                     <th style={{padding: '0.75rem', textAlign: 'center', color: '#0f172a', fontWeight: '700'}}>前日の<br/>回収率</th>
-                    <th style={{padding: '0.75rem', textAlign: 'center', color: '#0f172a', fontWeight: '700'}}>評価</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -256,9 +255,6 @@ function AccuracyDashboard() {
                     <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: getRecoveryRateColor(summary.yesterday.actualRecovery, 'win', summary.yesterday.topPickHitRate, 3.0)}}>
                       {getRecoveryRateDisplay(summary.yesterday.actualRecovery, 'win', summary.yesterday.topPickHitRate, 3.0)}
                     </td>
-                    <td style={{padding: '0.75rem', textAlign: 'center'}}>
-                      {summary.yesterday.totalRaces > 0 && summary.yesterday.topPickHitRate >= 0.33 ? '✅' : '❌'}
-                    </td>
                   </tr>
                   <tr style={{borderBottom: '1px solid #e2e8f0'}}>
                     <td style={{padding: '0.75rem', fontWeight: '600', color: '#0f172a'}}>複勝</td>
@@ -269,9 +265,6 @@ function AccuracyDashboard() {
                     </td>
                     <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: getRecoveryRateColor(summary.yesterday.actualRecovery, 'place', summary.yesterday.topPickPlaceRate, 1.5)}}>
                       {getRecoveryRateDisplay(summary.yesterday.actualRecovery, 'place', summary.yesterday.topPickPlaceRate, 1.5)}
-                    </td>
-                    <td style={{padding: '0.75rem', textAlign: 'center'}}>
-                      {summary.yesterday.totalRaces > 0 && summary.yesterday.topPickPlaceRate >= 0.67 ? '✅' : '❌'}
                     </td>
                   </tr>
                   <tr style={{borderBottom: '1px solid #e2e8f0'}}>
@@ -284,9 +277,6 @@ function AccuracyDashboard() {
                     <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: getRecoveryRateColor(summary.yesterday.actualRecovery, 'trifecta', summary.yesterday.top3HitRate, 17.5)}}>
                       {getRecoveryRateDisplay(summary.yesterday.actualRecovery, 'trifecta', summary.yesterday.top3HitRate, 17.5)}
                     </td>
-                    <td style={{padding: '0.75rem', textAlign: 'center'}}>
-                      {summary.yesterday.totalRaces > 0 && summary.yesterday.top3HitRate >= 0.05 ? '✅' : '❌'}
-                    </td>
                   </tr>
                   <tr>
                     <td style={{padding: '0.75rem', fontWeight: '600', color: '#0f172a'}}>3連単</td>
@@ -297,9 +287,6 @@ function AccuracyDashboard() {
                     </td>
                     <td style={{padding: '0.75rem', textAlign: 'center', fontWeight: '700', color: getRecoveryRateColor(summary.yesterday.actualRecovery, 'trio', summary.yesterday.top3IncludedRate, 90)}}>
                       {getRecoveryRateDisplay(summary.yesterday.actualRecovery, 'trio', summary.yesterday.top3IncludedRate, 90)}
-                    </td>
-                    <td style={{padding: '0.75rem', textAlign: 'center'}}>
-                      {summary.yesterday.totalRaces > 0 && summary.yesterday.top3IncludedRate >= 0.01 ? '✅' : '❌'}
                     </td>
                   </tr>
                 </tbody>
