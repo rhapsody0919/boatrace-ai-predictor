@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import AccuracyDashboard from './components/AccuracyDashboard'
+import PrivacyPolicy from './components/PrivacyPolicy'
+import Contact from './components/Contact'
 
 function App() {
   // URLのハッシュから初期タブを決定
   const getInitialTab = () => {
     const hash = window.location.hash.slice(1) // '#' を除去
-    return hash === 'accuracy' ? 'accuracy' : 'races'
+    const validTabs = ['races', 'accuracy', 'privacy', 'contact']
+    return validTabs.includes(hash) ? hash : 'races'
   }
 
   const [activeTab, setActiveTab] = useState(getInitialTab())
@@ -33,7 +36,8 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash.slice(1)
-      setActiveTab(hash === 'accuracy' ? 'accuracy' : 'races')
+      const validTabs = ['races', 'accuracy', 'privacy', 'contact']
+      setActiveTab(validTabs.includes(hash) ? hash : 'races')
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -49,7 +53,7 @@ function App() {
   const handleTabChange = (tab) => {
     setActiveTab(tab)
     // URLハッシュを更新（ブラウザ履歴に追加）
-    const newHash = tab === 'accuracy' ? '#accuracy' : '#races'
+    const newHash = `#${tab}`
     if (window.location.hash !== newHash) {
       window.history.pushState(null, '', newHash)
     }
@@ -342,7 +346,11 @@ function App() {
 
       <div className="container">
         <main className="main-content">
-          {activeTab === 'accuracy' ? (
+          {activeTab === 'privacy' ? (
+            <PrivacyPolicy />
+          ) : activeTab === 'contact' ? (
+            <Contact />
+          ) : activeTab === 'accuracy' ? (
             <AccuracyDashboard />
           ) : (
             <>
@@ -737,6 +745,16 @@ function App() {
 
       <footer className="footer">
         <p>※本サイトはAIによる予想を提供するものであり、的中を保証するものではありません</p>
+        <div style={{
+          display: 'flex',
+          gap: '1.5rem',
+          justifyContent: 'center',
+          marginTop: '0.75rem',
+          marginBottom: '0.75rem'
+        }}>
+          <a href="#privacy" style={{color: '#94a3b8', textDecoration: 'none'}}>プライバシーポリシー</a>
+          <a href="#contact" style={{color: '#94a3b8', textDecoration: 'none'}}>お問い合わせ</a>
+        </div>
         <p>&copy; 2025 ボートレースAI予想 - All Rights Reserved</p>
       </footer>
     </div>
