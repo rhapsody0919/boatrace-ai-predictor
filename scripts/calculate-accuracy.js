@@ -255,6 +255,7 @@ async function calculateAccuracy() {
           topPickPlaceRate: dayStats.topPickPlaceRate,
           top3HitRate: dayStats.top3HitRate,
           top3IncludedRate: dayStats.top3IncludedRate,
+          actualRecovery: dayStats.actualRecovery,
         });
       }
 

@@ -126,6 +126,34 @@ function AccuracyDashboard() {
                     <span className="detail-label">3連単:</span>
                     <span className="detail-value">{formatPercent(summary.yesterday.top3IncludedRate)}</span>
                   </div>
+                  {summary.yesterday.actualRecovery && (
+                    <>
+                      <div className="detail-item" style={{marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #e5e7eb'}}>
+                        <span className="detail-label">単勝回収率:</span>
+                        <span className="detail-value" style={{color: summary.yesterday.actualRecovery.win.recoveryRate >= 1.0 ? '#10b981' : '#ef4444'}}>
+                          {(summary.yesterday.actualRecovery.win.recoveryRate * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">複勝回収率:</span>
+                        <span className="detail-value" style={{color: summary.yesterday.actualRecovery.place.recoveryRate >= 1.0 ? '#10b981' : '#ef4444'}}>
+                          {(summary.yesterday.actualRecovery.place.recoveryRate * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">3連複回収率:</span>
+                        <span className="detail-value" style={{color: summary.yesterday.actualRecovery.trifecta.recoveryRate >= 1.0 ? '#10b981' : '#ef4444'}}>
+                          {(summary.yesterday.actualRecovery.trifecta.recoveryRate * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-label">3連単回収率:</span>
+                        <span className="detail-value" style={{color: summary.yesterday.actualRecovery.trio.recoveryRate >= 1.0 ? '#10b981' : '#ef4444'}}>
+                          {(summary.yesterday.actualRecovery.trio.recoveryRate * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -209,6 +237,26 @@ function AccuracyDashboard() {
                       <span className="history-label">3連単:</span>
                       <span className="history-value">{formatPercent(day.top3IncludedRate)}</span>
                     </div>
+                    {day.actualRecovery && (
+                      <div className="history-recovery" style={{marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #e5e7eb', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.25rem 0.5rem', fontSize: '0.85rem'}}>
+                        <span style={{color: '#64748b'}}>単勝回収率:</span>
+                        <span style={{fontWeight: '600', color: day.actualRecovery.win.recoveryRate >= 1.0 ? '#10b981' : '#ef4444'}}>
+                          {(day.actualRecovery.win.recoveryRate * 100).toFixed(1)}%
+                        </span>
+                        <span style={{color: '#64748b'}}>複勝回収率:</span>
+                        <span style={{fontWeight: '600', color: day.actualRecovery.place.recoveryRate >= 1.0 ? '#10b981' : '#ef4444'}}>
+                          {(day.actualRecovery.place.recoveryRate * 100).toFixed(1)}%
+                        </span>
+                        <span style={{color: '#64748b'}}>3連複回収率:</span>
+                        <span style={{fontWeight: '600', color: day.actualRecovery.trifecta.recoveryRate >= 1.0 ? '#10b981' : '#ef4444'}}>
+                          {(day.actualRecovery.trifecta.recoveryRate * 100).toFixed(1)}%
+                        </span>
+                        <span style={{color: '#64748b'}}>3連単回収率:</span>
+                        <span style={{fontWeight: '600', color: day.actualRecovery.trio.recoveryRate >= 1.0 ? '#10b981' : '#ef4444'}}>
+                          {(day.actualRecovery.trio.recoveryRate * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
