@@ -1,7 +1,7 @@
 {
   "date": "2025-12-05",
   "generatedAt": "2025-12-05T14:27:50.991Z",
-  "updatedAt": "2025-12-11T07:51:19.558Z",
+  "updatedAt": "2025-12-11T08:18:37.452Z",
   "races": [
     {
       "raceId": "2025-12-05-02-01",
@@ -126,7 +126,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -637,7 +637,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -1276,7 +1276,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -2556,7 +2556,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": true,
         "top3Included": false
       }
@@ -3713,7 +3713,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -5125,7 +5125,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -6272,7 +6272,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -6400,7 +6400,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -7041,7 +7041,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -7425,7 +7425,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -7937,7 +7937,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -8701,7 +8701,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -8829,7 +8829,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -9084,7 +9084,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -9978,7 +9978,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -10233,7 +10233,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -10743,7 +10743,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -12153,7 +12153,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -12282,7 +12282,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -12537,7 +12537,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -12665,7 +12665,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": true,
         "top3Included": false
       }
@@ -13687,7 +13687,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -14711,7 +14711,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -15349,7 +15349,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -16115,7 +16115,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -18286,7 +18286,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }
@@ -19947,7 +19947,7 @@
       },
       "accuracy": {
         "topPickHit": false,
-        "topPickPlace": true,
+        "topPickPlace": false,
         "top3Hit": false,
         "top3Included": false
       }

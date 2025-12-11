@@ -30,11 +30,10 @@ function calculateRaceAccuracy(prediction, result) {
   // Top pick hit (exact 1st place)
   const topPickHit = prediction.topPick === result.rank1;
 
-  // Top pick place (fukusho: top pick finishes in top 3)
+  // Top pick place (fukusho: top pick finishes in top 2)
   const topPickPlace = (
     prediction.topPick === result.rank1 ||
-    prediction.topPick === result.rank2 ||
-    prediction.topPick === result.rank3
+    prediction.topPick === result.rank2
   );
 
   // Top 3 hit (3-tanpuku: top 3 includes all podium finishers)
@@ -89,9 +88,9 @@ function calculateActualRecovery(races, betType) {
         }
       }
     } else if (betType === 'place') {
-      // Place bet: topPick must finish in top 3
+      // Place bet: topPick must finish in top 2 (競艇の複勝は1着と2着のみ)
       const topPick = prediction.topPick;
-      if (topPick === result.rank1 || topPick === result.rank2 || topPick === result.rank3) {
+      if (topPick === result.rank1 || topPick === result.rank2) {
         const payout = payouts.place[String(topPick)];
         if (payout) {
           totalPayout += payout;
