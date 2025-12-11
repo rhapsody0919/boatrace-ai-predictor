@@ -1,0 +1,49 @@
+name: Update Google Sheets
+
+on:
+  # スクレイピングワークフロー完了後に実行
+  workflow_run:
+    workflows: ["Scrape Race Data"]
+    types:
+      - completed
+
+  # 手動実行も可能
+  workflow_dispatch:
+
+jobs:
+  update-sheets:
+    runs-on: ubuntu-latest
+    # スクレイピングワークフローが成功した場合のみ実行
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create credentials directory
+        run: mkdir -p credentials
+
+      - name: Write service account key
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+        run: echo "$GOOGLE_SERVICE_ACCOUNT_KEY" > credentials/google-service-account.json
+
+      - name: Update Google Sheets
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ./credentials/google-service-account.json
+          GOOGLE_SPREADSHEET_ID: ${{ secrets.GOOGLE_SPREADSHEET_ID }}
+          TZ: 'Asia/Tokyo'
+        run: node scripts/update-google-sheets.js
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -f credentials/google-service-account.json
