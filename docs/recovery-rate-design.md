@@ -236,11 +236,10 @@ function calculateActualRecovery(races, betType) {
         }
       }
     } else if (betType === 'place') {
-      // 複勝：本命が3着以内なら配当を獲得
+      // 複勝：本命が2着以内なら配当を獲得
       const topPick = prediction.topPick;
       if (topPick === result.rank1 ||
-          topPick === result.rank2 ||
-          topPick === result.rank3) {
+          topPick === result.rank2) {
         const payout = payouts.place[String(topPick)];
         if (payout) {
           totalPayout += payout;
