@@ -110,17 +110,25 @@
   margin-bottom: 2rem;
 }
 
+.stats-table-container {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 .stats-table-container h3 {
   font-size: 1.3rem;
-  color: #1e293b;
+  color: #0f172a;
   margin: 0 0 0.5rem 0;
   font-weight: 700;
 }
 
 .stats-meta {
   font-size: 0.9rem;
-  color: #64748b;
+  color: #475569;
   margin: 0 0 1rem 0;
+  font-weight: 600;
 }
 
 .table-wrapper {
@@ -384,8 +392,16 @@
     margin-bottom: 1.5rem;
   }
 
+  .stats-table-container {
+    padding: 1.25rem;
+  }
+
   .stats-table-container h3 {
     font-size: 1.1rem;
+  }
+
+  .stats-meta {
+    font-size: 0.85rem;
   }
 
   .stats-table th,
@@ -482,12 +498,16 @@
     margin-bottom: 1.25rem;
   }
 
+  .stats-table-container {
+    padding: 1rem;
+  }
+
   .stats-table-container h3 {
     font-size: 1rem;
   }
 
   .stats-meta {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
   }
 
   .stats-table th,
