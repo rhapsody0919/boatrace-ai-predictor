@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 .vercel
 .env*.local
+
+# Credentials and secrets
+credentials/
+*.json.key
+google-service-account.json
