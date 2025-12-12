@@ -1,40 +1,40 @@
 {
-  "lastUpdated": "2025-12-12T11:47:13.954Z",
+  "lastUpdated": "2025-12-12T13:14:04.680Z",
   "overall": {
-    "totalRaces": 1102,
-    "finishedRaces": 1102,
+    "totalRaces": 1104,
+    "finishedRaces": 1104,
     "topPickHits": 298,
-    "topPickHitRate": 0.27041742286751363,
+    "topPickHitRate": 0.26992753623188404,
     "topPickPlaces": 552,
-    "topPickPlaceRate": 0.5009074410163339,
+    "topPickPlaceRate": 0.5,
     "top3Hits": 141,
-    "top3HitRate": 0.1279491833030853,
+    "top3HitRate": 0.12771739130434784,
     "top3IncludedHits": 29,
-    "top3IncludedRate": 0.02631578947368421,
+    "top3IncludedRate": 0.026268115942028984,
     "actualRecovery": {
       "win": {
-        "totalInvestment": 110000,
+        "totalInvestment": 110200,
         "totalPayout": 80790,
         "hitCount": 298,
-        "recoveryRate": 0.7344545454545455
+        "recoveryRate": 0.7331215970961887
       },
       "place": {
-        "totalInvestment": 110000,
+        "totalInvestment": 110200,
         "totalPayout": 97390,
         "hitCount": 551,
-        "recoveryRate": 0.8853636363636364
+        "recoveryRate": 0.8837568058076225
       },
       "trifecta": {
-        "totalInvestment": 110000,
+        "totalInvestment": 110200,
         "totalPayout": 91740,
         "hitCount": 141,
-        "recoveryRate": 0.834
+        "recoveryRate": 0.832486388384755
       },
       "trio": {
-        "totalInvestment": 110000,
+        "totalInvestment": 110200,
         "totalPayout": 225000,
         "hitCount": 29,
-        "recoveryRate": 2.0454545454545454
+        "recoveryRate": 2.041742286751361
       }
     }
   },
@@ -75,35 +75,35 @@
   "thisMonth": {
     "year": 2025,
     "month": 12,
-    "totalRaces": 1102,
-    "topPickHitRate": 0.27041742286751363,
-    "topPickPlaceRate": 0.5009074410163339,
-    "top3HitRate": 0.1279491833030853,
-    "top3IncludedRate": 0.02631578947368421,
+    "totalRaces": 1104,
+    "topPickHitRate": 0.26992753623188404,
+    "topPickPlaceRate": 0.5,
+    "top3HitRate": 0.12771739130434784,
+    "top3IncludedRate": 0.026268115942028984,
     "actualRecovery": {
       "win": {
-        "totalInvestment": 110000,
+        "totalInvestment": 110200,
         "totalPayout": 80790,
         "hitCount": 298,
-        "recoveryRate": 0.7344545454545455
+        "recoveryRate": 0.7331215970961887
       },
       "place": {
-        "totalInvestment": 110000,
+        "totalInvestment": 110200,
         "totalPayout": 97390,
         "hitCount": 551,
-        "recoveryRate": 0.8853636363636364
+        "recoveryRate": 0.8837568058076225
       },
       "trifecta": {
-        "totalInvestment": 110000,
+        "totalInvestment": 110200,
         "totalPayout": 91740,
         "hitCount": 141,
-        "recoveryRate": 0.834
+        "recoveryRate": 0.832486388384755
       },
       "trio": {
-        "totalInvestment": 110000,
+        "totalInvestment": 110200,
         "totalPayout": 225000,
         "hitCount": 29,
-        "recoveryRate": 2.0454545454545454
+        "recoveryRate": 2.041742286751361
       }
     }
   },
@@ -383,35 +383,35 @@
     },
     {
       "date": "2025-12-12",
-      "totalRaces": 118,
-      "topPickHitRate": 0.2457627118644068,
-      "topPickPlaceRate": 0.4915254237288136,
-      "top3HitRate": 0.1271186440677966,
-      "top3IncludedRate": 0.025423728813559324,
+      "totalRaces": 120,
+      "topPickHitRate": 0.24166666666666667,
+      "topPickPlaceRate": 0.48333333333333334,
+      "top3HitRate": 0.125,
+      "top3IncludedRate": 0.025,
       "actualRecovery": {
         "win": {
-          "totalInvestment": 11800,
+          "totalInvestment": 12000,
           "totalPayout": 4870,
           "hitCount": 29,
-          "recoveryRate": 0.41271186440677965
+          "recoveryRate": 0.4058333333333333
         },
         "place": {
-          "totalInvestment": 11800,
+          "totalInvestment": 12000,
           "totalPayout": 8260,
           "hitCount": 58,
-          "recoveryRate": 0.7
+          "recoveryRate": 0.6883333333333334
         },
         "trifecta": {
-          "totalInvestment": 11800,
+          "totalInvestment": 12000,
           "totalPayout": 6550,
           "hitCount": 15,
-          "recoveryRate": 0.5550847457627118
+          "recoveryRate": 0.5458333333333333
         },
         "trio": {
-          "totalInvestment": 11800,
+          "totalInvestment": 12000,
           "totalPayout": 3100,
           "hitCount": 3,
-          "recoveryRate": 0.2627118644067797
+          "recoveryRate": 0.25833333333333336
         }
       }
     }
