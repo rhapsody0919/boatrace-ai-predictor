@@ -1,5 +1,4 @@
 # タスク管理
-
 ## 🔴 優先度: 高（手動設定が必要）
 
 ### 1. Googleフォーム作成とContact.jsxへの埋め込む
@@ -51,6 +50,14 @@
 ### UI機能
 - [x] プライバシーポリシーページ作成（`src/components/PrivacyPolicy.jsx`）
 - [x] お問い合わせページ作成（`src/components/Contact.jsx`）
+- [x] 的中率統計ページを表形式にリニューアル
+  - [x] 「今月」セクションを表形式で表示（単勝/複勝/3連複/3連単の的中率と回収率）
+  - [x] 「直近のパフォーマンス」を10列の詳細な表形式に変更（2段ヘッダー構造）
+  - [x] 「回収率について」の説明をページ上部に移動
+  - [x] 旧「前日の的中率と回収率」テーブルを削除
+  - [x] `scripts/calculate-accuracy.js` で今月・先月の回収率を計算
+  - [x] `summary.json` を再生成
+  - [x] レスポンシブデザイン対応（1024px/768px/480pxブレークポイント）
 - [x] 「直近のパフォーマンス」に回収率を追加
   - [x] `scripts/calculate-accuracy.js` を修正
   - [x] `AccuracyDashboard.jsx` に表示実装
