@@ -601,8 +601,7 @@ function App() {
                         {/* 複勝 */}
                         <div className="check-item">
                           {(prediction.topPick.number === prediction.result.rank1 ||
-                            prediction.topPick.number === prediction.result.rank2 ||
-                            prediction.topPick.number === prediction.result.rank3) ? (
+                            prediction.topPick.number === prediction.result.rank2) ? (
                             <div className="hit">✅ 複勝的中！</div>
                           ) : (
                             <div className="miss">❌ 複勝外れ</div>
