@@ -110,6 +110,26 @@ function AccuracyDashboard() {
     </div>
   )
 
+  // 今月で3連単の回収率が最も高かった日を取得
+  const bestTrioDay = summary.dailyHistory && summary.dailyHistory.length > 0
+    ? summary.dailyHistory
+        .filter(day => {
+          const { year, month } = getDateInfo(day.date)
+          return year === summary.thisMonth.year && month === summary.thisMonth.month
+        })
+        .reduce((best, current) => {
+          const currentRate = current.actualRecovery?.trio?.recoveryRate || 0
+          const bestRate = best.actualRecovery?.trio?.recoveryRate || 0
+          return currentRate > bestRate ? current : best
+        }, summary.dailyHistory[0])
+    : null
+
+  // 日付から年月日を取得するヘルパー関数
+  function getDateInfo(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    return { year, month, day }
+  }
+
   return (
     <div className="accuracy-dashboard">
       <h2>📊 AI予想的中率</h2>
@@ -120,23 +140,29 @@ function AccuracyDashboard() {
         </div>
       ) : (
         <>
-          {/* 回収率についての説明 */}
-          <div className="accuracy-info recovery-info">
-            <h4>💡 回収率について</h4>
-            <p>
-              回収率は、実際の配当データに基づいて計算されています。
-              競艇の控除率は約25%のため、完全ランダムに購入すると理論上の回収率は約75%です。
-              回収率100%超えを目指すには、的中率だけでなく、高配当を狙う戦略も重要です。
-            </p>
-          </div>
-
-          {/* 前日の実績 */}
-          {summary.yesterday.totalRaces > 0 && (
-            <div className="stat-section yesterday-section">
-              <StatsTable
-                data={summary.yesterday}
-                title={`前日 (${summary.yesterday.date})`}
-              />
+          {/* 今月のベストパフォーマンス */}
+          {bestTrioDay && bestTrioDay.actualRecovery?.trio?.recoveryRate > 0 && (
+            <div className="best-performance">
+              <h3>🏆 今月のベストパフォーマンス</h3>
+              <div className="best-performance-content">
+                <div className="best-date">{bestTrioDay.date}</div>
+                <div className="best-stats">
+                  <div className="best-stat-item highlight">
+                    <span className="stat-label">3連単 回収率</span>
+                    <span className="stat-value" style={{color: getRecoveryColor(bestTrioDay.actualRecovery.trio.recoveryRate)}}>
+                      {formatPercent(bestTrioDay.actualRecovery.trio.recoveryRate)}
+                    </span>
+                  </div>
+                  <div className="best-stat-item">
+                    <span className="stat-label">レース数</span>
+                    <span className="stat-value">{bestTrioDay.totalRaces}レース</span>
+                  </div>
+                  <div className="best-stat-item">
+                    <span className="stat-label">3連単 的中率</span>
+                    <span className="stat-value">{formatPercent(bestTrioDay.top3IncludedRate)}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -207,16 +233,29 @@ function AccuracyDashboard() {
             </div>
           )}
 
-          {/* 的中率についての説明 */}
+          {/* 的中率と回収率についての説明 */}
           <div className="accuracy-info">
-            <h4>💡 的中率について</h4>
-            <ul>
-              <li><strong>単勝:</strong> AI予想の本命（1位予想）が1着になった割合</li>
-              <li><strong>複勝:</strong> AI予想の本命が2着以内に入った割合</li>
-              <li><strong>3連複:</strong> AI予想のトップ3が実際の1-2-3着を全て含んでいた割合（順序不問）</li>
-              <li><strong>3連単:</strong> AI予想のトップ3が実際の1-2-3着と順序も完全一致した割合</li>
-              <li><strong>データ更新:</strong> レース終了後、自動的に的中率が計算されます</li>
-            </ul>
+            <h4>💡 的中率と回収率について</h4>
+            <div className="info-section">
+              <h5>📊 的中率の見方</h5>
+              <ul>
+                <li><strong>単勝:</strong> AI予想の本命（1位予想）が1着になった割合</li>
+                <li><strong>複勝:</strong> AI予想の本命が2着以内に入った割合</li>
+                <li><strong>3連複:</strong> AI予想のトップ3が実際の1-2-3着を全て含んでいた割合（順序不問）</li>
+                <li><strong>3連単:</strong> AI予想のトップ3が実際の1-2-3着と順序も完全一致した割合</li>
+              </ul>
+            </div>
+            <div className="info-section">
+              <h5>💰 回収率の見方</h5>
+              <p>
+                回収率は、実際の配当データに基づいて計算されています。
+                競艇の控除率は約25%のため、完全ランダムに購入すると理論上の回収率は約75%です。
+                回収率100%超えを目指すには、的中率だけでなく、高配当を狙う戦略も重要です。
+              </p>
+            </div>
+            <div className="info-section">
+              <p><strong>データ更新:</strong> レース終了後、自動的に的中率と回収率が計算されます</p>
+            </div>
           </div>
         </>
       )}

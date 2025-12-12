@@ -29,17 +29,80 @@
   padding: 1.5rem;
 }
 
-/* 回収率についての説明セクション */
-.recovery-info {
-  background: #f0f9ff;
-  border-left: 4px solid #0ea5e9;
+/* ベストパフォーマンスカード */
+.best-performance {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 16px;
+  padding: 2rem;
   margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  border: 2px solid #f59e0b;
 }
 
-.recovery-info p {
-  margin: 0;
+.best-performance h3 {
+  font-size: 1.5rem;
+  color: #92400e;
+  margin: 0 0 1.5rem 0;
+  font-weight: 800;
+  text-align: center;
+}
+
+.best-performance-content {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.best-date {
+  font-size: 1.3rem;
+  font-weight: 700;
   color: #1e293b;
-  line-height: 1.6;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.best-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.best-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  flex: 1;
+  min-width: 140px;
+}
+
+.best-stat-item.highlight {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  transform: scale(1.05);
+}
+
+.best-stat-item .stat-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+  text-align: center;
+}
+
+.best-stat-item .stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.best-stat-item.highlight .stat-value {
+  font-size: 2.2rem;
 }
 
 /* 統計セクション */
@@ -210,18 +273,34 @@
   font-weight: 700;
 }
 
-/* 的中率についての説明 */
+/* 的中率と回収率についての説明 */
 .accuracy-info {
   background: #ffffff;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 2rem;
   border: 1px solid #e2e8f0;
   border-left: 4px solid #3b82f6;
 }
 
 .accuracy-info h4 {
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: #0f172a;
+  margin: 0 0 1.5rem 0;
+  font-weight: 700;
+  text-align: center;
+}
+
+.accuracy-info .info-section {
+  margin-bottom: 1.5rem;
+}
+
+.accuracy-info .info-section:last-child {
+  margin-bottom: 0;
+}
+
+.accuracy-info h5 {
+  font-size: 1rem;
+  color: #1e293b;
   margin: 0 0 0.75rem 0;
   font-weight: 700;
 }
@@ -234,6 +313,13 @@
 
 .accuracy-info li {
   padding: 0.5rem 0;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.accuracy-info p {
+  margin: 0;
   color: #475569;
   font-size: 0.9rem;
   line-height: 1.6;
@@ -264,6 +350,34 @@
   .accuracy-dashboard h2 {
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
+  }
+
+  .best-performance {
+    padding: 1.25rem;
+  }
+
+  .best-performance h3 {
+    font-size: 1.25rem;
+  }
+
+  .best-performance-content {
+    padding: 1.25rem;
+  }
+
+  .best-date {
+    font-size: 1.1rem;
+  }
+
+  .best-stat-item {
+    min-width: 120px;
+  }
+
+  .best-stat-item .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .best-stat-item.highlight .stat-value {
+    font-size: 1.8rem;
   }
 
   .stat-section {
@@ -323,6 +437,45 @@
 
   .accuracy-dashboard h2 {
     font-size: 1.3rem;
+  }
+
+  .best-performance {
+    padding: 1rem;
+  }
+
+  .best-performance h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .best-performance-content {
+    padding: 1rem;
+  }
+
+  .best-date {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .best-stats {
+    flex-direction: column;
+  }
+
+  .best-stat-item {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .best-stat-item .stat-label {
+    font-size: 0.8rem;
+  }
+
+  .best-stat-item .stat-value {
+    font-size: 1.3rem;
+  }
+
+  .best-stat-item.highlight .stat-value {
+    font-size: 1.6rem;
   }
 
   .stat-section {
