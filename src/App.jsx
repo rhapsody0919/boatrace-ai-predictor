@@ -325,7 +325,7 @@ function App() {
         <div>
           <div className="logo">
             <span className="logo-icon">🚤</span>
-            <h1>ボートレースAI予想</h1>
+            <h1>BoatAI</h1>
           </div>
           <nav className="nav">
             <button
@@ -754,7 +754,7 @@ function App() {
           <a href="#privacy" style={{color: '#94a3b8', textDecoration: 'none'}}>プライバシーポリシー</a>
           <a href="#contact" style={{color: '#94a3b8', textDecoration: 'none'}}>お問い合わせ</a>
         </div>
-        <p>&copy; 2025 ボートレースAI予想 - All Rights Reserved</p>
+        <p>&copy; 2025 BoatAI - All Rights Reserved</p>
       </footer>
     </div>
   )
