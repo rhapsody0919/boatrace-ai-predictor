@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/boatrace-ai-predictor/', // GitHub Pages用
+  base: '/', // Vercel用（カスタムドメイン boat-ai.jp）
   build: {
     outDir: 'dist',
     // data/races.json を dist にコピー
