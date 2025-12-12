@@ -61,6 +61,30 @@ function AccuracyDashboard() {
     return '#ef4444'
   }
 
+  // 日付から年月日を取得するヘルパー関数
+  const getDateInfo = (dateStr) => {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    return { year, month, day }
+  }
+
+  // 今月で3連単の回収率が最も高かった日を取得
+  const bestTrioDay = (() => {
+    if (!summary.dailyHistory || summary.dailyHistory.length === 0) return null
+
+    const thisMonthDays = summary.dailyHistory.filter(day => {
+      const { year, month } = getDateInfo(day.date)
+      return year === summary.thisMonth.year && month === summary.thisMonth.month
+    })
+
+    if (thisMonthDays.length === 0) return null
+
+    return thisMonthDays.reduce((best, current) => {
+      const currentRate = current.actualRecovery?.trio?.recoveryRate || 0
+      const bestRate = best.actualRecovery?.trio?.recoveryRate || 0
+      return currentRate > bestRate ? current : best
+    })
+  })()
+
   // 統計テーブルコンポーネント
   const StatsTable = ({ data, title }) => (
     <div className="stats-table-container">
@@ -109,26 +133,6 @@ function AccuracyDashboard() {
       </div>
     </div>
   )
-
-  // 今月で3連単の回収率が最も高かった日を取得
-  const bestTrioDay = summary.dailyHistory && summary.dailyHistory.length > 0
-    ? summary.dailyHistory
-        .filter(day => {
-          const { year, month } = getDateInfo(day.date)
-          return year === summary.thisMonth.year && month === summary.thisMonth.month
-        })
-        .reduce((best, current) => {
-          const currentRate = current.actualRecovery?.trio?.recoveryRate || 0
-          const bestRate = best.actualRecovery?.trio?.recoveryRate || 0
-          return currentRate > bestRate ? current : best
-        }, summary.dailyHistory[0])
-    : null
-
-  // 日付から年月日を取得するヘルパー関数
-  function getDateInfo(dateStr) {
-    const [year, month, day] = dateStr.split('-').map(Number)
-    return { year, month, day }
-  }
 
   return (
     <div className="accuracy-dashboard">
