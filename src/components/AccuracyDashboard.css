@@ -29,102 +29,99 @@
   padding: 1.5rem;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+/* 回収率についての説明セクション */
+.recovery-info {
+  background: #f0f9ff;
+  border-left: 4px solid #0ea5e9;
   margin-bottom: 2rem;
 }
 
-.stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e2e8f0;
-  transition: transform 0.2s, box-shadow 0.2s;
+.recovery-info p {
+  margin: 0;
+  color: #1e293b;
+  line-height: 1.6;
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+/* 統計セクション */
+.stat-section {
+  margin-bottom: 2rem;
 }
 
-.stat-card.overall {
-  border-color: #3b82f6;
+.stats-table-container h3 {
+  font-size: 1.3rem;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
 }
 
-.stat-card.yesterday {
-  border-color: #10b981;
-}
-
-.stat-card.this-month {
-  border-color: #8b5cf6;
-}
-
-.stat-card.last-month {
-  border-color: #64748b;
-}
-
-.stat-card h3 {
-  font-size: 1rem;
+.stats-meta {
+  font-size: 0.9rem;
   color: #64748b;
   margin: 0 0 1rem 0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.stat-main {
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 統計テーブル（前日・今月用） */
+.stats-table {
+  width: 100%;
+  max-width: 600px;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stats-table thead {
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+  color: white;
+}
+
+.stats-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.stats-table th:nth-child(2),
+.stats-table th:nth-child(3) {
   text-align: center;
-  margin-bottom: 1rem;
 }
 
-.stat-value {
-  font-size: 3rem;
-  font-weight: bold;
+.stats-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s;
+}
+
+.stats-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.stats-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.stats-table td {
+  padding: 1rem;
   color: #1e293b;
-  line-height: 1;
 }
 
-.stat-card.overall .stat-value {
-  color: #3b82f6;
-}
-
-.stat-card.yesterday .stat-value {
-  color: #10b981;
-}
-
-.stat-card.this-month .stat-value {
-  color: #8b5cf6;
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  color: #64748b;
-  margin-top: 0.5rem;
-}
-
-.stat-details {
-  border-top: 1px solid #e2e8f0;
-  padding-top: 1rem;
-}
-
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.4rem 0;
-  font-size: 0.9rem;
-}
-
-.detail-label {
-  color: #64748b;
-}
-
-.detail-value {
+.stats-table .bet-type {
   font-weight: 600;
-  color: #1e293b;
 }
 
+.stats-table .hit-rate,
+.stats-table .recovery-rate {
+  text-align: center;
+  font-weight: 600;
+}
+
+/* 直近のパフォーマンステーブル */
 .daily-history {
   background: white;
   border-radius: 12px;
@@ -134,67 +131,86 @@
 }
 
 .daily-history h3 {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: #1e293b;
   margin: 0 0 1rem 0;
+  font-weight: 700;
 }
 
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.daily-history-table {
+  width: 100%;
+  min-width: 800px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
 }
 
-.history-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
+.daily-history-table thead {
+  background: linear-gradient(135deg, #475569 0%, #64748b 100%);
+  color: white;
+}
+
+.daily-history-table th {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.daily-history-table th:last-child {
+  border-right: none;
+}
+
+.daily-history-table .sub-header {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+}
+
+.daily-history-table .sub-th {
+  font-size: 0.75rem;
+  padding: 0.5rem 0.25rem;
+  font-weight: 600;
+}
+
+.daily-history-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s;
+}
+
+.daily-history-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.daily-history-table tbody tr:hover {
   background: #f8fafc;
-  border-radius: 6px;
-  transition: background 0.2s;
 }
 
-.history-item:hover {
-  background: #f1f5f9;
+.daily-history-table td {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  color: #1e293b;
 }
 
-.history-date {
+.daily-history-table .date-cell {
   font-weight: 600;
   color: #475569;
+  text-align: left;
+  white-space: nowrap;
 }
 
-.history-stats {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-  font-size: 0.85rem;
-}
-
-.history-label {
-  color: #64748b;
-  font-size: 0.8rem;
-}
-
-.history-value {
-  font-weight: 600;
-  color: #3b82f6;
-  margin-right: 0.5rem;
-}
-
-.history-races {
-  font-size: 0.9rem;
+.daily-history-table .races-cell {
   color: #64748b;
 }
 
-.history-rate {
-  font-weight: 600;
+.daily-history-table .hit-rate {
   color: #3b82f6;
-  min-width: 60px;
-  text-align: right;
+  font-weight: 600;
 }
 
+.daily-history-table .recovery-rate {
+  font-weight: 700;
+}
+
+/* 的中率についての説明 */
 .accuracy-info {
   background: #ffffff;
   border-radius: 12px;
@@ -229,9 +245,13 @@
 
 /* タブレット対応 */
 @media (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
+  .stats-table {
+    max-width: 100%;
+  }
+
+  .daily-history-table {
+    min-width: 700px;
+    font-size: 0.85rem;
   }
 }
 
@@ -246,77 +266,52 @@
     margin-bottom: 1.5rem;
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .stat-section {
+    margin-bottom: 1.5rem;
   }
 
-  .stat-card {
-    padding: 1.25rem;
+  .stats-table-container h3 {
+    font-size: 1.1rem;
   }
 
-  .stat-value {
-    font-size: 2.5rem;
+  .stats-table th,
+  .stats-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
   }
 
-  /* 直近のパフォーマンスセクション - モバイル最適化 */
   .daily-history {
     padding: 1.25rem;
   }
 
   .daily-history h3 {
     font-size: 1.1rem;
-    margin-bottom: 1rem;
   }
 
-  .history-item {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 1rem;
-    gap: 0.75rem;
+  .daily-history-table {
+    min-width: 650px;
+    font-size: 0.8rem;
   }
 
-  .history-date {
-    font-size: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #e2e8f0;
+  .daily-history-table th {
+    padding: 0.6rem 0.4rem;
   }
 
-  .history-stats {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-    font-size: 0.9rem;
+  .daily-history-table td {
+    padding: 0.6rem 0.4rem;
   }
 
-  .history-label {
-    display: inline-block;
-    min-width: 90px;
+  .daily-history-table .sub-th {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.2rem;
   }
 
-  .history-value {
-    margin-right: 0;
-    display: inline-block;
-  }
-
-  /* 回収率表示の改善 */
-  .history-recovery {
-    font-size: 0.85rem !important;
-  }
-
-  /* テーブルのモバイル対応 */
   .accuracy-info {
     padding: 1.25rem;
-    overflow-x: auto;
   }
 
-  .accuracy-info table {
+  .accuracy-info li {
     font-size: 0.85rem;
-  }
-
-  .accuracy-info th,
-  .accuracy-info td {
-    padding: 0.6rem 0.4rem;
   }
 }
 
@@ -330,23 +325,21 @@
     font-size: 1.3rem;
   }
 
-  .stat-card {
-    padding: 1rem;
+  .stat-section {
+    margin-bottom: 1.25rem;
   }
 
-  .stat-card h3 {
+  .stats-table-container h3 {
+    font-size: 1rem;
+  }
+
+  .stats-meta {
     font-size: 0.85rem;
   }
 
-  .stat-value {
-    font-size: 2rem;
-  }
-
-  .stat-label {
-    font-size: 0.8rem;
-  }
-
-  .detail-item {
+  .stats-table th,
+  .stats-table td {
+    padding: 0.625rem 0.4rem;
     font-size: 0.85rem;
   }
 
@@ -354,33 +347,37 @@
     padding: 1rem;
   }
 
-  .history-item {
-    padding: 0.85rem;
+  .daily-history h3 {
+    font-size: 1rem;
   }
 
-  .history-stats {
-    font-size: 0.85rem;
-  }
-
-  /* テーブルを横スクロール可能にして読みやすく */
-  .accuracy-info table {
-    min-width: 100%;
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .accuracy-info thead,
-  .accuracy-info tbody,
-  .accuracy-info tr {
-    display: table;
-    width: 100%;
-    table-layout: fixed;
-  }
-
-  .accuracy-info th,
-  .accuracy-info td {
-    padding: 0.5rem 0.3rem;
+  .daily-history-table {
+    min-width: 600px;
     font-size: 0.75rem;
+  }
+
+  .daily-history-table th {
+    padding: 0.5rem 0.3rem;
+  }
+
+  .daily-history-table td {
+    padding: 0.5rem 0.3rem;
+  }
+
+  .daily-history-table .sub-th {
+    font-size: 0.65rem;
+  }
+
+  .accuracy-info {
+    padding: 1rem;
+  }
+
+  .accuracy-info h4 {
+    font-size: 0.95rem;
+  }
+
+  .accuracy-info li {
+    font-size: 0.8rem;
+    padding: 0.4rem 0;
   }
 }

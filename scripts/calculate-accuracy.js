@@ -295,6 +295,14 @@ async function calculateAccuracy() {
     });
     const thisMonthStats = calculateSummaryStats(thisMonthRaces);
 
+    // Calculate this month's actual recovery rates
+    const thisMonthActualRecovery = {
+      win: calculateActualRecovery(thisMonthRaces, 'win'),
+      place: calculateActualRecovery(thisMonthRaces, 'place'),
+      trifecta: calculateActualRecovery(thisMonthRaces, 'trifecta'),
+      trio: calculateActualRecovery(thisMonthRaces, 'trio')
+    };
+
     // Calculate last month's stats
     const lastMonthDate = new Date(thisYear, thisMonth - 2, 1); // month is 1-indexed, so -2 for last month
     const lastYear = lastMonthDate.getFullYear();
@@ -304,6 +312,14 @@ async function calculateAccuracy() {
       return year === lastYear && month === lastMonth;
     });
     const lastMonthStats = calculateSummaryStats(lastMonthRaces);
+
+    // Calculate last month's actual recovery rates
+    const lastMonthActualRecovery = {
+      win: calculateActualRecovery(lastMonthRaces, 'win'),
+      place: calculateActualRecovery(lastMonthRaces, 'place'),
+      trifecta: calculateActualRecovery(lastMonthRaces, 'trifecta'),
+      trio: calculateActualRecovery(lastMonthRaces, 'trio')
+    };
 
     // Generate summary
     const summary = {
@@ -338,6 +354,7 @@ async function calculateAccuracy() {
         topPickPlaceRate: thisMonthStats.topPickPlaceRate,
         top3HitRate: thisMonthStats.top3HitRate,
         top3IncludedRate: thisMonthStats.top3IncludedRate,
+        actualRecovery: thisMonthActualRecovery,
       },
       lastMonth: {
         year: lastYear,
@@ -347,6 +364,7 @@ async function calculateAccuracy() {
         topPickPlaceRate: lastMonthStats.topPickPlaceRate,
         top3HitRate: lastMonthStats.top3HitRate,
         top3IncludedRate: lastMonthStats.top3IncludedRate,
+        actualRecovery: lastMonthActualRecovery,
       },
       dailyHistory: dailyStats.slice(-30), // Last 30 days
     };
