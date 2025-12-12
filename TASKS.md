@@ -54,6 +54,13 @@
 - [x] 「直近のパフォーマンス」に回収率を追加
   - [x] `scripts/calculate-accuracy.js` を修正
   - [x] `AccuracyDashboard.jsx` に表示実装
+- [x] モバイル対応の大幅改善
+  - [x] レスポンシブデザインの強化（1024px/768px/480pxブレークポイント）
+  - [x] タッチターゲットのサイズ最適化（最小44x44px）
+  - [x] フォントサイズの調整（モバイルで読みやすく）
+  - [x] テーブルの横スクロール対応
+  - [x] 直近のパフォーマンスセクションのモバイルレイアウト改善
+  - [x] パディング・マージンの最適化
 
 ### 自動化機能
 - [x] Google Sheets連携スクリプト作成（`scripts/update-google-sheets.js`）
@@ -65,6 +72,8 @@
 - [x] Google Sheetsセットアップガイド（`docs/google-sheets-setup.md`）
 - [x] SendGridセットアップガイド（`docs/sendgrid-setup.md`）
 - [x] 統合自動化ガイド（`docs/automation-setup.md`）
+
+
 
 ---
 
@@ -92,5 +101,7 @@ Google Sheetsに自動記録（スクレイピング完了後）
 - **GitHub Actions:** パブリックリポジトリは無料
 
 ---
+
+
 
 最終更新: 2025-12-12
