@@ -55,79 +55,25 @@ export default function Contact() {
 
       {/* Googleフォーム埋め込みエリア */}
       <div style={{
-        backgroundColor: '#ffffff',
-        border: '2px dashed #cbd5e1',
-        borderRadius: '8px',
-        padding: '3rem 2rem',
-        textAlign: 'center',
         marginBottom: '2rem'
       }}>
-        <div style={{
-          fontSize: '3rem',
-          marginBottom: '1rem'
-        }}>
-          📧
-        </div>
-        <h3 style={{
-          fontSize: '1.25rem',
-          fontWeight: '600',
-          color: '#1e293b',
-          marginBottom: '1rem'
-        }}>
-          Googleフォームを設置してください
-        </h3>
-        <p style={{
-          color: '#64748b',
-          marginBottom: '1.5rem',
-          lineHeight: '1.6'
-        }}>
-          このエリアにGoogleフォームを埋め込んでください。<br />
-          以下の手順で設定できます：
-        </p>
-        <ol style={{
-          color: '#475569',
-          textAlign: 'left',
-          maxWidth: '600px',
-          margin: '0 auto',
-          lineHeight: '1.8',
-          paddingLeft: '1.5rem'
-        }}>
-          <li>Googleフォームで新しいフォームを作成</li>
-          <li>「送信」→「&lt;/&gt;（埋め込みコード）」をクリック</li>
-          <li>表示されたiframeコードをコピー</li>
-          <li>このファイル（src/components/Contact.jsx）の該当箇所に貼り付け</li>
-        </ol>
-
-        {/* ここにGoogleフォームのiframeを貼り付けてください */}
-        {/* 例:
         <iframe
-          src="https://docs.google.com/forms/d/e/YOUR_FORM_ID/viewform?embedded=true"
+          src="https://docs.google.com/forms/d/e/1FAIpQLSeiioPc2vCicOWbKogOXTVAcfaZD31vZHQgltI_K8ENpQFTzg/viewform?embedded=true"
           width="100%"
-          height="800"
+          height="721"
           frameBorder="0"
           marginHeight="0"
           marginWidth="0"
-          style={{ maxWidth: '640px', margin: '2rem auto', display: 'block' }}
+          style={{
+            maxWidth: '640px',
+            margin: '0 auto',
+            display: 'block',
+            border: 'none',
+            borderRadius: '8px'
+          }}
         >
           読み込んでいます…
         </iframe>
-        */}
-
-        <div style={{
-          marginTop: '2rem',
-          padding: '1rem',
-          backgroundColor: '#fef3c7',
-          borderRadius: '6px',
-          border: '1px solid #fbbf24'
-        }}>
-          <p style={{
-            color: '#92400e',
-            fontSize: '0.9rem',
-            margin: 0
-          }}>
-            💡 ヒント: Googleフォームには「お名前」「メールアドレス」「お問い合わせ内容」の3つの質問を作成することをおすすめします
-          </p>
-        </div>
       </div>
 
       <div style={{
