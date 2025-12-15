@@ -1,7 +1,7 @@
 {
   "date": "2025-12-15",
-  "generatedAt": "2025-12-14T23:24:57.939Z",
-  "updatedAt": "2025-12-14T23:52:19.878Z",
+  "generatedAt": "2025-12-15T01:58:47.670Z",
+  "updatedAt": "2025-12-15T02:26:00.889Z",
   "races": [
     {
       "raceId": "2025-12-15-01-01",
@@ -1456,17 +1456,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "1": 270
+          },
+          "place": {
+            "1": 110,
+            "2": 130
+          },
+          "trifecta": {
+            "1-2-3": 370
+          },
+          "trio": {
+            "1-2-3": 1140
+          }
+        },
+        "updatedAt": "2025-12-15T02:00:51.213Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -2812,17 +2827,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 5,
+        "rank2": 1,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "5": 780
+          },
+          "place": {
+            "1": 110,
+            "5": 260
+          },
+          "trifecta": {
+            "1-2-5": 390
+          },
+          "trio": {
+            "5-1-2": 6520
+          }
+        },
+        "updatedAt": "2025-12-15T02:02:49.255Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "topPickPlace": true,
+        "top3Hit": true,
+        "top3Included": false
       }
     },
     {
@@ -5512,17 +5542,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 5,
+        "rank2": 2,
+        "rank3": 6,
+        "payouts": {
+          "win": {
+            "5": 520
+          },
+          "place": {
+            "2": 590,
+            "5": 270
+          },
+          "trifecta": {
+            "2-5-6": 1220
+          },
+          "trio": {
+            "5-2-6": 3140
+          }
+        },
+        "updatedAt": "2025-12-15T02:06:40.255Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -6870,17 +6915,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 6,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "1": 100
+          },
+          "place": {
+            "1": 110,
+            "6": 540
+          },
+          "trifecta": {
+            "1-2-6": 740
+          },
+          "trio": {
+            "1-6-2": 4490
+          }
+        },
+        "updatedAt": "2025-12-15T02:08:33.235Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -7422,9 +7482,9 @@
             "localWinRate": "3.510",
             "motorNumber": 64,
             "motor2Rate": "34.5",
-            "boatNumber": 31,
-            "boat2Rate": "27.0",
-            "aiScore": 2437
+            "boatNumber": 25,
+            "boat2Rate": "30.1",
+            "aiScore": 2497
           }
         ],
         "reasoning": [
@@ -8226,17 +8286,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 5,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "1": 100
+          },
+          "place": {
+            "1": 100,
+            "5": 250
+          },
+          "trifecta": {
+            "1-3-5": 270
+          },
+          "trio": {
+            "1-5-3": 1040
+          }
+        },
+        "updatedAt": "2025-12-15T02:10:34.331Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "topPickPlace": true,
+        "top3Hit": true,
+        "top3Included": false
       }
     },
     {
@@ -8338,17 +8413,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 6,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "1": 100
+          },
+          "place": {
+            "1": 110,
+            "6": 540
+          },
+          "trifecta": {
+            "1-3-6": 1390
+          },
+          "trio": {
+            "1-6-3": 7340
+          }
+        },
+        "updatedAt": "2025-12-15T02:10:43.992Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -8451,17 +8541,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 6,
+        "payouts": {
+          "win": {
+            "1": 140
+          },
+          "place": {
+            "1": 100,
+            "3": 120
+          },
+          "trifecta": {
+            "1-3-6": 310
+          },
+          "trio": {
+            "1-3-6": 650
+          }
+        },
+        "updatedAt": "2025-12-15T02:10:52.696Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": true,
+        "top3Hit": true,
+        "top3Included": false
       }
     },
     {
@@ -8564,17 +8669,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "1": 190
+          },
+          "place": {
+            "1": 130,
+            "2": 220
+          },
+          "trifecta": {
+            "1-2-3": 490
+          },
+          "trio": {
+            "1-2-3": 1580
+          }
+        },
+        "updatedAt": "2025-12-15T02:11:03.355Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -8677,17 +8797,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 2,
+        "rank2": 3,
+        "rank3": 1,
+        "payouts": {
+          "win": {
+            "2": 400
+          },
+          "place": {
+            "2": 180,
+            "3": 120
+          },
+          "trifecta": {
+            "1-2-3": 170
+          },
+          "trio": {
+            "2-3-1": 3240
+          }
+        },
+        "updatedAt": "2025-12-15T02:11:12.013Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": true,
+        "top3Hit": true,
+        "top3Included": false
       }
     },
     {
@@ -8779,9 +8914,9 @@
             "localWinRate": "1.670",
             "motorNumber": 17,
             "motor2Rate": "36.1",
-            "boatNumber": 18,
-            "boat2Rate": "28.3",
-            "aiScore": 2075
+            "boatNumber": 41,
+            "boat2Rate": "37.0",
+            "aiScore": 2250
           }
         ],
         "reasoning": [
@@ -9578,17 +9713,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 4,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "1": 100
+          },
+          "place": {
+            "1": 100,
+            "4": 160
+          },
+          "trifecta": {
+            "1-2-4": 250
+          },
+          "trio": {
+            "1-4-2": 980
+          }
+        },
+        "updatedAt": "2025-12-15T02:12:34.352Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -9691,17 +9841,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 5,
+        "rank3": 4,
+        "payouts": {
+          "win": {
+            "1": 220
+          },
+          "place": {
+            "1": 150,
+            "5": 340
+          },
+          "trifecta": {
+            "1-4-5": 870
+          },
+          "trio": {
+            "1-5-4": 3260
+          }
+        },
+        "updatedAt": "2025-12-15T02:12:43.013Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -12286,17 +12451,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 5,
+        "payouts": {
+          "win": {
+            "1": 100
+          },
+          "place": {
+            "1": 190,
+            "2": 750
+          },
+          "trifecta": {
+            "1-2-5": 1070
+          },
+          "trio": {
+            "1-2-5": 1470
+          }
+        },
+        "updatedAt": "2025-12-15T02:16:19.559Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -12399,17 +12579,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 5,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "1": 100
+          },
+          "place": {
+            "1": 100,
+            "5": 320
+          },
+          "trifecta": {
+            "1-2-5": 1010
+          },
+          "trio": {
+            "1-5-2": 4190
+          }
+        },
+        "updatedAt": "2025-12-15T02:16:29.266Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -13639,17 +13834,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 5,
+        "rank2": 1,
+        "rank3": 6,
+        "payouts": {
+          "win": {
+            "5": 1870
+          },
+          "place": {
+            "1": 100,
+            "5": 210
+          },
+          "trifecta": {
+            "1-5-6": 1570
+          },
+          "trio": {
+            "5-1-6": 11370
+          }
+        },
+        "updatedAt": "2025-12-15T02:18:16.652Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": true,
+        "top3Hit": true,
+        "top3Included": false
       }
     },
     {
@@ -13657,7 +13867,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 2,
-      "startTime": "09:01",
+      "startTime": "09:03",
       "prediction": {
         "topPick": 6,
         "top3": [
@@ -13752,17 +13962,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 4,
+        "payouts": {
+          "win": {
+            "1": 140
+          },
+          "place": {
+            "1": 100,
+            "3": 240
+          },
+          "trifecta": {
+            "1-3-4": 1070
+          },
+          "trio": {
+            "1-3-4": 2430
+          }
+        },
+        "updatedAt": "2025-12-15T02:18:26.318Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -13770,7 +13995,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 3,
-      "startTime": "09:27",
+      "startTime": "09:31",
       "prediction": {
         "topPick": 2,
         "top3": [
@@ -13865,17 +14090,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 5,
+        "payouts": {
+          "win": {
+            "1": 140
+          },
+          "place": {
+            "1": 120,
+            "2": 150
+          },
+          "trifecta": {
+            "1-2-5": 220
+          },
+          "trio": {
+            "1-2-5": 500
+          }
+        },
+        "updatedAt": "2025-12-15T02:18:37.019Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -13883,7 +14123,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 4,
-      "startTime": "09:53",
+      "startTime": "09:58",
       "prediction": {
         "topPick": 1,
         "top3": [
@@ -13978,17 +14218,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 6,
+        "payouts": {
+          "win": {
+            "1": 140
+          },
+          "place": {
+            "1": 100,
+            "2": 110
+          },
+          "trifecta": {
+            "1-2-6": 1430
+          },
+          "trio": {
+            "1-2-6": 2420
+          }
+        },
+        "updatedAt": "2025-12-15T02:18:47.699Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -13996,7 +14251,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 5,
-      "startTime": "10:20",
+      "startTime": "10:25",
       "prediction": {
         "topPick": 3,
         "top3": [
@@ -14091,17 +14346,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "1": 160
+          },
+          "place": {
+            "1": 100,
+            "2": 110
+          },
+          "trifecta": {
+            "1-2-3": 250
+          },
+          "trio": {
+            "1-2-3": 520
+          }
+        },
+        "updatedAt": "2025-12-15T02:18:58.403Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -14109,7 +14379,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 6,
-      "startTime": "10:49",
+      "startTime": "10:54",
       "prediction": {
         "topPick": 4,
         "top3": [
@@ -14205,17 +14475,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 6,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "1": 140
+          },
+          "place": {
+            "1": 170,
+            "6": 240
+          },
+          "trifecta": {
+            "1-3-6": 1570
+          },
+          "trio": {
+            "1-6-3": 6480
+          }
+        },
+        "updatedAt": "2025-12-15T02:19:07.097Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -14223,7 +14508,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 7,
-      "startTime": "11:20",
+      "startTime": "11:24",
       "prediction": {
         "topPick": 2,
         "top3": [
@@ -14335,7 +14620,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 8,
-      "startTime": "11:52",
+      "startTime": "11:54",
       "prediction": {
         "topPick": 5,
         "top3": [
@@ -14448,7 +14733,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 9,
-      "startTime": "12:24",
+      "startTime": "12:25",
       "prediction": {
         "topPick": 1,
         "top3": [
@@ -14560,7 +14845,7 @@
       "venue": "徳山",
       "venueCode": 18,
       "raceNumber": 10,
-      "startTime": "12:58",
+      "startTime": "12:59",
       "prediction": {
         "topPick": 3,
         "top3": [
@@ -14994,17 +15279,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "1": 100
+          },
+          "place": {
+            "1": 100,
+            "2": 180
+          },
+          "trifecta": {
+            "1-2-3": 330
+          },
+          "trio": {
+            "1-2-3": 640
+          }
+        },
+        "updatedAt": "2025-12-15T02:20:12.737Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -16352,17 +16652,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 6,
+        "payouts": {
+          "win": {
+            "1": 130
+          },
+          "place": {
+            "1": 100,
+            "2": 120
+          },
+          "trifecta": {
+            "1-2-6": 400
+          },
+          "trio": {
+            "1-2-6": 640
+          }
+        },
+        "updatedAt": "2025-12-15T02:22:09.804Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": true,
+        "top3Hit": true,
+        "top3Included": false
       }
     },
     {
@@ -16465,17 +16780,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 5,
+        "payouts": {
+          "win": {
+            "1": 160
+          },
+          "place": {
+            "1": 100,
+            "2": 360
+          },
+          "trifecta": {
+            "1-2-5": 1580
+          },
+          "trio": {
+            "1-2-5": 3210
+          }
+        },
+        "updatedAt": "2025-12-15T02:22:20.512Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -16578,17 +16908,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "1": 100
+          },
+          "place": {
+            "1": 100,
+            "3": 120
+          },
+          "trifecta": {
+            "1-2-3": 250
+          },
+          "trio": {
+            "1-3-2": 480
+          }
+        },
+        "updatedAt": "2025-12-15T02:22:29.177Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": true,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -16691,17 +17036,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 2,
+        "rank2": 1,
+        "rank3": 6,
+        "payouts": {
+          "win": {
+            "2": 1410
+          },
+          "place": {
+            "1": 100,
+            "2": 130
+          },
+          "trifecta": {
+            "1-2-6": 440
+          },
+          "trio": {
+            "2-1-6": 8290
+          }
+        },
+        "updatedAt": "2025-12-15T02:22:39.882Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": true,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -16803,17 +17163,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 2,
+        "rank2": 1,
+        "rank3": 4,
+        "payouts": {
+          "win": {
+            "2": 440
+          },
+          "place": {
+            "1": 110,
+            "2": 130
+          },
+          "trifecta": {
+            "1-2-4": 910
+          },
+          "trio": {
+            "2-1-4": 3140
+          }
+        },
+        "updatedAt": "2025-12-15T02:22:49.587Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": false,
+        "top3Hit": false,
+        "top3Included": false
       }
     },
     {
@@ -16916,17 +17291,32 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 2,
+        "rank2": 3,
+        "rank3": 1,
+        "payouts": {
+          "win": {
+            "2": 220
+          },
+          "place": {
+            "2": 130,
+            "3": 180
+          },
+          "trifecta": {
+            "1-2-3": 180
+          },
+          "trio": {
+            "2-3-1": 1790
+          }
+        },
+        "updatedAt": "2025-12-15T02:22:59.245Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "topPickPlace": null,
-        "top3Hit": null,
-        "top3Included": null
+        "topPickHit": false,
+        "topPickPlace": true,
+        "top3Hit": true,
+        "top3Included": false
       }
     },
     {
