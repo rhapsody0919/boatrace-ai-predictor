@@ -10,11 +10,11 @@
           "placeCd": 1,
           "raceNo": 1,
           "weather": "晴",
-          "airTemp": 5,
+          "airTemp": 4,
           "windDirection": 2,
-          "windVelocity": 6,
+          "windVelocity": 4,
           "waterTemp": 8,
-          "waveHeight": 5,
+          "waveHeight": 3,
           "startTime": "15:24",
           "racers": [
             {
@@ -1090,9 +1090,9 @@
           "weather": "晴",
           "airTemp": 5,
           "windDirection": 2,
-          "windVelocity": 6,
+          "windVelocity": 5,
           "waterTemp": 8,
-          "waveHeight": 5,
+          "waveHeight": 4,
           "startTime": "20:45",
           "racers": [
             {
@@ -3556,11 +3556,11 @@
           "placeCd": 7,
           "raceNo": 1,
           "weather": "晴",
-          "airTemp": 7,
-          "windDirection": 3,
-          "windVelocity": 2,
+          "airTemp": 6,
+          "windDirection": 5,
+          "windVelocity": 1,
           "waterTemp": 13,
-          "waveHeight": 1,
+          "waveHeight": 0,
           "startTime": "15:21",
           "racers": [
             {
@@ -9458,6 +9458,168 @@
       ]
     },
     {
+      "placeCd": 12,
+      "placeName": "住之江",
+      "races": [
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 1,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 2,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 3,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 4,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 5,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 6,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 7,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 8,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 9,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 10,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 11,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        },
+        {
+          "date": "2025-12-15",
+          "placeCd": 12,
+          "raceNo": 12,
+          "weather": "",
+          "airTemp": null,
+          "windDirection": 0,
+          "windVelocity": null,
+          "waterTemp": null,
+          "waveHeight": null,
+          "startTime": null,
+          "racers": []
+        }
+      ]
+    },
+    {
       "placeCd": 15,
       "placeName": "丸亀",
       "races": [
@@ -9468,9 +9630,9 @@
           "weather": "晴",
           "airTemp": 9,
           "windDirection": 13,
-          "windVelocity": 4,
+          "windVelocity": 3,
           "waterTemp": 15,
-          "waveHeight": 4,
+          "waveHeight": 3,
           "startTime": "15:19",
           "racers": [
             {
@@ -16550,5 +16712,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-15T11:25:55.799Z"
+  "scrapedAt": "2025-12-15T12:57:01.362Z"
 }
