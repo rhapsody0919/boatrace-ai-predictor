@@ -620,7 +620,14 @@ function App() {
                         {/* 単勝 */}
                         <div className="check-item">
                           {prediction.topPick.number === prediction.result.rank1 ? (
-                            <div className="hit">✅ 単勝的中！</div>
+                            <div className="hit">
+                              ✅ 単勝的中！
+                              {prediction.result.payouts?.win?.[prediction.topPick.number] && (
+                                <span style={{ marginLeft: '0.5rem', color: '#2196f3', fontWeight: 'bold' }}>
+                                  配当: {prediction.result.payouts.win[prediction.topPick.number]}円
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <div className="miss">❌ 単勝外れ（予想: {prediction.topPick.number}号艇 → 実際: {prediction.result.rank1}号艇）</div>
                           )}
@@ -630,7 +637,14 @@ function App() {
                         <div className="check-item">
                           {(prediction.topPick.number === prediction.result.rank1 ||
                             prediction.topPick.number === prediction.result.rank2) ? (
-                            <div className="hit">✅ 複勝的中！</div>
+                            <div className="hit">
+                              ✅ 複勝的中！
+                              {prediction.result.payouts?.place?.[prediction.topPick.number] && (
+                                <span style={{ marginLeft: '0.5rem', color: '#2196f3', fontWeight: 'bold' }}>
+                                  配当: {prediction.result.payouts.place[prediction.topPick.number]}円
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <div className="miss">❌ 複勝外れ</div>
                           )}
@@ -641,7 +655,19 @@ function App() {
                           {prediction.top3.includes(prediction.result.rank1) &&
                            prediction.top3.includes(prediction.result.rank2) &&
                            prediction.top3.includes(prediction.result.rank3) ? (
-                            <div className="hit">✅ 3連複的中！</div>
+                            <div className="hit">
+                              ✅ 3連複的中！
+                              {(() => {
+                                const sorted = [prediction.result.rank1, prediction.result.rank2, prediction.result.rank3].sort((a, b) => a - b);
+                                const key = sorted.join('-');
+                                const payout = prediction.result.payouts?.trifecta?.[key];
+                                return payout && (
+                                  <span style={{ marginLeft: '0.5rem', color: '#2196f3', fontWeight: 'bold' }}>
+                                    配当: {payout}円
+                                  </span>
+                                );
+                              })()}
+                            </div>
                           ) : (
                             <div className="miss">❌ 3連複外れ</div>
                           )}
@@ -652,7 +678,18 @@ function App() {
                           {prediction.top3[0] === prediction.result.rank1 &&
                            prediction.top3[1] === prediction.result.rank2 &&
                            prediction.top3[2] === prediction.result.rank3 ? (
-                            <div className="hit">✅ 3連単的中！</div>
+                            <div className="hit">
+                              ✅ 3連単的中！
+                              {(() => {
+                                const key = `${prediction.result.rank1}-${prediction.result.rank2}-${prediction.result.rank3}`;
+                                const payout = prediction.result.payouts?.trio?.[key];
+                                return payout && (
+                                  <span style={{ marginLeft: '0.5rem', color: '#2196f3', fontWeight: 'bold' }}>
+                                    配当: {payout}円
+                                  </span>
+                                );
+                              })()}
+                            </div>
                           ) : (
                             <div className="miss">❌ 3連単外れ</div>
                           )}
