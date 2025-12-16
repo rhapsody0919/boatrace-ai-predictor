@@ -461,6 +461,34 @@ function App() {
             <section ref={predictionRef} className="prediction-section">
               <h2>📊 AI予想結果 - {selectedRace.venue} {selectedRace.raceNumber}R</h2>
 
+              {selectedRace.rawData && selectedRace.rawData.placeCd && selectedRace.rawData.date && (
+                <div style={{
+                  marginTop: '1rem',
+                  marginBottom: '1.5rem',
+                  padding: '0.75rem 1rem',
+                  background: '#e3f2fd',
+                  borderRadius: '8px',
+                  borderLeft: '4px solid #2196f3'
+                }}>
+                  <span style={{ marginRight: '0.5rem' }}>🔗</span>
+                  <a
+                    href={`https://www.boatrace.jp/owpc/pc/race/racelist?rno=${selectedRace.raceNumber}&jcd=${String(selectedRace.rawData.placeCd).padStart(2, '0')}&hd=${selectedRace.rawData.date.replace(/-/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: '#1976d2',
+                      textDecoration: 'none',
+                      fontWeight: '500'
+                    }}
+                  >
+                    公式サイトでレース情報を見る
+                  </a>
+                  <span style={{ marginLeft: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
+                    （新しいタブで開きます）
+                  </span>
+                </div>
+              )}
+
               {isAnalyzing ? (
                 <div className="analyzing">
                   <div className="spinner"></div>
