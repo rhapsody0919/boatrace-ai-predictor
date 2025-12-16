@@ -369,7 +369,7 @@ function App() {
           ) : (
             <>
               <section className="race-list-section">
-                <h2>🏁 本日開催中のレース {isRealData && <span style={{fontSize: '0.8rem', color: '#22c55e', marginLeft: '1rem'}}>✓ 実データ</span>}</h2>
+                <h2>🏁 本日開催中のレース</h2>
 
             {loading ? (
               <div className="analyzing">
