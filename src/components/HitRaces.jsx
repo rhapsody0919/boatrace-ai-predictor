@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react'
 function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) {
   const [hitRacesToday, setHitRacesToday] = useState([])
   const [hitRacesYesterday, setHitRacesYesterday] = useState([])
+  const [hitRacesAll, setHitRacesAll] = useState([])
   const [showAllToday, setShowAllToday] = useState(false)
   const [showAllYesterday, setShowAllYesterday] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [selectedPeriod, setSelectedPeriod] = useState('today') // 'today', 'yesterday', 'all'
 
   // 的中レースを読み込む
   useEffect(() => {
@@ -131,6 +133,17 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
 
         setHitRacesToday(extractHitRaces(todayPredictions))
         setHitRacesYesterday(extractHitRaces(yesterdayPredictions))
+
+        // 全期間のデータを読み込む（過去14日分）
+        const allHitRaces = []
+        for (let i = 0; i < 14; i++) {
+          const date = new Date(jstNow.getTime() - i * 24 * 60 * 60 * 1000)
+          const dateStr = date.toISOString().split('T')[0]
+          const predictions = await loadDayPredictions(dateStr)
+          const hits = extractHitRaces(predictions)
+          allHitRaces.push(...hits)
+        }
+        setHitRacesAll(allHitRaces)
       } catch (error) {
         console.error('的中レース読み込みエラー:', error)
       } finally {
@@ -163,6 +176,38 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
     }
   }
 
+  // 競艇場別の統計を計算
+  const calculateVenueStats = () => {
+    let hitRaces = []
+    if (selectedPeriod === 'today') {
+      hitRaces = hitRacesToday
+    } else if (selectedPeriod === 'yesterday') {
+      hitRaces = hitRacesYesterday
+    } else {
+      hitRaces = hitRacesAll
+    }
+
+    // 競艇場ごとに集計
+    const venueStats = {}
+    hitRaces.forEach(race => {
+      const venue = race.venue
+      if (!venueStats[venue]) {
+        venueStats[venue] = {
+          venue,
+          hitCount: 0,
+          totalPayout: 0
+        }
+      }
+      venueStats[venue].hitCount++
+      venueStats[venue].totalPayout += race.totalPayout
+    })
+
+    // 配列に変換して的中数でソート
+    return Object.values(venueStats).sort((a, b) => b.hitCount - a.hitCount)
+  }
+
+  const venueStats = calculateVenueStats()
+
   if (loading) {
     return (
       <div style={{padding: '2rem', textAlign: 'center'}}>
@@ -190,6 +235,126 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
 
   return (
     <div>
+      {/* 競艇場別統計セクション */}
+      <section style={{
+        marginBottom: '2rem',
+        padding: '1.5rem',
+        background: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+          📊 競艇場別の的中実績
+        </h2>
+
+        {/* 期間選択タブ */}
+        <div style={{
+          display: 'flex',
+          gap: '0.5rem',
+          marginBottom: '1.5rem',
+          borderBottom: '2px solid #e2e8f0',
+          paddingBottom: '0'
+        }}>
+          <button
+            onClick={() => setSelectedPeriod('today')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: selectedPeriod === 'today' ? '#667eea' : 'transparent',
+              color: selectedPeriod === 'today' ? 'white' : '#64748b',
+              border: 'none',
+              borderBottom: selectedPeriod === 'today' ? '3px solid #667eea' : '3px solid transparent',
+              cursor: 'pointer',
+              fontWeight: selectedPeriod === 'today' ? 'bold' : 'normal',
+              fontSize: '1rem',
+              transition: 'all 0.2s'
+            }}
+          >
+            今日
+          </button>
+          <button
+            onClick={() => setSelectedPeriod('yesterday')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: selectedPeriod === 'yesterday' ? '#667eea' : 'transparent',
+              color: selectedPeriod === 'yesterday' ? 'white' : '#64748b',
+              border: 'none',
+              borderBottom: selectedPeriod === 'yesterday' ? '3px solid #667eea' : '3px solid transparent',
+              cursor: 'pointer',
+              fontWeight: selectedPeriod === 'yesterday' ? 'bold' : 'normal',
+              fontSize: '1rem',
+              transition: 'all 0.2s'
+            }}
+          >
+            昨日
+          </button>
+          <button
+            onClick={() => setSelectedPeriod('all')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: selectedPeriod === 'all' ? '#667eea' : 'transparent',
+              color: selectedPeriod === 'all' ? 'white' : '#64748b',
+              border: 'none',
+              borderBottom: selectedPeriod === 'all' ? '3px solid #667eea' : '3px solid transparent',
+              cursor: 'pointer',
+              fontWeight: selectedPeriod === 'all' ? 'bold' : 'normal',
+              fontSize: '1rem',
+              transition: 'all 0.2s'
+            }}
+          >
+            全期間（14日間）
+          </button>
+        </div>
+
+        {/* 統計テーブル */}
+        {venueStats.length > 0 ? (
+          <div style={{overflowX: 'auto'}}>
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: '0.95rem'
+            }}>
+              <thead>
+                <tr style={{background: '#f8fafc', borderBottom: '2px solid #e2e8f0'}}>
+                  <th style={{padding: '1rem', textAlign: 'left', fontWeight: 'bold', color: '#1e293b'}}>順位</th>
+                  <th style={{padding: '1rem', textAlign: 'left', fontWeight: 'bold', color: '#1e293b'}}>競艇場</th>
+                  <th style={{padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: '#1e293b'}}>的中数</th>
+                  <th style={{padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: '#1e293b'}}>総配当</th>
+                </tr>
+              </thead>
+              <tbody>
+                {venueStats.map((stat, index) => (
+                  <tr key={stat.venue} style={{
+                    borderBottom: '1px solid #e2e8f0',
+                    transition: 'background 0.2s',
+                    background: index < 3 ? 'rgba(102, 126, 234, 0.05)' : 'white'
+                  }}>
+                    <td style={{padding: '1rem', textAlign: 'left'}}>
+                      {index === 0 && '🏆'}
+                      {index === 1 && '🥈'}
+                      {index === 2 && '🥉'}
+                      {index > 2 && (index + 1)}
+                    </td>
+                    <td style={{padding: '1rem', textAlign: 'left', fontWeight: '500', color: '#1e293b'}}>
+                      {stat.venue}
+                    </td>
+                    <td style={{padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: '#667eea'}}>
+                      {stat.hitCount}レース
+                    </td>
+                    <td style={{padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: '#dc2626'}}>
+                      {stat.totalPayout.toLocaleString()}円
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{padding: '2rem', textAlign: 'center', color: '#64748b'}}>
+            <p>選択期間に的中レースがありません</p>
+          </div>
+        )}
+      </section>
+
       {/* 今日の的中レース */}
       {hitRacesToday.length > 0 && (
         <section style={{
