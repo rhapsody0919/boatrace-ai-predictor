@@ -1369,4 +1369,32 @@ body {
     font-size: 0.95rem;
     padding: 0.6rem 1.2rem;
   }
+
+  /* 的中レースセクションのモバイル対応 */
+  .hit-races-section {
+    padding: 1rem !important;
+  }
+
+  .hit-races-section h2 {
+    font-size: 1.3rem !important;
+  }
+
+  .hit-races-section h3 {
+    font-size: 1rem !important;
+  }
+
+  /* カードグリッドを1カラムに */
+  .hit-races-section > div > div:first-of-type {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 統計情報のレイアウト調整 */
+  .hit-races-section > div:last-of-type > div {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .hit-races-section > div:last-of-type > div > div {
+    width: 100%;
+  }
 }
