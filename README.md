@@ -40,6 +40,16 @@ cd boatrace-ai-predictor
 npm install
 ```
 
+### 環境変数の設定
+
+```bash
+# .envファイルを作成
+cp .env.example .env
+
+# .envファイルを編集してGoogle Analytics IDを設定
+# VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
 ### 開発サーバーの起動
 
 ```bash
@@ -47,6 +57,16 @@ npm run dev
 ```
 
 ブラウザで http://localhost:5173/boatrace-ai-predictor/ を開きます。
+
+### Google Analyticsの設定
+
+1. [Google Analytics](https://analytics.google.com/)でアカウントを作成
+2. GA4プロパティを作成
+3. 測定ID（G-XXXXXXXXXXの形式）を取得
+4. Vercelの環境変数に設定:
+   - Environment Variable名: `VITE_GA_MEASUREMENT_ID`
+   - Value: 取得した測定ID
+5. デプロイ後、Google Analyticsでデータが確認できます
 
 ## プロジェクト構成
 

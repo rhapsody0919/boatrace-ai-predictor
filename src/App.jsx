@@ -33,6 +33,45 @@ function App() {
     19: '下関', 20: '若松', 21: '芦屋', 22: '福岡', 23: '唐津', 24: '大村'
   }
 
+  // Google Analytics初期化
+  useEffect(() => {
+    const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID
+
+    if (gaId && gaId !== '%VITE_GA_MEASUREMENT_ID%') {
+      // Google Analyticsスクリプトを動的に追加
+      const script1 = document.createElement('script')
+      script1.async = true
+      script1.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`
+      document.head.appendChild(script1)
+
+      // gtag初期化
+      window.dataLayer = window.dataLayer || []
+      function gtag() {
+        window.dataLayer.push(arguments)
+      }
+      gtag('js', new Date())
+      gtag('config', gaId, {
+        page_path: window.location.pathname + window.location.search + window.location.hash,
+      })
+
+      // グローバルに設定
+      window.gtag = gtag
+
+      console.log('Google Analytics initialized:', gaId)
+    }
+  }, [])
+
+  // ページビュー追跡（タブ切り替え時）
+  useEffect(() => {
+    if (window.gtag) {
+      window.gtag('event', 'page_view', {
+        page_title: activeTab,
+        page_location: window.location.href,
+        page_path: window.location.pathname + window.location.hash,
+      })
+    }
+  }, [activeTab])
+
   // ブラウザの戻る/進むボタンの処理
   useEffect(() => {
     const handlePopState = () => {
