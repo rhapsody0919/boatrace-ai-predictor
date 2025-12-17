@@ -1,7 +1,7 @@
 {
   "date": "2025-12-18",
-  "generatedAt": "2025-12-17T18:40:16.561Z",
-  "updatedAt": "2025-12-17T18:59:38.018Z",
+  "generatedAt": "2025-12-17T19:25:15.737Z",
+  "updatedAt": "2025-12-17T19:48:20.011Z",
   "races": [
     {
       "raceId": "2025-12-18-03-01",
@@ -10831,6 +10831,2704 @@
         "reasoning": [
           "2号艇の中岡　　正彦選手は当レース場での勝率が6.740と最も高い",
           "2号艇（勝率7.720）、4号艇（勝率7.020）は全国勝率が高い実力者"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-01",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 1,
+      "startTime": "15:21",
+      "prediction": {
+        "topPick": 1,
+        "top3": [
+          1,
+          5,
+          4
+        ],
+        "confidence": 89,
+        "players": [
+          {
+            "number": 1,
+            "name": "宮武　　英司",
+            "grade": "B1",
+            "age": 56,
+            "winRate": "4.820",
+            "localWinRate": "5.350",
+            "motorNumber": 13,
+            "motor2Rate": "40.4",
+            "boatNumber": 58,
+            "boat2Rate": "44.8",
+            "aiScore": 4322
+          },
+          {
+            "number": 5,
+            "name": "島川　　海輝",
+            "grade": "A2",
+            "age": 22,
+            "winRate": "5.920",
+            "localWinRate": "5.730",
+            "motorNumber": 49,
+            "motor2Rate": "32.2",
+            "boatNumber": 26,
+            "boat2Rate": "24.1",
+            "aiScore": 4126
+          },
+          {
+            "number": 4,
+            "name": "小林　　遼太",
+            "grade": "B1",
+            "age": 35,
+            "winRate": "4.910",
+            "localWinRate": "5.500",
+            "motorNumber": 67,
+            "motor2Rate": "36.1",
+            "boatNumber": 32,
+            "boat2Rate": "31.5",
+            "aiScore": 4065
+          },
+          {
+            "number": 2,
+            "name": "山崎　　　祥",
+            "grade": "B1",
+            "age": 26,
+            "winRate": "5.340",
+            "localWinRate": "4.950",
+            "motorNumber": 56,
+            "motor2Rate": "39.7",
+            "boatNumber": 33,
+            "boat2Rate": "35.4",
+            "aiScore": 3865
+          },
+          {
+            "number": 3,
+            "name": "岡谷　　健吾",
+            "grade": "B1",
+            "age": 43,
+            "winRate": "4.990",
+            "localWinRate": "5.140",
+            "motorNumber": 66,
+            "motor2Rate": "27.5",
+            "boatNumber": 13,
+            "boat2Rate": "26.7",
+            "aiScore": 3515
+          },
+          {
+            "number": 6,
+            "name": "東　　　健介",
+            "grade": "B1",
+            "age": 59,
+            "winRate": "4.170",
+            "localWinRate": "4.380",
+            "motorNumber": 45,
+            "motor2Rate": "32.9",
+            "boatNumber": 59,
+            "boat2Rate": "31.3",
+            "aiScore": 3491
+          }
+        ],
+        "reasoning": [
+          "5号艇の島川　　海輝選手は当レース場での勝率が5.730と最も高い",
+          "1号艇（40.4%）のモーターは2連率が高く好調"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-02",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 2,
+      "startTime": "15:51",
+      "prediction": {
+        "topPick": 4,
+        "top3": [
+          4,
+          1,
+          3
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 4,
+            "name": "高岡　　竜也",
+            "grade": "B1",
+            "age": 32,
+            "winRate": "5.560",
+            "localWinRate": "5.580",
+            "motorNumber": 37,
+            "motor2Rate": "35.8",
+            "boatNumber": 17,
+            "boat2Rate": "30.3",
+            "aiScore": 4167
+          },
+          {
+            "number": 1,
+            "name": "佐藤　　駿介",
+            "grade": "B1",
+            "age": 32,
+            "winRate": "3.050",
+            "localWinRate": "4.430",
+            "motorNumber": 46,
+            "motor2Rate": "26.6",
+            "boatNumber": 35,
+            "boat2Rate": "37.9",
+            "aiScore": 3319
+          },
+          {
+            "number": 3,
+            "name": "杉江　　浩明",
+            "grade": "B1",
+            "age": 47,
+            "winRate": "3.450",
+            "localWinRate": "4.370",
+            "motorNumber": 53,
+            "motor2Rate": "37.7",
+            "boatNumber": 18,
+            "boat2Rate": "25.7",
+            "aiScore": 3295
+          },
+          {
+            "number": 2,
+            "name": "市川　　健太",
+            "grade": "B1",
+            "age": 28,
+            "winRate": "4.610",
+            "localWinRate": "4.550",
+            "motorNumber": 70,
+            "motor2Rate": "30.6",
+            "boatNumber": 73,
+            "boat2Rate": "34.5",
+            "aiScore": 2971
+          },
+          {
+            "number": 5,
+            "name": "福島　　陽子",
+            "grade": "B1",
+            "age": 57,
+            "winRate": "3.500",
+            "localWinRate": "4.370",
+            "motorNumber": 35,
+            "motor2Rate": "31.8",
+            "boatNumber": 53,
+            "boat2Rate": "37.6",
+            "aiScore": 2825
+          },
+          {
+            "number": 6,
+            "name": "中西　　月輝",
+            "grade": "B2",
+            "age": 20,
+            "winRate": "1.110",
+            "localWinRate": "0.000",
+            "motorNumber": 15,
+            "motor2Rate": "18.8",
+            "boatNumber": 54,
+            "boat2Rate": "24.1",
+            "aiScore": 1132
+          }
+        ],
+        "reasoning": [
+          "4号艇の高岡　　竜也選手は当レース場での勝率が5.580と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-03",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 3,
+      "startTime": "16:20",
+      "prediction": {
+        "topPick": 6,
+        "top3": [
+          6,
+          3,
+          4
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 6,
+            "name": "山崎　　哲司",
+            "grade": "A1",
+            "age": 46,
+            "winRate": "6.120",
+            "localWinRate": "7.000",
+            "motorNumber": 12,
+            "motor2Rate": "23.6",
+            "boatNumber": 20,
+            "boat2Rate": "32.4",
+            "aiScore": 4896
+          },
+          {
+            "number": 3,
+            "name": "柴田　　直哉",
+            "grade": "B1",
+            "age": 35,
+            "winRate": "4.980",
+            "localWinRate": "6.800",
+            "motorNumber": 32,
+            "motor2Rate": "35.8",
+            "boatNumber": 49,
+            "boat2Rate": "35.6",
+            "aiScore": 4523
+          },
+          {
+            "number": 4,
+            "name": "山口　　裕二",
+            "grade": "A1",
+            "age": 46,
+            "winRate": "6.380",
+            "localWinRate": "6.620",
+            "motorNumber": 41,
+            "motor2Rate": "29.6",
+            "boatNumber": 23,
+            "boat2Rate": "25.4",
+            "aiScore": 4160
+          },
+          {
+            "number": 1,
+            "name": "向井田　佑紀",
+            "grade": "B1",
+            "age": 36,
+            "winRate": "4.950",
+            "localWinRate": "5.290",
+            "motorNumber": 17,
+            "motor2Rate": "28.5",
+            "boatNumber": 46,
+            "boat2Rate": "35.5",
+            "aiScore": 3487
+          },
+          {
+            "number": 5,
+            "name": "幸田　　智裕",
+            "grade": "B1",
+            "age": 45,
+            "winRate": "4.610",
+            "localWinRate": "4.200",
+            "motorNumber": 20,
+            "motor2Rate": "35.1",
+            "boatNumber": 47,
+            "boat2Rate": "26.3",
+            "aiScore": 2520
+          },
+          {
+            "number": 2,
+            "name": "谷川　　祐一",
+            "grade": "A2",
+            "age": 44,
+            "winRate": "6.040",
+            "localWinRate": "0.000",
+            "motorNumber": 16,
+            "motor2Rate": "36.4",
+            "boatNumber": 56,
+            "boat2Rate": "25.6",
+            "aiScore": 2202
+          }
+        ],
+        "reasoning": [
+          "6号艇の山崎　　哲司選手は当レース場での勝率が7.000と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-04",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 4,
+      "startTime": "16:46",
+      "prediction": {
+        "topPick": 5,
+        "top3": [
+          5,
+          2,
+          4
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 5,
+            "name": "岡田　　憲行",
+            "grade": "A2",
+            "age": 49,
+            "winRate": "5.220",
+            "localWinRate": "7.110",
+            "motorNumber": 24,
+            "motor2Rate": "29.1",
+            "boatNumber": 69,
+            "boat2Rate": "32.6",
+            "aiScore": 4806
+          },
+          {
+            "number": 2,
+            "name": "船岡　洋一郎",
+            "grade": "A1",
+            "age": 38,
+            "winRate": "7.120",
+            "localWinRate": "6.280",
+            "motorNumber": 27,
+            "motor2Rate": "26.0",
+            "boatNumber": 55,
+            "boat2Rate": "37.2",
+            "aiScore": 4262
+          },
+          {
+            "number": 4,
+            "name": "吉武　　真也",
+            "grade": "B1",
+            "age": 31,
+            "winRate": "4.230",
+            "localWinRate": "3.330",
+            "motorNumber": 69,
+            "motor2Rate": "27.9",
+            "boatNumber": 44,
+            "boat2Rate": "41.6",
+            "aiScore": 2552
+          },
+          {
+            "number": 1,
+            "name": "櫻井　　　優",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "4.920",
+            "localWinRate": "0.000",
+            "motorNumber": 48,
+            "motor2Rate": "34.4",
+            "boatNumber": 52,
+            "boat2Rate": "35.6",
+            "aiScore": 2236
+          },
+          {
+            "number": 3,
+            "name": "大須賀　　友",
+            "grade": "A1",
+            "age": 38,
+            "winRate": "6.430",
+            "localWinRate": "0.000",
+            "motorNumber": 25,
+            "motor2Rate": "23.8",
+            "boatNumber": 48,
+            "boat2Rate": "32.0",
+            "aiScore": 1987
+          },
+          {
+            "number": 6,
+            "name": "池田　　美優",
+            "grade": "B2",
+            "age": 19,
+            "winRate": "1.110",
+            "localWinRate": "0.000",
+            "motorNumber": 28,
+            "motor2Rate": "27.9",
+            "boatNumber": 39,
+            "boat2Rate": "29.9",
+            "aiScore": 1521
+          }
+        ],
+        "reasoning": [
+          "5号艇の岡田　　憲行選手は当レース場での勝率が7.110と最も高い",
+          "2号艇（勝率7.120）は全国勝率が高い実力者"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-05",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 5,
+      "startTime": "17:15",
+      "prediction": {
+        "topPick": 5,
+        "top3": [
+          5,
+          2,
+          3
+        ],
+        "confidence": 74,
+        "players": [
+          {
+            "number": 5,
+            "name": "吉村　　正明",
+            "grade": "B2",
+            "age": 45,
+            "winRate": "5.020",
+            "localWinRate": "6.300",
+            "motorNumber": 21,
+            "motor2Rate": "28.0",
+            "boatNumber": 31,
+            "boat2Rate": "33.3",
+            "aiScore": 4449
+          },
+          {
+            "number": 2,
+            "name": "古澤　　光紀",
+            "grade": "A1",
+            "age": 38,
+            "winRate": "6.040",
+            "localWinRate": "6.480",
+            "motorNumber": 73,
+            "motor2Rate": "30.4",
+            "boatNumber": 12,
+            "boat2Rate": "34.9",
+            "aiScore": 4408
+          },
+          {
+            "number": 3,
+            "name": "三好　　勇人",
+            "grade": "B1",
+            "age": 42,
+            "winRate": "5.870",
+            "localWinRate": "6.370",
+            "motorNumber": 18,
+            "motor2Rate": "28.4",
+            "boatNumber": 21,
+            "boat2Rate": "42.5",
+            "aiScore": 4129
+          },
+          {
+            "number": 1,
+            "name": "杉田　　篤光",
+            "grade": "A2",
+            "age": 47,
+            "winRate": "5.300",
+            "localWinRate": "5.520",
+            "motorNumber": 60,
+            "motor2Rate": "33.1",
+            "boatNumber": 37,
+            "boat2Rate": "36.2",
+            "aiScore": 3699
+          },
+          {
+            "number": 6,
+            "name": "後藤　　陽介",
+            "grade": "A2",
+            "age": 46,
+            "winRate": "3.970",
+            "localWinRate": "5.000",
+            "motorNumber": 50,
+            "motor2Rate": "24.8",
+            "boatNumber": 42,
+            "boat2Rate": "44.8",
+            "aiScore": 3149
+          },
+          {
+            "number": 4,
+            "name": "長尾　　萌加",
+            "grade": "B1",
+            "age": 24,
+            "winRate": "4.950",
+            "localWinRate": "3.690",
+            "motorNumber": 54,
+            "motor2Rate": "30.8",
+            "boatNumber": 14,
+            "boat2Rate": "34.9",
+            "aiScore": 2672
+          }
+        ],
+        "reasoning": [
+          "2号艇の古澤　　光紀選手は当レース場での勝率が6.480と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-06",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 6,
+      "startTime": "17:45",
+      "prediction": {
+        "topPick": 6,
+        "top3": [
+          6,
+          1,
+          5
+        ],
+        "confidence": 79,
+        "players": [
+          {
+            "number": 6,
+            "name": "榎　　　幸司",
+            "grade": "A1",
+            "age": 43,
+            "winRate": "6.450",
+            "localWinRate": "6.340",
+            "motorNumber": 72,
+            "motor2Rate": "33.5",
+            "boatNumber": 19,
+            "boat2Rate": "25.5",
+            "aiScore": 4171
+          },
+          {
+            "number": 1,
+            "name": "小林　　遼太",
+            "grade": "B1",
+            "age": 35,
+            "winRate": "4.910",
+            "localWinRate": "5.500",
+            "motorNumber": 67,
+            "motor2Rate": "36.1",
+            "boatNumber": 32,
+            "boat2Rate": "31.5",
+            "aiScore": 4080
+          },
+          {
+            "number": 5,
+            "name": "岡瀬　　正人",
+            "grade": "A2",
+            "age": 50,
+            "winRate": "5.450",
+            "localWinRate": "5.030",
+            "motorNumber": 22,
+            "motor2Rate": "34.4",
+            "boatNumber": 71,
+            "boat2Rate": "30.4",
+            "aiScore": 3832
+          },
+          {
+            "number": 3,
+            "name": "野末　　智一",
+            "grade": "A2",
+            "age": 46,
+            "winRate": "5.840",
+            "localWinRate": "5.500",
+            "motorNumber": 39,
+            "motor2Rate": "36.3",
+            "boatNumber": 65,
+            "boat2Rate": "33.8",
+            "aiScore": 3449
+          },
+          {
+            "number": 4,
+            "name": "杉江　　浩明",
+            "grade": "B1",
+            "age": 47,
+            "winRate": "3.450",
+            "localWinRate": "4.370",
+            "motorNumber": 53,
+            "motor2Rate": "37.7",
+            "boatNumber": 18,
+            "boat2Rate": "25.7",
+            "aiScore": 3290
+          },
+          {
+            "number": 2,
+            "name": "高井　　駿弥",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "4.040",
+            "localWinRate": "2.250",
+            "motorNumber": 63,
+            "motor2Rate": "36.8",
+            "boatNumber": 16,
+            "boat2Rate": "33.1",
+            "aiScore": 2164
+          }
+        ],
+        "reasoning": [
+          "6号艇の榎　　　幸司選手は当レース場での勝率が6.340と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-07",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 7,
+      "startTime": "18:16",
+      "prediction": {
+        "topPick": 1,
+        "top3": [
+          1,
+          2,
+          3
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 1,
+            "name": "田口　　節子",
+            "grade": "A1",
+            "age": 44,
+            "winRate": "7.490",
+            "localWinRate": "7.360",
+            "motorNumber": 38,
+            "motor2Rate": "29.8",
+            "boatNumber": 64,
+            "boat2Rate": "21.9",
+            "aiScore": 4879
+          },
+          {
+            "number": 2,
+            "name": "平川　　香織",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "5.760",
+            "localWinRate": "5.700",
+            "motorNumber": 62,
+            "motor2Rate": "39.9",
+            "boatNumber": 29,
+            "boat2Rate": "33.1",
+            "aiScore": 4429
+          },
+          {
+            "number": 3,
+            "name": "蜂須　　瑞生",
+            "grade": "B1",
+            "age": 34,
+            "winRate": "6.220",
+            "localWinRate": "5.650",
+            "motorNumber": 44,
+            "motor2Rate": "34.3",
+            "boatNumber": 66,
+            "boat2Rate": "46.0",
+            "aiScore": 4323
+          },
+          {
+            "number": 5,
+            "name": "村上　　奈穂",
+            "grade": "B1",
+            "age": 32,
+            "winRate": "4.570",
+            "localWinRate": "4.890",
+            "motorNumber": 64,
+            "motor2Rate": "32.6",
+            "boatNumber": 41,
+            "boat2Rate": "22.3",
+            "aiScore": 3529
+          },
+          {
+            "number": 6,
+            "name": "土屋　　千明",
+            "grade": "A1",
+            "age": 43,
+            "winRate": "6.140",
+            "localWinRate": "5.000",
+            "motorNumber": 11,
+            "motor2Rate": "34.0",
+            "boatNumber": 63,
+            "boat2Rate": "35.6",
+            "aiScore": 3154
+          },
+          {
+            "number": 4,
+            "name": "福島　　陽子",
+            "grade": "B1",
+            "age": 57,
+            "winRate": "3.500",
+            "localWinRate": "4.370",
+            "motorNumber": 35,
+            "motor2Rate": "31.8",
+            "boatNumber": 53,
+            "boat2Rate": "37.6",
+            "aiScore": 2830
+          }
+        ],
+        "reasoning": [
+          "1号艇の田口　　節子選手は当レース場での勝率が7.360と最も高い",
+          "1号艇（勝率7.490）は全国勝率が高い実力者"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-08",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 8,
+      "startTime": "18:47",
+      "prediction": {
+        "topPick": 4,
+        "top3": [
+          4,
+          5,
+          2
+        ],
+        "confidence": 75,
+        "players": [
+          {
+            "number": 4,
+            "name": "森野　　正弘",
+            "grade": "A1",
+            "age": 40,
+            "winRate": "6.380",
+            "localWinRate": "7.050",
+            "motorNumber": 58,
+            "motor2Rate": "26.1",
+            "boatNumber": 72,
+            "boat2Rate": "24.6",
+            "aiScore": 4571
+          },
+          {
+            "number": 5,
+            "name": "柴田　　直哉",
+            "grade": "B1",
+            "age": 35,
+            "winRate": "4.980",
+            "localWinRate": "6.800",
+            "motorNumber": 32,
+            "motor2Rate": "35.8",
+            "boatNumber": 49,
+            "boat2Rate": "35.6",
+            "aiScore": 4513
+          },
+          {
+            "number": 2,
+            "name": "西村　　　勝",
+            "grade": "B1",
+            "age": 52,
+            "winRate": "4.300",
+            "localWinRate": "5.380",
+            "motorNumber": 33,
+            "motor2Rate": "33.1",
+            "boatNumber": 24,
+            "boat2Rate": "34.3",
+            "aiScore": 3978
+          },
+          {
+            "number": 6,
+            "name": "山崎　　　祥",
+            "grade": "B1",
+            "age": 26,
+            "winRate": "5.340",
+            "localWinRate": "4.950",
+            "motorNumber": 56,
+            "motor2Rate": "39.7",
+            "boatNumber": 33,
+            "boat2Rate": "35.4",
+            "aiScore": 3845
+          },
+          {
+            "number": 1,
+            "name": "原田　　秀弥",
+            "grade": "A2",
+            "age": 46,
+            "winRate": "5.130",
+            "localWinRate": "4.880",
+            "motorNumber": 36,
+            "motor2Rate": "35.2",
+            "boatNumber": 34,
+            "boat2Rate": "36.3",
+            "aiScore": 3765
+          },
+          {
+            "number": 3,
+            "name": "橋口　　真樹",
+            "grade": "B1",
+            "age": 50,
+            "winRate": "4.160",
+            "localWinRate": "4.120",
+            "motorNumber": 68,
+            "motor2Rate": "24.0",
+            "boatNumber": 68,
+            "boat2Rate": "36.0",
+            "aiScore": 2424
+          }
+        ],
+        "reasoning": [
+          "4号艇の森野　　正弘選手は当レース場での勝率が7.050と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-09",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 9,
+      "startTime": "19:16",
+      "prediction": {
+        "topPick": 1,
+        "top3": [
+          1,
+          5,
+          2
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 1,
+            "name": "横澤　　剛治",
+            "grade": "A2",
+            "age": 48,
+            "winRate": "6.270",
+            "localWinRate": "6.670",
+            "motorNumber": 30,
+            "motor2Rate": "44.3",
+            "boatNumber": 67,
+            "boat2Rate": "33.6",
+            "aiScore": 5245
+          },
+          {
+            "number": 5,
+            "name": "郷原　　章平",
+            "grade": "A2",
+            "age": 44,
+            "winRate": "6.580",
+            "localWinRate": "5.770",
+            "motorNumber": 57,
+            "motor2Rate": "44.4",
+            "boatNumber": 62,
+            "boat2Rate": "29.7",
+            "aiScore": 4487
+          },
+          {
+            "number": 2,
+            "name": "高岡　　竜也",
+            "grade": "B1",
+            "age": 32,
+            "winRate": "5.560",
+            "localWinRate": "5.580",
+            "motorNumber": 37,
+            "motor2Rate": "35.8",
+            "boatNumber": 17,
+            "boat2Rate": "30.3",
+            "aiScore": 4177
+          },
+          {
+            "number": 3,
+            "name": "天野　　晶夫",
+            "grade": "A2",
+            "age": 51,
+            "winRate": "5.070",
+            "localWinRate": "5.210",
+            "motorNumber": 40,
+            "motor2Rate": "26.5",
+            "boatNumber": 28,
+            "boat2Rate": "36.2",
+            "aiScore": 3565
+          },
+          {
+            "number": 6,
+            "name": "岡谷　　健吾",
+            "grade": "B1",
+            "age": 43,
+            "winRate": "4.990",
+            "localWinRate": "5.140",
+            "motorNumber": 66,
+            "motor2Rate": "27.5",
+            "boatNumber": 13,
+            "boat2Rate": "26.7",
+            "aiScore": 3500
+          },
+          {
+            "number": 4,
+            "name": "櫻井　　　優",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "4.920",
+            "localWinRate": "0.000",
+            "motorNumber": 48,
+            "motor2Rate": "34.4",
+            "boatNumber": 52,
+            "boat2Rate": "35.6",
+            "aiScore": 2221
+          }
+        ],
+        "reasoning": [
+          "1号艇の横澤　　剛治選手は当レース場での勝率が6.670と最も高い",
+          "1号艇（44.3%）、5号艇（44.4%）のモーターは2連率が高く好調"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-10",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 10,
+      "startTime": "19:43",
+      "prediction": {
+        "topPick": 4,
+        "top3": [
+          4,
+          1,
+          5
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 4,
+            "name": "宮武　　英司",
+            "grade": "B1",
+            "age": 56,
+            "winRate": "4.820",
+            "localWinRate": "5.350",
+            "motorNumber": 13,
+            "motor2Rate": "40.4",
+            "boatNumber": 58,
+            "boat2Rate": "44.8",
+            "aiScore": 4307
+          },
+          {
+            "number": 1,
+            "name": "岡瀬　　正人",
+            "grade": "A2",
+            "age": 50,
+            "winRate": "5.450",
+            "localWinRate": "5.030",
+            "motorNumber": 22,
+            "motor2Rate": "34.4",
+            "boatNumber": 71,
+            "boat2Rate": "30.4",
+            "aiScore": 3852
+          },
+          {
+            "number": 5,
+            "name": "佐藤　　駿介",
+            "grade": "B1",
+            "age": 32,
+            "winRate": "3.050",
+            "localWinRate": "4.430",
+            "motorNumber": 46,
+            "motor2Rate": "26.6",
+            "boatNumber": 35,
+            "boat2Rate": "37.9",
+            "aiScore": 3299
+          },
+          {
+            "number": 2,
+            "name": "後藤　　陽介",
+            "grade": "A2",
+            "age": 46,
+            "winRate": "3.970",
+            "localWinRate": "5.000",
+            "motorNumber": 50,
+            "motor2Rate": "24.8",
+            "boatNumber": 42,
+            "boat2Rate": "44.8",
+            "aiScore": 3169
+          },
+          {
+            "number": 3,
+            "name": "吉武　　真也",
+            "grade": "B1",
+            "age": 31,
+            "winRate": "4.230",
+            "localWinRate": "3.330",
+            "motorNumber": 69,
+            "motor2Rate": "27.9",
+            "boatNumber": 44,
+            "boat2Rate": "41.6",
+            "aiScore": 2557
+          },
+          {
+            "number": 6,
+            "name": "谷川　　祐一",
+            "grade": "A2",
+            "age": 44,
+            "winRate": "6.040",
+            "localWinRate": "0.000",
+            "motorNumber": 16,
+            "motor2Rate": "36.4",
+            "boatNumber": 56,
+            "boat2Rate": "25.6",
+            "aiScore": 2182
+          }
+        ],
+        "reasoning": [
+          "4号艇の宮武　　英司選手は当レース場での勝率が5.350と最も高い",
+          "4号艇（40.4%）のモーターは2連率が高く好調"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-11",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 11,
+      "startTime": "20:11",
+      "prediction": {
+        "topPick": 1,
+        "top3": [
+          1,
+          3,
+          5
+        ],
+        "confidence": 73,
+        "players": [
+          {
+            "number": 1,
+            "name": "山口　　裕二",
+            "grade": "A1",
+            "age": 46,
+            "winRate": "6.380",
+            "localWinRate": "6.620",
+            "motorNumber": 41,
+            "motor2Rate": "29.6",
+            "boatNumber": 23,
+            "boat2Rate": "25.4",
+            "aiScore": 4175
+          },
+          {
+            "number": 3,
+            "name": "島川　　海輝",
+            "grade": "A2",
+            "age": 22,
+            "winRate": "5.920",
+            "localWinRate": "5.730",
+            "motorNumber": 49,
+            "motor2Rate": "32.2",
+            "boatNumber": 26,
+            "boat2Rate": "24.1",
+            "aiScore": 4136
+          },
+          {
+            "number": 5,
+            "name": "三好　　勇人",
+            "grade": "B1",
+            "age": 42,
+            "winRate": "5.870",
+            "localWinRate": "6.370",
+            "motorNumber": 18,
+            "motor2Rate": "28.4",
+            "boatNumber": 21,
+            "boat2Rate": "42.5",
+            "aiScore": 4119
+          },
+          {
+            "number": 2,
+            "name": "土屋　　千明",
+            "grade": "A1",
+            "age": 43,
+            "winRate": "6.140",
+            "localWinRate": "5.000",
+            "motorNumber": 11,
+            "motor2Rate": "34.0",
+            "boatNumber": 63,
+            "boat2Rate": "35.6",
+            "aiScore": 3174
+          },
+          {
+            "number": 4,
+            "name": "市川　　健太",
+            "grade": "B1",
+            "age": 28,
+            "winRate": "4.610",
+            "localWinRate": "4.550",
+            "motorNumber": 70,
+            "motor2Rate": "30.6",
+            "boatNumber": 73,
+            "boat2Rate": "34.5",
+            "aiScore": 2961
+          },
+          {
+            "number": 6,
+            "name": "大須賀　　友",
+            "grade": "A1",
+            "age": 38,
+            "winRate": "6.430",
+            "localWinRate": "0.000",
+            "motorNumber": 25,
+            "motor2Rate": "23.8",
+            "boatNumber": 48,
+            "boat2Rate": "32.0",
+            "aiScore": 1972
+          }
+        ],
+        "reasoning": [
+          "1号艇の山口　　裕二選手は当レース場での勝率が6.620と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-19-12",
+      "venue": "下関",
+      "venueCode": 19,
+      "raceNumber": 12,
+      "startTime": "20:35",
+      "prediction": {
+        "topPick": 3,
+        "top3": [
+          3,
+          2,
+          1
+        ],
+        "confidence": 73,
+        "players": [
+          {
+            "number": 3,
+            "name": "山崎　　哲司",
+            "grade": "A1",
+            "age": 46,
+            "winRate": "6.120",
+            "localWinRate": "7.000",
+            "motorNumber": 12,
+            "motor2Rate": "23.6",
+            "boatNumber": 20,
+            "boat2Rate": "32.4",
+            "aiScore": 4911
+          },
+          {
+            "number": 2,
+            "name": "田口　　節子",
+            "grade": "A1",
+            "age": 44,
+            "winRate": "7.490",
+            "localWinRate": "7.360",
+            "motorNumber": 38,
+            "motor2Rate": "29.8",
+            "boatNumber": 64,
+            "boat2Rate": "21.9",
+            "aiScore": 4874
+          },
+          {
+            "number": 1,
+            "name": "森野　　正弘",
+            "grade": "A1",
+            "age": 40,
+            "winRate": "6.380",
+            "localWinRate": "7.050",
+            "motorNumber": 58,
+            "motor2Rate": "26.1",
+            "boatNumber": 72,
+            "boat2Rate": "24.6",
+            "aiScore": 4586
+          },
+          {
+            "number": 6,
+            "name": "古澤　　光紀",
+            "grade": "A1",
+            "age": 38,
+            "winRate": "6.040",
+            "localWinRate": "6.480",
+            "motorNumber": 73,
+            "motor2Rate": "30.4",
+            "boatNumber": 12,
+            "boat2Rate": "34.9",
+            "aiScore": 4388
+          },
+          {
+            "number": 5,
+            "name": "船岡　洋一郎",
+            "grade": "A1",
+            "age": 38,
+            "winRate": "7.120",
+            "localWinRate": "6.280",
+            "motorNumber": 27,
+            "motor2Rate": "26.0",
+            "boatNumber": 55,
+            "boat2Rate": "37.2",
+            "aiScore": 4247
+          },
+          {
+            "number": 4,
+            "name": "榎　　　幸司",
+            "grade": "A1",
+            "age": 43,
+            "winRate": "6.450",
+            "localWinRate": "6.340",
+            "motorNumber": 72,
+            "motor2Rate": "33.5",
+            "boatNumber": 19,
+            "boat2Rate": "25.5",
+            "aiScore": 4181
+          }
+        ],
+        "reasoning": [
+          "2号艇の田口　　節子選手は当レース場での勝率が7.360と最も高い",
+          "2号艇（勝率7.490）、5号艇（勝率7.120）は全国勝率が高い実力者"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-01",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 1,
+      "startTime": "08:47",
+      "prediction": {
+        "topPick": 2,
+        "top3": [
+          2,
+          6,
+          5
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 2,
+            "name": "長谷川　　暖",
+            "grade": "B1",
+            "age": 20,
+            "winRate": "5.040",
+            "localWinRate": "4.760",
+            "motorNumber": 18,
+            "motor2Rate": "39.4",
+            "boatNumber": 127,
+            "boat2Rate": "30.3",
+            "aiScore": 3800
+          },
+          {
+            "number": 6,
+            "name": "藤井　　公人",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "4.440",
+            "localWinRate": "4.460",
+            "motorNumber": 49,
+            "motor2Rate": "29.5",
+            "boatNumber": 155,
+            "boat2Rate": "33.8",
+            "aiScore": 3407
+          },
+          {
+            "number": 5,
+            "name": "三木　　晴斗",
+            "grade": "B1",
+            "age": 23,
+            "winRate": "4.730",
+            "localWinRate": "4.040",
+            "motorNumber": 20,
+            "motor2Rate": "28.4",
+            "boatNumber": 153,
+            "boat2Rate": "31.6",
+            "aiScore": 3187
+          },
+          {
+            "number": 3,
+            "name": "大森　　　翼",
+            "grade": "B1",
+            "age": 23,
+            "winRate": "4.320",
+            "localWinRate": "4.670",
+            "motorNumber": 25,
+            "motor2Rate": "36.1",
+            "boatNumber": 111,
+            "boat2Rate": "30.4",
+            "aiScore": 2668
+          },
+          {
+            "number": 1,
+            "name": "青木　　　蓮",
+            "grade": "A2",
+            "age": 25,
+            "winRate": "6.410",
+            "localWinRate": "2.000",
+            "motorNumber": 24,
+            "motor2Rate": "34.3",
+            "boatNumber": 165,
+            "boat2Rate": "34.8",
+            "aiScore": 2364
+          },
+          {
+            "number": 4,
+            "name": "佐藤　　太亮",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "4.170",
+            "localWinRate": "2.880",
+            "motorNumber": 12,
+            "motor2Rate": "27.1",
+            "boatNumber": 166,
+            "boat2Rate": "34.0",
+            "aiScore": 1896
+          }
+        ],
+        "reasoning": [
+          "2号艇の長谷川　　暖選手は当レース場での勝率が4.760と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-02",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 2,
+      "startTime": "09:13",
+      "prediction": {
+        "topPick": 4,
+        "top3": [
+          4,
+          5,
+          6
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 4,
+            "name": "大澤　　風葵",
+            "grade": "A1",
+            "age": 24,
+            "winRate": "5.740",
+            "localWinRate": "6.210",
+            "motorNumber": 2,
+            "motor2Rate": "32.0",
+            "boatNumber": 129,
+            "boat2Rate": "33.1",
+            "aiScore": 4682
+          },
+          {
+            "number": 5,
+            "name": "田中　　勇輔",
+            "grade": "B1",
+            "age": 31,
+            "winRate": "3.300",
+            "localWinRate": "4.610",
+            "motorNumber": 39,
+            "motor2Rate": "34.6",
+            "boatNumber": 134,
+            "boat2Rate": "30.1",
+            "aiScore": 3893
+          },
+          {
+            "number": 6,
+            "name": "柳瀬　　幹太",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "5.020",
+            "localWinRate": "4.690",
+            "motorNumber": 41,
+            "motor2Rate": "27.6",
+            "boatNumber": 124,
+            "boat2Rate": "35.9",
+            "aiScore": 3449
+          },
+          {
+            "number": 1,
+            "name": "吉川　　晴人",
+            "grade": "A2",
+            "age": 22,
+            "winRate": "5.840",
+            "localWinRate": "0.000",
+            "motorNumber": 43,
+            "motor2Rate": "38.7",
+            "boatNumber": 114,
+            "boat2Rate": "37.2",
+            "aiScore": 2489
+          },
+          {
+            "number": 2,
+            "name": "岡崎　　凪汰",
+            "grade": "B2",
+            "age": 23,
+            "winRate": "2.480",
+            "localWinRate": "1.470",
+            "motorNumber": 57,
+            "motor2Rate": "28.6",
+            "boatNumber": 123,
+            "boat2Rate": "34.0",
+            "aiScore": 1780
+          },
+          {
+            "number": 3,
+            "name": "眞崎　　武蔵",
+            "grade": "B1",
+            "age": 24,
+            "winRate": "2.060",
+            "localWinRate": "0.000",
+            "motorNumber": 27,
+            "motor2Rate": "21.5",
+            "boatNumber": 167,
+            "boat2Rate": "35.4",
+            "aiScore": 1548
+          }
+        ],
+        "reasoning": [
+          "4号艇の大澤　　風葵選手は当レース場での勝率が6.210と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-03",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 3,
+      "startTime": "09:39",
+      "prediction": {
+        "topPick": 3,
+        "top3": [
+          3,
+          1,
+          5
+        ],
+        "confidence": 88,
+        "players": [
+          {
+            "number": 3,
+            "name": "佐々木　完太",
+            "grade": "A1",
+            "age": 29,
+            "winRate": "7.230",
+            "localWinRate": "6.380",
+            "motorNumber": 37,
+            "motor2Rate": "28.9",
+            "boatNumber": 150,
+            "boat2Rate": "36.3",
+            "aiScore": 4358
+          },
+          {
+            "number": 1,
+            "name": "山下　　大輝",
+            "grade": "A2",
+            "age": 29,
+            "winRate": "6.140",
+            "localWinRate": "5.000",
+            "motorNumber": 14,
+            "motor2Rate": "28.8",
+            "boatNumber": 163,
+            "boat2Rate": "34.7",
+            "aiScore": 4172
+          },
+          {
+            "number": 5,
+            "name": "田村　　　慶",
+            "grade": "A2",
+            "age": 24,
+            "winRate": "5.200",
+            "localWinRate": "4.260",
+            "motorNumber": 33,
+            "motor2Rate": "27.8",
+            "boatNumber": 118,
+            "boat2Rate": "38.4",
+            "aiScore": 3680
+          },
+          {
+            "number": 4,
+            "name": "城間　　盛渚",
+            "grade": "B1",
+            "age": 24,
+            "winRate": "4.680",
+            "localWinRate": "2.460",
+            "motorNumber": 38,
+            "motor2Rate": "38.5",
+            "boatNumber": 126,
+            "boat2Rate": "22.6",
+            "aiScore": 2702
+          },
+          {
+            "number": 6,
+            "name": "土井　　歩夢",
+            "grade": "B1",
+            "age": 22,
+            "winRate": "5.670",
+            "localWinRate": "2.590",
+            "motorNumber": 36,
+            "motor2Rate": "37.1",
+            "boatNumber": 128,
+            "boat2Rate": "18.6",
+            "aiScore": 2371
+          },
+          {
+            "number": 2,
+            "name": "鈴木　　唯央",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "3.360",
+            "localWinRate": "0.000",
+            "motorNumber": 40,
+            "motor2Rate": "26.4",
+            "boatNumber": 137,
+            "boat2Rate": "34.9",
+            "aiScore": 1821
+          }
+        ],
+        "reasoning": [
+          "3号艇の佐々木　完太選手は当レース場での勝率が6.380と最も高い",
+          "3号艇（勝率7.230）は全国勝率が高い実力者"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-04",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 4,
+      "startTime": "10:05",
+      "prediction": {
+        "topPick": 4,
+        "top3": [
+          4,
+          1,
+          3
+        ],
+        "confidence": 89,
+        "players": [
+          {
+            "number": 4,
+            "name": "大場　　恒季",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "6.350",
+            "localWinRate": "7.330",
+            "motorNumber": 50,
+            "motor2Rate": "25.3",
+            "boatNumber": 169,
+            "boat2Rate": "25.7",
+            "aiScore": 5227
+          },
+          {
+            "number": 1,
+            "name": "前原　　大道",
+            "grade": "A1",
+            "age": 29,
+            "winRate": "7.190",
+            "localWinRate": "6.890",
+            "motorNumber": 48,
+            "motor2Rate": "33.5",
+            "boatNumber": 138,
+            "boat2Rate": "26.7",
+            "aiScore": 5037
+          },
+          {
+            "number": 3,
+            "name": "富田　　恕生",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "4.920",
+            "localWinRate": "5.090",
+            "motorNumber": 1,
+            "motor2Rate": "37.9",
+            "boatNumber": 125,
+            "boat2Rate": "33.5",
+            "aiScore": 3846
+          },
+          {
+            "number": 5,
+            "name": "塚越　　海斗",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "6.310",
+            "localWinRate": "4.200",
+            "motorNumber": 4,
+            "motor2Rate": "27.4",
+            "boatNumber": 122,
+            "boat2Rate": "37.1",
+            "aiScore": 3676
+          },
+          {
+            "number": 2,
+            "name": "三馬　　崇史",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "5.500",
+            "localWinRate": "4.960",
+            "motorNumber": 53,
+            "motor2Rate": "24.2",
+            "boatNumber": 132,
+            "boat2Rate": "44.4",
+            "aiScore": 3559
+          },
+          {
+            "number": 6,
+            "name": "松田　　淳平",
+            "grade": "B1",
+            "age": 23,
+            "winRate": "5.990",
+            "localWinRate": "4.000",
+            "motorNumber": 6,
+            "motor2Rate": "37.3",
+            "boatNumber": 148,
+            "boat2Rate": "33.5",
+            "aiScore": 3154
+          }
+        ],
+        "reasoning": [
+          "4号艇の大場　　恒季選手は当レース場での勝率が7.330と最も高い",
+          "1号艇（勝率7.190）は全国勝率が高い実力者"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-05",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 5,
+      "startTime": "10:36",
+      "prediction": {
+        "topPick": 1,
+        "top3": [
+          1,
+          6,
+          2
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 1,
+            "name": "中村　　泰平",
+            "grade": "A1",
+            "age": 29,
+            "winRate": "7.260",
+            "localWinRate": "6.900",
+            "motorNumber": 34,
+            "motor2Rate": "26.1",
+            "boatNumber": 113,
+            "boat2Rate": "28.5",
+            "aiScore": 4912
+          },
+          {
+            "number": 6,
+            "name": "若林　　樹蘭",
+            "grade": "A2",
+            "age": 23,
+            "winRate": "5.980",
+            "localWinRate": "5.820",
+            "motorNumber": 21,
+            "motor2Rate": "36.6",
+            "boatNumber": 112,
+            "boat2Rate": "24.6",
+            "aiScore": 4436
+          },
+          {
+            "number": 2,
+            "name": "永松　　良教",
+            "grade": "B1",
+            "age": 26,
+            "winRate": "4.780",
+            "localWinRate": "2.350",
+            "motorNumber": 45,
+            "motor2Rate": "34.4",
+            "boatNumber": 142,
+            "boat2Rate": "30.2",
+            "aiScore": 2434
+          },
+          {
+            "number": 4,
+            "name": "青木　　　蓮",
+            "grade": "A2",
+            "age": 25,
+            "winRate": "6.410",
+            "localWinRate": "2.000",
+            "motorNumber": 24,
+            "motor2Rate": "34.3",
+            "boatNumber": 165,
+            "boat2Rate": "34.8",
+            "aiScore": 2349
+          },
+          {
+            "number": 5,
+            "name": "網代　　良芽",
+            "grade": "B1",
+            "age": 21,
+            "winRate": "3.770",
+            "localWinRate": "0.000",
+            "motorNumber": 52,
+            "motor2Rate": "37.6",
+            "boatNumber": 146,
+            "boat2Rate": "34.4",
+            "aiScore": 2171
+          },
+          {
+            "number": 3,
+            "name": "鐘ヶ江　真司",
+            "grade": "B2",
+            "age": 23,
+            "winRate": "2.680",
+            "localWinRate": "3.170",
+            "motorNumber": 7,
+            "motor2Rate": "29.0",
+            "boatNumber": 130,
+            "boat2Rate": "34.0",
+            "aiScore": 2086
+          }
+        ],
+        "reasoning": [
+          "1号艇の中村　　泰平選手は当レース場での勝率が6.900と最も高い",
+          "1号艇（勝率7.260）は全国勝率が高い実力者"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-06",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 6,
+      "startTime": "11:07",
+      "prediction": {
+        "topPick": 6,
+        "top3": [
+          6,
+          2,
+          1
+        ],
+        "confidence": 82,
+        "players": [
+          {
+            "number": 6,
+            "name": "藤原　　仙二",
+            "grade": "A2",
+            "age": 22,
+            "winRate": "6.650",
+            "localWinRate": "5.960",
+            "motorNumber": 19,
+            "motor2Rate": "34.8",
+            "boatNumber": 145,
+            "boat2Rate": "38.5",
+            "aiScore": 3992
+          },
+          {
+            "number": 2,
+            "name": "田中　　駿兵",
+            "grade": "A2",
+            "age": 23,
+            "winRate": "6.890",
+            "localWinRate": "5.570",
+            "motorNumber": 42,
+            "motor2Rate": "36.0",
+            "boatNumber": 141,
+            "boat2Rate": "34.0",
+            "aiScore": 3871
+          },
+          {
+            "number": 1,
+            "name": "村松　　栄太",
+            "grade": "B1",
+            "age": 29,
+            "winRate": "4.750",
+            "localWinRate": "4.850",
+            "motorNumber": 30,
+            "motor2Rate": "31.0",
+            "boatNumber": 152,
+            "boat2Rate": "34.4",
+            "aiScore": 3759
+          },
+          {
+            "number": 3,
+            "name": "藤井　　公人",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "4.440",
+            "localWinRate": "4.460",
+            "motorNumber": 49,
+            "motor2Rate": "29.5",
+            "boatNumber": 155,
+            "boat2Rate": "33.8",
+            "aiScore": 3422
+          },
+          {
+            "number": 5,
+            "name": "若林　　義人",
+            "grade": "A1",
+            "age": 27,
+            "winRate": "6.310",
+            "localWinRate": "4.400",
+            "motorNumber": 5,
+            "motor2Rate": "31.2",
+            "boatNumber": 117,
+            "boat2Rate": "28.6",
+            "aiScore": 3117
+          },
+          {
+            "number": 4,
+            "name": "高山　　敬悟",
+            "grade": "B2",
+            "age": 28,
+            "winRate": "4.560",
+            "localWinRate": "4.050",
+            "motorNumber": 3,
+            "motor2Rate": "24.7",
+            "boatNumber": 133,
+            "boat2Rate": "35.0",
+            "aiScore": 2768
+          }
+        ],
+        "reasoning": [
+          "6号艇の藤原　　仙二選手は当レース場での勝率が5.960と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-07",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 7,
+      "startTime": "11:38",
+      "prediction": {
+        "topPick": 4,
+        "top3": [
+          4,
+          5,
+          1
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 4,
+            "name": "中村　　栄治",
+            "grade": "B1",
+            "age": 26,
+            "winRate": "5.090",
+            "localWinRate": "7.140",
+            "motorNumber": 47,
+            "motor2Rate": "24.4",
+            "boatNumber": 139,
+            "boat2Rate": "37.0",
+            "aiScore": 4822
+          },
+          {
+            "number": 5,
+            "name": "堀越　　雄貴",
+            "grade": "B1",
+            "age": 26,
+            "winRate": "4.780",
+            "localWinRate": "5.900",
+            "motorNumber": 16,
+            "motor2Rate": "30.7",
+            "boatNumber": 143,
+            "boat2Rate": "32.2",
+            "aiScore": 4021
+          },
+          {
+            "number": 1,
+            "name": "篠原　　晟弥",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "6.370",
+            "localWinRate": "4.340",
+            "motorNumber": 31,
+            "motor2Rate": "21.8",
+            "boatNumber": 161,
+            "boat2Rate": "35.8",
+            "aiScore": 3291
+          },
+          {
+            "number": 3,
+            "name": "鈴木　　唯央",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "3.360",
+            "localWinRate": "0.000",
+            "motorNumber": 40,
+            "motor2Rate": "26.4",
+            "boatNumber": 137,
+            "boat2Rate": "34.9",
+            "aiScore": 1816
+          },
+          {
+            "number": 2,
+            "name": "眞崎　　武蔵",
+            "grade": "B1",
+            "age": 24,
+            "winRate": "2.060",
+            "localWinRate": "0.000",
+            "motorNumber": 27,
+            "motor2Rate": "21.5",
+            "boatNumber": 167,
+            "boat2Rate": "35.4",
+            "aiScore": 1553
+          },
+          {
+            "number": 6,
+            "name": "八戸　　琉楓",
+            "grade": "B2",
+            "age": 20,
+            "winRate": "1.890",
+            "localWinRate": "1.000",
+            "motorNumber": 51,
+            "motor2Rate": "14.8",
+            "boatNumber": 136,
+            "boat2Rate": "25.8",
+            "aiScore": 1125
+          }
+        ],
+        "reasoning": [
+          "4号艇の中村　　栄治選手は当レース場での勝率が7.140と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-08",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 8,
+      "startTime": "12:09",
+      "prediction": {
+        "topPick": 6,
+        "top3": [
+          6,
+          2,
+          1
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 6,
+            "name": "藤田　　俊祐",
+            "grade": "A2",
+            "age": 23,
+            "winRate": "5.880",
+            "localWinRate": "6.900",
+            "motorNumber": 10,
+            "motor2Rate": "28.8",
+            "boatNumber": 162,
+            "boat2Rate": "37.5",
+            "aiScore": 5177
+          },
+          {
+            "number": 2,
+            "name": "畑田　　汰一",
+            "grade": "A1",
+            "age": 27,
+            "winRate": "6.930",
+            "localWinRate": "6.550",
+            "motorNumber": 56,
+            "motor2Rate": "29.9",
+            "boatNumber": 149,
+            "boat2Rate": "33.5",
+            "aiScore": 4529
+          },
+          {
+            "number": 1,
+            "name": "森　　　智哉",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "4.570",
+            "localWinRate": "4.880",
+            "motorNumber": 23,
+            "motor2Rate": "26.0",
+            "boatNumber": 156,
+            "boat2Rate": "34.0",
+            "aiScore": 3388
+          },
+          {
+            "number": 3,
+            "name": "城間　　盛渚",
+            "grade": "B1",
+            "age": 24,
+            "winRate": "4.680",
+            "localWinRate": "2.460",
+            "motorNumber": 38,
+            "motor2Rate": "38.5",
+            "boatNumber": 126,
+            "boat2Rate": "22.6",
+            "aiScore": 2707
+          },
+          {
+            "number": 5,
+            "name": "松本　　真広",
+            "grade": "B1",
+            "age": 26,
+            "winRate": "4.330",
+            "localWinRate": "3.580",
+            "motorNumber": 8,
+            "motor2Rate": "33.3",
+            "boatNumber": 158,
+            "boat2Rate": "32.2",
+            "aiScore": 2682
+          },
+          {
+            "number": 4,
+            "name": "岡崎　　凪汰",
+            "grade": "B2",
+            "age": 23,
+            "winRate": "2.480",
+            "localWinRate": "1.470",
+            "motorNumber": 57,
+            "motor2Rate": "28.6",
+            "boatNumber": 123,
+            "boat2Rate": "34.0",
+            "aiScore": 1770
+          }
+        ],
+        "reasoning": [
+          "6号艇の藤田　　俊祐選手は当レース場での勝率が6.900と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-09",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 9,
+      "startTime": "12:42",
+      "prediction": {
+        "topPick": 1,
+        "top3": [
+          1,
+          3,
+          6
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 1,
+            "name": "大場　　恒季",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "6.350",
+            "localWinRate": "7.330",
+            "motorNumber": 50,
+            "motor2Rate": "25.3",
+            "boatNumber": 169,
+            "boat2Rate": "25.7",
+            "aiScore": 5242
+          },
+          {
+            "number": 3,
+            "name": "山下　　大輝",
+            "grade": "A2",
+            "age": 29,
+            "winRate": "6.140",
+            "localWinRate": "5.000",
+            "motorNumber": 14,
+            "motor2Rate": "28.8",
+            "boatNumber": 163,
+            "boat2Rate": "34.7",
+            "aiScore": 4162
+          },
+          {
+            "number": 6,
+            "name": "宮脇　　遼太",
+            "grade": "A2",
+            "age": 27,
+            "winRate": "6.210",
+            "localWinRate": "6.080",
+            "motorNumber": 15,
+            "motor2Rate": "30.9",
+            "boatNumber": 115,
+            "boat2Rate": "27.3",
+            "aiScore": 4150
+          },
+          {
+            "number": 2,
+            "name": "田中　　勇輔",
+            "grade": "B1",
+            "age": 31,
+            "winRate": "3.300",
+            "localWinRate": "4.610",
+            "motorNumber": 39,
+            "motor2Rate": "34.6",
+            "boatNumber": 134,
+            "boat2Rate": "30.1",
+            "aiScore": 3908
+          },
+          {
+            "number": 4,
+            "name": "長谷川　　暖",
+            "grade": "B1",
+            "age": 20,
+            "winRate": "5.040",
+            "localWinRate": "4.760",
+            "motorNumber": 18,
+            "motor2Rate": "39.4",
+            "boatNumber": 127,
+            "boat2Rate": "30.3",
+            "aiScore": 3790
+          },
+          {
+            "number": 5,
+            "name": "鐘ヶ江　真司",
+            "grade": "B2",
+            "age": 23,
+            "winRate": "2.680",
+            "localWinRate": "3.170",
+            "motorNumber": 7,
+            "motor2Rate": "29.0",
+            "boatNumber": 130,
+            "boat2Rate": "34.0",
+            "aiScore": 2076
+          }
+        ],
+        "reasoning": [
+          "1号艇の大場　　恒季選手は当レース場での勝率が7.330と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-10",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 10,
+      "startTime": "13:15",
+      "prediction": {
+        "topPick": 2,
+        "top3": [
+          2,
+          4,
+          1
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 2,
+            "name": "若林　　樹蘭",
+            "grade": "A2",
+            "age": 23,
+            "winRate": "5.980",
+            "localWinRate": "5.820",
+            "motorNumber": 21,
+            "motor2Rate": "36.6",
+            "boatNumber": 112,
+            "boat2Rate": "24.6",
+            "aiScore": 4456
+          },
+          {
+            "number": 4,
+            "name": "富田　　恕生",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "4.920",
+            "localWinRate": "5.090",
+            "motorNumber": 1,
+            "motor2Rate": "37.9",
+            "boatNumber": 125,
+            "boat2Rate": "33.5",
+            "aiScore": 3841
+          },
+          {
+            "number": 1,
+            "name": "田村　　　慶",
+            "grade": "A2",
+            "age": 24,
+            "winRate": "5.200",
+            "localWinRate": "4.260",
+            "motorNumber": 33,
+            "motor2Rate": "27.8",
+            "boatNumber": 118,
+            "boat2Rate": "38.4",
+            "aiScore": 3700
+          },
+          {
+            "number": 3,
+            "name": "柳瀬　　幹太",
+            "grade": "B1",
+            "age": 27,
+            "winRate": "5.020",
+            "localWinRate": "4.690",
+            "motorNumber": 41,
+            "motor2Rate": "27.6",
+            "boatNumber": 124,
+            "boat2Rate": "35.9",
+            "aiScore": 3464
+          },
+          {
+            "number": 6,
+            "name": "小林　　孝彰",
+            "grade": "A2",
+            "age": 25,
+            "winRate": "5.680",
+            "localWinRate": "4.250",
+            "motorNumber": 55,
+            "motor2Rate": "29.9",
+            "boatNumber": 170,
+            "boat2Rate": "36.2",
+            "aiScore": 3415
+          },
+          {
+            "number": 5,
+            "name": "大森　　　翼",
+            "grade": "B1",
+            "age": 23,
+            "winRate": "4.320",
+            "localWinRate": "4.670",
+            "motorNumber": 25,
+            "motor2Rate": "36.1",
+            "boatNumber": 111,
+            "boat2Rate": "30.4",
+            "aiScore": 2658
+          }
+        ],
+        "reasoning": [
+          "2号艇の若林　　樹蘭選手は当レース場での勝率が5.820と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-11",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 11,
+      "startTime": "13:49",
+      "prediction": {
+        "topPick": 6,
+        "top3": [
+          6,
+          1,
+          4
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 6,
+            "name": "中山　　翔太",
+            "grade": "A2",
+            "age": 21,
+            "winRate": "6.540",
+            "localWinRate": "5.550",
+            "motorNumber": 35,
+            "motor2Rate": "38.5",
+            "boatNumber": 154,
+            "boat2Rate": "38.6",
+            "aiScore": 4828
+          },
+          {
+            "number": 1,
+            "name": "田中　　駿兵",
+            "grade": "A2",
+            "age": 23,
+            "winRate": "6.890",
+            "localWinRate": "5.570",
+            "motorNumber": 42,
+            "motor2Rate": "36.0",
+            "boatNumber": 141,
+            "boat2Rate": "34.0",
+            "aiScore": 3876
+          },
+          {
+            "number": 4,
+            "name": "三馬　　崇史",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "5.500",
+            "localWinRate": "4.960",
+            "motorNumber": 53,
+            "motor2Rate": "24.2",
+            "boatNumber": 132,
+            "boat2Rate": "44.4",
+            "aiScore": 3549
+          },
+          {
+            "number": 2,
+            "name": "篠原　　晟弥",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "6.370",
+            "localWinRate": "4.340",
+            "motorNumber": 31,
+            "motor2Rate": "21.8",
+            "boatNumber": 161,
+            "boat2Rate": "35.8",
+            "aiScore": 3286
+          },
+          {
+            "number": 3,
+            "name": "吉川　　晴人",
+            "grade": "A2",
+            "age": 22,
+            "winRate": "5.840",
+            "localWinRate": "0.000",
+            "motorNumber": 43,
+            "motor2Rate": "38.7",
+            "boatNumber": 114,
+            "boat2Rate": "37.2",
+            "aiScore": 2479
+          },
+          {
+            "number": 5,
+            "name": "佐藤　　太亮",
+            "grade": "B1",
+            "age": 25,
+            "winRate": "4.170",
+            "localWinRate": "2.880",
+            "motorNumber": 12,
+            "motor2Rate": "27.1",
+            "boatNumber": 166,
+            "boat2Rate": "34.0",
+            "aiScore": 1891
+          }
+        ],
+        "reasoning": [
+          "1号艇の田中　　駿兵選手は当レース場での勝率が5.570と最も高い"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "topPickHit": null,
+        "topPickPlace": null,
+        "top3Hit": null,
+        "top3Included": null
+      }
+    },
+    {
+      "raceId": "2025-12-18-21-12",
+      "venue": "芦屋",
+      "venueCode": 21,
+      "raceNumber": 12,
+      "startTime": "14:26",
+      "prediction": {
+        "topPick": 5,
+        "top3": [
+          5,
+          2,
+          6
+        ],
+        "confidence": 81,
+        "players": [
+          {
+            "number": 5,
+            "name": "前原　　大道",
+            "grade": "A1",
+            "age": 29,
+            "winRate": "7.190",
+            "localWinRate": "6.890",
+            "motorNumber": 48,
+            "motor2Rate": "33.5",
+            "boatNumber": 138,
+            "boat2Rate": "26.7",
+            "aiScore": 5017
+          },
+          {
+            "number": 2,
+            "name": "中村　　泰平",
+            "grade": "A1",
+            "age": 29,
+            "winRate": "7.260",
+            "localWinRate": "6.900",
+            "motorNumber": 34,
+            "motor2Rate": "26.1",
+            "boatNumber": 113,
+            "boat2Rate": "28.5",
+            "aiScore": 4907
+          },
+          {
+            "number": 6,
+            "name": "大澤　　風葵",
+            "grade": "A1",
+            "age": 24,
+            "winRate": "5.740",
+            "localWinRate": "6.210",
+            "motorNumber": 2,
+            "motor2Rate": "32.0",
+            "boatNumber": 129,
+            "boat2Rate": "33.1",
+            "aiScore": 4672
+          },
+          {
+            "number": 4,
+            "name": "畑田　　汰一",
+            "grade": "A1",
+            "age": 27,
+            "winRate": "6.930",
+            "localWinRate": "6.550",
+            "motorNumber": 56,
+            "motor2Rate": "29.9",
+            "boatNumber": 149,
+            "boat2Rate": "33.5",
+            "aiScore": 4519
+          },
+          {
+            "number": 1,
+            "name": "佐々木　完太",
+            "grade": "A1",
+            "age": 29,
+            "winRate": "7.230",
+            "localWinRate": "6.380",
+            "motorNumber": 37,
+            "motor2Rate": "28.9",
+            "boatNumber": 150,
+            "boat2Rate": "36.3",
+            "aiScore": 4368
+          },
+          {
+            "number": 3,
+            "name": "若林　　義人",
+            "grade": "A1",
+            "age": 27,
+            "winRate": "6.310",
+            "localWinRate": "4.400",
+            "motorNumber": 5,
+            "motor2Rate": "31.2",
+            "boatNumber": 117,
+            "boat2Rate": "28.6",
+            "aiScore": 3127
+          }
+        ],
+        "reasoning": [
+          "2号艇の中村　　泰平選手は当レース場での勝率が6.900と最も高い",
+          "5号艇（勝率7.190）、2号艇（勝率7.260）、1号艇（勝率7.230）は全国勝率が高い実力者"
         ]
       },
       "result": {
