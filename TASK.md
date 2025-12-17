@@ -46,8 +46,8 @@
 ## 未着手 📋
 
 ### 収益化準備
-- [ ] DNS伝播完了を待機
-- [ ] Google Analytics設定
+- [x] DNS伝播完了を待機
+- [x] Google Analytics設定
 - [ ] Google AdSense申請
 - [ ] note記事1本目執筆
 
