@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ShareButton } from './ShareButton'
-import { shareHitRaceToX } from '../utils/share'
+import { SocialShareButtons } from './SocialShareButtons'
+import { shareHitRaceToX, generateHitRaceShareText } from '../utils/share'
 
 function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) {
   const [hitRacesToday, setHitRacesToday] = useState([])
@@ -444,8 +445,9 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
 
                 {/* SNSシェアボタン */}
                 <div style={{textAlign: 'center'}} onClick={(e) => e.stopPropagation()}>
-                  <ShareButton
-                    onClick={() => shareHitRaceToX({
+                  <SocialShareButtons
+                    shareUrl="https://boat-ai.jp/"
+                    title={generateHitRaceShareText({
                       venue: hitRace.venue,
                       raceNo: hitRace.raceNumber,
                       date: hitRace.date,
@@ -459,8 +461,8 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
                       ].filter(Boolean),
                       totalPayout: hitRace.totalPayout
                     })}
-                    label="的中をシェア"
-                    variant="secondary"
+                    hashtags={['競艇', 'ボートレース', '的中', 'BoatAI']}
+                    size={36}
                   />
                 </div>
               </div>
@@ -606,8 +608,9 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
 
                 {/* SNSシェアボタン */}
                 <div style={{textAlign: 'center'}} onClick={(e) => e.stopPropagation()}>
-                  <ShareButton
-                    onClick={() => shareHitRaceToX({
+                  <SocialShareButtons
+                    shareUrl="https://boat-ai.jp/"
+                    title={generateHitRaceShareText({
                       venue: hitRace.venue,
                       raceNo: hitRace.raceNumber,
                       date: hitRace.date,
@@ -621,8 +624,8 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
                       ].filter(Boolean),
                       totalPayout: hitRace.totalPayout
                     })}
-                    label="的中をシェア"
-                    variant="secondary"
+                    hashtags={['競艇', 'ボートレース', '的中', 'BoatAI']}
+                    size={36}
                   />
                 </div>
               </div>

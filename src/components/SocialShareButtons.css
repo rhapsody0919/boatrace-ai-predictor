@@ -1,0 +1,29 @@
+.social-share-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.social-share-button {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.social-share-button:hover {
+  opacity: 0.8;
+  transform: translateY(-2px);
+}
+
+.social-share-button:active {
+  transform: translateY(0);
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .social-share-buttons {
+    gap: 10px;
+  }
+}

@@ -5,7 +5,8 @@ import PrivacyPolicy from './components/PrivacyPolicy'
 import Contact from './components/Contact'
 import HitRaces from './components/HitRaces'
 import { ShareButton } from './components/ShareButton'
-import { shareRacePredictionToX } from './utils/share'
+import { SocialShareButtons } from './components/SocialShareButtons'
+import { shareRacePredictionToX, generatePredictionShareText } from './utils/share'
 
 function App() {
   // URLのハッシュから初期タブを決定
@@ -622,14 +623,15 @@ function App() {
 
                   {/* SNSシェアボタン */}
                   <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-                    <ShareButton
-                      onClick={() => {
+                    <SocialShareButtons
+                      shareUrl="https://boat-ai.jp/"
+                      title={(() => {
                         // レースIDから日付を抽出 (YYYY-MM-DD-PlaceCode-RaceNo)
                         const raceId = selectedRace?.id || '';
                         const dateParts = raceId.split('-').slice(0, 3);
                         const date = dateParts.length === 3 ? dateParts.join('-') : '';
 
-                        shareRacePredictionToX({
+                        return generatePredictionShareText({
                           venue: selectedRace?.venue || '不明',
                           raceNo: selectedRace?.raceNumber || '?',
                           date: date,
@@ -639,8 +641,9 @@ function App() {
                             aiScores: [prediction.topPick.aiScore]
                           }
                         });
-                      }}
-                      label="この予想をシェア"
+                      })()}
+                      hashtags={['競艇', 'ボートレース', 'AI予想', 'BoatAI']}
+                      size={40}
                     />
                   </div>
 

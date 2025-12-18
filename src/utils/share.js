@@ -231,3 +231,61 @@ https://boat-ai.jp/
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'width=600,height=400');
 };
+
+/**
+ * AI予想のシェアテキストを生成（react-share用）
+ */
+export const generatePredictionShareText = (race) => {
+  const venue = race.venue || '不明';
+  const raceNo = race.raceNo || '?';
+  const topPick = race.prediction?.topPick || '?';
+  const top3 = race.prediction?.top3?.join('-') || '?-?-?';
+  const aiScore = race.prediction?.aiScores?.[0]?.toFixed(1) || '?';
+
+  let dateStr = '';
+  if (race.date) {
+    const parts = race.date.split('-');
+    if (parts.length === 3) {
+      dateStr = `${parts[1]}/${parts[2]} `;
+    }
+  }
+
+  const messages = [
+    `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】\n\n本命: ${topPick}号艇\n推奨: ${top3}\nAIスコア: ${aiScore}\n\n今回のレース、データ的にこの並びが来そう！\nAIスコアも高めで期待できるかも👀\n\n▼詳細を見る\nhttps://boat-ai.jp/`,
+    `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】\n\n本命: ${topPick}号艇\n推奨: ${top3}\nAIスコア: ${aiScore}\n\n選手のコンディションとモーター性能を分析した結果、\nこの組み合わせに注目してます📊\n\n▼詳細を見る\nhttps://boat-ai.jp/`,
+    `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】\n\n本命: ${topPick}号艇\n推奨: ${top3}\nAIスコア: ${aiScore}\n\n無料でここまで精度の高い予想が見られるのは嬉しい✨\n今日も当たりますように！\n\n▼詳細を見る\nhttps://boat-ai.jp/`,
+    `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】\n\n本命: ${topPick}号艇\n推奨: ${top3}\nAIスコア: ${aiScore}\n\n勝率と2連対率から見て、この予想は信頼できそう！\n皆さんはどう思いますか？🤔\n\n▼詳細を見る\nhttps://boat-ai.jp/`,
+    `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】\n\n本命: ${topPick}号艇\n推奨: ${top3}\nAIスコア: ${aiScore}\n\n最近的中率が上がってきてて嬉しい😊\nAIの予想、参考にしてみてください！\n\n▼詳細を見る\nhttps://boat-ai.jp/`
+  ];
+
+  return messages[Math.floor(Math.random() * messages.length)];
+};
+
+/**
+ * 的中結果のシェアテキストを生成（react-share用）
+ */
+export const generateHitRaceShareText = (race) => {
+  const venue = race.venue || '不明';
+  const raceNo = race.raceNo || '?';
+  const prediction = race.prediction?.top3?.join('-') || '?-?-?';
+  const result = race.result?.join('-') || '?-?-?';
+  const payout = race.totalPayout || 0;
+
+  let dateStr = '';
+  if (race.date) {
+    const parts = race.date.split('-');
+    if (parts.length === 3) {
+      dateStr = `${parts[1]}/${parts[2]} `;
+    }
+  }
+
+  const messages = [
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\n予想: ${prediction}\n結果: ${result} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\nAIの精度に驚いてます！\n\n▼本日の予想を見る\nhttps://boat-ai.jp/`,
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\n予想: ${prediction}\n結果: ${result} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n無料でこの精度はすごい！\n\n▼本日の予想を見る\nhttps://boat-ai.jp/`,
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\n予想: ${prediction}\n結果: ${result} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\nデータ分析の力を実感！\n\n▼本日の予想を見る\nhttps://boat-ai.jp/`,
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\n予想: ${prediction}\n結果: ${result} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n今日もAI予想が当たった！\n\n▼本日の予想を見る\nhttps://boat-ai.jp/`,
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\n予想: ${prediction}\n結果: ${result} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n的中率の高さに満足してます！\n\n▼本日の予想を見る\nhttps://boat-ai.jp/`
+  ];
+
+  return messages[Math.floor(Math.random() * messages.length)];
+};
