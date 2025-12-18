@@ -16,6 +16,13 @@ export const SocialShareButtons = ({
   size = 36,
   type = 'prediction' // 'prediction' or 'hit'
 }) => {
+  // LINEシェア用: テキストからURLを除去（LINEは自動的にURLを追加するため）
+  const lineTitle = title
+    .replace(/▼詳細を見る\nhttps:\/\/boat-ai\.jp\/\n?/g, '')
+    .replace(/▼本日の予想を見る\nhttps:\/\/boat-ai\.jp\/\n?/g, '')
+    .replace(/https:\/\/boat-ai\.jp\/\n?/g, '')
+    .trim();
+
   return (
     <div className="social-share-buttons">
       <TwitterShareButton
@@ -38,7 +45,7 @@ export const SocialShareButtons = ({
 
       <LineShareButton
         url={shareUrl}
-        title={title}
+        title={lineTitle}
         className="social-share-button"
       >
         <LineIcon size={size} round />
