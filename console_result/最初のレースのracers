@@ -1,0 +1,68 @@
+[
+    {
+        "lane": 1,
+        "name": "崎　　　利仁",
+        "grade": "B1",
+        "globalWinRate": 4.35,
+        "global2Rate": 17.74,
+        "localWinRate": 4.8,
+        "local2Rate": 27.1,
+        "motor2Rate": 35.74,
+        "boat2Rate": 0
+    },
+    {
+        "lane": 2,
+        "name": "坂　　咲友理",
+        "grade": "B1",
+        "globalWinRate": 3.5,
+        "global2Rate": 12.5,
+        "localWinRate": 2.17,
+        "local2Rate": 0,
+        "motor2Rate": 32.81,
+        "boat2Rate": 0
+    },
+    {
+        "lane": 3,
+        "name": "寺田　　空詩",
+        "grade": "B1",
+        "globalWinRate": 5.4,
+        "global2Rate": 34.15,
+        "localWinRate": 0,
+        "local2Rate": 0,
+        "motor2Rate": 33.33,
+        "boat2Rate": 28.57
+    },
+    {
+        "lane": 4,
+        "name": "向後　　龍一",
+        "grade": "A2",
+        "globalWinRate": 6.1,
+        "global2Rate": 44.44,
+        "localWinRate": 5.25,
+        "local2Rate": 37.5,
+        "motor2Rate": 32.22,
+        "boat2Rate": 12.5
+    },
+    {
+        "lane": 5,
+        "name": "柳瀬　　興志",
+        "grade": "A2",
+        "globalWinRate": 5.11,
+        "global2Rate": 26.23,
+        "localWinRate": 0,
+        "local2Rate": 0,
+        "motor2Rate": 33.04,
+        "boat2Rate": 0
+    },
+    {
+        "lane": 6,
+        "name": "岸本　　雄貴",
+        "grade": "B1",
+        "globalWinRate": 3.71,
+        "global2Rate": 18.81,
+        "localWinRate": 5.52,
+        "local2Rate": 39.13,
+        "motor2Rate": 38.35,
+        "boat2Rate": 0
+    }
+]

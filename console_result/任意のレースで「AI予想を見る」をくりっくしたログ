@@ -1,0 +1,4 @@
+ selectedRace: null
+App.jsx:133 🔍 selectedRace.rawData: undefined
+App.jsx:134 🔍 selectedRace.rawData.racers: undefined
+App.jsx:139 ⚠️ racers データがありません。ダミーデータを使用します。
