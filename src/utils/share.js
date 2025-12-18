@@ -66,7 +66,7 @@ export const shareHitRaceToX = (race) => {
 
 BoatAIで予想的中🎉
 
-▼予想を見る
+▼本日の予想を見る
 https://boat-ai.jp/
 
 #競艇 #ボートレース #的中 #BoatAI`;
