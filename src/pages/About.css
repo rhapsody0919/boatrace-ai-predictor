@@ -2,6 +2,8 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1rem;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0F2942 0%, #1A4D6F 100%);
 }
 
 .about-header {
@@ -12,12 +14,12 @@
 .about-header h1 {
   font-size: 3rem;
   margin-bottom: 0.5rem;
-  color: #1e293b;
+  color: white;
 }
 
 .about-header p {
   font-size: 1.3rem;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .about-section {
@@ -27,7 +29,7 @@
 .about-section h2 {
   font-size: 2rem;
   margin-bottom: 1.5rem;
-  color: #1e293b;
+  color: white;
   border-left: 5px solid #667eea;
   padding-left: 1rem;
 }
@@ -35,7 +37,7 @@
 .about-section p {
   font-size: 1.1rem;
   line-height: 1.8;
-  color: #475569;
+  color: #cbd5e1;
   margin-bottom: 1rem;
 }
 
@@ -157,17 +159,17 @@
 .step-content h3 {
   font-size: 1.3rem;
   margin-bottom: 0.5rem;
-  color: #1e293b;
+  color: white;
 }
 
 .step-content p {
-  color: #64748b;
+  color: #cbd5e1;
   margin: 0;
 }
 
 .note {
   text-align: center;
-  color: #64748b;
+  color: #94a3b8;
   font-style: italic;
   margin-top: 2rem;
 }
@@ -201,7 +203,7 @@
 
 .stats-note {
   text-align: center;
-  color: #64748b;
+  color: #94a3b8;
   font-size: 0.95rem;
   margin-top: 1.5rem;
 }
@@ -211,12 +213,12 @@
   font-size: 1.3rem;
   margin-top: 2rem;
   margin-bottom: 0.75rem;
-  color: #1e293b;
+  color: white;
 }
 
 .terms p,
 .terms ul {
-  color: #475569;
+  color: #cbd5e1;
   line-height: 1.8;
 }
 

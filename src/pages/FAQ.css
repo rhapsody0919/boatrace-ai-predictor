@@ -2,6 +2,8 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem 1rem;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0F2942 0%, #1A4D6F 100%);
 }
 
 .faq-header {
@@ -12,12 +14,12 @@
 .faq-header h1 {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
-  color: #1e293b;
+  color: white;
 }
 
 .faq-header p {
   font-size: 1.1rem;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .faq-category {
@@ -27,7 +29,7 @@
 .faq-category h2 {
   font-size: 1.75rem;
   margin-bottom: 1.5rem;
-  color: #1e293b;
+  color: white;
   border-left: 5px solid #667eea;
   padding-left: 1rem;
 }
