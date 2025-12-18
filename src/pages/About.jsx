@@ -104,7 +104,7 @@ export default function About() {
           <div className="feature-card">
             <div className="feature-icon">🔄</div>
             <h3>毎日更新</h3>
-            <p>1時間ごとに最新のレースデータを自動取得・分析します。</p>
+            <p>1時間ごとに最新のレースデータを分析します。</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon">📱</div>
@@ -126,7 +126,7 @@ export default function About() {
             <div className="step-number">1</div>
             <div className="step-content">
               <h3>データ収集</h3>
-              <p>公式サイトから最新のレースデータを自動取得</p>
+              <p>最新のレースデータを収集</p>
             </div>
           </div>
           <div className="ai-step">
