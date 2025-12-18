@@ -22,17 +22,82 @@ export const shareRacePredictionToX = (race) => {
     }
   }
 
-  const text = `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】
+  // 5種類のメッセージバリエーション（人間味のある表現）
+  const messages = [
+    `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】
 
 本命: ${topPick}号艇
 推奨: ${top3}
-
 AIスコア: ${aiScore}
+
+今回のレース、データ的にこの並びが来そう！
+AIスコアも高めで期待できるかも👀
 
 ▼詳細を見る
 https://boat-ai.jp/
 
-#競艇 #ボートレース #AI予想 #BoatAI`;
+#競艇 #ボートレース #AI予想 #BoatAI`,
+
+    `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】
+
+本命: ${topPick}号艇
+推奨: ${top3}
+AIスコア: ${aiScore}
+
+選手のコンディションとモーター性能を分析した結果、
+この組み合わせに注目してます📊
+
+▼詳細を見る
+https://boat-ai.jp/
+
+#競艇 #ボートレース #AI予想 #BoatAI`,
+
+    `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】
+
+本命: ${topPick}号艇
+推奨: ${top3}
+AIスコア: ${aiScore}
+
+無料でここまで精度の高い予想が見られるのは嬉しい✨
+今日も当たりますように！
+
+▼詳細を見る
+https://boat-ai.jp/
+
+#競艇 #ボートレース #AI予想 #BoatAI`,
+
+    `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】
+
+本命: ${topPick}号艇
+推奨: ${top3}
+AIスコア: ${aiScore}
+
+勝率と2連対率から見て、この予想は信頼できそう！
+皆さんはどう思いますか？🤔
+
+▼詳細を見る
+https://boat-ai.jp/
+
+#競艇 #ボートレース #AI予想 #BoatAI`,
+
+    `🏁 BoatAI予想【${dateStr}${venue}${raceNo}R】
+
+本命: ${topPick}号艇
+推奨: ${top3}
+AIスコア: ${aiScore}
+
+最近的中率が上がってきてて嬉しい😊
+AIの予想、参考にしてみてください！
+
+▼詳細を見る
+https://boat-ai.jp/
+
+#競艇 #ボートレース #AI予想 #BoatAI`
+  ];
+
+  // ランダムにメッセージを選択
+  const randomIndex = Math.floor(Math.random() * messages.length);
+  const text = messages[randomIndex];
 
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'width=600,height=400');
