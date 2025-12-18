@@ -1,0 +1,55 @@
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.share-button-primary {
+  background: #1DA1F2;
+  color: white;
+}
+
+.share-button-primary:hover {
+  background: #1a8cd8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(29, 161, 242, 0.3);
+}
+
+.share-button-secondary {
+  background: #f0f0f0;
+  color: #1DA1F2;
+}
+
+.share-button-secondary:hover {
+  background: #e0e0e0;
+}
+
+.share-button:active {
+  transform: translateY(0);
+}
+
+.twitter-icon {
+  flex-shrink: 0;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .share-button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .twitter-icon {
+    width: 14px;
+    height: 14px;
+  }
+}

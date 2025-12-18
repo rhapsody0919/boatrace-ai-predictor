@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { ShareButton } from './ShareButton'
+import { shareHitRaceToX } from '../utils/share'
 
 function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) {
   const [hitRacesToday, setHitRacesToday] = useState([])
@@ -427,7 +429,8 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
                   paddingTop: '0.75rem',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  marginBottom: '0.75rem'
                 }}>
                   <span style={{fontWeight: 'bold', color: '#1e293b'}}>合計配当</span>
                   <span style={{
@@ -437,6 +440,28 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
                   }}>
                     {hitRace.totalPayout.toLocaleString()}円
                   </span>
+                </div>
+
+                {/* SNSシェアボタン */}
+                <div style={{textAlign: 'center'}} onClick={(e) => e.stopPropagation()}>
+                  <ShareButton
+                    onClick={() => shareHitRaceToX({
+                      venue: hitRace.venue,
+                      raceNo: hitRace.raceNumber,
+                      date: hitRace.date,
+                      prediction: {
+                        top3: hitRace.prediction?.top3 || []
+                      },
+                      result: [
+                        hitRace.result?.rank1,
+                        hitRace.result?.rank2,
+                        hitRace.result?.rank3
+                      ].filter(Boolean),
+                      totalPayout: hitRace.totalPayout
+                    })}
+                    label="的中をシェア"
+                    variant="secondary"
+                  />
                 </div>
               </div>
             ))}
@@ -566,7 +591,8 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
                   paddingTop: '0.75rem',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  marginBottom: '0.75rem'
                 }}>
                   <span style={{fontWeight: 'bold', color: '#1e293b'}}>合計配当</span>
                   <span style={{
@@ -576,6 +602,28 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
                   }}>
                     {hitRace.totalPayout.toLocaleString()}円
                   </span>
+                </div>
+
+                {/* SNSシェアボタン */}
+                <div style={{textAlign: 'center'}} onClick={(e) => e.stopPropagation()}>
+                  <ShareButton
+                    onClick={() => shareHitRaceToX({
+                      venue: hitRace.venue,
+                      raceNo: hitRace.raceNumber,
+                      date: hitRace.date,
+                      prediction: {
+                        top3: hitRace.prediction?.top3 || []
+                      },
+                      result: [
+                        hitRace.result?.rank1,
+                        hitRace.result?.rank2,
+                        hitRace.result?.rank3
+                      ].filter(Boolean),
+                      totalPayout: hitRace.totalPayout
+                    })}
+                    label="的中をシェア"
+                    variant="secondary"
+                  />
                 </div>
               </div>
             ))}

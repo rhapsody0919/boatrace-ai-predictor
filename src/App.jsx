@@ -4,6 +4,8 @@ import AccuracyDashboard from './components/AccuracyDashboard'
 import PrivacyPolicy from './components/PrivacyPolicy'
 import Contact from './components/Contact'
 import HitRaces from './components/HitRaces'
+import { ShareButton } from './components/ShareButton'
+import { shareRacePredictionToX } from './utils/share'
 
 function App() {
   // URLのハッシュから初期タブを決定
@@ -616,6 +618,30 @@ function App() {
                         <li key={idx}>{reason}</li>
                       ))}
                     </ul>
+                  </div>
+
+                  {/* SNSシェアボタン */}
+                  <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+                    <ShareButton
+                      onClick={() => {
+                        // レースIDから日付を抽出 (YYYY-MM-DD-PlaceCode-RaceNo)
+                        const raceId = selectedRace?.id || '';
+                        const dateParts = raceId.split('-').slice(0, 3);
+                        const date = dateParts.length === 3 ? dateParts.join('-') : '';
+
+                        shareRacePredictionToX({
+                          venue: selectedRace?.venue || '不明',
+                          raceNo: selectedRace?.raceNumber || '?',
+                          date: date,
+                          prediction: {
+                            topPick: prediction.topPick.number,
+                            top3: [1, 2, 3].map(i => prediction.allPlayers[i-1]?.number).filter(Boolean),
+                            aiScores: [prediction.topPick.aiScore]
+                          }
+                        });
+                      }}
+                      label="この予想をシェア"
+                    />
                   </div>
 
                   <div className="all-players">
