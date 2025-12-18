@@ -58,18 +58,82 @@ export const shareHitRaceToX = (race) => {
     }
   }
 
-  const text = `🎯 的中！【${dateStr}${venue}${raceNo}R】
+  // 5種類のメッセージバリエーション
+  const messages = [
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】
 
 予想: ${prediction}
 結果: ${result} ✅
 配当: ${payout.toLocaleString()}円
 
 BoatAIで予想的中🎉
+AIの精度に驚いてます！
 
 ▼本日の予想を見る
 https://boat-ai.jp/
 
-#競艇 #ボートレース #的中 #BoatAI`;
+#競艇 #ボートレース #的中 #BoatAI`,
+
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】
+
+予想: ${prediction}
+結果: ${result} ✅
+配当: ${payout.toLocaleString()}円
+
+BoatAIで予想的中🎉
+無料でこの精度はすごい！
+
+▼本日の予想を見る
+https://boat-ai.jp/
+
+#競艇 #ボートレース #的中 #BoatAI`,
+
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】
+
+予想: ${prediction}
+結果: ${result} ✅
+配当: ${payout.toLocaleString()}円
+
+BoatAIで予想的中🎉
+データ分析の力を実感！
+
+▼本日の予想を見る
+https://boat-ai.jp/
+
+#競艇 #ボートレース #的中 #BoatAI`,
+
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】
+
+予想: ${prediction}
+結果: ${result} ✅
+配当: ${payout.toLocaleString()}円
+
+BoatAIで予想的中🎉
+今日もAI予想が当たった！
+
+▼本日の予想を見る
+https://boat-ai.jp/
+
+#競艇 #ボートレース #的中 #BoatAI`,
+
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】
+
+予想: ${prediction}
+結果: ${result} ✅
+配当: ${payout.toLocaleString()}円
+
+BoatAIで予想的中🎉
+的中率の高さに満足してます！
+
+▼本日の予想を見る
+https://boat-ai.jp/
+
+#競艇 #ボートレース #的中 #BoatAI`
+  ];
+
+  // ランダムにメッセージを選択
+  const randomIndex = Math.floor(Math.random() * messages.length);
+  const text = messages[randomIndex];
 
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'width=600,height=400');
