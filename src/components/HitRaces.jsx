@@ -212,10 +212,50 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
   const venueStats = calculateVenueStats()
 
   if (loading) {
+    const tips = [
+      '💡 1号艇の勝率は全国平均で約55%です',
+      '💡 モーター2連対率40%以上が狙い目です',
+      '💡 風速5m以上の日は外側が有利になります',
+      '💡 A1級選手は全体の20%しかいません',
+      '💡 展示航走で調子を最終確認しましょう',
+      '💡 複勝は的中率50%超えも可能です',
+      '💡 大村は1号艇勝率が全国最高（63%）です',
+      '💡 トリガミを避けるため購入額を調整しましょう'
+    ];
+    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+
     return (
-      <div style={{padding: '2rem', textAlign: 'center'}}>
-        <div className="spinner"></div>
-        <p>的中レースを読み込み中...</p>
+      <div style={{
+        padding: '3rem 2rem',
+        textAlign: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        color: 'white',
+        minHeight: '300px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <div className="spinner" style={{marginBottom: '1.5rem'}}></div>
+        <h3 style={{fontSize: '1.3rem', marginBottom: '1rem', color: 'white'}}>
+          的中レースを読み込み中...
+        </h3>
+        <p style={{fontSize: '0.95rem', marginBottom: '1rem', color: 'rgba(255,255,255,0.9)'}}>
+          過去14日分のデータを分析しています
+        </p>
+        <div style={{
+          marginTop: '1.5rem',
+          padding: '1rem 1.5rem',
+          background: 'rgba(255,255,255,0.2)',
+          borderRadius: '8px',
+          backdropFilter: 'blur(10px)',
+          maxWidth: '400px'
+        }}>
+          <p style={{fontSize: '0.9rem', margin: 0, color: 'white'}}>
+            {randomTip}
+          </p>
+        </div>
       </div>
     )
   }

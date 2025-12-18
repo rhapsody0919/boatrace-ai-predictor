@@ -452,7 +452,8 @@ function App() {
                       display: 'block',
                       marginBottom: '0.5rem',
                       fontWeight: 'bold',
-                      color: '#334155'
+                      fontSize: '1.1rem',
+                      color: '#0f172a'
                     }}>
                       レース場を選択:
                     </label>
