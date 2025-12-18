@@ -27,6 +27,8 @@ function App() {
   const [allVenuesData, setAllVenuesData] = useState([])
   const [selectedVenueId, setSelectedVenueId] = useState(null)
   const [races, setRaces] = useState([])
+  const [selectedModel, setSelectedModel] = useState('standard') // 予想モデル選択
+  const [volatility, setVolatility] = useState(null) // 荒れ度情報
   const predictionRef = useRef(null)
 
   // レース場番号から名前へのマッピング
@@ -237,6 +239,37 @@ function App() {
     }
   }
 
+  // モデル切り替え関数
+  const switchModel = (model) => {
+    if (!prediction || !prediction.predictions) return
+
+    setSelectedModel(model)
+
+    // 選択されたモデルの予想データに切り替え
+    const modelKey = model === 'safe-bet' ? 'safeBet' :
+                    model === 'upset-focus' ? 'upsetFocus' : 'standard'
+    const modelPrediction = prediction.predictions[modelKey]
+
+    if (modelPrediction) {
+      const topPickPlayer = modelPrediction.players.find(
+        p => p.number === modelPrediction.topPick
+      )
+      const top3Players = modelPrediction.top3.map(num =>
+        modelPrediction.players.find(p => p.number === num)
+      )
+
+      setPrediction({
+        ...prediction,
+        topPick: topPickPlayer,
+        recommended: top3Players,
+        allPlayers: modelPrediction.players,
+        confidence: modelPrediction.confidence,
+        reasoning: modelPrediction.reasoning,
+        top3: modelPrediction.top3
+      })
+    }
+  }
+
   const analyzeRace = async (race) => {
     setSelectedRace(race)
     setIsAnalyzing(true)
@@ -257,23 +290,47 @@ function App() {
         return
       }
 
+      // 荒れ度情報を保存（新しいデータ構造に対応）
+      let currentModel = 'standard'
+      if (racePrediction.volatility) {
+        setVolatility(racePrediction.volatility)
+        // 推奨モデルを自動選択
+        currentModel = racePrediction.volatility.recommendedModel || 'standard'
+        setSelectedModel(currentModel)
+      } else {
+        setVolatility(null)
+      }
+
       // 予想データをUIの形式に変換
       setTimeout(() => {
-        const topPickPlayer = racePrediction.prediction.players.find(
-          p => p.number === racePrediction.prediction.topPick
+        // 選択されたモデルの予想を取得（後方互換性のため古いデータ構造もサポート）
+        let modelPrediction
+        if (racePrediction.predictions) {
+          // 新しいデータ構造（3モデル対応）
+          const modelKey = currentModel === 'safe-bet' ? 'safeBet' :
+                          currentModel === 'upset-focus' ? 'upsetFocus' : 'standard'
+          modelPrediction = racePrediction.predictions[modelKey]
+        } else {
+          // 古いデータ構造（後方互換性）
+          modelPrediction = racePrediction.prediction
+        }
+
+        const topPickPlayer = modelPrediction.players.find(
+          p => p.number === modelPrediction.topPick
         )
-        const top3Players = racePrediction.prediction.top3.map(num =>
-          racePrediction.prediction.players.find(p => p.number === num)
+        const top3Players = modelPrediction.top3.map(num =>
+          modelPrediction.players.find(p => p.number === num)
         )
 
         const aiPrediction = {
           topPick: topPickPlayer,
           recommended: top3Players,
-          allPlayers: racePrediction.prediction.players,
-          confidence: racePrediction.prediction.confidence,
-          reasoning: racePrediction.prediction.reasoning,
-          top3: racePrediction.prediction.top3, // トップ3の艇番（number配列）
-          result: racePrediction.result // レース結果
+          allPlayers: modelPrediction.players,
+          confidence: modelPrediction.confidence,
+          reasoning: modelPrediction.reasoning,
+          top3: modelPrediction.top3, // トップ3の艇番（number配列）
+          result: racePrediction.result, // レース結果
+          predictions: racePrediction.predictions // 全モデルの予想データ
         }
         setPrediction(aiPrediction)
         setIsAnalyzing(false)
@@ -554,6 +611,114 @@ function App() {
                     （新しいタブで開きます）
                   </span>
                 </div>
+              )}
+
+              {/* 荒れ度表示とモデル選択（予想表示時のみ） */}
+              {prediction && !prediction.error && prediction.predictions && (
+                <>
+                  {/* 荒れ度表示 */}
+                  {volatility && (
+                    <div style={{
+                      padding: '1rem 1.5rem',
+                      background: volatility.level === 'high' ? '#fff3e0' :
+                                 volatility.level === 'low' ? '#e8f5e9' : '#e3f2fd',
+                      borderRadius: '8px',
+                      marginBottom: '1.5rem',
+                      borderLeft: `4px solid ${
+                        volatility.level === 'high' ? '#ff9800' :
+                        volatility.level === 'low' ? '#4caf50' : '#2196f3'
+                      }`
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '1.2rem' }}>
+                          {volatility.level === 'high' ? '🌪️' :
+                           volatility.level === 'low' ? '🎯' : '⚖️'}
+                        </span>
+                        <span style={{ fontWeight: '600', color: '#333' }}>
+                          荒れ度: {volatility.score}
+                        </span>
+                        <span style={{
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '12px',
+                          fontSize: '0.85rem',
+                          fontWeight: '500',
+                          background: volatility.level === 'high' ? '#ff9800' :
+                                     volatility.level === 'low' ? '#4caf50' : '#2196f3',
+                          color: 'white'
+                        }}>
+                          {volatility.level === 'high' ? '荒れる' :
+                           volatility.level === 'low' ? '堅い' : '標準'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* モデル選択ボタン */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '0.75rem',
+                    marginBottom: '1.5rem',
+                    flexWrap: 'wrap'
+                  }}>
+                    <button
+                      onClick={() => switchModel('standard')}
+                      style={{
+                        flex: '1',
+                        minWidth: '140px',
+                        padding: '0.75rem 1rem',
+                        background: selectedModel === 'standard' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                        color: selectedModel === 'standard' ? 'white' : '#333',
+                        border: selectedModel === 'standard' ? 'none' : '2px solid #e0e0e0',
+                        borderRadius: '8px',
+                        fontSize: '0.95rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: selectedModel === 'standard' ? '0 4px 12px rgba(102, 126, 234, 0.3)' : 'none'
+                      }}
+                    >
+                      ⚖️ スタンダード
+                    </button>
+                    <button
+                      onClick={() => switchModel('safe-bet')}
+                      style={{
+                        flex: '1',
+                        minWidth: '140px',
+                        padding: '0.75rem 1rem',
+                        background: selectedModel === 'safe-bet' ? 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)' : 'white',
+                        color: selectedModel === 'safe-bet' ? 'white' : '#333',
+                        border: selectedModel === 'safe-bet' ? 'none' : '2px solid #e0e0e0',
+                        borderRadius: '8px',
+                        fontSize: '0.95rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: selectedModel === 'safe-bet' ? '0 4px 12px rgba(76, 175, 80, 0.3)' : 'none'
+                      }}
+                    >
+                      🎯 本命狙い
+                    </button>
+                    <button
+                      onClick={() => switchModel('upset-focus')}
+                      style={{
+                        flex: '1',
+                        minWidth: '140px',
+                        padding: '0.75rem 1rem',
+                        background: selectedModel === 'upset-focus' ? 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)' : 'white',
+                        color: selectedModel === 'upset-focus' ? 'white' : '#333',
+                        border: selectedModel === 'upset-focus' ? 'none' : '2px solid #e0e0e0',
+                        borderRadius: '8px',
+                        fontSize: '0.95rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: selectedModel === 'upset-focus' ? '0 4px 12px rgba(255, 152, 0, 0.3)' : 'none'
+                      }}
+                    >
+                      🌪️ 穴狙い
+                    </button>
+                  </div>
+                </>
               )}
 
               {isAnalyzing ? (

@@ -17,8 +17,66 @@ function getTodayDateJST() {
   return jstDate.toISOString().split('T')[0];
 }
 
-// AIスコアを計算（App.jsxのgeneratePlayersロジックを移植）
-function calculateAIScore(racer, index) {
+// 標準偏差を計算
+function calculateStdDev(values) {
+  const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+  const squareDiffs = values.map(val => Math.pow(val - avg, 2));
+  const avgSquareDiff = squareDiffs.reduce((sum, val) => sum + val, 0) / squareDiffs.length;
+  return Math.sqrt(avgSquareDiff);
+}
+
+// 荒れ度スコアを計算（0-100、高いほど荒れやすい）
+function calculateVolatilityScore(racers, placeCd) {
+  if (!racers || racers.length < 6) return 50; // デフォルト値
+
+  let volatility = 0;
+
+  // 1. 実力差の小ささ（最重要）- 拮抗しているほど荒れる
+  const winRates = racers.map(r => r.globalWinRate);
+  const winRateStdDev = calculateStdDev(winRates);
+  volatility += Math.max(0, (1.5 - winRateStdDev) * 20);
+
+  // 2. 1号艇の強さ（逆相関）- 1号艇が弱いほど荒れる
+  const lane1 = racers[0];
+  if (lane1.grade !== 'A1') volatility += 20;
+  if (lane1.globalWinRate < 6.0) volatility += 15;
+  if (lane1.globalWinRate < 5.5) volatility += 10;
+
+  // 3. モーター性能の均等さ - 均等なほど荒れる
+  const motorRates = racers.map(r => r.motor2Rate);
+  const motorStdDev = calculateStdDev(motorRates);
+  volatility += Math.max(0, (15 - motorStdDev) * 1.5);
+
+  // 4. 外枠の好機材 - 外枠に良いモーターがあると荒れる
+  const outsideGoodMotors = racers.slice(3).filter(r => r.motor2Rate > 40).length;
+  volatility += outsideGoodMotors * 8;
+
+  // 5. 競艇場特性（荒れやすい場）
+  // 戸田(02)、江戸川(03)、平和島(04)は荒れやすい
+  const roughVenues = ['02', '03', '04'];
+  if (roughVenues.includes(String(placeCd).padStart(2, '0'))) {
+    volatility += 12;
+  }
+
+  return Math.min(100, Math.max(0, Math.round(volatility)));
+}
+
+// 荒れ度レベルを判定
+function getVolatilityLevel(score) {
+  if (score < 35) return 'low';    // 堅い
+  if (score < 65) return 'medium'; // 標準
+  return 'high';                    // 荒れる
+}
+
+// 推奨モデルを判定
+function getRecommendedModel(score) {
+  if (score < 35) return 'safe-bet';      // 本命狙い
+  if (score < 65) return 'standard';      // スタンダード
+  return 'upset-focus';                   // 穴狙い
+}
+
+// スタンダード版AIスコア（従来のロジック）
+function calculateStandardScore(racer, index) {
   return Math.floor(
     racer.globalWinRate * 100 +
     racer.local2Rate * 50 +
@@ -28,8 +86,60 @@ function calculateAIScore(racer, index) {
   );
 }
 
-// 選手データを処理してAIスコア順にソート
-function processRacers(racers) {
+// 本命狙い版スコア（堅実型）
+function calculateSafeBetScore(racer, index) {
+  let score = 0;
+
+  // 1号艇に大きなボーナス
+  if (index === 0) score += 150;
+
+  // A1級に大きなボーナス
+  if (racer.grade === 'A1') score += 120;
+  else if (racer.grade === 'A2') score += 60;
+
+  // 全国勝率を重視
+  score += racer.globalWinRate * 130;
+
+  // 当地勝率
+  score += racer.localWinRate * 80;
+
+  // モーター性能（やや控えめ）
+  score += racer.motor2Rate * 40;
+
+  // レーン位置ペナルティ（強め）
+  score -= index * 15;
+
+  return Math.floor(score);
+}
+
+// 穴狙い版スコア（高配当型）
+function calculateUpsetFocusScore(racer, index) {
+  let score = 0;
+
+  // 外枠の逆転要素を重視
+  if (index >= 3) score += 100; // 4-6号艇にボーナス
+
+  // モーター性能を最重視（機材で逆転）
+  score += racer.motor2Rate * 180;
+
+  // ボート性能
+  score += racer.boat2Rate * 80;
+
+  // 当地適性（地元の利）
+  score += racer.localWinRate * 100;
+  score += racer.local2Rate * 60;
+
+  // 全国勝率（やや控えめ）
+  score += racer.globalWinRate * 50;
+
+  // 1号艇へのペナルティ（逆張り）
+  if (index === 0) score -= 100;
+
+  return Math.floor(score);
+}
+
+// 選手データを処理（特定のスコア計算関数を使用）
+function processRacersWithScoreFn(racers, scoreFn) {
   if (!racers || racers.length === 0) {
     console.warn('⚠️  選手データが空です');
     return [];
@@ -46,11 +156,16 @@ function processRacers(racers) {
     motor2Rate: racer.motor2Rate.toFixed(1),
     boatNumber: racer.boatNumber,
     boat2Rate: racer.boat2Rate.toFixed(1),
-    aiScore: calculateAIScore(racer, idx),
+    aiScore: scoreFn(racer, idx),
   }));
 
   // AIスコア順にソート
   return players.sort((a, b) => b.aiScore - a.aiScore);
+}
+
+// 後方互換性のため（従来のprocessRacers）
+function processRacers(racers) {
+  return processRacersWithScoreFn(racers, calculateStandardScore);
 }
 
 // 予想根拠を生成（App.jsxのgenerateInsightsロジックを移植）
@@ -109,19 +224,42 @@ function calculateConfidence(players) {
   return confidence;
 }
 
-// 1レース分の予想を生成
+// 1レース分の予想を生成（3モデル対応）
 function generateRacePrediction(race, date) {
-  const players = processRacers(race.racers);
-
-  if (players.length === 0) {
+  if (!race.racers || race.racers.length === 0) {
     console.warn(`⚠️  レース ${race.placeCd}-${race.raceNo} の選手データが不足しています`);
     return null;
   }
 
-  const topPick = players[0];
-  const top3 = players.slice(0, 3).map(p => p.number);
-  const confidence = calculateConfidence(players);
-  const reasoning = generateInsights(players);
+  // 荒れ度スコアを計算
+  const volatilityScore = calculateVolatilityScore(race.racers, race.placeCd);
+  const volatilityLevel = getVolatilityLevel(volatilityScore);
+  const recommendedModel = getRecommendedModel(volatilityScore);
+
+  // 3つのモデルで予想を生成
+  const standardPlayers = processRacersWithScoreFn(race.racers, calculateStandardScore);
+  const safeBetPlayers = processRacersWithScoreFn(race.racers, calculateSafeBetScore);
+  const upsetFocusPlayers = processRacersWithScoreFn(race.racers, calculateUpsetFocusScore);
+
+  if (standardPlayers.length === 0) {
+    console.warn(`⚠️  レース ${race.placeCd}-${race.raceNo} の選手データが不足しています`);
+    return null;
+  }
+
+  // スタンダード版の予想
+  const standardTop3 = standardPlayers.slice(0, 3).map(p => p.number);
+  const standardConfidence = calculateConfidence(standardPlayers);
+  const standardReasoning = generateInsights(standardPlayers);
+
+  // 本命狙い版の予想
+  const safeBetTop3 = safeBetPlayers.slice(0, 3).map(p => p.number);
+  const safeBetConfidence = calculateConfidence(safeBetPlayers);
+  const safeBetReasoning = generateInsights(safeBetPlayers);
+
+  // 穴狙い版の予想
+  const upsetFocusTop3 = upsetFocusPlayers.slice(0, 3).map(p => p.number);
+  const upsetFocusConfidence = calculateConfidence(upsetFocusPlayers);
+  const upsetFocusReasoning = generateInsights(upsetFocusPlayers);
 
   return {
     raceId: generateRaceId(date, race.placeCd, race.raceNo),
@@ -129,13 +267,48 @@ function generateRacePrediction(race, date) {
     venueCode: race.placeCd,
     raceNumber: race.raceNo,
     startTime: race.startTime || '未定',
-    prediction: {
-      topPick: topPick.number,
-      top3: top3,
-      confidence: confidence,
-      players: players,
-      reasoning: reasoning,
+
+    // 荒れ度情報
+    volatility: {
+      score: volatilityScore,
+      level: volatilityLevel,
+      recommendedModel: recommendedModel,
     },
+
+    // 3モデルの予想
+    predictions: {
+      standard: {
+        topPick: standardPlayers[0].number,
+        top3: standardTop3,
+        confidence: standardConfidence,
+        players: standardPlayers,
+        reasoning: standardReasoning,
+      },
+      safeBet: {
+        topPick: safeBetPlayers[0].number,
+        top3: safeBetTop3,
+        confidence: safeBetConfidence,
+        players: safeBetPlayers,
+        reasoning: safeBetReasoning,
+      },
+      upsetFocus: {
+        topPick: upsetFocusPlayers[0].number,
+        top3: upsetFocusTop3,
+        confidence: upsetFocusConfidence,
+        players: upsetFocusPlayers,
+        reasoning: upsetFocusReasoning,
+      },
+    },
+
+    // 後方互換性のため（既存のpredictionフィールドを維持）
+    prediction: {
+      topPick: standardPlayers[0].number,
+      top3: standardTop3,
+      confidence: standardConfidence,
+      players: standardPlayers,
+      reasoning: standardReasoning,
+    },
+
     result: {
       finished: false,
       rank1: null,
