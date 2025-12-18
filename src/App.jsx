@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import './App.css'
 import AccuracyDashboard from './components/AccuracyDashboard'
 import PrivacyPolicy from './components/PrivacyPolicy'
@@ -389,6 +390,15 @@ function App() {
             >
               的中率統計
             </button>
+            <Link to="/blog" className="nav-btn">
+              📚 ブログ
+            </Link>
+            <Link to="/about" className="nav-btn">
+              ℹ️ About
+            </Link>
+            <Link to="/faq" className="nav-btn">
+              ❓ FAQ
+            </Link>
           </nav>
         </div>
       </header>
@@ -896,9 +906,13 @@ function App() {
           display: 'flex',
           gap: '1.5rem',
           justifyContent: 'center',
+          flexWrap: 'wrap',
           marginTop: '0.75rem',
           marginBottom: '0.75rem'
         }}>
+          <Link to="/blog" style={{color: '#94a3b8', textDecoration: 'none'}}>ブログ</Link>
+          <Link to="/about" style={{color: '#94a3b8', textDecoration: 'none'}}>About</Link>
+          <Link to="/faq" style={{color: '#94a3b8', textDecoration: 'none'}}>FAQ</Link>
           <a href="#privacy" style={{color: '#94a3b8', textDecoration: 'none'}}>プライバシーポリシー</a>
           <a href="#contact" style={{color: '#94a3b8', textDecoration: 'none'}}>お問い合わせ</a>
         </div>
