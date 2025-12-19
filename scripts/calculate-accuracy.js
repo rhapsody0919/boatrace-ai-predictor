@@ -496,6 +496,47 @@ async function calculateAccuracy() {
         }
       }
 
+      // Generate monthly summaries (for data older than 90 days)
+      const modelMonthlyStats = [];
+      const cutoffDate = new Date(new Date(today).getTime() - 90 * 24 * 60 * 60 * 1000);
+      const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+
+      // Group old data by month
+      const oldDataByMonth = {};
+      for (const dayStat of modelDailyStats) {
+        if (dayStat.date < cutoffDateStr) {
+          const { year, month } = getDateInfo(dayStat.date);
+          const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+          if (!oldDataByMonth[monthKey]) {
+            oldDataByMonth[monthKey] = { year, month, days: [] };
+          }
+          oldDataByMonth[monthKey].days.push(dayStat);
+        }
+      }
+
+      // Calculate monthly aggregates
+      for (const monthKey of Object.keys(oldDataByMonth).sort()) {
+        const monthData = oldDataByMonth[monthKey];
+        const monthRaces = allRaces.filter(r => {
+          const { year, month } = getDateInfo(r.date);
+          return year === monthData.year && month === monthData.month;
+        });
+        const monthStats = calculateModelSummaryStats(monthRaces, modelKey);
+
+        if (monthStats.finishedRaces > 0) {
+          modelMonthlyStats.push({
+            year: monthData.year,
+            month: monthData.month,
+            totalRaces: monthStats.totalRaces,
+            topPickHitRate: monthStats.topPickHitRate,
+            topPickPlaceRate: monthStats.topPickPlaceRate,
+            top3HitRate: monthStats.top3HitRate,
+            top3IncludedRate: monthStats.top3IncludedRate,
+            actualRecovery: monthStats.actualRecovery,
+          });
+        }
+      }
+
       modelsSummary[modelKey] = {
         overall: {
           totalRaces: modelOverallStats.totalRaces,
@@ -539,11 +580,53 @@ async function calculateAccuracy() {
           top3IncludedRate: modelLastMonthStats.top3IncludedRate,
           actualRecovery: modelLastMonthStats.actualRecovery,
         },
-        dailyHistory: modelDailyStats.slice(-30), // Last 30 days
+        dailyHistory: modelDailyStats.filter(d => d.date >= cutoffDateStr), // Last 90 days
+        monthlyHistory: modelMonthlyStats, // Older data aggregated by month
       };
     }
 
     // Generate summary with model-specific data
+    // Calculate cutoff date for 90 days
+    const cutoffDate = new Date(new Date(today).getTime() - 90 * 24 * 60 * 60 * 1000);
+    const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+
+    // Generate monthly summaries for old data (for backward compatibility)
+    const monthlyStats = [];
+    const oldDataByMonth = {};
+    for (const dayStat of dailyStats) {
+      if (dayStat.date < cutoffDateStr) {
+        const { year, month } = getDateInfo(dayStat.date);
+        const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+        if (!oldDataByMonth[monthKey]) {
+          oldDataByMonth[monthKey] = { year, month, days: [] };
+        }
+        oldDataByMonth[monthKey].days.push(dayStat);
+      }
+    }
+
+    // Calculate monthly aggregates
+    for (const monthKey of Object.keys(oldDataByMonth).sort()) {
+      const monthData = oldDataByMonth[monthKey];
+      const monthRaces = allRaces.filter(r => {
+        const { year, month } = getDateInfo(r.date);
+        return year === monthData.year && month === monthData.month;
+      });
+      const monthStats = calculateSummaryStats(monthRaces);
+
+      if (monthStats.finishedRaces > 0) {
+        monthlyStats.push({
+          year: monthData.year,
+          month: monthData.month,
+          totalRaces: monthStats.totalRaces,
+          topPickHitRate: monthStats.topPickHitRate,
+          topPickPlaceRate: monthStats.topPickPlaceRate,
+          top3HitRate: monthStats.top3HitRate,
+          top3IncludedRate: monthStats.top3IncludedRate,
+          actualRecovery: monthStats.actualRecovery,
+        });
+      }
+    }
+
     const summary = {
       lastUpdated: new Date().toISOString(),
 
@@ -593,7 +676,8 @@ async function calculateAccuracy() {
         top3IncludedRate: lastMonthStats.top3IncludedRate,
         actualRecovery: lastMonthActualRecovery,
       },
-      dailyHistory: dailyStats.slice(-30), // Last 30 days
+      dailyHistory: dailyStats.filter(d => d.date >= cutoffDateStr), // Last 90 days
+      monthlyHistory: monthlyStats, // Older data aggregated by month
     };
 
     // Save summary

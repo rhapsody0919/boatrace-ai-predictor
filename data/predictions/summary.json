@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-12-19T10:53:35.028Z",
+  "lastUpdated": "2025-12-19T11:13:12.545Z",
   "models": {
     "standard": {
       "overall": {
@@ -655,7 +655,8 @@
             }
           }
         }
-      ]
+      ],
+      "monthlyHistory": []
     },
     "safeBet": {
       "overall": {
@@ -835,7 +836,8 @@
             }
           }
         }
-      ]
+      ],
+      "monthlyHistory": []
     },
     "upsetFocus": {
       "overall": {
@@ -1015,7 +1017,8 @@
             }
           }
         }
-      ]
+      ],
+      "monthlyHistory": []
     }
   },
   "overall": {
@@ -1671,5 +1674,6 @@
         }
       }
     }
-  ]
+  ],
+  "monthlyHistory": []
 }

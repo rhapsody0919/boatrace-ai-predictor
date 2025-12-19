@@ -26,39 +26,102 @@ function calculateStdDev(values) {
 }
 
 // 荒れ度スコアを計算（0-100、高いほど荒れやすい）
+// reasonsを含むオブジェクトを返す
 function calculateVolatilityScore(racers, placeCd) {
-  if (!racers || racers.length < 6) return 50; // デフォルト値
+  if (!racers || racers.length < 6) {
+    return {
+      score: 50,
+      reasons: ['選手データが不足しています']
+    };
+  }
 
   let volatility = 0;
+  const reasons = [];
 
   // 1. 実力差の小ささ（最重要）- 拮抗しているほど荒れる
   const winRates = racers.map(r => r.globalWinRate);
   const winRateStdDev = calculateStdDev(winRates);
-  volatility += Math.max(0, (1.5 - winRateStdDev) * 20);
+  const avgWinRate = winRates.reduce((sum, rate) => sum + rate, 0) / winRates.length;
+  const powerBalanceScore = Math.max(0, (1.5 - winRateStdDev) * 20);
+
+  if (powerBalanceScore > 10) {
+    volatility += powerBalanceScore;
+    reasons.push(`選手間の実力差が小さい（勝率の標準偏差: ${winRateStdDev.toFixed(2)}%、平均: ${avgWinRate.toFixed(1)}%）`);
+  }
 
   // 2. 1号艇の強さ（逆相関）- 1号艇が弱いほど荒れる
   const lane1 = racers[0];
-  if (lane1.grade !== 'A1') volatility += 20;
-  if (lane1.globalWinRate < 6.0) volatility += 15;
-  if (lane1.globalWinRate < 5.5) volatility += 10;
+  let lane1Weakness = 0;
+  const lane1Factors = [];
+
+  if (lane1.grade !== 'A1') {
+    lane1Weakness += 20;
+    lane1Factors.push(`グレード: ${lane1.grade}`);
+  }
+  if (lane1.globalWinRate < 6.0) {
+    lane1Weakness += 15;
+    lane1Factors.push(`勝率: ${lane1.globalWinRate.toFixed(1)}%`);
+  }
+  if (lane1.globalWinRate < 5.5) {
+    lane1Weakness += 10;
+  }
+
+  if (lane1Weakness > 0) {
+    volatility += lane1Weakness;
+    const avgWinRate = winRates.reduce((sum, r) => sum + r, 0) / winRates.length;
+    const diff = ((avgWinRate - lane1.globalWinRate) / avgWinRate * 100).toFixed(0);
+    reasons.push(`1号艇が平均より${diff}%弱い（${lane1Factors.join('、')}）`);
+  }
 
   // 3. モーター性能の均等さ - 均等なほど荒れる
   const motorRates = racers.map(r => r.motor2Rate);
   const motorStdDev = calculateStdDev(motorRates);
-  volatility += Math.max(0, (15 - motorStdDev) * 1.5);
+  const motorBalanceScore = Math.max(0, (15 - motorStdDev) * 1.5);
+
+  if (motorBalanceScore > 5 && motorStdDev < 12) {
+    volatility += motorBalanceScore;
+    reasons.push(`モーター性能が均等（2連率の標準偏差: ${motorStdDev.toFixed(1)}%）`);
+  }
 
   // 4. 外枠の好機材 - 外枠に良いモーターがあると荒れる
   const outsideGoodMotors = racers.slice(3).filter(r => r.motor2Rate > 40).length;
-  volatility += outsideGoodMotors * 8;
+  if (outsideGoodMotors > 0) {
+    volatility += outsideGoodMotors * 8;
+    const motorNumbers = racers.slice(3)
+      .filter(r => r.motor2Rate > 40)
+      .map(r => `${r.number}号艇(${r.motor2Rate.toFixed(1)}%)`)
+      .join('、');
+    reasons.push(`外枠に好機材が${outsideGoodMotors}艇（${motorNumbers}）`);
+  }
 
   // 5. 競艇場特性（荒れやすい場）
   // 戸田(02)、江戸川(03)、平和島(04)は荒れやすい
-  const roughVenues = ['02', '03', '04'];
-  if (roughVenues.includes(String(placeCd).padStart(2, '0'))) {
+  const roughVenues = {
+    '02': '戸田',
+    '03': '江戸川',
+    '04': '平和島'
+  };
+  const venueCode = String(placeCd).padStart(2, '0');
+  if (roughVenues[venueCode]) {
     volatility += 12;
+    reasons.push(`${roughVenues[venueCode]}は荒れやすい競艇場`);
   }
 
-  return Math.min(100, Math.max(0, Math.round(volatility)));
+  const finalScore = Math.min(100, Math.max(0, Math.round(volatility)));
+
+  // スコアに応じた総評を追加
+  if (reasons.length === 0) {
+    if (finalScore < 35) {
+      reasons.push('1号艇が安定して有利な展開');
+    } else {
+      reasons.push('標準的なレース展開');
+    }
+  }
+
+  return {
+    score: finalScore,
+    reasons: reasons
+  };
 }
 
 // 荒れ度レベルを判定
@@ -232,9 +295,9 @@ function generateRacePrediction(race, date) {
   }
 
   // 荒れ度スコアを計算
-  const volatilityScore = calculateVolatilityScore(race.racers, race.placeCd);
-  const volatilityLevel = getVolatilityLevel(volatilityScore);
-  const recommendedModel = getRecommendedModel(volatilityScore);
+  const volatilityData = calculateVolatilityScore(race.racers, race.placeCd);
+  const volatilityLevel = getVolatilityLevel(volatilityData.score);
+  const recommendedModel = getRecommendedModel(volatilityData.score);
 
   // 3つのモデルで予想を生成
   const standardPlayers = processRacersWithScoreFn(race.racers, calculateStandardScore);
@@ -270,9 +333,10 @@ function generateRacePrediction(race, date) {
 
     // 荒れ度情報
     volatility: {
-      score: volatilityScore,
+      score: volatilityData.score,
       level: volatilityLevel,
       recommendedModel: recommendedModel,
+      reasons: volatilityData.reasons,
     },
 
     // 3モデルの予想

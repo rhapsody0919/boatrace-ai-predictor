@@ -639,7 +639,7 @@ function App() {
                         volatility.level === 'low' ? '#4caf50' : '#2196f3'
                       }`
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: volatility.reasons && volatility.reasons.length > 0 ? '0.75rem' : '0' }}>
                         <span style={{ fontSize: '1.2rem' }}>
                           {volatility.level === 'high' ? '🌪️' :
                            volatility.level === 'low' ? '🎯' : '⚖️'}
@@ -660,6 +660,26 @@ function App() {
                            volatility.level === 'low' ? '堅い' : '標準'}
                         </span>
                       </div>
+                      {/* 荒れ度の根拠 */}
+                      {volatility.reasons && volatility.reasons.length > 0 && (
+                        <div style={{
+                          fontSize: '0.9rem',
+                          color: '#555',
+                          paddingLeft: '1.7rem'
+                        }}>
+                          <ul style={{
+                            margin: '0',
+                            paddingLeft: '1.2rem',
+                            listStyleType: 'disc'
+                          }}>
+                            {volatility.reasons.map((reason, index) => (
+                              <li key={index} style={{ marginBottom: '0.25rem' }}>
+                                {reason}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   )}
 
