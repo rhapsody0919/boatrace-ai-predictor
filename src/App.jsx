@@ -303,6 +303,8 @@ function App() {
       // 荒れ度情報を保存（新しいデータ構造に対応）
       let currentModel = 'standard'
       if (racePrediction.volatility) {
+        console.log('Volatility data:', racePrediction.volatility)
+        console.log('Reasons:', racePrediction.volatility.reasons)
         setVolatility(racePrediction.volatility)
         // 推奨モデルを自動選択
         currentModel = racePrediction.volatility.recommendedModel || 'standard'
@@ -660,12 +662,18 @@ function App() {
                            volatility.level === 'low' ? '堅い' : '標準'}
                         </span>
                       </div>
+                      {/* デバッグ情報 */}
+                      <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '0.5rem' }}>
+                        Debug: reasons={volatility.reasons ? `[${volatility.reasons.length}件]` : 'なし'}
+                      </div>
+
                       {/* 荒れ度の根拠 */}
                       {volatility.reasons && volatility.reasons.length > 0 && (
                         <div style={{
                           fontSize: '0.9rem',
                           color: '#555',
-                          paddingLeft: '1.7rem'
+                          paddingLeft: '1.7rem',
+                          marginTop: '0.5rem'
                         }}>
                           <ul style={{
                             margin: '0',
