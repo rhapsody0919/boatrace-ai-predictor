@@ -232,21 +232,86 @@ function processRacers(racers) {
   return processRacersWithScoreFn(racers, calculateStandardScore);
 }
 
-// 予想根拠を生成（App.jsxのgenerateInsightsロジックを移植）
-function generateInsights(players) {
-  const insights = [];
+// 本命選手の選定理由を生成
+function generateTopPickReasoning(topPickPlayer, players, modelType) {
+  const reasons = [];
+  const number = topPickPlayer.number;
+  const winRate = parseFloat(topPickPlayer.winRate);
+  const localWinRate = parseFloat(topPickPlayer.localWinRate);
+  const motor2Rate = parseFloat(topPickPlayer.motor2Rate);
 
-  // 当地勝率が最も高い選手
-  const topLocalWinRate = [...players].sort((a, b) =>
-    parseFloat(b.localWinRate) - parseFloat(a.localWinRate)
-  )[0];
+  if (modelType === 'standard') {
+    // スタンダード：バランス重視
+    reasons.push(`${number}号艇 ${topPickPlayer.name}選手を本命に選定`);
 
-  if (topLocalWinRate) {
-    insights.push(
-      `${topLocalWinRate.number}号艇の${topLocalWinRate.name}選手は` +
-      `当レース場での勝率が${topLocalWinRate.localWinRate}と最も高い`
-    );
+    const strengths = [];
+    if (winRate >= 6.5) {
+      strengths.push(`全国勝率${topPickPlayer.winRate}の実力者`);
+    }
+    if (localWinRate >= 5.5) {
+      strengths.push(`当地成績${topPickPlayer.localWinRate}と好相性`);
+    }
+    if (motor2Rate >= 35) {
+      strengths.push(`モーター2連率${topPickPlayer.motor2Rate}%の${motor2Rate >= 40 ? '好' : '安定'}機材`);
+    }
+
+    if (strengths.length > 0) {
+      reasons.push(strengths.join('、') + 'で総合評価が最高');
+    } else {
+      reasons.push('総合的なデータ分析により最高評価を獲得');
+    }
+
+  } else if (modelType === 'safe-bet') {
+    // 本命狙い：安全性重視
+    reasons.push(`${number}号艇 ${topPickPlayer.name}選手を本命に選定`);
+
+    const strengths = [];
+    if (number === 1) {
+      strengths.push('1号艇の有利なコース取り');
+    }
+    if (topPickPlayer.grade === 'A1') {
+      strengths.push('A1級選手として安定した実力');
+    } else if (topPickPlayer.grade === 'A2') {
+      strengths.push('A2級選手として堅実な実績');
+    }
+    if (winRate >= 6.0) {
+      strengths.push(`全国勝率${topPickPlayer.winRate}の高い実力`);
+    }
+
+    if (strengths.length > 0) {
+      reasons.push(strengths.join('、') + 'により的中率が期待できる');
+    } else {
+      reasons.push('安全性を重視した評価で最高スコアを獲得');
+    }
+
+  } else if (modelType === 'upset-focus') {
+    // 穴狙い：高配当重視
+    reasons.push(`${number}号艇 ${topPickPlayer.name}選手を本命に選定`);
+
+    const strengths = [];
+    if (number >= 4 && motor2Rate >= 38) {
+      strengths.push(`${number}号艇ながらモーター2連率${topPickPlayer.motor2Rate}%の好機材`);
+    }
+    if (localWinRate >= 5.5) {
+      strengths.push(`当地成績${topPickPlayer.localWinRate}で展開に期待`);
+    }
+    if (motor2Rate >= 40) {
+      strengths.push('好モーターを活かした高配当の可能性');
+    }
+
+    if (strengths.length > 0) {
+      reasons.push(strengths.join('、'));
+    } else {
+      reasons.push('展開の妙と機材性能を重視した評価で最高スコア');
+    }
   }
+
+  return reasons;
+}
+
+// 統計的な注目ポイントを生成（参考情報）
+function generateStatisticalInsights(players) {
+  const insights = [];
 
   // モーター2率が40%以上の選手
   const goodMotors = players.filter(p => parseFloat(p.motor2Rate) > 40);
@@ -255,7 +320,7 @@ function generateInsights(players) {
       `${p.number}号艇（${p.motor2Rate}%）`
     ).join('、');
     insights.push(
-      `${motorList}のモーターは2連率が高く好調`
+      `好モーター: ${motorList}`
     );
   }
 
@@ -266,7 +331,7 @@ function generateInsights(players) {
       `${p.number}号艇（勝率${p.winRate}）`
     ).join('、');
     insights.push(
-      `${racerList}は全国勝率が高い実力者`
+      `実力者: ${racerList}`
     );
   }
 
@@ -313,17 +378,17 @@ function generateRacePrediction(race, date) {
   // スタンダード版の予想
   const standardTop3 = standardPlayers.slice(0, 3).map(p => p.number);
   const standardConfidence = calculateConfidence(standardPlayers);
-  const standardReasoning = generateInsights(standardPlayers);
+  const standardReasoning = generateTopPickReasoning(standardPlayers[0], standardPlayers, 'standard');
 
   // 本命狙い版の予想
   const safeBetTop3 = safeBetPlayers.slice(0, 3).map(p => p.number);
   const safeBetConfidence = calculateConfidence(safeBetPlayers);
-  const safeBetReasoning = generateInsights(safeBetPlayers);
+  const safeBetReasoning = generateTopPickReasoning(safeBetPlayers[0], safeBetPlayers, 'safe-bet');
 
   // 穴狙い版の予想
   const upsetFocusTop3 = upsetFocusPlayers.slice(0, 3).map(p => p.number);
   const upsetFocusConfidence = calculateConfidence(upsetFocusPlayers);
-  const upsetFocusReasoning = generateInsights(upsetFocusPlayers);
+  const upsetFocusReasoning = generateTopPickReasoning(upsetFocusPlayers[0], upsetFocusPlayers, 'upset-focus');
 
   return {
     raceId: generateRaceId(date, race.placeCd, race.raceNo),
