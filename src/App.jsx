@@ -303,8 +303,6 @@ function App() {
       // 荒れ度情報を保存（新しいデータ構造に対応）
       let currentModel = 'standard'
       if (racePrediction.volatility) {
-        console.log('Volatility data:', racePrediction.volatility)
-        console.log('Reasons:', racePrediction.volatility.reasons)
         setVolatility(racePrediction.volatility)
         // 推奨モデルを自動選択
         currentModel = racePrediction.volatility.recommendedModel || 'standard'
@@ -662,10 +660,6 @@ function App() {
                            volatility.level === 'low' ? '堅い' : '標準'}
                         </span>
                       </div>
-                      {/* デバッグ情報 */}
-                      <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '0.5rem' }}>
-                        Debug: reasons={volatility.reasons ? `[${volatility.reasons.length}件]` : 'なし'}
-                      </div>
 
                       {/* 荒れ度の根拠 */}
                       {volatility.reasons && volatility.reasons.length > 0 && (
@@ -673,7 +667,7 @@ function App() {
                           fontSize: '0.9rem',
                           color: '#555',
                           paddingLeft: '1.7rem',
-                          marginTop: '0.5rem'
+                          marginTop: '0.75rem'
                         }}>
                           <ul style={{
                             margin: '0',
@@ -688,6 +682,43 @@ function App() {
                           </ul>
                         </div>
                       )}
+
+                      {/* おすすめモデル */}
+                      {volatility.recommendedModel && (
+                        <div style={{
+                          marginTop: '0.75rem',
+                          padding: '0.75rem',
+                          background: 'rgba(255, 255, 255, 0.5)',
+                          borderRadius: '6px',
+                          fontSize: '0.9rem'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '1.1rem' }}>💡</span>
+                            <span style={{ fontWeight: '600', color: '#333' }}>
+                              おすすめモデル:
+                            </span>
+                            <span style={{
+                              color: volatility.recommendedModel === 'upset-focus' ? '#ff6b00' :
+                                     volatility.recommendedModel === 'safe-bet' ? '#2e7d32' : '#667eea',
+                              fontWeight: '600'
+                            }}>
+                              {volatility.recommendedModel === 'standard' && 'スタンダード'}
+                              {volatility.recommendedModel === 'safe-bet' && '本命狙い'}
+                              {volatility.recommendedModel === 'upset-focus' && '穴狙い'}
+                            </span>
+                          </div>
+                          <div style={{
+                            marginTop: '0.35rem',
+                            paddingLeft: '1.6rem',
+                            fontSize: '0.85rem',
+                            color: '#666'
+                          }}>
+                            {volatility.level === 'high' && '荒れ度が高いため、高配当を狙える穴狙い型がおすすめです'}
+                            {volatility.level === 'low' && '堅いレースのため、的中率重視の本命狙い型がおすすめです'}
+                            {volatility.level === 'medium' && '標準的なレースのため、バランス型のスタンダードがおすすめです'}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -700,6 +731,7 @@ function App() {
                   }}>
                     <button
                       onClick={() => switchModel('standard')}
+                      title="バランス型：的中率と配当のバランスを重視。全国勝率・当地成績・モーター性能を総合的に評価します。"
                       style={{
                         flex: '1',
                         minWidth: '140px',
@@ -719,6 +751,7 @@ function App() {
                     </button>
                     <button
                       onClick={() => switchModel('safe-bet')}
+                      title="安全型：的中率を最重視。1号艇とA級選手を優先し、堅いレースで力を発揮します。"
                       style={{
                         flex: '1',
                         minWidth: '140px',
@@ -738,6 +771,7 @@ function App() {
                     </button>
                     <button
                       onClick={() => switchModel('upset-focus')}
+                      title="高配当型：大穴を狙って高配当を目指す。外枠の好モーターや展開の妙を重視し、荒れるレースで力を発揮します。"
                       style={{
                         flex: '1',
                         minWidth: '140px',
