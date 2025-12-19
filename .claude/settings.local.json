@@ -48,7 +48,12 @@
       "WebFetch(domain:boatrace-ai-predictor-690lo1is8-rhapsody0919s-projects.vercel.app)",
       "WebFetch(domain:boatrace-ai-predictor-21zjyoyck-rhapsody0919s-projects.vercel.app)",
       "WebFetch(domain:boatrace-ai-predictor.vercel.app)",
-      "Bash(gh workflow run:*)"
+      "Bash(gh workflow run:*)",
+      "WebFetch(domain:boat-ai.jp)",
+      "WebFetch(domain:www.boat-ai.jp)",
+      "Bash(grep:*)",
+      "WebFetch(domain:boatrace-ai-predictor-56dojk8jm-rhapsody0919s-projects.vercel.app)",
+      "Bash(cp:*)"
     ],
     "deny": [],
     "ask": []

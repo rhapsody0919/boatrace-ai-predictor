@@ -233,63 +233,6 @@ function calculateSummaryStats(races) {
   };
 }
 
-// Calculate summary statistics for a specific model
-function calculateModelSummaryStats(races, modelKey) {
-  const finishedRaces = races.filter(r =>
-    r.result?.finished &&
-    r.accuracy &&
-    r.accuracy[modelKey]
-  );
-
-  if (finishedRaces.length === 0) {
-    return {
-      totalRaces: 0,
-      finishedRaces: 0,
-      topPickHits: 0,
-      topPickHitRate: 0,
-      topPickPlaces: 0,
-      topPickPlaceRate: 0,
-      top3Hits: 0,
-      top3HitRate: 0,
-      top3IncludedHits: 0,
-      top3IncludedRate: 0,
-      actualRecovery: {
-        win: { totalInvestment: 0, totalPayout: 0, hitCount: 0, recoveryRate: 0 },
-        place: { totalInvestment: 0, totalPayout: 0, hitCount: 0, recoveryRate: 0 },
-        trifecta: { totalInvestment: 0, totalPayout: 0, hitCount: 0, recoveryRate: 0 },
-        trio: { totalInvestment: 0, totalPayout: 0, hitCount: 0, recoveryRate: 0 }
-      }
-    };
-  }
-
-  const topPickHits = finishedRaces.filter(r => r.accuracy[modelKey].topPickHit).length;
-  const topPickPlaces = finishedRaces.filter(r => r.accuracy[modelKey].topPickPlace).length;
-  const top3Hits = finishedRaces.filter(r => r.accuracy[modelKey].top3Hit).length;
-  const top3IncludedHits = finishedRaces.filter(r => r.accuracy[modelKey].top3Included).length;
-
-  // Calculate actual recovery rates for all bet types for this model
-  const actualRecovery = {
-    win: calculateActualRecovery(races, 'win', modelKey),
-    place: calculateActualRecovery(races, 'place', modelKey),
-    trifecta: calculateActualRecovery(races, 'trifecta', modelKey),
-    trio: calculateActualRecovery(races, 'trio', modelKey)
-  };
-
-  return {
-    totalRaces: finishedRaces.length,
-    finishedRaces: finishedRaces.length,
-    topPickHits,
-    topPickHitRate: topPickHits / finishedRaces.length,
-    topPickPlaces,
-    topPickPlaceRate: topPickPlaces / finishedRaces.length,
-    top3Hits,
-    top3HitRate: top3Hits / finishedRaces.length,
-    top3IncludedHits,
-    top3IncludedRate: top3IncludedHits / finishedRaces.length,
-    actualRecovery
-  };
-}
-
 // Get date info (year, month)
 function getDateInfo(dateStr) {
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -337,31 +280,11 @@ async function calculateAccuracy() {
 
       // Calculate accuracy for each race
       for (const race of data.races) {
-        const modelAccuracy = {};
-        const models = ['standard', 'safeBet', 'upsetFocus'];
-
-        // Calculate accuracy for all 3 models
-        for (const modelKey of models) {
-          if (race.predictions && race.predictions[modelKey]) {
-            modelAccuracy[modelKey] = calculateModelRaceAccuracy(
-              race.predictions[modelKey],
-              race.result
-            );
-          }
-        }
-
-        // Store model-specific accuracy
-        race.accuracy = modelAccuracy;
-
-        // Backward compatibility: if old structure exists, preserve it
-        if (race.prediction && Object.keys(modelAccuracy).length === 0) {
-          race.accuracy = calculateRaceAccuracy(race.prediction, race.result);
-        }
-
+        const accuracy = calculateRaceAccuracy(race.prediction, race.result);
+        race.accuracy = accuracy;
         allRaces.push({ ...race, date: data.date });
 
-        // Count updated races (any model with accuracy data)
-        if (Object.keys(modelAccuracy).length > 0 && modelAccuracy.standard?.topPickHit !== null) {
+        if (accuracy.topPickHit !== null) {
           updatedRaces++;
         }
       }
@@ -442,97 +365,9 @@ async function calculateAccuracy() {
       trio: calculateActualRecovery(lastMonthRaces, 'trio')
     };
 
-    // Calculate model-specific statistics for all 3 models
-    const models = ['standard', 'safeBet', 'upsetFocus'];
-    const modelsSummary = {};
-
-    for (const modelKey of models) {
-      // Overall stats for this model
-      const modelOverallStats = calculateModelSummaryStats(allRaces, modelKey);
-
-      // Yesterday stats for this model
-      const modelYesterdayStats = calculateModelSummaryStats(yesterdayRaces, modelKey);
-
-      // This month stats for this model
-      const modelThisMonthStats = calculateModelSummaryStats(thisMonthRaces, modelKey);
-
-      // Last month stats for this model
-      const modelLastMonthStats = calculateModelSummaryStats(lastMonthRaces, modelKey);
-
-      // Daily history for this model
-      const modelDailyStats = [];
-      for (const file of predictionFiles) {
-        const filePath = path.join(predictionsDir, file);
-        const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-        const dayStats = calculateModelSummaryStats(data.races, modelKey);
-        if (dayStats.finishedRaces > 0) {
-          modelDailyStats.push({
-            date: data.date,
-            totalRaces: dayStats.totalRaces,
-            topPickHitRate: dayStats.topPickHitRate,
-            topPickPlaceRate: dayStats.topPickPlaceRate,
-            top3HitRate: dayStats.top3HitRate,
-            top3IncludedRate: dayStats.top3IncludedRate,
-            actualRecovery: dayStats.actualRecovery,
-          });
-        }
-      }
-
-      modelsSummary[modelKey] = {
-        overall: {
-          totalRaces: modelOverallStats.totalRaces,
-          finishedRaces: modelOverallStats.finishedRaces,
-          topPickHits: modelOverallStats.topPickHits,
-          topPickHitRate: modelOverallStats.topPickHitRate,
-          topPickPlaces: modelOverallStats.topPickPlaces,
-          topPickPlaceRate: modelOverallStats.topPickPlaceRate,
-          top3Hits: modelOverallStats.top3Hits,
-          top3HitRate: modelOverallStats.top3HitRate,
-          top3IncludedHits: modelOverallStats.top3IncludedHits,
-          top3IncludedRate: modelOverallStats.top3IncludedRate,
-          actualRecovery: modelOverallStats.actualRecovery,
-        },
-        yesterday: {
-          date: yesterday,
-          totalRaces: modelYesterdayStats.totalRaces,
-          topPickHitRate: modelYesterdayStats.topPickHitRate,
-          topPickPlaceRate: modelYesterdayStats.topPickPlaceRate,
-          top3HitRate: modelYesterdayStats.top3HitRate,
-          top3IncludedRate: modelYesterdayStats.top3IncludedRate,
-          actualRecovery: modelYesterdayStats.actualRecovery,
-        },
-        thisMonth: {
-          year: thisYear,
-          month: thisMonth,
-          totalRaces: modelThisMonthStats.totalRaces,
-          topPickHitRate: modelThisMonthStats.topPickHitRate,
-          topPickPlaceRate: modelThisMonthStats.topPickPlaceRate,
-          top3HitRate: modelThisMonthStats.top3HitRate,
-          top3IncludedRate: modelThisMonthStats.top3IncludedRate,
-          actualRecovery: modelThisMonthStats.actualRecovery,
-        },
-        lastMonth: {
-          year: lastYear,
-          month: lastMonth,
-          totalRaces: modelLastMonthStats.totalRaces,
-          topPickHitRate: modelLastMonthStats.topPickHitRate,
-          topPickPlaceRate: modelLastMonthStats.topPickPlaceRate,
-          top3HitRate: modelLastMonthStats.top3HitRate,
-          top3IncludedRate: modelLastMonthStats.top3IncludedRate,
-          actualRecovery: modelLastMonthStats.actualRecovery,
-        },
-        dailyHistory: modelDailyStats.slice(-30), // Last 30 days
-      };
-    }
-
-    // Generate summary with model-specific data
+    // Generate summary
     const summary = {
       lastUpdated: new Date().toISOString(),
-
-      // Model-specific statistics
-      models: modelsSummary,
-
-      // Backward compatibility: keep old structure using standard model data
       overall: {
         totalRaces: overallStats.totalRaces,
         finishedRaces: overallStats.finishedRaces,

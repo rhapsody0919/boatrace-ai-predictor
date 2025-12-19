@@ -5,6 +5,7 @@ function AccuracyDashboard() {
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedModel, setSelectedModel] = useState('standard')
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -52,7 +53,25 @@ function AccuracyDashboard() {
   }
 
   const formatPercent = (rate) => (rate * 100).toFixed(1) + '%'
-  const hasData = summary.overall.totalRaces > 0
+
+  // Get model-specific data with backward compatibility
+  const getModelData = () => {
+    // If summary has models structure, use it
+    if (summary.models && summary.models[selectedModel]) {
+      return summary.models[selectedModel]
+    }
+    // Backward compatibility: if no models structure, use old structure (assume it's standard model)
+    return {
+      overall: summary.overall,
+      yesterday: summary.yesterday,
+      thisMonth: summary.thisMonth,
+      lastMonth: summary.lastMonth,
+      dailyHistory: summary.dailyHistory
+    }
+  }
+
+  const modelData = getModelData()
+  const hasData = modelData.overall.totalRaces > 0
 
   // 回収率の色を取得
   const getRecoveryColor = (rate) => {
@@ -69,11 +88,11 @@ function AccuracyDashboard() {
 
   // 今月で3連単の回収率が最も高かった日を取得
   const bestTrioDay = (() => {
-    if (!summary.dailyHistory || summary.dailyHistory.length === 0) return null
+    if (!modelData.dailyHistory || modelData.dailyHistory.length === 0) return null
 
-    const thisMonthDays = summary.dailyHistory.filter(day => {
+    const thisMonthDays = modelData.dailyHistory.filter(day => {
       const { year, month } = getDateInfo(day.date)
-      return year === summary.thisMonth.year && month === summary.thisMonth.month
+      return year === modelData.thisMonth.year && month === modelData.thisMonth.month
     })
 
     if (thisMonthDays.length === 0) return null
@@ -134,9 +153,36 @@ function AccuracyDashboard() {
     </div>
   )
 
+  // Model selector component
+  const ModelSelector = () => (
+    <div className="model-selector">
+      <button
+        className={selectedModel === 'standard' ? 'active' : ''}
+        onClick={() => setSelectedModel('standard')}
+      >
+        スタンダード
+      </button>
+      <button
+        className={selectedModel === 'safeBet' ? 'active' : ''}
+        onClick={() => setSelectedModel('safeBet')}
+      >
+        本命狙い
+      </button>
+      <button
+        className={selectedModel === 'upsetFocus' ? 'active' : ''}
+        onClick={() => setSelectedModel('upsetFocus')}
+      >
+        穴狙い
+      </button>
+    </div>
+  )
+
   return (
     <div className="accuracy-dashboard">
       <h2>📊 AI予想的中率</h2>
+
+      {/* Model selector - only show if models data exists */}
+      {summary.models && <ModelSelector />}
 
       {!hasData ? (
         <div className="no-data-message">
@@ -171,17 +217,17 @@ function AccuracyDashboard() {
           )}
 
           {/* 今月の実績 */}
-          {summary.thisMonth.totalRaces > 0 && (
+          {modelData.thisMonth.totalRaces > 0 && (
             <div className="stat-section this-month-section">
               <StatsTable
-                data={summary.thisMonth}
-                title={`今月 (${summary.thisMonth.year}年${summary.thisMonth.month}月)`}
+                data={modelData.thisMonth}
+                title={`今月 (${modelData.thisMonth.year}年${modelData.thisMonth.month}月)`}
               />
             </div>
           )}
 
           {/* 直近のパフォーマンス */}
-          {summary.dailyHistory && summary.dailyHistory.length > 0 && (
+          {modelData.dailyHistory && modelData.dailyHistory.length > 0 && (
             <div className="daily-history">
               <h3>直近のパフォーマンス</h3>
               <div className="table-wrapper">
@@ -209,7 +255,7 @@ function AccuracyDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {summary.dailyHistory.slice(-7).reverse().map((day) => (
+                    {modelData.dailyHistory.slice(-7).reverse().map((day) => (
                       <tr key={day.date}>
                         <td className="date-cell">{day.date}</td>
                         <td className="races-cell">{day.totalRaces}</td>
