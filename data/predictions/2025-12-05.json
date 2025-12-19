@@ -1,7 +1,7 @@
 {
   "date": "2025-12-05",
   "generatedAt": "2025-12-05T14:27:50.991Z",
-  "updatedAt": "2025-12-19T00:42:04.264Z",
+  "updatedAt": "2025-12-19T00:49:55.975Z",
   "races": [
     {
       "raceId": "2025-12-05-02-01",
@@ -125,10 +125,12 @@
         "updatedAt": "2025-12-09T00:10:37.101Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -252,10 +254,12 @@
         "updatedAt": "2025-12-09T00:10:46.708Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -380,10 +384,12 @@
         "updatedAt": "2025-12-09T00:10:55.408Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": true
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": true
+        }
       }
     },
     {
@@ -508,10 +514,12 @@
         "updatedAt": "2025-12-09T00:11:05.067Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -636,10 +644,12 @@
         "updatedAt": "2025-12-09T00:11:30.480Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -764,10 +774,12 @@
         "updatedAt": "2025-12-09T00:11:41.077Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -892,10 +904,12 @@
         "updatedAt": "2025-12-09T00:11:49.691Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -1019,10 +1033,12 @@
         "updatedAt": "2025-12-09T00:11:58.277Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -1147,10 +1163,12 @@
         "updatedAt": "2025-12-09T00:12:06.887Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -1275,10 +1293,12 @@
         "updatedAt": "2025-12-09T00:12:17.553Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -1403,10 +1423,12 @@
         "updatedAt": "2025-12-09T00:12:27.198Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -1531,10 +1553,12 @@
         "updatedAt": "2025-12-09T00:12:37.864Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -1659,10 +1683,12 @@
         "updatedAt": "2025-12-09T00:12:48.644Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -1787,10 +1813,12 @@
         "updatedAt": "2025-12-09T00:12:57.403Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -1915,10 +1943,12 @@
         "updatedAt": "2025-12-09T00:13:08.089Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -2043,10 +2073,12 @@
         "updatedAt": "2025-12-09T00:13:17.702Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -2171,10 +2203,12 @@
         "updatedAt": "2025-12-09T00:13:27.391Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -2299,10 +2333,12 @@
         "updatedAt": "2025-12-09T00:13:36.218Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -2427,10 +2463,12 @@
         "updatedAt": "2025-12-09T00:13:45.841Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -2555,10 +2593,12 @@
         "updatedAt": "2025-12-09T00:13:54.464Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -2683,10 +2723,12 @@
         "updatedAt": "2025-12-09T00:14:03.075Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -2811,10 +2853,12 @@
         "updatedAt": "2025-12-09T00:14:13.727Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -2939,10 +2983,12 @@
         "updatedAt": "2025-12-09T00:14:23.457Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -3067,10 +3113,12 @@
         "updatedAt": "2025-12-09T00:14:34.069Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -3196,10 +3244,12 @@
         "updatedAt": "2025-12-09T00:14:43.718Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -3325,10 +3375,12 @@
         "updatedAt": "2025-12-09T00:14:53.331Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -3454,10 +3506,12 @@
         "updatedAt": "2025-12-09T00:15:03.065Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -3583,10 +3637,12 @@
         "updatedAt": "2025-12-09T00:15:11.706Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -3712,10 +3768,12 @@
         "updatedAt": "2025-12-09T00:15:22.405Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -3841,10 +3899,12 @@
         "updatedAt": "2025-12-09T00:15:31.021Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -3970,10 +4030,12 @@
         "updatedAt": "2025-12-09T00:15:40.734Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -4099,10 +4161,12 @@
         "updatedAt": "2025-12-09T00:15:49.382Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -4228,10 +4292,12 @@
         "updatedAt": "2025-12-09T00:15:58.030Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -4357,10 +4423,12 @@
         "updatedAt": "2025-12-09T00:16:08.645Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -4486,10 +4554,12 @@
         "updatedAt": "2025-12-09T00:16:17.256Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -4615,10 +4685,12 @@
         "updatedAt": "2025-12-09T00:16:25.888Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -4742,10 +4814,12 @@
         "updatedAt": "2025-12-09T00:16:35.835Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -4869,10 +4943,12 @@
         "updatedAt": "2025-12-09T00:16:44.447Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -4997,10 +5073,12 @@
         "updatedAt": "2025-12-09T00:16:54.038Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -5124,10 +5202,12 @@
         "updatedAt": "2025-12-09T00:17:03.650Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -5252,10 +5332,12 @@
         "updatedAt": "2025-12-09T00:17:13.413Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -5379,10 +5461,12 @@
         "updatedAt": "2025-12-09T00:17:23.065Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -5507,10 +5591,12 @@
         "updatedAt": "2025-12-09T00:17:33.725Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -5634,10 +5720,12 @@
         "updatedAt": "2025-12-09T00:17:42.323Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -5761,10 +5849,12 @@
         "updatedAt": "2025-12-09T00:17:52.122Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -5888,10 +5978,12 @@
         "updatedAt": "2025-12-09T00:18:01.801Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -6015,10 +6107,12 @@
         "updatedAt": "2025-12-09T00:18:12.434Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -6143,10 +6237,12 @@
         "updatedAt": "2025-12-09T00:18:23.154Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -6271,10 +6367,12 @@
         "updatedAt": "2025-12-09T00:18:32.743Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -6399,10 +6497,12 @@
         "updatedAt": "2025-12-09T00:18:41.390Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -6527,10 +6627,12 @@
         "updatedAt": "2025-12-09T00:18:50.020Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -6655,10 +6757,12 @@
         "updatedAt": "2025-12-09T00:19:00.733Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -6784,10 +6888,12 @@
         "updatedAt": "2025-12-09T00:19:11.386Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -6912,10 +7018,12 @@
         "updatedAt": "2025-12-09T00:19:20.092Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -7040,10 +7148,12 @@
         "updatedAt": "2025-12-09T00:19:28.740Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -7168,10 +7278,12 @@
         "updatedAt": "2025-12-09T00:19:38.406Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -7297,10 +7409,12 @@
         "updatedAt": "2025-12-09T00:19:49.046Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -7424,10 +7538,12 @@
         "updatedAt": "2025-12-09T00:19:59.708Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -7552,10 +7668,12 @@
         "updatedAt": "2025-12-09T00:20:10.376Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -7680,10 +7798,12 @@
         "updatedAt": "2025-12-09T00:20:19.030Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -7808,10 +7928,12 @@
         "updatedAt": "2025-12-09T00:20:27.737Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -7936,10 +8058,12 @@
         "updatedAt": "2025-12-09T00:20:37.409Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -8063,10 +8187,12 @@
         "updatedAt": "2025-12-09T00:20:46.109Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -8190,10 +8316,12 @@
         "updatedAt": "2025-12-09T00:20:56.762Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -8318,10 +8446,12 @@
         "updatedAt": "2025-12-09T00:21:05.419Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -8445,10 +8575,12 @@
         "updatedAt": "2025-12-09T00:21:14.085Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -8572,10 +8704,12 @@
         "updatedAt": "2025-12-09T00:21:22.690Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -8700,10 +8834,12 @@
         "updatedAt": "2025-12-09T00:21:31.375Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -8828,10 +8964,12 @@
         "updatedAt": "2025-12-09T00:21:41.318Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -8955,10 +9093,12 @@
         "updatedAt": "2025-12-09T00:21:52.059Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -9083,10 +9223,12 @@
         "updatedAt": "2025-12-09T00:22:02.768Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -9212,10 +9354,12 @@
         "updatedAt": "2025-12-09T00:22:13.458Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -9339,10 +9483,12 @@
         "updatedAt": "2025-12-09T00:22:22.167Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -9467,10 +9613,12 @@
         "updatedAt": "2025-12-09T00:22:30.789Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -9595,10 +9743,12 @@
         "updatedAt": "2025-12-09T00:22:41.519Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -9723,10 +9873,12 @@
         "updatedAt": "2025-12-09T00:22:52.271Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -9850,10 +10002,12 @@
         "updatedAt": "2025-12-09T00:23:02.917Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -9977,10 +10131,12 @@
         "updatedAt": "2025-12-09T00:23:11.691Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -10105,10 +10261,12 @@
         "updatedAt": "2025-12-09T00:23:21.317Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -10232,10 +10390,12 @@
         "updatedAt": "2025-12-09T00:23:30.976Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -10359,10 +10519,12 @@
         "updatedAt": "2025-12-09T00:23:40.706Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -10488,10 +10650,12 @@
         "updatedAt": "2025-12-09T00:23:51.354Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -10615,10 +10779,12 @@
         "updatedAt": "2025-12-09T00:24:02.311Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -10742,10 +10908,12 @@
         "updatedAt": "2025-12-09T00:24:12.039Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -10870,10 +11038,12 @@
         "updatedAt": "2025-12-09T00:24:22.690Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -10998,10 +11168,12 @@
         "updatedAt": "2025-12-09T00:24:31.374Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -11125,10 +11297,12 @@
         "updatedAt": "2025-12-09T00:24:41.000Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -11254,10 +11428,12 @@
         "updatedAt": "2025-12-09T00:24:51.634Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -11382,10 +11558,12 @@
         "updatedAt": "2025-12-09T00:25:01.295Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": true
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": true
+        }
       }
     },
     {
@@ -11510,10 +11688,12 @@
         "updatedAt": "2025-12-09T00:25:11.946Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": true
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": true
+        }
       }
     },
     {
@@ -11639,10 +11819,12 @@
         "updatedAt": "2025-12-09T00:25:21.661Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -11768,10 +11950,12 @@
         "updatedAt": "2025-12-09T00:25:31.296Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -11895,10 +12079,12 @@
         "updatedAt": "2025-12-09T00:25:40.889Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -12023,10 +12209,12 @@
         "updatedAt": "2025-12-09T00:25:49.602Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -12152,10 +12340,12 @@
         "updatedAt": "2025-12-09T00:26:00.482Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -12281,10 +12471,12 @@
         "updatedAt": "2025-12-09T00:26:10.133Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -12409,10 +12601,12 @@
         "updatedAt": "2025-12-09T00:26:19.945Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -12536,10 +12730,12 @@
         "updatedAt": "2025-12-09T00:26:28.599Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -12664,10 +12860,12 @@
         "updatedAt": "2025-12-09T00:26:39.224Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -12792,10 +12990,12 @@
         "updatedAt": "2025-12-09T00:26:47.908Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -12920,10 +13120,12 @@
         "updatedAt": "2025-12-09T00:26:56.601Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -13047,10 +13249,12 @@
         "updatedAt": "2025-12-09T00:27:05.302Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -13176,10 +13380,12 @@
         "updatedAt": "2025-12-09T00:27:15.084Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -13304,10 +13510,12 @@
         "updatedAt": "2025-12-09T00:27:25.990Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -13431,10 +13639,12 @@
         "updatedAt": "2025-12-09T00:27:36.737Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -13558,10 +13768,12 @@
         "updatedAt": "2025-12-09T00:27:46.381Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -13686,10 +13898,12 @@
         "updatedAt": "2025-12-09T00:27:56.091Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -13815,10 +14029,12 @@
         "updatedAt": "2025-12-09T00:28:04.706Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -13943,10 +14159,12 @@
         "updatedAt": "2025-12-09T00:28:15.352Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -14070,10 +14288,12 @@
         "updatedAt": "2025-12-09T00:28:23.999Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -14199,10 +14419,12 @@
         "updatedAt": "2025-12-09T00:28:32.614Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -14326,10 +14548,12 @@
         "updatedAt": "2025-12-09T00:28:43.269Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -14454,10 +14678,12 @@
         "updatedAt": "2025-12-09T00:28:52.889Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -14582,10 +14808,12 @@
         "updatedAt": "2025-12-09T00:29:01.527Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -14710,10 +14938,12 @@
         "updatedAt": "2025-12-09T00:29:11.254Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -14837,10 +15067,12 @@
         "updatedAt": "2025-12-09T00:29:19.978Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -14964,10 +15196,12 @@
         "updatedAt": "2025-12-09T00:29:29.587Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -15092,10 +15326,12 @@
         "updatedAt": "2025-12-09T00:29:38.288Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -15220,10 +15456,12 @@
         "updatedAt": "2025-12-09T00:29:46.926Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -15348,10 +15586,12 @@
         "updatedAt": "2025-12-09T00:29:57.948Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -15475,10 +15715,12 @@
         "updatedAt": "2025-12-09T00:30:08.602Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -15602,10 +15844,12 @@
         "updatedAt": "2025-12-09T00:30:17.302Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -15730,10 +15974,12 @@
         "updatedAt": "2025-12-09T00:30:25.908Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -15858,10 +16104,12 @@
         "updatedAt": "2025-12-09T00:30:34.607Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -15986,10 +16234,12 @@
         "updatedAt": "2025-12-09T00:30:43.311Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -16114,10 +16364,12 @@
         "updatedAt": "2025-12-09T00:30:53.953Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -16242,10 +16494,12 @@
         "updatedAt": "2025-12-09T00:31:03.676Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -16370,10 +16624,12 @@
         "updatedAt": "2025-12-09T00:31:12.308Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -16498,10 +16754,12 @@
         "updatedAt": "2025-12-09T00:31:23.046Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -16626,10 +16884,12 @@
         "updatedAt": "2025-12-09T00:31:32.662Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -16753,10 +17013,12 @@
         "updatedAt": "2025-12-09T00:31:43.601Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -16881,10 +17143,12 @@
         "updatedAt": "2025-12-09T00:31:52.231Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -17008,10 +17272,12 @@
         "updatedAt": "2025-12-09T00:32:01.854Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -17136,10 +17402,12 @@
         "updatedAt": "2025-12-09T00:32:12.711Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -17264,10 +17532,12 @@
         "updatedAt": "2025-12-09T00:32:21.412Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -17392,10 +17662,12 @@
         "updatedAt": "2025-12-09T00:32:30.078Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -17519,10 +17791,12 @@
         "updatedAt": "2025-12-09T00:32:38.680Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -17646,10 +17920,12 @@
         "updatedAt": "2025-12-09T00:32:48.342Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": true
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": true
+        }
       }
     },
     {
@@ -17775,10 +18051,12 @@
         "updatedAt": "2025-12-09T00:32:58.069Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -17902,10 +18180,12 @@
         "updatedAt": "2025-12-09T00:33:07.679Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -18029,10 +18309,12 @@
         "updatedAt": "2025-12-09T00:33:17.409Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -18157,10 +18439,12 @@
         "updatedAt": "2025-12-09T00:33:28.277Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": true,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
+        }
       }
     },
     {
@@ -18285,10 +18569,12 @@
         "updatedAt": "2025-12-09T00:33:36.984Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -18413,10 +18699,12 @@
         "updatedAt": "2025-12-09T00:33:45.683Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -18541,10 +18829,12 @@
         "updatedAt": "2025-12-09T00:33:56.438Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -18669,10 +18959,12 @@
         "updatedAt": "2025-12-09T00:34:06.154Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -18796,10 +19088,12 @@
         "updatedAt": "2025-12-09T00:34:14.873Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -18923,10 +19217,12 @@
         "updatedAt": "2025-12-09T00:34:23.467Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -19051,10 +19347,12 @@
         "updatedAt": "2025-12-09T00:34:33.203Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -19178,10 +19476,12 @@
         "updatedAt": "2025-12-09T00:34:41.905Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -19306,10 +19606,12 @@
         "updatedAt": "2025-12-09T00:34:51.634Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -19434,10 +19736,12 @@
         "updatedAt": "2025-12-09T00:35:02.284Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -19563,10 +19867,12 @@
         "updatedAt": "2025-12-09T00:35:13.136Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -19690,10 +19996,12 @@
         "updatedAt": "2025-12-09T00:35:21.814Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -19818,10 +20126,12 @@
         "updatedAt": "2025-12-09T00:35:30.467Z"
       },
       "accuracy": {
-        "topPickHit": true,
-        "topPickPlace": true,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -19946,10 +20256,12 @@
         "updatedAt": "2025-12-09T00:35:40.276Z"
       },
       "accuracy": {
-        "topPickHit": false,
-        "topPickPlace": false,
-        "top3Hit": false,
-        "top3Included": false
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     }
   ]

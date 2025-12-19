@@ -340,28 +340,35 @@ async function calculateAccuracy() {
         const modelAccuracy = {};
         const models = ['standard', 'safeBet', 'upsetFocus'];
 
-        // Calculate accuracy for all 3 models
-        for (const modelKey of models) {
-          if (race.predictions && race.predictions[modelKey]) {
-            modelAccuracy[modelKey] = calculateModelRaceAccuracy(
-              race.predictions[modelKey],
-              race.result
-            );
+        // If race has new 3-model structure, calculate accuracy for all 3 models
+        if (race.predictions) {
+          for (const modelKey of models) {
+            if (race.predictions[modelKey]) {
+              modelAccuracy[modelKey] = calculateModelRaceAccuracy(
+                race.predictions[modelKey],
+                race.result
+              );
+            }
           }
+          race.accuracy = modelAccuracy;
         }
-
-        // Store model-specific accuracy
-        race.accuracy = modelAccuracy;
-
-        // Backward compatibility: if old structure exists, preserve it
-        if (race.prediction && Object.keys(modelAccuracy).length === 0) {
-          race.accuracy = calculateRaceAccuracy(race.prediction, race.result);
+        // Backward compatibility: if old single-model structure, treat as "standard" model
+        else if (race.prediction) {
+          const accuracy = calculateRaceAccuracy(race.prediction, race.result);
+          // Store in model-specific format, assigning old prediction to "standard"
+          race.accuracy = {
+            standard: accuracy
+          };
         }
 
         allRaces.push({ ...race, date: data.date });
 
-        // Count updated races (any model with accuracy data)
-        if (Object.keys(modelAccuracy).length > 0 && modelAccuracy.standard?.topPickHit !== null) {
+        // Count updated races
+        const hasAccuracy = race.accuracy &&
+          (race.accuracy.standard?.topPickHit !== null ||
+           race.accuracy.safeBet?.topPickHit !== null ||
+           race.accuracy.upsetFocus?.topPickHit !== null);
+        if (hasAccuracy) {
           updatedRaces++;
         }
       }
