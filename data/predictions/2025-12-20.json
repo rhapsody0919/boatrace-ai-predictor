@@ -1,7 +1,7 @@
 {
   "date": "2025-12-20",
-  "generatedAt": "2025-12-19T22:26:40.094Z",
-  "updatedAt": "2025-12-19T22:51:47.128Z",
+  "generatedAt": "2025-12-19T23:33:21.767Z",
+  "updatedAt": "2025-12-19T23:33:21.767Z",
   "races": [
     {
       "raceId": "2025-12-20-02-01",
@@ -397,24 +397,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -430,7 +415,7 @@
         "reasons": [
           "1号艇が平均より12%弱い（グレード: B1、勝率: 4.1%）",
           "モーター性能が均等（2連率の標準偏差: 6.3%）",
-          "外枠に好機材が1艇（undefined号艇(41.7%)）",
+          "外枠に好機材が1艇（6号艇(41.7%)）",
           "戸田は荒れやすい競艇場"
         ]
       },
@@ -816,24 +801,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -849,7 +819,7 @@
         "reasons": [
           "1号艇が平均より-0%弱い（グレード: B1、勝率: 5.5%）",
           "モーター性能が均等（2連率の標準偏差: 8.8%）",
-          "外枠に好機材が1艇（undefined号艇(40.5%)）",
+          "外枠に好機材が1艇（4号艇(40.5%)）",
           "戸田は荒れやすい競艇場"
         ]
       },
@@ -1239,24 +1209,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -1272,7 +1227,7 @@
         "reasons": [
           "1号艇が平均より25%弱い（グレード: B1、勝率: 3.5%）",
           "モーター性能が均等（2連率の標準偏差: 6.8%）",
-          "外枠に好機材が1艇（undefined号艇(44.2%)）",
+          "外枠に好機材が1艇（5号艇(44.2%)）",
           "戸田は荒れやすい競艇場"
         ]
       },
@@ -1658,24 +1613,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -1691,7 +1631,7 @@
         "reasons": [
           "1号艇が平均より-15%弱い（グレード: A2、勝率: 5.8%）",
           "モーター性能が均等（2連率の標準偏差: 9.4%）",
-          "外枠に好機材が1艇（undefined号艇(56.4%)）",
+          "外枠に好機材が1艇（6号艇(56.4%)）",
           "戸田は荒れやすい競艇場"
         ]
       },
@@ -2077,24 +2017,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -2110,7 +2035,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.87%、平均: 4.9%）",
           "1号艇が平均より9%弱い（グレード: B1、勝率: 4.5%）",
-          "外枠に好機材が2艇（undefined号艇(45.0%)、undefined号艇(42.9%)）",
+          "外枠に好機材が2艇（4号艇(45.0%)、5号艇(42.9%)）",
           "戸田は荒れやすい競艇場"
         ]
       },
@@ -2496,24 +2421,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -2909,24 +2819,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -3327,24 +3222,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -3360,7 +3240,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.57%、平均: 5.4%）",
           "1号艇が平均より-0%弱い（グレード: A2、勝率: 5.4%）",
-          "外枠に好機材が1艇（undefined号艇(47.9%)）",
+          "外枠に好機材が1艇（5号艇(47.9%)）",
           "戸田は荒れやすい競艇場"
         ]
       },
@@ -3746,24 +3626,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -4168,24 +4033,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -4200,7 +4050,7 @@
         "recommendedModel": "safe-bet",
         "reasons": [
           "モーター性能が均等（2連率の標準偏差: 10.4%）",
-          "外枠に好機材が1艇（undefined号艇(43.2%)）",
+          "外枠に好機材が1艇（5号艇(43.2%)）",
           "戸田は荒れやすい競艇場"
         ]
       },
@@ -4586,24 +4436,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -4619,7 +4454,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.84%、平均: 6.1%）",
           "モーター性能が均等（2連率の標準偏差: 9.3%）",
-          "外枠に好機材が2艇（undefined号艇(41.7%)、undefined号艇(49.4%)）",
+          "外枠に好機材が2艇（4号艇(41.7%)、5号艇(49.4%)）",
           "戸田は荒れやすい競艇場"
         ]
       },
@@ -5005,24 +4840,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -5419,24 +5239,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -5452,7 +5257,7 @@
         "reasons": [
           "1号艇が平均より10%弱い（グレード: B1、勝率: 4.7%）",
           "モーター性能が均等（2連率の標準偏差: 10.9%）",
-          "外枠に好機材が2艇（undefined号艇(41.0%)、undefined号艇(42.3%)）",
+          "外枠に好機材が2艇（4号艇(41.0%)、5号艇(42.3%)）",
           "江戸川は荒れやすい競艇場"
         ]
       },
@@ -5838,24 +5643,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -5871,7 +5661,7 @@
         "reasons": [
           "1号艇が平均より-3%弱い（グレード: B1、勝率: 5.2%）",
           "モーター性能が均等（2連率の標準偏差: 10.1%）",
-          "外枠に好機材が1艇（undefined号艇(46.0%)）",
+          "外枠に好機材が1艇（5号艇(46.0%)）",
           "江戸川は荒れやすい競艇場"
         ]
       },
@@ -6261,24 +6051,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -6679,24 +6454,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -6712,7 +6472,7 @@
         "reasons": [
           "1号艇が平均より-9%弱い（グレード: A2、勝率: 5.4%）",
           "モーター性能が均等（2連率の標準偏差: 6.8%）",
-          "外枠に好機材が1艇（undefined号艇(44.7%)）",
+          "外枠に好機材が1艇（6号艇(44.7%)）",
           "江戸川は荒れやすい競艇場"
         ]
       },
@@ -7098,24 +6858,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -7516,24 +7261,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -7934,24 +7664,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -7966,7 +7681,7 @@
         "recommendedModel": "safe-bet",
         "reasons": [
           "モーター性能が均等（2連率の標準偏差: 7.0%）",
-          "外枠に好機材が1艇（undefined号艇(44.4%)）",
+          "外枠に好機材が1艇（5号艇(44.4%)）",
           "江戸川は荒れやすい競艇場"
         ]
       },
@@ -8352,24 +8067,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -8771,24 +8471,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -9189,24 +8874,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -9222,7 +8892,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.54%、平均: 6.1%）",
           "モーター性能が均等（2連率の標準偏差: 6.1%）",
-          "外枠に好機材が2艇（undefined号艇(42.4%)、undefined号艇(42.2%)）",
+          "外枠に好機材が2艇（4号艇(42.4%)、5号艇(42.2%)）",
           "江戸川は荒れやすい競艇場"
         ]
       },
@@ -9608,24 +9278,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -9641,7 +9296,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.65%、平均: 6.3%）",
           "モーター性能が均等（2連率の標準偏差: 10.9%）",
-          "外枠に好機材が1艇（undefined号艇(53.7%)）",
+          "外枠に好機材が1艇（5号艇(53.7%)）",
           "江戸川は荒れやすい競艇場"
         ]
       },
@@ -10031,24 +9686,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -10065,7 +9705,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.82%、平均: 4.5%）",
           "1号艇が平均より-13%弱い（グレード: B1、勝率: 5.0%）",
           "モーター性能が均等（2連率の標準偏差: 3.7%）",
-          "外枠に好機材が1艇（undefined号艇(43.8%)）"
+          "外枠に好機材が1艇（6号艇(43.8%)）"
         ]
       },
       "predictions": {
@@ -10450,24 +10090,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -10484,7 +10109,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.61%、平均: 4.8%）",
           "1号艇が平均より17%弱い（グレード: B1、勝率: 4.0%）",
           "モーター性能が均等（2連率の標準偏差: 7.9%）",
-          "外枠に好機材が1艇（undefined号艇(45.0%)）"
+          "外枠に好機材が1艇（6号艇(45.0%)）"
         ]
       },
       "predictions": {
@@ -10869,24 +10494,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -10902,7 +10512,7 @@
         "reasons": [
           "1号艇が平均より-12%弱い（グレード: B1、勝率: 5.5%）",
           "モーター性能が均等（2連率の標準偏差: 9.5%）",
-          "外枠に好機材が2艇（undefined号艇(55.6%)、undefined号艇(41.8%)）"
+          "外枠に好機材が2艇（5号艇(55.6%)、6号艇(41.8%)）"
         ]
       },
       "predictions": {
@@ -11291,24 +10901,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -11325,7 +10920,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.74%、平均: 4.9%）",
           "1号艇が平均より19%弱い（グレード: B1、勝率: 4.0%）",
           "モーター性能が均等（2連率の標準偏差: 3.8%）",
-          "外枠に好機材が1艇（undefined号艇(40.2%)）"
+          "外枠に好機材が1艇（4号艇(40.2%)）"
         ]
       },
       "predictions": {
@@ -11710,24 +11305,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -12127,24 +11707,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -12161,7 +11726,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.70%、平均: 4.8%）",
           "1号艇が平均より-11%弱い（グレード: A2、勝率: 5.3%）",
           "モーター性能が均等（2連率の標準偏差: 4.1%）",
-          "外枠に好機材が1艇（undefined号艇(40.1%)）"
+          "外枠に好機材が1艇（5号艇(40.1%)）"
         ]
       },
       "predictions": {
@@ -12546,24 +12111,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -12579,7 +12129,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 1.00%、平均: 5.5%）",
           "モーター性能が均等（2連率の標準偏差: 6.5%）",
-          "外枠に好機材が2艇（undefined号艇(44.6%)、undefined号艇(43.1%)）"
+          "外枠に好機材が2艇（4号艇(44.6%)、5号艇(43.1%)）"
         ]
       },
       "predictions": {
@@ -12968,24 +12518,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -13388,24 +12923,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -13420,7 +12940,7 @@
         "recommendedModel": "safe-bet",
         "reasons": [
           "モーター性能が均等（2連率の標準偏差: 7.0%）",
-          "外枠に好機材が1艇（undefined号艇(47.3%)）"
+          "外枠に好機材が1艇（4号艇(47.3%)）"
         ]
       },
       "predictions": {
@@ -13805,24 +13325,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -13838,7 +13343,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.92%、平均: 5.0%）",
           "モーター性能が均等（2連率の標準偏差: 9.0%）",
-          "外枠に好機材が1艇（undefined号艇(45.4%)）"
+          "外枠に好機材が1艇（6号艇(45.4%)）"
         ]
       },
       "predictions": {
@@ -14223,24 +13728,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -14256,7 +13746,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.58%、平均: 5.9%）",
           "モーター性能が均等（2連率の標準偏差: 5.1%）",
-          "外枠に好機材が2艇（undefined号艇(41.1%)、undefined号艇(48.5%)）"
+          "外枠に好機材が2艇（5号艇(41.1%)、6号艇(48.5%)）"
         ]
       },
       "predictions": {
@@ -14645,24 +14135,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -15062,24 +14537,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -15479,24 +14939,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -15512,7 +14957,7 @@
         "reasons": [
           "1号艇が平均より1%弱い（グレード: B1、勝率: 4.5%）",
           "モーター性能が均等（2連率の標準偏差: 8.3%）",
-          "外枠に好機材が1艇（undefined号艇(46.0%)）"
+          "外枠に好機材が1艇（5号艇(46.0%)）"
         ]
       },
       "predictions": {
@@ -15897,24 +15342,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -15931,7 +15361,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.94%、平均: 4.8%）",
           "1号艇が平均より14%弱い（グレード: B1、勝率: 4.2%）",
           "モーター性能が均等（2連率の標準偏差: 6.6%）",
-          "外枠に好機材が1艇（undefined号艇(47.2%)）"
+          "外枠に好機材が1艇（6号艇(47.2%)）"
         ]
       },
       "predictions": {
@@ -16316,24 +15746,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -16349,7 +15764,7 @@
         "reasons": [
           "1号艇が平均より-3%弱い（グレード: B1、勝率: 5.6%）",
           "モーター性能が均等（2連率の標準偏差: 9.0%）",
-          "外枠に好機材が2艇（undefined号艇(41.6%)、undefined号艇(46.1%)）"
+          "外枠に好機材が2艇（5号艇(41.6%)、6号艇(46.1%)）"
         ]
       },
       "predictions": {
@@ -16738,24 +16153,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -17159,24 +16559,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -17571,24 +16956,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -17603,7 +16973,7 @@
         "recommendedModel": "standard",
         "reasons": [
           "1号艇が平均より-8%弱い（グレード: B1、勝率: 5.6%）",
-          "外枠に好機材が1艇（undefined号艇(46.6%)）"
+          "外枠に好機材が1艇（6号艇(46.6%)）"
         ]
       },
       "predictions": {
@@ -17988,24 +17358,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -18401,24 +17756,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -18434,7 +17774,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.91%、平均: 5.4%）",
           "モーター性能が均等（2連率の標準偏差: 6.9%）",
-          "外枠に好機材が1艇（undefined号艇(46.2%)）"
+          "外枠に好機材が1艇（6号艇(46.2%)）"
         ]
       },
       "predictions": {
@@ -18819,24 +18159,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -19239,24 +18564,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -19661,24 +18971,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -20073,24 +19368,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -20490,24 +19770,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -20907,24 +20172,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -21324,24 +20574,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -21741,24 +20976,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -22158,24 +21378,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -22575,24 +21780,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -22992,24 +22182,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -23413,24 +22588,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -23834,24 +22994,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -24251,24 +23396,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -24284,7 +23414,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.60%、平均: 7.2%）",
           "モーター性能が均等（2連率の標準偏差: 3.7%）",
-          "外枠に好機材が1艇（undefined号艇(41.7%)）"
+          "外枠に好機材が1艇（6号艇(41.7%)）"
         ]
       },
       "predictions": {
@@ -24673,24 +23803,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -24706,7 +23821,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.48%、平均: 7.3%）",
           "モーター性能が均等（2連率の標準偏差: 2.2%）",
-          "外枠に好機材が2艇（undefined号艇(41.5%)、undefined号艇(40.1%)）"
+          "外枠に好機材が2艇（4号艇(41.5%)、6号艇(40.1%)）"
         ]
       },
       "predictions": {
@@ -25095,24 +24210,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -25509,24 +24609,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -25543,7 +24628,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.95%、平均: 6.0%）",
           "1号艇が平均より17%弱い（グレード: B1、勝率: 5.0%）",
           "モーター性能が均等（2連率の標準偏差: 6.7%）",
-          "外枠に好機材が1艇（undefined号艇(45.9%)）"
+          "外枠に好機材が1艇（4号艇(45.9%)）"
         ]
       },
       "predictions": {
@@ -25932,24 +25017,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -25966,7 +25036,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.67%、平均: 5.6%）",
           "1号艇が平均より0%弱い（勝率: 5.6%）",
           "モーター性能が均等（2連率の標準偏差: 6.9%）",
-          "外枠に好機材が1艇（undefined号艇(46.9%)）"
+          "外枠に好機材が1艇（4号艇(46.9%)）"
         ]
       },
       "predictions": {
@@ -26351,24 +25421,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -26771,24 +25826,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -27189,24 +26229,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -27607,24 +26632,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -27641,7 +26651,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.69%、平均: 6.0%）",
           "1号艇が平均より18%弱い（グレード: B1、勝率: 4.9%）",
           "モーター性能が均等（2連率の標準偏差: 6.4%）",
-          "外枠に好機材が1艇（undefined号艇(46.9%)）"
+          "外枠に好機材が1艇（5号艇(46.9%)）"
         ]
       },
       "predictions": {
@@ -28026,24 +27036,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -28440,24 +27435,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -28473,7 +27453,7 @@
         "reasons": [
           "1号艇が平均より27%弱い（グレード: B1、勝率: 4.3%）",
           "モーター性能が均等（2連率の標準偏差: 6.7%）",
-          "外枠に好機材が1艇（undefined号艇(46.2%)）"
+          "外枠に好機材が1艇（6号艇(46.2%)）"
         ]
       },
       "predictions": {
@@ -28862,24 +27842,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -28896,7 +27861,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.91%、平均: 5.6%）",
           "1号艇が平均より-14%弱い（グレード: A2）",
           "モーター性能が均等（2連率の標準偏差: 7.7%）",
-          "外枠に好機材が1艇（undefined号艇(50.0%)）"
+          "外枠に好機材が1艇（4号艇(50.0%)）"
         ]
       },
       "predictions": {
@@ -29281,24 +28246,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -29698,24 +28648,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -29731,7 +28666,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.24%、平均: 6.8%）",
           "モーター性能が均等（2連率の標準偏差: 7.2%）",
-          "外枠に好機材が1艇（undefined号艇(45.3%)）"
+          "外枠に好機材が1艇（4号艇(45.3%)）"
         ]
       },
       "predictions": {
@@ -30116,24 +29051,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -30529,24 +29449,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -30942,24 +29847,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -31355,24 +30245,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -31768,24 +30643,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -32181,24 +31041,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -32594,24 +31439,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -33008,24 +31838,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -33422,24 +32237,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -33835,24 +32635,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -34249,24 +33034,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -34662,24 +33432,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -35079,24 +33834,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -35112,7 +33852,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.57%、平均: 5.1%）",
           "モーター性能が均等（2連率の標準偏差: 9.7%）",
-          "外枠に好機材が1艇（undefined号艇(51.0%)）"
+          "外枠に好機材が1艇（5号艇(51.0%)）"
         ]
       },
       "predictions": {
@@ -35497,24 +34237,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -35530,7 +34255,7 @@
         "reasons": [
           "1号艇が平均より-6%弱い（グレード: B1、勝率: 5.7%）",
           "モーター性能が均等（2連率の標準偏差: 5.3%）",
-          "外枠に好機材が1艇（undefined号艇(42.0%)）"
+          "外枠に好機材が1艇（4号艇(42.0%)）"
         ]
       },
       "predictions": {
@@ -35915,24 +34640,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -36332,24 +35042,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -36366,7 +35061,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.56%、平均: 5.6%）",
           "1号艇が平均より-0%弱い（グレード: B1、勝率: 5.6%）",
           "モーター性能が均等（2連率の標準偏差: 10.4%）",
-          "外枠に好機材が1艇（undefined号艇(61.5%)）"
+          "外枠に好機材が1艇（6号艇(61.5%)）"
         ]
       },
       "predictions": {
@@ -36751,24 +35446,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -36784,7 +35464,7 @@
         "reasons": [
           "1号艇が平均より11%弱い（グレード: B1、勝率: 3.6%）",
           "モーター性能が均等（2連率の標準偏差: 8.5%）",
-          "外枠に好機材が1艇（undefined号艇(50.0%)）"
+          "外枠に好機材が1艇（6号艇(50.0%)）"
         ]
       },
       "predictions": {
@@ -37173,24 +35853,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -37590,24 +36255,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -37623,7 +36273,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.77%、平均: 5.4%）",
           "モーター性能が均等（2連率の標準偏差: 10.0%）",
-          "外枠に好機材が1艇（undefined号艇(45.8%)）"
+          "外枠に好機材が1艇（4号艇(45.8%)）"
         ]
       },
       "predictions": {
@@ -38008,24 +36658,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -38041,7 +36676,7 @@
         "reasons": [
           "1号艇が平均より-27%弱い（グレード: A2）",
           "モーター性能が均等（2連率の標準偏差: 10.2%）",
-          "外枠に好機材が2艇（undefined号艇(46.0%)、undefined号艇(48.9%)）"
+          "外枠に好機材が2艇（4号艇(46.0%)、6号艇(48.9%)）"
         ]
       },
       "predictions": {
@@ -38426,24 +37061,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -38460,7 +37080,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.38%、平均: 4.4%）",
           "1号艇が平均より8%弱い（グレード: B1、勝率: 4.1%）",
           "モーター性能が均等（2連率の標準偏差: 5.8%）",
-          "外枠に好機材が1艇（undefined号艇(42.5%)）"
+          "外枠に好機材が1艇（6号艇(42.5%)）"
         ]
       },
       "predictions": {
@@ -38845,24 +37465,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -39259,24 +37864,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -39292,7 +37882,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.60%、平均: 5.5%）",
           "1号艇が平均より9%弱い（グレード: A2、勝率: 5.1%）",
-          "外枠に好機材が2艇（undefined号艇(42.3%)、undefined号艇(44.2%)）"
+          "外枠に好機材が2艇（4号艇(42.3%)、5号艇(44.2%)）"
         ]
       },
       "predictions": {
@@ -39677,24 +38267,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -39710,7 +38285,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.32%、平均: 6.8%）",
           "モーター性能が均等（2連率の標準偏差: 10.0%）",
-          "外枠に好機材が1艇（undefined号艇(46.1%)）"
+          "外枠に好機材が1艇（4号艇(46.1%)）"
         ]
       },
       "predictions": {
@@ -40099,24 +38674,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -40513,24 +39073,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -40926,24 +39471,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -41343,24 +39873,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -41757,24 +40272,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -41790,7 +40290,7 @@
         "reasons": [
           "1号艇が平均より-23%弱い（グレード: A2）",
           "モーター性能が均等（2連率の標準偏差: 7.6%）",
-          "外枠に好機材が1艇（undefined号艇(44.3%)）"
+          "外枠に好機材が1艇（5号艇(44.3%)）"
         ]
       },
       "predictions": {
@@ -42179,24 +40679,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -42593,24 +41078,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -42626,7 +41096,7 @@
         "reasons": [
           "1号艇が平均より-23%弱い（グレード: A2）",
           "モーター性能が均等（2連率の標準偏差: 7.4%）",
-          "外枠に好機材が1艇（undefined号艇(40.4%)）"
+          "外枠に好機材が1艇（5号艇(40.4%)）"
         ]
       },
       "predictions": {
@@ -43015,24 +41485,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -43429,24 +41884,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -43841,24 +42281,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -44258,24 +42683,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -44678,24 +43088,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -45091,24 +43486,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -45124,7 +43504,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.58%、平均: 4.2%）",
           "1号艇が平均より-4%弱い（グレード: B1、勝率: 4.3%）",
-          "外枠に好機材が1艇（undefined号艇(50.0%)）"
+          "外枠に好機材が1艇（5号艇(50.0%)）"
         ]
       },
       "predictions": {
@@ -45509,24 +43889,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -45926,24 +44291,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -45958,7 +44308,7 @@
         "recommendedModel": "standard",
         "reasons": [
           "1号艇が平均より9%弱い（グレード: B1、勝率: 4.1%）",
-          "外枠に好機材が2艇（undefined号艇(44.4%)、undefined号艇(42.1%)）"
+          "外枠に好機材が2艇（4号艇(44.4%)、6号艇(42.1%)）"
         ]
       },
       "predictions": {
@@ -46343,24 +44693,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -46376,7 +44711,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.76%、平均: 5.0%）",
           "1号艇が平均より15%弱い（グレード: B1、勝率: 4.3%）",
-          "外枠に好機材が2艇（undefined号艇(62.5%)、undefined号艇(87.5%)）"
+          "外枠に好機材が2艇（5号艇(62.5%)、6号艇(87.5%)）"
         ]
       },
       "predictions": {
@@ -46761,24 +45096,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -46792,7 +45112,7 @@
         "level": "low",
         "recommendedModel": "safe-bet",
         "reasons": [
-          "外枠に好機材が2艇（undefined号艇(50.0%)、undefined号艇(45.5%)）"
+          "外枠に好機材が2艇（5号艇(50.0%)、6号艇(45.5%)）"
         ]
       },
       "predictions": {
@@ -47177,24 +45497,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -47210,7 +45515,7 @@
         "reasons": [
           "1号艇が平均より-12%弱い（グレード: B1、勝率: 5.2%）",
           "モーター性能が均等（2連率の標準偏差: 11.3%）",
-          "外枠に好機材が1艇（undefined号艇(55.6%)）"
+          "外枠に好機材が1艇（4号艇(55.6%)）"
         ]
       },
       "predictions": {
@@ -47595,24 +45900,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -47627,7 +45917,7 @@
         "recommendedModel": "safe-bet",
         "reasons": [
           "1号艇が平均より-16%弱い（グレード: A2）",
-          "外枠に好機材が1艇（undefined号艇(87.5%)）"
+          "外枠に好機材が1艇（4号艇(87.5%)）"
         ]
       },
       "predictions": {
@@ -48012,24 +46302,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -48044,7 +46319,7 @@
         "recommendedModel": "safe-bet",
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.77%、平均: 5.5%）",
-          "外枠に好機材が1艇（undefined号艇(55.6%)）"
+          "外枠に好機材が1艇（6号艇(55.6%)）"
         ]
       },
       "predictions": {
@@ -48429,24 +46704,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -48461,7 +46721,7 @@
         "recommendedModel": "safe-bet",
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.95%、平均: 4.4%）",
-          "外枠に好機材が1艇（undefined号艇(44.4%)）"
+          "外枠に好機材が1艇（6号艇(44.4%)）"
         ]
       },
       "predictions": {
@@ -48846,24 +47106,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -48879,7 +47124,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.50%、平均: 5.3%）",
           "1号艇が平均より-10%弱い（グレード: A2、勝率: 5.8%）",
-          "外枠に好機材が1艇（undefined号艇(45.5%)）"
+          "外枠に好機材が1艇（6号艇(45.5%)）"
         ]
       },
       "predictions": {
@@ -49264,24 +47509,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -49678,24 +47908,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -49710,7 +47925,7 @@
         "recommendedModel": "safe-bet",
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.28%、平均: 6.5%）",
-          "外枠に好機材が1艇（undefined号艇(41.2%)）"
+          "外枠に好機材が1艇（4号艇(41.2%)）"
         ]
       },
       "predictions": {
@@ -50095,24 +48310,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -50508,24 +48708,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -50925,24 +49110,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -51338,24 +49508,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -51754,24 +49909,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -52170,24 +50310,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -52584,24 +50709,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -52998,24 +51108,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -53411,24 +51506,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -53824,24 +51904,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -54242,24 +52307,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -54656,24 +52706,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -55073,24 +53108,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -55105,7 +53125,7 @@
         "recommendedModel": "safe-bet",
         "reasons": [
           "モーター性能が均等（2連率の標準偏差: 4.5%）",
-          "外枠に好機材が2艇（undefined号艇(42.4%)、undefined号艇(44.0%)）"
+          "外枠に好機材が2艇（5号艇(42.4%)、6号艇(44.0%)）"
         ]
       },
       "predictions": {
@@ -55490,24 +53510,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -55903,24 +53908,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -56316,24 +54306,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -56350,7 +54325,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.87%、平均: 5.2%）",
           "1号艇が平均より22%弱い（グレード: B1、勝率: 4.1%）",
           "モーター性能が均等（2連率の標準偏差: 5.7%）",
-          "外枠に好機材が1艇（undefined号艇(45.6%)）"
+          "外枠に好機材が1艇（4号艇(45.6%)）"
         ]
       },
       "predictions": {
@@ -56735,24 +54710,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -56768,7 +54728,7 @@
         "reasons": [
           "1号艇が平均より-19%弱い（グレード: A2、勝率: 5.9%）",
           "モーター性能が均等（2連率の標準偏差: 4.3%）",
-          "外枠に好機材が1艇（undefined号艇(42.4%)）"
+          "外枠に好機材が1艇（4号艇(42.4%)）"
         ]
       },
       "predictions": {
@@ -57153,24 +55113,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -57187,7 +55132,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.71%、平均: 5.4%）",
           "1号艇が平均より-9%弱い（グレード: A2、勝率: 5.9%）",
           "モーター性能が均等（2連率の標準偏差: 5.0%）",
-          "外枠に好機材が1艇（undefined号艇(43.1%)）"
+          "外枠に好機材が1艇（6号艇(43.1%)）"
         ]
       },
       "predictions": {
@@ -57572,24 +55517,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -57605,7 +55535,7 @@
         "reasons": [
           "1号艇が平均より-72%弱い（グレード: A2）",
           "モーター性能が均等（2連率の標準偏差: 6.2%）",
-          "外枠に好機材が1艇（undefined号艇(44.0%)）"
+          "外枠に好機材が1艇（5号艇(44.0%)）"
         ]
       },
       "predictions": {
@@ -57994,24 +55924,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -58028,7 +55943,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.39%、平均: 5.1%）",
           "1号艇が平均より-2%弱い（グレード: B1、勝率: 5.2%）",
           "モーター性能が均等（2連率の標準偏差: 3.6%）",
-          "外枠に好機材が2艇（undefined号艇(44.3%)、undefined号艇(40.5%)）"
+          "外枠に好機材が2艇（5号艇(44.3%)、6号艇(40.5%)）"
         ]
       },
       "predictions": {
@@ -58413,24 +56328,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -58447,7 +56347,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.64%、平均: 5.8%）",
           "1号艇が平均より2%弱い（グレード: A2、勝率: 5.7%）",
           "モーター性能が均等（2連率の標準偏差: 5.6%）",
-          "外枠に好機材が1艇（undefined号艇(45.6%)）"
+          "外枠に好機材が1艇（6号艇(45.6%)）"
         ]
       },
       "predictions": {
@@ -58832,24 +56732,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -58866,7 +56751,7 @@
           "選手間の実力差が小さい（勝率の標準偏差: 0.50%、平均: 5.9%）",
           "1号艇が平均より11%弱い（グレード: B1、勝率: 5.3%）",
           "モーター性能が均等（2連率の標準偏差: 3.0%）",
-          "外枠に好機材が1艇（undefined号艇(41.8%)）"
+          "外枠に好機材が1艇（5号艇(41.8%)）"
         ]
       },
       "predictions": {
@@ -59251,24 +57136,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -59667,24 +57537,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -60088,24 +57943,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -60121,7 +57961,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.41%、平均: 5.5%）",
           "1号艇が平均より-15%弱い（グレード: A2）",
-          "外枠に好機材が1艇（undefined号艇(51.6%)）"
+          "外枠に好機材が1艇（4号艇(51.6%)）"
         ]
       },
       "predictions": {
@@ -60506,24 +58346,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -60923,24 +58748,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -60955,7 +58765,7 @@
         "recommendedModel": "standard",
         "reasons": [
           "1号艇が平均より-17%弱い（グレード: A2、勝率: 5.5%）",
-          "外枠に好機材が1艇（undefined号艇(41.9%)）"
+          "外枠に好機材が1艇（4号艇(41.9%)）"
         ]
       },
       "predictions": {
@@ -61340,24 +59150,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -61753,24 +59548,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -61786,7 +59566,7 @@
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.63%、平均: 5.1%）",
           "モーター性能が均等（2連率の標準偏差: 11.3%）",
-          "外枠に好機材が1艇（undefined号艇(44.4%)）"
+          "外枠に好機材が1艇（6号艇(44.4%)）"
         ]
       },
       "predictions": {
@@ -62171,24 +59951,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -62204,7 +59969,7 @@
         "reasons": [
           "1号艇が平均より-16%弱い（グレード: A2）",
           "モーター性能が均等（2連率の標準偏差: 8.5%）",
-          "外枠に好機材が1艇（undefined号艇(47.4%)）"
+          "外枠に好機材が1艇（6号艇(47.4%)）"
         ]
       },
       "predictions": {
@@ -62589,24 +60354,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -62621,7 +60371,7 @@
         "recommendedModel": "standard",
         "reasons": [
           "1号艇が平均より-6%弱い（グレード: B1、勝率: 5.3%）",
-          "外枠に好機材が1艇（undefined号艇(41.9%)）"
+          "外枠に好機材が1艇（5号艇(41.9%)）"
         ]
       },
       "predictions": {
@@ -63006,24 +60756,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -63422,24 +61157,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -63840,24 +61560,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -64257,24 +61962,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -64671,24 +62361,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     },
     {
@@ -64703,7 +62378,7 @@
         "recommendedModel": "standard",
         "reasons": [
           "選手間の実力差が小さい（勝率の標準偏差: 0.27%、平均: 6.2%）",
-          "外枠に好機材が3艇（undefined号艇(47.4%)、undefined号艇(51.4%)、undefined号艇(46.0%)）"
+          "外枠に好機材が3艇（4号艇(47.4%)、5号艇(51.4%)、6号艇(46.0%)）"
         ]
       },
       "predictions": {
@@ -65088,24 +62763,9 @@
         "updatedAt": null
       },
       "accuracy": {
-        "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        },
-        "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
-        }
+        "topPickHit": null,
+        "top3Hit": null,
+        "top3Included": null
       }
     }
   ]

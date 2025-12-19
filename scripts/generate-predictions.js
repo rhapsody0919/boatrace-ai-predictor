@@ -88,8 +88,9 @@ function calculateVolatilityScore(racers, placeCd) {
   if (outsideGoodMotors > 0) {
     volatility += outsideGoodMotors * 8;
     const motorNumbers = racers.slice(3)
+      .map((r, index) => ({ ...r, boatNumber: index + 4 }))
       .filter(r => r.motor2Rate > 40)
-      .map(r => `${r.number}号艇(${r.motor2Rate.toFixed(1)}%)`)
+      .map(r => `${r.boatNumber}号艇(${r.motor2Rate.toFixed(1)}%)`)
       .join('、');
     reasons.push(`外枠に好機材が${outsideGoodMotors}艇（${motorNumbers}）`);
   }
