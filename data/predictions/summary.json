@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-12-19T00:49:56.124Z",
+  "lastUpdated": "2025-12-19T03:12:03.787Z",
   "models": {
     "standard": {
       "overall": {
@@ -917,14 +917,14 @@
   "overall": {
     "totalRaces": 2028,
     "finishedRaces": 2028,
-    "topPickHits": 0,
-    "topPickHitRate": 0,
-    "topPickPlaces": 0,
-    "topPickPlaceRate": 0,
-    "top3Hits": 0,
-    "top3HitRate": 0,
-    "top3IncludedHits": 0,
-    "top3IncludedRate": 0,
+    "topPickHits": 544,
+    "topPickHitRate": 0.2682445759368836,
+    "topPickPlaces": 1007,
+    "topPickPlaceRate": 0.4965483234714004,
+    "top3Hits": 264,
+    "top3HitRate": 0.1301775147928994,
+    "top3IncludedHits": 58,
+    "top3IncludedRate": 0.028599605522682446,
     "actualRecovery": {
       "win": {
         "totalInvestment": 202600,
@@ -955,10 +955,10 @@
   "yesterday": {
     "date": "2025-12-18",
     "totalRaces": 144,
-    "topPickHitRate": 0,
-    "topPickPlaceRate": 0,
-    "top3HitRate": 0,
-    "top3IncludedRate": 0,
+    "topPickHitRate": 0.3263888888888889,
+    "topPickPlaceRate": 0.5277777777777778,
+    "top3HitRate": 0.1597222222222222,
+    "top3IncludedRate": 0.0763888888888889,
     "actualRecovery": {
       "win": {
         "totalInvestment": 14400,
@@ -990,10 +990,10 @@
     "year": 2025,
     "month": 12,
     "totalRaces": 2028,
-    "topPickHitRate": 0,
-    "topPickPlaceRate": 0,
-    "top3HitRate": 0,
-    "top3IncludedRate": 0,
+    "topPickHitRate": 0.2682445759368836,
+    "topPickPlaceRate": 0.4965483234714004,
+    "top3HitRate": 0.1301775147928994,
+    "top3IncludedRate": 0.028599605522682446,
     "actualRecovery": {
       "win": {
         "totalInvestment": 202600,
@@ -1060,9 +1060,9 @@
     {
       "date": "2025-12-04",
       "totalRaces": 144,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
+      "topPickHitRate": 0.2777777777777778,
+      "topPickPlaceRate": 0.5,
+      "top3HitRate": 0.13194444444444445,
       "top3IncludedRate": 0,
       "actualRecovery": {
         "win": {
@@ -1094,10 +1094,10 @@
     {
       "date": "2025-12-05",
       "totalRaces": 156,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.26282051282051283,
+      "topPickPlaceRate": 0.5192307692307693,
+      "top3HitRate": 0.16025641025641027,
+      "top3IncludedRate": 0.02564102564102564,
       "actualRecovery": {
         "win": {
           "totalInvestment": 15600,
@@ -1128,10 +1128,10 @@
     {
       "date": "2025-12-06",
       "totalRaces": 144,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.2708333333333333,
+      "topPickPlaceRate": 0.5277777777777778,
+      "top3HitRate": 0.06944444444444445,
+      "top3IncludedRate": 0.006944444444444444,
       "actualRecovery": {
         "win": {
           "totalInvestment": 14300,
@@ -1162,10 +1162,10 @@
     {
       "date": "2025-12-07",
       "totalRaces": 132,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.2878787878787879,
+      "topPickPlaceRate": 0.48484848484848486,
+      "top3HitRate": 0.15151515151515152,
+      "top3IncludedRate": 0.045454545454545456,
       "actualRecovery": {
         "win": {
           "totalInvestment": 13100,
@@ -1196,10 +1196,10 @@
     {
       "date": "2025-12-08",
       "totalRaces": 132,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.25757575757575757,
+      "topPickPlaceRate": 0.4772727272727273,
+      "top3HitRate": 0.12121212121212122,
+      "top3IncludedRate": 0.022727272727272728,
       "actualRecovery": {
         "win": {
           "totalInvestment": 13200,
@@ -1230,10 +1230,10 @@
     {
       "date": "2025-12-10",
       "totalRaces": 144,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.3125,
+      "topPickPlaceRate": 0.5208333333333334,
+      "top3HitRate": 0.1527777777777778,
+      "top3IncludedRate": 0.05555555555555555,
       "actualRecovery": {
         "win": {
           "totalInvestment": 14400,
@@ -1264,10 +1264,10 @@
     {
       "date": "2025-12-11",
       "totalRaces": 132,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.24242424242424243,
+      "topPickPlaceRate": 0.4772727272727273,
+      "top3HitRate": 0.10606060606060606,
+      "top3IncludedRate": 0.030303030303030304,
       "actualRecovery": {
         "win": {
           "totalInvestment": 13200,
@@ -1298,10 +1298,10 @@
     {
       "date": "2025-12-12",
       "totalRaces": 120,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.24166666666666667,
+      "topPickPlaceRate": 0.48333333333333334,
+      "top3HitRate": 0.125,
+      "top3IncludedRate": 0.025,
       "actualRecovery": {
         "win": {
           "totalInvestment": 12000,
@@ -1332,10 +1332,10 @@
     {
       "date": "2025-12-13",
       "totalRaces": 156,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.26282051282051283,
+      "topPickPlaceRate": 0.4807692307692308,
+      "top3HitRate": 0.10256410256410256,
+      "top3IncludedRate": 0.01282051282051282,
       "actualRecovery": {
         "win": {
           "totalInvestment": 15600,
@@ -1366,10 +1366,10 @@
     {
       "date": "2025-12-14",
       "totalRaces": 168,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.2261904761904762,
+      "topPickPlaceRate": 0.4642857142857143,
+      "top3HitRate": 0.10119047619047619,
+      "top3IncludedRate": 0.02976190476190476,
       "actualRecovery": {
         "win": {
           "totalInvestment": 16800,
@@ -1400,10 +1400,10 @@
     {
       "date": "2025-12-15",
       "totalRaces": 168,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.30357142857142855,
+      "topPickPlaceRate": 0.5416666666666666,
+      "top3HitRate": 0.17261904761904762,
+      "top3IncludedRate": 0.011904761904761904,
       "actualRecovery": {
         "win": {
           "totalInvestment": 16800,
@@ -1434,10 +1434,10 @@
     {
       "date": "2025-12-16",
       "totalRaces": 132,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.29545454545454547,
+      "topPickPlaceRate": 0.5227272727272727,
+      "top3HitRate": 0.11363636363636363,
+      "top3IncludedRate": 0.045454545454545456,
       "actualRecovery": {
         "win": {
           "totalInvestment": 13200,
@@ -1468,10 +1468,10 @@
     {
       "date": "2025-12-17",
       "totalRaces": 156,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.19230769230769232,
+      "topPickPlaceRate": 0.4230769230769231,
+      "top3HitRate": 0.14743589743589744,
+      "top3IncludedRate": 0.019230769230769232,
       "actualRecovery": {
         "win": {
           "totalInvestment": 15600,
@@ -1502,10 +1502,10 @@
     {
       "date": "2025-12-18",
       "totalRaces": 144,
-      "topPickHitRate": 0,
-      "topPickPlaceRate": 0,
-      "top3HitRate": 0,
-      "top3IncludedRate": 0,
+      "topPickHitRate": 0.3263888888888889,
+      "topPickPlaceRate": 0.5277777777777778,
+      "top3HitRate": 0.1597222222222222,
+      "top3IncludedRate": 0.0763888888888889,
       "actualRecovery": {
         "win": {
           "totalInvestment": 14400,

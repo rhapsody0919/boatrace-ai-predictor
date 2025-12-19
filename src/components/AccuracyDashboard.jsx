@@ -73,6 +73,42 @@ function AccuracyDashboard() {
   const modelData = getModelData()
   const hasData = modelData.overall.totalRaces > 0
 
+  // 今月の最も回収率が高いモデルを取得
+  const getBestModelThisMonth = () => {
+    if (!summary.models) return null
+
+    const models = ['standard', 'safeBet', 'upsetFocus']
+    const modelNames = {
+      standard: 'スタンダード',
+      safeBet: '本命狙い',
+      upsetFocus: '穴狙い'
+    }
+
+    let bestModel = null
+    let bestRate = 0
+
+    for (const modelKey of models) {
+      const model = summary.models[modelKey]
+      if (model.thisMonth && model.thisMonth.totalRaces > 0) {
+        const trioRate = model.thisMonth.actualRecovery?.trio?.recoveryRate || 0
+        if (trioRate > bestRate) {
+          bestRate = trioRate
+          bestModel = {
+            key: modelKey,
+            name: modelNames[modelKey],
+            rate: trioRate,
+            hitRate: model.thisMonth.top3IncludedRate,
+            races: model.thisMonth.totalRaces
+          }
+        }
+      }
+    }
+
+    return bestModel
+  }
+
+  const bestModel = getBestModelThisMonth()
+
   // 回収率の色を取得
   const getRecoveryColor = (rate) => {
     if (rate >= 1.0) return '#10b981'
@@ -186,11 +222,48 @@ function AccuracyDashboard() {
 
       {!hasData ? (
         <div className="no-data-message">
-          まだレース結果がありません。レース終了後にご確認ください！
+          <p className="data-collection-status">
+            {selectedModel === 'standard'
+              ? 'まだレース結果がありません。レース終了後にご確認ください！'
+              : `${selectedModel === 'safeBet' ? '本命狙い' : '穴狙い'}モデルのデータを収集中です。\n今日のレース終了後から統計データが蓄積されます。`
+            }
+          </p>
+          {selectedModel !== 'standard' && (
+            <p className="model-info">
+              💡 過去のデータは全て「スタンダード」モデルとして記録されています。<br/>
+              3モデル別の統計は今日のレースから開始されます。
+            </p>
+          )}
         </div>
       ) : (
         <>
-          {/* 今月のベストパフォーマンス */}
+          {/* 今月のベストモデル */}
+          {bestModel && (
+            <div className="best-model-section">
+              <h3>🏆 今月のベストパフォーマンスモデル</h3>
+              <div className="best-model-card">
+                <div className="model-badge">{bestModel.name}</div>
+                <div className="model-stats">
+                  <div className="model-stat-item highlight">
+                    <span className="stat-label">3連単 回収率</span>
+                    <span className="stat-value large" style={{color: getRecoveryColor(bestModel.rate)}}>
+                      {formatPercent(bestModel.rate)}
+                    </span>
+                  </div>
+                  <div className="model-stat-item">
+                    <span className="stat-label">3連単 的中率</span>
+                    <span className="stat-value">{formatPercent(bestModel.hitRate)}</span>
+                  </div>
+                  <div className="model-stat-item">
+                    <span className="stat-label">レース数</span>
+                    <span className="stat-value">{bestModel.races}レース</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 今月のベストパフォーマンス（日別） */}
           {bestTrioDay && bestTrioDay.actualRecovery?.trio?.recoveryRate > 0 && (
             <div className="best-performance">
               <h3>🏆 今月のベストパフォーマンス</h3>

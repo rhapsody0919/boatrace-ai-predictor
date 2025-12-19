@@ -205,10 +205,20 @@ function calculateSummaryStats(races) {
     };
   }
 
-  const topPickHits = finishedRaces.filter(r => r.accuracy.topPickHit).length;
-  const topPickPlaces = finishedRaces.filter(r => r.accuracy.topPickPlace).length;
-  const top3Hits = finishedRaces.filter(r => r.accuracy.top3Hit).length;
-  const top3IncludedHits = finishedRaces.filter(r => r.accuracy.top3Included).length;
+  // Support both new (3-model) and old (single-model) data structures
+  // New: r.accuracy.standard.topPickHit, Old: r.accuracy.topPickHit
+  const topPickHits = finishedRaces.filter(r =>
+    r.accuracy.standard?.topPickHit ?? r.accuracy.topPickHit
+  ).length;
+  const topPickPlaces = finishedRaces.filter(r =>
+    r.accuracy.standard?.topPickPlace ?? r.accuracy.topPickPlace
+  ).length;
+  const top3Hits = finishedRaces.filter(r =>
+    r.accuracy.standard?.top3Hit ?? r.accuracy.top3Hit
+  ).length;
+  const top3IncludedHits = finishedRaces.filter(r =>
+    r.accuracy.standard?.top3Included ?? r.accuracy.top3Included
+  ).length;
 
   // Calculate actual recovery rates for all bet types
   const actualRecovery = {
