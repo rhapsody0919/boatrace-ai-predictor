@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import './AccuracyDashboard.css'
 
 function AccuracyDashboard() {
@@ -46,7 +47,13 @@ function AccuracyDashboard() {
       <div className="accuracy-dashboard">
         <h2>📊 AI予想的中率</h2>
         <div className="error-message">
-          的中率データはまだ利用できません。レース終了後に自動計算されます。
+          <p>的中率データはまだ利用できません。レース終了後に自動計算されます。</p>
+          <button
+            className="reload-button"
+            onClick={() => window.location.reload()}
+          >
+            🔄 再読み込み
+          </button>
         </div>
       </div>
     )
@@ -108,6 +115,47 @@ function AccuracyDashboard() {
   }
 
   const bestModel = getBestModelThisMonth()
+
+  // モデル比較データを取得
+  const getModelComparisonData = () => {
+    if (!summary.models) return null
+
+    const models = ['standard', 'safeBet', 'upsetFocus']
+    const modelNames = {
+      standard: 'スタンダード',
+      safeBet: '本命狙い',
+      upsetFocus: '穴狙い'
+    }
+
+    return models.map(modelKey => {
+      const model = summary.models[modelKey]
+      const thisMonth = model.thisMonth || {}
+
+      return {
+        key: modelKey,
+        name: modelNames[modelKey],
+        races: thisMonth.totalRaces || 0,
+        winHitRate: thisMonth.topPickHitRate || 0,
+        winRecoveryRate: thisMonth.actualRecovery?.win?.recoveryRate || 0,
+        trioHitRate: thisMonth.top3IncludedRate || 0,
+        trioRecoveryRate: thisMonth.actualRecovery?.trio?.recoveryRate || 0
+      }
+    })
+  }
+
+  const modelComparison = getModelComparisonData()
+
+  // 最終更新時刻をフォーマット
+  const formatLastUpdated = (isoString) => {
+    if (!isoString) return ''
+    const date = new Date(isoString)
+    const year = date.getFullYear()
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${year}/${month}/${day} ${hours}:${minutes}`
+  }
 
   // 回収率の色を取得
   const getRecoveryColor = (rate) => {
@@ -213,12 +261,121 @@ function AccuracyDashboard() {
     </div>
   )
 
+  // モデル比較表コンポーネント
+  const ModelComparisonTable = () => {
+    if (!modelComparison) return null
+
+    return (
+      <div className="model-comparison-section">
+        <h3>📊 モデル間パフォーマンス比較（今月）</h3>
+        <div className="table-wrapper">
+          <table className="model-comparison-table">
+            <thead>
+              <tr>
+                <th>モデル</th>
+                <th>レース数</th>
+                <th colSpan="2">単勝</th>
+                <th colSpan="2">3連単</th>
+              </tr>
+              <tr className="sub-header">
+                <th></th>
+                <th></th>
+                <th className="sub-th">的中率</th>
+                <th className="sub-th">回収率</th>
+                <th className="sub-th">的中率</th>
+                <th className="sub-th">回収率</th>
+              </tr>
+            </thead>
+            <tbody>
+              {modelComparison.map(model => (
+                <tr key={model.key} className={model.key === selectedModel ? 'selected-model' : ''}>
+                  <td className="model-name">{model.name}</td>
+                  <td className="races-cell">{model.races > 0 ? `${model.races}レース` : '-'}</td>
+                  <td className="hit-rate">{model.races > 0 ? formatPercent(model.winHitRate) : '-'}</td>
+                  <td className="recovery-rate" style={{color: model.races > 0 ? getRecoveryColor(model.winRecoveryRate) : '#64748b'}}>
+                    {model.races > 0 ? formatPercent(model.winRecoveryRate) : '-'}
+                  </td>
+                  <td className="hit-rate">{model.races > 0 ? formatPercent(model.trioHitRate) : '-'}</td>
+                  <td className="recovery-rate" style={{color: model.races > 0 ? getRecoveryColor(model.trioRecoveryRate) : '#64748b'}}>
+                    {model.races > 0 ? formatPercent(model.trioRecoveryRate) : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
+  // 統計の信頼性警告コンポーネント
+  const ReliabilityWarning = ({ races }) => {
+    if (races >= 100) return null
+
+    return (
+      <div className="reliability-warning">
+        <span className="warning-icon">⚠️</span>
+        <div className="warning-content">
+          <strong>統計の信頼性について</strong>
+          <p>
+            現在のレース数は{races}レースです。
+            統計的に信頼性のある結果を得るには、最低100レース以上のデータが推奨されます。
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // 回収率推移グラフコンポーネント
+  const RecoveryTrendChart = () => {
+    if (!modelData.dailyHistory || modelData.dailyHistory.length === 0) return null
+
+    // 直近14日分のデータを準備
+    const chartData = modelData.dailyHistory.slice(-14).map(day => ({
+      date: day.date.substring(5), // MM-DDのみ表示
+      単勝: (day.actualRecovery?.win?.recoveryRate || 0) * 100,
+      複勝: (day.actualRecovery?.place?.recoveryRate || 0) * 100,
+      '3連複': (day.actualRecovery?.trifecta?.recoveryRate || 0) * 100,
+      '3連単': (day.actualRecovery?.trio?.recoveryRate || 0) * 100,
+    }))
+
+    return (
+      <div className="recovery-trend-section">
+        <h3>📈 回収率推移（直近14日）</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis label={{ value: '回収率 (%)', angle: -90, position: 'insideLeft' }} />
+            <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+            <Legend />
+            <Line type="monotone" dataKey="単勝" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
+            <Line type="monotone" dataKey="複勝" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
+            <Line type="monotone" dataKey="3連複" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
+            <Line type="monotone" dataKey="3連単" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />
+          </LineChart>
+        </ResponsiveContainer>
+        <div className="chart-note">
+          💡 100%を超えると黒字、下回ると赤字を意味します
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="accuracy-dashboard">
-      <h2>📊 AI予想的中率</h2>
+      <div className="dashboard-header">
+        <h2>📊 AI予想的中率</h2>
+        {summary.lastUpdated && (
+          <p className="last-updated">最終更新: {formatLastUpdated(summary.lastUpdated)}</p>
+        )}
+      </div>
 
       {/* Model selector - only show if models data exists */}
       {summary.models && <ModelSelector />}
+
+      {/* モデル間比較表 */}
+      {summary.models && <ModelComparisonTable />}
 
       {!hasData ? (
         <div className="no-data-message">
@@ -263,10 +420,10 @@ function AccuracyDashboard() {
             </div>
           )}
 
-          {/* 今月のベストパフォーマンス（日別） */}
+          {/* 今月の最高記録日 */}
           {bestTrioDay && bestTrioDay.actualRecovery?.trio?.recoveryRate > 0 && (
             <div className="best-performance">
-              <h3>🏆 今月のベストパフォーマンス</h3>
+              <h3>📅 今月の最高記録日</h3>
               <div className="best-performance-content">
                 <div className="best-date">{bestTrioDay.date}</div>
                 <div className="best-stats">
@@ -288,6 +445,12 @@ function AccuracyDashboard() {
               </div>
             </div>
           )}
+
+          {/* 統計の信頼性警告 */}
+          <ReliabilityWarning races={modelData.thisMonth.totalRaces || 0} />
+
+          {/* 回収率推移グラフ */}
+          <RecoveryTrendChart />
 
           {/* 今月の実績 */}
           {modelData.thisMonth.totalRaces > 0 && (

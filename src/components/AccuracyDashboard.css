@@ -4,13 +4,23 @@
   padding: 0 1rem;
 }
 
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
 .accuracy-dashboard h2 {
   font-size: 2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 0.5rem;
   color: #0ea5e9;
   font-weight: 800;
-  text-align: center;
   text-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
+}
+
+.last-updated {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
 }
 
 /* Model selector tabs */
@@ -64,6 +74,29 @@
   border-radius: 8px;
   color: #856404;
   padding: 1.5rem;
+  text-align: center;
+}
+
+.error-message p {
+  margin-bottom: 1rem;
+}
+
+.reload-button {
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+.reload-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.5);
 }
 
 .no-data-message .data-collection-status {
@@ -82,6 +115,97 @@
   color: #0c4a6e;
   font-size: 1rem;
   line-height: 1.6;
+}
+
+/* モデル比較表 */
+.model-comparison-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
+}
+
+.model-comparison-section h3 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin: 0 0 1.5rem 0;
+  font-weight: 800;
+  text-align: center;
+}
+
+.model-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.model-comparison-table th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 1rem;
+  text-align: center;
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.model-comparison-table .sub-header th {
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.model-comparison-table td {
+  padding: 1rem;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.model-comparison-table tr.selected-model {
+  background: #eff6ff;
+  border-left: 4px solid #0ea5e9;
+}
+
+.model-comparison-table .model-name {
+  font-weight: 700;
+  color: #1e293b;
+  text-align: left;
+}
+
+/* 信頼性警告 */
+.reliability-warning {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+
+.reliability-warning .warning-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.reliability-warning .warning-content {
+  flex: 1;
+}
+
+.reliability-warning strong {
+  display: block;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.reliability-warning p {
+  color: #78350f;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 /* ベストモデルセクション */
@@ -154,6 +278,32 @@
 
 .model-stat-item .stat-value.large {
   font-size: 2rem;
+}
+
+/* 回収率推移グラフ */
+.recovery-trend-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
+}
+
+.recovery-trend-section h3 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin: 0 0 1.5rem 0;
+  font-weight: 800;
+  text-align: center;
+}
+
+.chart-note {
+  text-align: center;
+  margin-top: 1rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 /* ベストパフォーマンスカード */
