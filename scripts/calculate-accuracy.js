@@ -278,11 +278,12 @@ function calculateModelSummaryStats(races, modelKey) {
   const top3IncludedHits = finishedRaces.filter(r => r.accuracy[modelKey].top3Included).length;
 
   // Calculate actual recovery rates for all bet types for this model
+  // IMPORTANT: Use finishedRaces (filtered by modelKey) instead of all races
   const actualRecovery = {
-    win: calculateActualRecovery(races, 'win', modelKey),
-    place: calculateActualRecovery(races, 'place', modelKey),
-    trifecta: calculateActualRecovery(races, 'trifecta', modelKey),
-    trio: calculateActualRecovery(races, 'trio', modelKey)
+    win: calculateActualRecovery(finishedRaces, 'win', modelKey),
+    place: calculateActualRecovery(finishedRaces, 'place', modelKey),
+    trifecta: calculateActualRecovery(finishedRaces, 'trifecta', modelKey),
+    trio: calculateActualRecovery(finishedRaces, 'trio', modelKey)
   };
 
   return {
