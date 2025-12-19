@@ -269,9 +269,25 @@ function AccuracyDashboard() {
   const ModelComparisonTable = () => {
     if (!modelComparison) return null
 
+    // Get date range for this month's data
+    const getThisMonthDateRange = () => {
+      if (!summary.models || !summary.models.standard.dailyHistory) return ''
+      const history = summary.models.standard.dailyHistory
+      const thisMonthHistory = history.filter(day => {
+        const { year, month } = getDateInfo(day.date)
+        return year === modelData.thisMonth.year && month === modelData.thisMonth.month
+      })
+      if (thisMonthHistory.length === 0) return ''
+      const startDate = thisMonthHistory[0].date
+      const endDate = thisMonthHistory[thisMonthHistory.length - 1].date
+      return `${startDate.substring(5)} - ${endDate.substring(5)}`
+    }
+
+    const dateRange = getThisMonthDateRange()
+
     return (
       <div className="model-comparison-section">
-        <h3>📊 モデル間パフォーマンス比較（今月）</h3>
+        <h3>📊 モデル間パフォーマンス比較（今月{dateRange ? `: ${dateRange}` : ''}）</h3>
         <div className="table-wrapper">
           <table className="model-comparison-table">
             <thead>
@@ -418,7 +434,15 @@ function AccuracyDashboard() {
           {/* 直近のパフォーマンス */}
           {modelData.dailyHistory && modelData.dailyHistory.length > 0 && (
             <div className="daily-history">
-              <h3>直近のパフォーマンス</h3>
+              <h3>直近7日間のパフォーマンス{(() => {
+                const last7Days = modelData.dailyHistory.slice(-7)
+                if (last7Days.length > 0) {
+                  const startDate = last7Days[0].date.substring(5)
+                  const endDate = last7Days[last7Days.length - 1].date.substring(5)
+                  return ` (${startDate} - ${endDate})`
+                }
+                return ''
+              })()}</h3>
               <div className="table-wrapper">
                 <table className="daily-history-table">
                   <thead>
