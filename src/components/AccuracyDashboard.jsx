@@ -36,7 +36,7 @@ function AccuracyDashboard() {
   if (loading) {
     return (
       <div className="accuracy-dashboard">
-        <h2>📊 AI予想的中率</h2>
+        <h2>📊 成績</h2>
         <div className="loading">的中率データを読み込み中...</div>
       </div>
     )
@@ -45,7 +45,7 @@ function AccuracyDashboard() {
   if (error || !summary) {
     return (
       <div className="accuracy-dashboard">
-        <h2>📊 AI予想的中率</h2>
+        <h2>📊 成績</h2>
         <div className="error-message">
           <p>的中率データはまだ利用できません。レース終了後に自動計算されます。</p>
           <button
@@ -364,8 +364,8 @@ function AccuracyDashboard() {
   const RecoveryTrendChart = () => {
     if (!modelData.dailyHistory || modelData.dailyHistory.length === 0) return null
 
-    // 直近14日分のデータを準備
-    const chartData = modelData.dailyHistory.slice(-14).map(day => ({
+    // 直近7日分のデータを準備
+    const chartData = modelData.dailyHistory.slice(-7).map(day => ({
       date: day.date.substring(5), // MM-DDのみ表示
       単勝: (day.actualRecovery?.win?.recoveryRate || 0) * 100,
       複勝: (day.actualRecovery?.place?.recoveryRate || 0) * 100,
@@ -375,7 +375,7 @@ function AccuracyDashboard() {
 
     return (
       <div className="recovery-trend-section">
-        <h3>📈 回収率推移（直近14日）</h3>
+        <h3>📈 回収率推移（直近7日）</h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -396,10 +396,22 @@ function AccuracyDashboard() {
     )
   }
 
+  // 本日の日付をフォーマット
+  const getTodayDate = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth() + 1
+    const day = today.getDate()
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土']
+    const weekday = weekdays[today.getDay()]
+    return `${year}年${month}月${day}日（${weekday}）`
+  }
+
   return (
     <div className="accuracy-dashboard">
       <div className="dashboard-header">
-        <h2>📊 AI予想的中率</h2>
+        <h2>📊 成績</h2>
+        <p className="last-updated">{getTodayDate()}</p>
         {summary.lastUpdated && (
           <p className="last-updated">最終更新: {formatLastUpdated(summary.lastUpdated)}</p>
         )}

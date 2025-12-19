@@ -39,6 +39,16 @@ function App() {
     19: '下関', 20: '若松', 21: '芦屋', 22: '福岡', 23: '唐津', 24: '大村'
   }
 
+  // 本日の日付をフォーマット
+  const getTodayDateShort = () => {
+    const today = new Date()
+    const month = today.getMonth() + 1
+    const day = today.getDate()
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土']
+    const weekday = weekdays[today.getDay()]
+    return `${month}/${day}(${weekday})`
+  }
+
   // Google Analytics初期化
   useEffect(() => {
     const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID
@@ -433,7 +443,7 @@ function App() {
               className={`nav-btn ${activeTab === 'races' ? 'active' : ''}`}
               onClick={() => handleTabChange('races')}
             >
-              今日のレース
+              今日のレース {getTodayDateShort()}
             </button>
             <button
               className={`nav-btn ${activeTab === 'hit-races' ? 'active' : ''}`}
@@ -445,7 +455,7 @@ function App() {
               className={`nav-btn ${activeTab === 'accuracy' ? 'active' : ''}`}
               onClick={() => handleTabChange('accuracy')}
             >
-              的中率統計
+              成績
             </button>
             <Link to="/blog" className="nav-btn">
               📚 ブログ
@@ -478,7 +488,7 @@ function App() {
           ) : (
             <>
               <section className="race-list-section">
-                <h2>🏁 本日開催中のレース</h2>
+                <h2>🏁 本日開催中のレース {getTodayDateShort()}</h2>
 
             {loading ? (
               <div className="analyzing">
