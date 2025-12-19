@@ -137,6 +137,10 @@ function AccuracyDashboard() {
         races: thisMonth.totalRaces || 0,
         winHitRate: thisMonth.topPickHitRate || 0,
         winRecoveryRate: thisMonth.actualRecovery?.win?.recoveryRate || 0,
+        placeHitRate: thisMonth.topPickPlaceRate || 0,
+        placeRecoveryRate: thisMonth.actualRecovery?.place?.recoveryRate || 0,
+        trifectaHitRate: thisMonth.top3HitRate || 0,
+        trifectaRecoveryRate: thisMonth.actualRecovery?.trifecta?.recoveryRate || 0,
         trioHitRate: thisMonth.top3IncludedRate || 0,
         trioRecoveryRate: thisMonth.actualRecovery?.trio?.recoveryRate || 0
       }
@@ -275,11 +279,17 @@ function AccuracyDashboard() {
                 <th>モデル</th>
                 <th>レース数</th>
                 <th colSpan="2">単勝</th>
+                <th colSpan="2">複勝</th>
+                <th colSpan="2">3連複</th>
                 <th colSpan="2">3連単</th>
               </tr>
               <tr className="sub-header">
                 <th></th>
                 <th></th>
+                <th className="sub-th">的中率</th>
+                <th className="sub-th">回収率</th>
+                <th className="sub-th">的中率</th>
+                <th className="sub-th">回収率</th>
                 <th className="sub-th">的中率</th>
                 <th className="sub-th">回収率</th>
                 <th className="sub-th">的中率</th>
@@ -294,6 +304,14 @@ function AccuracyDashboard() {
                   <td className="hit-rate">{model.races > 0 ? formatPercent(model.winHitRate) : '-'}</td>
                   <td className="recovery-rate" style={{color: model.races > 0 ? getRecoveryColor(model.winRecoveryRate) : '#64748b'}}>
                     {model.races > 0 ? formatPercent(model.winRecoveryRate) : '-'}
+                  </td>
+                  <td className="hit-rate">{model.races > 0 ? formatPercent(model.placeHitRate) : '-'}</td>
+                  <td className="recovery-rate" style={{color: model.races > 0 ? getRecoveryColor(model.placeRecoveryRate) : '#64748b'}}>
+                    {model.races > 0 ? formatPercent(model.placeRecoveryRate) : '-'}
+                  </td>
+                  <td className="hit-rate">{model.races > 0 ? formatPercent(model.trifectaHitRate) : '-'}</td>
+                  <td className="recovery-rate" style={{color: model.races > 0 ? getRecoveryColor(model.trifectaRecoveryRate) : '#64748b'}}>
+                    {model.races > 0 ? formatPercent(model.trifectaRecoveryRate) : '-'}
                   </td>
                   <td className="hit-rate">{model.races > 0 ? formatPercent(model.trioHitRate) : '-'}</td>
                   <td className="recovery-rate" style={{color: model.races > 0 ? getRecoveryColor(model.trioRecoveryRate) : '#64748b'}}>
@@ -394,73 +412,8 @@ function AccuracyDashboard() {
         </div>
       ) : (
         <>
-          {/* 今月のベストモデル */}
-          {bestModel && (
-            <div className="best-model-section">
-              <h3>🏆 今月のベストパフォーマンスモデル</h3>
-              <div className="best-model-card">
-                <div className="model-badge">{bestModel.name}</div>
-                <div className="model-stats">
-                  <div className="model-stat-item highlight">
-                    <span className="stat-label">3連単 回収率</span>
-                    <span className="stat-value large" style={{color: getRecoveryColor(bestModel.rate)}}>
-                      {formatPercent(bestModel.rate)}
-                    </span>
-                  </div>
-                  <div className="model-stat-item">
-                    <span className="stat-label">3連単 的中率</span>
-                    <span className="stat-value">{formatPercent(bestModel.hitRate)}</span>
-                  </div>
-                  <div className="model-stat-item">
-                    <span className="stat-label">レース数</span>
-                    <span className="stat-value">{bestModel.races}レース</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 今月の最高記録日 */}
-          {bestTrioDay && bestTrioDay.actualRecovery?.trio?.recoveryRate > 0 && (
-            <div className="best-performance">
-              <h3>📅 今月の最高記録日</h3>
-              <div className="best-performance-content">
-                <div className="best-date">{bestTrioDay.date}</div>
-                <div className="best-stats">
-                  <div className="best-stat-item highlight">
-                    <span className="stat-label">3連単 回収率</span>
-                    <span className="stat-value" style={{color: getRecoveryColor(bestTrioDay.actualRecovery.trio.recoveryRate)}}>
-                      {formatPercent(bestTrioDay.actualRecovery.trio.recoveryRate)}
-                    </span>
-                  </div>
-                  <div className="best-stat-item">
-                    <span className="stat-label">レース数</span>
-                    <span className="stat-value">{bestTrioDay.totalRaces}レース</span>
-                  </div>
-                  <div className="best-stat-item">
-                    <span className="stat-label">3連単 的中率</span>
-                    <span className="stat-value">{formatPercent(bestTrioDay.top3IncludedRate)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* 統計の信頼性警告 */}
           <ReliabilityWarning races={modelData.thisMonth.totalRaces || 0} />
-
-          {/* 回収率推移グラフ */}
-          <RecoveryTrendChart />
-
-          {/* 今月の実績 */}
-          {modelData.thisMonth.totalRaces > 0 && (
-            <div className="stat-section this-month-section">
-              <StatsTable
-                data={modelData.thisMonth}
-                title={`今月 (${modelData.thisMonth.year}年${modelData.thisMonth.month}月)`}
-              />
-            </div>
-          )}
 
           {/* 直近のパフォーマンス */}
           {modelData.dailyHistory && modelData.dailyHistory.length > 0 && (
@@ -518,6 +471,9 @@ function AccuracyDashboard() {
               </div>
             </div>
           )}
+
+          {/* 回収率推移グラフ */}
+          <RecoveryTrendChart />
 
           {/* 的中率と回収率についての説明 */}
           <div className="accuracy-info">
