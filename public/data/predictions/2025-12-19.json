@@ -1,7 +1,7 @@
 {
   "date": "2025-12-19",
-  "generatedAt": "2025-12-19T10:30:18.303Z",
-  "updatedAt": "2025-12-19T10:53:34.723Z",
+  "generatedAt": "2025-12-19T12:50:03.654Z",
+  "updatedAt": "2025-12-19T13:13:15.611Z",
   "races": [
     {
       "raceId": "2025-12-19-02-01",
@@ -12,7 +12,13 @@
       "volatility": {
         "score": 78,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.97%、平均: 4.1%）",
+          "1号艇が平均より-9%弱い（グレード: B1、勝率: 4.4%）",
+          "モーター性能が均等（2連率の標準偏差: 7.7%）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -404,7 +410,7 @@
             "1-3-2": 1540
           }
         },
-        "updatedAt": "2025-12-19T10:30:27.897Z"
+        "updatedAt": "2025-12-19T12:50:13.218Z"
       },
       "accuracy": {
         "standard": {
@@ -434,9 +440,14 @@
       "raceNumber": 2,
       "startTime": "11:12",
       "volatility": {
-        "score": 64,
+        "score": 61,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.80%、平均: 4.9%）",
+          "1号艇が平均より-17%弱い（グレード: B1、勝率: 5.7%）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -832,7 +843,7 @@
             "2-1-3": 3220
           }
         },
-        "updatedAt": "2025-12-19T10:30:36.675Z"
+        "updatedAt": "2025-12-19T12:50:23.958Z"
       },
       "accuracy": {
         "standard": {
@@ -864,7 +875,12 @@
       "volatility": {
         "score": 64,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より7%弱い（グレード: B1、勝率: 4.2%）",
+          "モーター性能が均等（2連率の標準偏差: 10.5%）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -1260,7 +1276,7 @@
             "3-1-5": 3430
           }
         },
-        "updatedAt": "2025-12-19T10:30:46.407Z"
+        "updatedAt": "2025-12-19T12:50:33.709Z"
       },
       "accuracy": {
         "standard": {
@@ -1292,7 +1308,12 @@
       "volatility": {
         "score": 71,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より-17%弱い（グレード: B1、勝率: 5.4%）",
+          "モーター性能が均等（2連率の標準偏差: 5.5%）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -1684,7 +1705,7 @@
             "2-1-5": 2470
           }
         },
-        "updatedAt": "2025-12-19T10:30:57.179Z"
+        "updatedAt": "2025-12-19T12:50:43.427Z"
       },
       "accuracy": {
         "standard": {
@@ -1714,9 +1735,14 @@
       "raceNumber": 5,
       "startTime": "12:33",
       "volatility": {
-        "score": 63,
+        "score": 57,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-10%弱い（グレード: A2、勝率: 5.9%）",
+          "モーター性能が均等（2連率の標準偏差: 8.0%）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -2116,7 +2142,7 @@
             "3-1-4": 1990
           }
         },
-        "updatedAt": "2025-12-19T10:31:05.893Z"
+        "updatedAt": "2025-12-19T12:50:53.127Z"
       },
       "accuracy": {
         "standard": {
@@ -2146,9 +2172,15 @@
       "raceNumber": 6,
       "startTime": "13:00",
       "volatility": {
-        "score": 87,
+        "score": 82,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より22%弱い（グレード: B1、勝率: 4.0%）",
+          "モーター性能が均等（2連率の標準偏差: 9.3%）",
+          "外枠に好機材が2艇（undefined号艇(47.9%)、undefined号艇(42.9%)）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -2548,7 +2580,7 @@
             "4-5-2": 11410
           }
         },
-        "updatedAt": "2025-12-19T10:31:15.608Z"
+        "updatedAt": "2025-12-19T12:51:03.877Z"
       },
       "accuracy": {
         "standard": {
@@ -2580,7 +2612,14 @@
       "volatility": {
         "score": 65,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.80%、平均: 4.4%）",
+          "1号艇が平均より-37%弱い（勝率: 6.0%）",
+          "モーター性能が均等（2連率の標準偏差: 9.7%）",
+          "外枠に好機材が2艇（undefined号艇(43.0%)、undefined号艇(43.2%)）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -2976,7 +3015,7 @@
             "2-1-5": 6690
           }
         },
-        "updatedAt": "2025-12-19T10:31:25.324Z"
+        "updatedAt": "2025-12-19T12:51:12.577Z"
       },
       "accuracy": {
         "standard": {
@@ -3008,7 +3047,12 @@
       "volatility": {
         "score": 66,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より10%弱い（グレード: B1、勝率: 3.8%）",
+          "モーター性能が均等（2連率の標準偏差: 8.7%）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -3400,7 +3444,7 @@
             "1-3-6": 3950
           }
         },
-        "updatedAt": "2025-12-19T10:31:35.041Z"
+        "updatedAt": "2025-12-19T12:51:21.316Z"
       },
       "accuracy": {
         "standard": {
@@ -3430,9 +3474,15 @@
       "raceNumber": 9,
       "startTime": "14:24",
       "volatility": {
-        "score": 59,
+        "score": 58,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.60%、平均: 6.0%）",
+          "1号艇が平均より-3%弱い（グレード: A2）",
+          "外枠に好機材が1艇（undefined号艇(56.4%)）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -3828,7 +3878,7 @@
             "1-2-6": 2120
           }
         },
-        "updatedAt": "2025-12-19T10:31:43.770Z"
+        "updatedAt": "2025-12-19T12:51:30.047Z"
       },
       "accuracy": {
         "standard": {
@@ -3860,7 +3910,13 @@
       "volatility": {
         "score": 59,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.76%、平均: 5.7%）",
+          "1号艇が平均より-6%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 6.7%）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -4256,7 +4312,7 @@
             "2-5-4": 16220
           }
         },
-        "updatedAt": "2025-12-19T10:31:53.544Z"
+        "updatedAt": "2025-12-19T12:51:38.777Z"
       },
       "accuracy": {
         "standard": {
@@ -4288,7 +4344,14 @@
       "volatility": {
         "score": 79,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.65%、平均: 5.1%）",
+          "1号艇が平均より-7%弱い（勝率: 5.4%）",
+          "モーター性能が均等（2連率の標準偏差: 8.8%）",
+          "外枠に好機材が2艇（undefined号艇(45.0%)、undefined号艇(40.5%)）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -4684,7 +4747,7 @@
             "5-1-4": 8930
           }
         },
-        "updatedAt": "2025-12-19T10:32:02.272Z"
+        "updatedAt": "2025-12-19T12:51:48.500Z"
       },
       "accuracy": {
         "standard": {
@@ -4716,7 +4779,12 @@
       "volatility": {
         "score": 38,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.66%、平均: 6.7%）",
+          "モーター性能が均等（2連率の標準偏差: 9.1%）",
+          "戸田は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -5112,7 +5180,7 @@
             "3-5-2": 20040
           }
         },
-        "updatedAt": "2025-12-19T10:32:11.031Z"
+        "updatedAt": "2025-12-19T12:51:59.224Z"
       },
       "accuracy": {
         "standard": {
@@ -5142,9 +5210,15 @@
       "raceNumber": 1,
       "startTime": "11:04",
       "volatility": {
-        "score": 74,
+        "score": 73,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より-30%弱い（グレード: B2、勝率: 5.1%）",
+          "モーター性能が均等（2連率の標準偏差: 10.0%）",
+          "外枠に好機材が1艇（undefined号艇(53.7%)）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -5540,7 +5614,7 @@
             "5-1-2": 2130
           }
         },
-        "updatedAt": "2025-12-19T10:32:19.785Z"
+        "updatedAt": "2025-12-19T12:52:08.924Z"
       },
       "accuracy": {
         "standard": {
@@ -5570,9 +5644,15 @@
       "raceNumber": 2,
       "startTime": "11:36",
       "volatility": {
-        "score": 78,
+        "score": 76,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より24%弱い（グレード: B1、勝率: 3.6%）",
+          "モーター性能が均等（2連率の標準偏差: 7.5%）",
+          "外枠に好機材が1艇（undefined号艇(42.3%)）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -5968,7 +6048,7 @@
             "1-3-4": 5460
           }
         },
-        "updatedAt": "2025-12-19T10:32:30.502Z"
+        "updatedAt": "2025-12-19T12:52:18.653Z"
       },
       "accuracy": {
         "standard": {
@@ -5998,9 +6078,14 @@
       "raceNumber": 3,
       "startTime": "12:01",
       "volatility": {
-        "score": 78,
+        "score": 71,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より-13%弱い（グレード: A2、勝率: 5.4%）",
+          "モーター性能が均等（2連率の標準偏差: 5.7%）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -6392,7 +6477,7 @@
             "3-1-4": 5460
           }
         },
-        "updatedAt": "2025-12-19T10:32:40.263Z"
+        "updatedAt": "2025-12-19T12:52:27.386Z"
       },
       "accuracy": {
         "standard": {
@@ -6424,7 +6509,12 @@
       "volatility": {
         "score": 71,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より40%弱い（グレード: B1、勝率: 3.0%）",
+          "モーター性能が均等（2連率の標準偏差: 5.7%）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -6820,7 +6910,7 @@
             "1-2-3": 3410
           }
         },
-        "updatedAt": "2025-12-19T10:32:50.032Z"
+        "updatedAt": "2025-12-19T12:52:36.122Z"
       },
       "accuracy": {
         "standard": {
@@ -6852,7 +6942,12 @@
       "volatility": {
         "score": 72,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より-13%弱い（グレード: B1、勝率: 5.2%）",
+          "モーター性能が均等（2連率の標準偏差: 5.2%）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -7248,7 +7343,7 @@
             "2-1-4": 1910
           }
         },
-        "updatedAt": "2025-12-19T10:32:59.757Z"
+        "updatedAt": "2025-12-19T12:52:46.835Z"
       },
       "accuracy": {
         "standard": {
@@ -7278,9 +7373,15 @@
       "raceNumber": 6,
       "startTime": "13:16",
       "volatility": {
-        "score": 73,
+        "score": 66,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より-18%弱い（グレード: B1、勝率: 5.9%）",
+          "モーター性能が均等（2連率の標準偏差: 7.8%）",
+          "外枠に好機材が1艇（undefined号艇(46.9%)）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -7676,7 +7777,7 @@
             "1-2-3": 1720
           }
         },
-        "updatedAt": "2025-12-19T10:33:10.497Z"
+        "updatedAt": "2025-12-19T12:52:55.593Z"
       },
       "accuracy": {
         "standard": {
@@ -7706,9 +7807,14 @@
       "raceNumber": 7,
       "startTime": "13:41",
       "volatility": {
-        "score": 80,
+        "score": 76,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より19%弱い（グレード: B1、勝率: 3.9%）",
+          "モーター性能が均等（2連率の標準偏差: 2.1%）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -8100,7 +8206,7 @@
             "1-4-2": 2960
           }
         },
-        "updatedAt": "2025-12-19T10:33:19.231Z"
+        "updatedAt": "2025-12-19T12:53:04.329Z"
       },
       "accuracy": {
         "standard": {
@@ -8130,9 +8236,15 @@
       "raceNumber": 8,
       "startTime": "14:06",
       "volatility": {
-        "score": 73,
+        "score": 68,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より-17%弱い（グレード: A2、勝率: 5.9%）",
+          "モーター性能が均等（2連率の標準偏差: 6.1%）",
+          "外枠に好機材が1艇（undefined号艇(41.6%)）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -8528,7 +8640,7 @@
             "1-2-6": 4500
           }
         },
-        "updatedAt": "2025-12-19T10:33:28.987Z"
+        "updatedAt": "2025-12-19T12:53:13.080Z"
       },
       "accuracy": {
         "standard": {
@@ -8560,7 +8672,12 @@
       "volatility": {
         "score": 33,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.94%、平均: 5.8%）",
+          "モーター性能が均等（2連率の標準偏差: 8.7%）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -8960,7 +9077,7 @@
             "4-5-2": 4400
           }
         },
-        "updatedAt": "2025-12-19T10:33:39.753Z"
+        "updatedAt": "2025-12-19T12:53:21.804Z"
       },
       "accuracy": {
         "standard": {
@@ -8990,9 +9107,14 @@
       "raceNumber": 10,
       "startTime": "14:59",
       "volatility": {
-        "score": 51,
+        "score": 46,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-17%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 5.9%）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -9388,7 +9510,7 @@
             "1-2-6": 550
           }
         },
-        "updatedAt": "2025-12-19T10:33:48.509Z"
+        "updatedAt": "2025-12-19T12:53:30.556Z"
       },
       "accuracy": {
         "standard": {
@@ -9418,9 +9540,14 @@
       "raceNumber": 11,
       "startTime": "15:29",
       "volatility": {
-        "score": 35,
-        "level": "medium",
-        "recommendedModel": "standard"
+        "score": 34,
+        "level": "low",
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 5.4%）",
+          "外枠に好機材が1艇（undefined号艇(41.0%)）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -9816,7 +9943,7 @@
             "1-2-3": 550
           }
         },
-        "updatedAt": "2025-12-19T10:33:58.271Z"
+        "updatedAt": "2025-12-19T12:53:41.273Z"
       },
       "accuracy": {
         "standard": {
@@ -9846,9 +9973,13 @@
       "raceNumber": 12,
       "startTime": "16:00",
       "volatility": {
-        "score": 32,
+        "score": 27,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 5.3%）",
+          "江戸川は荒れやすい競艇場"
+        ]
       },
       "predictions": {
         "standard": {
@@ -10244,7 +10375,7 @@
             "3-2-1": 14320
           }
         },
-        "updatedAt": "2025-12-19T10:34:09.033Z"
+        "updatedAt": "2025-12-19T12:53:51.006Z"
       },
       "accuracy": {
         "standard": {
@@ -10274,9 +10405,13 @@
       "raceNumber": 1,
       "startTime": "10:23",
       "volatility": {
-        "score": 69,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 60,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より15%弱い（グレード: B1、勝率: 4.0%）",
+          "モーター性能が均等（2連率の標準偏差: 5.2%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -10672,7 +10807,7 @@
             "1-2-3": 950
           }
         },
-        "updatedAt": "2025-12-19T10:34:18.789Z"
+        "updatedAt": "2025-12-19T12:54:00.721Z"
       },
       "accuracy": {
         "standard": {
@@ -10704,7 +10839,13 @@
       "volatility": {
         "score": 83,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.72%、平均: 5.0%）",
+          "1号艇が平均より10%弱い（グレード: B1、勝率: 4.5%）",
+          "モーター性能が均等（2連率の標準偏差: 5.4%）",
+          "外枠に好機材が1艇（undefined号艇(45.0%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -11100,7 +11241,7 @@
             "1-4-3": 5680
           }
         },
-        "updatedAt": "2025-12-19T10:34:29.514Z"
+        "updatedAt": "2025-12-19T12:54:11.424Z"
       },
       "accuracy": {
         "standard": {
@@ -11130,9 +11271,14 @@
       "raceNumber": 3,
       "startTime": "11:23",
       "volatility": {
-        "score": 80,
+        "score": 75,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より16%弱い（グレード: B1、勝率: 4.5%）",
+          "モーター性能が均等（2連率の標準偏差: 5.7%）",
+          "外枠に好機材が2艇（undefined号艇(43.8%)、undefined号艇(41.8%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -11532,7 +11678,7 @@
             "6-4-2": 5400
           }
         },
-        "updatedAt": "2025-12-19T10:34:40.241Z"
+        "updatedAt": "2025-12-19T12:54:22.122Z"
       },
       "accuracy": {
         "standard": {
@@ -11562,9 +11708,13 @@
       "raceNumber": 4,
       "startTime": "11:49",
       "volatility": {
-        "score": 69,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 60,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より15%弱い（グレード: B1、勝率: 4.4%）",
+          "モーター性能が均等（2連率の標準偏差: 5.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -11960,7 +12110,7 @@
             "2-4-5": 4510
           }
         },
-        "updatedAt": "2025-12-19T10:34:48.953Z"
+        "updatedAt": "2025-12-19T12:54:30.818Z"
       },
       "accuracy": {
         "standard": {
@@ -11992,7 +12142,13 @@
       "volatility": {
         "score": 84,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.92%、平均: 5.4%）",
+          "1号艇が平均より0%弱い（グレード: B1、勝率: 5.4%）",
+          "モーター性能が均等（2連率の標準偏差: 7.3%）",
+          "外枠に好機材が2艇（undefined号艇(45.4%)、undefined号艇(49.6%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -12392,7 +12548,7 @@
             "1-4-2": 6040
           }
         },
-        "updatedAt": "2025-12-19T10:34:58.710Z"
+        "updatedAt": "2025-12-19T12:54:40.556Z"
       },
       "accuracy": {
         "standard": {
@@ -12424,7 +12580,13 @@
       "volatility": {
         "score": 72,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.95%、平均: 5.2%）",
+          "1号艇が平均より10%弱い（グレード: B1、勝率: 4.7%）",
+          "モーター性能が均等（2連率の標準偏差: 9.4%）",
+          "外枠に好機材が1艇（undefined号艇(55.6%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -12820,7 +12982,7 @@
             "5-6-3": 4590
           }
         },
-        "updatedAt": "2025-12-19T10:35:09.455Z"
+        "updatedAt": "2025-12-19T12:54:49.256Z"
       },
       "accuracy": {
         "standard": {
@@ -12850,9 +13012,13 @@
       "raceNumber": 7,
       "startTime": "13:23",
       "volatility": {
-        "score": 65,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 58,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-5%弱い（グレード: A2、勝率: 5.3%）",
+          "モーター性能が均等（2連率の標準偏差: 6.4%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -13252,7 +13418,7 @@
             "1-4-2": 930
           }
         },
-        "updatedAt": "2025-12-19T10:35:20.210Z"
+        "updatedAt": "2025-12-19T12:54:57.966Z"
       },
       "accuracy": {
         "standard": {
@@ -13282,9 +13448,14 @@
       "raceNumber": 8,
       "startTime": "13:51",
       "volatility": {
-        "score": 77,
+        "score": 69,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より-3%弱い（グレード: A2、勝率: 5.3%）",
+          "モーター性能が均等（2連率の標準偏差: 4.2%）",
+          "外枠に好機材が1艇（undefined号艇(41.8%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -13684,7 +13855,7 @@
             "4-1-6": 3280
           }
         },
-        "updatedAt": "2025-12-19T10:35:30.938Z"
+        "updatedAt": "2025-12-19T12:55:07.693Z"
       },
       "accuracy": {
         "standard": {
@@ -13714,9 +13885,14 @@
       "raceNumber": 9,
       "startTime": "14:18",
       "volatility": {
-        "score": 72,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 64,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-6%弱い（グレード: A2、勝率: 5.5%）",
+          "モーター性能が均等（2連率の標準偏差: 6.7%）",
+          "外枠に好機材が2艇（undefined号艇(43.8%)、undefined号艇(43.1%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -14112,7 +14288,7 @@
             "5-2-6": 30300
           }
         },
-        "updatedAt": "2025-12-19T10:35:40.662Z"
+        "updatedAt": "2025-12-19T12:55:17.390Z"
       },
       "accuracy": {
         "standard": {
@@ -14144,7 +14320,13 @@
       "volatility": {
         "score": 91,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.67%、平均: 5.4%）",
+          "1号艇が平均より9%弱い（グレード: A2、勝率: 4.9%）",
+          "モーター性能が均等（2連率の標準偏差: 6.2%）",
+          "外枠に好機材が2艇（undefined号艇(40.1%)、undefined号艇(45.0%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -14540,7 +14722,7 @@
             "4-5-3": 10870
           }
         },
-        "updatedAt": "2025-12-19T10:35:51.407Z"
+        "updatedAt": "2025-12-19T12:55:26.094Z"
       },
       "accuracy": {
         "standard": {
@@ -14572,7 +14754,12 @@
       "volatility": {
         "score": 38,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.78%、平均: 5.7%）",
+          "モーター性能が均等（2連率の標準偏差: 4.7%）",
+          "外枠に好機材が1艇（undefined号艇(43.8%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -14968,7 +15155,7 @@
             "1-2-4": 820
           }
         },
-        "updatedAt": "2025-12-19T10:36:01.139Z"
+        "updatedAt": "2025-12-19T12:55:36.808Z"
       },
       "accuracy": {
         "standard": {
@@ -15000,7 +15187,12 @@
       "volatility": {
         "score": 30,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.92%、平均: 6.1%）",
+          "モーター性能が均等（2連率の標準偏差: 8.4%）",
+          "外枠に好機材が1艇（undefined号艇(55.6%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -15400,7 +15592,7 @@
             "5-4-6": 10170
           }
         },
-        "updatedAt": "2025-12-19T10:36:10.898Z"
+        "updatedAt": "2025-12-19T12:55:45.519Z"
       },
       "accuracy": {
         "standard": {
@@ -15432,7 +15624,12 @@
       "volatility": {
         "score": 66,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.91%、平均: 3.7%）",
+          "1号艇が平均より-5%弱い（グレード: B1、勝率: 3.9%）",
+          "モーター性能が均等（2連率の標準偏差: 8.9%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -15824,7 +16021,7 @@
             "2-3-6": 18880
           }
         },
-        "updatedAt": "2025-12-19T10:36:21.631Z"
+        "updatedAt": "2025-12-19T12:55:55.217Z"
       },
       "accuracy": {
         "standard": {
@@ -15854,9 +16051,13 @@
       "raceNumber": 2,
       "startTime": "11:01",
       "volatility": {
-        "score": 57,
+        "score": 51,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-5%弱い（グレード: B1、勝率: 5.3%）",
+          "モーター性能が均等（2連率の標準偏差: 11.1%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -16252,7 +16453,7 @@
             "4-6-5": 7810
           }
         },
-        "updatedAt": "2025-12-19T10:36:30.342Z"
+        "updatedAt": "2025-12-19T12:56:04.957Z"
       },
       "accuracy": {
         "standard": {
@@ -16284,7 +16485,12 @@
       "volatility": {
         "score": 60,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より6%弱い（グレード: B1、勝率: 4.3%）",
+          "モーター性能が均等（2連率の標準偏差: 10.2%）",
+          "外枠に好機材が1艇（undefined号艇(46.2%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -16680,7 +16886,7 @@
             "2-3-5": 2290
           }
         },
-        "updatedAt": "2025-12-19T10:36:39.094Z"
+        "updatedAt": "2025-12-19T12:56:13.659Z"
       },
       "accuracy": {
         "standard": {
@@ -16712,7 +16918,13 @@
       "volatility": {
         "score": 71,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.85%、平均: 4.9%）",
+          "1号艇が平均より-0%弱い（グレード: B1、勝率: 5.0%）",
+          "モーター性能が均等（2連率の標準偏差: 11.5%）",
+          "外枠に好機材が1艇（undefined号艇(45.7%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -17108,7 +17320,7 @@
             "3-6-4": 6050
           }
         },
-        "updatedAt": "2025-12-19T10:36:47.808Z"
+        "updatedAt": "2025-12-19T12:56:23.388Z"
       },
       "accuracy": {
         "standard": {
@@ -17140,7 +17352,13 @@
       "volatility": {
         "score": 82,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.59%、平均: 4.8%）",
+          "1号艇が平均より-10%弱い（グレード: A2、勝率: 5.3%）",
+          "モーター性能が均等（2連率の標準偏差: 7.8%）",
+          "外枠に好機材が1艇（undefined号艇(43.0%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -17536,7 +17754,7 @@
             "1-3-2": 1150
           }
         },
-        "updatedAt": "2025-12-19T10:36:58.523Z"
+        "updatedAt": "2025-12-19T12:56:34.085Z"
       },
       "accuracy": {
         "standard": {
@@ -17566,9 +17784,13 @@
       "raceNumber": 6,
       "startTime": "13:06",
       "volatility": {
-        "score": 22,
+        "score": 19,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 7.9%）",
+          "外枠に好機材が1艇（undefined号艇(47.2%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -17968,7 +18190,7 @@
             "1-3-2": 510
           }
         },
-        "updatedAt": "2025-12-19T10:37:09.285Z"
+        "updatedAt": "2025-12-19T12:56:43.832Z"
       },
       "accuracy": {
         "standard": {
@@ -17998,9 +18220,13 @@
       "raceNumber": 7,
       "startTime": "13:40",
       "volatility": {
-        "score": 66,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 61,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より31%弱い（グレード: B1、勝率: 3.4%）",
+          "外枠に好機材が2艇（undefined号艇(46.6%)、undefined号艇(46.0%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -18396,7 +18622,7 @@
             "2-4-1": 2610
           }
         },
-        "updatedAt": "2025-12-19T10:37:19.995Z"
+        "updatedAt": "2025-12-19T12:56:52.591Z"
       },
       "accuracy": {
         "standard": {
@@ -18426,9 +18652,12 @@
       "raceNumber": 8,
       "startTime": "14:08",
       "volatility": {
-        "score": 50,
+        "score": 45,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-0%弱い（グレード: B1、勝率: 4.9%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -18828,7 +19057,7 @@
             "5-2-6": 7700
           }
         },
-        "updatedAt": "2025-12-19T10:37:29.699Z"
+        "updatedAt": "2025-12-19T12:57:03.380Z"
       },
       "accuracy": {
         "standard": {
@@ -18860,7 +19089,13 @@
       "volatility": {
         "score": 65,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.93%、平均: 5.0%）",
+          "1号艇が平均より-16%弱い（グレード: A2、勝率: 5.8%）",
+          "モーター性能が均等（2連率の標準偏差: 8.0%）",
+          "外枠に好機材が1艇（undefined号艇(46.1%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -19256,7 +19491,7 @@
             "1-3-5": 770
           }
         },
-        "updatedAt": "2025-12-19T10:37:39.414Z"
+        "updatedAt": "2025-12-19T12:57:13.212Z"
       },
       "accuracy": {
         "standard": {
@@ -19288,7 +19523,12 @@
       "volatility": {
         "score": 71,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.93%、平均: 4.5%）",
+          "1号艇が平均より-14%弱い（グレード: A2、勝率: 5.2%）",
+          "モーター性能が均等（2連率の標準偏差: 5.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -19680,7 +19920,7 @@
             "1-6-3": 11680
           }
         },
-        "updatedAt": "2025-12-19T10:37:49.125Z"
+        "updatedAt": "2025-12-19T12:57:23.962Z"
       },
       "accuracy": {
         "standard": {
@@ -19712,7 +19952,12 @@
       "volatility": {
         "score": 33,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.64%、平均: 5.5%）",
+          "モーター性能が均等（2連率の標準偏差: 10.1%）",
+          "外枠に好機材が1艇（undefined号艇(51.7%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -20108,7 +20353,7 @@
             "1-3-4": 1060
           }
         },
-        "updatedAt": "2025-12-19T10:37:59.837Z"
+        "updatedAt": "2025-12-19T12:57:33.765Z"
       },
       "accuracy": {
         "standard": {
@@ -20140,7 +20385,11 @@
       "volatility": {
         "score": 28,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.35%、平均: 6.7%）",
+          "モーター性能が均等（2連率の標準偏差: 11.4%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -20540,7 +20789,7 @@
             "4-5-1": 10390
           }
         },
-        "updatedAt": "2025-12-19T10:38:10.567Z"
+        "updatedAt": "2025-12-19T12:57:42.499Z"
       },
       "accuracy": {
         "standard": {
@@ -20570,9 +20819,14 @@
       "raceNumber": 1,
       "startTime": "10:30",
       "volatility": {
-        "score": 64,
+        "score": 60,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-46%弱い（グレード: A2、勝率: 5.6%）",
+          "モーター性能が均等（2連率の標準偏差: 9.1%）",
+          "外枠に好機材が2艇（undefined号艇(46.3%)、undefined号艇(54.4%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -20968,7 +21222,7 @@
             "5-4-6": 18550
           }
         },
-        "updatedAt": "2025-12-19T10:38:19.280Z"
+        "updatedAt": "2025-12-19T12:57:52.249Z"
       },
       "accuracy": {
         "standard": {
@@ -21000,7 +21254,13 @@
       "volatility": {
         "score": 74,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.63%、平均: 4.8%）",
+          "1号艇が平均より-20%弱い（グレード: A2、勝率: 5.8%）",
+          "モーター性能が均等（2連率の標準偏差: 5.8%）",
+          "外枠に好機材が1艇（undefined号艇(42.9%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -21396,7 +21656,7 @@
             "1-4-6": 2040
           }
         },
-        "updatedAt": "2025-12-19T10:38:28.018Z"
+        "updatedAt": "2025-12-19T12:58:00.972Z"
       },
       "accuracy": {
         "standard": {
@@ -21428,7 +21688,12 @@
       "volatility": {
         "score": 69,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.65%、平均: 4.3%）",
+          "1号艇が平均より-28%弱い（グレード: B1、勝率: 5.5%）",
+          "モーター性能が均等（2連率の標準偏差: 3.9%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -21824,7 +22089,7 @@
             "3-1-5": 8330
           }
         },
-        "updatedAt": "2025-12-19T10:38:37.726Z"
+        "updatedAt": "2025-12-19T12:58:11.690Z"
       },
       "accuracy": {
         "standard": {
@@ -21854,9 +22119,13 @@
       "raceNumber": 4,
       "startTime": "11:56",
       "volatility": {
-        "score": 68,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 60,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より32%弱い（グレード: B1、勝率: 3.3%）",
+          "モーター性能が均等（2連率の標準偏差: 5.2%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -22248,7 +22517,7 @@
             "1-4-3": 3820
           }
         },
-        "updatedAt": "2025-12-19T10:38:46.479Z"
+        "updatedAt": "2025-12-19T12:58:22.398Z"
       },
       "accuracy": {
         "standard": {
@@ -22280,7 +22549,13 @@
       "volatility": {
         "score": 91,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.83%、平均: 4.6%）",
+          "1号艇が平均より16%弱い（グレード: B1、勝率: 3.9%）",
+          "モーター性能が均等（2連率の標準偏差: 3.9%）",
+          "外枠に好機材が2艇（undefined号艇(41.2%)、undefined号艇(40.2%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -22676,7 +22951,7 @@
             "3-4-5": 52260
           }
         },
-        "updatedAt": "2025-12-19T10:38:55.231Z"
+        "updatedAt": "2025-12-19T12:58:31.135Z"
       },
       "accuracy": {
         "standard": {
@@ -22708,7 +22983,12 @@
       "volatility": {
         "score": 61,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-25%弱い（グレード: A2、勝率: 5.7%）",
+          "モーター性能が均等（2連率の標準偏差: 8.0%）",
+          "外枠に好機材が2艇（undefined号艇(47.3%)、undefined号艇(54.4%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -23104,7 +23384,7 @@
             "5-1-4": 60140
           }
         },
-        "updatedAt": "2025-12-19T10:39:04.941Z"
+        "updatedAt": "2025-12-19T12:58:40.827Z"
       },
       "accuracy": {
         "standard": {
@@ -23136,7 +23416,12 @@
       "volatility": {
         "score": 73,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.65%、平均: 4.2%）",
+          "1号艇が平均より-25%弱い（グレード: A2、勝率: 5.3%）",
+          "モーター性能が均等（2連率の標準偏差: 7.4%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -23532,7 +23817,7 @@
             "5-1-3": 4310
           }
         },
-        "updatedAt": "2025-12-19T10:39:13.671Z"
+        "updatedAt": "2025-12-19T12:58:51.523Z"
       },
       "accuracy": {
         "standard": {
@@ -23564,7 +23849,12 @@
       "volatility": {
         "score": 61,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.85%、平均: 4.9%）",
+          "1号艇が平均より-16%弱い（グレード: A2、勝率: 5.7%）",
+          "モーター性能が均等（2連率の標準偏差: 6.2%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -23960,7 +24250,7 @@
             "4-3-5": 18490
           }
         },
-        "updatedAt": "2025-12-19T10:39:23.392Z"
+        "updatedAt": "2025-12-19T12:59:02.275Z"
       },
       "accuracy": {
         "standard": {
@@ -23992,7 +24282,12 @@
       "volatility": {
         "score": 33,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.80%、平均: 4.7%）",
+          "モーター性能が均等（2連率の標準偏差: 7.7%）",
+          "外枠に好機材が1艇（undefined号艇(42.9%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -24388,7 +24683,7 @@
             "1-5-3": 2930
           }
         },
-        "updatedAt": "2025-12-19T10:39:34.102Z"
+        "updatedAt": "2025-12-19T12:59:13.111Z"
       },
       "accuracy": {
         "standard": {
@@ -24418,9 +24713,13 @@
       "raceNumber": 10,
       "startTime": "15:02",
       "volatility": {
-        "score": 69,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 61,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より4%弱い（グレード: B1、勝率: 4.8%）",
+          "モーター性能が均等（2連率の標準偏差: 4.7%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -24812,7 +25111,7 @@
             "2-1-3": 2400
           }
         },
-        "updatedAt": "2025-12-19T10:39:42.815Z"
+        "updatedAt": "2025-12-19T12:59:23.841Z"
       },
       "accuracy": {
         "standard": {
@@ -24844,7 +25143,13 @@
       "volatility": {
         "score": 56,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.82%、平均: 5.4%）",
+          "1号艇が平均より-12%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 5.2%）",
+          "外枠に好機材が1艇（undefined号艇(41.2%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -25240,7 +25545,7 @@
             "1-3-5": 1830
           }
         },
-        "updatedAt": "2025-12-19T10:39:53.527Z"
+        "updatedAt": "2025-12-19T12:59:34.535Z"
       },
       "accuracy": {
         "standard": {
@@ -25272,7 +25577,11 @@
       "volatility": {
         "score": 34,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.51%、平均: 5.8%）",
+          "モーター性能が均等（2連率の標準偏差: 5.6%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -25664,7 +25973,7 @@
             "1-4-6": 5640
           }
         },
-        "updatedAt": "2025-12-19T10:40:04.242Z"
+        "updatedAt": "2025-12-19T12:59:43.288Z"
       },
       "accuracy": {
         "standard": {
@@ -25696,7 +26005,12 @@
       "volatility": {
         "score": 47,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.33%、平均: 6.9%）",
+          "モーター性能が均等（2連率の標準偏差: 4.3%）",
+          "外枠に好機材が1艇（undefined号艇(41.2%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -26096,7 +26410,7 @@
             "1-5-3": 1690
           }
         },
-        "updatedAt": "2025-12-19T10:40:14.953Z"
+        "updatedAt": "2025-12-19T12:59:52.033Z"
       },
       "accuracy": {
         "standard": {
@@ -26128,7 +26442,12 @@
       "volatility": {
         "score": 48,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.34%、平均: 7.0%）",
+          "モーター性能が均等（2連率の標準偏差: 3.5%）",
+          "外枠に好機材が1艇（undefined号艇(41.3%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -26528,7 +26847,7 @@
             "1-4-2": 1480
           }
         },
-        "updatedAt": "2025-12-19T10:40:24.682Z"
+        "updatedAt": "2025-12-19T13:00:00.777Z"
       },
       "accuracy": {
         "standard": {
@@ -26560,7 +26879,11 @@
       "volatility": {
         "score": 40,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.36%、平均: 6.8%）",
+          "モーター性能が均等（2連率の標準偏差: 3.4%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -26956,7 +27279,7 @@
             "2-5-3": 10460
           }
         },
-        "updatedAt": "2025-12-19T10:40:34.395Z"
+        "updatedAt": "2025-12-19T13:00:11.559Z"
       },
       "accuracy": {
         "standard": {
@@ -26988,7 +27311,12 @@
       "volatility": {
         "score": 45,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.45%、平均: 7.1%）",
+          "モーター性能が均等（2連率の標準偏差: 4.5%）",
+          "外枠に好機材が1艇（undefined号艇(40.8%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -27388,7 +27716,7 @@
             "1-2-4": 1300
           }
         },
-        "updatedAt": "2025-12-19T10:40:43.103Z"
+        "updatedAt": "2025-12-19T13:00:21.290Z"
       },
       "accuracy": {
         "standard": {
@@ -27420,7 +27748,11 @@
       "volatility": {
         "score": 43,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.25%、平均: 6.9%）",
+          "モーター性能が均等（2連率の標準偏差: 3.3%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -27816,7 +28148,7 @@
             "1-2-3": 1180
           }
         },
-        "updatedAt": "2025-12-19T10:40:52.813Z"
+        "updatedAt": "2025-12-19T13:00:32.267Z"
       },
       "accuracy": {
         "standard": {
@@ -27848,7 +28180,11 @@
       "volatility": {
         "score": 40,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.38%、平均: 6.9%）",
+          "モーター性能が均等（2連率の標準偏差: 3.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -28244,7 +28580,7 @@
             "1-3-4": 1440
           }
         },
-        "updatedAt": "2025-12-19T10:41:02.558Z"
+        "updatedAt": "2025-12-19T13:00:42.034Z"
       },
       "accuracy": {
         "standard": {
@@ -28276,7 +28612,11 @@
       "volatility": {
         "score": 45,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.20%、平均: 7.0%）",
+          "モーター性能が均等（2連率の標準偏差: 2.3%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -28672,7 +29012,7 @@
             "1-5-3": 1210
           }
         },
-        "updatedAt": "2025-12-19T10:41:12.318Z"
+        "updatedAt": "2025-12-19T13:00:52.755Z"
       },
       "accuracy": {
         "standard": {
@@ -28704,7 +29044,12 @@
       "volatility": {
         "score": 44,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.48%、平均: 7.0%）",
+          "モーター性能が均等（2連率の標準偏差: 4.8%）",
+          "外枠に好機材が1艇（undefined号艇(40.8%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -29104,7 +29449,7 @@
             "2-5-3": 15010
           }
         },
-        "updatedAt": "2025-12-19T10:41:22.031Z"
+        "updatedAt": "2025-12-19T13:01:03.474Z"
       },
       "accuracy": {
         "standard": {
@@ -29136,7 +29481,12 @@
       "volatility": {
         "score": 47,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.30%、平均: 6.9%）",
+          "モーター性能が均等（2連率の標準偏差: 5.4%）",
+          "外枠に好機材が1艇（undefined号艇(41.2%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -29536,7 +29886,7 @@
             "1-3-5": 1760
           }
         },
-        "updatedAt": "2025-12-19T10:41:30.738Z"
+        "updatedAt": "2025-12-19T13:01:13.184Z"
       },
       "accuracy": {
         "standard": {
@@ -29568,7 +29918,11 @@
       "volatility": {
         "score": 40,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.33%、平均: 6.9%）",
+          "モーター性能が均等（2連率の標準偏差: 3.8%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -29945,30 +30299,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 5,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "1": 120
+          },
+          "place": {
+            "1": 100,
+            "5": 180
+          },
+          "trifecta": {
+            "1-2-5": 530
+          },
+          "trio": {
+            "1-5-2": 1660
+          }
+        },
+        "updatedAt": "2025-12-19T13:01:22.046Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -29981,7 +30350,12 @@
       "volatility": {
         "score": 45,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.60%、平均: 7.1%）",
+          "モーター性能が均等（2連率の標準偏差: 2.5%）",
+          "外枠に好機材が1艇（undefined号艇(41.7%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -30362,30 +30736,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 5,
+        "payouts": {
+          "win": {
+            "1": 130
+          },
+          "place": {
+            "1": 110,
+            "2": 150
+          },
+          "trifecta": {
+            "1-2-5": 770
+          },
+          "trio": {
+            "1-2-5": 1570
+          }
+        },
+        "updatedAt": "2025-12-19T13:01:30.795Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -30398,7 +30787,12 @@
       "volatility": {
         "score": 56,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.38%、平均: 7.5%）",
+          "モーター性能が均等（2連率の標準偏差: 3.4%）",
+          "外枠に好機材が2艇（undefined号艇(41.4%)、undefined号艇(41.5%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -30779,30 +31173,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 4,
+        "payouts": {
+          "win": {
+            "1": 160
+          },
+          "place": {
+            "1": 130,
+            "2": 140
+          },
+          "trifecta": {
+            "1-2-4": 500
+          },
+          "trio": {
+            "1-2-4": 950
+          }
+        },
+        "updatedAt": "2025-12-19T13:01:39.515Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -30813,9 +31222,13 @@
       "raceNumber": 1,
       "startTime": "08:35",
       "volatility": {
-        "score": 34,
+        "score": 28,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 6.8%）",
+          "外枠に好機材が2艇（undefined号艇(50.0%)、undefined号艇(40.9%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -31215,7 +31628,7 @@
             "5-2-6": 13040
           }
         },
-        "updatedAt": "2025-12-19T10:42:08.547Z"
+        "updatedAt": "2025-12-19T13:01:48.214Z"
       },
       "accuracy": {
         "standard": {
@@ -31247,7 +31660,12 @@
       "volatility": {
         "score": 50,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.70%、平均: 5.4%）",
+          "1号艇が平均より-12%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 5.6%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -31639,7 +32057,7 @@
             "1-3-2": 600
           }
         },
-        "updatedAt": "2025-12-19T10:42:17.257Z"
+        "updatedAt": "2025-12-19T13:01:57.958Z"
       },
       "accuracy": {
         "standard": {
@@ -31671,7 +32089,12 @@
       "volatility": {
         "score": 71,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.73%、平均: 5.5%）",
+          "1号艇が平均より2%弱い（グレード: A2、勝率: 5.4%）",
+          "モーター性能が均等（2連率の標準偏差: 7.6%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -32067,7 +32490,7 @@
             "1-3-4": 770
           }
         },
-        "updatedAt": "2025-12-19T10:42:27.968Z"
+        "updatedAt": "2025-12-19T13:02:07.711Z"
       },
       "accuracy": {
         "standard": {
@@ -32099,7 +32522,12 @@
       "volatility": {
         "score": 52,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.71%、平均: 5.6%）",
+          "1号艇が平均より-21%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 3.9%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -32491,7 +32919,7 @@
             "5-6-2": 113510
           }
         },
-        "updatedAt": "2025-12-19T10:42:37.745Z"
+        "updatedAt": "2025-12-19T13:02:17.449Z"
       },
       "accuracy": {
         "standard": {
@@ -32521,9 +32949,13 @@
       "raceNumber": 5,
       "startTime": "10:20",
       "volatility": {
-        "score": 67,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 60,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より6%弱い（グレード: B1、勝率: 5.3%）",
+          "モーター性能が均等（2連率の標準偏差: 4.8%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -32923,7 +33355,7 @@
             "4-1-6": 6810
           }
         },
-        "updatedAt": "2025-12-19T10:42:46.479Z"
+        "updatedAt": "2025-12-19T13:02:28.216Z"
       },
       "accuracy": {
         "standard": {
@@ -32955,7 +33387,12 @@
       "volatility": {
         "score": 72,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.80%、平均: 5.5%）",
+          "1号艇が平均より18%弱い（グレード: B1、勝率: 4.5%）",
+          "モーター性能が均等（2連率の標準偏差: 6.6%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -33351,7 +33788,7 @@
             "3-4-6": 4250
           }
         },
-        "updatedAt": "2025-12-19T10:42:57.220Z"
+        "updatedAt": "2025-12-19T13:02:38.920Z"
       },
       "accuracy": {
         "standard": {
@@ -33383,7 +33820,12 @@
       "volatility": {
         "score": 57,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.93%、平均: 5.3%）",
+          "1号艇が平均より-9%弱い（グレード: B1、勝率: 5.8%）",
+          "モーター性能が均等（2連率の標準偏差: 8.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -33779,7 +34221,7 @@
             "1-2-4": 990
           }
         },
-        "updatedAt": "2025-12-19T10:43:07.946Z"
+        "updatedAt": "2025-12-19T13:02:48.628Z"
       },
       "accuracy": {
         "standard": {
@@ -33809,9 +34251,13 @@
       "raceNumber": 8,
       "startTime": "11:53",
       "volatility": {
-        "score": 68,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 60,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より16%弱い（グレード: B1、勝率: 4.5%）",
+          "モーター性能が均等（2連率の標準偏差: 5.3%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -34203,7 +34649,7 @@
             "2-6-3": 38170
           }
         },
-        "updatedAt": "2025-12-19T10:43:18.705Z"
+        "updatedAt": "2025-12-19T13:02:59.353Z"
       },
       "accuracy": {
         "standard": {
@@ -34235,7 +34681,13 @@
       "volatility": {
         "score": 83,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.50%、平均: 5.4%）",
+          "1号艇が平均より8%弱い（グレード: B1、勝率: 5.0%）",
+          "モーター性能が均等（2連率の標準偏差: 8.2%）",
+          "外枠に好機材が1艇（undefined号艇(46.2%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -34631,7 +35083,7 @@
             "2-6-1": 20430
           }
         },
-        "updatedAt": "2025-12-19T10:43:29.452Z"
+        "updatedAt": "2025-12-19T13:03:10.079Z"
       },
       "accuracy": {
         "standard": {
@@ -34663,7 +35115,13 @@
       "volatility": {
         "score": 78,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.89%、平均: 6.3%）",
+          "1号艇が平均より12%弱い（グレード: B1、勝率: 5.5%）",
+          "モーター性能が均等（2連率の標準偏差: 6.6%）",
+          "外枠に好機材が1艇（undefined号艇(45.9%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -35063,7 +35521,7 @@
             "5-1-3": 6320
           }
         },
-        "updatedAt": "2025-12-19T10:43:40.188Z"
+        "updatedAt": "2025-12-19T13:03:19.798Z"
       },
       "accuracy": {
         "standard": {
@@ -35095,7 +35553,12 @@
       "volatility": {
         "score": 59,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.41%、平均: 6.1%）",
+          "1号艇が平均より2%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 3.6%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -35487,7 +35950,7 @@
             "4-2-1": 23640
           }
         },
-        "updatedAt": "2025-12-19T10:43:48.914Z"
+        "updatedAt": "2025-12-19T13:03:28.538Z"
       },
       "accuracy": {
         "standard": {
@@ -35519,7 +35982,11 @@
       "volatility": {
         "score": 32,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.57%、平均: 6.5%）",
+          "モーター性能が均等（2連率の標準偏差: 5.7%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -35915,7 +36382,7 @@
             "1-2-6": 4890
           }
         },
-        "updatedAt": "2025-12-19T10:43:57.627Z"
+        "updatedAt": "2025-12-19T13:03:37.282Z"
       },
       "accuracy": {
         "standard": {
@@ -35947,7 +36414,11 @@
       "volatility": {
         "score": 36,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.84%、平均: 5.0%）",
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -36339,7 +36810,7 @@
             "1-6-2": 4130
           }
         },
-        "updatedAt": "2025-12-19T10:44:06.341Z"
+        "updatedAt": "2025-12-19T13:03:47.016Z"
       },
       "accuracy": {
         "standard": {
@@ -36371,7 +36842,11 @@
       "volatility": {
         "score": 68,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より15%弱い（グレード: B1、勝率: 3.3%）",
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -36763,7 +37238,7 @@
             "1-2-4": 3620
           }
         },
-        "updatedAt": "2025-12-19T10:44:15.096Z"
+        "updatedAt": "2025-12-19T13:03:57.711Z"
       },
       "accuracy": {
         "standard": {
@@ -36793,9 +37268,13 @@
       "raceNumber": 3,
       "startTime": "11:46",
       "volatility": {
-        "score": 75,
+        "score": 68,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より43%弱い（グレード: B1、勝率: 2.7%）",
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -37187,7 +37666,7 @@
             "3-2-6": 7800
           }
         },
-        "updatedAt": "2025-12-19T10:44:25.828Z"
+        "updatedAt": "2025-12-19T13:04:07.422Z"
       },
       "accuracy": {
         "standard": {
@@ -37217,9 +37696,13 @@
       "raceNumber": 4,
       "startTime": "12:15",
       "volatility": {
-        "score": 70,
+        "score": 68,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より22%弱い（グレード: B1、勝率: 4.1%）",
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -37615,7 +38098,7 @@
             "4-3-5": 8560
           }
         },
-        "updatedAt": "2025-12-19T10:44:34.562Z"
+        "updatedAt": "2025-12-19T13:04:17.150Z"
       },
       "accuracy": {
         "standard": {
@@ -37645,9 +38128,12 @@
       "raceNumber": 5,
       "startTime": "12:45",
       "volatility": {
-        "score": 28,
+        "score": 23,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -38039,7 +38525,7 @@
             "2-1-4": 1460
           }
         },
-        "updatedAt": "2025-12-19T10:44:43.323Z"
+        "updatedAt": "2025-12-19T13:04:25.892Z"
       },
       "accuracy": {
         "standard": {
@@ -38071,7 +38557,12 @@
       "volatility": {
         "score": 79,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.94%、平均: 5.3%）",
+          "1号艇が平均より26%弱い（グレード: A2、勝率: 4.0%）",
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -38463,7 +38954,7 @@
             "1-3-4": 1580
           }
         },
-        "updatedAt": "2025-12-19T10:44:53.056Z"
+        "updatedAt": "2025-12-19T13:04:34.615Z"
       },
       "accuracy": {
         "standard": {
@@ -38495,7 +38986,12 @@
       "volatility": {
         "score": 79,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.94%、平均: 4.8%）",
+          "1号艇が平均より31%弱い（グレード: B1、勝率: 3.3%）",
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -38887,7 +39383,7 @@
             "5-1-4": 37680
           }
         },
-        "updatedAt": "2025-12-19T10:45:02.793Z"
+        "updatedAt": "2025-12-19T13:04:45.334Z"
       },
       "accuracy": {
         "standard": {
@@ -38919,7 +39415,11 @@
       "volatility": {
         "score": 68,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より22%弱い（グレード: B1、勝率: 3.8%）",
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -39311,7 +39811,7 @@
             "1-3-6": 16350
           }
         },
-        "updatedAt": "2025-12-19T10:45:12.508Z"
+        "updatedAt": "2025-12-19T13:04:55.035Z"
       },
       "accuracy": {
         "standard": {
@@ -39343,7 +39843,12 @@
       "volatility": {
         "score": 87,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.54%、平均: 5.2%）",
+          "1号艇が平均より18%弱い（グレード: B1、勝率: 4.2%）",
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -39735,7 +40240,7 @@
             "1-3-2": 3050
           }
         },
-        "updatedAt": "2025-12-19T10:45:23.221Z"
+        "updatedAt": "2025-12-19T13:05:05.776Z"
       },
       "accuracy": {
         "standard": {
@@ -39767,7 +40272,12 @@
       "volatility": {
         "score": 62,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.54%、平均: 6.6%）",
+          "1号艇が平均より-1%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -40163,7 +40673,7 @@
             "2-5-1": 7040
           }
         },
-        "updatedAt": "2025-12-19T10:45:31.932Z"
+        "updatedAt": "2025-12-19T13:05:15.475Z"
       },
       "accuracy": {
         "standard": {
@@ -40193,9 +40703,12 @@
       "raceNumber": 11,
       "startTime": "15:43",
       "volatility": {
-        "score": 32,
+        "score": 23,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -40587,7 +41100,7 @@
             "2-1-3": 3910
           }
         },
-        "updatedAt": "2025-12-19T10:45:42.668Z"
+        "updatedAt": "2025-12-19T13:05:25.215Z"
       },
       "accuracy": {
         "standard": {
@@ -40617,9 +41130,12 @@
       "raceNumber": 12,
       "startTime": "16:18",
       "volatility": {
-        "score": 32,
+        "score": 23,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 0.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -41011,7 +41527,7 @@
             "1-2-4": 610
           }
         },
-        "updatedAt": "2025-12-19T10:45:51.384Z"
+        "updatedAt": "2025-12-19T13:05:34.043Z"
       },
       "accuracy": {
         "standard": {
@@ -41041,9 +41557,13 @@
       "raceNumber": 1,
       "startTime": "15:17",
       "volatility": {
-        "score": 64,
+        "score": 59,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-10%弱い（グレード: B1、勝率: 4.3%）",
+          "モーター性能が均等（2連率の標準偏差: 5.5%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -41435,7 +41955,7 @@
             "1-6-4": 2390
           }
         },
-        "updatedAt": "2025-12-19T10:46:00.194Z"
+        "updatedAt": "2025-12-19T13:05:42.785Z"
       },
       "accuracy": {
         "standard": {
@@ -41465,9 +41985,13 @@
       "raceNumber": 2,
       "startTime": "15:47",
       "volatility": {
-        "score": 65,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 62,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-24%弱い（グレード: B2、勝率: 5.0%）",
+          "モーター性能が均等（2連率の標準偏差: 3.5%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -41859,7 +42383,7 @@
             "1-3-5": 1360
           }
         },
-        "updatedAt": "2025-12-19T10:46:08.949Z"
+        "updatedAt": "2025-12-19T13:05:53.577Z"
       },
       "accuracy": {
         "standard": {
@@ -41891,7 +42415,12 @@
       "volatility": {
         "score": 74,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.69%、平均: 5.9%）",
+          "1号艇が平均より16%弱い（グレード: B1、勝率: 5.0%）",
+          "モーター性能が均等（2連率の標準偏差: 6.6%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -42287,7 +42816,7 @@
             "1-3-2": 1470
           }
         },
-        "updatedAt": "2025-12-19T10:46:17.659Z"
+        "updatedAt": "2025-12-19T13:06:02.295Z"
       },
       "accuracy": {
         "standard": {
@@ -42319,7 +42848,13 @@
       "volatility": {
         "score": 80,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.48%、平均: 5.4%）",
+          "1号艇が平均より-9%弱い（グレード: B1、勝率: 5.9%）",
+          "モーター性能が均等（2連率の標準偏差: 3.8%）",
+          "外枠に好機材が1艇（undefined号艇(40.4%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -42715,7 +43250,7 @@
             "1-3-4": 1940
           }
         },
-        "updatedAt": "2025-12-19T10:46:28.410Z"
+        "updatedAt": "2025-12-19T13:06:12.004Z"
       },
       "accuracy": {
         "standard": {
@@ -42745,9 +43280,13 @@
       "raceNumber": 5,
       "startTime": "17:15",
       "volatility": {
-        "score": 58,
+        "score": 52,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-2%弱い（グレード: A2、勝率: 5.8%）",
+          "モーター性能が均等（2連率の標準偏差: 3.9%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -43143,7 +43682,7 @@
             "1-2-4": 1120
           }
         },
-        "updatedAt": "2025-12-19T10:46:37.167Z"
+        "updatedAt": "2025-12-19T13:06:21.709Z"
       },
       "accuracy": {
         "standard": {
@@ -43175,7 +43714,12 @@
       "volatility": {
         "score": 71,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.57%、平均: 5.3%）",
+          "1号艇が平均より-12%弱い（グレード: A2、勝率: 5.9%）",
+          "モーター性能が均等（2連率の標準偏差: 3.1%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -43567,7 +44111,7 @@
             "1-4-2": 1380
           }
         },
-        "updatedAt": "2025-12-19T10:46:45.880Z"
+        "updatedAt": "2025-12-19T13:06:31.425Z"
       },
       "accuracy": {
         "standard": {
@@ -43599,7 +44143,13 @@
       "volatility": {
         "score": 79,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.84%、平均: 5.2%）",
+          "1号艇が平均より0%弱い（グレード: A2、勝率: 5.2%）",
+          "モーター性能が均等（2連率の標準偏差: 6.2%）",
+          "外枠に好機材が1艇（undefined号艇(44.3%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -43995,7 +44545,7 @@
             "1-3-6": 8830
           }
         },
-        "updatedAt": "2025-12-19T10:46:55.631Z"
+        "updatedAt": "2025-12-19T13:06:40.143Z"
       },
       "accuracy": {
         "standard": {
@@ -44027,7 +44577,11 @@
       "volatility": {
         "score": 61,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より2%弱い（グレード: A2、勝率: 4.0%）",
+          "モーター性能が均等（2連率の標準偏差: 4.5%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -44423,7 +44977,7 @@
             "1-4-3": 1090
           }
         },
-        "updatedAt": "2025-12-19T10:47:04.348Z"
+        "updatedAt": "2025-12-19T13:06:50.849Z"
       },
       "accuracy": {
         "standard": {
@@ -44453,9 +45007,12 @@
       "raceNumber": 9,
       "startTime": "19:16",
       "volatility": {
-        "score": 23,
+        "score": 15,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 5.3%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -44847,7 +45404,7 @@
             "1-3-5": 1960
           }
         },
-        "updatedAt": "2025-12-19T10:47:15.065Z"
+        "updatedAt": "2025-12-19T13:07:00.583Z"
       },
       "accuracy": {
         "standard": {
@@ -44879,7 +45436,11 @@
       "volatility": {
         "score": 30,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.84%、平均: 5.4%）",
+          "モーター性能が均等（2連率の標準偏差: 4.1%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -45252,30 +45813,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "1": 140
+          },
+          "place": {
+            "1": 170,
+            "3": 190
+          },
+          "trifecta": {
+            "1-2-3": 600
+          },
+          "trio": {
+            "1-3-2": 1890
+          }
+        },
+        "updatedAt": "2025-12-19T13:07:10.314Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -45288,7 +45864,11 @@
       "volatility": {
         "score": 38,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.42%、平均: 5.6%）",
+          "モーター性能が均等（2連率の標準偏差: 4.3%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -45661,30 +46241,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "1": 130
+          },
+          "place": {
+            "1": 110,
+            "2": 160
+          },
+          "trifecta": {
+            "1-2-3": 340
+          },
+          "trio": {
+            "1-2-3": 740
+          }
+        },
+        "updatedAt": "2025-12-19T13:07:21.022Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -45697,7 +46292,12 @@
       "volatility": {
         "score": 36,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.70%、平均: 6.1%）",
+          "モーター性能が均等（2連率の標準偏差: 6.9%）",
+          "外枠に好機材が1艇（undefined号艇(44.4%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -46078,30 +46678,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 4,
+        "payouts": {
+          "win": {
+            "1": 100
+          },
+          "place": {
+            "1": 100,
+            "3": 140
+          },
+          "trifecta": {
+            "1-3-4": 750
+          },
+          "trio": {
+            "1-3-4": 1140
+          }
+        },
+        "updatedAt": "2025-12-19T13:07:29.766Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -46112,9 +46727,13 @@
       "raceNumber": 1,
       "startTime": "08:47",
       "volatility": {
-        "score": 33,
+        "score": 31,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "1号艇が平均より-33%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 7.8%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -46506,7 +47125,7 @@
             "5-6-2": 12680
           }
         },
-        "updatedAt": "2025-12-19T10:47:54.874Z"
+        "updatedAt": "2025-12-19T13:07:39.467Z"
       },
       "accuracy": {
         "standard": {
@@ -46538,7 +47157,12 @@
       "volatility": {
         "score": 64,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.92%、平均: 5.3%）",
+          "1号艇が平均より-8%弱い（グレード: A2、勝率: 5.7%）",
+          "モーター性能が均等（2連率の標準偏差: 3.3%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -46930,7 +47554,7 @@
             "4-1-6": 4600
           }
         },
-        "updatedAt": "2025-12-19T10:48:03.643Z"
+        "updatedAt": "2025-12-19T13:07:48.207Z"
       },
       "accuracy": {
         "standard": {
@@ -46962,7 +47586,11 @@
       "volatility": {
         "score": 35,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-22%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 5.1%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -47358,7 +47986,7 @@
             "1-3-2": 940
           }
         },
-        "updatedAt": "2025-12-19T10:48:12.376Z"
+        "updatedAt": "2025-12-19T13:07:58.948Z"
       },
       "accuracy": {
         "standard": {
@@ -47388,9 +48016,13 @@
       "raceNumber": 4,
       "startTime": "10:05",
       "volatility": {
-        "score": 39,
-        "level": "medium",
-        "recommendedModel": "standard"
+        "score": 30,
+        "level": "low",
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "1号艇が平均より-13%弱い（勝率: 5.7%）",
+          "モーター性能が均等（2連率の標準偏差: 5.1%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -47782,7 +48414,7 @@
             "4-2-6": 16240
           }
         },
-        "updatedAt": "2025-12-19T10:48:21.097Z"
+        "updatedAt": "2025-12-19T13:08:08.649Z"
       },
       "accuracy": {
         "standard": {
@@ -47814,7 +48446,10 @@
       "volatility": {
         "score": 13,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 6.3%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -48206,7 +48841,7 @@
             "1-3-6": 1480
           }
         },
-        "updatedAt": "2025-12-19T10:48:31.810Z"
+        "updatedAt": "2025-12-19T13:08:17.362Z"
       },
       "accuracy": {
         "standard": {
@@ -48236,9 +48871,13 @@
       "raceNumber": 6,
       "startTime": "11:07",
       "volatility": {
-        "score": 69,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 60,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より16%弱い（グレード: B1、勝率: 4.8%）",
+          "モーター性能が均等（2連率の標準偏差: 5.2%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -48634,7 +49273,7 @@
             "1-6-3": 5340
           }
         },
-        "updatedAt": "2025-12-19T10:48:42.523Z"
+        "updatedAt": "2025-12-19T13:08:26.111Z"
       },
       "accuracy": {
         "standard": {
@@ -48666,7 +49305,12 @@
       "volatility": {
         "score": 74,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.93%、平均: 4.2%）",
+          "1号艇が平均より-19%弱い（グレード: B1、勝率: 4.9%）",
+          "モーター性能が均等（2連率の標準偏差: 3.5%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -49058,7 +49702,7 @@
             "1-3-6": 2930
           }
         },
-        "updatedAt": "2025-12-19T10:48:52.284Z"
+        "updatedAt": "2025-12-19T13:08:36.887Z"
       },
       "accuracy": {
         "standard": {
@@ -49090,7 +49734,12 @@
       "volatility": {
         "score": 76,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.81%、平均: 5.4%）",
+          "1号艇が平均より7%弱い（グレード: B1、勝率: 5.0%）",
+          "モーター性能が均等（2連率の標準偏差: 3.2%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -49482,7 +50131,7 @@
             "4-3-2": 22140
           }
         },
-        "updatedAt": "2025-12-19T10:49:02.018Z"
+        "updatedAt": "2025-12-19T13:08:46.591Z"
       },
       "accuracy": {
         "standard": {
@@ -49514,7 +50163,11 @@
       "volatility": {
         "score": 50,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-23%弱い（グレード: A2、勝率: 5.9%）",
+          "モーター性能が均等（2連率の標準偏差: 5.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -49910,7 +50563,7 @@
             "1-6-5": 2670
           }
         },
-        "updatedAt": "2025-12-19T10:49:12.728Z"
+        "updatedAt": "2025-12-19T13:08:55.297Z"
       },
       "accuracy": {
         "standard": {
@@ -49942,7 +50595,12 @@
       "volatility": {
         "score": 52,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.77%、平均: 6.0%）",
+          "1号艇が平均より-9%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 3.7%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -50338,7 +50996,7 @@
             "1-4-6": 1620
           }
         },
-        "updatedAt": "2025-12-19T10:49:23.485Z"
+        "updatedAt": "2025-12-19T13:09:05.990Z"
       },
       "accuracy": {
         "standard": {
@@ -50370,7 +51028,12 @@
       "volatility": {
         "score": 67,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.76%、平均: 6.1%）",
+          "1号艇が平均より2%弱い（グレード: A2、勝率: 6.0%）",
+          "モーター性能が均等（2連率の標準偏差: 3.5%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -50766,7 +51429,7 @@
             "1-2-6": 2360
           }
         },
-        "updatedAt": "2025-12-19T10:49:33.219Z"
+        "updatedAt": "2025-12-19T13:09:14.767Z"
       },
       "accuracy": {
         "standard": {
@@ -50798,7 +51461,11 @@
       "volatility": {
         "score": 39,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.35%、平均: 6.3%）",
+          "モーター性能が均等（2連率の標準偏差: 4.5%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -51190,7 +51857,7 @@
             "1-3-6": 2320
           }
         },
-        "updatedAt": "2025-12-19T10:49:42.967Z"
+        "updatedAt": "2025-12-19T13:09:25.463Z"
       },
       "accuracy": {
         "standard": {
@@ -51222,7 +51889,12 @@
       "volatility": {
         "score": 75,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.44%、平均: 5.4%）",
+          "1号艇が平均より-8%弱い（グレード: A2、勝率: 5.8%）",
+          "モーター性能が均等（2連率の標準偏差: 2.5%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -51614,7 +52286,7 @@
             "2-3-1": 9040
           }
         },
-        "updatedAt": "2025-12-19T10:49:52.703Z"
+        "updatedAt": "2025-12-19T13:09:36.166Z"
       },
       "accuracy": {
         "standard": {
@@ -51646,7 +52318,11 @@
       "volatility": {
         "score": 50,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-3%弱い（グレード: B1、勝率: 5.5%）",
+          "モーター性能が均等（2連率の標準偏差: 5.2%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -52046,7 +52722,7 @@
             "1-6-5": 2010
           }
         },
-        "updatedAt": "2025-12-19T10:50:01.473Z"
+        "updatedAt": "2025-12-19T13:09:45.903Z"
       },
       "accuracy": {
         "standard": {
@@ -52076,9 +52752,14 @@
       "raceNumber": 3,
       "startTime": "12:03",
       "volatility": {
-        "score": 77,
+        "score": 68,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より15%弱い（グレード: B1、勝率: 3.8%）",
+          "モーター性能が均等（2連率の標準偏差: 5.1%）",
+          "外枠に好機材が1艇（undefined号艇(40.5%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -52474,7 +53155,7 @@
             "3-4-6": 6080
           }
         },
-        "updatedAt": "2025-12-19T10:50:12.575Z"
+        "updatedAt": "2025-12-19T13:09:55.608Z"
       },
       "accuracy": {
         "standard": {
@@ -52504,9 +53185,14 @@
       "raceNumber": 4,
       "startTime": "12:31",
       "volatility": {
-        "score": 72,
+        "score": 68,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より17%弱い（グレード: B2、勝率: 4.8%）",
+          "モーター性能が均等（2連率の標準偏差: 4.8%）",
+          "外枠に好機材が1艇（undefined号艇(41.8%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -52906,7 +53592,7 @@
             "5-6-1": 3690
           }
         },
-        "updatedAt": "2025-12-19T10:50:23.331Z"
+        "updatedAt": "2025-12-19T13:10:04.368Z"
       },
       "accuracy": {
         "standard": {
@@ -52938,7 +53624,12 @@
       "volatility": {
         "score": 68,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より-19%弱い（グレード: B1、勝率: 5.3%）",
+          "モーター性能が均等（2連率の標準偏差: 5.2%）",
+          "外枠に好機材が1艇（undefined号艇(44.0%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -53334,7 +54025,7 @@
             "1-5-4": 960
           }
         },
-        "updatedAt": "2025-12-19T10:50:34.082Z"
+        "updatedAt": "2025-12-19T13:10:13.103Z"
       },
       "accuracy": {
         "standard": {
@@ -53366,7 +54057,11 @@
       "volatility": {
         "score": 36,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-29%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 4.6%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -53762,7 +54457,7 @@
             "1-2-4": 7100
           }
         },
-        "updatedAt": "2025-12-19T10:50:44.807Z"
+        "updatedAt": "2025-12-19T13:10:22.810Z"
       },
       "accuracy": {
         "standard": {
@@ -53792,9 +54487,14 @@
       "raceNumber": 7,
       "startTime": "13:55",
       "volatility": {
-        "score": 53,
+        "score": 43,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-13%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 4.8%）",
+          "外枠に好機材が1艇（undefined号艇(40.5%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -54194,7 +54894,7 @@
             "1-3-4": 1580
           }
         },
-        "updatedAt": "2025-12-19T10:50:54.563Z"
+        "updatedAt": "2025-12-19T13:10:32.507Z"
       },
       "accuracy": {
         "standard": {
@@ -54224,9 +54924,14 @@
       "raceNumber": 8,
       "startTime": "14:23",
       "volatility": {
-        "score": 51,
+        "score": 42,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-19%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 5.7%）",
+          "外枠に好機材が1艇（undefined号艇(44.3%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -54622,7 +55327,7 @@
             "5-1-4": 8590
           }
         },
-        "updatedAt": "2025-12-19T10:51:05.280Z"
+        "updatedAt": "2025-12-19T13:10:43.232Z"
       },
       "accuracy": {
         "standard": {
@@ -54654,7 +55359,12 @@
       "volatility": {
         "score": 71,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.46%、平均: 5.1%）",
+          "1号艇が平均より-11%弱い（グレード: A2、勝率: 5.7%）",
+          "モーター性能が均等（2連率の標準偏差: 5.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -55050,7 +55760,7 @@
             "3-2-1": 7610
           }
         },
-        "updatedAt": "2025-12-19T10:51:14.059Z"
+        "updatedAt": "2025-12-19T13:10:51.977Z"
       },
       "accuracy": {
         "standard": {
@@ -55080,9 +55790,12 @@
       "raceNumber": 10,
       "startTime": "15:22",
       "volatility": {
-        "score": 24,
+        "score": 17,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 3.8%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -55478,7 +56191,7 @@
             "1-2-4": 580
           }
         },
-        "updatedAt": "2025-12-19T10:51:23.775Z"
+        "updatedAt": "2025-12-19T13:11:02.732Z"
       },
       "accuracy": {
         "standard": {
@@ -55510,7 +56223,12 @@
       "volatility": {
         "score": 44,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.42%、平均: 6.4%）",
+          "モーター性能が均等（2連率の標準偏差: 5.5%）",
+          "外枠に好機材が1艇（undefined号艇(46.0%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -55906,7 +56624,7 @@
             "4-5-2": 8390
           }
         },
-        "updatedAt": "2025-12-19T10:51:32.505Z"
+        "updatedAt": "2025-12-19T13:11:11.441Z"
       },
       "accuracy": {
         "standard": {
@@ -55938,7 +56656,11 @@
       "volatility": {
         "score": 31,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.87%、平均: 6.1%）",
+          "モーター性能が均等（2連率の標準偏差: 3.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -56334,7 +57056,7 @@
             "1-4-2": 1810
           }
         },
-        "updatedAt": "2025-12-19T10:51:41.245Z"
+        "updatedAt": "2025-12-19T13:11:22.188Z"
       },
       "accuracy": {
         "standard": {
@@ -56364,9 +57086,13 @@
       "raceNumber": 1,
       "startTime": "15:19",
       "volatility": {
-        "score": 66,
-        "level": "high",
-        "recommendedModel": "upset-focus"
+        "score": 59,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-15%弱い（グレード: B1、勝率: 4.3%）",
+          "モーター性能が均等（2連率の標準偏差: 5.5%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -56758,7 +57484,7 @@
             "1-3-6": 3030
           }
         },
-        "updatedAt": "2025-12-19T10:51:49.972Z"
+        "updatedAt": "2025-12-19T13:11:32.900Z"
       },
       "accuracy": {
         "standard": {
@@ -56790,7 +57516,12 @@
       "volatility": {
         "score": 70,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "1号艇が平均より13%弱い（グレード: B1、勝率: 3.5%）",
+          "モーター性能が均等（2連率の標準偏差: 3.6%）",
+          "外枠に好機材が1艇（undefined号艇(41.4%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -57186,7 +57917,7 @@
             "5-4-2": 4940
           }
         },
-        "updatedAt": "2025-12-19T10:52:00.683Z"
+        "updatedAt": "2025-12-19T13:11:43.638Z"
       },
       "accuracy": {
         "standard": {
@@ -57218,7 +57949,13 @@
       "volatility": {
         "score": 69,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.73%、平均: 5.1%）",
+          "1号艇が平均より-9%弱い（グレード: A2、勝率: 5.6%）",
+          "モーター性能が均等（2連率の標準偏差: 7.6%）",
+          "外枠に好機材が1艇（undefined号艇(41.8%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -57614,7 +58351,7 @@
             "3-6-4": 65500
           }
         },
-        "updatedAt": "2025-12-19T10:52:09.407Z"
+        "updatedAt": "2025-12-19T13:11:53.332Z"
       },
       "accuracy": {
         "standard": {
@@ -57646,7 +58383,11 @@
       "volatility": {
         "score": 57,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より7%弱い（グレード: B1、勝率: 4.0%）",
+          "モーター性能が均等（2連率の標準偏差: 6.9%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -58038,7 +58779,7 @@
             "5-1-4": 3240
           }
         },
-        "updatedAt": "2025-12-19T10:52:19.136Z"
+        "updatedAt": "2025-12-19T13:12:02.067Z"
       },
       "accuracy": {
         "standard": {
@@ -58070,7 +58811,11 @@
       "volatility": {
         "score": 62,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-0%弱い（グレード: B1、勝率: 4.4%）",
+          "モーター性能が均等（2連率の標準偏差: 4.0%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -58462,7 +59207,7 @@
             "1-3-5": 13810
           }
         },
-        "updatedAt": "2025-12-19T10:52:29.881Z"
+        "updatedAt": "2025-12-19T13:12:10.793Z"
       },
       "accuracy": {
         "standard": {
@@ -58492,9 +59237,13 @@
       "raceNumber": 6,
       "startTime": "17:35",
       "volatility": {
-        "score": 64,
+        "score": 62,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より11%弱い（グレード: B1、勝率: 4.3%）",
+          "モーター性能が均等（2連率の標準偏差: 3.7%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -58890,7 +59639,7 @@
             "3-4-5": 9370
           }
         },
-        "updatedAt": "2025-12-19T10:52:40.632Z"
+        "updatedAt": "2025-12-19T13:12:19.506Z"
       },
       "accuracy": {
         "standard": {
@@ -58922,7 +59671,12 @@
       "volatility": {
         "score": 75,
         "level": "high",
-        "recommendedModel": "upset-focus"
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.76%、平均: 4.4%）",
+          "1号艇が平均より-19%弱い（グレード: A2、勝率: 5.3%）",
+          "モーター性能が均等（2連率の標準偏差: 5.1%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -59314,7 +60068,7 @@
             "1-5-4": 6760
           }
         },
-        "updatedAt": "2025-12-19T10:52:50.355Z"
+        "updatedAt": "2025-12-19T13:12:28.239Z"
       },
       "accuracy": {
         "standard": {
@@ -59346,7 +60100,10 @@
       "volatility": {
         "score": 17,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 3.8%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -59742,7 +60499,7 @@
             "2-1-4": 6050
           }
         },
-        "updatedAt": "2025-12-19T10:52:59.122Z"
+        "updatedAt": "2025-12-19T13:12:37.974Z"
       },
       "accuracy": {
         "standard": {
@@ -59772,9 +60529,12 @@
       "raceNumber": 9,
       "startTime": "19:06",
       "volatility": {
-        "score": 19,
+        "score": 16,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "モーター性能が均等（2連率の標準偏差: 4.7%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -60166,7 +60926,7 @@
             "1-2-4": 1720
           }
         },
-        "updatedAt": "2025-12-19T10:53:07.867Z"
+        "updatedAt": "2025-12-19T13:12:46.700Z"
       },
       "accuracy": {
         "standard": {
@@ -60198,7 +60958,12 @@
       "volatility": {
         "score": 45,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.87%、平均: 6.4%）",
+          "1号艇が平均より-5%弱い（グレード: A2）",
+          "モーター性能が均等（2連率の標準偏差: 6.5%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -60594,7 +61359,7 @@
             "1-5-2": 2730
           }
         },
-        "updatedAt": "2025-12-19T10:53:16.590Z"
+        "updatedAt": "2025-12-19T13:12:57.424Z"
       },
       "accuracy": {
         "standard": {
@@ -60626,7 +61391,11 @@
       "volatility": {
         "score": 28,
         "level": "low",
-        "recommendedModel": "safe-bet"
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.71%、平均: 5.3%）",
+          "モーター性能が均等（2連率の標準偏差: 6.6%）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -61003,30 +61772,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 4,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "1": 110
+          },
+          "place": {
+            "1": 100,
+            "4": 350
+          },
+          "trifecta": {
+            "1-2-4": 290
+          },
+          "trio": {
+            "1-4-2": 1080
+          }
+        },
+        "updatedAt": "2025-12-19T13:13:06.156Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -61039,7 +61823,12 @@
       "volatility": {
         "score": 42,
         "level": "medium",
-        "recommendedModel": "standard"
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.56%、平均: 6.0%）",
+          "モーター性能が均等（2連率の標準偏差: 5.2%）",
+          "外枠に好機材が1艇（undefined号艇(40.5%)）"
+        ]
       },
       "predictions": {
         "standard": {
@@ -61416,30 +62205,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 2,
+        "rank2": 6,
+        "rank3": 1,
+        "payouts": {
+          "win": {
+            "2": 400
+          },
+          "place": {
+            "2": 240,
+            "6": 410
+          },
+          "trifecta": {
+            "1-2-6": 800
+          },
+          "trio": {
+            "2-6-1": 6240
+          }
+        },
+        "updatedAt": "2025-12-19T13:13:14.889Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     }
