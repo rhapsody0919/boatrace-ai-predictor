@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { ShareButton } from './ShareButton'
 import { SocialShareButtons } from './SocialShareButtons'
 import { shareHitRaceToX, generateHitRaceShareText } from '../utils/share'
+import './HitRaces.css'
 
 function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) {
   const [hitRacesToday, setHitRacesToday] = useState([])
@@ -11,6 +12,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
   const [showAllYesterday, setShowAllYesterday] = useState(false)
   const [loading, setLoading] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState('today') // 'today', 'yesterday', 'all'
+  const [selectedModel, setSelectedModel] = useState('standard') // 'standard', 'safeBet', 'upsetFocus'
 
   // 的中レースを読み込む
   useEffect(() => {
@@ -44,16 +46,20 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
           loadDayPredictions(yesterdayStr)
         ])
 
-        // 的中レースを抽出する関数
-        const extractHitRaces = (predictions) => {
+        // 的中レースを抽出する関数（モデル対応）
+        const extractHitRaces = (predictions, modelKey) => {
           return predictions
             .filter(race => {
               // レース結果が確定しているものだけ
               if (!race.result || !race.result.finished) return false
 
+              // モデル別の予想データを取得（後方互換性あり）
+              const prediction = race.predictions?.[modelKey] || race.prediction
+              if (!prediction) return false
+
               // 的中判定: 単勝、複勝、3連複、3連単のいずれかが的中していれば抽出
-              const topPick = race.prediction.topPick
-              const top3 = race.prediction.top3
+              const topPick = prediction.topPick
+              const top3 = prediction.top3
               const result = race.result
 
               const isWinHit = topPick === result.rank1
@@ -68,9 +74,12 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
               return isWinHit || isPlaceHit || is3FukuHit || is3TanHit
             })
             .map(race => {
+              // モデル別の予想データを取得（後方互換性あり）
+              const prediction = race.predictions?.[modelKey] || race.prediction
+
               // 的中情報と配当を計算
-              const topPick = race.prediction.topPick
-              const top3 = race.prediction.top3
+              const topPick = prediction.topPick
+              const top3 = prediction.top3
               const result = race.result
               const payouts = result.payouts || {}
 
@@ -127,15 +136,16 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
                 placeCode: parseInt(placeCode),
                 hitTypes,
                 totalPayout,
-                prediction: race.prediction,
-                result: race.result
+                prediction,
+                result: race.result,
+                modelKey // モデル情報を追加
               }
             })
             .sort((a, b) => b.totalPayout - a.totalPayout) // 配当額が高い順
         }
 
-        setHitRacesToday(extractHitRaces(todayPredictions))
-        setHitRacesYesterday(extractHitRaces(yesterdayPredictions))
+        setHitRacesToday(extractHitRaces(todayPredictions, selectedModel))
+        setHitRacesYesterday(extractHitRaces(yesterdayPredictions, selectedModel))
 
         // 全期間のデータを読み込む（過去14日分）
         const allHitRaces = []
@@ -143,7 +153,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
           const date = new Date(jstNow.getTime() - i * 24 * 60 * 60 * 1000)
           const dateStr = date.toISOString().split('T')[0]
           const predictions = await loadDayPredictions(dateStr)
-          const hits = extractHitRaces(predictions)
+          const hits = extractHitRaces(predictions, selectedModel)
           allHitRaces.push(...hits)
         }
         setHitRacesAll(allHitRaces)
@@ -155,7 +165,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
     }
 
     fetchHitRaces()
-  }, [stadiumNames, fetchWithRetry])
+  }, [stadiumNames, fetchWithRetry, selectedModel])
 
   const handleCardClick = (hitRace) => {
     const venueData = allVenuesData.find(v => v.placeCd === hitRace.placeCode)
@@ -225,36 +235,12 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
     const randomTip = tips[Math.floor(Math.random() * tips.length)];
 
     return (
-      <div style={{
-        padding: '3rem 2rem',
-        textAlign: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        borderRadius: '12px',
-        color: 'white',
-        minHeight: '300px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}>
+      <div className="loading-container">
         <div className="spinner" style={{marginBottom: '1.5rem'}}></div>
-        <h3 style={{fontSize: '1.3rem', marginBottom: '1rem', color: 'white'}}>
-          的中レースを読み込み中...
-        </h3>
-        <p style={{fontSize: '0.95rem', marginBottom: '1rem', color: 'rgba(255,255,255,0.9)'}}>
-          過去14日分のデータを分析しています
-        </p>
-        <div style={{
-          marginTop: '1.5rem',
-          padding: '1rem 1.5rem',
-          background: 'rgba(255,255,255,0.2)',
-          borderRadius: '8px',
-          backdropFilter: 'blur(10px)',
-          maxWidth: '400px'
-        }}>
-          <p style={{fontSize: '0.9rem', margin: 0, color: 'white'}}>
-            {randomTip}
-          </p>
+        <h3>的中レースを読み込み中...</h3>
+        <p>過去14日分のデータを分析しています</p>
+        <div className="loading-tip">
+          <p>{randomTip}</p>
         </div>
       </div>
     )
@@ -262,16 +248,10 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
 
   if (hitRacesToday.length === 0 && hitRacesYesterday.length === 0) {
     return (
-      <div style={{
-        padding: '3rem 2rem',
-        textAlign: 'center',
-        background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{fontSize: '3rem', marginBottom: '1rem'}}>🎯</div>
-        <h2 style={{color: '#64748b', marginBottom: '0.5rem'}}>的中レースはまだありません</h2>
-        <p style={{color: '#94a3b8'}}>レース結果が確定すると、ここに的中レースが表示されます。</p>
+      <div className="no-data-container">
+        <div className="icon">🎯</div>
+        <h2>的中レースはまだありません</h2>
+        <p>レース結果が確定すると、ここに的中レースが表示されます。</p>
       </div>
     )
   }
@@ -279,111 +259,81 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
   return (
     <div>
       {/* 競艇場別統計セクション */}
-      <section style={{
-        marginBottom: '2rem',
-        padding: '1.5rem',
-        background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-          📊 競艇場別の的中実績
-        </h2>
+      <section className="venue-stats-section">
+        <h2>📊 競艇場別の的中実績</h2>
 
         {/* 期間選択タブ */}
-        <div style={{
-          display: 'flex',
-          gap: '0.5rem',
-          marginBottom: '1.5rem',
-          borderBottom: '2px solid #e2e8f0',
-          paddingBottom: '0'
-        }}>
+        <div className="period-selector">
           <button
             onClick={() => setSelectedPeriod('today')}
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: selectedPeriod === 'today' ? '#667eea' : 'transparent',
-              color: selectedPeriod === 'today' ? 'white' : '#64748b',
-              border: 'none',
-              borderBottom: selectedPeriod === 'today' ? '3px solid #667eea' : '3px solid transparent',
-              cursor: 'pointer',
-              fontWeight: selectedPeriod === 'today' ? 'bold' : 'normal',
-              fontSize: '1rem',
-              transition: 'all 0.2s'
-            }}
+            className={selectedPeriod === 'today' ? 'active' : ''}
           >
             今日
           </button>
           <button
             onClick={() => setSelectedPeriod('yesterday')}
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: selectedPeriod === 'yesterday' ? '#667eea' : 'transparent',
-              color: selectedPeriod === 'yesterday' ? 'white' : '#64748b',
-              border: 'none',
-              borderBottom: selectedPeriod === 'yesterday' ? '3px solid #667eea' : '3px solid transparent',
-              cursor: 'pointer',
-              fontWeight: selectedPeriod === 'yesterday' ? 'bold' : 'normal',
-              fontSize: '1rem',
-              transition: 'all 0.2s'
-            }}
+            className={selectedPeriod === 'yesterday' ? 'active' : ''}
           >
             昨日
           </button>
           <button
             onClick={() => setSelectedPeriod('all')}
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: selectedPeriod === 'all' ? '#667eea' : 'transparent',
-              color: selectedPeriod === 'all' ? 'white' : '#64748b',
-              border: 'none',
-              borderBottom: selectedPeriod === 'all' ? '3px solid #667eea' : '3px solid transparent',
-              cursor: 'pointer',
-              fontWeight: selectedPeriod === 'all' ? 'bold' : 'normal',
-              fontSize: '1rem',
-              transition: 'all 0.2s'
-            }}
+            className={selectedPeriod === 'all' ? 'active' : ''}
           >
             全期間（14日間）
+          </button>
+        </div>
+
+        {/* モデル選択タブ */}
+        <div className="model-selector">
+          <button
+            onClick={() => setSelectedModel('standard')}
+            className={selectedModel === 'standard' ? 'active standard' : ''}
+          >
+            スタンダード
+          </button>
+          <button
+            onClick={() => setSelectedModel('safeBet')}
+            className={selectedModel === 'safeBet' ? 'active safe-bet' : ''}
+          >
+            本命狙い
+          </button>
+          <button
+            onClick={() => setSelectedModel('upsetFocus')}
+            className={selectedModel === 'upsetFocus' ? 'active upset-focus' : ''}
+          >
+            穴狙い
           </button>
         </div>
 
         {/* 統計テーブル */}
         {venueStats.length > 0 ? (
           <div style={{overflowX: 'auto'}}>
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              fontSize: '0.95rem'
-            }}>
+            <table className="venue-stats-table">
               <thead>
-                <tr style={{background: '#f8fafc', borderBottom: '2px solid #e2e8f0'}}>
-                  <th style={{padding: '1rem', textAlign: 'left', fontWeight: 'bold', color: '#1e293b'}}>順位</th>
-                  <th style={{padding: '1rem', textAlign: 'left', fontWeight: 'bold', color: '#1e293b'}}>競艇場</th>
-                  <th style={{padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: '#1e293b'}}>的中数</th>
-                  <th style={{padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: '#1e293b'}}>総配当</th>
+                <tr>
+                  <th>順位</th>
+                  <th>競艇場</th>
+                  <th className="text-right">的中数</th>
+                  <th className="text-right">総配当</th>
                 </tr>
               </thead>
               <tbody>
                 {venueStats.map((stat, index) => (
-                  <tr key={stat.venue} style={{
-                    borderBottom: '1px solid #e2e8f0',
-                    transition: 'background 0.2s',
-                    background: index < 3 ? 'rgba(102, 126, 234, 0.05)' : 'white'
-                  }}>
-                    <td style={{padding: '1rem', textAlign: 'left'}}>
+                  <tr key={stat.venue} className={index < 3 ? 'top-3' : ''}>
+                    <td className={`rank-cell ${index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : ''}`}>
                       {index === 0 && '🏆'}
                       {index === 1 && '🥈'}
                       {index === 2 && '🥉'}
                       {index > 2 && (index + 1)}
                     </td>
-                    <td style={{padding: '1rem', textAlign: 'left', fontWeight: '500', color: '#1e293b'}}>
+                    <td className="venue-name">
                       {stat.venue}
                     </td>
-                    <td style={{padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: '#667eea'}}>
+                    <td className="hit-count text-right">
                       {stat.hitCount}レース
                     </td>
-                    <td style={{padding: '1rem', textAlign: 'right', fontWeight: 'bold', color: '#dc2626'}}>
+                    <td className="total-payout text-right">
                       {stat.totalPayout.toLocaleString()}円
                     </td>
                   </tr>
@@ -400,85 +350,43 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
 
       {/* 今日の的中レース */}
       {hitRacesToday.length > 0 && (
-        <section style={{
-          marginBottom: '2rem',
-          padding: '1.5rem',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          borderRadius: '12px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-        }}>
-          <h2 style={{color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-            📅 今日の的中レース ({hitRacesToday.length}レース)
-          </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '1rem'
-          }}>
+        <section className="hit-races-section today">
+          <h2>📅 今日の的中レース ({hitRacesToday.length}レース)</h2>
+          <div className="race-cards-grid">
             {(showAllToday ? hitRacesToday : hitRacesToday.slice(0, 8)).map(hitRace => (
               <div
                 key={hitRace.raceId}
-                style={{
-                  background: 'white',
-                  borderRadius: '8px',
-                  padding: '1rem',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s',
-                }}
+                className="race-card clickable"
                 onClick={() => handleCardClick(hitRace)}
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem'}}>
+                <div className="race-card-header">
                   <div>
-                    <div style={{fontWeight: 'bold', fontSize: '1.1rem', color: '#1e293b'}}>
+                    <div className="race-card-venue">
                       {hitRace.venue}
                     </div>
-                    <div style={{fontSize: '0.9rem', color: '#64748b'}}>
+                    <div className="race-card-number">
                       {hitRace.raceNumber}R
                     </div>
                   </div>
-                  <div style={{
-                    background: '#22c55e',
-                    color: 'white',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '20px',
-                    fontSize: '0.85rem',
-                    fontWeight: 'bold'
-                  }}>
+                  <div className="hit-badge">
                     的中
                   </div>
                 </div>
 
-                <div style={{marginBottom: '0.75rem'}}>
+                <div className="hit-types-list">
                   {hitRace.hitTypes.map((hit, idx) => (
-                    <div key={idx} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      padding: '0.4rem 0',
-                      borderBottom: idx < hitRace.hitTypes.length - 1 ? '1px solid #e2e8f0' : 'none'
-                    }}>
-                      <span style={{color: '#475569', fontWeight: '500'}}>✅ {hit.type}</span>
-                      <span style={{color: '#2563eb', fontWeight: 'bold'}}>{hit.payout.toLocaleString()}円</span>
+                    <div key={idx} className="hit-type-item">
+                      <span className="hit-type-label">✅ {hit.type}</span>
+                      <span className="hit-type-payout">{hit.payout.toLocaleString()}円</span>
                     </div>
                   ))}
                 </div>
 
-                <div style={{
-                  borderTop: '2px solid #e2e8f0',
-                  paddingTop: '0.75rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '0.75rem'
-                }}>
-                  <span style={{fontWeight: 'bold', color: '#1e293b'}}>合計配当</span>
-                  <span style={{
-                    fontSize: '1.2rem',
-                    fontWeight: 'bold',
-                    color: '#dc2626'
-                  }}>
+                <div className="total-payout-section">
+                  <span className="total-payout-label">合計配当</span>
+                  <span className="total-payout-value">
                     {hitRace.totalPayout.toLocaleString()}円
                   </span>
                 </div>
@@ -512,18 +420,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
           {hitRacesToday.length > 8 && (
             <button
               onClick={() => setShowAllToday(!showAllToday)}
-              style={{
-                marginTop: '1rem',
-                padding: '0.75rem 1.5rem',
-                background: 'white',
-                color: '#667eea',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                width: '100%',
-                transition: 'background 0.2s'
-              }}
+              className="show-more-button"
               onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
             >
@@ -532,32 +429,21 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
           )}
 
           {/* 統計情報 */}
-          <div style={{
-            marginTop: '1.5rem',
-            padding: '1rem',
-            background: 'rgba(255,255,255,0.2)',
-            borderRadius: '8px',
-            backdropFilter: 'blur(10px)'
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-around',
-              flexWrap: 'wrap',
-              gap: '1rem'
-            }}>
-              <div style={{textAlign: 'center'}}>
-                <div style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.9)', marginBottom: '0.25rem'}}>
+          <div className="stats-box">
+            <div className="stats-flex">
+              <div className="stat-item">
+                <div className="stat-label">
                   的中数
                 </div>
-                <div style={{fontSize: '1.8rem', fontWeight: 'bold', color: 'white'}}>
+                <div className="stat-value">
                   {hitRacesToday.length}
                 </div>
               </div>
-              <div style={{textAlign: 'center'}}>
-                <div style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.9)', marginBottom: '0.25rem'}}>
+              <div className="stat-item">
+                <div className="stat-label">
                   総配当
                 </div>
-                <div style={{fontSize: '1.8rem', fontWeight: 'bold', color: 'white'}}>
+                <div className="stat-value">
                   {hitRacesToday.reduce((sum, race) => sum + race.totalPayout, 0).toLocaleString()}円
                 </div>
               </div>
@@ -568,80 +454,40 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
 
       {/* 昨日の的中レース */}
       {hitRacesYesterday.length > 0 && (
-        <section style={{
-          padding: '1.5rem',
-          background: 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)',
-          borderRadius: '12px',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-        }}>
-          <h2 style={{color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-            📅 昨日の的中レース ({hitRacesYesterday.length}レース)
-          </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '1rem'
-          }}>
+        <section className="hit-races-section yesterday">
+          <h2>📅 昨日の的中レース ({hitRacesYesterday.length}レース)</h2>
+          <div className="race-cards-grid">
             {(showAllYesterday ? hitRacesYesterday : hitRacesYesterday.slice(0, 8)).map(hitRace => (
               <div
                 key={hitRace.raceId}
-                style={{
-                  background: 'white',
-                  borderRadius: '8px',
-                  padding: '1rem',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  opacity: 0.95
-                }}
+                className="race-card yesterday"
               >
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem'}}>
+                <div className="race-card-header">
                   <div>
-                    <div style={{fontWeight: 'bold', fontSize: '1.1rem', color: '#1e293b'}}>
+                    <div className="race-card-venue">
                       {hitRace.venue}
                     </div>
-                    <div style={{fontSize: '0.9rem', color: '#64748b'}}>
+                    <div className="race-card-number">
                       {hitRace.raceNumber}R
                     </div>
                   </div>
-                  <div style={{
-                    background: '#94a3b8',
-                    color: 'white',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '20px',
-                    fontSize: '0.85rem',
-                    fontWeight: 'bold'
-                  }}>
+                  <div className="hit-badge yesterday">
                     的中
                   </div>
                 </div>
 
-                <div style={{marginBottom: '0.75rem'}}>
+                <div className="hit-types-list">
                   {hitRace.hitTypes.map((hit, idx) => (
-                    <div key={idx} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      padding: '0.4rem 0',
-                      borderBottom: idx < hitRace.hitTypes.length - 1 ? '1px solid #e2e8f0' : 'none'
-                    }}>
-                      <span style={{color: '#475569', fontWeight: '500'}}>✅ {hit.type}</span>
-                      <span style={{color: '#2563eb', fontWeight: 'bold'}}>{hit.payout.toLocaleString()}円</span>
+                    <div key={idx} className="hit-type-item">
+                      <span className="hit-type-label">✅ {hit.type}</span>
+                      <span className="hit-type-payout">{hit.payout.toLocaleString()}円</span>
                     </div>
                   ))}
                 </div>
 
-                <div style={{
-                  borderTop: '2px solid #e2e8f0',
-                  paddingTop: '0.75rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '0.75rem'
-                }}>
-                  <span style={{fontWeight: 'bold', color: '#1e293b'}}>合計配当</span>
-                  <span style={{
-                    fontSize: '1.2rem',
-                    fontWeight: 'bold',
-                    color: '#dc2626'
-                  }}>
+                <div className="total-payout-section">
+                  <span className="total-payout-label">合計配当</span>
+                  <span className="total-payout-value">
                     {hitRace.totalPayout.toLocaleString()}円
                   </span>
                 </div>
@@ -675,18 +521,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
           {hitRacesYesterday.length > 8 && (
             <button
               onClick={() => setShowAllYesterday(!showAllYesterday)}
-              style={{
-                marginTop: '1rem',
-                padding: '0.75rem 1.5rem',
-                background: 'white',
-                color: '#64748b',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                width: '100%',
-                transition: 'background 0.2s'
-              }}
+              className="show-more-button yesterday"
               onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
             >
@@ -695,32 +530,21 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
           )}
 
           {/* 統計情報 */}
-          <div style={{
-            marginTop: '1.5rem',
-            padding: '1rem',
-            background: 'rgba(255,255,255,0.2)',
-            borderRadius: '8px',
-            backdropFilter: 'blur(10px)'
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-around',
-              flexWrap: 'wrap',
-              gap: '1rem'
-            }}>
-              <div style={{textAlign: 'center'}}>
-                <div style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.9)', marginBottom: '0.25rem'}}>
+          <div className="stats-box">
+            <div className="stats-flex">
+              <div className="stat-item">
+                <div className="stat-label">
                   的中数
                 </div>
-                <div style={{fontSize: '1.8rem', fontWeight: 'bold', color: 'white'}}>
+                <div className="stat-value">
                   {hitRacesYesterday.length}
                 </div>
               </div>
-              <div style={{textAlign: 'center'}}>
-                <div style={{fontSize: '0.9rem', color: 'rgba(255,255,255,0.9)', marginBottom: '0.25rem'}}>
+              <div className="stat-item">
+                <div className="stat-label">
                   総配当
                 </div>
-                <div style={{fontSize: '1.8rem', fontWeight: 'bold', color: 'white'}}>
+                <div className="stat-value">
                   {hitRacesYesterday.reduce((sum, race) => sum + race.totalPayout, 0).toLocaleString()}円
                 </div>
               </div>
