@@ -1,7 +1,7 @@
 {
   "date": "2025-12-21",
-  "generatedAt": "2025-12-20T18:33:26.885Z",
-  "updatedAt": "2025-12-20T18:54:52.900Z",
+  "generatedAt": "2025-12-20T19:21:36.731Z",
+  "updatedAt": "2025-12-20T19:44:54.980Z",
   "races": [
     {
       "raceId": "2025-12-21-02-01",
@@ -20050,6 +20050,5012 @@
         "reasoning": [
           "2号艇 田中　　　豪選手を本命に選定",
           "当地成績8.880と好相性、モーター2連率46.6%の好機材で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-01",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 1,
+      "startTime": "10:25",
+      "volatility": {
+        "score": 19,
+        "level": "low",
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.93%、平均: 5.1%）",
+          "外枠に好機材が1艇（5号艇(42.9%)）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 3,
+          "top3": [
+            3,
+            1,
+            5
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "松本　　浩貴",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "4.130",
+              "localWinRate": "5.630",
+              "motorNumber": 3,
+              "motor2Rate": "57.1",
+              "boatNumber": 21,
+              "boat2Rate": "35.4",
+              "aiScore": 4700
+            },
+            {
+              "number": 1,
+              "name": "吉田　凌太朗",
+              "grade": "A1",
+              "age": 32,
+              "winRate": "6.900",
+              "localWinRate": "6.780",
+              "motorNumber": 50,
+              "motor2Rate": "14.7",
+              "boatNumber": 45,
+              "boat2Rate": "26.4",
+              "aiScore": 4375
+            },
+            {
+              "number": 5,
+              "name": "松尾　　宣邦",
+              "grade": "B1",
+              "age": 56,
+              "winRate": "5.340",
+              "localWinRate": "4.860",
+              "motorNumber": 29,
+              "motor2Rate": "42.9",
+              "boatNumber": 26,
+              "boat2Rate": "31.2",
+              "aiScore": 4090
+            },
+            {
+              "number": 4,
+              "name": "伊藤　　紘章",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.810",
+              "localWinRate": "4.690",
+              "motorNumber": 23,
+              "motor2Rate": "28.6",
+              "boatNumber": 66,
+              "boat2Rate": "34.8",
+              "aiScore": 3581
+            },
+            {
+              "number": 6,
+              "name": "鈴木　　　猛",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "5.360",
+              "localWinRate": "4.460",
+              "motorNumber": 32,
+              "motor2Rate": "38.7",
+              "boatNumber": 55,
+              "boat2Rate": "32.4",
+              "aiScore": 3390
+            },
+            {
+              "number": 2,
+              "name": "角浜　　　修",
+              "grade": "B1",
+              "age": 57,
+              "winRate": "4.210",
+              "localWinRate": "0.000",
+              "motorNumber": 41,
+              "motor2Rate": "37.8",
+              "boatNumber": 61,
+              "boat2Rate": "26.7",
+              "aiScore": 2084
+            }
+          ],
+          "reasoning": [
+            "3号艇 松本　　浩貴選手を本命に選定",
+            "当地成績5.630と好相性、モーター2連率57.1%の好機材で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 3,
+          "top3": [
+            3,
+            5,
+            6
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "松本　　浩貴",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "4.130",
+              "localWinRate": "5.630",
+              "motorNumber": 3,
+              "motor2Rate": "57.1",
+              "boatNumber": 21,
+              "boat2Rate": "35.4",
+              "aiScore": 3242
+            },
+            {
+              "number": 5,
+              "name": "松尾　　宣邦",
+              "grade": "B1",
+              "age": 56,
+              "winRate": "5.340",
+              "localWinRate": "4.860",
+              "motorNumber": 29,
+              "motor2Rate": "42.9",
+              "boatNumber": 26,
+              "boat2Rate": "31.2",
+              "aiScore": 2737
+            },
+            {
+              "number": 6,
+              "name": "鈴木　　　猛",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "5.360",
+              "localWinRate": "4.460",
+              "motorNumber": 32,
+              "motor2Rate": "38.7",
+              "boatNumber": 55,
+              "boat2Rate": "32.4",
+              "aiScore": 2527
+            },
+            {
+              "number": 1,
+              "name": "吉田　凌太朗",
+              "grade": "A1",
+              "age": 32,
+              "winRate": "6.900",
+              "localWinRate": "6.780",
+              "motorNumber": 50,
+              "motor2Rate": "14.7",
+              "boatNumber": 45,
+              "boat2Rate": "26.4",
+              "aiScore": 2297
+            },
+            {
+              "number": 4,
+              "name": "伊藤　　紘章",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.810",
+              "localWinRate": "4.690",
+              "motorNumber": 23,
+              "motor2Rate": "28.6",
+              "boatNumber": 66,
+              "boat2Rate": "34.8",
+              "aiScore": 2098
+            },
+            {
+              "number": 2,
+              "name": "角浜　　　修",
+              "grade": "B1",
+              "age": 57,
+              "winRate": "4.210",
+              "localWinRate": "0.000",
+              "motorNumber": 41,
+              "motor2Rate": "37.8",
+              "boatNumber": 61,
+              "boat2Rate": "26.7",
+              "aiScore": 2045
+            }
+          ],
+          "reasoning": [
+            "3号艇 松本　　浩貴選手を本命に選定",
+            "安全性を重視した評価で最高スコアを獲得"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 3,
+          "top3": [
+            3,
+            5,
+            6
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "松本　　浩貴",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "4.130",
+              "localWinRate": "5.630",
+              "motorNumber": 3,
+              "motor2Rate": "57.1",
+              "boatNumber": 21,
+              "boat2Rate": "35.4",
+              "aiScore": 16136
+            },
+            {
+              "number": 5,
+              "name": "松尾　　宣邦",
+              "grade": "B1",
+              "age": 56,
+              "winRate": "5.340",
+              "localWinRate": "4.860",
+              "motorNumber": 29,
+              "motor2Rate": "42.9",
+              "boatNumber": 26,
+              "boat2Rate": "31.2",
+              "aiScore": 13062
+            },
+            {
+              "number": 6,
+              "name": "鈴木　　　猛",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "5.360",
+              "localWinRate": "4.460",
+              "motorNumber": 32,
+              "motor2Rate": "38.7",
+              "boatNumber": 55,
+              "boat2Rate": "32.4",
+              "aiScore": 11655
+            },
+            {
+              "number": 4,
+              "name": "伊藤　　紘章",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.810",
+              "localWinRate": "4.690",
+              "motorNumber": 23,
+              "motor2Rate": "28.6",
+              "boatNumber": 66,
+              "boat2Rate": "34.8",
+              "aiScore": 10609
+            },
+            {
+              "number": 2,
+              "name": "角浜　　　修",
+              "grade": "B1",
+              "age": 57,
+              "winRate": "4.210",
+              "localWinRate": "0.000",
+              "motorNumber": 41,
+              "motor2Rate": "37.8",
+              "boatNumber": 61,
+              "boat2Rate": "26.7",
+              "aiScore": 9155
+            },
+            {
+              "number": 1,
+              "name": "吉田　凌太朗",
+              "grade": "A1",
+              "age": 32,
+              "winRate": "6.900",
+              "localWinRate": "6.780",
+              "motorNumber": 50,
+              "motor2Rate": "14.7",
+              "boatNumber": 45,
+              "boat2Rate": "26.4",
+              "aiScore": 8943
+            }
+          ],
+          "reasoning": [
+            "3号艇 松本　　浩貴選手を本命に選定",
+            "当地成績5.630で展開に期待、好モーターを活かした高配当の可能性"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 3,
+        "top3": [
+          3,
+          1,
+          5
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 3,
+            "name": "松本　　浩貴",
+            "grade": "B1",
+            "age": 52,
+            "winRate": "4.130",
+            "localWinRate": "5.630",
+            "motorNumber": 3,
+            "motor2Rate": "57.1",
+            "boatNumber": 21,
+            "boat2Rate": "35.4",
+            "aiScore": 4700
+          },
+          {
+            "number": 1,
+            "name": "吉田　凌太朗",
+            "grade": "A1",
+            "age": 32,
+            "winRate": "6.900",
+            "localWinRate": "6.780",
+            "motorNumber": 50,
+            "motor2Rate": "14.7",
+            "boatNumber": 45,
+            "boat2Rate": "26.4",
+            "aiScore": 4375
+          },
+          {
+            "number": 5,
+            "name": "松尾　　宣邦",
+            "grade": "B1",
+            "age": 56,
+            "winRate": "5.340",
+            "localWinRate": "4.860",
+            "motorNumber": 29,
+            "motor2Rate": "42.9",
+            "boatNumber": 26,
+            "boat2Rate": "31.2",
+            "aiScore": 4090
+          },
+          {
+            "number": 4,
+            "name": "伊藤　　紘章",
+            "grade": "B1",
+            "age": 39,
+            "winRate": "4.810",
+            "localWinRate": "4.690",
+            "motorNumber": 23,
+            "motor2Rate": "28.6",
+            "boatNumber": 66,
+            "boat2Rate": "34.8",
+            "aiScore": 3581
+          },
+          {
+            "number": 6,
+            "name": "鈴木　　　猛",
+            "grade": "B1",
+            "age": 52,
+            "winRate": "5.360",
+            "localWinRate": "4.460",
+            "motorNumber": 32,
+            "motor2Rate": "38.7",
+            "boatNumber": 55,
+            "boat2Rate": "32.4",
+            "aiScore": 3390
+          },
+          {
+            "number": 2,
+            "name": "角浜　　　修",
+            "grade": "B1",
+            "age": 57,
+            "winRate": "4.210",
+            "localWinRate": "0.000",
+            "motorNumber": 41,
+            "motor2Rate": "37.8",
+            "boatNumber": 61,
+            "boat2Rate": "26.7",
+            "aiScore": 2084
+          }
+        ],
+        "reasoning": [
+          "3号艇 松本　　浩貴選手を本命に選定",
+          "当地成績5.630と好相性、モーター2連率57.1%の好機材で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-02",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 2,
+      "startTime": "10:54",
+      "volatility": {
+        "score": 56,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.97%、平均: 4.8%）",
+          "1号艇が平均より14%弱い（グレード: B1、勝率: 4.1%）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 3,
+          "top3": [
+            3,
+            4,
+            6
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "石田　　章央",
+              "grade": "A2",
+              "age": 50,
+              "winRate": "5.870",
+              "localWinRate": "6.830",
+              "motorNumber": 38,
+              "motor2Rate": "30.6",
+              "boatNumber": 47,
+              "boat2Rate": "36.1",
+              "aiScore": 5049
+            },
+            {
+              "number": 4,
+              "name": "菅沼　　佳昭",
+              "grade": "B1",
+              "age": 50,
+              "winRate": "3.910",
+              "localWinRate": "4.350",
+              "motorNumber": 25,
+              "motor2Rate": "36.8",
+              "boatNumber": 51,
+              "boat2Rate": "43.5",
+              "aiScore": 3541
+            },
+            {
+              "number": 6,
+              "name": "白井　　友晴",
+              "grade": "B1",
+              "age": 53,
+              "winRate": "4.760",
+              "localWinRate": "5.260",
+              "motorNumber": 43,
+              "motor2Rate": "16.1",
+              "boatNumber": 60,
+              "boat2Rate": "39.3",
+              "aiScore": 3334
+            },
+            {
+              "number": 5,
+              "name": "渋谷　　明憲",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "6.190",
+              "localWinRate": "5.720",
+              "motorNumber": 57,
+              "motor2Rate": "8.3",
+              "boatNumber": 72,
+              "boat2Rate": "28.4",
+              "aiScore": 2806
+            },
+            {
+              "number": 1,
+              "name": "岩永　　節也",
+              "grade": "B1",
+              "age": 43,
+              "winRate": "4.100",
+              "localWinRate": "2.400",
+              "motorNumber": 42,
+              "motor2Rate": "50.0",
+              "boatNumber": 40,
+              "boat2Rate": "25.0",
+              "aiScore": 2410
+            },
+            {
+              "number": 2,
+              "name": "齋藤　　智裕",
+              "grade": "B2",
+              "age": 52,
+              "winRate": "3.670",
+              "localWinRate": "3.800",
+              "motorNumber": 45,
+              "motor2Rate": "20.6",
+              "boatNumber": 65,
+              "boat2Rate": "31.9",
+              "aiScore": 2367
+            }
+          ],
+          "reasoning": [
+            "3号艇 石田　　章央選手を本命に選定",
+            "当地成績6.830と好相性で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 1,
+          "top3": [
+            1,
+            3,
+            4
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 1,
+              "name": "岩永　　節也",
+              "grade": "B1",
+              "age": 43,
+              "winRate": "4.100",
+              "localWinRate": "2.400",
+              "motorNumber": 42,
+              "motor2Rate": "50.0",
+              "boatNumber": 40,
+              "boat2Rate": "25.0",
+              "aiScore": 2875
+            },
+            {
+              "number": 3,
+              "name": "石田　　章央",
+              "grade": "A2",
+              "age": 50,
+              "winRate": "5.870",
+              "localWinRate": "6.830",
+              "motorNumber": 38,
+              "motor2Rate": "30.6",
+              "boatNumber": 47,
+              "boat2Rate": "36.1",
+              "aiScore": 2561
+            },
+            {
+              "number": 4,
+              "name": "菅沼　　佳昭",
+              "grade": "B1",
+              "age": 50,
+              "winRate": "3.910",
+              "localWinRate": "4.350",
+              "motorNumber": 25,
+              "motor2Rate": "36.8",
+              "boatNumber": 51,
+              "boat2Rate": "43.5",
+              "aiScore": 2284
+            },
+            {
+              "number": 6,
+              "name": "白井　　友晴",
+              "grade": "B1",
+              "age": 53,
+              "winRate": "4.760",
+              "localWinRate": "5.260",
+              "motorNumber": 43,
+              "motor2Rate": "16.1",
+              "boatNumber": 60,
+              "boat2Rate": "39.3",
+              "aiScore": 1609
+            },
+            {
+              "number": 5,
+              "name": "渋谷　　明憲",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "6.190",
+              "localWinRate": "5.720",
+              "motorNumber": 57,
+              "motor2Rate": "8.3",
+              "boatNumber": 72,
+              "boat2Rate": "28.4",
+              "aiScore": 1595
+            },
+            {
+              "number": 2,
+              "name": "齋藤　　智裕",
+              "grade": "B2",
+              "age": 52,
+              "winRate": "3.670",
+              "localWinRate": "3.800",
+              "motorNumber": 45,
+              "motor2Rate": "20.6",
+              "boatNumber": 65,
+              "boat2Rate": "31.9",
+              "aiScore": 1589
+            }
+          ],
+          "reasoning": [
+            "1号艇 岩永　　節也選手を本命に選定",
+            "1号艇の有利なコース取りにより的中率が期待できる"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 3,
+          "top3": [
+            3,
+            4,
+            1
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "石田　　章央",
+              "grade": "A2",
+              "age": 50,
+              "winRate": "5.870",
+              "localWinRate": "6.830",
+              "motorNumber": 38,
+              "motor2Rate": "30.6",
+              "boatNumber": 47,
+              "boat2Rate": "36.1",
+              "aiScore": 12766
+            },
+            {
+              "number": 4,
+              "name": "菅沼　　佳昭",
+              "grade": "B1",
+              "age": 50,
+              "winRate": "3.910",
+              "localWinRate": "4.350",
+              "motorNumber": 25,
+              "motor2Rate": "36.8",
+              "boatNumber": 51,
+              "boat2Rate": "43.5",
+              "aiScore": 12268
+            },
+            {
+              "number": 1,
+              "name": "岩永　　節也",
+              "grade": "B1",
+              "age": 43,
+              "winRate": "4.100",
+              "localWinRate": "2.400",
+              "motorNumber": 42,
+              "motor2Rate": "50.0",
+              "boatNumber": 40,
+              "boat2Rate": "25.0",
+              "aiScore": 11345
+            },
+            {
+              "number": 6,
+              "name": "白井　　友晴",
+              "grade": "B1",
+              "age": 53,
+              "winRate": "4.760",
+              "localWinRate": "5.260",
+              "motorNumber": 43,
+              "motor2Rate": "16.1",
+              "boatNumber": 60,
+              "boat2Rate": "39.3",
+              "aiScore": 8850
+            },
+            {
+              "number": 2,
+              "name": "齋藤　　智裕",
+              "grade": "B2",
+              "age": 52,
+              "winRate": "3.670",
+              "localWinRate": "3.800",
+              "motorNumber": 45,
+              "motor2Rate": "20.6",
+              "boatNumber": 65,
+              "boat2Rate": "31.9",
+              "aiScore": 7722
+            },
+            {
+              "number": 5,
+              "name": "渋谷　　明憲",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "6.190",
+              "localWinRate": "5.720",
+              "motorNumber": 57,
+              "motor2Rate": "8.3",
+              "boatNumber": 72,
+              "boat2Rate": "28.4",
+              "aiScore": 6422
+            }
+          ],
+          "reasoning": [
+            "3号艇 石田　　章央選手を本命に選定",
+            "当地成績6.830で展開に期待"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 3,
+        "top3": [
+          3,
+          4,
+          6
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 3,
+            "name": "石田　　章央",
+            "grade": "A2",
+            "age": 50,
+            "winRate": "5.870",
+            "localWinRate": "6.830",
+            "motorNumber": 38,
+            "motor2Rate": "30.6",
+            "boatNumber": 47,
+            "boat2Rate": "36.1",
+            "aiScore": 5049
+          },
+          {
+            "number": 4,
+            "name": "菅沼　　佳昭",
+            "grade": "B1",
+            "age": 50,
+            "winRate": "3.910",
+            "localWinRate": "4.350",
+            "motorNumber": 25,
+            "motor2Rate": "36.8",
+            "boatNumber": 51,
+            "boat2Rate": "43.5",
+            "aiScore": 3541
+          },
+          {
+            "number": 6,
+            "name": "白井　　友晴",
+            "grade": "B1",
+            "age": 53,
+            "winRate": "4.760",
+            "localWinRate": "5.260",
+            "motorNumber": 43,
+            "motor2Rate": "16.1",
+            "boatNumber": 60,
+            "boat2Rate": "39.3",
+            "aiScore": 3334
+          },
+          {
+            "number": 5,
+            "name": "渋谷　　明憲",
+            "grade": "A2",
+            "age": 39,
+            "winRate": "6.190",
+            "localWinRate": "5.720",
+            "motorNumber": 57,
+            "motor2Rate": "8.3",
+            "boatNumber": 72,
+            "boat2Rate": "28.4",
+            "aiScore": 2806
+          },
+          {
+            "number": 1,
+            "name": "岩永　　節也",
+            "grade": "B1",
+            "age": 43,
+            "winRate": "4.100",
+            "localWinRate": "2.400",
+            "motorNumber": 42,
+            "motor2Rate": "50.0",
+            "boatNumber": 40,
+            "boat2Rate": "25.0",
+            "aiScore": 2410
+          },
+          {
+            "number": 2,
+            "name": "齋藤　　智裕",
+            "grade": "B2",
+            "age": 52,
+            "winRate": "3.670",
+            "localWinRate": "3.800",
+            "motorNumber": 45,
+            "motor2Rate": "20.6",
+            "boatNumber": 65,
+            "boat2Rate": "31.9",
+            "aiScore": 2367
+          }
+        ],
+        "reasoning": [
+          "3号艇 石田　　章央選手を本命に選定",
+          "当地成績6.830と好相性で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-03",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 3,
+      "startTime": "11:22",
+      "volatility": {
+        "score": 89,
+        "level": "high",
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.80%、平均: 5.3%）",
+          "1号艇が平均より7%弱い（グレード: B2、勝率: 4.9%）",
+          "モーター性能が均等（2連率の標準偏差: 5.9%）",
+          "外枠に好機材が2艇（4号艇(45.7%)、6号艇(43.2%)）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 4,
+          "top3": [
+            4,
+            1,
+            2
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 4,
+              "name": "福田　　宗平",
+              "grade": "A2",
+              "age": 36,
+              "winRate": "6.390",
+              "localWinRate": "7.940",
+              "motorNumber": 13,
+              "motor2Rate": "45.7",
+              "boatNumber": 22,
+              "boat2Rate": "33.6",
+              "aiScore": 6197
+            },
+            {
+              "number": 1,
+              "name": "黒崎　　竜也",
+              "grade": "B2",
+              "age": 49,
+              "winRate": "4.910",
+              "localWinRate": "6.910",
+              "motorNumber": 2,
+              "motor2Rate": "29.0",
+              "boatNumber": 37,
+              "boat2Rate": "39.7",
+              "aiScore": 5155
+            },
+            {
+              "number": 2,
+              "name": "堀本　　和也",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.130",
+              "localWinRate": "6.950",
+              "motorNumber": 56,
+              "motor2Rate": "35.3",
+              "boatNumber": 49,
+              "boat2Rate": "36.8",
+              "aiScore": 5106
+            },
+            {
+              "number": 5,
+              "name": "川上　　聡介",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "5.080",
+              "localWinRate": "5.550",
+              "motorNumber": 28,
+              "motor2Rate": "33.3",
+              "boatNumber": 18,
+              "boat2Rate": "37.8",
+              "aiScore": 3928
+            },
+            {
+              "number": 6,
+              "name": "今泉　　　徹",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "3.990",
+              "localWinRate": "4.150",
+              "motorNumber": 34,
+              "motor2Rate": "43.2",
+              "boatNumber": 14,
+              "boat2Rate": "35.9",
+              "aiScore": 3388
+            },
+            {
+              "number": 3,
+              "name": "抹香　　雄三",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "5.200",
+              "localWinRate": "0.000",
+              "motorNumber": 26,
+              "motor2Rate": "33.3",
+              "boatNumber": 73,
+              "boat2Rate": "24.5",
+              "aiScore": 1999
+            }
+          ],
+          "reasoning": [
+            "4号艇 福田　　宗平選手を本命に選定",
+            "当地成績7.940と好相性、モーター2連率45.7%の好機材で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 4,
+          "top3": [
+            4,
+            2,
+            6
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 4,
+              "name": "福田　　宗平",
+              "grade": "A2",
+              "age": 36,
+              "winRate": "6.390",
+              "localWinRate": "7.940",
+              "motorNumber": 13,
+              "motor2Rate": "45.7",
+              "boatNumber": 22,
+              "boat2Rate": "33.6",
+              "aiScore": 3309
+            },
+            {
+              "number": 2,
+              "name": "堀本　　和也",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.130",
+              "localWinRate": "6.950",
+              "motorNumber": 56,
+              "motor2Rate": "35.3",
+              "boatNumber": 49,
+              "boat2Rate": "36.8",
+              "aiScore": 2869
+            },
+            {
+              "number": 6,
+              "name": "今泉　　　徹",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "3.990",
+              "localWinRate": "4.150",
+              "motorNumber": 34,
+              "motor2Rate": "43.2",
+              "boatNumber": 14,
+              "boat2Rate": "35.9",
+              "aiScore": 2505
+            },
+            {
+              "number": 1,
+              "name": "黒崎　　竜也",
+              "grade": "B2",
+              "age": 49,
+              "winRate": "4.910",
+              "localWinRate": "6.910",
+              "motorNumber": 2,
+              "motor2Rate": "29.0",
+              "boatNumber": 37,
+              "boat2Rate": "39.7",
+              "aiScore": 2502
+            },
+            {
+              "number": 5,
+              "name": "川上　　聡介",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "5.080",
+              "localWinRate": "5.550",
+              "motorNumber": 28,
+              "motor2Rate": "33.3",
+              "boatNumber": 18,
+              "boat2Rate": "37.8",
+              "aiScore": 2377
+            },
+            {
+              "number": 3,
+              "name": "抹香　　雄三",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "5.200",
+              "localWinRate": "0.000",
+              "motorNumber": 26,
+              "motor2Rate": "33.3",
+              "boatNumber": 73,
+              "boat2Rate": "24.5",
+              "aiScore": 1979
+            }
+          ],
+          "reasoning": [
+            "4号艇 福田　　宗平選手を本命に選定",
+            "A2級選手として堅実な実績、全国勝率6.390の高い実力により的中率が期待できる"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 4,
+          "top3": [
+            4,
+            2,
+            1
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 4,
+              "name": "福田　　宗平",
+              "grade": "A2",
+              "age": 36,
+              "winRate": "6.390",
+              "localWinRate": "7.940",
+              "motorNumber": 13,
+              "motor2Rate": "45.7",
+              "boatNumber": 22,
+              "boat2Rate": "33.6",
+              "aiScore": 16366
+            },
+            {
+              "number": 2,
+              "name": "堀本　　和也",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.130",
+              "localWinRate": "6.950",
+              "motorNumber": 56,
+              "motor2Rate": "35.3",
+              "boatNumber": 49,
+              "boat2Rate": "36.8",
+              "aiScore": 13543
+            },
+            {
+              "number": 1,
+              "name": "黒崎　　竜也",
+              "grade": "B2",
+              "age": 49,
+              "winRate": "4.910",
+              "localWinRate": "6.910",
+              "motorNumber": 2,
+              "motor2Rate": "29.0",
+              "boatNumber": 37,
+              "boat2Rate": "39.7",
+              "aiScore": 12834
+            },
+            {
+              "number": 6,
+              "name": "今泉　　　徹",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "3.990",
+              "localWinRate": "4.150",
+              "motorNumber": 34,
+              "motor2Rate": "43.2",
+              "boatNumber": 14,
+              "boat2Rate": "35.9",
+              "aiScore": 12565
+            },
+            {
+              "number": 5,
+              "name": "川上　　聡介",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "5.080",
+              "localWinRate": "5.550",
+              "motorNumber": 28,
+              "motor2Rate": "33.3",
+              "boatNumber": 18,
+              "boat2Rate": "37.8",
+              "aiScore": 11954
+            },
+            {
+              "number": 3,
+              "name": "抹香　　雄三",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "5.200",
+              "localWinRate": "0.000",
+              "motorNumber": 26,
+              "motor2Rate": "33.3",
+              "boatNumber": 73,
+              "boat2Rate": "24.5",
+              "aiScore": 8218
+            }
+          ],
+          "reasoning": [
+            "4号艇 福田　　宗平選手を本命に選定",
+            "4号艇ながらモーター2連率45.7%の好機材、当地成績7.940で展開に期待、好モーターを活かした高配当の可能性"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 4,
+        "top3": [
+          4,
+          1,
+          2
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 4,
+            "name": "福田　　宗平",
+            "grade": "A2",
+            "age": 36,
+            "winRate": "6.390",
+            "localWinRate": "7.940",
+            "motorNumber": 13,
+            "motor2Rate": "45.7",
+            "boatNumber": 22,
+            "boat2Rate": "33.6",
+            "aiScore": 6197
+          },
+          {
+            "number": 1,
+            "name": "黒崎　　竜也",
+            "grade": "B2",
+            "age": 49,
+            "winRate": "4.910",
+            "localWinRate": "6.910",
+            "motorNumber": 2,
+            "motor2Rate": "29.0",
+            "boatNumber": 37,
+            "boat2Rate": "39.7",
+            "aiScore": 5155
+          },
+          {
+            "number": 2,
+            "name": "堀本　　和也",
+            "grade": "A1",
+            "age": 36,
+            "winRate": "6.130",
+            "localWinRate": "6.950",
+            "motorNumber": 56,
+            "motor2Rate": "35.3",
+            "boatNumber": 49,
+            "boat2Rate": "36.8",
+            "aiScore": 5106
+          },
+          {
+            "number": 5,
+            "name": "川上　　聡介",
+            "grade": "B1",
+            "age": 48,
+            "winRate": "5.080",
+            "localWinRate": "5.550",
+            "motorNumber": 28,
+            "motor2Rate": "33.3",
+            "boatNumber": 18,
+            "boat2Rate": "37.8",
+            "aiScore": 3928
+          },
+          {
+            "number": 6,
+            "name": "今泉　　　徹",
+            "grade": "B1",
+            "age": 52,
+            "winRate": "3.990",
+            "localWinRate": "4.150",
+            "motorNumber": 34,
+            "motor2Rate": "43.2",
+            "boatNumber": 14,
+            "boat2Rate": "35.9",
+            "aiScore": 3388
+          },
+          {
+            "number": 3,
+            "name": "抹香　　雄三",
+            "grade": "B1",
+            "age": 39,
+            "winRate": "5.200",
+            "localWinRate": "0.000",
+            "motorNumber": 26,
+            "motor2Rate": "33.3",
+            "boatNumber": 73,
+            "boat2Rate": "24.5",
+            "aiScore": 1999
+          }
+        ],
+        "reasoning": [
+          "4号艇 福田　　宗平選手を本命に選定",
+          "当地成績7.940と好相性、モーター2連率45.7%の好機材で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-04",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 4,
+      "startTime": "11:49",
+      "volatility": {
+        "score": 53,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より14%弱い（グレード: B1、勝率: 4.8%）",
+          "外枠に好機材が1艇（4号艇(45.5%)）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 3,
+          "top3": [
+            3,
+            2,
+            4
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "高倉　　和士",
+              "grade": "A2",
+              "age": 34,
+              "winRate": "7.240",
+              "localWinRate": "7.290",
+              "motorNumber": 53,
+              "motor2Rate": "54.3",
+              "boatNumber": 28,
+              "boat2Rate": "38.3",
+              "aiScore": 5462
+            },
+            {
+              "number": 2,
+              "name": "丹下　　　将",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "6.060",
+              "localWinRate": "6.800",
+              "motorNumber": 44,
+              "motor2Rate": "26.3",
+              "boatNumber": 44,
+              "boat2Rate": "31.5",
+              "aiScore": 4549
+            },
+            {
+              "number": 4,
+              "name": "飯島　　　誠",
+              "grade": "B1",
+              "age": 47,
+              "winRate": "4.710",
+              "localWinRate": "5.220",
+              "motorNumber": 36,
+              "motor2Rate": "45.5",
+              "boatNumber": 43,
+              "boat2Rate": "33.1",
+              "aiScore": 4280
+            },
+            {
+              "number": 1,
+              "name": "上田　　洋平",
+              "grade": "B1",
+              "age": 49,
+              "winRate": "4.840",
+              "localWinRate": "5.410",
+              "motorNumber": 18,
+              "motor2Rate": "40.0",
+              "boatNumber": 36,
+              "boat2Rate": "38.7",
+              "aiScore": 4275
+            },
+            {
+              "number": 6,
+              "name": "片岡　　大地",
+              "grade": "B1",
+              "age": 29,
+              "winRate": "4.390",
+              "localWinRate": "5.670",
+              "motorNumber": 46,
+              "motor2Rate": "24.1",
+              "boatNumber": 56,
+              "boat2Rate": "49.2",
+              "aiScore": 3788
+            },
+            {
+              "number": 5,
+              "name": "市川　　哲也",
+              "grade": "A2",
+              "age": 57,
+              "winRate": "6.390",
+              "localWinRate": "5.140",
+              "motorNumber": 16,
+              "motor2Rate": "18.8",
+              "boatNumber": 71,
+              "boat2Rate": "34.7",
+              "aiScore": 3304
+            }
+          ],
+          "reasoning": [
+            "3号艇 高倉　　和士選手を本命に選定",
+            "全国勝率7.240の実力者、当地成績7.290と好相性、モーター2連率54.3%の好機材で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 3,
+          "top3": [
+            3,
+            1,
+            4
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "高倉　　和士",
+              "grade": "A2",
+              "age": 34,
+              "winRate": "7.240",
+              "localWinRate": "7.290",
+              "motorNumber": 53,
+              "motor2Rate": "54.3",
+              "boatNumber": 28,
+              "boat2Rate": "38.3",
+              "aiScore": 3726
+            },
+            {
+              "number": 1,
+              "name": "上田　　洋平",
+              "grade": "B1",
+              "age": 49,
+              "winRate": "4.840",
+              "localWinRate": "5.410",
+              "motorNumber": 18,
+              "motor2Rate": "40.0",
+              "boatNumber": 36,
+              "boat2Rate": "38.7",
+              "aiScore": 2812
+            },
+            {
+              "number": 4,
+              "name": "飯島　　　誠",
+              "grade": "B1",
+              "age": 47,
+              "winRate": "4.710",
+              "localWinRate": "5.220",
+              "motorNumber": 36,
+              "motor2Rate": "45.5",
+              "boatNumber": 43,
+              "boat2Rate": "33.1",
+              "aiScore": 2802
+            },
+            {
+              "number": 2,
+              "name": "丹下　　　将",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "6.060",
+              "localWinRate": "6.800",
+              "motorNumber": 44,
+              "motor2Rate": "26.3",
+              "boatNumber": 44,
+              "boat2Rate": "31.5",
+              "aiScore": 2489
+            },
+            {
+              "number": 5,
+              "name": "市川　　哲也",
+              "grade": "A2",
+              "age": 57,
+              "winRate": "6.390",
+              "localWinRate": "5.140",
+              "motorNumber": 16,
+              "motor2Rate": "18.8",
+              "boatNumber": 71,
+              "boat2Rate": "34.7",
+              "aiScore": 1991
+            },
+            {
+              "number": 6,
+              "name": "片岡　　大地",
+              "grade": "B1",
+              "age": 29,
+              "winRate": "4.390",
+              "localWinRate": "5.670",
+              "motorNumber": 46,
+              "motor2Rate": "24.1",
+              "boatNumber": 56,
+              "boat2Rate": "49.2",
+              "aiScore": 1914
+            }
+          ],
+          "reasoning": [
+            "3号艇 高倉　　和士選手を本命に選定",
+            "A2級選手として堅実な実績、全国勝率7.240の高い実力により的中率が期待できる"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 3,
+          "top3": [
+            3,
+            4,
+            1
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "高倉　　和士",
+              "grade": "A2",
+              "age": 34,
+              "winRate": "7.240",
+              "localWinRate": "7.290",
+              "motorNumber": 53,
+              "motor2Rate": "54.3",
+              "boatNumber": 28,
+              "boat2Rate": "38.3",
+              "aiScore": 16753
+            },
+            {
+              "number": 4,
+              "name": "飯島　　　誠",
+              "grade": "B1",
+              "age": 47,
+              "winRate": "4.710",
+              "localWinRate": "5.220",
+              "motorNumber": 36,
+              "motor2Rate": "45.5",
+              "boatNumber": 43,
+              "boat2Rate": "33.1",
+              "aiScore": 13843
+            },
+            {
+              "number": 1,
+              "name": "上田　　洋平",
+              "grade": "B1",
+              "age": 49,
+              "winRate": "4.840",
+              "localWinRate": "5.410",
+              "motorNumber": 18,
+              "motor2Rate": "40.0",
+              "boatNumber": 36,
+              "boat2Rate": "38.7",
+              "aiScore": 13157
+            },
+            {
+              "number": 2,
+              "name": "丹下　　　将",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "6.060",
+              "localWinRate": "6.800",
+              "motorNumber": 44,
+              "motor2Rate": "26.3",
+              "boatNumber": 44,
+              "boat2Rate": "31.5",
+              "aiScore": 11274
+            },
+            {
+              "number": 6,
+              "name": "片岡　　大地",
+              "grade": "B1",
+              "age": 29,
+              "winRate": "4.390",
+              "localWinRate": "5.670",
+              "motorNumber": 46,
+              "motor2Rate": "24.1",
+              "boatNumber": 56,
+              "boat2Rate": "49.2",
+              "aiScore": 11166
+            },
+            {
+              "number": 5,
+              "name": "市川　　哲也",
+              "grade": "A2",
+              "age": 57,
+              "winRate": "6.390",
+              "localWinRate": "5.140",
+              "motorNumber": 16,
+              "motor2Rate": "18.8",
+              "boatNumber": 71,
+              "boat2Rate": "34.7",
+              "aiScore": 8799
+            }
+          ],
+          "reasoning": [
+            "3号艇 高倉　　和士選手を本命に選定",
+            "当地成績7.290で展開に期待、好モーターを活かした高配当の可能性"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 3,
+        "top3": [
+          3,
+          2,
+          4
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 3,
+            "name": "高倉　　和士",
+            "grade": "A2",
+            "age": 34,
+            "winRate": "7.240",
+            "localWinRate": "7.290",
+            "motorNumber": 53,
+            "motor2Rate": "54.3",
+            "boatNumber": 28,
+            "boat2Rate": "38.3",
+            "aiScore": 5462
+          },
+          {
+            "number": 2,
+            "name": "丹下　　　将",
+            "grade": "A1",
+            "age": 40,
+            "winRate": "6.060",
+            "localWinRate": "6.800",
+            "motorNumber": 44,
+            "motor2Rate": "26.3",
+            "boatNumber": 44,
+            "boat2Rate": "31.5",
+            "aiScore": 4549
+          },
+          {
+            "number": 4,
+            "name": "飯島　　　誠",
+            "grade": "B1",
+            "age": 47,
+            "winRate": "4.710",
+            "localWinRate": "5.220",
+            "motorNumber": 36,
+            "motor2Rate": "45.5",
+            "boatNumber": 43,
+            "boat2Rate": "33.1",
+            "aiScore": 4280
+          },
+          {
+            "number": 1,
+            "name": "上田　　洋平",
+            "grade": "B1",
+            "age": 49,
+            "winRate": "4.840",
+            "localWinRate": "5.410",
+            "motorNumber": 18,
+            "motor2Rate": "40.0",
+            "boatNumber": 36,
+            "boat2Rate": "38.7",
+            "aiScore": 4275
+          },
+          {
+            "number": 6,
+            "name": "片岡　　大地",
+            "grade": "B1",
+            "age": 29,
+            "winRate": "4.390",
+            "localWinRate": "5.670",
+            "motorNumber": 46,
+            "motor2Rate": "24.1",
+            "boatNumber": 56,
+            "boat2Rate": "49.2",
+            "aiScore": 3788
+          },
+          {
+            "number": 5,
+            "name": "市川　　哲也",
+            "grade": "A2",
+            "age": 57,
+            "winRate": "6.390",
+            "localWinRate": "5.140",
+            "motorNumber": 16,
+            "motor2Rate": "18.8",
+            "boatNumber": 71,
+            "boat2Rate": "34.7",
+            "aiScore": 3304
+          }
+        ],
+        "reasoning": [
+          "3号艇 高倉　　和士選手を本命に選定",
+          "全国勝率7.240の実力者、当地成績7.290と好相性、モーター2連率54.3%の好機材で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-05",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 5,
+      "startTime": "12:20",
+      "volatility": {
+        "score": 53,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より3%弱い（グレード: B1、勝率: 4.8%）",
+          "外枠に好機材が1艇（4号艇(52.0%)）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 5,
+          "top3": [
+            5,
+            3,
+            2
+          ],
+          "confidence": 72,
+          "players": [
+            {
+              "number": 5,
+              "name": "安達　　裕樹",
+              "grade": "A1",
+              "age": 42,
+              "winRate": "5.920",
+              "localWinRate": "6.650",
+              "motorNumber": 30,
+              "motor2Rate": "37.9",
+              "boatNumber": 46,
+              "boat2Rate": "31.4",
+              "aiScore": 4646
+            },
+            {
+              "number": 3,
+              "name": "上條　　嘉嗣",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.690",
+              "localWinRate": "6.600",
+              "motorNumber": 15,
+              "motor2Rate": "16.0",
+              "boatNumber": 27,
+              "boat2Rate": "41.0",
+              "aiScore": 4625
+            },
+            {
+              "number": 2,
+              "name": "山口　　広樹",
+              "grade": "A2",
+              "age": 30,
+              "winRate": "4.870",
+              "localWinRate": "4.500",
+              "motorNumber": 22,
+              "motor2Rate": "41.0",
+              "boatNumber": 17,
+              "boat2Rate": "40.2",
+              "aiScore": 3587
+            },
+            {
+              "number": 6,
+              "name": "三宅　　健太",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.960",
+              "localWinRate": "5.860",
+              "motorNumber": 19,
+              "motor2Rate": "30.8",
+              "boatNumber": 42,
+              "boat2Rate": "29.0",
+              "aiScore": 3402
+            },
+            {
+              "number": 1,
+              "name": "大谷　　直弘",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "4.840",
+              "localWinRate": "4.930",
+              "motorNumber": 27,
+              "motor2Rate": "11.4",
+              "boatNumber": 59,
+              "boat2Rate": "31.4",
+              "aiScore": 2787
+            },
+            {
+              "number": 4,
+              "name": "若林　　　麗",
+              "grade": "B1",
+              "age": 26,
+              "winRate": "2.680",
+              "localWinRate": "1.560",
+              "motorNumber": 39,
+              "motor2Rate": "52.0",
+              "boatNumber": 12,
+              "boat2Rate": "18.1",
+              "aiScore": 2175
+            }
+          ],
+          "reasoning": [
+            "5号艇 安達　　裕樹選手を本命に選定",
+            "当地成績6.650と好相性、モーター2連率37.9%の安定機材で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 5,
+          "top3": [
+            5,
+            2,
+            4
+          ],
+          "confidence": 89,
+          "players": [
+            {
+              "number": 5,
+              "name": "安達　　裕樹",
+              "grade": "A1",
+              "age": 42,
+              "winRate": "5.920",
+              "localWinRate": "6.650",
+              "motorNumber": 30,
+              "motor2Rate": "37.9",
+              "boatNumber": 46,
+              "boat2Rate": "31.4",
+              "aiScore": 2878
+            },
+            {
+              "number": 2,
+              "name": "山口　　広樹",
+              "grade": "A2",
+              "age": 30,
+              "winRate": "4.870",
+              "localWinRate": "4.500",
+              "motorNumber": 22,
+              "motor2Rate": "41.0",
+              "boatNumber": 17,
+              "boat2Rate": "40.2",
+              "aiScore": 2679
+            },
+            {
+              "number": 4,
+              "name": "若林　　　麗",
+              "grade": "B1",
+              "age": 26,
+              "winRate": "2.680",
+              "localWinRate": "1.560",
+              "motorNumber": 39,
+              "motor2Rate": "52.0",
+              "boatNumber": 12,
+              "boat2Rate": "18.1",
+              "aiScore": 2508
+            },
+            {
+              "number": 6,
+              "name": "三宅　　健太",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.960",
+              "localWinRate": "5.860",
+              "motorNumber": 19,
+              "motor2Rate": "30.8",
+              "boatNumber": 42,
+              "boat2Rate": "29.0",
+              "aiScore": 2269
+            },
+            {
+              "number": 3,
+              "name": "上條　　嘉嗣",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.690",
+              "localWinRate": "6.600",
+              "motorNumber": 15,
+              "motor2Rate": "16.0",
+              "boatNumber": 27,
+              "boat2Rate": "41.0",
+              "aiScore": 2127
+            },
+            {
+              "number": 1,
+              "name": "大谷　　直弘",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "4.840",
+              "localWinRate": "4.930",
+              "motorNumber": 27,
+              "motor2Rate": "11.4",
+              "boatNumber": 59,
+              "boat2Rate": "31.4",
+              "aiScore": 1630
+            }
+          ],
+          "reasoning": [
+            "5号艇 安達　　裕樹選手を本命に選定",
+            "A1級選手として安定した実力により的中率が期待できる"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 5,
+          "top3": [
+            5,
+            2,
+            4
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 5,
+              "name": "安達　　裕樹",
+              "grade": "A1",
+              "age": 42,
+              "winRate": "5.920",
+              "localWinRate": "6.650",
+              "motorNumber": 30,
+              "motor2Rate": "37.9",
+              "boatNumber": 46,
+              "boat2Rate": "31.4",
+              "aiScore": 13173
+            },
+            {
+              "number": 2,
+              "name": "山口　　広樹",
+              "grade": "A2",
+              "age": 30,
+              "winRate": "4.870",
+              "localWinRate": "4.500",
+              "motorNumber": 22,
+              "motor2Rate": "41.0",
+              "boatNumber": 17,
+              "boat2Rate": "40.2",
+              "aiScore": 12578
+            },
+            {
+              "number": 4,
+              "name": "若林　　　麗",
+              "grade": "B1",
+              "age": 26,
+              "winRate": "2.680",
+              "localWinRate": "1.560",
+              "motorNumber": 39,
+              "motor2Rate": "52.0",
+              "boatNumber": 12,
+              "boat2Rate": "18.1",
+              "aiScore": 11198
+            },
+            {
+              "number": 6,
+              "name": "三宅　　健太",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.960",
+              "localWinRate": "5.860",
+              "motorNumber": 19,
+              "motor2Rate": "30.8",
+              "boatNumber": 42,
+              "boat2Rate": "29.0",
+              "aiScore": 10504
+            },
+            {
+              "number": 3,
+              "name": "上條　　嘉嗣",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.690",
+              "localWinRate": "6.600",
+              "motorNumber": 15,
+              "motor2Rate": "16.0",
+              "boatNumber": 27,
+              "boat2Rate": "41.0",
+              "aiScore": 10352
+            },
+            {
+              "number": 1,
+              "name": "大谷　　直弘",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "4.840",
+              "localWinRate": "4.930",
+              "motorNumber": 27,
+              "motor2Rate": "11.4",
+              "boatNumber": 59,
+              "boat2Rate": "31.4",
+              "aiScore": 6802
+            }
+          ],
+          "reasoning": [
+            "5号艇 安達　　裕樹選手を本命に選定",
+            "当地成績6.650で展開に期待"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 5,
+        "top3": [
+          5,
+          3,
+          2
+        ],
+        "confidence": 72,
+        "players": [
+          {
+            "number": 5,
+            "name": "安達　　裕樹",
+            "grade": "A1",
+            "age": 42,
+            "winRate": "5.920",
+            "localWinRate": "6.650",
+            "motorNumber": 30,
+            "motor2Rate": "37.9",
+            "boatNumber": 46,
+            "boat2Rate": "31.4",
+            "aiScore": 4646
+          },
+          {
+            "number": 3,
+            "name": "上條　　嘉嗣",
+            "grade": "A1",
+            "age": 36,
+            "winRate": "6.690",
+            "localWinRate": "6.600",
+            "motorNumber": 15,
+            "motor2Rate": "16.0",
+            "boatNumber": 27,
+            "boat2Rate": "41.0",
+            "aiScore": 4625
+          },
+          {
+            "number": 2,
+            "name": "山口　　広樹",
+            "grade": "A2",
+            "age": 30,
+            "winRate": "4.870",
+            "localWinRate": "4.500",
+            "motorNumber": 22,
+            "motor2Rate": "41.0",
+            "boatNumber": 17,
+            "boat2Rate": "40.2",
+            "aiScore": 3587
+          },
+          {
+            "number": 6,
+            "name": "三宅　　健太",
+            "grade": "B1",
+            "age": 39,
+            "winRate": "4.960",
+            "localWinRate": "5.860",
+            "motorNumber": 19,
+            "motor2Rate": "30.8",
+            "boatNumber": 42,
+            "boat2Rate": "29.0",
+            "aiScore": 3402
+          },
+          {
+            "number": 1,
+            "name": "大谷　　直弘",
+            "grade": "B1",
+            "age": 48,
+            "winRate": "4.840",
+            "localWinRate": "4.930",
+            "motorNumber": 27,
+            "motor2Rate": "11.4",
+            "boatNumber": 59,
+            "boat2Rate": "31.4",
+            "aiScore": 2787
+          },
+          {
+            "number": 4,
+            "name": "若林　　　麗",
+            "grade": "B1",
+            "age": 26,
+            "winRate": "2.680",
+            "localWinRate": "1.560",
+            "motorNumber": 39,
+            "motor2Rate": "52.0",
+            "boatNumber": 12,
+            "boat2Rate": "18.1",
+            "aiScore": 2175
+          }
+        ],
+        "reasoning": [
+          "5号艇 安達　　裕樹選手を本命に選定",
+          "当地成績6.650と好相性、モーター2連率37.9%の安定機材で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-06",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 6,
+      "startTime": "12:49",
+      "volatility": {
+        "score": 0,
+        "level": "low",
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "1号艇が安定して有利な展開"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 1,
+          "top3": [
+            1,
+            3,
+            4
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 1,
+              "name": "秦　　　英悟",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "7.230",
+              "localWinRate": "8.450",
+              "motorNumber": 48,
+              "motor2Rate": "0.0",
+              "boatNumber": 34,
+              "boat2Rate": "32.7",
+              "aiScore": 5241
+            },
+            {
+              "number": 3,
+              "name": "松田　　隆司",
+              "grade": "B1",
+              "age": 46,
+              "winRate": "4.740",
+              "localWinRate": "4.840",
+              "motorNumber": 9,
+              "motor2Rate": "58.3",
+              "boatNumber": 52,
+              "boat2Rate": "13.6",
+              "aiScore": 4190
+            },
+            {
+              "number": 4,
+              "name": "南　　　佑典",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "5.930",
+              "localWinRate": "5.290",
+              "motorNumber": 59,
+              "motor2Rate": "30.8",
+              "boatNumber": 50,
+              "boat2Rate": "27.1",
+              "aiScore": 3293
+            },
+            {
+              "number": 6,
+              "name": "牟田　　奨太",
+              "grade": "B1",
+              "age": 28,
+              "winRate": "3.390",
+              "localWinRate": "3.980",
+              "motorNumber": 17,
+              "motor2Rate": "28.1",
+              "boatNumber": 39,
+              "boat2Rate": "31.0",
+              "aiScore": 3149
+            },
+            {
+              "number": 2,
+              "name": "石田　　勇斗",
+              "grade": "B2",
+              "age": 25,
+              "winRate": "4.070",
+              "localWinRate": "2.320",
+              "motorNumber": 12,
+              "motor2Rate": "40.5",
+              "boatNumber": 75,
+              "boat2Rate": "38.3",
+              "aiScore": 2731
+            },
+            {
+              "number": 5,
+              "name": "角浜　　　修",
+              "grade": "B1",
+              "age": 57,
+              "winRate": "4.210",
+              "localWinRate": "0.000",
+              "motorNumber": 41,
+              "motor2Rate": "37.8",
+              "boatNumber": 61,
+              "boat2Rate": "26.7",
+              "aiScore": 2069
+            }
+          ],
+          "reasoning": [
+            "1号艇 秦　　　英悟選手を本命に選定",
+            "全国勝率7.230の実力者、当地成績8.450と好相性で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 3,
+          "top3": [
+            3,
+            4,
+            2
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "松田　　隆司",
+              "grade": "B1",
+              "age": 46,
+              "winRate": "4.740",
+              "localWinRate": "4.840",
+              "motorNumber": 9,
+              "motor2Rate": "58.3",
+              "boatNumber": 52,
+              "boat2Rate": "13.6",
+              "aiScore": 3306
+            },
+            {
+              "number": 4,
+              "name": "南　　　佑典",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "5.930",
+              "localWinRate": "5.290",
+              "motorNumber": 59,
+              "motor2Rate": "30.8",
+              "boatNumber": 50,
+              "boat2Rate": "27.1",
+              "aiScore": 2439
+            },
+            {
+              "number": 2,
+              "name": "石田　　勇斗",
+              "grade": "B2",
+              "age": 25,
+              "winRate": "4.070",
+              "localWinRate": "2.320",
+              "motorNumber": 12,
+              "motor2Rate": "40.5",
+              "boatNumber": 75,
+              "boat2Rate": "38.3",
+              "aiScore": 2321
+            },
+            {
+              "number": 5,
+              "name": "角浜　　　修",
+              "grade": "B1",
+              "age": 57,
+              "winRate": "4.210",
+              "localWinRate": "0.000",
+              "motorNumber": 41,
+              "motor2Rate": "37.8",
+              "boatNumber": 61,
+              "boat2Rate": "26.7",
+              "aiScore": 2000
+            },
+            {
+              "number": 1,
+              "name": "秦　　　英悟",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "7.230",
+              "localWinRate": "8.450",
+              "motorNumber": 48,
+              "motor2Rate": "0.0",
+              "boatNumber": 34,
+              "boat2Rate": "32.7",
+              "aiScore": 1885
+            },
+            {
+              "number": 6,
+              "name": "牟田　　奨太",
+              "grade": "B1",
+              "age": 28,
+              "winRate": "3.390",
+              "localWinRate": "3.980",
+              "motorNumber": 17,
+              "motor2Rate": "28.1",
+              "boatNumber": 39,
+              "boat2Rate": "31.0",
+              "aiScore": 1809
+            }
+          ],
+          "reasoning": [
+            "3号艇 松田　　隆司選手を本命に選定",
+            "安全性を重視した評価で最高スコアを獲得"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 3,
+          "top3": [
+            3,
+            2,
+            4
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "松田　　隆司",
+              "grade": "B1",
+              "age": 46,
+              "winRate": "4.740",
+              "localWinRate": "4.840",
+              "motorNumber": 9,
+              "motor2Rate": "58.3",
+              "boatNumber": 52,
+              "boat2Rate": "13.6",
+              "aiScore": 14352
+            },
+            {
+              "number": 2,
+              "name": "石田　　勇斗",
+              "grade": "B2",
+              "age": 25,
+              "winRate": "4.070",
+              "localWinRate": "2.320",
+              "motorNumber": 12,
+              "motor2Rate": "40.5",
+              "boatNumber": 75,
+              "boat2Rate": "38.3",
+              "aiScore": 11215
+            },
+            {
+              "number": 4,
+              "name": "南　　　佑典",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "5.930",
+              "localWinRate": "5.290",
+              "motorNumber": 59,
+              "motor2Rate": "30.8",
+              "boatNumber": 50,
+              "boat2Rate": "27.1",
+              "aiScore": 10133
+            },
+            {
+              "number": 6,
+              "name": "牟田　　奨太",
+              "grade": "B1",
+              "age": 28,
+              "winRate": "3.390",
+              "localWinRate": "3.980",
+              "motorNumber": 17,
+              "motor2Rate": "28.1",
+              "boatNumber": 39,
+              "boat2Rate": "31.0",
+              "aiScore": 9855
+            },
+            {
+              "number": 5,
+              "name": "角浜　　　修",
+              "grade": "B1",
+              "age": 57,
+              "winRate": "4.210",
+              "localWinRate": "0.000",
+              "motorNumber": 41,
+              "motor2Rate": "37.8",
+              "boatNumber": 61,
+              "boat2Rate": "26.7",
+              "aiScore": 9255
+            },
+            {
+              "number": 1,
+              "name": "秦　　　英悟",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "7.230",
+              "localWinRate": "8.450",
+              "motorNumber": 48,
+              "motor2Rate": "0.0",
+              "boatNumber": 34,
+              "boat2Rate": "32.7",
+              "aiScore": 8361
+            }
+          ],
+          "reasoning": [
+            "3号艇 松田　　隆司選手を本命に選定",
+            "好モーターを活かした高配当の可能性"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 1,
+        "top3": [
+          1,
+          3,
+          4
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 1,
+            "name": "秦　　　英悟",
+            "grade": "A1",
+            "age": 40,
+            "winRate": "7.230",
+            "localWinRate": "8.450",
+            "motorNumber": 48,
+            "motor2Rate": "0.0",
+            "boatNumber": 34,
+            "boat2Rate": "32.7",
+            "aiScore": 5241
+          },
+          {
+            "number": 3,
+            "name": "松田　　隆司",
+            "grade": "B1",
+            "age": 46,
+            "winRate": "4.740",
+            "localWinRate": "4.840",
+            "motorNumber": 9,
+            "motor2Rate": "58.3",
+            "boatNumber": 52,
+            "boat2Rate": "13.6",
+            "aiScore": 4190
+          },
+          {
+            "number": 4,
+            "name": "南　　　佑典",
+            "grade": "A2",
+            "age": 39,
+            "winRate": "5.930",
+            "localWinRate": "5.290",
+            "motorNumber": 59,
+            "motor2Rate": "30.8",
+            "boatNumber": 50,
+            "boat2Rate": "27.1",
+            "aiScore": 3293
+          },
+          {
+            "number": 6,
+            "name": "牟田　　奨太",
+            "grade": "B1",
+            "age": 28,
+            "winRate": "3.390",
+            "localWinRate": "3.980",
+            "motorNumber": 17,
+            "motor2Rate": "28.1",
+            "boatNumber": 39,
+            "boat2Rate": "31.0",
+            "aiScore": 3149
+          },
+          {
+            "number": 2,
+            "name": "石田　　勇斗",
+            "grade": "B2",
+            "age": 25,
+            "winRate": "4.070",
+            "localWinRate": "2.320",
+            "motorNumber": 12,
+            "motor2Rate": "40.5",
+            "boatNumber": 75,
+            "boat2Rate": "38.3",
+            "aiScore": 2731
+          },
+          {
+            "number": 5,
+            "name": "角浜　　　修",
+            "grade": "B1",
+            "age": 57,
+            "winRate": "4.210",
+            "localWinRate": "0.000",
+            "motorNumber": 41,
+            "motor2Rate": "37.8",
+            "boatNumber": 61,
+            "boat2Rate": "26.7",
+            "aiScore": 2069
+          }
+        ],
+        "reasoning": [
+          "1号艇 秦　　　英悟選手を本命に選定",
+          "全国勝率7.230の実力者、当地成績8.450と好相性で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-07",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 7,
+      "startTime": "13:20",
+      "volatility": {
+        "score": 65,
+        "level": "high",
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.97%、平均: 5.3%）",
+          "1号艇が平均より2%弱い（グレード: B1、勝率: 5.2%）",
+          "モーター性能が均等（2連率の標準偏差: 8.4%）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 6,
+          "top3": [
+            6,
+            2,
+            5
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 6,
+              "name": "田中　　和也",
+              "grade": "A1",
+              "age": 41,
+              "winRate": "6.830",
+              "localWinRate": "8.210",
+              "motorNumber": 10,
+              "motor2Rate": "23.7",
+              "boatNumber": 57,
+              "boat2Rate": "34.9",
+              "aiScore": 6025
+            },
+            {
+              "number": 2,
+              "name": "松尾　　宣邦",
+              "grade": "B1",
+              "age": 56,
+              "winRate": "5.340",
+              "localWinRate": "4.860",
+              "motorNumber": 29,
+              "motor2Rate": "42.9",
+              "boatNumber": 26,
+              "boat2Rate": "31.2",
+              "aiScore": 4105
+            },
+            {
+              "number": 5,
+              "name": "鹿島　　敏弘",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.770",
+              "localWinRate": "4.890",
+              "motorNumber": 37,
+              "motor2Rate": "32.1",
+              "boatNumber": 74,
+              "boat2Rate": "35.7",
+              "aiScore": 3616
+            },
+            {
+              "number": 3,
+              "name": "佐々木　和伸",
+              "grade": "A2",
+              "age": 49,
+              "winRate": "5.920",
+              "localWinRate": "5.040",
+              "motorNumber": 4,
+              "motor2Rate": "18.9",
+              "boatNumber": 33,
+              "boat2Rate": "30.8",
+              "aiScore": 3431
+            },
+            {
+              "number": 4,
+              "name": "齋藤　　智裕",
+              "grade": "B2",
+              "age": 52,
+              "winRate": "3.670",
+              "localWinRate": "3.800",
+              "motorNumber": 45,
+              "motor2Rate": "20.6",
+              "boatNumber": 65,
+              "boat2Rate": "31.9",
+              "aiScore": 2357
+            },
+            {
+              "number": 1,
+              "name": "抹香　　雄三",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "5.200",
+              "localWinRate": "0.000",
+              "motorNumber": 26,
+              "motor2Rate": "33.3",
+              "boatNumber": 73,
+              "boat2Rate": "24.5",
+              "aiScore": 2009
+            }
+          ],
+          "reasoning": [
+            "6号艇 田中　　和也選手を本命に選定",
+            "全国勝率6.830の実力者、当地成績8.210と好相性で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 2,
+          "top3": [
+            2,
+            6,
+            5
+          ],
+          "confidence": 94,
+          "players": [
+            {
+              "number": 2,
+              "name": "松尾　　宣邦",
+              "grade": "B1",
+              "age": 56,
+              "winRate": "5.340",
+              "localWinRate": "4.860",
+              "motorNumber": 29,
+              "motor2Rate": "42.9",
+              "boatNumber": 26,
+              "boat2Rate": "31.2",
+              "aiScore": 2782
+            },
+            {
+              "number": 6,
+              "name": "田中　　和也",
+              "grade": "A1",
+              "age": 41,
+              "winRate": "6.830",
+              "localWinRate": "8.210",
+              "motorNumber": 10,
+              "motor2Rate": "23.7",
+              "boatNumber": 57,
+              "boat2Rate": "34.9",
+              "aiScore": 2536
+            },
+            {
+              "number": 5,
+              "name": "鹿島　　敏弘",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.770",
+              "localWinRate": "4.890",
+              "motorNumber": 37,
+              "motor2Rate": "32.1",
+              "boatNumber": 74,
+              "boat2Rate": "35.7",
+              "aiScore": 2236
+            },
+            {
+              "number": 1,
+              "name": "抹香　　雄三",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "5.200",
+              "localWinRate": "0.000",
+              "motorNumber": 26,
+              "motor2Rate": "33.3",
+              "boatNumber": 73,
+              "boat2Rate": "24.5",
+              "aiScore": 2159
+            },
+            {
+              "number": 3,
+              "name": "佐々木　和伸",
+              "grade": "A2",
+              "age": 49,
+              "winRate": "5.920",
+              "localWinRate": "5.040",
+              "motorNumber": 4,
+              "motor2Rate": "18.9",
+              "boatNumber": 33,
+              "boat2Rate": "30.8",
+              "aiScore": 1959
+            },
+            {
+              "number": 4,
+              "name": "齋藤　　智裕",
+              "grade": "B2",
+              "age": 52,
+              "winRate": "3.670",
+              "localWinRate": "3.800",
+              "motorNumber": 45,
+              "motor2Rate": "20.6",
+              "boatNumber": 65,
+              "boat2Rate": "31.9",
+              "aiScore": 1559
+            }
+          ],
+          "reasoning": [
+            "2号艇 松尾　　宣邦選手を本命に選定",
+            "安全性を重視した評価で最高スコアを獲得"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 6,
+          "top3": [
+            6,
+            2,
+            5
+          ],
+          "confidence": 80,
+          "players": [
+            {
+              "number": 6,
+              "name": "田中　　和也",
+              "grade": "A1",
+              "age": 41,
+              "winRate": "6.830",
+              "localWinRate": "8.210",
+              "motorNumber": 10,
+              "motor2Rate": "23.7",
+              "boatNumber": 57,
+              "boat2Rate": "34.9",
+              "aiScore": 13068
+            },
+            {
+              "number": 2,
+              "name": "松尾　　宣邦",
+              "grade": "B1",
+              "age": 56,
+              "winRate": "5.340",
+              "localWinRate": "4.860",
+              "motorNumber": 29,
+              "motor2Rate": "42.9",
+              "boatNumber": 26,
+              "boat2Rate": "31.2",
+              "aiScore": 12962
+            },
+            {
+              "number": 5,
+              "name": "鹿島　　敏弘",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.770",
+              "localWinRate": "4.890",
+              "motorNumber": 37,
+              "motor2Rate": "32.1",
+              "boatNumber": 74,
+              "boat2Rate": "35.7",
+              "aiScore": 11247
+            },
+            {
+              "number": 3,
+              "name": "佐々木　和伸",
+              "grade": "A2",
+              "age": 49,
+              "winRate": "5.920",
+              "localWinRate": "5.040",
+              "motorNumber": 4,
+              "motor2Rate": "18.9",
+              "boatNumber": 33,
+              "boat2Rate": "30.8",
+              "aiScore": 8667
+            },
+            {
+              "number": 1,
+              "name": "抹香　　雄三",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "5.200",
+              "localWinRate": "0.000",
+              "motorNumber": 26,
+              "motor2Rate": "33.3",
+              "boatNumber": 73,
+              "boat2Rate": "24.5",
+              "aiScore": 8118
+            },
+            {
+              "number": 4,
+              "name": "齋藤　　智裕",
+              "grade": "B2",
+              "age": 52,
+              "winRate": "3.670",
+              "localWinRate": "3.800",
+              "motorNumber": 45,
+              "motor2Rate": "20.6",
+              "boatNumber": 65,
+              "boat2Rate": "31.9",
+              "aiScore": 7822
+            }
+          ],
+          "reasoning": [
+            "6号艇 田中　　和也選手を本命に選定",
+            "当地成績8.210で展開に期待"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 6,
+        "top3": [
+          6,
+          2,
+          5
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 6,
+            "name": "田中　　和也",
+            "grade": "A1",
+            "age": 41,
+            "winRate": "6.830",
+            "localWinRate": "8.210",
+            "motorNumber": 10,
+            "motor2Rate": "23.7",
+            "boatNumber": 57,
+            "boat2Rate": "34.9",
+            "aiScore": 6025
+          },
+          {
+            "number": 2,
+            "name": "松尾　　宣邦",
+            "grade": "B1",
+            "age": 56,
+            "winRate": "5.340",
+            "localWinRate": "4.860",
+            "motorNumber": 29,
+            "motor2Rate": "42.9",
+            "boatNumber": 26,
+            "boat2Rate": "31.2",
+            "aiScore": 4105
+          },
+          {
+            "number": 5,
+            "name": "鹿島　　敏弘",
+            "grade": "B1",
+            "age": 39,
+            "winRate": "4.770",
+            "localWinRate": "4.890",
+            "motorNumber": 37,
+            "motor2Rate": "32.1",
+            "boatNumber": 74,
+            "boat2Rate": "35.7",
+            "aiScore": 3616
+          },
+          {
+            "number": 3,
+            "name": "佐々木　和伸",
+            "grade": "A2",
+            "age": 49,
+            "winRate": "5.920",
+            "localWinRate": "5.040",
+            "motorNumber": 4,
+            "motor2Rate": "18.9",
+            "boatNumber": 33,
+            "boat2Rate": "30.8",
+            "aiScore": 3431
+          },
+          {
+            "number": 4,
+            "name": "齋藤　　智裕",
+            "grade": "B2",
+            "age": 52,
+            "winRate": "3.670",
+            "localWinRate": "3.800",
+            "motorNumber": 45,
+            "motor2Rate": "20.6",
+            "boatNumber": 65,
+            "boat2Rate": "31.9",
+            "aiScore": 2357
+          },
+          {
+            "number": 1,
+            "name": "抹香　　雄三",
+            "grade": "B1",
+            "age": 39,
+            "winRate": "5.200",
+            "localWinRate": "0.000",
+            "motorNumber": 26,
+            "motor2Rate": "33.3",
+            "boatNumber": 73,
+            "boat2Rate": "24.5",
+            "aiScore": 2009
+          }
+        ],
+        "reasoning": [
+          "6号艇 田中　　和也選手を本命に選定",
+          "全国勝率6.830の実力者、当地成績8.210と好相性で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-08",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 8,
+      "startTime": "13:54",
+      "volatility": {
+        "score": 53,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より2%弱い（グレード: B1、勝率: 5.1%）",
+          "外枠に好機材が1艇（6号艇(59.0%)）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 5,
+          "top3": [
+            5,
+            1,
+            3
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 5,
+              "name": "守田　　俊介",
+              "grade": "A1",
+              "age": 50,
+              "winRate": "7.160",
+              "localWinRate": "6.590",
+              "motorNumber": 8,
+              "motor2Rate": "22.9",
+              "boatNumber": 64,
+              "boat2Rate": "33.7",
+              "aiScore": 4328
+            },
+            {
+              "number": 1,
+              "name": "川上　　聡介",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "5.080",
+              "localWinRate": "5.550",
+              "motorNumber": 28,
+              "motor2Rate": "33.3",
+              "boatNumber": 18,
+              "boat2Rate": "37.8",
+              "aiScore": 3948
+            },
+            {
+              "number": 3,
+              "name": "鈴木　　　猛",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "5.360",
+              "localWinRate": "4.460",
+              "motorNumber": 32,
+              "motor2Rate": "38.7",
+              "boatNumber": 55,
+              "boat2Rate": "32.4",
+              "aiScore": 3405
+            },
+            {
+              "number": 2,
+              "name": "渋谷　　明憲",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "6.190",
+              "localWinRate": "5.720",
+              "motorNumber": 57,
+              "motor2Rate": "8.3",
+              "boatNumber": 72,
+              "boat2Rate": "28.4",
+              "aiScore": 2821
+            },
+            {
+              "number": 4,
+              "name": "柴田　　友和",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "4.360",
+              "localWinRate": "3.950",
+              "motorNumber": 33,
+              "motor2Rate": "23.7",
+              "boatNumber": 25,
+              "boat2Rate": "38.7",
+              "aiScore": 2815
+            },
+            {
+              "number": 6,
+              "name": "豊田　　訓靖",
+              "grade": "B2",
+              "age": 56,
+              "winRate": "3.040",
+              "localWinRate": "1.000",
+              "motorNumber": 14,
+              "motor2Rate": "59.0",
+              "boatNumber": 54,
+              "boat2Rate": "37.1",
+              "aiScore": 2790
+            }
+          ],
+          "reasoning": [
+            "5号艇 守田　　俊介選手を本命に選定",
+            "全国勝率7.160の実力者、当地成績6.590と好相性で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 6,
+          "top3": [
+            6,
+            1,
+            3
+          ],
+          "confidence": 87,
+          "players": [
+            {
+              "number": 6,
+              "name": "豊田　　訓靖",
+              "grade": "B2",
+              "age": 56,
+              "winRate": "3.040",
+              "localWinRate": "1.000",
+              "motorNumber": 14,
+              "motor2Rate": "59.0",
+              "boatNumber": 54,
+              "boat2Rate": "37.1",
+              "aiScore": 2759
+            },
+            {
+              "number": 1,
+              "name": "川上　　聡介",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "5.080",
+              "localWinRate": "5.550",
+              "motorNumber": 28,
+              "motor2Rate": "33.3",
+              "boatNumber": 18,
+              "boat2Rate": "37.8",
+              "aiScore": 2587
+            },
+            {
+              "number": 3,
+              "name": "鈴木　　　猛",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "5.360",
+              "localWinRate": "4.460",
+              "motorNumber": 32,
+              "motor2Rate": "38.7",
+              "boatNumber": 55,
+              "boat2Rate": "32.4",
+              "aiScore": 2572
+            },
+            {
+              "number": 5,
+              "name": "守田　　俊介",
+              "grade": "A1",
+              "age": 50,
+              "winRate": "7.160",
+              "localWinRate": "6.590",
+              "motorNumber": 8,
+              "motor2Rate": "22.9",
+              "boatNumber": 64,
+              "boat2Rate": "33.7",
+              "aiScore": 2432
+            },
+            {
+              "number": 4,
+              "name": "柴田　　友和",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "4.360",
+              "localWinRate": "3.950",
+              "motorNumber": 33,
+              "motor2Rate": "23.7",
+              "boatNumber": 25,
+              "boat2Rate": "38.7",
+              "aiScore": 1785
+            },
+            {
+              "number": 2,
+              "name": "渋谷　　明憲",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "6.190",
+              "localWinRate": "5.720",
+              "motorNumber": 57,
+              "motor2Rate": "8.3",
+              "boatNumber": 72,
+              "boat2Rate": "28.4",
+              "aiScore": 1640
+            }
+          ],
+          "reasoning": [
+            "6号艇 豊田　　訓靖選手を本命に選定",
+            "安全性を重視した評価で最高スコアを獲得"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 6,
+          "top3": [
+            6,
+            1,
+            3
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 6,
+              "name": "豊田　　訓靖",
+              "grade": "B2",
+              "age": 56,
+              "winRate": "3.040",
+              "localWinRate": "1.000",
+              "motorNumber": 14,
+              "motor2Rate": "59.0",
+              "boatNumber": 54,
+              "boat2Rate": "37.1",
+              "aiScore": 13934
+            },
+            {
+              "number": 1,
+              "name": "川上　　聡介",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "5.080",
+              "localWinRate": "5.550",
+              "motorNumber": 28,
+              "motor2Rate": "33.3",
+              "boatNumber": 18,
+              "boat2Rate": "37.8",
+              "aiScore": 11754
+            },
+            {
+              "number": 3,
+              "name": "鈴木　　　猛",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "5.360",
+              "localWinRate": "4.460",
+              "motorNumber": 32,
+              "motor2Rate": "38.7",
+              "boatNumber": 55,
+              "boat2Rate": "32.4",
+              "aiScore": 11555
+            },
+            {
+              "number": 5,
+              "name": "守田　　俊介",
+              "grade": "A1",
+              "age": 50,
+              "winRate": "7.160",
+              "localWinRate": "6.590",
+              "motorNumber": 8,
+              "motor2Rate": "22.9",
+              "boatNumber": 64,
+              "boat2Rate": "33.7",
+              "aiScore": 10654
+            },
+            {
+              "number": 4,
+              "name": "柴田　　友和",
+              "grade": "B1",
+              "age": 48,
+              "winRate": "4.360",
+              "localWinRate": "3.950",
+              "motorNumber": 33,
+              "motor2Rate": "23.7",
+              "boatNumber": 25,
+              "boat2Rate": "38.7",
+              "aiScore": 9165
+            },
+            {
+              "number": 2,
+              "name": "渋谷　　明憲",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "6.190",
+              "localWinRate": "5.720",
+              "motorNumber": 57,
+              "motor2Rate": "8.3",
+              "boatNumber": 72,
+              "boat2Rate": "28.4",
+              "aiScore": 6322
+            }
+          ],
+          "reasoning": [
+            "6号艇 豊田　　訓靖選手を本命に選定",
+            "6号艇ながらモーター2連率59.0%の好機材、好モーターを活かした高配当の可能性"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 5,
+        "top3": [
+          5,
+          1,
+          3
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 5,
+            "name": "守田　　俊介",
+            "grade": "A1",
+            "age": 50,
+            "winRate": "7.160",
+            "localWinRate": "6.590",
+            "motorNumber": 8,
+            "motor2Rate": "22.9",
+            "boatNumber": 64,
+            "boat2Rate": "33.7",
+            "aiScore": 4328
+          },
+          {
+            "number": 1,
+            "name": "川上　　聡介",
+            "grade": "B1",
+            "age": 48,
+            "winRate": "5.080",
+            "localWinRate": "5.550",
+            "motorNumber": 28,
+            "motor2Rate": "33.3",
+            "boatNumber": 18,
+            "boat2Rate": "37.8",
+            "aiScore": 3948
+          },
+          {
+            "number": 3,
+            "name": "鈴木　　　猛",
+            "grade": "B1",
+            "age": 52,
+            "winRate": "5.360",
+            "localWinRate": "4.460",
+            "motorNumber": 32,
+            "motor2Rate": "38.7",
+            "boatNumber": 55,
+            "boat2Rate": "32.4",
+            "aiScore": 3405
+          },
+          {
+            "number": 2,
+            "name": "渋谷　　明憲",
+            "grade": "A2",
+            "age": 39,
+            "winRate": "6.190",
+            "localWinRate": "5.720",
+            "motorNumber": 57,
+            "motor2Rate": "8.3",
+            "boatNumber": 72,
+            "boat2Rate": "28.4",
+            "aiScore": 2821
+          },
+          {
+            "number": 4,
+            "name": "柴田　　友和",
+            "grade": "B1",
+            "age": 48,
+            "winRate": "4.360",
+            "localWinRate": "3.950",
+            "motorNumber": 33,
+            "motor2Rate": "23.7",
+            "boatNumber": 25,
+            "boat2Rate": "38.7",
+            "aiScore": 2815
+          },
+          {
+            "number": 6,
+            "name": "豊田　　訓靖",
+            "grade": "B2",
+            "age": 56,
+            "winRate": "3.040",
+            "localWinRate": "1.000",
+            "motorNumber": 14,
+            "motor2Rate": "59.0",
+            "boatNumber": 54,
+            "boat2Rate": "37.1",
+            "aiScore": 2790
+          }
+        ],
+        "reasoning": [
+          "5号艇 守田　　俊介選手を本命に選定",
+          "全国勝率7.160の実力者、当地成績6.590と好相性で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-09",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 9,
+      "startTime": "14:36",
+      "volatility": {
+        "score": 51,
+        "level": "medium",
+        "recommendedModel": "standard",
+        "reasons": [
+          "1号艇が平均より-12%弱い（グレード: A2、勝率: 6.0%）",
+          "外枠に好機材が2艇（4号艇(54.3%)、6号艇(57.1%)）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 4,
+          "top3": [
+            4,
+            5,
+            6
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 4,
+              "name": "高倉　　和士",
+              "grade": "A2",
+              "age": 34,
+              "winRate": "7.240",
+              "localWinRate": "7.290",
+              "motorNumber": 53,
+              "motor2Rate": "54.3",
+              "boatNumber": 28,
+              "boat2Rate": "38.3",
+              "aiScore": 5457
+            },
+            {
+              "number": 5,
+              "name": "黒崎　　竜也",
+              "grade": "B2",
+              "age": 49,
+              "winRate": "4.910",
+              "localWinRate": "6.910",
+              "motorNumber": 2,
+              "motor2Rate": "29.0",
+              "boatNumber": 37,
+              "boat2Rate": "39.7",
+              "aiScore": 5135
+            },
+            {
+              "number": 6,
+              "name": "松本　　浩貴",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "4.130",
+              "localWinRate": "5.630",
+              "motorNumber": 3,
+              "motor2Rate": "57.1",
+              "boatNumber": 21,
+              "boat2Rate": "35.4",
+              "aiScore": 4685
+            },
+            {
+              "number": 2,
+              "name": "一瀬　　　明",
+              "grade": "A2",
+              "age": 54,
+              "winRate": "5.740",
+              "localWinRate": "5.500",
+              "motorNumber": 47,
+              "motor2Rate": "25.0",
+              "boatNumber": 31,
+              "boat2Rate": "39.3",
+              "aiScore": 3890
+            },
+            {
+              "number": 1,
+              "name": "天野　　友和",
+              "grade": "A2",
+              "age": 48,
+              "winRate": "5.990",
+              "localWinRate": "5.750",
+              "motorNumber": 11,
+              "motor2Rate": "28.1",
+              "boatNumber": 30,
+              "boat2Rate": "24.2",
+              "aiScore": 3783
+            },
+            {
+              "number": 3,
+              "name": "岩永　　節也",
+              "grade": "B1",
+              "age": 43,
+              "winRate": "4.100",
+              "localWinRate": "2.400",
+              "motorNumber": 42,
+              "motor2Rate": "50.0",
+              "boatNumber": 40,
+              "boat2Rate": "25.0",
+              "aiScore": 2400
+            }
+          ],
+          "reasoning": [
+            "4号艇 高倉　　和士選手を本命に選定",
+            "全国勝率7.240の実力者、当地成績7.290と好相性、モーター2連率54.3%の好機材で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 4,
+          "top3": [
+            4,
+            6,
+            3
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 4,
+              "name": "高倉　　和士",
+              "grade": "A2",
+              "age": 34,
+              "winRate": "7.240",
+              "localWinRate": "7.290",
+              "motorNumber": 53,
+              "motor2Rate": "54.3",
+              "boatNumber": 28,
+              "boat2Rate": "38.3",
+              "aiScore": 3711
+            },
+            {
+              "number": 6,
+              "name": "松本　　浩貴",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "4.130",
+              "localWinRate": "5.630",
+              "motorNumber": 3,
+              "motor2Rate": "57.1",
+              "boatNumber": 21,
+              "boat2Rate": "35.4",
+              "aiScore": 3197
+            },
+            {
+              "number": 3,
+              "name": "岩永　　節也",
+              "grade": "B1",
+              "age": 43,
+              "winRate": "4.100",
+              "localWinRate": "2.400",
+              "motorNumber": 42,
+              "motor2Rate": "50.0",
+              "boatNumber": 40,
+              "boat2Rate": "25.0",
+              "aiScore": 2695
+            },
+            {
+              "number": 1,
+              "name": "天野　　友和",
+              "grade": "A2",
+              "age": 48,
+              "winRate": "5.990",
+              "localWinRate": "5.750",
+              "motorNumber": 11,
+              "motor2Rate": "28.1",
+              "boatNumber": 30,
+              "boat2Rate": "24.2",
+              "aiScore": 2573
+            },
+            {
+              "number": 5,
+              "name": "黒崎　　竜也",
+              "grade": "B2",
+              "age": 49,
+              "winRate": "4.910",
+              "localWinRate": "6.910",
+              "motorNumber": 2,
+              "motor2Rate": "29.0",
+              "boatNumber": 37,
+              "boat2Rate": "39.7",
+              "aiScore": 2292
+            },
+            {
+              "number": 2,
+              "name": "一瀬　　　明",
+              "grade": "A2",
+              "age": 54,
+              "winRate": "5.740",
+              "localWinRate": "5.500",
+              "motorNumber": 47,
+              "motor2Rate": "25.0",
+              "boatNumber": 31,
+              "boat2Rate": "39.3",
+              "aiScore": 2231
+            }
+          ],
+          "reasoning": [
+            "4号艇 高倉　　和士選手を本命に選定",
+            "A2級選手として堅実な実績、全国勝率7.240の高い実力により的中率が期待できる"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 4,
+          "top3": [
+            4,
+            6,
+            5
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 4,
+              "name": "高倉　　和士",
+              "grade": "A2",
+              "age": 34,
+              "winRate": "7.240",
+              "localWinRate": "7.290",
+              "motorNumber": 53,
+              "motor2Rate": "54.3",
+              "boatNumber": 28,
+              "boat2Rate": "38.3",
+              "aiScore": 16853
+            },
+            {
+              "number": 6,
+              "name": "松本　　浩貴",
+              "grade": "B1",
+              "age": 52,
+              "winRate": "4.130",
+              "localWinRate": "5.630",
+              "motorNumber": 3,
+              "motor2Rate": "57.1",
+              "boatNumber": 21,
+              "boat2Rate": "35.4",
+              "aiScore": 16236
+            },
+            {
+              "number": 5,
+              "name": "黒崎　　竜也",
+              "grade": "B2",
+              "age": 49,
+              "winRate": "4.910",
+              "localWinRate": "6.910",
+              "motorNumber": 2,
+              "motor2Rate": "29.0",
+              "boatNumber": 37,
+              "boat2Rate": "39.7",
+              "aiScore": 13034
+            },
+            {
+              "number": 3,
+              "name": "岩永　　節也",
+              "grade": "B1",
+              "age": 43,
+              "winRate": "4.100",
+              "localWinRate": "2.400",
+              "motorNumber": 42,
+              "motor2Rate": "50.0",
+              "boatNumber": 40,
+              "boat2Rate": "25.0",
+              "aiScore": 11445
+            },
+            {
+              "number": 2,
+              "name": "一瀬　　　明",
+              "grade": "A2",
+              "age": 54,
+              "winRate": "5.740",
+              "localWinRate": "5.500",
+              "motorNumber": 47,
+              "motor2Rate": "25.0",
+              "boatNumber": 31,
+              "boat2Rate": "39.3",
+              "aiScore": 10625
+            },
+            {
+              "number": 1,
+              "name": "天野　　友和",
+              "grade": "A2",
+              "age": 48,
+              "winRate": "5.990",
+              "localWinRate": "5.750",
+              "motorNumber": 11,
+              "motor2Rate": "28.1",
+              "boatNumber": 30,
+              "boat2Rate": "24.2",
+              "aiScore": 10003
+            }
+          ],
+          "reasoning": [
+            "4号艇 高倉　　和士選手を本命に選定",
+            "4号艇ながらモーター2連率54.3%の好機材、当地成績7.290で展開に期待、好モーターを活かした高配当の可能性"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 4,
+        "top3": [
+          4,
+          5,
+          6
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 4,
+            "name": "高倉　　和士",
+            "grade": "A2",
+            "age": 34,
+            "winRate": "7.240",
+            "localWinRate": "7.290",
+            "motorNumber": 53,
+            "motor2Rate": "54.3",
+            "boatNumber": 28,
+            "boat2Rate": "38.3",
+            "aiScore": 5457
+          },
+          {
+            "number": 5,
+            "name": "黒崎　　竜也",
+            "grade": "B2",
+            "age": 49,
+            "winRate": "4.910",
+            "localWinRate": "6.910",
+            "motorNumber": 2,
+            "motor2Rate": "29.0",
+            "boatNumber": 37,
+            "boat2Rate": "39.7",
+            "aiScore": 5135
+          },
+          {
+            "number": 6,
+            "name": "松本　　浩貴",
+            "grade": "B1",
+            "age": 52,
+            "winRate": "4.130",
+            "localWinRate": "5.630",
+            "motorNumber": 3,
+            "motor2Rate": "57.1",
+            "boatNumber": 21,
+            "boat2Rate": "35.4",
+            "aiScore": 4685
+          },
+          {
+            "number": 2,
+            "name": "一瀬　　　明",
+            "grade": "A2",
+            "age": 54,
+            "winRate": "5.740",
+            "localWinRate": "5.500",
+            "motorNumber": 47,
+            "motor2Rate": "25.0",
+            "boatNumber": 31,
+            "boat2Rate": "39.3",
+            "aiScore": 3890
+          },
+          {
+            "number": 1,
+            "name": "天野　　友和",
+            "grade": "A2",
+            "age": 48,
+            "winRate": "5.990",
+            "localWinRate": "5.750",
+            "motorNumber": 11,
+            "motor2Rate": "28.1",
+            "boatNumber": 30,
+            "boat2Rate": "24.2",
+            "aiScore": 3783
+          },
+          {
+            "number": 3,
+            "name": "岩永　　節也",
+            "grade": "B1",
+            "age": 43,
+            "winRate": "4.100",
+            "localWinRate": "2.400",
+            "motorNumber": 42,
+            "motor2Rate": "50.0",
+            "boatNumber": 40,
+            "boat2Rate": "25.0",
+            "aiScore": 2400
+          }
+        ],
+        "reasoning": [
+          "4号艇 高倉　　和士選手を本命に選定",
+          "全国勝率7.240の実力者、当地成績7.290と好相性、モーター2連率54.3%の好機材で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-10",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 10,
+      "startTime": "15:05",
+      "volatility": {
+        "score": 68,
+        "level": "high",
+        "recommendedModel": "upset-focus",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.64%、平均: 5.4%）",
+          "1号艇が平均より-9%弱い（グレード: A2、勝率: 5.9%）",
+          "外枠に好機材が2艇（5号艇(45.7%)、6号艇(45.5%)）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 5,
+          "top3": [
+            5,
+            1,
+            6
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 5,
+              "name": "福田　　宗平",
+              "grade": "A2",
+              "age": 36,
+              "winRate": "6.390",
+              "localWinRate": "7.940",
+              "motorNumber": 13,
+              "motor2Rate": "45.7",
+              "boatNumber": 22,
+              "boat2Rate": "33.6",
+              "aiScore": 6192
+            },
+            {
+              "number": 1,
+              "name": "石田　　章央",
+              "grade": "A2",
+              "age": 50,
+              "winRate": "5.870",
+              "localWinRate": "6.830",
+              "motorNumber": 38,
+              "motor2Rate": "30.6",
+              "boatNumber": 47,
+              "boat2Rate": "36.1",
+              "aiScore": 5059
+            },
+            {
+              "number": 6,
+              "name": "飯島　　　誠",
+              "grade": "B1",
+              "age": 47,
+              "winRate": "4.710",
+              "localWinRate": "5.220",
+              "motorNumber": 36,
+              "motor2Rate": "45.5",
+              "boatNumber": 43,
+              "boat2Rate": "33.1",
+              "aiScore": 4270
+            },
+            {
+              "number": 2,
+              "name": "伊藤　　紘章",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.810",
+              "localWinRate": "4.690",
+              "motorNumber": 23,
+              "motor2Rate": "28.6",
+              "boatNumber": 66,
+              "boat2Rate": "34.8",
+              "aiScore": 3591
+            },
+            {
+              "number": 3,
+              "name": "大串　　重幸",
+              "grade": "A2",
+              "age": 40,
+              "winRate": "5.680",
+              "localWinRate": "4.270",
+              "motorNumber": 58,
+              "motor2Rate": "13.0",
+              "boatNumber": 19,
+              "boat2Rate": "40.0",
+              "aiScore": 2658
+            },
+            {
+              "number": 4,
+              "name": "安部　　慎一",
+              "grade": "B1",
+              "age": 38,
+              "winRate": "4.810",
+              "localWinRate": "4.360",
+              "motorNumber": 55,
+              "motor2Rate": "5.7",
+              "boatNumber": 62,
+              "boat2Rate": "30.2",
+              "aiScore": 2312
+            }
+          ],
+          "reasoning": [
+            "5号艇 福田　　宗平選手を本命に選定",
+            "当地成績7.940と好相性、モーター2連率45.7%の好機材で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 5,
+          "top3": [
+            5,
+            6,
+            1
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 5,
+              "name": "福田　　宗平",
+              "grade": "A2",
+              "age": 36,
+              "winRate": "6.390",
+              "localWinRate": "7.940",
+              "motorNumber": 13,
+              "motor2Rate": "45.7",
+              "boatNumber": 22,
+              "boat2Rate": "33.6",
+              "aiScore": 3294
+            },
+            {
+              "number": 6,
+              "name": "飯島　　　誠",
+              "grade": "B1",
+              "age": 47,
+              "winRate": "4.710",
+              "localWinRate": "5.220",
+              "motorNumber": 36,
+              "motor2Rate": "45.5",
+              "boatNumber": 43,
+              "boat2Rate": "33.1",
+              "aiScore": 2772
+            },
+            {
+              "number": 1,
+              "name": "石田　　章央",
+              "grade": "A2",
+              "age": 50,
+              "winRate": "5.870",
+              "localWinRate": "6.830",
+              "motorNumber": 38,
+              "motor2Rate": "30.6",
+              "boatNumber": 47,
+              "boat2Rate": "36.1",
+              "aiScore": 2741
+            },
+            {
+              "number": 2,
+              "name": "伊藤　　紘章",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.810",
+              "localWinRate": "4.690",
+              "motorNumber": 23,
+              "motor2Rate": "28.6",
+              "boatNumber": 66,
+              "boat2Rate": "34.8",
+              "aiScore": 2128
+            },
+            {
+              "number": 3,
+              "name": "大串　　重幸",
+              "grade": "A2",
+              "age": 40,
+              "winRate": "5.680",
+              "localWinRate": "4.270",
+              "motorNumber": 58,
+              "motor2Rate": "13.0",
+              "boatNumber": 19,
+              "boat2Rate": "40.0",
+              "aiScore": 1631
+            },
+            {
+              "number": 4,
+              "name": "安部　　慎一",
+              "grade": "B1",
+              "age": 38,
+              "winRate": "4.810",
+              "localWinRate": "4.360",
+              "motorNumber": 55,
+              "motor2Rate": "5.7",
+              "boatNumber": 62,
+              "boat2Rate": "30.2",
+              "aiScore": 1157
+            }
+          ],
+          "reasoning": [
+            "5号艇 福田　　宗平選手を本命に選定",
+            "A2級選手として堅実な実績、全国勝率6.390の高い実力により的中率が期待できる"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 5,
+          "top3": [
+            5,
+            6,
+            1
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 5,
+              "name": "福田　　宗平",
+              "grade": "A2",
+              "age": 36,
+              "winRate": "6.390",
+              "localWinRate": "7.940",
+              "motorNumber": 13,
+              "motor2Rate": "45.7",
+              "boatNumber": 22,
+              "boat2Rate": "33.6",
+              "aiScore": 16366
+            },
+            {
+              "number": 6,
+              "name": "飯島　　　誠",
+              "grade": "B1",
+              "age": 47,
+              "winRate": "4.710",
+              "localWinRate": "5.220",
+              "motorNumber": 36,
+              "motor2Rate": "45.5",
+              "boatNumber": 43,
+              "boat2Rate": "33.1",
+              "aiScore": 13843
+            },
+            {
+              "number": 1,
+              "name": "石田　　章央",
+              "grade": "A2",
+              "age": 50,
+              "winRate": "5.870",
+              "localWinRate": "6.830",
+              "motorNumber": 38,
+              "motor2Rate": "30.6",
+              "boatNumber": 47,
+              "boat2Rate": "36.1",
+              "aiScore": 12666
+            },
+            {
+              "number": 2,
+              "name": "伊藤　　紘章",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.810",
+              "localWinRate": "4.690",
+              "motorNumber": 23,
+              "motor2Rate": "28.6",
+              "boatNumber": 66,
+              "boat2Rate": "34.8",
+              "aiScore": 10509
+            },
+            {
+              "number": 3,
+              "name": "大串　　重幸",
+              "grade": "A2",
+              "age": 40,
+              "winRate": "5.680",
+              "localWinRate": "4.270",
+              "motorNumber": 58,
+              "motor2Rate": "13.0",
+              "boatNumber": 19,
+              "boat2Rate": "40.0",
+              "aiScore": 7349
+            },
+            {
+              "number": 4,
+              "name": "安部　　慎一",
+              "grade": "B1",
+              "age": 38,
+              "winRate": "4.810",
+              "localWinRate": "4.360",
+              "motorNumber": 55,
+              "motor2Rate": "5.7",
+              "boatNumber": 62,
+              "boat2Rate": "30.2",
+              "aiScore": 5505
+            }
+          ],
+          "reasoning": [
+            "5号艇 福田　　宗平選手を本命に選定",
+            "5号艇ながらモーター2連率45.7%の好機材、当地成績7.940で展開に期待、好モーターを活かした高配当の可能性"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 5,
+        "top3": [
+          5,
+          1,
+          6
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 5,
+            "name": "福田　　宗平",
+            "grade": "A2",
+            "age": 36,
+            "winRate": "6.390",
+            "localWinRate": "7.940",
+            "motorNumber": 13,
+            "motor2Rate": "45.7",
+            "boatNumber": 22,
+            "boat2Rate": "33.6",
+            "aiScore": 6192
+          },
+          {
+            "number": 1,
+            "name": "石田　　章央",
+            "grade": "A2",
+            "age": 50,
+            "winRate": "5.870",
+            "localWinRate": "6.830",
+            "motorNumber": 38,
+            "motor2Rate": "30.6",
+            "boatNumber": 47,
+            "boat2Rate": "36.1",
+            "aiScore": 5059
+          },
+          {
+            "number": 6,
+            "name": "飯島　　　誠",
+            "grade": "B1",
+            "age": 47,
+            "winRate": "4.710",
+            "localWinRate": "5.220",
+            "motorNumber": 36,
+            "motor2Rate": "45.5",
+            "boatNumber": 43,
+            "boat2Rate": "33.1",
+            "aiScore": 4270
+          },
+          {
+            "number": 2,
+            "name": "伊藤　　紘章",
+            "grade": "B1",
+            "age": 39,
+            "winRate": "4.810",
+            "localWinRate": "4.690",
+            "motorNumber": 23,
+            "motor2Rate": "28.6",
+            "boatNumber": 66,
+            "boat2Rate": "34.8",
+            "aiScore": 3591
+          },
+          {
+            "number": 3,
+            "name": "大串　　重幸",
+            "grade": "A2",
+            "age": 40,
+            "winRate": "5.680",
+            "localWinRate": "4.270",
+            "motorNumber": 58,
+            "motor2Rate": "13.0",
+            "boatNumber": 19,
+            "boat2Rate": "40.0",
+            "aiScore": 2658
+          },
+          {
+            "number": 4,
+            "name": "安部　　慎一",
+            "grade": "B1",
+            "age": 38,
+            "winRate": "4.810",
+            "localWinRate": "4.360",
+            "motorNumber": 55,
+            "motor2Rate": "5.7",
+            "boatNumber": 62,
+            "boat2Rate": "30.2",
+            "aiScore": 2312
+          }
+        ],
+        "reasoning": [
+          "5号艇 福田　　宗平選手を本命に選定",
+          "当地成績7.940と好相性、モーター2連率45.7%の好機材で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-11",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 11,
+      "startTime": "15:32",
+      "volatility": {
+        "score": 24,
+        "level": "low",
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.86%、平均: 5.9%）",
+          "モーター性能が均等（2連率の標準偏差: 7.2%）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 1,
+          "top3": [
+            1,
+            5,
+            3
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 1,
+              "name": "上條　　嘉嗣",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.690",
+              "localWinRate": "6.600",
+              "motorNumber": 15,
+              "motor2Rate": "16.0",
+              "boatNumber": 27,
+              "boat2Rate": "41.0",
+              "aiScore": 4635
+            },
+            {
+              "number": 5,
+              "name": "吉田　凌太朗",
+              "grade": "A1",
+              "age": 32,
+              "winRate": "6.900",
+              "localWinRate": "6.780",
+              "motorNumber": 50,
+              "motor2Rate": "14.7",
+              "boatNumber": 45,
+              "boat2Rate": "26.4",
+              "aiScore": 4355
+            },
+            {
+              "number": 3,
+              "name": "鹿島　　敏弘",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.770",
+              "localWinRate": "4.890",
+              "motorNumber": 37,
+              "motor2Rate": "32.1",
+              "boatNumber": 74,
+              "boat2Rate": "35.7",
+              "aiScore": 3626
+            },
+            {
+              "number": 2,
+              "name": "白井　　友晴",
+              "grade": "B1",
+              "age": 53,
+              "winRate": "4.760",
+              "localWinRate": "5.260",
+              "motorNumber": 43,
+              "motor2Rate": "16.1",
+              "boatNumber": 60,
+              "boat2Rate": "39.3",
+              "aiScore": 3354
+            },
+            {
+              "number": 4,
+              "name": "市川　　哲也",
+              "grade": "A2",
+              "age": 57,
+              "winRate": "6.390",
+              "localWinRate": "5.140",
+              "motorNumber": 16,
+              "motor2Rate": "18.8",
+              "boatNumber": 71,
+              "boat2Rate": "34.7",
+              "aiScore": 3309
+            },
+            {
+              "number": 6,
+              "name": "南　　　佑典",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "5.930",
+              "localWinRate": "5.290",
+              "motorNumber": 59,
+              "motor2Rate": "30.8",
+              "boatNumber": 50,
+              "boat2Rate": "27.1",
+              "aiScore": 3283
+            }
+          ],
+          "reasoning": [
+            "1号艇 上條　　嘉嗣選手を本命に選定",
+            "全国勝率6.690の実力者、当地成績6.600と好相性で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 6,
+          "top3": [
+            6,
+            1,
+            3
+          ],
+          "confidence": 80,
+          "players": [
+            {
+              "number": 6,
+              "name": "南　　　佑典",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "5.930",
+              "localWinRate": "5.290",
+              "motorNumber": 59,
+              "motor2Rate": "30.8",
+              "boatNumber": 50,
+              "boat2Rate": "27.1",
+              "aiScore": 2409
+            },
+            {
+              "number": 1,
+              "name": "上條　　嘉嗣",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.690",
+              "localWinRate": "6.600",
+              "motorNumber": 15,
+              "motor2Rate": "16.0",
+              "boatNumber": 27,
+              "boat2Rate": "41.0",
+              "aiScore": 2307
+            },
+            {
+              "number": 3,
+              "name": "鹿島　　敏弘",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.770",
+              "localWinRate": "4.890",
+              "motorNumber": 37,
+              "motor2Rate": "32.1",
+              "boatNumber": 74,
+              "boat2Rate": "35.7",
+              "aiScore": 2266
+            },
+            {
+              "number": 5,
+              "name": "吉田　凌太朗",
+              "grade": "A1",
+              "age": 32,
+              "winRate": "6.900",
+              "localWinRate": "6.780",
+              "motorNumber": 50,
+              "motor2Rate": "14.7",
+              "boatNumber": 45,
+              "boat2Rate": "26.4",
+              "aiScore": 2087
+            },
+            {
+              "number": 4,
+              "name": "市川　　哲也",
+              "grade": "A2",
+              "age": 57,
+              "winRate": "6.390",
+              "localWinRate": "5.140",
+              "motorNumber": 16,
+              "motor2Rate": "18.8",
+              "boatNumber": 71,
+              "boat2Rate": "34.7",
+              "aiScore": 2006
+            },
+            {
+              "number": 2,
+              "name": "白井　　友晴",
+              "grade": "B1",
+              "age": 53,
+              "winRate": "4.760",
+              "localWinRate": "5.260",
+              "motorNumber": 43,
+              "motor2Rate": "16.1",
+              "boatNumber": 60,
+              "boat2Rate": "39.3",
+              "aiScore": 1669
+            }
+          ],
+          "reasoning": [
+            "6号艇 南　　　佑典選手を本命に選定",
+            "A2級選手として堅実な実績により的中率が期待できる"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 3,
+          "top3": [
+            3,
+            1,
+            6
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "鹿島　　敏弘",
+              "grade": "B1",
+              "age": 39,
+              "winRate": "4.770",
+              "localWinRate": "4.890",
+              "motorNumber": 37,
+              "motor2Rate": "32.1",
+              "boatNumber": 74,
+              "boat2Rate": "35.7",
+              "aiScore": 11147
+            },
+            {
+              "number": 1,
+              "name": "上條　　嘉嗣",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.690",
+              "localWinRate": "6.600",
+              "motorNumber": 15,
+              "motor2Rate": "16.0",
+              "boatNumber": 27,
+              "boat2Rate": "41.0",
+              "aiScore": 10252
+            },
+            {
+              "number": 6,
+              "name": "南　　　佑典",
+              "grade": "A2",
+              "age": 39,
+              "winRate": "5.930",
+              "localWinRate": "5.290",
+              "motorNumber": 59,
+              "motor2Rate": "30.8",
+              "boatNumber": 50,
+              "boat2Rate": "27.1",
+              "aiScore": 10133
+            },
+            {
+              "number": 5,
+              "name": "吉田　凌太朗",
+              "grade": "A1",
+              "age": 32,
+              "winRate": "6.900",
+              "localWinRate": "6.780",
+              "motorNumber": 50,
+              "motor2Rate": "14.7",
+              "boatNumber": 45,
+              "boat2Rate": "26.4",
+              "aiScore": 9143
+            },
+            {
+              "number": 4,
+              "name": "市川　　哲也",
+              "grade": "A2",
+              "age": 57,
+              "winRate": "6.390",
+              "localWinRate": "5.140",
+              "motorNumber": 16,
+              "motor2Rate": "18.8",
+              "boatNumber": 71,
+              "boat2Rate": "34.7",
+              "aiScore": 8799
+            },
+            {
+              "number": 2,
+              "name": "白井　　友晴",
+              "grade": "B1",
+              "age": 53,
+              "winRate": "4.760",
+              "localWinRate": "5.260",
+              "motorNumber": 43,
+              "motor2Rate": "16.1",
+              "boatNumber": 60,
+              "boat2Rate": "39.3",
+              "aiScore": 8750
+            }
+          ],
+          "reasoning": [
+            "3号艇 鹿島　　敏弘選手を本命に選定",
+            "展開の妙と機材性能を重視した評価で最高スコア"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 1,
+        "top3": [
+          1,
+          5,
+          3
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 1,
+            "name": "上條　　嘉嗣",
+            "grade": "A1",
+            "age": 36,
+            "winRate": "6.690",
+            "localWinRate": "6.600",
+            "motorNumber": 15,
+            "motor2Rate": "16.0",
+            "boatNumber": 27,
+            "boat2Rate": "41.0",
+            "aiScore": 4635
+          },
+          {
+            "number": 5,
+            "name": "吉田　凌太朗",
+            "grade": "A1",
+            "age": 32,
+            "winRate": "6.900",
+            "localWinRate": "6.780",
+            "motorNumber": 50,
+            "motor2Rate": "14.7",
+            "boatNumber": 45,
+            "boat2Rate": "26.4",
+            "aiScore": 4355
+          },
+          {
+            "number": 3,
+            "name": "鹿島　　敏弘",
+            "grade": "B1",
+            "age": 39,
+            "winRate": "4.770",
+            "localWinRate": "4.890",
+            "motorNumber": 37,
+            "motor2Rate": "32.1",
+            "boatNumber": 74,
+            "boat2Rate": "35.7",
+            "aiScore": 3626
+          },
+          {
+            "number": 2,
+            "name": "白井　　友晴",
+            "grade": "B1",
+            "age": 53,
+            "winRate": "4.760",
+            "localWinRate": "5.260",
+            "motorNumber": 43,
+            "motor2Rate": "16.1",
+            "boatNumber": 60,
+            "boat2Rate": "39.3",
+            "aiScore": 3354
+          },
+          {
+            "number": 4,
+            "name": "市川　　哲也",
+            "grade": "A2",
+            "age": 57,
+            "winRate": "6.390",
+            "localWinRate": "5.140",
+            "motorNumber": 16,
+            "motor2Rate": "18.8",
+            "boatNumber": 71,
+            "boat2Rate": "34.7",
+            "aiScore": 3309
+          },
+          {
+            "number": 6,
+            "name": "南　　　佑典",
+            "grade": "A2",
+            "age": 39,
+            "winRate": "5.930",
+            "localWinRate": "5.290",
+            "motorNumber": 59,
+            "motor2Rate": "30.8",
+            "boatNumber": 50,
+            "boat2Rate": "27.1",
+            "aiScore": 3283
+          }
+        ],
+        "reasoning": [
+          "1号艇 上條　　嘉嗣選手を本命に選定",
+          "全国勝率6.690の実力者、当地成績6.600と好相性で総合評価が最高"
+        ]
+      },
+      "result": {
+        "finished": false,
+        "rank1": null,
+        "rank2": null,
+        "rank3": null,
+        "updatedAt": null
+      },
+      "accuracy": {
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
+      }
+    },
+    {
+      "raceId": "2025-12-21-08-12",
+      "venue": "常滑",
+      "venueCode": 8,
+      "raceNumber": 12,
+      "startTime": "16:06",
+      "volatility": {
+        "score": 19,
+        "level": "low",
+        "recommendedModel": "safe-bet",
+        "reasons": [
+          "選手間の実力差が小さい（勝率の標準偏差: 0.54%、平均: 6.6%）"
+        ]
+      },
+      "predictions": {
+        "standard": {
+          "topPick": 3,
+          "top3": [
+            3,
+            5,
+            6
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 3,
+              "name": "田中　　和也",
+              "grade": "A1",
+              "age": 41,
+              "winRate": "6.830",
+              "localWinRate": "8.210",
+              "motorNumber": 10,
+              "motor2Rate": "23.7",
+              "boatNumber": 57,
+              "boat2Rate": "34.9",
+              "aiScore": 6040
+            },
+            {
+              "number": 5,
+              "name": "秦　　　英悟",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "7.230",
+              "localWinRate": "8.450",
+              "motorNumber": 48,
+              "motor2Rate": "0.0",
+              "boatNumber": 34,
+              "boat2Rate": "32.7",
+              "aiScore": 5221
+            },
+            {
+              "number": 6,
+              "name": "堀本　　和也",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.130",
+              "localWinRate": "6.950",
+              "motorNumber": 56,
+              "motor2Rate": "35.3",
+              "boatNumber": 49,
+              "boat2Rate": "36.8",
+              "aiScore": 5086
+            },
+            {
+              "number": 2,
+              "name": "安達　　裕樹",
+              "grade": "A1",
+              "age": 42,
+              "winRate": "5.920",
+              "localWinRate": "6.650",
+              "motorNumber": 30,
+              "motor2Rate": "37.9",
+              "boatNumber": 46,
+              "boat2Rate": "31.4",
+              "aiScore": 4661
+            },
+            {
+              "number": 4,
+              "name": "丹下　　　将",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "6.060",
+              "localWinRate": "6.800",
+              "motorNumber": 44,
+              "motor2Rate": "26.3",
+              "boatNumber": 44,
+              "boat2Rate": "31.5",
+              "aiScore": 4539
+            },
+            {
+              "number": 1,
+              "name": "守田　　俊介",
+              "grade": "A1",
+              "age": 50,
+              "winRate": "7.160",
+              "localWinRate": "6.590",
+              "motorNumber": 8,
+              "motor2Rate": "22.9",
+              "boatNumber": 64,
+              "boat2Rate": "33.7",
+              "aiScore": 4348
+            }
+          ],
+          "reasoning": [
+            "3号艇 田中　　和也選手を本命に選定",
+            "全国勝率6.830の実力者、当地成績8.210と好相性で総合評価が最高"
+          ]
+        },
+        "safeBet": {
+          "topPick": 2,
+          "top3": [
+            2,
+            6,
+            1
+          ],
+          "confidence": 81,
+          "players": [
+            {
+              "number": 2,
+              "name": "安達　　裕樹",
+              "grade": "A1",
+              "age": 42,
+              "winRate": "5.920",
+              "localWinRate": "6.650",
+              "motorNumber": 30,
+              "motor2Rate": "37.9",
+              "boatNumber": 46,
+              "boat2Rate": "31.4",
+              "aiScore": 2923
+            },
+            {
+              "number": 6,
+              "name": "堀本　　和也",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.130",
+              "localWinRate": "6.950",
+              "motorNumber": 56,
+              "motor2Rate": "35.3",
+              "boatNumber": 49,
+              "boat2Rate": "36.8",
+              "aiScore": 2809
+            },
+            {
+              "number": 1,
+              "name": "守田　　俊介",
+              "grade": "A1",
+              "age": 50,
+              "winRate": "7.160",
+              "localWinRate": "6.590",
+              "motorNumber": 8,
+              "motor2Rate": "22.9",
+              "boatNumber": 64,
+              "boat2Rate": "33.7",
+              "aiScore": 2642
+            },
+            {
+              "number": 3,
+              "name": "田中　　和也",
+              "grade": "A1",
+              "age": 41,
+              "winRate": "6.830",
+              "localWinRate": "8.210",
+              "motorNumber": 10,
+              "motor2Rate": "23.7",
+              "boatNumber": 57,
+              "boat2Rate": "34.9",
+              "aiScore": 2581
+            },
+            {
+              "number": 4,
+              "name": "丹下　　　将",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "6.060",
+              "localWinRate": "6.800",
+              "motorNumber": 44,
+              "motor2Rate": "26.3",
+              "boatNumber": 44,
+              "boat2Rate": "31.5",
+              "aiScore": 2459
+            },
+            {
+              "number": 5,
+              "name": "秦　　　英悟",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "7.230",
+              "localWinRate": "8.450",
+              "motorNumber": 48,
+              "motor2Rate": "0.0",
+              "boatNumber": 34,
+              "boat2Rate": "32.7",
+              "aiScore": 1675
+            }
+          ],
+          "reasoning": [
+            "2号艇 安達　　裕樹選手を本命に選定",
+            "A1級選手として安定した実力により的中率が期待できる"
+          ]
+        },
+        "upsetFocus": {
+          "topPick": 6,
+          "top3": [
+            6,
+            2,
+            3
+          ],
+          "confidence": 95,
+          "players": [
+            {
+              "number": 6,
+              "name": "堀本　　和也",
+              "grade": "A1",
+              "age": 36,
+              "winRate": "6.130",
+              "localWinRate": "6.950",
+              "motorNumber": 56,
+              "motor2Rate": "35.3",
+              "boatNumber": 49,
+              "boat2Rate": "36.8",
+              "aiScore": 13643
+            },
+            {
+              "number": 2,
+              "name": "安達　　裕樹",
+              "grade": "A1",
+              "age": 42,
+              "winRate": "5.920",
+              "localWinRate": "6.650",
+              "motorNumber": 30,
+              "motor2Rate": "37.9",
+              "boatNumber": 46,
+              "boat2Rate": "31.4",
+              "aiScore": 13073
+            },
+            {
+              "number": 3,
+              "name": "田中　　和也",
+              "grade": "A1",
+              "age": 41,
+              "winRate": "6.830",
+              "localWinRate": "8.210",
+              "motorNumber": 10,
+              "motor2Rate": "23.7",
+              "boatNumber": 57,
+              "boat2Rate": "34.9",
+              "aiScore": 12968
+            },
+            {
+              "number": 4,
+              "name": "丹下　　　将",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "6.060",
+              "localWinRate": "6.800",
+              "motorNumber": 44,
+              "motor2Rate": "26.3",
+              "boatNumber": 44,
+              "boat2Rate": "31.5",
+              "aiScore": 11374
+            },
+            {
+              "number": 1,
+              "name": "守田　　俊介",
+              "grade": "A1",
+              "age": 50,
+              "winRate": "7.160",
+              "localWinRate": "6.590",
+              "motorNumber": 8,
+              "motor2Rate": "22.9",
+              "boatNumber": 64,
+              "boat2Rate": "33.7",
+              "aiScore": 10454
+            },
+            {
+              "number": 5,
+              "name": "秦　　　英悟",
+              "grade": "A1",
+              "age": 40,
+              "winRate": "7.230",
+              "localWinRate": "8.450",
+              "motorNumber": 48,
+              "motor2Rate": "0.0",
+              "boatNumber": 34,
+              "boat2Rate": "32.7",
+              "aiScore": 8561
+            }
+          ],
+          "reasoning": [
+            "6号艇 堀本　　和也選手を本命に選定",
+            "当地成績6.950で展開に期待"
+          ]
+        }
+      },
+      "prediction": {
+        "topPick": 3,
+        "top3": [
+          3,
+          5,
+          6
+        ],
+        "confidence": 95,
+        "players": [
+          {
+            "number": 3,
+            "name": "田中　　和也",
+            "grade": "A1",
+            "age": 41,
+            "winRate": "6.830",
+            "localWinRate": "8.210",
+            "motorNumber": 10,
+            "motor2Rate": "23.7",
+            "boatNumber": 57,
+            "boat2Rate": "34.9",
+            "aiScore": 6040
+          },
+          {
+            "number": 5,
+            "name": "秦　　　英悟",
+            "grade": "A1",
+            "age": 40,
+            "winRate": "7.230",
+            "localWinRate": "8.450",
+            "motorNumber": 48,
+            "motor2Rate": "0.0",
+            "boatNumber": 34,
+            "boat2Rate": "32.7",
+            "aiScore": 5221
+          },
+          {
+            "number": 6,
+            "name": "堀本　　和也",
+            "grade": "A1",
+            "age": 36,
+            "winRate": "6.130",
+            "localWinRate": "6.950",
+            "motorNumber": 56,
+            "motor2Rate": "35.3",
+            "boatNumber": 49,
+            "boat2Rate": "36.8",
+            "aiScore": 5086
+          },
+          {
+            "number": 2,
+            "name": "安達　　裕樹",
+            "grade": "A1",
+            "age": 42,
+            "winRate": "5.920",
+            "localWinRate": "6.650",
+            "motorNumber": 30,
+            "motor2Rate": "37.9",
+            "boatNumber": 46,
+            "boat2Rate": "31.4",
+            "aiScore": 4661
+          },
+          {
+            "number": 4,
+            "name": "丹下　　　将",
+            "grade": "A1",
+            "age": 40,
+            "winRate": "6.060",
+            "localWinRate": "6.800",
+            "motorNumber": 44,
+            "motor2Rate": "26.3",
+            "boatNumber": 44,
+            "boat2Rate": "31.5",
+            "aiScore": 4539
+          },
+          {
+            "number": 1,
+            "name": "守田　　俊介",
+            "grade": "A1",
+            "age": 50,
+            "winRate": "7.160",
+            "localWinRate": "6.590",
+            "motorNumber": 8,
+            "motor2Rate": "22.9",
+            "boatNumber": 64,
+            "boat2Rate": "33.7",
+            "aiScore": 4348
+          }
+        ],
+        "reasoning": [
+          "3号艇 田中　　和也選手を本命に選定",
+          "全国勝率6.830の実力者、当地成績8.210と好相性で総合評価が最高"
         ]
       },
       "result": {
