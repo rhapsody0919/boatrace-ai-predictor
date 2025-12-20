@@ -1,7 +1,7 @@
 {
   "date": "2025-12-20",
-  "generatedAt": "2025-12-19T23:39:25.572Z",
-  "updatedAt": "2025-12-19T23:39:25.572Z",
+  "generatedAt": "2025-12-19T23:58:28.778Z",
+  "updatedAt": "2025-12-20T00:23:45.185Z",
   "races": [
     {
       "raceId": "2025-12-20-02-01",
@@ -401,9 +401,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -805,9 +820,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -1209,9 +1239,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -1613,9 +1658,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -2017,9 +2077,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -2421,9 +2496,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -2823,9 +2913,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -3226,9 +3331,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -3630,9 +3750,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -4033,9 +4168,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -4436,9 +4586,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -4840,9 +5005,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -5243,9 +5423,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -5647,9 +5842,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -6051,9 +6261,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -6454,9 +6679,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -6858,9 +7098,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -7261,9 +7516,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -7664,9 +7934,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -8067,9 +8352,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -8471,9 +8771,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -8874,9 +9189,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -9278,9 +9608,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -9682,9 +10027,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -10086,9 +10446,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -10490,9 +10865,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -10893,9 +11283,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -11297,9 +11702,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -11699,9 +12119,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -12103,9 +12538,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -12506,9 +12956,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -12907,9 +13372,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -13309,9 +13789,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -13712,9 +14207,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -14115,9 +14625,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -14517,9 +15042,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -14919,9 +15459,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -15322,9 +15877,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -15726,9 +16296,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -16129,9 +16714,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -16531,9 +17131,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -16932,9 +17547,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -17334,9 +17964,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -17736,9 +18381,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -18139,9 +18799,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -18540,9 +19215,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -18943,9 +19633,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -19344,9 +20049,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -19746,9 +20466,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -20148,9 +20883,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -20550,9 +21300,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -20952,9 +21717,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -21354,9 +22134,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -21756,9 +22551,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -22158,9 +22968,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -22560,9 +23385,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -22962,9 +23802,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -23364,9 +24219,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -23767,9 +24637,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -24170,9 +25055,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -24566,16 +25466,46 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 2,
+        "rank2": 1,
+        "rank3": 6,
+        "payouts": {
+          "win": {
+            "2": 670
+          },
+          "place": {
+            "1": 110,
+            "2": 170
+          },
+          "trifecta": {
+            "1-2-6": 3580
+          },
+          "trio": {
+            "2-1-6": 14100
+          }
+        },
+        "updatedAt": "2025-12-20T00:08:17.572Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        },
+        "safeBet": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        },
+        "upsetFocus": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -24977,9 +25907,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -25381,9 +26326,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -25782,9 +26742,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -26185,9 +27160,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -26588,9 +27578,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -26992,9 +27997,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -27395,9 +28415,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -27798,9 +28833,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -28202,9 +29252,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -28604,9 +29669,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -29007,9 +30087,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -29409,9 +30504,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -29811,9 +30921,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -30213,9 +31338,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -30615,9 +31755,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -31017,9 +32172,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -31419,9 +32589,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -31822,9 +33007,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -32225,9 +33425,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -32627,9 +33842,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -33030,9 +34260,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -33432,9 +34677,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -33834,9 +35094,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -34237,9 +35512,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -34640,9 +35930,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -35042,9 +36347,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -35446,9 +36766,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -35849,9 +37184,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -36251,9 +37601,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -36654,9 +38019,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -37057,9 +38437,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -37461,9 +38856,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -37864,9 +39274,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -38267,9 +39692,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -38670,9 +40110,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -39073,9 +40528,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -39475,9 +40945,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -39877,9 +41362,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -40280,9 +41780,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -40683,9 +42198,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -41086,9 +42616,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -41489,9 +43034,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -41892,9 +43452,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -42293,9 +43868,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -42695,9 +44285,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -43096,9 +44701,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -43498,9 +45118,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -43901,9 +45536,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -44303,9 +45953,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -44705,9 +46370,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -45108,9 +46788,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -45509,9 +47204,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -45912,9 +47622,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -46314,9 +48039,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -46716,9 +48456,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -47118,9 +48873,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -47521,9 +49291,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -47924,9 +49709,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -48326,9 +50126,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -48721,16 +50536,46 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 6,
+        "rank3": 5,
+        "payouts": {
+          "win": {
+            "1": 110
+          },
+          "place": {
+            "1": 100,
+            "6": 240
+          },
+          "trifecta": {
+            "1-5-6": 420
+          },
+          "trio": {
+            "1-6-5": 1660
+          }
+        },
+        "updatedAt": "2025-12-20T00:18:01.421Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        },
+        "safeBet": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        },
+        "upsetFocus": {
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -49130,9 +50975,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -49532,9 +51392,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -49933,9 +51808,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -50334,9 +52224,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -50737,9 +52642,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -51140,9 +53060,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -51542,9 +53477,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -51944,9 +53894,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -52347,9 +54312,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -52750,9 +54730,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -53152,9 +55147,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -53554,9 +55564,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -53956,9 +55981,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -54358,9 +56398,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -54762,9 +56817,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -55165,9 +57235,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -55569,9 +57654,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -55972,9 +58072,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -56376,9 +58491,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -56780,9 +58910,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -57184,9 +59329,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -57585,9 +59745,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -57987,9 +60162,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -58383,16 +60573,46 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 4,
+        "rank3": 5,
+        "payouts": {
+          "win": {
+            "1": 120
+          },
+          "place": {
+            "1": 100,
+            "4": 190
+          },
+          "trifecta": {
+            "1-4-5": 730
+          },
+          "trio": {
+            "1-4-5": 1530
+          }
+        },
+        "updatedAt": "2025-12-20T00:21:52.513Z"
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        },
+        "safeBet": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        },
+        "upsetFocus": {
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
+        }
       }
     },
     {
@@ -58792,9 +61012,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -59194,9 +61429,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -59596,9 +61846,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -59999,9 +62264,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -60402,9 +62682,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -60804,9 +63099,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -61205,9 +63515,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -61608,9 +63933,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -62010,9 +64350,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -62413,9 +64768,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     },
     {
@@ -62815,9 +65185,24 @@
         "updatedAt": null
       },
       "accuracy": {
-        "topPickHit": null,
-        "top3Hit": null,
-        "top3Included": null
+        "standard": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "safeBet": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        },
+        "upsetFocus": {
+          "topPickHit": null,
+          "topPickPlace": null,
+          "top3Hit": null,
+          "top3Included": null
+        }
       }
     }
   ]
