@@ -9467,7 +9467,7 @@
           "raceNo": 1,
           "weather": "雨",
           "airTemp": 15,
-          "windDirection": 3,
+          "windDirection": 7,
           "windVelocity": 1,
           "waterTemp": 12,
           "waveHeight": 1,
@@ -10545,10 +10545,10 @@
           "raceNo": 12,
           "weather": "雨",
           "airTemp": 15,
-          "windDirection": 3,
-          "windVelocity": 1,
+          "windDirection": 7,
+          "windVelocity": 2,
           "waterTemp": 12,
-          "waveHeight": 1,
+          "waveHeight": 2,
           "startTime": "20:35",
           "racers": [
             {
@@ -15368,5 +15368,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-20T11:22:33.037Z"
+  "scrapedAt": "2025-12-20T12:46:28.473Z"
 }
