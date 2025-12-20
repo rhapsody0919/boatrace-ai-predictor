@@ -4,6 +4,7 @@ import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import About from './pages/About';
 import FAQ from './pages/FAQ';
+import HowToUse from './pages/HowToUse';
 
 export default function AppRouter() {
   return (
@@ -18,6 +19,7 @@ export default function AppRouter() {
       {/* Other Pages */}
       <Route path="/about" element={<About />} />
       <Route path="/faq" element={<FAQ />} />
+      <Route path="/how-to-use" element={<HowToUse />} />
 
       {/* Fallback to main app */}
       <Route path="*" element={<App />} />

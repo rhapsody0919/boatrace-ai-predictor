@@ -1,0 +1,51 @@
+.update-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.update-status.fresh {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #4caf50;
+}
+
+.update-status.stale {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ff9800;
+}
+
+.update-icon {
+  font-size: 1.1rem;
+}
+
+.update-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.update-relative {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* スマホ対応 */
+@media (max-width: 768px) {
+  .update-status {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .update-relative {
+    font-size: 0.75rem;
+  }
+}

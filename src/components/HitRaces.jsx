@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { ShareButton } from './ShareButton'
 import { SocialShareButtons } from './SocialShareButtons'
 import { shareHitRaceToX, generateHitRaceShareText } from '../utils/share'
+import UpdateStatus from './UpdateStatus'
 import './HitRaces.css'
 
-function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) {
+function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, lastUpdated }) {
   const [hitRacesToday, setHitRacesToday] = useState([])
   const [hitRacesYesterday, setHitRacesYesterday] = useState([])
   const [hitRacesAll, setHitRacesAll] = useState([])
@@ -261,6 +262,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
       {/* 競艇場別統計セクション */}
       <section className="venue-stats-section">
         <h2>📊 競艇場別の的中実績</h2>
+        <UpdateStatus lastUpdated={lastUpdated} dataType="予想データ" />
 
         {/* 期間選択タブ */}
         <div className="period-selector">
@@ -408,7 +410,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
                         hitRace.result?.rank3
                       ].filter(Boolean),
                       totalPayout: hitRace.totalPayout
-                    })}
+                    }, selectedModel)}
                     hashtags={['競艇', 'ボートレース', '的中', 'BoatAI']}
                     size={36}
                   />
@@ -509,7 +511,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry }) 
                         hitRace.result?.rank3
                       ].filter(Boolean),
                       totalPayout: hitRace.totalPayout
-                    })}
+                    }, selectedModel)}
                     hashtags={['競艇', 'ボートレース', '的中', 'BoatAI']}
                     size={36}
                   />

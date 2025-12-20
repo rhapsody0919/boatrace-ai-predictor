@@ -1,0 +1,422 @@
+.how-to-use-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: white;
+}
+
+.how-to-use-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.how-to-use-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.how-to-use-header p {
+  font-size: 1.1rem;
+  color: #94a3b8;
+}
+
+/* ステップナビゲーション */
+.steps-navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.step-nav-btn {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.step-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(102, 126, 234, 0.5);
+  transform: translateY(-2px);
+}
+
+.step-nav-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+}
+
+.step-nav-btn.completed {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.step-icon {
+  font-size: 1.5rem;
+}
+
+.step-number {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ステップコンテンツ */
+.step-content {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  min-height: 500px;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.step-icon-large {
+  font-size: 3rem;
+}
+
+.step-header h2 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.step-body {
+  line-height: 1.8;
+}
+
+.step-body p {
+  margin-bottom: 1.5rem;
+}
+
+.step-body strong {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.step-detail {
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 4px solid #667eea;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+}
+
+.step-detail h4 {
+  color: #667eea;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.step-detail ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.step-detail li {
+  margin-bottom: 0.75rem;
+}
+
+.step-detail ul ul {
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+.example-box {
+  background: rgba(102, 126, 234, 0.1);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+}
+
+.example-title {
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+}
+
+.tip-box {
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+}
+
+.tip-box h4 {
+  color: #10b981;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.warning-box {
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  padding: 1.5rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+}
+
+.warning-box p {
+  margin: 0.5rem 0;
+}
+
+.warning-box strong {
+  color: #ef4444;
+}
+
+.warning-box a {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+.warning-box a:hover {
+  color: #93c5fd;
+}
+
+/* モデル比較 */
+.model-comparison {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.model-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 2px solid;
+}
+
+.model-card.standard {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: rgba(102, 126, 234, 0.5);
+}
+
+.model-card.safe-bet {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.model-card.upset-focus {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.model-card h5 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+
+.model-card p {
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.model-card ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.model-card li {
+  margin-bottom: 0.5rem;
+}
+
+/* ナビゲーションボタン */
+.step-navigation-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.nav-button {
+  flex: 1;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-button.prev {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.nav-button.prev:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(-4px);
+}
+
+.nav-button.next {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.nav-button.next:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.nav-button.finish {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.nav-button.finish:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+/* FAQへのCTA */
+.faq-cta {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+.faq-cta h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.faq-cta p {
+  color: #94a3b8;
+  margin-bottom: 1.5rem;
+}
+
+.faq-button {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.faq-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* スマホ対応 */
+@media (max-width: 768px) {
+  .how-to-use-container {
+    padding: 1rem;
+  }
+
+  .how-to-use-header h1 {
+    font-size: 2rem;
+  }
+
+  .how-to-use-header p {
+    font-size: 1rem;
+  }
+
+  .steps-navigation {
+    gap: 0.5rem;
+  }
+
+  .step-nav-btn {
+    min-width: 100px;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .step-icon {
+    font-size: 1.2rem;
+  }
+
+  .step-number {
+    font-size: 0.75rem;
+  }
+
+  .step-content {
+    padding: 1.5rem;
+    min-height: auto;
+  }
+
+  .step-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+
+  .step-icon-large {
+    font-size: 2.5rem;
+  }
+
+  .step-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .step-detail,
+  .example-box,
+  .tip-box,
+  .warning-box {
+    padding: 1rem;
+  }
+
+  .model-comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .step-navigation-buttons {
+    flex-direction: column;
+  }
+
+  .nav-button {
+    width: 100%;
+  }
+
+  .faq-cta {
+    padding: 1.5rem;
+  }
+}
+
+/* タブレット対応 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .steps-navigation {
+    flex-wrap: wrap;
+  }
+
+  .step-nav-btn {
+    flex: 1 1 30%;
+  }
+}

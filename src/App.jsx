@@ -5,6 +5,7 @@ import AccuracyDashboard from './components/AccuracyDashboard'
 import PrivacyPolicy from './components/PrivacyPolicy'
 import Contact from './components/Contact'
 import HitRaces from './components/HitRaces'
+import UpdateStatus from './components/UpdateStatus'
 import { ShareButton } from './components/ShareButton'
 import { SocialShareButtons } from './components/SocialShareButtons'
 import { shareRacePredictionToX, generatePredictionShareText } from './utils/share'
@@ -29,6 +30,7 @@ function App() {
   const [races, setRaces] = useState([])
   const [selectedModel, setSelectedModel] = useState('standard') // 予想モデル選択
   const [volatility, setVolatility] = useState(null) // 荒れ度情報
+  const [lastUpdated, setLastUpdated] = useState(null) // データ更新時刻
   const predictionRef = useRef(null)
 
   // レース場番号から名前へのマッピング
@@ -164,6 +166,11 @@ function App() {
         console.log('📊 最初のレースのracers:', result.data[0]?.races[0]?.racers)
         setAllVenuesData(result.data)
         setIsRealData(true)
+
+        // データ更新時刻を保存
+        if (result.scrapedAt) {
+          setLastUpdated(result.scrapedAt)
+        }
 
         // 最初に開催されているレース場を自動選択
         if (result.data.length > 0) {
@@ -457,8 +464,11 @@ function App() {
             >
               成績
             </button>
+            <Link to="/how-to-use" className="nav-btn">
+              📚 使い方
+            </Link>
             <Link to="/blog" className="nav-btn">
-              📚 ブログ
+              📝 ブログ
             </Link>
             <Link to="/about" className="nav-btn">
               ℹ️ About
@@ -484,11 +494,13 @@ function App() {
               analyzeRace={analyzeRace}
               stadiumNames={stadiumNames}
               fetchWithRetry={fetchWithRetry}
+              lastUpdated={lastUpdated}
             />
           ) : (
             <>
               <section className="race-list-section">
                 <h2>🏁 本日開催中のレース {getTodayDateShort()}</h2>
+                <UpdateStatus lastUpdated={lastUpdated} dataType="レースデータ" />
 
             {loading ? (
               <div className="analyzing">
@@ -888,7 +900,7 @@ function App() {
                             top3: [1, 2, 3].map(i => prediction.allPlayers[i-1]?.number).filter(Boolean),
                             aiScores: [prediction.topPick.aiScore]
                           }
-                        });
+                        }, selectedModel);
                       })()}
                       hashtags={['競艇', 'ボートレース', 'AI予想', 'BoatAI']}
                       size={40}

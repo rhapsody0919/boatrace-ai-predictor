@@ -1,0 +1,10 @@
+# robots.txt for BoatAI (boat-ai.jp)
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://boat-ai.jp/sitemap.xml
+
+# Crawl-delay (optional, helps prevent server overload)
+Crawl-delay: 1

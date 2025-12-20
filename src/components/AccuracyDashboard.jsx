@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import UpdateStatus from './UpdateStatus'
 import './AccuracyDashboard.css'
 
 function AccuracyDashboard() {
@@ -412,10 +413,8 @@ function AccuracyDashboard() {
       <div className="dashboard-header">
         <h2>📊 成績</h2>
         <p className="last-updated">{getTodayDate()}</p>
-        {summary.lastUpdated && (
-          <p className="last-updated">最終更新: {formatLastUpdated(summary.lastUpdated)}</p>
-        )}
       </div>
+      <UpdateStatus lastUpdated={summary.lastUpdated} dataType="成績データ" />
 
       {/* Model selector - only show if models data exists */}
       {summary.models && <ModelSelector />}

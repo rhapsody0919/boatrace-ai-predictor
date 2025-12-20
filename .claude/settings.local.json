@@ -53,7 +53,8 @@
       "WebFetch(domain:www.boat-ai.jp)",
       "Bash(grep:*)",
       "WebFetch(domain:boatrace-ai-predictor-56dojk8jm-rhapsody0919s-projects.vercel.app)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []
