@@ -4741,7 +4741,7 @@
           "airTemp": 15,
           "windDirection": 17,
           "windVelocity": 0,
-          "waterTemp": 10,
+          "waterTemp": 11,
           "waveHeight": 1,
           "startTime": "14:57",
           "racers": [
@@ -5525,7 +5525,7 @@
           "airTemp": 15,
           "windDirection": 17,
           "windVelocity": 0,
-          "waterTemp": 10,
+          "waterTemp": 11,
           "waveHeight": 1,
           "startTime": "18:55",
           "racers": [
@@ -5623,7 +5623,7 @@
           "airTemp": 15,
           "windDirection": 17,
           "windVelocity": 0,
-          "waterTemp": 10,
+          "waterTemp": 11,
           "waveHeight": 1,
           "startTime": "19:28",
           "racers": [
@@ -5721,7 +5721,7 @@
           "airTemp": 15,
           "windDirection": 17,
           "windVelocity": 0,
-          "waterTemp": 10,
+          "waterTemp": 11,
           "waveHeight": 1,
           "startTime": "20:04",
           "racers": [
@@ -5819,7 +5819,7 @@
           "airTemp": 15,
           "windDirection": 17,
           "windVelocity": 0,
-          "waterTemp": 10,
+          "waterTemp": 11,
           "waveHeight": 1,
           "startTime": "20:40",
           "racers": [
@@ -9465,12 +9465,12 @@
           "date": "2025-12-20",
           "placeCd": 19,
           "raceNo": 1,
-          "weather": "雨",
+          "weather": "曇り",
           "airTemp": 15,
           "windDirection": 7,
-          "windVelocity": 2,
+          "windVelocity": 1,
           "waterTemp": 12,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "15:20",
           "racers": [
             {
@@ -10249,12 +10249,12 @@
           "date": "2025-12-20",
           "placeCd": 19,
           "raceNo": 9,
-          "weather": "雨",
+          "weather": "曇り",
           "airTemp": 15,
           "windDirection": 7,
-          "windVelocity": 2,
+          "windVelocity": 1,
           "waterTemp": 12,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "19:16",
           "racers": [
             {
@@ -10347,12 +10347,12 @@
           "date": "2025-12-20",
           "placeCd": 19,
           "raceNo": 10,
-          "weather": "雨",
+          "weather": "曇り",
           "airTemp": 15,
           "windDirection": 7,
-          "windVelocity": 2,
+          "windVelocity": 1,
           "waterTemp": 12,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "19:44",
           "racers": [
             {
@@ -10445,12 +10445,12 @@
           "date": "2025-12-20",
           "placeCd": 19,
           "raceNo": 11,
-          "weather": "雨",
+          "weather": "曇り",
           "airTemp": 15,
           "windDirection": 7,
-          "windVelocity": 2,
+          "windVelocity": 1,
           "waterTemp": 12,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "20:11",
           "racers": [
             {
@@ -10543,12 +10543,12 @@
           "date": "2025-12-20",
           "placeCd": 19,
           "raceNo": 12,
-          "weather": "雨",
+          "weather": "曇り",
           "airTemp": 15,
           "windDirection": 7,
-          "windVelocity": 2,
+          "windVelocity": 1,
           "waterTemp": 12,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "20:35",
           "racers": [
             {
@@ -10648,11 +10648,11 @@
           "placeCd": 20,
           "raceNo": 1,
           "weather": "雨",
-          "airTemp": 16,
+          "airTemp": 15,
           "windDirection": 4,
-          "windVelocity": 5,
+          "windVelocity": 4,
           "waterTemp": 13,
-          "waveHeight": 5,
+          "waveHeight": 4,
           "startTime": "15:17",
           "racers": [
             {
@@ -11434,9 +11434,9 @@
           "weather": "雨",
           "airTemp": 16,
           "windDirection": 4,
-          "windVelocity": 5,
+          "windVelocity": 4,
           "waterTemp": 13,
-          "waveHeight": 5,
+          "waveHeight": 4,
           "startTime": "19:05",
           "racers": [
             {
@@ -11530,11 +11530,11 @@
           "placeCd": 20,
           "raceNo": 10,
           "weather": "雨",
-          "airTemp": 16,
+          "airTemp": 15,
           "windDirection": 4,
-          "windVelocity": 5,
+          "windVelocity": 4,
           "waterTemp": 13,
-          "waveHeight": 5,
+          "waveHeight": 4,
           "startTime": "19:34",
           "racers": [
             {
@@ -11628,11 +11628,11 @@
           "placeCd": 20,
           "raceNo": 11,
           "weather": "雨",
-          "airTemp": 16,
+          "airTemp": 15,
           "windDirection": 4,
-          "windVelocity": 5,
+          "windVelocity": 4,
           "waterTemp": 13,
-          "waveHeight": 5,
+          "waveHeight": 4,
           "startTime": "19:58",
           "racers": [
             {
@@ -11726,11 +11726,11 @@
           "placeCd": 20,
           "raceNo": 12,
           "weather": "雨",
-          "airTemp": 16,
+          "airTemp": 15,
           "windDirection": 4,
-          "windVelocity": 5,
+          "windVelocity": 4,
           "waterTemp": 13,
-          "waveHeight": 5,
+          "waveHeight": 4,
           "startTime": "20:30",
           "racers": [
             {
@@ -15368,5 +15368,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-20T09:26:40.101Z"
+  "scrapedAt": "2025-12-20T10:26:30.305Z"
 }
