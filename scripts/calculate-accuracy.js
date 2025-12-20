@@ -537,6 +537,44 @@ async function calculateAccuracy() {
         }
       }
 
+      // Calculate venue-specific statistics (24 venues)
+      const byVenue = {};
+      for (let venueCode = 1; venueCode <= 24; venueCode++) {
+        // Filter races for this venue
+        const venueOverallRaces = allRaces.filter(r => r.venueCode === venueCode);
+        const venueThisMonthRaces = thisMonthRaces.filter(r => r.venueCode === venueCode);
+
+        // Calculate stats for this venue
+        const venueOverallStats = calculateModelSummaryStats(venueOverallRaces, modelKey);
+        const venueThisMonthStats = calculateModelSummaryStats(venueThisMonthRaces, modelKey);
+
+        byVenue[venueCode] = {
+          overall: {
+            totalRaces: venueOverallStats.totalRaces,
+            finishedRaces: venueOverallStats.finishedRaces,
+            topPickHits: venueOverallStats.topPickHits,
+            topPickHitRate: venueOverallStats.topPickHitRate,
+            topPickPlaces: venueOverallStats.topPickPlaces,
+            topPickPlaceRate: venueOverallStats.topPickPlaceRate,
+            top3Hits: venueOverallStats.top3Hits,
+            top3HitRate: venueOverallStats.top3HitRate,
+            top3IncludedHits: venueOverallStats.top3IncludedHits,
+            top3IncludedRate: venueOverallStats.top3IncludedRate,
+            actualRecovery: venueOverallStats.actualRecovery,
+          },
+          thisMonth: {
+            year: thisYear,
+            month: thisMonth,
+            totalRaces: venueThisMonthStats.totalRaces,
+            topPickHitRate: venueThisMonthStats.topPickHitRate,
+            topPickPlaceRate: venueThisMonthStats.topPickPlaceRate,
+            top3HitRate: venueThisMonthStats.top3HitRate,
+            top3IncludedRate: venueThisMonthStats.top3IncludedRate,
+            actualRecovery: venueThisMonthStats.actualRecovery,
+          },
+        };
+      }
+
       modelsSummary[modelKey] = {
         overall: {
           totalRaces: modelOverallStats.totalRaces,
@@ -582,7 +620,60 @@ async function calculateAccuracy() {
         },
         dailyHistory: modelDailyStats.filter(d => d.date >= cutoffDateStr), // Last 90 days
         monthlyHistory: modelMonthlyStats, // Older data aggregated by month
+        byVenue: byVenue, // Venue-specific statistics
       };
+    }
+
+    // Calculate venue recommendations (best model per venue)
+    const venueRecommendations = {
+      overall: {},
+      thisMonth: {}
+    };
+
+    for (let venueCode = 1; venueCode <= 24; venueCode++) {
+      // Find best model for overall stats
+      let bestOverallModel = null;
+      let bestOverallRecovery = 0;
+
+      // Find best model for this month
+      let bestThisMonthModel = null;
+      let bestThisMonthRecovery = 0;
+
+      for (const modelKey of models) {
+        const venueStats = modelsSummary[modelKey].byVenue[venueCode];
+
+        // Overall: use trio (3連単) recovery rate as primary metric
+        if (venueStats.overall.finishedRaces >= 5) { // Minimum 5 races for reliable stats
+          const trioRecovery = venueStats.overall.actualRecovery.trio.recoveryRate;
+          if (trioRecovery > bestOverallRecovery) {
+            bestOverallRecovery = trioRecovery;
+            bestOverallModel = modelKey;
+          }
+        }
+
+        // This month: use trio recovery rate
+        if (venueStats.thisMonth.totalRaces >= 3) { // Minimum 3 races for monthly stats
+          const trioRecovery = venueStats.thisMonth.actualRecovery.trio.recoveryRate;
+          if (trioRecovery > bestThisMonthRecovery) {
+            bestThisMonthRecovery = trioRecovery;
+            bestThisMonthModel = modelKey;
+          }
+        }
+      }
+
+      if (bestOverallModel) {
+        venueRecommendations.overall[venueCode] = {
+          bestModel: bestOverallModel,
+          recoveryRate: bestOverallRecovery
+        };
+      }
+
+      if (bestThisMonthModel) {
+        venueRecommendations.thisMonth[venueCode] = {
+          bestModel: bestThisMonthModel,
+          recoveryRate: bestThisMonthRecovery
+        };
+      }
     }
 
     // Generate summary with model-specific data
@@ -678,6 +769,7 @@ async function calculateAccuracy() {
       },
       dailyHistory: dailyStats.filter(d => d.date >= cutoffDateStr), // Last 90 days
       monthlyHistory: monthlyStats, // Older data aggregated by month
+      venueRecommendations: venueRecommendations, // Best model per venue
     };
 
     // Save summary

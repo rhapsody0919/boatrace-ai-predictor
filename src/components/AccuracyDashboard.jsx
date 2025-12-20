@@ -8,6 +8,15 @@ function AccuracyDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedModel, setSelectedModel] = useState('standard')
+  const [selectedVenue, setSelectedVenue] = useState('all')
+
+  // 競艇場名マッピング
+  const stadiumNames = {
+    1: '桐生', 2: '戸田', 3: '江戸川', 4: '平和島', 5: '多摩川', 6: '浜名湖',
+    7: '蒲郡', 8: '常滑', 9: '津', 10: '三国', 11: 'びわこ', 12: '住之江',
+    13: '尼崎', 14: '鳴門', 15: '丸亀', 16: '児島', 17: '宮島', 18: '徳山',
+    19: '下関', 20: '若松', 21: '芦屋', 22: '福岡', 23: '唐津', 24: '大村'
+  }
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -66,7 +75,15 @@ function AccuracyDashboard() {
   const getModelData = () => {
     // If summary has models structure, use it
     if (summary.models && summary.models[selectedModel]) {
-      return summary.models[selectedModel]
+      const modelData = summary.models[selectedModel]
+
+      // If a specific venue is selected, return venue-specific data
+      if (selectedVenue !== 'all' && modelData.byVenue && modelData.byVenue[selectedVenue]) {
+        return modelData.byVenue[selectedVenue]
+      }
+
+      // Otherwise return overall data
+      return modelData
     }
     // Backward compatibility: if no models structure, use old structure (assume it's standard model)
     return {
@@ -266,6 +283,81 @@ function AccuracyDashboard() {
     </div>
   )
 
+  // Venue selector component
+  const VenueSelector = () => (
+    <div className="venue-selector">
+      <label htmlFor="venue-select">競艇場:</label>
+      <select
+        id="venue-select"
+        value={selectedVenue}
+        onChange={(e) => setSelectedVenue(e.target.value)}
+      >
+        <option value="all">全競艇場</option>
+        {Object.entries(stadiumNames).map(([code, name]) => (
+          <option key={code} value={code}>
+            {name}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+
+  // 競艇場別最良モデル推薦コンポーネント
+  const VenueRecommendation = () => {
+    if (selectedVenue === 'all' || !summary.venueRecommendations) return null
+
+    const modelNames = {
+      standard: 'スタンダード',
+      safeBet: '本命狙い',
+      upsetFocus: '穴狙い'
+    }
+
+    const overallRec = summary.venueRecommendations.overall[selectedVenue]
+    const thisMonthRec = summary.venueRecommendations.thisMonth[selectedVenue]
+
+    if (!overallRec && !thisMonthRec) {
+      return (
+        <div className="venue-recommendation">
+          <div className="recommendation-header">
+            📍 {stadiumNames[selectedVenue]}の推奨モデル
+          </div>
+          <p className="no-recommendation">この競艇場のデータがまだ十分ではありません。</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="venue-recommendation">
+        <div className="recommendation-header">
+          📍 {stadiumNames[selectedVenue]}の推奨モデル
+        </div>
+        <div className="recommendation-content">
+          {overallRec && (
+            <div className="recommendation-item">
+              <span className="recommendation-period">全期間:</span>
+              <span className="recommendation-model">{modelNames[overallRec.bestModel]}</span>
+              <span className="recommendation-rate" style={{color: getRecoveryColor(overallRec.recoveryRate)}}>
+                回収率 {formatPercent(overallRec.recoveryRate)}
+              </span>
+            </div>
+          )}
+          {thisMonthRec && (
+            <div className="recommendation-item">
+              <span className="recommendation-period">今月:</span>
+              <span className="recommendation-model">{modelNames[thisMonthRec.bestModel]}</span>
+              <span className="recommendation-rate" style={{color: getRecoveryColor(thisMonthRec.recoveryRate)}}>
+                回収率 {formatPercent(thisMonthRec.recoveryRate)}
+              </span>
+            </div>
+          )}
+        </div>
+        <p className="recommendation-note">
+          💡 3連単の回収率が最も高いモデルを推奨しています
+        </p>
+      </div>
+    )
+  }
+
   // モデル比較表コンポーネント
   const ModelComparisonTable = () => {
     if (!modelComparison) return null
@@ -419,8 +511,14 @@ function AccuracyDashboard() {
       {/* Model selector - only show if models data exists */}
       {summary.models && <ModelSelector />}
 
-      {/* モデル間比較表 */}
-      {summary.models && <ModelComparisonTable />}
+      {/* Venue selector - only show if byVenue data exists */}
+      {summary.models && summary.models[selectedModel]?.byVenue && <VenueSelector />}
+
+      {/* Venue recommendation */}
+      <VenueRecommendation />
+
+      {/* モデル間比較表 - only show when viewing all venues */}
+      {summary.models && selectedVenue === 'all' && <ModelComparisonTable />}
 
       {!hasData ? (
         <div className="no-data-message">
