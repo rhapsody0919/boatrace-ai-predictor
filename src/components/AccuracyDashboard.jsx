@@ -8,7 +8,6 @@ function AccuracyDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedModel, setSelectedModel] = useState('standard')
-  const [selectedVenue, setSelectedVenue] = useState('all')
 
   // 競艇場名マッピング
   const stadiumNames = {
@@ -75,15 +74,7 @@ function AccuracyDashboard() {
   const getModelData = () => {
     // If summary has models structure, use it
     if (summary.models && summary.models[selectedModel]) {
-      const modelData = summary.models[selectedModel]
-
-      // If a specific venue is selected, return venue-specific data
-      if (selectedVenue !== 'all' && modelData.byVenue && modelData.byVenue[selectedVenue]) {
-        return modelData.byVenue[selectedVenue]
-      }
-
-      // Otherwise return overall data
-      return modelData
+      return summary.models[selectedModel]
     }
     // Backward compatibility: if no models structure, use old structure (assume it's standard model)
     return {
@@ -283,30 +274,95 @@ function AccuracyDashboard() {
     </div>
   )
 
-  // Venue selector component
-  const VenueSelector = () => (
-    <div className="venue-selector">
-      <label htmlFor="venue-select">競艇場:</label>
-      <select
-        id="venue-select"
-        value={selectedVenue}
-        onChange={(e) => setSelectedVenue(e.target.value)}
-      >
-        <option value="all">全競艇場</option>
-        {Object.entries(stadiumNames).map(([code, name]) => (
-          <option key={code} value={code}>
-            {name}
-          </option>
-        ))}
-      </select>
-    </div>
-  )
-
-  // 競艇場別投資戦略テーブルコンポーネント
-  const VenueStrategyTable = () => {
+  // 競艇場別詳細分析セクション
+  const VenueDetailedAnalysis = () => {
     if (!summary.models) return null
 
-    const [selectedStrategyModel, setSelectedStrategyModel] = useState('standard')
+    const [detailVenue, setDetailVenue] = useState('1') // デフォルトは桐生
+    const [detailModel, setDetailModel] = useState('standard')
+
+    const modelNames = {
+      standard: 'スタンダード',
+      safeBet: '本命狙い',
+      upsetFocus: '穴狙い'
+    }
+
+    const venueData = summary.models[detailModel]?.byVenue?.[detailVenue]
+    if (!venueData) return null
+
+    return (
+      <div className="venue-detailed-analysis">
+        <h3>📊 競艇場別詳細分析</h3>
+        <p className="section-description">
+          特定の競艇場とモデルを選択して詳細な統計を確認できます
+        </p>
+
+        {/* 競艇場セレクター */}
+        <div className="venue-selector">
+          <label htmlFor="detail-venue-select">競艇場:</label>
+          <select
+            id="detail-venue-select"
+            value={detailVenue}
+            onChange={(e) => setDetailVenue(e.target.value)}
+          >
+            {Object.entries(stadiumNames).map(([code, name]) => (
+              <option key={code} value={code}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* モデル選択タブ */}
+        <div className="strategy-model-selector">
+          <button
+            className={detailModel === 'standard' ? 'active' : ''}
+            onClick={() => setDetailModel('standard')}
+          >
+            スタンダード
+          </button>
+          <button
+            className={detailModel === 'safeBet' ? 'active' : ''}
+            onClick={() => setDetailModel('safeBet')}
+          >
+            本命狙い
+          </button>
+          <button
+            className={detailModel === 'upsetFocus' ? 'active' : ''}
+            onClick={() => setDetailModel('upsetFocus')}
+          >
+            穴狙い
+          </button>
+        </div>
+
+        {/* 選択された競艇場の統計 */}
+        <div className="venue-stats-grid">
+          {venueData.thisMonth && venueData.thisMonth.totalRaces > 0 && (
+            <StatsTable
+              data={venueData.thisMonth}
+              title={`今月の成績（${stadiumNames[detailVenue]}）`}
+            />
+          )}
+          {venueData.overall && venueData.overall.totalRaces > 0 && (
+            <StatsTable
+              data={venueData.overall}
+              title={`全期間の成績（${stadiumNames[detailVenue]}）`}
+            />
+          )}
+        </div>
+
+        {venueData.thisMonth?.totalRaces === 0 && venueData.overall?.totalRaces === 0 && (
+          <p className="no-data-message" style={{textAlign: 'center', padding: '2rem', color: '#64748b'}}>
+            {stadiumNames[detailVenue]}のデータはまだありません
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  // 競艇場別投資戦略テーブルコンポーネント（上部モデルタブに連動）
+  const VenueStrategyTable = () => {
+    if (!summary.models) return null
 
     const modelNames = {
       standard: 'スタンダード',
@@ -321,9 +377,9 @@ function AccuracyDashboard() {
       trio: '3連単'
     }
 
-    // 選択されたモデルの24競艇場データを取得
+    // 選択されたモデルの24競艇場データを取得（上部のselectedModelを使用）
     const venueData = Object.keys(stadiumNames).map(venueCode => {
-      const venueStats = summary.models[selectedStrategyModel]?.byVenue?.[venueCode]
+      const venueStats = summary.models[selectedModel]?.byVenue?.[venueCode]
       const thisMonthStats = venueStats?.thisMonth
 
       return {
@@ -341,30 +397,8 @@ function AccuracyDashboard() {
       <div className="venue-strategy-section">
         <h3>🎯 競艇場別投資戦略（今月）</h3>
         <p className="section-description">
-          各競艇場・各買い方の回収率を表示しています
+          {modelNames[selectedModel]}モデルの各競艇場・各買い方の回収率を表示しています
         </p>
-
-        {/* モデル選択タブ */}
-        <div className="strategy-model-selector">
-          <button
-            className={selectedStrategyModel === 'standard' ? 'active' : ''}
-            onClick={() => setSelectedStrategyModel('standard')}
-          >
-            スタンダード
-          </button>
-          <button
-            className={selectedStrategyModel === 'safeBet' ? 'active' : ''}
-            onClick={() => setSelectedStrategyModel('safeBet')}
-          >
-            本命狙い
-          </button>
-          <button
-            className={selectedStrategyModel === 'upsetFocus' ? 'active' : ''}
-            onClick={() => setSelectedStrategyModel('upsetFocus')}
-          >
-            穴狙い
-          </button>
-        </div>
 
         <div className="table-wrapper">
           <table className="venue-strategy-table">
@@ -558,11 +592,8 @@ function AccuracyDashboard() {
       {/* Model selector - only show if models data exists */}
       {summary.models && <ModelSelector />}
 
-      {/* Venue selector - only show if byVenue data exists */}
-      {summary.models && summary.models[selectedModel]?.byVenue && <VenueSelector />}
-
-      {/* モデル間比較表 - only show when viewing all venues */}
-      {summary.models && selectedVenue === 'all' && <ModelComparisonTable />}
+      {/* モデル間比較表 */}
+      {summary.models && <ModelComparisonTable />}
 
       {!hasData ? (
         <div className="no-data-message">
@@ -651,6 +682,9 @@ function AccuracyDashboard() {
 
           {/* 回収率推移グラフ */}
           <RecoveryTrendChart />
+
+          {/* 競艇場別詳細分析 */}
+          <VenueDetailedAnalysis />
 
           {/* 競艇場別投資戦略テーブル */}
           <VenueStrategyTable />

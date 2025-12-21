@@ -909,6 +909,38 @@
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
+/* Venue Detailed Analysis */
+.venue-detailed-analysis {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
+}
+
+.venue-detailed-analysis h3 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+  font-weight: 800;
+  text-align: center;
+}
+
+.venue-detailed-analysis .section-description {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem 0;
+}
+
+.venue-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
 /* Venue Strategy Table */
 .venue-strategy-section {
   background: white;
@@ -1048,6 +1080,18 @@
     min-width: auto;
   }
 
+  .venue-detailed-analysis {
+    padding: 1.25rem;
+  }
+
+  .venue-detailed-analysis h3 {
+    font-size: 1.25rem;
+  }
+
+  .venue-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
   .venue-strategy-section {
     padding: 1.25rem;
   }
@@ -1067,6 +1111,14 @@
 }
 
 @media (max-width: 480px) {
+  .venue-detailed-analysis {
+    padding: 1rem;
+  }
+
+  .venue-detailed-analysis h3 {
+    font-size: 1.1rem;
+  }
+
   .venue-strategy-section {
     padding: 1rem;
   }
