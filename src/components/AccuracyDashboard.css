@@ -909,76 +909,93 @@
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
-/* Venue recommendation */
-.venue-recommendation {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+/* Venue Optimal Strategy Table */
+.venue-optimal-strategy-section {
+  background: white;
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
-  border: 2px solid #0ea5e9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
 }
 
-.venue-recommendation .recommendation-header {
+.venue-optimal-strategy-section h3 {
   font-size: 1.5rem;
-  color: #0c4a6e;
-  margin: 0 0 1.5rem 0;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
   font-weight: 800;
   text-align: center;
 }
 
-.venue-recommendation .no-recommendation {
+.venue-optimal-strategy-section .section-description {
   text-align: center;
-  color: #0c4a6e;
-  font-size: 1rem;
-  margin: 0;
-}
-
-.venue-recommendation .recommendation-content {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.venue-recommendation .recommendation-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  margin-bottom: 0.75rem;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
-.venue-recommendation .recommendation-item:last-child {
-  margin-bottom: 0;
-}
-
-.venue-recommendation .recommendation-period {
-  font-size: 0.9rem;
   color: #64748b;
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem 0;
+}
+
+.venue-strategy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.venue-strategy-table thead {
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+  color: white;
+}
+
+.venue-strategy-table th {
+  padding: 1rem 0.75rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.venue-strategy-table th:first-child {
+  text-align: left;
+}
+
+.venue-strategy-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s;
+}
+
+.venue-strategy-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.venue-strategy-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.venue-strategy-table td {
+  padding: 0.75rem;
+  text-align: center;
+  color: #1e293b;
+}
+
+.venue-strategy-table .venue-name {
+  font-weight: 700;
+  text-align: left;
+  color: #1e293b;
+}
+
+.venue-strategy-table .strategy-cell {
   font-weight: 600;
-  min-width: 70px;
-}
-
-.venue-recommendation .recommendation-model {
-  font-size: 1.2rem;
-  font-weight: 800;
   color: #0ea5e9;
-  flex: 1;
 }
 
-.venue-recommendation .recommendation-rate {
-  font-size: 1.1rem;
+.venue-strategy-table .recovery-rate {
   font-weight: 700;
 }
 
-.venue-recommendation .recommendation-note {
+.venue-optimal-strategy-section .table-note {
   text-align: center;
-  color: #0c4a6e;
+  margin-top: 1rem;
+  color: #64748b;
   font-size: 0.9rem;
-  margin: 0;
+  margin-bottom: 0;
   font-weight: 600;
 }
 
@@ -994,21 +1011,39 @@
     min-width: auto;
   }
 
-  .venue-recommendation {
+  .venue-optimal-strategy-section {
     padding: 1.25rem;
   }
 
-  .venue-recommendation .recommendation-header {
+  .venue-optimal-strategy-section h3 {
     font-size: 1.25rem;
   }
 
-  .venue-recommendation .recommendation-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
+  .venue-strategy-table {
+    font-size: 0.8rem;
   }
 
-  .venue-recommendation .recommendation-period {
-    min-width: auto;
+  .venue-strategy-table th,
+  .venue-strategy-table td {
+    padding: 0.6rem 0.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .venue-optimal-strategy-section {
+    padding: 1rem;
+  }
+
+  .venue-optimal-strategy-section h3 {
+    font-size: 1.1rem;
+  }
+
+  .venue-strategy-table {
+    font-size: 0.75rem;
+  }
+
+  .venue-strategy-table th,
+  .venue-strategy-table td {
+    padding: 0.5rem 0.3rem;
   }
 }

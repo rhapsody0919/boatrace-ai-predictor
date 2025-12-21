@@ -624,53 +624,67 @@ async function calculateAccuracy() {
       };
     }
 
-    // Calculate venue recommendations (best model per venue)
+    // Calculate venue recommendations (best model × bet type combination per venue)
     const venueRecommendations = {
       overall: {},
       thisMonth: {}
     };
 
+    const betTypes = ['win', 'place', 'trifecta', 'trio'];
+
     for (let venueCode = 1; venueCode <= 24; venueCode++) {
-      // Find best model for overall stats
-      let bestOverallModel = null;
+      // Find best model × bet type combination for overall stats
+      let bestOverall = null;
       let bestOverallRecovery = 0;
 
-      // Find best model for this month
-      let bestThisMonthModel = null;
+      // Find best model × bet type combination for this month
+      let bestThisMonth = null;
       let bestThisMonthRecovery = 0;
 
       for (const modelKey of models) {
         const venueStats = modelsSummary[modelKey].byVenue[venueCode];
 
-        // Overall: use trio (3連単) recovery rate as primary metric
+        // Overall: check all bet types
         if (venueStats.overall.finishedRaces >= 5) { // Minimum 5 races for reliable stats
-          const trioRecovery = venueStats.overall.actualRecovery.trio.recoveryRate;
-          if (trioRecovery > bestOverallRecovery) {
-            bestOverallRecovery = trioRecovery;
-            bestOverallModel = modelKey;
+          for (const betType of betTypes) {
+            const recovery = venueStats.overall.actualRecovery[betType].recoveryRate;
+            if (recovery > bestOverallRecovery) {
+              bestOverallRecovery = recovery;
+              bestOverall = {
+                model: modelKey,
+                betType: betType
+              };
+            }
           }
         }
 
-        // This month: use trio recovery rate
+        // This month: check all bet types
         if (venueStats.thisMonth.totalRaces >= 3) { // Minimum 3 races for monthly stats
-          const trioRecovery = venueStats.thisMonth.actualRecovery.trio.recoveryRate;
-          if (trioRecovery > bestThisMonthRecovery) {
-            bestThisMonthRecovery = trioRecovery;
-            bestThisMonthModel = modelKey;
+          for (const betType of betTypes) {
+            const recovery = venueStats.thisMonth.actualRecovery[betType].recoveryRate;
+            if (recovery > bestThisMonthRecovery) {
+              bestThisMonthRecovery = recovery;
+              bestThisMonth = {
+                model: modelKey,
+                betType: betType
+              };
+            }
           }
         }
       }
 
-      if (bestOverallModel) {
+      if (bestOverall) {
         venueRecommendations.overall[venueCode] = {
-          bestModel: bestOverallModel,
+          bestModel: bestOverall.model,
+          bestBetType: bestOverall.betType,
           recoveryRate: bestOverallRecovery
         };
       }
 
-      if (bestThisMonthModel) {
+      if (bestThisMonth) {
         venueRecommendations.thisMonth[venueCode] = {
-          bestModel: bestThisMonthModel,
+          bestModel: bestThisMonth.model,
+          bestBetType: bestThisMonth.betType,
           recoveryRate: bestThisMonthRecovery
         };
       }

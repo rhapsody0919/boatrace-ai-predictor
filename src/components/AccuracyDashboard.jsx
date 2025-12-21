@@ -302,9 +302,9 @@ function AccuracyDashboard() {
     </div>
   )
 
-  // 競艇場別最良モデル推薦コンポーネント
-  const VenueRecommendation = () => {
-    if (selectedVenue === 'all' || !summary.venueRecommendations) return null
+  // 競艇場別最適投資戦略テーブルコンポーネント
+  const VenueOptimalStrategyTable = () => {
+    if (!summary.venueRecommendations) return null
 
     const modelNames = {
       standard: 'スタンダード',
@@ -312,47 +312,72 @@ function AccuracyDashboard() {
       upsetFocus: '穴狙い'
     }
 
-    const overallRec = summary.venueRecommendations.overall[selectedVenue]
-    const thisMonthRec = summary.venueRecommendations.thisMonth[selectedVenue]
-
-    if (!overallRec && !thisMonthRec) {
-      return (
-        <div className="venue-recommendation">
-          <div className="recommendation-header">
-            📍 {stadiumNames[selectedVenue]}の推奨モデル
-          </div>
-          <p className="no-recommendation">この競艇場のデータがまだ十分ではありません。</p>
-        </div>
-      )
+    const betTypeNames = {
+      win: '単勝',
+      place: '複勝',
+      trifecta: '3連複',
+      trio: '3連単'
     }
 
+    // 全24競艇場のデータを配列に変換
+    const venueData = Object.keys(stadiumNames).map(venueCode => {
+      const overallRec = summary.venueRecommendations.overall[venueCode]
+      const thisMonthRec = summary.venueRecommendations.thisMonth[venueCode]
+
+      return {
+        venueCode: parseInt(venueCode),
+        venueName: stadiumNames[venueCode],
+        overall: overallRec ? {
+          strategy: `${modelNames[overallRec.bestModel]} × ${betTypeNames[overallRec.bestBetType]}`,
+          recoveryRate: overallRec.recoveryRate
+        } : null,
+        thisMonth: thisMonthRec ? {
+          strategy: `${modelNames[thisMonthRec.bestModel]} × ${betTypeNames[thisMonthRec.bestBetType]}`,
+          recoveryRate: thisMonthRec.recoveryRate
+        } : null
+      }
+    })
+
     return (
-      <div className="venue-recommendation">
-        <div className="recommendation-header">
-          📍 {stadiumNames[selectedVenue]}の推奨モデル
+      <div className="venue-optimal-strategy-section">
+        <h3>🎯 競艇場別最適投資戦略</h3>
+        <p className="section-description">
+          各競艇場で最も回収率が高い「モデル × 買い方」の組み合わせを表示しています
+        </p>
+        <div className="table-wrapper">
+          <table className="venue-strategy-table">
+            <thead>
+              <tr>
+                <th>競艇場</th>
+                <th>推奨戦略（全期間）</th>
+                <th>回収率</th>
+                <th>推奨戦略（今月）</th>
+                <th>回収率</th>
+              </tr>
+            </thead>
+            <tbody>
+              {venueData.map(venue => (
+                <tr key={venue.venueCode}>
+                  <td className="venue-name">{venue.venueName}</td>
+                  <td className="strategy-cell">
+                    {venue.overall ? venue.overall.strategy : '-'}
+                  </td>
+                  <td className="recovery-rate" style={{color: venue.overall ? getRecoveryColor(venue.overall.recoveryRate) : '#64748b'}}>
+                    {venue.overall ? formatPercent(venue.overall.recoveryRate) : '-'}
+                  </td>
+                  <td className="strategy-cell">
+                    {venue.thisMonth ? venue.thisMonth.strategy : '-'}
+                  </td>
+                  <td className="recovery-rate" style={{color: venue.thisMonth ? getRecoveryColor(venue.thisMonth.recoveryRate) : '#64748b'}}>
+                    {venue.thisMonth ? formatPercent(venue.thisMonth.recoveryRate) : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className="recommendation-content">
-          {overallRec && (
-            <div className="recommendation-item">
-              <span className="recommendation-period">全期間:</span>
-              <span className="recommendation-model">{modelNames[overallRec.bestModel]}</span>
-              <span className="recommendation-rate" style={{color: getRecoveryColor(overallRec.recoveryRate)}}>
-                回収率 {formatPercent(overallRec.recoveryRate)}
-              </span>
-            </div>
-          )}
-          {thisMonthRec && (
-            <div className="recommendation-item">
-              <span className="recommendation-period">今月:</span>
-              <span className="recommendation-model">{modelNames[thisMonthRec.bestModel]}</span>
-              <span className="recommendation-rate" style={{color: getRecoveryColor(thisMonthRec.recoveryRate)}}>
-                回収率 {formatPercent(thisMonthRec.recoveryRate)}
-              </span>
-            </div>
-          )}
-        </div>
-        <p className="recommendation-note">
-          💡 3連単の回収率が最も高いモデルを推奨しています
+        <p className="table-note">
+          💡 回収率100%以上（緑色）なら黒字、100%未満なら赤字を意味します
         </p>
       </div>
     )
@@ -514,9 +539,6 @@ function AccuracyDashboard() {
       {/* Venue selector - only show if byVenue data exists */}
       {summary.models && summary.models[selectedModel]?.byVenue && <VenueSelector />}
 
-      {/* Venue recommendation */}
-      <VenueRecommendation />
-
       {/* モデル間比較表 - only show when viewing all venues */}
       {summary.models && selectedVenue === 'all' && <ModelComparisonTable />}
 
@@ -607,6 +629,9 @@ function AccuracyDashboard() {
 
           {/* 回収率推移グラフ */}
           <RecoveryTrendChart />
+
+          {/* 競艇場別最適投資戦略テーブル */}
+          <VenueOptimalStrategyTable />
 
           {/* 的中率と回収率についての説明 */}
           <div className="accuracy-info">

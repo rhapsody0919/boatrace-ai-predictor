@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-12-20T23:47:18.447Z",
+  "lastUpdated": "2025-12-21T00:17:22.610Z",
   "models": {
     "standard": {
       "overall": {
@@ -7222,164 +7222,234 @@
     "overall": {
       "1": {
         "bestModel": "standard",
-        "recoveryRate": 0.15416666666666667
+        "bestBetType": "trifecta",
+        "recoveryRate": 0.8944444444444445
       },
       "2": {
-        "bestModel": "standard",
-        "recoveryRate": 0.17058823529411765
+        "bestModel": "upsetFocus",
+        "bestBetType": "win",
+        "recoveryRate": 1.4625
       },
       "3": {
-        "bestModel": "standard",
-        "recoveryRate": 0.2814814814814815
+        "bestModel": "safeBet",
+        "bestBetType": "win",
+        "recoveryRate": 1.8333333333333333
       },
       "5": {
         "bestModel": "safeBet",
+        "bestBetType": "trio",
         "recoveryRate": 1.9125
       },
       "6": {
-        "bestModel": "standard",
-        "recoveryRate": 1.2385416666666667
+        "bestModel": "upsetFocus",
+        "bestBetType": "trifecta",
+        "recoveryRate": 2.475
       },
       "7": {
         "bestModel": "standard",
-        "recoveryRate": 0.18796296296296297
+        "bestBetType": "place",
+        "recoveryRate": 1.048148148148148
       },
       "8": {
         "bestModel": "standard",
-        "recoveryRate": 0.571969696969697
+        "bestBetType": "place",
+        "recoveryRate": 0.9424242424242424
       },
       "9": {
         "bestModel": "standard",
-        "recoveryRate": 0.42336448598130844
+        "bestBetType": "place",
+        "recoveryRate": 0.8158878504672897
       },
       "10": {
         "bestModel": "standard",
-        "recoveryRate": 0.4091666666666667
+        "bestBetType": "place",
+        "recoveryRate": 0.8583333333333333
       },
       "11": {
         "bestModel": "upsetFocus",
+        "bestBetType": "trio",
         "recoveryRate": 3.591666666666667
+      },
+      "12": {
+        "bestModel": "standard",
+        "bestBetType": "win",
+        "recoveryRate": 0.8509803921568627
       },
       "13": {
         "bestModel": "standard",
-        "recoveryRate": 0.21428571428571427
+        "bestBetType": "place",
+        "recoveryRate": 0.7619047619047619
+      },
+      "14": {
+        "bestModel": "upsetFocus",
+        "bestBetType": "win",
+        "recoveryRate": 0.9625
       },
       "15": {
         "bestModel": "standard",
-        "recoveryRate": 0.31833333333333336
+        "bestBetType": "place",
+        "recoveryRate": 0.9716666666666667
       },
       "16": {
-        "bestModel": "standard",
-        "recoveryRate": 1.6375
+        "bestModel": "upsetFocus",
+        "bestBetType": "win",
+        "recoveryRate": 1.8333333333333333
       },
       "17": {
         "bestModel": "standard",
-        "recoveryRate": 0.2675
+        "bestBetType": "place",
+        "recoveryRate": 0.7691666666666667
       },
       "18": {
         "bestModel": "standard",
-        "recoveryRate": 0.628030303030303
+        "bestBetType": "win",
+        "recoveryRate": 0.9871212121212121
       },
       "19": {
-        "bestModel": "standard",
-        "recoveryRate": 0.04597701149425287
+        "bestModel": "safeBet",
+        "bestBetType": "place",
+        "recoveryRate": 0.8266666666666667
       },
       "20": {
         "bestModel": "standard",
-        "recoveryRate": 0.5238095238095238
+        "bestBetType": "trifecta",
+        "recoveryRate": 0.9650793650793651
       },
       "21": {
         "bestModel": "standard",
+        "bestBetType": "trio",
         "recoveryRate": 18.675
       },
       "22": {
         "bestModel": "standard",
+        "bestBetType": "trio",
         "recoveryRate": 1.6886363636363637
+      },
+      "23": {
+        "bestModel": "standard",
+        "bestBetType": "place",
+        "recoveryRate": 0.8933333333333333
       },
       "24": {
         "bestModel": "safeBet",
+        "bestBetType": "trio",
         "recoveryRate": 4.116666666666666
       }
     },
     "thisMonth": {
       "1": {
         "bestModel": "standard",
-        "recoveryRate": 0.15416666666666667
+        "bestBetType": "trifecta",
+        "recoveryRate": 0.8944444444444445
       },
       "2": {
-        "bestModel": "standard",
-        "recoveryRate": 0.17058823529411765
+        "bestModel": "upsetFocus",
+        "bestBetType": "win",
+        "recoveryRate": 1.4625
       },
       "3": {
-        "bestModel": "standard",
-        "recoveryRate": 0.2814814814814815
+        "bestModel": "safeBet",
+        "bestBetType": "win",
+        "recoveryRate": 1.8333333333333333
       },
       "5": {
         "bestModel": "safeBet",
+        "bestBetType": "trio",
         "recoveryRate": 1.9125
       },
       "6": {
-        "bestModel": "standard",
-        "recoveryRate": 1.2385416666666667
+        "bestModel": "upsetFocus",
+        "bestBetType": "trifecta",
+        "recoveryRate": 2.475
       },
       "7": {
         "bestModel": "standard",
-        "recoveryRate": 0.18796296296296297
+        "bestBetType": "place",
+        "recoveryRate": 1.048148148148148
       },
       "8": {
         "bestModel": "standard",
-        "recoveryRate": 0.571969696969697
+        "bestBetType": "place",
+        "recoveryRate": 0.9424242424242424
       },
       "9": {
         "bestModel": "standard",
-        "recoveryRate": 0.42336448598130844
+        "bestBetType": "place",
+        "recoveryRate": 0.8158878504672897
       },
       "10": {
         "bestModel": "standard",
-        "recoveryRate": 0.4091666666666667
+        "bestBetType": "place",
+        "recoveryRate": 0.8583333333333333
       },
       "11": {
         "bestModel": "upsetFocus",
+        "bestBetType": "trio",
         "recoveryRate": 3.591666666666667
+      },
+      "12": {
+        "bestModel": "standard",
+        "bestBetType": "win",
+        "recoveryRate": 0.8509803921568627
       },
       "13": {
         "bestModel": "standard",
-        "recoveryRate": 0.21428571428571427
+        "bestBetType": "place",
+        "recoveryRate": 0.7619047619047619
+      },
+      "14": {
+        "bestModel": "upsetFocus",
+        "bestBetType": "win",
+        "recoveryRate": 0.9625
       },
       "15": {
         "bestModel": "standard",
-        "recoveryRate": 0.31833333333333336
+        "bestBetType": "place",
+        "recoveryRate": 0.9716666666666667
       },
       "16": {
-        "bestModel": "standard",
-        "recoveryRate": 1.6375
+        "bestModel": "upsetFocus",
+        "bestBetType": "win",
+        "recoveryRate": 1.8333333333333333
       },
       "17": {
         "bestModel": "standard",
-        "recoveryRate": 0.2675
+        "bestBetType": "place",
+        "recoveryRate": 0.7691666666666667
       },
       "18": {
         "bestModel": "standard",
-        "recoveryRate": 0.628030303030303
+        "bestBetType": "win",
+        "recoveryRate": 0.9871212121212121
       },
       "19": {
-        "bestModel": "standard",
-        "recoveryRate": 0.04597701149425287
+        "bestModel": "safeBet",
+        "bestBetType": "place",
+        "recoveryRate": 0.8266666666666667
       },
       "20": {
         "bestModel": "standard",
-        "recoveryRate": 0.5238095238095238
+        "bestBetType": "trifecta",
+        "recoveryRate": 0.9650793650793651
       },
       "21": {
         "bestModel": "standard",
+        "bestBetType": "trio",
         "recoveryRate": 18.675
       },
       "22": {
         "bestModel": "standard",
+        "bestBetType": "trio",
         "recoveryRate": 1.6886363636363637
+      },
+      "23": {
+        "bestModel": "standard",
+        "bestBetType": "place",
+        "recoveryRate": 0.8933333333333333
       },
       "24": {
         "bestModel": "safeBet",
+        "bestBetType": "trio",
         "recoveryRate": 4.116666666666666
       }
     }
