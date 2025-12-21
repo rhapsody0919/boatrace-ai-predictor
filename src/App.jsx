@@ -31,6 +31,7 @@ function App() {
   const [selectedModel, setSelectedModel] = useState('standard') // 予想モデル選択
   const [volatility, setVolatility] = useState(null) // 荒れ度情報
   const [lastUpdated, setLastUpdated] = useState(null) // データ更新時刻
+  const [isMenuOpen, setIsMenuOpen] = useState(false) // サブメニュー開閉状態
   const predictionRef = useRef(null)
 
   // レース場番号から名前へのマッピング
@@ -110,12 +111,25 @@ function App() {
   // タブ切り替え関数（URLハッシュも更新）
   const handleTabChange = (tab) => {
     setActiveTab(tab)
+    setIsMenuOpen(false) // タブ切り替え時にメニューを閉じる
     // URLハッシュを更新（ブラウザ履歴に追加）
     const newHash = `#${tab}`
     if (window.location.hash !== newHash) {
       window.history.pushState(null, '', newHash)
     }
   }
+
+  // メニュー外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isMenuOpen && !event.target.closest('.menu-container')) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [isMenuOpen])
 
   // リトライ機能付きfetch関数
   const fetchWithRetry = async (url, maxRetries = 3, retryDelay = 2000) => {
@@ -450,32 +464,44 @@ function App() {
               className={`nav-btn ${activeTab === 'races' ? 'active' : ''}`}
               onClick={() => handleTabChange('races')}
             >
-              今日のレース {getTodayDateShort()}
+              🏁 予想
             </button>
             <button
               className={`nav-btn ${activeTab === 'hit-races' ? 'active' : ''}`}
               onClick={() => handleTabChange('hit-races')}
             >
-              的中レース
+              ✅ 的中
             </button>
             <button
               className={`nav-btn ${activeTab === 'accuracy' ? 'active' : ''}`}
               onClick={() => handleTabChange('accuracy')}
             >
-              成績
+              📊 成績
             </button>
-            <Link to="/how-to-use" className="nav-btn">
-              📚 使い方
-            </Link>
-            <Link to="/blog" className="nav-btn">
-              📝 ブログ
-            </Link>
-            <Link to="/about" className="nav-btn">
-              ℹ️ About
-            </Link>
-            <Link to="/faq" className="nav-btn">
-              ❓ FAQ
-            </Link>
+            <div className="menu-container">
+              <button
+                className="nav-btn menu-btn"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                ⋮
+              </button>
+              {isMenuOpen && (
+                <div className="submenu">
+                  <Link to="/how-to-use" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
+                    📚 使い方
+                  </Link>
+                  <Link to="/blog" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
+                    📝 ブログ
+                  </Link>
+                  <Link to="/faq" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
+                    ❓ よくある質問
+                  </Link>
+                  <Link to="/about" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
+                    ℹ️ サービスについて
+                  </Link>
+                </div>
+              )}
+            </div>
           </nav>
         </div>
       </header>
