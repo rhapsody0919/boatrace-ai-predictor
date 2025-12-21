@@ -302,9 +302,11 @@ function AccuracyDashboard() {
     </div>
   )
 
-  // 競艇場別最適投資戦略テーブルコンポーネント
-  const VenueOptimalStrategyTable = () => {
-    if (!summary.venueRecommendations) return null
+  // 競艇場別投資戦略テーブルコンポーネント
+  const VenueStrategyTable = () => {
+    if (!summary.models) return null
+
+    const [selectedStrategyModel, setSelectedStrategyModel] = useState('standard')
 
     const modelNames = {
       standard: 'スタンダード',
@@ -319,57 +321,77 @@ function AccuracyDashboard() {
       trio: '3連単'
     }
 
-    // 全24競艇場のデータを配列に変換
+    // 選択されたモデルの24競艇場データを取得
     const venueData = Object.keys(stadiumNames).map(venueCode => {
-      const overallRec = summary.venueRecommendations.overall[venueCode]
-      const thisMonthRec = summary.venueRecommendations.thisMonth[venueCode]
+      const venueStats = summary.models[selectedStrategyModel]?.byVenue?.[venueCode]
+      const thisMonthStats = venueStats?.thisMonth
 
       return {
         venueCode: parseInt(venueCode),
         venueName: stadiumNames[venueCode],
-        overall: overallRec ? {
-          strategy: `${modelNames[overallRec.bestModel]} × ${betTypeNames[overallRec.bestBetType]}`,
-          recoveryRate: overallRec.recoveryRate
-        } : null,
-        thisMonth: thisMonthRec ? {
-          strategy: `${modelNames[thisMonthRec.bestModel]} × ${betTypeNames[thisMonthRec.bestBetType]}`,
-          recoveryRate: thisMonthRec.recoveryRate
-        } : null
+        win: thisMonthStats?.actualRecovery?.win?.recoveryRate,
+        place: thisMonthStats?.actualRecovery?.place?.recoveryRate,
+        trifecta: thisMonthStats?.actualRecovery?.trifecta?.recoveryRate,
+        trio: thisMonthStats?.actualRecovery?.trio?.recoveryRate,
+        totalRaces: thisMonthStats?.totalRaces || 0
       }
     })
 
     return (
-      <div className="venue-optimal-strategy-section">
-        <h3>🎯 競艇場別最適投資戦略</h3>
+      <div className="venue-strategy-section">
+        <h3>🎯 競艇場別投資戦略（今月）</h3>
         <p className="section-description">
-          各競艇場で最も回収率が高い「モデル × 買い方」の組み合わせを表示しています
+          各競艇場・各買い方の回収率を表示しています
         </p>
+
+        {/* モデル選択タブ */}
+        <div className="strategy-model-selector">
+          <button
+            className={selectedStrategyModel === 'standard' ? 'active' : ''}
+            onClick={() => setSelectedStrategyModel('standard')}
+          >
+            スタンダード
+          </button>
+          <button
+            className={selectedStrategyModel === 'safeBet' ? 'active' : ''}
+            onClick={() => setSelectedStrategyModel('safeBet')}
+          >
+            本命狙い
+          </button>
+          <button
+            className={selectedStrategyModel === 'upsetFocus' ? 'active' : ''}
+            onClick={() => setSelectedStrategyModel('upsetFocus')}
+          >
+            穴狙い
+          </button>
+        </div>
+
         <div className="table-wrapper">
           <table className="venue-strategy-table">
             <thead>
               <tr>
                 <th>競艇場</th>
-                <th>推奨戦略（全期間）</th>
-                <th>回収率</th>
-                <th>推奨戦略（今月）</th>
-                <th>回収率</th>
+                <th>単勝</th>
+                <th>複勝</th>
+                <th>3連複</th>
+                <th>3連単</th>
               </tr>
             </thead>
             <tbody>
               {venueData.map(venue => (
                 <tr key={venue.venueCode}>
                   <td className="venue-name">{venue.venueName}</td>
-                  <td className="strategy-cell">
-                    {venue.overall ? venue.overall.strategy : '-'}
+                  <td className="recovery-rate" style={{color: venue.win ? getRecoveryColor(venue.win) : '#64748b'}}>
+                    {venue.win !== undefined ? formatPercent(venue.win) : '-'}
                   </td>
-                  <td className="recovery-rate" style={{color: venue.overall ? getRecoveryColor(venue.overall.recoveryRate) : '#64748b'}}>
-                    {venue.overall ? formatPercent(venue.overall.recoveryRate) : '-'}
+                  <td className="recovery-rate" style={{color: venue.place ? getRecoveryColor(venue.place) : '#64748b'}}>
+                    {venue.place !== undefined ? formatPercent(venue.place) : '-'}
                   </td>
-                  <td className="strategy-cell">
-                    {venue.thisMonth ? venue.thisMonth.strategy : '-'}
+                  <td className="recovery-rate" style={{color: venue.trifecta ? getRecoveryColor(venue.trifecta) : '#64748b'}}>
+                    {venue.trifecta !== undefined ? formatPercent(venue.trifecta) : '-'}
                   </td>
-                  <td className="recovery-rate" style={{color: venue.thisMonth ? getRecoveryColor(venue.thisMonth.recoveryRate) : '#64748b'}}>
-                    {venue.thisMonth ? formatPercent(venue.thisMonth.recoveryRate) : '-'}
+                  <td className="recovery-rate" style={{color: venue.trio ? getRecoveryColor(venue.trio) : '#64748b'}}>
+                    {venue.trio !== undefined ? formatPercent(venue.trio) : '-'}
                   </td>
                 </tr>
               ))}
@@ -630,8 +652,8 @@ function AccuracyDashboard() {
           {/* 回収率推移グラフ */}
           <RecoveryTrendChart />
 
-          {/* 競艇場別最適投資戦略テーブル */}
-          <VenueOptimalStrategyTable />
+          {/* 競艇場別投資戦略テーブル */}
+          <VenueStrategyTable />
 
           {/* 的中率と回収率についての説明 */}
           <div className="accuracy-info">

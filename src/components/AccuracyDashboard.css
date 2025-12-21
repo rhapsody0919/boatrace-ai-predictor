@@ -909,8 +909,8 @@
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
-/* Venue Optimal Strategy Table */
-.venue-optimal-strategy-section {
+/* Venue Strategy Table */
+.venue-strategy-section {
   background: white;
   border-radius: 16px;
   padding: 2rem;
@@ -919,7 +919,7 @@
   border: 2px solid #e2e8f0;
 }
 
-.venue-optimal-strategy-section h3 {
+.venue-strategy-section h3 {
   font-size: 1.5rem;
   color: #1e293b;
   margin: 0 0 0.5rem 0;
@@ -927,11 +927,48 @@
   text-align: center;
 }
 
-.venue-optimal-strategy-section .section-description {
+.venue-strategy-section .section-description {
   text-align: center;
   color: #64748b;
   font-size: 0.9rem;
   margin: 0 0 1.5rem 0;
+}
+
+/* Strategy model selector tabs (inside venue strategy section) */
+.strategy-model-selector {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.strategy-model-selector button {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 2px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 110px;
+}
+
+.strategy-model-selector button:hover {
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(14, 165, 233, 0.2);
+}
+
+.strategy-model-selector button.active {
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+  border-color: #0ea5e9;
+  color: white;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
+  transform: translateY(-1px);
 }
 
 .venue-strategy-table {
@@ -990,7 +1027,7 @@
   font-weight: 700;
 }
 
-.venue-optimal-strategy-section .table-note {
+.venue-strategy-section .table-note {
   text-align: center;
   margin-top: 1rem;
   color: #64748b;
@@ -1011,11 +1048,11 @@
     min-width: auto;
   }
 
-  .venue-optimal-strategy-section {
+  .venue-strategy-section {
     padding: 1.25rem;
   }
 
-  .venue-optimal-strategy-section h3 {
+  .venue-strategy-section h3 {
     font-size: 1.25rem;
   }
 
@@ -1030,11 +1067,11 @@
 }
 
 @media (max-width: 480px) {
-  .venue-optimal-strategy-section {
+  .venue-strategy-section {
     padding: 1rem;
   }
 
-  .venue-optimal-strategy-section h3 {
+  .venue-strategy-section h3 {
     font-size: 1.1rem;
   }
 
