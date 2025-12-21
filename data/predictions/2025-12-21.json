@@ -1,7 +1,7 @@
 {
   "date": "2025-12-21",
-  "generatedAt": "2025-12-21T06:38:06.885Z",
-  "updatedAt": "2025-12-21T07:01:50.187Z",
+  "generatedAt": "2025-12-21T07:25:53.868Z",
+  "updatedAt": "2025-12-21T07:49:23.853Z",
   "races": [
     {
       "raceId": "2025-12-21-02-01",
@@ -414,7 +414,7 @@
             "1-2-6": 2000
           }
         },
-        "updatedAt": "2025-12-21T06:38:17.485Z"
+        "updatedAt": "2025-12-21T07:26:03.601Z"
       },
       "accuracy": {
         "standard": {
@@ -847,7 +847,7 @@
             "3-4-5": 2260
           }
         },
-        "updatedAt": "2025-12-21T06:38:27.264Z"
+        "updatedAt": "2025-12-21T07:26:13.373Z"
       },
       "accuracy": {
         "standard": {
@@ -1281,7 +1281,7 @@
             "2-5-6": 2580
           }
         },
-        "updatedAt": "2025-12-21T06:38:38.029Z"
+        "updatedAt": "2025-12-21T07:26:22.133Z"
       },
       "accuracy": {
         "standard": {
@@ -1715,7 +1715,7 @@
             "3-1-5": 3270
           }
         },
-        "updatedAt": "2025-12-21T06:38:47.760Z"
+        "updatedAt": "2025-12-21T07:26:30.859Z"
       },
       "accuracy": {
         "standard": {
@@ -2148,7 +2148,7 @@
             "3-5-1": 18480
           }
         },
-        "updatedAt": "2025-12-21T06:38:58.537Z"
+        "updatedAt": "2025-12-21T07:26:40.607Z"
       },
       "accuracy": {
         "standard": {
@@ -2582,7 +2582,7 @@
             "2-3-6": 1600
           }
         },
-        "updatedAt": "2025-12-21T06:39:08.282Z"
+        "updatedAt": "2025-12-21T07:26:50.322Z"
       },
       "accuracy": {
         "standard": {
@@ -3017,7 +3017,7 @@
             "1-6-3": 7040
           }
         },
-        "updatedAt": "2025-12-21T06:39:18.064Z"
+        "updatedAt": "2025-12-21T07:27:00.068Z"
       },
       "accuracy": {
         "standard": {
@@ -3450,7 +3450,7 @@
             "3-1-5": 1310
           }
         },
-        "updatedAt": "2025-12-21T06:39:28.803Z"
+        "updatedAt": "2025-12-21T07:27:10.789Z"
       },
       "accuracy": {
         "standard": {
@@ -3884,7 +3884,7 @@
             "1-3-4": 2650
           }
         },
-        "updatedAt": "2025-12-21T06:39:37.565Z"
+        "updatedAt": "2025-12-21T07:27:21.232Z"
       },
       "accuracy": {
         "standard": {
@@ -4318,7 +4318,7 @@
             "1-3-6": 2780
           }
         },
-        "updatedAt": "2025-12-21T06:39:48.323Z"
+        "updatedAt": "2025-12-21T07:27:32.074Z"
       },
       "accuracy": {
         "standard": {
@@ -4751,7 +4751,7 @@
             "1-4-6": 950
           }
         },
-        "updatedAt": "2025-12-21T06:39:58.048Z"
+        "updatedAt": "2025-12-21T07:27:42.987Z"
       },
       "accuracy": {
         "standard": {
@@ -5165,30 +5165,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 5,
+        "rank2": 2,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "5": 1700
+          },
+          "place": {
+            "2": 150,
+            "5": 300
+          },
+          "trifecta": {
+            "2-3-5": 1760
+          },
+          "trio": {
+            "5-2-3": 27550
+          }
+        },
+        "updatedAt": "2025-12-21T07:27:52.758Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": true
         }
       }
     },
@@ -5604,7 +5619,7 @@
             "4-1-2": 1580
           }
         },
-        "updatedAt": "2025-12-21T06:40:18.547Z"
+        "updatedAt": "2025-12-21T07:28:02.491Z"
       },
       "accuracy": {
         "standard": {
@@ -6038,7 +6053,7 @@
             "2-4-3": 1490
           }
         },
-        "updatedAt": "2025-12-21T06:40:27.278Z"
+        "updatedAt": "2025-12-21T07:28:12.223Z"
       },
       "accuracy": {
         "standard": {
@@ -6472,7 +6487,7 @@
             "6-2-3": 3930
           }
         },
-        "updatedAt": "2025-12-21T06:40:37.042Z"
+        "updatedAt": "2025-12-21T07:28:22.993Z"
       },
       "accuracy": {
         "standard": {
@@ -6907,7 +6922,7 @@
             "4-3-6": 20130
           }
         },
-        "updatedAt": "2025-12-21T06:40:46.790Z"
+        "updatedAt": "2025-12-21T07:28:31.765Z"
       },
       "accuracy": {
         "standard": {
@@ -7340,7 +7355,7 @@
             "2-1-5": 5160
           }
         },
-        "updatedAt": "2025-12-21T06:40:55.546Z"
+        "updatedAt": "2025-12-21T07:28:40.538Z"
       },
       "accuracy": {
         "standard": {
@@ -7773,7 +7788,7 @@
             "1-6-2": 1570
           }
         },
-        "updatedAt": "2025-12-21T06:41:04.302Z"
+        "updatedAt": "2025-12-21T07:28:51.321Z"
       },
       "accuracy": {
         "standard": {
@@ -8206,7 +8221,7 @@
             "1-3-2": 7600
           }
         },
-        "updatedAt": "2025-12-21T06:41:13.021Z"
+        "updatedAt": "2025-12-21T07:29:00.033Z"
       },
       "accuracy": {
         "standard": {
@@ -8639,7 +8654,7 @@
             "1-2-6": 1820
           }
         },
-        "updatedAt": "2025-12-21T06:41:23.776Z"
+        "updatedAt": "2025-12-21T07:29:09.790Z"
       },
       "accuracy": {
         "standard": {
@@ -9072,7 +9087,7 @@
             "5-4-3": 5270
           }
         },
-        "updatedAt": "2025-12-21T06:41:32.544Z"
+        "updatedAt": "2025-12-21T07:29:18.507Z"
       },
       "accuracy": {
         "standard": {
@@ -9507,7 +9522,7 @@
             "4-1-5": 6320
           }
         },
-        "updatedAt": "2025-12-21T06:41:42.274Z"
+        "updatedAt": "2025-12-21T07:29:27.219Z"
       },
       "accuracy": {
         "standard": {
@@ -9922,30 +9937,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 3,
+        "rank2": 1,
+        "rank3": 5,
+        "payouts": {
+          "win": {
+            "3": 490
+          },
+          "place": {
+            "1": 100,
+            "3": 150
+          },
+          "trifecta": {
+            "1-3-5": 920
+          },
+          "trio": {
+            "3-1-5": 6270
+          }
+        },
+        "updatedAt": "2025-12-21T07:29:35.959Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -10341,30 +10371,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 5,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "1": 240
+          },
+          "place": {
+            "1": 140,
+            "5": 420
+          },
+          "trifecta": {
+            "1-2-5": 810
+          },
+          "trio": {
+            "1-5-2": 3700
+          }
+        },
+        "updatedAt": "2025-12-21T07:29:46.693Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -10779,7 +10824,7 @@
             "1-3-5": 1510
           }
         },
-        "updatedAt": "2025-12-21T06:42:10.559Z"
+        "updatedAt": "2025-12-21T07:29:56.443Z"
       },
       "accuracy": {
         "standard": {
@@ -11212,7 +11257,7 @@
             "1-2-4": 700
           }
         },
-        "updatedAt": "2025-12-21T06:42:21.324Z"
+        "updatedAt": "2025-12-21T07:30:05.153Z"
       },
       "accuracy": {
         "standard": {
@@ -11644,7 +11689,7 @@
             "1-4-6": 1500
           }
         },
-        "updatedAt": "2025-12-21T06:42:31.052Z"
+        "updatedAt": "2025-12-21T07:30:14.904Z"
       },
       "accuracy": {
         "standard": {
@@ -12077,7 +12122,7 @@
             "3-4-2": 9360
           }
         },
-        "updatedAt": "2025-12-21T06:42:40.807Z"
+        "updatedAt": "2025-12-21T07:30:25.656Z"
       },
       "accuracy": {
         "standard": {
@@ -12511,7 +12556,7 @@
             "1-2-4": 2640
           }
         },
-        "updatedAt": "2025-12-21T06:42:51.567Z"
+        "updatedAt": "2025-12-21T07:30:36.409Z"
       },
       "accuracy": {
         "standard": {
@@ -12944,7 +12989,7 @@
             "3-2-4": 16580
           }
         },
-        "updatedAt": "2025-12-21T06:43:02.302Z"
+        "updatedAt": "2025-12-21T07:30:46.146Z"
       },
       "accuracy": {
         "standard": {
@@ -13378,7 +13423,7 @@
             "4-2-1": 6580
           }
         },
-        "updatedAt": "2025-12-21T06:43:12.061Z"
+        "updatedAt": "2025-12-21T07:30:56.853Z"
       },
       "accuracy": {
         "standard": {
@@ -13812,7 +13857,7 @@
             "1-6-2": 7140
           }
         },
-        "updatedAt": "2025-12-21T06:43:21.835Z"
+        "updatedAt": "2025-12-21T07:31:06.820Z"
       },
       "accuracy": {
         "standard": {
@@ -14244,7 +14289,7 @@
             "4-3-1": 6250
           }
         },
-        "updatedAt": "2025-12-21T06:43:32.918Z"
+        "updatedAt": "2025-12-21T07:31:15.559Z"
       },
       "accuracy": {
         "standard": {
@@ -14677,7 +14722,7 @@
             "4-5-6": 4470
           }
         },
-        "updatedAt": "2025-12-21T06:43:42.653Z"
+        "updatedAt": "2025-12-21T07:31:25.288Z"
       },
       "accuracy": {
         "standard": {
@@ -15110,7 +15155,7 @@
             "6-4-5": 10200
           }
         },
-        "updatedAt": "2025-12-21T06:43:53.403Z"
+        "updatedAt": "2025-12-21T07:31:36.006Z"
       },
       "accuracy": {
         "standard": {
@@ -15524,30 +15569,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 4,
+        "rank2": 2,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "4": 440
+          },
+          "place": {
+            "2": 640,
+            "4": 360
+          },
+          "trifecta": {
+            "2-3-4": 2370
+          },
+          "trio": {
+            "4-2-3": 23690
+          }
+        },
+        "updatedAt": "2025-12-21T07:31:44.743Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": true
         }
       }
     },
@@ -15961,7 +16021,7 @@
             "1-2-3": 1120
           }
         },
-        "updatedAt": "2025-12-21T06:44:12.829Z"
+        "updatedAt": "2025-12-21T07:31:53.501Z"
       },
       "accuracy": {
         "standard": {
@@ -16393,7 +16453,7 @@
             "2-5-3": 2150
           }
         },
-        "updatedAt": "2025-12-21T06:44:22.595Z"
+        "updatedAt": "2025-12-21T07:32:03.262Z"
       },
       "accuracy": {
         "standard": {
@@ -16825,7 +16885,7 @@
             "1-2-3": 3070
           }
         },
-        "updatedAt": "2025-12-21T06:44:33.316Z"
+        "updatedAt": "2025-12-21T07:32:13.009Z"
       },
       "accuracy": {
         "standard": {
@@ -17259,7 +17319,7 @@
             "1-2-5": 4900
           }
         },
-        "updatedAt": "2025-12-21T06:44:42.081Z"
+        "updatedAt": "2025-12-21T07:32:21.721Z"
       },
       "accuracy": {
         "standard": {
@@ -17693,7 +17753,7 @@
             "3-2-6": 4870
           }
         },
-        "updatedAt": "2025-12-21T06:44:51.833Z"
+        "updatedAt": "2025-12-21T07:32:30.472Z"
       },
       "accuracy": {
         "standard": {
@@ -18124,7 +18184,7 @@
             "1-2-3": 1230
           }
         },
-        "updatedAt": "2025-12-21T06:45:01.627Z"
+        "updatedAt": "2025-12-21T07:32:41.235Z"
       },
       "accuracy": {
         "standard": {
@@ -18556,7 +18616,7 @@
             "4-6-5": 2330
           }
         },
-        "updatedAt": "2025-12-21T06:45:10.376Z"
+        "updatedAt": "2025-12-21T07:32:51.985Z"
       },
       "accuracy": {
         "standard": {
@@ -18988,7 +19048,7 @@
             "6-3-1": 1880
           }
         },
-        "updatedAt": "2025-12-21T06:45:20.143Z"
+        "updatedAt": "2025-12-21T07:33:00.731Z"
       },
       "accuracy": {
         "standard": {
@@ -19420,7 +19480,7 @@
             "1-2-3": 490
           }
         },
-        "updatedAt": "2025-12-21T06:45:29.948Z"
+        "updatedAt": "2025-12-21T07:33:11.439Z"
       },
       "accuracy": {
         "standard": {
@@ -19852,7 +19912,7 @@
             "1-4-5": 610
           }
         },
-        "updatedAt": "2025-12-21T06:45:38.665Z"
+        "updatedAt": "2025-12-21T07:33:21.148Z"
       },
       "accuracy": {
         "standard": {
@@ -20266,30 +20326,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 4,
+        "payouts": {
+          "win": {
+            "1": 200
+          },
+          "place": {
+            "1": 100,
+            "2": 100
+          },
+          "trifecta": {
+            "1-2-4": 260
+          },
+          "trio": {
+            "1-2-4": 450
+          }
+        },
+        "updatedAt": "2025-12-21T07:33:31.900Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -20683,30 +20758,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 2,
+        "rank2": 6,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "2": 460
+          },
+          "place": {
+            "2": 100,
+            "6": 1960
+          },
+          "trifecta": {
+            "2-3-6": 5910
+          },
+          "trio": {
+            "2-6-3": 40900
+          }
+        },
+        "updatedAt": "2025-12-21T07:33:41.611Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": true
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": true
         }
       }
     },
@@ -21119,7 +21209,7 @@
             "1-5-2": 2560
           }
         },
-        "updatedAt": "2025-12-21T06:46:10.898Z"
+        "updatedAt": "2025-12-21T07:33:50.358Z"
       },
       "accuracy": {
         "standard": {
@@ -21551,7 +21641,7 @@
             "3-2-5": 11850
           }
         },
-        "updatedAt": "2025-12-21T06:46:21.655Z"
+        "updatedAt": "2025-12-21T07:33:59.099Z"
       },
       "accuracy": {
         "standard": {
@@ -21985,7 +22075,7 @@
             "2-3-4": 4410
           }
         },
-        "updatedAt": "2025-12-21T06:46:32.381Z"
+        "updatedAt": "2025-12-21T07:34:09.812Z"
       },
       "accuracy": {
         "standard": {
@@ -22417,7 +22507,7 @@
             "4-3-6": 54820
           }
         },
-        "updatedAt": "2025-12-21T06:46:43.135Z"
+        "updatedAt": "2025-12-21T07:34:18.569Z"
       },
       "accuracy": {
         "standard": {
@@ -22849,7 +22939,7 @@
             "5-2-6": 14120
           }
         },
-        "updatedAt": "2025-12-21T06:46:53.874Z"
+        "updatedAt": "2025-12-21T07:34:28.311Z"
       },
       "accuracy": {
         "standard": {
@@ -23280,7 +23370,7 @@
             "1-3-2": 1000
           }
         },
-        "updatedAt": "2025-12-21T06:47:03.618Z"
+        "updatedAt": "2025-12-21T07:34:39.018Z"
       },
       "accuracy": {
         "standard": {
@@ -23713,7 +23803,7 @@
             "1-2-3": 950
           }
         },
-        "updatedAt": "2025-12-21T06:47:14.353Z"
+        "updatedAt": "2025-12-21T07:34:49.759Z"
       },
       "accuracy": {
         "standard": {
@@ -24145,7 +24235,7 @@
             "5-1-4": 8460
           }
         },
-        "updatedAt": "2025-12-21T06:47:24.064Z"
+        "updatedAt": "2025-12-21T07:35:00.512Z"
       },
       "accuracy": {
         "standard": {
@@ -24577,7 +24667,7 @@
             "1-2-3": 500
           }
         },
-        "updatedAt": "2025-12-21T06:47:32.772Z"
+        "updatedAt": "2025-12-21T07:35:09.224Z"
       },
       "accuracy": {
         "standard": {
@@ -25010,7 +25100,7 @@
             "1-3-4": 1240
           }
         },
-        "updatedAt": "2025-12-21T06:47:43.505Z"
+        "updatedAt": "2025-12-21T07:35:17.936Z"
       },
       "accuracy": {
         "standard": {
@@ -25423,30 +25513,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 5,
+        "rank3": 4,
+        "payouts": {
+          "win": {
+            "1": 100
+          },
+          "place": {
+            "1": 100,
+            "5": 110
+          },
+          "trifecta": {
+            "1-4-5": 390
+          },
+          "trio": {
+            "1-5-4": 970
+          }
+        },
+        "updatedAt": "2025-12-21T07:35:26.675Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -25455,7 +25560,7 @@
       "venue": "常滑",
       "venueCode": 8,
       "raceNumber": 12,
-      "startTime": "16:07",
+      "startTime": "16:06",
       "volatility": {
         "score": 19,
         "level": "low",
@@ -25839,30 +25944,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 6,
+        "payouts": {
+          "win": {
+            "1": 130
+          },
+          "place": {
+            "1": 100,
+            "2": 200
+          },
+          "trifecta": {
+            "1-2-6": 1590
+          },
+          "trio": {
+            "1-2-6": 2380
+          }
+        },
+        "updatedAt": "2025-12-21T07:35:35.383Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -26275,7 +26395,7 @@
             "2-5-1": 43170
           }
         },
-        "updatedAt": "2025-12-21T06:48:13.670Z"
+        "updatedAt": "2025-12-21T07:35:44.132Z"
       },
       "accuracy": {
         "standard": {
@@ -26707,7 +26827,7 @@
             "4-2-1": 6760
           }
         },
-        "updatedAt": "2025-12-21T06:48:22.378Z"
+        "updatedAt": "2025-12-21T07:35:54.883Z"
       },
       "accuracy": {
         "standard": {
@@ -27121,30 +27241,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 6,
+        "rank2": 2,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "6": 2000
+          },
+          "place": {
+            "2": 220,
+            "6": 870
+          },
+          "trifecta": {
+            "2-3-6": 4820
+          },
+          "trio": {
+            "6-2-3": 100350
+          }
+        },
+        "updatedAt": "2025-12-21T07:36:04.598Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -31313,7 +31448,7 @@
             "1-5-2": 2750
           }
         },
-        "updatedAt": "2025-12-21T06:50:10.209Z"
+        "updatedAt": "2025-12-21T07:37:47.774Z"
       },
       "accuracy": {
         "standard": {
@@ -31745,7 +31880,7 @@
             "1-6-2": 8930
           }
         },
-        "updatedAt": "2025-12-21T06:50:18.991Z"
+        "updatedAt": "2025-12-21T07:37:58.526Z"
       },
       "accuracy": {
         "standard": {
@@ -32178,7 +32313,7 @@
             "3-2-4": 6940
           }
         },
-        "updatedAt": "2025-12-21T06:50:28.770Z"
+        "updatedAt": "2025-12-21T07:38:07.282Z"
       },
       "accuracy": {
         "standard": {
@@ -32611,7 +32746,7 @@
             "1-3-4": 1700
           }
         },
-        "updatedAt": "2025-12-21T06:50:37.491Z"
+        "updatedAt": "2025-12-21T07:38:17.022Z"
       },
       "accuracy": {
         "standard": {
@@ -33045,7 +33180,7 @@
             "1-3-4": 4730
           }
         },
-        "updatedAt": "2025-12-21T06:50:46.259Z"
+        "updatedAt": "2025-12-21T07:38:25.762Z"
       },
       "accuracy": {
         "standard": {
@@ -33478,7 +33613,7 @@
             "2-3-5": 11000
           }
         },
-        "updatedAt": "2025-12-21T06:50:57.009Z"
+        "updatedAt": "2025-12-21T07:38:36.514Z"
       },
       "accuracy": {
         "standard": {
@@ -33911,7 +34046,7 @@
             "1-2-3": 1820
           }
         },
-        "updatedAt": "2025-12-21T06:51:07.740Z"
+        "updatedAt": "2025-12-21T07:38:45.245Z"
       },
       "accuracy": {
         "standard": {
@@ -34343,7 +34478,7 @@
             "1-2-4": 900
           }
         },
-        "updatedAt": "2025-12-21T06:51:18.492Z"
+        "updatedAt": "2025-12-21T07:38:55.999Z"
       },
       "accuracy": {
         "standard": {
@@ -34776,7 +34911,7 @@
             "1-5-3": 2800
           }
         },
-        "updatedAt": "2025-12-21T06:51:27.245Z"
+        "updatedAt": "2025-12-21T07:39:06.752Z"
       },
       "accuracy": {
         "standard": {
@@ -35209,7 +35344,7 @@
             "3-1-4": 5200
           }
         },
-        "updatedAt": "2025-12-21T06:51:35.964Z"
+        "updatedAt": "2025-12-21T07:39:15.505Z"
       },
       "accuracy": {
         "standard": {
@@ -35642,7 +35777,7 @@
             "2-1-3": 8620
           }
         },
-        "updatedAt": "2025-12-21T06:51:45.720Z"
+        "updatedAt": "2025-12-21T07:39:25.246Z"
       },
       "accuracy": {
         "standard": {
@@ -36073,7 +36208,7 @@
             "5-1-2": 4700
           }
         },
-        "updatedAt": "2025-12-21T06:51:55.491Z"
+        "updatedAt": "2025-12-21T07:39:34.958Z"
       },
       "accuracy": {
         "standard": {
@@ -36505,7 +36640,7 @@
             "1-2-3": 600
           }
         },
-        "updatedAt": "2025-12-21T06:52:04.311Z"
+        "updatedAt": "2025-12-21T07:39:45.671Z"
       },
       "accuracy": {
         "standard": {
@@ -36939,7 +37074,7 @@
             "6-4-1": 7040
           }
         },
-        "updatedAt": "2025-12-21T06:52:15.067Z"
+        "updatedAt": "2025-12-21T07:39:54.426Z"
       },
       "accuracy": {
         "standard": {
@@ -37371,7 +37506,7 @@
             "5-4-6": 3560
           }
         },
-        "updatedAt": "2025-12-21T06:52:26.462Z"
+        "updatedAt": "2025-12-21T07:40:04.183Z"
       },
       "accuracy": {
         "standard": {
@@ -37803,7 +37938,7 @@
             "3-1-2": 3250
           }
         },
-        "updatedAt": "2025-12-21T06:52:35.321Z"
+        "updatedAt": "2025-12-21T07:40:13.930Z"
       },
       "accuracy": {
         "standard": {
@@ -38236,7 +38371,7 @@
             "6-3-4": 12150
           }
         },
-        "updatedAt": "2025-12-21T06:52:44.068Z"
+        "updatedAt": "2025-12-21T07:40:23.654Z"
       },
       "accuracy": {
         "standard": {
@@ -38669,7 +38804,7 @@
             "2-3-4": 1590
           }
         },
-        "updatedAt": "2025-12-21T06:52:58.332Z"
+        "updatedAt": "2025-12-21T07:40:33.406Z"
       },
       "accuracy": {
         "standard": {
@@ -39101,7 +39236,7 @@
             "2-1-3": 5390
           }
         },
-        "updatedAt": "2025-12-21T06:53:09.581Z"
+        "updatedAt": "2025-12-21T07:40:44.116Z"
       },
       "accuracy": {
         "standard": {
@@ -39535,7 +39670,7 @@
             "2-4-5": 4120
           }
         },
-        "updatedAt": "2025-12-21T06:53:20.312Z"
+        "updatedAt": "2025-12-21T07:40:53.847Z"
       },
       "accuracy": {
         "standard": {
@@ -39967,7 +40102,7 @@
             "5-6-2": 12030
           }
         },
-        "updatedAt": "2025-12-21T06:53:29.078Z"
+        "updatedAt": "2025-12-21T07:41:03.588Z"
       },
       "accuracy": {
         "standard": {
@@ -40400,7 +40535,7 @@
             "3-1-2": 7620
           }
         },
-        "updatedAt": "2025-12-21T06:53:38.801Z"
+        "updatedAt": "2025-12-21T07:41:13.319Z"
       },
       "accuracy": {
         "standard": {
@@ -40833,7 +40968,7 @@
             "2-3-1": 7070
           }
         },
-        "updatedAt": "2025-12-21T06:53:49.511Z"
+        "updatedAt": "2025-12-21T07:41:22.062Z"
       },
       "accuracy": {
         "standard": {
@@ -41266,7 +41401,7 @@
             "1-2-4": 940
           }
         },
-        "updatedAt": "2025-12-21T06:53:59.281Z"
+        "updatedAt": "2025-12-21T07:41:30.810Z"
       },
       "accuracy": {
         "standard": {
@@ -41698,7 +41833,7 @@
             "1-6-4": 9760
           }
         },
-        "updatedAt": "2025-12-21T06:54:08.036Z"
+        "updatedAt": "2025-12-21T07:41:41.554Z"
       },
       "accuracy": {
         "standard": {
@@ -42112,30 +42247,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 4,
+        "payouts": {
+          "win": {
+            "1": 280
+          },
+          "place": {
+            "1": 100,
+            "3": 180
+          },
+          "trifecta": {
+            "1-3-4": 410
+          },
+          "trio": {
+            "1-3-4": 1060
+          }
+        },
+        "updatedAt": "2025-12-21T07:41:52.274Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -42531,30 +42681,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 6,
+        "rank2": 3,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "6": 2980
+          },
+          "place": {
+            "3": 190,
+            "6": 1100
+          },
+          "trifecta": {
+            "2-3-6": 2680
+          },
+          "trio": {
+            "6-3-2": 64360
+          }
+        },
+        "updatedAt": "2025-12-21T07:42:01.988Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -46719,7 +46884,7 @@
             "4-1-3": 1720
           }
         },
-        "updatedAt": "2025-12-21T06:56:02.138Z"
+        "updatedAt": "2025-12-21T07:43:35.175Z"
       },
       "accuracy": {
         "standard": {
@@ -47151,7 +47316,7 @@
             "2-6-1": 7890
           }
         },
-        "updatedAt": "2025-12-21T06:56:10.852Z"
+        "updatedAt": "2025-12-21T07:43:45.920Z"
       },
       "accuracy": {
         "standard": {
@@ -47564,30 +47729,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 3,
+        "rank2": 1,
+        "rank3": 4,
+        "payouts": {
+          "win": {
+            "3": 190
+          },
+          "place": {
+            "1": 220,
+            "3": 150
+          },
+          "trifecta": {
+            "1-3-4": 1470
+          },
+          "trio": {
+            "3-1-4": 5310
+          }
+        },
+        "updatedAt": "2025-12-21T07:43:56.677Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -47982,30 +48162,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "1": 300
+          },
+          "place": {
+            "1": 150,
+            "3": 310
+          },
+          "trifecta": {
+            "1-2-3": 420
+          },
+          "trio": {
+            "1-3-2": 2330
+          }
+        },
+        "updatedAt": "2025-12-21T07:44:07.436Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -51755,7 +51950,7 @@
             "1-4-2": 3000
           }
         },
-        "updatedAt": "2025-12-21T06:57:56.173Z"
+        "updatedAt": "2025-12-21T07:45:38.126Z"
       },
       "accuracy": {
         "standard": {
@@ -52187,7 +52382,7 @@
             "1-4-2": 660
           }
         },
-        "updatedAt": "2025-12-21T06:58:06.056Z"
+        "updatedAt": "2025-12-21T07:45:46.877Z"
       },
       "accuracy": {
         "standard": {
@@ -52619,7 +52814,7 @@
             "1-3-2": 690
           }
         },
-        "updatedAt": "2025-12-21T06:58:15.806Z"
+        "updatedAt": "2025-12-21T07:45:56.638Z"
       },
       "accuracy": {
         "standard": {
@@ -53050,7 +53245,7 @@
             "2-1-4": 2770
           }
         },
-        "updatedAt": "2025-12-21T06:58:25.553Z"
+        "updatedAt": "2025-12-21T07:46:05.388Z"
       },
       "accuracy": {
         "standard": {
@@ -53482,7 +53677,7 @@
             "3-1-4": 6920
           }
         },
-        "updatedAt": "2025-12-21T06:58:35.321Z"
+        "updatedAt": "2025-12-21T07:46:14.109Z"
       },
       "accuracy": {
         "standard": {
@@ -53914,7 +54109,7 @@
             "3-2-5": 2700
           }
         },
-        "updatedAt": "2025-12-21T06:58:46.096Z"
+        "updatedAt": "2025-12-21T07:46:22.821Z"
       },
       "accuracy": {
         "standard": {
@@ -54347,7 +54542,7 @@
             "4-6-5": 260
           }
         },
-        "updatedAt": "2025-12-21T06:58:57.847Z"
+        "updatedAt": "2025-12-21T07:46:33.581Z"
       },
       "accuracy": {
         "standard": {
@@ -54779,7 +54974,7 @@
             "4-2-3": 22650
           }
         },
-        "updatedAt": "2025-12-21T06:59:10.033Z"
+        "updatedAt": "2025-12-21T07:46:44.295Z"
       },
       "accuracy": {
         "standard": {
@@ -55211,7 +55406,7 @@
             "1-3-2": 1120
           }
         },
-        "updatedAt": "2025-12-21T06:59:22.040Z"
+        "updatedAt": "2025-12-21T07:46:55.039Z"
       },
       "accuracy": {
         "standard": {
@@ -55643,7 +55838,7 @@
             "3-6-4": 25760
           }
         },
-        "updatedAt": "2025-12-21T06:59:32.010Z"
+        "updatedAt": "2025-12-21T07:47:03.787Z"
       },
       "accuracy": {
         "standard": {
@@ -56076,7 +56271,7 @@
             "1-2-3": 570
           }
         },
-        "updatedAt": "2025-12-21T06:59:41.766Z"
+        "updatedAt": "2025-12-21T07:47:12.516Z"
       },
       "accuracy": {
         "standard": {
@@ -56508,7 +56703,7 @@
             "1-4-3": 1700
           }
         },
-        "updatedAt": "2025-12-21T06:59:52.512Z"
+        "updatedAt": "2025-12-21T07:47:23.235Z"
       },
       "accuracy": {
         "standard": {
@@ -56941,7 +57136,7 @@
             "1-5-3": 5320
           }
         },
-        "updatedAt": "2025-12-21T07:00:02.308Z"
+        "updatedAt": "2025-12-21T07:47:32.939Z"
       },
       "accuracy": {
         "standard": {
@@ -57372,7 +57567,7 @@
             "1-2-3": 570
           }
         },
-        "updatedAt": "2025-12-21T07:00:12.249Z"
+        "updatedAt": "2025-12-21T07:47:41.687Z"
       },
       "accuracy": {
         "standard": {
@@ -57805,7 +58000,7 @@
             "1-2-3": 5700
           }
         },
-        "updatedAt": "2025-12-21T07:00:21.459Z"
+        "updatedAt": "2025-12-21T07:47:51.434Z"
       },
       "accuracy": {
         "standard": {
@@ -58236,7 +58431,7 @@
             "1-3-6": 1420
           }
         },
-        "updatedAt": "2025-12-21T07:00:32.241Z"
+        "updatedAt": "2025-12-21T07:48:02.171Z"
       },
       "accuracy": {
         "standard": {
@@ -58669,7 +58864,7 @@
             "1-3-6": 400
           }
         },
-        "updatedAt": "2025-12-21T07:00:42.673Z"
+        "updatedAt": "2025-12-21T07:48:11.886Z"
       },
       "accuracy": {
         "standard": {
@@ -59102,7 +59297,7 @@
             "1-3-2": 810
           }
         },
-        "updatedAt": "2025-12-21T07:00:51.601Z"
+        "updatedAt": "2025-12-21T07:48:22.627Z"
       },
       "accuracy": {
         "standard": {
@@ -59534,7 +59729,7 @@
             "4-1-2": 8840
           }
         },
-        "updatedAt": "2025-12-21T07:01:00.438Z"
+        "updatedAt": "2025-12-21T07:48:31.380Z"
       },
       "accuracy": {
         "standard": {
@@ -59967,7 +60162,7 @@
             "2-6-5": 6010
           }
         },
-        "updatedAt": "2025-12-21T07:01:11.189Z"
+        "updatedAt": "2025-12-21T07:48:42.090Z"
       },
       "accuracy": {
         "standard": {
@@ -60400,7 +60595,7 @@
             "2-1-4": 910
           }
         },
-        "updatedAt": "2025-12-21T07:01:19.949Z"
+        "updatedAt": "2025-12-21T07:48:52.844Z"
       },
       "accuracy": {
         "standard": {
@@ -60832,7 +61027,7 @@
             "1-3-5": 5620
           }
         },
-        "updatedAt": "2025-12-21T07:01:30.665Z"
+        "updatedAt": "2025-12-21T07:49:01.590Z"
       },
       "accuracy": {
         "standard": {
@@ -61264,7 +61459,7 @@
             "2-4-1": 2770
           }
         },
-        "updatedAt": "2025-12-21T07:01:40.425Z"
+        "updatedAt": "2025-12-21T07:49:12.339Z"
       },
       "accuracy": {
         "standard": {
@@ -61697,7 +61892,7 @@
             "5-1-2": 15750
           }
         },
-        "updatedAt": "2025-12-21T07:01:49.402Z"
+        "updatedAt": "2025-12-21T07:49:23.079Z"
       },
       "accuracy": {
         "standard": {
