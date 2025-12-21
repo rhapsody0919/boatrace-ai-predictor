@@ -656,13 +656,28 @@ body {
   .nav {
     width: 100%;
     justify-content: flex-start;
+    /* 横スクロール有効化 */
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    flex-wrap: nowrap; /* 折り返しを防止 */
+    gap: 0.5rem;
+    padding-bottom: 0.25rem;
+  }
+
+  /* スクロールバーを非表示 */
+  .nav::-webkit-scrollbar {
+    display: none;
   }
 
   .nav-btn {
-    padding: 0.625rem 1.125rem;
-    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
     /* タッチターゲットを確保 */
     min-height: 44px;
+    flex-shrink: 0; /* 縮小を防止 */
   }
 
   .container {
@@ -801,9 +816,14 @@ body {
     font-size: 1.75rem;
   }
 
+  .nav {
+    gap: 0.4rem;
+  }
+
   .nav-btn {
-    padding: 0.5rem 0.875rem;
-    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    min-height: 40px;
   }
 
   .container {
