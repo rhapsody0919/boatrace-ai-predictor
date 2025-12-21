@@ -683,11 +683,11 @@ function AccuracyDashboard() {
           {/* 回収率推移グラフ */}
           <RecoveryTrendChart />
 
-          {/* 競艇場別詳細分析 */}
-          <VenueDetailedAnalysis />
-
           {/* 競艇場別投資戦略テーブル */}
           <VenueStrategyTable />
+
+          {/* 競艇場別詳細分析 */}
+          <VenueDetailedAnalysis />
 
           {/* 的中率と回収率についての説明 */}
           <div className="accuracy-info">
