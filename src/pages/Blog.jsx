@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { blogPosts, categories, getFeaturedPosts } from '../data/blogPosts';
 import './Blog.css';
 
@@ -17,6 +18,42 @@ export default function Blog() {
 
   return (
     <div className="blog-container">
+      <Helmet>
+        <title>ブログ | BoatAI - 競艇予想・データ分析・戦略情報</title>
+        <meta name="description" content="競艇予想、データ分析、舟券戦略に関する最新情報を発信。初心者向けの基本知識から、上級者向けの高度な戦略まで幅広くカバーしています。" />
+        <meta name="keywords" content="競艇ブログ,予想戦略,データ分析,舟券購入,AI予想,勝ち方" />
+        <link rel="canonical" href="https://boat-ai.jp/blog" />
+
+        {/* OGP Tags */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="BoatAI ブログ | 競艇予想・戦略情報" />
+        <meta property="og:description" content="競艇予想、データ分析、舟券戦略に関する最新情報を発信中。" />
+        <meta property="og:url" content="https://boat-ai.jp/blog" />
+        <meta property="og:image" content="https://boat-ai.jp/ogp-image.png" />
+
+        {/* BreadcrumbList */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "ホーム",
+                "item": "https://boat-ai.jp/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "ブログ",
+                "item": "https://boat-ai.jp/blog"
+              }
+            ]
+          })}
+        </script>
+      </Helmet>
+
       <div className="blog-header">
         <h1>📚 BoatAI ブログ</h1>
         <p>競艇予想・データ分析・戦略に関する情報を発信しています</p>

@@ -8,7 +8,6 @@ export const blogPosts = [
     category: '初心者向け',
     tags: ['競艇', 'AI予想', '勝てない', '負けパターン'],
     readTime: '10分',
-    image: '/images/blog/why-you-lose.jpg',
     featured: true
   },
   {
@@ -19,7 +18,6 @@ export const blogPosts = [
     category: '戦略',
     tags: ['競艇', '副業', '月5万円', 'ロードマップ'],
     readTime: '12分',
-    image: '/images/blog/monthly-50k.jpg',
     featured: true
   },
   {
@@ -30,7 +28,6 @@ export const blogPosts = [
     category: '上級者向け',
     tags: ['競艇', 'プロ', '買わない', '舟券'],
     readTime: '10分',
-    image: '/images/blog/what-pros-avoid.jpg',
     featured: false
   },
   {
@@ -41,7 +38,6 @@ export const blogPosts = [
     category: 'データ分析',
     tags: ['AI予想', '検証', 'データ', '比較'],
     readTime: '11分',
-    image: '/images/blog/ai-vs-human.jpg',
     featured: true
   },
   {
@@ -52,7 +48,6 @@ export const blogPosts = [
     category: 'リスク管理',
     tags: ['競艇', '破産', 'ギャンブル依存症', 'ルール'],
     readTime: '11分',
-    image: '/images/blog/bankruptcy.jpg',
     featured: false
   },
   {
@@ -63,7 +58,6 @@ export const blogPosts = [
     category: '初心者向け',
     tags: ['競艇', '初心者', '基本'],
     readTime: '8分',
-    image: '/images/blog/beginner.jpg',
     featured: false
   },
   {
@@ -74,7 +68,6 @@ export const blogPosts = [
     category: '戦略',
     tags: ['舟券', '戦略', '資金管理'],
     readTime: '9分',
-    image: '/images/blog/betting.jpg',
     featured: false
   },
   {
@@ -85,7 +78,6 @@ export const blogPosts = [
     category: 'データ分析',
     tags: ['選手データ', 'AI分析', 'データ'],
     readTime: '10分',
-    image: '/images/blog/player-data.jpg',
     featured: false
   },
   {
@@ -96,7 +88,6 @@ export const blogPosts = [
     category: 'データ分析',
     tags: ['モーター', '2連対率', '性能'],
     readTime: '10分',
-    image: '/images/blog/motor.jpg',
     featured: false
   },
   {
@@ -107,7 +98,6 @@ export const blogPosts = [
     category: '実績レポート',
     tags: ['実績', '的中率', '回収率'],
     readTime: '12分',
-    image: '/images/blog/report-1210.jpg',
     featured: false
   }
 ];

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import './HowToUse.css';
 
 export default function HowToUse() {
@@ -197,6 +198,58 @@ export default function HowToUse() {
 
   return (
     <div className="how-to-use-container">
+      <Helmet>
+        <title>使い方ガイド | BoatAI - 初心者でもわかる利用方法</title>
+        <meta name="description" content="BoatAIの使い方を6つのステップで解説。レース場の選び方、AI予想モデルの選択、舟券購入のコツまで、初心者にもわかりやすく説明します。" />
+        <meta name="keywords" content="BoatAI使い方,競艇予想方法,初心者ガイド,舟券購入,AI予想モデル" />
+        <link rel="canonical" href="https://boat-ai.jp/how-to-use" />
+
+        {/* OGP Tags */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="使い方ガイド | BoatAI" />
+        <meta property="og:description" content="BoatAIの使い方を初心者にもわかりやすく6ステップで解説。" />
+        <meta property="og:url" content="https://boat-ai.jp/how-to-use" />
+        <meta property="og:image" content="https://boat-ai.jp/ogp-image.png" />
+
+        {/* HowTo Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "HowTo",
+            "name": "BoatAI（AI競艇予想サービス）の使い方",
+            "description": "BoatAIの使い方を6つのステップで解説",
+            "step": steps.map((step, index) => ({
+              "@type": "HowToStep",
+              "position": index + 1,
+              "name": step.title,
+              "text": step.title
+            }))
+          })}
+        </script>
+
+        {/* BreadcrumbList */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "ホーム",
+                "item": "https://boat-ai.jp/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "使い方ガイド",
+                "item": "https://boat-ai.jp/how-to-use"
+              }
+            ]
+          })}
+        </script>
+      </Helmet>
+
       <div className="how-to-use-header">
         <h1>📚 使い方ガイド</h1>
         <p>BoatAIの使い方を初心者にもわかりやすく解説</p>

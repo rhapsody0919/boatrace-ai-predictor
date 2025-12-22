@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -70,8 +71,100 @@ export default function BlogPost() {
     );
   }
 
+  const url = `https://boat-ai.jp/blog/${id}`;
+  const imageUrl = post.image ? `https://boat-ai.jp${post.image}` : 'https://boat-ai.jp/ogp-image.png';
+
   return (
     <div className="blog-post-container">
+      <Helmet>
+        {/* Basic Meta Tags */}
+        <title>{post.title} | BoatAI</title>
+        <meta name="description" content={post.description} />
+        <meta name="keywords" content={post.tags.join(', ')} />
+        <link rel="canonical" href={url} />
+
+        {/* OGP Tags */}
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="BoatAI" />
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={post.description} />
+        <meta property="og:url" content={url} />
+        <meta property="og:image" content={imageUrl} />
+        <meta property="article:published_time" content={post.date} />
+        <meta property="article:author" content="BoatAI" />
+        <meta property="article:section" content={post.category} />
+        {post.tags.map(tag => (
+          <meta key={tag} property="article:tag" content={tag} />
+        ))}
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.title} />
+        <meta name="twitter:description" content={post.description} />
+        <meta name="twitter:image" content={imageUrl} />
+
+        {/* Article Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            "headline": post.title,
+            "description": post.description,
+            "image": imageUrl,
+            "datePublished": post.date,
+            "dateModified": post.date,
+            "author": {
+              "@type": "Organization",
+              "name": "BoatAI",
+              "url": "https://boat-ai.jp"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "BoatAI",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://boat-ai.jp/logo.png"
+              }
+            },
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": url
+            },
+            "keywords": post.tags.join(', '),
+            "articleSection": post.category,
+            "wordCount": content.split(' ').length
+          })}
+        </script>
+
+        {/* BreadcrumbList Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "ホーム",
+                "item": "https://boat-ai.jp/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "ブログ",
+                "item": "https://boat-ai.jp/blog"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": post.title,
+                "item": url
+              }
+            ]
+          })}
+        </script>
+      </Helmet>
+
       <div className="blog-post-header">
         <Link to="/blog" className="back-link">
           ← ブログ一覧に戻る

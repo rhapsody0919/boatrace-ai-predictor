@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import './FAQ.css';
 
 export default function FAQ() {
@@ -164,8 +165,57 @@ export default function FAQ() {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  // Prepare FAQ schema data
+  const faqSchemaItems = faqs.flatMap(category =>
+    category.questions.map(faq => ({
+      "@type": "Question",
+      "name": faq.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.a
+      }
+    }))
+  );
+
   return (
     <div className="faq-container">
+      <Helmet>
+        <title>よくある質問（FAQ） | BoatAI</title>
+        <meta name="description" content="BoatAIに関するよくある質問と回答。無料での利用方法、AI予想の的中率、使い方、舟券購入のアドバイスなど、皆様の疑問にお答えします。" />
+        <link rel="canonical" href="https://boat-ai.jp/faq" />
+
+        {/* FAQPage Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": faqSchemaItems
+          })}
+        </script>
+
+        {/* BreadcrumbList Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "ホーム",
+                "item": "https://boat-ai.jp/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "よくある質問",
+                "item": "https://boat-ai.jp/faq"
+              }
+            ]
+          })}
+        </script>
+      </Helmet>
+
       <div className="faq-header">
         <h1>❓ よくある質問（FAQ）</h1>
         <p>BoatAIに関するよくある質問と回答</p>

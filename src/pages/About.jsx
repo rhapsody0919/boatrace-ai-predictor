@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import './About.css';
 
 export default function About() {
@@ -7,6 +8,42 @@ export default function About() {
 
   return (
     <div className="about-container">
+      <Helmet>
+        <title>BoatAIについて | AI競艇予想サービスの詳細</title>
+        <meta name="description" content="BoatAIは45項目以上のデータをAIが分析する競艇予想サービス。完全無料・登録不要で、複勝的中率49.5%、3連単回収率134.3%の実績を誇ります。" />
+        <meta name="keywords" content="BoatAI,競艇,AI予想,機械学習,データ分析,的中率,無料" />
+        <link rel="canonical" href="https://boat-ai.jp/about" />
+
+        {/* OGP Tags */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="BoatAIについて | AI競艇予想サービス" />
+        <meta property="og:description" content="45項目以上のデータをAIが分析。完全無料・登録不要の競艇予想サービス。" />
+        <meta property="og:url" content="https://boat-ai.jp/about" />
+        <meta property="og:image" content="https://boat-ai.jp/ogp-image.png" />
+
+        {/* BreadcrumbList */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "ホーム",
+                "item": "https://boat-ai.jp/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "BoatAIについて",
+                "item": "https://boat-ai.jp/about"
+              }
+            ]
+          })}
+        </script>
+      </Helmet>
+
       <div className="about-header">
         <h1>🚀 BoatAIについて</h1>
         <p>AI技術で競艇予想を革新する</p>

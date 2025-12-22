@@ -11,9 +11,33 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
   const [hitRacesAll, setHitRacesAll] = useState([])
   const [showAllToday, setShowAllToday] = useState(false)
   const [showAllYesterday, setShowAllYesterday] = useState(false)
+  const [showAllPeriod, setShowAllPeriod] = useState(false)
   const [loading, setLoading] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState('today') // 'today', 'yesterday', 'all'
   const [selectedModel, setSelectedModel] = useState('standard') // 'standard', 'safeBet', 'upsetFocus'
+
+  // 日付フォーマット関数（12/21(土)形式）
+  const formatDateWithDay = (dateStr) => {
+    const date = new Date(dateStr + 'T00:00:00+09:00') // JSTとして解釈
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土']
+    const weekday = weekdays[date.getDay()]
+    return `${month}/${day}(${weekday})`
+  }
+
+  // 今日と昨日の日付を取得
+  const getJSTDate = () => {
+    const now = new Date()
+    const jstOffset = 9 * 60 // JST is UTC+9
+    const jstNow = new Date(now.getTime() + jstOffset * 60 * 1000)
+    const todayStr = jstNow.toISOString().split('T')[0]
+    const yesterday = new Date(jstNow.getTime() - 24 * 60 * 60 * 1000)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
+    return { todayStr, yesterdayStr }
+  }
+
+  const { todayStr, yesterdayStr } = getJSTDate()
 
   // 的中レースを読み込む
   useEffect(() => {
@@ -24,10 +48,6 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
         const now = new Date()
         const jstOffset = 9 * 60 // JST is UTC+9
         const jstNow = new Date(now.getTime() + jstOffset * 60 * 1000)
-
-        const todayStr = jstNow.toISOString().split('T')[0]
-        const yesterday = new Date(jstNow.getTime() - 24 * 60 * 60 * 1000)
-        const yesterdayStr = yesterday.toISOString().split('T')[0]
 
         // 今日と昨日の予想データを読み込む
         const loadDayPredictions = async (dateStr) => {
@@ -351,9 +371,9 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
       </section>
 
       {/* 今日の的中レース */}
-      {hitRacesToday.length > 0 && (
+      {hitRacesToday.length > 0 && selectedPeriod === 'today' && (
         <section className="hit-races-section today">
-          <h2>📅 今日の的中レース ({hitRacesToday.length}レース)</h2>
+          <h2>📅 今日の的中レース {formatDateWithDay(todayStr)} ({hitRacesToday.length}レース)</h2>
           <div className="race-cards-grid">
             {(showAllToday ? hitRacesToday : hitRacesToday.slice(0, 8)).map(hitRace => (
               <div
@@ -455,9 +475,9 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
       )}
 
       {/* 昨日の的中レース */}
-      {hitRacesYesterday.length > 0 && (
+      {hitRacesYesterday.length > 0 && selectedPeriod === 'yesterday' && (
         <section className="hit-races-section yesterday">
-          <h2>📅 昨日の的中レース ({hitRacesYesterday.length}レース)</h2>
+          <h2>📅 昨日の的中レース {formatDateWithDay(yesterdayStr)} ({hitRacesYesterday.length}レース)</h2>
           <div className="race-cards-grid">
             {(showAllYesterday ? hitRacesYesterday : hitRacesYesterday.slice(0, 8)).map(hitRace => (
               <div
@@ -548,6 +568,114 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
                 </div>
                 <div className="stat-value">
                   {hitRacesYesterday.reduce((sum, race) => sum + race.totalPayout, 0).toLocaleString()}円
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 全期間の的中レース */}
+      {hitRacesAll.length > 0 && selectedPeriod === 'all' && (
+        <section className="hit-races-section all">
+          <h2>📅 過去14日間の的中レース ({hitRacesAll.length}レース)</h2>
+          <div className="race-cards-grid">
+            {(showAllPeriod ? hitRacesAll : hitRacesAll.slice(0, 12)).map(hitRace => (
+              <div
+                key={hitRace.raceId}
+                className={`race-card ${hitRace.date === new Date().toISOString().split('T')[0] ? 'today' : 'yesterday'}`}
+                onClick={() => handleCardClick(hitRace)}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div className="race-card-header">
+                  <div>
+                    <div className="race-card-venue">
+                      {hitRace.venue}
+                    </div>
+                    <div className="race-card-number">
+                      {hitRace.raceNumber}R
+                    </div>
+                  </div>
+                  <div className="hit-badge">
+                    的中
+                  </div>
+                </div>
+
+                <div className="race-card-date" style={{fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem'}}>
+                  {hitRace.date}
+                </div>
+
+                <div className="hit-types-list">
+                  {hitRace.hitTypes.map((hit, idx) => (
+                    <div key={idx} className="hit-type-item">
+                      <span className="hit-type-label">✅ {hit.type}</span>
+                      <span className="hit-type-payout">{hit.payout.toLocaleString()}円</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="total-payout-section">
+                  <span className="total-payout-label">合計配当</span>
+                  <span className="total-payout-value">
+                    {hitRace.totalPayout.toLocaleString()}円
+                  </span>
+                </div>
+
+                {/* SNSシェアボタン */}
+                <div style={{textAlign: 'center'}} onClick={(e) => e.stopPropagation()}>
+                  <SocialShareButtons
+                    shareUrl="https://boat-ai.jp/"
+                    title={generateHitRaceShareText({
+                      venue: hitRace.venue,
+                      raceNo: hitRace.raceNumber,
+                      date: hitRace.date,
+                      prediction: {
+                        top3: hitRace.prediction?.top3 || []
+                      },
+                      result: [
+                        hitRace.result?.rank1,
+                        hitRace.result?.rank2,
+                        hitRace.result?.rank3
+                      ].filter(Boolean),
+                      totalPayout: hitRace.totalPayout
+                    }, selectedModel)}
+                    hashtags={['競艇', 'ボートレース', '的中', 'BoatAI']}
+                    size={36}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {hitRacesAll.length > 12 && (
+            <button
+              onClick={() => setShowAllPeriod(!showAllPeriod)}
+              className="show-more-button"
+              onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+            >
+              {showAllPeriod ? '閉じる ▲' : `もっと見る (残り${hitRacesAll.length - 12}レース) ▼`}
+            </button>
+          )}
+
+          {/* 統計情報 */}
+          <div className="stats-box">
+            <div className="stats-flex">
+              <div className="stat-item">
+                <div className="stat-label">
+                  的中数
+                </div>
+                <div className="stat-value">
+                  {hitRacesAll.length}
+                </div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-label">
+                  総配当
+                </div>
+                <div className="stat-value">
+                  {hitRacesAll.reduce((sum, race) => sum + race.totalPayout, 0).toLocaleString()}円
                 </div>
               </div>
             </div>
