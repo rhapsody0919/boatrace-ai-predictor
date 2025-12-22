@@ -150,6 +150,46 @@ function calculateStandardScore(racer, index) {
   );
 }
 
+// スタンダードv2版AIスコア（統計的に最適化）
+// 統計分析（2,172レース）に基づく係数:
+// - 枠番の影響: 22倍差（最重要）
+// - 全国勝率の影響: 10倍差（非常に重要）
+// - 級別の影響: 5倍差（重要）
+// - モーター性能: 5.2%差（限定的）
+// - 当地成績: 3.7%差（限定的）
+function calculateStandardScoreV2(racer, index) {
+  let score = 0;
+
+  // 全国勝率（最重要: 10倍の差がある）
+  score += racer.globalWinRate * 150;
+
+  // 級別ボーナス（非常に重要: A1はB2の5倍勝ちやすい）
+  if (racer.grade === 'A1') score += 400;
+  else if (racer.grade === 'A2') score += 250;
+  else if (racer.grade === 'B1') score += 100;
+  else if (racer.grade === 'B2') score += 0;
+
+  // 枠番補正（圧倒的に重要: 1号艇は6号艇の22倍勝ちやすい）
+  if (index === 0) score += 500;      // 1号艇
+  else if (index === 1) score += 100; // 2号艇
+  else if (index === 2) score += 0;   // 3号艇
+  else if (index === 3) score -= 50;  // 4号艇
+  else if (index === 4) score -= 100; // 5号艇
+  else if (index === 5) score -= 150; // 6号艇
+
+  // モーター性能（限定的: 5.2%の差）
+  score += racer.motor2Rate * 20;
+
+  // ボート性能（限定的: データ不足）
+  score += racer.boat2Rate * 10;
+
+  // 当地アドバンテージ（限定的: 3.7%の差）
+  const localAdvantage = racer.localWinRate - racer.globalWinRate;
+  score += localAdvantage * 10;
+
+  return Math.floor(score);
+}
+
 // 本命狙い版スコア（堅実型）
 function calculateSafeBetScore(racer, index) {
   let score = 0;
@@ -229,7 +269,7 @@ function processRacersWithScoreFn(racers, scoreFn) {
 
 // 後方互換性のため（従来のprocessRacers）
 function processRacers(racers) {
-  return processRacersWithScoreFn(racers, calculateStandardScore);
+  return processRacersWithScoreFn(racers, calculateStandardScoreV2);
 }
 
 // 本命選手の選定理由を生成
@@ -366,7 +406,7 @@ function generateRacePrediction(race, date) {
   const recommendedModel = getRecommendedModel(volatilityData.score);
 
   // 3つのモデルで予想を生成
-  const standardPlayers = processRacersWithScoreFn(race.racers, calculateStandardScore);
+  const standardPlayers = processRacersWithScoreFn(race.racers, calculateStandardScoreV2);
   const safeBetPlayers = processRacersWithScoreFn(race.racers, calculateSafeBetScore);
   const upsetFocusPlayers = processRacersWithScoreFn(race.racers, calculateUpsetFocusScore);
 
