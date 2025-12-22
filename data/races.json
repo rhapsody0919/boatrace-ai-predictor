@@ -2374,9 +2374,9 @@
           "placeCd": 7,
           "raceNo": 1,
           "weather": "晴",
-          "airTemp": 8,
-          "windDirection": 1,
-          "windVelocity": 3,
+          "airTemp": 7,
+          "windDirection": 15,
+          "windVelocity": 2,
           "waterTemp": 12,
           "waveHeight": 1,
           "startTime": "15:27",
@@ -10648,7 +10648,7 @@
           "placeCd": 19,
           "raceNo": 1,
           "weather": "晴",
-          "airTemp": 9,
+          "airTemp": 8,
           "windDirection": 5,
           "windVelocity": 2,
           "waterTemp": 12,
@@ -15368,5 +15368,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-22T11:25:04.410Z"
+  "scrapedAt": "2025-12-22T12:52:19.937Z"
 }
