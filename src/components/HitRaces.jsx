@@ -429,7 +429,8 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
                         hitRace.result?.rank2,
                         hitRace.result?.rank3
                       ].filter(Boolean),
-                      totalPayout: hitRace.totalPayout
+                      totalPayout: hitRace.totalPayout,
+                      hitTypes: hitRace.hitTypes || []
                     }, selectedModel)}
                     hashtags={['競艇', 'ボートレース', '的中', 'BoatAI']}
                     size={36}
@@ -530,7 +531,8 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
                         hitRace.result?.rank2,
                         hitRace.result?.rank3
                       ].filter(Boolean),
-                      totalPayout: hitRace.totalPayout
+                      totalPayout: hitRace.totalPayout,
+                      hitTypes: hitRace.hitTypes || []
                     }, selectedModel)}
                     hashtags={['競艇', 'ボートレース', '的中', 'BoatAI']}
                     size={36}
@@ -638,7 +640,8 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
                         hitRace.result?.rank2,
                         hitRace.result?.rank3
                       ].filter(Boolean),
-                      totalPayout: hitRace.totalPayout
+                      totalPayout: hitRace.totalPayout,
+                      hitTypes: hitRace.hitTypes || []
                     }, selectedModel)}
                     hashtags={['競艇', 'ボートレース', '的中', 'BoatAI']}
                     size={36}

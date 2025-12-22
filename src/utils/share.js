@@ -113,6 +113,7 @@ export const shareHitRaceToX = (race, model = 'standard') => {
   const prediction = race.prediction?.top3?.join('-') || '?-?-?';
   const result = race.result?.join('-') || '?-?-?';
   const payout = race.totalPayout || 0;
+  const hitTypes = race.hitTypes || [];
 
   // モデル名の日本語表記
   const modelNames = {
@@ -121,6 +122,17 @@ export const shareHitRaceToX = (race, model = 'standard') => {
     'upsetFocus': '穴狙い'
   };
   const modelName = modelNames[model] || 'スタンダード';
+
+  // 的中券種を文字列化
+  let hitTypesStr = '';
+  if (hitTypes.length > 0) {
+    const hitTypeNames = hitTypes.map(h => h.type);
+    if (hitTypeNames.length === 4) {
+      hitTypesStr = '全的中';
+    } else {
+      hitTypesStr = hitTypeNames.join('・');
+    }
+  }
 
   // 日付をフォーマット (YYYY-MM-DD -> MM/DD)
   let dateStr = '';
@@ -137,7 +149,8 @@ export const shareHitRaceToX = (race, model = 'standard') => {
 
 モデル: ${modelName}
 予想: ${prediction}
-結果: ${result} ✅
+結果: ${result}
+的中: ${hitTypesStr} ✅
 配当: ${payout.toLocaleString()}円
 
 BoatAIで予想的中🎉
@@ -149,7 +162,8 @@ AIの精度に驚いてます！
 
 モデル: ${modelName}
 予想: ${prediction}
-結果: ${result} ✅
+結果: ${result}
+的中: ${hitTypesStr} ✅
 配当: ${payout.toLocaleString()}円
 
 BoatAIで予想的中🎉
@@ -161,7 +175,8 @@ BoatAIで予想的中🎉
 
 モデル: ${modelName}
 予想: ${prediction}
-結果: ${result} ✅
+結果: ${result}
+的中: ${hitTypesStr} ✅
 配当: ${payout.toLocaleString()}円
 
 BoatAIで予想的中🎉
@@ -173,7 +188,8 @@ BoatAIで予想的中🎉
 
 モデル: ${modelName}
 予想: ${prediction}
-結果: ${result} ✅
+結果: ${result}
+的中: ${hitTypesStr} ✅
 配当: ${payout.toLocaleString()}円
 
 BoatAIで予想的中🎉
@@ -185,7 +201,8 @@ BoatAIで予想的中🎉
 
 モデル: ${modelName}
 予想: ${prediction}
-結果: ${result} ✅
+結果: ${result}
+的中: ${hitTypesStr} ✅
 配当: ${payout.toLocaleString()}円
 
 BoatAIで予想的中🎉
@@ -275,6 +292,7 @@ export const generateHitRaceShareText = (race, model = 'standard') => {
   const prediction = race.prediction?.top3?.join('-') || '?-?-?';
   const result = race.result?.join('-') || '?-?-?';
   const payout = race.totalPayout || 0;
+  const hitTypes = race.hitTypes || [];
 
   // モデル名の日本語表記
   const modelNames = {
@@ -283,6 +301,17 @@ export const generateHitRaceShareText = (race, model = 'standard') => {
     'upsetFocus': '穴狙い'
   };
   const modelName = modelNames[model] || 'スタンダード';
+
+  // 的中券種を文字列化
+  let hitTypesStr = '';
+  if (hitTypes.length > 0) {
+    const hitTypeNames = hitTypes.map(h => h.type);
+    if (hitTypeNames.length === 4) {
+      hitTypesStr = '全的中';
+    } else {
+      hitTypesStr = hitTypeNames.join('・');
+    }
+  }
 
   let dateStr = '';
   if (race.date) {
@@ -293,11 +322,11 @@ export const generateHitRaceShareText = (race, model = 'standard') => {
   }
 
   const messages = [
-    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\nAIの精度に驚いてます！`,
-    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n無料でこの精度はすごい！`,
-    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\nデータ分析の力を実感！`,
-    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n今日もAI予想が当たった！`,
-    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n的中率の高さに満足してます！`
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result}\n的中: ${hitTypesStr} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\nAIの精度に驚いてます！`,
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result}\n的中: ${hitTypesStr} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n無料でこの精度はすごい！`,
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result}\n的中: ${hitTypesStr} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\nデータ分析の力を実感！`,
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result}\n的中: ${hitTypesStr} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n今日もAI予想が当たった！`,
+    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result}\n的中: ${hitTypesStr} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n的中率の高さに満足してます！`
   ];
 
   return messages[Math.floor(Math.random() * messages.length)];
