@@ -99,6 +99,36 @@ export const blogPosts = [
     tags: ['実績', '的中率', '回収率'],
     readTime: '12分',
     featured: false
+  },
+  {
+    id: 'rough-race-signals',
+    title: '荒れるレースの見分け方 - AIが教える5つのサイン',
+    description: '「今日のレースは荒れそう」と予想できれば、舟券戦略が変わります。AIが分析した1,899レースから導き出した「荒れるレースの5つのサイン」を公開。',
+    date: '2025-12-22',
+    category: '初心者向け',
+    tags: ['荒れるレース', '予想', 'サイン', '見分け方'],
+    readTime: '10分',
+    featured: true
+  },
+  {
+    id: 'exhibition-run-guide',
+    title: '展示航走で勝率が変わる！正しい見方と活用法',
+    description: '展示航走を見ずに舟券を買うのは損です。プロも注目する展示タイムの見方、伸び足・回り足の判断方法を徹底解説します。',
+    date: '2025-12-22',
+    category: 'データ分析',
+    tags: ['展示航走', '展示タイム', 'スタート', 'モーター'],
+    readTime: '11分',
+    featured: false
+  },
+  {
+    id: 'stadium-strategy-guide',
+    title: '競艇場別攻略ガイド - 24場の特徴と狙い目',
+    description: '競艇場によって勝ちパターンは全く違います。全国24場の特徴、1号艇勝率、インが強い場・弱い場を完全ガイド。',
+    date: '2025-12-22',
+    category: '戦略',
+    tags: ['競艇場', '攻略', '特徴', '1号艇勝率'],
+    readTime: '15分',
+    featured: true
   }
 ];
 
