@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import './App.css'
 import AccuracyDashboard from './components/AccuracyDashboard'
 import PrivacyPolicy from './components/PrivacyPolicy'
+import Terms from './components/Terms'
 import Contact from './components/Contact'
 import HitRaces from './components/HitRaces'
 import UpdateStatus from './components/UpdateStatus'
@@ -14,7 +15,7 @@ function App() {
   // URLのハッシュから初期タブを決定
   const getInitialTab = () => {
     const hash = window.location.hash.slice(1) // '#' を除去
-    const validTabs = ['races', 'hit-races', 'accuracy', 'privacy', 'contact']
+    const validTabs = ['races', 'hit-races', 'accuracy', 'privacy', 'terms', 'contact']
     return validTabs.includes(hash) ? hash : 'races'
   }
 
@@ -95,7 +96,7 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash.slice(1)
-      const validTabs = ['races', 'hit-races', 'accuracy', 'privacy', 'contact']
+      const validTabs = ['races', 'hit-races', 'accuracy', 'privacy', 'terms', 'contact']
       setActiveTab(validTabs.includes(hash) ? hash : 'races')
     }
 
@@ -510,6 +511,8 @@ function App() {
         <main className="main-content">
           {activeTab === 'privacy' ? (
             <PrivacyPolicy />
+          ) : activeTab === 'terms' ? (
+            <Terms />
           ) : activeTab === 'contact' ? (
             <Contact />
           ) : activeTab === 'accuracy' ? (
@@ -1189,6 +1192,7 @@ function App() {
           <Link to="/about" style={{color: '#94a3b8', textDecoration: 'none'}}>About</Link>
           <Link to="/faq" style={{color: '#94a3b8', textDecoration: 'none'}}>FAQ</Link>
           <a href="#privacy" style={{color: '#94a3b8', textDecoration: 'none'}}>プライバシーポリシー</a>
+          <a href="#terms" style={{color: '#94a3b8', textDecoration: 'none'}}>利用規約</a>
           <a href="#contact" style={{color: '#94a3b8', textDecoration: 'none'}}>お問い合わせ</a>
         </div>
         <p>&copy; 2025 BoatAI - All Rights Reserved</p>
