@@ -225,15 +225,6 @@ export default function Terms() {
             <li>負けを取り戻そうと熱くならないでください</li>
             <li>ギャンブル依存症かもと思ったら、専門機関にご相談ください</li>
           </ul>
-          <p style={{ color: '#9a3412', lineHeight: '1.8', marginTop: '0.75rem' }}>
-            相談窓口:
-            <a href="https://www.rcpg.or.jp/"
-               target="_blank"
-               rel="noopener noreferrer"
-               style={{ color: '#c2410c', textDecoration: 'underline', marginLeft: '0.5rem' }}>
-              ギャンブル依存症予防回復支援センター
-            </a>
-          </p>
         </div>
       </section>
 
