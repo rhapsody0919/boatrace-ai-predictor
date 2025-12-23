@@ -2373,9 +2373,9 @@
           "date": "2025-12-23",
           "placeCd": 7,
           "raceNo": 1,
-          "weather": "曇り",
+          "weather": "雨",
           "airTemp": 10,
-          "windDirection": 5,
+          "windDirection": 1,
           "windVelocity": 1,
           "waterTemp": 12,
           "waveHeight": 1,
@@ -3255,7 +3255,7 @@
           "date": "2025-12-23",
           "placeCd": 7,
           "raceNo": 10,
-          "weather": "曇り",
+          "weather": "雨",
           "airTemp": 10,
           "windDirection": 5,
           "windVelocity": 1,
@@ -3353,9 +3353,9 @@
           "date": "2025-12-23",
           "placeCd": 7,
           "raceNo": 11,
-          "weather": "曇り",
+          "weather": "雨",
           "airTemp": 10,
-          "windDirection": 5,
+          "windDirection": 1,
           "windVelocity": 1,
           "waterTemp": 12,
           "waveHeight": 1,
@@ -3451,9 +3451,9 @@
           "date": "2025-12-23",
           "placeCd": 7,
           "raceNo": 12,
-          "weather": "曇り",
+          "weather": "雨",
           "airTemp": 10,
-          "windDirection": 5,
+          "windDirection": 1,
           "windVelocity": 1,
           "waterTemp": 12,
           "waveHeight": 1,
@@ -10649,10 +10649,10 @@
           "raceNo": 1,
           "weather": "曇り",
           "airTemp": 12,
-          "windDirection": 3,
-          "windVelocity": 1,
+          "windDirection": 5,
+          "windVelocity": 2,
           "waterTemp": 12,
-          "waveHeight": 1,
+          "waveHeight": 2,
           "startTime": "15:23",
           "racers": [
             {
@@ -11629,10 +11629,10 @@
           "raceNo": 11,
           "weather": "曇り",
           "airTemp": 12,
-          "windDirection": 3,
-          "windVelocity": 1,
+          "windDirection": 5,
+          "windVelocity": 2,
           "waterTemp": 12,
-          "waveHeight": 1,
+          "waveHeight": 2,
           "startTime": "20:10",
           "racers": [
             {
@@ -11727,10 +11727,10 @@
           "raceNo": 12,
           "weather": "曇り",
           "airTemp": 12,
-          "windDirection": 3,
-          "windVelocity": 1,
+          "windDirection": 5,
+          "windVelocity": 2,
           "waterTemp": 12,
-          "waveHeight": 1,
+          "waveHeight": 2,
           "startTime": "20:40",
           "racers": [
             {
@@ -15368,5 +15368,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-23T10:31:19.210Z"
+  "scrapedAt": "2025-12-23T11:25:26.705Z"
 }
