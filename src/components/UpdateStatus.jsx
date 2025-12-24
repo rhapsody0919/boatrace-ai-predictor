@@ -38,28 +38,35 @@ export default function UpdateStatus({ lastUpdated, dataType = 'データ', onRe
   const stale = isStale(lastUpdated);
 
   return (
-    <div className={`update-status ${stale ? 'stale' : 'fresh'}`}>
-      {lastUpdated && (
-        <>
-          <span className="update-icon">{stale ? '⚠️' : '✅'}</span>
-          <span className="update-text">
-            {dataType}更新: {formatDate(lastUpdated)}
-            <span className="update-relative"> ({getTimeSinceUpdate(lastUpdated)})</span>
-          </span>
-        </>
-      )}
+    <div className="update-status-container">
+      <div className={`update-status ${stale ? 'stale' : 'fresh'}`}>
+        {lastUpdated && (
+          <>
+            <span className="update-icon">{stale ? '⚠️' : '✅'}</span>
+            <span className="update-text">
+              {dataType}更新: {formatDate(lastUpdated)}
+              <span className="update-relative"> ({getTimeSinceUpdate(lastUpdated)})</span>
+            </span>
+          </>
+        )}
+        {onRefresh && (
+          <button
+            className={`refresh-button ${isRefreshing ? 'refreshing' : ''}`}
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            title="ブラウザのキャッシュをクリアしてデータを再読み込み"
+          >
+            <span className="refresh-icon">🔄</span>
+            <span className="refresh-text">
+              {isRefreshing ? '読み込み中...' : '再読み込み'}
+            </span>
+          </button>
+        )}
+      </div>
       {onRefresh && (
-        <button
-          className={`refresh-button ${isRefreshing ? 'refreshing' : ''}`}
-          onClick={onRefresh}
-          disabled={isRefreshing}
-          title="最新データに更新"
-        >
-          <span className="refresh-icon">🔄</span>
-          <span className="refresh-text">
-            {isRefreshing ? '更新中...' : '最新データに更新'}
-          </span>
-        </button>
+        <p className="update-info">
+          💡 データは1時間ごとに自動更新されます
+        </p>
       )}
     </div>
   );

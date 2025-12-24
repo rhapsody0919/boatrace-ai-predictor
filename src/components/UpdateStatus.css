@@ -88,6 +88,21 @@
   display: inline-block;
 }
 
+/* 更新情報テキスト */
+.update-status-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.update-info {
+  margin: 0;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 400;
+}
+
 /* スマホ対応 */
 @media (max-width: 768px) {
   .update-status {
@@ -112,5 +127,10 @@
 
   .refresh-icon {
     font-size: 1.2rem;
+  }
+
+  .update-info {
+    font-size: 0.75rem;
+    text-align: center;
   }
 }
