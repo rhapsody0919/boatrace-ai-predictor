@@ -675,30 +675,58 @@ function App() {
                                             </div>
                                         ) : (
                                             <div className="race-grid">
-                                                {races.map(race => (
-                                                    <div
-                                                        key={race.id}
-                                                        className="race-card"
-                                                        ref={el => raceCardRefs.current[race.id] = el}
-                                                    >
-                                                        <div className="race-card-header">
-                                                            <h3>{race.venue}</h3>
-                                                            <span className="race-number">{race.raceNumber}R</span>
-                                                        </div>
-                                                        <div className="race-info">
-                                                            <div className="info-item">
-                                                                <span className="label">締切予定時刻</span>
-                                                                <span className="value">{race.startTime}</span>
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            className="predict-btn"
-                                                            onClick={() => analyzeRace(race)}
+                                                {races.map(race => {
+                                                    // レースが終了しているかチェック
+                                                    const isFinished = (() => {
+                                                        if (!race.startTime || race.startTime === '未定') return false
+                                                        const now = new Date()
+                                                        const jstOffset = 9 * 60
+                                                        const jstNow = new Date(now.getTime() + jstOffset * 60 * 1000)
+                                                        const currentTimeInMinutes = jstNow.getUTCHours() * 60 + jstNow.getUTCMinutes()
+                                                        const [hours, minutes] = race.startTime.split(':').map(Number)
+                                                        const raceTimeInMinutes = hours * 60 + minutes
+                                                        return raceTimeInMinutes < currentTimeInMinutes
+                                                    })()
+
+                                                    return (
+                                                        <div
+                                                            key={race.id}
+                                                            className="race-card"
+                                                            ref={el => raceCardRefs.current[race.id] = el}
                                                         >
-                                                            AI予想を見る
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                                            <div className="race-card-header">
+                                                                <h3>{race.venue}</h3>
+                                                                <span className="race-number">{race.raceNumber}R</span>
+                                                            </div>
+                                                            <div className="race-info">
+                                                                <div className="info-item">
+                                                                    <span className="label">締切予定時刻</span>
+                                                                    <span className="value">{race.startTime}</span>
+                                                                </div>
+                                                                {isFinished && (
+                                                                    <div style={{
+                                                                        marginTop: '0.5rem',
+                                                                        padding: '0.4rem 0.8rem',
+                                                                        background: '#e0e0e0',
+                                                                        borderRadius: '6px',
+                                                                        textAlign: 'center',
+                                                                        fontSize: '0.85rem',
+                                                                        fontWeight: '600',
+                                                                        color: '#666'
+                                                                    }}>
+                                                                        ⏱️ 終了
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                className="predict-btn"
+                                                                onClick={() => analyzeRace(race)}
+                                                            >
+                                                                AI予想を見る
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                })}
                                             </div>
                                         )}
                                     </>
