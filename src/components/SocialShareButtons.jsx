@@ -12,7 +12,7 @@ import './SocialShareButtons.css';
 export const SocialShareButtons = ({
     shareUrl = 'https://boat-ai.jp/',
     title,
-    hashtags = ['ボートレース', 'ボートレース', 'AI予想', 'BoatAI'],
+    hashtags = ['ボートレース', 'AI予想', 'BoatAI'],
     size = 36,
     type = 'prediction' // 'prediction' or 'hit'
 }) => {

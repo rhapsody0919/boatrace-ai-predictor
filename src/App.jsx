@@ -676,7 +676,7 @@ function App() {
                                                     borderRadius: '8px',
                                                     marginBottom: '1.5rem',
                                                     borderLeft: `4px solid ${volatility.level === 'high' ? '#ff9800' :
-                                                            volatility.level === 'low' ? '#4caf50' : '#2196f3'
+                                                        volatility.level === 'low' ? '#4caf50' : '#2196f3'
                                                         }`
                                                 }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: volatility.reasons && volatility.reasons.length > 0 ? '0.75rem' : '0' }}>
@@ -930,7 +930,7 @@ function App() {
                                                             }
                                                         }, selectedModel);
                                                     })()}
-                                                    hashtags={['ボートレース', 'ボートレース', 'AI予想', 'BoatAI']}
+                                                    hashtags={['ボートレース', 'AI予想', 'BoatAI']}
                                                     size={40}
                                                 />
                                             </div>

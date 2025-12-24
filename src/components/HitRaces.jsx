@@ -432,7 +432,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
                                             totalPayout: hitRace.totalPayout,
                                             hitTypes: hitRace.hitTypes || []
                                         }, selectedModel)}
-                                        hashtags={['ボートレース', 'ボートレース', '的中', 'BoatAI']}
+                                        hashtags={['ボートレース', '的中', 'BoatAI']}
                                         size={36}
                                     />
                                 </div>
@@ -534,7 +534,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
                                             totalPayout: hitRace.totalPayout,
                                             hitTypes: hitRace.hitTypes || []
                                         }, selectedModel)}
-                                        hashtags={['ボートレース', 'ボートレース', '的中', 'BoatAI']}
+                                        hashtags={['ボートレース', '的中', 'BoatAI']}
                                         size={36}
                                     />
                                 </div>
@@ -643,7 +643,7 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
                                             totalPayout: hitRace.totalPayout,
                                             hitTypes: hitRace.hitTypes || []
                                         }, selectedModel)}
-                                        hashtags={['ボートレース', 'ボートレース', '的中', 'BoatAI']}
+                                        hashtags={['ボートレース', '的中', 'BoatAI']}
                                         size={36}
                                     />
                                 </div>
