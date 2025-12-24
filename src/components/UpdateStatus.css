@@ -1,12 +1,13 @@
 .update-status {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
   padding: 0.5rem 1rem;
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 500;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .update-status.fresh {
@@ -36,6 +37,57 @@
   opacity: 0.8;
 }
 
+/* 更新ボタン */
+.refresh-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background: #0052a3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+}
+
+.refresh-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.refresh-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.refresh-button.refreshing .refresh-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.refresh-icon {
+  font-size: 1.1rem;
+  display: inline-block;
+}
+
 /* スマホ対応 */
 @media (max-width: 768px) {
   .update-status {
@@ -47,5 +99,18 @@
 
   .update-relative {
     font-size: 0.75rem;
+  }
+
+  .refresh-button {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .refresh-text {
+    display: none;
+  }
+
+  .refresh-icon {
+    font-size: 1.2rem;
   }
 }

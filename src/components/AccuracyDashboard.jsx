@@ -3,7 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import UpdateStatus from './UpdateStatus'
 import './AccuracyDashboard.css'
 
-function AccuracyDashboard() {
+function AccuracyDashboard({ onRefresh, isRefreshing }) {
     const [summary, setSummary] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -587,7 +587,7 @@ function AccuracyDashboard() {
                 <h2>📊 成績</h2>
                 <p className="last-updated">{getTodayDate()}</p>
             </div>
-            <UpdateStatus lastUpdated={summary.lastUpdated} dataType="成績データ" />
+            <UpdateStatus lastUpdated={summary.lastUpdated} dataType="成績データ" onRefresh={onRefresh} isRefreshing={isRefreshing} />
 
             {/* Model selector - only show if models data exists */}
             {summary.models && <ModelSelector />}

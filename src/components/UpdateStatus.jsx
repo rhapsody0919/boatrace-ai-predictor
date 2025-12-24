@@ -1,8 +1,8 @@
 import React from 'react';
 import './UpdateStatus.css';
 
-export default function UpdateStatus({ lastUpdated, dataType = 'データ' }) {
-  if (!lastUpdated) return null;
+export default function UpdateStatus({ lastUpdated, dataType = 'データ', onRefresh, isRefreshing }) {
+  if (!lastUpdated && !onRefresh) return null;
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -39,11 +39,28 @@ export default function UpdateStatus({ lastUpdated, dataType = 'データ' }) {
 
   return (
     <div className={`update-status ${stale ? 'stale' : 'fresh'}`}>
-      <span className="update-icon">{stale ? '⚠️' : '✅'}</span>
-      <span className="update-text">
-        {dataType}更新: {formatDate(lastUpdated)}
-        <span className="update-relative"> ({getTimeSinceUpdate(lastUpdated)})</span>
-      </span>
+      {lastUpdated && (
+        <>
+          <span className="update-icon">{stale ? '⚠️' : '✅'}</span>
+          <span className="update-text">
+            {dataType}更新: {formatDate(lastUpdated)}
+            <span className="update-relative"> ({getTimeSinceUpdate(lastUpdated)})</span>
+          </span>
+        </>
+      )}
+      {onRefresh && (
+        <button
+          className={`refresh-button ${isRefreshing ? 'refreshing' : ''}`}
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          title="最新データに更新"
+        >
+          <span className="refresh-icon">🔄</span>
+          <span className="refresh-text">
+            {isRefreshing ? '更新中...' : '最新データに更新'}
+          </span>
+        </button>
+      )}
     </div>
   );
 }

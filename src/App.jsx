@@ -10,6 +10,7 @@ import UpdateStatus from './components/UpdateStatus'
 import { ShareButton } from './components/ShareButton'
 import { SocialShareButtons } from './components/SocialShareButtons'
 import { shareRacePredictionToX, generatePredictionShareText } from './utils/share'
+import { dataService } from './services/dataService'
 
 function App() {
     // URLのハッシュから初期タブを決定
@@ -33,6 +34,7 @@ function App() {
     const [volatility, setVolatility] = useState(null) // 荒れ度情報
     const [lastUpdated, setLastUpdated] = useState(null) // データ更新時刻
     const [isMenuOpen, setIsMenuOpen] = useState(false) // サブメニュー開閉状態
+    const [isRefreshing, setIsRefreshing] = useState(false) // 手動更新中フラグ
     const predictionRef = useRef(null)
 
     // レース場番号から名前へのマッピング
@@ -157,50 +159,57 @@ function App() {
         throw lastError
     }
 
+    // レースデータを取得（初回読み込み＆手動更新で使用）
+    const fetchRaceData = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            // データサービス経由で取得（DB移行に備えて抽象化）
+            const result = await dataService.getRaces()
+
+            if (!result.success || !result.data) {
+                throw new Error('有効なデータが取得できませんでした')
+            }
+
+            // レース場データを保存
+            console.log('📊 取得したデータ:', result.data)
+            console.log('📊 最初の会場のレース:', result.data[0]?.races)
+            console.log('📊 最初のレースのracers:', result.data[0]?.races[0]?.racers)
+            setAllVenuesData(result.data)
+            setIsRealData(true)
+
+            // データ更新時刻を保存
+            if (result.scrapedAt) {
+                setLastUpdated(result.scrapedAt)
+            }
+
+            // 最初に開催されているレース場を自動選択
+            if (result.data.length > 0) {
+                setSelectedVenueId(result.data[0].placeCd)
+            }
+
+        } catch (err) {
+            console.error('API取得エラー:', err)
+            setError(err.message)
+            setIsRealData(false)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // 手動更新関数
+    const handleRefresh = async () => {
+        setIsRefreshing(true)
+        try {
+            await fetchRaceData()
+        } finally {
+            setIsRefreshing(false)
+        }
+    }
+
     // 実際のAPIからデータを取得
     useEffect(() => {
-        const fetchRaceData = async () => {
-            try {
-                setLoading(true)
-                setError(null)
-
-                // 静的JSONファイルから読み込み（GitHub Pages対応）
-                // ローカル開発時はpublic/data/races.json、本番はビルド後のdata/races.jsonから読み込み
-                const apiUrl = import.meta.env.BASE_URL + 'data/races.json'
-
-                const response = await fetchWithRetry(apiUrl)
-                const result = await response.json()
-
-                if (!result.success || !result.data) {
-                    throw new Error('有効なデータが取得できませんでした')
-                }
-
-                // レース場データを保存
-                console.log('📊 取得したデータ:', result.data)
-                console.log('📊 最初の会場のレース:', result.data[0]?.races)
-                console.log('📊 最初のレースのracers:', result.data[0]?.races[0]?.racers)
-                setAllVenuesData(result.data)
-                setIsRealData(true)
-
-                // データ更新時刻を保存
-                if (result.scrapedAt) {
-                    setLastUpdated(result.scrapedAt)
-                }
-
-                // 最初に開催されているレース場を自動選択
-                if (result.data.length > 0) {
-                    setSelectedVenueId(result.data[0].placeCd)
-                }
-
-            } catch (err) {
-                console.error('API取得エラー:', err)
-                setError(err.message)
-                setIsRealData(false)
-            } finally {
-                setLoading(false)
-            }
-        }
-
         fetchRaceData()
     }, [])
 
@@ -516,7 +525,10 @@ function App() {
                     ) : activeTab === 'contact' ? (
                         <Contact />
                     ) : activeTab === 'accuracy' ? (
-                        <AccuracyDashboard />
+                        <AccuracyDashboard
+                            onRefresh={handleRefresh}
+                            isRefreshing={isRefreshing}
+                        />
                     ) : activeTab === 'hit-races' ? (
                         <HitRaces
                             allVenuesData={allVenuesData}
@@ -524,12 +536,19 @@ function App() {
                             stadiumNames={stadiumNames}
                             fetchWithRetry={fetchWithRetry}
                             lastUpdated={lastUpdated}
+                            onRefresh={handleRefresh}
+                            isRefreshing={isRefreshing}
                         />
                     ) : (
                         <>
                             <section className="race-list-section">
                                 <h2>🏁 本日開催中のレース {getTodayDateShort()}</h2>
-                                <UpdateStatus lastUpdated={lastUpdated} dataType="レースデータ" />
+                                <UpdateStatus
+                                    lastUpdated={lastUpdated}
+                                    dataType="レースデータ"
+                                    onRefresh={handleRefresh}
+                                    isRefreshing={isRefreshing}
+                                />
 
                                 {loading ? (
                                     <div className="analyzing">

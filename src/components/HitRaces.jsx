@@ -5,7 +5,7 @@ import { shareHitRaceToX, generateHitRaceShareText } from '../utils/share'
 import UpdateStatus from './UpdateStatus'
 import './HitRaces.css'
 
-function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, lastUpdated }) {
+function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, lastUpdated, onRefresh, isRefreshing }) {
     const [hitRacesToday, setHitRacesToday] = useState([])
     const [hitRacesYesterday, setHitRacesYesterday] = useState([])
     const [hitRacesAll, setHitRacesAll] = useState([])
@@ -282,7 +282,12 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
             {/* ボートレース場別統計セクション */}
             <section className="venue-stats-section">
                 <h2>📊 ボートレース場別の的中実績</h2>
-                <UpdateStatus lastUpdated={lastUpdated} dataType="予想データ" />
+                <UpdateStatus
+                    lastUpdated={lastUpdated}
+                    dataType="予想データ"
+                    onRefresh={onRefresh}
+                    isRefreshing={isRefreshing}
+                />
 
                 {/* 期間選択タブ */}
                 <div className="period-selector">
