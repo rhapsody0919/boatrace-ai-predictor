@@ -127,11 +127,7 @@ export const shareHitRaceToX = (race, model = 'standard') => {
   let hitTypesStr = '';
   if (hitTypes.length > 0) {
     const hitTypeNames = hitTypes.map(h => h.type);
-    if (hitTypeNames.length === 4) {
-      hitTypesStr = '全的中';
-    } else {
-      hitTypesStr = hitTypeNames.join('・');
-    }
+    hitTypesStr = hitTypeNames.join('・');
   }
 
   // 日付をフォーマット (YYYY-MM-DD -> MM/DD)
@@ -306,11 +302,7 @@ export const generateHitRaceShareText = (race, model = 'standard') => {
   let hitTypesStr = '';
   if (hitTypes.length > 0) {
     const hitTypeNames = hitTypes.map(h => h.type);
-    if (hitTypeNames.length === 4) {
-      hitTypesStr = '全的中';
-    } else {
-      hitTypesStr = hitTypeNames.join('・');
-    }
+    hitTypesStr = hitTypeNames.join('・');
   }
 
   let dateStr = '';
