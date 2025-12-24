@@ -36,6 +36,7 @@ function App() {
     const [isMenuOpen, setIsMenuOpen] = useState(false) // サブメニュー開閉状態
     const [isRefreshing, setIsRefreshing] = useState(false) // 手動更新中フラグ
     const predictionRef = useRef(null)
+    const raceCardRefs = useRef({}) // 各レースカードへの参照を保持
 
     // レース場番号から名前へのマッピング
     const stadiumNames = {
@@ -249,6 +250,55 @@ function App() {
             })
         }
     }, [prediction, isAnalyzing])
+
+    // レース一覧が読み込まれたら、次に開催されるレースに自動スクロール
+    useEffect(() => {
+        if (races.length === 0 || loading) return
+
+        // 現在時刻（JST）を取得
+        const now = new Date()
+        const jstOffset = 9 * 60 // JST is UTC+9
+        const jstNow = new Date(now.getTime() + jstOffset * 60 * 1000)
+        const currentHours = jstNow.getUTCHours()
+        const currentMinutes = jstNow.getUTCMinutes()
+        const currentTimeInMinutes = currentHours * 60 + currentMinutes
+
+        // 次に開催されるレースを探す
+        let nextRace = null
+        let minTimeDiff = Infinity
+
+        races.forEach(race => {
+            if (race.startTime && race.startTime !== '未定') {
+                const [hours, minutes] = race.startTime.split(':').map(Number)
+                const raceTimeInMinutes = hours * 60 + minutes
+                const timeDiff = raceTimeInMinutes - currentTimeInMinutes
+
+                // 現在時刻より後のレースで、最も近いものを選択
+                if (timeDiff > 0 && timeDiff < minTimeDiff) {
+                    minTimeDiff = timeDiff
+                    nextRace = race
+                }
+            }
+        })
+
+        // 次のレースが見つからない場合は、最後のレース（最も新しいレース）を選択
+        if (!nextRace && races.length > 0) {
+            nextRace = races.reduce((latest, race) => {
+                return race.raceNumber > latest.raceNumber ? race : latest
+            }, races[0])
+        }
+
+        // 次のレースが見つかった場合、そのレースカードにスクロール
+        if (nextRace && raceCardRefs.current[nextRace.id]) {
+            // 少し遅延させてDOM要素が確実に描画されてからスクロール
+            setTimeout(() => {
+                raceCardRefs.current[nextRace.id]?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                })
+            }, 500)
+        }
+    }, [races, loading])
 
     // 予想データをJSONファイルから読み込む
     const loadPredictionData = async (race) => {
@@ -626,7 +676,11 @@ function App() {
                                         ) : (
                                             <div className="race-grid">
                                                 {races.map(race => (
-                                                    <div key={race.id} className="race-card">
+                                                    <div
+                                                        key={race.id}
+                                                        className="race-card"
+                                                        ref={el => raceCardRefs.current[race.id] = el}
+                                                    >
                                                         <div className="race-card-header">
                                                             <h3>{race.venue}</h3>
                                                             <span className="race-number">{race.raceNumber}R</span>
