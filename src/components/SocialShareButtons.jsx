@@ -44,8 +44,7 @@ export const SocialShareButtons = ({
       </FacebookShareButton>
 
       <LineShareButton
-        url={shareUrl}
-        title={lineTitle}
+        url={lineTitle ? `${lineTitle}\n${shareUrl}` : shareUrl}
         className="social-share-button"
       >
         <LineIcon size={size} round />
