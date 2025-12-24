@@ -10649,10 +10649,10 @@
           "raceNo": 1,
           "weather": "曇り",
           "airTemp": 12,
-          "windDirection": 3,
-          "windVelocity": 2,
+          "windDirection": 15,
+          "windVelocity": 1,
           "waterTemp": 14,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "15:18",
           "racers": [
             {
@@ -11727,10 +11727,10 @@
           "raceNo": 12,
           "weather": "曇り",
           "airTemp": 12,
-          "windDirection": 3,
-          "windVelocity": 2,
+          "windDirection": 15,
+          "windVelocity": 1,
           "waterTemp": 14,
-          "waveHeight": 2,
+          "waveHeight": 1,
           "startTime": "20:30",
           "racers": [
             {
@@ -15377,10 +15377,10 @@
           "raceNo": 1,
           "weather": "雨",
           "airTemp": 13,
-          "windDirection": 7,
-          "windVelocity": 1,
+          "windDirection": 5,
+          "windVelocity": 2,
           "waterTemp": 12,
-          "waveHeight": 1,
+          "waveHeight": 2,
           "startTime": "15:23",
           "racers": [
             {
@@ -16357,10 +16357,10 @@
           "raceNo": 11,
           "weather": "雨",
           "airTemp": 13,
-          "windDirection": 7,
-          "windVelocity": 1,
+          "windDirection": 5,
+          "windVelocity": 2,
           "waterTemp": 12,
-          "waveHeight": 1,
+          "waveHeight": 2,
           "startTime": "20:10",
           "racers": [
             {
@@ -16455,10 +16455,10 @@
           "raceNo": 12,
           "weather": "雨",
           "airTemp": 13,
-          "windDirection": 7,
-          "windVelocity": 1,
+          "windDirection": 5,
+          "windVelocity": 2,
           "waterTemp": 12,
-          "waveHeight": 1,
+          "waveHeight": 2,
           "startTime": "20:40",
           "racers": [
             {
@@ -16557,7 +16557,7 @@
           "date": "2025-12-24",
           "placeCd": 20,
           "raceNo": 1,
-          "weather": "曇り",
+          "weather": "雨",
           "airTemp": 13,
           "windDirection": 4,
           "windVelocity": 2,
@@ -17537,7 +17537,7 @@
           "date": "2025-12-24",
           "placeCd": 20,
           "raceNo": 11,
-          "weather": "曇り",
+          "weather": "雨",
           "airTemp": 13,
           "windDirection": 4,
           "windVelocity": 2,
@@ -17635,7 +17635,7 @@
           "date": "2025-12-24",
           "placeCd": 20,
           "raceNo": 12,
-          "weather": "曇り",
+          "weather": "雨",
           "airTemp": 13,
           "windDirection": 4,
           "windVelocity": 2,
@@ -17732,5 +17732,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-24T10:29:31.032Z"
+  "scrapedAt": "2025-12-24T11:26:12.754Z"
 }
