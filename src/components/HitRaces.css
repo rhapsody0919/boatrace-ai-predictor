@@ -83,7 +83,7 @@
   font-weight: bold;
 }
 
-/* 競艇場別統計セクション */
+/* ボートレース場別統計セクション */
 .venue-stats-section {
   margin-bottom: 2rem;
   padding: 1.5rem;
@@ -165,7 +165,7 @@
   color: #cd7f32;
 }
 
-/* 競艇場名 */
+/* ボートレース場名 */
 .venue-name {
   font-weight: 500;
   color: #1e293b;

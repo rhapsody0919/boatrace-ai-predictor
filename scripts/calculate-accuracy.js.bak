@@ -132,7 +132,7 @@ function calculateActualRecovery(races, betType, modelKey = null) {
         }
       }
     } else if (betType === 'place') {
-      // Place bet: topPick must finish in top 2 (競艇の複勝は1着と2着のみ)
+      // Place bet: topPick must finish in top 2 (ボートレースの複勝は1着と2着のみ)
       const topPick = prediction.topPick;
       if (topPick === result.rank1 || topPick === result.rank2) {
         const payout = payouts.place[String(topPick)];

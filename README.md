@@ -1,6 +1,6 @@
 # BoatAI
 
-AIを活用した競艇予想サービスです。選手の過去データ、モーター性能、当地実績などを分析し、レースの予想を提供します。
+AIを活用したボートレース予想サービスです。選手の過去データ、モーター性能、当地実績などを分析し、レースの予想を提供します。
 
 🔗 **公式サイト**: https://boat-ai.jp/ (DNS反映待ち)
 
@@ -173,7 +173,7 @@ npm run deploy
 ## 注意事項
 
 - 本サイトはAIによる予想を提供するものであり、的中を保証するものではありません
-- 競艇の公式サイトからデータをスクレイピングしています。利用規約に従い、適切な間隔でアクセスしています
+- ボートレースの公式サイトからデータをスクレイピングしています。利用規約に従い、適切な間隔でアクセスしています
 - 投資は自己責任で行ってください
 
 ## ライセンス
@@ -183,6 +183,52 @@ npm run deploy
 ## 課題・改善点
 
 プロジェクトの現在の課題と改善点については [ISSUES.md](./ISSUES.md) を参照してください。
+
+## Linear統合
+
+このプロジェクトはLinearとGitHubを統合して、タスク管理を自動化しています。
+
+### Claude Codeでのタスク管理（推奨）
+
+Claude Codeで壁打ちしながらタスクを整理し、実装中にLinearタスクを自動更新できます。
+
+**セットアップ:**
+```bash
+# Linear APIキーを設定
+export LINEAR_API_KEY="your-api-key"
+```
+
+**使用方法:**
+```bash
+# タスクを作成
+npm run linear:create "予測機能の実装" "AI予測ロジックを追加"
+
+# タスクを更新
+npm run linear:update BOAT-123 "進行中" "実装を開始"
+
+# コメントを追加
+npm run linear:comment BOAT-123 "進捗: 50%完了"
+
+# タスク一覧を表示
+npm run linear:list
+```
+
+詳細は [Claude Code統合ガイド](./docs/linear-claude-code-integration.md) を参照してください。
+
+### GitHub統合
+
+1. **LinearでGitHub統合を有効化**
+   - Linearアプリ → Settings → Integrations → GitHub
+   - GitHubアカウントを接続し、リポジトリを選択
+
+2. **コミットメッセージでタスクを参照**
+   ```bash
+   git commit -m "feat: 機能追加
+
+   Fixes BOAT-123"
+   ```
+
+詳細なセットアップ方法は [Linear統合ガイド](./docs/linear-quick-start.md) を参照してください。
 
 ## 貢献
 

@@ -54,7 +54,11 @@
       "Bash(grep:*)",
       "WebFetch(domain:boatrace-ai-predictor-56dojk8jm-rhapsody0919s-projects.vercel.app)",
       "Bash(cp:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(npm run linear:*:)",
+      "Bash(node scripts/linear-cli.js:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: LINEシェアでスマホでもメッセージが表示されるように修正\n\nLINEの公式シェアAPIはtitleパラメータをサポートしていないため、\nurlパラメータにメッセージとURLを結合して渡すように変更。\nこれにより、スマホでもPCでも同様にメッセージが表示されるようになる。\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git stash push:*)"
     ],
     "deny": [],
     "ask": []

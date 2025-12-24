@@ -1,0 +1,166 @@
+/* Difyチャットコンポーネントのスタイル */
+
+/* フローティングボタン */
+.dify-chat-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.dify-chat-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+}
+
+.dify-chat-button:active {
+  transform: translateY(0);
+}
+
+.chat-icon {
+  font-size: 20px;
+}
+
+.chat-label {
+  font-size: 14px;
+}
+
+/* チャットウィンドウ */
+.dify-chat-window {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 420px;
+  height: 600px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.dify-chat-window.minimized {
+  height: 60px;
+}
+
+/* ヘッダー */
+.dify-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+}
+
+.chat-header-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.chat-header-icon {
+  font-size: 20px;
+}
+
+.chat-header-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.chat-header-subtitle {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-left: 8px;
+}
+
+.chat-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-minimize-btn,
+.chat-close-btn {
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.chat-minimize-btn:hover,
+.chat-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* チャットコンテンツ */
+.dify-chat-content {
+  flex: 1;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.dify-chat-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: white;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .dify-chat-window {
+    width: calc(100vw - 32px);
+    height: calc(100vh - 120px);
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .dify-chat-button {
+    bottom: 16px;
+    right: 16px;
+  }
+}
+
+/* アニメーション */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.dify-chat-window {
+  animation: slideUp 0.3s ease;
+}
+

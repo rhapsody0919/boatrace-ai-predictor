@@ -9,7 +9,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // 競艇場IDから名前へのマッピング
+  // ボートレース場IDから名前へのマッピング
   const stadiumNames = {
     1: '桐生', 2: '戸田', 3: '江戸川', 4: '平和島', 5: '多摩川', 6: '浜名湖',
     7: '蒲郡', 8: '常滑', 9: '津', 10: 'びわこ', 11: '住之江', 12: '尼崎',
@@ -37,7 +37,7 @@ function App() {
           .map(race => ({
             id: `${race.race_stadium_number}-${race.race_number}`,
             stadiumNumber: race.race_stadium_number,
-            venue: stadiumNames[race.race_stadium_number] || `競艇場${race.race_stadium_number}`,
+            venue: stadiumNames[race.race_stadium_number] || `ボートレース場${race.race_stadium_number}`,
             raceNumber: race.race_number,
             date: race.race_date,
             weather: race.race_weather || '晴れ',

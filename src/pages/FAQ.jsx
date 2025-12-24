@@ -4,273 +4,273 @@ import { Helmet } from 'react-helmet-async';
 import './FAQ.css';
 
 export default function FAQ() {
-  const navigate = useNavigate();
-  const [openIndex, setOpenIndex] = useState(null);
+    const navigate = useNavigate();
+    const [openIndex, setOpenIndex] = useState(null);
 
-  const faqs = [
-    {
-      category: '基本情報',
-      questions: [
+    const faqs = [
         {
-          q: 'BoatAIは無料ですか？',
-          a: 'はい、完全無料です。すべての機能を登録不要で利用できます。今後も無料で提供し続けます。'
-        },
-        {
-          q: '登録は必要ですか？',
-          a: 'いいえ、登録は一切不要です。サイトにアクセスするだけで、すぐにAI予想を確認できます。'
-        },
-        {
-          q: 'スマホでも使えますか？',
-          a: 'はい、スマートフォンでも快適に利用できます。レスポンシブデザインに対応しているため、PCでもスマホでも同じように使えます。'
-        }
-      ]
-    },
-    {
-      category: 'AI予想について',
-      questions: [
-        {
-          q: 'AI予想の的中率はどのくらいですか？',
-          a: '2025年12月の実績では、複勝的中率49.5%、3連複的中率12.8%です。詳細な実績は「的中率」ページで公開しています。'
-        },
-        {
-          q: 'AIはどのようにデータを分析していますか？',
-          a: '選手データ、モーター性能、ボート性能、展示航走データ、レース条件など45項目以上のデータを総合的に分析し、機械学習モデルでスコアを算出しています。'
-        },
-        {
-          q: 'AIスコアとは何ですか？',
-          a: 'AIが算出した各艇の勝率を数値化したものです。スコアが高いほど、AIが勝つ可能性が高いと判断しています。'
-        },
-        {
-          q: '予想は毎日更新されますか？',
-          a: 'はい、1時間ごとに最新のレースデータを分析し、予想を更新しています。'
-        },
-        {
-          q: 'どの競艇場に対応していますか？',
-          a: '全24競艇場すべてに対応しています。桐生、戸田、江戸川、平和島、多摩川、浜名湖、蒲郡、常滑、津、三国、びわこ、住之江、尼崎、鳴門、丸亀、児島、宮島、徳山、下関、若松、芦屋、福岡、唐津、大村です。'
-        },
-        {
-          q: '3つのモデル（スタンダード・本命狙い・穴狙い）の違いは何ですか？',
-          a: 'それぞれ異なる戦略でAI予想を行います。\n\n【スタンダード】バランス型：的中率と配当のバランスを重視。全国勝率・当地成績・モーター性能を総合的に評価します。迷ったらまずこれ。\n\n【本命狙い】安全型：的中率を最重視。1号艇とA級選手を優先し、堅いレースで力を発揮します。初心者や堅実に当てたい方におすすめ。\n\n【穴狙い】高配当型：大穴を狙って高配当を目指す。外枠の好モーターや展開の妙を重視し、荒れるレースで力を発揮します。一攫千金を狙う方向け。'
-        },
-        {
-          q: 'どのモデルを選べば良いですか？',
-          a: 'レースの荒れ度とご自身の戦略に応じて選んでください。\n\n荒れ度が「堅い」：本命狙い型がおすすめ（1号艇優先で的中率重視）\n荒れ度が「標準」：スタンダード型がおすすめ（バランス重視）\n荒れ度が「荒れる」：穴狙い型がおすすめ（高配当狙い）\n\n各レースの予想ページには「おすすめモデル」が表示されるので、参考にしてください。'
-        },
-        {
-          q: 'モデルごとの的中率と回収率はどのくらい違いますか？',
-          a: '各モデルで異なる特徴があります（2025年12月実績）。\n\n【本命狙い】単勝的中率53%、3連単的中率7%（安全志向）\n【スタンダード】単勝的中率27%、3連単的中率3%、3連単回収率136%（バランス型）\n【穴狙い】単勝的中率27%、3連複回収率333%（高配当型）\n\n詳細な実績は「成績」ページでモデル別に確認できます。'
-        }
-      ]
-    },
-    {
-      category: '使い方',
-      questions: [
-        {
-          q: 'どうやって予想を見れば良いですか？',
-          a: 'トップページで気になる競艇場を選択すると、その日のレース一覧が表示されます。各レースの「AI予想を見る」ボタンをクリックすると、詳細な予想が確認できます。'
-        },
-        {
-          q: '本命、推奨買い目とは何ですか？',
-          a: '本命はAIが最も勝つ可能性が高いと判断した艇です。推奨買い目は、3連複や3連単を購入する際に参考にできる買い目です。'
-        },
-        {
-          q: '的中レースはどこで確認できますか？',
-          a: 'トップページの「的中レース」タブで、過去14日間の的中レースを確認できます。レース場別、期間別に絞り込むこともできます。'
-        },
-        {
-          q: 'シェア機能はありますか？',
-          a: 'はい、各予想ページにX（旧Twitter）、Facebook、LINEのシェアボタンがあります。友達と予想を共有できます。'
-        }
-      ]
-    },
-    {
-      category: '舟券購入',
-      questions: [
-        {
-          q: 'BoatAIで舟券を購入できますか？',
-          a: 'いいえ、BoatAIは予想情報のみを提供するサービスです。舟券の購入は、テレボートなどの公式サービスをご利用ください。'
-        },
-        {
-          q: 'どの舟券種別がおすすめですか？',
-          a: '初心者には複勝（的中率49.5%）、中級者には3連複（回収率80.6%）、上級者には3連単（回収率134.3%）がおすすめです。自分のレベルに合わせて選んでください。'
-        },
-        {
-          q: '1日いくらくらい購入すれば良いですか？',
-          a: '余剰資金の範囲内で、1日1,000円〜3,000円程度から始めることをおすすめします。決して生活費には手をつけないでください。'
-        },
-        {
-          q: 'AI予想通りに買えば必ず当たりますか？',
-          a: 'いいえ、100%の的中はありません。AI予想は参考情報として提供しており、購入は自己責任でお願いします。資金管理を徹底し、無理のない範囲で楽しんでください。'
-        }
-      ]
-    },
-    {
-      category: 'データ・技術',
-      questions: [
-        {
-          q: 'どのようなデータを使用していますか？',
-          a: '競艇の公開データを活用しています。選手情報、モーター性能、レース結果など、すべて公式に公開されているデータを分析に使用しています。'
-        },
-        {
-          q: 'AIの予想精度は向上していますか？',
-          a: 'はい、レースデータが蓄積されるごとに、AIモデルを改善しています。今後もより高精度な予想を目指して開発を続けます。'
-        },
-        {
-          q: 'どのようなAI技術を使っていますか？',
-          a: '機械学習（Machine Learning）の技術を使用しています。詳細なアルゴリズムは企業秘密のため非公開です。'
-        }
-      ]
-    },
-    {
-      category: 'トラブル',
-      questions: [
-        {
-          q: '予想が表示されません',
-          a: 'ブラウザのキャッシュをクリアして、ページを再読み込みしてください。それでも表示されない場合は、お問い合わせページからご連絡ください。'
-        },
-        {
-          q: 'データが古いようです',
-          a: 'データは1時間ごとに自動更新されますが、タイミングによっては最新データが反映されていない場合があります。少し時間をおいて再度アクセスしてください。'
-        },
-        {
-          q: 'スマホで表示が崩れます',
-          a: 'ブラウザを最新版にアップデートしてください。Safari、Chrome、Edgeの最新版を推奨しています。'
-        }
-      ]
-    },
-    {
-      category: 'その他',
-      questions: [
-        {
-          q: '今後、有料化する予定はありますか？',
-          a: '現時点では有料化の予定はありません。今後も無料で提供し続けることを目指しています。'
-        },
-        {
-          q: '要望や不具合を報告したいです',
-          a: 'お問い合わせページからご連絡ください。いただいたご意見は、サービス改善の参考にさせていただきます。'
-        },
-        {
-          q: 'BoatAIを紹介しても良いですか？',
-          a: 'はい、ぜひご紹介ください。X、ブログ、YouTubeなど、どこで紹介していただいても構いません。シェアボタンもご活用ください。'
-        },
-        {
-          q: 'API提供の予定はありますか？',
-          a: '現時点ではAPI提供の予定はありません。今後の開発状況によっては検討する可能性があります。'
-        }
-      ]
-    }
-  ];
-
-  const toggleFAQ = (index) => {
-    setOpenIndex(openIndex === index ? null : index);
-  };
-
-  // Prepare FAQ schema data
-  const faqSchemaItems = faqs.flatMap(category =>
-    category.questions.map(faq => ({
-      "@type": "Question",
-      "name": faq.q,
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": faq.a
-      }
-    }))
-  );
-
-  return (
-    <div className="faq-container">
-      <Helmet>
-        <title>よくある質問（FAQ） | BoatAI</title>
-        <meta name="description" content="BoatAIに関するよくある質問と回答。無料での利用方法、AI予想の的中率、使い方、舟券購入のアドバイスなど、皆様の疑問にお答えします。" />
-        <link rel="canonical" href="https://boat-ai.jp/faq" />
-
-        {/* FAQPage Structured Data */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": faqSchemaItems
-          })}
-        </script>
-
-        {/* BreadcrumbList Structured Data */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "ホーム",
-                "item": "https://boat-ai.jp/"
-              },
-              {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "よくある質問",
-                "item": "https://boat-ai.jp/faq"
-              }
+            category: '基本情報',
+            questions: [
+                {
+                    q: 'BoatAIは無料ですか？',
+                    a: 'はい、完全無料です。すべての機能を登録不要で利用できます。今後も無料で提供し続けます。'
+                },
+                {
+                    q: '登録は必要ですか？',
+                    a: 'いいえ、登録は一切不要です。サイトにアクセスするだけで、すぐにAI予想を確認できます。'
+                },
+                {
+                    q: 'スマホでも使えますか？',
+                    a: 'はい、スマートフォンでも快適に利用できます。レスポンシブデザインに対応しているため、PCでもスマホでも同じように使えます。'
+                }
             ]
-          })}
-        </script>
-      </Helmet>
+        },
+        {
+            category: 'AI予想について',
+            questions: [
+                {
+                    q: 'AI予想の的中率はどのくらいですか？',
+                    a: '2025年12月の実績では、複勝的中率49.5%、3連複的中率12.8%です。詳細な実績は「的中率」ページで公開しています。'
+                },
+                {
+                    q: 'AIはどのようにデータを分析していますか？',
+                    a: '選手データ、モーター性能、ボート性能、展示航走データ、レース条件など45項目以上のデータを総合的に分析し、機械学習モデルでスコアを算出しています。'
+                },
+                {
+                    q: 'AIスコアとは何ですか？',
+                    a: 'AIが算出した各艇の勝率を数値化したものです。スコアが高いほど、AIが勝つ可能性が高いと判断しています。'
+                },
+                {
+                    q: '予想は毎日更新されますか？',
+                    a: 'はい、1時間ごとに最新のレースデータを分析し、予想を更新しています。'
+                },
+                {
+                    q: 'どのボートレース場に対応していますか？',
+                    a: '全24ボートレース場すべてに対応しています。桐生、戸田、江戸川、平和島、多摩川、浜名湖、蒲郡、常滑、津、三国、びわこ、住之江、尼崎、鳴門、丸亀、児島、宮島、徳山、下関、若松、芦屋、福岡、唐津、大村です。'
+                },
+                {
+                    q: '3つのモデル（スタンダード・本命狙い・穴狙い）の違いは何ですか？',
+                    a: 'それぞれ異なる戦略でAI予想を行います。\n\n【スタンダード】バランス型：的中率と配当のバランスを重視。全国勝率・当地成績・モーター性能を総合的に評価します。迷ったらまずこれ。\n\n【本命狙い】安全型：的中率を最重視。1号艇とA級選手を優先し、堅いレースで力を発揮します。初心者や堅実に当てたい方におすすめ。\n\n【穴狙い】高配当型：大穴を狙って高配当を目指す。外枠の好モーターや展開の妙を重視し、荒れるレースで力を発揮します。一攫千金を狙う方向け。'
+                },
+                {
+                    q: 'どのモデルを選べば良いですか？',
+                    a: 'レースの荒れ度とご自身の戦略に応じて選んでください。\n\n荒れ度が「堅い」：本命狙い型がおすすめ（1号艇優先で的中率重視）\n荒れ度が「標準」：スタンダード型がおすすめ（バランス重視）\n荒れ度が「荒れる」：穴狙い型がおすすめ（高配当狙い）\n\n各レースの予想ページには「おすすめモデル」が表示されるので、参考にしてください。'
+                },
+                {
+                    q: 'モデルごとの的中率と回収率はどのくらい違いますか？',
+                    a: '各モデルで異なる特徴があります（2025年12月実績）。\n\n【本命狙い】単勝的中率53%、3連単的中率7%（安全志向）\n【スタンダード】単勝的中率27%、3連単的中率3%、3連単回収率136%（バランス型）\n【穴狙い】単勝的中率27%、3連複回収率333%（高配当型）\n\n詳細な実績は「成績」ページでモデル別に確認できます。'
+                }
+            ]
+        },
+        {
+            category: '使い方',
+            questions: [
+                {
+                    q: 'どうやって予想を見れば良いですか？',
+                    a: 'トップページで気になるボートレース場を選択すると、その日のレース一覧が表示されます。各レースの「AI予想を見る」ボタンをクリックすると、詳細な予想が確認できます。'
+                },
+                {
+                    q: '本命、推奨買い目とは何ですか？',
+                    a: '本命はAIが最も勝つ可能性が高いと判断した艇です。推奨買い目は、3連複や3連単を購入する際に参考にできる買い目です。'
+                },
+                {
+                    q: '的中レースはどこで確認できますか？',
+                    a: 'トップページの「的中レース」タブで、過去14日間の的中レースを確認できます。レース場別、期間別に絞り込むこともできます。'
+                },
+                {
+                    q: 'シェア機能はありますか？',
+                    a: 'はい、各予想ページにX（旧Twitter）、Facebook、LINEのシェアボタンがあります。友達と予想を共有できます。'
+                }
+            ]
+        },
+        {
+            category: '舟券購入',
+            questions: [
+                {
+                    q: 'BoatAIで舟券を購入できますか？',
+                    a: 'いいえ、BoatAIは予想情報のみを提供するサービスです。舟券の購入は、テレボートなどの公式サービスをご利用ください。'
+                },
+                {
+                    q: 'どの舟券種別がおすすめですか？',
+                    a: '初心者には複勝（的中率49.5%）、中級者には3連複（回収率80.6%）、上級者には3連単（回収率134.3%）がおすすめです。自分のレベルに合わせて選んでください。'
+                },
+                {
+                    q: '1日いくらくらい購入すれば良いですか？',
+                    a: '余剰資金の範囲内で、1日1,000円〜3,000円程度から始めることをおすすめします。決して生活費には手をつけないでください。'
+                },
+                {
+                    q: 'AI予想通りに買えば必ず当たりますか？',
+                    a: 'いいえ、100%の的中はありません。AI予想は参考情報として提供しており、購入は自己責任でお願いします。資金管理を徹底し、無理のない範囲で楽しんでください。'
+                }
+            ]
+        },
+        {
+            category: 'データ・技術',
+            questions: [
+                {
+                    q: 'どのようなデータを使用していますか？',
+                    a: 'ボートレースの公開データを活用しています。選手情報、モーター性能、レース結果など、すべて公式に公開されているデータを分析に使用しています。'
+                },
+                {
+                    q: 'AIの予想精度は向上していますか？',
+                    a: 'はい、レースデータが蓄積されるごとに、AIモデルを改善しています。今後もより高精度な予想を目指して開発を続けます。'
+                },
+                {
+                    q: 'どのようなAI技術を使っていますか？',
+                    a: '機械学習（Machine Learning）の技術を使用しています。詳細なアルゴリズムは企業秘密のため非公開です。'
+                }
+            ]
+        },
+        {
+            category: 'トラブル',
+            questions: [
+                {
+                    q: '予想が表示されません',
+                    a: 'ブラウザのキャッシュをクリアして、ページを再読み込みしてください。それでも表示されない場合は、お問い合わせページからご連絡ください。'
+                },
+                {
+                    q: 'データが古いようです',
+                    a: 'データは1時間ごとに自動更新されますが、タイミングによっては最新データが反映されていない場合があります。少し時間をおいて再度アクセスしてください。'
+                },
+                {
+                    q: 'スマホで表示が崩れます',
+                    a: 'ブラウザを最新版にアップデートしてください。Safari、Chrome、Edgeの最新版を推奨しています。'
+                }
+            ]
+        },
+        {
+            category: 'その他',
+            questions: [
+                {
+                    q: '今後、有料化する予定はありますか？',
+                    a: '現時点では有料化の予定はありません。今後も無料で提供し続けることを目指しています。'
+                },
+                {
+                    q: '要望や不具合を報告したいです',
+                    a: 'お問い合わせページからご連絡ください。いただいたご意見は、サービス改善の参考にさせていただきます。'
+                },
+                {
+                    q: 'BoatAIを紹介しても良いですか？',
+                    a: 'はい、ぜひご紹介ください。X、ブログ、YouTubeなど、どこで紹介していただいても構いません。シェアボタンもご活用ください。'
+                },
+                {
+                    q: 'API提供の予定はありますか？',
+                    a: '現時点ではAPI提供の予定はありません。今後の開発状況によっては検討する可能性があります。'
+                }
+            ]
+        }
+    ];
 
-      <div className="faq-header">
-        <h1>❓ よくある質問（FAQ）</h1>
-        <p>BoatAIに関するよくある質問と回答</p>
-      </div>
+    const toggleFAQ = (index) => {
+        setOpenIndex(openIndex === index ? null : index);
+    };
 
-      {faqs.map((category, categoryIndex) => (
-        <section key={categoryIndex} className="faq-category">
-          <h2>{category.category}</h2>
-          <div className="faq-list">
-            {category.questions.map((faq, questionIndex) => {
-              const globalIndex = `${categoryIndex}-${questionIndex}`;
-              const isOpen = openIndex === globalIndex;
+    // Prepare FAQ schema data
+    const faqSchemaItems = faqs.flatMap(category =>
+        category.questions.map(faq => ({
+            "@type": "Question",
+            "name": faq.q,
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": faq.a
+            }
+        }))
+    );
 
-              return (
-                <div
-                  key={questionIndex}
-                  className={`faq-item ${isOpen ? 'open' : ''}`}
-                >
-                  <button
-                    className="faq-question"
-                    onClick={() => toggleFAQ(globalIndex)}
-                  >
-                    <span className="question-text">Q. {faq.q}</span>
-                    <span className="toggle-icon">{isOpen ? '−' : '+'}</span>
-                  </button>
-                  {isOpen && (
-                    <div className="faq-answer">
-                      <p>A. {faq.a}</p>
+    return (
+        <div className="faq-container">
+            <Helmet>
+                <title>よくある質問（FAQ） | BoatAI</title>
+                <meta name="description" content="BoatAIに関するよくある質問と回答。無料での利用方法、AI予想の的中率、使い方、舟券購入のアドバイスなど、皆様の疑問にお答えします。" />
+                <link rel="canonical" href="https://boat-ai.jp/faq" />
+
+                {/* FAQPage Structured Data */}
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "FAQPage",
+                        "mainEntity": faqSchemaItems
+                    })}
+                </script>
+
+                {/* BreadcrumbList Structured Data */}
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "BreadcrumbList",
+                        "itemListElement": [
+                            {
+                                "@type": "ListItem",
+                                "position": 1,
+                                "name": "ホーム",
+                                "item": "https://boat-ai.jp/"
+                            },
+                            {
+                                "@type": "ListItem",
+                                "position": 2,
+                                "name": "よくある質問",
+                                "item": "https://boat-ai.jp/faq"
+                            }
+                        ]
+                    })}
+                </script>
+            </Helmet>
+
+            <div className="faq-header">
+                <h1>❓ よくある質問（FAQ）</h1>
+                <p>BoatAIに関するよくある質問と回答</p>
+            </div>
+
+            {faqs.map((category, categoryIndex) => (
+                <section key={categoryIndex} className="faq-category">
+                    <h2>{category.category}</h2>
+                    <div className="faq-list">
+                        {category.questions.map((faq, questionIndex) => {
+                            const globalIndex = `${categoryIndex}-${questionIndex}`;
+                            const isOpen = openIndex === globalIndex;
+
+                            return (
+                                <div
+                                    key={questionIndex}
+                                    className={`faq-item ${isOpen ? 'open' : ''}`}
+                                >
+                                    <button
+                                        className="faq-question"
+                                        onClick={() => toggleFAQ(globalIndex)}
+                                    >
+                                        <span className="question-text">Q. {faq.q}</span>
+                                        <span className="toggle-icon">{isOpen ? '−' : '+'}</span>
+                                    </button>
+                                    {isOpen && (
+                                        <div className="faq-answer">
+                                            <p>A. {faq.a}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      ))}
+                </section>
+            ))}
 
-      <div className="faq-cta">
-        <h2>🚀 まだ質問がありますか？</h2>
-        <p>お気軽にお問い合わせください</p>
-        <div className="cta-buttons">
-          <button
-            onClick={() => navigate('/contact')}
-            className="contact-button"
-          >
-            お問い合わせ
-          </button>
-          <button
-            onClick={() => navigate('/')}
-            className="try-button"
-          >
-            AI予想を試す
-          </button>
+            <div className="faq-cta">
+                <h2>🚀 まだ質問がありますか？</h2>
+                <p>お気軽にお問い合わせください</p>
+                <div className="cta-buttons">
+                    <button
+                        onClick={() => navigate('/contact')}
+                        className="contact-button"
+                    >
+                        お問い合わせ
+                    </button>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="try-button"
+                    >
+                        AI予想を試す
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

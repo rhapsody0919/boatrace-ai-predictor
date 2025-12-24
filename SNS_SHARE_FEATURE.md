@@ -51,7 +51,7 @@ AIスコア: 24.5
 ▼詳細を見る
 https://boat-ai.jp/#race-tokuyama-12
 
-#競艇 #ボートレース #AI予想 #BoatAI
+#ボートレース #ボートレース #AI予想 #BoatAI
 ```
 
 **パターンB: 的中結果シェア**
@@ -67,7 +67,7 @@ BoatAIで予想的中🎉
 ▼予想を見る
 https://boat-ai.jp/
 
-#競艇 #ボートレース #的中 #BoatAI
+#ボートレース #ボートレース #的中 #BoatAI
 ```
 
 ---
@@ -258,7 +258,7 @@ AIスコア: ${aiScore}
 ▼詳細を見る
 https://boat-ai.jp/
 
-#競艇 #ボートレース #AI予想 #BoatAI`;
+#ボートレース #ボートレース #AI予想 #BoatAI`;
 
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'width=600,height=400');
@@ -285,7 +285,7 @@ BoatAIで予想的中🎉
 ▼予想を見る
 https://boat-ai.jp/
 
-#競艇 #ボートレース #的中 #BoatAI`;
+#ボートレース #ボートレース #的中 #BoatAI`;
 
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'width=600,height=400');
@@ -309,7 +309,7 @@ BoatAIのAI予想で的中率UP📈
 ▼無料で使える
 https://boat-ai.jp/
 
-#競艇 #ボートレース #AI予想`;
+#ボートレース #ボートレース #AI予想`;
 
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'width=600,height=400');

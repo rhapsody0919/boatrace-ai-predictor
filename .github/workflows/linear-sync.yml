@@ -1,0 +1,77 @@
+name: Linear Task Sync
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    types: [ opened, closed, synchronize ]
+
+jobs:
+  sync-linear:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Get commit message
+        id: commit-msg
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            # Pushイベントの場合
+            if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              COMMIT_MSG=$(git log --format=%B ${{ github.event.before }}..${{ github.event.after }} | head -20)
+            else
+              COMMIT_MSG=$(git log --format=%B -1 ${{ github.event.after }})
+            fi
+          else
+            # Pull Requestイベントの場合
+            COMMIT_MSG=$(git log --format=%B ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | head -20)
+            # PRのタイトルと説明も含める
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_BODY="${{ github.event.pull_request.body }}"
+            COMMIT_MSG="$PR_TITLE
+
+$PR_BODY
+
+$COMMIT_MSG"
+          fi
+          
+          # マルチライン文字列を安全に保存
+          {
+            echo 'EOF'
+            echo "$COMMIT_MSG"
+            echo 'EOF'
+          } > /tmp/commit_msg.txt
+          
+          echo "commit_msg_file=/tmp/commit_msg.txt" >> $GITHUB_OUTPUT
+
+      - name: Update Linear tasks
+        if: steps.commit-msg.outputs.commit_msg_file != ''
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          GITHUB_COMMIT_MESSAGE: ${{ steps.commit-msg.outputs.commit_msg_file }}
+        run: |
+          if [ -z "$LINEAR_API_KEY" ]; then
+            echo "⚠️ LINEAR_API_KEY is not set. Skipping Linear update."
+            echo "💡 Linear GitHub統合を使用する場合は、このステップは不要です。"
+            exit 0
+          fi
+          
+          COMMIT_MSG=$(cat "$GITHUB_COMMIT_MESSAGE" | tail -n +2 | head -n -1)
+          
+          echo "📝 コミットメッセージ:"
+          echo "$COMMIT_MSG"
+          echo ""
+          
+          # Node.jsスクリプトを使用してLinearタスクを更新
+          node .github/scripts/linear-sync.js "$COMMIT_MSG"
+
