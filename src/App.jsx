@@ -135,6 +135,16 @@ function App() {
         return () => document.removeEventListener('click', handleClickOutside)
     }, [isMenuOpen])
 
+    // ロゴクリック時の処理
+    const handleLogoClick = () => {
+        // 予想タブに移動
+        handleTabChange('races')
+        // データをリフレッシュ
+        handleRefresh()
+        // ページトップにスクロール
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
     // リトライ機能付きfetch関数
     const fetchWithRetry = async (url, maxRetries = 3, retryDelay = 2000) => {
         let lastError
@@ -515,7 +525,7 @@ function App() {
         <div className="app">
             <header className="header">
                 <div>
-                    <div className="logo">
+                    <div className="logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
                         <span className="logo-icon">🚤</span>
                         <h1>BoatAI</h1>
                     </div>
