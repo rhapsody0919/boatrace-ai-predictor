@@ -1,7 +1,7 @@
 {
   "date": "2025-12-25",
-  "generatedAt": "2025-12-25T10:29:29.643Z",
-  "updatedAt": "2025-12-25T10:56:55.205Z",
+  "generatedAt": "2025-12-25T11:24:59.144Z",
+  "updatedAt": "2025-12-25T11:52:12.812Z",
   "races": [
     {
       "raceId": "2025-12-25-03-01",
@@ -414,7 +414,7 @@
             "1-3-4": 3010
           }
         },
-        "updatedAt": "2025-12-25T10:29:39.295Z"
+        "updatedAt": "2025-12-25T11:25:08.676Z"
       },
       "accuracy": {
         "standard": {
@@ -849,7 +849,7 @@
             "3-1-5": 2330
           }
         },
-        "updatedAt": "2025-12-25T10:29:49.031Z"
+        "updatedAt": "2025-12-25T11:25:19.367Z"
       },
       "accuracy": {
         "standard": {
@@ -1283,7 +1283,7 @@
             "2-4-6": 19150
           }
         },
-        "updatedAt": "2025-12-25T10:29:57.769Z"
+        "updatedAt": "2025-12-25T11:25:28.081Z"
       },
       "accuracy": {
         "standard": {
@@ -1717,7 +1717,7 @@
             "1-5-4": 10340
           }
         },
-        "updatedAt": "2025-12-25T10:30:06.639Z"
+        "updatedAt": "2025-12-25T11:25:36.827Z"
       },
       "accuracy": {
         "standard": {
@@ -2150,7 +2150,7 @@
             "4-2-1": 3740
           }
         },
-        "updatedAt": "2025-12-25T10:30:17.359Z"
+        "updatedAt": "2025-12-25T11:25:47.495Z"
       },
       "accuracy": {
         "standard": {
@@ -2584,7 +2584,7 @@
             "3-1-6": 2080
           }
         },
-        "updatedAt": "2025-12-25T10:30:28.273Z"
+        "updatedAt": "2025-12-25T11:25:58.214Z"
       },
       "accuracy": {
         "standard": {
@@ -3018,7 +3018,7 @@
             "2-3-1": 1170
           }
         },
-        "updatedAt": "2025-12-25T10:30:39.030Z"
+        "updatedAt": "2025-12-25T11:26:07.887Z"
       },
       "accuracy": {
         "standard": {
@@ -3452,7 +3452,7 @@
             "1-3-6": 1970
           }
         },
-        "updatedAt": "2025-12-25T10:30:48.888Z"
+        "updatedAt": "2025-12-25T11:26:16.586Z"
       },
       "accuracy": {
         "standard": {
@@ -3887,7 +3887,7 @@
             "4-2-6": 8780
           }
         },
-        "updatedAt": "2025-12-25T10:30:58.649Z"
+        "updatedAt": "2025-12-25T11:26:26.292Z"
       },
       "accuracy": {
         "standard": {
@@ -4321,7 +4321,7 @@
             "1-3-5": 4470
           }
         },
-        "updatedAt": "2025-12-25T10:31:09.366Z"
+        "updatedAt": "2025-12-25T11:26:37.012Z"
       },
       "accuracy": {
         "standard": {
@@ -4754,7 +4754,7 @@
             "4-2-6": 17470
           }
         },
-        "updatedAt": "2025-12-25T10:31:20.085Z"
+        "updatedAt": "2025-12-25T11:26:46.716Z"
       },
       "accuracy": {
         "standard": {
@@ -5188,7 +5188,7 @@
             "1-5-2": 3780
           }
         },
-        "updatedAt": "2025-12-25T10:31:29.857Z"
+        "updatedAt": "2025-12-25T11:26:55.387Z"
       },
       "accuracy": {
         "standard": {
@@ -5620,7 +5620,7 @@
             "1-2-3": 650
           }
         },
-        "updatedAt": "2025-12-25T10:31:40.602Z"
+        "updatedAt": "2025-12-25T11:27:05.064Z"
       },
       "accuracy": {
         "standard": {
@@ -6054,7 +6054,7 @@
             "1-3-2": 4560
           }
         },
-        "updatedAt": "2025-12-25T10:31:49.401Z"
+        "updatedAt": "2025-12-25T11:27:15.730Z"
       },
       "accuracy": {
         "standard": {
@@ -6488,7 +6488,7 @@
             "4-2-5": 15310
           }
         },
-        "updatedAt": "2025-12-25T10:32:00.200Z"
+        "updatedAt": "2025-12-25T11:27:25.468Z"
       },
       "accuracy": {
         "standard": {
@@ -6921,7 +6921,7 @@
             "1-4-2": 1250
           }
         },
-        "updatedAt": "2025-12-25T10:32:10.978Z"
+        "updatedAt": "2025-12-25T11:27:36.165Z"
       },
       "accuracy": {
         "standard": {
@@ -7354,7 +7354,7 @@
             "2-4-3": 5930
           }
         },
-        "updatedAt": "2025-12-25T10:32:21.868Z"
+        "updatedAt": "2025-12-25T11:27:46.870Z"
       },
       "accuracy": {
         "standard": {
@@ -7786,7 +7786,7 @@
             "2-4-3": 10110
           }
         },
-        "updatedAt": "2025-12-25T10:32:30.661Z"
+        "updatedAt": "2025-12-25T11:27:56.571Z"
       },
       "accuracy": {
         "standard": {
@@ -8220,7 +8220,7 @@
             "3-1-2": 5070
           }
         },
-        "updatedAt": "2025-12-25T10:32:39.395Z"
+        "updatedAt": "2025-12-25T11:28:05.276Z"
       },
       "accuracy": {
         "standard": {
@@ -8652,7 +8652,7 @@
             "4-5-1": 5690
           }
         },
-        "updatedAt": "2025-12-25T10:32:50.109Z"
+        "updatedAt": "2025-12-25T11:28:13.944Z"
       },
       "accuracy": {
         "standard": {
@@ -9084,7 +9084,7 @@
             "1-4-5": 920
           }
         },
-        "updatedAt": "2025-12-25T10:32:58.986Z"
+        "updatedAt": "2025-12-25T11:28:24.638Z"
       },
       "accuracy": {
         "standard": {
@@ -9499,30 +9499,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 5,
+        "rank3": 2,
+        "payouts": {
+          "win": {
+            "1": 130
+          },
+          "place": {
+            "1": 100,
+            "5": 290
+          },
+          "trifecta": {
+            "1-2-5": 1020
+          },
+          "trio": {
+            "1-5-2": 2740
+          }
+        },
+        "updatedAt": "2025-12-25T11:28:34.305Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -9918,30 +9933,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 5,
+        "payouts": {
+          "win": {
+            "1": 120
+          },
+          "place": {
+            "1": 120,
+            "2": 160
+          },
+          "trifecta": {
+            "1-2-5": 260
+          },
+          "trio": {
+            "1-2-5": 620
+          }
+        },
+        "updatedAt": "2025-12-25T11:28:43.998Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": true
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -10773,7 +10803,7 @@
             "1-4-2": 1250
           }
         },
-        "updatedAt": "2025-12-25T10:33:37.030Z"
+        "updatedAt": "2025-12-25T11:29:03.390Z"
       },
       "accuracy": {
         "standard": {
@@ -11205,7 +11235,7 @@
             "4-5-1": 2960
           }
         },
-        "updatedAt": "2025-12-25T10:33:45.755Z"
+        "updatedAt": "2025-12-25T11:29:12.116Z"
       },
       "accuracy": {
         "standard": {
@@ -11638,7 +11668,7 @@
             "1-3-2": 470
           }
         },
-        "updatedAt": "2025-12-25T10:33:54.552Z"
+        "updatedAt": "2025-12-25T11:29:21.862Z"
       },
       "accuracy": {
         "standard": {
@@ -12069,7 +12099,7 @@
             "3-5-6": 10290
           }
         },
-        "updatedAt": "2025-12-25T10:34:04.336Z"
+        "updatedAt": "2025-12-25T11:29:30.541Z"
       },
       "accuracy": {
         "standard": {
@@ -12501,7 +12531,7 @@
             "1-5-3": 760
           }
         },
-        "updatedAt": "2025-12-25T10:34:13.068Z"
+        "updatedAt": "2025-12-25T11:29:40.219Z"
       },
       "accuracy": {
         "standard": {
@@ -12932,7 +12962,7 @@
             "1-4-6": 1120
           }
         },
-        "updatedAt": "2025-12-25T10:34:22.811Z"
+        "updatedAt": "2025-12-25T11:29:48.884Z"
       },
       "accuracy": {
         "standard": {
@@ -13363,7 +13393,7 @@
             "1-4-6": 840
           }
         },
-        "updatedAt": "2025-12-25T10:34:31.524Z"
+        "updatedAt": "2025-12-25T11:29:57.591Z"
       },
       "accuracy": {
         "standard": {
@@ -13796,7 +13826,7 @@
             "1-4-3": 2770
           }
         },
-        "updatedAt": "2025-12-25T10:34:42.293Z"
+        "updatedAt": "2025-12-25T11:30:07.301Z"
       },
       "accuracy": {
         "standard": {
@@ -14230,7 +14260,7 @@
             "2-1-4": 9310
           }
         },
-        "updatedAt": "2025-12-25T10:34:51.035Z"
+        "updatedAt": "2025-12-25T11:30:17.964Z"
       },
       "accuracy": {
         "standard": {
@@ -14661,7 +14691,7 @@
             "1-2-3": 390
           }
         },
-        "updatedAt": "2025-12-25T10:35:00.821Z"
+        "updatedAt": "2025-12-25T11:30:28.676Z"
       },
       "accuracy": {
         "standard": {
@@ -15094,7 +15124,7 @@
             "1-3-5": 4430
           }
         },
-        "updatedAt": "2025-12-25T10:35:11.611Z"
+        "updatedAt": "2025-12-25T11:30:37.390Z"
       },
       "accuracy": {
         "standard": {
@@ -15526,7 +15556,7 @@
             "2-5-1": 57890
           }
         },
-        "updatedAt": "2025-12-25T10:35:22.365Z"
+        "updatedAt": "2025-12-25T11:30:48.058Z"
       },
       "accuracy": {
         "standard": {
@@ -15958,7 +15988,7 @@
             "1-3-5": 620
           }
         },
-        "updatedAt": "2025-12-25T10:35:33.083Z"
+        "updatedAt": "2025-12-25T11:30:57.725Z"
       },
       "accuracy": {
         "standard": {
@@ -16390,7 +16420,7 @@
             "2-4-3": 2020
           }
         },
-        "updatedAt": "2025-12-25T10:35:42.834Z"
+        "updatedAt": "2025-12-25T11:31:06.427Z"
       },
       "accuracy": {
         "standard": {
@@ -16822,7 +16852,7 @@
             "4-2-3": 4790
           }
         },
-        "updatedAt": "2025-12-25T10:35:51.572Z"
+        "updatedAt": "2025-12-25T11:31:15.093Z"
       },
       "accuracy": {
         "standard": {
@@ -17254,7 +17284,7 @@
             "1-3-4": 420
           }
         },
-        "updatedAt": "2025-12-25T10:36:00.314Z"
+        "updatedAt": "2025-12-25T11:31:25.760Z"
       },
       "accuracy": {
         "standard": {
@@ -17685,7 +17715,7 @@
             "1-3-4": 720
           }
         },
-        "updatedAt": "2025-12-25T10:36:11.079Z"
+        "updatedAt": "2025-12-25T11:31:35.490Z"
       },
       "accuracy": {
         "standard": {
@@ -18117,7 +18147,7 @@
             "1-2-4": 660
           }
         },
-        "updatedAt": "2025-12-25T10:36:20.812Z"
+        "updatedAt": "2025-12-25T11:31:44.168Z"
       },
       "accuracy": {
         "standard": {
@@ -18549,7 +18579,7 @@
             "1-3-4": 1620
           }
         },
-        "updatedAt": "2025-12-25T10:36:30.515Z"
+        "updatedAt": "2025-12-25T11:31:54.828Z"
       },
       "accuracy": {
         "standard": {
@@ -18981,7 +19011,7 @@
             "1-5-3": 820
           }
         },
-        "updatedAt": "2025-12-25T10:36:41.287Z"
+        "updatedAt": "2025-12-25T11:32:04.537Z"
       },
       "accuracy": {
         "standard": {
@@ -19414,7 +19444,7 @@
             "1-3-5": 850
           }
         },
-        "updatedAt": "2025-12-25T10:36:52.008Z"
+        "updatedAt": "2025-12-25T11:32:14.234Z"
       },
       "accuracy": {
         "standard": {
@@ -19846,7 +19876,7 @@
             "1-5-3": 1760
           }
         },
-        "updatedAt": "2025-12-25T10:37:00.806Z"
+        "updatedAt": "2025-12-25T11:32:24.929Z"
       },
       "accuracy": {
         "standard": {
@@ -20277,7 +20307,7 @@
             "1-4-2": 1810
           }
         },
-        "updatedAt": "2025-12-25T10:37:10.647Z"
+        "updatedAt": "2025-12-25T11:32:34.650Z"
       },
       "accuracy": {
         "standard": {
@@ -20709,7 +20739,7 @@
             "1-2-3": 580
           }
         },
-        "updatedAt": "2025-12-25T10:37:21.470Z"
+        "updatedAt": "2025-12-25T11:32:44.312Z"
       },
       "accuracy": {
         "standard": {
@@ -21141,7 +21171,7 @@
             "2-1-3": 2660
           }
         },
-        "updatedAt": "2025-12-25T10:37:31.264Z"
+        "updatedAt": "2025-12-25T11:32:55.017Z"
       },
       "accuracy": {
         "standard": {
@@ -21574,7 +21604,7 @@
             "1-2-5": 8020
           }
         },
-        "updatedAt": "2025-12-25T10:37:42.090Z"
+        "updatedAt": "2025-12-25T11:33:03.724Z"
       },
       "accuracy": {
         "standard": {
@@ -22005,7 +22035,7 @@
             "1-4-3": 1180
           }
         },
-        "updatedAt": "2025-12-25T10:37:52.809Z"
+        "updatedAt": "2025-12-25T11:33:13.388Z"
       },
       "accuracy": {
         "standard": {
@@ -22436,7 +22466,7 @@
             "1-5-2": 870
           }
         },
-        "updatedAt": "2025-12-25T10:38:01.587Z"
+        "updatedAt": "2025-12-25T11:33:22.098Z"
       },
       "accuracy": {
         "standard": {
@@ -22867,7 +22897,7 @@
             "1-3-5": 1420
           }
         },
-        "updatedAt": "2025-12-25T10:38:11.300Z"
+        "updatedAt": "2025-12-25T11:33:31.762Z"
       },
       "accuracy": {
         "standard": {
@@ -23299,7 +23329,7 @@
             "1-4-3": 3740
           }
         },
-        "updatedAt": "2025-12-25T10:38:20.255Z"
+        "updatedAt": "2025-12-25T11:33:42.434Z"
       },
       "accuracy": {
         "standard": {
@@ -23732,7 +23762,7 @@
             "4-6-5": 19210
           }
         },
-        "updatedAt": "2025-12-25T10:38:31.052Z"
+        "updatedAt": "2025-12-25T11:33:53.139Z"
       },
       "accuracy": {
         "standard": {
@@ -24164,7 +24194,7 @@
             "1-4-5": 2560
           }
         },
-        "updatedAt": "2025-12-25T10:38:39.841Z"
+        "updatedAt": "2025-12-25T11:34:01.835Z"
       },
       "accuracy": {
         "standard": {
@@ -24596,7 +24626,7 @@
             "3-4-6": 4290
           }
         },
-        "updatedAt": "2025-12-25T10:38:48.589Z"
+        "updatedAt": "2025-12-25T11:34:10.516Z"
       },
       "accuracy": {
         "standard": {
@@ -25029,7 +25059,7 @@
             "3-1-5": 3160
           }
         },
-        "updatedAt": "2025-12-25T10:38:59.367Z"
+        "updatedAt": "2025-12-25T11:34:21.176Z"
       },
       "accuracy": {
         "standard": {
@@ -25461,7 +25491,7 @@
             "2-3-4": 5570
           }
         },
-        "updatedAt": "2025-12-25T10:39:08.156Z"
+        "updatedAt": "2025-12-25T11:34:31.836Z"
       },
       "accuracy": {
         "standard": {
@@ -25893,7 +25923,7 @@
             "3-1-2": 13020
           }
         },
-        "updatedAt": "2025-12-25T10:39:18.863Z"
+        "updatedAt": "2025-12-25T11:34:42.506Z"
       },
       "accuracy": {
         "standard": {
@@ -26325,7 +26355,7 @@
             "1-3-2": 570
           }
         },
-        "updatedAt": "2025-12-25T10:39:28.567Z"
+        "updatedAt": "2025-12-25T11:34:52.210Z"
       },
       "accuracy": {
         "standard": {
@@ -26758,7 +26788,7 @@
             "1-4-2": 2840
           }
         },
-        "updatedAt": "2025-12-25T10:39:37.273Z"
+        "updatedAt": "2025-12-25T11:35:00.910Z"
       },
       "accuracy": {
         "standard": {
@@ -27192,7 +27222,7 @@
             "3-4-5": 5800
           }
         },
-        "updatedAt": "2025-12-25T10:39:46.992Z"
+        "updatedAt": "2025-12-25T11:35:09.612Z"
       },
       "accuracy": {
         "standard": {
@@ -27624,7 +27654,7 @@
             "2-6-4": 3900
           }
         },
-        "updatedAt": "2025-12-25T10:39:57.696Z"
+        "updatedAt": "2025-12-25T11:35:20.274Z"
       },
       "accuracy": {
         "standard": {
@@ -28057,7 +28087,7 @@
             "1-4-6": 960
           }
         },
-        "updatedAt": "2025-12-25T10:40:08.453Z"
+        "updatedAt": "2025-12-25T11:35:29.976Z"
       },
       "accuracy": {
         "standard": {
@@ -28490,7 +28520,7 @@
             "2-4-3": 1350
           }
         },
-        "updatedAt": "2025-12-25T10:40:17.207Z"
+        "updatedAt": "2025-12-25T11:35:40.860Z"
       },
       "accuracy": {
         "standard": {
@@ -28923,7 +28953,7 @@
             "4-5-2": 1170
           }
         },
-        "updatedAt": "2025-12-25T10:40:25.993Z"
+        "updatedAt": "2025-12-25T11:35:51.557Z"
       },
       "accuracy": {
         "standard": {
@@ -29355,7 +29385,7 @@
             "1-5-3": 38320
           }
         },
-        "updatedAt": "2025-12-25T10:40:34.764Z"
+        "updatedAt": "2025-12-25T11:36:02.260Z"
       },
       "accuracy": {
         "standard": {
@@ -29788,7 +29818,7 @@
             "2-3-6": 5640
           }
         },
-        "updatedAt": "2025-12-25T10:40:43.554Z"
+        "updatedAt": "2025-12-25T11:36:12.924Z"
       },
       "accuracy": {
         "standard": {
@@ -30221,7 +30251,7 @@
             "1-5-6": 3330
           }
         },
-        "updatedAt": "2025-12-25T10:40:53.318Z"
+        "updatedAt": "2025-12-25T11:36:22.625Z"
       },
       "accuracy": {
         "standard": {
@@ -30654,7 +30684,7 @@
             "2-1-5": 3290
           }
         },
-        "updatedAt": "2025-12-25T10:41:03.159Z"
+        "updatedAt": "2025-12-25T11:36:32.295Z"
       },
       "accuracy": {
         "standard": {
@@ -31087,7 +31117,7 @@
             "3-4-6": 39010
           }
         },
-        "updatedAt": "2025-12-25T10:41:11.909Z"
+        "updatedAt": "2025-12-25T11:36:40.989Z"
       },
       "accuracy": {
         "standard": {
@@ -31520,7 +31550,7 @@
             "4-5-2": 12140
           }
         },
-        "updatedAt": "2025-12-25T10:41:22.821Z"
+        "updatedAt": "2025-12-25T11:36:51.657Z"
       },
       "accuracy": {
         "standard": {
@@ -31954,7 +31984,7 @@
             "4-1-6": 8100
           }
         },
-        "updatedAt": "2025-12-25T10:41:32.532Z"
+        "updatedAt": "2025-12-25T11:37:02.370Z"
       },
       "accuracy": {
         "standard": {
@@ -32387,7 +32417,7 @@
             "1-4-5": 2150
           }
         },
-        "updatedAt": "2025-12-25T10:41:42.288Z"
+        "updatedAt": "2025-12-25T11:37:11.081Z"
       },
       "accuracy": {
         "standard": {
@@ -32821,7 +32851,7 @@
             "6-1-3": 22150
           }
         },
-        "updatedAt": "2025-12-25T10:41:50.992Z"
+        "updatedAt": "2025-12-25T11:37:20.775Z"
       },
       "accuracy": {
         "standard": {
@@ -33254,7 +33284,7 @@
             "1-6-3": 5200
           }
         },
-        "updatedAt": "2025-12-25T10:41:59.767Z"
+        "updatedAt": "2025-12-25T11:37:30.470Z"
       },
       "accuracy": {
         "standard": {
@@ -33688,7 +33718,7 @@
             "2-4-5": 1300
           }
         },
-        "updatedAt": "2025-12-25T10:42:08.484Z"
+        "updatedAt": "2025-12-25T11:37:40.176Z"
       },
       "accuracy": {
         "standard": {
@@ -34121,7 +34151,7 @@
             "2-1-5": 1050
           }
         },
-        "updatedAt": "2025-12-25T10:42:18.198Z"
+        "updatedAt": "2025-12-25T11:37:48.873Z"
       },
       "accuracy": {
         "standard": {
@@ -34552,7 +34582,7 @@
             "1-4-5": 1220
           }
         },
-        "updatedAt": "2025-12-25T10:42:26.902Z"
+        "updatedAt": "2025-12-25T11:37:57.568Z"
       },
       "accuracy": {
         "standard": {
@@ -34986,7 +35016,7 @@
             "2-4-3": 14370
           }
         },
-        "updatedAt": "2025-12-25T10:42:37.649Z"
+        "updatedAt": "2025-12-25T11:38:08.228Z"
       },
       "accuracy": {
         "standard": {
@@ -35400,30 +35430,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 5,
+        "rank2": 1,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "5": 1820
+          },
+          "place": {
+            "1": 130,
+            "5": 800
+          },
+          "trifecta": {
+            "1-3-5": 510
+          },
+          "trio": {
+            "5-1-3": 15470
+          }
+        },
+        "updatedAt": "2025-12-25T11:38:18.930Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": true,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -35819,30 +35864,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 5,
+        "payouts": {
+          "win": {
+            "1": 130
+          },
+          "place": {
+            "1": 120,
+            "2": 150
+          },
+          "trifecta": {
+            "1-2-5": 910
+          },
+          "trio": {
+            "1-2-5": 1810
+          }
+        },
+        "updatedAt": "2025-12-25T11:38:27.625Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -36672,7 +36732,7 @@
             "2-5-1": 37830
           }
         },
-        "updatedAt": "2025-12-25T10:43:16.676Z"
+        "updatedAt": "2025-12-25T11:38:48.955Z"
       },
       "accuracy": {
         "standard": {
@@ -37105,7 +37165,7 @@
             "1-4-5": 2460
           }
         },
-        "updatedAt": "2025-12-25T10:43:25.389Z"
+        "updatedAt": "2025-12-25T11:38:57.623Z"
       },
       "accuracy": {
         "standard": {
@@ -37539,7 +37599,7 @@
             "1-6-3": 6430
           }
         },
-        "updatedAt": "2025-12-25T10:43:34.135Z"
+        "updatedAt": "2025-12-25T11:39:08.287Z"
       },
       "accuracy": {
         "standard": {
@@ -37972,7 +38032,7 @@
             "1-2-3": 2280
           }
         },
-        "updatedAt": "2025-12-25T10:43:42.894Z"
+        "updatedAt": "2025-12-25T11:39:18.958Z"
       },
       "accuracy": {
         "standard": {
@@ -38404,7 +38464,7 @@
             "2-1-3": 1910
           }
         },
-        "updatedAt": "2025-12-25T10:43:52.616Z"
+        "updatedAt": "2025-12-25T11:39:28.665Z"
       },
       "accuracy": {
         "standard": {
@@ -38838,7 +38898,7 @@
             "1-2-5": 3230
           }
         },
-        "updatedAt": "2025-12-25T10:44:03.346Z"
+        "updatedAt": "2025-12-25T11:39:39.344Z"
       },
       "accuracy": {
         "standard": {
@@ -39271,7 +39331,7 @@
             "3-2-1": 15620
           }
         },
-        "updatedAt": "2025-12-25T10:44:12.128Z"
+        "updatedAt": "2025-12-25T11:39:50.023Z"
       },
       "accuracy": {
         "standard": {
@@ -39704,7 +39764,7 @@
             "2-6-5": 7700
           }
         },
-        "updatedAt": "2025-12-25T10:44:20.869Z"
+        "updatedAt": "2025-12-25T11:40:00.721Z"
       },
       "accuracy": {
         "standard": {
@@ -40136,7 +40196,7 @@
             "2-3-6": 51070
           }
         },
-        "updatedAt": "2025-12-25T10:44:30.682Z"
+        "updatedAt": "2025-12-25T11:40:11.437Z"
       },
       "accuracy": {
         "standard": {
@@ -40568,7 +40628,7 @@
             "3-4-1": 14310
           }
         },
-        "updatedAt": "2025-12-25T10:44:39.514Z"
+        "updatedAt": "2025-12-25T11:40:22.100Z"
       },
       "accuracy": {
         "standard": {
@@ -41002,7 +41062,7 @@
             "1-2-3": 610
           }
         },
-        "updatedAt": "2025-12-25T10:44:48.499Z"
+        "updatedAt": "2025-12-25T11:40:30.781Z"
       },
       "accuracy": {
         "standard": {
@@ -41434,7 +41494,7 @@
             "1-4-5": 1620
           }
         },
-        "updatedAt": "2025-12-25T10:44:59.209Z"
+        "updatedAt": "2025-12-25T11:40:40.485Z"
       },
       "accuracy": {
         "standard": {
@@ -41868,7 +41928,7 @@
             "1-3-2": 1020
           }
         },
-        "updatedAt": "2025-12-25T10:45:08.940Z"
+        "updatedAt": "2025-12-25T11:40:51.191Z"
       },
       "accuracy": {
         "standard": {
@@ -42300,7 +42360,7 @@
             "1-3-5": 3960
           }
         },
-        "updatedAt": "2025-12-25T10:45:19.684Z"
+        "updatedAt": "2025-12-25T11:41:00.857Z"
       },
       "accuracy": {
         "standard": {
@@ -42732,7 +42792,7 @@
             "1-6-2": 13580
           }
         },
-        "updatedAt": "2025-12-25T10:45:30.497Z"
+        "updatedAt": "2025-12-25T11:41:11.562Z"
       },
       "accuracy": {
         "standard": {
@@ -43165,7 +43225,7 @@
             "3-5-1": 2110
           }
         },
-        "updatedAt": "2025-12-25T10:45:39.204Z"
+        "updatedAt": "2025-12-25T11:41:20.241Z"
       },
       "accuracy": {
         "standard": {
@@ -43597,7 +43657,7 @@
             "3-4-2": 2350
           }
         },
-        "updatedAt": "2025-12-25T10:45:48.039Z"
+        "updatedAt": "2025-12-25T11:41:28.946Z"
       },
       "accuracy": {
         "standard": {
@@ -44030,7 +44090,7 @@
             "1-3-6": 720
           }
         },
-        "updatedAt": "2025-12-25T10:45:58.809Z"
+        "updatedAt": "2025-12-25T11:41:38.653Z"
       },
       "accuracy": {
         "standard": {
@@ -44461,7 +44521,7 @@
             "4-1-5": 3660
           }
         },
-        "updatedAt": "2025-12-25T10:46:07.579Z"
+        "updatedAt": "2025-12-25T11:41:48.363Z"
       },
       "accuracy": {
         "standard": {
@@ -44893,7 +44953,7 @@
             "1-3-4": 1280
           }
         },
-        "updatedAt": "2025-12-25T10:46:16.364Z"
+        "updatedAt": "2025-12-25T11:41:57.045Z"
       },
       "accuracy": {
         "standard": {
@@ -45338,7 +45398,7 @@
       "venue": "丸亀",
       "venueCode": 15,
       "raceNumber": 10,
-      "startTime": "19:46",
+      "startTime": "20:01",
       "volatility": {
         "score": 40,
         "level": "medium",
@@ -45756,7 +45816,7 @@
       "venue": "丸亀",
       "venueCode": 15,
       "raceNumber": 11,
-      "startTime": "20:09",
+      "startTime": "20:03",
       "volatility": {
         "score": 36,
         "level": "medium",
@@ -46174,7 +46234,7 @@
       "venue": "丸亀",
       "venueCode": 15,
       "raceNumber": 12,
-      "startTime": "20:40",
+      "startTime": "20:14",
       "volatility": {
         "score": 25,
         "level": "low",
@@ -46996,7 +47056,7 @@
             "5-6-1": 17580
           }
         },
-        "updatedAt": "2025-12-25T10:47:09.189Z"
+        "updatedAt": "2025-12-25T11:42:43.396Z"
       },
       "accuracy": {
         "standard": {
@@ -47428,7 +47488,7 @@
             "3-1-4": 840
           }
         },
-        "updatedAt": "2025-12-25T10:47:19.936Z"
+        "updatedAt": "2025-12-25T11:42:53.055Z"
       },
       "accuracy": {
         "standard": {
@@ -47861,7 +47921,7 @@
             "1-4-2": 1420
           }
         },
-        "updatedAt": "2025-12-25T10:47:30.673Z"
+        "updatedAt": "2025-12-25T11:43:03.718Z"
       },
       "accuracy": {
         "standard": {
@@ -48293,7 +48353,7 @@
             "4-3-1": 2220
           }
         },
-        "updatedAt": "2025-12-25T10:47:41.416Z"
+        "updatedAt": "2025-12-25T11:43:12.392Z"
       },
       "accuracy": {
         "standard": {
@@ -48725,7 +48785,7 @@
             "4-1-2": 9580
           }
         },
-        "updatedAt": "2025-12-25T10:47:51.160Z"
+        "updatedAt": "2025-12-25T11:43:21.091Z"
       },
       "accuracy": {
         "standard": {
@@ -49157,7 +49217,7 @@
             "1-3-4": 550
           }
         },
-        "updatedAt": "2025-12-25T10:48:00.910Z"
+        "updatedAt": "2025-12-25T11:43:29.780Z"
       },
       "accuracy": {
         "standard": {
@@ -49588,7 +49648,7 @@
             "2-4-5": 8530
           }
         },
-        "updatedAt": "2025-12-25T10:48:10.623Z"
+        "updatedAt": "2025-12-25T11:43:39.470Z"
       },
       "accuracy": {
         "standard": {
@@ -50021,7 +50081,7 @@
             "3-1-5": 1760
           }
         },
-        "updatedAt": "2025-12-25T10:48:21.382Z"
+        "updatedAt": "2025-12-25T11:43:48.133Z"
       },
       "accuracy": {
         "standard": {
@@ -50452,7 +50512,7 @@
             "1-2-3": 310
           }
         },
-        "updatedAt": "2025-12-25T10:48:32.130Z"
+        "updatedAt": "2025-12-25T11:43:58.793Z"
       },
       "accuracy": {
         "standard": {
@@ -50884,7 +50944,7 @@
             "4-1-6": 5080
           }
         },
-        "updatedAt": "2025-12-25T10:48:40.886Z"
+        "updatedAt": "2025-12-25T11:44:09.460Z"
       },
       "accuracy": {
         "standard": {
@@ -51315,7 +51375,7 @@
             "1-2-4": 750
           }
         },
-        "updatedAt": "2025-12-25T10:48:51.635Z"
+        "updatedAt": "2025-12-25T11:44:20.150Z"
       },
       "accuracy": {
         "standard": {
@@ -51746,7 +51806,7 @@
             "1-3-2": 3910
           }
         },
-        "updatedAt": "2025-12-25T10:49:02.437Z"
+        "updatedAt": "2025-12-25T11:44:28.815Z"
       },
       "accuracy": {
         "standard": {
@@ -52179,7 +52239,7 @@
             "5-3-6": 32460
           }
         },
-        "updatedAt": "2025-12-25T10:49:11.219Z"
+        "updatedAt": "2025-12-25T11:44:39.511Z"
       },
       "accuracy": {
         "standard": {
@@ -52611,7 +52671,7 @@
             "1-4-2": 1060
           }
         },
-        "updatedAt": "2025-12-25T10:49:22.126Z"
+        "updatedAt": "2025-12-25T11:44:50.211Z"
       },
       "accuracy": {
         "standard": {
@@ -53045,7 +53105,7 @@
             "6-3-1": 31200
           }
         },
-        "updatedAt": "2025-12-25T10:49:31.878Z"
+        "updatedAt": "2025-12-25T11:44:59.911Z"
       },
       "accuracy": {
         "standard": {
@@ -53479,7 +53539,7 @@
             "4-5-3": 22350
           }
         },
-        "updatedAt": "2025-12-25T10:49:40.621Z"
+        "updatedAt": "2025-12-25T11:45:10.615Z"
       },
       "accuracy": {
         "standard": {
@@ -53912,7 +53972,7 @@
             "1-4-3": 1480
           }
         },
-        "updatedAt": "2025-12-25T10:49:50.369Z"
+        "updatedAt": "2025-12-25T11:45:20.277Z"
       },
       "accuracy": {
         "standard": {
@@ -54345,7 +54405,7 @@
             "1-6-2": 780
           }
         },
-        "updatedAt": "2025-12-25T10:50:01.076Z"
+        "updatedAt": "2025-12-25T11:45:29.982Z"
       },
       "accuracy": {
         "standard": {
@@ -54777,7 +54837,7 @@
             "1-6-2": 9110
           }
         },
-        "updatedAt": "2025-12-25T10:50:10.823Z"
+        "updatedAt": "2025-12-25T11:45:39.680Z"
       },
       "accuracy": {
         "standard": {
@@ -55209,7 +55269,7 @@
             "6-4-5": 95720
           }
         },
-        "updatedAt": "2025-12-25T10:50:21.563Z"
+        "updatedAt": "2025-12-25T11:45:48.345Z"
       },
       "accuracy": {
         "standard": {
@@ -55642,7 +55702,7 @@
             "1-3-2": 1520
           }
         },
-        "updatedAt": "2025-12-25T10:50:30.276Z"
+        "updatedAt": "2025-12-25T11:45:57.094Z"
       },
       "accuracy": {
         "standard": {
@@ -56076,7 +56136,7 @@
             "3-2-5": 12080
           }
         },
-        "updatedAt": "2025-12-25T10:50:39.994Z"
+        "updatedAt": "2025-12-25T11:46:06.788Z"
       },
       "accuracy": {
         "standard": {
@@ -56509,7 +56569,7 @@
             "1-4-5": 2290
           }
         },
-        "updatedAt": "2025-12-25T10:50:50.801Z"
+        "updatedAt": "2025-12-25T11:46:17.479Z"
       },
       "accuracy": {
         "standard": {
@@ -56942,7 +57002,7 @@
             "3-1-2": 5630
           }
         },
-        "updatedAt": "2025-12-25T10:50:59.516Z"
+        "updatedAt": "2025-12-25T11:46:28.195Z"
       },
       "accuracy": {
         "standard": {
@@ -57376,7 +57436,7 @@
             "5-6-1": 17920
           }
         },
-        "updatedAt": "2025-12-25T10:51:10.230Z"
+        "updatedAt": "2025-12-25T11:46:37.862Z"
       },
       "accuracy": {
         "standard": {
@@ -57808,7 +57868,7 @@
             "2-1-3": 8090
           }
         },
-        "updatedAt": "2025-12-25T10:51:18.940Z"
+        "updatedAt": "2025-12-25T11:46:46.526Z"
       },
       "accuracy": {
         "standard": {
@@ -58240,7 +58300,7 @@
             "1-2-5": 490
           }
         },
-        "updatedAt": "2025-12-25T10:51:28.728Z"
+        "updatedAt": "2025-12-25T11:46:56.228Z"
       },
       "accuracy": {
         "standard": {
@@ -58671,7 +58731,7 @@
             "1-2-4": 490
           }
         },
-        "updatedAt": "2025-12-25T10:51:37.466Z"
+        "updatedAt": "2025-12-25T11:47:05.935Z"
       },
       "accuracy": {
         "standard": {
@@ -59103,7 +59163,7 @@
             "6-3-1": 6390
           }
         },
-        "updatedAt": "2025-12-25T10:51:48.187Z"
+        "updatedAt": "2025-12-25T11:47:16.615Z"
       },
       "accuracy": {
         "standard": {
@@ -59535,7 +59595,7 @@
             "1-6-3": 3070
           }
         },
-        "updatedAt": "2025-12-25T10:51:58.936Z"
+        "updatedAt": "2025-12-25T11:47:26.279Z"
       },
       "accuracy": {
         "standard": {
@@ -59968,7 +60028,7 @@
             "2-1-3": 3880
           }
         },
-        "updatedAt": "2025-12-25T10:52:08.734Z"
+        "updatedAt": "2025-12-25T11:47:34.951Z"
       },
       "accuracy": {
         "standard": {
@@ -60401,7 +60461,7 @@
             "1-4-2": 7830
           }
         },
-        "updatedAt": "2025-12-25T10:52:19.342Z"
+        "updatedAt": "2025-12-25T11:47:43.669Z"
       },
       "accuracy": {
         "standard": {
@@ -60834,7 +60894,7 @@
             "1-2-4": 550
           }
         },
-        "updatedAt": "2025-12-25T10:52:28.441Z"
+        "updatedAt": "2025-12-25T11:47:54.378Z"
       },
       "accuracy": {
         "standard": {
@@ -61266,7 +61326,7 @@
             "4-6-3": 4210
           }
         },
-        "updatedAt": "2025-12-25T10:52:37.613Z"
+        "updatedAt": "2025-12-25T11:48:05.083Z"
       },
       "accuracy": {
         "standard": {
@@ -61699,7 +61759,7 @@
             "2-5-1": 5100
           }
         },
-        "updatedAt": "2025-12-25T10:52:47.707Z"
+        "updatedAt": "2025-12-25T11:48:13.753Z"
       },
       "accuracy": {
         "standard": {
@@ -62131,7 +62191,7 @@
             "3-1-5": 10680
           }
         },
-        "updatedAt": "2025-12-25T10:52:58.539Z"
+        "updatedAt": "2025-12-25T11:48:23.416Z"
       },
       "accuracy": {
         "standard": {
@@ -62564,7 +62624,7 @@
             "1-4-5": 7320
           }
         },
-        "updatedAt": "2025-12-25T10:53:09.291Z"
+        "updatedAt": "2025-12-25T11:48:33.139Z"
       },
       "accuracy": {
         "standard": {
@@ -62996,7 +63056,7 @@
             "2-3-5": 4210
           }
         },
-        "updatedAt": "2025-12-25T10:53:18.094Z"
+        "updatedAt": "2025-12-25T11:48:43.803Z"
       },
       "accuracy": {
         "standard": {
@@ -63428,7 +63488,7 @@
             "1-2-6": 5570
           }
         },
-        "updatedAt": "2025-12-25T10:53:28.840Z"
+        "updatedAt": "2025-12-25T11:48:53.510Z"
       },
       "accuracy": {
         "standard": {
@@ -63860,7 +63920,7 @@
             "1-3-2": 2030
           }
         },
-        "updatedAt": "2025-12-25T10:53:39.650Z"
+        "updatedAt": "2025-12-25T11:49:03.224Z"
       },
       "accuracy": {
         "standard": {
@@ -64292,7 +64352,7 @@
             "1-2-4": 440
           }
         },
-        "updatedAt": "2025-12-25T10:53:50.581Z"
+        "updatedAt": "2025-12-25T11:49:12.927Z"
       },
       "accuracy": {
         "standard": {
@@ -64724,7 +64784,7 @@
             "3-2-5": 19590
           }
         },
-        "updatedAt": "2025-12-25T10:54:00.281Z"
+        "updatedAt": "2025-12-25T11:49:21.589Z"
       },
       "accuracy": {
         "standard": {
@@ -65155,7 +65215,7 @@
             "2-3-4": 117210
           }
         },
-        "updatedAt": "2025-12-25T10:54:11.033Z"
+        "updatedAt": "2025-12-25T11:49:31.246Z"
       },
       "accuracy": {
         "standard": {
@@ -65586,7 +65646,7 @@
             "1-3-2": 870
           }
         },
-        "updatedAt": "2025-12-25T10:54:19.779Z"
+        "updatedAt": "2025-12-25T11:49:39.947Z"
       },
       "accuracy": {
         "standard": {
@@ -66018,7 +66078,7 @@
             "2-1-3": 6850
           }
         },
-        "updatedAt": "2025-12-25T10:54:28.483Z"
+        "updatedAt": "2025-12-25T11:49:48.647Z"
       },
       "accuracy": {
         "standard": {
@@ -66449,7 +66509,7 @@
             "1-3-2": 900
           }
         },
-        "updatedAt": "2025-12-25T10:54:38.219Z"
+        "updatedAt": "2025-12-25T11:49:58.320Z"
       },
       "accuracy": {
         "standard": {
@@ -66863,30 +66923,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 2,
+        "rank3": 3,
+        "payouts": {
+          "win": {
+            "1": 110
+          },
+          "place": {
+            "1": 140,
+            "2": 110
+          },
+          "trifecta": {
+            "1-2-3": 280
+          },
+          "trio": {
+            "1-2-3": 650
+          }
+        },
+        "updatedAt": "2025-12-25T11:50:08.027Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": true,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": true
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": true,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -67280,30 +67355,45 @@
         ]
       },
       "result": {
-        "finished": false,
-        "rank1": null,
-        "rank2": null,
-        "rank3": null,
-        "updatedAt": null
+        "finished": true,
+        "rank1": 1,
+        "rank2": 3,
+        "rank3": 4,
+        "payouts": {
+          "win": {
+            "1": 120
+          },
+          "place": {
+            "1": 100,
+            "3": 180
+          },
+          "trifecta": {
+            "1-3-4": 670
+          },
+          "trio": {
+            "1-3-4": 1060
+          }
+        },
+        "updatedAt": "2025-12-25T11:50:16.718Z"
       },
       "accuracy": {
         "standard": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "safeBet": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": false,
+          "top3Hit": false,
+          "top3Included": false
         },
         "upsetFocus": {
-          "topPickHit": null,
-          "topPickPlace": null,
-          "top3Hit": null,
-          "top3Included": null
+          "topPickHit": false,
+          "topPickPlace": true,
+          "top3Hit": false,
+          "top3Included": false
         }
       }
     },
@@ -67716,7 +67806,7 @@
             "1-2-4": 960
           }
         },
-        "updatedAt": "2025-12-25T10:55:07.673Z"
+        "updatedAt": "2025-12-25T11:50:25.428Z"
       },
       "accuracy": {
         "standard": {
@@ -68149,7 +68239,7 @@
             "1-5-2": 6560
           }
         },
-        "updatedAt": "2025-12-25T10:55:18.384Z"
+        "updatedAt": "2025-12-25T11:50:36.104Z"
       },
       "accuracy": {
         "standard": {
@@ -68582,7 +68672,7 @@
             "4-3-5": 3200
           }
         },
-        "updatedAt": "2025-12-25T10:55:27.161Z"
+        "updatedAt": "2025-12-25T11:50:46.771Z"
       },
       "accuracy": {
         "standard": {
@@ -69014,7 +69104,7 @@
             "2-3-5": 3180
           }
         },
-        "updatedAt": "2025-12-25T10:55:37.076Z"
+        "updatedAt": "2025-12-25T11:50:56.431Z"
       },
       "accuracy": {
         "standard": {
@@ -69448,7 +69538,7 @@
             "1-2-4": 980
           }
         },
-        "updatedAt": "2025-12-25T10:55:47.020Z"
+        "updatedAt": "2025-12-25T11:51:07.092Z"
       },
       "accuracy": {
         "standard": {
@@ -69881,7 +69971,7 @@
             "2-1-3": 550
           }
         },
-        "updatedAt": "2025-12-25T10:55:56.759Z"
+        "updatedAt": "2025-12-25T11:51:15.753Z"
       },
       "accuracy": {
         "standard": {
@@ -70313,7 +70403,7 @@
             "2-4-6": 41430
           }
         },
-        "updatedAt": "2025-12-25T10:56:05.518Z"
+        "updatedAt": "2025-12-25T11:51:26.449Z"
       },
       "accuracy": {
         "standard": {
@@ -70744,7 +70834,7 @@
             "1-6-4": 15570
           }
         },
-        "updatedAt": "2025-12-25T10:56:14.230Z"
+        "updatedAt": "2025-12-25T11:51:36.157Z"
       },
       "accuracy": {
         "standard": {
@@ -71178,7 +71268,7 @@
             "1-2-4": 910
           }
         },
-        "updatedAt": "2025-12-25T10:56:22.984Z"
+        "updatedAt": "2025-12-25T11:51:44.824Z"
       },
       "accuracy": {
         "standard": {
@@ -71611,7 +71701,7 @@
             "3-1-5": 6630
           }
         },
-        "updatedAt": "2025-12-25T10:56:33.747Z"
+        "updatedAt": "2025-12-25T11:51:53.489Z"
       },
       "accuracy": {
         "standard": {
@@ -72043,7 +72133,7 @@
             "1-3-6": 1160
           }
         },
-        "updatedAt": "2025-12-25T10:56:44.530Z"
+        "updatedAt": "2025-12-25T11:52:03.225Z"
       },
       "accuracy": {
         "standard": {
@@ -72476,7 +72566,7 @@
             "1-3-4": 770
           }
         },
-        "updatedAt": "2025-12-25T10:56:54.305Z"
+        "updatedAt": "2025-12-25T11:52:11.898Z"
       },
       "accuracy": {
         "standard": {
