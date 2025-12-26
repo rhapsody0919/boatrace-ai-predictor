@@ -10,11 +10,11 @@
 }
 
 :root {
-  /* カラーパレット - ボートレーステーマ */
-  --primary-blue: #0A4F8D;
-  --primary-blue-light: #0D6EBC;
-  --secondary-cyan: #00A3A3;
-  --secondary-cyan-light: #00C7C7;
+  /* カラーパレット - ボートレーステーマ（統一された青系） */
+  --primary-blue: #0ea5e9;
+  --primary-blue-light: #0284c7;
+  --secondary-cyan: #0ea5e9;
+  --secondary-cyan-light: #0284c7;
   --accent-orange: #FF6B35;
   --accent-gold: #FFB347;
   --bg-gradient-start: #0F2942;
