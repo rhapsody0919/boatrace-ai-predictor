@@ -557,6 +557,9 @@ function App() {
                             </button>
                             {isMenuOpen && (
                                 <div className="submenu">
+                                    <Link to="/races" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
+                                        📅 過去の予想
+                                    </Link>
                                     <Link to="/how-to-use" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
                                         📚 使い方
                                     </Link>
