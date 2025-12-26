@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export default function Terms() {
     return (
         <div style={{
@@ -263,9 +265,9 @@ export default function Terms() {
                 </h2>
                 <p style={{ color: '#475569', lineHeight: '1.8' }}>
                     当サイトは、利用者の個人情報を
-                    <a href="#privacy" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
+                    <Link to="/privacy" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
                         プライバシーポリシー
-                    </a>
+                    </Link>
                     に基づいて適切に取り扱います。
                 </p>
             </section>
@@ -340,9 +342,9 @@ export default function Terms() {
                 </h2>
                 <p style={{ color: '#475569', lineHeight: '1.8' }}>
                     本規約に関するお問い合わせは、
-                    <a href="#contact" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
+                    <Link to="/contact" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
                         お問い合わせページ
-                    </a>
+                    </Link>
                     からご連絡ください。
                 </p>
             </section>
@@ -354,14 +356,14 @@ export default function Terms() {
                 borderRadius: '8px',
                 textAlign: 'center'
             }}>
-                <a href="#races" style={{
+                <Link to="/" style={{
                     color: '#0ea5e9',
                     textDecoration: 'none',
                     fontSize: '1rem',
                     fontWeight: '600'
                 }}>
                     ← トップページに戻る
-                </a>
+                </Link>
             </div>
         </div>
     )

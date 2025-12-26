@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export default function Contact() {
     return (
         <div style={{
@@ -102,9 +104,9 @@ export default function Contact() {
                     </h3>
                     <p style={{ color: '#475569', lineHeight: '1.8', marginLeft: '1rem' }}>
                         A. 単勝的中率は約27%、複勝的中率は約66%です。詳細は
-                        <a href="#accuracy" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
+                        <Link to="/accuracy" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
                             精度ダッシュボード
-                        </a>
+                        </Link>
                         をご確認ください。
                     </p>
                 </div>
@@ -160,14 +162,14 @@ export default function Contact() {
                 borderRadius: '8px',
                 textAlign: 'center'
             }}>
-                <a href="#races" style={{
+                <Link to="/" style={{
                     color: '#0ea5e9',
                     textDecoration: 'none',
                     fontSize: '1rem',
                     fontWeight: '600'
                 }}>
                     ← トップページに戻る
-                </a>
+                </Link>
             </div>
         </div>
     )

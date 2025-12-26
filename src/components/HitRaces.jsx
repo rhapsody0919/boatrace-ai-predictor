@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ShareButton } from './ShareButton'
 import { SocialShareButtons } from './SocialShareButtons'
 import { shareHitRaceToX, generateHitRaceShareText } from '../utils/share'
@@ -6,6 +7,7 @@ import UpdateStatus from './UpdateStatus'
 import './HitRaces.css'
 
 function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, lastUpdated, onRefresh, isRefreshing }) {
+    const navigate = useNavigate()
     const [hitRacesToday, setHitRacesToday] = useState([])
     const [hitRacesYesterday, setHitRacesYesterday] = useState([])
     const [hitRacesAll, setHitRacesAll] = useState([])
@@ -204,8 +206,8 @@ function HitRaces({ allVenuesData, analyzeRace, stadiumNames, fetchWithRetry, la
                     rawData: race
                 }
                 analyzeRace(formattedRace)
-                // レースタブに切り替え
-                window.location.hash = '#races'
+                // トップページに移動
+                navigate('/')
             }
         }
     }

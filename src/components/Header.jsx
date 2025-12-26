@@ -39,13 +39,14 @@ function Header() {
 
   // ロゴクリック時の処理
   const handleLogoClick = () => {
-    navigate('/#races')
+    navigate('/')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // タブクリック時の処理（ホームページのハッシュナビゲーション）
+  // タブクリック時の処理（パスベースナビゲーション）
   const handleTabClick = (tab) => {
-    navigate(`/#${tab}`)
+    const path = tab === 'races' ? '/' : `/${tab}`
+    navigate(path)
   }
 
   return (

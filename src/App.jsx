@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import './App.css'
 import AccuracyDashboard from './components/AccuracyDashboard'
 import PrivacyPolicy from './components/PrivacyPolicy'
@@ -12,15 +12,9 @@ import { SocialShareButtons } from './components/SocialShareButtons'
 import { shareRacePredictionToX, generatePredictionShareText } from './utils/share'
 import { dataService } from './services/dataService'
 
-function App() {
-    // URLのハッシュから初期タブを決定
-    const getInitialTab = () => {
-        const hash = window.location.hash.slice(1) // '#' を除去
-        const validTabs = ['races', 'hit-races', 'accuracy', 'privacy', 'terms', 'contact']
-        return validTabs.includes(hash) ? hash : 'races'
-    }
-
-    const [activeTab, setActiveTab] = useState(getInitialTab())
+function App({ tab = 'races' }) {
+    const navigate = useNavigate()
+    const [activeTab, setActiveTab] = useState(tab)
     const [selectedRace, setSelectedRace] = useState(null)
     const [prediction, setPrediction] = useState(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -56,6 +50,11 @@ function App() {
         return `${month}/${day}(${weekday})`
     }
 
+    // propsのtabが変わったらactiveTabを更新
+    useEffect(() => {
+        setActiveTab(tab)
+    }, [tab])
+
     // Google Analytics初期化
     useEffect(() => {
         const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID
@@ -74,7 +73,7 @@ function App() {
             }
             gtag('js', new Date())
             gtag('config', gaId, {
-                page_path: window.location.pathname + window.location.search + window.location.hash,
+                page_path: window.location.pathname,
             })
 
             // グローバルに設定
@@ -90,37 +89,17 @@ function App() {
             window.gtag('event', 'page_view', {
                 page_title: activeTab,
                 page_location: window.location.href,
-                page_path: window.location.pathname + window.location.hash,
+                page_path: window.location.pathname,
             })
         }
     }, [activeTab])
 
-    // ブラウザの戻る/進むボタンの処理
-    useEffect(() => {
-        const handlePopState = () => {
-            const hash = window.location.hash.slice(1)
-            const validTabs = ['races', 'hit-races', 'accuracy', 'privacy', 'terms', 'contact']
-            setActiveTab(validTabs.includes(hash) ? hash : 'races')
-        }
-
-        window.addEventListener('popstate', handlePopState)
-        window.addEventListener('hashchange', handlePopState)
-
-        return () => {
-            window.removeEventListener('popstate', handlePopState)
-            window.removeEventListener('hashchange', handlePopState)
-        }
-    }, [])
-
-    // タブ切り替え関数（URLハッシュも更新）
-    const handleTabChange = (tab) => {
-        setActiveTab(tab)
+    // タブ切り替え関数（react-routerでナビゲート）
+    const handleTabChange = (newTab) => {
         setIsMenuOpen(false) // タブ切り替え時にメニューを閉じる
-        // URLハッシュを更新（ブラウザ履歴に追加）
-        const newHash = `#${tab}`
-        if (window.location.hash !== newHash) {
-            window.history.pushState(null, '', newHash)
-        }
+        // パスベースのナビゲーション
+        const path = newTab === 'races' ? '/' : `/${newTab}`
+        navigate(path)
     }
 
     // メニュー外クリック/タッチで閉じる（オーバーレイ方式）
@@ -1401,9 +1380,9 @@ function App() {
                     <Link to="/blog" style={{ color: '#94a3b8', textDecoration: 'none' }}>ブログ</Link>
                     <Link to="/about" style={{ color: '#94a3b8', textDecoration: 'none' }}>About</Link>
                     <Link to="/faq" style={{ color: '#94a3b8', textDecoration: 'none' }}>FAQ</Link>
-                    <a href="#privacy" style={{ color: '#94a3b8', textDecoration: 'none' }}>プライバシーポリシー</a>
-                    <a href="#terms" style={{ color: '#94a3b8', textDecoration: 'none' }}>利用規約</a>
-                    <a href="#contact" style={{ color: '#94a3b8', textDecoration: 'none' }}>お問い合わせ</a>
+                    <Link to="/privacy" style={{ color: '#94a3b8', textDecoration: 'none' }}>プライバシーポリシー</Link>
+                    <Link to="/terms" style={{ color: '#94a3b8', textDecoration: 'none' }}>利用規約</Link>
+                    <Link to="/contact" style={{ color: '#94a3b8', textDecoration: 'none' }}>お問い合わせ</Link>
                 </div>
                 <p>&copy; 2025 BoatAI - All Rights Reserved</p>
             </footer>
