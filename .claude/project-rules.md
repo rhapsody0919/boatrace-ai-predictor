@@ -220,9 +220,24 @@ import Header from '../components/Header';
 
 **背景とテキストのコントラスト問題を防ぐため、以下を厳守すること：**
 
+#### 1. 背景色タイプごとのテキスト色定義
+
+| 背景色タイプ | テキスト色 | 適用場所 |
+|------------|----------|---------|
+| 白背景 `#ffffff` または `#f8fafc` | `#1e293b !important`（濃いグレー） | ページ本体、カード |
+| グラデーション背景（青系） | `#ffffff !important`（白） | CTA、ヘッダー、強調セクション |
+| 薄いグレー背景 `#f1f5f9`, `#e2e8f0` | `#1e293b !important`（濃いグレー） | サブセクション、ボックス |
+| 青背景 `#0ea5e9` 系 | `#ffffff !important`（白） | ボタン、バッジ、アクセント |
+| 暗い背景 `#1e293b` 系 | `#f1f5f9 !important`（薄いグレー） | コードブロック、暗いテーマ |
+
+**重要：すべてのテキスト色には`!important`を付けて、継承による予期しない色の適用を防ぐこと**
+
+#### 2. 必須ルール
+
 1. **すべてのテキスト要素に明示的に色を指定する**
-   - h1, h2, h3, p などすべてのテキスト要素に`color`プロパティを明示的に設定
+   - h1, h2, h3, h4, h5, h6, p, span, a などすべてのテキスト要素に`color`プロパティを明示的に設定
    - 親要素からの継承に依存しない
+   - 必ず`!important`を使用する
 
 2. **背景色とテキスト色を同時に設定する**
    - 背景色を変更する場合は、必ずテキスト色も同時に設定
@@ -236,23 +251,100 @@ import Header from '../components/Header';
    - コミット前にブラウザで実際の表示を確認する
    - 特に、CTAセクション、ヘッダー、カードなど背景色が異なる箇所を重点的にチェック
 
-**❌ 悪い例:**
+#### 3. よくある問題パターンと解決方法
+
+**パターンA: グラデーション背景のセクション**
+
+❌ **悪い例:**
 ```css
 .section {
-  background: #0ea5e9;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
 }
-.section h2 {
-  /* 色が指定されていない → 継承に依存 → 背景とかぶる可能性 */
+.section h2 { /* 色指定なし */ }
+.section p { /* 色指定なし */ }
+```
+
+✅ **良い例:**
+```css
+.section {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: white; /* 親要素でデフォルトを設定 */
+}
+.section h1,
+.section h2,
+.section h3,
+.section h4,
+.section p,
+.section span,
+.section a {
+  color: white !important; /* すべての子要素で明示 */
 }
 ```
 
-**✅ 良い例:**
+**パターンB: 白背景のセクション**
+
+❌ **悪い例:**
 ```css
 .section {
-  background: #0ea5e9;
-  color: white;  /* 親要素で基本色を設定 */
+  background: #ffffff;
 }
-.section h2 {
-  color: white !important;  /* 子要素で明示的に色を指定 */
+/* テキスト色が指定されていない */
+```
+
+✅ **良い例:**
+```css
+.section {
+  background: #ffffff;
+  color: #1e293b; /* 濃いグレー */
+}
+.section h1,
+.section h2,
+.section h3,
+.section h4 {
+  color: #1e293b !important;
+}
+.section p {
+  color: #64748b !important; /* グレー */
 }
 ```
+
+**パターンC: テーブル**
+
+❌ **悪い例:**
+```css
+table {
+  background: #ffffff;
+}
+thead {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+}
+/* th, td の色が指定されていない */
+```
+
+✅ **良い例:**
+```css
+table {
+  background: #ffffff;
+}
+thead {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+}
+th {
+  color: #ffffff !important;
+}
+td {
+  background: #ffffff;
+  color: #1e293b !important;
+}
+```
+
+#### 4. 実装チェックリスト
+
+新しいページやコンポーネントを追加する際は、以下を確認：
+
+- [ ] すべてのh1〜h6要素に`color: XXX !important;`を設定
+- [ ] すべてのp要素に`color: XXX !important;`を設定
+- [ ] グラデーション背景を持つ要素の子要素すべてに明示的な色を設定
+- [ ] テーブルのth, tdに明示的な色を設定
+- [ ] ボタン、バッジ、ラベルなどの特殊要素にも明示的な色を設定
+- [ ] ブラウザで実際の表示を確認し、すべてのテキストが読める

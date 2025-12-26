@@ -189,10 +189,10 @@ body {
    レース一覧セクション
    ===================================================== */
 .race-list-section h2 {
-  color: white;
+  color: #1e293b !important;
   font-size: 2rem;
   margin-bottom: 2rem;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+  text-shadow: none;
   font-weight: 700;
 }
 
@@ -201,7 +201,7 @@ body {
   display: block;
   margin-bottom: 0.75rem;
   font-weight: 600;
-  color: white;
+  color: #1e293b !important;
   font-size: 1.1rem;
 }
 
@@ -380,10 +380,10 @@ body {
 }
 
 .prediction-section h2 {
-  color: white;
+  color: #1e293b !important;
   font-size: 2rem;
   margin-bottom: 2rem;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+  text-shadow: none;
   font-weight: 700;
 }
 

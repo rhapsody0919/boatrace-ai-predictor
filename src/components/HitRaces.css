@@ -29,9 +29,9 @@
 }
 
 .model-selector button.active {
-  background: #667eea;
-  color: white;
-  border-bottom: 3px solid #667eea;
+  background: #0ea5e9;
+  color: white !important;
+  border-bottom: 3px solid #0ea5e9;
   font-weight: bold;
 }
 
@@ -73,13 +73,13 @@
 }
 
 .period-selector button:hover {
-  color: #667eea;
+  color: #0ea5e9;
 }
 
 .period-selector button.active {
-  background: #667eea;
-  color: white;
-  border-bottom: 3px solid #667eea;
+  background: #0ea5e9;
+  color: white !important;
+  border-bottom: 3px solid #0ea5e9;
   font-weight: bold;
 }
 
@@ -174,7 +174,7 @@
 /* 的中数 */
 .hit-count {
   font-weight: bold;
-  color: #667eea;
+  color: #0ea5e9;
 }
 
 /* 総配当 */
@@ -192,7 +192,7 @@
 }
 
 .hit-races-section.today {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
 }
 
 .hit-races-section.yesterday {
@@ -200,7 +200,7 @@
 }
 
 .hit-races-section h2 {
-  color: white;
+  color: white !important;
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -315,7 +315,7 @@
   margin-top: 1rem;
   padding: 0.75rem 1.5rem;
   background: white;
-  color: #667eea;
+  color: #0ea5e9;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -354,21 +354,21 @@
 
 .stat-label {
   font-size: 0.9rem;
-  color: rgba(255,255,255,0.9);
+  color: rgba(255,255,255,0.9) !important;
   margin-bottom: 0.25rem;
 }
 
 .stat-value {
   font-size: 1.8rem;
   font-weight: bold;
-  color: white;
+  color: white !important;
 }
 
 /* ローディング */
 .loading-container {
   padding: 3rem 2rem;
   text-align: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   border-radius: 12px;
   color: white;
   min-height: 300px;
@@ -381,13 +381,13 @@
 .loading-container h3 {
   font-size: 1.3rem;
   margin-bottom: 1rem;
-  color: white;
+  color: white !important;
 }
 
 .loading-container p {
   font-size: 0.95rem;
   margin-bottom: 1rem;
-  color: rgba(255,255,255,0.9);
+  color: rgba(255,255,255,0.9) !important;
 }
 
 .loading-tip {
@@ -402,7 +402,7 @@
 .loading-tip p {
   font-size: 0.9rem;
   margin: 0;
-  color: white;
+  color: white !important;
 }
 
 /* 空データメッセージ */

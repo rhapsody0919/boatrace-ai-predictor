@@ -222,9 +222,9 @@
 
 .race-list-section h2 {
   font-size: 1.75rem;
-  color: white;
+  color: #1e293b !important;
   margin-bottom: 1.5rem;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  text-shadow: none;
 }
 
 .race-grid {
