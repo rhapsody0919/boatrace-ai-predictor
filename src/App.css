@@ -1466,12 +1466,12 @@ body {
   .result-podium {
     gap: 0.5rem;
     margin: 0.5rem 0;
-    flex-direction: row;
+    flex-direction: row !important;
   }
 
   .podium-item {
     flex: 1;
-    max-width: none;
+    max-width: none !important;
     padding: 0.5rem 0.25rem;
     min-height: auto;
   }
