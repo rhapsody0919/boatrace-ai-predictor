@@ -570,7 +570,7 @@ function AccuracyDashboard({ onRefresh, isRefreshing }) {
                         <YAxis label={{ value: '回収率 (%)', angle: -90, position: 'insideLeft' }} />
                         <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
                         <Legend />
-                        <Line type="monotone" dataKey="単勝" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
+                        <Line type="monotone" dataKey="単勝" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 4 }} />
                         <Line type="monotone" dataKey="複勝" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
                         <Line type="monotone" dataKey="3連複" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
                         <Line type="monotone" dataKey="3連単" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} />

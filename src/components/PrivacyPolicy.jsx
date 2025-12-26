@@ -12,7 +12,7 @@ export default function PrivacyPolicy() {
                 fontWeight: '700',
                 color: '#0f172a',
                 marginBottom: '1.5rem',
-                borderBottom: '3px solid #3b82f6',
+                borderBottom: '3px solid #0ea5e9',
                 paddingBottom: '0.5rem'
             }}>
                 プライバシーポリシー
@@ -28,7 +28,7 @@ export default function PrivacyPolicy() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     1. 基本方針
@@ -44,7 +44,7 @@ export default function PrivacyPolicy() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     2. 収集する情報
@@ -65,7 +65,7 @@ export default function PrivacyPolicy() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     3. 情報の利用目的
@@ -87,7 +87,7 @@ export default function PrivacyPolicy() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     4. Google AdSenseについて
@@ -104,7 +104,7 @@ export default function PrivacyPolicy() {
                     <a href="https://policies.google.com/technologies/ads?hl=ja"
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: '#3b82f6', textDecoration: 'underline' }}>
+                        style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
                         Googleの広告に関するポリシー
                     </a>
                     をご確認ください。
@@ -117,7 +117,7 @@ export default function PrivacyPolicy() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     5. Google Analyticsについて
@@ -134,7 +134,7 @@ export default function PrivacyPolicy() {
                     <a href="https://policies.google.com/privacy?hl=ja"
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: '#3b82f6', textDecoration: 'underline' }}>
+                        style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
                         Googleのプライバシーポリシー
                     </a>
                     をご確認ください。
@@ -147,7 +147,7 @@ export default function PrivacyPolicy() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     6. Cookieについて
@@ -172,7 +172,7 @@ export default function PrivacyPolicy() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     7. 個人情報の第三者提供
@@ -193,7 +193,7 @@ export default function PrivacyPolicy() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     8. 免責事項
@@ -216,7 +216,7 @@ export default function PrivacyPolicy() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     9. プライバシーポリシーの変更
@@ -233,14 +233,14 @@ export default function PrivacyPolicy() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     10. お問い合わせ
                 </h2>
                 <p style={{ color: '#475569', lineHeight: '1.8' }}>
                     本プライバシーポリシーに関するお問い合わせは、
-                    <a href="#contact" style={{ color: '#3b82f6', textDecoration: 'underline' }}>
+                    <a href="#contact" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
                         お問い合わせページ
                     </a>
                     からご連絡ください。
@@ -255,7 +255,7 @@ export default function PrivacyPolicy() {
                 textAlign: 'center'
             }}>
                 <a href="#races" style={{
-                    color: '#3b82f6',
+                    color: '#0ea5e9',
                     textDecoration: 'none',
                     fontSize: '1rem',
                     fontWeight: '600'

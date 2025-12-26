@@ -1252,8 +1252,8 @@ body {
   padding: 2rem;
   background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
   border-radius: 16px;
-  border: 2px solid #3b82f6;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  border: 2px solid #0ea5e9;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
 }
 
 .race-result h4 {

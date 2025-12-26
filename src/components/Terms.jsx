@@ -12,7 +12,7 @@ export default function Terms() {
                 fontWeight: '700',
                 color: '#0f172a',
                 marginBottom: '1.5rem',
-                borderBottom: '3px solid #3b82f6',
+                borderBottom: '3px solid #0ea5e9',
                 paddingBottom: '0.5rem'
             }}>
                 利用規約
@@ -28,7 +28,7 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第1条（適用）
@@ -47,7 +47,7 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第2条（サービスの内容）
@@ -69,7 +69,7 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第3条（利用条件）
@@ -104,7 +104,7 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第4条（禁止事項）
@@ -131,7 +131,7 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第5条（免責事項）
@@ -202,7 +202,7 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第6条（ギャンブル依存症への注意）
@@ -234,7 +234,7 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第7条（知的財産権）
@@ -256,14 +256,14 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第8条（プライバシーポリシー）
                 </h2>
                 <p style={{ color: '#475569', lineHeight: '1.8' }}>
                     当サイトは、利用者の個人情報を
-                    <a href="#privacy" style={{ color: '#3b82f6', textDecoration: 'underline' }}>
+                    <a href="#privacy" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
                         プライバシーポリシー
                     </a>
                     に基づいて適切に取り扱います。
@@ -276,7 +276,7 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第9条（サービスの変更・終了）
@@ -295,7 +295,7 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第10条（利用規約の変更）
@@ -314,7 +314,7 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第11条（準拠法・管轄裁判所）
@@ -333,14 +333,14 @@ export default function Terms() {
                     fontWeight: '600',
                     color: '#1e293b',
                     marginBottom: '1rem',
-                    borderLeft: '4px solid #3b82f6',
+                    borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     第12条（お問い合わせ）
                 </h2>
                 <p style={{ color: '#475569', lineHeight: '1.8' }}>
                     本規約に関するお問い合わせは、
-                    <a href="#contact" style={{ color: '#3b82f6', textDecoration: 'underline' }}>
+                    <a href="#contact" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
                         お問い合わせページ
                     </a>
                     からご連絡ください。
@@ -355,7 +355,7 @@ export default function Terms() {
                 textAlign: 'center'
             }}>
                 <a href="#races" style={{
-                    color: '#3b82f6',
+                    color: '#0ea5e9',
                     textDecoration: 'none',
                     fontSize: '1rem',
                     fontWeight: '600'

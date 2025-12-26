@@ -41,8 +41,8 @@
 }
 
 .model-selector button.active.safe-bet {
-  background: #3b82f6;
-  border-bottom-color: #3b82f6;
+  background: #0ea5e9;
+  border-bottom-color: #0ea5e9;
 }
 
 .model-selector button.active.upset-focus {
@@ -285,7 +285,7 @@
 }
 
 .hit-type-payout {
-  color: #2563eb;
+  color: #0ea5e9;
   font-weight: bold;
 }
 

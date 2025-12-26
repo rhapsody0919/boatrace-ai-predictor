@@ -564,7 +564,7 @@
 }
 
 .daily-history-table .hit-rate {
-  color: #3b82f6;
+  color: #0ea5e9;
   font-weight: 600;
 }
 
@@ -578,7 +578,7 @@
   border-radius: 12px;
   padding: 2rem;
   border: 1px solid #e2e8f0;
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid #0ea5e9;
 }
 
 .accuracy-info h4 {

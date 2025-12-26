@@ -12,7 +12,7 @@ export default function Contact() {
                 fontWeight: '700',
                 color: '#0f172a',
                 marginBottom: '1.5rem',
-                borderBottom: '3px solid #3b82f6',
+                borderBottom: '3px solid #0ea5e9',
                 paddingBottom: '0.5rem'
             }}>
                 お問い合わせ
@@ -102,7 +102,7 @@ export default function Contact() {
                     </h3>
                     <p style={{ color: '#475569', lineHeight: '1.8', marginLeft: '1rem' }}>
                         A. 単勝的中率は約27%、複勝的中率は約66%です。詳細は
-                        <a href="#accuracy" style={{ color: '#3b82f6', textDecoration: 'underline' }}>
+                        <a href="#accuracy" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
                             精度ダッシュボード
                         </a>
                         をご確認ください。
@@ -161,7 +161,7 @@ export default function Contact() {
                 textAlign: 'center'
             }}>
                 <a href="#races" style={{
-                    color: '#3b82f6',
+                    color: '#0ea5e9',
                     textDecoration: 'none',
                     fontSize: '1rem',
                     fontWeight: '600'
