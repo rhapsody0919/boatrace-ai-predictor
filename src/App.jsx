@@ -123,7 +123,7 @@ function App() {
         }
     }
 
-    // メニュー外クリックで閉じる
+    // メニュー外クリック/タッチで閉じる
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (isMenuOpen && !event.target.closest('.menu-container')) {
@@ -131,8 +131,14 @@ function App() {
             }
         }
 
+        // クリックとタッチの両方に対応
         document.addEventListener('click', handleClickOutside)
-        return () => document.removeEventListener('click', handleClickOutside)
+        document.addEventListener('touchstart', handleClickOutside)
+
+        return () => {
+            document.removeEventListener('click', handleClickOutside)
+            document.removeEventListener('touchstart', handleClickOutside)
+        }
     }, [isMenuOpen])
 
     // ロゴクリック時の処理
@@ -551,7 +557,17 @@ function App() {
                         <div className="menu-container">
                             <button
                                 className="nav-btn menu-btn"
-                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsMenuOpen(!isMenuOpen);
+                                }}
+                                onTouchEnd={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setIsMenuOpen(!isMenuOpen);
+                                }}
+                                aria-label="メニュー"
+                                aria-expanded={isMenuOpen}
                             >
                                 ⋮
                             </button>

@@ -120,12 +120,17 @@ body {
 .menu-container {
   position: relative;
   display: inline-block;
+  z-index: 100;
 }
 
 .menu-btn {
   font-size: 1.5rem;
   padding: 0.5rem 1rem;
   line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 /* サブメニュー */
@@ -161,13 +166,18 @@ body {
   transition: background 0.2s;
   font-weight: 500;
   border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .submenu-item:last-child {
   border-bottom: none;
 }
 
-.submenu-item:hover {
+.submenu-item:hover,
+.submenu-item:active {
   background: #f8fafc;
   color: #0ea5e9;
 }
@@ -740,16 +750,26 @@ body {
   .menu-btn {
     font-size: 1.3rem;
     padding: 0.5rem 0.8rem;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .submenu {
     right: 0;
     min-width: 180px;
+    max-height: 80vh;
+    overflow-y: auto;
   }
 
   .submenu-item {
     padding: 0.875rem 1.25rem;
     font-size: 0.9rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
 
   .container {
@@ -901,15 +921,25 @@ body {
   .menu-btn {
     font-size: 1.2rem;
     padding: 0.4rem 0.7rem;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .submenu {
     min-width: 160px;
+    max-height: 70vh;
+    overflow-y: auto;
   }
 
   .submenu-item {
     padding: 0.75rem 1rem;
     font-size: 0.85rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
 
   .container {
