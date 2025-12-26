@@ -233,7 +233,7 @@
 /* CTA */
 .about-cta {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white;
+  color: white !important;
   padding: 4rem 2rem;
   border-radius: 12px;
   text-align: center;
@@ -243,7 +243,7 @@
 .about-cta h2 {
   font-size: 2.5rem;
   margin-bottom: 1rem;
-  color: white;
+  color: white !important;
   border: none;
   padding: 0;
 }
@@ -251,12 +251,13 @@
 .about-cta p {
   font-size: 1.2rem;
   margin-bottom: 2rem;
-  color: rgba(255,255,255,0.9);
+  color: white !important;
+  opacity: 0.9;
 }
 
 .cta-button {
   background: white;
-  color: #0ea5e9;
+  color: #0ea5e9 !important;
   border: none;
   padding: 1rem 3rem;
   font-size: 1.2rem;

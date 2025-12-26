@@ -131,7 +131,7 @@
 /* CTA */
 .faq-cta {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white;
+  color: white !important;
   padding: 3rem 2rem;
   border-radius: 12px;
   text-align: center;
@@ -171,7 +171,7 @@
 
 .contact-button {
   background: white;
-  color: #0ea5e9;
+  color: #0ea5e9 !important;
 }
 
 .contact-button:hover {
@@ -181,7 +181,7 @@
 
 .try-button {
   background: rgba(255,255,255,0.2);
-  color: white;
+  color: white !important;
   border: 2px solid white;
 }
 
