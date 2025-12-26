@@ -3556,7 +3556,7 @@
           "placeCd": 7,
           "raceNo": 1,
           "weather": "晴",
-          "airTemp": 4,
+          "airTemp": 3,
           "windDirection": 1,
           "windVelocity": 3,
           "waterTemp": 12,
@@ -4340,7 +4340,7 @@
           "placeCd": 7,
           "raceNo": 9,
           "weather": "晴",
-          "airTemp": 4,
+          "airTemp": 3,
           "windDirection": 1,
           "windVelocity": 3,
           "waterTemp": 12,
@@ -4438,7 +4438,7 @@
           "placeCd": 7,
           "raceNo": 10,
           "weather": "晴",
-          "airTemp": 4,
+          "airTemp": 3,
           "windDirection": 1,
           "windVelocity": 3,
           "waterTemp": 12,
@@ -4536,7 +4536,7 @@
           "placeCd": 7,
           "raceNo": 11,
           "weather": "晴",
-          "airTemp": 4,
+          "airTemp": 3,
           "windDirection": 1,
           "windVelocity": 3,
           "waterTemp": 12,
@@ -4634,7 +4634,7 @@
           "placeCd": 7,
           "raceNo": 12,
           "weather": "晴",
-          "airTemp": 4,
+          "airTemp": 3,
           "windDirection": 1,
           "windVelocity": 3,
           "waterTemp": 12,
@@ -10251,7 +10251,7 @@
           "raceNo": 9,
           "weather": "晴",
           "airTemp": 4,
-          "windDirection": 5,
+          "windDirection": 7,
           "windVelocity": 2,
           "waterTemp": 9,
           "waveHeight": 1,
@@ -11832,9 +11832,9 @@
           "weather": "晴",
           "airTemp": 5,
           "windDirection": 11,
-          "windVelocity": 7,
+          "windVelocity": 6,
           "waterTemp": 14,
-          "waveHeight": 7,
+          "waveHeight": 6,
           "startTime": "15:23",
           "racers": [
             {
@@ -12714,9 +12714,9 @@
           "weather": "晴",
           "airTemp": 5,
           "windDirection": 11,
-          "windVelocity": 7,
+          "windVelocity": 6,
           "waterTemp": 14,
-          "waveHeight": 7,
+          "waveHeight": 6,
           "startTime": "19:19",
           "racers": [
             {
@@ -12812,9 +12812,9 @@
           "weather": "晴",
           "airTemp": 5,
           "windDirection": 11,
-          "windVelocity": 7,
+          "windVelocity": 6,
           "waterTemp": 14,
-          "waveHeight": 7,
+          "waveHeight": 6,
           "startTime": "19:50",
           "racers": [
             {
@@ -12910,9 +12910,9 @@
           "weather": "晴",
           "airTemp": 5,
           "windDirection": 11,
-          "windVelocity": 7,
+          "windVelocity": 6,
           "waterTemp": 14,
-          "waveHeight": 7,
+          "waveHeight": 6,
           "startTime": "20:30",
           "racers": [
             {
@@ -15378,9 +15378,9 @@
           "weather": "晴",
           "airTemp": 2,
           "windDirection": 11,
-          "windVelocity": 5,
+          "windVelocity": 3,
           "waterTemp": 12,
-          "waveHeight": 4,
+          "waveHeight": 2,
           "startTime": "14:57",
           "racers": [
             {
@@ -16260,9 +16260,9 @@
           "weather": "晴",
           "airTemp": 2,
           "windDirection": 11,
-          "windVelocity": 5,
+          "windVelocity": 3,
           "waterTemp": 12,
-          "waveHeight": 4,
+          "waveHeight": 2,
           "startTime": "19:30",
           "racers": [
             {
@@ -16358,9 +16358,9 @@
           "weather": "晴",
           "airTemp": 2,
           "windDirection": 11,
-          "windVelocity": 5,
+          "windVelocity": 3,
           "waterTemp": 12,
-          "waveHeight": 4,
+          "waveHeight": 2,
           "startTime": "20:04",
           "racers": [
             {
@@ -16456,9 +16456,9 @@
           "weather": "晴",
           "airTemp": 2,
           "windDirection": 11,
-          "windVelocity": 5,
+          "windVelocity": 3,
           "waterTemp": 12,
-          "waveHeight": 4,
+          "waveHeight": 2,
           "startTime": "20:40",
           "racers": [
             {
@@ -16550,5 +16550,5 @@
       ]
     }
   ],
-  "scrapedAt": "2025-12-26T09:30:30.507Z"
+  "scrapedAt": "2025-12-26T10:29:36.032Z"
 }
