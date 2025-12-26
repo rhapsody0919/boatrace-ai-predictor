@@ -125,19 +125,23 @@ function App() {
 
     // メニュー外クリック/タッチで閉じる
     useEffect(() => {
+        if (!isMenuOpen) return
+
         const handleClickOutside = (event) => {
-            if (isMenuOpen && !event.target.closest('.menu-container')) {
+            const menuContainer = document.querySelector('.menu-container')
+            if (menuContainer && !menuContainer.contains(event.target)) {
                 setIsMenuOpen(false)
             }
         }
 
-        // クリックとタッチの両方に対応
-        document.addEventListener('click', handleClickOutside)
-        document.addEventListener('touchstart', handleClickOutside)
+        // メニューを開いた直後のクリックを無視するため、少し遅延
+        const timeoutId = setTimeout(() => {
+            document.addEventListener('pointerdown', handleClickOutside, true)
+        }, 150)
 
         return () => {
-            document.removeEventListener('click', handleClickOutside)
-            document.removeEventListener('touchstart', handleClickOutside)
+            clearTimeout(timeoutId)
+            document.removeEventListener('pointerdown', handleClickOutside, true)
         }
     }, [isMenuOpen])
 
@@ -556,18 +560,16 @@ function App() {
                         </button>
                         <div className="menu-container">
                             <button
+                                type="button"
                                 className="nav-btn menu-btn"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsMenuOpen(!isMenuOpen);
-                                }}
-                                onTouchEnd={(e) => {
+                                onPointerDown={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    setIsMenuOpen(!isMenuOpen);
+                                    setIsMenuOpen(prev => !prev);
                                 }}
                                 aria-label="メニュー"
                                 aria-expanded={isMenuOpen}
+                                style={{ WebkitTapHighlightColor: 'transparent' }}
                             >
                                 ⋮
                             </button>

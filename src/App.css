@@ -121,6 +121,8 @@ body {
   position: relative;
   display: inline-block;
   z-index: 100;
+  /* タッチイベントを確実にキャプチャ */
+  touch-action: manipulation;
 }
 
 .menu-btn {
@@ -129,8 +131,12 @@ body {
   line-height: 1;
   cursor: pointer;
   user-select: none;
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   touch-action: manipulation;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  /* iOS Safari の遅延を完全に除去 */
+  -ms-touch-action: manipulation;
 }
 
 /* サブメニュー */
@@ -145,6 +151,9 @@ body {
   overflow: hidden;
   z-index: 1000;
   animation: slideDown 0.2s ease-out;
+  /* タッチイベントを確実に受け取る */
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 @keyframes slideDown {
