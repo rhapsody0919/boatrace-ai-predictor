@@ -1,0 +1,298 @@
+.race-history-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  padding: 2rem 1rem;
+}
+
+.race-history-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: white;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.page-description {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* 日付一覧セクション */
+.dates-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.loading-container {
+  text-align: center;
+  padding: 3rem;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #0ea5e9;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.no-data {
+  text-align: center;
+  padding: 3rem;
+  color: #999;
+}
+
+/* 月別グループ */
+.month-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.month-group {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.month-group:hover {
+  border-color: #0ea5e9;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+}
+
+.month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.month-header:hover {
+  background: linear-gradient(135deg, #e8eaf0 0%, #b8c5d9 100%);
+}
+
+.month-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.month-title h2 {
+  font-size: 1.3rem;
+  color: #333;
+  margin: 0;
+}
+
+.expand-icon {
+  font-size: 0.9rem;
+  color: #0ea5e9;
+  transition: transform 0.3s ease;
+}
+
+.month-summary {
+  font-size: 0.95rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.dates-list {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #fafafa;
+}
+
+.date-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  display: block;
+}
+
+.date-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  border-color: #0ea5e9;
+}
+
+.date-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.date-card-header h3 {
+  font-size: 1.2rem;
+  color: #333;
+  margin: 0;
+}
+
+.race-count {
+  font-size: 0.9rem;
+  color: #666;
+  background: #e9ecef;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+}
+
+/* モデル比較表（RaceDetailと同じスタイル） */
+.date-card .model-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.date-card .model-comparison-table th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.date-card .model-comparison-table .sub-header th {
+  font-size: 0.75rem;
+  padding: 0.4rem 0.3rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.date-card .model-comparison-table td {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  color: #1e293b;
+  font-size: 0.85rem;
+}
+
+.date-card .model-comparison-table .model-name {
+  font-weight: 700;
+  color: #1e293b;
+  text-align: left;
+}
+
+.date-card .model-comparison-table .hit-rate {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.date-card .model-comparison-table .recovery-rate {
+  font-weight: 700;
+}
+
+.date-card-footer {
+  text-align: right;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.view-detail {
+  color: #0ea5e9;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .page-header h1 {
+    font-size: 2rem;
+  }
+
+  .month-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .month-summary {
+    font-size: 0.85rem;
+  }
+
+  .date-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .race-count {
+    align-self: flex-start;
+  }
+
+  .date-card .model-comparison-table th {
+    padding: 0.6rem 0.3rem;
+    font-size: 0.75rem;
+  }
+
+  .date-card .model-comparison-table .sub-header th {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.7rem;
+  }
+
+  .date-card .model-comparison-table td {
+    padding: 0.6rem 0.3rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .race-history-page {
+    padding: 1rem 0.5rem;
+  }
+
+  .dates-section {
+    padding: 1.5rem 1rem;
+  }
+
+  .month-title h2 {
+    font-size: 1.1rem;
+  }
+
+  .date-card .model-comparison-table th {
+    padding: 0.5rem 0.2rem;
+    font-size: 0.7rem;
+  }
+
+  .date-card .model-comparison-table .sub-header th {
+    padding: 0.35rem 0.15rem;
+    font-size: 0.65rem;
+  }
+
+  .date-card .model-comparison-table td {
+    padding: 0.5rem 0.2rem;
+    font-size: 0.7rem;
+  }
+}

@@ -1,0 +1,726 @@
+.race-detail-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0F2942 0%, #1A4D6F 100%);
+  padding: 2rem 1rem;
+}
+
+.race-detail-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: white;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  font-weight: 700;
+}
+
+.back-link {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+}
+
+.back-link:hover {
+  color: white;
+  text-decoration: underline;
+}
+
+/* 統計セクション */
+.stats-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.model-selector {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.model-selector button {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.75rem 1.5rem;
+  background: rgba(10, 79, 141, 0.1);
+  color: #0A4F8D;
+  border: 2px solid #E2E8F0;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.model-selector button:hover {
+  background: rgba(10, 79, 141, 0.2);
+  border-color: #0A4F8D;
+}
+
+.model-selector button.active {
+  background: linear-gradient(135deg, #0A4F8D 0%, #0D6EBC 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(10, 79, 141, 0.3);
+}
+
+/* 統計テーブル */
+.stats-table-container {
+  margin-top: 2rem;
+}
+
+.stats-table-container h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #1E293B;
+}
+
+.stats-meta {
+  font-size: 0.95rem;
+  color: #64748B;
+  margin-bottom: 1rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.stats-table thead {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.stats-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #1E293B;
+  border-bottom: 2px solid #E2E8F0;
+}
+
+.stats-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.stats-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.stats-table tbody tr:hover {
+  background: #F8FAFC;
+}
+
+.bet-type {
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.hit-rate {
+  color: #0A4F8D;
+  font-weight: 600;
+}
+
+.recovery-rate {
+  font-weight: 600;
+}
+
+/* モデル比較表 */
+.model-comparison-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
+}
+
+.model-comparison-section h3 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin: 0 0 1.5rem 0;
+  font-weight: 800;
+  text-align: center;
+}
+
+.model-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.model-comparison-table th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 1rem;
+  text-align: center;
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.model-comparison-table .sub-header th {
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.model-comparison-table td {
+  padding: 1rem;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.model-comparison-table tr.selected-model {
+  background: #eff6ff;
+  border-left: 4px solid #0ea5e9;
+}
+
+.model-comparison-table tr.selected-model td {
+  color: #1e293b;
+}
+
+.model-comparison-table .model-name {
+  font-weight: 700;
+  color: #1e293b;
+  text-align: left;
+}
+
+.model-comparison-table .races-cell {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.model-comparison-table .hit-rate {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* レース一覧セクション */
+.race-list-section {
+  margin-bottom: 2rem;
+}
+
+.race-list-section h2 {
+  font-size: 1.75rem;
+  color: white;
+  margin-bottom: 1.5rem;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.race-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.race-card {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.race-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  border-color: #0A4F8D;
+}
+
+.race-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.race-card-header h3 {
+  font-size: 1.25rem;
+  color: #1E293B;
+  font-weight: 600;
+}
+
+.race-number {
+  background: linear-gradient(135deg, #0A4F8D 0%, #0D6EBC 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.predict-btn {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #FF6B35 0%, #FFB347 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  margin-top: 1rem;
+}
+
+.predict-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+}
+
+.predict-btn:active {
+  transform: translateY(0);
+}
+
+/* 予想結果セクション（App.cssと同じ） */
+.prediction-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.prediction-section h2 {
+  font-size: 1.75rem;
+  margin-bottom: 2rem;
+  color: #1E293B;
+  border-bottom: 3px solid #0A4F8D;
+  padding-bottom: 0.75rem;
+}
+
+.prediction-error {
+  text-align: center;
+  padding: 2rem;
+  color: #EF4444;
+  font-weight: 600;
+}
+
+.prediction-result {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* 信頼度バー */
+.confidence-bar {
+  background: #F8FAFC;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.confidence-label {
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  color: #1E293B;
+}
+
+.confidence-label strong {
+  color: #0A4F8D;
+  font-size: 1.3rem;
+}
+
+.bar {
+  height: 24px;
+  background: #E2E8F0;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10B981 0%, #00C7C7 100%);
+  border-radius: 12px;
+  transition: width 1s ease-out;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+/* 本命予想 */
+.top-pick {
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 3px solid #FFB347;
+}
+
+.top-pick h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #1E293B;
+}
+
+.player-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1.5rem;
+  align-items: center;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.player-card.featured {
+  border: 2px solid #FFB347;
+}
+
+.player-number {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #FF6B35;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+  border-radius: 50%;
+  border: 3px solid #FF6B35;
+}
+
+.player-details h4 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #1E293B;
+}
+
+.player-details .stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.95rem;
+  color: #64748B;
+}
+
+.ai-score {
+  text-align: center;
+}
+
+.score-label {
+  font-size: 0.85rem;
+  color: #64748B;
+  margin-bottom: 0.5rem;
+}
+
+.score-value {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #0A4F8D;
+}
+
+/* 予想根拠 */
+.reasoning {
+  background: #F8FAFC;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.reasoning h4 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: #1E293B;
+}
+
+.reasoning ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.reasoning li {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: white;
+  border-left: 4px solid #0A4F8D;
+  border-radius: 6px;
+  color: #1E293B;
+}
+
+/* レース結果 */
+.race-result {
+  background: #F0FDF4;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 2px solid #10B981;
+}
+
+.race-result h4 {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: #1E293B;
+}
+
+.result-podium {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.podium-item {
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 12px;
+  min-width: 100px;
+}
+
+.podium-item.first {
+  background: linear-gradient(135deg, #FFD700 0%, #FFC700 100%);
+  border: 3px solid #DAA520;
+}
+
+.podium-item.second {
+  background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%);
+  border: 3px solid #808080;
+}
+
+.podium-item.third {
+  background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
+  border: 3px solid #8B4513;
+}
+
+.podium-item .rank {
+  font-size: 0.9rem;
+  color: #1E293B;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.podium-item .boat-number {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #1E293B;
+}
+
+.accuracy-check {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.check-item {
+  text-align: center;
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.check-item .hit {
+  color: #10B981;
+  background: #ECFDF5;
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+.check-item .miss {
+  color: #EF4444;
+  background: #FEF2F2;
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+/* 全艇情報 */
+.all-players {
+  background: #F8FAFC;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.all-players h4 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: #1E293B;
+}
+
+.players-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.players-table thead {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.players-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #1E293B;
+  border-bottom: 2px solid #E2E8F0;
+}
+
+.players-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.players-table tbody tr:hover {
+  background: #F8FAFC;
+}
+
+.players-table tbody tr.recommended {
+  background: #FFF7ED;
+}
+
+.players-table tbody tr.recommended:hover {
+  background: #FFEDD5;
+}
+
+.score-badge {
+  background: linear-gradient(135deg, #0A4F8D 0%, #0D6EBC 100%);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+/* ローディング・エラー */
+.loading-container,
+.error-container {
+  text-align: center;
+  padding: 3rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.loading-container p,
+.error-container p {
+  color: #1E293B;
+  margin-top: 1rem;
+}
+
+.spinner {
+  border: 4px solid #E2E8F0;
+  border-top: 4px solid #0A4F8D;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-container h3 {
+  color: #EF4444;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.btn-primary {
+  display: inline-block;
+  padding: 0.875rem 1.75rem;
+  background: linear-gradient(135deg, #0A4F8D 0%, #0D6EBC 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(10, 79, 141, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(10, 79, 141, 0.4);
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+  .page-header h1 {
+    font-size: 2rem;
+  }
+
+  .model-selector button {
+    min-width: 100px;
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+  }
+
+  .race-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .player-card {
+    grid-template-columns: auto 1fr;
+    gap: 1rem;
+  }
+
+  .player-number {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+  }
+
+  .ai-score {
+    grid-column: span 2;
+  }
+
+  .result-podium {
+    flex-direction: column;
+  }
+
+  .accuracy-check {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .race-detail-page {
+    padding: 1rem 0.5rem;
+  }
+
+  .stats-section,
+  .prediction-section {
+    padding: 1.5rem 1rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .model-selector {
+    flex-direction: column;
+  }
+
+  .model-selector button {
+    width: 100%;
+  }
+
+  .player-details h4 {
+    font-size: 1.25rem;
+  }
+
+  .player-details .stats {
+    font-size: 0.85rem;
+  }
+}

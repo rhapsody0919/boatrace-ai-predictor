@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import Header from '../components/Header';
 import './FAQ.css';
 
 export default function FAQ() {
@@ -178,7 +179,7 @@ export default function FAQ() {
     );
 
     return (
-        <div className="faq-container">
+        <>
             <Helmet>
                 <title>よくある質問（FAQ） | BoatAI</title>
                 <meta name="description" content="BoatAIに関するよくある質問と回答。無料での利用方法、AI予想の的中率、使い方、舟券購入のアドバイスなど、皆様の疑問にお答えします。" />
@@ -216,7 +217,10 @@ export default function FAQ() {
                 </script>
             </Helmet>
 
-            <div className="faq-header">
+            <Header />
+
+            <div className="faq-container">
+                <div className="faq-header">
                 <h1>❓ よくある質問（FAQ）</h1>
                 <p>BoatAIに関するよくある質問と回答</p>
             </div>
@@ -271,6 +275,7 @@ export default function FAQ() {
                     </button>
                 </div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

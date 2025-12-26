@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import Header from '../components/Header';
 import './HowToUse.css';
 
 export default function HowToUse() {
@@ -197,7 +198,7 @@ export default function HowToUse() {
     ];
 
     return (
-        <div className="how-to-use-container">
+        <>
             <Helmet>
                 <title>使い方ガイド | BoatAI - 初心者でもわかる利用方法</title>
                 <meta name="description" content="BoatAIの使い方を6つのステップで解説。レース場の選び方、AI予想モデルの選択、舟券購入のコツまで、初心者にもわかりやすく説明します。" />
@@ -250,7 +251,10 @@ export default function HowToUse() {
                 </script>
             </Helmet>
 
-            <div className="how-to-use-header">
+            <Header />
+
+            <div className="how-to-use-container">
+                <div className="how-to-use-header">
                 <h1>📚 使い方ガイド</h1>
                 <p>BoatAIの使い方を初心者にもわかりやすく解説</p>
             </div>
@@ -318,6 +322,7 @@ export default function HowToUse() {
                     FAQ（よくある質問）
                 </button>
             </div>
-        </div>
+            </div>
+        </>
     );
 }

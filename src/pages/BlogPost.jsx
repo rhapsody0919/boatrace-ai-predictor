@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { getPostById, getLatestPosts } from '../data/blogPosts';
+import Header from '../components/Header';
 import './BlogPost.css';
 
 export default function BlogPost() {
@@ -75,7 +76,7 @@ export default function BlogPost() {
   const imageUrl = post.image ? `https://boat-ai.jp${post.image}` : 'https://boat-ai.jp/ogp-image.png';
 
   return (
-    <div className="blog-post-container">
+    <>
       <Helmet>
         {/* Basic Meta Tags */}
         <title>{post.title} | BoatAI</title>
@@ -165,7 +166,10 @@ export default function BlogPost() {
         </script>
       </Helmet>
 
-      <div className="blog-post-header">
+      <Header />
+
+      <div className="blog-post-container">
+        <div className="blog-post-header">
         <Link to="/blog" className="back-link">
           ← ブログ一覧に戻る
         </Link>
@@ -236,6 +240,7 @@ export default function BlogPost() {
           AI予想を見る
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

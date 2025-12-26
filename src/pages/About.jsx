@@ -1,13 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import Header from '../components/Header';
 import './About.css';
 
 export default function About() {
     const navigate = useNavigate();
 
     return (
-        <div className="about-container">
+        <>
             <Helmet>
                 <title>BoatAIについて | AIボートレース予想サービスの詳細</title>
                 <meta name="description" content="BoatAIは45項目以上のデータをAIが分析するボートレース予想サービス。完全無料・登録不要で、複勝的中率49.5%、3連単回収率134.3%の実績を誇ります。" />
@@ -44,7 +45,10 @@ export default function About() {
                 </script>
             </Helmet>
 
-            <div className="about-header">
+            <Header />
+
+            <div className="about-container">
+                <div className="about-header">
                 <h1>🚀 BoatAIについて</h1>
                 <p>AI技術でボートレース予想を革新する</p>
             </div>
@@ -259,6 +263,7 @@ export default function About() {
                     AI予想を見る
                 </button>
             </section>
-        </div>
+            </div>
+        </>
     );
 }

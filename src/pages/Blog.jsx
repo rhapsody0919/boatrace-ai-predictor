@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import Header from '../components/Header';
 import { blogPosts, categories, getFeaturedPosts } from '../data/blogPosts';
 import './Blog.css';
 
@@ -17,7 +18,7 @@ export default function Blog() {
     );
 
     return (
-        <div className="blog-container">
+        <>
             <Helmet>
                 <title>ブログ | BoatAI - ボートレース予想・データ分析・戦略情報</title>
                 <meta name="description" content="ボートレース予想、データ分析、舟券戦略に関する最新情報を発信。初心者向けの基本知識から、上級者向けの高度な戦略まで幅広くカバーしています。" />
@@ -54,7 +55,10 @@ export default function Blog() {
                 </script>
             </Helmet>
 
-            <div className="blog-header">
+            <Header />
+
+            <div className="blog-container">
+                <div className="blog-header">
                 <h1>📚 BoatAI ブログ</h1>
                 <p>ボートレース予想・データ分析・戦略に関する情報を発信しています</p>
             </div>
@@ -135,6 +139,7 @@ export default function Blog() {
                     <p>このカテゴリの記事はまだありません。</p>
                 </div>
             )}
-        </div>
+            </div>
+        </>
     );
 }
