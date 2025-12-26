@@ -45,7 +45,7 @@ function RaceHistory() {
         const jstOffset = 9 * 60
         const jstToday = new Date(today.getTime() + jstOffset * 60 * 1000)
 
-        for (let i = 0; i < 90; i++) {
+        for (let i = 1; i < 90; i++) {
           const targetDate = new Date(jstToday.getTime() - i * 24 * 60 * 60 * 1000)
           const dateStr = targetDate.toISOString().split('T')[0]
 
