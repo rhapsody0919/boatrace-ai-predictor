@@ -49,8 +49,11 @@ body {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 50;
   backdrop-filter: blur(10px);
+  /* iOS Safari sticky要素のタッチ問題対策 */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 .header > div {
@@ -120,7 +123,7 @@ body {
 .menu-container {
   position: relative;
   display: inline-block;
-  z-index: 100;
+  z-index: 200;
   /* タッチイベントを確実にキャプチャ */
   touch-action: manipulation;
 }
@@ -137,6 +140,11 @@ body {
   -webkit-touch-callout: none;
   /* iOS Safari の遅延を完全に除去 */
   -ms-touch-action: manipulation;
+  /* iOS Safari sticky内のタッチ問題対策 */
+  position: relative;
+  isolation: isolate;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* サブメニュー */
@@ -149,7 +157,7 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   min-width: 200px;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 2000;
   animation: slideDown 0.2s ease-out;
   /* タッチイベントを確実に受け取る */
   pointer-events: auto;
