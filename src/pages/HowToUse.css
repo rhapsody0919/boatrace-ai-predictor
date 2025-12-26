@@ -43,17 +43,17 @@
   align-items: center;
   gap: 0.5rem;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
   border-radius: 12px;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .step-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(102, 126, 234, 0.5);
+  background: #f1f5f9;
+  border-color: rgba(14, 165, 233, 0.5);
   transform: translateY(-2px);
 }
 
@@ -79,8 +79,8 @@
 
 /* ステップコンテンツ */
 .step-content {
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -93,7 +93,7 @@
   gap: 1rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .step-icon-large {
@@ -119,7 +119,7 @@
 }
 
 .step-detail {
-  background: rgba(0, 0, 0, 0.2);
+  background: #f1f5f9;
   border-left: 4px solid #0ea5e9;
   padding: 1.5rem;
   margin: 1.5rem 0;
@@ -148,8 +148,8 @@
 }
 
 .example-box {
-  background: rgba(102, 126, 234, 0.1);
-  border: 2px solid rgba(102, 126, 234, 0.3);
+  background: rgba(14, 165, 233, 0.1);
+  border: 2px solid rgba(14, 165, 233, 0.3);
   padding: 1.5rem;
   margin: 1.5rem 0;
   border-radius: 8px;
@@ -216,8 +216,8 @@
 }
 
 .model-card.standard {
-  background: rgba(102, 126, 234, 0.1);
-  border-color: rgba(102, 126, 234, 0.5);
+  background: rgba(14, 165, 233, 0.1);
+  border-color: rgba(14, 165, 233, 0.5);
 }
 
 .model-card.safe-bet {
@@ -272,12 +272,12 @@
 }
 
 .nav-button.prev {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: #e2e8f0;
+  color: #1e293b;
 }
 
 .nav-button.prev:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: #e2e8f0;
   transform: translateX(-4px);
 }
 
@@ -288,7 +288,7 @@
 
 .nav-button.next:hover {
   transform: translateX(4px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
 }
 
 .nav-button.finish {
@@ -305,8 +305,8 @@
 .faq-cta {
   text-align: center;
   padding: 2rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
   border-radius: 16px;
 }
 
@@ -317,7 +317,7 @@
 }
 
 .faq-cta p {
-  color: #94a3b8;
+  color: #64748b;
   margin-bottom: 1.5rem;
 }
 
@@ -335,7 +335,7 @@
 
 .faq-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
 }
 
 /* スマホ対応 */
