@@ -36,7 +36,7 @@ body {
 
 .app {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  background: #ffffff;
   position: relative;
 }
 

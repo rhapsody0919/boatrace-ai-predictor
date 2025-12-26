@@ -2,7 +2,9 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem;
-  color: white;
+  background: #ffffff;
+  color: #1e293b;
+  min-height: 100vh;
 }
 
 .how-to-use-header {
@@ -21,7 +23,7 @@
 
 .how-to-use-header p {
   font-size: 1.1rem;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 /* ステップナビゲーション */
