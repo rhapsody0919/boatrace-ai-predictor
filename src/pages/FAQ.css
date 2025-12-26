@@ -141,13 +141,13 @@
 .faq-cta h2 {
   font-size: 2rem;
   margin-bottom: 0.75rem;
-  color: white;
+  color: white !important;
 }
 
 .faq-cta p {
   font-size: 1.1rem;
   margin-bottom: 2rem;
-  color: white;
+  color: white !important;
   opacity: 0.9;
 }
 

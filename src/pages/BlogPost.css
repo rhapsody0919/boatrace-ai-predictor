@@ -253,11 +253,13 @@
 .post-cta h3 {
   font-size: 1.75rem;
   margin-bottom: 0.5rem;
+  color: white !important;
 }
 
 .post-cta p {
   margin-bottom: 1.5rem;
   opacity: 0.9;
+  color: white !important;
 }
 
 .cta-button {
