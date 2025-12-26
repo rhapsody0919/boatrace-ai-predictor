@@ -239,12 +239,16 @@ function RaceDetail() {
         }
         if (top3.includes(result.rank1) && top3.includes(result.rank2) && top3.includes(result.rank3)) {
           trifecta3Hits++
-          // 3連複の配当を計算（簡易版）
-          trifecta3Payouts += result.payouts?.trifecta || 0
+          // 3連複の配当を計算
+          const sorted = [result.rank1, result.rank2, result.rank3].sort((a, b) => a - b)
+          const trifectaKey = sorted.join('-')
+          trifecta3Payouts += result.payouts?.trifecta?.[trifectaKey] || 0
         }
         if (top3[0] === result.rank1 && top3[1] === result.rank2 && top3[2] === result.rank3) {
           trio3Hits++
-          trio3Payouts += result.payouts?.trio || 0
+          // 3連単の配当を計算
+          const trioKey = `${result.rank1}-${result.rank2}-${result.rank3}`
+          trio3Payouts += result.payouts?.trio?.[trioKey] || 0
         }
       })
 
