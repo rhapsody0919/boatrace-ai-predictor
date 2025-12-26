@@ -44,7 +44,7 @@
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   border-radius: 12px;
   padding: 2rem;
-  color: white;
+  color: white !important;
   text-decoration: none;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -58,7 +58,7 @@
 .featured-content h3 {
   font-size: 1.5rem;
   margin: 0.5rem 0 1rem 0;
-  color: white;
+  color: white !important;
 }
 
 .featured-content .description {
@@ -95,7 +95,7 @@
 
 .category-filter button.active {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white;
+  color: white !important;
   border-color: #0ea5e9;
 }
 
@@ -144,7 +144,7 @@
   display: inline-block;
   padding: 0.25rem 0.75rem;
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white;
+  color: white !important;
   border-radius: 15px;
   font-size: 0.85rem;
   font-weight: 600;

@@ -60,7 +60,7 @@
 .step-nav-btn.active {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   border-color: #0ea5e9;
-  color: white;
+  color: white !important;
 }
 
 .step-nav-btn.completed {
@@ -283,7 +283,7 @@
 
 .nav-button.next {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white;
+  color: white !important;
 }
 
 .nav-button.next:hover {
@@ -293,7 +293,7 @@
 
 .nav-button.finish {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
+  color: white !important;
 }
 
 .nav-button.finish:hover {
@@ -327,7 +327,7 @@
   font-size: 1.1rem;
   font-weight: 600;
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white;
+  color: white !important;
   border: none;
   border-radius: 12px;
   cursor: pointer;
