@@ -1,6 +1,6 @@
 .race-history-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  background: #ffffff;
   padding: 2rem 1rem;
 }
 
@@ -12,13 +12,13 @@
 .page-header {
   text-align: center;
   margin-bottom: 2rem;
-  color: white;
+  color: #1e293b;
 }
 
 .page-header h1 {
   font-size: 2.5rem;
   margin-bottom: 1rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  text-shadow: none;
 }
 
 .page-description {
@@ -86,7 +86,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   cursor: pointer;
   transition: background 0.3s ease;
 }

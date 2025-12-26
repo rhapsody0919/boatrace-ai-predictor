@@ -1,6 +1,6 @@
 .race-detail-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0F2942 0%, #1A4D6F 100%);
+  background: #ffffff;
   padding: 2rem 1rem;
 }
 
@@ -12,25 +12,25 @@
 .page-header {
   text-align: center;
   margin-bottom: 2rem;
-  color: white;
+  color: #1e293b;
 }
 
 .page-header h1 {
   font-size: 2.5rem;
   margin-bottom: 1rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  text-shadow: none;
   font-weight: 700;
 }
 
 .back-link {
-  color: rgba(255, 255, 255, 0.9);
+  color: #0ea5e9;
   text-decoration: none;
   font-size: 1rem;
   transition: color 0.3s ease;
 }
 
 .back-link:hover {
-  color: white;
+  color: #0284c7;
   text-decoration: underline;
 }
 
@@ -106,7 +106,7 @@
 }
 
 .stats-table thead {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .stats-table th {
@@ -563,7 +563,7 @@
 }
 
 .players-table thead {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .players-table th {

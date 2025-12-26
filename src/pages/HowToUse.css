@@ -13,7 +13,7 @@
 .how-to-use-header h1 {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -56,8 +56,8 @@
 }
 
 .step-nav-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  border-color: #0ea5e9;
   color: white;
 }
 
@@ -112,20 +112,20 @@
 }
 
 .step-body strong {
-  color: #667eea;
+  color: #0ea5e9;
   font-weight: 600;
 }
 
 .step-detail {
   background: rgba(0, 0, 0, 0.2);
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #0ea5e9;
   padding: 1.5rem;
   margin: 1.5rem 0;
   border-radius: 8px;
 }
 
 .step-detail h4 {
-  color: #667eea;
+  color: #0ea5e9;
   margin-top: 0;
   margin-bottom: 1rem;
   font-size: 1.2rem;
@@ -155,7 +155,7 @@
 
 .example-title {
   font-weight: bold;
-  color: #667eea;
+  color: #0ea5e9;
   margin-bottom: 0.5rem;
 }
 
@@ -280,7 +280,7 @@
 }
 
 .nav-button.next {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
 }
 
@@ -323,7 +323,7 @@
   padding: 1rem 2rem;
   font-size: 1.1rem;
   font-weight: 600;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
   border: none;
   border-radius: 12px;

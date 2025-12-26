@@ -853,7 +853,7 @@ function App() {
                                                                 </span>
                                                                 <span style={{
                                                                     color: volatility.recommendedModel === 'upset-focus' ? '#ff6b00' :
-                                                                        volatility.recommendedModel === 'safe-bet' ? '#2e7d32' : '#667eea',
+                                                                        volatility.recommendedModel === 'safe-bet' ? '#2e7d32' : '#0ea5e9',
                                                                     fontWeight: '600'
                                                                 }}>
                                                                     {volatility.recommendedModel === 'standard' && 'スタンダード'}
@@ -879,7 +879,7 @@ function App() {
                                             {/* モデルについて（説明セクション） */}
                                             <div style={{
                                                 padding: '1.25rem 1.5rem',
-                                                background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                                                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
                                                 borderRadius: '8px',
                                                 marginBottom: '1.5rem',
                                                 border: '1px solid #e0e0e0'
@@ -906,11 +906,11 @@ function App() {
                                                         padding: '1rem',
                                                         background: 'white',
                                                         borderRadius: '6px',
-                                                        borderLeft: '4px solid #667eea'
+                                                        borderLeft: '4px solid #0ea5e9'
                                                     }}>
                                                         <div style={{
                                                             fontWeight: '700',
-                                                            color: '#667eea',
+                                                            color: '#0ea5e9',
                                                             marginBottom: '0.5rem',
                                                             fontSize: '0.95rem'
                                                         }}>
@@ -997,7 +997,7 @@ function App() {
                                                         flex: '1',
                                                         minWidth: '140px',
                                                         padding: '0.75rem 1rem',
-                                                        background: selectedModel === 'standard' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                                                        background: selectedModel === 'standard' ? 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)' : 'white',
                                                         color: selectedModel === 'standard' ? 'white' : '#333',
                                                         border: selectedModel === 'standard' ? 'none' : '2px solid #e0e0e0',
                                                         borderRadius: '8px',
@@ -1005,7 +1005,7 @@ function App() {
                                                         fontWeight: '600',
                                                         cursor: 'pointer',
                                                         transition: 'all 0.3s ease',
-                                                        boxShadow: selectedModel === 'standard' ? '0 4px 12px rgba(102, 126, 234, 0.3)' : 'none'
+                                                        boxShadow: selectedModel === 'standard' ? '0 4px 12px rgba(14, 165, 233, 0.3)' : 'none'
                                                     }}
                                                 >
                                                     ⚖️ スタンダード

@@ -3,7 +3,7 @@
   margin: 0 auto;
   padding: 2rem 1rem;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0F2942 0%, #1A4D6F 100%);
+  background: #ffffff;
 }
 
 .about-header {
@@ -14,12 +14,12 @@
 .about-header h1 {
   font-size: 3rem;
   margin-bottom: 0.5rem;
-  color: white;
+  color: #1e293b;
 }
 
 .about-header p {
   font-size: 1.3rem;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .about-section {
@@ -29,15 +29,15 @@
 .about-section h2 {
   font-size: 2rem;
   margin-bottom: 1.5rem;
-  color: white;
-  border-left: 5px solid #667eea;
+  color: #1e293b;
+  border-left: 5px solid #0ea5e9;
   padding-left: 1rem;
 }
 
 .about-section p {
   font-size: 1.1rem;
   line-height: 1.8;
-  color: #cbd5e1;
+  color: #64748b;
   margin-bottom: 1rem;
 }
 
@@ -58,14 +58,14 @@
 }
 
 .data-category:hover {
-  border-color: #667eea;
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+  border-color: #0ea5e9;
+  box-shadow: 0 5px 15px rgba(14, 165, 233, 0.1);
 }
 
 .data-category h3 {
   font-size: 1.3rem;
   margin-bottom: 1rem;
-  color: #667eea;
+  color: #0ea5e9;
   border-bottom: 2px solid #e2e8f0;
   padding-bottom: 0.5rem;
 }
@@ -86,7 +86,7 @@
   content: "✓";
   position: absolute;
   left: 0;
-  color: #667eea;
+  color: #0ea5e9;
   font-weight: bold;
 }
 
@@ -110,7 +110,7 @@
 .feature-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  border-color: #667eea;
+  border-color: #0ea5e9;
 }
 
 .feature-icon {
@@ -146,7 +146,7 @@
   flex-shrink: 0;
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
   border-radius: 50%;
   display: flex;
@@ -159,17 +159,17 @@
 .step-content h3 {
   font-size: 1.3rem;
   margin-bottom: 0.5rem;
-  color: white;
+  color: #1e293b;
 }
 
 .step-content p {
-  color: #cbd5e1;
+  color: #64748b;
   margin: 0;
 }
 
 .note {
   text-align: center;
-  color: #94a3b8;
+  color: #64748b;
   font-style: italic;
   margin-top: 2rem;
 }
@@ -183,7 +183,7 @@
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
   border-radius: 12px;
   padding: 2rem;
@@ -203,7 +203,7 @@
 
 .stats-note {
   text-align: center;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.95rem;
   margin-top: 1.5rem;
 }
@@ -213,12 +213,12 @@
   font-size: 1.3rem;
   margin-top: 2rem;
   margin-bottom: 0.75rem;
-  color: white;
+  color: #1e293b;
 }
 
 .terms p,
 .terms ul {
-  color: #cbd5e1;
+  color: #64748b;
   line-height: 1.8;
 }
 
@@ -232,7 +232,7 @@
 
 /* CTA */
 .about-cta {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
   padding: 4rem 2rem;
   border-radius: 12px;
@@ -256,7 +256,7 @@
 
 .cta-button {
   background: white;
-  color: #667eea;
+  color: #0ea5e9;
   border: none;
   padding: 1rem 3rem;
   font-size: 1.2rem;
