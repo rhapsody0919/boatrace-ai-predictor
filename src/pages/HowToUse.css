@@ -302,7 +302,7 @@
 }
 
 /* FAQへのCTA */
-.faq-cta {
+.faq-link-section {
   text-align: center;
   padding: 2rem;
   background: #f8fafc;
@@ -310,15 +310,15 @@
   border-radius: 16px;
 }
 
-.faq-cta h3 {
+.faq-link-section h3 {
   margin-top: 0;
   margin-bottom: 0.5rem;
   font-size: 1.5rem;
-  color: #1e293b;
+  color: #1e293b !important;
 }
 
-.faq-cta p {
-  color: #64748b;
+.faq-link-section p {
+  color: #64748b !important;
   margin-bottom: 1.5rem;
 }
 
@@ -408,7 +408,7 @@
     width: 100%;
   }
 
-  .faq-cta {
+  .faq-link-section {
     padding: 1.5rem;
   }
 }

@@ -312,7 +312,7 @@ export default function HowToUse() {
             </div>
 
             {/* よくある質問へのリンク */}
-            <div className="faq-cta">
+            <div className="faq-link-section">
                 <h3>💡 もっと詳しく知りたい方へ</h3>
                 <p>よくある質問もご覧ください</p>
                 <button
