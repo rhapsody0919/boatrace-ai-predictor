@@ -123,27 +123,8 @@ function App() {
         }
     }
 
-    // メニュー外クリック/タッチで閉じる
-    useEffect(() => {
-        if (!isMenuOpen) return
-
-        const handleClickOutside = (event) => {
-            const menuContainer = document.querySelector('.menu-container')
-            if (menuContainer && !menuContainer.contains(event.target)) {
-                setIsMenuOpen(false)
-            }
-        }
-
-        // メニューを開いた直後のクリックを無視するため、少し遅延
-        const timeoutId = setTimeout(() => {
-            document.addEventListener('pointerdown', handleClickOutside, true)
-        }, 150)
-
-        return () => {
-            clearTimeout(timeoutId)
-            document.removeEventListener('pointerdown', handleClickOutside, true)
-        }
-    }, [isMenuOpen])
+    // メニュー外クリック/タッチで閉じる（オーバーレイ方式）
+    // 外側クリック検出を削除し、明示的なオーバーレイで処理
 
     // ロゴクリック時の処理
     const handleLogoClick = () => {
@@ -558,42 +539,33 @@ function App() {
                         >
                             📊 成績
                         </button>
-                        <div className="menu-container">
-                            <button
-                                type="button"
-                                className="nav-btn menu-btn"
-                                onPointerDown={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setIsMenuOpen(prev => !prev);
-                                }}
-                                aria-label="メニュー"
-                                aria-expanded={isMenuOpen}
-                                style={{ WebkitTapHighlightColor: 'transparent' }}
-                            >
-                                ⋮
-                            </button>
-                            {isMenuOpen && (
-                                <div className="submenu">
-                                    <Link to="/races" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
-                                        📅 過去の予想
-                                    </Link>
-                                    <Link to="/how-to-use" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
-                                        📚 使い方
-                                    </Link>
-                                    <Link to="/blog" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
-                                        📝 ブログ
-                                    </Link>
-                                    <Link to="/faq" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
-                                        ❓ よくある質問
-                                    </Link>
-                                    <Link to="/about" className="submenu-item" onClick={() => setIsMenuOpen(false)}>
-                                        ℹ️ サービスについて
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
+                        <button
+                            className="nav-btn menu-toggle-btn"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            ☰
+                        </button>
                     </nav>
+                    {/* ドロップダウンメニュー - navの外に配置 */}
+                    {isMenuOpen && (
+                        <div className="mobile-menu-dropdown">
+                            <Link to="/races" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+                                📅 過去の予想
+                            </Link>
+                            <Link to="/how-to-use" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+                                📚 使い方
+                            </Link>
+                            <Link to="/blog" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+                                📝 ブログ
+                            </Link>
+                            <Link to="/faq" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+                                ❓ よくある質問
+                            </Link>
+                            <Link to="/about" className="mobile-menu-item" onClick={() => setIsMenuOpen(false)}>
+                                ℹ️ サービスについて
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </header>
 

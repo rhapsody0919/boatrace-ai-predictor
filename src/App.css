@@ -91,6 +91,7 @@ body {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .nav-btn {
@@ -119,82 +120,41 @@ body {
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
 }
 
-/* メニューコンテナ */
-.menu-container {
-  position: relative;
-  display: inline-block;
-  z-index: 200;
-  /* タッチイベントを確実にキャプチャ */
-  touch-action: manipulation;
-}
-
-.menu-btn {
+/* ハンバーガーメニューボタン */
+.menu-toggle-btn {
   font-size: 1.5rem;
   padding: 0.5rem 1rem;
-  line-height: 1;
   cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-  touch-action: manipulation;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  /* iOS Safari の遅延を完全に除去 */
-  -ms-touch-action: manipulation;
-  /* iOS Safari sticky内のタッチ問題対策 */
-  position: relative;
-  isolation: isolate;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
 }
 
-/* サブメニュー */
-.submenu {
+/* ドロップダウンメニュー */
+.mobile-menu-dropdown {
   position: absolute;
-  top: calc(100% + 0.5rem);
+  top: 100%;
+  left: 0;
   right: 0;
   background: white;
-  border-radius: 12px;
+  border-radius: 0 0 12px 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  min-width: 200px;
-  overflow: hidden;
-  z-index: 2000;
-  animation: slideDown 0.2s ease-out;
-  /* タッチイベントを確実に受け取る */
-  pointer-events: auto;
-  touch-action: manipulation;
+  z-index: 1000;
+  padding: 0.5rem 0;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.submenu-item {
+.mobile-menu-item {
   display: block;
   padding: 1rem 1.5rem;
   color: var(--text-dark);
   text-decoration: none;
-  transition: background 0.2s;
   font-weight: 500;
   border-bottom: 1px solid var(--border-light);
-  cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
 
-.submenu-item:last-child {
+.mobile-menu-item:last-child {
   border-bottom: none;
 }
 
-.submenu-item:hover,
-.submenu-item:active {
+.mobile-menu-item:hover,
+.mobile-menu-item:active {
   background: #f8fafc;
   color: #0ea5e9;
 }
@@ -740,53 +700,31 @@ body {
   .nav {
     width: 100%;
     justify-content: flex-start;
-    /* 横スクロール有効化 */
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
-    flex-wrap: nowrap; /* 折り返しを防止 */
+    /* 横スクロールを無効化してメニューボタンのタッチを確保 */
+    overflow: visible;
+    flex-wrap: wrap;
     gap: 0.5rem;
     padding-bottom: 0.25rem;
-  }
-
-  /* スクロールバーを非表示 */
-  .nav::-webkit-scrollbar {
-    display: none;
+    position: relative;
   }
 
   .nav-btn {
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
-    /* タッチターゲットを確保 */
     min-height: 44px;
-    flex-shrink: 0; /* 縮小を防止 */
+    flex-shrink: 0;
   }
 
-  .menu-btn {
+  .menu-toggle-btn {
     font-size: 1.3rem;
-    padding: 0.5rem 0.8rem;
     min-width: 44px;
     min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
-  .submenu {
-    right: 0;
-    min-width: 180px;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-
-  .submenu-item {
+  .mobile-menu-item {
     padding: 0.875rem 1.25rem;
     font-size: 0.9rem;
     min-height: 44px;
-    display: flex;
-    align-items: center;
   }
 
   .container {
@@ -927,6 +865,8 @@ body {
 
   .nav {
     gap: 0.4rem;
+    overflow: visible;
+    flex-wrap: wrap;
   }
 
   .nav-btn {
@@ -935,28 +875,16 @@ body {
     min-height: 40px;
   }
 
-  .menu-btn {
+  .menu-toggle-btn {
     font-size: 1.2rem;
-    padding: 0.4rem 0.7rem;
     min-width: 44px;
     min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
-  .submenu {
-    min-width: 160px;
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-
-  .submenu-item {
+  .mobile-menu-item {
     padding: 0.75rem 1rem;
     font-size: 0.85rem;
     min-height: 44px;
-    display: flex;
-    align-items: center;
   }
 
   .container {
