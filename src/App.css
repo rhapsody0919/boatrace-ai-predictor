@@ -44,7 +44,7 @@ body {
    ヘッダー
    ===================================================== */
 .header {
-  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-light) 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   padding: 1.5rem 2rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   position: sticky;
@@ -111,7 +111,7 @@ body {
 
 .nav-btn.active {
   background: white;
-  color: var(--primary-blue);
+  color: #0ea5e9;
   border-color: white;
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
 }
@@ -169,7 +169,7 @@ body {
 
 .submenu-item:hover {
   background: #f8fafc;
-  color: var(--primary-blue);
+  color: #0ea5e9;
 }
 
 /* =====================================================
@@ -220,13 +220,13 @@ body {
 }
 
 .race-list-section select:hover {
-  border-color: var(--secondary-cyan);
+  border-color: #0ea5e9;
 }
 
 .race-list-section select:focus {
   outline: none;
-  border-color: var(--primary-blue);
-  box-shadow: 0 0 0 3px rgba(13, 110, 188, 0.2);
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
 }
 
 /* レースグリッド */
@@ -255,13 +255,13 @@ body {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--secondary-cyan) 0%, var(--accent-orange) 100%);
+  background: linear-gradient(90deg, #0ea5e9 0%, #FF6B35 100%);
 }
 
 .race-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
-  border-color: var(--secondary-cyan-light);
+  border-color: #0ea5e9;
 }
 
 .race-card-header {
@@ -274,7 +274,7 @@ body {
 }
 
 .race-card-header h3 {
-  color: var(--primary-blue);
+  color: #0ea5e9;
   font-size: 1.5rem;
   font-weight: 700;
 }
@@ -318,7 +318,7 @@ body {
 .predict-btn {
   width: 100%;
   padding: 1.125rem;
-  background: linear-gradient(135deg, var(--secondary-cyan) 0%, var(--secondary-cyan-light) 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -326,12 +326,12 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px rgba(0, 163, 163, 0.3);
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.3);
 }
 
 .predict-btn:hover {
   transform: scale(1.02);
-  box-shadow: 0 8px 24px rgba(0, 163, 163, 0.4);
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);
 }
 
 .predict-btn:active {
@@ -353,7 +353,7 @@ body {
   width: 64px;
   height: 64px;
   border: 6px solid #F3F4F6;
-  border-top: 6px solid var(--secondary-cyan);
+  border-top: 6px solid #0ea5e9;
   border-radius: 50%;
   margin: 0 auto 2rem;
   animation: spin 1s linear infinite;
@@ -416,7 +416,7 @@ body {
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--secondary-cyan) 0%, var(--success-green) 100%);
+  background: linear-gradient(90deg, #0ea5e9 0%, #10B981 100%);
   transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
@@ -425,7 +425,7 @@ body {
   color: white;
   font-weight: 700;
   font-size: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 163, 163, 0.4);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
 }
 
 /* 本命予想 */
@@ -507,7 +507,7 @@ body {
 .score-value {
   font-size: 3rem;
   font-weight: 900;
-  background: linear-gradient(135deg, var(--secondary-cyan), var(--success-green));
+  background: linear-gradient(135deg, #0ea5e9, #10B981);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -518,9 +518,9 @@ body {
   margin: 2.5rem 0;
   padding: 2rem;
   background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
-  border-left: 5px solid var(--secondary-cyan);
+  border-left: 5px solid #0ea5e9;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 163, 163, 0.1);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
 }
 
 .reasoning h4 {
@@ -544,7 +544,7 @@ body {
 
 .reasoning li:before {
   content: '✓ ';
-  color: var(--secondary-cyan);
+  color: #0ea5e9;
   font-weight: 900;
   margin-right: 0.75rem;
   font-size: 1.2rem;
@@ -573,8 +573,8 @@ body {
 }
 
 .players-table th {
-  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-light) 100%);
-  color: white;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: white !important;
   padding: 1.125rem 1rem;
   text-align: left;
   font-weight: 700;
@@ -619,22 +619,22 @@ body {
 }
 
 .score-badge {
-  background: linear-gradient(135deg, var(--secondary-cyan) 0%, var(--success-green) 100%);
-  color: white;
+  background: linear-gradient(135deg, #0ea5e9 0%, #10B981 100%);
+  color: white !important;
   padding: 0.5rem 1rem;
   border-radius: 50px;
   font-weight: 700;
   font-size: 0.95rem;
   display: inline-block;
-  box-shadow: 0 2px 8px rgba(0, 163, 163, 0.3);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
 }
 
 /* =====================================================
    フッター
    ===================================================== */
 .footer {
-  background: var(--primary-blue);
-  color: white;
+  background: #0ea5e9;
+  color: white !important;
   text-align: center;
   padding: 2.5rem 2rem;
   margin-top: 4rem;
@@ -646,6 +646,7 @@ body {
   font-size: 0.95rem;
   opacity: 0.9;
   line-height: 1.6;
+  color: white !important;
 }
 
 /* =====================================================
@@ -1115,8 +1116,8 @@ body {
   padding: 1.75rem;
   background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
   border-radius: 12px;
-  border-left: 5px solid var(--secondary-cyan);
-  box-shadow: 0 4px 12px rgba(0, 163, 163, 0.1);
+  border-left: 5px solid #0ea5e9;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
 }
 
 .statistical-insights h4 {
