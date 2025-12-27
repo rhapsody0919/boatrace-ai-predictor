@@ -65,7 +65,9 @@ function RaceHistory() {
               const finishedRaces = data.races?.filter(r => r.result?.finished).length || 0
 
               // モデル間パフォーマンスを計算
-              const models = ['standard', 'safeBet', 'upsetFocus']
+              // 12/18以前は prediction (単数形)、12/19以降は predictions (複数形)
+              const hasNewFormat = data.races?.some(r => r.predictions)
+              const models = hasNewFormat ? ['standard', 'safeBet', 'upsetFocus'] : ['standard']
               const modelNames = {
                 standard: 'スタンダード',
                 safeBet: '本命狙い',
@@ -78,7 +80,8 @@ function RaceHistory() {
                 let winPayouts = 0, placePayouts = 0, trifecta3Payouts = 0, trio3Payouts = 0
 
                 races.forEach(race => {
-                  const prediction = race.predictions?.[modelKey]
+                  // 新形式: predictions[modelKey]、旧形式: prediction (standardとして扱う)
+                  const prediction = race.predictions?.[modelKey] || (modelKey === 'standard' ? race.prediction : null)
                   if (!prediction) return
 
                   const topPick = prediction.topPick
