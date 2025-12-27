@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import Header from '../components/Header'
 import Breadcrumb from '../components/Breadcrumb'
+import LoadingScreen from '../components/LoadingScreen'
 import './RaceHistory.css'
 
 function RaceHistory() {
@@ -228,33 +229,10 @@ function RaceHistory() {
         {/* 月別日付一覧 */}
         <div className="dates-section">
           {loading ? (
-            <div className="loading-container" style={{
-              padding: '3rem',
-              textAlign: 'center',
-              background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-              borderRadius: '12px',
-              color: 'white',
-              minHeight: '300px'
-            }}>
-              <div className="spinner" style={{ marginBottom: '1.5rem' }}></div>
-              <h3 style={{ color: 'white' }}>過去の予想データを読み込み中...</h3>
-              <p>過去90日分のデータを確認しています</p>
-              <div className="loading-tip">
-                <p>{(() => {
-                  const tips = [
-                    '💡 1号艇の勝率は全国平均で約55%です',
-                    '💡 モーター2連対率40%以上が狙い目です',
-                    '💡 風速5m以上の日は外側が有利になります',
-                    '💡 A1級選手は全体の20%しかいません',
-                    '💡 展示航走で調子を最終確認しましょう',
-                    '💡 複勝は的中率50%超えも可能です',
-                    '💡 大村は1号艇勝率が全国最高（63%）です',
-                    '💡 トリガミを避けるため購入額を調整しましょう'
-                  ];
-                  return tips[Math.floor(Math.random() * tips.length)];
-                })()}</p>
-              </div>
-            </div>
+            <LoadingScreen
+              title="過去の予想データを読み込み中..."
+              description="過去90日分のデータを確認しています"
+            />
           ) : Object.keys(groupedDates).length === 0 ? (
             <div className="no-data">
               <p>利用可能なデータがありません</p>

@@ -364,46 +364,7 @@
   color: white !important;
 }
 
-/* ローディング */
-.loading-container {
-  padding: 3rem 2rem;
-  text-align: center;
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  border-radius: 12px;
-  color: white;
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.loading-container h3 {
-  font-size: 1.3rem;
-  margin-bottom: 1rem;
-  color: white !important;
-}
-
-.loading-container p {
-  font-size: 0.95rem;
-  margin-bottom: 1rem;
-  color: rgba(255,255,255,0.9) !important;
-}
-
-.loading-tip {
-  margin-top: 1.5rem;
-  padding: 1rem 1.5rem;
-  background: rgba(255,255,255,0.2);
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
-  max-width: 400px;
-}
-
-.loading-tip p {
-  font-size: 0.9rem;
-  margin: 0;
-  color: white !important;
-}
+/* LoadingScreenコンポーネントを使用 */
 
 /* 空データメッセージ */
 .no-data-container {
