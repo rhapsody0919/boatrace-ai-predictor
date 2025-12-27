@@ -37,18 +37,52 @@
 }
 
 .loading-container {
+  padding: 3rem 2rem;
   text-align: center;
-  padding: 3rem;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  border-radius: 12px;
+  color: white;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-container h3 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: white !important;
+}
+
+.loading-container p {
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  color: rgba(255,255,255,0.9) !important;
+}
+
+.loading-tip {
+  margin-top: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  max-width: 400px;
+}
+
+.loading-tip p {
+  font-size: 0.9rem;
+  margin: 0;
+  color: white !important;
 }
 
 .spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #0ea5e9;
+  border: 4px solid rgba(255,255,255,0.3);
+  border-top: 4px solid white;
   border-radius: 50%;
   width: 40px;
   height: 40px;
   animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
 }
 
 @keyframes spin {

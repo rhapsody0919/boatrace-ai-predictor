@@ -229,8 +229,24 @@ function RaceHistory() {
         <div className="dates-section">
           {loading ? (
             <div className="loading-container">
-              <div className="spinner"></div>
-              <p>データを読み込み中...</p>
+              <div className="spinner" style={{ marginBottom: '1.5rem' }}></div>
+              <h3>過去の予想データを読み込み中...</h3>
+              <p>過去90日分のデータを確認しています</p>
+              <div className="loading-tip">
+                <p>{(() => {
+                  const tips = [
+                    '💡 1号艇の勝率は全国平均で約55%です',
+                    '💡 モーター2連対率40%以上が狙い目です',
+                    '💡 風速5m以上の日は外側が有利になります',
+                    '💡 A1級選手は全体の20%しかいません',
+                    '💡 展示航走で調子を最終確認しましょう',
+                    '💡 複勝は的中率50%超えも可能です',
+                    '💡 大村は1号艇勝率が全国最高（63%）です',
+                    '💡 トリガミを避けるため購入額を調整しましょう'
+                  ];
+                  return tips[Math.floor(Math.random() * tips.length)];
+                })()}</p>
+              </div>
             </div>
           ) : Object.keys(groupedDates).length === 0 ? (
             <div className="no-data">
