@@ -228,9 +228,16 @@ function RaceHistory() {
         {/* 月別日付一覧 */}
         <div className="dates-section">
           {loading ? (
-            <div className="loading-container">
+            <div className="loading-container" style={{
+              padding: '3rem',
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+              borderRadius: '12px',
+              color: 'white',
+              minHeight: '300px'
+            }}>
               <div className="spinner" style={{ marginBottom: '1.5rem' }}></div>
-              <h3>過去の予想データを読み込み中...</h3>
+              <h3 style={{ color: 'white' }}>過去の予想データを読み込み中...</h3>
               <p>過去90日分のデータを確認しています</p>
               <div className="loading-tip">
                 <p>{(() => {
