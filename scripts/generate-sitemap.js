@@ -20,6 +20,18 @@ const staticPages = [
     priority: '1.0'
   },
   {
+    loc: '/accuracy',
+    lastmod: new Date().toISOString().split('T')[0],
+    changefreq: 'daily',
+    priority: '0.9'
+  },
+  {
+    loc: '/hit-races',
+    lastmod: new Date().toISOString().split('T')[0],
+    changefreq: 'daily',
+    priority: '0.9'
+  },
+  {
     loc: '/about',
     lastmod: new Date().toISOString().split('T')[0],
     changefreq: 'monthly',
@@ -36,6 +48,24 @@ const staticPages = [
     lastmod: new Date().toISOString().split('T')[0],
     changefreq: 'monthly',
     priority: '0.9'
+  },
+  {
+    loc: '/privacy',
+    lastmod: new Date().toISOString().split('T')[0],
+    changefreq: 'yearly',
+    priority: '0.3'
+  },
+  {
+    loc: '/terms',
+    lastmod: new Date().toISOString().split('T')[0],
+    changefreq: 'yearly',
+    priority: '0.3'
+  },
+  {
+    loc: '/contact',
+    lastmod: new Date().toISOString().split('T')[0],
+    changefreq: 'monthly',
+    priority: '0.5'
   },
   {
     loc: '/blog',
