@@ -63,6 +63,11 @@ jobs:
           cp -r data/* public/data/
           echo "Data synced to public/data/ for Vercel deployment"
 
+      - name: Generate sitemap
+        run: node scripts/generate-sitemap.js
+        env:
+          TZ: 'Asia/Tokyo'
+
       - name: Check for changes
         id: git-check
         run: |
@@ -87,7 +92,7 @@ jobs:
             }
           fi
 
-          git add data/races.json data/predictions/*.json public/data/
+          git add data/races.json data/predictions/*.json public/data/ public/sitemap.xml
           git commit -m "Update race data and predictions [automated] $(date +'%Y-%m-%d %H:%M:%S JST')" || {
             echo "No changes to commit"
             exit 0
