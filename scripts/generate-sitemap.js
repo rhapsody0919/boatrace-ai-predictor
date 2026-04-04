@@ -9,7 +9,6 @@ const __dirname = path.dirname(__filename);
 const SITE_URL = 'https://www.boat-ai.jp';
 const PUBLIC_DIR = path.join(__dirname, '../public');
 const BLOG_DIR = path.join(PUBLIC_DIR, 'blog');
-const PREDICTIONS_DIR = path.join(PUBLIC_DIR, 'data/predictions');
 
 // 静的ページの定義
 const staticPages = [
@@ -157,51 +156,72 @@ function getBlogPosts() {
   return blogPosts;
 }
 
-// 過去のレースページのスキャン
-function getRacePages() {
+// 過去のレースページをSupabaseから取得
+async function getRacePages() {
   const racePages = [];
 
-  if (!fs.existsSync(PREDICTIONS_DIR)) {
-    console.warn('Predictions directory not found:', PREDICTIONS_DIR);
-    return racePages;
-  }
+  // Supabase から全日付を取得
+  try {
+    const { supabase, isSupabaseEnabled } = await import('./lib/supabaseClient.js');
+    if (!isSupabaseEnabled()) {
+      console.warn('⚠️ Supabase未設定のため、レースページはスキップします');
+      return racePages;
+    }
 
-  const files = fs.readdirSync(PREDICTIONS_DIR);
+    // race_date のユニーク値だけ取得するRPCがないため、ページネーションで全件取得
+    let allDates = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data, error: pageError } = await supabase
+        .from('races')
+        .select('race_date')
+        .order('race_date', { ascending: false })
+        .range(from, from + pageSize - 1);
+      if (pageError) throw new Error(pageError.message);
+      if (!data || data.length === 0) break;
+      allDates.push(...data.map(r => r.race_date));
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+    const data = allDates.map(d => ({ race_date: d }));
+    const error = null;
 
-  files.forEach(file => {
-    // YYYY-MM-DD.json形式のファイルのみ対象
-    if (!file.match(/^\d{4}-\d{2}-\d{2}\.json$/)) return;
+    if (error) {
+      console.error('Supabase error:', error.message);
+      return racePages;
+    }
 
-    const dateStr = file.replace('.json', '');
-    const stats = fs.statSync(path.join(PREDICTIONS_DIR, file));
-
-    // 過去90日以内のデータをsitemapに含める
-    const fileDate = new Date(dateStr);
+    // race_date の重複を除去
+    const uniqueDates = [...new Set(data.map(r => r.race_date))];
     const now = new Date();
-    const daysDiff = (now - fileDate) / (1000 * 60 * 60 * 24);
 
-    if (daysDiff <= 90) {
+    for (const dateStr of uniqueDates) {
+      const fileDate = new Date(dateStr);
+      const daysDiff = (now - fileDate) / (1000 * 60 * 60 * 24);
+
       // 古いデータほど優先度を下げる
       const priority = daysDiff <= 7 ? '0.8' : daysDiff <= 30 ? '0.7' : '0.5';
       racePages.push({
         loc: `/races/${dateStr}`,
-        lastmod: stats.mtime.toISOString().split('T')[0],
+        lastmod: dateStr,
         changefreq: 'weekly',
         priority
       });
     }
-  });
 
-  // 日付の新しい順にソート
-  racePages.sort((a, b) => b.loc.localeCompare(a.loc));
+    console.log(`📊 Supabase から ${uniqueDates.length} 日分のレースデータを取得`);
+  } catch (err) {
+    console.error('レースページ取得エラー:', err.message);
+  }
 
   return racePages;
 }
 
 // sitemap.xmlの生成
-function generateSitemap() {
+async function generateSitemap() {
   const blogPosts = getBlogPosts();
-  const racePages = getRacePages();
+  const racePages = await getRacePages();
   const allPages = [...staticPages, ...blogPosts, ...racePages];
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -222,11 +242,11 @@ function generateSitemap() {
 }
 
 // メイン処理
-function main() {
+async function main() {
   try {
     console.log('Generating sitemap.xml...');
 
-    const sitemap = generateSitemap();
+    const sitemap = await generateSitemap();
     const sitemapPath = path.join(PUBLIC_DIR, 'sitemap.xml');
 
     fs.writeFileSync(sitemapPath, sitemap, 'utf-8');
@@ -236,16 +256,10 @@ function main() {
     // 生成された記事数を表示
     const blogPosts = getBlogPosts();
     console.log(`📝 Blog posts found: ${blogPosts.length}`);
-    blogPosts.forEach(post => {
-      console.log(`   - ${post.loc}`);
-    });
 
     // 生成されたレースページ数を表示
-    const racePages = getRacePages();
+    const racePages = await getRacePages();
     console.log(`🏁 Race pages found: ${racePages.length}`);
-    racePages.forEach(page => {
-      console.log(`   - ${page.loc}`);
-    });
 
   } catch (error) {
     console.error('❌ Error generating sitemap:', error);
