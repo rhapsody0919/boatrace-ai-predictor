@@ -224,7 +224,11 @@ function transformEdgeResponse(edgeData, date) {
       volatility: race.volatility || null,
       turnPrediction,
       racerStats: stdPred?.racerStats || null,
-      exhibitionData: race.exhibitionData || null,
+      exhibitionData: race.exhibitionData?.map(ed => ({
+        boat_number: ed.boatNumber,
+        exhibition_time: ed.exhibitionTime,
+        start_timing: ed.startTiming,
+      })) || null,
     };
 
     // 予測データ（モデル別）
