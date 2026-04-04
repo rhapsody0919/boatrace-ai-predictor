@@ -104,6 +104,26 @@ function RaceDetail() {
     return () => { cancelled = true }
   }, [date])
 
+  // フル版到着時に selectedRace と prediction を最新データで更新
+  // （2段階ロードで軽量版 → フル版に切り替わった時の自動リフレッシュ）
+  useEffect(() => {
+    if (!raceData?.races || !selectedRace) return
+
+    const latestRawData = raceData.races.find(r => r.raceId === selectedRace.id)
+    if (!latestRawData || latestRawData === selectedRace.rawData) return
+
+    // 新しい rawData で selectedRace を更新
+    const upgradedRace = { ...selectedRace, rawData: latestRawData }
+    setSelectedRace(upgradedRace)
+
+    // prediction が表示中なら新データで再計算（turnPrediction / racerStats 反映）
+    if (prediction && !prediction.error && !isAnalyzing) {
+      processRacePrediction(upgradedRace)
+    }
+    // raceData の変更のみを監視（selectedRace/prediction は closure で参照）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [raceData])
+
   // モデル切り替え
   const switchModel = (model) => {
     if (!prediction || !prediction.predictions) return
