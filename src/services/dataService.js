@@ -23,9 +23,11 @@ export const dataService = {
   /**
    * 予想データを取得
    * @param {string} date - 日付文字列（YYYY-MM-DD形式）
+   * @param {object} options - オプション
+   * @param {boolean} options.light - turnPrediction/racerStats を除外して軽量版を取得
    */
-  async getPredictions(date) {
-    return supabaseDataService.getPredictions(date);
+  async getPredictions(date, options = {}) {
+    return supabaseDataService.getPredictions(date, options);
   },
 
   /**

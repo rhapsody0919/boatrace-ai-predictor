@@ -28,61 +28,80 @@ function RaceDetail() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const predictionRef = useRef(null)
 
-  // レースデータを取得（Supabaseから）
+  // 会場・レースマップを構築する共通関数
+  const applyRaceData = (data) => {
+    setRaceData(data)
+
+    const venueMap = {}
+    data.races?.forEach(race => {
+      const venueCode = race.venueCode
+      if (!venueMap[venueCode]) {
+        venueMap[venueCode] = {
+          placeCd: venueCode,
+          placeName: race.venue,
+          races: []
+        }
+      }
+      venueMap[venueCode].races.push({
+        id: race.raceId,
+        venue: race.venue,
+        raceNumber: race.raceNumber,
+        venueCode: race.venueCode,
+        rawData: race
+      })
+    })
+
+    Object.values(venueMap).forEach(venue => {
+      venue.races.sort((a, b) => a.raceNumber - b.raceNumber)
+    })
+
+    return Object.values(venueMap).sort((a, b) => a.placeCd - b.placeCd)
+  }
+
+  // レースデータを取得（2段階ロード: 軽量版 → フル版）
   useEffect(() => {
+    let cancelled = false
+
     const fetchRaceData = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        const data = await dataService.getPredictions(date)
+        // Phase 1: 軽量版で即座に一覧表示
+        const lightData = await dataService.getPredictions(date, { light: true })
+        if (cancelled) return
 
-        if (!data.races || data.races.length === 0) {
+        if (!lightData.races || lightData.races.length === 0) {
           throw new Error('データが見つかりません')
         }
 
-        setRaceData(data)
-
-        // 会場ごとにレースをグループ化
-        const venueMap = {}
-        data.races?.forEach(race => {
-          const venueCode = race.venueCode
-          if (!venueMap[venueCode]) {
-            venueMap[venueCode] = {
-              placeCd: venueCode,
-              placeName: race.venue,
-              races: []
-            }
-          }
-          venueMap[venueCode].races.push({
-            id: race.raceId,
-            venue: race.venue,
-            raceNumber: race.raceNumber,
-            venueCode: race.venueCode,
-            rawData: race
-          })
-        })
-
-        Object.values(venueMap).forEach(venue => {
-          venue.races.sort((a, b) => a.raceNumber - b.raceNumber)
-        })
-
-        const venues = Object.values(venueMap).sort((a, b) => a.placeCd - b.placeCd)
+        const venues = applyRaceData(lightData)
         setVenuesData(venues)
-
         if (venues.length > 0) {
           setSelectedVenueId(venues[0].placeCd)
+        }
+        setLoading(false)
+
+        // Phase 2: バックグラウンドでフル版を取得（turnPrediction/racerStats含む）
+        const fullData = await dataService.getPredictions(date)
+        if (cancelled) return
+
+        if (fullData.races && fullData.races.length > 0) {
+          const fullVenues = applyRaceData(fullData)
+          setVenuesData(fullVenues)
         }
 
       } catch (err) {
         console.error('データ取得エラー:', err)
-        setError(err.message)
-      } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setError(err.message)
+          setLoading(false)
+        }
       }
     }
 
     fetchRaceData()
+    return () => { cancelled = true }
   }, [date])
 
   // モデル切り替え

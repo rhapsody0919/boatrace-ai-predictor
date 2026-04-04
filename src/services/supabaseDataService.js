@@ -572,15 +572,17 @@ export const supabaseDataService = {
    * 予測データを取得（predictions/YYYY-MM-DD.json形式で返す）
    * Phase 2: Edge API経由でCDNキャッシュを活用
    */
-  async getPredictions(date) {
-    return withCache(`predictions-${date}`, async () => {
+  async getPredictions(date, { light = false } = {}) {
+    const cacheKey = light ? `predictions-light-${date}` : `predictions-${date}`;
+    return withCache(cacheKey, async () => {
       // Phase 2: まずEdge APIを試行（CDNキャッシュ活用）
+      const lightParam = light ? '?light=true' : '';
       try {
-        const edgeResponse = await fetch(`${EDGE_API_BASE}/api/predictions/${date}`);
+        const edgeResponse = await fetch(`${EDGE_API_BASE}/api/predictions/${date}${lightParam}`);
         if (edgeResponse.ok) {
           const edgeData = await edgeResponse.json();
           if (edgeData.races && edgeData.races.length > 0) {
-            console.log(`[getPredictions] Edge API success: ${edgeData.races.length} races`);
+            console.log(`[getPredictions] Edge API success: ${edgeData.races.length} races${light ? ' (light)' : ''}`);
             return transformEdgeResponse(edgeData, date);
           }
         }

@@ -42,9 +42,13 @@ export default async function handler(req) {
     });
   }
 
+  // light パラメータで turnPrediction/racerStats を除外（初期表示の高速化用）
+  const isLight = url.searchParams.get('light') === 'true';
+  const rpcName = isLight ? 'get_predictions_by_date_light' : 'get_predictions_by_date';
+
   try {
     // Supabase RPC関数を呼び出し
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_predictions_by_date`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${rpcName}`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_KEY,
