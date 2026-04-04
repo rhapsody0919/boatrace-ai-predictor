@@ -23,6 +23,8 @@ GitHub Actions 側の cron スケジュールはフォールバックとして�
 | Scrape Exhibition Data | `243971527` | `*/15 7-23 * * *` | 7:00-23:00 (15分間隔) |
 | Aggregate Racer Stats | `244870991` | `0 23 * * *` | 23:00 |
 
+※ Workflow ID は変更される可能性がある。最新の ID は `gh workflow list` で確認できる。
+
 ## セットアップ手順
 
 ### 1. GitHub Personal Access Token の発行
@@ -75,6 +77,7 @@ GitHub Actions 側の cron スケジュールはフォールバックとして�
 - **URL**: `https://api.github.com/repos/rhapsody0919/boatrace-ai-predictor/actions/workflows/244870991/dispatches`
 - **Schedule**: `0 23 * * *`
 - **Timezone**: Asia/Tokyo
+
 
 ### 4. 動作確認
 
