@@ -44,6 +44,14 @@ export const dataService = {
   },
 
   /**
+   * レース履歴サマリーを取得（日付ごとのモデル別的中統計）
+   * @param {number} days - 過去何日分を取得するか
+   */
+  async getRaceHistorySummary(days = 90) {
+    return supabaseDataService.getRaceHistorySummary(days);
+  },
+
+  /**
    * キャッシュをクリア（手動更新時に使用）
    * @param {string|null} key - 特定のキーをクリア（nullで全クリア）
    */

@@ -1148,5 +1148,41 @@ export const supabaseDataService = {
       const uniqueDates = [...new Set(allData.map(r => r.race_date))];
       return uniqueDates;
     }); // withCache end
+  },
+
+  /**
+   * レース履歴サマリーを取得（日付ごとのモデル別的中統計）
+   * /races ページ用。従来の N+1 フェッチを 1 リクエストに集約
+   * @param {number} days - 過去何日分を取得するか（デフォルト 90）
+   */
+  async getRaceHistorySummary(days = 90) {
+    return withCache(`raceHistorySummary-${days}`, async () => {
+      // Phase 1: Edge API を試行
+      try {
+        const edgeResponse = await fetch(`${EDGE_API_BASE}/api/race-history/summary?days=${days}`);
+        if (edgeResponse.ok) {
+          const edgeData = await edgeResponse.json();
+          if (edgeData.days) {
+            console.log('[getRaceHistorySummary] Edge API success');
+            return edgeData;
+          }
+        }
+      } catch (edgeError) {
+        console.log('[getRaceHistorySummary] Edge API failed, falling back:', edgeError.message);
+      }
+
+      // フォールバック: Supabase RPC を直接呼び出し
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        return { days: [] };
+      }
+
+      const { data, error } = await supabase.rpc('get_race_history_summary', { days_back: days });
+      if (error) {
+        console.error('Supabase getRaceHistorySummary error:', error.message);
+        return { days: [] };
+      }
+      return data || { days: [] };
+    });
   }
 };
