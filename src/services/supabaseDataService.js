@@ -197,7 +197,7 @@ function transformEdgeResponse(edgeData, date) {
         age: e.age,
         winRate: String(e.winRate || ''),
         localWinRate: String(e.localWinRate || ''),
-        global2Rate: null,
+        global2Rate: e.global2Rate != null ? String(e.global2Rate) : null,
         motorNumber: e.motorNumber,
         motor2Rate: String(e.motor2Rate || ''),
         boatNumber: e.boatNumber,
@@ -224,7 +224,7 @@ function transformEdgeResponse(edgeData, date) {
       volatility: race.volatility || null,
       turnPrediction,
       racerStats: stdPred?.racerStats || null,
-      exhibitionData: null,
+      exhibitionData: race.exhibitionData || null,
     };
 
     // 予測データ（モデル別）
