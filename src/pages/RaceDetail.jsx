@@ -104,12 +104,13 @@ function RaceDetail() {
     return () => { cancelled = true }
   }, [date])
 
-  // フル版到着時に selectedRace と prediction を最新データで更新
+  // フル版到着時 or レース選択時に selectedRace を最新データと同期
   // （2段階ロードで軽量版 → フル版に切り替わった時の自動リフレッシュ）
   useEffect(() => {
     if (!raceData?.races || !selectedRace) return
 
     const latestRawData = raceData.races.find(r => r.raceId === selectedRace.id)
+    // 参照が同じなら何もしない（無限ループ防止 & 不要な再描画防止）
     if (!latestRawData || latestRawData === selectedRace.rawData) return
 
     // 新しい rawData で selectedRace を更新
@@ -120,9 +121,9 @@ function RaceDetail() {
     if (prediction && !prediction.error && !isAnalyzing) {
       processRacePrediction(upgradedRace)
     }
-    // raceData の変更のみを監視（selectedRace/prediction は closure で参照）
+    // raceData と selectedRace.id を監視し、最新の state を closure で取得
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [raceData])
+  }, [raceData, selectedRace?.id])
 
   // モデル切り替え
   const switchModel = (model) => {
