@@ -70,6 +70,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add -A
           git diff --staged --quiet || git commit -m "Update race data and predictions [automated]"
+          git pull --rebase || true
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
