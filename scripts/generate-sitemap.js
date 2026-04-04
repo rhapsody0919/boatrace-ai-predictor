@@ -168,8 +168,8 @@ async function getRacePages() {
       return racePages;
     }
 
-    // race_date のユニーク値だけ取得するRPCがないため、ページネーションで全件取得
-    let allDates = [];
+    // race_date をページネーションで全件取得し、重複除去
+    const allDates = [];
     let from = 0;
     const pageSize = 1000;
     while (true) {
@@ -184,16 +184,8 @@ async function getRacePages() {
       if (data.length < pageSize) break;
       from += pageSize;
     }
-    const data = allDates.map(d => ({ race_date: d }));
-    const error = null;
 
-    if (error) {
-      console.error('Supabase error:', error.message);
-      return racePages;
-    }
-
-    // race_date の重複を除去
-    const uniqueDates = [...new Set(data.map(r => r.race_date))];
+    const uniqueDates = [...new Set(allDates)];
     const now = new Date();
 
     for (const dateStr of uniqueDates) {
@@ -251,15 +243,9 @@ async function main() {
 
     fs.writeFileSync(sitemapPath, sitemap, 'utf-8');
 
-    console.log(`✅ Sitemap generated successfully: ${sitemapPath}`);
-
-    // 生成された記事数を表示
-    const blogPosts = getBlogPosts();
-    console.log(`📝 Blog posts found: ${blogPosts.length}`);
-
-    // 生成されたレースページ数を表示
-    const racePages = await getRacePages();
-    console.log(`🏁 Race pages found: ${racePages.length}`);
+    // URL数をカウント
+    const urlCount = sitemap.split('<url>').length - 1;
+    console.log(`✅ Sitemap generated: ${sitemapPath} (${urlCount} URLs)`);
 
   } catch (error) {
     console.error('❌ Error generating sitemap:', error);
