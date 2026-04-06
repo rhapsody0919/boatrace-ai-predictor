@@ -30,6 +30,34 @@ export const supabase = supabaseUrl && supabaseServiceKey
 export const isSupabaseEnabled = () => !!supabase;
 
 /**
+ * ページネーション付きデータ一括取得
+ *
+ * @param {string} table - テーブル名
+ * @param {string} select - selectカラム
+ * @param {Function} [buildQuery] - クエリビルダー関数
+ * @returns {Promise<Array>}
+ */
+export async function fetchAll(table, select, buildQuery) {
+  const allData = [];
+  let from = 0;
+  const pageSize = 1000;
+  while (true) {
+    let q = supabase.from(table).select(select).range(from, from + pageSize - 1);
+    if (buildQuery) q = buildQuery(q);
+    const { data, error } = await q;
+    if (error) {
+      console.error(`${table} 取得エラー:`, error.message);
+      break;
+    }
+    if (!data || data.length === 0) break;
+    allData.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return allData;
+}
+
+/**
  * 会場コード→会場名のマッピング
  */
 export const VENUE_NAMES = {

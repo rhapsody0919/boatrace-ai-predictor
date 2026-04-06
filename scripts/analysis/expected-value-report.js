@@ -11,8 +11,8 @@
  */
 
 import {
-  supabase,
   isSupabaseEnabled,
+  fetchAll,
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
 
@@ -37,28 +37,6 @@ function parseArgs() {
   return opts;
 }
 
-async function fetchAll(table, select, buildQuery) {
-  const allData = [];
-  let from = 0;
-  const pageSize = 1000;
-  while (true) {
-    let q = supabase
-      .from(table)
-      .select(select)
-      .range(from, from + pageSize - 1);
-    if (buildQuery) q = buildQuery(q);
-    const { data, error } = await q;
-    if (error) {
-      console.error(`${table} 取得エラー:`, error.message);
-      break;
-    }
-    if (!data || data.length === 0) break;
-    allData.push(...data);
-    if (data.length < pageSize) break;
-    from += pageSize;
-  }
-  return allData;
-}
 
 function fmt(v, digits = 1) {
   return v.toFixed(digits);
@@ -306,9 +284,9 @@ async function main() {
   // 3. 「EV > 1 の時だけ買う」シミュレーション
   // =========================================
   console.log("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("3. 「予測確率 × オッズ > 閾値」シミュレーション");
-  console.log("   的中レースのEVで事後フィルタした場合の効果");
-  console.log("   ※ 事前にオッズがわかれば、この戦略が実行可能");
+  console.log("3. 予測確率閾値シミュレーション");
+  console.log("   「P ≥ 閾値のレースだけ買う」戦略の事後検証");
+  console.log("   ※ 事前に使える情報は予測確率のみ（オッズは結果判明後）");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
   // 全レースの回収率（ベースライン）

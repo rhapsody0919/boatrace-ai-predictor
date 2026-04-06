@@ -13,9 +13,8 @@
  */
 
 import {
-  supabase,
   isSupabaseEnabled,
-  VENUE_NAMES,
+  fetchAll,
 } from "../lib/supabaseClient.js";
 
 // 決まり手マッピング（予測側の英語 → 実績側の日本語）
@@ -45,38 +44,15 @@ function parseArgs() {
   return opts;
 }
 
-// ページネーション付きデータ取得
-async function fetchAll(table, select, buildQuery) {
-  const allData = [];
-  let from = 0;
-  const pageSize = 1000;
-  while (true) {
-    let q = supabase
-      .from(table)
-      .select(select)
-      .range(from, from + pageSize - 1);
-    if (buildQuery) q = buildQuery(q);
-    const { data, error } = await q;
-    if (error) {
-      console.error(`${table} 取得エラー:`, error.message);
-      break;
-    }
-    if (!data || data.length === 0) break;
-    allData.push(...data);
-    if (data.length < pageSize) break;
-    from += pageSize;
-  }
-  return allData;
-}
-
-// ISO週番号を取得
+// ISO 8601 週番号を取得
 function getISOWeek(dateStr) {
   const d = new Date(dateStr + "T00:00:00Z");
-  const dayOfYear = Math.floor(
-    (d - new Date(Date.UTC(d.getUTCFullYear(), 0, 1))) / 86400000,
-  );
-  const weekNum = Math.ceil((dayOfYear + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, "0")}`;
+  // 木曜日を基準に週の年を決定（ISO 8601）
+  const thursday = new Date(d);
+  thursday.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(thursday.getUTCFullYear(), 0, 1));
+  const weekNum = Math.ceil(((thursday - yearStart) / 86400000 + 1) / 7);
+  return `${thursday.getUTCFullYear()}-W${String(weekNum).padStart(2, "0")}`;
 }
 
 // 線形回帰
