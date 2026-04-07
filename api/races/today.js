@@ -46,8 +46,8 @@ export default async function handler(req) {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        // CDNキャッシュ: 5分間キャッシュ、10分間は古いデータを返しつつ裏で更新
-        'Cache-Control': 's-maxage=300, stale-while-revalidate=600',
+        // CDNキャッシュ: 1時間キャッシュ（毎時デプロイでリセットされるため古くならない）
+        'Cache-Control': 's-maxage=3600, stale-while-revalidate=7200',
       },
     });
   } catch (error) {

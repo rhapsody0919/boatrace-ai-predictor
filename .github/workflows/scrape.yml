@@ -56,14 +56,6 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         continue-on-error: true
 
-      - name: Calculate accuracy
-        run: node scripts/daily/calculate-accuracy.js
-        env:
-          TZ: 'Asia/Tokyo'
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        continue-on-error: true
-
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"

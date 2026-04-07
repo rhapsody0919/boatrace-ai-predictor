@@ -1,0 +1,31 @@
+name: Calculate Accuracy Daily
+
+on:
+  schedule:
+    # JST 23:30（全レース終了後に1日分を集計）= UTC 14:30
+    - cron: '30 14 * * *'
+  workflow_dispatch:
+
+jobs:
+  calculate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Calculate accuracy
+        run: node scripts/daily/calculate-accuracy.js
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
