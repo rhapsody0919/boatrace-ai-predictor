@@ -71,8 +71,8 @@ export default async function handler(req) {
     // 今日のデータ: 1時間キャッシュ（毎時デプロイでリセットされるため古くならない）
     // 過去データ: 1日キャッシュ
     const cacheControl = isToday
-      ? 's-maxage=3600, stale-while-revalidate=7200'
-      : 's-maxage=86400, stale-while-revalidate=604800';
+      ? 's-maxage=3600, stale-while-revalidate=600'
+      : 's-maxage=86400, stale-while-revalidate=3600';
 
     return new Response(JSON.stringify(data), {
       status: 200,

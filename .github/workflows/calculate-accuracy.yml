@@ -6,6 +6,9 @@ on:
     - cron: '30 14 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read  # Supabase書き込みのみ、git pushなし
+
 jobs:
   calculate:
     runs-on: ubuntu-latest
