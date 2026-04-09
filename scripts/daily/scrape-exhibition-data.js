@@ -211,10 +211,11 @@ async function main() {
   }
   console.log(`📊 当日レース数: ${schedule.length}件`);
 
-  // ±8分ウィンドウ（22〜38分前）: 5分毎実行 + cron-job.org 遅延を考慮した安全マージン
-  const windowRaces = getRacesInWindow(schedule, 30, 8);
+  // ±15分ウィンドウ（15〜45分前）: 展示データ公開タイミング（発走18〜22分前）を確実にカバー
+  // 旧: ±8分（22〜38分前）→ 展示データ公開直後にウィンドウ外になるケースが発生
+  const windowRaces = getRacesInWindow(schedule, 30, 15);
   if (windowRaces.length === 0) {
-    console.log("📭 発走22〜38分前ウィンドウの対象レースなし");
+    console.log("📭 発走15〜45分前ウィンドウの対象レースなし");
     return;
   }
   console.log(`🎯 取得対象: ${windowRaces.length}レース（発走22〜38分前ウィンドウ）`);
