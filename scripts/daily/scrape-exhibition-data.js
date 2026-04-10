@@ -26,46 +26,6 @@ const FETCH_HEADERS = {
 };
 
 /**
- * race_id を生成 (YYYY-MM-DD-VV-RR 形式)
- */
-function makeRaceId(date, venueCode, raceNo) {
-  const vv = String(venueCode).padStart(2, "0");
-  const rr = String(raceNo).padStart(2, "0");
-  return `${date}-${vv}-${rr}`;
-}
-
-/**
- * 本日開催中のレース場リストを取得
- */
-async function getTodayVenues() {
-  const url = "https://www.boatrace.jp/owpc/pc/race/index";
-  const response = await fetch(url, { headers: FETCH_HEADERS });
-
-  if (!response.ok) {
-    console.error(`HTTP ${response.status}: ${url}`);
-    return [];
-  }
-
-  const html = await response.text();
-  const $ = cheerio.load(html);
-  const venues = new Set();
-
-  $('a[href*="raceindex"]').each((i, elem) => {
-    const href = $(elem).attr("href");
-    if (href) {
-      const match = href.match(/jcd=(\d+)/);
-      if (match) venues.add(parseInt(match[1]));
-    }
-  });
-
-  const venuesList = Array.from(venues).sort((a, b) => a - b);
-  console.log(
-    `📍 本日の開催会場: ${venuesList.length}場 (${venuesList.map((v) => VENUE_NAMES[v]).join(", ")})`,
-  );
-  return venuesList;
-}
-
-/**
  * Supabase から取得済みの展示データがある race_id セットを取得
  */
 async function getExistingExhibitionRaceIds(date) {
@@ -78,26 +38,6 @@ async function getExistingExhibitionRaceIds(date) {
 
   if (error) {
     console.error("⚠️ 取得済みデータの確認に失敗:", error.message);
-    return new Set();
-  }
-
-  return new Set(data.map((r) => r.race_id));
-}
-
-/**
- * races テーブルに存在する race_id セットを取得
- * （exhibition_data は races への FK 制約があるため、存在しない race_id には書き込めない）
- */
-async function getExistingRaceIds(date) {
-  if (!isSupabaseEnabled()) return new Set();
-
-  const { data, error } = await supabase
-    .from("races")
-    .select("race_id")
-    .like("race_id", `${date}%`);
-
-  if (error) {
-    console.error("⚠️ races テーブルの確認に失敗:", error.message);
     return new Set();
   }
 
