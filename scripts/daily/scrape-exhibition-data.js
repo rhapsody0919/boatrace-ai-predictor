@@ -211,14 +211,14 @@ async function main() {
   }
   console.log(`📊 当日レース数: ${schedule.length}件`);
 
-  // ±15分ウィンドウ（15〜45分前）: 展示データ公開タイミング（発走18〜22分前）を確実にカバー
-  // 旧: ±8分（22〜38分前）→ 展示データ公開直後にウィンドウ外になるケースが発生
-  const windowRaces = getRacesInWindow(schedule, 30, 15);
+  // ±20分ウィンドウ（10〜50分前）: GitHub Actions実行ラグ（1〜2分）を考慮し下限を10分前に設定
+  // 旧: ±15分（15〜45分前）→ 展示データ公開（発走14〜15分前）直後にウィンドウ外になるケースが発生
+  const windowRaces = getRacesInWindow(schedule, 30, 20);
   if (windowRaces.length === 0) {
-    console.log("📭 発走15〜45分前ウィンドウの対象レースなし");
+    console.log("📭 発走10〜50分前ウィンドウの対象レースなし");
     return;
   }
-  console.log(`🎯 取得対象: ${windowRaces.length}レース（発走22〜38分前ウィンドウ）`);
+  console.log(`🎯 取得対象: ${windowRaces.length}レース（発走10〜50分前ウィンドウ）`);
 
   // 展示データ取得済みの race_id（スキップ判定用）
   const existingExhibitionIds = await getExistingExhibitionRaceIds(date);
