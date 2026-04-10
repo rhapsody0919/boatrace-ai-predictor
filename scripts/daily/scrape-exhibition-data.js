@@ -106,11 +106,15 @@ async function getExistingRaceIds(date) {
 
 /**
  * beforeinfo ページから展示データをスクレイピング
+ * @returns {{ data: Array|null, reason: string|null }}
+ *   reason: 'tables_lt_2' | 'no_boats' | 'no_values' | null(成功)
  */
 function scrapeExhibitionData($) {
   const exhibitionData = [];
   const tables = $(".table1");
-  if (tables.length < 2) return null;
+  if (tables.length < 2) {
+    return { data: null, reason: `tables_lt_2 (found ${tables.length})` };
+  }
 
   // 展示タイム（table[1]の各tbody）
   const exTable = tables.eq(1);
@@ -134,6 +138,10 @@ function scrapeExhibitionData($) {
       });
     }
   });
+
+  if (exhibitionData.length === 0) {
+    return { data: null, reason: `no_boats (tbodies=${tbodies.length})` };
+  }
 
   // 展示ST（table[2]）
   if (tables.length >= 3) {
@@ -162,11 +170,15 @@ function scrapeExhibitionData($) {
   const hasData = exhibitionData.some(
     (e) => e.exhibitionTime !== null || e.startTiming !== null,
   );
-  return hasData ? exhibitionData : null;
+  if (!hasData) {
+    return { data: null, reason: `no_values (boats=${exhibitionData.length})` };
+  }
+  return { data: exhibitionData, reason: null };
 }
 
 /**
  * 1レースの展示データを取得
+ * @returns {{ data: Array|null, reason: string|null }}
  */
 async function fetchExhibitionForRace(date, venueCode, raceNo) {
   const ymd = date.replace(/-/g, "");
@@ -175,7 +187,9 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
 
   try {
     const response = await fetch(url, { headers: FETCH_HEADERS });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      return { data: null, reason: `http_${response.status}` };
+    }
 
     const html = await response.text();
     const $ = cheerio.load(html);
@@ -184,7 +198,7 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
     console.error(
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R: ${error.message}`,
     );
-    return null;
+    return { data: null, reason: `error: ${error.message}` };
   }
 }
 
@@ -247,15 +261,17 @@ async function main() {
     // 会場内の全対象レースを並列取得
     const results = await Promise.all(
       races.map((r) =>
-        fetchExhibitionForRace(date, venueCode, r.race_no).then((data) => ({
+        fetchExhibitionForRace(date, venueCode, r.race_no).then(({ data, reason }) => ({
           raceId: r.race_id,
           data,
+          reason,
         })),
       ),
     );
 
     let venueFetched = 0;
-    for (const { raceId, data } of results) {
+    for (const { raceId, data, reason } of results) {
+      const raceNo = raceId.split("-")[4];
       if (data) {
         for (const ex of data) {
           if (ex.exhibitionTime != null || ex.startTiming != null) {
@@ -268,6 +284,8 @@ async function main() {
           }
         }
         venueFetched++;
+      } else {
+        console.log(`  ⚠️ ${venueName} ${parseInt(raceNo)}R: データなし (${reason})`);
       }
     }
 
