@@ -1283,18 +1283,20 @@ async function main() {
     }
 }
 
-// スクリプト実行
-const args = process.argv.slice(2);
-const isRefresh = args.includes('--refresh');
-const isDryRun = args.includes('--dry-run');
-const raceIdsArg = args.find((a) => a.startsWith('--race-ids='));
-const specificRaceIds = raceIdsArg ? raceIdsArg.split('=')[1].split(',') : null;
+// スタンドアローン実行時のみ実行する（import 時に実行させない）
+if (process.argv[1] === __filename) {
+    const args = process.argv.slice(2);
+    const isRefresh = args.includes('--refresh');
+    const isDryRun = args.includes('--dry-run');
+    const raceIdsArg = args.find((a) => a.startsWith('--race-ids='));
+    const specificRaceIds = raceIdsArg ? raceIdsArg.split('=')[1].split(',') : null;
 
-if (isRefresh) {
-    mainRefresh({ isDryRun, specificRaceIds }).catch((error) => {
-        console.error('❌ エラー:', error);
-        process.exit(1);
-    });
-} else {
-    main();
+    if (isRefresh) {
+        mainRefresh({ isDryRun, specificRaceIds }).catch((error) => {
+            console.error('❌ エラー:', error);
+            process.exit(1);
+        });
+    } else {
+        main();
+    }
 }

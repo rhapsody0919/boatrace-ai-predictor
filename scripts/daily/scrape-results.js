@@ -619,8 +619,8 @@ async function fixMissingHitFlags(targetDate) {
   }
 }
 
-// Get date from command line argument (optional)
-const targetDate = parseDateArg();
-
-// Execute script
-scrapeResults(targetDate);
+// スタンドアローン実行時のみ実行する（import 時に実行させない）
+if (process.argv[1] === new URL(import.meta.url).pathname) {
+  const targetDate = parseDateArg();
+  scrapeResults(targetDate);
+}

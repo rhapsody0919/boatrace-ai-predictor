@@ -275,7 +275,10 @@ async function main() {
   console.log("🏁 完了");
 }
 
-main().catch((err) => {
-  console.error("❌ エラー:", err);
-  process.exit(1);
-});
+// スタンドアローン実行時のみ main() を呼ぶ（import 時に実行させない）
+if (process.argv[1] === new URL(import.meta.url).pathname) {
+  main().catch((err) => {
+    console.error("❌ エラー:", err);
+    process.exit(1);
+  });
+}
