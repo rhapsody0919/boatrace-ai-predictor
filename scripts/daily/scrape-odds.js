@@ -140,33 +140,17 @@ async function fetchOddsForRace(date, venueCode, raceNo) {
 }
 
 /**
- * メイン処理
+ * オーケストレーターから呼び出し可能なオッズ取得処理
+ * @param {Array} schedule - getRaceSchedule() の返り値（外部から渡す）
+ * @param {string} date - YYYY-MM-DD
+ * @returns {Promise<{updated: boolean, count: number}>}
  */
-async function main() {
-  console.log("🎰 オッズスクレイピング開始");
-  console.log(`⏰ ${new Date().toISOString()}`);
-
-  if (!isSupabaseEnabled()) {
-    console.error("❌ Supabase環境変数が未設定です。");
-    process.exit(1);
-  }
-
-  const date = parseDateArg() || getTodayDateJST();
-  console.log(`📅 対象日: ${date}`);
-
-  // レーススケジュール取得
-  const schedule = await getRaceSchedule(date);
-  if (schedule.length === 0) {
-    console.log("📭 対象レースなし（スケジュール未登録）");
-    return;
-  }
-  console.log(`📊 当日レース数: ${schedule.length}件`);
-
+export async function run(schedule, date) {
   // 結果取得済みレースはスキップ
   const finishedIds = await getFinishedRaceIds(date);
 
   // 各ウィンドウで対象レースを収集（重複なし）
-  const targetRaces = new Map(); // race_id → race info
+  const targetRaces = new Map();
   for (const minutes of ODDS_WINDOWS) {
     const inWindow = getRacesInWindow(schedule, minutes);
     for (const r of inWindow) {
@@ -177,12 +161,12 @@ async function main() {
   }
 
   if (targetRaces.size === 0) {
-    console.log("📭 現在取得対象のレースなし（全ウィンドウ外）");
-    return;
+    console.log("📭 オッズ: 取得対象レースなし（全ウィンドウ外）");
+    return { updated: false, count: 0 };
   }
 
   console.log(
-    `🎯 取得対象: ${targetRaces.size}レース (${ODDS_WINDOWS.map((m) => `${m}分前`).join("/")} ウィンドウ)`,
+    `🎯 オッズ取得: ${targetRaces.size}レース (${ODDS_WINDOWS.map((m) => `${m}分前`).join("/")} ウィンドウ)`,
   );
 
   // 会場ごとにグループ化して並列取得
@@ -244,13 +228,12 @@ async function main() {
     }
   }
 
-  // Supabase に upsert
   if (allRows.length === 0) {
-    console.log("\n📭 書き込みデータなし");
-    return;
+    console.log("\n📭 オッズ: 書き込みデータなし");
+    return { updated: false, count: 0 };
   }
 
-  console.log(`\n💾 Supabase に ${allRows.length} 件を書き込み中...`);
+  console.log(`\n💾 race_odds: ${allRows.length}件書き込み中...`);
   for (let i = 0; i < allRows.length; i += 1000) {
     const batch = allRows.slice(i, i + 1000);
     const { error } = await supabase
@@ -261,7 +244,33 @@ async function main() {
     }
   }
 
-  console.log(`✅ ${allRows.length}件 書き込み完了`);
+  console.log(`✅ race_odds: ${allRows.length}件完了`);
+  return { updated: true, count: allRows.length };
+}
+
+/**
+ * メイン処理（スタンドアローン実行用）
+ */
+async function main() {
+  console.log("🎰 オッズスクレイピング開始");
+  console.log(`⏰ ${new Date().toISOString()}`);
+
+  if (!isSupabaseEnabled()) {
+    console.error("❌ Supabase環境変数が未設定です。");
+    process.exit(1);
+  }
+
+  const date = parseDateArg() || getTodayDateJST();
+  console.log(`📅 対象日: ${date}`);
+
+  const schedule = await getRaceSchedule(date);
+  if (schedule.length === 0) {
+    console.log("📭 対象レースなし（スケジュール未登録）");
+    return;
+  }
+  console.log(`📊 当日レース数: ${schedule.length}件`);
+
+  await run(schedule, date);
   console.log("🏁 完了");
 }
 

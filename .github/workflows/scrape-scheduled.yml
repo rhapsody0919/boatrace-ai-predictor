@@ -44,45 +44,11 @@ jobs:
           VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
         continue-on-error: true
 
-      # Phase 1: オッズ取得（発走前60/30/15/10/5分前のウィンドウ）
-      - name: Scrape odds for upcoming races
-        run: node scripts/daily/scrape-odds.js
-        env:
-          TZ: 'Asia/Tokyo'
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        continue-on-error: true
-
-      # Phase 2: レース情報更新（発走1時間前: 欠場・代替・天候）
-      - name: Update race info for upcoming races
-        run: node scripts/daily/update-race-info.js
-        env:
-          TZ: 'Asia/Tokyo'
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        continue-on-error: true
-
-      # Phase 3: 展示データ取得（発走30分前ウィンドウ）
-      - name: Scrape exhibition data for upcoming races
-        run: node scripts/daily/scrape-exhibition-data.js
-        env:
-          TZ: 'Asia/Tokyo'
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        continue-on-error: true
-
-      # Phase 3: 結果取得（発走後5分以上経過レース）
-      - name: Scrape race results for finished races
-        run: node scripts/daily/scrape-results.js
-        env:
-          TZ: 'Asia/Tokyo'
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        continue-on-error: true
-
-      # Phase 4: 予測リフレッシュ（各ウィンドウのレースを再予測）
-      - name: Refresh predictions for upcoming races
-        run: node scripts/daily/generate-predictions.js --refresh
+      # スクレイピングオーケストレーター
+      # スケジュール取得を1回のみ実行し、対象ウィンドウのレースがあれば必要な処理を実行する。
+      # 対象レースがなければ即終了（Egress ゼロ）。データ更新時のみ予測リフレッシュ・Deploy Hook を実行。
+      - name: Run scraping orchestrator
+        run: node scripts/daily/scrape-scheduled.js
         env:
           TZ: 'Asia/Tokyo'
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

@@ -254,35 +254,20 @@ async function fetchRaceInfo(date, venueCode, raceNo) {
 }
 
 /**
- * メイン処理
+ * オーケストレーターから呼び出し可能なレース情報更新処理
+ * @param {Array} schedule - getRaceSchedule() の返り値（外部から渡す）
+ * @param {string} date - YYYY-MM-DD
+ * @returns {Promise<{updated: boolean, count: number}>}
  */
-async function main() {
-  console.log("📋 レース情報更新開始");
-  console.log(`⏰ ${new Date().toISOString()}`);
-
-  if (!isSupabaseEnabled()) {
-    console.error("❌ Supabase環境変数が未設定です。");
-    process.exit(1);
-  }
-
-  const date = parseDateArg() || getTodayDateJST();
-  console.log(`📅 対象日: ${date}`);
-
-  const schedule = await getRaceSchedule(date);
-  if (schedule.length === 0) {
-    console.log("📭 対象レースなし（スケジュール未登録）");
-    return;
-  }
-  console.log(`📊 当日レース数: ${schedule.length}件`);
-
+export async function run(schedule, date) {
   // 発走1時間前ウィンドウのレースのみ対象
   const targetRaces = getRacesInWindow(schedule, WINDOW_MINUTES);
   if (targetRaces.length === 0) {
-    console.log(`📭 発走${WINDOW_MINUTES}分前ウィンドウの対象レースなし`);
-    return;
+    console.log(`📭 レース情報: 発走${WINDOW_MINUTES}分前ウィンドウの対象レースなし`);
+    return { updated: false, count: 0 };
   }
   console.log(
-    `🎯 取得対象: ${targetRaces.length}レース（発走${WINDOW_MINUTES}分前ウィンドウ）`,
+    `🎯 レース情報更新: ${targetRaces.length}レース（発走${WINDOW_MINUTES}分前ウィンドウ）`,
   );
 
   // 会場ごとにグループ化して並列取得
@@ -374,11 +359,11 @@ async function main() {
   }
 
   if (entriesRows.length === 0) {
-    console.log("\n📭 書き込みデータなし");
-    return;
+    console.log("\n📭 レース情報: 書き込みデータなし");
+    return { updated: false, count: 0 };
   }
 
-  console.log(`\n💾 Supabase に書き込み中...`);
+  console.log(`\n💾 レース情報書き込み中...`);
 
   // race_entries upsert
   for (let i = 0; i < entriesRows.length; i += 1000) {
@@ -400,6 +385,32 @@ async function main() {
     else console.log(`  ✅ race_conditions: ${conditionsRows.length}件`);
   }
 
+  return { updated: true, count: entriesRows.length };
+}
+
+/**
+ * メイン処理（スタンドアローン実行用）
+ */
+async function main() {
+  console.log("📋 レース情報更新開始");
+  console.log(`⏰ ${new Date().toISOString()}`);
+
+  if (!isSupabaseEnabled()) {
+    console.error("❌ Supabase環境変数が未設定です。");
+    process.exit(1);
+  }
+
+  const date = parseDateArg() || getTodayDateJST();
+  console.log(`📅 対象日: ${date}`);
+
+  const schedule = await getRaceSchedule(date);
+  if (schedule.length === 0) {
+    console.log("📭 対象レースなし（スケジュール未登録）");
+    return;
+  }
+  console.log(`📊 当日レース数: ${schedule.length}件`);
+
+  await run(schedule, date);
   console.log("🏁 完了");
 }
 

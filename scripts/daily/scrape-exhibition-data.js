@@ -143,36 +143,32 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
 }
 
 /**
- * メイン処理
+ * オーケストレーターから呼び出し可能な展示データ取得処理
+ * @param {Array} schedule - getRaceSchedule() の返り値（外部から渡す）
+ * @param {string} date - YYYY-MM-DD
+ * @returns {Promise<{updated: boolean, count: number}>}
  */
-async function main() {
-  console.log("🚀 展示データ専用スクレイピング開始");
-  console.log(`⏰ ${new Date().toISOString()}`);
+/**
+ * 展示データ取得のウィンドウ（BOA-55: 発走30分前・15分前・10分前）
+ * existingExhibitionIds でスキップ制御するため広めに取っても二重取得なし。
+ */
+const EXHIBITION_WINDOWS = [30, 15, 10];
 
-  if (!isSupabaseEnabled()) {
-    console.error("❌ Supabase環境変数が未設定です。");
-    process.exit(1);
+export async function run(schedule, date) {
+  // BOA-55: 30分前（初回取得）・15分前・10分前（未取得時リトライ）のウィンドウをカバー
+  const exhibitionTargetMap = new Map();
+  for (const w of EXHIBITION_WINDOWS) {
+    for (const r of getRacesInWindow(schedule, w, 3)) {
+      exhibitionTargetMap.set(r.race_id, r);
+    }
   }
+  const windowRaces = [...exhibitionTargetMap.values()];
 
-  const date = parseDateArg() || getTodayDateJST();
-  console.log(`📅 対象日: ${date}`);
-
-  // 発走30分前ウィンドウのレースのみ対象
-  const schedule = await getRaceSchedule(date);
-  if (schedule.length === 0) {
-    console.log("📭 対象レースなし（スケジュール未登録）");
-    return;
-  }
-  console.log(`📊 当日レース数: ${schedule.length}件`);
-
-  // ±15分ウィンドウ（15〜45分前）: 展示データ公開タイミング（発走18〜22分前）を確実にカバー
-  // 旧: ±8分（22〜38分前）→ 展示データ公開直後にウィンドウ外になるケースが発生
-  const windowRaces = getRacesInWindow(schedule, 30, 15);
   if (windowRaces.length === 0) {
-    console.log("📭 発走15〜45分前ウィンドウの対象レースなし");
-    return;
+    console.log("📭 展示: 発走10〜33分前ウィンドウの対象レースなし");
+    return { updated: false, count: 0 };
   }
-  console.log(`🎯 取得対象: ${windowRaces.length}レース（発走22〜38分前ウィンドウ）`);
+  console.log(`🎯 展示データ取得: ${windowRaces.length}レース（発走30/15/10分前ウィンドウ）`);
 
   // 展示データ取得済みの race_id（スキップ判定用）
   const existingExhibitionIds = await getExistingExhibitionRaceIds(date);
@@ -186,8 +182,8 @@ async function main() {
   }
 
   if (byVenue.size === 0) {
-    console.log("📭 全レース取得済み（スキップ）");
-    return;
+    console.log("📭 展示: 全レース取得済み（スキップ）");
+    return { updated: false, count: 0 };
   }
 
   let totalFetched = 0;
@@ -242,7 +238,7 @@ async function main() {
 
   // Supabase に upsert
   if (allRows.length > 0) {
-    console.log(`\n💾 Supabase に ${allRows.length} 件を書き込み中...`);
+    console.log(`\n💾 exhibition_data: ${allRows.length}件書き込み中...`);
 
     for (let i = 0; i < allRows.length; i += 1000) {
       const batch = allRows.slice(i, i + 1000);
@@ -255,12 +251,38 @@ async function main() {
       }
     }
 
-    console.log(`✅ ${allRows.length}件 書き込み完了`);
+    console.log(`✅ exhibition_data: ${allRows.length}件完了`);
   } else {
-    console.log("\n📭 新規データなし");
+    console.log("\n📭 展示: 新規データなし");
   }
 
-  console.log(`\n📊 結果: 取得${totalFetched}R / データ${allRows.length}件`);
+  console.log(`📊 展示: 取得${totalFetched}R / データ${allRows.length}件`);
+  return { updated: allRows.length > 0, count: allRows.length };
+}
+
+/**
+ * メイン処理（スタンドアローン実行用）
+ */
+async function main() {
+  console.log("🚀 展示データ専用スクレイピング開始");
+  console.log(`⏰ ${new Date().toISOString()}`);
+
+  if (!isSupabaseEnabled()) {
+    console.error("❌ Supabase環境変数が未設定です。");
+    process.exit(1);
+  }
+
+  const date = parseDateArg() || getTodayDateJST();
+  console.log(`📅 対象日: ${date}`);
+
+  const schedule = await getRaceSchedule(date);
+  if (schedule.length === 0) {
+    console.log("📭 対象レースなし（スケジュール未登録）");
+    return;
+  }
+  console.log(`📊 当日レース数: ${schedule.length}件`);
+
+  await run(schedule, date);
   console.log("🏁 完了");
 }
 

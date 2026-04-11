@@ -248,53 +248,37 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
   }
 }
 
-// Main function
-async function scrapeResults(dateStr = null) {
-  if (!isSupabaseEnabled()) {
-    console.error('❌ Supabaseが設定されていません');
-    process.exit(1);
+/**
+ * オーケストレーターから呼び出し可能な結果取得処理
+ * @param {Array} schedule - getRaceSchedule() の返り値（外部から渡す）
+ * @param {string} date - YYYY-MM-DD
+ * @returns {Promise<{updated: boolean, count: number}>}
+ */
+export async function run(schedule, date) {
+  const startedRaces = getRacesAfterStart(schedule, 5);
+  if (startedRaces.length === 0) {
+    console.log('📭 結果: 発走後5分以上経過したレースなし');
+    return { updated: false, count: 0 };
   }
+  console.log(`🎯 結果取得: ${startedRaces.length}レース（発走後5分以上）`);
 
-  const targetDate = dateStr || getTodayDateJST();
-  console.log(`Starting race result scraping: ${targetDate}`);
+  // schedule から直接 races 情報を構築（追加 DB 呼び出し不要）
+  const races = startedRaces.map(r => ({
+    race_id: r.race_id,
+    venue_code: r.venue_code,
+    race_number: r.race_no,
+  }));
 
-  // 発走後5分以上経過したレースのみ対象
-  // スケジュール取得失敗時はフィルタなしで全レースを対象にフォールバック
-  const schedule = await getRaceSchedule(targetDate);
-  let startedRaceIds = null;
-  if (schedule.length > 0) {
-    const startedRaces = getRacesAfterStart(schedule, 5);
-    startedRaceIds = new Set(startedRaces.map((r) => r.race_id));
-    if (startedRaceIds.size === 0) {
-      console.log('📭 発走後5分以上経過したレースなし');
-      return;
-    }
-    console.log(`🎯 取得対象: ${startedRaceIds.size}レース（発走後5分以上）`);
-  } else {
-    console.warn('⚠️ スケジュール取得失敗: フィルタなしで全レースを対象');
-  }
+  return scrapeAndSaveResults(races, date);
+}
 
-  // Supabaseから対象日のレース一覧を取得
-  const { data: allRaces, error: racesError } = await supabase
-    .from('races')
-    .select('race_id, venue_code, race_number')
-    .eq('race_date', targetDate)
-    .order('race_id');
-
-  if (racesError) {
-    console.error('❌ レース取得エラー:', racesError.message);
-    process.exit(1);
-  }
-
-  // 発走後5分以上のレースに絞り込む（スケジュール取得失敗時は全レース対象）
-  const races = startedRaceIds
-    ? (allRaces || []).filter((r) => startedRaceIds.has(r.race_id))
-    : (allRaces || []);
-
-  if (races.length === 0) {
-    console.log('⚠️  対象レースがありません');
-    process.exit(0);
-  }
+/**
+ * 結果スクレイピング・DB書き込みの共通処理
+ * @param {Array} races - { race_id, venue_code, race_number }[] の配列
+ * @param {string} targetDate - YYYY-MM-DD
+ * @returns {Promise<{updated: boolean, count: number}>}
+ */
+async function scrapeAndSaveResults(races, targetDate) {
 
   // 既に結果があるレースを取得
   const { data: existingResults } = await supabase
@@ -417,21 +401,29 @@ async function scrapeResults(dateStr = null) {
       }
     }
 
-    // predictions の的中判定を更新
+    // predictions の的中判定を更新（N+1 → 1クエリでバッチ取得）
     console.log(`\n📤 predictions の的中判定を更新中...`);
     let winHits = 0;
     let placeHits = 0;
     let trifectaHits = 0;
     let trioHits = 0;
 
-    for (const result of newResults) {
-      // このレースの予測を取得
-      const { data: predictions, error: predError } = await supabase
-        .from('predictions')
-        .select('prediction_id, model_id, top_pick, top_2nd, top_3rd')
-        .eq('race_id', result.race_id);
+    const newResultIds = newResults.map(r => r.race_id);
+    const { data: allPredictions, error: predError } = await supabase
+      .from('predictions')
+      .select('prediction_id, model_id, top_pick, top_2nd, top_3rd, race_id')
+      .in('race_id', newResultIds);
 
-      if (predError || !predictions) continue;
+    // race_id ごとにグループ化
+    const predsByRace = new Map();
+    for (const pred of (allPredictions || [])) {
+      if (!predsByRace.has(pred.race_id)) predsByRace.set(pred.race_id, []);
+      predsByRace.get(pred.race_id).push(pred);
+    }
+
+    for (const result of newResults) {
+      const predictions = predsByRace.get(result.race_id) || [];
+      if (predictions.length === 0) continue;
 
       for (const pred of predictions) {
         // 単勝: 1着予測が的中
@@ -492,12 +484,60 @@ async function scrapeResults(dateStr = null) {
 
     console.log(`  ✅ 単勝的中: ${winHits}件, 複勝的中: ${placeHits}件`);
     console.log(`  ✅ 3連複的中: ${trifectaHits}件, 3連単的中: ${trioHits}件`);
+    // 欠落した的中フラグを修正（新結果取得時のみ）
+    await fixMissingHitFlags(targetDate);
+
+    return { updated: true, count: newResults.length };
   } else {
-    console.log('\n📤 Supabase: 新規結果なし');
+    console.log('\n📤 結果: 新規データなし');
+    return { updated: false, count: 0 };
+  }
+}
+
+// Main function（スタンドアローン実行用の後方互換ラッパー）
+async function scrapeResults(dateStr = null) {
+  if (!isSupabaseEnabled()) {
+    console.error('❌ Supabaseが設定されていません');
+    process.exit(1);
   }
 
-  // 欠落した的中フラグを修正（結果があるのにis_hit_winがNULLの予測）
-  await fixMissingHitFlags(targetDate);
+  const targetDate = dateStr || getTodayDateJST();
+  console.log(`Starting race result scraping: ${targetDate}`);
+
+  const schedule = await getRaceSchedule(targetDate);
+  let races;
+  if (schedule.length > 0) {
+    const startedRaces = getRacesAfterStart(schedule, 5);
+    if (startedRaces.length === 0) {
+      console.log('📭 発走後5分以上経過したレースなし');
+      return;
+    }
+    console.log(`🎯 取得対象: ${startedRaces.length}レース（発走後5分以上）`);
+    races = startedRaces.map(r => ({
+      race_id: r.race_id,
+      venue_code: r.venue_code,
+      race_number: r.race_no,
+    }));
+  } else {
+    // スケジュール取得失敗時: races テーブルから全件取得（フォールバック）
+    console.warn('⚠️ スケジュール取得失敗: races テーブルから全レースを対象');
+    const { data: allRaces, error: racesError } = await supabase
+      .from('races')
+      .select('race_id, venue_code, race_number')
+      .eq('race_date', targetDate)
+      .order('race_id');
+    if (racesError) {
+      console.error('❌ レース取得エラー:', racesError.message);
+      process.exit(1);
+    }
+    races = allRaces || [];
+    if (races.length === 0) {
+      console.log('⚠️ 対象レースがありません');
+      return;
+    }
+  }
+
+  await scrapeAndSaveResults(races, targetDate);
 }
 
 // 結果があるのにis_hit_winがNULLの予測を修正

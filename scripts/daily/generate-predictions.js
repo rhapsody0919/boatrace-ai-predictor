@@ -1080,8 +1080,9 @@ async function fetchRaceDataFromSupabase(raceIds) {
 
 /**
  * リフレッシュモードのメイン処理
+ * オーケストレーターから直接インポートして呼び出し可能
  */
-async function mainRefresh({ isDryRun, specificRaceIds }) {
+export async function mainRefresh({ isDryRun, specificRaceIds }) {
     console.log(`🔄 予測リフレッシュモード${isDryRun ? ' [DRY-RUN]' : ''}`);
     console.log(`⏰ ${new Date().toISOString()}`);
 
