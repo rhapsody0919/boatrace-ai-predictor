@@ -21,14 +21,11 @@ import {
   getRacesAfterStart,
 } from "../lib/raceSchedule.js";
 
-import { run as runOdds } from "./scrape-odds.js";
+import { run as runOdds, ODDS_WINDOWS } from "./scrape-odds.js";
 import { run as runUpdateInfo } from "./update-race-info.js";
 import { run as runExhibition } from "./scrape-exhibition-data.js";
 import { run as runResults } from "./scrape-results.js";
 import { mainRefresh } from "./generate-predictions.js";
-
-/** オッズ取得ウィンドウ（発走X分前±3分） */
-const ODDS_WINDOWS = [60, 30, 15, 10, 5];
 
 async function main() {
   console.log("🎯 スクレイピングオーケストレーター開始");

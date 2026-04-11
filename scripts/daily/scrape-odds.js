@@ -26,7 +26,8 @@ const FETCH_HEADERS = {
 };
 
 // 発走前の取得ウィンドウ（分）: 各ウィンドウで ±3分
-const ODDS_WINDOWS = [60, 30, 15, 10, 5];
+// オーケストレーターでも参照するため export
+export const ODDS_WINDOWS = [60, 30, 15, 10, 5];
 
 /**
  * 結果取得済みレースの race_id セットを取得（スキップ判定用）
