@@ -68,10 +68,11 @@ export default async function handler(req) {
     const today = new Date().toISOString().split('T')[0];
     const isToday = date === today;
 
-    // 今日のデータ: 1時間キャッシュ（毎時デプロイでリセットされるため古くならない）
+    // 今日のデータ: 5分キャッシュ（morning-init が全レースを逐次ロードする間に
+    //   古い部分データがキャッシュされても 5分以内に正しいデータへ更新される）
     // 過去データ: 1日キャッシュ
     const cacheControl = isToday
-      ? 's-maxage=3600, stale-while-revalidate=600'
+      ? 's-maxage=300, stale-while-revalidate=60'
       : 's-maxage=86400, stale-while-revalidate=3600';
 
     return new Response(JSON.stringify(data), {
