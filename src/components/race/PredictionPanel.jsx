@@ -183,7 +183,6 @@ function PredictionPanel({
               <BettingValueSection
                 prediction={prediction}
                 selectedModel={selectedModel}
-                selectedPatternIndex={selectedPatternIndex}
               />
             </motion.div>
           )}

@@ -1,4 +1,3 @@
-/* ネイビーグラデーション背景（PredictionFlash / FirstMarkAnimation と統一） */
 .bvs-section {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border-radius: 12px;
@@ -27,12 +26,10 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
-/* カード2列 */
 .bvs-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
 }
 
 .bvs-card {
@@ -45,12 +42,6 @@
   gap: 0.5rem;
 }
 
-/* 割安カードはボーダーを緑に */
-.bvs-card--value {
-  border-color: rgba(74, 222, 128, 0.5);
-  background: rgba(74, 222, 128, 0.06);
-}
-
 .bvs-card-label {
   font-size: 0.72rem;
   font-weight: 700;
@@ -59,7 +50,6 @@
   letter-spacing: 0.04em;
 }
 
-/* 買い目（BoatBadge 列） */
 .bvs-combo {
   display: flex;
   align-items: center;
@@ -91,99 +81,29 @@
   flex-shrink: 0;
 }
 
-/* スタッツ行 */
-.bvs-card-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.bvs-stat {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.25rem;
-}
-
-.bvs-stat-label {
-  font-size: 0.72rem;
-  color: rgba(255, 255, 255, 0.5);
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-/* 市場確率の計算式 */
-.bvs-formula {
-  font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.3);
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-.bvs-stat--market .bvs-stat-value {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.bvs-stat--market .bvs-stat-value strong {
-  font-size: 0.9rem;
-}
-
-.bvs-stat-value {
-  font-size: 0.85rem;
-  color: #e2e8f0;
+.bvs-odds {
   display: flex;
   align-items: baseline;
   gap: 0.15rem;
-  flex-shrink: 0;
+  margin-top: auto;
 }
 
-.bvs-stat-value strong {
-  font-size: 1rem;
+.bvs-odds strong {
+  font-size: 1.4rem;
   font-weight: 700;
+  color: #ffffff;
 }
 
 .bvs-unit {
-  font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .bvs-na {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.3);
 }
 
-/* 割安/割高バッジ */
-.bvs-badge {
-  margin-top: auto;
-  padding: 0.3rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-align: center;
-}
-
-.bvs-badge--value {
-  background: rgba(74, 222, 128, 0.15);
-  color: #4ade80;
-  border: 1px solid rgba(74, 222, 128, 0.3);
-}
-
-.bvs-badge--overpriced {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* 注釈 */
-.bvs-note {
-  margin: 0;
-  font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.3);
-  line-height: 1.5;
-}
-
-/* モバイル */
 @media (max-width: 480px) {
   .bvs-section {
     padding: 0.9rem 0.75rem;
@@ -201,9 +121,5 @@
     width: 1.35rem;
     height: 1.35rem;
     font-size: 0.75rem;
-  }
-
-  .bvs-formula {
-    font-size: 0.6rem;
   }
 }
