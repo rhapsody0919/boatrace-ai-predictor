@@ -5,7 +5,7 @@
  * 選択中モデルの3連単・3連複について、オッズ・AI推定確率・期待値を表示する。
  *
  * 期待値の算出:
- *   展開確率 = 展開確率分布に表示されている pattern.probability（そのまま使用）
+ *   展開確率 = distribution[pattern.technique]（展開確率分布バーの値と同じ）
  *   EV = 展開確率 × odds
  *
  * ボートレース控除率は約25%のため、ランダム期待値は0.75。
@@ -83,12 +83,12 @@ function formatUpdatedAt(iso) {
 }
 
 /**
- * EV計算: 展開確率 × オッズ
- * pattern.probability = 展開確率分布に表示されている確率そのもの
+ * EV計算: 展開確率分布の技法確率 × オッズ
+ * distribution[pattern.technique] = 展開確率分布のバーに表示されている確率
  */
-function computeEV(pattern, odds) {
-  if (!pattern || odds == null) return null;
-  const P = pattern.probability ?? 0;
+function computeEV(pattern, distribution, odds) {
+  if (!pattern || !distribution || odds == null) return null;
+  const P = distribution[pattern.technique] ?? 0;
   if (P <= 0) return null;
   return P * odds;
 }
@@ -126,16 +126,21 @@ function BettingValueSection({
     return tp.patterns[selectedPatternIndex] ?? tp.patterns[0];
   }, [prediction, selectedPatternIndex]);
 
-  // 展開確率分布の確率をそのまま使用
-  const patternProb = pattern ? (pattern.probability ?? 0) * 100 : null;
+  // distribution[technique] = 展開確率分布のバーに表示されている確率
+  const distribution = prediction?.turnPrediction?.distribution ?? null;
+  const patternProb = useMemo(() => {
+    if (!pattern || !distribution) return null;
+    const p = distribution[pattern.technique] ?? 0;
+    return p > 0 ? p * 100 : null;
+  }, [pattern, distribution]);
 
   const evTrifecta = useMemo(
-    () => computeEV(pattern, oddsData?.trifectaOdds),
-    [pattern, oddsData],
+    () => computeEV(pattern, distribution, oddsData?.trifectaOdds),
+    [pattern, distribution, oddsData],
   );
   const evTrio = useMemo(
-    () => computeEV(pattern, oddsData?.trioOdds),
-    [pattern, oddsData],
+    () => computeEV(pattern, distribution, oddsData?.trioOdds),
+    [pattern, distribution, oddsData],
   );
 
   if (!oddsData) return null;
