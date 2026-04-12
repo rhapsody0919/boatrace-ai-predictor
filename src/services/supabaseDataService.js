@@ -652,6 +652,7 @@ export const supabaseDataService = {
           start_timing
         ),
         prediction_odds (
+          updated_at,
           trifecta_pred_standard,
           trifecta_odds_standard,
           trio_pred_standard,
@@ -715,6 +716,7 @@ export const supabaseDataService = {
       const po = race.prediction_odds ?? null;
       const predictionOdds = po
         ? {
+            updatedAt:              po.updated_at               ?? null,
             trifectaPredStandard:   po.trifecta_pred_standard   ?? null,
             trifectaOddsStandard:   po.trifecta_odds_standard   != null ? Number(po.trifecta_odds_standard)   : null,
             trioPredStandard:       po.trio_pred_standard       ?? null,

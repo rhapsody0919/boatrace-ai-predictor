@@ -1,0 +1,181 @@
+.bvs-section {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.bvs-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.bvs-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.bvs-updated {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+/* カード2列 */
+.bvs-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.bvs-card {
+  padding: 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.bvs-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+
+/* 買い目（BoatBadge 列） */
+.bvs-card-combo {
+  margin-bottom: 0.6rem;
+}
+
+.bvs-combo {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+}
+
+.bvs-combo-sep {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+  padding: 0 0.1rem;
+}
+
+.bvs-combo-na {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.bvs-boat-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* スタッツ行 */
+.bvs-card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.bvs-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bvs-stat-label {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.bvs-stat-value {
+  font-size: 0.85rem;
+  color: #1e293b;
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+}
+
+.bvs-stat-value strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.bvs-unit {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.bvs-na {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* 期待値カラー */
+.bvs-ev strong {
+  font-size: 1rem;
+}
+
+.bvs-ev--positive strong {
+  color: #16a34a;
+}
+
+.bvs-ev--neutral strong {
+  color: #ca8a04;
+}
+
+.bvs-ev--negative strong {
+  color: #94a3b8;
+}
+
+.bvs-ev-check {
+  font-size: 0.75rem;
+  color: #16a34a;
+  margin-left: 0.1rem;
+}
+
+/* 注釈 */
+.bvs-note {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* モバイル */
+@media (max-width: 480px) {
+  .bvs-section {
+    padding: 0.9rem 0.75rem;
+  }
+
+  .bvs-cards {
+    gap: 0.5rem;
+  }
+
+  .bvs-card {
+    padding: 0.6rem;
+  }
+
+  .bvs-boat-badge {
+    width: 1.35rem;
+    height: 1.35rem;
+    font-size: 0.75rem;
+  }
+}

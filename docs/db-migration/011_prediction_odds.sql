@@ -138,6 +138,7 @@ BEGIN
             ),
             'predictionOdds', (
               SELECT json_build_object(
+                'updatedAt',               po.updated_at,
                 'trifectaPredStandard',    po.trifecta_pred_standard,
                 'trifectaOddsStandard',    po.trifecta_odds_standard,
                 'trioPredStandard',        po.trio_pred_standard,

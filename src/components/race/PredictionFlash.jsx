@@ -8,7 +8,6 @@
 import { useMemo } from "react";
 import { BOAT_COLORS } from "../../utils/colors";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
-import OddsDisplay from "./OddsDisplay";
 import "./PredictionFlash.css";
 
 /**
@@ -205,7 +204,6 @@ function PredictionFlash({
   prediction,
   selectedRace,
   selectedPatternIndex = 0,
-  selectedModel = "standard",
 }) {
   const betData = useMemo(
     () => buildBetData(prediction, selectedPatternIndex),
@@ -315,11 +313,6 @@ function PredictionFlash({
         </>
       )}
 
-      {/* 配当妙味（オッズ） */}
-      <OddsDisplay
-        predictionOdds={prediction.predictionOdds}
-        selectedModel={selectedModel}
-      />
     </div>
   );
 }
