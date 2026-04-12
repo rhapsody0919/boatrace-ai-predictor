@@ -1,30 +1,26 @@
 /**
  * BettingValueSection - 配当妙味セクション
  *
- * FirstMarkAnimation の直下に表示する独立セクション。
- * 選択中モデルの3連単・3連複について、オッズ・AI推定確率・期待値を表示する。
+ * AI推定確率 vs 市場確率（= 0.75 ÷ オッズ）を比較し、
+ * AIが市場より高く評価していれば「割安（妙味あり）」と表示する。
  *
- * 期待値の算出:
- *   展開確率 = distribution[pattern.technique]（展開確率分布バーの値と同じ）
- *   EV = 展開確率 × odds
+ * AI確率の算出:
+ *   3連単: pattern.probability × secondPlace[c2] × thirdPlace[c3]
+ *   3連複: pattern.probability × (secondPlace[c2]×thirdPlace[c3] + secondPlace[c3]×thirdPlace[c2])
  *
- * ボートレース控除率は約25%のため、ランダム期待値は0.75。
- * EV ≥ 1.0 が購入検討ライン。
+ * 市場確率の算出:
+ *   市場確率 = 0.75 ÷ オッズ（控除率25%を考慮した逆算）
  */
 import { useMemo } from "react";
 import { BOAT_COLORS } from "../../utils/colors";
 import "./BettingValueSection.css";
 
-// モデルキー（kebab）→ predictionOdds フィールドのサフィックスへのマッピング
 const MODEL_SUFFIX = {
   "safe-bet": "SafeBet",
   standard: "Standard",
   "upset-focus": "UpsetFocus",
 };
 
-/**
- * ボート番号バッジ（小）
- */
 function BoatBadge({ number }) {
   const colors = BOAT_COLORS[number] || BOAT_COLORS[1];
   return (
@@ -37,9 +33,6 @@ function BoatBadge({ number }) {
   );
 }
 
-/**
- * 買い目を区切り記号付きで表示（BoatBadge + 区切り）
- */
 function BetCombo({ combo, separator }) {
   if (!combo) return <span className="bvs-combo-na">—</span>;
   const boats = combo.split("-").map(Number);
@@ -55,20 +48,6 @@ function BetCombo({ combo, separator }) {
   );
 }
 
-/**
- * 期待値の色クラスを返す
- * 1.0以上: green、0.75〜1.0: yellow、0.75未満: gray
- */
-function evClass(ev) {
-  if (ev == null) return "";
-  if (ev >= 1.0) return "bvs-ev--positive";
-  if (ev >= 0.75) return "bvs-ev--neutral";
-  return "bvs-ev--negative";
-}
-
-/**
- * オッズ取得時刻をフォーマット（JST HH:MM）
- */
 function formatUpdatedAt(iso) {
   if (!iso) return null;
   try {
@@ -82,15 +61,106 @@ function formatUpdatedAt(iso) {
   }
 }
 
+/** 3連単のAI推定確率 */
+function calcTrifectaProb(pattern, combo) {
+  if (!pattern || !combo) return null;
+  const boats = combo.split("-").map(Number);
+  if (boats.length !== 3) return null;
+  const [, c2, c3] = boats;
+  const p =
+    (pattern.probability ?? 0) *
+    (pattern.secondPlace?.[c2] ?? 0) *
+    (pattern.thirdPlace?.[c3] ?? 0);
+  return p > 0 ? p : null;
+}
+
+/** 3連複のAI推定確率（c2・c3の両順序を合算） */
+function calcTrioProb(pattern, combo) {
+  if (!pattern || !combo) return null;
+  const boats = combo.split("-").map(Number);
+  if (boats.length !== 3) return null;
+  const [, c2, c3] = boats;
+  const p_c2c3 =
+    (pattern.secondPlace?.[c2] ?? 0) * (pattern.thirdPlace?.[c3] ?? 0);
+  const p_c3c2 =
+    (pattern.secondPlace?.[c3] ?? 0) * (pattern.thirdPlace?.[c2] ?? 0);
+  const p = (pattern.probability ?? 0) * (p_c2c3 + p_c3c2);
+  return p > 0 ? p : null;
+}
+
+/** 市場確率 = 0.75 ÷ オッズ（控除率25%考慮） */
+function marketProb(odds) {
+  if (odds == null || odds <= 0) return null;
+  return 0.75 / odds;
+}
+
 /**
- * EV計算: 展開確率分布の技法確率 × オッズ
- * distribution[pattern.technique] = 展開確率分布のバーに表示されている確率
+ * 1枚のカード（3連単 or 3連複）
  */
-function computeEV(pattern, distribution, odds) {
-  if (!pattern || !distribution || odds == null) return null;
-  const P = distribution[pattern.technique] ?? 0;
-  if (P <= 0) return null;
-  return P * odds;
+function BetCard({ label, separator, combo, odds, aiProb }) {
+  const mProb = marketProb(odds);
+  const isValue = aiProb != null && mProb != null && aiProb > mProb;
+  const hasOdds = odds != null;
+
+  return (
+    <div className={`bvs-card ${isValue ? "bvs-card--value" : ""}`}>
+      <div className="bvs-card-label">{label}</div>
+      <div className="bvs-card-combo">
+        <BetCombo combo={combo} separator={separator} />
+      </div>
+
+      <div className="bvs-card-stats">
+        {/* オッズ */}
+        <div className="bvs-stat">
+          <span className="bvs-stat-label">オッズ</span>
+          <span className="bvs-stat-value">
+            {hasOdds ? (
+              <>
+                <strong>{odds.toFixed(1)}</strong>
+                <span className="bvs-unit">倍</span>
+              </>
+            ) : (
+              <span className="bvs-na">発売前</span>
+            )}
+          </span>
+        </div>
+
+        {/* AI確率 */}
+        {aiProb != null && (
+          <div className="bvs-stat">
+            <span className="bvs-stat-label">AI確率</span>
+            <span className="bvs-stat-value">
+              <strong>{(aiProb * 100).toFixed(1)}</strong>
+              <span className="bvs-unit">%</span>
+            </span>
+          </div>
+        )}
+
+        {/* 市場確率（計算式つき） */}
+        {mProb != null && (
+          <div className="bvs-stat bvs-stat--market">
+            <span className="bvs-stat-label">
+              市場確率
+              <span className="bvs-formula">0.75 ÷ {odds.toFixed(1)}倍</span>
+            </span>
+            <span className="bvs-stat-value">
+              <strong>{(mProb * 100).toFixed(1)}</strong>
+              <span className="bvs-unit">%</span>
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* 割安/割高バッジ */}
+      {aiProb != null && mProb != null && (
+        <div
+          className={`bvs-badge ${isValue ? "bvs-badge--value" : "bvs-badge--overpriced"}`}
+        >
+          {isValue ? "◎ 割安（妙味あり）" : "割高"}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function BettingValueSection({
@@ -103,14 +173,11 @@ function BettingValueSection({
   const oddsData = useMemo(() => {
     const po = prediction?.predictionOdds;
     if (!po || !suffix) return null;
-
     const trifectaPred = po[`trifectaPred${suffix}`];
     const trifectaOdds = po[`trifectaOdds${suffix}`];
     const trioPred = po[`trioPred${suffix}`];
     const trioOdds = po[`trioOdds${suffix}`];
-
     if (!trifectaPred && !trioPred) return null;
-
     return {
       trifectaPred,
       trifectaOdds,
@@ -126,21 +193,13 @@ function BettingValueSection({
     return tp.patterns[selectedPatternIndex] ?? tp.patterns[0];
   }, [prediction, selectedPatternIndex]);
 
-  // distribution[technique] = 展開確率分布のバーに表示されている確率
-  const distribution = prediction?.turnPrediction?.distribution ?? null;
-  const patternProb = useMemo(() => {
-    if (!pattern || !distribution) return null;
-    const p = distribution[pattern.technique] ?? 0;
-    return p > 0 ? p * 100 : null;
-  }, [pattern, distribution]);
-
-  const evTrifecta = useMemo(
-    () => computeEV(pattern, distribution, oddsData?.trifectaOdds),
-    [pattern, distribution, oddsData],
+  const aiTrifecta = useMemo(
+    () => calcTrifectaProb(pattern, oddsData?.trifectaPred),
+    [pattern, oddsData],
   );
-  const evTrio = useMemo(
-    () => computeEV(pattern, distribution, oddsData?.trioOdds),
-    [pattern, distribution, oddsData],
+  const aiTrio = useMemo(
+    () => calcTrioProb(pattern, oddsData?.trioPred),
+    [pattern, oddsData],
   );
 
   if (!oddsData) return null;
@@ -157,93 +216,25 @@ function BettingValueSection({
       </div>
 
       <div className="bvs-cards">
-        {/* 3連単 */}
-        <div className="bvs-card">
-          <div className="bvs-card-label">3連単</div>
-          <div className="bvs-card-combo">
-            <BetCombo combo={oddsData.trifectaPred} separator="→" />
-          </div>
-          <div className="bvs-card-stats">
-            <div className="bvs-stat">
-              <span className="bvs-stat-label">オッズ</span>
-              <span className="bvs-stat-value">
-                {oddsData.trifectaOdds != null ? (
-                  <>
-                    <strong>{oddsData.trifectaOdds.toFixed(1)}</strong>
-                    <span className="bvs-unit">倍</span>
-                  </>
-                ) : (
-                  <span className="bvs-na">発売前</span>
-                )}
-              </span>
-            </div>
-            {patternProb != null && (
-              <div className="bvs-stat">
-                <span className="bvs-stat-label">展開確率</span>
-                <span className="bvs-stat-value">
-                  <strong>{patternProb.toFixed(1)}</strong>
-                  <span className="bvs-unit">%</span>
-                </span>
-              </div>
-            )}
-            {evTrifecta != null && (
-              <div className="bvs-stat">
-                <span className="bvs-stat-label">期待値</span>
-                <span
-                  className={`bvs-stat-value bvs-ev ${evClass(evTrifecta)}`}
-                >
-                  <strong>{evTrifecta.toFixed(2)}</strong>
-                  {evTrifecta >= 1.0 && <span className="bvs-ev-check">✓</span>}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 3連複 */}
-        <div className="bvs-card">
-          <div className="bvs-card-label">3連複</div>
-          <div className="bvs-card-combo">
-            <BetCombo combo={oddsData.trioPred} separator="=" />
-          </div>
-          <div className="bvs-card-stats">
-            <div className="bvs-stat">
-              <span className="bvs-stat-label">オッズ</span>
-              <span className="bvs-stat-value">
-                {oddsData.trioOdds != null ? (
-                  <>
-                    <strong>{oddsData.trioOdds.toFixed(1)}</strong>
-                    <span className="bvs-unit">倍</span>
-                  </>
-                ) : (
-                  <span className="bvs-na">発売前</span>
-                )}
-              </span>
-            </div>
-            {patternProb != null && (
-              <div className="bvs-stat">
-                <span className="bvs-stat-label">展開確率</span>
-                <span className="bvs-stat-value">
-                  <strong>{patternProb.toFixed(1)}</strong>
-                  <span className="bvs-unit">%</span>
-                </span>
-              </div>
-            )}
-            {evTrio != null && (
-              <div className="bvs-stat">
-                <span className="bvs-stat-label">期待値</span>
-                <span className={`bvs-stat-value bvs-ev ${evClass(evTrio)}`}>
-                  <strong>{evTrio.toFixed(2)}</strong>
-                  {evTrio >= 1.0 && <span className="bvs-ev-check">✓</span>}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
+        <BetCard
+          label="3連単"
+          separator="→"
+          combo={oddsData.trifectaPred}
+          odds={oddsData.trifectaOdds}
+          aiProb={aiTrifecta}
+        />
+        <BetCard
+          label="3連複"
+          separator="="
+          combo={oddsData.trioPred}
+          odds={oddsData.trioOdds}
+          aiProb={aiTrio}
+        />
       </div>
 
       <p className="bvs-note">
-        期待値1.0以上が購入検討ライン（控除率約25%を考慮）
+        市場確率 = 0.75 ÷
+        オッズ（ボートレース控除率25%を考慮）。AI確率が市場確率を上回れば「割安」。
       </p>
     </div>
   );
