@@ -1,0 +1,110 @@
+.odds-display {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f4fd 100%);
+  border: 1px solid #b3d9f7;
+  border-radius: 8px;
+}
+
+.odds-display__title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0284c7;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.odds-display__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.odds-display__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.odds-display__label {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.odds-display__combo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: 0.02em;
+}
+
+.odds-display__value {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.odds-display__value strong {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0ea5e9;
+}
+
+.odds-display__unit {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.odds-display__unavailable {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* 配当妙味バッジ */
+.odds-display__badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+.odds-value--high {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.odds-value--mid-high {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fdba74;
+}
+
+.odds-value--mid {
+  background: #fefce8;
+  color: #ca8a04;
+  border: 1px solid #fde047;
+}
+
+.odds-value--low {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #86efac;
+}
+
+@media (max-width: 480px) {
+  .odds-display {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .odds-display__value strong {
+    font-size: 1.05rem;
+  }
+
+  .odds-display__combo {
+    font-size: 0.8rem;
+  }
+}

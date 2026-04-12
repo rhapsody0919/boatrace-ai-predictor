@@ -229,6 +229,7 @@ function transformEdgeResponse(edgeData, date) {
         exhibition_time: ed.exhibitionTime,
         start_timing: ed.startTiming,
       })) || null,
+      predictionOdds: race.predictionOdds || null,
     };
 
     // 予測データ（モデル別）
@@ -649,6 +650,20 @@ export const supabaseDataService = {
           boat_number,
           exhibition_time,
           start_timing
+        ),
+        prediction_odds (
+          trifecta_pred_standard,
+          trifecta_odds_standard,
+          trio_pred_standard,
+          trio_odds_standard,
+          trifecta_pred_safe_bet,
+          trifecta_odds_safe_bet,
+          trio_pred_safe_bet,
+          trio_odds_safe_bet,
+          trifecta_pred_upset_focus,
+          trifecta_odds_upset_focus,
+          trio_pred_upset_focus,
+          trio_odds_upset_focus
         )
       `)
       .eq('race_date', date)
@@ -696,6 +711,25 @@ export const supabaseDataService = {
         aiScore: e[scoreField] || 0
       })).sort((a, b) => b.aiScore - a.aiScore);
 
+      // prediction_odds（1行 or null）
+      const po = race.prediction_odds ?? null;
+      const predictionOdds = po
+        ? {
+            trifectaPredStandard:   po.trifecta_pred_standard   ?? null,
+            trifectaOddsStandard:   po.trifecta_odds_standard   != null ? Number(po.trifecta_odds_standard)   : null,
+            trioPredStandard:       po.trio_pred_standard       ?? null,
+            trioOddsStandard:       po.trio_odds_standard       != null ? Number(po.trio_odds_standard)       : null,
+            trifectaPredSafeBet:    po.trifecta_pred_safe_bet   ?? null,
+            trifectaOddsSafeBet:    po.trifecta_odds_safe_bet   != null ? Number(po.trifecta_odds_safe_bet)   : null,
+            trioPredSafeBet:        po.trio_pred_safe_bet       ?? null,
+            trioOddsSafeBet:        po.trio_odds_safe_bet       != null ? Number(po.trio_odds_safe_bet)       : null,
+            trifectaPredUpsetFocus: po.trifecta_pred_upset_focus ?? null,
+            trifectaOddsUpsetFocus: po.trifecta_odds_upset_focus != null ? Number(po.trifecta_odds_upset_focus) : null,
+            trioPredUpsetFocus:     po.trio_pred_upset_focus    ?? null,
+            trioOddsUpsetFocus:     po.trio_odds_upset_focus    != null ? Number(po.trio_odds_upset_focus)    : null,
+          }
+        : null;
+
       const raceData = {
         raceId: race.race_id,
         venue: VENUE_NAMES[race.venue_code] || `会場${race.venue_code}`,
@@ -711,6 +745,7 @@ export const supabaseDataService = {
         turnPrediction: turnPrediction,
         racerStats: standardPred?.feature_contributions?.racerStats || null,
         exhibitionData: race.exhibition_data || null,
+        predictionOdds,
       };
 
       // 予測データ（新形式: predictions）

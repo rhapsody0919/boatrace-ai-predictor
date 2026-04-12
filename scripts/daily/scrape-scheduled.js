@@ -26,6 +26,7 @@ import { run as runUpdateInfo } from "./update-race-info.js";
 import { run as runExhibition } from "./scrape-exhibition-data.js";
 import { run as runResults } from "./scrape-results.js";
 import { mainRefresh } from "./generate-predictions.js";
+import { run as runPredictionOdds } from "./scrape-prediction-odds.js";
 
 async function main() {
   console.log("🎯 スクレイピングオーケストレーター開始");
@@ -144,6 +145,12 @@ async function main() {
       specificRaceIds: [...updatedRaceIds],
     }).catch((e) => {
       console.error("⚠️ 予測リフレッシュ失敗:", e.message);
+    });
+
+    // 5. 予測リフレッシュ後に予測買い目オッズを取得
+    console.log("\n💹 予測買い目オッズ取得");
+    await runPredictionOdds([...updatedRaceIds], date).catch((e) => {
+      console.error("⚠️ 予測買い目オッズ取得失敗:", e.message);
     });
   } else if (!anyUpdated) {
     console.log("\n📭 新規データなし → 予測リフレッシュスキップ");
