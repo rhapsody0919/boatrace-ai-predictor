@@ -48,7 +48,16 @@
       "Bash(python3:*)",
       "Bash(npm install:*)",
       "Read(//tmp/**)",
-      "Bash(gh pr:*)"
+      "Bash(gh pr:*)",
+      "mcp__linear__linear_search_issues_by_identifier",
+      "Bash(\\\\\".is-w495\\\\\")",
+      "mcp__linear__linear_search_issues",
+      "mcp__linear__linear_get_teams",
+      "mcp__linear__linear_create_issue",
+      "mcp__linear__linear_bulk_update_issues",
+      "mcp__linear__linear_create_comment",
+      "Bash(kill %1)",
+      "Bash(kill 77450)"
     ],
     "deny": [
       "Bash(rm -rf:*)",

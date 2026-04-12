@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS prediction_odds (
 -- RLS: anon ユーザーが読み取れるようにする
 ALTER TABLE prediction_odds ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "prediction_odds_public_read" ON prediction_odds;
 CREATE POLICY "prediction_odds_public_read"
   ON prediction_odds FOR SELECT
   USING (true);
