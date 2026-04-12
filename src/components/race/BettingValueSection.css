@@ -1,4 +1,11 @@
-/* .bvs-section は .ad-section (AttackDefenseTable.css) と組み合わせて使う */
+/* ネイビーグラデーション背景（PredictionFlash / FirstMarkAnimation と統一） */
+.bvs-section {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+  color: #e2e8f0;
+}
 
 .bvs-header {
   display: flex;
@@ -8,9 +15,16 @@
   flex-wrap: wrap;
 }
 
+.bvs-section h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
 .bvs-updated {
   font-size: 0.72rem;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 /* カード2列 */
@@ -23,15 +37,15 @@
 
 .bvs-card {
   padding: 0.75rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
 }
 
 .bvs-card-label {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 0.4rem;
@@ -51,13 +65,13 @@
 
 .bvs-combo-sep {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.4);
   font-weight: 600;
   padding: 0 0.1rem;
 }
 
 .bvs-combo-na {
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.3);
   font-size: 0.9rem;
 }
 
@@ -88,12 +102,12 @@
 
 .bvs-stat-label {
   font-size: 0.72rem;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .bvs-stat-value {
   font-size: 0.85rem;
-  color: #1e293b;
+  color: #e2e8f0;
   display: flex;
   align-items: baseline;
   gap: 0.15rem;
@@ -106,12 +120,12 @@
 
 .bvs-unit {
   font-size: 0.7rem;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .bvs-na {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.3);
 }
 
 /* 期待値カラー */
@@ -120,20 +134,20 @@
 }
 
 .bvs-ev--positive strong {
-  color: #16a34a;
+  color: #4ade80;
 }
 
 .bvs-ev--neutral strong {
-  color: #ca8a04;
+  color: #fbbf24;
 }
 
 .bvs-ev--negative strong {
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .bvs-ev-check {
   font-size: 0.75rem;
-  color: #16a34a;
+  color: #4ade80;
   margin-left: 0.1rem;
 }
 
@@ -141,12 +155,23 @@
 .bvs-note {
   margin: 0;
   font-size: 0.7rem;
-  color: #94a3b8;
-  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.35);
+  line-height: 1.5;
+}
+
+/* AI確率の参考値ライン */
+.bvs-prob-ref {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.3);
+  margin-left: 0.25rem;
 }
 
 /* モバイル */
 @media (max-width: 480px) {
+  .bvs-section {
+    padding: 0.9rem 0.75rem;
+  }
+
   .bvs-cards {
     gap: 0.5rem;
   }

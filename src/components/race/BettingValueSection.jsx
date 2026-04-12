@@ -14,7 +14,6 @@
  */
 import { useMemo } from "react";
 import { BOAT_COLORS } from "../../utils/colors";
-import "./AttackDefenseTable.css";
 import "./BettingValueSection.css";
 
 // モデルキー（kebab）→ predictionOdds フィールドのサフィックスへのマッピング
@@ -193,7 +192,7 @@ function BettingValueSection({
   const updatedAtStr = formatUpdatedAt(oddsData.updatedAt);
 
   return (
-    <div className="ad-section bvs-section">
+    <div className="bvs-section">
       <div className="bvs-header">
         <h4>配当妙味</h4>
         {updatedAtStr && (
@@ -224,7 +223,10 @@ function BettingValueSection({
             </div>
             {probTrifecta != null && (
               <div className="bvs-stat">
-                <span className="bvs-stat-label">AI確率</span>
+                <span className="bvs-stat-label">
+                  AI確率
+                  <span className="bvs-prob-ref">（ランダム0.8%）</span>
+                </span>
                 <span className="bvs-stat-value">
                   <strong>{probTrifecta.toFixed(1)}</strong>
                   <span className="bvs-unit">%</span>
@@ -267,7 +269,10 @@ function BettingValueSection({
             </div>
             {probTrio != null && (
               <div className="bvs-stat">
-                <span className="bvs-stat-label">AI確率</span>
+                <span className="bvs-stat-label">
+                  AI確率
+                  <span className="bvs-prob-ref">（ランダム5.0%）</span>
+                </span>
                 <span className="bvs-stat-value">
                   <strong>{probTrio.toFixed(1)}</strong>
                   <span className="bvs-unit">%</span>
