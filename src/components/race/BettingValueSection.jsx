@@ -5,9 +5,8 @@
  * 選択中モデルの3連単・3連複について、オッズ・AI推定確率・期待値を表示する。
  *
  * 期待値の算出:
- *   P(3連単) = pattern.probability × secondPlace[c2] × thirdPlace[c3]
- *   P(3連複) = pattern.probability × (secondPlace[c2]×thirdPlace[c3] + secondPlace[c3]×thirdPlace[c2])
- *   EV = P × odds
+ *   展開確率 = 展開確率分布に表示されている pattern.probability（そのまま使用）
+ *   EV = 展開確率 × odds
  *
  * ボートレース控除率は約25%のため、ランダム期待値は0.75。
  * EV ≥ 1.0 が購入検討ライン。
@@ -84,37 +83,12 @@ function formatUpdatedAt(iso) {
 }
 
 /**
- * EV計算（turnPrediction が存在する場合）
+ * EV計算: 展開確率 × オッズ
+ * pattern.probability = 展開確率分布に表示されている確率そのもの
  */
-function computeEV(pattern, combo, odds) {
-  if (!pattern || !combo || odds == null) return null;
-  const boats = combo.split("-").map(Number);
-  if (boats.length !== 3) return null;
-  const [, c2, c3] = boats;
-
-  const p1 = pattern.probability ?? 0;
-  const p2 = pattern.secondPlace?.[c2] ?? 0;
-  const p3 = pattern.thirdPlace?.[c3] ?? 0;
-  const P = p1 * p2 * p3;
-  if (P <= 0) return null;
-  return P * odds;
-}
-
-/**
- * 3連複のEV計算（c2とc3の両方の順序を合算）
- */
-function computeTrioEV(pattern, combo, odds) {
-  if (!pattern || !combo || odds == null) return null;
-  const boats = combo.split("-").map(Number);
-  if (boats.length !== 3) return null;
-  const [, c2, c3] = boats;
-
-  const p1 = pattern.probability ?? 0;
-  const p_c2c3 =
-    (pattern.secondPlace?.[c2] ?? 0) * (pattern.thirdPlace?.[c3] ?? 0);
-  const p_c3c2 =
-    (pattern.secondPlace?.[c3] ?? 0) * (pattern.thirdPlace?.[c2] ?? 0);
-  const P = p1 * (p_c2c3 + p_c3c2);
+function computeEV(pattern, odds) {
+  if (!pattern || odds == null) return null;
+  const P = pattern.probability ?? 0;
   if (P <= 0) return null;
   return P * odds;
 }
@@ -152,40 +126,17 @@ function BettingValueSection({
     return tp.patterns[selectedPatternIndex] ?? tp.patterns[0];
   }, [prediction, selectedPatternIndex]);
 
+  // 展開確率分布の確率をそのまま使用
+  const patternProb = pattern ? (pattern.probability ?? 0) * 100 : null;
+
   const evTrifecta = useMemo(
-    () => computeEV(pattern, oddsData?.trifectaPred, oddsData?.trifectaOdds),
+    () => computeEV(pattern, oddsData?.trifectaOdds),
     [pattern, oddsData],
   );
   const evTrio = useMemo(
-    () => computeTrioEV(pattern, oddsData?.trioPred, oddsData?.trioOdds),
+    () => computeEV(pattern, oddsData?.trioOdds),
     [pattern, oddsData],
   );
-
-  // 確率表示（パーセント）
-  const probTrifecta = useMemo(() => {
-    if (!pattern || !oddsData?.trifectaPred) return null;
-    const boats = oddsData.trifectaPred.split("-").map(Number);
-    if (boats.length !== 3) return null;
-    const [, c2, c3] = boats;
-    const p =
-      (pattern.probability ?? 0) *
-      (pattern.secondPlace?.[c2] ?? 0) *
-      (pattern.thirdPlace?.[c3] ?? 0);
-    return p > 0 ? p * 100 : null;
-  }, [pattern, oddsData]);
-
-  const probTrio = useMemo(() => {
-    if (!pattern || !oddsData?.trioPred) return null;
-    const boats = oddsData.trioPred.split("-").map(Number);
-    if (boats.length !== 3) return null;
-    const [, c2, c3] = boats;
-    const p_c2c3 =
-      (pattern.secondPlace?.[c2] ?? 0) * (pattern.thirdPlace?.[c3] ?? 0);
-    const p_c3c2 =
-      (pattern.secondPlace?.[c3] ?? 0) * (pattern.thirdPlace?.[c2] ?? 0);
-    const p = (pattern.probability ?? 0) * (p_c2c3 + p_c3c2);
-    return p > 0 ? p * 100 : null;
-  }, [pattern, oddsData]);
 
   if (!oddsData) return null;
 
@@ -221,14 +172,11 @@ function BettingValueSection({
                 )}
               </span>
             </div>
-            {probTrifecta != null && (
+            {patternProb != null && (
               <div className="bvs-stat">
-                <span className="bvs-stat-label">
-                  AI確率
-                  <span className="bvs-prob-ref">（ランダム0.8%）</span>
-                </span>
+                <span className="bvs-stat-label">展開確率</span>
                 <span className="bvs-stat-value">
-                  <strong>{probTrifecta.toFixed(1)}</strong>
+                  <strong>{patternProb.toFixed(1)}</strong>
                   <span className="bvs-unit">%</span>
                 </span>
               </div>
@@ -267,14 +215,11 @@ function BettingValueSection({
                 )}
               </span>
             </div>
-            {probTrio != null && (
+            {patternProb != null && (
               <div className="bvs-stat">
-                <span className="bvs-stat-label">
-                  AI確率
-                  <span className="bvs-prob-ref">（ランダム5.0%）</span>
-                </span>
+                <span className="bvs-stat-label">展開確率</span>
                 <span className="bvs-stat-value">
-                  <strong>{probTrio.toFixed(1)}</strong>
+                  <strong>{patternProb.toFixed(1)}</strong>
                   <span className="bvs-unit">%</span>
                 </span>
               </div>
