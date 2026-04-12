@@ -226,6 +226,7 @@ function RaceDetail() {
       predictions: racePrediction.predictions || { standard: racePrediction.prediction },
       turnPrediction: racePrediction.turnPrediction || null,
       racerStats: racePrediction.racerStats || null,
+      predictionOdds: racePrediction.predictionOdds || null,
     })
   }
 

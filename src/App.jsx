@@ -444,6 +444,7 @@ function App({ tab = 'races' }) {
                     turnPrediction: racePrediction.turnPrediction || null,
                     racerStats: racePrediction.racerStats || null,
                     exhibitionData: racePrediction.exhibitionData || null,
+                    predictionOdds: racePrediction.predictionOdds || null,
                 }
                 setPrediction(aiPrediction)
                 setIsAnalyzing(false)
