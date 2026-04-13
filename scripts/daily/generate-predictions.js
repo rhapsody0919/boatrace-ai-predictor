@@ -195,13 +195,13 @@ function calculateStandardScoreV2(racer, index, turnResult, exEntry, avgExTime) 
     else if (racer.grade === 'B1') score += 100;
     else if (racer.grade === 'B2') score += 0;
 
-    // 枠番補正（圧倒的に重要: 1号艇は6号艇の22倍勝ちやすい）
+    // 枠番補正（1着率ベース: 1号艇57% / 6号艇3%、ただし入着率は6号艇25%あるためペナルティを緩和）
     if (index === 0) score += 500;      // 1号艇
     else if (index === 1) score += 100; // 2号艇
     else if (index === 2) score += 0;   // 3号艇
     else if (index === 3) score -= 50;  // 4号艇
     else if (index === 4) score -= 100; // 5号艇
-    else if (index === 5) score -= 150; // 6号艇
+    else if (index === 5) score -= 70;  // 6号艇（入着率25%を考慮して-150→-70に緩和）
 
     // モーター性能（限定的: 5.2%の差）
     score += racer.motor2Rate * 20;
@@ -508,10 +508,10 @@ function calculateTurnBonus(turnResult, boatLane, modelType) {
             bonus += prob * secondProb * w;
         }
 
-        // 3着ボーナス
+        // 3着ボーナス（実データで6号艇の3着率が15%以上あるため係数を引き上げ）
         const thirdProb = pattern.thirdPlace?.[boatLane] || 0;
         if (thirdProb > 0) {
-            const w = { standard: 80, safeBet: 100, upsetFocus: 60 }[modelType];
+            const w = { standard: 150, safeBet: 180, upsetFocus: 120 }[modelType];
             bonus += prob * thirdProb * w;
         }
     }
