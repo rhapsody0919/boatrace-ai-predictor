@@ -3,7 +3,7 @@
  *
  * 推奨買い目と各艇の選出理由を静的カードとして表示する。
  * 上段: 買い目（コース + 選手名）
- * 下段: 各艇の最も突出した指標 + 展開ストーリー
+ * 下段: 各艇の予想根拠（上位3因子ランキング）+ 展開ストーリー
  */
 import { useMemo } from "react";
 import { BOAT_COLORS } from "../../utils/colors";
@@ -70,16 +70,17 @@ function buildBetData(prediction, patternIndex) {
 }
 
 /**
- * 各艇の最も突出した指標を特定する（6艇中の順位付き）
+ * 各艇の突出した指標を上位N件返す（全艇中の順位付き）
+ * BOA-64: findTopStat → findTopStats に拡張（上位3因子ランキング）
  */
-function findTopStat(boatNumber, allPlayers, racerStats) {
+function findTopStats(boatNumber, allPlayers, racerStats, n = 3) {
   const player = allPlayers.find((p) => p.number === boatNumber);
-  if (!player) return null;
+  if (!player) return [];
 
   const candidates = [];
+  const racer = racerStats?.find((r) => r.boatNumber === boatNumber);
 
   // 展示ST（小さいほど良い → 順位は昇順）
-  const racer = racerStats?.find((r) => r.boatNumber === boatNumber);
   if (racer?.avgST > 0) {
     const stAll = racerStats
       .filter((r) => r.avgST > 0)
@@ -87,7 +88,7 @@ function findTopStat(boatNumber, allPlayers, racerStats) {
     const rank = stAll.findIndex((r) => r.boatNumber === boatNumber) + 1;
     if (rank > 0) {
       candidates.push({
-        label: "ST",
+        label: "スタート",
         value: racer.avgST.toFixed(2),
         rank,
         total: stAll.length,
@@ -119,7 +120,7 @@ function findTopStat(boatNumber, allPlayers, racerStats) {
     const rank = winAll.findIndex((p) => p.number === boatNumber) + 1;
     if (rank > 0) {
       candidates.push({
-        label: "勝率",
+        label: "全国勝率",
         value: parseFloat(player.winRate).toFixed(2),
         rank,
         total: winAll.length,
@@ -135,7 +136,7 @@ function findTopStat(boatNumber, allPlayers, racerStats) {
     const rank = localAll.findIndex((p) => p.number === boatNumber) + 1;
     if (rank > 0) {
       candidates.push({
-        label: "当地",
+        label: "当地勝率",
         value: parseFloat(player.localWinRate).toFixed(2),
         rank,
         total: localAll.length,
@@ -143,9 +144,35 @@ function findTopStat(boatNumber, allPlayers, racerStats) {
     }
   }
 
-  // 最も順位が高い（= 最も突出した）指標を返す
+  // コース1着率（担当コースでの勝率、3走以上のみ）
+  if (racer) {
+    const course = String(racer.course || racer.boatNumber);
+    const counts = racer.courseRaceCounts?.[course];
+    if (counts && counts.total >= 3 && counts.wins > 0) {
+      const courseWinRate = counts.wins / counts.total;
+      const courseRates = racerStats
+        .map((r) => {
+          const c = String(r.course || r.boatNumber);
+          const cnt = r.courseRaceCounts?.[c];
+          if (!cnt || cnt.total < 3) return null;
+          return { boatNumber: r.boatNumber, rate: cnt.wins / cnt.total };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.rate - a.rate);
+      const rank = courseRates.findIndex((r) => r.boatNumber === boatNumber) + 1;
+      if (rank > 0) {
+        candidates.push({
+          label: `${course}コース実績`,
+          value: `${(courseWinRate * 100).toFixed(0)}%`,
+          rank,
+          total: courseRates.length,
+        });
+      }
+    }
+  }
+
   candidates.sort((a, b) => a.rank - b.rank);
-  return candidates[0] || null;
+  return candidates.slice(0, n);
 }
 
 /**
@@ -213,7 +240,7 @@ function PredictionFlash({
   const boatReasons = useMemo(() => {
     if (!betData || !prediction.allPlayers) return [];
     return betData.courses.map((course) => ({
-      topStat: findTopStat(course, prediction.allPlayers, prediction.racerStats),
+      topStats: findTopStats(course, prediction.allPlayers, prediction.racerStats),
       attack: findAttackHighlight(course, prediction.racerStats),
     }));
   }, [betData, prediction.allPlayers, prediction.racerStats]);
@@ -264,10 +291,10 @@ function PredictionFlash({
 
       <div className="flash-divider" />
 
-      {/* 下段: 各艇の選出理由 */}
+      {/* 下段: 各艇の予想根拠（上位3因子ランキング） */}
       <div className="flash-reasons">
         {betData.courses.map((course, i) => {
-          const { topStat, attack } = boatReasons[i] || {};
+          const { topStats, attack } = boatReasons[i] || {};
           const rankLabel = i === 0 ? "1着" : i === 1 ? "2着" : "3着";
           return (
             <div key={course} className="flash-reason-block">
@@ -275,16 +302,20 @@ function PredictionFlash({
                 <span className="flash-reason-rank">{rankLabel}</span>
                 <BoatBadge number={course} />
                 <span className="flash-reason-name">{betData.names[i]}</span>
-                {topStat && (
-                  <span className="flash-reason-stat">
-                    {topStat.label}{" "}
-                    <span className="flash-highlight">{topStat.value}</span>
-                    <span className="flash-reason-position">
-                      ({topStat.rank}位)
-                    </span>
-                  </span>
-                )}
               </div>
+              {topStats?.length > 0 && (
+                <ol className="flash-factor-list">
+                  {topStats.map((stat, j) => (
+                    <li key={j} className="flash-factor-item">
+                      <span className="flash-factor-label">{stat.label}</span>
+                      <span className="flash-highlight">{stat.value}</span>
+                      <span className="flash-reason-position">
+                        ({stat.rank}位/{stat.total}中)
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
               {attack && (
                 <div className="flash-attack-highlight">
                   <span className="flash-attack-icon">&#x26A1;</span>
