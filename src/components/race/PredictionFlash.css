@@ -9,12 +9,23 @@
 }
 
 .flash-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   color: #ffffff;
   font-size: 1rem;
   font-weight: 800;
   text-align: center;
   margin-bottom: 0.75rem;
   letter-spacing: 0.03em;
+}
+
+.flash-card-meta {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #94a3b8;
+  white-space: nowrap;
 }
 
 /* 上段: 買い目 */

@@ -154,6 +154,7 @@ function PredictionPanel({
                 prediction={prediction}
                 selectedRace={selectedRace}
                 selectedPatternIndex={selectedPatternIndex}
+                selectedModel={selectedModel}
               />
             </motion.div>
           )}
@@ -173,6 +174,9 @@ function PredictionPanel({
                   name: p.name,
                 }))}
                 selectedPatternIndex={selectedPatternIndex}
+                venue={selectedRace?.venue}
+                raceNumber={selectedRace?.raceNumber}
+                selectedModel={selectedModel}
               />
             </motion.div>
           )}

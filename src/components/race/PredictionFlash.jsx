@@ -8,6 +8,7 @@
 import { useMemo } from "react";
 import { BOAT_COLORS } from "../../utils/colors";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
+import { MODEL_NAMES } from "../../constants";
 import "./PredictionFlash.css";
 
 /**
@@ -231,6 +232,7 @@ function PredictionFlash({
   prediction,
   selectedRace,
   selectedPatternIndex = 0,
+  selectedModel,
 }) {
   const betData = useMemo(
     () => buildBetData(prediction, selectedPatternIndex),
@@ -252,7 +254,16 @@ function PredictionFlash({
 
   return (
     <div className="prediction-flash">
-      <div className="flash-card-title">注目データ</div>
+      <div className="flash-card-title">
+        <span>注目データ</span>
+        {(selectedRace?.venue || selectedRace?.raceNumber || selectedModel) && (
+          <span className="flash-card-meta">
+            {selectedRace?.venue}
+            {selectedRace?.raceNumber && ` ${selectedRace.raceNumber}R`}
+            {selectedModel && MODEL_NAMES[selectedModel] && ` · ${MODEL_NAMES[selectedModel]}`}
+          </span>
+        )}
+      </div>
 
       {/* 上段: 買い目 */}
       <div className="flash-bet-section">

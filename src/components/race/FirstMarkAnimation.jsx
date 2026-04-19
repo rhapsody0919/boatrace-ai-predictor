@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { BOAT_COLORS } from "../../utils/colors";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
+import { MODEL_NAMES } from "../../constants";
 import "./FirstMarkAnimation.css";
 
 // framer-motion を1回だけ動的importし、state で保持
@@ -552,7 +553,7 @@ function ResultBadge({ rank, course, x, y, delay, label }) {
   );
 }
 
-function FirstMarkAnimationInner({ patterns, distribution, players, boatStrengths, selectedPatternIndex = 0 }) {
+function FirstMarkAnimationInner({ patterns, distribution, players, boatStrengths, selectedPatternIndex = 0, venue, raceNumber, selectedModel }) {
   const [animKey, setAnimKey] = useState(0);
   const [phase, setPhase] = useState("");
   const [animationDone, setAnimationDone] = useState(false);
@@ -756,7 +757,16 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
   if (!motionMod) {
     return (
       <div className="first-mark-animation">
-        <div className="first-mark-animation__title">1マーク展開予測</div>
+        <div className="first-mark-animation__title">
+          <span>1マーク展開予測</span>
+          {(venue || raceNumber || selectedModel) && (
+            <span className="first-mark-animation__meta">
+              {venue}
+              {raceNumber && ` ${raceNumber}R`}
+              {selectedModel && MODEL_NAMES[selectedModel] && ` · ${MODEL_NAMES[selectedModel]}`}
+            </span>
+          )}
+        </div>
 
         <div className="first-mark-animation__svg-container">
           <svg
@@ -834,7 +844,16 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
 
   return (
     <div className="first-mark-animation">
-      <div className="first-mark-animation__title">1マーク展開予測</div>
+      <div className="first-mark-animation__title">
+        <span>1マーク展開予測</span>
+        {(venue || raceNumber || selectedModel) && (
+          <span className="first-mark-animation__meta">
+            {venue}
+            {raceNumber && ` ${raceNumber}R`}
+            {selectedModel && MODEL_NAMES[selectedModel] && ` · ${MODEL_NAMES[selectedModel]}`}
+          </span>
+        )}
+      </div>
 
       <div className="first-mark-animation__svg-container">
         <svg
@@ -1155,6 +1174,9 @@ export default function FirstMarkAnimation(props) {
       players={props.players}
       boatStrengths={props.boatStrengths}
       selectedPatternIndex={props.selectedPatternIndex || 0}
+      venue={props.venue}
+      raceNumber={props.raceNumber}
+      selectedModel={props.selectedModel}
     />
   );
 }

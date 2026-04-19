@@ -16,6 +16,13 @@
   color: #fff;
 }
 
+.first-mark-animation__meta {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
 .first-mark-animation__svg-container {
   position: relative;
   width: 100%;
