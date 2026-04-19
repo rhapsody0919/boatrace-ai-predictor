@@ -10,7 +10,7 @@
 
 import { chromium } from "playwright";
 import { TwitterApi } from "twitter-api-v2";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -278,18 +278,19 @@ async function main() {
   const cropFilter = `crop=${cropW}:${flashBottom}:${cropX}:0`;
   const outMp4 = path.join(OUT_DIR, "animation.mp4");
 
-  const ffmpegCmd = [
-    "ffmpeg -y",
-    `-i "${rawWebm}"`,
-    `-ss ${ss}`,
-    `-t ${trimDuration}`,
-    `-vf "${cropFilter}"`,
-    `-c:v libx264 -pix_fmt yuv420p`,
-    `"${outMp4}"`,
-  ].join(" ");
+  const ffmpegArgs = [
+    "-y",
+    "-i", rawWebm,
+    "-ss", ss,
+    "-t", trimDuration,
+    "-vf", cropFilter,
+    "-c:v", "libx264",
+    "-pix_fmt", "yuv420p",
+    outMp4,
+  ];
 
-  console.log(`\n[6] ffmpeg: ${ffmpegCmd}`);
-  execSync(ffmpegCmd, { stdio: "pipe" });
+  console.log(`\n[6] ffmpeg ${ffmpegArgs.join(" ")}`);
+  execFileSync("ffmpeg", ffmpegArgs, { stdio: "pipe" });
   console.log(
     `    ✅ MP4: ${outMp4} (${(fs.statSync(outMp4).size / 1024).toFixed(0)} KB)`,
   );
@@ -302,9 +303,10 @@ async function main() {
     accessToken: process.env.X_ACCESS_TOKEN,
     accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
   });
+  const mp4SizeBytes = fs.statSync(outMp4).size;
   const mediaId = await twitterClient.v1.uploadMedia(outMp4, {
     mimeType: "video/mp4",
-    longVideo: true,
+    longVideo: mp4SizeBytes > 5 * 1024 * 1024,
   });
   console.log(`    media_id: ${mediaId}`);
 
@@ -332,7 +334,16 @@ async function main() {
   console.log("\n=== 完了 ===");
 }
 
-main().catch((err) => {
-  console.error("エラー:", err);
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error("エラー:", err);
+    process.exit(1);
+  })
+  .finally(() => {
+    // エラー時も一時ファイルを確実に削除
+    try {
+      fs.rmSync(OUT_DIR, { recursive: true, force: true });
+    } catch {
+      // 既に削除済みの場合は無視
+    }
+  });
