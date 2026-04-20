@@ -270,9 +270,8 @@ export async function run(raceIds, date) {
 
   console.log(`🎯 予測買い目オッズ取得: ${predictionsMap.size}レース`);
 
-  const upsertRows = [];
-
-  // race_id から venue_code / race_no を抽出（"YYYY-MM-DD-VV-RR" 形式）
+  // race_id → { venueCode, raceNo, modelPredictions } に変換
+  const tasks = [];
   for (const [raceId, modelPredictions] of predictionsMap) {
     const parts = raceId.split("-");
     if (parts.length < 5) {
@@ -285,19 +284,26 @@ export async function run(raceIds, date) {
       console.warn(`  ⚠️ venue/race 解析失敗: ${raceId}`);
       continue;
     }
+    tasks.push({ raceId, venueCode, raceNo, modelPredictions });
+  }
 
-    const row = await fetchPredictionOddsForRace(
-      date,
-      venueCode,
-      raceNo,
-      modelPredictions,
+  // 同時実行数を制限した並列取得（boatrace.jp への負荷を抑えつつ高速化）
+  const CONCURRENCY = 5;
+  const upsertRows = [];
+
+  for (let i = 0; i < tasks.length; i += CONCURRENCY) {
+    const batch = tasks.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      batch.map(({ raceId, venueCode, raceNo, modelPredictions }) =>
+        fetchPredictionOddsForRace(date, venueCode, raceNo, modelPredictions)
+          .then((row) => (row ? { race_id: raceId, ...row } : null))
+          .catch((e) => {
+            console.error(`  ❌ ${raceId} 取得エラー: ${e.message}`);
+            return null;
+          }),
+      ),
     );
-    if (!row) continue;
-
-    upsertRows.push({ race_id: raceId, ...row });
-
-    // 会場間スロットリング（1レース毎に 300ms）
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    upsertRows.push(...results.filter(Boolean));
   }
 
   if (upsertRows.length === 0) {
