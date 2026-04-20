@@ -9,6 +9,7 @@
  */
 
 import { chromium } from "playwright";
+import { TwitterApi } from "twitter-api-v2";
 import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
@@ -320,7 +321,40 @@ async function main() {
   console.log(`    ✅ 動画: ${artifactMp4}`);
   console.log(`    ✅ キャプション:\n${caption}`);
 
-  // [8] 一時ファイル削除
+  // [8] X に投稿
+  const xApiKey = process.env.X_API_KEY;
+  const xApiSecret = process.env.X_API_SECRET;
+  const xAccessToken = process.env.X_ACCESS_TOKEN;
+  const xAccessTokenSecret = process.env.X_ACCESS_TOKEN_SECRET;
+
+  if (xApiKey && xApiSecret && xAccessToken && xAccessTokenSecret) {
+    console.log("\n[8] X に投稿中...");
+    const twitterClient = new TwitterApi({
+      appKey: xApiKey,
+      appSecret: xApiSecret,
+      accessToken: xAccessToken,
+      accessSecret: xAccessTokenSecret,
+    });
+
+    const videoBuffer = fs.readFileSync(outMp4);
+    const mediaId = await twitterClient.v1.uploadMedia(videoBuffer, {
+      mimeType: "video/mp4",
+      additionalOwners: [],
+      target: "tweet",
+      waitForUpload: true,
+    });
+    console.log(`    ✅ 動画アップロード完了: media_id=${mediaId}`);
+
+    const tweet = await twitterClient.v2.tweet({
+      text: caption,
+      media: { media_ids: [mediaId] },
+    });
+    console.log(`    ✅ ツイート投稿完了: id=${tweet.data.id}`);
+  } else {
+    console.log("\n[8] X API キー未設定 → 投稿スキップ（アーティファクトのみ保存）");
+  }
+
+  // [9] 一時ファイル削除
   fs.rmSync(OUT_DIR, { recursive: true, force: true });
   console.log("\n=== 完了 ===");
 }
