@@ -61,8 +61,8 @@ async function main() {
     (w) => getRacesInWindow(schedule, w, 3).length > 0,
   );
   const finishedRaces = getRacesAfterStart(schedule, 5);
-  // 予測買い目オッズ: 発走前の全レース（オッズは発走まで変動し続ける）
-  const upcomingRaces = getRacesBeforeStart(schedule);
+  // 予測買い目オッズ: 発走60分以内のレース（オッズは発走直前に最も変動する）
+  const upcomingRaces = getRacesBeforeStart(schedule, 60);
 
   if (
     !hasOddsRaces &&

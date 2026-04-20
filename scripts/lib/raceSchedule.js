@@ -108,13 +108,17 @@ export function getRacesAfterStart(schedule, minutesAfter = 5, maxMinutesAfter =
 /**
  * 発走前のレースを返す（オッズがまだ変動中のレース）
  *
- * 例: getRacesBeforeStart(schedule)
- *   → 発走時刻が現在より後の全レースを返す
+ * 例: getRacesBeforeStart(schedule, 60)
+ *   → 発走60分以内のレースを返す（発走済みは除外）
  *
  * @param {Array} schedule - getRaceSchedule() の返り値
+ * @param {number} [maxMinutesBefore=Infinity] - 発走まで最大何分前まで対象にするか
  * @returns {Array}
  */
-export function getRacesBeforeStart(schedule) {
+export function getRacesBeforeStart(schedule, maxMinutesBefore = Infinity) {
   const now = new Date();
-  return schedule.filter((r) => r.start_time > now);
+  return schedule.filter((r) => {
+    const minBeforeStart = (r.start_time - now) / 1000 / 60;
+    return minBeforeStart > 0 && minBeforeStart <= maxMinutesBefore;
+  });
 }
