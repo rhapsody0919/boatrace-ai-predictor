@@ -9,8 +9,8 @@
  * 1. getRaceSchedule() を1回だけ呼ぶ（5スクリプト個別呼び出しを廃止）
  * 2. 全ウィンドウに対象レースがなければ即終了（追加 DB 呼び出しゼロ）
  * 3. データが更新された場合のみ generate-predictions を実行
- * 4. 予測が更新された場合のみ Vercel Deploy Hook をトリガー
- * 5. 各サブスクリプトの失敗は後続処理をブロックしない（try-catch でフォールバック）
+ * 4. 各サブスクリプトの失敗は後続処理をブロックしない（try-catch でフォールバック）
+ * 5. 予測買い目オッズは予測リフレッシュとは独立して、発走前レースに対して毎回実行
  */
 
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
@@ -19,6 +19,7 @@ import {
   getRaceSchedule,
   getRacesInWindow,
   getRacesAfterStart,
+  getRacesBeforeStart,
 } from "../lib/raceSchedule.js";
 
 import { run as runOdds, ODDS_WINDOWS } from "./scrape-odds.js";
@@ -60,12 +61,15 @@ async function main() {
     (w) => getRacesInWindow(schedule, w, 3).length > 0,
   );
   const finishedRaces = getRacesAfterStart(schedule, 5);
+  // 予測買い目オッズ: 発走前の全レース（オッズは発走まで変動し続ける）
+  const upcomingRaces = getRacesBeforeStart(schedule);
 
   if (
     !hasOddsRaces &&
     !hasUpdateRaces &&
     !hasExhibitionRaces &&
-    finishedRaces.length === 0
+    finishedRaces.length === 0 &&
+    upcomingRaces.length === 0
   ) {
     console.log("📭 全ウィンドウ対象レースなし。終了。");
     return;
@@ -146,14 +150,20 @@ async function main() {
     }).catch((e) => {
       console.error("⚠️ 予測リフレッシュ失敗:", e.message);
     });
-
-    // 5. 予測リフレッシュ後に予測買い目オッズを取得
-    console.log("\n💹 予測買い目オッズ取得");
-    await runPredictionOdds([...updatedRaceIds], date).catch((e) => {
-      console.error("⚠️ 予測買い目オッズ取得失敗:", e.message);
-    });
   } else if (!anyUpdated) {
     console.log("\n📭 新規データなし → 予測リフレッシュスキップ");
+  }
+
+  // 5. 予測買い目オッズ更新（発走前レースに対して毎回実行）
+  // 予測リフレッシュの有無に関わらず、オッズは発走まで変動し続けるため独立して実行する
+  if (upcomingRaces.length > 0) {
+    console.log(`\n💹 予測買い目オッズ更新: ${upcomingRaces.length}レース`);
+    await runPredictionOdds(
+      upcomingRaces.map((r) => r.race_id),
+      date,
+    ).catch((e) => {
+      console.error("⚠️ 予測買い目オッズ取得失敗:", e.message);
+    });
   }
 
   console.log("\n🏁 オーケストレーター完了");
