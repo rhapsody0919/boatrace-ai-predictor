@@ -1,5 +1,10 @@
 /**
- * 1マーク展開予測ロジック v4（バックエンド用）
+ * 1マーク展開予測ロジック v5（バックエンド用）
+ *
+ * v5: キャリブレーション改善（BOA-66分析より）
+ *   - 1コース基本勝率を会場別勝率で補正（全国平均55%固定→会場実績値）
+ *   - softmax温度 1.3→1.7（高確率帯の過信を抑制）
+ *   - まくり・まくり差しにフロア確率を設定（低確率帯の過小評価を緩和）
  *
  * v4: 統一コース勝率フレームワーク + レースコンディション統合
  *   - 逃げ/非逃げを同一スケール（COURSE_BASE_WIN_RATE × techniqueRate）で計算し、逃げバイアスを解消
@@ -20,7 +25,13 @@ import { VENUE_1COURSE_WIN_RATE, VENUE_1COURSE_AVG } from "./venueParameters.js"
 const DEFAULT_ST = 0.15;
 
 // 正規化時のsoftmax温度パラメータ（T>1で高確率帯の過大評価を抑制）
-const SOFTMAX_TEMP = 1.3;
+// v5: 1.3→1.5 に引き上げ（70-80%帯で+14pt過信を緩和しつつ下がりすぎを防ぐ）
+const SOFTMAX_TEMP = 1.5;
+
+// v5: まくり・まくり差しの正規化後フロア確率（低確率帯の過小評価を緩和）
+// 正規化後に適用し、合計が1を超える場合は逃げ確率から差し引く
+const MAKURI_PROB_FLOOR = 0.015;
+const MAKURIZASHI_PROB_FLOOR = 0.012;
 
 // コース別の基本勝率（全国平均）
 const COURSE_BASE_WIN_RATE = {
@@ -205,6 +216,19 @@ export function predictFirstMarkV2(players, raceConditions) {
   // v4: upsetFactor算出（レースコンディションベース）
   const upsetFactor = calcUpsetFactor(raceConditions);
 
+  // v5: 会場別1コース勝率でコース基本勝率を補正
+  // COURSE_BASE_WIN_RATE は全国平均（1コース=55%）だが、インが強い会場（大村62%等）では
+  // 低確率帯の逃げが過小評価されるため、会場実績値にスケールする
+  const venueCode = String(raceConditions?.venueCode || "").padStart(2, "0");
+  const venue1Rate = VENUE_1COURSE_WIN_RATE[venueCode] || VENUE_1COURSE_AVG;
+  const base1Rate = COURSE_BASE_WIN_RATE[1]; // 0.55
+  const remainingScale = (1 - venue1Rate) / (1 - base1Rate); // 2-6コースを比例縮小
+
+  function getVenueCourseWinRate(courseInt) {
+    if (courseInt === 1) return venue1Rate;
+    return (COURSE_BASE_WIN_RATE[courseInt] || 0.05) * remainingScale;
+  }
+
   // Step 3: 全コース・全決まり手の統一確率計算
   const course1 = sorted[0];
   const c1Course = String(course1.course);
@@ -225,8 +249,8 @@ export function predictFirstMarkV2(players, raceConditions) {
     const courseNum = String(player.course);
     const courseInt = player.course;
 
-    // コース別基本勝率
-    const courseWinRate = COURSE_BASE_WIN_RATE[courseInt] || 0.05;
+    // コース別基本勝率（v5: 会場別補正済み）
+    const courseWinRate = getVenueCourseWinRate(courseInt);
 
     // 攻撃分布（ベイズ縮小）
     const playerAttackDist = player.attackDistribution || {};
@@ -390,6 +414,20 @@ export function predictFirstMarkV2(players, raceConditions) {
     distribution[p.technique] =
       (distribution[p.technique] || 0) + p.probability;
   }
+
+  // v5: まくり・まくり差しのフロア確率を正規化後に適用
+  // 過小評価された低確率帯を底上げし、不足分を逃げ確率から差し引く
+  for (const [tech, floor] of [["makuri", MAKURI_PROB_FLOOR], ["makurizashi", MAKURIZASHI_PROB_FLOOR]]) {
+    if ((distribution[tech] || 0) < floor) {
+      const deficit = floor - (distribution[tech] || 0);
+      distribution[tech] = floor;
+      // 不足分を逃げから差し引く（逃げが最大の確率を持つため）
+      if (distribution.nige > deficit + 0.01) {
+        distribution.nige -= deficit;
+      }
+    }
+  }
+
   for (const key of Object.keys(distribution)) {
     distribution[key] = Math.round(distribution[key] * 100) / 100;
   }
