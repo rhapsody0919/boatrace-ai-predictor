@@ -29,7 +29,7 @@ const DEFAULT_ST = 0.15;
 const SOFTMAX_TEMP = 1.5;
 
 // v5: まくり・まくり差しの正規化後フロア確率（低確率帯の過小評価を緩和）
-// 正規化後に適用し、合計が1を超える場合は逃げ確率から差し引く
+// 正規化後に適用し、全体を再正規化して合計100%を維持
 const MAKURI_PROB_FLOOR = 0.015;
 const MAKURIZASHI_PROB_FLOOR = 0.012;
 
