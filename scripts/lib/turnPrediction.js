@@ -3,7 +3,7 @@
  *
  * v5: キャリブレーション改善（BOA-66分析より）
  *   - 1コース基本勝率を会場別勝率で補正（全国平均55%固定→会場実績値）
- *   - softmax温度 1.3→1.7（高確率帯の過信を抑制）
+ *   - softmax温度 1.3→1.5（高確率帯の過信を抑制）
  *   - まくり・まくり差しにフロア確率を設定（低確率帯の過小評価を緩和）
  *
  * v4: 統一コース勝率フレームワーク + レースコンディション統合
@@ -416,15 +416,16 @@ export function predictFirstMarkV2(players, raceConditions) {
   }
 
   // v5: まくり・まくり差しのフロア確率を正規化後に適用
-  // 過小評価された低確率帯を底上げし、不足分を逃げ確率から差し引く
+  // 過小評価された低確率帯を底上げし、全体を再正規化して合計100%を維持
   for (const [tech, floor] of [["makuri", MAKURI_PROB_FLOOR], ["makurizashi", MAKURIZASHI_PROB_FLOOR]]) {
     if ((distribution[tech] || 0) < floor) {
-      const deficit = floor - (distribution[tech] || 0);
       distribution[tech] = floor;
-      // 不足分を逃げから差し引く（逃げが最大の確率を持つため）
-      if (distribution.nige > deficit + 0.01) {
-        distribution.nige -= deficit;
-      }
+    }
+  }
+  const distTotal = Object.values(distribution).reduce((a, b) => a + b, 0);
+  if (distTotal > 1.001) {
+    for (const key of Object.keys(distribution)) {
+      distribution[key] /= distTotal;
     }
   }
 
