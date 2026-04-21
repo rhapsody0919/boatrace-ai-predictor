@@ -49,7 +49,7 @@ export default async function handler(req) {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
         // 精度データは calculate-accuracy.js が日1回更新するため24時間キャッシュで十分
-      "Cache-Control": "s-maxage=86400, stale-while-revalidate=3600",
+        "Cache-Control": "s-maxage=86400, stale-while-revalidate=3600",
       },
     });
   } catch (error) {

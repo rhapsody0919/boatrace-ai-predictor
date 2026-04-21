@@ -27,7 +27,7 @@ const cache = {
    * 1. メモリキャッシュ（最速）
    * 2. localStorageキャッシュ（リロード後も有効）
    * @param {string} key
-   * @param {number} [ttl] - TTL(ms)。省略時はグローバルCAHCE_TTL
+   * @param {number} [ttl] - TTL(ms)。省略時はグローバルCACHE_TTL
    */
   get(key, ttl = CACHE_TTL) {
     // 1. メモリから
