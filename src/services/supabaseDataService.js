@@ -26,12 +26,14 @@ const cache = {
    * キャッシュからデータを取得
    * 1. メモリキャッシュ（最速）
    * 2. localStorageキャッシュ（リロード後も有効）
+   * @param {string} key
+   * @param {number} [ttl] - TTL(ms)。省略時はグローバルCAHCE_TTL
    */
-  get(key) {
+  get(key, ttl = CACHE_TTL) {
     // 1. メモリから
     const memCached = this.memory.get(key);
-    if (memCached && Date.now() - memCached.timestamp < CACHE_TTL) {
-      const remaining = Math.round((CACHE_TTL - (Date.now() - memCached.timestamp)) / 1000);
+    if (memCached && Date.now() - memCached.timestamp < ttl) {
+      const remaining = Math.round((ttl - (Date.now() - memCached.timestamp)) / 1000);
       console.log(`[Cache HIT] Memory: ${key} (${remaining}s remaining)`);
       return memCached.data;
     }
@@ -41,8 +43,8 @@ const cache = {
       const stored = localStorage.getItem(CACHE_PREFIX + key);
       if (stored) {
         const { data, timestamp } = JSON.parse(stored);
-        if (Date.now() - timestamp < CACHE_TTL) {
-          const remaining = Math.round((CACHE_TTL - (Date.now() - timestamp)) / 1000);
+        if (Date.now() - timestamp < ttl) {
+          const remaining = Math.round((ttl - (Date.now() - timestamp)) / 1000);
           console.log(`[Cache HIT] localStorage: ${key} (${remaining}s remaining)`);
           // メモリにも復元
           this.memory.set(key, { data, timestamp });
@@ -151,8 +153,8 @@ const cache = {
 /**
  * キャッシュ付きデータ取得
  */
-function withCache(key, fetcher) {
-  const cached = cache.get(key);
+function withCache(key, fetcher, ttl = CACHE_TTL) {
+  const cached = cache.get(key, ttl);
   if (cached !== null) {
     return Promise.resolve(cached);
   }
@@ -845,6 +847,8 @@ export const supabaseDataService = {
    * 精度統計データを取得（summary.json形式で返す）
    */
   async getAccuracy() {
+    // 精度データは日1回更新のため24時間キャッシュ（Edge CDNと合わせる）
+    const ACCURACY_TTL = 24 * 60 * 60 * 1000;
     return withCache('accuracy', async () => {
       // Phase D: まずEdge APIを試行（CDNキャッシュ活用）
       try {
@@ -1137,7 +1141,7 @@ export const supabaseDataService = {
         lastUpdated: new Date().toISOString(),
         models: modelStats
       };
-    }); // withCache end
+    }, ACCURACY_TTL); // withCache end
   },
 
   /**
