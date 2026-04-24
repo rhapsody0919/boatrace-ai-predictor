@@ -38,7 +38,7 @@ function calculateStdDev(values) {
 // イン崩れ指数（6因子の重み付き複合スコア）
 // 分析根拠: 過去90日13,094件の実データで各因子の予測力を検証（analyze-upset-factors.js）
 // 複合スコアで現行スコアの約2倍（36.6pt差）の予測力を確認済み
-function calculateVolatilityScore(racers, placeCd, turnPrediction, race) {
+function calculateVolatilityScore(racers, placeCd, turnPrediction, racerStatsList) {
     if (!racers || racers.length < 6) {
         return { score: 50, reasons: ['選手データが不足しています'] };
     }
@@ -62,7 +62,7 @@ function calculateVolatilityScore(racers, placeCd, turnPrediction, race) {
 
     // B. 1号艇の今節avgST（重み28%）— 遅いほどイン崩れしやすい
     // 観測レンジ: 0.07〜0.34。予測力 26.7pt差
-    const boat1ST = race.racerStats?.find(s => s.boatNumber === 1)?.avgST ?? null;
+    const boat1ST = racerStatsList?.find(s => s.boatNumber === 1)?.avgST ?? null;
     if (boat1ST != null) {
         const norm = Math.min(1, Math.max(0, (boat1ST - 0.07) / (0.34 - 0.07)));
         factors.push({ value: norm, weight: 0.277 });
@@ -101,7 +101,8 @@ function calculateVolatilityScore(racers, placeCd, turnPrediction, race) {
         const norm = 1 - Math.min(1, Math.max(0, (venueWinRate - 0.43) / (0.62 - 0.43)));
         factors.push({ value: norm, weight: 0.084 });
         if (venueWinRate <= 0.46) {
-            reasons.push(`${race.placeName || venueCode}は1コース勝率が低い（${(venueWinRate * 100).toFixed(0)}%）`);
+            const venueName = VENUE_NAMES[String(parseInt(venueCode, 10))] || venueCode;
+            reasons.push(`${venueName}は1コース勝率が低い（${(venueWinRate * 100).toFixed(0)}%）`);
         }
     }
 
@@ -583,7 +584,7 @@ function generateRacePrediction(race, date, racerStatsMap) {
     const turnPrediction = predictFirstMark(turnPredictionPlayers, raceConditions);
 
     // 荒れ度スコアを計算（展開予測の結果を活用）
-    const volatilityData = calculateVolatilityScore(race.racers, race.placeCd, turnPrediction, race);
+    const volatilityData = calculateVolatilityScore(race.racers, race.placeCd, turnPrediction, turnPredictionPlayers);
     const volatilityLevel = getVolatilityLevel(volatilityData.score);
     const recommendedModel = getRecommendedModel(volatilityData.score);
 
