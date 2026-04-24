@@ -395,6 +395,7 @@ async function main() {
       // 空のデータを保存
       const outputData = {
         success: true,
+        date: getTodayDateJST(),
         data: [],
         scrapedAt: new Date().toISOString(),
         message: 'No races today'
@@ -470,6 +471,7 @@ async function main() {
     // JSONファイルに保存
     const outputData = {
       success: true,
+      date: getTodayDateJST(),
       data: allRaces,
       scrapedAt: new Date().toISOString()
     };

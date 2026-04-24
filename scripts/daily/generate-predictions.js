@@ -40,11 +40,10 @@ function calculateStdDev(values) {
 // 複合スコアで現行スコアの約2倍（36.6pt差）の予測力を確認済み
 function calculateVolatilityScore(racers, placeCd, turnPrediction, racerStatsList) {
     if (!racers || racers.length < 6) {
-        return { score: 50, reasons: ['選手データが不足しています'] };
+        return { score: 50, reasons: ['選手データが不足しています'], boat1AvgST: null };
     }
 
-    const reasons = [];
-    const factors = [];
+    const factors = []; // { value, weight, reason }
 
     // A. 1号艇の全国勝率（重み36%）— 低いほどイン崩れしやすい
     // 観測レンジ: 0〜8.49。予測力 35.2pt差（最強因子）
@@ -52,12 +51,13 @@ function calculateVolatilityScore(racers, placeCd, turnPrediction, racerStatsLis
     const boat1WinRate = boat1 ? parseFloat(boat1.winRate) : null;
     if (boat1WinRate != null) {
         const norm = 1 - Math.min(1, Math.max(0, boat1WinRate / 8.5));
-        factors.push({ value: norm, weight: 0.364 });
-        if (boat1WinRate < 4.8) {
-            reasons.push(`1号艇の全国勝率が低い（${boat1WinRate.toFixed(2)}）→ イン崩れリスク高`);
-        } else if (boat1WinRate >= 6.4) {
-            reasons.push(`1号艇の全国勝率が高い（${boat1WinRate.toFixed(2)}）→ 逃げ安定`);
-        }
+        let reason;
+        if (boat1WinRate < 4.0)      reason = `1号艇の全国勝率が非常に低い（${boat1WinRate.toFixed(2)}）→ イン崩れリスク高`;
+        else if (boat1WinRate < 5.5) reason = `1号艇の全国勝率がやや低い（${boat1WinRate.toFixed(2)}）→ 崩れやすい`;
+        else if (boat1WinRate >= 7.0) reason = `1号艇の全国勝率が非常に高い（${boat1WinRate.toFixed(2)}）→ 逃げ鉄板`;
+        else if (boat1WinRate >= 6.0) reason = `1号艇の全国勝率が高い（${boat1WinRate.toFixed(2)}）→ 逃げ安定`;
+        else                          reason = `1号艇の全国勝率は標準（${boat1WinRate.toFixed(2)}）`;
+        factors.push({ value: norm, weight: 0.364, reason });
     }
 
     // B. 1号艇の今節avgST（重み28%）— 遅いほどイン崩れしやすい
@@ -65,12 +65,13 @@ function calculateVolatilityScore(racers, placeCd, turnPrediction, racerStatsLis
     const boat1ST = racerStatsList?.find(s => s.boatNumber === 1)?.avgST ?? null;
     if (boat1ST != null) {
         const norm = Math.min(1, Math.max(0, (boat1ST - 0.07) / (0.34 - 0.07)));
-        factors.push({ value: norm, weight: 0.277 });
-        if (boat1ST >= 0.18) {
-            reasons.push(`1号艇の今節スタートが遅い（平均${boat1ST.toFixed(3)}秒）→ イン崩れリスク`);
-        } else if (boat1ST <= 0.14) {
-            reasons.push(`1号艇の今節スタートが速い（平均${boat1ST.toFixed(3)}秒）→ 逃げ安定`);
-        }
+        let reason;
+        if (boat1ST >= 0.22)      reason = `1号艇の今節STが非常に遅い（平均${boat1ST.toFixed(3)}秒）→ 出遅れリスク大`;
+        else if (boat1ST >= 0.18) reason = `1号艇の今節STが遅い（平均${boat1ST.toFixed(3)}秒）→ イン崩れリスク`;
+        else if (boat1ST <= 0.10) reason = `1号艇の今節STが非常に速い（平均${boat1ST.toFixed(3)}秒）→ 逃げ鉄板`;
+        else if (boat1ST <= 0.14) reason = `1号艇の今節STが速い（平均${boat1ST.toFixed(3)}秒）→ スタート安定`;
+        else                      reason = `1号艇の今節STは標準（平均${boat1ST.toFixed(3)}秒）`;
+        factors.push({ value: norm, weight: 0.277, reason });
     }
 
     // C. AI逃げ確率（重み11%）— 低いほどイン崩れしやすい
@@ -78,10 +79,14 @@ function calculateVolatilityScore(racers, placeCd, turnPrediction, racerStatsLis
     const nigeProb = turnPrediction?.distribution?.nige ?? null;
     if (nigeProb != null) {
         const norm = 1 - Math.min(1, Math.max(0, (nigeProb - 0.20) / (0.99 - 0.20)));
-        factors.push({ value: norm, weight: 0.112 });
-        if (nigeProb < 0.43) {
-            reasons.push(`展開予測の逃げ確率が低い（${(nigeProb * 100).toFixed(0)}%）→ まくり・差し有力`);
-        }
+        const nigePct = (nigeProb * 100).toFixed(0);
+        let reason;
+        if (nigeProb < 0.30)      reason = `AI逃げ確率が非常に低い（${nigePct}%）→ まくり・差しが有力`;
+        else if (nigeProb < 0.43) reason = `AI逃げ確率が低い（${nigePct}%）→ まくり・差し有力`;
+        else if (nigeProb >= 0.75) reason = `AI逃げ確率が非常に高い（${nigePct}%）→ 逃げ鉄板`;
+        else if (nigeProb >= 0.60) reason = `AI逃げ確率が高い（${nigePct}%）→ 逃げ安定`;
+        else                       reason = `AI逃げ確率は標準（${nigePct}%）`;
+        factors.push({ value: norm, weight: 0.112, reason });
     }
 
     // D. 選手間の勝率σ（重み11%）— 高いほどイン崩れしやすい（外枠に実力者の可能性）
@@ -90,7 +95,12 @@ function calculateVolatilityScore(racers, placeCd, turnPrediction, racerStatsLis
     if (winRates.length >= 4) {
         const stddev = calculateStdDev(winRates);
         const norm = Math.min(1, Math.max(0, (stddev - 0.06) / (2.75 - 0.06)));
-        factors.push({ value: norm, weight: 0.107 });
+        let reason;
+        if (stddev >= 1.5)      reason = `選手間の実力差が大きい（σ=${stddev.toFixed(2)}）→ 外枠に実力者の可能性`;
+        else if (stddev >= 1.0) reason = `選手間の実力差がやや大きい（σ=${stddev.toFixed(2)}）→ 波乱の要因`;
+        else if (stddev < 0.5)  reason = `選手間の実力が拮抗（σ=${stddev.toFixed(2)}）→ 接戦になりやすい`;
+        else                    reason = `選手間の実力差は標準（σ=${stddev.toFixed(2)}）`;
+        factors.push({ value: norm, weight: 0.107, reason });
     }
 
     // E. 会場の1コース勝率（重み8%）— 低いほどイン崩れしやすい
@@ -99,11 +109,14 @@ function calculateVolatilityScore(racers, placeCd, turnPrediction, racerStatsLis
     const venueWinRate = VENUE_1COURSE_WIN_RATE[venueCode] || VENUE_1COURSE_AVG;
     {
         const norm = 1 - Math.min(1, Math.max(0, (venueWinRate - 0.43) / (0.62 - 0.43)));
-        factors.push({ value: norm, weight: 0.084 });
-        if (venueWinRate <= 0.46) {
-            const venueName = VENUE_NAMES[String(parseInt(venueCode, 10))] || venueCode;
-            reasons.push(`${venueName}は1コース勝率が低い（${(venueWinRate * 100).toFixed(0)}%）`);
-        }
+        const venueName = VENUE_NAMES[String(parseInt(venueCode, 10))] || venueCode;
+        const venuePct = (venueWinRate * 100).toFixed(0);
+        let reason;
+        if (venueWinRate <= 0.44)      reason = `${venueName}は1コース勝率が低い（${venuePct}%）→ 荒れやすい会場`;
+        else if (venueWinRate <= 0.48) reason = `${venueName}は1コース勝率がやや低い（${venuePct}%）`;
+        else if (venueWinRate >= 0.58) reason = `${venueName}は1コース勝率が高い（${venuePct}%）→ インが堅い会場`;
+        else                           reason = `${venueName}の1コース勝率は標準（${venuePct}%）`;
+        factors.push({ value: norm, weight: 0.084, reason });
     }
 
     // F. 1号艇のモーター2連率（重み6%）— 低いほどイン崩れしやすい
@@ -111,27 +124,29 @@ function calculateVolatilityScore(racers, placeCd, turnPrediction, racerStatsLis
     const boat1MotorRate = boat1 ? parseFloat(boat1.motor2Rate) : null;
     if (boat1MotorRate != null) {
         const norm = 1 - Math.min(1, Math.max(0, boat1MotorRate / 100));
-        factors.push({ value: norm, weight: 0.055 });
+        let reason;
+        if (boat1MotorRate < 20)      reason = `1号艇のモーターが不調（${boat1MotorRate.toFixed(1)}%）→ スタート・周回に不安`;
+        else if (boat1MotorRate < 28) reason = `1号艇のモーターがやや低調（${boat1MotorRate.toFixed(1)}%）`;
+        else if (boat1MotorRate >= 45) reason = `1号艇のモーターが好調（${boat1MotorRate.toFixed(1)}%）→ 機力で有利`;
+        else if (boat1MotorRate >= 35) reason = `1号艇のモーターがやや好調（${boat1MotorRate.toFixed(1)}%）`;
+        else                           reason = `1号艇のモーターは標準（${boat1MotorRate.toFixed(1)}%）`;
+        factors.push({ value: norm, weight: 0.055, reason });
     }
 
     // 利用可能な因子の重み合計で正規化（avgSTがない場合も対応）
     const totalWeight = factors.reduce((s, f) => s + f.weight, 0);
-    if (totalWeight === 0) return { score: 50, reasons: ['データ不足'] };
+    if (totalWeight === 0) return { score: 50, reasons: ['データ不足'], boat1AvgST: boat1ST ?? null };
 
     const composite = factors.reduce((s, f) => s + f.value * (f.weight / totalWeight), 0);
 
     // キャリブレーション: 分析で観測した30〜70%レンジに線形変換
     const finalScore = Math.min(100, Math.max(0, Math.round(30 + composite * 40)));
 
-    if (reasons.length === 0) {
-        if (finalScore < 42) {
-            reasons.push('1号艇が優位な安定したレース展開');
-        } else if (finalScore >= 55) {
-            reasons.push('複数因子がイン崩れを示唆');
-        } else {
-            reasons.push('標準的なレース展開');
-        }
-    }
+    // スコアへの寄与度（中立値0.5からの乖離 × 重み）上位3因子のreasonを採用
+    const reasons = [...factors]
+        .sort((a, b) => Math.abs(b.value - 0.5) * b.weight - Math.abs(a.value - 0.5) * a.weight)
+        .slice(0, 3)
+        .map(f => f.reason);
 
     return { score: finalScore, reasons, boat1AvgST: boat1ST };
 }
@@ -1210,6 +1225,11 @@ async function main() {
 
         // 今日の日付を取得
         const today = getTodayDateJST();
+
+        // races.json の日付が今日と一致するか確認（古いファイルで誤挿入を防ぐ）
+        if (racesData.date && racesData.date !== today) {
+            throw new Error(`races.json の日付 (${racesData.date}) が今日 (${today}) と一致しません。scrape-to-json.js を先に実行してください。`);
+        }
         console.log(`📅 予想生成日: ${today}`);
 
         // 全レースの予想を生成
