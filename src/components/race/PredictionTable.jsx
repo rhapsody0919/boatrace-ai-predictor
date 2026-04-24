@@ -23,17 +23,17 @@ function generateInsights(prediction, showExhibition, volatility) {
     }
   }
 
-  // ルール2: 荒れ度の示唆
+  // ルール2: イン崩れ指数の示唆
   if (volatility?.score != null) {
-    if (volatility.score >= 65) {
+    if (volatility.score >= 55) {
       candidates.push({
         priority: 7,
-        text: `荒れ度スコア${volatility.score} — 波乱の可能性が高いレース。穴目にも注目`,
+        text: `イン崩れ指数${volatility.score} — 1コースが崩れやすい。まくり・差しに注目`,
       });
-    } else if (volatility.score <= 35) {
+    } else if (volatility.score < 42) {
       candidates.push({
         priority: 7,
-        text: `荒れ度スコア${volatility.score} — 堅いレース予測。本命筋が安定`,
+        text: `イン崩れ指数${volatility.score} — 1コースが安定。本命筋が有利`,
       });
     }
   }

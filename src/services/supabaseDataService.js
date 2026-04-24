@@ -612,6 +612,7 @@ export const supabaseDataService = {
         volatility_level,
         recommended_model,
         volatility_reasons,
+        first_boat_avg_st,
         race_entries (
           boat_number,
           player_name,
@@ -744,7 +745,8 @@ export const supabaseDataService = {
           score: race.volatility_score,
           level: race.volatility_level,
           recommendedModel: race.recommended_model,
-          reasons: race.volatility_reasons || []
+          reasons: race.volatility_reasons || [],
+          boat1AvgST: race.first_boat_avg_st ?? null
         } : null,
         turnPrediction: turnPrediction,
         racerStats: standardPred?.feature_contributions?.racerStats || null,

@@ -35,127 +35,111 @@ function calculateStdDev(values) {
     return Math.sqrt(avgSquareDiff);
 }
 
-// 荒れ度スコア v2（展開予測・展示・気象を統合）
+// イン崩れ指数（6因子の重み付き複合スコア）
+// 分析根拠: 過去90日13,094件の実データで各因子の予測力を検証（analyze-upset-factors.js）
+// 複合スコアで現行スコアの約2倍（36.6pt差）の予測力を確認済み
 function calculateVolatilityScore(racers, placeCd, turnPrediction, race) {
     if (!racers || racers.length < 6) {
         return { score: 50, reasons: ['選手データが不足しています'] };
     }
 
-    let volatility = 0;
     const reasons = [];
+    const factors = [];
 
-    // デフォルト予測かどうか判定（データ不足時）
-    const isDefault = turnPrediction.probability === 0.55 &&
-        turnPrediction.boatStrengths.every(v => v === turnPrediction.boatStrengths[0]);
-
-    // ===== Factor A: 展開予測エントロピー（0-45点）=====
-    if (!isDefault) {
-        const probs = Object.values(turnPrediction.distribution).filter(p => p > 0);
-        const entropy = -probs.reduce((sum, p) => sum + p * Math.log2(p), 0);
-        const maxEntropy = Math.log2(probs.length);
-        const normalizedEntropy = maxEntropy > 0 ? entropy / maxEntropy : 0;
-
-        let entropyScore = normalizedEntropy * 35;
-        const topProb = turnPrediction.patterns[0].probability;
-        const uncertaintyBonus = Math.max(0, (0.55 - topProb) * 25);
-        entropyScore = Math.min(45, entropyScore + uncertaintyBonus);
-        volatility += entropyScore;
-
-        const nigeProb = turnPrediction.distribution.nige || 0;
-        const nigePct = (nigeProb * 100).toFixed(0);
-        if (normalizedEntropy > 0.7) {
-            reasons.push(`展開予測が拮抗（逃げ確率: ${nigePct}%、複数の決まり手が有力）`);
-        } else if (normalizedEntropy > 0.5) {
-            reasons.push(`複数の展開パターンが想定される（逃げ確率: ${nigePct}%）`);
-        }
-    } else {
-        // データ不足時のベース不確実性
-        volatility += 20;
-        reasons.push('展開予測データが不足（ベース不確実性を加算）');
-    }
-
-    // ===== Factor B: boatStrengths分散（0-20点）=====
-    if (!isDefault) {
-        const strengthStdDev = calculateStdDev(turnPrediction.boatStrengths);
-        const strengthScore = Math.max(0, (0.08 - strengthStdDev) / 0.08 * 20);
-        volatility += strengthScore;
-
-        if (strengthScore > 8) {
-            reasons.push('各艇の総合力が接近している');
+    // A. 1号艇の全国勝率（重み36%）— 低いほどイン崩れしやすい
+    // 観測レンジ: 0〜8.49。予測力 35.2pt差（最強因子）
+    const boat1 = racers.find(r => r.number === 1);
+    const boat1WinRate = boat1 ? parseFloat(boat1.winRate) : null;
+    if (boat1WinRate != null) {
+        const norm = 1 - Math.min(1, Math.max(0, boat1WinRate / 8.5));
+        factors.push({ value: norm, weight: 0.364 });
+        if (boat1WinRate < 4.8) {
+            reasons.push(`1号艇の全国勝率が低い（${boat1WinRate.toFixed(2)}）→ イン崩れリスク高`);
+        } else if (boat1WinRate >= 6.4) {
+            reasons.push(`1号艇の全国勝率が高い（${boat1WinRate.toFixed(2)}）→ 逃げ安定`);
         }
     }
 
-    // ===== Factor C: 展示アノマリー（0-15点）=====
-    let exhibitionScore = 0;
-    if (race.exhibitionData && race.exhibitionData.length > 0) {
-        // 1号艇の展示STが他艇より遅い
-        const exSTs = race.exhibitionData
-            .filter(e => e.startTiming != null)
-            .map(e => ({ boat: e.boatNumber, st: e.startTiming }));
-        if (exSTs.length >= 4) {
-            const lane1ST = exSTs.find(e => e.boat === 1);
-            const otherSTs = exSTs.filter(e => e.boat !== 1);
-            if (lane1ST && otherSTs.length > 0) {
-                const avgOtherST = otherSTs.reduce((s, e) => s + e.st, 0) / otherSTs.length;
-                const stDiff = lane1ST.st - avgOtherST;
-                if (stDiff > 0.02) {
-                    exhibitionScore += Math.min(8, stDiff * 120);
-                    reasons.push(`1号艇の展示STが他艇より遅い（${lane1ST.st.toFixed(2)}秒 vs 平均${avgOtherST.toFixed(2)}秒）`);
-                }
-            }
-        }
-
-        // 外枠に展示タイム上位の艇
-        const exTimes = race.exhibitionData
-            .filter(e => e.exhibitionTime != null)
-            .map(e => ({ boat: e.boatNumber, time: e.exhibitionTime }));
-        if (exTimes.length >= 4) {
-            const avgExTime = exTimes.reduce((s, e) => s + e.time, 0) / exTimes.length;
-            const fastOutside = exTimes.filter(e => e.boat >= 4 && e.time < avgExTime - 0.03);
-            if (fastOutside.length > 0) {
-                exhibitionScore += fastOutside.length * 4;
-                reasons.push(`外枠に展示タイム上位の艇あり（${fastOutside.map(e => `${e.boat}号艇`).join('、')}）`);
-            }
+    // B. 1号艇の今節avgST（重み28%）— 遅いほどイン崩れしやすい
+    // 観測レンジ: 0.07〜0.34。予測力 26.7pt差
+    const boat1ST = race.racerStats?.find(s => s.boatNumber === 1)?.avgST ?? null;
+    if (boat1ST != null) {
+        const norm = Math.min(1, Math.max(0, (boat1ST - 0.07) / (0.34 - 0.07)));
+        factors.push({ value: norm, weight: 0.277 });
+        if (boat1ST >= 0.18) {
+            reasons.push(`1号艇の今節スタートが遅い（平均${boat1ST.toFixed(3)}秒）→ イン崩れリスク`);
+        } else if (boat1ST <= 0.14) {
+            reasons.push(`1号艇の今節スタートが速い（平均${boat1ST.toFixed(3)}秒）→ 逃げ安定`);
         }
     }
-    volatility += Math.min(15, exhibitionScore);
 
-    // ===== Factor D: 会場・気象（0-20点）=====
+    // C. AI逃げ確率（重み11%）— 低いほどイン崩れしやすい
+    // 観測レンジ: 0.20〜0.99。予測力 10.8pt差
+    const nigeProb = turnPrediction?.distribution?.nige ?? null;
+    if (nigeProb != null) {
+        const norm = 1 - Math.min(1, Math.max(0, (nigeProb - 0.20) / (0.99 - 0.20)));
+        factors.push({ value: norm, weight: 0.112 });
+        if (nigeProb < 0.43) {
+            reasons.push(`展開予測の逃げ確率が低い（${(nigeProb * 100).toFixed(0)}%）→ まくり・差し有力`);
+        }
+    }
+
+    // D. 選手間の勝率σ（重み11%）— 高いほどイン崩れしやすい（外枠に実力者の可能性）
+    // 観測レンジ: 0.06〜2.75。予測力 10.4pt差
+    const winRates = racers.map(r => parseFloat(r.winRate)).filter(v => !isNaN(v));
+    if (winRates.length >= 4) {
+        const stddev = calculateStdDev(winRates);
+        const norm = Math.min(1, Math.max(0, (stddev - 0.06) / (2.75 - 0.06)));
+        factors.push({ value: norm, weight: 0.107 });
+    }
+
+    // E. 会場の1コース勝率（重み8%）— 低いほどイン崩れしやすい
+    // 観測レンジ: 0.43〜0.62。予測力 8.1pt差
     const venueCode = String(placeCd).padStart(2, '0');
     const venueWinRate = VENUE_1COURSE_WIN_RATE[venueCode] || VENUE_1COURSE_AVG;
-    let venueScore = Math.max(0, (VENUE_1COURSE_AVG - venueWinRate) / 0.10 * 12);
-    venueScore = Math.min(12, venueScore);
-
-    if (venueScore > 4) {
-        reasons.push(`${race.placeName || venueCode}は1コース勝率が低く荒れやすい（${(venueWinRate * 100).toFixed(0)}%）`);
+    {
+        const norm = 1 - Math.min(1, Math.max(0, (venueWinRate - 0.43) / (0.62 - 0.43)));
+        factors.push({ value: norm, weight: 0.084 });
+        if (venueWinRate <= 0.46) {
+            reasons.push(`${race.placeName || venueCode}は1コース勝率が低い（${(venueWinRate * 100).toFixed(0)}%）`);
+        }
     }
 
-    let weatherScore = 0;
-    if (race.windVelocity != null && race.windVelocity >= 5) {
-        weatherScore += Math.min(5, (race.windVelocity - 4) * 2);
-        reasons.push(`風速${race.windVelocity}mで荒れやすい`);
+    // F. 1号艇のモーター2連率（重み6%）— 低いほどイン崩れしやすい
+    // 観測レンジ: 0〜100。予測力 5.3pt差
+    const boat1MotorRate = boat1 ? parseFloat(boat1.motor2Rate) : null;
+    if (boat1MotorRate != null) {
+        const norm = 1 - Math.min(1, Math.max(0, boat1MotorRate / 100));
+        factors.push({ value: norm, weight: 0.055 });
     }
-    if (race.waveHeight != null && race.waveHeight >= 5) {
-        weatherScore += Math.min(3, race.waveHeight - 4);
-        reasons.push(`波高${race.waveHeight}cmで水面不安定`);
-    }
-    volatility += Math.min(20, venueScore + weatherScore);
 
-    // 最終スコア
-    const finalScore = Math.min(100, Math.max(0, Math.round(volatility)));
+    // 利用可能な因子の重み合計で正規化（avgSTがない場合も対応）
+    const totalWeight = factors.reduce((s, f) => s + f.weight, 0);
+    if (totalWeight === 0) return { score: 50, reasons: ['データ不足'] };
+
+    const composite = factors.reduce((s, f) => s + f.value * (f.weight / totalWeight), 0);
+
+    // キャリブレーション: 分析で観測した30〜70%レンジに線形変換
+    const finalScore = Math.min(100, Math.max(0, Math.round(30 + composite * 40)));
 
     if (reasons.length === 0) {
-        reasons.push(finalScore < 35 ? '1号艇が安定して有利な展開' : '標準的なレース展開');
+        if (finalScore < 42) {
+            reasons.push('1号艇が優位な安定したレース展開');
+        } else if (finalScore >= 55) {
+            reasons.push('複数因子がイン崩れを示唆');
+        } else {
+            reasons.push('標準的なレース展開');
+        }
     }
 
     return { score: finalScore, reasons };
 }
 
-// 荒れ度レベルを判定
+// イン崩れ指数のレベルを判定
 function getVolatilityLevel(score) {
-    if (score < 35) return 'low';    // 堅い
-    if (score < 65) return 'medium'; // 標準
-    return 'high';                    // 荒れる
+    if (score < 42) return 'low';    // 堅い
+    if (score < 55) return 'medium'; // 標準
+    return 'high';                    // 崩れやすい
 }
 
 // 推奨モデルを判定
@@ -773,6 +757,7 @@ async function writeToSupabase(allPredictions, date) {
                 first_boat_grade: firstPlayer?.grade || null,
                 first_boat_win_rate: firstPlayer ? parseFloat(firstPlayer.winRate) : null,
                 first_boat_motor_2rate: firstPlayer ? parseFloat(firstPlayer.motor2Rate) : null,
+                first_boat_avg_st: race.racerStats?.find(s => s.boatNumber === 1)?.avgST ?? null,
                 win_rate_stddev: calculateStdDev(winRates),
                 win_rate_avg: winRates.reduce((a, b) => a + b, 0) / winRates.length,
                 motor_2rate_stddev: calculateStdDev(motorRates),
