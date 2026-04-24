@@ -133,7 +133,7 @@ function calculateVolatilityScore(racers, placeCd, turnPrediction, racerStatsLis
         }
     }
 
-    return { score: finalScore, reasons };
+    return { score: finalScore, reasons, boat1AvgST: boat1ST };
 }
 
 // イン崩れ指数のレベルを判定
@@ -653,6 +653,7 @@ function generateRacePrediction(race, date, racerStatsMap) {
             level: volatilityLevel,
             recommendedModel: recommendedModel,
             reasons: volatilityData.reasons,
+            boat1AvgST: volatilityData.boat1AvgST,
         },
 
         // 3モデルの予想
@@ -758,7 +759,7 @@ async function writeToSupabase(allPredictions, date) {
                 first_boat_grade: firstPlayer?.grade || null,
                 first_boat_win_rate: firstPlayer ? parseFloat(firstPlayer.winRate) : null,
                 first_boat_motor_2rate: firstPlayer ? parseFloat(firstPlayer.motor2Rate) : null,
-                first_boat_avg_st: race.racerStats?.find(s => s.boatNumber === 1)?.avgST ?? null,
+                first_boat_avg_st: race.volatility.boat1AvgST ?? null,
                 win_rate_stddev: calculateStdDev(winRates),
                 win_rate_avg: winRates.reduce((a, b) => a + b, 0) / winRates.length,
                 motor_2rate_stddev: calculateStdDev(motorRates),

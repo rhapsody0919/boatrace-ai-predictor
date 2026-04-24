@@ -1,11 +1,11 @@
 /**
- * 荒れ度スコア精度検証 — 1コースが飛ぶレースをどれだけ予測できているか
+ * イン崩れ指数精度検証 — 1コースが飛ぶレースをどれだけ予測できているか
  *
  * 分析内容:
- * 1. 荒れ度レベル別の「1コースが飛んだ率」（ベースラインと比較）
- * 2. 荒れ度スコア帯別（10点刻み）の1コース飛び率
- * 3. 決まり手（winning_technique）別の荒れ度分布
- * 4. 高配当レースで事前に荒れ度highが付いていたか
+ * 1. イン崩れ指数レベル別の「1コースが飛んだ率」（ベースラインと比較）
+ * 2. イン崩れ指数スコア帯別（10点刻み）の1コース飛び率
+ * 3. 決まり手（winning_technique）別のイン崩れ指数分布
+ * 4. 高配当レースで事前にイン崩れ指数highが付いていたか
  * 5. racesテーブルの特徴量と1コース飛びの相関
  */
 
@@ -41,7 +41,7 @@ async function main() {
   since.setDate(since.getDate() - DAYS);
   const sinceStr = since.toISOString().split("T")[0];
 
-  console.log("🔍 荒れ度スコア精度検証\n");
+  console.log("🔍 イン崩れ指数精度検証\n");
   console.log(`📅 期間: 過去${DAYS}日 (${sinceStr} 〜)\n`);
 
   // races（volatility付き）
@@ -69,7 +69,7 @@ async function main() {
       .range(from, to),
   );
 
-  console.log(`荒れ度データ: ${races.length.toLocaleString()} 件`);
+  console.log(`イン崩れ指数データ: ${races.length.toLocaleString()} 件`);
   console.log(`結果データ:   ${results.length.toLocaleString()} 件\n`);
 
   // JOIN
@@ -103,17 +103,17 @@ async function main() {
   console.log(`  全体の1号艇1着率:               ${pct(rank1WinRate)}`);
   console.log(`  → 1コースが飛ぶ率（逃げ以外）:  ${pct(1 - nige1stRate)}\n`);
 
-  // --- 1. 荒れ度レベル別 ---
+  // --- 1. イン崩れ指数レベル別 ---
   console.log("=".repeat(65));
-  console.log("【1】荒れ度レベル別 — 1コース飛び率と決まり手");
+  console.log("【1】イン崩れ指数レベル別 — 1コース飛び率と決まり手");
   console.log("=".repeat(65));
 
   const baseUpsettRate = 1 - nige1stRate;
 
   for (const [level, label] of [
-    ["low", "堅い   (score<35) "],
-    ["medium", "標準   (35≤s<65) "],
-    ["high", "荒れる (score≥65) "],
+    ["low", "堅い       (score<42) "],
+    ["medium", "標準       (42≤s<55) "],
+    ["high", "崩れやすい (score≥55) "],
   ]) {
     const entries = joined.filter((r) => r.volatility_level === level);
     if (entries.length === 0) {
@@ -187,9 +187,9 @@ async function main() {
   }
   console.log();
 
-  // --- 3. 高配当レースで荒れ度が当たっていたか ---
+  // --- 3. 高配当レースでイン崩れ指数が当たっていたか ---
   console.log("=".repeat(65));
-  console.log("【3】実際に高配当だったレース — 事前の荒れ度は？");
+  console.log("【3】実際に高配当だったレース — 事前のイン崩れ指数は？");
   console.log("  (本当に使える指標なら high が多いはず)");
   console.log("=".repeat(65));
 
@@ -326,22 +326,22 @@ async function main() {
   console.log(`\n  ベースライン（1コース飛び率）: ${pct(baseUpsettRate)}`);
   if (highUpsetRate !== null)
     console.log(
-      `  荒れ度high時:                 ${pct(highUpsetRate)} (${highUpsetRate - baseUpsettRate >= 0 ? "+" : ""}${((highUpsetRate - baseUpsettRate) * 100).toFixed(1)}pt)`,
+      `  イン崩れ指数high時:           ${pct(highUpsetRate)} (${highUpsetRate - baseUpsettRate >= 0 ? "+" : ""}${((highUpsetRate - baseUpsettRate) * 100).toFixed(1)}pt)`,
     );
   if (lowUpsetRate !== null)
     console.log(
-      `  荒れ度low時:                  ${pct(lowUpsetRate)} (${lowUpsetRate - baseUpsettRate >= 0 ? "+" : ""}${((lowUpsetRate - baseUpsettRate) * 100).toFixed(1)}pt)`,
+      `  イン崩れ指数low時:            ${pct(lowUpsetRate)} (${lowUpsetRate - baseUpsettRate >= 0 ? "+" : ""}${((lowUpsetRate - baseUpsettRate) * 100).toFixed(1)}pt)`,
     );
 
   const lift = highUpsetRate != null ? highUpsetRate - baseUpsettRate : 0;
   console.log();
   if (lift > 0.08) {
-    console.log("  ✅ 荒れ度スコアに有意な予測力あり（8pt超のリフト）");
+    console.log("  ✅ イン崩れ指数に有意な予測力あり（8pt超のリフト）");
   } else if (lift > 0.03) {
-    console.log("  ⚠️  荒れ度スコアに弱い予測力（3〜8ptのリフト）→ 改善余地大");
+    console.log("  ⚠️  イン崩れ指数に弱い予測力（3〜8ptのリフト）→ 改善余地大");
   } else {
     console.log(
-      "  ❌ 荒れ度スコアがほぼランダム（3pt未満）→ 根本的な再設計が必要",
+      "  ❌ イン崩れ指数がほぼランダム（3pt未満）→ 根本的な再設計が必要",
     );
   }
 }
