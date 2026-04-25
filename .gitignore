@@ -31,3 +31,4 @@ dist-ssr
 credentials/
 *.json.key
 google-service-account.json
+data/races.json
