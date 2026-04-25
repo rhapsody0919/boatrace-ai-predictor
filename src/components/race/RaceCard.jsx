@@ -3,6 +3,7 @@
  */
 
 function RaceCard({ race, selectedModel, onAnalyzeRace }) {
+  const volatility = race.rawData?.volatility
   const racePrediction = race.rawData
   const result = racePrediction?.result
   const isFinished = result?.finished
@@ -83,6 +84,22 @@ function RaceCard({ race, selectedModel, onAnalyzeRace }) {
               ❌ 外れ
             </span>
           )}
+        </div>
+      )}
+      {volatility && volatility.level !== 'medium' && (
+        <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+          <span style={{
+            display: 'inline-block',
+            padding: '0.2rem 0.6rem',
+            borderRadius: '10px',
+            fontSize: '0.72rem',
+            fontWeight: '600',
+            background: volatility.level === 'high' ? '#fff3e0' : '#e8f5e9',
+            color: volatility.level === 'high' ? '#e65100' : '#2e7d32',
+            border: `1px solid ${volatility.level === 'high' ? '#ffb74d' : '#81c784'}`,
+          }}>
+            {volatility.level === 'high' ? '🌪️ 崩れやすい' : '🎯 堅い'}
+          </span>
         </div>
       )}
       <button
