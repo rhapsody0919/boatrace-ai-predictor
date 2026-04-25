@@ -41,7 +41,45 @@ async function main() {
   }
 
   if ((count || 0) > 0) {
-    console.log(`✅ 初期化済み（${count}レース）。スキップ。`);
+    // generate-predictions.js がDB更新後にコード変更されていた場合のみ予測を再生成する
+    let shouldRegen = false;
+    try {
+      const gitTs = execSync(
+        "git log -1 --format=%ct scripts/daily/generate-predictions.js",
+        { encoding: "utf8", cwd: ROOT },
+      ).trim();
+      if (gitTs) {
+        const scriptModifiedAt = new Date(parseInt(gitTs, 10) * 1000);
+
+        const { data: latestRace } = await supabase
+          .from("races")
+          .select("updated_at")
+          .like("race_id", `${date}%`)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latestRace && scriptModifiedAt > new Date(latestRace.updated_at)) {
+          shouldRegen = true;
+          console.log(
+            `🔄 予測スクリプトがDB更新後に変更されています（${scriptModifiedAt.toISOString()} > ${latestRace.updated_at}）`,
+          );
+        }
+      }
+    } catch {
+      // git 未使用環境またはクエリ失敗の場合はスキップ
+    }
+
+    if (shouldRegen) {
+      console.log("🤖 予測のみ再生成します...");
+      execSync(
+        `node ${path.join(ROOT, "scripts", "daily", "generate-predictions.js")}`,
+        { stdio: "inherit", env: { ...process.env } },
+      );
+      console.log("✅ 予測再生成完了");
+    } else {
+      console.log(`✅ 初期化済み（${count}レース）。スキップ。`);
+    }
     return;
   }
 
