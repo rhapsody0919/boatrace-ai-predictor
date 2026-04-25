@@ -1192,6 +1192,28 @@ export async function mainRefresh({ isDryRun, specificRaceIds }) {
     }
     console.log(`  ✅ predictions: ${predictionsData.length}件（${allPredictions.length}レース）`);
 
+    // races テーブルの volatility 項目を更新（イン崩れ指数リフレッシュ）
+    // upsert ではなく update を使用し、既存行のみを更新する（NOT NULL 制約エラーを回避）
+    const now = new Date().toISOString();
+    let volatilityUpdated = 0;
+    for (const race of allPredictions) {
+        const { error } = await supabase.from('races')
+            .update({
+                volatility_score: race.volatility.score,
+                volatility_level: race.volatility.level,
+                volatility_reasons: race.volatility.reasons,
+                first_boat_avg_st: race.volatility.boat1AvgST ?? null,
+                updated_at: now,
+            })
+            .eq('race_id', race.raceId);
+        if (error) {
+            console.error(`❌ races volatility更新エラー (${race.raceId}):`, error.message);
+        } else {
+            volatilityUpdated++;
+        }
+    }
+    console.log(`  ✅ races volatility: ${volatilityUpdated}件`);
+
     // Vercel Deploy Hook をトリガー
     const deployHook = process.env.VERCEL_DEPLOY_HOOK;
     if (deployHook) {
