@@ -686,11 +686,11 @@ function App({ tab = 'races' }) {
                                                                         borderRadius: '10px',
                                                                         fontSize: '0.75rem',
                                                                         fontWeight: '700',
-                                                                        background: volatility.level === 'high' ? 'var(--color-warning-light)' : 'var(--color-success)',
+                                                                        background: volatility.level === 'high' ? '#f57c00' : '#2e7d32',
                                                                         color: '#fff',
                                                                         letterSpacing: '0.02em',
                                                                     }}>
-                                                                        {volatility.level === 'high' ? '🌪️ 波乱注目' : '🎯 本命有利'}
+                                                                        {volatility.level === 'high' ? '💰 高配当期待' : '🎯 本命有利'}
                                                                     </span>
                                                                 </div>
                                                             )}
