@@ -94,7 +94,7 @@ function RaceCard({ race, selectedModel, onAnalyzeRace }) {
             borderRadius: '10px',
             fontSize: '0.75rem',
             fontWeight: '700',
-            background: volatility.level === 'high' ? '#f57c00' : '#2e7d32',
+            background: volatility.level === 'high' ? '#c62828' : '#2e7d32',
             color: '#fff',
             letterSpacing: '0.02em',
           }}>
