@@ -3,8 +3,8 @@
  */
 
 function RaceCard({ race, selectedModel, onAnalyzeRace }) {
-  const volatility = race.rawData?.volatility
   const racePrediction = race.rawData
+  const volatility = racePrediction?.volatility
   const result = racePrediction?.result
   const isFinished = result?.finished
 
@@ -95,8 +95,8 @@ function RaceCard({ race, selectedModel, onAnalyzeRace }) {
             fontSize: '0.72rem',
             fontWeight: '600',
             background: volatility.level === 'high' ? '#fff3e0' : '#e8f5e9',
-            color: volatility.level === 'high' ? '#e65100' : '#2e7d32',
-            border: `1px solid ${volatility.level === 'high' ? '#ffb74d' : '#81c784'}`,
+            color: volatility.level === 'high' ? 'var(--color-warning-dark)' : 'var(--color-success-dark)',
+            border: `1px solid ${volatility.level === 'high' ? 'var(--color-warning-light)' : 'var(--color-success-light)'}`,
           }}>
             {volatility.level === 'high' ? '🌪️ 崩れやすい' : '🎯 堅い'}
           </span>
