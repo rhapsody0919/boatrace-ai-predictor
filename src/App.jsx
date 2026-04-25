@@ -625,16 +625,38 @@ function App({ tab = 'races' }) {
                                                     const turnPreview = turnPredictionMap[race.id]
                                                     const topPattern = turnPreview?.patterns?.[0]
                                                     const volatility = race.rawData?.volatility
+                                                    const isHighVol = volatility?.level === 'high'
+                                                    const isLowVol = volatility?.level === 'low'
+                                                    const showVolBadge = isHighVol || isLowVol
+                                                    const volBadgeColor = isHighVol ? '#c62828' : '#2e7d32'
+                                                    const volBadgeLabel = isHighVol ? '💰 高配当期待' : '🎯 本命有利'
 
                                                     return (
                                                         <div
                                                             key={race.id}
                                                             className="race-card"
                                                             ref={el => raceCardRefs.current[race.id] = el}
+                                                            style={showVolBadge ? { borderLeft: `4px solid ${volBadgeColor}` } : undefined}
                                                         >
                                                             <div className="race-card-header">
                                                                 <h3>{race.venue}</h3>
-                                                                <span className="race-number">{race.raceNumber}R</span>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                    {showVolBadge && (
+                                                                        <span style={{
+                                                                            padding: '0.2rem 0.55rem',
+                                                                            borderRadius: '8px',
+                                                                            fontSize: '0.7rem',
+                                                                            fontWeight: '700',
+                                                                            background: volBadgeColor,
+                                                                            color: '#fff',
+                                                                            letterSpacing: '0.02em',
+                                                                            whiteSpace: 'nowrap',
+                                                                        }}>
+                                                                            {volBadgeLabel}
+                                                                        </span>
+                                                                    )}
+                                                                    <span className="race-number">{race.raceNumber}R</span>
+                                                                </div>
                                                             </div>
                                                             <div className="race-info">
                                                                 <div className="info-item">
@@ -676,22 +698,6 @@ function App({ tab = 'races' }) {
                                                                             {Math.round(topPattern.probability * 100)}%
                                                                         </span>
                                                                     </div>
-                                                                </div>
-                                                            )}
-                                                            {volatility && volatility.level !== 'medium' && (
-                                                                <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
-                                                                    <span style={{
-                                                                        display: 'inline-block',
-                                                                        padding: '0.25rem 0.7rem',
-                                                                        borderRadius: '10px',
-                                                                        fontSize: '0.75rem',
-                                                                        fontWeight: '700',
-                                                                        background: volatility.level === 'high' ? '#c62828' : '#2e7d32',
-                                                                        color: '#fff',
-                                                                        letterSpacing: '0.02em',
-                                                                    }}>
-                                                                        {volatility.level === 'high' ? '💰 高配当期待' : '🎯 本命有利'}
-                                                                    </span>
                                                                 </div>
                                                             )}
                                                             <button
