@@ -624,6 +624,7 @@ function App({ tab = 'races' }) {
 
                                                     const turnPreview = turnPredictionMap[race.id]
                                                     const topPattern = turnPreview?.patterns?.[0]
+                                                    const volatility = race.rawData?.volatility
 
                                                     return (
                                                         <div
@@ -675,6 +676,22 @@ function App({ tab = 'races' }) {
                                                                             {Math.round(topPattern.probability * 100)}%
                                                                         </span>
                                                                     </div>
+                                                                </div>
+                                                            )}
+                                                            {volatility && volatility.level !== 'medium' && (
+                                                                <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                                                                    <span style={{
+                                                                        display: 'inline-block',
+                                                                        padding: '0.2rem 0.6rem',
+                                                                        borderRadius: '10px',
+                                                                        fontSize: '0.72rem',
+                                                                        fontWeight: '600',
+                                                                        background: volatility.level === 'high' ? '#fff3e0' : '#e8f5e9',
+                                                                        color: volatility.level === 'high' ? 'var(--color-warning-dark)' : 'var(--color-success-dark)',
+                                                                        border: `1px solid ${volatility.level === 'high' ? 'var(--color-warning-light)' : 'var(--color-success-light)'}`,
+                                                                    }}>
+                                                                        {volatility.level === 'high' ? '🌪️ 崩れやすい' : '🎯 堅い'}
+                                                                    </span>
                                                                 </div>
                                                             )}
                                                             <button

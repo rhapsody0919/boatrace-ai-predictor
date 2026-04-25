@@ -503,6 +503,9 @@ export const supabaseDataService = {
         venue_code,
         race_number,
         start_time,
+        volatility_score,
+        volatility_level,
+        volatility_reasons,
         race_entries (
           boat_number,
           player_name,
@@ -546,6 +549,11 @@ export const supabaseDataService = {
         startTime: race.start_time?.substring(0, 5) || '',
         date: race.race_date,
         placeCd: race.venue_code,
+        volatility: race.volatility_score ? {
+          score: race.volatility_score,
+          level: race.volatility_level,
+          reasons: race.volatility_reasons || [],
+        } : null,
         racers: (race.race_entries || []).map(entry => ({
           waku: entry.boat_number,
           name: entry.player_name,
