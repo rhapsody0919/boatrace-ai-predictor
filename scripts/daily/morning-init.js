@@ -72,10 +72,23 @@ async function main() {
 
     if (shouldRegen) {
       console.log("🤖 予測のみ再生成します...");
-      execSync(
-        `node ${path.join(ROOT, "scripts", "daily", "generate-predictions.js")}`,
-        { stdio: "inherit", env: { ...process.env } },
-      );
+      // main() は races.json（git stale）を読むため使わない。
+      // mainRefresh() は race_entries（DB）から読むため stale データを混入しない。
+      const genPath = path.join(ROOT, "scripts", "daily", "generate-predictions.js");
+      const { mainRefresh } = await import(genPath);
+
+      // 当日の全 race_entries から race_id を収集
+      const { data: entries } = await supabase
+        .from("race_entries")
+        .select("race_id")
+        .like("race_id", `${date}%`);
+      const allTodayRaceIds = [...new Set((entries || []).map((e) => e.race_id))];
+
+      if (allTodayRaceIds.length > 0) {
+        await mainRefresh({ isDryRun: false, specificRaceIds: allTodayRaceIds });
+      } else {
+        console.log("⚠️ race_entries にデータなし — スキップ");
+      }
       console.log("✅ 予測再生成完了");
     } else {
       console.log(`✅ 初期化済み（${count}レース）。スキップ。`);
