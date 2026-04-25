@@ -65,9 +65,9 @@ function VolatilityDisplay({ volatility }) {
           }}
         >
           {volatility.level === "high"
-            ? "崩れやすい"
+            ? "波乱注目"
             : volatility.level === "low"
-              ? "堅い"
+              ? "本命有利"
               : "標準"}
         </span>
       </div>

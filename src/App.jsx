@@ -682,15 +682,15 @@ function App({ tab = 'races' }) {
                                                                 <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
                                                                     <span style={{
                                                                         display: 'inline-block',
-                                                                        padding: '0.2rem 0.6rem',
+                                                                        padding: '0.25rem 0.7rem',
                                                                         borderRadius: '10px',
-                                                                        fontSize: '0.72rem',
-                                                                        fontWeight: '600',
-                                                                        background: volatility.level === 'high' ? '#fff3e0' : '#e8f5e9',
-                                                                        color: volatility.level === 'high' ? 'var(--color-warning-dark)' : 'var(--color-success-dark)',
-                                                                        border: `1px solid ${volatility.level === 'high' ? 'var(--color-warning-light)' : 'var(--color-success-light)'}`,
+                                                                        fontSize: '0.75rem',
+                                                                        fontWeight: '700',
+                                                                        background: volatility.level === 'high' ? 'var(--color-warning-light)' : 'var(--color-success)',
+                                                                        color: '#fff',
+                                                                        letterSpacing: '0.02em',
                                                                     }}>
-                                                                        {volatility.level === 'high' ? '🌪️ 崩れやすい' : '🎯 堅い'}
+                                                                        {volatility.level === 'high' ? '🌪️ 波乱注目' : '🎯 本命有利'}
                                                                     </span>
                                                                 </div>
                                                             )}
