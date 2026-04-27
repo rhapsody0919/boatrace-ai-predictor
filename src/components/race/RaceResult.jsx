@@ -65,12 +65,12 @@ function RaceResult({ prediction, volatility }) {
       {/* イン崩れ予測 → 結果の対応表示 */}
       {showInKuzure && (
         <div className="in-kuzure-result">
-          <span className="in-kuzure-prediction">イン崩れ予測</span>
+          <span className="in-kuzure-prediction">イン崩れ確率高</span>
           <span className="in-kuzure-arrow">→</span>
           <span
             className={`in-kuzure-outcome ${isInKuzure ? "outcome-hit" : "outcome-miss"}`}
           >
-            {isInKuzure ? "🌊 イン崩れ" : "🛡️ イン逃げ切り"}
+            {isInKuzure ? "🌊 イン崩れ的中！" : "❌ イン逃げ切り（外れ）"}
           </span>
         </div>
       )}
