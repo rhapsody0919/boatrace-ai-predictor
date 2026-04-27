@@ -1082,12 +1082,12 @@ input:focus-visible,
 }
 
 .in-kuzure-outcome.outcome-hit {
-  background: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
   color: white;
 }
 
 .in-kuzure-outcome.outcome-miss {
-  background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
   color: white;
 }
 
