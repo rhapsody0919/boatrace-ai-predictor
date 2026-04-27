@@ -270,74 +270,8 @@
   color: #1E293B;
 }
 
-.result-podium {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.podium-item {
-  text-align: center;
-  padding: 1.5rem;
-  border-radius: 12px;
-  min-width: 100px;
-}
-
-.podium-item.first {
-  background: linear-gradient(135deg, #FFD700 0%, #FFC700 100%);
-  border: 3px solid #DAA520;
-}
-
-.podium-item.second {
-  background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%);
-  border: 3px solid #808080;
-}
-
-.podium-item.third {
-  background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
-  border: 3px solid #8B4513;
-}
-
-.podium-item .rank {
-  font-size: 0.9rem;
-  color: #1E293B;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-.podium-item .boat-number {
-  font-size: 2.5rem;
-  font-weight: 900;
-  color: #1E293B;
-}
-
-.accuracy-check {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-}
-
-.check-item {
-  text-align: center;
-  padding: 1rem;
-  border-radius: 8px;
-  font-weight: 600;
-}
-
-.check-item .hit {
-  color: #10B981;
-  background: #ECFDF5;
-  padding: 0.5rem;
-  border-radius: 6px;
-}
-
-.check-item .miss {
-  color: #EF4444;
-  background: #FEF2F2;
-  padding: 0.5rem;
-  border-radius: 6px;
-}
+/* result-podium / podium-item / accuracy-check / check-item / hit / miss は
+   App.css で一元管理しているため RaceDetail.css では定義しない */
 
 
 /* ローディング・エラー */
@@ -411,13 +345,7 @@
     grid-template-columns: 1fr;
   }
 
-  .result-podium {
-    flex-direction: column;
-  }
 
-  .accuracy-check {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 480px) {
