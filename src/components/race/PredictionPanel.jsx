@@ -233,7 +233,7 @@ function PredictionPanel({
 
           {/* レース結果 */}
           <motion.div {...staggerItem(0.7)}>
-            <RaceResult prediction={prediction} />
+            <RaceResult prediction={prediction} volatility={volatility} />
           </motion.div>
 
           {/* 会場攻略ガイドリンク */}

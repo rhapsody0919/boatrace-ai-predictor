@@ -2,7 +2,7 @@
  * RaceResult - レース結果表示コンポーネント
  */
 
-function RaceResult({ prediction }) {
+function RaceResult({ prediction, volatility }) {
   const result = prediction.result
 
   if (!result || !result.finished) {
@@ -114,6 +114,17 @@ function RaceResult({ prediction }) {
             <div className="miss">❌ 3連単不的中</div>
           )}
         </div>
+
+        {/* イン崩れ確率高レースの結果 */}
+        {volatility?.level === 'high' && result.winningTechnique && (
+          <div className="check-item">
+            {result.winningTechnique !== 'nige' ? (
+              <div className="hit">🌊 イン崩れ</div>
+            ) : (
+              <div className="miss">🛡️ イン逃げ切り</div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

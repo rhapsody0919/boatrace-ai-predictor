@@ -655,7 +655,8 @@ export const supabaseDataService = {
           payout_place_1,
           payout_place_2,
           payout_trifecta,
-          payout_trio
+          payout_trio,
+          winning_technique
         ),
         exhibition_data (
           boat_number,
@@ -815,6 +816,7 @@ export const supabaseDataService = {
           rank1: result.rank1,
           rank2: result.rank2,
           rank3: result.rank3,
+          winningTechnique: result.winning_technique || null,
           payouts: {
             win: result.payout_win ? { [result.rank1]: result.payout_win } : {},
             place: {},
