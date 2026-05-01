@@ -1175,24 +1175,24 @@ export const supabaseDataService = {
       };
     }
 
-      // accuracy_cache から volatilityStats を取得（フォールバックパスでも表示できるよう）
-      let volatilityStats = null;
-      try {
-        const { data: cacheRow } = await supabase
-          .from('accuracy_cache')
-          .select('data')
-          .eq('key', 'accuracy_summary')
-          .single();
-        volatilityStats = cacheRow?.data?.volatilityStats ?? null;
-      } catch {
-        // 取得失敗時は非表示のまま
-      }
+       // accuracy_cache から volatilityStats を取得（フォールバックパスでも表示できるよう）
+       let volatilityStats = null;
+       try {
+         const { data: cacheRow } = await supabase
+           .from('accuracy_cache')
+           .select('data')
+           .eq('key', 'accuracy_summary')
+           .single();
+         volatilityStats = cacheRow?.data?.volatilityStats ?? null;
+       } catch {
+         // 取得失敗時は非表示のまま
+       }
 
-      return {
-        lastUpdated: new Date().toISOString(),
-        volatilityStats,
-        models: modelStats
-      };
+       return {
+         lastUpdated: new Date().toISOString(),
+         volatilityStats,
+         models: modelStats
+       };
     }, ACCURACY_TTL); // withCache end
   },
 
