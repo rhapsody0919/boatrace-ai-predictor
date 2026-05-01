@@ -13,7 +13,8 @@ import {
   ReliabilityWarning,
   RecoveryTrendChart,
   VenueStrategyTable,
-  VenueDetailedAnalysis
+  VenueDetailedAnalysis,
+  VolatilityAccuracySection
 } from './accuracy'
 import LoadingScreen from './LoadingScreen'
 import './AccuracyDashboard.css'
@@ -225,6 +226,10 @@ function AccuracyDashboard({ onRefresh, isRefreshing }) {
       )}
 
       {summary.models && <ModelComparisonTable />}
+
+      {summary.volatilityStats && (
+        <VolatilityAccuracySection stats={summary.volatilityStats} />
+      )}
 
       {summary.models && (
         <div className="history-link-container">

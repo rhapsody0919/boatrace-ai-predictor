@@ -175,6 +175,141 @@ function addMonths(date, n) {
   return d;
 }
 
+// イン崩れ予測精度を集計（直近90日の races × race_results）
+async function calculateVolatilityStats() {
+  const now = new Date();
+  const ninetyDaysAgoStr = jstDateStr(new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000));
+
+  const VENUE_NAMES = {
+    1: '桐生', 2: '戸田', 3: '江戸川', 4: '平和島', 5: '多摩川', 6: '浜名湖',
+    7: '蒲郡', 8: '常滑', 9: '津', 10: '三国', 11: 'びわこ', 12: '住之江',
+    13: '尼崎', 14: '鳴門', 15: '丸亀', 16: '児島', 17: '宮島', 18: '徳山',
+    19: '下関', 20: '若松', 21: '芦屋', 22: '福岡', 23: '唐津', 24: '大村',
+  };
+
+  // races を取得（volatility_level が設定されているもの）
+  let races = [];
+  let from = 0;
+  const pageSize = 1000;
+  while (true) {
+    const { data: page, error } = await supabase
+      .from("races")
+      .select("race_id, venue_code, volatility_level")
+      .gte("race_date", ninetyDaysAgoStr)
+      .not("volatility_level", "is", null)
+      .range(from, from + pageSize - 1);
+    if (error) {
+      console.error("  volatilityStats races error:", error.message);
+      return null;
+    }
+    if (!page || page.length === 0) break;
+    races = races.concat(page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+
+  // race_results を取得
+  let results = [];
+  from = 0;
+  while (true) {
+    const { data: page, error } = await supabase
+      .from("race_results")
+      .select("race_id, rank1, is_cancelled, is_no_race")
+      .gte("race_id", ninetyDaysAgoStr)
+      .range(from, from + pageSize - 1);
+    if (error) {
+      console.error("  volatilityStats results error:", error.message);
+      return null;
+    }
+    if (!page || page.length === 0) break;
+    results = results.concat(page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+
+  // アプリ側 JOIN・フィルタ
+  const resultMap = new Map(results.map((r) => [r.race_id, r]));
+  const joined = races
+    .map((race) => {
+      const result = resultMap.get(race.race_id);
+      if (!result || result.is_cancelled || result.is_no_race) return null;
+      return {
+        venueCode: race.venue_code,
+        level: race.volatility_level,
+        upset: result.rank1 !== 1,
+      };
+    })
+    .filter(Boolean);
+
+  if (joined.length === 0) return null;
+
+  // ベースライン（全体）
+  const totalUpset = joined.filter((r) => r.upset).length;
+  const baseline = {
+    raceCount: joined.length,
+    upsetRate: parseFloat(((totalUpset / joined.length) * 100).toFixed(1)),
+  };
+
+  // レベル別集計
+  const byLevel = {};
+  for (const level of ["low", "medium", "high"]) {
+    const rows = joined.filter((r) => r.level === level);
+    if (rows.length === 0) continue;
+    const upsetCount = rows.filter((r) => r.upset).length;
+    const upsetRate = parseFloat(((upsetCount / rows.length) * 100).toFixed(1));
+    byLevel[level] = {
+      raceCount: rows.length,
+      upsetRate,
+      lift: parseFloat((upsetRate - baseline.upsetRate).toFixed(1)),
+    };
+  }
+
+  // 会場別ベースライン（全レベル合計）
+  const venueAllMap = new Map();
+  for (const row of joined) {
+    const vc = row.venueCode;
+    if (!venueAllMap.has(vc)) venueAllMap.set(vc, { total: 0, upset: 0 });
+    const v = venueAllMap.get(vc);
+    v.total++;
+    if (row.upset) v.upset++;
+  }
+
+  // 会場別 high 集計
+  const venueHighMap = new Map();
+  for (const row of joined) {
+    if (row.level !== "high") continue;
+    const vc = row.venueCode;
+    if (!venueHighMap.has(vc)) venueHighMap.set(vc, { total: 0, upset: 0 });
+    const v = venueHighMap.get(vc);
+    v.total++;
+    if (row.upset) v.upset++;
+  }
+
+  const byVenue = Array.from(venueHighMap.entries())
+    .filter(([, v]) => v.total >= 5)
+    .map(([venueCode, v]) => {
+      const all = venueAllMap.get(venueCode) || { total: 1, upset: 0 };
+      return {
+        venueCode: String(venueCode).padStart(2, "0"),
+        venueName: VENUE_NAMES[venueCode] || `会場${venueCode}`,
+        highRaceCount: v.total,
+        highUpsetRate: parseFloat(((v.upset / v.total) * 100).toFixed(1)),
+        baselineUpsetRate: parseFloat(((all.upset / all.total) * 100).toFixed(1)),
+      };
+    })
+    .sort((a, b) => b.highUpsetRate - a.highUpsetRate);
+
+  console.log(`  volatilityStats: ${joined.length}件集計完了 (high=${byLevel.high?.raceCount ?? 0}件)`);
+
+  return {
+    baseline,
+    byLevel,
+    byVenue,
+    period: "90days",
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
 // accuracy_cache テーブルに全統計を書き込む
 async function buildAndStoreAccuracyCache() {
   const now = new Date();
@@ -338,8 +473,12 @@ async function buildAndStoreAccuracyCache() {
     );
   }
 
+  console.log("\n🌪️ イン崩れ予測精度を集計中...");
+  const volatilityStats = await calculateVolatilityStats();
+
   const cacheData = {
     lastUpdated: new Date().toISOString(),
+    volatilityStats,
     models: cacheModels,
   };
 
