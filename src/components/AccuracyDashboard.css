@@ -1339,8 +1339,8 @@
   background: #f8fafc;
 }
 
-.venue-name-cell {
-  text-align: left !important;
+.volatility-venue-table tbody td.venue-name-cell {
+  text-align: left;
   font-weight: 500;
 }
 
