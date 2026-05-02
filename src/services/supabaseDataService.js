@@ -229,6 +229,7 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
       venueCode: race.venueCode,
       raceNumber: race.raceNumber,
       startTime: race.startTime || '',
+      raceGrade: race.raceGrade ?? null,
       volatility: race.volatility ? {
         ...race.volatility,
         venueWinRate: venueWinRateMap[race.venueCode] ?? null,
@@ -569,6 +570,7 @@ export const supabaseDataService = {
         startTime: race.start_time?.substring(0, 5) || '',
         date: race.race_date,
         placeCd: race.venue_code,
+        raceGrade: race.race_grade ?? null,
         volatility: race.volatility_score ? {
           score: race.volatility_score,
           level: race.volatility_level,
@@ -777,6 +779,7 @@ export const supabaseDataService = {
         venueCode: race.venue_code,
         raceNumber: race.race_number,
         startTime: race.start_time?.substring(0, 5) || '',
+        raceGrade: race.race_grade ?? null,
         volatility: race.volatility_score ? {
           score: race.volatility_score,
           level: race.volatility_level,

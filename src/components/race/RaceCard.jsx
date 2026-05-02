@@ -2,6 +2,13 @@
  * RaceCard - レース一覧のカードコンポーネント
  */
 
+const GRADE_CONFIG = {
+  SG: { label: "SG", color: "#7c3aed" },
+  G1: { label: "G1", color: "#dc2626" },
+  G2: { label: "G2", color: "#2563eb" },
+  G3: { label: "G3", color: "#059669" },
+};
+
 function RaceCard({ race, selectedModel, onAnalyzeRace }) {
   const racePrediction = race.rawData;
   const volatility = racePrediction?.volatility;
@@ -13,6 +20,8 @@ function RaceCard({ race, selectedModel, onAnalyzeRace }) {
   const showBadge = isHighVolatility || isLowVolatility;
   const badgeColor = isHighVolatility ? "#c62828" : "#2e7d32";
   const badgeLabel = isHighVolatility ? "🌪️ イン崩れ確率高" : "🎯 本命有利";
+
+  const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];
 
   // 的中判定（買い方別）
   let hitBadges = [];
@@ -78,6 +87,22 @@ function RaceCard({ race, selectedModel, onAnalyzeRace }) {
               }}
             >
               {badgeLabel}
+            </span>
+          )}
+          {gradeConfig && (
+            <span
+              style={{
+                padding: "0.2rem 0.5rem",
+                borderRadius: "6px",
+                fontSize: "0.7rem",
+                fontWeight: "700",
+                background: gradeConfig.color,
+                color: "#fff",
+                letterSpacing: "0.05em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {gradeConfig.label}
             </span>
           )}
           <span className="race-number">{race.raceNumber}R</span>
