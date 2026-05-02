@@ -143,7 +143,7 @@ function scrapeRaceMeta($) {
   const raceGrade = (() => {
     const el = $(".heading2_title");
     if (!el.length) return null;
-    const cls = el.attr("class") || "";
+    const cls = (el.attr("class") || "").toLowerCase();
     if (cls.includes("is-sg")) return "SG";
     if (cls.includes("is-g1")) return "G1";
     if (cls.includes("is-g2")) return "G2";

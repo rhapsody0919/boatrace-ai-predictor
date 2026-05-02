@@ -209,7 +209,7 @@ async function getRaceStartTimes(date, placeCd) {
 
 // レースグレードを取得する関数
 function scrapeRaceGrade($) {
-  const classAttr = $('.heading2_title').attr('class') || '';
+  const classAttr = ($('.heading2_title').attr('class') || '').toLowerCase();
   if (classAttr.includes('is-sg')) return 'SG';
   if (classAttr.includes('is-g1')) return 'G1';
   if (classAttr.includes('is-g2')) return 'G2';
