@@ -631,6 +631,14 @@ function App({ tab = 'races' }) {
                                                     const volBadgeColor = isHighVol ? '#c62828' : '#2e7d32'
                                                     const volBadgeLabel = isHighVol ? '🌪️ イン崩れ確率高' : '🎯 本命有利'
 
+                                                    const raceGrade = race.rawData?.raceGrade
+                                                    const gradeConfig = {
+                                                        SG: { label: 'SG', color: '#7c3aed' },
+                                                        G1: { label: 'G1', color: '#dc2626' },
+                                                        G2: { label: 'G2', color: '#2563eb' },
+                                                        G3: { label: 'G3', color: '#059669' },
+                                                    }[raceGrade]
+
                                                     return (
                                                         <div
                                                             key={race.id}
@@ -653,6 +661,20 @@ function App({ tab = 'races' }) {
                                                                             whiteSpace: 'nowrap',
                                                                         }}>
                                                                             {volBadgeLabel}
+                                                                        </span>
+                                                                    )}
+                                                                    {gradeConfig && (
+                                                                        <span style={{
+                                                                            padding: '0.2rem 0.5rem',
+                                                                            borderRadius: '6px',
+                                                                            fontSize: '0.7rem',
+                                                                            fontWeight: '700',
+                                                                            background: gradeConfig.color,
+                                                                            color: '#fff',
+                                                                            letterSpacing: '0.05em',
+                                                                            whiteSpace: 'nowrap',
+                                                                        }}>
+                                                                            {gradeConfig.label}
                                                                         </span>
                                                                     )}
                                                                     <span className="race-number">{race.raceNumber}R</span>
