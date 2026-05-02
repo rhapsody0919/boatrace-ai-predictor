@@ -13,6 +13,7 @@ import { getFeaturedPosts, getLatestPosts } from './data/blogPosts'
 import { dataService } from './services/dataService'
 import { PredictionPanel } from './components/race'
 import { STADIUM_NAMES, WEEKDAYS } from './constants'
+import { GRADE_CONFIG } from './constants/gradeConfig'
 import { TECHNIQUE_NAMES } from './utils/turnPrediction'
 import { BOAT_COLORS } from './utils/colors'
 import { getTodayJST, formatDateJP } from './utils/dateUtils'
@@ -632,12 +633,7 @@ function App({ tab = 'races' }) {
                                                     const volBadgeLabel = isHighVol ? '🌪️ イン崩れ確率高' : '🎯 本命有利'
 
                                                     const raceGrade = race.rawData?.raceGrade
-                                                    const gradeConfig = {
-                                                        SG: { label: 'SG', color: '#7c3aed' },
-                                                        G1: { label: 'G1', color: '#dc2626' },
-                                                        G2: { label: 'G2', color: '#2563eb' },
-                                                        G3: { label: 'G3', color: '#059669' },
-                                                    }[raceGrade]
+                                                    const gradeConfig = GRADE_CONFIG[raceGrade]
 
                                                     return (
                                                         <div

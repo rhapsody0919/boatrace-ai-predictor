@@ -2,12 +2,7 @@
  * RaceCard - レース一覧のカードコンポーネント
  */
 
-const GRADE_CONFIG = {
-  SG: { label: "SG", color: "#7c3aed" },
-  G1: { label: "G1", color: "#dc2626" },
-  G2: { label: "G2", color: "#2563eb" },
-  G3: { label: "G3", color: "#059669" },
-};
+import { GRADE_CONFIG } from '../../constants/gradeConfig'
 
 function RaceCard({ race, selectedModel, onAnalyzeRace }) {
   const racePrediction = race.rawData;

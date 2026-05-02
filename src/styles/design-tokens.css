@@ -43,6 +43,12 @@
   --color-info: #2196f3;
   --color-info-light: #60a5fa;
 
+  /* ボートレースグレード */
+  --color-grade-sg: #7c3aed;      /* スーパーG */
+  --color-grade-g1: #dc2626;      /* G1 */
+  --color-grade-g2: #2563eb;      /* G2 */
+  --color-grade-g3: #059669;      /* G3 */
+
   /* グレースケール - 背景、テキスト、ボーダーなど */
   --color-gray-50: #f8fafc;      /* 最も明るい背景 */
   --color-gray-100: #f1f5f9;
