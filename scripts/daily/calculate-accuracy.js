@@ -194,7 +194,7 @@ async function calculateVolatilityStats() {
   while (true) {
     const { data: page, error } = await supabase
       .from("races")
-      .select("race_id, venue_code, volatility_level")
+      .select("race_id, venue_code, volatility_level, race_grade")
       .gte("race_date", ninetyDaysAgoStr)
       .not("volatility_level", "is", null)
       .range(from, from + pageSize - 1);
@@ -236,6 +236,7 @@ async function calculateVolatilityStats() {
       return {
         venueCode: race.venue_code,
         level: race.volatility_level,
+        grade: race.race_grade,
         upset: result.rank1 !== 1,
       };
     })
@@ -261,6 +262,26 @@ async function calculateVolatilityStats() {
       raceCount: rows.length,
       upsetRate,
       lift: parseFloat((upsetRate - baseline.upsetRate).toFixed(1)),
+    };
+  }
+
+  // グレード別集計
+  const GRADE_KEYS = ["SG", "G1", "G2", "G3", "ippan"];
+  const byGrade = {};
+  for (const grade of GRADE_KEYS) {
+    const rows = joined.filter((r) => r.grade === grade);
+    if (rows.length < 5) continue; // 5件未満はスキップ
+    const upsetCount = rows.filter((r) => r.upset).length;
+    const upsetRate = parseFloat(((upsetCount / rows.length) * 100).toFixed(1));
+    const highRows = rows.filter((r) => r.level === "high");
+    const highUpsetCount = highRows.filter((r) => r.upset).length;
+    byGrade[grade] = {
+      raceCount: rows.length,
+      upsetRate,
+      highRaceCount: highRows.length,
+      highUpsetRate: highRows.length > 0
+        ? parseFloat(((highUpsetCount / highRows.length) * 100).toFixed(1))
+        : null,
     };
   }
 
@@ -305,6 +326,7 @@ async function calculateVolatilityStats() {
     baseline,
     byLevel,
     byVenue,
+    byGrade: Object.keys(byGrade).length > 0 ? byGrade : undefined,
     period: "90days",
     lastUpdated: new Date().toISOString(),
   };

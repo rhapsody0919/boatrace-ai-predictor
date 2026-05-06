@@ -1335,6 +1335,73 @@
   margin-left: 0.25rem;
 }
 
+/* グレード別参考値注記 */
+.vas-ref-note {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.vas-ref-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.5rem;
+}
+
+/* グレード別折りたたみ */
+.vas-grade-details {
+  margin-top: 1rem;
+}
+
+.vas-grade-details summary {
+  font-size: 0.85rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  user-select: none;
+}
+
+.vas-grade-details summary:hover {
+  color: #334155;
+}
+
+.vas-grade-details .table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.75rem;
+}
+
+/* グレード別テーブル */
+.volatility-grade-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.volatility-grade-table thead th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #475569;
+  font-weight: 600;
+  padding: 0.6rem 0.875rem;
+  text-align: center;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.volatility-grade-table tbody td {
+  padding: 0.6rem 0.875rem;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.volatility-grade-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.volatility-grade-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
 /* 会場別折りたたみ */
 .vas-venue-details {
   margin-top: 0.5rem;
