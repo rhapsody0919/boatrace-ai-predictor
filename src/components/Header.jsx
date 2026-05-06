@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import './Header.css'
 
@@ -6,6 +6,7 @@ function Header() {
   const location = useLocation()
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef(null)
 
   // 現在のページ/タブを判定
   const getActiveTab = () => {
@@ -30,6 +31,20 @@ function Header() {
 
   const activeTab = getActiveTab()
 
+  // メニュー外クリック検出
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    if (isMenuOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [isMenuOpen])
+
   // ロゴクリック時の処理
   const handleLogoClick = () => {
     navigate('/')
@@ -44,7 +59,7 @@ function Header() {
 
   return (
     <header className="app-header">
-      <div className="header-content">
+      <div className="header-content" ref={menuRef}>
         <button className="logo" onClick={handleLogoClick} aria-label="BoatAI トップページへ">
           <span className="logo-icon">🚤</span>
           <h1>BoatAI</h1>
@@ -84,6 +99,7 @@ function Header() {
           </button>
         </nav>
         {/* サブメニュー - navの外に配置してoverflowの影響を受けないようにする */}
+        {isMenuOpen && <div className="menu-overlay" onClick={() => setIsMenuOpen(false)} />}
         {isMenuOpen && (
           <div className="submenu">
             <Link

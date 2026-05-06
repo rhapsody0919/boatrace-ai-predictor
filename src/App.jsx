@@ -781,7 +781,7 @@ function App({ tab = 'races' }) {
                 <p>※本サイトはAIによる予測情報を提供するものであり、結果を保証するものではありません</p>
                 <p className="last-updated" style={{
                     fontSize: '0.9rem',
-                    color: '#94a3b8',
+                    color: 'white',
                     marginTop: '0.5rem'
                 }}>
                     {(() => {
@@ -797,14 +797,14 @@ function App({ tab = 'races' }) {
                     marginTop: '0.75rem',
                     marginBottom: '0.75rem'
                 }}>
-                    <Link to="/blog" style={{ color: '#94a3b8', textDecoration: 'none' }}>ブログ</Link>
-                    <Link to="/about" style={{ color: '#94a3b8', textDecoration: 'none' }}>About</Link>
-                    <Link to="/profile" style={{ color: '#94a3b8', textDecoration: 'none' }}>運営者</Link>
-                    <Link to="/faq" style={{ color: '#94a3b8', textDecoration: 'none' }}>FAQ</Link>
-                    <Link to="/privacy" style={{ color: '#94a3b8', textDecoration: 'none' }}>プライバシーポリシー</Link>
-                    <Link to="/terms" style={{ color: '#94a3b8', textDecoration: 'none' }}>利用規約</Link>
-                    <Link to="/contact" style={{ color: '#94a3b8', textDecoration: 'none' }}>お問い合わせ</Link>
-                    <Link to="/responsible-gambling" style={{ color: '#94a3b8', textDecoration: 'none' }}>責任あるギャンブル</Link>
+                    <Link to="/blog" style={{ color: 'white', textDecoration: 'none' }}>ブログ</Link>
+                    <Link to="/about" style={{ color: 'white', textDecoration: 'none' }}>About</Link>
+                    <Link to="/profile" style={{ color: 'white', textDecoration: 'none' }}>運営者</Link>
+                    <Link to="/faq" style={{ color: 'white', textDecoration: 'none' }}>FAQ</Link>
+                    <Link to="/privacy" style={{ color: 'white', textDecoration: 'none' }}>プライバシーポリシー</Link>
+                    <Link to="/terms" style={{ color: 'white', textDecoration: 'none' }}>利用規約</Link>
+                    <Link to="/contact" style={{ color: 'white', textDecoration: 'none' }}>お問い合わせ</Link>
+                    <Link to="/responsible-gambling" style={{ color: 'white', textDecoration: 'none' }}>責任あるギャンブル</Link>
                 </div>
                 <p>&copy; 2025 BoatAI - All Rights Reserved</p>
             </footer>
