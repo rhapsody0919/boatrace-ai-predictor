@@ -57,14 +57,16 @@ function calculateStdDev(values) {
 // 基準: avgST の ρ が全国勝率の ρ を上回る会場 → avgST 増・winRate 微減
 const VENUE_VOLATILITY_WEIGHTS = {
     // ── avgSTが全国勝率より強い会場 ──
-    '14': { avgST: 0.52, winRate: 0.30 }, // 鳴門:  avgST ρ=0.615（全会場最強）
-    '24': { avgST: 0.50, winRate: 0.32 }, // 大村:  avgST ρ=0.444
-    '20': { avgST: 0.48, winRate: 0.32 }, // 若松:  avgST ρ=0.366
-    '15': { avgST: 0.46, winRate: 0.34 }, // 丸亀:  avgST ρ=0.294
     '03': { avgST: 0.46, winRate: 0.34 }, // 江戸川: avgST ρ=0.288
-    '17': { avgST: 0.44, winRate: 0.36 }, // 宮島:  avgST ρ=0.250
-    '16': { avgST: 0.44, winRate: 0.36 }, // 児島:  avgST ρ=0.261
+    '05': { avgST: 0.44, winRate: 0.36 }, // 多摩川: 過去90日分析（2026-05-09）
     '09': { avgST: 0.44, winRate: 0.36 }, // 津:    avgST ρ=0.279
+    '12': { avgST: 0.44, winRate: 0.36 }, // 住之江: 過去90日分析（2026-05-09）
+    '14': { avgST: 0.52, winRate: 0.30 }, // 鳴門:  avgST ρ=0.615（全会場最強）
+    '15': { avgST: 0.46, winRate: 0.34 }, // 丸亀:  avgST ρ=0.294
+    '16': { avgST: 0.44, winRate: 0.36 }, // 児島:  avgST ρ=0.261
+    '17': { avgST: 0.44, winRate: 0.36 }, // 宮島:  avgST ρ=0.250
+    '20': { avgST: 0.48, winRate: 0.32 }, // 若松:  avgST ρ=0.366
+    '24': { avgST: 0.50, winRate: 0.32 }, // 大村:  avgST ρ=0.444
 };
 
 // イン崩れ指数（6因子の重み付き複合スコア）
