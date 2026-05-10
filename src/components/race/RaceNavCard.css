@@ -1,17 +1,17 @@
 .race-nav-card {
   margin: 2rem 0;
   padding: 1.5rem;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
+  background: var(--color-primary-alpha-10);
+  border: 2px solid var(--color-primary-500);
   border-radius: 8px;
 }
 
 .race-nav-card__title {
   margin: 0 0 1rem 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-primary-600);
+  text-transform: none;
   letter-spacing: 0.5px;
 }
 
@@ -28,8 +28,8 @@
   border: 1px solid var(--color-border);
   border-radius: 6px;
   background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
+  color: var(--color-gray-800);
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -37,11 +37,12 @@
   justify-content: center;
   gap: 0.5rem;
   text-align: center;
+  flex-direction: column;
 }
 
 .race-nav-card__button:hover {
   background: var(--color-bg-hover);
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-500);
 }
 
 .race-nav-card__button:active {
@@ -51,19 +52,58 @@
 .race-nav-card__arrow {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-primary-500);
   flex: 0 0 auto;
 }
 
 .race-nav-card__race {
-  font-weight: 600;
-  color: var(--color-text-primary);
+  font-weight: 700;
+  color: var(--color-gray-800);
+  font-size: 1.1rem;
 }
 
 .race-nav-card__time {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  color: var(--color-gray-600);
   font-weight: 500;
+}
+
+.race-nav-card__venue-title {
+  margin: 1.25rem 0 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-gray-800);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.race-nav-card__venues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.race-nav-card__venue-pill {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg-primary);
+  color: var(--color-gray-800);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.race-nav-card__venue-pill:hover {
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-alpha-10);
+}
+
+.race-nav-card__venue-pill.active {
+  background: var(--color-primary-500);
+  color: white;
+  border-color: var(--color-primary-500);
 }
 
 @media (max-width: 480px) {
@@ -79,5 +119,9 @@
 
   .race-nav-card__row {
     gap: 0.5rem;
+  }
+
+  .race-nav-card__venue-title {
+    margin: 1rem 0 0.5rem 0;
   }
 }

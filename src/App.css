@@ -517,7 +517,7 @@ input:focus-visible,
 /* スマートフォン */
 @media (max-width: 768px) {
   .app {
-    padding-bottom: 56px;
+    padding-bottom: 80px;
   }
 
   .header {

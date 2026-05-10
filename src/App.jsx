@@ -459,7 +459,24 @@ function App({ tab = 'races' }) {
     const handleNavigate = useCallback((race) => {
         analyzeRace(race)
         window.scrollTo({ top: 0, behavior: 'smooth' })
-    }, [])
+    }, [analyzeRace])
+
+    const handleVenueChange = useCallback((placeCd) => {
+        setSelectedVenueId(placeCd)
+        // 新会場の最初のレースを自動選択
+        const venueData = allVenuesData.find(v => v.placeCd === placeCd)
+        if (venueData?.races?.length > 0) {
+            const firstRace = venueData.races[0]
+            const formattedRace = {
+                id: `${firstRace.date}-${String(placeCd).padStart(2, '0')}-${String(firstRace.raceNo).padStart(2, '0')}`,
+                venue: venueData.placeName,
+                raceNumber: firstRace.raceNo,
+                startTime: firstRace.startTime || '未定',
+                rawData: firstRace
+            }
+            analyzeRace(formattedRace)
+        }
+    }, [allVenuesData, analyzeRace])
 
     const generatePlayers = (race) => {
         // 実データから選手情報を取得
@@ -753,6 +770,17 @@ function App({ tab = 'races' }) {
                                 </section>
                             )}
 
+                            {selectedRace && (
+                                <RaceNavCard
+                                    races={races}
+                                    selectedRace={selectedRace}
+                                    onNavigate={handleNavigate}
+                                    venues={allVenuesData.map(v => ({ placeCd: v.placeCd, placeName: v.placeName }))}
+                                    selectedVenueId={selectedVenueId}
+                                    onVenueChange={handleVenueChange}
+                                />
+                            )}
+
                             {/* ブログ記事セクション */}
                             <section className="blog-preview-section">
                                 <h2>📝 ボートレース攻略ブログ</h2>
@@ -777,14 +805,6 @@ function App({ tab = 'races' }) {
                                     </Link>
                                 </div>
                             </section>
-
-                            {selectedRace && (
-                                <RaceNavCard
-                                    races={races}
-                                    selectedRace={selectedRace}
-                                    onNavigate={handleNavigate}
-                                />
-                            )}
                         </>
                     )}
                 </main>
@@ -827,6 +847,9 @@ function App({ tab = 'races' }) {
                     races={races}
                     selectedRace={selectedRace}
                     onNavigate={handleNavigate}
+                    venues={allVenuesData.map(v => ({ placeCd: v.placeCd, placeName: v.placeName }))}
+                    selectedVenueId={selectedVenueId}
+                    onVenueChange={handleVenueChange}
                 />
             )}
         </div>

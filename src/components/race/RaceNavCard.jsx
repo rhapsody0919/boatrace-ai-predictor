@@ -1,6 +1,13 @@
 import "./RaceNavCard.css";
 
-function RaceNavCard({ races, selectedRace, onNavigate }) {
+function RaceNavCard({
+  races,
+  selectedRace,
+  onNavigate,
+  venues,
+  selectedVenueId,
+  onVenueChange,
+}) {
   const currentIndex = races.findIndex((r) => r.id === selectedRace?.id);
   const prevRace = currentIndex > 0 ? races[currentIndex - 1] : null;
   const nextRace =
@@ -10,7 +17,7 @@ function RaceNavCard({ races, selectedRace, onNavigate }) {
 
   return (
     <div className="race-nav-card">
-      <p className="race-nav-card__title">他のレース</p>
+      <p className="race-nav-card__title">その他のレース</p>
       <div className="race-nav-card__row">
         {prevRace && (
           <button
@@ -35,6 +42,25 @@ function RaceNavCard({ races, selectedRace, onNavigate }) {
           </button>
         )}
       </div>
+
+      {venues && venues.length > 0 && (
+        <>
+          <p className="race-nav-card__venue-title">会場を変える</p>
+          <div className="race-nav-card__venues">
+            {venues.map((v) => (
+              <button
+                key={v.placeCd}
+                className={`race-nav-card__venue-pill ${
+                  v.placeCd === selectedVenueId ? "active" : ""
+                }`}
+                onClick={() => onVenueChange(v.placeCd)}
+              >
+                {v.placeName}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
