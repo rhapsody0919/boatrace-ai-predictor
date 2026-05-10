@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import './App.css'
 import Header from './components/Header'
@@ -11,7 +11,7 @@ import TodaysPicks from './components/TodaysPicks'
 import UpdateStatus from './components/UpdateStatus'
 import { getFeaturedPosts, getLatestPosts } from './data/blogPosts'
 import { dataService } from './services/dataService'
-import { PredictionPanel } from './components/race'
+import { PredictionPanel, RaceBottomNav, RaceNavCard } from './components/race'
 import { STADIUM_NAMES, WEEKDAYS } from './constants'
 import { GRADE_CONFIG } from './constants/gradeConfig'
 import { TECHNIQUE_NAMES } from './utils/turnPrediction'
@@ -456,6 +456,11 @@ function App({ tab = 'races' }) {
         }
     }
 
+    const handleNavigate = useCallback((race) => {
+        analyzeRace(race)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, [])
+
     const generatePlayers = (race) => {
         // 実データから選手情報を取得
         // raceはフォーマット済みオブジェクトで、実データはrawDataに格納されている
@@ -772,6 +777,14 @@ function App({ tab = 'races' }) {
                                     </Link>
                                 </div>
                             </section>
+
+                            {selectedRace && (
+                                <RaceNavCard
+                                    races={races}
+                                    selectedRace={selectedRace}
+                                    onNavigate={handleNavigate}
+                                />
+                            )}
                         </>
                     )}
                 </main>
@@ -808,6 +821,14 @@ function App({ tab = 'races' }) {
                 </div>
                 <p>&copy; 2025 BoatAI - All Rights Reserved</p>
             </footer>
+
+            {selectedRace && (
+                <RaceBottomNav
+                    races={races}
+                    selectedRace={selectedRace}
+                    onNavigate={handleNavigate}
+                />
+            )}
         </div>
     )
 }

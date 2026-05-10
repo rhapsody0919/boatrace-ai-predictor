@@ -7,7 +7,9 @@ import ModelComparisonTable from '../components/ModelComparisonTable'
 import {
   VenueSelector,
   RaceCard,
-  PredictionPanel
+  PredictionPanel,
+  RaceBottomNav,
+  RaceNavCard
 } from '../components/race'
 import { dataService } from '../services/dataService'
 import { STADIUM_NAMES } from '../constants'
@@ -411,10 +413,26 @@ function RaceDetail() {
                   />
                 </section>
               )}
+
+              {selectedRace && (
+                <RaceNavCard
+                  races={races}
+                  selectedRace={selectedRace}
+                  onNavigate={analyzeRace}
+                />
+              )}
             </>
           )}
         </div>
       </div>
+
+      {selectedRace && (
+        <RaceBottomNav
+          races={races}
+          selectedRace={selectedRace}
+          onNavigate={analyzeRace}
+        />
+      )}
     </>
   )
 }
