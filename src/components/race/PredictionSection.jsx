@@ -5,9 +5,7 @@
  */
 import { forwardRef } from "react";
 import PredictionPanel from "./PredictionPanel";
-import OutcomePatternPreview from "./OutcomePatternPreview";
 import RaceResult from "./RaceResult";
-import { useRaceData } from "../../hooks/useRaceData";
 
 const PredictionSection = forwardRef(({
   prediction,
@@ -21,15 +19,13 @@ const PredictionSection = forwardRef(({
 }, ref) => {
   if (!selectedRace) return null;
 
-  const { venueCode, venueName } = useRaceData(selectedRace);
-
   return (
     <section ref={ref} className="prediction-section">
       <h2>
-        &#x1F4CA; AI予想結果 - {venueName} {selectedRace.raceNumber}R
+        &#x1F4CA; AI予想結果 - {selectedRace.venue} {selectedRace.raceNumber}R
       </h2>
 
-      {/* AI予想セクション（予想テーブル、1マーク、配当妙味、超展開データ） */}
+      {/* AI予想セクション全体（予想テーブル、1マーク、配当妙味、超展開データ、出現パターン） */}
       <PredictionPanel
         prediction={prediction}
         selectedRace={selectedRace}
@@ -40,16 +36,6 @@ const PredictionSection = forwardRef(({
         date={date}
         showExhibition={showExhibition}
       />
-
-      {/* 出現パターンセクション（会場の過去90日3連単分析） */}
-      {venueCode && venueName && (
-        <OutcomePatternPreview
-          venueCode={venueCode}
-          venueName={venueName}
-          prediction={prediction}
-          selectedModel={selectedModel}
-        />
-      )}
 
       {/* レース結果セクション */}
       <RaceResult prediction={prediction} volatility={volatility} />

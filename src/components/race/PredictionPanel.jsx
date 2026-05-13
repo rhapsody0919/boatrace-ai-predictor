@@ -14,6 +14,7 @@ import ModelSwitcher from "./ModelSwitcher";
 import FirstMarkAnimation from "./FirstMarkAnimation";
 import PredictionFlash from "./PredictionFlash";
 import AttackDefenseTable from "./AttackDefenseTable";
+import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionTable from "./PredictionTable";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import BettingValueSection from "./BettingValueSection";
@@ -37,7 +38,7 @@ function PredictionPanel({
   if (!prediction && !isAnalyzing) return null;
 
   // 会場コード・会場名（useRaceDataで一元化）
-  const { venueCode } = useRaceData(selectedRace);
+  const { venueCode, venueName } = useRaceData(selectedRace);
 
   // 日付（明示的に渡されるか、raceIdから抽出）
   const raceDate =
@@ -201,8 +202,20 @@ function PredictionPanel({
             </motion.div>
           )}
 
+          {/* 出現パターン */}
+          {venueCode && venueName && (
+            <motion.div {...staggerItem(0.4)}>
+              <OutcomePatternPreview
+                venueCode={venueCode}
+                venueName={venueName}
+                prediction={prediction}
+                selectedModel={selectedModel}
+              />
+            </motion.div>
+          )}
+
           {/* AIデータ予想テーブル */}
-          <motion.div {...staggerItem(0.4)}>
+          <motion.div {...staggerItem(0.5)}>
             <PredictionTable
               prediction={prediction}
               showExhibition={showExhibition}
@@ -211,7 +224,7 @@ function PredictionPanel({
           </motion.div>
 
           {/* SNSシェアボタン */}
-          <motion.div className="social-share-wrapper" {...staggerItem(0.5)}>
+          <motion.div className="social-share-wrapper" {...staggerItem(0.6)}>
             <SocialShareButtons
               shareUrl="https://www.boat-ai.jp/"
               title={generatePredictionShareText(
@@ -233,7 +246,7 @@ function PredictionPanel({
 
           {/* 会場攻略ガイドリンク */}
           {venueCode && getVenueGuidePath(venueCode) && (
-            <motion.div {...staggerItem(0.6)}>
+            <motion.div {...staggerItem(0.7)}>
               <div className="venue-guide-link">
                 <Link to={getVenueGuidePath(venueCode)}>
                   <span className="venue-guide-icon">&#x1F4D6;</span>
