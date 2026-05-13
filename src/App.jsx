@@ -11,7 +11,7 @@ import TodaysPicks from './components/TodaysPicks'
 import UpdateStatus from './components/UpdateStatus'
 import { getFeaturedPosts, getLatestPosts } from './data/blogPosts'
 import { dataService } from './services/dataService'
-import { PredictionPanel, RaceBottomNav, RaceNavCard, RaceResult } from './components/race'
+import { PredictionSection, RaceBottomNav, RaceNavCard } from './components/race'
 import { STADIUM_NAMES, WEEKDAYS } from './constants'
 import { GRADE_CONFIG } from './constants/gradeConfig'
 import { TECHNIQUE_NAMES } from './utils/turnPrediction'
@@ -757,21 +757,16 @@ function App({ tab = 'races' }) {
                             </section>
 
                             {selectedRace && (
-                                <section ref={predictionRef} className="prediction-section">
-                                    <h2>&#x1F4CA; AI予想結果 - {selectedRace.venue} {selectedRace.raceNumber}R</h2>
-                                    <PredictionPanel
-                                        prediction={prediction}
-                                        selectedRace={selectedRace}
-                                        selectedModel={selectedModel}
-                                        onSwitchModel={switchModel}
-                                        volatility={volatility}
-                                        isAnalyzing={isAnalyzing}
-                                        showExhibition={true}
-                                        venueCode={selectedRace.venueCode}
-                                        venueName={selectedRace.venue}
-                                    />
-                                    <RaceResult prediction={prediction} volatility={volatility} />
-                                </section>
+                                <PredictionSection
+                                    ref={predictionRef}
+                                    prediction={prediction}
+                                    selectedRace={selectedRace}
+                                    selectedModel={selectedModel}
+                                    onSwitchModel={switchModel}
+                                    volatility={volatility}
+                                    isAnalyzing={isAnalyzing}
+                                    showExhibition={true}
+                                />
                             )}
 
                             {selectedRace && (

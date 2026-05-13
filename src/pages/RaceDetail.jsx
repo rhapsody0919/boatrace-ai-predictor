@@ -7,10 +7,9 @@ import ModelComparisonTable from '../components/ModelComparisonTable'
 import {
   VenueSelector,
   RaceCard,
-  PredictionPanel,
+  PredictionSection,
   RaceBottomNav,
   RaceNavCard,
-  RaceResult
 } from '../components/race'
 import { dataService } from '../services/dataService'
 import { STADIUM_NAMES } from '../constants'
@@ -410,24 +409,16 @@ function RaceDetail() {
               </section>
 
               {selectedRace && (
-                <section ref={predictionRef} className="prediction-section">
-                  <h2>&#x1F4CA; AI予想結果 - {selectedRace.venue} {selectedRace.raceNumber}R</h2>
-                  <PredictionPanel
-                    prediction={prediction}
-                    selectedRace={selectedRace}
-                    selectedModel={selectedModel}
-                    onSwitchModel={switchModel}
-                    volatility={volatility}
-                    isAnalyzing={isAnalyzing}
-                    date={date}
-                    venueCode={selectedRace.venueCode}
-                    venueName={selectedRace.venue}
-                  />
-                  <RaceResult
-                    prediction={prediction}
-                    volatility={volatility}
-                  />
-                </section>
+                <PredictionSection
+                  ref={predictionRef}
+                  prediction={prediction}
+                  selectedRace={selectedRace}
+                  selectedModel={selectedModel}
+                  onSwitchModel={switchModel}
+                  volatility={volatility}
+                  isAnalyzing={isAnalyzing}
+                  date={date}
+                />
               )}
 
               {selectedRace && (
