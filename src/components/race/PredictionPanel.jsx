@@ -2,8 +2,8 @@
  * PredictionPanel - AI予想結果セクション
  * App.jsx と RaceDetail.jsx で共通利用
  */
-import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useRaceData } from "../../hooks/useRaceData";
 import { motion, AnimatePresence } from "framer-motion";
 import { SocialShareButtons } from "../SocialShareButtons";
 import { generatePredictionShareText } from "../../utils/share";
@@ -36,11 +36,8 @@ function PredictionPanel({
 }) {
   if (!prediction && !isAnalyzing) return null;
 
-  // 会場コード（selectedRaceから抽出）
-  const venueCode = useMemo(
-    () => selectedRace?.rawData?.venueCode || selectedRace?.rawData?.placeCd,
-    [selectedRace?.rawData]
-  );
+  // 会場コード・会場名（useRaceDataで一元化）
+  const { venueCode } = useRaceData(selectedRace);
 
   // 日付（明示的に渡されるか、raceIdから抽出）
   const raceDate =

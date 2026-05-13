@@ -7,6 +7,7 @@ import { forwardRef } from "react";
 import PredictionPanel from "./PredictionPanel";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import RaceResult from "./RaceResult";
+import { useRaceData } from "../../hooks/useRaceData";
 
 const PredictionSection = forwardRef(({
   prediction,
@@ -20,9 +21,7 @@ const PredictionSection = forwardRef(({
 }, ref) => {
   if (!selectedRace) return null;
 
-  const venueCode =
-    selectedRace?.rawData?.venueCode || selectedRace?.rawData?.placeCd;
-  const venueName = selectedRace.venue;
+  const { venueCode, venueName } = useRaceData(selectedRace);
 
   return (
     <section ref={ref} className="prediction-section">
