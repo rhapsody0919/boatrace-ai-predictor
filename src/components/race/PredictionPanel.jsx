@@ -37,7 +37,12 @@ function PredictionPanel({
 }) {
   if (!prediction && !isAnalyzing) return null;
 
-  // 会場コード・会場名（useRaceDataで一元化）
+  // null check を一箇所に集約：ここで selectedRace の存在を確認
+  // 以降のコードでは selectedRace が null でないことを前提とする
+  if (!selectedRace) return null;
+
+  // 会場コード・会場名を useRaceData で一元的に抽出
+  // （selectedRace は必ず存在するため、フック側で計算のみに専念）
   const { venueCode, venueName } = useRaceData(selectedRace);
 
   // 日付（明示的に渡されるか、raceIdから抽出）
