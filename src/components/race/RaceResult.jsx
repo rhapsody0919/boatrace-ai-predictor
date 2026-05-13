@@ -3,9 +3,13 @@
  */
 
 function RaceResult({ prediction, volatility }) {
+  if (!prediction || !prediction.result || !prediction.topPick) {
+    return null;
+  }
+
   const result = prediction.result;
 
-  if (!result || !result.finished) {
+  if (!result.finished) {
     return null;
   }
 

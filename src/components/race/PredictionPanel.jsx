@@ -13,7 +13,7 @@ import ModelSwitcher from "./ModelSwitcher";
 import FirstMarkAnimation from "./FirstMarkAnimation";
 import PredictionFlash from "./PredictionFlash";
 import AttackDefenseTable from "./AttackDefenseTable";
-import RaceResult from "./RaceResult";
+import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionTable from "./PredictionTable";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import BettingValueSection from "./BettingValueSection";
@@ -33,12 +33,11 @@ function PredictionPanel({
   isAnalyzing,
   date,
   showExhibition = false,
+  venueCode,
+  venueName,
 }) {
   if (!prediction && !isAnalyzing) return null;
 
-  // 会場コード（App.jsxはplaceCd、RaceDetailはvenueCode）
-  const venueCode =
-    selectedRace?.rawData?.venueCode || selectedRace?.rawData?.placeCd;
   // 日付（明示的に渡されるか、raceIdから抽出）
   const raceDate =
     date ||
@@ -201,8 +200,29 @@ function PredictionPanel({
             </motion.div>
           )}
 
+          {/* 出現パターン */}
+          {venueCode && venueName && (
+            <motion.div {...staggerItem(0.4)}>
+              <OutcomePatternPreview
+                venueCode={venueCode}
+                venueName={venueName}
+                prediction={prediction}
+                selectedModel={selectedModel}
+              />
+            </motion.div>
+          )}
+
+          {/* AIデータ予想テーブル */}
+          <motion.div {...staggerItem(0.5)}>
+            <PredictionTable
+              prediction={prediction}
+              showExhibition={showExhibition}
+              volatility={volatility}
+            />
+          </motion.div>
+
           {/* SNSシェアボタン */}
-          <motion.div className="social-share-wrapper" {...staggerItem(0.5)}>
+          <motion.div className="social-share-wrapper" {...staggerItem(0.6)}>
             <SocialShareButtons
               shareUrl="https://www.boat-ai.jp/"
               title={generatePredictionShareText(
@@ -220,20 +240,6 @@ function PredictionPanel({
               hashtags={["ボートレース", "AI予想", "BoatAI"]}
               size={40}
             />
-          </motion.div>
-
-          {/* AIデータ予想テーブル */}
-          <motion.div {...staggerItem(0.6)}>
-            <PredictionTable
-              prediction={prediction}
-              showExhibition={showExhibition}
-              volatility={volatility}
-            />
-          </motion.div>
-
-          {/* レース結果 */}
-          <motion.div {...staggerItem(0.7)}>
-            <RaceResult prediction={prediction} volatility={volatility} />
           </motion.div>
 
           {/* 会場攻略ガイドリンク */}

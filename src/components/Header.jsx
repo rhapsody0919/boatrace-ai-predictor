@@ -18,6 +18,7 @@ function Header() {
     // その他のページ
     if (location.pathname === '/hit-races') return 'hit-races'
     if (location.pathname === '/accuracy') return 'accuracy'
+    if (location.pathname === '/outcome-distribution') return 'outcome-distribution'
     if (location.pathname === '/picks') return 'picks'
     if (location.pathname.startsWith('/races')) return 'past-races'
     if (location.pathname === '/how-to-use') return 'how-to-use'
@@ -78,12 +79,6 @@ function Header() {
             ✅ 的中
           </button>
           <button
-            className={`nav-btn ${activeTab === 'accuracy' ? 'active' : ''}`}
-            onClick={() => handleTabClick('accuracy')}
-          >
-            📊 成績
-          </button>
-          <button
             className="nav-btn menu-btn"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="その他のメニュー"
@@ -96,6 +91,13 @@ function Header() {
         {isMenuOpen && <div className="menu-overlay" onClick={() => setIsMenuOpen(false)} />}
         {isMenuOpen && (
           <div className="submenu">
+            <Link
+              to="/outcome-distribution"
+              className={`submenu-item ${activeTab === 'outcome-distribution' ? 'active' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              📊 出目分布分析
+            </Link>
             <Link
               to="/races"
               className={`submenu-item ${activeTab === 'past-races' ? 'active' : ''}`}

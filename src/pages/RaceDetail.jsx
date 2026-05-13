@@ -9,7 +9,8 @@ import {
   RaceCard,
   PredictionPanel,
   RaceBottomNav,
-  RaceNavCard
+  RaceNavCard,
+  RaceResult
 } from '../components/race'
 import { dataService } from '../services/dataService'
 import { STADIUM_NAMES } from '../constants'
@@ -419,6 +420,12 @@ function RaceDetail() {
                     volatility={volatility}
                     isAnalyzing={isAnalyzing}
                     date={date}
+                    venueCode={selectedRace.venueCode}
+                    venueName={selectedRace.venue}
+                  />
+                  <RaceResult
+                    prediction={prediction}
+                    volatility={volatility}
                   />
                 </section>
               )}

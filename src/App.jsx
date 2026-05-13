@@ -11,7 +11,7 @@ import TodaysPicks from './components/TodaysPicks'
 import UpdateStatus from './components/UpdateStatus'
 import { getFeaturedPosts, getLatestPosts } from './data/blogPosts'
 import { dataService } from './services/dataService'
-import { PredictionPanel, RaceBottomNav, RaceNavCard } from './components/race'
+import { PredictionPanel, RaceBottomNav, RaceNavCard, RaceResult } from './components/race'
 import { STADIUM_NAMES, WEEKDAYS } from './constants'
 import { GRADE_CONFIG } from './constants/gradeConfig'
 import { TECHNIQUE_NAMES } from './utils/turnPrediction'
@@ -234,6 +234,7 @@ function App({ tab = 'races' }) {
                     return {
                         id: `${race.date}-${String(race.placeCd).padStart(2, '0')}-${String(race.raceNo).padStart(2, '0')}`,
                         venue: venueData.placeName,
+                        venueCode: race.placeCd,
                         raceNumber: race.raceNo,
                         startTime: race.startTime || '未定', // スクレイピングした締切予定時刻を使用
                         weather: race.weather || '不明',
@@ -766,7 +767,10 @@ function App({ tab = 'races' }) {
                                         volatility={volatility}
                                         isAnalyzing={isAnalyzing}
                                         showExhibition={true}
+                                        venueCode={selectedRace.venueCode}
+                                        venueName={selectedRace.venue}
                                     />
+                                    <RaceResult prediction={prediction} volatility={volatility} />
                                 </section>
                             )}
 

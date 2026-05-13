@@ -1,0 +1,290 @@
+{
+  "venue_code": "04",
+  "venue_name": "平和島",
+  "analysis_date": "2026-05-11",
+  "total_races_analyzed": 1000,
+  "second_place_by_first": {
+    "1": {
+      "total_occurrences": 544,
+      "pattern": [
+        {
+          "boat": 2,
+          "rate": 34.6,
+          "count": 188
+        },
+        {
+          "boat": 3,
+          "rate": 27.2,
+          "count": 148
+        },
+        {
+          "boat": 4,
+          "rate": 21.9,
+          "count": 119
+        },
+        {
+          "boat": 5,
+          "rate": 11.8,
+          "count": 64
+        },
+        {
+          "boat": 6,
+          "rate": 4.6,
+          "count": 25
+        }
+      ]
+    },
+    "2": {
+      "total_occurrences": 138,
+      "pattern": [
+        {
+          "boat": 1,
+          "rate": 40.6,
+          "count": 56
+        },
+        {
+          "boat": 4,
+          "rate": 21,
+          "count": 29
+        },
+        {
+          "boat": 3,
+          "rate": 18.1,
+          "count": 25
+        },
+        {
+          "boat": 5,
+          "rate": 11.6,
+          "count": 16
+        },
+        {
+          "boat": 6,
+          "rate": 8.7,
+          "count": 12
+        }
+      ]
+    },
+    "3": {
+      "total_occurrences": 122,
+      "pattern": [
+        {
+          "boat": 1,
+          "rate": 41,
+          "count": 50
+        },
+        {
+          "boat": 4,
+          "rate": 22.1,
+          "count": 27
+        },
+        {
+          "boat": 2,
+          "rate": 18,
+          "count": 22
+        },
+        {
+          "boat": 5,
+          "rate": 12.3,
+          "count": 15
+        },
+        {
+          "boat": 6,
+          "rate": 6.6,
+          "count": 8
+        }
+      ]
+    },
+    "4": {
+      "total_occurrences": 103,
+      "pattern": [
+        {
+          "boat": 1,
+          "rate": 31.1,
+          "count": 32
+        },
+        {
+          "boat": 2,
+          "rate": 27.2,
+          "count": 28
+        },
+        {
+          "boat": 3,
+          "rate": 18.4,
+          "count": 19
+        },
+        {
+          "boat": 5,
+          "rate": 15.5,
+          "count": 16
+        },
+        {
+          "boat": 6,
+          "rate": 7.8,
+          "count": 8
+        }
+      ]
+    },
+    "5": {
+      "total_occurrences": 65,
+      "pattern": [
+        {
+          "boat": 2,
+          "rate": 30.8,
+          "count": 20
+        },
+        {
+          "boat": 1,
+          "rate": 26.2,
+          "count": 17
+        },
+        {
+          "boat": 4,
+          "rate": 18.5,
+          "count": 12
+        },
+        {
+          "boat": 3,
+          "rate": 12.3,
+          "count": 8
+        },
+        {
+          "boat": 6,
+          "rate": 12.3,
+          "count": 8
+        }
+      ]
+    },
+    "6": {
+      "total_occurrences": 28,
+      "pattern": [
+        {
+          "boat": 2,
+          "rate": 32.1,
+          "count": 9
+        },
+        {
+          "boat": 3,
+          "rate": 21.4,
+          "count": 6
+        },
+        {
+          "boat": 1,
+          "rate": 17.9,
+          "count": 5
+        },
+        {
+          "boat": 4,
+          "rate": 14.3,
+          "count": 4
+        },
+        {
+          "boat": 5,
+          "rate": 14.3,
+          "count": 4
+        }
+      ]
+    }
+  },
+  "top_trifecta_patterns": [
+    {
+      "pattern": "1-2-3",
+      "count": 84,
+      "rate": "8.40"
+    },
+    {
+      "pattern": "1-3-2",
+      "count": 56,
+      "rate": "5.60"
+    },
+    {
+      "pattern": "1-2-4",
+      "count": 50,
+      "rate": "5.00"
+    },
+    {
+      "pattern": "1-3-4",
+      "count": 42,
+      "rate": "4.20"
+    },
+    {
+      "pattern": "1-2-5",
+      "count": 36,
+      "rate": "3.60"
+    },
+    {
+      "pattern": "1-4-3",
+      "count": 35,
+      "rate": "3.50"
+    },
+    {
+      "pattern": "1-4-2",
+      "count": 32,
+      "rate": "3.20"
+    },
+    {
+      "pattern": "1-4-5",
+      "count": 28,
+      "rate": "2.80"
+    },
+    {
+      "pattern": "1-3-5",
+      "count": 28,
+      "rate": "2.80"
+    },
+    {
+      "pattern": "2-1-3",
+      "count": 25,
+      "rate": "2.50"
+    },
+    {
+      "pattern": "1-4-6",
+      "count": 24,
+      "rate": "2.40"
+    },
+    {
+      "pattern": "1-5-2",
+      "count": 24,
+      "rate": "2.40"
+    },
+    {
+      "pattern": "1-3-6",
+      "count": 22,
+      "rate": "2.20"
+    },
+    {
+      "pattern": "3-1-5",
+      "count": 20,
+      "rate": "2.00"
+    },
+    {
+      "pattern": "1-5-3",
+      "count": 18,
+      "rate": "1.80"
+    },
+    {
+      "pattern": "1-2-6",
+      "count": 18,
+      "rate": "1.80"
+    },
+    {
+      "pattern": "1-6-2",
+      "count": 15,
+      "rate": "1.50"
+    },
+    {
+      "pattern": "2-4-1",
+      "count": 13,
+      "rate": "1.30"
+    },
+    {
+      "pattern": "2-1-4",
+      "count": 13,
+      "rate": "1.30"
+    },
+    {
+      "pattern": "1-5-4",
+      "count": 12,
+      "rate": "1.20"
+    }
+  ]
+}

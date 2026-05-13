@@ -11,6 +11,7 @@ import RaceHistory from './pages/RaceHistory';
 import RaceDetail from './pages/RaceDetail';
 import Profile from './pages/Profile';
 import AccuracyHistory from './pages/AccuracyHistory';
+import OutcomeDistribution from './pages/OutcomeDistribution';
 import ContentHub from './pages/ContentHub';
 import AdminRules from './pages/admin/AdminRules';
 import ResponsibleGambling from './pages/ResponsibleGambling';
@@ -63,6 +64,7 @@ export default function AppRouter() {
         <Route path="/accuracy" element={<App tab="accuracy" />} />
         <Route path="/picks" element={<App tab="picks" />} />
         <Route path="/accuracy/history" element={<AccuracyHistory />} />
+        <Route path="/outcome-distribution" element={<OutcomeDistribution />} />
         <Route path="/privacy" element={<App tab="privacy" />} />
         <Route path="/terms" element={<App tab="terms" />} />
         <Route path="/contact" element={<App tab="contact" />} />

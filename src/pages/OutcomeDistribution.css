@@ -1,0 +1,148 @@
+.outcome-distribution-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+.outcome-distribution-page .content {
+  flex: 1;
+  padding: 2rem 0;
+  background: #f8fafc;
+}
+
+.outcome-distribution-page .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  color: #0f172a;
+}
+
+.page-subtitle {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.info-section {
+  margin-top: 3rem;
+}
+
+.info-section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #0f172a;
+}
+
+.info-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #0284c7;
+}
+
+.info-card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.info-card p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.info-card ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #475569;
+}
+
+.info-card li {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.info-card li:last-child {
+  margin-bottom: 0;
+}
+
+.info-card strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.page-footer {
+  background: #f1f5f9;
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.85rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .outcome-distribution-page .content {
+    padding: 1rem 0;
+  }
+
+  .outcome-distribution-page .container {
+    padding: 0 0.75rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .info-section {
+    margin-top: 2rem;
+  }
+
+  .info-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .info-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left-width: 3px;
+  }
+
+  .info-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .info-card p,
+  .info-card ul {
+    font-size: 0.9rem;
+  }
+
+  .page-footer {
+    padding: 1.5rem;
+    font-size: 0.8rem;
+  }
+}

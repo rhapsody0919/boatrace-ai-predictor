@@ -1,0 +1,180 @@
+.outcome-pattern-preview {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 12px;
+  border: 2px solid #fbbf24;
+  margin-top: 2rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+}
+
+.expand-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: linear-gradient(135deg, #fcd34d 0%, #fbca51 100%);
+  border: none;
+  padding: 1.25rem;
+  cursor: pointer;
+  text-align: left;
+  font-size: inherit;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.expand-button:hover {
+  background: linear-gradient(135deg, #fbca51 0%, #f59e0b 100%);
+  transform: translateY(-1px);
+}
+
+.expand-button .chevron {
+  font-size: 0.9rem;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.expand-button h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #78350f;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.preview-content {
+  padding: 1.5rem;
+  border-top: 2px solid #fbbf24;
+  background: white;
+}
+
+.loading {
+  text-align: center;
+  color: #64748b;
+  padding: 1rem;
+}
+
+.error {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.no-data {
+  text-align: center;
+  color: #94a3b8;
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.pattern-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.pattern-table thead {
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.pattern-table th {
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.85rem;
+}
+
+.pattern-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+.pattern-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.pattern-table td {
+  padding: 0.75rem;
+  text-align: center;
+  color: #475569;
+}
+
+.pattern-table td.rank {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.pattern-table td.trifecta {
+  font-weight: 600;
+  color: #0f172a;
+  text-align: left;
+}
+
+.pattern-table td.count {
+  background: #f0f9ff;
+  color: #0c4a6e;
+  font-weight: 500;
+}
+
+.pattern-table td.probability {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.pattern-table td.payout {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.detail-link {
+  display: inline-block;
+  padding: 0.75rem 1rem;
+  background: #0284c7;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.detail-link:hover {
+  background: #0369a1;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .expand-button {
+    padding: 0.75rem;
+  }
+
+  .expand-button h3 {
+    font-size: 0.9rem;
+  }
+
+  .preview-content {
+    padding: 1rem;
+  }
+
+  .pattern-table {
+    font-size: 0.8rem;
+  }
+
+  .pattern-table th,
+  .pattern-table td {
+    padding: 0.5rem;
+  }
+
+  .detail-link {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}

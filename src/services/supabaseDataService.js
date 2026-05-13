@@ -1284,5 +1284,111 @@ export const supabaseDataService = {
       }
       return data || { days: [] };
     });
-  }
+  },
+
+  /**
+   * 出目分布データを取得（会場別の3連単パターン）
+   * @param {number} venueCode - 会場コード（1-24）
+   * @returns {Promise<Object>} - { venue_code, venue_name, total_races, last_updated, data: { first_boat: [...] } }
+   */
+  getOutcomeDistribution(venueCode) {
+    return withCache(`outcome-distribution-${venueCode}`, async () => {
+      // Phase 1: Edge API を試行（CDNキャッシュ活用）
+      try {
+        const edgeResponse = await fetch(`${EDGE_API_BASE}/api/outcome-distribution?venue_code=${venueCode}`);
+        if (edgeResponse.ok) {
+          const edgeData = await edgeResponse.json();
+          if (edgeData.venue_code) {
+            console.log('[getOutcomeDistribution] Edge API success');
+            return edgeData;
+          }
+        }
+      } catch (edgeError) {
+        console.log('[getOutcomeDistribution] Edge API failed, falling back:', edgeError.message);
+      }
+
+      // フォールバック: Supabase 直接クエリ
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        return { venue_code: venueCode, venue_name: '', total_races: 0, last_updated: null, data: {} };
+      }
+
+      const { data, error } = await supabase
+        .from('outcome_distribution')
+        .select('*')
+        .eq('venue_code', venueCode)
+        .order('first_boat')
+        .order('count_90days', { ascending: false });
+
+      if (error) {
+        console.error('Supabase getOutcomeDistribution error:', error.message);
+        return { venue_code: venueCode, venue_name: '', total_races: 0, last_updated: null, data: {} };
+      }
+
+      if (!data || data.length === 0) {
+        return { venue_code: venueCode, venue_name: '', total_races: 0, last_updated: null, data: {} };
+      }
+
+      // 1着別にグループ化
+      const outcomesData = {};
+      let totalRaces = 0;
+      let lastUpdated = null;
+
+      data.forEach(row => {
+        const firstBoat = row.first_boat;
+        if (!outcomesData[firstBoat]) {
+          outcomesData[firstBoat] = [];
+        }
+
+        outcomesData[firstBoat].push({
+          second_boat: row.second_boat,
+          third_boat: row.third_boat,
+          count: row.count_90days,
+          probability: row.probability,
+          avg_payout: row.avg_payout,
+        });
+
+        if (!totalRaces) {
+          totalRaces = row.total_races;
+          lastUpdated = row.last_updated;
+        }
+      });
+
+      // VENUE_NAMES マッピング
+      const VENUE_NAMES = {
+        1: '桐生',
+        2: '戸田',
+        3: '江戸川',
+        4: '平和島',
+        5: '多摩川',
+        6: '浜名湖',
+        7: '蒲郡',
+        8: '常滑',
+        9: '津',
+        10: '三国',
+        11: 'びわこ',
+        12: '住之江',
+        13: '尼崎',
+        14: '鳴門',
+        15: '丸亀',
+        16: '児島',
+        17: '宮島',
+        18: '徳山',
+        19: '下関',
+        20: '若松',
+        21: '芦屋',
+        22: '福岡',
+        23: '唐津',
+        24: '大村',
+      };
+
+      return {
+        venue_code: venueCode,
+        venue_name: VENUE_NAMES[venueCode] || '',
+        total_races: totalRaces,
+        last_updated: lastUpdated,
+        data: outcomesData,
+      };
+    });
+  },
 };
