@@ -6,6 +6,7 @@ function Header() {
   const location = useLocation()
   const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isCompressed, setIsCompressed] = useState(false)
   const menuRef = useRef(null)
 
   // 現在のページ/タブを判定
@@ -46,6 +47,22 @@ function Header() {
     }
   }, [isMenuOpen])
 
+  // スクロール検出：デスクトップのみ圧縮
+  useEffect(() => {
+    const handleScroll = () => {
+      const isMobile = window.innerWidth <= 768
+      if (isMobile) {
+        setIsCompressed(false)
+        return
+      }
+      const currentScrollY = window.scrollY
+      setIsCompressed(currentScrollY > 100) // 100px以上スクロールで圧縮
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   // ロゴクリック時の処理
   const handleLogoClick = () => {
     navigate('/')
@@ -59,7 +76,7 @@ function Header() {
   }
 
   return (
-    <header className="app-header">
+    <header className={`app-header ${isCompressed ? 'compressed' : ''}`}>
       <div className="header-content" ref={menuRef}>
         <button className="logo" onClick={handleLogoClick} aria-label="BoatAI トップページへ">
           <span className="logo-icon">🚤</span>
@@ -91,6 +108,18 @@ function Header() {
         {isMenuOpen && <div className="menu-overlay" onClick={() => setIsMenuOpen(false)} />}
         {isMenuOpen && (
           <div className="submenu">
+            <button
+              className={`submenu-item submenu-item-button ${activeTab === 'races' ? 'active' : ''}`}
+              onClick={() => { handleTabClick('races'); setIsMenuOpen(false) }}
+            >
+              🏁 予想
+            </button>
+            <button
+              className={`submenu-item submenu-item-button ${activeTab === 'hit-races' ? 'active' : ''}`}
+              onClick={() => { handleTabClick('hit-races'); setIsMenuOpen(false) }}
+            >
+              ✅ 的中
+            </button>
             <Link
               to="/accuracy"
               className={`submenu-item ${activeTab === 'accuracy' ? 'active' : ''}`}
