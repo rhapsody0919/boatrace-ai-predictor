@@ -307,7 +307,6 @@ async function calculateVolatilityStats() {
   }
 
   const byVenue = Array.from(venueHighMap.entries())
-    .filter(([, v]) => v.total >= 5)
     .map(([venueCode, v]) => {
       const all = venueAllMap.get(venueCode) || { total: 1, upset: 0 };
       return {
@@ -316,6 +315,7 @@ async function calculateVolatilityStats() {
         highRaceCount: v.total,
         highUpsetRate: parseFloat(((v.upset / v.total) * 100).toFixed(1)),
         baselineUpsetRate: parseFloat(((all.upset / all.total) * 100).toFixed(1)),
+        isReliable: v.total >= 5, // 5件以上で信頼性フラグを設定
       };
     })
     .sort((a, b) => b.highUpsetRate - a.highUpsetRate);

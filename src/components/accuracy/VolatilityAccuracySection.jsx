@@ -151,12 +151,13 @@ function VolatilityAccuracySection({ stats }) {
               </thead>
               <tbody>
                 {byVenue.map((v) => (
-                  <tr key={v.venueCode}>
+                  <tr key={v.venueCode} style={{ opacity: v.isReliable ? 1 : 0.7 }}>
                     <td className="volatility-venue-table__name">
                       {v.venueName}
                     </td>
                     <td style={{ fontWeight: 600, color: "#ff9800" }}>
                       {v.highUpsetRate.toFixed(1)}%
+                      {!v.isReliable && <span className="vas-ref-note"> ※</span>}
                     </td>
                     <td>{v.baselineUpsetRate.toFixed(1)}%</td>
                     <td>{v.highRaceCount}</td>
@@ -164,6 +165,7 @@ function VolatilityAccuracySection({ stats }) {
                 ))}
               </tbody>
             </table>
+            <p className="vas-ref-desc">※ サンプル数が5件未満のため参考値</p>
           </div>
         </details>
       )}
