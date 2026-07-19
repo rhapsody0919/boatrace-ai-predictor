@@ -8,6 +8,14 @@ boatAI 多言語化における対訳の基準表。翻訳キー追加時はこ�
 - 会場名はヘボン式ローマ字
 - UI 一般文言は自然な英語に意訳
 
+### 韓国語（ko）の方針
+
+- 競技名は **「경정」**（韓国語での正式呼称。韓国自国の競技名でもあり、日本のものは「일본 경정」と表記）。補助的に「쿄테이（Kyotei）」を併記
+- 決まり手は **韓国 경정（KSPO）の公式戦法用語**に対応させる: 逃げ=인빠지기、差し=찌르기、まくり=휘감기、まくり差し=휘감아찌르기。ローマ字（Nige 等）を併記して日本語実況との対照を可能にする
+- 券種名は韓国 경정 の公式券種名に対応: 単勝=단승식、複勝=연승식、2連単=쌍승식、2連複=복승식、3連単=삼쌍승식、3連複=삼복승식
+- 2連率は韓国公営競技の公式用語「연대율」を使用
+- 会場名はカタカナ発音のハングル転写（키류、헤이와지마 等）
+
 ### 繁体字中国語（zh-TW）の方針
 
 - 競技名は公式インバウンド向け表記に従い **「賽艇（BOAT RACE / Kyotei）」** を使用する。中華圏で通用する俗称「競艇」はプロジェクトルール（「競艇」使用禁止）と公式ブランディングの両方に反するため使わない
@@ -18,75 +26,75 @@ boatAI 多言語化における対訳の基準表。翻訳キー追加時はこ�
 
 ## 決まり手（Winning Techniques）
 
-| 日本語 | キー | 英語表記 | 繁體中文 | 補足 |
-|--------|------|---------|----------|------|
-| 逃げ | nige | Nige (Escape) | 逃走（Nige） | 1コースが先マイして押し切る |
-| 差し | sashi | Sashi (Inside pass) | 切入（Sashi） | ターンで内側を差す |
-| まくり | makuri | Makuri (Outside sweep) | 外攻（Makuri） | 外から全速で抜き去る |
-| まくり差し | makurizashi | Makuri-zashi (Sweep & pass) | 外攻切入（Makuri-zashi） | まくりつつ内を差す |
-| 抜き | nuki | Nuki (Overtake) | 超越（Nuki） | 1マーク以降で抜く |
-| 恵まれ | megumare | Megumare (Lucky win) | 幸運勝出（Megumare） | 先行艇の事故等による勝利 |
+| 日本語 | キー | 英語表記 | 繁體中文 | 한국어 | 補足 |
+|--------|------|---------|----------|--------|------|
+| 逃げ | nige | Nige (Escape) | 逃走（Nige） | 인빠지기 (Nige) | 1コースが先マイして押し切る |
+| 差し | sashi | Sashi (Inside pass) | 切入（Sashi） | 찌르기 (Sashi) | ターンで内側を差す |
+| まくり | makuri | Makuri (Outside sweep) | 外攻（Makuri） | 휘감기 (Makuri) | 外から全速で抜き去る |
+| まくり差し | makurizashi | Makuri-zashi (Sweep & pass) | 外攻切入（Makuri-zashi） | 휘감아찌르기 (Makuri-zashi) | まくりつつ内を差す |
+| 抜き | nuki | Nuki (Overtake) | 超越（Nuki） | 추월 (Nuki) | 1マーク以降で抜く |
+| 恵まれ | megumare | Megumare (Lucky win) | 幸運勝出（Megumare） | 어부지리 (Megumare) | 先行艇の事故等による勝利 |
 
 ## 会場（Venues）
 
-| コード | 日本語 | 英語 | 繁體中文 |
-|--------|--------|------|----------|
-| 1 | 桐生 | Kiryu | 桐生 |
-| 2 | 戸田 | Toda | 戶田 |
-| 3 | 江戸川 | Edogawa | 江戶川 |
-| 4 | 平和島 | Heiwajima | 平和島 |
-| 5 | 多摩川 | Tamagawa | 多摩川 |
-| 6 | 浜名湖 | Hamanako | 濱名湖 |
-| 7 | 蒲郡 | Gamagori | 蒲郡 |
-| 8 | 常滑 | Tokoname | 常滑 |
-| 9 | 津 | Tsu | 津 |
-| 10 | 三国 | Mikuni | 三國 |
-| 11 | びわこ | Biwako | 琵琶湖 |
-| 12 | 住之江 | Suminoe | 住之江 |
-| 13 | 尼崎 | Amagasaki | 尼崎 |
-| 14 | 鳴門 | Naruto | 鳴門 |
-| 15 | 丸亀 | Marugame | 丸龜 |
-| 16 | 児島 | Kojima | 兒島 |
-| 17 | 宮島 | Miyajima | 宮島 |
-| 18 | 徳山 | Tokuyama | 德山 |
-| 19 | 下関 | Shimonoseki | 下關 |
-| 20 | 若松 | Wakamatsu | 若松 |
-| 21 | 芦屋 | Ashiya | 蘆屋 |
-| 22 | 福岡 | Fukuoka | 福岡 |
-| 23 | 唐津 | Karatsu | 唐津 |
-| 24 | 大村 | Omura | 大村 |
+| コード | 日本語 | 英語 | 繁體中文 | 한국어 |
+|--------|--------|------|----------|--------|
+| 1 | 桐生 | Kiryu | 桐生 | 키류 |
+| 2 | 戸田 | Toda | 戶田 | 토다 |
+| 3 | 江戸川 | Edogawa | 江戶川 | 에도가와 |
+| 4 | 平和島 | Heiwajima | 平和島 | 헤이와지마 |
+| 5 | 多摩川 | Tamagawa | 多摩川 | 타마가와 |
+| 6 | 浜名湖 | Hamanako | 濱名湖 | 하마나코 |
+| 7 | 蒲郡 | Gamagori | 蒲郡 | 가마고리 |
+| 8 | 常滑 | Tokoname | 常滑 | 토코나메 |
+| 9 | 津 | Tsu | 津 | 츠 |
+| 10 | 三国 | Mikuni | 三國 | 미쿠니 |
+| 11 | びわこ | Biwako | 琵琶湖 | 비와코 |
+| 12 | 住之江 | Suminoe | 住之江 | 스미노에 |
+| 13 | 尼崎 | Amagasaki | 尼崎 | 아마가사키 |
+| 14 | 鳴門 | Naruto | 鳴門 | 나루토 |
+| 15 | 丸亀 | Marugame | 丸龜 | 마루가메 |
+| 16 | 児島 | Kojima | 兒島 | 코지마 |
+| 17 | 宮島 | Miyajima | 宮島 | 미야지마 |
+| 18 | 徳山 | Tokuyama | 德山 | 토쿠야마 |
+| 19 | 下関 | Shimonoseki | 下關 | 시모노세키 |
+| 20 | 若松 | Wakamatsu | 若松 | 와카마츠 |
+| 21 | 芦屋 | Ashiya | 蘆屋 | 아시야 |
+| 22 | 福岡 | Fukuoka | 福岡 | 후쿠오카 |
+| 23 | 唐津 | Karatsu | 唐津 | 카라츠 |
+| 24 | 大村 | Omura | 大村 | 오무라 |
 
 ## 予想モデル（Prediction Models）
 
-| 日本語 | キー | 英語 | 繁體中文 |
-|--------|------|------|----------|
-| 本命狙い | safeBet | Safe Bet | 穩健型 |
-| スタンダード | standard | Standard | 標準型 |
-| 穴狙い | upsetFocus | Upset Focus | 冷門型 |
+| 日本語 | キー | 英語 | 繁體中文 | 한국어 |
+|--------|------|------|----------|--------|
+| 本命狙い | safeBet | Safe Bet | 穩健型 | 안정형 |
+| スタンダード | standard | Standard | 標準型 | 표준형 |
+| 穴狙い | upsetFocus | Upset Focus | 冷門型 | 고배당형 |
 
 ## ドメイン用語（General Domain Terms）
 
-| 日本語 | 英語 | 繁體中文 | 補足 |
-|--------|------|----------|------|
-| 艇番 | Boat # | 艇號 | |
-| 級別 | Class | 級別 | A1/A2/B1/B2 はそのまま |
-| 全国勝率 | National win rate | 全國勝率 | |
-| 全国2連率 | National top-2 rate | 全國2連率 | 2着以内率 |
-| 当地勝率 | Local win rate | 當地勝率 | その会場での勝率 |
-| モーター2率 | Motor top-2 rate | 馬達2連率 | |
-| 平均ST | Avg. ST | 平均ST | ST = Start Timing（そのまま使用） |
-| 展示タイム | Exhibition time | 展示時間 | |
-| 展示ST | Exhibition ST | 展示ST | |
-| 総合力 | Overall score | 綜合力 | |
-| コース勝率 | Course win rate | 航道勝率 | コース → 航道 |
-| イン崩れ | In-kuzure (Lane-1 upset) | 1號位失守 | 1コースが負けること |
-| イン崩れ指数 | Lane-1 upset index | 1號位失守指數 | |
-| 単勝 | Win | 單勝 | 券種（繁体字は公式表記） |
-| 複勝 | Place | 複勝 | 券種 |
-| 3連複 | Trio | 3連複 | 券種（公式英語表記） |
-| 3連単 | Trifecta | 3連單 | 券種（公式英語表記） |
-| 的中 | Hit | 命中 | |
-| 配当 | Payout | 派彩 | |
-| 買い目 | Betting picks | 投注組合 | |
-| 1マーク | First mark (1st turn) | 第一轉彎標 | |
-| 荒れ度 | Volatility | 爆冷程度 | UI では「1號位失守指數」を使用 |
+| 日本語 | 英語 | 繁體中文 | 한국어 | 補足 |
+|--------|------|----------|--------|------|
+| 艇番 | Boat # | 艇號 | 번호 | |
+| 級別 | Class | 級別 | 등급 | A1/A2/B1/B2 はそのまま |
+| 全国勝率 | National win rate | 全國勝率 | 전국 승률 | |
+| 全国2連率 | National top-2 rate | 全國2連率 | 전국 연대율 | 2着以内率。연대율は韓国公営競技の公式用語 |
+| 当地勝率 | Local win rate | 當地勝率 | 현지 승률 | その会場での勝率 |
+| モーター2率 | Motor top-2 rate | 馬達2連率 | 모터 연대율 | |
+| 平均ST | Avg. ST | 平均ST | 평균 ST | ST = Start Timing（そのまま使用） |
+| 展示タイム | Exhibition time | 展示時間 | 전시 타임 | |
+| 展示ST | Exhibition ST | 展示ST | 전시 ST | |
+| 総合力 | Overall score | 綜合力 | 종합력 | |
+| コース勝率 | Course win rate | 航道勝率 | 코스 승률 | zh はコース → 航道 |
+| イン崩れ | In-kuzure (Lane-1 upset) | 1號位失守 | 1코스 이변 | 1コースが負けること |
+| イン崩れ指数 | Lane-1 upset index | 1號位失守指數 | 1코스 이변 지수 | |
+| 単勝 | Win | 單勝 | 단승 | 券種（繁体字・韓国語は各公式表記） |
+| 複勝 | Place | 複勝 | 연승 | 券種 |
+| 3連複 | Trio | 3連複 | 삼복승 | 券種（公式英語表記） |
+| 3連単 | Trifecta | 3連單 | 삼쌍승 | 券種（公式英語表記） |
+| 的中 | Hit | 命中 | 적중 | |
+| 配当 | Payout | 派彩 | 배당금 | |
+| 買い目 | Betting picks | 投注組合 | 추천 조합 | |
+| 1マーク | First mark (1st turn) | 第一轉彎標 | 1턴 마크 | |
+| 荒れ度 | Volatility | 爆冷程度 | 이변 정도 | UI では各言語の「イン崩れ指数」訳を使用 |

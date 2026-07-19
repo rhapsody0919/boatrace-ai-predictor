@@ -23,6 +23,7 @@ import Holmes from "./pages/Holmes";
 import ContentHub from "./pages/ContentHub";
 import EnglishGuide from "./pages/EnglishGuide";
 import ZhTwGuide from "./pages/ZhTwGuide";
+import KoGuide from "./pages/KoGuide";
 import EnglishVenueGuide, { EnglishVenueGuides } from "./pages/EnglishVenueGuide";
 import AdminRules from "./pages/admin/AdminRules";
 import ResponsibleGambling from "./pages/ResponsibleGambling";
@@ -91,6 +92,7 @@ function PageViewTracker() {
 const GUIDE_BY_LANG = {
   en: EnglishGuide,
   "zh-TW": ZhTwGuide,
+  ko: KoGuide,
 };
 
 // 言語別に共通のルート定義（言語プレフィックス配下でも相対パスで再利用）
