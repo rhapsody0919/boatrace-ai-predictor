@@ -63,12 +63,14 @@ export async function getMoriartyStats(daysWindow = null) {
     const win_rate = total_predictions > 0 ? win_hits / total_predictions : 0;
     const cumulative_roi = investment > 0 ? payout / investment : 0;
 
-    const { data: recs } = await supabase
+    // 累積推奨レース数は「実際に賭けたレース」のみ（skip は除外）
+    const { count: betCount } = await supabase
       .from("bet_recommendations")
-      .select("race_id", { count: "exact", head: false })
-      .eq("model_id", "moriarty");
+      .select("race_id", { count: "exact", head: true })
+      .eq("model_id", "moriarty")
+      .neq("recommendation", "skip");
 
-    const total_bets = recs ? recs.length : 0;
+    const total_bets = betCount || 0;
 
     return {
       operation_days,
@@ -141,6 +143,7 @@ export async function getMoriartyRecommendations(date) {
         "race_id, expected_value, bet_fraction, actual_hit, actual_payout, reasons",
       )
       .eq("model_id", "moriarty")
+      .neq("recommendation", "skip")
       .like("race_id", `${targetDate}%`)
       .order("expected_value", { ascending: false });
 
@@ -259,10 +262,13 @@ export async function getMoriartyVenueBreakdown(daysWindow = 30) {
 export async function getMoriartyCalibrationData() {
   if (!supabase) return [];
   try {
+    // skip 行は actual_hit を強制的に false にしているため、実際に賭けた
+    // 推奨（非 skip）だけでキャリブレーションを評価する
     const { data, error } = await supabase
       .from("bet_recommendations")
       .select("expected_value, actual_hit")
       .eq("model_id", "moriarty")
+      .neq("recommendation", "skip")
       .not("actual_hit", "is", null);
 
     if (error || !data || data.length === 0) return [];

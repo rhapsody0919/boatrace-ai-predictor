@@ -38,4 +38,12 @@ data/races.json
 data/ml/
 scripts/ml/.venv/
 scripts/ml/models/
+scripts/ml/models.bak/
 scripts/ml/__pycache__/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# oh-my-claudecode local state
+.omc/

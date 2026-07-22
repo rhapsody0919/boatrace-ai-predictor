@@ -15,18 +15,26 @@
 // judgeBet 内で正しい対応付けを行う。
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
-import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
+import {
+  getTodayDateJST,
+  getYesterdayDateJST,
+  parseDateArg,
+} from "../lib/dateUtils.js";
 
 const MODEL_ID = "moriarty";
 // Virtual bankroll for ROI calculation
 const VIRTUAL_BANKROLL = 10000;
 
-async function fetchPendingRecommendations(date) {
+// その日の Moriarty 推奨を全件取得する（settle 済み・未 settle 問わず）。
+// 決着更新は actual_hit === null の行だけに行い、日次集計は全件から計算する
+// ため、何度再実行しても同じ結果になる（冪等）。
+async function fetchRecommendationsForDate(date) {
   const { data, error } = await supabase
     .from("bet_recommendations")
-    .select("race_id, recommendation, reasons, expected_value, bet_fraction")
+    .select(
+      "race_id, recommendation, reasons, expected_value, bet_fraction, actual_hit",
+    )
     .eq("model_id", MODEL_ID)
-    .is("actual_hit", null)
     .gte("created_at", `${date}T00:00:00+09:00`)
     .lt("created_at", `${date}T23:59:59+09:00`);
 
@@ -176,12 +184,14 @@ async function updateRecommendations(pending, resultsMap) {
   return updates.length;
 }
 
-async function upsertDailyPerformance(date, pending, resultsMap, venueMap) {
-  const resolved = pending.filter((r) => resultsMap[r.race_id]);
+async function upsertDailyPerformance(date, recs, resultsMap, venueMap) {
+  const resolved = recs.filter((r) => resultsMap[r.race_id]);
   if (resolved.length === 0) return;
 
-  const totalPredictions = resolved.length;
-
+  // total_predictions は「実際に賭けたレース数」を表す。skip や中止は含めない
+  // ため、ここではカウントせずループ内で bet ごとに加算する（的中率の分母が
+  // 賭けたレース数になり、フロントの表示と一致する）。
+  let betsPlaced = 0;
   let totalInvestment = 0;
   let totalPayoutWin = 0;
   let totalPayoutTrifecta = 0;
@@ -196,6 +206,7 @@ async function upsertDailyPerformance(date, pending, resultsMap, venueMap) {
     if (!result || result.is_cancelled || result.is_no_race) continue;
     if (rec.recommendation === "skip") continue;
 
+    betsPlaced++;
     const venueCode = venueMap[rec.race_id];
     const betAmount = betAmountFor(rec);
     const { isHit, payoutPer100 } = judgeBet(rec.reasons, result);
@@ -236,10 +247,17 @@ async function upsertDailyPerformance(date, pending, resultsMap, venueMap) {
     ]),
   );
 
+  // 賭けが1件も無かった日は「運用日」ではないため行を作らない
+  // （運用日数・的中率の分母が実際に賭けた日だけになる）
+  if (betsPlaced === 0) {
+    console.log(`  No bets placed on ${date}; skipping daily performance row`);
+    return;
+  }
+
   const row = {
     model_id: MODEL_ID,
     date,
-    total_predictions: totalPredictions,
+    total_predictions: betsPlaced,
     win_hits: winHits,
     place_hits: null,
     trifecta_hits: trifectaHits,
@@ -266,6 +284,67 @@ async function upsertDailyPerformance(date, pending, resultsMap, venueMap) {
     );
 }
 
+// 指定日1日ぶんの outcome 決着 + model_performance_daily upsert を行う
+async function processDate(date) {
+  console.log(`Updating Moriarty outcomes for ${date}`);
+
+  const allRecs = await fetchRecommendationsForDate(date);
+  if (allRecs.length === 0) {
+    console.log("  No Moriarty recommendations for this date.");
+    return;
+  }
+
+  const raceIds = allRecs.map((r) => r.race_id);
+  const [resultsMap, venueMap] = await Promise.all([
+    fetchRaceResults(raceIds),
+    fetchRaceVenues(raceIds),
+  ]);
+
+  // 決着更新は未決着（actual_hit === null）の行だけに限定する
+  const pending = allRecs.filter((r) => r.actual_hit == null);
+  const updatedCount = await updateRecommendations(pending, resultsMap);
+  console.log(
+    `  ${allRecs.length} recs (${pending.length} pending), updated ${updatedCount}`,
+  );
+
+  // 日次集計は全件から計算する（再実行しても同じ結果になる）
+  await upsertDailyPerformance(date, allRecs, resultsMap, venueMap);
+}
+
+// YYYY-MM-DD の連続する日付配列を作る（両端含む）
+function dateRange(from, to) {
+  const dates = [];
+  const cursor = new Date(`${from}T00:00:00Z`);
+  const end = new Date(`${to}T00:00:00Z`);
+  while (cursor <= end) {
+    dates.push(cursor.toISOString().split("T")[0]);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+// 処理対象日を決める
+//   --date=YYYY-MM-DD          … その1日だけ
+//   --from=YYYY-MM-DD --to=... … 範囲（バックフィル用。--to 省略時は今日）
+//   引数なし                    … 昨日＋今日（JST）の2日ぶん
+// 既定で2日ぶん処理するのは、GitHub Actions のスケジュール遅延で実行が
+// JST 翌日にずれても当日ぶんを取りこぼさないため（決着処理は冪等）。
+function resolveTargetDates() {
+  const single = parseDateArg();
+  if (single) return [single];
+
+  const args = process.argv.slice(2);
+  const fromArg = args.find((a) => a.startsWith("--from="));
+  if (fromArg) {
+    const from = fromArg.split("=")[1];
+    const toArg = args.find((a) => a.startsWith("--to="));
+    const to = toArg ? toArg.split("=")[1] : getTodayDateJST();
+    return dateRange(from, to);
+  }
+
+  return [getYesterdayDateJST(), getTodayDateJST()];
+}
+
 async function main() {
   if (!isSupabaseEnabled()) {
     console.error(
@@ -274,28 +353,10 @@ async function main() {
     process.exit(1);
   }
 
-  // 使い方: node update-moriarty-outcomes.js [--date=YYYY-MM-DD]
-  const date = parseDateArg() || getTodayDateJST();
-  console.log(`Updating Moriarty outcomes for ${date}`);
-
-  const pending = await fetchPendingRecommendations(date);
-  if (pending.length === 0) {
-    console.log("No pending Moriarty recommendations found.");
-    return;
+  const dates = resolveTargetDates();
+  for (const date of dates) {
+    await processDate(date);
   }
-
-  console.log(`  Found ${pending.length} pending recommendations`);
-
-  const raceIds = pending.map((r) => r.race_id);
-  const [resultsMap, venueMap] = await Promise.all([
-    fetchRaceResults(raceIds),
-    fetchRaceVenues(raceIds),
-  ]);
-
-  const updatedCount = await updateRecommendations(pending, resultsMap);
-  console.log(`  Updated ${updatedCount} recommendation rows`);
-
-  await upsertDailyPerformance(date, pending, resultsMap, venueMap);
 }
 
 // CLI 実行時のみ main を起動（judgeBet はテスト用に export）
