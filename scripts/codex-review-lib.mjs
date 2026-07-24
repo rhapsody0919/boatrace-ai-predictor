@@ -2,6 +2,8 @@
  * Codex レビューゲートの判定ロジック（純粋関数 + 薄い CLI）。
  *
  * 判定の正本はここに一本化し、シェル（scripts/codex-review.sh）はこの CLI を呼ぶだけにする。
+ * boatai には単体テストフレームワークが無いため（hakumei-app 版は verdict.test.ts で検証していた）、
+ * この分離の主目的はテスト容易性ではなく「判定ロジックをシェルの文字列処理で再実装しない」こと。
  *
  * CLI 用法:
  *   node codex-review-lib.mjs classify < json   # critical/high>0 なら exit 1、不正 JSON は exit 2

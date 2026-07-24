@@ -3,7 +3,9 @@ description: SDD Step 2 — docs/design/{機能slug}/plan.md（システム設�
 argument-hint: "<機能slug（kebab-case）>"
 ---
 
-確定した `docs/design/$1/spec.md` と（UI機能なら）`docs/design/$1/screens.md` から `docs/design/$1/plan.md` を作成する。
+引数 `$ARGUMENTS` は機能slug（kebab-case）。以降 `{slug}` と表記する。
+
+確定した `docs/design/{slug}/spec.md` と（UI機能なら）`docs/design/{slug}/screens.md` から `docs/design/{slug}/plan.md` を作成する。
 
 含める内容:
 - データ設計（Supabase テーブル・カラム追加が必要なら `docs/db-migration/` にマイグレーション案も作成。既存テーブルの `patterns` 配列が2026-03-08以降のデータにしか無い等、既知の制約を踏まえる）

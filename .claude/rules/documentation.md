@@ -38,7 +38,8 @@
 
 ## ファイル命名規則
 
-- **すべてのファイルは `kebab-case`**（例外: `README.md`, `TODO.md`）
+- **すべてのファイルは `kebab-case`**（例外: `README.md`, `TODO.md`, `AGENTS.md`）
+- `AGENTS.md` はルート配置の例外。Codex CLI 等の外部ツールがリポジトリルート直下を規約上前提にするため（`docs/operation/sdd-and-codex-review.md` 参照）
 - スクリプト: `analyze-venue-{コード}.js`, `find-{対象}.js`, `verify-{ルール名}.js`
 - 分析結果: `venue-{コード}-analysis.json`, `rule-{ルール名}-verification.json`
 - 会場分析ディレクトリ: `data/analysis/venue-{コード}/`

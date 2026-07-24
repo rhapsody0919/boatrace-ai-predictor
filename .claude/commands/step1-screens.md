@@ -3,7 +3,9 @@ description: SDD Step 1（UI機能）— docs/design/{機能slug}/screens.md に
 argument-hint: "<機能slug（kebab-case）>"
 ---
 
-`docs/design/$1/spec.md` をもとに `docs/design/$1/screens.md` に、影響する画面・コンポーネントをすべて洗い出して一覧化する。各項目に1〜2行の役割記述（何の画面/コンポーネントか・主要素）を付ける。
+引数 `$ARGUMENTS` は機能slug（kebab-case）。以降 `{slug}` と表記する。
+
+`docs/design/{slug}/spec.md` をもとに `docs/design/{slug}/screens.md` に、影響する画面・コンポーネントをすべて洗い出して一覧化する。各項目に1〜2行の役割記述（何の画面/コンポーネントか・主要素）を付ける。
 
 洗い出す際は必ず `.claude/rules/component-reuse.md` を確認し、以下を明記する。
 - 新規コンポーネントか、既存コンポーネント（`src/components/race/` 等）の拡張で足りるか

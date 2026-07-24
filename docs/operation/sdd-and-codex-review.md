@@ -48,7 +48,7 @@ PR 作成後、`/code-review` を通してから `/codex-review` を実行する
 /codex-review develop   # base ブランチを指定する場合
 ```
 
-- Codex はレビュー観点を `AGENTS.md`（リポジトリルート）から読む。boatAI 固有の危険ゾーン（Supabase ページネーション、i18n 言語プレフィックス、モバイルタッチイベント、「競艇」禁止用語等）を記載済み
+- Codex はレビュー観点を `AGENTS.md`（リポジトリルート）から読む。boatAI 固有の危険ゾーン（Supabase ページネーション、i18n 言語プレフィックス、モバイルタッチイベント、「競艇」禁止用語等）を記載済み。`.claude/rules/code-style.md` 等と一部内容が重複するのは意図的（`AGENTS.md` 単体でレビュー基準が完結するようにするため、hakumei-app の設計を踏襲）。ルール変更時は `.claude/rules/` 側を正としつつ、`AGENTS.md` にも反映を忘れないこと
 - Codex はコードを書き換えない（read-only）。指摘への対応は必ず Claude が行う
 - Critical/High の指摘が0件になる（approve）まで、最大5ラウンド自動でループする
 - **hakumei-app と異なり、boatAI では収束後も自動マージしない**。マージの最終承認は引き続きユーザーが行う（プロジェクト CLAUDE.md の既存ルールを維持）
@@ -61,3 +61,16 @@ PR 作成後、`/code-review` を通してから `/codex-review` を実行する
 | `codex が未認証` | `codex login` 未実施 | `! codex login` を実行 |
 | `PR が未作成` | PR 作成前に実行した | 先に `gh pr create`（または `/create-pr`） |
 | `codex も npx も見つからない` | Node/npm 環境の問題 | `npm i -g @openai/codex` |
+
+## レビュー系コマンドの使い分け
+
+| コマンド | 対象 | 用途 |
+|---------|------|------|
+| `/code-review` | 自分の作業ブランチの diff | Claude によるセルフレビュー（既存フローの必須ステップ） |
+| `/codex-review [base]` | 自分の作業ブランチの diff | Codex による第三者セカンドオピニオン（大規模・高リスクな変更で追加実施） |
+| `/review-pr {PR番号}` | 他者が作成した任意の PR | ルール準拠チェックしつつ GitHub にレビューコメントを投稿 |
+
+## 既知の制約
+
+- `.claude/hooks/block-secrets.sh` はファイル名（basename）のみで判定する。`credentials/` ディレクトリ配下でもファイル名自体に `.env`/`.pem`/`credentials` を含まないファイルは保護対象外
+- 翻訳リソース等と同様、`AGENTS.md` の記載は手動同期が必要（`.claude/rules/` の自動読み込みとは異なり、Codex はこのファイルだけを読む）

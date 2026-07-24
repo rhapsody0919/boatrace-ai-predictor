@@ -3,12 +3,14 @@ description: SDD Step 1 — docs/design/{機能slug}/spec.md を対話形式で�
 argument-hint: "<機能slug（kebab-case）> [Linearチケット番号 例: BOA-140]"
 ---
 
-`docs/design/$1/spec.md` を対話形式で作成する。次の手順で進めること。
+引数 `$ARGUMENTS` はスペース区切りで「機能slug（kebab-case、必須）」「Linearチケット番号（任意）」を受け取る（例: `venue-comparison-widget BOA-140`）。以降このコマンド内で `{slug}` は1語目、`{ticket}` は2語目（あれば）を指す。
+
+`docs/design/{slug}/spec.md` を対話形式で作成する。次の手順で進めること。
 
 このコマンドは**大きい・曖昧さが残る新機能**向け。小さく仕様が明確な Linear チケットは `/implement` で直接実装した方が速い。迷ったら「仕様を書き下さないと設計判断を誤りそうか」で判断する。
 
 手順
-1. `$2` が渡されていれば該当 Linear チケット（`node scripts/linear-cli.js get $2` 等）の説明・受入基準を読む。関連する `docs/proposal/` や既存分析結果（`data/analysis/`）があれば読む。
+1. `{ticket}` が渡されていれば該当 Linear チケット（`node scripts/linear-cli.js get {ticket}` 等）の説明・受入基準を読む。関連する `docs/proposal/` や既存分析結果（`data/analysis/`）があれば読む。
 2. spec.md に必要な情報のうち、資料から読み取れない・曖昧なものを洗い出して質問する。下記5カテゴリを漏れなくカバーする。カテゴリごとに区切って質問してよい。
 3. 回答を反映する。答えられない項目は推測で埋めず「未確定（いつ・誰が決めるか）」として記録する。
 4. 全カテゴリが埋まる、または残りが未確定として確定したら spec.md を生成し、未確定事項の一覧を再掲する。
