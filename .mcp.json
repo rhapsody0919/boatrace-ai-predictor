@@ -18,7 +18,10 @@
         "--read-only",
         "--project-ref=phwgirodvaptywzyibmi"
       ],
-      "env": {}
+      "env": {
+        "npm_config_legacy_peer_deps": "false",
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
+      }
     },
     "vercel": {
       "type": "http",
