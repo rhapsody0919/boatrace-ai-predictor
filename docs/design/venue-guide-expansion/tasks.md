@@ -12,7 +12,7 @@ spec.md / screens.md / plan.md を踏まえたタスク分解。依存順に並�
 
 ## Phase A: 基盤整備
 
-- [ ] **A1. データスキーマ拡張 + 地域マスタ作成**（[BOA-135](https://linear.app/boat-ai/issue/BOA-135)）
+- [x] **A1. データスキーマ拡張 + 地域マスタ作成**（[BOA-135](https://linear.app/boat-ai/issue/BOA-135)）
   `venueGuidesEn.js` に `regionGroup`/`nearbyAttractions`/`schedule`/`image` フィールドを追加し、既存5会場分の値を埋める。`src/data/venueRegions.js` を新規作成（6地域のマスタ定義）。既存5会場の画像もこのタスクでCC素材を調査・追加する
 - [ ] **A2. VenueCard共通コンポーネント抽出**（[BOA-136](https://linear.app/boat-ai/issue/BOA-136)）
   `VenueGuideList` からカードのレンダリングを `VenueCard` として抽出。一覧ページの見た目に変更がないことをPlaywrightで確認（既存英語版・zh-TW版のリグレッションチェック）
