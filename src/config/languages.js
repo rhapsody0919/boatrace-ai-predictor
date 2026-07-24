@@ -8,6 +8,7 @@ export const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English", shortLabel: "EN", ogLocale: "en_US", hreflang: "en" },
   // 繁体字の hreflang は地域（TW）でなく文字体系（Hant）で指定する
   { code: "zh-TW", label: "繁體中文", shortLabel: "中文", ogLocale: "zh_TW", hreflang: "zh-Hant" },
+  { code: "ko", label: "한국어", shortLabel: "한국어", ogLocale: "ko_KR", hreflang: "ko" },
 ];
 
 // URL プレフィックスなしで配信するデフォルト言語
