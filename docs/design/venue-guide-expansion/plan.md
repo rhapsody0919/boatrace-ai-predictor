@@ -39,7 +39,7 @@ Supabaseテーブルの追加・変更は不要（会場ガイドのコンテン
 ```js
 export const VENUE_REGIONS = [
   { slug: "kanto", label: "Kanto (Tokyo Area)" },
-  { slug: "kansai", label: "Kansai (Osaka Area)" },
+  { slug: "kinki", label: "Kinki (Osaka Area)" }, // 実装確定名。近畿（大阪・京都・兵庫・滋賀等）を含むためkansaiより地理的に正確
   // 他地域は19会場の内訳確定後、実装時に確定する（未確定事項）
 ];
 ```
