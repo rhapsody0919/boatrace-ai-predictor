@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "summary", "findings"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["approve", "block"],
+      "description": "Critical/High の finding が 1 件でもあれば block、なければ approve。"
+    },
+    "summary": {
+      "type": "string",
+      "description": "レビュー全体の所見を 1〜3 文で常体・簡潔に。指摘が無い場合もなぜ問題ないと判断したかを残す。"
+    },
+    "findings": {
+      "type": "array",
+      "description": "指摘の一覧。problem が無ければ空配列。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "file", "line", "title", "detail", "suggestion"],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"],
+            "description": "critical=本番障害/データ破損/秘密漏洩/法令違反, high=機能不全/回帰/規約重大違反/後方互換破壊, medium=保守性/将来のバグ温床/検証欠落, low=スタイル/命名/軽微"
+          },
+          "file": {
+            "type": "string",
+            "description": "対象ファイルパス（リポジトリルート相対）。diff 全体に関わる場合は空文字。"
+          },
+          "line": {
+            "type": "integer",
+            "description": "対象行番号。特定行に紐づかない場合は 0。"
+          },
+          "title": {
+            "type": "string",
+            "description": "指摘の見出し（1行・常体）。"
+          },
+          "detail": {
+            "type": "string",
+            "description": "何が・なぜ問題かを機序で説明する。推測ではなく diff の根拠を示す。"
+          },
+          "suggestion": {
+            "type": "string",
+            "description": "どう直すかの具体的な提案。"
+          }
+        }
+      }
+    }
+  }
+}
