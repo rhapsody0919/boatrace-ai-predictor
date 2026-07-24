@@ -1,4 +1,10 @@
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -24,7 +30,10 @@ import ContentHub from "./pages/ContentHub";
 import EnglishGuide from "./pages/EnglishGuide";
 import ZhTwGuide from "./pages/ZhTwGuide";
 import KoGuide from "./pages/KoGuide";
-import EnglishVenueGuide, { EnglishVenueGuides } from "./pages/EnglishVenueGuide";
+import EnglishVenueGuide, {
+  EnglishVenueGuides,
+} from "./pages/EnglishVenueGuide";
+import ZhTwVenueGuide, { ZhTwVenueGuides } from "./pages/ZhTwVenueGuide";
 import AdminRules from "./pages/admin/AdminRules";
 import ResponsibleGambling from "./pages/ResponsibleGambling";
 import Poirot from "./pages/Poirot";
@@ -95,9 +104,16 @@ const GUIDE_BY_LANG = {
   ko: KoGuide,
 };
 
+// 言語別の会場別ビジターガイド（対応言語は config の LANGUAGE_ONLY_PATHS と合わせて管理する）
+const VENUE_GUIDE_BY_LANG = {
+  en: { List: EnglishVenueGuides, Detail: EnglishVenueGuide },
+  "zh-TW": { List: ZhTwVenueGuides, Detail: ZhTwVenueGuide },
+};
+
 // 言語別に共通のルート定義（言語プレフィックス配下でも相対パスで再利用）
 function LocalizedRoutes({ lng = "ja" }) {
   const Guide = GUIDE_BY_LANG[lng] ?? ContentHub;
+  const VenueGuide = VENUE_GUIDE_BY_LANG[lng];
   return (
     <Routes>
       {/* Main App - 予想ページ（トップ） */}
@@ -130,12 +146,13 @@ function LocalizedRoutes({ lng = "ja" }) {
       <Route path="guide" element={<Guide />} />
 
       {/* 言語専用: 会場別ビジターガイド（インバウンド観光クエリ向け。対応言語は config の LANGUAGE_ONLY_PATHS） */}
-      {getAvailableLanguages("/venues").some((l) => l.code === lng) && (
-        <>
-          <Route path="venues" element={<EnglishVenueGuides />} />
-          <Route path="venues/:slug" element={<EnglishVenueGuide />} />
-        </>
-      )}
+      {getAvailableLanguages("/venues").some((l) => l.code === lng) &&
+        VenueGuide && (
+          <>
+            <Route path="venues" element={<VenueGuide.List />} />
+            <Route path="venues/:slug" element={<VenueGuide.Detail />} />
+          </>
+        )}
       <Route path="responsible-gambling" element={<ResponsibleGambling />} />
 
       {/* Admin Pages (Hidden) */}
@@ -212,15 +229,15 @@ export default function AppRouter() {
       <HreflangTags />
       <InitialLanguageRedirect />
       <Routes>
-        {SUPPORTED_LANGUAGES.filter(({ code }) => code !== DEFAULT_LANGUAGE).map(
-          ({ code }) => (
-            <Route
-              key={code}
-              path={`/${code}/*`}
-              element={<LocalizedLayout lng={code} />}
-            />
-          ),
-        )}
+        {SUPPORTED_LANGUAGES.filter(
+          ({ code }) => code !== DEFAULT_LANGUAGE,
+        ).map(({ code }) => (
+          <Route
+            key={code}
+            path={`/${code}/*`}
+            element={<LocalizedLayout lng={code} />}
+          />
+        ))}
         <Route path="/*" element={<LocalizedLayout lng={DEFAULT_LANGUAGE} />} />
       </Routes>
     </>

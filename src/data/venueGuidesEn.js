@@ -118,7 +118,3 @@ export const VENUE_GUIDES_EN = [
     tip: "Swell at the first mark makes exhibition data unusually important — our prediction table shows exhibition times for every racer.",
   },
 ];
-
-export function getVenueGuideEn(slug) {
-  return VENUE_GUIDES_EN.find((v) => v.slug === slug) || null;
-}
