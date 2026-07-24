@@ -14,6 +14,6 @@ spec.mdの要件7で、Google Search Console連携により検索順位・CTRを
 - **Search Console Data APIのBigQueryエクスポート + Supabase経由での参照**: 小規模なレポート用途に対して過剰な構成（YAGNI違反）。既存の月次レポートスクリプト群と整合しない
 
 ## 影響
-- ユーザー側の作業として、Search ConsoleプロパティへのサービスアカウントEmail（GA4と同一）の閲覧者権限付与が必要（GA4導入時と同様の運用）
+- ユーザー側の作業として、Search Consoleの「設定 > ユーザーと権限」からサービスアカウントのEmail（GA4と同一）を「制限付き」ユーザーとして追加する必要がある（GA4のIAM閲覧者権限とは付与画面・権限モデルが異なる点に注意。GA4導入時と同様、対話ターミナルでの実施が必要）
 - `scripts/lib/googleServiceAuth.js`抽出に伴い、`i18n-demand-report.js`も軽微なリファクタリングが必要（動作は変えない）
 - 新しい`googleapis`のスコープ（`webmasters.readonly`）を追加する

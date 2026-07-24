@@ -72,6 +72,7 @@ VenueRegionHub（新規, /en/venues/region/:regionSlug）
 
 - `LANGUAGE_ONLY_PATHS` に `/venues/region` を追加（現状 `{"/venues": ["en", "zh-TW"]}` の並びに `"/venues/region": ["en"]` を追加）
 - `VENUE_GUIDE_BY_LANG` と同様のパターンで地域ハブページのコンポーネントマップを追加、またはシンプルに `en` 固定で直接ルート定義するかは実装時に既存コードの読みやすさを見て判断
+- **【設計レビューで発見した必須修正、ADR 0002参照】** `getAvailableLanguages`は現状「最初にマッチしたエントリ」を返すため、`/venues`が`/venues/region`より前に登録されていると、プレフィックス一致により`/venues/region/kanto`が誤って`/venues`エントリ（`en`, `zh-TW`）にマッチする。地域ハブはzh-TW非対応のため、この誤マッチはルーティングガード・hreflang双方で誤動作する。実装時（BOA-138）に`getAvailableLanguages`を「最も長く一致するエントリを優先する」ロジックに修正すること
 
 ## 既存サービス層・共通ライブラリとの連携
 
