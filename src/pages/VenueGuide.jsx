@@ -4,6 +4,10 @@
  */
 import { Link, useParams, Navigate } from "react-router-dom";
 import Header from "../components/Header";
+import {
+  VenueListStructuredData,
+  VenueDetailStructuredData,
+} from "../components/VenueStructuredData";
 import "./EnglishGuide.css";
 import "./EnglishVenueGuide.css";
 
@@ -18,6 +22,7 @@ export function VenueGuideList({ lang, guides, copy }) {
       <title>{copy.listTitle}</title>
       <meta name="description" content={copy.listDescription} />
       <link rel="canonical" href={`${SITE_URL}${base}/venues`} />
+      <VenueListStructuredData lang={lang} guides={guides} />
 
       <Header />
 
@@ -79,6 +84,7 @@ export function VenueGuideDetail({ lang, guides, copy }) {
       <title>{copy.detailTitle(venue)}</title>
       <meta name="description" content={copy.detailDescription(venue)} />
       <link rel="canonical" href={`${SITE_URL}${base}/venues/${venue.slug}`} />
+      <VenueDetailStructuredData lang={lang} venue={venue} />
 
       <Header />
 
