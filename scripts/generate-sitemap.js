@@ -8,6 +8,7 @@ import {
   localizePath,
 } from "../src/config/languages.js";
 import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
+import { VENUE_REGIONS } from "../src/data/venueRegions.js";
 import { VENUE_GUIDES_ZH_TW } from "../src/data/venueGuidesZhTw.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -125,11 +126,21 @@ const LOCALIZED_PAGES = [
 
 // 特定言語にのみ存在するページ（会場別ビジターガイド: 英語版 BOA-133 / 繁体字版 BOA-134）
 const LANGUAGE_ONLY_PAGES = {
-  en: ["", ...VENUE_GUIDES_EN.map((v) => v.slug)].map((slug) => ({
-    basePath: slug ? `/venues/${slug}` : "/venues",
-    changefreq: "monthly",
-    priority: "0.7",
-  })),
+  en: [
+    ...["", ...VENUE_GUIDES_EN.map((v) => v.slug)].map((slug) => ({
+      basePath: slug ? `/venues/${slug}` : "/venues",
+      changefreq: "monthly",
+      priority: "0.7",
+    })),
+    // 会場が1件も無い地域ハブは実際には/venuesへリダイレクトされるため、sitemapには含めない
+    ...VENUE_REGIONS.filter((r) =>
+      VENUE_GUIDES_EN.some((v) => v.regionGroup === r.slug),
+    ).map((r) => ({
+      basePath: `/venues/region/${r.slug}`,
+      changefreq: "monthly",
+      priority: "0.6",
+    })),
+  ],
   "zh-TW": ["", ...VENUE_GUIDES_ZH_TW.map((v) => v.slug)].map((slug) => ({
     basePath: slug ? `/venues/${slug}` : "/venues",
     changefreq: "monthly",

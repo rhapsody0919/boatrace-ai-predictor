@@ -18,7 +18,7 @@ spec.md / screens.md / plan.md を踏まえたタスク分解。依存順に並�
   `VenueGuideList` からカードのレンダリングを `VenueCard` として抽出。一覧ページの見た目に変更がないことをPlaywrightで確認（既存英語版・zh-TW版のリグレッションチェック）
 - [x] **A3. VenueStructuredData共通コンポーネント作成**（[BOA-137](https://linear.app/boat-ai/issue/BOA-137)）
   `TouristAttraction`（詳細）/`ItemList`（一覧・地域ハブ）+ `BreadcrumbList` のJSON-LDを出力。既存5会場の一覧・詳細ページに適用し、Googleリッチリザルトテストで有効性を確認
-- [ ] **A4. 地域別ハブページ実装**（[BOA-138](https://linear.app/boat-ai/issue/BOA-138)）
+- [x] **A4. 地域別ハブページ実装**（[BOA-138](https://linear.app/boat-ai/issue/BOA-138)）
   `VenueRegionHub` コンポーネント + ルーティング（`/en/venues/region/:regionSlug`）を追加。既存5会場のデータ（A1で付与した`regionGroup`）で動作確認。sitemapへの追加も本タスクに含める
 - [x] **A5. `scripts/lib/googleServiceAuth.js` 抽出**（[BOA-139](https://linear.app/boat-ai/issue/BOA-139)）
   `i18n-demand-report.js` の認証ロジックを共通化。既存の動作が変わらないことを確認（月次レポート実行で確認）

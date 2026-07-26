@@ -32,6 +32,7 @@ import ZhTwGuide from "./pages/ZhTwGuide";
 import KoGuide from "./pages/KoGuide";
 import EnglishVenueGuide, {
   EnglishVenueGuides,
+  EnglishVenueRegionHub,
 } from "./pages/EnglishVenueGuide";
 import ZhTwVenueGuide, { ZhTwVenueGuides } from "./pages/ZhTwVenueGuide";
 import AdminRules from "./pages/admin/AdminRules";
@@ -105,8 +106,13 @@ const GUIDE_BY_LANG = {
 };
 
 // 言語別の会場別ビジターガイド（対応言語は config の LANGUAGE_ONLY_PATHS と合わせて管理する）
+// RegionHub は地域ハブページ（現状 en のみ対応、LANGUAGE_ONLY_PATHS["/venues/region"]）
 const VENUE_GUIDE_BY_LANG = {
-  en: { List: EnglishVenueGuides, Detail: EnglishVenueGuide },
+  en: {
+    List: EnglishVenueGuides,
+    Detail: EnglishVenueGuide,
+    RegionHub: EnglishVenueRegionHub,
+  },
   "zh-TW": { List: ZhTwVenueGuides, Detail: ZhTwVenueGuide },
 };
 
@@ -152,6 +158,14 @@ function LocalizedRoutes({ lng = "ja" }) {
             <Route path="venues" element={<VenueGuide.List />} />
             <Route path="venues/:slug" element={<VenueGuide.Detail />} />
           </>
+        )}
+      {/* 言語専用: 地域別ビジターガイドハブ（対応言語は config の LANGUAGE_ONLY_PATHS） */}
+      {getAvailableLanguages("/venues/region").some((l) => l.code === lng) &&
+        VenueGuide?.RegionHub && (
+          <Route
+            path="venues/region/:regionSlug"
+            element={<VenueGuide.RegionHub />}
+          />
         )}
       <Route path="responsible-gambling" element={<ResponsibleGambling />} />
 
