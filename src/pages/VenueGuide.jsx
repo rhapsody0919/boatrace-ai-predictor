@@ -9,6 +9,27 @@ import "./EnglishVenueGuide.css";
 
 const SITE_URL = "https://www.boat-ai.jp";
 
+// 会場カード（一覧・地域ハブページ共通、BOA-136）
+export function VenueCard({ venue, to, nightRaceBadge }) {
+  return (
+    <Link to={to} className="evg-card">
+      <div className="evg-card-head">
+        <h2>
+          {venue.name} <span className="eg-kanji">{venue.kanji}</span>
+        </h2>
+        <span className="evg-region">{venue.region}</span>
+      </div>
+      <p className="evg-tagline">{venue.tagline}</p>
+      <div className="evg-badges">
+        {venue.facts.nightRace && (
+          <span className="evg-badge evg-badge--night">{nightRaceBadge}</span>
+        )}
+        <span className="evg-badge">{venue.facts.water}</span>
+      </div>
+    </Link>
+  );
+}
+
 // 会場一覧ページ（/{lang}/venues）
 export function VenueGuideList({ lang, guides, copy }) {
   const base = `/${lang}`;
@@ -29,27 +50,12 @@ export function VenueGuideList({ lang, guides, copy }) {
 
         <div className="evg-list">
           {guides.map((v) => (
-            <Link
+            <VenueCard
               key={v.slug}
+              venue={v}
               to={`${base}/venues/${v.slug}`}
-              className="evg-card"
-            >
-              <div className="evg-card-head">
-                <h2>
-                  {v.name} <span className="eg-kanji">{v.kanji}</span>
-                </h2>
-                <span className="evg-region">{v.region}</span>
-              </div>
-              <p className="evg-tagline">{v.tagline}</p>
-              <div className="evg-badges">
-                {v.facts.nightRace && (
-                  <span className="evg-badge evg-badge--night">
-                    {copy.nightRaceBadge}
-                  </span>
-                )}
-                <span className="evg-badge">{v.facts.water}</span>
-              </div>
-            </Link>
+              nightRaceBadge={copy.nightRaceBadge}
+            />
           ))}
         </div>
 
