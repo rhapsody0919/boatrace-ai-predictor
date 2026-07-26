@@ -19,6 +19,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { google } from "googleapis";
+import { getGoogleAuthClient } from "../lib/googleServiceAuth.js";
 import {
   SUPPORTED_LANGUAGES,
   DEFAULT_LANGUAGE,
@@ -37,11 +38,6 @@ const DAYS = parseInt(
 );
 const PROPERTY_ID = process.env.GA4_PROPERTY_ID;
 
-// サービスアカウント認証（update-google-sheets.js と同じ方式）
-const KEY_PATH =
-  process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH ||
-  "./credentials/google-service-account.json";
-
 if (!PROPERTY_ID) {
   console.error(`❌ GA4_PROPERTY_ID が設定されていません。
 
@@ -52,23 +48,10 @@ if (!PROPERTY_ID) {
   process.exit(1);
 }
 
-if (!fs.existsSync(KEY_PATH)) {
-  console.error(`❌ サービスアカウントのキーファイルが見つかりません: ${KEY_PATH}
-
-Google Sheets 連携と同じ credentials/google-service-account.json を配置するか、
-GOOGLE_SERVICE_ACCOUNT_KEY_PATH でパスを指定してください。
-
-詳細: docs/operation/i18n-demand-report.md`);
-  process.exit(1);
-}
-
-const credentials = JSON.parse(fs.readFileSync(KEY_PATH, "utf-8"));
-
-const auth = new google.auth.JWT({
-  email: credentials.client_email,
-  key: credentials.private_key,
-  scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
-});
+// サービスアカウント認証（update-google-sheets.js と同じ方式、BOA-139で共通化）
+const auth = getGoogleAuthClient([
+  "https://www.googleapis.com/auth/analytics.readonly",
+]);
 
 const analyticsdata = google.analyticsdata({ version: "v1beta", auth });
 const property = `properties/${PROPERTY_ID}`;
@@ -185,7 +168,9 @@ async function main() {
   const [byLang, switches, byCountryList, bySourceList] = await Promise.all([
     reportByLanguagePath(),
     reportLanguageSwitches(),
-    Promise.all(PREFIXED_LANGUAGES.map(({ code }) => reportLangByCountry(code))),
+    Promise.all(
+      PREFIXED_LANGUAGES.map(({ code }) => reportLangByCountry(code)),
+    ),
     Promise.all(PREFIXED_LANGUAGES.map(({ code }) => reportLangBySource(code))),
   ]);
   const byCountry = Object.fromEntries(
@@ -201,7 +186,8 @@ async function main() {
 
   console.log(`\n## 言語別トラフィック`);
   for (const { code, label } of SUPPORTED_LANGUAGES) {
-    const share = code === DEFAULT_LANGUAGE ? "" : `（全体の ${shareOf(code)}%）`;
+    const share =
+      code === DEFAULT_LANGUAGE ? "" : `（全体の ${shareOf(code)}%）`;
     console.log(
       `  ${label.padEnd(8)}: ${byLang[code].pv.toLocaleString()} PV${share}`,
     );
@@ -247,7 +233,10 @@ async function main() {
         days: DAYS,
         byLanguage: byLang,
         shareOfPv: Object.fromEntries(
-          PREFIXED_LANGUAGES.map(({ code }) => [code, parseFloat(shareOf(code))]),
+          PREFIXED_LANGUAGES.map(({ code }) => [
+            code,
+            parseFloat(shareOf(code)),
+          ]),
         ),
         languageSwitches: switches,
         byCountry,
