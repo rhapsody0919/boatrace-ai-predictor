@@ -258,7 +258,7 @@ main().catch((err) => {
     console.error(`❌ GA4 へのアクセス権限がありません。
 
 GA4 管理 > プロパティのアクセス管理 で以下を「閲覧者」に追加してください:
-  ${credentials.client_email}`);
+  ${auth.email}`);
   } else {
     console.error("❌ レポート生成エラー:", err.message);
   }
