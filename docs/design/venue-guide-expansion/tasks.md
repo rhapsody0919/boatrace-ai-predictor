@@ -22,7 +22,7 @@ spec.md / screens.md / plan.md を踏まえたタスク分解。依存順に並�
   `VenueRegionHub` コンポーネント + ルーティング（`/en/venues/region/:regionSlug`）を追加。既存5会場のデータ（A1で付与した`regionGroup`）で動作確認。sitemapへの追加も本タスクに含める
 - [x] **A5. `scripts/lib/googleServiceAuth.js` 抽出**（[BOA-139](https://linear.app/boat-ai/issue/BOA-139)）
   `i18n-demand-report.js` の認証ロジックを共通化。既存の動作が変わらないことを確認（月次レポート実行で確認）
-- [ ] **A6. `search-console-report.js` 新規実装**（[BOA-140](https://linear.app/boat-ai/issue/BOA-140)）
+- [x] **A6. `search-console-report.js` 新規実装**（[BOA-140](https://linear.app/boat-ai/issue/BOA-140)）
   A5の共通認証を使い、Search Console APIから検索順位・CTRを取得するレポートスクリプトを実装。`docs/operation/`にセットアップ手順（サービスアカウント権限付与手順）を追加
 
 ## Phase B: 既存5会場のフル化
