@@ -16,7 +16,7 @@ spec.md / screens.md / plan.md を踏まえたタスク分解。依存順に並�
   `venueGuidesEn.js` に `regionGroup`/`nearbyAttractions`/`schedule`/`image` フィールドを追加し、既存5会場分の値を埋める。`src/data/venueRegions.js` を新規作成（6地域のマスタ定義）。既存5会場の画像もこのタスクでCC素材を調査・追加する
 - [x] **A2. VenueCard共通コンポーネント抽出**（[BOA-136](https://linear.app/boat-ai/issue/BOA-136)）
   `VenueGuideList` からカードのレンダリングを `VenueCard` として抽出。一覧ページの見た目に変更がないことをPlaywrightで確認（既存英語版・zh-TW版のリグレッションチェック）
-- [ ] **A3. VenueStructuredData共通コンポーネント作成**（[BOA-137](https://linear.app/boat-ai/issue/BOA-137)）
+- [x] **A3. VenueStructuredData共通コンポーネント作成**（[BOA-137](https://linear.app/boat-ai/issue/BOA-137)）
   `TouristAttraction`（詳細）/`ItemList`（一覧・地域ハブ）+ `BreadcrumbList` のJSON-LDを出力。既存5会場の一覧・詳細ページに適用し、Googleリッチリザルトテストで有効性を確認
 - [ ] **A4. 地域別ハブページ実装**（[BOA-138](https://linear.app/boat-ai/issue/BOA-138)）
   `VenueRegionHub` コンポーネント + ルーティング（`/en/venues/region/:regionSlug`）を追加。既存5会場のデータ（A1で付与した`regionGroup`）で動作確認。sitemapへの追加も本タスクに含める
