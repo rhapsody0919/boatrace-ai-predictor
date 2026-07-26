@@ -27,7 +27,7 @@ spec.md / screens.md / plan.md を踏まえたタスク分解。依存順に並�
 
 ## Phase B: 既存5会場のフル化
 
-- [ ] **B1. 既存5会場に新規セクション追加**（[BOA-141](https://linear.app/boat-ai/issue/BOA-141)）
+- [x] **B1. 既存5会場に新規セクション追加**（[BOA-141](https://linear.app/boat-ai/issue/BOA-141)）
   平和島・住之江・江戸川・多摩川・福岡の5会場に、周辺観光・グルメ（`nearbyAttractions`）と開催カレンダー詳細（`schedule`）セクションをWeb調査の上追加。VenueGuideDetailに両セクションの表示部分を実装
 
 ## Phase C: 新規19会場のコンテンツ作成（地域別バッチ）

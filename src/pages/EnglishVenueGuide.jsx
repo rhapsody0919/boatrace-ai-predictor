@@ -48,6 +48,8 @@ const copy = {
   },
   nightRaceYes: "Yes 🌙",
   nightRaceNo: "No (daytime)",
+  scheduleHeading: "📅 When it races",
+  nearbyAttractionsHeading: "🗺️ Nearby attractions",
   bettingTip: "💡 Betting tip",
   beforeYouBet: "⚖️ Before you bet",
   disclaimer: (

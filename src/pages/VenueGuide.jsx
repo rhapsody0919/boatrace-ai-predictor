@@ -145,6 +145,29 @@ export function VenueGuideDetail({ lang, guides, copy }) {
           </div>
         </section>
 
+        {venue.schedule?.typicalRaceDays && (
+          <section className="eg-section">
+            <h2>{copy.scheduleHeading}</h2>
+            <p>{venue.schedule.typicalRaceDays}</p>
+            {venue.schedule.seasonalNotes && (
+              <p className="eg-note">{venue.schedule.seasonalNotes}</p>
+            )}
+          </section>
+        )}
+
+        {venue.nearbyAttractions?.length > 0 && (
+          <section className="eg-section">
+            <h2>{copy.nearbyAttractionsHeading}</h2>
+            <ul className="eg-list">
+              {venue.nearbyAttractions.map((a, i) => (
+                <li key={i}>
+                  <strong>{a.name}</strong> — {a.description}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section className="eg-section eg-highlight">
           <h2>{copy.bettingTip}</h2>
           <p>{venue.tip}</p>

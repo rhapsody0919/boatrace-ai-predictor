@@ -28,8 +28,29 @@ export const VENUE_GUIDES_EN = [
       nightRace: false,
     },
     tip: "Check the Lane-1 upset index on our prediction page before betting here — Heiwajima is exactly the kind of venue where it pays off.",
-    nearbyAttractions: [],
-    schedule: {},
+    nearbyAttractions: [
+      {
+        name: "Heiwajima Onsen (natural hot spring)",
+        description:
+          "In the same BIG FUN Heiwajima complex — natural hot spring baths and a rock-bed sauna, open late.",
+      },
+      {
+        name: "Tondemi Heiwajima (indoor athletic park)",
+        description:
+          "Trampolines, a climbing wall and rope courses in the same complex — good for families.",
+      },
+      {
+        name: "Haneda Airport",
+        description:
+          "About 20-30 minutes by Keikyu Line — an easy stop before or after a flight.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
     image: {
       src: "/images/venues/heiwajima.jpg",
       alt: "Boat Race Heiwajima stadium",
@@ -61,8 +82,24 @@ export const VENUE_GUIDES_EN = [
       nightRace: true,
     },
     tip: "Night races mean you can combine Osaka sightseeing by day with Kyotei by night — check our predictions for the evening card.",
-    nearbyAttractions: [],
-    schedule: {},
+    nearbyAttractions: [
+      {
+        name: "Namba & Shinsaibashi",
+        description:
+          "Osaka's main shopping and dining district, about 15 minutes away by metro.",
+      },
+      {
+        name: "Sumiyoshi Taisha",
+        description:
+          "One of Japan's oldest and most important Shinto shrines, about 20 minutes away.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days, plus periodic multi-day SG/G1 tournaments.",
+      seasonalNotes:
+        "Hosts the SG Grand Prix, the sport's season-ending championship, most years in December — one of the biggest events in Kyotei.",
+    },
     image: {
       src: "/images/venues/suminoe.jpg",
       alt: "Boat Race Suminoe grandstand",
@@ -92,8 +129,24 @@ export const VENUE_GUIDES_EN = [
       nightRace: false,
     },
     tip: "Weather matters more here than anywhere else. Our AI factors venue volatility into every Edogawa prediction.",
-    nearbyAttractions: [],
-    schedule: {},
+    nearbyAttractions: [
+      {
+        name: "Kasai Rinkai Park",
+        description:
+          "Seaside park with a large aquarium, a giant Ferris wheel and BBQ areas, one JR Keiyo Line stop from the Tokyo Disney Resort area.",
+      },
+      {
+        name: "Kitaro Walkway (on-site)",
+        description:
+          "The venue's own embankment stands are lined with yokai artwork by Shigeru Mizuki, creator of GeGeGe no Kitaro.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
     image: {
       src: "/images/venues/edogawa.jpg",
       alt: "Boat Race Edogawa stadium",
@@ -124,8 +177,24 @@ export const VENUE_GUIDES_EN = [
       nightRace: false,
     },
     tip: "Stable conditions mean racer and motor stats carry extra weight — exactly the data our AI analyzes for every race.",
-    nearbyAttractions: [],
-    schedule: {},
+    nearbyAttractions: [
+      {
+        name: "Tokyo Racecourse (horse racing)",
+        description:
+          "JRA's major Fuchu racecourse is about a 14-minute walk away — a rare chance to see two very different kinds of Japanese racing in one trip.",
+      },
+      {
+        name: "Fuchu city center",
+        description:
+          "Restaurants and shops around Fuchu-Honmachi and Bubaigawara stations, connected by free race-day shuttle buses.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
     image: {
       src: "/images/venues/tamagawa.jpg",
       alt: "Boat Race Tamagawa stadium",
@@ -156,8 +225,24 @@ export const VENUE_GUIDES_EN = [
       nightRace: false,
     },
     tip: "Swell at the first mark makes exhibition data unusually important — our prediction table shows exhibition times for every racer.",
-    nearbyAttractions: [],
-    schedule: {},
+    nearbyAttractions: [
+      {
+        name: "Ohori Park",
+        description:
+          "A large scenic park with a Japanese garden, a boating pond and lakeside cafes, 4 minutes from Tenjin by subway.",
+      },
+      {
+        name: "Tenjin",
+        description:
+          "Fukuoka's main shopping, dining and nightlife district, about 15 minutes on foot.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
     image: {
       src: "/images/venues/fukuoka.jpg",
       alt: "Main entrance of Boat Race Fukuoka",
