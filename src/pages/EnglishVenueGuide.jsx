@@ -5,6 +5,7 @@
  */
 import { Link } from "react-router-dom";
 import { VenueGuideList, VenueGuideDetail } from "./VenueGuide";
+import { VenueRegionHub } from "./VenueRegionHub";
 import { VENUE_GUIDES_EN } from "../data/venueGuidesEn";
 
 const copy = {
@@ -59,6 +60,11 @@ const copy = {
   ),
   seeTodaysPredictions: (venue) =>
     `See today's AI predictions${venue.facts.nightRace ? " — including night races" : ""}`,
+  regionTitle: (region) =>
+    `Boat Race Venues in ${region.label}: Visitor Guides | BoatAI`,
+  regionDescription: (region) =>
+    `English visitor guides to Kyotei (boat race) venues in ${region.label}: how to get there, entrance fees, and betting tips.`,
+  regionHeading: (region) => `🏟️ Boat Race Venues in ${region.label}`,
 };
 
 export function EnglishVenueGuides() {
@@ -67,4 +73,8 @@ export function EnglishVenueGuides() {
 
 export default function EnglishVenueGuide() {
   return <VenueGuideDetail lang="en" guides={VENUE_GUIDES_EN} copy={copy} />;
+}
+
+export function EnglishVenueRegionHub() {
+  return <VenueRegionHub lang="en" guides={VENUE_GUIDES_EN} copy={copy} />;
 }

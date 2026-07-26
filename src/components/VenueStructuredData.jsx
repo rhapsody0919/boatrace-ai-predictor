@@ -15,8 +15,9 @@ function toTouristAttraction(venue, url) {
   };
 }
 
-// 一覧ページ用: ItemList + パンくずリスト（Home > Venues）
-export function VenueListStructuredData({ lang, guides }) {
+// 一覧・地域ハブページ用: ItemList + パンくずリスト（Home > Venues[ > 地域名]）
+// extraCrumb を渡すと地域ハブページ用に3階層目のパンくずを追加する（BOA-138）
+export function VenueListStructuredData({ lang, guides, extraCrumb }) {
   const base = `/${lang}`;
   const itemList = {
     "@context": "https://schema.org",
@@ -27,23 +28,32 @@ export function VenueListStructuredData({ lang, guides }) {
       item: toTouristAttraction(v, `${SITE_URL}${base}/venues/${v.slug}`),
     })),
   };
+  const crumbs = [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: `${SITE_URL}${base}/`,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Venues",
+      item: `${SITE_URL}${base}/venues`,
+    },
+  ];
+  if (extraCrumb) {
+    crumbs.push({
+      "@type": "ListItem",
+      position: 3,
+      name: extraCrumb.name,
+      item: `${SITE_URL}${extraCrumb.path}`,
+    });
+  }
   const breadcrumb = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: `${SITE_URL}${base}/`,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Venues",
-        item: `${SITE_URL}${base}/venues`,
-      },
-    ],
+    itemListElement: crumbs,
   };
 
   return (
