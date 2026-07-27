@@ -11,11 +11,13 @@
     "faq": "❓ 常見問題",
     "about": "ℹ️ 關於本站",
     "profile": "👤 營運者介紹",
+    "venues": "🏟️ 賽場指南",
     "menuLabel": "更多選單",
     "logoLabel": "回到 BoatAI 首頁"
   },
   "language": {
-    "switchLabel": "切換語言"
+    "switchLabel": "切換語言",
+    "notAvailable": "此頁面尚未提供{{lang}}版本"
   },
   "meta": {
     "title": "BoatAI - 日本賽艇（Kyotei）AI 預測 | 免費",

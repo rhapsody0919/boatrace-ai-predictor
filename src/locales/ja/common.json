@@ -11,11 +11,13 @@
     "faq": "❓ よくある質問",
     "about": "ℹ️ サービスについて",
     "profile": "👤 運営者プロフィール",
+    "venues": "🏟️ 会場ガイド",
     "menuLabel": "その他のメニュー",
     "logoLabel": "BoatAI トップページへ"
   },
   "language": {
-    "switchLabel": "言語切替"
+    "switchLabel": "言語切替",
+    "notAvailable": "このページは{{lang}}未対応です"
   },
   "meta": {
     "title": "BoatAI - AIボートレース予想 | 完全無料・実績公開中",
