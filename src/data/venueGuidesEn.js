@@ -675,4 +675,102 @@ export const VENUE_GUIDES_EN = [
         "https://commons.wikimedia.org/wiki/File:Amagasaki-kyotei-01.jpg",
     },
   },
+  {
+    slug: "naruto",
+    code: 14,
+    name: "Naruto",
+    kanji: "鳴門",
+    region: "Tokushima",
+    regionGroup: "shikoku",
+    tagline: "Wide-open, upset-friendly water next to the famous whirlpools",
+    intro: [
+      "Boat Race Naruto sits on the Konaruto Strait in Tokushima, close enough to the stands that races feel unusually intense to watch live. A breakwater keeps the seawater course calm despite its coastal setting, but lane 1 is weak here — any lane can win, upsets are common, and payouts run high, making Naruto a favorite for bettors who chase long shots.",
+      "The venue operates up to 360 days a year with tickets on sale from early morning to about 8:30pm, including night racing, so there's almost always a card running.",
+    ],
+    access: [
+      'JR "Naruto" station → about 10 minutes on foot',
+      'Bus from JR Naruto station or Tokushima Airport → get off at "Kosoku Naruto" stop',
+    ],
+    facts: {
+      water:
+        "Seawater, sheltered by a breakwater — calm despite the coastal setting",
+      character:
+        "Lane 1 is weak — any lane can win; upsets and high payouts are common",
+      nightRace: true,
+    },
+    tip: "With lane 1 this weak, our AI weighs every lane's chances more evenly here than at almost any other venue.",
+    nearbyAttractions: [
+      {
+        name: "Naruto Whirlpools (Uzushio)",
+        description:
+          "Some of the world's largest tidal whirlpools, best seen up close on a sightseeing boat from Uzushio Kisen.",
+      },
+      {
+        name: "Otsuka Museum of Art",
+        description:
+          "A museum of full-size ceramic reproductions of world masterpieces, a short trip from the venue.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "One of the most active venues in Japan, racing up to 360 days a year with both day and night meets.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/naruto.jpg",
+      alt: "Boat Race Naruto stadium",
+      credit: "Photo by Na00ru0010, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Naruto-kyotei-01.jpg",
+    },
+  },
+  {
+    slug: "marugame",
+    code: 15,
+    name: "Marugame",
+    kanji: "丸亀",
+    region: "Kagawa",
+    regionGroup: "shikoku",
+    tagline: "A tide-driven Seto Inland Sea course, in Japan's udon capital",
+    intro: [
+      'Boat Race Marugame faces the Seto Inland Sea in Kagawa prefecture, on a soft, buoyant seawater course with one of the strongest tidal swings of any Kyotei venue — up to about 2 meters between high and low tide. A headwind is common, and passing moves like "sashi" and "makuri-sashi" succeed more often here than pure escapes.',
+      'Marugame has raced under lights since its "Blue Nighter" night program launched in 2009, and is now a year-round night-racing venue.',
+    ],
+    access: [
+      'JR Yosan Line "Marugame" station → free shuttle bus, about 10 minutes',
+      "By car: about 15-20 minutes from Sakaide or Zentsuji interchanges on the Takamatsu or Seto-Chuo Expressways",
+    ],
+    facts: {
+      water: "Seawater, Seto Inland Sea — strong tidal swing (up to ~2m)",
+      character:
+        "Passing moves (sashi, makuri-sashi) succeed more than pure escapes",
+      nightRace: true,
+    },
+    tip: "The tide here genuinely changes the water through the card — our AI factors tidal timing into every Marugame prediction.",
+    nearbyAttractions: [
+      {
+        name: "Marugame Castle",
+        description:
+          "A 400-year-old castle with one of Japan's 12 surviving original wooden keeps, famous for its dramatic curved stone walls.",
+      },
+      {
+        name: "Marugame udon",
+        description:
+          "The city is one of Japan's udon capitals — a short walk from the venue turns up several well-known noodle shops.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "A year-round night-racing venue since 2009. Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/marugame.jpg",
+      alt: "Boat Race Marugame stadium",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Marugame-kyotei-02.jpg",
+    },
+  },
 ];
