@@ -11,6 +11,12 @@ node_modules
 dist
 dist-ssr
 
+# Playwright E2E test artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # Claude Code local settings (personal overrides)
 .claude/settings.local.json
 
