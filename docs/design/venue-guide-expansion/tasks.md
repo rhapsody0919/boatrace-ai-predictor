@@ -36,7 +36,7 @@ spec.md / screens.md / plan.md を踏まえたタスク分解。依存順に並�
   桐生・戸田をWeb調査の上、フルスキーマ（既存5会場と同水準: アクセス・特徴・投注tips・周辺観光・カレンダー・画像）で追加
 - [x] **C2. Chubu/Tokai地域の5会場を追加**（[BOA-143](https://linear.app/boat-ai/issue/BOA-143)）
   浜名湖・蒲郡・常滑・津・三国を同水準で追加
-- [ ] **C3. Kinki地域の残り2会場を追加**（[BOA-144](https://linear.app/boat-ai/issue/BOA-144)）
+- [x] **C3. Kinki地域の残り2会場を追加**（[BOA-144](https://linear.app/boat-ai/issue/BOA-144)）
   びわこ・尼崎を同水準で追加
 - [ ] **C4. Shikoku地域の2会場を追加**（[BOA-145](https://linear.app/boat-ai/issue/BOA-145)）
   鳴門・丸亀を同水準で追加
