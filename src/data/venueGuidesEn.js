@@ -773,4 +773,199 @@ export const VENUE_GUIDES_EN = [
         "https://commons.wikimedia.org/wiki/File:Marugame-kyotei-02.jpg",
     },
   },
+  {
+    slug: "kojima",
+    code: 16,
+    name: "Kojima",
+    kanji: "児島",
+    region: "Okayama",
+    regionGroup: "chugoku",
+    tagline: "Calm water in the shadow of the Great Seto Bridge",
+    intro: [
+      "Boat Race Kojima sits on the Seto Inland Sea in Kurashiki, right by the Great Seto Bridge, with views of the bridge and the sea's scattered islands from the stands. Tides here swing significantly, but wind is usually light, so races tend to stay calm and readable rather than chaotic.",
+      "Kojima is also Japan's denim capital: the venue is a short trip from Kojima Jeans Street, where dozens of shops sell jeans made in local mills — an easy pairing with a day at the races.",
+    ],
+    access: [
+      'JR Seto-Ohashi Line "Kojima" station → free shuttle bus, 3-5 minutes',
+      "By car: about 5 minutes from Kojima IC on the Seto-Chuo Expressway",
+    ],
+    facts: {
+      water:
+        "Seawater, Seto Inland Sea — strong tidal swing, usually light wind",
+      character: "Tide-driven but generally calm and readable",
+      nightRace: false,
+    },
+    tip: "With wind rarely a factor, tide timing does most of the work here — our AI tracks it closely for every Kojima prediction.",
+    nearbyAttractions: [
+      {
+        name: "Kojima Jeans Street",
+        description:
+          "A shopping street lined with shops selling locally made denim — Kojima is considered Japan's jeans-making capital.",
+      },
+      {
+        name: "Great Seto Bridge sightseeing cruise",
+        description:
+          "A roughly 45-minute cruise under the bridge, departing from Kojima's sightseeing port.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/kojima.jpg",
+      alt: "Boat Race Kojima stadium",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Kojima-kyotei-01.jpg",
+    },
+  },
+  {
+    slug: "miyajima",
+    code: 17,
+    name: "Miyajima",
+    kanji: "宮島",
+    region: "Hiroshima",
+    regionGroup: "chugoku",
+    tagline:
+      "One of the most technical waters in Japan, facing Miyajima Island",
+    intro: [
+      "Boat Race Miyajima sits right next to the ferry pier for Miyajima Island, and on a clear day the stands look out over passing ferries and the torii gate of UNESCO World Heritage-listed Itsukushima Shrine — one of the more striking views in the sport. The Seto Inland Sea water here is considered one of the most technical in Japan.",
+      "A tidal swing of over 4 meters transforms the course through the day: at low tide the breakwater blocks the wind for easy racing, while at high tide the water gets choppy and races bunch up. Wind direction often flips between morning and afternoon, which can throw off starts.",
+    ],
+    access: [
+      'JR "Miyajimaguchi" station → about 3 minutes on foot',
+      "Hiroden Miyajima Line trams stop right at the venue on race days",
+    ],
+    facts: {
+      water:
+        "Seawater, Seto Inland Sea — over 4m tidal swing, one of Japan's most technical courses",
+      character:
+        "Calm at low tide, choppy and bunched at high tide; starts can be uneven",
+      nightRace: false,
+    },
+    tip: "Tide state matters more here than almost anywhere else — our AI weighs it heavily in every Miyajima prediction.",
+    nearbyAttractions: [
+      {
+        name: "Itsukushima Shrine",
+        description:
+          "A UNESCO World Heritage shrine famous for its floating torii gate, a short ferry ride from the venue.",
+      },
+      {
+        name: "Miyajima Island",
+        description:
+          "Ferries to the island depart minutes from the venue, making it an easy add-on before or after racing.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/miyajima.jpg",
+      alt: "Boat Race Miyajima stadium",
+      credit: "Photo by Ujinaport, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Miyajima_Kyotei_01.jpg",
+    },
+  },
+  {
+    slug: "tokuyama",
+    code: 18,
+    name: "Tokuyama",
+    kanji: "徳山",
+    region: "Yamaguchi",
+    regionGroup: "chugoku",
+    tagline: "A tide-driven course on Kasado Bay, framed by mountain views",
+    intro: [
+      "Boat Race Tokuyama faces Kasado Bay in Yamaguchi prefecture, with Mt. Takaayama rising behind the stands and the Seto Inland Sea stretching out in front. It's also a year-round morning-racing venue — the first race sets off around 8:32am, and the card wraps up by early afternoon.",
+      "A diagonal tailwind is common, and the tide swings more than 3 meters, splitting racing into two distinct styles through the day: at low tide it becomes a power race, rewarding strong motors; at high tide, handling and finesse matter more as the water gets trickier to read.",
+    ],
+    access: [
+      'JR "Kushigahama" station is the nearest train station',
+      'Free taxi service from JR Tokuyama station\'s "Minato-guchi" exit, about 20 minutes, from 7:45am',
+    ],
+    facts: {
+      water: "Seawater, Kasado Bay — tidal swing over 3m",
+      character: "Power race at low tide, handling race at high tide",
+      nightRace: false,
+    },
+    tip: "Because low and high tide play so differently here, our AI checks tide timing alongside motor and handling data for every Tokuyama prediction.",
+    nearbyAttractions: [
+      {
+        name: "Tokuyama Zoo",
+        description:
+          "A small city zoo a short trip from the venue, popular with families.",
+      },
+      {
+        name: "Seto Inland Sea views",
+        description:
+          "The venue itself looks out over Kasado Bay with Mt. Takaayama behind — worth a moment even outside race hours.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "A year-round morning-racing venue. Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/tokuyama.jpg",
+      alt: "Boat Race Tokuyama stadium",
+      credit: "Photo by dora1977, public domain, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Tokuyamakyotei.JPG",
+    },
+  },
+  {
+    slug: "shimonoseki",
+    code: 19,
+    name: "Shimonoseki",
+    kanji: "下関",
+    region: "Yamaguchi",
+    regionGroup: "chugoku",
+    tagline: "A calm, LED-lit seawater pool at the tip of Honshu",
+    intro: [
+      "Boat Race Shimonoseki sits at the western tip of Honshu, with a seawater course built pool-style behind a raised breakwater — high enough that waves from the Suo Sea rarely get in, even at high tide. That keeps the water calm most of the time and reduces the impact of racers' weight differences, though a tide over 3 meters can still bring water in near the first mark.",
+      'The course is lit by LED lighting that racers rate highly, and Shimonoseki has raced under lights year-round since 2017 — plus late-night "Midnight" boat racing since 2021, for some of the latest post times in the sport.',
+    ],
+    access: [
+      '"Chofu" station is the nearest train station → about 10 minutes on foot to the main gate',
+      "About 10 minutes from Shin-Shimonoseki station by taxi or bus",
+    ],
+    facts: {
+      water:
+        "Seawater pool (breakwater-sheltered) — generally calm, tide affects mark 1 when over 3m",
+      character: "Calm and consistent most of the time",
+      nightRace: true,
+    },
+    tip: "Stable, well-lit conditions make this one of the more consistent venues to read — our AI still checks tide state near the first mark for every Shimonoseki prediction.",
+    nearbyAttractions: [
+      {
+        name: "Karato Market",
+        description:
+          "A famous fugu (pufferfish) and seafood market, with weekend food stalls selling sushi and seafood bowls.",
+      },
+      {
+        name: "Shimonoseki Kaikyokan Aquarium",
+        description:
+          "An aquarium overlooking the Kanmon Strait with the world's largest collection of pufferfish species.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        'A year-round night-racing venue since 2017, with late-night "Midnight" boat racing since 2021.',
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/shimonoseki.jpg",
+      alt: "Boat Race Shimonoseki stadium",
+      credit: "Photo by Muyo, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Shimonoseki_Kyotei.jpg",
+    },
+  },
 ];
