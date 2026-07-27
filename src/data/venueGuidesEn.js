@@ -576,4 +576,103 @@ export const VENUE_GUIDES_EN = [
     },
     image: null,
   },
+  {
+    slug: "biwako",
+    code: 11,
+    name: "Biwako",
+    kanji: "びわこ",
+    region: "Shiga",
+    regionGroup: "kinki",
+    tagline: "Japan's most scenic venue, on the shore of Lake Biwa",
+    intro: [
+      'Boat Race Biwako sits on the shore of Lake Biwa, Japan\'s largest freshwater lake, with views across the water to Mt. Mikami ("Omi-Fuji") and Mt. Ibuki that make it one of the most scenic Kyotei venues in the country. A sightseeing paddle steamer, the Michigan, is often visible cruising the lake during racing.',
+      "Spring and summer bring offshore winds that can roughen the water, so conditions vary more here than at fully sheltered venues — a factor worth watching alongside the view.",
+    ],
+    access: [
+      'Keihan "Bessho" station → about 9 minutes on foot',
+      "By car: about 15 minutes from Otsu or Kyoto-Higashi interchanges on the Meishin Expressway",
+    ],
+    facts: {
+      water:
+        "Freshwater (Lake Biwa) — can roughen with offshore wind in spring/summer",
+      character:
+        "One of the most scenic venues in Japan; conditions vary with wind",
+      nightRace: false,
+    },
+    tip: "Wind off the lake can shift conditions mid-card here — our AI factors venue volatility into every Biwako prediction.",
+    nearbyAttractions: [
+      {
+        name: "Lake Biwa waterfront",
+        description:
+          "Sweeping views of Mt. Mikami and Mt. Ibuki across the water, with sightseeing boats cruising the lake.",
+      },
+      {
+        name: "Otsu city sights",
+        description:
+          "Shiga prefecture's capital, with historic temples and lakeside parks a short trip from the venue.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/biwako.jpg",
+      alt: "Boat Race Biwako stadium on Lake Biwa",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Biwako-kyotei-01.jpg",
+    },
+  },
+  {
+    slug: "amagasaki",
+    code: 13,
+    name: "Amagasaki",
+    kanji: "尼崎",
+    region: "Hyogo",
+    regionGroup: "kinki",
+    tagline:
+      "Step off the train and you're there — one of the calmest waters in Japan",
+    intro: [
+      'Boat Race Amagasaki is about as convenient as Kyotei gets: the venue sits right next to Hanshin Railway\'s "Amagasaki Center Pool-mae" station, so you barely need an umbrella even on a rainy day. The water here is known as one of the calmest and most technical in the sport, freshwater and firm underneath the hull.',
+      "A headwind blows across the course most of the year, though it can swing to a tailwind when a low-pressure system or rain moves in. In recent years lane 1 has been winning more than 60% of the time here, making Amagasaki one of the most inside-favored venues in Japan.",
+    ],
+    access: [
+      'Hanshin Railway "Amagasaki Center Pool-mae" station → right next to the venue',
+      'Direct limited express or express trains from Osaka-Umeda, or transfer to local service at "Nishinomiya" from Kobe-Sannomiya',
+    ],
+    facts: {
+      water: "Freshwater, firm and calm — technique-friendly",
+      character:
+        "One of the most inside-favored venues in Japan (lane 1 wins 60%+)",
+      nightRace: false,
+    },
+    tip: "With lane 1 winning this often, our AI weighs start-course strength especially heavily in every Amagasaki prediction.",
+    nearbyAttractions: [
+      {
+        name: "Amagasaki Castle",
+        description:
+          "A rebuilt Edo-period castle (reopened 2019) on the site of the original, a short trip from the venue.",
+      },
+      {
+        name: "Jicho-machi Temple District",
+        description:
+          "A historic quarter of eleven temples preserving the look of the old castle town.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Amagasaki races about 180 days a year, more than most venues. Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/amagasaki.jpg",
+      alt: "Boat Race Amagasaki stadium",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Amagasaki-kyotei-01.jpg",
+    },
+  },
 ];
