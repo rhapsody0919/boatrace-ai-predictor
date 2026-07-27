@@ -775,6 +775,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.boat-ai.jp/races/2026-07-28</loc>
+    <lastmod>2026-07-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.boat-ai.jp/races/2026-07-27</loc>
     <lastmod>2026-07-27</lastmod>
     <changefreq>weekly</changefreq>
