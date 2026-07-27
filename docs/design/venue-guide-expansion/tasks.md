@@ -49,8 +49,8 @@ spec.md / screens.md / plan.md を踏まえたタスク分解。依存順に並�
 
 - [x] **D1. sitemap最終反映・全体検証**（[BOA-148](https://linear.app/boat-ai/issue/BOA-148)）
   全24会場+6地域ハブページのURLがsitemapに含まれることを確認。Playwrightで全24会場の title/description/canonical/構造化データを一括チェックするスクリプトを作成し実行
-- [ ] **D2. 月次計測の運用開始**（[BOA-149](https://linear.app/boat-ai/issue/BOA-149)）
-  `i18n-demand-report.js` と `search-console-report.js` を実行し、ベースラインを記録（`data/analysis/`配下）。3ヶ月後（spec.mdの数値目標判定時期）の比較基準とする
+- [x] **D2. 月次計測の運用開始**（[BOA-149](https://linear.app/boat-ai/issue/BOA-149)）
+  `i18n-demand-report.js` のベースラインを記録済み（`data/analysis/i18n-demand/report-2026-07-27.json`、全24会場公開後）。3ヶ月後（2026-10-27頃、spec.mdの数値目標判定時期）の比較基準とする。`search-console-report.js` は `SEARCH_CONSOLE_SITE_URL` 未設定・Search Console側の権限付与が未完了のため、ユーザー側のセットアップ（`docs/operation/search-console-report.md`）完了後に別途ベースラインを記録する
 
 ## 備考
 
