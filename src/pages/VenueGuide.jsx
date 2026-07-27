@@ -104,6 +104,21 @@ export function VenueGuideDetail({ lang, guides, copy }) {
           <p className="evg-tagline evg-tagline--hero">{venue.tagline}</p>
         </section>
 
+        {venue.image && (
+          <figure className="evg-photo">
+            <img src={venue.image.src} alt={venue.image.alt} loading="lazy" />
+            <figcaption>
+              <a
+                href={venue.image.creditUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {venue.image.credit}
+              </a>
+            </figcaption>
+          </figure>
+        )}
+
         <section className="eg-section">
           <h2>{copy.whyVisit}</h2>
           {venue.intro.map((p, i) => (
