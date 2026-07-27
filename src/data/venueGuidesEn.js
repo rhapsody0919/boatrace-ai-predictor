@@ -348,4 +348,232 @@ export const VENUE_GUIDES_EN = [
         "https://commons.wikimedia.org/wiki/File:Toda_Rowing_Course_(Tokyo,_JAP)_2021.jpg",
     },
   },
+  {
+    slug: "hamanako",
+    code: 6,
+    name: "Hamanako",
+    kanji: "浜名湖",
+    region: "Shizuoka",
+    regionGroup: "chubu-tokai",
+    tagline: "Japan's widest race course, on a brackish lake famous for eel",
+    intro: [
+      'Boat Race Hamanako sits on the western shore of Lake Hamana in Shizuoka, on the widest competition water of any of Japan\'s 24 venues. The lake is brackish — a mix of seawater and freshwater — and the sheer size of the course lets boats hit high speed, so outside-lane overtakes ("makuri-sashi") succeed more often here than at narrower venues.',
+      "From March to September the last race runs into dusk under a summer-time schedule, ending a little after 5pm rather than the usual daytime finish — a nice option if you want racing plus an evening in the area.",
+    ],
+    access: [
+      'JR Tokaido Line "Arai-machi" station → about 5 minutes on foot',
+      "By car: about 30 minutes from Hamamatsu-nishi, Mikkabi or Kanzanji Smart ICs",
+    ],
+    facts: {
+      water:
+        "Brackish (lake, mix of sea and freshwater) — widest course in Japan",
+      character: "High-speed water; outside-lane overtakes are common",
+      nightRace: false,
+    },
+    tip: "The extra-wide course rewards outside dash racers more than most venues — our AI weighs this into every Hamanako prediction.",
+    nearbyAttractions: [
+      {
+        name: "Kanzanji Onsen",
+        description:
+          "A hot-spring resort town on the lakeshore, known for eel (unagi) cuisine and lake views.",
+      },
+      {
+        name: "Hamanako Parupal & Garden Park",
+        description:
+          "A lakeside amusement park and flower garden, both popular family day-trip spots near Kanzanji.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days. From March to September, the final race runs slightly later under a summer schedule.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/hamanako.jpg",
+      alt: "Boat Race Hamanako stadium",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Hamanako-kyotei-01.jpg",
+    },
+  },
+  {
+    slug: "gamagori",
+    code: 7,
+    name: "Gamagori",
+    kanji: "蒲郡",
+    region: "Aichi",
+    regionGroup: "chubu-tokai",
+    tagline:
+      "A fast, sheltered course by Mikawa Bay — one of the few night venues",
+    intro: [
+      "Boat Race Gamagori sits on Mikawa Bay in Aichi prefecture, with a backstretch at the first mark that's the widest in the country. The water is calm and fast, sheltered from strong wind, so races here are quick and lane 1 wins often — but center-lane overtakes still work often enough to produce dramatic comebacks at the second mark.",
+      "Gamagori is also one of the relatively small number of venues that races at night, with the water sparkling under floodlights for a distinctive atmosphere you won't get at a daytime card.",
+    ],
+    access: [
+      'JR Tokaido Line "Mikawa-Shiotsu" station → about 5 minutes on foot',
+      'Meitetsu Gamagori Line "Gamagori Kyoteijo-mae" station, or a direct bus from JR Gamagori station every 30 minutes',
+    ],
+    facts: {
+      water: "Freshwater pool — calm and fast, sheltered from wind",
+      character:
+        "Lane 1 wins often, but center-lane comebacks are common at mark 2",
+      nightRace: true,
+    },
+    tip: "Fast, sheltered water raises the value of a clean start here — our AI weighs start-timing data heavily in every Gamagori prediction.",
+    nearbyAttractions: [
+      {
+        name: "Takeshima Island",
+        description:
+          "Gamagori's symbol — a small sacred island reached by a bridge, home to Yaotomi Shrine.",
+      },
+      {
+        name: "Laguna Ten Bosch",
+        description:
+          "A seaside resort with a theme park, shopping and dining, about 15 minutes by free shuttle bus from JR Gamagori station.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: null,
+  },
+  {
+    slug: "tokoname",
+    code: 8,
+    name: "Tokoname",
+    kanji: "常滑",
+    region: "Aichi",
+    regionGroup: "chubu-tokai",
+    tagline: "Across the bay from Centrair Airport — a tricky pit start",
+    intro: [
+      "Boat Race Tokoname sits directly across the water from Chubu Centrair International Airport in Aichi, making it one of the easiest venues in Japan to combine with a flight. The pit area, where boats launch from before the start, is longer here than at most venues, which makes a clean pit-out trickier to time.",
+      "Tokoname is also a historic pottery town, so a race-day visit pairs naturally with a stroll through its famous ceramics district.",
+    ],
+    access: [
+      'Meitetsu Tokoname Line "Tokoname" station → about 5 minutes on foot',
+      "From Chubu Centrair Airport: about 5 minutes by train to Tokoname station, then 5 minutes on foot",
+    ],
+    facts: {
+      water: "Seawater pool (gated — no tidal effect)",
+      character: "Long pit area — pit-out timing is trickier than most venues",
+      nightRace: false,
+    },
+    tip: "Because pit-out here is unusually tricky to time, start-timing data carries extra weight in our Tokoname predictions.",
+    nearbyAttractions: [
+      {
+        name: "Yakimono Sanpo-michi (Pottery Walking Trail)",
+        description:
+          "A historic ceramics district with brick kiln chimneys and craft studios, about 5 minutes from Tokoname station.",
+      },
+      {
+        name: "Chubu Centrair International Airport",
+        description:
+          "Just across the bay — an easy combination with a flight before or after racing.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/tokoname.jpg",
+      alt: "Boat Race Tokoname stadium",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Tokoname-kyotei-01.jpg",
+    },
+  },
+  {
+    slug: "tsu",
+    code: 9,
+    name: "Tsu",
+    kanji: "津",
+    region: "Mie",
+    regionGroup: "chubu-tokai",
+    tagline: "Ise Bay's wind-tossed water — one of Tokai's roughest courses",
+    intro: [
+      'Boat Race Tsu faces Ise Bay in Mie prefecture, a long north-south inlet that funnels the weather straight at the course — a southerly sea breeze in summer, and a strong cold wind known as the "Suzuka-oroshi" blowing off the Suzuka mountains in winter. When the wind picks up, Tsu becomes one of the roughest, most unpredictable courses in the Tokai region; on calm days it races much more predictably, with lane 1 favored.',
+      "The venue itself is a bright, mall-like space with food stalls, a kids' play area and a popular mascot, Tsukky, making it an easy stop even outside race hours.",
+    ],
+    access: [
+      'Free shuttle buses from JR/Kintetsu "Tsu" station and Kintetsu "Tsu-Shinmachi" station',
+      "By car: about 20 minutes from Tsu or Hisai interchanges on the Ise Expressway",
+    ],
+    facts: {
+      water:
+        "Faces Ise Bay — can be one of the roughest courses in Tokai when windy",
+      character:
+        "Wind-dependent: rough and unpredictable when windy, lane-1-favored when calm",
+      nightRace: false,
+    },
+    tip: "Wind is the single biggest swing factor at Tsu — our AI factors venue volatility into every prediction here.",
+    nearbyAttractions: [
+      {
+        name: "Tsu Nagisamachi",
+        description:
+          "A ferry terminal with restaurants overlooking the bay; high-speed boats connect to Chubu Centrair Airport in about 45 minutes.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/tsu.jpg",
+      alt: "Boat Race Tsu stadium",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Tsu-kyotei-01.jpg",
+    },
+  },
+  {
+    slug: "mikuni",
+    code: 10,
+    name: "Mikuni",
+    kanji: "三国",
+    region: "Fukui",
+    regionGroup: "chubu-tokai",
+    tagline: "Japan's only Sea of Japan venue, next to a historic port town",
+    intro: [
+      "Boat Race Mikuni, in Fukui prefecture, is the only Kyotei venue on the Sea of Japan coast. The course is a freshwater pool with no tidal effect, but a sea breeze often picks up as the day warms, adding a wrinkle to the racing. Because the water is unaffected by tides, strong-motor boats tend to have a reliable edge here.",
+      "The venue sits close to Mikuni-minato, a former Kitamae-bune trading port with a well-preserved old town, and within reach of one of Japan's most dramatic coastlines.",
+    ],
+    access: [
+      'JR "Awara Onsen" station → free shuttle bus',
+      'Echizen Railway "Awara-Yunomachi" station → about 17 minutes on foot',
+    ],
+    facts: {
+      water:
+        "Freshwater pool, no tidal effect — sea breeze picks up later in the day",
+      character: "Strong-motor boats have a reliable edge",
+      nightRace: false,
+    },
+    tip: "With no tide to complicate things, motor performance data is especially reliable here — exactly what our AI weighs most heavily for Mikuni.",
+    nearbyAttractions: [
+      {
+        name: "Tojinbo",
+        description:
+          "Dramatic basalt sea cliffs stretching about a kilometer along the coast, ranked among Japan's most scenic spots.",
+      },
+      {
+        name: "Mikuni-minato",
+        description:
+          "A historic Kitamae-bune trading port with a preserved old town and fresh seafood, including crab in season, about 5 minutes from Mikuni station.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: null,
+  },
 ];

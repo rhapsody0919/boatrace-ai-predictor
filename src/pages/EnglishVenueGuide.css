@@ -73,6 +73,29 @@
   color: #6d28d9;
 }
 
+.evg-photo {
+  margin: 0 0 var(--spacing-5);
+}
+
+.evg-photo img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  display: block;
+}
+
+.evg-photo figcaption {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  margin-top: var(--spacing-1);
+  text-align: right;
+}
+
+.evg-photo figcaption a {
+  color: inherit;
+}
+
 .evg-breadcrumb {
   margin-bottom: var(--spacing-4);
 }
