@@ -8,7 +8,15 @@ venue-guide-expansion（会場別ビジターガイド全会場化・SEOフル�
 
 `https://www.boat-ai.jp/` が Search Console に登録済みであることを確認する（未登録の場合は先にプロパティを追加し、所有権を確認する）。
 
-### 2. サービスアカウントへの権限付与
+### 2. Google Cloud プロジェクトで Search Console API を有効化
+
+サービスアカウントのプロジェクトで **Google Search Console API** が有効になっている必要がある（GA4/Sheets連携で既に有効化された別のAPIとは無関係。これを見落とすと後述の権限付与を正しく行っても`accessNotConfigured`エラーで失敗する）。
+
+1. https://console.developers.google.com/apis/library/searchconsole.googleapis.com を開く（サービスアカウントが属するプロジェクトを選択した状態で）
+2. 「有効にする」をクリック
+3. 反映まで数分かかる場合がある
+
+### 3. サービスアカウントへの権限付与
 
 GA4 連携と同じサービスアカウント（`credentials/google-service-account.json` の `client_email`）を使う。GA4 とは付与画面・権限モデルが異なる点に注意。
 
@@ -19,15 +27,19 @@ GA4 連携と同じサービスアカウント（`credentials/google-service-acc
 
 この操作は対話ターミナルでの実施が必要（GA4 導入時と同様）。
 
-### 3. 環境変数の設定
+### 4. 環境変数の設定
 
-`.env.local` に追加:
+`.env.local` に追加。**プロパティの種類によって書式が異なる**（Search Console設定画面のURLに `resource_id=sc-domain%3A...` と出ていればドメインプロパティ、`resource_id=https%3A%2F%2F...` と出ていればURLプレフィックスプロパティ）。
 
 ```
+# ドメインプロパティ（例: boat-ai.jp 全体を登録している場合）
+SEARCH_CONSOLE_SITE_URL=sc-domain:boat-ai.jp
+
+# URLプレフィックスプロパティ（例: https://www.boat-ai.jp/ を登録している場合、末尾スラッシュ必須）
 SEARCH_CONSOLE_SITE_URL=https://www.boat-ai.jp/
 ```
 
-末尾スラッシュ必須（Search Console にドメインプロパティではなくURLプレフィックスプロパティとして登録している場合）。
+書式を間違えると「アクセス権限がありません」という誤ったエラーになるため要注意（実際にドメインプロパティにURLプレフィックス形式を指定してハマった経緯がある）。
 
 ## レポートの実行
 

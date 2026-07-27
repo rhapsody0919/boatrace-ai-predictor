@@ -125,7 +125,15 @@ async function main() {
 }
 
 main().catch((err) => {
-  if (err.code === 403 || /permission/i.test(err.message)) {
+  // SERVICE_DISABLED は「Search Console の権限」ではなく「GCPプロジェクトでAPI自体が
+  // 未有効化」というまったく別の原因。/permission/i だけで判定すると誤判定するため、
+  // 先にこちらを判定する（実際にこの誤判定でハマった経緯があるため要注意）
+  if (/has not been used in project|SERVICE_DISABLED/i.test(err.message)) {
+    console.error(`❌ Google Search Console API が有効になっていません。
+
+以下のURLでAPIを有効化してください（有効化後、反映まで数分かかる場合があります）:
+  ${err.message.match(/https:\/\/\S+/)?.[0] ?? "https://console.developers.google.com/apis/library/searchconsole.googleapis.com"}`);
+  } else if (err.code === 403 || /permission/i.test(err.message)) {
     console.error(`❌ Search Console へのアクセス権限がありません。
 
 Search Console の「設定 > ユーザーと権限」で以下を「制限付き」ユーザーとして追加してください
