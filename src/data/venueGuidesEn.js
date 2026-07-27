@@ -968,4 +968,190 @@ export const VENUE_GUIDES_EN = [
         "https://commons.wikimedia.org/wiki/File:Shimonoseki_Kyotei.jpg",
     },
   },
+  {
+    slug: "wakamatsu",
+    code: 20,
+    name: "Wakamatsu",
+    kanji: "若松",
+    region: "Fukuoka (Kyushu)",
+    regionGroup: "kyushu",
+    tagline: "The birthplace of the All-Japan Championship, on Dokai Bay",
+    intro: [
+      'Boat Race Wakamatsu sits on Dokai Bay in Kitakyushu, and is known as the "birthplace of the Derby" — the first All-Japan Championship was held here. The seawater course connects directly to the bay near the second mark, so tide and wind can flow in from that side, though the water is generally calmer than the rougher venues in the sport.',
+      'Wakamatsu is also famous for being the closest pair of venues in Japan: Boat Race Ashiya is a short trip away, and some fans "hop" between the two, catching one card in the morning and another later in the day.',
+    ],
+    access: ['"Okudokai" station → about 5 minutes on foot'],
+    facts: {
+      water:
+        "Seawater, connects to Dokai Bay near mark 2 — generally calm, some winter roughness",
+      character: "Balanced water with both calm and technical traits",
+      nightRace: true,
+    },
+    tip: "Conditions here sit between calm and technical — our AI weighs both start data and venue volatility for every Wakamatsu prediction.",
+    nearbyAttractions: [
+      {
+        name: "Shabon Dama Soap factory tour",
+        description:
+          "A free factory tour at the well-known Japanese soap maker, a short trip from the venue.",
+      },
+      {
+        name: "Moly Fantasy Wakamatsu",
+        description:
+          "An indoor amusement arcade inside the nearby Aeon Wakamatsu shopping center — good for a rainy day.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/wakamatsu.jpg",
+      alt: "Boat Race Wakamatsu, near Okudokai station",
+      credit: "Photo by そらみみ, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_Race_Wakamatsu_in_front_of_Okudokai_Station.jpg",
+    },
+  },
+  {
+    slug: "ashiya",
+    code: 21,
+    name: "Ashiya",
+    kanji: "芦屋",
+    region: "Fukuoka (Kyushu)",
+    regionGroup: "kyushu",
+    tagline: "A calm, technical freshwater course near the coast",
+    intro: [
+      "Boat Race Ashiya sits near the Onga River, about 2km from the Hibiki-nada sea. The course runs roughly east-west on a firm freshwater surface often compared to Tamagawa's — calm and technical rather than rough.",
+      "Ashiya is one half of Japan's closest pair of venues: Boat Race Wakamatsu is nearby, and some visitors combine both in a single day.",
+    ],
+    access: [
+      'JR Kagoshima Main Line "Orio" or "Onga-gawa" stations → free taxi or free bus',
+    ],
+    facts: {
+      water: "Freshwater, firm — runs roughly east-west",
+      character: "Calm and technical, similar in feel to Tamagawa",
+      nightRace: false,
+    },
+    tip: "Calm, technical water like this rewards consistent racers — our AI weighs racer and motor form heavily for every Ashiya prediction.",
+    nearbyAttractions: [
+      {
+        name: "Ashiya Beach",
+        description:
+          "A roughly 1km stretch of coastline on the Hibiki-nada sea, popular for swimming in summer.",
+      },
+      {
+        name: "Aqua Ocean",
+        description:
+          "A water park with a 120m water slide and a lazy river, a short trip from the venue.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/ashiya.jpg",
+      alt: "Boat Race Ashiya racecourse",
+      credit: "Photo by Umako, CC BY 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_Race_Ashiya_racecourse_260508.jpg",
+    },
+  },
+  {
+    slug: "karatsu",
+    code: 23,
+    name: "Karatsu",
+    kanji: "唐津",
+    region: "Saga (Kyushu)",
+    regionGroup: "kyushu",
+    tagline:
+      "One of Japan's widest courses, framed by pine forest and bay views",
+    intro: [
+      "Boat Race Karatsu sits between Karatsu Bay and the famous Niji no Matsubara pine forest in Saga prefecture, on a freshwater pool course that's among the widest and largest in the country. The course runs roughly north-south, and the balance between land and sea breezes means early races tend to face a headwind while later races often get a tailwind.",
+      "Like Tokuyama, Karatsu is a year-round morning-racing venue (aside from special tournaments), so a visit pairs naturally with an afternoon exploring the coast.",
+    ],
+    access: [
+      'JR "Higashi-Karatsu" station → free shuttle bus, about 6 minutes (race days only)',
+    ],
+    facts: {
+      water: "Freshwater pool — one of the widest courses in Japan",
+      character:
+        "Headwind early, tailwind later in the day; no standout quirks otherwise",
+      nightRace: false,
+    },
+    tip: "The wind here tends to flip through the card in a predictable way — our AI factors race-order timing into every Karatsu prediction.",
+    nearbyAttractions: [
+      {
+        name: "Karatsu Castle",
+        description:
+          "A rebuilt 1608 castle with sweeping views of Karatsu Bay and the pine forest below.",
+      },
+      {
+        name: "Niji no Matsubara",
+        description:
+          "One of Japan's three great pine groves, a 4.5km stretch with over a million pine trees.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "A year-round morning-racing venue outside special tournaments. Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: null,
+  },
+  {
+    slug: "omura",
+    code: 24,
+    name: "Omura",
+    kanji: "大村",
+    region: "Nagasaki (Kyushu)",
+    regionGroup: "kyushu",
+    tagline:
+      "The birthplace of Kyotei itself, and one of the most inside-favored venues",
+    intro: [
+      "Boat Race Omura holds a unique place in the sport's history: it hosted Japan's first-ever motorboat race, on April 6, 1952, making it the literal birthplace of Kyotei. Wind screens have since been expanded to support night racing, and lane 1 wins here roughly 63% of the time — among the highest rates in the country.",
+      "The venue is close to Nagasaki Airport and racing runs about 180 days a year, with a food court (including Sasebo burgers) and play areas that make it an easy family stop.",
+    ],
+    access: [
+      '"Omura" station → about 2.4km, 29 minutes on foot — free shuttle bus recommended',
+      "Free buses and ferry connections from Nagasaki, Sasebo, Isahaya and Togitsu",
+    ],
+    facts: {
+      water: "Seawater, wind-screened for night racing",
+      character:
+        "One of the most inside-favored venues in Japan (lane 1 wins ~63%)",
+      nightRace: true,
+    },
+    tip: "With lane 1 winning this often, our AI weighs start-course strength especially heavily in every Omura prediction.",
+    nearbyAttractions: [
+      {
+        name: "Kotohira Sky Park",
+        description:
+          "A hilltop park (330m elevation) with sweeping views of Omura Bay and a roller slide.",
+      },
+      {
+        name: "Omura Park",
+        description:
+          'One of Japan\'s "100 Famous Cherry Blossom Spots," with about 2,000 cherry trees.',
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Races about 180 days a year, more than most venues. Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/omura.jpg",
+      alt: "Boat Race Omura stadium",
+      credit: "Photo by kajikawa, CC BY 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E5%A4%A7%E6%9D%91_-_panoramio.jpg",
+    },
+  },
 ];
