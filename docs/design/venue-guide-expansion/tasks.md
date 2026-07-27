@@ -40,7 +40,7 @@ spec.md / screens.md / plan.md を踏まえたタスク分解。依存順に並�
   びわこ・尼崎を同水準で追加
 - [x] **C4. Shikoku地域の2会場を追加**（[BOA-145](https://linear.app/boat-ai/issue/BOA-145)）
   鳴門・丸亀を同水準で追加
-- [ ] **C5. Chugoku地域の4会場を追加**（[BOA-146](https://linear.app/boat-ai/issue/BOA-146)）
+- [x] **C5. Chugoku地域の4会場を追加**（[BOA-146](https://linear.app/boat-ai/issue/BOA-146)）
   児島・宮島・徳山・下関を同水準で追加
 - [ ] **C6. Kyushu地域の残り4会場を追加**（[BOA-147](https://linear.app/boat-ai/issue/BOA-147)）
   若松・芦屋・唐津・大村を同水準で追加
