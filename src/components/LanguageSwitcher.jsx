@@ -5,6 +5,8 @@ import {
   DEFAULT_LANGUAGE,
   LANGUAGE_STORAGE_KEY,
   localizePath,
+  parseLangFromPath,
+  getAvailableLanguages,
 } from "../config/languages";
 import { trackLanguageSwitch } from "../utils/analytics";
 import "./LanguageSwitcher.css";
@@ -16,6 +18,10 @@ function LanguageSwitcher() {
 
   // resolvedLanguage は 'en-US' → 'en' のように正規化済み
   const currentLang = i18n.resolvedLanguage || DEFAULT_LANGUAGE;
+
+  // 現在のページが提供されていない言語はボタンを無効化する（例: /venues は ja/ko 非対応）
+  const { basePath } = parseLangFromPath(pathname);
+  const availableLangCodes = getAvailableLanguages(basePath).map((l) => l.code);
 
   // 言語切替時は URL も言語プレフィックスに同期させる（SEO: 言語別 URL）
   const handleChange = (code) => {
@@ -42,18 +48,30 @@ function LanguageSwitcher() {
       <span className="language-switcher-icon" aria-hidden="true">
         🌐
       </span>
-      {SUPPORTED_LANGUAGES.map((lang) => (
-        <button
-          key={lang.code}
-          className={`language-switcher-btn ${currentLang === lang.code ? "active" : ""}`}
-          onClick={() => handleChange(lang.code)}
-          aria-pressed={currentLang === lang.code}
-          title={lang.label}
-          aria-label={lang.label}
-        >
-          {lang.shortLabel ?? lang.code.toUpperCase()}
-        </button>
-      ))}
+      {SUPPORTED_LANGUAGES.map((lang) => {
+        const isAvailable = availableLangCodes.includes(lang.code);
+        return (
+          <button
+            key={lang.code}
+            className={`language-switcher-btn ${currentLang === lang.code ? "active" : ""} ${isAvailable ? "" : "unavailable"}`}
+            onClick={() => isAvailable && handleChange(lang.code)}
+            aria-pressed={currentLang === lang.code}
+            aria-disabled={!isAvailable}
+            title={
+              isAvailable
+                ? lang.label
+                : t("language.notAvailable", { lang: lang.label })
+            }
+            aria-label={
+              isAvailable
+                ? lang.label
+                : `${lang.label}: ${t("language.notAvailable", { lang: lang.label })}`
+            }
+          >
+            {lang.shortLabel ?? lang.code.toUpperCase()}
+          </button>
+        );
+      })}
     </div>
   );
 }

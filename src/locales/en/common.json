@@ -11,11 +11,13 @@
     "faq": "❓ FAQ",
     "about": "ℹ️ About",
     "profile": "👤 Operator Profile",
+    "venues": "🏟️ Venue Guides",
     "menuLabel": "More menu",
     "logoLabel": "Go to BoatAI top page"
   },
   "language": {
-    "switchLabel": "Switch language"
+    "switchLabel": "Switch language",
+    "notAvailable": "This page isn't available in {{lang}}"
   },
   "meta": {
     "title": "BoatAI - AI Predictions for Japanese Boat Race (Kyotei) | Free",

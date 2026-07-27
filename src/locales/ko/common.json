@@ -11,11 +11,13 @@
     "faq": "❓ 자주 묻는 질문",
     "about": "ℹ️ 사이트 소개",
     "profile": "👤 운영자 소개",
+    "venues": "🏟️ 경기장 가이드",
     "menuLabel": "더 보기 메뉴",
     "logoLabel": "BoatAI 홈으로 이동"
   },
   "language": {
-    "switchLabel": "언어 변경"
+    "switchLabel": "언어 변경",
+    "notAvailable": "이 페이지는 {{lang}}로 제공되지 않습니다"
   },
   "meta": {
     "title": "BoatAI - 일본 경정(쿄테이) AI 예측 | 무료",

@@ -33,6 +33,16 @@
   border-color: white;
 }
 
+.language-switcher-btn.unavailable {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.language-switcher-btn.unavailable:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 @media (max-width: 480px) {
   .language-switcher-icon {
     display: none;
