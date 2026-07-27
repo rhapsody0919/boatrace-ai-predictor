@@ -251,4 +251,101 @@ export const VENUE_GUIDES_EN = [
         "https://commons.wikimedia.org/wiki/File:Main_entrance_of_Boat_Race_Fukuoka.jpg",
     },
   },
+  {
+    slug: "kiryu",
+    code: 1,
+    name: "Kiryu",
+    kanji: "桐生",
+    region: "Gunma",
+    regionGroup: "kanto",
+    tagline: "The birthplace of night racing — Japan's highest-altitude venue",
+    intro: [
+      "Boat Race Kiryu, in Gunma prefecture, was the first of Japan's 24 venues to introduce night racing, back in 1997, and today every card here runs entirely under floodlights (first race around 3pm, last race around 8:30pm). It's also the highest-altitude Kyotei venue in the country, sitting 128 meters above sea level.",
+      'The thinner air at altitude means motors produce slightly less power than at sea-level venues, which tends to favor dash-style (outside lane) racers over pure escapes. A strong seasonal tailwind known as the "Akagi-oroshi" blows through in winter and spring, adding another layer to the racing.',
+    ],
+    access: [
+      'JR Ryomo Line "Iwajuku" station → about 12 minutes on foot, or free shuttle bus',
+      'Free shuttle buses also run from "Azami" station on race days',
+    ],
+    facts: {
+      water: "Freshwater pond",
+      character: "Highest altitude in Japan — thinner air favors dash racers",
+      nightRace: true,
+    },
+    tip: "Lower air pressure here quietly shifts the balance toward outside-lane dash racers — our AI weighs altitude effects into every Kiryu prediction.",
+    nearbyAttractions: [
+      {
+        name: "Kiryu Shinmachi Weaving District",
+        description:
+          "A preserved historic textile district with saw-tooth roof factories — Kiryu has been a major silk weaving town for 400 years.",
+      },
+      {
+        name: "Orimono Sankokan Textile Museum",
+        description:
+          "A museum dedicated to Kiryu's textile heritage, with working looms on display.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Every card here runs at night. Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/kiryu.jpg",
+      alt: "Boat Race Kiryu stadium",
+      credit: "Photo by cake6, CC BY 3.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Kiryu-kyotei-01.jpg",
+    },
+  },
+  {
+    slug: "toda",
+    code: 2,
+    name: "Toda",
+    kanji: "戸田",
+    region: "Saitama",
+    regionGroup: "kanto",
+    tagline:
+      "Japan's narrowest course — the only venue with an Olympic pedigree",
+    intro: [
+      "Boat Race Toda sits inside Toda Park in Saitama, on the same still-water course used for the 1964 Tokyo Olympics rowing events — the only Kyotei venue with an Olympic history. The course is also the narrowest of Japan's 24 venues, putting boats close together and making for some of the most exciting racing to watch live.",
+      'The narrow, hard-packed freshwater surface makes it difficult for the front-runner to hold the inside line cleanly, so "makuri" (outside overtaking) passes succeed here more often than almost anywhere else in Japan — Toda has one of the lowest lane-1 win rates in the sport.',
+    ],
+    access: [
+      'JR Saikyo Line "Toda-Koen" station (west exit) → about 3km / 40 minutes on foot — the free race-day shuttle bus is strongly recommended',
+      'Kokusai Kogyo bus to "Hikawacho 3-chome" stop → about 15 minutes on foot',
+    ],
+    facts: {
+      water: "Freshwater, narrow course — hard surface",
+      character:
+        "One of the lowest lane-1 win rates in Japan — overtakes are common",
+      nightRace: false,
+    },
+    tip: "With overtakes this common, our AI leans harder on start-timing and turn data for Toda than for almost any other venue.",
+    nearbyAttractions: [
+      {
+        name: "Toda Park",
+        description:
+          "The 1964 Olympic rowing course itself, now a public park with cherry blossoms along the Arakawa riverbank in spring.",
+      },
+      {
+        name: "BOAT KIDS PARK Morvi Toda (on-site)",
+        description:
+          "A family-friendly play area inside the venue with photo-ready boat displays.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "Regular meets run several times a year, each lasting about 4-7 days.",
+      seasonalNotes:
+        "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
+    },
+    image: {
+      src: "/images/venues/toda.jpg",
+      alt: "Toda Rowing Course, home of Boat Race Toda",
+      credit: "Photo by Ibamoto, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Toda_Rowing_Course_(Tokyo,_JAP)_2021.jpg",
+    },
+  },
 ];
