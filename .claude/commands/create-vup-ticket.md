@@ -9,6 +9,9 @@ kyoteibiyori.com/vup/ の機能を boatAI 向けに分析して、**Linear チ�
 
 機能名：**$ARGUMENTS**
 
+競合機能をそのまま模倣しない大原則は `/analyze-vup-feature` と共通（詳細はそちらを参照）。
+チケットの実装案も「boatAIらしく昇華させた案」であることを前提に書く。
+
 ## 実行手順
 
 1. **分析**（`/analyze-vup-feature $ARGUMENTS` と同じ内容）
