@@ -82,3 +82,15 @@ test.describe("その他の主要ページ", () => {
     await expect(page).toHaveURL("/");
   });
 });
+
+test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {
+  test("ブログ記事詳細ページのtitleが空にならない", async ({ page }) => {
+    await page.goto("/blog/rough-race-signals");
+    await expect(page).toHaveTitle(/.+\| BoatAI$/);
+  });
+
+  test("レース詳細ページのtitleが空にならない", async ({ page }) => {
+    await page.goto("/races/2026-06-22");
+    await expect(page).toHaveTitle(/.+BoatAI$/);
+  });
+});
