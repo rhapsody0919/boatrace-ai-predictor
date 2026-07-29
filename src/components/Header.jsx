@@ -27,6 +27,7 @@ function Header() {
     if (pathname === "/hit-races") return "hit-races";
     if (pathname === "/accuracy") return "accuracy";
     if (pathname === "/outcome-distribution") return "outcome-distribution";
+    if (pathname === "/winning-technique") return "winning-technique";
     if (pathname === "/picks") return "picks";
     if (pathname.startsWith("/races")) return "past-races";
     if (pathname === "/how-to-use") return "how-to-use";
@@ -160,6 +161,13 @@ function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               {t("nav.outcomeDistribution")}
+            </Link>
+            <Link
+              to={localize("/winning-technique")}
+              className={`submenu-item ${activeTab === "winning-technique" ? "active" : ""}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {t("nav.winningTechnique")}
             </Link>
             <Link
               to={localize("/races")}

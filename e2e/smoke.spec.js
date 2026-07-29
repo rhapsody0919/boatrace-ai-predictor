@@ -83,6 +83,34 @@ test.describe("その他の主要ページ", () => {
   });
 });
 
+test.describe("決まり手データ分析（BOA-150）", () => {
+  test("ハンバーガーメニューから決まり手データ分析へ遷移できる", async ({
+    page,
+  }) => {
+    // ブラウザのロケール検出でenへリダイレクトされるのを防ぎ、jaを固定する
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-language", "ja"),
+    );
+    await page.goto("/");
+    await page.click(".menu-btn");
+    const link = page.locator('a.submenu-item:has-text("決まり手データ分析")');
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute("href", "/winning-technique");
+    await link.click();
+    await expect(page).toHaveURL(/\/winning-technique$/);
+  });
+
+  test("/winning-technique が表示される（データ未投入でも空状態を表示）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await expect(page.locator(".app-header")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: /決まり手データ分析/ }),
+    ).toBeVisible();
+  });
+});
+
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {
   test("ブログ記事詳細ページのtitleが空にならない", async ({ page }) => {
     await page.goto("/blog/rough-race-signals");

@@ -25,6 +25,7 @@ import RaceDetail from "./pages/RaceDetail";
 import Profile from "./pages/Profile";
 import AccuracyHistory from "./pages/AccuracyHistory";
 import OutcomeDistribution from "./pages/OutcomeDistribution";
+import WinningTechniqueAnalysis from "./pages/WinningTechniqueAnalysis";
 import Holmes from "./pages/Holmes";
 import ContentHub from "./pages/ContentHub";
 import EnglishGuide from "./pages/EnglishGuide";
@@ -131,6 +132,7 @@ function LocalizedRoutes({ lng = "ja" }) {
       <Route path="picks" element={<App tab="picks" />} />
       <Route path="accuracy/history" element={<AccuracyHistory />} />
       <Route path="outcome-distribution" element={<OutcomeDistribution />} />
+      <Route path="winning-technique" element={<WinningTechniqueAnalysis />} />
       <Route path="privacy" element={<App tab="privacy" />} />
       <Route path="terms" element={<App tab="terms" />} />
       <Route path="contact" element={<App tab="contact" />} />
