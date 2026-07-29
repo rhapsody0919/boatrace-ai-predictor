@@ -109,6 +109,17 @@ test.describe("決まり手データ分析（BOA-150）", () => {
       page.getByRole("heading", { level: 1, name: /決まり手データ分析/ }),
     ).toBeVisible();
   });
+
+  test("モーター調子タブに切り替えるとチャートが表示される（BOA-151）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:has-text("モーター調子")');
+    await expect(page.locator("#motor-select")).toBeVisible();
+    await expect(page.locator(".recharts-wrapper")).toBeVisible({
+      timeout: 10000,
+    });
+  });
 });
 
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {

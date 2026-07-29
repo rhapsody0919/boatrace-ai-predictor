@@ -182,6 +182,39 @@ export function clearCache(key = null) {
   cache.clear(key);
 }
 
+// 配列を指定サイズごとに分割する（Supabase の in() 上限対策）
+function chunkArray(array, size) {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
+
+// 指定会場の直近90日のレース一覧を取得する（BOA-151、複数メソッドで共有するためキャッシュする）
+function getRacesForVenue(venueCode) {
+  return withCache(`races-for-venue-${venueCode}`, async () => {
+    if (!supabase) return [];
+
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const cutoff = ninetyDaysAgo.toISOString().split("T")[0];
+
+    const { data, error } = await supabase
+      .from("races")
+      .select("race_id, race_date")
+      .eq("venue_code", venueCode)
+      .gte("race_date", cutoff)
+      .order("race_date");
+
+    if (error) {
+      console.error("races取得エラー:", error.message);
+      return [];
+    }
+    return data ?? [];
+  });
+}
+
 /**
  * 会場コード→会場名のマッピング
  */
@@ -1744,5 +1777,121 @@ export const supabaseDataService = {
         data: techniqueData,
       };
     });
+  },
+
+  /**
+   * 指定会場の直近レースに登場したモーター番号一覧を取得する（BOA-151）
+   */
+  getMotorNumbersForVenue(venueCode) {
+    return withCache(`motor-numbers-${venueCode}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const races = await getRacesForVenue(venueCode);
+      if (races.length === 0) return [];
+
+      const raceIds = races.map((r) => r.race_id);
+      const chunks = chunkArray(raceIds, 500);
+
+      const results = await Promise.all(
+        chunks.map((chunk) =>
+          supabase
+            .from("race_entries")
+            .select("motor_number")
+            .in("race_id", chunk)
+            .not("motor_number", "is", null),
+        ),
+      );
+
+      const motorNumbers = new Set();
+      results.forEach(({ data, error }) => {
+        if (error) {
+          console.error("race_entries取得エラー:", error.message);
+          return;
+        }
+        data.forEach((r) => motorNumbers.add(r.motor_number));
+      });
+
+      return [...motorNumbers].sort((a, b) => a - b);
+    });
+  },
+
+  /**
+   * 指定会場・モーター番号の2連率/3連率の節ごとの推移を取得する（BOA-151）
+   * race_entries.motor_2rate/3rate は節単位でのみ更新されるため、
+   * 日付単位でdedupeして推移として扱う
+   */
+  getMotorConditionTrend(venueCode, motorNumber) {
+    return withCache(
+      `motor-condition-${venueCode}-${motorNumber}`,
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return {
+            venue_code: venueCode,
+            motor_number: motorNumber,
+            trend: [],
+          };
+        }
+
+        const races = await getRacesForVenue(venueCode);
+        if (races.length === 0) {
+          return {
+            venue_code: venueCode,
+            motor_number: motorNumber,
+            trend: [],
+          };
+        }
+
+        const raceDateById = new Map(
+          races.map((r) => [r.race_id, r.race_date]),
+        );
+        const raceIds = races.map((r) => r.race_id);
+        const chunks = chunkArray(raceIds, 500);
+
+        const results = await Promise.all(
+          chunks.map((chunk) =>
+            supabase
+              .from("race_entries")
+              .select("race_id, motor_2rate, motor_3rate")
+              .in("race_id", chunk)
+              .eq("motor_number", motorNumber),
+          ),
+        );
+
+        let entries = [];
+        results.forEach(({ data, error }) => {
+          if (error) {
+            console.error("race_entries取得エラー:", error.message);
+            return;
+          }
+          entries = entries.concat(data);
+        });
+
+        // 日付単位でdedupe（同日の複数レースは同じ値のため最初の1件を採用）
+        const byDate = new Map();
+        entries
+          .map((e) => ({ ...e, race_date: raceDateById.get(e.race_id) }))
+          .filter((e) => e.race_date)
+          .sort((a, b) => a.race_date.localeCompare(b.race_date))
+          .forEach((e) => {
+            if (!byDate.has(e.race_date)) {
+              byDate.set(e.race_date, {
+                date: e.race_date,
+                motor_2rate: e.motor_2rate,
+                motor_3rate: e.motor_3rate,
+              });
+            }
+          });
+
+        return {
+          venue_code: venueCode,
+          motor_number: motorNumber,
+          trend: [...byDate.values()],
+        };
+      },
+    );
   },
 };
