@@ -1935,6 +1935,52 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定選手の全国勝率の節ごとの推移を取得する（BOA-152）
+   * race_entries.win_rate/local_win_rate は節単位でのみ更新されるため、
+   * モーター調子と同じく日付単位でdedupeして推移として扱う
+   */
+  getRacerFormTrend(racerId) {
+    return withCache(`racer-form-trend-${racerId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return { racer_id: racerId, trend: [] };
+      }
+
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const cutoff = ninetyDaysAgo.toISOString().split("T")[0];
+
+      const { data, error } = await supabase
+        .from("race_entries")
+        .select("race_id, win_rate, local_win_rate")
+        .eq("racer_id", racerId)
+        .gte("race_id", cutoff)
+        .order("race_id");
+
+      if (error) {
+        console.error("race_entries取得エラー:", error.message);
+        return { racer_id: racerId, trend: [] };
+      }
+
+      // 日付単位でdedupe（同日の複数レースは同じ値のため最初の1件を採用）
+      const byDate = new Map();
+      (data ?? [])
+        .map((e) => ({ ...e, race_date: e.race_id.slice(0, 10) }))
+        .forEach((e) => {
+          if (!byDate.has(e.race_date)) {
+            byDate.set(e.race_date, {
+              date: e.race_date,
+              win_rate: e.win_rate,
+              local_win_rate: e.local_win_rate,
+            });
+          }
+        });
+
+      return { racer_id: racerId, trend: [...byDate.values()] };
+    });
+  },
+
+  /**
    * 指定会場・モーター番号の2連率/3連率の節ごとの推移を取得する（BOA-151）
    * race_entries.motor_2rate/3rate は節単位でのみ更新されるため、
    * 日付単位でdedupeして推移として扱う

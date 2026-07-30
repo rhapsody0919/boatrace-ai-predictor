@@ -2,8 +2,19 @@
  * RacerFormChart - 選手勝率上昇/下降（BOA-152）
  * 本日開催中の会場・レースを選ぶと、そのレースに出走する6選手の
  * 現在の全国勝率と約90日前時点の全国勝率を比較し、調子の変化を示す。
+ * 気になる選手は節ごとの推移グラフにドリルダウンできる。
  */
 import { useState, useEffect, useRef } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import "./MotorConditionChart.css";
 
@@ -40,6 +51,8 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
   const [races, setRaces] = useState([]);
   const [selectedRace, setSelectedRace] = useState(initialRaceId);
   const [breakdown, setBreakdown] = useState([]);
+  const [drillDownRacer, setDrillDownRacer] = useState(null);
+  const [trendData, setTrendData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -102,6 +115,7 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
       try {
         setLoading(true);
         setError(null);
+        setDrillDownRacer(null);
         const data =
           await supabaseDataService.getRaceRacerFormBreakdown(selectedRace);
         setBreakdown(data);
@@ -115,12 +129,42 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
     loadBreakdown();
   }, [selectedRace]);
 
+  // 選手選択時: 節ごとの全国勝率推移を取得
+  useEffect(() => {
+    if (drillDownRacer === null) return;
+    const loadTrend = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data =
+          await supabaseDataService.getRacerFormTrend(drillDownRacer);
+        setTrendData(data);
+      } catch (err) {
+        setError(err.message || "選手推移の取得に失敗しました");
+        console.error("Failed to load racer form trend:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTrend();
+  }, [drillDownRacer]);
+
   const bestDelta =
     breakdown.length > 0
       ? Math.max(
           ...breakdown.filter((r) => r.delta !== null).map((r) => r.delta),
         )
       : null;
+
+  const chartData = (trendData?.trend ?? []).map((row) => ({
+    date: row.date.slice(5),
+    全国勝率: row.win_rate,
+    当地勝率: row.local_win_rate,
+  }));
+
+  const drillDownRacerName = breakdown.find(
+    (r) => r.racer_id === drillDownRacer,
+  )?.player_name;
 
   return (
     <div className="motor-condition-container">
@@ -172,60 +216,119 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
       {loading && <div className="loading-state">データを読み込み中...</div>}
       {error && <div className="error-state">エラー: {error}</div>}
 
-      {!loading && !error && breakdown.length > 0 && (
-        <div className="table-wrapper">
-          <table className="motor-ranking-table">
-            <thead>
-              <tr>
-                <th>枠番</th>
-                <th>選手名</th>
-                <th>現在の全国勝率</th>
-                <th>約90日前</th>
-                <th>変化</th>
-              </tr>
-            </thead>
-            <tbody>
-              {breakdown.map((row) => (
-                <tr
-                  key={row.boat_number}
-                  className={`motor-ranking-row non-clickable-row ${row.delta === bestDelta && bestDelta > 0 ? "best-motor" : ""}`}
-                >
-                  <td className="rank">{row.boat_number}</td>
-                  <td>{row.player_name?.replace(/\s+/g, "")}</td>
-                  <td className="rate">{row.win_rate?.toFixed(2)}</td>
-                  <td className="rate">
-                    {row.past_win_rate !== null
-                      ? row.past_win_rate.toFixed(2)
-                      : "データなし"}
-                  </td>
-                  <td className="rate">
-                    {row.delta !== null ? (
-                      <span
-                        className={
-                          row.delta > 0
-                            ? "delta-up"
-                            : row.delta < 0
-                              ? "delta-down"
-                              : ""
-                        }
-                      >
-                        {row.delta > 0 ? "↑" : row.delta < 0 ? "↓" : "→"}{" "}
-                        {Math.abs(row.delta).toFixed(2)}
-                      </span>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
+      {!loading &&
+        !error &&
+        drillDownRacer === null &&
+        breakdown.length > 0 && (
+          <div className="table-wrapper">
+            <table className="motor-ranking-table">
+              <thead>
+                <tr>
+                  <th>枠番</th>
+                  <th>選手名</th>
+                  <th>現在の全国勝率</th>
+                  <th>約90日前</th>
+                  <th>変化</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {breakdown.map((row) => (
+                  <tr
+                    key={row.boat_number}
+                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""} ${row.delta === bestDelta && bestDelta > 0 ? "best-motor" : ""}`}
+                    onClick={() =>
+                      row.racer_id !== null && setDrillDownRacer(row.racer_id)
+                    }
+                  >
+                    <td className="rank">{row.boat_number}</td>
+                    <td>{row.player_name?.replace(/\s+/g, "")}</td>
+                    <td className="rate">{row.win_rate?.toFixed(2)}</td>
+                    <td className="rate">
+                      {row.past_win_rate !== null
+                        ? row.past_win_rate.toFixed(2)
+                        : "データなし"}
+                    </td>
+                    <td className="rate">
+                      {row.delta !== null ? (
+                        <span
+                          className={
+                            row.delta > 0
+                              ? "delta-up"
+                              : row.delta < 0
+                                ? "delta-down"
+                                : ""
+                          }
+                        >
+                          {row.delta > 0 ? "↑" : row.delta < 0 ? "↓" : "→"}{" "}
+                          {Math.abs(row.delta).toFixed(2)}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+      {!loading && !error && drillDownRacer !== null && (
+        <>
+          <button
+            className="back-to-ranking-btn"
+            onClick={() => setDrillDownRacer(null)}
+          >
+            ← レースの一覧に戻る
+          </button>
+          <h3 className="selected-motor-heading">
+            {drillDownRacerName?.replace(/\s+/g, "")}選手の推移
+          </h3>
+
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={chartData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis
+                  label={{
+                    value: "勝率",
+                    angle: -90,
+                    position: "insideLeft",
+                  }}
+                />
+                <Tooltip formatter={(value) => value.toFixed(2)} />
+                <Legend />
+                <Line
+                  type="stepAfter"
+                  dataKey="全国勝率"
+                  stroke="#0ea5e9"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="stepAfter"
+                  dataKey="当地勝率"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="empty-state">
+              この選手の推移データが見つかりません
+            </div>
+          )}
+        </>
       )}
 
       <p className="table-note">
         💡
-        「約90日前」は当該時期にデータが存在する場合のみ表示されます。データなしの選手は新人選手・移籍直後等が考えられます。
+        表の行をクリックするとその選手の節ごとの全国勝率・当地勝率の推移が見られます。「約90日前」は当該時期にデータが存在する場合のみ表示されます。データなしの選手は新人選手・移籍直後等が考えられます。
       </p>
     </div>
   );

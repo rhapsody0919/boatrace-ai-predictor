@@ -125,7 +125,7 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     });
   });
 
-  test("選手調子タブで本日のレースの枠番別勝率変化が表示される（BOA-152）", async ({
+  test("選手調子タブで本日のレースの枠番別勝率変化→クリックで推移グラフに切り替わる（BOA-152）", async ({
     page,
   }) => {
     await page.goto("/winning-technique");
@@ -133,6 +133,11 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     const rows = page.locator(".motor-ranking-row");
     await expect(rows.first()).toBeVisible({ timeout: 10000 });
     await expect(rows).toHaveCount(6);
+    await rows.first().click();
+    await expect(page.locator(".back-to-ranking-btn")).toBeVisible();
+    await expect(page.locator(".recharts-wrapper")).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("会場・レース・タブ指定のディープリンクで直接開ける（BOA-152）", async ({
@@ -172,6 +177,25 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     await page.goto("/races/2026-07-13");
     await page.locator(".predict-btn").first().click();
     await expect(page.locator(".analysis-tools-link-section")).toHaveCount(0);
+  });
+
+  test("/races/{本日}には導線がある（本日開催中のレースのため機能する）", async ({
+    page,
+  }) => {
+    const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    await page.goto(`/races/${today}`);
+    await page.locator(".predict-btn").first().click();
+    const link = page.locator(
+      'a:has-text("このレースの決まり手・モーター調子・選手調子を見る")',
+    );
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/winning-technique\?/);
+    await expect(page.locator(".motor-ranking-row").first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 

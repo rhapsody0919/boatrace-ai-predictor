@@ -160,6 +160,9 @@ function WinningTechniqueAnalysis() {
                       <strong>下降傾向の選手</strong> =
                       実力があっても信頼度をやや下げて考える材料になる
                     </li>
+                    <li>
+                      表の行をクリックすると、その選手の節ごとの全国勝率・当地勝率の推移グラフにドリルダウンできます
+                    </li>
                   </ul>
                 </div>
               </>
