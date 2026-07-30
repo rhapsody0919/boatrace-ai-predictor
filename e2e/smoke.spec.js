@@ -109,6 +109,21 @@ test.describe("決まり手データ分析（BOA-150）", () => {
       page.getByRole("heading", { level: 1, name: /決まり手データ分析/ }),
     ).toBeVisible();
   });
+
+  test("モーター調子タブで本日のレースの枠番別モーター調子→クリックで推移グラフに切り替わる（BOA-151）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:has-text("モーター調子")');
+    const breakdown = page.locator(".motor-ranking-row");
+    await expect(breakdown.first()).toBeVisible({ timeout: 10000 });
+    await expect(breakdown).toHaveCount(6); // 6艇分
+    await breakdown.first().click();
+    await expect(page.locator(".back-to-ranking-btn")).toBeVisible();
+    await expect(page.locator(".recharts-wrapper")).toBeVisible({
+      timeout: 10000,
+    });
+  });
 });
 
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {

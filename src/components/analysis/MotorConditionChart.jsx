@@ -1,0 +1,301 @@
+/**
+ * MotorConditionChart - モーター調子（BOA-151）
+ * 本日開催中の会場・レースを選ぶと、そのレースの枠番別モーター調子
+ * （2連率/3連率）を一覧表示する。「このレースのどの艇のモーターが
+ * 調子いいか」を直接示すことで、賭ける判断にそのまま使えるようにする。
+ * 気になるモーターは節ごとの推移グラフにドリルダウンできる。
+ */
+import { useState, useEffect } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { supabaseDataService } from "../../services/supabaseDataService";
+import "./MotorConditionChart.css";
+
+const VENUE_NAMES = {
+  1: "桐生",
+  2: "戸田",
+  3: "江戸川",
+  4: "平和島",
+  5: "多摩川",
+  6: "浜名湖",
+  7: "蒲郡",
+  8: "常滑",
+  9: "津",
+  10: "三国",
+  11: "びわこ",
+  12: "住之江",
+  13: "尼崎",
+  14: "鳴門",
+  15: "丸亀",
+  16: "児島",
+  17: "宮島",
+  18: "徳山",
+  19: "下関",
+  20: "若松",
+  21: "芦屋",
+  22: "福岡",
+  23: "唐津",
+  24: "大村",
+};
+
+function MotorConditionChart() {
+  const [venues, setVenues] = useState([]);
+  const [selectedVenue, setSelectedVenue] = useState(null);
+  const [races, setRaces] = useState([]);
+  const [selectedRace, setSelectedRace] = useState(null);
+  const [breakdown, setBreakdown] = useState([]);
+  const [drillDownMotor, setDrillDownMotor] = useState(null);
+  const [trendData, setTrendData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // 本日開催中の会場一覧を取得
+  useEffect(() => {
+    const loadVenues = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const list = await supabaseDataService.getVenuesWithTodaysRaces();
+        setVenues(list);
+        setSelectedVenue(list.length > 0 ? list[0] : null);
+      } catch (err) {
+        setError(err.message || "会場一覧の取得に失敗しました");
+        console.error("Failed to load venues with today's races:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadVenues();
+  }, []);
+
+  // 会場変更時: 本日のレース一覧を取得
+  useEffect(() => {
+    if (selectedVenue === null) {
+      setRaces([]);
+      return;
+    }
+    const loadRaces = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        setSelectedRace(null);
+        const list =
+          await supabaseDataService.getTodaysRacesForVenue(selectedVenue);
+        setRaces(list);
+        setSelectedRace(list.length > 0 ? list[0].race_id : null);
+      } catch (err) {
+        setError(err.message || "レース一覧の取得に失敗しました");
+        console.error("Failed to load today's races:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadRaces();
+  }, [selectedVenue]);
+
+  // レース選択時: 枠番別モーター調子を取得
+  useEffect(() => {
+    if (selectedRace === null) return;
+    const loadBreakdown = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        setDrillDownMotor(null);
+        const data =
+          await supabaseDataService.getRaceMotorBreakdown(selectedRace);
+        setBreakdown(data);
+      } catch (err) {
+        setError(err.message || "モーター調子の取得に失敗しました");
+        console.error("Failed to load race motor breakdown:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadBreakdown();
+  }, [selectedRace]);
+
+  // モーター選択時: 節ごとの推移を取得
+  useEffect(() => {
+    if (drillDownMotor === null || selectedVenue === null) return;
+    const loadTrend = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await supabaseDataService.getMotorConditionTrend(
+          selectedVenue,
+          drillDownMotor,
+        );
+        setTrendData(data);
+      } catch (err) {
+        setError(err.message || "モーター推移の取得に失敗しました");
+        console.error("Failed to load motor condition trend:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTrend();
+  }, [selectedVenue, drillDownMotor]);
+
+  const chartData = (trendData?.trend ?? []).map((row) => ({
+    date: row.date.slice(5),
+    "2連率": row.motor_2rate,
+    "3連率": row.motor_3rate,
+  }));
+
+  const bestMotor2Rate =
+    breakdown.length > 0
+      ? Math.max(...breakdown.map((r) => r.motor_2rate ?? 0))
+      : null;
+
+  return (
+    <div className="motor-condition-container">
+      <h2>🔧 モーター調子</h2>
+      <p className="section-description">
+        本日開催中のレースを選ぶと、各艇のモーターの2連率/3連率が一覧でわかります。気になるモーターをクリックすると、節（開催）をまたいだ推移が見られます。
+      </p>
+
+      {venues.length === 0 && !loading ? (
+        <div className="empty-state">本日開催しているレースがありません</div>
+      ) : (
+        <div className="controls-section">
+          <label htmlFor="motor-venue-select">
+            ボートレース場（本日開催中）:
+          </label>
+          <select
+            id="motor-venue-select"
+            value={selectedVenue ?? ""}
+            onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
+            className="venue-select"
+          >
+            {venues.map((v) => (
+              <option key={v} value={v}>
+                {VENUE_NAMES[v] || v}
+              </option>
+            ))}
+          </select>
+
+          {races.length > 0 && (
+            <>
+              <label htmlFor="motor-race-select">レース:</label>
+              <select
+                id="motor-race-select"
+                value={selectedRace ?? ""}
+                onChange={(e) => setSelectedRace(e.target.value)}
+                className="venue-select"
+              >
+                {races.map((r) => (
+                  <option key={r.race_id} value={r.race_id}>
+                    {r.race_number}R（{r.start_time?.slice(0, 5)}〜）
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+        </div>
+      )}
+
+      {loading && <div className="loading-state">データを読み込み中...</div>}
+      {error && <div className="error-state">エラー: {error}</div>}
+
+      {!loading &&
+        !error &&
+        drillDownMotor === null &&
+        breakdown.length > 0 && (
+          <div className="table-wrapper">
+            <table className="motor-ranking-table">
+              <thead>
+                <tr>
+                  <th>枠番</th>
+                  <th>選手名</th>
+                  <th>モーター番号</th>
+                  <th>2連率 (%)</th>
+                  <th>3連率 (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {breakdown.map((row) => (
+                  <tr
+                    key={row.boat_number}
+                    className={`motor-ranking-row ${row.motor_2rate === bestMotor2Rate ? "best-motor" : ""}`}
+                    onClick={() => setDrillDownMotor(row.motor_number)}
+                  >
+                    <td className="rank">{row.boat_number}</td>
+                    <td>{row.player_name?.replace(/\s+/g, "")}</td>
+                    <td className="motor-num">{row.motor_number}号機</td>
+                    <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
+                    <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+      {!loading && !error && drillDownMotor !== null && (
+        <>
+          <button
+            className="back-to-ranking-btn"
+            onClick={() => setDrillDownMotor(null)}
+          >
+            ← レースの一覧に戻る
+          </button>
+          <h3 className="selected-motor-heading">{drillDownMotor}号機の推移</h3>
+
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={chartData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis
+                  label={{
+                    value: "出現率 (%)",
+                    angle: -90,
+                    position: "insideLeft",
+                  }}
+                />
+                <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+                <Legend />
+                <Line
+                  type="stepAfter"
+                  dataKey="2連率"
+                  stroke="#0ea5e9"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="stepAfter"
+                  dataKey="3連率"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="empty-state">
+              このモーターの推移データが見つかりません
+            </div>
+          )}
+        </>
+      )}
+
+      <p className="table-note">
+        💡
+        表の行をクリックするとそのモーターの節ごとの推移が見られます。ハイライトされた行はこのレースで最も2連率が高い艇です。
+      </p>
+    </div>
+  );
+}
+
+export default MotorConditionChart;
