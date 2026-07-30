@@ -110,12 +110,15 @@ test.describe("決まり手データ分析（BOA-150）", () => {
     ).toBeVisible();
   });
 
-  test("モーター調子タブに切り替えるとチャートが表示される（BOA-151）", async ({
+  test("モーター調子タブでランキング表示→クリックで推移グラフに切り替わる（BOA-151）", async ({
     page,
   }) => {
     await page.goto("/winning-technique");
     await page.click('.analysis-tab-btn:has-text("モーター調子")');
-    await expect(page.locator("#motor-select")).toBeVisible();
+    const ranking = page.locator(".motor-ranking-row");
+    await expect(ranking.first()).toBeVisible({ timeout: 10000 });
+    await ranking.first().click();
+    await expect(page.locator(".back-to-ranking-btn")).toBeVisible();
     await expect(page.locator(".recharts-wrapper")).toBeVisible({
       timeout: 10000,
     });

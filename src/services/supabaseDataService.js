@@ -1780,18 +1780,20 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定会場の直近レースに登場したモーター番号一覧を取得する（BOA-151）
+   * 指定会場の全モーターの最新2連率/3連率ランキングを取得する（BOA-151）
+   * モーター番号を事前に知らなくても「今調子が良いモーター」から発見できるようにする
    */
-  getMotorNumbersForVenue(venueCode) {
-    return withCache(`motor-numbers-${venueCode}`, async () => {
+  getMotorRankingForVenue(venueCode) {
+    return withCache(`motor-ranking-${venueCode}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
-        return [];
+        return { venue_code: venueCode, ranking: [] };
       }
 
       const races = await getRacesForVenue(venueCode);
-      if (races.length === 0) return [];
+      if (races.length === 0) return { venue_code: venueCode, ranking: [] };
 
+      const raceDateById = new Map(races.map((r) => [r.race_id, r.race_date]));
       const raceIds = races.map((r) => r.race_id);
       const chunks = chunkArray(raceIds, 500);
 
@@ -1799,22 +1801,39 @@ export const supabaseDataService = {
         chunks.map((chunk) =>
           supabase
             .from("race_entries")
-            .select("motor_number")
+            .select("race_id, motor_number, motor_2rate, motor_3rate")
             .in("race_id", chunk)
             .not("motor_number", "is", null),
         ),
       );
 
-      const motorNumbers = new Set();
+      // モーター番号ごとに最新日付のレコードを採用（motor_2rate/3rateは節単位でのみ更新されるため）
+      const latestByMotor = new Map();
       results.forEach(({ data, error }) => {
         if (error) {
           console.error("race_entries取得エラー:", error.message);
           return;
         }
-        data.forEach((r) => motorNumbers.add(r.motor_number));
+        data.forEach((row) => {
+          const raceDate = raceDateById.get(row.race_id);
+          if (!raceDate) return;
+          const current = latestByMotor.get(row.motor_number);
+          if (!current || raceDate > current.date) {
+            latestByMotor.set(row.motor_number, {
+              motor_number: row.motor_number,
+              motor_2rate: row.motor_2rate,
+              motor_3rate: row.motor_3rate,
+              date: raceDate,
+            });
+          }
+        });
       });
 
-      return [...motorNumbers].sort((a, b) => a - b);
+      const ranking = [...latestByMotor.values()].sort(
+        (a, b) => (b.motor_2rate ?? 0) - (a.motor_2rate ?? 0),
+      );
+
+      return { venue_code: venueCode, ranking };
     });
   },
 

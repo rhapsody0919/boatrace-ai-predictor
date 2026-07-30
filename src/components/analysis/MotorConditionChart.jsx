@@ -1,6 +1,7 @@
 /**
  * MotorConditionChart - モーター調子トレンド（BOA-151）
- * 会場×モーター番号別の2連率/3連率の節ごとの推移を可視化する
+ * デフォルトで会場全モーターの最新2連率ランキングを表示し、
+ * 気になるモーターをクリックすると節ごとの推移グラフにドリルダウンする
  */
 import { useState, useEffect } from "react";
 import {
@@ -45,39 +46,37 @@ const VENUES = [
 
 function MotorConditionChart() {
   const [selectedVenue, setSelectedVenue] = useState("03");
-  const [motorNumbers, setMotorNumbers] = useState([]);
+  const [ranking, setRanking] = useState([]);
   const [selectedMotor, setSelectedMotor] = useState(null);
   const [trendData, setTrendData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 会場変更時: その会場のモーター番号一覧を取得
+  // 会場変更時: ランキングを取得し、詳細表示は閉じる
   useEffect(() => {
-    const loadMotorNumbers = async () => {
+    const loadRanking = async () => {
       try {
         setLoading(true);
         setError(null);
+        setSelectedMotor(null);
         const venueCode = parseInt(selectedVenue, 10);
-        const numbers =
-          await supabaseDataService.getMotorNumbersForVenue(venueCode);
-        setMotorNumbers(numbers);
-        setSelectedMotor(numbers.length > 0 ? numbers[0] : null);
+        const result =
+          await supabaseDataService.getMotorRankingForVenue(venueCode);
+        setRanking(result.ranking);
       } catch (err) {
-        setError(err.message || "モーター番号一覧の取得に失敗しました");
-        console.error("Failed to load motor numbers:", err);
+        setError(err.message || "モーターランキングの取得に失敗しました");
+        console.error("Failed to load motor ranking:", err);
+      } finally {
         setLoading(false);
       }
     };
 
-    loadMotorNumbers();
+    loadRanking();
   }, [selectedVenue]);
 
-  // モーター番号選択時: 推移データを取得
+  // モーター選択時: 推移データを取得
   useEffect(() => {
-    if (selectedMotor === null) {
-      setLoading(false);
-      return;
-    }
+    if (selectedMotor === null) return;
 
     const loadTrend = async () => {
       try {
@@ -100,34 +99,8 @@ function MotorConditionChart() {
     loadTrend();
   }, [selectedVenue, selectedMotor]);
 
-  if (loading) {
-    return (
-      <div className="motor-condition-container">
-        <div className="loading-state">データを読み込み中...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="motor-condition-container">
-        <div className="error-state">エラー: {error}</div>
-      </div>
-    );
-  }
-
-  if (motorNumbers.length === 0) {
-    return (
-      <div className="motor-condition-container">
-        <div className="empty-state">
-          この会場のモーターデータが見つかりません
-        </div>
-      </div>
-    );
-  }
-
   const chartData = (trendData?.trend ?? []).map((row) => ({
-    date: row.date.slice(5), // MM-DDのみ表示
+    date: row.date.slice(5),
     "2連率": row.motor_2rate,
     "3連率": row.motor_3rate,
   }));
@@ -136,7 +109,9 @@ function MotorConditionChart() {
     <div className="motor-condition-container">
       <h2>🔧 モーター調子トレンド</h2>
       <p className="section-description">
-        過去90日間のデータから、同一モーターの2連率/3連率が節（開催）をまたいでどう推移しているかを表示しています。
+        {selectedMotor === null
+          ? "過去90日間のデータから、現在の2連率が高い順にモーターを一覧表示しています。気になるモーターをクリックすると、節（開催）をまたいだ推移が見られます。"
+          : "過去90日間のデータから、同一モーターの2連率/3連率が節（開催）をまたいでどう推移しているかを表示しています。"}
       </p>
 
       <div className="controls-section">
@@ -153,57 +128,97 @@ function MotorConditionChart() {
             </option>
           ))}
         </select>
-
-        <label htmlFor="motor-select">モーター番号:</label>
-        <select
-          id="motor-select"
-          value={selectedMotor ?? ""}
-          onChange={(e) => setSelectedMotor(parseInt(e.target.value, 10))}
-          className="venue-select"
-        >
-          {motorNumbers.map((num) => (
-            <option key={num} value={num}>
-              {num}号機
-            </option>
-          ))}
-        </select>
       </div>
 
-      {chartData.length > 0 ? (
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart
-            data={chartData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      {loading && <div className="loading-state">データを読み込み中...</div>}
+      {error && <div className="error-state">エラー: {error}</div>}
+
+      {!loading && !error && selectedMotor === null && (
+        <>
+          {ranking.length === 0 ? (
+            <div className="empty-state">
+              この会場のモーターデータが見つかりません
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table className="motor-ranking-table">
+                <thead>
+                  <tr>
+                    <th>順位</th>
+                    <th>モーター番号</th>
+                    <th>2連率 (%)</th>
+                    <th>3連率 (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ranking.map((row, idx) => (
+                    <tr
+                      key={row.motor_number}
+                      className="motor-ranking-row"
+                      onClick={() => setSelectedMotor(row.motor_number)}
+                    >
+                      <td className="rank">{idx + 1}</td>
+                      <td className="motor-num">{row.motor_number}号機</td>
+                      <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
+                      <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {!loading && !error && selectedMotor !== null && (
+        <>
+          <button
+            className="back-to-ranking-btn"
+            onClick={() => setSelectedMotor(null)}
           >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis
-              label={{
-                value: "出現率 (%)",
-                angle: -90,
-                position: "insideLeft",
-              }}
-            />
-            <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
-            <Legend />
-            <Line
-              type="stepAfter"
-              dataKey="2連率"
-              stroke="#0ea5e9"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-            />
-            <Line
-              type="stepAfter"
-              dataKey="3連率"
-              stroke="#10b981"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      ) : (
-        <div className="empty-state">このモーターのデータが見つかりません</div>
+            ← ランキングに戻る
+          </button>
+          <h3 className="selected-motor-heading">{selectedMotor}号機の推移</h3>
+
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart
+                data={chartData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis
+                  label={{
+                    value: "出現率 (%)",
+                    angle: -90,
+                    position: "insideLeft",
+                  }}
+                />
+                <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+                <Legend />
+                <Line
+                  type="stepAfter"
+                  dataKey="2連率"
+                  stroke="#0ea5e9"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="stepAfter"
+                  dataKey="3連率"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="empty-state">
+              このモーターのデータが見つかりません
+            </div>
+          )}
+        </>
       )}
 
       <p className="table-note">
