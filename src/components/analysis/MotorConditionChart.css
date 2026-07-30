@@ -126,6 +126,20 @@
   font-weight: 500;
 }
 
+.delta-up {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.delta-down {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.motor-ranking-row.non-clickable-row {
+  cursor: default;
+}
+
 .motor-ranking-row {
   cursor: pointer;
   border-bottom: 1px solid #f1f5f9;

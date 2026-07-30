@@ -495,3 +495,34 @@
     font-size: 0.75rem;
   }
 }
+
+.analysis-tools-link-section {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.analysis-tools-link {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0284c7;
+  background: white;
+  border: 2px solid #0284c7;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.analysis-tools-link:hover {
+  background: #0284c7;
+  color: white;
+}
+
+@media (max-width: 480px) {
+  .analysis-tools-link {
+    display: block;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+}

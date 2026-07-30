@@ -1868,6 +1868,73 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定レースの枠番別・選手の勝率上昇/下降を取得する（BOA-152）
+   * 現在の全国勝率と約90日前時点の全国勝率を比較し、調子の変化を示す
+   */
+  getRaceRacerFormBreakdown(raceId) {
+    return withCache(`race-racer-form-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const { data: current, error: curError } = await supabase
+        .from("race_entries")
+        .select("boat_number, player_name, racer_id, win_rate, local_win_rate")
+        .eq("race_id", raceId)
+        .order("boat_number");
+
+      if (curError || !current || current.length === 0) {
+        if (curError)
+          console.error("race_entries取得エラー:", curError.message);
+        return [];
+      }
+
+      const racerIds = [...new Set(current.map((r) => r.racer_id))].filter(
+        (id) => id !== null,
+      );
+      if (racerIds.length === 0) return current;
+
+      // 約90日前時点の直近の記録を探す（cutoff以前・探索窓2週間で最新のもの）
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const cutoff = ninetyDaysAgo.toISOString().split("T")[0];
+      const windowStart = new Date(ninetyDaysAgo);
+      windowStart.setDate(windowStart.getDate() - 14);
+      const windowStartStr = windowStart.toISOString().split("T")[0];
+
+      const { data: past, error: pastError } = await supabase
+        .from("race_entries")
+        .select("race_id, racer_id, win_rate")
+        .in("racer_id", racerIds)
+        .gte("race_id", windowStartStr)
+        .lte("race_id", cutoff)
+        .order("race_id", { ascending: false });
+
+      if (pastError) {
+        console.error("過去データ取得エラー:", pastError.message);
+      }
+
+      // race_id降順のため、各racer_idごとに最初に出てくるものが cutoff に最も近い記録
+      const pastByRacer = new Map();
+      (past ?? []).forEach((row) => {
+        if (!pastByRacer.has(row.racer_id)) {
+          pastByRacer.set(row.racer_id, row.win_rate);
+        }
+      });
+
+      return current.map((row) => {
+        const pastWinRate = pastByRacer.get(row.racer_id) ?? null;
+        return {
+          ...row,
+          past_win_rate: pastWinRate,
+          delta: pastWinRate !== null ? row.win_rate - pastWinRate : null,
+        };
+      });
+    });
+  },
+
+  /**
    * 指定会場・モーター番号の2連率/3連率の節ごとの推移を取得する（BOA-151）
    * race_entries.motor_2rate/3rate は節単位でのみ更新されるため、
    * 日付単位でdedupeして推移として扱う

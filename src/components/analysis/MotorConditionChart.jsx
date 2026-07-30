@@ -5,7 +5,7 @@
  * 調子いいか」を直接示すことで、賭ける判断にそのまま使えるようにする。
  * 気になるモーターは節ごとの推移グラフにドリルダウンできる。
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   LineChart,
   Line,
@@ -46,16 +46,22 @@ const VENUE_NAMES = {
   24: "大村",
 };
 
-function MotorConditionChart() {
+function MotorConditionChart({
+  initialVenueCode = null,
+  initialRaceId = null,
+}) {
   const [venues, setVenues] = useState([]);
-  const [selectedVenue, setSelectedVenue] = useState(null);
+  const [selectedVenue, setSelectedVenue] = useState(initialVenueCode);
   const [races, setRaces] = useState([]);
-  const [selectedRace, setSelectedRace] = useState(null);
+  const [selectedRace, setSelectedRace] = useState(initialRaceId);
   const [breakdown, setBreakdown] = useState([]);
   const [drillDownMotor, setDrillDownMotor] = useState(null);
   const [trendData, setTrendData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // RaceDetail等からのディープリンク用: 初回のみ指定のレースを優先する
+  const pendingInitialRaceId = useRef(initialRaceId);
 
   // 本日開催中の会場一覧を取得
   useEffect(() => {
@@ -65,7 +71,11 @@ function MotorConditionChart() {
         setError(null);
         const list = await supabaseDataService.getVenuesWithTodaysRaces();
         setVenues(list);
-        setSelectedVenue(list.length > 0 ? list[0] : null);
+        const preferred =
+          initialVenueCode !== null && list.includes(initialVenueCode)
+            ? initialVenueCode
+            : (list[0] ?? null);
+        setSelectedVenue(preferred);
       } catch (err) {
         setError(err.message || "会場一覧の取得に失敗しました");
         console.error("Failed to load venues with today's races:", err);
@@ -74,6 +84,7 @@ function MotorConditionChart() {
       }
     };
     loadVenues();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 会場変更時: 本日のレース一覧を取得
@@ -86,11 +97,15 @@ function MotorConditionChart() {
       try {
         setLoading(true);
         setError(null);
-        setSelectedRace(null);
         const list =
           await supabaseDataService.getTodaysRacesForVenue(selectedVenue);
         setRaces(list);
-        setSelectedRace(list.length > 0 ? list[0].race_id : null);
+
+        const pending = pendingInitialRaceId.current;
+        const pendingExists =
+          pending !== null && list.some((r) => r.race_id === pending);
+        setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
+        pendingInitialRaceId.current = null;
       } catch (err) {
         setError(err.message || "レース一覧の取得に失敗しました");
         console.error("Failed to load today's races:", err);

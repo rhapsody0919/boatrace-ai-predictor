@@ -486,6 +486,17 @@ function RaceDetail() {
               )}
 
               {selectedRace && (
+                <div className="analysis-tools-link-section">
+                  <Link
+                    to={`/winning-technique?venue_code=${selectedRace.venueCode}&race_id=${selectedRace.id}&tab=motor`}
+                    className="analysis-tools-link"
+                  >
+                    🔍 このレースの決まり手・モーター調子・選手調子を見る
+                  </Link>
+                </div>
+              )}
+
+              {selectedRace && (
                 <RaceNavCard
                   races={races}
                   selectedRace={selectedRace}
