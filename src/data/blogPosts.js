@@ -1,6 +1,17 @@
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "winning-technique-motor-condition-guide",
+    title: "決まり手データ分析とモーター調子 - BoatAIの新しい分析機能の使い方",
+    description:
+      "会場・枠番別の決まり手傾向と、本日のレースの枠番別モーター調子（2連率・3連率）を確認できる新機能を解説。AIの予想を裏付ける根拠として、自分で判断する材料に使えます。",
+    date: "2026-07-30",
+    category: "データ分析",
+    tags: ["決まり手", "モーター", "新機能", "データ分析", "根拠"],
+    readTime: "8分",
+    featured: true,
+  },
+  {
     id: "ai-prediction-accuracy-review",
     title:
       "ボートレースAI予想は本当に当たるのか？ — 3ヶ月15,000レースの検証結果",
