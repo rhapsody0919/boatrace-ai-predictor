@@ -149,10 +149,11 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     });
   });
 
-  test("レース詳細ページからデータ分析ツールへの導線がある（BOA-152）", async ({
+  test("トップページ（本日の予想）からデータ分析ツールへの導線がある（BOA-152）", async ({
     page,
   }) => {
-    await page.goto("/races/2026-07-30");
+    // /races/ は過去アーカイブのため対象外。実際に予想を見るトップページに導線が必要
+    await page.goto("/");
     await page.locator(".predict-btn").first().click();
     const link = page.locator(
       'a:has-text("このレースの決まり手・モーター調子・選手調子を見る")',
@@ -163,6 +164,14 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     await expect(page.locator(".motor-ranking-row").first()).toBeVisible({
       timeout: 10000,
     });
+  });
+
+  test("過去アーカイブ（/races/）にはデータ分析ツールへの導線が無い（本日開催中の会場のみ対応のため）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-07-13");
+    await page.locator(".predict-btn").first().click();
+    await expect(page.locator(".analysis-tools-link-section")).toHaveCount(0);
   });
 });
 
