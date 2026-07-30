@@ -1780,60 +1780,90 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定会場の全モーターの最新2連率/3連率ランキングを取得する（BOA-151）
-   * モーター番号を事前に知らなくても「今調子が良いモーター」から発見できるようにする
+   * 本日レースが開催されている会場一覧を取得する（BOA-151）
+   * races テーブルは当日分のカードしか保持していないため、モーター調子の
+   * レース単位表示は「本日開催中の会場」に限定する
    */
-  getMotorRankingForVenue(venueCode) {
-    return withCache(`motor-ranking-${venueCode}`, async () => {
+  getVenuesWithTodaysRaces() {
+    const now = new Date();
+    const jstOffset = 9 * 60;
+    const jstNow = new Date(now.getTime() + jstOffset * 60 * 1000);
+    const today = jstNow.toISOString().split("T")[0];
+
+    return withCache(`venues-with-races-${today}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
-        return { venue_code: venueCode, ranking: [] };
+        return [];
       }
 
-      const races = await getRacesForVenue(venueCode);
-      if (races.length === 0) return { venue_code: venueCode, ranking: [] };
+      const { data, error } = await supabase
+        .from("races")
+        .select("venue_code")
+        .eq("race_date", today);
 
-      const raceDateById = new Map(races.map((r) => [r.race_id, r.race_date]));
-      const raceIds = races.map((r) => r.race_id);
-      const chunks = chunkArray(raceIds, 500);
+      if (error) {
+        console.error("races取得エラー:", error.message);
+        return [];
+      }
 
-      const results = await Promise.all(
-        chunks.map((chunk) =>
-          supabase
-            .from("race_entries")
-            .select("race_id, motor_number, motor_2rate, motor_3rate")
-            .in("race_id", chunk)
-            .not("motor_number", "is", null),
-        ),
-      );
+      return [...new Set(data.map((r) => r.venue_code))].sort((a, b) => a - b);
+    });
+  },
 
-      // モーター番号ごとに最新日付のレコードを採用（motor_2rate/3rateは節単位でのみ更新されるため）
-      const latestByMotor = new Map();
-      results.forEach(({ data, error }) => {
-        if (error) {
-          console.error("race_entries取得エラー:", error.message);
-          return;
-        }
-        data.forEach((row) => {
-          const raceDate = raceDateById.get(row.race_id);
-          if (!raceDate) return;
-          const current = latestByMotor.get(row.motor_number);
-          if (!current || raceDate > current.date) {
-            latestByMotor.set(row.motor_number, {
-              motor_number: row.motor_number,
-              motor_2rate: row.motor_2rate,
-              motor_3rate: row.motor_3rate,
-              date: raceDate,
-            });
-          }
-        });
-      });
+  /**
+   * 指定会場の本日のレース一覧を取得する（BOA-151）
+   */
+  getTodaysRacesForVenue(venueCode) {
+    const now = new Date();
+    const jstOffset = 9 * 60;
+    const jstNow = new Date(now.getTime() + jstOffset * 60 * 1000);
+    const today = jstNow.toISOString().split("T")[0];
 
-      const ranking = [...latestByMotor.values()].sort(
-        (a, b) => (b.motor_2rate ?? 0) - (a.motor_2rate ?? 0),
-      );
+    return withCache(`todays-races-${venueCode}-${today}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
 
-      return { venue_code: venueCode, ranking };
+      const { data, error } = await supabase
+        .from("races")
+        .select("race_id, race_number, start_time")
+        .eq("venue_code", venueCode)
+        .eq("race_date", today)
+        .order("race_number");
+
+      if (error) {
+        console.error("races取得エラー:", error.message);
+        return [];
+      }
+      return data ?? [];
+    });
+  },
+
+  /**
+   * 指定レースの枠番別モーター調子（2連率/3連率）を取得する（BOA-151）
+   * 「このレースのどの艇のモーターが調子いいか」を直接示す
+   */
+  getRaceMotorBreakdown(raceId) {
+    return withCache(`race-motor-breakdown-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from("race_entries")
+        .select(
+          "boat_number, player_name, motor_number, motor_2rate, motor_3rate",
+        )
+        .eq("race_id", raceId)
+        .order("boat_number");
+
+      if (error) {
+        console.error("race_entries取得エラー:", error.message);
+        return [];
+      }
+      return data ?? [];
     });
   },
 

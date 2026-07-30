@@ -136,6 +136,15 @@
   background-color: #f0f9ff;
 }
 
+.motor-ranking-row.best-motor {
+  background-color: #fef9c3;
+  font-weight: 600;
+}
+
+.motor-ranking-row.best-motor:hover {
+  background-color: #fef08a;
+}
+
 .back-to-ranking-btn {
   padding: 0.5rem 1rem;
   margin-bottom: 1rem;
