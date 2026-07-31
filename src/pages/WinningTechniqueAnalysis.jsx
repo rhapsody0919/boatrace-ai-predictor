@@ -9,6 +9,7 @@ import {
   StPredictabilityChart,
   TopStartChart,
   LosingTechniqueChart,
+  NigeOutcomeChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -30,6 +31,7 @@ function WinningTechniqueAnalysis() {
       "st",
       "topstart",
       "losing",
+      "nige",
     ].includes(initialTab)
       ? initialTab
       : "technique",
@@ -41,7 +43,7 @@ function WinningTechniqueAnalysis() {
         <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析の7つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布の8つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
       </>
@@ -53,7 +55,7 @@ function WinningTechniqueAnalysis() {
           <div className="page-header">
             <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手の傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布の傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
@@ -100,6 +102,12 @@ function WinningTechniqueAnalysis() {
             >
               💔 負け決まり手
             </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "nige" ? "active" : ""}`}
+              onClick={() => setActiveTab("nige")}
+            >
+              🏃 逃げ成功時分布
+            </button>
           </div>
 
           {activeTab === "outcome" && (
@@ -137,6 +145,15 @@ function WinningTechniqueAnalysis() {
           )}
           {activeTab === "losing" && (
             <LosingTechniqueChart initialVenueCode={initialVenueCode} />
+          )}
+          {activeTab === "nige" && (
+            <NigeOutcomeChart
+              initialVenueCode={
+                initialVenueCode !== null
+                  ? String(initialVenueCode).padStart(2, "0")
+                  : null
+              }
+            />
           )}
 
           <section className="info-section">
@@ -339,6 +356,33 @@ function WinningTechniqueAnalysis() {
                     </li>
                     <li>
                       1号艇がどの決まり手で負けやすいかを見ることで、逃げが決まらなかった場合の展開を予測する材料になります
+                    </li>
+                  </ul>
+                </div>
+              </>
+            )}
+            {activeTab === "nige" && (
+              <>
+                <h2>逃げ成功時の複勝分布について</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    過去90日間のレース結果から、「逃げ（先頭独走）」で1着になったレースだけに絞って、2着・3着の出現パターンを分析しています。出目分布（決まり手を問わない全体集計）とは異なり、逃げ切りが決まった場合に限定した傾向がわかります。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      1号艇が逃げた場合に2着・3着になりやすい艇の組み合わせを把握できる
+                    </li>
+                    <li>
+                      1号艇以外（2〜6コース）が逃げるケースは件数が少なく、荒れたレースの参考になる
+                    </li>
+                    <li>
+                      決まり手を問わない出目分布と比較することで、逃げ特有の傾向を切り分けられます
                     </li>
                   </ul>
                 </div>
