@@ -2297,4 +2297,30 @@ export const supabaseDataService = {
       return { racer_id: racerId, trend };
     });
   },
+
+  /**
+   * 会場別・枠番別のトップスタート実績（回数/確率、トップスタート時の1着率）を取得する（BOA-154）
+   * 日次バッチ（scripts/daily/update-top-start-stats.js）で事前集計したテーブルを参照する
+   */
+  getTopStartStats(venueCode) {
+    return withCache(`top-start-stats-${venueCode}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return { venue_code: venueCode, data: [] };
+      }
+
+      const { data, error } = await supabase
+        .from("top_start_stats")
+        .select("*")
+        .eq("venue_code", venueCode)
+        .order("boat_number");
+
+      if (error) {
+        console.error("Supabase getTopStartStats error:", error.message);
+        return { venue_code: venueCode, data: [] };
+      }
+
+      return { venue_code: venueCode, data: data ?? [] };
+    });
+  },
 };
