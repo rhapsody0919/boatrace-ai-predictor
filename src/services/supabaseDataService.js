@@ -191,6 +191,31 @@ function chunkArray(array, size) {
   return chunks;
 }
 
+// Supabaseのデフォルトlimit(1000行)を超えるin()クエリを.range()でページネーションして全件取得する
+// （race_id 1件につき最大6艇分の行がある race_start_timings/exhibition_data 等、
+// 「in()のキー数 × 1行あたりの行数」が1000を超えうるクエリで使用する）
+async function fetchAllByIn(table, select, column, values) {
+  const results = [];
+  const pageSize = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(select)
+      .in(column, values)
+      .range(from, from + pageSize - 1);
+    if (error) {
+      console.error(`${table}取得エラー:`, error.message);
+      break;
+    }
+    if (!data || data.length === 0) break;
+    results.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return results;
+}
+
 // 指定会場の直近90日のレース一覧を取得する（BOA-151、複数メソッドで共有するためキャッシュする）
 function getRacesForVenue(venueCode) {
   return withCache(`races-for-venue-${venueCode}`, async () => {
@@ -2055,5 +2080,221 @@ export const supabaseDataService = {
         };
       },
     );
+  },
+
+  /**
+   * 指定レースの枠番別・展示ST/本番STのズレ（安定度）を取得する（BOA-153）
+   * 展示STが本番の参考になるか（ズレが小さいほど安定）を選手ごとの過去実績から示す
+   */
+  getRaceStPredictabilityBreakdown(raceId) {
+    return withCache(`race-st-predictability-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const { data: entries, error: entriesError } = await supabase
+        .from("race_entries")
+        .select("boat_number, player_name, racer_id")
+        .eq("race_id", raceId)
+        .order("boat_number");
+
+      if (entriesError || !entries || entries.length === 0) {
+        if (entriesError)
+          console.error("race_entries取得エラー:", entriesError.message);
+        return [];
+      }
+
+      const { data: todaysExhibition } = await supabase
+        .from("exhibition_data")
+        .select("boat_number, start_timing")
+        .eq("race_id", raceId);
+      const exhibitionByBoat = new Map(
+        (todaysExhibition ?? []).map((e) => [e.boat_number, e.start_timing]),
+      );
+
+      const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
+        (id) => id !== null,
+      );
+      if (racerIds.length === 0) {
+        return entries.map((row) => ({
+          ...row,
+          exhibition_st: exhibitionByBoat.get(row.boat_number) ?? null,
+          avg_deviation: null,
+          sample_count: 0,
+        }));
+      }
+
+      // 過去90日、当該レースより前の出走を選手ごとに収集
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
+
+      const { data: pastEntries, error: pastError } = await supabase
+        .from("race_entries")
+        .select("race_id, boat_number, racer_id")
+        .in("racer_id", racerIds)
+        .gte("race_id", cutoffStr)
+        .lt("race_id", raceId);
+
+      if (pastError) {
+        console.error("過去出走データ取得エラー:", pastError.message);
+      }
+
+      const pastRaceIds = [
+        ...new Set((pastEntries ?? []).map((e) => e.race_id)),
+      ];
+
+      if (pastRaceIds.length === 0) {
+        return entries.map((row) => ({
+          ...row,
+          exhibition_st: exhibitionByBoat.get(row.boat_number) ?? null,
+          avg_deviation: null,
+          sample_count: 0,
+        }));
+      }
+
+      // race_id 1件につき最大6艇分の行があるため、in()のキー数だけでなく取得行数も
+      // 1000行を超えうる。chunkArrayだけでは不十分なため.range()ページネーションで全件取得する
+      const [actualRows, exhibitionRows] = await Promise.all([
+        fetchAllByIn(
+          "race_start_timings",
+          "race_id, boat_number, start_timing, is_flying",
+          "race_id",
+          pastRaceIds,
+        ),
+        fetchAllByIn(
+          "exhibition_data",
+          "race_id, boat_number, start_timing",
+          "race_id",
+          pastRaceIds,
+        ),
+      ]);
+
+      const actualByKey = new Map();
+      actualRows.forEach((r) => {
+        if (r.is_flying) return; // フライングは異常値のためズレ計算から除外
+        actualByKey.set(`${r.race_id}-${r.boat_number}`, r.start_timing);
+      });
+
+      const exhibitionByKey = new Map();
+      exhibitionRows.forEach((e) => {
+        exhibitionByKey.set(`${e.race_id}-${e.boat_number}`, e.start_timing);
+      });
+
+      // 選手ごとに過去の |本番ST - 展示ST| を集計
+      const deviationsByRacer = new Map();
+      (pastEntries ?? []).forEach((e) => {
+        const key = `${e.race_id}-${e.boat_number}`;
+        const actual = actualByKey.get(key);
+        const exhibition = exhibitionByKey.get(key);
+        if (actual === undefined || exhibition === undefined) return;
+
+        const deviation = Math.abs(actual - exhibition);
+        if (!deviationsByRacer.has(e.racer_id)) {
+          deviationsByRacer.set(e.racer_id, []);
+        }
+        deviationsByRacer.get(e.racer_id).push(deviation);
+      });
+
+      return entries.map((row) => {
+        const deviations = deviationsByRacer.get(row.racer_id) ?? [];
+        const avgDeviation =
+          deviations.length > 0
+            ? deviations.reduce((sum, d) => sum + d, 0) / deviations.length
+            : null;
+        return {
+          ...row,
+          exhibition_st: exhibitionByBoat.get(row.boat_number) ?? null,
+          avg_deviation: avgDeviation,
+          sample_count: deviations.length,
+        };
+      });
+    });
+  },
+
+  /**
+   * 指定選手の展示ST/本番STのズレの推移を取得する（BOA-153）
+   * フライングは異常値のため除外。同日複数レースは平均してグラフ用に日付単位でまとめる
+   */
+  getStDeviationTrend(racerId) {
+    return withCache(`st-deviation-trend-${racerId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return { racer_id: racerId, trend: [] };
+      }
+
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
+
+      const { data: pastEntries, error: entriesError } = await supabase
+        .from("race_entries")
+        .select("race_id, boat_number")
+        .eq("racer_id", racerId)
+        .gte("race_id", cutoffStr)
+        .order("race_id");
+
+      if (entriesError || !pastEntries || pastEntries.length === 0) {
+        if (entriesError)
+          console.error("race_entries取得エラー:", entriesError.message);
+        return { racer_id: racerId, trend: [] };
+      }
+
+      const raceIds = pastEntries.map((e) => e.race_id);
+
+      // race_id 1件につき最大6艇分の行があるため.range()ページネーションで全件取得する
+      const [actualRows, exhibitionRows] = await Promise.all([
+        fetchAllByIn(
+          "race_start_timings",
+          "race_id, boat_number, start_timing, is_flying",
+          "race_id",
+          raceIds,
+        ),
+        fetchAllByIn(
+          "exhibition_data",
+          "race_id, boat_number, start_timing",
+          "race_id",
+          raceIds,
+        ),
+      ]);
+
+      const actualByKey = new Map();
+      actualRows.forEach((r) => {
+        if (r.is_flying) return;
+        actualByKey.set(`${r.race_id}-${r.boat_number}`, r.start_timing);
+      });
+
+      const exhibitionByKey = new Map();
+      exhibitionRows.forEach((e) => {
+        exhibitionByKey.set(`${e.race_id}-${e.boat_number}`, e.start_timing);
+      });
+
+      // 日付単位で当日の平均ズレをまとめる
+      const byDate = new Map();
+      pastEntries
+        .map((e) => ({ ...e, race_date: e.race_id.slice(0, 10) }))
+        .sort((a, b) => a.race_date.localeCompare(b.race_date))
+        .forEach((e) => {
+          const key = `${e.race_id}-${e.boat_number}`;
+          const actual = actualByKey.get(key);
+          const exhibition = exhibitionByKey.get(key);
+          if (actual === undefined || exhibition === undefined) return;
+
+          const deviation = Math.abs(actual - exhibition);
+          if (!byDate.has(e.race_date)) {
+            byDate.set(e.race_date, []);
+          }
+          byDate.get(e.race_date).push(deviation);
+        });
+
+      const trend = [...byDate.entries()].map(([date, deviations]) => ({
+        date,
+        avg_deviation:
+          deviations.reduce((sum, d) => sum + d, 0) / deviations.length,
+      }));
+
+      return { racer_id: racerId, trend };
+    });
   },
 };
