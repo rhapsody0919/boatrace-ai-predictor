@@ -24,7 +24,6 @@ import RaceHistory from "./pages/RaceHistory";
 import RaceDetail from "./pages/RaceDetail";
 import Profile from "./pages/Profile";
 import AccuracyHistory from "./pages/AccuracyHistory";
-import OutcomeDistribution from "./pages/OutcomeDistribution";
 import WinningTechniqueAnalysis from "./pages/WinningTechniqueAnalysis";
 import Holmes from "./pages/Holmes";
 import ContentHub from "./pages/ContentHub";
@@ -69,6 +68,15 @@ function HashRedirect() {
   }, [location]);
 
   return null;
+}
+
+// 旧 /outcome-distribution はデータ分析ツールの1タブに統合済み（BOA-152）
+// venue_code は維持しつつ tab=outcome を付与してリダイレクトする
+function OutcomeDistributionRedirect() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  params.set("tab", "outcome");
+  return <Navigate to={`/winning-technique?${params.toString()}`} replace />;
 }
 
 // ルート変更時にAuto Adsを再スキャン
@@ -131,7 +139,10 @@ function LocalizedRoutes({ lng = "ja" }) {
       <Route path="accuracy" element={<App tab="accuracy" />} />
       <Route path="picks" element={<App tab="picks" />} />
       <Route path="accuracy/history" element={<AccuracyHistory />} />
-      <Route path="outcome-distribution" element={<OutcomeDistribution />} />
+      <Route
+        path="outcome-distribution"
+        element={<OutcomeDistributionRedirect />}
+      />
       <Route path="winning-technique" element={<WinningTechniqueAnalysis />} />
       <Route path="privacy" element={<App tab="privacy" />} />
       <Route path="terms" element={<App tab="terms" />} />

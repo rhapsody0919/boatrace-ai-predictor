@@ -85,9 +85,15 @@ function OutcomePatternPreview({
 
       {expanded && (
         <div className="preview-content">
-          {loading && <div className="loading">{t("outcomePreview.loading")}</div>}
+          {loading && (
+            <div className="loading">{t("outcomePreview.loading")}</div>
+          )}
 
-          {error && <div className="error">{t("outcomePreview.error", { message: error })}</div>}
+          {error && (
+            <div className="error">
+              {t("outcomePreview.error", { message: error })}
+            </div>
+          )}
 
           {!loading && !error && topPatterns.length > 0 && (
             <div className="table-wrapper">
@@ -123,7 +129,7 @@ function OutcomePatternPreview({
               </table>
 
               <Link
-                to={`/outcome-distribution?venue_code=${venueCode}`}
+                to={`/winning-technique?venue_code=${venueCode}&tab=outcome`}
                 className="detail-link"
               >
                 {t("outcomePreview.detailLink", { venue: venueName })}
@@ -132,9 +138,7 @@ function OutcomePatternPreview({
           )}
 
           {!loading && !error && topPatterns.length === 0 && (
-            <div className="no-data">
-              {t("outcomePreview.noData")}
-            </div>
+            <div className="no-data">{t("outcomePreview.noData")}</div>
           )}
         </div>
       )}

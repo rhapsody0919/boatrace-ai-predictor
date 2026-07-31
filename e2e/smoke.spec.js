@@ -110,6 +110,31 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     ).toBeVisible();
   });
 
+  test("出目分布タブが表示される（BOA-152: 旧/outcome-distributionを統合）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:has-text("出目分布")');
+    await expect(page.locator(".outcome-distribution-container")).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
+  test("旧/outcome-distributionは会場指定を保ったままデータ分析ツールへリダイレクトされる（BOA-152）", async ({
+    page,
+  }) => {
+    await page.goto("/outcome-distribution?venue_code=4");
+    await expect(page).toHaveURL(
+      /\/winning-technique\?venue_code=4&tab=outcome/,
+    );
+    await expect(
+      page.locator('.analysis-tab-btn:has-text("出目分布")'),
+    ).toHaveClass(/active/);
+    await expect(page.locator(".outcome-distribution-container")).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
   test("モーター調子タブで本日のレースの枠番別モーター調子→クリックで推移グラフに切り替わる（BOA-151）", async ({
     page,
   }) => {

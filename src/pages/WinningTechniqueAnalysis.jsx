@@ -5,6 +5,7 @@ import {
   WinningTechniqueChart,
   MotorConditionChart,
   RacerFormChart,
+  OutcomeDistributionTable,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -18,7 +19,7 @@ function WinningTechniqueAnalysis() {
   const initialTab = params.get("tab");
 
   const [activeTab, setActiveTab] = useState(
-    ["technique", "motor", "racer"].includes(initialTab)
+    ["technique", "motor", "racer", "outcome"].includes(initialTab)
       ? initialTab
       : "technique",
   );
@@ -29,7 +30,7 @@ function WinningTechniqueAnalysis() {
         <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="決まり手データ分析・モーター調子・選手調子の3つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子の4つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
       </>
@@ -41,11 +42,17 @@ function WinningTechniqueAnalysis() {
           <div className="page-header">
             <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              決まり手・モーター調子・選手調子の傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子の傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
           <div className="analysis-tabs">
+            <button
+              className={`analysis-tab-btn ${activeTab === "outcome" ? "active" : ""}`}
+              onClick={() => setActiveTab("outcome")}
+            >
+              📊 出目分布
+            </button>
             <button
               className={`analysis-tab-btn ${activeTab === "technique" ? "active" : ""}`}
               onClick={() => setActiveTab("technique")}
@@ -66,6 +73,15 @@ function WinningTechniqueAnalysis() {
             </button>
           </div>
 
+          {activeTab === "outcome" && (
+            <OutcomeDistributionTable
+              initialVenueCode={
+                initialVenueCode !== null
+                  ? String(initialVenueCode).padStart(2, "0")
+                  : null
+              }
+            />
+          )}
           {activeTab === "technique" && (
             <WinningTechniqueChart initialVenueCode={initialVenueCode} />
           )}
@@ -83,6 +99,39 @@ function WinningTechniqueAnalysis() {
           )}
 
           <section className="info-section">
+            {activeTab === "outcome" && (
+              <>
+                <h2>出目分布分析について</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    過去90日間のレース結果を集計し、各ボートレース場で「1着が1コースの時、2着と3着がどの組み合わせで出やすいか」を統計的に分析しています。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>出現率が高い</strong> =
+                      その組み合わせが実際によく出ている
+                    </li>
+                    <li>
+                      <strong>配当が低い</strong> =
+                      予想が集中しやすい（多くの人が買っている）
+                    </li>
+                    <li>
+                      <strong>配当が高い</strong>=
+                      穴目だが出現率は低い（的中しづらい傾向）
+                    </li>
+                    <li>
+                      各ボートレース場ごとに特性が異なるため、会場選択で出現率が大きく変わります
+                    </li>
+                  </ul>
+                </div>
+              </>
+            )}
             {activeTab === "technique" && (
               <>
                 <h2>決まり手データ分析について</h2>
