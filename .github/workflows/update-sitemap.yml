@@ -33,16 +33,51 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
+      - name: Check for sitemap changes
+        id: sitemap_diff
+        run: |
+          git add public/sitemap.xml
+          if git diff --staged --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Commit and push if changed
+        if: steps.sitemap_diff.outputs.changed == 'true'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add public/sitemap.xml
-          git diff --staged --quiet || git commit -m "chore: update sitemap [automated]"
+          git commit -m "chore: update sitemap [automated]"
           git pull --rebase
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger Vercel Deploy
+        if: steps.sitemap_diff.outputs.changed == 'true'
         run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+
+      # sitemap変更時のみGoogleへ再送信を通知（BOA-152関連: SEO未対応の是正）
+      # サービスアカウントがSearch Consoleで「フル」権限を持つ場合のみ成功する
+      - name: Create credentials directory
+        if: steps.sitemap_diff.outputs.changed == 'true'
+        run: mkdir -p credentials
+
+      - name: Write service account key
+        if: steps.sitemap_diff.outputs.changed == 'true'
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+        run: echo "$GOOGLE_SERVICE_ACCOUNT_KEY" > credentials/google-service-account.json
+
+      - name: Submit sitemap to Search Console
+        if: steps.sitemap_diff.outputs.changed == 'true'
+        continue-on-error: true # サービスアカウントが未設定/権限不足でも sitemap 更新自体は失敗させない
+        run: node scripts/submit-sitemap.js
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ./credentials/google-service-account.json
+          SEARCH_CONSOLE_SITE_URL: ${{ secrets.SEARCH_CONSOLE_SITE_URL }}
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -f credentials/google-service-account.json
