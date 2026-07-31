@@ -116,6 +116,12 @@ const staticPages = [
     changefreq: "daily",
     priority: "0.8",
   },
+  {
+    loc: "/winning-technique",
+    lastmod: new Date().toISOString().split("T")[0],
+    changefreq: "daily",
+    priority: "0.8",
+  },
 ];
 
 // 全言語で翻訳提供済みのページ（デフォルト言語以外の各言語 URL を登録。未翻訳の blog 等は含めない）
