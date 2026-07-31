@@ -2424,4 +2424,113 @@ export const supabaseDataService = {
       };
     });
   },
+
+  /**
+   * 逃げ成功時（winning_technique='逃げ'）の複勝分布を取得する（BOA-158）
+   * 既存のgetOutcomeDistributionと対になるが、テーブル・集計とも分離されている
+   */
+  getNigeOutcomeDistribution(venueCode) {
+    return withCache(`nige-outcome-distribution-${venueCode}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return {
+          venue_code: venueCode,
+          venue_name: "",
+          total_races: 0,
+          last_updated: null,
+          data: {},
+        };
+      }
+
+      const { data, error } = await supabase
+        .from("nige_outcome_distribution")
+        .select("*")
+        .eq("venue_code", venueCode)
+        .order("first_boat")
+        .order("count_90days", { ascending: false });
+
+      if (error) {
+        console.error(
+          "Supabase getNigeOutcomeDistribution error:",
+          error.message,
+        );
+        return {
+          venue_code: venueCode,
+          venue_name: "",
+          total_races: 0,
+          last_updated: null,
+          data: {},
+        };
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          venue_code: venueCode,
+          venue_name: "",
+          total_races: 0,
+          last_updated: null,
+          data: {},
+        };
+      }
+
+      const outcomesData = {};
+      let totalRaces = 0;
+      let lastUpdated = null;
+
+      data.forEach((row) => {
+        const firstBoat = row.first_boat;
+        if (!outcomesData[firstBoat]) {
+          outcomesData[firstBoat] = [];
+        }
+
+        outcomesData[firstBoat].push({
+          second_boat: row.second_boat,
+          third_boat: row.third_boat,
+          count: row.count_90days,
+          probability: row.probability,
+          avg_payout: row.avg_payout,
+        });
+
+        if (!totalRaces) {
+          totalRaces = row.total_races;
+          lastUpdated = row.last_updated;
+        }
+      });
+
+      const VENUE_NAMES = {
+        1: "桐生",
+        2: "戸田",
+        3: "江戸川",
+        4: "平和島",
+        5: "多摩川",
+        6: "浜名湖",
+        7: "蒲郡",
+        8: "常滑",
+        9: "津",
+        10: "三国",
+        11: "びわこ",
+        12: "住之江",
+        13: "尼崎",
+        14: "鳴門",
+        15: "丸亀",
+        16: "児島",
+        17: "宮島",
+        18: "徳山",
+        19: "下関",
+        20: "若松",
+        21: "芦屋",
+        22: "福岡",
+        23: "唐津",
+        24: "大村",
+      };
+
+      return {
+        venue_code: venueCode,
+        venue_name: VENUE_NAMES[venueCode] || "",
+        total_races: totalRaces,
+        last_updated: lastUpdated,
+        data: outcomesData,
+      };
+    });
+  },
 };
