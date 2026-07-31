@@ -1,22 +1,36 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import {
   WinningTechniqueChart,
   MotorConditionChart,
+  RacerFormChart,
+  OutcomeDistributionTable,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
 
 function WinningTechniqueAnalysis() {
-  const [activeTab, setActiveTab] = useState("technique");
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const venueCodeParam = params.get("venue_code");
+  const initialVenueCode = venueCodeParam ? parseInt(venueCodeParam, 10) : null;
+  const initialRaceId = params.get("race_id");
+  const initialTab = params.get("tab");
+
+  const [activeTab, setActiveTab] = useState(
+    ["technique", "motor", "racer", "outcome"].includes(initialTab)
+      ? initialTab
+      : "technique",
+  );
 
   return (
     <div className="outcome-distribution-page">
       <>
-        <title>決まり手データ分析 - BoatAI</title>
+        <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="ボートレース場別・枠番別の決まり手（逃げ・差し・まくり等）出現割合を過去90日のデータから分析。各ボートレース場の傾向を詳しく解説します。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子の4つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
       </>
@@ -26,13 +40,19 @@ function WinningTechniqueAnalysis() {
       <main className="content">
         <div className="container">
           <div className="page-header">
-            <h1>🎯 決まり手データ分析</h1>
+            <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              ボートレース場ごとの決まり手傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子の傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
           <div className="analysis-tabs">
+            <button
+              className={`analysis-tab-btn ${activeTab === "outcome" ? "active" : ""}`}
+              onClick={() => setActiveTab("outcome")}
+            >
+              📊 出目分布
+            </button>
             <button
               className={`analysis-tab-btn ${activeTab === "technique" ? "active" : ""}`}
               onClick={() => setActiveTab("technique")}
@@ -45,16 +65,74 @@ function WinningTechniqueAnalysis() {
             >
               🔧 モーター調子
             </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "racer" ? "active" : ""}`}
+              onClick={() => setActiveTab("racer")}
+            >
+              📈 選手調子
+            </button>
           </div>
 
-          {activeTab === "technique" ? (
-            <WinningTechniqueChart />
-          ) : (
-            <MotorConditionChart />
+          {activeTab === "outcome" && (
+            <OutcomeDistributionTable
+              initialVenueCode={
+                initialVenueCode !== null
+                  ? String(initialVenueCode).padStart(2, "0")
+                  : null
+              }
+            />
+          )}
+          {activeTab === "technique" && (
+            <WinningTechniqueChart initialVenueCode={initialVenueCode} />
+          )}
+          {activeTab === "motor" && (
+            <MotorConditionChart
+              initialVenueCode={initialVenueCode}
+              initialRaceId={initialRaceId}
+            />
+          )}
+          {activeTab === "racer" && (
+            <RacerFormChart
+              initialVenueCode={initialVenueCode}
+              initialRaceId={initialRaceId}
+            />
           )}
 
           <section className="info-section">
-            {activeTab === "technique" ? (
+            {activeTab === "outcome" && (
+              <>
+                <h2>出目分布分析について</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    過去90日間のレース結果を集計し、各ボートレース場で「1着が1コースの時、2着と3着がどの組み合わせで出やすいか」を統計的に分析しています。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>出現率が高い</strong> =
+                      その組み合わせが実際によく出ている
+                    </li>
+                    <li>
+                      <strong>配当が低い</strong> =
+                      予想が集中しやすい（多くの人が買っている）
+                    </li>
+                    <li>
+                      <strong>配当が高い</strong>=
+                      穴目だが出現率は低い（的中しづらい傾向）
+                    </li>
+                    <li>
+                      各ボートレース場ごとに特性が異なるため、会場選択で出現率が大きく変わります
+                    </li>
+                  </ul>
+                </div>
+              </>
+            )}
+            {activeTab === "technique" && (
               <>
                 <h2>決まり手データ分析について</h2>
 
@@ -82,9 +160,10 @@ function WinningTechniqueAnalysis() {
                   </ul>
                 </div>
               </>
-            ) : (
+            )}
+            {activeTab === "motor" && (
               <>
-                <h2>モーター調子トレンドについて</h2>
+                <h2>モーター調子について</h2>
 
                 <div className="info-card">
                   <h3>📈 データの見方</h3>
@@ -103,6 +182,35 @@ function WinningTechniqueAnalysis() {
                     <li>
                       <strong>下降傾向</strong> =
                       調子を崩している、当該レースでの信頼度がやや下がる可能性
+                    </li>
+                  </ul>
+                </div>
+              </>
+            )}
+            {activeTab === "racer" && (
+              <>
+                <h2>選手調子について</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    選手の全国勝率は期（開催）単位で更新されます。現在の勝率と約90日前時点の勝率を比較することで、選手の調子が上昇/下降しているかを判断する材料になります。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>勝率が上昇傾向の選手</strong> =
+                      調子が上向いている可能性
+                    </li>
+                    <li>
+                      <strong>下降傾向の選手</strong> =
+                      実力があっても信頼度をやや下げて考える材料になる
+                    </li>
+                    <li>
+                      表の行をクリックすると、その選手の節ごとの全国勝率・当地勝率の推移グラフにドリルダウンできます
                     </li>
                   </ul>
                 </div>

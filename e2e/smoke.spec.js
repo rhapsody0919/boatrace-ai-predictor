@@ -83,8 +83,8 @@ test.describe("その他の主要ページ", () => {
   });
 });
 
-test.describe("決まり手データ分析（BOA-150）", () => {
-  test("ハンバーガーメニューから決まり手データ分析へ遷移できる", async ({
+test.describe("データ分析ツール（BOA-150/151/152）", () => {
+  test("ハンバーガーメニューからデータ分析ツールへ遷移できる", async ({
     page,
   }) => {
     // ブラウザのロケール検出でenへリダイレクトされるのを防ぎ、jaを固定する
@@ -93,7 +93,7 @@ test.describe("決まり手データ分析（BOA-150）", () => {
     );
     await page.goto("/");
     await page.click(".menu-btn");
-    const link = page.locator('a.submenu-item:has-text("決まり手データ分析")');
+    const link = page.locator('a.submenu-item:has-text("データ分析ツール")');
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute("href", "/winning-technique");
     await link.click();
@@ -106,8 +106,33 @@ test.describe("決まり手データ分析（BOA-150）", () => {
     await page.goto("/winning-technique");
     await expect(page.locator(".app-header")).toBeVisible();
     await expect(
-      page.getByRole("heading", { level: 1, name: /決まり手データ分析/ }),
+      page.getByRole("heading", { level: 1, name: /データ分析ツール/ }),
     ).toBeVisible();
+  });
+
+  test("出目分布タブが表示される（BOA-152: 旧/outcome-distributionを統合）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:has-text("出目分布")');
+    await expect(page.locator(".outcome-distribution-container")).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
+  test("旧/outcome-distributionは会場指定を保ったままデータ分析ツールへリダイレクトされる（BOA-152）", async ({
+    page,
+  }) => {
+    await page.goto("/outcome-distribution?venue_code=4");
+    await expect(page).toHaveURL(
+      /\/winning-technique\?venue_code=4&tab=outcome/,
+    );
+    await expect(
+      page.locator('.analysis-tab-btn:has-text("出目分布")'),
+    ).toHaveClass(/active/);
+    await expect(page.locator(".outcome-distribution-container")).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("モーター調子タブで本日のレースの枠番別モーター調子→クリックで推移グラフに切り替わる（BOA-151）", async ({
@@ -121,6 +146,79 @@ test.describe("決まり手データ分析（BOA-150）", () => {
     await breakdown.first().click();
     await expect(page.locator(".back-to-ranking-btn")).toBeVisible();
     await expect(page.locator(".recharts-wrapper")).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
+  test("選手調子タブで本日のレースの枠番別勝率変化→クリックで推移グラフに切り替わる（BOA-152）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:has-text("選手調子")');
+    const rows = page.locator(".motor-ranking-row");
+    await expect(rows.first()).toBeVisible({ timeout: 10000 });
+    await expect(rows).toHaveCount(6);
+    await rows.first().click();
+    await expect(page.locator(".back-to-ranking-btn")).toBeVisible();
+    await expect(page.locator(".recharts-wrapper")).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
+  test("会場・レース・タブ指定のディープリンクで直接開ける（BOA-152）", async ({
+    page,
+  }) => {
+    await page.goto(
+      "/winning-technique?venue_code=4&race_id=2026-07-30-04-01&tab=racer",
+    );
+    await expect(
+      page.locator('.analysis-tab-btn:has-text("選手調子")'),
+    ).toHaveClass(/active/);
+    await expect(page.locator(".motor-ranking-row").first()).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
+  test("トップページ（本日の予想）からデータ分析ツールへの導線がある（BOA-152）", async ({
+    page,
+  }) => {
+    // /races/ は過去アーカイブのため対象外。実際に予想を見るトップページに導線が必要
+    await page.goto("/");
+    await page.locator(".predict-btn").first().click();
+    const link = page.locator(
+      'a:has-text("このレースの決まり手・モーター調子・選手調子を見る")',
+    );
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/winning-technique\?/);
+    await expect(page.locator(".motor-ranking-row").first()).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
+  test("過去アーカイブ（/races/）にはデータ分析ツールへの導線が無い（本日開催中の会場のみ対応のため）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-07-13");
+    await page.locator(".predict-btn").first().click();
+    await expect(page.locator(".analysis-tools-link-section")).toHaveCount(0);
+  });
+
+  test("/races/{本日}には導線がある（本日開催中のレースのため機能する）", async ({
+    page,
+  }) => {
+    const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    await page.goto(`/races/${today}`);
+    await page.locator(".predict-btn").first().click();
+    const link = page.locator(
+      'a:has-text("このレースの決まり手・モーター調子・選手調子を見る")',
+    );
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/winning-technique\?/);
+    await expect(page.locator(".motor-ranking-row").first()).toBeVisible({
       timeout: 10000,
     });
   });

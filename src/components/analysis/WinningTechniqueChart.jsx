@@ -65,8 +65,12 @@ function techniqueColor(technique, index) {
   return TECHNIQUE_COLORS[technique] ?? palette[index % palette.length];
 }
 
-function WinningTechniqueChart() {
-  const [selectedVenue, setSelectedVenue] = useState("03");
+function WinningTechniqueChart({ initialVenueCode = null }) {
+  const [selectedVenue, setSelectedVenue] = useState(
+    initialVenueCode !== null
+      ? String(initialVenueCode).padStart(2, "0")
+      : "03",
+  );
   const [statsData, setStatsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

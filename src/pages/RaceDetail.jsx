@@ -13,6 +13,7 @@ import {
 import { dataService } from "../services/dataService";
 import { STADIUM_NAMES } from "../constants";
 import { formatDate } from "../utils/formatters";
+import { getTodayJST } from "../utils/dateUtils";
 import "./RaceDetail.css";
 
 function RaceDetail() {
@@ -483,6 +484,17 @@ function RaceDetail() {
                   isAnalyzing={isAnalyzing}
                   date={date}
                 />
+              )}
+
+              {selectedRace && date === getTodayJST() && (
+                <div className="analysis-tools-link-section">
+                  <Link
+                    to={`/winning-technique?venue_code=${selectedRace.venueCode}&race_id=${selectedRace.id}&tab=motor`}
+                    className="analysis-tools-link"
+                  >
+                    🔍 このレースの決まり手・モーター調子・選手調子を見る
+                  </Link>
+                </div>
               )}
 
               {selectedRace && (

@@ -65,3 +65,27 @@ venue-guide-expansion の数値目標（`docs/design/venue-guide-expansion/spec.
 | 検索クエリ上位 | 想定していた観光系クエリ（"how to get there"等）で実際に流入しているか |
 
 GA4側のPV推移（`scripts/analysis/i18n-demand-report.js`）と合わせて総合的に判断する。
+
+## sitemap自動再送信（BOA-152関連: SEO未対応の是正、2026-07導入）
+
+`/winning-technique`がsitemap.xmlに一度も掲載されておらず未インデックスだった問題を受け、
+`.github/workflows/update-sitemap.yml`にsitemap変更時のGoogleへの再送信ステップを追加した
+（`scripts/submit-sitemap.js`、Search Console API の`sitemaps.submit`を使用）。
+
+**個々の新規ページの即時インデックス登録を保証するものではない**（それにはGoogleの
+Indexing APIが必要だが、求人情報・ライブ配信ページ専用で一般ページへの使用は規約違反となる
+ため使用しない）。あくまで「sitemapが変わったのでGoogleに再クロールを促す」正規の手段。
+
+### 追加セットアップ（このステップだけ既存のレポート機能とは別に必要）
+
+1. **サービスアカウントの権限を「フル」に変更**（上記レポート機能は「制限付き」で足りるが、
+   sitemap再送信は書き込み系APIのため「フル」権限が必須）
+   - Search Console の対象プロパティ →「設定」→「ユーザーと権限」
+   - `credentials/google-service-account.json`の`client_email`のアクセスレベルを「制限付き」→「フル」に変更
+   - この操作はGoogleアカウント側の設定のため、必ず対話ターミナル（人間）が実施する
+2. **GitHub Secretsに以下を追加**（リポジトリの Settings → Secrets and variables → Actions）
+   - `GOOGLE_SERVICE_ACCOUNT_KEY`（`update-google-sheets.yml`と共用、未設定なら追加）
+   - `SEARCH_CONSOLE_SITE_URL`（`.env.local`と同じ値）
+
+権限変更前は`scripts/submit-sitemap.js`が権限エラーで失敗するが、CI上は`update-sitemap.yml`の
+該当ステップが失敗するだけで、sitemap.xml自体の更新・デプロイには影響しない。
