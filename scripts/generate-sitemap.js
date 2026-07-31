@@ -214,11 +214,12 @@ function getBlogPosts() {
   return blogPosts;
 }
 
-// 過去のレースページをSupabaseから取得
+// 直近7日分のレースページをSupabaseから取得
+// 過去の日別レースページ（/races/YYYY-MM-DD）は検索需要がほぼゼロで大半が未インデックスのまま
+// クロールバジェットを消費していたため、直近7日分のみに限定する（BOA-84）
 async function getRacePages() {
   const racePages = [];
 
-  // Supabase から全日付を取得
   try {
     const { supabase, isSupabaseEnabled } =
       await import("./lib/supabaseClient.js");
@@ -227,42 +228,30 @@ async function getRacePages() {
       return racePages;
     }
 
-    // race_date をページネーションで全件取得し、重複除去
-    const allDates = [];
-    let from = 0;
-    const pageSize = 1000;
-    while (true) {
-      const { data, error: pageError } = await supabase
-        .from("races")
-        .select("race_date")
-        .order("race_date", { ascending: false })
-        .range(from, from + pageSize - 1);
-      if (pageError) throw new Error(pageError.message);
-      if (!data || data.length === 0) break;
-      allDates.push(...data.map((r) => r.race_date));
-      if (data.length < pageSize) break;
-      from += pageSize;
-    }
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    const cutoffStr = cutoff.toISOString().split("T")[0];
 
-    const uniqueDates = [...new Set(allDates)];
-    const now = new Date();
+    const { data, error } = await supabase
+      .from("races")
+      .select("race_date")
+      .gte("race_date", cutoffStr)
+      .order("race_date", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const uniqueDates = [...new Set((data ?? []).map((r) => r.race_date))];
 
     for (const dateStr of uniqueDates) {
-      const fileDate = new Date(dateStr);
-      const daysDiff = (now - fileDate) / (1000 * 60 * 60 * 24);
-
-      // 古いデータほど優先度を下げる
-      const priority = daysDiff <= 7 ? "0.8" : daysDiff <= 30 ? "0.7" : "0.5";
       racePages.push({
         loc: `/races/${dateStr}`,
         lastmod: dateStr,
         changefreq: "weekly",
-        priority,
+        priority: "0.8",
       });
     }
 
     console.log(
-      `📊 Supabase から ${uniqueDates.length} 日分のレースデータを取得`,
+      `📊 Supabase から直近7日分のレースデータを取得（${uniqueDates.length}日分）`,
     );
   } catch (err) {
     console.error("レースページ取得エラー:", err.message);
