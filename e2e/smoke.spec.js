@@ -194,6 +194,19 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     ).toBeVisible({ timeout: 10000 });
   });
 
+  test("負け決まり手タブが表示される（BOA-157: データ未投入でも空状態を表示）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:has-text("負け決まり手")');
+    await expect(page.locator(".winning-technique-container")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(
+      page.locator(".empty-state, .winning-technique-table"),
+    ).toBeVisible({ timeout: 10000 });
+  });
+
   test("会場・レース・タブ指定のディープリンクで直接開ける（BOA-152）", async ({
     page,
   }) => {
