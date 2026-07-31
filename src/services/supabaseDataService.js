@@ -2533,4 +2533,33 @@ export const supabaseDataService = {
       };
     });
   },
+
+  /**
+   * 会場別・枠番別の展示タイム最速実績（回数/確率、最速時の1着率）を取得する（BOA-160）
+   * 日次バッチ（scripts/daily/update-exhibition-time-top-stats.js）で事前集計したテーブルを参照する
+   */
+  getExhibitionTimeTopStats(venueCode) {
+    return withCache(`exhibition-time-top-stats-${venueCode}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return { venue_code: venueCode, data: [] };
+      }
+
+      const { data, error } = await supabase
+        .from("exhibition_time_top_stats")
+        .select("*")
+        .eq("venue_code", venueCode)
+        .order("boat_number");
+
+      if (error) {
+        console.error(
+          "Supabase getExhibitionTimeTopStats error:",
+          error.message,
+        );
+        return { venue_code: venueCode, data: [] };
+      }
+
+      return { venue_code: venueCode, data: data ?? [] };
+    });
+  },
 };
