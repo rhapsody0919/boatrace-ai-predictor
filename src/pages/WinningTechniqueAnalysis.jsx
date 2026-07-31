@@ -6,6 +6,7 @@ import {
   MotorConditionChart,
   RacerFormChart,
   OutcomeDistributionTable,
+  StPredictabilityChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -19,7 +20,7 @@ function WinningTechniqueAnalysis() {
   const initialTab = params.get("tab");
 
   const [activeTab, setActiveTab] = useState(
-    ["technique", "motor", "racer", "outcome"].includes(initialTab)
+    ["technique", "motor", "racer", "outcome", "st"].includes(initialTab)
       ? initialTab
       : "technique",
   );
@@ -30,7 +31,7 @@ function WinningTechniqueAnalysis() {
         <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="出目分布・決まり手データ分析・モーター調子・選手調子の4つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレの5つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
       </>
@@ -42,7 +43,7 @@ function WinningTechniqueAnalysis() {
           <div className="page-header">
             <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              出目分布・決まり手・モーター調子・選手調子の傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレの傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
@@ -71,6 +72,12 @@ function WinningTechniqueAnalysis() {
             >
               📈 選手調子
             </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "st" ? "active" : ""}`}
+              onClick={() => setActiveTab("st")}
+            >
+              ⏱️ STのズレ
+            </button>
           </div>
 
           {activeTab === "outcome" && (
@@ -93,6 +100,12 @@ function WinningTechniqueAnalysis() {
           )}
           {activeTab === "racer" && (
             <RacerFormChart
+              initialVenueCode={initialVenueCode}
+              initialRaceId={initialRaceId}
+            />
+          )}
+          {activeTab === "st" && (
+            <StPredictabilityChart
               initialVenueCode={initialVenueCode}
               initialRaceId={initialRaceId}
             />
@@ -211,6 +224,35 @@ function WinningTechniqueAnalysis() {
                     </li>
                     <li>
                       表の行をクリックすると、その選手の節ごとの全国勝率・当地勝率の推移グラフにドリルダウンできます
+                    </li>
+                  </ul>
+                </div>
+              </>
+            )}
+            {activeTab === "st" && (
+              <>
+                <h2>展示ST/本番STのズレについて</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    スタート展示（展示ST）とレース本番（本番ST）のスタートタイミングがどれくらいズレるかを、選手ごとの過去実績から算出しています。ズレが小さいほど、展示STが本番の参考になる「安定」した選手です。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>ズレが小さい選手</strong> =
+                      展示STがそのまま本番の目安になりやすい
+                    </li>
+                    <li>
+                      <strong>ズレが大きい選手</strong> =
+                      展示が良くても本番で崩れる可能性があり、信頼度をやや下げて考える材料になる
+                    </li>
+                    <li>
+                      表の行をクリックすると、その選手の過去レースごとのズレ推移が見られます
                     </li>
                   </ul>
                 </div>

@@ -165,6 +165,21 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     });
   });
 
+  test("STのズレタブで本日のレースの枠番別ズレ実績→クリックで推移グラフに切り替わる（BOA-153）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:has-text("STのズレ")');
+    const rows = page.locator(".motor-ranking-row");
+    await expect(rows.first()).toBeVisible({ timeout: 10000 });
+    await expect(rows).toHaveCount(6);
+    await rows.first().click();
+    await expect(page.locator(".back-to-ranking-btn")).toBeVisible();
+    await expect(page.locator(".recharts-wrapper")).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
   test("会場・レース・タブ指定のディープリンクで直接開ける（BOA-152）", async ({
     page,
   }) => {
