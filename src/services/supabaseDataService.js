@@ -2323,4 +2323,105 @@ export const supabaseDataService = {
       return { venue_code: venueCode, data: data ?? [] };
     });
   },
+
+  /**
+   * 会場別・枠番別の負け決まり手（1着を逃した際、勝者がどの決まり手で勝ったか）を取得する（BOA-157）
+   * 既存のgetWinningTechniqueStatsと対になる。v1ではEdge API連携は行わず、Supabase直接クエリのみ
+   */
+  getLosingTechniqueStats(venueCode) {
+    return withCache(`losing-technique-stats-${venueCode}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return {
+          venue_code: venueCode,
+          venue_name: "",
+          last_updated: null,
+          data: {},
+        };
+      }
+
+      const { data, error } = await supabase
+        .from("losing_technique_stats")
+        .select("*")
+        .eq("venue_code", venueCode)
+        .order("boat_number")
+        .order("percentage", { ascending: false });
+
+      if (error) {
+        console.error("Supabase getLosingTechniqueStats error:", error.message);
+        return {
+          venue_code: venueCode,
+          venue_name: "",
+          last_updated: null,
+          data: {},
+        };
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          venue_code: venueCode,
+          venue_name: "",
+          last_updated: null,
+          data: {},
+        };
+      }
+
+      const techniqueData = {};
+      let lastUpdated = null;
+
+      data.forEach((row) => {
+        const boatNumber = row.boat_number;
+        if (!techniqueData[boatNumber]) {
+          techniqueData[boatNumber] = {
+            total_races: row.total_losses_90days,
+            techniques: [],
+          };
+        }
+
+        techniqueData[boatNumber].techniques.push({
+          technique: row.losing_technique,
+          count: row.count_90days,
+          percentage: row.percentage,
+        });
+
+        if (!lastUpdated) {
+          lastUpdated = row.last_updated;
+        }
+      });
+
+      const VENUE_NAMES = {
+        1: "桐生",
+        2: "戸田",
+        3: "江戸川",
+        4: "平和島",
+        5: "多摩川",
+        6: "浜名湖",
+        7: "蒲郡",
+        8: "常滑",
+        9: "津",
+        10: "三国",
+        11: "びわこ",
+        12: "住之江",
+        13: "尼崎",
+        14: "鳴門",
+        15: "丸亀",
+        16: "児島",
+        17: "宮島",
+        18: "徳山",
+        19: "下関",
+        20: "若松",
+        21: "芦屋",
+        22: "福岡",
+        23: "唐津",
+        24: "大村",
+      };
+
+      return {
+        venue_code: venueCode,
+        venue_name: VENUE_NAMES[venueCode] || "",
+        last_updated: lastUpdated,
+        data: techniqueData,
+      };
+    });
+  },
 };

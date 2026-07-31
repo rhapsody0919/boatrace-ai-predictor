@@ -8,6 +8,7 @@ import {
   OutcomeDistributionTable,
   StPredictabilityChart,
   TopStartChart,
+  LosingTechniqueChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -21,9 +22,15 @@ function WinningTechniqueAnalysis() {
   const initialTab = params.get("tab");
 
   const [activeTab, setActiveTab] = useState(
-    ["technique", "motor", "racer", "outcome", "st", "topstart"].includes(
-      initialTab,
-    )
+    [
+      "technique",
+      "motor",
+      "racer",
+      "outcome",
+      "st",
+      "topstart",
+      "losing",
+    ].includes(initialTab)
       ? initialTab
       : "technique",
   );
@@ -34,7 +41,7 @@ function WinningTechniqueAnalysis() {
         <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析の6つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析の7つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
       </>
@@ -46,7 +53,7 @@ function WinningTechniqueAnalysis() {
           <div className="page-header">
             <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタートの傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手の傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
@@ -87,6 +94,12 @@ function WinningTechniqueAnalysis() {
             >
               🚀 トップスタート
             </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "losing" ? "active" : ""}`}
+              onClick={() => setActiveTab("losing")}
+            >
+              💔 負け決まり手
+            </button>
           </div>
 
           {activeTab === "outcome" && (
@@ -121,6 +134,9 @@ function WinningTechniqueAnalysis() {
           )}
           {activeTab === "topstart" && (
             <TopStartChart initialVenueCode={initialVenueCode} />
+          )}
+          {activeTab === "losing" && (
+            <LosingTechniqueChart initialVenueCode={initialVenueCode} />
           )}
 
           <section className="info-section">
@@ -294,6 +310,35 @@ function WinningTechniqueAnalysis() {
                     </li>
                     <li>
                       各ボートレース場ごとに特性が異なるため、会場選択で傾向が大きく変わります
+                    </li>
+                  </ul>
+                </div>
+              </>
+            )}
+            {activeTab === "losing" && (
+              <>
+                <h2>負け決まり手データ分析について</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    過去90日間のレース結果から、各ボートレース場で「1着を逃した際、勝者がどの決まり手（逃げ・差し・まくり等）で勝っているか」を枠番別に分析しています。決まり手データ分析（勝ち方）の裏返しで、負け方の傾向がわかります。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>差されて負ける割合が高い枠番</strong> =
+                      内側から差されやすい、粘りが弱い傾向
+                    </li>
+                    <li>
+                      <strong>まくられて負ける割合が高い枠番</strong> =
+                      外側からの追い上げに弱い傾向
+                    </li>
+                    <li>
+                      1号艇がどの決まり手で負けやすいかを見ることで、逃げが決まらなかった場合の展開を予測する材料になります
                     </li>
                   </ul>
                 </div>
