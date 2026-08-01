@@ -220,6 +220,19 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     );
   });
 
+  test("展示タイムタブが表示される（BOA-160: データ未投入でも空状態を表示）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:has-text("展示タイム")');
+    await expect(page.locator(".winning-technique-container")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(
+      page.locator(".empty-state, .winning-technique-table"),
+    ).toBeVisible({ timeout: 10000 });
+  });
+
   test("会場・レース・タブ指定のディープリンクで直接開ける（BOA-152）", async ({
     page,
   }) => {

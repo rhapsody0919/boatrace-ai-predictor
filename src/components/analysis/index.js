@@ -6,3 +6,4 @@ export { default as StPredictabilityChart } from "./StPredictabilityChart";
 export { default as TopStartChart } from "./TopStartChart";
 export { default as LosingTechniqueChart } from "./LosingTechniqueChart";
 export { default as NigeOutcomeChart } from "./NigeOutcomeChart";
+export { default as ExhibitionTimeTopChart } from "./ExhibitionTimeTopChart";

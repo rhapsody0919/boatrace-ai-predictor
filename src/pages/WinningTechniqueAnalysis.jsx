@@ -10,6 +10,7 @@ import {
   TopStartChart,
   LosingTechniqueChart,
   NigeOutcomeChart,
+  ExhibitionTimeTopChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -32,6 +33,7 @@ function WinningTechniqueAnalysis() {
       "topstart",
       "losing",
       "nige",
+      "extime",
     ].includes(initialTab)
       ? initialTab
       : "technique",
@@ -43,7 +45,7 @@ function WinningTechniqueAnalysis() {
         <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布の8つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率の9つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
       </>
@@ -55,7 +57,7 @@ function WinningTechniqueAnalysis() {
           <div className="page-header">
             <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布の傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率の傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
@@ -108,6 +110,12 @@ function WinningTechniqueAnalysis() {
             >
               🏃 逃げ成功時分布
             </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "extime" ? "active" : ""}`}
+              onClick={() => setActiveTab("extime")}
+            >
+              ⏲️ 展示タイム
+            </button>
           </div>
 
           {activeTab === "outcome" && (
@@ -154,6 +162,9 @@ function WinningTechniqueAnalysis() {
                   : null
               }
             />
+          )}
+          {activeTab === "extime" && (
+            <ExhibitionTimeTopChart initialVenueCode={initialVenueCode} />
           )}
 
           <section className="info-section">
@@ -383,6 +394,35 @@ function WinningTechniqueAnalysis() {
                     </li>
                     <li>
                       決まり手を問わない出目分布と比較することで、逃げ特有の傾向を切り分けられます
+                    </li>
+                  </ul>
+                </div>
+              </>
+            )}
+            {activeTab === "extime" && (
+              <>
+                <h2>展示タイム最速艇の1着転換率について</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    過去90日間のレース結果から、各ボートレース場で「どの枠番が展示タイム（周回タイム）で最速になりやすいか」「展示タイム最速時に実際に1着になれているか」を枠番別に分析しています。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>展示タイム最速率は高いが1着率が低い枠番</strong> =
+                      展示は速いが本番で勝ちきれない傾向がある可能性
+                    </li>
+                    <li>
+                      <strong>最速時の1着率が高い枠番</strong> =
+                      展示の速さをそのまま勝利につなげやすい
+                    </li>
+                    <li>
+                      展示ST/本番STのズレ分析と組み合わせることで、展示の信頼度を多角的に判断できます
                     </li>
                   </ul>
                 </div>
