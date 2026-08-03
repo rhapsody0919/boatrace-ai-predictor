@@ -145,6 +145,11 @@ boatrace-ai-predictor/
 
 sitemap変更は`.github/workflows/update-sitemap.yml`で毎日自動反映され、変更があった場合はSearch Consoleへの再送信（`scripts/submit-sitemap.js`）も自動実行される。ただし個々のページの即時インデックス登録を保証するものではない（詳細は`docs/operation/search-console-report.md`）。
 
+### SEO・集客施策の判断軸: SPAアーキテクチャによるクローラー制約
+boatAIは`vercel.json`で `/((?!api/).*) → /index.html` のみを行う純粋なクライアントサイドSPAで、SSR・プリレンダリングの仕組みが無い。ページ固有のtitle/meta/OGPタグはReactコンポーネントがマウント後にJSで書き換える方式のため、**JavaScriptを実行しないクローラー（Facebook等）にはページ固有の変更が反映されない**（Googlebotや一部のX(Twitter)クローラーはJSレンダリング対応のため反映される）。
+
+SEO・集客施策を検討・実装する際は、その施策が「JS実行後にしか反映されない変更かどうか」を必ず確認する。検索順位・インデックス精度に関わる施策はReactでの実装で概ね機能するが、SNSシェア時のリンクプレビュー（OGP/Twitterカード）はVercel Edge Functionでのボット判定＋静的HTML返却、またはSSG化が無ければ機能しない。DevTools/Playwrightでの確認はJS実行後の状態であり、非JS実行クローラーの見え方とは異なる点に注意する。詳細・具体例は`docs/reference/seo-architecture-constraints.md`を参照（BOA-161で発覚）。
+
 ### コミットメッセージ
 形式: `<type>: <日本語の説明>`
 
