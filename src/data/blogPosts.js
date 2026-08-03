@@ -25,6 +25,82 @@ export const blogPosts = [
     image: "/images/blog/motor-condition-table.jpg",
   },
   {
+    id: "exhibition-time-top-guide",
+    title:
+      "展示タイム最速艇の1着転換率とは？「展示が速い艇」の信頼度を見抜く新機能",
+    description:
+      "会場・枠番ごとに展示タイム最速率と、最速時の1着率を過去90日データから分析する新機能を解説。展示タイムの速さが本番の勝利にどれだけ直結するかを見極める材料として活用する方法を紹介します。",
+    date: "2026-08-03",
+    category: "データ分析",
+    tags: ["展示タイム", "新機能", "データ分析", "根拠", "会場別"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/exhibition-time-top-chart.jpg",
+  },
+  {
+    id: "nige-outcome-guide",
+    title:
+      "逃げ成功時の複勝分布とは？「イン逃げが決まった後」の買い目を絞り込む新機能",
+    description:
+      "逃げで1着が決まったレースに絞って2着・3着のパターンを過去90日データから分析する新機能を解説。展示で逃げが濃厚な時の3連単・3連複の買い目絞り込みに活用する方法を紹介します。",
+    date: "2026-08-03",
+    category: "データ分析",
+    tags: ["逃げ", "新機能", "データ分析", "根拠", "会場別"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/nige-outcome-table.jpg",
+  },
+  {
+    id: "losing-technique-guide",
+    title:
+      "負け決まり手データ分析とは？「負け方」から会場・枠番の弱点を見抜く新機能",
+    description:
+      "1着を逃した際、勝者がどの決まり手で勝っているかを枠番別に過去90日データから分析する新機能を解説。決まり手データ分析（勝ち方）と組み合わせた除外判断の材料として活用する方法を紹介します。",
+    date: "2026-08-03",
+    category: "データ分析",
+    tags: ["決まり手", "新機能", "データ分析", "根拠", "会場別"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/losing-technique-chart.jpg",
+  },
+  {
+    id: "top-start-guide",
+    title: "枠番別トップスタート分析とは？「先に出るだけ」の枠番を見抜く新機能",
+    description:
+      "会場・枠番ごとにトップスタート率と、トップスタート時の1着率を過去90日データから分析する新機能を解説。スタートを取った時の押し切り力が高い枠番・会場を見分ける方法を紹介します。",
+    date: "2026-08-03",
+    category: "データ分析",
+    tags: ["トップスタート", "新機能", "データ分析", "根拠", "会場別"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/top-start-chart.jpg",
+  },
+  {
+    id: "st-timing-gap-guide",
+    title:
+      "展示ST/本番STのズレとは？「展示は速いのに本番で出遅れる」選手を見抜く新機能",
+    description:
+      "選手ごとに展示STと本番STがどれだけ一致してきたかを過去実績から分析する新機能を解説。展示STが本番の参考になる「安定」した選手を見極める方法を紹介します。",
+    date: "2026-08-03",
+    category: "データ分析",
+    tags: ["展示ST", "新機能", "データ分析", "根拠", "選手"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/st-timing-gap-table.jpg",
+  },
+  {
+    id: "racer-form-guide",
+    title: "選手調子とは？全国勝率の変化から「今が旬」の選手を見抜く新機能",
+    description:
+      "出走選手の全国勝率が直近90日でどう変化しているかを分析する新機能を解説。番組表の勝率だけでは見えない選手の「今の調子」を判断材料に加える方法を紹介します。",
+    date: "2026-08-03",
+    category: "データ分析",
+    tags: ["選手調子", "新機能", "データ分析", "根拠", "選手"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-form-table.jpg",
+  },
+  {
     id: "ai-prediction-accuracy-review",
     title:
       "ボートレースAI予想は本当に当たるのか？ — 3ヶ月15,000レースの検証結果",
