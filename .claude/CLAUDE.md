@@ -141,6 +141,7 @@ boatrace-ai-predictor/
 - 用語・文体は `.claude/rules/code-style.md`（「競艇」使用禁止等）に従う
 - **「よくある質問」セクションを設ける**: `BlogPost.jsx`が`## よくある質問`セクションを自動検出してFAQPage構造化データを生成する（`src/utils/blogFaqSchema.js`）ため、`### 質問文` + 回答段落の形式でFAQセクションを含めると追加コード不要でSEO/AI引用対策になる
 - **note.com向け下書きを同時生成する（2026-08-04〜）**: 新規ブログ記事作成時は`python3 convert_to_note_markdown.py public/blog/{slug}.md`を実行し、出力された`{slug}_note.md`を`note-articles/{slug}.md`にリネームして配置する。note.comへの実際の投稿・公開は自動化できない（公開APIが存在しない）ため、生成した下書きをユーザーがnoteエディタに貼り付けて手動公開する
+- **Xツイート下書きも同時生成する（2026-08-04〜）**: 新規ブログ記事作成時は`node scripts/generate-tweet-draft.js {post-id}`を実行し、`note-articles/tweet-drafts.md`に下書きを追記する。投稿はユーザーが内容を確認の上、手動でXに行う（2025-12時点の同種の取り組みが下書き作成後1週間で止まった実績があるため、「記事公開のたびに機械的に生成する」運用に固定し、単発の週次計画には戻さない）
 
 ### 新規ページ追加時のsitemap登録（必須）
 2026-07-31時点で、`/winning-technique`が`scripts/generate-sitemap.js`への追加漏れで長期間sitemap.xmlに未掲載、Google未インデックスのままだった実績あり（Search Console実データで検索クリック・表示回数0件と確認）。同じ漏れを繰り返さないため、新しい静的ページ・ルート（`AppRouter.jsx`に`<Route>`を追加するもの）を実装したら、**同じPRで**`scripts/generate-sitemap.js`の`staticPages`（多言語対応ページは`LOCALIZED_PAGES`/`LANGUAGE_ONLY_PAGES`）にも追記する。ページ単体の実装が完了した時点で完了とせず、sitemap反映まで含めて1タスクとして扱う。
