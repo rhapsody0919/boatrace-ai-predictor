@@ -12,6 +12,7 @@ import Contact from "./components/Contact";
 import HitRaces from "./components/HitRaces";
 import TodaysPicks from "./components/TodaysPicks";
 import UpdateStatus from "./components/UpdateStatus";
+import IntroBanner from "./components/IntroBanner";
 import { getFeaturedPosts, getLatestPosts } from "./data/blogPosts";
 import { dataService } from "./services/dataService";
 import {
@@ -609,6 +610,8 @@ function App({ tab = "races" }) {
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
                 />
+
+                <IntroBanner />
 
                 {loading ? (
                   <LoadingScreen

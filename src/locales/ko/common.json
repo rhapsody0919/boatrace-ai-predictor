@@ -135,6 +135,8 @@
     "venueGuideDesc": "경정장 특성과 베팅 포인트 상세"
   },
   "home": {
+    "introBannerText": "AI가 45개 이상의 데이터를 분석 | BoatAI 자세히 보기 →",
+    "introBannerClose": "닫기",
     "todayRaces": "오늘의 경주",
     "dataType": "경주 데이터",
     "loadingTitle": "경주 데이터 로딩 중...",

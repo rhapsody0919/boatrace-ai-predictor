@@ -135,6 +135,8 @@
     "venueGuideDesc": "賽場特性與投注要點詳解"
   },
   "home": {
+    "introBannerText": "AI分析45項以上數據 | 了解更多BoatAI →",
+    "introBannerClose": "關閉",
     "todayRaces": "今日賽事",
     "dataType": "比賽資料",
     "loadingTitle": "正在載入比賽資料...",
