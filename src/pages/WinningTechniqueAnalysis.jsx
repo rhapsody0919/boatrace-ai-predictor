@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import Header from "../components/Header";
 import {
   WinningTechniqueChart,
@@ -228,6 +228,15 @@ function WinningTechniqueAnalysis() {
                     </li>
                   </ul>
                 </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/winning-technique-analysis-guide">
+                      決まり手データ分析とは？会場・枠番別の勝ちパターンを見る新機能
+                    </Link>
+                  </p>
+                </div>
               </>
             )}
             {activeTab === "motor" && (
@@ -253,6 +262,15 @@ function WinningTechniqueAnalysis() {
                       調子を崩している、当該レースでの信頼度がやや下がる可能性
                     </li>
                   </ul>
+                </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/motor-condition-guide">
+                      モーター調子とは？本日のレースの枠番別2連率がわかる新機能
+                    </Link>
+                  </p>
                 </div>
               </>
             )}
@@ -283,6 +301,15 @@ function WinningTechniqueAnalysis() {
                     </li>
                   </ul>
                 </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/racer-form-guide">
+                      選手調子とは？全国勝率の変化から「今が旬」の選手を見抜く新機能
+                    </Link>
+                  </p>
+                </div>
               </>
             )}
             {activeTab === "st" && (
@@ -311,6 +338,15 @@ function WinningTechniqueAnalysis() {
                       表の行をクリックすると、その選手の過去レースごとのズレ推移が見られます
                     </li>
                   </ul>
+                </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/st-timing-gap-guide">
+                      展示ST/本番STのズレとは？「展示は速いのに本番で出遅れる」選手を見抜く新機能
+                    </Link>
+                  </p>
                 </div>
               </>
             )}
@@ -341,6 +377,15 @@ function WinningTechniqueAnalysis() {
                     </li>
                   </ul>
                 </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/top-start-guide">
+                      枠番別トップスタート分析とは？「先に出るだけ」の枠番を見抜く新機能
+                    </Link>
+                  </p>
+                </div>
               </>
             )}
             {activeTab === "losing" && (
@@ -370,6 +415,15 @@ function WinningTechniqueAnalysis() {
                     </li>
                   </ul>
                 </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/losing-technique-guide">
+                      負け決まり手データ分析とは？「負け方」から会場・枠番の弱点を見抜く新機能
+                    </Link>
+                  </p>
+                </div>
               </>
             )}
             {activeTab === "nige" && (
@@ -396,6 +450,15 @@ function WinningTechniqueAnalysis() {
                       決まり手を問わない出目分布と比較することで、逃げ特有の傾向を切り分けられます
                     </li>
                   </ul>
+                </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/nige-outcome-guide">
+                      逃げ成功時の複勝分布とは？「イン逃げが決まった後」の買い目を絞り込む新機能
+                    </Link>
+                  </p>
                 </div>
               </>
             )}
@@ -425,6 +488,15 @@ function WinningTechniqueAnalysis() {
                       展示ST/本番STのズレ分析と組み合わせることで、展示の信頼度を多角的に判断できます
                     </li>
                   </ul>
+                </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/exhibition-time-top-guide">
+                      展示タイム最速艇の1着転換率とは？「展示が速い艇」の信頼度を見抜く新機能
+                    </Link>
+                  </p>
                 </div>
               </>
             )}
