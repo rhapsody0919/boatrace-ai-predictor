@@ -22,6 +22,77 @@
   color: #64748b;
 }
 
+.about-hero-video {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 4rem;
+}
+
+.hero-video-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.hero-video {
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.hero-video-mobile {
+  display: block;
+  max-width: 360px;
+}
+
+.hero-video-desktop {
+  display: none;
+  max-width: 800px;
+}
+
+@media (min-width: 768px) {
+  .hero-video-mobile {
+    display: none;
+  }
+
+  .hero-video-desktop {
+    display: block;
+  }
+}
+
+.hero-video-play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(14, 165, 233, 0.9);
+  color: #ffffff;
+  font-size: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.hero-video-play-button:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.hero-video-credit {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
 .about-section {
   margin-bottom: 4rem;
 }
