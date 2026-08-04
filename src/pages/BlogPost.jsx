@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import { getPostById, getLatestPosts } from "../data/blogPosts";
+import { getPostById, getRelatedPosts } from "../data/blogPosts";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
@@ -17,9 +17,7 @@ export default function BlogPost() {
   const [error, setError] = useState(null);
 
   const post = getPostById(id);
-  const relatedPosts = getLatestPosts(4)
-    .filter((p) => p.id !== id)
-    .slice(0, 3);
+  const relatedPosts = getRelatedPosts(id, 3);
 
   const postUrl = post ? `https://www.boat-ai.jp/blog/${id}` : null;
   const postImageUrl = post

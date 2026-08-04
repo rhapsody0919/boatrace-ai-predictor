@@ -15,6 +15,48 @@ import {
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
 
+const ANALYSIS_FEATURES = [
+  {
+    name: "出目分布",
+    description: "1着コース別に2着・3着の出現パターンを分析",
+  },
+  {
+    name: "決まり手データ分析",
+    description:
+      "会場・枠番ごとの決まり手（逃げ・差し・まくり等）の勝ちパターンを分析",
+  },
+  {
+    name: "モーター調子",
+    description: "本日開催中のレースの枠番別モーター2連率・3連率を分析",
+  },
+  {
+    name: "選手調子",
+    description: "出走選手の全国勝率が直近90日でどう変化しているかを分析",
+  },
+  {
+    name: "展示ST/本番STのズレ",
+    description: "選手ごとに展示STと本番STがどれだけ一致してきたかを分析",
+  },
+  {
+    name: "枠番別トップスタート",
+    description:
+      "会場・枠番ごとの最速スタート率と、最速スタート時の1着率を分析",
+  },
+  {
+    name: "負け決まり手データ分析",
+    description:
+      "1着を逃した際、勝者がどの決まり手で勝っているかを枠番別に分析",
+  },
+  {
+    name: "逃げ成功時の複勝分布",
+    description: "逃げで1着が決まったレースに絞って2着・3着のパターンを分析",
+  },
+  {
+    name: "展示タイム最速艇の1着転換率",
+    description: "会場・枠番ごとに展示タイム最速率と、最速時の1着率を分析",
+  },
+];
+
 function WinningTechniqueAnalysis() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -48,6 +90,42 @@ function WinningTechniqueAnalysis() {
           content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率の9つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
+
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: "データ分析ツール",
+            description: "会場・レースごとの傾向を確認できる9つの分析機能",
+            itemListElement: ANALYSIS_FEATURES.map((feature, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              name: feature.name,
+              description: feature.description,
+            })),
+          })}
+        </script>
+
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "ホーム",
+                item: "https://www.boat-ai.jp/",
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: "データ分析ツール",
+                item: "https://www.boat-ai.jp/winning-technique",
+              },
+            ],
+          })}
+        </script>
       </>
 
       <Header />

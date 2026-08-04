@@ -917,3 +917,23 @@ export const getLatestPosts = (limit = 5) =>
   [...blogPosts]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, limit);
+
+// Get related posts by shared tags (falls back to latest when no tag overlap exists)
+export const getRelatedPosts = (postId, limit = 3) => {
+  const currentPost = getPostById(postId);
+  if (!currentPost) return getLatestPosts(limit);
+
+  return blogPosts
+    .filter((post) => post.id !== postId)
+    .map((post) => ({
+      post,
+      sharedTags: post.tags.filter((tag) => currentPost.tags.includes(tag))
+        .length,
+    }))
+    .sort((a, b) => {
+      if (b.sharedTags !== a.sharedTags) return b.sharedTags - a.sharedTags;
+      return new Date(b.post.date) - new Date(a.post.date);
+    })
+    .slice(0, limit)
+    .map(({ post }) => post);
+};
