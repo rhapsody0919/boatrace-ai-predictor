@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
@@ -10,6 +10,15 @@ const DESCRIPTION =
 
 export default function About() {
   const navigate = useNavigate();
+  const mobileVideoRef = useRef(null);
+  const desktopVideoRef = useRef(null);
+  const [videoStarted, setVideoStarted] = useState(false);
+
+  const handlePlayVideo = () => {
+    setVideoStarted(true);
+    mobileVideoRef.current?.play();
+    desktopVideoRef.current?.play();
+  };
 
   useSocialMeta({
     title: TITLE,
@@ -56,28 +65,44 @@ export default function About() {
         </div>
 
         <section className="about-hero-video">
-          <video
-            className="hero-video hero-video-mobile"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="none"
-            poster="/videos/about-hero-mobile-poster.jpg"
-          >
-            <source src="/videos/about-hero-mobile.mp4" type="video/mp4" />
-          </video>
-          <video
-            className="hero-video hero-video-desktop"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="none"
-            poster="/videos/about-hero-desktop-poster.jpg"
-          >
-            <source src="/videos/about-hero-desktop.mp4" type="video/mp4" />
-          </video>
+          <div className="hero-video-wrapper">
+            <video
+              ref={mobileVideoRef}
+              className="hero-video hero-video-mobile"
+              loop
+              playsInline
+              controls={videoStarted}
+              preload="none"
+              poster="/videos/about-hero-mobile-poster.jpg"
+            >
+              <source src="/videos/about-hero-mobile.mp4" type="video/mp4" />
+            </video>
+            <video
+              ref={desktopVideoRef}
+              className="hero-video hero-video-desktop"
+              loop
+              playsInline
+              controls={videoStarted}
+              preload="none"
+              poster="/videos/about-hero-desktop-poster.jpg"
+            >
+              <source src="/videos/about-hero-desktop.mp4" type="video/mp4" />
+            </video>
+            {!videoStarted && (
+              <button
+                type="button"
+                className="hero-video-play-button"
+                onClick={handlePlayVideo}
+                aria-label="動画を再生"
+              >
+                ▶
+              </button>
+            )}
+          </div>
+          <p className="hero-video-credit">
+            音楽:「Rocket Power」by Kevin MacLeod (incompetech.com) — Licensed
+            under Creative Commons: By Attribution 4.0
+          </p>
         </section>
 
         <section className="about-section">
