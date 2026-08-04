@@ -6,6 +6,7 @@ import rehypeRaw from "rehype-raw";
 import { getPostById, getLatestPosts } from "../data/blogPosts";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
+import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
 import "./BlogPost.css";
 
 export default function BlogPost() {
@@ -91,6 +92,7 @@ export default function BlogPost() {
 
   const url = postUrl;
   const imageUrl = postImageUrl;
+  const faqItems = extractFaqItems(content);
 
   return (
     <>
@@ -139,6 +141,13 @@ export default function BlogPost() {
           wordCount: content.split(" ").length,
         })}
       </script>
+
+      {/* FAQPage Structured Data（記事本文に「よくある質問」セクションがある場合のみ） */}
+      {faqItems.length > 0 && (
+        <script type="application/ld+json">
+          {JSON.stringify(buildFaqPageSchema(faqItems))}
+        </script>
+      )}
 
       {/* BreadcrumbList Structured Data */}
       <script type="application/ld+json">
