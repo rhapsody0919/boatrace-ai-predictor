@@ -55,6 +55,31 @@ export default function About() {
           <p>AI技術でボートレース予想を革新する</p>
         </div>
 
+        <section className="about-hero-video">
+          <video
+            className="hero-video hero-video-mobile"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="none"
+            poster="/videos/about-hero-mobile-poster.jpg"
+          >
+            <source src="/videos/about-hero-mobile.mp4" type="video/mp4" />
+          </video>
+          <video
+            className="hero-video hero-video-desktop"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="none"
+            poster="/videos/about-hero-desktop-poster.jpg"
+          >
+            <source src="/videos/about-hero-desktop.mp4" type="video/mp4" />
+          </video>
+        </section>
+
         <section className="about-section">
           <h2>BoatAIとは</h2>
           <p>
@@ -137,7 +162,7 @@ export default function About() {
             <div className="feature-card">
               <div className="feature-icon">🎯</div>
               <h3>高精度分析</h3>
-              <p>複勝予測精度49.5%、高精度な分析実績（2025年12月実績）</p>
+              <p>複勝的中率52.9%、35,000レース超の累計実績</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">📈</div>
@@ -202,27 +227,28 @@ export default function About() {
         </section>
 
         <section className="about-section">
-          <h2>📊 AI分析の精度（2025年12月）</h2>
+          <h2>📊 AI分析の精度（スタンダードモデル累計）</h2>
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-value">49.5%</div>
-              <div className="stat-label">複勝予測精度</div>
+              <div className="stat-value">52.9%</div>
+              <div className="stat-label">複勝的中率</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">12.8%</div>
+              <div className="stat-value">4.1%</div>
               <div className="stat-label">3連複的中率</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">85.3%</div>
+              <div className="stat-value">92.7%</div>
               <div className="stat-label">複勝回収率</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">134.3%</div>
+              <div className="stat-value">77.6%</div>
               <div className="stat-label">3連単回収率</div>
             </div>
           </div>
           <p className="stats-note">
-            ※ 2025年12月1日〜18日の分析データ（全1,951レース）
+            ※
+            2026年1月6日〜8月4日の累計データ（全35,597レース）。本命狙い・穴狙いモデルの実績は「成績」ページで公開しています
           </p>
         </section>
 
