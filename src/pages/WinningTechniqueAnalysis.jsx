@@ -11,6 +11,7 @@ import {
   LosingTechniqueChart,
   NigeOutcomeChart,
   ExhibitionTimeTopChart,
+  ExhibitionTimeTrendChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -55,6 +56,11 @@ const ANALYSIS_FEATURES = [
     name: "展示タイム最速艇の1着転換率",
     description: "会場・枠番ごとに展示タイム最速率と、最速時の1着率を分析",
   },
+  {
+    name: "選手別展示タイム推移",
+    description:
+      "選手ごとの展示タイム（周回タイム）が過去90日でどう推移しているかを分析",
+  },
 ];
 
 function WinningTechniqueAnalysis() {
@@ -76,6 +82,7 @@ function WinningTechniqueAnalysis() {
       "losing",
       "nige",
       "extime",
+      "extrend",
     ].includes(initialTab)
       ? initialTab
       : "technique",
@@ -87,7 +94,7 @@ function WinningTechniqueAnalysis() {
         <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率の9つの分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移の10の分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
 
@@ -96,7 +103,7 @@ function WinningTechniqueAnalysis() {
             "@context": "https://schema.org",
             "@type": "ItemList",
             name: "データ分析ツール",
-            description: "会場・レースごとの傾向を確認できる9つの分析機能",
+            description: "会場・レースごとの傾向を確認できる10の分析機能",
             itemListElement: ANALYSIS_FEATURES.map((feature, index) => ({
               "@type": "ListItem",
               position: index + 1,
@@ -135,7 +142,7 @@ function WinningTechniqueAnalysis() {
           <div className="page-header">
             <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率の傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移の傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
@@ -194,6 +201,12 @@ function WinningTechniqueAnalysis() {
             >
               ⏲️ 展示タイム
             </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "extrend" ? "active" : ""}`}
+              onClick={() => setActiveTab("extrend")}
+            >
+              📈 展示タイム推移
+            </button>
           </div>
 
           {activeTab === "outcome" && (
@@ -243,6 +256,12 @@ function WinningTechniqueAnalysis() {
           )}
           {activeTab === "extime" && (
             <ExhibitionTimeTopChart initialVenueCode={initialVenueCode} />
+          )}
+          {activeTab === "extrend" && (
+            <ExhibitionTimeTrendChart
+              initialVenueCode={initialVenueCode}
+              initialRaceId={initialRaceId}
+            />
           )}
 
           <section className="info-section">
@@ -573,6 +592,44 @@ function WinningTechniqueAnalysis() {
                   <p>
                     <Link to="/blog/exhibition-time-top-guide">
                       展示タイム最速艇の1着転換率とは？「展示が速い艇」の信頼度を見抜く新機能
+                    </Link>
+                  </p>
+                </div>
+              </>
+            )}
+            {activeTab === "extrend" && (
+              <>
+                <h2>選手別展示タイム推移について</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    出走選手ごとに、展示タイム（周回タイム）が過去90日間でどう推移しているかを表示しています。「展示タイム最速艇の1着転換率」（会場・枠番単位）とは異なり、選手個人のコンディションを見る機能です。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>展示タイムが継続的に悪化している選手</strong> =
+                      調子を崩している可能性があり、信頼度をやや下げて考える材料になる
+                    </li>
+                    <li>
+                      <strong>展示タイムが安定・改善傾向の選手</strong> =
+                      モーター・体調ともに好調である可能性
+                    </li>
+                    <li>
+                      表の行をクリックすると、その選手の展示タイム推移グラフにドリルダウンできます
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/exhibition-time-trend-guide">
+                      選手別展示タイム推移とは？調子の波を展示タイムから読み解く新機能
                     </Link>
                   </p>
                 </div>

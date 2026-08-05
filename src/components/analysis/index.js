@@ -7,3 +7,4 @@ export { default as TopStartChart } from "./TopStartChart";
 export { default as LosingTechniqueChart } from "./LosingTechniqueChart";
 export { default as NigeOutcomeChart } from "./NigeOutcomeChart";
 export { default as ExhibitionTimeTopChart } from "./ExhibitionTimeTopChart";
+export { default as ExhibitionTimeTrendChart } from "./ExhibitionTimeTrendChart";
