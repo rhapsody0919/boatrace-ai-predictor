@@ -272,6 +272,24 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     });
   });
 
+  test("本日の好調・不調選手ランキングタブが表示される（BOA-166）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click(
+      '.analysis-tab-btn:text-is("🔥 好調・不調選手ランキング")',
+    );
+    await expect(page.locator(".motor-condition-container")).toBeVisible({
+      timeout: 10000,
+    });
+    // 本日開催中のレースが無い環境でも空状態を許容する
+    await expect(
+      page.locator(".empty-state, .motor-ranking-row").first(),
+    ).toBeVisible({
+      timeout: 15000,
+    });
+  });
+
   test("会場・レース・タブ指定のディープリンクで直接開ける（BOA-152）", async ({
     page,
   }) => {

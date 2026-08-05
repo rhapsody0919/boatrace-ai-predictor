@@ -2476,6 +2476,122 @@ export const supabaseDataService = {
   },
 
   /**
+   * 本日出走する全選手を対象に、現在の全国勝率と約90日前時点の全国勝率のdeltaで
+   * 急上昇/急下降ランキングを作成する（BOA-166）
+   * 会場・レース単位の選手調子（BOA-152）とは異なり、レース選択前の発見導線として
+   * 本日カード全体を横断する
+   */
+  getTodaysRacerFormRanking(limit = 10) {
+    const now = new Date();
+    const jstOffset = 9 * 60;
+    const jstNow = new Date(now.getTime() + jstOffset * 60 * 1000);
+    const today = jstNow.toISOString().split("T")[0];
+
+    return withCache(
+      `todays-racer-form-ranking-${today}-${limit}`,
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return { rising: [], falling: [] };
+        }
+
+        const { data: races, error: racesError } = await supabase
+          .from("races")
+          .select("race_id, venue_code, race_number")
+          .eq("race_date", today);
+
+        if (racesError || !races || races.length === 0) {
+          if (racesError) console.error("races取得エラー:", racesError.message);
+          return { rising: [], falling: [] };
+        }
+
+        const raceMetaByRaceId = new Map(races.map((r) => [r.race_id, r]));
+        const raceIds = races.map((r) => r.race_id);
+
+        const entries = await fetchAllByIn(
+          "race_entries",
+          "race_id, boat_number, player_name, racer_id, win_rate",
+          "race_id",
+          raceIds,
+        );
+
+        // 同じ選手が本日複数レースに出走することは無いはずだが、念のためracer_idごとに最初の1件のみ採用
+        const currentByRacer = new Map();
+        entries.forEach((e) => {
+          if (e.racer_id === null || e.win_rate === null) return;
+          if (!currentByRacer.has(e.racer_id))
+            currentByRacer.set(e.racer_id, e);
+        });
+
+        if (currentByRacer.size === 0) return { rising: [], falling: [] };
+
+        // 約90日前時点の直近の記録を探す（cutoff以前・探索窓2週間で最新のもの）
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        const cutoff = ninetyDaysAgo.toISOString().split("T")[0];
+        const windowStart = new Date(ninetyDaysAgo);
+        windowStart.setDate(windowStart.getDate() - 14);
+        const windowStartStr = windowStart.toISOString().split("T")[0];
+
+        // racer_idのIN句が大きくなりうるため、race_id範囲（全会場横断・2週間分）で
+        // まとめて取得しracer_idでフィルタする
+        const pastRows = [];
+        const pageSize = 1000;
+        let from = 0;
+        while (true) {
+          const { data, error } = await supabase
+            .from("race_entries")
+            .select("race_id, racer_id, win_rate")
+            .gte("race_id", windowStartStr)
+            .lte("race_id", cutoff)
+            .order("race_id", { ascending: false })
+            .range(from, from + pageSize - 1);
+          if (error) {
+            console.error("過去データ取得エラー:", error.message);
+            break;
+          }
+          if (!data || data.length === 0) break;
+          pastRows.push(...data);
+          if (data.length < pageSize) break;
+          from += pageSize;
+        }
+
+        // race_id降順のため、各racer_idごとに最初に出てくるものが cutoff に最も近い記録
+        const pastByRacer = new Map();
+        pastRows.forEach((row) => {
+          if (!currentByRacer.has(row.racer_id)) return;
+          if (!pastByRacer.has(row.racer_id)) {
+            pastByRacer.set(row.racer_id, row.win_rate);
+          }
+        });
+
+        const withDelta = [...currentByRacer.values()]
+          .map((entry) => {
+            const pastWinRate = pastByRacer.get(entry.racer_id) ?? null;
+            const meta = raceMetaByRaceId.get(entry.race_id);
+            return {
+              ...entry,
+              venue_code: meta?.venue_code ?? null,
+              race_number: meta?.race_number ?? null,
+              past_win_rate: pastWinRate,
+              delta: pastWinRate !== null ? entry.win_rate - pastWinRate : null,
+            };
+          })
+          .filter((row) => row.delta !== null);
+
+        const rising = [...withDelta]
+          .sort((a, b) => b.delta - a.delta)
+          .slice(0, limit);
+        const falling = [...withDelta]
+          .sort((a, b) => a.delta - b.delta)
+          .slice(0, limit);
+
+        return { rising, falling };
+      },
+    );
+  },
+
+  /**
    * 本日開催中のレースの出走選手について、過去90日間で勝った時の決まり手構成比を取得する（BOA-165）
    * 会場・枠番単位の決まり手データ分析（BOA-150）とは異なり、選手個人単位の勝ちパターンを見る機能
    */
