@@ -13,6 +13,7 @@ import {
   ExhibitionTimeTopChart,
   ExhibitionTimeTrendChart,
   RacerTechniqueProfileChart,
+  RacerFormRankingChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -67,6 +68,11 @@ const ANALYSIS_FEATURES = [
     description:
       "出走選手ごとに、過去90日間で勝った時にどの決まり手で勝っているかを分析",
   },
+  {
+    name: "本日の好調・不調選手ランキング",
+    description:
+      "本日出走する全選手を対象に、全国勝率の変化量で急上昇/急下降選手をランキング",
+  },
 ];
 
 function WinningTechniqueAnalysis() {
@@ -90,6 +96,7 @@ function WinningTechniqueAnalysis() {
       "extime",
       "extrend",
       "techprofile",
+      "formranking",
     ].includes(initialTab)
       ? initialTab
       : "technique",
@@ -101,7 +108,7 @@ function WinningTechniqueAnalysis() {
         <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向の11の分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキングの12の分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
 
@@ -110,7 +117,7 @@ function WinningTechniqueAnalysis() {
             "@context": "https://schema.org",
             "@type": "ItemList",
             name: "データ分析ツール",
-            description: "会場・レースごとの傾向を確認できる11の分析機能",
+            description: "会場・レースごとの傾向を確認できる12の分析機能",
             itemListElement: ANALYSIS_FEATURES.map((feature, index) => ({
               "@type": "ListItem",
               position: index + 1,
@@ -149,7 +156,7 @@ function WinningTechniqueAnalysis() {
           <div className="page-header">
             <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向の傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキングの傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
@@ -220,6 +227,12 @@ function WinningTechniqueAnalysis() {
             >
               🏆 選手別決まり手傾向
             </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "formranking" ? "active" : ""}`}
+              onClick={() => setActiveTab("formranking")}
+            >
+              🔥 好調・不調選手ランキング
+            </button>
           </div>
 
           {activeTab === "outcome" && (
@@ -282,6 +295,7 @@ function WinningTechniqueAnalysis() {
               initialRaceId={initialRaceId}
             />
           )}
+          {activeTab === "formranking" && <RacerFormRankingChart />}
 
           <section className="info-section">
             {activeTab === "outcome" && (
@@ -687,6 +701,47 @@ function WinningTechniqueAnalysis() {
                   <p>
                     <Link to="/blog/racer-technique-profile-guide">
                       選手別決まり手傾向とは？選手の勝ちパターンを見抜く新機能
+                    </Link>
+                  </p>
+                </div>
+              </>
+            )}
+            {activeTab === "formranking" && (
+              <>
+                <h2>本日の好調・不調選手ランキングについて</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    本日出走する全選手を対象に、現在の全国勝率と約90日前時点の全国勝率を比較し、変化量（delta）が大きい上位10名を「急上昇」「急下降」の2つのランキングで表示しています。他のタブと異なり、会場・レースを選ばずに本日のカード全体から注目選手を発見できる機能です。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>急上昇選手</strong> =
+                      直近好調な選手。狙い目の根拠として活用できる
+                    </li>
+                    <li>
+                      <strong>急下降選手</strong> =
+                      直近不調な選手。除外判断の根拠として活用できる
+                    </li>
+                    <li>
+                      選手名をクリックすると、その選手が出走する本日のレースの「選手調子」タブで詳細を確認できます
+                    </li>
+                    <li>
+                      デビュー直後の新人選手は勝率0%からの上昇となり、急上昇ランキングに出やすい点に注意してください
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/racer-form-ranking-guide">
+                      本日の好調・不調選手ランキングとは？レースを選ばず注目選手を発見する新機能
                     </Link>
                   </p>
                 </div>
