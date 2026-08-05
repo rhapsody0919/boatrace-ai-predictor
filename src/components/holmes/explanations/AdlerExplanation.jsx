@@ -1,6 +1,10 @@
+import adlerModel from "../../../../data/adler/model.json";
 import "./ExplanationSection.css";
 
 function AdlerExplanation() {
+  // 週次再フィットで値が変わるため、本文の γ・δ はモデルJSONから表示する
+  const gamma = adlerModel.gamma.toFixed(2);
+  const delta = adlerModel.delta.toFixed(2);
   return (
     <section className="holmes-section explanation-section">
       <h3>仕組みを知る</h3>
@@ -358,7 +362,8 @@ function AdlerExplanation() {
             </p>
             <p>
               競馬では Benter (1994) の γ=0.81, δ=0.65 が有名ですが、アドラーは
-              ボートレースの実データで最尤推定した値（γ≈0.67, δ≈0.47）を使います。
+              ボートレースの実データで最尤推定した値（γ={gamma}, δ={delta}
+              、週次で再フィット）を使います。
               競馬より小さい値になったのは、イン優位のボートレースでは「勝率の高さ」が
               「2・3着への残りやすさ」に直結しにくいことを示しています。
             </p>
