@@ -13,6 +13,18 @@ export const blogPosts = [
     image: "/images/blog/exhibition-time-trend-table.jpg",
   },
   {
+    id: "racer-technique-profile-guide",
+    title: "選手別決まり手傾向とは？選手の勝ちパターンを見抜く新機能",
+    description:
+      "出走選手ごとに過去90日間の勝利時決まり手（逃げ・差し・まくり等）構成比を分析する新機能を解説。選手個人の勝ちパターンを買い目判断の根拠に加える方法を紹介します。",
+    date: "2026-08-06",
+    category: "データ分析",
+    tags: ["決まり手", "新機能", "データ分析", "根拠", "選手"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-technique-profile-table.jpg",
+  },
+  {
     id: "winning-technique-analysis-guide",
     title: "決まり手データ分析とは？会場・枠番別の勝ちパターンを見る新機能",
     description:
