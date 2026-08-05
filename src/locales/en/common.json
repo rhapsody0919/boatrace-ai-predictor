@@ -136,6 +136,8 @@
     "venueGuideDesc": "Detailed venue characteristics and betting angles"
   },
   "home": {
+    "introBannerText": "AI-analyzed 45+ data points | Learn more about BoatAI →",
+    "introBannerClose": "Close",
     "todayRaces": "Today's Races",
     "dataType": "Race data",
     "loadingTitle": "Loading race data...",

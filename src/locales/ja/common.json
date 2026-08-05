@@ -135,6 +135,8 @@
     "venueGuideDesc": "会場の特徴と狙い目を詳しく解説"
   },
   "home": {
+    "introBannerText": "45項目のデータをAIが分析 | BoatAIについて詳しくはこちら →",
+    "introBannerClose": "閉じる",
     "todayRaces": "本日開催中のレース",
     "dataType": "レースデータ",
     "loadingTitle": "レースデータを読み込み中...",
