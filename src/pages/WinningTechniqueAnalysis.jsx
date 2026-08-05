@@ -12,6 +12,7 @@ import {
   NigeOutcomeChart,
   ExhibitionTimeTopChart,
   ExhibitionTimeTrendChart,
+  RacerTechniqueProfileChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -61,6 +62,11 @@ const ANALYSIS_FEATURES = [
     description:
       "選手ごとの展示タイム（周回タイム）が過去90日でどう推移しているかを分析",
   },
+  {
+    name: "選手別決まり手傾向",
+    description:
+      "出走選手ごとに、過去90日間で勝った時にどの決まり手で勝っているかを分析",
+  },
 ];
 
 function WinningTechniqueAnalysis() {
@@ -83,6 +89,7 @@ function WinningTechniqueAnalysis() {
       "nige",
       "extime",
       "extrend",
+      "techprofile",
     ].includes(initialTab)
       ? initialTab
       : "technique",
@@ -94,7 +101,7 @@ function WinningTechniqueAnalysis() {
         <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移の10の分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向の11の分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
 
@@ -103,7 +110,7 @@ function WinningTechniqueAnalysis() {
             "@context": "https://schema.org",
             "@type": "ItemList",
             name: "データ分析ツール",
-            description: "会場・レースごとの傾向を確認できる10の分析機能",
+            description: "会場・レースごとの傾向を確認できる11の分析機能",
             itemListElement: ANALYSIS_FEATURES.map((feature, index) => ({
               "@type": "ListItem",
               position: index + 1,
@@ -142,7 +149,7 @@ function WinningTechniqueAnalysis() {
           <div className="page-header">
             <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移の傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向の傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
@@ -207,6 +214,12 @@ function WinningTechniqueAnalysis() {
             >
               📈 展示タイム推移
             </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "techprofile" ? "active" : ""}`}
+              onClick={() => setActiveTab("techprofile")}
+            >
+              🏆 選手別決まり手傾向
+            </button>
           </div>
 
           {activeTab === "outcome" && (
@@ -259,6 +272,12 @@ function WinningTechniqueAnalysis() {
           )}
           {activeTab === "extrend" && (
             <ExhibitionTimeTrendChart
+              initialVenueCode={initialVenueCode}
+              initialRaceId={initialRaceId}
+            />
+          )}
+          {activeTab === "techprofile" && (
+            <RacerTechniqueProfileChart
               initialVenueCode={initialVenueCode}
               initialRaceId={initialRaceId}
             />
@@ -630,6 +649,44 @@ function WinningTechniqueAnalysis() {
                   <p>
                     <Link to="/blog/exhibition-time-trend-guide">
                       選手別展示タイム推移とは？調子の波を展示タイムから読み解く新機能
+                    </Link>
+                  </p>
+                </div>
+              </>
+            )}
+            {activeTab === "techprofile" && (
+              <>
+                <h2>選手別決まり手傾向について</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    出走選手ごとに、過去90日間で勝った時にどの決まり手（逃げ・差し・まくり等）で勝っているかを構成比で表示しています。会場・枠番単位の「決まり手」タブとは異なり、選手個人の勝ちパターンを見る機能です。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>逃げの割合が高い選手</strong> =
+                      先行して逃げ切るタイプ。イン枠で強みが出やすい
+                    </li>
+                    <li>
+                      <strong>まくり・まくり差しの割合が高い選手</strong> =
+                      外枠からでも勝ち切る力がある選手
+                    </li>
+                    <li>
+                      勝利数が少ない選手は、決まり手構成の信頼度が低くなる点に注意してください
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/racer-technique-profile-guide">
+                      選手別決まり手傾向とは？選手の勝ちパターンを見抜く新機能
                     </Link>
                   </p>
                 </div>

@@ -2476,6 +2476,114 @@ export const supabaseDataService = {
   },
 
   /**
+   * 本日開催中のレースの出走選手について、過去90日間で勝った時の決まり手構成比を取得する（BOA-165）
+   * 会場・枠番単位の決まり手データ分析（BOA-150）とは異なり、選手個人単位の勝ちパターンを見る機能
+   */
+  getRaceTechniqueProfileBreakdown(raceId) {
+    return withCache(`race-technique-profile-breakdown-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const { data: entries, error: entriesError } = await supabase
+        .from("race_entries")
+        .select("boat_number, player_name, racer_id")
+        .eq("race_id", raceId)
+        .order("boat_number");
+
+      if (entriesError || !entries || entries.length === 0) {
+        if (entriesError)
+          console.error("race_entries取得エラー:", entriesError.message);
+        return [];
+      }
+
+      const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
+        (id) => id !== null,
+      );
+      if (racerIds.length === 0) {
+        return entries.map((row) => ({
+          ...row,
+          win_count: 0,
+          techniques: [],
+        }));
+      }
+
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
+
+      const { data: pastEntries, error: pastError } = await supabase
+        .from("race_entries")
+        .select("race_id, boat_number, racer_id")
+        .in("racer_id", racerIds)
+        .gte("race_id", cutoffStr)
+        .lt("race_id", raceId);
+
+      if (pastError) {
+        console.error("過去出走データ取得エラー:", pastError.message);
+      }
+
+      const pastRaceIds = [
+        ...new Set((pastEntries ?? []).map((e) => e.race_id)),
+      ];
+
+      if (pastRaceIds.length === 0) {
+        return entries.map((row) => ({
+          ...row,
+          win_count: 0,
+          techniques: [],
+        }));
+      }
+
+      const resultRows = await fetchAllByIn(
+        "race_results",
+        "race_id, rank1, winning_technique",
+        "race_id",
+        pastRaceIds,
+      );
+
+      const resultByRaceId = new Map();
+      resultRows.forEach((r) => {
+        if (!r.winning_technique || r.rank1 === null) return;
+        resultByRaceId.set(r.race_id, r);
+      });
+
+      const techniqueCountsByRacer = new Map();
+      (pastEntries ?? []).forEach((e) => {
+        const result = resultByRaceId.get(e.race_id);
+        if (!result || result.rank1 !== e.boat_number) return; // この選手が勝ったレースのみ集計
+
+        if (!techniqueCountsByRacer.has(e.racer_id)) {
+          techniqueCountsByRacer.set(e.racer_id, new Map());
+        }
+        const counts = techniqueCountsByRacer.get(e.racer_id);
+        counts.set(
+          result.winning_technique,
+          (counts.get(result.winning_technique) ?? 0) + 1,
+        );
+      });
+
+      return entries.map((row) => {
+        const counts = techniqueCountsByRacer.get(row.racer_id) ?? new Map();
+        const winCount = [...counts.values()].reduce((s, c) => s + c, 0);
+        const techniques = [...counts.entries()]
+          .map(([technique, count]) => ({
+            technique,
+            count,
+            percentage: winCount > 0 ? (count / winCount) * 100 : 0,
+          }))
+          .sort((a, b) => b.count - a.count);
+        return {
+          ...row,
+          win_count: winCount,
+          techniques,
+        };
+      });
+    });
+  },
+
+  /**
    * 会場別・枠番別のトップスタート実績（回数/確率、トップスタート時の1着率）を取得する（BOA-154）
    * 日次バッチ（scripts/daily/update-top-start-stats.js）で事前集計したテーブルを参照する
    */
