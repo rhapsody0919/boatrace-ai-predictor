@@ -1,0 +1,19 @@
+{
+  "model_id": "adler",
+  "version": 1,
+  "trained_at": "2026-08-05T14:52:09.281Z",
+  "base_model": "sherlock",
+  "base_model_trained_at": "2026-08-01T18:29:11.378Z",
+  "gamma": 0.6716990229219257,
+  "delta": 0.47164379649234456,
+  "n_races": 36333,
+  "fit_from": "2025-12-04",
+  "fit_to": "2026-08-05",
+  "eval": {
+    "n_test": 5450,
+    "trifecta_logloss_plain": 4.008225327601335,
+    "trifecta_logloss_benter": 3.895280251526386,
+    "trifecta_logloss_fitted": 3.8757440985310017,
+    "top1_trifecta_hit_rate": 0.0891743119266055
+  }
+}

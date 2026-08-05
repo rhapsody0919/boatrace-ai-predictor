@@ -73,7 +73,7 @@ function parseArgs(argv = process.argv.slice(2)) {
 // データ取得・結合
 // ---------------------------------------------------------------------------
 
-async function loadDataset({ from, to }) {
+export async function loadDataset({ from, to }) {
   const rangeFilter = (col) => (q) => {
     if (from) q = q.gte(col, from);
     if (to) q = q.lte(col, `${to}~`); // race_id は日付プレフィックスで辞書順
@@ -94,7 +94,7 @@ async function loadDataset({ from, to }) {
     ),
     fetchAll(
       "race_results",
-      "race_id, rank1, payout_win, is_cancelled, is_no_race",
+      "race_id, rank1, rank2, rank3, payout_win, is_cancelled, is_no_race",
       (q) => {
         q = q.not("rank1", "is", null);
         return rangeFilter("race_id")(q);
@@ -169,6 +169,7 @@ async function loadDataset({ from, to }) {
       entries: raceEntries.sort((a, b) => a.boat_number - b.boat_number),
       exhibition: exhibitionByRace[raceId] ?? {},
       winner: result.rank1, // 艇番 1-6
+      ranks: [result.rank1, result.rank2, result.rank3], // 上位3着の艇番（アドラー温度フィット用）
       payoutWin: result.payout_win ?? 0, // 100円あたり払戻（勝者に対する）
       odds,
       hasOdds: !!odds,
