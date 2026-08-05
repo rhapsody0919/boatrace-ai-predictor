@@ -224,13 +224,38 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     page,
   }) => {
     await page.goto("/winning-technique");
-    await page.click('.analysis-tab-btn:has-text("展示タイム")');
+    await page.click('.analysis-tab-btn:text-is("⏲️ 展示タイム")');
     await expect(page.locator(".winning-technique-container")).toBeVisible({
       timeout: 10000,
     });
     await expect(
       page.locator(".empty-state, .winning-technique-table"),
     ).toBeVisible({ timeout: 10000 });
+  });
+
+  test("選手別展示タイム推移タブで本日のレースの推移一覧→クリックで推移グラフに切り替わる（BOA-164）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:text-is("📈 展示タイム推移")');
+    await expect(page.locator(".motor-condition-container")).toBeVisible({
+      timeout: 10000,
+    });
+    // マイグレーション不要のためデータは常に存在するはずだが、
+    // 本日開催中のレースが無い環境でも空状態を許容する
+    await expect(
+      page.locator(".empty-state, .motor-ranking-row").first(),
+    ).toBeVisible({
+      timeout: 15000,
+    });
+
+    const rowCount = await page.locator(".motor-ranking-row").count();
+    if (rowCount > 0) {
+      await page.locator(".motor-ranking-row").first().click();
+      await expect(page.locator(".selected-motor-heading")).toBeVisible({
+        timeout: 10000,
+      });
+    }
   });
 
   test("会場・レース・タブ指定のディープリンクで直接開ける（BOA-152）", async ({

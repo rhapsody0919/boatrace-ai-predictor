@@ -1,6 +1,18 @@
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "exhibition-time-trend-guide",
+    title: "選手別展示タイム推移とは？調子の波を展示タイムから読み解く新機能",
+    description:
+      "出走選手ごとの展示タイム（周回タイム）が過去90日でどう推移しているかを分析する新機能を解説。展示タイムの悪化傾向を選手コンディションの警戒材料として活用する方法を紹介します。",
+    date: "2026-08-05",
+    category: "データ分析",
+    tags: ["展示タイム", "新機能", "データ分析", "根拠", "選手"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/exhibition-time-trend-table.jpg",
+  },
+  {
     id: "winning-technique-analysis-guide",
     title: "決まり手データ分析とは？会場・枠番別の勝ちパターンを見る新機能",
     description:
