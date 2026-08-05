@@ -10,3 +10,4 @@ export { default as ExhibitionTimeTopChart } from "./ExhibitionTimeTopChart";
 export { default as ExhibitionTimeTrendChart } from "./ExhibitionTimeTrendChart";
 export { default as RacerTechniqueProfileChart } from "./RacerTechniqueProfileChart";
 export { default as RacerFormRankingChart } from "./RacerFormRankingChart";
+export { default as RacerBoatReturnRateChart } from "./RacerBoatReturnRateChart";

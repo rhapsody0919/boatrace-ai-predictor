@@ -1,6 +1,18 @@
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-boat-return-rate-guide",
+    title: "選手×艇番別回収率分析とは？勝率だけでなく儲かるかを見る新機能",
+    description:
+      "出走選手ごとに過去180日間・同じ艇番で出走した際の単勝・複勝回収率を分析する新機能を解説。勝率だけでなく実際の収益性の視点を買い目判断に加える方法を紹介します。",
+    date: "2026-08-08",
+    category: "データ分析",
+    tags: ["回収率", "新機能", "データ分析", "根拠", "選手"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-boat-return-rate-table.jpg",
+  },
+  {
     id: "exhibition-time-trend-guide",
     title: "選手別展示タイム推移とは？調子の波を展示タイムから読み解く新機能",
     description:

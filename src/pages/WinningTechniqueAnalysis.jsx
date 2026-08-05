@@ -14,6 +14,7 @@ import {
   ExhibitionTimeTrendChart,
   RacerTechniqueProfileChart,
   RacerFormRankingChart,
+  RacerBoatReturnRateChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -73,6 +74,11 @@ const ANALYSIS_FEATURES = [
     description:
       "本日出走する全選手を対象に、全国勝率の変化量で急上昇/急下降選手をランキング",
   },
+  {
+    name: "選手×艇番別 回収率分析",
+    description:
+      "出走選手ごとに、過去180日間・同じ艇番で出走した際の単勝・複勝回収率を分析",
+  },
 ];
 
 function WinningTechniqueAnalysis() {
@@ -97,6 +103,7 @@ function WinningTechniqueAnalysis() {
       "extrend",
       "techprofile",
       "formranking",
+      "returnrate",
     ].includes(initialTab)
       ? initialTab
       : "technique",
@@ -108,7 +115,7 @@ function WinningTechniqueAnalysis() {
         <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキングの12の分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキング・選手×艇番別回収率分析の13の分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
 
@@ -117,7 +124,7 @@ function WinningTechniqueAnalysis() {
             "@context": "https://schema.org",
             "@type": "ItemList",
             name: "データ分析ツール",
-            description: "会場・レースごとの傾向を確認できる12の分析機能",
+            description: "会場・レースごとの傾向を確認できる13の分析機能",
             itemListElement: ANALYSIS_FEATURES.map((feature, index) => ({
               "@type": "ListItem",
               position: index + 1,
@@ -156,7 +163,7 @@ function WinningTechniqueAnalysis() {
           <div className="page-header">
             <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキングの傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキング・選手×艇番別回収率分析の傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
@@ -233,6 +240,12 @@ function WinningTechniqueAnalysis() {
             >
               🔥 好調・不調選手ランキング
             </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "returnrate" ? "active" : ""}`}
+              onClick={() => setActiveTab("returnrate")}
+            >
+              💰 回収率分析
+            </button>
           </div>
 
           {activeTab === "outcome" && (
@@ -296,6 +309,12 @@ function WinningTechniqueAnalysis() {
             />
           )}
           {activeTab === "formranking" && <RacerFormRankingChart />}
+          {activeTab === "returnrate" && (
+            <RacerBoatReturnRateChart
+              initialVenueCode={initialVenueCode}
+              initialRaceId={initialRaceId}
+            />
+          )}
 
           <section className="info-section">
             {activeTab === "outcome" && (
@@ -742,6 +761,43 @@ function WinningTechniqueAnalysis() {
                   <p>
                     <Link to="/blog/racer-form-ranking-guide">
                       本日の好調・不調選手ランキングとは？レースを選ばず注目選手を発見する新機能
+                    </Link>
+                  </p>
+                </div>
+              </>
+            )}
+            {activeTab === "returnrate" && (
+              <>
+                <h2>選手×艇番別 回収率分析について</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    出走選手ごとに、過去180日間・同じ艇番で出走したレースを対象に、単勝・複勝を100円ずつ購入し続けた場合の払戻金合計の割合（回収率）を表示しています。AI予想モデルの確率は使わず、実際に払い戻された金額の実績のみを集計しています。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>回収率が高い選手</strong> =
+                      勝率だけでなく、実際に購入して儲かりやすい選手
+                    </li>
+                    <li>
+                      勝率が高くても回収率が低い選手は、人気が集中しオッズが低い（妙味が薄い）可能性があります
+                    </li>
+                    <li>
+                      サンプル数が少ない選手は、回収率の信頼度が低くなる点に注意してください
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="info-card">
+                  <h3>📖 詳しい解説記事</h3>
+                  <p>
+                    <Link to="/blog/racer-boat-return-rate-guide">
+                      選手×艇番別回収率分析とは？勝率だけでなく儲かるかを見る新機能
                     </Link>
                   </p>
                 </div>

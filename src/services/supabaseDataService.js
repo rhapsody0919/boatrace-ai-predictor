@@ -2476,6 +2476,137 @@ export const supabaseDataService = {
   },
 
   /**
+   * 本日開催中のレースの出走選手について、過去180日間・同じ艇番で出走した
+   * レースでの単勝回収率・複勝回収率を取得する（BOA-167）
+   * AI予想モデルの確率は使わず、race_results.payout_win/payout_place_1/2の
+   * 過去の実績払戻金のみを集計する（期待値分析のようなモデル較正は不要）
+   */
+  getRaceRacerBoatReturnRate(raceId) {
+    return withCache(`race-racer-boat-return-rate-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const { data: entries, error: entriesError } = await supabase
+        .from("race_entries")
+        .select("boat_number, player_name, racer_id")
+        .eq("race_id", raceId)
+        .order("boat_number");
+
+      if (entriesError || !entries || entries.length === 0) {
+        if (entriesError)
+          console.error("race_entries取得エラー:", entriesError.message);
+        return [];
+      }
+
+      const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
+        (id) => id !== null,
+      );
+      if (racerIds.length === 0) {
+        return entries.map((row) => ({
+          ...row,
+          sample_count: 0,
+          win_return_rate: null,
+          place_return_rate: null,
+        }));
+      }
+
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 180);
+      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+      const relevantPastEntries = [];
+      const pageSize = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("race_entries")
+          .select("race_id, boat_number, racer_id")
+          .in("racer_id", racerIds)
+          .gte("race_id", cutoffStr)
+          .lt("race_id", raceId)
+          .range(from, from + pageSize - 1);
+        if (error) {
+          console.error("過去出走データ取得エラー:", error.message);
+          break;
+        }
+        if (!data || data.length === 0) break;
+        relevantPastEntries.push(...data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+
+      if (relevantPastEntries.length === 0) {
+        return entries.map((row) => ({
+          ...row,
+          sample_count: 0,
+          win_return_rate: null,
+          place_return_rate: null,
+        }));
+      }
+
+      const pastRaceIds = [
+        ...new Set(relevantPastEntries.map((e) => e.race_id)),
+      ];
+      const resultRows = await fetchAllByIn(
+        "race_results",
+        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+        "race_id",
+        pastRaceIds,
+      );
+      const resultByRaceId = new Map(resultRows.map((r) => [r.race_id, r]));
+
+      // racer_id + boat_number ごとに集計（同じ選手でも艇番が違えば別集計）
+      const statsByRacerBoat = new Map();
+      relevantPastEntries.forEach((e) => {
+        const result = resultByRaceId.get(e.race_id);
+        if (!result || result.is_cancelled || result.is_no_race) return;
+
+        const key = `${e.racer_id}-${e.boat_number}`;
+        if (!statsByRacerBoat.has(key)) {
+          statsByRacerBoat.set(key, {
+            sampleCount: 0,
+            winPayoutSum: 0,
+            placePayoutSum: 0,
+          });
+        }
+        const stats = statsByRacerBoat.get(key);
+        stats.sampleCount += 1;
+
+        if (result.rank1 === e.boat_number) {
+          stats.winPayoutSum += result.payout_win ?? 0;
+          stats.placePayoutSum += result.payout_place_1 ?? 0;
+        } else if (result.rank2 === e.boat_number) {
+          stats.placePayoutSum += result.payout_place_2 ?? 0;
+        }
+      });
+
+      return entries.map((row) => {
+        const stats = statsByRacerBoat.get(
+          `${row.racer_id}-${row.boat_number}`,
+        );
+        if (!stats || stats.sampleCount === 0) {
+          return {
+            ...row,
+            sample_count: 0,
+            win_return_rate: null,
+            place_return_rate: null,
+          };
+        }
+        return {
+          ...row,
+          sample_count: stats.sampleCount,
+          win_return_rate:
+            (stats.winPayoutSum / (stats.sampleCount * 100)) * 100,
+          place_return_rate:
+            (stats.placePayoutSum / (stats.sampleCount * 100)) * 100,
+        };
+      });
+    });
+  },
+
+  /**
    * 本日出走する全選手を対象に、現在の全国勝率と約90日前時点の全国勝率のdeltaで
    * 急上昇/急下降ランキングを作成する（BOA-166）
    * 会場・レース単位の選手調子（BOA-152）とは異なり、レース選択前の発見導線として
