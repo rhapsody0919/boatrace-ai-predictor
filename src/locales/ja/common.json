@@ -295,5 +295,47 @@
     "rankLabel": "{{rank}}着",
     "distributionTitle": "展開確率分布",
     "courseLabel": "{{course}}コース"
+  },
+  "dataTable": {
+    "title": "データ出走表",
+    "subtitle": "出走6選手の分析データを一覧比較。行ラベルをタップすると詳細分析ページへ移動します",
+    "rowWinRate": "級別・勝率",
+    "rowMotor": "モーター2連率",
+    "rowForm": "調子（勝率Δ）",
+    "rowSt": "ST安定度",
+    "rowExhibition": "展示タイム",
+    "rowTechnique": "決まり手型",
+    "rowReturnRate": "単勝回収率",
+    "noWins": "勝利なし",
+    "winCount": "{{n}}勝",
+    "note": "分析データは過去90日間（回収率は180日間）の実績集計です。ハイライトはレース内で最も良い値。参考値であり結果を保証するものではありません"
+  },
+  "aiSection": {
+    "title": "AIデータ分析",
+    "topPickSummary": "AIの本命: {{number}}号艇 {{name}}",
+    "expandHint": "タップで展開: AI予想の詳細（買い目・1マーク展開予測・配当妙味・詳細テーブル）"
+  },
+  "review": {
+    "title": "データで振り返る",
+    "resultLine": "1着: {{number}}号艇 {{name}}",
+    "techniqueLabel": "決まり手: {{technique}}",
+    "loading": "分析データを照合中...",
+    "matchHeading": "データと整合した点",
+    "mismatchHeading": "データと違った点",
+    "aiHeading": "AI検証",
+    "aiHit": "AIの本命 {{number}}号艇が1着。",
+    "aiMissWithData": "AIの本命は{{aiNumber}}号艇だったが、1着は{{winnerNumber}}号艇。上記の整合したデータが{{winnerNumber}}号艇の好走を示唆していた。",
+    "aiMissNoData": "AIの本命は{{aiNumber}}号艇だったが、1着は{{winnerNumber}}号艇。今回はデータからも読みにくい波乱だった。",
+    "itemTechniqueTop": "決まり手「{{technique}}」は過去90日の勝ちパターン1位（{{pct}}%）と一致",
+    "itemTechniqueNone": "「{{technique}}」は過去90日の勝ちパターンに無い決まり手",
+    "itemTechniqueNoWins": "過去90日間で勝利の無かった選手の1着",
+    "itemMotorHigh": "モーター2連率がレース内{{rank}}位と上位",
+    "itemMotorLow": "モーター2連率はレース内{{rank}}位と下位",
+    "itemFormUp": "全国勝率が上昇基調（+{{delta}}）",
+    "itemFormDown": "全国勝率は下降基調（-{{delta}}）",
+    "itemExhibitionFast": "当日の展示タイムがレース内{{rank}}位と上位",
+    "itemExhibitionSlow": "当日の展示タイムはレース内{{rank}}位と下位",
+    "itemReturnHigh": "単勝回収率{{rate}}%（過去180日・同艇番の購入実績）",
+    "note": "照合は機械的な順位・一致判定によるものです。データは過去の傾向であり、今後の結果を保証するものではありません"
   }
 }

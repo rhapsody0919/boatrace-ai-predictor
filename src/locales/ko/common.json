@@ -295,5 +295,47 @@
     "rankLabel": "{{rank}}위",
     "distributionTitle": "결과 확률",
     "courseLabel": "{{course}}코스"
+  },
+  "dataTable": {
+    "title": "데이터 출주표",
+    "subtitle": "출주 6명의 분석 데이터를 한눈에 비교. 행 라벨을 탭하면 상세 분석 페이지로 이동합니다",
+    "rowWinRate": "급별・승률",
+    "rowMotor": "모터 2연대율",
+    "rowForm": "컨디션（승률Δ）",
+    "rowSt": "ST 안정도",
+    "rowExhibition": "전시 타임",
+    "rowTechnique": "결정수 유형",
+    "rowReturnRate": "단승 회수율",
+    "noWins": "승리 없음",
+    "winCount": "{{n}}승",
+    "note": "분석 데이터는 최근 90일（회수율은 180일）의 실적 집계입니다. 하이라이트는 이 레이스에서 가장 좋은 값. 참고용이며 결과를 보장하지 않습니다"
+  },
+  "aiSection": {
+    "title": "AI 데이터 분석",
+    "topPickSummary": "AI 본명: {{number}}호정 {{name}}",
+    "expandHint": "탭하여 펼치기: AI 예상 상세（추천 조합・1마크 전개 시뮬레이션・배당 가치・상세 테이블）"
+  },
+  "review": {
+    "title": "데이터로 돌아보기",
+    "resultLine": "1착: {{number}}호정 {{name}}",
+    "techniqueLabel": "결정수: {{technique}}",
+    "loading": "분석 데이터 대조 중...",
+    "matchHeading": "데이터와 일치한 점",
+    "mismatchHeading": "데이터와 달랐던 점",
+    "aiHeading": "AI 검증",
+    "aiHit": "AI 본명 {{number}}호정이 1착.",
+    "aiMissWithData": "AI 본명은 {{aiNumber}}호정이었지만 1착은 {{winnerNumber}}호정. 위의 일치한 데이터가 {{winnerNumber}}호정의 호주를 시사하고 있었다.",
+    "aiMissNoData": "AI 본명은 {{aiNumber}}호정이었지만 1착은 {{winnerNumber}}호정. 이번에는 데이터로도 읽기 어려운 이변이었다.",
+    "itemTechniqueTop": "결정수「{{technique}}」는 최근 90일 승리 패턴 1위（{{pct}}%）와 일치",
+    "itemTechniqueNone": "「{{technique}}」는 최근 90일 승리 패턴에 없는 결정수",
+    "itemTechniqueNoWins": "최근 90일간 승리가 없던 선수의 1착",
+    "itemMotorHigh": "모터 2연대율이 레이스 내 {{rank}}위로 상위",
+    "itemMotorLow": "모터 2연대율은 레이스 내 {{rank}}위로 하위",
+    "itemFormUp": "전국 승률이 상승 기조（+{{delta}}）",
+    "itemFormDown": "전국 승률은 하락 기조（-{{delta}}）",
+    "itemExhibitionFast": "당일 전시 타임이 레이스 내 {{rank}}위로 상위",
+    "itemExhibitionSlow": "당일 전시 타임은 레이스 내 {{rank}}위로 하위",
+    "itemReturnHigh": "단승 회수율 {{rate}}%（최근 180일・같은 정번의 구매 실적）",
+    "note": "대조는 기계적인 순위・일치 판정에 의한 것입니다. 데이터는 과거 경향이며 향후 결과를 보장하지 않습니다"
   }
 }

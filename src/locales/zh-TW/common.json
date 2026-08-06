@@ -295,5 +295,47 @@
     "rankLabel": "第{{rank}}名",
     "distributionTitle": "結果機率",
     "courseLabel": "{{course}}號航道"
+  },
+  "dataTable": {
+    "title": "數據出賽表",
+    "subtitle": "一覽比較6位選手的分析數據。點擊列標籤可前往詳細分析頁面",
+    "rowWinRate": "級別・勝率",
+    "rowMotor": "馬達2連率",
+    "rowForm": "狀態（勝率Δ）",
+    "rowSt": "ST穩定度",
+    "rowExhibition": "展示時間",
+    "rowTechnique": "獲勝方式",
+    "rowReturnRate": "獨贏回收率",
+    "noWins": "無勝場",
+    "winCount": "{{n}}勝",
+    "note": "分析數據為過去90天（回收率為180天）的實績統計。醒目標示為本場最佳值。僅供參考，不保證結果"
+  },
+  "aiSection": {
+    "title": "AI數據分析",
+    "topPickSummary": "AI本命: {{number}}號艇 {{name}}",
+    "expandHint": "點擊展開：AI預測詳情（推薦組合・第一彎道模擬・賠率價值・詳細表格）"
+  },
+  "review": {
+    "title": "以數據回顧",
+    "resultLine": "冠軍: {{number}}號艇 {{name}}",
+    "techniqueLabel": "獲勝方式: {{technique}}",
+    "loading": "數據比對中...",
+    "matchHeading": "與數據相符之處",
+    "mismatchHeading": "與數據不符之處",
+    "aiHeading": "AI驗證",
+    "aiHit": "AI本命{{number}}號艇獲勝。",
+    "aiMissWithData": "AI本命為{{aiNumber}}號艇，但{{winnerNumber}}號艇獲勝。上述相符的數據曾指向{{winnerNumber}}號艇。",
+    "aiMissNoData": "AI本命為{{aiNumber}}號艇，但{{winnerNumber}}號艇獲勝。此次冷門連數據也難以預測。",
+    "itemTechniqueTop": "獲勝方式「{{technique}}」與該選手過去90天的第1獲勝模式（{{pct}}%）一致",
+    "itemTechniqueNone": "「{{technique}}」不在該選手過去90天的獲勝模式中",
+    "itemTechniqueNoWins": "過去90天無勝場的選手獲勝",
+    "itemMotorHigh": "馬達2連率為本場第{{rank}}名的上位",
+    "itemMotorLow": "馬達2連率僅為本場第{{rank}}名",
+    "itemFormUp": "全國勝率呈上升趨勢（+{{delta}}）",
+    "itemFormDown": "全國勝率呈下降趨勢（-{{delta}}）",
+    "itemExhibitionFast": "當天展示時間為本場第{{rank}}名的上位",
+    "itemExhibitionSlow": "當天展示時間僅為本場第{{rank}}名",
+    "itemReturnHigh": "獨贏回收率{{rate}}%（過去180天・同艇號的購買實績）",
+    "note": "比對僅基於機械性的排名與一致性判定。數據為過去趨勢，不保證未來結果"
   }
 }

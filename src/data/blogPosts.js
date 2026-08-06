@@ -1,6 +1,30 @@
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "data-race-table-guide",
+    title: "データ出走表とは？6選手の分析データを一覧比較できる新機能",
+    description:
+      "レース予想ページをリニューアルし、出走6選手×7つの分析データ（モーター・調子・ST安定度・展示タイム・決まり手型・回収率）を一覧比較できるデータ出走表を追加。自分で予想を組み立てるための作業台としての使い方を解説します。",
+    date: "2026-08-09",
+    category: "データ分析",
+    tags: ["出走表", "新機能", "データ分析", "根拠", "選手"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/data-race-table.jpg",
+  },
+  {
+    id: "race-review-guide",
+    title: "データで振り返るとは？レース結果を分析データで検証する新機能",
+    description:
+      "レース結果確定後、勝った艇をBoatAIの分析データと機械的に照合し「整合した点・違った点」を表示する新機能を解説。AI予想の当否も毎レース誠実に検証します。",
+    date: "2026-08-10",
+    category: "データ分析",
+    tags: ["レース結果", "新機能", "データ分析", "検証", "振り返り"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/race-review.jpg",
+  },
+  {
     id: "racer-boat-return-rate-guide",
     title: "選手×艇番別回収率分析とは？勝率だけでなく儲かるかを見る新機能",
     description:

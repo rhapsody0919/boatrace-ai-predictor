@@ -2476,6 +2476,34 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定レースの結果サマリー（着順・決まり手）を取得する（BOA-168）
+   * Edge Function経由のpredictionデータにはwinning_techniqueが含まれないため、
+   * 「データで振り返る」はこの関数で確実に決まり手を取得する
+   */
+  getRaceResultSummary(raceId) {
+    return withCache(`race-result-summary-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from("race_results")
+        .select(
+          "race_id, rank1, rank2, rank3, winning_technique, is_cancelled, is_no_race",
+        )
+        .eq("race_id", raceId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("race_results取得エラー:", error.message);
+        return null;
+      }
+      return data ?? null;
+    });
+  },
+
+  /**
    * 本日開催中のレースの出走選手について、過去180日間・同じ艇番で出走した
    * レースでの単勝回収率・複勝回収率を取得する（BOA-167）
    * AI予想モデルの確率は使わず、race_results.payout_win/payout_place_1/2の

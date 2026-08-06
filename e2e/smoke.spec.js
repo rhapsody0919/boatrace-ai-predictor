@@ -365,6 +365,55 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
   });
 });
 
+test.describe("レースページ再設計（BOA-168）", () => {
+  test("トップページでレース選択→データ出走表とAIデータ分析（折りたたみ）が表示される", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.locator(".predict-btn").first().click();
+
+    // データ出走表が主役として表示される
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 15000,
+    });
+
+    // AIデータ分析はデフォルト折りたたみ。ヘッダのみ表示
+    const aiHeader = page.locator(".ai-analysis-header");
+    await expect(aiHeader).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(".ai-analysis-body")).toHaveCount(0);
+
+    // 展開すると既存のAI予想UI（モデル切替等）が表示される
+    await aiHeader.click();
+    await expect(page.locator(".ai-analysis-body")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(
+      page.locator(".ai-analysis-body .players-table-detailed"),
+    ).toBeVisible({ timeout: 10000 });
+  });
+
+  test("過去日付ページで結果確定レースを選ぶと「データで振り返る」が表示される", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-07-30");
+    await page.locator(".predict-btn").first().click();
+
+    // データ出走表は過去日付でも表示される
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 15000,
+    });
+
+    // 結果確定済みレースなので振り返りセクションが表示される
+    await expect(page.locator(".race-review")).toBeVisible({
+      timeout: 20000,
+    });
+    // 照合完了後、AI検証ブロックが表示される
+    await expect(page.locator(".race-review-ai")).toBeVisible({
+      timeout: 20000,
+    });
+  });
+});
+
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {
   test("ブログ記事詳細ページのtitleが空にならない", async ({ page }) => {
     await page.goto("/blog/rough-race-signals");
