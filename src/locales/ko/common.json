@@ -132,7 +132,8 @@
     "newTab": "(새 창에서 열림)",
     "unknownVenue": "알 수 없음",
     "venueGuideLink": "{{venue}} 경정장 가이드 보기",
-    "venueGuideDesc": "경정장 특성과 베팅 포인트 상세"
+    "venueGuideDesc": "경정장 특성과 베팅 포인트 상세",
+    "analysisToolsLink": "데이터 분석 도구로 이 레이스를 더 분석하기"
   },
   "home": {
     "introBannerText": "AI가 45개 이상의 데이터를 분석 | BoatAI 자세히 보기 →",

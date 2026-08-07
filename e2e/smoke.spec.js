@@ -326,9 +326,7 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     // /races/ は過去アーカイブのため対象外。実際に予想を見るトップページに導線が必要
     await page.goto("/");
     await page.locator(".predict-btn").first().click();
-    const link = page.locator(
-      'a:has-text("このレースの決まり手・モーター調子・選手調子を見る")',
-    );
+    const link = page.locator(".analysis-tools-link");
     await expect(link).toBeVisible({ timeout: 10000 });
     await link.click();
     await expect(page).toHaveURL(/\/winning-technique\?/);
@@ -353,9 +351,7 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
       .split("T")[0];
     await page.goto(`/races/${today}`);
     await page.locator(".predict-btn").first().click();
-    const link = page.locator(
-      'a:has-text("このレースの決まり手・モーター調子・選手調子を見る")',
-    );
+    const link = page.locator(".analysis-tools-link");
     await expect(link).toBeVisible({ timeout: 10000 });
     await link.click();
     await expect(page).toHaveURL(/\/winning-technique\?/);

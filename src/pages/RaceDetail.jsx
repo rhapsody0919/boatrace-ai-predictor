@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
 import ModelComparisonTable from "../components/ModelComparisonTable";
@@ -18,6 +19,7 @@ import "./RaceDetail.css";
 
 function RaceDetail() {
   const { date } = useParams();
+  const { t } = useTranslation();
   const [raceData, setRaceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -492,7 +494,7 @@ function RaceDetail() {
                     to={`/winning-technique?venue_code=${selectedRace.venueCode}&race_id=${selectedRace.id}&tab=motor`}
                     className="analysis-tools-link"
                   >
-                    🔍 このレースの決まり手・モーター調子・選手調子を見る
+                    📊 {t("panel.analysisToolsLink")}
                   </Link>
                 </div>
               )}

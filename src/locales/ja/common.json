@@ -132,7 +132,8 @@
     "newTab": "（新しいタブで開きます）",
     "unknownVenue": "不明",
     "venueGuideLink": "{{venue}}の攻略ガイドを見る",
-    "venueGuideDesc": "会場の特徴と狙い目を詳しく解説"
+    "venueGuideDesc": "会場の特徴と狙い目を詳しく解説",
+    "analysisToolsLink": "データ分析ツールでこのレースをさらに分析する"
   },
   "home": {
     "introBannerText": "45項目のデータをAIが分析 | BoatAIについて詳しくはこちら →",

@@ -133,7 +133,8 @@
     "newTab": "(opens in a new tab)",
     "unknownVenue": "Unknown",
     "venueGuideLink": "View the {{venue}} venue guide",
-    "venueGuideDesc": "Detailed venue characteristics and betting angles"
+    "venueGuideDesc": "Detailed venue characteristics and betting angles",
+    "analysisToolsLink": "Analyze this race further with the data analysis tools"
   },
   "home": {
     "introBannerText": "AI-analyzed 45+ data points | Learn more about BoatAI →",

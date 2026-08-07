@@ -132,7 +132,8 @@
     "newTab": "（另開新視窗）",
     "unknownVenue": "未知",
     "venueGuideLink": "查看{{venue}}賽場指南",
-    "venueGuideDesc": "賽場特性與投注要點詳解"
+    "venueGuideDesc": "賽場特性與投注要點詳解",
+    "analysisToolsLink": "用數據分析工具進一步分析本場比賽"
   },
   "home": {
     "introBannerText": "AI分析45項以上數據 | 了解更多BoatAI →",
