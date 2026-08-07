@@ -15,6 +15,8 @@ import {
   RacerTechniqueProfileChart,
   RacerFormRankingChart,
   RacerBoatReturnRateChart,
+  AttackDefenseAnalysis,
+  RaceCardDataTable,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -79,6 +81,16 @@ const ANALYSIS_FEATURES = [
     description:
       "出走選手ごとに、過去180日間・同じ艇番で出走した際の単勝・複勝回収率を分析",
   },
+  {
+    name: "超展開データ",
+    description:
+      "出走選手ごとの進入コースでの攻め手（差し・まくり等）と守り手の実績分布を分析",
+  },
+  {
+    name: "出走表データ",
+    description:
+      "出走6選手の勝率・モーター・平均ST・展示・コース勝率を枠番順に一覧比較",
+  },
 ];
 
 function WinningTechniqueAnalysis() {
@@ -104,6 +116,8 @@ function WinningTechniqueAnalysis() {
       "techprofile",
       "formranking",
       "returnrate",
+      "attackdefense",
+      "racecard",
     ].includes(initialTab)
       ? initialTab
       : "technique",
@@ -115,7 +129,7 @@ function WinningTechniqueAnalysis() {
         <title>データ分析ツール - BoatAI</title>
         <meta
           name="description"
-          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキング・選手×艇番別回収率分析の13の分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
+          content="出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキング・選手×艇番別回収率分析・超展開データ・出走表データの15の分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
         />
         <link rel="canonical" href="https://www.boat-ai.jp/winning-technique" />
 
@@ -124,7 +138,7 @@ function WinningTechniqueAnalysis() {
             "@context": "https://schema.org",
             "@type": "ItemList",
             name: "データ分析ツール",
-            description: "会場・レースごとの傾向を確認できる13の分析機能",
+            description: "会場・レースごとの傾向を確認できる15の分析機能",
             itemListElement: ANALYSIS_FEATURES.map((feature, index) => ({
               "@type": "ListItem",
               position: index + 1,
@@ -163,7 +177,7 @@ function WinningTechniqueAnalysis() {
           <div className="page-header">
             <h1>📊 データ分析ツール</h1>
             <p className="page-subtitle">
-              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキング・選手×艇番別回収率分析の傾向から、買い目選定・除外判断の参考データを提供します
+              出目分布・決まり手・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート・負け決まり手・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキング・選手×艇番別回収率分析・超展開データ・出走表データの傾向から、買い目選定・除外判断の参考データを提供します
             </p>
           </div>
 
@@ -246,6 +260,18 @@ function WinningTechniqueAnalysis() {
             >
               💰 回収率分析
             </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "attackdefense" ? "active" : ""}`}
+              onClick={() => setActiveTab("attackdefense")}
+            >
+              ⚔️ 超展開データ
+            </button>
+            <button
+              className={`analysis-tab-btn ${activeTab === "racecard" ? "active" : ""}`}
+              onClick={() => setActiveTab("racecard")}
+            >
+              📋 出走表データ
+            </button>
           </div>
 
           {activeTab === "outcome" && (
@@ -311,6 +337,18 @@ function WinningTechniqueAnalysis() {
           {activeTab === "formranking" && <RacerFormRankingChart />}
           {activeTab === "returnrate" && (
             <RacerBoatReturnRateChart
+              initialVenueCode={initialVenueCode}
+              initialRaceId={initialRaceId}
+            />
+          )}
+          {activeTab === "attackdefense" && (
+            <AttackDefenseAnalysis
+              initialVenueCode={initialVenueCode}
+              initialRaceId={initialRaceId}
+            />
+          )}
+          {activeTab === "racecard" && (
+            <RaceCardDataTable
               initialVenueCode={initialVenueCode}
               initialRaceId={initialRaceId}
             />
@@ -800,6 +838,63 @@ function WinningTechniqueAnalysis() {
                       選手×艇番別回収率分析とは？勝率だけでなく儲かるかを見る新機能
                     </Link>
                   </p>
+                </div>
+              </>
+            )}
+            {activeTab === "attackdefense" && (
+              <>
+                <h2>超展開データについて</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    出走選手ごとに、進入コースから「どう攻めて勝ってきたか」（攻め手:
+                    差し・まくり・まくり差し等）と、1コースの選手が「どう攻められて敗れてきたか」（守り手）の実績分布を表示しています。全国平均との比較で、その選手の攻めの型が読み取れます。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>まくり攻めが多い外枠選手</strong> =
+                      1コース艇が守りに弱いレースでは高配当の起点になりうる
+                    </li>
+                    <li>
+                      1コース選手の守り手分布から、どの決まり手で崩されやすいかがわかります
+                    </li>
+                    <li>
+                      「決まり手」タブ（会場・枠番単位）や「選手別決まり手傾向」タブと組み合わせると根拠が積み上がります
+                    </li>
+                  </ul>
+                </div>
+              </>
+            )}
+            {activeTab === "racecard" && (
+              <>
+                <h2>出走表データについて</h2>
+
+                <div className="info-card">
+                  <h3>📈 データの見方</h3>
+                  <p>
+                    出走6選手の級別・勝率・モーター・平均ST・展示・進入コース勝率を枠番順に一覧しています。数値の色はレース内の上位3位を示します。AI予想のスコアやソートは含まない、純粋な出走表データです。
+                  </p>
+                </div>
+
+                <div className="info-card">
+                  <h3>💡 活用のポイント</h3>
+                  <ul>
+                    <li>
+                      <strong>色付きの数値が集中している選手</strong> =
+                      複数の指標でレース内上位。データ面の総合力が高い
+                    </li>
+                    <li>
+                      平均STが速くST安定度も高い選手はスタート勝負で優位に立ちやすい
+                    </li>
+                    <li>
+                      レースページの「データ出走表」が分析指標の要約、このタブが生データの一覧という関係です
+                    </li>
+                  </ul>
                 </div>
               </>
             )}

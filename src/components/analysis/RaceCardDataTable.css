@@ -1,0 +1,65 @@
+/* RaceCardDataTable - 出走表データ分析タブ（BOA-168） */
+
+.rcd-table-wrapper {
+  overflow-x: auto;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: var(--border-width-1) solid var(--color-gray-200);
+}
+
+.rcd-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.rcd-table th,
+.rcd-table td {
+  padding: var(--spacing-2);
+  text-align: center;
+  border-bottom: var(--border-width-1) solid var(--color-gray-200);
+  white-space: nowrap;
+}
+
+.rcd-table thead th {
+  background: var(--color-gray-100);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-800);
+  font-size: var(--font-size-xs);
+}
+
+.rcd-boat {
+  font-weight: var(--font-weight-bold);
+}
+
+.rcd-name {
+  font-weight: var(--font-weight-medium);
+}
+
+.rcd-rank-1 {
+  color: var(--color-error);
+  font-weight: var(--font-weight-bold);
+}
+
+.rcd-rank-2 {
+  color: var(--color-warning-dark, #b45309);
+  font-weight: var(--font-weight-semibold);
+}
+
+.rcd-rank-3 {
+  color: var(--color-primary-600);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 768px) {
+  .rcd-table {
+    min-width: 780px;
+    font-size: var(--font-size-xs);
+  }
+
+  .rcd-table th,
+  .rcd-table td {
+    padding: var(--spacing-1);
+  }
+}

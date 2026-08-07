@@ -308,7 +308,11 @@
     "rowReturnRate": "단승 회수율",
     "noWins": "승리 없음",
     "winCount": "{{n}}승",
-    "note": "분석 데이터는 최근 90일（회수율은 180일）의 실적 집계입니다. 하이라이트는 이 레이스에서 가장 좋은 값. 참고용이며 결과를 보장하지 않습니다"
+    "note": "분석 데이터는 최근 90일（회수율은 180일）의 실적 집계입니다. 하이라이트는 이 레이스에서 가장 좋은 값. 참고용이며 결과를 보장하지 않습니다",
+    "rowLocalWinRate": "당지 승률",
+    "rowAvgSt": "평균 ST",
+    "rowExSt": "전시 ST",
+    "rowCourseRate": "코스 승률"
   },
   "aiSection": {
     "title": "AI 데이터 분석",
@@ -329,13 +333,30 @@
     "itemTechniqueTop": "결정수「{{technique}}」는 최근 90일 승리 패턴 1위（{{pct}}%）와 일치",
     "itemTechniqueNone": "「{{technique}}」는 최근 90일 승리 패턴에 없는 결정수",
     "itemTechniqueNoWins": "최근 90일간 승리가 없던 선수의 1착",
-    "itemMotorHigh": "모터 2연대율이 레이스 내 {{rank}}위로 상위",
-    "itemMotorLow": "모터 2연대율은 레이스 내 {{rank}}위로 하위",
     "itemFormUp": "전국 승률이 상승 기조（+{{delta}}）",
     "itemFormDown": "전국 승률은 하락 기조（-{{delta}}）",
-    "itemExhibitionFast": "당일 전시 타임이 레이스 내 {{rank}}위로 상위",
-    "itemExhibitionSlow": "당일 전시 타임은 레이스 내 {{rank}}위로 하위",
-    "itemReturnHigh": "단승 회수율 {{rate}}%（최근 180일・같은 정번의 구매 실적）",
-    "note": "대조는 기계적인 순위・일치 판정에 의한 것입니다. 데이터는 과거 경향이며 향후 결과를 보장하지 않습니다"
+    "note": "대조는 기계적인 순위・일치 판정에 의한 것입니다. 데이터는 과거 경향이며 향후 결과를 보장하지 않습니다",
+    "allBoatsHeading": "전체 보트 데이터 대조 요약",
+    "colFinish": "착순",
+    "colBoat": "보트・선수",
+    "finishPosition": "{{position}}착",
+    "finishOut": "착외",
+    "allBoatsLegend": "○=데이터 시사와 착순이 일치 / ×=상이 / −=중립 또는 데이터 없음. 1〜3착을 「호주」, 그 외를 「착외」로 판정합니다（4착 이하의 개별 착순은 미보존이므로 착외로 묶습니다）",
+    "itemRank": "{{label}}이(가) 레이스 내 {{rank}}위",
+    "itemReturn": "단승 회수율 {{rate}}%（최근 180일・같은 정번）",
+    "noItems": "판정 가능한 데이터가 없습니다（전 보트 동일값 또는 미계측）",
+    "cols": {
+      "winRate": "승률",
+      "localWinRate": "당지",
+      "motor": "모터",
+      "form": "컨디션",
+      "avgSt": "평균ST",
+      "st": "ST안정",
+      "exSt": "전시ST",
+      "exhibition": "전시T",
+      "courseRate": "코스",
+      "returnRate": "회수율"
+    },
+    "itemTechniqueRank": "결정수「{{technique}}」는 최근 90일 승리 패턴 {{rank}}위（{{pct}}%）"
   }
 }

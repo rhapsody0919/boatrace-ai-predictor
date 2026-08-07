@@ -14,6 +14,7 @@ const EMPTY = {
   exhibitionTime: null,
   techniqueProfile: null,
   returnRate: null,
+  racerStats: null,
   resultSummary: null,
 };
 
@@ -35,6 +36,7 @@ export function useRaceAnalysisData(raceId, { includeResult = false } = {}) {
         supabaseDataService.getRaceExhibitionTimeBreakdown(raceId),
         supabaseDataService.getRaceTechniqueProfileBreakdown(raceId),
         supabaseDataService.getRaceRacerBoatReturnRate(raceId),
+        supabaseDataService.getRaceRacerStats(raceId),
         includeResult
           ? supabaseDataService.getRaceResultSummary(raceId)
           : Promise.resolve(null),
@@ -51,7 +53,8 @@ export function useRaceAnalysisData(raceId, { includeResult = false } = {}) {
           exhibitionTime: value(3),
           techniqueProfile: value(4),
           returnRate: value(5),
-          resultSummary: value(6),
+          racerStats: value(6),
+          resultSummary: value(7),
         },
       });
     };

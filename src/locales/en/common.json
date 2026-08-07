@@ -310,7 +310,11 @@
     "rowReturnRate": "Win return rate",
     "noWins": "No wins",
     "winCount": "{{n}}W",
-    "note": "Analytics cover the last 90 days (return rate: 180 days). Highlights mark the best value in this race. For reference only — results are not guaranteed"
+    "note": "Analytics cover the last 90 days (return rate: 180 days). Highlights mark the best value in this race. For reference only — results are not guaranteed",
+    "rowLocalWinRate": "Local win rate",
+    "rowAvgSt": "Avg ST",
+    "rowExSt": "Exhibition ST",
+    "rowCourseRate": "Course win rate"
   },
   "aiSection": {
     "title": "AI Data Analysis",
@@ -331,13 +335,30 @@
     "itemTechniqueTop": "Winning technique \"{{technique}}\" matches this racer’s No.1 winning pattern ({{pct}}%) of the last 90 days",
     "itemTechniqueNone": "\"{{technique}}\" was not among this racer’s winning patterns in the last 90 days",
     "itemTechniqueNoWins": "The winner had no wins in the last 90 days",
-    "itemMotorHigh": "Motor 2nd rate ranked No.{{rank}} in this race",
-    "itemMotorLow": "Motor 2nd rate ranked only No.{{rank}} in this race",
     "itemFormUp": "National win rate trending up (+{{delta}})",
     "itemFormDown": "National win rate trending down (-{{delta}})",
-    "itemExhibitionFast": "Exhibition time ranked No.{{rank}} in this race",
-    "itemExhibitionSlow": "Exhibition time ranked only No.{{rank}} in this race",
-    "itemReturnHigh": "Win return rate {{rate}}% (last 180 days, same lane)",
-    "note": "Matching is purely mechanical (in-race ranks and pattern matches). Past trends do not guarantee future results"
+    "note": "Matching is purely mechanical (in-race ranks and pattern matches). Past trends do not guarantee future results",
+    "allBoatsHeading": "All-boat data check",
+    "colFinish": "Finish",
+    "colBoat": "Boat / Racer",
+    "finishPosition": "P{{position}}",
+    "finishOut": "Out",
+    "allBoatsLegend": "○ = data signal matched the finish / × = differed / − = neutral or no data. Boats finishing 1st–3rd count as strong runs; the rest as out (individual 4th–6th positions are not stored)",
+    "itemRank": "{{label}} ranked No.{{rank}} in this race",
+    "itemReturn": "Win return rate {{rate}}% (last 180 days, same lane)",
+    "noItems": "No judgeable data (all boats equal or not measured)",
+    "cols": {
+      "winRate": "Win",
+      "localWinRate": "Local",
+      "motor": "Motor",
+      "form": "Form",
+      "avgSt": "AvgST",
+      "st": "ST stab.",
+      "exSt": "Ex.ST",
+      "exhibition": "Ex.time",
+      "courseRate": "Course",
+      "returnRate": "Return"
+    },
+    "itemTechniqueRank": "Winning technique \"{{technique}}\" is No.{{rank}} ({{pct}}%) in this racer's 90-day winning patterns"
   }
 }

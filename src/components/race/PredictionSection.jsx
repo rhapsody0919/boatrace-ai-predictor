@@ -19,7 +19,6 @@ const PredictionSection = forwardRef(
       volatility,
       isAnalyzing,
       date,
-      showExhibition,
     },
     ref,
   ) => {
@@ -37,7 +36,7 @@ const PredictionSection = forwardRef(
           {selectedRace.raceNumber}R
         </h2>
 
-        {/* AI予想セクション全体（予想テーブル、1マーク、配当妙味、超展開データ、出現パターン） */}
+        {/* データ出走表 + AIデータ分析（1マーク、配当妙味、出現パターン） */}
         <PredictionPanel
           prediction={prediction}
           selectedRace={selectedRace}
@@ -46,7 +45,6 @@ const PredictionSection = forwardRef(
           volatility={volatility}
           isAnalyzing={isAnalyzing}
           date={date}
-          showExhibition={showExhibition}
         />
 
         {/* レース結果セクション */}

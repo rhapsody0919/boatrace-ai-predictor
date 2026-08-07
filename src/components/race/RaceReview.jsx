@@ -1,47 +1,35 @@
 /**
  * RaceReview - データで振り返る（BOA-168）
- * レース結果確定後、勝った艇についてboatAIの分析データを機械的に照合し、
- * 「データと整合した点」「データと違った点」に分類して表示する。
- * AIの本命の当否も誠実に検証する（外れた場合は勝者を示唆していたデータを提示）。
- * 判定は全てレース内順位・一致判定のみで、恣意的な閾値・文章生成は使わない。
+ * レース結果確定後、全6艇についてboatAIの分析データと着順を機械的に照合する。
+ * - 全艇の照合サマリー: 全指標×全艇の○×一覧テーブル
+ * - 全艇の言語化: 1〜3着（好走）・着外の各艇について「整合した点/違った点」を列挙
+ * - AI検証: 本命の当否を毎レース明記
+ * 判定は全てレース内順位・一致判定のみ（指標定義はraceIndicators.jsxで
+ * データ出走表と共通化）。4〜6着の個別着順はDBに未保存のため「着外」で扱う。
  */
 import { useTranslation } from "react-i18next";
-import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { getRaceId } from "../../utils/raceId";
+import { buildIndicatorRows, TECHNIQUE_KEY_BY_NAME } from "./raceIndicators";
 import "./RaceReview.css";
 
-const TECHNIQUE_KEY_BY_NAME = Object.fromEntries(
-  Object.entries(TECHNIQUE_NAMES).map(([key, name]) => [name, key]),
-);
+// 指標の示唆（strong/weak）と着順（好走/着外）の組み合わせ → ○×−
+const markFor = (signal, good) => {
+  if (signal === "strong") return good ? "match" : "mismatch";
+  if (signal === "weak") return good ? "mismatch" : "match";
+  return "none";
+};
 
-// rows内でaccessor値のレース内順位（1始まり）を返す。dir="max"なら大きいほど上位。
-// 同値タイは同順位（competition ranking: 自分より真に良い値の数+1）として扱う
-function rankInRace(rows, boat, accessor, dir = "max") {
-  const values = (rows ?? [])
-    .map((row) => ({ boat: row.boat_number, value: accessor(row) }))
-    .filter((c) => c.value !== null && c.value !== undefined);
-  const target = values.find((c) => c.boat === boat);
-  if (!target) return null;
-  const better = values.filter((c) =>
-    dir === "min" ? c.value < target.value : c.value > target.value,
-  ).length;
-  return better + 1;
-}
+const MARK = { match: "○", mismatch: "×", none: "−" };
 
 function RaceReview({ prediction, selectedRace }) {
   const { t } = useTranslation();
   const raceId = getRaceId(selectedRace);
   const finished = Boolean(prediction?.result?.finished);
-  const {
-    motor,
-    racerForm,
-    exhibitionTime,
-    techniqueProfile,
-    returnRate,
-    resultSummary,
-    loading,
-  } = useRaceAnalysisData(finished ? raceId : null, { includeResult: true });
+  const analysis = useRaceAnalysisData(finished ? raceId : null, {
+    includeResult: true,
+  });
+  const { techniqueProfile, resultSummary, loading } = analysis;
 
   if (!finished || !raceId) return null;
 
@@ -53,127 +41,104 @@ function RaceReview({ prediction, selectedRace }) {
     prediction.result.winningTechnique ??
     null;
 
-  const winnerPlayer = prediction.allPlayers?.find((p) => p.number === winner);
-  const winnerName = winnerPlayer?.name?.replace(/\s+/g, "") ?? "";
+  const players = [...(prediction.allPlayers ?? [])].sort(
+    (a, b) => a.number - b.number,
+  );
+  const boatName = (boat) =>
+    players.find((p) => p.number === boat)?.name?.replace(/\s+/g, "") ?? "";
+  const playerOf = (boat) => players.find((p) => p.number === boat);
 
   const translateTechnique = (name) => {
     const key = TECHNIQUE_KEY_BY_NAME[name];
     return key ? t(`techniques.${key}`, name) : name;
   };
 
-  // --- 機械的照合 ---
-  const matches = [];
-  const mismatches = [];
+  // 着順順の艇リスト（1〜3着 + 着外を枠番順）
+  const rank2 = resultSummary?.rank2 ?? prediction.result.rank2 ?? null;
+  const rank3 = resultSummary?.rank3 ?? prediction.result.rank3 ?? null;
+  const topFinishers = [winner, rank2, rank3].filter((b) => b !== null);
+  const outBoats = players
+    .map((p) => p.number)
+    .filter((b) => !topFinishers.includes(b));
+  const orderedBoats = [
+    ...topFinishers.map((b, i) => ({ boat: b, position: i + 1 })),
+    ...outBoats.map((b) => ({ boat: b, position: null })),
+  ];
 
-  // 1. 決まり手 vs 勝者の勝ちパターン
-  const winnerTech = (techniqueProfile ?? []).find(
-    (r) => r.boat_number === winner,
-  );
-  if (winnerTech) {
-    if (!winnerTech.win_count) {
-      mismatches.push({
-        key: "techniqueNoWins",
-        text: t("review.itemTechniqueNoWins"),
-      });
-    } else if (winningTechnique) {
-      const idx = winnerTech.techniques.findIndex(
-        (tech) => tech.technique === winningTechnique,
-      );
-      if (idx === 0) {
-        matches.push({
-          key: "techniqueTop",
-          text: t("review.itemTechniqueTop", {
-            technique: translateTechnique(winningTechnique),
-            pct: winnerTech.techniques[0].percentage.toFixed(0),
-          }),
-        });
-      } else if (idx === -1) {
-        mismatches.push({
-          key: "techniqueNone",
-          text: t("review.itemTechniqueNone", {
-            technique: translateTechnique(winningTechnique),
-          }),
-        });
-      }
-      // リスト内2位以下は中立として表示しない
-    }
-  }
+  // 指標定義（データ出走表と共通）。決まり手型は勝者専用の特別判定
+  const rows = buildIndicatorRows({ t, players, analysis, loading });
+  const judgeableRows = rows.filter((row) => row.key !== "technique");
 
-  // 2. モーター2連率のレース内順位
-  const motorRank = rankInRace(motor, winner, (r) => r.motor_2rate);
-  if (motorRank !== null) {
-    if (motorRank <= 2) {
-      matches.push({
-        key: "motorHigh",
-        text: t("review.itemMotorHigh", { rank: motorRank }),
-      });
-    } else if (motorRank >= 5) {
-      mismatches.push({
-        key: "motorLow",
-        text: t("review.itemMotorLow", { rank: motorRank }),
-      });
-    }
-  }
-
-  // 3. 勝率Δ（調子）
-  const winnerForm = (racerForm ?? []).find((r) => r.boat_number === winner);
-  if (winnerForm && winnerForm.delta !== null) {
-    if (winnerForm.delta > 0) {
-      matches.push({
-        key: "formUp",
-        text: t("review.itemFormUp", { delta: winnerForm.delta.toFixed(2) }),
-      });
-    } else if (winnerForm.delta < 0) {
-      mismatches.push({
-        key: "formDown",
-        text: t("review.itemFormDown", {
-          delta: Math.abs(winnerForm.delta).toFixed(2),
-        }),
-      });
-    }
-  }
-
-  // 4. 当日展示タイムのレース内順位（速いほど上位）
-  const exRank = rankInRace(
-    exhibitionTime,
-    winner,
-    (r) => r.exhibition_time,
-    "min",
-  );
-  if (exRank !== null) {
-    if (exRank <= 2) {
-      matches.push({
-        key: "exFast",
-        text: t("review.itemExhibitionFast", { rank: exRank }),
-      });
-    } else if (exRank >= 5) {
-      mismatches.push({
-        key: "exSlow",
-        text: t("review.itemExhibitionSlow", { rank: exRank }),
-      });
-    }
-  }
-
-  // 5. 単勝回収率100%以上（客観基準のため参考として整合側のみ）
-  const winnerRate = (returnRate ?? []).find((r) => r.boat_number === winner);
-  if (winnerRate?.sample_count > 0 && winnerRate.win_return_rate >= 100) {
-    matches.push({
-      key: "returnHigh",
-      text: t("review.itemReturnHigh", {
-        rate: winnerRate.win_return_rate.toFixed(0),
-      }),
+  // 各艇の言語化: 整合/相違の事実文リスト
+  const itemsFor = (boat, good) => {
+    const matches = [];
+    const mismatches = [];
+    judgeableRows.forEach((row) => {
+      const signal = row.signal(boat);
+      if (!signal) return;
+      const text = row.itemText?.(boat);
+      if (!text) return;
+      const mark = markFor(signal, good);
+      if (mark === "match") matches.push({ key: row.key, text });
+      else if (mark === "mismatch") mismatches.push({ key: row.key, text });
     });
-  }
+    return { matches, mismatches };
+  };
 
-  // --- AI検証 ---
+  // 勝者の決まり手×勝ちパターン照合（特別判定）
+  const winnerTechniqueItem = (() => {
+    const winnerTech = (techniqueProfile ?? []).find(
+      (r) => r.boat_number === winner,
+    );
+    if (!winnerTech) return null;
+    if (!winnerTech.win_count) {
+      return { type: "mismatch", text: t("review.itemTechniqueNoWins") };
+    }
+    if (!winningTechnique) return null;
+    const idx = winnerTech.techniques.findIndex(
+      (tech) => tech.technique === winningTechnique,
+    );
+    if (idx === 0) {
+      return {
+        type: "match",
+        text: t("review.itemTechniqueTop", {
+          technique: translateTechnique(winningTechnique),
+          pct: winnerTech.techniques[0].percentage.toFixed(0),
+        }),
+      };
+    }
+    if (idx === -1) {
+      return {
+        type: "mismatch",
+        text: t("review.itemTechniqueNone", {
+          technique: translateTechnique(winningTechnique),
+        }),
+      };
+    }
+    // 勝ちパターン2位以下での勝利: 実績はあるため整合側に順位付きで表示
+    return {
+      type: "match",
+      text: t("review.itemTechniqueRank", {
+        technique: translateTechnique(winningTechnique),
+        rank: idx + 1,
+        pct: winnerTech.techniques[idx].percentage.toFixed(0),
+      }),
+    };
+  })();
+
+  // AI検証
   const aiPick = prediction.topPick?.number ?? null;
   const aiHit = aiPick !== null && aiPick === winner;
+  const winnerItems = itemsFor(winner, true);
+  const winnerMatchCount =
+    winnerItems.matches.length +
+    (winnerTechniqueItem?.type === "match" ? 1 : 0);
 
   return (
     <div className="race-review">
       <h3 className="race-review-title">🔍 {t("review.title")}</h3>
       <p className="race-review-result">
-        {t("review.resultLine", { number: winner, name: winnerName })}
+        {t("review.resultLine", { number: winner, name: boatName(winner) })}
         {winningTechnique && (
           <span className="race-review-technique">
             {t("review.techniqueLabel", {
@@ -187,27 +152,115 @@ function RaceReview({ prediction, selectedRace }) {
 
       {!loading && (
         <>
-          {matches.length > 0 && (
-            <div className="race-review-group race-review-match">
-              <h4>✅ {t("review.matchHeading")}</h4>
-              <ul>
-                {matches.map((item) => (
-                  <li key={item.key}>{item.text}</li>
-                ))}
-              </ul>
+          {/* 全艇の照合サマリー（全指標×全艇の○×一覧） */}
+          <div className="race-review-all">
+            <h4>📋 {t("review.allBoatsHeading")}</h4>
+            <div className="race-review-all-wrapper">
+              <table className="race-review-all-table">
+                <thead>
+                  <tr>
+                    <th>{t("review.colFinish")}</th>
+                    <th>{t("review.colBoat")}</th>
+                    {judgeableRows.map((row) => (
+                      <th key={row.key}>{t(`review.cols.${row.key}`)}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderedBoats.map(({ boat, position }) => {
+                    const good = position !== null;
+                    return (
+                      <tr key={boat}>
+                        <td className="race-review-finish">
+                          {position !== null
+                            ? t("review.finishPosition", { position })
+                            : t("review.finishOut")}
+                        </td>
+                        <td className="race-review-boat">
+                          {boat} {boatName(boat)}
+                        </td>
+                        {judgeableRows.map((row) => {
+                          const mark = markFor(row.signal(boat), good);
+                          return (
+                            <td
+                              key={row.key}
+                              className={`race-review-mark-${mark}`}
+                            >
+                              {MARK[mark]}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
+            <p className="race-review-legend">{t("review.allBoatsLegend")}</p>
+          </div>
 
-          {mismatches.length > 0 && (
-            <div className="race-review-group race-review-mismatch">
-              <h4>⚠️ {t("review.mismatchHeading")}</h4>
-              <ul>
-                {mismatches.map((item) => (
-                  <li key={item.key}>{item.text}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {/* 全艇の言語化（1〜3着 + 着外の各艇） */}
+          <div className="race-review-boats">
+            {orderedBoats.map(({ boat, position }) => {
+              const good = position !== null;
+              const { matches, mismatches } = itemsFor(boat, good);
+              if (boat === winner && winnerTechniqueItem) {
+                if (winnerTechniqueItem.type === "match")
+                  matches.push({
+                    key: "technique",
+                    text: winnerTechniqueItem.text,
+                  });
+                else
+                  mismatches.push({
+                    key: "technique",
+                    text: winnerTechniqueItem.text,
+                  });
+              }
+              const player = playerOf(boat);
+              return (
+                <div key={boat} className="race-review-boat-block">
+                  <h4 className="race-review-boat-heading">
+                    <span
+                      className={`race-review-finish-badge ${good ? "race-review-finish-good" : ""}`}
+                    >
+                      {position !== null
+                        ? t("review.finishPosition", { position })
+                        : t("review.finishOut")}
+                    </span>
+                    {boat}. {player?.name?.replace(/\s+/g, "") ?? ""}
+                  </h4>
+                  {matches.length === 0 && mismatches.length === 0 ? (
+                    <p className="race-review-no-items">
+                      {t("review.noItems")}
+                    </p>
+                  ) : (
+                    <>
+                      {matches.length > 0 && (
+                        <div className="race-review-group race-review-match">
+                          <h5>✅ {t("review.matchHeading")}</h5>
+                          <ul>
+                            {matches.map((item) => (
+                              <li key={item.key}>{item.text}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {mismatches.length > 0 && (
+                        <div className="race-review-group race-review-mismatch">
+                          <h5>⚠️ {t("review.mismatchHeading")}</h5>
+                          <ul>
+                            {mismatches.map((item) => (
+                              <li key={item.key}>{item.text}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
           {aiPick !== null && (
             <div className="race-review-ai">
@@ -215,7 +268,7 @@ function RaceReview({ prediction, selectedRace }) {
               <p>
                 {aiHit
                   ? t("review.aiHit", { number: aiPick })
-                  : matches.length > 0
+                  : winnerMatchCount > 0
                     ? t("review.aiMissWithData", {
                         aiNumber: aiPick,
                         winnerNumber: winner,

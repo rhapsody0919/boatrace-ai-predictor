@@ -382,13 +382,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(aiHeader).toBeVisible({ timeout: 10000 });
     await expect(page.locator(".ai-analysis-body")).toHaveCount(0);
 
-    // 展開すると既存のAI予想UI（モデル切替等）が表示される
+    // 展開すると既存のAI予想UI（買い目・展開予測等）が表示される
     await aiHeader.click();
     await expect(page.locator(".ai-analysis-body")).toBeVisible({
       timeout: 10000,
     });
     await expect(
-      page.locator(".ai-analysis-body .players-table-detailed"),
+      page.locator(".ai-analysis-body .prediction-result"),
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -407,8 +407,44 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".race-review")).toBeVisible({
       timeout: 20000,
     });
-    // 照合完了後、AI検証ブロックが表示される
+    // 照合完了後、全艇サマリーとAI検証ブロックが表示される
+    await expect(page.locator(".race-review-all-table")).toBeVisible({
+      timeout: 20000,
+    });
     await expect(page.locator(".race-review-ai")).toBeVisible({
+      timeout: 20000,
+    });
+    // 全艇サマリーは6艇分の行を持つ
+    await expect(page.locator(".race-review-all-table tbody tr")).toHaveCount(
+      6,
+    );
+    // 全艇の言語化ブロックも6艇分表示される
+    await expect(page.locator(".race-review-boat-block")).toHaveCount(6);
+  });
+
+  test("分析ツールの超展開データタブが表示される（レースAI予想からの外出し）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:text-is("⚔️ 超展開データ")');
+    await expect(page.locator(".motor-condition-container")).toBeVisible({
+      timeout: 10000,
+    });
+    // 本日開催中のレースが無い環境でも空状態を許容する
+    await expect(page.locator(".empty-state, .ad-section").first()).toBeVisible(
+      { timeout: 20000 },
+    );
+  });
+
+  test("分析ツールの出走表データタブが表示される（レースAI予想からの外出し）", async ({
+    page,
+  }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:text-is("📋 出走表データ")');
+    await expect(page.locator(".motor-condition-container")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.locator(".empty-state, .rcd-table").first()).toBeVisible({
       timeout: 20000,
     });
   });

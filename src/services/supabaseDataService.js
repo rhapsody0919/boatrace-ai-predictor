@@ -2476,6 +2476,77 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定レースの選手コース別統計（racerStats）を取得する（BOA-168）
+   * predictions.feature_contributions.racerStats に日次バッチで保存済みの
+   * 進入コース・平均ST・コース別勝敗・攻め手/守り手分布を返す。
+   * 超展開データタブ・データ出走表の平均ST/コース勝率行で使用する
+   */
+  getRaceRacerStats(raceId) {
+    return withCache(`race-racer-stats-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      // shadow予測が併存する可能性があるためmaybeSingleは使わず最新1件を取る
+      const { data, error } = await supabase
+        .from("predictions")
+        .select("model_id, feature_contributions, predicted_at")
+        .eq("race_id", raceId)
+        .eq("model_id", "standard")
+        .order("predicted_at", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error("predictions取得エラー:", error.message);
+        return null;
+      }
+      return data?.[0]?.feature_contributions?.racerStats ?? null;
+    });
+  },
+
+  /**
+   * 指定レースの出走表詳細（race_entriesの全選手データ）を取得する（BOA-168）
+   * 分析ツールの「出走表データ」タブで使用する。AIスコアは含めない
+   */
+  getRaceEntriesDetail(raceId) {
+    return withCache(`race-entries-detail-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const [entriesRes, exhibitionRes] = await Promise.all([
+        supabase
+          .from("race_entries")
+          .select(
+            "boat_number, player_name, grade, age, win_rate, local_win_rate, global_2rate, motor_number, motor_2rate",
+          )
+          .eq("race_id", raceId)
+          .order("boat_number"),
+        supabase
+          .from("exhibition_data")
+          .select("boat_number, exhibition_time, start_timing")
+          .eq("race_id", raceId),
+      ]);
+
+      if (entriesRes.error || !entriesRes.data) {
+        if (entriesRes.error)
+          console.error("race_entries取得エラー:", entriesRes.error.message);
+        return [];
+      }
+      const exByBoat = new Map(
+        (exhibitionRes.data ?? []).map((e) => [e.boat_number, e]),
+      );
+      return entriesRes.data.map((row) => ({
+        ...row,
+        exhibition_time: exByBoat.get(row.boat_number)?.exhibition_time ?? null,
+        exhibition_st: exByBoat.get(row.boat_number)?.start_timing ?? null,
+      }));
+    });
+  },
+
+  /**
    * 指定レースの結果サマリー（着順・決まり手）を取得する（BOA-168）
    * Edge Function経由のpredictionデータにはwinning_techniqueが含まれないため、
    * 「データで振り返る」はこの関数で確実に決まり手を取得する

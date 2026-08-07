@@ -308,7 +308,11 @@
     "rowReturnRate": "単勝回収率",
     "noWins": "勝利なし",
     "winCount": "{{n}}勝",
-    "note": "分析データは過去90日間（回収率は180日間）の実績集計です。ハイライトはレース内で最も良い値。参考値であり結果を保証するものではありません"
+    "note": "分析データは過去90日間（回収率は180日間）の実績集計です。ハイライトはレース内で最も良い値。参考値であり結果を保証するものではありません",
+    "rowLocalWinRate": "当地勝率",
+    "rowAvgSt": "平均ST",
+    "rowExSt": "展示ST",
+    "rowCourseRate": "コース勝率"
   },
   "aiSection": {
     "title": "AIデータ分析",
@@ -329,13 +333,30 @@
     "itemTechniqueTop": "決まり手「{{technique}}」は過去90日の勝ちパターン1位（{{pct}}%）と一致",
     "itemTechniqueNone": "「{{technique}}」は過去90日の勝ちパターンに無い決まり手",
     "itemTechniqueNoWins": "過去90日間で勝利の無かった選手の1着",
-    "itemMotorHigh": "モーター2連率がレース内{{rank}}位と上位",
-    "itemMotorLow": "モーター2連率はレース内{{rank}}位と下位",
     "itemFormUp": "全国勝率が上昇基調（+{{delta}}）",
     "itemFormDown": "全国勝率は下降基調（-{{delta}}）",
-    "itemExhibitionFast": "当日の展示タイムがレース内{{rank}}位と上位",
-    "itemExhibitionSlow": "当日の展示タイムはレース内{{rank}}位と下位",
-    "itemReturnHigh": "単勝回収率{{rate}}%（過去180日・同艇番の購入実績）",
-    "note": "照合は機械的な順位・一致判定によるものです。データは過去の傾向であり、今後の結果を保証するものではありません"
+    "note": "照合は機械的な順位・一致判定によるものです。データは過去の傾向であり、今後の結果を保証するものではありません",
+    "allBoatsHeading": "全艇の照合サマリー",
+    "colFinish": "着順",
+    "colBoat": "艇・選手",
+    "finishPosition": "{{position}}着",
+    "finishOut": "着外",
+    "allBoatsLegend": "○=データの示唆と着順が整合 / ×=相違 / −=中立またはデータなし。1〜3着を「好走」、それ以外を「着外」として判定しています（4着以下の個別着順は未保存のため着外でまとめています）",
+    "itemRank": "{{label}}がレース内{{rank}}位",
+    "itemReturn": "単勝回収率{{rate}}%（過去180日・同艇番）",
+    "noItems": "判定可能なデータがありません（全艇同値または未計測）",
+    "cols": {
+      "winRate": "勝率",
+      "localWinRate": "当地",
+      "motor": "モーター",
+      "form": "調子",
+      "avgSt": "平均ST",
+      "st": "ST安定",
+      "exSt": "展示ST",
+      "exhibition": "展示T",
+      "courseRate": "コース",
+      "returnRate": "回収率"
+    },
+    "itemTechniqueRank": "決まり手「{{technique}}」は過去90日の勝ちパターン{{rank}}位（{{pct}}%）"
   }
 }

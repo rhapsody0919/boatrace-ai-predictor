@@ -14,9 +14,7 @@ import ModelDescription from "./ModelDescription";
 import ModelSwitcher from "./ModelSwitcher";
 import FirstMarkAnimation from "./FirstMarkAnimation";
 import PredictionFlash from "./PredictionFlash";
-import AttackDefenseTable from "./AttackDefenseTable";
 import OutcomePatternPreview from "./OutcomePatternPreview";
-import PredictionTable from "./PredictionTable";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import BettingValueSection from "./BettingValueSection";
 import DataRaceTable from "./DataRaceTable";
@@ -37,7 +35,6 @@ function PredictionPanel({
   volatility,
   isAnalyzing,
   date,
-  showExhibition = false,
 }) {
   const { t } = useTranslation();
 
@@ -219,19 +216,9 @@ function PredictionPanel({
               </motion.div>
             )}
 
-            {/* 超展開データ */}
-            {prediction.racerStats && (
-              <motion.div {...staggerItem(0.3)}>
-                <AttackDefenseTable
-                  racerStats={prediction.racerStats}
-                  players={prediction.allPlayers}
-                />
-              </motion.div>
-            )}
-
             {/* 出現パターン */}
             {venueCode && venueName && (
-              <motion.div {...staggerItem(0.4)}>
+              <motion.div {...staggerItem(0.3)}>
                 <OutcomePatternPreview
                   venueCode={venueCode}
                   venueName={venueName}
@@ -240,15 +227,6 @@ function PredictionPanel({
                 />
               </motion.div>
             )}
-
-            {/* AIデータ予想テーブル */}
-            <motion.div {...staggerItem(0.5)}>
-              <PredictionTable
-                prediction={prediction}
-                showExhibition={showExhibition}
-                volatility={volatility}
-              />
-            </motion.div>
           </motion.div>
         </AnimatePresence>
       </AiAnalysisSection>

@@ -308,7 +308,11 @@
     "rowReturnRate": "獨贏回收率",
     "noWins": "無勝場",
     "winCount": "{{n}}勝",
-    "note": "分析數據為過去90天（回收率為180天）的實績統計。醒目標示為本場最佳值。僅供參考，不保證結果"
+    "note": "分析數據為過去90天（回收率為180天）的實績統計。醒目標示為本場最佳值。僅供參考，不保證結果",
+    "rowLocalWinRate": "當地勝率",
+    "rowAvgSt": "平均ST",
+    "rowExSt": "展示ST",
+    "rowCourseRate": "航道勝率"
   },
   "aiSection": {
     "title": "AI數據分析",
@@ -329,13 +333,30 @@
     "itemTechniqueTop": "獲勝方式「{{technique}}」與該選手過去90天的第1獲勝模式（{{pct}}%）一致",
     "itemTechniqueNone": "「{{technique}}」不在該選手過去90天的獲勝模式中",
     "itemTechniqueNoWins": "過去90天無勝場的選手獲勝",
-    "itemMotorHigh": "馬達2連率為本場第{{rank}}名的上位",
-    "itemMotorLow": "馬達2連率僅為本場第{{rank}}名",
     "itemFormUp": "全國勝率呈上升趨勢（+{{delta}}）",
     "itemFormDown": "全國勝率呈下降趨勢（-{{delta}}）",
-    "itemExhibitionFast": "當天展示時間為本場第{{rank}}名的上位",
-    "itemExhibitionSlow": "當天展示時間僅為本場第{{rank}}名",
-    "itemReturnHigh": "獨贏回收率{{rate}}%（過去180天・同艇號的購買實績）",
-    "note": "比對僅基於機械性的排名與一致性判定。數據為過去趨勢，不保證未來結果"
+    "note": "比對僅基於機械性的排名與一致性判定。數據為過去趨勢，不保證未來結果",
+    "allBoatsHeading": "全艇數據對照摘要",
+    "colFinish": "名次",
+    "colBoat": "艇・選手",
+    "finishPosition": "第{{position}}名",
+    "finishOut": "圈外",
+    "allBoatsLegend": "○=數據示唆與名次相符 / ×=不符 / −=中立或無數據。第1〜3名視為「好走」，其餘視為「圈外」（第4名以下的個別名次未保存，故合併為圈外）",
+    "itemRank": "{{label}}為本場第{{rank}}名",
+    "itemReturn": "獨贏回收率{{rate}}%（過去180天・同艇號）",
+    "noItems": "無可判定的數據（全艇同值或未測量）",
+    "cols": {
+      "winRate": "勝率",
+      "localWinRate": "當地",
+      "motor": "馬達",
+      "form": "狀態",
+      "avgSt": "平均ST",
+      "st": "ST穩定",
+      "exSt": "展示ST",
+      "exhibition": "展示T",
+      "courseRate": "航道",
+      "returnRate": "回收率"
+    },
+    "itemTechniqueRank": "獲勝方式「{{technique}}」為該選手過去90天獲勝模式第{{rank}}名（{{pct}}%）"
   }
 }
