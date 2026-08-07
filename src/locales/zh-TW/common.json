@@ -317,7 +317,8 @@
   "aiSection": {
     "title": "AI數據分析",
     "topPickSummary": "AI本命: {{number}}號艇 {{name}}",
-    "expandHint": "點擊展開：AI預測詳情（推薦組合・第一彎道模擬・賠率價值・詳細表格）"
+    "expandHint": "點擊展開：AI預測詳情（推薦組合・第一彎道模擬・賠率價值・出現模式）",
+    "confidence": "信賴度{{value}}%"
   },
   "review": {
     "title": "以數據回顧",

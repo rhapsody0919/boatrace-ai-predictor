@@ -317,7 +317,8 @@
   "aiSection": {
     "title": "AI 데이터 분석",
     "topPickSummary": "AI 본명: {{number}}호정 {{name}}",
-    "expandHint": "탭하여 펼치기: AI 예상 상세（추천 조합・1마크 전개 시뮬레이션・배당 가치・상세 테이블）"
+    "expandHint": "탭하여 펼치기: AI 예상 상세（추천 조합・1마크 전개 시뮬레이션・배당 가치・출현 패턴）",
+    "confidence": "신뢰도 {{value}}%"
   },
   "review": {
     "title": "데이터로 돌아보기",

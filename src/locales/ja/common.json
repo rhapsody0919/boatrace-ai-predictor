@@ -317,7 +317,8 @@
   "aiSection": {
     "title": "AIデータ分析",
     "topPickSummary": "AIの本命: {{number}}号艇 {{name}}",
-    "expandHint": "タップで展開: AI予想の詳細（買い目・1マーク展開予測・配当妙味・詳細テーブル）"
+    "expandHint": "タップで展開: AI予想の詳細（買い目・1マーク展開予測・配当妙味・出現パターン）",
+    "confidence": "信頼度{{value}}%"
   },
   "review": {
     "title": "データで振り返る",

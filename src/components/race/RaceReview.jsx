@@ -218,10 +218,13 @@ function RaceReview({ prediction, selectedRace }) {
               }
               const player = playerOf(boat);
               return (
-                <div key={boat} className="race-review-boat-block">
+                <div
+                  key={boat}
+                  className={`race-review-boat-block ${boat === winner ? "race-review-boat-winner" : ""}`}
+                >
                   <h4 className="race-review-boat-heading">
                     <span
-                      className={`race-review-finish-badge ${good ? "race-review-finish-good" : ""}`}
+                      className={`race-review-finish-badge ${position !== null ? `race-review-finish-${position}` : ""}`}
                     >
                       {position !== null
                         ? t("review.finishPosition", { position })

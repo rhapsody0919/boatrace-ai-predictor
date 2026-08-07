@@ -319,7 +319,8 @@
   "aiSection": {
     "title": "AI Data Analysis",
     "topPickSummary": "AI top pick: Boat {{number}} {{name}}",
-    "expandHint": "Tap to expand AI prediction details (picks, first-turn simulation, odds value, full table)"
+    "expandHint": "Tap to expand AI prediction details (picks, first-turn simulation, odds value, outcome patterns)",
+    "confidence": "Confidence {{value}}%"
   },
   "review": {
     "title": "Race Review with Data",

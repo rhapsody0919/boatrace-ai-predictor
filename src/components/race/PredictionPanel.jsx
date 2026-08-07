@@ -146,7 +146,10 @@ function PredictionPanel({
       />
 
       {/* AIデータ分析（折りたたみ）: 既存のAI予想ブロック群を内包 */}
-      <AiAnalysisSection topPick={prediction.topPick}>
+      <AiAnalysisSection
+        topPick={prediction.topPick}
+        confidence={prediction.confidence}
+      >
         {/* 荒れ度 + モデル説明 + モデル切替 */}
         {prediction.predictions && (
           <>

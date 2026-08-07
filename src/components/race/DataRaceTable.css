@@ -90,9 +90,23 @@
   color: var(--color-gray-800);
 }
 
+/* ゼブラ縞（最良セルのハイライトが優先） */
+.drt-table tbody tr:nth-child(even) td {
+  background: var(--color-gray-50);
+}
+
+.drt-table tbody tr:nth-child(even) .drt-label-cell {
+  background: var(--color-gray-100);
+}
+
 .drt-cell.drt-best {
-  background: rgba(14, 165, 233, 0.12);
+  background: rgba(14, 165, 233, 0.14);
   font-weight: var(--font-weight-bold);
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.35);
+}
+
+.drt-table tbody tr:nth-child(even) .drt-cell.drt-best {
+  background: rgba(14, 165, 233, 0.14);
 }
 
 .drt-value {
