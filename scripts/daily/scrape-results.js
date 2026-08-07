@@ -284,7 +284,7 @@ async function scrapeAndSaveResults(races, targetDate) {
   const { data: existingResults } = await supabase
     .from('race_results')
     .select('race_id, payout_win')
-    .like('race_id', `${targetDate}%`);
+    .gte('race_id', targetDate).lt('race_id', `${targetDate}~`);
 
   const finishedRaceIds = new Set(
     (existingResults || [])
@@ -546,7 +546,7 @@ async function fixMissingHitFlags(targetDate) {
   const { data: missingPredictions, error: predError } = await supabase
     .from('predictions')
     .select('prediction_id, race_id, top_pick, top_2nd, top_3rd')
-    .like('race_id', `${targetDate}%`)
+    .gte('race_id', targetDate).lt('race_id', `${targetDate}~`)
     .is('is_hit_win', null);
 
   if (predError || !missingPredictions || missingPredictions.length === 0) {
@@ -559,7 +559,7 @@ async function fixMissingHitFlags(targetDate) {
   const { data: results, error: resError } = await supabase
     .from('race_results')
     .select('race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio')
-    .like('race_id', `${targetDate}%`);
+    .gte('race_id', targetDate).lt('race_id', `${targetDate}~`);
 
   if (resError || !results) {
     console.error('  ❌ 結果取得エラー');

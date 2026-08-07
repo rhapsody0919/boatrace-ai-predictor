@@ -38,7 +38,7 @@ async function getFinishedRaceIds(date) {
   const { data, error } = await supabase
     .from("race_results")
     .select("race_id")
-    .like("race_id", `${date}%`)
+    .gte("race_id", date).lt("race_id", `${date}~`)
     .not("payout_win", "is", null);
   if (error) {
     console.error("⚠️ 結果済みレースの確認に失敗:", error.message);

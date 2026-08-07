@@ -34,7 +34,7 @@ async function getExistingExhibitionRaceIds(date) {
   const { data, error } = await supabase
     .from("exhibition_data")
     .select("race_id")
-    .like("race_id", `${date}%`);
+    .gte("race_id", date).lt("race_id", `${date}~`);
 
   if (error) {
     console.error("⚠️ 取得済みデータの確認に失敗:", error.message);
