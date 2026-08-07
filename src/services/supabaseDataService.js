@@ -17,6 +17,24 @@ const EDGE_API_BASE = "";
  * スクレイピングは1時間に1回なので、30分間キャッシュを保持
  */
 const CACHE_TTL = 30 * 60 * 1000; // 30分
+// 過去レースの分析データは不変のため長期キャッシュしてよい
+// （Supabase egress削減: レース単位の分析クエリは1レースあたり約0.5MBの生データを転送するため）
+const PAST_RACE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7日
+
+/**
+ * キャッシュキーからTTLを推定する。
+ * キー末尾がrace_id形式（YYYY-MM-DD-VV-RR）かつ過去日付なら長期TTL
+ * （本日分は展示データ投入・結果確定で内容が変わるため通常TTL）
+ */
+function inferTtlFromKey(key) {
+  const m = String(key).match(/(\d{4}-\d{2}-\d{2})-\d{2}-\d{2}(?::.*)?$/);
+  if (m) {
+    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const today = jstNow.toISOString().split("T")[0];
+    if (m[1] < today) return PAST_RACE_CACHE_TTL;
+  }
+  return CACHE_TTL;
+}
 const CACHE_PREFIX = "boatai:";
 
 const cache = {
@@ -168,8 +186,9 @@ const cache = {
  */
 const inflightRequests = new Map();
 
-function withCache(key, fetcher, ttl = CACHE_TTL) {
-  const cached = cache.get(key, ttl);
+function withCache(key, fetcher, ttl) {
+  const effectiveTtl = ttl ?? inferTtlFromKey(key);
+  const cached = cache.get(key, effectiveTtl);
   if (cached !== null) {
     return Promise.resolve(cached);
   }
