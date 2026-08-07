@@ -27,7 +27,7 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
     t,
     players,
     analysis,
-    loading: analysis.loading,
+    pending: analysis.pending,
   });
 
   const deepLink = (tab) =>
@@ -40,7 +40,12 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
 
   return (
     <div className="data-race-table">
-      <h3 className="drt-title">📋 {t("dataTable.title")}</h3>
+      <h3 className="drt-title">
+        📋 {t("dataTable.title")}
+        {analysis.loading && (
+          <span className="drt-loading-chip">{t("dataTable.loading")}</span>
+        )}
+      </h3>
       <p className="drt-subtitle">{t("dataTable.subtitle")}</p>
 
       <div className="drt-table-wrapper">

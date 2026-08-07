@@ -163,18 +163,32 @@ const cache = {
 
 /**
  * キャッシュ付きデータ取得
+ * 同一キーの取得が進行中の場合は同じPromiseを返す（in-flightデデュープ）。
+ * プリフェッチとコンポーネントの取得が重なっても二重クエリにならない
  */
+const inflightRequests = new Map();
+
 function withCache(key, fetcher, ttl = CACHE_TTL) {
   const cached = cache.get(key, ttl);
   if (cached !== null) {
     return Promise.resolve(cached);
   }
 
+  if (inflightRequests.has(key)) {
+    return inflightRequests.get(key);
+  }
+
   console.log(`[Cache MISS] ${key}`);
-  return fetcher().then((data) => {
-    cache.set(key, data);
-    return data;
-  });
+  const promise = fetcher()
+    .then((data) => {
+      cache.set(key, data);
+      return data;
+    })
+    .finally(() => {
+      inflightRequests.delete(key);
+    });
+  inflightRequests.set(key, promise);
+  return promise;
 }
 
 // キャッシュクリア（手動更新時に使用）

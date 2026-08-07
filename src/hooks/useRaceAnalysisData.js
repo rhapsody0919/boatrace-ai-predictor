@@ -1,72 +1,107 @@
 /**
- * useRaceAnalysisData - レース単位の分析データ6種を並列取得するフック（BOA-168）
- * DataRaceTable / RaceReview で共有する。サービス層のwithCache（30分TTL）により
- * 同一レースの2回目以降の呼び出しはキャッシュヒットする。
- * Promise.allSettledで個別の取得失敗を許容する（失敗したキーはnull）。
+ * useRaceAnalysisData - レース単位の分析データを並列取得するフック（BOA-168）
+ * DataRaceTable / RaceReview で共有する。サービス層のwithCache（30分TTL +
+ * in-flightデデュープ）により、同一レースの重複取得は発生しない。
+ *
+ * 各クエリは独立して解決され、取得できたものから順次stateに反映される
+ * （プログレッシブ表示）。最も重い回収率クエリに他の行が引きずられない。
+ * 個別の取得失敗は該当キーがnullのままになる。
  */
 import { useState, useEffect } from "react";
 import { supabaseDataService } from "../services/supabaseDataService";
 
-const EMPTY = {
-  motor: null,
-  racerForm: null,
-  stPredictability: null,
-  exhibitionTime: null,
-  techniqueProfile: null,
-  returnRate: null,
-  racerStats: null,
-  resultSummary: null,
+const SOURCES = {
+  motor: (raceId) => supabaseDataService.getRaceMotorBreakdown(raceId),
+  racerForm: (raceId) => supabaseDataService.getRaceRacerFormBreakdown(raceId),
+  stPredictability: (raceId) =>
+    supabaseDataService.getRaceStPredictabilityBreakdown(raceId),
+  exhibitionTime: (raceId) =>
+    supabaseDataService.getRaceExhibitionTimeBreakdown(raceId),
+  techniqueProfile: (raceId) =>
+    supabaseDataService.getRaceTechniqueProfileBreakdown(raceId),
+  returnRate: (raceId) =>
+    supabaseDataService.getRaceRacerBoatReturnRate(raceId),
+  racerStats: (raceId) => supabaseDataService.getRaceRacerStats(raceId),
 };
 
+const EMPTY = Object.fromEntries(
+  [...Object.keys(SOURCES), "resultSummary"].map((name) => [name, null]),
+);
+
+const ALL_PENDING = Object.fromEntries(
+  [...Object.keys(SOURCES), "resultSummary"].map((name) => [name, true]),
+);
+
+/**
+ * レース選択直後に呼ぶと分析データの取得を先行開始できる（fire-and-forget）。
+ * withCacheのin-flightデデュープにより、後続のフック側の取得と重複しない
+ */
+export function prefetchRaceAnalysisData(raceId) {
+  if (!raceId) return;
+  Object.values(SOURCES).forEach((fn) => {
+    fn(raceId).catch(() => {});
+  });
+}
+
 export function useRaceAnalysisData(raceId, { includeResult = false } = {}) {
-  // 取得完了したraceId(+オプション)をキーに保持し、表示値は導出する。
-  // これによりraceId切替時のリセット用setStateが不要になる
-  const [loaded, setLoaded] = useState({ key: null, data: EMPTY });
+  // key（raceId+オプション）でstateの鮮度を管理し、各クエリの解決ごとに
+  // functional setStateでマージする。keyが変わった後に届いた古い結果は捨てる
+  const [loaded, setLoaded] = useState({ key: null, data: EMPTY, done: {} });
 
   const key = raceId ? `${raceId}:${includeResult}` : null;
 
   useEffect(() => {
     if (!raceId) return undefined;
+    const currentKey = `${raceId}:${includeResult}`;
     let cancelled = false;
-    const load = async () => {
-      const results = await Promise.allSettled([
-        supabaseDataService.getRaceMotorBreakdown(raceId),
-        supabaseDataService.getRaceRacerFormBreakdown(raceId),
-        supabaseDataService.getRaceStPredictabilityBreakdown(raceId),
-        supabaseDataService.getRaceExhibitionTimeBreakdown(raceId),
-        supabaseDataService.getRaceTechniqueProfileBreakdown(raceId),
-        supabaseDataService.getRaceRacerBoatReturnRate(raceId),
-        supabaseDataService.getRaceRacerStats(raceId),
-        includeResult
-          ? supabaseDataService.getRaceResultSummary(raceId)
-          : Promise.resolve(null),
-      ]);
+
+    const applyResult = (name, value) => {
       if (cancelled) return;
-      const value = (i) =>
-        results[i].status === "fulfilled" ? results[i].value : null;
-      setLoaded({
-        key: `${raceId}:${includeResult}`,
-        data: {
-          motor: value(0),
-          racerForm: value(1),
-          stPredictability: value(2),
-          exhibitionTime: value(3),
-          techniqueProfile: value(4),
-          returnRate: value(5),
-          racerStats: value(6),
-          resultSummary: value(7),
-        },
+      setLoaded((prev) => {
+        const base =
+          prev.key === currentKey
+            ? prev
+            : { key: currentKey, data: EMPTY, done: {} };
+        return {
+          key: currentKey,
+          data: { ...base.data, [name]: value },
+          done: { ...base.done, [name]: true },
+        };
       });
     };
-    load();
+
+    Object.entries(SOURCES).forEach(([name, fn]) => {
+      fn(raceId)
+        .then((value) => applyResult(name, value))
+        .catch(() => applyResult(name, null));
+    });
+
+    if (includeResult) {
+      supabaseDataService
+        .getRaceResultSummary(raceId)
+        .then((value) => applyResult("resultSummary", value))
+        .catch(() => applyResult("resultSummary", null));
+    }
+
     return () => {
       cancelled = true;
     };
   }, [raceId, includeResult]);
 
   const isCurrent = key !== null && loaded.key === key;
-  return {
-    ...(isCurrent ? loaded.data : EMPTY),
-    loading: key !== null && !isCurrent,
-  };
+  const data = isCurrent ? loaded.data : EMPTY;
+  const done = isCurrent ? loaded.done : {};
+  const pending = Object.fromEntries(
+    Object.keys(ALL_PENDING).map((name) => [
+      name,
+      // resultSummaryはincludeResult時のみ取得対象（それ以外は常に取得済み扱い）
+      name === "resultSummary"
+        ? includeResult && key !== null && !done[name]
+        : key !== null && !done[name],
+    ]),
+  );
+  const loading =
+    key !== null && Object.keys(SOURCES).some((name) => !done[name]);
+
+  return { ...data, pending, loading };
 }

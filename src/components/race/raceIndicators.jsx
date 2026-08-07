@@ -1,11 +1,14 @@
 /**
  * raceIndicators - レース分析指標の共通定義（BOA-168）
  * データ出走表（DataRaceTable）と振り返り（RaceReview）で同じ指標セットを
- * 使うため、行定義（ラベル・値レンダリング・最良艇・強弱シグナル）を共通化する。
+ * 使うため、行定義（ラベル・値レンダリング・最良艇・強弱シグナル・言語化）を共通化する。
  *
  * signal: その艇のデータが「好走を示唆(strong)/凡走を示唆(weak)/中立(null)」かを
  * レース内順位ベースで機械的に返す。全艇同値の指標は判定不能としてnull
  * （例: モーター交換直後で全艇2連率0%の戸田のようなケース）
+ *
+ * ロード中の未取得セルはソース別pendingに基づきスケルトン表示する
+ * （プログレッシブ表示: 取得できた行から順次値が入る）
  */
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 
@@ -67,9 +70,9 @@ function bestOf(candidates, dir = "max") {
  * @param {Function} t - i18n
  * @param {Array} players - prediction.allPlayers（枠番順ソート済み）
  * @param {Object} analysis - useRaceAnalysisDataの戻り値
- * @param {boolean} loading - 分析データロード中
+ * @param {Object} pending - ソース別ロード中フラグ（useRaceAnalysisDataのpending）
  */
-export function buildIndicatorRows({ t, players, analysis, loading }) {
+export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
   const {
     motor,
     racerForm,
@@ -88,7 +91,13 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
   const rateByBoat = byBoat(returnRate);
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
 
-  const placeholder = loading ? "…" : "—";
+  // ソース別プレースホルダ: ロード中はスケルトン、取得済みでデータ無しは「—」
+  const ph = (source) =>
+    pending[source] ? (
+      <span className="drt-skeleton" aria-hidden="true" />
+    ) : (
+      "—"
+    );
 
   const translateTechnique = (name) => {
     const key = TECHNIQUE_KEY_BY_NAME[name];
@@ -188,7 +197,7 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
         return rate !== null ? (
           <span className="drt-value">{rate.toFixed(2)}</span>
         ) : (
-          placeholder
+          "—"
         );
       },
     },
@@ -207,11 +216,11 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
       render: (p) => {
         const row = motorByBoat.get(p.number);
         const rate = toNumber(row?.motor_2rate ?? p.motor2Rate);
-        if (rate === null) return placeholder;
+        if (rate === null) return ph("motor");
         // 全艇0%（モーター交換直後で実績なし）は0.0%表示が誤解を招くため「—」
         const values = cand.motor.map((c) => c.value).filter((v) => v !== null);
         const allZero = values.length > 0 && values.every((v) => v === 0);
-        if (allZero) return placeholder;
+        if (allZero) return "—";
         return <span className="drt-value">{rate.toFixed(1)}%</span>;
       },
     },
@@ -243,7 +252,7 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
       render: (p) => {
         const row = formByBoat.get(p.number);
         if (!row || row.delta === null || row.delta === undefined)
-          return placeholder;
+          return ph("racerForm");
         const up = row.delta > 0;
         const flat = row.delta === 0;
         return (
@@ -273,7 +282,7 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
         return rate !== null ? (
           <span className="drt-value">{rate.toFixed(2)}</span>
         ) : (
-          placeholder
+          ph("racerStats")
         );
       },
     },
@@ -291,7 +300,7 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
       },
       render: (p) => {
         const row = stByBoat.get(p.number);
-        if (!row || !row.sample_count) return placeholder;
+        if (!row || !row.sample_count) return ph("stPredictability");
         return (
           <span className="drt-value">±{row.avg_deviation.toFixed(2)}</span>
         );
@@ -314,7 +323,7 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
         return rate !== null ? (
           <span className="drt-value">{rate.toFixed(2)}</span>
         ) : (
-          placeholder
+          ph("stPredictability")
         );
       },
     },
@@ -335,7 +344,7 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
       },
       render: (p) => {
         const row = exByBoat.get(p.number);
-        if (!row) return placeholder;
+        if (!row) return ph("exhibitionTime");
         if (row.exhibition_time !== null && row.exhibition_time !== undefined) {
           return (
             <span className="drt-value">{row.exhibition_time.toFixed(2)}</span>
@@ -351,7 +360,7 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
             </span>
           );
         }
-        return placeholder;
+        return "—";
       },
     },
     {
@@ -371,7 +380,7 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
       },
       render: (p) => {
         const cr = courseRateOf(p.number);
-        if (!cr) return placeholder;
+        if (!cr) return ph("racerStats");
         return (
           <span className="drt-value">
             {cr.rate.toFixed(0)}%
@@ -391,7 +400,7 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
       itemText: () => null,
       render: (p) => {
         const row = techByBoat.get(p.number);
-        if (!row) return placeholder;
+        if (!row) return ph("techniqueProfile");
         if (!row.win_count || row.techniques.length === 0)
           return <span className="drt-sub">{t("dataTable.noWins")}</span>;
         const top = row.techniques[0];
@@ -424,7 +433,7 @@ export function buildIndicatorRows({ t, players, analysis, loading }) {
       },
       render: (p) => {
         const row = rateByBoat.get(p.number);
-        if (!row || !row.sample_count) return placeholder;
+        if (!row || !row.sample_count) return ph("returnRate");
         return (
           <span
             className={`drt-value ${row.win_return_rate >= 100 ? "drt-plus" : ""}`}

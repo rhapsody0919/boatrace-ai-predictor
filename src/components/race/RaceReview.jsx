@@ -66,7 +66,12 @@ function RaceReview({ prediction, selectedRace }) {
   ];
 
   // 指標定義（データ出走表と共通）。決まり手型は勝者専用の特別判定
-  const rows = buildIndicatorRows({ t, players, analysis, loading });
+  const rows = buildIndicatorRows({
+    t,
+    players,
+    analysis,
+    pending: analysis.pending,
+  });
   const judgeableRows = rows.filter((row) => row.key !== "technique");
 
   // 各艇の言語化: 整合/相違の事実文リスト

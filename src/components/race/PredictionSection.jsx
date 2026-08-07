@@ -3,11 +3,13 @@
  * PredictionPanel（AI予想） + OutcomePatternPreview（出現パターン） + RaceResult（レース結果）
  * をまとめて、コンポーネント間の責務を明確化
  */
-import { forwardRef } from "react";
+import { forwardRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import PredictionPanel from "./PredictionPanel";
 import RaceResult from "./RaceResult";
 import RaceReview from "./RaceReview";
+import { prefetchRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
+import { getRaceId } from "../../utils/raceId";
 
 const PredictionSection = forwardRef(
   (
@@ -23,6 +25,14 @@ const PredictionSection = forwardRef(
     ref,
   ) => {
     const { t } = useTranslation();
+
+    // レース選択直後（AI分析演出の間）に分析データの取得を先行開始する。
+    // withCacheのin-flightデデュープにより後続のDataRaceTable/RaceReviewの
+    // 取得と重複せず、データ出走表の体感ロード時間を短縮する
+    const prefetchRaceId = getRaceId(selectedRace);
+    useEffect(() => {
+      prefetchRaceAnalysisData(prefetchRaceId);
+    }, [prefetchRaceId]);
 
     if (!selectedRace) return null;
 

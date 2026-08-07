@@ -315,7 +315,8 @@
     "rowLocalWinRate": "Local win rate",
     "rowAvgSt": "Avg ST",
     "rowExSt": "Exhibition ST",
-    "rowCourseRate": "Course win rate"
+    "rowCourseRate": "Course win rate",
+    "loading": "Loading analytics…"
   },
   "aiSection": {
     "title": "AI Data Analysis",

@@ -13,6 +13,56 @@
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-gray-800);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.drt-loading-chip {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
+  background: var(--color-gray-100);
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-full);
+  animation: drt-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes drt-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ロード中セルのスケルトン */
+.drt-skeleton {
+  display: inline-block;
+  width: 2.5em;
+  height: 0.9em;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-100) 25%,
+    var(--color-gray-200) 50%,
+    var(--color-gray-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: drt-shimmer 1.2s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes drt-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .drt-subtitle {

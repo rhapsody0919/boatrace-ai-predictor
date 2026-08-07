@@ -313,7 +313,8 @@
     "rowLocalWinRate": "당지 승률",
     "rowAvgSt": "평균 ST",
     "rowExSt": "전시 ST",
-    "rowCourseRate": "코스 승률"
+    "rowCourseRate": "코스 승률",
+    "loading": "분석 데이터 로딩 중…"
   },
   "aiSection": {
     "title": "AI 데이터 분석",

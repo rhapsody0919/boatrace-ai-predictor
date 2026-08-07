@@ -313,7 +313,8 @@
     "rowLocalWinRate": "當地勝率",
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
-    "rowCourseRate": "航道勝率"
+    "rowCourseRate": "航道勝率",
+    "loading": "數據載入中…"
   },
   "aiSection": {
     "title": "AI數據分析",

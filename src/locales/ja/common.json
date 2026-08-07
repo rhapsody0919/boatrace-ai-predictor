@@ -313,7 +313,8 @@
     "rowLocalWinRate": "当地勝率",
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
-    "rowCourseRate": "コース勝率"
+    "rowCourseRate": "コース勝率",
+    "loading": "分析データを読み込み中…"
   },
   "aiSection": {
     "title": "AIデータ分析",
