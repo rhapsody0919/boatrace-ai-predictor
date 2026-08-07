@@ -15,11 +15,7 @@
 // judgeBet 内で正しい対応付けを行う。
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
-import {
-  getTodayDateJST,
-  getYesterdayDateJST,
-  parseDateArg,
-} from "../lib/dateUtils.js";
+import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 
 const MODEL_ID = "moriarty";
 // Virtual bankroll for ROI calculation
@@ -323,12 +319,23 @@ function dateRange(from, to) {
   return dates;
 }
 
+// 既定のルックバック日数。スケジュール遅延だけなら2日で足りるが、
+// Actions のランナー障害等で1晩まるごと実行が飛ぶと、その日が永久に
+// 未決着のまま残る（2026-08-06 に実際に発生）。決着処理は冪等で
+// 決着済みの日はほぼ素通りするため、余裕を持って7日間さかのぼる。
+const LOOKBACK_DAYS = 7;
+
+// JST 今日から days 日前の YYYY-MM-DD
+function daysAgoJST(days) {
+  const d = new Date(`${getTodayDateJST()}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().split("T")[0];
+}
+
 // 処理対象日を決める
 //   --date=YYYY-MM-DD          … その1日だけ
 //   --from=YYYY-MM-DD --to=... … 範囲（バックフィル用。--to 省略時は今日）
-//   引数なし                    … 昨日＋今日（JST）の2日ぶん
-// 既定で2日ぶん処理するのは、GitHub Actions のスケジュール遅延で実行が
-// JST 翌日にずれても当日ぶんを取りこぼさないため（決着処理は冪等）。
+//   引数なし                    … 直近 LOOKBACK_DAYS 日＋当日（JST）
 function resolveTargetDates() {
   const single = parseDateArg();
   if (single) return [single];
@@ -342,7 +349,7 @@ function resolveTargetDates() {
     return dateRange(from, to);
   }
 
-  return [getYesterdayDateJST(), getTodayDateJST()];
+  return dateRange(daysAgoJST(LOOKBACK_DAYS), getTodayDateJST());
 }
 
 async function main() {

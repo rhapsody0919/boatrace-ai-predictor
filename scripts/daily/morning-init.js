@@ -33,7 +33,7 @@ async function main() {
   const { count, error } = await supabase
     .from("races")
     .select("*", { count: "exact", head: true })
-    .like("race_id", `${date}%`);
+    .gte("race_id", date).lt("race_id", `${date}~`);
 
   if (error) {
     console.error("❌ races テーブル確認エラー:", error.message);
@@ -54,7 +54,7 @@ async function main() {
         const { data: latestRace } = await supabase
           .from("races")
           .select("updated_at")
-          .like("race_id", `${date}%`)
+          .gte("race_id", date).lt("race_id", `${date}~`)
           .order("updated_at", { ascending: false })
           .limit(1)
           .single();
@@ -81,7 +81,7 @@ async function main() {
       const { data: entries } = await supabase
         .from("race_entries")
         .select("race_id")
-        .like("race_id", `${date}%`);
+        .gte("race_id", date).lt("race_id", `${date}~`);
       const allTodayRaceIds = [...new Set((entries || []).map((e) => e.race_id))];
 
       if (allTodayRaceIds.length > 0) {
