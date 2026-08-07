@@ -29,7 +29,7 @@ export function impliedProbsFromOdds(oddsArr) {
 }
 
 // P(2着=second | 1着=first)
-function condSecond(probs, first, second, gamma) {
+export function condSecond(probs, first, second, gamma) {
   let denom = 0;
   for (let k = 0; k < probs.length; k++) {
     if (k === first) continue;
@@ -39,7 +39,7 @@ function condSecond(probs, first, second, gamma) {
 }
 
 // P(3着=third | 1着=first, 2着=second)
-function condThird(probs, first, second, third, delta) {
+export function condThird(probs, first, second, third, delta) {
   let denom = 0;
   for (let k = 0; k < probs.length; k++) {
     if (k === first || k === second) continue;
@@ -115,8 +115,12 @@ export function trioProbFromCombo(winProbs, comboStr, opts = {}) {
   return trioProb(winProbs, parts, opts);
 }
 
-// CLI self-test
-if (process.argv[1] && process.argv[1].endsWith("harville.js")) {
+// CLI self-test（ブラウザから import される場合は process が無いためガード）
+if (
+  typeof process !== "undefined" &&
+  process.argv?.[1] &&
+  process.argv[1].endsWith("harville.js")
+) {
   const assert = (cond, msg) => {
     if (!cond) throw new Error(`Assertion failed: ${msg}`);
   };

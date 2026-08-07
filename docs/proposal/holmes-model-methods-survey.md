@@ -10,7 +10,7 @@ BOA-103（機械学習・深層学習モデルの検討）の一環として、�
 | 探偵 | 手法 | 役割 | 状況 |
 |------|------|------|------|
 | 🩺 ワトソン | LightGBM (LambdaRank) | 順位予測 | 未実装 |
-| 💎 アドラー | Plackett-Luce NN | 順列確率予測 | 未実装 |
+| 💎 アドラー | 位置別温度付き Plackett-Luce | 順列確率予測 | 実装済み（軽量版・温度フィット） |
 | 🏛️ マイクロフト | Transformer（選手時系列） | 順位予測（切り札） | 未実装 |
 | 🎩 モリアーティ | オッズ条件付き校正 + Kelly | 賭け方の最適化（メタ） | 実装済み・改善済み |
 
@@ -114,12 +114,17 @@ JRA研究（arXiv:2509.14645）の「締切直前のオッズ変化が予測情�
   ΔR² で自前特徴量の真の価値を計測 / 時系列 walk-forward 必須 /
   LambdaRank と multiclass+校正 の両方を比較
 
-### 優先度B: アドラー（Plackett-Luce）
-- まず軽量版から: 既存モデル（または条件付きロジット）のスコアを効用として
-  PL分布に流し、`harville.js` の代わりに使う（NNなしで実装1日レベル）
-- 素のPLはIIA仮定により2着以降を単純化しすぎる。位置別温度パラメータ
-  （Benter補正のPL版）を推奨
-- フルNN版は entity embedding（選手・モーター・会場）を入れる価値が高い
+### 優先度B: アドラー（Plackett-Luce）— 軽量版実装済み
+- 軽量版を実装済み: シャーロックの勝率を効用として位置別温度付きPLで
+  順列確率に展開（`src/services/adlerModel.js` / `adlerService.js`、
+  タブUI `HolmesAdler.jsx`）
+- 温度パラメータは `scripts/analysis/train-adler-temps.js` で実データ最尤推定
+  （γ≈0.67, δ≈0.47。Benter既定値より強い減衰 = イン優位のボートレースでは
+  勝率が連対力に直結しにくい）。時系列検証で3連単loglossが
+  素のHarville 4.008 → Benter 3.895 → フィット値 3.876 と改善を確認。
+  `train-sherlock.yml` に組み込み週次で再フィット
+- 残タスク: フルNN版（効用スコアを entity embedding（選手・モーター・会場）
+  入りのNNで学習）、連単・連複オッズ収集後のEV表示
 
 ### 優先度C: レース内相互作用モデル（Set Transformer）— 新探偵候補
 - 6艇の集合に self-attention をかけ「誰と誰が競るか」= 展開を学習

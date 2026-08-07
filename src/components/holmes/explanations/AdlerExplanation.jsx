@@ -1,13 +1,18 @@
+import adlerModel from "../../../../data/adler/model.json";
 import "./ExplanationSection.css";
 
 function AdlerExplanation() {
+  // 週次再フィットで値が変わるため、本文の γ・δ はモデルJSONから表示する
+  const gamma = adlerModel.gamma.toFixed(2);
+  const delta = adlerModel.delta.toFixed(2);
   return (
     <section className="holmes-section explanation-section">
       <h3>仕組みを知る</h3>
 
       <p className="explanation-summary">
-        ニューラルネットが各艇の「効用スコア」を出力し、Plackett-Luce分布で
-        単勝・連単・連複の確率を一つのモデルから一貫して導出します。
+        シャーロックが計算した各艇の勝率を「効用スコア」として、位置別温度付き
+        Plackett-Luce分布で2連単・3連単・3連複の順列確率を一貫して導出します。
+        温度パラメータ（γ・δ）は過去3万レース超の実データで最尤推定した値です。
       </p>
 
       <div className="explanation-diagram">
@@ -105,7 +110,7 @@ function AdlerExplanation() {
             markerEnd="url(#adler-arrow)"
           />
 
-          {/* NNボックス */}
+          {/* シャーロックボックス */}
           <rect
             x="150"
             y="30"
@@ -125,7 +130,7 @@ function AdlerExplanation() {
             fill="#9333ea"
             fontWeight="600"
           >
-            ニューラルネット
+            シャーロック
           </text>
           <text
             x="215"
@@ -135,7 +140,7 @@ function AdlerExplanation() {
             fontFamily="system-ui, sans-serif"
             fill="#7c3aed"
           >
-            共有重みで各艇を
+            条件付きロジット
           </text>
           <text
             x="215"
@@ -145,17 +150,17 @@ function AdlerExplanation() {
             fontFamily="system-ui, sans-serif"
             fill="#7c3aed"
           >
-            独立にエンコード
+            （+オッズ結合）で
           </text>
           <text
             x="215"
-            y="116"
+            y="112"
             textAnchor="middle"
             fontSize="9"
             fontFamily="system-ui, sans-serif"
             fill="#7c3aed"
           >
-            PyTorch実装
+            勝率を計算
           </text>
 
           {/* 矢印2 */}
@@ -169,7 +174,7 @@ function AdlerExplanation() {
             markerEnd="url(#adler-arrow)"
           />
 
-          {/* 効用スコアボックス */}
+          {/* 勝率ボックス */}
           <rect
             x="320"
             y="30"
@@ -189,7 +194,7 @@ function AdlerExplanation() {
             fill="#9333ea"
             fontWeight="600"
           >
-            効用スコア
+            勝率 = 効用
           </text>
           <text
             x="380"
@@ -199,7 +204,7 @@ function AdlerExplanation() {
             fontFamily="system-ui, sans-serif"
             fill="#7c3aed"
           >
-            u₁, u₂, …, u₆
+            p₁, p₂, …, p₆
           </text>
           <text
             x="380"
@@ -219,7 +224,7 @@ function AdlerExplanation() {
             fontFamily="system-ui, sans-serif"
             fill="#7c3aed"
           >
-            を実数で表現
+            を確率で表現
           </text>
 
           {/* 矢印3 */}
@@ -253,7 +258,7 @@ function AdlerExplanation() {
             fill="#ffffff"
             fontWeight="600"
           >
-            PL分布
+            温度付きPL分布
           </text>
           <text
             x="555"
@@ -263,7 +268,7 @@ function AdlerExplanation() {
             fontFamily="system-ui, sans-serif"
             fill="#f3e8ff"
           >
-            単勝確率
+            2着はγ乗・3着はδ乗
           </text>
           <text
             x="555"
@@ -314,12 +319,15 @@ function AdlerExplanation() {
           単勝・連単・連複の確率を矛盾なく一貫したモデルで計算
         </li>
         <li>
-          ニューラルネットが各艇の効用スコアを学習し、複雑な非線形パターンを捕捉
+          2着・3着の条件付き確率に位置別温度（γ・δ）を適用し、素のPL（Harville式）が
+          本命の連対率を過大評価するバイアスを補正
         </li>
-        <li>対数尤度を直接最大化できるため、PyTorchで微分可能に実装可能</li>
         <li>
-          IIA (Independence of Irrelevant Alternatives)
-          仮定のもとで計算効率が高い
+          γ・δは競馬の借り物の定数ではなく、ボートレースの実データ3万レース超で最尤推定
+        </li>
+        <li>
+          シャーロックの勝率（週次再学習）に乗るため、追加の重いモデルなしで
+          ブラウザ内リアルタイム計算が可能
         </li>
       </ul>
 
@@ -329,17 +337,35 @@ function AdlerExplanation() {
           <div className="explanation-detail-block">
             <h4>Plackett-Luce 分布とは</h4>
             <p>
-              各選択肢に「効用スコア
-              u_i」を割り当て、順列の確率をその指数の比で表す確率モデルです。
+              各選択肢に「効用スコア」を割り当て、順列の確率をその比で表す確率モデルです。
               「1位が艇kである確率」は k
-              の効用を全体の効用合計で割った値になります。
+              の効用を全体の効用合計で割った値になります。アドラーでは
+              シャーロックが計算した勝率そのものを効用として使います。
             </p>
             <code className="explanation-formula">
-              P(順列π) = ∏_k exp(u_π(k)) / Σ_{"{"} j≥k {"}"} exp(u_π(j))
+              P(1着=i, 2着=j, 3着=k) = p_i × p_j^γ/Σ p^γ × p_k^δ/Σ p^δ
             </code>
             <p>
-              この式の積を展開すると、「1位が艇A、2位が艇B、…」という任意の順列の確率が
-              解析的に計算できます。これにより単勝・連単・連複のすべてを同一モデルから導出できます。
+              この式で「1着が艇A、2着が艇B、3着が艇C」という任意の順列の確率が
+              解析的に計算できます。これにより2連単・3連単・3連複のすべてを
+              同一モデルから導出できます。
+            </p>
+          </div>
+
+          <div className="explanation-detail-block">
+            <h4>位置別温度 γ・δ の役割</h4>
+            <p>
+              素のPL（Harville式、γ=δ=1）は「1着確率をそのまま2着・3着の条件付き確率に
+              流用」するため、本命艇の2・3着確率を過大評価します。実際のレースでは
+              1着争いに敗れた本命が大きく崩れることがあるためです。γ・δ（0〜1）を
+              1着確率の指数として適用すると、この過信が減衰されます。
+            </p>
+            <p>
+              競馬では Benter (1994) の γ=0.81, δ=0.65 が有名ですが、アドラーは
+              ボートレースの実データで最尤推定した値（γ={gamma}, δ={delta}
+              、週次で再フィット）を使います。
+              競馬より小さい値になったのは、イン優位のボートレースでは「勝率の高さ」が
+              「2・3着への残りやすさ」に直結しにくいことを示しています。
             </p>
           </div>
 
@@ -347,36 +373,27 @@ function AdlerExplanation() {
             <h4>IIA (無関係な選択肢からの独立) 仮定</h4>
             <p>
               「艇Aが艇Bより先着する確率」は他の艇の存在に依存しないという仮定です。
-              これにより計算が大幅に簡略化され、6艇すべての順列 (720通り) を
-              明示的に列挙せずに効率的に計算できます。
-              実際のレースでは完全に成立しない場面もありますが、
-              近似として十分な精度を持ちます。
-            </p>
-          </div>
-
-          <div className="explanation-detail-block">
-            <h4>ニューラルネットの役割</h4>
-            <p>
-              各艇の特徴量（選手成績・モーター成績・展示タイム・コース・天候など）を
-              入力とし、その艇の効用スコア u_i を出力します。
-              全艇で共通の重みを使う「共有アーキテクチャ」を採用することで、
-              「艇番に依存しない汎化能力」を学習できます。
+              これにより計算が大幅に簡略化され、6艇すべての順列 (120通り) を
+              軽量に列挙できます。実際のレースでは完全には成立しないため、
+              位置別温度がその歪みの一部を吸収しています。展開（誰と誰が競るか）まで
+              モデル化するのは、将来のレース内相互作用モデルの課題です。
             </p>
           </div>
 
           <div className="explanation-detail-block">
             <h4>具体的なウォークスルー</h4>
             <p>
-              例: 1号艇 u=2.1、2号艇 u=1.3、3号艇 u=0.8、4号艇 u=0.5、5号艇
-              u=0.3、6号艇 u=0.1 の場合、1号艇の単勝確率は：
+              例: シャーロックの勝率が 1号艇 45%、2号艇 20%、3号艇 15%、4号艇
+              10%、5号艇 6%、6号艇 4% のレースで「1-2-3」の3連単確率は:
             </p>
             <code className="explanation-formula">
-              P(1着=1号艇) = exp(2.1) /
-              (exp(2.1)+exp(1.3)+exp(0.8)+exp(0.5)+exp(0.3)+exp(0.1)) ≈ 42%
+              45% × (20%^0.67 ÷ 残り5艇の^0.67合計) × (15%^0.47 ÷
+              残り4艇の^0.47合計) ≈ 45% × 31% × 33% ≈ 4.6%
             </code>
             <p>
-              同様に「1-2連単」は exp(2.1)/(全合計) × exp(1.3)/(2.1を除く合計)
-              で計算でき、 すべての賭け式の確率を一気に導出できます。
+              素のHarville式なら約7.0%と出るところが、温度補正で現実的な値に
+              抑えられます。全120通りに同じ計算をして確率順に並べたものが
+              上の「本日の推理」です。
             </p>
           </div>
 
@@ -386,30 +403,32 @@ function AdlerExplanation() {
               <div className="explanation-pros">
                 <h5>強み</h5>
                 <ul>
-                  <li>全賭け式を一貫したモデルで計算</li>
-                  <li>確率の合計が必ず1になる</li>
-                  <li>非線形パターンを学習</li>
-                  <li>微分可能で学習安定</li>
+                  <li>全賭け式を一貫したモデルで計算（確率の合計が必ず1）</li>
+                  <li>温度パラメータを実データで検証済み（未来データで logloss 改善を確認）</li>
+                  <li>パラメータ2つだけで過学習しにくい</li>
+                  <li>ブラウザ内で即座に計算できる軽さ</li>
                 </ul>
               </div>
               <div className="explanation-cons">
                 <h5>弱み</h5>
                 <ul>
-                  <li>IIA仮定が成立しない場合に精度低下</li>
-                  <li>GBDTより学習データが多く必要</li>
-                  <li>ハイパーパラメータ調整が複雑</li>
+                  <li>勝率の精度はシャーロックに依存（それ以上にはならない）</li>
+                  <li>IIA仮定のため「展開」による順位入れ替わりは表現できない</li>
+                  <li>連単・連複オッズが未収集のため期待値（EV）は未対応</li>
                 </ul>
               </div>
             </div>
           </div>
 
           <div className="explanation-detail-block">
-            <h4>既存モデルとの違い</h4>
+            <h4>既存モデルとの違いと今後</h4>
             <p>
-              現行モデルは「1着予想」と「連単予想」を別々のロジックで算出しているため、
-              単勝確率と連単確率が矛盾することがあります。
+              現行のルールベースモデルは「1着予想」と「連単予想」を別々のロジックで
+              算出しているため、単勝確率と連単確率が矛盾することがあります。
               アドラーは一つの確率モデルからすべての賭け式を導出するため、
-              論理的一貫性を保ちながら複数の賭け式を組み合わせた戦略が立てられます。
+              論理的一貫性が保たれます。将来的には、効用スコア自体を
+              ニューラルネット（選手・モーター・会場の embedding 入り）で学習する
+              「フルアドラー」への拡張を構想しています。
             </p>
           </div>
         </div>
