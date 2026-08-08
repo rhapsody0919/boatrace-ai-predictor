@@ -360,6 +360,7 @@
       "courseRate": "코스",
       "returnRate": "회수율"
     },
-    "itemTechniqueRank": "결정수「{{technique}}」는 최근 90일 승리 패턴 {{rank}}위（{{pct}}%）"
+    "itemTechniqueRank": "결정수「{{technique}}」는 최근 90일 승리 패턴 {{rank}}위（{{pct}}%）",
+    "colGrade": "급별"
   }
 }

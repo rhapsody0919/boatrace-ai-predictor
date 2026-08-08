@@ -166,6 +166,7 @@ function RaceReview({ prediction, selectedRace }) {
                   <tr>
                     <th>{t("review.colFinish")}</th>
                     <th>{t("review.colBoat")}</th>
+                    <th>{t("review.colGrade")}</th>
                     {judgeableRows.map((row) => (
                       <th key={row.key}>{t(`review.cols.${row.key}`)}</th>
                     ))}
@@ -183,6 +184,11 @@ function RaceReview({ prediction, selectedRace }) {
                         </td>
                         <td className="race-review-boat">
                           {boat} {boatName(boat)}
+                        </td>
+                        <td
+                          className={`race-review-grade ${playerOf(boat)?.grade === "A1" ? "race-review-grade-a1" : ""}`}
+                        >
+                          {playerOf(boat)?.grade ?? "—"}
                         </td>
                         {judgeableRows.map((row) => {
                           const mark = markFor(row.signal(boat), good);
@@ -236,6 +242,13 @@ function RaceReview({ prediction, selectedRace }) {
                         : t("review.finishOut")}
                     </span>
                     {boat}. {player?.name?.replace(/\s+/g, "") ?? ""}
+                    {player?.grade && (
+                      <span
+                        className={`race-review-grade-badge ${player.grade === "A1" ? "race-review-grade-a1" : ""}`}
+                      >
+                        {player.grade}
+                      </span>
+                    )}
                   </h4>
                   {matches.length === 0 && mismatches.length === 0 ? (
                     <p className="race-review-no-items">

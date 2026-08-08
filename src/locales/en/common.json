@@ -362,6 +362,7 @@
       "courseRate": "Course",
       "returnRate": "Return"
     },
-    "itemTechniqueRank": "Winning technique \"{{technique}}\" is No.{{rank}} ({{pct}}%) in this racer's 90-day winning patterns"
+    "itemTechniqueRank": "Winning technique \"{{technique}}\" is No.{{rank}} ({{pct}}%) in this racer's 90-day winning patterns",
+    "colGrade": "Class"
   }
 }

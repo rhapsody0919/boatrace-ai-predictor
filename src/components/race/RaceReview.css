@@ -95,6 +95,31 @@
   color: var(--color-gray-800);
 }
 
+.race-review-grade {
+  color: var(--color-gray-500);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.race-review-grade.race-review-grade-a1 {
+  color: var(--color-error);
+  font-weight: var(--font-weight-bold);
+}
+
+.race-review-grade-badge {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-500);
+  background: var(--color-gray-100);
+  padding: 1px var(--spacing-1);
+  border-radius: var(--radius-sm);
+}
+
+.race-review-grade-badge.race-review-grade-a1 {
+  color: #ffffff;
+  background: var(--color-error);
+}
+
 .race-review-mark-match {
   color: var(--color-success);
   font-weight: var(--font-weight-bold);

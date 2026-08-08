@@ -360,6 +360,7 @@
       "courseRate": "航道",
       "returnRate": "回收率"
     },
-    "itemTechniqueRank": "獲勝方式「{{technique}}」為該選手過去90天獲勝模式第{{rank}}名（{{pct}}%）"
+    "itemTechniqueRank": "獲勝方式「{{technique}}」為該選手過去90天獲勝模式第{{rank}}名（{{pct}}%）",
+    "colGrade": "級別"
   }
 }

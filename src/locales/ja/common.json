@@ -360,6 +360,7 @@
       "courseRate": "コース",
       "returnRate": "回収率"
     },
-    "itemTechniqueRank": "決まり手「{{technique}}」は過去90日の勝ちパターン{{rank}}位（{{pct}}%）"
+    "itemTechniqueRank": "決まり手「{{technique}}」は過去90日の勝ちパターン{{rank}}位（{{pct}}%）",
+    "colGrade": "級別"
   }
 }
