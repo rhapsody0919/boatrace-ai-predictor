@@ -154,7 +154,9 @@
     "blogDesc": "提升命中率的預測技巧、賽場指南與數據分析",
     "viewAllPosts": "查看所有文章 →",
     "disclaimer": "* 本網站提供 AI 產生的預測資訊，不保證任何結果",
-    "blogLastUpdated": "部落格最後更新：{{date}}"
+    "blogLastUpdated": "部落格最後更新：{{date}}",
+    "tbd": "未定",
+    "jstNote": " JST"
   },
   "footer": {
     "blog": "部落格",

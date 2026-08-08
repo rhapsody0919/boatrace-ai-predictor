@@ -155,7 +155,9 @@
     "blogDesc": "Prediction tips, venue guides, and data analysis to boost your win rate",
     "viewAllPosts": "View all blog posts →",
     "disclaimer": "* This site provides AI-generated prediction information and does not guarantee results",
-    "blogLastUpdated": "Blog last updated: {{date}}"
+    "blogLastUpdated": "Blog last updated: {{date}}",
+    "tbd": "TBD",
+    "jstNote": " JST"
   },
   "footer": {
     "blog": "Blog",

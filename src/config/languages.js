@@ -47,10 +47,35 @@ export const LANGUAGE_ONLY_PATHS = {
   "/venues/region": ["en"],
 };
 
+/**
+ * コンテンツが実際に翻訳されているパス（プレフィックス一致）。
+ *
+ * ここに無いパスは ja 専用として扱い、/{lng}/... アクセスは ja 版へリダイレクト、
+ * hreflang 非出力・言語スイッチャー無効化の対象になる。
+ * 「lang=en を宣言しながら日本語コンテンツを配信する」状態は、ブラウザ自動翻訳の
+ * 発動を妨げ、検索エンジンにも矛盾シグナルを送るため禁止（2026-08 i18n監査で決定）。
+ *
+ * 新ページ追加時は必ず「翻訳対象/ja専用/特定言語専用」を決めること
+ * （プロジェクトCLAUDE.md「多言語化の3区分」参照）。翻訳対象にする場合は
+ * 4言語のi18nキーを同PRで追加した上でここに登録する。
+ */
+export const TRANSLATED_PATHS = ["/", "/guide", "/venues"];
+
+// パス（言語プレフィックス除去済み）のコンテンツが翻訳済みかどうか
+export function isPathTranslated(basePath) {
+  return TRANSLATED_PATHS.some(
+    (p) => basePath === p || (p !== "/" && basePath.startsWith(`${p}/`)),
+  );
+}
+
 // パス（言語プレフィックス除去済み）が提供されている言語の定義一覧を返す
 // /venues と /venues/region のように入れ子のパスが登録され得るため、
 // 最初にマッチしたエントリではなく最も長く一致するエントリを優先する（BOA-138で発見・修正）
 export function getAvailableLanguages(basePath) {
+  // 未翻訳パスは ja のみ提供（hreflang非出力・言語スイッチャー無効化に波及する）
+  if (!isPathTranslated(basePath)) {
+    return SUPPORTED_LANGUAGES.filter(({ code }) => code === DEFAULT_LANGUAGE);
+  }
   const matches = Object.entries(LANGUAGE_ONLY_PATHS).filter(
     ([p]) => basePath === p || basePath.startsWith(`${p}/`),
   );

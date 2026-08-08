@@ -12,6 +12,7 @@ import {
   DEFAULT_LANGUAGE,
   LANGUAGE_STORAGE_KEY,
   getAvailableLanguages,
+  isPathTranslated,
 } from "./config/languages";
 import { refreshAdsOnRouteChange, trackPageView } from "./utils/analytics";
 import App from "./App";
@@ -236,8 +237,20 @@ function InitialLanguageRedirect() {
   return null;
 }
 
-// 言語別レイアウト: URL プレフィックスに応じた言語へ同期
+// 言語別レイアウト: URL プレフィックスに応じた言語へ同期。
+// コンテンツ未翻訳のパスへの /{lng}/ アクセスは ja 版へリダイレクトする
+// （lang=en を宣言しながら日本語を配信するとブラウザ自動翻訳が発動せず、
+// 検索エンジンにも矛盾シグナルを送るため。TRANSLATED_PATHS 参照）
 function LocalizedLayout({ lng }) {
+  const { pathname, search } = useLocation();
+
+  if (lng !== DEFAULT_LANGUAGE) {
+    const basePath = pathname.slice(lng.length + 1) || "/";
+    if (!isPathTranslated(basePath)) {
+      return <Navigate to={`${basePath}${search}`} replace />;
+    }
+  }
+
   return (
     <>
       <LanguageSync lng={lng} />

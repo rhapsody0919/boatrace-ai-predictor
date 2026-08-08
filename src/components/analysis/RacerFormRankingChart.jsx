@@ -59,6 +59,7 @@ function RankingTable({ title, rows, emptyMessage }) {
                 <td>
                   <Link
                     to={`/winning-technique?venue_code=${row.venue_code}&race_id=${row.race_id}&tab=racer`}
+                    translate="no"
                   >
                     {row.player_name?.replace(/\s+/g, "")}
                   </Link>

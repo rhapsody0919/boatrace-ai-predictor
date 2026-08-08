@@ -189,7 +189,7 @@ function RaceReview({ prediction, selectedRace }) {
                             ? t("review.finishPosition", { position })
                             : t("review.finishOut")}
                         </td>
-                        <td className="race-review-boat">
+                        <td className="race-review-boat" translate="no">
                           {boat} {boatName(boat)}
                         </td>
                         <td
@@ -250,7 +250,10 @@ function RaceReview({ prediction, selectedRace }) {
                           ? t("review.finishPosition", { position })
                           : t("review.finishOut")}
                       </span>
-                      {boat}. {player?.name?.replace(/\s+/g, "") ?? ""}
+                      {boat}.{" "}
+                      <span translate="no">
+                        {player?.name?.replace(/\s+/g, "") ?? ""}
+                      </span>
                       {player?.grade && (
                         <span
                           className={`race-review-grade-badge ${player.grade === "A1" ? "race-review-grade-a1" : ""}`}
