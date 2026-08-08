@@ -35,6 +35,7 @@ function App({ tab = "races" }) {
   const [activeTab, setActiveTab] = useState(tab);
   const [selectedRace, setSelectedRace] = useState(null);
   const [prediction, setPrediction] = useState(null);
+  const [raceListCollapsed, setRaceListCollapsed] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -390,6 +391,8 @@ function App({ tab = "races" }) {
     setSelectedRace(race);
     setIsAnalyzing(true);
     setPrediction(null);
+    // レース選択後は一覧を折りたたんでページ全長を抑える（モバイルで特に効果大）
+    setRaceListCollapsed(true);
 
     // 次フレームで即座にスクロール（selectedRaceセットによりsectionがレンダリングされた後）
     requestAnimationFrame(() => {
@@ -725,6 +728,14 @@ function App({ tab = "races" }) {
                       >
                         <p>{t("home.noRacesToday")}</p>
                       </div>
+                    ) : raceListCollapsed ? (
+                      <button
+                        type="button"
+                        className="race-list-toggle"
+                        onClick={() => setRaceListCollapsed(false)}
+                      >
+                        {t("raceList.show")}
+                      </button>
                     ) : (
                       <div className="race-grid">
                         {races.map((race) => {
@@ -895,6 +906,15 @@ function App({ tab = "races" }) {
                           );
                         })}
                       </div>
+                    )}
+                    {!raceListCollapsed && selectedRace && races.length > 0 && (
+                      <button
+                        type="button"
+                        className="race-list-toggle"
+                        onClick={() => setRaceListCollapsed(true)}
+                      >
+                        {t("raceList.hide")}
+                      </button>
                     )}
                   </>
                 )}

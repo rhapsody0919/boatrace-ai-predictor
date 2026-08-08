@@ -81,11 +81,18 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
                 <td className="drt-label-cell">
                   {row.tab ? (
                     <Link to={deepLink(row.tab)} className="drt-label-link">
-                      {row.label}
+                      <span className="drt-label-full">{row.label}</span>
+                      <span className="drt-label-short">{row.shortLabel}</span>
                       <span className="drt-link-arrow">›</span>
                     </Link>
                   ) : (
-                    row.label
+                    <>
+                      <span className="drt-label-full">{row.label}</span>
+                      <span className="drt-label-short">{row.shortLabel}</span>
+                    </>
+                  )}
+                  {row.note && (
+                    <span className="drt-label-note">{row.note}</span>
                   )}
                 </td>
                 {players.map((p) => (

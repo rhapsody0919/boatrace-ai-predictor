@@ -11,8 +11,14 @@ function AiAnalysisSection({ topPick, confidence, children }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
-  const confidenceValue = Number.isFinite(Number(confidence))
-    ? Math.round(Number(confidence))
+  // confidenceは通常0-100スケールだが、旧データ構造では0-1の可能性があるため正規化する
+  const rawConfidence = Number(confidence);
+  const confidenceValue = Number.isFinite(rawConfidence)
+    ? Math.round(
+        rawConfidence > 0 && rawConfidence <= 1
+          ? rawConfidence * 100
+          : rawConfidence,
+      )
     : null;
 
   return (

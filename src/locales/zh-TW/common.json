@@ -313,8 +313,9 @@
     "rowLocalWinRate": "當地勝率",
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
-    "rowCourseRate": "航道勝率",
-    "loading": "數據載入中…"
+    "rowCourseRate": "進入航道勝率",
+    "loading": "數據載入中…",
+    "motorResetNote": "剛更換"
   },
   "aiSection": {
     "title": "AI數據分析",
@@ -358,8 +359,16 @@
       "exSt": "展示ST",
       "exhibition": "展示T",
       "courseRate": "航道",
-      "returnRate": "回收率"
+      "returnRate": "回收率",
+      "technique": "方式"
     },
-    "itemTechniqueRank": "獲勝方式「{{technique}}」為該選手過去90天獲勝模式第{{rank}}名（{{pct}}%）"
+    "itemTechniqueRank": "獲勝方式「{{technique}}」為該選手過去90天獲勝模式第{{rank}}名（{{pct}}%）",
+    "colGrade": "級別",
+    "showOutBoats": "▼ 查看圈外{{n}}艇的詳情",
+    "hideOutBoats": "▲ 收起圈外艇"
+  },
+  "raceList": {
+    "show": "▼ 選擇其他比賽",
+    "hide": "▲ 收起比賽列表"
   }
 }

@@ -136,6 +136,19 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* モバイルでは短縮ラベルに切り替える（折り返しによる可読性低下対策） */
+.drt-label-short {
+  display: none;
+}
+
+.drt-label-note {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-warning-dark, #b45309);
+  margin-top: 2px;
+}
+
 .drt-cell {
   color: var(--color-gray-800);
 }
@@ -222,5 +235,13 @@
   .drt-label-cell {
     font-size: var(--font-size-2xs);
     white-space: normal;
+  }
+
+  .drt-label-full {
+    display: none;
+  }
+
+  .drt-label-short {
+    display: inline;
   }
 }

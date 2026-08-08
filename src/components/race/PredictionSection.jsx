@@ -36,6 +36,28 @@ const PredictionSection = forwardRef(
 
     if (!selectedRace) return null;
 
+    // レース前は「予想の作業台」（データ出走表が主役）、
+    // 結果確定後は「検証の場」（結果・振り返りが主役）として順序を入れ替える
+    const finished = Boolean(prediction?.result?.finished);
+
+    const panel = (
+      <PredictionPanel
+        prediction={prediction}
+        selectedRace={selectedRace}
+        selectedModel={selectedModel}
+        onSwitchModel={onSwitchModel}
+        volatility={volatility}
+        isAnalyzing={isAnalyzing}
+        date={date}
+      />
+    );
+    const result = (
+      <RaceResult prediction={prediction} volatility={volatility} />
+    );
+    const review = (
+      <RaceReview prediction={prediction} selectedRace={selectedRace} />
+    );
+
     return (
       <section ref={ref} className="prediction-section">
         <h2>
@@ -46,22 +68,19 @@ const PredictionSection = forwardRef(
           {selectedRace.raceNumber}R
         </h2>
 
-        {/* データ出走表 + AIデータ分析（1マーク、配当妙味、出現パターン） */}
-        <PredictionPanel
-          prediction={prediction}
-          selectedRace={selectedRace}
-          selectedModel={selectedModel}
-          onSwitchModel={onSwitchModel}
-          volatility={volatility}
-          isAnalyzing={isAnalyzing}
-          date={date}
-        />
-
-        {/* レース結果セクション */}
-        <RaceResult prediction={prediction} volatility={volatility} />
-
-        {/* データで振り返る（結果確定後のみ表示） */}
-        <RaceReview prediction={prediction} selectedRace={selectedRace} />
+        {finished ? (
+          <>
+            {result}
+            {review}
+            {panel}
+          </>
+        ) : (
+          <>
+            {panel}
+            {result}
+            {review}
+          </>
+        )}
       </section>
     );
   },

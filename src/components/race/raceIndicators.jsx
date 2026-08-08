@@ -161,6 +161,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "winRate",
       label: t("dataTable.rowWinRate"),
+      shortLabel: t("review.cols.winRate"),
       tab: null,
       best: bestOf(cand.winRate),
       signal: (boat) => rankSignal(cand.winRate, boat),
@@ -180,6 +181,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "localWinRate",
       label: t("dataTable.rowLocalWinRate"),
+      shortLabel: t("review.cols.localWinRate"),
       tab: "racecard",
       best: bestOf(cand.localWinRate),
       signal: (boat) => rankSignal(cand.localWinRate, boat),
@@ -204,6 +206,14 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "motor",
       label: t("dataTable.rowMotor"),
+      shortLabel: t("review.cols.motor"),
+      // モーター交換直後（全艇2連率0%）は理由をラベル横に注記する
+      note: (() => {
+        const values = cand.motor.map((c) => c.value).filter((v) => v !== null);
+        return values.length > 0 && values.every((v) => v === 0)
+          ? t("dataTable.motorResetNote")
+          : null;
+      })(),
       tab: "motor",
       best: bestOf(cand.motor),
       signal: (boat) => rankSignal(cand.motor, boat),
@@ -227,6 +237,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "form",
       label: t("dataTable.rowForm"),
+      shortLabel: t("review.cols.form"),
       tab: "racer",
       best: bestOf(
         (racerForm ?? []).map((r) => ({ boat: r.boat_number, value: r.delta })),
@@ -268,6 +279,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "avgSt",
       label: t("dataTable.rowAvgSt"),
+      shortLabel: t("review.cols.avgSt"),
       tab: "racecard",
       best: bestOf(cand.avgSt, "min"),
       signal: (boat) => rankSignal(cand.avgSt, boat, "min"),
@@ -289,6 +301,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "st",
       label: t("dataTable.rowSt"),
+      shortLabel: t("review.cols.st"),
       tab: "st",
       best: bestOf(cand.st, "min"),
       signal: (boat) => rankSignal(cand.st, boat, "min"),
@@ -309,6 +322,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "exSt",
       label: t("dataTable.rowExSt"),
+      shortLabel: t("review.cols.exSt"),
       tab: "st",
       best: bestOf(cand.exSt, "min"),
       signal: (boat) => rankSignal(cand.exSt, boat, "min"),
@@ -330,6 +344,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "exhibition",
       label: t("dataTable.rowExhibition"),
+      shortLabel: t("review.cols.exhibition"),
       tab: "extrend",
       best: bestOf(cand.exhibition, "min"),
       signal: (boat) => rankSignal(cand.exhibition, boat, "min"),
@@ -366,6 +381,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "courseRate",
       label: t("dataTable.rowCourseRate"),
+      shortLabel: t("review.cols.courseRate"),
       tab: "attackdefense",
       best: bestOf(cand.courseRate),
       signal: (boat) => rankSignal(cand.courseRate, boat),
@@ -394,6 +410,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "technique",
       label: t("dataTable.rowTechnique"),
+      shortLabel: t("review.cols.technique"),
       tab: "techprofile",
       best: null,
       signal: () => null, // 決まり手型はRaceReview側で勝者の決まり手一致を特別判定する
@@ -417,6 +434,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     {
       key: "returnRate",
       label: t("dataTable.rowReturnRate"),
+      shortLabel: t("review.cols.returnRate"),
       tab: "returnrate",
       best: bestOf(cand.returnRate),
       signal: (boat) => {

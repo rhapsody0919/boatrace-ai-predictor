@@ -313,8 +313,9 @@
     "rowLocalWinRate": "당지 승률",
     "rowAvgSt": "평균 ST",
     "rowExSt": "전시 ST",
-    "rowCourseRate": "코스 승률",
-    "loading": "분석 데이터 로딩 중…"
+    "rowCourseRate": "진입 코스 승률",
+    "loading": "분석 데이터 로딩 중…",
+    "motorResetNote": "교체 직후"
   },
   "aiSection": {
     "title": "AI 데이터 분석",
@@ -358,8 +359,16 @@
       "exSt": "전시ST",
       "exhibition": "전시T",
       "courseRate": "코스",
-      "returnRate": "회수율"
+      "returnRate": "회수율",
+      "technique": "결정수"
     },
-    "itemTechniqueRank": "결정수「{{technique}}」는 최근 90일 승리 패턴 {{rank}}위（{{pct}}%）"
+    "itemTechniqueRank": "결정수「{{technique}}」는 최근 90일 승리 패턴 {{rank}}위（{{pct}}%）",
+    "colGrade": "급별",
+    "showOutBoats": "▼ 착외 {{n}}정의 상세도 보기",
+    "hideOutBoats": "▲ 착외 보트 접기"
+  },
+  "raceList": {
+    "show": "▼ 다른 레이스 선택",
+    "hide": "▲ 레이스 목록 접기"
   }
 }

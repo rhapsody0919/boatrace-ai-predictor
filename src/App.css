@@ -1806,3 +1806,23 @@ input:focus-visible,
     font-size: 0.85rem;
   }
 }
+
+/* レース一覧の折りたたみトグル（App.jsx / RaceDetail.jsx共通、BOA-168 UX改善） */
+.race-list-toggle {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  background: #ffffff;
+  border: 1px dashed var(--color-gray-200);
+  border-radius: var(--radius-md);
+  color: var(--color-primary-600);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.race-list-toggle:hover {
+  background: var(--color-gray-50);
+}

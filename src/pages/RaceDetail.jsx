@@ -27,6 +27,7 @@ function RaceDetail() {
   const [selectedVenueId, setSelectedVenueId] = useState(null);
   const [selectedRace, setSelectedRace] = useState(null);
   const [prediction, setPrediction] = useState(null);
+  const [raceListCollapsed, setRaceListCollapsed] = useState(false);
   const [selectedModel, setSelectedModel] = useState("standard");
   const [volatility, setVolatility] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -173,6 +174,8 @@ function RaceDetail() {
     setSelectedRace(race);
     setIsAnalyzing(true);
     setPrediction(null);
+    // レース選択後は一覧を折りたたんでページ全長を抑える
+    setRaceListCollapsed(true);
 
     setTimeout(() => {
       setIsAnalyzing(false);
@@ -461,17 +464,36 @@ function RaceDetail() {
                   >
                     <p>このレース場のデータはありません</p>
                   </div>
+                ) : raceListCollapsed ? (
+                  <button
+                    type="button"
+                    className="race-list-toggle"
+                    onClick={() => setRaceListCollapsed(false)}
+                  >
+                    {t("raceList.show")}
+                  </button>
                 ) : (
-                  <div className="race-grid">
-                    {races.map((race) => (
-                      <RaceCard
-                        key={race.id}
-                        race={race}
-                        selectedModel={selectedModel}
-                        onAnalyzeRace={analyzeRace}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="race-grid">
+                      {races.map((race) => (
+                        <RaceCard
+                          key={race.id}
+                          race={race}
+                          selectedModel={selectedModel}
+                          onAnalyzeRace={analyzeRace}
+                        />
+                      ))}
+                    </div>
+                    {selectedRace && races.length > 0 && (
+                      <button
+                        type="button"
+                        className="race-list-toggle"
+                        onClick={() => setRaceListCollapsed(true)}
+                      >
+                        {t("raceList.hide")}
+                      </button>
+                    )}
+                  </>
                 )}
               </section>
 
