@@ -1,0 +1,226 @@
+/* DataRaceTable - データ出走表（BOA-168） */
+
+.data-race-table {
+  margin: var(--spacing-4) 0 var(--spacing-6);
+  padding: var(--spacing-4);
+  background: var(--color-gray-50);
+  border: var(--border-width-1) solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+}
+
+.drt-title {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.drt-loading-chip {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-500);
+  background: var(--color-gray-100);
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-full);
+  animation: drt-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes drt-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ロード中セルのスケルトン */
+.drt-skeleton {
+  display: inline-block;
+  width: 2.5em;
+  height: 0.9em;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-gray-100) 25%,
+    var(--color-gray-200) 50%,
+    var(--color-gray-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: drt-shimmer 1.2s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes drt-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.drt-subtitle {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-500);
+}
+
+.drt-table-wrapper {
+  overflow-x: auto;
+}
+
+.drt-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+}
+
+.drt-table th,
+.drt-table td {
+  padding: var(--spacing-2);
+  text-align: center;
+  border: var(--border-width-1) solid var(--color-gray-200);
+}
+
+.drt-boat-th {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  width: calc(100% / 7);
+}
+
+.drt-name-th {
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-2xs);
+  color: var(--color-gray-800);
+  background: var(--color-gray-100);
+  word-break: break-all;
+  line-height: var(--line-height-tight);
+}
+
+.drt-label-th {
+  background: var(--color-gray-100);
+}
+
+.drt-label-cell {
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-800);
+  background: var(--color-gray-100);
+  white-space: nowrap;
+}
+
+.drt-label-link {
+  color: var(--color-primary-600);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.drt-label-link:hover {
+  text-decoration: underline;
+}
+
+.drt-link-arrow {
+  color: var(--color-primary-400);
+  font-weight: var(--font-weight-bold);
+}
+
+.drt-cell {
+  color: var(--color-gray-800);
+}
+
+/* ゼブラ縞（最良セルのハイライトが優先） */
+.drt-table tbody tr:nth-child(even) td {
+  background: var(--color-gray-50);
+}
+
+.drt-table tbody tr:nth-child(even) .drt-label-cell {
+  background: var(--color-gray-100);
+}
+
+.drt-cell.drt-best {
+  background: rgba(14, 165, 233, 0.14);
+  font-weight: var(--font-weight-bold);
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.35);
+}
+
+.drt-table tbody tr:nth-child(even) .drt-cell.drt-best {
+  background: rgba(14, 165, 233, 0.14);
+}
+
+.drt-value {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: var(--line-height-tight);
+}
+
+.drt-grade {
+  font-size: var(--font-size-2xs);
+  color: var(--color-gray-500);
+}
+
+.drt-sub {
+  font-size: var(--font-size-2xs);
+  color: var(--color-gray-500);
+}
+
+.drt-up {
+  color: var(--color-error);
+}
+
+.drt-down {
+  color: var(--color-info);
+}
+
+.drt-plus {
+  color: var(--color-success);
+  font-weight: var(--font-weight-bold);
+}
+
+.drt-technique {
+  font-size: var(--font-size-xs);
+}
+
+.drt-note {
+  margin: var(--spacing-3) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+@media (max-width: 480px) {
+  .data-race-table {
+    padding: var(--spacing-2);
+    margin: var(--spacing-2) 0 var(--spacing-4);
+  }
+
+  .drt-table th,
+  .drt-table td {
+    padding: var(--spacing-1);
+  }
+
+  .drt-table {
+    font-size: var(--font-size-xs);
+  }
+
+  .drt-name-th {
+    font-size: 0.55rem;
+  }
+
+  .drt-label-cell {
+    font-size: var(--font-size-2xs);
+    white-space: normal;
+  }
+}

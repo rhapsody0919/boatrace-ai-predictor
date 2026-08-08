@@ -132,7 +132,8 @@
     "newTab": "（新しいタブで開きます）",
     "unknownVenue": "不明",
     "venueGuideLink": "{{venue}}の攻略ガイドを見る",
-    "venueGuideDesc": "会場の特徴と狙い目を詳しく解説"
+    "venueGuideDesc": "会場の特徴と狙い目を詳しく解説",
+    "analysisToolsLink": "データ分析ツールでこのレースをさらに分析する"
   },
   "home": {
     "introBannerText": "45項目のデータをAIが分析 | BoatAIについて詳しくはこちら →",
@@ -295,5 +296,70 @@
     "rankLabel": "{{rank}}着",
     "distributionTitle": "展開確率分布",
     "courseLabel": "{{course}}コース"
+  },
+  "dataTable": {
+    "title": "データ出走表",
+    "subtitle": "出走6選手の分析データを一覧比較。行ラベルをタップすると詳細分析ページへ移動します",
+    "rowWinRate": "級別・勝率",
+    "rowMotor": "モーター2連率",
+    "rowForm": "調子（勝率Δ）",
+    "rowSt": "ST安定度",
+    "rowExhibition": "展示タイム",
+    "rowTechnique": "決まり手型",
+    "rowReturnRate": "単勝回収率",
+    "noWins": "勝利なし",
+    "winCount": "{{n}}勝",
+    "note": "分析データは過去90日間（回収率は180日間）の実績集計です。ハイライトはレース内で最も良い値。参考値であり結果を保証するものではありません",
+    "rowLocalWinRate": "当地勝率",
+    "rowAvgSt": "平均ST",
+    "rowExSt": "展示ST",
+    "rowCourseRate": "コース勝率",
+    "loading": "分析データを読み込み中…"
+  },
+  "aiSection": {
+    "title": "AIデータ分析",
+    "topPickSummary": "AIの本命: {{number}}号艇 {{name}}",
+    "expandHint": "タップで展開: AI予想の詳細（買い目・1マーク展開予測・配当妙味・出現パターン）",
+    "confidence": "信頼度{{value}}%"
+  },
+  "review": {
+    "title": "データで振り返る",
+    "resultLine": "1着: {{number}}号艇 {{name}}",
+    "techniqueLabel": "決まり手: {{technique}}",
+    "loading": "分析データを照合中...",
+    "matchHeading": "データと整合した点",
+    "mismatchHeading": "データと違った点",
+    "aiHeading": "AI検証",
+    "aiHit": "AIの本命 {{number}}号艇が1着。",
+    "aiMissWithData": "AIの本命は{{aiNumber}}号艇だったが、1着は{{winnerNumber}}号艇。上記の整合したデータが{{winnerNumber}}号艇の好走を示唆していた。",
+    "aiMissNoData": "AIの本命は{{aiNumber}}号艇だったが、1着は{{winnerNumber}}号艇。今回はデータからも読みにくい波乱だった。",
+    "itemTechniqueTop": "決まり手「{{technique}}」は過去90日の勝ちパターン1位（{{pct}}%）と一致",
+    "itemTechniqueNone": "「{{technique}}」は過去90日の勝ちパターンに無い決まり手",
+    "itemTechniqueNoWins": "過去90日間で勝利の無かった選手の1着",
+    "itemFormUp": "全国勝率が上昇基調（+{{delta}}）",
+    "itemFormDown": "全国勝率は下降基調（-{{delta}}）",
+    "note": "照合は機械的な順位・一致判定によるものです。データは過去の傾向であり、今後の結果を保証するものではありません",
+    "allBoatsHeading": "全艇の照合サマリー",
+    "colFinish": "着順",
+    "colBoat": "艇・選手",
+    "finishPosition": "{{position}}着",
+    "finishOut": "着外",
+    "allBoatsLegend": "○=データの示唆と着順が整合 / ×=相違 / −=中立またはデータなし。1〜3着を「好走」、それ以外を「着外」として判定しています（4着以下の個別着順は未保存のため着外でまとめています）",
+    "itemRank": "{{label}}がレース内{{rank}}位",
+    "itemReturn": "単勝回収率{{rate}}%（過去180日・同艇番）",
+    "noItems": "判定可能なデータがありません（全艇同値または未計測）",
+    "cols": {
+      "winRate": "勝率",
+      "localWinRate": "当地",
+      "motor": "モーター",
+      "form": "調子",
+      "avgSt": "平均ST",
+      "st": "ST安定",
+      "exSt": "展示ST",
+      "exhibition": "展示T",
+      "courseRate": "コース",
+      "returnRate": "回収率"
+    },
+    "itemTechniqueRank": "決まり手「{{technique}}」は過去90日の勝ちパターン{{rank}}位（{{pct}}%）"
   }
 }

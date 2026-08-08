@@ -133,7 +133,8 @@
     "newTab": "(opens in a new tab)",
     "unknownVenue": "Unknown",
     "venueGuideLink": "View the {{venue}} venue guide",
-    "venueGuideDesc": "Detailed venue characteristics and betting angles"
+    "venueGuideDesc": "Detailed venue characteristics and betting angles",
+    "analysisToolsLink": "Analyze this race further with the data analysis tools"
   },
   "home": {
     "introBannerText": "AI-analyzed 45+ data points | Learn more about BoatAI →",
@@ -297,5 +298,70 @@
     "rankLabel": "#{{rank}}",
     "distributionTitle": "Outcome probability",
     "courseLabel": "Lane {{course}}"
+  },
+  "dataTable": {
+    "title": "Data Race Card",
+    "subtitle": "Compare analytics for all six racers at a glance. Tap a row label for the full analysis",
+    "rowWinRate": "Class / Win rate",
+    "rowMotor": "Motor 2nd rate",
+    "rowForm": "Form (Δ win rate)",
+    "rowSt": "ST stability",
+    "rowExhibition": "Exhibition time",
+    "rowTechnique": "Winning style",
+    "rowReturnRate": "Win return rate",
+    "noWins": "No wins",
+    "winCount": "{{n}}W",
+    "note": "Analytics cover the last 90 days (return rate: 180 days). Highlights mark the best value in this race. For reference only — results are not guaranteed",
+    "rowLocalWinRate": "Local win rate",
+    "rowAvgSt": "Avg ST",
+    "rowExSt": "Exhibition ST",
+    "rowCourseRate": "Course win rate",
+    "loading": "Loading analytics…"
+  },
+  "aiSection": {
+    "title": "AI Data Analysis",
+    "topPickSummary": "AI top pick: Boat {{number}} {{name}}",
+    "expandHint": "Tap to expand AI prediction details (picks, first-turn simulation, odds value, outcome patterns)",
+    "confidence": "Confidence {{value}}%"
+  },
+  "review": {
+    "title": "Race Review with Data",
+    "resultLine": "Winner: Boat {{number}} {{name}}",
+    "techniqueLabel": "Winning technique: {{technique}}",
+    "loading": "Matching analytics...",
+    "matchHeading": "What the data got right",
+    "mismatchHeading": "Where the data differed",
+    "aiHeading": "AI verification",
+    "aiHit": "AI's top pick Boat {{number}} won.",
+    "aiMissWithData": "AI picked Boat {{aiNumber}}, but Boat {{winnerNumber}} won. The matching data above pointed to Boat {{winnerNumber}}.",
+    "aiMissNoData": "AI picked Boat {{aiNumber}}, but Boat {{winnerNumber}} won. This upset was hard to read even from the data.",
+    "itemTechniqueTop": "Winning technique \"{{technique}}\" matches this racer’s No.1 winning pattern ({{pct}}%) of the last 90 days",
+    "itemTechniqueNone": "\"{{technique}}\" was not among this racer’s winning patterns in the last 90 days",
+    "itemTechniqueNoWins": "The winner had no wins in the last 90 days",
+    "itemFormUp": "National win rate trending up (+{{delta}})",
+    "itemFormDown": "National win rate trending down (-{{delta}})",
+    "note": "Matching is purely mechanical (in-race ranks and pattern matches). Past trends do not guarantee future results",
+    "allBoatsHeading": "All-boat data check",
+    "colFinish": "Finish",
+    "colBoat": "Boat / Racer",
+    "finishPosition": "P{{position}}",
+    "finishOut": "Out",
+    "allBoatsLegend": "○ = data signal matched the finish / × = differed / − = neutral or no data. Boats finishing 1st–3rd count as strong runs; the rest as out (individual 4th–6th positions are not stored)",
+    "itemRank": "{{label}} ranked No.{{rank}} in this race",
+    "itemReturn": "Win return rate {{rate}}% (last 180 days, same lane)",
+    "noItems": "No judgeable data (all boats equal or not measured)",
+    "cols": {
+      "winRate": "Win",
+      "localWinRate": "Local",
+      "motor": "Motor",
+      "form": "Form",
+      "avgSt": "AvgST",
+      "st": "ST stab.",
+      "exSt": "Ex.ST",
+      "exhibition": "Ex.time",
+      "courseRate": "Course",
+      "returnRate": "Return"
+    },
+    "itemTechniqueRank": "Winning technique \"{{technique}}\" is No.{{rank}} ({{pct}}%) in this racer's 90-day winning patterns"
   }
 }

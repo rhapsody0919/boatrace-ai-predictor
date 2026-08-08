@@ -1,0 +1,279 @@
+/* RaceReview - データで振り返る（BOA-168） */
+/* 親セクション（.prediction-section等）の文字色を継承すると背景と被って
+   見えなくなるケースがあるため、全テキスト要素に色を明示指定する */
+
+.race-review {
+  margin: var(--spacing-4) 0;
+  padding: var(--spacing-4);
+  background: #ffffff;
+  border: var(--border-width-1) solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  color: var(--color-gray-800);
+}
+
+.race-review-title {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+}
+
+.race-review-result {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-800);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.race-review-technique {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-700);
+  background: rgba(14, 165, 233, 0.1);
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-full);
+}
+
+.race-review-loading {
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+}
+
+/* --- 全艇の照合サマリーテーブル --- */
+
+.race-review-all {
+  margin-bottom: var(--spacing-4);
+}
+
+.race-review-all h4 {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+}
+
+.race-review-all-wrapper {
+  overflow-x: auto;
+}
+
+.race-review-all-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  background: #ffffff;
+  color: var(--color-gray-800);
+}
+
+.race-review-all-table th,
+.race-review-all-table td {
+  padding: var(--spacing-1) var(--spacing-2);
+  text-align: center;
+  border: var(--border-width-1) solid var(--color-gray-200);
+  color: var(--color-gray-800);
+}
+
+.race-review-all-table thead th {
+  background: var(--color-gray-100);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-800);
+  white-space: nowrap;
+}
+
+.race-review-finish {
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  color: var(--color-gray-800);
+}
+
+.race-review-boat {
+  text-align: left;
+  white-space: nowrap;
+  color: var(--color-gray-800);
+}
+
+.race-review-mark-match {
+  color: var(--color-success);
+  font-weight: var(--font-weight-bold);
+}
+
+.race-review-mark-mismatch {
+  color: var(--color-warning);
+  font-weight: var(--font-weight-bold);
+}
+
+.race-review-mark-none {
+  color: var(--color-gray-500);
+}
+
+.race-review-legend {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+/* --- 全艇の言語化ブロック --- */
+
+.race-review-boats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+@media (min-width: 768px) {
+  .race-review-boats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.race-review-boat-block {
+  padding: var(--spacing-3);
+  border: var(--border-width-1) solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: var(--color-gray-50);
+}
+
+.race-review-boat-block.race-review-boat-winner {
+  border-color: var(--color-gold);
+  border-width: var(--border-width-2, 2px);
+  background: #fffdf5;
+}
+
+.race-review-boat-heading {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.race-review-finish-badge {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+  background: var(--color-gray-200);
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.race-review-finish-badge.race-review-finish-1 {
+  color: #5c4300;
+  background: var(--color-gold);
+}
+
+.race-review-finish-badge.race-review-finish-2 {
+  color: var(--color-gray-800);
+  background: var(--color-silver);
+}
+
+.race-review-finish-badge.race-review-finish-3 {
+  color: #ffffff;
+  background: var(--color-bronze);
+}
+
+.race-review-no-items {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+.race-review-group {
+  margin-bottom: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+}
+
+.race-review-group:last-child {
+  margin-bottom: 0;
+}
+
+.race-review-group h5 {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+}
+
+.race-review-group ul {
+  margin: 0;
+  padding-left: var(--spacing-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-800);
+}
+
+.race-review-group li {
+  margin-bottom: 2px;
+  color: var(--color-gray-800);
+}
+
+.race-review-match {
+  background: rgba(16, 185, 129, 0.08);
+  border-left: var(--border-width-3, 3px) solid var(--color-success);
+}
+
+.race-review-mismatch {
+  background: rgba(245, 158, 11, 0.08);
+  border-left: var(--border-width-3, 3px) solid var(--color-warning);
+}
+
+/* --- AI検証 --- */
+
+.race-review-ai {
+  margin-bottom: var(--spacing-3);
+  padding: var(--spacing-3);
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
+}
+
+.race-review-ai h4 {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+}
+
+.race-review-ai p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-800);
+}
+
+.race-review-note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
+
+@media (max-width: 480px) {
+  .race-review {
+    padding: var(--spacing-2);
+    margin: var(--spacing-2) 0;
+  }
+
+  .race-review-boat-block,
+  .race-review-group {
+    padding: var(--spacing-2);
+  }
+
+  .race-review-all-table {
+    font-size: var(--font-size-xs);
+  }
+
+  .race-review-all-table th,
+  .race-review-all-table td {
+    padding: 2px var(--spacing-1);
+  }
+
+  .race-review-boat {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

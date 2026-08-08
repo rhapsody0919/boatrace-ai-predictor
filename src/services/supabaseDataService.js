@@ -17,6 +17,24 @@ const EDGE_API_BASE = "";
  * スクレイピングは1時間に1回なので、30分間キャッシュを保持
  */
 const CACHE_TTL = 30 * 60 * 1000; // 30分
+// 過去レースの分析データは不変のため長期キャッシュしてよい
+// （Supabase egress削減: レース単位の分析クエリは1レースあたり約0.5MBの生データを転送するため）
+const PAST_RACE_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7日
+
+/**
+ * キャッシュキーからTTLを推定する。
+ * キー末尾がrace_id形式（YYYY-MM-DD-VV-RR）かつ過去日付なら長期TTL
+ * （本日分は展示データ投入・結果確定で内容が変わるため通常TTL）
+ */
+function inferTtlFromKey(key) {
+  const m = String(key).match(/(\d{4}-\d{2}-\d{2})-\d{2}-\d{2}(?::.*)?$/);
+  if (m) {
+    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const today = jstNow.toISOString().split("T")[0];
+    if (m[1] < today) return PAST_RACE_CACHE_TTL;
+  }
+  return CACHE_TTL;
+}
 const CACHE_PREFIX = "boatai:";
 
 const cache = {
@@ -163,18 +181,33 @@ const cache = {
 
 /**
  * キャッシュ付きデータ取得
+ * 同一キーの取得が進行中の場合は同じPromiseを返す（in-flightデデュープ）。
+ * プリフェッチとコンポーネントの取得が重なっても二重クエリにならない
  */
-function withCache(key, fetcher, ttl = CACHE_TTL) {
-  const cached = cache.get(key, ttl);
+const inflightRequests = new Map();
+
+function withCache(key, fetcher, ttl) {
+  const effectiveTtl = ttl ?? inferTtlFromKey(key);
+  const cached = cache.get(key, effectiveTtl);
   if (cached !== null) {
     return Promise.resolve(cached);
   }
 
+  if (inflightRequests.has(key)) {
+    return inflightRequests.get(key);
+  }
+
   console.log(`[Cache MISS] ${key}`);
-  return fetcher().then((data) => {
-    cache.set(key, data);
-    return data;
-  });
+  const promise = fetcher()
+    .then((data) => {
+      cache.set(key, data);
+      return data;
+    })
+    .finally(() => {
+      inflightRequests.delete(key);
+    });
+  inflightRequests.set(key, promise);
+  return promise;
 }
 
 // キャッシュクリア（手動更新時に使用）
@@ -2093,6 +2126,22 @@ export const supabaseDataService = {
         return [];
       }
 
+      // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
+      // 未適用環境では旧クライアント集計にフォールバックする
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "get_race_st_predictability",
+        { p_race_id: raceId },
+      );
+      if (!rpcError && Array.isArray(rpcData)) {
+        return rpcData;
+      }
+      if (rpcError) {
+        console.warn(
+          "get_race_st_predictability RPC未適用のため旧ロジックで取得:",
+          rpcError.message,
+        );
+      }
+
       const { data: entries, error: entriesError } = await supabase
         .from("race_entries")
         .select("boat_number, player_name, racer_id")
@@ -2308,6 +2357,22 @@ export const supabaseDataService = {
         return [];
       }
 
+      // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
+      // 未適用環境では旧クライアント集計にフォールバックする
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "get_race_exhibition_trend",
+        { p_race_id: raceId },
+      );
+      if (!rpcError && Array.isArray(rpcData)) {
+        return rpcData;
+      }
+      if (rpcError) {
+        console.warn(
+          "get_race_exhibition_trend RPC未適用のため旧ロジックで取得:",
+          rpcError.message,
+        );
+      }
+
       const { data: entries, error: entriesError } = await supabase
         .from("race_entries")
         .select("boat_number, player_name, racer_id")
@@ -2476,6 +2541,105 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定レースの選手コース別統計（racerStats）を取得する（BOA-168）
+   * predictions.feature_contributions.racerStats に日次バッチで保存済みの
+   * 進入コース・平均ST・コース別勝敗・攻め手/守り手分布を返す。
+   * 超展開データタブ・データ出走表の平均ST/コース勝率行で使用する
+   */
+  getRaceRacerStats(raceId) {
+    return withCache(`race-racer-stats-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      // shadow予測が併存する可能性があるためmaybeSingleは使わず最新1件を取る
+      const { data, error } = await supabase
+        .from("predictions")
+        .select("model_id, feature_contributions, predicted_at")
+        .eq("race_id", raceId)
+        .eq("model_id", "standard")
+        .order("predicted_at", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error("predictions取得エラー:", error.message);
+        return null;
+      }
+      return data?.[0]?.feature_contributions?.racerStats ?? null;
+    });
+  },
+
+  /**
+   * 指定レースの出走表詳細（race_entriesの全選手データ）を取得する（BOA-168）
+   * 分析ツールの「出走表データ」タブで使用する。AIスコアは含めない
+   */
+  getRaceEntriesDetail(raceId) {
+    return withCache(`race-entries-detail-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const [entriesRes, exhibitionRes] = await Promise.all([
+        supabase
+          .from("race_entries")
+          .select(
+            "boat_number, player_name, grade, age, win_rate, local_win_rate, global_2rate, motor_number, motor_2rate",
+          )
+          .eq("race_id", raceId)
+          .order("boat_number"),
+        supabase
+          .from("exhibition_data")
+          .select("boat_number, exhibition_time, start_timing")
+          .eq("race_id", raceId),
+      ]);
+
+      if (entriesRes.error || !entriesRes.data) {
+        if (entriesRes.error)
+          console.error("race_entries取得エラー:", entriesRes.error.message);
+        return [];
+      }
+      const exByBoat = new Map(
+        (exhibitionRes.data ?? []).map((e) => [e.boat_number, e]),
+      );
+      return entriesRes.data.map((row) => ({
+        ...row,
+        exhibition_time: exByBoat.get(row.boat_number)?.exhibition_time ?? null,
+        exhibition_st: exByBoat.get(row.boat_number)?.start_timing ?? null,
+      }));
+    });
+  },
+
+  /**
+   * 指定レースの結果サマリー（着順・決まり手）を取得する（BOA-168）
+   * Edge Function経由のpredictionデータにはwinning_techniqueが含まれないため、
+   * 「データで振り返る」はこの関数で確実に決まり手を取得する
+   */
+  getRaceResultSummary(raceId) {
+    return withCache(`race-result-summary-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from("race_results")
+        .select(
+          "race_id, rank1, rank2, rank3, winning_technique, is_cancelled, is_no_race",
+        )
+        .eq("race_id", raceId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("race_results取得エラー:", error.message);
+        return null;
+      }
+      return data ?? null;
+    });
+  },
+
+  /**
    * 本日開催中のレースの出走選手について、過去180日間・同じ艇番で出走した
    * レースでの単勝回収率・複勝回収率を取得する（BOA-167）
    * AI予想モデルの確率は使わず、race_results.payout_win/payout_place_1/2の
@@ -2486,6 +2650,22 @@ export const supabaseDataService = {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
+      }
+
+      // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
+      // 未適用環境では旧クライアント集計にフォールバックする
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "get_race_return_rate",
+        { p_race_id: raceId },
+      );
+      if (!rpcError && Array.isArray(rpcData)) {
+        return rpcData;
+      }
+      if (rpcError) {
+        console.warn(
+          "get_race_return_rate RPC未適用のため旧ロジックで取得:",
+          rpcError.message,
+        );
       }
 
       const { data: entries, error: entriesError } = await supabase
@@ -2731,6 +2911,22 @@ export const supabaseDataService = {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
+      }
+
+      // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
+      // 未適用環境では旧クライアント集計にフォールバックする
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "get_race_technique_profile",
+        { p_race_id: raceId },
+      );
+      if (!rpcError && Array.isArray(rpcData)) {
+        return rpcData;
+      }
+      if (rpcError) {
+        console.warn(
+          "get_race_technique_profile RPC未適用のため旧ロジックで取得:",
+          rpcError.message,
+        );
       }
 
       const { data: entries, error: entriesError } = await supabase

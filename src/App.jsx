@@ -919,7 +919,7 @@ function App({ tab = "races" }) {
                     to={`/winning-technique?venue_code=${selectedRace.venueCode}&race_id=${selectedRace.id}&tab=motor`}
                     className="analysis-tools-link"
                   >
-                    🔍 このレースの決まり手・モーター調子・選手調子を見る
+                    📊 {t("panel.analysisToolsLink")}
                   </Link>
                 </div>
               )}
