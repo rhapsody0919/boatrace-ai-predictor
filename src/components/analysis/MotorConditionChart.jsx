@@ -6,6 +6,7 @@
  * 気になるモーターは節ごとの推移グラフにドリルダウンできる。
  */
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   LineChart,
   Line,
@@ -50,6 +51,7 @@ function MotorConditionChart({
   initialVenueCode = null,
   initialRaceId = null,
 }) {
+  const { t } = useTranslation();
   const [venues, setVenues] = useState([]);
   const [selectedVenue, setSelectedVenue] = useState(initialVenueCode);
   const [races, setRaces] = useState([]);
@@ -178,11 +180,11 @@ function MotorConditionChart({
       </p>
 
       {venues.length === 0 && !loading ? (
-        <div className="empty-state">本日開催しているレースがありません</div>
+        <div className="empty-state">{t("analysis.noRacesToday")}</div>
       ) : (
         <div className="controls-section">
           <label htmlFor="motor-venue-select">
-            ボートレース場（本日開催中）:
+            {t("analysis.venueSelectTodayLabel")}
           </label>
           <select
             id="motor-venue-select"
@@ -192,14 +194,14 @@ function MotorConditionChart({
           >
             {venues.map((v) => (
               <option key={v} value={v}>
-                {VENUE_NAMES[v] || v}
+                {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
               </option>
             ))}
           </select>
 
           {races.length > 0 && (
             <>
-              <label htmlFor="motor-race-select">レース:</label>
+              <label htmlFor="motor-race-select">{t("analysis.raceSelectLabel")}</label>
               <select
                 id="motor-race-select"
                 value={selectedRace ?? ""}
@@ -217,8 +219,8 @@ function MotorConditionChart({
         </div>
       )}
 
-      {loading && <div className="loading-state">データを読み込み中...</div>}
-      {error && <div className="error-state">エラー: {error}</div>}
+      {loading && <div className="loading-state">{t("analysis.loading")}</div>}
+      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
 
       {!loading &&
         !error &&
@@ -260,7 +262,7 @@ function MotorConditionChart({
             className="back-to-ranking-btn"
             onClick={() => setDrillDownMotor(null)}
           >
-            ← レースの一覧に戻る
+            {t("analysis.backToList")}
           </button>
           <h3 className="selected-motor-heading">{drillDownMotor}号機の推移</h3>
 

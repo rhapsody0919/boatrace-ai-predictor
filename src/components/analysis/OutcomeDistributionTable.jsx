@@ -3,6 +3,7 @@
  * 会場別の3連単出現パターンを1着別に表示
  */
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import "./OutcomeDistributionTable.css";
 
@@ -34,6 +35,7 @@ const VENUES = [
 ];
 
 function OutcomeDistributionTable({ initialVenueCode = null }) {
+  const { t } = useTranslation();
   const [selectedVenue, setSelectedVenue] = useState(
     initialVenueCode || "03"
   );
@@ -65,7 +67,7 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
   if (loading) {
     return (
       <div className="outcome-distribution-container">
-        <div className="loading-state">データを読み込み中...</div>
+        <div className="loading-state">{t("analysis.loading")}</div>
       </div>
     );
   }
@@ -73,7 +75,7 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
   if (error) {
     return (
       <div className="outcome-distribution-container">
-        <div className="error-state">エラー: {error}</div>
+        <div className="error-state">{t("analysis.error", { message: error })}</div>
       </div>
     );
   }
@@ -97,7 +99,7 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
       </p>
 
       <div className="controls-section">
-        <label htmlFor="venue-select">ボートレース場:</label>
+        <label htmlFor="venue-select">{t("analysis.venueSelectLabel")}</label>
         <select
           id="venue-select"
           value={selectedVenue}
@@ -106,7 +108,7 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
         >
           {VENUES.map((venue) => (
             <option key={venue.code} value={venue.code}>
-              {venue.name}
+              {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
             </option>
           ))}
         </select>

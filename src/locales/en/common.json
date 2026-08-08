@@ -374,5 +374,15 @@
   "raceList": {
     "show": "▼ Choose another race",
     "hide": "▲ Collapse race list"
+  },
+  "analysis": {
+    "loading": "Loading data...",
+    "error": "Error: {{message}}",
+    "noRacesToday": "No races are held today",
+    "venueSelectTodayLabel": "Venue (racing today):",
+    "venueSelectLabel": "Venue:",
+    "raceSelectLabel": "Race:",
+    "backToList": "← Back to race list",
+    "dataLoadError": "Failed to load data"
   }
 }

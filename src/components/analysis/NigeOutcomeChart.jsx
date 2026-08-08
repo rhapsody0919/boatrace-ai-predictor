@@ -4,6 +4,7 @@
  * 既存のOutcomeDistributionTableと同じ構成だが、winning_technique='逃げ'に絞り込んだ集計
  */
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import "./OutcomeDistributionTable.css";
 
@@ -35,6 +36,7 @@ const VENUES = [
 ];
 
 function NigeOutcomeChart({ initialVenueCode = null }) {
+  const { t } = useTranslation();
   const [selectedVenue, setSelectedVenue] = useState(initialVenueCode || "03");
   const [outcomeData, setOutcomeData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
   if (loading) {
     return (
       <div className="outcome-distribution-container">
-        <div className="loading-state">データを読み込み中...</div>
+        <div className="loading-state">{t("analysis.loading")}</div>
       </div>
     );
   }
@@ -75,7 +77,7 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
   if (error) {
     return (
       <div className="outcome-distribution-container">
-        <div className="error-state">エラー: {error}</div>
+        <div className="error-state">{t("analysis.error", { message: error })}</div>
       </div>
     );
   }
@@ -109,7 +111,7 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
         >
           {VENUES.map((venue) => (
             <option key={venue.code} value={venue.code}>
-              {venue.name}
+              {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
             </option>
           ))}
         </select>

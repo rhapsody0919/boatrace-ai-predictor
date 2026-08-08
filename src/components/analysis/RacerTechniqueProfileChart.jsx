@@ -5,6 +5,7 @@
  * 会場・枠番単位の「決まり手データ分析」（BOA-150）とは異なり、選手個人単位の傾向を見る機能。
  */
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BarChart,
   Bar,
@@ -71,6 +72,7 @@ function RacerTechniqueProfileChart({
   initialVenueCode = null,
   initialRaceId = null,
 }) {
+  const { t } = useTranslation();
   const [venues, setVenues] = useState([]);
   const [selectedVenue, setSelectedVenue] = useState(initialVenueCode);
   const [races, setRaces] = useState([]);
@@ -178,11 +180,11 @@ function RacerTechniqueProfileChart({
       </p>
 
       {venues.length === 0 && !loading ? (
-        <div className="empty-state">本日開催しているレースがありません</div>
+        <div className="empty-state">{t("analysis.noRacesToday")}</div>
       ) : (
         <div className="controls-section">
           <label htmlFor="technique-profile-venue-select">
-            ボートレース場（本日開催中）:
+            {t("analysis.venueSelectTodayLabel")}
           </label>
           <select
             id="technique-profile-venue-select"
@@ -192,14 +194,14 @@ function RacerTechniqueProfileChart({
           >
             {venues.map((v) => (
               <option key={v} value={v}>
-                {VENUE_NAMES[v] || v}
+                {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
               </option>
             ))}
           </select>
 
           {races.length > 0 && (
             <>
-              <label htmlFor="technique-profile-race-select">レース:</label>
+              <label htmlFor="technique-profile-race-select">{t("analysis.raceSelectLabel")}</label>
               <select
                 id="technique-profile-race-select"
                 value={selectedRace ?? ""}
@@ -217,8 +219,8 @@ function RacerTechniqueProfileChart({
         </div>
       )}
 
-      {loading && <div className="loading-state">データを読み込み中...</div>}
-      {error && <div className="error-state">エラー: {error}</div>}
+      {loading && <div className="loading-state">{t("analysis.loading")}</div>}
+      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
 
       {!loading && !error && breakdown.length > 0 && (
         <>

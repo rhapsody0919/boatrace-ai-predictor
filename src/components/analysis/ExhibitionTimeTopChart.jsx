@@ -4,6 +4,7 @@
  * 「展示タイム最速時に実際に1着になれた確率」を可視化する
  */
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BarChart,
   Bar,
@@ -45,6 +46,7 @@ const VENUES = [
 ];
 
 function ExhibitionTimeTopChart({ initialVenueCode = null }) {
+  const { t } = useTranslation();
   const [selectedVenue, setSelectedVenue] = useState(
     initialVenueCode !== null
       ? String(initialVenueCode).padStart(2, "0")
@@ -77,7 +79,7 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
   if (loading) {
     return (
       <div className="winning-technique-container">
-        <div className="loading-state">データを読み込み中...</div>
+        <div className="loading-state">{t("analysis.loading")}</div>
       </div>
     );
   }
@@ -85,7 +87,7 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
   if (error) {
     return (
       <div className="winning-technique-container">
-        <div className="error-state">エラー: {error}</div>
+        <div className="error-state">{t("analysis.error", { message: error })}</div>
       </div>
     );
   }
@@ -127,7 +129,7 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
         >
           {VENUES.map((venue) => (
             <option key={venue.code} value={venue.code}>
-              {venue.name}
+              {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
             </option>
           ))}
         </select>
