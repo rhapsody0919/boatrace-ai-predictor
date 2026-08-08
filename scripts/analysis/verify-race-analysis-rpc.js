@@ -320,18 +320,18 @@ const CHECKS = [
   {
     rpc: "get_race_technique_profile",
     legacy: legacyTechniqueProfile,
-    compare: (a, b) =>
-      a.boat_number === b.boat_number &&
-      a.win_count === b.win_count &&
-      a.techniques.length === b.techniques.length &&
-      a.techniques.every((t, i) => {
-        const u = b.techniques[i];
-        return (
-          t.technique === u.technique &&
-          t.count === u.count &&
-          near(t.percentage, u.percentage)
-        );
-      }),
+    // 同数タイの並び順は旧実装が非決定的（Map挿入順）だったため、
+    // 並び順ではなく「決まり手→件数・割合」の集合として比較する
+    compare: (a, b) => {
+      if (a.boat_number !== b.boat_number) return false;
+      if (a.win_count !== b.win_count) return false;
+      if (a.techniques.length !== b.techniques.length) return false;
+      const byName = new Map(b.techniques.map((t) => [t.technique, t]));
+      return a.techniques.every((t) => {
+        const u = byName.get(t.technique);
+        return u && t.count === u.count && near(t.percentage, u.percentage);
+      });
+    },
   },
   {
     rpc: "get_race_return_rate",
