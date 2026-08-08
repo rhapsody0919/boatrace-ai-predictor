@@ -1,0 +1,92 @@
+{
+  "generatedAt": "2026-07-24T12:42:29.890Z",
+  "days": 30,
+  "byLanguage": {
+    "ja": {
+      "pv": 22163,
+      "users": 1708
+    },
+    "en": {
+      "pv": 98,
+      "users": 37
+    },
+    "zh-TW": {
+      "pv": 2,
+      "users": 1
+    },
+    "ko": {
+      "pv": 0,
+      "users": 0
+    }
+  },
+  "shareOfPv": {
+    "en": 0.44,
+    "zh-TW": 0.01,
+    "ko": 0
+  },
+  "languageSwitches": 32,
+  "byCountry": {
+    "en": [
+      {
+        "country": "United States",
+        "users": 17,
+        "pv": 34
+      },
+      {
+        "country": "Japan",
+        "users": 16,
+        "pv": 59
+      },
+      {
+        "country": "Canada",
+        "users": 1,
+        "pv": 2
+      },
+      {
+        "country": "Germany",
+        "users": 1,
+        "pv": 1
+      },
+      {
+        "country": "Poland",
+        "users": 1,
+        "pv": 2
+      }
+    ],
+    "zh-TW": [
+      {
+        "country": "Japan",
+        "users": 1,
+        "pv": 2
+      }
+    ],
+    "ko": []
+  },
+  "bySource": {
+    "en": [
+      {
+        "channel": "Direct",
+        "sessions": 22
+      },
+      {
+        "channel": "Organic Search",
+        "sessions": 15
+      },
+      {
+        "channel": "AI Assistant",
+        "sessions": 2
+      },
+      {
+        "channel": "Unassigned",
+        "sessions": 2
+      }
+    ],
+    "zh-TW": [
+      {
+        "channel": "Organic Search",
+        "sessions": 1
+      }
+    ],
+    "ko": []
+  }
+}
