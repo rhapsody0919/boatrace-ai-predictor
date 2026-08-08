@@ -446,6 +446,22 @@ test.describe("レースページ再設計（BOA-168）", () => {
   });
 });
 
+test.describe("ホームズ予想（α版・非公開リンク）", () => {
+  test("/holmes のアドラータブで順列確率の実測値が表示される", async ({
+    page,
+  }) => {
+    await page.goto("/holmes");
+    await page.click('.holmes-tab:has-text("アドラー")');
+    await expect(page.locator(".holmes-detective-name")).toHaveText(
+      "アドラー予想",
+    );
+    // モデルJSON（data/adler/model.json）由来の実測値グリッドが描画される
+    await expect(page.locator(".adler-stat").first()).toBeVisible();
+    // 当日データの有無に依存しないモデル情報（フィットレース数）が数値で出ている
+    await expect(page.locator(".adler-stat-value").nth(3)).not.toHaveText("—");
+  });
+});
+
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {
   test("ブログ記事詳細ページのtitleが空にならない", async ({ page }) => {
     await page.goto("/blog/rough-race-signals");

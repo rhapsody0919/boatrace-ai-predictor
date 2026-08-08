@@ -81,7 +81,9 @@ async function fetchTodayPredictions(date) {
     .select("race_id, model_id, top_pick, top_2nd, top_3rd")
     .in("model_id", BASE_MODELS)
     .eq("is_shadow", false)
-    .like("race_id", `${date}%`);
+    // 前方一致 LIKE は btree インデックスに乗らず、テーブル成長で statement timeout
+    // になる（本番で発生）。race_id は日付プレフィックスの辞書順なので範囲条件で絞る
+    .gte("race_id", date).lt("race_id", `${date}~`);
 
   if (error) throw new Error(`predictions fetch error: ${error.message}`);
   return data || [];
