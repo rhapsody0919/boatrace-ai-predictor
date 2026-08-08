@@ -241,7 +241,7 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
                     }
                   >
                     <td className="rank">{row.boat_number}</td>
-                    <td>{row.player_name?.replace(/\s+/g, "")}</td>
+                    <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
                     <td className="rate">{row.win_rate?.toFixed(2)}</td>
                     <td className="rate">
                       {row.past_win_rate !== null

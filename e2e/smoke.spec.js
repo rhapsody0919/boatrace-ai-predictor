@@ -71,6 +71,28 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
   });
 });
 
+test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
+  test("未翻訳ページ（/en/blog等）はja版へリダイレクトされlang=jaで配信される", async ({
+    page,
+  }) => {
+    await page.goto("/en/blog");
+    await expect(page).toHaveURL(/\/blog$/);
+    // lang属性はLanguageSyncのeffectで非同期に同期されるためポーリングで待つ
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.lang))
+      .toBe("ja");
+  });
+
+  test("翻訳済みページ（/en/guide）はリダイレクトされずlang=enで配信される", async ({
+    page,
+  }) => {
+    await page.goto("/en/guide");
+    await expect(page).toHaveURL(/\/en\/guide$/);
+    const lang = await page.evaluate(() => document.documentElement.lang);
+    expect(lang).toBe("en");
+  });
+});
+
 test.describe("その他の主要ページ", () => {
   test("ブログ一覧が表示される", async ({ page }) => {
     await page.goto("/blog");

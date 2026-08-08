@@ -202,7 +202,7 @@ function RacerBoatReturnRateChart({
                   }`}
                 >
                   <td className="rank">{row.boat_number}</td>
-                  <td>{row.player_name?.replace(/\s+/g, "")}</td>
+                  <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
                   <td className="rate">{row.sample_count}</td>
                   <td className="rate">
                     {row.win_return_rate !== null

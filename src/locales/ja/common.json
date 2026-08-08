@@ -154,7 +154,9 @@
     "blogDesc": "予想のコツ、会場別攻略、データ分析手法など、勝率アップに役立つ情報をお届けします",
     "viewAllPosts": "全てのブログ記事を見る →",
     "disclaimer": "※本サイトはAIによる予測情報を提供するものであり、結果を保証するものではありません",
-    "blogLastUpdated": "ブログ最終更新: {{date}}"
+    "blogLastUpdated": "ブログ最終更新: {{date}}",
+    "tbd": "未定",
+    "jstNote": ""
   },
   "footer": {
     "blog": "ブログ",

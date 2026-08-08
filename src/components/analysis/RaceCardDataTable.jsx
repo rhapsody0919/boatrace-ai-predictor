@@ -229,7 +229,7 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
                 return (
                   <tr key={row.boat_number}>
                     <td className="rcd-boat">{row.boat_number}</td>
-                    <td className="rcd-name">
+                    <td className="rcd-name" translate="no">
                       {row.player_name?.replace(/\s+/g, "")}
                     </td>
                     <td>{row.grade ?? "—"}</td>

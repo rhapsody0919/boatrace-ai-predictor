@@ -839,7 +839,10 @@ function App({ tab = "races" }) {
                                     {t("home.deadline")}
                                   </span>
                                   <span className="value">
-                                    {race.startTime}
+                                    {!race.startTime ||
+                                    race.startTime === "未定"
+                                      ? t("home.tbd")
+                                      : `${race.startTime}${t("home.jstNote")}`}
                                   </span>
                                 </div>
                                 {isFinished && (

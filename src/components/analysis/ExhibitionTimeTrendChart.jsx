@@ -246,7 +246,7 @@ function ExhibitionTimeTrendChart({
                     }
                   >
                     <td className="rank">{row.boat_number}</td>
-                    <td>{row.player_name?.replace(/\s+/g, "")}</td>
+                    <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
                     <td className="rate">
                       {row.exhibition_time !== null
                         ? row.exhibition_time.toFixed(2)

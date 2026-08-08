@@ -243,7 +243,7 @@ function MotorConditionChart({
                     onClick={() => setDrillDownMotor(row.motor_number)}
                   >
                     <td className="rank">{row.boat_number}</td>
-                    <td>{row.player_name?.replace(/\s+/g, "")}</td>
+                    <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
                     <td className="motor-num">{row.motor_number}号機</td>
                     <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
                     <td className="rate">{row.motor_3rate?.toFixed(2)}</td>

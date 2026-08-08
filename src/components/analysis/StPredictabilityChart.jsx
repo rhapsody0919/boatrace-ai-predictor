@@ -245,7 +245,7 @@ function StPredictabilityChart({
                     }
                   >
                     <td className="rank">{row.boat_number}</td>
-                    <td>{row.player_name?.replace(/\s+/g, "")}</td>
+                    <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
                     <td className="rate">
                       {row.exhibition_st !== null
                         ? row.exhibition_st.toFixed(2)
