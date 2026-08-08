@@ -9,7 +9,7 @@ BOA-103（機械学習・深層学習モデルの検討）の一環として、�
 
 | 探偵 | 手法 | 役割 | 状況 |
 |------|------|------|------|
-| 🩺 ワトソン | LightGBM (LambdaRank) | 順位予測 | 未実装 |
+| 🩺 ワトソン | LightGBM (LambdaRank) | 順位予測 | 実装済み（v1・SHAP診断付き） |
 | 💎 アドラー | 位置別温度付き Plackett-Luce | 順列確率予測 | 実装済み（軽量版・温度フィット） |
 | 🏛️ マイクロフト | Transformer（選手時系列） | 順位予測（切り札） | 未実装 |
 | 🎩 モリアーティ | オッズ条件付き校正 + Kelly | 賭け方の最適化（メタ） | 実装済み・改善済み |
@@ -107,12 +107,20 @@ JRA研究（arXiv:2509.14645）の「締切直前のオッズ変化が予測情�
 
 ## 4. 未実装手法のロードマップ
 
-### 優先度A: ワトソン（LightGBM）
-- 条件付きロジット（実装済み）が超えるべきベースラインになった
-- Python + LightGBM の学習環境が必要（本リポジトリはNode.js）
-- 設計指針: レース内相対化特徴量 / オッズあり・なし両方を学習して
-  ΔR² で自前特徴量の真の価値を計測 / 時系列 walk-forward 必須 /
-  LambdaRank と multiclass+校正 の両方を比較
+### 優先度A: ワトソン（LightGBM）— v1 実装済み
+- `scripts/ml/train_watson.py`: LambdaRank（relevance 1着=3/2着=2/3着=1）+
+  レース内 softmax 温度校正。ポアロと同じ `features.py` 基盤（36特徴量・
+  レース内相対化済み）を流用
+- 実測（時系列分割 test 21,402R）: top1的中率 56.9% / AUC 0.845 /
+  NDCG@3 0.742。ポアロV2（AUC 0.847・的中率 56.8%）と同水準
+- **ΔR² = +0.059**（オッズ単独 R² 0.222 → Benter結合 0.281、eval 3,607R）。
+  市場への上乗せ情報はシャーロック（+0.06）と同等を確認
+- オッズは特徴量に入れない設計（日次推論 08/12/16 JST 時点で未存在のため
+  学習/評価専用。`export-training-data.js` が odds.csv を出力）
+- 配信: `predict_watson.py` → `generate-watson-predictions.js` →
+  `watson_predictions` テーブル（generate-poirot.yml に相乗り）。
+  診断ポイントは LightGBM `pred_contrib`（TreeSHAP）の上位3特徴量
+- 残タスク: multiclass+校正との厳密比較、オッズ結合勝率のタブ表示・EV
 
 ### 優先度B: アドラー（Plackett-Luce）— 軽量版実装済み
 - 軽量版を実装済み: シャーロックの勝率を効用として位置別温度付きPLで

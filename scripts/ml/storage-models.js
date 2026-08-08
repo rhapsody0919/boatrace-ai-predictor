@@ -25,7 +25,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MODELS_DIR = path.join(__dirname, "models");
 
 const BUCKET = "poirot";
-const MODEL_FILES = ["rf_v1.pkl", "lgbm_v2.pkl"];
+const MODEL_FILES = ["rf_v1.pkl", "lgbm_v2.pkl", "watson_v1.pkl"];
 const PREFIX = "models";
 
 async function ensureBucket() {
