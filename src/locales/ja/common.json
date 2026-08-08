@@ -313,8 +313,9 @@
     "rowLocalWinRate": "当地勝率",
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
-    "rowCourseRate": "コース勝率",
-    "loading": "分析データを読み込み中…"
+    "rowCourseRate": "進入コース勝率",
+    "loading": "分析データを読み込み中…",
+    "motorResetNote": "交換直後"
   },
   "aiSection": {
     "title": "AIデータ分析",
@@ -358,9 +359,16 @@
       "exSt": "展示ST",
       "exhibition": "展示T",
       "courseRate": "コース",
-      "returnRate": "回収率"
+      "returnRate": "回収率",
+      "technique": "決まり手"
     },
     "itemTechniqueRank": "決まり手「{{technique}}」は過去90日の勝ちパターン{{rank}}位（{{pct}}%）",
-    "colGrade": "級別"
+    "colGrade": "級別",
+    "showOutBoats": "▼ 着外の{{n}}艇の詳細も見る",
+    "hideOutBoats": "▲ 着外の艇をたたむ"
+  },
+  "raceList": {
+    "show": "▼ 他のレースを選ぶ",
+    "hide": "▲ レース一覧をたたむ"
   }
 }

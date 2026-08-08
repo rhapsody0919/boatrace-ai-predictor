@@ -57,6 +57,25 @@
 
 .race-review-all-wrapper {
   overflow-x: auto;
+  position: relative;
+}
+
+/* モバイルでは横スクロールに気づきにくいため右端にフェードのヒントを出す */
+@media (max-width: 768px) {
+  .race-review-all {
+    position: relative;
+  }
+
+  .race-review-all::after {
+    content: "";
+    position: absolute;
+    top: 28px;
+    right: 0;
+    bottom: 28px;
+    width: 24px;
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.9), transparent);
+    pointer-events: none;
+  }
 }
 
 .race-review-all-table {
@@ -246,6 +265,25 @@
 .race-review-mismatch {
   background: rgba(245, 158, 11, 0.08);
   border-left: var(--border-width-3, 3px) solid var(--color-warning);
+}
+
+.race-review-out-toggle {
+  display: block;
+  width: 100%;
+  margin: calc(-1 * var(--spacing-2)) 0 var(--spacing-4);
+  padding: var(--spacing-2);
+  background: var(--color-gray-50);
+  border: var(--border-width-1) dashed var(--color-gray-200);
+  border-radius: var(--radius-md);
+  color: var(--color-primary-600);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.race-review-out-toggle:hover {
+  background: var(--color-gray-100);
 }
 
 /* --- AI検証 --- */

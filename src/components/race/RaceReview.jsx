@@ -7,6 +7,7 @@
  * 判定は全てレース内順位・一致判定のみ（指標定義はraceIndicators.jsxで
  * データ出走表と共通化）。4〜6着の個別着順はDBに未保存のため「着外」で扱う。
  */
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { getRaceId } from "../../utils/raceId";
@@ -30,6 +31,12 @@ function RaceReview({ prediction, selectedRace }) {
     includeResult: true,
   });
   const { techniqueProfile, resultSummary, loading } = analysis;
+
+  // 着外艇の言語化ブロックはモバイルではデフォルト折りたたみ（縦長対策）。
+  // デスクトップ（768px以上）はデフォルト展開
+  const [showOutBoats, setShowOutBoats] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768,
+  );
 
   if (!finished || !raceId) return null;
 
@@ -210,78 +217,92 @@ function RaceReview({ prediction, selectedRace }) {
             <p className="race-review-legend">{t("review.allBoatsLegend")}</p>
           </div>
 
-          {/* 全艇の言語化（1〜3着 + 着外の各艇） */}
+          {/* 全艇の言語化（1〜3着 + 着外の各艇）。着外はトグルで折りたたみ可能 */}
           <div className="race-review-boats">
-            {orderedBoats.map(({ boat, position }) => {
-              const good = position !== null;
-              const { matches, mismatches } = itemsFor(boat, good);
-              if (boat === winner && winnerTechniqueItem) {
-                if (winnerTechniqueItem.type === "match")
-                  matches.push({
-                    key: "technique",
-                    text: winnerTechniqueItem.text,
-                  });
-                else
-                  mismatches.push({
-                    key: "technique",
-                    text: winnerTechniqueItem.text,
-                  });
-              }
-              const player = playerOf(boat);
-              return (
-                <div
-                  key={boat}
-                  className={`race-review-boat-block ${boat === winner ? "race-review-boat-winner" : ""}`}
-                >
-                  <h4 className="race-review-boat-heading">
-                    <span
-                      className={`race-review-finish-badge ${position !== null ? `race-review-finish-${position}` : ""}`}
-                    >
-                      {position !== null
-                        ? t("review.finishPosition", { position })
-                        : t("review.finishOut")}
-                    </span>
-                    {boat}. {player?.name?.replace(/\s+/g, "") ?? ""}
-                    {player?.grade && (
+            {orderedBoats
+              .filter(({ position }) => showOutBoats || position !== null)
+              .map(({ boat, position }) => {
+                const good = position !== null;
+                const { matches, mismatches } = itemsFor(boat, good);
+                if (boat === winner && winnerTechniqueItem) {
+                  if (winnerTechniqueItem.type === "match")
+                    matches.push({
+                      key: "technique",
+                      text: winnerTechniqueItem.text,
+                    });
+                  else
+                    mismatches.push({
+                      key: "technique",
+                      text: winnerTechniqueItem.text,
+                    });
+                }
+                const player = playerOf(boat);
+                return (
+                  <div
+                    key={boat}
+                    className={`race-review-boat-block ${boat === winner ? "race-review-boat-winner" : ""}`}
+                  >
+                    <h4 className="race-review-boat-heading">
                       <span
-                        className={`race-review-grade-badge ${player.grade === "A1" ? "race-review-grade-a1" : ""}`}
+                        className={`race-review-finish-badge ${position !== null ? `race-review-finish-${position}` : ""}`}
                       >
-                        {player.grade}
+                        {position !== null
+                          ? t("review.finishPosition", { position })
+                          : t("review.finishOut")}
                       </span>
+                      {boat}. {player?.name?.replace(/\s+/g, "") ?? ""}
+                      {player?.grade && (
+                        <span
+                          className={`race-review-grade-badge ${player.grade === "A1" ? "race-review-grade-a1" : ""}`}
+                        >
+                          {player.grade}
+                        </span>
+                      )}
+                    </h4>
+                    {matches.length === 0 && mismatches.length === 0 ? (
+                      <p className="race-review-no-items">
+                        {t("review.noItems")}
+                      </p>
+                    ) : (
+                      <>
+                        {matches.length > 0 && (
+                          <div className="race-review-group race-review-match">
+                            <h5>✅ {t("review.matchHeading")}</h5>
+                            <ul>
+                              {matches.map((item) => (
+                                <li key={item.key}>{item.text}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {mismatches.length > 0 && (
+                          <div className="race-review-group race-review-mismatch">
+                            <h5>⚠️ {t("review.mismatchHeading")}</h5>
+                            <ul>
+                              {mismatches.map((item) => (
+                                <li key={item.key}>{item.text}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </>
                     )}
-                  </h4>
-                  {matches.length === 0 && mismatches.length === 0 ? (
-                    <p className="race-review-no-items">
-                      {t("review.noItems")}
-                    </p>
-                  ) : (
-                    <>
-                      {matches.length > 0 && (
-                        <div className="race-review-group race-review-match">
-                          <h5>✅ {t("review.matchHeading")}</h5>
-                          <ul>
-                            {matches.map((item) => (
-                              <li key={item.key}>{item.text}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {mismatches.length > 0 && (
-                        <div className="race-review-group race-review-mismatch">
-                          <h5>⚠️ {t("review.mismatchHeading")}</h5>
-                          <ul>
-                            {mismatches.map((item) => (
-                              <li key={item.key}>{item.text}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
+                  </div>
+                );
+              })}
           </div>
+
+          {outBoats.length > 0 && (
+            <button
+              type="button"
+              className="race-review-out-toggle"
+              onClick={() => setShowOutBoats((prev) => !prev)}
+            >
+              {showOutBoats
+                ? t("review.hideOutBoats")
+                : t("review.showOutBoats", { n: outBoats.length })}
+            </button>
+          )}
 
           {aiPick !== null && (
             <div className="race-review-ai">

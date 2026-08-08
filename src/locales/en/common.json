@@ -315,8 +315,9 @@
     "rowLocalWinRate": "Local win rate",
     "rowAvgSt": "Avg ST",
     "rowExSt": "Exhibition ST",
-    "rowCourseRate": "Course win rate",
-    "loading": "Loading analytics…"
+    "rowCourseRate": "Entry course win rate",
+    "loading": "Loading analytics…",
+    "motorResetNote": "New motors"
   },
   "aiSection": {
     "title": "AI Data Analysis",
@@ -360,9 +361,16 @@
       "exSt": "Ex.ST",
       "exhibition": "Ex.time",
       "courseRate": "Course",
-      "returnRate": "Return"
+      "returnRate": "Return",
+      "technique": "Style"
     },
     "itemTechniqueRank": "Winning technique \"{{technique}}\" is No.{{rank}} ({{pct}}%) in this racer's 90-day winning patterns",
-    "colGrade": "Class"
+    "colGrade": "Class",
+    "showOutBoats": "▼ Show details for {{n}} out boats",
+    "hideOutBoats": "▲ Collapse out boats"
+  },
+  "raceList": {
+    "show": "▼ Choose another race",
+    "hide": "▲ Collapse race list"
   }
 }
