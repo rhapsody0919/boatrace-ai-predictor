@@ -2126,6 +2126,22 @@ export const supabaseDataService = {
         return [];
       }
 
+      // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
+      // 未適用環境では旧クライアント集計にフォールバックする
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "get_race_st_predictability",
+        { p_race_id: raceId },
+      );
+      if (!rpcError && Array.isArray(rpcData)) {
+        return rpcData;
+      }
+      if (rpcError) {
+        console.warn(
+          "get_race_st_predictability RPC未適用のため旧ロジックで取得:",
+          rpcError.message,
+        );
+      }
+
       const { data: entries, error: entriesError } = await supabase
         .from("race_entries")
         .select("boat_number, player_name, racer_id")
@@ -2339,6 +2355,22 @@ export const supabaseDataService = {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
+      }
+
+      // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
+      // 未適用環境では旧クライアント集計にフォールバックする
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "get_race_exhibition_trend",
+        { p_race_id: raceId },
+      );
+      if (!rpcError && Array.isArray(rpcData)) {
+        return rpcData;
+      }
+      if (rpcError) {
+        console.warn(
+          "get_race_exhibition_trend RPC未適用のため旧ロジックで取得:",
+          rpcError.message,
+        );
       }
 
       const { data: entries, error: entriesError } = await supabase
@@ -2620,6 +2652,22 @@ export const supabaseDataService = {
         return [];
       }
 
+      // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
+      // 未適用環境では旧クライアント集計にフォールバックする
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "get_race_return_rate",
+        { p_race_id: raceId },
+      );
+      if (!rpcError && Array.isArray(rpcData)) {
+        return rpcData;
+      }
+      if (rpcError) {
+        console.warn(
+          "get_race_return_rate RPC未適用のため旧ロジックで取得:",
+          rpcError.message,
+        );
+      }
+
       const { data: entries, error: entriesError } = await supabase
         .from("race_entries")
         .select("boat_number, player_name, racer_id")
@@ -2863,6 +2911,22 @@ export const supabaseDataService = {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
+      }
+
+      // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
+      // 未適用環境では旧クライアント集計にフォールバックする
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "get_race_technique_profile",
+        { p_race_id: raceId },
+      );
+      if (!rpcError && Array.isArray(rpcData)) {
+        return rpcData;
+      }
+      if (rpcError) {
+        console.warn(
+          "get_race_technique_profile RPC未適用のため旧ロジックで取得:",
+          rpcError.message,
+        );
       }
 
       const { data: entries, error: entriesError } = await supabase
