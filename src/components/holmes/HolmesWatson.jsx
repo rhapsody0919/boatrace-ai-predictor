@@ -175,7 +175,9 @@ function HolmesWatson() {
           </div>
           <div className="watson-stat">
             <div className="watson-stat-value">
-              {info.deltaR2 != null ? `+${info.deltaR2.toFixed(3)}` : "—"}
+              {info.deltaR2 != null
+                ? `${info.deltaR2 >= 0 ? "+" : ""}${info.deltaR2.toFixed(3)}`
+                : "—"}
             </div>
             <div className="watson-stat-label">
               ΔR²（市場への上乗せ）

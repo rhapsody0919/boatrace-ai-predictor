@@ -216,9 +216,9 @@ def main():
     print(f"  train={train['race_id'].nunique()}R  cal={cal['race_id'].nunique()}R  "
           f"test={test['race_id'].nunique()}R")
 
-    d_tr, X_tr, y_tr, g_tr = make_rank_xy(train)
+    _, X_tr, y_tr, g_tr = make_rank_xy(train)
     d_ca, X_ca, y_ca, g_ca = make_rank_xy(cal)
-    d_te, X_te, y_te, g_te = make_rank_xy(test)
+    d_te, X_te, _, _ = make_rank_xy(test)
     cat_idx = [F.FEATURE_COLS.index(c) for c in F.CATEGORICAL_COLS]
 
     print("⚡ LambdaRank 学習中...")
