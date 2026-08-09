@@ -67,7 +67,7 @@ function AttackDefenseAnalysis({
             : (list[0] ?? null);
         setSelectedVenue(preferred);
       } catch (err) {
-        setError(err.message || "会場一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load venues with today's races:", err);
       } finally {
         setLoading(false);
@@ -96,7 +96,7 @@ function AttackDefenseAnalysis({
         setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
         pendingInitialRaceId.current = null;
       } catch (err) {
-        setError(err.message || "レース一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load today's races:", err);
       } finally {
         setLoading(false);
@@ -123,7 +123,7 @@ function AttackDefenseAnalysis({
           })),
         );
       } catch (err) {
-        setError(err.message || "超展開データの取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load attack/defense data:", err);
       } finally {
         setLoading(false);
@@ -134,10 +134,8 @@ function AttackDefenseAnalysis({
 
   return (
     <div className="motor-condition-container">
-      <h2>⚔️ 超展開データ</h2>
-      <p className="section-description">
-        本日開催中のレースを選ぶと、出走する6選手それぞれの進入コースでの「攻め手」（差し・まくり等でどう攻めるか）と、1コースの「守り手」（どう攻められて敗れるか）の実績分布がわかります。
-      </p>
+      <h2>{t("analysis.ad.title")}</h2>
+      <p className="section-description">{t("analysis.ad.description")}</p>
 
       {venues.length === 0 && !loading ? (
         <div className="empty-state">{t("analysis.noRacesToday")}</div>
@@ -161,7 +159,9 @@ function AttackDefenseAnalysis({
 
           {races.length > 0 && (
             <>
-              <label htmlFor="attack-defense-race-select">{t("analysis.raceSelectLabel")}</label>
+              <label htmlFor="attack-defense-race-select">
+                {t("analysis.raceSelectLabel")}
+              </label>
               <select
                 id="attack-defense-race-select"
                 value={selectedRace ?? ""}
@@ -170,7 +170,10 @@ function AttackDefenseAnalysis({
               >
                 {races.map((r) => (
                   <option key={r.race_id} value={r.race_id}>
-                    {r.race_number}R（{r.start_time?.slice(0, 5)}〜）
+                    {t("analysis.raceOption", {
+                      number: r.race_number,
+                      time: r.start_time?.slice(0, 5),
+                    })}
                   </option>
                 ))}
               </select>
@@ -180,16 +183,18 @@ function AttackDefenseAnalysis({
       )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
+      {error && (
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
+      )}
 
       {!loading && !error && racerStats && racerStats.length >= 6 && (
         <AttackDefenseTable racerStats={racerStats} players={players} />
       )}
 
       {!loading && !error && (!racerStats || racerStats.length < 6) && (
-        <div className="empty-state">
-          このレースの超展開データがまだ生成されていません
-        </div>
+        <div className="empty-state">{t("analysis.ad.empty")}</div>
       )}
     </div>
   );

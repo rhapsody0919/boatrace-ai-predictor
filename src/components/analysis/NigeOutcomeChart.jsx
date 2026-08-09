@@ -54,9 +54,7 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
           await supabaseDataService.getNigeOutcomeDistribution(venueCode);
         setOutcomeData(data);
       } catch (err) {
-        setError(
-          err.message || "逃げ成功時の複勝分布データの取得に失敗しました",
-        );
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load nige outcome distribution:", err);
       } finally {
         setLoading(false);
@@ -77,7 +75,9 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
   if (error) {
     return (
       <div className="outcome-distribution-container">
-        <div className="error-state">{t("analysis.error", { message: error })}</div>
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
       </div>
     );
   }
@@ -85,24 +85,23 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
   if (!outcomeData || !outcomeData.data) {
     return (
       <div className="outcome-distribution-container">
-        <div className="empty-state">
-          逃げ成功時の複勝分布データが見つかりません
-        </div>
+        <div className="empty-state">{t("analysis.nige.empty")}</div>
       </div>
     );
   }
 
   const { venue_name, total_races, last_updated, data } = outcomeData;
+  const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venue_name);
 
   return (
     <div className="outcome-distribution-container">
-      <h2>🏃 逃げ成功時の複勝分布</h2>
-      <p className="section-description">
-        過去90日間のボートレース結果から、「逃げ（先頭独走）」で1着になったレースに絞って、2着・3着がどのコース組み合わせで出やすいかを分析しています。1号艇以外が逃げたケースも含みます。
-      </p>
+      <h2>{t("analysis.nige.title")}</h2>
+      <p className="section-description">{t("analysis.nige.description")}</p>
 
       <div className="controls-section">
-        <label htmlFor="nige-venue-select">ボートレース場:</label>
+        <label htmlFor="nige-venue-select">
+          {t("analysis.venueSelectLabel")}
+        </label>
         <select
           id="nige-venue-select"
           value={selectedVenue}
@@ -120,10 +119,12 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
       {total_races > 0 && (
         <div className="summary-info">
           <p>
-            <strong>{venue_name}</strong> - 過去90日間の逃げ成功{" "}
-            <strong>{total_races}</strong>レース
+            <strong>{venueLabel}</strong> -{" "}
+            {t("analysis.nige.summary", { count: total_races })}
             {last_updated && (
-              <span className="update-date">（最終更新: {last_updated}）</span>
+              <span className="update-date">
+                {t("analysis.lastUpdated", { date: last_updated })}
+              </span>
             )}
           </p>
         </div>
@@ -136,10 +137,10 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
             onClick={() => setTopPatternsExpanded(!topPatternsExpanded)}
           >
             <span className="chevron">{topPatternsExpanded ? "▼" : "▶"}</span>
-            <h3>📈 出現率ランキング</h3>
+            <h3>{t("analysis.rankingTitle")}</h3>
           </button>
           <div className="limit-controls">
-            <label>表示件数:</label>
+            <label>{t("analysis.limitLabel")}</label>
             {[10, 20, 50].map((limit) => (
               <button
                 key={limit}
@@ -176,11 +177,11 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
                 <table className="top-patterns-table">
                   <thead>
                     <tr>
-                      <th>順位</th>
-                      <th>3連単</th>
-                      <th>出現回数</th>
-                      <th>出現率 (%)</th>
-                      <th>平均配当 (円)</th>
+                      <th>{t("analysis.rankHeader")}</th>
+                      <th>{t("analysis.trifectaHeader")}</th>
+                      <th>{t("analysis.countHeader")}</th>
+                      <th>{t("analysis.ratePctHeader")}</th>
+                      <th>{t("analysis.avgPayoutHeader")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -217,8 +218,10 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
           return (
             <div key={firstBoat} className="outcome-tab">
               <div className="tab-header">
-                <h3>{firstBoat}号艇が逃げて1着</h3>
-                <span className="pattern-count">{patterns.length}パターン</span>
+                <h3>{t("analysis.nige.firstHeading", { n: firstBoat })}</h3>
+                <span className="pattern-count">
+                  {t("analysis.patternCount", { n: patterns.length })}
+                </span>
               </div>
 
               {patterns.length > 0 ? (
@@ -226,11 +229,11 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
                   <table className="outcome-table">
                     <thead>
                       <tr>
-                        <th>2着</th>
-                        <th>3着</th>
-                        <th>出現回数</th>
-                        <th>出現率 (%)</th>
-                        <th>平均配当 (円)</th>
+                        <th>{t("analysis.secondHeader")}</th>
+                        <th>{t("analysis.thirdHeader")}</th>
+                        <th>{t("analysis.countHeader")}</th>
+                        <th>{t("analysis.ratePctHeader")}</th>
+                        <th>{t("analysis.avgPayoutHeader")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -253,17 +256,14 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
                   </table>
                 </div>
               ) : (
-                <div className="no-patterns">データなし</div>
+                <div className="no-patterns">{t("analysis.noData")}</div>
               )}
             </div>
           );
         })}
       </div>
 
-      <p className="table-note">
-        💡
-        出現率はその艇が逃げて1着になったレース内での確率です。1号艇以外の逃げは件数が少なくなる傾向があります。
-      </p>
+      <p className="table-note">{t("analysis.nige.note")}</p>
     </div>
   );
 }

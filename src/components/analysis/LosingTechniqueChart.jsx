@@ -16,6 +16,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { translateTechnique } from "../race/raceIndicators";
 import "./WinningTechniqueChart.css";
 
 const VENUES = [
@@ -88,7 +89,7 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
           await supabaseDataService.getLosingTechniqueStats(venueCode);
         setStatsData(data);
       } catch (err) {
-        setError(err.message || "負け決まり手データの取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load losing technique stats:", err);
       } finally {
         setLoading(false);
@@ -109,7 +110,9 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
   if (error) {
     return (
       <div className="winning-technique-container">
-        <div className="error-state">{t("analysis.error", { message: error })}</div>
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
       </div>
     );
   }
@@ -121,28 +124,33 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
   ) {
     return (
       <div className="winning-technique-container">
-        <div className="empty-state">負け決まり手データが見つかりません</div>
+        <div className="empty-state">{t("analysis.lt.empty")}</div>
       </div>
     );
   }
 
   const { venue_name, last_updated, data } = statsData;
+  const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venue_name);
+
+  // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
+  const techniqueLabel = (name) => translateTechnique(t, name);
 
   const allTechniques = [
     ...new Set(
       Object.values(data).flatMap((boat) =>
-        boat.techniques.map((t) => t.technique),
+        boat.techniques.map((tech) => tech.technique),
       ),
     ),
   ];
 
+  // dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
   const chartData = [1, 2, 3, 4, 5, 6]
     .filter((boatNumber) => data[boatNumber])
     .map((boatNumber) => {
-      const row = { boat_number: `${boatNumber}号艇` };
+      const row = { boat_number: t("analysis.boatN", { n: boatNumber }) };
       allTechniques.forEach((technique) => {
         const match = data[boatNumber].techniques.find(
-          (t) => t.technique === technique,
+          (tech) => tech.technique === technique,
         );
         row[technique] = match ? match.percentage : 0;
       });
@@ -151,13 +159,13 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
 
   return (
     <div className="winning-technique-container">
-      <h2>💔 負け決まり手データ分析</h2>
-      <p className="section-description">
-        過去90日間のレース結果から、各ボートレース場で「1着を逃した際、勝者がどの決まり手（逃げ・差し・まくり等）で勝っているか」を枠番別に分析しています。
-      </p>
+      <h2>{t("analysis.lt.title")}</h2>
+      <p className="section-description">{t("analysis.lt.description")}</p>
 
       <div className="controls-section">
-        <label htmlFor="losing-venue-select">ボートレース場:</label>
+        <label htmlFor="losing-venue-select">
+          {t("analysis.venueSelectLabel")}
+        </label>
         <select
           id="losing-venue-select"
           value={selectedVenue}
@@ -175,9 +183,11 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
       {venue_name && (
         <div className="summary-info">
           <p>
-            <strong>{venue_name}</strong> - 過去90日間の負け決まり手構成比
+            <strong>{venueLabel}</strong> - {t("analysis.lt.summary")}
             {last_updated && (
-              <span className="update-date">（最終更新: {last_updated}）</span>
+              <span className="update-date">
+                {t("analysis.lastUpdated", { date: last_updated })}
+              </span>
             )}
           </p>
         </div>
@@ -192,7 +202,7 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
           <XAxis dataKey="boat_number" />
           <YAxis
             label={{
-              value: "出現割合 (%)",
+              value: t("analysis.sharePctHeader"),
               angle: -90,
               position: "insideLeft",
             }}
@@ -205,6 +215,7 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
             <Bar
               key={technique}
               dataKey={technique}
+              name={techniqueLabel(technique)}
               stackId="technique"
               fill={techniqueColor(technique, idx)}
             />
@@ -216,29 +227,31 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
         <table className="winning-technique-table">
           <thead>
             <tr>
-              <th>枠番</th>
-              <th>決まり手</th>
-              <th>出現回数</th>
-              <th>出現割合 (%)</th>
+              <th>{t("analysis.laneHeader")}</th>
+              <th>{t("analysis.techniqueHeader")}</th>
+              <th>{t("analysis.countHeader")}</th>
+              <th>{t("analysis.sharePctHeader")}</th>
             </tr>
           </thead>
           <tbody>
             {[1, 2, 3, 4, 5, 6]
               .filter((boatNumber) => data[boatNumber])
               .flatMap((boatNumber) =>
-                data[boatNumber].techniques.map((t, idx) => (
-                  <tr key={`${boatNumber}-${t.technique}`}>
+                data[boatNumber].techniques.map((tech, idx) => (
+                  <tr key={`${boatNumber}-${tech.technique}`}>
                     {idx === 0 && (
                       <td
                         rowSpan={data[boatNumber].techniques.length}
                         className="boat-num"
                       >
-                        {boatNumber}号艇
+                        {t("analysis.boatN", { n: boatNumber })}
                       </td>
                     )}
-                    <td>{t.technique}</td>
-                    <td className="count">{t.count}</td>
-                    <td className="percentage">{t.percentage.toFixed(2)}%</td>
+                    <td>{techniqueLabel(tech.technique)}</td>
+                    <td className="count">{tech.count}</td>
+                    <td className="percentage">
+                      {tech.percentage.toFixed(2)}%
+                    </td>
                   </tr>
                 )),
               )}
@@ -246,10 +259,7 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
         </table>
       </div>
 
-      <p className="table-note">
-        💡
-        出現割合はその枠番が1着を逃したレース内での構成比です。「1号艇は負ける時、差される割合が高い」等の傾向が読み取れます。
-      </p>
+      <p className="table-note">{t("analysis.lt.note")}</p>
     </div>
   );
 }

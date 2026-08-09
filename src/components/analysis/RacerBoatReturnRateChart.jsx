@@ -64,7 +64,7 @@ function RacerBoatReturnRateChart({
             : (list[0] ?? null);
         setSelectedVenue(preferred);
       } catch (err) {
-        setError(err.message || "会場一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load venues with today's races:", err);
       } finally {
         setLoading(false);
@@ -93,7 +93,7 @@ function RacerBoatReturnRateChart({
         setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
         pendingInitialRaceId.current = null;
       } catch (err) {
-        setError(err.message || "レース一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load today's races:", err);
       } finally {
         setLoading(false);
@@ -112,7 +112,7 @@ function RacerBoatReturnRateChart({
           await supabaseDataService.getRaceRacerBoatReturnRate(selectedRace);
         setBreakdown(data);
       } catch (err) {
-        setError(err.message || "回収率の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load race racer boat return rate:", err);
       } finally {
         setLoading(false);
@@ -132,9 +132,9 @@ function RacerBoatReturnRateChart({
 
   return (
     <div className="motor-condition-container">
-      <h2>💰 選手×艇番別 回収率分析</h2>
+      <h2>{t("analysis.returnRate.title")}</h2>
       <p className="section-description">
-        本日開催中のレースを選ぶと、出走する6選手それぞれについて、過去180日間・同じ艇番で出走したレースでの単勝回収率・複勝回収率がわかります。勝率だけでなく、実際に買って儲かるかという視点での判断材料です。
+        {t("analysis.returnRate.description")}
       </p>
 
       {venues.length === 0 && !loading ? (
@@ -159,7 +159,9 @@ function RacerBoatReturnRateChart({
 
           {races.length > 0 && (
             <>
-              <label htmlFor="return-rate-race-select">{t("analysis.raceSelectLabel")}</label>
+              <label htmlFor="return-rate-race-select">
+                {t("analysis.raceSelectLabel")}
+              </label>
               <select
                 id="return-rate-race-select"
                 value={selectedRace ?? ""}
@@ -168,7 +170,10 @@ function RacerBoatReturnRateChart({
               >
                 {races.map((r) => (
                   <option key={r.race_id} value={r.race_id}>
-                    {r.race_number}R（{r.start_time?.slice(0, 5)}〜）
+                    {t("analysis.raceOption", {
+                      number: r.race_number,
+                      time: r.start_time?.slice(0, 5),
+                    })}
                   </option>
                 ))}
               </select>
@@ -178,18 +183,22 @@ function RacerBoatReturnRateChart({
       )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
+      {error && (
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
+      )}
 
       {!loading && !error && breakdown.length > 0 && (
         <div className="table-wrapper">
           <table className="motor-ranking-table">
             <thead>
               <tr>
-                <th>枠番</th>
-                <th>選手名</th>
-                <th>サンプル数（180日）</th>
-                <th>単勝回収率</th>
-                <th>複勝回収率</th>
+                <th>{t("analysis.laneHeader")}</th>
+                <th>{t("table.playerName")}</th>
+                <th>{t("analysis.returnRate.sample180Header")}</th>
+                <th>{t("analysis.returnRate.winReturnHeader")}</th>
+                <th>{t("analysis.returnRate.placeReturnHeader")}</th>
               </tr>
             </thead>
             <tbody>
@@ -209,12 +218,12 @@ function RacerBoatReturnRateChart({
                   <td className="rate">
                     {row.win_return_rate !== null
                       ? `${row.win_return_rate.toFixed(0)}%`
-                      : "データなし"}
+                      : t("analysis.noData")}
                   </td>
                   <td className="rate">
                     {row.place_return_rate !== null
                       ? `${row.place_return_rate.toFixed(0)}%`
-                      : "データなし"}
+                      : t("analysis.noData")}
                   </td>
                 </tr>
               ))}
@@ -223,10 +232,7 @@ function RacerBoatReturnRateChart({
         </div>
       )}
 
-      <p className="table-note">
-        💡
-        回収率は過去180日間・同じ艇番から出走した全レースを対象に、単勝/複勝を100円ずつ購入し続けた場合の払戻金合計の割合です。サンプル数が少ない選手は信頼度が低くなる点にご注意ください。
-      </p>
+      <p className="table-note">{t("analysis.returnRate.note")}</p>
     </div>
   );
 }

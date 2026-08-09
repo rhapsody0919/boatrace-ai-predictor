@@ -76,7 +76,7 @@ function ExhibitionTimeTrendChart({
             : (list[0] ?? null);
         setSelectedVenue(preferred);
       } catch (err) {
-        setError(err.message || "会場一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load venues with today's races:", err);
       } finally {
         setLoading(false);
@@ -105,7 +105,7 @@ function ExhibitionTimeTrendChart({
         setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
         pendingInitialRaceId.current = null;
       } catch (err) {
-        setError(err.message || "レース一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load today's races:", err);
       } finally {
         setLoading(false);
@@ -127,7 +127,7 @@ function ExhibitionTimeTrendChart({
           );
         setBreakdown(data);
       } catch (err) {
-        setError(err.message || "展示タイム推移の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load race exhibition time breakdown:", err);
       } finally {
         setLoading(false);
@@ -146,7 +146,7 @@ function ExhibitionTimeTrendChart({
           await supabaseDataService.getExhibitionTimeTrend(drillDownRacer);
         setTrendData(data);
       } catch (err) {
-        setError(err.message || "推移データの取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load exhibition time trend:", err);
       } finally {
         setLoading(false);
@@ -166,7 +166,7 @@ function ExhibitionTimeTrendChart({
 
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
-    展示タイム: row.avg_exhibition_time,
+    exhibition_time: row.avg_exhibition_time,
   }));
 
   const drillDownRacerName = breakdown.find(
@@ -175,10 +175,8 @@ function ExhibitionTimeTrendChart({
 
   return (
     <div className="motor-condition-container">
-      <h2>📈 選手別展示タイム推移</h2>
-      <p className="section-description">
-        本日開催中のレースを選ぶと、各選手の展示タイム（周回タイム）が過去90日間でどう推移しているかがわかります。会場・枠番単位の「展示タイム」タブとは異なり、選手個人のコンディションを見る機能です。
-      </p>
+      <h2>{t("analysis.exTrend.title")}</h2>
+      <p className="section-description">{t("analysis.exTrend.description")}</p>
 
       {venues.length === 0 && !loading ? (
         <div className="empty-state">{t("analysis.noRacesToday")}</div>
@@ -202,7 +200,9 @@ function ExhibitionTimeTrendChart({
 
           {races.length > 0 && (
             <>
-              <label htmlFor="extrend-race-select">{t("analysis.raceSelectLabel")}</label>
+              <label htmlFor="extrend-race-select">
+                {t("analysis.raceSelectLabel")}
+              </label>
               <select
                 id="extrend-race-select"
                 value={selectedRace ?? ""}
@@ -211,7 +211,10 @@ function ExhibitionTimeTrendChart({
               >
                 {races.map((r) => (
                   <option key={r.race_id} value={r.race_id}>
-                    {r.race_number}R（{r.start_time?.slice(0, 5)}〜）
+                    {t("analysis.raceOption", {
+                      number: r.race_number,
+                      time: r.start_time?.slice(0, 5),
+                    })}
                   </option>
                 ))}
               </select>
@@ -221,7 +224,11 @@ function ExhibitionTimeTrendChart({
       )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
+      {error && (
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
+      )}
 
       {!loading &&
         !error &&
@@ -231,11 +238,11 @@ function ExhibitionTimeTrendChart({
             <table className="motor-ranking-table">
               <thead>
                 <tr>
-                  <th>枠番</th>
-                  <th>選手名</th>
-                  <th>本日の展示タイム</th>
-                  <th>過去の平均展示タイム</th>
-                  <th>サンプル数</th>
+                  <th>{t("analysis.laneHeader")}</th>
+                  <th>{t("table.playerName")}</th>
+                  <th>{t("analysis.exTrend.todayTimeHeader")}</th>
+                  <th>{t("analysis.exTrend.avgTimeHeader")}</th>
+                  <th>{t("analysis.sampleCountHeader")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -248,16 +255,18 @@ function ExhibitionTimeTrendChart({
                     }
                   >
                     <td className="rank">{row.boat_number}</td>
-                    <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
+                    <td translate="no">
+                      {row.player_name?.replace(/\s+/g, "")}
+                    </td>
                     <td className="rate">
                       {row.exhibition_time !== null
                         ? row.exhibition_time.toFixed(2)
-                        : "未計測"}
+                        : t("analysis.notMeasured")}
                     </td>
                     <td className="rate">
                       {row.avg_exhibition_time !== null
                         ? row.avg_exhibition_time.toFixed(2)
-                        : "データなし"}
+                        : t("analysis.noData")}
                     </td>
                     <td className="rate">{row.sample_count}</td>
                   </tr>
@@ -275,8 +284,10 @@ function ExhibitionTimeTrendChart({
           >
             {t("analysis.backToList")}
           </button>
-          <h3 className="selected-motor-heading">
-            {drillDownRacerName?.replace(/\s+/g, "")}選手の推移
+          <h3 className="selected-motor-heading" translate="no">
+            {t("analysis.racerTrendHeading", {
+              name: drillDownRacerName?.replace(/\s+/g, ""),
+            })}
           </h3>
 
           {chartData.length > 0 ? (
@@ -289,7 +300,7 @@ function ExhibitionTimeTrendChart({
                 <XAxis dataKey="date" />
                 <YAxis
                   label={{
-                    value: "展示タイム（秒）",
+                    value: t("analysis.exTrend.yAxis"),
                     angle: -90,
                     position: "insideLeft",
                   }}
@@ -299,7 +310,8 @@ function ExhibitionTimeTrendChart({
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey="展示タイム"
+                  dataKey="exhibition_time"
+                  name={t("analysis.exTrend.legend")}
                   stroke="#0ea5e9"
                   strokeWidth={2}
                   dot={{ r: 3 }}
@@ -307,17 +319,12 @@ function ExhibitionTimeTrendChart({
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="empty-state">
-              この選手の推移データが見つかりません
-            </div>
+            <div className="empty-state">{t("analysis.racerTrendEmpty")}</div>
           )}
         </>
       )}
 
-      <p className="table-note">
-        💡
-        表の行をクリックするとその選手の展示タイムの推移が見られます。ハイライトされた行はこのレースで最も過去の平均展示タイムが速い選手です。展示タイムが継続的に遅くなっている選手は、調子を崩している可能性があります。
-      </p>
+      <p className="table-note">{t("analysis.exTrend.note")}</p>
     </div>
   );
 }

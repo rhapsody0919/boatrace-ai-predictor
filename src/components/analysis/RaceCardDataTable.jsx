@@ -85,7 +85,7 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
             : (list[0] ?? null);
         setSelectedVenue(preferred);
       } catch (err) {
-        setError(err.message || "会場一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load venues with today's races:", err);
       } finally {
         setLoading(false);
@@ -114,7 +114,7 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
         setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
         pendingInitialRaceId.current = null;
       } catch (err) {
-        setError(err.message || "レース一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load today's races:", err);
       } finally {
         setLoading(false);
@@ -136,7 +136,7 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
         setEntries(entryRows ?? []);
         setRacerStats(stats);
       } catch (err) {
-        setError(err.message || "出走表データの取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load race card data:", err);
       } finally {
         setLoading(false);
@@ -154,9 +154,9 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
 
   return (
     <div className="motor-condition-container">
-      <h2>📋 出走表データ</h2>
+      <h2>{t("analysis.raceCard.title")}</h2>
       <p className="section-description">
-        本日開催中のレースを選ぶと、出走する6選手の勝率・モーター・平均ST・展示・コース勝率などの出走表データを枠番順に一覧できます。数値の色はレース内の上位3位を示します。
+        {t("analysis.raceCard.description")}
       </p>
 
       {venues.length === 0 && !loading ? (
@@ -181,7 +181,9 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
 
           {races.length > 0 && (
             <>
-              <label htmlFor="race-card-race-select">{t("analysis.raceSelectLabel")}</label>
+              <label htmlFor="race-card-race-select">
+                {t("analysis.raceSelectLabel")}
+              </label>
               <select
                 id="race-card-race-select"
                 value={selectedRace ?? ""}
@@ -190,7 +192,10 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
               >
                 {races.map((r) => (
                   <option key={r.race_id} value={r.race_id}>
-                    {r.race_number}R（{r.start_time?.slice(0, 5)}〜）
+                    {t("analysis.raceOption", {
+                      number: r.race_number,
+                      time: r.start_time?.slice(0, 5),
+                    })}
                   </option>
                 ))}
               </select>
@@ -200,7 +205,11 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
       )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
+      {error && (
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
+      )}
 
       {!loading && !error && entries.length > 0 && (
         <div className="rcd-table-wrapper">
@@ -304,10 +313,7 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
         </div>
       )}
 
-      <p className="table-note">
-        💡
-        コース勝率は進入コースでの1着数/出走数（racerStats集計）。展示タイム・展示STは当日の展示航走が行われた後に表示されます。
-      </p>
+      <p className="table-note">{t("analysis.raceCard.note")}</p>
     </div>
   );
 }
