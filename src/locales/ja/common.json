@@ -372,5 +372,15 @@
   "raceList": {
     "show": "▼ 他のレースを選ぶ",
     "hide": "▲ レース一覧をたたむ"
+  },
+  "analysis": {
+    "loading": "データを読み込み中...",
+    "error": "エラー: {{message}}",
+    "noRacesToday": "本日開催しているレースがありません",
+    "venueSelectTodayLabel": "ボートレース場（本日開催中）:",
+    "venueSelectLabel": "ボートレース場:",
+    "raceSelectLabel": "レース:",
+    "backToList": "← レースの一覧に戻る",
+    "dataLoadError": "データの取得に失敗しました"
   }
 }

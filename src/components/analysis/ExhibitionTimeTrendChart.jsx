@@ -5,6 +5,7 @@
  * 「展示タイム最速艇の1着転換率」（会場・枠番単位）とは異なり、選手個人単位の推移を見る機能。
  */
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   LineChart,
   Line,
@@ -49,6 +50,7 @@ function ExhibitionTimeTrendChart({
   initialVenueCode = null,
   initialRaceId = null,
 }) {
+  const { t } = useTranslation();
   const [venues, setVenues] = useState([]);
   const [selectedVenue, setSelectedVenue] = useState(initialVenueCode);
   const [races, setRaces] = useState([]);
@@ -179,11 +181,11 @@ function ExhibitionTimeTrendChart({
       </p>
 
       {venues.length === 0 && !loading ? (
-        <div className="empty-state">本日開催しているレースがありません</div>
+        <div className="empty-state">{t("analysis.noRacesToday")}</div>
       ) : (
         <div className="controls-section">
           <label htmlFor="extrend-venue-select">
-            ボートレース場（本日開催中）:
+            {t("analysis.venueSelectTodayLabel")}
           </label>
           <select
             id="extrend-venue-select"
@@ -193,14 +195,14 @@ function ExhibitionTimeTrendChart({
           >
             {venues.map((v) => (
               <option key={v} value={v}>
-                {VENUE_NAMES[v] || v}
+                {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
               </option>
             ))}
           </select>
 
           {races.length > 0 && (
             <>
-              <label htmlFor="extrend-race-select">レース:</label>
+              <label htmlFor="extrend-race-select">{t("analysis.raceSelectLabel")}</label>
               <select
                 id="extrend-race-select"
                 value={selectedRace ?? ""}
@@ -218,8 +220,8 @@ function ExhibitionTimeTrendChart({
         </div>
       )}
 
-      {loading && <div className="loading-state">データを読み込み中...</div>}
-      {error && <div className="error-state">エラー: {error}</div>}
+      {loading && <div className="loading-state">{t("analysis.loading")}</div>}
+      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
 
       {!loading &&
         !error &&
@@ -271,7 +273,7 @@ function ExhibitionTimeTrendChart({
             className="back-to-ranking-btn"
             onClick={() => setDrillDownRacer(null)}
           >
-            ← レースの一覧に戻る
+            {t("analysis.backToList")}
           </button>
           <h3 className="selected-motor-heading">
             {drillDownRacerName?.replace(/\s+/g, "")}選手の推移

@@ -4,6 +4,7 @@
  * 既存のWinningTechniqueChartと対になる「負け方」の分析
  */
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BarChart,
   Bar,
@@ -67,6 +68,7 @@ function techniqueColor(technique, index) {
 }
 
 function LosingTechniqueChart({ initialVenueCode = null }) {
+  const { t } = useTranslation();
   const [selectedVenue, setSelectedVenue] = useState(
     initialVenueCode !== null
       ? String(initialVenueCode).padStart(2, "0")
@@ -99,7 +101,7 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
   if (loading) {
     return (
       <div className="winning-technique-container">
-        <div className="loading-state">データを読み込み中...</div>
+        <div className="loading-state">{t("analysis.loading")}</div>
       </div>
     );
   }
@@ -107,7 +109,7 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
   if (error) {
     return (
       <div className="winning-technique-container">
-        <div className="error-state">エラー: {error}</div>
+        <div className="error-state">{t("analysis.error", { message: error })}</div>
       </div>
     );
   }
@@ -164,7 +166,7 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
         >
           {VENUES.map((venue) => (
             <option key={venue.code} value={venue.code}>
-              {venue.name}
+              {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
             </option>
           ))}
         </select>

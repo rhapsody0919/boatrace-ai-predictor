@@ -372,5 +372,15 @@
   "raceList": {
     "show": "▼ 다른 레이스 선택",
     "hide": "▲ 레이스 목록 접기"
+  },
+  "analysis": {
+    "loading": "데이터 로딩 중...",
+    "error": "오류: {{message}}",
+    "noRacesToday": "오늘 개최 중인 레이스가 없습니다",
+    "venueSelectTodayLabel": "보트레이스장（오늘 개최 중）:",
+    "venueSelectLabel": "보트레이스장:",
+    "raceSelectLabel": "레이스:",
+    "backToList": "← 레이스 목록으로 돌아가기",
+    "dataLoadError": "데이터를 가져오지 못했습니다"
   }
 }

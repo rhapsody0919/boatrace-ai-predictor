@@ -5,6 +5,7 @@
  * とは異なり、レース選択前の発見導線として本日カード全体を横断する。
  */
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import "./MotorConditionChart.css";
@@ -37,6 +38,7 @@ const VENUE_NAMES = {
 };
 
 function RankingTable({ title, rows, emptyMessage }) {
+  const { t } = useTranslation();
   return (
     <div className="table-wrapper">
       <h3 className="selected-motor-heading">{title}</h3>
@@ -65,7 +67,11 @@ function RankingTable({ title, rows, emptyMessage }) {
                   </Link>
                 </td>
                 <td>
-                  {VENUE_NAMES[row.venue_code] || ""} {row.race_number}R
+                  {t(
+                    `venues.${row.venue_code}`,
+                    VENUE_NAMES[row.venue_code] || "",
+                  )}{" "}
+                  {row.race_number}R
                 </td>
                 <td className="rate">{row.win_rate?.toFixed(2)}</td>
                 <td className="rate">{row.past_win_rate?.toFixed(2)}</td>
@@ -84,6 +90,7 @@ function RankingTable({ title, rows, emptyMessage }) {
 }
 
 function RacerFormRankingChart() {
+  const { t } = useTranslation();
   const [ranking, setRanking] = useState({ rising: [], falling: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -114,11 +121,15 @@ function RacerFormRankingChart() {
         本日出走する全選手を対象に、現在の全国勝率と約90日前時点の全国勝率を比較し、変化量が大きい選手をランキング表示します。他のタブと異なり、会場・レースを選ばず本日のカード全体から注目選手を発見できます。
       </p>
 
-      {loading && <div className="loading-state">データを読み込み中...</div>}
-      {error && <div className="error-state">エラー: {error}</div>}
+      {loading && <div className="loading-state">{t("analysis.loading")}</div>}
+      {error && (
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
+      )}
 
       {!loading && !error && isEmpty && (
-        <div className="empty-state">本日開催しているレースがありません</div>
+        <div className="empty-state">{t("analysis.noRacesToday")}</div>
       )}
 
       {!loading && !error && !isEmpty && (

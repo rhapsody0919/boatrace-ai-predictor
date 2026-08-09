@@ -3,6 +3,7 @@
  * 会場別・枠番別の決まり手（逃げ/差し/まくり等）出現割合を可視化する
  */
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BarChart,
   Bar,
@@ -66,6 +67,7 @@ function techniqueColor(technique, index) {
 }
 
 function WinningTechniqueChart({ initialVenueCode = null }) {
+  const { t } = useTranslation();
   const [selectedVenue, setSelectedVenue] = useState(
     initialVenueCode !== null
       ? String(initialVenueCode).padStart(2, "0")
@@ -98,7 +100,7 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
   if (loading) {
     return (
       <div className="winning-technique-container">
-        <div className="loading-state">データを読み込み中...</div>
+        <div className="loading-state">{t("analysis.loading")}</div>
       </div>
     );
   }
@@ -106,7 +108,7 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
   if (error) {
     return (
       <div className="winning-technique-container">
-        <div className="error-state">エラー: {error}</div>
+        <div className="error-state">{t("analysis.error", { message: error })}</div>
       </div>
     );
   }
@@ -156,7 +158,7 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
       </p>
 
       <div className="controls-section">
-        <label htmlFor="venue-select">ボートレース場:</label>
+        <label htmlFor="venue-select">{t("analysis.venueSelectLabel")}</label>
         <select
           id="venue-select"
           value={selectedVenue}
@@ -165,7 +167,7 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
         >
           {VENUES.map((venue) => (
             <option key={venue.code} value={venue.code}>
-              {venue.name}
+              {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
             </option>
           ))}
         </select>

@@ -5,6 +5,7 @@
  * AI予想モデルの確率は使わず、過去の実績払戻金のみを集計する。
  */
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import "./MotorConditionChart.css";
 
@@ -39,6 +40,7 @@ function RacerBoatReturnRateChart({
   initialVenueCode = null,
   initialRaceId = null,
 }) {
+  const { t } = useTranslation();
   const [venues, setVenues] = useState([]);
   const [selectedVenue, setSelectedVenue] = useState(initialVenueCode);
   const [races, setRaces] = useState([]);
@@ -136,11 +138,11 @@ function RacerBoatReturnRateChart({
       </p>
 
       {venues.length === 0 && !loading ? (
-        <div className="empty-state">本日開催しているレースがありません</div>
+        <div className="empty-state">{t("analysis.noRacesToday")}</div>
       ) : (
         <div className="controls-section">
           <label htmlFor="return-rate-venue-select">
-            ボートレース場（本日開催中）:
+            {t("analysis.venueSelectTodayLabel")}
           </label>
           <select
             id="return-rate-venue-select"
@@ -150,14 +152,14 @@ function RacerBoatReturnRateChart({
           >
             {venues.map((v) => (
               <option key={v} value={v}>
-                {VENUE_NAMES[v] || v}
+                {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
               </option>
             ))}
           </select>
 
           {races.length > 0 && (
             <>
-              <label htmlFor="return-rate-race-select">レース:</label>
+              <label htmlFor="return-rate-race-select">{t("analysis.raceSelectLabel")}</label>
               <select
                 id="return-rate-race-select"
                 value={selectedRace ?? ""}
@@ -175,8 +177,8 @@ function RacerBoatReturnRateChart({
         </div>
       )}
 
-      {loading && <div className="loading-state">データを読み込み中...</div>}
-      {error && <div className="error-state">エラー: {error}</div>}
+      {loading && <div className="loading-state">{t("analysis.loading")}</div>}
+      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
 
       {!loading && !error && breakdown.length > 0 && (
         <div className="table-wrapper">
