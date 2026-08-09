@@ -543,6 +543,21 @@
       "title": "📋 Race Card Data",
       "description": "Select a race being held today to view the six racers' win rates, motor stats, average ST, exhibition data, and course win rates in lane order. Colored values indicate the top 3 in the race.",
       "note": "💡 Course win rate is wins/starts from the entry course (racerStats aggregate). Exhibition time and exhibition ST appear after the day's exhibition run."
+    },
+    "venueRanking": {
+      "title": "🏟️ Today's Venue Ranking",
+      "description": "Ranks venues by four indicators, based only on races that have finished today. Unlike other tabs, you can discover notable venues across today's entire card without picking a venue or race.",
+      "stableTitle": "🛡️ Most Stable Venues TOP5",
+      "roughTitle": "🌊 Most Upset-Prone Venues TOP5",
+      "nigeRateTitle": "🚤 Highest Nige Rate TOP5",
+      "manshuTitle": "💰 Highest Big-Payout Rate TOP5",
+      "avgPayoutHeader": "Avg. payout",
+      "nigeRateHeader": "Nige rate",
+      "manshuRateHeader": "Big-payout rate",
+      "raceCountHeader": "Races finished",
+      "notEnoughData": "No data available",
+      "empty": "No races have finished today yet",
+      "note": "💡 Based on trifecta payout (per ¥100 stake). Venues with fewer than 3 finished races are excluded due to insufficient sample size. Treat rankings as a rough guide early in the day."
     }
   },
   "analysisPage": {
@@ -571,7 +586,8 @@
       "formranking": "🔥 Hot & Cold Racers",
       "returnrate": "💰 ROI Analysis",
       "attackdefense": "⚔️ Advanced Race Data",
-      "racecard": "📋 Race Card Data"
+      "racecard": "📋 Race Card Data",
+      "venueranking": "🏟️ Venue Ranking"
     },
     "features": {
       "outcome": {
@@ -633,6 +649,10 @@
       "racecard": {
         "name": "Race Card Data",
         "description": "Compares the six racers' win rates, motor, average ST, exhibition, and course win rate in lane order"
+      },
+      "venueranking": {
+        "name": "Today's Venue Ranking",
+        "description": "Ranks venues by stability, upset rate, Nige rate, and big-payout rate based on today's finished races"
       }
     },
     "info": {
@@ -899,6 +919,26 @@
           },
           {
             "text": "The Race Data Table on the race page is a summary of analysis indicators; this tab is the raw data listing"
+          }
+        ]
+      },
+      "venueranking": {
+        "title": "About Today's Venue Ranking",
+        "dataView": "Aggregates today's finished races by venue and ranks them by four indicators: average trifecta payout (stable/rough), boat 1's Nige success rate, and the big-payout (¥10,000+) occurrence rate.",
+        "tips": [
+          {
+            "strong": "Stable venues",
+            "text": " = boat 1's Nige tends to succeed here. Good picks for favorite-backers"
+          },
+          {
+            "strong": "Rough venues",
+            "text": " = upsets tend to happen here. Good picks for longshot-hunters"
+          },
+          {
+            "text": "Unlike other tabs (historical trends), this tab is a real-time tally limited to today"
+          },
+          {
+            "text": "Rankings are less reliable early in the day, when few races have finished"
           }
         ]
       }

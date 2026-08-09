@@ -2903,6 +2903,105 @@ export const supabaseDataService = {
   },
 
   /**
+   * 本日の結果確定済みレースを会場別に横断集計し、4指標（固い場/荒れている場/
+   * イン逃げ率/万舟率）でランキングする（BOA-171）
+   * 消化レース数が少ない会場（minRaceCount未満）はサンプル不足のためランキング対象から除外する
+   *
+   * 注意: 3連単配当は race_results.payout_trio を使う（DB列名と実態が歴史的経緯で
+   * 逆転しており、payout_trifecta は実態3連複のため使わない。scripts/lib/payoutCalculator.js参照）
+   */
+  getTodaysVenueRanking(limit = 5, minRaceCount = 3) {
+    const now = new Date();
+    const jstOffset = 9 * 60;
+    const jstNow = new Date(now.getTime() + jstOffset * 60 * 1000);
+    const today = jstNow.toISOString().split("T")[0];
+
+    const empty = { stable: [], rough: [], nigeRate: [], manshu: [] };
+
+    return withCache(`todays-venue-ranking-${today}-${limit}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return empty;
+      }
+
+      const { data: races, error: racesError } = await supabase
+        .from("races")
+        .select("race_id, venue_code")
+        .eq("race_date", today);
+
+      if (racesError || !races || races.length === 0) {
+        if (racesError) console.error("races取得エラー:", racesError.message);
+        return empty;
+      }
+
+      const venueByRaceId = new Map(
+        races.map((r) => [r.race_id, r.venue_code]),
+      );
+      const raceIds = races.map((r) => r.race_id);
+
+      const results = await fetchAllByIn(
+        "race_results",
+        "race_id, rank1, payout_trio, winning_technique, is_cancelled, is_no_race",
+        "race_id",
+        raceIds,
+      );
+
+      const byVenue = new Map();
+      results.forEach((r) => {
+        if (r.is_cancelled || r.is_no_race || r.rank1 === null) return;
+        const venueCode = venueByRaceId.get(r.race_id);
+        if (venueCode === null || venueCode === undefined) return;
+        if (!byVenue.has(venueCode)) {
+          byVenue.set(venueCode, {
+            venue_code: venueCode,
+            raceCount: 0,
+            payoutCount: 0,
+            payoutSum: 0,
+            nigeCount: 0,
+            manshuCount: 0,
+          });
+        }
+        const v = byVenue.get(venueCode);
+        v.raceCount += 1;
+        if (r.payout_trio !== null) {
+          v.payoutCount += 1;
+          v.payoutSum += r.payout_trio;
+          if (r.payout_trio >= 10000) v.manshuCount += 1;
+        }
+        if (r.rank1 === 1 && r.winning_technique === "逃げ") v.nigeCount += 1;
+      });
+
+      const venues = [...byVenue.values()]
+        .filter((v) => v.raceCount >= minRaceCount && v.payoutCount > 0)
+        .map((v) => ({
+          venue_code: v.venue_code,
+          race_count: v.raceCount,
+          avg_payout: v.payoutSum / v.payoutCount,
+          nige_rate: (v.nigeCount / v.raceCount) * 100,
+          manshu_rate: (v.manshuCount / v.payoutCount) * 100,
+        }));
+
+      const byAvgPayoutAsc = [...venues].sort(
+        (a, b) => a.avg_payout - b.avg_payout,
+      );
+      const byAvgPayoutDesc = [...venues].sort(
+        (a, b) => b.avg_payout - a.avg_payout,
+      );
+
+      return {
+        stable: byAvgPayoutAsc.slice(0, limit),
+        rough: byAvgPayoutDesc.slice(0, limit),
+        nigeRate: [...venues]
+          .sort((a, b) => b.nige_rate - a.nige_rate)
+          .slice(0, limit),
+        manshu: [...venues]
+          .sort((a, b) => b.manshu_rate - a.manshu_rate)
+          .slice(0, limit),
+      };
+    });
+  },
+
+  /**
    * 本日開催中のレースの出走選手について、過去90日間で勝った時の決まり手構成比を取得する（BOA-165）
    * 会場・枠番単位の決まり手データ分析（BOA-150）とは異なり、選手個人単位の勝ちパターンを見る機能
    */

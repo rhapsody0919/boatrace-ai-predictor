@@ -19,6 +19,7 @@ import {
   RacerBoatReturnRateChart,
   AttackDefenseAnalysis,
   RaceCardDataTable,
+  VenueRankingChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -39,6 +40,7 @@ const TAB_KEYS = [
   "returnrate",
   "attackdefense",
   "racecard",
+  "venueranking",
 ];
 
 // 詳しい解説記事（ja専用ブログのため、非ja言語では該当info-cardごと非表示にする）
@@ -224,6 +226,7 @@ function WinningTechniqueAnalysis() {
               initialRaceId={initialRaceId}
             />
           )}
+          {activeTab === "venueranking" && <VenueRankingChart />}
 
           <section className="info-section">
             {TAB_KEYS.includes(activeTab) &&
