@@ -59,7 +59,12 @@ export const LANGUAGE_ONLY_PATHS = {
  * （プロジェクトCLAUDE.md「多言語化の3区分」参照）。翻訳対象にする場合は
  * 4言語のi18nキーを同PRで追加した上でここに登録する。
  */
-export const TRANSLATED_PATHS = ["/", "/guide", "/venues"];
+export const TRANSLATED_PATHS = [
+  "/",
+  "/guide",
+  "/venues",
+  "/winning-technique",
+];
 
 // パス（言語プレフィックス除去済み）のコンテンツが翻訳済みかどうか
 export function isPathTranslated(basePath) {

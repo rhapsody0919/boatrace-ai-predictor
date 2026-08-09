@@ -128,6 +128,7 @@ const staticPages = [
 const LOCALIZED_PAGES = [
   { basePath: "/", changefreq: "daily", priority: "0.9" },
   { basePath: "/guide", changefreq: "monthly", priority: "0.8" },
+  { basePath: "/winning-technique", changefreq: "daily", priority: "0.8" },
 ];
 
 // 特定言語にのみ存在するページ（会場別ビジターガイド: 英語版 BOA-133 / 繁体字版 BOA-134）
