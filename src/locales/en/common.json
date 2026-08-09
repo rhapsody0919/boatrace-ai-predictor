@@ -383,6 +383,163 @@
     "venueSelectLabel": "Venue:",
     "raceSelectLabel": "Race:",
     "backToList": "← Back to race list",
-    "dataLoadError": "Failed to load data"
+    "dataLoadError": "Failed to load data",
+    "boatN": "Boat {{n}}",
+    "raceOption": "Race {{number}} ({{time}} JST)",
+    "lastUpdated": "(Last updated: {{date}})",
+    "noData": "No data",
+    "notMeasured": "Not measured",
+    "laneHeader": "Lane",
+    "sampleCountHeader": "Samples",
+    "countHeader": "Count",
+    "ratePctHeader": "Rate (%)",
+    "sharePctHeader": "Share (%)",
+    "avgPayoutHeader": "Avg. payout (¥)",
+    "rankHeader": "Rank",
+    "trifectaHeader": "Trifecta",
+    "secondHeader": "2nd",
+    "thirdHeader": "3rd",
+    "techniqueHeader": "Winning technique",
+    "venueHeader": "Venue",
+    "rankingTitle": "📈 Most Frequent Patterns",
+    "limitLabel": "Show:",
+    "patternCount": "{{n}} patterns",
+    "probabilityYAxis": "Probability (%)",
+    "racerTrendHeading": "{{name}}'s trend",
+    "racerTrendEmpty": "No trend data found for this racer",
+    "wt": {
+      "title": "🎯 Winning Technique Analysis",
+      "description": "Based on race results from the past 90 days, this shows which winning techniques (Nige, Sashi, Makuri, etc.) first-place boats use at each venue, broken down by lane.",
+      "summary": "Winning technique breakdown over the past 90 days",
+      "note": "💡 The share is the breakdown within races won by that lane.",
+      "empty": "No winning technique data found"
+    },
+    "lt": {
+      "title": "💔 Losing Technique Analysis",
+      "description": "Based on race results from the past 90 days, this shows for each venue and lane which technique the winner used when that lane failed to finish first.",
+      "summary": "Losing technique breakdown over the past 90 days",
+      "note": "💡 The share is the breakdown within races where that lane failed to win. You can read tendencies such as \"when boat 1 loses, it is often beaten by Sashi.\"",
+      "empty": "No losing technique data found"
+    },
+    "outcome": {
+      "title": "📊 Trifecta Outcome Distribution",
+      "description": "Based on race results from the past 90 days, this analyzes trifecta outcome patterns at each venue. See at a glance which 2nd/3rd place course combinations are most common for each winning course.",
+      "summary": "{{count}} races in the past 90 days",
+      "firstHeading": "Course {{n}} wins",
+      "note": "💡 The rate is the probability within races won by that course. Higher payouts mean harder-to-hit patterns.",
+      "empty": "No outcome distribution data found"
+    },
+    "nige": {
+      "title": "🏃 Outcome Distribution After a Nige Win",
+      "description": "Based on race results from the past 90 days, this analyzes which 2nd/3rd place course combinations appear in races won by Nige (wire-to-wire escape). Races where a boat other than boat 1 escaped are also included.",
+      "summary": "{{count}} Nige wins in the past 90 days",
+      "firstHeading": "Boat {{n}} wins by Nige",
+      "note": "💡 The rate is the probability within races that boat won by Nige. Nige wins by boats other than boat 1 tend to be rare.",
+      "empty": "No Nige outcome distribution data found"
+    },
+    "exTop": {
+      "title": "⏲️ Fastest Exhibition Time → Win Conversion",
+      "description": "Based on race results from the past 90 days, this shows which lanes tend to record the fastest exhibition (lap) time at each venue, and how often the fastest boat actually wins.",
+      "summary": "Exhibition time results over the past 90 days",
+      "fastestRate": "Fastest exhibition rate",
+      "winWhenFastest": "Win rate when fastest",
+      "participationsHeader": "Races",
+      "fastestCountHeader": "Times fastest",
+      "fastestRateHeader": "Fastest rate (%)",
+      "winWhenFastestHeader": "Win rate when fastest (%)",
+      "note": "💡 \"Fastest exhibition\" means recording the fastest lap time in that race (excluding ties). A lane with a high fastest rate but low win rate may be \"fast in exhibition but unable to close out the race.\"",
+      "empty": "No exhibition time data found"
+    },
+    "topStart": {
+      "title": "🚀 Top Start Analysis by Lane",
+      "description": "Based on race results from the past 90 days, this shows which lanes tend to record the fastest start at each venue, and how often a top start actually converts to a win.",
+      "summary": "Top start results over the past 90 days",
+      "topStartRate": "Top start rate",
+      "winWhenTopStart": "Win rate after top start",
+      "participationsHeader": "Races",
+      "topStartCountHeader": "Top starts",
+      "topStartRateHeader": "Top start rate (%)",
+      "winWhenTopStartHeader": "Win rate after top start (%)",
+      "note": "💡 A top start means recording the fastest start timing in that race (excluding flying starts). A lane with a high top start rate but low win rate may \"get out first but fail to win.\"",
+      "empty": "No top start data found"
+    },
+    "motor": {
+      "title": "🔧 Motor Condition",
+      "description": "Select a race being held today to see each boat's motor top-2/top-3 rates at a glance. Click a motor you are interested in to see its trend across meets.",
+      "motorNumberHeader": "Motor #",
+      "motorUnit": "Motor {{n}}",
+      "rate2Header": "Top-2 rate (%)",
+      "rate3Header": "Top-3 rate (%)",
+      "legend2": "Top-2 rate",
+      "legend3": "Top-3 rate",
+      "trendHeading": "Motor {{n}} trend",
+      "trendEmpty": "No trend data found for this motor",
+      "yAxis": "Rate (%)",
+      "note": "💡 Click a table row to see that motor's trend across meets. The highlighted row is the boat with the highest motor top-2 rate in this race."
+    },
+    "racerForm": {
+      "title": "📈 Racer Form",
+      "description": "Select a race being held today to compare each racer's current national win rate with their rate about 90 days ago and see whether their form is rising or falling.",
+      "currentWinRateHeader": "Current national win rate",
+      "past90Header": "~90 days ago",
+      "deltaHeader": "Change",
+      "legendNational": "National win rate",
+      "legendLocal": "Local win rate",
+      "yAxis": "Win rate",
+      "note": "💡 Click a table row to see that racer's national/local win rate trend by meet. \"~90 days ago\" appears only when data exists for that period. Racers with no data may be rookies or recent transfers."
+    },
+    "formRanking": {
+      "title": "🔥 Today's Hot & Cold Racers",
+      "description": "Compares the current national win rate of every racer running today with their rate about 90 days ago, and ranks the biggest movers. Unlike other tabs, you can discover notable racers across today's entire card without picking a venue or race.",
+      "risingTitle": "🔥 Top 10 Rising Racers",
+      "fallingTitle": "📉 Top 10 Falling Racers",
+      "empty": "No data available",
+      "note": "💡 Click a racer's name to see details in the Racer Form tab for their race today. \"~90 days ago\" only includes racers with data from that period. Note that recently debuted rookies rise from a 0% win rate and easily appear in the rising ranking."
+    },
+    "st": {
+      "title": "⏱️ Exhibition vs Actual ST Gap",
+      "description": "Select a race being held today to see how much each racer's exhibition ST has historically deviated from their actual race ST. The smaller the gap, the more \"stable\" the racer — their exhibition ST is a reliable reference.",
+      "todayStHeader": "Today's exhibition ST",
+      "avgDevHeader": "Avg. historical gap",
+      "trendHeading": "{{name}}'s ST gap trend",
+      "legend": "Gap",
+      "yAxis": "Gap (sec)",
+      "note": "💡 Click a table row to see that racer's gap trend across past races. The highlighted row is the racer with the smallest (most stable) gap in this race. Flying starts are excluded from the gap calculation as outliers."
+    },
+    "exTrend": {
+      "title": "📈 Racer Exhibition Time Trend",
+      "description": "Select a race being held today to see how each racer's exhibition (lap) time has trended over the past 90 days. Unlike the venue/lane-based Exhibition Time tab, this tracks each racer's individual condition.",
+      "todayTimeHeader": "Today's exhibition time",
+      "avgTimeHeader": "Avg. past exhibition time",
+      "legend": "Exhibition time",
+      "yAxis": "Exhibition time (sec)",
+      "note": "💡 Click a table row to see that racer's exhibition time trend. The highlighted row is the racer with the fastest average past exhibition time in this race. A racer whose exhibition time keeps getting slower may be losing form."
+    },
+    "techProfile": {
+      "title": "🏆 Racer Winning Technique Profile",
+      "description": "Select a race being held today to see which techniques (Nige, Sashi, Makuri, etc.) each of the six racers has used to win over the past 90 days. Unlike the venue/lane-based Winning Technique tab, this shows each racer's individual winning patterns.",
+      "yAxis": "Share of wins (%)",
+      "winCountHeader": "Wins (90 days)",
+      "compositionHeader": "Technique breakdown",
+      "note": "💡 The breakdown is the share within races that racer won in the past 90 days. For racers with few wins, the tendency is less reliable."
+    },
+    "returnRate": {
+      "title": "💰 Racer × Boat Number ROI",
+      "description": "Select a race being held today to see each racer's Win/Place bet return rate over the past 180 days when racing from the same boat number. A perspective on whether betting on them actually pays, beyond win rates.",
+      "sample180Header": "Samples (180 days)",
+      "winReturnHeader": "Win bet ROI",
+      "placeReturnHeader": "Place bet ROI",
+      "note": "💡 The return rate is the total payout ratio if you had kept placing ¥100 Win/Place bets on every race from the same boat number over the past 180 days. Note that a small sample size reduces reliability."
+    },
+    "ad": {
+      "title": "⚔️ Advanced Race Data",
+      "description": "Select a race being held today to see each of the six racers' actual \"attack\" patterns from their entry course (how they attack with Sashi, Makuri, etc.) and course 1's \"defense\" patterns (how it gets beaten).",
+      "empty": "Advanced race data for this race has not been generated yet"
+    },
+    "raceCard": {
+      "title": "📋 Race Card Data",
+      "description": "Select a race being held today to view the six racers' win rates, motor stats, average ST, exhibition data, and course win rates in lane order. Colored values indicate the top 3 in the race.",
+      "note": "💡 Course win rate is wins/starts from the entry course (racerStats aggregate). Exhibition time and exhibition ST appear after the day's exhibition run."
+    }
   }
 }

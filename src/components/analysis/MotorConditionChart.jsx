@@ -79,7 +79,7 @@ function MotorConditionChart({
             : (list[0] ?? null);
         setSelectedVenue(preferred);
       } catch (err) {
-        setError(err.message || "会場一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load venues with today's races:", err);
       } finally {
         setLoading(false);
@@ -109,7 +109,7 @@ function MotorConditionChart({
         setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
         pendingInitialRaceId.current = null;
       } catch (err) {
-        setError(err.message || "レース一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load today's races:", err);
       } finally {
         setLoading(false);
@@ -130,7 +130,7 @@ function MotorConditionChart({
           await supabaseDataService.getRaceMotorBreakdown(selectedRace);
         setBreakdown(data);
       } catch (err) {
-        setError(err.message || "モーター調子の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load race motor breakdown:", err);
       } finally {
         setLoading(false);
@@ -152,7 +152,7 @@ function MotorConditionChart({
         );
         setTrendData(data);
       } catch (err) {
-        setError(err.message || "モーター推移の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
       } finally {
         setLoading(false);
@@ -161,10 +161,13 @@ function MotorConditionChart({
     loadTrend();
   }, [selectedVenue, drillDownMotor]);
 
+  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
+  const rate2Key = t("analysis.motor.legend2");
+  const rate3Key = t("analysis.motor.legend3");
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
-    "2連率": row.motor_2rate,
-    "3連率": row.motor_3rate,
+    [rate2Key]: row.motor_2rate,
+    [rate3Key]: row.motor_3rate,
   }));
 
   const bestMotor2Rate =
@@ -174,10 +177,8 @@ function MotorConditionChart({
 
   return (
     <div className="motor-condition-container">
-      <h2>🔧 モーター調子</h2>
-      <p className="section-description">
-        本日開催中のレースを選ぶと、各艇のモーターの2連率/3連率が一覧でわかります。気になるモーターをクリックすると、節（開催）をまたいだ推移が見られます。
-      </p>
+      <h2>{t("analysis.motor.title")}</h2>
+      <p className="section-description">{t("analysis.motor.description")}</p>
 
       {venues.length === 0 && !loading ? (
         <div className="empty-state">{t("analysis.noRacesToday")}</div>
@@ -201,7 +202,9 @@ function MotorConditionChart({
 
           {races.length > 0 && (
             <>
-              <label htmlFor="motor-race-select">{t("analysis.raceSelectLabel")}</label>
+              <label htmlFor="motor-race-select">
+                {t("analysis.raceSelectLabel")}
+              </label>
               <select
                 id="motor-race-select"
                 value={selectedRace ?? ""}
@@ -210,7 +213,10 @@ function MotorConditionChart({
               >
                 {races.map((r) => (
                   <option key={r.race_id} value={r.race_id}>
-                    {r.race_number}R（{r.start_time?.slice(0, 5)}〜）
+                    {t("analysis.raceOption", {
+                      number: r.race_number,
+                      time: r.start_time?.slice(0, 5),
+                    })}
                   </option>
                 ))}
               </select>
@@ -220,7 +226,11 @@ function MotorConditionChart({
       )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
+      {error && (
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
+      )}
 
       {!loading &&
         !error &&
@@ -230,11 +240,11 @@ function MotorConditionChart({
             <table className="motor-ranking-table">
               <thead>
                 <tr>
-                  <th>枠番</th>
-                  <th>選手名</th>
-                  <th>モーター番号</th>
-                  <th>2連率 (%)</th>
-                  <th>3連率 (%)</th>
+                  <th>{t("analysis.laneHeader")}</th>
+                  <th>{t("table.playerName")}</th>
+                  <th>{t("analysis.motor.motorNumberHeader")}</th>
+                  <th>{t("analysis.motor.rate2Header")}</th>
+                  <th>{t("analysis.motor.rate3Header")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -245,8 +255,12 @@ function MotorConditionChart({
                     onClick={() => setDrillDownMotor(row.motor_number)}
                   >
                     <td className="rank">{row.boat_number}</td>
-                    <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
-                    <td className="motor-num">{row.motor_number}号機</td>
+                    <td translate="no">
+                      {row.player_name?.replace(/\s+/g, "")}
+                    </td>
+                    <td className="motor-num">
+                      {t("analysis.motor.motorUnit", { n: row.motor_number })}
+                    </td>
                     <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
                     <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
                   </tr>
@@ -264,7 +278,9 @@ function MotorConditionChart({
           >
             {t("analysis.backToList")}
           </button>
-          <h3 className="selected-motor-heading">{drillDownMotor}号機の推移</h3>
+          <h3 className="selected-motor-heading">
+            {t("analysis.motor.trendHeading", { n: drillDownMotor })}
+          </h3>
 
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
@@ -276,7 +292,7 @@ function MotorConditionChart({
                 <XAxis dataKey="date" />
                 <YAxis
                   label={{
-                    value: "出現率 (%)",
+                    value: t("analysis.motor.yAxis"),
                     angle: -90,
                     position: "insideLeft",
                   }}
@@ -285,14 +301,14 @@ function MotorConditionChart({
                 <Legend />
                 <Line
                   type="stepAfter"
-                  dataKey="2連率"
+                  dataKey={rate2Key}
                   stroke="#0ea5e9"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                 />
                 <Line
                   type="stepAfter"
-                  dataKey="3連率"
+                  dataKey={rate3Key}
                   stroke="#10b981"
                   strokeWidth={2}
                   dot={{ r: 3 }}
@@ -300,17 +316,12 @@ function MotorConditionChart({
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="empty-state">
-              このモーターの推移データが見つかりません
-            </div>
+            <div className="empty-state">{t("analysis.motor.trendEmpty")}</div>
           )}
         </>
       )}
 
-      <p className="table-note">
-        💡
-        表の行をクリックするとそのモーターの節ごとの推移が見られます。ハイライトされた行はこのレースで最も2連率が高い艇です。
-      </p>
+      <p className="table-note">{t("analysis.motor.note")}</p>
     </div>
   );
 }

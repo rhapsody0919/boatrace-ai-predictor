@@ -48,11 +48,11 @@ function RankingTable({ title, rows, emptyMessage }) {
         <table className="motor-ranking-table">
           <thead>
             <tr>
-              <th>選手名</th>
-              <th>ボートレース場</th>
-              <th>現在の全国勝率</th>
-              <th>約90日前</th>
-              <th>変化</th>
+              <th>{t("table.playerName")}</th>
+              <th>{t("analysis.venueHeader")}</th>
+              <th>{t("analysis.racerForm.currentWinRateHeader")}</th>
+              <th>{t("analysis.racerForm.past90Header")}</th>
+              <th>{t("analysis.racerForm.deltaHeader")}</th>
             </tr>
           </thead>
           <tbody>
@@ -103,7 +103,7 @@ function RacerFormRankingChart() {
         const data = await supabaseDataService.getTodaysRacerFormRanking(10);
         setRanking(data);
       } catch (err) {
-        setError(err.message || "選手ランキングの取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load today's racer form ranking:", err);
       } finally {
         setLoading(false);
@@ -116,9 +116,9 @@ function RacerFormRankingChart() {
 
   return (
     <div className="motor-condition-container">
-      <h2>🔥 本日の好調・不調選手ランキング</h2>
+      <h2>{t("analysis.formRanking.title")}</h2>
       <p className="section-description">
-        本日出走する全選手を対象に、現在の全国勝率と約90日前時点の全国勝率を比較し、変化量が大きい選手をランキング表示します。他のタブと異なり、会場・レースを選ばず本日のカード全体から注目選手を発見できます。
+        {t("analysis.formRanking.description")}
       </p>
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
@@ -135,22 +135,19 @@ function RacerFormRankingChart() {
       {!loading && !error && !isEmpty && (
         <>
           <RankingTable
-            title="🔥 急上昇選手 TOP10"
+            title={t("analysis.formRanking.risingTitle")}
             rows={ranking.rising}
-            emptyMessage="対象データがありません"
+            emptyMessage={t("analysis.formRanking.empty")}
           />
           <RankingTable
-            title="📉 急下降選手 TOP10"
+            title={t("analysis.formRanking.fallingTitle")}
             rows={ranking.falling}
-            emptyMessage="対象データがありません"
+            emptyMessage={t("analysis.formRanking.empty")}
           />
         </>
       )}
 
-      <p className="table-note">
-        💡
-        選手名をクリックすると、その選手が出走する本日のレースの「選手調子」タブで詳細を確認できます。「約90日前」は当該時期にデータが存在する選手のみランキング対象です。デビュー直後の新人選手は勝率0%からの上昇となり急上昇ランキングに出やすいため、その点にご注意ください。
-      </p>
+      <p className="table-note">{t("analysis.formRanking.note")}</p>
     </div>
   );
 }

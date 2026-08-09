@@ -77,7 +77,7 @@ function StPredictabilityChart({
             : (list[0] ?? null);
         setSelectedVenue(preferred);
       } catch (err) {
-        setError(err.message || "会場一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load venues with today's races:", err);
       } finally {
         setLoading(false);
@@ -106,7 +106,7 @@ function StPredictabilityChart({
         setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
         pendingInitialRaceId.current = null;
       } catch (err) {
-        setError(err.message || "レース一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load today's races:", err);
       } finally {
         setLoading(false);
@@ -128,7 +128,7 @@ function StPredictabilityChart({
           );
         setBreakdown(data);
       } catch (err) {
-        setError(err.message || "ST予測性の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load race ST predictability breakdown:", err);
       } finally {
         setLoading(false);
@@ -147,7 +147,7 @@ function StPredictabilityChart({
           await supabaseDataService.getStDeviationTrend(drillDownRacer);
         setTrendData(data);
       } catch (err) {
-        setError(err.message || "ズレ推移の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load ST deviation trend:", err);
       } finally {
         setLoading(false);
@@ -165,9 +165,11 @@ function StPredictabilityChart({
         )
       : null;
 
+  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
+  const deviationKey = t("analysis.st.legend");
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
-    ズレ: row.avg_deviation,
+    [deviationKey]: row.avg_deviation,
   }));
 
   const drillDownRacerName = breakdown.find(
@@ -176,16 +178,16 @@ function StPredictabilityChart({
 
   return (
     <div className="motor-condition-container">
-      <h2>⏱️ 展示ST/本番STのズレ</h2>
-      <p className="section-description">
-        本日開催中のレースを選ぶと、各選手の展示STと本番STが過去どれくらいズレる傾向にあるかがわかります。ズレが小さいほど、展示STが本番の参考になる「安定」した選手です。
-      </p>
+      <h2>{t("analysis.st.title")}</h2>
+      <p className="section-description">{t("analysis.st.description")}</p>
 
       {venues.length === 0 && !loading ? (
         <div className="empty-state">{t("analysis.noRacesToday")}</div>
       ) : (
         <div className="controls-section">
-          <label htmlFor="st-venue-select">ボートレース場（本日開催中）:</label>
+          <label htmlFor="st-venue-select">
+            {t("analysis.venueSelectTodayLabel")}
+          </label>
           <select
             id="st-venue-select"
             value={selectedVenue ?? ""}
@@ -201,7 +203,9 @@ function StPredictabilityChart({
 
           {races.length > 0 && (
             <>
-              <label htmlFor="st-race-select">{t("analysis.raceSelectLabel")}</label>
+              <label htmlFor="st-race-select">
+                {t("analysis.raceSelectLabel")}
+              </label>
               <select
                 id="st-race-select"
                 value={selectedRace ?? ""}
@@ -210,7 +214,10 @@ function StPredictabilityChart({
               >
                 {races.map((r) => (
                   <option key={r.race_id} value={r.race_id}>
-                    {r.race_number}R（{r.start_time?.slice(0, 5)}〜）
+                    {t("analysis.raceOption", {
+                      number: r.race_number,
+                      time: r.start_time?.slice(0, 5),
+                    })}
                   </option>
                 ))}
               </select>
@@ -220,7 +227,11 @@ function StPredictabilityChart({
       )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
+      {error && (
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
+      )}
 
       {!loading &&
         !error &&
@@ -230,11 +241,11 @@ function StPredictabilityChart({
             <table className="motor-ranking-table">
               <thead>
                 <tr>
-                  <th>枠番</th>
-                  <th>選手名</th>
-                  <th>本日の展示ST</th>
-                  <th>過去の平均ズレ</th>
-                  <th>サンプル数</th>
+                  <th>{t("analysis.laneHeader")}</th>
+                  <th>{t("table.playerName")}</th>
+                  <th>{t("analysis.st.todayStHeader")}</th>
+                  <th>{t("analysis.st.avgDevHeader")}</th>
+                  <th>{t("analysis.sampleCountHeader")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -247,16 +258,18 @@ function StPredictabilityChart({
                     }
                   >
                     <td className="rank">{row.boat_number}</td>
-                    <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
+                    <td translate="no">
+                      {row.player_name?.replace(/\s+/g, "")}
+                    </td>
                     <td className="rate">
                       {row.exhibition_st !== null
                         ? row.exhibition_st.toFixed(2)
-                        : "未計測"}
+                        : t("analysis.notMeasured")}
                     </td>
                     <td className="rate">
                       {row.avg_deviation !== null
                         ? row.avg_deviation.toFixed(3)
-                        : "データなし"}
+                        : t("analysis.noData")}
                     </td>
                     <td className="rate">{row.sample_count}</td>
                   </tr>
@@ -274,8 +287,10 @@ function StPredictabilityChart({
           >
             {t("analysis.backToList")}
           </button>
-          <h3 className="selected-motor-heading">
-            {drillDownRacerName?.replace(/\s+/g, "")}選手のズレ推移
+          <h3 className="selected-motor-heading" translate="no">
+            {t("analysis.st.trendHeading", {
+              name: drillDownRacerName?.replace(/\s+/g, ""),
+            })}
           </h3>
 
           {chartData.length > 0 ? (
@@ -288,7 +303,7 @@ function StPredictabilityChart({
                 <XAxis dataKey="date" />
                 <YAxis
                   label={{
-                    value: "ズレ（秒）",
+                    value: t("analysis.st.yAxis"),
                     angle: -90,
                     position: "insideLeft",
                   }}
@@ -297,7 +312,7 @@ function StPredictabilityChart({
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey="ズレ"
+                  dataKey={deviationKey}
                   stroke="#0ea5e9"
                   strokeWidth={2}
                   dot={{ r: 3 }}
@@ -305,17 +320,12 @@ function StPredictabilityChart({
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="empty-state">
-              この選手のズレ推移データが見つかりません
-            </div>
+            <div className="empty-state">{t("analysis.racerTrendEmpty")}</div>
           )}
         </>
       )}
 
-      <p className="table-note">
-        💡
-        表の行をクリックするとその選手の過去レースごとのズレ推移が見られます。ハイライトされた行はこのレースで最もズレが小さい（安定した）選手です。フライングは異常値のためズレの計算から除外しています。
-      </p>
+      <p className="table-note">{t("analysis.st.note")}</p>
     </div>
   );
 }

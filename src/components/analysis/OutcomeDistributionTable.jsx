@@ -36,9 +36,7 @@ const VENUES = [
 
 function OutcomeDistributionTable({ initialVenueCode = null }) {
   const { t } = useTranslation();
-  const [selectedVenue, setSelectedVenue] = useState(
-    initialVenueCode || "03"
-  );
+  const [selectedVenue, setSelectedVenue] = useState(initialVenueCode || "03");
   const [outcomeData, setOutcomeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,10 +49,11 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
         setLoading(true);
         setError(null);
         const venueCode = parseInt(selectedVenue, 10);
-        const data = await supabaseDataService.getOutcomeDistribution(venueCode);
+        const data =
+          await supabaseDataService.getOutcomeDistribution(venueCode);
         setOutcomeData(data);
       } catch (err) {
-        setError(err.message || "出目分布データの取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load outcome distribution:", err);
       } finally {
         setLoading(false);
@@ -75,7 +74,9 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
   if (error) {
     return (
       <div className="outcome-distribution-container">
-        <div className="error-state">{t("analysis.error", { message: error })}</div>
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
       </div>
     );
   }
@@ -83,20 +84,18 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
   if (!outcomeData || !outcomeData.data) {
     return (
       <div className="outcome-distribution-container">
-        <div className="empty-state">出目分布データが見つかりません</div>
+        <div className="empty-state">{t("analysis.outcome.empty")}</div>
       </div>
     );
   }
 
   const { venue_name, total_races, last_updated, data } = outcomeData;
+  const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venue_name);
 
   return (
     <div className="outcome-distribution-container">
-      <h2>📊 出目分布分析</h2>
-      <p className="section-description">
-        過去90日間のボートレース結果から、各ボートレース場の3連単出現パターンを分析しています。
-        1着が各コースの場合に、2着・3着がどのコース組み合わせで出やすいかが一目でわかります。
-      </p>
+      <h2>{t("analysis.outcome.title")}</h2>
+      <p className="section-description">{t("analysis.outcome.description")}</p>
 
       <div className="controls-section">
         <label htmlFor="venue-select">{t("analysis.venueSelectLabel")}</label>
@@ -117,10 +116,12 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
       {total_races > 0 && (
         <div className="summary-info">
           <p>
-            <strong>{venue_name}</strong> - 過去90日間{" "}
-            <strong>{total_races}</strong>レース
+            <strong>{venueLabel}</strong> -{" "}
+            {t("analysis.outcome.summary", { count: total_races })}
             {last_updated && (
-              <span className="update-date">（最終更新: {last_updated}）</span>
+              <span className="update-date">
+                {t("analysis.lastUpdated", { date: last_updated })}
+              </span>
             )}
           </p>
         </div>
@@ -132,13 +133,11 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
             className="expand-button"
             onClick={() => setTopPatternsExpanded(!topPatternsExpanded)}
           >
-            <span className="chevron">
-              {topPatternsExpanded ? "▼" : "▶"}
-            </span>
-            <h3>📈 出現率ランキング</h3>
+            <span className="chevron">{topPatternsExpanded ? "▼" : "▶"}</span>
+            <h3>{t("analysis.rankingTitle")}</h3>
           </button>
           <div className="limit-controls">
-            <label>表示件数:</label>
+            <label>{t("analysis.limitLabel")}</label>
             {[10, 20, 50].map((limit) => (
               <button
                 key={limit}
@@ -175,11 +174,11 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
                 <table className="top-patterns-table">
                   <thead>
                     <tr>
-                      <th>順位</th>
-                      <th>3連単</th>
-                      <th>出現回数</th>
-                      <th>出現率 (%)</th>
-                      <th>平均配当 (円)</th>
+                      <th>{t("analysis.rankHeader")}</th>
+                      <th>{t("analysis.trifectaHeader")}</th>
+                      <th>{t("analysis.countHeader")}</th>
+                      <th>{t("analysis.ratePctHeader")}</th>
+                      <th>{t("analysis.avgPayoutHeader")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -216,8 +215,10 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
           return (
             <div key={firstBoat} className="outcome-tab">
               <div className="tab-header">
-                <h3>{firstBoat}コースが1着</h3>
-                <span className="pattern-count">{patterns.length}パターン</span>
+                <h3>{t("analysis.outcome.firstHeading", { n: firstBoat })}</h3>
+                <span className="pattern-count">
+                  {t("analysis.patternCount", { n: patterns.length })}
+                </span>
               </div>
 
               {patterns.length > 0 ? (
@@ -225,11 +226,11 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
                   <table className="outcome-table">
                     <thead>
                       <tr>
-                        <th>2着</th>
-                        <th>3着</th>
-                        <th>出現回数</th>
-                        <th>出現率 (%)</th>
-                        <th>平均配当 (円)</th>
+                        <th>{t("analysis.secondHeader")}</th>
+                        <th>{t("analysis.thirdHeader")}</th>
+                        <th>{t("analysis.countHeader")}</th>
+                        <th>{t("analysis.ratePctHeader")}</th>
+                        <th>{t("analysis.avgPayoutHeader")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -252,17 +253,14 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
                   </table>
                 </div>
               ) : (
-                <div className="no-patterns">データなし</div>
+                <div className="no-patterns">{t("analysis.noData")}</div>
               )}
             </div>
           );
         })}
       </div>
 
-      <p className="table-note">
-        💡
-        出現率はその1着コース内での確率です。配当が高いほど的中しづらいパターンとなります。
-      </p>
+      <p className="table-note">{t("analysis.outcome.note")}</p>
     </div>
   );
 }

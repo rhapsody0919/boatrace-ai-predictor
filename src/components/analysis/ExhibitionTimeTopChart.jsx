@@ -66,7 +66,7 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
           await supabaseDataService.getExhibitionTimeTopStats(venueCode);
         setStatsData(data);
       } catch (err) {
-        setError(err.message || "展示タイムデータの取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load exhibition time top stats:", err);
       } finally {
         setLoading(false);
@@ -87,7 +87,9 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
   if (error) {
     return (
       <div className="winning-technique-container">
-        <div className="error-state">{t("analysis.error", { message: error })}</div>
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
       </div>
     );
   }
@@ -95,32 +97,36 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
   if (!statsData || !statsData.data || statsData.data.length === 0) {
     return (
       <div className="winning-technique-container">
-        <div className="empty-state">展示タイムデータが見つかりません</div>
+        <div className="empty-state">{t("analysis.exTop.empty")}</div>
       </div>
     );
   }
 
   const { data } = statsData;
   const venueName = VENUES.find((v) => v.code === selectedVenue)?.name;
+  const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venueName);
 
+  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
+  const fastestRateKey = t("analysis.exTop.fastestRate");
+  const winWhenFastestKey = t("analysis.exTop.winWhenFastest");
   const chartData = [1, 2, 3, 4, 5, 6]
     .map((boatNumber) => data.find((row) => row.boat_number === boatNumber))
     .filter(Boolean)
     .map((row) => ({
-      boat_number: `${row.boat_number}号艇`,
-      展示タイム最速率: row.fastest_rate,
-      最速時の1着率: row.win_rate_when_fastest,
+      boat_number: t("analysis.boatN", { n: row.boat_number }),
+      [fastestRateKey]: row.fastest_rate,
+      [winWhenFastestKey]: row.win_rate_when_fastest,
     }));
 
   return (
     <div className="winning-technique-container">
-      <h2>⏲️ 展示タイム最速艇の1着転換率</h2>
-      <p className="section-description">
-        過去90日間のレース結果から、各ボートレース場で「どの枠番が展示タイム(周回タイム)最速になりやすいか」「展示タイム最速時に実際に1着になれているか」を分析しています。
-      </p>
+      <h2>{t("analysis.exTop.title")}</h2>
+      <p className="section-description">{t("analysis.exTop.description")}</p>
 
       <div className="controls-section">
-        <label htmlFor="exhibition-time-venue-select">ボートレース場:</label>
+        <label htmlFor="exhibition-time-venue-select">
+          {t("analysis.venueSelectLabel")}
+        </label>
         <select
           id="exhibition-time-venue-select"
           value={selectedVenue}
@@ -138,10 +144,10 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
       {venueName && (
         <div className="summary-info">
           <p>
-            <strong>{venueName}</strong> - 過去90日間の展示タイム実績
+            <strong>{venueLabel}</strong> - {t("analysis.exTop.summary")}
             {data[0]?.last_updated && (
               <span className="update-date">
-                （最終更新: {data[0].last_updated}）
+                {t("analysis.lastUpdated", { date: data[0].last_updated })}
               </span>
             )}
           </p>
@@ -157,7 +163,7 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
           <XAxis dataKey="boat_number" />
           <YAxis
             label={{
-              value: "確率 (%)",
+              value: t("analysis.probabilityYAxis"),
               angle: -90,
               position: "insideLeft",
             }}
@@ -166,8 +172,8 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
           />
           <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
           <Legend />
-          <Bar dataKey="展示タイム最速率" fill="#0ea5e9" />
-          <Bar dataKey="最速時の1着率" fill="#10b981" />
+          <Bar dataKey={fastestRateKey} fill="#0ea5e9" />
+          <Bar dataKey={winWhenFastestKey} fill="#10b981" />
         </BarChart>
       </ResponsiveContainer>
 
@@ -175,11 +181,11 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
         <table className="winning-technique-table">
           <thead>
             <tr>
-              <th>枠番</th>
-              <th>参加数</th>
-              <th>展示タイム最速回数</th>
-              <th>展示タイム最速率 (%)</th>
-              <th>最速時の1着率 (%)</th>
+              <th>{t("analysis.laneHeader")}</th>
+              <th>{t("analysis.exTop.participationsHeader")}</th>
+              <th>{t("analysis.exTop.fastestCountHeader")}</th>
+              <th>{t("analysis.exTop.fastestRateHeader")}</th>
+              <th>{t("analysis.exTop.winWhenFastestHeader")}</th>
             </tr>
           </thead>
           <tbody>
@@ -190,7 +196,9 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
               .filter(Boolean)
               .map((row) => (
                 <tr key={row.boat_number}>
-                  <td className="boat-num">{row.boat_number}号艇</td>
+                  <td className="boat-num">
+                    {t("analysis.boatN", { n: row.boat_number })}
+                  </td>
                   <td className="count">{row.race_count}</td>
                   <td className="count">{row.fastest_count}</td>
                   <td className="percentage">{row.fastest_rate.toFixed(2)}%</td>
@@ -203,10 +211,7 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
         </table>
       </div>
 
-      <p className="table-note">
-        💡
-        展示タイム最速は、そのレースで最も速い周回タイム（同着を除く）を記録したことを指します。最速率が高くても1着率が低い枠番は、「展示は速いが本番で勝ちきれない」傾向がある可能性があります。
-      </p>
+      <p className="table-note">{t("analysis.exTop.note")}</p>
     </div>
   );
 }

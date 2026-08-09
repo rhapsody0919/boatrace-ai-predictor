@@ -65,7 +65,7 @@ function TopStartChart({ initialVenueCode = null }) {
         const data = await supabaseDataService.getTopStartStats(venueCode);
         setStatsData(data);
       } catch (err) {
-        setError(err.message || "トップスタートデータの取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load top start stats:", err);
       } finally {
         setLoading(false);
@@ -86,7 +86,9 @@ function TopStartChart({ initialVenueCode = null }) {
   if (error) {
     return (
       <div className="winning-technique-container">
-        <div className="error-state">{t("analysis.error", { message: error })}</div>
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
       </div>
     );
   }
@@ -94,32 +96,38 @@ function TopStartChart({ initialVenueCode = null }) {
   if (!statsData || !statsData.data || statsData.data.length === 0) {
     return (
       <div className="winning-technique-container">
-        <div className="empty-state">トップスタートデータが見つかりません</div>
+        <div className="empty-state">{t("analysis.topStart.empty")}</div>
       </div>
     );
   }
 
   const { data } = statsData;
   const venueName = VENUES.find((v) => v.code === selectedVenue)?.name;
+  const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venueName);
 
+  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
+  const topStartRateKey = t("analysis.topStart.topStartRate");
+  const winWhenTopStartKey = t("analysis.topStart.winWhenTopStart");
   const chartData = [1, 2, 3, 4, 5, 6]
     .map((boatNumber) => data.find((row) => row.boat_number === boatNumber))
     .filter(Boolean)
     .map((row) => ({
-      boat_number: `${row.boat_number}号艇`,
-      トップスタート率: row.top_start_rate,
-      トップスタート時の1着率: row.win_rate_when_top_start,
+      boat_number: t("analysis.boatN", { n: row.boat_number }),
+      [topStartRateKey]: row.top_start_rate,
+      [winWhenTopStartKey]: row.win_rate_when_top_start,
     }));
 
   return (
     <div className="winning-technique-container">
-      <h2>🚀 枠番別トップスタート分析</h2>
+      <h2>{t("analysis.topStart.title")}</h2>
       <p className="section-description">
-        過去90日間のレース結果から、各ボートレース場で「どの枠番が最速でスタートを切りやすいか」「最速スタート時に実際に1着になれているか」を分析しています。
+        {t("analysis.topStart.description")}
       </p>
 
       <div className="controls-section">
-        <label htmlFor="top-start-venue-select">ボートレース場:</label>
+        <label htmlFor="top-start-venue-select">
+          {t("analysis.venueSelectLabel")}
+        </label>
         <select
           id="top-start-venue-select"
           value={selectedVenue}
@@ -137,10 +145,10 @@ function TopStartChart({ initialVenueCode = null }) {
       {venueName && (
         <div className="summary-info">
           <p>
-            <strong>{venueName}</strong> - 過去90日間のトップスタート実績
+            <strong>{venueLabel}</strong> - {t("analysis.topStart.summary")}
             {data[0]?.last_updated && (
               <span className="update-date">
-                （最終更新: {data[0].last_updated}）
+                {t("analysis.lastUpdated", { date: data[0].last_updated })}
               </span>
             )}
           </p>
@@ -156,7 +164,7 @@ function TopStartChart({ initialVenueCode = null }) {
           <XAxis dataKey="boat_number" />
           <YAxis
             label={{
-              value: "確率 (%)",
+              value: t("analysis.probabilityYAxis"),
               angle: -90,
               position: "insideLeft",
             }}
@@ -165,8 +173,8 @@ function TopStartChart({ initialVenueCode = null }) {
           />
           <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
           <Legend />
-          <Bar dataKey="トップスタート率" fill="#0ea5e9" />
-          <Bar dataKey="トップスタート時の1着率" fill="#10b981" />
+          <Bar dataKey={topStartRateKey} fill="#0ea5e9" />
+          <Bar dataKey={winWhenTopStartKey} fill="#10b981" />
         </BarChart>
       </ResponsiveContainer>
 
@@ -174,11 +182,11 @@ function TopStartChart({ initialVenueCode = null }) {
         <table className="winning-technique-table">
           <thead>
             <tr>
-              <th>枠番</th>
-              <th>参加数</th>
-              <th>トップスタート回数</th>
-              <th>トップスタート率 (%)</th>
-              <th>トップスタート時の1着率 (%)</th>
+              <th>{t("analysis.laneHeader")}</th>
+              <th>{t("analysis.topStart.participationsHeader")}</th>
+              <th>{t("analysis.topStart.topStartCountHeader")}</th>
+              <th>{t("analysis.topStart.topStartRateHeader")}</th>
+              <th>{t("analysis.topStart.winWhenTopStartHeader")}</th>
             </tr>
           </thead>
           <tbody>
@@ -189,7 +197,9 @@ function TopStartChart({ initialVenueCode = null }) {
               .filter(Boolean)
               .map((row) => (
                 <tr key={row.boat_number}>
-                  <td className="boat-num">{row.boat_number}号艇</td>
+                  <td className="boat-num">
+                    {t("analysis.boatN", { n: row.boat_number })}
+                  </td>
                   <td className="count">{row.race_count}</td>
                   <td className="count">{row.top_start_count}</td>
                   <td className="percentage">
@@ -204,10 +214,7 @@ function TopStartChart({ initialVenueCode = null }) {
         </table>
       </div>
 
-      <p className="table-note">
-        💡
-        トップスタートは、そのレースで最速のスタートタイミング（フライング除く）を記録したことを指します。トップスタート率が高くても1着率が低い枠番は、「先に出るだけで勝ちきれない」傾向がある可能性があります。
-      </p>
+      <p className="table-note">{t("analysis.topStart.note")}</p>
     </div>
   );
 }

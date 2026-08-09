@@ -17,6 +17,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { TECHNIQUE_KEY_BY_NAME } from "../race/raceIndicators";
 import "./MotorConditionChart.css";
 
 const VENUE_NAMES = {
@@ -96,7 +97,7 @@ function RacerTechniqueProfileChart({
             : (list[0] ?? null);
         setSelectedVenue(preferred);
       } catch (err) {
-        setError(err.message || "会場一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load venues with today's races:", err);
       } finally {
         setLoading(false);
@@ -125,7 +126,7 @@ function RacerTechniqueProfileChart({
         setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
         pendingInitialRaceId.current = null;
       } catch (err) {
-        setError(err.message || "レース一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load today's races:", err);
       } finally {
         setLoading(false);
@@ -146,7 +147,7 @@ function RacerTechniqueProfileChart({
           );
         setBreakdown(data);
       } catch (err) {
-        setError(err.message || "決まり手傾向の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load race technique profile breakdown:", err);
       } finally {
         setLoading(false);
@@ -155,28 +156,35 @@ function RacerTechniqueProfileChart({
     loadBreakdown();
   }, [selectedRace]);
 
+  // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
+  const techniqueLabel = (name) => {
+    const key = TECHNIQUE_KEY_BY_NAME[name];
+    return key ? t(`techniques.${key}`, name) : name;
+  };
+
   const allTechniques = [
     ...new Set(
-      breakdown.flatMap((row) => row.techniques.map((t) => t.technique)),
+      breakdown.flatMap((row) => row.techniques.map((tech) => tech.technique)),
     ),
   ];
 
+  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
   const chartData = breakdown.map((row) => {
     const item = {
       boat_number: `${row.boat_number} ${row.player_name?.replace(/\s+/g, "") ?? ""}`,
     };
     allTechniques.forEach((technique) => {
-      const match = row.techniques.find((t) => t.technique === technique);
-      item[technique] = match ? match.percentage : 0;
+      const match = row.techniques.find((tech) => tech.technique === technique);
+      item[techniqueLabel(technique)] = match ? match.percentage : 0;
     });
     return item;
   });
 
   return (
     <div className="motor-condition-container">
-      <h2>🏆 選手別決まり手傾向</h2>
+      <h2>{t("analysis.techProfile.title")}</h2>
       <p className="section-description">
-        本日開催中のレースを選ぶと、出走する6選手それぞれについて、過去90日間で勝った時にどの決まり手（逃げ・差し・まくり等）で勝っているかがわかります。会場・枠番単位の「決まり手」タブとは異なり、選手個人の勝ちパターンを見る機能です。
+        {t("analysis.techProfile.description")}
       </p>
 
       {venues.length === 0 && !loading ? (
@@ -201,7 +209,9 @@ function RacerTechniqueProfileChart({
 
           {races.length > 0 && (
             <>
-              <label htmlFor="technique-profile-race-select">{t("analysis.raceSelectLabel")}</label>
+              <label htmlFor="technique-profile-race-select">
+                {t("analysis.raceSelectLabel")}
+              </label>
               <select
                 id="technique-profile-race-select"
                 value={selectedRace ?? ""}
@@ -210,7 +220,10 @@ function RacerTechniqueProfileChart({
               >
                 {races.map((r) => (
                   <option key={r.race_id} value={r.race_id}>
-                    {r.race_number}R（{r.start_time?.slice(0, 5)}〜）
+                    {t("analysis.raceOption", {
+                      number: r.race_number,
+                      time: r.start_time?.slice(0, 5),
+                    })}
                   </option>
                 ))}
               </select>
@@ -220,7 +233,11 @@ function RacerTechniqueProfileChart({
       )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
+      {error && (
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
+      )}
 
       {!loading && !error && breakdown.length > 0 && (
         <>
@@ -233,7 +250,7 @@ function RacerTechniqueProfileChart({
               <XAxis dataKey="boat_number" />
               <YAxis
                 label={{
-                  value: "勝利時の構成比 (%)",
+                  value: t("analysis.techProfile.yAxis"),
                   angle: -90,
                   position: "insideLeft",
                 }}
@@ -245,7 +262,7 @@ function RacerTechniqueProfileChart({
               {allTechniques.map((technique, idx) => (
                 <Bar
                   key={technique}
-                  dataKey={technique}
+                  dataKey={techniqueLabel(technique)}
                   stackId="technique"
                   fill={techniqueColor(technique, idx)}
                 />
@@ -257,10 +274,10 @@ function RacerTechniqueProfileChart({
             <table className="motor-ranking-table">
               <thead>
                 <tr>
-                  <th>枠番</th>
-                  <th>選手名</th>
-                  <th>勝利数（90日）</th>
-                  <th>決まり手構成</th>
+                  <th>{t("analysis.laneHeader")}</th>
+                  <th>{t("table.playerName")}</th>
+                  <th>{t("analysis.techProfile.winCountHeader")}</th>
+                  <th>{t("analysis.techProfile.compositionHeader")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -270,17 +287,19 @@ function RacerTechniqueProfileChart({
                     className="motor-ranking-row non-clickable-row"
                   >
                     <td className="rank">{row.boat_number}</td>
-                    <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
+                    <td translate="no">
+                      {row.player_name?.replace(/\s+/g, "")}
+                    </td>
                     <td className="rate">{row.win_count}</td>
                     <td className="rate">
                       {row.techniques.length > 0
                         ? row.techniques
                             .map(
-                              (t) =>
-                                `${t.technique} ${t.percentage.toFixed(0)}%`,
+                              (tech) =>
+                                `${techniqueLabel(tech.technique)} ${tech.percentage.toFixed(0)}%`,
                             )
                             .join(" / ")
-                        : "データなし"}
+                        : t("analysis.noData")}
                     </td>
                   </tr>
                 ))}
@@ -290,10 +309,7 @@ function RacerTechniqueProfileChart({
         </>
       )}
 
-      <p className="table-note">
-        💡
-        決まり手の構成比は、その選手が過去90日間で勝ったレースの中での割合です。勝利数が少ない選手は、傾向の信頼度が低くなる点にご注意ください。
-      </p>
+      <p className="table-note">{t("analysis.techProfile.note")}</p>
     </div>
   );
 }

@@ -73,7 +73,7 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
             : (list[0] ?? null);
         setSelectedVenue(preferred);
       } catch (err) {
-        setError(err.message || "会場一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load venues with today's races:", err);
       } finally {
         setLoading(false);
@@ -102,7 +102,7 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
         setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
         pendingInitialRaceId.current = null;
       } catch (err) {
-        setError(err.message || "レース一覧の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load today's races:", err);
       } finally {
         setLoading(false);
@@ -122,7 +122,7 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
           await supabaseDataService.getRaceRacerFormBreakdown(selectedRace);
         setBreakdown(data);
       } catch (err) {
-        setError(err.message || "選手調子の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load race racer form breakdown:", err);
       } finally {
         setLoading(false);
@@ -142,7 +142,7 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
           await supabaseDataService.getRacerFormTrend(drillDownRacer);
         setTrendData(data);
       } catch (err) {
-        setError(err.message || "選手推移の取得に失敗しました");
+        setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load racer form trend:", err);
       } finally {
         setLoading(false);
@@ -158,10 +158,13 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
         )
       : null;
 
+  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
+  const nationalKey = t("analysis.racerForm.legendNational");
+  const localKey = t("analysis.racerForm.legendLocal");
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
-    全国勝率: row.win_rate,
-    当地勝率: row.local_win_rate,
+    [nationalKey]: row.win_rate,
+    [localKey]: row.local_win_rate,
   }));
 
   const drillDownRacerName = breakdown.find(
@@ -170,9 +173,9 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
 
   return (
     <div className="motor-condition-container">
-      <h2>📈 選手調子</h2>
+      <h2>{t("analysis.racerForm.title")}</h2>
       <p className="section-description">
-        本日開催中のレースを選ぶと、各選手の現在の全国勝率と約90日前時点の全国勝率を比較し、調子が上昇/下降しているかがわかります。
+        {t("analysis.racerForm.description")}
       </p>
 
       {venues.length === 0 && !loading ? (
@@ -197,7 +200,9 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
 
           {races.length > 0 && (
             <>
-              <label htmlFor="racer-race-select">{t("analysis.raceSelectLabel")}</label>
+              <label htmlFor="racer-race-select">
+                {t("analysis.raceSelectLabel")}
+              </label>
               <select
                 id="racer-race-select"
                 value={selectedRace ?? ""}
@@ -206,7 +211,10 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
               >
                 {races.map((r) => (
                   <option key={r.race_id} value={r.race_id}>
-                    {r.race_number}R（{r.start_time?.slice(0, 5)}〜）
+                    {t("analysis.raceOption", {
+                      number: r.race_number,
+                      time: r.start_time?.slice(0, 5),
+                    })}
                   </option>
                 ))}
               </select>
@@ -216,7 +224,11 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
       )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && <div className="error-state">{t("analysis.error", { message: error })}</div>}
+      {error && (
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
+      )}
 
       {!loading &&
         !error &&
@@ -226,11 +238,11 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
             <table className="motor-ranking-table">
               <thead>
                 <tr>
-                  <th>枠番</th>
-                  <th>選手名</th>
-                  <th>現在の全国勝率</th>
-                  <th>約90日前</th>
-                  <th>変化</th>
+                  <th>{t("analysis.laneHeader")}</th>
+                  <th>{t("table.playerName")}</th>
+                  <th>{t("analysis.racerForm.currentWinRateHeader")}</th>
+                  <th>{t("analysis.racerForm.past90Header")}</th>
+                  <th>{t("analysis.racerForm.deltaHeader")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -243,12 +255,14 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
                     }
                   >
                     <td className="rank">{row.boat_number}</td>
-                    <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
+                    <td translate="no">
+                      {row.player_name?.replace(/\s+/g, "")}
+                    </td>
                     <td className="rate">{row.win_rate?.toFixed(2)}</td>
                     <td className="rate">
                       {row.past_win_rate !== null
                         ? row.past_win_rate.toFixed(2)
-                        : "データなし"}
+                        : t("analysis.noData")}
                     </td>
                     <td className="rate">
                       {row.delta !== null ? (
@@ -283,8 +297,10 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
           >
             {t("analysis.backToList")}
           </button>
-          <h3 className="selected-motor-heading">
-            {drillDownRacerName?.replace(/\s+/g, "")}選手の推移
+          <h3 className="selected-motor-heading" translate="no">
+            {t("analysis.racerTrendHeading", {
+              name: drillDownRacerName?.replace(/\s+/g, ""),
+            })}
           </h3>
 
           {chartData.length > 0 ? (
@@ -297,7 +313,7 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
                 <XAxis dataKey="date" />
                 <YAxis
                   label={{
-                    value: "勝率",
+                    value: t("analysis.racerForm.yAxis"),
                     angle: -90,
                     position: "insideLeft",
                   }}
@@ -306,14 +322,14 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
                 <Legend />
                 <Line
                   type="stepAfter"
-                  dataKey="全国勝率"
+                  dataKey={nationalKey}
                   stroke="#0ea5e9"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                 />
                 <Line
                   type="stepAfter"
-                  dataKey="当地勝率"
+                  dataKey={localKey}
                   stroke="#10b981"
                   strokeWidth={2}
                   dot={{ r: 3 }}
@@ -321,17 +337,12 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="empty-state">
-              この選手の推移データが見つかりません
-            </div>
+            <div className="empty-state">{t("analysis.racerTrendEmpty")}</div>
           )}
         </>
       )}
 
-      <p className="table-note">
-        💡
-        表の行をクリックするとその選手の節ごとの全国勝率・当地勝率の推移が見られます。「約90日前」は当該時期にデータが存在する場合のみ表示されます。データなしの選手は新人選手・移籍直後等が考えられます。
-      </p>
+      <p className="table-note">{t("analysis.racerForm.note")}</p>
     </div>
   );
 }
