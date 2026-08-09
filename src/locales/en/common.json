@@ -544,5 +544,377 @@
       "description": "Select a race being held today to view the six racers' win rates, motor stats, average ST, exhibition data, and course win rates in lane order. Colored values indicate the top 3 in the race.",
       "note": "💡 Course win rate is wins/starts from the entry course (racerStats aggregate). Exhibition time and exhibition ST appear after the day's exhibition run."
     }
+  },
+  "analysisPage": {
+    "meta": {
+      "title": "Analysis Tools - BoatAI",
+      "description": "15 analysis tools — outcome distribution, winning technique, motor condition, racer form, exhibition vs actual ST gap, top start by lane, losing technique, outcome distribution after a Nige win, fastest exhibition time to win conversion, racer exhibition time trend, racer winning technique profile, today's hot & cold racers, racer x boat number ROI, advanced race data, and race card data — let you check tendencies by venue and race. Use them as evidence to back up the AI's predictions."
+    },
+    "h1": "📊 Analysis Tools",
+    "subtitle": "Reference data for picking or excluding boats, drawn from tendencies in outcome distribution, winning technique, motor condition, racer form, exhibition vs actual ST gap, top start by lane, losing technique, outcome distribution after a Nige win, fastest exhibition time to win conversion, racer exhibition time trend, racer winning technique profile, today's hot & cold racers, racer x boat number ROI, advanced race data, and race card data",
+    "breadcrumbHome": "Home",
+    "itemListName": "Analysis Tools",
+    "itemListDescription": "15 analysis features to check tendencies by venue and race",
+    "footerText": "© {{year}} BoatAI - AI Boat Racing Predictions",
+    "tabs": {
+      "outcome": "📊 Outcome Distribution",
+      "technique": "🎯 Winning Technique",
+      "motor": "🔧 Motor Condition",
+      "racer": "📈 Racer Form",
+      "st": "⏱️ ST Gap",
+      "topstart": "🚀 Top Start",
+      "losing": "💔 Losing Technique",
+      "nige": "🏃 Nige Outcomes",
+      "extime": "⏲️ Exhibition Time",
+      "extrend": "📈 Exhibition Time Trend",
+      "techprofile": "🏆 Racer Technique Profile",
+      "formranking": "🔥 Hot & Cold Racers",
+      "returnrate": "💰 ROI Analysis",
+      "attackdefense": "⚔️ Advanced Race Data",
+      "racecard": "📋 Race Card Data"
+    },
+    "features": {
+      "outcome": {
+        "name": "Outcome Distribution",
+        "description": "Analyzes 2nd/3rd place patterns broken down by winning course"
+      },
+      "technique": {
+        "name": "Winning Technique Analysis",
+        "description": "Analyzes winning patterns (Nige, Sashi, Makuri, etc.) by venue and lane"
+      },
+      "motor": {
+        "name": "Motor Condition",
+        "description": "Analyzes motor top-2/top-3 rates by lane for today's races"
+      },
+      "racer": {
+        "name": "Racer Form",
+        "description": "Analyzes how racers' national win rates have changed over the past 90 days"
+      },
+      "st": {
+        "name": "Exhibition vs Actual ST Gap",
+        "description": "Analyzes how closely each racer's exhibition ST has matched their actual ST"
+      },
+      "topstart": {
+        "name": "Top Start by Lane",
+        "description": "Analyzes the fastest-start rate by venue and lane, and the win rate after a top start"
+      },
+      "losing": {
+        "name": "Losing Technique Analysis",
+        "description": "Analyzes which technique the winner used by lane when that lane failed to finish first"
+      },
+      "nige": {
+        "name": "Outcome Distribution After a Nige Win",
+        "description": "Analyzes 2nd/3rd place patterns limited to races won by Nige"
+      },
+      "extime": {
+        "name": "Fastest Exhibition Time → Win Conversion",
+        "description": "Analyzes the fastest-exhibition-time rate by venue and lane, and the win rate when fastest"
+      },
+      "extrend": {
+        "name": "Racer Exhibition Time Trend",
+        "description": "Analyzes how each racer's exhibition (lap) time has trended over the past 90 days"
+      },
+      "techprofile": {
+        "name": "Racer Winning Technique Profile",
+        "description": "Analyzes which technique each racer used to win over the past 90 days"
+      },
+      "formranking": {
+        "name": "Today's Hot & Cold Racers",
+        "description": "Ranks racers running today by how much their national win rate has risen or fallen"
+      },
+      "returnrate": {
+        "name": "Racer × Boat Number ROI",
+        "description": "Analyzes each racer's Win/Place bet return rate over the past 180 days from the same boat number"
+      },
+      "attackdefense": {
+        "name": "Advanced Race Data",
+        "description": "Analyzes each racer's attack patterns by entry course and course 1's defense patterns"
+      },
+      "racecard": {
+        "name": "Race Card Data",
+        "description": "Compares the six racers' win rates, motor, average ST, exhibition, and course win rate in lane order"
+      }
+    },
+    "info": {
+      "outcome": {
+        "title": "About Outcome Distribution",
+        "dataView": "Based on race results from the past 90 days, this statistically analyzes which 2nd/3rd place combinations tend to appear at each venue when a given course finishes 1st.",
+        "tips": [
+          {
+            "strong": "High appearance rate",
+            "text": " = that combination actually appears often"
+          },
+          {
+            "strong": "Low payout",
+            "text": " = predictions tend to concentrate on it (many people bet on it)"
+          },
+          {
+            "strong": "High payout",
+            "text": " = an upset pick with a low appearance rate (harder to hit)"
+          },
+          {
+            "text": "Each venue has different characteristics, so the appearance rate changes significantly depending on the venue you select"
+          }
+        ]
+      },
+      "technique": {
+        "title": "About Winning Technique Analysis",
+        "dataView": "Based on race results from the past 90 days, this statistically analyzes which winning technique the 1st-place boat (by lane) used at each venue.",
+        "tips": [
+          {
+            "strong": "Lanes with a high Nige rate",
+            "text": " = venues/waters where an inside escape tends to succeed"
+          },
+          {
+            "strong": "Lanes with a high Makuri/Makuri-zashi rate",
+            "text": " = outer lanes tend to win, an upset-prone tendency"
+          },
+          {
+            "text": "Each venue has different characteristics, so the tendency changes significantly depending on the venue you select"
+          }
+        ],
+        "articleLinkText": "What is Winning Technique Analysis? A new feature to see winning patterns by venue and lane"
+      },
+      "motor": {
+        "title": "About Motor Condition",
+        "dataView": "Motor top-2/top-3 rates are updated per meet. Seeing how the same motor's results change from meet to meet helps you judge whether it is trending up or down.",
+        "tips": [
+          {
+            "strong": "Rising top-2/top-3 rate",
+            "text": " = may indicate the motor is improving after maintenance or parts replacement"
+          },
+          {
+            "strong": "Declining trend",
+            "text": " = may indicate the motor is losing form, slightly lowering reliability for that race"
+          }
+        ],
+        "articleLinkText": "What is Motor Condition? A new feature showing today's race top-2 rate by lane"
+      },
+      "racer": {
+        "title": "About Racer Form",
+        "dataView": "Racers' national win rates are updated per period (meet). Comparing the current rate with the rate from about 90 days ago helps judge whether a racer's form is rising or falling.",
+        "tips": [
+          {
+            "strong": "Racers with a rising win rate",
+            "text": " = may be improving in form"
+          },
+          {
+            "strong": "Racers with a declining trend",
+            "text": " = even a skilled racer's reliability may need to be discounted slightly"
+          },
+          {
+            "text": "Click a table row to drill down into that racer's national/local win rate trend by meet"
+          }
+        ],
+        "articleLinkText": "What is Racer Form? A new feature to spot racers who are \"hot right now\" from national win rate changes"
+      },
+      "st": {
+        "title": "About Exhibition vs Actual ST Gap",
+        "dataView": "This calculates, from each racer's past results, how much the start timing typically differs between the exhibition start (exhibition ST) and the actual race (actual ST). The smaller the gap, the more \"stable\" the racer — their exhibition ST is a reliable reference.",
+        "tips": [
+          {
+            "strong": "Racers with a small gap",
+            "text": " = their exhibition ST tends to be a reliable guide for the actual race"
+          },
+          {
+            "strong": "Racers with a large gap",
+            "text": " = may fall apart in the actual race even with a good exhibition, slightly lowering reliability"
+          },
+          {
+            "text": "Click a table row to see that racer's gap trend across past races"
+          }
+        ],
+        "articleLinkText": "What is the Exhibition vs Actual ST Gap? A new feature to spot racers who are \"fast in exhibition but slow off the actual start\""
+      },
+      "topstart": {
+        "title": "About Top Start Analysis by Lane",
+        "dataView": "Based on race results from the past 90 days, this analyzes by lane, for each venue, \"which lane tends to record the fastest start (top start rate)\" and \"how often a top start actually converts to a win (win rate after top start).\"",
+        "tips": [
+          {
+            "strong": "Lanes with a high top start rate but low win rate",
+            "text": " = may tend to get out first but fail to win"
+          },
+          {
+            "strong": "Lanes with a high win rate after top start",
+            "text": " = tend to convert a fast start directly into a win"
+          },
+          {
+            "text": "Each venue has different characteristics, so the tendency changes significantly depending on the venue you select"
+          }
+        ],
+        "articleLinkText": "What is Top Start Analysis by Lane? A new feature to spot lanes that merely \"get out first\""
+      },
+      "losing": {
+        "title": "About Losing Technique Analysis",
+        "dataView": "Based on race results from the past 90 days, this analyzes by lane, for each venue, which technique (Nige, Sashi, Makuri, etc.) the winner used when that lane failed to finish first. It is the mirror image of Winning Technique Analysis, showing tendencies in how a lane loses.",
+        "tips": [
+          {
+            "strong": "Lanes with a high rate of losing to Sashi",
+            "text": " = tend to be passed from the inside, a weaker-holding tendency"
+          },
+          {
+            "strong": "Lanes with a high rate of losing to Makuri",
+            "text": " = tend to be weak against a charge from the outside"
+          },
+          {
+            "text": "Seeing which technique tends to beat boat 1 helps predict how the race develops when Nige fails"
+          }
+        ],
+        "articleLinkText": "What is Losing Technique Analysis? A new feature to spot a venue/lane's weaknesses from how it loses"
+      },
+      "nige": {
+        "title": "About Outcome Distribution After a Nige Win",
+        "dataView": "Based on race results from the past 90 days, this analyzes 2nd/3rd place appearance patterns limited to races won by \"Nige\" (wire-to-wire escape). Unlike Outcome Distribution (an overall tally regardless of technique), this shows tendencies specific to races decided by an escape.",
+        "tips": [
+          {
+            "text": "Lets you grasp which boats tend to finish 2nd/3rd when boat 1 wins by Nige"
+          },
+          {
+            "text": "Cases where a boat other than boat 1 wins by Nige are rare and useful as a reference for upset-prone races"
+          },
+          {
+            "text": "Comparing with the technique-agnostic Outcome Distribution lets you isolate the tendencies specific to Nige"
+          }
+        ],
+        "articleLinkText": "What is Outcome Distribution After a Nige Win? A new feature to narrow down picks after an inside escape"
+      },
+      "extime": {
+        "title": "About Fastest Exhibition Time → Win Conversion",
+        "dataView": "Based on race results from the past 90 days, this analyzes by lane, for each venue, \"which lane tends to record the fastest exhibition (lap) time\" and \"how often the fastest boat actually wins.\"",
+        "tips": [
+          {
+            "strong": "Lanes with a high fastest-exhibition rate but low win rate",
+            "text": " = may be fast in exhibition but unable to close out the race"
+          },
+          {
+            "strong": "Lanes with a high win rate when fastest",
+            "text": " = tend to convert exhibition speed directly into a win"
+          },
+          {
+            "text": "Combine with the Exhibition vs Actual ST Gap analysis to judge exhibition reliability from multiple angles"
+          }
+        ],
+        "articleLinkText": "What is Fastest Exhibition Time → Win Conversion? A new feature to spot the reliability of \"fast in exhibition\" boats"
+      },
+      "extrend": {
+        "title": "About Racer Exhibition Time Trend",
+        "dataView": "This shows how each racer's exhibition (lap) time has trended over the past 90 days. Unlike Fastest Exhibition Time → Win Conversion (venue/lane-based), this tracks each racer's individual condition.",
+        "tips": [
+          {
+            "strong": "Racers whose exhibition time keeps worsening",
+            "text": " = may be losing form, slightly lowering reliability"
+          },
+          {
+            "strong": "Racers with a stable or improving exhibition time",
+            "text": " = may be in good shape both in motor and physical condition"
+          },
+          {
+            "text": "Click a table row to drill down into that racer's exhibition time trend chart"
+          }
+        ],
+        "articleLinkText": "What is Racer Exhibition Time Trend? A new feature to read a racer's ups and downs from their exhibition time"
+      },
+      "techprofile": {
+        "title": "About Racer Winning Technique Profile",
+        "dataView": "This shows, as a percentage breakdown, which technique (Nige, Sashi, Makuri, etc.) each racer has used to win over the past 90 days. Unlike the venue/lane-based Winning Technique tab, this shows each racer's individual winning pattern.",
+        "tips": [
+          {
+            "strong": "Racers with a high Nige rate",
+            "text": " = the type who leads and escapes; tends to show strength from the inside lane"
+          },
+          {
+            "strong": "Racers with a high Makuri/Makuri-zashi rate",
+            "text": " = have the power to win even from an outer lane"
+          },
+          {
+            "text": "For racers with few wins, the technique breakdown is less reliable — please keep this in mind"
+          }
+        ],
+        "articleLinkText": "What is Racer Winning Technique Profile? A new feature to spot a racer's winning pattern"
+      },
+      "formranking": {
+        "title": "About Today's Hot & Cold Racers Ranking",
+        "dataView": "For every racer running today, this compares their current national win rate with their rate from about 90 days ago and ranks the top 10 with the largest change (delta) in two lists: \"Rising\" and \"Falling.\" Unlike other tabs, this lets you discover notable racers across today's entire card without selecting a venue or race.",
+        "tips": [
+          {
+            "strong": "Rising racers",
+            "text": " = recently in good form; can be used as grounds for a favorable pick"
+          },
+          {
+            "strong": "Falling racers",
+            "text": " = recently in poor form; can be used as grounds for exclusion"
+          },
+          {
+            "text": "Click a racer's name to see details in the Racer Form tab for their race today"
+          },
+          {
+            "text": "Note that recently debuted rookies rise from a 0% win rate and easily appear in the rising ranking"
+          }
+        ],
+        "articleLinkText": "What is Today's Hot & Cold Racers Ranking? A new feature to discover notable racers without picking a race"
+      },
+      "returnrate": {
+        "title": "About Racer × Boat Number ROI Analysis",
+        "dataView": "For each racer, this shows the total payout ratio (return rate) from continuously placing ¥100 Win/Place bets on every race over the past 180 days where that racer raced from the same boat number. It does not use the AI prediction model's probabilities — only actual paid-out amounts are tallied.",
+        "tips": [
+          {
+            "strong": "Racers with a high return rate",
+            "text": " = tend to be profitable to actually bet on, not just have a high win rate"
+          },
+          {
+            "text": "A racer with a high win rate but low return rate may be popular, with odds concentrated low (little value)"
+          },
+          {
+            "text": "For racers with a small sample size, the return rate is less reliable — please keep this in mind"
+          }
+        ],
+        "articleLinkText": "What is Racer × Boat Number ROI Analysis? A new feature to see profitability, not just win rate"
+      },
+      "attackdefense": {
+        "title": "About Advanced Race Data",
+        "dataView": "For each racer, this shows the actual distribution of \"how they have attacked and won\" from their entry course (attack: Sashi, Makuri, Makuri-zashi, etc.) and, for course 1 racers, \"how they have been attacked and beaten\" (defense). Comparing with the national average reveals a racer's attacking style.",
+        "tips": [
+          {
+            "strong": "Outer-lane racers with frequent Makuri attacks",
+            "text": " = can be a starting point for a high payout in races where the course 1 boat is weak on defense"
+          },
+          {
+            "text": "The course 1 racer's defense distribution shows which technique tends to beat them"
+          },
+          {
+            "text": "Combining this with the Winning Technique tab (venue/lane-based) or the Racer Winning Technique Profile tab builds up stronger grounds"
+          }
+        ]
+      },
+      "racecard": {
+        "title": "About Race Card Data",
+        "dataView": "This lists the six racers' class, win rate, motor, average ST, exhibition, and entry-course win rate in lane order. Colored values indicate the top 3 in the race. This is pure race card data, with no AI prediction score or sorting applied.",
+        "tips": [
+          {
+            "strong": "Racers with many colored (highlighted) values",
+            "text": " = rank in the top 3 across multiple metrics in the race; strong overall on the data side"
+          },
+          {
+            "text": "A racer with a fast average ST and high ST consistency tends to have an edge in the start"
+          },
+          {
+            "text": "The Race Data Table on the race page is a summary of analysis indicators; this tab is the raw data listing"
+          }
+        ]
+      }
+    },
+    "notice": {
+      "title": "⚠️ Notes",
+      "items": [
+        "This data is for reference only. Please do not base betting decisions on it alone",
+        "Patterns may change over time due to seasonal variation or weather conditions",
+        "As these are statistical tendencies, future outcomes are not guaranteed",
+        "Please always bet based on your own analysis and judgment"
+      ]
+    },
+    "dataViewHeading": "📈 What the Data Shows",
+    "tipsHeading": "💡 How to Use This",
+    "articleHeading": "📖 Related Article",
+    "noticeHeading": "⚠️ Notes"
   }
 }
