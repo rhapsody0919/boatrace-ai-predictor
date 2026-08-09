@@ -226,48 +226,52 @@ function WinningTechniqueAnalysis() {
           )}
 
           <section className="info-section">
-            {TAB_KEYS.filter((key) => key === activeTab).map((key) => {
-              const info = t(`analysisPage.info.${key}`, {
-                returnObjects: true,
-              });
-              return (
-                <div key={key}>
-                  <h2>{info.title}</h2>
+            {TAB_KEYS.includes(activeTab) &&
+              (() => {
+                const info = t(`analysisPage.info.${activeTab}`, {
+                  returnObjects: true,
+                });
+                return (
+                  <div>
+                    <h2>{info.title}</h2>
 
-                  <div className="info-card">
-                    <h3>{t("analysisPage.dataViewHeading")}</h3>
-                    <p>{info.dataView}</p>
-                  </div>
-
-                  <div className="info-card">
-                    <h3>{t("analysisPage.tipsHeading")}</h3>
-                    <ul>
-                      {info.tips.map((tip, idx) => (
-                        <li key={idx}>
-                          {tip.strong ? (
-                            <>
-                              <strong>{tip.strong}</strong>
-                              {tip.text}
-                            </>
-                          ) : (
-                            tip.text
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {i18n.language === "ja" && BLOG_LINKS[key] && (
                     <div className="info-card">
-                      <h3>{t("analysisPage.articleHeading")}</h3>
-                      <p>
-                        <Link to={BLOG_LINKS[key]}>{info.articleLinkText}</Link>
-                      </p>
+                      <h3>{t("analysisPage.dataViewHeading")}</h3>
+                      <p>{info.dataView}</p>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+
+                    <div className="info-card">
+                      <h3>{t("analysisPage.tipsHeading")}</h3>
+                      <ul>
+                        {info.tips.map((tip, idx) => (
+                          <li key={idx}>
+                            {tip.strong ? (
+                              <>
+                                <strong>{tip.strong}</strong>
+                                {tip.text}
+                              </>
+                            ) : (
+                              tip.text
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {i18n.resolvedLanguage === "ja" &&
+                      BLOG_LINKS[activeTab] && (
+                        <div className="info-card">
+                          <h3>{t("analysisPage.articleHeading")}</h3>
+                          <p>
+                            <Link to={BLOG_LINKS[activeTab]}>
+                              {info.articleLinkText}
+                            </Link>
+                          </p>
+                        </div>
+                      )}
+                  </div>
+                );
+              })()}
 
             <div className="info-card">
               <h3>{t("analysisPage.noticeHeading")}</h3>
@@ -284,7 +288,9 @@ function WinningTechniqueAnalysis() {
       </main>
 
       <footer className="page-footer">
-        <p>{t("analysisPage.footerText")}</p>
+        <p>
+          {t("analysisPage.footerText", { year: new Date().getFullYear() })}
+        </p>
       </footer>
     </div>
   );

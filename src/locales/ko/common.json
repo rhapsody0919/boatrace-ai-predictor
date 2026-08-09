@@ -550,7 +550,7 @@
     "breadcrumbHome": "홈",
     "itemListName": "데이터 분석 도구",
     "itemListDescription": "경기장·레이스별 경향을 확인할 수 있는 15가지 분석 기능",
-    "footerText": "© 2025 BoatAI - 보트레이스 AI 예측 지원",
+    "footerText": "© {{year}} BoatAI - 보트레이스 AI 예측 지원",
     "tabs": {
       "outcome": "📊 결과 조합 분포",
       "technique": "🎯 결정수",

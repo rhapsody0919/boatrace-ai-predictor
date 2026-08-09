@@ -550,7 +550,7 @@
     "breadcrumbHome": "ホーム",
     "itemListName": "データ分析ツール",
     "itemListDescription": "会場・レースごとの傾向を確認できる15の分析機能",
-    "footerText": "© 2025 BoatAI - ボートレース AI予想支援",
+    "footerText": "© {{year}} BoatAI - ボートレース AI予想支援",
     "tabs": {
       "outcome": "📊 出目分布",
       "technique": "🎯 決まり手",

@@ -555,7 +555,7 @@
     "breadcrumbHome": "Home",
     "itemListName": "Analysis Tools",
     "itemListDescription": "15 analysis features to check tendencies by venue and race",
-    "footerText": "© 2025 BoatAI - AI Boat Racing Predictions",
+    "footerText": "© {{year}} BoatAI - AI Boat Racing Predictions",
     "tabs": {
       "outcome": "📊 Outcome Distribution",
       "technique": "🎯 Winning Technique",
