@@ -9,33 +9,6 @@ import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import "./MotorConditionChart.css";
 
-const VENUE_NAMES = {
-  1: "桐生",
-  2: "戸田",
-  3: "江戸川",
-  4: "平和島",
-  5: "多摩川",
-  6: "浜名湖",
-  7: "蒲郡",
-  8: "常滑",
-  9: "津",
-  10: "三国",
-  11: "びわこ",
-  12: "住之江",
-  13: "尼崎",
-  14: "鳴門",
-  15: "丸亀",
-  16: "児島",
-  17: "宮島",
-  18: "徳山",
-  19: "下関",
-  20: "若松",
-  21: "芦屋",
-  22: "福岡",
-  23: "唐津",
-  24: "大村",
-};
-
 function RankingTable({ title, rows, emptyMessage, valueHeader, formatValue }) {
   const { t } = useTranslation();
   return (
@@ -60,12 +33,7 @@ function RankingTable({ title, rows, emptyMessage, valueHeader, formatValue }) {
                 className="motor-ranking-row non-clickable-row"
               >
                 <td className="rank">{idx + 1}</td>
-                <td>
-                  {t(
-                    `venues.${row.venue_code}`,
-                    VENUE_NAMES[row.venue_code] || String(row.venue_code),
-                  )}
-                </td>
+                <td>{t(`venues.${row.venue_code}`, String(row.venue_code))}</td>
                 <td className="rate">{formatValue(row)}</td>
                 <td className="rate">{row.race_count}</td>
               </tr>
