@@ -15,7 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { supabaseDataService } from "../../services/supabaseDataService";
-import { TECHNIQUE_KEY_BY_NAME } from "../race/raceIndicators";
+import { translateTechnique } from "../race/raceIndicators";
 import "./WinningTechniqueChart.css";
 
 const VENUES = [
@@ -132,10 +132,7 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
   const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venue_name);
 
   // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
-  const techniqueLabel = (name) => {
-    const key = TECHNIQUE_KEY_BY_NAME[name];
-    return key ? t(`techniques.${key}`, name) : name;
-  };
+  const techniqueLabel = (name) => translateTechnique(t, name);
 
   // 全枠番に登場する決まり手の種類を集める（凡例・積み上げバーの構成要素として使う）
   const allTechniques = [
@@ -147,7 +144,7 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
   ];
 
   // recharts用データ: 枠番ごとに { boat_number, 逃げ: 62.3, 差し: 20.1, ... }
-  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
+  // dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
   const chartData = [1, 2, 3, 4, 5, 6]
     .filter((boatNumber) => data[boatNumber])
     .map((boatNumber) => {
@@ -156,7 +153,7 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
         const match = data[boatNumber].techniques.find(
           (tech) => tech.technique === technique,
         );
-        row[techniqueLabel(technique)] = match ? match.percentage : 0;
+        row[technique] = match ? match.percentage : 0;
       });
       return row;
     });
@@ -216,7 +213,8 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
           {allTechniques.map((technique, idx) => (
             <Bar
               key={technique}
-              dataKey={techniqueLabel(technique)}
+              dataKey={technique}
+              name={techniqueLabel(technique)}
               stackId="technique"
               fill={techniqueColor(technique, idx)}
             />

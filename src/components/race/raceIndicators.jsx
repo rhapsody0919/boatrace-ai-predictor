@@ -16,6 +16,12 @@ export const TECHNIQUE_KEY_BY_NAME = Object.fromEntries(
   Object.entries(TECHNIQUE_NAMES).map(([key, name]) => [name, key]),
 );
 
+// 決まり手（DB値・日本語）を表示用に翻訳する。未知の値はそのまま返す
+export const translateTechnique = (t, name) => {
+  const key = TECHNIQUE_KEY_BY_NAME[name];
+  return key ? t(`techniques.${key}`, name) : name;
+};
+
 export const toNumber = (value) => {
   const n = parseFloat(value);
   return Number.isFinite(n) ? n : null;
@@ -99,10 +105,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
       "—"
     );
 
-  const translateTechnique = (name) => {
-    const key = TECHNIQUE_KEY_BY_NAME[name];
-    return key ? t(`techniques.${key}`, name) : name;
-  };
+  const localizedTechnique = (name) => translateTechnique(t, name);
 
   // 指標ごとの候補値リスト（signal/best共用）
   const cand = {
@@ -423,7 +426,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
         const top = row.techniques[0];
         return (
           <span className="drt-value drt-technique">
-            {translateTechnique(top.technique)}
+            {localizedTechnique(top.technique)}
             <span className="drt-sub">
               {t("dataTable.winCount", { n: row.win_count })}
             </span>

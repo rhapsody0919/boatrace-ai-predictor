@@ -404,6 +404,7 @@
     "rankingTitle": "📈 Most Frequent Patterns",
     "limitLabel": "Show:",
     "patternCount": "{{n}} patterns",
+    "patternCount_one": "{{n}} pattern",
     "probabilityYAxis": "Probability (%)",
     "racerTrendHeading": "{{name}}'s trend",
     "racerTrendEmpty": "No trend data found for this racer",
@@ -425,6 +426,7 @@
       "title": "📊 Trifecta Outcome Distribution",
       "description": "Based on race results from the past 90 days, this analyzes trifecta outcome patterns at each venue. See at a glance which 2nd/3rd place course combinations are most common for each winning course.",
       "summary": "{{count}} races in the past 90 days",
+      "summary_one": "{{count}} race in the past 90 days",
       "firstHeading": "Course {{n}} wins",
       "note": "💡 The rate is the probability within races won by that course. Higher payouts mean harder-to-hit patterns.",
       "empty": "No outcome distribution data found"
@@ -433,6 +435,7 @@
       "title": "🏃 Outcome Distribution After a Nige Win",
       "description": "Based on race results from the past 90 days, this analyzes which 2nd/3rd place course combinations appear in races won by Nige (wire-to-wire escape). Races where a boat other than boat 1 escaped are also included.",
       "summary": "{{count}} Nige wins in the past 90 days",
+      "summary_one": "{{count}} Nige win in the past 90 days",
       "firstHeading": "Boat {{n}} wins by Nige",
       "note": "💡 The rate is the probability within races that boat won by Nige. Nige wins by boats other than boat 1 tend to be rare.",
       "empty": "No Nige outcome distribution data found"

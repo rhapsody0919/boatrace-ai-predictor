@@ -105,16 +105,13 @@ function TopStartChart({ initialVenueCode = null }) {
   const venueName = VENUES.find((v) => v.code === selectedVenue)?.name;
   const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venueName);
 
-  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
-  const topStartRateKey = t("analysis.topStart.topStartRate");
-  const winWhenTopStartKey = t("analysis.topStart.winWhenTopStart");
   const chartData = [1, 2, 3, 4, 5, 6]
     .map((boatNumber) => data.find((row) => row.boat_number === boatNumber))
     .filter(Boolean)
     .map((row) => ({
       boat_number: t("analysis.boatN", { n: row.boat_number }),
-      [topStartRateKey]: row.top_start_rate,
-      [winWhenTopStartKey]: row.win_rate_when_top_start,
+      top_start_rate: row.top_start_rate,
+      win_when_top_start: row.win_rate_when_top_start,
     }));
 
   return (
@@ -173,8 +170,16 @@ function TopStartChart({ initialVenueCode = null }) {
           />
           <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
           <Legend />
-          <Bar dataKey={topStartRateKey} fill="#0ea5e9" />
-          <Bar dataKey={winWhenTopStartKey} fill="#10b981" />
+          <Bar
+            dataKey="top_start_rate"
+            name={t("analysis.topStart.topStartRate")}
+            fill="#0ea5e9"
+          />
+          <Bar
+            dataKey="win_when_top_start"
+            name={t("analysis.topStart.winWhenTopStart")}
+            fill="#10b981"
+          />
         </BarChart>
       </ResponsiveContainer>
 

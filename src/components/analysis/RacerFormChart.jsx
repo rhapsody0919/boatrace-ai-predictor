@@ -158,13 +158,10 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
         )
       : null;
 
-  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
-  const nationalKey = t("analysis.racerForm.legendNational");
-  const localKey = t("analysis.racerForm.legendLocal");
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
-    [nationalKey]: row.win_rate,
-    [localKey]: row.local_win_rate,
+    national_win_rate: row.win_rate,
+    local_win_rate: row.local_win_rate,
   }));
 
   const drillDownRacerName = breakdown.find(
@@ -322,14 +319,16 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
                 <Legend />
                 <Line
                   type="stepAfter"
-                  dataKey={nationalKey}
+                  dataKey="national_win_rate"
+                  name={t("analysis.racerForm.legendNational")}
                   stroke="#0ea5e9"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                 />
                 <Line
                   type="stepAfter"
-                  dataKey={localKey}
+                  dataKey="local_win_rate"
+                  name={t("analysis.racerForm.legendLocal")}
                   stroke="#10b981"
                   strokeWidth={2}
                   dot={{ r: 3 }}

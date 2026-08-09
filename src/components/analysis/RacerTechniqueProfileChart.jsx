@@ -17,7 +17,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { supabaseDataService } from "../../services/supabaseDataService";
-import { TECHNIQUE_KEY_BY_NAME } from "../race/raceIndicators";
+import { translateTechnique } from "../race/raceIndicators";
 import "./MotorConditionChart.css";
 
 const VENUE_NAMES = {
@@ -157,10 +157,7 @@ function RacerTechniqueProfileChart({
   }, [selectedRace]);
 
   // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
-  const techniqueLabel = (name) => {
-    const key = TECHNIQUE_KEY_BY_NAME[name];
-    return key ? t(`techniques.${key}`, name) : name;
-  };
+  const techniqueLabel = (name) => translateTechnique(t, name);
 
   const allTechniques = [
     ...new Set(
@@ -168,14 +165,14 @@ function RacerTechniqueProfileChart({
     ),
   ];
 
-  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
+  // dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
   const chartData = breakdown.map((row) => {
     const item = {
       boat_number: `${row.boat_number} ${row.player_name?.replace(/\s+/g, "") ?? ""}`,
     };
     allTechniques.forEach((technique) => {
       const match = row.techniques.find((tech) => tech.technique === technique);
-      item[techniqueLabel(technique)] = match ? match.percentage : 0;
+      item[technique] = match ? match.percentage : 0;
     });
     return item;
   });
@@ -241,34 +238,37 @@ function RacerTechniqueProfileChart({
 
       {!loading && !error && breakdown.length > 0 && (
         <>
-          <ResponsiveContainer width="100%" height={360}>
-            <BarChart
-              data={chartData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="boat_number" />
-              <YAxis
-                label={{
-                  value: t("analysis.techProfile.yAxis"),
-                  angle: -90,
-                  position: "insideLeft",
-                }}
-                domain={[0, 100]}
-                ticks={[0, 20, 40, 60, 80, 100]}
-              />
-              <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
-              <Legend />
-              {allTechniques.map((technique, idx) => (
-                <Bar
-                  key={technique}
-                  dataKey={techniqueLabel(technique)}
-                  stackId="technique"
-                  fill={techniqueColor(technique, idx)}
+          <div translate="no">
+            <ResponsiveContainer width="100%" height={360}>
+              <BarChart
+                data={chartData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="boat_number" />
+                <YAxis
+                  label={{
+                    value: t("analysis.techProfile.yAxis"),
+                    angle: -90,
+                    position: "insideLeft",
+                  }}
+                  domain={[0, 100]}
+                  ticks={[0, 20, 40, 60, 80, 100]}
                 />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
+                <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+                <Legend />
+                {allTechniques.map((technique, idx) => (
+                  <Bar
+                    key={technique}
+                    dataKey={technique}
+                    name={techniqueLabel(technique)}
+                    stackId="technique"
+                    fill={techniqueColor(technique, idx)}
+                  />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
           <div className="table-wrapper">
             <table className="motor-ranking-table">

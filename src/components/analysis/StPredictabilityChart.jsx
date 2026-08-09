@@ -165,11 +165,9 @@ function StPredictabilityChart({
         )
       : null;
 
-  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
-  const deviationKey = t("analysis.st.legend");
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
-    [deviationKey]: row.avg_deviation,
+    deviation: row.avg_deviation,
   }));
 
   const drillDownRacerName = breakdown.find(
@@ -312,7 +310,8 @@ function StPredictabilityChart({
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey={deviationKey}
+                  dataKey="deviation"
+                  name={t("analysis.st.legend")}
                   stroke="#0ea5e9"
                   strokeWidth={2}
                   dot={{ r: 3 }}

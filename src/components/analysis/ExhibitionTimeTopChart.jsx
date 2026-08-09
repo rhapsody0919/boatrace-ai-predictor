@@ -106,16 +106,13 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
   const venueName = VENUES.find((v) => v.code === selectedVenue)?.name;
   const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venueName);
 
-  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
-  const fastestRateKey = t("analysis.exTop.fastestRate");
-  const winWhenFastestKey = t("analysis.exTop.winWhenFastest");
   const chartData = [1, 2, 3, 4, 5, 6]
     .map((boatNumber) => data.find((row) => row.boat_number === boatNumber))
     .filter(Boolean)
     .map((row) => ({
       boat_number: t("analysis.boatN", { n: row.boat_number }),
-      [fastestRateKey]: row.fastest_rate,
-      [winWhenFastestKey]: row.win_rate_when_fastest,
+      fastest_rate: row.fastest_rate,
+      win_when_fastest: row.win_rate_when_fastest,
     }));
 
   return (
@@ -172,8 +169,16 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
           />
           <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
           <Legend />
-          <Bar dataKey={fastestRateKey} fill="#0ea5e9" />
-          <Bar dataKey={winWhenFastestKey} fill="#10b981" />
+          <Bar
+            dataKey="fastest_rate"
+            name={t("analysis.exTop.fastestRate")}
+            fill="#0ea5e9"
+          />
+          <Bar
+            dataKey="win_when_fastest"
+            name={t("analysis.exTop.winWhenFastest")}
+            fill="#10b981"
+          />
         </BarChart>
       </ResponsiveContainer>
 

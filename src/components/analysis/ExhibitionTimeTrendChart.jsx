@@ -164,11 +164,9 @@ function ExhibitionTimeTrendChart({
         )
       : null;
 
-  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
-  const exhibitionTimeKey = t("analysis.exTrend.legend");
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
-    [exhibitionTimeKey]: row.avg_exhibition_time,
+    exhibition_time: row.avg_exhibition_time,
   }));
 
   const drillDownRacerName = breakdown.find(
@@ -312,7 +310,8 @@ function ExhibitionTimeTrendChart({
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey={exhibitionTimeKey}
+                  dataKey="exhibition_time"
+                  name={t("analysis.exTrend.legend")}
                   stroke="#0ea5e9"
                   strokeWidth={2}
                   dot={{ r: 3 }}

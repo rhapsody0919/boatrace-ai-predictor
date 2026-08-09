@@ -161,13 +161,10 @@ function MotorConditionChart({
     loadTrend();
   }, [selectedVenue, drillDownMotor]);
 
-  // 凡例・ツールチップに翻訳名を出すため、データキー自体を翻訳名にする
-  const rate2Key = t("analysis.motor.legend2");
-  const rate3Key = t("analysis.motor.legend3");
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
-    [rate2Key]: row.motor_2rate,
-    [rate3Key]: row.motor_3rate,
+    motor_2rate: row.motor_2rate,
+    motor_3rate: row.motor_3rate,
   }));
 
   const bestMotor2Rate =
@@ -301,14 +298,16 @@ function MotorConditionChart({
                 <Legend />
                 <Line
                   type="stepAfter"
-                  dataKey={rate2Key}
+                  dataKey="motor_2rate"
+                  name={t("analysis.motor.legend2")}
                   stroke="#0ea5e9"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                 />
                 <Line
                   type="stepAfter"
-                  dataKey={rate3Key}
+                  dataKey="motor_3rate"
+                  name={t("analysis.motor.legend3")}
                   stroke="#10b981"
                   strokeWidth={2}
                   dot={{ r: 3 }}
