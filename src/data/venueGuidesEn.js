@@ -841,6 +841,15 @@ export const VENUE_GUIDES_EN = [
       'Free shuttle buses from JR/Kintetsu "Tsu" station and Kintetsu "Tsu-Shinmachi" station',
       "By car: about 20 minutes from Tsu or Hisai interchanges on the Ise Expressway",
     ],
+    mapQuery: "ボートレース津",
+    lat: 34.681031,
+    lng: 136.518254,
+    videoUrl:
+      "https://www.youtube.com/@%E3%83%AC%E3%83%BC%E3%82%B9LIVE%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E6%B4%A5%E3%81%85%E5%85%AC%E5%BC%8F",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the "Tsukki Card", charge it in advance, and winnings are credited automatically so you can head straight to the next race without a payout line.',
+      url: "https://www.boatrace-tsu.com/",
+    },
     facts: {
       water:
         "Faces Ise Bay — can be one of the roughest courses in Tokai when windy",
@@ -854,6 +863,32 @@ export const VENUE_GUIDES_EN = [
         name: "Tsu Nagisamachi",
         description:
           "A ferry terminal with restaurants overlooking the bay; high-speed boats connect to Chubu Centrair Airport in about 45 minutes.",
+      },
+      {
+        name: "Yuki Shrine",
+        description:
+          "A shrine famous for around 300 weeping plum trees, known as \"Yuki-san's weeping plums\", in full bloom from mid-February to mid-March — one of the region's best plum-viewing spots.",
+        lat: 34.697693,
+        lng: 136.515215,
+      },
+      {
+        name: "Tsu Castle Ruins (Oshiro Park)",
+        description:
+          "The ruins of a castle rebuilt by the famed castle architect Todo Takatora, now a park preserving part of the main keep, moat and turret — a quiet historical stop in the city center.",
+        lat: 34.717973,
+        lng: 136.507393,
+      },
+      {
+        name: "Mie Prefectural Museum (MieMu)",
+        description:
+          "The prefecture's flagship museum covering Mie's natural history, culture and industry, with hands-on exhibits that work well for families.",
+        lat: 34.742185,
+        lng: 136.501689,
+      },
+      {
+        name: "Tsu Kannon Temple & Daimon district",
+        description:
+          "One of Japan's three great Kannon temples, at the heart of the Daimon shopping and dining district — Tsu's original birthplace of the tenmusu rice ball, a local specialty worth trying nearby.",
       },
     ],
     schedule: {
