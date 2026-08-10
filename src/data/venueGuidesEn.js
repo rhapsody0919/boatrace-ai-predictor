@@ -1803,6 +1803,14 @@ export const VENUE_GUIDES_EN = [
     access: [
       'JR "Higashi-Karatsu" station → free shuttle bus, about 6 minutes (race days only)',
     ],
+    mapQuery: "ボートレース唐津",
+    lat: 33.424194,
+    lng: 129.995806,
+    videoUrl: "https://www.youtube.com/@boatracekaratsu",
+    cashless: {
+      note: "The venue uses the \"KARAMO\" card, free to join with no annual fee and available for same-day sign-up. It earns 0.5 points per ¥100 wagered plus 2 points per visit, and also supports palm-vein authentication for purchases. It's only usable at the main venue — there's no coverage at off-track outlets.",
+      url: "https://www.infoworld.co.jp/karatsu_cl/cashless.html",
+    },
     facts: {
       water: "Freshwater pool — one of the widest courses in Japan",
       character:
@@ -1815,11 +1823,34 @@ export const VENUE_GUIDES_EN = [
         name: "Karatsu Castle",
         description:
           "A rebuilt 1608 castle with sweeping views of Karatsu Bay and the pine forest below.",
+        lat: 33.453529,
+        lng: 129.97818,
       },
       {
         name: "Niji no Matsubara",
         description:
           "One of Japan's three great pine groves, a 4.5km stretch with over a million pine trees.",
+        lat: 33.478,
+        lng: 130.005,
+      },
+      {
+        name: "Kagamiyama Observation Deck",
+        description:
+          "A lookout at 284m elevation with sweeping views over Karatsu Bay and Niji no Matsubara.",
+        lat: 33.430604,
+        lng: 130.018033,
+      },
+      {
+        name: 'Nanatsugama Sightseeing Boat ("Ika-Maru")',
+        description:
+          "A roughly 40-minute cruise from Yobuko past seven basalt sea caves carved into the coastline.",
+        lat: 33.538085,
+        lng: 129.893847,
+      },
+      {
+        name: "Yobuko Morning Market",
+        description:
+          "One of Japan's three great morning markets, known for fresh seafood and street-food snacking along the harbor.",
       },
     ],
     schedule: {
@@ -1828,7 +1859,13 @@ export const VENUE_GUIDES_EN = [
       seasonalNotes:
         "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
     },
-    image: null,
+    image: {
+      src: "/images/venues/karatsu.jpg",
+      alt: "Boat Race Karatsu stadium",
+      credit: "Photo by Peka, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_Race_Karatsu_in_April_2025.jpg",
+    },
   },
   {
     slug: "omura",
