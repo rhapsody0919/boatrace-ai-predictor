@@ -1096,4 +1096,87 @@ export const VENUE_GUIDES_KO = [
       creditUrl: "https://commons.wikimedia.org/wiki/File:Tokuyamakyotei.JPG",
     },
   },
+  {
+    slug: "shimonoseki",
+    code: 19,
+    name: "시모노세키",
+    kanji: "Shimonoseki",
+    region: "야마구치",
+    regionGroup: "chugoku",
+    tagline: "혼슈 서쪽 끝, LED 조명이 밝히는 잔잔한 해수풀",
+    intro: [
+      "시모노세키 경정장은 혼슈 서쪽 끝에 자리하고 있으며, 높게 쌓아 올린 방파제 뒤에 풀장처럼 조성된 해수 코스입니다 — 방파제가 워낙 높아 만조 때도 스오나다의 파도가 거의 들어오지 않습니다. 덕분에 대부분 수면이 잔잔하고 선수 체중 차이의 영향도 줄어들지만, 조수가 3m를 넘으면 1턴 부근까지 물이 들어올 수 있습니다.",
+      "선수들의 평가가 높은 LED 조명을 사용하며, 시모노세키는 2017년부터 연중 야간 경주를 열어왔고, 2021년부터는 심야 경주 'Midnight'도 진행해 이 스포츠에서 가장 늦은 출주 시각을 기록하고 있습니다.",
+    ],
+    access: [
+      "'조후'역이 가장 가까운 역 → 정문까지 도보 약 10분",
+      "신시모노세키역에서 택시나 버스로 약 10분",
+    ],
+    mapQuery: "ボートレース下関",
+    lat: 34.019189,
+    lng: 131.004075,
+    videoUrl:
+      "https://www.youtube.com/@%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E4%B8%8B%E9%96%A2%E5%85%AC%E5%BC%8F%E3%83%AC%E3%83%BC%E3%82%B9%E3%83%A9%E3%82%A4%E3%83%96",
+    cashless: {
+      note: "이곳은 무료 선불카드 'e〜ほっ！카드'로 운영됩니다. 구매, 방문, 유료석 이용 시 포인트가 적립되며 현금이나 상품으로 교환할 수 있습니다. 본장뿐 아니라 장외 발매소 '후쿠~루 시모노세키', '오라레 시모노세키', 'BTS나가토'에서도 사용할 수 있습니다. 신청 시 신분증이 필요하며, 카드 유효기간은 2년입니다.",
+      url: "https://www.boatrace-shimonoseki.jp/modules/service/?page=index_cashless",
+    },
+    facts: {
+      water: "해수풀（방파제 보호）— 대체로 잔잔, 조수 3m 초과 시 1턴에 영향",
+      character: "대부분 잔잔하고 일정함",
+      nightRace: true,
+    },
+    tip: "안정적이고 조명이 밝은 환경 덕분에 이곳은 비교적 읽기 쉬운 경정장 중 하나입니다 — 그럼에도 저희 AI는 시모노세키 예측마다 1턴 부근의 조수 상태를 확인합니다.",
+    nearbyAttractions: [
+      {
+        name: "고잔지",
+        description:
+          "1327년 창건된 선종 사찰로 국보로 지정된 본당이 있으며, 막부 말기 개혁가 다카스기 신사쿠가 1865년 거병한 곳이기도 합니다.",
+        lat: 33.995889,
+        lng: 130.981917,
+      },
+      {
+        name: "이미노미야 신사",
+        description:
+          "옛 조후 성하마을을 지켜온 유서 깊은 신사로, 매년 8월 열리는 활기찬 스호테이 축제로 유명합니다.",
+        lat: 33.998972,
+        lng: 130.987556,
+      },
+      {
+        name: "조후 정원",
+        description:
+          "조후번 가로（家老) 저택 터에 조성된 약 31,000㎡ 규모의 일본식 회유식 정원입니다.",
+      },
+      {
+        name: "간류지마",
+        description:
+          "검객 미야모토 무사시와 사사키 고지로의 전설적인 결투 장소로 알려진 무인도로, 가라토에서 배로 갈 수 있습니다.",
+        lat: 33.93278,
+        lng: 130.93056,
+      },
+      {
+        name: "가라토 시장",
+        description:
+          "복어와 해산물로 유명한 시장으로, 주말에는 초밥과 해산물 덮밥을 파는 노점이 열립니다.",
+      },
+      {
+        name: "시모노세키 해향관 수족관",
+        description:
+          "간몬 해협을 내려다보는 수족관으로, 세계에서 가장 많은 복어 종을 보유하고 있습니다.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "2017년부터 연중 야간 경주를 여는 경정장이며, 2021년부터는 심야 경주 'Midnight'도 진행합니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/shimonoseki.jpg",
+      alt: "시모노세키 경정장",
+      credit: "Photo by Muyo, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Shimonoseki_Kyotei.jpg",
+    },
+  },
 ];
