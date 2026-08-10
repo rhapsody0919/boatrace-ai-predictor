@@ -552,4 +552,83 @@ export const VENUE_GUIDES_KO = [
       creditUrl: "https://commons.wikimedia.org/wiki/File:Boat_Race_Mikuni.jpg",
     },
   },
+  {
+    slug: "biwako",
+    code: 11,
+    name: "비와코",
+    kanji: "Biwako",
+    region: "시가",
+    regionGroup: "kinki",
+    tagline: "일본에서 가장 아름다운 경정장, 비와호 호숫가에",
+    intro: [
+      "비와코 경정장은 일본 최대의 담수호인 비와호 호숫가에 자리하고 있으며, 호수 너머로 미카미산（오미후지）과 이부키산이 보이는 풍경 덕분에 일본에서 가장 경치가 아름다운 경정장 중 하나로 꼽힙니다. 경주 중에는 관광 유람선 '미시간호'가 호수를 오가는 모습도 자주 보입니다.",
+      "봄과 여름에는 호수에서 불어오는 바람 때문에 수면이 거칠어질 수 있어, 완전히 바람을 막아주는 다른 경정장보다 컨디션 변화가 큰 편입니다 — 경치와 함께 눈여겨볼 만한 요소입니다.",
+    ],
+    access: [
+      "게이한 '벳쇼'역 → 도보 약 9분",
+      "자동차: 메이신고속도로 오쓰 또는 교토히가시 나들목에서 약 15분",
+    ],
+    mapQuery: "ボートレースびわこ",
+    lat: 35.01730116,
+    lng: 135.86110332,
+    videoUrl: "https://www.youtube.com/channel/UCLbcsJqsT5Qa1axpYcOBpmg",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 'Bina Touch'를 신청하세요. 공동 포인트 프로그램 '오미 포인트 클럽'도 있어, 이곳에서 적립한 포인트를 미쿠니・스미노에・아마가사키에서도 사용할 수 있습니다.",
+      url: "https://www.boatrace-biwako.jp/modules/service/?page=index_point",
+    },
+    facts: {
+      water: "담수（비와호）— 봄・여름에 호수 바람으로 거칠어질 수 있음",
+      character:
+        "일본에서 가장 경치가 아름다운 경정장 중 하나 — 바람에 따라 컨디션 변화",
+      nightRace: false,
+    },
+    tip: "호수에서 불어오는 바람이 경주 도중 컨디션을 바꿔놓을 수 있습니다 — 저희 AI는 비와코 예측마다 경정장 변동성을 반영합니다.",
+    nearbyAttractions: [
+      {
+        name: "비와호 호숫가",
+        description:
+          "경정장 바로 옆에서 호수 너머로 미카미산과 이부키산이 펼쳐지는 절경을 감상할 수 있으며, 관광 유람선 '미시간호' 등이 호수를 오갑니다.",
+      },
+      {
+        name: "미이데라（온조지）",
+        description:
+          "일본 4대 사찰 중 하나로, 일본에서 가장 아름다운 종소리로 유명한 범종이 있습니다 — 유네스코 세계유산 잠정목록에 올라 있으며, 경정장에서 약 1km 거리입니다.",
+        lat: 35.01335,
+        lng: 135.852822,
+      },
+      {
+        name: "비와호 소수（운하）",
+        description:
+          "비와호와 교토를 잇는 19세기 운하로, 물길을 따라 벚나무가 심어진 산책로가 있습니다 — 미이데라 근처의 경치 좋은 산책 코스입니다.",
+        lat: 35.012481,
+        lng: 135.858029,
+      },
+      {
+        name: "오미 신궁",
+        description:
+          "덴지 천황을 모시는 신사로, 숲이 우거진 언덕에 자리하며 일본 전국 가루타 대회 개최지로 유명합니다 — 경정장에서 차로 약 20분 거리입니다.",
+        lat: 35.032216,
+        lng: 135.852109,
+      },
+      {
+        name: "나기사 공원과 오쓰 호숫가",
+        description:
+          "계절 꽃（봄에는 芝桜）이 피는 길게 뻗은 호숫가 공원으로, 비와코 오쓰 프린스 호텔 근처에 있습니다 — 경정장에서 남쪽으로 약 15분 거리의 여유로운 호숫가 산책 코스입니다.",
+        lat: 35.004965,
+        lng: 135.889099,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/biwako.jpg",
+      alt: "비와코 경정장",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Biwako-kyotei-01.jpg",
+    },
+  },
 ];
