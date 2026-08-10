@@ -1714,6 +1714,14 @@ export const VENUE_GUIDES_EN = [
     access: [
       'JR Kagoshima Main Line "Orio" or "Onga-gawa" stations → free taxi or free bus',
     ],
+    mapQuery: "ボートレース芦屋",
+    lat: 33.873954,
+    lng: 130.663844,
+    videoUrl: "https://www.youtube.com/channel/UCeyQwUd3H1p-e4R50yJ6K7Q",
+    cashless: {
+      note: 'The venue uses the "ASHIMU Card," free to join with no annual fee and valid for 2 years from your last use (it auto-renews). It works at the ticket machines throughout the main venue (B1F, 1F, and the 2F/3F reserved seating) as well as at the payout counter of the off-track outlet Ashimu Terrace. Replacement for a lost card costs ¥500.',
+      url: "https://www.boatrace-ashiya.com/modules/service/?page=index_cashless",
+    },
     facts: {
       water: "Freshwater, firm — runs roughly east-west",
       character: "Calm and technical, similar in feel to Tamagawa",
@@ -1722,14 +1730,47 @@ export const VENUE_GUIDES_EN = [
     tip: "Calm, technical water like this rewards consistent racers — our AI weighs racer and motor form heavily for every Ashiya prediction.",
     nearbyAttractions: [
       {
+        name: "Okanominato Shrine",
+        description:
+          "An ancient shrine with roughly 1,800 years of history, mentioned in the Nihon Shoki chronicle.",
+        lat: 33.870655,
+        lng: 130.657897,
+      },
+      {
+        name: "Ashiya History and Folklore Museum",
+        description:
+          "A local museum displaying Jomon-era human remains from the Yamaga shell mounds and artifacts from Ashiya's foundry craftsmen.",
+        lat: 33.906239,
+        lng: 130.665537,
+      },
+      {
+        name: "Sanri-matsubara Pine Grove",
+        description:
+          "A scenic stretch of white-sand beach backed by a long run of pine trees.",
+        lat: 33.879501,
+        lng: 130.619637,
+      },
+      {
+        name: "Horayama Cave and Senjojiki",
+        description:
+          "A sea cave and flat rock shelf carved from roughly 30-million-year-old sedimentary rock, near Kashiwabara fishing port.",
+      },
+      {
+        name: "Kariomisaki Cape",
+        description:
+          "A walkable cape near Horayama, easy to combine into the same coastal stroll.",
+      },
+      {
         name: "Ashiya Beach",
         description:
           "A roughly 1km stretch of coastline on the Hibiki-nada sea, popular for swimming in summer.",
       },
       {
-        name: "Aqua Ocean",
+        name: "Aquasian",
         description:
           "A water park with a 120m water slide and a lazy river, a short trip from the venue.",
+        lat: 33.893489,
+        lng: 130.656281,
       },
     ],
     schedule: {
