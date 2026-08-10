@@ -1632,6 +1632,14 @@ export const VENUE_GUIDES_EN = [
       'Wakamatsu is also famous for being the closest pair of venues in Japan: Boat Race Ashiya is a short trip away, and some fans "hop" between the two, catching one card in the morning and another later in the day.',
     ],
     access: ['"Okudokai" station → about 5 minutes on foot'],
+    mapQuery: "ボートレース若松",
+    lat: 33.887271,
+    lng: 130.764915,
+    videoUrl: "https://www.youtube.com/channel/UCll--OtE3eJpzb4uwX8MX9A",
+    cashless: {
+      note: 'The venue uses the "Kappa-kun Card" (かっぱくんカード), a cashless IC card that earns points automatically on ticket purchases. Load cash at an in-venue deposit machine, then tap the card at a ticket terminal and enter your PIN to buy. Points expire at the end of the month one year after they\'re earned.',
+      url: "https://www.wmb.jp/info/cashless/",
+    },
     facts: {
       water:
         "Seawater, connects to Dokai Bay near mark 2 — generally calm, some winter roughness",
@@ -1640,6 +1648,32 @@ export const VENUE_GUIDES_EN = [
     },
     tip: "Conditions here sit between calm and technical — our AI weighs both start data and venue volatility for every Wakamatsu prediction.",
     nearbyAttractions: [
+      {
+        name: "Mt. Takato Park",
+        description:
+          "A hilltop park at 124m elevation with views over the Wakato Bridge, Mt. Sarakura and the Hibiki-nada sea — certified one of Japan's night-view heritage sites in 2013.",
+        lat: 33.902651,
+        lng: 130.798503,
+      },
+      {
+        name: "Wakato Bridge",
+        description:
+          "A 2.1km red suspension bridge spanning Dokai Bay, opened in 1962 and a symbol of Kitakyushu city.",
+        lat: 33.902559,
+        lng: 130.81712,
+      },
+      {
+        name: "Waita Beach",
+        description:
+          "A swimming beach along Wakamatsu's north coast, within the Genkai Quasi-National Park.",
+        lat: 33.934992,
+        lng: 130.728309,
+      },
+      {
+        name: "Kitakyushu Next-Generation Energy Park",
+        description:
+          "A hands-on facility where visitors can tour wind and solar power installations, opened in 2009.",
+      },
       {
         name: "Shabon Dama Soap factory tour",
         description:
