@@ -183,6 +183,14 @@ export const VENUE_GUIDES_EN = [
       'Toei Shinjuku Line "Funabori" station → free race-day shuttle bus',
       'JR Sobu Line "Hirai" station → free race-day shuttle bus',
     ],
+    mapQuery: "ボートレース江戸川",
+    lat: 35.69223896,
+    lng: 139.86135473,
+    videoUrl: "https://www.youtube.com/channel/UCpNAwETM_vPV2Skumzc_KMA",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the prepaid points card "Eメンバー" (E-Member), which earns 1.5 points per ¥100 wagered, redeemable for venue vouchers, reserved-seat tickets or gift cards.',
+      url: "https://edogawa-emember.com/",
+    },
     facts: {
       water: "River (tidal, affected by wind and current)",
       character: "The roughest water in Japan — expect upsets",
@@ -191,14 +199,38 @@ export const VENUE_GUIDES_EN = [
     tip: "Weather matters more here than anywhere else. Our AI factors venue volatility into every Edogawa prediction.",
     nearbyAttractions: [
       {
-        name: "Kasai Rinkai Park",
-        description:
-          "Seaside park with a large aquarium, a giant Ferris wheel and BBQ areas, one JR Keiyo Line stop from the Tokyo Disney Resort area.",
-      },
-      {
         name: "Kitaro Walkway (on-site)",
         description:
-          "The venue's own embankment stands are lined with yokai artwork by Shigeru Mizuki, creator of GeGeGe no Kitaro.",
+          "The venue's own embankment stands are lined with yokai artwork by Shigeru Mizuki, creator of GeGeGe no Kitaro — a one-of-a-kind sight you won't find at any other Kyotei venue.",
+      },
+      {
+        name: "Kasai Rinkai Park & Aquarium",
+        description:
+          "Seaside park with a large aquarium built around a giant tuna tank, plus a giant Ferris wheel with bay views. About 30 minutes by train, and one stop further gets you to Tokyo Disney Resort.",
+        lat: 35.64442524,
+        lng: 139.86156763,
+      },
+      {
+        name: "Tower Hall Funabori",
+        description:
+          "Edogawa Ward's landmark observation tower — a free 115m-high deck with views of Tokyo Skytree and, on clear days, Mt. Fuji. Right next to Funabori Station, an easy stop before or after a race.",
+        url: "https://www.towerhall.jp/",
+        lat: 35.684378,
+        lng: 139.86496,
+      },
+      {
+        name: "Gyosen Park & Shizen Zoo",
+        description:
+          "A free mini-zoo with 62 species including flamingos, meerkats and capybaras, plus a Japanese garden and fishing pond in the same park. About 15 minutes on foot from Nishi-Kasai Station — good for a family stop.",
+        lat: 35.671505,
+        lng: 139.858263,
+      },
+      {
+        name: "Tokyo Disney Resort",
+        description:
+          "Japan's most famous theme park, one more stop past Kasai Rinkai Park on the JR Keiyo Line to Maihama Station. If your race is scheduled during the day, you can still fit in an evening at the park.",
+        lat: 35.63626,
+        lng: 139.88361,
       },
     ],
     schedule: {
