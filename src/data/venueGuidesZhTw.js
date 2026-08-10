@@ -1020,4 +1020,79 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "amagasaki",
+    code: 13,
+    name: "尼崎",
+    kanji: "Amagasaki",
+    region: "兵庫",
+    tagline: "一出車站就到——日本水面最平穩的賽場之一",
+    intro: [
+      "尼崎賽艇場的交通便利程度在競艇界數一數二：賽場就緊鄰阪神電鐵「尼崎中央運動公園前」站，就算下雨天也幾乎不需要撐傘。這裡的水面以全國最平穩、最考驗技術聞名，淡水賽道，船底下的水面十分紮實。",
+      "全年大多數時候賽道會吹逆風，但當低氣壓或降雨接近時，風向也可能轉為順風。近年來1號艇在這裡的奪冠率超過六成，讓尼崎成為日本內側最有利的賽場之一。",
+    ],
+    access: [
+      "阪神電鐵「尼崎中央運動公園前」站 → 緊鄰賽場",
+      "從大阪梅田可搭乘直達特急或急行列車，或從神戶三宮於「西宮」站轉乘普通車",
+    ],
+    mapQuery: "ボートレース尼崎",
+    lat: 34.719489,
+    lng: 135.393973,
+    videoUrl: "https://www.youtube.com/@AMABOATRACE",
+    cashless: {
+      note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可申請免費的「AMA+」卡，可在場內機台加值，每100日圓投注可獲得1點，點數可兌換指定席票券、QUO卡或場館周邊商品。",
+      url: "https://www.boatrace-amagasaki.jp/sp/index.php?page=service-cashless",
+    },
+    image: {
+      src: "/images/venues/amagasaki.jpg",
+      alt: "尼崎賽艇場",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Amagasaki-kyotei-01.jpg",
+    },
+    facts: {
+      water: "淡水，水面紮實平穩——有利於技術型選手發揮",
+      character: "日本內側最有利的賽場之一（1號艇奪冠率超過60%）",
+      nightRace: false,
+    },
+    tip: "由於1號艇在這裡奪冠率極高，我們的AI在每場尼崎預測中都會特別重視起跑水道的優勢分析。",
+    nearbyAttractions: [
+      {
+        name: "尼崎城",
+        description:
+          "在原址重建的江戶時代城郭（2019年重新開放），館內設有介紹城下町歷史的博物館，距賽場約2公里。",
+        lat: 34.716723,
+        lng: 135.41875,
+      },
+      {
+        name: "寺町（尼崎城下寺院群）",
+        description:
+          "緊鄰尼崎城的歷史街區，保留11座寺院，維持著昔日城下町的風貌，與賽事的熱鬧氣氛形成寧靜對比。",
+      },
+      {
+        name: "尼崎存錢筒博物館",
+        description:
+          "由當地信用金庫經營的特色企業博物館，展示來自世界各地的數千個存錢筒，可以和附近的尼崎城與寺町街區一起安排參觀。",
+        lat: 34.716214,
+        lng: 135.413431,
+      },
+      {
+        name: "汐江須佐男神社",
+        description:
+          "以夏季祭典聞名的當地神社，若在阪神尼崎站周邊散步，值得順道一訪的寧靜景點。",
+        lat: 34.737332,
+        lng: 135.435484,
+      },
+      {
+        name: "阪神尼崎站周邊",
+        description:
+          "市內主要交通樞紐，周邊有商店街與近期整修完成的中央公園，適合作為結合市區其他觀光行程的據點。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "尼崎一年約舉辦180天賽事，比大多數賽場更頻繁。每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
