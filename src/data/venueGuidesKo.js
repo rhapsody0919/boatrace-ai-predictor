@@ -1259,4 +1259,92 @@ export const VENUE_GUIDES_KO = [
         "https://commons.wikimedia.org/wiki/File:Boat_Race_Wakamatsu_in_front_of_Okudokai_Station.jpg",
     },
   },
+  {
+    slug: "ashiya",
+    code: 21,
+    name: "아시야",
+    kanji: "Ashiya",
+    region: "후쿠오카（규슈）",
+    regionGroup: "kyushu",
+    tagline: "해안 근처의 잔잔하고 기술적인 담수 코스",
+    intro: [
+      "아시야 경정장은 온가강 근처, 히비키나다 바다에서 약 2km 떨어진 곳에 있습니다. 코스는 대체로 동서 방향으로 뻗어 있으며, 다마가와와 자주 비교되는 단단한 담수 수면입니다 — 거칠기보다는 잔잔하고 기술적입니다.",
+      "아시야는 일본에서 가장 가까운 경정장 쌍의 절반을 이룹니다: 와카마쓰 경정장이 가까이 있어, 일부 방문객은 하루에 두 곳을 함께 둘러봅니다.",
+    ],
+    access: [
+      "JR가고시마 본선 '오리오' 또는 '온가가와'역 → 무료 택시 또는 무료 버스",
+    ],
+    mapQuery: "ボートレース芦屋",
+    lat: 33.873954,
+    lng: 130.663844,
+    videoUrl: "https://www.youtube.com/channel/UCeyQwUd3H1p-e4R50yJ6K7Q",
+    cashless: {
+      note: "이곳은 'ASHIMU 카드'를 사용합니다. 가입비・연회비 무료이며 마지막 사용일로부터 2년간 유효합니다（자동 갱신）. 본장 전역（지하1층・1층・2층/3층 지정석）의 발매기와 장외 발매소 '아시무 테라스'의 환급 창구에서 사용할 수 있습니다. 카드 분실 재발급 비용은 500엔입니다.",
+      url: "https://www.boatrace-ashiya.com/modules/service/?page=index_cashless",
+    },
+    facts: {
+      water: "담수, 단단함 — 대체로 동서 방향",
+      character: "잔잔하고 기술적, 다마가와와 비슷한 느낌",
+      nightRace: false,
+    },
+    tip: "이런 잔잔하고 기술적인 수면은 꾸준한 실력의 선수에게 유리합니다 — 저희 AI는 아시야 예측마다 선수와 모터 컨디션 데이터를 크게 반영합니다.",
+    nearbyAttractions: [
+      {
+        name: "오카미나토 신사",
+        description:
+          "약 1,800년의 역사를 지닌 유서 깊은 신사로, 일본서기에도 기록되어 있습니다.",
+        lat: 33.870655,
+        lng: 130.657897,
+      },
+      {
+        name: "아시야 역사민속자료관",
+        description:
+          "야마가 조개무지에서 출토된 조몬시대 인골과 아시야 주물사 관련 유물을 전시하는 지역 박물관입니다.",
+        lat: 33.906239,
+        lng: 130.665537,
+      },
+      {
+        name: "산리마쓰바라 소나무숲",
+        description:
+          "길게 이어진 백사장과 소나무숲이 어우러진 경치 좋은 해안입니다.",
+        lat: 33.879501,
+        lng: 130.619637,
+      },
+      {
+        name: "호라야마 동굴과 센조지키",
+        description:
+          "약 3천만 년 전 퇴적암으로 이루어진 해식동굴과 평평한 암반으로, 가시와바라 어항 근처에 있습니다.",
+      },
+      {
+        name: "가리오미사키곶",
+        description:
+          "호라야마 근처의 산책 가능한 곶으로, 같은 해안 산책 코스에 포함하기 좋습니다.",
+      },
+      {
+        name: "아시야 해수욕장",
+        description:
+          "히비키나다 바다를 따라 약 1km 이어지는 해안으로, 여름철 해수욕으로 인기가 많습니다.",
+      },
+      {
+        name: "아쿠아시안",
+        description:
+          "120m 워터슬라이드와 유수풀을 갖춘 워터파크로, 경정장에서 가까운 거리입니다.",
+        lat: 33.893489,
+        lng: 130.656281,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/ashiya.jpg",
+      alt: "아시야 경정장 코스",
+      credit: "Photo by Umako, CC BY 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_Race_Ashiya_racecourse_260508.jpg",
+    },
+  },
 ];
