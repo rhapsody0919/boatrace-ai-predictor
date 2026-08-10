@@ -148,6 +148,13 @@ const LANGUAGE_ONLY_PAGES = {
       changefreq: "monthly",
       priority: "0.6",
     })),
+    // ブログはja専用が原則だが、需要が確認できたこの1記事のみ英語版を用意した
+    // 最小実装（languages.js の LANGUAGE_ONLY_PATHS 参照）
+    {
+      basePath: "/blog/odds-expected-value-guide",
+      changefreq: "monthly",
+      priority: "0.6",
+    },
   ],
   "zh-TW": [
     ...["", ...VENUE_GUIDES_ZH_TW.map((v) => v.slug)].map((slug) => ({
@@ -208,6 +215,8 @@ function getBlogPosts() {
 
   files.forEach((file) => {
     if (!file.endsWith(".md")) return;
+    // 英語版等の言語別mdファイルはja版sitemapの対象外（LANGUAGE_ONLY_PAGESで別途登録する）
+    if (file.endsWith("-en.md")) return;
 
     const filePath = path.join(BLOG_DIR, file);
     const content = fs.readFileSync(filePath, "utf-8");

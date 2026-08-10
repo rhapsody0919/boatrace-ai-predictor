@@ -1,25 +1,97 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { getPostById, getRelatedPosts } from "../data/blogPosts";
+import { parseLangFromPath, localizePath } from "../config/languages";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
 import "./BlogPost.css";
 
+// 最小実装: ブログ全体の多言語化はまだ行わず、需要が確認できた記事のみ
+// 英語版を用意する（Search Consoleでこの記事に表示回数110件を確認、2026-08-11）。
+// languages.js の TRANSLATED_PATHS にこの記事のパスだけを登録することで、
+// 他の記事は従来通り ja 版へリダイレクトされる。
+const ENGLISH_POST_OVERRIDES = {
+  "odds-expected-value-guide": {
+    title: "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
+    description:
+      "How boat racing odds work and how to think in expected value, explained with data — the overpopularity trap, targeting odds distortions, and break-even odds by bet type.",
+    category: "Data Analysis",
+    tags: [
+      "Odds",
+      "ExpectedValue",
+      "Overpopularity",
+      "BettingStrategy",
+      "DataAnalysis",
+    ],
+    readTime: "9 min",
+    mdPath: "/blog/odds-expected-value-guide-en.md",
+  },
+};
+
+const UI_TEXT = {
+  ja: {
+    backToBlog: "← ブログ一覧に戻る",
+    backHref: "/blog",
+    loading: "記事を読み込み中...",
+    errorTitle: "エラー",
+    notFound: "記事が見つかりません",
+    loadError: "記事の読み込みに失敗しました",
+    relatedPosts: "📌 関連記事",
+    readMore: "続きを読む →",
+    ctaTitle: "🚀 今すぐBoatAI予想を試してみる",
+    ctaDesc: "完全無料でAI予想を確認できます",
+    ctaButton: "AI予想を見る",
+    home: "ホーム",
+    blogLabel: "ブログ",
+    homeHref: "/",
+  },
+  en: {
+    backToBlog: "← Back to BoatAI",
+    backHref: "/en/",
+    loading: "Loading article...",
+    errorTitle: "Error",
+    notFound: "Article not found",
+    loadError: "Failed to load article",
+    relatedPosts: "📌 Related articles",
+    readMore: "Read more →",
+    ctaTitle: "🚀 Try BoatAI predictions now",
+    ctaDesc: "Check AI predictions completely free",
+    ctaButton: "View AI Predictions",
+    home: "Home",
+    blogLabel: "Blog",
+    homeHref: "/en/",
+  },
+};
+
 export default function BlogPost() {
   const { id } = useParams();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const post = getPostById(id);
-  const relatedPosts = getRelatedPosts(id, 3);
+  const { lng } = parseLangFromPath(pathname);
+  const isEnglish = lng === "en" && Boolean(ENGLISH_POST_OVERRIDES[id]);
+  const t = UI_TEXT[isEnglish ? "en" : "ja"];
 
-  const postUrl = post ? `https://www.boat-ai.jp/blog/${id}` : null;
+  const basePost = getPostById(id);
+  const post =
+    isEnglish && basePost
+      ? { ...basePost, ...ENGLISH_POST_OVERRIDES[id] }
+      : basePost;
+  const relatedPosts = isEnglish ? [] : getRelatedPosts(id, 3);
+  const mdPath = isEnglish
+    ? ENGLISH_POST_OVERRIDES[id].mdPath
+    : `/blog/${id}.md`;
+
+  const postUrl = post
+    ? `https://www.boat-ai.jp${localizePath(`/blog/${id}`, isEnglish ? "en" : "ja")}`
+    : null;
   const postImageUrl = post
     ? post.image
       ? `https://www.boat-ai.jp${post.image}`
@@ -27,17 +99,17 @@ export default function BlogPost() {
     : null;
 
   useEffect(() => {
-    if (!post) {
-      setError("記事が見つかりません");
+    if (!basePost) {
+      setError(t.notFound);
       setLoading(false);
       return;
     }
 
     // Load markdown content
-    fetch(`/blog/${id}.md`)
+    fetch(mdPath)
       .then((response) => {
         if (!response.ok) {
-          throw new Error("記事の読み込みに失敗しました");
+          throw new Error(t.loadError);
         }
         return response.text();
       })
@@ -53,7 +125,8 @@ export default function BlogPost() {
 
     // Scroll to top
     window.scrollTo(0, 0);
-  }, [id, post]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mdPath/t は id/isEnglish から導出される
+  }, [id, basePost, mdPath]);
 
   useSocialMeta({
     title: post?.title,
@@ -68,7 +141,7 @@ export default function BlogPost() {
       <div className="blog-post-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>記事を読み込み中...</p>
+          <p>{t.loading}</p>
         </div>
       </div>
     );
@@ -78,10 +151,10 @@ export default function BlogPost() {
     return (
       <div className="blog-post-container">
         <div className="error">
-          <h2>エラー</h2>
-          <p>{error || "記事が見つかりません"}</p>
-          <Link to="/blog" className="back-button">
-            ← ブログ一覧に戻る
+          <h2>{t.errorTitle}</h2>
+          <p>{error || t.notFound}</p>
+          <Link to={t.backHref} className="back-button">
+            {t.backToBlog}
           </Link>
         </div>
       </div>
@@ -156,14 +229,14 @@ export default function BlogPost() {
             {
               "@type": "ListItem",
               position: 1,
-              name: "ホーム",
-              item: "https://www.boat-ai.jp/",
+              name: t.home,
+              item: `https://www.boat-ai.jp${localizePath("/", isEnglish ? "en" : "ja")}`,
             },
             {
               "@type": "ListItem",
               position: 2,
-              name: "ブログ",
-              item: "https://www.boat-ai.jp/blog",
+              name: t.blogLabel,
+              item: `https://www.boat-ai.jp${localizePath("/blog", isEnglish ? "en" : "ja")}`,
             },
             {
               "@type": "ListItem",
@@ -179,8 +252,8 @@ export default function BlogPost() {
 
       <div className="blog-post-container">
         <div className="blog-post-header">
-          <Link to="/blog" className="back-link">
-            ← ブログ一覧に戻る
+          <Link to={t.backHref} className="back-link">
+            {t.backToBlog}
           </Link>
           <span className="category-badge">{post.category}</span>
           <h1>{post.title}</h1>
@@ -222,7 +295,7 @@ export default function BlogPost() {
         {/* Related Posts */}
         {relatedPosts.length > 0 && (
           <div className="related-posts">
-            <h2>📌 関連記事</h2>
+            <h2>{t.relatedPosts}</h2>
             <div className="related-grid">
               {relatedPosts.map((relatedPost) => (
                 <Link
@@ -233,7 +306,7 @@ export default function BlogPost() {
                   <span className="category-badge">{relatedPost.category}</span>
                   <h3>{relatedPost.title}</h3>
                   <p>{relatedPost.description}</p>
-                  <span className="read-more">続きを読む →</span>
+                  <span className="read-more">{t.readMore}</span>
                 </Link>
               ))}
             </div>
@@ -242,10 +315,10 @@ export default function BlogPost() {
 
         {/* CTA */}
         <div className="post-cta">
-          <h3>🚀 今すぐBoatAI予想を試してみる</h3>
-          <p>完全無料でAI予想を確認できます</p>
-          <button onClick={() => navigate("/")} className="cta-button">
-            AI予想を見る
+          <h3>{t.ctaTitle}</h3>
+          <p>{t.ctaDesc}</p>
+          <button onClick={() => navigate(t.homeHref)} className="cta-button">
+            {t.ctaButton}
           </button>
         </div>
       </div>

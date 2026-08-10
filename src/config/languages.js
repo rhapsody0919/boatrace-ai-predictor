@@ -43,9 +43,14 @@ export const LANGUAGE_STORAGE_KEY = "boatai-language";
 
 // 特定言語にのみ存在するパスと対応言語（ルーティング・hreflang で共用）
 // 会場別ビジターガイドのko版は24会場全てのデータが揃ったため有効化済み（en/zh-TWと同じフルセット）
+// ブログはja専用が原則だが、Search Consoleで需要が確認できた記事（表示回数110件、2026-08-11）
+// のみ英語版を用意した最小実装のため、この1記事だけja+enを個別登録する（BlogPost.jsx参照）。
+// 他エントリと異なりjaも含むのは、この記事はja版が既存であり「特定言語専用」ではなく
+// 「ja+enの2言語のみ提供」というケースのため（hreflang・言語スイッチャーの可用性判定に必要）
 export const LANGUAGE_ONLY_PATHS = {
   "/venues": ["en", "zh-TW", "ko"],
   "/venues/region": ["en", "zh-TW", "ko"],
+  "/blog/odds-expected-value-guide": ["ja", "en"],
 };
 
 /**
@@ -65,6 +70,7 @@ export const TRANSLATED_PATHS = [
   "/guide",
   "/venues",
   "/winning-technique",
+  "/blog/odds-expected-value-guide",
 ];
 
 // パス（言語プレフィックス除去済み）のコンテンツが翻訳済みかどうか

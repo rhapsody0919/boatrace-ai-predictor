@@ -47,27 +47,32 @@ test.describe("会場ガイド (venues)", () => {
 });
 
 test.describe("言語切替 (回帰: 対応外言語クリックでホームに飛ばされない)", () => {
-  test("/en/venues で対応外言語(韓国語)ボタンは無効化され、クリックしても遷移しない", async ({
+  test("/en/venues で対応外言語(日本語)ボタンは無効化され、クリックしても遷移しない", async ({
     page,
   }) => {
+    // 会場ガイドはja非対応（en/zh-TW/koの3言語フルセット、2026-08-11時点）
     await page.goto("/en/venues");
-    const koBtn = page.locator('.language-switcher-btn:has-text("한국어")');
-    await expect(koBtn).toBeVisible();
-    await expect(koBtn).toHaveAttribute("aria-disabled", "true");
-    await expect(koBtn).toHaveClass(/unavailable/);
+    const jaBtn = page.locator('.language-switcher-btn:has-text("JA")');
+    await expect(jaBtn).toBeVisible();
+    await expect(jaBtn).toHaveAttribute("aria-disabled", "true");
+    await expect(jaBtn).toHaveClass(/unavailable/);
     // aria-disabled はネイティブ disabled と異なりクリック自体は可能なため force で実クリックを再現
-    await koBtn.click({ force: true });
+    await jaBtn.click({ force: true });
     await page.waitForTimeout(300);
     await expect(page).toHaveURL(/\/en\/venues$/);
   });
 
-  test("/en/venues で対応言語(繁體中文)ボタンは正しく遷移する", async ({
+  test("/en/venues で対応言語(繁體中文・韓国語)ボタンは正しく遷移する", async ({
     page,
   }) => {
     await page.goto("/en/venues");
     const zhBtn = page.locator('.language-switcher-btn:has-text("中文")');
     await zhBtn.click();
     await expect(page).toHaveURL(/\/zh-TW\/venues$/);
+
+    const koBtn = page.locator('.language-switcher-btn:has-text("한국어")');
+    await koBtn.click();
+    await expect(page).toHaveURL(/\/ko\/venues$/);
   });
 });
 
