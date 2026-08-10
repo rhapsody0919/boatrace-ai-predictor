@@ -1314,6 +1314,14 @@ export const VENUE_GUIDES_EN = [
       'JR Seto-Ohashi Line "Kojima" station → free shuttle bus, 3-5 minutes',
       "By car: about 5 minutes from Kojima IC on the Seto-Chuo Expressway",
     ],
+    mapQuery: "ボートレース児島",
+    lat: 34.44852433,
+    lng: 133.80919362,
+    videoUrl: "https://www.youtube.com/channel/UC6IrOXVuw6xXLl1qJqYUrsg",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the free "K Smart Card"; ¥100 wagered earns 1 point (more at reserved seating), redeemable for e-money or venue goods, and usable at the off-track facility too.',
+      url: "https://www.kojimaboat.jp/cashless.html",
+    },
     facts: {
       water:
         "Seawater, Seto Inland Sea — strong tidal swing, usually light wind",
@@ -1325,12 +1333,33 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Kojima Jeans Street",
         description:
-          "A shopping street lined with shops selling locally made denim — Kojima is considered Japan's jeans-making capital.",
+          "A roughly 400m shopping street in the Ajino district lined with shops selling locally made denim — Kojima is considered Japan's jeans-making capital, and this is its most concentrated stretch of shops.",
+      },
+      {
+        name: "Kyu-Nozaki-ke Residence",
+        description:
+          "A vast Edo-period merchant estate built by a salt-trading magnate, with roughly 1,000 tsubo of buildings preserved as a museum — a striking contrast to the modern jeans stores nearby.",
+      },
+      {
+        name: "Shimotsui Port & Castle Ruins",
+        description:
+          "A historic fishing port with the ruins of Shimotsui Castle on the hill behind it, now part of a memorial park for the Great Seto Bridge — cherry blossoms in spring.",
+        lat: 34.43678,
+        lng: 133.797712,
+      },
+      {
+        name: "Washuzan Observatory",
+        description:
+          "A hilltop lookout with sweeping views over the Seto Inland Sea and the Great Seto Bridge, especially striking at sunset.",
+        lat: 34.434429,
+        lng: 133.813915,
       },
       {
         name: "Great Seto Bridge sightseeing cruise",
         description:
           "A roughly 45-minute cruise under the bridge, departing from Kojima's sightseeing port.",
+        lat: 34.43678,
+        lng: 133.797712,
       },
     ],
     schedule: {
