@@ -1317,4 +1317,79 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "miyajima",
+    code: 17,
+    name: "宮島",
+    kanji: "Miyajima",
+    region: "廣島",
+    tagline: "日本水面條件數一數二刁鑽的賽場，正對宮島",
+    intro: [
+      "宮島賽艇場緊鄰前往宮島的渡輪碼頭，天氣晴朗時，從看台就能望見往來渡輪與UNESCO世界遺產嚴島神社的鳥居——是競艇界數一數二壯觀的景色。這裡的瀨戶內海水面被視為全日本最考驗技術的賽道之一。",
+      "超過4公尺的潮差讓賽道整天呈現不同面貌：低潮時防波堤能阻擋風勢、比較好比賽，高潮時水面則變得起伏不定、賽況更加緊湊。風向常在上午與下午之間轉變，容易影響起跑表現。",
+    ],
+    access: [
+      "JR「宮島口」站 → 步行約3分鐘",
+      "賽事日廣電宮島線路面電車會直接停靠賽場",
+    ],
+    mapQuery: "ボートレース宮島",
+    lat: 34.315217,
+    lng: 132.306522,
+    videoUrl:
+      "https://www.youtube.com/@%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E5%AE%AE%E5%B3%B6%E3%83%81%E3%83%A3%E3%83%B3%E3%83%8D%E3%83%AB%E5%85%AC%E5%BC%8F",
+    cashless: {
+      note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可申請「MOMIJI CARD」，當天申請當天即可使用，每200日圓投注可獲得1點，持卡者還能免費進入3樓「MOMIJI」桌席區。",
+      url: "https://www.boatrace-miyajima.com/momiji_card.html",
+    },
+    image: {
+      src: "/images/venues/miyajima.jpg",
+      alt: "宮島賽艇場",
+      credit: "Photo by Ujinaport, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Miyajima_Kyotei_01.jpg",
+    },
+    facts: {
+      water: "海水，瀨戶內海——潮差超過4公尺，日本數一數二考驗技術的賽道",
+      character: "低潮時平穩、高潮時起伏緊湊；起跑表現容易不穩定",
+      nightRace: false,
+    },
+    tip: "潮汐狀態在這裡的重要性幾乎居全國之冠——我們的AI在每場宮島預測中都會重點納入潮汐分析。",
+    nearbyAttractions: [
+      {
+        name: "宮島口渡輪碼頭",
+        description:
+          "就在賽場旁的本州側渡輪碼頭，班次頻繁，約10分鐘即可抵達宮島——是結合賽事與宮島觀光最方便的方式。",
+        lat: 34.3112306,
+        lng: 132.3052806,
+      },
+      {
+        name: "嚴島神社",
+        description:
+          "以海上鳥居聞名的UNESCO世界遺產神社，坐落於宮島島上，從賽場搭渡輪即可短程抵達。",
+        lat: 34.295922,
+        lng: 132.319816,
+      },
+      {
+        name: "五重塔與千疊閣",
+        description:
+          "建於1407年、色彩鮮豔的五重塔，緊鄰豐臣秀吉下令興建卻未完工的巨大木造殿堂「千疊閣」，兩者皆座落於嚴島神社旁的小山丘上，可俯瞰神社全景。",
+        lat: 34.29272654861169,
+        lng: 132.32234728742426,
+      },
+      {
+        name: "宮島水族館",
+        description:
+          "由市政府經營的水族館，主題聚焦瀨戶內海的海洋生物，可看到江豚、海獅與企鵝——很適合帶小朋友一同前往。",
+      },
+      {
+        name: "紅葉谷公園",
+        description:
+          "彌山山腳下的楓葉谷公園，是日本數一數二知名的賞楓勝地，附近設有纜車站，供健行或登山遊客搭乘。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
