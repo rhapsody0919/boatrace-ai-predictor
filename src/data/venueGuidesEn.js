@@ -603,6 +603,14 @@ export const VENUE_GUIDES_EN = [
       'JR Tokaido Line "Arai-machi" station → about 5 minutes on foot',
       "By car: about 30 minutes from Hamamatsu-nishi, Mikkabi or Kanzanji Smart ICs",
     ],
+    mapQuery: "ボートレース浜名湖",
+    lat: 34.698504,
+    lng: 137.57206,
+    videoUrl: "https://www.youtube.com/channel/UCGZig6i5JrZ33jjW2GG6Bzw",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the free "Hamana Po!" IC card, which you charge at on-site machines; ¥100 wagered earns 1 point, redeemable for cash or venue goods.',
+      url: "https://www.boatrace-hamanako.jp/sp/index.php?page=service-point",
+    },
     facts: {
       water:
         "Brackish (lake, mix of sea and freshwater) — widest course in Japan",
@@ -614,12 +622,35 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Kanzanji Onsen",
         description:
-          "A hot-spring resort town on the lakeshore, known for eel (unagi) cuisine and lake views.",
+          "A hot-spring resort town on the eastern lakeshore, known for eel (unagi) cuisine and lake-view baths. About 40 minutes from the venue by car, on the opposite side of Lake Hamana.",
+        lat: 34.763229,
+        lng: 137.615619,
       },
       {
-        name: "Hamanako Parupal & Garden Park",
+        name: "Hamanako Parupal (amusement park)",
         description:
-          "A lakeside amusement park and flower garden, both popular family day-trip spots near Kanzanji.",
+          "A lakeside amusement park with around 25 rides right in Kanzanji, a popular family day-trip spot that pairs well with the onsen town.",
+        lat: 34.763229,
+        lng: 137.615619,
+      },
+      {
+        name: "Hamanako Garden Park",
+        description:
+          "A large prefectural park on the lake's south shore with flower gardens and open lawns, once the site of a national flower expo. About 15 minutes from the venue by car.",
+        lat: 34.714473,
+        lng: 137.600915,
+      },
+      {
+        name: "Arai Checkpoint (Arai Sekisho)",
+        description:
+          "Japan's only surviving Edo-period checkpoint building on the old Tokaido road, now a museum — a short trip from the venue since both sit in the same Arai district.",
+        lat: 34.694906,
+        lng: 137.561779,
+      },
+      {
+        name: "Hamamatsu Flower Park",
+        description:
+          "A large flower theme park with seasonal displays year-round, about 12 minutes by car north of Hamanako Garden Park.",
       },
     ],
     schedule: {
