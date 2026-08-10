@@ -1770,4 +1770,84 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "omura",
+    code: 24,
+    name: "大村",
+    kanji: "Omura",
+    region: "長崎（九州）",
+    tagline: "競艇運動的發源地，也是內側最有利的賽場之一",
+    intro: [
+      "大村賽艇場在這項運動的歷史上佔有獨特地位：1952年4月6日，日本第一場正式的競艇比賽便是在此舉行，是名副其實的「競艇發源地」。後來為了支援夜間比賽而擴建了防風牆，這裡的1號艇勝率約達63%——是全國數一數二高的水準。",
+      "賽場鄰近長崎機場，全年約舉辦180天賽事，並設有美食街（包含佐世保漢堡）與遊戲區，是很適合親子同遊的賽場。",
+    ],
+    access: [
+      "「大村」站 → 約2.4公里，步行29分鐘——建議搭乘免費接駁巴士",
+      "從長崎、佐世保、諫早、時津等地皆有免費巴士與渡輪接駁",
+    ],
+    mapQuery: "ボートレース大村",
+    lat: 32.897098,
+    lng: 129.951736,
+    videoUrl: "https://www.youtube.com/@omurainterview",
+    cashless: {
+      note: "現場使用「ORICA」卡，可通用於大村本場、Blue Dragon與場外發售所BTS大村三處設施，購票與入場費皆可使用。可在場內機台以現金儲值；每投注100日圓可獲得0.5點，依設施與活動不同，每次到場另可獲得1至2點的加碼點數。",
+      url: "https://omurakyotei.jp/orica/",
+    },
+    image: {
+      src: "/images/venues/omura.jpg",
+      alt: "大村賽艇場",
+      credit: "Photo by kajikawa, CC BY 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E5%A4%A7%E6%9D%91_-_panoramio.jpg",
+    },
+    facts: {
+      water: "海水，設有防風牆以支援夜間比賽",
+      character: "全國內側最有利的賽場之一（1號艇勝率約63%）",
+      nightRace: true,
+    },
+    tip: "由於1號艇在這裡的勝率如此之高，我們的AI在每場大村預測中都會特別重視起跑水道的優勢分析。",
+    nearbyAttractions: [
+      {
+        name: "琴平山公園（Kotohira Sky Park）",
+        description:
+          "海拔330公尺的山頂公園，可俯瞰大村灣全景，還設有滾輪滑梯。",
+      },
+      {
+        name: "大村公園",
+        description: "日本「賞櫻名所100選」之一，園內種有約2,000株櫻花樹。",
+      },
+      {
+        name: "玻璃海灘",
+        description:
+          "位於長崎機場附近，以回收玻璃製成沙粒的人工海灘，設立目的是為了改善大村灣的水質。",
+        lat: 32.920074,
+        lng: 129.937057,
+      },
+      {
+        name: "長崎機場展望台",
+        description:
+          "日本第一座海上機場的3樓展望台，可近距離欣賞飛機起降與灣區夕陽美景。",
+        lat: 32.91339,
+        lng: 129.918427,
+      },
+      {
+        name: "大村溫泉「湯之華」",
+        description:
+          "鄰近機場的一日遊溫泉設施，鈉、鎂、鈣氯化物泉質以美肌效果聞名。",
+        lat: 32.922336,
+        lng: 129.937634,
+      },
+      {
+        name: "Sea Hat大村",
+        description: "鄰近大村站的市民活動中心與文化會館，距機場約10分鐘車程。",
+        lat: 32.900469,
+        lng: 129.956265,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "全年約舉辦180天賽事，比大多數賽場更頻繁。每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
