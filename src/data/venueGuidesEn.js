@@ -263,6 +263,14 @@ export const VENUE_GUIDES_EN = [
       'Seibu Tamagawa Line "Kyoteijo-mae" station → about 3 minutes on foot',
       'Free race-day buses from JR "Fuchu-Honmachi" and Keio Line "Tama-reien" stations',
     ],
+    mapQuery: "ボートレース多摩川",
+    lat: 35.658024,
+    lng: 139.497068,
+    videoUrl: "https://www.youtube.com/channel/UC4lvZQUptR8m5VDSu49xCGQ",
+    cashless: {
+      note: "The venue is cash-only for regular purchases — no credit cards. There's no branded cashless card here like at some other venues, but you can apply in person at the reserved-seat counter or Wakey Park 2F for a general prepaid card, chargeable in advance and usable for betting and entry; ¥100 wagered earns 1 point, redeemable for cash.",
+      url: "https://www.boatrace-tamagawa.com/sp/index.php?page=service-cashless",
+    },
     facts: {
       water: "Freshwater pool",
       character: "Very calm — skill-driven races, good for beginners",
@@ -273,12 +281,39 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Tokyo Racecourse (horse racing)",
         description:
-          "JRA's major Fuchu racecourse is about a 14-minute walk away — a rare chance to see two very different kinds of Japanese racing in one trip.",
+          "JRA's major Fuchu racecourse is about a 14-minute walk away — a rare chance to see two very different kinds of Japanese racing in one trip. Meets usually run on weekends.",
+        lat: 35.662493,
+        lng: 139.485571,
       },
       {
-        name: "Fuchu city center",
+        name: "Fuchu Station & Baba-Daimon Keyaki-namiki",
         description:
-          "Restaurants and shops around Fuchu-Honmachi and Bubaigawara stations, connected by free race-day shuttle buses.",
+          "A roughly 500m avenue of old zelkova trees stretching from Fuchu Station's south exit, one of Tokyo's most distinctive tree-lined streets, with department stores and shopping streets nearby. Free race-day shuttle buses run here.",
+        lat: 35.668992,
+        lng: 139.477725,
+      },
+      {
+        name: "Okunitama Shrine",
+        description:
+          "The chief Shinto shrine of the old Musashi Province and Fuchu's most important shrine, known for the lively Kurayami Festival each May — one of Tokyo's biggest traditional festivals. About 5 minutes on foot from Fuchu Station.",
+        url: "https://www.ookunitamajinja.or.jp/",
+        lat: 35.669633,
+        lng: 139.479583,
+      },
+      {
+        name: "Fuchu City Local History Museum & Park",
+        description:
+          "A sprawling 14-hectare outdoor museum with restored historic buildings, a planetarium and a large water-play pond. The plum grove is especially popular in February-March. About 20 minutes on foot from the venue.",
+        lat: 35.656734,
+        lng: 139.473216,
+      },
+      {
+        name: "Suntory Musashino Beer Factory",
+        description:
+          "Suntory's first-ever beer factory, offering free brewing-process tours with tastings at the end (reservation required). About 15 minutes on foot from Fuchu-Honmachi Station — a good stop for beer fans.",
+        url: "https://www.suntory.co.jp/factory/musashino/",
+        lat: 35.66641531,
+        lng: 139.47706333,
       },
     ],
     schedule: {
