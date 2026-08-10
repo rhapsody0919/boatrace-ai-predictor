@@ -96,6 +96,63 @@
   color: inherit;
 }
 
+.eg-subheading {
+  font-size: 1.05rem;
+  color: var(--color-gray-800);
+  margin-top: var(--spacing-4);
+  margin-bottom: var(--spacing-2);
+}
+
+.evg-map-label {
+  margin-top: var(--spacing-4);
+  margin-bottom: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-gray-600);
+}
+
+.evg-map {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+
+.evg-map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.evg-video-link {
+  display: inline-block;
+  margin-top: var(--spacing-4);
+  color: var(--color-primary-600);
+  font-weight: 600;
+}
+
+.venue-map-pin-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-gray-700);
+  color: var(--color-white);
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 1px 4px var(--color-black-alpha-30);
+  border: 2px solid var(--color-white);
+}
+
+.venue-map-pin-inner--main {
+  width: 30px;
+  height: 30px;
+  background: var(--color-primary-600);
+  font-size: 1rem;
+}
+
 .evg-breadcrumb {
   margin-bottom: var(--spacing-4);
 }

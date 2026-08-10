@@ -8,6 +8,7 @@ import {
   VenueListStructuredData,
   VenueDetailStructuredData,
 } from "../components/VenueStructuredData";
+import VenueMap from "../components/VenueMap";
 import "./EnglishGuide.css";
 import "./EnglishVenueGuide.css";
 
@@ -127,6 +128,20 @@ export function VenueGuideDetail({ lang, guides, copy }) {
         </section>
 
         <section className="eg-section">
+          <h2>{copy.raceVideoHeading}</h2>
+          <div className="evg-map">
+            <iframe
+              title={copy.raceVideoHeading}
+              src="https://www.youtube.com/embed/videoseries?list=UU4zGMicoES8FZwkhiXXZThg"
+              loading="lazy"
+              allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+          <p className="eg-note">{copy.raceVideoNote}</p>
+        </section>
+
+        <section className="eg-section">
           <h2>{copy.gettingThere}</h2>
           <ul className="eg-list">
             {venue.access.map((a, i) => (
@@ -134,6 +149,29 @@ export function VenueGuideDetail({ lang, guides, copy }) {
             ))}
           </ul>
           <p className="eg-note">{copy.entranceNote}</p>
+          {venue.lat && venue.lng && (
+            <>
+              <p className="evg-map-label">{copy.multiMapLabel}</p>
+              <VenueMap
+                venue={venue}
+                venueLabel={venue.name}
+                attractions={venue.nearbyAttractions}
+              />
+            </>
+          )}
+          {venue.mapQuery && (
+            <>
+              <p className="evg-map-label">{copy.googleMapLabel}</p>
+              <div className="evg-map">
+                <iframe
+                  title={copy.mapHeading}
+                  src={`https://www.google.com/maps?q=${encodeURIComponent(venue.mapQuery)}&output=embed`}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </>
+          )}
         </section>
 
         <section className="eg-section">
@@ -158,6 +196,16 @@ export function VenueGuideDetail({ lang, guides, copy }) {
               <span>¥100</span>
             </div>
           </div>
+          {venue.videoUrl && (
+            <a
+              className="evg-video-link"
+              href={venue.videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {copy.videoLabel}
+            </a>
+          )}
         </section>
 
         {venue.schedule?.typicalRaceDays && (
@@ -167,6 +215,13 @@ export function VenueGuideDetail({ lang, guides, copy }) {
             {venue.schedule.seasonalNotes && (
               <p className="eg-note">{venue.schedule.seasonalNotes}</p>
             )}
+            <a
+              href={`https://www.boatrace.jp/owpc/pc/site/place/stadium/br${String(venue.code).padStart(2, "0")}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {copy.scheduleOfficialLabel}
+            </a>
           </section>
         )}
 
@@ -177,11 +232,46 @@ export function VenueGuideDetail({ lang, guides, copy }) {
               {venue.nearbyAttractions.map((a, i) => (
                 <li key={i}>
                   <strong>{a.name}</strong> — {a.description}
+                  {a.url && (
+                    <>
+                      {" "}
+                      <a href={a.url} target="_blank" rel="noopener noreferrer">
+                        {copy.officialSiteLabel}
+                      </a>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
           </section>
         )}
+
+        <section className="eg-section">
+          <h2>{copy.languageBarrierHeading}</h2>
+          {copy.languageBarrierBody.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
+          <a
+            href="https://www.boatrace.jp/extent/common/en/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {copy.languageBarrierLinkLabel}
+          </a>
+          {venue.cashless && (
+            <>
+              <h3 className="eg-subheading">{copy.cashlessHeading}</h3>
+              <p>{venue.cashless.note}</p>
+              <a
+                href={venue.cashless.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {copy.cashlessLinkLabel}
+              </a>
+            </>
+          )}
+        </section>
 
         <section className="eg-section eg-highlight">
           <h2>{copy.bettingTip}</h2>
