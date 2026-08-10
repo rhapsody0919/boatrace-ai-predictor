@@ -1392,6 +1392,15 @@ export const VENUE_GUIDES_EN = [
       'JR "Miyajimaguchi" station → about 3 minutes on foot',
       "Hiroden Miyajima Line trams stop right at the venue on race days",
     ],
+    mapQuery: "ボートレース宮島",
+    lat: 34.315217,
+    lng: 132.306522,
+    videoUrl:
+      "https://www.youtube.com/@%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E5%AE%AE%E5%B3%B6%E3%83%81%E3%83%A3%E3%83%B3%E3%83%8D%E3%83%AB%E5%85%AC%E5%BC%8F",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the "MOMIJI CARD", issued same-day; ¥200 wagered earns 1 point, and card holders get free access to the desk seating in the 3F "Momiji" section.',
+      url: "https://www.boatrace-miyajima.com/momiji_card.html",
+    },
     facts: {
       water:
         "Seawater, Seto Inland Sea — over 4m tidal swing, one of Japan's most technical courses",
@@ -1402,14 +1411,35 @@ export const VENUE_GUIDES_EN = [
     tip: "Tide state matters more here than almost anywhere else — our AI weighs it heavily in every Miyajima prediction.",
     nearbyAttractions: [
       {
-        name: "Itsukushima Shrine",
+        name: "Miyajimaguchi Ferry Terminal",
         description:
-          "A UNESCO World Heritage shrine famous for its floating torii gate, a short ferry ride from the venue.",
+          "The mainland ferry pier right by the venue, with frequent crossings to Miyajima Island taking about 10 minutes — the easiest way to combine a race visit with the island.",
+        lat: 34.3112306,
+        lng: 132.3052806,
       },
       {
-        name: "Miyajima Island",
+        name: "Itsukushima Shrine",
         description:
-          "Ferries to the island depart minutes from the venue, making it an easy add-on before or after racing.",
+          "A UNESCO World Heritage shrine famous for its floating torii gate, built out over the water on Miyajima Island, a short ferry ride from the venue.",
+        lat: 34.295922,
+        lng: 132.319816,
+      },
+      {
+        name: "Five-storied Pagoda & Senjokaku Hall",
+        description:
+          "A vividly painted 1407 pagoda standing next to Senjokaku, a huge unfinished wooden hall built by Toyotomi Hideyoshi — both overlook Itsukushima Shrine from a small hill nearby.",
+        lat: 34.29272654861169,
+        lng: 132.32234728742426,
+      },
+      {
+        name: "Miyajima Aquarium (Miyajima Marine)",
+        description:
+          "A city-run aquarium focused on Seto Inland Sea marine life, with finless porpoises, sea lions and penguins — a good option if you're visiting with kids.",
+      },
+      {
+        name: "Momijidani Park",
+        description:
+          "A maple valley park below Mt. Misen, one of Japan's most famous autumn-leaf spots, with a ropeway station nearby for those wanting to hike or ride up the mountain.",
       },
     ],
     schedule: {
