@@ -316,4 +316,83 @@ export const VENUE_GUIDES_KO = [
         "https://commons.wikimedia.org/wiki/File:20080719_Gamagori_kyotei_Central_Gate.jpg",
     },
   },
+  {
+    slug: "tokoname",
+    code: 8,
+    name: "도코나메",
+    kanji: "Tokoname",
+    region: "아이치",
+    regionGroup: "chubu-tokai",
+    tagline: "주부국제공항을 마주보는 곳 — 까다로운 피트 스타트",
+    intro: [
+      "도코나메 경정장은 아이치현 주부국제공항(센트레아)과 바다를 사이에 두고 마주보고 있어, 일본에서 비행기 여행과 결합하기 가장 쉬운 경정장 중 하나입니다. 정들이 스타트 전 대기하는 피트 구역이 다른 경정장보다 길어, 깔끔한 피트 아웃 타이밍을 잡기가 더 까다롭습니다.",
+      "도코나메는 유서 깊은 도자기 마을이기도 해서, 경주 관람 날에는 유명한 도자기 거리 산책을 자연스럽게 함께 즐길 수 있습니다.",
+    ],
+    access: [
+      "메이테쓰도코나메선 '도코나메'역 → 도보 약 5분",
+      "주부국제공항에서: 전철로 약 5분 도코나메역 도착 후 도보 약 5분",
+    ],
+    mapQuery: "ボートレースとこなめ",
+    lat: 34.88566429,
+    lng: 136.8324971,
+    videoUrl: "https://www.youtube.com/channel/UCu9lPbAk1MosTGm2yQ4BapQ",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 무료 'TOKOCA' 카드를 발급받으세요. 당일 발급도 가능하며, 200엔당 1포인트가 적립되어 티켓이나 입장료로 사용할 수 있습니다.",
+      url: "https://tokoname-mania.com/card/",
+    },
+    facts: {
+      water: "해수（수문으로 조수 영향 차단）",
+      character: "피트 구역이 길어 피트 아웃 타이밍이 다른 경정장보다 까다로움",
+      nightRace: false,
+    },
+    tip: "이곳은 피트 아웃 타이밍을 잡기가 유난히 까다로워, 저희 도코나메 예측에서는 스타트 타이밍 데이터에 더 큰 비중을 둡니다.",
+    nearbyAttractions: [
+      {
+        name: "야키모노 산포미치（도자기 산책길）",
+        description:
+          "벽돌 가마 굴뚝과 공방이 늘어선 유서 깊은 도자기 거리로, 도코나메역에서 도보 약 5분 거리의 도자기 박물관에서 시작해 약 1.6km 이어집니다.",
+        lat: 34.89056,
+        lng: 136.83556,
+      },
+      {
+        name: "도코나메 마네키네코 거리",
+        description:
+          "지역 도예가들이 만든 도자기 복고양이 39점이 늘어선 벽으로, 벽 너머로 얼굴을 내민 6.3m 크기의 거대 복고양이 '도코냥'이 지켜보고 있습니다. 도자기 박물관으로 가는 길에 있는 도코나메의 대표 포토스팟입니다.",
+        lat: 34.89056,
+        lng: 136.83656,
+      },
+      {
+        name: "INAX 라이브 뮤지엄",
+        description:
+          "타일과 도자기의 역사를 소개하는 박물관 단지로, 안으로 직접 들어가 볼 수 있는 벽돌 가마도 보존되어 있습니다. 도자기 거리 산책과 함께 둘러보기 좋습니다.",
+      },
+      {
+        name: "주부국제공항（센트레아）",
+        description:
+          "경정장과 바다를 사이에 두고 마주보고 있어, 경주 전후로 항공편을 이용하기 편리합니다. 비행기 구경만 하고 싶다면 전망대도 있습니다.",
+        lat: 34.85833,
+        lng: 136.80528,
+      },
+      {
+        name: "린쿠 해변",
+        description:
+          "경정장 바로 옆의 백사장 인공 해변으로, 여름철에 인기가 많으며 센트레아 방향으로 지는 노을 풍경으로 유명합니다.",
+        lat: 34.886178,
+        lng: 136.822708,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/tokoname.jpg",
+      alt: "도코나메 경정장",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Tokoname-kyotei-01.jpg",
+    },
+  },
 ];
