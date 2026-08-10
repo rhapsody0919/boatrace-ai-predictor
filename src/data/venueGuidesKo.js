@@ -83,4 +83,81 @@ export const VENUE_GUIDES_KO = [
       creditUrl: "https://commons.wikimedia.org/wiki/File:Kiryu-kyotei-01.jpg",
     },
   },
+  {
+    slug: "toda",
+    code: 2,
+    name: "도다",
+    kanji: "Toda",
+    region: "사이타마",
+    regionGroup: "kanto",
+    tagline: "일본에서 가장 좁은 수로 — 유일하게 올림픽 혈통을 가진 경정장",
+    intro: [
+      "도다 경정장은 사이타마현 도다 공원 안에 자리하고 있으며, 1964년 도쿄 올림픽 조정 경기가 열렸던 바로 그 정수(靜水) 코스를 그대로 사용합니다 — 올림픽 역사를 가진 유일한 경정장입니다. 또한 일본 24개 경정장 중 수로 폭이 가장 좁아 정끼리 가까이 붙어 달리게 되어, 현장에서 지켜보기에 가장 손에 땀을 쥐게 하는 경주 중 하나입니다.",
+      "좁고 단단하게 다져진 담수 수면 때문에 선두정이 안쪽 라인을 깔끔하게 지키기 어려워, '마쿠리(바깥쪽 추월)'가 일본의 다른 어느 경정장보다도 성공하기 쉬운 편입니다 — 도다는 1코스 승률이 전국에서 가장 낮은 축에 속합니다.",
+    ],
+    access: [
+      "JR사이쿄선 '도다코엔'역(서쪽 출구) → 도보 약 3km／40분 — 경주일 무료 셔틀버스 이용을 강력히 추천합니다",
+      "고쿠사이코교 버스로 '히카와초3초메' 정류장 하차 → 도보 약 15분",
+    ],
+    mapQuery: "ボートレース戸田",
+    lat: 35.801908,
+    lng: 139.676807,
+    videoUrl: "https://www.youtube.com/channel/UCoLCf3aVRMSukwetHfn1p1A",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 마크시트 없이도 베팅할 수 있는 앱을 지원하는 'WINWIN카드'를 발급받으세요. 200엔당 1포인트가 적립되며 전자화폐로 교환할 수 있습니다.",
+      url: "https://www.boatrace-toda.jp/service/cashless.html",
+    },
+    facts: {
+      water: "담수, 좁은 수로 — 단단한 수면",
+      character: "일본에서 1코스 승률이 가장 낮은 경정장 중 하나 — 추월이 흔함",
+      nightRace: false,
+    },
+    tip: "이곳은 추월이 워낙 자주 나오기 때문에, 저희 AI는 도다 경주를 예측할 때 다른 어느 경정장보다도 스타트 타이밍과 턴 데이터에 비중을 둡니다.",
+    nearbyAttractions: [
+      {
+        name: "도다 공원",
+        description:
+          "1964년 도쿄 올림픽 조정 경기가 열렸던 바로 그 코스로, 경정장이 자리한 곳이기도 합니다. 지금은 시민공원으로, 봄에는 아라카와 강변을 따라 벚꽃이 핍니다.",
+      },
+      {
+        name: "가미토다 히카와 신사",
+        description:
+          "경정장에서 약 1.5km 거리에 있는 지역 신사로, 도다코엔역 근처 강변길을 걷거나 자전거를 탄다면 잠시 들러보기 좋은 곳입니다.",
+        lat: 35.813919,
+        lng: 139.675218,
+      },
+      {
+        name: "도다바시 다리와 아라카와 강변",
+        description:
+          "사이타마와 도쿄를 잇는 역사적인 도로 다리로, 근처 강변 녹지에서는 여름철 불꽃놀이가 열립니다. 경정장에서 도보 약 15분 거리입니다.",
+        lat: 35.798526,
+        lng: 139.660923,
+      },
+      {
+        name: "사이코 호수와 도미쓰 녹지공원",
+        description:
+          "아라카와강을 따라 조성된 대형 저수지 공원으로, 자전거·낚시·윈드서핑으로 인기가 많으며 보호종 야생 앵초 서식지도 있습니다. 경정장에서 약 3km 거리입니다.",
+        lat: 35.825039,
+        lng: 139.63012303,
+      },
+      {
+        name: "보트키즈파크 모르비 도다（경정장 내부）",
+        description:
+          "경정장 안에 있는 가족 친화적인 놀이 공간으로, 사진 찍기 좋은 보트 전시물이 있어 경주 사이사이 아이들과 들르기 좋습니다.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/toda.jpg",
+      alt: "도다 경정장（도다 조정 코스）",
+      credit: "Photo by Ibamoto, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Toda_Rowing_Course_(Tokyo,_JAP)_2021.jpg",
+    },
+  },
 ];
