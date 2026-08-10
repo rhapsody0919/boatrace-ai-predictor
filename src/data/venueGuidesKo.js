@@ -861,4 +861,80 @@ export const VENUE_GUIDES_KO = [
         "https://commons.wikimedia.org/wiki/File:Marugame-kyotei-02.jpg",
     },
   },
+  {
+    slug: "kojima",
+    code: 16,
+    name: "고지마",
+    kanji: "Kojima",
+    region: "오카야마",
+    regionGroup: "chugoku",
+    tagline: "세토대교 그늘 아래 잔잔한 수면",
+    intro: [
+      "고지마 경정장은 구라시키시 세토내해에 자리하고 있으며, 세토대교 바로 옆에 위치해 관중석에서 다리와 점점이 흩어진 섬들을 바라볼 수 있습니다. 이곳은 조수 간만의 차가 크지만 바람은 대체로 약해, 경주가 혼란스럽기보다는 잔잔하고 읽기 쉬운 편입니다.",
+      "고지마는 일본 데님의 고장이기도 합니다: 경정장에서 조금만 가면 고지마 진스 스트리트가 있어, 수십 개 매장에서 지역 공장에서 만든 청바지를 판매합니다 — 경주 관람과 함께 즐기기 좋습니다.",
+    ],
+    access: [
+      "JR세토오하시선 '고지마'역 → 무료 셔틀버스, 3~5분",
+      "자동차: 세토추오 자동차도 고지마 나들목에서 약 5분",
+    ],
+    mapQuery: "ボートレース児島",
+    lat: 34.44852433,
+    lng: 133.80919362,
+    videoUrl: "https://www.youtube.com/channel/UC6IrOXVuw6xXLl1qJqYUrsg",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 무료 'K 스마트 카드'를 발급받으세요. 100엔당 1포인트가 적립되며（지정석은 더 많이 적립）, 전자화폐나 경정장 상품으로 교환할 수 있고 장외 시설에서도 사용할 수 있습니다.",
+      url: "https://www.kojimaboat.jp/cashless.html",
+    },
+    facts: {
+      water: "해수, 세토내해 — 조수 간만의 차가 크지만 대체로 바람이 약함",
+      character: "조수의 영향을 받지만 대체로 잔잔하고 읽기 쉬움",
+      nightRace: false,
+    },
+    tip: "바람이 변수가 되는 일이 드물어 조수 타이밍이 대부분을 좌우합니다 — 저희 AI는 고지마 예측마다 이를 면밀히 추적합니다.",
+    nearbyAttractions: [
+      {
+        name: "고지마 진스 스트리트",
+        description:
+          "아지노 지구에 있는 약 400m 길이의 쇼핑거리로, 지역에서 만든 데님을 파는 매장들이 늘어서 있습니다 — 고지마는 일본 청바지 제조의 고장으로 꼽히며, 이곳이 매장이 가장 밀집된 구간입니다.",
+      },
+      {
+        name: "구 노자키가 저택",
+        description:
+          "소금 무역으로 부를 쌓은 상인이 지은 광대한 에도시대 저택으로, 약 1,000평 규모의 건물이 박물관으로 보존되어 있습니다 — 근처의 현대적인 청바지 매장들과 대비를 이룹니다.",
+      },
+      {
+        name: "시모쓰이 항과 성터",
+        description:
+          "언덕 위에 시모쓰이성 터가 남아있는 유서 깊은 어항으로, 지금은 세토대교 기념공원의 일부입니다 — 봄에는 벚꽃이 핍니다.",
+        lat: 34.43678,
+        lng: 133.797712,
+      },
+      {
+        name: "와슈잔 전망대",
+        description:
+          "세토내해와 세토대교를 한눈에 담을 수 있는 언덕 위 전망대로, 특히 노을 질 때 아름답습니다.",
+        lat: 34.434429,
+        lng: 133.813915,
+      },
+      {
+        name: "세토대교 관광 유람선",
+        description:
+          "고지마 관광항에서 출발해 다리 아래를 지나는 약 45분 코스의 유람선입니다.",
+        lat: 34.43678,
+        lng: 133.797712,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/kojima.jpg",
+      alt: "고지마 경정장",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Kojima-kyotei-01.jpg",
+    },
+  },
 ];
