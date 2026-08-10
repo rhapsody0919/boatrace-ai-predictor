@@ -525,6 +525,14 @@ export const VENUE_GUIDES_EN = [
       'JR Saikyo Line "Toda-Koen" station (west exit) → about 3km / 40 minutes on foot — the free race-day shuttle bus is strongly recommended',
       'Kokusai Kogyo bus to "Hikawacho 3-chome" stop → about 15 minutes on foot',
     ],
+    mapQuery: "ボートレース戸田",
+    lat: 35.801908,
+    lng: 139.676807,
+    videoUrl: "https://www.youtube.com/channel/UCoLCf3aVRMSukwetHfn1p1A",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the "WINWIN Card", which also supports a markless betting app; ¥200 wagered earns 1 point, redeemable for e-money cashback.',
+      url: "https://www.boatrace-toda.jp/service/cashless.html",
+    },
     facts: {
       water: "Freshwater, narrow course — hard surface",
       character:
@@ -536,12 +544,33 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Toda Park",
         description:
-          "The 1964 Olympic rowing course itself, now a public park with cherry blossoms along the Arakawa riverbank in spring.",
+          "The 1964 Olympic rowing course itself, right where the venue sits, now a public park with cherry blossoms along the Arakawa riverbank in spring.",
+      },
+      {
+        name: "Kamitoda Hikawa Shrine",
+        description:
+          "A local Shinto shrine about 1.5km from the venue, worth a quiet stop if you're walking or cycling the riverside paths near Toda-Koen Station.",
+        lat: 35.813919,
+        lng: 139.675218,
+      },
+      {
+        name: "Todabashi Bridge & Arakawa Riverside",
+        description:
+          "A historic road bridge over the Arakawa river connecting Saitama and Tokyo, with a riverside green space nearby that hosts fireworks displays in summer. About 15 minutes on foot from the venue.",
+        lat: 35.798526,
+        lng: 139.660923,
+      },
+      {
+        name: "Saiko Lake & Domitsu Green Park",
+        description:
+          "A large reservoir-turned-park along the Arakawa, popular for cycling, fishing and windsurfing, with a protected wild primrose habitat. About 3km from the venue.",
+        lat: 35.825039,
+        lng: 139.63012303,
       },
       {
         name: "BOAT KIDS PARK Morvi Toda (on-site)",
         description:
-          "A family-friendly play area inside the venue with photo-ready boat displays.",
+          "A family-friendly play area inside the venue with photo-ready boat displays — an easy stop between races if you're bringing kids.",
       },
     ],
     schedule: {
