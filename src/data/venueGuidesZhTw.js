@@ -1469,4 +1469,85 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "shimonoseki",
+    code: 19,
+    name: "下關",
+    kanji: "Shimonoseki",
+    region: "山口",
+    tagline: "本州最西端，平穩的LED燈光海水賽池",
+    intro: [
+      "下關賽艇場位於本州最西端，賽道是築在高聳防波堤後方、如水池般的海水賽道——堤防高度足以阻擋周防灘的海浪，即使漲潮時也很少受影響。這讓水面大多時候維持平穩，也降低了選手體重差異的影響，不過潮位超過3公尺時，第一標附近仍可能受到海水影響。",
+      "賽道採用選手評價極高的LED照明，自2017年起全年皆為夜間賽事，2021年起更推出深夜場次「Midnight」比賽，是全國開賽時間最晚的賽場之一。",
+    ],
+    access: [
+      "「長府」站是最近的車站 → 步行約10分鐘可達正門",
+      "從新下關站搭乘計程車或巴士約10分鐘",
+    ],
+    mapQuery: "ボートレース下関",
+    lat: 34.019189,
+    lng: 131.004075,
+    videoUrl:
+      "https://www.youtube.com/@%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E4%B8%8B%E9%96%A2%E5%85%AC%E5%BC%8F%E3%83%AC%E3%83%BC%E3%82%B9%E3%83%A9%E3%82%A4%E3%83%96",
+    cashless: {
+      note: "現場一般購票採用「e～ほっ！卡」，這是一張免費預付卡，購票、入場與付費席消費皆可累積點數，可兌換現金或商品。除本場外，場外發售所「ふく～る下関」「オラレ下関」「BTSながと」也能使用。",
+      url: "https://www.boatrace-shimonoseki.jp/modules/service/?page=index_cashless",
+    },
+    image: {
+      src: "/images/venues/shimonoseki.jpg",
+      alt: "下關賽艇場",
+      credit: "Photo by Muyo, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Shimonoseki_Kyotei.jpg",
+    },
+    facts: {
+      water: "海水賽池（防波堤保護）——大多時候平穩，潮位超過3公尺時影響第一標",
+      character: "大多時候平穩且穩定",
+      nightRace: true,
+    },
+    tip: "穩定且照明充足的環境讓這裡的比賽相對容易判讀——即使如此，我們的AI仍會針對每場下關預測檢查第一標附近的潮位狀態。",
+    nearbyAttractions: [
+      {
+        name: "功山寺",
+        description:
+          "創建於1327年的禪寺，擁有被列為國寶的佛殿，也是幕末志士高杉晉作於1865年舉兵起義之地。",
+        lat: 33.995889,
+        lng: 130.981917,
+      },
+      {
+        name: "忌宮神社",
+        description:
+          "服務舊長府城下町的歷史神社，以每年8月舉行的熱鬧「數方庭祭」聞名。",
+        lat: 33.998972,
+        lng: 130.987556,
+      },
+      {
+        name: "長府庭園",
+        description:
+          "佔地約31,000平方公尺的日式回遊式庭園，建於長府藩家老宅邸舊址上。",
+      },
+      {
+        name: "巖流島",
+        description:
+          "傳說中劍豪宮本武藏與佐佐木小次郎決鬥之地的無人島，從唐戶搭船即可抵達。",
+        lat: 33.93278,
+        lng: 130.93056,
+      },
+      {
+        name: "唐戶市場",
+        description:
+          "以河豚與海鮮聞名的市場，週末還有販售壽司與海鮮蓋飯的美食攤位。",
+      },
+      {
+        name: "下關市立水族館 海響館",
+        description:
+          "俯瞰關門海峽的水族館，館內收藏全球最多種類的河豚，是館內一大特色。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "自2017年起為全年夜間賽事的賽場，2021年起更推出深夜場次「Midnight」比賽。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
