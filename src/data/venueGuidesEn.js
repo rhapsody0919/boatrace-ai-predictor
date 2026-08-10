@@ -762,6 +762,14 @@ export const VENUE_GUIDES_EN = [
       'Meitetsu Tokoname Line "Tokoname" station → about 5 minutes on foot',
       "From Chubu Centrair Airport: about 5 minutes by train to Tokoname station, then 5 minutes on foot",
     ],
+    mapQuery: "ボートレースとこなめ",
+    lat: 34.88566429,
+    lng: 136.8324971,
+    videoUrl: "https://www.youtube.com/channel/UCu9lPbAk1MosTGm2yQ4BapQ",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the free "TOKOCA" card, issued same-day; ¥200 wagered earns 1 point, redeemable for cash toward tickets or entry.',
+      url: "https://tokoname-mania.com/card/",
+    },
     facts: {
       water: "Seawater pool (gated — no tidal effect)",
       character: "Long pit area — pit-out timing is trickier than most venues",
@@ -772,12 +780,35 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Yakimono Sanpo-michi (Pottery Walking Trail)",
         description:
-          "A historic ceramics district with brick kiln chimneys and craft studios, about 5 minutes from Tokoname station.",
+          "A historic ceramics district with brick kiln chimneys and craft studios along a roughly 1.6km walking course, starting from the Ceramic Museum about 5 minutes from Tokoname station.",
+        lat: 34.89056,
+        lng: 136.83556,
+      },
+      {
+        name: "Tokoname Maneki-neko Street",
+        description:
+          'A wall lined with 39 ceramic lucky cats made by local potters, watched over by "Tokonyan", a giant 6.3m beckoning cat peeking over the wall — one of Tokoname\'s most photographed spots, on the way to the pottery museum.',
+        lat: 34.89056,
+        lng: 136.83656,
+      },
+      {
+        name: "INAX Live Museum",
+        description:
+          "A museum complex covering the history of tiles and ceramics, including a preserved brick kiln you can walk inside — a good complement to a walk through the pottery district.",
       },
       {
         name: "Chubu Centrair International Airport",
         description:
-          "Just across the bay — an easy combination with a flight before or after racing.",
+          "Just across the bay from the venue — an easy combination with a flight before or after racing, with an observation deck if you just want to watch planes.",
+        lat: 34.85833,
+        lng: 136.80528,
+      },
+      {
+        name: "Rinku Beach",
+        description:
+          "A white-sand artificial beach right by the venue, popular in summer and known for sunset views over the bay toward Centrair Airport.",
+        lat: 34.886178,
+        lng: 136.822708,
       },
     ],
     schedule: {
