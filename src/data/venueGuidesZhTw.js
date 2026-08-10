@@ -256,12 +256,70 @@ export const VENUE_GUIDES_ZH_TW = [
       "西武多摩川線「競艇場前」站 → 步行約3分鐘",
       "從JR「府中本町」站或京王線「多磨靈園」站搭乘賽事日免費接駁巴士",
     ],
+    mapQuery: "ボートレース多摩川",
+    lat: 35.658024,
+    lng: 139.497068,
+    videoUrl: "https://www.youtube.com/channel/UC4lvZQUptR8m5VDSu49xCGQ",
+    cashless: {
+      note: "現場沒有信用卡收單，可在指定席窗口或Wakey Park 2樓申請場內專用電子預付卡，事先加值後即可用於投注與入場，本場投注每100日圓可獲得1點，點數可兌換現金。",
+      url: "https://www.boatrace-tamagawa.com/sp/index.php?page=service-cashless",
+    },
+    image: {
+      src: "/images/venues/tamagawa.jpg",
+      alt: "多摩川賽艇場",
+      credit: "Photo by nakashi, CC BY-SA 2.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_race_tamagawa_%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E5%A4%9A%E6%91%A9%E5%B7%9D_(48113070693).jpg",
+    },
     facts: {
       water: "淡水（人工水池）",
       character: "水面非常平穩——技術導向，適合新手",
       nightRace: false,
     },
     tip: "穩定的水面條件讓選手與馬達數據更具參考價值——這正是我們AI在每場比賽中重點分析的資料。",
+    nearbyAttractions: [
+      {
+        name: "東京競馬場",
+        description:
+          "JRA旗下規模最大的賽馬場之一，從多摩川賽艇場步行約14分鐘可達，是同一天內連續體驗兩種截然不同日本賽事文化的難得機會，賽馬日通常在週末。",
+        lat: 35.662493,
+        lng: 139.485571,
+      },
+      {
+        name: "府中站・馬場大門欅並木",
+        description:
+          "府中站南口延伸約500公尺的欅樹林蔭大道，是東京都內少見的古樹並木道，四季皆有不同風情，周邊百貨與商店街也集中在此，賽事日有免費接駁巴士往返。",
+        lat: 35.668992,
+        lng: 139.477725,
+      },
+      {
+        name: "大國魂神社",
+        description:
+          "武藏國總社，府中最重要的神社，每年5月的「くらやみ祭」是東京都內數一數二盛大的傳統祭典，境內古木參天，從府中站步行約5分鐘可達。",
+        url: "https://www.ookunitamajinja.or.jp/",
+        lat: 35.669633,
+        lng: 139.479583,
+      },
+      {
+        name: "府中市鄉土之森博物館",
+        description:
+          "佔地約14萬平方公尺的戶外博物館，園內保存多棟歷史建築、天文館與大型水景遊戲池，2至3月梅園盛開時尤其熱門，從賽場步行約20分鐘可達。",
+        lat: 35.656734,
+        lng: 139.473216,
+      },
+      {
+        name: "SUNTORY武藏野啤酒工廠",
+        description:
+          "SUNTORY首座啤酒工廠，提供免費的釀造流程導覽與試飲行程（需事先預約），從府中本町站步行約15分鐘，適合對日本啤酒文化有興趣的旅客。",
+        url: "https://www.suntory.co.jp/factory/musashino/",
+        lat: 35.66641531,
+        lng: 139.47706333,
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
   },
   {
     slug: "fukuoka",
