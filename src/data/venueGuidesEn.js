@@ -684,6 +684,14 @@ export const VENUE_GUIDES_EN = [
       'JR Tokaido Line "Mikawa-Shiotsu" station → about 5 minutes on foot',
       'Meitetsu Gamagori Line "Gamagori Kyoteijo-mae" station, or a direct bus from JR Gamagori station every 30 minutes',
     ],
+    mapQuery: "ボートレース蒲郡",
+    lat: 34.82390294,
+    lng: 137.20574497,
+    videoUrl: "https://www.youtube.com/channel/UCZhuyNQgLORLjgl8hlA7uHw",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the free "e-jan Card" at the 1F information counter; ¥100 spent on tickets, entry or reserved seating earns 1 point, redeemable for cash or goods, and card holders can also bet from a free smartphone app.',
+      url: "https://gama-win.com/card/about/index.html",
+    },
     facts: {
       water: "Freshwater pool — calm and fast, sheltered from wind",
       character:
@@ -693,14 +701,35 @@ export const VENUE_GUIDES_EN = [
     tip: "Fast, sheltered water raises the value of a clean start here — our AI weighs start-timing data heavily in every Gamagori prediction.",
     nearbyAttractions: [
       {
-        name: "Takeshima Island",
+        name: "Takeshima Island & Yaotomi Shrine",
         description:
-          "Gamagori's symbol — a small sacred island reached by a bridge, home to Yaotomi Shrine.",
+          "Gamagori's symbol — a small sacred island reached by a 387m bridge, home to Yaotomi Shrine, one of Japan's Seven Benzaiten shrines. The island itself is a designated natural monument for its plant life.",
+        lat: 34.811002,
+        lng: 137.231683,
+      },
+      {
+        name: "Takeshima Aquarium",
+        description:
+          "A compact, quirky aquarium right by Takeshima Island, known for showcasing rare and unusual deep-sea creatures alongside the usual favorites.",
+        lat: 34.811002,
+        lng: 137.2325,
       },
       {
         name: "Laguna Ten Bosch",
         description:
-          "A seaside resort with a theme park, shopping and dining, about 15 minutes by free shuttle bus from JR Gamagori station.",
+          "A seaside resort with a theme park, outlet shopping and dining, about 15 minutes by free shuttle bus from JR Gamagori station.",
+        lat: 34.808775,
+        lng: 137.271339,
+      },
+      {
+        name: "Mitsuya Onsen",
+        description:
+          "A hot-spring district on Mikawa Bay, unusual for offering four different spring types in one small area — a relaxed stop before or after racing.",
+      },
+      {
+        name: "Gamagori Classic Hotel",
+        description:
+          "A prewar Western-style hotel on a hilltop across the bay from Takeshima Island, worth a look even if you're not staying, for its retro architecture and sea views.",
       },
     ],
     schedule: {
@@ -709,7 +738,13 @@ export const VENUE_GUIDES_EN = [
       seasonalNotes:
         "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
     },
-    image: null,
+    image: {
+      src: "/images/venues/gamagori.jpg",
+      alt: "Boat Race Gamagori central gate",
+      credit: "Photo by A301m089, public domain, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:20080719_Gamagori_kyotei_Central_Gate.jpg",
+    },
   },
   {
     slug: "tokoname",
