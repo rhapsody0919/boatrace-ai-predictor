@@ -1095,4 +1095,78 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "naruto",
+    code: 14,
+    name: "鳴門",
+    kanji: "Naruto",
+    region: "德島",
+    tagline: "水面寬闊、爆冷頻傳，緊鄰著名漩渦景觀",
+    intro: [
+      "鳴門賽艇場位於德島縣小鳴門海峽畔，看台距離賽道近到讓現場觀賽格外緊張刺激。雖然是海水賽道，但有防波堤保護，水面依然平穩。這裡的1號艇實力偏弱——任何水道都有機會奪冠，爆冷屢見不鮮，配當也常常偏高，是喜歡追高倍率的投注者鍾愛的賽場。",
+      "賽場最多一年營運360天，售票時間從清晨一路持續到晚上約8點半，包含夜間賽事，幾乎隨時都有比賽可看。",
+    ],
+    access: [
+      "JR「鳴門」站 → 步行約10分鐘",
+      "從JR鳴門站或德島機場搭乘巴士 → 於「高速鳴門」站下車",
+    ],
+    mapQuery: "ボートレース鳴門",
+    lat: 34.190725,
+    lng: 134.609646,
+    videoUrl: "https://www.youtube.com/channel/UCd8rJfg7p8qsASOEIIwAinQ",
+    cashless: {
+      note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可申請「鳴子e-CLUB」卡；每200日圓投注可獲得1點，使用該卡支付指定席費用可享9折優惠，中獎獎金也會保留在卡片內跨日使用。",
+      url: "https://www.n14.jp/sp/index.php?page=service-cashless",
+    },
+    image: {
+      src: "/images/venues/naruto.jpg",
+      alt: "鳴門賽艇場",
+      credit: "Photo by Na00ru0010, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Naruto-kyotei-01.jpg",
+    },
+    facts: {
+      water: "海水，有防波堤保護——雖臨海但水面平穩",
+      character: "1號艇實力偏弱——任何水道皆有機會奪冠，爆冷與高配當常見",
+      nightRace: true,
+    },
+    tip: "由於這裡1號艇實力偏弱，我們的AI在鳴門預測中會比其他多數賽場更均衡地評估各水道的奪冠機會。",
+    nearbyAttractions: [
+      {
+        name: "鳴門漩渦",
+        description:
+          "全球數一數二壯觀的潮汐漩渦景觀，可搭乘「渦潮汽船」的觀光船近距離欣賞，或從大鳴門橋的行人步道「渦之道」俯瞰。",
+      },
+      {
+        name: "鳴門公園與千疊敷展望台",
+        description:
+          "位於懸崖上的公園，可俯瞰漩渦與大鳴門橋，設有展望台，周邊聚集多間餐廳與紀念品店。",
+      },
+      {
+        name: "大塚國際美術館",
+        description:
+          "展示世界名畫等比例陶板複製品的美術館，收藏從米開朗基羅的西斯汀禮拜堂到莫內的睡蓮系列，是日本樓地板面積數一數二的大型美術館。",
+        lat: 34.23203,
+        lng: 134.637815,
+      },
+      {
+        name: "鳴門德國館",
+        description:
+          "建於第一次世界大戰德軍戰俘營舊址的博物館，這裡曾上演日本首次貝多芬第九號交響曲全曲演出，是一段特殊的地方歷史。",
+        lat: 34.164678,
+        lng: 134.499038,
+      },
+      {
+        name: "道之驛くるくる鳴門",
+        description:
+          "2022年開幕的現代化公路休息站，販售在地農產、海鮮與餐飲，前往賽場途中順道補給美食的好去處。",
+        lat: 34.158134,
+        lng: 134.580155,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "日本最活躍的賽場之一，最多一年舉辦360天賽事，涵蓋日間與夜間場次。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
