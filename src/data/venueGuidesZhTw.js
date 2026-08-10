@@ -870,4 +870,79 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "mikuni",
+    code: 10,
+    name: "三國",
+    kanji: "Mikuni",
+    region: "福井",
+    tagline: "日本唯一面向日本海的賽艇場，緊鄰歷史悠久的港町",
+    intro: [
+      "三國賽艇場位於福井縣，是全國唯一面向日本海的競艇場。賽道為不受潮汐影響的淡水人工水池，但隨著白天氣溫升高常會吹起海風，為賽況增添變數。由於水面不受潮汐影響，馬力強勁的賽艇往往能穩定發揮優勢。",
+      "賽場緊鄰三國湊——一座保存完好的北前船貿易古港町，鄰近日本數一數二壯觀的海岸線。",
+    ],
+    access: [
+      "JR「蘆原溫泉」站 → 免費接駁巴士",
+      "越前鐵道「蘆原湯之町」站 → 步行約17分鐘",
+    ],
+    mapQuery: "ボートレース三国",
+    lat: 36.23277732,
+    lng: 136.18537486,
+    videoUrl: "https://www.youtube.com/channel/UCu-yP6WJQ0zcx5nmWhxvJEg",
+    cashless: {
+      note: "截至2026年，賽場尚未導入電子支付投注系統，所有購票僅收現金。設有免費的「三國Boat Point Card」集點卡，但僅能累積點數，無法儲值投注金額。",
+      url: "https://www.boatrace-mikuni.jp/sp/index.php?page=service-pointcard",
+    },
+    image: {
+      src: "/images/venues/mikuni.jpg",
+      alt: "三國賽艇場",
+      credit: "Photo by SONIC BLOOMING, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Boat_Race_Mikuni.jpg",
+    },
+    facts: {
+      water: "淡水人工水池，不受潮汐影響——白天氣溫上升後常有海風",
+      character: "馬力強勁的賽艇有穩定優勢",
+      nightRace: false,
+    },
+    tip: "由於不受潮汐干擾，馬達性能數據在這裡格外可靠——這正是我們AI在三國預測中最重視的分析項目。",
+    nearbyAttractions: [
+      {
+        name: "東尋坊",
+        description:
+          "沿海岸綿延約1公里的壯觀玄武岩海崖，以獨特的六角形岩柱聞名，被列為日本數一數二的絕景之一。",
+        lat: 36.23778,
+        lng: 136.12528,
+      },
+      {
+        name: "三國湊",
+        description:
+          "保存完好的北前船貿易古港町，老街上林立著商家建築，還能品嚐當季新鮮海鮮（含螃蟹），距三國站約5分鐘路程。",
+      },
+      {
+        name: "三國神社",
+        description:
+          "北陸三大祭典之一「三國祭」的舉辦地，每年5月會出動六座巨大的山車遊行——神社本身暱稱「Osan之神」，全年都值得一訪。",
+        lat: 36.20599,
+        lng: 136.16072,
+      },
+      {
+        name: "蘆原溫泉",
+        description:
+          "福井縣最知名的溫泉鄉之一，聚集數十間旅館與公共浴場，從賽場搭乘免費接駁巴士約10分鐘可達蘆原溫泉站方向。",
+        lat: 36.21456164,
+        lng: 136.23503542,
+      },
+      {
+        name: "丸岡城",
+        description:
+          "日本現存最古老的天守之一，建於16世紀，城丘上種滿櫻花，春季吸引大量賞花人潮，從賽場開車約25分鐘可達。",
+        lat: 36.152363,
+        lng: 136.272073,
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
