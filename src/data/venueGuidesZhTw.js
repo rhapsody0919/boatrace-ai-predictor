@@ -23,12 +23,65 @@ export const VENUE_GUIDES_ZH_TW = [
       "JR京濱東北線「大森」站（東口）→ 賽事日免費接駁巴士",
       "從羽田機場出發：搭乘京急線約20-30分鐘",
     ],
+    mapQuery: "ボートレース平和島",
+    lat: 35.586035,
+    lng: 139.740333,
+    videoUrl: "https://www.youtube.com/@tokyobaytv9067",
+    cashless: {
+      note: "本場（賽艇場本身）僅收現金，沒有信用卡或投注專用預付卡。若想使用電子支付投注，需前往緊鄰的場外發售所「平和島劇場」，該處提供專用預付卡「P★CARD」。",
+      url: "https://www.heiwajima.gr.jp/sp/cashless/cashless.htm",
+    },
+    image: {
+      src: "/images/venues/heiwajima.jpg",
+      alt: "平和島賽艇場",
+      credit: "Photo by cake6, CC BY 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Heiwajima-kyotei-01.jpg",
+    },
     facts: {
       water: "海水（受潮汐影響）",
       character: "1號艇容易落敗——爆冷與高配當常見",
       nightRace: false,
     },
     tip: "下注前先查看我們預測頁面上的「1號艇爆冷指數」——平和島正是這項數據最能發揮作用的賽場。",
+    nearbyAttractions: [
+      {
+        name: "天然溫泉平和島",
+        description:
+          "就在賽場所在的「BIG FUN平和島」娛樂複合設施內，24小時營業，源自地下2000公尺湧出的天然溫泉，鈉強鹽泉與高濃度碳酸泉是招牌，另設岩盤浴與按摩服務，賽前賽後都能順道泡湯放鬆。",
+        url: "https://www.heiwajima-onsen.jp/",
+      },
+      {
+        name: "跳跳平和島（トンデミ平和島）",
+        description:
+          "同樣位於BIG FUN平和島內的室內運動樂園，有蹦床、攀岩牆與繩索課程，適合帶小孩的家庭，可以和賽艇、溫泉排在同一趟行程。",
+      },
+      {
+        name: "しながわ水族館",
+        description:
+          "東京都內的中型水族館，海豚秀、海獅秀與360度全景水槽的海豹館最受歡迎，位於大森海岸站附近的しながわ區民公園內，從賽場搭電車約10分鐘可達。",
+        lat: 35.58763655,
+        lng: 139.73533342,
+      },
+      {
+        name: "大森故鄉海濱公園",
+        description:
+          "東京23區內少見保留天然沙灘與潮間帶的區立公園，可以赤腳踏浪、觀察招潮蟹等潮間帶生物，園內的「大森海苔故鄉館」還有可以眺望東京灣的展望台，從賽場步行約15分鐘可達。",
+        lat: 35.57302718,
+        lng: 139.74220282,
+      },
+      {
+        name: "羽田機場",
+        description:
+          "日本主要國際機場之一，搭京急線約20-30分鐘可達，第三航廈的江戶小路重現江戶時代街景並附設免稅店，適合安排在航班前後順道觀賽或返程前的最後行程。",
+        lat: 35.544982,
+        lng: 139.769184,
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
   },
   {
     slug: "suminoe",
