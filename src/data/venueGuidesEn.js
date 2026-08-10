@@ -920,6 +920,14 @@ export const VENUE_GUIDES_EN = [
       'JR "Awara Onsen" station → free shuttle bus',
       'Echizen Railway "Awara-Yunomachi" station → about 17 minutes on foot',
     ],
+    mapQuery: "ボートレース三国",
+    lat: 36.23277732,
+    lng: 136.18537486,
+    videoUrl: "https://www.youtube.com/channel/UCu-yP6WJQ0zcx5nmWhxvJEg",
+    cashless: {
+      note: 'The venue has no cashless betting system as of 2026 — all purchases are cash-only. There is a free loyalty points program, the "Mikuni Boat Point Card", but it only tracks points, not betting balance.',
+      url: "https://www.boatrace-mikuni.jp/sp/index.php?page=service-pointcard",
+    },
     facts: {
       water:
         "Freshwater pool, no tidal effect — sea breeze picks up later in the day",
@@ -931,12 +939,35 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Tojinbo",
         description:
-          "Dramatic basalt sea cliffs stretching about a kilometer along the coast, ranked among Japan's most scenic spots.",
+          "Dramatic basalt sea cliffs stretching about a kilometer along the coast, ranked among Japan's most scenic spots and known for their unusual hexagonal rock columns.",
+        lat: 36.23778,
+        lng: 136.12528,
       },
       {
         name: "Mikuni-minato",
         description:
-          "A historic Kitamae-bune trading port with a preserved old town and fresh seafood, including crab in season, about 5 minutes from Mikuni station.",
+          "A historic Kitamae-bune trading port with a preserved old town of merchant houses and fresh seafood, including crab in season, about 5 minutes from Mikuni station.",
+      },
+      {
+        name: "Mikuni Shrine",
+        description:
+          'Home of the Mikuni Festival, one of the Hokuriku region\'s three major festivals, held every May with six giant floats — the shrine itself, nicknamed "Osan-no-san", is worth a visit year-round.',
+        lat: 36.20599,
+        lng: 136.16072,
+      },
+      {
+        name: "Awara Onsen",
+        description:
+          "One of Fukui's best-known hot spring towns, with dozens of ryokan and public baths, about 10 minutes from the venue by free shuttle bus toward Awara-Onsen station.",
+        lat: 36.21456164,
+        lng: 136.23503542,
+      },
+      {
+        name: "Maruoka Castle",
+        description:
+          "One of Japan's oldest surviving original castle keeps, dating to the 16th century, on a hill with cherry trees that draw crowds in spring. About a 25-minute drive from the venue.",
+        lat: 36.152363,
+        lng: 136.272073,
       },
     ],
     schedule: {
@@ -945,7 +976,12 @@ export const VENUE_GUIDES_EN = [
       seasonalNotes:
         "Occasionally hosts national-grade (G1/G2) tournaments — check the official schedule for exact dates.",
     },
-    image: null,
+    image: {
+      src: "/images/venues/mikuni.jpg",
+      alt: "Boat Race Mikuni stadium",
+      credit: "Photo by SONIC BLOOMING, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Boat_Race_Mikuni.jpg",
+    },
   },
   {
     slug: "biwako",
