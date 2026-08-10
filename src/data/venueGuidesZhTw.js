@@ -45,12 +45,71 @@ export const VENUE_GUIDES_ZH_TW = [
       "大阪地下鐵四橋線「住之江公園」站（2號出口）→ 步行約3分鐘",
       "從難波出發：搭乘地下鐵約15分鐘",
     ],
+    mapQuery: "ボートレース住之江",
+    lat: 34.61166795,
+    lng: 135.47127343,
+    videoUrl: "https://www.youtube.com/channel/UCW3AReETO-oDmEoE-m3i7dQ",
+    cashless: {
+      note: "現場沒有信用卡收單，僅能用現金或會場發行的投注專用預付卡「JUMPY CARD+」，需先加值才能投注，入場閘門也可用這張卡感應通過。",
+      url: "https://www.boatrace-suminoe.jp/sp/cashless.html",
+    },
+    image: {
+      src: "/images/venues/suminoe.jpg",
+      alt: "住之江賽艇場看台",
+      credit: "Photo by MASA, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Suminoe_Kyotei2.jpg",
+    },
     facts: {
       water: "淡水（人工水池）",
       character: "賽事風格均衡；經常舉辦SG/G1等級最高賽事",
       nightRace: true,
     },
     tip: "夜間賽事讓你能白天遊大阪、晚上看賽艇——別忘了查看我們針對夜間賽程的預測。",
+    nearbyAttractions: [
+      {
+        name: "住吉大社",
+        description:
+          "日本最古老、最重要的神社之一，主祭海上守護神，每年新年參拜人數在關西名列前茅。境內的太鼓橋（反橋）是知名地標，從賽場搭地下鐵轉乘約20分鐘可達，適合安排在賽事前的半天行程。",
+        url: "https://www.sumiyoshitaisha.net/",
+        lat: 34.613379,
+        lng: 135.493023,
+      },
+      {
+        name: "ATC（亞太貿易中心）與住之江溫泉SPA",
+        description:
+          "賽場往西約6公里的大型複合商場，內有暢貨中心、家居賣場與海景餐廳，適合逛街購物。緊鄰住之江公園站的住之江溫泉SPA則是在地人賽後泡湯放鬆的熱門去處，兩者可安排在同一趟行程。",
+        lat: 34.6378236,
+        lng: 135.41157189,
+      },
+      {
+        name: "難波、心齋橋",
+        description:
+          "大阪最大的購物與美食商圈，心齋橋筋商店街、道頓堀周邊林立百貨公司與傳統小吃店，從賽場搭地下鐵約15分鐘可達，晚間賽事結束後可以直接安排逛街吃飯的行程。",
+        lat: 34.666438,
+        lng: 135.495265,
+      },
+      {
+        name: "道頓堀",
+        description:
+          "大阪最具代表性的觀光地標，固力果跑跑人看板、螃蟹道樂等巨大招牌沿著道頓堀川一字排開，章魚燒、大阪燒、串炸等大阪代表美食都能在這裡吃到，緊鄰難波、心齋橋，適合排在同一段路線。",
+        lat: 34.668516,
+        lng: 135.502552,
+      },
+      {
+        name: "通天閣・新世界",
+        description:
+          "大阪的地標塔通天閣與周邊的新世界懷舊街區，串炸店與昭和復古氛圍的招牌林立，是感受大阪下町人情味的代表景點。從難波搭地下鐵約10分鐘可達，適合排在道頓堀之後的行程。",
+        url: "https://www.tsutenkaku.co.jp/",
+        lat: 34.650935,
+        lng: 135.505724,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "每年固定舉辦多次例行賽，每次約4至7天，另有定期的多日SG／G1大賽。",
+      seasonalNotes:
+        "多數年份的12月會舉辦賽季總決賽SG大獎賽（グランプリ），是賽艇界年度最盛大的賽事之一。",
+    },
   },
   {
     slug: "edogawa",
@@ -111,11 +170,89 @@ export const VENUE_GUIDES_ZH_TW = [
       "從天神地下鐵站（東1a出口）向北步行約10分鐘",
       "從西鐵福岡（天神）站步行約15分鐘",
     ],
+    mapQuery: "ボートレース福岡",
+    lat: 33.599365,
+    lng: 130.397081,
+    videoUrl: "https://www.youtube.com/@boatracejpfukuoka",
+    cashless: {
+      note: "現場沒有信用卡收單，僅能用現金或會場自己發行的投注專用預付卡「ペラ坊卡」（Perabo Card），卡片內建樂天Edy功能，需先在場內儲值機加值後才能投注。",
+      url: "https://www.boatrace-fukuoka.com/sp/index.php?page=service-perabo",
+    },
+    image: {
+      src: "/images/venues/fukuoka.jpg",
+      alt: "福岡賽艇場正門入口",
+      credit: "Photo by STA3816, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Main_entrance_of_Boat_Race_Fukuoka.jpg",
+    },
     facts: {
       water: "汽水（河海交會）——特殊湧浪",
       character: "第一彎道刁鑽；請密切留意展示航行表現",
       nightRace: false,
     },
     tip: "第一標附近的湧浪讓展示數據格外重要——我們的預測表會顯示每位選手的展示時間。",
+    nearbyAttractions: [
+      {
+        name: "大濠公園",
+        description:
+          "福岡市中心少見的水景公園，中央是一座大湖，環湖步道全長約2公里，湖畔還有仿中國蘇州庭園打造的日本庭園（入園費用¥250，開放時間依季節為9:00-17:00或9:00-18:00，週一休園）。從天神搭地下鐵空港線約4分鐘、大濠公園站下車即達，很適合在賽前或賽後散步放鬆、感受福岡人日常生活的一面。",
+        url: "https://www.ohorikouen.jp/",
+        lat: 33.586182,
+        lng: 130.376188,
+      },
+      {
+        name: "舞鶴公園・福岡城跡",
+        description:
+          "與大濠公園相連的城跡公園，保留福岡城的石垣與瞭望台遺跡，春天是福岡數一數二的賞櫻名所。入園免費，從大濠公園步行過去即可，很適合和大濠公園排在同一段路線一起參觀，感受福岡從江戶時代到現代的城市變化。",
+        lat: 33.586043,
+        lng: 130.383178,
+      },
+      {
+        name: "天神",
+        description:
+          "福岡最大的購物、美食與夜生活商圈，從賽場步行約15分鐘可達。百貨公司、地下街、居酒屋林立，晚間賽事結束後可以直接步行過來吃晚餐、逛街，不需要額外規劃交通。",
+        lat: 33.591426,
+        lng: 130.399002,
+      },
+      {
+        name: "警固神社",
+        description:
+          "位於天神鬧區正中央的神社，1608年由福岡藩主黑田長政建立，逛街逛累了可以順道進去參拜、感受鬧市中的寧靜。緊鄰的警固公園也是市民休憩的熱門地點。",
+        lat: 33.5877369,
+        lng: 130.39996343,
+      },
+      {
+        name: "中洲屋台街",
+        description:
+          "沿那珂川而設的路邊屋台（攤販）街，是福岡最具代表性的在地飲食文化，天氣好時每晚約18:00起陸續開張、營業至凌晨。拉麵、關東煮、串烤一應俱全，坐在屋台的吧檯前與老闆和鄰座閒聊，是外國旅客體驗「福岡在地生活感」最推薦的方式，晚間看完賽事後順道前往非常順路。",
+        lat: 33.595235,
+        lng: 130.402559,
+      },
+      {
+        name: "櫛田神社",
+        description:
+          "博多的總鎮守，被暱稱為「お櫛田さん」，每年7月博多祇園山笠祭典的主舞台就在這裡，境內常年展示著色彩繽紛的山笠花車。從中洲步行約10分鐘可達，是感受博多（相對於天神）另一種傳統氛圍的代表景點。",
+        lat: 33.5929546,
+        lng: 130.4104589,
+      },
+      {
+        name: "Canal City博多",
+        description:
+          "以運河造景聞名的大型購物商場，內有電影院、劇場與多間餐廳，緊鄰櫛田神社，晚上還有噴水音樂秀。從中洲屋台街步行約5分鐘可達，適合安排在屋台晚餐前後順道逛逛。",
+        url: "https://canalcity.co.jp/",
+        lat: 33.596269,
+        lng: 130.410857,
+      },
+      {
+        name: "場內美食與特別觀覽席「ROKU」",
+        description:
+          "賽場本身也是一個值得停留的景點：中央看台2樓的「ペラ坊饅頭」是招牌小吃，3樓餐廳的「穴子丼（星鰻蓋飯）」評價很高。場外還有獨立的特別觀覽設施「ROKU」，可以邊喝咖啡邊觀賽，並設有兒童遊戲區，適合親子或情侶悠閒度過一個下午。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes:
+        "福岡近年也多次舉辦G1級別的全國性大賽，是九州地區規格較高的賽艇場之一，確切日期請查詢官方賽程。",
+    },
   },
 ];
