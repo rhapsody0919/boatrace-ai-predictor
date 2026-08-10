@@ -101,6 +101,14 @@ export const VENUE_GUIDES_EN = [
       'Osaka Metro Yotsubashi Line "Suminoekoen" station (exit 2) → about 3 minutes on foot',
       "From Namba: about 15 minutes by metro",
     ],
+    mapQuery: "ボートレース住之江",
+    lat: 34.61166795,
+    lng: 135.47127343,
+    videoUrl: "https://www.youtube.com/channel/UCW3AReETO-oDmEoE-m3i7dQ",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the prepaid card "JUMPY CARD+", which you charge in advance; it also works as your entry pass at the gates.',
+      url: "https://www.boatrace-suminoe.jp/sp/cashless.html",
+    },
     facts: {
       water: "Freshwater pool",
       character: "Balanced racing; hosts many premier (SG/G1) events",
@@ -109,14 +117,41 @@ export const VENUE_GUIDES_EN = [
     tip: "Night races mean you can combine Osaka sightseeing by day with Kyotei by night — check our predictions for the evening card.",
     nearbyAttractions: [
       {
-        name: "Namba & Shinsaibashi",
-        description:
-          "Osaka's main shopping and dining district, about 15 minutes away by metro.",
-      },
-      {
         name: "Sumiyoshi Taisha",
         description:
-          "One of Japan's oldest and most important Shinto shrines, about 20 minutes away.",
+          "One of Japan's oldest and most important Shinto shrines, dedicated to the gods of the sea. Its arched Taiko-bashi bridge is a well-known landmark, and New Year's visits here are among the busiest in the Kansai region. About 20 minutes by train and subway from the venue.",
+        url: "https://www.sumiyoshitaisha.net/",
+        lat: 34.613379,
+        lng: 135.493023,
+      },
+      {
+        name: "ATC (Asia and Pacific Trade Center) & Suminoe Onsen SPA",
+        description:
+          "A large waterfront shopping complex about 6km west of the venue, with outlet stores, a home-goods mall and bay-view restaurants. Suminoe Onsen SPA, right by Suminoekoen Station, is where locals go to unwind with a hot bath after the races — easy to combine both in one trip.",
+        lat: 34.6378236,
+        lng: 135.41157189,
+      },
+      {
+        name: "Namba & Shinsaibashi",
+        description:
+          "Osaka's biggest shopping and dining district, with department stores and traditional eateries lining Shinsaibashi-suji and the streets around Dotonbori. About 15 minutes away by metro — easy to fit in dinner and a walk after an evening card.",
+        lat: 34.666438,
+        lng: 135.495265,
+      },
+      {
+        name: "Dotonbori",
+        description:
+          "Osaka's most iconic tourist strip, lined with oversized signs like the Glico running man and Kani Doraku's giant crab along the Dotonbori canal. Takoyaki, okonomiyaki and kushikatsu are all here — right next to Namba and Shinsaibashi, so pair them in one visit.",
+        lat: 34.668516,
+        lng: 135.502552,
+      },
+      {
+        name: "Tsutenkaku Tower & Shinsekai",
+        description:
+          "Osaka's retro landmark tower and the old-school Shinsekai district around it, known for kushikatsu shops and Showa-era neon signage — a good dose of old Osaka atmosphere. About 10 minutes by metro from Namba, so it pairs well after Dotonbori.",
+        url: "https://www.tsutenkaku.co.jp/",
+        lat: 34.650935,
+        lng: 135.505724,
       },
     ],
     schedule: {
