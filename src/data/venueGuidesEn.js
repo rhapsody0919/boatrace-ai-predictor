@@ -999,6 +999,14 @@ export const VENUE_GUIDES_EN = [
       'Keihan "Bessho" station → about 9 minutes on foot',
       "By car: about 15 minutes from Otsu or Kyoto-Higashi interchanges on the Meishin Expressway",
     ],
+    mapQuery: "ボートレースびわこ",
+    lat: 35.01730116,
+    lng: 135.86110332,
+    videoUrl: "https://www.youtube.com/channel/UCLbcsJqsT5Qa1axpYcOBpmg",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for "Bina Touch"; there is also a shared loyalty program, "Ohmi Point Club", where points earned here also count at Mikuni, Suminoe and Amagasaki.',
+      url: "https://www.boatrace-biwako.jp/modules/service/?page=index_point",
+    },
     facts: {
       water:
         "Freshwater (Lake Biwa) — can roughen with offshore wind in spring/summer",
@@ -1011,12 +1019,35 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Lake Biwa waterfront",
         description:
-          "Sweeping views of Mt. Mikami and Mt. Ibuki across the water, with sightseeing boats cruising the lake.",
+          "Sweeping views of Mt. Mikami and Mt. Ibuki across the water right by the venue, with sightseeing boats like the paddle steamer Michigan cruising the lake.",
       },
       {
-        name: "Otsu city sights",
+        name: "Mii-dera Temple",
         description:
-          "Shiga prefecture's capital, with historic temples and lakeside parks a short trip from the venue.",
+          "One of Japan's four great temples, with a bell famed as one of the country's finest-sounding — a UNESCO World Heritage tentative site, about 1km from the venue.",
+        lat: 35.01335,
+        lng: 135.852822,
+      },
+      {
+        name: "Lake Biwa Canal (Biwako Sosui)",
+        description:
+          "A 19th-century canal connecting Lake Biwa to Kyoto, with a cherry-lined walking path along the water — a scenic stroll near Mii-dera.",
+        lat: 35.012481,
+        lng: 135.858029,
+      },
+      {
+        name: "Omi Jingu Shrine",
+        description:
+          "A shrine dedicated to Emperor Tenji, set in a forested hillside and known for hosting Japan's national karuta card game championships — about a 20-minute drive from the venue.",
+        lat: 35.032216,
+        lng: 135.852109,
+      },
+      {
+        name: "Nagisa Park & Otsu lakefront",
+        description:
+          "A long lakeside park with seasonal flowers (moss phlox in spring), near the Biwako Otsu Prince Hotel — a relaxed lakefront walk about 15 minutes south of the venue.",
+        lat: 35.004965,
+        lng: 135.889099,
       },
     ],
     schedule: {
