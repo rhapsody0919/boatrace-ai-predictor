@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { VENUE_GUIDES_ZH_TW } from "../src/data/venueGuidesZhTw.js";
 import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
+import { VENUE_GUIDES_KO } from "../src/data/venueGuidesKo.js";
 import { VENUE_REGIONS } from "../src/data/venueRegions.js";
 
 // 日本国内のおおよその緯度経度範囲（沖縄〜北海道、離島含む）
@@ -147,6 +148,7 @@ function registerVenueGuideQualityTests(guides, label) {
 
 registerVenueGuideQualityTests(VENUE_GUIDES_ZH_TW, "zh-TW");
 registerVenueGuideQualityTests(VENUE_GUIDES_EN, "en");
+registerVenueGuideQualityTests(VENUE_GUIDES_KO, "ko");
 
 // 地域ハブページ（/venues/region/:regionSlug）が正しく機能するための前提条件を検証する
 function registerRegionGroupTests(guides, label) {
@@ -165,3 +167,4 @@ function registerRegionGroupTests(guides, label) {
 
 registerRegionGroupTests(VENUE_GUIDES_ZH_TW, "zh-TW");
 registerRegionGroupTests(VENUE_GUIDES_EN, "en");
+registerRegionGroupTests(VENUE_GUIDES_KO, "ko");

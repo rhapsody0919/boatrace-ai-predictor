@@ -163,6 +163,10 @@ const LANGUAGE_ONLY_PAGES = {
       priority: "0.6",
     })),
   ],
+  // ko版はconfig/languages.jsのLANGUAGE_ONLY_PATHSに未登録（1会場のみで
+  // 全会場ko対応を宣言してしまうため）。ルーティングが存在しない状態で
+  // sitemapにも載せるとGooglebotに壊れたURLとして扱われるため、
+  // 全24会場が揃いLANGUAGE_ONLY_PATHSにkoを追加するタイミングで有効化する
 };
 
 // デフォルト言語以外の言語別ページを生成
