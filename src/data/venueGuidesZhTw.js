@@ -1700,4 +1700,74 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "karatsu",
+    code: 23,
+    name: "唐津",
+    kanji: "Karatsu",
+    region: "佐賀（九州）",
+    tagline: "日本數一數二寬闊的賽道，松林與海灣景色環繞",
+    intro: [
+      "唐津賽艇場位於佐賀縣，坐落於唐津灣與著名的虹之松原之間，淡水賽池是全國數一數二寬廣的賽道。賽道大致呈南北走向，陸風與海風的消長讓早場比賽多為逆風，後段賽事則常轉為順風。",
+      "與德山賽艇場一樣，唐津是全年舉辦晨間賽事的賽場（特別大賽除外），賽事日很適合搭配午後的沿岸觀光行程。",
+    ],
+    access: ["JR「東唐津」站 → 免費接駁巴士，約6分鐘（僅限賽事日）"],
+    mapQuery: "ボートレース唐津",
+    lat: 33.424194,
+    lng: 129.995806,
+    videoUrl: "https://www.youtube.com/@boatracekaratsu",
+    cashless: {
+      note: "現場使用「KARAMO」卡，入會免入會金、免年費，當天即可申請使用。每投注100日圓可獲得0.5點，每次到場再加贈2點，也支援手掌靜脈認證購票。此卡僅限本場使用，場外發售所不適用。",
+      url: "https://www.infoworld.co.jp/karatsu_cl/cashless.html",
+    },
+    image: {
+      src: "/images/venues/karatsu.jpg",
+      alt: "唐津賽艇場",
+      credit: "Photo by Peka, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_Race_Karatsu_in_April_2025.jpg",
+    },
+    facts: {
+      water: "淡水人工水池——全國數一數二寬闊的賽道",
+      character: "早場逆風、後段順風，其餘沒有特別明顯的怪癖",
+      nightRace: false,
+    },
+    tip: "風向在這裡會隨著賽程呈現固定的變化模式——我們的AI在每場唐津預測中都會納入比賽順序的時機分析。",
+    nearbyAttractions: [
+      {
+        name: "唐津城",
+        description: "1608年重建的城郭，可俯瞰唐津灣與腳下的松林景色。",
+        lat: 33.453529,
+        lng: 129.97818,
+      },
+      {
+        name: "虹之松原",
+        description: "日本三大松林之一，綿延約4.5公里，種有超過百萬棵松樹。",
+        lat: 33.478,
+        lng: 130.005,
+      },
+      {
+        name: "鏡山展望台",
+        description: "標高284公尺的展望台，可一覽唐津灣與虹之松原的壯闊景色。",
+        lat: 33.430604,
+        lng: 130.018033,
+      },
+      {
+        name: "七釜觀光遊覽船「烏賊丸」",
+        description:
+          "從呼子出發、約40分鐘的遊覽行程，沿岸可欣賞七座玄武岩海蝕洞景觀。",
+        lat: 33.538085,
+        lng: 129.893847,
+      },
+      {
+        name: "呼子朝市",
+        description: "日本三大朝市之一，可沿路品嚐新鮮海產小吃。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "特別大賽以外皆為全年晨間賽事的賽場。每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
