@@ -160,4 +160,83 @@ export const VENUE_GUIDES_KO = [
         "https://commons.wikimedia.org/wiki/File:Toda_Rowing_Course_(Tokyo,_JAP)_2021.jpg",
     },
   },
+  {
+    slug: "hamanako",
+    code: 6,
+    name: "하마나코",
+    kanji: "Hamanako",
+    region: "시즈오카",
+    regionGroup: "chubu-tokai",
+    tagline: "일본에서 가장 넓은 수로 — 장어 요리로 유명한 기수호",
+    intro: [
+      "하마나코 경정장은 시즈오카현 하마나 호수 서쪽 기슭에 자리하고 있으며, 일본 24개 경정장 중 가장 넓은 수로를 자랑합니다. 하마나 호수는 바닷물과 민물이 섞인 기수호로, 워낙 넓은 수로 덕분에 정들이 고속을 낼 수 있어 바깥쪽 정의 '마쿠리사시(추입 겸 추월)'가 좁은 경정장보다 더 자주 성공합니다.",
+      "3월부터 9월까지는 여름 일정에 따라 마지막 경주가 해질 무렵까지 이어져 보통 오후 5시가 조금 지나서 끝납니다 — 경주 관람과 저녁 나들이를 함께 즐기고 싶다면 좋은 선택지입니다.",
+    ],
+    access: [
+      "JR도카이도선 '아라이마치'역 → 도보 약 5분",
+      "자동차: 하마마쓰니시, 미카베, 간자지 스마트IC에서 약 30분",
+    ],
+    mapQuery: "ボートレース浜名湖",
+    lat: 34.698504,
+    lng: 137.57206,
+    videoUrl: "https://www.youtube.com/channel/UCGZig6i5JrZ33jjW2GG6Bzw",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 무료 'Hamana Po!' IC카드를 발급받아 현장 기계에서 충전하세요. 100엔당 1포인트가 적립되며 현금이나 경정장 상품으로 교환할 수 있습니다.",
+      url: "https://www.boatrace-hamanako.jp/sp/index.php?page=service-point",
+    },
+    facts: {
+      water: "기수（호수, 바닷물과 민물 혼합）— 일본에서 가장 넓은 수로",
+      character: "고속 수면 — 바깥쪽 정의 추월이 흔함",
+      nightRace: false,
+    },
+    tip: "이곳의 유난히 넓은 수로는 바깥쪽 추입정에 다른 어느 경정장보다 유리하게 작용합니다 — 저희 AI는 하마나코 예측 시 이 점을 항상 반영합니다.",
+    nearbyAttractions: [
+      {
+        name: "간자지 온천",
+        description:
+          "호수 동쪽 기슭의 온천 마을로, 장어(우나기) 요리와 호수 전망 온천으로 유명합니다. 경정장에서 자동차로 약 40분, 하마나 호수 반대편에 있습니다.",
+        lat: 34.763229,
+        lng: 137.615619,
+      },
+      {
+        name: "하마나코 파루파루（놀이공원）",
+        description:
+          "간자지에 위치한 호숫가 놀이공원으로, 약 25종의 놀이기구가 있어 온천 마을과 함께 즐기기 좋은 인기 가족 나들이 코스입니다.",
+        lat: 34.763229,
+        lng: 137.615619,
+      },
+      {
+        name: "하마나코 가든파크",
+        description:
+          "호수 남쪽 기슭의 대형 현립 공원으로, 화단과 넓은 잔디밭이 있으며 과거 국제 꽃 박람회가 열렸던 곳입니다. 경정장에서 자동차로 약 15분 거리입니다.",
+        lat: 34.714473,
+        lng: 137.600915,
+      },
+      {
+        name: "아라이 관문",
+        description:
+          "옛 도카이도 가도에 남아있는 일본 유일의 에도시대 관문 건물로, 지금은 박물관으로 쓰이고 있습니다. 경정장과 같은 아라이 지구에 있어 가깝습니다.",
+        lat: 34.694906,
+        lng: 137.561779,
+      },
+      {
+        name: "하마마쓰 플라워파크",
+        description:
+          "사계절 내내 다양한 꽃을 볼 수 있는 대형 꽃 테마파크로, 하마나코 가든파크에서 북쪽으로 자동차로 약 12분 거리에 있습니다.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다. 3월부터 9월까지는 여름 일정에 따라 마지막 경주가 조금 늦게 끝납니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/hamanako.jpg",
+      alt: "하마나코 경정장",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Hamanako-kyotei-01.jpg",
+    },
+  },
 ];
