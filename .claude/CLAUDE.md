@@ -233,6 +233,9 @@ node scripts/daily/calculate-accuracy.js
 | `/step3 {slug}` | SDD Step3: タスク分解 |
 | `/step4 {slug}` | SDD Step4: 次タスク実装 |
 | `/codex-review [base]` | Codex (OpenAI) セカンドオピニオンレビュー |
+| `/growth-report` | 集客状況レポート（Search Console先行指標の定点観測） |
+| `/i18n-growth-report` | 多言語集客状況レポート（GA4需要+Search Console言語パス） |
+| `/growth-pdca` | 集客状況の網羅分析→施策立案→小施策は即実行（「集客を分析して」等の自然言語でも起動） |
 
 ---
 
