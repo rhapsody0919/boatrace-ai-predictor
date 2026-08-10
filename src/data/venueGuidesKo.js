@@ -1749,4 +1749,87 @@ export const VENUE_GUIDES_KO = [
         "https://commons.wikimedia.org/wiki/File:%E6%B1%9F%E6%88%B8%E5%B7%9D%E7%AB%B6%E8%89%87%E5%A0%B4_-_panoramio.jpg",
     },
   },
+  {
+    slug: "tamagawa",
+    code: 5,
+    name: "다마가와",
+    kanji: "Tamagawa",
+    region: "도쿄（후추）",
+    regionGroup: "kanto",
+    tagline: "일본에서 가장 잔잔한 수면 — 순수한 실력의 경주",
+    intro: [
+      "도쿄 서부의 다마가와 경정장은 '일본에서 가장 잔잔한 수면'이라는 별명을 가지고 있습니다. 방풍림과 관중석이 풀장을 바람으로부터 지켜주어, 경주가 조건이 아닌 순수한 기술로 결정됩니다.",
+      "경정장은 말 그대로 전용 역 바로 옆에 있습니다 — '교테이조마에'（경정장 앞）역으로, 스포츠 이름을 딴 드문 역 이름입니다. 잔잔한 수면 덕분에 결과를 비교적 읽기 쉬워, 처음 베팅하는 분들에게도 적합합니다.",
+    ],
+    access: [
+      "세이부 다마가와선 '교테이조마에'역 → 도보 약 3분",
+      "JR '후추혼마치'역, 게이오선 '다마레이엔'역에서 경주일 무료 버스",
+    ],
+    mapQuery: "ボートレース多摩川",
+    lat: 35.658024,
+    lng: 139.497068,
+    videoUrl: "https://www.youtube.com/channel/UC4lvZQUptR8m5VDSu49xCGQ",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 다른 경정장처럼 자체 브랜드 캐시리스 카드는 없지만, 지정석 창구나 웨이키파크 2층에서 직접 신청하면 범용 선불카드를 발급받을 수 있습니다. 미리 충전해 투표와 입장에 사용할 수 있으며, 100엔당 1포인트가 적립되어 현금으로 교환할 수 있습니다.",
+      url: "https://www.boatrace-tamagawa.com/sp/index.php?page=service-cashless",
+    },
+    facts: {
+      water: "담수풀",
+      character: "매우 잔잔함 — 실력 위주의 경주, 초보자에게 좋음",
+      nightRace: false,
+    },
+    tip: "안정적인 조건 덕분에 선수와 모터 데이터의 비중이 커집니다 — 저희 AI가 모든 경주마다 분석하는 데이터와 정확히 일치합니다.",
+    nearbyAttractions: [
+      {
+        name: "도쿄 경마장",
+        description:
+          "JRA의 대표 경마장인 후추 경마장이 도보 약 14분 거리에 있습니다 — 한 번의 여행으로 전혀 다른 두 종류의 일본 경주를 볼 수 있는 드문 기회입니다. 경마는 보통 주말에 열립니다.",
+        lat: 35.662493,
+        lng: 139.485571,
+      },
+      {
+        name: "후추역과 바바다이몬 느티나무길",
+        description:
+          "후추역 남쪽 출구에서 뻗어나가는 약 500m 길이의 오래된 느티나무 가로수길로, 도쿄에서 손꼽히게 독특한 가로수길입니다. 근처에 백화점과 상점가도 있습니다. 경주일 무료 셔틀버스가 이곳까지 운행합니다.",
+        lat: 35.668992,
+        lng: 139.477725,
+      },
+      {
+        name: "오쿠니타마 신사",
+        description:
+          "옛 무사시국의 총사이자 후추 최고의 신사로, 매년 5월 열리는 활기찬 구라야미 축제로 유명합니다 — 도쿄 최대 규모의 전통 축제 중 하나입니다. 후추역에서 도보 약 5분 거리입니다.",
+        url: "https://www.ookunitamajinja.or.jp/",
+        lat: 35.669633,
+        lng: 139.479583,
+      },
+      {
+        name: "후추시 향토의숲박물관과 공원",
+        description:
+          "약 14헥타르 규모의 야외박물관으로, 복원된 역사 건물과 플라네타리움, 대형 물놀이 연못이 있습니다. 2~3월에는 매화숲이 특히 인기입니다. 경정장에서 도보 약 20분 거리입니다.",
+        lat: 35.656734,
+        lng: 139.473216,
+      },
+      {
+        name: "산토리 무사시노 맥주공장",
+        description:
+          "산토리 최초의 맥주공장으로, 무료 양조 과정 견학과 시음（예약 필요）을 제공합니다. 후추혼마치역에서 도보 약 15분 거리로 맥주 애호가에게 좋은 곳입니다.",
+        url: "https://www.suntory.co.jp/factory/musashino/",
+        lat: 35.66641531,
+        lng: 139.47706333,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/tamagawa.jpg",
+      alt: "다마가와 경정장",
+      credit: "Photo by nakashi, CC BY-SA 2.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_race_tamagawa_%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E5%A4%9A%E6%91%A9%E5%B7%9D_(48113070693).jpg",
+    },
+  },
 ];
