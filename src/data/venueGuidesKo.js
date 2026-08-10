@@ -1347,4 +1347,80 @@ export const VENUE_GUIDES_KO = [
         "https://commons.wikimedia.org/wiki/File:Boat_Race_Ashiya_racecourse_260508.jpg",
     },
   },
+  {
+    slug: "karatsu",
+    code: 23,
+    name: "가라쓰",
+    kanji: "Karatsu",
+    region: "사가（규슈）",
+    regionGroup: "kyushu",
+    tagline: "일본에서 손꼽히는 넓은 코스, 소나무숲과 바다 전망으로 둘러싸인",
+    intro: [
+      "가라쓰 경정장은 사가현 가라쓰만과 유명한 니지노마쓰바라 소나무숲 사이에 있으며, 담수풀 코스로는 전국에서 손꼽히게 넓고 큽니다. 코스는 대략 남북 방향으로 뻗어 있으며, 육풍과 해풍의 균형 때문에 이른 경주는 맞바람을, 늦은 경주는 순풍을 받는 경향이 있습니다.",
+      "도쿠야마와 마찬가지로 가라쓰는 특별 대회를 제외하면 연중 아침 경주를 여는 경정장이라, 방문 후 오후에 해안을 둘러보기에도 좋습니다.",
+    ],
+    access: ["JR '히가시가라쓰'역 → 무료 셔틀버스, 약 6분（경주일만 운행）"],
+    mapQuery: "ボートレース唐津",
+    lat: 33.424194,
+    lng: 129.995806,
+    videoUrl: "https://www.youtube.com/@boatracekaratsu",
+    cashless: {
+      note: "이곳은 'KARAMO' 카드를 사용합니다. 가입비・연회비 무료이며 당일 가입도 가능합니다. 100엔당 0.5포인트, 방문 시 2포인트가 적립되며, 손바닥 정맥 인증 결제도 지원합니다. 본장에서만 사용 가능하며 장외 발매소에서는 사용할 수 없습니다.",
+      url: "https://www.infoworld.co.jp/karatsu_cl/cashless.html",
+    },
+    facts: {
+      water: "담수풀 — 일본에서 손꼽히게 넓은 코스",
+      character: "초반 맞바람, 후반 순풍 — 그 외 특별한 특징은 없음",
+      nightRace: false,
+    },
+    tip: "이곳의 바람은 경주 순서에 따라 예측 가능한 방식으로 바뀌는 경향이 있습니다 — 저희 AI는 가라쓰 예측마다 경주 순서 타이밍을 반영합니다.",
+    nearbyAttractions: [
+      {
+        name: "가라쓰성",
+        description:
+          "1608년 재건된 성으로, 가라쓰만과 그 아래 소나무숲을 두루 조망할 수 있습니다.",
+        lat: 33.453529,
+        lng: 129.97818,
+      },
+      {
+        name: "니지노마쓰바라",
+        description:
+          "일본 3대 소나무숲 중 하나로, 100만 그루가 넘는 소나무가 4.5km에 걸쳐 이어집니다.",
+        lat: 33.478,
+        lng: 130.005,
+      },
+      {
+        name: "가가미야마 전망대",
+        description:
+          "해발 284m에서 가라쓰만과 니지노마쓰바라를 두루 조망할 수 있는 전망대입니다.",
+        lat: 33.430604,
+        lng: 130.018033,
+      },
+      {
+        name: "나나쓰가마 관광유람선（이카마루）",
+        description:
+          "요부코에서 출발해 해안에 새겨진 일곱 개의 현무암 해식동굴을 지나는 약 40분 코스의 유람선입니다.",
+        lat: 33.538085,
+        lng: 129.893847,
+      },
+      {
+        name: "요부코 아침시장",
+        description:
+          "일본 3대 아침시장 중 하나로, 신선한 해산물과 항구를 따라 즐기는 길거리 음식으로 유명합니다.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "특별 대회를 제외하면 연중 아침 경주를 여는 경정장입니다. 정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/karatsu.jpg",
+      alt: "가라쓰 경정장",
+      credit: "Photo by Peka, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_Race_Karatsu_in_April_2025.jpg",
+    },
+  },
 ];
