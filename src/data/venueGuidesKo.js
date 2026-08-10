@@ -474,4 +474,82 @@ export const VENUE_GUIDES_KO = [
       creditUrl: "https://commons.wikimedia.org/wiki/File:Tsu-kyotei-01.jpg",
     },
   },
+  {
+    slug: "mikuni",
+    code: 10,
+    name: "미쿠니",
+    kanji: "Mikuni",
+    region: "후쿠이",
+    regionGroup: "chubu-tokai",
+    tagline: "일본에서 유일한 동해 연안 경정장, 유서 깊은 항구마을 곁에",
+    intro: [
+      "후쿠이현에 있는 미쿠니 경정장은 동해 연안에 위치한 유일한 경정장입니다. 코스는 조수의 영향을 받지 않는 담수 인공 수지이지만, 날이 따뜻해지면 바닷바람이 자주 불어와 경주에 변수를 더합니다. 조수의 영향이 없기 때문에 강한 모터를 가진 정이 안정적으로 우위를 점하는 경향이 있습니다.",
+      "경정장은 옛 기타마에부네 무역항이자 옛 거리가 잘 보존된 미쿠니미나토에서 가깝고, 일본에서 가장 극적인 해안선 중 하나에도 쉽게 갈 수 있습니다.",
+    ],
+    access: [
+      "JR '아와라온센'역 → 무료 셔틀버스",
+      "에치젠 철도 '아와라유노마치'역 → 도보 약 17분",
+    ],
+    mapQuery: "ボートレース三国",
+    lat: 36.23277732,
+    lng: 136.18537486,
+    videoUrl: "https://www.youtube.com/channel/UCu-yP6WJQ0zcx5nmWhxvJEg",
+    cashless: {
+      note: "2026년 기준 이 경정장에는 캐시리스 투표 시스템이 없어 모든 구매는 현금으로만 가능합니다. 무료 포인트 적립 프로그램인 '미쿠니 보트 포인트 카드'가 있지만, 포인트만 적립될 뿐 투표 잔액은 관리하지 않습니다.",
+      url: "https://www.boatrace-mikuni.jp/sp/index.php?page=service-pointcard",
+    },
+    facts: {
+      water: "담수 인공 수지, 조수 영향 없음 — 낮 시간대에 바닷바람이 붐",
+      character: "강한 모터를 가진 정이 안정적으로 우위",
+      nightRace: false,
+    },
+    tip: "조수로 인한 변수가 없어 이곳에서는 모터 성능 데이터가 특히 신뢰할 만합니다 — 저희 AI가 미쿠니 예측에서 가장 중요하게 보는 부분입니다.",
+    nearbyAttractions: [
+      {
+        name: "도진보",
+        description:
+          "해안을 따라 약 1km 이어지는 웅장한 현무암 해안절벽으로, 독특한 육각형 암주로 유명하며 일본에서 손꼽히는 절경으로 꼽힙니다.",
+        lat: 36.23778,
+        lng: 136.12528,
+      },
+      {
+        name: "미쿠니미나토",
+        description:
+          "옛 기타마에부네 무역항으로, 상가 건물이 보존된 옛 거리와 제철 게 등 신선한 해산물을 즐길 수 있습니다. 미쿠니역에서 약 5분 거리입니다.",
+      },
+      {
+        name: "미쿠니 신사",
+        description:
+          "호쿠리쿠 지역 3대 축제 중 하나인 미쿠니 마쓰리의 무대로, 매년 5월 여섯 개의 대형 수레가 등장합니다 — '오산노상'이라는 애칭으로 불리는 이 신사는 연중 방문할 가치가 있습니다.",
+        lat: 36.20599,
+        lng: 136.16072,
+      },
+      {
+        name: "아와라 온천",
+        description:
+          "후쿠이현에서 가장 유명한 온천 마을 중 하나로, 수십 개의 료칸과 대중목욕탕이 있으며, 경정장에서 무료 셔틀버스로 아와라온센역 방향으로 약 10분 거리입니다.",
+        lat: 36.21456164,
+        lng: 136.23503542,
+      },
+      {
+        name: "마루오카성",
+        description:
+          "16세기에 지어진 일본에 남아있는 가장 오래된 원형 천수 중 하나로, 벚나무가 심어진 언덕 위에 있어 봄철에는 많은 인파가 몰립니다. 경정장에서 차로 약 25분 거리입니다.",
+        lat: 36.152363,
+        lng: 136.272073,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/mikuni.jpg",
+      alt: "미쿠니 경정장",
+      credit: "Photo by SONIC BLOOMING, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Boat_Race_Mikuni.jpg",
+    },
+  },
 ];
