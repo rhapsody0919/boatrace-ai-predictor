@@ -1550,4 +1550,76 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "wakamatsu",
+    code: 20,
+    name: "若松",
+    kanji: "Wakamatsu",
+    region: "福岡（九州）",
+    tagline: "全日本錦標賽的發源地，坐落於洞海灣畔",
+    intro: [
+      "若松賽艇場位於北九州市洞海灣畔，被譽為「德比賽的發源地」——首屆全日本錦標賽便是在此舉行。這裡是海水賽道，第二標附近直接連通海灣，潮汐與風勢會從那一側灌入，但整體水面仍比全國較粗獷的賽場來得平穩。",
+      "若松也是日本兩座相距最近的賽艇場之一：芦屋賽艇場只有短短車程，部分死忠粉絲會安排「跨場」行程，上午看一場、下午再趕往另一場。",
+    ],
+    access: ["「奧洞海」站 → 步行約5分鐘"],
+    mapQuery: "ボートレース若松",
+    lat: 33.887271,
+    lng: 130.764915,
+    videoUrl: "https://www.youtube.com/channel/UCll--OtE3eJpzb4uwX8MX9A",
+    cashless: {
+      note: "現場使用「河童君卡（かっぱくんカード）」，這是一張能自動累積點數的電子IC卡。先在場內加值機投入現金儲值，再於購票機的IC讀卡機感應卡片並輸入密碼即可購票。點數效期為取得日起算至隔年同月底止。",
+      url: "https://www.wmb.jp/info/cashless/",
+    },
+    image: {
+      src: "/images/venues/wakamatsu.jpg",
+      alt: "若松賽艇場",
+      credit: "Photo by そらみみ, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_Race_Wakamatsu_in_front_of_Okudokai_Station.jpg",
+    },
+    facts: {
+      water: "海水，第二標附近連通洞海灣——大致平穩，冬季偶有較大風浪",
+      character: "水面條件兼具平穩與技術性",
+      nightRace: true,
+    },
+    tip: "這裡的水面條件介於平穩與技術型之間——我們的AI在每場若松預測中都會同時權衡起跑數據與賽場波動指數。",
+    nearbyAttractions: [
+      {
+        name: "高塔山公園",
+        description:
+          "標高124公尺的山頂公園，展望台可一覽若戶大橋、皿倉山與響灘的景色，2013年獲認證為「日本夜景遺產」。",
+        lat: 33.902651,
+        lng: 130.798503,
+      },
+      {
+        name: "若戶大橋",
+        description:
+          "橫跨洞海灣、全長2.1公里的紅色吊橋，1962年通車，是北九州市的象徵地標。",
+        lat: 33.902559,
+        lng: 130.81712,
+      },
+      {
+        name: "脇田海水浴場",
+        description: "位於玄海國定公園內、若松北岸的海水浴場。",
+        lat: 33.934992,
+        lng: 130.728309,
+      },
+      {
+        name: "北九州次世代能源公園",
+        description: "2009年開幕的體驗型設施，可參觀風力與太陽能發電等設備。",
+      },
+      {
+        name: "肥皂泡工廠見學（シャボン玉石けん）",
+        description: "知名日本肥皂製造商提供的免費工廠導覽，距賽場不遠。",
+      },
+      {
+        name: "Moly Fantasy若松",
+        description: "位於附近永旺若松購物中心內的室內遊樂場，適合雨天備案。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
