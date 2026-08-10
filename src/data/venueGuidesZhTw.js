@@ -51,6 +51,27 @@ export const VENUE_GUIDES_ZH_TW = [
       nightRace: true,
     },
     tip: "夜間賽事讓你能白天遊大阪、晚上看賽艇——別忘了查看我們針對夜間賽程的預測。",
+    nearbyAttractions: [
+      {
+        name: "難波、心齋橋",
+        description: "大阪最大的購物與美食商圈，搭地下鐵約15分鐘可達。",
+      },
+      {
+        name: "住吉大社",
+        description: "日本最古老、最重要的神社之一，車程約20分鐘。",
+      },
+      {
+        name: "ATC（亞太貿易中心）與住之江溫泉SPA",
+        description:
+          "賽場周邊6公里內的暢貨中心與家居購物商場，住之江溫泉SPA則緊鄰住之江公園站，賽後泡湯放鬆是在地人的熱門選擇。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "每年固定舉辦多次例行賽，每次約4至7天，另有定期的多日SG／G1大賽。",
+      seasonalNotes:
+        "多數年份的12月會舉辦賽季總決賽SG大獎賽（グランプリ），是賽艇界年度最盛大的賽事之一。",
+    },
   },
   {
     slug: "edogawa",
@@ -117,5 +138,25 @@ export const VENUE_GUIDES_ZH_TW = [
       nightRace: false,
     },
     tip: "第一標附近的湧浪讓展示數據格外重要——我們的預測表會顯示每位選手的展示時間。",
+    nearbyAttractions: [
+      {
+        name: "大濠公園",
+        description:
+          "福岡市中心的大型景觀公園，有日式庭園與湖畔咖啡廳，從天神搭地下鐵約4分鐘可達。",
+      },
+      {
+        name: "天神",
+        description: "福岡最大的購物、美食與夜生活商圈，步行約15分鐘可達。",
+      },
+      {
+        name: "屋台（長濱拉麵）",
+        description:
+          "福岡著名的路邊屋台文化，以長濱拉麵最具代表性，晚間看完賽事後順道品嚐在地美食是熱門玩法。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
   },
 ];

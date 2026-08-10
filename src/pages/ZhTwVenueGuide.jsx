@@ -44,6 +44,8 @@ const copy = {
   },
   nightRaceYes: "有 🌙",
   nightRaceNo: "無（僅日間賽事）",
+  scheduleHeading: "📅 賽期資訊",
+  nearbyAttractionsHeading: "🗺️ 周邊景點",
   bettingTip: "💡 投注小技巧",
   beforeYouBet: "⚖️ 投注前須知",
   disclaimer: (
