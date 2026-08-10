@@ -42,9 +42,13 @@ export const DEFAULT_LANGUAGE = "ja";
 export const LANGUAGE_STORAGE_KEY = "boatai-language";
 
 // 特定言語にのみ存在するパスと対応言語（ルーティング・hreflang で共用）
+// 会場別ビジターガイドのko版は現状1会場（桐生）のみデータがあり、
+// LANGUAGE_ONLY_PATHSに"ko"を加えると全会場でko対応を宣言してしまい
+// hreflang破損・存在しない会場への言語スイッチャー導線が発生するため
+// 全24会場分のデータが揃うまでは意図的に含めない（en/zh-TWは24会場フルセット）
 export const LANGUAGE_ONLY_PATHS = {
-  "/venues": ["en", "zh-TW", "ko"],
-  "/venues/region": ["en", "zh-TW", "ko"],
+  "/venues": ["en", "zh-TW"],
+  "/venues/region": ["en", "zh-TW"],
 };
 
 /**
