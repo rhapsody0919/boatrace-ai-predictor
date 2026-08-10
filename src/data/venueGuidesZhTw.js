@@ -646,4 +646,80 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "tokoname",
+    code: 8,
+    name: "常滑",
+    kanji: "Tokoname",
+    region: "愛知",
+    tagline: "隔海遙望中部國際機場，起航區考驗選手技術",
+    intro: [
+      "常滑賽艇場座落於愛知縣，隔著海灣正對中部國際機場（Centrair），是日本少數能輕鬆安排「賽艇＋航班」行程的賽場之一。賽艇出發前停靠的起航區（Pit）比大多數賽場更長，讓選手要抓準出航時機變得更加困難。",
+      "常滑同時也是歷史悠久的燒物（陶瓷）產地，賽事日安排一趟陶藝老街散步，可以說是理所當然的行程搭配。",
+    ],
+    access: [
+      "名鐵常滑線「常滑」站 → 步行約5分鐘",
+      "從中部國際機場出發：搭電車約5分鐘至常滑站，再步行約5分鐘",
+    ],
+    mapQuery: "ボートレースとこなめ",
+    lat: 34.88566429,
+    lng: 136.8324971,
+    videoUrl: "https://www.youtube.com/channel/UCu9lPbAk1MosTGm2yQ4BapQ",
+    cashless: {
+      note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可申請免費的「TOKOCA」卡，當天申請當天即可使用，每200日圓投注可獲得1點，點數可折抵購票或入場費用。",
+      url: "https://tokoname-mania.com/card/",
+    },
+    image: {
+      src: "/images/venues/tokoname.jpg",
+      alt: "常滑賽艇場",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Tokoname-kyotei-01.jpg",
+    },
+    facts: {
+      water: "海水人工水池（有閘門阻隔，不受潮汐影響）",
+      character: "起航區較長，出航時機掌握比其他賽場更困難",
+      nightRace: false,
+    },
+    tip: "由於這裡的出航時機特別難以掌握，我們的AI在常滑預測中會特別加重起跑數據的分析權重。",
+    nearbyAttractions: [
+      {
+        name: "燒物散步道（やきもの散歩道）",
+        description:
+          "歷史悠久的陶瓷老街，磚造煙囪與工藝工坊沿著約1.6公里的步道分佈，起點是常滑站步行約5分鐘可達的陶瓷博物館。",
+        lat: 34.89056,
+        lng: 136.83556,
+      },
+      {
+        name: "常滑招財貓通り",
+        description:
+          "一面由當地陶藝家製作的39隻陶製招財貓組成的牆面，上方還有一隻高6.3公尺、名為「TOKONYAN」的巨型招財貓探頭俯瞰——常滑最熱門的拍照景點之一，就在前往陶瓷博物館的路上。",
+        lat: 34.89056,
+        lng: 136.83656,
+      },
+      {
+        name: "INAX Live Museum",
+        description:
+          "介紹磁磚與陶瓷歷史的博物館園區，園內保留一座可實際走入內部參觀的磚造窯，很適合和陶藝老街散步安排在一起。",
+      },
+      {
+        name: "中部國際機場（Centrair）",
+        description:
+          "就在賽場對岸的海灣另一側，賽前賽後安排航班十分方便，機場內還設有展望台，適合單純看飛機起降。",
+        lat: 34.85833,
+        lng: 136.80528,
+      },
+      {
+        name: "臨空海岸",
+        description:
+          "就在賽場旁的白沙人工海灘，夏季相當熱門，以能眺望中部國際機場方向的夕陽美景聞名。",
+        lat: 34.886178,
+        lng: 136.822708,
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
