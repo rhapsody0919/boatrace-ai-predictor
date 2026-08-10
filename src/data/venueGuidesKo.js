@@ -631,4 +631,81 @@ export const VENUE_GUIDES_KO = [
       creditUrl: "https://commons.wikimedia.org/wiki/File:Biwako-kyotei-01.jpg",
     },
   },
+  {
+    slug: "amagasaki",
+    code: 13,
+    name: "아마가사키",
+    kanji: "Amagasaki",
+    region: "효고",
+    regionGroup: "kinki",
+    tagline: "역에서 내리면 바로 도착 — 일본에서 가장 잔잔한 수면 중 하나",
+    intro: [
+      "아마가사키 경정장은 편의성 면에서 경정 중 최고 수준입니다: 한신전철 '아마가사키추오풀마에'역 바로 옆에 있어 비 오는 날에도 우산이 거의 필요 없을 정도입니다. 이곳의 수면은 이 스포츠에서 가장 잔잔하고 기술적인 곳 중 하나로 꼽히며, 담수이고 선체 아래가 단단합니다.",
+      "일 년 중 대부분 코스를 가로질러 맞바람이 불지만, 저기압이나 비가 다가올 때는 순풍으로 바뀌기도 합니다. 최근 몇 년간 이곳의 1코스 승률은 60%를 넘어, 아마가사키는 일본에서 손꼽히는 인코스 유리 경정장이 되었습니다.",
+    ],
+    access: [
+      "한신전철 '아마가사키추오풀마에'역 → 경정장 바로 옆",
+      "오사카우메다에서 직행 특급 또는 급행 열차, 또는 고베산노미야에서 '니시노미야'역 환승 후 보통열차 이용",
+    ],
+    mapQuery: "ボートレース尼崎",
+    lat: 34.719489,
+    lng: 135.393973,
+    videoUrl: "https://www.youtube.com/@AMABOATRACE",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 무료 'AMA+' 카드를 발급받으세요. 현장 기계에서 충전할 수 있으며, 100엔당 1포인트가 적립되어 지정석 티켓, QUO카드, 경정장 상품으로 교환할 수 있습니다.",
+      url: "https://www.boatrace-amagasaki.jp/sp/index.php?page=service-cashless",
+    },
+    facts: {
+      water: "담수, 단단하고 잔잔함 — 기술 중심",
+      character: "일본에서 손꼽히는 인코스 유리 경정장（1코스 승률 60% 이상）",
+      nightRace: false,
+    },
+    tip: "이곳은 1코스 승률이 워낙 높기 때문에, 저희 AI는 아마가사키 예측마다 스타트 코스의 강점을 특히 중요하게 봅니다.",
+    nearbyAttractions: [
+      {
+        name: "아마가사키성",
+        description:
+          "옛터에 재건된 에도시대 성곽（2019년 재개관）으로, 성 아래 마을의 역사를 다루는 박물관이 내부에 있습니다 — 경정장에서 약 2km 거리입니다.",
+        lat: 34.716723,
+        lng: 135.41875,
+      },
+      {
+        name: "지초마치 절거리",
+        description:
+          "아마가사키성 바로 옆에 있는 11개 사찰이 모인 역사 지구로, 옛 성곽 마을의 모습을 간직하고 있습니다 — 경주의 활기와 대비되는 조용한 곳입니다.",
+      },
+      {
+        name: "아마가사키 저금통 박물관",
+        description:
+          "지역 신용금고가 운영하는 독특한 기업 박물관으로, 전 세계에서 모은 수천 개의 저금통을 전시합니다 — 근처의 성과 절거리와 함께 둘러보기 좋습니다.",
+        lat: 34.716214,
+        lng: 135.413431,
+      },
+      {
+        name: "시오에 스사노오 신사",
+        description:
+          "여름 축제로 유명한 지역 신사로, 한신 아마가사키역 주변을 둘러본다면 들러볼 만한 조용한 곳입니다.",
+        lat: 34.737332,
+        lng: 135.435484,
+      },
+      {
+        name: "한신 아마가사키역 일대",
+        description:
+          "시내 주요 교통 허브로, 쇼핑거리와 최근 새단장한 주오 공원이 근처에 있습니다 — 시내 다른 관광과 함께 경주 관람을 계획할 때 편리한 거점입니다.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "아마가사키는 연간 약 180일 경주를 열어, 대부분의 경정장보다 자주 열립니다. 정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/amagasaki.jpg",
+      alt: "아마가사키 경정장",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Amagasaki-kyotei-01.jpg",
+    },
+  },
 ];
