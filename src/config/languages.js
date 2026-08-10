@@ -1,3 +1,5 @@
+import { blogPostsEn } from "../data/blogPostsEn.js";
+
 /**
  * 対応言語の唯一の情報源
  * React 非依存の純粋な JS モジュール（sitemap 生成等の Node スクリプトからも import する）
@@ -43,15 +45,37 @@ export const LANGUAGE_STORAGE_KEY = "boatai-language";
 
 // 特定言語にのみ存在するパスと対応言語（ルーティング・hreflang で共用）
 // 会場別ビジターガイドのko版は24会場全てのデータが揃ったため有効化済み（en/zh-TWと同じフルセット）
-// ブログはja専用が原則だが、Search Consoleで需要が確認できた記事（表示回数110件、2026-08-11）
-// のみ英語版を用意した最小実装のため、この1記事だけja+enを個別登録する（BlogPost.jsx参照）。
-// 他エントリと異なりjaも含むのは、この記事はja版が既存であり「特定言語専用」ではなく
-// 「ja+enの2言語のみ提供」というケースのため（hreflang・言語スイッチャーの可用性判定に必要）
 export const LANGUAGE_ONLY_PATHS = {
   "/venues": ["en", "zh-TW", "ko"],
   "/venues/region": ["en", "zh-TW", "ko"],
-  "/blog/odds-expected-value-guide": ["ja", "en"],
 };
+
+// 配下の一部パスだけが翻訳済みのケース（LANGUAGE_ONLY_PATHS/TRANSLATED_PATHSは
+// 「配下丸ごと翻訳済み」前提のため表現できない）。ブログはfeatured記事の一部のみ
+// 英語版が存在するため、記事単位のホワイトリストで判定する。
+// entries は blogPostsEn.js から動的導出（新規記事追加時にここへの手動追記は不要）。
+// 詳細: docs/adr/0005-blog-partial-translation-routing.md
+export const PARTIALLY_TRANSLATED_PATHS = {
+  "/blog": {
+    listPage: true,
+    entries: blogPostsEn.map((post) => post.id),
+    langs: ["ja", "en"],
+  },
+};
+
+// basePathがPARTIALLY_TRANSLATED_PATHSのいずれかにマッチすればその設定を返す
+function matchPartiallyTranslated(basePath) {
+  for (const [prefix, config] of Object.entries(PARTIALLY_TRANSLATED_PATHS)) {
+    if (basePath === prefix) {
+      return config.listPage ? config : null;
+    }
+    if (basePath.startsWith(`${prefix}/`)) {
+      const rest = basePath.slice(prefix.length + 1);
+      return config.entries.includes(rest) ? config : null;
+    }
+  }
+  return null;
+}
 
 /**
  * コンテンツが実際に翻訳されているパス（プレフィックス一致）。
@@ -70,14 +94,18 @@ export const TRANSLATED_PATHS = [
   "/guide",
   "/venues",
   "/winning-technique",
-  "/blog/odds-expected-value-guide",
 ];
 
 // パス（言語プレフィックス除去済み）のコンテンツが翻訳済みかどうか
 export function isPathTranslated(basePath) {
-  return TRANSLATED_PATHS.some(
-    (p) => basePath === p || (p !== "/" && basePath.startsWith(`${p}/`)),
-  );
+  if (
+    TRANSLATED_PATHS.some(
+      (p) => basePath === p || (p !== "/" && basePath.startsWith(`${p}/`)),
+    )
+  ) {
+    return true;
+  }
+  return matchPartiallyTranslated(basePath) !== null;
 }
 
 // パス（言語プレフィックス除去済み）が提供されている言語の定義一覧を返す
@@ -88,6 +116,14 @@ export function getAvailableLanguages(basePath) {
   if (!isPathTranslated(basePath)) {
     return SUPPORTED_LANGUAGES.filter(({ code }) => code === DEFAULT_LANGUAGE);
   }
+
+  const partial = matchPartiallyTranslated(basePath);
+  if (partial) {
+    return SUPPORTED_LANGUAGES.filter(({ code }) =>
+      partial.langs.includes(code),
+    );
+  }
+
   const matches = Object.entries(LANGUAGE_ONLY_PATHS).filter(
     ([p]) => basePath === p || basePath.startsWith(`${p}/`),
   );

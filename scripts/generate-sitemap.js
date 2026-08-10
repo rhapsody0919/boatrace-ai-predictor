@@ -11,6 +11,7 @@ import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
 import { VENUE_REGIONS } from "../src/data/venueRegions.js";
 import { VENUE_GUIDES_ZH_TW } from "../src/data/venueGuidesZhTw.js";
 import { VENUE_GUIDES_KO } from "../src/data/venueGuidesKo.js";
+import { blogPostsEn } from "../src/data/blogPostsEn.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -148,13 +149,19 @@ const LANGUAGE_ONLY_PAGES = {
       changefreq: "monthly",
       priority: "0.6",
     })),
-    // ブログはja専用が原則だが、需要が確認できたこの1記事のみ英語版を用意した
-    // 最小実装（languages.js の LANGUAGE_ONLY_PATHS 参照）
+    // ブログはja専用が原則だが、featured記事の一部のみ英語版を用意している
+    // （languages.js の PARTIALLY_TRANSLATED_PATHS 参照）。記事リストは
+    // blogPostsEn.js から動的に生成し、新規記事追加時の登録漏れを防ぐ
     {
-      basePath: "/blog/odds-expected-value-guide",
-      changefreq: "monthly",
+      basePath: "/blog",
+      changefreq: "weekly",
       priority: "0.6",
     },
+    ...blogPostsEn.map((post) => ({
+      basePath: `/blog/${post.id}`,
+      changefreq: "monthly",
+      priority: "0.6",
+    })),
   ],
   "zh-TW": [
     ...["", ...VENUE_GUIDES_ZH_TW.map((v) => v.slug)].map((slug) => ({

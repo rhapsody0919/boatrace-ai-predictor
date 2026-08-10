@@ -1,3 +1,5 @@
+import { blogPostsEn, getEnglishOverride } from "./blogPostsEn.js";
+
 // Blog post metadata
 export const blogPosts = [
   {
@@ -1011,4 +1013,27 @@ export const getRelatedPosts = (postId, limit = 3) => {
     })
     .slice(0, limit)
     .map(({ post }) => post);
+};
+
+// 英語版が存在する記事同士でのみ関連記事を返す（未翻訳記事へのリンクを避けるため）
+// タグの重複度計算は日本語版タグを使用（英語版タグは表示専用の翻訳ラベルのため）
+export const getRelatedPostsEn = (postId, limit = 3) => {
+  const currentPost = getPostById(postId);
+  if (!currentPost) return [];
+
+  const availableIds = new Set(blogPostsEn.map((post) => post.id));
+
+  return blogPosts
+    .filter((post) => post.id !== postId && availableIds.has(post.id))
+    .map((post) => ({
+      post,
+      sharedTags: post.tags.filter((tag) => currentPost.tags.includes(tag))
+        .length,
+    }))
+    .sort((a, b) => {
+      if (b.sharedTags !== a.sharedTags) return b.sharedTags - a.sharedTags;
+      return new Date(b.post.date) - new Date(a.post.date);
+    })
+    .slice(0, limit)
+    .map(({ post }) => ({ ...post, ...getEnglishOverride(post.id) }));
 };

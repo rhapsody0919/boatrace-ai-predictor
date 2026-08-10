@@ -3,34 +3,17 @@ import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import { getPostById, getRelatedPosts } from "../data/blogPosts";
+import {
+  getPostById,
+  getRelatedPosts,
+  getRelatedPostsEn,
+} from "../data/blogPosts";
+import { getEnglishOverride, isEnglishAvailable } from "../data/blogPostsEn";
 import { parseLangFromPath, localizePath } from "../config/languages";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
 import "./BlogPost.css";
-
-// 最小実装: ブログ全体の多言語化はまだ行わず、需要が確認できた記事のみ
-// 英語版を用意する（Search Consoleでこの記事に表示回数110件を確認、2026-08-11）。
-// languages.js の TRANSLATED_PATHS にこの記事のパスだけを登録することで、
-// 他の記事は従来通り ja 版へリダイレクトされる。
-const ENGLISH_POST_OVERRIDES = {
-  "odds-expected-value-guide": {
-    title: "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
-    description:
-      "How boat racing odds work and how to think in expected value, explained with data — the overpopularity trap, targeting odds distortions, and break-even odds by bet type.",
-    category: "Data Analysis",
-    tags: [
-      "Odds",
-      "ExpectedValue",
-      "Overpopularity",
-      "BettingStrategy",
-      "DataAnalysis",
-    ],
-    readTime: "9 min",
-    mdPath: "/blog/odds-expected-value-guide-en.md",
-  },
-};
 
 const UI_TEXT = {
   ja: {
@@ -50,8 +33,8 @@ const UI_TEXT = {
     homeHref: "/",
   },
   en: {
-    backToBlog: "← Back to BoatAI",
-    backHref: "/en/",
+    backToBlog: "← Back to blog list",
+    backHref: "/en/blog",
     loading: "Loading article...",
     errorTitle: "Error",
     notFound: "Article not found",
@@ -76,18 +59,18 @@ export default function BlogPost() {
   const [error, setError] = useState(null);
 
   const { lng } = parseLangFromPath(pathname);
-  const isEnglish = lng === "en" && Boolean(ENGLISH_POST_OVERRIDES[id]);
+  const isEnglish = lng === "en" && isEnglishAvailable(id);
   const t = UI_TEXT[isEnglish ? "en" : "ja"];
 
   const basePost = getPostById(id);
   const post =
     isEnglish && basePost
-      ? { ...basePost, ...ENGLISH_POST_OVERRIDES[id] }
+      ? { ...basePost, ...getEnglishOverride(id) }
       : basePost;
-  const relatedPosts = isEnglish ? [] : getRelatedPosts(id, 3);
-  const mdPath = isEnglish
-    ? ENGLISH_POST_OVERRIDES[id].mdPath
-    : `/blog/${id}.md`;
+  const relatedPosts = isEnglish
+    ? getRelatedPostsEn(id, 3)
+    : getRelatedPosts(id, 3);
+  const mdPath = isEnglish ? `/blog/${id}-en.md` : `/blog/${id}.md`;
 
   const postUrl = post
     ? `https://www.boat-ai.jp${localizePath(`/blog/${id}`, isEnglish ? "en" : "ja")}`
@@ -300,7 +283,10 @@ export default function BlogPost() {
               {relatedPosts.map((relatedPost) => (
                 <Link
                   key={relatedPost.id}
-                  to={`/blog/${relatedPost.id}`}
+                  to={localizePath(
+                    `/blog/${relatedPost.id}`,
+                    isEnglish ? "en" : "ja",
+                  )}
                   className="related-card"
                 >
                   <span className="category-badge">{relatedPost.category}</span>

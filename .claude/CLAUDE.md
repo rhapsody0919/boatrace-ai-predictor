@@ -145,12 +145,13 @@ boatrace-ai-predictor/
 - **note.com向け下書きを同時生成する（2026-08-04〜）**: 新規ブログ記事作成時は`python3 convert_to_note_markdown.py public/blog/{slug}.md`を実行し、出力された`{slug}_note.md`を`note-articles/{slug}.md`にリネームして配置する。note.comへの実際の投稿・公開は自動化できない（公開APIが存在しない）ため、生成した下書きをユーザーがnoteエディタに貼り付けて手動公開する
 - **Xツイート下書きも同時生成する（2026-08-04〜）**: 新規ブログ記事作成時は`node scripts/generate-tweet-draft.js {post-id}`を実行し、`note-articles/tweet-drafts.md`に下書きを追記する。投稿はユーザーが内容を確認の上、手動でXに行う（2025-12時点の同種の取り組みが下書き作成後1週間で止まった実績があるため、「記事公開のたびに機械的に生成する」運用に固定し、単発の週次計画には戻さない）
 - **note/X投稿のリマインドを毎回行う（2026-08-08〜）**: ブログ記事を作成したPRの完了報告・マージ確認には、必ず「note/Xへの投稿依頼」を含める。具体的には①note下書きのファイルパス（`note-articles/{slug}.md`）②tweet-drafts.md内の該当セクション（日付見出し）③「noteエディタに貼り付けて公開→対応ツイートをXに投稿」の手順を明示する。リマインドなしで記事だけ公開して投稿が溜まった実績（2026-07-30〜08-08の14記事が未投稿で滞留）があるため、下書き生成だけで完了とせず、リマインド提示までを記事作成タスクの完了条件とする
+- **featured記事は英訳も同時作成する（2026-08-11〜）**: featured記事（`blogPosts.js`の`featured: true`）を新規公開する際は、英語版（`public/blog/{slug}-en.md` + `src/data/blogPostsEn.js`へのエントリ追加）も同一PRまたは近接PRで作成する。対象言語は英語のみ（zh-TW/koは対象外、需要が確認できるまで見送り）。ブログi18nの実装パターン・設計判断は`docs/design/blog-i18n/`（spec/screens/plan/tasks）・`docs/adr/0005〜0007`を参照
 
 ### 新機能・新ページ追加時の多言語化の3区分（必須）
 新しいページ・機能を実装する際は、必ず以下の3区分のどれに該当するかを決めてから着手する（2026-08-09合意、i18n監査で「未翻訳ページを全言語URLで配信しlang=enを宣言する」構造欠陥が発覚したため）。
 
 1. **翻訳対象（translated）**: ユーザー獲得に直結する主要導線（ホーム・分析ツール・ガイド・会場ガイド等）。UI文言は直書き禁止で`t()`経由、**4言語のi18nキーを同じPRで追加**し、`src/config/languages.js`の`TRANSLATED_PATHS`に登録する。用語は`docs/reference/i18n-glossary.md`準拠（新用語はglossaryに追記してから翻訳）
-2. **ja専用（ja-only）**: ブログ・規約・管理画面・成績ページ等、翻訳コストに見合わないもの。`TRANSLATED_PATHS`に登録しない（=言語プレフィックスURLはja版へ自動リダイレクトされ、`lang=ja`で配信されてブラウザのGoogle翻訳に委ねられる。hreflang非出力・言語スイッチャー無効化も自動で連動）
+2. **ja専用（ja-only）**: 規約・管理画面・成績ページ等、翻訳コストに見合わないもの。`TRANSLATED_PATHS`に登録しない（=言語プレフィックスURLはja版へ自動リダイレクトされ、`lang=ja`で配信されてブラウザのGoogle翻訳に委ねられる。hreflang非出力・言語スイッチャー無効化も自動で連動）。ブログは原則この区分だが、featured記事のうち英語対応済みのものは`src/config/languages.js`の`PARTIALLY_TRANSLATED_PATHS`で記事単位に例外扱いする（下記「新機能リリース時のブログ記事ルール」参照）
 3. **特定言語専用**: `/venues`系のような言語別コンテンツ。`LANGUAGE_ONLY_PATHS`に登録
 
 共通ルール:

@@ -1,40 +1,87 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import Header from "../components/Header";
-import { blogPosts, categories, getFeaturedPosts } from "../data/blogPosts";
+import { blogPosts } from "../data/blogPosts";
+import { getEnglishOverride, isEnglishAvailable } from "../data/blogPostsEn";
+import { parseLangFromPath, localizePath } from "../config/languages";
 import { isWithinDays } from "../utils/dateUtils";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import "./Blog.css";
 
-const TITLE = "ブログ | BoatAI - ボートレース予想・データ分析・戦略情報";
-const DESCRIPTION =
-  "ボートレース予想、データ分析、舟券戦略に関する最新情報を発信。初心者向けの基本知識から、上級者向けの高度な戦略まで幅広くカバーしています。";
+const UI_TEXT = {
+  ja: {
+    title: "ブログ | BoatAI - ボートレース予想・データ分析・戦略情報",
+    description:
+      "ボートレース予想、データ分析、舟券戦略に関する最新情報を発信。初心者向けの基本知識から、上級者向けの高度な戦略まで幅広くカバーしています。",
+    keywords: "ボートレースブログ,予想戦略,データ分析,舟券購入,AI予想,勝ち方",
+    heading: "📚 BoatAI ブログ",
+    subheading:
+      "ボートレース予想・データ分析・戦略に関する情報を発信しています",
+    featuredHeading: "🌟 注目記事",
+    allButton: "すべて",
+    noPosts: "このカテゴリの記事はまだありません。",
+    home: "ホーム",
+    blogLabel: "ブログ",
+  },
+  en: {
+    title: "Blog | BoatAI - Boat Racing Predictions, Data Analysis & Strategy",
+    description:
+      "The latest on boat racing predictions, data analysis, and betting strategy — from beginner basics to advanced techniques.",
+    keywords: "boat racing blog,betting strategy,data analysis,AI predictions",
+    heading: "📚 BoatAI Blog",
+    subheading: "Boat racing predictions, data analysis, and strategy insights",
+    featuredHeading: "🌟 Featured Articles",
+    allButton: "All",
+    noPosts: "No articles in this category yet.",
+    home: "Home",
+    blogLabel: "Blog",
+  },
+};
 
 export default function Blog() {
+  const { pathname } = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const featuredPosts = getFeaturedPosts();
+
+  const { lng } = parseLangFromPath(pathname);
+  const isEnglish = lng === "en";
+  const t = UI_TEXT[isEnglish ? "en" : "ja"];
+
+  // 英語版は英語版データが存在する記事のみを対象にする（未翻訳記事は一覧に出さない）
+  const basePosts = isEnglish
+    ? blogPosts
+        .filter((post) => isEnglishAvailable(post.id))
+        .map((post) => ({ ...post, ...getEnglishOverride(post.id) }))
+    : blogPosts;
+
+  const featuredPosts = basePosts.filter((post) => post.featured);
+  const availableCategories = [
+    ...new Set(basePosts.map((post) => post.category)),
+  ];
 
   const filteredPosts =
     selectedCategory === "all"
-      ? blogPosts
-      : blogPosts.filter((post) => post.category === selectedCategory);
+      ? basePosts
+      : basePosts.filter((post) => post.category === selectedCategory);
 
   const sortedPosts = [...filteredPosts].sort(
     (a, b) => new Date(b.date) - new Date(a.date),
   );
 
+  const blogHref = localizePath("/blog", isEnglish ? "en" : "ja");
+  const canonicalUrl = `https://www.boat-ai.jp${blogHref}`;
+
   useSocialMeta({
-    title: TITLE,
-    description: DESCRIPTION,
-    url: "https://www.boat-ai.jp/blog",
-    keywords: "ボートレースブログ,予想戦略,データ分析,舟券購入,AI予想,勝ち方",
+    title: t.title,
+    description: t.description,
+    url: canonicalUrl,
+    keywords: t.keywords,
   });
 
   return (
     <>
-      <title>{TITLE}</title>
-      <meta name="description" content={DESCRIPTION} />
-      <link rel="canonical" href="https://www.boat-ai.jp/blog" />
+      <title>{t.title}</title>
+      <meta name="description" content={t.description} />
+      <link rel="canonical" href={canonicalUrl} />
 
       {/* BreadcrumbList */}
       <script type="application/ld+json">
@@ -45,14 +92,14 @@ export default function Blog() {
             {
               "@type": "ListItem",
               position: 1,
-              name: "ホーム",
-              item: "https://www.boat-ai.jp/",
+              name: t.home,
+              item: `https://www.boat-ai.jp${localizePath("/", isEnglish ? "en" : "ja")}`,
             },
             {
               "@type": "ListItem",
               position: 2,
-              name: "ブログ",
-              item: "https://www.boat-ai.jp/blog",
+              name: t.blogLabel,
+              item: canonicalUrl,
             },
           ],
         })}
@@ -62,19 +109,19 @@ export default function Blog() {
 
       <div className="blog-container">
         <div className="blog-header">
-          <h1>📚 BoatAI ブログ</h1>
-          <p>ボートレース予想・データ分析・戦略に関する情報を発信しています</p>
+          <h1>{t.heading}</h1>
+          <p>{t.subheading}</p>
         </div>
 
         {/* Featured Posts */}
         {selectedCategory === "all" && featuredPosts.length > 0 && (
           <section className="featured-section">
-            <h2>🌟 注目記事</h2>
+            <h2>{t.featuredHeading}</h2>
             <div className="featured-grid">
               {featuredPosts.map((post) => (
                 <Link
                   key={post.id}
-                  to={`/blog/${post.id}`}
+                  to={localizePath(`/blog/${post.id}`, isEnglish ? "en" : "ja")}
                   className="featured-card"
                 >
                   {isWithinDays(post.date, 7) && (
@@ -101,9 +148,9 @@ export default function Blog() {
             className={selectedCategory === "all" ? "active" : ""}
             onClick={() => setSelectedCategory("all")}
           >
-            すべて
+            {t.allButton}
           </button>
-          {categories.map((category) => (
+          {availableCategories.map((category) => (
             <button
               key={category}
               className={selectedCategory === category ? "active" : ""}
@@ -117,7 +164,11 @@ export default function Blog() {
         {/* Blog Posts Grid */}
         <div className="blog-grid">
           {sortedPosts.map((post) => (
-            <Link key={post.id} to={`/blog/${post.id}`} className="blog-card">
+            <Link
+              key={post.id}
+              to={localizePath(`/blog/${post.id}`, isEnglish ? "en" : "ja")}
+              className="blog-card"
+            >
               {isWithinDays(post.date, 7) && (
                 <span className="new-badge">NEW</span>
               )}
@@ -143,7 +194,7 @@ export default function Blog() {
 
         {filteredPosts.length === 0 && (
           <div className="no-posts">
-            <p>このカテゴリの記事はまだありません。</p>
+            <p>{t.noPosts}</p>
           </div>
         )}
       </div>

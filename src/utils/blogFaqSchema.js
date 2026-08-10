@@ -7,11 +7,11 @@ function stripMarkdown(text) {
 }
 
 /**
- * ブログ記事本文の「## よくある質問」セクションからQ&Aを抽出する。
+ * ブログ記事本文の「## よくある質問」（英語版は「## FAQ」）セクションからQ&Aを抽出する。
  * セクションが無い記事（大半の旧記事）は空配列を返す。
  */
 export function extractFaqItems(markdown) {
-  const headingMatch = markdown.match(/^##\s*よくある質問\s*$/m);
+  const headingMatch = markdown.match(/^##\s*(よくある質問|FAQ)\s*$/m);
   if (!headingMatch) return [];
 
   const afterHeading = markdown.slice(
