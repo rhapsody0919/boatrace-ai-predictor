@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { getPostById, getRelatedPosts } from "../data/blogPosts";
-import { parseLangFromPath } from "../config/languages";
+import { parseLangFromPath, localizePath } from "../config/languages";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
@@ -90,7 +90,7 @@ export default function BlogPost() {
     : `/blog/${id}.md`;
 
   const postUrl = post
-    ? `https://www.boat-ai.jp${isEnglish ? "/en" : ""}/blog/${id}`
+    ? `https://www.boat-ai.jp${localizePath(`/blog/${id}`, isEnglish ? "en" : "ja")}`
     : null;
   const postImageUrl = post
     ? post.image
@@ -99,7 +99,7 @@ export default function BlogPost() {
     : null;
 
   useEffect(() => {
-    if (!post) {
+    if (!basePost) {
       setError(t.notFound);
       setLoading(false);
       return;
@@ -126,7 +126,7 @@ export default function BlogPost() {
     // Scroll to top
     window.scrollTo(0, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mdPath/t は id/isEnglish から導出される
-  }, [id, post, mdPath]);
+  }, [id, basePost, mdPath]);
 
   useSocialMeta({
     title: post?.title,
@@ -230,13 +230,13 @@ export default function BlogPost() {
               "@type": "ListItem",
               position: 1,
               name: t.home,
-              item: `https://www.boat-ai.jp${isEnglish ? "/en" : ""}/`,
+              item: `https://www.boat-ai.jp${localizePath("/", isEnglish ? "en" : "ja")}`,
             },
             {
               "@type": "ListItem",
               position: 2,
               name: t.blogLabel,
-              item: `https://www.boat-ai.jp${isEnglish ? "/en" : ""}/blog`,
+              item: `https://www.boat-ai.jp${localizePath("/blog", isEnglish ? "en" : "ja")}`,
             },
             {
               "@type": "ListItem",
