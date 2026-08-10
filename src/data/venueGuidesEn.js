@@ -1236,6 +1236,14 @@ export const VENUE_GUIDES_EN = [
       'JR Yosan Line "Marugame" station → free shuttle bus, about 10 minutes',
       "By car: about 15-20 minutes from Sakaide or Zentsuji interchanges on the Takamatsu or Seto-Chuo Expressways",
     ],
+    mapQuery: "ボートレース丸亀",
+    lat: 34.30469395,
+    lng: 133.79470945,
+    videoUrl: "https://www.youtube.com/channel/UC2CWDMG18mpBGXkI9KHdACQ",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the "B Card"; ¥100 wagered earns 1 point, and reserved-seat prices are discounted (typically half price) when paid with the card.',
+      url: "https://www.marugameboat.jp/sp/pointcard.htm",
+    },
     facts: {
       water: "Seawater, Seto Inland Sea — strong tidal swing (up to ~2m)",
       character:
@@ -1247,12 +1255,33 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Marugame Castle",
         description:
-          "A 400-year-old castle with one of Japan's 12 surviving original wooden keeps, famous for its dramatic curved stone walls.",
+          "A 400-year-old castle with one of Japan's 12 surviving original wooden keeps, famous for its dramatic curved stone walls and Japan's tallest existing stone castle ramparts.",
+        lat: 34.286115,
+        lng: 133.800334,
       },
       {
         name: "Marugame udon",
         description:
           "The city is one of Japan's udon capitals — a short walk from the venue turns up several well-known noodle shops.",
+      },
+      {
+        name: "Marugame Genichiro-Inokuma Museum of Contemporary Art (MIMOCA)",
+        description:
+          "A striking modern building facing JR Marugame station, showcasing the work of Kagawa-born artist Genichiro Inokuma alongside contemporary exhibitions.",
+        lat: 34.291214,
+        lng: 133.792025,
+      },
+      {
+        name: "Nakazu Banshoen Garden & Uchiwa Museum",
+        description:
+          "A traditional Edo-period strolling garden with a teahouse, now also home to the relocated Marugame Uchiwa (fan) Museum — Marugame makes about 90% of Japan's traditional paper fans.",
+        lat: 34.285108,
+        lng: 133.769663,
+      },
+      {
+        name: "Marugame Port",
+        description:
+          "The city's historic harbor, once a key Edo-period trading port, with ferries still running to nearby Shodoshima and Honjima islands.",
       },
     ],
     schedule: {
