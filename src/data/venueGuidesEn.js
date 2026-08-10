@@ -448,6 +448,14 @@ export const VENUE_GUIDES_EN = [
       'JR Ryomo Line "Iwajuku" station → about 12 minutes on foot, or free shuttle bus',
       'Free shuttle buses also run from "Azami" station on race days',
     ],
+    mapQuery: "ボートレース桐生",
+    lat: 36.39642168,
+    lng: 139.30845653,
+    videoUrl: "https://www.youtube.com/@boatracejpkiryu",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the free "DK Card", chargeable at on-site machines; ¥100 wagered earns 1 point when using reserved seating.',
+      url: "https://www.kiryu-kyotei.com/sp/index.php?page=about-question",
+    },
     facts: {
       water: "Freshwater pond",
       character: "Highest altitude in Japan — thinner air favors dash racers",
@@ -458,12 +466,33 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Kiryu Shinmachi Weaving District",
         description:
-          "A preserved historic textile district with saw-tooth roof factories — Kiryu has been a major silk weaving town for 400 years.",
+          "A preserved historic textile district with saw-tooth roof factories — Kiryu has been a major silk weaving town for 400 years. The Yurinkan storehouse complex at its southern end is the area's centerpiece.",
+        lat: 36.416606,
+        lng: 139.34303,
       },
       {
         name: "Orimono Sankokan Textile Museum",
         description:
-          "A museum dedicated to Kiryu's textile heritage, with working looms on display.",
+          "A museum dedicated to Kiryu's textile heritage, with working looms on display inside the Shinmachi weaving district — a good pairing with a walk through the historic streets.",
+      },
+      {
+        name: "Kiryu Tenmangu Shrine",
+        description:
+          "The shrine that Kiryu Shinmachi grew up around roughly 400 years ago, still the town's spiritual center today and host to an antiques market on the 25th of most months.",
+        lat: 36.422137,
+        lng: 139.34634,
+      },
+      {
+        name: "Kiryu Station area",
+        description:
+          "The city's main train station and the surrounding shopping streets, connecting the venue to Shinmachi and the rest of central Kiryu.",
+        lat: 36.41102148,
+        lng: 139.33332328,
+      },
+      {
+        name: "Kiryugaoka Park (zoo & amusement park)",
+        description:
+          "A free city park combining a small zoo (giraffes, lions, elephants and more) with an amusement park — a relaxed family outing about 15 minutes on foot from Kiryu Station.",
       },
     ],
     schedule: {
