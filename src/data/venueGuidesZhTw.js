@@ -1244,4 +1244,77 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "kojima",
+    code: 16,
+    name: "兒島",
+    kanji: "Kojima",
+    region: "岡山",
+    tagline: "瀨戶大橋橋影下的平穩水面",
+    intro: [
+      "兒島賽艇場位於岡山縣倉敷市的瀨戶內海畔，緊鄰瀨戶大橋，從看台就能眺望大橋與海上星羅棋布的島嶼。這裡潮差顯著，但風勢通常不大，因此比賽多半平穩、容易判讀，較少出現混亂局面。",
+      "兒島同時也是日本的牛仔褲之都：從賽場出發不遠就能抵達兒島牛仔褲街，數十間店鋪販售在地製作的牛仔褲——很適合安排在賽事日一併走訪。",
+    ],
+    access: [
+      "JR瀨戶大橋線「兒島」站 → 免費接駁巴士，約3-5分鐘",
+      "自駕：距瀨戶中央自動車道兒島交流道約5分鐘車程",
+    ],
+    mapQuery: "ボートレース児島",
+    lat: 34.44852433,
+    lng: 133.80919362,
+    videoUrl: "https://www.youtube.com/channel/UC6IrOXVuw6xXLl1qJqYUrsg",
+    cashless: {
+      note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可申請免費的「K Smart Card」，每100日圓投注可獲得1點（指定席消費點數更多），點數可兌換電子錢包或場館商品，也能在場外設施使用。",
+      url: "https://www.kojimaboat.jp/cashless.html",
+    },
+    image: {
+      src: "/images/venues/kojima.jpg",
+      alt: "兒島賽艇場",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Kojima-kyotei-01.jpg",
+    },
+    facts: {
+      water: "海水，瀨戶內海——潮差顯著，風勢通常較弱",
+      character: "受潮汐牽動但整體平穩、容易判讀",
+      nightRace: false,
+    },
+    tip: "由於風勢在這裡很少造成影響，潮汐時機主導了大部分賽況——我們的AI在每場兒島預測中都會密切追蹤潮汐數據。",
+    nearbyAttractions: [
+      {
+        name: "兒島牛仔褲街",
+        description:
+          "位於味野地區、長約400公尺的購物街，兩側林立販售在地製作牛仔褲的店鋪——兒島被視為日本的牛仔褲製造之都，這裡是店鋪最集中的一段。",
+      },
+      {
+        name: "舊野崎家住宅",
+        description:
+          "由製鹽業巨賈興建的江戶時代大型商家宅邸，約1,000坪的建築群保存至今並作為博物館開放，與附近現代化的牛仔褲店鋪形成鮮明對比。",
+      },
+      {
+        name: "下津井港與城跡",
+        description:
+          "歷史悠久的漁港，後方山丘上有下津井城遺跡，如今已成為瀨戶大橋紀念公園的一部分，春季可賞櫻。",
+        lat: 34.43678,
+        lng: 133.797712,
+      },
+      {
+        name: "鷲羽山展望台",
+        description:
+          "山頂展望台，可眺望瀨戶內海與瀨戶大橋的壯闊景色，夕陽時分格外動人。",
+        lat: 34.434429,
+        lng: 133.813915,
+      },
+      {
+        name: "瀨戶大橋觀光遊覽船",
+        description:
+          "從兒島觀光港出發，約45分鐘的遊覽行程，可近距離仰望瀨戶大橋橋下風光。",
+        lat: 34.43678,
+        lng: 133.797712,
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
