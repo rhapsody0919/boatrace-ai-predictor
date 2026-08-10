@@ -239,4 +239,81 @@ export const VENUE_GUIDES_KO = [
         "https://commons.wikimedia.org/wiki/File:Hamanako-kyotei-01.jpg",
     },
   },
+  {
+    slug: "gamagori",
+    code: 7,
+    name: "가마고리",
+    kanji: "Gamagori",
+    region: "아이치",
+    regionGroup: "chubu-tokai",
+    tagline: "미카와만의 빠르고 잔잔한 수로 — 몇 안 되는 나이터 경정장",
+    intro: [
+      "가마고리 경정장은 아이치현 미카와만에 자리하고 있으며, 1턴 마크의 백스트레치가 전국에서 가장 넓습니다. 수면은 잔잔하고 빠르며 강풍의 영향을 잘 받지 않아 경주가 빠르게 진행되고 1코스 승률이 높은 편이지만, 2턴 마크에서는 중앙 코스의 추월도 꽤 자주 성공해 극적인 역전이 나오곤 합니다.",
+      "가마고리는 나이터(야간) 경주를 여는 몇 안 되는 경정장 중 하나로, 조명 아래 반짝이는 수면이 주간 경주에서는 볼 수 없는 독특한 분위기를 자아냅니다.",
+    ],
+    access: [
+      "JR도카이도본선 '미카와시오쓰'역 → 도보 약 5분",
+      "메이테쓰가마고리선 '가마고리쿄테이조마에'역, 또는 JR가마고리역에서 30분 간격으로 운행하는 직행버스",
+    ],
+    mapQuery: "ボートレース蒲郡",
+    lat: 34.82390294,
+    lng: 137.20574497,
+    videoUrl: "https://www.youtube.com/channel/UCZhuyNQgLORLjgl8hlA7uHw",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 1층 안내데스크에서 무료 'e잔카드'를 발급받으세요. 티켓·입장·지정석 이용 시 100엔당 1포인트가 적립되어 현금이나 상품으로 교환할 수 있으며, 카드 소지자는 무료 스마트폰 앱으로도 베팅할 수 있습니다.",
+      url: "https://gama-win.com/card/about/index.html",
+    },
+    facts: {
+      water: "담수（인공 수지）— 잔잔하고 빠르며 강풍의 영향이 적음",
+      character: "1코스 승률이 높지만 2턴 마크의 중앙 코스 역전도 흔함",
+      nightRace: true,
+    },
+    tip: "빠르고 잔잔한 수면일수록 깨끗한 스타트의 가치가 커집니다 — 저희 AI는 가마고리 예측 시 스타트 타이밍 데이터에 특히 비중을 둡니다.",
+    nearbyAttractions: [
+      {
+        name: "다케시마섬과 야오토미 신사",
+        description:
+          "가마고리의 상징으로, 길이 387m 다리로 연결된 작은 신성한 섬입니다. 일본 칠복신 벤자이텐을 모시는 야오토미 신사가 있으며, 섬 자체가 식생 덕분에 천연기념물로 지정되어 있습니다.",
+        lat: 34.811002,
+        lng: 137.231683,
+      },
+      {
+        name: "다케시마 수족관",
+        description:
+          "다케시마섬 바로 옆에 있는 아담하고 개성 있는 수족관으로, 희귀한 심해 생물부터 인기 해양 동물까지 함께 전시하고 있습니다.",
+        lat: 34.811002,
+        lng: 137.2325,
+      },
+      {
+        name: "라구나 텐보스",
+        description:
+          "테마파크와 아웃렛 쇼핑, 식당가를 갖춘 해변 리조트로, JR가마고리역에서 무료 셔틀버스로 약 15분 거리입니다.",
+        lat: 34.808775,
+        lng: 137.271339,
+      },
+      {
+        name: "미쓰야 온천",
+        description:
+          "미카와만에 자리한 온천 지구로, 좁은 지역 안에서 네 가지 다른 종류의 온천을 즐길 수 있는 흔치 않은 곳입니다. 경주 전후로 느긋하게 쉬어 가기 좋습니다.",
+      },
+      {
+        name: "가마고리 클래식 호텔",
+        description:
+          "다케시마섬 건너편 언덕에 자리한 전쟁 전 서양식 호텔로, 숙박하지 않더라도 레트로한 건축미와 바다 전망을 구경할 가치가 있습니다.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/gamagori.jpg",
+      alt: "가마고리 경정장 정문",
+      credit: "Photo by A301m089, public domain, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:20080719_Gamagori_kyotei_Central_Gate.jpg",
+    },
+  },
 ];
