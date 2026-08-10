@@ -5,12 +5,37 @@
  */
 
 export const VENUE_REGIONS = [
-  { slug: "kanto", label: "Kanto (Tokyo Area)", labelZhTw: "關東（東京地區）" },
-  { slug: "chubu-tokai", label: "Chubu / Tokai", labelZhTw: "中部・東海地區" },
-  { slug: "kinki", label: "Kinki (Osaka Area)", labelZhTw: "近畿（大阪地區）" },
-  { slug: "shikoku", label: "Shikoku", labelZhTw: "四國地區" },
-  { slug: "chugoku", label: "Chugoku", labelZhTw: "中國地區" },
-  { slug: "kyushu", label: "Kyushu", labelZhTw: "九州地區" },
+  {
+    slug: "kanto",
+    label: "Kanto (Tokyo Area)",
+    labelZhTw: "關東（東京地區）",
+    labelKo: "간토（도쿄 지역）",
+  },
+  {
+    slug: "chubu-tokai",
+    label: "Chubu / Tokai",
+    labelZhTw: "中部・東海地區",
+    labelKo: "주부・도카이",
+  },
+  {
+    slug: "kinki",
+    label: "Kinki (Osaka Area)",
+    labelZhTw: "近畿（大阪地區）",
+    labelKo: "긴키（오사카 지역）",
+  },
+  {
+    slug: "shikoku",
+    label: "Shikoku",
+    labelZhTw: "四國地區",
+    labelKo: "시코쿠",
+  },
+  {
+    slug: "chugoku",
+    label: "Chugoku",
+    labelZhTw: "中國地區",
+    labelKo: "주고쿠",
+  },
+  { slug: "kyushu", label: "Kyushu", labelZhTw: "九州地區", labelKo: "규슈" },
 ];
 
 export function getVenueRegion(slug) {

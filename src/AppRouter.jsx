@@ -39,6 +39,10 @@ import ZhTwVenueGuide, {
   ZhTwVenueGuides,
   ZhTwVenueRegionHub,
 } from "./pages/ZhTwVenueGuide";
+import KoVenueGuide, {
+  KoVenueGuides,
+  KoVenueRegionHub,
+} from "./pages/KoVenueGuide";
 import AdminRules from "./pages/admin/AdminRules";
 import ResponsibleGambling from "./pages/ResponsibleGambling";
 import Poirot from "./pages/Poirot";
@@ -130,6 +134,11 @@ const VENUE_GUIDE_BY_LANG = {
     List: ZhTwVenueGuides,
     Detail: ZhTwVenueGuide,
     RegionHub: ZhTwVenueRegionHub,
+  },
+  ko: {
+    List: KoVenueGuides,
+    Detail: KoVenueGuide,
+    RegionHub: KoVenueRegionHub,
   },
 };
 

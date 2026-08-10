@@ -10,6 +10,7 @@ import {
 import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
 import { VENUE_REGIONS } from "../src/data/venueRegions.js";
 import { VENUE_GUIDES_ZH_TW } from "../src/data/venueGuidesZhTw.js";
+import { VENUE_GUIDES_KO } from "../src/data/venueGuidesKo.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -157,6 +158,21 @@ const LANGUAGE_ONLY_PAGES = {
     // 会場が1件も無い地域ハブは実際には/venuesへリダイレクトされるため、sitemapには含めない
     ...VENUE_REGIONS.filter((r) =>
       VENUE_GUIDES_ZH_TW.some((v) => v.regionGroup === r.slug),
+    ).map((r) => ({
+      basePath: `/venues/region/${r.slug}`,
+      changefreq: "monthly",
+      priority: "0.6",
+    })),
+  ],
+  ko: [
+    ...["", ...VENUE_GUIDES_KO.map((v) => v.slug)].map((slug) => ({
+      basePath: slug ? `/venues/${slug}` : "/venues",
+      changefreq: "monthly",
+      priority: "0.7",
+    })),
+    // 会場が1件も無い地域ハブは実際には/venuesへリダイレクトされるため、sitemapには含めない
+    ...VENUE_REGIONS.filter((r) =>
+      VENUE_GUIDES_KO.some((v) => v.regionGroup === r.slug),
     ).map((r) => ({
       basePath: `/venues/region/${r.slug}`,
       changefreq: "monthly",
