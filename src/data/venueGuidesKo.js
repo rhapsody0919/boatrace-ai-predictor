@@ -708,4 +708,80 @@ export const VENUE_GUIDES_KO = [
         "https://commons.wikimedia.org/wiki/File:Amagasaki-kyotei-01.jpg",
     },
   },
+  {
+    slug: "naruto",
+    code: 14,
+    name: "나루토",
+    kanji: "Naruto",
+    region: "도쿠시마",
+    regionGroup: "shikoku",
+    tagline: "유명한 소용돌이 옆의 탁 트인 이변 잦은 수면",
+    intro: [
+      "나루토 경정장은 도쿠시마현 고나루토 해협에 자리하고 있으며, 관중석과 가까워 실제로 지켜보면 유독 긴박한 느낌을 줍니다. 방파제 덕분에 해안가에 있음에도 해수면이 잔잔하지만, 이곳은 1코스가 약한 편입니다 — 어느 코스든 우승할 수 있어 이변이 잦고 배당금도 높아, 큰 배당을 노리는 베팅 팬들에게 인기가 많습니다.",
+      "이 경정장은 연간 최대 360일 운영되며, 이른 아침부터 저녁 8시 반경까지 야간 경주를 포함해 표를 판매하므로 거의 항상 경주가 열리고 있습니다.",
+    ],
+    access: [
+      "JR '나루토'역 → 도보 약 10분",
+      "JR나루토역 또는 도쿠시마 공항에서 버스 → '고소쿠나루토' 정류장 하차",
+    ],
+    mapQuery: "ボートレース鳴門",
+    lat: 34.190725,
+    lng: 134.609646,
+    videoUrl: "https://www.youtube.com/channel/UCd8rJfg7p8qsASOEIIwAinQ",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 '나루짱 e-CLUB' 카드를 발급받으세요. 200엔당 1포인트가 적립되며, 카드로 지정석 요금을 결제하면 10% 할인되고, 당첨금도 카드에 이월되어 다음날 사용할 수 있습니다.",
+      url: "https://www.n14.jp/sp/index.php?page=service-cashless",
+    },
+    facts: {
+      water: "해수, 방파제로 보호됨 — 해안가지만 잔잔함",
+      character: "1코스가 약함 — 어느 코스든 우승 가능, 이변과 고배당이 흔함",
+      nightRace: true,
+    },
+    tip: "이곳은 1코스가 워낙 약하기 때문에, 저희 AI는 다른 어느 경정장보다 각 코스의 우승 확률을 고르게 평가합니다.",
+    nearbyAttractions: [
+      {
+        name: "나루토 소용돌이（우즈시오）",
+        description:
+          "세계 최대급 조석 소용돌이로, 우즈시오기센의 관광선을 타고 가까이서 보거나 오나루토 대교의 보행로 '우즈노미치'에서 내려다볼 수 있습니다.",
+      },
+      {
+        name: "나루토 공원과 센조지키 전망대",
+        description:
+          "소용돌이와 오나루토 대교가 내려다보이는 절벽 위 공원으로, 전망대와 함께 여러 식당·기념품점이 모여 있습니다.",
+      },
+      {
+        name: "오쓰카 국제미술관",
+        description:
+          "미켈란젤로의 시스티나 성당부터 모네의 수련까지, 세계 명화를 실물 크기 도판으로 재현한 미술관입니다 — 연면적 기준 일본 최대급 미술관 중 하나입니다.",
+        lat: 34.23203,
+        lng: 134.637815,
+      },
+      {
+        name: "나루토 독일관",
+        description:
+          "제1차 세계대전 당시 포로수용소 터에 세워진 박물관으로, 이곳에 수용됐던 독일군 포로들이 일본 최초로 베토벤 교향곡 9번을 전곡 연주한 것으로 유명합니다 — 흥미로운 지역 역사의 한 장면입니다.",
+        lat: 34.164678,
+        lng: 134.499038,
+      },
+      {
+        name: "미치노에키 쿠루쿠루나루토",
+        description:
+          "2022년 문을 연 현대적인 도로변 마켓으로, 지역 농산물과 해산물, 식사를 즐길 수 있습니다 — 경정장을 오가는 길에 들르기 좋습니다.",
+        lat: 34.158134,
+        lng: 134.580155,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "일본에서 가장 활발한 경정장 중 하나로, 연간 최대 360일 주간・야간 경주를 엽니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/naruto.jpg",
+      alt: "나루토 경정장",
+      credit: "Photo by Na00ru0010, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Naruto-kyotei-01.jpg",
+    },
+  },
 ];
