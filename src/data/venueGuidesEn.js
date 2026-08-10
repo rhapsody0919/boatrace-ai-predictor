@@ -22,6 +22,14 @@ export const VENUE_GUIDES_EN = [
       'JR Keihin-Tohoku Line "Omori" station (east exit) → free race-day shuttle bus',
       "From Haneda Airport: roughly 20-30 minutes via Keikyu Line",
     ],
+    mapQuery: "ボートレース平和島",
+    lat: 35.586035,
+    lng: 139.740333,
+    videoUrl: "https://www.youtube.com/@tokyobaytv9067",
+    cashless: {
+      note: 'The venue itself is cash-only — no card or prepaid system. The adjacent off-track betting facility "Heiwajima Theater" does offer a prepaid card called "P★CARD" if you want cashless betting.',
+      url: "https://www.heiwajima.gr.jp/sp/cashless/cashless.htm",
+    },
     facts: {
       water: "Seawater / tidal",
       character: "Hard on lane 1 — upsets and high payouts are common",
@@ -32,17 +40,34 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Heiwajima Onsen (natural hot spring)",
         description:
-          "In the same BIG FUN Heiwajima complex — natural hot spring baths and a rock-bed sauna, open late.",
+          "Open 24 hours in the same BIG FUN Heiwajima complex — a natural hot spring drawn from 2,000m underground, known for its sodium-chloride water and high-concentration carbonated bath, plus a rock-bed sauna and massage services. Easy to fit in before or after a race.",
+        url: "https://www.heiwajima-onsen.jp/",
       },
       {
         name: "Tondemi Heiwajima (indoor athletic park)",
         description:
-          "Trampolines, a climbing wall and rope courses in the same complex — good for families.",
+          "Trampolines, a climbing wall and rope courses in the same complex — good for families with kids to burn off energy between races.",
+      },
+      {
+        name: "Shinagawa Aquarium",
+        description:
+          "A mid-size aquarium known for its dolphin and sea lion shows and a 360-degree seal tank, inside Shinagawa Ward Citizens' Park near Omori-Kaigan Station — about 10 minutes by train from the venue.",
+        lat: 35.58763655,
+        lng: 139.73533342,
+      },
+      {
+        name: "Omori Furusato-no-Hamabe Park",
+        description:
+          "One of the few 23-ward parks with a real sandy beach and tidal flats — you can wade in and spot crabs at low tide. The on-site Omori Nori Museum has an observation deck over Tokyo Bay. About 15 minutes on foot from the venue.",
+        lat: 35.57302718,
+        lng: 139.7422028,
       },
       {
         name: "Haneda Airport",
         description:
-          "About 20-30 minutes by Keikyu Line — an easy stop before or after a flight.",
+          "About 20-30 minutes by Keikyu Line — Terminal 3's Edo Koji recreates an Edo-period streetscape and has duty-free shopping, making it an easy last stop before or after a flight.",
+        lat: 35.544982,
+        lng: 139.769184,
       },
     ],
     schedule: {
