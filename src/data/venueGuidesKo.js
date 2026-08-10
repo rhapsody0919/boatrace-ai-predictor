@@ -1669,4 +1669,84 @@ export const VENUE_GUIDES_KO = [
       creditUrl: "https://commons.wikimedia.org/wiki/File:Suminoe_Kyotei2.jpg",
     },
   },
+  {
+    slug: "edogawa",
+    code: 3,
+    name: "에도가와",
+    kanji: "Edogawa",
+    region: "도쿄",
+    regionGroup: "kanto",
+    tagline: "일본에서 유일한 하천 코스 — 거친 물살, 거친 배당금",
+    intro: [
+      "도쿄 동부의 에도가와 경정장은 일본에서 유일하게 자연 하천 위에 지어진 경정장입니다. 바람과 조수가 끊임없이 수면을 바꿔놓아, 이 스포츠에서 가장 예측하기 어려운 경주 환경을 만듭니다 — 이곳의 경주는 이변으로 악명이 높습니다.",
+      "관중에게는 이곳이 경정의 가장 원초적인 모습입니다: 거친 물살, 물살과 싸우는 정, 그리고 놀라운 배당금까지. 혼돈을 즐긴다면 에도가와가 정답입니다.",
+    ],
+    access: [
+      "도에이 신주쿠선 '후나보리'역 → 경주일 무료 셔틀버스",
+      "JR소부선 '히라이'역 → 경주일 무료 셔틀버스",
+    ],
+    mapQuery: "ボートレース江戸川",
+    lat: 35.69223896,
+    lng: 139.86135473,
+    videoUrl: "https://www.youtube.com/channel/UCpNAwETM_vPV2Skumzc_KMA",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 선불 포인트카드 'E멤버'를 발급받으세요. 100엔당 1.5포인트가 적립되며 경정장 상품권, 지정석 티켓, 상품권으로 교환할 수 있습니다.",
+      url: "https://edogawa-emember.com/",
+    },
+    facts: {
+      water: "하천（조수 영향, 바람과 물살의 영향을 받음）",
+      character: "일본에서 가장 거친 수면 — 이변을 예상하세요",
+      nightRace: false,
+    },
+    tip: "이곳은 다른 어느 곳보다 날씨가 중요합니다. 저희 AI는 에도가와 예측마다 경정장 변동성을 반영합니다.",
+    nearbyAttractions: [
+      {
+        name: "기타로 산책로（경정장 내）",
+        description:
+          "경정장 자체의 제방 관중석에는 게게게노 기타로의 작가 미즈키 시게루의 요괴 작품이 늘어서 있습니다 — 다른 어느 경정장에서도 볼 수 없는 독특한 볼거리입니다.",
+      },
+      {
+        name: "가사이 린카이 공원과 수족관",
+        description:
+          "대형 참치 수조를 중심으로 한 대형 수족관이 있는 해변 공원으로, 바다가 보이는 대형 관람차도 있습니다. 전철로 약 30분 거리이며, 한 정거장 더 가면 도쿄 디즈니 리조트입니다.",
+        lat: 35.64442524,
+        lng: 139.86156763,
+      },
+      {
+        name: "타워홀 후나보리",
+        description:
+          "에도가와구의 랜드마크 전망탑으로, 무료로 오를 수 있는 115m 높이 전망대에서 도쿄 스카이트리와 맑은 날에는 후지산까지 볼 수 있습니다. 후나보리역 바로 옆이라 경주 전후로 들르기 좋습니다.",
+        url: "https://www.towerhall.jp/",
+        lat: 35.684378,
+        lng: 139.86496,
+      },
+      {
+        name: "교센 공원과 시젠 동물원",
+        description:
+          "플라밍고・미어캣・카피바라 등 62종을 보유한 무료 미니 동물원으로, 같은 공원 안에 일본식 정원과 낚시 연못도 있습니다. 니시카사이역에서 도보 약 15분 거리로 가족 나들이에 좋습니다.",
+        lat: 35.671505,
+        lng: 139.858263,
+      },
+      {
+        name: "도쿄 디즈니 리조트",
+        description:
+          "일본에서 가장 유명한 테마파크로, JR게이요선을 타고 가사이 린카이 공원에서 한 정거장 더 가면 마이하마역입니다. 경주가 낮 시간에 예정되어 있어도 저녁에 파크를 즐길 시간이 충분합니다.",
+        lat: 35.63626,
+        lng: 139.88361,
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/edogawa.jpg",
+      alt: "에도가와 경정장",
+      credit: "Photo by 博柳, CC BY 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:%E6%B1%9F%E6%88%B8%E5%B7%9D%E7%AB%B6%E8%89%87%E5%A0%B4_-_panoramio.jpg",
+    },
+  },
 ];
