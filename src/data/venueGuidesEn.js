@@ -1158,6 +1158,14 @@ export const VENUE_GUIDES_EN = [
       'JR "Naruto" station → about 10 minutes on foot',
       'Bus from JR Naruto station or Tokushima Airport → get off at "Kosoku Naruto" stop',
     ],
+    mapQuery: "ボートレース鳴門",
+    lat: 34.190725,
+    lng: 134.609646,
+    videoUrl: "https://www.youtube.com/channel/UCd8rJfg7p8qsASOEIIwAinQ",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the "Naru-chan e-CLUB" card; ¥200 wagered earns 1 point, reserved-seat fees get a 10% discount when paid with the card, and winnings carry over on the card day to day.',
+      url: "https://www.n14.jp/sp/index.php?page=service-cashless",
+    },
     facts: {
       water:
         "Seawater, sheltered by a breakwater — calm despite the coastal setting",
@@ -1170,12 +1178,33 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Naruto Whirlpools (Uzushio)",
         description:
-          "Some of the world's largest tidal whirlpools, best seen up close on a sightseeing boat from Uzushio Kisen.",
+          "Some of the world's largest tidal whirlpools, best seen up close on a sightseeing boat from Uzushio Kisen, or from the Onaruto Bridge's pedestrian walkway, Uzu-no-Michi.",
+      },
+      {
+        name: "Naruto Park & Senjojiki Observatory",
+        description:
+          "A clifftop park overlooking the whirlpools and the Onaruto Bridge, with an observation deck and a cluster of restaurants and souvenir shops.",
       },
       {
         name: "Otsuka Museum of Art",
         description:
-          "A museum of full-size ceramic reproductions of world masterpieces, a short trip from the venue.",
+          "A museum of full-size ceramic reproductions of world masterpieces, from Michelangelo's Sistine Chapel to Monet's water lilies — one of Japan's largest art museums by floor space.",
+        lat: 34.23203,
+        lng: 134.637815,
+      },
+      {
+        name: "Naruto Germany Hall",
+        description:
+          "A museum on the site of a WWI POW camp where German prisoners famously performed Japan's first complete Beethoven's Ninth Symphony — an unusual piece of local history.",
+        lat: 34.164678,
+        lng: 134.499038,
+      },
+      {
+        name: "Roadside Station Kurukuru Naruto",
+        description:
+          "A modern roadside market with local produce, seafood and dining, opened in 2022 — a convenient stop for food on the way to or from the venue.",
+        lat: 34.158134,
+        lng: 134.580155,
       },
     ],
     schedule: {
