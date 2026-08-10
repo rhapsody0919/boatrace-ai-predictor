@@ -44,7 +44,7 @@ export const LANGUAGE_STORAGE_KEY = "boatai-language";
 // 特定言語にのみ存在するパスと対応言語（ルーティング・hreflang で共用）
 export const LANGUAGE_ONLY_PATHS = {
   "/venues": ["en", "zh-TW"],
-  "/venues/region": ["en"],
+  "/venues/region": ["en", "zh-TW"],
 };
 
 /**

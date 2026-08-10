@@ -85,6 +85,7 @@ const copy = {
   regionDescription: (region) =>
     `English visitor guides to Kyotei (boat race) venues in ${region.label}: how to get there, entrance fees, and betting tips.`,
   regionHeading: (region) => `🏟️ Boat Race Venues in ${region.label}`,
+  regionLabel: (region) => region.label,
 };
 
 export function EnglishVenueGuides() {

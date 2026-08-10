@@ -35,7 +35,10 @@ import EnglishVenueGuide, {
   EnglishVenueGuides,
   EnglishVenueRegionHub,
 } from "./pages/EnglishVenueGuide";
-import ZhTwVenueGuide, { ZhTwVenueGuides } from "./pages/ZhTwVenueGuide";
+import ZhTwVenueGuide, {
+  ZhTwVenueGuides,
+  ZhTwVenueRegionHub,
+} from "./pages/ZhTwVenueGuide";
 import AdminRules from "./pages/admin/AdminRules";
 import ResponsibleGambling from "./pages/ResponsibleGambling";
 import Poirot from "./pages/Poirot";
@@ -116,14 +119,18 @@ const GUIDE_BY_LANG = {
 };
 
 // 言語別の会場別ビジターガイド（対応言語は config の LANGUAGE_ONLY_PATHS と合わせて管理する）
-// RegionHub は地域ハブページ（現状 en のみ対応、LANGUAGE_ONLY_PATHS["/venues/region"]）
+// RegionHub は地域ハブページ（対応言語は LANGUAGE_ONLY_PATHS["/venues/region"]）
 const VENUE_GUIDE_BY_LANG = {
   en: {
     List: EnglishVenueGuides,
     Detail: EnglishVenueGuide,
     RegionHub: EnglishVenueRegionHub,
   },
-  "zh-TW": { List: ZhTwVenueGuides, Detail: ZhTwVenueGuide },
+  "zh-TW": {
+    List: ZhTwVenueGuides,
+    Detail: ZhTwVenueGuide,
+    RegionHub: ZhTwVenueRegionHub,
+  },
 };
 
 // 言語別に共通のルート定義（言語プレフィックス配下でも相対パスで再利用）

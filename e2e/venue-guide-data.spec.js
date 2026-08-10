@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { VENUE_GUIDES_ZH_TW } from "../src/data/venueGuidesZhTw.js";
 import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
+import { VENUE_REGIONS } from "../src/data/venueRegions.js";
 
 // 日本国内のおおよその緯度経度範囲（沖縄〜北海道、離島含む）
 const JAPAN_LAT_RANGE = [20, 46];
@@ -146,3 +147,21 @@ function registerVenueGuideQualityTests(guides, label) {
 
 registerVenueGuideQualityTests(VENUE_GUIDES_ZH_TW, "zh-TW");
 registerVenueGuideQualityTests(VENUE_GUIDES_EN, "en");
+
+// 地域ハブページ（/venues/region/:regionSlug）が正しく機能するための前提条件を検証する
+function registerRegionGroupTests(guides, label) {
+  const validSlugs = VENUE_REGIONS.map((r) => r.slug);
+  test.describe(`regionGroupの整合性チェック（${label}）`, () => {
+    for (const venue of guides) {
+      test(`${venue.slug}: regionGroupがVENUE_REGIONSに存在する有効な値`, () => {
+        expect(
+          validSlugs,
+          `${venue.slug}.regionGroup="${venue.regionGroup}"がVENUE_REGIONSに存在しない`,
+        ).toContain(venue.regionGroup);
+      });
+    }
+  });
+}
+
+registerRegionGroupTests(VENUE_GUIDES_ZH_TW, "zh-TW");
+registerRegionGroupTests(VENUE_GUIDES_EN, "en");

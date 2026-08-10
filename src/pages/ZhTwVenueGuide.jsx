@@ -5,6 +5,7 @@
  */
 import { Link } from "react-router-dom";
 import { VenueGuideList, VenueGuideDetail } from "./VenueGuide";
+import { VenueRegionHub } from "./VenueRegionHub";
 import { VENUE_GUIDES_ZH_TW } from "../data/venueGuidesZhTw";
 
 const copy = {
@@ -74,6 +75,12 @@ const copy = {
   ),
   seeTodaysPredictions: (venue) =>
     `查看今日的AI預測${venue.facts.nightRace ? "（含夜間賽事）" : ""}`,
+  regionTitle: (region) =>
+    `${region.labelZhTw}賽艇場旅遊指南：交通與門票資訊 | BoatAI`,
+  regionDescription: (region) =>
+    `日本${region.labelZhTw}賽艇（Kyotei）賽場旅遊指南：交通方式、入場費與投注小技巧。`,
+  regionHeading: (region) => `🏟️ ${region.labelZhTw}賽艇賽場旅遊指南`,
+  regionLabel: (region) => region.labelZhTw,
 };
 
 export function ZhTwVenueGuides() {
@@ -85,5 +92,11 @@ export function ZhTwVenueGuides() {
 export default function ZhTwVenueGuide() {
   return (
     <VenueGuideDetail lang="zh-TW" guides={VENUE_GUIDES_ZH_TW} copy={copy} />
+  );
+}
+
+export function ZhTwVenueRegionHub() {
+  return (
+    <VenueRegionHub lang="zh-TW" guides={VENUE_GUIDES_ZH_TW} copy={copy} />
   );
 }
