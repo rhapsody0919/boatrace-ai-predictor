@@ -64,17 +64,22 @@ export const PARTIALLY_TRANSLATED_PATHS = {
 };
 
 // basePathがPARTIALLY_TRANSLATED_PATHSのいずれかにマッチすればその設定を返す
+// LANGUAGE_ONLY_PATHS同様、入れ子のprefixが登録され得るため最長一致を優先する（BOA-138の教訓）
 function matchPartiallyTranslated(basePath) {
-  for (const [prefix, config] of Object.entries(PARTIALLY_TRANSLATED_PATHS)) {
-    if (basePath === prefix) {
-      return config.listPage ? config : null;
-    }
-    if (basePath.startsWith(`${prefix}/`)) {
-      const rest = basePath.slice(prefix.length + 1);
-      return config.entries.includes(rest) ? config : null;
-    }
+  const matches = Object.entries(PARTIALLY_TRANSLATED_PATHS).filter(
+    ([prefix]) => basePath === prefix || basePath.startsWith(`${prefix}/`),
+  );
+  if (matches.length === 0) return null;
+
+  const [prefix, config] = matches.reduce((longest, current) =>
+    current[0].length > longest[0].length ? current : longest,
+  );
+
+  if (basePath === prefix) {
+    return config.listPage ? config : null;
   }
-  return null;
+  const rest = basePath.slice(prefix.length + 1);
+  return config.entries.includes(rest) ? config : null;
 }
 
 /**

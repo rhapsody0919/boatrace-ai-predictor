@@ -976,9 +976,6 @@ export const blogPosts = [
   },
 ];
 
-// Get all categories
-export const categories = [...new Set(blogPosts.map((post) => post.category))];
-
 // Get featured posts
 export const getFeaturedPosts = () => blogPosts.filter((post) => post.featured);
 
@@ -995,13 +992,10 @@ export const getLatestPosts = (limit = 5) =>
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, limit);
 
-// Get related posts by shared tags (falls back to latest when no tag overlap exists)
-export const getRelatedPosts = (postId, limit = 3) => {
-  const currentPost = getPostById(postId);
-  if (!currentPost) return getLatestPosts(limit);
-
-  return blogPosts
-    .filter((post) => post.id !== postId)
+// タグ重複度→日付降順で候補記事をランク付けする共通ロジック
+// （getRelatedPosts/getRelatedPostsEn で共有。タイブレーク条件の変更漏れを防ぐ）
+function rankRelatedPosts(currentPost, candidates, limit) {
+  return candidates
     .map((post) => ({
       post,
       sharedTags: post.tags.filter((tag) => currentPost.tags.includes(tag))
@@ -1013,6 +1007,15 @@ export const getRelatedPosts = (postId, limit = 3) => {
     })
     .slice(0, limit)
     .map(({ post }) => post);
+}
+
+// Get related posts by shared tags (falls back to latest when no tag overlap exists)
+export const getRelatedPosts = (postId, limit = 3) => {
+  const currentPost = getPostById(postId);
+  if (!currentPost) return getLatestPosts(limit);
+
+  const candidates = blogPosts.filter((post) => post.id !== postId);
+  return rankRelatedPosts(currentPost, candidates, limit);
 };
 
 // 英語版が存在する記事同士でのみ関連記事を返す（未翻訳記事へのリンクを避けるため）
@@ -1022,18 +1025,11 @@ export const getRelatedPostsEn = (postId, limit = 3) => {
   if (!currentPost) return [];
 
   const availableIds = new Set(blogPostsEn.map((post) => post.id));
-
-  return blogPosts
-    .filter((post) => post.id !== postId && availableIds.has(post.id))
-    .map((post) => ({
-      post,
-      sharedTags: post.tags.filter((tag) => currentPost.tags.includes(tag))
-        .length,
-    }))
-    .sort((a, b) => {
-      if (b.sharedTags !== a.sharedTags) return b.sharedTags - a.sharedTags;
-      return new Date(b.post.date) - new Date(a.post.date);
-    })
-    .slice(0, limit)
-    .map(({ post }) => ({ ...post, ...getEnglishOverride(post.id) }));
+  const candidates = blogPosts.filter(
+    (post) => post.id !== postId && availableIds.has(post.id),
+  );
+  return rankRelatedPosts(currentPost, candidates, limit).map((post) => ({
+    ...post,
+    ...getEnglishOverride(post.id),
+  }));
 };

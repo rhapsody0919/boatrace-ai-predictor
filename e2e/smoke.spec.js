@@ -99,14 +99,21 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
 });
 
 test.describe("ブログ英語版（部分翻訳、blog-i18n）", () => {
-  test("/en/blog は英語版が存在する記事のみ一覧表示される", async ({
+  test("/en/blog は英語版が存在する記事のみ一覧表示される（ja版全件より少ない件数）", async ({
     page,
   }) => {
     await page.goto("/en/blog");
     await expect(page).toHaveURL(/\/en\/blog$/);
-    const cards = page.locator(".blog-card");
-    await expect(cards).toHaveCount(await cards.count());
-    await expect(cards.first()).toBeVisible();
+    const enCards = page.locator(".blog-card");
+    await expect(enCards.first()).toBeVisible();
+    const enCount = await enCards.count();
+    expect(enCount).toBeGreaterThan(0);
+
+    await page.goto("/blog");
+    const jaCount = await page.locator(".blog-card").count();
+    // フィルタが機能していれば英語版件数はja版全件より必ず少ない
+    // （全件一致は「フィルタが効いていない」回帰を示す）
+    expect(enCount).toBeLessThan(jaCount);
   });
 
   test("英語版がある記事は/en/blog/{id}でリダイレクトされずに表示される", async ({

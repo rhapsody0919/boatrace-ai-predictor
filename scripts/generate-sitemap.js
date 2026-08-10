@@ -133,6 +133,18 @@ const LOCALIZED_PAGES = [
   { basePath: "/winning-technique", changefreq: "daily", priority: "0.8" },
 ];
 
+// blogPostsEn.js にエントリはあるが対応する -en.md が存在しない場合、sitemapが
+// 実体の無いURLを配信してしまう（code-reviewで発見: エントリ追加と-en.md作成が
+// 別PRになるケースを想定した検知）。生成時に警告のみ出し、処理は止めない
+blogPostsEn.forEach((post) => {
+  const enMdPath = path.join(BLOG_DIR, `${post.id}-en.md`);
+  if (!fs.existsSync(enMdPath)) {
+    console.warn(
+      `⚠️ blogPostsEn.js に "${post.id}" のエントリがありますが public/blog/${post.id}-en.md が見つかりません`,
+    );
+  }
+});
+
 // 特定言語にのみ存在するページ（会場別ビジターガイド: 英語版 BOA-133 / 繁体字版 BOA-134）
 const LANGUAGE_ONLY_PAGES = {
   en: [

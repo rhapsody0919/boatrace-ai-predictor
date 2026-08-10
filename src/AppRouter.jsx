@@ -12,7 +12,6 @@ import {
   DEFAULT_LANGUAGE,
   LANGUAGE_STORAGE_KEY,
   getAvailableLanguages,
-  isPathTranslated,
 } from "./config/languages";
 import { refreshAdsOnRouteChange, trackPageView } from "./utils/analytics";
 import App from "./App";
@@ -254,15 +253,22 @@ function InitialLanguageRedirect() {
 }
 
 // 言語別レイアウト: URL プレフィックスに応じた言語へ同期。
-// コンテンツ未翻訳のパスへの /{lng}/ アクセスは ja 版へリダイレクトする
+// そのパスがその言語で提供されていない場合は ja 版へリダイレクトする
 // （lang=en を宣言しながら日本語を配信するとブラウザ自動翻訳が発動せず、
-// 検索エンジンにも矛盾シグナルを送るため。TRANSLATED_PATHS 参照）
+// 検索エンジンにも矛盾シグナルを送るため）。
+// isPathTranslated ではなく getAvailableLanguages で判定するのは、
+// ブログ（PARTIALLY_TRANSLATED_PATHS）のように「言語ごとに提供有無が異なる」
+// パスがあるため。isPathTranslated は言語非依存の真偽値しか返さず、
+// これで判定すると対応外言語（zh-TW/ko等）でもリダイレクトされず、
+// lang属性と実コンテンツの言語が食い違って配信されるバグになる
+// （docs/adr/0005-blog-partial-translation-routing.md参照、code-reviewで発見・修正）
 function LocalizedLayout({ lng }) {
   const { pathname, search } = useLocation();
 
   if (lng !== DEFAULT_LANGUAGE) {
     const basePath = pathname.slice(lng.length + 1) || "/";
-    if (!isPathTranslated(basePath)) {
+    const availableCodes = getAvailableLanguages(basePath).map((l) => l.code);
+    if (!availableCodes.includes(lng)) {
       return <Navigate to={`${basePath}${search}`} replace />;
     }
   }
