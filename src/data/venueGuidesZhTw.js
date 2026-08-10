@@ -722,4 +722,78 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "toda",
+    code: 2,
+    name: "戶田",
+    kanji: "Toda",
+    region: "埼玉",
+    tagline: "日本最狹窄的賽道——唯一擁有奧運血統的賽艇場",
+    intro: [
+      "戶田賽艇場位於埼玉縣戶田公園內，使用的正是1964年東京奧運划船賽事的同一條靜水賽道——是日本唯一擁有奧運歷史的競艇場。這裡同時也是全國24座賽艇場中最狹窄的賽道，賽艇之間距離相當接近，現場觀賽格外刺激。",
+      "狹窄且硬實的淡水水面，讓領先艇難以乾淨守住內側航線，因此「捲」（外側超車）戰術在這裡的成功率是全國數一數二的高——戶田的1號艇奪冠率也是全國最低之一。",
+    ],
+    access: [
+      "JR埼京線「戶田公園」站（西口）→ 步行約3公里、40分鐘——強烈建議搭乘賽事日免費接駁巴士",
+      "國際興業巴士至「氷川町3丁目」站 → 步行約15分鐘",
+    ],
+    mapQuery: "ボートレース戸田",
+    lat: 35.801908,
+    lng: 139.676807,
+    videoUrl: "https://www.youtube.com/channel/UCoLCf3aVRMSukwetHfn1p1A",
+    cashless: {
+      note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可申請「WINWIN Card」，同時也支援免馬券單的下注App，每200日圓投注可獲得1點，點數可兌換電子錢包回饋金。",
+      url: "https://www.boatrace-toda.jp/service/cashless.html",
+    },
+    image: {
+      src: "/images/venues/toda.jpg",
+      alt: "戶田划船場，戶田賽艇場所在地",
+      credit: "Photo by Ibamoto, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Toda_Rowing_Course_(Tokyo,_JAP)_2021.jpg",
+    },
+    facts: {
+      water: "淡水，賽道狹窄——水面硬實",
+      character: "全國1號艇奪冠率最低之一——超車戰術頻繁成功",
+      nightRace: false,
+    },
+    tip: "由於超車在這裡格外常見，我們的AI在戶田預測中比其他多數賽場更加重視起跑時間與過彎數據。",
+    nearbyAttractions: [
+      {
+        name: "戶田公園",
+        description:
+          "1964年東京奧運划船賽事的原始賽道，就位於賽艇場所在地，現已成為市民公園，春季荒川河岸兩側櫻花盛開。",
+      },
+      {
+        name: "上戶田氷川神社",
+        description:
+          "距賽場約1.5公里的當地神社，若沿著戶田公園站附近的河岸步道散步或騎車，是值得順道一訪的寧靜景點。",
+        lat: 35.813919,
+        lng: 139.675218,
+      },
+      {
+        name: "戶田橋與荒川河岸",
+        description:
+          "橫跨荒川、連接埼玉與東京的歷史道路橋，附近的河濱綠地在夏季會舉辦煙火大會。從賽場步行約15分鐘可達。",
+        lat: 35.798526,
+        lng: 139.660923,
+      },
+      {
+        name: "彩湖與道滿綠地公園",
+        description:
+          "由荒川蓄水池改建而成的大型公園，是騎自行車、釣魚與風帆運動的熱門去處，園內還有受保護的野生櫻草棲地。距賽場約3公里。",
+        lat: 35.825039,
+        lng: 139.63012303,
+      },
+      {
+        name: "BOAT KIDS PARK（場內設施）",
+        description:
+          "賽場內設有的親子遊戲區，佈置了適合拍照的賽艇造景，帶小孩同行時很適合在賽事空檔順道一逛。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
