@@ -36,7 +36,7 @@ export function VenueRegionHub({ lang, guides, copy }) {
         lang={lang}
         guides={regionGuides}
         extraCrumb={{
-          name: region.label,
+          name: copy.regionLabel(region),
           path: `${base}/venues/region/${region.slug}`,
         }}
       />

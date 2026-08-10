@@ -80,6 +80,7 @@ const copy = {
   regionDescription: (region) =>
     `日本${region.labelZhTw}賽艇（Kyotei）賽場旅遊指南：交通方式、入場費與投注小技巧。`,
   regionHeading: (region) => `🏟️ ${region.labelZhTw}賽艇賽場旅遊指南`,
+  regionLabel: (region) => region.labelZhTw,
 };
 
 export function ZhTwVenueGuides() {
