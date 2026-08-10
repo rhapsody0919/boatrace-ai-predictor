@@ -1472,6 +1472,15 @@ export const VENUE_GUIDES_EN = [
       'JR "Kushigahama" station is the nearest train station',
       'Free taxi service from JR Tokuyama station\'s "Minato-guchi" exit, about 20 minutes, from 7:45am',
     ],
+    mapQuery: "ボートレース徳山",
+    lat: 34.010378,
+    lng: 131.83555,
+    videoUrl:
+      "https://www.youtube.com/@%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E5%BE%B3%E5%B1%B1",
+    cashless: {
+      note: "The venue is cash-only for regular purchases — no credit cards. There's no branded cashless card here like at some other venues, but a free general-purpose prepaid card is available; ¥200 wagered earns 1 point, redeemable for cash or Tokuyama-limited merchandise.",
+      url: "https://www.boatrace-tokuyama.jp/uploads/info_event/cashless.pdf",
+    },
     facts: {
       water: "Seawater, Kasado Bay — tidal swing over 3m",
       character: "Power race at low tide, handling race at high tide",
@@ -1482,7 +1491,30 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Tokuyama Zoo",
         description:
-          "A small city zoo a short trip from the venue, popular with families.",
+          "A small city zoo popular with families, with pandas among its more notable residents, about a 20-minute drive from the venue.",
+        lat: 34.062152,
+        lng: 131.816085,
+      },
+      {
+        name: "Shunan City Museum of Art and History",
+        description:
+          "A regional museum covering local art and history, near Tokuyama Zoo — easy to combine both into one trip.",
+        lat: 34.060194,
+        lng: 131.812083,
+      },
+      {
+        name: "Tokuyama Station & Ginnan-gai Shopping Street",
+        description:
+          "The city's main train station and its adjoining covered shopping arcade, with restaurants and shops for a stop before or after the venue.",
+        lat: 34.051194,
+        lng: 131.80225,
+      },
+      {
+        name: "Harumi Shinsui Park",
+        description:
+          "A waterfront park on Tokuyama Bay with walking paths and lawns — a relaxed spot for a lakeside walk.",
+        lat: 34.047413,
+        lng: 131.795738,
       },
       {
         name: "Seto Inland Sea views",
