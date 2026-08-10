@@ -1080,6 +1080,14 @@ export const VENUE_GUIDES_EN = [
       'Hanshin Railway "Amagasaki Center Pool-mae" station → right next to the venue',
       'Direct limited express or express trains from Osaka-Umeda, or transfer to local service at "Nishinomiya" from Kobe-Sannomiya',
     ],
+    mapQuery: "ボートレース尼崎",
+    lat: 34.719489,
+    lng: 135.393973,
+    videoUrl: "https://www.youtube.com/@AMABOATRACE",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the free "AMA+" card, chargeable at on-site machines; ¥100 wagered earns 1 point, redeemable for reserved-seat tickets, QUO cards or venue goods.',
+      url: "https://www.boatrace-amagasaki.jp/sp/index.php?page=service-cashless",
+    },
     facts: {
       water: "Freshwater, firm and calm — technique-friendly",
       character:
@@ -1091,12 +1099,33 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Amagasaki Castle",
         description:
-          "A rebuilt Edo-period castle (reopened 2019) on the site of the original, a short trip from the venue.",
+          "A rebuilt Edo-period castle (reopened 2019) on the site of the original, with a museum inside covering the castle town's history — about 2km from the venue.",
+        lat: 34.716723,
+        lng: 135.41875,
       },
       {
         name: "Jicho-machi Temple District",
         description:
-          "A historic quarter of eleven temples preserving the look of the old castle town.",
+          "A historic quarter of eleven temples right by Amagasaki Castle, preserving the look of the old castle town — a quiet contrast to the racing.",
+      },
+      {
+        name: "Amagasaki Piggy Bank Museum",
+        description:
+          "A quirky company museum run by a local credit union, displaying thousands of piggy banks from around the world — an easy pairing with the castle and temple district nearby.",
+        lat: 34.716214,
+        lng: 135.413431,
+      },
+      {
+        name: "Shioe Susanoo Shrine",
+        description:
+          "A local Shinto shrine known for its summer festival, a quiet stop if you're exploring the area around Hanshin Amagasaki Station.",
+        lat: 34.737332,
+        lng: 135.435484,
+      },
+      {
+        name: "Hanshin Amagasaki Station area",
+        description:
+          "The city's main train hub, with shopping streets and the recently renewed Chuo Park nearby — a convenient base if you're combining a race visit with sightseeing elsewhere in the city.",
       },
     ],
     schedule: {
