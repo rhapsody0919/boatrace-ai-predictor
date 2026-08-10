@@ -1622,4 +1622,82 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "ashiya",
+    code: 21,
+    name: "芦屋",
+    kanji: "Ashiya",
+    region: "福岡（九州）",
+    tagline: "近海的平穩技術型淡水賽道",
+    intro: [
+      "芦屋賽艇場鄰近遠賀川出海口，距響灘約2公里。賽道大致呈東西走向，水面紮實、風格平穩偏技術導向，常被拿來與多摩川賽艇場相提並論。",
+      "芦屋是日本兩座相距最近的賽艇場之一：若松賽艇場近在咫尺，不少訪客會把兩場安排在同一天內走訪。",
+    ],
+    access: ["JR鹿兒島本線「折尾」或「遠賀川」站 → 免費計程車或免費巴士"],
+    mapQuery: "ボートレース芦屋",
+    lat: 33.873954,
+    lng: 130.663844,
+    videoUrl: "https://www.youtube.com/channel/UCeyQwUd3H1p-e4R50yJ6K7Q",
+    cashless: {
+      note: "現場使用「ASHIMU卡」，入會免入會金、免年費，效期為自最後使用日起2年（未使用也會自動延長）。除本場（地下1樓、1樓與2、3樓指定席購票機）外，場外發售所「Ashimu Terrace」的兌獎櫃台也能使用。卡片遺失補發需500日圓。",
+      url: "https://www.boatrace-ashiya.com/modules/service/?page=index_cashless",
+    },
+    image: {
+      src: "/images/venues/ashiya.jpg",
+      alt: "芦屋賽艇場",
+      credit: "Photo by Umako, CC BY 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_Race_Ashiya_racecourse_260508.jpg",
+    },
+    facts: {
+      water: "淡水，水質紮實——賽道大致呈東西走向",
+      character: "平穩且技術導向，風格與多摩川相近",
+      nightRace: false,
+    },
+    tip: "這類平穩、技術導向的水面格外考驗選手與馬達的穩定表現——我們的AI在每場芦屋預測中都會重點分析這兩項數據。",
+    nearbyAttractions: [
+      {
+        name: "岡湊神社",
+        description: "擁有約1,800年歷史的古老神社，《日本書紀》中亦有記載。",
+        lat: 33.870655,
+        lng: 130.657897,
+      },
+      {
+        name: "芦屋歷史之里・歷史民俗資料館",
+        description:
+          "展示山鹿貝塚出土的繩文時代人骨與芦屋鑄物師相關文物的地方博物館。",
+        lat: 33.906239,
+        lng: 130.665537,
+      },
+      {
+        name: "三里松原",
+        description: "綿延的白沙海岸與松林景觀，自然風光優美。",
+        lat: 33.879501,
+        lng: 130.619637,
+      },
+      {
+        name: "洞山・千疊敷",
+        description:
+          "由約3000萬年前沉積岩形成的海蝕洞與平坦岩盤，以柏原漁港為地標。",
+      },
+      {
+        name: "狩尾岬",
+        description: "保留步道的岬角，可以和千疊敷安排在同一段散步路線中。",
+      },
+      {
+        name: "芦屋海水浴場",
+        description: "面向響灘、長約1公里的海岸線，夏季是熱門的戲水地點。",
+      },
+      {
+        name: "Aquasian水上樂園",
+        description: "設有120公尺長滑水道與漂漂河的水上樂園，距賽場車程不遠。",
+        lat: 33.893489,
+        lng: 130.656281,
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
