@@ -572,4 +572,78 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "gamagori",
+    code: 7,
+    name: "蒲郡",
+    kanji: "Gamagori",
+    region: "愛知",
+    tagline: "面向三河灣的快速平穩賽道，日本少數的夜間競賽場之一",
+    intro: [
+      "蒲郡賽艇場位於愛知縣三河灣畔，第一標附近的直道是全國最寬的賽道之一。水面平穩且流速快，加上有屏障阻擋強風，因此賽事節奏快、1號艇奪冠率高——但中央水道的超車戰術仍然時常成功，第二標常有精彩逆轉。",
+      "蒲郡也是少數採夜間競賽的賽艇場之一，水面在探照燈下閃閃發光，氛圍與白天賽事截然不同，是特別值得體驗的一點。",
+    ],
+    access: [
+      "JR東海道本線「三河塩津」站 → 步行約5分鐘",
+      "名鐵蒲郡線「蒲郡競艇場前」站，或從JR蒲郡站搭乘每30分鐘一班的直達巴士",
+    ],
+    mapQuery: "ボートレース蒲郡",
+    lat: 34.82390294,
+    lng: 137.20574497,
+    videoUrl: "https://www.youtube.com/channel/UCZhuyNQgLORLjgl8hlA7uHw",
+    cashless: {
+      note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可在1樓服務台申請免費的「e-jan Card」，投注、入場或指定席消費每100日圓可獲得1點，點數可兌換現金或商品，持卡者也能透過免費手機App下注。",
+      url: "https://gama-win.com/card/about/index.html",
+    },
+    image: {
+      src: "/images/venues/gamagori.jpg",
+      alt: "蒲郡賽艇場正門",
+      credit: "Photo by A301m089, public domain, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:20080719_Gamagori_kyotei_Central_Gate.jpg",
+    },
+    facts: {
+      water: "淡水人工水池——平穩快速，有屏障阻擋強風",
+      character: "1號艇奪冠率高，但第二標中央水道逆轉也很常見",
+      nightRace: true,
+    },
+    tip: "平穩快速的水面讓乾淨的起跑更加關鍵——我們的AI在每場蒲郡預測中都會重點分析起跑時間數據。",
+    nearbyAttractions: [
+      {
+        name: "竹島與八百富神社",
+        description:
+          "蒲郡的地標——透過一座387公尺長的橋樑連接的小型聖島，島上供奉八百富神社，是日本七大辯天神社之一。竹島本身因獨特的植物生態被指定為天然紀念物。",
+        lat: 34.811002,
+        lng: 137.231683,
+      },
+      {
+        name: "竹島水族館",
+        description:
+          "就在竹島旁的小型特色水族館，以展示珍奇深海生物聞名，同時也有常見的人氣海洋生物。",
+        lat: 34.811002,
+        lng: 137.2325,
+      },
+      {
+        name: "Laguna Ten Bosch",
+        description:
+          "濱海度假區，內有主題樂園、outlet購物中心與餐飲設施，從JR蒲郡站搭乘免費接駁巴士約15分鐘可達。",
+        lat: 34.808775,
+        lng: 137.271339,
+      },
+      {
+        name: "三谷溫泉",
+        description:
+          "位於三河灣畔的溫泉區，罕見地在同一小範圍內擁有四種不同泉質的溫泉，適合賽事前後放鬆一下。",
+      },
+      {
+        name: "蒲郡經典飯店",
+        description:
+          "戰前興建的西式飯店，位於竹島對岸的山丘上，即使不住宿也值得一看，以懷舊建築與海景聞名。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
