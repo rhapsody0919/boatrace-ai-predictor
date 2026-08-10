@@ -179,12 +179,67 @@ export const VENUE_GUIDES_ZH_TW = [
       "都營新宿線「船堀」站 → 賽事日免費接駁巴士",
       "JR總武線「平井」站 → 賽事日免費接駁巴士",
     ],
+    mapQuery: "ボートレース江戸川",
+    lat: 35.69223896,
+    lng: 139.86135473,
+    videoUrl: "https://www.youtube.com/channel/UCpNAwETM_vPV2Skumzc_KMA",
+    cashless: {
+      note: "現場沒有信用卡收單，僅能用現金或會場發行的投注專用預付卡「Eメンバー」，投注每100日圓可獲得1.5倍點數（1.5pt），點數可兌換場內利用券、指定席券或禮品卡。",
+      url: "https://edogawa-emember.com/",
+    },
+    image: {
+      src: "/images/venues/edogawa.jpg",
+      alt: "江戶川賽艇場",
+      credit: "Photo by 博柳, CC BY 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:%E6%B1%9F%E6%88%B8%E5%B7%9D%E7%AB%B6%E8%89%87%E5%A0%B4_-_panoramio.jpg",
+    },
     facts: {
       water: "河川（受潮汐、風向與水流影響）",
       character: "日本水面最不穩定的賽場——預期會有爆冷",
       nightRace: false,
     },
     tip: "這裡的天氣影響比其他任何賽場都更大。我們的AI會將賽場的不穩定性納入每一場江戶川預測。",
+    nearbyAttractions: [
+      {
+        name: "鬼太郎小路（場內）",
+        description:
+          "賽場自己的堤防看台上，掛滿了《鬼太郎》作者水木茂的妖怪畫作，是全日本賽艇場中獨一無二的場內景點，看比賽之餘也能順道欣賞這些懷舊插畫。",
+      },
+      {
+        name: "葛西臨海公園・水族園",
+        description:
+          "擁有大型甜甜圈形水槽、可觀賞成群黑鮪魚洄游的水族園，以及能眺望東京灣的大摩天輪，從賽場搭電車約30分鐘可達，往東京迪士尼度假區方向也只有一站之隔。",
+        lat: 35.64442524,
+        lng: 139.86156763,
+      },
+      {
+        name: "TOWER HALL船堀",
+        description:
+          "江戶川區的地標展望塔，115公尺高的展望台免費開放，天氣好時可遠眺東京晴空塔與富士山，就在船堀站旁，是賽前賽後順道眺望東京全景的好去處。",
+        url: "https://www.towerhall.jp/",
+        lat: 35.684378,
+        lng: 139.86496,
+      },
+      {
+        name: "行船公園・自然動物園",
+        description:
+          "免費入園的迷你動物園，可近距離觀察紅鶴、狐獴、水豚等62種小動物，園內還有日式庭園「平成庭園」與釣魚池，從西葛西站步行約15分鐘，很適合親子行程。",
+        lat: 35.671505,
+        lng: 139.858263,
+      },
+      {
+        name: "東京迪士尼度假區",
+        description:
+          "日本最具代表性的主題樂園，從葛西臨海公園再搭JR京葉線一站即達舞濱站，若賽事排在白天，晚上還能安排半天樂園行程。",
+        lat: 35.63626,
+        lng: 139.88361,
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
   },
   {
     slug: "tamagawa",
