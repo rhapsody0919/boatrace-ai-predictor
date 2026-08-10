@@ -1169,4 +1169,79 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "marugame",
+    code: 15,
+    name: "丸龜",
+    kanji: "Marugame",
+    region: "香川",
+    tagline: "受潮汐牽動的瀨戶內海賽道，位於日本烏龍麵之都",
+    intro: [
+      "丸龜賽艇場面向香川縣的瀨戶內海，賽道水質柔軟浮力佳，是全國潮差最大的競艇場之一——高低潮位差可達約2公尺。這裡常吹逆風，「差」與「捲差」等超車戰術在此的成功率高於單純的逃走戰術。",
+      "自2009年推出夜間賽事「Blue Nighter」計畫以來，丸龜便持續在燈光下比賽，如今已是全年舉辦夜間賽事的賽場。",
+    ],
+    access: [
+      "JR予讚線「丸龜」站 → 免費接駁巴士，約10分鐘",
+      "自駕：距高松自動車道或瀨戶中央自動車道坂出、善通寺交流道約15-20分鐘車程",
+    ],
+    mapQuery: "ボートレース丸亀",
+    lat: 34.30469395,
+    lng: 133.79470945,
+    videoUrl: "https://www.youtube.com/channel/UC2CWDMG18mpBGXkI9KHdACQ",
+    cashless: {
+      note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可申請「B Card」，每100日圓投注可獲得1點，使用該卡支付指定席費用通常可享半價優惠。",
+      url: "https://www.marugameboat.jp/sp/pointcard.htm",
+    },
+    image: {
+      src: "/images/venues/marugame.jpg",
+      alt: "丸龜賽艇場",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Marugame-kyotei-02.jpg",
+    },
+    facts: {
+      water: "海水，瀨戶內海——潮差顯著（最高約2公尺）",
+      character: "超車戰術（差、捲差）成功率高於單純逃走",
+      nightRace: true,
+    },
+    tip: "這裡的潮汐會實實在在地改變整場賽事的水面條件——我們的AI在每場丸龜預測中都會納入潮汐時間的分析。",
+    nearbyAttractions: [
+      {
+        name: "丸龜城",
+        description:
+          "建城400年、日本現存12座木造原始天守之一，以壯觀的弧形石垣聞名，擁有全日本最高的現存石造城牆。",
+        lat: 34.286115,
+        lng: 133.800334,
+      },
+      {
+        name: "丸龜烏龍麵",
+        description:
+          "丸龜是日本數一數二的烏龍麵之都，從賽場步行不遠就能找到多間知名麵店。",
+      },
+      {
+        name: "丸龜市豬熊弦一郎現代美術館（MIMOCA）",
+        description:
+          "面向JR丸龜站、外觀搶眼的現代建築，展示香川縣出身藝術家豬熊弦一郎的作品，同時也舉辦當代藝術特展。",
+        lat: 34.291214,
+        lng: 133.792025,
+      },
+      {
+        name: "中津萬象園與團扇博物館",
+        description:
+          "傳統江戶時代回遊式庭園，園內設有茶室，現已將遷移過來的丸龜團扇博物館一併納入——丸龜製作了全日本約九成的傳統紙製團扇。",
+        lat: 34.285108,
+        lng: 133.769663,
+      },
+      {
+        name: "丸龜港",
+        description:
+          "市內歷史悠久的港口，江戶時代曾是重要貿易港，如今仍有渡輪往返鄰近的小豆島與本島。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "自2009年起為全年舉辦夜間賽事的賽場。每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
