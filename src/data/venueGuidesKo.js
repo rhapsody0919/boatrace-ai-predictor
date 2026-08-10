@@ -784,4 +784,81 @@ export const VENUE_GUIDES_KO = [
       creditUrl: "https://commons.wikimedia.org/wiki/File:Naruto-kyotei-01.jpg",
     },
   },
+  {
+    slug: "marugame",
+    code: 15,
+    name: "마루가메",
+    kanji: "Marugame",
+    region: "가가와",
+    regionGroup: "shikoku",
+    tagline: "조수의 영향을 크게 받는 세토내해 코스, 일본 우동의 고장에서",
+    intro: [
+      "마루가메 경정장은 가가와현 세토내해를 마주하고 있으며, 부드럽고 부력이 좋은 해수 코스로 모든 경정장 중에서도 조수 간만의 차가 가장 큰 편입니다 — 만조와 간조 사이 최대 약 2m 차이가 납니다. 맞바람이 흔하며, '사시'와 '마쿠리사시' 같은 추월 기술이 순수한 도주보다 더 자주 성공합니다.",
+      "마루가메는 2009년 야간 경주 프로그램 '블루 나이터'가 시작된 이후 조명 아래에서 경주를 열어왔으며, 지금은 연중 야간 경주를 진행하는 경정장입니다.",
+    ],
+    access: [
+      "JR요산선 '마루가메'역 → 무료 셔틀버스, 약 10분",
+      "자동차: 다카마쓰 또는 세토추오 자동차도 사카이데 또는 젠쓰지 나들목에서 약 15~20분",
+    ],
+    mapQuery: "ボートレース丸亀",
+    lat: 34.30469395,
+    lng: 133.79470945,
+    videoUrl: "https://www.youtube.com/channel/UC2CWDMG18mpBGXkI9KHdACQ",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 'B카드'를 발급받으세요. 100엔당 1포인트가 적립되며, 카드로 결제하면 지정석 요금이 할인（보통 반값）됩니다.",
+      url: "https://www.marugameboat.jp/sp/pointcard.htm",
+    },
+    facts: {
+      water: "해수, 세토내해 — 조수 간만의 차가 큼（최대 약 2m）",
+      character: "추월 기술（사시, 마쿠리사시）이 순수한 도주보다 자주 성공",
+      nightRace: true,
+    },
+    tip: "이곳의 조수는 경주 도중 실제로 수면을 바꿔놓습니다 — 저희 AI는 마루가메 예측마다 조수 시각을 반영합니다.",
+    nearbyAttractions: [
+      {
+        name: "마루가메성",
+        description:
+          "400년 역사를 가진 성으로, 일본에 남은 12개의 원형 목조 천수 중 하나입니다 — 극적으로 휘어진 석벽과 일본에서 가장 높은 현존 석축으로 유명합니다.",
+        lat: 34.286115,
+        lng: 133.800334,
+      },
+      {
+        name: "마루가메 우동",
+        description:
+          "이 도시는 일본 우동의 고장 중 하나로, 경정장에서 조금만 걸으면 유명한 면 요리집을 여럿 만날 수 있습니다.",
+      },
+      {
+        name: "마루가메 이노쿠마 겐이치로 현대미술관（MIMOCA）",
+        description:
+          "JR마루가메역 앞에 자리한 독특한 현대식 건물로, 가가와현 출신 예술가 이노쿠마 겐이치로의 작품과 현대미술 특별전을 선보입니다.",
+        lat: 34.291214,
+        lng: 133.792025,
+      },
+      {
+        name: "나카즈 반쇼엔 정원과 부채박물관",
+        description:
+          "에도시대 전통 회유식 정원으로 다실이 있으며, 이전해온 마루가메 부채（우치와）박물관도 함께 있습니다 — 마루가메는 일본 전통 종이 부채의 약 90%를 생산합니다.",
+        lat: 34.285108,
+        lng: 133.769663,
+      },
+      {
+        name: "마루가메 항",
+        description:
+          "에도시대의 주요 무역항이었던 유서 깊은 항구로, 지금도 인근 쇼도시마와 혼지마섬으로 향하는 페리가 운항됩니다.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "2009년부터 연중 야간 경주를 여는 경정장입니다. 정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/marugame.jpg",
+      alt: "마루가메 경정장",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Marugame-kyotei-02.jpg",
+    },
+  },
 ];
