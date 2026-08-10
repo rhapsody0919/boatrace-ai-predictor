@@ -1392,4 +1392,81 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "tokuyama",
+    code: 18,
+    name: "德山",
+    kanji: "Tokuyama",
+    region: "山口",
+    tagline: "受潮汐牽動的笠戶灣賽道，群山環繞",
+    intro: [
+      "德山賽艇場面朝山口縣笠戶灣，看台後方是高鹿山，前方則是瀨戶內海的開闊景色。這裡也是全年舉辦晨間賽事的賽場——首場比賽約在早上8點32分開跑，整場賽事在下午初便結束。",
+      "斜向順風相當常見，潮差超過3公尺，讓一天之內的比賽風格分成兩種：低潮時是拼馬力的力量賽，強勁馬達的賽艇較有優勢；高潮時水面較難判讀，操控技巧與細膩度更為關鍵。",
+    ],
+    access: [
+      "JR「櫛濱」站為最近的車站",
+      "從JR德山站「港口」出口搭乘免費計程車，約20分鐘，服務時間自早上7:45起",
+    ],
+    mapQuery: "ボートレース徳山",
+    lat: 34.010378,
+    lng: 131.83555,
+    videoUrl:
+      "https://www.youtube.com/@%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E5%BE%B3%E5%B1%B1",
+    cashless: {
+      note: "現場一般購票僅收現金，不支援信用卡。這裡沒有像其他賽場那樣的專屬品牌卡，但提供免費的通用型預付卡；每投注200日圓可獲得1點，可兌換現金或德山限定周邊商品。",
+      url: "https://www.boatrace-tokuyama.jp/uploads/info_event/cashless.pdf",
+    },
+    image: {
+      src: "/images/venues/tokuyama.jpg",
+      alt: "德山賽艇場",
+      credit: "Photo by dora1977, public domain, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Tokuyamakyotei.JPG",
+    },
+    facts: {
+      water: "海水，笠戶灣——潮差超過3公尺",
+      character: "低潮時是力量賽，高潮時考驗操控技巧",
+      nightRace: false,
+    },
+    tip: "由於低潮與高潮時的比賽風格差異明顯，我們的AI在每場德山預測中都會同時分析潮汐時機與馬達、操控數據。",
+    nearbyAttractions: [
+      {
+        name: "德山動物園",
+        description:
+          "廣受家庭歡迎的市立動物園，貓熊是館內較受矚目的明星動物之一，從賽場開車約20分鐘可達。",
+        lat: 34.062152,
+        lng: 131.816085,
+      },
+      {
+        name: "周南市美術博物館",
+        description:
+          "介紹當地藝術與歷史的地區博物館，就在德山動物園附近，可以安排在同一趟行程中順道參觀。",
+        lat: 34.060194,
+        lng: 131.812083,
+      },
+      {
+        name: "德山站與銀南街商店街",
+        description:
+          "市內主要車站及緊鄰的有頂蓋商店街，餐廳與店鋪林立，適合在賽場行程前後順道一逛。",
+        lat: 34.051194,
+        lng: 131.80225,
+      },
+      {
+        name: "晴海親水公園",
+        description:
+          "面向德山灣的濱海公園，設有步道與草坪，是悠閒散步的好去處。",
+        lat: 34.047413,
+        lng: 131.795738,
+      },
+      {
+        name: "瀨戶內海景致",
+        description:
+          "賽場本身就能眺望笠戶灣與背後的高鹿山，即使不在賽事時間，這片景色也值得駐足欣賞。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "全年舉辦晨間賽事的賽場。每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
