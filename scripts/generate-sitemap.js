@@ -148,6 +148,13 @@ const LANGUAGE_ONLY_PAGES = {
       changefreq: "monthly",
       priority: "0.6",
     })),
+    // ブログはja専用が原則だが、需要が確認できたこの1記事のみ英語版を用意した
+    // 最小実装（languages.js の LANGUAGE_ONLY_PATHS 参照）
+    {
+      basePath: "/blog/odds-expected-value-guide",
+      changefreq: "monthly",
+      priority: "0.6",
+    },
   ],
   "zh-TW": [
     ...["", ...VENUE_GUIDES_ZH_TW.map((v) => v.slug)].map((slug) => ({
