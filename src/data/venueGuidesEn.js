@@ -346,6 +346,14 @@ export const VENUE_GUIDES_EN = [
       "About 10 minutes on foot north of Tenjin subway station (exit East 1a)",
       "About 15 minutes on foot from Nishitetsu-Fukuoka (Tenjin) station",
     ],
+    mapQuery: "ボートレース福岡",
+    lat: 33.599365,
+    lng: 130.397081,
+    videoUrl: "https://www.youtube.com/@boatracejpfukuoka",
+    cashless: {
+      note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the prepaid "Perabo Card", which doubles as a Rakuten Edy e-money card; charge it at the on-site machines before you bet.',
+      url: "https://www.boatrace-fukuoka.com/sp/index.php?page=service-perabo",
+    },
     facts: {
       water: "Brackish (river mouth) — distinctive swell",
       character: "Tricky first turn; watch exhibition performance closely",
@@ -356,12 +364,58 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Ohori Park",
         description:
-          "A large scenic park with a Japanese garden, a boating pond and lakeside cafes, 4 minutes from Tenjin by subway.",
+          "A large scenic park with a lake at its center and a roughly 2km loop path around it, plus a Japanese garden modeled on Suzhou-style gardens (entry ¥250, seasonal hours 9am-5pm or 9am-6pm, closed Mondays). About 4 minutes from Tenjin by subway to Ohorikoen Station — a good spot for a walk before or after racing.",
+        url: "https://www.ohorikouen.jp/",
+        lat: 33.586182,
+        lng: 130.376188,
+      },
+      {
+        name: "Maizuru Park & Fukuoka Castle Ruins",
+        description:
+          "Connected to Ohori Park, this park preserves the stone walls and watchtower ruins of Fukuoka Castle and is one of the city's best cherry-blossom spots. Free entry, and it's an easy pairing with Ohori Park on the same walk.",
+        lat: 33.586043,
+        lng: 130.383178,
       },
       {
         name: "Tenjin",
         description:
-          "Fukuoka's main shopping, dining and nightlife district, about 15 minutes on foot.",
+          "Fukuoka's main shopping, dining and nightlife district, with department stores, underground malls and izakaya, about 15 minutes on foot from the venue — easy to walk over for dinner after an evening card.",
+        lat: 33.591426,
+        lng: 130.399002,
+      },
+      {
+        name: "Kego Shrine",
+        description:
+          "A shrine right in the middle of the Tenjin shopping district, founded in 1608 by Fukuoka's feudal lord Kuroda Nagamasa — a quiet stop to duck into after shopping. The adjacent Kego Park is a popular spot for locals to relax.",
+        lat: 33.5877369,
+        lng: 130.39996343,
+      },
+      {
+        name: "Kushida Shrine",
+        description:
+          'Hakata\'s guardian shrine, affectionately called "O-Kushida-san", and the main stage of the July Hakata Gion Yamakasa festival — its colorful festival floats are on display year-round. About 10 minutes on foot from Nakasu.',
+        lat: 33.5929546,
+        lng: 130.4104589,
+      },
+      {
+        name: "Nakasu Yatai Food Stalls",
+        description:
+          "Fukuoka's iconic street-food alley along the Naka river, with stalls opening from around 6pm on clear evenings and staying open late. Ramen, oden and grilled skewers are all here — pull up a seat at the counter and chat with the owner. An easy stop after an evening race.",
+        lat: 33.595235,
+        lng: 130.402559,
+      },
+      {
+        name: "Canal City Hakata",
+        description:
+          "A large shopping complex built around an artificial canal, with a cinema, theater and dozens of restaurants, plus a nightly fountain show. About 5 minutes on foot from the Nakasu food stalls.",
+        url: "https://canalcity.co.jp/",
+        lat: 33.596269,
+        lng: 130.410857,
+      },
+      {
+        name: "On-site dining & the ROKU premium viewing lounge",
+        description:
+          'The venue itself is worth lingering at: the "Perabo Manju" bun on the 2F grandstand is a signature snack, and the conger-eel rice bowl at the 3F restaurant gets consistently good reviews. The standalone ROKU lounge outside offers café-style seating while you watch the races, plus a kids\' play area — good for a relaxed afternoon with family or a date.',
       },
     ],
     schedule: {
