@@ -1179,4 +1179,84 @@ export const VENUE_GUIDES_KO = [
         "https://commons.wikimedia.org/wiki/File:Shimonoseki_Kyotei.jpg",
     },
   },
+  {
+    slug: "wakamatsu",
+    code: 20,
+    name: "와카마쓰",
+    kanji: "Wakamatsu",
+    region: "후쿠오카（규슈）",
+    regionGroup: "kyushu",
+    tagline: "전일본선수권대회의 발상지, 도카이만 곁에",
+    intro: [
+      "와카마쓰 경정장은 기타큐슈 도카이만에 자리하고 있으며, '더비의 발상지'로 알려져 있습니다 — 첫 전일본선수권대회가 이곳에서 열렸습니다. 해수 코스가 2턴 부근에서 만과 직접 연결되어 조수와 바람이 그쪽에서 밀려들 수 있지만, 전반적으로 이 스포츠의 거친 경정장들보다는 잔잔한 편입니다.",
+      "와카마쓰는 일본에서 가장 가까운 경정장 쌍으로도 유명합니다: 아시야 경정장이 지척에 있어, 일부 팬들은 오전에 한 곳, 오후에 다른 곳을 '넘나들며' 관람하기도 합니다.",
+    ],
+    access: ["'오쿠도카이'역 → 도보 약 5분"],
+    mapQuery: "ボートレース若松",
+    lat: 33.887271,
+    lng: 130.764915,
+    videoUrl: "https://www.youtube.com/channel/UCll--OtE3eJpzb4uwX8MX9A",
+    cashless: {
+      note: "이곳은 '갓파쿤 카드'를 사용합니다. 티켓 구매 시 자동으로 포인트가 적립되는 캐시리스 IC카드입니다. 현장 입출금기에서 현금을 충전한 뒤, 발매기에서 카드를 태그하고 비밀번호를 입력해 구매합니다. 포인트는 적립일로부터 1년 뒤 해당 월 말에 만료됩니다.",
+      url: "https://www.wmb.jp/info/cashless/",
+    },
+    facts: {
+      water:
+        "해수, 2턴 부근에서 도카이만과 연결 — 대체로 잔잔, 겨울철 일부 거칠어짐",
+      character: "잔잔함과 기술적 특성이 균형을 이루는 수면",
+      nightRace: true,
+    },
+    tip: "이곳 수면 조건은 잔잔함과 기술적 특성 사이에 있습니다 — 저희 AI는 와카마쓰 예측마다 스타트 데이터와 경정장 변동성을 함께 반영합니다.",
+    nearbyAttractions: [
+      {
+        name: "다카토산 공원",
+        description:
+          "해발 124m 언덕 위 공원으로, 와카토대교・사라쿠라산・히비키나다 바다를 조망할 수 있습니다 — 2013년 일본 야경유산으로 인증받았습니다.",
+        lat: 33.902651,
+        lng: 130.798503,
+      },
+      {
+        name: "와카토대교",
+        description:
+          "도카이만을 가로지르는 전장 2.1km의 붉은 현수교로, 1962년 개통했으며 기타큐슈시의 상징입니다.",
+        lat: 33.902559,
+        lng: 130.81712,
+      },
+      {
+        name: "와이타 해수욕장",
+        description:
+          "겐카이 국정공원 내 와카마쓰 북쪽 해안을 따라 있는 해수욕장입니다.",
+        lat: 33.934992,
+        lng: 130.728309,
+      },
+      {
+        name: "기타큐슈 차세대 에너지파크",
+        description:
+          "풍력・태양광 발전 설비를 둘러볼 수 있는 체험형 시설로, 2009년 개설됐습니다.",
+      },
+      {
+        name: "샤본다마 비누 공장 견학",
+        description:
+          "유명 일본 비누 제조사가 제공하는 무료 공장 견학으로, 경정장에서 가까운 거리입니다.",
+      },
+      {
+        name: "몰리 판타지 와카마쓰",
+        description:
+          "인근 이온 와카마쓰 쇼핑센터 내 실내 놀이시설로, 비 오는 날에 좋습니다.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/wakamatsu.jpg",
+      alt: "와카마쓰 경정장, 오쿠도카이역 근처",
+      credit: "Photo by そらみみ, CC BY-SA 4.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Boat_Race_Wakamatsu_in_front_of_Okudokai_Station.jpg",
+    },
+  },
 ];
