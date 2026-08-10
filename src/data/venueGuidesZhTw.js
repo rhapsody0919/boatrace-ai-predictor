@@ -945,4 +945,79 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "biwako",
+    code: 11,
+    name: "琵琶湖",
+    kanji: "Biwako",
+    region: "滋賀",
+    tagline: "日本景色最優美的賽艇場，坐落於琵琶湖畔",
+    intro: [
+      "琵琶湖賽艇場位於日本最大淡水湖——琵琶湖畔，隔著湖面可眺望三上山（人稱「近江富士」）與伊吹山，是全國景色最優美的競艇場之一。觀光遊覽船「密西根號」也經常在比賽期間於湖面上悠然行駛。",
+      "春夏季常吹起離岸風，可能讓水面變得較不平穩，因此這裡的比賽條件比完全受屏障保護的賽場變化更大——是欣賞美景之餘也值得留意的一點。",
+    ],
+    access: [
+      "京阪「別所」站 → 步行約9分鐘",
+      "自駕：距名神高速公路大津或京都東交流道約15分鐘車程",
+    ],
+    mapQuery: "ボートレースびわこ",
+    lat: 35.01730116,
+    lng: 135.86110332,
+    videoUrl: "https://www.youtube.com/channel/UCLbcsJqsT5Qa1axpYcOBpmg",
+    cashless: {
+      note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可申請「Bina Touch」卡；另有共通集點方案「近江Point Club」，在此累積的點數也能在三國、住之江與尼崎共同使用。",
+      url: "https://www.boatrace-biwako.jp/modules/service/?page=index_point",
+    },
+    image: {
+      src: "/images/venues/biwako.jpg",
+      alt: "琵琶湖賽艇場",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Biwako-kyotei-01.jpg",
+    },
+    facts: {
+      water: "淡水（琵琶湖）——春夏季離岸風可能使水面變得較不平穩",
+      character: "日本景色最優美的賽艇場之一；水面條件隨風勢變化",
+      nightRace: false,
+    },
+    tip: "湖面風勢可能讓賽事中途的水面條件產生變化——我們的AI在每場琵琶湖預測中都會納入賽場波動指數分析。",
+    nearbyAttractions: [
+      {
+        name: "琵琶湖畔景觀",
+        description:
+          "就在賽場旁，可眺望三上山與伊吹山隔湖相望的壯闊景色，觀光遊覽船「密西根號」等船隻也經常在湖面上巡航。",
+      },
+      {
+        name: "三井寺（園城寺）",
+        description:
+          "日本四大名寺之一，寺內梵鐘被譽為日本音色最優美的鐘聲之一，並列入UNESCO世界遺產暫定名單，距賽場約1公里。",
+        lat: 35.01335,
+        lng: 135.852822,
+      },
+      {
+        name: "琵琶湖疏水",
+        description:
+          "19世紀興建、連接琵琶湖與京都的運河，沿岸設有賞櫻步道，是三井寺附近一段風景優美的散步路線。",
+        lat: 35.012481,
+        lng: 135.858029,
+      },
+      {
+        name: "近江神宮",
+        description:
+          "供奉天智天皇的神社，坐落於林木蓊鬱的山坡上，以舉辦日本全國歌牌（かるた）錦標賽聞名，從賽場開車約20分鐘可達。",
+        lat: 35.032216,
+        lng: 135.852109,
+      },
+      {
+        name: "渚公園與大津湖畔",
+        description:
+          "沿湖而建的狹長公園，種有應季花卉（春季有芝櫻），鄰近琵琶湖大津王子飯店，從賽場往南步行約15分鐘即可享受悠閒的湖畔散步。",
+        lat: 35.004965,
+        lng: 135.889099,
+      },
+    ],
+    schedule: {
+      typicalRaceDays: "每年固定舉辦多次例行賽，每次約4至7天。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
