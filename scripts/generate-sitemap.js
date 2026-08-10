@@ -148,11 +148,21 @@ const LANGUAGE_ONLY_PAGES = {
       priority: "0.6",
     })),
   ],
-  "zh-TW": ["", ...VENUE_GUIDES_ZH_TW.map((v) => v.slug)].map((slug) => ({
-    basePath: slug ? `/venues/${slug}` : "/venues",
-    changefreq: "monthly",
-    priority: "0.7",
-  })),
+  "zh-TW": [
+    ...["", ...VENUE_GUIDES_ZH_TW.map((v) => v.slug)].map((slug) => ({
+      basePath: slug ? `/venues/${slug}` : "/venues",
+      changefreq: "monthly",
+      priority: "0.7",
+    })),
+    // 会場が1件も無い地域ハブは実際には/venuesへリダイレクトされるため、sitemapには含めない
+    ...VENUE_REGIONS.filter((r) =>
+      VENUE_GUIDES_ZH_TW.some((v) => v.regionGroup === r.slug),
+    ).map((r) => ({
+      basePath: `/venues/region/${r.slug}`,
+      changefreq: "monthly",
+      priority: "0.6",
+    })),
+  ],
 };
 
 // デフォルト言語以外の言語別ページを生成

@@ -13,6 +13,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "平和島",
     kanji: "Heiwajima",
     region: "東京",
+    regionGroup: "kanto",
     tagline: "距羽田機場僅數分鐘——對旅客最友善的賽場",
     intro: [
       "平和島賽艇場位於東京都大田區的「BIG FUN平和島」娛樂複合設施內——內有保齡球館、遊樂場、餐廳，隔壁還有天然溫泉。如果你正在東京旅遊，或搭乘羽田機場班機前後有多餘時間，這裡是初次體驗賽艇最輕鬆的賽場。",
@@ -89,6 +90,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "住之江",
     kanji: "Suminoe",
     region: "大阪",
+    regionGroup: "kinki",
     tagline: "賽艇的「聖地」——在大阪市中心觀賞夜間賽事",
     intro: [
       "大阪的住之江賽艇場素有「賽艇聖地」之稱，經常舉辦賽艇界最重要的錦標賽，並設有夜間賽事（約下午2:30至晚上9:00），讓你白天在大阪觀光、晚上仍能在燈光下欣賞完整賽事。",
@@ -170,6 +172,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "江戶川",
     kanji: "Edogawa",
     region: "東京",
+    regionGroup: "kanto",
     tagline: "日本唯一的天然河川賽道——狂野水域、狂野配當",
     intro: [
       "位於東京東部的江戶川賽艇場，是日本唯一建於天然河川上的賽場。風向與潮汐不斷改變水面狀況，使其成為賽艇界最難預測的賽道——這裡的比賽以爆冷聞名。",
@@ -247,6 +250,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "多摩川",
     kanji: "Tamagawa",
     region: "東京（府中）",
+    regionGroup: "kanto",
     tagline: "日本最平穩的水面——純粹考驗選手實力",
     intro: [
       "位於東京西部的多摩川賽艇場，人稱「日本最平穩的水面」。防風林與看台為水池擋住風勢，因此比賽結果多由純粹的技術決定，較少受天候影響。",
@@ -327,6 +331,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "福岡",
     kanji: "Fukuoka",
     region: "福岡（九州）",
+    regionGroup: "kyushu",
     tagline: "步行即達天神鬧區的賽場——以刁鑽水面聞名",
     intro: [
       "福岡賽艇場可能是日本地理位置最便利的賽場：座落於那珂川與博多灣交會處，距離福岡市中心天神地區僅約10分鐘步行路程。你可以從逛街吃拉麵，到現場看賽事，只需幾分鐘的轉換。",
@@ -427,6 +432,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "桐生",
     kanji: "Kiryu",
     region: "群馬",
+    regionGroup: "kanto",
     tagline: "夜間競賽的發源地——日本海拔最高的賽艇場",
     intro: [
       "位於群馬縣的桐生賽艇場，是日本24座賽艇場中第一個引進夜間競賽的場館（1997年），如今每一場比賽都在夜間燈光下進行（首場約下午3點開始，末場約晚上8點半結束）。這裡同時也是日本海拔最高的賽艇場，位於海拔128公尺處。",
@@ -501,6 +507,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "濱名湖",
     kanji: "Hamanako",
     region: "靜岡",
+    regionGroup: "chubu-tokai",
     tagline: "日本最寬闊的賽道，坐落於以鰻魚聞名的鹹淡水湖畔",
     intro: [
       "濱名湖賽艇場位於靜岡縣濱名湖西岸，賽道寬度是日本24座賽艇場中最寬的。湖水為海水與淡水混合的鹹淡水湖，加上賽道格外寬闊，賽艇能加速衝到更高速度，因此外側艇的「捲切」（外側超車）戰術在這裡的成功率比狹窄賽場更高。",
@@ -578,6 +585,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "蒲郡",
     kanji: "Gamagori",
     region: "愛知",
+    regionGroup: "chubu-tokai",
     tagline: "面向三河灣的快速平穩賽道，日本少數的夜間競賽場之一",
     intro: [
       "蒲郡賽艇場位於愛知縣三河灣畔，第一標附近的直道是全國最寬的賽道之一。水面平穩且流速快，加上有屏障阻擋強風，因此賽事節奏快、1號艇奪冠率高——但中央水道的超車戰術仍然時常成功，第二標常有精彩逆轉。",
@@ -652,6 +660,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "常滑",
     kanji: "Tokoname",
     region: "愛知",
+    regionGroup: "chubu-tokai",
     tagline: "隔海遙望中部國際機場，起航區考驗選手技術",
     intro: [
       "常滑賽艇場座落於愛知縣，隔著海灣正對中部國際機場（Centrair），是日本少數能輕鬆安排「賽艇＋航班」行程的賽場之一。賽艇出發前停靠的起航區（Pit）比大多數賽場更長，讓選手要抓準出航時機變得更加困難。",
@@ -728,6 +737,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "戶田",
     kanji: "Toda",
     region: "埼玉",
+    regionGroup: "kanto",
     tagline: "日本最狹窄的賽道——唯一擁有奧運血統的賽艇場",
     intro: [
       "戶田賽艇場位於埼玉縣戶田公園內，使用的正是1964年東京奧運划船賽事的同一條靜水賽道——是日本唯一擁有奧運歷史的競艇場。這裡同時也是全國24座賽艇場中最狹窄的賽道，賽艇之間距離相當接近，現場觀賽格外刺激。",
@@ -802,6 +812,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "津",
     kanji: "Tsu",
     region: "三重",
+    regionGroup: "chubu-tokai",
     tagline: "面向伊勢灣的風浪水域——東海地區最刁鑽的賽道之一",
     intro: [
       "津賽艇場面朝三重縣伊勢灣，這條南北狹長的海灣會將天氣直接送進賽道——夏季吹南風，冬季則有從鈴鹿山脈吹來、當地人稱為「鈴鹿颪」的強勁寒風。風勢增強時，津會成為東海地區數一數二刁鑽、難以預測的賽道；風平浪靜的日子則相對容易判讀，1號艇較為有利。",
@@ -876,6 +887,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "三國",
     kanji: "Mikuni",
     region: "福井",
+    regionGroup: "chubu-tokai",
     tagline: "日本唯一面向日本海的賽艇場，緊鄰歷史悠久的港町",
     intro: [
       "三國賽艇場位於福井縣，是全國唯一面向日本海的競艇場。賽道為不受潮汐影響的淡水人工水池，但隨著白天氣溫升高常會吹起海風，為賽況增添變數。由於水面不受潮汐影響，馬力強勁的賽艇往往能穩定發揮優勢。",
@@ -951,6 +963,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "琵琶湖",
     kanji: "Biwako",
     region: "滋賀",
+    regionGroup: "kinki",
     tagline: "日本景色最優美的賽艇場，坐落於琵琶湖畔",
     intro: [
       "琵琶湖賽艇場位於日本最大淡水湖——琵琶湖畔，隔著湖面可眺望三上山（人稱「近江富士」）與伊吹山，是全國景色最優美的競艇場之一。觀光遊覽船「密西根號」也經常在比賽期間於湖面上悠然行駛。",
@@ -1026,6 +1039,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "尼崎",
     kanji: "Amagasaki",
     region: "兵庫",
+    regionGroup: "kinki",
     tagline: "一出車站就到——日本水面最平穩的賽場之一",
     intro: [
       "尼崎賽艇場的交通便利程度在競艇界數一數二：賽場就緊鄰阪神電鐵「尼崎中央運動公園前」站，就算下雨天也幾乎不需要撐傘。這裡的水面以全國最平穩、最考驗技術聞名，淡水賽道，船底下的水面十分紮實。",
@@ -1101,6 +1115,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "鳴門",
     kanji: "Naruto",
     region: "德島",
+    regionGroup: "shikoku",
     tagline: "水面寬闊、爆冷頻傳，緊鄰著名漩渦景觀",
     intro: [
       "鳴門賽艇場位於德島縣小鳴門海峽畔，看台距離賽道近到讓現場觀賽格外緊張刺激。雖然是海水賽道，但有防波堤保護，水面依然平穩。這裡的1號艇實力偏弱——任何水道都有機會奪冠，爆冷屢見不鮮，配當也常常偏高，是喜歡追高倍率的投注者鍾愛的賽場。",
@@ -1175,6 +1190,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "丸龜",
     kanji: "Marugame",
     region: "香川",
+    regionGroup: "shikoku",
     tagline: "受潮汐牽動的瀨戶內海賽道，位於日本烏龍麵之都",
     intro: [
       "丸龜賽艇場面向香川縣的瀨戶內海，賽道水質柔軟浮力佳，是全國潮差最大的競艇場之一——高低潮位差可達約2公尺。這裡常吹逆風，「差」與「捲差」等超車戰術在此的成功率高於單純的逃走戰術。",
@@ -1250,6 +1266,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "兒島",
     kanji: "Kojima",
     region: "岡山",
+    regionGroup: "chugoku",
     tagline: "瀨戶大橋橋影下的平穩水面",
     intro: [
       "兒島賽艇場位於岡山縣倉敷市的瀨戶內海畔，緊鄰瀨戶大橋，從看台就能眺望大橋與海上星羅棋布的島嶼。這裡潮差顯著，但風勢通常不大，因此比賽多半平穩、容易判讀，較少出現混亂局面。",
@@ -1323,6 +1340,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "宮島",
     kanji: "Miyajima",
     region: "廣島",
+    regionGroup: "chugoku",
     tagline: "日本水面條件數一數二刁鑽的賽場，正對宮島",
     intro: [
       "宮島賽艇場緊鄰前往宮島的渡輪碼頭，天氣晴朗時，從看台就能望見往來渡輪與UNESCO世界遺產嚴島神社的鳥居——是競艇界數一數二壯觀的景色。這裡的瀨戶內海水面被視為全日本最考驗技術的賽道之一。",
@@ -1398,6 +1416,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "德山",
     kanji: "Tokuyama",
     region: "山口",
+    regionGroup: "chugoku",
     tagline: "受潮汐牽動的笠戶灣賽道，群山環繞",
     intro: [
       "德山賽艇場面朝山口縣笠戶灣，看台後方是高鹿山，前方則是瀨戶內海的開闊景色。這裡也是全年舉辦晨間賽事的賽場——首場比賽約在早上8點32分開跑，整場賽事在下午初便結束。",
@@ -1475,6 +1494,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "下關",
     kanji: "Shimonoseki",
     region: "山口",
+    regionGroup: "chugoku",
     tagline: "本州最西端，平穩的LED燈光海水賽池",
     intro: [
       "下關賽艇場位於本州最西端，賽道是築在高聳防波堤後方、如水池般的海水賽道——堤防高度足以阻擋周防灘的海浪，即使漲潮時也很少受影響。這讓水面大多時候維持平穩，也降低了選手體重差異的影響，不過潮位超過3公尺時，第一標附近仍可能受到海水影響。",
@@ -1556,6 +1576,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "若松",
     kanji: "Wakamatsu",
     region: "福岡（九州）",
+    regionGroup: "kyushu",
     tagline: "全日本錦標賽的發源地，坐落於洞海灣畔",
     intro: [
       "若松賽艇場位於北九州市洞海灣畔，被譽為「德比賽的發源地」——首屆全日本錦標賽便是在此舉行。這裡是海水賽道，第二標附近直接連通海灣，潮汐與風勢會從那一側灌入，但整體水面仍比全國較粗獷的賽場來得平穩。",
@@ -1628,6 +1649,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "芦屋",
     kanji: "Ashiya",
     region: "福岡（九州）",
+    regionGroup: "kyushu",
     tagline: "近海的平穩技術型淡水賽道",
     intro: [
       "芦屋賽艇場鄰近遠賀川出海口，距響灘約2公里。賽道大致呈東西走向，水面紮實、風格平穩偏技術導向，常被拿來與多摩川賽艇場相提並論。",
@@ -1706,6 +1728,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "唐津",
     kanji: "Karatsu",
     region: "佐賀（九州）",
+    regionGroup: "kyushu",
     tagline: "日本數一數二寬闊的賽道，松林與海灣景色環繞",
     intro: [
       "唐津賽艇場位於佐賀縣，坐落於唐津灣與著名的虹之松原之間，淡水賽池是全國數一數二寬廣的賽道。賽道大致呈南北走向，陸風與海風的消長讓早場比賽多為逆風，後段賽事則常轉為順風。",
@@ -1776,6 +1799,7 @@ export const VENUE_GUIDES_ZH_TW = [
     name: "大村",
     kanji: "Omura",
     region: "長崎（九州）",
+    regionGroup: "kyushu",
     tagline: "競艇運動的發源地，也是內側最有利的賽場之一",
     intro: [
       "大村賽艇場在這項運動的歷史上佔有獨特地位：1952年4月6日，日本第一場正式的競艇比賽便是在此舉行，是名副其實的「競艇發源地」。後來為了支援夜間比賽而擴建了防風牆，這裡的1號艇勝率約達63%——是全國數一數二高的水準。",
