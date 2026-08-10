@@ -495,4 +495,81 @@ export const VENUE_GUIDES_ZH_TW = [
       seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
     },
   },
+  {
+    slug: "hamanako",
+    code: 6,
+    name: "濱名湖",
+    kanji: "Hamanako",
+    region: "靜岡",
+    tagline: "日本最寬闊的賽道，坐落於以鰻魚聞名的鹹淡水湖畔",
+    intro: [
+      "濱名湖賽艇場位於靜岡縣濱名湖西岸，賽道寬度是日本24座賽艇場中最寬的。湖水為海水與淡水混合的鹹淡水湖，加上賽道格外寬闊，賽艇能加速衝到更高速度，因此外側艇的「捲切」（外側超車）戰術在這裡的成功率比狹窄賽場更高。",
+      "每年3月至9月採夏季賽程，末場比賽會延後到接近黃昏時分、下午5點過後才結束，而非一般白天賽事的時段——如果想同時安排賽艇觀戰與傍晚的湖畔行程，這個時段很值得留意。",
+    ],
+    access: [
+      "JR東海道本線「新居町」站 → 步行約5分鐘",
+      "自駕：距濱松西、三日、館山寺智慧型交流道約30分鐘車程",
+    ],
+    mapQuery: "ボートレース浜名湖",
+    lat: 34.698504,
+    lng: 137.57206,
+    videoUrl: "https://www.youtube.com/channel/UCGZig6i5JrZ33jjW2GG6Bzw",
+    cashless: {
+      note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可申請免費的「Hamana Po!」IC卡，可在場內機台加值，每100日圓投注可獲得1點，點數可兌換現金或場館周邊商品。",
+      url: "https://www.boatrace-hamanako.jp/sp/index.php?page=service-point",
+    },
+    image: {
+      src: "/images/venues/hamanako.jpg",
+      alt: "濱名湖賽艇場",
+      credit: "Photo by 計記録, CC BY-SA 3.0, via Wikimedia Commons",
+      creditUrl:
+        "https://commons.wikimedia.org/wiki/File:Hamanako-kyotei-01.jpg",
+    },
+    facts: {
+      water: "鹹淡水（湖水，海水與淡水混合）——日本最寬賽道",
+      character: "水面流速快，外側艇超車機會多",
+      nightRace: false,
+    },
+    tip: "格外寬闊的賽道比其他賽場更有利於外側衝刺型選手——我們的AI在每場濱名湖預測中都會納入這項因素。",
+    nearbyAttractions: [
+      {
+        name: "館山寺溫泉",
+        description:
+          "位於湖東岸的溫泉度假小鎮，以鰻魚料理與可眺望湖景的溫泉旅館聞名，從賽場開車約40分鐘，位於濱名湖對岸。",
+        lat: 34.763229,
+        lng: 137.615619,
+      },
+      {
+        name: "濱名湖Pal Pal遊樂園",
+        description:
+          "就在館山寺溫泉區內的湖畔遊樂園，設有約25項遊樂設施，是廣受歡迎的親子同遊景點，可以和溫泉行程一起安排。",
+        lat: 34.763229,
+        lng: 137.615619,
+      },
+      {
+        name: "濱名湖花園公園",
+        description:
+          "湖泊南岸的大型縣立公園，園內有花卉庭園與寬廣草坪，曾是全國花卉博覽會的舉辦場地，從賽場開車約15分鐘可達。",
+        lat: 34.714473,
+        lng: 137.600915,
+      },
+      {
+        name: "新居關所（新居宿關卡遺跡）",
+        description:
+          "日本唯一保存至今的江戶時代舊東海道關卡建築，現已改為博物館，與賽場同樣位於新居地區，交通十分方便。",
+        lat: 34.694906,
+        lng: 137.561779,
+      },
+      {
+        name: "濱松花卉公園",
+        description:
+          "大型花卉主題樂園，全年皆有應季花卉展示，位於濱名湖花園公園以北約12分鐘車程處。",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "每年固定舉辦多次例行賽，每次約4至7天。3月至9月採夏季賽程，末場比賽時間會略為延後。",
+      seasonalNotes: "偶爾會舉辦SG／G1等全國性大賽，確切日期請查詢官方賽程。",
+    },
+  },
 ];
