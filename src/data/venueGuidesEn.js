@@ -1551,6 +1551,15 @@ export const VENUE_GUIDES_EN = [
       '"Chofu" station is the nearest train station → about 10 minutes on foot to the main gate',
       "About 10 minutes from Shin-Shimonoseki station by taxi or bus",
     ],
+    mapQuery: "ボートレース下関",
+    lat: 34.019189,
+    lng: 131.004075,
+    videoUrl:
+      "https://www.youtube.com/@%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E4%B8%8B%E9%96%A2%E5%85%AC%E5%BC%8F%E3%83%AC%E3%83%BC%E3%82%B9%E3%83%A9%E3%82%A4%E3%83%96",
+    cashless: {
+      note: 'The venue runs on the "e-hoc! Card" (e〜ほっ！カード), a free prepaid card that earns points on purchases, venue visits and paid-seat use — redeemable for cash or goods. It works not just at the main venue but also at the off-track outlets Fuku-le Shimonoseki, Orare Shimonoseki and BTS Nagato. Bring ID to sign up; cards are valid for 2 years.',
+      url: "https://www.boatrace-shimonoseki.jp/modules/service/?page=index_cashless",
+    },
     facts: {
       water:
         "Seawater pool (breakwater-sheltered) — generally calm, tide affects mark 1 when over 3m",
@@ -1559,6 +1568,32 @@ export const VENUE_GUIDES_EN = [
     },
     tip: "Stable, well-lit conditions make this one of the more consistent venues to read — our AI still checks tide state near the first mark for every Shimonoseki prediction.",
     nearbyAttractions: [
+      {
+        name: "Kozan-ji Temple",
+        description:
+          "A Zen temple founded in 1327 with a National Treasure main hall, and the site where samurai reformer Takasugi Shinsaku raised his forces in 1865.",
+        lat: 33.995889,
+        lng: 130.981917,
+      },
+      {
+        name: "Iminomiya Shrine",
+        description:
+          "A historic shrine serving the old Chofu castle town, known for its lively Suho-tei Festival held every August.",
+        lat: 33.998972,
+        lng: 130.987556,
+      },
+      {
+        name: "Chofu Garden",
+        description:
+          "A roughly 31,000-square-meter Japanese strolling garden built on the former residence of the Chofu domain's chief retainer.",
+      },
+      {
+        name: "Ganryu Island",
+        description:
+          "An uninhabited island said to be the site of the legendary duel between swordsmen Miyamoto Musashi and Sasaki Kojiro, reachable by boat from Karato.",
+        lat: 33.93278,
+        lng: 130.93056,
+      },
       {
         name: "Karato Market",
         description:
