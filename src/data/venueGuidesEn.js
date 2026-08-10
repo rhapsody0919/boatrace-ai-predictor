@@ -1884,6 +1884,14 @@ export const VENUE_GUIDES_EN = [
       '"Omura" station → about 2.4km, 29 minutes on foot — free shuttle bus recommended',
       "Free buses and ferry connections from Nagasaki, Sasebo, Isahaya and Togitsu",
     ],
+    mapQuery: "ボートレース大村",
+    lat: 32.897098,
+    lng: 129.951736,
+    videoUrl: "https://www.youtube.com/@omurainterview",
+    cashless: {
+      note: 'The venue uses the "ORICA" card, valid across all three of the venue\'s facilities — the main stadium, Blue Dragon and BTS Omura (the off-track outlet) — for both ticket purchases and entrance fees. Load cash at an in-venue deposit machine; wagers earn 0.5 points per ¥100, and visits earn 1-2 bonus points depending on the facility and event.',
+      url: "https://omurakyotei.jp/orica/",
+    },
     facts: {
       water: "Seawater, wind-screened for night racing",
       character:
@@ -1901,6 +1909,34 @@ export const VENUE_GUIDES_EN = [
         name: "Omura Park",
         description:
           'One of Japan\'s "100 Famous Cherry Blossom Spots," with about 2,000 cherry trees.',
+      },
+      {
+        name: "Glass Beach",
+        description:
+          "A beach near Nagasaki Airport made from recycled glass sand, created as part of an effort to improve Omura Bay's water quality.",
+        lat: 32.920074,
+        lng: 129.937057,
+      },
+      {
+        name: "Nagasaki Airport Observation Deck",
+        description:
+          "A 3rd-floor deck at Japan's first offshore airport, with close-up plane views and bay sunsets.",
+        lat: 32.91339,
+        lng: 129.918427,
+      },
+      {
+        name: "Sunspa Omura",
+        description:
+          "A day-use hot spring near the airport, with sodium/magnesium/calcium chloride waters known for leaving skin smooth.",
+        lat: 32.922336,
+        lng: 129.937634,
+      },
+      {
+        name: "Sea Hat Omura",
+        description:
+          "A civic arena and cultural hall near Omura Station, about 10 minutes from the airport.",
+        lat: 32.900469,
+        lng: 129.956265,
       },
     ],
     schedule: {
