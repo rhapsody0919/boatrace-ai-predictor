@@ -1017,4 +1017,83 @@ export const VENUE_GUIDES_KO = [
         "https://commons.wikimedia.org/wiki/File:Miyajima_Kyotei_01.jpg",
     },
   },
+  {
+    slug: "tokuyama",
+    code: 18,
+    name: "도쿠야마",
+    kanji: "Tokuyama",
+    region: "야마구치",
+    regionGroup: "chugoku",
+    tagline: "가사도만의 조수가 좌우하는 코스, 산 풍경을 배경으로",
+    intro: [
+      "도쿠야마 경정장은 야마구치현 가사도만을 마주하고 있으며, 관중석 뒤로 다카아야마산이 솟아 있고 앞으로는 세토내해가 펼쳐집니다. 이곳은 연중 아침 경주를 여는 경정장이기도 합니다 — 첫 경주는 오전 8시 32분경 시작되며, 이른 오후면 모든 경주가 끝납니다.",
+      "대각선 방향의 순풍이 흔하고, 조수 간만의 차가 3m를 넘어 하루를 두 가지 뚜렷한 스타일로 나눕니다: 간조 때는 파워 승부가 되어 강한 모터가 유리하고, 만조 때는 수면을 읽기 어려워져 조작 기술과 섬세함이 더 중요해집니다.",
+    ],
+    access: [
+      "JR '구시가하마'역이 가장 가까운 기차역입니다",
+      "JR도쿠야마역 '미나토구치' 출구에서 무료 택시 서비스, 약 20분, 오전 7시 45분부터 운행",
+    ],
+    mapQuery: "ボートレース徳山",
+    lat: 34.010378,
+    lng: 131.83555,
+    videoUrl:
+      "https://www.youtube.com/@%E3%83%9C%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%82%B9%E5%BE%B3%E5%B1%B1",
+    cashless: {
+      note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 다른 경정장들과 달리 자체 브랜드 캐시리스 카드는 없지만, 무료 범용 선불카드를 이용할 수 있습니다. 200엔당 1포인트가 적립되며 현금이나 도쿠야마 한정 상품으로 교환할 수 있습니다.",
+      url: "https://www.boatrace-tokuyama.jp/uploads/info_event/cashless.pdf",
+    },
+    facts: {
+      water: "해수, 가사도만 — 조수 간만의 차 3m 이상",
+      character: "간조 때는 파워 승부, 만조 때는 조작 기술 승부",
+      nightRace: false,
+    },
+    tip: "간조와 만조 때 경주 양상이 크게 다르기 때문에, 저희 AI는 도쿠야마 예측마다 조수 시각과 모터・조작 데이터를 함께 확인합니다.",
+    nearbyAttractions: [
+      {
+        name: "도쿠야마 동물원",
+        description:
+          "가족 단위 방문객에게 인기 있는 소규모 시립 동물원으로, 판다가 대표 동물 중 하나입니다 — 경정장에서 차로 약 20분 거리입니다.",
+        lat: 34.062152,
+        lng: 131.816085,
+      },
+      {
+        name: "슈난시 미술박물관",
+        description:
+          "지역 미술과 역사를 다루는 박물관으로 도쿠야마 동물원 근처에 있어 함께 둘러보기 좋습니다.",
+        lat: 34.060194,
+        lng: 131.812083,
+      },
+      {
+        name: "도쿠야마역과 긴난가이 상점가",
+        description:
+          "시내 주요 기차역과 이어진 아케이드 상점가로, 경정장 방문 전후로 식사나 쇼핑을 하기 좋습니다.",
+        lat: 34.051194,
+        lng: 131.80225,
+      },
+      {
+        name: "하루미 신스이 공원",
+        description:
+          "도쿠야마만을 마주한 수변 공원으로 산책로와 잔디밭이 있습니다 — 여유롭게 호숫가를 걷기 좋은 곳입니다.",
+        lat: 34.047413,
+        lng: 131.795738,
+      },
+      {
+        name: "세토내해 전망",
+        description:
+          "경정장 자체에서 다카아야마산을 배경으로 가사도만을 바라볼 수 있습니다 — 경주 시간이 아니어도 잠시 감상할 가치가 있습니다.",
+      },
+    ],
+    schedule: {
+      typicalRaceDays:
+        "연중 아침 경주를 여는 경정장입니다. 정기 경주는 매년 여러 차례, 회당 약 4~7일간 진행됩니다.",
+      seasonalNotes:
+        "간혹 SG／G1급 전국 대회가 열리기도 하니 정확한 일정은 공식 홈페이지를 확인하세요.",
+    },
+    image: {
+      src: "/images/venues/tokuyama.jpg",
+      alt: "도쿠야마 경정장",
+      credit: "Photo by dora1977, public domain, via Wikimedia Commons",
+      creditUrl: "https://commons.wikimedia.org/wiki/File:Tokuyamakyotei.JPG",
+    },
+  },
 ];
