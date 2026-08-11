@@ -176,6 +176,33 @@ export const blogPostsZhTw = [
     tags: ["實績", "命中率", "回收率", "透明度", "計測方法"],
     readTime: "12分鐘",
   },
+  {
+    id: "ai-vs-human",
+    title: "AI預測vs人類預測，1個月實測驗證結果【數據公開】",
+    description:
+      "AI預測的投注券與人類預測的投注券，哪個比較準？2025年12月整整1個月，我們實施了實測驗證。",
+    category: "數據分析",
+    tags: ["AI預測", "驗證", "數據", "比較"],
+    readTime: "11分鐘",
+  },
+  {
+    id: "rough-race-signals",
+    title: "分辨容易爆冷的賽艇比賽的5個信號——AI從1,899場比賽中發現",
+    description:
+      "以數據解說爆冷比賽的5個特徵（氣溫變化・水面穩定・內道勝率上升等）與各舉辦會場的攻略要點。",
+    category: "初學者向",
+    tags: ["爆冷比賽", "預測", "信號", "分辨方法"],
+    readTime: "10分鐘",
+  },
+  {
+    id: "stadium-strategy-guide",
+    title: "依會場分類的賽艇攻略指南——24會場的特徵與鎖定要點",
+    description:
+      "依賽艇會場不同，獲勝模式完全不同。完整介紹全國24處會場的特徵、1號艇勝率、內道強弱勢的會場。",
+    category: "策略",
+    tags: ["賽艇場", "攻略", "特徵", "1號艇勝率"],
+    readTime: "15分鐘",
+  },
 ];
 
 export function getZhTwOverride(id) {

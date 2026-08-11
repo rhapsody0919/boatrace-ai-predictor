@@ -54,7 +54,7 @@
 - [x] **Task 31**: picks-performance-report, venue-visit-guide, picks-guide, 10000-races-analysis, suji-funaken-guide（2026-02-16〜03-02、5件）
 - [x] **Task 32**: sg-g1-race-strategy, special-planned-races（2026-01-23、2件）
 - [x] **Task 33**: venue-ashiya, how-we-measure-accuracy（2025-12-29〜31、2件）
-- [ ] **Task 34**: ai-vs-human, rough-race-signals, stadium-strategy-guide（2025-12-22〜23、3件）
+- [x] **Task 34**: ai-vs-human, rough-race-signals, stadium-strategy-guide（2025-12-22〜23、3件）
 - [ ] **Task 35**: monthly-50k-roadmap, why-you-lose（2025-12-19〜21、2件）
 - [ ] **Task 36**: odds-expected-value-guide（英語版がTask1で最初に移行した記事。zh-TW版はここで新規追加）
 
