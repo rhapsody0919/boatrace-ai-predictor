@@ -17,10 +17,10 @@ function MycroftExplanation() {
 
       <div className="explanation-diagram">
         <svg
-          viewBox="0 0 640 160"
+          viewBox="0 0 640 266"
           width="100%"
           height="auto"
-          aria-label="マイクロフト処理フロー図"
+          aria-label="マイクロフト処理フロー図: 選手の過去32走をフォームエンコーダで読み、静的特徴量と合わせて6艇の相互作用にかけ、順位と勝率を出力する"
         >
           <defs>
             <marker
@@ -35,259 +35,63 @@ function MycroftExplanation() {
             </marker>
           </defs>
 
-          {/* 過去戦系列ボックス */}
-          <rect
-            x="10"
-            y="25"
-            width="120"
-            height="110"
-            rx="6"
-            fill="#fef9c3"
-            stroke="#ca8a04"
-            strokeWidth="1.5"
-          />
-          <text
-            x="70"
-            y="54"
-            textAnchor="middle"
-            fontSize="11"
-            fontFamily="system-ui, sans-serif"
-            fill="#ca8a04"
-            fontWeight="600"
-          >
-            過去戦系列
-          </text>
-          <text
-            x="70"
-            y="72"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#92400e"
-          >
-            30〜100戦
-          </text>
-          <text
-            x="70"
-            y="88"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#92400e"
-          >
-            着順・タイム
-          </text>
-          <text
-            x="70"
-            y="104"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#92400e"
-          >
-            コース・相手
-          </text>
-          <text
-            x="70"
-            y="120"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#92400e"
-          >
-            節間情報
-          </text>
+          {/* ===== 上段: 履歴系列の分岐 ===== */}
+          <rect x="6" y="14" width="124" height="98" rx="6" fill="#fef9c3" stroke="#ca8a04" strokeWidth="1.5" />
+          <text x="68" y="36" textAnchor="middle" fontSize="12" fontFamily="system-ui, sans-serif" fill="#ca8a04" fontWeight="600">選手の過去32走</text>
+          <text x="68" y="56" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">1走 = 1トークン</text>
+          <text x="68" y="74" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">着順・コース・ST</text>
+          <text x="68" y="90" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">相手の強さ</text>
+          <text x="68" y="106" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">経過日数・同じ節か</text>
 
-          {/* 矢印1 */}
-          <line
-            x1="132"
-            y1="80"
-            x2="158"
-            y2="80"
-            stroke="#ca8a04"
-            strokeWidth="1.5"
-            markerEnd="url(#mycroft-arrow)"
-          />
+          <line x1="132" y1="62" x2="150" y2="62" stroke="#ca8a04" strokeWidth="1.5" markerEnd="url(#mycroft-arrow)" />
 
-          {/* Embeddingボックス */}
-          <rect
-            x="160"
-            y="40"
-            width="110"
-            height="80"
-            rx="6"
-            fill="#fef9c3"
-            stroke="#ca8a04"
-            strokeWidth="1.5"
-          />
-          <text
-            x="215"
-            y="72"
-            textAnchor="middle"
-            fontSize="11"
-            fontFamily="system-ui, sans-serif"
-            fill="#ca8a04"
-            fontWeight="600"
-          >
-            Embedding
-          </text>
-          <text
-            x="215"
-            y="90"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#92400e"
-          >
-            選手ID + 位置
-          </text>
-          <text
-            x="215"
-            y="106"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#92400e"
-          >
-            エンコーディング
-          </text>
+          <rect x="152" y="8" width="156" height="110" rx="6" fill="#fef9c3" stroke="#ca8a04" strokeWidth="1.5" />
+          <text x="230" y="30" textAnchor="middle" fontSize="12" fontFamily="system-ui, sans-serif" fill="#ca8a04" fontWeight="600">① フォームエンコーダ</text>
+          <text x="230" y="50" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">Transformer 2層</text>
+          <text x="230" y="66" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">self-attention で</text>
+          <text x="230" y="82" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">調子の波を読む</text>
+          <text x="230" y="104" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#a16207" fontWeight="600">→ 今の状態（フォーム）</text>
 
-          {/* 矢印2 */}
-          <line
-            x1="272"
-            y1="80"
-            x2="298"
-            y2="80"
-            stroke="#ca8a04"
-            strokeWidth="1.5"
-            markerEnd="url(#mycroft-arrow)"
-          />
+          {/* ===== 下段: 静的特徴量の分岐 ===== */}
+          <rect x="6" y="164" width="124" height="82" rx="6" fill="#fffbeb" stroke="#d9a441" strokeWidth="1.5" />
+          <text x="68" y="188" textAnchor="middle" fontSize="12" fontFamily="system-ui, sans-serif" fill="#a16207" fontWeight="600">静的特徴量 36項目</text>
+          <text x="68" y="208" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">艇番・選手勝率</text>
+          <text x="68" y="224" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">モーター・展示</text>
+          <text x="68" y="240" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">気象（ワトソンと同じ）</text>
 
-          {/* Self-attentionボックス */}
-          <rect
-            x="300"
-            y="25"
-            width="140"
-            height="110"
-            rx="6"
-            fill="#fef9c3"
-            stroke="#ca8a04"
-            strokeWidth="1.5"
-          />
-          <text
-            x="370"
-            y="54"
-            textAnchor="middle"
-            fontSize="11"
-            fontFamily="system-ui, sans-serif"
-            fill="#ca8a04"
-            fontWeight="600"
-          >
-            Self-attention
-          </text>
-          <text
-            x="370"
-            y="72"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#92400e"
-          >
-            各戦が他の戦を
-          </text>
-          <text
-            x="370"
-            y="86"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#92400e"
-          >
-            参照してコンテキスト
-          </text>
-          <text
-            x="370"
-            y="100"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#92400e"
-          >
-            を捕捉
-          </text>
-          <text
-            x="370"
-            y="116"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#92400e"
-          >
-            フォーム・調子を抽出
-          </text>
+          <line x1="132" y1="204" x2="150" y2="204" stroke="#d9a441" strokeWidth="1.5" markerEnd="url(#mycroft-arrow)" />
 
-          {/* 矢印3 */}
-          <line
-            x1="442"
-            y1="80"
-            x2="468"
-            y2="80"
-            stroke="#ca8a04"
-            strokeWidth="1.5"
-            markerEnd="url(#mycroft-arrow)"
-          />
+          <rect x="152" y="176" width="156" height="58" rx="6" fill="#fffbeb" stroke="#d9a441" strokeWidth="1.5" />
+          <text x="230" y="200" textAnchor="middle" fontSize="11" fontFamily="system-ui, sans-serif" fill="#a16207" fontWeight="600">埋め込み</text>
+          <text x="230" y="220" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">艇番・会場はカテゴリ扱い</text>
 
-          {/* 出力ボックス */}
-          <rect
-            x="470"
-            y="30"
-            width="160"
-            height="100"
-            rx="6"
-            fill="#ca8a04"
-            stroke="#ca8a04"
-            strokeWidth="1.5"
-          />
-          <text
-            x="550"
-            y="62"
-            textAnchor="middle"
-            fontSize="11"
-            fontFamily="system-ui, sans-serif"
-            fill="#ffffff"
-            fontWeight="600"
-          >
-            選手スコア
+          {/* ===== 合流: 6艇の相互作用 ===== */}
+          <line x1="310" y1="62" x2="336" y2="108" stroke="#ca8a04" strokeWidth="1.5" markerEnd="url(#mycroft-arrow)" />
+          <line x1="310" y1="204" x2="336" y2="158" stroke="#d9a441" strokeWidth="1.5" markerEnd="url(#mycroft-arrow)" />
+
+          <rect x="342" y="70" width="160" height="126" rx="6" fill="#fef3c7" stroke="#ca8a04" strokeWidth="2" />
+          <text x="422" y="94" textAnchor="middle" fontSize="12" fontFamily="system-ui, sans-serif" fill="#ca8a04" fontWeight="600">② 6艇の相互作用</text>
+          <text x="422" y="114" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">set-attention</text>
+          <text x="422" y="134" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">6艇を見比べる</text>
+          <text x="422" y="154" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">「誰が誰に</text>
+          <text x="422" y="170" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#92400e">沈められるか」</text>
+          <text x="422" y="188" textAnchor="middle" fontSize="9" fontFamily="system-ui, sans-serif" fill="#a16207">※ 並び順に依存しない</text>
+
+          <line x1="504" y1="133" x2="522" y2="133" stroke="#ca8a04" strokeWidth="1.5" markerEnd="url(#mycroft-arrow)" />
+
+          {/* ===== 出力 ===== */}
+          <rect x="524" y="96" width="110" height="74" rx="6" fill="#ca8a04" stroke="#ca8a04" strokeWidth="1.5" />
+          <text x="579" y="120" textAnchor="middle" fontSize="12" fontFamily="system-ui, sans-serif" fill="#ffffff" fontWeight="600">③ 順位・勝率</text>
+          <text x="579" y="140" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#fef9c3">Plackett-Luce</text>
+          <text x="579" y="158" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#fef9c3">1位〜6位</text>
+
+          {/* ===== 説明性の注記（線で結ぶと「埋め込み」ボックスを貫通するため独立表示） ===== */}
+          <rect x="342" y="206" width="292" height="52" rx="4" fill="#fffbeb" stroke="#d9a441" strokeWidth="1" />
+          <text x="488" y="226" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#a16207" fontWeight="600">
+            ① の「どの過去走を重視したか」の重みが
           </text>
-          <text
-            x="550"
-            y="80"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#fef9c3"
-          >
-            現在のフォーム
-          </text>
-          <text
-            x="550"
-            y="94"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#fef9c3"
-          >
-            + 対戦傾向
-          </text>
-          <text
-            x="550"
-            y="108"
-            textAnchor="middle"
-            fontSize="9"
-            fontFamily="system-ui, sans-serif"
-            fill="#fef9c3"
-          >
-            → 順位予想
+          <text x="488" y="244" textAnchor="middle" fontSize="10" fontFamily="system-ui, sans-serif" fill="#a16207" fontWeight="600">
+            タブの「マイクロフトの記憶」になる
           </text>
         </svg>
       </div>
