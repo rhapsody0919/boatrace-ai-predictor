@@ -140,6 +140,24 @@ export const blogPostsZhTw = [
     tags: ["筋投注", "投注組合", "走勢預測", "外攻", "切入", "內道逃走"],
     readTime: "12分鐘",
   },
+  {
+    id: "sg-g1-race-strategy",
+    title: "贏得SG比賽・G1比賽的策略【分級賽事攻略】",
+    description:
+      "SG、G1等分級賽事與一般賽事完全不同。解說預賽與決賽的投注方式區分、得點率的活用法、夢幻戰的鎖定要點。",
+    category: "進階玩家",
+    tags: ["SG", "G1", "分級賽事", "策略", "得點率"],
+    readTime: "12分鐘",
+  },
+  {
+    id: "special-planned-races",
+    title: "什麼是企劃比賽？推薦初學者的理由【分辨穩健比賽的方法】",
+    description:
+      "1號艇A級固定等企劃比賽，即使初學者也容易命中。詳細解說企劃比賽的種類、尋找方法、活用法。",
+    category: "初學者向",
+    tags: ["企劃比賽", "初學者", "1號艇", "A級", "穩健比賽"],
+    readTime: "9分鐘",
+  },
 ];
 
 export function getZhTwOverride(id) {
