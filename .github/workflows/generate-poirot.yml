@@ -65,9 +65,18 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
-      # マイクロフト（PyTorch）。モデル未配置ならスクリプト側でスキップされる
+      # マイクロフト（PyTorch）。torch は 200MB超あるため共通の requirements とは
+      # 分け、このステップの直前でのみ入れる（ポアロ/ワトソンの推論に影響させない）
+      - name: Install Mycroft deps (torch)
+        run: pip install -r scripts/ml/requirements-mycroft.txt
+        continue-on-error: true
+
+      # β版のためジョブ全体は落とさない。ポアロ/ワトソンは既に upsert 済みで、
+      # ここが赤いと本命2モデルの健全性シグナルが埋もれるため。
+      # モデル未配置ならスクリプト側でスキップされる
       - name: Generate & upsert mycroft predictions
         run: node scripts/daily/generate-mycroft-predictions.js --skip-export
+        continue-on-error: true
         env:
           TZ: 'Asia/Tokyo'
           MYCROFT_PYTHON: python

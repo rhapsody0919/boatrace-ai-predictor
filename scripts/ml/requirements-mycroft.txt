@@ -1,0 +1,10 @@
+# マイクロフト（Transformer）専用の追加依存。
+# requirements.txt とは分けている: torch は 200MB超あり、ポアロ/ワトソンの
+# 日次ジョブ（1日3回）に無関係なインストール時間と失敗経路を持ち込むため。
+# マイクロフトのステップの直前でのみインストールする。
+#
+# ローカルは Python 3.12 の専用 venv を使う（3.14 は torch 未対応）:
+#   python3.12 -m venv scripts/ml/.venv-torch
+#   scripts/ml/.venv-torch/bin/pip install -r scripts/ml/requirements.txt \
+#       -r scripts/ml/requirements-mycroft.txt
+torch>=2.2
