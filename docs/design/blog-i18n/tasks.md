@@ -25,7 +25,7 @@
 - [x] **Task 14**: picks-guide（2026-02-17）
 - [x] **Task 15**: 10000-races-analysis（2026-02-16）
 - [x] **Task 16**: suji-funaken-guide（2026-01-30）
-- [ ] **Task 17**: sg-g1-race-strategy, special-planned-races（2026-01-23、2件）
+- [x] **Task 17**: sg-g1-race-strategy, special-planned-races（2026-01-23、2件）
 - [ ] **Task 18**: venue-ashiya（2025-12-31）
 - [ ] **Task 19**: how-we-measure-accuracy（2025-12-29）
 - [ ] **Task 20**: ai-vs-human（2025-12-23）

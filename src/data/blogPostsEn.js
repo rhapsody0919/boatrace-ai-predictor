@@ -232,6 +232,25 @@ export const blogPostsEn = [
     readTime: "12 min",
   },
   {
+    id: "sg-g1-race-strategy",
+    title: "Strategy for Winning SG and G1 Races [Cracking Grade Races]",
+    description:
+      "SG and G1 grade races are a different game from regular races. How to bet differently in qualifying vs. the final, how to use the points average, and how to target the Dream Race.",
+    category: "Advanced",
+    tags: ["SG", "G1", "GradeRaces", "Strategy", "PointsAverage"],
+    readTime: "12 min",
+  },
+  {
+    id: "special-planned-races",
+    title:
+      'What Are "Planned Races"? Why They\'re Great for Beginners [How to Spot a Solid Race]',
+    description:
+      "Planned races, like a lane-1-Class-A-fixed lineup, are easy for beginners to predict. A detailed guide to the types of planned races, how to spot them, and how to bet on them.",
+    category: "Beginner",
+    tags: ["PlannedRaces", "Beginner", "Lane1", "ClassA", "SolidRace"],
+    readTime: "9 min",
+  },
+  {
     id: "odds-expected-value-guide",
     title: "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
     description:
