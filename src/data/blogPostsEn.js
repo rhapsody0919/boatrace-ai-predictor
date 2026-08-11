@@ -91,6 +91,70 @@ export const blogPostsEn = [
     readTime: "12 min",
   },
   {
+    id: "trifecta-betting-guide",
+    title:
+      "The Complete Guide to Trifecta Betting — From Narrowing Combinations to Allocating Your Bankroll",
+    description:
+      "How to raise your Trifecta return rate: picking your anchor, choosing between formation and box betting, return-rate data by combination count, and how to think about bankroll allocation.",
+    category: "Strategy",
+    tags: [
+      "Trifecta",
+      "HowToBet",
+      "Formation",
+      "BankrollManagement",
+      "BettingTickets",
+    ],
+    readTime: "10 min",
+  },
+  {
+    id: "improve-recovery-rate",
+    title:
+      "How to Push Your Boat Racing Return Rate Above 100% — The Reality Shown by 10,000+ Races",
+    description:
+      "5 data-backed strategies for clearing the 25% deduction wall — race selection, bet-type choice, combination discipline, bankroll management, and using AI. Includes BoatAI's real 104% return rate results.",
+    category: "Strategy",
+    tags: [
+      "ReturnRate",
+      "HowToWin",
+      "BankrollManagement",
+      "DataAnalysis",
+      "DeductionRate",
+    ],
+    readTime: "10 min",
+  },
+  {
+    id: "beginners-start-guide",
+    title:
+      "The Beginner's Guide to Getting Started with Boat Racing — From Buying a Ticket to Using AI Predictions",
+    description:
+      "A complete guide for anyone wanting to start boat racing — basic rules, all 7 bet types explained, how to register for TELEBOAT, beginner-friendly betting approaches, and how to think about your budget.",
+    category: "Beginner",
+    tags: [
+      "Beginner",
+      "GettingStarted",
+      "BettingTickets",
+      "TELEBOAT",
+      "Introduction",
+    ],
+    readTime: "10 min",
+  },
+  {
+    id: "first-mark-prediction-guide",
+    title:
+      "What Are First-Mark Turn Predictions? How AI Reads the Way a Race Unfolds",
+    description:
+      "A full breakdown of BoatAI's turn prediction feature — how it statistically forecasts the first-mark turn from each racer's winning-technique distribution, ST, and motor performance, and how to use it in your betting strategy.",
+    category: "How-To",
+    tags: [
+      "TurnPrediction",
+      "FirstMark",
+      "WinningTechnique",
+      "AIPrediction",
+      "HowTo",
+    ],
+    readTime: "10 min",
+  },
+  {
     id: "picks-performance-report",
     title:
       '"Today\'s Picks" Hits a 104% Return Rate — Real Results from 2,577 Races',

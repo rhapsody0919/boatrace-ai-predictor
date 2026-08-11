@@ -19,7 +19,7 @@
 
 - [x] **Task 9**: winning-technique-analysis-guide, motor-condition-guide（2026-07-30公開、2件）
 - [x] **Task 10**: ai-prediction-accuracy-review, night-race-strategy, sg-race-guide-2026, how-to-predict-races（2026-03-12公開、4件）
-- [ ] **Task 11**: trifecta-betting-guide, improve-recovery-rate, beginners-start-guide, first-mark-prediction-guide（2026-03-12公開、4件）— 実装順序を誤りTask12〜16を先に処理したため後回し、次に対応する
+- [x] **Task 11**: trifecta-betting-guide, improve-recovery-rate, beginners-start-guide, first-mark-prediction-guide（2026-03-12公開、4件）
 - [x] **Task 12**: picks-performance-report（2026-03-02）
 - [x] **Task 13**: venue-visit-guide（2026-02-21）
 - [x] **Task 14**: picks-guide（2026-02-17）
