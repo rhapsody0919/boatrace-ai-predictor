@@ -48,8 +48,8 @@
 
 各タスクは`public/blog/{id}-zh-tw.md`作成 + `blogPostsZhTw.js`へのエントリ追加 + 該当記事のPlaywright目視確認。ファイル名サフィックスは`-zh-tw`（`-zh-TW`ではなくケバブケース、実装時に確定させる）。
 
-- [ ] **Task 28**: winning-technique-analysis-guide, motor-condition-guide（2026-07-30公開、2件）
-- [ ] **Task 29**: ai-prediction-accuracy-review, night-race-strategy, sg-race-guide-2026, how-to-predict-races（2026-03-12公開、4件）
+- [x] **Task 28**: winning-technique-analysis-guide, motor-condition-guide（2026-07-30公開、2件）
+- [x] **Task 29**: ai-prediction-accuracy-review, night-race-strategy, sg-race-guide-2026, how-to-predict-races（2026-03-12公開、4件）
 - [ ] **Task 30**: trifecta-betting-guide, improve-recovery-rate, beginners-start-guide, first-mark-prediction-guide（2026-03-12公開、4件）
 - [ ] **Task 31**: picks-performance-report, venue-visit-guide, picks-guide, 10000-races-analysis, suji-funaken-guide（2026-02-16〜03-02、5件）
 - [ ] **Task 32**: sg-g1-race-strategy, special-planned-races（2026-01-23、2件）
