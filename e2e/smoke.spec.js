@@ -77,11 +77,11 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
 });
 
 test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
-  test("未翻訳ページ（/en/blog等）はja版へリダイレクトされlang=jaで配信される", async ({
+  test("未翻訳ページ（/en/faq等）はja版へリダイレクトされlang=jaで配信される", async ({
     page,
   }) => {
-    await page.goto("/en/blog");
-    await expect(page).toHaveURL(/\/blog$/);
+    await page.goto("/en/faq");
+    await expect(page).toHaveURL(/\/faq$/);
     // lang属性はLanguageSyncのeffectで非同期に同期されるためポーリングで待つ
     await expect
       .poll(() => page.evaluate(() => document.documentElement.lang))
@@ -95,6 +95,43 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
     await expect(page).toHaveURL(/\/en\/guide$/);
     const lang = await page.evaluate(() => document.documentElement.lang);
     expect(lang).toBe("en");
+  });
+});
+
+test.describe("ブログ英語版（部分翻訳、blog-i18n）", () => {
+  test("/en/blog は英語版が存在する記事のみ一覧表示される（ja版全件より少ない件数）", async ({
+    page,
+  }) => {
+    await page.goto("/en/blog");
+    await expect(page).toHaveURL(/\/en\/blog$/);
+    const enCards = page.locator(".blog-card");
+    await expect(enCards.first()).toBeVisible();
+    const enCount = await enCards.count();
+    expect(enCount).toBeGreaterThan(0);
+
+    await page.goto("/blog");
+    const jaCount = await page.locator(".blog-card").count();
+    // フィルタが機能していれば英語版件数はja版全件より必ず少ない
+    // （全件一致は「フィルタが効いていない」回帰を示す）
+    expect(enCount).toBeLessThan(jaCount);
+  });
+
+  test("英語版がある記事は/en/blog/{id}でリダイレクトされずに表示される", async ({
+    page,
+  }) => {
+    await page.goto("/en/blog/odds-expected-value-guide");
+    await expect(page).toHaveURL(/\/en\/blog\/odds-expected-value-guide$/);
+    await expect(page.locator(".blog-post-header h1")).toContainText(
+      "How Odds Work",
+    );
+  });
+
+  test("英語版が無い記事は/en/blog/{id}でja版へリダイレクトされる", async ({
+    page,
+  }) => {
+    await page.goto("/en/blog/why-you-lose");
+    await expect(page).toHaveURL(/\/blog\/why-you-lose$/);
+    await expect(page).not.toHaveURL(/^\/en\//);
   });
 });
 

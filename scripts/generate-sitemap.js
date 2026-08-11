@@ -11,6 +11,7 @@ import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
 import { VENUE_REGIONS } from "../src/data/venueRegions.js";
 import { VENUE_GUIDES_ZH_TW } from "../src/data/venueGuidesZhTw.js";
 import { VENUE_GUIDES_KO } from "../src/data/venueGuidesKo.js";
+import { blogPostsEn } from "../src/data/blogPostsEn.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -132,6 +133,18 @@ const LOCALIZED_PAGES = [
   { basePath: "/winning-technique", changefreq: "daily", priority: "0.8" },
 ];
 
+// blogPostsEn.js にエントリはあるが対応する -en.md が存在しない場合、sitemapが
+// 実体の無いURLを配信してしまう（code-reviewで発見: エントリ追加と-en.md作成が
+// 別PRになるケースを想定した検知）。生成時に警告のみ出し、処理は止めない
+blogPostsEn.forEach((post) => {
+  const enMdPath = path.join(BLOG_DIR, `${post.id}-en.md`);
+  if (!fs.existsSync(enMdPath)) {
+    console.warn(
+      `⚠️ blogPostsEn.js に "${post.id}" のエントリがありますが public/blog/${post.id}-en.md が見つかりません`,
+    );
+  }
+});
+
 // 特定言語にのみ存在するページ（会場別ビジターガイド: 英語版 BOA-133 / 繁体字版 BOA-134）
 const LANGUAGE_ONLY_PAGES = {
   en: [
@@ -148,13 +161,19 @@ const LANGUAGE_ONLY_PAGES = {
       changefreq: "monthly",
       priority: "0.6",
     })),
-    // ブログはja専用が原則だが、需要が確認できたこの1記事のみ英語版を用意した
-    // 最小実装（languages.js の LANGUAGE_ONLY_PATHS 参照）
+    // ブログはja専用が原則だが、featured記事の一部のみ英語版を用意している
+    // （languages.js の PARTIALLY_TRANSLATED_PATHS 参照）。記事リストは
+    // blogPostsEn.js から動的に生成し、新規記事追加時の登録漏れを防ぐ
     {
-      basePath: "/blog/odds-expected-value-guide",
-      changefreq: "monthly",
+      basePath: "/blog",
+      changefreq: "weekly",
       priority: "0.6",
     },
+    ...blogPostsEn.map((post) => ({
+      basePath: `/blog/${post.id}`,
+      changefreq: "monthly",
+      priority: "0.6",
+    })),
   ],
   "zh-TW": [
     ...["", ...VENUE_GUIDES_ZH_TW.map((v) => v.slug)].map((slug) => ({
