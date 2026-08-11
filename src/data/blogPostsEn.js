@@ -287,6 +287,26 @@ export const blogPostsEn = [
     readTime: "11 min",
   },
   {
+    id: "rough-race-signals",
+    title:
+      "5 Signals That Predict a Volatile Boat Race — Discovered by AI Across 1,899 Races",
+    description:
+      "Being able to sense a volatile race changes your betting strategy. BoatAI analyzed 1,899 races and found 5 signals shared by races that turn volatile.",
+    category: "Beginner",
+    tags: ["VolatileRace", "Prediction", "Signals", "HowToSpot"],
+    readTime: "10 min",
+  },
+  {
+    id: "stadium-strategy-guide",
+    title:
+      "The Venue-by-Venue Strategy Guide — All 24 Venues' Character and What to Target",
+    description:
+      "Winning patterns differ completely from venue to venue. A complete guide to all 24 boat racing venues' character, lane-1 win rate, and which favor the inside vs. the outside.",
+    category: "Strategy",
+    tags: ["BoatRacingVenue", "Strategy", "Character", "Lane1WinRate"],
+    readTime: "15 min",
+  },
+  {
     id: "odds-expected-value-guide",
     title: "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
     description:

@@ -29,7 +29,7 @@
 - [x] **Task 18**: venue-ashiya（2025-12-31）
 - [x] **Task 19**: how-we-measure-accuracy（2025-12-29）
 - [x] **Task 20**: ai-vs-human（2025-12-23）
-- [ ] **Task 21**: rough-race-signals, stadium-strategy-guide（2025-12-22、2件）
+- [x] **Task 21**: rough-race-signals, stadium-strategy-guide（2025-12-22、2件）
 - [ ] **Task 22**: monthly-50k-roadmap（2025-12-21）
 - [ ] **Task 23**: why-you-lose（2025-12-19）
 
