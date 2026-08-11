@@ -251,6 +251,32 @@ export const blogPostsEn = [
     readTime: "9 min",
   },
   {
+    id: "venue-ashiya",
+    title:
+      "Ashiya Boat Race Venue Strategy Guide — Standard Model Trifecta at 1259% Return",
+    description:
+      "Ashiya boat racing venue's character and strategy, with BoatAI track record data. One of Japan's strongest inside-favoring venues, with a 1259% Trifecta return rate under the Standard model.",
+    category: "Venue Strategy",
+    tags: ["Ashiya", "BoatRacingVenue", "Strategy", "Standard", "StrongInside"],
+    readTime: "5 min",
+  },
+  {
+    id: "how-we-measure-accuracy",
+    title:
+      "Is BoatAI's Track Record Real? A Full Breakdown of How We Measure It and Why It's Transparent",
+    description:
+      "How does BoatAI actually measure its hit rate and return rate? Why does it publish all the data? A full breakdown of the reliability and transparency behind BoatAI's track record.",
+    category: "Data Analysis",
+    tags: [
+      "TrackRecord",
+      "HitRate",
+      "ReturnRate",
+      "Transparency",
+      "Measurement",
+    ],
+    readTime: "12 min",
+  },
+  {
     id: "odds-expected-value-guide",
     title: "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
     description:
