@@ -13,6 +13,9 @@ on:
 jobs:
   train:
     runs-on: ubuntu-latest
+    # data/watson/model.json（ワトソンのメタデータ）の自動コミットに必要
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -45,8 +48,21 @@ jobs:
         working-directory: scripts/ml
         run: python train_v2.py
 
+      # ワトソンの ΔR² 評価は export-training-data.js が出力する odds.csv を使う
+      - name: Train Watson (LightGBM LambdaRank)
+        working-directory: scripts/ml
+        run: python train_watson.py
+
       - name: Upload models to Supabase Storage
         run: node scripts/ml/storage-models.js upload
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/watson/model.json
+          git diff --staged --quiet || git commit -m "chore: update watson model metadata [automated]"
+          git push

@@ -1,0 +1,246 @@
+/* ワトソン予想タブ */
+
+/* ===== 実測パフォーマンス ===== */
+.watson-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.watson-stat {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.watson-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0284c7;
+}
+
+.watson-stat-label {
+  font-size: 0.75rem;
+  color: #374151;
+  margin-top: 0.25rem;
+}
+
+.watson-stat-sub {
+  display: block;
+  color: #6b7280;
+  font-size: 0.7rem;
+}
+
+.watson-honesty-note {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  line-height: 1.5;
+}
+
+/* ===== ライブ診断 ===== */
+.watson-loading {
+  color: #6b7280;
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+}
+
+.watson-summary-line {
+  font-size: 0.85rem;
+  color: #374151;
+  margin-bottom: 0.75rem;
+}
+
+.watson-race-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.watson-race-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.watson-race-card summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.watson-race-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.watson-race-card[open] summary {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.watson-race-title {
+  font-weight: 600;
+  color: #1f2937;
+  min-width: 5.5rem;
+}
+
+.watson-race-time {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.watson-race-pick {
+  color: #374151;
+  font-size: 0.8rem;
+}
+
+.watson-race-pick strong {
+  color: #0284c7;
+}
+
+.watson-prob-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  margin-left: auto;
+}
+
+.watson-race-body {
+  padding: 0.75rem;
+}
+
+/* ===== ランキング行 ===== */
+.watson-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  font-size: 0.8rem;
+}
+
+.watson-rank-row.top {
+  font-weight: 600;
+}
+
+.watson-rank-num {
+  width: 1.8rem;
+  text-align: right;
+  color: #9ca3af;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.watson-player-name {
+  min-width: 4.5rem;
+  color: #374151;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.watson-bar-track {
+  flex: 1;
+  height: 0.75rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 3rem;
+}
+
+.watson-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.watson-rank-prob {
+  width: 3.2rem;
+  text-align: right;
+  color: #1f2937;
+  flex-shrink: 0;
+}
+
+/* ===== 診断ポイント ===== */
+.watson-diagnosis {
+  margin-top: 0.6rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+}
+
+.watson-diagnosis-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0369a1;
+  margin-bottom: 0.35rem;
+}
+
+.watson-diagnosis ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.78rem;
+  color: #374151;
+}
+
+.watson-diagnosis li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.12rem 0;
+}
+
+.watson-contrib-sign {
+  font-weight: 700;
+}
+
+.watson-contrib-sign.plus {
+  color: #059669;
+}
+
+.watson-contrib-sign.minus {
+  color: #dc2626;
+}
+
+.watson-contrib-value {
+  margin-left: auto;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== モバイル ===== */
+@media (max-width: 480px) {
+  .watson-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .watson-stat {
+    padding: 0.6rem 0.4rem;
+  }
+
+  .watson-stat-value {
+    font-size: 1.1rem;
+  }
+
+  .watson-player-name {
+    min-width: 3.5rem;
+  }
+}

@@ -199,6 +199,35 @@ async function main() {
     toCsv(stRows, Object.keys(stRows[0])),
   );
   console.log(`✅ start_timings.csv: ${stRows.length.toLocaleString()}行`);
+
+  // 単勝オッズ（各レースの最新スナップショットのみ。ΔR²評価・オッズ結合の材料）
+  // 特徴量には使わない: 日次推論時点ではオッズが存在しないため（学習/評価専用）
+  const oddsSnapshots = await fetchAll(
+    "race_odds",
+    "race_id, captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6",
+    (q) => q.order("race_id").order("captured_at"),
+  );
+  const latestOdds = new Map();
+  for (const o of oddsSnapshots) {
+    const prev = latestOdds.get(o.race_id);
+    if (!prev || o.captured_at > prev.captured_at) latestOdds.set(o.race_id, o);
+  }
+  const oddsRows = [...latestOdds.values()].filter((o) =>
+    [1, 2, 3, 4, 5, 6].every((b) => o[`odds_win_${b}`] > 1),
+  );
+  if (oddsRows.length > 0) {
+    await fs.writeFile(
+      path.join(OUT_DIR, "odds.csv"),
+      toCsv(oddsRows, Object.keys(oddsRows[0])),
+    );
+    console.log(
+      `✅ odds.csv: ${oddsRows.length.toLocaleString()}レース（最新スナップショット・全艇オッズあり）`,
+    );
+  } else {
+    console.log(
+      "📭 odds.csv: 有効なオッズスナップショットなし（出力スキップ）",
+    );
+  }
   console.log(`📁 出力先: ${OUT_DIR}`);
 }
 
