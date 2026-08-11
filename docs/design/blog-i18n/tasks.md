@@ -10,15 +10,15 @@
 - [x] **Task 4**: `src/utils/blogFaqSchema.js`の`extractFaqItems`が英語見出し（`## FAQ`）も検出できるよう拡張する
 - [x] **Task 5**: `src/pages/Blog.jsx`を多言語対応させる。`/en/blog`で英語版記事のみの一覧・featuredセクション・カテゴリフィルターを表示し、見出し・空状態メッセージ等のUI文言を言語別に出し分ける
 - [x] **Task 6**: `scripts/generate-sitemap.js`を`blogPostsEn`からの動的生成に変更し、既存の`odds-expected-value-guide`ハードコードエントリを削除する（`docs/adr/0007`）。あわせて`/en/blog`一覧ページもsitemapに登録した
-- [x] **Task 7**: 基盤PRの検証・PR作成・マージ。検証項目: `npm run build`、`npx playwright test e2e/smoke.spec.js`（回帰1件発見・修正、専用テスト3件追加）、`npx playwright test e2e/venue-guide-data.spec.js`（792件、languages.jsコアロジック変更の回帰確認）、Playwright目視確認（`/en/blog`一覧、`/en/blog/odds-expected-value-guide`詳細、hreflang、言語スイッチャー往復、未翻訳記事のリダイレクト、FAQPage構造化データ、`node scripts/generate-sitemap.js`実行結果）
+- [x] **Task 7**: 基盤PRの検証・PR作成（マージはユーザー承認待ち、PR#274）。検証項目: `npm run build`、`npx playwright test e2e/smoke.spec.js`（回帰1件発見・修正、専用テスト3件追加）、`npx playwright test e2e/venue-guide-data.spec.js`（792件、languages.jsコアロジック変更の回帰確認）、Playwright目視確認（`/en/blog`一覧、`/en/blog/odds-expected-value-guide`詳細、hreflang、言語スイッチャー往復、未翻訳記事のリダイレクト、FAQPage構造化データ、`node scripts/generate-sitemap.js`実行結果）。`/code-review`で重大バグ（zh-TW/koの言語不整合）含む6件検出・修正済み
 - [x] **Task 8**: `.claude/CLAUDE.md`の「新機能リリース時のブログ記事ルール」に、featured記事公開時は英訳（`-en.md` + `blogPostsEn.js`エントリ）も同一/近接PRで作成する運用を追記する。あわせて「多言語化の3区分」のja専用の説明も更新した
 
 ## フェーズ2: 既存24記事の翻訳（新しい記事から順、spec.md FR3）
 
 `odds-expected-value-guide`はTask 1で移行済みのため対象外。各タスクは`public/blog/{id}-en.md`作成 + `blogPostsEn.js`へのエントリ追加 + 該当記事のPlaywright目視確認。
 
-- [ ] **Task 9**: winning-technique-analysis-guide, motor-condition-guide（2026-07-30公開、2件）
-- [ ] **Task 10**: ai-prediction-accuracy-review, night-race-strategy, sg-race-guide-2026, how-to-predict-races（2026-03-12公開、4件）
+- [x] **Task 9**: winning-technique-analysis-guide, motor-condition-guide（2026-07-30公開、2件）
+- [x] **Task 10**: ai-prediction-accuracy-review, night-race-strategy, sg-race-guide-2026, how-to-predict-races（2026-03-12公開、4件）
 - [ ] **Task 11**: trifecta-betting-guide, improve-recovery-rate, beginners-start-guide, first-mark-prediction-guide（2026-03-12公開、4件）
 - [ ] **Task 12**: picks-performance-report（2026-03-02）
 - [ ] **Task 13**: venue-visit-guide（2026-02-21）
