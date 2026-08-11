@@ -203,6 +203,33 @@ export const blogPostsZhTw = [
     tags: ["賽艇場", "攻略", "特徵", "1號艇勝率"],
     readTime: "15分鐘",
   },
+  {
+    id: "monthly-50k-roadmap",
+    title: "用賽艇賺取每月5萬日圓副業收入的路線圖【重視再現性】",
+    description:
+      "以每月5萬日圓為目標的資金管理方法，以及活用BoatAI數據分析的投注思考方式。",
+    category: "策略",
+    tags: ["賽艇", "資金管理", "每月5萬日圓", "數據活用"],
+    readTime: "12分鐘",
+  },
+  {
+    id: "why-you-lose",
+    title: "賽艇輸家的5個共通點與AI預測的解決方案",
+    description:
+      "為什麼您總是無法在賽艇中獲勝？傳達從1,899場比賽數據分析中看出的「輸家模式」，以及運用AI預測的解決方案。",
+    category: "初學者向",
+    tags: ["賽艇", "AI預測", "無法獲勝", "輸家模式"],
+    readTime: "10分鐘",
+  },
+  {
+    id: "odds-expected-value-guide",
+    title: "賽艇賠率的判讀方法——用期望值選擇投注券的方法",
+    description:
+      "以數據解說賽艇賠率的機制與期望值的思考方式——過剩人氣的陷阱、鎖定賠率歪曲、依投注組合種類的損益平衡賠率。",
+    category: "數據分析",
+    tags: ["賠率", "期望值", "過剩人氣", "投注策略", "數據分析"],
+    readTime: "9分鐘",
+  },
 ];
 
 export function getZhTwOverride(id) {
