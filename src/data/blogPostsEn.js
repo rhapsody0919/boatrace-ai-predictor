@@ -91,6 +91,83 @@ export const blogPostsEn = [
     readTime: "12 min",
   },
   {
+    id: "picks-performance-report",
+    title:
+      '"Today\'s Picks" Hits a 104% Return Rate — Real Results from 2,577 Races',
+    description:
+      "BoatAI's \"Today's Picks\" feature recorded a 104% return rate across 2,577 races. An honest look at how it overcomes the 25% deduction rate to stay net-positive — including its real limitations.",
+    category: "Track Record",
+    tags: ["TodaysPicks", "ReturnRate", "DataMining", "TrackRecord"],
+    readTime: "7 min",
+  },
+  {
+    id: "venue-visit-guide",
+    title:
+      "The Complete Guide to Enjoying a Boat Racing Venue — Get 120% Out of Your First Visit",
+    description:
+      "Boat racing venues are more than just betting windows — ¥100 admission, local food specialties, night races, even a good date spot. A complete guide covering what to bring, budgeting, and beginner tips for a 120% on-site experience.",
+    category: "Beginner",
+    tags: [
+      "BoatRacingVenue",
+      "HowToEnjoy",
+      "Beginner",
+      "Food",
+      "NightRace",
+      "VisitGuide",
+    ],
+    readTime: "12 min",
+  },
+  {
+    id: "picks-guide",
+    title:
+      'How to Use "Today\'s Picks" — High-Return Races Selected by Data Mining',
+    description:
+      "A full breakdown of BoatAI's \"Today's Picks\" feature — how data mining across 15 venues and 34 patterns automatically surfaces races with a 100%+ return rate, how to read the screen, and how to use it by bet type.",
+    category: "How-To",
+    tags: [
+      "TodaysPicks",
+      "DataMining",
+      "ReturnRate",
+      "HowTo",
+      "PatternMatching",
+    ],
+    readTime: "8 min",
+  },
+  {
+    id: "10000-races-analysis",
+    title:
+      "BoatAI Passes 10,000 Races — What the Data Says About AI Prediction's Strengths and Limits",
+    description:
+      "BoatAI's cumulative analyzed race count passed 10,000. An honest look at what 12,324 races reveal — a 47.4% Win hit rate, an 18.0% Trio hit rate, and the real challenges around return rate.",
+    category: "Track Record",
+    tags: [
+      "10000Races",
+      "TrackRecordAnalysis",
+      "HitRate",
+      "ReturnRate",
+      "Trio",
+      "DataDisclosure",
+    ],
+    readTime: "10 min",
+  },
+  {
+    id: "suji-funaken-guide",
+    title:
+      'What Is a "Suji" Bet? A Quick-Reference Guide to Venue-Specific Patterns',
+    description:
+      "A quick-reference guide to basic suji betting patterns — inside wire-to-wire, overtake, and inside-pass combinations, how to spot against-the-suji results, and venue tendencies from Omura and Ashiya to Toda and Edogawa.",
+    category: "Strategy",
+    tags: [
+      "SujiBetting",
+      "BettingStrategy",
+      "RaceDevelopment",
+      "Overtake",
+      "InsidePass",
+      "WireToWire",
+    ],
+    readTime: "12 min",
+  },
+  {
     id: "odds-expected-value-guide",
     title: "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
     description:
