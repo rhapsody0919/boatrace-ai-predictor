@@ -33,6 +33,15 @@
   display: block;
 }
 
+/* モバイルでは幅に合わせて縮小すると図中の文字が読めなくなる。
+   一定幅を保ち、親の overflow-x: auto で横スクロールさせる
+   （図は静的SVGでタッチ操作を持たないため、スクロール化の副作用はない） */
+@media (max-width: 600px) {
+  .explanation-diagram svg {
+    min-width: 560px;
+  }
+}
+
 /* ===== キーポイントリスト ===== */
 .explanation-key-points {
   list-style: none;
