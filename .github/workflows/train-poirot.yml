@@ -53,6 +53,21 @@ jobs:
         working-directory: scripts/ml
         run: python train_watson.py
 
+      # マイクロフト（PyTorch）。torch は 200MB超あるため共通の requirements とは
+      # 分け、このステップの直前でのみ入れる
+      - name: Install Mycroft deps (torch)
+        run: pip install -r scripts/ml/requirements-mycroft.txt
+        continue-on-error: true
+
+      # CPU のみで全データ2エポック390秒（ローカル実測、実効1.5コア相当）。
+      # 早期終了まで8〜13エポックのため 15〜50分の見込みで、週次なら十分収まる。
+      # 失敗しても続行する: models/mycroft_v1.pt が生成されなければ次の
+      # アップロードが警告付きでスキップし、Storage は直前の正常なモデルを保つ
+      - name: Train Mycroft (Transformer)
+        working-directory: scripts/ml
+        run: python train_mycroft.py
+        continue-on-error: true
+
       - name: Upload models to Supabase Storage
         run: node scripts/ml/storage-models.js upload
         env:
@@ -63,6 +78,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add data/watson/model.json
-          git diff --staged --quiet || git commit -m "chore: update watson model metadata [automated]"
+          git add data/watson/model.json data/mycroft/model.json
+          git diff --staged --quiet || git commit -m "chore: update watson/mycroft model metadata [automated]"
           git push

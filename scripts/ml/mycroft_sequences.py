@@ -87,7 +87,7 @@ def split_static(df: pd.DataFrame):
     return cat, cont
 
 
-def load_raw():
+def load_raw(include_backfill: bool = True):
     """dataset.csv / start_timings.csv を backfill 込みで読む。
 
     features.load_dataset の読み込み部と同じ規則（重複 race_id は Supabase 側
@@ -100,7 +100,7 @@ def load_raw():
     st = pd.read_csv(F.DATA_DIR / "start_timings.csv")
 
     bf_path = F.DATA_DIR / "backfill_dataset.csv"
-    if bf_path.exists():
+    if include_backfill and bf_path.exists():
         bf = pd.read_csv(bf_path)
         bf_st = pd.read_csv(F.DATA_DIR / "backfill_start_timings.csv")
         supabase_ids = set(df["race_id"])
