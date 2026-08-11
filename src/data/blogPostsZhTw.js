@@ -158,6 +158,24 @@ export const blogPostsZhTw = [
     tags: ["企劃比賽", "初學者", "1號艇", "A級", "穩健比賽"],
     readTime: "9分鐘",
   },
+  {
+    id: "venue-ashiya",
+    title: "蘆屋賽艇場攻略指南——標準模型3連單回收率1259%",
+    description:
+      "蘆屋賽艇場的特徵與攻略法，附BoatAI實績數據。日本內道最強的會場之一，標準模型的3連單回收率達1259%。",
+    category: "會場攻略",
+    tags: ["蘆屋", "賽艇場", "攻略", "標準", "內道強"],
+    readTime: "5分鐘",
+  },
+  {
+    id: "how-we-measure-accuracy",
+    title: "BoatAI的實績是真的嗎？徹底解說計測方法與透明度",
+    description:
+      "BoatAI的命中率・回收率是如何計測的？為什麼要公開所有數據？徹底解說實績的可信度與透明度。",
+    category: "數據分析",
+    tags: ["實績", "命中率", "回收率", "透明度", "計測方法"],
+    readTime: "12分鐘",
+  },
 ];
 
 export function getZhTwOverride(id) {
