@@ -18,7 +18,7 @@
 `odds-expected-value-guide`はTask 1で移行済みのため対象外。各タスクは`public/blog/{id}-en.md`作成 + `blogPostsEn.js`へのエントリ追加 + 該当記事のPlaywright目視確認。
 
 - [x] **Task 9**: winning-technique-analysis-guide, motor-condition-guide（2026-07-30公開、2件）
-- [ ] **Task 10**: ai-prediction-accuracy-review, night-race-strategy, sg-race-guide-2026, how-to-predict-races（2026-03-12公開、4件）
+- [x] **Task 10**: ai-prediction-accuracy-review, night-race-strategy, sg-race-guide-2026, how-to-predict-races（2026-03-12公開、4件）
 - [ ] **Task 11**: trifecta-betting-guide, improve-recovery-rate, beginners-start-guide, first-mark-prediction-guide（2026-03-12公開、4件）
 - [ ] **Task 12**: picks-performance-report（2026-03-02）
 - [ ] **Task 13**: venue-visit-guide（2026-02-21）
