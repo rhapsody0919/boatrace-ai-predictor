@@ -38,7 +38,7 @@ Below is the 2026 SG race lineup. Check the official site for the latest exact d
 | 7 | **Challenge Cup** | November | Top prize-money earners |
 | 8 | **Grand Prix / Grand Prix Series** | December | Top 18 annual prize-money earners |
 
-*Check the [official boat racing site](https://www.boatrace.jp/) for exact dates and venues.
+Note: Check the [official boat racing site](https://www.boatrace.jp/) for exact dates and venues.
 
 ---
 
