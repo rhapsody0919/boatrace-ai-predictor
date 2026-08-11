@@ -19,12 +19,12 @@
 
 - [x] **Task 9**: winning-technique-analysis-guide, motor-condition-guide（2026-07-30公開、2件）
 - [x] **Task 10**: ai-prediction-accuracy-review, night-race-strategy, sg-race-guide-2026, how-to-predict-races（2026-03-12公開、4件）
-- [ ] **Task 11**: trifecta-betting-guide, improve-recovery-rate, beginners-start-guide, first-mark-prediction-guide（2026-03-12公開、4件）
-- [ ] **Task 12**: picks-performance-report（2026-03-02）
-- [ ] **Task 13**: venue-visit-guide（2026-02-21）
-- [ ] **Task 14**: picks-guide（2026-02-17）
-- [ ] **Task 15**: 10000-races-analysis（2026-02-16）
-- [ ] **Task 16**: suji-funaken-guide（2026-01-30）
+- [x] **Task 11**: trifecta-betting-guide, improve-recovery-rate, beginners-start-guide, first-mark-prediction-guide（2026-03-12公開、4件）
+- [x] **Task 12**: picks-performance-report（2026-03-02）
+- [x] **Task 13**: venue-visit-guide（2026-02-21）
+- [x] **Task 14**: picks-guide（2026-02-17）
+- [x] **Task 15**: 10000-races-analysis（2026-02-16）
+- [x] **Task 16**: suji-funaken-guide（2026-01-30）
 - [ ] **Task 17**: sg-g1-race-strategy, special-planned-races（2026-01-23、2件）
 - [ ] **Task 18**: venue-ashiya（2025-12-31）
 - [ ] **Task 19**: how-we-measure-accuracy（2025-12-29）

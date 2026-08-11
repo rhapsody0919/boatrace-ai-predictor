@@ -91,6 +91,147 @@ export const blogPostsEn = [
     readTime: "12 min",
   },
   {
+    id: "trifecta-betting-guide",
+    title:
+      "The Complete Guide to Trifecta Betting — From Narrowing Combinations to Allocating Your Bankroll",
+    description:
+      "How to raise your Trifecta return rate: picking your anchor, choosing between formation and box betting, return-rate data by combination count, and how to think about bankroll allocation.",
+    category: "Strategy",
+    tags: [
+      "Trifecta",
+      "HowToBet",
+      "Formation",
+      "BankrollManagement",
+      "BettingTickets",
+    ],
+    readTime: "10 min",
+  },
+  {
+    id: "improve-recovery-rate",
+    title:
+      "How to Push Your Boat Racing Return Rate Above 100% — The Reality Shown by 10,000+ Races",
+    description:
+      "5 data-backed strategies for clearing the 25% deduction wall — race selection, bet-type choice, combination discipline, bankroll management, and using AI. Includes BoatAI's real 104% return rate results.",
+    category: "Strategy",
+    tags: [
+      "ReturnRate",
+      "HowToWin",
+      "BankrollManagement",
+      "DataAnalysis",
+      "DeductionRate",
+    ],
+    readTime: "10 min",
+  },
+  {
+    id: "beginners-start-guide",
+    title:
+      "The Beginner's Guide to Getting Started with Boat Racing — From Buying a Ticket to Using AI Predictions",
+    description:
+      "A complete guide for anyone wanting to start boat racing — basic rules, all 7 bet types explained, how to register for TELEBOAT, beginner-friendly betting approaches, and how to think about your budget.",
+    category: "Beginner",
+    tags: [
+      "Beginner",
+      "GettingStarted",
+      "BettingTickets",
+      "TELEBOAT",
+      "Introduction",
+    ],
+    readTime: "10 min",
+  },
+  {
+    id: "first-mark-prediction-guide",
+    title:
+      "What Are First-Mark Turn Predictions? How AI Reads the Way a Race Unfolds",
+    description:
+      "A full breakdown of BoatAI's turn prediction feature — how it statistically forecasts the first-mark turn from each racer's winning-technique distribution, ST, and motor performance, and how to use it in your betting strategy.",
+    category: "How-To",
+    tags: [
+      "TurnPrediction",
+      "FirstMark",
+      "WinningTechnique",
+      "AIPrediction",
+      "HowTo",
+    ],
+    readTime: "10 min",
+  },
+  {
+    id: "picks-performance-report",
+    title:
+      '"Today\'s Picks" Hits a 104% Return Rate — Real Results from 2,577 Races',
+    description:
+      "BoatAI's \"Today's Picks\" feature recorded a 104% return rate across 2,577 races. An honest look at how it overcomes the 25% deduction rate to stay net-positive — including its real limitations.",
+    category: "Track Record",
+    tags: ["TodaysPicks", "ReturnRate", "DataMining", "TrackRecord"],
+    readTime: "7 min",
+  },
+  {
+    id: "venue-visit-guide",
+    title:
+      "The Complete Guide to Enjoying a Boat Racing Venue — Get 120% Out of Your First Visit",
+    description:
+      "Boat racing venues are more than just betting windows — ¥100 admission, local food specialties, night races, even a good date spot. A complete guide covering what to bring, budgeting, and beginner tips for a 120% on-site experience.",
+    category: "Beginner",
+    tags: [
+      "BoatRacingVenue",
+      "HowToEnjoy",
+      "Beginner",
+      "Food",
+      "NightRace",
+      "VisitGuide",
+    ],
+    readTime: "12 min",
+  },
+  {
+    id: "picks-guide",
+    title:
+      'How to Use "Today\'s Picks" — High-Return Races Selected by Data Mining',
+    description:
+      "A full breakdown of BoatAI's \"Today's Picks\" feature — how data mining across 15 venues and 34 patterns automatically surfaces races with a 100%+ return rate, how to read the screen, and how to use it by bet type.",
+    category: "How-To",
+    tags: [
+      "TodaysPicks",
+      "DataMining",
+      "ReturnRate",
+      "HowTo",
+      "PatternMatching",
+    ],
+    readTime: "8 min",
+  },
+  {
+    id: "10000-races-analysis",
+    title:
+      "BoatAI Passes 10,000 Races — What the Data Says About AI Prediction's Strengths and Limits",
+    description:
+      "BoatAI's cumulative analyzed race count passed 10,000. An honest look at what 12,324 races reveal — a 47.4% Win hit rate, an 18.0% Trio hit rate, and the real challenges around return rate.",
+    category: "Track Record",
+    tags: [
+      "10000Races",
+      "TrackRecordAnalysis",
+      "HitRate",
+      "ReturnRate",
+      "Trio",
+      "DataDisclosure",
+    ],
+    readTime: "10 min",
+  },
+  {
+    id: "suji-funaken-guide",
+    title:
+      'What Is a "Suji" Bet? A Quick-Reference Guide to Venue-Specific Patterns',
+    description:
+      "A quick-reference guide to basic suji betting patterns — inside wire-to-wire, overtake, and inside-pass combinations, how to spot against-the-suji results, and venue tendencies from Omura and Ashiya to Toda and Edogawa.",
+    category: "Strategy",
+    tags: [
+      "SujiBetting",
+      "BettingStrategy",
+      "RaceDevelopment",
+      "Overtake",
+      "InsidePass",
+      "WireToWire",
+    ],
+    readTime: "12 min",
+  },
+  {
     id: "odds-expected-value-guide",
     title: "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
     description:
