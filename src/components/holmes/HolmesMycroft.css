@@ -1,0 +1,281 @@
+/* マイクロフト予想タブ */
+
+/* ===== 実測パフォーマンス ===== */
+.mycroft-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.mycroft-stat {
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.mycroft-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ca8a04;
+}
+
+.mycroft-stat-label {
+  font-size: 0.75rem;
+  color: #374151;
+  margin-top: 0.25rem;
+}
+
+.mycroft-stat-sub {
+  display: block;
+  color: #6b7280;
+  font-size: 0.7rem;
+}
+
+.mycroft-honesty-note {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  line-height: 1.5;
+}
+
+/* ===== 本日の推理 ===== */
+.mycroft-loading {
+  color: #6b7280;
+  font-size: 0.9rem;
+  padding: 0.5rem 0;
+}
+
+.mycroft-summary-line {
+  font-size: 0.85rem;
+  color: #374151;
+  margin-bottom: 0.75rem;
+}
+
+.mycroft-race-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mycroft-race-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.mycroft-race-card summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.mycroft-race-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.mycroft-race-card[open] summary {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.mycroft-race-title {
+  font-weight: 600;
+  color: #1f2937;
+  min-width: 5.5rem;
+}
+
+.mycroft-race-time {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.mycroft-race-pick {
+  color: #374151;
+  font-size: 0.8rem;
+}
+
+.mycroft-race-pick strong {
+  color: #ca8a04;
+}
+
+.mycroft-prob-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: #fef9c3;
+  color: #a16207;
+  margin-left: auto;
+}
+
+.mycroft-race-body {
+  padding: 0.75rem;
+}
+
+/* ===== ランキング行 ===== */
+.mycroft-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  font-size: 0.8rem;
+}
+
+.mycroft-rank-row.top {
+  font-weight: 600;
+}
+
+.mycroft-rank-num {
+  width: 1.8rem;
+  text-align: right;
+  color: #9ca3af;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.mycroft-player-name {
+  min-width: 4.5rem;
+  color: #374151;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.mycroft-bar-track {
+  flex: 1;
+  height: 0.75rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 3rem;
+}
+
+.mycroft-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.mycroft-rank-prob {
+  width: 3.2rem;
+  text-align: right;
+  color: #1f2937;
+  flex-shrink: 0;
+}
+
+/* ===== マイクロフトの記憶（attention根拠） ===== */
+.mycroft-memory {
+  margin-top: 0.6rem;
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+}
+
+.mycroft-memory-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #a16207;
+  margin-bottom: 0.35rem;
+}
+
+.mycroft-memory ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.75rem;
+  color: #374151;
+}
+
+.mycroft-memory li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0;
+}
+
+.mycroft-memory-date {
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.mycroft-memory-venue {
+  min-width: 3rem;
+  flex-shrink: 0;
+}
+
+.mycroft-memory-result {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.mycroft-memory-result.good {
+  color: #059669;
+}
+
+.mycroft-memory-result.bad {
+  color: #9ca3af;
+}
+
+.mycroft-memory-ago {
+  color: #9ca3af;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.mycroft-memory-track {
+  flex: 1;
+  height: 0.4rem;
+  background: #fef3c7;
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 2rem;
+}
+
+.mycroft-memory-fill {
+  height: 100%;
+  background: #ca8a04;
+  border-radius: 3px;
+}
+
+/* ===== モバイル ===== */
+@media (max-width: 480px) {
+  .mycroft-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .mycroft-stat {
+    padding: 0.6rem 0.4rem;
+  }
+
+  .mycroft-stat-value {
+    font-size: 1.1rem;
+  }
+
+  .mycroft-player-name {
+    min-width: 3.5rem;
+  }
+
+  .mycroft-memory-date {
+    font-size: 0.7rem;
+  }
+
+  .mycroft-memory-venue {
+    min-width: 2.4rem;
+  }
+}

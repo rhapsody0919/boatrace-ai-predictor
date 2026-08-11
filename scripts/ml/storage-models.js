@@ -25,7 +25,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MODELS_DIR = path.join(__dirname, "models");
 
 const BUCKET = "poirot";
-const MODEL_FILES = ["rf_v1.pkl", "lgbm_v2.pkl", "watson_v1.pkl"];
+const MODEL_FILES = [
+  "rf_v1.pkl",
+  "lgbm_v2.pkl",
+  "watson_v1.pkl",
+  "mycroft_v1.pt",
+];
 const PREFIX = "models";
 
 async function ensureBucket() {
@@ -68,15 +73,24 @@ async function upload() {
 
 async function download() {
   await fs.mkdir(MODELS_DIR, { recursive: true });
+  let ok = 0;
   for (const name of MODEL_FILES) {
     const key = `${PREFIX}/${name}.gz`;
     const { data, error } = await supabase.storage.from(BUCKET).download(key);
-    if (error) throw new Error(`${key} download失敗: ${error.message}`);
+    // 未学習・未アップロードのモデルで日次ジョブ全体を落とさない。
+    // 各 generate-*-predictions.js はモデル不在時にスキップする作りになっている
+    if (error) {
+      console.warn(`  ⚠️ ${key} が Storage にありません（スキップ）`);
+      continue;
+    }
     const buf = await gunzip(Buffer.from(await data.arrayBuffer()));
     await fs.writeFile(path.join(MODELS_DIR, name), buf);
     console.log(`  ⬇️ ${key} → ${name} (${(buf.length / 1e6).toFixed(1)}MB)`);
+    ok++;
   }
-  console.log("✅ モデルダウンロード完了");
+  if (ok === 0)
+    throw new Error("Storage からモデルを1つも取得できませんでした");
+  console.log(`✅ モデルダウンロード完了（${ok}/${MODEL_FILES.length}）`);
 }
 
 async function main() {
