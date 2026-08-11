@@ -307,6 +307,26 @@ export const blogPostsEn = [
     readTime: "15 min",
   },
   {
+    id: "monthly-50k-roadmap",
+    title:
+      "A Roadmap to Earning ¥50,000/Month in Side Income from Boat Racing [Built for Repeatability]",
+    description:
+      "A bankroll-management approach for targeting ¥50,000/month, and how to use BoatAI's data analysis to guide your betting.",
+    category: "Strategy",
+    tags: ["BoatRacing", "BankrollManagement", "50KPerMonth", "UsingData"],
+    readTime: "12 min",
+  },
+  {
+    id: "why-you-lose",
+    title:
+      "5 Traits Shared by People Who Lose at Boat Racing — And How AI Prediction Fixes Them",
+    description:
+      "Why can't you win at boat racing? The losing patterns revealed by analyzing 1,899 races, and how AI prediction fixes them.",
+    category: "Beginner",
+    tags: ["BoatRacing", "AIPrediction", "CantWin", "LosingPattern"],
+    readTime: "10 min",
+  },
+  {
     id: "odds-expected-value-guide",
     title: "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
     description:
