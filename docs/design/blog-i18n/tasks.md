@@ -52,11 +52,13 @@
 - [x] **Task 29**: ai-prediction-accuracy-review, night-race-strategy, sg-race-guide-2026, how-to-predict-races（2026-03-12公開、4件）
 - [x] **Task 30**: trifecta-betting-guide, improve-recovery-rate, beginners-start-guide, first-mark-prediction-guide（2026-03-12公開、4件）
 - [x] **Task 31**: picks-performance-report, venue-visit-guide, picks-guide, 10000-races-analysis, suji-funaken-guide（2026-02-16〜03-02、5件）
-- [ ] **Task 32**: sg-g1-race-strategy, special-planned-races（2026-01-23、2件）
-- [ ] **Task 33**: venue-ashiya, how-we-measure-accuracy（2025-12-29〜31、2件）
-- [ ] **Task 34**: ai-vs-human, rough-race-signals, stadium-strategy-guide（2025-12-22〜23、3件）
-- [ ] **Task 35**: monthly-50k-roadmap, why-you-lose（2025-12-19〜21、2件）
-- [ ] **Task 36**: odds-expected-value-guide（英語版がTask1で最初に移行した記事。zh-TW版はここで新規追加）
+- [x] **Task 32**: sg-g1-race-strategy, special-planned-races（2026-01-23、2件）
+- [x] **Task 33**: venue-ashiya, how-we-measure-accuracy（2025-12-29〜31、2件）
+- [x] **Task 34**: ai-vs-human, rough-race-signals, stadium-strategy-guide（2025-12-22〜23、3件）
+- [x] **Task 35**: monthly-50k-roadmap, why-you-lose（2025-12-19〜21、2件）
+- [x] **Task 36**: odds-expected-value-guide（英語版がTask1で最初に移行した記事。zh-TW版はここで新規追加）
+
+**zh-TWフェーズ4完了（2026-08-11）**: featured記事25件全ての繁體中文版が完成。zh-TW版blog-i18nは完了。koはこの後の需要確認を経て着手判断（spec.md「拡張: zh-TW版」参照）。
 
 ## 備考
 - フェーズ1完了後、フェーズ2の各タスクは独立して着手可能（基盤が整っているため機械的な作業になる想定）

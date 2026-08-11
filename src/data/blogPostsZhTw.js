@@ -140,6 +140,96 @@ export const blogPostsZhTw = [
     tags: ["筋投注", "投注組合", "走勢預測", "外攻", "切入", "內道逃走"],
     readTime: "12分鐘",
   },
+  {
+    id: "sg-g1-race-strategy",
+    title: "贏得SG比賽・G1比賽的策略【分級賽事攻略】",
+    description:
+      "SG、G1等分級賽事與一般賽事完全不同。解說預賽與決賽的投注方式區分、得點率的活用法、夢幻戰的鎖定要點。",
+    category: "進階玩家",
+    tags: ["SG", "G1", "分級賽事", "策略", "得點率"],
+    readTime: "12分鐘",
+  },
+  {
+    id: "special-planned-races",
+    title: "什麼是企劃比賽？推薦初學者的理由【分辨穩健比賽的方法】",
+    description:
+      "1號艇A級固定等企劃比賽，即使初學者也容易命中。詳細解說企劃比賽的種類、尋找方法、活用法。",
+    category: "初學者向",
+    tags: ["企劃比賽", "初學者", "1號艇", "A級", "穩健比賽"],
+    readTime: "9分鐘",
+  },
+  {
+    id: "venue-ashiya",
+    title: "蘆屋賽艇場攻略指南——標準模型3連單回收率1259%",
+    description:
+      "蘆屋賽艇場的特徵與攻略法，附BoatAI實績數據。日本內道最強的會場之一，標準模型的3連單回收率達1259%。",
+    category: "會場攻略",
+    tags: ["蘆屋", "賽艇場", "攻略", "標準", "內道強"],
+    readTime: "5分鐘",
+  },
+  {
+    id: "how-we-measure-accuracy",
+    title: "BoatAI的實績是真的嗎？徹底解說計測方法與透明度",
+    description:
+      "BoatAI的命中率・回收率是如何計測的？為什麼要公開所有數據？徹底解說實績的可信度與透明度。",
+    category: "數據分析",
+    tags: ["實績", "命中率", "回收率", "透明度", "計測方法"],
+    readTime: "12分鐘",
+  },
+  {
+    id: "ai-vs-human",
+    title: "AI預測vs人類預測，1個月實測驗證結果【數據公開】",
+    description:
+      "AI預測的投注券與人類預測的投注券，哪個比較準？2025年12月整整1個月，我們實施了實測驗證。",
+    category: "數據分析",
+    tags: ["AI預測", "驗證", "數據", "比較"],
+    readTime: "11分鐘",
+  },
+  {
+    id: "rough-race-signals",
+    title: "分辨容易爆冷的賽艇比賽的5個信號——AI從1,899場比賽中發現",
+    description:
+      "以數據解說爆冷比賽的5個特徵（氣溫變化・水面穩定・內道勝率上升等）與各舉辦會場的攻略要點。",
+    category: "初學者向",
+    tags: ["爆冷比賽", "預測", "信號", "分辨方法"],
+    readTime: "10分鐘",
+  },
+  {
+    id: "stadium-strategy-guide",
+    title: "依會場分類的賽艇攻略指南——24會場的特徵與鎖定要點",
+    description:
+      "依賽艇會場不同，獲勝模式完全不同。完整介紹全國24處會場的特徵、1號艇勝率、內道強弱勢的會場。",
+    category: "策略",
+    tags: ["賽艇場", "攻略", "特徵", "1號艇勝率"],
+    readTime: "15分鐘",
+  },
+  {
+    id: "monthly-50k-roadmap",
+    title: "用賽艇賺取每月5萬日圓副業收入的路線圖【重視再現性】",
+    description:
+      "以每月5萬日圓為目標的資金管理方法，以及活用BoatAI數據分析的投注思考方式。",
+    category: "策略",
+    tags: ["賽艇", "資金管理", "每月5萬日圓", "數據活用"],
+    readTime: "12分鐘",
+  },
+  {
+    id: "why-you-lose",
+    title: "賽艇輸家的5個共通點與AI預測的解決方案",
+    description:
+      "為什麼您總是無法在賽艇中獲勝？傳達從1,899場比賽數據分析中看出的「輸家模式」，以及運用AI預測的解決方案。",
+    category: "初學者向",
+    tags: ["賽艇", "AI預測", "無法獲勝", "輸家模式"],
+    readTime: "10分鐘",
+  },
+  {
+    id: "odds-expected-value-guide",
+    title: "賽艇賠率的判讀方法——用期望值選擇投注券的方法",
+    description:
+      "以數據解說賽艇賠率的機制與期望值的思考方式——過剩人氣的陷阱、鎖定賠率歪曲、依投注組合種類的損益平衡賠率。",
+    category: "數據分析",
+    tags: ["賠率", "期望值", "過剩人氣", "投注策略", "數據分析"],
+    readTime: "9分鐘",
+  },
 ];
 
 export function getZhTwOverride(id) {
