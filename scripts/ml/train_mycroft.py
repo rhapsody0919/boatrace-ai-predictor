@@ -284,6 +284,8 @@ def main():
     parser.add_argument("--ablation", choices=["none", "static-only", "form-only"],
                         default="none",
                         help="診断用: 片方の分岐だけで学習し、寄与を切り分ける")
+    parser.add_argument("--no-backfill", action="store_true",
+                        help="CI 相当の検証: 公式アーカイブのバックフィルを使わない")
     parser.add_argument("--no-save", action="store_true",
                         help="診断実行: モデル・レポートを保存しない")
     args = parser.parse_args()
@@ -295,7 +297,7 @@ def main():
     print(f"🖥️  device: {device}")
 
     print("📥 データ読み込み・特徴量構築...")
-    raw_df, raw_st = MS.load_raw()
+    raw_df, raw_st = MS.load_raw(include_backfill=not args.no_backfill)
     df = F.build_features(raw_df, raw_st)
     train_df, cal_df, test_df = quality_matched_split(df)
     print(
