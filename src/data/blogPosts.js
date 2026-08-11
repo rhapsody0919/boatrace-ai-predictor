@@ -1,4 +1,30 @@
-import { blogPostsEn, getEnglishOverride } from "./blogPostsEn.js";
+import {
+  blogPostsEn,
+  getEnglishOverride,
+  isEnglishAvailable,
+} from "./blogPostsEn.js";
+import {
+  blogPostsZhTw,
+  getZhTwOverride,
+  isZhTwAvailable,
+} from "./blogPostsZhTw.js";
+
+// 言語別ブログ翻訳データの設定。新言語追加時はここに1エントリ足すだけで良い
+// （BlogPost.jsx/Blog.jsxはこのマップ経由でのみ言語別データにアクセスする）
+const BLOG_LANG_CONFIG = {
+  en: {
+    posts: blogPostsEn,
+    getOverride: getEnglishOverride,
+    isAvailable: isEnglishAvailable,
+    mdSuffix: "-en",
+  },
+  "zh-TW": {
+    posts: blogPostsZhTw,
+    getOverride: getZhTwOverride,
+    isAvailable: isZhTwAvailable,
+    mdSuffix: "-zh-tw",
+  },
+};
 
 // Blog post metadata
 export const blogPosts = [
@@ -1018,18 +1044,30 @@ export const getRelatedPosts = (postId, limit = 3) => {
   return rankRelatedPosts(currentPost, candidates, limit);
 };
 
-// 英語版が存在する記事同士でのみ関連記事を返す（未翻訳記事へのリンクを避けるため）
-// タグの重複度計算は日本語版タグを使用（英語版タグは表示専用の翻訳ラベルのため）
-export const getRelatedPostsEn = (postId, limit = 3) => {
-  const currentPost = getPostById(postId);
-  if (!currentPost) return [];
+// 指定言語版の記事が存在するか（BLOG_LANG_CONFIGに未登録の言語コードはfalse）
+export const isBlogLangAvailable = (id, lang) =>
+  BLOG_LANG_CONFIG[lang]?.isAvailable(id) ?? false;
 
-  const availableIds = new Set(blogPostsEn.map((post) => post.id));
+// 指定言語版のメタデータ上書き分を取得
+export const getBlogOverride = (id, lang) =>
+  BLOG_LANG_CONFIG[lang]?.getOverride(id);
+
+// 指定言語版のMarkdownファイル名サフィックス（例: en → "-en"）
+export const getBlogMdSuffix = (lang) => BLOG_LANG_CONFIG[lang]?.mdSuffix ?? "";
+
+// 同じ言語版が存在する記事同士でのみ関連記事を返す（未翻訳記事へのリンクを避けるため）
+// タグの重複度計算は日本語版タグを使用（翻訳版タグは表示専用の翻訳ラベルのため）
+export const getRelatedPostsForLang = (postId, lang, limit = 3) => {
+  const currentPost = getPostById(postId);
+  const config = BLOG_LANG_CONFIG[lang];
+  if (!currentPost || !config) return [];
+
+  const availableIds = new Set(config.posts.map((post) => post.id));
   const candidates = blogPosts.filter(
     (post) => post.id !== postId && availableIds.has(post.id),
   );
   return rankRelatedPosts(currentPost, candidates, limit).map((post) => ({
     ...post,
-    ...getEnglishOverride(post.id),
+    ...config.getOverride(post.id),
   }));
 };

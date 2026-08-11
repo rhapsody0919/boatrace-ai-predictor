@@ -1,4 +1,5 @@
 import { blogPostsEn } from "../data/blogPostsEn.js";
+import { blogPostsZhTw } from "../data/blogPostsZhTw.js";
 
 /**
  * 対応言語の唯一の情報源
@@ -50,20 +51,31 @@ export const LANGUAGE_ONLY_PATHS = {
   "/venues/region": ["en", "zh-TW", "ko"],
 };
 
-// 配下の一部パスだけが翻訳済みのケース（LANGUAGE_ONLY_PATHS/TRANSLATED_PATHSは
-// 「配下丸ごと翻訳済み」前提のため表現できない）。ブログはfeatured記事の一部のみ
-// 英語版が存在するため、記事単位のホワイトリストで判定する。
-// entries は blogPostsEn.js から動的導出（新規記事追加時にここへの手動追記は不要）。
-// 詳細: docs/adr/0005-blog-partial-translation-routing.md
-export const PARTIALLY_TRANSLATED_PATHS = {
-  "/blog": {
-    listPage: true,
-    entries: blogPostsEn.map((post) => post.id),
-    langs: ["ja", "en"],
-  },
+// /blog配下の記事翻訳データソース。新言語追加時はここに1行足すだけで良い
+// （languages.js自体への他の変更は不要）
+const BLOG_TRANSLATION_SOURCES = {
+  en: blogPostsEn,
+  "zh-TW": blogPostsZhTw,
 };
 
-// basePathがPARTIALLY_TRANSLATED_PATHSのいずれかにマッチすればその設定を返す
+// 配下の一部パスだけが翻訳済みのケース（LANGUAGE_ONLY_PATHS/TRANSLATED_PATHSは
+// 「配下丸ごと翻訳済み」前提のため表現できない）。ブログはfeatured記事の一部のみ、
+// かつ記事ごとに提供言語が異なりうる（英語版は完了・zh-TW版は展開中、等）ため、
+// 記事IDごとに動的に提供言語を算出する。
+// 詳細: docs/adr/0005-blog-partial-translation-routing.md,
+//       docs/adr/0008-blog-multilingual-partial-translation.md
+export const PARTIALLY_TRANSLATED_PATHS = {
+  "/blog": { listPage: true },
+};
+
+// 指定した記事IDが翻訳済みの言語コード一覧を返す
+function blogLangsFor(id) {
+  return Object.entries(BLOG_TRANSLATION_SOURCES)
+    .filter(([, posts]) => posts.some((post) => post.id === id))
+    .map(([lang]) => lang);
+}
+
+// basePathがPARTIALLY_TRANSLATED_PATHSのいずれかにマッチすれば { langs } を返す
 // LANGUAGE_ONLY_PATHS同様、入れ子のprefixが登録され得るため最長一致を優先する（BOA-138の教訓）
 function matchPartiallyTranslated(basePath) {
   const matches = Object.entries(PARTIALLY_TRANSLATED_PATHS).filter(
@@ -76,10 +88,18 @@ function matchPartiallyTranslated(basePath) {
   );
 
   if (basePath === prefix) {
-    return config.listPage ? config : null;
+    if (!config.listPage) return null;
+    // 一覧ページ自体は、1件でも翻訳記事がある言語なら提供する
+    const langs = new Set(["ja"]);
+    Object.entries(BLOG_TRANSLATION_SOURCES).forEach(([lang, posts]) => {
+      if (posts.length > 0) langs.add(lang);
+    });
+    return { langs: [...langs] };
   }
+
   const rest = basePath.slice(prefix.length + 1);
-  return config.entries.includes(rest) ? config : null;
+  const langs = ["ja", ...blogLangsFor(rest)];
+  return langs.length > 1 ? { langs } : null;
 }
 
 /**

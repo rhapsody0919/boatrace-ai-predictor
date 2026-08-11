@@ -33,8 +33,32 @@
 - [x] **Task 22**: monthly-50k-roadmap（2025-12-21）
 - [x] **Task 23**: why-you-lose（2025-12-19）
 
-**フェーズ2完了（2026-08-11）**: featured記事25件全ての英語版が完成。blog-i18n機能は完了。
+**フェーズ2完了（2026-08-11）**: featured記事25件全ての英語版が完成。
+
+## フェーズ3: zh-TW版基盤実装（2026-08-11追加、`docs/adr/0008`）
+
+英語版完了後、ユーザー指示によりzh-TW版に着手（`docs/design/blog-i18n/spec.md`「拡張: zh-TW版」参照）。
+
+- [x] **Task 24**: `src/data/blogPostsZhTw.js`を新設する（`blogPostsEn.js`と同じ構造、`getZhTwOverride(id)` / `isZhTwAvailable(id)`関数、現時点は空配列）。`src/config/languages.js`の`matchPartiallyTranslated`を、記事IDごとに動的に提供言語を算出する方式に変更する（`docs/adr/0008`）。既存の英語版動作（`/en/blog`25記事、hreflang、言語スイッチャー）に回帰が無いことをPlaywrightで確認
+- [x] **Task 25**: `src/data/blogPosts.js`に`isBlogLangAvailable(id, lang)` / `getBlogOverride(id, lang)` / `getBlogMdSuffix(lang)` / `getRelatedPostsForLang(id, lang, limit)`という言語非依存の汎用関数を追加（`BLOG_LANG_CONFIG`マップ経由）。`BlogPost.jsx` / `Blog.jsx`の`isEnglish`判定をこれらの汎用関数ベースの`isTranslated`/`lng`に置き換え、`UI_TEXT`にzh-TWの文言も追加
+- [x] **Task 26**: `scripts/generate-sitemap.js`を`blogPostsZhTw`からの動的生成にも対応。zh-TW記事が0件の間は`/zh-TW/blog`一覧ページ自体もsitemapに含めない条件分岐を追加（`getAvailableLanguages`のロジックと整合させるため）。`-en.md`/`-zh-tw.md`欠落検知の警告ロジックも汎用化
+- [ ] **Task 27**: 基盤PRの検証・PR作成。検証項目: `npm run build`、`npx playwright test e2e/smoke.spec.js`、`/code-review`実施（Task2実施時にzh-TW/koの言語不整合バグが見つかった実績があるため、ルーティングガード周りは特に重点確認）
+
+## フェーズ4: zh-TW版25記事の翻訳（新しい記事から順、英語版と同じグルーピング）
+
+各タスクは`public/blog/{id}-zh-tw.md`作成 + `blogPostsZhTw.js`へのエントリ追加 + 該当記事のPlaywright目視確認。ファイル名サフィックスは`-zh-tw`（`-zh-TW`ではなくケバブケース、実装時に確定させる）。
+
+- [ ] **Task 28**: winning-technique-analysis-guide, motor-condition-guide（2026-07-30公開、2件）
+- [ ] **Task 29**: ai-prediction-accuracy-review, night-race-strategy, sg-race-guide-2026, how-to-predict-races（2026-03-12公開、4件）
+- [ ] **Task 30**: trifecta-betting-guide, improve-recovery-rate, beginners-start-guide, first-mark-prediction-guide（2026-03-12公開、4件）
+- [ ] **Task 31**: picks-performance-report, venue-visit-guide, picks-guide, 10000-races-analysis, suji-funaken-guide（2026-02-16〜03-02、5件）
+- [ ] **Task 32**: sg-g1-race-strategy, special-planned-races（2026-01-23、2件）
+- [ ] **Task 33**: venue-ashiya, how-we-measure-accuracy（2025-12-29〜31、2件）
+- [ ] **Task 34**: ai-vs-human, rough-race-signals, stadium-strategy-guide（2025-12-22〜23、3件）
+- [ ] **Task 35**: monthly-50k-roadmap, why-you-lose（2025-12-19〜21、2件）
+- [ ] **Task 36**: odds-expected-value-guide（英語版がTask1で最初に移行した記事。zh-TW版はここで新規追加）
 
 ## 備考
 - フェーズ1完了後、フェーズ2の各タスクは独立して着手可能（基盤が整っているため機械的な作業になる想定）
 - `/step4`で1タスクずつ実装する
+- ko版は英語版・zh-TW版と同じ基盤（`PARTIALLY_TRANSLATED_PATHS`の動的算出方式）にそのまま乗せられる設計のため、着手判断時は新たなSDDサイクルは不要（`blogPostsKo.js`を追加するだけで済む見込み）。ただし着手前にzh-TW版の需要（Search Console等）を確認すること（spec.md「拡張: zh-TW版」参照）
