@@ -277,6 +277,16 @@ export const blogPostsEn = [
     readTime: "12 min",
   },
   {
+    id: "ai-vs-human",
+    title:
+      "AI vs. Human Predictions — A 1-Month Head-to-Head Test [Data Published]",
+    description:
+      "Which hits more — AI-picked tickets or human-picked tickets? We ran a real head-to-head test throughout December 2025 to find out.",
+    category: "Data Analysis",
+    tags: ["AIPrediction", "Verification", "Data", "Comparison"],
+    readTime: "11 min",
+  },
+  {
     id: "odds-expected-value-guide",
     title: "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
     description:
