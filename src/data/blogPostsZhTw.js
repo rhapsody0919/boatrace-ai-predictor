@@ -59,6 +59,42 @@ export const blogPostsZhTw = [
     tags: ["預測", "訣竅", "命中率", "初學者", "AI預測", "數據分析"],
     readTime: "12分鐘",
   },
+  {
+    id: "trifecta-betting-guide",
+    title: "3連單投注方法完全攻略——從縮減投注組合到資金分配",
+    description:
+      "以數據解說提升3連單回收率的投注組合縮減方法、排列式與全組合的靈活運用、依點數分類的回收率數據、資金分配的思考方式。",
+    category: "策略",
+    tags: ["3連單", "投注方法", "排列式", "資金管理", "投注組合"],
+    readTime: "10分鐘",
+  },
+  {
+    id: "improve-recovery-rate",
+    title: "如何將賽艇回收率提升至100%以上——1萬場比賽數據顯示的現實",
+    description:
+      "突破抽成率25%這道牆的5個策略。以數據解說比賽篩選・投注組合種類・點數管理・資金管理・AI活用。並公開BoatAI達成回收率104%的實績。",
+    category: "策略",
+    tags: ["回收率", "獲勝方法", "資金管理", "數據分析", "抽成率"],
+    readTime: "10分鐘",
+  },
+  {
+    id: "beginners-start-guide",
+    title: "賽艇初學者入門指南——從投注方法到AI預測活用法",
+    description:
+      "給想開始玩賽艇的人的完全指南。基本規則、7種投注組合解說、TELEBOAT註冊方法、初學者推薦的投注方法、預算的思考方式。",
+    category: "初學者向",
+    tags: ["初學者", "入門方法", "投注組合", "TELEBOAT", "入門"],
+    readTime: "10分鐘",
+  },
+  {
+    id: "first-mark-prediction-guide",
+    title: "什麼是1轉彎展開預測？AI解讀比賽走勢的機制",
+    description:
+      "徹底解說BoatAI的展開預測功能。介紹AI如何從選手的決勝技巧分布・ST・馬達性能統計預測1轉彎迴旋的走勢，以及活用於投注策略的方法。",
+    category: "使用方法",
+    tags: ["展開預測", "1轉彎", "決勝技巧", "AI預測", "使用方法"],
+    readTime: "10分鐘",
+  },
 ];
 
 export function getZhTwOverride(id) {
