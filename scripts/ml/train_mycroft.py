@@ -46,7 +46,6 @@ LR = 1e-3
 WEIGHT_DECAY = 1e-2
 AUX_WEIGHT = 0.1
 WARMUP_EPOCHS = 1
-RELEVANCE = {1: 3, 2: 2, 3: 1, 0: 0}
 
 
 def pick_device(requested: str) -> torch.device:

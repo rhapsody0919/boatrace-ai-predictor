@@ -93,7 +93,8 @@ def load_raw():
     features.load_dataset の読み込み部と同じ規則（重複 race_id は Supabase 側
     を優先）。build_features 前の生データと start_timings の両方が必要なため、
     共有コードを変更せずここに同等処理を置いている。
-    整合性は self-test（--self-test）で F.load_dataset と突き合わせて検証する。
+    整合性は self-test（python mycroft_sequences.py）で F.load_dataset と
+    突き合わせて検証する。
     """
     df = pd.read_csv(F.DATA_DIR / "dataset.csv")
     st = pd.read_csv(F.DATA_DIR / "start_timings.csv")
@@ -378,7 +379,7 @@ def _self_test():
     tok_date = np.where(mask, store.row_date[np.where(h >= 0, h, 0)], -1)
     tgt_date = store.row_date[sample][:, None]
     assert not np.any(mask & (tok_date >= tgt_date)), "❌ 同日/未来のトークンが混入"
-    print(f"✅ リーク検証OK（同日・未来トークンなし）")
+    print("✅ リーク検証OK（同日・未来トークンなし）")
 
     # 同一選手であることの検証（racer_id 不明行は「履歴なし」であることを確認）
     racer = pd.to_numeric(store.df["racer_id"], errors="coerce").fillna(-1).to_numpy()
