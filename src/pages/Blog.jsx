@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Header from "../components/Header";
-import { blogPosts } from "../data/blogPosts";
-import { getEnglishOverride, isEnglishAvailable } from "../data/blogPostsEn";
+import {
+  blogPosts,
+  isBlogLangAvailable,
+  getBlogOverride,
+} from "../data/blogPosts";
 import { parseLangFromPath, localizePath } from "../config/languages";
 import { isWithinDays } from "../utils/dateUtils";
 import { useSocialMeta } from "../hooks/useSocialMeta";
@@ -36,6 +39,19 @@ const UI_TEXT = {
     home: "Home",
     blogLabel: "Blog",
   },
+  "zh-TW": {
+    title: "部落格 | BoatAI - 賽艇預測・數據分析・戰略資訊",
+    description:
+      "發布賽艇預測、數據分析、投注策略的最新資訊。從初學者的基礎知識到進階戰略，內容廣泛涵蓋。",
+    keywords: "賽艇部落格,預測策略,數據分析,購買船票,AI預測,獲勝方法",
+    heading: "📚 BoatAI 部落格",
+    subheading: "發布賽艇預測、數據分析、戰略相關資訊",
+    featuredHeading: "🌟 精選文章",
+    allButton: "全部",
+    noPosts: "此分類目前尚無文章。",
+    home: "首頁",
+    blogLabel: "部落格",
+  },
 };
 
 export default function Blog() {
@@ -43,14 +59,14 @@ export default function Blog() {
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   const { lng } = parseLangFromPath(pathname);
-  const isEnglish = lng === "en";
-  const t = UI_TEXT[isEnglish ? "en" : "ja"];
+  const isTranslated = lng !== "ja" && Boolean(UI_TEXT[lng]);
+  const t = UI_TEXT[isTranslated ? lng : "ja"];
 
-  // 英語版は英語版データが存在する記事のみを対象にする（未翻訳記事は一覧に出さない）
-  const basePosts = isEnglish
+  // 翻訳版はその言語のデータが存在する記事のみを対象にする（未翻訳記事は一覧に出さない）
+  const basePosts = isTranslated
     ? blogPosts
-        .filter((post) => isEnglishAvailable(post.id))
-        .map((post) => ({ ...post, ...getEnglishOverride(post.id) }))
+        .filter((post) => isBlogLangAvailable(post.id, lng))
+        .map((post) => ({ ...post, ...getBlogOverride(post.id, lng) }))
     : blogPosts;
 
   const featuredPosts = basePosts.filter((post) => post.featured);
@@ -67,7 +83,7 @@ export default function Blog() {
     (a, b) => new Date(b.date) - new Date(a.date),
   );
 
-  const blogHref = localizePath("/blog", isEnglish ? "en" : "ja");
+  const blogHref = localizePath("/blog", isTranslated ? lng : "ja");
   const canonicalUrl = `https://www.boat-ai.jp${blogHref}`;
 
   useSocialMeta({
@@ -93,7 +109,7 @@ export default function Blog() {
               "@type": "ListItem",
               position: 1,
               name: t.home,
-              item: `https://www.boat-ai.jp${localizePath("/", isEnglish ? "en" : "ja")}`,
+              item: `https://www.boat-ai.jp${localizePath("/", isTranslated ? lng : "ja")}`,
             },
             {
               "@type": "ListItem",
@@ -121,7 +137,7 @@ export default function Blog() {
               {featuredPosts.map((post) => (
                 <Link
                   key={post.id}
-                  to={localizePath(`/blog/${post.id}`, isEnglish ? "en" : "ja")}
+                  to={localizePath(`/blog/${post.id}`, isTranslated ? lng : "ja")}
                   className="featured-card"
                 >
                   {isWithinDays(post.date, 7) && (
@@ -166,7 +182,7 @@ export default function Blog() {
           {sortedPosts.map((post) => (
             <Link
               key={post.id}
-              to={localizePath(`/blog/${post.id}`, isEnglish ? "en" : "ja")}
+              to={localizePath(`/blog/${post.id}`, isTranslated ? lng : "ja")}
               className="blog-card"
             >
               {isWithinDays(post.date, 7) && (

@@ -6,9 +6,11 @@ import rehypeRaw from "rehype-raw";
 import {
   getPostById,
   getRelatedPosts,
-  getRelatedPostsEn,
+  getRelatedPostsForLang,
+  isBlogLangAvailable,
+  getBlogOverride,
+  getBlogMdSuffix,
 } from "../data/blogPosts";
-import { getEnglishOverride, isEnglishAvailable } from "../data/blogPostsEn";
 import { parseLangFromPath, localizePath } from "../config/languages";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
@@ -48,6 +50,22 @@ const UI_TEXT = {
     blogLabel: "Blog",
     homeHref: "/en/",
   },
+  "zh-TW": {
+    backToBlog: "← 返回文章列表",
+    backHref: "/zh-TW/blog",
+    loading: "文章載入中...",
+    errorTitle: "錯誤",
+    notFound: "找不到文章",
+    loadError: "文章載入失敗",
+    relatedPosts: "📌 相關文章",
+    readMore: "繼續閱讀 →",
+    ctaTitle: "🚀 立即試用BoatAI預測",
+    ctaDesc: "完全免費查看AI預測",
+    ctaButton: "查看AI預測",
+    home: "首頁",
+    blogLabel: "部落格",
+    homeHref: "/zh-TW/",
+  },
 };
 
 export default function BlogPost() {
@@ -59,21 +77,23 @@ export default function BlogPost() {
   const [error, setError] = useState(null);
 
   const { lng } = parseLangFromPath(pathname);
-  const isEnglish = lng === "en" && isEnglishAvailable(id);
-  const t = UI_TEXT[isEnglish ? "en" : "ja"];
+  const isTranslated = lng !== "ja" && isBlogLangAvailable(id, lng);
+  const t = UI_TEXT[isTranslated ? lng : "ja"];
 
   const basePost = getPostById(id);
   const post =
-    isEnglish && basePost
-      ? { ...basePost, ...getEnglishOverride(id) }
+    isTranslated && basePost
+      ? { ...basePost, ...getBlogOverride(id, lng) }
       : basePost;
-  const relatedPosts = isEnglish
-    ? getRelatedPostsEn(id, 3)
+  const relatedPosts = isTranslated
+    ? getRelatedPostsForLang(id, lng, 3)
     : getRelatedPosts(id, 3);
-  const mdPath = isEnglish ? `/blog/${id}-en.md` : `/blog/${id}.md`;
+  const mdPath = isTranslated
+    ? `/blog/${id}${getBlogMdSuffix(lng)}.md`
+    : `/blog/${id}.md`;
 
   const postUrl = post
-    ? `https://www.boat-ai.jp${localizePath(`/blog/${id}`, isEnglish ? "en" : "ja")}`
+    ? `https://www.boat-ai.jp${localizePath(`/blog/${id}`, isTranslated ? lng : "ja")}`
     : null;
   const postImageUrl = post
     ? post.image
@@ -108,7 +128,7 @@ export default function BlogPost() {
 
     // Scroll to top
     window.scrollTo(0, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mdPath/t は id/isEnglish から導出される
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mdPath/t は id/isTranslated から導出される
   }, [id, basePost, mdPath]);
 
   useSocialMeta({
@@ -213,13 +233,13 @@ export default function BlogPost() {
               "@type": "ListItem",
               position: 1,
               name: t.home,
-              item: `https://www.boat-ai.jp${localizePath("/", isEnglish ? "en" : "ja")}`,
+              item: `https://www.boat-ai.jp${localizePath("/", isTranslated ? lng : "ja")}`,
             },
             {
               "@type": "ListItem",
               position: 2,
               name: t.blogLabel,
-              item: `https://www.boat-ai.jp${localizePath("/blog", isEnglish ? "en" : "ja")}`,
+              item: `https://www.boat-ai.jp${localizePath("/blog", isTranslated ? lng : "ja")}`,
             },
             {
               "@type": "ListItem",
@@ -285,7 +305,7 @@ export default function BlogPost() {
                   key={relatedPost.id}
                   to={localizePath(
                     `/blog/${relatedPost.id}`,
-                    isEnglish ? "en" : "ja",
+                    isTranslated ? lng : "ja",
                   )}
                   className="related-card"
                 >

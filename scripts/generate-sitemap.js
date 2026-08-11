@@ -12,6 +12,7 @@ import { VENUE_REGIONS } from "../src/data/venueRegions.js";
 import { VENUE_GUIDES_ZH_TW } from "../src/data/venueGuidesZhTw.js";
 import { VENUE_GUIDES_KO } from "../src/data/venueGuidesKo.js";
 import { blogPostsEn } from "../src/data/blogPostsEn.js";
+import { blogPostsZhTw } from "../src/data/blogPostsZhTw.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -133,16 +134,22 @@ const LOCALIZED_PAGES = [
   { basePath: "/winning-technique", changefreq: "daily", priority: "0.8" },
 ];
 
-// blogPostsEn.js にエントリはあるが対応する -en.md が存在しない場合、sitemapが
+// blogPostsXx.js にエントリはあるが対応する -{suffix}.md が存在しない場合、sitemapが
 // 実体の無いURLを配信してしまう（code-reviewで発見: エントリ追加と-en.md作成が
 // 別PRになるケースを想定した検知）。生成時に警告のみ出し、処理は止めない
-blogPostsEn.forEach((post) => {
-  const enMdPath = path.join(BLOG_DIR, `${post.id}-en.md`);
-  if (!fs.existsSync(enMdPath)) {
-    console.warn(
-      `⚠️ blogPostsEn.js に "${post.id}" のエントリがありますが public/blog/${post.id}-en.md が見つかりません`,
-    );
-  }
+const BLOG_TRANSLATION_CHECKS = [
+  { label: "blogPostsEn.js", posts: blogPostsEn, mdSuffix: "-en" },
+  { label: "blogPostsZhTw.js", posts: blogPostsZhTw, mdSuffix: "-zh-tw" },
+];
+BLOG_TRANSLATION_CHECKS.forEach(({ label, posts, mdSuffix }) => {
+  posts.forEach((post) => {
+    const mdPath = path.join(BLOG_DIR, `${post.id}${mdSuffix}.md`);
+    if (!fs.existsSync(mdPath)) {
+      console.warn(
+        `⚠️ ${label} に "${post.id}" のエントリがありますが public/blog/${post.id}${mdSuffix}.md が見つかりません`,
+      );
+    }
+  });
 });
 
 // 特定言語にのみ存在するページ（会場別ビジターガイド: 英語版 BOA-133 / 繁体字版 BOA-134）
@@ -189,6 +196,19 @@ const LANGUAGE_ONLY_PAGES = {
       changefreq: "monthly",
       priority: "0.6",
     })),
+    // ブログはfeatured記事の一部のみzh-TW版を展開中。languages.jsの
+    // getAvailableLanguages("/blog")は記事が1件も無い言語では一覧ページ自体を
+    // 未提供と判定するため、それと矛盾しないよう記事0件の間は一覧ページも含めない
+    ...(blogPostsZhTw.length > 0
+      ? [
+          { basePath: "/blog", changefreq: "weekly", priority: "0.6" },
+          ...blogPostsZhTw.map((post) => ({
+            basePath: `/blog/${post.id}`,
+            changefreq: "monthly",
+            priority: "0.6",
+          })),
+        ]
+      : []),
   ],
   ko: [
     ...["", ...VENUE_GUIDES_KO.map((v) => v.slug)].map((slug) => ({
@@ -234,8 +254,11 @@ function getBlogPosts() {
 
   files.forEach((file) => {
     if (!file.endsWith(".md")) return;
-    // 英語版等の言語別mdファイルはja版sitemapの対象外（LANGUAGE_ONLY_PAGESで別途登録する）
-    if (file.endsWith("-en.md")) return;
+    // 英語版・zh-TW版等の言語別mdファイルはja版sitemapの対象外（LANGUAGE_ONLY_PAGESで別途登録する）
+    const isTranslatedBlogFile = BLOG_TRANSLATION_CHECKS.some(({ mdSuffix }) =>
+      file.endsWith(`${mdSuffix}.md`),
+    );
+    if (isTranslatedBlogFile) return;
 
     const filePath = path.join(BLOG_DIR, file);
     const content = fs.readFileSync(filePath, "utf-8");
