@@ -25,13 +25,15 @@
 - [x] **Task 14**: picks-guide（2026-02-17）
 - [x] **Task 15**: 10000-races-analysis（2026-02-16）
 - [x] **Task 16**: suji-funaken-guide（2026-01-30）
-- [ ] **Task 17**: sg-g1-race-strategy, special-planned-races（2026-01-23、2件）
-- [ ] **Task 18**: venue-ashiya（2025-12-31）
-- [ ] **Task 19**: how-we-measure-accuracy（2025-12-29）
-- [ ] **Task 20**: ai-vs-human（2025-12-23）
-- [ ] **Task 21**: rough-race-signals, stadium-strategy-guide（2025-12-22、2件）
-- [ ] **Task 22**: monthly-50k-roadmap（2025-12-21）
-- [ ] **Task 23**: why-you-lose（2025-12-19）
+- [x] **Task 17**: sg-g1-race-strategy, special-planned-races（2026-01-23、2件）
+- [x] **Task 18**: venue-ashiya（2025-12-31）
+- [x] **Task 19**: how-we-measure-accuracy（2025-12-29）
+- [x] **Task 20**: ai-vs-human（2025-12-23）
+- [x] **Task 21**: rough-race-signals, stadium-strategy-guide（2025-12-22、2件）
+- [x] **Task 22**: monthly-50k-roadmap（2025-12-21）
+- [x] **Task 23**: why-you-lose（2025-12-19）
+
+**フェーズ2完了（2026-08-11）**: featured記事25件全ての英語版が完成。blog-i18n機能は完了。
 
 ## 備考
 - フェーズ1完了後、フェーズ2の各タスクは独立して着手可能（基盤が整っているため機械的な作業になる想定）

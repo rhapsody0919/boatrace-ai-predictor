@@ -232,6 +232,101 @@ export const blogPostsEn = [
     readTime: "12 min",
   },
   {
+    id: "sg-g1-race-strategy",
+    title: "Strategy for Winning SG and G1 Races [Cracking Grade Races]",
+    description:
+      "SG and G1 grade races are a different game from regular races. How to bet differently in qualifying vs. the final, how to use the points average, and how to target the Dream Race.",
+    category: "Advanced",
+    tags: ["SG", "G1", "GradeRaces", "Strategy", "PointsAverage"],
+    readTime: "12 min",
+  },
+  {
+    id: "special-planned-races",
+    title:
+      'What Are "Planned Races"? Why They\'re Great for Beginners [How to Spot a Solid Race]',
+    description:
+      "Planned races, like a lane-1-Class-A-fixed lineup, are easy for beginners to predict. A detailed guide to the types of planned races, how to spot them, and how to bet on them.",
+    category: "Beginner",
+    tags: ["PlannedRaces", "Beginner", "Lane1", "ClassA", "SolidRace"],
+    readTime: "9 min",
+  },
+  {
+    id: "venue-ashiya",
+    title:
+      "Ashiya Boat Race Venue Strategy Guide — Standard Model Trifecta at 1259% Return",
+    description:
+      "Ashiya boat racing venue's character and strategy, with BoatAI track record data. One of Japan's strongest inside-favoring venues, with a 1259% Trifecta return rate under the Standard model.",
+    category: "Venue Strategy",
+    tags: ["Ashiya", "BoatRacingVenue", "Strategy", "Standard", "StrongInside"],
+    readTime: "5 min",
+  },
+  {
+    id: "how-we-measure-accuracy",
+    title:
+      "Is BoatAI's Track Record Real? A Full Breakdown of How We Measure It and Why It's Transparent",
+    description:
+      "How does BoatAI actually measure its hit rate and return rate? Why does it publish all the data? A full breakdown of the reliability and transparency behind BoatAI's track record.",
+    category: "Data Analysis",
+    tags: [
+      "TrackRecord",
+      "HitRate",
+      "ReturnRate",
+      "Transparency",
+      "Measurement",
+    ],
+    readTime: "12 min",
+  },
+  {
+    id: "ai-vs-human",
+    title:
+      "AI vs. Human Predictions — A 1-Month Head-to-Head Test [Data Published]",
+    description:
+      "Which hits more — AI-picked tickets or human-picked tickets? We ran a real head-to-head test throughout December 2025 to find out.",
+    category: "Data Analysis",
+    tags: ["AIPrediction", "Verification", "Data", "Comparison"],
+    readTime: "11 min",
+  },
+  {
+    id: "rough-race-signals",
+    title:
+      "5 Signals That Predict a Volatile Boat Race — Discovered by AI Across 1,899 Races",
+    description:
+      "Being able to sense a volatile race changes your betting strategy. BoatAI analyzed 1,899 races and found 5 signals shared by races that turn volatile.",
+    category: "Beginner",
+    tags: ["VolatileRace", "Prediction", "Signals", "HowToSpot"],
+    readTime: "10 min",
+  },
+  {
+    id: "stadium-strategy-guide",
+    title:
+      "The Venue-by-Venue Strategy Guide — All 24 Venues' Character and What to Target",
+    description:
+      "Winning patterns differ completely from venue to venue. A complete guide to all 24 boat racing venues' character, lane-1 win rate, and which favor the inside vs. the outside.",
+    category: "Strategy",
+    tags: ["BoatRacingVenue", "Strategy", "Character", "Lane1WinRate"],
+    readTime: "15 min",
+  },
+  {
+    id: "monthly-50k-roadmap",
+    title:
+      "A Roadmap to Earning ¥50,000/Month in Side Income from Boat Racing [Built for Repeatability]",
+    description:
+      "A bankroll-management approach for targeting ¥50,000/month, and how to use BoatAI's data analysis to guide your betting.",
+    category: "Strategy",
+    tags: ["BoatRacing", "BankrollManagement", "50KPerMonth", "UsingData"],
+    readTime: "12 min",
+  },
+  {
+    id: "why-you-lose",
+    title:
+      "5 Traits Shared by People Who Lose at Boat Racing — And How AI Prediction Fixes Them",
+    description:
+      "Why can't you win at boat racing? The losing patterns revealed by analyzing 1,899 races, and how AI prediction fixes them.",
+    category: "Beginner",
+    tags: ["BoatRacing", "AIPrediction", "CantWin", "LosingPattern"],
+    readTime: "10 min",
+  },
+  {
     id: "odds-expected-value-guide",
     title: "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
     description:
