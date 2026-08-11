@@ -254,8 +254,11 @@ function getBlogPosts() {
 
   files.forEach((file) => {
     if (!file.endsWith(".md")) return;
-    // 英語版等の言語別mdファイルはja版sitemapの対象外（LANGUAGE_ONLY_PAGESで別途登録する）
-    if (file.endsWith("-en.md")) return;
+    // 英語版・zh-TW版等の言語別mdファイルはja版sitemapの対象外（LANGUAGE_ONLY_PAGESで別途登録する）
+    const isTranslatedBlogFile = BLOG_TRANSLATION_CHECKS.some(({ mdSuffix }) =>
+      file.endsWith(`${mdSuffix}.md`),
+    );
+    if (isTranslatedBlogFile) return;
 
     const filePath = path.join(BLOG_DIR, file);
     const content = fs.readFileSync(filePath, "utf-8");

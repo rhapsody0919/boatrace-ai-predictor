@@ -121,15 +121,16 @@ export const TRANSLATED_PATHS = [
   "/winning-technique",
 ];
 
+// pathがTRANSLATED_PATHSに直接該当する（配下丸ごと翻訳済み）かどうか
+function isFullyTranslatedPath(basePath) {
+  return TRANSLATED_PATHS.some(
+    (p) => basePath === p || (p !== "/" && basePath.startsWith(`${p}/`)),
+  );
+}
+
 // パス（言語プレフィックス除去済み）のコンテンツが翻訳済みかどうか
 export function isPathTranslated(basePath) {
-  if (
-    TRANSLATED_PATHS.some(
-      (p) => basePath === p || (p !== "/" && basePath.startsWith(`${p}/`)),
-    )
-  ) {
-    return true;
-  }
+  if (isFullyTranslatedPath(basePath)) return true;
   return matchPartiallyTranslated(basePath) !== null;
 }
 
@@ -137,12 +138,16 @@ export function isPathTranslated(basePath) {
 // /venues と /venues/region のように入れ子のパスが登録され得るため、
 // 最初にマッチしたエントリではなく最も長く一致するエントリを優先する（BOA-138で発見・修正）
 export function getAvailableLanguages(basePath) {
+  const fullyTranslated = isFullyTranslatedPath(basePath);
+  // matchPartiallyTranslatedは記事ごとの動的スキャンを伴うため、
+  // fullyTranslatedがtrueの場合は呼ばずに済ませる（不要な二重計算を避ける）
+  const partial = fullyTranslated ? null : matchPartiallyTranslated(basePath);
+
   // 未翻訳パスは ja のみ提供（hreflang非出力・言語スイッチャー無効化に波及する）
-  if (!isPathTranslated(basePath)) {
+  if (!fullyTranslated && !partial) {
     return SUPPORTED_LANGUAGES.filter(({ code }) => code === DEFAULT_LANGUAGE);
   }
 
-  const partial = matchPartiallyTranslated(basePath);
   if (partial) {
     return SUPPORTED_LANGUAGES.filter(({ code }) =>
       partial.langs.includes(code),
