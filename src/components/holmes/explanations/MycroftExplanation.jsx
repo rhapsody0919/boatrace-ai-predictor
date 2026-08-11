@@ -1,4 +1,7 @@
 import "./ExplanationSection.css";
+import mycroftModel from "../../../../data/mycroft/model.json";
+
+const MAX_HISTORY = mycroftModel.max_history ?? 32;
 
 function MycroftExplanation() {
   return (
@@ -6,8 +9,10 @@ function MycroftExplanation() {
       <h3>仕組みを知る</h3>
 
       <p className="explanation-summary">
-        各選手の過去30〜100戦を時系列としてTransformerに入力し、
-        Self-attentionでフォームの変化・節間の調子・対戦傾向を捕捉します。
+        各選手の過去{MAX_HISTORY}走を時系列としてTransformerに入力し、
+        Self-attentionでフォームの変化・節間の調子・相手文脈を捕捉します。
+        さらに6艇の「フォーム」同士を相互作用させ、
+        誰が誰に沈められるかというレース展開まで含めて順位を予測します。
       </p>
 
       <div className="explanation-diagram">
@@ -295,9 +300,15 @@ function MycroftExplanation() {
         <li>
           集約統計（平均着順など）では失われる「最近の変化」と「流れ」を学習
         </li>
-        <li>選手ごとに個別のembeddingを持ち、選手固有のスタイルを記憶</li>
         <li>
-          GPU推奨・データ要求量大。他モデルが頭打ちになった段階で投入する切り札
+          6艇のフォームに{" "}
+          <span style={{ color: "#ca8a04" }}>set-attention</span>{" "}
+          をかけ、「強い選手が誰に沈められるか」というレース内の相互作用を捉える
+        </li>
+        <li>
+          attention の重みから
+          <strong>「どの過去走を根拠にしたか」</strong>
+          を取り出せる（タブの「マイクロフトの記憶」）
         </li>
       </ul>
 
@@ -355,12 +366,27 @@ function MycroftExplanation() {
           <div className="explanation-detail-block">
             <h4>具体的なウォークスルー</h4>
             <p>
-              選手Aの直近50戦をTransformerに入力すると： 1)
-              過去50戦を各々768次元のベクトルに変換。 2)
-              Self-attentionが「直近10戦で1着率が急上昇している」パターンを検出。
-              3) 「節末（最終日）に調子を上げる傾向」も節 Embedding から学習。
-              4) 最終的な選手スコアに「上昇中の選手」ブーストが加わり、
-              他モデルより高い評価を付与。
+              選手Aの直近{MAX_HISTORY}走をTransformerに入力すると： 1)
+              各走を「着順・進入コース・会場・本番ST・展示順位・相手の強さ・
+              何日前か・同じ節か」を束ねた1トークンに変換。 2)
+              Self-attentionが「直近数走で着順が上向き」「この会場では毎回好走」
+              といったパターンを検出。 3) attention pooling
+              で1本の「フォーム埋め込み」に集約（このときの重みが
+              「マイクロフトの記憶」として表示される根拠）。 4)
+              6艇ぶんのフォームを相互作用させ、レース全体の順位スコアを出力。
+            </p>
+          </div>
+
+          <div className="explanation-detail-block">
+            <h4>リーク（未来の情報の混入）を防ぐ工夫</h4>
+            <p>
+              系列モデルは過去参照の実装を誤ると簡単に未来の情報が漏れ、
+              検証成績だけが良く見える状態になります。マイクロフトでは
+              <strong>対象レースより厳密に過去の日付</strong>
+              の走のみをトークンにし（同日レースは
+              race_idの並び順が時刻順でないため除外）、
+              選手IDが不明な走は「他人の履歴」が混ざらないよう履歴なしとして扱います。
+              これらは学習のたびに自動検証しています。
             </p>
           </div>
 
@@ -379,23 +405,37 @@ function MycroftExplanation() {
               <div className="explanation-cons">
                 <h5>弱み</h5>
                 <ul>
-                  <li>GPU必須・計算コスト大</li>
                   <li>十分な履歴データが必要</li>
-                  <li>解釈性がGBDTより低い</li>
                   <li>過学習リスクが高い</li>
+                  <li>単独精度がGBDTを超えるとは限らない</li>
+                  <li>履歴の薄い新人選手に弱い</li>
                 </ul>
               </div>
             </div>
           </div>
 
           <div className="explanation-detail-block">
-            <h4>なぜ今でなく「切り札」か</h4>
+            <h4>なぜ最後に実装したか</h4>
             <p>
-              Transformerは大量のデータがあるほど真価を発揮します。
-              現段階ではワトソン・アドラーのGBDT/PLモデルが
-              少ないデータでも安定した精度を出せるため先行実装しています。
-              データが十分蓄積された段階でマイクロフトを投入し、
-              特に「調子の変化が重要な選手」の予想精度向上を狙います。
+              Transformerは大量のデータがあるほど真価を発揮するため、
+              当初は「データ蓄積待ち」として見送っていました。公式アーカイブの
+              過去データを取り込んだ結果、直近に出走している選手の履歴が
+              中央値で500走を超え、系列{MAX_HISTORY}走はほぼ全選手で
+              埋まる状態になったため着手しています。
+            </p>
+          </div>
+
+          <div className="explanation-detail-block">
+            <h4>価値の測り方（正直な指標）</h4>
+            <p>
+              マイクロフトが読むのは「履歴の並び」という
+              <strong>他のモデルが見ていない情報</strong>
+              です。したがって単独の的中率がワトソンを上回るかよりも、
+              <strong>ワトソンと併用したときに改善するか</strong>
+              （アンサンブル増分）のほうが本質的な検定になります。
+              単独精度が同等でも、両者を組み合わせて予測が良くなるなら、
+              系列は本当に新しい情報を持っていたことになります。
+              タブ上部にはこの増分を実測値として表示しています。
             </p>
           </div>
         </div>

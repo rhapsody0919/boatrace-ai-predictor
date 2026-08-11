@@ -64,3 +64,12 @@ jobs:
           TZ: 'Asia/Tokyo'
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      # マイクロフト（PyTorch）。モデル未配置ならスクリプト側でスキップされる
+      - name: Generate & upsert mycroft predictions
+        run: node scripts/daily/generate-mycroft-predictions.js --skip-export
+        env:
+          TZ: 'Asia/Tokyo'
+          MYCROFT_PYTHON: python
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

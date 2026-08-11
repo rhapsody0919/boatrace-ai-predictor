@@ -3,3 +3,5 @@ numpy>=2.0
 scikit-learn>=1.5
 scipy>=1.10
 lightgbm>=4.5
+# マイクロフト（Transformer）用。CPU wheel で足りる
+torch>=2.2

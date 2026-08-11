@@ -43,6 +43,8 @@ data/races.json
 # ML artifacts (BOA-104)
 data/ml/
 scripts/ml/.venv/
+# マイクロフト（PyTorch）用。torch は Python 3.14 未対応のため 3.12 の別 venv
+scripts/ml/.venv-torch/
 scripts/ml/models/
 scripts/ml/models.bak/
 scripts/ml/__pycache__/
