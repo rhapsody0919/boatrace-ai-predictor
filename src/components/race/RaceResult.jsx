@@ -3,7 +3,7 @@
  */
 import { useTranslation } from "react-i18next";
 
-function RaceResult({ prediction, volatility }) {
+function RaceResult({ prediction }) {
   const { t } = useTranslation();
 
   if (!prediction || !prediction.result || !prediction.topPick) {
@@ -46,9 +46,12 @@ function RaceResult({ prediction, volatility }) {
   const getTrioPayout = () =>
     result.payouts?.trio?.[`${result.rank1}-${result.rank2}-${result.rank3}`];
 
-  // イン崩れ判定
-  const showInKuzure = volatility?.level === "high" && result.winningTechnique;
+  // イン崩れ判定（FR3の会場内パーセンタイル、0.7以上をVolatilityDisplayと同じ閾値で「高」とみなす）
+  const showInKuzure =
+    prediction.volatilityPercentile >= 0.7 && result.winningTechnique;
   const isInKuzure = showInKuzure && result.winningTechnique !== "逃げ";
+  // unifiedモデルはtopPick/top2ndの2艇のみ（3連複・3連単の的中判定には使えない、旧モデル互換のみ対象）
+  const hasFullTop3 = top3?.length === 3;
 
   return (
     <div className="race-result">
@@ -72,7 +75,9 @@ function RaceResult({ prediction, volatility }) {
       {/* イン崩れ予測 → 結果の対応表示 */}
       {showInKuzure && (
         <div className="in-kuzure-result">
-          <span className="in-kuzure-prediction">{t("result.inKuzureHigh")}</span>
+          <span className="in-kuzure-prediction">
+            {t("result.inKuzureHigh")}
+          </span>
           <span className="in-kuzure-arrow">→</span>
           <span
             className={`in-kuzure-outcome ${isInKuzure ? "outcome-hit" : "outcome-miss"}`}
@@ -88,12 +93,17 @@ function RaceResult({ prediction, volatility }) {
             <div className="hit">
               {t("result.winHit")}
               {getWinPayout() && (
-                <span className="payout">{t("result.payout", { amount: getWinPayout() })}</span>
+                <span className="payout">
+                  {t("result.payout", { amount: getWinPayout() })}
+                </span>
               )}
             </div>
           ) : (
             <div className="miss">
-              {t("result.winMiss", { picked: topPick.number, actual: result.rank1 })}
+              {t("result.winMiss", {
+                picked: topPick.number,
+                actual: result.rank1,
+              })}
             </div>
           )}
         </div>
@@ -103,7 +113,9 @@ function RaceResult({ prediction, volatility }) {
             <div className="hit">
               {t("result.placeHit")}
               {getPlacePayout() && (
-                <span className="payout">{t("result.payout", { amount: getPlacePayout() })}</span>
+                <span className="payout">
+                  {t("result.payout", { amount: getPlacePayout() })}
+                </span>
               )}
             </div>
           ) : (
@@ -111,31 +123,39 @@ function RaceResult({ prediction, volatility }) {
           )}
         </div>
 
-        <div className="check-item">
-          {is3FukuHit ? (
-            <div className="hit">
-              {t("result.trifectaHit")}
-              {getTrifectaPayout() && (
-                <span className="payout">{t("result.payout", { amount: getTrifectaPayout() })}</span>
-              )}
-            </div>
-          ) : (
-            <div className="miss">{t("result.trifectaMiss")}</div>
-          )}
-        </div>
+        {hasFullTop3 && (
+          <div className="check-item">
+            {is3FukuHit ? (
+              <div className="hit">
+                {t("result.trifectaHit")}
+                {getTrifectaPayout() && (
+                  <span className="payout">
+                    {t("result.payout", { amount: getTrifectaPayout() })}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="miss">{t("result.trifectaMiss")}</div>
+            )}
+          </div>
+        )}
 
-        <div className="check-item">
-          {is3TanHit ? (
-            <div className="hit">
-              {t("result.trioHit")}
-              {getTrioPayout() && (
-                <span className="payout">{t("result.payout", { amount: getTrioPayout() })}</span>
-              )}
-            </div>
-          ) : (
-            <div className="miss">{t("result.trioMiss")}</div>
-          )}
-        </div>
+        {hasFullTop3 && (
+          <div className="check-item">
+            {is3TanHit ? (
+              <div className="hit">
+                {t("result.trioHit")}
+                {getTrioPayout() && (
+                  <span className="payout">
+                    {t("result.payout", { amount: getTrioPayout() })}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="miss">{t("result.trioMiss")}</div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

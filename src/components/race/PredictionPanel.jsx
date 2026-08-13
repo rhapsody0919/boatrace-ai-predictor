@@ -1,52 +1,54 @@
 /**
  * PredictionPanel - AI予想結果セクション
  * App.jsx と RaceDetail.jsx で共通利用
+ *
+ * AI予想モデル大規模改修（2026-08-13）: 3モデル切替（standard/safeBet/upsetFocus）を廃止し、
+ * unifiedモデル1本に統合。AiAnalysisSection内は複勝予想（DataRaceTable側、FR1/FR5）と対をなす
+ * 3ブロック構成（展開予測パネル/イン崩れ指数バッジ/3連単参考情報、FR2/FR3/FR4）に再編した。
  */
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useRaceData } from "../../hooks/useRaceData";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRaceData } from "../../hooks/useRaceData";
 import { SocialShareButtons } from "../SocialShareButtons";
 import { generatePredictionShareText } from "../../utils/share";
 import { getVenueGuidePath } from "../../utils/venueUtils";
+import { dataService } from "../../services/dataService";
 import VolatilityDisplay from "./VolatilityDisplay";
-import ModelDescription from "./ModelDescription";
-import ModelSwitcher from "./ModelSwitcher";
 import FirstMarkAnimation from "./FirstMarkAnimation";
-import PredictionFlash from "./PredictionFlash";
+import TrifectaReferenceCard from "./TrifectaReferenceCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
-import BettingValueSection from "./BettingValueSection";
 import DataRaceTable from "./DataRaceTable";
 import AiAnalysisSection from "./AiAnalysisSection";
 import { getRaceId } from "../../utils/raceId";
 
-const staggerItem = (delay) => ({
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4, delay, ease: "easeOut" },
-});
-
-function PredictionPanel({
-  prediction,
-  selectedRace,
-  selectedModel,
-  onSwitchModel,
-  volatility,
-  isAnalyzing,
-  date,
-}) {
+function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
   const { t } = useTranslation();
+  const [trifectaReference, setTrifectaReference] = useState(null);
+  // フックはearly returnより前で無条件に呼ぶ必要があるため、selectedRace未確定時は空オブジェクトを渡す
+  const { venueCode, venueName } = useRaceData(selectedRace || {});
+  const analysisRaceId = selectedRace ? getRaceId(selectedRace) : null;
+
+  // 3連単参考情報（FR4）: 発走前バッチ実行後にのみ存在するため別クエリで取得する
+  useEffect(() => {
+    setTrifectaReference(null);
+    if (!analysisRaceId) return;
+    let cancelled = false;
+    dataService.getUnifiedTrifectaReference(analysisRaceId).then((data) => {
+      if (!cancelled) setTrifectaReference(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [analysisRaceId]);
 
   if (!prediction && !isAnalyzing) return null;
 
   // null check を一箇所に集約：ここで selectedRace の存在を確認
   // 以降のコードでは selectedRace が null でないことを前提とする
   if (!selectedRace) return null;
-
-  // 会場コード・会場名を useRaceData で一元的に抽出
-  // （selectedRace は必ず存在するため、フック側で計算のみに専念）
-  const { venueCode, venueName } = useRaceData(selectedRace);
 
   // 日付（明示的に渡されるか、raceIdから抽出）
   const raceDate =
@@ -62,13 +64,6 @@ function PredictionPanel({
     venueCode && raceDate
       ? `https://www.boatrace.jp/owpc/pc/race/racelist?rno=${selectedRace.raceNumber}&jcd=${String(venueCode).padStart(2, "0")}&hd=${raceDate.replace(/-/g, "")}`
       : null;
-
-  // パターンインデックス（モデルと1マーク展開予測の連動）
-  const selectedPatternIndex =
-    selectedModel === "safe-bet" ? 0 : selectedModel === "standard" ? 1 : 2;
-
-  // データ出走表・振り返り用のrace_id（おすすめ自動選択パスではrawDataから導出）
-  const analysisRaceId = getRaceId(selectedRace);
 
   // ローディング中
   if (isAnalyzing) {
@@ -138,54 +133,32 @@ function PredictionPanel({
         </div>
       )}
 
-      {/* データ出走表（主役）: 出走6選手×分析指標のマトリクス */}
+      {/* データ出走表（主役）: 出走6選手×分析指標のマトリクス。複勝予想行を含む（FR1/FR5） */}
       <DataRaceTable
         raceId={analysisRaceId}
         prediction={prediction}
         venueCode={venueCode}
       />
 
-      {/* AIデータ分析（折りたたみ）: 既存のAI予想ブロック群を内包 */}
-      <AiAnalysisSection
-        topPick={prediction.topPick}
-        confidence={prediction.confidence}
-      >
-        {/* 荒れ度 + モデル説明 + モデル切替 */}
-        {prediction.predictions && (
-          <>
-            <VolatilityDisplay volatility={volatility} />
-            <ModelDescription />
-            <ModelSwitcher
-              selectedModel={selectedModel}
-              onSwitchModel={onSwitchModel}
-            />
-          </>
-        )}
-
+      {/* AIデータ分析（折りたたみ）: 展開予測パネル/イン崩れ指数バッジ/3連単参考情報の3ブロック */}
+      <AiAnalysisSection topPick={prediction.topPick} confidence={null}>
         <AnimatePresence mode="wait">
           <motion.div
-            key={selectedModel}
             className="prediction-result"
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2 }}
           >
-            {/* AI予想根拠フラッシュ + 買い目表示 */}
+            {/* ブロック1: 展開予測パネル（FR2、的中率80.0%） */}
             {prediction.turnPrediction && prediction.allPlayers && (
-              <motion.div {...staggerItem(0)}>
-                <PredictionFlash
-                  prediction={prediction}
-                  selectedRace={selectedRace}
-                  selectedPatternIndex={selectedPatternIndex}
-                  selectedModel={selectedModel}
-                />
-              </motion.div>
-            )}
-
-            {/* 1マーク展開予測 */}
-            {prediction.turnPrediction && (
-              <motion.div {...staggerItem(0.1)}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+              >
+                <p className="ai-analysis-block-badge">
+                  {t("animation.accuracyBadge")}
+                </p>
                 <FirstMarkAnimation
                   patterns={prediction.turnPrediction.patterns}
                   technique={prediction.turnPrediction.technique}
@@ -197,36 +170,49 @@ function PredictionPanel({
                     number: p.number,
                     name: p.name,
                   }))}
-                  selectedPatternIndex={selectedPatternIndex}
+                  selectedPatternIndex={0}
                   venue={
-                    venueCode
-                      ? t(`venues.${venueCode}`, selectedRace?.venue)
-                      : selectedRace?.venue
+                    venueCode ? t(`venues.${venueCode}`, venueName) : venueName
                   }
                   raceNumber={selectedRace?.raceNumber}
-                  selectedModel={selectedModel}
                 />
               </motion.div>
             )}
 
-            {/* 配当妙味 */}
-            {prediction.predictionOdds && (
-              <motion.div {...staggerItem(0.2)}>
-                <BettingValueSection
-                  prediction={prediction}
-                  selectedModel={selectedModel}
+            {/* ブロック2: イン崩れ指数バッジ（FR3） */}
+            {prediction.volatilityPercentile != null && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+              >
+                <VolatilityDisplay
+                  percentile={prediction.volatilityPercentile}
+                  reasons={prediction.volatilityReasons}
                 />
               </motion.div>
             )}
+
+            {/* ブロック3: 3連単参考情報（FR4、補助的な位置づけ） */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
+            >
+              <TrifectaReferenceCard trifectaReference={trifectaReference} />
+            </motion.div>
 
             {/* 出現パターン */}
             {venueCode && venueName && (
-              <motion.div {...staggerItem(0.3)}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
+              >
                 <OutcomePatternPreview
                   venueCode={venueCode}
                   venueName={venueName}
                   prediction={prediction}
-                  selectedModel={selectedModel}
                 />
               </motion.div>
             )}
@@ -240,15 +226,15 @@ function PredictionPanel({
           shareUrl="https://www.boat-ai.jp/"
           title={generatePredictionShareText(
             {
-              venue: selectedRace?.venue || t("panel.unknownVenue"),
+              venue: venueName || t("panel.unknownVenue"),
               raceNo: selectedRace?.raceNumber || "?",
               date: raceDate,
               prediction: {
-                topPick: prediction.top3?.[0] || prediction.topPick?.number,
+                topPick: prediction.topPick?.number,
                 top3: prediction.top3 || [],
               },
             },
-            selectedModel,
+            "unified",
           )}
           hashtags={["ボートレース", "AI予想", "BoatAI"]}
           size={40}
@@ -264,8 +250,8 @@ function PredictionPanel({
               <span className="venue-guide-title">
                 {t("panel.venueGuideLink", {
                   venue: venueCode
-                    ? t(`venues.${venueCode}`, selectedRace.venue)
-                    : selectedRace.venue,
+                    ? t(`venues.${venueCode}`, venueName)
+                    : venueName,
                 })}
               </span>
               <span className="venue-guide-desc">

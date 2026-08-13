@@ -68,17 +68,28 @@
     "raceCount_one": "{{count}} race"
   },
   "volatility": {
-    "indexLabel": "Lane-1 upset index: {{score}}",
     "levelHigh": "High upset chance",
     "levelLow": "Favorite friendly",
-    "levelMedium": "Average",
-    "description": "How likely lane 1 is to lose (higher = more upsets)",
-    "winRateLabel": "Lane 1 win rate (last 90 days)",
-    "nationalAvg": "National avg {{rate}}%",
-    "recommendedModel": "Recommended model:",
-    "adviceHigh": "Lane 1 is likely to lose here, so the Upset Focus model targeting high payouts is recommended",
-    "adviceLow": "Lane 1 is stable here, so the accuracy-focused Safe Bet model is recommended",
-    "adviceMedium": "A typical race, so the balanced Standard model is recommended"
+    "description": "A relative measure of how likely lane 1 is to lose, compared to races at this venue over the last 90 days",
+    "attentionTitle": "Upset alert level",
+    "attentionHigh": "Caution",
+    "attentionLow": "Stable",
+    "attentionStandard": "Average",
+    "percentileBarLabel": "Venue percentile",
+    "percentileBarMin": "Stable",
+    "percentileBarMedian": "Average",
+    "percentileBarMax": "Upset-prone"
+  },
+  "trifectaReference": {
+    "title": "Trifecta reference",
+    "desc": "A single positive expected-value combination shown for reference only. Not a guarantee of results",
+    "recommendation": {
+      "bet": "Worth a look",
+      "neutral": "Reference",
+      "skip": "Pass"
+    },
+    "odds": "Odds {{odds}}x",
+    "ev": "EV {{ev}}"
   },
   "table": {
     "title": "AI Data Predictions",
@@ -137,7 +148,7 @@
     "analysisToolsLink": "Analyze this race further with the data analysis tools"
   },
   "home": {
-    "introBannerText": "AI-analyzed 45+ data points | Learn more about BoatAI →",
+    "introBannerText": "45+ data points analyzed, including place picks and turn predictions | Learn more about BoatAI →",
     "introBannerClose": "Close",
     "todayRaces": "Today's Races",
     "dataType": "Race data",
@@ -150,7 +161,7 @@
     "deadline": "Betting deadline",
     "finished": "⏱️ Finished",
     "turnPreviewLabel": "Forecast",
-    "viewPrediction": "View AI Prediction",
+    "viewPrediction": "View place pick",
     "blogTitle": "Boat Race Strategy Blog",
     "blogDesc": "Prediction tips, venue guides, and data analysis to boost your win rate",
     "viewAllPosts": "View all blog posts →",
@@ -289,7 +300,7 @@
     "view": "View Prediction"
   },
   "section": {
-    "resultTitle": "AI Prediction Results"
+    "resultTitle": "Data Analysis Results"
   },
   "animation": {
     "title": "First Mark Prediction",
@@ -299,7 +310,8 @@
     "replay": "▶ Replay",
     "rankLabel": "#{{rank}}",
     "distributionTitle": "Outcome probability",
-    "courseLabel": "Lane {{course}}"
+    "courseLabel": "Lane {{course}}",
+    "accuracyBadge": "Track record: ~80% accuracy over 4,580 races"
   },
   "dataTable": {
     "title": "Data Race Card",
@@ -318,6 +330,8 @@
     "rowAvgSt": "Avg ST",
     "rowExSt": "Exhibition ST",
     "rowCourseRate": "Entry course win rate",
+    "rowPlaceRecommendation": "Place pick",
+    "placeBadgeLabel": "Place pick #{{rank}}",
     "loading": "Loading analytics…",
     "motorResetNote": "New motors"
   },
@@ -364,7 +378,8 @@
       "exhibition": "Ex.time",
       "courseRate": "Course",
       "returnRate": "Return",
-      "technique": "Style"
+      "technique": "Style",
+      "placeRecommendation": "Place"
     },
     "itemTechniqueRank": "Winning technique \"{{technique}}\" is No.{{rank}} ({{pct}}%) in this racer's 90-day winning patterns",
     "colGrade": "Class",

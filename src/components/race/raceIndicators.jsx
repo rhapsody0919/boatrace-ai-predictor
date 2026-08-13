@@ -160,6 +160,14 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     value: courseRateOf(p.number)?.rate ?? null,
   }));
 
+  // 複勝予想（FR1/FR5）: コース別勝率上位2艇。generate-unified-predictions.js の
+  // calculatePlaceRecommendation と同じロジック（上位2艇、EV計算は経由しない）
+  const placeBoats = [...cand.courseRate]
+    .filter((c) => c.value !== null)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 2)
+    .map((c) => c.boat);
+
   return [
     {
       key: "winRate",
@@ -405,6 +413,30 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
             {cr.rate.toFixed(0)}%
             <span className="drt-sub">
               {cr.wins}/{cr.total}
+            </span>
+          </span>
+        );
+      },
+    },
+    {
+      key: "placeRecommendation",
+      label: t("dataTable.rowPlaceRecommendation"),
+      shortLabel: t("review.cols.placeRecommendation"),
+      tab: "attackdefense",
+      best: null,
+      // 複勝＝上位2着的中（RaceReviewの好走判定は上位3着基準のため流用不可）。
+      // RaceReviewでの的中判定は本行のスコープ外（別途top2専用の実装が必要）
+      signal: () => null,
+      itemText: () => null,
+      render: (p) => {
+        if (placeBoats.length === 0) return ph("racerStats");
+        const rank = placeBoats.indexOf(p.number);
+        if (rank === -1) return <span className="drt-sub">—</span>;
+        return (
+          <span className="drt-value drt-plus">
+            {rank === 0 ? "◎" : "○"}
+            <span className="drt-sub">
+              {t("dataTable.placeBadgeLabel", { rank: rank + 1 })}
             </span>
           </span>
         );

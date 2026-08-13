@@ -67,17 +67,28 @@
     "raceCount": "{{count}}レース"
   },
   "volatility": {
-    "indexLabel": "イン崩れ指数: {{score}}",
     "levelHigh": "イン崩れ確率高",
     "levelLow": "本命有利",
-    "levelMedium": "標準",
-    "description": "1コースが崩れる可能性の目安（高いほど波乱になりやすい）",
-    "winRateLabel": "1コース勝率（直近90日）",
-    "nationalAvg": "全国平均 {{rate}}%",
-    "recommendedModel": "おすすめモデル:",
-    "adviceHigh": "イン崩れ指数が高く1コースが崩れやすいため、高配当を狙える穴狙い型がおすすめです",
-    "adviceLow": "1コースが安定しているため、的中率重視の本命狙い型がおすすめです",
-    "adviceMedium": "標準的なレースのため、バランス型のスタンダードがおすすめです"
+    "description": "過去90日・同会場のレースと比較した、1号艇が崩れやすいかどうかの相対指標です",
+    "attentionTitle": "イン崩れ注意度",
+    "attentionHigh": "警戒",
+    "attentionLow": "堅い",
+    "attentionStandard": "標準",
+    "percentileBarLabel": "会場内パーセンタイル",
+    "percentileBarMin": "堅い",
+    "percentileBarMedian": "標準",
+    "percentileBarMax": "崩れやすい"
+  },
+  "trifectaReference": {
+    "title": "3連単参考情報",
+    "desc": "期待値がプラスの1点を参考として表示します。結果を保証するものではありません",
+    "recommendation": {
+      "bet": "狙い目",
+      "neutral": "参考",
+      "skip": "見送り目安"
+    },
+    "odds": "オッズ {{odds}}倍",
+    "ev": "期待値 {{ev}}"
   },
   "table": {
     "title": "AIデータ予想",
@@ -136,7 +147,7 @@
     "analysisToolsLink": "データ分析ツールでこのレースをさらに分析する"
   },
   "home": {
-    "introBannerText": "45項目のデータをAIが分析 | BoatAIについて詳しくはこちら →",
+    "introBannerText": "複勝予想・展開予測など45項目のデータを分析 | BoatAIについて詳しくはこちら →",
     "introBannerClose": "閉じる",
     "todayRaces": "本日開催中のレース",
     "dataType": "レースデータ",
@@ -149,7 +160,7 @@
     "deadline": "締切予定時刻",
     "finished": "⏱️ 終了",
     "turnPreviewLabel": "展開予測",
-    "viewPrediction": "AI予想を見る",
+    "viewPrediction": "複勝予想を見る",
     "blogTitle": "ボートレース攻略ブログ",
     "blogDesc": "予想のコツ、会場別攻略、データ分析手法など、勝率アップに役立つ情報をお届けします",
     "viewAllPosts": "全てのブログ記事を見る →",
@@ -287,7 +298,7 @@
     "view": "予想を見る"
   },
   "section": {
-    "resultTitle": "AI予想結果"
+    "resultTitle": "データ分析結果"
   },
   "animation": {
     "title": "1マーク展開予測",
@@ -297,7 +308,8 @@
     "replay": "▶ 再生",
     "rankLabel": "{{rank}}着",
     "distributionTitle": "展開確率分布",
-    "courseLabel": "{{course}}コース"
+    "courseLabel": "{{course}}コース",
+    "accuracyBadge": "実測: 展開的中率 約80%（過去4,580レース）"
   },
   "dataTable": {
     "title": "データ出走表",
@@ -316,6 +328,8 @@
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
     "rowCourseRate": "進入コース勝率",
+    "rowPlaceRecommendation": "複勝予想",
+    "placeBadgeLabel": "複勝{{rank}}位",
     "loading": "分析データを読み込み中…",
     "motorResetNote": "交換直後"
   },
@@ -362,7 +376,8 @@
       "exhibition": "展示T",
       "courseRate": "コース",
       "returnRate": "回収率",
-      "technique": "決まり手"
+      "technique": "決まり手",
+      "placeRecommendation": "複勝"
     },
     "itemTechniqueRank": "決まり手「{{technique}}」は過去90日の勝ちパターン{{rank}}位（{{pct}}%）",
     "colGrade": "級別",

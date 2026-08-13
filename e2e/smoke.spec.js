@@ -469,7 +469,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
   test("過去日付ページで結果確定レースを選ぶと「データで振り返る」が表示される", async ({
     page,
   }) => {
-    await page.goto("/races/2026-07-30");
+    // unifiedモデル運用開始日（2026-08-11〜）以降の日付を使う。
+    // それより前の日付はAI予想（topPick）が存在せず.race-review-aiが出ない仕様のため
+    await page.goto("/races/2026-08-11");
     await page.locator(".predict-btn").first().click();
 
     // データ出走表は過去日付でも表示される

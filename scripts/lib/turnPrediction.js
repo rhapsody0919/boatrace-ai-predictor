@@ -20,7 +20,11 @@ import {
   COURSE_DEFAULT_DEFENSE,
 } from "./winningTechniques.js";
 import { getPlacementBaseline } from "./placementDistribution.js";
-import { VENUE_1COURSE_WIN_RATE, VENUE_1COURSE_AVG } from "./venueParameters.js";
+import {
+  VENUE_1COURSE_WIN_RATE,
+  VENUE_1COURSE_AVG,
+  getVenueType,
+} from "./venueParameters.js";
 
 const DEFAULT_ST = 0.15;
 
@@ -32,6 +36,30 @@ const SOFTMAX_TEMP = 1.5;
 // 正規化後に適用し、全体を再正規化して合計100%を維持
 const MAKURI_PROB_FLOOR = 0.015;
 const MAKURIZASHI_PROB_FLOOR = 0.012;
+
+// v6: 逃げ確率のキャリブレーション補正係数（Phase 1a, ADR0011）
+// scripts/analysis/simulate-nige-calibration.js で1.0〜2.0を検証し、k=1.5を採用
+const NIGE_CALIBRATION_FACTOR = 1.5;
+
+// v6: 会場グループ別 upsetFactor 倍率（Phase 2, ADR0011）
+// venueParameters.js の VENUE_TYPE（的中率ベース分類）に対応。
+// extremeは1コース勝率ベースでは「該当なし」想定だったが、的中率分類では
+// 桐生・平和島・鳴門等が該当するため、volatileよりさらに強い倍率を設定する
+const UPSET_FACTOR_MULTIPLIER = {
+  stable: 1.0,
+  volatile: 1.5,
+  extreme: 2.0,
+};
+
+// v6: 会場グループ別 まくり・まくり差しフロア確率（Phase 2, ADR0011）
+// 低精度会場（extreme）ほど「まくり」「まくり差し」の予測数が実績より過小
+// （turn-prediction-improvement-roadmap.md: 低精度会場で非1コース決着が3割以上、
+// モデルが外郭艇の台頭を捉えられていない）ため、フロア値を段階的に引き上げる
+const TECHNIQUE_FLOOR_BY_VENUE = {
+  stable: { makuri: MAKURI_PROB_FLOOR, makurizashi: MAKURIZASHI_PROB_FLOOR },
+  volatile: { makuri: 0.04, makurizashi: 0.03 },
+  extreme: { makuri: 0.06, makurizashi: 0.04 },
+};
 
 // コース別の基本勝率（全国平均）
 const COURSE_BASE_WIN_RATE = {
@@ -88,17 +116,24 @@ function calcUpsetFactor(raceConditions) {
   const venueCode = String(raceConditions.venueCode || "").padStart(2, "0");
   const venueWinRate = VENUE_1COURSE_WIN_RATE[venueCode] || VENUE_1COURSE_AVG;
   const venueDiff = VENUE_1COURSE_AVG - venueWinRate;
-  factor += clamp(venueDiff / 0.10 * 0.4, 0, 0.4);
+  factor += clamp((venueDiff / 0.1) * 0.4, 0, 0.4);
 
-  // 風速5m以上 → 荒れやすい（最大0.3）
+  // v6: 風速5m以上 → 荒れやすい（Phase 1b, ADR0011）
+  // turn-prediction-improvement-roadmap.md: 風速7m+でも実測の逃げ率低下は0-2m比-4.8ptのみで、
+  // 旧係数（最大0.3）は実測効果の約5倍の抑制だった。1/4へ縮小（最大0.075）
   if (raceConditions.windSpeed != null && raceConditions.windSpeed >= 5) {
-    factor += clamp((raceConditions.windSpeed - 4) * 0.08, 0, 0.3);
+    factor += clamp((raceConditions.windSpeed - 4) * 0.02, 0, 0.075);
   }
 
-  // 波高5cm以上 → 荒れやすい（最大0.3）
+  // v6: 波高5cm以上 → 荒れやすい（Phase 1b, ADR0011、風速と同様の理由で1/4へ縮小）
   if (raceConditions.waveHeight != null && raceConditions.waveHeight >= 5) {
-    factor += clamp((raceConditions.waveHeight - 4) * 0.06, 0, 0.3);
+    factor += clamp((raceConditions.waveHeight - 4) * 0.015, 0, 0.075);
   }
+
+  // v6: 会場グループ別倍率（Phase 2, ADR0011）
+  // 的中率の低い会場（extreme）ほどupsetFactorを強め、非逃げ確率を引き上げる
+  const venueType = getVenueType(venueCode);
+  factor *= UPSET_FACTOR_MULTIPLIER[venueType];
 
   return clamp(factor, 0, 1);
 }
@@ -241,7 +276,14 @@ export function predictFirstMarkV2(players, raceConditions) {
     Object.values(c1DefenseForCourse).reduce((s, v) => s + v, 0) /
     Object.keys(c1DefenseForCourse).length;
 
-  const allTechniques = ["nige", "sashi", "makuri", "makurizashi", "nuki", "megumare"];
+  const allTechniques = [
+    "nige",
+    "sashi",
+    "makuri",
+    "makurizashi",
+    "nuki",
+    "megumare",
+  ];
   const patterns = [];
 
   for (let cIdx = 0; cIdx < 6; cIdx++) {
@@ -307,6 +349,16 @@ export function predictFirstMarkV2(players, raceConditions) {
       // 決まり手別選手力補正
       rawProb *= 1 + playerSkillZ[cIdx] * (SKILL_WEIGHT[t] || 0.05);
 
+      // v6: 逃げ確率のキャリブレーション補正（Phase 1a, ADR0011）
+      // calibration-report.js（2026-08-11実行）で全確率帯において逃げの予測確率が
+      // 実現率より系統的に低い（乖離12.8〜18.3pt、過小評価）ことを確認。
+      // scripts/analysis/simulate-nige-calibration.js でrawProbへの補正係数kを
+      // 1.0〜2.0の範囲で試した結果、k=1.5でサンプル数加重平均乖離が12.3pt→8.3ptに縮小
+      // （k=2.0でさらに縮小するが60%+帯の乖離が変わらず過学習の懸念があるため保守的な値を採用）
+      if (t === "nige") {
+        rawProb *= NIGE_CALIBRATION_FACTOR;
+      }
+
       // v4: upsetFactor による逃げ抑制・非逃げ押し上げ
       if (upsetFactor > 0) {
         if (t === "nige") {
@@ -333,7 +385,9 @@ export function predictFirstMarkV2(players, raceConditions) {
 
   // Step 5: 正規化 & 上位3パターン選出
   // softmax温度パラメータで高確率帯の過大評価を抑制
-  const scaledProbs = patterns.map((p) => Math.pow(p.rawProb, 1 / SOFTMAX_TEMP));
+  const scaledProbs = patterns.map((p) =>
+    Math.pow(p.rawProb, 1 / SOFTMAX_TEMP),
+  );
   const totalScaled = scaledProbs.reduce((s, v) => s + v, 0);
   for (let i = 0; i < patterns.length; i++) {
     patterns[i].probability =
@@ -415,9 +469,15 @@ export function predictFirstMarkV2(players, raceConditions) {
       (distribution[p.technique] || 0) + p.probability;
   }
 
-  // v5: まくり・まくり差しのフロア確率を正規化後に適用
+  // v5/v6: まくり・まくり差しのフロア確率を正規化後に適用（Phase2で会場グループ別に変更、ADR0011）
   // 過小評価された低確率帯を底上げし、全体を再正規化して合計100%を維持
-  for (const [tech, floor] of [["makuri", MAKURI_PROB_FLOOR], ["makurizashi", MAKURIZASHI_PROB_FLOOR]]) {
+  const floorByVenue =
+    TECHNIQUE_FLOOR_BY_VENUE[getVenueType(venueCode)] ||
+    TECHNIQUE_FLOOR_BY_VENUE.volatile;
+  for (const [tech, floor] of [
+    ["makuri", floorByVenue.makuri],
+    ["makurizashi", floorByVenue.makurizashi],
+  ]) {
     if ((distribution[tech] || 0) < floor) {
       distribution[tech] = floor;
     }

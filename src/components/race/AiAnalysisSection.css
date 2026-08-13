@@ -92,6 +92,15 @@
   color: var(--color-primary-600);
 }
 
+/* 展開予測パネル（FR2）の実測的中率バッジ */
+.ai-analysis-block-badge {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success-dark);
+  text-align: center;
+}
+
 @media (max-width: 480px) {
   .ai-analysis-header {
     padding: var(--spacing-2) var(--spacing-3);

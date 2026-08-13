@@ -86,6 +86,16 @@ function OutcomeDistributionRedirect() {
   return <Navigate to={`/winning-technique?${params.toString()}`} replace />;
 }
 
+// 「今日のおすすめ」（3モデル運用の推奨レース表示）はFR6で廃止。
+// 新モデル（unified）の相当ページはトップページに統合されているため、
+// 旧URLへの直接アクセスはトップへリダイレクトする（ブログ等の既存リンクの到達性維持）
+// 注: ホームズ5探偵・ポアロは当初廃止対象としたが、/holmes は元々ナビ非公開のα版検証ページで、
+// Watson/Mycroft等の実験モデルが別セッションで現在も活発に開発中と判明したため復元した
+// （2026-08-14、e2eテストとの衝突・並行開発中のPRで発覚）
+function LegacyModelPageRedirect() {
+  return <Navigate to="/" replace />;
+}
+
 // ルート変更時にAuto Adsを再スキャン
 function AdRefresh() {
   const location = useLocation();
@@ -153,7 +163,7 @@ function LocalizedRoutes({ lng = "ja" }) {
       {/* タブページ（SEO対応: 個別URL） */}
       <Route path="hit-races" element={<App tab="hit-races" />} />
       <Route path="accuracy" element={<App tab="accuracy" />} />
-      <Route path="picks" element={<App tab="picks" />} />
+      <Route path="picks" element={<LegacyModelPageRedirect />} />
       <Route path="accuracy/history" element={<AccuracyHistory />} />
       <Route
         path="outcome-distribution"
@@ -201,7 +211,7 @@ function LocalizedRoutes({ lng = "ja" }) {
       {/* Admin Pages (Hidden) */}
       <Route path="admin/rules" element={<AdminRules />} />
 
-      {/* α版・動線非公開ページ */}
+      {/* α版・動線非公開ページ（Watson/Mycroft等の実験モデルが継続開発中のため維持） */}
       <Route path="holmes" element={<Holmes />} />
       <Route path="poirot" element={<Poirot />} />
 

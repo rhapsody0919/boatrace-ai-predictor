@@ -1,29 +1,16 @@
 /**
- * VolatilityDisplay - イン崩れ指数表示コンポーネント
+ * VolatilityDisplay - イン崩れ指数バッジ（FR3、AI予想モデル大規模改修）
+ * 会場内パーセンタイル（0-1、高いほど1号艇が崩れやすい）を表示する。
+ * high/medium/lowの3段階ラベル・おすすめモデル提示（旧3モデル切替）は廃止し、
+ * 連続値パーセンタイル＋実測相関の裏付けを示す構成に変更した（ADR0012、screens.md）。
  */
 import { useTranslation } from "react-i18next";
 
-const NATIONAL_AVG_WIN_RATE = 53;
-const WIN_RATE_BAR_MIN = 40;
-const WIN_RATE_BAR_MAX = 65;
-
-function WinRateGauge({ rate }) {
+function PercentileBar({ percentile }) {
   const { t } = useTranslation();
-  const pct = rate * 100;
-  const diff = pct - NATIONAL_AVG_WIN_RATE;
+  const pct = Math.round(percentile * 100);
   const color =
-    pct < 47 ? "#ef5350" : pct < NATIONAL_AVG_WIN_RATE ? "#ff9800" : "#4caf50";
-  const barFill = Math.min(
-    100,
-    Math.max(
-      0,
-      ((pct - WIN_RATE_BAR_MIN) / (WIN_RATE_BAR_MAX - WIN_RATE_BAR_MIN)) * 100,
-    ),
-  );
-  const avgMarkerPos =
-    ((NATIONAL_AVG_WIN_RATE - WIN_RATE_BAR_MIN) /
-      (WIN_RATE_BAR_MAX - WIN_RATE_BAR_MIN)) *
-    100;
+    percentile >= 0.7 ? "#ff9800" : percentile <= 0.3 ? "#4caf50" : "#2196f3";
 
   return (
     <div
@@ -44,26 +31,11 @@ function WinRateGauge({ rate }) {
         }}
       >
         <span style={{ fontSize: "0.82rem", color: "#555" }}>
-          {t("volatility.winRateLabel")}
+          {t("volatility.percentileBarLabel")}
         </span>
-        <div
-          style={{ display: "flex", alignItems: "baseline", gap: "0.35rem" }}
-        >
-          <span
-            style={{
-              fontSize: "1.25rem",
-              fontWeight: "700",
-              color,
-              lineHeight: 1,
-            }}
-          >
-            {pct.toFixed(1)}%
-          </span>
-          <span style={{ fontSize: "0.72rem", color, fontWeight: "600" }}>
-            ({diff >= 0 ? "+" : ""}
-            {diff.toFixed(1)}pt)
-          </span>
-        </div>
+        <span style={{ fontSize: "1.25rem", fontWeight: "700", color }}>
+          {pct}
+        </span>
       </div>
 
       <div
@@ -78,7 +50,7 @@ function WinRateGauge({ rate }) {
           style={{
             position: "absolute",
             left: 0,
-            width: `${barFill}%`,
+            width: `${pct}%`,
             height: "100%",
             background: color,
             borderRadius: "3px",
@@ -87,7 +59,7 @@ function WinRateGauge({ rate }) {
         <div
           style={{
             position: "absolute",
-            left: `${avgMarkerPos}%`,
+            left: "50%",
             top: "-3px",
             bottom: "-3px",
             width: "2px",
@@ -107,40 +79,43 @@ function WinRateGauge({ rate }) {
           marginTop: "0.25rem",
         }}
       >
-        <span>{WIN_RATE_BAR_MIN}%</span>
-        <span>{t("volatility.nationalAvg", { rate: NATIONAL_AVG_WIN_RATE })}</span>
-        <span>{WIN_RATE_BAR_MAX}%</span>
+        <span>{t("volatility.percentileBarMin")}</span>
+        <span>{t("volatility.percentileBarMedian")}</span>
+        <span>{t("volatility.percentileBarMax")}</span>
       </div>
     </div>
   );
 }
 
-function VolatilityDisplay({ volatility }) {
+function VolatilityDisplay({ percentile, reasons }) {
   const { t } = useTranslation();
 
-  if (!volatility) {
+  if (percentile === null || percentile === undefined) {
     return null;
   }
+
+  const level =
+    percentile >= 0.7 ? "high" : percentile <= 0.3 ? "low" : "standard";
+  const icon = level === "high" ? "🌪️" : level === "low" ? "🎯" : "⚖️";
+  const bg =
+    level === "high" ? "#fff3e0" : level === "low" ? "#e8f5e9" : "#e3f2fd";
+  const border =
+    level === "high" ? "#ff9800" : level === "low" ? "#4caf50" : "#2196f3";
+  const attentionLabel =
+    level === "high"
+      ? t("volatility.attentionHigh")
+      : level === "low"
+        ? t("volatility.attentionLow")
+        : t("volatility.attentionStandard");
 
   return (
     <div
       style={{
         padding: "1rem 1.5rem",
-        background:
-          volatility.level === "high"
-            ? "#fff3e0"
-            : volatility.level === "low"
-              ? "#e8f5e9"
-              : "#e3f2fd",
+        background: bg,
         borderRadius: "8px",
         marginBottom: "1.5rem",
-        borderLeft: `4px solid ${
-          volatility.level === "high"
-            ? "#ff9800"
-            : volatility.level === "low"
-              ? "#4caf50"
-              : "#2196f3"
-        }`,
+        borderLeft: `4px solid ${border}`,
       }}
     >
       <div
@@ -151,15 +126,9 @@ function VolatilityDisplay({ volatility }) {
           marginBottom: "0.5rem",
         }}
       >
-        <span style={{ fontSize: "1.2rem" }}>
-          {volatility.level === "high"
-            ? "🌪️"
-            : volatility.level === "low"
-              ? "🎯"
-              : "⚖️"}
-        </span>
+        <span style={{ fontSize: "1.2rem" }}>{icon}</span>
         <span style={{ fontWeight: "600", color: "#333" }}>
-          {t("volatility.indexLabel", { score: volatility.score })}
+          {t("volatility.attentionTitle")}
         </span>
         <span
           style={{
@@ -167,24 +136,14 @@ function VolatilityDisplay({ volatility }) {
             borderRadius: "12px",
             fontSize: "0.85rem",
             fontWeight: "500",
-            background:
-              volatility.level === "high"
-                ? "#ff9800"
-                : volatility.level === "low"
-                  ? "#4caf50"
-                  : "#2196f3",
+            background: border,
             color: "white",
           }}
         >
-          {volatility.level === "high"
-            ? t("volatility.levelHigh")
-            : volatility.level === "low"
-              ? t("volatility.levelLow")
-              : t("volatility.levelMedium")}
+          {attentionLabel}
         </span>
       </div>
 
-      {/* 指数の説明 */}
       <div
         style={{
           fontSize: "0.8rem",
@@ -196,13 +155,9 @@ function VolatilityDisplay({ volatility }) {
         {t("volatility.description")}
       </div>
 
-      {/* 1コース勝率ゲージ（会場ベースライン） */}
-      {volatility.venueWinRate != null && (
-        <WinRateGauge rate={volatility.venueWinRate} />
-      )}
+      <PercentileBar percentile={percentile} />
 
-      {/* イン崩れ指数の根拠 */}
-      {volatility.reasons && volatility.reasons.length > 0 && (
+      {reasons && reasons.length > 0 && (
         <div
           style={{
             fontSize: "0.9rem",
@@ -218,59 +173,12 @@ function VolatilityDisplay({ volatility }) {
               listStyleType: "disc",
             }}
           >
-            {volatility.reasons.map((reason, index) => (
+            {reasons.map((reason, index) => (
               <li key={index} style={{ marginBottom: "0.25rem" }}>
                 {reason}
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      {/* おすすめモデル */}
-      {volatility.recommendedModel && (
-        <div
-          style={{
-            marginTop: "0.75rem",
-            padding: "0.75rem",
-            background: "rgba(255, 255, 255, 0.5)",
-            borderRadius: "6px",
-            fontSize: "0.9rem",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "1.1rem" }}>💡</span>
-            <span style={{ fontWeight: "600", color: "#333" }}>
-              {t("volatility.recommendedModel")}
-            </span>
-            <span
-              style={{
-                color:
-                  volatility.recommendedModel === "upset-focus"
-                    ? "#ff6b00"
-                    : volatility.recommendedModel === "safe-bet"
-                      ? "#2e7d32"
-                      : "#0ea5e9",
-                fontWeight: "600",
-              }}
-            >
-              {volatility.recommendedModel === "standard" && t("models.standard")}
-              {volatility.recommendedModel === "safe-bet" && t("models.safeBet")}
-              {volatility.recommendedModel === "upset-focus" && t("models.upsetFocus")}
-            </span>
-          </div>
-          <div
-            style={{
-              marginTop: "0.35rem",
-              paddingLeft: "1.6rem",
-              fontSize: "0.85rem",
-              color: "#475569",
-            }}
-          >
-            {volatility.level === "high" && t("volatility.adviceHigh")}
-            {volatility.level === "low" && t("volatility.adviceLow")}
-            {volatility.level === "medium" && t("volatility.adviceMedium")}
-          </div>
         </div>
       )}
     </div>

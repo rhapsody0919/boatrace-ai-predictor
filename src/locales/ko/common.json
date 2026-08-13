@@ -67,17 +67,28 @@
     "raceCount": "{{count}}개 경주"
   },
   "volatility": {
-    "indexLabel": "1코스 이변 지수: {{score}}",
     "levelHigh": "이변 가능성 높음",
     "levelLow": "인기 안정",
-    "levelMedium": "보통",
-    "description": "1코스가 질 가능성 (높을수록 이변이 잦음)",
-    "winRateLabel": "1코스 승률 (최근 90일)",
-    "nationalAvg": "전국 평균 {{rate}}%",
-    "recommendedModel": "추천 모델:",
-    "adviceHigh": "이 경정장은 1코스가 무너지기 쉬워 고배당을 노리는 고배당형 모델을 추천합니다",
-    "adviceLow": "이 경정장은 1코스가 안정적이라 적중률 중시의 안정형 모델을 추천합니다",
-    "adviceMedium": "평균적인 경주로, 균형 잡힌 표준형 모델을 추천합니다"
+    "description": "최근 90일간 같은 경정장 레이스와 비교한, 1코스가 질 가능성의 상대 지표입니다",
+    "attentionTitle": "1코스 이변 주의도",
+    "attentionHigh": "경계",
+    "attentionLow": "안정",
+    "attentionStandard": "보통",
+    "percentileBarLabel": "경정장 내 백분위",
+    "percentileBarMin": "안정",
+    "percentileBarMedian": "보통",
+    "percentileBarMax": "이변 주의"
+  },
+  "trifectaReference": {
+    "title": "3쌍승 참고 정보",
+    "desc": "기대값이 플러스인 조합 1개를 참고용으로 표시합니다. 결과를 보장하지 않습니다",
+    "recommendation": {
+      "bet": "주목",
+      "neutral": "참고",
+      "skip": "관망 권장"
+    },
+    "odds": "배당 {{odds}}배",
+    "ev": "기대값 {{ev}}"
   },
   "table": {
     "title": "AI 데이터 예측",
@@ -136,7 +147,7 @@
     "analysisToolsLink": "데이터 분석 도구로 이 레이스를 더 분석하기"
   },
   "home": {
-    "introBannerText": "AI가 45개 이상의 데이터를 분석 | BoatAI 자세히 보기 →",
+    "introBannerText": "복승 예상・전개 예측 등 45개 이상의 데이터를 분석 | BoatAI 자세히 보기 →",
     "introBannerClose": "닫기",
     "todayRaces": "오늘의 경주",
     "dataType": "경주 데이터",
@@ -149,7 +160,7 @@
     "deadline": "발매 마감",
     "finished": "⏱️ 종료",
     "turnPreviewLabel": "예상 전개",
-    "viewPrediction": "AI 예측 보기",
+    "viewPrediction": "복승 예상 보기",
     "blogTitle": "경정 공략 블로그",
     "blogDesc": "적중률을 높이는 예측 팁, 경정장 가이드, 데이터 분석",
     "viewAllPosts": "전체 글 보기 →",
@@ -287,7 +298,7 @@
     "view": "예측 보기"
   },
   "section": {
-    "resultTitle": "AI 예측 결과"
+    "resultTitle": "데이터 분석 결과"
   },
   "animation": {
     "title": "1턴 마크 전개 예측",
@@ -297,7 +308,8 @@
     "replay": "▶ 다시 보기",
     "rankLabel": "{{rank}}위",
     "distributionTitle": "결과 확률",
-    "courseLabel": "{{course}}코스"
+    "courseLabel": "{{course}}코스",
+    "accuracyBadge": "실측: 적중률 약 80%（지난 4,580경주）"
   },
   "dataTable": {
     "title": "데이터 출주표",
@@ -316,6 +328,8 @@
     "rowAvgSt": "평균 ST",
     "rowExSt": "전시 ST",
     "rowCourseRate": "진입 코스 승률",
+    "rowPlaceRecommendation": "복승 예상",
+    "placeBadgeLabel": "복승 {{rank}}위",
     "loading": "분석 데이터 로딩 중…",
     "motorResetNote": "교체 직후"
   },
@@ -362,7 +376,8 @@
       "exhibition": "전시T",
       "courseRate": "코스",
       "returnRate": "회수율",
-      "technique": "결정수"
+      "technique": "결정수",
+      "placeRecommendation": "복승"
     },
     "itemTechniqueRank": "결정수「{{technique}}」는 최근 90일 승리 패턴 {{rank}}위（{{pct}}%）",
     "colGrade": "급별",

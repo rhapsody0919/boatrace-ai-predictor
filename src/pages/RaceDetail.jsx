@@ -28,8 +28,9 @@ function RaceDetail() {
   const [selectedRace, setSelectedRace] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [raceListCollapsed, setRaceListCollapsed] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("standard");
-  const [volatility, setVolatility] = useState(null);
+  // 旧3モデル実績アーカイブ（ModelComparisonTable・RaceCardの的中バッジ）表示専用。
+  // モデル切替UIはFR6で廃止したため定数化（AI予想モデル大規模改修）
+  const selectedModel = "standard";
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const predictionRef = useRef(null);
 
@@ -135,40 +136,6 @@ function RaceDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raceData, selectedRace?.id]);
 
-  // モデル切り替え
-  const switchModel = (model) => {
-    if (!prediction || !prediction.predictions) return;
-
-    setSelectedModel(model);
-
-    const modelKey =
-      model === "safe-bet"
-        ? "safeBet"
-        : model === "upset-focus"
-          ? "upsetFocus"
-          : "standard";
-    const modelPrediction = prediction.predictions[modelKey];
-
-    if (modelPrediction) {
-      const topPickPlayer = modelPrediction.players?.find(
-        (p) => p.number === modelPrediction.topPick,
-      );
-      const top3Players = (modelPrediction.top3 || []).map((num) =>
-        modelPrediction.players?.find((p) => p.number === num),
-      );
-
-      setPrediction({
-        ...prediction,
-        topPick: topPickPlayer,
-        recommended: top3Players,
-        allPlayers: modelPrediction.players,
-        confidence: modelPrediction.confidence,
-        reasoning: modelPrediction.reasoning,
-        top3: modelPrediction.top3,
-      });
-    }
-  };
-
   // レース分析
   const analyzeRace = useCallback((race) => {
     setSelectedRace(race);
@@ -203,71 +170,33 @@ function RaceDetail() {
 
   const processRacePrediction = (race) => {
     const racePrediction = race.rawData;
-    const hasNewFormat = !!racePrediction?.predictions;
-    const hasOldFormat = !!racePrediction?.prediction;
+    // データ出走表（DataRaceTable）はモデル非依存のため、race_entriesがあれば
+    // unifiedモデルの予測データが無い過去日付（2026-08-11より前）でも表示できるようにする
+    const players =
+      racePrediction?.players || racePrediction?.unified?.players || [];
 
-    if (!racePrediction || (!hasNewFormat && !hasOldFormat)) {
-      setPrediction({ error: true, errorMessage: "予想データがありません" });
-      return;
-    }
-
-    if (racePrediction.volatility) {
-      setVolatility(racePrediction.volatility);
-    } else {
-      setVolatility(null);
-    }
-
-    const modelKey =
-      selectedModel === "safe-bet"
-        ? "safeBet"
-        : selectedModel === "upset-focus"
-          ? "upsetFocus"
-          : "standard";
-
-    let modelPrediction;
-    if (hasNewFormat) {
-      modelPrediction = racePrediction.predictions[modelKey];
-    } else {
-      if (modelKey !== "standard") {
-        setPrediction({
-          error: true,
-          errorMessage:
-            "この日付のデータはスタンダードモデルのみ対応しています",
-        });
-        return;
-      }
-      modelPrediction = racePrediction.prediction;
-    }
-
-    if (!modelPrediction) {
+    if (players.length === 0) {
       setPrediction({
         error: true,
-        errorMessage: "このモデルの予想データがありません",
+        errorMessage: "予想データがありません",
       });
       return;
     }
 
-    const topPickPlayer = modelPrediction.players?.find(
-      (p) => p.number === modelPrediction.topPick,
-    );
-    const top3Players = (modelPrediction.top3 || []).map((num) =>
-      modelPrediction.players?.find((p) => p.number === num),
-    );
+    const unified = racePrediction?.unified || null;
+    const topPickPlayer = unified
+      ? players.find((p) => p.number === unified.topPick)
+      : null;
 
     setPrediction({
       topPick: topPickPlayer,
-      recommended: top3Players,
-      allPlayers: modelPrediction.players,
-      confidence: modelPrediction.confidence,
-      reasoning: modelPrediction.reasoning || ["予想根拠データなし"],
-      top3: modelPrediction.top3,
+      allPlayers: players,
+      top3: unified ? [unified.topPick, unified.top2nd].filter(Boolean) : [],
       result: racePrediction.result,
-      predictions: racePrediction.predictions || {
-        standard: racePrediction.prediction,
-      },
-      turnPrediction: racePrediction.turnPrediction || null,
+      turnPrediction: unified?.turnPrediction ?? null,
+      volatilityPercentile: unified?.volatilityPercentile ?? null,
+      volatilityReasons: unified?.volatilityReasons ?? [],
       racerStats: racePrediction.racerStats || null,
-      predictionOdds: racePrediction.predictionOdds || null,
     });
   };
 
@@ -406,7 +335,7 @@ function RaceDetail() {
               <ModelComparisonTable
                 data={modelComparison}
                 showRaceCount={true}
-                title="📊 モデル間パフォーマンス比較"
+                title="📊 モデル間パフォーマンス比較（旧モデルアーカイブ）"
               />
 
               <VenueSelector
@@ -502,9 +431,6 @@ function RaceDetail() {
                   ref={predictionRef}
                   prediction={prediction}
                   selectedRace={selectedRace}
-                  selectedModel={selectedModel}
-                  onSwitchModel={switchModel}
-                  volatility={volatility}
                   isAnalyzing={isAnalyzing}
                   date={date}
                 />

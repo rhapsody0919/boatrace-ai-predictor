@@ -12,18 +12,7 @@ import { prefetchRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { getRaceId } from "../../utils/raceId";
 
 const PredictionSection = forwardRef(
-  (
-    {
-      prediction,
-      selectedRace,
-      selectedModel,
-      onSwitchModel,
-      volatility,
-      isAnalyzing,
-      date,
-    },
-    ref,
-  ) => {
+  ({ prediction, selectedRace, isAnalyzing, date }, ref) => {
     const { t } = useTranslation();
 
     // レース選択直後（AI分析演出の間）に分析データの取得を先行開始する。
@@ -44,16 +33,11 @@ const PredictionSection = forwardRef(
       <PredictionPanel
         prediction={prediction}
         selectedRace={selectedRace}
-        selectedModel={selectedModel}
-        onSwitchModel={onSwitchModel}
-        volatility={volatility}
         isAnalyzing={isAnalyzing}
         date={date}
       />
     );
-    const result = (
-      <RaceResult prediction={prediction} volatility={volatility} />
-    );
+    const result = <RaceResult prediction={prediction} />;
     const review = (
       <RaceReview prediction={prediction} selectedRace={selectedRace} />
     );

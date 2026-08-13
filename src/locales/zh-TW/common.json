@@ -67,17 +67,28 @@
     "raceCount": "{{count}} 場比賽"
   },
   "volatility": {
-    "indexLabel": "1號位失守指數：{{score}}",
     "levelHigh": "冷門機率高",
     "levelLow": "熱門穩定",
-    "levelMedium": "普通",
-    "description": "1號位落敗的可能性（數值越高越容易爆冷）",
-    "winRateLabel": "1號位勝率（近90天）",
-    "nationalAvg": "全國平均 {{rate}}%",
-    "recommendedModel": "推薦模型：",
-    "adviceHigh": "此賽場1號位容易失守，推薦瞄準高派彩的冷門型模型",
-    "adviceLow": "此賽場1號位表現穩定，推薦重視命中率的穩健型模型",
-    "adviceMedium": "屬於標準賽況，推薦平衡取向的標準型模型"
+    "description": "與該賽場過去90天的賽事相比，1號位落敗可能性的相對指標",
+    "attentionTitle": "1號位失守注意度",
+    "attentionHigh": "警戒",
+    "attentionLow": "穩健",
+    "attentionStandard": "普通",
+    "percentileBarLabel": "賽場內百分位",
+    "percentileBarMin": "穩健",
+    "percentileBarMedian": "普通",
+    "percentileBarMax": "容易爆冷"
+  },
+  "trifectaReference": {
+    "title": "3連單參考資訊",
+    "desc": "僅顯示期望值為正的1組作為參考，不保證結果",
+    "recommendation": {
+      "bet": "值得關注",
+      "neutral": "參考",
+      "skip": "建議觀望"
+    },
+    "odds": "賠率 {{odds}}倍",
+    "ev": "期望值 {{ev}}"
   },
   "table": {
     "title": "AI 數據預測",
@@ -136,7 +147,7 @@
     "analysisToolsLink": "用數據分析工具進一步分析本場比賽"
   },
   "home": {
-    "introBannerText": "AI分析45項以上數據 | 了解更多BoatAI →",
+    "introBannerText": "分析複勝預測、展開預測等45項以上數據 | 了解更多BoatAI →",
     "introBannerClose": "關閉",
     "todayRaces": "今日賽事",
     "dataType": "比賽資料",
@@ -149,7 +160,7 @@
     "deadline": "投注截止",
     "finished": "⏱️ 已結束",
     "turnPreviewLabel": "預測",
-    "viewPrediction": "查看 AI 預測",
+    "viewPrediction": "查看複勝預測",
     "blogTitle": "賽艇攻略部落格",
     "blogDesc": "提升命中率的預測技巧、賽場指南與數據分析",
     "viewAllPosts": "查看所有文章 →",
@@ -287,7 +298,7 @@
     "view": "查看預測"
   },
   "section": {
-    "resultTitle": "AI 預測結果"
+    "resultTitle": "數據分析結果"
   },
   "animation": {
     "title": "第一轉彎標預測",
@@ -297,7 +308,8 @@
     "replay": "▶ 重播",
     "rankLabel": "第{{rank}}名",
     "distributionTitle": "結果機率",
-    "courseLabel": "{{course}}號航道"
+    "courseLabel": "{{course}}號航道",
+    "accuracyBadge": "實測：命中率約80%（過去4,580場）"
   },
   "dataTable": {
     "title": "數據出賽表",
@@ -316,6 +328,8 @@
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
     "rowCourseRate": "進入航道勝率",
+    "rowPlaceRecommendation": "複勝預測",
+    "placeBadgeLabel": "複勝第{{rank}}位",
     "loading": "數據載入中…",
     "motorResetNote": "剛更換"
   },
@@ -362,7 +376,8 @@
       "exhibition": "展示T",
       "courseRate": "航道",
       "returnRate": "回收率",
-      "technique": "方式"
+      "technique": "方式",
+      "placeRecommendation": "複勝"
     },
     "itemTechniqueRank": "獲勝方式「{{technique}}」為該選手過去90天獲勝模式第{{rank}}名（{{pct}}%）",
     "colGrade": "級別",
