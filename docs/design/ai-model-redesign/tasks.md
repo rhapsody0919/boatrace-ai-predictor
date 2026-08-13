@@ -85,6 +85,7 @@
 
 ## 備考
 
+- **PR**: [#286](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/286)（`feature/ai-model-redesign` → `master`）。`/code-review`セルフレビューを実行したが45分以上経過しても結果が返らず（finder段階で確認が取れたのみ）、build/e2e（43件全通過）の検証は完了していたためレビュー結果を待たずにコミット・PR作成した。結果が届き次第フォローアップ対応する（未マージ）
 - **重大インシデントと復旧（2026-08-13深夜〜14未明）**: フェーズ5の作業を、既にmasterへマージ済み（PR#281）だった`feature/blog-i18n-zhtw-articles-3`ブランチ上で継続してしまっていたことが、e2eテスト実行時に発覚した。同期間中、並行セッションでWatson/Mycroft予想（PR#282〜285、CI週次再学習含む）がmasterへマージされており、当初FR6で「廃止」としていたホームズ5探偵ページ（`/holmes`）配下のファイルを誤って削除していたため、並行開発中の実装を破壊し、既存e2eテスト（`/holmes`のアドラータブ検証）とも衝突していた。以下の手順で復旧した。
   1. `git checkout`で誤って削除したHolmes/Poirot関連ファイル（`src/pages/Holmes.jsx`等、`src/components/holmes/`全体、`src/components/poirot/`全体、`src/services/poirotService.js`）を復元し、`AppRouter.jsx`の`/holmes`・`/poirot`ルートを元のページ表示に戻す（`/picks`のみリダイレクト維持）よう訂正。spec.md/screens.mdのFR6該当箇所に訂正履歴を追記
   2. `git stash -u`で全変更を退避 → `master`をorigin/masterまで`--ff-only`で最新化（12コミット分、Watson/Mycroft実装含む）→ 新規ブランチ`feature/ai-model-redesign`を作成 → `git stash pop`で変更を復元（`e2e/smoke.spec.js`はWatson/Mycroft関連テスト追加とのauto-merge、コンフリクトなし）
