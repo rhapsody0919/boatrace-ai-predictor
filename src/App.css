@@ -1072,50 +1072,6 @@ input:focus-visible,
 .podium-item.second .boat-number { color: #475569; }
 .podium-item.third .boat-number { color: #78350f; }
 
-/* イン崩れ予測 → 結果 ペア表示 */
-.in-kuzure-result {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
-}
-
-.in-kuzure-prediction {
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
-  color: #92400e;
-  font-weight: 600;
-  font-size: 0.8rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 12px;
-  white-space: nowrap;
-}
-
-.in-kuzure-arrow {
-  color: #94a3b8;
-  font-size: 1rem;
-}
-
-.in-kuzure-outcome {
-  font-weight: bold;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  white-space: nowrap;
-}
-
-.in-kuzure-outcome.outcome-hit {
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-  color: white;
-}
-
-.in-kuzure-outcome.outcome-miss {
-  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
-  color: white;
-}
-
 .accuracy-check {
   margin: 0.75rem auto 0;
   max-width: 320px;
@@ -1285,21 +1241,6 @@ input:focus-visible,
 
   .podium-item .boat-number {
     font-size: 1.25rem;
-  }
-
-  .in-kuzure-result {
-    gap: 0.35rem;
-    font-size: 0.82rem;
-  }
-
-  .in-kuzure-prediction {
-    font-size: 0.72rem;
-    padding: 0.2rem 0.5rem;
-  }
-
-  .in-kuzure-outcome {
-    font-size: 0.82rem;
-    padding: 0.2rem 0.6rem;
   }
 
   .accuracy-check {
@@ -1716,19 +1657,6 @@ input:focus-visible,
 
   .podium-item .boat-number {
     font-size: 1.1rem;
-  }
-
-  .in-kuzure-result {
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .in-kuzure-prediction {
-    font-size: 0.68rem;
-  }
-
-  .in-kuzure-outcome {
-    font-size: 0.75rem;
   }
 
   .hit, .miss {

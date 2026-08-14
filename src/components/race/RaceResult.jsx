@@ -42,11 +42,6 @@ function RaceResult({ prediction }) {
   const hasTurnPrediction =
     Array.isArray(turnPatterns) && turnPatterns.length > 0;
 
-  // イン崩れ判定（FR3の会場内パーセンタイル、0.7以上をVolatilityDisplayと同じ閾値で「高」とみなす）
-  const showInKuzure =
-    prediction.volatilityPercentile >= 0.7 && result.winningTechnique;
-  const isInKuzure = showInKuzure && result.winningTechnique !== "逃げ";
-
   // 複勝1位・2位の2予想を配列でまとめてレンダリング
   const placePicks = [
     { rankLabel: 1, number: topPick.number },
@@ -72,20 +67,11 @@ function RaceResult({ prediction }) {
         </div>
       </div>
 
-      {/* イン崩れ予測 → 結果の対応表示 */}
-      {showInKuzure && (
-        <div className="in-kuzure-result">
-          <span className="in-kuzure-prediction">
-            {t("result.inKuzureHigh")}
-          </span>
-          <span className="in-kuzure-arrow">→</span>
-          <span
-            className={`in-kuzure-outcome ${isInKuzure ? "outcome-hit" : "outcome-miss"}`}
-          >
-            {isInKuzure ? t("result.inKuzureHit") : t("result.inKuzureMiss")}
-          </span>
-        </div>
-      )}
+      {/* イン崩れ指数は「このレースは荒れやすい/堅い」という確率的な傾向予測であり、
+          複勝予想・展開予測のような単発レースの二値的中判定にはなじまない
+          （1レースが堅く決まっても「高リスク」判定が誤りだったとは言えない）。
+          2026-08-14: 従来ここに表示していた単発レースの的中/不的中判定を削除。
+          精度検証は集計ベース（BOA-177、着手待ち）に委ねる方針で統一した */}
 
       {/* 複勝予想の検証と展開予測の検証は完全に独立したロジックのため、
           1つの注記で済ませず別セクションとして分けて見せる
