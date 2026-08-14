@@ -3,7 +3,6 @@ import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
-import ModelComparisonTable from "../components/ModelComparisonTable";
 import {
   VenueSelector,
   RaceCard,
@@ -208,92 +207,6 @@ function RaceDetail() {
     { label: formatDate(date), path: `/races/${date}` },
   ];
 
-  // 全モデルの統計を計算
-  const getModelComparison = () => {
-    if (!raceData || !raceData.races) return null;
-
-    const hasNewFormat = raceData.races.some((r) => r.predictions);
-    const models = hasNewFormat
-      ? ["standard", "safeBet", "upsetFocus"]
-      : ["standard"];
-    const modelNames = {
-      standard: "スタンダード",
-      safeBet: "本命狙い",
-      upsetFocus: "穴狙い",
-    };
-
-    return models.map((modelKey) => {
-      const finishedRaces = raceData.races.filter((r) => r.result?.finished);
-      let winHits = 0,
-        placeHits = 0,
-        trifecta3Hits = 0,
-        trio3Hits = 0;
-      let winPayouts = 0,
-        placePayouts = 0,
-        trifecta3Payouts = 0,
-        trio3Payouts = 0;
-
-      finishedRaces.forEach((race) => {
-        const prediction =
-          race.predictions?.[modelKey] ||
-          (modelKey === "standard" ? race.prediction : null);
-        if (!prediction) return;
-
-        const topPick = prediction.topPick;
-        const top3 = prediction.top3;
-        const result = race.result;
-
-        if (topPick === result.rank1) {
-          winHits++;
-          winPayouts += result.payouts?.win?.[topPick] || 0;
-        }
-        if (topPick === result.rank1 || topPick === result.rank2) {
-          placeHits++;
-          placePayouts += result.payouts?.place?.[topPick] || 0;
-        }
-        if (
-          top3.includes(result.rank1) &&
-          top3.includes(result.rank2) &&
-          top3.includes(result.rank3)
-        ) {
-          trifecta3Hits++;
-          const sorted = [result.rank1, result.rank2, result.rank3].sort(
-            (a, b) => a - b,
-          );
-          const trifectaKey = sorted.join("-");
-          trifecta3Payouts += result.payouts?.trifecta?.[trifectaKey] || 0;
-        }
-        if (
-          top3[0] === result.rank1 &&
-          top3[1] === result.rank2 &&
-          top3[2] === result.rank3
-        ) {
-          trio3Hits++;
-          const trioKey = `${result.rank1}-${result.rank2}-${result.rank3}`;
-          trio3Payouts += result.payouts?.trio?.[trioKey] || 0;
-        }
-      });
-
-      const totalRaces = finishedRaces.length;
-
-      return {
-        key: modelKey,
-        name: modelNames[modelKey],
-        races: totalRaces,
-        winHitRate: totalRaces > 0 ? winHits / totalRaces : 0,
-        winRecoveryRate: totalRaces > 0 ? winPayouts / 100 / totalRaces : 0,
-        placeHitRate: totalRaces > 0 ? placeHits / totalRaces : 0,
-        placeRecoveryRate: totalRaces > 0 ? placePayouts / 100 / totalRaces : 0,
-        trifectaHitRate: totalRaces > 0 ? trifecta3Hits / totalRaces : 0,
-        trifectaRecoveryRate:
-          totalRaces > 0 ? trifecta3Payouts / 100 / totalRaces : 0,
-        trioHitRate: totalRaces > 0 ? trio3Hits / totalRaces : 0,
-        trioRecoveryRate: totalRaces > 0 ? trio3Payouts / 100 / totalRaces : 0,
-      };
-    });
-  };
-
-  const modelComparison = getModelComparison();
   const selectedVenue = venuesData.find((v) => v.placeCd === selectedVenueId);
   const races = selectedVenue?.races || [];
 
@@ -334,12 +247,6 @@ function RaceDetail() {
             </div>
           ) : (
             <>
-              <ModelComparisonTable
-                data={modelComparison}
-                showRaceCount={true}
-                title="📊 モデル間パフォーマンス比較（旧モデルアーカイブ）"
-              />
-
               <VenueSelector
                 venuesData={venuesData}
                 selectedVenueId={selectedVenueId}

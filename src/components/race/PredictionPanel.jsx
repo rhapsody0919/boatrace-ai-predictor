@@ -8,6 +8,12 @@
  * 3連単参考情報（FR4、TrifectaReferenceCard）はUX上のフィードバックにより2026-08-14に表示を廃止。
  * バックエンド生成（generate-unified-trifecta-reference.js/bet_recommendations）自体は
  * 将来のモデル評価用途で残置している
+ *
+ * 2026-08-14追記: AiAnalysisSection（展開予測パネル/イン崩れバッジ）は「これから何が起きそうか」を
+ * 示す未来志向のUIのため、結果確定済みレースには表示しない（結果と矛盾する見え方になるため）。
+ * 過去レースの予想根拠検証は「データで振り返る」（RaceReview、モデル非依存で常時正しく振る舞う）が
+ * 担う。unifiedモデルのデータが無い日付でAIデータ分析欄が空白のまま表示される問題も、
+ * 未確定レースに限定することで実質的に解消される
  */
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -50,6 +56,10 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
     venueCode && raceDate
       ? `https://www.boatrace.jp/owpc/pc/race/racelist?rno=${selectedRace.raceNumber}&jcd=${String(venueCode).padStart(2, "0")}&hd=${raceDate.replace(/-/g, "")}`
       : null;
+
+  // 結果確定済みレースでは未来志向のAIデータ分析（展開予測/イン崩れ）を表示しない。
+  // 過去レースの検証は「データで振り返る」（RaceReview）が担う
+  const isFinished = Boolean(prediction?.result?.finished);
 
   // ローディング中
   if (isAnalyzing) {
@@ -126,77 +136,82 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
         venueCode={venueCode}
       />
 
-      {/* AIデータ分析（折りたたみ）: 展開予測パネル/イン崩れ指数バッジの2ブロック */}
-      <AiAnalysisSection topPick={prediction.topPick} confidence={null}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            className="prediction-result"
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            {/* ブロック1: 展開予測パネル（FR2、的中率80.0%） */}
-            {prediction.turnPrediction && prediction.allPlayers && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-              >
-                <p className="ai-analysis-block-badge">
-                  {t("animation.accuracyBadge")}
-                </p>
-                <FirstMarkAnimation
-                  patterns={prediction.turnPrediction.patterns}
-                  technique={prediction.turnPrediction.technique}
-                  probability={prediction.turnPrediction.probability}
-                  winnerCourse={prediction.turnPrediction.winnerCourse}
-                  distribution={prediction.turnPrediction.distribution}
-                  boatStrengths={prediction.turnPrediction.boatStrengths}
-                  players={prediction.allPlayers?.map((p) => ({
-                    number: p.number,
-                    name: p.name,
-                  }))}
-                  selectedPatternIndex={0}
-                  venue={
-                    venueCode ? t(`venues.${venueCode}`, venueName) : venueName
-                  }
-                  raceNumber={selectedRace?.raceNumber}
-                />
-              </motion.div>
-            )}
+      {/* AIデータ分析（折りたたみ）: 展開予測パネル/イン崩れ指数バッジの2ブロック。
+          未来志向のUIのため結果確定済みレースでは表示しない（データで振り返るが代わりに担う） */}
+      {!isFinished && (
+        <AiAnalysisSection topPick={prediction.topPick} confidence={null}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              className="prediction-result"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* ブロック1: 展開予測パネル（FR2、的中率80.0%） */}
+              {prediction.turnPrediction && prediction.allPlayers && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <p className="ai-analysis-block-badge">
+                    {t("animation.accuracyBadge")}
+                  </p>
+                  <FirstMarkAnimation
+                    patterns={prediction.turnPrediction.patterns}
+                    technique={prediction.turnPrediction.technique}
+                    probability={prediction.turnPrediction.probability}
+                    winnerCourse={prediction.turnPrediction.winnerCourse}
+                    distribution={prediction.turnPrediction.distribution}
+                    boatStrengths={prediction.turnPrediction.boatStrengths}
+                    players={prediction.allPlayers?.map((p) => ({
+                      number: p.number,
+                      name: p.name,
+                    }))}
+                    selectedPatternIndex={0}
+                    venue={
+                      venueCode
+                        ? t(`venues.${venueCode}`, venueName)
+                        : venueName
+                    }
+                    raceNumber={selectedRace?.raceNumber}
+                  />
+                </motion.div>
+              )}
 
-            {/* ブロック2: イン崩れ指数バッジ（FR3） */}
-            {prediction.volatilityPercentile != null && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
-              >
-                <VolatilityDisplay
-                  percentile={prediction.volatilityPercentile}
-                  reasons={prediction.volatilityReasons}
-                  isFallback={prediction.volatilityPercentileIsFallback}
-                />
-              </motion.div>
-            )}
+              {/* ブロック2: イン崩れ指数バッジ（FR3） */}
+              {prediction.volatilityPercentile != null && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+                >
+                  <VolatilityDisplay
+                    percentile={prediction.volatilityPercentile}
+                    reasons={prediction.volatilityReasons}
+                    isFallback={prediction.volatilityPercentileIsFallback}
+                  />
+                </motion.div>
+              )}
 
-            {/* 出現パターン */}
-            {venueCode && venueName && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
-              >
-                <OutcomePatternPreview
-                  venueCode={venueCode}
-                  venueName={venueName}
-                  prediction={prediction}
-                />
-              </motion.div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </AiAnalysisSection>
+              {/* 出現パターン */}
+              {venueCode && venueName && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
+                >
+                  <OutcomePatternPreview
+                    venueCode={venueCode}
+                    venueName={venueName}
+                    prediction={prediction}
+                  />
+                </motion.div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </AiAnalysisSection>
+      )}
 
       {/* SNSシェアボタン */}
       <div className="social-share-wrapper">

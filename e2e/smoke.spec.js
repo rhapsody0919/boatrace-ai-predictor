@@ -444,7 +444,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
     page,
   }) => {
     await page.goto("/");
-    await page.locator(".predict-btn").first().click();
+    // AIデータ分析（展開予測/イン崩れ）は未来志向のUIのため結果確定済みレースでは
+    // 表示しない仕様（2026-08-14）。「⏱️ 終了」バッジが無い＝未終了のレースカードを選ぶ
+    const upcomingCard = page
+      .locator(".race-card")
+      .filter({ hasNotText: "終了" })
+      .first();
+    await upcomingCard.locator(".predict-btn").click();
 
     // データ出走表が主役として表示される
     await expect(page.locator(".data-race-table")).toBeVisible({
@@ -496,6 +502,8 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
     // 全艇の言語化ブロックも6艇分表示される
     await expect(page.locator(".race-review-boat-block")).toHaveCount(6);
+    // 結果確定済みレースでは未来志向のAIデータ分析（展開予測/イン崩れ）を表示しない
+    await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });
 
   test("分析ツールの超展開データタブが表示される（レースAI予想からの外出し）", async ({
