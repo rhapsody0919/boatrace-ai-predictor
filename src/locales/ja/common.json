@@ -296,6 +296,10 @@
     "summaryHit": "✅ 上位予想の1つが的中しました",
     "summaryMiss": "❌ 上位予想に無い{{winnerNumber}}号艇が1着でした"
   },
+  "placeRecommendation": {
+    "basis": "進入コース別勝率が高い艇を予想",
+    "courseRateLabel": "コース別勝率{{rate}}%（{{wins}}/{{total}}）"
+  },
   "section": {
     "resultTitle": "データ分析結果"
   },
@@ -326,7 +330,6 @@
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
     "rowCourseRate": "進入コース勝率",
-    "rowPlaceRecommendation": "複勝予想",
     "placeBadgeLabel": "複勝{{rank}}位",
     "placeOddsLabel": "（複勝{{low}}-{{high}}倍）",
     "loading": "分析データを読み込み中…",
@@ -371,8 +374,7 @@
       "exhibition": "展示T",
       "courseRate": "コース",
       "returnRate": "回収率",
-      "technique": "決まり手",
-      "placeRecommendation": "複勝"
+      "technique": "決まり手"
     },
     "itemTechniqueRank": "決まり手「{{technique}}」は過去90日の勝ちパターン{{rank}}位（{{pct}}%）",
     "colGrade": "級別",

@@ -298,6 +298,10 @@
     "summaryHit": "✅ One of the top predictions hit",
     "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions"
   },
+  "placeRecommendation": {
+    "basis": "Predicts boats with the highest entry-course win rate",
+    "courseRateLabel": "Course win rate {{rate}}% ({{wins}}/{{total}})"
+  },
   "section": {
     "resultTitle": "Data Analysis Results"
   },
@@ -328,7 +332,6 @@
     "rowAvgSt": "Avg ST",
     "rowExSt": "Exhibition ST",
     "rowCourseRate": "Entry course win rate",
-    "rowPlaceRecommendation": "Place pick",
     "placeBadgeLabel": "Place pick #{{rank}}",
     "placeOddsLabel": "(place odds {{low}}-{{high}}x)",
     "loading": "Loading analytics…",
@@ -373,8 +376,7 @@
       "exhibition": "Ex.time",
       "courseRate": "Course",
       "returnRate": "Return",
-      "technique": "Style",
-      "placeRecommendation": "Place"
+      "technique": "Style"
     },
     "itemTechniqueRank": "Winning technique \"{{technique}}\" is No.{{rank}} ({{pct}}%) in this racer's 90-day winning patterns",
     "colGrade": "Class",

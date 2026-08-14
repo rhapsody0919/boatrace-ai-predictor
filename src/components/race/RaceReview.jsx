@@ -81,11 +81,8 @@ function RaceReview({ prediction, selectedRace }) {
     analysis,
     pending: analysis.pending,
   });
-  // technique/placeRecommendationは常時null signalのため一覧比較の対象外
-  // （placeRecommendationは上位2着基準の的中判定が未実装、review.jsxのgoodは上位3着基準のため流用不可）
-  const judgeableRows = rows.filter(
-    (row) => !["technique", "placeRecommendation"].includes(row.key),
-  );
+  // techniqueは常時null signalのため一覧比較の対象外（決まり手型は上のwinnerTechniqueItemで特別判定）
+  const judgeableRows = rows.filter((row) => row.key !== "technique");
 
   // 各艇の言語化: 整合/相違の事実文リスト
   const itemsFor = (boat, good) => {

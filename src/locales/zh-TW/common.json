@@ -296,6 +296,10 @@
     "summaryHit": "✅ 其中一項預測命中",
     "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中"
   },
+  "placeRecommendation": {
+    "basis": "預測進入航道勝率較高的艇",
+    "courseRateLabel": "航道勝率{{rate}}%（{{wins}}/{{total}}）"
+  },
   "section": {
     "resultTitle": "數據分析結果"
   },
@@ -326,7 +330,6 @@
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
     "rowCourseRate": "進入航道勝率",
-    "rowPlaceRecommendation": "複勝預測",
     "placeBadgeLabel": "複勝第{{rank}}位",
     "placeOddsLabel": "（複勝{{low}}-{{high}}倍）",
     "loading": "數據載入中…",
@@ -371,8 +374,7 @@
       "exhibition": "展示T",
       "courseRate": "航道",
       "returnRate": "回收率",
-      "technique": "方式",
-      "placeRecommendation": "複勝"
+      "technique": "方式"
     },
     "itemTechniqueRank": "獲勝方式「{{technique}}」為該選手過去90天獲勝模式第{{rank}}名（{{pct}}%）",
     "colGrade": "級別",

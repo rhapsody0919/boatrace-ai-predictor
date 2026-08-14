@@ -3,17 +3,23 @@
  * App.jsx と RaceDetail.jsx で共通利用
  *
  * AI予想モデル大規模改修（2026-08-13）: 3モデル切替（standard/safeBet/upsetFocus）を廃止し、
- * unifiedモデル1本に統合。AiAnalysisSection内は複勝予想（DataRaceTable側、FR1/FR5）と対をなす
- * 展開予測パネル/イン崩れ指数バッジの2ブロック構成に再編した（FR2/FR3）。
+ * unifiedモデル1本に統合。AiAnalysisSectionは複勝予想パネル/展開予測パネル/イン崩れ指数
+ * バッジの3ブロック構成（FR1/FR2/FR3）。
  * 3連単参考情報（FR4、TrifectaReferenceCard）はUX上のフィードバックにより2026-08-14に表示を廃止。
  * バックエンド生成（generate-unified-trifecta-reference.js/bet_recommendations）自体は
  * 将来のモデル評価用途で残置している
  *
- * 2026-08-14追記: AiAnalysisSection（展開予測パネル/イン崩れバッジ）は「これから何が起きそうか」を
- * 示す未来志向のUIのため、結果確定済みレースには表示しない（結果と矛盾する見え方になるため）。
- * 過去レースの予想根拠検証は「データで振り返る」（RaceReview、モデル非依存で常時正しく振る舞う）が
- * 担う。unifiedモデルのデータが無い日付でAIデータ分析欄が空白のまま表示される問題も、
- * 未確定レースに限定することで実質的に解消される
+ * 2026-08-14追記: AiAnalysisSection（複勝予想パネル/展開予測パネル/イン崩れバッジ）は
+ * 「これから何が起きそうか」を示す未来志向のUIのため、結果確定済みレースには表示しない
+ * （結果と矛盾する見え方になるため）。過去レースの予想根拠検証は「データで振り返る」
+ * （RaceReview、モデル非依存で常時正しく振る舞う）と、レース結果パネル（RaceResult、
+ * 複勝的中/展開予測的中の検証）が担う。unifiedモデルのデータが無い日付でAIデータ分析欄が
+ * 空白のまま表示される問題も、未確定レースに限定することで実質的に解消される
+ *
+ * 2026-08-14再追記: 複勝予想は当初データ出走表（DataRaceTable）の行として表示していたが、
+ * 客観的な生データ（勝率・モーター等）の行と、AIの結論（複勝予想）の行が同じ見た目で
+ * 並んでいると「AIの予想であること」が埋もれてしまうという指摘を受け、展開予測・イン崩れ
+ * 指数と同じ独立パネル（PlaceRecommendationPanel）に分離した
  */
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -25,6 +31,7 @@ import { getVenueGuidePath } from "../../utils/venueUtils";
 import VolatilityDisplay from "./VolatilityDisplay";
 import FirstMarkAnimation from "./FirstMarkAnimation";
 import TurnPatternList from "./TurnPatternList";
+import PlaceRecommendationPanel from "./PlaceRecommendationPanel";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
@@ -130,14 +137,16 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
         </div>
       )}
 
-      {/* データ出走表（主役）: 出走6選手×分析指標のマトリクス。複勝予想行を含む（FR1/FR5） */}
+      {/* データ出走表（主役）: 出走6選手×客観的な生データの一覧マトリクス。
+          複勝予想（AIの結論）は2026-08-14〜このテーブルの行から独立させ、
+          AiAnalysisSection側のPlaceRecommendationPanelに移した */}
       <DataRaceTable
         raceId={analysisRaceId}
         prediction={prediction}
         venueCode={venueCode}
       />
 
-      {/* AIデータ分析（折りたたみ）: 展開予測パネル/イン崩れ指数バッジの2ブロック。
+      {/* AIデータ分析（折りたたみ）: 複勝予想/展開予測パネル/イン崩れ指数バッジの3ブロック。
           未来志向のUIのため結果確定済みレースでは表示しない（データで振り返るが代わりに担う） */}
       {!isFinished && (
         <AiAnalysisSection topPick={prediction.topPick} confidence={null}>
@@ -148,7 +157,21 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {/* ブロック1: 展開予測パネル（FR2、的中率80.0%） */}
+              {/* ブロック1: 複勝予想パネル（FR1/FR5） */}
+              {prediction.allPlayers && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <PlaceRecommendationPanel
+                    raceId={analysisRaceId}
+                    players={prediction.allPlayers}
+                  />
+                </motion.div>
+              )}
+
+              {/* ブロック2: 展開予測パネル（FR2、的中率80.0%） */}
               {prediction.turnPrediction && prediction.allPlayers && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -183,7 +206,7 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
                 </motion.div>
               )}
 
-              {/* ブロック2: イン崩れ指数バッジ（FR3） */}
+              {/* ブロック3: イン崩れ指数バッジ（FR3） */}
               {prediction.volatilityPercentile != null && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}

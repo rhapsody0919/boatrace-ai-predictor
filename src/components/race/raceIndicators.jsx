@@ -27,6 +27,39 @@ export const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
+// 艇のコース別勝率（進入コースでの1着数/出走数）。racerStatsから算出する
+export function courseRateOf(statsByBoat, boat) {
+  const stats = statsByBoat.get(boat);
+  if (!stats) return null;
+  const course = stats.course ?? boat;
+  const counts = stats.courseRaceCounts?.[String(course)];
+  if (!counts || !counts.total) return null;
+  return {
+    wins: counts.wins ?? 0,
+    total: counts.total,
+    rate: ((counts.wins ?? 0) / counts.total) * 100,
+  };
+}
+
+/**
+ * 複勝予想（FR1/FR5）: コース別勝率上位2艇。generate-unified-predictions.js の
+ * calculatePlaceRecommendation と同じロジック（上位2艇、EV計算は経由しない）。
+ * DataRaceTable（テーブル行）とPlaceRecommendationPanel（独立パネル、2026-08-14〜）
+ * の両方から使う共有ロジック
+ */
+export function getPlaceRecommendation(players, racerStats) {
+  const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
+  return players
+    .map((p) => ({
+      boat: p.number,
+      name: p.name,
+      courseRate: courseRateOf(statsByBoat, p.number),
+    }))
+    .filter((c) => c.courseRate !== null)
+    .sort((a, b) => b.courseRate.rate - a.courseRate.rate)
+    .slice(0, 2);
+}
+
 const byBoat = (rows) => {
   const map = new Map();
   (rows ?? []).forEach((row) => map.set(row.boat_number, row));
@@ -87,7 +120,6 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     techniqueProfile,
     returnRate,
     racerStats,
-    placeOdds,
   } = analysis;
 
   const motorByBoat = byBoat(motor);
@@ -97,7 +129,6 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
   const techByBoat = byBoat(techniqueProfile);
   const rateByBoat = byBoat(returnRate);
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
-  const placeOddsByBoat = byBoat(placeOdds);
 
   // ソース別プレースホルダ: ロード中はスケルトン、取得済みでデータ無しは「—」
   const ph = (source) =>
@@ -145,30 +176,10 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     })),
   };
 
-  const courseRateOf = (boat) => {
-    const stats = statsByBoat.get(boat);
-    if (!stats) return null;
-    const course = stats.course ?? boat;
-    const counts = stats.courseRaceCounts?.[String(course)];
-    if (!counts || !counts.total) return null;
-    return {
-      wins: counts.wins ?? 0,
-      total: counts.total,
-      rate: ((counts.wins ?? 0) / counts.total) * 100,
-    };
-  };
   cand.courseRate = players.map((p) => ({
     boat: p.number,
-    value: courseRateOf(p.number)?.rate ?? null,
+    value: courseRateOf(statsByBoat, p.number)?.rate ?? null,
   }));
-
-  // 複勝予想（FR1/FR5）: コース別勝率上位2艇。generate-unified-predictions.js の
-  // calculatePlaceRecommendation と同じロジック（上位2艇、EV計算は経由しない）
-  const placeBoats = [...cand.courseRate]
-    .filter((c) => c.value !== null)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 2)
-    .map((c) => c.boat);
 
   return [
     {
@@ -408,7 +419,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
             });
       },
       render: (p) => {
-        const cr = courseRateOf(p.number);
+        const cr = courseRateOf(statsByBoat, p.number);
         if (!cr) return ph("racerStats");
         return (
           <span className="drt-value">
@@ -416,43 +427,6 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
             <span className="drt-sub">
               {cr.wins}/{cr.total}
             </span>
-          </span>
-        );
-      },
-    },
-    {
-      key: "placeRecommendation",
-      label: t("dataTable.rowPlaceRecommendation"),
-      shortLabel: t("review.cols.placeRecommendation"),
-      tab: "attackdefense",
-      best: null,
-      // 複勝＝上位2着的中（RaceReviewの好走判定は上位3着基準のため流用不可）。
-      // RaceReviewでの的中判定は本行のスコープ外（別途top2専用の実装が必要）
-      signal: () => null,
-      itemText: () => null,
-      render: (p) => {
-        if (placeBoats.length === 0) return ph("racerStats");
-        const rank = placeBoats.indexOf(p.number);
-        if (rank === -1) return <span className="drt-sub">—</span>;
-        const boatOdds = placeOddsByBoat.get(p.number);
-        const oddsLow = toNumber(boatOdds?.odds_place_low);
-        const oddsHigh = toNumber(boatOdds?.odds_place_high);
-        return (
-          <span className="drt-value drt-plus">
-            {rank === 0 ? "◎" : "○"}
-            <span className="drt-sub">
-              {t("dataTable.placeBadgeLabel", { rank: rank + 1 })}
-            </span>
-            {pending.placeOdds ? (
-              <span className="drt-skeleton" aria-hidden="true" />
-            ) : oddsLow !== null && oddsHigh !== null ? (
-              <span className="drt-sub">
-                {t("dataTable.placeOddsLabel", {
-                  low: oddsLow.toFixed(1),
-                  high: oddsHigh.toFixed(1),
-                })}
-              </span>
-            ) : null}
           </span>
         );
       },

@@ -296,6 +296,10 @@
     "summaryHit": "✅ 상위 예측 중 하나가 적중했습니다",
     "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}호정이 1착이었습니다"
   },
+  "placeRecommendation": {
+    "basis": "진입 코스별 승률이 높은 보트를 예측",
+    "courseRateLabel": "코스별 승률 {{rate}}%（{{wins}}/{{total}}）"
+  },
   "section": {
     "resultTitle": "데이터 분석 결과"
   },
@@ -326,7 +330,6 @@
     "rowAvgSt": "평균 ST",
     "rowExSt": "전시 ST",
     "rowCourseRate": "진입 코스 승률",
-    "rowPlaceRecommendation": "복승 예상",
     "placeBadgeLabel": "복승 {{rank}}위",
     "placeOddsLabel": "（복승 {{low}}-{{high}}배）",
     "loading": "분석 데이터 로딩 중…",
@@ -371,8 +374,7 @@
       "exhibition": "전시T",
       "courseRate": "코스",
       "returnRate": "회수율",
-      "technique": "결정수",
-      "placeRecommendation": "복승"
+      "technique": "결정수"
     },
     "itemTechniqueRank": "결정수「{{technique}}」는 최근 90일 승리 패턴 {{rank}}위（{{pct}}%）",
     "colGrade": "급별",
