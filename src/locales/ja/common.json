@@ -155,7 +155,6 @@
     "noRacesToday": "本日、このレース場での開催はありません",
     "deadline": "締切予定時刻",
     "finished": "⏱️ 終了",
-    "placePreviewLabel": "複勝予想",
     "viewPrediction": "データ分析を見る",
     "blogTitle": "ボートレース攻略ブログ",
     "blogDesc": "予想のコツ、会場別攻略、データ分析手法など、勝率アップに役立つ情報をお届けします",
@@ -298,11 +297,6 @@
     "summaryHit": "✅ 上位予想の1つが的中しました",
     "summaryMiss": "❌ 上位予想に無い{{winnerNumber}}号艇が1着でした"
   },
-  "placeRecommendation": {
-    "title": "複勝予想",
-    "basis": "進入コース別勝率が高い艇を予想",
-    "courseRateLabel": "コース別勝率{{rate}}%（{{wins}}/{{total}}）"
-  },
   "accuracyStat": {
     "withRecovery": "実測: 的中率{{hitRate}}%・回収率{{recoveryRate}}%（過去{{totalRaces}}レース）",
     "hitRateOnly": "実測: 1着的中率{{hitRate}}%（過去{{totalRaces}}レース）"
@@ -330,8 +324,6 @@
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
     "rowCourseRate": "進入コース勝率",
-    "placeBadgeLabel": "複勝{{rank}}位",
-    "placeOddsLabel": "（複勝{{low}}-{{high}}倍）",
     "loading": "分析データを読み込み中…",
     "motorResetNote": "交換直後"
   },

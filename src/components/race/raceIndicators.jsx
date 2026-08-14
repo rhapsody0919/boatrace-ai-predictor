@@ -41,25 +41,6 @@ export function courseRateOf(statsByBoat, boat) {
   };
 }
 
-/**
- * 複勝予想（FR1/FR5）: コース別勝率上位2艇。generate-unified-predictions.js の
- * calculatePlaceRecommendation と同じロジック（上位2艇、EV計算は経由しない）。
- * DataRaceTable（テーブル行）とPlaceRecommendationPanel（独立パネル、2026-08-14〜）
- * の両方から使う共有ロジック
- */
-export function getPlaceRecommendation(players, racerStats) {
-  const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
-  return players
-    .map((p) => ({
-      boat: p.number,
-      name: p.name,
-      courseRate: courseRateOf(statsByBoat, p.number),
-    }))
-    .filter((c) => c.courseRate !== null)
-    .sort((a, b) => b.courseRate.rate - a.courseRate.rate)
-    .slice(0, 2);
-}
-
 const byBoat = (rows) => {
   const map = new Map();
   (rows ?? []).forEach((row) => map.set(row.boat_number, row));

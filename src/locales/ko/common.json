@@ -155,7 +155,6 @@
     "noRacesToday": "오늘 이 경정장에는 경주가 없습니다",
     "deadline": "발매 마감",
     "finished": "⏱️ 종료",
-    "placePreviewLabel": "복승 예측",
     "viewPrediction": "데이터 분석 보기",
     "blogTitle": "경정 공략 블로그",
     "blogDesc": "적중률을 높이는 예측 팁, 경정장 가이드, 데이터 분석",
@@ -298,11 +297,6 @@
     "summaryHit": "✅ 상위 예측 중 하나가 적중했습니다",
     "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}호정이 1착이었습니다"
   },
-  "placeRecommendation": {
-    "title": "복승 예측",
-    "basis": "진입 코스별 승률이 높은 보트를 예측",
-    "courseRateLabel": "코스별 승률 {{rate}}%（{{wins}}/{{total}}）"
-  },
   "accuracyStat": {
     "withRecovery": "실측: 적중률{{hitRate}}%・회수율{{recoveryRate}}%（지난{{totalRaces}}경주）",
     "hitRateOnly": "실측: 1착 적중률{{hitRate}}%（지난{{totalRaces}}경주）"
@@ -330,8 +324,6 @@
     "rowAvgSt": "평균 ST",
     "rowExSt": "전시 ST",
     "rowCourseRate": "진입 코스 승률",
-    "placeBadgeLabel": "복승 {{rank}}위",
-    "placeOddsLabel": "（복승 {{low}}-{{high}}배）",
     "loading": "분석 데이터 로딩 중…",
     "motorResetNote": "교체 직후"
   },

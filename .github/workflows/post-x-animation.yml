@@ -1,9 +1,14 @@
 name: Post X Animation
 
+# 2026-08-14: AIモデル大規模改修（PR#286）で1マーク展開アニメーション
+# （FirstMarkAnimation）とモデル切替UI自体を撤去したため、本ワークフローが
+# 録画対象とするDOM要素が本番に存在しなくなり毎日必ず失敗する状態だった。
+# スクリプト自体（scripts/daily/post-x-animation.js）は将来アニメーションを
+# 再設計する際の参考用に残し、定期実行のみ無効化する
 on:
-  schedule:
-    - cron: "0 1 * * *" # JST 10:00（UTC 01:00）
-  workflow_dispatch: # 手動実行
+  # schedule:
+  #   - cron: "0 1 * * *" # JST 10:00（UTC 01:00）— 無効化中（上記コメント参照）
+  workflow_dispatch: # 手動実行のみ
 
 permissions:
   contents: read
