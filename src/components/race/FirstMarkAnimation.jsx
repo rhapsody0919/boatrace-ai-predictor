@@ -643,16 +643,15 @@ function FirstMarkAnimationInner({
   const winnerCourse = currentPattern.winnerCourse;
   const probability = currentPattern.probability;
 
-  // 2着・3着を取得（1着・2着と重複しないように除外）
+  // 2着・3着はアニメーションでのボート移動先としてのみ使用する
+  // （2026-08-14: 独自の確率表示はTurnPatternListとの数値不一致の原因になるため廃止した）
   const secondResult = getTopCourse(currentPattern.secondPlace, [winnerCourse]);
   const secondCourse = secondResult?.course;
-  const secondProb = secondResult?.prob;
   const thirdResult = getTopCourse(
     currentPattern.thirdPlace,
     [winnerCourse, secondCourse].filter(Boolean),
   );
   const thirdCourse = thirdResult?.course;
-  const thirdProb = thirdResult?.prob;
 
   // アニメーション完了検知（最長ボートに合わせる）
   useEffect(() => {
@@ -877,14 +876,7 @@ function FirstMarkAnimationInner({
         </div>
 
         {/* 順位カード（静止画でも表示） */}
-        <ResultCards
-          winnerCourse={winnerCourse}
-          technique={technique}
-          secondCourse={secondCourse}
-          secondProb={secondProb}
-          thirdCourse={thirdCourse}
-          thirdProb={thirdProb}
-        />
+        <ResultCards winnerCourse={winnerCourse} technique={technique} />
       </div>
     );
   }
@@ -1073,7 +1065,8 @@ function FirstMarkAnimationInner({
             </text>
           )}
 
-          {/* アニメーション完了後: SVG内順位バッジ */}
+          {/* アニメーション完了後: SVG内順位バッジ。1位候補の視覚化のみ（2026-08-14、
+              ResultCardsと同じ理由で2着/3着の独自確率表示は廃止した） */}
           {animationDone && (
             <g className="result-overlay">
               <ResultBadge
@@ -1084,26 +1077,6 @@ function FirstMarkAnimationInner({
                 delay={0}
                 label={techniqueLabel(technique)}
               />
-              {secondCourse && (
-                <ResultBadge
-                  rank={2}
-                  course={secondCourse}
-                  x={345}
-                  y={65}
-                  delay={0.3}
-                  label={`${Math.round(secondProb * 100)}%`}
-                />
-              )}
-              {thirdCourse && (
-                <ResultBadge
-                  rank={3}
-                  course={thirdCourse}
-                  x={345}
-                  y={95}
-                  delay={0.6}
-                  label={`${Math.round(thirdProb * 100)}%`}
-                />
-              )}
             </g>
           )}
         </svg>
@@ -1111,14 +1084,7 @@ function FirstMarkAnimationInner({
 
       {/* 順位カード（SVG下） */}
       {animationDone && (
-        <ResultCards
-          winnerCourse={winnerCourse}
-          technique={technique}
-          secondCourse={secondCourse}
-          secondProb={secondProb}
-          thirdCourse={thirdCourse}
-          thirdProb={thirdProb}
-        />
+        <ResultCards winnerCourse={winnerCourse} technique={technique} />
       )}
 
       {/* リプレイボタン */}
@@ -1135,14 +1101,12 @@ function FirstMarkAnimationInner({
 }
 
 // 順位カードコンポーネント
-function ResultCards({
-  winnerCourse,
-  technique,
-  secondCourse,
-  secondProb,
-  thirdCourse,
-  thirdProb,
-}) {
+// 2026-08-14: 以前は2着・3着の候補（条件付き確率）もここに表示していたが、
+// TurnPatternList（展開予測パネル）が示す確率（各パターン自体の発生確率）とは
+// 異なる統計量であるにもかかわらず見た目が似ており、「数字が食い違う」という
+// 混乱の原因になっていた。展開予測の正本表示はTurnPatternListに一本化し、
+// このアニメーションは1位候補の視覚化のみを担う（独自の数値は主張しない）
+function ResultCards({ winnerCourse, technique }) {
   const { t } = useTranslation();
   const techniqueLabel = useTechniqueLabel();
   const techniqueName = techniqueLabel(technique);
@@ -1160,36 +1124,6 @@ function ResultCards({
         </span>
         <span className="result-technique">{techniqueName}</span>
       </div>
-      {secondCourse && (
-        <div className="result-card result-card--2nd">
-          <span className="result-rank">{t("result.rank2")}</span>
-          <span
-            className="result-course"
-            style={{
-              backgroundColor: (BOAT_COLORS[secondCourse] || BOAT_COLORS[1]).bg,
-              color: (BOAT_COLORS[secondCourse] || BOAT_COLORS[1]).text,
-            }}
-          >
-            {secondCourse}
-          </span>
-          <span className="result-prob">{Math.round(secondProb * 100)}%</span>
-        </div>
-      )}
-      {thirdCourse && (
-        <div className="result-card result-card--3rd">
-          <span className="result-rank">{t("result.rank3")}</span>
-          <span
-            className="result-course"
-            style={{
-              backgroundColor: (BOAT_COLORS[thirdCourse] || BOAT_COLORS[1]).bg,
-              color: (BOAT_COLORS[thirdCourse] || BOAT_COLORS[1]).text,
-            }}
-          >
-            {thirdCourse}
-          </span>
-          <span className="result-prob">{Math.round(thirdProb * 100)}%</span>
-        </div>
-      )}
     </div>
   );
 }

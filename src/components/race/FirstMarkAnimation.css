@@ -111,16 +111,6 @@
   background: rgba(255, 215, 0, 0.08);
 }
 
-.result-card--2nd {
-  border-color: #c0c0c0;
-  background: rgba(192, 192, 192, 0.06);
-}
-
-.result-card--3rd {
-  border-color: #cd7f32;
-  background: rgba(205, 127, 50, 0.06);
-}
-
 .result-rank {
   font-size: 0.7rem;
   font-weight: 700;
@@ -129,14 +119,6 @@
 
 .result-card--1st .result-rank {
   color: #ffd700;
-}
-
-.result-card--2nd .result-rank {
-  color: #c0c0c0;
-}
-
-.result-card--3rd .result-rank {
-  color: #cd7f32;
 }
 
 .result-course {
@@ -154,11 +136,6 @@
   font-size: 0.7rem;
   font-weight: 600;
   color: #38bdf8;
-}
-
-.result-prob {
-  font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.6);
 }
 
 /* ターンマーク波紋パルス */
@@ -258,8 +235,7 @@
     font-size: 1rem;
   }
 
-  .result-technique,
-  .result-prob {
+  .result-technique {
     font-size: 0.75rem;
   }
 
