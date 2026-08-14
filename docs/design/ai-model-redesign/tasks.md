@@ -97,3 +97,18 @@
 - `/step4`で1タスクずつ実装する
 - 全タスク完了後、`/code-review`セルフレビュー→`npm run build`→`npm run test:e2e`→PR作成・完了報告の既存フロー（`.claude/CLAUDE.md`）に従う
 - 分析スクリプトを新規作成する際は、Supabaseのデフォルトlimit1000件を`fetchAll`（`.range()`ページネーション）で必ず回避すること（2026-08-12の教訓）
+
+## フォローアップ（2026-08-14、ローカル動作確認フィードバックより）
+
+ユーザーがローカルで新UIを確認した際の指摘を受けて対応した項目・Linearチケット化した項目。
+
+**このPR#286で対応済み**:
+- 三国6R以降でAIデータ分析が表示されない不具合（`morning-init.js`の`ensureUnifiedPredictions`が日単位の冪等判定になっており、スクレイピングタイミング次第で一部レースが恒久的に生成漏れするバグ。レース単位の差分検出に修正）
+- `AiAnalysisSection`（展開予測パネル/イン崩れバッジ）のデフォルト折りたたみを廃止し、デフォルト展開に変更（新AIモデル開発を今後行わない方針としたため、控えめにする理由が無くなった）
+- 展開予測パネルの実測的中率バッジ（「実測: 展開的中率 約80%」）を目立つピル型バッジに変更
+
+**Linearチケット化（別PR予定）**:
+- [BOA-173](https://linear.app/boat-ai/issue/BOA-173) 的中バッジをunifiedモデル（複勝的中1本）に合わせて再設計（RaceCard/RaceReview）
+- [BOA-174](https://linear.app/boat-ai/issue/BOA-174) `/hit-races`をunifiedモデルに合わせて根本再設計
+- [BOA-175](https://linear.app/boat-ai/issue/BOA-175) `/accuracy`をunifiedモデルに合わせて根本再設計（会場別イン崩れ傾向の扱いは要ユーザー確認）
+- [BOA-176](https://linear.app/boat-ai/issue/BOA-176) 複勝オッズのスクレイピング・保存対応（投資判断待ち、未着手）
