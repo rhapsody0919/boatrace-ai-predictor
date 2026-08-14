@@ -440,7 +440,7 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
 });
 
 test.describe("レースページ再設計（BOA-168）", () => {
-  test("トップページでレース選択→データ出走表とAIデータ分析（折りたたみ）が表示される", async ({
+  test("トップページでレース選択→データ出走表とAIデータ分析（デフォルト展開）が表示される", async ({
     page,
   }) => {
     await page.goto("/");
@@ -457,19 +457,20 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 15000,
     });
 
-    // AIデータ分析はデフォルト折りたたみ。ヘッダのみ表示
+    // AIデータ分析はデフォルト展開（2026-08-14: 新AIモデル開発を今後行わない方針のため
+    // 分析パネルを控えめにする必要が無くなった）。クリック無しで中身が見える
     const aiHeader = page.locator(".ai-analysis-header");
     await expect(aiHeader).toBeVisible({ timeout: 10000 });
-    await expect(page.locator(".ai-analysis-body")).toHaveCount(0);
-
-    // 展開すると既存のAI予想UI（買い目・展開予測等）が表示される
-    await aiHeader.click();
     await expect(page.locator(".ai-analysis-body")).toBeVisible({
       timeout: 10000,
     });
     await expect(
       page.locator(".ai-analysis-body .prediction-result"),
     ).toBeVisible({ timeout: 10000 });
+
+    // ヘッダクリックで折りたたむこともできる
+    await aiHeader.click();
+    await expect(page.locator(".ai-analysis-body")).toHaveCount(0);
   });
 
   test("過去日付ページで結果確定レースを選ぶと「データで振り返る」が表示される", async ({

@@ -155,7 +155,7 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
                   transition={{ duration: 0.4, ease: "easeOut" }}
                 >
                   <p className="ai-analysis-block-badge">
-                    {t("animation.accuracyBadge")}
+                    📈 {t("animation.accuracyBadge")}
                   </p>
                   <FirstMarkAnimation
                     patterns={prediction.turnPrediction.patterns}
