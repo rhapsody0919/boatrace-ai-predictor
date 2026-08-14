@@ -3,8 +3,14 @@
  *
  * 予測力分析（analyze-indicator-predictive-power.js）で11指標中最強と判明した
  * courseRate（進入コース別の勝率）だけを使って複勝予想をした場合の的中率・回収率を検証する。
- * unifiedModel.js の複合スコア（Zスコア合成、複勝的中率90.0%・回収率135.8%）との比較材料とし、
+ * unifiedModel.js の複合スコア（Zスコア合成）との比較材料とし、
  * 「単一指標の強さ」と「複合スコアの価値」のどちらを訴求すべきか判断する材料にする。
+ *
+ * 回収率の定義（2026-08-14修正、BOA-180）: ◎○それぞれに100円ずつ賭けた場合
+ * （計200円/レース）の実際の回収率。旧実装は「◎○のうち都合よく的中した方の
+ * 払戻を1点分(100円)の投資額で割る」という実行不可能な計算方式で、真の回収率を
+ * 約1.5倍に水増ししていた（この方式で算出された「回収率146.0%」等の数値が
+ * ブログ・FAQ等の公開コンテンツにも波及していたため、あわせて修正が必要）
  *
  * 使い方:
  *   node scripts/analysis/backtest-course-rate-only.js --from=2026-07-01 --to=2026-08-01
@@ -21,20 +27,23 @@ function parseArgs(argv = process.argv.slice(2)) {
 }
 
 function newAcc() {
-  return { bets: 0, hits: 0, payout: 0 };
+  return { races: 0, hits: 0, payout: 0, invest: 0 };
 }
-function add(acc, hit, payout) {
-  acc.bets += 1;
+// betCount: このレースで実際に賭けた点数（◎○の2点、片方欠けている場合は1点）
+function add(acc, hit, payout, betCount) {
+  acc.races += 1;
+  acc.invest += betCount * 100;
   if (hit) {
     acc.hits += 1;
     acc.payout += payout;
   }
 }
 function fmt(acc) {
-  const invest = acc.bets * 100;
-  const hitRate = acc.bets ? ((acc.hits / acc.bets) * 100).toFixed(1) : "-";
-  const recovery = invest ? ((acc.payout / invest) * 100).toFixed(1) : "-";
-  return `${String(acc.bets).padStart(5)}件 | 的中 ${hitRate.padStart(5)}% | 回収 ${recovery.padStart(6)}%`;
+  const hitRate = acc.races ? ((acc.hits / acc.races) * 100).toFixed(1) : "-";
+  const recovery = acc.invest
+    ? ((acc.payout / acc.invest) * 100).toFixed(1)
+    : "-";
+  return `${String(acc.races).padStart(5)}件 | 的中 ${hitRate.padStart(5)}% | 回収 ${recovery.padStart(6)}%`;
 }
 
 async function main() {
@@ -105,14 +114,18 @@ async function main() {
     const top2 = sorted.slice(0, 2).map((c) => c.number);
 
     const actualTop2 = [result.rank1, result.rank2];
-    const hitBoat = top2.find((n) => actualTop2.includes(n));
-    const hit = hitBoat != null;
-    const payout = hit
-      ? hitBoat === result.rank1
-        ? result.payout_place_1 || 0
-        : result.payout_place_2 || 0
-      : 0;
-    add(placeAcc, hit, payout);
+    let payout = 0;
+    let hit = false;
+    for (const boat of top2) {
+      if (actualTop2.includes(boat)) {
+        hit = true;
+        payout +=
+          (boat === result.rank1
+            ? result.payout_place_1
+            : result.payout_place_2) || 0;
+      }
+    }
+    add(placeAcc, hit, payout, top2.length);
 
     processed += 1;
     if (processed % 100 === 0)
@@ -120,11 +133,10 @@ async function main() {
   }
 
   console.log(`\nデータ不足でスキップ: ${noDataSkipped}件`);
-  console.log("\n=== 複勝（コース別勝率のみ、上位2艇） ===");
-  console.log(fmt(placeAcc));
   console.log(
-    "  ※比較: unifiedModel.js複合スコアは的中90.0%・回収135.8%（1週間分、2026-08-12検証）",
+    "\n=== 複勝（コース別勝率のみ、上位2艇、◎○各100円=計200円/レース） ===",
   );
+  console.log(fmt(placeAcc));
 
   console.log("\n完了");
 }
