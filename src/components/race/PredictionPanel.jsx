@@ -190,6 +190,8 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
                     percentile={prediction.volatilityPercentile}
                     reasons={prediction.volatilityReasons}
                     isFallback={prediction.volatilityPercentileIsFallback}
+                    venueCode={venueCode}
+                    raceId={analysisRaceId}
                   />
                 </motion.div>
               )}

@@ -5,6 +5,12 @@
  * 連続値パーセンタイル＋実測相関の裏付けを示す構成に変更した（ADR0012、screens.md）。
  */
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import { useUnifiedVolatilityAccuracy } from "../../hooks/useUnifiedVolatilityAccuracy";
+
+// VolatilityDisplayのlevel（high/low/standard）→ calculate-unified-volatility-accuracy.js
+// の集計キー（high/low/medium）への対応
+const STATS_LEVEL_KEY = { high: "high", low: "low", standard: "medium" };
 
 function PercentileBar({ percentile }) {
   const { t } = useTranslation();
@@ -87,7 +93,75 @@ function PercentileBar({ percentile }) {
   );
 }
 
-function VolatilityDisplay({ percentile, reasons, isFallback }) {
+/**
+ * LevelAccuracyStat - 今表示しているレベル（警戒/標準/堅い）に対応する実測値を
+ * その場で示す（BOA-177）。複勝予想/展開予測カードのAccuracyStatBadgeと同じ
+ * 「AIの結論のすぐそばに実測の裏付けを置く」設計方針を踏襲。
+ * データ取得はcalculate-unified-volatility-accuracy.jsが日次で保存した値を
+ * 読むだけの軽量フックのため、レースごとの追加クエリは発生しない
+ */
+function LevelAccuracyStat({ level, venueCode, raceId }) {
+  const { t } = useTranslation();
+  const { stats, loading } = useUnifiedVolatilityAccuracy();
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          fontSize: "0.8rem",
+          color: "#999",
+          paddingLeft: "1.7rem",
+          marginTop: "0.5rem",
+        }}
+      >
+        {t("volatility.accuracyLoading")}
+      </div>
+    );
+  }
+
+  const levelStat = stats?.byLevel?.[STATS_LEVEL_KEY[level]];
+  if (!levelStat) return null;
+
+  return (
+    <div
+      style={{
+        fontSize: "0.85rem",
+        color: "#334155",
+        paddingLeft: "1.7rem",
+        marginTop: "0.5rem",
+      }}
+    >
+      📈{" "}
+      {t("volatility.accuracyStat", {
+        level: t(
+          `volatility.attention${level === "standard" ? "Standard" : level === "high" ? "High" : "Low"}`,
+        ),
+        rate: levelStat.upsetRate,
+        count: levelStat.raceCount,
+        baseline: stats.baseline.upsetRate,
+      })}
+      {venueCode && raceId && (
+        <>
+          {" "}
+          <Link
+            to={`/winning-technique?venue_code=${venueCode}&race_id=${raceId}&tab=volatility`}
+            style={{ color: "#0ea5e9", textDecoration: "none" }}
+          >
+            {t("volatility.accuracyLink")}
+          </Link>
+        </>
+      )}
+    </div>
+  );
+}
+
+function VolatilityDisplay({
+  percentile,
+  reasons,
+  isFallback,
+  venueCode,
+  raceId,
+}) {
   const { t } = useTranslation();
 
   if (percentile === null || percentile === undefined) {
@@ -230,6 +304,8 @@ function VolatilityDisplay({ percentile, reasons, isFallback }) {
       >
         {t("volatility.description")}
       </div>
+
+      <LevelAccuracyStat level={level} venueCode={venueCode} raceId={raceId} />
 
       <PercentileBar percentile={percentile} />
 

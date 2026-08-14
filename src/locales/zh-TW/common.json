@@ -79,7 +79,34 @@
     "percentileBarMedian": "普通",
     "percentileBarMax": "容易爆冷",
     "collectingData": "數據累積中",
-    "collectingDataDesc": "此賽場的1號位失守傾向所需的實績數據仍在累積中，運用開始一段時間後將會顯示"
+    "collectingDataDesc": "此賽場的1號位失守傾向所需的實績數據仍在累積中，運用開始一段時間後將會顯示",
+    "accuracyLoading": "實測準確度載入中...",
+    "accuracyStat": "實測：標示「{{level}}」的比賽，實際崩盤率為{{rate}}%（過去{{count}}場，整體平均{{baseline}}%）",
+    "accuracyLink": "查看詳情 ›"
+  },
+  "volatilityAccuracy": {
+    "title": "🌪️ 內道崩盤預測實績（過去90天）",
+    "level": {
+      "low": "熱門穩定",
+      "medium": "普通",
+      "high": "冷門機率高"
+    },
+    "baselineTitle": "整體平均 {{rate}}%",
+    "summaryPrefix": "標示「冷門機率高」的比賽中，實際上1號艇未獲得第1名的機率為",
+    "summarySuffix": "",
+    "summaryBaseline": "（整體平均：{{rate}}%）",
+    "legendBaseline": "縱線＝整體平均 {{rate}}%",
+    "legendCount": "（統計：{{count}}場）",
+    "gradeDetailsSummary": "查看各等級詳情",
+    "gradeHeader": "等級",
+    "highUpsetRateHeader": "標示「冷門機率高」時1號艇的落敗機率",
+    "baselineRateHeader": "賽場整體1號艇落敗機率平均值",
+    "countHeader": "件數",
+    "gradeIppan": "一般",
+    "gradeRefNote": "※ 樣本數未滿30件，僅供參考",
+    "venueDetailsSummary": "查看各賽場詳情",
+    "venueHeader": "賽場",
+    "venueRefNote": "※ 樣本數未滿5件，僅供參考"
   },
   "trifectaReference": {
     "title": "3連單參考資訊",
@@ -586,7 +613,8 @@
       "returnrate": "💰 回收率分析",
       "attackdefense": "⚔️ 進階比賽數據",
       "racecard": "📋 出賽表資料",
-      "venueranking": "🏟️ 賽場排行榜"
+      "venueranking": "🏟️ 賽場排行榜",
+      "volatility": "🌪️ 內道崩盤指數實績"
     },
     "features": {
       "outcome": {
@@ -652,6 +680,10 @@
       "venueranking": {
         "name": "本日賽場排行榜",
         "description": "依本日已確定結果的比賽，以堅實度、爆冷率、內線逃走率、萬舟率為各賽場排行"
+      },
+      "volatility": {
+        "name": "內道崩盤指數實績",
+        "description": "公開新AI預測模型的內道崩盤指數（警戒/標準/穩定）實際命中的準確度"
       }
     },
     "info": {
@@ -938,6 +970,26 @@
           },
           {
             "text": "比賽初期已結束場次較少時，排行的可信度較低，請留意"
+          }
+        ]
+      },
+      "volatility": {
+        "title": "關於內道崩盤指數實績",
+        "dataView": "公開新AI預測模型（2026年8月11日上線）計算的「內道崩盤指數」（1號艇容易崩盤程度的賽場內百分位），依等級（警戒/標準/穩定）與實際崩盤發生率對照。",
+        "tips": [
+          {
+            "strong": "警戒",
+            "text": "標籤的比賽，實際崩盤機率往往高於整體平均"
+          },
+          {
+            "strong": "穩定",
+            "text": "標籤的比賽，實際崩盤機率往往低於整體平均"
+          },
+          {
+            "text": "由於剛上線不久，統計筆數仍偏少，未來資料累積越多，準確度會越高"
+          },
+          {
+            "text": "與各比賽預測畫面顯示的「內道崩盤注意度」徽章為同一指標"
           }
         ]
       }

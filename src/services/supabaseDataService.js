@@ -2688,6 +2688,39 @@ export const supabaseDataService = {
   },
 
   /**
+   * unifiedモデルのイン崩れ指数の実測精度（レベル別イン崩れ率）を取得する（BOA-177）
+   * scripts/daily/calculate-unified-volatility-accuracy.js が日次で accuracy_cache に
+   * 保存した集計値を読むだけ。既存のVolatilityAccuracySectionコンポーネントと
+   * 同じshape（baseline/byLevel）で返す
+   */
+  getUnifiedVolatilityAccuracy() {
+    return withCache(
+      "unified-volatility-accuracy",
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return null;
+        }
+        const { data, error } = await supabase
+          .from("accuracy_cache")
+          .select("data")
+          .eq("key", "unified_volatility_accuracy")
+          .single();
+
+        if (error) {
+          console.error(
+            "unified_volatility_accuracy取得エラー:",
+            error.message,
+          );
+          return null;
+        }
+        return data?.data ?? null;
+      },
+      6 * 60 * 60 * 1000,
+    );
+  },
+
+  /**
    * 指定レースの出走表詳細（race_entriesの全選手データ）を取得する（BOA-168）
    * 分析ツールの「出走表データ」タブで使用する。AIスコアは含めない
    */

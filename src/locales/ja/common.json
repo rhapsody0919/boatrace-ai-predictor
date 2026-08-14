@@ -79,7 +79,34 @@
     "percentileBarMedian": "標準",
     "percentileBarMax": "崩れやすい",
     "collectingData": "データ収集中",
-    "collectingDataDesc": "この会場のイン崩れ傾向を判定するための実績データを蓄積中です。運用開始から一定期間が経過すると表示されます"
+    "collectingDataDesc": "この会場のイン崩れ傾向を判定するための実績データを蓄積中です。運用開始から一定期間が経過すると表示されます",
+    "accuracyLoading": "実測精度を読み込み中...",
+    "accuracyStat": "実測: 「{{level}}」ラベルの実際のイン崩れ率は{{rate}}%です（過去{{count}}件、全体平均{{baseline}}%）",
+    "accuracyLink": "詳しく見る ›"
+  },
+  "volatilityAccuracy": {
+    "title": "🌪️ イン崩れ予測の実績（直近90日）",
+    "level": {
+      "low": "本命有利",
+      "medium": "標準",
+      "high": "イン崩れ確率高"
+    },
+    "baselineTitle": "全体平均 {{rate}}%",
+    "summaryPrefix": "「イン崩れ確率高」ラベルが付与されたレースでは、実際に",
+    "summarySuffix": "の確率で1コース（1号艇）が1着になっていません",
+    "summaryBaseline": "（全体平均: {{rate}}%）",
+    "legendBaseline": "縦線 = 全体平均 {{rate}}%",
+    "legendCount": "（集計: {{count}}レース）",
+    "gradeDetailsSummary": "グレード別の詳細を見る",
+    "gradeHeader": "グレード",
+    "highUpsetRateHeader": "イン崩れ確率高ラベル時の1コース負け確率",
+    "baselineRateHeader": "会場全体の1コース負け確率平均",
+    "countHeader": "件数",
+    "gradeIppan": "一般",
+    "gradeRefNote": "※ サンプル数が30件未満のため参考値",
+    "venueDetailsSummary": "会場別の詳細を見る",
+    "venueHeader": "会場",
+    "venueRefNote": "※ サンプル数が5件未満のため参考値"
   },
   "trifectaReference": {
     "title": "3連単参考情報",
@@ -586,7 +613,8 @@
       "returnrate": "💰 回収率分析",
       "attackdefense": "⚔️ 超展開データ",
       "racecard": "📋 出走表データ",
-      "venueranking": "🏟️ 会場ランキング"
+      "venueranking": "🏟️ 会場ランキング",
+      "volatility": "🌪️ イン崩れ指数の実績"
     },
     "features": {
       "outcome": {
@@ -652,6 +680,10 @@
       "venueranking": {
         "name": "本日の会場ランキング",
         "description": "本日の結果確定済みレースを会場別に集計し、固い場・荒れている場・イン逃げ率・万舟率でランキング"
+      },
+      "volatility": {
+        "name": "イン崩れ指数の実績",
+        "description": "新AI予想モデルのイン崩れ指数（警戒/標準/堅い）が実際にどれくらい当たっているかを実測値で公開"
       }
     },
     "info": {
@@ -938,6 +970,26 @@
           },
           {
             "text": "消化レース数が少ない開催序盤は、ランキングの信頼度が低くなる点にご注意ください"
+          }
+        ]
+      },
+      "volatility": {
+        "title": "イン崩れ指数の実績について",
+        "dataView": "新AI予想モデル（2026年8月11日運用開始）が算出する「イン崩れ指数」（1号艇が崩れやすいかどうかの会場内パーセンタイル）を、レベル別（警戒/標準/堅い）に実際のイン崩れ発生率と突き合わせて公開しています。",
+        "tips": [
+          {
+            "strong": "警戒",
+            "text": " ラベルのレースは、実際にイン崩れが起きる確率が全体平均より高い傾向にあります"
+          },
+          {
+            "strong": "堅い",
+            "text": " ラベルのレースは、実際にイン崩れが起きる確率が全体平均より低い傾向にあります"
+          },
+          {
+            "text": "運用開始直後のため集計件数がまだ少なく、今後データが蓄積されるほど数値の精度が上がります"
+          },
+          {
+            "text": "各レースの予想画面に表示される「イン崩れ注意度」バッジと同じ指標です"
           }
         ]
       }

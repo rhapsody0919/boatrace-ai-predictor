@@ -80,7 +80,34 @@
     "percentileBarMedian": "Average",
     "percentileBarMax": "Upset-prone",
     "collectingData": "Collecting data",
-    "collectingDataDesc": "We're still building up a track record for this venue's upset tendency. This will appear once enough data has been collected"
+    "collectingDataDesc": "We're still building up a track record for this venue's upset tendency. This will appear once enough data has been collected",
+    "accuracyLoading": "Loading track record...",
+    "accuracyStat": "Track record: races labeled \"{{level}}\" actually had a {{rate}}% upset rate (last {{count}} races, overall average {{baseline}}%)",
+    "accuracyLink": "See details ›"
+  },
+  "volatilityAccuracy": {
+    "title": "🌪️ Upset Index Track Record (last 90 days)",
+    "level": {
+      "low": "Favorite friendly",
+      "medium": "Average",
+      "high": "High upset chance"
+    },
+    "baselineTitle": "Overall average {{rate}}%",
+    "summaryPrefix": "In races labeled \"High upset chance\", boat 1 actually failed to finish 1st",
+    "summarySuffix": "of the time",
+    "summaryBaseline": "(overall average: {{rate}}%)",
+    "legendBaseline": "Vertical line = overall average {{rate}}%",
+    "legendCount": "(sample: {{count}} races)",
+    "gradeDetailsSummary": "View breakdown by grade",
+    "gradeHeader": "Grade",
+    "highUpsetRateHeader": "Boat 1 loss rate when labeled \"High upset chance\"",
+    "baselineRateHeader": "Venue-wide average boat 1 loss rate",
+    "countHeader": "Races",
+    "gradeIppan": "General",
+    "gradeRefNote": "* Reference value; sample size under 30",
+    "venueDetailsSummary": "View breakdown by venue",
+    "venueHeader": "Venue",
+    "venueRefNote": "* Reference value; sample size under 5"
   },
   "trifectaReference": {
     "title": "Trifecta reference",
@@ -591,7 +618,8 @@
       "returnrate": "💰 ROI Analysis",
       "attackdefense": "⚔️ Advanced Race Data",
       "racecard": "📋 Race Card Data",
-      "venueranking": "🏟️ Venue Ranking"
+      "venueranking": "🏟️ Venue Ranking",
+      "volatility": "🌪️ Upset Index Track Record"
     },
     "features": {
       "outcome": {
@@ -657,6 +685,10 @@
       "venueranking": {
         "name": "Today's Venue Ranking",
         "description": "Ranks venues by stability, upset rate, Nige rate, and big-payout rate based on today's finished races"
+      },
+      "volatility": {
+        "name": "Upset Index Track Record",
+        "description": "Shows how accurately the new AI model's upset index (warning/standard/stable) has predicted actual outcomes"
       }
     },
     "info": {
@@ -943,6 +975,26 @@
           },
           {
             "text": "Rankings are less reliable early in the day, when few races have finished"
+          }
+        ]
+      },
+      "volatility": {
+        "title": "About the Upset Index Track Record",
+        "dataView": "Shows the new AI model's (launched August 11, 2026) \"upset index\" — a within-venue percentile of how likely boat 1 is to be upset — broken down by level (warning/standard/stable) against actual outcomes.",
+        "tips": [
+          {
+            "strong": "Warning",
+            "text": "-labeled races tend to have a higher-than-average actual upset rate"
+          },
+          {
+            "strong": "Stable",
+            "text": "-labeled races tend to have a lower-than-average actual upset rate"
+          },
+          {
+            "text": "Since this model just launched, the sample size is still small and accuracy will improve as more data accumulates"
+          },
+          {
+            "text": "This is the same metric shown as the \"Upset Alert\" badge on each race's prediction screen"
           }
         ]
       }

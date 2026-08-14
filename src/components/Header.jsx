@@ -138,6 +138,13 @@ function Header() {
             >
               {t("nav.predictions")}
             </button>
+            <Link
+              to={localize("/winning-technique")}
+              className={`submenu-item ${activeTab === "winning-technique" ? "active" : ""}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {t("nav.winningTechnique")}
+            </Link>
             <button
               className={`submenu-item submenu-item-button ${activeTab === "hit-races" ? "active" : ""}`}
               onClick={() => {
@@ -153,13 +160,6 @@ function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               {t("nav.accuracy")}
-            </Link>
-            <Link
-              to={localize("/winning-technique")}
-              className={`submenu-item ${activeTab === "winning-technique" ? "active" : ""}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t("nav.winningTechnique")}
             </Link>
             <Link
               to={localize("/races")}

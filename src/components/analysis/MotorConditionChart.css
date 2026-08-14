@@ -224,3 +224,10 @@
     padding: 0.5rem;
   }
 }
+
+.volatility-accuracy-chart-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+  text-align: center;
+}

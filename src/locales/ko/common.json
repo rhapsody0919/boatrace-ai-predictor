@@ -79,7 +79,34 @@
     "percentileBarMedian": "보통",
     "percentileBarMax": "이변 주의",
     "collectingData": "데이터 수집 중",
-    "collectingDataDesc": "이 경정장의 1코스 이변 경향을 판단하기 위한 실적 데이터를 수집하고 있습니다. 운영 개시 후 일정 기간이 지나면 표시됩니다"
+    "collectingDataDesc": "이 경정장의 1코스 이변 경향을 판단하기 위한 실적 데이터를 수집하고 있습니다. 운영 개시 후 일정 기간이 지나면 표시됩니다",
+    "accuracyLoading": "실측 정확도 불러오는 중...",
+    "accuracyStat": "실측: 「{{level}}」라벨 레이스의 실제 이변 발생률은 {{rate}}%입니다（지난 {{count}}건, 전체 평균 {{baseline}}%）",
+    "accuracyLink": "자세히 보기 ›"
+  },
+  "volatilityAccuracy": {
+    "title": "🌪️ 인코스 붕괴 예측 실적（최근 90일）",
+    "level": {
+      "low": "인기 안정",
+      "medium": "보통",
+      "high": "이변 가능성 높음"
+    },
+    "baselineTitle": "전체 평균 {{rate}}%",
+    "summaryPrefix": "「이변 가능성 높음」라벨이 부여된 레이스에서는, 실제로",
+    "summarySuffix": "확률로 1코스（1호정）가 1착이 되지 못했습니다",
+    "summaryBaseline": "（전체 평균: {{rate}}%）",
+    "legendBaseline": "세로선 = 전체 평균 {{rate}}%",
+    "legendCount": "（집계: {{count}}경주）",
+    "gradeDetailsSummary": "그레이드별 상세 보기",
+    "gradeHeader": "그레이드",
+    "highUpsetRateHeader": "「이변 가능성 높음」라벨 시 1코스 패배 확률",
+    "baselineRateHeader": "경정장 전체 1코스 패배 확률 평균",
+    "countHeader": "건수",
+    "gradeIppan": "일반",
+    "gradeRefNote": "※ 표본 수가 30건 미만이라 참고값",
+    "venueDetailsSummary": "경정장별 상세 보기",
+    "venueHeader": "경정장",
+    "venueRefNote": "※ 표본 수가 5건 미만이라 참고값"
   },
   "trifectaReference": {
     "title": "3쌍승 참고 정보",
@@ -586,7 +613,8 @@
       "returnrate": "💰 회수율 분석",
       "attackdefense": "⚔️ 심화 경주 데이터",
       "racecard": "📋 출전표 데이터",
-      "venueranking": "🏟️ 경기장 랭킹"
+      "venueranking": "🏟️ 경기장 랭킹",
+      "volatility": "🌪️ 인코스 붕괴 지수 실적"
     },
     "features": {
       "outcome": {
@@ -652,6 +680,10 @@
       "venueranking": {
         "name": "오늘의 경기장 랭킹",
         "description": "오늘 종료된 레이스를 기준으로 경기장별 안정도·이변율·인빠지기율·만슈율을 랭킹화"
+      },
+      "volatility": {
+        "name": "인코스 붕괴 지수 실적",
+        "description": "신규 AI 예측 모델의 인코스 붕괴 지수(경계/표준/안정)가 실제로 얼마나 적중했는지 실측치로 공개"
       }
     },
     "info": {
@@ -938,6 +970,26 @@
           },
           {
             "text": "종료 레이스가 적은 개최 초반에는 랭킹의 신뢰도가 낮아지는 점에 주의하세요"
+          }
+        ]
+      },
+      "volatility": {
+        "title": "인코스 붕괴 지수 실적 소개",
+        "dataView": "신규 AI 예측 모델(2026년 8월 11일 운용 개시)이 산출하는 「인코스 붕괴 지수」(1호정이 붕괴하기 쉬운 정도의 경기장 내 백분위)를 레벨별(경계/표준/안정)로 실제 인코스 붕괴 발생률과 대조하여 공개합니다.",
+        "tips": [
+          {
+            "strong": "경계",
+            "text": " 라벨의 레이스는 실제 인코스 붕괴 확률이 전체 평균보다 높은 경향이 있습니다"
+          },
+          {
+            "strong": "안정",
+            "text": " 라벨의 레이스는 실제 인코스 붕괴 확률이 전체 평균보다 낮은 경향이 있습니다"
+          },
+          {
+            "text": "운용 개시 직후라 집계 건수가 아직 적으며, 앞으로 데이터가 쌓일수록 정확도가 높아집니다"
+          },
+          {
+            "text": "각 레이스 예측 화면에 표시되는 「인코스 붕괴 주의도」 배지와 동일한 지표입니다"
           }
         ]
       }

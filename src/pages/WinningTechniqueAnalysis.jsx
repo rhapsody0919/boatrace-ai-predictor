@@ -20,6 +20,7 @@ import {
   AttackDefenseAnalysis,
   RaceCardDataTable,
   VenueRankingChart,
+  VolatilityAccuracyChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
@@ -41,6 +42,7 @@ const TAB_KEYS = [
   "attackdefense",
   "racecard",
   "venueranking",
+  "volatility",
 ];
 
 // 詳しい解説記事（ja専用ブログのため、非ja言語では該当info-cardごと非表示にする）
@@ -227,6 +229,7 @@ function WinningTechniqueAnalysis() {
             />
           )}
           {activeTab === "venueranking" && <VenueRankingChart />}
+          {activeTab === "volatility" && <VolatilityAccuracyChart />}
 
           <section className="info-section">
             {TAB_KEYS.includes(activeTab) &&

@@ -14,3 +14,4 @@ export { default as RacerBoatReturnRateChart } from "./RacerBoatReturnRateChart"
 export { default as AttackDefenseAnalysis } from "./AttackDefenseAnalysis";
 export { default as RaceCardDataTable } from "./RaceCardDataTable";
 export { default as VenueRankingChart } from "./VenueRankingChart";
+export { default as VolatilityAccuracyChart } from "./VolatilityAccuracyChart";
