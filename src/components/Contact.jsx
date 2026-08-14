@@ -137,7 +137,7 @@ export default function Contact() {
               }}
             >
               A.
-              複勝予想の的中率は約91.9%（回収率146.0%）、展開予測の的中率は約80.0%です（過去4,580レースの実測値）。詳細は
+              展開予測の的中率は約79%です（実測値）。複勝予想は実測精度の算出方法を見直し中のため、一時的に表示を停止しています。詳細は
               <Link
                 to="/accuracy"
                 style={{ color: "#0ea5e9", textDecoration: "underline" }}

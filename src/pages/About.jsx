@@ -187,7 +187,7 @@ export default function About() {
             <div className="feature-card">
               <div className="feature-icon">🎯</div>
               <h3>高精度分析</h3>
-              <p>複勝的中率52.9%、35,000レース超の累計実績</p>
+              <p>展開予測的中率約79%の実測実績</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">📈</div>
@@ -244,7 +244,7 @@ export default function About() {
               <div className="step-number">4</div>
               <div className="step-content">
                 <h3>予想生成</h3>
-                <p>複勝予想・イン崩れ指数を算出</p>
+                <p>展開予測・イン崩れ指数を算出</p>
               </div>
             </div>
           </div>
@@ -255,21 +255,13 @@ export default function About() {
           <h2>📊 AI分析の精度（実測値）</h2>
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-value">91.9%</div>
-              <div className="stat-label">複勝的中率</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">146.0%</div>
-              <div className="stat-label">複勝回収率</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">80.0%</div>
+              <div className="stat-value">79%</div>
               <div className="stat-label">展開予測的中率</div>
             </div>
           </div>
           <p className="stats-note">
             ※
-            過去4,580レースの実測値。各レースの予想画面・データで振り返るセクションで、毎回の的中/不的中を確認できます
+            実測値。各レースの予想画面・データで振り返るセクションで、毎回の的中/不的中を確認できます。複勝予想は実測精度の算出方法を見直し中のため一時的に表示を停止しています
           </p>
         </section>
 
