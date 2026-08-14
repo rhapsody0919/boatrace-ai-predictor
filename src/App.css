@@ -1106,6 +1106,14 @@ input:focus-visible,
   text-align: center;
 }
 
+.prediction-note {
+  display: block;
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
 .hit {
   display: block;
   padding: 0.6rem 0.5rem;
@@ -1278,6 +1286,10 @@ input:focus-visible,
   .accuracy-check {
     margin: 0.4rem 0 0;
     gap: 0.4rem;
+  }
+
+  .prediction-note {
+    font-size: 0.65rem;
   }
 
   .hit, .miss {

@@ -129,10 +129,12 @@
     "inKuzureHigh": "イン崩れ確率高",
     "inKuzureHit": "🌊 イン崩れ的中！",
     "inKuzureMiss": "❌ イン逃げ切り（外れ）",
-    "placeHit": "✅ 複勝的中！",
+    "placePredicted": "予想: {{number}}号艇の複勝",
+    "placeHit": "✅ 複勝的中！（{{position}}着）",
     "placeMiss": "❌ 複勝不的中",
+    "turnPredicted": "予想: {{numbers}}号艇が1着",
     "turnHit": "✅ 展開的中！",
-    "turnMiss": "❌ 展開不的中",
+    "turnMiss": "❌ 展開不的中（結果: {{winnerNumber}}号艇が1着）",
     "payout": "配当: {{amount}}円"
   },
   "panel": {
@@ -332,7 +334,7 @@
   },
   "aiSection": {
     "title": "AIデータ分析",
-    "topPickSummary": "AIの本命: {{number}}号艇 {{name}}",
+    "topPickSummary": "AIの本命（複勝）: {{number}}号艇 {{name}}",
     "expandHint": "タップで展開: AI予想の詳細（買い目・1マーク展開予測・配当妙味・出現パターン）",
     "confidence": "信頼度{{value}}%"
   },

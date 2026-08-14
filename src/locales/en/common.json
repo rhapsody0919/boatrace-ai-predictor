@@ -130,10 +130,12 @@
     "inKuzureHigh": "High upset chance",
     "inKuzureHit": "🌊 Lane-1 upset hit!",
     "inKuzureMiss": "❌ Lane 1 held on (missed)",
-    "placeHit": "✅ Place bet hit!",
+    "placePredicted": "Predicted: Boat {{number}} to place",
+    "placeHit": "✅ Place bet hit! (finished #{{position}})",
     "placeMiss": "❌ Place bet missed",
+    "turnPredicted": "Predicted: Boat {{numbers}} to win",
     "turnHit": "✅ Turn prediction hit!",
-    "turnMiss": "❌ Turn prediction missed",
+    "turnMiss": "❌ Turn prediction missed (Boat {{winnerNumber}} won)",
     "payout": "Payout: ¥{{amount}}"
   },
   "panel": {
@@ -334,7 +336,7 @@
   },
   "aiSection": {
     "title": "AI Data Analysis",
-    "topPickSummary": "AI top pick: Boat {{number}} {{name}}",
+    "topPickSummary": "AI top pick (place): Boat {{number}} {{name}}",
     "expandHint": "Tap to expand AI prediction details (picks, first-turn simulation, odds value, outcome patterns)",
     "confidence": "Confidence {{value}}%"
   },

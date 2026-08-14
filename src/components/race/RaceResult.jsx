@@ -21,8 +21,13 @@ function RaceResult({ prediction }) {
   // 的中判定（BOA-173: unifiedモデルはレース単位で二値判定できる複勝予想・
   // 展開予測の2種類のみを的中対象とする。単勝的中・3連複的中・3連単的中は
   // AIが予想していない賭け方のため廃止した）
-  const isPlaceHit =
-    topPick.number === result.rank1 || topPick.number === result.rank2;
+  const placeFinishPosition =
+    topPick.number === result.rank1
+      ? 1
+      : topPick.number === result.rank2
+        ? 2
+        : null;
+  const isPlaceHit = placeFinishPosition !== null;
 
   const turnPatterns = prediction.turnPrediction?.patterns;
   const hasTurnPrediction =
@@ -30,6 +35,11 @@ function RaceResult({ prediction }) {
   const isTurnHit =
     hasTurnPrediction &&
     turnPatterns.some((p) => p.winnerCourse === result.rank1);
+  // 事前予想が何だったのかを結果と一緒に示す（2026-08-14: 予想を伏せたまま
+  // 「的中！」とだけ言われても検証できないというユーザー指摘への対応）
+  const predictedTurnCourses = hasTurnPrediction
+    ? [...new Set(turnPatterns.map((p) => p.winnerCourse))]
+    : [];
 
   // 配当取得ヘルパー
   const getPlacePayout = () => result.payouts?.place?.[String(topPick.number)];
@@ -75,9 +85,12 @@ function RaceResult({ prediction }) {
 
       <div className="accuracy-check">
         <div className="check-item">
+          <span className="prediction-note">
+            {t("result.placePredicted", { number: topPick.number })}
+          </span>
           {isPlaceHit ? (
             <div className="hit">
-              {t("result.placeHit")}
+              {t("result.placeHit", { position: placeFinishPosition })}
               {getPlacePayout() && (
                 <span className="payout">
                   {t("result.payout", { amount: getPlacePayout() })}
@@ -91,10 +104,19 @@ function RaceResult({ prediction }) {
 
         {hasTurnPrediction && (
           <div className="check-item">
+            <span className="prediction-note">
+              {t("result.turnPredicted", {
+                numbers: predictedTurnCourses.join(
+                  t("review.courseListSeparator"),
+                ),
+              })}
+            </span>
             {isTurnHit ? (
               <div className="hit">{t("result.turnHit")}</div>
             ) : (
-              <div className="miss">{t("result.turnMiss")}</div>
+              <div className="miss">
+                {t("result.turnMiss", { winnerNumber: result.rank1 })}
+              </div>
             )}
           </div>
         )}

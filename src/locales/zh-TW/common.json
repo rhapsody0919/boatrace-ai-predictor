@@ -129,10 +129,12 @@
     "inKuzureHigh": "冷門機率高",
     "inKuzureHit": "🌊 1號位失守命中！",
     "inKuzureMiss": "❌ 1號位守住了（未命中）",
-    "placeHit": "✅ 複勝命中！",
+    "placePredicted": "預測：{{number}}號艇複勝",
+    "placeHit": "✅ 複勝命中！（第{{position}}名）",
     "placeMiss": "❌ 複勝未中",
+    "turnPredicted": "預測：{{numbers}}號艇獲得第1名",
     "turnHit": "✅ 展開命中！",
-    "turnMiss": "❌ 展開未中",
+    "turnMiss": "❌ 展開未中（結果：{{winnerNumber}}號艇獲得第1名）",
     "payout": "派彩：¥{{amount}}"
   },
   "panel": {
@@ -332,7 +334,7 @@
   },
   "aiSection": {
     "title": "AI數據分析",
-    "topPickSummary": "AI本命: {{number}}號艇 {{name}}",
+    "topPickSummary": "AI本命（複勝）: {{number}}號艇 {{name}}",
     "expandHint": "點擊展開：AI預測詳情（推薦組合・第一彎道模擬・賠率價值・出現模式）",
     "confidence": "信賴度{{value}}%"
   },

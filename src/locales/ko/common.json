@@ -129,10 +129,12 @@
     "inKuzureHigh": "이변 가능성 높음",
     "inKuzureHit": "🌊 1코스 이변 적중!",
     "inKuzureMiss": "❌ 1코스가 지켜냈습니다 (미적중)",
-    "placeHit": "✅ 연승 적중!",
+    "placePredicted": "예측: {{number}}호정 복승",
+    "placeHit": "✅ 연승 적중!（{{position}}착）",
     "placeMiss": "❌ 연승 미적중",
+    "turnPredicted": "예측: {{numbers}}호정이 1착",
     "turnHit": "✅ 전개 적중!",
-    "turnMiss": "❌ 전개 미적중",
+    "turnMiss": "❌ 전개 미적중（결과: {{winnerNumber}}호정이 1착）",
     "payout": "배당금: ¥{{amount}}"
   },
   "panel": {
@@ -332,7 +334,7 @@
   },
   "aiSection": {
     "title": "AI 데이터 분석",
-    "topPickSummary": "AI 본명: {{number}}호정 {{name}}",
+    "topPickSummary": "AI 본명（복승）: {{number}}호정 {{name}}",
     "expandHint": "탭하여 펼치기: AI 예상 상세（추천 조합・1마크 전개 시뮬레이션・배당 가치・출현 패턴）",
     "confidence": "신뢰도 {{value}}%"
   },
