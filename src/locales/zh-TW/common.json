@@ -292,26 +292,25 @@
     "view": "查看預測"
   },
   "turnPatternList": {
+    "title": "轉彎預測",
     "hitTag": "命中",
     "summaryHit": "✅ 其中一項預測命中",
     "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中"
   },
   "placeRecommendation": {
+    "title": "複勝預測",
     "basis": "預測進入航道勝率較高的艇",
     "courseRateLabel": "航道勝率{{rate}}%（{{wins}}/{{total}}）"
+  },
+  "accuracyStat": {
+    "withRecovery": "實測：命中率{{hitRate}}%・回收率{{recoveryRate}}%（過去{{totalRaces}}場）",
+    "hitRateOnly": "實測：命中率{{hitRate}}%（過去{{totalRaces}}場）"
   },
   "section": {
     "resultTitle": "數據分析結果"
   },
   "animation": {
-    "title": "第一轉彎標預測",
-    "phaseStart": "起跑",
-    "phaseTurn": "第一轉彎",
-    "firstMark": "第1轉彎標",
-    "replay": "▶ 重播",
-    "rankLabel": "第{{rank}}名",
-    "courseLabel": "{{course}}號航道",
-    "accuracyBadge": "實測：命中率約80%（過去4,580場）"
+    "courseLabel": "{{course}}號航道"
   },
   "dataTable": {
     "title": "數據出賽表",

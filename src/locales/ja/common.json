@@ -292,26 +292,25 @@
     "view": "予想を見る"
   },
   "turnPatternList": {
+    "title": "展開予測",
     "hitTag": "的中",
     "summaryHit": "✅ 上位予想の1つが的中しました",
     "summaryMiss": "❌ 上位予想に無い{{winnerNumber}}号艇が1着でした"
   },
   "placeRecommendation": {
+    "title": "複勝予想",
     "basis": "進入コース別勝率が高い艇を予想",
     "courseRateLabel": "コース別勝率{{rate}}%（{{wins}}/{{total}}）"
+  },
+  "accuracyStat": {
+    "withRecovery": "実測: 的中率{{hitRate}}%・回収率{{recoveryRate}}%（過去{{totalRaces}}レース）",
+    "hitRateOnly": "実測: 的中率{{hitRate}}%（過去{{totalRaces}}レース）"
   },
   "section": {
     "resultTitle": "データ分析結果"
   },
   "animation": {
-    "title": "1マーク展開予測",
-    "phaseStart": "スタート",
-    "phaseTurn": "1マーク旋回",
-    "firstMark": "1マーク",
-    "replay": "▶ 再生",
-    "rankLabel": "{{rank}}着",
-    "courseLabel": "{{course}}コース",
-    "accuracyBadge": "実測: 展開的中率 約80%（過去4,580レース）"
+    "courseLabel": "{{course}}コース"
   },
   "dataTable": {
     "title": "データ出走表",

@@ -294,26 +294,25 @@
     "view": "View Prediction"
   },
   "turnPatternList": {
+    "title": "Turn Prediction",
     "hitTag": "Hit",
     "summaryHit": "✅ One of the top predictions hit",
     "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions"
   },
   "placeRecommendation": {
+    "title": "Place Prediction",
     "basis": "Predicts boats with the highest entry-course win rate",
     "courseRateLabel": "Course win rate {{rate}}% ({{wins}}/{{total}})"
+  },
+  "accuracyStat": {
+    "withRecovery": "Track record: {{hitRate}}% hit rate, {{recoveryRate}}% recovery (last {{totalRaces}} races)",
+    "hitRateOnly": "Track record: {{hitRate}}% hit rate (last {{totalRaces}} races)"
   },
   "section": {
     "resultTitle": "Data Analysis Results"
   },
   "animation": {
-    "title": "First Mark Prediction",
-    "phaseStart": "Start",
-    "phaseTurn": "1st mark turn",
-    "firstMark": "1st Mark",
-    "replay": "▶ Replay",
-    "rankLabel": "#{{rank}}",
-    "courseLabel": "Lane {{course}}",
-    "accuracyBadge": "Track record: ~80% accuracy over 4,580 races"
+    "courseLabel": "Lane {{course}}"
   },
   "dataTable": {
     "title": "Data Race Card",

@@ -292,26 +292,25 @@
     "view": "예측 보기"
   },
   "turnPatternList": {
+    "title": "전개 예측",
     "hitTag": "적중",
     "summaryHit": "✅ 상위 예측 중 하나가 적중했습니다",
     "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}호정이 1착이었습니다"
   },
   "placeRecommendation": {
+    "title": "복승 예측",
     "basis": "진입 코스별 승률이 높은 보트를 예측",
     "courseRateLabel": "코스별 승률 {{rate}}%（{{wins}}/{{total}}）"
+  },
+  "accuracyStat": {
+    "withRecovery": "실측: 적중률{{hitRate}}%・회수율{{recoveryRate}}%（지난{{totalRaces}}경주）",
+    "hitRateOnly": "실측: 적중률{{hitRate}}%（지난{{totalRaces}}경주）"
   },
   "section": {
     "resultTitle": "데이터 분석 결과"
   },
   "animation": {
-    "title": "1턴 마크 전개 예측",
-    "phaseStart": "스타트",
-    "phaseTurn": "1턴 선회",
-    "firstMark": "1턴 마크",
-    "replay": "▶ 다시 보기",
-    "rankLabel": "{{rank}}위",
-    "courseLabel": "{{course}}코스",
-    "accuracyBadge": "실측: 적중률 약 80%（지난 4,580경주）"
+    "courseLabel": "{{course}}코스"
   },
   "dataTable": {
     "title": "데이터 출주표",

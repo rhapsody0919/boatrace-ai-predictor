@@ -2651,6 +2651,36 @@ export const supabaseDataService = {
   },
 
   /**
+   * unifiedモデルの実測精度（複勝的中率・回収率、展開的中率）を取得する（BOA-179関連）
+   * scripts/daily/calculate-unified-model-accuracy.js が日次で accuracy_cache に
+   * 保存した集計値を読むだけなので軽量。AIデータ分析の複勝予想/展開予測カードで
+   * 「過去の実測実績」を動的に表示するために使う
+   */
+  getUnifiedModelAccuracy() {
+    return withCache(
+      "unified-model-accuracy",
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return null;
+        }
+        const { data, error } = await supabase
+          .from("accuracy_cache")
+          .select("data")
+          .eq("key", "unified_model_accuracy")
+          .single();
+
+        if (error) {
+          console.error("unified_model_accuracy取得エラー:", error.message);
+          return null;
+        }
+        return data?.data ?? null;
+      },
+      6 * 60 * 60 * 1000, // 6時間キャッシュ（日次バッチでしか更新されないため長め）
+    );
+  },
+
+  /**
    * 指定レースの出走表詳細（race_entriesの全選手データ）を取得する（BOA-168）
    * 分析ツールの「出走表データ」タブで使用する。AIスコアは含めない
    */

@@ -5,7 +5,6 @@ export { default as VenueSelector } from "./VenueSelector";
 export { default as RaceCard } from "./RaceCard";
 export { default as VolatilityDisplay } from "./VolatilityDisplay";
 export { default as RaceResult } from "./RaceResult";
-export { default as FirstMarkAnimation } from "./FirstMarkAnimation";
 export { default as TrifectaReferenceCard } from "./TrifectaReferenceCard";
 export { default as AttackDefenseTable } from "./AttackDefenseTable";
 export { default as PredictionPanel } from "./PredictionPanel";

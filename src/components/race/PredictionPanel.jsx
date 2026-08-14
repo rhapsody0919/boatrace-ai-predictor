@@ -29,9 +29,9 @@ import { SocialShareButtons } from "../SocialShareButtons";
 import { generatePredictionShareText } from "../../utils/share";
 import { getVenueGuidePath } from "../../utils/venueUtils";
 import VolatilityDisplay from "./VolatilityDisplay";
-import FirstMarkAnimation from "./FirstMarkAnimation";
 import TurnPatternList from "./TurnPatternList";
 import PlaceRecommendationPanel from "./PlaceRecommendationPanel";
+import PredictionCard from "./PredictionCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
@@ -157,52 +157,45 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.2 }}
             >
-              {/* ブロック1: 複勝予想パネル（FR1/FR5） */}
+              {/* ブロック1: 複勝予想カード（FR1/FR5）。実測精度（動的）+ 今回の予想 */}
               {prediction.allPlayers && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
                 >
-                  <PlaceRecommendationPanel
-                    raceId={analysisRaceId}
-                    players={prediction.allPlayers}
-                  />
+                  <PredictionCard
+                    title={`🎯 ${t("placeRecommendation.title")}`}
+                    statKey="place"
+                  >
+                    <PlaceRecommendationPanel
+                      raceId={analysisRaceId}
+                      players={prediction.allPlayers}
+                    />
+                  </PredictionCard>
                 </motion.div>
               )}
 
-              {/* ブロック2: 展開予測パネル（FR2、的中率80.0%） */}
+              {/* ブロック2: 展開予測カード（FR2）。実測精度（動的）+ 今回の上位候補ランキング。
+                  以前はここにアニメーション（FirstMarkAnimation）も併記していたが、
+                  同じpatternsデータから異なる問い（複数シナリオの勝者候補 vs 単一
+                  シナリオの全着順）に答える2つの表示が数値レベルで食い違い、
+                  ユーザーから「よくわからないUX」との指摘を受けたため撤去した
+                  （2026-08-14。将来的に別の演出を検討する） */}
               {prediction.turnPrediction && prediction.allPlayers && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
                 >
-                  <p className="ai-analysis-block-badge">
-                    📈 {t("animation.accuracyBadge")}
-                  </p>
-                  <TurnPatternList
-                    patterns={prediction.turnPrediction.patterns}
-                  />
-                  <FirstMarkAnimation
-                    patterns={prediction.turnPrediction.patterns}
-                    technique={prediction.turnPrediction.technique}
-                    probability={prediction.turnPrediction.probability}
-                    winnerCourse={prediction.turnPrediction.winnerCourse}
-                    distribution={prediction.turnPrediction.distribution}
-                    boatStrengths={prediction.turnPrediction.boatStrengths}
-                    players={prediction.allPlayers?.map((p) => ({
-                      number: p.number,
-                      name: p.name,
-                    }))}
-                    selectedPatternIndex={0}
-                    venue={
-                      venueCode
-                        ? t(`venues.${venueCode}`, venueName)
-                        : venueName
-                    }
-                    raceNumber={selectedRace?.raceNumber}
-                  />
+                  <PredictionCard
+                    title={`🌊 ${t("turnPatternList.title")}`}
+                    statKey="turn"
+                  >
+                    <TurnPatternList
+                      patterns={prediction.turnPrediction.patterns}
+                    />
+                  </PredictionCard>
                 </motion.div>
               )}
 
