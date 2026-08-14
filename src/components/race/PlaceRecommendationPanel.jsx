@@ -9,6 +9,10 @@
  *
  * 根拠のコース別勝率算出は raceIndicators.jsx の getPlaceRecommendation を
  * データ出走表と共有し、二重実装を避けている。
+ *
+ * 2026-08-14再追記: 当初は◎○を同じ見た目の行として並べていたため訴求力に欠ける
+ * という指摘を受け、上部に艇番を大きく強調するヘッドライン（◎本命/○対抗）を追加し、
+ * 根拠（コース別勝率・オッズ）は下の補足行に分離した
  */
 import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
@@ -43,48 +47,64 @@ function PlaceRecommendationPanel({ raceId, players }) {
       <p className="place-recommendation-basis">
         {t("placeRecommendation.basis")}
       </p>
-      {picks.map((pick, index) => {
-        const colors = BOAT_COLORS[pick.boat] || BOAT_COLORS[1];
-        const boatOdds = placeOddsByBoat.get(pick.boat);
-        const oddsLow = toNumber(boatOdds?.odds_place_low);
-        const oddsHigh = toNumber(boatOdds?.odds_place_high);
-        return (
-          <div className="place-recommendation-row" key={pick.boat}>
-            <span className="place-recommendation-mark">
-              {index === 0 ? "◎" : "○"}
-            </span>
-            <span
-              className="place-recommendation-boat"
-              style={{ background: colors.bg, color: colors.text }}
+
+      <div className="place-recommendation-headline">
+        {picks.map((pick, index) => {
+          const colors = BOAT_COLORS[pick.boat] || BOAT_COLORS[1];
+          const variant = index === 0 ? "honmei" : "taikou";
+          return (
+            <div
+              className={`place-recommendation-pick place-recommendation-pick--${variant}`}
+              key={pick.boat}
             >
-              {pick.boat}
-            </span>
-            <span className="place-recommendation-name" translate="no">
-              {pick.name?.replace(/\s+/g, "")}
-            </span>
-            <span className="place-recommendation-rank-label">
-              {t("dataTable.placeBadgeLabel", { rank: index + 1 })}
-            </span>
-            <span className="place-recommendation-rate">
-              {t("placeRecommendation.courseRateLabel", {
-                rate: pick.courseRate.rate.toFixed(0),
-                wins: pick.courseRate.wins,
-                total: pick.courseRate.total,
-              })}
-            </span>
-            {pending.placeOdds ? (
-              <span className="drt-skeleton" aria-hidden="true" />
-            ) : oddsLow !== null && oddsHigh !== null ? (
-              <span className="place-recommendation-odds">
-                {t("dataTable.placeOddsLabel", {
-                  low: oddsLow.toFixed(1),
-                  high: oddsHigh.toFixed(1),
+              <span className="place-recommendation-pick-mark">
+                {index === 0 ? "◎" : "○"}
+              </span>
+              <span
+                className="place-recommendation-pick-boat"
+                style={{ background: colors.bg, color: colors.text }}
+              >
+                {pick.boat}
+              </span>
+              <span className="place-recommendation-pick-name" translate="no">
+                {pick.name?.replace(/\s+/g, "")}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="place-recommendation-details">
+        {picks.map((pick, index) => {
+          const boatOdds = placeOddsByBoat.get(pick.boat);
+          const oddsLow = toNumber(boatOdds?.odds_place_low);
+          const oddsHigh = toNumber(boatOdds?.odds_place_high);
+          return (
+            <div className="place-recommendation-row" key={pick.boat}>
+              <span className="place-recommendation-rank-label">
+                {t("dataTable.placeBadgeLabel", { rank: index + 1 })}
+              </span>
+              <span className="place-recommendation-rate">
+                {t("placeRecommendation.courseRateLabel", {
+                  rate: pick.courseRate.rate.toFixed(0),
+                  wins: pick.courseRate.wins,
+                  total: pick.courseRate.total,
                 })}
               </span>
-            ) : null}
-          </div>
-        );
-      })}
+              {pending.placeOdds ? (
+                <span className="drt-skeleton" aria-hidden="true" />
+              ) : oddsLow !== null && oddsHigh !== null ? (
+                <span className="place-recommendation-odds">
+                  {t("dataTable.placeOddsLabel", {
+                    low: oddsLow.toFixed(1),
+                    high: oddsHigh.toFixed(1),
+                  })}
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

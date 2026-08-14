@@ -295,6 +295,7 @@
   },
   "turnPatternList": {
     "title": "Turn Prediction",
+    "caption": "Candidates likely to finish 1st (up to 3 boats, ranked by probability)",
     "hitTag": "Hit",
     "summaryHit": "✅ One of the top predictions hit",
     "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions"
@@ -306,7 +307,7 @@
   },
   "accuracyStat": {
     "withRecovery": "Track record: {{hitRate}}% hit rate, {{recoveryRate}}% recovery (last {{totalRaces}} races)",
-    "hitRateOnly": "Track record: {{hitRate}}% hit rate (last {{totalRaces}} races)"
+    "hitRateOnly": "Track record: {{hitRate}}% 1st-place hit rate (last {{totalRaces}} races)"
   },
   "section": {
     "resultTitle": "Data Analysis Results"

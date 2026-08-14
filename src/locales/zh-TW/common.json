@@ -293,6 +293,7 @@
   },
   "turnPatternList": {
     "title": "轉彎預測",
+    "caption": "可能獲得第1名的候選艇（最多3艇，依機率排序）",
     "hitTag": "命中",
     "summaryHit": "✅ 其中一項預測命中",
     "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中"
@@ -304,7 +305,7 @@
   },
   "accuracyStat": {
     "withRecovery": "實測：命中率{{hitRate}}%・回收率{{recoveryRate}}%（過去{{totalRaces}}場）",
-    "hitRateOnly": "實測：命中率{{hitRate}}%（過去{{totalRaces}}場）"
+    "hitRateOnly": "實測：第1名命中率{{hitRate}}%（過去{{totalRaces}}場）"
   },
   "section": {
     "resultTitle": "數據分析結果"

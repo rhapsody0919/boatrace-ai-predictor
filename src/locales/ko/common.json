@@ -293,6 +293,7 @@
   },
   "turnPatternList": {
     "title": "전개 예측",
+    "caption": "1착이 될 가능성이 높은 정의 후보입니다（최대 3정・확률순）",
     "hitTag": "적중",
     "summaryHit": "✅ 상위 예측 중 하나가 적중했습니다",
     "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}호정이 1착이었습니다"
@@ -304,7 +305,7 @@
   },
   "accuracyStat": {
     "withRecovery": "실측: 적중률{{hitRate}}%・회수율{{recoveryRate}}%（지난{{totalRaces}}경주）",
-    "hitRateOnly": "실측: 적중률{{hitRate}}%（지난{{totalRaces}}경주）"
+    "hitRateOnly": "실측: 1착 적중률{{hitRate}}%（지난{{totalRaces}}경주）"
   },
   "section": {
     "resultTitle": "데이터 분석 결과"

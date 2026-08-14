@@ -51,6 +51,9 @@ function TurnPatternList({ patterns, actualWinner = null }) {
 
   return (
     <div className="turn-pattern-list">
+      {!isResultMode && (
+        <p className="turn-pattern-caption">{t("turnPatternList.caption")}</p>
+      )}
       {displayPatterns.map((pattern, index) => {
         const isMatch = isResultMode && pattern.winnerCourse === actualWinner;
         const colors = BOAT_COLORS[pattern.winnerCourse] || BOAT_COLORS[1];

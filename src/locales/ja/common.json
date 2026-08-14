@@ -293,6 +293,7 @@
   },
   "turnPatternList": {
     "title": "展開予測",
+    "caption": "1着になりそうな艇の候補です（最大3艇・確率順）",
     "hitTag": "的中",
     "summaryHit": "✅ 上位予想の1つが的中しました",
     "summaryMiss": "❌ 上位予想に無い{{winnerNumber}}号艇が1着でした"
@@ -304,7 +305,7 @@
   },
   "accuracyStat": {
     "withRecovery": "実測: 的中率{{hitRate}}%・回収率{{recoveryRate}}%（過去{{totalRaces}}レース）",
-    "hitRateOnly": "実測: 的中率{{hitRate}}%（過去{{totalRaces}}レース）"
+    "hitRateOnly": "実測: 1着的中率{{hitRate}}%（過去{{totalRaces}}レース）"
   },
   "section": {
     "resultTitle": "データ分析結果"
