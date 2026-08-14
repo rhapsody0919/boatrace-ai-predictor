@@ -102,13 +102,19 @@ async function fetchRacerStats(racerIds) {
 /**
  * FR1複勝予想: コース別勝率が高い上位2艇を選出する（EV計算不要、backtest-course-rate-only.jsと同じロジック）
  */
+// コース別勝率のサンプル数がこれ未満の場合は判定不能として除外する
+// （2026-08-14修正、BOA-190。total:1/wins:1のような極少サンプルが勝率100%として
+// 実績豊富な選手を押しのけて1位表示されるのを防ぐ）
+const MIN_COURSE_SAMPLES = 5;
+
 function calculatePlaceRecommendation(entries, racerStatsMap) {
   const courseRates = entries.map((e) => {
     const stats = racerStatsMap.get(e.racer_id);
     const counts = stats?.course_race_counts?.[String(e.boat_number)];
-    const rate = counts?.total
-      ? ((counts.wins ?? 0) / counts.total) * 100
-      : null;
+    const rate =
+      counts?.total >= MIN_COURSE_SAMPLES
+        ? ((counts.wins ?? 0) / counts.total) * 100
+        : null;
     return { boat: e.boat_number, rate };
   });
 
@@ -127,13 +133,21 @@ function calculatePlaceRecommendation(entries, racerStatsMap) {
  * predictions（model_id='unified'）の蓄積データから直近N日・同会場のcomposite値を集める。
  * 運用開始直後等でサンプル不足の場合は空配列を返し、呼び出し側でフォールバックする。
  */
-async function fetchVolatilityDistribution(venueCode, beforeDate) {
+// race_idは"YYYY-MM-DD-VV-RR"形式。4番目のセグメントが会場コード
+function venueCodeOfRaceId(raceId) {
+  const parts = raceId.split("-");
+  return parts.length === 5 ? parseInt(parts[3], 10) : null;
+}
+
+// 会場別のイン崩れ分布を全会場ぶん1回のクエリでまとめて取得する。
+// 2026-08-14修正（BOA-182）: 旧実装はrace_id.includes(`-${venueCode}-`)で
+// 会場を絞り込んでおり、race_idの年月日セグメントと誤マッチしていた
+// （例: 会場8のprefix "-08-" が8月の全会場レースにマッチする）
+async function fetchVolatilityDistributionByVenue(beforeDate) {
   const cutoff = new Date(beforeDate);
   cutoff.setDate(cutoff.getDate() - VOLATILITY_LOOKBACK_DAYS);
   const cutoffStr = cutoff.toISOString().split("T")[0];
 
-  // 90日分・全会場のpredictionsを取得後にvenueCodeで絞り込む（race_idのvenue部分は
-  // 中間位置のためDB側での範囲指定ができない）。運用開始直後は件数が少ないが、
   // 蓄積後は90日×全会場で1000行を超えうるためfetchAll必須
   const data = await fetchAll(
     "predictions",
@@ -145,11 +159,16 @@ async function fetchVolatilityDistribution(venueCode, beforeDate) {
         .lt("race_id", beforeDate),
   );
 
-  const prefix = `-${String(venueCode).padStart(2, "0")}-`;
-  return (data || [])
-    .filter((row) => row.race_id.includes(prefix))
-    .map((row) => row.feature_contributions?.volatilityComposite)
-    .filter((v) => typeof v === "number");
+  const byVenue = new Map();
+  for (const row of data || []) {
+    const composite = row.feature_contributions?.volatilityComposite;
+    if (typeof composite !== "number") continue;
+    const venueCode = venueCodeOfRaceId(row.race_id);
+    if (venueCode == null) continue;
+    if (!byVenue.has(venueCode)) byVenue.set(venueCode, []);
+    byVenue.get(venueCode).push(composite);
+  }
+  return byVenue;
 }
 
 async function main() {
@@ -185,13 +204,8 @@ async function main() {
   const racerStatsMap = await fetchRacerStats([...allRacerIds]);
   console.log(`📊 ${racerStatsMap.size}人の選手統計を取得しました`);
 
-  // 会場別のイン崩れ分布を事前取得（レースごとに毎回問い合わせない）
-  const venueCodes = [...new Set(races.map((r) => r.venueCode))];
-  const volatilityDistByVenue = new Map();
-  for (const venueCode of venueCodes) {
-    const dist = await fetchVolatilityDistribution(venueCode, date);
-    volatilityDistByVenue.set(venueCode, dist);
-  }
+  // 会場別のイン崩れ分布を事前取得（レースごとに毎回問い合わせない、全会場を1回のクエリで取得）
+  const volatilityDistByVenue = await fetchVolatilityDistributionByVenue(date);
 
   const predictionsData = [];
   for (const race of races) {
@@ -269,22 +283,19 @@ async function main() {
     return;
   }
 
-  const updatedRaceIds = predictionsData.map((r) => r.race_id);
-  const { error: deleteError } = await supabase
-    .from("predictions")
-    .delete()
-    .in("race_id", updatedRaceIds)
-    .eq("model_id", MODEL_ID)
-    .eq("is_shadow", false);
-  if (deleteError) {
-    console.error("❌ predictions削除エラー:", deleteError.message);
-    return;
-  }
-
+  // 2026-08-14修正（BOA-185）: 旧実装は先にdeleteしてからinsertしており、insert失敗時
+  // （タイムアウト・接続断等）に削除済みの行が復元されずデータが消失していた。
+  // predictionsテーブルには idx_predictions_unique（race_id, model_id 一意、
+  // is_shadow=FALSE の部分インデックス）があるため、upsertで置き換えると
+  // delete/insertを分離せず単一操作でアトミックに更新できる（onConflictは実データで
+  // 動作確認済み）。バッチが失敗しても既に成功した分は反映済みのまま残り、
+  // 失敗分だけが旧データのまま留まる（全滅する旧実装より安全）
   let writeFailed = false;
   for (let i = 0; i < predictionsData.length; i += 1000) {
     const batch = predictionsData.slice(i, i + 1000);
-    const { error } = await supabase.from("predictions").insert(batch);
+    const { error } = await supabase
+      .from("predictions")
+      .upsert(batch, { onConflict: "race_id,model_id" });
     if (error) {
       console.error("❌ predictions書き込みエラー:", error.message);
       writeFailed = true;

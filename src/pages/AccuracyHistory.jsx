@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { dataService } from "../services/dataService";
 import { MODEL_NAMES } from "../constants";
-import { formatPercent } from "../utils/formatters";
-import { getRecoveryColor } from "../utils/colors";
+import ModelComparisonTable from "../components/ModelComparisonTable";
 import "./AccuracyHistory.css";
 
 function AccuracyHistory() {
@@ -171,118 +170,11 @@ function AccuracyHistory() {
             const modelComparison = getModelComparisonForMonth(monthInfo);
             return (
               <div key={monthInfo.key} className="model-comparison-section">
-                <h3>
-                  📊 {monthInfo.year}年{monthInfo.month}月
-                  モデル間パフォーマンス比較
-                </h3>
-                <div className="table-wrapper">
-                  <table className="model-comparison-table">
-                    <thead>
-                      <tr>
-                        <th>モデル</th>
-                        <th>レース数</th>
-                        <th colSpan="2">単勝</th>
-                        <th colSpan="2">複勝</th>
-                        <th colSpan="2">3連複</th>
-                        <th colSpan="2">3連単</th>
-                      </tr>
-                      <tr className="sub-header">
-                        <th></th>
-                        <th></th>
-                        <th className="sub-th">的中率</th>
-                        <th className="sub-th">回収率</th>
-                        <th className="sub-th">的中率</th>
-                        <th className="sub-th">回収率</th>
-                        <th className="sub-th">的中率</th>
-                        <th className="sub-th">回収率</th>
-                        <th className="sub-th">的中率</th>
-                        <th className="sub-th">回収率</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {modelComparison.map((model) => (
-                        <tr key={model.key}>
-                          <td className="model-name">{model.name}</td>
-                          <td className="races-cell">
-                            {model.races > 0 ? `${model.races}R` : "-"}
-                          </td>
-                          <td className="hit-rate">
-                            {model.races > 0
-                              ? formatPercent(model.winHitRate)
-                              : "-"}
-                          </td>
-                          <td
-                            className="recovery-rate"
-                            style={{
-                              color:
-                                model.races > 0
-                                  ? getRecoveryColor(model.winRecoveryRate)
-                                  : "#64748b",
-                            }}
-                          >
-                            {model.races > 0
-                              ? formatPercent(model.winRecoveryRate)
-                              : "-"}
-                          </td>
-                          <td className="hit-rate">
-                            {model.races > 0
-                              ? formatPercent(model.placeHitRate)
-                              : "-"}
-                          </td>
-                          <td
-                            className="recovery-rate"
-                            style={{
-                              color:
-                                model.races > 0
-                                  ? getRecoveryColor(model.placeRecoveryRate)
-                                  : "#64748b",
-                            }}
-                          >
-                            {model.races > 0
-                              ? formatPercent(model.placeRecoveryRate)
-                              : "-"}
-                          </td>
-                          <td className="hit-rate">
-                            {model.races > 0
-                              ? formatPercent(model.trifectaHitRate)
-                              : "-"}
-                          </td>
-                          <td
-                            className="recovery-rate"
-                            style={{
-                              color:
-                                model.races > 0
-                                  ? getRecoveryColor(model.trifectaRecoveryRate)
-                                  : "#64748b",
-                            }}
-                          >
-                            {model.races > 0
-                              ? formatPercent(model.trifectaRecoveryRate)
-                              : "-"}
-                          </td>
-                          <td className="hit-rate">
-                            {model.races > 0
-                              ? formatPercent(model.trioHitRate)
-                              : "-"}
-                          </td>
-                          <td
-                            className="recovery-rate"
-                            style={{
-                              color:
-                                model.races > 0
-                                  ? getRecoveryColor(model.trioRecoveryRate)
-                                  : "#64748b",
-                            }}
-                          >
-                            {model.races > 0
-                              ? formatPercent(model.trioRecoveryRate)
-                              : "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ModelComparisonTable
+                  data={modelComparison}
+                  showRaceCount
+                  title={`📊 ${monthInfo.year}年${monthInfo.month}月 モデル間パフォーマンス比較`}
+                />
               </div>
             );
           })
