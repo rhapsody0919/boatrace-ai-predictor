@@ -1282,12 +1282,6 @@ export const supabaseDataService = {
           return allData;
         };
 
-        // 今月の予測データを取得（is_hit_winがセットされているもの = 結果が出ているもの）
-        const thisMonthPredictions = await fetchAllPredictions(
-          thisMonthStart,
-          thisMonthEnd,
-        );
-
         // 過去6ヶ月分の月別データを取得するためのヘルパー
         const getMonthRange = (year, month) => {
           const start = `${year}-${String(month).padStart(2, "0")}-01`;
@@ -1314,46 +1308,52 @@ export const supabaseDataService = {
           monthsToFetch.push(getMonthRange(currentYear, currentMonth));
         }
 
-        // 各月の予測データを取得
-        const monthlyPredictionsMap = {};
-        for (const monthInfo of monthsToFetch) {
-          const predictions = await fetchAllPredictions(
-            monthInfo.start,
-            monthInfo.end,
-          );
-          const key = `${monthInfo.year}-${String(monthInfo.month).padStart(2, "0")}`;
-          monthlyPredictionsMap[key] = {
-            predictions,
-            year: monthInfo.year,
-            month: monthInfo.month,
-          };
-        }
-
-        // 先月のデータ（互換性のため）
-        const lastMonthKey = `${monthsToFetch[0].year}-${String(monthsToFetch[0].month).padStart(2, "0")}`;
-        const lastMonthPredictions =
-          monthlyPredictionsMap[lastMonthKey]?.predictions || [];
-
-        // 過去7日分の日別データ取得
+        // 過去7日分・過去90日分の開始日
         const sevenDaysAgo = new Date(
           jstNow.getTime() - 7 * 24 * 60 * 60 * 1000,
         );
         const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0];
 
-        const recentPredictions = await fetchAllPredictions(
-          sevenDaysAgoStr,
-          null,
-        );
-
-        // 全期間のデータを取得（会場別統計用）- 過去90日分
         const ninetyDaysAgo = new Date(
           jstNow.getTime() - 90 * 24 * 60 * 60 * 1000,
         );
         const ninetyDaysAgoStr = ninetyDaysAgo.toISOString().split("T")[0];
-        const allPredictions = await fetchAllPredictions(
-          ninetyDaysAgoStr,
-          null,
-        );
+
+        // 2026-08-15修正（BOA-193）: 以下9件のfetchAllPredictions呼び出しは互いに
+        // 独立したデータ取得なのに直列awaitされており、predictionsテーブルの
+        // 行数増加に伴って/accuracyの応答が数十秒〜1分以上に悪化していた。
+        // Promise.allで並列化し、体感速度を「合計時間」から「最長1件分の時間」に短縮する
+        const [
+          thisMonthPredictions,
+          monthlyResults,
+          recentPredictions,
+          allPredictions,
+        ] = await Promise.all([
+          fetchAllPredictions(thisMonthStart, thisMonthEnd),
+          Promise.all(
+            monthsToFetch.map((monthInfo) =>
+              fetchAllPredictions(monthInfo.start, monthInfo.end),
+            ),
+          ),
+          fetchAllPredictions(sevenDaysAgoStr, null),
+          fetchAllPredictions(ninetyDaysAgoStr, null),
+        ]);
+
+        // 各月の予測データをマップ化
+        const monthlyPredictionsMap = {};
+        monthsToFetch.forEach((monthInfo, i) => {
+          const key = `${monthInfo.year}-${String(monthInfo.month).padStart(2, "0")}`;
+          monthlyPredictionsMap[key] = {
+            predictions: monthlyResults[i],
+            year: monthInfo.year,
+            month: monthInfo.month,
+          };
+        });
+
+        // 先月のデータ（互換性のため）
+        const lastMonthKey = `${monthsToFetch[0].year}-${String(monthsToFetch[0].month).padStart(2, "0")}`;
+        const lastMonthPredictions =
+          monthlyPredictionsMap[lastMonthKey]?.predictions || [];
 
         // race_idから日付を抽出するヘルパー関数
         const extractDate = (raceId) => raceId.substring(0, 10);
