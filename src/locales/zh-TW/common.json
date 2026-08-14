@@ -129,14 +129,10 @@
     "inKuzureHigh": "冷門機率高",
     "inKuzureHit": "🌊 1號位失守命中！",
     "inKuzureMiss": "❌ 1號位守住了（未命中）",
-    "winHit": "✅ 單勝命中！",
-    "winMiss": "❌ 單勝未中（{{picked}}→{{actual}}）",
     "placeHit": "✅ 複勝命中！",
     "placeMiss": "❌ 複勝未中",
-    "trifectaHit": "✅ 3連複命中！",
-    "trifectaMiss": "❌ 3連複未中",
-    "trioHit": "✅ 3連單命中！",
-    "trioMiss": "❌ 3連單未中",
+    "turnHit": "✅ 展開命中！",
+    "turnMiss": "❌ 展開未中",
     "payout": "派彩：¥{{amount}}"
   },
   "panel": {

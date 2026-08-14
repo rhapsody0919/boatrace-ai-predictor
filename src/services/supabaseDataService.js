@@ -461,17 +461,6 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
         raceData.result.payouts.place[r.rank1] = r.payoutPlace1;
       if (r.payoutPlace2)
         raceData.result.payouts.place[r.rank2] = r.payoutPlace2;
-
-      // 的中情報
-      const stdHit = predictions.standard;
-      if (stdHit) {
-        raceData.accuracy = {
-          standard: {
-            isHitWin: stdHit.isHitWin,
-            isHitPlace: stdHit.isHitPlace,
-          },
-        };
-      }
     }
 
     return raceData;
@@ -1177,16 +1166,6 @@ export const supabaseDataService = {
           }
           if (result.payout_place_2) {
             raceData.result.payouts.place[result.rank2] = result.payout_place_2;
-          }
-
-          // 的中情報
-          if (standardPred) {
-            raceData.accuracy = {
-              standard: {
-                isHitWin: standardPred.is_hit_win,
-                isHitPlace: standardPred.is_hit_place,
-              },
-            };
           }
         }
 

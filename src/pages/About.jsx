@@ -244,7 +244,7 @@ export default function About() {
               <div className="step-number">4</div>
               <div className="step-content">
                 <h3>予想生成</h3>
-                <p>本命・推奨買い目を自動生成</p>
+                <p>複勝予想・イン崩れ指数を算出</p>
               </div>
             </div>
           </div>
@@ -252,28 +252,24 @@ export default function About() {
         </section>
 
         <section className="about-section">
-          <h2>📊 AI分析の精度（スタンダードモデル累計）</h2>
+          <h2>📊 AI分析の精度（実測値）</h2>
           <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-value">52.9%</div>
+              <div className="stat-value">91.9%</div>
               <div className="stat-label">複勝的中率</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">4.1%</div>
-              <div className="stat-label">3連複的中率</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value">92.7%</div>
+              <div className="stat-value">146.0%</div>
               <div className="stat-label">複勝回収率</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">77.6%</div>
-              <div className="stat-label">3連単回収率</div>
+              <div className="stat-value">80.0%</div>
+              <div className="stat-label">展開予測的中率</div>
             </div>
           </div>
           <p className="stats-note">
             ※
-            2026年1月6日〜8月4日の累計データ（全35,597レース）。本命狙い・穴狙いモデルの実績は「成績」ページで公開しています
+            過去4,580レースの実測値。各レースの予想画面・データで振り返るセクションで、毎回の的中/不的中を確認できます
           </p>
         </section>
 

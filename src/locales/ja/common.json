@@ -129,14 +129,10 @@
     "inKuzureHigh": "イン崩れ確率高",
     "inKuzureHit": "🌊 イン崩れ的中！",
     "inKuzureMiss": "❌ イン逃げ切り（外れ）",
-    "winHit": "✅ 単勝的中！",
-    "winMiss": "❌ 単勝（{{picked}}→{{actual}}）",
     "placeHit": "✅ 複勝的中！",
     "placeMiss": "❌ 複勝不的中",
-    "trifectaHit": "✅ 3連複的中！",
-    "trifectaMiss": "❌ 3連複不的中",
-    "trioHit": "✅ 3連単的中！",
-    "trioMiss": "❌ 3連単不的中",
+    "turnHit": "✅ 展開的中！",
+    "turnMiss": "❌ 展開不的中",
     "payout": "配当: {{amount}}円"
   },
   "panel": {

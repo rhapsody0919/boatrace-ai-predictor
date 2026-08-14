@@ -130,14 +130,10 @@
     "inKuzureHigh": "High upset chance",
     "inKuzureHit": "🌊 Lane-1 upset hit!",
     "inKuzureMiss": "❌ Lane 1 held on (missed)",
-    "winHit": "✅ Win bet hit!",
-    "winMiss": "❌ Win bet ({{picked}}→{{actual}})",
     "placeHit": "✅ Place bet hit!",
     "placeMiss": "❌ Place bet missed",
-    "trifectaHit": "✅ Trio hit!",
-    "trifectaMiss": "❌ Trio missed",
-    "trioHit": "✅ Trifecta hit!",
-    "trioMiss": "❌ Trifecta missed",
+    "turnHit": "✅ Turn prediction hit!",
+    "turnMiss": "❌ Turn prediction missed",
     "payout": "Payout: ¥{{amount}}"
   },
   "panel": {

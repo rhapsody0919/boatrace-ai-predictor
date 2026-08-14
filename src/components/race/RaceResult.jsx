@@ -17,41 +17,27 @@ function RaceResult({ prediction }) {
   }
 
   const topPick = prediction.topPick;
-  const top3 = prediction.top3;
 
-  // 的中判定
-  const isWinHit = topPick.number === result.rank1;
+  // 的中判定（BOA-173: unifiedモデルはレース単位で二値判定できる複勝予想・
+  // 展開予測の2種類のみを的中対象とする。単勝的中・3連複的中・3連単的中は
+  // AIが予想していない賭け方のため廃止した）
   const isPlaceHit =
     topPick.number === result.rank1 || topPick.number === result.rank2;
-  const is3FukuHit =
-    top3 &&
-    top3.includes(result.rank1) &&
-    top3.includes(result.rank2) &&
-    top3.includes(result.rank3);
-  const is3TanHit =
-    top3 &&
-    top3[0] === result.rank1 &&
-    top3[1] === result.rank2 &&
-    top3[2] === result.rank3;
+
+  const turnPatterns = prediction.turnPrediction?.patterns;
+  const hasTurnPrediction =
+    Array.isArray(turnPatterns) && turnPatterns.length > 0;
+  const isTurnHit =
+    hasTurnPrediction &&
+    turnPatterns.some((p) => p.winnerCourse === result.rank1);
 
   // 配当取得ヘルパー
-  const getWinPayout = () => result.payouts?.win?.[String(topPick.number)];
   const getPlacePayout = () => result.payouts?.place?.[String(topPick.number)];
-  const getTrifectaPayout = () => {
-    const sorted = [result.rank1, result.rank2, result.rank3].sort(
-      (a, b) => a - b,
-    );
-    return result.payouts?.trifecta?.[sorted.join("-")];
-  };
-  const getTrioPayout = () =>
-    result.payouts?.trio?.[`${result.rank1}-${result.rank2}-${result.rank3}`];
 
   // イン崩れ判定（FR3の会場内パーセンタイル、0.7以上をVolatilityDisplayと同じ閾値で「高」とみなす）
   const showInKuzure =
     prediction.volatilityPercentile >= 0.7 && result.winningTechnique;
   const isInKuzure = showInKuzure && result.winningTechnique !== "逃げ";
-  // unifiedモデルはtopPick/top2ndの2艇のみ（3連複・3連単の的中判定には使えない、旧モデル互換のみ対象）
-  const hasFullTop3 = top3?.length === 3;
 
   return (
     <div className="race-result">
@@ -89,26 +75,6 @@ function RaceResult({ prediction }) {
 
       <div className="accuracy-check">
         <div className="check-item">
-          {isWinHit ? (
-            <div className="hit">
-              {t("result.winHit")}
-              {getWinPayout() && (
-                <span className="payout">
-                  {t("result.payout", { amount: getWinPayout() })}
-                </span>
-              )}
-            </div>
-          ) : (
-            <div className="miss">
-              {t("result.winMiss", {
-                picked: topPick.number,
-                actual: result.rank1,
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="check-item">
           {isPlaceHit ? (
             <div className="hit">
               {t("result.placeHit")}
@@ -123,36 +89,12 @@ function RaceResult({ prediction }) {
           )}
         </div>
 
-        {hasFullTop3 && (
+        {hasTurnPrediction && (
           <div className="check-item">
-            {is3FukuHit ? (
-              <div className="hit">
-                {t("result.trifectaHit")}
-                {getTrifectaPayout() && (
-                  <span className="payout">
-                    {t("result.payout", { amount: getTrifectaPayout() })}
-                  </span>
-                )}
-              </div>
+            {isTurnHit ? (
+              <div className="hit">{t("result.turnHit")}</div>
             ) : (
-              <div className="miss">{t("result.trifectaMiss")}</div>
-            )}
-          </div>
-        )}
-
-        {hasFullTop3 && (
-          <div className="check-item">
-            {is3TanHit ? (
-              <div className="hit">
-                {t("result.trioHit")}
-                {getTrioPayout() && (
-                  <span className="payout">
-                    {t("result.payout", { amount: getTrioPayout() })}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <div className="miss">{t("result.trioMiss")}</div>
+              <div className="miss">{t("result.turnMiss")}</div>
             )}
           </div>
         )}

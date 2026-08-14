@@ -129,14 +129,10 @@
     "inKuzureHigh": "이변 가능성 높음",
     "inKuzureHit": "🌊 1코스 이변 적중!",
     "inKuzureMiss": "❌ 1코스가 지켜냈습니다 (미적중)",
-    "winHit": "✅ 단승 적중!",
-    "winMiss": "❌ 단승 미적중 ({{picked}}→{{actual}})",
     "placeHit": "✅ 연승 적중!",
     "placeMiss": "❌ 연승 미적중",
-    "trifectaHit": "✅ 삼복승 적중!",
-    "trifectaMiss": "❌ 삼복승 미적중",
-    "trioHit": "✅ 삼쌍승 적중!",
-    "trioMiss": "❌ 삼쌍승 미적중",
+    "turnHit": "✅ 전개 적중!",
+    "turnMiss": "❌ 전개 미적중",
     "payout": "배당금: ¥{{amount}}"
   },
   "panel": {
