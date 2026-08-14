@@ -132,9 +132,7 @@
     "placePredicted": "予想: {{number}}号艇の複勝",
     "placeHit": "✅ 複勝的中！（{{position}}着）",
     "placeMiss": "❌ 複勝不的中",
-    "turnPredicted": "予想: {{numbers}}号艇が1着",
-    "turnHit": "✅ 展開的中！",
-    "turnMiss": "❌ 展開不的中（結果: {{winnerNumber}}号艇が1着）",
+    "turnLabel": "展開予測",
     "payout": "配当: {{amount}}円"
   },
   "panel": {
@@ -295,6 +293,11 @@
     "missBadge": "❌ 外れ",
     "view": "予想を見る"
   },
+  "turnPatternList": {
+    "hitTag": "的中",
+    "summaryHit": "✅ 上位予想の1つが的中しました",
+    "summaryMiss": "❌ 上位予想に無い{{winnerNumber}}号艇が1着でした"
+  },
   "section": {
     "resultTitle": "データ分析結果"
   },
@@ -353,9 +356,6 @@
     "aiHit": "AIの本命 {{number}}号艇が{{position}}着。",
     "aiMissWithData": "AIの本命は{{aiNumber}}号艇だったが、1着は{{winnerNumber}}号艇。上記の整合したデータが{{winnerNumber}}号艇の好走を示唆していた。",
     "aiMissNoData": "AIの本命は{{aiNumber}}号艇だったが、1着は{{winnerNumber}}号艇。今回はデータからも読みにくい波乱だった。",
-    "turnHit": "予想通り{{number}}号艇が1着でした。",
-    "turnMiss": "予想は{{predicted}}号艇でしたが、1着は{{winnerNumber}}号艇でした。",
-    "courseListSeparator": "・",
     "itemTechniqueTop": "決まり手「{{technique}}」は過去90日の勝ちパターン1位（{{pct}}%）と一致",
     "itemTechniqueNone": "「{{technique}}」は過去90日の勝ちパターンに無い決まり手",
     "itemTechniqueNoWins": "過去90日間で勝利の無かった選手の1着",

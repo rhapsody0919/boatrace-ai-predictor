@@ -2,6 +2,7 @@
  * RaceResult - レース結果表示コンポーネント
  */
 import { useTranslation } from "react-i18next";
+import TurnPatternList from "./TurnPatternList";
 
 function RaceResult({ prediction }) {
   const { t } = useTranslation();
@@ -32,14 +33,6 @@ function RaceResult({ prediction }) {
   const turnPatterns = prediction.turnPrediction?.patterns;
   const hasTurnPrediction =
     Array.isArray(turnPatterns) && turnPatterns.length > 0;
-  const isTurnHit =
-    hasTurnPrediction &&
-    turnPatterns.some((p) => p.winnerCourse === result.rank1);
-  // 事前予想が何だったのかを結果と一緒に示す（2026-08-14: 予想を伏せたまま
-  // 「的中！」とだけ言われても検証できないというユーザー指摘への対応）
-  const predictedTurnCourses = hasTurnPrediction
-    ? [...new Set(turnPatterns.map((p) => p.winnerCourse))]
-    : [];
 
   // 配当取得ヘルパー
   const getPlacePayout = () => result.payouts?.place?.[String(topPick.number)];
@@ -101,26 +94,19 @@ function RaceResult({ prediction }) {
             <div className="miss">{t("result.placeMiss")}</div>
           )}
         </div>
-
-        {hasTurnPrediction && (
-          <div className="check-item">
-            <span className="prediction-note">
-              {t("result.turnPredicted", {
-                numbers: predictedTurnCourses.join(
-                  t("review.courseListSeparator"),
-                ),
-              })}
-            </span>
-            {isTurnHit ? (
-              <div className="hit">{t("result.turnHit")}</div>
-            ) : (
-              <div className="miss">
-                {t("result.turnMiss", { winnerNumber: result.rank1 })}
-              </div>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* 展開予測: 実測的中率（約80%）は「上位予想のいずれかが的中すれば的中」という
+          定義のため、単一の断定予想ではなく確率付きランキングとして正直に見せる */}
+      {hasTurnPrediction && (
+        <div className="turn-check">
+          <h5 className="turn-check-title">{t("result.turnLabel")}</h5>
+          <TurnPatternList
+            patterns={turnPatterns}
+            actualWinner={result.rank1}
+          />
+        </div>
+      )}
     </div>
   );
 }

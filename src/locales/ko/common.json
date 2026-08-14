@@ -132,9 +132,7 @@
     "placePredicted": "예측: {{number}}호정 복승",
     "placeHit": "✅ 연승 적중!（{{position}}착）",
     "placeMiss": "❌ 연승 미적중",
-    "turnPredicted": "예측: {{numbers}}호정이 1착",
-    "turnHit": "✅ 전개 적중!",
-    "turnMiss": "❌ 전개 미적중（결과: {{winnerNumber}}호정이 1착）",
+    "turnLabel": "전개 예측",
     "payout": "배당금: ¥{{amount}}"
   },
   "panel": {
@@ -295,6 +293,11 @@
     "missBadge": "❌ 미적중",
     "view": "예측 보기"
   },
+  "turnPatternList": {
+    "hitTag": "적중",
+    "summaryHit": "✅ 상위 예측 중 하나가 적중했습니다",
+    "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}호정이 1착이었습니다"
+  },
   "section": {
     "resultTitle": "데이터 분석 결과"
   },
@@ -353,9 +356,6 @@
     "aiHit": "AI 본명 {{number}}호정이 {{position}}착.",
     "aiMissWithData": "AI 본명은 {{aiNumber}}호정이었지만 1착은 {{winnerNumber}}호정. 위의 일치한 데이터가 {{winnerNumber}}호정의 호주를 시사하고 있었다.",
     "aiMissNoData": "AI 본명은 {{aiNumber}}호정이었지만 1착은 {{winnerNumber}}호정. 이번에는 데이터로도 읽기 어려운 이변이었다.",
-    "turnHit": "예측대로 {{number}}호정이 1착이었습니다.",
-    "turnMiss": "예측은 {{predicted}}호정이었지만 1착은 {{winnerNumber}}호정이었습니다.",
-    "courseListSeparator": "・",
     "itemTechniqueTop": "결정수「{{technique}}」는 최근 90일 승리 패턴 1위（{{pct}}%）와 일치",
     "itemTechniqueNone": "「{{technique}}」는 최근 90일 승리 패턴에 없는 결정수",
     "itemTechniqueNoWins": "최근 90일간 승리가 없던 선수의 1착",

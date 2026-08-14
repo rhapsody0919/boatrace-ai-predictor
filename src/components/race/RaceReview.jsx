@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { getRaceId } from "../../utils/raceId";
 import { buildIndicatorRows, TECHNIQUE_KEY_BY_NAME } from "./raceIndicators";
+import TurnPatternList from "./TurnPatternList";
 import "./RaceReview.css";
 
 // 指標の示唆（strong/weak）と着順（好走/着外）の組み合わせ → ○×−
@@ -151,17 +152,11 @@ function RaceReview({ prediction, selectedRace }) {
     winnerItems.matches.length +
     (winnerTechniqueItem?.type === "match" ? 1 : 0);
 
-  // AI検証（展開予測）: 集計的中率（実測約80%）と同じロジック
-  // 上位パターンのwinnerCourseのいずれかが実際の1着と一致すれば的中。
+  // AI検証（展開予測）: TurnPatternListが確率付きランキング＋的中判定を担う。
   // unifiedモデル運用開始（2026-08-11）より前の日付はturnPredictionが無いため非表示
   const turnPatterns = prediction.turnPrediction?.patterns;
   const hasTurnPrediction =
     Array.isArray(turnPatterns) && turnPatterns.length > 0;
-  const turnHit =
-    hasTurnPrediction && turnPatterns.some((p) => p.winnerCourse === winner);
-  const predictedCourses = hasTurnPrediction
-    ? [...new Set(turnPatterns.map((p) => p.winnerCourse))]
-    : [];
 
   return (
     <div className="race-review">
@@ -354,23 +349,14 @@ function RaceReview({ prediction, selectedRace }) {
               </div>
 
               {hasTurnPrediction && (
-                <div className="race-review-ai-item">
-                  <span
-                    className={`race-review-ai-badge ${turnHit ? "hit" : "miss"}`}
-                  >
-                    {turnHit ? t("review.hitBadge") : t("review.missBadge")}
-                  </span>
-                  <p>
-                    {t("review.turnLabel")}:{" "}
-                    {turnHit
-                      ? t("review.turnHit", { number: winner })
-                      : t("review.turnMiss", {
-                          predicted: predictedCourses.join(
-                            t("review.courseListSeparator"),
-                          ),
-                          winnerNumber: winner,
-                        })}
+                <div className="race-review-turn">
+                  <p className="race-review-turn-label">
+                    {t("review.turnLabel")}
                   </p>
+                  <TurnPatternList
+                    patterns={turnPatterns}
+                    actualWinner={winner}
+                  />
                 </div>
               )}
             </div>

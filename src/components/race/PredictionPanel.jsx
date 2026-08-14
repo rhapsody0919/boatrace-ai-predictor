@@ -24,6 +24,7 @@ import { generatePredictionShareText } from "../../utils/share";
 import { getVenueGuidePath } from "../../utils/venueUtils";
 import VolatilityDisplay from "./VolatilityDisplay";
 import FirstMarkAnimation from "./FirstMarkAnimation";
+import TurnPatternList from "./TurnPatternList";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
@@ -157,6 +158,9 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
                   <p className="ai-analysis-block-badge">
                     📈 {t("animation.accuracyBadge")}
                   </p>
+                  <TurnPatternList
+                    patterns={prediction.turnPrediction.patterns}
+                  />
                   <FirstMarkAnimation
                     patterns={prediction.turnPrediction.patterns}
                     technique={prediction.turnPrediction.technique}

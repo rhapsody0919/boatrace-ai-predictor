@@ -337,6 +337,19 @@
   background: #ef4444;
 }
 
+.race-review-turn {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-3);
+  border-top: var(--border-width-1) solid var(--color-gray-200);
+}
+
+.race-review-turn-label {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
+}
+
 .race-review-note {
   margin: 0;
   font-size: var(--font-size-xs);

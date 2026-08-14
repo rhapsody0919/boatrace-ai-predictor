@@ -132,9 +132,7 @@
     "placePredicted": "預測：{{number}}號艇複勝",
     "placeHit": "✅ 複勝命中！（第{{position}}名）",
     "placeMiss": "❌ 複勝未中",
-    "turnPredicted": "預測：{{numbers}}號艇獲得第1名",
-    "turnHit": "✅ 展開命中！",
-    "turnMiss": "❌ 展開未中（結果：{{winnerNumber}}號艇獲得第1名）",
+    "turnLabel": "展開預測",
     "payout": "派彩：¥{{amount}}"
   },
   "panel": {
@@ -295,6 +293,11 @@
     "missBadge": "❌ 未命中",
     "view": "查看預測"
   },
+  "turnPatternList": {
+    "hitTag": "命中",
+    "summaryHit": "✅ 其中一項預測命中",
+    "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中"
+  },
   "section": {
     "resultTitle": "數據分析結果"
   },
@@ -353,9 +356,6 @@
     "aiHit": "AI本命{{number}}號艇獲得第{{position}}名。",
     "aiMissWithData": "AI本命為{{aiNumber}}號艇，但{{winnerNumber}}號艇獲勝。上述相符的數據曾指向{{winnerNumber}}號艇。",
     "aiMissNoData": "AI本命為{{aiNumber}}號艇，但{{winnerNumber}}號艇獲勝。此次冷門連數據也難以預測。",
-    "turnHit": "如預測，{{number}}號艇獲得第1名。",
-    "turnMiss": "預測為{{predicted}}號艇，但第1名是{{winnerNumber}}號艇。",
-    "courseListSeparator": "、",
     "itemTechniqueTop": "獲勝方式「{{technique}}」與該選手過去90天的第1獲勝模式（{{pct}}%）一致",
     "itemTechniqueNone": "「{{technique}}」不在該選手過去90天的獲勝模式中",
     "itemTechniqueNoWins": "過去90天無勝場的選手獲勝",

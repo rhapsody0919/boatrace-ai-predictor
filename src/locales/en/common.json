@@ -133,9 +133,7 @@
     "placePredicted": "Predicted: Boat {{number}} to place",
     "placeHit": "✅ Place bet hit! (finished #{{position}})",
     "placeMiss": "❌ Place bet missed",
-    "turnPredicted": "Predicted: Boat {{numbers}} to win",
-    "turnHit": "✅ Turn prediction hit!",
-    "turnMiss": "❌ Turn prediction missed (Boat {{winnerNumber}} won)",
+    "turnLabel": "Turn prediction",
     "payout": "Payout: ¥{{amount}}"
   },
   "panel": {
@@ -297,6 +295,11 @@
     "missBadge": "❌ Missed",
     "view": "View Prediction"
   },
+  "turnPatternList": {
+    "hitTag": "Hit",
+    "summaryHit": "✅ One of the top predictions hit",
+    "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions"
+  },
   "section": {
     "resultTitle": "Data Analysis Results"
   },
@@ -355,9 +358,6 @@
     "aiHit": "AI's top pick Boat {{number}} placed #{{position}}.",
     "aiMissWithData": "AI picked Boat {{aiNumber}}, but Boat {{winnerNumber}} won. The matching data above pointed to Boat {{winnerNumber}}.",
     "aiMissNoData": "AI picked Boat {{aiNumber}}, but Boat {{winnerNumber}} won. This upset was hard to read even from the data.",
-    "turnHit": "As predicted, Boat {{number}} won.",
-    "turnMiss": "The prediction favored Boat {{predicted}}, but Boat {{winnerNumber}} won.",
-    "courseListSeparator": "/",
     "itemTechniqueTop": "Winning technique \"{{technique}}\" matches this racer’s No.1 winning pattern ({{pct}}%) of the last 90 days",
     "itemTechniqueNone": "\"{{technique}}\" was not among this racer’s winning patterns in the last 90 days",
     "itemTechniqueNoWins": "The winner had no wins in the last 90 days",

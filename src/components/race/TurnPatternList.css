@@ -1,0 +1,92 @@
+/* TurnPatternList - 展開予測の確率付きランキング表示 */
+
+.turn-pattern-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: var(--spacing-2) 0;
+}
+
+.turn-pattern-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--color-gray-50);
+  border: var(--border-width-1) solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+}
+
+.turn-pattern-row--hit {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: var(--color-success);
+}
+
+.turn-pattern-rank {
+  flex-shrink: 0;
+  font-size: var(--font-size-base);
+  width: 1.4em;
+  text-align: center;
+}
+
+.turn-pattern-boat {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: var(--radius-circle);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  border: var(--border-width-1) solid var(--color-gray-300);
+}
+
+.turn-pattern-technique {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+}
+
+.turn-pattern-prob {
+  flex-shrink: 0;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+}
+
+.turn-pattern-hit-tag {
+  flex-shrink: 0;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  color: #ffffff;
+  background: var(--gradient-success);
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.turn-pattern-summary {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.turn-pattern-summary--hit {
+  color: var(--color-success-dark);
+}
+
+.turn-pattern-summary--miss {
+  color: var(--color-error-dark);
+}
+
+@media (max-width: 480px) {
+  .turn-pattern-row {
+    padding: var(--spacing-1) var(--spacing-2);
+  }
+
+  .turn-pattern-technique {
+    font-size: var(--font-size-xs);
+  }
+}
