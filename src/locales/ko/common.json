@@ -67,17 +67,30 @@
     "raceCount": "{{count}}개 경주"
   },
   "volatility": {
-    "indexLabel": "1코스 이변 지수: {{score}}",
     "levelHigh": "이변 가능성 높음",
     "levelLow": "인기 안정",
-    "levelMedium": "보통",
-    "description": "1코스가 질 가능성 (높을수록 이변이 잦음)",
-    "winRateLabel": "1코스 승률 (최근 90일)",
-    "nationalAvg": "전국 평균 {{rate}}%",
-    "recommendedModel": "추천 모델:",
-    "adviceHigh": "이 경정장은 1코스가 무너지기 쉬워 고배당을 노리는 고배당형 모델을 추천합니다",
-    "adviceLow": "이 경정장은 1코스가 안정적이라 적중률 중시의 안정형 모델을 추천합니다",
-    "adviceMedium": "평균적인 경주로, 균형 잡힌 표준형 모델을 추천합니다"
+    "description": "최근 90일간 같은 경정장 레이스와 비교한, 1코스가 질 가능성의 상대 지표입니다",
+    "attentionTitle": "1코스 이변 주의도",
+    "attentionHigh": "경계",
+    "attentionLow": "안정",
+    "attentionStandard": "보통",
+    "percentileBarLabel": "경정장 내 백분위",
+    "percentileBarMin": "안정",
+    "percentileBarMedian": "보통",
+    "percentileBarMax": "이변 주의",
+    "collectingData": "데이터 수집 중",
+    "collectingDataDesc": "이 경정장의 1코스 이변 경향을 판단하기 위한 실적 데이터를 수집하고 있습니다. 운영 개시 후 일정 기간이 지나면 표시됩니다"
+  },
+  "trifectaReference": {
+    "title": "3쌍승 참고 정보",
+    "desc": "기대값이 플러스인 조합 1개를 참고용으로 표시합니다. 결과를 보장하지 않습니다",
+    "recommendation": {
+      "bet": "주목",
+      "neutral": "참고",
+      "skip": "관망 권장"
+    },
+    "odds": "배당 {{odds}}배",
+    "ev": "기대값 {{ev}}"
   },
   "table": {
     "title": "AI 데이터 예측",
@@ -113,17 +126,11 @@
     "rank1": "1착",
     "rank2": "2착",
     "rank3": "3착",
-    "inKuzureHigh": "이변 가능성 높음",
-    "inKuzureHit": "🌊 1코스 이변 적중!",
-    "inKuzureMiss": "❌ 1코스가 지켜냈습니다 (미적중)",
-    "winHit": "✅ 단승 적중!",
-    "winMiss": "❌ 단승 미적중 ({{picked}}→{{actual}})",
-    "placeHit": "✅ 연승 적중!",
-    "placeMiss": "❌ 연승 미적중",
-    "trifectaHit": "✅ 삼복승 적중!",
-    "trifectaMiss": "❌ 삼복승 미적중",
-    "trioHit": "✅ 삼쌍승 적중!",
-    "trioMiss": "❌ 삼쌍승 미적중",
+    "placeSectionTitle": "🎯 복승 예측 검증",
+    "placePredicted": "복승 {{rank}}위 예측: {{number}}호정",
+    "placeHit": "✅ 적중!（{{position}}착）",
+    "placeMiss": "❌ 미적중",
+    "turnSectionTitle": "🌊 전개 예측 검증",
     "payout": "배당금: ¥{{amount}}"
   },
   "panel": {
@@ -136,7 +143,7 @@
     "analysisToolsLink": "데이터 분석 도구로 이 레이스를 더 분석하기"
   },
   "home": {
-    "introBannerText": "AI가 45개 이상의 데이터를 분석 | BoatAI 자세히 보기 →",
+    "introBannerText": "복승 예상・전개 예측 등 45개 이상의 데이터를 분석 | BoatAI 자세히 보기 →",
     "introBannerClose": "닫기",
     "todayRaces": "오늘의 경주",
     "dataType": "경주 데이터",
@@ -149,7 +156,7 @@
     "deadline": "발매 마감",
     "finished": "⏱️ 종료",
     "turnPreviewLabel": "예상 전개",
-    "viewPrediction": "AI 예측 보기",
+    "viewPrediction": "데이터 분석 보기",
     "blogTitle": "경정 공략 블로그",
     "blogDesc": "적중률을 높이는 예측 팁, 경정장 가이드, 데이터 분석",
     "viewAllPosts": "전체 글 보기 →",
@@ -279,24 +286,31 @@
     "noNextRace": "다음 경주가 없습니다"
   },
   "raceCard": {
-    "badgeWin": "단승",
-    "badgePlace": "연승",
-    "badgeTrifecta": "삼복승",
-    "badgeTrio": "삼쌍승",
+    "badgePlace": "✅ 복승 적중",
+    "badgeTurn": "✅ 전개 적중",
     "missBadge": "❌ 미적중",
     "view": "예측 보기"
   },
+  "turnPatternList": {
+    "title": "전개 예측",
+    "caption": "1착이 될 가능성이 높은 정의 후보입니다（최대 3정・확률순）",
+    "hitTag": "적중",
+    "summaryHit": "✅ 상위 예측 중 하나가 적중했습니다",
+    "summaryMiss": "❌ 상위 예측에 없던 {{winnerNumber}}호정이 1착이었습니다"
+  },
+  "placeRecommendation": {
+    "title": "복승 예측",
+    "basis": "진입 코스별 승률이 높은 보트를 예측",
+    "courseRateLabel": "코스별 승률 {{rate}}%（{{wins}}/{{total}}）"
+  },
+  "accuracyStat": {
+    "withRecovery": "실측: 적중률{{hitRate}}%・회수율{{recoveryRate}}%（지난{{totalRaces}}경주）",
+    "hitRateOnly": "실측: 1착 적중률{{hitRate}}%（지난{{totalRaces}}경주）"
+  },
   "section": {
-    "resultTitle": "AI 예측 결과"
+    "resultTitle": "데이터 분석 결과"
   },
   "animation": {
-    "title": "1턴 마크 전개 예측",
-    "phaseStart": "스타트",
-    "phaseTurn": "1턴 선회",
-    "firstMark": "1턴 마크",
-    "replay": "▶ 다시 보기",
-    "rankLabel": "{{rank}}위",
-    "distributionTitle": "결과 확률",
     "courseLabel": "{{course}}코스"
   },
   "dataTable": {
@@ -316,12 +330,14 @@
     "rowAvgSt": "평균 ST",
     "rowExSt": "전시 ST",
     "rowCourseRate": "진입 코스 승률",
+    "placeBadgeLabel": "복승 {{rank}}위",
+    "placeOddsLabel": "（복승 {{low}}-{{high}}배）",
     "loading": "분석 데이터 로딩 중…",
     "motorResetNote": "교체 직후"
   },
   "aiSection": {
     "title": "AI 데이터 분석",
-    "topPickSummary": "AI 본명: {{number}}호정 {{name}}",
+    "topPickSummary": "AI 본명（복승）: {{number}}호정 {{name}}",
     "expandHint": "탭하여 펼치기: AI 예상 상세（추천 조합・1마크 전개 시뮬레이션・배당 가치・출현 패턴）",
     "confidence": "신뢰도 {{value}}%"
   },
@@ -332,10 +348,6 @@
     "loading": "분석 데이터 대조 중...",
     "matchHeading": "데이터와 일치한 점",
     "mismatchHeading": "데이터와 달랐던 점",
-    "aiHeading": "AI 검증",
-    "aiHit": "AI 본명 {{number}}호정이 1착.",
-    "aiMissWithData": "AI 본명은 {{aiNumber}}호정이었지만 1착은 {{winnerNumber}}호정. 위의 일치한 데이터가 {{winnerNumber}}호정의 호주를 시사하고 있었다.",
-    "aiMissNoData": "AI 본명은 {{aiNumber}}호정이었지만 1착은 {{winnerNumber}}호정. 이번에는 데이터로도 읽기 어려운 이변이었다.",
     "itemTechniqueTop": "결정수「{{technique}}」는 최근 90일 승리 패턴 1위（{{pct}}%）와 일치",
     "itemTechniqueNone": "「{{technique}}」는 최근 90일 승리 패턴에 없는 결정수",
     "itemTechniqueNoWins": "최근 90일간 승리가 없던 선수의 1착",

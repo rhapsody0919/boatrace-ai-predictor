@@ -440,36 +440,45 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
 });
 
 test.describe("レースページ再設計（BOA-168）", () => {
-  test("トップページでレース選択→データ出走表とAIデータ分析（折りたたみ）が表示される", async ({
+  test("トップページでレース選択→データ出走表とAIデータ分析（デフォルト展開）が表示される", async ({
     page,
   }) => {
     await page.goto("/");
-    await page.locator(".predict-btn").first().click();
+    // AIデータ分析（展開予測/イン崩れ）は未来志向のUIのため結果確定済みレースでは
+    // 表示しない仕様（2026-08-14）。「⏱️ 終了」バッジが無い＝未終了のレースカードを選ぶ
+    const upcomingCard = page
+      .locator(".race-card")
+      .filter({ hasNotText: "終了" })
+      .first();
+    await upcomingCard.locator(".predict-btn").click();
 
     // データ出走表が主役として表示される
     await expect(page.locator(".data-race-table")).toBeVisible({
       timeout: 15000,
     });
 
-    // AIデータ分析はデフォルト折りたたみ。ヘッダのみ表示
+    // AIデータ分析はデフォルト展開（2026-08-14: 新AIモデル開発を今後行わない方針のため
+    // 分析パネルを控えめにする必要が無くなった）。クリック無しで中身が見える
     const aiHeader = page.locator(".ai-analysis-header");
     await expect(aiHeader).toBeVisible({ timeout: 10000 });
-    await expect(page.locator(".ai-analysis-body")).toHaveCount(0);
-
-    // 展開すると既存のAI予想UI（買い目・展開予測等）が表示される
-    await aiHeader.click();
     await expect(page.locator(".ai-analysis-body")).toBeVisible({
       timeout: 10000,
     });
     await expect(
       page.locator(".ai-analysis-body .prediction-result"),
     ).toBeVisible({ timeout: 10000 });
+
+    // ヘッダクリックで折りたたむこともできる
+    await aiHeader.click();
+    await expect(page.locator(".ai-analysis-body")).toHaveCount(0);
   });
 
   test("過去日付ページで結果確定レースを選ぶと「データで振り返る」が表示される", async ({
     page,
   }) => {
-    await page.goto("/races/2026-07-30");
+    // unifiedモデル運用開始日（2026-08-11〜）以降の日付を使う。
+    // それより前の日付はAI予想（topPick）が存在せず.race-resultが出ない仕様のため
+    await page.goto("/races/2026-08-11");
     await page.locator(".predict-btn").first().click();
 
     // データ出走表は過去日付でも表示される
@@ -477,15 +486,21 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 15000,
     });
 
+    // 的中判定（複勝的中/展開予測的中）はレース結果パネルに一本化されている
+    // （2026-08-14: 従来はAI検証ブロックと重複表示していたのを整理・統合）
+    await expect(page.locator(".race-result")).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.locator(".turn-pattern-list")).toBeVisible({
+      timeout: 20000,
+    });
+
     // 結果確定済みレースなので振り返りセクションが表示される
     await expect(page.locator(".race-review")).toBeVisible({
       timeout: 20000,
     });
-    // 照合完了後、全艇サマリーとAI検証ブロックが表示される
+    // 照合完了後、全艇サマリーが表示される
     await expect(page.locator(".race-review-all-table")).toBeVisible({
-      timeout: 20000,
-    });
-    await expect(page.locator(".race-review-ai")).toBeVisible({
       timeout: 20000,
     });
     // 全艇サマリーは6艇分の行を持つ
@@ -494,6 +509,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
     // 全艇の言語化ブロックも6艇分表示される
     await expect(page.locator(".race-review-boat-block")).toHaveCount(6);
+    // AI検証ブロックはレース結果パネルと重複するため廃止済み
+    await expect(page.locator(".race-review-ai")).toHaveCount(0);
+    // 結果確定済みレースでは未来志向のAIデータ分析（展開予測/イン崩れ）を表示しない
+    await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });
 
   test("分析ツールの超展開データタブが表示される（レースAI予想からの外出し）", async ({

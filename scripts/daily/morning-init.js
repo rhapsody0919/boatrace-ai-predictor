@@ -10,12 +10,65 @@
 import { execSync } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
-import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import {
+  supabase,
+  isSupabaseEnabled,
+  fetchAll,
+} from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.join(__dirname, "..", "..");
+
+// unifiedモデル（AI予想モデル大規模改修）の朝バッチが当日分未実行なら実行する。
+// 2026-08-14判明: 「その日にunified predictionsが1件でもあればスキップ」という日単位の
+// 判定だと、朝一番のcron実行時点でrace_entriesのスクレイピングが間に合っていない
+// レース（generate-unified-predictions.js側で黙ってスキップされる）が、その後
+// スクレイピングされても永久に生成対象外になってしまう（三国4〜7Rで実際に発生）。
+// race_entriesが存在するのにunified predictionsが無いレースが1件でもあれば
+// 再実行する（generate-unified-predictions.jsは対象日全体をdelete→insertし直すため
+// 冪等で、重複や余計な書き込みは発生しない）
+async function ensureUnifiedPredictions(date) {
+  const [entryRows, predRows] = await Promise.all([
+    fetchAll("race_entries", "race_id", (q) =>
+      q.gte("race_id", date).lt("race_id", `${date}~`),
+    ),
+    fetchAll("predictions", "race_id", (q) =>
+      q
+        .eq("model_id", "unified")
+        .gte("race_id", date)
+        .lt("race_id", `${date}~`),
+    ),
+  ]);
+
+  const entryRaceIds = new Set((entryRows || []).map((r) => r.race_id));
+  if (entryRaceIds.size === 0) {
+    return;
+  }
+  const predRaceIds = new Set((predRows || []).map((r) => r.race_id));
+  const missingCount = [...entryRaceIds].filter(
+    (id) => !predRaceIds.has(id),
+  ).length;
+  if (missingCount === 0) {
+    return;
+  }
+
+  console.log(
+    `\n🤖 unifiedモデルの日次予測を生成中...（${missingCount}レース未生成）`,
+  );
+  try {
+    execSync(
+      `node ${path.join(ROOT, "scripts", "daily", "generate-unified-predictions.js")} --date=${date}`,
+      { stdio: "inherit", env: { ...process.env } },
+    );
+  } catch (e) {
+    console.warn(
+      "⚠️ unified predictions生成で一部エラー（処理は継続）:",
+      e.message,
+    );
+  }
+}
 
 async function main() {
   console.log("🌅 朝の初期化チェック");
@@ -33,7 +86,8 @@ async function main() {
   const { count, error } = await supabase
     .from("races")
     .select("*", { count: "exact", head: true })
-    .gte("race_id", date).lt("race_id", `${date}~`);
+    .gte("race_id", date)
+    .lt("race_id", `${date}~`);
 
   if (error) {
     console.error("❌ races テーブル確認エラー:", error.message);
@@ -54,7 +108,8 @@ async function main() {
         const { data: latestRace } = await supabase
           .from("races")
           .select("updated_at")
-          .gte("race_id", date).lt("race_id", `${date}~`)
+          .gte("race_id", date)
+          .lt("race_id", `${date}~`)
           .order("updated_at", { ascending: false })
           .limit(1)
           .single();
@@ -74,18 +129,29 @@ async function main() {
       console.log("🤖 予測のみ再生成します...");
       // main() は races.json（git stale）を読むため使わない。
       // mainRefresh() は race_entries（DB）から読むため stale データを混入しない。
-      const genPath = path.join(ROOT, "scripts", "daily", "generate-predictions.js");
+      const genPath = path.join(
+        ROOT,
+        "scripts",
+        "daily",
+        "generate-predictions.js",
+      );
       const { mainRefresh } = await import(genPath);
 
       // 当日の全 race_entries から race_id を収集
       const { data: entries } = await supabase
         .from("race_entries")
         .select("race_id")
-        .gte("race_id", date).lt("race_id", `${date}~`);
-      const allTodayRaceIds = [...new Set((entries || []).map((e) => e.race_id))];
+        .gte("race_id", date)
+        .lt("race_id", `${date}~`);
+      const allTodayRaceIds = [
+        ...new Set((entries || []).map((e) => e.race_id)),
+      ];
 
       if (allTodayRaceIds.length > 0) {
-        await mainRefresh({ isDryRun: false, specificRaceIds: allTodayRaceIds });
+        await mainRefresh({
+          isDryRun: false,
+          specificRaceIds: allTodayRaceIds,
+        });
       } else {
         console.log("⚠️ race_entries にデータなし — スキップ");
       }
@@ -93,6 +159,7 @@ async function main() {
     } else {
       console.log(`✅ 初期化済み（${count}レース）。スキップ。`);
     }
+    await ensureUnifiedPredictions(date);
     return;
   }
 
@@ -115,6 +182,9 @@ async function main() {
     },
   );
 
+  // Step 2.5: unifiedモデルの日次予測を生成（複勝予想・展開予測・イン崩れバッジ）
+  await ensureUnifiedPredictions(date);
+
   // Step 3: pcexpect 公式コンピュータ予想を全レース分取得
   // 失敗しても以降の処理（Deploy Hook）には影響させない
   console.log("\n🔮 Step 3: scrape-pcexpect.js 実行中...");
@@ -127,7 +197,10 @@ async function main() {
       },
     );
   } catch (e) {
-    console.warn("⚠️ pcexpect スクレイプで一部エラー（処理は継続）:", e.message);
+    console.warn(
+      "⚠️ pcexpect スクレイプで一部エラー（処理は継続）:",
+      e.message,
+    );
   }
 
   console.log("\n✅ 朝の初期化完了");

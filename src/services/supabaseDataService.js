@@ -380,6 +380,9 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
           start_timing: ed.startTiming,
         })) || null,
       predictionOdds: race.predictionOdds || null,
+      // モデル非依存の選手一覧（race_entriesから直接構築、DataRaceTable等がunifiedモデルの
+      // predictions行が無い過去日付でも表示できるようにするため）
+      players: createPlayers(null, null),
     };
 
     // 予測データ（モデル別）
@@ -400,6 +403,37 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
         confidence: Number(pred.confidence) || 0,
         players,
         reasoning: generateReasoning(topPickPlayer, modelId),
+      };
+    }
+
+    // unifiedモデル（AI予想モデル大規模改修）: turnPrediction/volatilityPercentile/reasonsは
+    // 019マイグレーション時点でturnPredictionのみRPCから汎用的に取得できていたが、
+    // volatilityPercentile/volatilityReasonsは031マイグレーション未適用の間はundefinedになる
+    // （docs/db-migration/031_add_unified_fields_to_predictions_rpc.sql参照、SUPABASE_ACCESS_TOKEN
+    // 失効中のため2026-08-13時点で未適用。適用後はEdge API経由でも取得できるようになる）
+    const unifiedRaw = predictions.unified;
+    if (unifiedRaw) {
+      const rawUnifiedTurn = unifiedRaw.turnPrediction || null;
+      raceData.unified = {
+        topPick: unifiedRaw.topPick,
+        top2nd: unifiedRaw.top3?.[1] ?? null,
+        players: raceData.predictions.unified?.players || [],
+        turnPrediction: rawUnifiedTurn
+          ? {
+              ...rawUnifiedTurn,
+              patterns: rawUnifiedTurn.patterns || [
+                {
+                  technique: rawUnifiedTurn.technique,
+                  winnerCourse: rawUnifiedTurn.winnerCourse,
+                  probability: rawUnifiedTurn.probability,
+                },
+              ],
+            }
+          : null,
+        volatilityPercentile: unifiedRaw.volatilityPercentile ?? null,
+        volatilityPercentileIsFallback:
+          unifiedRaw.volatilityPercentileIsFallback ?? null,
+        volatilityReasons: unifiedRaw.volatilityReasons || [],
       };
     }
 
@@ -427,17 +461,6 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
         raceData.result.payouts.place[r.rank1] = r.payoutPlace1;
       if (r.payoutPlace2)
         raceData.result.payouts.place[r.rank2] = r.payoutPlace2;
-
-      // 的中情報
-      const stdHit = predictions.standard;
-      if (stdHit) {
-        raceData.accuracy = {
-          standard: {
-            isHitWin: stdHit.isHitWin,
-            isHitPlace: stdHit.isHitPlace,
-          },
-        };
-      }
     }
 
     return raceData;
@@ -922,6 +945,7 @@ export const supabaseDataService = {
         const standardPred = predictions.find((p) => p.model_id === "standard");
         const safeBetPred = predictions.find((p) => p.model_id === "safeBet");
         const upsetPred = predictions.find((p) => p.model_id === "upsetFocus");
+        const unifiedPred = predictions.find((p) => p.model_id === "unified");
 
         // turnPredictionを取得（standardのfeature_contributionsに格納）
         const rawTurn =
@@ -1018,6 +1042,9 @@ export const supabaseDataService = {
           racerStats: standardPred?.feature_contributions?.racerStats || null,
           exhibitionData: race.exhibition_data || null,
           predictionOdds,
+          // モデル非依存の選手一覧（race_entriesから直接構築、DataRaceTable等がunifiedモデルの
+          // predictions行が無い過去日付でも表示できるようにするため）
+          players: createPlayers(null, null),
         };
 
         // 予測データ（新形式: predictions）
@@ -1079,6 +1106,34 @@ export const supabaseDataService = {
           }
         }
 
+        // unifiedモデル（AI予想モデル大規模改修）。feature_contributions列を丸ごと取得しているため
+        // Edge API経路と異なりマイグレーション適用を待たずvolatilityPercentile/volatilityReasonsを取得できる
+        if (unifiedPred) {
+          const fc = unifiedPred.feature_contributions || {};
+          const rawUnifiedTurn = fc.turnPrediction || null;
+          raceData.unified = {
+            topPick: unifiedPred.top_pick,
+            top2nd: unifiedPred.top_2nd,
+            players: createPlayers(unifiedPred, "ai_score_standard"),
+            turnPrediction: rawUnifiedTurn
+              ? {
+                  ...rawUnifiedTurn,
+                  patterns: rawUnifiedTurn.patterns || [
+                    {
+                      technique: rawUnifiedTurn.technique,
+                      winnerCourse: rawUnifiedTurn.winnerCourse,
+                      probability: rawUnifiedTurn.probability,
+                    },
+                  ],
+                }
+              : null,
+            volatilityPercentile: fc.volatilityPercentile ?? null,
+            volatilityPercentileIsFallback:
+              fc.volatilityPercentileIsFallback ?? null,
+            volatilityReasons: fc.volatilityReasons || [],
+          };
+        }
+
         // 結果データ
         if (result && result.rank1) {
           // 3連複用のソート済みキー（順不同なのでソートが必要）
@@ -1111,16 +1166,6 @@ export const supabaseDataService = {
           }
           if (result.payout_place_2) {
             raceData.result.payouts.place[result.rank2] = result.payout_place_2;
-          }
-
-          // 的中情報
-          if (standardPred) {
-            raceData.accuracy = {
-              standard: {
-                isHitWin: standardPred.is_hit_win,
-                isHitPlace: standardPred.is_hit_place,
-              },
-            };
           }
         }
 
@@ -2571,6 +2616,71 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定レースの複勝オッズ（最新スクレイプ分）を取得する（AI予想モデル大規模改修、複勝予想バッジ用）
+   * 複勝オッズは下限-上限のレンジで提供される（race_odds.odds_place_{n}_low/high、マイグレーション032）。
+   * 未適用環境・スクレイピング未実施のレースではlow/highともnullを返す
+   */
+  getRacePlaceOdds(raceId) {
+    return withCache(`race-place-odds-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from("race_odds")
+        .select(
+          "odds_place_1_low, odds_place_1_high, odds_place_2_low, odds_place_2_high, odds_place_3_low, odds_place_3_high, odds_place_4_low, odds_place_4_high, odds_place_5_low, odds_place_5_high, odds_place_6_low, odds_place_6_high",
+        )
+        .eq("race_id", raceId)
+        .order("captured_at", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error("race_odds（複勝）取得エラー:", error.message);
+        return null;
+      }
+      const row = data?.[0];
+      if (!row) return null;
+      return [1, 2, 3, 4, 5, 6].map((n) => ({
+        boat_number: n,
+        odds_place_low: row[`odds_place_${n}_low`] ?? null,
+        odds_place_high: row[`odds_place_${n}_high`] ?? null,
+      }));
+    });
+  },
+
+  /**
+   * unifiedモデルの実測精度（複勝的中率・回収率、展開的中率）を取得する（BOA-179関連）
+   * scripts/daily/calculate-unified-model-accuracy.js が日次で accuracy_cache に
+   * 保存した集計値を読むだけなので軽量。AIデータ分析の複勝予想/展開予測カードで
+   * 「過去の実測実績」を動的に表示するために使う
+   */
+  getUnifiedModelAccuracy() {
+    return withCache(
+      "unified-model-accuracy",
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return null;
+        }
+        const { data, error } = await supabase
+          .from("accuracy_cache")
+          .select("data")
+          .eq("key", "unified_model_accuracy")
+          .single();
+
+        if (error) {
+          console.error("unified_model_accuracy取得エラー:", error.message);
+          return null;
+        }
+        return data?.data ?? null;
+      },
+      6 * 60 * 60 * 1000, // 6時間キャッシュ（日次バッチでしか更新されないため長め）
+    );
+  },
+
+  /**
    * 指定レースの出走表詳細（race_entriesの全選手データ）を取得する（BOA-168）
    * 分析ツールの「出走表データ」タブで使用する。AIスコアは含めない
    */
@@ -3409,5 +3519,33 @@ export const supabaseDataService = {
 
       return { venue_code: venueCode, data: data ?? [] };
     });
+  },
+
+  /**
+   * unifiedモデルの3連単参考情報（FR4）を1レース分取得する（AI予想モデル大規模改修 Task11）。
+   * scripts/daily/generate-unified-trifecta-reference.js（発走前バッチ）が書き込む。
+   * 発走前バッチ未実行の時間帯はnullを返す（呼び出し側で非表示にする）
+   */
+  async getUnifiedTrifectaReference(raceId) {
+    if (!supabase || !raceId) return null;
+    const { data, error } = await supabase
+      .from("bet_recommendations")
+      .select(
+        "recommendation, expected_value, expected_hit_rate, expected_payout, reasons",
+      )
+      .eq("model_id", "unified")
+      .eq("race_id", raceId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      recommendation: data.recommendation,
+      expectedValue: data.expected_value,
+      expectedHitRate: data.expected_hit_rate,
+      expectedPayout: data.expected_payout,
+      combo: data.reasons?.combo ?? null,
+      odds: data.reasons?.odds ?? null,
+    };
   },
 };

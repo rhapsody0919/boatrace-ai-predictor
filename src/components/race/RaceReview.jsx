@@ -1,9 +1,11 @@
 /**
  * RaceReview - データで振り返る（BOA-168）
- * レース結果確定後、全6艇についてboatAIの分析データと着順を機械的に照合する。
+ * レース結果確定後、全6艇についてboatAIの分析データと着順を機械的に照合する
+ * 「指標レベルの深掘り」を担う。的中/不的中の一次判定（複勝的中・展開予測的中）は
+ * RaceResult.jsx（レース結果パネル）が担当するため、ここでは繰り返さない
+ * （2026-08-14: 同じ判定を2箇所に重複表示していたのを整理・統合）。
  * - 全艇の照合サマリー: 全指標×全艇の○×一覧テーブル
  * - 全艇の言語化: 1〜3着（好走）・着外の各艇について「整合した点/違った点」を列挙
- * - AI検証: 本命の当否を毎レース明記
  * 判定は全てレース内順位・一致判定のみ（指標定義はraceIndicators.jsxで
  * データ出走表と共通化）。4〜6着の個別着順はDBに未保存のため「着外」で扱う。
  */
@@ -79,6 +81,7 @@ function RaceReview({ prediction, selectedRace }) {
     analysis,
     pending: analysis.pending,
   });
+  // techniqueは常時null signalのため一覧比較の対象外（決まり手型は上のwinnerTechniqueItemで特別判定）
   const judgeableRows = rows.filter((row) => row.key !== "technique");
 
   // 各艇の言語化: 整合/相違の事実文リスト
@@ -137,14 +140,6 @@ function RaceReview({ prediction, selectedRace }) {
       }),
     };
   })();
-
-  // AI検証
-  const aiPick = prediction.topPick?.number ?? null;
-  const aiHit = aiPick !== null && aiPick === winner;
-  const winnerItems = itemsFor(winner, true);
-  const winnerMatchCount =
-    winnerItems.matches.length +
-    (winnerTechniqueItem?.type === "match" ? 1 : 0);
 
   return (
     <div className="race-review">
@@ -305,25 +300,6 @@ function RaceReview({ prediction, selectedRace }) {
                 ? t("review.hideOutBoats")
                 : t("review.showOutBoats", { n: outBoats.length })}
             </button>
-          )}
-
-          {aiPick !== null && (
-            <div className="race-review-ai">
-              <h4>🤖 {t("review.aiHeading")}</h4>
-              <p>
-                {aiHit
-                  ? t("review.aiHit", { number: aiPick })
-                  : winnerMatchCount > 0
-                    ? t("review.aiMissWithData", {
-                        aiNumber: aiPick,
-                        winnerNumber: winner,
-                      })
-                    : t("review.aiMissNoData", {
-                        aiNumber: aiPick,
-                        winnerNumber: winner,
-                      })}
-              </p>
-            </div>
           )}
 
           <p className="race-review-note">💡 {t("review.note")}</p>

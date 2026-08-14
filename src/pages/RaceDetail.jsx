@@ -3,7 +3,6 @@ import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
-import ModelComparisonTable from "../components/ModelComparisonTable";
 import {
   VenueSelector,
   RaceCard,
@@ -28,8 +27,6 @@ function RaceDetail() {
   const [selectedRace, setSelectedRace] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [raceListCollapsed, setRaceListCollapsed] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("standard");
-  const [volatility, setVolatility] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const predictionRef = useRef(null);
 
@@ -135,40 +132,6 @@ function RaceDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raceData, selectedRace?.id]);
 
-  // モデル切り替え
-  const switchModel = (model) => {
-    if (!prediction || !prediction.predictions) return;
-
-    setSelectedModel(model);
-
-    const modelKey =
-      model === "safe-bet"
-        ? "safeBet"
-        : model === "upset-focus"
-          ? "upsetFocus"
-          : "standard";
-    const modelPrediction = prediction.predictions[modelKey];
-
-    if (modelPrediction) {
-      const topPickPlayer = modelPrediction.players?.find(
-        (p) => p.number === modelPrediction.topPick,
-      );
-      const top3Players = (modelPrediction.top3 || []).map((num) =>
-        modelPrediction.players?.find((p) => p.number === num),
-      );
-
-      setPrediction({
-        ...prediction,
-        topPick: topPickPlayer,
-        recommended: top3Players,
-        allPlayers: modelPrediction.players,
-        confidence: modelPrediction.confidence,
-        reasoning: modelPrediction.reasoning,
-        top3: modelPrediction.top3,
-      });
-    }
-  };
-
   // レース分析
   const analyzeRace = useCallback((race) => {
     setSelectedRace(race);
@@ -203,71 +166,35 @@ function RaceDetail() {
 
   const processRacePrediction = (race) => {
     const racePrediction = race.rawData;
-    const hasNewFormat = !!racePrediction?.predictions;
-    const hasOldFormat = !!racePrediction?.prediction;
+    // データ出走表（DataRaceTable）はモデル非依存のため、race_entriesがあれば
+    // unifiedモデルの予測データが無い過去日付（2026-08-11より前）でも表示できるようにする
+    const players =
+      racePrediction?.players || racePrediction?.unified?.players || [];
 
-    if (!racePrediction || (!hasNewFormat && !hasOldFormat)) {
-      setPrediction({ error: true, errorMessage: "予想データがありません" });
-      return;
-    }
-
-    if (racePrediction.volatility) {
-      setVolatility(racePrediction.volatility);
-    } else {
-      setVolatility(null);
-    }
-
-    const modelKey =
-      selectedModel === "safe-bet"
-        ? "safeBet"
-        : selectedModel === "upset-focus"
-          ? "upsetFocus"
-          : "standard";
-
-    let modelPrediction;
-    if (hasNewFormat) {
-      modelPrediction = racePrediction.predictions[modelKey];
-    } else {
-      if (modelKey !== "standard") {
-        setPrediction({
-          error: true,
-          errorMessage:
-            "この日付のデータはスタンダードモデルのみ対応しています",
-        });
-        return;
-      }
-      modelPrediction = racePrediction.prediction;
-    }
-
-    if (!modelPrediction) {
+    if (players.length === 0) {
       setPrediction({
         error: true,
-        errorMessage: "このモデルの予想データがありません",
+        errorMessage: "予想データがありません",
       });
       return;
     }
 
-    const topPickPlayer = modelPrediction.players?.find(
-      (p) => p.number === modelPrediction.topPick,
-    );
-    const top3Players = (modelPrediction.top3 || []).map((num) =>
-      modelPrediction.players?.find((p) => p.number === num),
-    );
+    const unified = racePrediction?.unified || null;
+    const topPickPlayer = unified
+      ? players.find((p) => p.number === unified.topPick)
+      : null;
 
     setPrediction({
       topPick: topPickPlayer,
-      recommended: top3Players,
-      allPlayers: modelPrediction.players,
-      confidence: modelPrediction.confidence,
-      reasoning: modelPrediction.reasoning || ["予想根拠データなし"],
-      top3: modelPrediction.top3,
+      allPlayers: players,
+      top3: unified ? [unified.topPick, unified.top2nd].filter(Boolean) : [],
       result: racePrediction.result,
-      predictions: racePrediction.predictions || {
-        standard: racePrediction.prediction,
-      },
-      turnPrediction: racePrediction.turnPrediction || null,
+      turnPrediction: unified?.turnPrediction ?? null,
+      volatilityPercentile: unified?.volatilityPercentile ?? null,
+      volatilityPercentileIsFallback:
+        unified?.volatilityPercentileIsFallback ?? null,
+      volatilityReasons: unified?.volatilityReasons ?? [],
       racerStats: racePrediction.racerStats || null,
-      predictionOdds: racePrediction.predictionOdds || null,
     });
   };
 
@@ -277,92 +204,6 @@ function RaceDetail() {
     { label: formatDate(date), path: `/races/${date}` },
   ];
 
-  // 全モデルの統計を計算
-  const getModelComparison = () => {
-    if (!raceData || !raceData.races) return null;
-
-    const hasNewFormat = raceData.races.some((r) => r.predictions);
-    const models = hasNewFormat
-      ? ["standard", "safeBet", "upsetFocus"]
-      : ["standard"];
-    const modelNames = {
-      standard: "スタンダード",
-      safeBet: "本命狙い",
-      upsetFocus: "穴狙い",
-    };
-
-    return models.map((modelKey) => {
-      const finishedRaces = raceData.races.filter((r) => r.result?.finished);
-      let winHits = 0,
-        placeHits = 0,
-        trifecta3Hits = 0,
-        trio3Hits = 0;
-      let winPayouts = 0,
-        placePayouts = 0,
-        trifecta3Payouts = 0,
-        trio3Payouts = 0;
-
-      finishedRaces.forEach((race) => {
-        const prediction =
-          race.predictions?.[modelKey] ||
-          (modelKey === "standard" ? race.prediction : null);
-        if (!prediction) return;
-
-        const topPick = prediction.topPick;
-        const top3 = prediction.top3;
-        const result = race.result;
-
-        if (topPick === result.rank1) {
-          winHits++;
-          winPayouts += result.payouts?.win?.[topPick] || 0;
-        }
-        if (topPick === result.rank1 || topPick === result.rank2) {
-          placeHits++;
-          placePayouts += result.payouts?.place?.[topPick] || 0;
-        }
-        if (
-          top3.includes(result.rank1) &&
-          top3.includes(result.rank2) &&
-          top3.includes(result.rank3)
-        ) {
-          trifecta3Hits++;
-          const sorted = [result.rank1, result.rank2, result.rank3].sort(
-            (a, b) => a - b,
-          );
-          const trifectaKey = sorted.join("-");
-          trifecta3Payouts += result.payouts?.trifecta?.[trifectaKey] || 0;
-        }
-        if (
-          top3[0] === result.rank1 &&
-          top3[1] === result.rank2 &&
-          top3[2] === result.rank3
-        ) {
-          trio3Hits++;
-          const trioKey = `${result.rank1}-${result.rank2}-${result.rank3}`;
-          trio3Payouts += result.payouts?.trio?.[trioKey] || 0;
-        }
-      });
-
-      const totalRaces = finishedRaces.length;
-
-      return {
-        key: modelKey,
-        name: modelNames[modelKey],
-        races: totalRaces,
-        winHitRate: totalRaces > 0 ? winHits / totalRaces : 0,
-        winRecoveryRate: totalRaces > 0 ? winPayouts / 100 / totalRaces : 0,
-        placeHitRate: totalRaces > 0 ? placeHits / totalRaces : 0,
-        placeRecoveryRate: totalRaces > 0 ? placePayouts / 100 / totalRaces : 0,
-        trifectaHitRate: totalRaces > 0 ? trifecta3Hits / totalRaces : 0,
-        trifectaRecoveryRate:
-          totalRaces > 0 ? trifecta3Payouts / 100 / totalRaces : 0,
-        trioHitRate: totalRaces > 0 ? trio3Hits / totalRaces : 0,
-        trioRecoveryRate: totalRaces > 0 ? trio3Payouts / 100 / totalRaces : 0,
-      };
-    });
-  };
-
-  const modelComparison = getModelComparison();
   const selectedVenue = venuesData.find((v) => v.placeCd === selectedVenueId);
   const races = selectedVenue?.races || [];
 
@@ -403,12 +244,6 @@ function RaceDetail() {
             </div>
           ) : (
             <>
-              <ModelComparisonTable
-                data={modelComparison}
-                showRaceCount={true}
-                title="📊 モデル間パフォーマンス比較"
-              />
-
               <VenueSelector
                 venuesData={venuesData}
                 selectedVenueId={selectedVenueId}
@@ -417,42 +252,6 @@ function RaceDetail() {
 
               <section className="race-list-section">
                 <h2>🏁 レース一覧</h2>
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "rgba(255, 255, 255, 0.9)",
-                    fontSize: "0.9rem",
-                    marginBottom: "1.5rem",
-                    padding: "0.75rem 1rem",
-                    background: "rgba(255, 255, 255, 0.1)",
-                    borderRadius: "8px",
-                    maxWidth: "600px",
-                    margin: "0 auto 1.5rem",
-                  }}
-                >
-                  ※ 的中バッジは
-                  <strong
-                    style={{
-                      color: "white",
-                      margin: "0 0.3rem",
-                      padding: "0.2rem 0.5rem",
-                      background:
-                        selectedModel === "standard"
-                          ? "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"
-                          : selectedModel === "safe-bet"
-                            ? "linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)"
-                            : "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    {selectedModel === "standard"
-                      ? "スタンダード"
-                      : selectedModel === "safe-bet"
-                        ? "本命狙い"
-                        : "穴狙い"}
-                  </strong>
-                  モデルの予想結果です
-                </p>
 
                 {races.length === 0 ? (
                   <div
@@ -479,7 +278,6 @@ function RaceDetail() {
                         <RaceCard
                           key={race.id}
                           race={race}
-                          selectedModel={selectedModel}
                           onAnalyzeRace={analyzeRace}
                         />
                       ))}
@@ -502,9 +300,6 @@ function RaceDetail() {
                   ref={predictionRef}
                   prediction={prediction}
                   selectedRace={selectedRace}
-                  selectedModel={selectedModel}
-                  onSwitchModel={switchModel}
-                  volatility={volatility}
                   isAnalyzing={isAnalyzing}
                   date={date}
                 />

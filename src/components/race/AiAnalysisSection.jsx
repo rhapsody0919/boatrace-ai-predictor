@@ -1,7 +1,11 @@
 /**
- * AiAnalysisSection - 「AIデータ分析」折りたたみセクション（BOA-168）
+ * AiAnalysisSection - 「AIデータ分析」セクション（BOA-168）
  * 既存のAI予想ブロック群を無変更で内包し、コンパクトな1セクションに降格する。
- * ヘッダにはAI本命と信頼度のサマリーを常時表示し、展開すると従来のUI一式が表示される。
+ * ヘッダにはAI本命と信頼度のサマリーを常時表示する。
+ *
+ * 2026-08-14追記: 当初はAI予想を控えめにし分析サイトとしての側面を強調する狙いで
+ * デフォルト折りたたみにしていたが、新AIモデル開発を今後行わない方針としたため、
+ * 展開予測パネル/イン崩れバッジをデフォルトで表示するよう変更（開閉自体は維持）
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,7 +13,7 @@ import "./AiAnalysisSection.css";
 
 function AiAnalysisSection({ topPick, confidence, children }) {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   // confidenceは通常0-100スケールだが、旧データ構造では0-1の可能性があるため正規化する
   const rawConfidence = Number(confidence);

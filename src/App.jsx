@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "./hooks/useLocalizedPath";
 import { getLanguage, localizePath } from "./config/languages";
@@ -10,7 +10,6 @@ import PrivacyPolicy from "./components/PrivacyPolicy";
 import Terms from "./components/Terms";
 import Contact from "./components/Contact";
 import HitRaces from "./components/HitRaces";
-import TodaysPicks from "./components/TodaysPicks";
 import UpdateStatus from "./components/UpdateStatus";
 import IntroBanner from "./components/IntroBanner";
 import { getFeaturedPosts, getLatestPosts } from "./data/blogPosts";
@@ -30,8 +29,6 @@ import LoadingScreen from "./components/LoadingScreen";
 function App({ tab = "races" }) {
   const { t, i18n } = useTranslation();
   const localize = useLocalizedPath();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [activeTab, setActiveTab] = useState(tab);
   const [selectedRace, setSelectedRace] = useState(null);
   const [prediction, setPrediction] = useState(null);
@@ -43,8 +40,6 @@ function App({ tab = "races" }) {
   const [allVenuesData, setAllVenuesData] = useState([]);
   const [selectedVenueId, setSelectedVenueId] = useState(null);
   const [races, setRaces] = useState([]);
-  const [selectedModel, setSelectedModel] = useState("standard"); // 予想モデル選択
-  const [volatility, setVolatility] = useState(null); // 荒れ度情報
   const [lastUpdated, setLastUpdated] = useState(null); // データ更新時刻
   const [isRefreshing, setIsRefreshing] = useState(false); // 手動更新中フラグ
   const [turnPredictionMap, setTurnPredictionMap] = useState({}); // レースID→展開予測のマップ
@@ -64,38 +59,6 @@ function App({ tab = "races" }) {
   useEffect(() => {
     setActiveTab(tab);
   }, [tab]);
-
-  // おすすめページからの自動レース選択
-  useEffect(() => {
-    if (location.state?.autoSelectRace && allVenuesData.length > 0) {
-      const { venueCode, raceNo, venueName } = location.state.autoSelectRace;
-
-      // 該当レースを検索
-      for (const venue of allVenuesData) {
-        const venueId = String(venue.placeCd || venue.venueId || "").padStart(
-          2,
-          "0",
-        );
-        if (venueId === venueCode) {
-          const race = venue.races?.find((r) => r.raceNo === raceNo);
-          if (race) {
-            // フォーマットしてanalyzeRaceを呼び出す
-            const formattedRace = {
-              venue: venueName,
-              venueId: venueCode,
-              raceNumber: raceNo,
-              rawData: race,
-            };
-            analyzeRace(formattedRace);
-            break;
-          }
-        }
-      }
-
-      // stateをクリアして再選択を防ぐ
-      navigate("/", { replace: true, state: {} });
-    }
-  }, [location.state, allVenuesData]);
 
   // Google Analytics初期化
   useEffect(() => {
@@ -352,41 +315,6 @@ function App({ tab = "races" }) {
     }
   };
 
-  // モデル切り替え関数
-  const switchModel = (model) => {
-    if (!prediction || !prediction.predictions) return;
-
-    setSelectedModel(model);
-
-    // 選択されたモデルの予想データに切り替え
-    const modelKey =
-      model === "safe-bet"
-        ? "safeBet"
-        : model === "upset-focus"
-          ? "upsetFocus"
-          : "standard";
-    const modelPrediction = prediction.predictions[modelKey];
-
-    if (modelPrediction && modelPrediction.players) {
-      const topPickPlayer = modelPrediction.players.find(
-        (p) => p.number === modelPrediction.topPick,
-      );
-      const top3Players = (modelPrediction.top3 || []).map((num) =>
-        modelPrediction.players.find((p) => p.number === num),
-      );
-
-      setPrediction({
-        ...prediction,
-        topPick: topPickPlayer,
-        recommended: top3Players,
-        allPlayers: modelPrediction.players,
-        confidence: modelPrediction.confidence,
-        reasoning: modelPrediction.reasoning || [],
-        top3: modelPrediction.top3 || [],
-      });
-    }
-  };
-
   const analyzeRace = async (race) => {
     setSelectedRace(race);
     setIsAnalyzing(true);
@@ -419,65 +347,42 @@ function App({ tab = "races" }) {
         return;
       }
 
-      // 荒れ度情報を保存（新しいデータ構造に対応）
-      let currentModel = "standard";
-      if (racePrediction.volatility) {
-        setVolatility(racePrediction.volatility);
-        // 推奨モデルを自動選択
-        currentModel = racePrediction.volatility.recommendedModel || "standard";
-        setSelectedModel(currentModel);
-      } else {
-        setVolatility(null);
-      }
-
-      // 予想データをUIの形式に変換
+      // 予想データをUIの形式に変換（unifiedモデル、AI予想モデル大規模改修）
       setTimeout(() => {
-        // 選択されたモデルの予想を取得（後方互換性のため古いデータ構造もサポート）
-        let modelPrediction;
-        if (racePrediction.predictions) {
-          // 新しいデータ構造（3モデル対応）
-          const modelKey =
-            currentModel === "safe-bet"
-              ? "safeBet"
-              : currentModel === "upset-focus"
-                ? "upsetFocus"
-                : "standard";
-          modelPrediction = racePrediction.predictions[modelKey];
-        } else {
-          // 古いデータ構造（後方互換性）
-          modelPrediction = racePrediction.prediction;
-        }
+        // データ出走表（DataRaceTable）はモデル非依存のため、race_entriesがあれば
+        // unifiedモデルの予測データが無い過去日付（2026-08-11より前）でも表示できるようにする
+        const players =
+          racePrediction.players || racePrediction.unified?.players || [];
 
-        if (!modelPrediction || !modelPrediction.players) {
-          console.error("❌ モデル予想データが見つかりません:", currentModel);
+        if (players.length === 0) {
+          console.error("❌ 選手データが見つかりません");
           setPrediction({
             error: true,
-            errorMessage: t("errors.noModelData"),
+            errorMessage: t("errors.noPredictionData"),
           });
           setIsAnalyzing(false);
           return;
         }
 
-        const topPickPlayer = modelPrediction.players.find(
-          (p) => p.number === modelPrediction.topPick,
-        );
-        const top3Players = (modelPrediction.top3 || []).map((num) =>
-          modelPrediction.players.find((p) => p.number === num),
-        );
+        const unified = racePrediction.unified || null;
+        const topPickPlayer = unified
+          ? players.find((p) => p.number === unified.topPick)
+          : null;
 
         const aiPrediction = {
           topPick: topPickPlayer,
-          recommended: top3Players,
-          allPlayers: modelPrediction.players,
-          confidence: modelPrediction.confidence,
-          reasoning: modelPrediction.reasoning || [], // 未設定の場合は空配列
-          top3: modelPrediction.top3 || [], // トップ3の艇番（number配列）
+          allPlayers: players,
+          top3: unified
+            ? [unified.topPick, unified.top2nd].filter(Boolean)
+            : [],
           result: racePrediction.result, // レース結果
-          predictions: racePrediction.predictions, // 全モデルの予想データ
-          turnPrediction: racePrediction.turnPrediction || null,
+          turnPrediction: unified?.turnPrediction ?? null,
+          volatilityPercentile: unified?.volatilityPercentile ?? null,
+          volatilityPercentileIsFallback:
+            unified?.volatilityPercentileIsFallback ?? null,
+          volatilityReasons: unified?.volatilityReasons ?? [],
           racerStats: racePrediction.racerStats || null,
           exhibitionData: racePrediction.exhibitionData || null,
-          predictionOdds: racePrediction.predictionOdds || null,
         };
         setPrediction(aiPrediction);
         setIsAnalyzing(false);
@@ -599,8 +504,6 @@ function App({ tab = "races" }) {
               onRefresh={handleRefresh}
               isRefreshing={isRefreshing}
             />
-          ) : activeTab === "picks" ? (
-            <TodaysPicks />
           ) : (
             <>
               <section className="race-list-section">
@@ -928,9 +831,6 @@ function App({ tab = "races" }) {
                   ref={predictionRef}
                   prediction={prediction}
                   selectedRace={selectedRace}
-                  selectedModel={selectedModel}
-                  onSwitchModel={switchModel}
-                  volatility={volatility}
                   isAnalyzing={isAnalyzing}
                   showExhibition={true}
                 />

@@ -68,17 +68,30 @@
     "raceCount_one": "{{count}} race"
   },
   "volatility": {
-    "indexLabel": "Lane-1 upset index: {{score}}",
     "levelHigh": "High upset chance",
     "levelLow": "Favorite friendly",
-    "levelMedium": "Average",
-    "description": "How likely lane 1 is to lose (higher = more upsets)",
-    "winRateLabel": "Lane 1 win rate (last 90 days)",
-    "nationalAvg": "National avg {{rate}}%",
-    "recommendedModel": "Recommended model:",
-    "adviceHigh": "Lane 1 is likely to lose here, so the Upset Focus model targeting high payouts is recommended",
-    "adviceLow": "Lane 1 is stable here, so the accuracy-focused Safe Bet model is recommended",
-    "adviceMedium": "A typical race, so the balanced Standard model is recommended"
+    "description": "A relative measure of how likely lane 1 is to lose, compared to races at this venue over the last 90 days",
+    "attentionTitle": "Upset alert level",
+    "attentionHigh": "Caution",
+    "attentionLow": "Stable",
+    "attentionStandard": "Average",
+    "percentileBarLabel": "Venue percentile",
+    "percentileBarMin": "Stable",
+    "percentileBarMedian": "Average",
+    "percentileBarMax": "Upset-prone",
+    "collectingData": "Collecting data",
+    "collectingDataDesc": "We're still building up a track record for this venue's upset tendency. This will appear once enough data has been collected"
+  },
+  "trifectaReference": {
+    "title": "Trifecta reference",
+    "desc": "A single positive expected-value combination shown for reference only. Not a guarantee of results",
+    "recommendation": {
+      "bet": "Worth a look",
+      "neutral": "Reference",
+      "skip": "Pass"
+    },
+    "odds": "Odds {{odds}}x",
+    "ev": "EV {{ev}}"
   },
   "table": {
     "title": "AI Data Predictions",
@@ -114,17 +127,11 @@
     "rank1": "1st",
     "rank2": "2nd",
     "rank3": "3rd",
-    "inKuzureHigh": "High upset chance",
-    "inKuzureHit": "🌊 Lane-1 upset hit!",
-    "inKuzureMiss": "❌ Lane 1 held on (missed)",
-    "winHit": "✅ Win bet hit!",
-    "winMiss": "❌ Win bet ({{picked}}→{{actual}})",
-    "placeHit": "✅ Place bet hit!",
-    "placeMiss": "❌ Place bet missed",
-    "trifectaHit": "✅ Trio hit!",
-    "trifectaMiss": "❌ Trio missed",
-    "trioHit": "✅ Trifecta hit!",
-    "trioMiss": "❌ Trifecta missed",
+    "placeSectionTitle": "🎯 Place prediction check",
+    "placePredicted": "Place pick #{{rank}}: Boat {{number}}",
+    "placeHit": "✅ Hit! (finished #{{position}})",
+    "placeMiss": "❌ Missed",
+    "turnSectionTitle": "🌊 Turn prediction check",
     "payout": "Payout: ¥{{amount}}"
   },
   "panel": {
@@ -137,7 +144,7 @@
     "analysisToolsLink": "Analyze this race further with the data analysis tools"
   },
   "home": {
-    "introBannerText": "AI-analyzed 45+ data points | Learn more about BoatAI →",
+    "introBannerText": "45+ data points analyzed, including place picks and turn predictions | Learn more about BoatAI →",
     "introBannerClose": "Close",
     "todayRaces": "Today's Races",
     "dataType": "Race data",
@@ -150,7 +157,7 @@
     "deadline": "Betting deadline",
     "finished": "⏱️ Finished",
     "turnPreviewLabel": "Forecast",
-    "viewPrediction": "View AI Prediction",
+    "viewPrediction": "View data analysis",
     "blogTitle": "Boat Race Strategy Blog",
     "blogDesc": "Prediction tips, venue guides, and data analysis to boost your win rate",
     "viewAllPosts": "View all blog posts →",
@@ -281,24 +288,31 @@
     "noNextRace": "No next race"
   },
   "raceCard": {
-    "badgeWin": "Win",
-    "badgePlace": "Place",
-    "badgeTrifecta": "Trio",
-    "badgeTrio": "Trifecta",
+    "badgePlace": "✅ Place hit",
+    "badgeTurn": "✅ Turn hit",
     "missBadge": "❌ Missed",
     "view": "View Prediction"
   },
+  "turnPatternList": {
+    "title": "Turn Prediction",
+    "caption": "Candidates likely to finish 1st (up to 3 boats, ranked by probability)",
+    "hitTag": "Hit",
+    "summaryHit": "✅ One of the top predictions hit",
+    "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions"
+  },
+  "placeRecommendation": {
+    "title": "Place Prediction",
+    "basis": "Predicts boats with the highest entry-course win rate",
+    "courseRateLabel": "Course win rate {{rate}}% ({{wins}}/{{total}})"
+  },
+  "accuracyStat": {
+    "withRecovery": "Track record: {{hitRate}}% hit rate, {{recoveryRate}}% recovery (last {{totalRaces}} races)",
+    "hitRateOnly": "Track record: {{hitRate}}% 1st-place hit rate (last {{totalRaces}} races)"
+  },
   "section": {
-    "resultTitle": "AI Prediction Results"
+    "resultTitle": "Data Analysis Results"
   },
   "animation": {
-    "title": "First Mark Prediction",
-    "phaseStart": "Start",
-    "phaseTurn": "1st mark turn",
-    "firstMark": "1st Mark",
-    "replay": "▶ Replay",
-    "rankLabel": "#{{rank}}",
-    "distributionTitle": "Outcome probability",
     "courseLabel": "Lane {{course}}"
   },
   "dataTable": {
@@ -318,12 +332,14 @@
     "rowAvgSt": "Avg ST",
     "rowExSt": "Exhibition ST",
     "rowCourseRate": "Entry course win rate",
+    "placeBadgeLabel": "Place pick #{{rank}}",
+    "placeOddsLabel": "(place odds {{low}}-{{high}}x)",
     "loading": "Loading analytics…",
     "motorResetNote": "New motors"
   },
   "aiSection": {
     "title": "AI Data Analysis",
-    "topPickSummary": "AI top pick: Boat {{number}} {{name}}",
+    "topPickSummary": "AI top pick (place): Boat {{number}} {{name}}",
     "expandHint": "Tap to expand AI prediction details (picks, first-turn simulation, odds value, outcome patterns)",
     "confidence": "Confidence {{value}}%"
   },
@@ -334,10 +350,6 @@
     "loading": "Matching analytics...",
     "matchHeading": "What the data got right",
     "mismatchHeading": "Where the data differed",
-    "aiHeading": "AI verification",
-    "aiHit": "AI's top pick Boat {{number}} won.",
-    "aiMissWithData": "AI picked Boat {{aiNumber}}, but Boat {{winnerNumber}} won. The matching data above pointed to Boat {{winnerNumber}}.",
-    "aiMissNoData": "AI picked Boat {{aiNumber}}, but Boat {{winnerNumber}} won. This upset was hard to read even from the data.",
     "itemTechniqueTop": "Winning technique \"{{technique}}\" matches this racer’s No.1 winning pattern ({{pct}}%) of the last 90 days",
     "itemTechniqueNone": "\"{{technique}}\" was not among this racer’s winning patterns in the last 90 days",
     "itemTechniqueNoWins": "The winner had no wins in the last 90 days",

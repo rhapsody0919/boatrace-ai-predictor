@@ -2,10 +2,10 @@
  * RaceCard - レース一覧のカードコンポーネント
  */
 
-import { useTranslation } from 'react-i18next'
-import { GRADE_CONFIG } from '../../constants/gradeConfig'
+import { useTranslation } from "react-i18next";
+import { GRADE_CONFIG } from "../../constants/gradeConfig";
 
-function RaceCard({ race, selectedModel, onAnalyzeRace }) {
+function RaceCard({ race, onAnalyzeRace }) {
   const { t } = useTranslation();
   const racePrediction = race.rawData;
   const volatility = racePrediction?.volatility;
@@ -16,50 +16,38 @@ function RaceCard({ race, selectedModel, onAnalyzeRace }) {
   const isLowVolatility = volatility?.level === "low";
   const showBadge = isHighVolatility || isLowVolatility;
   const badgeColor = isHighVolatility ? "#c62828" : "#2e7d32";
-  const badgeLabel = isHighVolatility ? `🌪️ ${t("volatility.levelHigh")}` : `🎯 ${t("volatility.levelLow")}`;
+  const badgeLabel = isHighVolatility
+    ? `🌪️ ${t("volatility.levelHigh")}`
+    : `🎯 ${t("volatility.levelLow")}`;
 
   const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];
 
-  // 的中判定（買い方別）
+  // 的中判定（unifiedモデル: 複勝的中・展開予測的中の2種類のみ。
+  // unifiedモデルは複勝予想[topPick/top2nd]と展開予測[turnPrediction]しか
+  // 生成しないため、旧3モデル由来の単勝的中/3連複的中/3連単的中は廃止した）
+  const unified = racePrediction?.unified;
   let hitBadges = [];
-  const hasNewFormat = !!racePrediction?.predictions;
-  const hasOldFormat = !!racePrediction?.prediction;
 
-  // モデルキーを変換
-  const modelKey =
-    selectedModel === "safe-bet"
-      ? "safeBet"
-      : selectedModel === "upset-focus"
-        ? "upsetFocus"
-        : "standard";
+  if (isFinished && unified) {
+    // 複勝1位（topPick）・複勝2位（top2nd）のどちらかが2着以内なら的中
+    // （2026-08-14: 1位候補のみ判定していたのをユーザー指摘で修正）
+    const isBoatPlaceHit = (boat) =>
+      boat != null && (boat === result.rank1 || boat === result.rank2);
+    const isPlaceHit =
+      isBoatPlaceHit(unified.topPick) || isBoatPlaceHit(unified.top2nd);
+    if (isPlaceHit) {
+      hitBadges.push({ label: t("raceCard.badgePlace"), type: "place" });
+    }
 
-  // 予測データを取得
-  let prediction;
-  if (hasNewFormat) {
-    prediction = racePrediction.predictions[modelKey];
-  } else if (modelKey === "standard" && hasOldFormat) {
-    prediction = racePrediction.prediction;
-  }
-
-  if (isFinished && prediction) {
-    const topPick = prediction.topPick;
-    const top3 = prediction.top3;
-
-    const isWinHit = topPick === result.rank1;
-    const isPlaceHit = topPick === result.rank1 || topPick === result.rank2;
-    const is3FukuHit =
-      top3.includes(result.rank1) &&
-      top3.includes(result.rank2) &&
-      top3.includes(result.rank3);
-    const is3TanHit =
-      top3[0] === result.rank1 &&
-      top3[1] === result.rank2 &&
-      top3[2] === result.rank3;
-
-    if (isWinHit) hitBadges.push({ label: t("raceCard.badgeWin"), type: "win" });
-    if (isPlaceHit) hitBadges.push({ label: t("raceCard.badgePlace"), type: "place" });
-    if (is3FukuHit) hitBadges.push({ label: t("raceCard.badgeTrifecta"), type: "trifecta" });
-    if (is3TanHit) hitBadges.push({ label: t("raceCard.badgeTrio"), type: "trio" });
+    // 展開予測の的中判定は集計指標（実測的中率約80%）と同じロジック:
+    // 上位パターンのwinnerCourseのいずれかが実際の1着と一致すれば的中
+    const patterns = unified.turnPrediction?.patterns;
+    const isTurnHit =
+      Array.isArray(patterns) &&
+      patterns.some((p) => p.winnerCourse === result.rank1);
+    if (isTurnHit) {
+      hitBadges.push({ label: t("raceCard.badgeTurn"), type: "turn" });
+    }
   }
 
   return (
@@ -105,7 +93,7 @@ function RaceCard({ race, selectedModel, onAnalyzeRace }) {
           <span className="race-number">{race.raceNumber}R</span>
         </div>
       </div>
-      {isFinished && (
+      {isFinished && unified && (
         <div
           style={{
             marginTop: "0.5rem",
@@ -128,7 +116,7 @@ function RaceCard({ race, selectedModel, onAnalyzeRace }) {
                   fontWeight: "700",
                 }}
               >
-                ✅ {badge.label}
+                {badge.label}
               </span>
             ))
           ) : (

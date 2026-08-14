@@ -67,17 +67,30 @@
     "raceCount": "{{count}} 場比賽"
   },
   "volatility": {
-    "indexLabel": "1號位失守指數：{{score}}",
     "levelHigh": "冷門機率高",
     "levelLow": "熱門穩定",
-    "levelMedium": "普通",
-    "description": "1號位落敗的可能性（數值越高越容易爆冷）",
-    "winRateLabel": "1號位勝率（近90天）",
-    "nationalAvg": "全國平均 {{rate}}%",
-    "recommendedModel": "推薦模型：",
-    "adviceHigh": "此賽場1號位容易失守，推薦瞄準高派彩的冷門型模型",
-    "adviceLow": "此賽場1號位表現穩定，推薦重視命中率的穩健型模型",
-    "adviceMedium": "屬於標準賽況，推薦平衡取向的標準型模型"
+    "description": "與該賽場過去90天的賽事相比，1號位落敗可能性的相對指標",
+    "attentionTitle": "1號位失守注意度",
+    "attentionHigh": "警戒",
+    "attentionLow": "穩健",
+    "attentionStandard": "普通",
+    "percentileBarLabel": "賽場內百分位",
+    "percentileBarMin": "穩健",
+    "percentileBarMedian": "普通",
+    "percentileBarMax": "容易爆冷",
+    "collectingData": "數據累積中",
+    "collectingDataDesc": "此賽場的1號位失守傾向所需的實績數據仍在累積中，運用開始一段時間後將會顯示"
+  },
+  "trifectaReference": {
+    "title": "3連單參考資訊",
+    "desc": "僅顯示期望值為正的1組作為參考，不保證結果",
+    "recommendation": {
+      "bet": "值得關注",
+      "neutral": "參考",
+      "skip": "建議觀望"
+    },
+    "odds": "賠率 {{odds}}倍",
+    "ev": "期望值 {{ev}}"
   },
   "table": {
     "title": "AI 數據預測",
@@ -113,17 +126,11 @@
     "rank1": "第1名",
     "rank2": "第2名",
     "rank3": "第3名",
-    "inKuzureHigh": "冷門機率高",
-    "inKuzureHit": "🌊 1號位失守命中！",
-    "inKuzureMiss": "❌ 1號位守住了（未命中）",
-    "winHit": "✅ 單勝命中！",
-    "winMiss": "❌ 單勝未中（{{picked}}→{{actual}}）",
-    "placeHit": "✅ 複勝命中！",
-    "placeMiss": "❌ 複勝未中",
-    "trifectaHit": "✅ 3連複命中！",
-    "trifectaMiss": "❌ 3連複未中",
-    "trioHit": "✅ 3連單命中！",
-    "trioMiss": "❌ 3連單未中",
+    "placeSectionTitle": "🎯 複勝預測驗證",
+    "placePredicted": "複勝第{{rank}}名預測：{{number}}號艇",
+    "placeHit": "✅ 命中！（第{{position}}名）",
+    "placeMiss": "❌ 未中",
+    "turnSectionTitle": "🌊 展開預測驗證",
     "payout": "派彩：¥{{amount}}"
   },
   "panel": {
@@ -136,7 +143,7 @@
     "analysisToolsLink": "用數據分析工具進一步分析本場比賽"
   },
   "home": {
-    "introBannerText": "AI分析45項以上數據 | 了解更多BoatAI →",
+    "introBannerText": "分析複勝預測、展開預測等45項以上數據 | 了解更多BoatAI →",
     "introBannerClose": "關閉",
     "todayRaces": "今日賽事",
     "dataType": "比賽資料",
@@ -149,7 +156,7 @@
     "deadline": "投注截止",
     "finished": "⏱️ 已結束",
     "turnPreviewLabel": "預測",
-    "viewPrediction": "查看 AI 預測",
+    "viewPrediction": "查看數據分析",
     "blogTitle": "賽艇攻略部落格",
     "blogDesc": "提升命中率的預測技巧、賽場指南與數據分析",
     "viewAllPosts": "查看所有文章 →",
@@ -279,24 +286,31 @@
     "noNextRace": "沒有下一場比賽"
   },
   "raceCard": {
-    "badgeWin": "單勝",
-    "badgePlace": "複勝",
-    "badgeTrifecta": "3連複",
-    "badgeTrio": "3連單",
+    "badgePlace": "✅ 複勝命中",
+    "badgeTurn": "✅ 展開命中",
     "missBadge": "❌ 未命中",
     "view": "查看預測"
   },
+  "turnPatternList": {
+    "title": "轉彎預測",
+    "caption": "可能獲得第1名的候選艇（最多3艇，依機率排序）",
+    "hitTag": "命中",
+    "summaryHit": "✅ 其中一項預測命中",
+    "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中"
+  },
+  "placeRecommendation": {
+    "title": "複勝預測",
+    "basis": "預測進入航道勝率較高的艇",
+    "courseRateLabel": "航道勝率{{rate}}%（{{wins}}/{{total}}）"
+  },
+  "accuracyStat": {
+    "withRecovery": "實測：命中率{{hitRate}}%・回收率{{recoveryRate}}%（過去{{totalRaces}}場）",
+    "hitRateOnly": "實測：第1名命中率{{hitRate}}%（過去{{totalRaces}}場）"
+  },
   "section": {
-    "resultTitle": "AI 預測結果"
+    "resultTitle": "數據分析結果"
   },
   "animation": {
-    "title": "第一轉彎標預測",
-    "phaseStart": "起跑",
-    "phaseTurn": "第一轉彎",
-    "firstMark": "第1轉彎標",
-    "replay": "▶ 重播",
-    "rankLabel": "第{{rank}}名",
-    "distributionTitle": "結果機率",
     "courseLabel": "{{course}}號航道"
   },
   "dataTable": {
@@ -316,12 +330,14 @@
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
     "rowCourseRate": "進入航道勝率",
+    "placeBadgeLabel": "複勝第{{rank}}位",
+    "placeOddsLabel": "（複勝{{low}}-{{high}}倍）",
     "loading": "數據載入中…",
     "motorResetNote": "剛更換"
   },
   "aiSection": {
     "title": "AI數據分析",
-    "topPickSummary": "AI本命: {{number}}號艇 {{name}}",
+    "topPickSummary": "AI本命（複勝）: {{number}}號艇 {{name}}",
     "expandHint": "點擊展開：AI預測詳情（推薦組合・第一彎道模擬・賠率價值・出現模式）",
     "confidence": "信賴度{{value}}%"
   },
@@ -332,10 +348,6 @@
     "loading": "數據比對中...",
     "matchHeading": "與數據相符之處",
     "mismatchHeading": "與數據不符之處",
-    "aiHeading": "AI驗證",
-    "aiHit": "AI本命{{number}}號艇獲勝。",
-    "aiMissWithData": "AI本命為{{aiNumber}}號艇，但{{winnerNumber}}號艇獲勝。上述相符的數據曾指向{{winnerNumber}}號艇。",
-    "aiMissNoData": "AI本命為{{aiNumber}}號艇，但{{winnerNumber}}號艇獲勝。此次冷門連數據也難以預測。",
     "itemTechniqueTop": "獲勝方式「{{technique}}」與該選手過去90天的第1獲勝模式（{{pct}}%）一致",
     "itemTechniqueNone": "「{{technique}}」不在該選手過去90天的獲勝模式中",
     "itemTechniqueNoWins": "過去90天無勝場的選手獲勝",

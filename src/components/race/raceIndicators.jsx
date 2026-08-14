@@ -27,6 +27,39 @@ export const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
+// 艇のコース別勝率（進入コースでの1着数/出走数）。racerStatsから算出する
+export function courseRateOf(statsByBoat, boat) {
+  const stats = statsByBoat.get(boat);
+  if (!stats) return null;
+  const course = stats.course ?? boat;
+  const counts = stats.courseRaceCounts?.[String(course)];
+  if (!counts || !counts.total) return null;
+  return {
+    wins: counts.wins ?? 0,
+    total: counts.total,
+    rate: ((counts.wins ?? 0) / counts.total) * 100,
+  };
+}
+
+/**
+ * 複勝予想（FR1/FR5）: コース別勝率上位2艇。generate-unified-predictions.js の
+ * calculatePlaceRecommendation と同じロジック（上位2艇、EV計算は経由しない）。
+ * DataRaceTable（テーブル行）とPlaceRecommendationPanel（独立パネル、2026-08-14〜）
+ * の両方から使う共有ロジック
+ */
+export function getPlaceRecommendation(players, racerStats) {
+  const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
+  return players
+    .map((p) => ({
+      boat: p.number,
+      name: p.name,
+      courseRate: courseRateOf(statsByBoat, p.number),
+    }))
+    .filter((c) => c.courseRate !== null)
+    .sort((a, b) => b.courseRate.rate - a.courseRate.rate)
+    .slice(0, 2);
+}
+
 const byBoat = (rows) => {
   const map = new Map();
   (rows ?? []).forEach((row) => map.set(row.boat_number, row));
@@ -143,21 +176,9 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     })),
   };
 
-  const courseRateOf = (boat) => {
-    const stats = statsByBoat.get(boat);
-    if (!stats) return null;
-    const course = stats.course ?? boat;
-    const counts = stats.courseRaceCounts?.[String(course)];
-    if (!counts || !counts.total) return null;
-    return {
-      wins: counts.wins ?? 0,
-      total: counts.total,
-      rate: ((counts.wins ?? 0) / counts.total) * 100,
-    };
-  };
   cand.courseRate = players.map((p) => ({
     boat: p.number,
-    value: courseRateOf(p.number)?.rate ?? null,
+    value: courseRateOf(statsByBoat, p.number)?.rate ?? null,
   }));
 
   return [
@@ -398,7 +419,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
             });
       },
       render: (p) => {
-        const cr = courseRateOf(p.number);
+        const cr = courseRateOf(statsByBoat, p.number);
         if (!cr) return ph("racerStats");
         return (
           <span className="drt-value">

@@ -90,12 +90,6 @@ const staticPages = [
     priority: "0.9",
   },
   {
-    loc: "/picks",
-    lastmod: new Date().toISOString().split("T")[0],
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
     loc: "/guide",
     lastmod: new Date().toISOString().split("T")[0],
     changefreq: "monthly",

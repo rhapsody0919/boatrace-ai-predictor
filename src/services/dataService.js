@@ -4,10 +4,10 @@
  * Supabaseからデータを取得します。
  */
 
-import { supabaseDataService, clearCache } from './supabaseDataService';
+import { supabaseDataService, clearCache } from "./supabaseDataService";
 
 // 起動時にログ出力
-console.log('📊 データソース: Supabase (30分キャッシュ有効)');
+console.log("📊 データソース: Supabase (30分キャッシュ有効)");
 
 /**
  * データサービス
@@ -54,10 +54,18 @@ export const dataService = {
   },
 
   /**
+   * unifiedモデルの3連単参考情報を1レース分取得
+   * @param {string} raceId - レースID
+   */
+  async getUnifiedTrifectaReference(raceId) {
+    return supabaseDataService.getUnifiedTrifectaReference(raceId);
+  },
+
+  /**
    * キャッシュをクリア（手動更新時に使用）
    * @param {string|null} key - 特定のキーをクリア（nullで全クリア）
    */
   clearCache(key = null) {
     clearCache(key);
-  }
+  },
 };

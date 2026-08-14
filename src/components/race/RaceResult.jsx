@@ -2,8 +2,9 @@
  * RaceResult - レース結果表示コンポーネント
  */
 import { useTranslation } from "react-i18next";
+import TurnPatternList from "./TurnPatternList";
 
-function RaceResult({ prediction, volatility }) {
+function RaceResult({ prediction }) {
   const { t } = useTranslation();
 
   if (!prediction || !prediction.result || !prediction.topPick) {
@@ -17,38 +18,35 @@ function RaceResult({ prediction, volatility }) {
   }
 
   const topPick = prediction.topPick;
-  const top3 = prediction.top3;
+  // 複勝2位候補（unified.top2nd）の艇番。DataRaceTableの複勝予想行では
+  // ◎(1位)/○(2位)の両方を予想として提示しているため、検証も両方独立して行う
+  // （2026-08-14: 1位候補のみ検証していたのをユーザー指摘で修正）
+  const top2ndNumber =
+    Array.isArray(prediction.top3) && prediction.top3.length > 1
+      ? prediction.top3[1]
+      : null;
 
-  // 的中判定
-  const isWinHit = topPick.number === result.rank1;
-  const isPlaceHit =
-    topPick.number === result.rank1 || topPick.number === result.rank2;
-  const is3FukuHit =
-    top3 &&
-    top3.includes(result.rank1) &&
-    top3.includes(result.rank2) &&
-    top3.includes(result.rank3);
-  const is3TanHit =
-    top3 &&
-    top3[0] === result.rank1 &&
-    top3[1] === result.rank2 &&
-    top3[2] === result.rank3;
-
-  // 配当取得ヘルパー
-  const getWinPayout = () => result.payouts?.win?.[String(topPick.number)];
-  const getPlacePayout = () => result.payouts?.place?.[String(topPick.number)];
-  const getTrifectaPayout = () => {
-    const sorted = [result.rank1, result.rank2, result.rank3].sort(
-      (a, b) => a - b,
-    );
-    return result.payouts?.trifecta?.[sorted.join("-")];
+  // 的中判定（BOA-173: unifiedモデルはレース単位で二値判定できる複勝予想・
+  // 展開予測の2種類のみを的中対象とする。単勝的中・3連複的中・3連単的中は
+  // AIが予想していない賭け方のため廃止した）
+  const checkPlaceHit = (boatNumber) => {
+    if (boatNumber == null) return null;
+    if (boatNumber === result.rank1) return 1;
+    if (boatNumber === result.rank2) return 2;
+    return null;
   };
-  const getTrioPayout = () =>
-    result.payouts?.trio?.[`${result.rank1}-${result.rank2}-${result.rank3}`];
+  const getPlacePayout = (boatNumber) =>
+    result.payouts?.place?.[String(boatNumber)];
 
-  // イン崩れ判定
-  const showInKuzure = volatility?.level === "high" && result.winningTechnique;
-  const isInKuzure = showInKuzure && result.winningTechnique !== "逃げ";
+  const turnPatterns = prediction.turnPrediction?.patterns;
+  const hasTurnPrediction =
+    Array.isArray(turnPatterns) && turnPatterns.length > 0;
+
+  // 複勝1位・2位の2予想を配列でまとめてレンダリング
+  const placePicks = [
+    { rankLabel: 1, number: topPick.number },
+    ...(top2ndNumber != null ? [{ rankLabel: 2, number: top2ndNumber }] : []),
+  ];
 
   return (
     <div className="race-result">
@@ -69,74 +67,61 @@ function RaceResult({ prediction, volatility }) {
         </div>
       </div>
 
-      {/* イン崩れ予測 → 結果の対応表示 */}
-      {showInKuzure && (
-        <div className="in-kuzure-result">
-          <span className="in-kuzure-prediction">{t("result.inKuzureHigh")}</span>
-          <span className="in-kuzure-arrow">→</span>
-          <span
-            className={`in-kuzure-outcome ${isInKuzure ? "outcome-hit" : "outcome-miss"}`}
-          >
-            {isInKuzure ? t("result.inKuzureHit") : t("result.inKuzureMiss")}
-          </span>
+      {/* イン崩れ指数は「このレースは荒れやすい/堅い」という確率的な傾向予測であり、
+          複勝予想・展開予測のような単発レースの二値的中判定にはなじまない
+          （1レースが堅く決まっても「高リスク」判定が誤りだったとは言えない）。
+          2026-08-14: 従来ここに表示していた単発レースの的中/不的中判定を削除。
+          精度検証は集計ベース（BOA-177、着手待ち）に委ねる方針で統一した */}
+
+      {/* 複勝予想の検証と展開予測の検証は完全に独立したロジックのため、
+          1つの注記で済ませず別セクションとして分けて見せる
+          （2026-08-14: 「なぜ矛盾するのか」を文章の注記でなく構造で伝える） */}
+      <div className="result-verify-section">
+        <h5 className="result-verify-title">{t("result.placeSectionTitle")}</h5>
+        {placePicks.map((pick) => {
+          const position = checkPlaceHit(pick.number);
+          const isHit = position !== null;
+          const payout = isHit ? getPlacePayout(pick.number) : null;
+          return (
+            <div className="accuracy-check" key={pick.rankLabel}>
+              <div className="check-item">
+                <span className="prediction-note">
+                  {t("result.placePredicted", {
+                    rank: pick.rankLabel,
+                    number: pick.number,
+                  })}
+                </span>
+                {isHit ? (
+                  <div className="hit">
+                    {t("result.placeHit", { position })}
+                    {payout && (
+                      <span className="payout">
+                        {t("result.payout", { amount: payout })}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="miss">{t("result.placeMiss")}</div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 展開予測: 実測的中率（約80%）は「上位予想のいずれかが的中すれば的中」という
+          定義のため、単一の断定予想ではなく確率付きランキングとして正直に見せる */}
+      {hasTurnPrediction && (
+        <div className="result-verify-section">
+          <h5 className="result-verify-title">
+            {t("result.turnSectionTitle")}
+          </h5>
+          <TurnPatternList
+            patterns={turnPatterns}
+            actualWinner={result.rank1}
+          />
         </div>
       )}
-
-      <div className="accuracy-check">
-        <div className="check-item">
-          {isWinHit ? (
-            <div className="hit">
-              {t("result.winHit")}
-              {getWinPayout() && (
-                <span className="payout">{t("result.payout", { amount: getWinPayout() })}</span>
-              )}
-            </div>
-          ) : (
-            <div className="miss">
-              {t("result.winMiss", { picked: topPick.number, actual: result.rank1 })}
-            </div>
-          )}
-        </div>
-
-        <div className="check-item">
-          {isPlaceHit ? (
-            <div className="hit">
-              {t("result.placeHit")}
-              {getPlacePayout() && (
-                <span className="payout">{t("result.payout", { amount: getPlacePayout() })}</span>
-              )}
-            </div>
-          ) : (
-            <div className="miss">{t("result.placeMiss")}</div>
-          )}
-        </div>
-
-        <div className="check-item">
-          {is3FukuHit ? (
-            <div className="hit">
-              {t("result.trifectaHit")}
-              {getTrifectaPayout() && (
-                <span className="payout">{t("result.payout", { amount: getTrifectaPayout() })}</span>
-              )}
-            </div>
-          ) : (
-            <div className="miss">{t("result.trifectaMiss")}</div>
-          )}
-        </div>
-
-        <div className="check-item">
-          {is3TanHit ? (
-            <div className="hit">
-              {t("result.trioHit")}
-              {getTrioPayout() && (
-                <span className="payout">{t("result.payout", { amount: getTrioPayout() })}</span>
-              )}
-            </div>
-          ) : (
-            <div className="miss">{t("result.trioMiss")}</div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
