@@ -10,7 +10,11 @@
 import { execSync } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
-import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import {
+  supabase,
+  isSupabaseEnabled,
+  fetchAll,
+} from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,24 +22,41 @@ const __dirname = path.dirname(__filename);
 const ROOT = path.join(__dirname, "..", "..");
 
 // unifiedモデル（AI予想モデル大規模改修）の朝バッチが当日分未実行なら実行する。
-// 冪等（当日分のpredictionsが既にあれば何もしない）なので、5分毎に呼ばれても安全
+// 2026-08-14判明: 「その日にunified predictionsが1件でもあればスキップ」という日単位の
+// 判定だと、朝一番のcron実行時点でrace_entriesのスクレイピングが間に合っていない
+// レース（generate-unified-predictions.js側で黙ってスキップされる）が、その後
+// スクレイピングされても永久に生成対象外になってしまう（三国4〜7Rで実際に発生）。
+// race_entriesが存在するのにunified predictionsが無いレースが1件でもあれば
+// 再実行する（generate-unified-predictions.jsは対象日全体をdelete→insertし直すため
+// 冪等で、重複や余計な書き込みは発生しない）
 async function ensureUnifiedPredictions(date) {
-  const { count, error } = await supabase
-    .from("predictions")
-    .select("*", { count: "exact", head: true })
-    .eq("model_id", "unified")
-    .gte("race_id", date)
-    .lt("race_id", `${date}~`);
+  const [entryRows, predRows] = await Promise.all([
+    fetchAll("race_entries", "race_id", (q) =>
+      q.gte("race_id", date).lt("race_id", `${date}~`),
+    ),
+    fetchAll("predictions", "race_id", (q) =>
+      q
+        .eq("model_id", "unified")
+        .gte("race_id", date)
+        .lt("race_id", `${date}~`),
+    ),
+  ]);
 
-  if (error) {
-    console.warn("⚠️ unified predictions確認エラー:", error.message);
+  const entryRaceIds = new Set((entryRows || []).map((r) => r.race_id));
+  if (entryRaceIds.size === 0) {
     return;
   }
-  if ((count || 0) > 0) {
+  const predRaceIds = new Set((predRows || []).map((r) => r.race_id));
+  const missingCount = [...entryRaceIds].filter(
+    (id) => !predRaceIds.has(id),
+  ).length;
+  if (missingCount === 0) {
     return;
   }
 
-  console.log("\n🤖 unifiedモデルの日次予測を生成中...");
+  console.log(
+    `\n🤖 unifiedモデルの日次予測を生成中...（${missingCount}レース未生成）`,
+  );
   try {
     execSync(
       `node ${path.join(ROOT, "scripts", "daily", "generate-unified-predictions.js")} --date=${date}`,
