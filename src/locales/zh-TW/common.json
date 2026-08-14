@@ -79,7 +79,10 @@
     "percentileBarMedian": "普通",
     "percentileBarMax": "容易爆冷",
     "collectingData": "數據累積中",
-    "collectingDataDesc": "此賽場的1號位失守傾向所需的實績數據仍在累積中，運用開始一段時間後將會顯示"
+    "collectingDataDesc": "此賽場的1號位失守傾向所需的實績數據仍在累積中，運用開始一段時間後將會顯示",
+    "accuracyLoading": "實測準確度載入中...",
+    "accuracyStat": "實測：標示「{{level}}」的比賽，實際崩盤率為{{rate}}%（過去{{count}}場，整體平均{{baseline}}%）",
+    "accuracyLink": "查看詳情 ›"
   },
   "volatilityAccuracy": {
     "title": "🌪️ 內道崩盤預測實績（過去90天）",

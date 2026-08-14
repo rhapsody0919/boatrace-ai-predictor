@@ -79,7 +79,10 @@
     "percentileBarMedian": "보통",
     "percentileBarMax": "이변 주의",
     "collectingData": "데이터 수집 중",
-    "collectingDataDesc": "이 경정장의 1코스 이변 경향을 판단하기 위한 실적 데이터를 수집하고 있습니다. 운영 개시 후 일정 기간이 지나면 표시됩니다"
+    "collectingDataDesc": "이 경정장의 1코스 이변 경향을 판단하기 위한 실적 데이터를 수집하고 있습니다. 운영 개시 후 일정 기간이 지나면 표시됩니다",
+    "accuracyLoading": "실측 정확도 불러오는 중...",
+    "accuracyStat": "실측: 「{{level}}」라벨 레이스의 실제 이변 발생률은 {{rate}}%입니다（지난 {{count}}건, 전체 평균 {{baseline}}%）",
+    "accuracyLink": "자세히 보기 ›"
   },
   "volatilityAccuracy": {
     "title": "🌪️ 인코스 붕괴 예측 실적（최근 90일）",

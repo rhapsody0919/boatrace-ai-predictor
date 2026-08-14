@@ -79,7 +79,10 @@
     "percentileBarMedian": "標準",
     "percentileBarMax": "崩れやすい",
     "collectingData": "データ収集中",
-    "collectingDataDesc": "この会場のイン崩れ傾向を判定するための実績データを蓄積中です。運用開始から一定期間が経過すると表示されます"
+    "collectingDataDesc": "この会場のイン崩れ傾向を判定するための実績データを蓄積中です。運用開始から一定期間が経過すると表示されます",
+    "accuracyLoading": "実測精度を読み込み中...",
+    "accuracyStat": "実測: 「{{level}}」ラベルの実際のイン崩れ率は{{rate}}%です（過去{{count}}件、全体平均{{baseline}}%）",
+    "accuracyLink": "詳しく見る ›"
   },
   "volatilityAccuracy": {
     "title": "🌪️ イン崩れ予測の実績（直近90日）",
