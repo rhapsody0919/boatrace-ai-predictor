@@ -36,9 +36,27 @@ function BoatIcon({ color, textColor, number, x, y, rotation = 0, glow }) {
             filter="url(#glow)"
           />
           {/* 水しぶきエフェクト（勝者のみ） */}
-          <circle cx={-12} cy={-5} r={1.5} fill="rgba(255,255,255,0.6)" className="spray spray--1" />
-          <circle cx={-14} cy={3} r={1.2} fill="rgba(255,255,255,0.4)" className="spray spray--2" />
-          <circle cx={-10} cy={6} r={1} fill="rgba(255,255,255,0.5)" className="spray spray--3" />
+          <circle
+            cx={-12}
+            cy={-5}
+            r={1.5}
+            fill="rgba(255,255,255,0.6)"
+            className="spray spray--1"
+          />
+          <circle
+            cx={-14}
+            cy={3}
+            r={1.2}
+            fill="rgba(255,255,255,0.4)"
+            className="spray spray--2"
+          />
+          <circle
+            cx={-10}
+            cy={6}
+            r={1}
+            fill="rgba(255,255,255,0.5)"
+            className="spray spray--3"
+          />
         </>
       )}
       <ellipse
@@ -107,14 +125,14 @@ const PLAYER_NAME_HIDE = 0.2; // 選手名が消えるタイミング
 // ボートごとのアニメーション速度（順位による差）
 function getBoatDuration(rankOrder) {
   if (rankOrder === 0) return ANIM_DURATION - 0.3; // 勝者: 速い
-  if (rankOrder <= 2) return ANIM_DURATION;         // 2-3着: 標準
-  return ANIM_DURATION + 0.2;                       // 4-6着: やや遅い
+  if (rankOrder <= 2) return ANIM_DURATION; // 2-3着: 標準
+  return ANIM_DURATION + 0.2; // 4-6着: やや遅い
 }
 
 // 各コースの初期位置（左側スタート、右へ向かって進む）
 // 1コースが最内（上・ターンマークに近い側）、6コースが最外（下）
 const START_POSITIONS = [
-  { x: 60, y: 95 },  // 1コース（最内・上）
+  { x: 60, y: 95 }, // 1コース（最内・上）
   { x: 60, y: 120 }, // 2コース
   { x: 60, y: 145 }, // 3コース
   { x: 60, y: 170 }, // 4コース
@@ -158,12 +176,20 @@ function catmullRomSubdivide(points, segments = 3, tension = 0.5) {
       const t2 = t * t;
       const t3 = t2 * t;
       const x =
-        tension * ((-t3 + 2 * t2 - t) * p0.x + (3 * t3 - 5 * t2 + 2) * p1.x +
-        (-3 * t3 + 4 * t2 + t) * p2.x + (t3 - t2) * p3.x) / 2 +
+        (tension *
+          ((-t3 + 2 * t2 - t) * p0.x +
+            (3 * t3 - 5 * t2 + 2) * p1.x +
+            (-3 * t3 + 4 * t2 + t) * p2.x +
+            (t3 - t2) * p3.x)) /
+          2 +
         (1 - tension) * (p1.x + t * (p2.x - p1.x));
       const y =
-        tension * ((-t3 + 2 * t2 - t) * p0.y + (3 * t3 - 5 * t2 + 2) * p1.y +
-        (-3 * t3 + 4 * t2 + t) * p2.y + (t3 - t2) * p3.y) / 2 +
+        (tension *
+          ((-t3 + 2 * t2 - t) * p0.y +
+            (3 * t3 - 5 * t2 + 2) * p1.y +
+            (-3 * t3 + 4 * t2 + t) * p2.y +
+            (t3 - t2) * p3.y)) /
+          2 +
         (1 - tension) * (p1.y + t * (p2.y - p1.y));
       result.push({ x, y });
     }
@@ -174,7 +200,7 @@ function catmullRomSubdivide(points, segments = 3, tension = 0.5) {
 
 // 補間後のパスがターンマークの外側を通るよう制約を適用
 function enforceMarkClearance(points, mark, minDistance) {
-  return points.map(p => {
+  return points.map((p) => {
     const dx = p.x - mark.x;
     const dy = p.y - mark.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -197,9 +223,12 @@ function buildSmoothWakePath(xValues, yValues) {
   const M = TURN_MARK;
   const MIN_CP = 30; // 制御点のクリアランス
   for (let i = 1; i < xValues.length - 1; i++) {
-    const prevX = xValues[i - 1], prevY = yValues[i - 1];
-    const curX = xValues[i], curY = yValues[i];
-    const nextX = xValues[i + 1], nextY = yValues[i + 1];
+    const prevX = xValues[i - 1],
+      prevY = yValues[i - 1];
+    const curX = xValues[i],
+      curY = yValues[i];
+    const nextX = xValues[i + 1],
+      nextY = yValues[i + 1];
     const next2X = xValues[Math.min(i + 2, xValues.length - 1)];
     const next2Y = yValues[Math.min(i + 2, yValues.length - 1)];
     let cp1x = curX + (nextX - prevX) / 6;
@@ -208,7 +237,12 @@ function buildSmoothWakePath(xValues, yValues) {
     let cp2y = nextY - (next2Y - curY) / 6;
     // 制御点がターンマーク内側に入らないよう押し出す
     const [cp1, cp2] = enforceMarkClearance(
-      [{ x: cp1x, y: cp1y }, { x: cp2x, y: cp2y }], M, MIN_CP
+      [
+        { x: cp1x, y: cp1y },
+        { x: cp2x, y: cp2y },
+      ],
+      M,
+      MIN_CP,
     );
     d += ` C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${nextX} ${nextY}`;
   }
@@ -218,12 +252,12 @@ function buildSmoothWakePath(xValues, yValues) {
 // ゴール位置を順位順に割り当て（バックストレッチ方向＝左上）
 function getExitPosition(rankOrder, M) {
   const exitPositions = [
-    { x: M.x - 100, y: M.y - 35 },  // 1着: バックストレッチ最先頭
-    { x: M.x - 80, y: M.y - 30 },   // 2着
-    { x: M.x - 65, y: M.y - 27 },   // 3着
-    { x: M.x - 50, y: M.y - 24 },   // 4着
-    { x: M.x - 35, y: M.y - 21 },   // 5着
-    { x: M.x - 20, y: M.y - 18 },   // 6着
+    { x: M.x - 100, y: M.y - 35 }, // 1着: バックストレッチ最先頭
+    { x: M.x - 80, y: M.y - 30 }, // 2着
+    { x: M.x - 65, y: M.y - 27 }, // 3着
+    { x: M.x - 50, y: M.y - 24 }, // 4着
+    { x: M.x - 35, y: M.y - 21 }, // 5着
+    { x: M.x - 20, y: M.y - 18 }, // 6着
   ];
   return exitPositions[Math.min(rankOrder, 5)];
 }
@@ -231,7 +265,13 @@ function getExitPosition(rankOrder, M) {
 // 決まり手ごとのアニメーションパスを生成
 // ボートは左→右に進み、1マークを反時計回りに旋回。
 // 極座標で弧を生成し、全艇がマークを確実に回る。
-function getAnimationPaths(technique, winnerCourse, secondCourse, thirdCourse, boatStrengths) {
+function getAnimationPaths(
+  technique,
+  winnerCourse,
+  secondCourse,
+  thirdCourse,
+  boatStrengths,
+) {
   const winIdx = winnerCourse - 1;
   const secIdx = secondCourse ? secondCourse - 1 : -1;
   const thdIdx = thirdCourse ? thirdCourse - 1 : -1;
@@ -240,7 +280,7 @@ function getAnimationPaths(technique, winnerCourse, secondCourse, thirdCourse, b
   // ターンマーク周りの弧上の点を算出
   // angleDeg: 0°=右, 90°=上, 180°=左（反時計回りが正）
   function arc(angleDeg, R) {
-    const rad = angleDeg * Math.PI / 180;
+    const rad = (angleDeg * Math.PI) / 180;
     return { x: M.x + R * Math.cos(rad), y: M.y - R * Math.sin(rad) };
   }
 
@@ -271,13 +311,13 @@ function getAnimationPaths(technique, winnerCourse, secondCourse, thirdCourse, b
     // 全コースがマーク下側から接近（内枠はマークに近く、外枠は遠い）
     const approachY = M.y + 5 + i * 3;
     return [
-      { x: 150 + i * 5, y: startY },           // スタート
-      { x: M.x, y: approachY },                 // 接近（マーク付近に収束）
-      arc(-10, R),                               // 旋回開始（マーク右下）
-      arc(40, R),                                // 旋回中（右上）
-      arc(85, R),                                // 旋回中（上方）
-      arc(130, R),                               // 旋回終了（左上）
-      exit,                                      // バックストレッチへ
+      { x: 150 + i * 5, y: startY }, // スタート
+      { x: M.x, y: approachY }, // 接近（マーク付近に収束）
+      arc(-10, R), // 旋回開始（マーク右下）
+      arc(40, R), // 旋回中（右上）
+      arc(85, R), // 旋回中（上方）
+      arc(130, R), // 旋回終了（左上）
+      exit, // バックストレッチへ
     ];
   }
 
@@ -460,10 +500,7 @@ function getAnimationPaths(technique, winnerCourse, secondCourse, thirdCourse, b
         }
         if (i === winIdx) {
           // 恵まれた側: 標準旋回で先着
-          return [
-            ...standardTurnPath(i, 22).slice(0, 6),
-            exit1st,
-          ];
+          return [...standardTurnPath(i, 22).slice(0, 6), exit1st];
         }
         return standardTurnPath(i, 30);
       });
@@ -562,7 +599,16 @@ function ResultBadge({ rank, course, x, y, delay, label }) {
   );
 }
 
-function FirstMarkAnimationInner({ patterns, distribution, players, boatStrengths, selectedPatternIndex = 0, venue, raceNumber, selectedModel }) {
+function FirstMarkAnimationInner({
+  patterns,
+  distribution,
+  players,
+  boatStrengths,
+  selectedPatternIndex = 0,
+  venue,
+  raceNumber,
+  selectedModel,
+}) {
   const { t } = useTranslation();
   const techniqueLabel = useTechniqueLabel();
   const [animKey, setAnimKey] = useState(0);
@@ -575,8 +621,8 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth <= 480);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
   }, []);
 
   const handleReplay = useCallback(() => {
@@ -601,7 +647,10 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
   const secondResult = getTopCourse(currentPattern.secondPlace, [winnerCourse]);
   const secondCourse = secondResult?.course;
   const secondProb = secondResult?.prob;
-  const thirdResult = getTopCourse(currentPattern.thirdPlace, [winnerCourse, secondCourse].filter(Boolean));
+  const thirdResult = getTopCourse(
+    currentPattern.thirdPlace,
+    [winnerCourse, secondCourse].filter(Boolean),
+  );
   const thirdCourse = thirdResult?.course;
   const thirdProb = thirdResult?.prob;
 
@@ -623,7 +672,10 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
     const phaseTurn = t("animation.phaseTurn");
 
     // スタート表示
-    const startShow = setTimeout(() => setPhase(phaseStart), PHASE_TIMING.START_SHOW * ANIM_DURATION_MS);
+    const startShow = setTimeout(
+      () => setPhase(phaseStart),
+      PHASE_TIMING.START_SHOW * ANIM_DURATION_MS,
+    );
     const startHide = setTimeout(
       () => setPhase((prev) => (prev === phaseStart ? "" : prev)),
       PHASE_TIMING.START_HIDE * ANIM_DURATION_MS,
@@ -631,7 +683,10 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
     phaseTimers.current.push(startShow, startHide);
 
     // 1マーク旋回
-    const turnShow = setTimeout(() => setPhase(phaseTurn), PHASE_TIMING.TURN_SHOW * ANIM_DURATION_MS);
+    const turnShow = setTimeout(
+      () => setPhase(phaseTurn),
+      PHASE_TIMING.TURN_SHOW * ANIM_DURATION_MS,
+    );
     const turnHide = setTimeout(
       () => setPhase((prev) => (prev === phaseTurn ? "" : prev)),
       PHASE_TIMING.TURN_HIDE * ANIM_DURATION_MS,
@@ -655,20 +710,19 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
     };
   }, [animKey, technique, winnerCourse]);
 
-  const paths = getAnimationPaths(technique, winnerCourse, secondCourse, thirdCourse, boatStrengths);
+  const paths = getAnimationPaths(
+    technique,
+    winnerCourse,
+    secondCourse,
+    thirdCourse,
+    boatStrengths,
+  );
   // playersをboat number順にソート（コースとインデックスを一致させる）
   const sortedPlayers = players
     ? [...players].sort((a, b) => a.number - b.number)
     : null;
   const boatNumbers = sortedPlayers?.map((p) => p.number) || [1, 2, 3, 4, 5, 6];
   const winIdx = winnerCourse - 1;
-
-  // 確率分布をソート
-  const sortedDistribution = distribution
-    ? Object.entries(distribution).sort(([, a], [, b]) => b - a)
-    : [];
-
-  const topTechnique = sortedDistribution[0]?.[0];
 
   // 決まり手ラベルの表示判定
   const isTechniquePhase = phase && phase.endsWith("!");
@@ -677,7 +731,10 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
   const [showNames, setShowNames] = useState(true);
   useEffect(() => {
     setShowNames(true);
-    const timer = setTimeout(() => setShowNames(false), PLAYER_NAME_HIDE * ANIM_DURATION_MS);
+    const timer = setTimeout(
+      () => setShowNames(false),
+      PLAYER_NAME_HIDE * ANIM_DURATION_MS,
+    );
     return () => clearTimeout(timer);
   }, [animKey]);
 
@@ -785,7 +842,9 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
             <span className="first-mark-animation__meta">
               {venue}
               {raceNumber && ` ${raceNumber}R`}
-              {selectedModel && MODEL_NAMES[selectedModel] && ` · ${t(`models.${MODEL_KEY_MAP[selectedModel] || selectedModel}`, MODEL_NAMES[selectedModel])}`}
+              {selectedModel &&
+                MODEL_NAMES[selectedModel] &&
+                ` · ${t(`models.${MODEL_KEY_MAP[selectedModel] || selectedModel}`, MODEL_NAMES[selectedModel])}`}
             </span>
           )}
         </div>
@@ -826,14 +885,6 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
           thirdCourse={thirdCourse}
           thirdProb={thirdProb}
         />
-
-        {sortedDistribution.length > 0 && (
-          <DistributionBars
-            sortedDistribution={sortedDistribution}
-            topTechnique={topTechnique}
-            patterns={patterns}
-          />
-        )}
       </div>
     );
   }
@@ -843,8 +894,16 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
   // パスの事前計算（航跡・ボート共通）
   const precomputedPaths = boatNumbers.map((_, i) => {
     const MIN_CLEARANCE = 30; // ターンマーク外側リング(12px) + ボート楕円(15px) + 余裕(3px)
-    const clearedKeyframes = enforceMarkClearance(paths[i], TURN_MARK, MIN_CLEARANCE);
-    const interpPath = enforceMarkClearance(catmullRomSubdivide(clearedKeyframes), TURN_MARK, MIN_CLEARANCE);
+    const clearedKeyframes = enforceMarkClearance(
+      paths[i],
+      TURN_MARK,
+      MIN_CLEARANCE,
+    );
+    const interpPath = enforceMarkClearance(
+      catmullRomSubdivide(clearedKeyframes),
+      TURN_MARK,
+      MIN_CLEARANCE,
+    );
     const xValues = [START_POSITIONS[i].x, ...interpPath.map((p) => p.x)];
     const yValues = [START_POSITIONS[i].y, ...interpPath.map((p) => p.y)];
     return { xValues, yValues };
@@ -872,7 +931,9 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
           <span className="first-mark-animation__meta">
             {venue}
             {raceNumber && ` ${raceNumber}R`}
-            {selectedModel && MODEL_NAMES[selectedModel] && ` · ${t(`models.${MODEL_KEY_MAP[selectedModel] || selectedModel}`, MODEL_NAMES[selectedModel])}`}
+            {selectedModel &&
+              MODEL_NAMES[selectedModel] &&
+              ` · ${t(`models.${MODEL_KEY_MAP[selectedModel] || selectedModel}`, MODEL_NAMES[selectedModel])}`}
           </span>
         )}
       </div>
@@ -1060,15 +1121,6 @@ function FirstMarkAnimationInner({ patterns, distribution, players, boatStrength
         />
       )}
 
-      {/* 確率分布 */}
-      {sortedDistribution.length > 0 && (
-        <DistributionBars
-          sortedDistribution={sortedDistribution}
-          topTechnique={topTechnique}
-          patterns={patterns}
-        />
-      )}
-
       {/* リプレイボタン */}
       <div className="first-mark-animation__replay">
         <button
@@ -1138,40 +1190,6 @@ function ResultCards({
           <span className="result-prob">{Math.round(thirdProb * 100)}%</span>
         </div>
       )}
-    </div>
-  );
-}
-
-// 確率分布バーコンポーネント
-function DistributionBars({ sortedDistribution, topTechnique, patterns }) {
-  const { t } = useTranslation();
-  const techniqueLabel = useTechniqueLabel();
-
-  return (
-    <div className="technique-distribution">
-      <div className="technique-distribution__header">{t("animation.distributionTitle")}</div>
-      {sortedDistribution.map(([tech, prob]) => {
-        const matchingPattern = patterns.find((p) => p.technique === tech);
-        return (
-          <div key={tech} className="technique-bar">
-            <span className="technique-bar__label">
-              {techniqueLabel(tech)}
-            </span>
-            <span className="technique-bar__course">
-              {matchingPattern ? t("animation.courseLabel", { course: matchingPattern.winnerCourse }) : ""}
-            </span>
-            <div className="technique-bar__track">
-              <div
-                className={`technique-bar__fill ${tech === topTechnique ? "technique-bar__fill--top" : ""}`}
-                style={{ width: `${Math.max(prob * 100, 1)}%` }}
-              />
-            </div>
-            <span className="technique-bar__prob">
-              {Math.round(prob * 100)}%
-            </span>
-          </div>
-        );
-      })}
     </div>
   );
 }

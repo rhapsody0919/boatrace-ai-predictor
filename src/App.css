@@ -1012,6 +1012,13 @@ input:focus-visible,
   text-align: center;
 }
 
+.race-result-independent-note {
+  margin: 0 0 0.75rem;
+  font-size: 0.72rem;
+  color: #64748b;
+  text-align: center;
+}
+
 /* ポジウム：ピル型横並び */
 .result-podium {
   display: flex;

@@ -1,9 +1,11 @@
 /**
  * RaceReview - データで振り返る（BOA-168）
- * レース結果確定後、全6艇についてboatAIの分析データと着順を機械的に照合する。
+ * レース結果確定後、全6艇についてboatAIの分析データと着順を機械的に照合する
+ * 「指標レベルの深掘り」を担う。的中/不的中の一次判定（複勝的中・展開予測的中）は
+ * RaceResult.jsx（レース結果パネル）が担当するため、ここでは繰り返さない
+ * （2026-08-14: 同じ判定を2箇所に重複表示していたのを整理・統合）。
  * - 全艇の照合サマリー: 全指標×全艇の○×一覧テーブル
  * - 全艇の言語化: 1〜3着（好走）・着外の各艇について「整合した点/違った点」を列挙
- * - AI検証: 本命の当否を毎レース明記
  * 判定は全てレース内順位・一致判定のみ（指標定義はraceIndicators.jsxで
  * データ出走表と共通化）。4〜6着の個別着順はDBに未保存のため「着外」で扱う。
  */
@@ -12,7 +14,6 @@ import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { getRaceId } from "../../utils/raceId";
 import { buildIndicatorRows, TECHNIQUE_KEY_BY_NAME } from "./raceIndicators";
-import TurnPatternList from "./TurnPatternList";
 import "./RaceReview.css";
 
 // 指標の示唆（strong/weak）と着順（好走/着外）の組み合わせ → ○×−
@@ -142,21 +143,6 @@ function RaceReview({ prediction, selectedRace }) {
       }),
     };
   })();
-
-  // AI検証（複勝予想）: unifiedモデルの的中定義は「本命が2着以内」で統一
-  const aiPick = prediction.topPick?.number ?? null;
-  const aiFinishPosition = aiPick === winner ? 1 : aiPick === rank2 ? 2 : null;
-  const placeHit = aiPick !== null && aiFinishPosition !== null;
-  const winnerItems = itemsFor(winner, true);
-  const winnerMatchCount =
-    winnerItems.matches.length +
-    (winnerTechniqueItem?.type === "match" ? 1 : 0);
-
-  // AI検証（展開予測）: TurnPatternListが確率付きランキング＋的中判定を担う。
-  // unifiedモデル運用開始（2026-08-11）より前の日付はturnPredictionが無いため非表示
-  const turnPatterns = prediction.turnPrediction?.patterns;
-  const hasTurnPrediction =
-    Array.isArray(turnPatterns) && turnPatterns.length > 0;
 
   return (
     <div className="race-review">
@@ -317,49 +303,6 @@ function RaceReview({ prediction, selectedRace }) {
                 ? t("review.hideOutBoats")
                 : t("review.showOutBoats", { n: outBoats.length })}
             </button>
-          )}
-
-          {aiPick !== null && (
-            <div className="race-review-ai">
-              <h4>🤖 {t("review.aiHeading")}</h4>
-
-              <div className="race-review-ai-item">
-                <span
-                  className={`race-review-ai-badge ${placeHit ? "hit" : "miss"}`}
-                >
-                  {placeHit ? t("review.hitBadge") : t("review.missBadge")}
-                </span>
-                <p>
-                  {t("review.placeLabel")}:{" "}
-                  {placeHit
-                    ? t("review.aiHit", {
-                        number: aiPick,
-                        position: aiFinishPosition,
-                      })
-                    : winnerMatchCount > 0
-                      ? t("review.aiMissWithData", {
-                          aiNumber: aiPick,
-                          winnerNumber: winner,
-                        })
-                      : t("review.aiMissNoData", {
-                          aiNumber: aiPick,
-                          winnerNumber: winner,
-                        })}
-                </p>
-              </div>
-
-              {hasTurnPrediction && (
-                <div className="race-review-turn">
-                  <p className="race-review-turn-label">
-                    {t("review.turnLabel")}
-                  </p>
-                  <TurnPatternList
-                    patterns={turnPatterns}
-                    actualWinner={winner}
-                  />
-                </div>
-              )}
-            </div>
           )}
 
           <p className="race-review-note">💡 {t("review.note")}</p>

@@ -477,7 +477,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     page,
   }) => {
     // unifiedモデル運用開始日（2026-08-11〜）以降の日付を使う。
-    // それより前の日付はAI予想（topPick）が存在せず.race-review-aiが出ない仕様のため
+    // それより前の日付はAI予想（topPick）が存在せず.race-resultが出ない仕様のため
     await page.goto("/races/2026-08-11");
     await page.locator(".predict-btn").first().click();
 
@@ -486,15 +486,21 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 15000,
     });
 
+    // 的中判定（複勝的中/展開予測的中）はレース結果パネルに一本化されている
+    // （2026-08-14: 従来はAI検証ブロックと重複表示していたのを整理・統合）
+    await expect(page.locator(".race-result")).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.locator(".turn-pattern-list")).toBeVisible({
+      timeout: 20000,
+    });
+
     // 結果確定済みレースなので振り返りセクションが表示される
     await expect(page.locator(".race-review")).toBeVisible({
       timeout: 20000,
     });
-    // 照合完了後、全艇サマリーとAI検証ブロックが表示される
+    // 照合完了後、全艇サマリーが表示される
     await expect(page.locator(".race-review-all-table")).toBeVisible({
-      timeout: 20000,
-    });
-    await expect(page.locator(".race-review-ai")).toBeVisible({
       timeout: 20000,
     });
     // 全艇サマリーは6艇分の行を持つ
@@ -503,6 +509,8 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
     // 全艇の言語化ブロックも6艇分表示される
     await expect(page.locator(".race-review-boat-block")).toHaveCount(6);
+    // AI検証ブロックはレース結果パネルと重複するため廃止済み
+    await expect(page.locator(".race-review-ai")).toHaveCount(0);
     // 結果確定済みレースでは未来志向のAIデータ分析（展開予測/イン崩れ）を表示しない
     await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });

@@ -45,6 +45,9 @@ function RaceResult({ prediction }) {
   return (
     <div className="race-result">
       <h4>🏁 {t("result.title")}</h4>
+      <p className="race-result-independent-note">
+        {t("result.independentNote")}
+      </p>
 
       <div className="result-podium">
         <div className="podium-item first">

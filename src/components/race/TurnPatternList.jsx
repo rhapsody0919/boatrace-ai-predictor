@@ -10,8 +10,16 @@
  * という2つの問題があった。確率付きの候補ランキングとして正直に見せることで、
  * どの程度の自信度の予想なのかが一目でわかるようにする。
  *
- * PredictionPanel（レース前）とRaceResult/RaceReview（レース後）で共有する。
+ * PredictionPanel（レース前）とRaceResult（レース後）で共有する。
  * actualWinnerを渡すとレース後モードになり、一致した行をハイライトし結果を明示する。
+ *
+ * 艇番の重複除去（2026-08-14追記）: patternsは技術（決まり手）単位の配列のため、
+ * 同じ艇が異なる決まり手で複数回登場することがある（例: 2号艇の差し9%とまくり9%）。
+ * そのまま並べると「1号艇→2号艇→2号艇」のように同じ艇が2回候補として見え、
+ * 分かりにくい・データがおかしく見えるという指摘があったため、表示上は艇番で
+ * 重複除去する（既に確率降順のため最も確率の高い決まり手が残る）。
+ * 的中判定（hasHit）は実測的中率80%の定義と一致させるため、重複除去前の
+ * 元のpatterns全体に対して行う（表示の重複除去とは独立）
  */
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
@@ -34,9 +42,16 @@ function TurnPatternList({ patterns, actualWinner = null }) {
   const hasHit =
     isResultMode && patterns.some((p) => p.winnerCourse === actualWinner);
 
+  const seenCourses = new Set();
+  const displayPatterns = patterns.filter((p) => {
+    if (seenCourses.has(p.winnerCourse)) return false;
+    seenCourses.add(p.winnerCourse);
+    return true;
+  });
+
   return (
     <div className="turn-pattern-list">
-      {patterns.map((pattern, index) => {
+      {displayPatterns.map((pattern, index) => {
         const isMatch = isResultMode && pattern.winnerCourse === actualWinner;
         const colors = BOAT_COLORS[pattern.winnerCourse] || BOAT_COLORS[1];
         return (
