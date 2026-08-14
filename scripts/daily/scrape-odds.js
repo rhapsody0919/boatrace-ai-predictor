@@ -81,10 +81,19 @@ function scrapePlaceOdds($) {
   $(".oddsPoint").each((i, el) => {
     if (i < 6 || i >= 12) return;
     const text = $(el).text().trim();
-    const [lowText, highText] = text.split("-");
-    const low = parseFloat(lowText);
-    const high = highText !== undefined ? parseFloat(highText) : low;
-    const valid = !isNaN(low) && !isNaN(high) && low > 0 && high > 0;
+    // 2026-08-14修正（BOA-186）: scrapeTrifectaOddsと同様に全角ハイフンを正規化する。
+    // 未対応だと split("-") が1要素になり、high=lowにフォールバックして
+    // 「幅ゼロの点オッズ」が有効値として黙って保存されてしまう（nullと区別できない）
+    const normalized = text.replace(/[－ー−]/g, "-");
+    const parts = normalized.split("-");
+    const low = parseFloat(parts[0]);
+    const high = parts.length === 2 ? parseFloat(parts[1]) : NaN;
+    const valid =
+      parts.length === 2 &&
+      !isNaN(low) &&
+      !isNaN(high) &&
+      low > 0 &&
+      high >= low;
     placeOdds.push(valid ? { low, high } : null);
   });
   return placeOdds;

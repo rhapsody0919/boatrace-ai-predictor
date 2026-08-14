@@ -389,12 +389,19 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
     raceData.predictions = {};
     for (const [modelId, pred] of Object.entries(predictions)) {
       if (!pred) continue;
+      // unifiedモデル専用のai_score列はDBに存在しない（旧3モデル
+      // aiScoreStandard/SafeBet/UpsetFocusのみ）。従来はここが必ずaiScoreUpsetFocusに
+      // フォールバックしており、unified.playersを直接参照する経路が増えた場合に
+      // 穴狙いモデルの並び順が紛れ込むバグになっていた（2026-08-14修正、BOA-187）。
+      // nullを渡しaiScore=0（順位付け不能）として扱う
       const scoreField =
         modelId === "standard"
           ? "aiScoreStandard"
           : modelId === "safeBet"
             ? "aiScoreSafeBet"
-            : "aiScoreUpsetFocus";
+            : modelId === "upsetFocus"
+              ? "aiScoreUpsetFocus"
+              : null;
       const players = createPlayers(pred, scoreField);
       const topPickPlayer = players.find((p) => p.number === pred.topPick);
       raceData.predictions[modelId] = {

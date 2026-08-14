@@ -207,7 +207,7 @@ function calculateGroupScores(playerGroup, ctx) {
         score += contribution;
         factors.push({
           contribution,
-          reason: `${top.technique}が得意（勝利の${top.percentage.toFixed(0)}%）`,
+          reason: `${top.technique}が得意（勝利の${(top.percentage ?? 0).toFixed(0)}%）`,
         });
       }
     }
