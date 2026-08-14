@@ -156,7 +156,6 @@
     "noRacesToday": "No races at this venue today",
     "deadline": "Betting deadline",
     "finished": "⏱️ Finished",
-    "placePreviewLabel": "Place Pick",
     "viewPrediction": "View data analysis",
     "blogTitle": "Boat Race Strategy Blog",
     "blogDesc": "Prediction tips, venue guides, and data analysis to boost your win rate",
@@ -300,11 +299,6 @@
     "summaryHit": "✅ One of the top predictions hit",
     "summaryMiss": "❌ Boat {{winnerNumber}} won, which wasn't among the top predictions"
   },
-  "placeRecommendation": {
-    "title": "Place Prediction",
-    "basis": "Predicts boats with the highest entry-course win rate",
-    "courseRateLabel": "Course win rate {{rate}}% ({{wins}}/{{total}})"
-  },
   "accuracyStat": {
     "withRecovery": "Track record: {{hitRate}}% hit rate, {{recoveryRate}}% recovery (last {{totalRaces}} races)",
     "hitRateOnly": "Track record: {{hitRate}}% 1st-place hit rate (last {{totalRaces}} races)"
@@ -332,8 +326,6 @@
     "rowAvgSt": "Avg ST",
     "rowExSt": "Exhibition ST",
     "rowCourseRate": "Entry course win rate",
-    "placeBadgeLabel": "Place pick #{{rank}}",
-    "placeOddsLabel": "(place odds {{low}}-{{high}}x)",
     "loading": "Loading analytics…",
     "motorResetNote": "New motors"
   },

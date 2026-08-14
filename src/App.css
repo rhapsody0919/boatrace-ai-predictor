@@ -331,66 +331,6 @@ input:focus-visible,
   color: var(--text-dark);
 }
 
-/* レースカード複勝予想プレビュー */
-.race-card-place-preview {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 0.75rem;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border-radius: 8px;
-  margin-bottom: 0.75rem;
-}
-
-.place-preview-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #94a3b8;
-  white-space: nowrap;
-}
-
-.place-preview-content {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-left: auto;
-}
-
-.place-preview-pick {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.place-preview-mark {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #34d399;
-}
-
-.place-preview-mark--sub {
-  font-size: 0.75rem;
-  color: #94a3b8;
-}
-
-.place-preview-boat {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.place-preview-boat--sub {
-  width: 18px;
-  height: 18px;
-  font-size: 0.65rem;
-}
-
 .predict-btn {
   width: 100%;
   padding: 1.125rem;

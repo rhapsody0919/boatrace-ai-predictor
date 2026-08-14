@@ -21,7 +21,6 @@ import {
 } from "./components/race";
 import { STADIUM_NAMES, WEEKDAYS } from "./constants";
 import { GRADE_CONFIG } from "./constants/gradeConfig";
-import { BOAT_COLORS } from "./utils/colors";
 import { getTodayJST, formatDateJP } from "./utils/dateUtils";
 import LoadingScreen from "./components/LoadingScreen";
 
@@ -41,7 +40,6 @@ function App({ tab = "races" }) {
   const [races, setRaces] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null); // データ更新時刻
   const [isRefreshing, setIsRefreshing] = useState(false); // 手動更新中フラグ
-  const [placePickMap, setPlacePickMap] = useState({}); // レースID→複勝予想(◎○)のマップ
   const predictionRef = useRef(null);
   const raceCardRefs = useRef({}); // 各レースカードへの参照を保持
 
@@ -152,36 +150,6 @@ function App({ tab = "races" }) {
       if (result.data.length > 0) {
         setSelectedVenueId(result.data[0].placeCd);
       }
-
-      // 複勝予想プレビュー用: 予測データをバックグラウンドで取得
-      // （旧: 展開予測プレビューはpredictions.standard(廃止済み旧モデル)由来で
-      // unifiedモデルに未追従だったため、2026-08-14に複勝予想プレビューへ置き換えた）
-      const today = (() => {
-        const now = new Date();
-        const jstOffset = 9 * 60;
-        const jstDate = new Date(now.getTime() + jstOffset * 60 * 1000);
-        return jstDate.toISOString().split("T")[0];
-      })();
-      dataService
-        .getPredictions(today)
-        .then((predData) => {
-          if (predData?.races) {
-            const map = {};
-            for (const race of predData.races) {
-              if (race.unified?.topPick == null) continue;
-              const nameOf = (boat) =>
-                race.players?.find((p) => p.number === boat)?.name ?? null;
-              map[race.raceId] = {
-                topPick: race.unified.topPick,
-                topPickName: nameOf(race.unified.topPick),
-                top2nd: race.unified.top2nd,
-                top2ndName: nameOf(race.unified.top2nd),
-              };
-            }
-            setPlacePickMap(map);
-          }
-        })
-        .catch(() => {});
     } catch (err) {
       console.error("API取得エラー:", err);
       setError(err.message);
@@ -668,7 +636,6 @@ function App({ tab = "races" }) {
                             return raceTimeInMinutes < currentTimeInMinutes;
                           })();
 
-                          const placePick = placePickMap[race.id];
                           const volatility = race.rawData?.volatility;
                           const isHighVol = volatility?.level === "high";
                           const isLowVol = volatility?.level === "low";
@@ -771,57 +738,6 @@ function App({ tab = "races" }) {
                                   </div>
                                 )}
                               </div>
-                              {placePick && !isFinished && (
-                                <div className="race-card-place-preview">
-                                  <span className="place-preview-label">
-                                    {t("home.placePreviewLabel")}
-                                  </span>
-                                  <div className="place-preview-content">
-                                    <span className="place-preview-pick">
-                                      <span className="place-preview-mark">
-                                        ◎
-                                      </span>
-                                      <span
-                                        className="place-preview-boat"
-                                        style={{
-                                          backgroundColor: (
-                                            BOAT_COLORS[placePick.topPick] ||
-                                            BOAT_COLORS[1]
-                                          ).bg,
-                                          color: (
-                                            BOAT_COLORS[placePick.topPick] ||
-                                            BOAT_COLORS[1]
-                                          ).text,
-                                        }}
-                                      >
-                                        {placePick.topPick}
-                                      </span>
-                                    </span>
-                                    {placePick.top2nd != null && (
-                                      <span className="place-preview-pick">
-                                        <span className="place-preview-mark place-preview-mark--sub">
-                                          ○
-                                        </span>
-                                        <span
-                                          className="place-preview-boat place-preview-boat--sub"
-                                          style={{
-                                            backgroundColor: (
-                                              BOAT_COLORS[placePick.top2nd] ||
-                                              BOAT_COLORS[1]
-                                            ).bg,
-                                            color: (
-                                              BOAT_COLORS[placePick.top2nd] ||
-                                              BOAT_COLORS[1]
-                                            ).text,
-                                          }}
-                                        >
-                                          {placePick.top2nd}
-                                        </span>
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
                               <button
                                 className="predict-btn"
                                 onClick={() => analyzeRace(race)}
