@@ -107,8 +107,14 @@
 - `AiAnalysisSection`（展開予測パネル/イン崩れバッジ）のデフォルト折りたたみを廃止し、デフォルト展開に変更（新AIモデル開発を今後行わない方針としたため、控えめにする理由が無くなった）
 - 展開予測パネルの実測的中率バッジ（「実測: 展開的中率 約80%」）を目立つピル型バッジに変更
 
-**Linearチケット化（別PR予定）**:
-- [BOA-173](https://linear.app/boat-ai/issue/BOA-173) 的中バッジをunifiedモデル（複勝的中1本）に合わせて再設計（RaceCard/RaceReview）
+その後、ユーザーとの議論で以下が決定・追加実装された。
+
+- **BOA-173スコープ拡張**: 「新UIで実質予想しているのは複勝だけか」という問いから、unifiedモデルの3種の予想（複勝予想/展開予測/イン崩れ指数）のうちレース単位で二値判定できるのは複勝予想と展開予測の2つと整理し、的中バッジ対象に展開予測を追加（イン崩れ指数は確率的傾向のため対象外、BOA-177の集計検証に一本化）
+- **BOA-173実装完了**: `RaceCard.jsx`の単勝的中/3連複的中/3連単的中を削除し複勝的中＋展開予測的中の2バッジ制に変更（展開予測的中の判定は集計指標「実測的中率約80%」と同一ロジック）。`RaceReview.jsx`のAI検証ブロックに✅的中/❌不的中の視覚的バッジを追加し、複勝的中の判定を「1着のみ」から正しく「2着以内」に修正。`RaceDetail.jsx`の旧モデル選択注記（`selectedModel`定数）を削除
+- **BOA-177新規作成**: 「イン崩れ注意度の的中精度をデータ分析ツールで可視化したい」という要望を受け調査した結果、バックエンド計算・UIとも既存の`VolatilityAccuracySection.jsx`で実装済みと判明。ただしその実績データは旧3モデル（稼働継続中）由来で、unifiedモデルの新指標はまだ蓄積不足（526件中大半がフォールバック値）。**ユーザー決定: 案B（unifiedデータが十分蓄積されるまで着手を待つ）**、旧データでの先行公開（案A）は不採用
+- **BOA-176実装完了**: 「複勝オッズは取得してほしい」と承認。調査の結果、単勝オッズと同一ページ（`oddstf`）に複勝オッズも掲載されており新規スクレイピングページ不要と判明。`scrapePlaceOdds()`を追加、`docs/db-migration/032_add_place_odds_to_race_odds.sql`（**未適用**）、`supabaseDataService.js`/`raceIndicators.jsx`を複勝オッズ表示に変更。**重要: マイグレーション未適用のままデプロイすると単勝オッズの書き込みも失敗する（検証済み）。必ずマイグレーション適用→デプロイの順序を守ること**
+
+**Linearチケット（別PR予定・引き続き未着手）**:
 - [BOA-174](https://linear.app/boat-ai/issue/BOA-174) `/hit-races`をunifiedモデルに合わせて根本再設計
-- [BOA-175](https://linear.app/boat-ai/issue/BOA-175) `/accuracy`をunifiedモデルに合わせて根本再設計（会場別イン崩れ傾向の扱いは要ユーザー確認）
-- [BOA-176](https://linear.app/boat-ai/issue/BOA-176) 複勝オッズのスクレイピング・保存対応（投資判断待ち、未着手）
+- [BOA-175](https://linear.app/boat-ai/issue/BOA-175) `/accuracy`をunifiedモデルに合わせて根本再設計
+- [BOA-177](https://linear.app/boat-ai/issue/BOA-177) イン崩れ指数の的中精度を`/winning-technique`に可視化（案B、unifiedデータ蓄積待ち）

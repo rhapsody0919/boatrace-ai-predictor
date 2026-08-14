@@ -142,13 +142,26 @@ function RaceReview({ prediction, selectedRace }) {
     };
   })();
 
-  // AI検証
+  // AI検証（複勝予想）: unifiedモデルの的中定義は「本命が2着以内」で統一
   const aiPick = prediction.topPick?.number ?? null;
-  const aiHit = aiPick !== null && aiPick === winner;
+  const aiFinishPosition = aiPick === winner ? 1 : aiPick === rank2 ? 2 : null;
+  const placeHit = aiPick !== null && aiFinishPosition !== null;
   const winnerItems = itemsFor(winner, true);
   const winnerMatchCount =
     winnerItems.matches.length +
     (winnerTechniqueItem?.type === "match" ? 1 : 0);
+
+  // AI検証（展開予測）: 集計的中率（実測約80%）と同じロジック
+  // 上位パターンのwinnerCourseのいずれかが実際の1着と一致すれば的中。
+  // unifiedモデル運用開始（2026-08-11）より前の日付はturnPredictionが無いため非表示
+  const turnPatterns = prediction.turnPrediction?.patterns;
+  const hasTurnPrediction =
+    Array.isArray(turnPatterns) && turnPatterns.length > 0;
+  const turnHit =
+    hasTurnPrediction && turnPatterns.some((p) => p.winnerCourse === winner);
+  const predictedCourses = hasTurnPrediction
+    ? [...new Set(turnPatterns.map((p) => p.winnerCourse))]
+    : [];
 
   return (
     <div className="race-review">
@@ -314,19 +327,52 @@ function RaceReview({ prediction, selectedRace }) {
           {aiPick !== null && (
             <div className="race-review-ai">
               <h4>🤖 {t("review.aiHeading")}</h4>
-              <p>
-                {aiHit
-                  ? t("review.aiHit", { number: aiPick })
-                  : winnerMatchCount > 0
-                    ? t("review.aiMissWithData", {
-                        aiNumber: aiPick,
-                        winnerNumber: winner,
+
+              <div className="race-review-ai-item">
+                <span
+                  className={`race-review-ai-badge ${placeHit ? "hit" : "miss"}`}
+                >
+                  {placeHit ? t("review.hitBadge") : t("review.missBadge")}
+                </span>
+                <p>
+                  {t("review.placeLabel")}:{" "}
+                  {placeHit
+                    ? t("review.aiHit", {
+                        number: aiPick,
+                        position: aiFinishPosition,
                       })
-                    : t("review.aiMissNoData", {
-                        aiNumber: aiPick,
-                        winnerNumber: winner,
-                      })}
-              </p>
+                    : winnerMatchCount > 0
+                      ? t("review.aiMissWithData", {
+                          aiNumber: aiPick,
+                          winnerNumber: winner,
+                        })
+                      : t("review.aiMissNoData", {
+                          aiNumber: aiPick,
+                          winnerNumber: winner,
+                        })}
+                </p>
+              </div>
+
+              {hasTurnPrediction && (
+                <div className="race-review-ai-item">
+                  <span
+                    className={`race-review-ai-badge ${turnHit ? "hit" : "miss"}`}
+                  >
+                    {turnHit ? t("review.hitBadge") : t("review.missBadge")}
+                  </span>
+                  <p>
+                    {t("review.turnLabel")}:{" "}
+                    {turnHit
+                      ? t("review.turnHit", { number: winner })
+                      : t("review.turnMiss", {
+                          predicted: predictedCourses.join(
+                            t("review.courseListSeparator"),
+                          ),
+                          winnerNumber: winner,
+                        })}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

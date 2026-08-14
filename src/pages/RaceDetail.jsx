@@ -27,9 +27,6 @@ function RaceDetail() {
   const [selectedRace, setSelectedRace] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [raceListCollapsed, setRaceListCollapsed] = useState(false);
-  // 旧3モデル実績アーカイブ（ModelComparisonTable・RaceCardの的中バッジ）表示専用。
-  // モデル切替UIはFR6で廃止したため定数化（AI予想モデル大規模改修）
-  const selectedModel = "standard";
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const predictionRef = useRef(null);
 
@@ -255,42 +252,6 @@ function RaceDetail() {
 
               <section className="race-list-section">
                 <h2>🏁 レース一覧</h2>
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "rgba(255, 255, 255, 0.9)",
-                    fontSize: "0.9rem",
-                    marginBottom: "1.5rem",
-                    padding: "0.75rem 1rem",
-                    background: "rgba(255, 255, 255, 0.1)",
-                    borderRadius: "8px",
-                    maxWidth: "600px",
-                    margin: "0 auto 1.5rem",
-                  }}
-                >
-                  ※ 的中バッジは
-                  <strong
-                    style={{
-                      color: "white",
-                      margin: "0 0.3rem",
-                      padding: "0.2rem 0.5rem",
-                      background:
-                        selectedModel === "standard"
-                          ? "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)"
-                          : selectedModel === "safe-bet"
-                            ? "linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)"
-                            : "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    {selectedModel === "standard"
-                      ? "スタンダード"
-                      : selectedModel === "safe-bet"
-                        ? "本命狙い"
-                        : "穴狙い"}
-                  </strong>
-                  モデルの予想結果です
-                </p>
 
                 {races.length === 0 ? (
                   <div
@@ -317,7 +278,6 @@ function RaceDetail() {
                         <RaceCard
                           key={race.id}
                           race={race}
-                          selectedModel={selectedModel}
                           onAnalyzeRace={analyzeRace}
                         />
                       ))}

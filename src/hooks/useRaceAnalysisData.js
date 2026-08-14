@@ -22,7 +22,7 @@ const SOURCES = {
   returnRate: (raceId) =>
     supabaseDataService.getRaceRacerBoatReturnRate(raceId),
   racerStats: (raceId) => supabaseDataService.getRaceRacerStats(raceId),
-  winOdds: (raceId) => supabaseDataService.getRaceWinOdds(raceId),
+  placeOdds: (raceId) => supabaseDataService.getRacePlaceOdds(raceId),
 };
 
 const EMPTY = Object.fromEntries(

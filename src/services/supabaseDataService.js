@@ -2637,12 +2637,12 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定レースの単勝オッズ（最新スクレイプ分）を取得する（AI予想モデル大規模改修、複勝予想バッジ用）
-   * 複勝オッズは幅（レンジ）でしか提供されておらずrace_oddsに保存していないため、
-   * 参考値として単勝オッズを艇番ごとに返す
+   * 指定レースの複勝オッズ（最新スクレイプ分）を取得する（AI予想モデル大規模改修、複勝予想バッジ用）
+   * 複勝オッズは下限-上限のレンジで提供される（race_odds.odds_place_{n}_low/high、マイグレーション032）。
+   * 未適用環境・スクレイピング未実施のレースではlow/highともnullを返す
    */
-  getRaceWinOdds(raceId) {
-    return withCache(`race-win-odds-${raceId}`, async () => {
+  getRacePlaceOdds(raceId) {
+    return withCache(`race-place-odds-${raceId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return null;
@@ -2651,21 +2651,22 @@ export const supabaseDataService = {
       const { data, error } = await supabase
         .from("race_odds")
         .select(
-          "odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6",
+          "odds_place_1_low, odds_place_1_high, odds_place_2_low, odds_place_2_high, odds_place_3_low, odds_place_3_high, odds_place_4_low, odds_place_4_high, odds_place_5_low, odds_place_5_high, odds_place_6_low, odds_place_6_high",
         )
         .eq("race_id", raceId)
         .order("captured_at", { ascending: false })
         .limit(1);
 
       if (error) {
-        console.error("race_odds取得エラー:", error.message);
+        console.error("race_odds（複勝）取得エラー:", error.message);
         return null;
       }
       const row = data?.[0];
       if (!row) return null;
       return [1, 2, 3, 4, 5, 6].map((n) => ({
         boat_number: n,
-        odds_win: row[`odds_win_${n}`] ?? null,
+        odds_place_low: row[`odds_place_${n}_low`] ?? null,
+        odds_place_high: row[`odds_place_${n}_high`] ?? null,
       }));
     });
   },

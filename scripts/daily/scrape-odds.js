@@ -1,8 +1,10 @@
 /**
  * レース前オッズ取得スクリプト
  *
- * 発走60/30/15/10/5分前のウィンドウで単勝・3連単オッズを取得し、
- * Supabase race_odds テーブルに upsert する。
+ * 発走60/30/15/10/5分前のウィンドウで単勝・複勝・3連単オッズを取得し、
+ * Supabase race_odds テーブルに upsert する。単勝・複勝オッズは同一ページ
+ * （oddstf）に掲載されており、.oddsPoint の7〜12番目が複勝オッズ
+ * （下限-上限のレンジ形式）（2026-08-14追加）。
  *
  * scrape-scheduled.yml から5分毎に実行される。
  * 実装パターン: scrape-exhibition-data.js に準拠
@@ -38,7 +40,8 @@ async function getFinishedRaceIds(date) {
   const { data, error } = await supabase
     .from("race_results")
     .select("race_id")
-    .gte("race_id", date).lt("race_id", `${date}~`)
+    .gte("race_id", date)
+    .lt("race_id", `${date}~`)
     .not("payout_win", "is", null);
   if (error) {
     console.error("⚠️ 結果済みレースの確認に失敗:", error.message);
@@ -64,6 +67,27 @@ function scrapeWinOdds($) {
     winOdds.push(!isNaN(val) && val > 0 ? val : null);
   });
   return winOdds;
+}
+
+/**
+ * 複勝オッズをスクレイプ（単勝オッズと同一ページ内、.oddsPointの7〜12番目）
+ * 複勝オッズは「下限-上限」のレンジ表示（例: "3.9-4.6"）
+ *
+ * @param {CheerioAPI} $ - cheerio インスタンス（scrapeWinOddsと同じページ）
+ * @returns {Array<{low: number, high: number}|null>} 艇1〜6の複勝オッズ（取得失敗はnull）
+ */
+function scrapePlaceOdds($) {
+  const placeOdds = [];
+  $(".oddsPoint").each((i, el) => {
+    if (i < 6 || i >= 12) return;
+    const text = $(el).text().trim();
+    const [lowText, highText] = text.split("-");
+    const low = parseFloat(lowText);
+    const high = highText !== undefined ? parseFloat(highText) : low;
+    const valid = !isNaN(low) && !isNaN(high) && low > 0 && high > 0;
+    placeOdds.push(valid ? { low, high } : null);
+  });
+  return placeOdds;
 }
 
 /**
@@ -123,7 +147,9 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
       return null;
     }
 
-    const winOdds = scrapeWinOdds(cheerio.load(await winRes.text()));
+    const $win = cheerio.load(await winRes.text());
+    const winOdds = scrapeWinOdds($win);
+    const placeOdds = scrapePlaceOdds($win);
 
     let trifecta = [];
     let trifectaAll = null;
@@ -140,7 +166,7 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
     // 有効な単勝オッズが1件もなければ null
     if (!winOdds.some((o) => o !== null)) return null;
 
-    return { winOdds, trifecta, trifectaAll };
+    return { winOdds, placeOdds, trifecta, trifectaAll };
   } catch (err) {
     console.error(
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R オッズ取得エラー: ${err.message}`,
@@ -215,7 +241,7 @@ export async function run(schedule, date) {
 
     for (const { r, data } of results) {
       if (!data) continue;
-      const { winOdds, trifecta, trifectaAll } = data;
+      const { winOdds, placeOdds, trifecta, trifectaAll } = data;
 
       allRows.push({
         race_id: r.race_id,
@@ -229,6 +255,18 @@ export async function run(schedule, date) {
         odds_win_4: winOdds[3] ?? null,
         odds_win_5: winOdds[4] ?? null,
         odds_win_6: winOdds[5] ?? null,
+        odds_place_1_low: placeOdds[0]?.low ?? null,
+        odds_place_1_high: placeOdds[0]?.high ?? null,
+        odds_place_2_low: placeOdds[1]?.low ?? null,
+        odds_place_2_high: placeOdds[1]?.high ?? null,
+        odds_place_3_low: placeOdds[2]?.low ?? null,
+        odds_place_3_high: placeOdds[2]?.high ?? null,
+        odds_place_4_low: placeOdds[3]?.low ?? null,
+        odds_place_4_high: placeOdds[3]?.high ?? null,
+        odds_place_5_low: placeOdds[4]?.low ?? null,
+        odds_place_5_high: placeOdds[4]?.high ?? null,
+        odds_place_6_low: placeOdds[5]?.low ?? null,
+        odds_place_6_high: placeOdds[5]?.high ?? null,
         trifecta_popular_1: trifecta[0]?.combination ?? null,
         trifecta_odds_1: trifecta[0]?.odds ?? null,
         trifecta_popular_2: trifecta[1]?.combination ?? null,
