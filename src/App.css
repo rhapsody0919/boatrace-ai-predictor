@@ -331,8 +331,8 @@ input:focus-visible,
   color: var(--text-dark);
 }
 
-/* レースカード展開予測プレビュー */
-.race-card-turn-preview {
+/* レースカード複勝予想プレビュー */
+.race-card-place-preview {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -342,21 +342,38 @@ input:focus-visible,
   margin-bottom: 0.75rem;
 }
 
-.turn-preview-label {
+.place-preview-label {
   font-size: 0.7rem;
   font-weight: 600;
   color: #94a3b8;
   white-space: nowrap;
 }
 
-.turn-preview-content {
+.place-preview-content {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.6rem;
   margin-left: auto;
 }
 
-.turn-preview-course {
+.place-preview-pick {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.place-preview-mark {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.place-preview-mark--sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.place-preview-boat {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -368,16 +385,10 @@ input:focus-visible,
   line-height: 1;
 }
 
-.turn-preview-technique {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #38bdf8;
-}
-
-.turn-preview-prob {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #fbbf24;
+.place-preview-boat--sub {
+  width: 18px;
+  height: 18px;
+  font-size: 0.65rem;
 }
 
 .predict-btn {
