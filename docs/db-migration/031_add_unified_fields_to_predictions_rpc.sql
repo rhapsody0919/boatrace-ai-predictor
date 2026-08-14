@@ -110,6 +110,7 @@ BEGIN
                   'turnPrediction', p.feature_contributions->'turnPrediction',
                   'racerStats', p.feature_contributions->'racerStats',
                   'volatilityPercentile', p.feature_contributions->'volatilityPercentile',
+                  'volatilityPercentileIsFallback', p.feature_contributions->'volatilityPercentileIsFallback',
                   'volatilityReasons', p.feature_contributions->'volatilityReasons'
                 )
               )
@@ -255,6 +256,7 @@ BEGIN
                   'payoutTrifecta', p.payout_trifecta,
                   'payoutTrio', p.payout_trio,
                   'volatilityPercentile', p.feature_contributions->'volatilityPercentile',
+                  'volatilityPercentileIsFallback', p.feature_contributions->'volatilityPercentileIsFallback',
                   'volatilityReasons', p.feature_contributions->'volatilityReasons'
                 )
               )

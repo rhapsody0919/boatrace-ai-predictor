@@ -77,7 +77,9 @@
     "percentileBarLabel": "경정장 내 백분위",
     "percentileBarMin": "안정",
     "percentileBarMedian": "보통",
-    "percentileBarMax": "이변 주의"
+    "percentileBarMax": "이변 주의",
+    "collectingData": "데이터 수집 중",
+    "collectingDataDesc": "이 경정장의 1코스 이변 경향을 판단하기 위한 실적 데이터를 수집하고 있습니다. 운영 개시 후 일정 기간이 지나면 표시됩니다"
   },
   "trifectaReference": {
     "title": "3쌍승 참고 정보",
@@ -160,7 +162,7 @@
     "deadline": "발매 마감",
     "finished": "⏱️ 종료",
     "turnPreviewLabel": "예상 전개",
-    "viewPrediction": "복승 예상 보기",
+    "viewPrediction": "데이터 분석 보기",
     "blogTitle": "경정 공략 블로그",
     "blogDesc": "적중률을 높이는 예측 팁, 경정장 가이드, 데이터 분석",
     "viewAllPosts": "전체 글 보기 →",
@@ -330,6 +332,7 @@
     "rowCourseRate": "진입 코스 승률",
     "rowPlaceRecommendation": "복승 예상",
     "placeBadgeLabel": "복승 {{rank}}위",
+    "winOddsLabel": "（단승 {{odds}}배）",
     "loading": "분석 데이터 로딩 중…",
     "motorResetNote": "교체 직후"
   },

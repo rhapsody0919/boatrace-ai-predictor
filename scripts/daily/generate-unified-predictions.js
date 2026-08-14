@@ -234,10 +234,11 @@ async function main() {
     );
 
     const dist = volatilityDistByVenue.get(race.venueCode) || [];
-    const volatilityPercentile =
-      dist.length >= MIN_DISTRIBUTION_SAMPLES
-        ? toVolatilityPercentile(volatility.composite, dist)
-        : FALLBACK_PERCENTILE;
+    const volatilityPercentileIsFallback =
+      dist.length < MIN_DISTRIBUTION_SAMPLES;
+    const volatilityPercentile = volatilityPercentileIsFallback
+      ? FALLBACK_PERCENTILE
+      : toVolatilityPercentile(volatility.composite, dist);
 
     predictionsData.push({
       race_id: race.raceId,
@@ -252,6 +253,9 @@ async function main() {
         turnPrediction,
         volatilityComposite: volatility.composite,
         volatilityPercentile,
+        // フォールバック値0.5は「標準」に見えてしまい実態と異なるため、フロント側で
+        // 「データ収集中」表示に切り替えられるようフラグを持たせる（2026-08-14ユーザー指摘）
+        volatilityPercentileIsFallback,
         volatilityReasons: volatility.reasons,
       },
     });
@@ -277,10 +281,21 @@ async function main() {
     return;
   }
 
+  let writeFailed = false;
   for (let i = 0; i < predictionsData.length; i += 1000) {
     const batch = predictionsData.slice(i, i + 1000);
     const { error } = await supabase.from("predictions").insert(batch);
-    if (error) console.error("❌ predictions書き込みエラー:", error.message);
+    if (error) {
+      console.error("❌ predictions書き込みエラー:", error.message);
+      writeFailed = true;
+    }
+  }
+  if (writeFailed) {
+    console.error(
+      `⚠️ 一部書き込みに失敗しました。実際にDBへ反映された件数を必ず確認してください`,
+    );
+    process.exitCode = 1;
+    return;
   }
   console.log(`✅ predictions: ${predictionsData.length}件書き込み完了`);
 }

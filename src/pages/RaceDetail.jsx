@@ -195,6 +195,8 @@ function RaceDetail() {
       result: racePrediction.result,
       turnPrediction: unified?.turnPrediction ?? null,
       volatilityPercentile: unified?.volatilityPercentile ?? null,
+      volatilityPercentileIsFallback:
+        unified?.volatilityPercentileIsFallback ?? null,
       volatilityReasons: unified?.volatilityReasons ?? [],
       racerStats: racePrediction.racerStats || null,
     });

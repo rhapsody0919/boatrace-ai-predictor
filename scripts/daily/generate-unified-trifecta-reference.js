@@ -214,11 +214,21 @@ async function main() {
     return;
   }
 
+  let writeFailed = false;
   for (let i = 0; i < recommendations.length; i += 1000) {
     const batch = recommendations.slice(i, i + 1000);
     const { error } = await supabase.from("bet_recommendations").insert(batch);
-    if (error)
+    if (error) {
       console.error("❌ bet_recommendations書き込みエラー:", error.message);
+      writeFailed = true;
+    }
+  }
+  if (writeFailed) {
+    console.error(
+      `⚠️ 一部書き込みに失敗しました。実際にDBへ反映された件数を必ず確認してください`,
+    );
+    process.exitCode = 1;
+    return;
   }
   console.log(
     `✅ bet_recommendations: ${recommendations.length}件書き込み完了`,

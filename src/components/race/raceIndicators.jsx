@@ -87,6 +87,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
     techniqueProfile,
     returnRate,
     racerStats,
+    winOdds,
   } = analysis;
 
   const motorByBoat = byBoat(motor);
@@ -96,6 +97,7 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
   const techByBoat = byBoat(techniqueProfile);
   const rateByBoat = byBoat(returnRate);
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
+  const winOddsByBoat = byBoat(winOdds);
 
   // ソース別プレースホルダ: ロード中はスケルトン、取得済みでデータ無しは「—」
   const ph = (source) =>
@@ -432,12 +434,20 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
         if (placeBoats.length === 0) return ph("racerStats");
         const rank = placeBoats.indexOf(p.number);
         if (rank === -1) return <span className="drt-sub">—</span>;
+        const odds = toNumber(winOddsByBoat.get(p.number)?.odds_win);
         return (
           <span className="drt-value drt-plus">
             {rank === 0 ? "◎" : "○"}
             <span className="drt-sub">
               {t("dataTable.placeBadgeLabel", { rank: rank + 1 })}
             </span>
+            {pending.winOdds ? (
+              <span className="drt-skeleton" aria-hidden="true" />
+            ) : odds !== null ? (
+              <span className="drt-sub">
+                {t("dataTable.winOddsLabel", { odds: odds.toFixed(1) })}
+              </span>
+            ) : null}
           </span>
         );
       },

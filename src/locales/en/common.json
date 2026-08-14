@@ -78,7 +78,9 @@
     "percentileBarLabel": "Venue percentile",
     "percentileBarMin": "Stable",
     "percentileBarMedian": "Average",
-    "percentileBarMax": "Upset-prone"
+    "percentileBarMax": "Upset-prone",
+    "collectingData": "Collecting data",
+    "collectingDataDesc": "We're still building up a track record for this venue's upset tendency. This will appear once enough data has been collected"
   },
   "trifectaReference": {
     "title": "Trifecta reference",
@@ -161,7 +163,7 @@
     "deadline": "Betting deadline",
     "finished": "⏱️ Finished",
     "turnPreviewLabel": "Forecast",
-    "viewPrediction": "View place pick",
+    "viewPrediction": "View data analysis",
     "blogTitle": "Boat Race Strategy Blog",
     "blogDesc": "Prediction tips, venue guides, and data analysis to boost your win rate",
     "viewAllPosts": "View all blog posts →",
@@ -332,6 +334,7 @@
     "rowCourseRate": "Entry course win rate",
     "rowPlaceRecommendation": "Place pick",
     "placeBadgeLabel": "Place pick #{{rank}}",
+    "winOddsLabel": "(win odds {{odds}}x)",
     "loading": "Loading analytics…",
     "motorResetNote": "New motors"
   },

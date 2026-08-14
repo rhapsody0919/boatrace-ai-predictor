@@ -87,11 +87,87 @@ function PercentileBar({ percentile }) {
   );
 }
 
-function VolatilityDisplay({ percentile, reasons }) {
+function VolatilityDisplay({ percentile, reasons, isFallback }) {
   const { t } = useTranslation();
 
   if (percentile === null || percentile === undefined) {
     return null;
+  }
+
+  // 会場内パーセンタイル分布のサンプル数が不足している場合、フォールバック値0.5を
+  // そのまま「標準」として表示すると実データのように見えてしまうため、
+  // 「データ収集中」であることを誠実に伝える表示に切り替える（2026-08-14ユーザー指摘）
+  if (isFallback) {
+    return (
+      <div
+        style={{
+          padding: "1rem 1.5rem",
+          background: "#f5f5f5",
+          borderRadius: "8px",
+          marginBottom: "1.5rem",
+          borderLeft: "4px solid #9e9e9e",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            marginBottom: "0.5rem",
+          }}
+        >
+          <span style={{ fontSize: "1.2rem" }}>📊</span>
+          <span style={{ fontWeight: "600", color: "#333" }}>
+            {t("volatility.attentionTitle")}
+          </span>
+          <span
+            style={{
+              padding: "0.25rem 0.75rem",
+              borderRadius: "12px",
+              fontSize: "0.85rem",
+              fontWeight: "500",
+              background: "#9e9e9e",
+              color: "white",
+            }}
+          >
+            {t("volatility.collectingData")}
+          </span>
+        </div>
+        <div
+          style={{
+            fontSize: "0.8rem",
+            color: "#777",
+            paddingLeft: "1.7rem",
+          }}
+        >
+          {t("volatility.collectingDataDesc")}
+        </div>
+        {reasons && reasons.length > 0 && (
+          <div
+            style={{
+              fontSize: "0.9rem",
+              color: "#555",
+              paddingLeft: "1.7rem",
+              marginTop: "0.5rem",
+            }}
+          >
+            <ul
+              style={{
+                margin: "0",
+                paddingLeft: "1.2rem",
+                listStyleType: "disc",
+              }}
+            >
+              {reasons.map((reason, index) => (
+                <li key={index} style={{ marginBottom: "0.25rem" }}>
+                  {reason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
   }
 
   const level =

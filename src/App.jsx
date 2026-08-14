@@ -378,6 +378,8 @@ function App({ tab = "races" }) {
           result: racePrediction.result, // レース結果
           turnPrediction: unified?.turnPrediction ?? null,
           volatilityPercentile: unified?.volatilityPercentile ?? null,
+          volatilityPercentileIsFallback:
+            unified?.volatilityPercentileIsFallback ?? null,
           volatilityReasons: unified?.volatilityReasons ?? [],
           racerStats: racePrediction.racerStats || null,
           exhibitionData: racePrediction.exhibitionData || null,

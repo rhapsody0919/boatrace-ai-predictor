@@ -431,6 +431,8 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
             }
           : null,
         volatilityPercentile: unifiedRaw.volatilityPercentile ?? null,
+        volatilityPercentileIsFallback:
+          unifiedRaw.volatilityPercentileIsFallback ?? null,
         volatilityReasons: unifiedRaw.volatilityReasons || [],
       };
     }
@@ -1137,6 +1139,8 @@ export const supabaseDataService = {
                 }
               : null,
             volatilityPercentile: fc.volatilityPercentile ?? null,
+            volatilityPercentileIsFallback:
+              fc.volatilityPercentileIsFallback ?? null,
             volatilityReasons: fc.volatilityReasons || [],
           };
         }
@@ -2629,6 +2633,40 @@ export const supabaseDataService = {
         return null;
       }
       return data?.[0]?.feature_contributions?.racerStats ?? null;
+    });
+  },
+
+  /**
+   * 指定レースの単勝オッズ（最新スクレイプ分）を取得する（AI予想モデル大規模改修、複勝予想バッジ用）
+   * 複勝オッズは幅（レンジ）でしか提供されておらずrace_oddsに保存していないため、
+   * 参考値として単勝オッズを艇番ごとに返す
+   */
+  getRaceWinOdds(raceId) {
+    return withCache(`race-win-odds-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from("race_odds")
+        .select(
+          "odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6",
+        )
+        .eq("race_id", raceId)
+        .order("captured_at", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error("race_odds取得エラー:", error.message);
+        return null;
+      }
+      const row = data?.[0];
+      if (!row) return null;
+      return [1, 2, 3, 4, 5, 6].map((n) => ({
+        boat_number: n,
+        odds_win: row[`odds_win_${n}`] ?? null,
+      }));
     });
   },
 

@@ -77,7 +77,9 @@
     "percentileBarLabel": "会場内パーセンタイル",
     "percentileBarMin": "堅い",
     "percentileBarMedian": "標準",
-    "percentileBarMax": "崩れやすい"
+    "percentileBarMax": "崩れやすい",
+    "collectingData": "データ収集中",
+    "collectingDataDesc": "この会場のイン崩れ傾向を判定するための実績データを蓄積中です。運用開始から一定期間が経過すると表示されます"
   },
   "trifectaReference": {
     "title": "3連単参考情報",
@@ -160,7 +162,7 @@
     "deadline": "締切予定時刻",
     "finished": "⏱️ 終了",
     "turnPreviewLabel": "展開予測",
-    "viewPrediction": "複勝予想を見る",
+    "viewPrediction": "データ分析を見る",
     "blogTitle": "ボートレース攻略ブログ",
     "blogDesc": "予想のコツ、会場別攻略、データ分析手法など、勝率アップに役立つ情報をお届けします",
     "viewAllPosts": "全てのブログ記事を見る →",
@@ -330,6 +332,7 @@
     "rowCourseRate": "進入コース勝率",
     "rowPlaceRecommendation": "複勝予想",
     "placeBadgeLabel": "複勝{{rank}}位",
+    "winOddsLabel": "（単勝{{odds}}倍）",
     "loading": "分析データを読み込み中…",
     "motorResetNote": "交換直後"
   },

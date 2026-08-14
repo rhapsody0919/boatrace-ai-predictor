@@ -4,9 +4,11 @@
  *
  * AI予想モデル大規模改修（2026-08-13）: 3モデル切替（standard/safeBet/upsetFocus）を廃止し、
  * unifiedモデル1本に統合。AiAnalysisSection内は複勝予想（DataRaceTable側、FR1/FR5）と対をなす
- * 3ブロック構成（展開予測パネル/イン崩れ指数バッジ/3連単参考情報、FR2/FR3/FR4）に再編した。
+ * 展開予測パネル/イン崩れ指数バッジの2ブロック構成に再編した（FR2/FR3）。
+ * 3連単参考情報（FR4、TrifectaReferenceCard）はUX上のフィードバックにより2026-08-14に表示を廃止。
+ * バックエンド生成（generate-unified-trifecta-reference.js/bet_recommendations）自体は
+ * 将来のモデル評価用途で残置している
  */
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,10 +16,8 @@ import { useRaceData } from "../../hooks/useRaceData";
 import { SocialShareButtons } from "../SocialShareButtons";
 import { generatePredictionShareText } from "../../utils/share";
 import { getVenueGuidePath } from "../../utils/venueUtils";
-import { dataService } from "../../services/dataService";
 import VolatilityDisplay from "./VolatilityDisplay";
 import FirstMarkAnimation from "./FirstMarkAnimation";
-import TrifectaReferenceCard from "./TrifectaReferenceCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
@@ -26,23 +26,9 @@ import { getRaceId } from "../../utils/raceId";
 
 function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
   const { t } = useTranslation();
-  const [trifectaReference, setTrifectaReference] = useState(null);
   // フックはearly returnより前で無条件に呼ぶ必要があるため、selectedRace未確定時は空オブジェクトを渡す
   const { venueCode, venueName } = useRaceData(selectedRace || {});
   const analysisRaceId = selectedRace ? getRaceId(selectedRace) : null;
-
-  // 3連単参考情報（FR4）: 発走前バッチ実行後にのみ存在するため別クエリで取得する
-  useEffect(() => {
-    setTrifectaReference(null);
-    if (!analysisRaceId) return;
-    let cancelled = false;
-    dataService.getUnifiedTrifectaReference(analysisRaceId).then((data) => {
-      if (!cancelled) setTrifectaReference(data);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [analysisRaceId]);
 
   if (!prediction && !isAnalyzing) return null;
 
@@ -140,7 +126,7 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
         venueCode={venueCode}
       />
 
-      {/* AIデータ分析（折りたたみ）: 展開予測パネル/イン崩れ指数バッジ/3連単参考情報の3ブロック */}
+      {/* AIデータ分析（折りたたみ）: 展開予測パネル/イン崩れ指数バッジの2ブロック */}
       <AiAnalysisSection topPick={prediction.topPick} confidence={null}>
         <AnimatePresence mode="wait">
           <motion.div
@@ -189,18 +175,10 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
                 <VolatilityDisplay
                   percentile={prediction.volatilityPercentile}
                   reasons={prediction.volatilityReasons}
+                  isFallback={prediction.volatilityPercentileIsFallback}
                 />
               </motion.div>
             )}
-
-            {/* ブロック3: 3連単参考情報（FR4、補助的な位置づけ） */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
-            >
-              <TrifectaReferenceCard trifectaReference={trifectaReference} />
-            </motion.div>
 
             {/* 出現パターン */}
             {venueCode && venueName && (
