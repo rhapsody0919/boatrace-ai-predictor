@@ -29,9 +29,12 @@ function RaceCard({ race, onAnalyzeRace }) {
   let hitBadges = [];
 
   if (isFinished && unified) {
-    const topPick = unified.topPick;
+    // 複勝1位（topPick）・複勝2位（top2nd）のどちらかが2着以内なら的中
+    // （2026-08-14: 1位候補のみ判定していたのをユーザー指摘で修正）
+    const isBoatPlaceHit = (boat) =>
+      boat != null && (boat === result.rank1 || boat === result.rank2);
     const isPlaceHit =
-      topPick != null && (topPick === result.rank1 || topPick === result.rank2);
+      isBoatPlaceHit(unified.topPick) || isBoatPlaceHit(unified.top2nd);
     if (isPlaceHit) {
       hitBadges.push({ label: t("raceCard.badgePlace"), type: "place" });
     }

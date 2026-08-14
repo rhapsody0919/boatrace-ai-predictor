@@ -993,18 +993,6 @@ input:focus-visible,
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
 }
 
-.turn-check {
-  margin-top: 0.75rem;
-}
-
-.turn-check-title {
-  margin: 0 0 0.4rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #475569;
-  text-align: center;
-}
-
 .race-result h4 {
   font-size: 1.2rem;
   color: #1e293b;
@@ -1012,10 +1000,24 @@ input:focus-visible,
   text-align: center;
 }
 
-.race-result-independent-note {
-  margin: 0 0 0.75rem;
-  font-size: 0.72rem;
-  color: #64748b;
+/* 複勝予想の検証・展開予測の検証を独立したセクションとして区切る
+   （2026-08-14: 「なぜ矛盾するのか」を注記の文章でなく構造で伝える） */
+.result-verify-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed rgba(14, 165, 233, 0.3);
+}
+
+.result-verify-section:first-of-type {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.result-verify-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
   text-align: center;
 }
 

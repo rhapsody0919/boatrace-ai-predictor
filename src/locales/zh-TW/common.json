@@ -123,17 +123,17 @@
   },
   "result": {
     "title": "比賽結果",
-    "independentNote": "複勝預測與展開預測是各自獨立計算的，可能不一致",
     "rank1": "第1名",
     "rank2": "第2名",
     "rank3": "第3名",
     "inKuzureHigh": "冷門機率高",
     "inKuzureHit": "🌊 1號位失守命中！",
     "inKuzureMiss": "❌ 1號位守住了（未命中）",
-    "placePredicted": "預測：{{number}}號艇複勝",
-    "placeHit": "✅ 複勝命中！（第{{position}}名）",
-    "placeMiss": "❌ 複勝未中",
-    "turnLabel": "展開預測",
+    "placeSectionTitle": "🎯 複勝預測驗證",
+    "placePredicted": "複勝第{{rank}}名預測：{{number}}號艇",
+    "placeHit": "✅ 命中！（第{{position}}名）",
+    "placeMiss": "❌ 未中",
+    "turnSectionTitle": "🌊 展開預測驗證",
     "payout": "派彩：¥{{amount}}"
   },
   "panel": {

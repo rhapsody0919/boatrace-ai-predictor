@@ -123,17 +123,17 @@
   },
   "result": {
     "title": "レース結果",
-    "independentNote": "複勝予想と展開予測は別々のロジックで計算されており、一致しないことがあります",
     "rank1": "1着",
     "rank2": "2着",
     "rank3": "3着",
     "inKuzureHigh": "イン崩れ確率高",
     "inKuzureHit": "🌊 イン崩れ的中！",
     "inKuzureMiss": "❌ イン逃げ切り（外れ）",
-    "placePredicted": "予想: {{number}}号艇の複勝",
-    "placeHit": "✅ 複勝的中！（{{position}}着）",
-    "placeMiss": "❌ 複勝不的中",
-    "turnLabel": "展開予測",
+    "placeSectionTitle": "🎯 複勝予想の検証",
+    "placePredicted": "複勝{{rank}}位予想: {{number}}号艇",
+    "placeHit": "✅ 的中！（{{position}}着）",
+    "placeMiss": "❌ 不的中",
+    "turnSectionTitle": "🌊 展開予測の検証",
     "payout": "配当: {{amount}}円"
   },
   "panel": {
