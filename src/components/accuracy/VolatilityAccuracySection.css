@@ -1,0 +1,270 @@
+/* ============================================================
+   イン崩れ予測精度セクション
+   ============================================================ */
+
+.volatility-accuracy-section {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
+}
+
+.volatility-accuracy-section h3 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin: 0 0 1.5rem 0;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* ひと言サマリー */
+.vas-summary {
+  font-size: 0.95rem;
+  color: #334155;
+  margin: 0 0 1.25rem 0;
+  line-height: 1.6;
+}
+
+.vas-summary-sub {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-left: 0.25rem;
+}
+
+/* ラベル別バー */
+.vas-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.vas-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vas-label {
+  width: 9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.vas-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vas-bar-track {
+  flex: 1;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 5px;
+  position: relative;
+}
+
+.vas-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.4s ease;
+}
+
+.vas-baseline-marker {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: #64748b;
+  border-radius: 1px;
+  transform: translateX(-50%);
+}
+
+.vas-rate {
+  font-size: 1rem;
+  font-weight: 700;
+  width: 3.5rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* 凡例 */
+.vas-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.vas-legend-marker {
+  display: inline-block;
+  width: 2px;
+  height: 12px;
+  background: #64748b;
+  border-radius: 1px;
+}
+
+.vas-legend-count {
+  margin-left: 0.25rem;
+}
+
+/* グレード別参考値注記 */
+.vas-ref-note {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.vas-ref-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.5rem;
+}
+
+/* グレード別折りたたみ */
+.vas-grade-details {
+  margin-top: 1rem;
+}
+
+.vas-grade-details summary {
+  font-size: 0.85rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  user-select: none;
+}
+
+.vas-grade-details summary:hover {
+  color: #334155;
+}
+
+.vas-grade-details .table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.75rem;
+}
+
+/* グレード別テーブル */
+.volatility-grade-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.volatility-grade-table thead th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #475569;
+  font-weight: 600;
+  padding: 0.6rem 0.875rem;
+  text-align: center;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.volatility-grade-table tbody td {
+  padding: 0.6rem 0.875rem;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.volatility-grade-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.volatility-grade-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+/* 会場別折りたたみ */
+.vas-venue-details {
+  margin-top: 0.5rem;
+}
+
+.vas-venue-details summary {
+  font-size: 0.85rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  user-select: none;
+}
+
+.vas-venue-details summary:hover {
+  color: #334155;
+}
+
+.vas-venue-details .table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.75rem;
+}
+
+/* 会場別テーブル */
+.volatility-venue-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.volatility-venue-table thead th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #475569;
+  font-weight: 600;
+  padding: 0.6rem 0.875rem;
+  text-align: center;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.volatility-venue-table tbody td {
+  padding: 0.6rem 0.875rem;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.volatility-venue-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.volatility-venue-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.volatility-venue-table__name {
+  text-align: left;
+  font-weight: 500;
+}
+
+/* モバイル対応 */
+@media (max-width: 480px) {
+  .volatility-accuracy-section {
+    padding: 1rem;
+  }
+
+  .vas-label {
+    width: 7.5rem;
+    font-size: 0.78rem;
+  }
+
+  .vas-rate {
+    font-size: 0.9rem;
+    width: 3rem;
+  }
+
+  .volatility-venue-table {
+    font-size: 0.8rem;
+  }
+
+  .volatility-venue-table thead th,
+  .volatility-venue-table tbody td {
+    padding: 0.5rem 0.5rem;
+  }
+}
