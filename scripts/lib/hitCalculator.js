@@ -127,6 +127,21 @@ export function isTrioHit(predTop3, rank1, rank2, rank3) {
 }
 
 /**
+ * 展開予測的中判定（unifiedモデル専用）
+ * turnPrediction.patternsのいずれかのwinnerCourseが実際の1着コースと
+ * 一致すれば的中（scripts/analysis/verify-turn-prediction-accuracy-v6.js、
+ * scripts/daily/calculate-unified-model-accuracy.js、
+ * src/components/race/RaceCard.jsxのisTurnHitと同じ定義。ADR 0013）
+ * @param {Array<{winnerCourse: number}>} patterns - turnPrediction.patterns
+ * @param {number} rank1 - 実際の1着コース
+ * @returns {boolean}
+ */
+export function isTurnHit(patterns, rank1) {
+  if (!Array.isArray(patterns) || patterns.length === 0) return false;
+  return patterns.some((p) => p.winnerCourse === rank1);
+}
+
+/**
  * 複勝配当を取得
  * @param {number} topPick - 予想1着
  * @param {number} rank1 - 実際の1着
