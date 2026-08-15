@@ -25,6 +25,11 @@ import {
   DEFAULT_LANGUAGE,
   parseLangFromPath,
 } from "../../src/config/languages.js";
+import {
+  findPreviousReport,
+  perDay,
+  formatDelta,
+} from "../lib/reportComparison.js";
 
 // .env.local を読み込む（プロジェクト共通パターン: scripts/lib/supabaseClient.js と同様）
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -218,13 +223,41 @@ async function main() {
     }
   }
 
-  // JSON 保存（推移比較用）
+  // 前回レポートとの比較（日割りPV・シェア%の推移）
   const outDir = path.join(process.cwd(), "data", "analysis", "i18n-demand");
+  const today = new Date().toISOString().split("T")[0];
+  const previous = findPreviousReport(outDir, today);
+
+  if (previous) {
+    const prevDays = previous.data.days ?? 1;
+    console.log(
+      `\n## 前回レポート（${previous.date}、${prevDays}日間）との比較`,
+    );
+    for (const { code, label } of SUPPORTED_LANGUAGES) {
+      const prevLang = previous.data.byLanguage?.[code];
+      if (!prevLang) {
+        console.log(`  ${label.padEnd(8)}: （前回データなし）`);
+        continue;
+      }
+      const currPerDay = perDay(byLang[code].pv, DAYS);
+      const prevPerDay = perDay(prevLang.pv, prevDays);
+      const pctDelta =
+        prevPerDay > 0
+          ? formatDelta(((currPerDay - prevPerDay) / prevPerDay) * 100)
+          : "N/A";
+      console.log(
+        `  ${label.padEnd(8)}: PV/日 ${currPerDay.toFixed(1)} (前回 ${prevPerDay.toFixed(1)}、${pctDelta}%)`,
+      );
+    }
+  } else {
+    console.log(
+      `\n## 前回レポートとの比較\n  （比較対象となる過去レポートが見つかりません。次回実行時から比較が有効になります）`,
+    );
+  }
+
+  // JSON 保存（推移比較用）
   fs.mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(
-    outDir,
-    `report-${new Date().toISOString().split("T")[0]}.json`,
-  );
+  const outPath = path.join(outDir, `report-${today}.json`);
   fs.writeFileSync(
     outPath,
     JSON.stringify(

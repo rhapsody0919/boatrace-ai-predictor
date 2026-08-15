@@ -20,6 +20,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { google } from "googleapis";
 import { getGoogleAuthClient } from "../lib/googleServiceAuth.js";
+import {
+  findPreviousReport,
+  perDay,
+  formatDelta,
+} from "../lib/reportComparison.js";
 
 // .env.local を読み込む（プロジェクト共通パターン: scripts/lib/supabaseClient.js と同様）
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -85,10 +90,24 @@ function printRows(rows, keyWidth) {
   }
 }
 
+// 新機能記事・分析ツール関連ページ（/growth-report・/growth-pdcaで毎回確認する対象）
+function isFeatureOrArticlePage(url) {
+  return /\/winning-technique(\?|$)/.test(url) || /\/blog\/.*-guide/.test(url);
+}
+
 async function main() {
   const topQueries = await queryDimensions(["query"], 20);
   const topPages = await queryDimensions(["page"], 100);
   const venuePages = topPages.filter((r) => r.keys[0].includes("/venues"));
+  const featurePages = topPages.filter((r) =>
+    isFeatureOrArticlePage(r.keys[0]),
+  );
+
+  const today = formatDate(new Date());
+  const outDir = path.join(process.cwd(), "data", "analysis", "search-console");
+
+  // 前回レポートを今回の書き込み前に探す（比較対象に自分自身を含めないため）
+  const previous = findPreviousReport(outDir, today);
 
   console.log(`\n## 検索クエリ上位（過去${DAYS}日、直近3日を除く）`);
   printRows(topQueries, 40);
@@ -99,10 +118,74 @@ async function main() {
   console.log(`\n## 会場ガイドページ（/venues配下）の検索パフォーマンス`);
   printRows(venuePages, 60);
 
+  console.log(
+    `\n## 新機能記事・分析ツール（/winning-technique・/blog/*-guide配下）の検索パフォーマンス`,
+  );
+  printRows(featurePages, 60);
+  if (featurePages.length === 0) {
+    console.log(
+      "  ※ 上位100ページ圏外の可能性あり。表示回数1桁でも公開直後は正常（SEO効果は2〜4週間のタイムラグ）",
+    );
+  }
+
+  // 前回レポートとの比較（日割り正規化 + クエリ順位変動）
+  if (previous) {
+    const prevDays = previous.data.days ?? 1;
+    const prevClicksTotal = previous.data.topQueries.reduce(
+      (sum, r) => sum + r.clicks,
+      0,
+    );
+    const prevImpressionsTotal = previous.data.topQueries.reduce(
+      (sum, r) => sum + r.impressions,
+      0,
+    );
+    const currClicksTotal = topQueries.reduce((sum, r) => sum + r.clicks, 0);
+    const currImpressionsTotal = topQueries.reduce(
+      (sum, r) => sum + r.impressions,
+      0,
+    );
+
+    const prevClicksPerDay = perDay(prevClicksTotal, prevDays);
+    const currClicksPerDay = perDay(currClicksTotal, DAYS);
+    const prevImpressionsPerDay = perDay(prevImpressionsTotal, prevDays);
+    const currImpressionsPerDay = perDay(currImpressionsTotal, DAYS);
+
+    console.log(
+      `\n## 前回レポート（${previous.date}、${prevDays}日間）との比較`,
+    );
+    console.log(
+      `  トップ${topQueries.length}クエリ合計 クリック/日: ${currClicksPerDay.toFixed(1)} (前回 ${prevClicksPerDay.toFixed(1)}、${formatDelta(((currClicksPerDay - prevClicksPerDay) / (prevClicksPerDay || 1)) * 100)}%)`,
+    );
+    console.log(
+      `  トップ${topQueries.length}クエリ合計 表示回数/日: ${currImpressionsPerDay.toFixed(1)} (前回 ${prevImpressionsPerDay.toFixed(1)}、${formatDelta(((currImpressionsPerDay - prevImpressionsPerDay) / (prevImpressionsPerDay || 1)) * 100)}%)`,
+    );
+
+    console.log(`\n  クエリ別の順位変動（+は下落、-は上昇）:`);
+    const prevQueryMap = new Map(
+      previous.data.topQueries.map((r) => [r.keys[0], r]),
+    );
+    for (const r of topQueries) {
+      const prevRow = prevQueryMap.get(r.keys[0]);
+      if (!prevRow) {
+        console.log(
+          `    ${r.keys[0].padEnd(40)} position:${r.position.toFixed(1)} (新規ランクイン)`,
+        );
+        continue;
+      }
+      const delta = r.position - prevRow.position;
+      console.log(
+        `    ${r.keys[0].padEnd(40)} position:${r.position.toFixed(1)} (${formatDelta(delta)}pt)`,
+      );
+    }
+  } else {
+    console.log(
+      `\n## 前回レポートとの比較\n  （比較対象となる過去レポートが見つかりません。次回実行時から比較が有効になります）`,
+    );
+  }
+
   // JSON 保存（推移比較用）
-  const outDir = path.join(process.cwd(), "data", "analysis", "search-console");
   fs.mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, `report-${formatDate(new Date())}.json`);
+  const outPath = path.join(outDir, `report-${today}.json`);
   fs.writeFileSync(
     outPath,
     JSON.stringify(
@@ -112,6 +195,7 @@ async function main() {
         topQueries,
         topPages,
         venuePages,
+        featurePages,
       },
       null,
       2,
