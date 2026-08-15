@@ -74,6 +74,73 @@
     border: 2px solid #e2e8f0;
 }
 
+.mct-title {
+    font-size: 1.5rem;
+    color: #1e293b;
+    margin: 0 0 1.5rem 0;
+    font-weight: 800;
+    text-align: center;
+}
+
+.mct-scroll-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mct-table {
+    width: 100%;
+    min-width: 600px;
+    border-collapse: collapse;
+}
+
+.mct-table th {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 1rem;
+    text-align: center;
+    font-weight: 700;
+    color: #1e293b;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.mct-table .mct-sub-header th {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.mct-table td {
+    padding: 1rem;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+    color: #1e293b;
+}
+
+.mct-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.mct-model-name {
+    font-weight: 700;
+    color: #1e293b;
+    text-align: left !important;
+    white-space: nowrap;
+}
+
+.mct-races {
+    color: #64748b;
+    font-weight: 600;
+}
+
+.mct-hit {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.mct-recovery {
+    font-weight: 700;
+}
+
 @media (max-width: 768px) {
     .accuracy-history-page {
         padding: 16px;
@@ -85,6 +152,26 @@
 
     .model-comparison-section {
         padding: 1rem;
+    }
+
+    .mct-title {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .mct-table th {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .mct-table .mct-sub-header th {
+        font-size: 0.75rem;
+        padding: 0.4rem;
+    }
+
+    .mct-table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.9rem;
     }
 }
 
