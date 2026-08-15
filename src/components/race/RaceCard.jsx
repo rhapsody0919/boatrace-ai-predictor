@@ -22,23 +22,12 @@ function RaceCard({ race, onAnalyzeRace }) {
 
   const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];
 
-  // 的中判定（unifiedモデル: 複勝的中・展開予測的中の2種類のみ。
-  // unifiedモデルは複勝予想[topPick/top2nd]と展開予測[turnPrediction]しか
-  // 生成しないため、旧3モデル由来の単勝的中/3連複的中/3連単的中は廃止した）
+  // 的中判定（unifiedモデル: 展開予測的中のみ。複勝予想は表示しない方針
+  // に統一、ADR 0013・BOA-174/175/178参照）
   const unified = racePrediction?.unified;
   let hitBadges = [];
 
   if (isFinished && unified) {
-    // 複勝1位（topPick）・複勝2位（top2nd）のどちらかが2着以内なら的中
-    // （2026-08-14: 1位候補のみ判定していたのをユーザー指摘で修正）
-    const isBoatPlaceHit = (boat) =>
-      boat != null && (boat === result.rank1 || boat === result.rank2);
-    const isPlaceHit =
-      isBoatPlaceHit(unified.topPick) || isBoatPlaceHit(unified.top2nd);
-    if (isPlaceHit) {
-      hitBadges.push({ label: t("raceCard.badgePlace"), type: "place" });
-    }
-
     // 展開予測の的中判定は集計指標（実測的中率約80%）と同じロジック:
     // 上位パターンのwinnerCourseのいずれかが実際の1着と一致すれば的中
     const patterns = unified.turnPrediction?.patterns;
