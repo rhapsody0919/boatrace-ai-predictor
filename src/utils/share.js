@@ -255,26 +255,19 @@ export const generatePredictionShareText = (race, model = "standard") => {
 };
 
 /**
- * 的中結果のシェアテキストを生成（react-share用）
- * @param {Object} race - レースデータ（結果含む）
- * @param {string} model - 使用したモデル (standard/safeBet/upsetFocus)
+ * 展開予測的中結果のシェアテキストを生成（react-share用、BOA-174）
+ * unifiedモデルは複勝予想・展開予測の2種類のみのため、レース単位の的中は
+ * 展開予測的中（1マークでの予想パターンが実際の1着コースと一致）のみを扱う
+ * @param {Object} race - { venue, raceNo, date, winnerCourse, probability }
  */
-export const generateHitRaceShareText = (race, model = "standard") => {
+export const generateTurnHitShareText = (race) => {
   const venue = race.venue || "不明";
   const raceNo = race.raceNo || "?";
-  const prediction = race.prediction?.top3?.join("-") || "?-?-?";
-  const result = race.result?.join("-") || "?-?-?";
-  const payout = race.totalPayout || 0;
-  const hitTypes = race.hitTypes || [];
-
-  const modelName = MODEL_NAMES[model] || "スタンダード";
-
-  // 的中券種を文字列化
-  let hitTypesStr = "";
-  if (hitTypes.length > 0) {
-    const hitTypeNames = hitTypes.map((h) => h.type);
-    hitTypesStr = hitTypeNames.join("・");
-  }
+  const winnerCourse = race.winnerCourse;
+  const probabilityStr =
+    race.probability != null
+      ? `（予想確率${(race.probability * 100).toFixed(0)}%）`
+      : "";
 
   let dateStr = "";
   if (race.date) {
@@ -285,11 +278,11 @@ export const generateHitRaceShareText = (race, model = "standard") => {
   }
 
   const messages = [
-    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result}\n的中: ${hitTypesStr} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\nAIの精度に驚いてます！`,
-    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result}\n的中: ${hitTypesStr} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n無料でこの精度はすごい！`,
-    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result}\n的中: ${hitTypesStr} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\nデータ分析の力を実感！`,
-    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result}\n的中: ${hitTypesStr} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n今日もAI予想が当たった！`,
-    `🎯 的中！【${dateStr}${venue}${raceNo}R】\n\nモデル: ${modelName}\n予想: ${prediction}\n結果: ${result}\n的中: ${hitTypesStr} ✅\n配当: ${payout.toLocaleString()}円\n\nBoatAIで予想的中🎉\n的中率の高さに満足してます！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\nBoatAIで展開予測的中🎉\nAIの分析力に驚いてます！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\nBoatAIで展開予測的中🎉\n無料でこの精度はすごい！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\nBoatAIで展開予測的中🎉\nデータ分析の力を実感！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\nBoatAIで展開予測的中🎉\n今日もAI予想が当たった！`,
+    `🌊 展開予測的中！【${dateStr}${venue}${raceNo}R】\n\n1マークで${winnerCourse}コースが先頭に${probabilityStr}\n予想通りの展開でした ✅\n\nBoatAIで展開予測的中🎉\n的中率の高さに満足してます！`,
   ];
 
   return messages[Math.floor(Math.random() * messages.length)];

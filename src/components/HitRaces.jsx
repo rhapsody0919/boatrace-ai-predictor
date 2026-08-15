@@ -10,78 +10,24 @@ import { HitRaceCard, HitStats, VenueStatsTable } from "./hits";
 import "./HitRaces.css";
 
 /**
- * 予測データから的中レースを抽出する
+ * 予測データから展開予測的中レースを抽出する（BOA-174、unified一本化）
+ * unifiedモデルはレース単位で二値的中判定できるのが複勝的中・展開予測的中の
+ * 2種類のみ（BOA-173）。本ページは「1マーク展開の予想パターンが実際の1着
+ * コースと一致したか」の展開予測的中のみを扱う（複勝的中は対象外、spec.md方針）。
  */
-function extractHitRaces(predictions, modelKey) {
+function extractHitRaces(predictions) {
   return predictions
     .filter((race) => {
       if (!race.result || !race.result.finished) return false;
-      const prediction = race.predictions?.[modelKey] || race.prediction;
-      if (!prediction) return false;
-
-      const topPick = prediction.topPick;
-      const top3 = prediction.top3;
-      const result = race.result;
-
-      const isWinHit = topPick === result.rank1;
-      const isPlaceHit = topPick === result.rank1 || topPick === result.rank2;
-      const is3FukuHit =
-        top3.includes(result.rank1) &&
-        top3.includes(result.rank2) &&
-        top3.includes(result.rank3);
-      const is3TanHit =
-        top3[0] === result.rank1 &&
-        top3[1] === result.rank2 &&
-        top3[2] === result.rank3;
-
-      return isWinHit || isPlaceHit || is3FukuHit || is3TanHit;
+      const patterns = race.unified?.turnPrediction?.patterns;
+      if (!Array.isArray(patterns) || patterns.length === 0) return false;
+      return patterns.some((p) => p.winnerCourse === race.result.rank1);
     })
     .map((race) => {
-      const prediction = race.predictions?.[modelKey] || race.prediction;
-      const topPick = prediction.topPick;
-      const top3 = prediction.top3;
-      const result = race.result;
-      const payouts = result.payouts || {};
-
-      const hitTypes = [];
-      let totalPayout = 0;
-
-      if (topPick === result.rank1) {
-        const payout = payouts.win?.[topPick] || 0;
-        hitTypes.push({ type: "単勝", payout });
-        totalPayout += payout;
-      }
-
-      if (topPick === result.rank1 || topPick === result.rank2) {
-        const payout = payouts.place?.[topPick] || 0;
-        hitTypes.push({ type: "複勝", payout });
-        totalPayout += payout;
-      }
-
-      if (
-        top3.includes(result.rank1) &&
-        top3.includes(result.rank2) &&
-        top3.includes(result.rank3)
-      ) {
-        const sorted = [result.rank1, result.rank2, result.rank3].sort(
-          (a, b) => a - b,
-        );
-        const key = sorted.join("-");
-        const payout = payouts.trifecta?.[key] || 0;
-        hitTypes.push({ type: "3連複", payout });
-        totalPayout += payout;
-      }
-
-      if (
-        top3[0] === result.rank1 &&
-        top3[1] === result.rank2 &&
-        top3[2] === result.rank3
-      ) {
-        const key = `${result.rank1}-${result.rank2}-${result.rank3}`;
-        const payout = payouts.trio?.[key] || 0;
-        hitTypes.push({ type: "3連単", payout });
-        totalPayout += payout;
-      }
+      const patterns = race.unified.turnPrediction.patterns;
+      const matchedPattern = patterns.find(
+        (p) => p.winnerCourse === race.result.rank1,
+      );
 
       const parts = race.raceId.split("-");
       const date = `${parts[0]}-${parts[1]}-${parts[2]}`;
@@ -94,14 +40,16 @@ function extractHitRaces(predictions, modelKey) {
         raceNumber: parseInt(raceNo),
         date,
         placeCode: parseInt(placeCode),
-        hitTypes,
-        totalPayout,
-        prediction,
+        winnerCourse: race.result.rank1,
+        matchedPattern,
         result: race.result,
-        modelKey,
       };
     })
-    .sort((a, b) => b.totalPayout - a.totalPayout);
+    .sort(
+      (a, b) =>
+        (b.matchedPattern?.probability || 0) -
+        (a.matchedPattern?.probability || 0),
+    );
 }
 
 function HitRaces({
@@ -122,7 +70,6 @@ function HitRaces({
   const [initialLoading, setInitialLoading] = useState(true);
   const [backgroundLoading, setBackgroundLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState("today");
-  const [selectedModel, setSelectedModel] = useState("standard");
 
   const { todayStr, yesterdayStr } = getJSTDateInfo();
 
@@ -179,21 +126,14 @@ function HitRaces({
     fetchInitial();
   }, [todayStr, yesterdayStr]);
 
-  // selectedModel変更時はuseMemoで再計算（再取得なし）
-  const hitRacesToday = useMemo(
-    () => extractHitRaces(rawToday, selectedModel),
-    [rawToday, selectedModel],
-  );
+  const hitRacesToday = useMemo(() => extractHitRaces(rawToday), [rawToday]);
 
   const hitRacesYesterday = useMemo(
-    () => extractHitRaces(rawYesterday, selectedModel),
-    [rawYesterday, selectedModel],
+    () => extractHitRaces(rawYesterday),
+    [rawYesterday],
   );
 
-  const hitRacesAll = useMemo(
-    () => extractHitRaces(rawAll, selectedModel),
-    [rawAll, selectedModel],
-  );
+  const hitRacesAll = useMemo(() => extractHitRaces(rawAll), [rawAll]);
 
   const handleCardClick = useCallback(
     (hitRace) => {
@@ -236,10 +176,9 @@ function HitRaces({
     hitRaces.forEach((race) => {
       const venue = race.venue;
       if (!stats[venue]) {
-        stats[venue] = { venue, hitCount: 0, totalPayout: 0 };
+        stats[venue] = { venue, hitCount: 0 };
       }
       stats[venue].hitCount++;
-      stats[venue].totalPayout += race.totalPayout;
     });
 
     return Object.values(stats).sort((a, b) => b.hitCount - a.hitCount);
@@ -258,7 +197,7 @@ function HitRaces({
     return (
       <div className="no-data-container">
         <div className="icon">&#x1F3AF;</div>
-        <h2>的中レースはまだありません</h2>
+        <h2>展開予測の的中レースはまだありません</h2>
         <p>レース結果が確定すると、ここに的中レースが表示されます。</p>
       </div>
     );
@@ -299,15 +238,15 @@ function HitRaces({
 
   return (
     <>
-        <title>的中レース一覧 | BoatAI</title>
-        <meta
-          name="description"
-          content="BoatAIのAI予測が的中したレース一覧。今日・昨日・過去14日間の的中レースと会場別的中実績を公開。"
-        />
-        <link rel="canonical" href="https://www.boat-ai.jp/hit-races" />
+      <title>展開予測 的中レース一覧 | BoatAI</title>
+      <meta
+        name="description"
+        content="BoatAIの展開予測（1マーク展開）が的中したレース一覧。今日・昨日・過去14日間の的中レースと会場別的中実績を公開。"
+      />
+      <link rel="canonical" href="https://www.boat-ai.jp/hit-races" />
       <div>
         <section className="venue-stats-section">
-          <h2>&#x1F4CA; ボートレース場別の的中実績</h2>
+          <h2>&#x1F4CA; ボートレース場別 展開予測の的中実績</h2>
           <UpdateStatus
             lastUpdated={lastUpdated}
             dataType="予想データ"
@@ -338,34 +277,6 @@ function HitRaces({
             </button>
           </div>
 
-          {/* モデル選択タブ */}
-          <div
-            className="model-selector"
-            role="group"
-            aria-label="予想モデル選択"
-          >
-            <button
-              onClick={() => setSelectedModel("standard")}
-              className={selectedModel === "standard" ? "active standard" : ""}
-            >
-              スタンダード
-            </button>
-            <button
-              onClick={() => setSelectedModel("safeBet")}
-              className={selectedModel === "safeBet" ? "active safe-bet" : ""}
-            >
-              本命狙い
-            </button>
-            <button
-              onClick={() => setSelectedModel("upsetFocus")}
-              className={
-                selectedModel === "upsetFocus" ? "active upset-focus" : ""
-              }
-            >
-              穴狙い
-            </button>
-          </div>
-
           <VenueStatsTable venueStats={venueStats} />
         </section>
 
@@ -386,7 +297,6 @@ function HitRaces({
                 <HitRaceCard
                   key={hitRace.raceId}
                   hitRace={hitRace}
-                  selectedModel={selectedModel}
                   variant={
                     selectedPeriod === "all"
                       ? hitRace.date === todayStr
