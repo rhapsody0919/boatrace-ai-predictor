@@ -593,6 +593,19 @@ test.describe("ホームズ予想（α版・非公開リンク）", () => {
   });
 });
 
+test.describe("過去の予想データ一覧のunified一本化（BOA-178）", () => {
+  test("/races で日付カードに展開予測的中率が表示され、旧モデル比較表が表示されない", async ({
+    page,
+  }) => {
+    await page.goto("/races");
+    await expect(page.locator(".date-card").first()).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.locator(".date-card-turn-stat").first()).toBeVisible();
+    await expect(page.locator(".mct-wrapper")).toHaveCount(0);
+  });
+});
+
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {
   test("ブログ記事詳細ページのtitleが空にならない", async ({ page }) => {
     await page.goto("/blog/rough-race-signals");
