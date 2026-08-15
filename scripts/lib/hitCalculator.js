@@ -17,24 +17,33 @@ export function calculateHits(prediction, result) {
   // 単勝: top_pickが1着と一致
   const isHitWin = prediction.top_pick === result.rank1;
 
-  // 複勝: top_pickが2着以内（競艇のルール）
-  const isHitPlace = prediction.top_pick === result.rank1 ||
-                     prediction.top_pick === result.rank2;
+  // 複勝: top_pickが2着以内（ボートレースのルール）
+  const isHitPlace =
+    prediction.top_pick === result.rank1 ||
+    prediction.top_pick === result.rank2;
 
   // isHitTrifecta → 実態: 3連複的中（順不同で3艇一致）
-  const predTop3 = [prediction.top_pick, prediction.top_2nd, prediction.top_3rd].sort((a, b) => a - b);
-  const resultTop3 = [result.rank1, result.rank2, result.rank3].sort((a, b) => a - b);
-  const isHitTrifecta = predTop3[0] === resultTop3[0] &&
-                        predTop3[1] === resultTop3[1] &&
-                        predTop3[2] === resultTop3[2];
+  const predTop3 = [
+    prediction.top_pick,
+    prediction.top_2nd,
+    prediction.top_3rd,
+  ].sort((a, b) => a - b);
+  const resultTop3 = [result.rank1, result.rank2, result.rank3].sort(
+    (a, b) => a - b,
+  );
+  const isHitTrifecta =
+    predTop3[0] === resultTop3[0] &&
+    predTop3[1] === resultTop3[1] &&
+    predTop3[2] === resultTop3[2];
 
   // isHitTrio → 実態: 3連単的中（完全順序一致）
-  const isHitTrio = prediction.top_pick === result.rank1 &&
-                    prediction.top_2nd === result.rank2 &&
-                    prediction.top_3rd === result.rank3;
+  const isHitTrio =
+    prediction.top_pick === result.rank1 &&
+    prediction.top_2nd === result.rank2 &&
+    prediction.top_3rd === result.rank3;
 
   // 配当計算
-  const payoutWin = isHitWin ? (result.payout_win || 0) : 0;
+  const payoutWin = isHitWin ? result.payout_win || 0 : 0;
 
   let payoutPlace = 0;
   if (isHitPlace) {
@@ -45,8 +54,8 @@ export function calculateHits(prediction, result) {
     }
   }
 
-  const payoutTrifecta = isHitTrifecta ? (result.payout_trifecta || 0) : 0;
-  const payoutTrio = isHitTrio ? (result.payout_trio || 0) : 0;
+  const payoutTrifecta = isHitTrifecta ? result.payout_trifecta || 0 : 0;
+  const payoutTrio = isHitTrio ? result.payout_trio || 0 : 0;
 
   return {
     isHitWin,
@@ -56,7 +65,7 @@ export function calculateHits(prediction, result) {
     payoutWin,
     payoutPlace,
     payoutTrifecta,
-    payoutTrio
+    payoutTrio,
   };
 }
 
@@ -94,9 +103,11 @@ export function isTrifectaHit(predTop3, rank1, rank2, rank3) {
   if (!predTop3 || predTop3.length !== 3) return false;
   const sortedPred = [...predTop3].sort((a, b) => a - b);
   const sortedResult = [rank1, rank2, rank3].sort((a, b) => a - b);
-  return sortedPred[0] === sortedResult[0] &&
-         sortedPred[1] === sortedResult[1] &&
-         sortedPred[2] === sortedResult[2];
+  return (
+    sortedPred[0] === sortedResult[0] &&
+    sortedPred[1] === sortedResult[1] &&
+    sortedPred[2] === sortedResult[2]
+  );
 }
 
 /**
@@ -110,9 +121,9 @@ export function isTrifectaHit(predTop3, rank1, rank2, rank3) {
  */
 export function isTrioHit(predTop3, rank1, rank2, rank3) {
   if (!predTop3 || predTop3.length !== 3) return false;
-  return predTop3[0] === rank1 &&
-         predTop3[1] === rank2 &&
-         predTop3[2] === rank3;
+  return (
+    predTop3[0] === rank1 && predTop3[1] === rank2 && predTop3[2] === rank3
+  );
 }
 
 /**
@@ -124,7 +135,13 @@ export function isTrioHit(predTop3, rank1, rank2, rank3) {
  * @param {number} payoutPlace2 - 2着複勝配当
  * @returns {number} 配当金額
  */
-export function getPlacePayout(topPick, rank1, rank2, payoutPlace1, payoutPlace2) {
+export function getPlacePayout(
+  topPick,
+  rank1,
+  rank2,
+  payoutPlace1,
+  payoutPlace2,
+) {
   if (topPick === rank1) {
     return payoutPlace1 || 0;
   } else if (topPick === rank2) {

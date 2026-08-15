@@ -12,7 +12,7 @@ Actually, the odds number alone can't tell you whether a bet is good or bad. Wha
 
 Odds are **the multiplier showing how much you get back per ¥100 wagered if your bet wins**.
 
-Japanese boat racing (Kyotei) uses a pari-mutuel system. The total amount wagered by all bettors has roughly a 25% deduction (the operator's cut) taken out, and the remainder is split among winning tickets.
+Japanese boat racing uses a pari-mutuel system. The total amount wagered by all bettors has roughly a 25% deduction (the operator's cut) taken out, and the remainder is split among winning tickets.
 
 | Item | Description |
 |------|------|
@@ -160,4 +160,4 @@ Odds aren't just a multiplier — they're **a number that reflects bettor psycho
 
 ---
 
-**Tags:** #BoatRacing #Kyotei #Odds #ExpectedValue #OddsDistortion #Overpopularity #BettingStrategy #ReturnRate #DataAnalysis #BoatAI
+**Tags:** #BoatRacing #BoatRace #Odds #ExpectedValue #OddsDistortion #Overpopularity #BettingStrategy #ReturnRate #DataAnalysis #BoatAI

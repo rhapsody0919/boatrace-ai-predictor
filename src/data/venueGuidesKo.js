@@ -1,5 +1,5 @@
 /**
- * 한국어판 경장(競艇場) 방문 가이드 콘텐츠 데이터
+ * 한국어판 보트레이스장 방문 가이드 콘텐츠 데이터
  * 영어판(venueGuidesEn.js)과 같은 회장을 대상으로 번역·현지화
  * scripts/generate-sitemap.js（node 직접 실행）에서도 import되므로 Vite 전용 문법을 사용하지 않고 순수 JS 데이터로 유지할 것
  *
