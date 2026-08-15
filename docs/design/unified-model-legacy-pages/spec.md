@@ -68,7 +68,7 @@ unifiedモデルの運用開始は2026-08-11、spec作成時点（2026-08-15）�
 ### やること
 - FR-1〜3（3ページのフロント再設計、BOA-178のみバックエンドバッチ改修も含む）
 - `ModelComparisonTable.jsx`の完全廃止（3ページの置き換え先UI + `AccuracyHistory.jsx`への表示マークアップのインライン化を含む）
-- 4言語（ja/en/zh-TW/ko）のi18nキー追加（3ページとも`TRANSLATED_PATHS`対象の既存ページ）
+- i18n対応は不要（3ページとも`TRANSLATED_PATHS`未登録のja専用ページと判明、2026-08-15訂正。screens.md参照）
 - 影響するe2eスモークテストの追随修正
 
 ### やらないこと

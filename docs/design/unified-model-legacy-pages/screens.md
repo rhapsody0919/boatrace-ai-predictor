@@ -55,4 +55,4 @@
 
 ## i18n
 
-3ページとも`TRANSLATED_PATHS`対象（既存の翻訳対象ページ）のため、UI文言変更は4言語（ja/en/zh-TW/ko）分のキーを同一PRで追加する。廃止する旧モデル関連の文言キー（`MODEL_NAMES`表示等）は未使用化するが、他ページで参照されていないか事前に確認してから削除する。
+**訂正（2026-08-15、`/step4`実装中に判明）**: `/accuracy`・`/hit-races`・`/races`はいずれも`src/config/languages.js`の`TRANSLATED_PATHS`（`/`, `/guide`, `/venues`, `/winning-technique`のみ）に含まれておらず、**ja専用ページ**（3区分の「ja-only」に該当、`t()`も使われていない直書き日本語）だった。当初spec.md/tasks.mdに記載していた「4言語のi18nキー追加」は誤りのため対象外とする。廃止する旧モデル関連の文言（`MODEL_NAMES`表示等）は未使用化するが、他ページで参照されていないか事前に確認してから削除する。

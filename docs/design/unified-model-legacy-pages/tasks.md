@@ -8,26 +8,26 @@
 
 ## 1. 展開予測的中の永続化（ADR 0013）
 
-- [ ] **Task 1**: `scripts/lib/hitCalculator.js`に展開予測的中の判定関数を追加し、`scripts/daily/scrape-results.js`の結果反映処理に組み込み、`predictions.is_hit_turn`を保存する（マイグレーション033の適用が前提）
-- [ ] **Task 2**: `scripts/maintenance/backfill-is-hit-turn.js`を新規作成し、unified運用開始（2026-08-11）〜現在までの確定済みレースに対して`is_hit_turn`を一括計算・更新する。実行後、件数・的中率をログ出力して検証する（Task 1完了・マイグレーション適用後に実行）
+- [x] **Task 1**: `scripts/lib/hitCalculator.js`に展開予測的中の判定関数を追加し、`scripts/daily/scrape-results.js`の結果反映処理に組み込み、`predictions.is_hit_turn`を保存する（マイグレーション033の適用が前提。PR #295、マージ待ち）
+- [x] **Task 2**: `scripts/maintenance/backfill-is-hit-turn.js`を新規作成し、unified運用開始（2026-08-11）〜現在までの確定済みレースに対して`is_hit_turn`を一括計算・更新する。実行後、件数・的中率をログ出力して検証する（Task 1完了・マイグレーション適用後に実行。PR #295にコード含む、実行はマイグレーション適用後）
 
 ## 2. BOA-178: /races一覧のunified一本化
 
 - [ ] **Task 3**: `scripts/daily/update-race-history-cache.js`を改修し、`race_history_cache.data`を新構造（`days[] = {date, totalRaces, finishedRaces, turnRaces, turnHits, turnHitRate}`）で保存するよう変更。旧モデル別集計ロジックを削除（Task 1に依存、`is_hit_turn`カラムを参照するため）
-- [ ] **Task 4**: `src/pages/RaceHistory.jsx`（+ `.css`）を新しい`race_history_cache`構造に合わせて改修。日付カードの表示指標を展開予測的中率1つに簡素化。i18n 4言語のキー追加。Task 3と同一PRでデプロイする（データ構造変更のため片方だけのデプロイは不整合を招く）
+- [ ] **Task 4**: `src/pages/RaceHistory.jsx`（+ `.css`）を新しい`race_history_cache`構造に合わせて改修。日付カードの表示指標を展開予測的中率1つに簡素化。Task 3と同一PRでデプロイする（データ構造変更のため片方だけのデプロイは不整合を招く）。i18n対応は不要（ja専用ページ、screens.md参照）
 - [ ] **Task 5**: `/races`一覧のe2eスモークテストを新UIに追随修正
 
 ## 3. BOA-175: /accuracyのunified一本化
 
-- [ ] **Task 6**: `scripts/daily/calculate-unified-volatility-accuracy.js`を改修し、`accuracy_cache.unified_volatility_accuracy`に会場別内訳（`byVenue`）を追加する。旧`calculate-accuracy.js`の`calculateVolatilityStats()`の`byVenue`集計ロジックをunifiedモデル向けに移植する
-- [ ] **Task 7**: `src/components/accuracy/VolatilityAccuracySection.jsx`（+ `.css`）を`byVenue`表示に対応させる。`src/components/analysis/VolatilityAccuracyChart.jsx`（BOA-177、`/winning-technique`）との表示ロジック共通化を検討し、共通化できる部分は切り出す
-- [ ] **Task 8**: `src/components/AccuracyDashboard.jsx`を再設計。旧3モデルタブ・回収率カラムを削除し、`dataService.getUnifiedModelAccuracy()`の展開予測的中率を主役指標に据えたレイアウトに作り替える。`src/components/accuracy/ModelSelector.jsx`・`StatsTable.jsx`・`RecoveryTrendChart.jsx`・`VenueStrategyTable.jsx`・`VenueDetailedAnalysis.jsx`を削除。i18n 4言語のキー追加
+- [x] **Task 6**: `scripts/daily/calculate-unified-volatility-accuracy.js`を改修し、`accuracy_cache.unified_volatility_accuracy`に会場別内訳（`byVenue`）を追加する。旧`calculate-accuracy.js`の`calculateVolatilityStats()`の`byVenue`集計ロジックをunifiedモデル向けに移植する（PR #296、マージ待ち）
+- [x] **Task 7**: `src/components/accuracy/VolatilityAccuracySection.jsx`（+ `.css`）を`byVenue`表示に対応させる。→ 調査の結果、既に対応済み（旧モデル版から流用されたコンポーネントのため）と判明、コード変更なし。Playwrightで`/winning-technique?tab=volatility`の会場別テーブル表示を確認済み（PR #296に含む）
+- [ ] **Task 8**: `src/components/AccuracyDashboard.jsx`を再設計。旧3モデルタブ・回収率カラムを削除し、`dataService.getUnifiedModelAccuracy()`の展開予測的中率を主役指標に据えたレイアウトに作り替える。`src/components/accuracy/ModelSelector.jsx`・`StatsTable.jsx`・`RecoveryTrendChart.jsx`・`VenueStrategyTable.jsx`・`VenueDetailedAnalysis.jsx`を削除。i18n対応は不要（ja専用ページ）
 - [ ] **Task 9**: `/accuracy`のe2eスモークテストを新UIに追随修正
 
 ## 4. BOA-174: /hit-racesのunified一本化
 
 - [ ] **Task 10**: `src/components/HitRaces.jsx`の`extractHitRaces()`を展開予測的中1種類の判定に書き換え（`is_hit_turn`優先、未保存の場合のみ`feature_contributions`からのフォールバック計算）。`selectedModel` state・`MODEL_KEYS`ループを削除
-- [ ] **Task 11**: `src/components/hits/HitRaceCard.jsx`を0から再設計（展開予測的中のみの新レイアウト）。`src/components/hits/HitStats.jsx`・`VenueStatsTable.jsx`を展開予測的中率の集計に作り替え。i18n 4言語のキー追加
+- [ ] **Task 11**: `src/components/hits/HitRaceCard.jsx`を0から再設計（展開予測的中のみの新レイアウト）。`src/components/hits/HitStats.jsx`・`VenueStatsTable.jsx`を展開予測的中率の集計に作り替え。i18n対応は不要（ja専用ページ）
 - [ ] **Task 12**: `/hit-races`のe2eスモークテストを新UIに追随修正
 
 ## 5. 後片付け（3ページの置き換え完了後）
