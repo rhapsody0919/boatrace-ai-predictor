@@ -647,6 +647,30 @@ test.describe("成績ページのunified一本化（BOA-175）", () => {
     await historyLink.click();
     await expect(page).toHaveURL(/\/accuracy\/history$/);
   });
+
+  test("/accuracy で展開予測の会場別的中率が表示される", async ({ page }) => {
+    await page.goto("/accuracy");
+    const details = page.locator(".turn-accuracy-venue-details");
+    await expect(details).toBeVisible({ timeout: 10000 });
+    await details.locator("summary").click();
+    await expect(
+      page.locator(".turn-accuracy-venue-table tbody tr").first(),
+    ).toBeVisible();
+  });
+});
+
+test.describe("複勝予想UI撤去の完全性（レース結果パネル）", () => {
+  test("結果確定済みレースの「レース結果」パネルに複勝予想の検証が表示されない", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-08-14");
+    const button = page.locator(".race-card .predict-btn").first();
+    await expect(button).toBeVisible({ timeout: 10000 });
+    await button.click();
+    const resultPanel = page.locator(".race-result");
+    await expect(resultPanel).toBeVisible({ timeout: 10000 });
+    await expect(resultPanel).not.toContainText("複勝");
+  });
 });
 
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {

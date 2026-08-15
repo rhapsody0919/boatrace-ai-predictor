@@ -130,6 +130,58 @@
   line-height: 1.6;
 }
 
+/* 会場別の的中率（折りたたみ） */
+.turn-accuracy-venue-details {
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.turn-accuracy-venue-details summary {
+  cursor: pointer;
+  color: #0369a1;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.turn-accuracy-venue-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 0.9rem;
+}
+
+.turn-accuracy-venue-table th {
+  background: #f1f5f9;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.turn-accuracy-venue-table td {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.turn-accuracy-venue-table__name {
+  font-weight: 600;
+}
+
+.turn-accuracy-venue-ref-note {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.turn-accuracy-venue-ref-desc {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
 /* 的中率についての説明 */
 .accuracy-info {
   background: #ffffff;

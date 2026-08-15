@@ -14,8 +14,11 @@
  * ブログ・FAQ等の公開コンテンツにも波及していた）。実際に◎○を両方100円ずつ
  * （計200円）買った場合の真の回収率に修正する。的中判定は「◎○のいずれかが
  * 2着以内」のまま変更していない（的中率自体は水増しされていなかったため）。
- * ※現在、複勝予想UI自体はBOA-180の対応（既存公開コンテンツとの整合性含む）が
- * 完了するまで撤去中（PR#287）。本スクリプトはUI復活時に備えて維持する。
+ * ※複勝予想UIはBOA-174/175/178（unified一本化）でページ本文からは完全撤去済み。
+ * 本スクリプトのplace集計自体は将来の再設計に備えて維持している。
+ *
+ * turn.byVenue: 展開予測的中率の会場別内訳（2026-08-15追加）。会場によって
+ * 実測的中率に差がある（例: 尼崎91.7% vs 桐生68.1%）ことが判明したため追加。
  *
  * 使い方:
  *   node scripts/daily/calculate-unified-model-accuracy.js
@@ -25,6 +28,33 @@ import {
   fetchAll,
   isSupabaseEnabled,
 } from "../lib/supabaseClient.js";
+
+const VENUE_NAMES = {
+  1: "桐生",
+  2: "戸田",
+  3: "江戸川",
+  4: "平和島",
+  5: "多摩川",
+  6: "浜名湖",
+  7: "蒲郡",
+  8: "常滑",
+  9: "津",
+  10: "三国",
+  11: "びわこ",
+  12: "住之江",
+  13: "尼崎",
+  14: "鳴門",
+  15: "丸亀",
+  16: "児島",
+  17: "宮島",
+  18: "徳山",
+  19: "下関",
+  20: "若松",
+  21: "芦屋",
+  22: "福岡",
+  23: "唐津",
+  24: "大村",
+};
 
 async function main() {
   if (!isSupabaseEnabled()) {
@@ -55,6 +85,7 @@ async function main() {
   let placeInvest = 0;
   let turnRaces = 0;
   let turnHits = 0;
+  const turnByVenue = new Map(); // venueCode -> { total, hits }
 
   for (const pred of predictions) {
     const result = resultByRaceId.get(pred.race_id);
@@ -86,11 +117,30 @@ async function main() {
     const patterns = pred.feature_contributions?.turnPrediction?.patterns;
     if (Array.isArray(patterns) && patterns.length > 0) {
       turnRaces += 1;
-      if (patterns.some((p) => p.winnerCourse === result.rank1)) {
-        turnHits += 1;
+      const hit = patterns.some((p) => p.winnerCourse === result.rank1);
+      if (hit) turnHits += 1;
+
+      // 会場別集計（race_id形式: YYYY-MM-DD-VV-RR）
+      const venueCode = parseInt(pred.race_id.split("-")[3], 10);
+      if (!turnByVenue.has(venueCode)) {
+        turnByVenue.set(venueCode, { total: 0, hits: 0 });
       }
+      const venueStats = turnByVenue.get(venueCode);
+      venueStats.total += 1;
+      if (hit) venueStats.hits += 1;
     }
   }
+
+  const turnVenueBreakdown = Array.from(turnByVenue.entries())
+    .map(([venueCode, v]) => ({
+      venueCode: String(venueCode).padStart(2, "0"),
+      venueName: VENUE_NAMES[venueCode] || `会場${venueCode}`,
+      totalRaces: v.total,
+      hitRate:
+        v.total > 0 ? parseFloat(((v.hits / v.total) * 100).toFixed(1)) : 0,
+      isReliable: v.total >= 20,
+    }))
+    .sort((a, b) => b.hitRate - a.hitRate);
 
   const summary = {
     calculatedAt: new Date().toISOString(),
@@ -104,6 +154,7 @@ async function main() {
       totalRaces: turnRaces,
       hits: turnHits,
       hitRate: turnRaces > 0 ? turnHits / turnRaces : null,
+      byVenue: turnVenueBreakdown,
     },
   };
 
@@ -115,6 +166,7 @@ async function main() {
   console.log(
     `${summary.turn.totalRaces}件 | 的中率 ${((summary.turn.hitRate ?? 0) * 100).toFixed(1)}%`,
   );
+  console.log(`  会場別: ${turnVenueBreakdown.length}会場分集計`);
 
   const { error } = await supabase.from("accuracy_cache").upsert({
     key: "unified_model_accuracy",
