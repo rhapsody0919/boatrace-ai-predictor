@@ -12,7 +12,7 @@ import {
   formatDateForUrl,
   parseDateArg,
 } from "../lib/dateUtils.js";
-import { calculateHits } from "../lib/hitCalculator.js";
+import { calculateHits, isTurnHit } from "../lib/hitCalculator.js";
 import { getRaceSchedule, getRacesAfterStart } from "../lib/raceSchedule.js";
 
 // Generate race result page URL
@@ -442,7 +442,9 @@ async function scrapeAndSaveResults(races, targetDate) {
     const newResultIds = newResults.map((r) => r.race_id);
     const { data: allPredictions, error: predError } = await supabase
       .from("predictions")
-      .select("prediction_id, model_id, top_pick, top_2nd, top_3rd, race_id")
+      .select(
+        "prediction_id, model_id, top_pick, top_2nd, top_3rd, race_id, feature_contributions",
+      )
       .in("race_id", newResultIds);
 
     // race_id ごとにグループ化
@@ -504,11 +506,22 @@ async function scrapeAndSaveResults(races, targetDate) {
           }
         }
 
+        // 展開予測的中（unifiedモデルのみ。feature_contributions.turnPrediction
+        // が無い旧モデルはnullのまま＝「対象外」として区別する。ADR 0013）
+        const turnPatterns =
+          pred.feature_contributions?.turnPrediction?.patterns;
+        const hasTurnPrediction =
+          Array.isArray(turnPatterns) && turnPatterns.length > 0;
+        const turnHit = hasTurnPrediction
+          ? isTurnHit(turnPatterns, result.rank1)
+          : null;
+
         const updateData = {
           is_hit_win: isWinHit,
           is_hit_place: isPlaceHit,
           is_hit_trifecta: isTrifectaHit,
           is_hit_trio: isTrioHit,
+          is_hit_turn: turnHit,
           payout_win: isWinHit ? result.payout_win : 0,
           payout_place: payoutPlace,
           payout_trifecta: predictsTrio
@@ -600,7 +613,9 @@ async function fixMissingHitFlags(targetDate) {
   // is_hit_winがNULLの予測を取得
   const { data: missingPredictions, error: predError } = await supabase
     .from("predictions")
-    .select("prediction_id, race_id, top_pick, top_2nd, top_3rd")
+    .select(
+      "prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions",
+    )
     .gte("race_id", targetDate)
     .lt("race_id", `${targetDate}~`)
     .is("is_hit_win", null);
@@ -665,6 +680,14 @@ async function fixMissingHitFlags(targetDate) {
       }
     }
 
+    // 展開予測的中（unifiedモデルのみ。ADR 0013）
+    const turnPatterns = pred.feature_contributions?.turnPrediction?.patterns;
+    const hasTurnPrediction =
+      Array.isArray(turnPatterns) && turnPatterns.length > 0;
+    const turnHit = hasTurnPrediction
+      ? isTurnHit(turnPatterns, result.rank1)
+      : null;
+
     const { error: updateError } = await supabase
       .from("predictions")
       .update({
@@ -672,6 +695,7 @@ async function fixMissingHitFlags(targetDate) {
         is_hit_place: isPlaceHit,
         is_hit_trifecta: isTrifectaHit,
         is_hit_trio: isTrioHit,
+        is_hit_turn: turnHit,
         payout_win: isWinHit ? result.payout_win : 0,
         payout_place: payoutPlace,
         payout_trifecta: isTrifectaHit ? result.payout_trifecta : 0,
