@@ -885,11 +885,6 @@ export const supabaseDataService = {
         race_number,
         start_time,
         race_grade,
-        volatility_score,
-        volatility_level,
-        recommended_model,
-        volatility_reasons,
-        first_boat_avg_st,
         race_entries (
           boat_number,
           player_name,
@@ -957,9 +952,6 @@ export const supabaseDataService = {
         console.error("Supabase getPredictions error:", racesError.message);
         return { date, generatedAt: null, updatedAt: null, races: [] };
       }
-
-      // 会場別1コース勝率（直近90日）を取得
-      const venueWinRateMap = await fetchVenueWinRateMap();
 
       // JSON形式に変換
       const transformedRaces = races.map((race) => {
@@ -1054,16 +1046,10 @@ export const supabaseDataService = {
           raceNumber: race.race_number,
           startTime: race.start_time?.substring(0, 5) || "",
           raceGrade: race.race_grade ?? null,
-          volatility: race.volatility_score
-            ? {
-                score: race.volatility_score,
-                level: race.volatility_level,
-                recommendedModel: race.recommended_model,
-                reasons: race.volatility_reasons || [],
-                boat1AvgST: race.first_boat_avg_st ?? null,
-                venueWinRate: venueWinRateMap[race.venue_code] ?? null,
-              }
-            : null,
+          // イン崩れ指数（旧「荒れ度」）はunifiedモデルのvolatilityPercentile
+          // （raceData.unified.volatilityPercentile）に一本化済み。旧
+          // races.volatility_score/level（generate-predictions.jsが今も書き込み
+          // 続けているが読み手が無い値）は使用しない（2026-08-16、ユーザー指摘）
           turnPrediction: turnPrediction,
           racerStats: standardPred?.feature_contributions?.racerStats || null,
           exhibitionData: race.exhibition_data || null,

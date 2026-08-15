@@ -6,7 +6,7 @@ import "./HowToUse.css";
 
 const TITLE = "使い方ガイド | BoatAI - 初心者でもわかる利用方法";
 const DESCRIPTION =
-  "BoatAIの使い方を6つのステップで解説。レース場の選び方、AI予測モデルの選択、予測データの活用方法まで、初心者にもわかりやすく説明します。";
+  "BoatAIの使い方を5つのステップで解説。レース場の選び方、データ出走表・展開予測・イン崩れ指数の見方まで、初心者にもわかりやすく説明します。";
 
 export default function HowToUse() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function HowToUse() {
     description: DESCRIPTION,
     url: "https://www.boat-ai.jp/how-to-use",
     keywords:
-      "BoatAI使い方,ボートレース分析方法,初心者ガイド,AI予測モデル,データ分析",
+      "BoatAI使い方,ボートレース分析方法,初心者ガイド,データ出走表,展開予測,イン崩れ指数",
   });
 
   const steps = [
@@ -72,160 +72,169 @@ export default function HowToUse() {
                 <strong>締切予定時刻</strong>が表示されます
               </li>
               <li>
-                <strong>荒れ度</strong>
-                マークで、レースの予想しやすさがわかります
+                <strong>イン崩れ指数</strong>
+                バッジで、1号艇（インコース）が崩れやすいレースかどうかがわかります
                 <ul>
                   <li>
-                    😌 <strong>堅い</strong>: 1号艇が有利なレース（本命党向け）
+                    🎯 <strong>本命有利</strong>:
+                    1号艇が有利で堅く決まりやすいレース
                   </li>
                   <li>
-                    😐 <strong>標準</strong>: バランス型のレース
+                    （バッジなし）<strong>標準</strong>: 平均的な傾向のレース
                   </li>
                   <li>
-                    😬 <strong>荒れる</strong>:
-                    波乱が起きやすいレース（穴党向け）
+                    🌪️ <strong>イン崩れ確率高</strong>:
+                    1号艇が崩れて波乱が起きやすいレース
                   </li>
                 </ul>
               </li>
               <li>
-                <strong>「AI予想を見る」</strong>ボタンをクリック
+                <strong>「データ分析を見る」</strong>ボタンをクリック
               </li>
             </ul>
           </div>
           <div className="example-box">
             <p className="example-title">📌 例</p>
             <p>
-              「平和島 10R（14:30締切）荒れ度:
-              😌堅い」→「AI予想を見る」をクリック
+              「平和島
+              10R（14:30締切）🎯本命有利」→「データ分析を見る」をクリック
             </p>
           </div>
         </>
       ),
     },
     {
-      title: "ステップ3: AI予想モデルを選ぶ",
-      icon: "🤖",
+      title: "ステップ3: データ出走表を見る",
+      icon: "📋",
       content: (
         <>
           <p>
-            BoatAIでは<strong>3種類の予想モデル</strong>から選べます。
+            レースを選ぶと、まず
+            <strong>データ出走表</strong>
+            （出走6選手×客観的なデータの一覧表）が表示されます。BoatAIは
+            <strong>「予想モデルを選ぶ」機能は提供していません</strong>
+            。誰が見ても同じ客観的なデータをもとに、自分で予想を組み立てる形です。
           </p>
           <div className="step-detail">
-            <h4>💡 モデルの違い</h4>
-            <div className="model-comparison">
-              <div className="model-card standard">
-                <h5>🎯 スタンダード（推奨）</h5>
-                <p>
-                  <strong>予測精度とパフォーマンスのバランス重視</strong>
-                </p>
-                <ul>
-                  <li>全国勝率・当地成績・モーター性能を総合評価</li>
-                  <li>迷ったらまずこれ</li>
-                  <li>単勝予測精度 27%、高効率な分析</li>
-                </ul>
-              </div>
-              <div className="model-card safe-bet">
-                <h5>🛡️ 本命狙い</h5>
-                <p>
-                  <strong>予測精度を最重視（安全志向）</strong>
-                </p>
-                <ul>
-                  <li>1号艇とA級選手を優先</li>
-                  <li>堅いレースで力を発揮</li>
-                  <li>単勝予測精度 53%（高精度）</li>
-                </ul>
-              </div>
-              <div className="model-card upset-focus">
-                <h5>💎 穴狙い</h5>
-                <p>
-                  <strong>高倍率予測を狙う（攻撃型）</strong>
-                </p>
-                <ul>
-                  <li>外枠の好モーターや展開の妙を重視</li>
-                  <li>荒れるレースで力を発揮</li>
-                  <li>3連複回収率 333%（高配当型）</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div className="example-box">
-            <p className="example-title">📌 例</p>
-            <p>
-              荒れ度が「😌堅い」なら → <strong>本命狙い</strong>モデル
-            </p>
-            <p>
-              荒れ度が「😬荒れる」なら → <strong>穴狙い</strong>モデル
-            </p>
-            <p>
-              迷ったら → <strong>スタンダード</strong>モデル
-            </p>
-          </div>
-        </>
-      ),
-    },
-    {
-      title: "ステップ4: AI予想を確認する",
-      icon: "📊",
-      content: (
-        <>
-          <p>AI予想画面では、AIが分析した予想結果が表示されます。</p>
-          <div className="step-detail">
-            <h4>💡 予想画面の見方</h4>
+            <h4>💡 データ出走表に含まれる指標</h4>
             <ul>
               <li>
-                <strong>展開予測アニメーション</strong>:
-                1マークでの各艇の動きをシミュレーション表示
+                <strong>級別・全国勝率</strong>: 選手の実力の目安
               </li>
               <li>
-                <strong>超展開データ</strong>:
-                各コースの攻撃力・守備力を数値化したテーブル
+                <strong>モーター2連率</strong>: 使用モーターの調子
               </li>
               <li>
-                <strong>本命</strong>: 展開予測で最も1着の可能性が高い艇
+                <strong>調子（勝率Δ）</strong>: 最近の勝率の上昇/下降
               </li>
               <li>
-                <strong>推奨買い目</strong>:
-                展開予測に基づく1〜3着の推奨組み合わせ
+                <strong>ST安定度・展示タイム</strong>: スタートの正確さ・機力
               </li>
               <li>
-                <strong>AIデータ予想</strong>:
-                各選手の級別、勝率、モーター性能などの詳細データ
+                <strong>決まり手型</strong>: その選手が得意な勝ちパターン
+              </li>
+              <li>
+                <strong>単勝回収率</strong>: 過去にその艇番で走った際の回収率
               </li>
             </ul>
           </div>
           <div className="tip-box">
-            <h4>💡 予測データの種別について</h4>
-            <ul>
-              <li>
-                <strong>複勝</strong>: 予測精度49.5%（2着以内予測）- 初心者向け
-              </li>
-              <li>
-                <strong>3連複</strong>:
-                的中率12.8%、回収率80.6%（順不同で1-2-3着）- 中級者向け
-              </li>
-              <li>
-                <strong>3連単</strong>: 的中率2.8%、回収率134.3%（着順一致）-
-                上級者向け
-              </li>
-            </ul>
+            <h4>📝 見方のコツ</h4>
+            <p>
+              各指標は<strong>レース内での相対順位</strong>
+              で色分けされています。最も良い数値のマスがハイライトされるので、6艇を比較しながら注目艇を見つけられます。
+            </p>
           </div>
         </>
       ),
     },
     {
-      title: "ステップ5: 予測を活用する",
-      icon: "🎫",
+      title: "ステップ4: 展開予測とイン崩れ指数を見る",
+      icon: "🌊",
       content: (
         <>
-          <p>AI予測データを参考に、レース展開を予測しましょう。</p>
+          <p>
+            データ出走表の下にある
+            <strong>「AIデータ分析」</strong>
+            （折りたたみ表示）を開くと、AIによる2種類の分析結果が確認できます。
+          </p>
+          <div className="step-detail">
+            <h4>💡 展開予測</h4>
+            <ul>
+              <li>
+                1マーク（最初のターン）で
+                <strong>どの艇が先頭になりそうか</strong>
+                を、確率付きの上位パターンとして提示します
+              </li>
+              <li>
+                実測的中率は
+                <strong>約8割</strong>
+                （上位パターンのいずれかが実際の1着コースと一致すれば的中）。会場によって的中率に差があり、実績は「成績」ページで確認できます
+              </li>
+            </ul>
+          </div>
+          <div className="step-detail">
+            <h4>💡 イン崩れ指数</h4>
+            <ul>
+              <li>
+                1号艇（インコース）が
+                <strong>崩れやすいかどうか</strong>
+                を、過去90日・同会場のレースと比較した相対的な指数（パーセンタイル）で示します
+              </li>
+              <li>
+                「イン崩れ確率高」ラベルのレースは、実際にどの程度崩れているかの実測値も確認できます
+              </li>
+            </ul>
+          </div>
+          <div className="example-box">
+            <p className="example-title">📌 例</p>
+            <p>
+              展開予測で「1コースが39%で先頭」「3コースが10%で先頭」と出ていれば、1コースを軸にしつつ3コースも警戒する、といった読み方ができます
+            </p>
+          </div>
+        </>
+      ),
+    },
+    {
+      title: "ステップ5: 予測実績を確認する",
+      icon: "📈",
+      content: (
+        <>
+          <p>レース終了後、AIの分析が的中だったかを確認できます。</p>
+          <div className="step-detail">
+            <h4>💡 実績の確認方法</h4>
+            <ul>
+              <li>
+                <strong>各レースの「レース結果」パネル</strong>:
+                そのレースの展開予測が的中したかを表示
+              </li>
+              <li>
+                <strong>「的中」タブ</strong>（/hit-races）:
+                過去14日間で展開予測が的中したレース一覧を会場別に表示
+              </li>
+              <li>
+                <strong>「成績」タブ</strong>（/accuracy）:
+                展開予測の実測的中率を、全体・会場別で公開
+              </li>
+            </ul>
+          </div>
+          <div className="tip-box">
+            <h4>📊 実績の見方</h4>
+            <p>
+              展開予測の実測的中率は
+              <strong>会場によって差があります</strong>
+              （例:
+              ある会場は9割超、別の会場は7割弱）。よく使う会場の実績を「成績」ページで確認してから活用すると、精度への理解が深まります。
+            </p>
+          </div>
           <div className="step-detail">
             <h4>⚠️ 重要な注意事項</h4>
             <div className="warning-box">
               <p>
-                <strong>BoatAIは予測情報のみを提供しています</strong>
+                <strong>BoatAIは分析情報のみを提供しています</strong>
               </p>
               <p>
-                詳細は
+                舟券の購入は
                 <a
                   href="https://www.boatrace.jp/"
                   target="_blank"
@@ -233,69 +242,9 @@ export default function HowToUse() {
                 >
                   公式サイト
                 </a>
-                でご確認ください。
+                でご確認ください。分析データは参考情報としてご活用ください。
               </p>
             </div>
-          </div>
-          <div className="step-detail">
-            <h4>💡 予測データ活用のポイント</h4>
-            <ul>
-              <li>
-                <strong>余裕のある範囲で</strong>楽しむ
-              </li>
-              <li>
-                AI予測は<strong>参考情報</strong>として活用する
-              </li>
-              <li>レース展開の分析に役立てる</li>
-            </ul>
-          </div>
-          <div className="tip-box">
-            <h4>📝 活用のヒント</h4>
-            <ul>
-              <li>展開予測アニメーションでレース展開をイメージ</li>
-              <li>超展開データで各コースの攻防を分析</li>
-              <li>モデル別の展開パターンを比較して活用する</li>
-            </ul>
-          </div>
-        </>
-      ),
-    },
-    {
-      title: "ステップ6: 予測実績を確認する",
-      icon: "📈",
-      content: (
-        <>
-          <p>レース終了後、AIの予測が的中だったかを確認できます。</p>
-          <div className="step-detail">
-            <h4>💡 実績の確認方法</h4>
-            <ul>
-              <li>
-                <strong>「的中レース」タブ</strong>:
-                過去14日間の的中レースを表示
-              </li>
-              <li>
-                <strong>「成績」タブ</strong>:
-                予測精度・回収率の統計データを表示
-              </li>
-              <li>期間別（今日、昨日、全期間）に絞り込み可能</li>
-              <li>モデル別（スタンダード、本命狙い、穴狙い）に切り替え可能</li>
-            </ul>
-          </div>
-          <div className="tip-box">
-            <h4>📊 実績の見方</h4>
-            <ul>
-              <li>
-                <strong>予測精度</strong>: どれくらいの確率で的中するか
-              </li>
-              <li>
-                <strong>回収率</strong>: 予測のパフォーマンスを示す指標
-                <ul>
-                  <li>100%以上: 高パフォーマンス</li>
-                  <li>100%未満: 標準以下</li>
-                </ul>
-              </li>
-              <li>予測精度を参考に、分析戦略を見直しましょう</li>
-            </ul>
           </div>
         </>
       ),
@@ -313,8 +262,8 @@ export default function HowToUse() {
         {JSON.stringify({
           "@context": "https://schema.org",
           "@type": "HowTo",
-          name: "BoatAI（AIボートレース予想サービス）の使い方",
-          description: "BoatAIの使い方を6つのステップで解説",
+          name: "BoatAI（AIボートレース分析サービス）の使い方",
+          description: "BoatAIの使い方を5つのステップで解説",
           step: steps.map((step, index) => ({
             "@type": "HowToStep",
             position: index + 1,
@@ -396,7 +345,7 @@ export default function HowToUse() {
             </button>
           ) : (
             <button onClick={() => navigate("/")} className="nav-button finish">
-              AI予想を見る 🚀
+              データ分析を見る 🚀
             </button>
           )}
         </div>
