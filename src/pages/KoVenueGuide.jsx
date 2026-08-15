@@ -1,6 +1,6 @@
 /**
  * KoVenueGuide - 회장별 한국어 가이드（/ko/venues, /ko/venues/:slug）
- * 한국은 자국에 경정(競艇)이 있어 방일 관광객 중에서도 관심도가 높은 편（BOA-132）
+ * 한국은 자국에 경정이 있어 방일 관광객 중에서도 관심도가 높은 편（BOA-132）
  * JSX 구조는 VenueGuide.jsx에 공통화되어 있음. 여기서는 한국어 문구만 관리한다
  */
 import { Link } from "react-router-dom";

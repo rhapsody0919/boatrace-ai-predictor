@@ -460,7 +460,7 @@ async function scrapeAndSaveResults(races, targetDate) {
         // 単勝: 1着予測が的中
         const isWinHit = pred.top_pick === result.rank1;
 
-        // 複勝: 1着予測が2着以内（競艇のルール）
+        // 複勝: 1着予測が2着以内（ボートレースのルール）
         const isPlaceHit =
           pred.top_pick === result.rank1 || pred.top_pick === result.rank2;
 

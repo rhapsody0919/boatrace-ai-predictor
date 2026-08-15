@@ -14,8 +14,8 @@ export const VENUE_GUIDES_EN = [
     regionGroup: "kanto",
     tagline: "The most tourist-friendly venue — minutes from Haneda Airport",
     intro: [
-      "Boat Race Heiwajima sits inside the BIG FUN Heiwajima entertainment complex in Ota ward, southern Tokyo — complete with bowling, arcades, restaurants and even a natural hot-spring spa next door. If you are staying in Tokyo or have hours to spare around a Haneda flight, this is the easiest venue to experience Kyotei for the first time.",
-      "Heiwajima is also famous among bettors as one of the toughest venues for lane 1 in Japan. The tight first turn means escapes (Nige) fail more often than average, producing frequent upsets and juicy payouts — a perfect place to see why venue characteristics matter so much in Kyotei prediction.",
+      "Boat Race Heiwajima sits inside the BIG FUN Heiwajima entertainment complex in Ota ward, southern Tokyo — complete with bowling, arcades, restaurants and even a natural hot-spring spa next door. If you are staying in Tokyo or have hours to spare around a Haneda flight, this is the easiest venue to experience boat racing for the first time.",
+      "Heiwajima is also famous among bettors as one of the toughest venues for lane 1 in Japan. The tight first turn means escapes (Nige) fail more often than average, producing frequent upsets and juicy payouts — a perfect place to see why venue characteristics matter so much in boat race prediction.",
     ],
     access: [
       'Keikyu Line "Heiwajima" station → free shuttle bus (or about 15-20 min on foot)',
@@ -92,9 +92,9 @@ export const VENUE_GUIDES_EN = [
     region: "Osaka",
     regionGroup: "kinki",
     tagline:
-      'The "sacred ground" of Kyotei — night races in the heart of Osaka',
+      'The "sacred ground" of boat racing — night races in the heart of Osaka',
     intro: [
-      "Boat Race Suminoe in Osaka is often called the sacred ground of Kyotei. It hosts many of the sport's biggest championships and runs night races (roughly 2:30pm-9:00pm), so you can spend the day sightseeing in Osaka and still catch a full evening of racing under the floodlights.",
+      "Boat Race Suminoe in Osaka is often called the sacred ground of boat racing. It hosts many of the sport's biggest championships and runs night races (roughly 2:30pm-9:00pm), so you can spend the day sightseeing in Osaka and still catch a full evening of racing under the floodlights.",
       "The venue is a short walk from a metro station, making it one of the most accessible in Japan. Grandstand food, neon-lit water and top-class racers make Suminoe the venue to visit if you only see one boat race in Kansai.",
     ],
     access: [
@@ -114,7 +114,7 @@ export const VENUE_GUIDES_EN = [
       character: "Balanced racing; hosts many premier (SG/G1) events",
       nightRace: true,
     },
-    tip: "Night races mean you can combine Osaka sightseeing by day with Kyotei by night — check our predictions for the evening card.",
+    tip: "Night races mean you can combine Osaka sightseeing by day with boat racing by night — check our predictions for the evening card.",
     nearbyAttractions: [
       {
         name: "Sumiyoshi Taisha",
@@ -158,7 +158,7 @@ export const VENUE_GUIDES_EN = [
       typicalRaceDays:
         "Regular meets run several times a year, each lasting about 4-7 days, plus periodic multi-day SG/G1 tournaments.",
       seasonalNotes:
-        "Hosts the SG Grand Prix, the sport's season-ending championship, most years in December — one of the biggest events in Kyotei.",
+        "Hosts the SG Grand Prix, the sport's season-ending championship, most years in December — one of the biggest events in boat racing.",
     },
     image: {
       src: "/images/venues/suminoe.jpg",
@@ -177,7 +177,7 @@ export const VENUE_GUIDES_EN = [
     tagline: "Japan's only river course — wild water, wild payouts",
     intro: [
       "Boat Race Edogawa in eastern Tokyo is the only venue in Japan built on a natural river. Wind and tide constantly change the water, making it the most unpredictable racing surface in the sport — races here are notorious for upsets.",
-      "For spectators this is Kyotei at its rawest: choppy water, boats fighting the current, and payouts that can be spectacular. If you enjoy chaos, Edogawa is your venue.",
+      "For spectators this is boat racing at its rawest: choppy water, boats fighting the current, and payouts that can be spectacular. If you enjoy chaos, Edogawa is your venue.",
     ],
     access: [
       'Toei Shinjuku Line "Funabori" station → free race-day shuttle bus',
@@ -201,7 +201,7 @@ export const VENUE_GUIDES_EN = [
       {
         name: "Kitaro Walkway (on-site)",
         description:
-          "The venue's own embankment stands are lined with yokai artwork by Shigeru Mizuki, creator of GeGeGe no Kitaro — a one-of-a-kind sight you won't find at any other Kyotei venue.",
+          "The venue's own embankment stands are lined with yokai artwork by Shigeru Mizuki, creator of GeGeGe no Kitaro — a one-of-a-kind sight you won't find at any other boat race venue.",
       },
       {
         name: "Kasai Rinkai Park & Aquarium",
@@ -441,7 +441,7 @@ export const VENUE_GUIDES_EN = [
     regionGroup: "kanto",
     tagline: "The birthplace of night racing — Japan's highest-altitude venue",
     intro: [
-      "Boat Race Kiryu, in Gunma prefecture, was the first of Japan's 24 venues to introduce night racing, back in 1997, and today every card here runs entirely under floodlights (first race around 3pm, last race around 8:30pm). It's also the highest-altitude Kyotei venue in the country, sitting 128 meters above sea level.",
+      "Boat Race Kiryu, in Gunma prefecture, was the first of Japan's 24 venues to introduce night racing, back in 1997, and today every card here runs entirely under floodlights (first race around 3pm, last race around 8:30pm). It's also the highest-altitude boat race venue in the country, sitting 128 meters above sea level.",
       'The thinner air at altitude means motors produce slightly less power than at sea-level venues, which tends to favor dash-style (outside lane) racers over pure escapes. A strong seasonal tailwind known as the "Akagi-oroshi" blows through in winter and spring, adding another layer to the racing.',
     ],
     access: [
@@ -518,7 +518,7 @@ export const VENUE_GUIDES_EN = [
     tagline:
       "Japan's narrowest course — the only venue with an Olympic pedigree",
     intro: [
-      "Boat Race Toda sits inside Toda Park in Saitama, on the same still-water course used for the 1964 Tokyo Olympics rowing events — the only Kyotei venue with an Olympic history. The course is also the narrowest of Japan's 24 venues, putting boats close together and making for some of the most exciting racing to watch live.",
+      "Boat Race Toda sits inside Toda Park in Saitama, on the same still-water course used for the 1964 Tokyo Olympics rowing events — the only boat race venue with an Olympic history. The course is also the narrowest of Japan's 24 venues, putting boats close together and making for some of the most exciting racing to watch live.",
       'The narrow, hard-packed freshwater surface makes it difficult for the front-runner to hold the inside line cleanly, so "makuri" (outside overtaking) passes succeed here more often than almost anywhere else in Japan — Toda has one of the lowest lane-1 win rates in the sport.',
     ],
     access: [
@@ -913,7 +913,7 @@ export const VENUE_GUIDES_EN = [
     regionGroup: "chubu-tokai",
     tagline: "Japan's only Sea of Japan venue, next to a historic port town",
     intro: [
-      "Boat Race Mikuni, in Fukui prefecture, is the only Kyotei venue on the Sea of Japan coast. The course is a freshwater pool with no tidal effect, but a sea breeze often picks up as the day warms, adding a wrinkle to the racing. Because the water is unaffected by tides, strong-motor boats tend to have a reliable edge here.",
+      "Boat Race Mikuni, in Fukui prefecture, is the only boat race venue on the Sea of Japan coast. The course is a freshwater pool with no tidal effect, but a sea breeze often picks up as the day warms, adding a wrinkle to the racing. Because the water is unaffected by tides, strong-motor boats tend to have a reliable edge here.",
       "The venue sits close to Mikuni-minato, a former Kitamae-bune trading port with a well-preserved old town, and within reach of one of Japan's most dramatic coastlines.",
     ],
     access: [
@@ -992,7 +992,7 @@ export const VENUE_GUIDES_EN = [
     regionGroup: "kinki",
     tagline: "Japan's most scenic venue, on the shore of Lake Biwa",
     intro: [
-      'Boat Race Biwako sits on the shore of Lake Biwa, Japan\'s largest freshwater lake, with views across the water to Mt. Mikami ("Omi-Fuji") and Mt. Ibuki that make it one of the most scenic Kyotei venues in the country. A sightseeing paddle steamer, the Michigan, is often visible cruising the lake during racing.',
+      'Boat Race Biwako sits on the shore of Lake Biwa, Japan\'s largest freshwater lake, with views across the water to Mt. Mikami ("Omi-Fuji") and Mt. Ibuki that make it one of the most scenic boat race venues in the country. A sightseeing paddle steamer, the Michigan, is often visible cruising the lake during racing.',
       "Spring and summer bring offshore winds that can roughen the water, so conditions vary more here than at fully sheltered venues — a factor worth watching alongside the view.",
     ],
     access: [
@@ -1073,7 +1073,7 @@ export const VENUE_GUIDES_EN = [
     tagline:
       "Step off the train and you're there — one of the calmest waters in Japan",
     intro: [
-      'Boat Race Amagasaki is about as convenient as Kyotei gets: the venue sits right next to Hanshin Railway\'s "Amagasaki Center Pool-mae" station, so you barely need an umbrella even on a rainy day. The water here is known as one of the calmest and most technical in the sport, freshwater and firm underneath the hull.',
+      'Boat Race Amagasaki is about as convenient as boat racing gets: the venue sits right next to Hanshin Railway\'s "Amagasaki Center Pool-mae" station, so you barely need an umbrella even on a rainy day. The water here is known as one of the calmest and most technical in the sport, freshwater and firm underneath the hull.',
       "A headwind blows across the course most of the year, though it can swing to a tailwind when a low-pressure system or rain moves in. In recent years lane 1 has been winning more than 60% of the time here, making Amagasaki one of the most inside-favored venues in Japan.",
     ],
     access: [
@@ -1229,7 +1229,7 @@ export const VENUE_GUIDES_EN = [
     regionGroup: "shikoku",
     tagline: "A tide-driven Seto Inland Sea course, in Japan's udon capital",
     intro: [
-      'Boat Race Marugame faces the Seto Inland Sea in Kagawa prefecture, on a soft, buoyant seawater course with one of the strongest tidal swings of any Kyotei venue — up to about 2 meters between high and low tide. A headwind is common, and passing moves like "sashi" and "makuri-sashi" succeed more often here than pure escapes.',
+      'Boat Race Marugame faces the Seto Inland Sea in Kagawa prefecture, on a soft, buoyant seawater course with one of the strongest tidal swings of any boat race venue — up to about 2 meters between high and low tide. A headwind is common, and passing moves like "sashi" and "makuri-sashi" succeed more often here than pure escapes.',
       'Marugame has raced under lights since its "Blue Nighter" night program launched in 2009, and is now a year-round night-racing venue.',
     ],
     access: [
@@ -1875,9 +1875,9 @@ export const VENUE_GUIDES_EN = [
     region: "Nagasaki (Kyushu)",
     regionGroup: "kyushu",
     tagline:
-      "The birthplace of Kyotei itself, and one of the most inside-favored venues",
+      "The birthplace of boat racing itself, and one of the most inside-favored venues",
     intro: [
-      "Boat Race Omura holds a unique place in the sport's history: it hosted Japan's first-ever motorboat race, on April 6, 1952, making it the literal birthplace of Kyotei. Wind screens have since been expanded to support night racing, and lane 1 wins here roughly 63% of the time — among the highest rates in the country.",
+      "Boat Race Omura holds a unique place in the sport's history: it hosted Japan's first-ever motorboat race, on April 6, 1952, making it the literal birthplace of boat racing. Wind screens have since been expanded to support night racing, and lane 1 wins here roughly 63% of the time — among the highest rates in the country.",
       "The venue is close to Nagasaki Airport and racing runs about 180 days a year, with a food court (including Sasebo burgers) and play areas that make it an easy family stop.",
     ],
     access: [
