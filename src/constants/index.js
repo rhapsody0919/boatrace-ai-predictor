@@ -41,9 +41,6 @@ export const MODEL_NAMES = {
   "upset-focus": "穴狙い",
 };
 
-// モデルキー配列（イテレーション用）
-export const MODEL_KEYS = ["standard", "safeBet", "upsetFocus"];
-
 // 曜日名（日本語）
 export const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
