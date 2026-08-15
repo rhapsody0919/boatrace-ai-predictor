@@ -732,9 +732,6 @@ export const supabaseDataService = {
         race_number,
         start_time,
         race_grade,
-        volatility_score,
-        volatility_level,
-        volatility_reasons,
         race_entries (
           boat_number,
           player_name,
@@ -762,6 +759,30 @@ export const supabaseDataService = {
       // 会場別1コース勝率（直近90日）を取得
       const venueWinRateMap = await fetchVenueWinRateMap();
 
+      // イン崩れ指数はunifiedモデル（predictions.feature_contributions.
+      // volatilityPercentile）基準に統一する（旧races.volatility_score/level は
+      // generate-predictions.js（旧3モデル）由来で別ロジックのため不使用。2026-08-15）
+      const { data: unifiedPreds } = await supabase
+        .from("predictions")
+        .select("race_id, feature_contributions")
+        .eq("model_id", "unified")
+        .in(
+          "race_id",
+          races.map((r) => r.race_id),
+        );
+      const volatilityByRaceId = new Map();
+      for (const pred of unifiedPreds || []) {
+        const percentile = pred.feature_contributions?.volatilityPercentile;
+        if (typeof percentile !== "number") continue;
+        volatilityByRaceId.set(pred.race_id, {
+          percentile,
+          isFallback:
+            pred.feature_contributions?.volatilityPercentileIsFallback ?? false,
+          level:
+            percentile >= 0.7 ? "high" : percentile <= 0.3 ? "low" : "standard",
+        });
+      }
+
       // 会場ごとにグループ化
       const venueMap = new Map();
 
@@ -783,11 +804,9 @@ export const supabaseDataService = {
           date: race.race_date,
           placeCd: race.venue_code,
           raceGrade: race.race_grade ?? null,
-          volatility: race.volatility_score
+          volatility: volatilityByRaceId.has(race.race_id)
             ? {
-                score: race.volatility_score,
-                level: race.volatility_level,
-                reasons: race.volatility_reasons || [],
+                ...volatilityByRaceId.get(race.race_id),
                 venueWinRate: venueWinRateMap[race.venue_code] ?? null,
               }
             : null,

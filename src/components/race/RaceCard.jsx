@@ -12,8 +12,12 @@ function RaceCard({ race, onAnalyzeRace }) {
   const result = racePrediction?.result;
   const isFinished = result?.finished;
 
-  const isHighVolatility = volatility?.level === "high";
-  const isLowVolatility = volatility?.level === "low";
+  // フォールバック値（percentile=0.5）は「実測ではない」ため、high/lowの
+  // 断定バッジを出さない（VolatilityDisplay.jsxの「データ収集中」表示と同じ方針）
+  const isHighVolatility =
+    !volatility?.isFallback && volatility?.level === "high";
+  const isLowVolatility =
+    !volatility?.isFallback && volatility?.level === "low";
   const showBadge = isHighVolatility || isLowVolatility;
   const badgeColor = isHighVolatility ? "#c62828" : "#2e7d32";
   const badgeLabel = isHighVolatility
