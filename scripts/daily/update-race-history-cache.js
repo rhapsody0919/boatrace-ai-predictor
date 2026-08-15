@@ -1,7 +1,15 @@
 // Race History Cache Update Script
-// predictions テーブルから過去90日の日別・モデル別統計を集計し、race_history_cache に保存
+// predictions（unified）テーブルから過去90日の日別・展開予測的中統計を集計し、
+// race_history_cache に保存する
+//
+// BOA-178（unified一本化）対応: 旧3モデル別の単勝/複勝/3連複/3連単集計を廃止し、
+// unifiedモデルの展開予測的中（predictions.is_hit_turn、ADR 0013）のみを
+// 日別に集計するシンプルな構造に変更。マイグレーション033
+// （predictions.is_hit_turn追加）の適用が前提。
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+
+const MODEL_ID = "unified";
 
 // JST 日付文字列を生成
 function jstDateStr(date) {
@@ -9,30 +17,22 @@ function jstDateStr(date) {
   return jst.toISOString().split("T")[0];
 }
 
-// predictions テーブルから指定範囲を全件取得（ページネーション付き）
-async function fetchPredictionsRange(startDate, endDate) {
+// predictions（unified）から指定範囲を全件取得（ページネーション付き）
+async function fetchUnifiedPredictionsRange(startDate) {
   let allData = [];
   let from = 0;
   const pageSize = 1000;
-  const adjustedEnd = endDate ? `${endDate}-99-99` : null;
 
   while (true) {
-    let query = supabase
+    const { data: page, error } = await supabase
       .from("predictions")
-      .select(
-        "race_id, model_id, is_hit_win, is_hit_place, is_hit_trifecta, is_hit_trio, payout_win, payout_place, payout_trifecta, payout_trio",
-      )
+      .select("race_id, is_hit_turn")
+      .eq("model_id", MODEL_ID)
       .gte("race_id", startDate)
-      .not("is_hit_win", "is", null)
       .range(from, from + pageSize - 1);
 
-    if (adjustedEnd) {
-      query = query.lte("race_id", adjustedEnd);
-    }
-
-    const { data: page, error } = await query;
     if (error) {
-      console.error("  fetchPredictionsRange error:", error.message);
+      console.error("  fetchUnifiedPredictionsRange error:", error.message);
       break;
     }
     if (!page || page.length === 0) break;
@@ -55,19 +55,11 @@ async function updateRaceHistoryCache() {
 
   console.log("\n📊 レース履歴キャッシュ用データ取得中...");
 
-  // predictions を取得（ページネーション付き）
-  const allPredictions = await fetchPredictionsRange(ninetyDaysAgoStr, null);
-  console.log(`  取得した予測: ${allPredictions.length}件`);
+  // unified予測を取得（ページネーション付き）
+  const predictions = await fetchUnifiedPredictionsRange(ninetyDaysAgoStr);
+  console.log(`  取得したunified予測: ${predictions.length}件`);
 
-  if (allPredictions.length === 0) {
-    console.log("  ⚠️  予測データが見つかりません");
-    return false;
-  }
-
-  // race_id ごとの レース情報を取得（total/finished を計数）
-  const raceIds = [...new Set(allPredictions.map((p) => p.race_id))];
-  console.log(`  対象レース: ${raceIds.length}件`);
-
+  // race_id ごとの レース情報を取得（total を計数）
   let allRaces = [];
   let from = 0;
   const pageSize = 1000;
@@ -88,10 +80,8 @@ async function updateRaceHistoryCache() {
     from += pageSize;
   }
 
-  const raceSet = new Set(allRaces.map((r) => r.race_id));
-
-  // 日付別・モデル別に集計
-  const dayMap = new Map(); // date -> { totalRaces, finishedRaces, models: Map<modelId, stats> }
+  // 日付別に集計
+  const dayMap = new Map(); // date -> { totalRaces, finishedRaces, turnRaces, turnHits }
 
   // ステップ 1: 全レース数を日付別に集計
   for (const race of allRaces) {
@@ -101,14 +91,17 @@ async function updateRaceHistoryCache() {
         date,
         totalRaces: 0,
         finishedRaces: 0,
-        models: new Map(),
+        turnRaces: 0,
+        turnHits: 0,
       });
     }
     dayMap.get(date).totalRaces++;
   }
 
-  // ステップ 2: 予測データを日付別・モデル別に集計
-  for (const pred of allPredictions) {
+  // ステップ 2: unified予測を日付別に集計
+  // is_hit_turn: true=的中, false=不的中, null=結果未確定 or turnPredictionなし
+  const processedRaceIds = new Set();
+  for (const pred of predictions) {
     const date = pred.race_id.substring(0, 10);
 
     if (!dayMap.has(date)) {
@@ -116,80 +109,38 @@ async function updateRaceHistoryCache() {
         date,
         totalRaces: 0,
         finishedRaces: 0,
-        models: new Map(),
+        turnRaces: 0,
+        turnHits: 0,
       });
     }
-
     const dayData = dayMap.get(date);
 
-    // 初回訪問時のみ finishedRaces をインクリメント（race_id 単位）
-    // （複数モデルの予測があっても1レース1回のみカウント）
-    if (!dayData._processedRaces) dayData._processedRaces = new Set();
-    if (!dayData._processedRaces.has(pred.race_id)) {
+    // finishedRaces: is_hit_turnが確定している（null以外）レースをカウント
+    // （レース単位で1回のみ、unifiedはrace_idごとに1レコードのため実質不要だが念のため）
+    if (pred.is_hit_turn !== null && !processedRaceIds.has(pred.race_id)) {
       dayData.finishedRaces++;
-      dayData._processedRaces.add(pred.race_id);
+      processedRaceIds.add(pred.race_id);
     }
 
-    // モデル別の統計を初期化
-    const modelId = pred.model_id;
-    if (!dayData.models.has(modelId)) {
-      dayData.models.set(modelId, {
-        modelId,
-        finishedRaces: 0,
-        winHits: 0,
-        winPayouts: 0,
-        placeHits: 0,
-        placePayouts: 0,
-        trifectaHits: 0,
-        trifectaPayouts: 0,
-        trioHits: 0,
-        trioPayouts: 0,
-      });
+    if (pred.is_hit_turn !== null) {
+      dayData.turnRaces++;
+      if (pred.is_hit_turn) dayData.turnHits++;
     }
-
-    const modelStats = dayData.models.get(modelId);
-
-    // 各モデルの race 単位でのカウント
-    // （複数のカテゴリの予測があっても1レース1回のみ）
-    if (!modelStats._processedRaces) modelStats._processedRaces = new Set();
-    if (!modelStats._processedRaces.has(pred.race_id)) {
-      modelStats.finishedRaces++;
-      modelStats._processedRaces.add(pred.race_id);
-    }
-
-    // ヒット数・配当合計
-    if (pred.is_hit_win) modelStats.winHits++;
-    modelStats.winPayouts += pred.payout_win || 0;
-
-    if (pred.is_hit_place) modelStats.placeHits++;
-    modelStats.placePayouts += pred.payout_place || 0;
-
-    if (pred.is_hit_trifecta) modelStats.trifectaHits++;
-    modelStats.trifectaPayouts += pred.payout_trifecta || 0;
-
-    if (pred.is_hit_trio) modelStats.trioHits++;
-    modelStats.trioPayouts += pred.payout_trio || 0;
   }
 
   // ステップ 3: dayMap を days 配列に変換
   const days = Array.from(dayMap.values())
-    .map((day) => {
-      // _processedRaces は不要（内部用）
-      delete day._processedRaces;
-
-      // models を配列に変換
-      const models = Array.from(day.models.values()).map((m) => {
-        delete m._processedRaces;
-        return m;
-      });
-
-      return {
-        date: day.date,
-        totalRaces: day.totalRaces,
-        finishedRaces: day.finishedRaces,
-        models,
-      };
-    })
+    .map((day) => ({
+      date: day.date,
+      totalRaces: day.totalRaces,
+      finishedRaces: day.finishedRaces,
+      turnRaces: day.turnRaces,
+      turnHits: day.turnHits,
+      turnHitRate:
+        day.turnRaces > 0
+          ? parseFloat(((day.turnHits / day.turnRaces) * 100).toFixed(1))
+          : null,
+    }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
   console.log(`  日別集計: ${days.length}日分`);
@@ -213,7 +164,7 @@ async function updateRaceHistoryCache() {
     return false;
   }
 
-  console.log("  ✅ race_history_cache 更新完了（90日分）");
+  console.log("  ✅ race_history_cache 更新完了（90日分、展開予測的中率）");
   return true;
 }
 

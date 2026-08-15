@@ -593,6 +593,19 @@ test.describe("ホームズ予想（α版・非公開リンク）", () => {
   });
 });
 
+test.describe("過去の予想データ一覧のunified一本化（BOA-178）", () => {
+  test("/races で日付カードに展開予測的中率が表示され、旧モデル比較表が表示されない", async ({
+    page,
+  }) => {
+    await page.goto("/races");
+    await expect(page.locator(".date-card").first()).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.locator(".date-card-turn-stat").first()).toBeVisible();
+    await expect(page.locator(".mct-wrapper")).toHaveCount(0);
+  });
+});
+
 test.describe("成績ページのunified一本化（BOA-175）", () => {
   test("/accuracy で展開予測の実測的中率が表示され、旧モデル切替UIが表示されない", async ({
     page,

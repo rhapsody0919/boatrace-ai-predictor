@@ -148,7 +148,34 @@
   border-radius: 20px;
 }
 
-/* モデル比較表は ModelComparisonTable.css を使用 */
+.date-card-turn-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.date-card-turn-stat-label {
+  font-size: 0.9rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.date-card-turn-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0369a1;
+}
+
+.date-card-turn-stat-count {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.date-card-turn-stat-empty {
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
 
 .date-card-footer {
   text-align: right;
@@ -189,19 +216,8 @@
     align-self: flex-start;
   }
 
-  .date-card .model-comparison-table th {
-    padding: 0.6rem 0.3rem;
-    font-size: 0.75rem;
-  }
-
-  .date-card .model-comparison-table .sub-header th {
-    padding: 0.4rem 0.2rem;
-    font-size: 0.75rem;
-  }
-
-  .date-card .model-comparison-table td {
-    padding: 0.6rem 0.3rem;
-    font-size: 0.75rem;
+  .date-card-turn-stat-value {
+    font-size: 1.3rem;
   }
 }
 
@@ -216,21 +232,6 @@
 
   .month-title h2 {
     font-size: 1.1rem;
-  }
-
-  .date-card .model-comparison-table th {
-    padding: 0.5rem 0.2rem;
-    font-size: 0.75rem;
-  }
-
-  .date-card .model-comparison-table .sub-header th {
-    padding: 0.35rem 0.15rem;
-    font-size: 0.75rem;
-  }
-
-  .date-card .model-comparison-table td {
-    padding: 0.5rem 0.2rem;
-    font-size: 0.75rem;
   }
 }
 
