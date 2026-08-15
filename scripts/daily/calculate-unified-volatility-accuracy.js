@@ -22,6 +22,33 @@ import {
 
 const MODEL_ID = "unified";
 
+const VENUE_NAMES = {
+  1: "桐生",
+  2: "戸田",
+  3: "江戸川",
+  4: "平和島",
+  5: "多摩川",
+  6: "浜名湖",
+  7: "蒲郡",
+  8: "常滑",
+  9: "津",
+  10: "三国",
+  11: "びわこ",
+  12: "住之江",
+  13: "尼崎",
+  14: "鳴門",
+  15: "丸亀",
+  16: "児島",
+  17: "宮島",
+  18: "徳山",
+  19: "下関",
+  20: "若松",
+  21: "芦屋",
+  22: "福岡",
+  23: "唐津",
+  24: "大村",
+};
+
 function levelOf(percentile) {
   if (percentile >= 0.7) return "high"; // 警戒
   if (percentile <= 0.3) return "low"; // 堅い
@@ -62,7 +89,10 @@ async function main() {
       if (!result || result.is_cancelled || result.is_no_race) return null;
       const percentile = pred.feature_contributions?.volatilityPercentile;
       if (typeof percentile !== "number") return null;
+      // race_id形式: YYYY-MM-DD-VV-RR
+      const venueCode = parseInt(pred.race_id.split("-")[3], 10);
       return {
+        venueCode,
         level: levelOf(percentile),
         upset: result.rank1 !== 1,
       };
@@ -93,7 +123,32 @@ async function main() {
     };
   }
 
-  const summary = { baseline, byLevel };
+  // 会場別: 「イン崩れ確率高」ラベル時の実際のイン崩れ率 vs 会場全体の平均
+  // （VolatilityAccuracySection.jsxが期待するshapeに合わせる。BOA-175）
+  const venueCodes = [...new Set(joined.map((r) => r.venueCode))];
+  const byVenue = venueCodes
+    .map((venueCode) => {
+      const all = joined.filter((r) => r.venueCode === venueCode);
+      const high = all.filter((r) => r.level === "high");
+      const allUpset = all.filter((r) => r.upset).length;
+      const highUpset = high.filter((r) => r.upset).length;
+      return {
+        venueCode: String(venueCode).padStart(2, "0"),
+        venueName: VENUE_NAMES[venueCode] || `会場${venueCode}`,
+        highRaceCount: high.length,
+        highUpsetRate:
+          high.length > 0
+            ? parseFloat(((highUpset / high.length) * 100).toFixed(1))
+            : 0,
+        baselineUpsetRate: parseFloat(
+          ((allUpset / all.length) * 100).toFixed(1),
+        ),
+        isReliable: high.length >= 5,
+      };
+    })
+    .sort((a, b) => b.highUpsetRate - a.highUpsetRate);
+
+  const summary = { baseline, byLevel, byVenue };
 
   console.log("\n=== イン崩れ指数（unifiedモデル、実測値のみ） ===");
   console.log(
@@ -105,6 +160,7 @@ async function main() {
       `  ${level}: ${byLevel[level].raceCount}件 | イン崩れ率 ${byLevel[level].upsetRate}% (差分 ${byLevel[level].lift >= 0 ? "+" : ""}${byLevel[level].lift}pt)`,
     );
   }
+  console.log(`  会場別: ${byVenue.length}会場分集計`);
 
   const { error } = await supabase.from("accuracy_cache").upsert({
     key: "unified_volatility_accuracy",

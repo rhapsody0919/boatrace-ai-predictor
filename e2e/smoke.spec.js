@@ -613,6 +613,42 @@ test.describe("的中レース一覧のunified一本化（BOA-174）", () => {
   });
 });
 
+test.describe("過去の予想データ一覧のunified一本化（BOA-178）", () => {
+  test("/races で日付カードに展開予測的中率が表示され、旧モデル比較表が表示されない", async ({
+    page,
+  }) => {
+    await page.goto("/races");
+    await expect(page.locator(".date-card").first()).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.locator(".date-card-turn-stat").first()).toBeVisible();
+    await expect(page.locator(".mct-wrapper")).toHaveCount(0);
+  });
+});
+
+test.describe("成績ページのunified一本化（BOA-175）", () => {
+  test("/accuracy で展開予測の実測的中率が表示され、旧モデル切替UIが表示されない", async ({
+    page,
+  }) => {
+    await page.goto("/accuracy");
+    await expect(page.locator(".turn-accuracy-hero-rate")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.locator(".turn-accuracy-hero-rate")).toHaveText(/%$/);
+    await expect(page.locator(".model-selector")).toHaveCount(0);
+  });
+
+  test("/accuracy から旧モデルの月別成績アーカイブへの導線がある", async ({
+    page,
+  }) => {
+    await page.goto("/accuracy");
+    const historyLink = page.locator('a.history-link:has-text("アーカイブ")');
+    await expect(historyLink).toBeVisible({ timeout: 10000 });
+    await historyLink.click();
+    await expect(page).toHaveURL(/\/accuracy\/history$/);
+  });
+});
+
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {
   test("ブログ記事詳細ページのtitleが空にならない", async ({ page }) => {
     await page.goto("/blog/rough-race-signals");
