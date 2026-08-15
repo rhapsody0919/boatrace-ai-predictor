@@ -1,55 +1,5 @@
 /* 的中レースページのスタイル */
 
-/* モデル選択タブ（AccuracyDashboard.cssと統一） */
-.model-selector {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 0;
-  flex-wrap: wrap;
-}
-
-.model-selector button {
-  padding: 0.75rem 1.5rem;
-  background: transparent;
-  color: #64748b;
-  border: none;
-  border-bottom: 3px solid transparent;
-  cursor: pointer;
-  font-weight: normal;
-  font-size: 1rem;
-  transition: all 0.2s;
-  min-width: 120px;
-}
-
-.model-selector button:hover {
-  color: #0ea5e9;
-  transform: translateY(-2px);
-}
-
-.model-selector button.active {
-  background: #0ea5e9;
-  color: white !important;
-  border-bottom: 3px solid #0ea5e9;
-  font-weight: bold;
-}
-
-.model-selector button.active.standard {
-  background: #10b981;
-  border-bottom-color: #10b981;
-}
-
-.model-selector button.active.safe-bet {
-  background: #0ea5e9;
-  border-bottom-color: #0ea5e9;
-}
-
-.model-selector button.active.upset-focus {
-  background: #f59e0b;
-  border-bottom-color: #f59e0b;
-}
-
 /* 期間選択タブ */
 .period-selector {
   display: flex;
@@ -177,12 +127,6 @@
   color: #0ea5e9;
 }
 
-/* 総配当 */
-.total-payout {
-  font-weight: bold;
-  color: #dc2626;
-}
-
 /* 的中レースセクション */
 .hit-races-section {
   margin-bottom: 2rem;
@@ -263,51 +207,36 @@
   background: #94a3b8;
 }
 
-/* 的中タイプリスト */
-.hit-types-list {
+/* 展開予測的中の詳細（1マーク先頭コース・予想確率） */
+.turn-hit-detail {
+  border-top: 2px solid #e2e8f0;
+  padding-top: 0.75rem;
   margin-bottom: 0.75rem;
 }
 
-.hit-type-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.4rem 0;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.hit-type-item:last-child {
-  border-bottom: none;
-}
-
-.hit-type-label {
-  color: #475569;
-  font-weight: 500;
-}
-
-.hit-type-payout {
-  color: #0ea5e9;
-  font-weight: bold;
-}
-
-/* 合計配当 */
-.total-payout-section {
-  border-top: 2px solid #e2e8f0;
-  padding-top: 0.75rem;
+.turn-hit-course {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
 }
 
-.total-payout-label {
-  font-weight: bold;
-  color: #1e293b;
+.turn-hit-course-label {
+  color: #475569;
+  font-weight: 500;
+  font-size: 0.9rem;
 }
 
-.total-payout-value {
+.turn-hit-course-value {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #dc2626;
+  color: #0369a1;
+}
+
+.turn-hit-probability {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  text-align: right;
 }
 
 /* もっと見るボタン */
@@ -391,7 +320,6 @@
 
 /* レスポンシブデザイン */
 @media (max-width: 768px) {
-  .model-selector button,
   .period-selector button {
     padding: 0.625rem 1.25rem;
     font-size: 0.9rem;
@@ -414,12 +342,10 @@
 }
 
 @media (max-width: 480px) {
-  .model-selector,
   .period-selector {
     gap: 0.5rem;
   }
 
-  .model-selector button,
   .period-selector button {
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
