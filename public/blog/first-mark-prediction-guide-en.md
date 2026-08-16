@@ -23,6 +23,8 @@ Unlike horse racing or bicycle racing, boat racing takes place **on the water**.
 
 Lane 1's wire-to-wire win accounts for about 55%, but in the remaining 45%, **a boat from lanes 2–6 overtakes at the first mark**. Being able to predict that 45% opens up real opportunities for higher-payout bets.
 
+![Donut chart showing the breakdown of winning patterns decided at the first mark: Nige 55%, Sashi 15%, Makuri 12%, Makuri-zashi 13%, Nuki 4%, and Megumare 1%, with the 45% share held by lanes other than 1 highlighted at the center](/images/blog/first-mark-kimarite-donut-en.jpg)
+
 ---
 
 ## How BoatAI's turn prediction works
@@ -183,5 +185,27 @@ If you're not sure how to build your bet, check the turn prediction first. It sh
 ---
 
 **Check BoatAI's turn predictions now →** [https://boat-ai.jp/](https://boat-ai.jp/)
+
+---
+
+## FAQ
+
+### Does the turn prediction always hit?
+
+No, it's a probabilistic prediction. The tracked hit rate for turn predictions is published on the [performance page](/accuracy), and it isn't 100%. Treat it as reference information about which development is more likely, and make your own final call.
+
+### I don't understand the difference between Nige, Sashi, and Makuri
+
+Nige is when lane 1 holds the lead the whole way. Sashi is when an inside boat cuts inside the leading boat to move ahead. Makuri is when an outside boat blows past on pure speed from the outside. Check these against the table above for more detail.
+
+### Can I trust the prediction for a racer with few starts on a given course?
+
+It's less reliable, but not meaningless. Racers with limited data get a prediction corrected toward the national average, which keeps it from swinging to extremes but also makes it less reflective of that racer's specific tendencies. Treat it as one reference point among several.
+
+### When does the turn prediction update?
+
+It's recalculated using exhibition-run data (exhibition ST) captured about 30 minutes before the race. Checking closer to post time gives you a prediction based on more current information.
+
+---
 
 **Tags:** #BoatRacing #TurnPrediction #FirstMark #WinningTechnique #AIPrediction #BoatAI

@@ -362,6 +362,7 @@ export const blogPosts = [
     tags: ["展開予測", "1マーク", "決まり手", "AI予想", "使い方"],
     readTime: "10分",
     featured: true,
+    image: "/images/blog/first-mark-kimarite-donut-ja.jpg",
   },
   {
     id: "picks-performance-report",

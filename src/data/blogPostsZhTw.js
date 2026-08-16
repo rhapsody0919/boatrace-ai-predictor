@@ -94,6 +94,7 @@ export const blogPostsZhTw = [
     category: "使用方法",
     tags: ["展開預測", "1轉彎", "決勝技巧", "AI預測", "使用方法"],
     readTime: "10分鐘",
+    image: "/images/blog/first-mark-kimarite-donut-zh-tw.jpg",
   },
   {
     id: "picks-performance-report",

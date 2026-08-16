@@ -154,6 +154,7 @@ export const blogPostsEn = [
       "HowTo",
     ],
     readTime: "10 min",
+    image: "/images/blog/first-mark-kimarite-donut-en.jpg",
   },
   {
     id: "picks-performance-report",
