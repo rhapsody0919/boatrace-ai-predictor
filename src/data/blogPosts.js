@@ -469,6 +469,7 @@ export const blogPosts = [
     tags: ["スジ舟券", "買い目", "展開予想", "まくり", "差し", "イン逃げ"],
     readTime: "12分",
     featured: true,
+    image: "/images/blog/suji-funaken-chart-ja.jpg",
   },
   {
     id: "start-exhibition-guide",

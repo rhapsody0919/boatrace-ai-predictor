@@ -233,6 +233,7 @@ export const blogPostsEn = [
       "WireToWire",
     ],
     readTime: "12 min",
+    image: "/images/blog/suji-funaken-chart-en.jpg",
   },
   {
     id: "sg-g1-race-strategy",

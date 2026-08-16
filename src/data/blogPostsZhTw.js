@@ -140,6 +140,7 @@ export const blogPostsZhTw = [
     category: "策略",
     tags: ["筋投注", "投注組合", "走勢預測", "外攻", "切入", "內道逃走"],
     readTime: "12分鐘",
+    image: "/images/blog/suji-funaken-chart-zh-tw.jpg",
   },
   {
     id: "sg-g1-race-strategy",
