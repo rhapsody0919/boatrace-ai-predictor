@@ -109,11 +109,10 @@ An odds distortion is **a situation where the odds are higher than the actual pr
 - **A racer with a high motor 2-place rate but low name recognition** — often undervalued by bettors who don't check the data
 - **Races with rough weather or changing water conditions** — bettor prediction accuracy drops when conditions change, creating odds distortions
 
-### Practice: 3 Steps
+### Practice: 2 Steps
 
-1. **Choose your race** — check for volatile conditions (wind speed, wave height, closely matched racer ability)
-2. **Compare the data** — cross-reference motor performance, exhibition times, and course-specific records against the odds
-3. **Compare against the odds** — calculate whether the odds are high enough relative to the hit rate you estimate
+1. **Pick a race with volatile conditions** (wind speed, wave height, closely matched racer ability), then cross-reference motor performance, exhibition times, and course-specific records to form your own hit-rate estimate
+2. **Check whether the odds clear expected value 1.0** relative to that hit rate
 
 ---
 
@@ -141,10 +140,8 @@ BoatAI generates predictions by analyzing motor performance, racer data, course-
 
 **How to use BoatAI for this:**
 
-- **Check "Today's Picks" for curated races** — the AI automatically surfaces races with high expected value
-- **Use the volatility score to read a race's character** — lean toward longshots in volatile races, favorites in stable ones
-- **Read the finish order with First-Mark Turn Predictions** — visualize the race from start to first turn to spot gaps against the odds
-- **Switch between 3 prediction models** — Safe Bet, Standard, and Longshot models to match the odds range you're targeting
+- **Read the finish order with turn predictions** — visualize the race up to the first turn, cross-check against BoatAI's tracked hit rate, and spot gaps against the odds
+- **Use the Upset Index to read a race's character** — lean toward longshots in races flagged "High upset chance," and toward favorites in races flagged "Favorite friendly"
 
 Don't just bet on the odds — **cross-reference BoatAI's data-driven predictions with the odds to find bets with positive expected value**. That's the first step toward a stable long-term return rate.
 
@@ -178,9 +175,9 @@ In theory, yes — but it isn't easy. Random betting converges to roughly a 75% 
 
 Relying on gut feeling alone makes you prone to the overpopularity trap. A more solid approach combines multiple data points — motor 2-place rate, course-specific win rate, exhibition times, and more. BoatAI's analysis data and its tracked turn-prediction hit rate are useful reference points for estimating hit rate yourself.
 
-### Do odds keep changing right up until the betting deadline?
+### Do odds keep changing right up until the betting deadline? What are "final odds"?
 
-Yes. Odds shift continuously as bettors place wagers, right up until betting closes. Popular racers' odds can drop further in a late rush of bets just before the deadline, so when you calculate expected value matters — an odds check an hour before post time can look different from one taken at the deadline.
+Yes. Odds shift continuously as bettors place wagers, right up until betting closes. Popular racers' odds can drop further in a late rush of bets just before the deadline. The odds locked in the moment betting closes — the ones actually used to calculate payouts — are the **final odds**. Calculating expected value closer to that moment gives you a more accurate read than checking odds well ahead of post time.
 
 ---
 
