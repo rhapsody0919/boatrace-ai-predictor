@@ -114,6 +114,8 @@ That said, drinking too much before placing a bet clouds your judgment, so pace 
 | 15:00 | Later races. The main races are typically races 10–12 |
 | 16:30 | Final race ends. Head home |
 
+![Timeline of a day at the boat race venue. From admission at 10:00 to the final race at 16:30, showing 8 milestones in order: entry, betting opens, grabbing a race program, checking the exhibition run, lunch, mid-day races, later races, and the final race](/images/blog/venue-visit-timeline-en.jpg)
+
 **Tip:** You don't have to bet on all 12 races. Betting only on races that feel right to you tends to be more enjoyable in the end.
 
 ### How to read the race program
@@ -319,6 +321,26 @@ A boat racing venue is a place you can enjoy even without buying a ticket.
 Just go and see for yourself. The thrill of boats racing through the spray simply doesn't come through on a screen.
 
 And for your predictions on site, put **BoatAI** to use. Combine the AI's data analysis with your own on-the-ground eye, and boat racing becomes many times more fun.
+
+---
+
+## FAQ
+
+### Do I need a reservation?
+
+No. Anyone can walk in and pay the admission fee (typically ¥100). Major races like SG or G1 events do get very crowded, though, so arriving early is a good idea.
+
+### Is there a dress code?
+
+None in particular — everyday clothes, sandals, and hats are all fine. Since much of the seating is outdoors, plan for sun protection in summer and warm layers in winter.
+
+### Can minors enter?
+
+Yes, admission itself has no age limit, but only people 20 and older can purchase tickets. Visiting with family, or just enjoying the venue's food, works fine without betting.
+
+### Can I still enjoy it on a rainy day?
+
+Most venues have covered seating areas, so you can watch even in the rain. Races can be cancelled or postponed in severe weather, though, so it's worth checking the official schedule before you head out.
 
 ---
 

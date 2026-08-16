@@ -105,6 +105,7 @@ export const blogPostsEn = [
       "BettingTickets",
     ],
     readTime: "10 min",
+    image: "/images/blog/trifecta-formation-matrix-en.jpg",
   },
   {
     id: "improve-recovery-rate",
@@ -180,6 +181,7 @@ export const blogPostsEn = [
       "VisitGuide",
     ],
     readTime: "12 min",
+    image: "/images/blog/venue-visit-timeline-en.jpg",
   },
   {
     id: "picks-guide",
