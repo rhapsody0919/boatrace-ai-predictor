@@ -113,15 +113,14 @@ This is where **BoatAI (boat-ai.jp)**'s AI predictions come in.
 - **View AI predictions for every race, completely free**
 - Racer data, motor performance, and lane-specific results are analyzed automatically
 - **First-Mark Turn Predictions** simulate how the race is likely to unfold
-- The **volatility score** shows you in advance which races are likely to be upset-prone
-- Choose from 3 prediction models (favorite-focused, standard, or longshot) to match your strategy
+- The **Upset Index** shows you in advance which races are likely to be upset-prone (labeled "High upset chance," "Standard," or "Favorite friendly")
 
 ### A recommended workflow for beginners
 
 1. Go to boat-ai.jp and check today's races
-2. Use the **"favorite-focused model" predictions** to pick races anchored around lane 1
+2. Use the **AI's predictions** to pick races anchored around lane 1
 3. Build a Quinella bet from the AI's top 3 boats
-4. Prioritize races with a low volatility score (solid races)
+4. Prioritize races labeled "Favorite friendly" on the Upset Index (solid races)
 
 ---
 

@@ -46,38 +46,17 @@ A Trio bet requires correctly picking the 3 boats that finish in the top 3 (orde
 
 ---
 
-## Strengths and weaknesses by model
+## How AI prediction works, and reading each race's volatility
 
-BoatAI offers 3 prediction models, each with its own characteristics and limits.
-
-### Standard model
+BoatAI analyzes every race with a single unified AI model. On top of that, each race's volatility is visualized through the "Upset Index," a percentile-based indicator that classifies races as "High upset chance," "Standard," or "Favorite friendly."
 
 | Item | Description |
 |------|------|
-| Character | Balanced. Analyzes all factors holistically |
-| Strength | Stable hit rate. Easy for beginners to use |
-| Weakness | Hard to hit big payouts; return rate doesn't grow much |
-| Best for | Bettors who want steady, reliable hits |
+| Prediction model | One unified model (analyzes all factors holistically) |
+| Volatility indicator | Upset Index |
+| Labels | High upset chance / Standard / Favorite friendly |
 
-### Favorite-focused model
-
-| Item | Description |
-|------|------|
-| Character | Weights lane 1 and Class A1 racers heavily |
-| Strength | Highest hit rate; strong in "sure thing" races |
-| Weakness | Low odds, so wins pay out little |
-| Best for | Bettors who prioritize hit rate above all |
-
-### Longshot model
-
-| Item | Description |
-|------|------|
-| Character | Identifies volatile races to target big payouts |
-| Strength | Large returns when it hits |
-| Weakness | Lowest hit rate; can go on losing streaks |
-| Best for | Bettors with spare bankroll chasing big payouts |
-
-**The key point: no model is a silver bullet.** Switching between models to match your own style and each race's character is what matters.
+**The key point: AI prediction is no silver bullet.** Use the Upset Index to adjust your approach to each race — betting conservatively on "Favorite friendly" races and keeping an eye on big payouts on "High upset chance" ones.
 
 ---
 
@@ -91,19 +70,13 @@ Boat racing has a deduction rate of roughly 25% — meaning about a quarter of e
 
 If you bet a flat amount on every single race, BoatAI's standard predictions return roughly **88–94%**. The hit rate is 3x random, but that alone isn't enough to fully overcome the 25% deduction.
 
-### "Today's Picks" achieves a 104% return rate
+### Curating races tends to improve the return rate
 
-BoatAI has a feature called "**Today's Picks**," which selects only the races the AI is most confident about.
+Instead of betting flat on every race, focusing only on the races where the AI's confidence is highest tends to improve the return rate, based on our evaluation (104% return rate, 30% Trio hit rate on curated races only).
 
-| Metric | Standard predictions | Today's Picks |
-|------|----------|---------------|
-| Races covered | All races | Curated races only |
-| Return rate | 88–94% | **104%** |
-| Hit rate | 18% (Trio) | **30%** (Trio) |
+In other words, **instead of "letting the AI pick every race," betting only on the AI's curated picks** can potentially break through the deduction-rate wall.
 
-In other words, **instead of "letting the AI pick every race," betting only on "the races the AI has curated"** can potentially break through the deduction-rate wall.
-
-That said, these numbers aren't a guarantee of future performance either — results shift constantly with market conditions and odds movement.
+That said, these numbers aren't a guarantee of future performance either — results shift constantly with market conditions and odds movement. See the [accuracy page](/accuracy) for the latest track record.
 
 ---
 
@@ -139,7 +112,7 @@ No matter how accurate it is, AI has real limits.
 2. **Be selective about races** — instead of betting on everything, focus on the races the AI is most confident about
 3. **Manage your bankroll strictly** — set a daily budget and don't chase a single big win
 4. **Take a long-term view** — judge performance over a month, not by a single day's win or loss
-5. **Switch models to match the race** — the favorite model for solid races, the longshot model for volatile ones
+5. **Use the Upset Index as a guide** — bet conservatively on "Favorite friendly" races, and watch for big payouts on "High upset chance" ones
 
 ---
 
@@ -150,7 +123,7 @@ Here's what 3 months and 15,000 races taught us:
 - The AI's hit rate is **about 3x random chance** — it genuinely does "hit"
 - But **it's wrong about half the time** — it's not infallible
 - Betting flat on every race makes **breaking 100% return rate difficult**
-- Curating races carefully **can produce a net-positive return** (104% with Today's Picks)
+- Curating races carefully **can produce a net-positive return** (104% when focused on the AI's highest-confidence picks)
 - The single most important thing is **transparency of track record** — don't trust an AI prediction service you can't verify
 
 AI prediction isn't "a magic tool that guarantees you'll win." But used correctly, it can be **a real weapon that reliably improves your boat racing hit rate**.
@@ -161,4 +134,4 @@ BoatAI publishes its entire track record. See for yourself first.
 
 ---
 
-**Tags:** #AIPrediction #BoatRacing #HitRate #ReturnRate #AIAccuracyReview #BoatAI #TodaysPicks #DataAnalysis
+**Tags:** #AIPrediction #BoatRacing #HitRate #ReturnRate #AIAccuracyReview #BoatAI #DataAnalysis

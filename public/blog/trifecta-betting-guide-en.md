@@ -171,9 +171,9 @@ BoatAI publishes free **AI predictions** built from integrated racer, motor, exh
    - If it predicts "wire-to-wire" → build a formation around the inside anchor
    - If it predicts "overtake" → build a formation around an outside anchor
 
-3. **Adjust your approach based on the volatility score**
-   - Low volatility → a tighter, favorite-leaning bet of 6–8 combinations
-   - High volatility → spread wider with 12 combinations, or switch to an outside anchor
+3. **Adjust your approach based on the Upset Index**
+   - "Favorite friendly" label → a tighter, favorite-leaning bet of 6–8 combinations
+   - "High upset chance" label → spread wider with 12 combinations, or switch to an outside anchor
 
 4. **Use the detailed turn data to narrow 2nd- and 3rd-place candidates**
    - Racers with strong attacking numbers → good 2nd-place candidates
@@ -185,7 +185,7 @@ BoatAI publishes free **AI predictions** built from integrated racer, motor, exh
 [BoatAI prediction]
 1st: lane 1 (85% confidence)
 Predicted development: wire-to-wire
-Volatility: Low
+Upset Index: Favorite friendly
 
 [Bets]
 1-2-3: ¥400 (favorite)

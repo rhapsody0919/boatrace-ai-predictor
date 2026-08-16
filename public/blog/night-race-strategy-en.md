@@ -164,7 +164,7 @@ Night races are a genre where understanding the fundamentals can meaningfully ra
 - All night races across every venue are analyzed by AI in real time
 - Motor performance, racer data, and water conditions are judged holistically
 - First-Mark Turn Predictions visualize each lane's attacking and defensive positioning
-- The volatility score lets you gauge a race's stability or upset potential in advance
+- The Upset Index lets you gauge a race's stability or upset potential in advance
 
 Don't rely on "the inside is favored" alone — start making **precise, data-driven predictions** for night races.
 

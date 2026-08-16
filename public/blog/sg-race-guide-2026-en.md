@@ -148,8 +148,8 @@ BoatAI provides data-driven predictions for SG races too.
 ### Tips for using it
 
 - **Check the turn predictions first** — in SG races, the battle at the first turn often decides the outcome, making turn-prediction data especially valuable
-- **Switch between the 3 prediction models** — use the favorite model for solid picks and the longshot model for higher payouts, depending on the race's character
-- **Use the volatility score as a guide** — SG races tend to be volatile, so on high-volatility races you can widen your bet spread accordingly
+- **Use the AI's data analysis** — an AI prediction combining racer, motor, exhibition, and weather data helps you gauge the race's character
+- **Use the Upset Index as a guide** — SG races tend to be volatile, so on races with a high Upset Index you can widen your bet spread accordingly
 
 SG races are hard, but with data on your side, there's real opportunity. Enjoy the 2026 SG season together with BoatAI.
 

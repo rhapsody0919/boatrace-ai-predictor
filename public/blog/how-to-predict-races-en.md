@@ -128,7 +128,7 @@ Boat racing takes place outdoors, so weather has a strong influence.
 | Headwind 3m+ | Inside passes land more easily | Watch lane 2 |
 | Crosswind | Harder to control the boat | Weight racer skill more heavily |
 
-⚠️ **Wind of 5m or more raises the chance of a volatile race.** Use BoatAI's volatility score too, to decide between a conservative or aggressive bet structure.
+⚠️ **Wind of 5m or more raises the chance of a volatile race.** Use BoatAI's Upset Index too, to decide between a conservative or aggressive bet structure.
 
 ---
 
@@ -169,13 +169,13 @@ Honestly, checking all 6 factors for every single race is a lot of work. This is
 | Exhibition data | Factors in exhibition time and start exhibition |
 | Lane tendencies | Accounts for each venue's lane-1 1st-place rate |
 | Weather adjustment | Factors in wind direction and speed |
-| Volatility score | Quantifies how likely a race is to be volatile |
+| Upset Index | Quantifies how likely a race is to be volatile, as a percentile ("High upset chance," "Standard," or "Favorite friendly") |
 
 ### How to predict using AI
 
 1. **Open the race you're interested in on BoatAI**
 2. **Check the AI's recommended bet**
-3. **Check the volatility score to judge whether it's a solid or volatile race**
+3. **Check the Upset Index to judge whether it's a solid or volatile race**
 4. **Use First-Mark Turn Predictions to visually see how the race is likely to unfold**
 5. **Add your own judgment to finalize your bet**
 
