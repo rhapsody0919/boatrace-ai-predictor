@@ -275,12 +275,29 @@ function InitialLanguageRedirect() {
 function LocalizedLayout({ lng }) {
   const { pathname, search } = useLocation();
 
-  if (lng !== DEFAULT_LANGUAGE) {
-    const basePath = pathname.slice(lng.length + 1) || "/";
-    const availableCodes = getAvailableLanguages(basePath).map((l) => l.code);
-    if (!availableCodes.includes(lng)) {
-      return <Navigate to={`${basePath}${search}`} replace />;
+  const isUntranslatedPath =
+    lng !== DEFAULT_LANGUAGE &&
+    !getAvailableLanguages(pathname.slice(lng.length + 1) || "/")
+      .map((l) => l.code)
+      .includes(lng);
+
+  // history.replaceStateベースのクライアントサイド遷移（React RouterのNavigate）は
+  // HTTPレベルの301/302ではなく、GoogleもHistory APIによるURL変更を
+  // リダイレクトとして扱わない（window.location系の遷移のみ認識する）。
+  // 実際に検証したところ、Navigateによる遷移は同一の同期処理内で完結し
+  // 外部から一切観測できないため、noindexメタタグを添えても無意味だった。
+  // window.location.replaceで実際のフルナビゲーションを発生させ、
+  // Googleがこのパスを「/{lng}/...から/...へのリダイレクト」と正しく
+  // 認識できるようにする（2026-08-16、多言語SEO技術基盤調査で発見・修正）
+  useEffect(() => {
+    if (isUntranslatedPath) {
+      const basePath = pathname.slice(lng.length + 1) || "/";
+      window.location.replace(`${basePath}${search}`);
     }
+  }, [isUntranslatedPath, pathname, search, lng]);
+
+  if (isUntranslatedPath) {
+    return null;
   }
 
   return (
