@@ -340,6 +340,7 @@ export const blogPostsEn = [
       "DataAnalysis",
     ],
     readTime: "9 min",
+    image: "/images/blog/odds-expected-value-matrix-en.jpg",
   },
 ];
 
