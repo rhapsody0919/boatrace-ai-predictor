@@ -52,6 +52,19 @@ const UI_TEXT = {
     home: "首頁",
     blogLabel: "部落格",
   },
+  ko: {
+    title: "블로그 | BoatAI - 보트레이스 예측・데이터 분석・전략 정보",
+    description:
+      "보트레이스 예측, 데이터 분석, 마권 전략에 관한 최신 정보를 발신합니다. 초보자를 위한 기초 지식부터 상급자를 위한 고급 전략까지 폭넓게 다룹니다.",
+    keywords: "보트레이스블로그,예측전략,데이터분석,마권구매,AI예측,승리법",
+    heading: "📚 BoatAI 블로그",
+    subheading: "보트레이스 예측・데이터 분석・전략에 관한 정보를 발신합니다",
+    featuredHeading: "🌟 주목 기사",
+    allButton: "전체",
+    noPosts: "이 카테고리의 기사는 아직 없습니다.",
+    home: "홈",
+    blogLabel: "블로그",
+  },
 };
 
 export default function Blog() {
@@ -137,7 +150,10 @@ export default function Blog() {
               {featuredPosts.map((post) => (
                 <Link
                   key={post.id}
-                  to={localizePath(`/blog/${post.id}`, isTranslated ? lng : "ja")}
+                  to={localizePath(
+                    `/blog/${post.id}`,
+                    isTranslated ? lng : "ja",
+                  )}
                   className="featured-card"
                 >
                   {isWithinDays(post.date, 7) && (

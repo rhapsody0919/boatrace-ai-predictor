@@ -8,6 +8,11 @@ import {
   getZhTwOverride,
   isZhTwAvailable,
 } from "./blogPostsZhTw.js";
+import {
+  blogPostsKo,
+  getKoreanOverride,
+  isKoreanAvailable,
+} from "./blogPostsKo.js";
 
 // 言語別ブログ翻訳データの設定。新言語追加時はここに1エントリ足すだけで良い
 // （BlogPost.jsx/Blog.jsxはこのマップ経由でのみ言語別データにアクセスする）
@@ -23,6 +28,12 @@ const BLOG_LANG_CONFIG = {
     getOverride: getZhTwOverride,
     isAvailable: isZhTwAvailable,
     mdSuffix: "-zh-tw",
+  },
+  ko: {
+    posts: blogPostsKo,
+    getOverride: getKoreanOverride,
+    isAvailable: isKoreanAvailable,
+    mdSuffix: "-ko",
   },
 };
 
