@@ -42,7 +42,7 @@ export const blogPostsEn = [
     title:
       "Does Boat Racing AI Prediction Really Hit? — Results from 3 Months and 15,000 Races",
     description:
-      "We audited AI prediction hit rate and return rate across 15,000 races. An honest look at each model's strengths and weaknesses, how BoatAI differs from other services, and where AI prediction falls short.",
+      "We audited AI prediction hit rate and return rate across 15,000 races. An honest look at its strengths and weaknesses, how BoatAI differs from other services, and where AI prediction falls short.",
     category: "Data Analysis",
     tags: [
       "AIPrediction",
@@ -253,11 +253,11 @@ export const blogPostsEn = [
   {
     id: "venue-ashiya",
     title:
-      "Ashiya Boat Race Venue Strategy Guide — Standard Model Trifecta at 1259% Return",
+      "Ashiya Boat Race Venue Strategy Guide — One of Japan's Strongest Inside-Favoring Venues",
     description:
-      "Ashiya boat racing venue's character and strategy, with BoatAI track record data. One of Japan's strongest inside-favoring venues, with a 1259% Trifecta return rate under the Standard model.",
+      "Ashiya boat racing venue's character and strategy, with BoatAI track record data. One of Japan's strongest inside-favoring venues.",
     category: "Venue Strategy",
-    tags: ["Ashiya", "BoatRacingVenue", "Strategy", "Standard", "StrongInside"],
+    tags: ["Ashiya", "BoatRacingVenue", "Strategy", "StrongInside"],
     readTime: "5 min",
   },
   {

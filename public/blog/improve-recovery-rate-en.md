@@ -93,29 +93,17 @@ AI can analyze every race in seconds and **extract only the statistically favora
 
 ---
 
-## Inside BoatAI's "Today's Picks" — the story behind its 104% return rate
+## How BoatAI's AI predictions put race curation into practice
 
-BoatAI's "Today's Picks" feature automates every one of the strategies above.
+BoatAI's AI predictions automate every one of the strategies above.
 
-### The results
+### Why race curation is what drives return rate
 
-| Metric | Value |
-|------|------|
-| Races covered | **2,577 races** |
-| Hits | **772** |
-| Hit rate | **30%** |
-| Return rate | **104% (+¥11,470)** |
-
-This is the result of betting a flat ¥100 on every recommended race. With no cherry-picking of races and no adjusting bet sizes — a **fully mechanical** operation achieving a net-positive return.
-
-### Why it can beat 100%
-
-The key is "**race curation**." Out of the 100+ races run each day, it extracts only the ones that match high-return patterns discovered through data mining.
-
-- Standard predictions across all races → 88–94% return rate
-- Today's Picks (curated) → **104% return rate**
+The key is "**race curation**." Out of the 100+ races run each day, spotting the ones that match high-return patterns discovered through data mining is what pushes a return rate above 100%.
 
 Rather than "participating in everything," it's about "**participating only in the races you can win**." That difference is what turns the 25% deduction rate around.
+
+You can check the latest hit rate and return rate on the [accuracy page](/accuracy).
 
 ---
 
@@ -154,12 +142,12 @@ Rather than "participating in everything," it's about "**participating only in t
 
 Breaking a 100% return rate isn't magic. It's the steady accumulation of **race selection, combination discipline, and bankroll management** overcoming the 25% deduction rate.
 
-BoatAI's "Today's Picks" runs this exact strategy automatically, every day, via AI.
+BoatAI's AI predictions run this exact strategy automatically, every day.
 
-👉 **[Check out BoatAI's "Today's Picks"](https://boat-ai.jp/picks)**
+👉 **[Check out BoatAI's AI predictions](https://boat-ai.jp/)**
 
 Start by looking at the data and seeing what kind of races get selected.
 
 ---
 
-**Tags:** #BoatRacing #ReturnRate #HowToWin #BettingStrategy #BankrollManagement #DataAnalysis #BoatAI #TodaysPicks
+**Tags:** #BoatRacing #ReturnRate #HowToWin #BettingStrategy #BankrollManagement #DataAnalysis #BoatAI

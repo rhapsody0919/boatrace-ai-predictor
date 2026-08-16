@@ -1,5 +1,7 @@
 # How to Use "Today's Picks" — High-Return Races Selected by Data Mining
 
+> **Note**: The "Today's Picks" feature described in this article has since been folded into BoatAI's single unified prediction model and is no longer offered as a standalone feature. What follows is a record of how it worked at the time. For current AI predictions and tracked hit rates, see the [performance page](/accuracy).
+
 ## Introduction
 
 "Which race should I bet on today?"
@@ -151,4 +153,4 @@ Trifecta has a lower hit rate, but a much bigger potential payout when it lands.
 
 Instead of betting blindly on every race, **narrow your focus to the conditions the data shows are winnable** — this is the most rational way to raise your return rate.
 
-👉 [Check Today's Picks](/picks)
+👉 [Check BoatAI's latest performance](/accuracy)

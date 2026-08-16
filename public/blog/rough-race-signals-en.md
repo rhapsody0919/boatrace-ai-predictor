@@ -60,7 +60,7 @@ Check the "motor 2nd-place-or-better rate" in the race program.
 
 → A 24-point gap, signaling a high chance of a volatile race
 
-BoatAI automatically calculates this gap and displays it as the "volatility score."
+BoatAI automatically calculates this gap and factors it into the "Upset Index."
 
 ---
 
@@ -143,21 +143,21 @@ For example, a situation like this:
 
 → **3 signals stack up, and the race is very likely to be volatile**
 
-In a situation like this, targeting a longshot with BoatAI's longshot model is an effective approach.
+In a situation like this, using BoatAI's Upset Index to guide a longshot bet for a bigger payout is an effective approach.
 
 ---
 
-## Put BoatAI's "volatility score" to use
+## Put BoatAI's "Upset Index" to use
 
-BoatAI analyzes these signals together and displays a "volatility score" for every race.
+BoatAI analyzes these signals together and displays an "Upset Index" for every race.
 
-### How to read the volatility score
+### How to read the Upset Index
 
-- **😌 Solid**: lane 1 is favored, best suited for a favorite-focused bet
-- **😐 Standard**: a balanced race, the Standard model is recommended
-- **😬 Volatile**: an upset is likely, the longshot model is recommended
+- **😌 Favorite friendly**: lane 1 is favored, best suited for a favorite-focused bet
+- **😐 Standard**: a balanced race
+- **😬 High upset chance**: an upset is likely, worth considering a bet aimed at a bigger payout
 
-Using this volatility score to switch between models lets you optimize both hit rate and return rate.
+Using this Upset Index to adjust how you bet lets you optimize both hit rate and return rate.
 
 ---
 
@@ -187,7 +187,7 @@ Let's verify this with an actual race.
 - **3rd**: lane 2
 - **Trifecta**: 5-4-2 → payout of **¥28,340**
 
-BoatAI's longshot model recommended lane 5 as its top pick, and it hit exactly.
+BoatAI's Upset Index showed "High upset chance," and lane 5 did indeed take 1st place, hitting exactly.
 
 ---
 
@@ -205,12 +205,12 @@ Here are the 5 signals that predict a volatile race.
 
 ### How to use BoatAI
 
-- Check the "volatility score" for each race
-- If the volatility score shows "😬 Volatile" → select the **longshot model**
+- Check the "Upset Index" for each race
+- If the Upset Index shows "😬 High upset chance" → consider a bet aimed at a bigger payout
 - Cross-check the signals yourself to raise your confidence further
 
 **Spotting a volatile race in advance** is a key skill for winning consistently at boat racing. Put data-driven predictions into practice with BoatAI!
 
 ---
 
-**Check the volatility score on BoatAI now →** [https://boat-ai.jp/](https://boat-ai.jp/)
+**Check the Upset Index on BoatAI now →** [https://boat-ai.jp/](https://boat-ai.jp/)

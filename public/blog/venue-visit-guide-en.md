@@ -253,12 +253,11 @@ Using your phone at the venue significantly boosts both the accuracy and the fun
 
 Using BoatAI at the venue gives you information you can't get from the race program alone.
 
-- **AI score**: See each of the 6 boats' predicted win probability at a glance
-- **3 prediction models**: Choose your strategy from favorite-focused, longshot-focused, or standard
-- **Today's Picks**: Automatically surfaces races matching patterns with a 100%+ return rate
-- **Performance data**: The AI's hit rate and return rate are always public
+- **Data race table**: Compare all 6 racers' win rates, motor performance, and exhibition times on the spot
+- **Turn prediction & Upset Index**: See the likely 1st-place finishers alongside a "Favorite friendly" or "High upset chance" label
+- **Tracked hit rate**: The turn prediction's actual hit rate is always public
 
-Narrow down your picks from the race program, then use BoatAI's AI score to back it up — this combination is the strongest approach.
+Narrow down your picks from the race program, then use BoatAI's data race table to back it up — this combination is the strongest approach.
 
 ---
 

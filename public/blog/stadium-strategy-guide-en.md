@@ -57,7 +57,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Targeting 2nd/3rd with outside lanes is an effective approach
 - For Trifecta, anchoring 1st with a flow bet is more efficient than a box bet
 
-**BoatAI's recommended model:** Favorite-focused
+**BoatAI's Upset Index tendency:** Favorite friendly
 
 ---
 
@@ -73,7 +73,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Target Trio bets around 2nd/3rd
 - Volatile races are rare here, so avoid targeting longshots
 
-**BoatAI's recommended model:** Favorite-focused
+**BoatAI's Upset Index tendency:** Favorite friendly
 
 ---
 
@@ -89,7 +89,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Watch outside lanes with a motor 2nd-place-or-better rate of 40%+
 - Days with wind of 5m or more can turn volatile
 
-**BoatAI's recommended model:** Favorite-focused
+**BoatAI's Upset Index tendency:** Favorite friendly
 
 ---
 
@@ -107,7 +107,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - At high tide, target racers with a fast exhibition time
 - Check the gap in motor 2nd-place-or-better rate
 
-**BoatAI's recommended model:** Standard
+**BoatAI's Upset Index tendency:** Standard
 
 ---
 
@@ -123,7 +123,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Wind weakens during night races, favoring lane 1
 - A prediction weighted toward racer win rate works well
 
-**BoatAI's recommended model:** Favorite-focused
+**BoatAI's Upset Index tendency:** Favorite friendly
 
 ---
 
@@ -139,9 +139,9 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 **Strategy:**
 - Check wind speed and direction (be cautious of a headwind)
 - Weight racers with a motor 2nd-place rate of 40%+
-- Target a longshot when the volatility score shows "😬 Volatile"
+- Target a longshot when the Upset Index shows "High upset chance"
 
-**BoatAI's recommended model:** Standard
+**BoatAI's Upset Index tendency:** Standard
 
 ---
 
@@ -157,7 +157,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Weight racers with a fast exhibition time
 - Overtakes and inside passes land relatively often
 
-**BoatAI's recommended model:** Standard
+**BoatAI's Upset Index tendency:** Standard
 
 ---
 
@@ -175,7 +175,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Avoid racers who looked close to a flying start in the exhibition
 - Inside passes from lanes 2–4 land often
 
-**BoatAI's recommended model:** Standard to Longshot
+**BoatAI's Upset Index tendency:** Standard to high upset chance
 
 ---
 
@@ -191,7 +191,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Always check the exhibition run
 - Target local racers who specialize in Edogawa's conditions
 
-**BoatAI's recommended model:** Longshot
+**BoatAI's Upset Index tendency:** High upset chance
 
 ---
 
@@ -207,7 +207,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Lighter racers have an advantage
 - Target racers skilled at motor tuning
 
-**BoatAI's recommended model:** Standard to Longshot
+**BoatAI's Upset Index tendency:** Standard to high upset chance
 
 ---
 
@@ -219,7 +219,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Wind has a significant effect
 - Standard theory often doesn't hold
 
-**Strategy:** Weight the exhibition run heavily, use the longshot model
+**Strategy:** Weight the exhibition run heavily, stay mindful of upset potential
 
 ---
 
@@ -229,7 +229,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Affected by both wind and tide
 - Motor performance matters
 
-**Strategy:** Check the motor 2nd-place-or-better rate, the Standard model is recommended
+**Strategy:** Check the motor 2nd-place-or-better rate, and weigh both sides for a balanced bet
 
 ---
 
@@ -239,7 +239,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Mostly fresh water
 - Racer ability tends to translate directly into results
 
-**Strategy:** Weight racer win rate heavily, the favorite-focused model works well
+**Strategy:** Weight racer win rate heavily and lean toward the favorite
 
 ---
 
@@ -249,7 +249,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Calm water facing the Seto Inland Sea
 - Lane 1 is highly reliable
 
-**Strategy:** Bet around a lane-1 anchor, the favorite-focused model is recommended
+**Strategy:** Bet around a lane-1 anchor with a favorite-focused approach
 
 ---
 
@@ -267,11 +267,11 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 
 BoatAI analyzes each venue's character and factors it into its predictions.
 
-### 1. Recommends the optimal model per venue
+### 1. Reflects each venue's Upset Index tendency
 
-- Omura, Tokuyama → favorite-focused model recommended
-- Edogawa, Toda → longshot model recommended
-- All others → Standard model recommended
+- Omura, Tokuyama → low upset chance, favorite friendly
+- Edogawa, Toda → high upset chance, prone to volatility
+- All others → a standard upset tendency
 
 ### 2. Factors venue-specific lane-1 win rate into the AI score
 
@@ -279,7 +279,7 @@ At inside-favoring venues, lane 1's AI score runs higher accordingly.
 
 ### 3. Automatically pulls in wind and tide data
 
-Same-day weather conditions are pulled in automatically and used in the volatility assessment.
+Same-day weather conditions are pulled in automatically and used to calculate the Upset Index.
 
 ---
 
@@ -333,18 +333,17 @@ Here are the key strategies for all 24 boat racing venues.
 
 - Weight motor 2nd-place-or-better rate and exhibition time heavily
 - Check wind speed and tide
-- Use the Standard model for an overall judgment
+- Weigh both sides for an overall judgment
 
 ### Outside-favoring venues (Edogawa, Toda, Kiryu, etc.)
 
 - Always check the exhibition run
 - Prioritize wind speed and direction above all else
-- Use the longshot model to target a bigger payout
+- Stay mindful of upset potential to target a bigger payout
 
 ### How to use BoatAI
 
-- Check each venue's "volatility score"
-- Reference the recommended model
+- Check each venue's "Upset Index"
 - Keep each venue's lane-1 win rate data in mind
 
 Understanding each venue's character reliably improves your prediction accuracy. Put venue-specific strategy into practice together with BoatAI!

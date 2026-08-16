@@ -1,5 +1,7 @@
 # "Today's Picks" Hits a 104% Return Rate — Real Results from 2,577 Races
 
+> **Note**: The "Today's Picks" feature described in this article has since been folded into BoatAI's single unified prediction model and is no longer offered as a standalone feature. What follows is a record of that period's results. For current AI predictions and tracked hit rates, see the [performance page](/accuracy).
+
 ## Introduction
 
 "Breaking a 100% return rate in boat racing is impossible."
@@ -111,7 +113,7 @@ BoatAI periodically re-validates each rule's effectiveness and revises any rule 
 
 ### Basic usage
 
-1. Go to the [Today's Picks](/picks) page
+1. Go to the [BoatAI's latest performance](/accuracy) page
 2. Check today's recommended races
 3. Tap a race you're interested in to see the details
 4. Check the bet type (Win, Place, Trio, Trifecta) before deciding
@@ -138,7 +140,7 @@ BoatAI's "Today's Picks" is a feature that **selects only "the races with the hi
 
 Daily results are updated on the page in real time. We don't hide the bad numbers any more than the good ones.
 
-If this piqued your interest, check out [Today's Picks](/picks).
+If this piqued your interest, check out [BoatAI's latest performance](/accuracy).
 
 ---
 
