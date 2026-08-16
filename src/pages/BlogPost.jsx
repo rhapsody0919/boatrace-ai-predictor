@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useLocation, Link, useNavigate } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -71,7 +71,6 @@ const UI_TEXT = {
 export default function BlogPost() {
   const { id } = useParams();
   const { pathname } = useLocation();
-  const navigate = useNavigate();
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -323,9 +322,9 @@ export default function BlogPost() {
         <div className="post-cta">
           <h3>{t.ctaTitle}</h3>
           <p>{t.ctaDesc}</p>
-          <button onClick={() => navigate(t.homeHref)} className="cta-button">
+          <Link to={t.homeHref} className="cta-button">
             {t.ctaButton}
-          </button>
+          </Link>
         </div>
       </div>
     </>
