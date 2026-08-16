@@ -78,6 +78,8 @@ Choose your 3rd-place candidates, including boats you didn't pick for 2nd.
 | Formation | Lets you narrow your combinations | Requires predicting race development |
 | Box | Requires less thinking | Combinations balloon, prone to breaking even or losing even on a hit |
 
+![Formation betting matrix. With 1st place fixed to lane 1, the table cross-references 2nd-place candidates (lanes 2-4) against 3rd-place candidates (lanes 2-5), showing that excluding the combinations where 2nd and 3rd would be the same lane leaves 9 valid combinations](/images/blog/trifecta-formation-matrix-en.jpg)
+
 **Bottom line: make Formation betting your default.** Boxes tend to grow into too many combinations and eat away at the payout.
 
 ---
@@ -212,5 +214,27 @@ The Trifecta is a difficult bet, but narrowed correctly, it becomes **the highes
 ---
 
 **Check your predictions on BoatAI now →** [https://boat-ai.jp/](https://boat-ai.jp/)
+
+---
+
+## FAQ
+
+### Formation or box — which actually makes more money?
+
+It depends, but formation betting tends to have an edge: narrowing your combinations lets you put more money behind each pick with the same total budget, making a hit more likely to pay off. Box betting tends to rack up combinations, which makes it easier to end up "in the red on a hit" — winning but earning less than you spent.
+
+### If my 1st-place anchor misses, is the whole bet dead?
+
+Yes. Both formation and box betting built around a fixed 1st-place anchor only pay out if that boat actually finishes 1st. If you're not confident in a single anchor for a given race, either spread the anchor across a couple of boats or pick a different race where your 1st-place read is stronger.
+
+### What does it mean to be "in the red on a hit"?
+
+It's when your bet actually wins, but the payout ends up lower than what you spent (number of combinations × unit price). It tends to happen when you buy too many combinations. Keeping your bet to around 6–12 combinations, and weighting more money toward your top picks, is the basic way to avoid it.
+
+### How many combinations should a beginner start with?
+
+Starting with a formation bet of around 6 combinations is a good approach. Fewer combinations means you can put more behind each one, which makes a hit feel more rewarding and makes it easier to learn bankroll management along the way.
+
+---
 
 **Tags:** #BoatRacing #Trifecta #HowToBet #BettingTickets #BoatAI

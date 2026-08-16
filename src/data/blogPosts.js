@@ -326,6 +326,7 @@ export const blogPosts = [
     tags: ["3連単", "買い方", "フォーメーション", "資金管理", "舟券"],
     readTime: "10分",
     featured: true,
+    image: "/images/blog/trifecta-formation-matrix-ja.jpg",
   },
   {
     id: "improve-recovery-rate",
@@ -414,6 +415,7 @@ export const blogPosts = [
     ],
     readTime: "12分",
     featured: true,
+    image: "/images/blog/venue-visit-timeline-ja.jpg",
   },
   {
     id: "picks-guide",
