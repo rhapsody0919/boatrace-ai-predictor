@@ -263,6 +263,7 @@
 }
 
 .cta-button {
+  display: inline-block;
   background: white;
   color: #0ea5e9 !important;
   border: none;
