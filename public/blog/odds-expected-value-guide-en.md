@@ -70,6 +70,10 @@ The basic rule: **1.0 or above means "bet it," below 1.0 means "pass."**
 
 Look at Case A. A 50% hit rate looks "safe" at first glance, but at 1.5x odds, **you'll lose money over the long run**. Case C, by contrast, has a lower hit rate of 10%, but at 15x odds the expected value of 1.50 means **it's worth betting**.
 
+![Expected value matrix chart. Hit rate on the x-axis, odds on the y-axis, with the expected-value-1.0 curve dividing a "bet" zone from a "pass" zone, plotting Cases A through D from the table above](/images/blog/odds-expected-value-matrix-en.jpg)
+
+The chart above plots all four cases. B and C sit above the dashed expected-value-1.0 curve (in the blue "bet" zone), while A and D fall below it (in the gray "pass" zone) — the position tells you the verdict at a glance. Betting well isn't about hit rate or odds alone; **it's about where their product lands relative to that curve**.
+
 ---
 
 ## The Overpopularity Trap — Why "Sure Things" Lose
@@ -157,6 +161,26 @@ Don't just bet on the odds — **cross-reference BoatAI's data-driven prediction
 | "Target expected value = hit rate × odds ≥ 1.0" | Aims for long-term profit |
 
 Odds aren't just a multiplier — they're **a number that reflects bettor psychology**. Spotting the distortions the majority overlooks, backed by data, is what leads to winning.
+
+---
+
+## FAQ
+
+### If expected value is positive, why don't I win every time?
+
+Expected value describes **the average outcome if you repeated the same bet many times** — it doesn't guarantee any single race's result. Even a bet with an expected value of 1.5 will lose more often than it wins in any given race. The statistical edge only shows up in your results after you consistently choose positive-expected-value bets across many races.
+
+### Can you really beat the 25% deduction rate over the long run?
+
+In theory, yes — but it isn't easy. Random betting converges to roughly a 75% return rate because of the deduction. To beat it, you need to consistently spot odds distortions (bets where the odds are generous relative to the true hit rate). The key is **not betting every race** — skip races where expected value falls below 1.0, and bet only when the conditions line up. That's the realistic path to beating the deduction.
+
+### How do I estimate hit rate in the first place?
+
+Relying on gut feeling alone makes you prone to the overpopularity trap. A more solid approach combines multiple data points — motor 2-place rate, course-specific win rate, exhibition times, and more. BoatAI's analysis data and its tracked turn-prediction hit rate are useful reference points for estimating hit rate yourself.
+
+### Do odds keep changing right up until the betting deadline?
+
+Yes. Odds shift continuously as bettors place wagers, right up until betting closes. Popular racers' odds can drop further in a late rush of bets just before the deadline, so when you calculate expected value matters — an odds check an hour before post time can look different from one taken at the deadline.
 
 ---
 

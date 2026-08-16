@@ -269,6 +269,7 @@ export const blogPosts = [
     tags: ["オッズ", "期待値", "過剰人気", "舟券", "データ分析"],
     readTime: "9分",
     featured: true,
+    image: "/images/blog/odds-expected-value-matrix-ja.jpg",
   },
   {
     id: "night-race-strategy",
