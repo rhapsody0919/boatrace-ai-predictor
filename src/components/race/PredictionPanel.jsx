@@ -37,7 +37,10 @@ import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
 import AiAnalysisSection from "./AiAnalysisSection";
+import AiCopyBanner from "./AiCopyBanner";
+import AiCopyButton from "./AiCopyButton";
 import { getRaceId } from "../../utils/raceId";
+import { AI_COPY_PROMPT_TYPES } from "../../utils/aiCopyPrompts";
 
 function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
   const { t } = useTranslation();
@@ -138,12 +141,31 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
         </div>
       )}
 
+      {/* AI用にコピー（BOA-194）: 結果未確定レースのみ、外部AIツールで独自分析したいユーザー向け */}
+      {!isFinished && (
+        <AiCopyBanner
+          raceId={analysisRaceId}
+          prediction={prediction}
+          race={selectedRace}
+        />
+      )}
+
       {/* データ出走表（主役）: 出走6選手×客観的な生データの一覧マトリクス */}
       <DataRaceTable
         raceId={analysisRaceId}
         prediction={prediction}
         venueCode={venueCode}
       />
+
+      {!isFinished && (
+        <AiCopyButton
+          variant="inline"
+          raceId={analysisRaceId}
+          prediction={prediction}
+          race={selectedRace}
+          promptType={AI_COPY_PROMPT_TYPES.WIN}
+        />
+      )}
 
       {/* AIデータ分析（折りたたみ）: 展開予測パネル/イン崩れ指数バッジの2ブロック。
           未来志向のUIのため結果確定済みレースでは表示しない（データで振り返るが代わりに担う） */}
