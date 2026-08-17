@@ -192,6 +192,7 @@ export const blogPostsKo = [
     category: "경기장별 공략",
     tags: ["아시야", "경정장", "공략법", "인코스강세"],
     readTime: "5분",
+    image: "/images/blog/ashiya-stats-ko.jpg",
   },
   {
     id: "how-we-measure-accuracy",
@@ -232,6 +233,7 @@ export const blogPostsKo = [
     category: "전략",
     tags: ["경정장", "공략법", "회장특징", "1번정승률"],
     readTime: "15분",
+    image: "/images/blog/venue-winrate-spectrum-ko.jpg",
   },
   {
     id: "monthly-50k-roadmap",
@@ -251,6 +253,7 @@ export const blogPostsKo = [
     category: "초보자용",
     tags: ["경정", "AI예측", "이기지못함", "패배패턴"],
     readTime: "10분",
+    image: "/images/blog/hitrate-paradox-ko.jpg",
   },
   {
     id: "odds-expected-value-guide",

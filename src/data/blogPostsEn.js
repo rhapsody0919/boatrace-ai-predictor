@@ -274,6 +274,7 @@ export const blogPostsEn = [
     category: "Venue Strategy",
     tags: ["Ashiya", "BoatRacingVenue", "Strategy", "StrongInside"],
     readTime: "5 min",
+    image: "/images/blog/ashiya-stats-en.jpg",
   },
   {
     id: "how-we-measure-accuracy",
@@ -323,6 +324,7 @@ export const blogPostsEn = [
     category: "Strategy",
     tags: ["BoatRacingVenue", "Strategy", "Character", "Lane1WinRate"],
     readTime: "15 min",
+    image: "/images/blog/venue-winrate-spectrum-en.jpg",
   },
   {
     id: "monthly-50k-roadmap",
@@ -344,6 +346,7 @@ export const blogPostsEn = [
     category: "Beginner",
     tags: ["BoatRacing", "AIPrediction", "CantWin", "LosingPattern"],
     readTime: "10 min",
+    image: "/images/blog/hitrate-paradox-en.jpg",
   },
   {
     id: "odds-expected-value-guide",

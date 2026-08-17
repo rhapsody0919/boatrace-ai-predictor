@@ -179,6 +179,7 @@ export const blogPostsZhTw = [
     category: "會場攻略",
     tags: ["蘆屋", "賽艇場", "攻略", "內道強"],
     readTime: "5分鐘",
+    image: "/images/blog/ashiya-stats-zh-tw.jpg",
   },
   {
     id: "how-we-measure-accuracy",
@@ -218,6 +219,7 @@ export const blogPostsZhTw = [
     category: "策略",
     tags: ["賽艇場", "攻略", "特徵", "1號艇勝率"],
     readTime: "15分鐘",
+    image: "/images/blog/venue-winrate-spectrum-zh-tw.jpg",
   },
   {
     id: "monthly-50k-roadmap",
@@ -237,6 +239,7 @@ export const blogPostsZhTw = [
     category: "初學者向",
     tags: ["賽艇", "AI預測", "無法獲勝", "輸家模式"],
     readTime: "10分鐘",
+    image: "/images/blog/hitrate-paradox-zh-tw.jpg",
   },
   {
     id: "odds-expected-value-guide",

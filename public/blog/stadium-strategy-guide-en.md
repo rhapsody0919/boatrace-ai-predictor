@@ -209,6 +209,8 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 
 **BoatAI's Upset Index tendency:** Standard to high upset chance
 
+![Lane-1 win rate spectrum by venue. Led by Omura at 65.2%, through Tokuyama, Ashiya, Shimonoseki, Suminoe, Heiwajima, Hamanako, Toda, Kiryu, and Edogawa — representative venues color-coded across 4 tiers from extremely inside-favoring to outside-favoring](/images/blog/venue-winrate-spectrum-en.jpg)
+
 ---
 
 ## Regional tendencies
