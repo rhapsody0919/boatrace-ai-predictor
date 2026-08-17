@@ -26,6 +26,8 @@ This article publishes the results from 2,577 races and explains what this numbe
 | Returned | **¥269,170** |
 | **Return rate** | **104% (+¥11,470)** |
 
+![Today's Picks track record funnel. 2,577 races covered, narrowing to 772 hits and a 30% hit rate, ending in a 104% return rate on ¥257,700 wagered vs. ¥269,170 returned](/images/blog/picks-performance-funnel-en.jpg)
+
 This is the result of betting a flat ¥100 on every single recommended race — no cherry-picking, no adjusting amounts. It's a **fully mechanical** result.
 
 ---

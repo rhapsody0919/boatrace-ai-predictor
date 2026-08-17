@@ -350,6 +350,7 @@ export const blogPosts = [
     tags: ["回収率", "勝ち方", "資金管理", "データ分析", "控除率"],
     readTime: "10分",
     featured: true,
+    image: "/images/blog/improve-recovery-rate-hitrate-ja.jpg",
   },
   {
     id: "beginners-start-guide",
@@ -362,6 +363,7 @@ export const blogPosts = [
     tags: ["初心者", "始め方", "舟券", "テレボート", "入門"],
     readTime: "10分",
     featured: true,
+    image: "/images/blog/beginners-bet-types-ja.jpg",
   },
   {
     id: "first-mark-prediction-guide",
@@ -385,6 +387,7 @@ export const blogPosts = [
     tags: ["今日のおすすめ", "回収率", "データマイニング", "実績公開"],
     readTime: "7分",
     featured: true,
+    image: "/images/blog/picks-performance-funnel-ja.jpg",
   },
   {
     id: "monthly-report-202604",
@@ -885,6 +888,7 @@ export const blogPosts = [
     tags: ["AI予想", "検証", "データ", "比較"],
     readTime: "11分",
     featured: true,
+    image: "/images/blog/ai-vs-human-comparison-ja.jpg",
   },
   {
     id: "bankruptcy-prevention",

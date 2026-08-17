@@ -54,6 +54,8 @@ Every race at every boat racing venue (1,899 races)
 | Human B (YouTuber) | 41.8% | ¥189,700 | ¥136,800 | 72.1% |
 | Human C (paid site) | 38.5% | ¥189,700 | ¥128,200 | 67.6% |
 
+![AI vs. human predictions, return rate comparison. All 4 predictors staked the same ¥189,700 over a 1-month head-to-head test; AI came out ahead of every human predictor with an 85.3% return rate](/images/blog/ai-vs-human-comparison-en.jpg)
+
 **Result:**
 AI prediction ranked **1st on every metric**
 
