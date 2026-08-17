@@ -96,6 +96,8 @@ Return rate in this case:
 
 **A return rate above 100%** means more came back than was wagered — i.e., a net-positive result.
 
+![How return rate is calculated. ¥1,000 wagered on each of 5 races, 2 hits and 3 misses, ¥5,000 wagered vs. ¥5,700 returned, for a 114% return rate](/images/blog/return-rate-ledger-en.jpg)
+
 ### 4. The assumption behind the wager amount
 
 BoatAI's return rate calculation assumes **¥100 per combination**.

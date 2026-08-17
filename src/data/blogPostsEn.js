@@ -52,6 +52,7 @@ export const blogPostsEn = [
       "Transparency",
     ],
     readTime: "10 min",
+    image: "/images/blog/ai-accuracy-comparison-en.jpg",
   },
   {
     id: "night-race-strategy",
@@ -202,6 +203,7 @@ export const blogPostsEn = [
       "PatternMatching",
     ],
     readTime: "8 min",
+    image: "/images/blog/picks-compare-table-en.jpg",
   },
   {
     id: "10000-races-analysis",
@@ -246,6 +248,7 @@ export const blogPostsEn = [
     category: "Advanced",
     tags: ["SG", "G1", "GradeRaces", "Strategy", "PointsAverage"],
     readTime: "12 min",
+    image: "/images/blog/sg-grade-tiers-en.jpg",
   },
   {
     id: "special-planned-races",
@@ -282,6 +285,7 @@ export const blogPostsEn = [
       "Measurement",
     ],
     readTime: "12 min",
+    image: "/images/blog/return-rate-ledger-en.jpg",
   },
   {
     id: "ai-vs-human",

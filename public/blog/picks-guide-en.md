@@ -27,6 +27,8 @@ It's a feature that **checks whether today's races match a "winning pattern" tha
 | Display | Score and ranking | Comes with a specific bet type (Win/Place/Trio/Trifecta) |
 | Race count | 100+ daily | A curated handful |
 
+![Comparison card: standard AI predictions vs. Today's Picks. Predicting every race vs. curating only the races with a statistically positive expected value](/images/blog/picks-compare-table-en.jpg)
+
 In other words, rather than "the AI predicting every race," the approach is to **curate only the races where the statistical expected value is positive**.
 
 ---

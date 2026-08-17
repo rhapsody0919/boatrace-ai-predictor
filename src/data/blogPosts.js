@@ -223,6 +223,7 @@ export const blogPosts = [
     tags: ["AI予想", "的中率", "回収率", "検証", "透明性"],
     readTime: "10分",
     featured: true,
+    image: "/images/blog/ai-accuracy-comparison-ja.jpg",
   },
   {
     id: "popular-patterns-analysis",
@@ -449,6 +450,7 @@ export const blogPosts = [
     ],
     readTime: "8分",
     featured: true,
+    image: "/images/blog/picks-compare-table-ja.jpg",
   },
   {
     id: "10000-races-analysis",
@@ -506,6 +508,7 @@ export const blogPosts = [
     tags: ["SG", "G1", "グレードレース", "戦略", "得点率"],
     readTime: "12分",
     featured: true,
+    image: "/images/blog/sg-grade-tiers-ja.jpg",
   },
   {
     id: "course-prediction-tips",
@@ -844,6 +847,7 @@ export const blogPosts = [
     tags: ["実績", "的中率", "回収率", "透明性", "計測方法"],
     readTime: "12分",
     featured: true,
+    image: "/images/blog/return-rate-ledger-ja.jpg",
   },
   {
     id: "why-you-lose",
