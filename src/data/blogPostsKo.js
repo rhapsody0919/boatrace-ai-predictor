@@ -59,6 +59,7 @@ export const blogPostsKo = [
     category: "데이터 분석",
     tags: ["AI예측", "적중률", "회수율", "정확도검증", "투명성"],
     readTime: "10분",
+    image: "/images/blog/ai-accuracy-comparison-ko.jpg",
   },
   {
     id: "night-race-strategy",
@@ -147,6 +148,7 @@ export const blogPostsKo = [
     category: "사용법",
     tags: ["오늘의추천", "데이터마이닝", "회수율", "사용법", "패턴매칭"],
     readTime: "8분",
+    image: "/images/blog/picks-compare-table-ko.jpg",
   },
   {
     id: "10000-races-analysis",
@@ -165,6 +167,7 @@ export const blogPostsKo = [
     category: "상급자용",
     tags: ["SG", "G1", "그레이드경주", "전략", "득점율"],
     readTime: "12분",
+    image: "/images/blog/sg-grade-tiers-ko.jpg",
   },
   {
     id: "special-planned-races",
@@ -193,6 +196,7 @@ export const blogPostsKo = [
     category: "데이터 분석",
     tags: ["실적", "적중률", "회수율", "투명성", "계측방법"],
     readTime: "12분",
+    image: "/images/blog/return-rate-ledger-ko.jpg",
   },
   {
     id: "ai-vs-human",

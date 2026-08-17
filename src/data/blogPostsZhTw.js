@@ -31,6 +31,7 @@ export const blogPostsZhTw = [
     category: "數據分析",
     tags: ["AI預測", "命中率", "回收率", "驗證", "透明度"],
     readTime: "10分鐘",
+    image: "/images/blog/ai-accuracy-comparison-zh-tw.jpg",
   },
   {
     id: "night-race-strategy",
@@ -125,6 +126,7 @@ export const blogPostsZhTw = [
     category: "使用方法",
     tags: ["今日精選", "數據挖掘", "回收率", "使用方法", "模式配對"],
     readTime: "8分鐘",
+    image: "/images/blog/picks-compare-table-zh-tw.jpg",
   },
   {
     id: "10000-races-analysis",
@@ -153,6 +155,7 @@ export const blogPostsZhTw = [
     category: "進階玩家",
     tags: ["SG", "G1", "分級賽事", "策略", "得點率"],
     readTime: "12分鐘",
+    image: "/images/blog/sg-grade-tiers-zh-tw.jpg",
   },
   {
     id: "special-planned-races",
@@ -180,6 +183,7 @@ export const blogPostsZhTw = [
     category: "數據分析",
     tags: ["實績", "命中率", "回收率", "透明度", "計測方法"],
     readTime: "12分鐘",
+    image: "/images/blog/return-rate-ledger-zh-tw.jpg",
   },
   {
     id: "ai-vs-human",

@@ -44,6 +44,8 @@ A Trio bet requires correctly picking the 3 boats that finish in the top 3 (orde
 
 18% is **3.6 times better than random**, but flip it around and it also means **you'll be wrong more than 4 times out of 5**. Winning consistently on Trio bets, race after race, is not easy.
 
+![AI prediction hit rate vs. random chance. Win hit rate 47-50% (about 3x random), Trio hit rate 18% (3.6x random)](/images/blog/ai-accuracy-comparison-en.jpg)
+
 ---
 
 ## How AI prediction works, and reading each race's volatility

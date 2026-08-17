@@ -24,6 +24,8 @@ Boat racing has the following grade tiers.
 | **G3** | ~100 | ¥2M+ | Selected by host venue |
 | **Regular** | Many | ~¥1M | No conditions |
 
+![Boat race grades at a glance. From SG (8 races/year, ¥30M-¥100M+ prize) down to G1, G2, G3, and Regular races, compared by prize scale](/images/blog/sg-grade-tiers-en.jpg)
+
 ### The 8 SG (Special Grade) races
 
 **The 8 SG races held each year:**
