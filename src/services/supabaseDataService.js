@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "./supabaseClient";
+import { getVolatilityLevel } from "../utils/volatilityLevel";
 
 // Edge API のベースURL（本番環境では同一オリジン）
 const EDGE_API_BASE = "";
@@ -778,8 +779,7 @@ export const supabaseDataService = {
           percentile,
           isFallback:
             pred.feature_contributions?.volatilityPercentileIsFallback ?? false,
-          level:
-            percentile >= 0.7 ? "high" : percentile <= 0.3 ? "low" : "standard",
+          level: getVolatilityLevel(percentile),
         });
       }
 
