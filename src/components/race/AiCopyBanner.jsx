@@ -1,9 +1,7 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import AiCopyPromptSelector from "./AiCopyPromptSelector";
 import AiCopyButton from "./AiCopyButton";
-import { AI_COPY_PROMPT_TYPES } from "../../utils/aiCopyPrompts";
 
 const scrollToDataRaceTable = () => {
   document
@@ -11,9 +9,16 @@ const scrollToDataRaceTable = () => {
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
-export default function AiCopyBanner({ raceId, prediction, race }) {
+export default function AiCopyBanner({
+  raceId,
+  prediction,
+  race,
+  venueCode,
+  promptType,
+  onPromptTypeChange,
+  onCopy,
+}) {
   const { t } = useTranslation();
-  const [promptType, setPromptType] = useState(AI_COPY_PROMPT_TYPES.WIN);
   const prefersReducedMotion = useReducedMotion();
 
   return (
@@ -33,7 +38,6 @@ export default function AiCopyBanner({ raceId, prediction, race }) {
     >
       <div
         style={{
-          position: "relative",
           display: "inline-flex",
           alignItems: "center",
           gap: "8px",
@@ -42,35 +46,44 @@ export default function AiCopyBanner({ raceId, prediction, race }) {
         {/* ボタン自体は静止させ、背後に脈動するグローだけを重ねる
             （ボタンをscaleさせるとPlaywrightのactionability判定が
             「element is not stable」で失敗し続けるだけでなく、実クリック時の
-            座標もフレームごとにずれるため、装飾要素として分離した） */}
-        {!prefersReducedMotion && (
-          <motion.span
-            aria-hidden="true"
-            animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0, 0.5] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-            style={{
-              position: "absolute",
-              inset: 0,
-              borderRadius: "var(--radius-md)",
-              background: "var(--color-primary-500)",
-              zIndex: 0,
-            }}
-          />
-        )}
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <AiCopyButton
-            variant="banner"
-            raceId={raceId}
-            prediction={prediction}
-            race={race}
-            promptType={promptType}
-            onBeforeCopy={scrollToDataRaceTable}
-          />
+            座標もフレームごとにずれるため、装飾要素として分離した）。
+            グローのラッパーはボタンだけを子に持つ（キャッチコピーバッジを
+            含めると脈動範囲がバッジまで広がってしまうため） */}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          {!prefersReducedMotion && (
+            <motion.span
+              aria-hidden="true"
+              animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0, 0.5] }}
+              transition={{
+                duration: 1.6,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: "var(--radius-md)",
+                background: "var(--color-primary-500)",
+                zIndex: 0,
+                pointerEvents: "none",
+              }}
+            />
+          )}
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <AiCopyButton
+              variant="banner"
+              raceId={raceId}
+              prediction={prediction}
+              race={race}
+              venueCode={venueCode}
+              promptType={promptType}
+              onBeforeCopy={scrollToDataRaceTable}
+              onCopy={onCopy}
+            />
+          </div>
         </div>
         <span
           style={{
-            position: "relative",
-            zIndex: 1,
             fontSize: "var(--font-size-sm)",
             fontWeight: 700,
             color: "var(--color-primary-700)",
@@ -83,7 +96,7 @@ export default function AiCopyBanner({ raceId, prediction, race }) {
           {t("aiCopy.bannerCatchphrase")}
         </span>
       </div>
-      <AiCopyPromptSelector value={promptType} onChange={setPromptType} />
+      <AiCopyPromptSelector value={promptType} onChange={onPromptTypeChange} />
     </div>
   );
 }

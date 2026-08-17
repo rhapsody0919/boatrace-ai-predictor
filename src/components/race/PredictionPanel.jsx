@@ -23,6 +23,7 @@
  * ホームページのレースカード一覧プレビュー）を一式撤去した。データ取得基盤（複勝オッズ
  * スクレイピング等）は将来の再設計に備えて残置している
  */
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,6 +40,7 @@ import DataRaceTable from "./DataRaceTable";
 import AiAnalysisSection from "./AiAnalysisSection";
 import AiCopyBanner from "./AiCopyBanner";
 import AiCopyButton from "./AiCopyButton";
+import Toast, { useToast } from "../Toast";
 import { getRaceId } from "../../utils/raceId";
 import { AI_COPY_PROMPT_TYPES } from "../../utils/aiCopyPrompts";
 
@@ -47,6 +49,12 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
   // フックはearly returnより前で無条件に呼ぶ必要があるため、selectedRace未確定時は空オブジェクトを渡す
   const { venueCode, venueName } = useRaceData(selectedRace || {});
   const analysisRaceId = selectedRace ? getRaceId(selectedRace) : null;
+  // バナー/インライン両方のAiCopyButtonで選択状態とトースト表示を共有する
+  // （別々に持つと選択がずれる・トーストが同じ座標に重複表示されるため）
+  const [aiCopyPromptType, setAiCopyPromptType] = useState(
+    AI_COPY_PROMPT_TYPES.WIN,
+  );
+  const { toast: aiCopyToast, showToast: showAiCopyToast } = useToast();
 
   if (!prediction && !isAnalyzing) return null;
 
@@ -147,6 +155,10 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
           raceId={analysisRaceId}
           prediction={prediction}
           race={selectedRace}
+          venueCode={venueCode}
+          promptType={aiCopyPromptType}
+          onPromptTypeChange={setAiCopyPromptType}
+          onCopy={showAiCopyToast}
         />
       )}
 
@@ -163,7 +175,16 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
           raceId={analysisRaceId}
           prediction={prediction}
           race={selectedRace}
-          promptType={AI_COPY_PROMPT_TYPES.WIN}
+          venueCode={venueCode}
+          promptType={aiCopyPromptType}
+          onCopy={showAiCopyToast}
+        />
+      )}
+      {!isFinished && (
+        <Toast
+          message={aiCopyToast.message}
+          type={aiCopyToast.type}
+          visible={aiCopyToast.visible}
         />
       )}
 

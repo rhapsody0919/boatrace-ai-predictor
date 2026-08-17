@@ -22,6 +22,23 @@ function byBoat(rows, key = "boat_number") {
   return map;
 }
 
+// モーター交換直後は全艇motor_2rateが0になり「0.0%」が誤解を招くため、
+// raceIndicators.jsxのrowMotorと同じくその場合は全艇「—」にする
+function buildMotorRow(t, players, motorByBoat) {
+  const values = players.map((p) =>
+    toNumber(motorByBoat.get(p.number)?.motor_2rate ?? p.motor2Rate),
+  );
+  const allZero = values.length > 0 && values.every((v) => v === 0);
+
+  return {
+    label: t("dataTable.rowMotor"),
+    values: values.map((v) => {
+      if (allZero || v === null) return DASH;
+      return `${v.toFixed(1)}%`;
+    }),
+  };
+}
+
 function buildRows(t, players, analysis) {
   const motorByBoat = byBoat(analysis.motor);
   const formByBoat = byBoat(analysis.racerForm);
@@ -53,14 +70,7 @@ function buildRows(t, players, analysis) {
         return v !== null ? v.toFixed(2) : DASH;
       }),
     },
-    {
-      label: t("dataTable.rowMotor"),
-      values: players.map((p) => {
-        const row = motorByBoat.get(p.number);
-        const v = toNumber(row?.motor_2rate ?? p.motor2Rate);
-        return v !== null ? `${v.toFixed(1)}%` : DASH;
-      }),
-    },
+    buildMotorRow(t, players, motorByBoat),
     {
       label: t("dataTable.rowForm"),
       values: players.map((p) => {
@@ -119,7 +129,8 @@ function buildRows(t, players, analysis) {
       label: t("dataTable.rowTechnique"),
       values: players.map((p) => {
         const row = techByBoat.get(p.number);
-        if (!row || !row.win_count || row.techniques.length === 0)
+        if (!row) return DASH;
+        if (!row.win_count || row.techniques.length === 0)
           return t("dataTable.noWins");
         const top = row.techniques[0];
         return `${translateTechnique(t, top.technique)}（${t("dataTable.winCount", { n: row.win_count })}）`;
@@ -150,7 +161,7 @@ function toMarkdownTable(t, players, rows) {
   return [toLine(header), toLine(separator), ...lines.map(toLine)].join("\n");
 }
 
-export function useAiCopyText({ raceId, prediction, race }) {
+export function useAiCopyText({ raceId, prediction, race, venueCode }) {
   const { t } = useTranslation();
   const analysis = useRaceAnalysisData(raceId);
 
@@ -163,8 +174,13 @@ export function useAiCopyText({ raceId, prediction, race }) {
 
     const rows = buildRows(t, players, analysis);
     const table = toMarkdownTable(t, players, rows);
+    // 会場名はvenues.*i18nキー経由で翻訳する（他箇所と同じ既存パターン。
+    // race?.venueは日本語の生値のため、非ja言語では直接使えない）
+    const venueLabel = venueCode
+      ? t(`venues.${venueCode}`, race?.venue ?? "")
+      : (race?.venue ?? "");
     const heading = t("aiCopy.markdownHeading", {
-      venue: race?.venue ?? "",
+      venue: venueLabel,
       race: race?.raceNumber ?? "",
     });
     const prompt = getAiCopyPromptText(t, promptType);
@@ -172,5 +188,8 @@ export function useAiCopyText({ raceId, prediction, race }) {
     return `## ${heading}\n\n${table}\n\n${prompt}`;
   };
 
-  return { buildText, isReady: players.length > 0 };
+  // analysisは複数クエリの並列取得（30分TTLキャッシュ）で、DataRaceTableと
+  // 同じソースを共有する。読み込み未完了のままコピーすると本来値が有る行まで
+  // 「—」として出力されうるため、読み込み完了までボタン自体を出さない
+  return { buildText, isReady: players.length > 0 && !analysis.loading };
 }

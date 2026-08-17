@@ -1,18 +1,23 @@
 import { useTranslation } from "react-i18next";
 import { useAiCopyText } from "../../hooks/useAiCopyText";
-import Toast, { useToast } from "../Toast";
 
 export default function AiCopyButton({
   variant = "inline",
   raceId,
   prediction,
   race,
+  venueCode,
   promptType,
   onBeforeCopy,
+  onCopy,
 }) {
   const { t } = useTranslation();
-  const { buildText, isReady } = useAiCopyText({ raceId, prediction, race });
-  const { toast, showToast } = useToast();
+  const { buildText, isReady } = useAiCopyText({
+    raceId,
+    prediction,
+    race,
+    venueCode,
+  });
 
   if (!isReady) return null;
 
@@ -21,9 +26,9 @@ export default function AiCopyButton({
     try {
       const text = buildText(promptType);
       await navigator.clipboard.writeText(text);
-      showToast(t("aiCopy.toastSuccess"), "success");
+      onCopy?.(t("aiCopy.toastSuccess"), "success");
     } catch {
-      showToast(t("aiCopy.toastError"), "error");
+      onCopy?.(t("aiCopy.toastError"), "error");
     }
   };
 
@@ -53,20 +58,13 @@ export default function AiCopyButton({
         };
 
   return (
-    <>
-      <button
-        type="button"
-        className={`ai-copy-btn ai-copy-btn-${variant}`}
-        onClick={handleCopy}
-        style={style}
-      >
-        {label}
-      </button>
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        visible={toast.visible}
-      />
-    </>
+    <button
+      type="button"
+      className={`ai-copy-btn ai-copy-btn-${variant}`}
+      onClick={handleCopy}
+      style={style}
+    >
+      {label}
+    </button>
   );
 }

@@ -722,7 +722,9 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     await expect(page.locator(".ai-copy-btn-inline")).toHaveCount(0);
   });
 
-  test("コピー実行後にトーストが表示される", async ({ page }) => {
+  test("コピー実行後にトーストが表示され、クリップボードに整形済みMarkdownが入る", async ({
+    page,
+  }) => {
     await selectUpcomingRace(page);
 
     const bannerButton = page.locator(".ai-copy-btn-banner");
@@ -732,6 +734,16 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     const toast = page.getByRole("status");
     await expect(toast).toBeVisible();
     await expect(toast).toHaveText("コピーしました");
+
+    const clipboardText = await page.evaluate(() =>
+      navigator.clipboard.readText(),
+    );
+    // 見出し・表・プロンプト文の3ブロックが揃っており、
+    // 値の未解決を示す undefined/NaN が混入していないことを確認する
+    expect(clipboardText).toMatch(/^## .+\n\n\|/);
+    expect(clipboardText).toContain("| 項目 |");
+    expect(clipboardText).not.toContain("undefined");
+    expect(clipboardText).not.toContain("NaN");
   });
 });
 
