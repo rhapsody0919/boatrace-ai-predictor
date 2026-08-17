@@ -28,6 +28,8 @@ Night races typically run from around **3:00 PM to 8:30 PM**. Because they're ea
 | **Tokuyama** (Yamaguchi) | Among the nation's best inside win rates; calm water |
 | **Omura** (Nagasaki) | Nation's highest inside-lane 1st-place rate; the heartland of night racing |
 
+![Card grid showing the character of all 7 night-race venues: Kiryu, Gamagori, Marugame, Shimonoseki, Wakamatsu, Tokuyama, and Omura, each with its water and weather conditions](/images/blog/night-venues-grid-en.jpg)
+
 ---
 
 ## 5 differences from daytime racing

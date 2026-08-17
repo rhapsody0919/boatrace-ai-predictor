@@ -63,6 +63,7 @@ export const blogPostsEn = [
     category: "Strategy",
     tags: ["NightRace", "Strategy", "Gamagori", "Marugame", "Omura", "Motor"],
     readTime: "9 min",
+    image: "/images/blog/night-venues-grid-en.jpg",
   },
   {
     id: "sg-race-guide-2026",
@@ -73,6 +74,7 @@ export const blogPostsEn = [
     category: "Advanced",
     tags: ["SG", "GrandPrix", "AllStar", "GradeRaces", "2026"],
     readTime: "10 min",
+    image: "/images/blog/sg-race-timeline-en.jpg",
   },
   {
     id: "how-to-predict-races",
@@ -90,6 +92,7 @@ export const blogPostsEn = [
       "DataAnalysis",
     ],
     readTime: "12 min",
+    image: "/images/blog/predict-steps-flow-en.jpg",
   },
   {
     id: "trifecta-betting-guide",
@@ -221,6 +224,7 @@ export const blogPostsEn = [
       "DataDisclosure",
     ],
     readTime: "10 min",
+    image: "/images/blog/10000-races-hitrate-en.jpg",
   },
   {
     id: "suji-funaken-guide",

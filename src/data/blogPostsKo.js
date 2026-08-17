@@ -69,6 +69,7 @@ export const blogPostsKo = [
     category: "전략",
     tags: ["나이터", "전략", "가마고리", "마루가메", "오무라", "모터"],
     readTime: "9분",
+    image: "/images/blog/night-venues-grid-ko.jpg",
   },
   {
     id: "sg-race-guide-2026",
@@ -78,6 +79,7 @@ export const blogPostsKo = [
     category: "상급자용",
     tags: ["SG경주", "그랑프리", "올스타", "등급전", "2026시즌"],
     readTime: "10분",
+    image: "/images/blog/sg-race-timeline-ko.jpg",
   },
   {
     id: "how-to-predict-races",
@@ -87,6 +89,7 @@ export const blogPostsKo = [
     category: "초보자용",
     tags: ["예상법", "적중률", "초보자", "AI예상", "데이터분석"],
     readTime: "12분",
+    image: "/images/blog/predict-steps-flow-ko.jpg",
   },
   {
     id: "trifecta-betting-guide",
@@ -158,6 +161,7 @@ export const blogPostsKo = [
     category: "실적 분석",
     tags: ["1만경주", "실적분석", "적중률", "회수율", "삼복승", "데이터공개"],
     readTime: "10분",
+    image: "/images/blog/10000-races-hitrate-ko.jpg",
   },
   {
     id: "sg-g1-race-strategy",

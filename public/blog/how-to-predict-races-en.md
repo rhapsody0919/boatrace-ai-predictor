@@ -22,6 +22,8 @@ Predicting a boat race breaks down into 5 basic steps.
 
 **About 10 minutes total.** Once you're used to it, 5 minutes is enough. Skipping this process and betting on a hunch is the number one reason bettors lose.
 
+![Flow diagram of the 5-step prediction process. Check entry list (2 min) → analyze lane data (2 min) → watch exhibition run (3 min) → check weather/water (1 min) → decide your bet (2 min), about 10 minutes total](/images/blog/predict-steps-flow-en.jpg)
+
 ---
 
 ## 6 key factors in a good prediction
