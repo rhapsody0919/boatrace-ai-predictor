@@ -7,6 +7,8 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useUnifiedVolatilityAccuracy } from "../../hooks/useUnifiedVolatilityAccuracy";
+import { getVolatilityLevel } from "../../utils/volatilityLevel";
+import RaceMoodEffect from "./RaceMoodEffect";
 
 // VolatilityDisplayのlevel（high/low/standard）→ calculate-unified-volatility-accuracy.js
 // の集計キー（high/low/medium）への対応
@@ -174,6 +176,7 @@ function VolatilityDisplay({
   if (isFallback) {
     return (
       <div
+        className="volatility-display volatility-display-fallback"
         style={{
           padding: "1rem 1.5rem",
           background: "#f5f5f5",
@@ -244,8 +247,7 @@ function VolatilityDisplay({
     );
   }
 
-  const level =
-    percentile >= 0.7 ? "high" : percentile <= 0.3 ? "low" : "standard";
+  const level = getVolatilityLevel(percentile);
   const icon = level === "high" ? "🌪️" : level === "low" ? "🎯" : "⚖️";
   const bg =
     level === "high" ? "#fff3e0" : level === "low" ? "#e8f5e9" : "#e3f2fd";
@@ -260,6 +262,7 @@ function VolatilityDisplay({
 
   return (
     <div
+      className={`volatility-display volatility-display-${level}`}
       style={{
         padding: "1rem 1.5rem",
         background: bg,
@@ -276,7 +279,18 @@ function VolatilityDisplay({
           marginBottom: "0.5rem",
         }}
       >
-        <span style={{ fontSize: "1.2rem" }}>{icon}</span>
+        {/* イン崩れレベルに応じた波紋ムード演出（BOA-195）。艇番・決まり手等の
+            具体的な予測内容は表現しない純粋な装飾のため、アイコンの背後に重ねる */}
+        <span
+          style={{
+            position: "relative",
+            display: "inline-flex",
+            fontSize: "1.2rem",
+          }}
+        >
+          <RaceMoodEffect level={level} />
+          <span style={{ position: "relative", zIndex: 1 }}>{icon}</span>
+        </span>
         <span style={{ fontWeight: "600", color: "#333" }}>
           {t("volatility.attentionTitle")}
         </span>
