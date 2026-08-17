@@ -682,10 +682,15 @@ async function selectUpcomingRace(page) {
   // 誤って選ばれうる（BOA-168のテストと同様の理由）
   await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
   await page.goto("/");
-  await page.waitForTimeout(300);
 
+  // 初回ロードは予測データ取得が完了するまで#venue-selectが描画されない
+  // （固定の短い待機では間に合わないことがあるため、要素出現を待つ）
   const venueSelect = page.locator("#venue-select");
-  if ((await venueSelect.count()) === 0) return false;
+  try {
+    await venueSelect.waitFor({ timeout: 10000 });
+  } catch {
+    return false;
+  }
   const optionValues = await venueSelect
     .locator("option")
     .evaluateAll((els) => els.map((el) => el.value));
@@ -765,49 +770,61 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
 });
 
 // イン崩れ指数（volatilityPercentile）を持つ結果未確定レースを会場横断で探す。
-// フォールバック値（データ収集中）はムード演出の対象外のため、
-// .volatility-display-{high,standard,low}（フォールバック以外）を探す。
+// レースカード一覧はhigh/lowレベルのレースに「🌪️ イン崩れ確率高」
+// 「🎯 本命有利」バッジを直接表示する（App.jsx/RaceCard.jsx、standardは無印）ため、
+// これをフィルタして対象レースを直接特定する（総当たりでpredict-btnを
+// クリックして判定するより高速・確実）
 //
 // 注意: predict-btnクリックでApp.jsxのraceListCollapsedがtrueになると
 // .race-gridが隠れ、以降.race-card自体が0件になる。venue-selectの再選択
 // だけではこの状態は解除されない（onChangeはsetSelectedVenueIdのみ）ため、
-// .race-list-toggle（「他のレースを選ぶ」）を明示的にクリックして復帰させる
+// 会場ごとにpage.goto("/")からやり直す
 async function findRaceWithVolatilityLevel(page) {
   await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
 
   await page.goto("/");
-  await page.waitForTimeout(500);
   const venueSelect = page.locator("#venue-select");
-  if ((await venueSelect.count()) === 0) return null;
+  try {
+    await venueSelect.waitFor({ timeout: 10000 });
+  } catch {
+    return null;
+  }
   const optionValues = await venueSelect
     .locator("option")
     .evaluateAll((els) => els.map((el) => el.value));
 
   for (const value of optionValues) {
     await page.goto("/");
-    await page.waitForTimeout(500);
+    // 初回ロードは予測データ取得が完了するまで#venue-selectが描画されない
+    try {
+      await venueSelect.waitFor({ timeout: 10000 });
+    } catch {
+      continue;
+    }
     await venueSelect.selectOption(value);
     await page.waitForTimeout(500);
 
-    const btnCount = Math.min(
-      await page.locator(".race-card .predict-btn").count(),
-      3,
-    );
+    const badgedCard = page
+      .locator(".race-card")
+      .filter({ hasText: /イン崩れ確率高|本命有利/ })
+      .first();
+    if ((await badgedCard.count()) === 0) continue;
 
-    for (let i = 0; i < btnCount; i++) {
-      const toggle = page.locator(".race-list-toggle");
-      if ((await toggle.count()) > 0) {
-        await toggle.click();
-        await page.waitForTimeout(300);
-      }
-      const btn = page.locator(".race-card .predict-btn").nth(i);
-      if ((await btn.count()) === 0) break;
-      await btn.click();
-      await page.waitForTimeout(800);
-      for (const level of ["high", "standard", "low"]) {
-        const el = page.locator(`.volatility-display-${level}`);
-        if ((await el.count()) > 0) return level;
-      }
+    await badgedCard.locator(".predict-btn").click();
+    // AI分析は非同期（データ読み込み→展開パターン解析→予想生成）で完了まで
+    // 数秒〜十数秒かかるため、固定の短い待機だけでは volatility-display の
+    // 描画前に判定してしまう。分析結果パネルの描画を待つ
+    try {
+      await page
+        .locator(".ai-analysis-header")
+        .first()
+        .waitFor({ timeout: 15000 });
+    } catch {
+      continue;
+    }
+    for (const level of ["high", "low", "standard"]) {
+      const el = page.locator(`.volatility-display-${level}`);
+      if ((await el.count()) > 0) return level;
     }
   }
   return null;
