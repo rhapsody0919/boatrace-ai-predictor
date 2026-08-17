@@ -1,5 +1,6 @@
 import { blogPostsEn } from "../data/blogPostsEn.js";
 import { blogPostsZhTw } from "../data/blogPostsZhTw.js";
+import { blogPostsKo } from "../data/blogPostsKo.js";
 
 /**
  * 対応言語の唯一の情報源
@@ -56,6 +57,7 @@ export const LANGUAGE_ONLY_PATHS = {
 const BLOG_TRANSLATION_SOURCES = {
   en: blogPostsEn,
   "zh-TW": blogPostsZhTw,
+  ko: blogPostsKo,
 };
 
 // 配下の一部パスだけが翻訳済みのケース（LANGUAGE_ONLY_PATHS/TRANSLATED_PATHSは

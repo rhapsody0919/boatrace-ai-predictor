@@ -13,6 +13,7 @@ import { VENUE_GUIDES_ZH_TW } from "../src/data/venueGuidesZhTw.js";
 import { VENUE_GUIDES_KO } from "../src/data/venueGuidesKo.js";
 import { blogPostsEn } from "../src/data/blogPostsEn.js";
 import { blogPostsZhTw } from "../src/data/blogPostsZhTw.js";
+import { blogPostsKo } from "../src/data/blogPostsKo.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -134,6 +135,7 @@ const LOCALIZED_PAGES = [
 const BLOG_TRANSLATION_CHECKS = [
   { label: "blogPostsEn.js", posts: blogPostsEn, mdSuffix: "-en" },
   { label: "blogPostsZhTw.js", posts: blogPostsZhTw, mdSuffix: "-zh-tw" },
+  { label: "blogPostsKo.js", posts: blogPostsKo, mdSuffix: "-ko" },
 ];
 BLOG_TRANSLATION_CHECKS.forEach(({ label, posts, mdSuffix }) => {
   posts.forEach((post) => {
@@ -218,6 +220,19 @@ const LANGUAGE_ONLY_PAGES = {
       changefreq: "monthly",
       priority: "0.6",
     })),
+    // ブログはfeatured記事の一部のみko版を展開中。languages.jsの
+    // getAvailableLanguages("/blog")は記事が1件も無い言語では一覧ページ自体を
+    // 未提供と判定するため、それと矛盾しないよう記事0件の間は一覧ページも含めない
+    ...(blogPostsKo.length > 0
+      ? [
+          { basePath: "/blog", changefreq: "weekly", priority: "0.6" },
+          ...blogPostsKo.map((post) => ({
+            basePath: `/blog/${post.id}`,
+            changefreq: "monthly",
+            priority: "0.6",
+          })),
+        ]
+      : []),
   ],
 };
 

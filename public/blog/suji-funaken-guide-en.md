@@ -114,6 +114,8 @@ A handy **suji quick-reference table** worth memorizing.
 | Lane 5 | 4, 6 | 1, 4, 6 |
 | Lane 6 | 4, 5 | 1, 4, 5 |
 
+![Suji quick-reference chart shown in official lane colors, from Lane 1 (white) through Lane 6 (green), with the likely 2nd and 3rd place lanes shown as colored circles for each winning lane](/images/blog/suji-funaken-chart-en.jpg)
+
 **The rule of thumb:**
 - Inside lane wins → **inside lanes tend to follow**
 - Outside lane wins → **outside lanes tend to follow**

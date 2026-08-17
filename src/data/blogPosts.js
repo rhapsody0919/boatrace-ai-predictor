@@ -8,6 +8,11 @@ import {
   getZhTwOverride,
   isZhTwAvailable,
 } from "./blogPostsZhTw.js";
+import {
+  blogPostsKo,
+  getKoreanOverride,
+  isKoreanAvailable,
+} from "./blogPostsKo.js";
 
 // 言語別ブログ翻訳データの設定。新言語追加時はここに1エントリ足すだけで良い
 // （BlogPost.jsx/Blog.jsxはこのマップ経由でのみ言語別データにアクセスする）
@@ -23,6 +28,12 @@ const BLOG_LANG_CONFIG = {
     getOverride: getZhTwOverride,
     isAvailable: isZhTwAvailable,
     mdSuffix: "-zh-tw",
+  },
+  ko: {
+    posts: blogPostsKo,
+    getOverride: getKoreanOverride,
+    isAvailable: isKoreanAvailable,
+    mdSuffix: "-ko",
   },
 };
 
@@ -362,6 +373,7 @@ export const blogPosts = [
     tags: ["展開予測", "1マーク", "決まり手", "AI予想", "使い方"],
     readTime: "10分",
     featured: true,
+    image: "/images/blog/first-mark-kimarite-donut-ja.jpg",
   },
   {
     id: "picks-performance-report",
@@ -468,6 +480,7 @@ export const blogPosts = [
     tags: ["スジ舟券", "買い目", "展開予想", "まくり", "差し", "イン逃げ"],
     readTime: "12分",
     featured: true,
+    image: "/images/blog/suji-funaken-chart-ja.jpg",
   },
   {
     id: "start-exhibition-guide",

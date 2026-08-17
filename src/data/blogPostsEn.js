@@ -154,6 +154,7 @@ export const blogPostsEn = [
       "HowTo",
     ],
     readTime: "10 min",
+    image: "/images/blog/first-mark-kimarite-donut-en.jpg",
   },
   {
     id: "picks-performance-report",
@@ -232,6 +233,7 @@ export const blogPostsEn = [
       "WireToWire",
     ],
     readTime: "12 min",
+    image: "/images/blog/suji-funaken-chart-en.jpg",
   },
   {
     id: "sg-g1-race-strategy",

@@ -66,6 +66,22 @@ const UI_TEXT = {
     blogLabel: "部落格",
     homeHref: "/zh-TW/",
   },
+  ko: {
+    backToBlog: "← 블로그 목록으로 돌아가기",
+    backHref: "/ko/blog",
+    loading: "기사를 불러오는 중...",
+    errorTitle: "오류",
+    notFound: "기사를 찾을 수 없습니다",
+    loadError: "기사를 불러오지 못했습니다",
+    relatedPosts: "📌 관련 기사",
+    readMore: "더 읽기 →",
+    ctaTitle: "🚀 지금 바로 BoatAI 예측을 체험해보세요",
+    ctaDesc: "완전 무료로 AI 예측을 확인할 수 있습니다",
+    ctaButton: "AI 예측 보기",
+    home: "홈",
+    blogLabel: "블로그",
+    homeHref: "/ko/",
+  },
 };
 
 export default function BlogPost() {

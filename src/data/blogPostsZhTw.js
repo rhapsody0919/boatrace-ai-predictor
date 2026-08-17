@@ -94,6 +94,7 @@ export const blogPostsZhTw = [
     category: "使用方法",
     tags: ["展開預測", "1轉彎", "決勝技巧", "AI預測", "使用方法"],
     readTime: "10分鐘",
+    image: "/images/blog/first-mark-kimarite-donut-zh-tw.jpg",
   },
   {
     id: "picks-performance-report",
@@ -139,6 +140,7 @@ export const blogPostsZhTw = [
     category: "策略",
     tags: ["筋投注", "投注組合", "走勢預測", "外攻", "切入", "內道逃走"],
     readTime: "12分鐘",
+    image: "/images/blog/suji-funaken-chart-zh-tw.jpg",
   },
   {
     id: "sg-g1-race-strategy",
