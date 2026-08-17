@@ -16,5 +16,5 @@
 - [x] **4. E2Eスモークテスト追加**
   `e2e/smoke.spec.js`に、(a) イン崩れバッジが表示されるレースで`RaceMoodEffect`のDOM要素（波紋のリング要素）が存在する (b) `prefers-reduced-motion`環境ではリング要素が非表示/animation無しになる、の2点を確認するテストケースを追加する。
 
-- [ ] **5. 動作確認・PR作成**
+- [x] **5. 動作確認・PR作成**
   ローカルで`npm run dev`起動、Playwrightで警戒/標準/堅いの3レベルそれぞれの波紋の見た目・周期の違いを実機確認する。モバイル幅（375px）でのレイアウト崩れ・パフォーマンス（過度なDOM要素・repaint負荷が無いか）も確認する。`npm run build`・`npm run test:e2e`実行後、`/create-pr`でPR作成。
