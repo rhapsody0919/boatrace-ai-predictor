@@ -9,6 +9,8 @@
 | Character | One of Japan's strongest inside-favoring venues |
 | Lane 1 win rate | **~63% (among the nation's highest)** |
 
+![Ashiya boat race venue basic data. Cards showing location, water type, and lane 1 win rate of ~63% (among the nation's highest)](/images/blog/ashiya-stats-en.jpg)
+
 ---
 
 ## Ashiya's BoatAI Data

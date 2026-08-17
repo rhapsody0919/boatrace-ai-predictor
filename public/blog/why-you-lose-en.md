@@ -173,6 +173,8 @@ Net: -¥160
 
 The reality: **even a 70% hit rate can leave you in the red**.
 
+![Diagram showing why a 70% hit rate can still lose money. ¥1,000 wagered vs. ¥840 returned, an 84% return rate resulting in a -¥160 loss](/images/blog/hitrate-paradox-en.jpg)
+
 **The problem:**
 A high hit rate means nothing if the return rate falls below 100%.
 

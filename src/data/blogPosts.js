@@ -602,6 +602,7 @@ export const blogPosts = [
     tags: ["芦屋", "ボートレース場", "攻略", "イン強い"],
     readTime: "5分",
     featured: true,
+    image: "/images/blog/ashiya-stats-ja.jpg",
   },
   {
     id: "venue-wakamatsu",
@@ -864,6 +865,7 @@ export const blogPosts = [
     tags: ["ボートレース", "AI予想", "勝てない", "負けパターン"],
     readTime: "10分",
     featured: true,
+    image: "/images/blog/hitrate-paradox-ja.jpg",
   },
   {
     id: "monthly-50k-roadmap",
@@ -1030,6 +1032,7 @@ export const blogPosts = [
     tags: ["ボートレース場", "攻略", "特徴", "1号艇勝率"],
     readTime: "15分",
     featured: true,
+    image: "/images/blog/venue-winrate-spectrum-ja.jpg",
   },
 ];
 
