@@ -39,7 +39,7 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
     `drt-cell ${best !== null && boat === best ? "drt-best" : ""}`;
 
   return (
-    <div className="data-race-table">
+    <div className="data-race-table" id="data-race-table">
       <h3 className="drt-title">
         📋 {t("dataTable.title")}
         {analysis.loading && (

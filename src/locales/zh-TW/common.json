@@ -354,6 +354,23 @@
     "loading": "數據載入中…",
     "motorResetNote": "剛更換"
   },
+  "aiCopy": {
+    "bannerLabel": "複製給AI使用",
+    "bannerCatchphrase": "讓你的AI也能分析！",
+    "inlineButtonLabel": "複製給AI使用",
+    "toastSuccess": "已複製",
+    "toastError": "複製失敗",
+    "promptSelectorWin": "單勝",
+    "promptSelectorTrifecta": "3連單",
+    "promptSelectorTrio": "3連複",
+    "markdownHeading": "賽艇出賽表數據（{{venue}} 第{{race}}場）",
+    "tableItemHeader": "項目",
+    "playerNameLabel": "選手姓名",
+    "promptWin": "以上是賽艇的出賽表數據。請根據這些數據，告訴我最有可能獲得第一名的艇號，並說明理由。",
+    "promptTrifecta": "以上是賽艇的出賽表數據。請根據這些數據，提出3組值得鎖定的3連單（依序命中第1・2・3名）組合，並說明理由。",
+    "promptTrio": "以上是賽艇的出賽表數據。請根據這些數據，提出3組值得鎖定的3連複（命中前3名，順序不拘）組合，並說明理由。",
+    "previewToggleLabel": "查看將複製的提問內容"
+  },
   "aiSection": {
     "title": "AI數據分析",
     "topPickSummary": "AI本命（複勝）: {{number}}號艇 {{name}}",

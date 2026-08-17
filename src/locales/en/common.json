@@ -356,6 +356,23 @@
     "loading": "Loading analytics…",
     "motorResetNote": "New motors"
   },
+  "aiCopy": {
+    "bannerLabel": "Copy for AI",
+    "bannerCatchphrase": "Ask your AI!",
+    "inlineButtonLabel": "Copy for AI",
+    "toastSuccess": "Copied",
+    "toastError": "Copy failed",
+    "promptSelectorWin": "Win",
+    "promptSelectorTrifecta": "Trifecta",
+    "promptSelectorTrio": "Trio",
+    "markdownHeading": "Boat Race Entry Data ({{venue}} Race {{race}})",
+    "tableItemHeader": "Item",
+    "playerNameLabel": "Racer",
+    "promptWin": "The above is boat race entry data. Based on this data, tell me which boat is most likely to finish 1st, along with your reasoning.",
+    "promptTrifecta": "The above is boat race entry data. Based on this data, suggest 3 combinations to target for a Trifecta bet (picking the exact 1st, 2nd, and 3rd place finishers in order), along with your reasoning.",
+    "promptTrio": "The above is boat race entry data. Based on this data, suggest 3 combinations to target for a Trio bet (picking the 3 boats that finish in the top 3, in any order), along with your reasoning.",
+    "previewToggleLabel": "Show the question that will be copied"
+  },
   "aiSection": {
     "title": "AI Data Analysis",
     "topPickSummary": "AI top pick (place): Boat {{number}} {{name}}",

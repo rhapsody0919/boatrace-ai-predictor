@@ -354,6 +354,23 @@
     "loading": "分析データを読み込み中…",
     "motorResetNote": "交換直後"
   },
+  "aiCopy": {
+    "bannerLabel": "AI用にコピー",
+    "bannerCatchphrase": "あなたのAIに聞ける！",
+    "inlineButtonLabel": "AI用にコピー",
+    "toastSuccess": "コピーしました",
+    "toastError": "コピーに失敗しました",
+    "promptSelectorWin": "単勝",
+    "promptSelectorTrifecta": "3連単",
+    "promptSelectorTrio": "3連複",
+    "markdownHeading": "ボートレース出走表データ（{{venue}} 第{{race}}レース）",
+    "tableItemHeader": "項目",
+    "playerNameLabel": "選手名",
+    "promptWin": "上記はボートレースの出走表データです。このデータをもとに、1着になる可能性が最も高い艇番を、根拠とともに教えてください。",
+    "promptTrifecta": "上記はボートレースの出走表データです。このデータをもとに、3連単（1着・2着・3着を着順通りに当てる）で狙うべき組み合わせを3つ、根拠とともに提案してください。",
+    "promptTrio": "上記はボートレースの出走表データです。このデータをもとに、3連複（1〜3着に入る3艇を着順不問で当てる）で狙うべき組み合わせを3つ、根拠とともに提案してください。",
+    "previewToggleLabel": "コピーされる質問文を見る"
+  },
   "aiSection": {
     "title": "AIデータ分析",
     "topPickSummary": "AIの本命（複勝）: {{number}}号艇 {{name}}",

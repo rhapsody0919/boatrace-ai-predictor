@@ -673,6 +673,80 @@ test.describe("複勝予想UI撤去の完全性（レース結果パネル）", 
   });
 });
 
+// ホームページの本日開催レースは実行時刻次第で全会場終了済みになりうるため、
+// 大村（ナイター開催）→戸田（デフォルト会場）の順で未終了レースを探す
+async function selectUpcomingRace(page) {
+  // 「⏱️ 終了」フィルタは日本語文言依存のため、ja固定が無いと終了済みレースが
+  // 誤って選ばれうる（BOA-168のテストと同様の理由）
+  await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
+  await page.goto("/");
+
+  await page
+    .locator("#venue-select")
+    .selectOption({ label: "大村 (12レース)" });
+  await page.waitForTimeout(500);
+
+  let upcomingCard = page.locator(".race-card").filter({ hasNotText: "終了" });
+  if ((await upcomingCard.count()) === 0) {
+    await page.locator("#venue-select").selectOption({ label: /^戸田/ });
+    await page.waitForTimeout(500);
+    upcomingCard = page.locator(".race-card").filter({ hasNotText: "終了" });
+  }
+  await upcomingCard.first().locator(".predict-btn").click();
+}
+
+test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
+  test.use({ permissions: ["clipboard-read", "clipboard-write"] });
+
+  test("結果未確定レースでバナー・インラインのコピーボタンが表示される", async ({
+    page,
+  }) => {
+    await selectUpcomingRace(page);
+
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.locator(".ai-copy-banner")).toBeVisible();
+    await expect(page.locator(".ai-copy-btn-banner")).toBeVisible();
+    await expect(page.locator(".ai-copy-btn-inline")).toBeVisible();
+  });
+
+  test("結果確定済みレースではコピーボタンが表示されない", async ({ page }) => {
+    // unifiedモデル運用開始日（2026-08-11〜）以降の結果確定済み日付
+    await page.goto("/races/2026-08-11");
+    await page.locator(".predict-btn").first().click();
+    await expect(page.locator(".race-result")).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.locator(".ai-copy-banner")).toHaveCount(0);
+    await expect(page.locator(".ai-copy-btn-inline")).toHaveCount(0);
+  });
+
+  test("コピー実行後にトーストが表示され、クリップボードに整形済みMarkdownが入る", async ({
+    page,
+  }) => {
+    await selectUpcomingRace(page);
+
+    const bannerButton = page.locator(".ai-copy-btn-banner");
+    await expect(bannerButton).toBeVisible({ timeout: 15000 });
+    await bannerButton.click();
+
+    const toast = page.getByRole("status");
+    await expect(toast).toBeVisible();
+    await expect(toast).toHaveText("コピーしました");
+
+    const clipboardText = await page.evaluate(() =>
+      navigator.clipboard.readText(),
+    );
+    // 見出し・表・プロンプト文の3ブロックが揃っており、
+    // 値の未解決を示す undefined/NaN が混入していないことを確認する
+    expect(clipboardText).toMatch(/^## .+\n\n\|/);
+    expect(clipboardText).toContain("| 項目 |");
+    expect(clipboardText).not.toContain("undefined");
+    expect(clipboardText).not.toContain("NaN");
+  });
+});
+
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {
   test("ブログ記事詳細ページのtitleが空にならない", async ({ page }) => {
     await page.goto("/blog/rough-race-signals");
