@@ -94,6 +94,8 @@ Lane 1 is Class A1, while lanes 5–6 are Class B.
 **Examples:**
 - Races named "First Battle," "Early Bird Race," etc.
 
+![Card grid showing the 4 types of planned races: 1) Lane 1 fixed to Class A, 2) Seeded lineup, 3) Fixed-approach race, 4) Lane 1 Class A1 + outside lanes Class B, each with its rule and character](/images/blog/planned-race-types-en.jpg)
+
 ---
 
 ## When planned races are held

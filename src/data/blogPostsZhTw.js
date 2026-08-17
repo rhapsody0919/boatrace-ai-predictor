@@ -169,6 +169,7 @@ export const blogPostsZhTw = [
     category: "初學者向",
     tags: ["企劃比賽", "初學者", "1號艇", "A級", "穩健比賽"],
     readTime: "9分鐘",
+    image: "/images/blog/planned-race-types-zh-tw.jpg",
   },
   {
     id: "venue-ashiya",
@@ -203,10 +204,11 @@ export const blogPostsZhTw = [
     id: "rough-race-signals",
     title: "分辨容易爆冷的賽艇比賽的5個信號——AI從1,899場比賽中發現",
     description:
-      "以數據解說爆冷比賽的5個特徵（氣溫變化・水面穩定・內道勝率上升等）與各舉辦會場的攻略要點。",
+      "能夠預先判斷「今天的比賽可能會爆冷」，投注策略就會改變。BoatAI分析1,899場比賽，發現爆冷比賽共通的5個信號並公開。",
     category: "初學者向",
     tags: ["爆冷比賽", "預測", "信號", "分辨方法"],
     readTime: "10分鐘",
+    image: "/images/blog/signals-probability-zh-tw.jpg",
   },
   {
     id: "stadium-strategy-guide",
@@ -225,6 +227,7 @@ export const blogPostsZhTw = [
     category: "策略",
     tags: ["賽艇", "資金管理", "每月5萬日圓", "數據活用"],
     readTime: "12分鐘",
+    image: "/images/blog/roadmap-steps-zh-tw.jpg",
   },
   {
     id: "why-you-lose",

@@ -135,6 +135,8 @@ What matters most is **whether multiple signals show up at the same time**.
 - **2 signals**: ~35% chance of volatility
 - **3+ signals**: ~50%+ chance of volatility ⚠️⚠️
 
+![Bar chart showing volatility probability vs. signal count. 1 signal is ~20%, 2 signals ~35%, 3+ signals ~50%+ — the more signals stack up, the higher the chance of a volatile race](/images/blog/signals-probability-en.jpg)
+
 For example, a situation like this:
 
 1. Lane 1's win rate is 5.2 (Signal 1)
