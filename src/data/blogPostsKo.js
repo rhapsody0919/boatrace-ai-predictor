@@ -182,6 +182,7 @@ export const blogPostsKo = [
     category: "초보자용",
     tags: ["기획레이스", "초보자", "1호정", "A급고정", "안정적인레이스"],
     readTime: "9분",
+    image: "/images/blog/planned-race-types-ko.jpg",
   },
   {
     id: "venue-ashiya",
@@ -221,6 +222,7 @@ export const blogPostsKo = [
     category: "초보자용",
     tags: ["이변레이스", "예측", "신호", "판별법", "마권전략"],
     readTime: "10분",
+    image: "/images/blog/signals-probability-ko.jpg",
   },
   {
     id: "stadium-strategy-guide",
@@ -239,6 +241,7 @@ export const blogPostsKo = [
     category: "전략",
     tags: ["경정", "자금관리", "월5만엔", "데이터활용"],
     readTime: "12분",
+    image: "/images/blog/roadmap-steps-ko.jpg",
   },
   {
     id: "why-you-lose",

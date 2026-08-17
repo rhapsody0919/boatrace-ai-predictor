@@ -546,6 +546,7 @@ export const blogPosts = [
     tags: ["企画レース", "初心者", "1号艇", "A級", "堅いレース"],
     readTime: "9分",
     featured: true,
+    image: "/images/blog/planned-race-types-ja.jpg",
   },
   {
     id: "venue-monthly-202512",
@@ -874,6 +875,7 @@ export const blogPosts = [
     tags: ["ボートレース", "資金管理", "月5万円", "データ活用"],
     readTime: "12分",
     featured: true,
+    image: "/images/blog/roadmap-steps-ja.jpg",
   },
   {
     id: "what-pros-avoid",
@@ -1004,6 +1006,7 @@ export const blogPosts = [
     tags: ["荒れるレース", "予想", "サイン", "見分け方"],
     readTime: "10分",
     featured: true,
+    image: "/images/blog/signals-probability-ja.jpg",
   },
   {
     id: "exhibition-run-guide",

@@ -70,6 +70,8 @@ This is only for readers who can commit to these 3 principles — read on if tha
 - Goal: +¥50,000/month
 - Learn: spotting high-payout races, combining multiple bet types
 
+![Step chart showing the 3 steps to ¥50,000/month. Step 1 Fundamentals (month 1, break even) → Step 2 Stabilize (months 2-3, +¥10K-20K) → Step 3 Scale up (month 4+, +¥50K), raising the target gradually](/images/blog/roadmap-steps-en.jpg)
+
 ---
 
 ## Step 1: Build the fundamentals (month 1)

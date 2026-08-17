@@ -263,6 +263,7 @@ export const blogPostsEn = [
     category: "Beginner",
     tags: ["PlannedRaces", "Beginner", "Lane1", "ClassA", "SolidRace"],
     readTime: "9 min",
+    image: "/images/blog/planned-race-types-en.jpg",
   },
   {
     id: "venue-ashiya",
@@ -311,6 +312,7 @@ export const blogPostsEn = [
     category: "Beginner",
     tags: ["VolatileRace", "Prediction", "Signals", "HowToSpot"],
     readTime: "10 min",
+    image: "/images/blog/signals-probability-en.jpg",
   },
   {
     id: "stadium-strategy-guide",
@@ -331,6 +333,7 @@ export const blogPostsEn = [
     category: "Strategy",
     tags: ["BoatRacing", "BankrollManagement", "50KPerMonth", "UsingData"],
     readTime: "12 min",
+    image: "/images/blog/roadmap-steps-en.jpg",
   },
   {
     id: "why-you-lose",
