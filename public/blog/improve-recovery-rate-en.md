@@ -65,6 +65,8 @@ The single biggest secret to breaking a 100% return rate is **deciding which rac
 | Trio | 8–15% | A balanced approach targeting a mid-range payout |
 | Trifecta | 3–8% | A big payout on races with a predictable development |
 
+![Typical hit rate by bet type. Place 50-60%, Quinella 15-25%, Trio 8-15%, Trifecta 3-8% — the higher the hit rate, the easier it is to stabilize your return rate](/images/blog/improve-recovery-rate-hitrate-en.jpg)
+
 For a stable return rate, focusing on **Place and Quinella, with Trio for the races you're most confident in**, works well.
 
 ### ⭐ Strategy 3: Narrow your combination count

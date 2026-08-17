@@ -122,6 +122,7 @@ export const blogPostsEn = [
       "DeductionRate",
     ],
     readTime: "10 min",
+    image: "/images/blog/improve-recovery-rate-hitrate-en.jpg",
   },
   {
     id: "beginners-start-guide",
@@ -138,6 +139,7 @@ export const blogPostsEn = [
       "Introduction",
     ],
     readTime: "10 min",
+    image: "/images/blog/beginners-bet-types-en.jpg",
   },
   {
     id: "first-mark-prediction-guide",
@@ -165,6 +167,7 @@ export const blogPostsEn = [
     category: "Track Record",
     tags: ["TodaysPicks", "ReturnRate", "DataMining", "TrackRecord"],
     readTime: "7 min",
+    image: "/images/blog/picks-performance-funnel-en.jpg",
   },
   {
     id: "venue-visit-guide",
@@ -289,6 +292,7 @@ export const blogPostsEn = [
     category: "Data Analysis",
     tags: ["AIPrediction", "Verification", "Data", "Comparison"],
     readTime: "11 min",
+    image: "/images/blog/ai-vs-human-comparison-en.jpg",
   },
   {
     id: "rough-race-signals",

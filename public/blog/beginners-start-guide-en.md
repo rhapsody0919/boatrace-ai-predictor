@@ -35,6 +35,8 @@ Boat racing offers 7 bet types. As a beginner, learn them from the top of this l
 | **Trifecta** | Pick the top 3 in exact order | 1/120 (~0.8%) | ¥3,000–tens of thousands |
 | **Quinella Place** | Pick 2 boats that both finish top 2 | 3/15 (~20%) | ¥100–500 |
 
+![The 7 bet types compared by hit probability and typical payout. Win 17%, Place 33%, Quinella 7%, Exacta 3%, Trio 5%, Trifecta 0.8%, Quinella Place 20% — showing the tradeoff between a higher hit probability and a higher payout](/images/blog/beginners-bet-types-en.jpg)
+
 ⭐ **Quinella is the recommended bet for beginners.** It has a good balance of hit probability and payout, and anchoring around lane 1 gives even a beginner a real shot.
 
 ---

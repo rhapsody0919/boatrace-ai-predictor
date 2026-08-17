@@ -106,6 +106,7 @@ export const blogPostsKo = [
     category: "전략",
     tags: ["회수율", "승리법", "자금관리", "데이터분석", "공제율"],
     readTime: "10분",
+    image: "/images/blog/improve-recovery-rate-hitrate-ko.jpg",
   },
   {
     id: "beginners-start-guide",
@@ -115,6 +116,7 @@ export const blogPostsKo = [
     category: "초보자용",
     tags: ["초보자", "시작하기", "마권구매", "텔레보트", "입문"],
     readTime: "10분",
+    image: "/images/blog/beginners-bet-types-ko.jpg",
   },
   {
     id: "picks-performance-report",
@@ -124,6 +126,7 @@ export const blogPostsKo = [
     category: "실적 분석",
     tags: ["오늘의추천", "회수율", "데이터마이닝", "실적공개"],
     readTime: "7분",
+    image: "/images/blog/picks-performance-funnel-ko.jpg",
   },
   {
     id: "venue-visit-guide",
@@ -199,6 +202,7 @@ export const blogPostsKo = [
     category: "데이터 분석",
     tags: ["AI예측", "검증", "데이터", "비교"],
     readTime: "11분",
+    image: "/images/blog/ai-vs-human-comparison-ko.jpg",
   },
   {
     id: "rough-race-signals",

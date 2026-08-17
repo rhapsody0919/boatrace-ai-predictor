@@ -76,6 +76,7 @@ export const blogPostsZhTw = [
     category: "策略",
     tags: ["回收率", "獲勝方法", "資金管理", "數據分析", "抽成率"],
     readTime: "10分鐘",
+    image: "/images/blog/improve-recovery-rate-hitrate-zh-tw.jpg",
   },
   {
     id: "beginners-start-guide",
@@ -85,6 +86,7 @@ export const blogPostsZhTw = [
     category: "初學者向",
     tags: ["初學者", "入門方法", "投注組合", "TELEBOAT", "入門"],
     readTime: "10分鐘",
+    image: "/images/blog/beginners-bet-types-zh-tw.jpg",
   },
   {
     id: "first-mark-prediction-guide",
@@ -104,6 +106,7 @@ export const blogPostsZhTw = [
     category: "實績分析",
     tags: ["今日精選", "回收率", "數據挖掘", "實績公開"],
     readTime: "7分鐘",
+    image: "/images/blog/picks-performance-funnel-zh-tw.jpg",
   },
   {
     id: "venue-visit-guide",
@@ -186,6 +189,7 @@ export const blogPostsZhTw = [
     category: "數據分析",
     tags: ["AI預測", "驗證", "數據", "比較"],
     readTime: "11分鐘",
+    image: "/images/blog/ai-vs-human-comparison-zh-tw.jpg",
   },
   {
     id: "rough-race-signals",
