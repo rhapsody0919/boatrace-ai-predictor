@@ -293,6 +293,7 @@ export const blogPosts = [
     tags: ["ナイター", "攻略", "蒲郡", "丸亀", "大村", "モーター"],
     readTime: "9分",
     featured: true,
+    image: "/images/blog/night-venues-grid-ja.jpg",
   },
   {
     id: "sg-race-guide-2026",
@@ -304,6 +305,7 @@ export const blogPosts = [
     tags: ["SG", "グランプリ", "オールスター", "グレードレース", "2026年"],
     readTime: "10分",
     featured: true,
+    image: "/images/blog/sg-race-timeline-ja.jpg",
   },
   {
     id: "womens-race-strategy",
@@ -327,6 +329,7 @@ export const blogPosts = [
     tags: ["予想", "コツ", "的中率", "初心者", "AI予想", "データ分析"],
     readTime: "12分",
     featured: true,
+    image: "/images/blog/predict-steps-flow-ja.jpg",
   },
   {
     id: "trifecta-betting-guide",
@@ -462,6 +465,7 @@ export const blogPosts = [
     tags: ["1万レース", "実績分析", "的中率", "回収率", "3連複", "データ公開"],
     readTime: "10分",
     featured: true,
+    image: "/images/blog/10000-races-hitrate-ja.jpg",
   },
   {
     id: "monthly-report-202601",

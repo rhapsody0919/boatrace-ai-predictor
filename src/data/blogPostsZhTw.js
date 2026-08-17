@@ -41,6 +41,7 @@ export const blogPostsZhTw = [
     category: "策略",
     tags: ["夜間賽", "攻略", "蒲郡", "丸龜", "大村", "馬達"],
     readTime: "9分鐘",
+    image: "/images/blog/night-venues-grid-zh-tw.jpg",
   },
   {
     id: "sg-race-guide-2026",
@@ -50,6 +51,7 @@ export const blogPostsZhTw = [
     category: "進階玩家",
     tags: ["SG", "總決賽", "全明星賽", "分級賽事", "2026年"],
     readTime: "10分鐘",
+    image: "/images/blog/sg-race-timeline-zh-tw.jpg",
   },
   {
     id: "how-to-predict-races",
@@ -59,6 +61,7 @@ export const blogPostsZhTw = [
     category: "初學者向",
     tags: ["預測", "訣竅", "命中率", "初學者", "AI預測", "數據分析"],
     readTime: "12分鐘",
+    image: "/images/blog/predict-steps-flow-zh-tw.jpg",
   },
   {
     id: "trifecta-betting-guide",
@@ -136,6 +139,7 @@ export const blogPostsZhTw = [
     category: "實績分析",
     tags: ["1萬場比賽", "實績分析", "命中率", "回收率", "3連複", "數據公開"],
     readTime: "10分鐘",
+    image: "/images/blog/10000-races-hitrate-zh-tw.jpg",
   },
   {
     id: "suji-funaken-guide",

@@ -40,6 +40,8 @@ SG是「Special Grade（特別級）」的縮寫，是賽艇中**最高等級**�
 
 ※正確的賽程、舉辦會場請以[賽艇官方網站](https://www.boatrace.jp/)為準。
 
+![2026年SG賽事年度行事曆。從3月的賽艇經典賽到12月的總決賽，年度8場SG賽事的舉辦時期依時間順序呈現](/images/blog/sg-race-timeline-zh-tw.jpg)
+
 ---
 
 ## 各SG比賽的特徵與攻略要點

@@ -52,6 +52,8 @@ BoatAI's standard model hits **18.0%** (about once every 5.5 races) — roughly 
 
 Even for **Trifecta**, which requires the exact finishing order (probability 1/120), the standard model achieves **5.9%** — about **7.1x** better than random.
 
+![Hit rate vs. random chance across 10,000+ races. Win 47.4% (~3x), Trio 18.0% (~3.6x), Trifecta 5.9% (~7.1x), compared by bet type](/images/blog/10000-races-hitrate-en.jpg)
+
 ### 4. Broken down by venue, a return rate above 100% shows up often
 
 While the overall monthly and average return rates fall below 100%, breaking things down **by venue × model × bet type** reveals many conditions that exceed a 100% return rate.

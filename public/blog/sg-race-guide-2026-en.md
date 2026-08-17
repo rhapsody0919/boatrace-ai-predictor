@@ -40,6 +40,8 @@ Below is the 2026 SG race lineup. Check the official site for the latest exact d
 
 Note: Check the [official boat racing site](https://www.boatrace.jp/) for exact dates and venues.
 
+![2026 SG Race Calendar. From the Boat Race Classic in March to the Grand Prix in December, the 8 SG races' typical timing shown chronologically](/images/blog/sg-race-timeline-en.jpg)
+
 ---
 
 ## Each SG race's character and how to bet on it
