@@ -673,26 +673,40 @@ test.describe("複勝予想UI撤去の完全性（レース結果パネル）", 
   });
 });
 
-// ホームページの本日開催レースは実行時刻次第で全会場終了済みになりうるため、
-// 大村（ナイター開催）→戸田（デフォルト会場）の順で未終了レースを探す
+// ホームページの本日開催レースは実行時刻次第で全会場終了済み、または
+// （日付が変わった直後など）当日分の予測データが未生成で1件も無い状態に
+// なりうる。いずれも本アプリの正常な状態であり検証をスキップする対象のため、
+// 全会場を順に走査して未終了レースを探し、無ければfalseを返す
 async function selectUpcomingRace(page) {
   // 「⏱️ 終了」フィルタは日本語文言依存のため、ja固定が無いと終了済みレースが
   // 誤って選ばれうる（BOA-168のテストと同様の理由）
   await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
   await page.goto("/");
 
-  await page
-    .locator("#venue-select")
-    .selectOption({ label: "大村 (12レース)" });
-  await page.waitForTimeout(500);
-
-  let upcomingCard = page.locator(".race-card").filter({ hasNotText: "終了" });
-  if ((await upcomingCard.count()) === 0) {
-    await page.locator("#venue-select").selectOption({ label: /^戸田/ });
-    await page.waitForTimeout(500);
-    upcomingCard = page.locator(".race-card").filter({ hasNotText: "終了" });
+  // 初回ロードは予測データ取得が完了するまで#venue-selectが描画されない
+  // （固定の短い待機では間に合わないことがあるため、要素出現を待つ）
+  const venueSelect = page.locator("#venue-select");
+  try {
+    await venueSelect.waitFor({ timeout: 10000 });
+  } catch {
+    return false;
   }
-  await upcomingCard.first().locator(".predict-btn").click();
+  const optionValues = await venueSelect
+    .locator("option")
+    .evaluateAll((els) => els.map((el) => el.value));
+
+  for (const value of optionValues) {
+    await venueSelect.selectOption(value);
+    await page.waitForTimeout(500);
+    const upcomingCard = page
+      .locator(".race-card")
+      .filter({ hasNotText: "終了" });
+    if ((await upcomingCard.count()) > 0) {
+      await upcomingCard.first().locator(".predict-btn").click();
+      return true;
+    }
+  }
+  return false;
 }
 
 test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
@@ -701,7 +715,11 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
   test("結果未確定レースでバナー・インラインのコピーボタンが表示される", async ({
     page,
   }) => {
-    await selectUpcomingRace(page);
+    const found = await selectUpcomingRace(page);
+    test.skip(
+      !found,
+      "本日開催中の未終了レースが見つからないため検証をスキップ",
+    );
 
     await expect(page.locator(".data-race-table")).toBeVisible({
       timeout: 15000,
@@ -725,7 +743,11 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
   test("コピー実行後にトーストが表示され、クリップボードに整形済みMarkdownが入る", async ({
     page,
   }) => {
-    await selectUpcomingRace(page);
+    const found = await selectUpcomingRace(page);
+    test.skip(
+      !found,
+      "本日開催中の未終了レースが見つからないため検証をスキップ",
+    );
 
     const bannerButton = page.locator(".ai-copy-btn-banner");
     await expect(bannerButton).toBeVisible({ timeout: 15000 });
@@ -744,6 +766,104 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     expect(clipboardText).toContain("| 項目 |");
     expect(clipboardText).not.toContain("undefined");
     expect(clipboardText).not.toContain("NaN");
+  });
+});
+
+// イン崩れ指数（volatilityPercentile）を持つ結果未確定レースを会場横断で探す。
+// レースカード一覧はhigh/lowレベルのレースに「🌪️ イン崩れ確率高」
+// 「🎯 本命有利」バッジを直接表示する（App.jsx/RaceCard.jsx、standardは無印）ため、
+// これをフィルタして対象レースを直接特定する（総当たりでpredict-btnを
+// クリックして判定するより高速・確実）
+//
+// 注意: predict-btnクリックでApp.jsxのraceListCollapsedがtrueになると
+// .race-gridが隠れ、以降.race-card自体が0件になる。venue-selectの再選択
+// だけではこの状態は解除されない（onChangeはsetSelectedVenueIdのみ）ため、
+// 会場ごとにpage.goto("/")からやり直す
+async function findRaceWithVolatilityLevel(page) {
+  await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
+
+  await page.goto("/");
+  const venueSelect = page.locator("#venue-select");
+  try {
+    await venueSelect.waitFor({ timeout: 10000 });
+  } catch {
+    return null;
+  }
+  const optionValues = await venueSelect
+    .locator("option")
+    .evaluateAll((els) => els.map((el) => el.value));
+
+  for (const value of optionValues) {
+    await page.goto("/");
+    // 初回ロードは予測データ取得が完了するまで#venue-selectが描画されない
+    try {
+      await venueSelect.waitFor({ timeout: 10000 });
+    } catch {
+      continue;
+    }
+    await venueSelect.selectOption(value);
+    await page.waitForTimeout(500);
+
+    const badgedCard = page
+      .locator(".race-card")
+      .filter({ hasText: /イン崩れ確率高|本命有利/ })
+      .first();
+    if ((await badgedCard.count()) === 0) continue;
+
+    await badgedCard.locator(".predict-btn").click();
+    // AI分析は非同期（データ読み込み→展開パターン解析→予想生成）で完了まで
+    // 数秒〜十数秒かかるため、固定の短い待機だけでは volatility-display の
+    // 描画前に判定してしまう。分析結果パネルの描画を待つ
+    try {
+      await page
+        .locator(".ai-analysis-header")
+        .first()
+        .waitFor({ timeout: 15000 });
+    } catch {
+      continue;
+    }
+    for (const level of ["high", "low", "standard"]) {
+      const el = page.locator(`.volatility-display-${level}`);
+      if ((await el.count()) > 0) return level;
+    }
+  }
+  return null;
+}
+
+test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation）", () => {
+  test("イン崩れバッジが表示されるレースで波紋アニメーションが表示される", async ({
+    page,
+  }) => {
+    const level = await findRaceWithVolatilityLevel(page);
+    test.skip(
+      level === null,
+      "本日開催中の全レースにイン崩れ指数（非フォールバック）を持つ未確定レースが無いため検証をスキップ",
+    );
+
+    await expect(page.locator(`.volatility-display-${level}`)).toBeVisible();
+    await expect(page.locator(".race-mood-effect")).toBeVisible();
+    await expect(
+      page.locator(".race-mood-effect .race-mood-effect-ring").first(),
+    ).toBeAttached();
+  });
+
+  test("prefers-reduced-motion環境では波紋アニメーションが表示されない", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ reducedMotion: "reduce" });
+    try {
+      const page = await context.newPage();
+      const level = await findRaceWithVolatilityLevel(page);
+      test.skip(
+        level === null,
+        "本日開催中の全レースにイン崩れ指数（非フォールバック）を持つ未確定レースが無いため検証をスキップ",
+      );
+
+      await expect(page.locator(`.volatility-display-${level}`)).toBeVisible();
+      await expect(page.locator(".race-mood-effect")).toHaveCount(0);
+    } finally {
+      await context.close();
+    }
   });
 });
 
