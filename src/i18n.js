@@ -45,8 +45,15 @@ i18n
     ns: ["common"],
     supportedLngs: SUPPORTED_LANGUAGES.map((l) => l.code),
     detection: {
-      // localStorage優先 → ブラウザ言語で自動検出
-      order: ["localStorage", "navigator"],
+      // localStorageの明示的な選択のみを見る。navigatorでのブラウザ言語自動判定は
+      // 使わない（トップページ「/」は言語プレフィックス無しの日本語カノニカルURLだが、
+      // navigator検出があると初回訪問時（localStorage未設定）にブラウザ言語で
+      // レンダリング内容が変わってしまい、Googlebotが英語ブラウザ相当でクロールした
+      // 場合に「/」の索引結果が英語タイトルになる実害が発生した。
+      // localStorage未設定時はfallbackLng（ja）に委ねることで、
+      // 「/」は常に日本語を返す決定的な挙動にする。
+      // 非日本語ユーザーへの言語提案はLanguageSwitcher（明示操作）に一本化する
+      order: ["localStorage"],
       lookupLocalStorage: LANGUAGE_STORAGE_KEY,
       caches: ["localStorage"],
     },
