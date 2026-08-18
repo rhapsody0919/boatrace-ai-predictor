@@ -40,6 +40,31 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "race-mood-effect-guide",
+    title:
+      "イン崩れ注意度に波紋アニメーションを追加。荒れそうなレースがひと目でわかる",
+    description:
+      "イン崩れ注意度のアイコン背後に、荒れ度合いに応じて強弱が変わる波紋アニメーションを追加した新機能を解説。数値を読む前に、波紋の勢いで大まかな荒れ度合いをつかむ使い方を紹介します。",
+    date: "2026-08-18",
+    category: "新機能",
+    tags: ["イン崩れ指数", "新機能", "UI改善", "アニメーション"],
+    readTime: "5分",
+    featured: false,
+    image: "/images/blog/race-mood-effect-badge.jpg",
+  },
+  {
+    id: "race-ai-copy-guide",
+    title: "AI用にコピーとは？ボートレースのデータをChatGPTで検証する新機能",
+    description:
+      "BoatAIのデータ出走表を、ChatGPTやGeminiなど外部のAIチャットツールにそのまま貼り付けて分析できる新機能を解説。単勝・3連単・3連複の3種類の質問文から選んで、複数のAIで見比べる使い方を紹介します。",
+    date: "2026-08-18",
+    category: "新機能",
+    tags: ["AI予想", "新機能", "外部連携", "ChatGPT"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/race-ai-copy-banner.jpg",
+  },
+  {
     id: "data-race-table-guide",
     title: "データ出走表とは？6選手の分析データを一覧比較できる新機能",
     description:
