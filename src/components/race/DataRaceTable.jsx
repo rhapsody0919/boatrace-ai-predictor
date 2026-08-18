@@ -15,7 +15,7 @@ import { buildIndicatorRows } from "./raceIndicators";
 import "./DataRaceTable.css";
 
 function DataRaceTable({ raceId, prediction, venueCode }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const analysis = useRaceAnalysisData(raceId);
 
   const players = [...(prediction?.allPlayers ?? [])].sort(
@@ -107,6 +107,11 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
       </div>
 
       <p className="drt-note">💡 {t("dataTable.note")}</p>
+      {i18n.language === "ja" && (
+        <Link to="/blog/data-race-table-guide" className="drt-guide-link">
+          📖 {t("dataTable.guideLink")} →
+        </Link>
+      )}
     </div>
   );
 }

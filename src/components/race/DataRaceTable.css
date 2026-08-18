@@ -213,6 +213,18 @@
   color: var(--color-gray-500);
 }
 
+.drt-guide-link {
+  display: inline-block;
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-700);
+  text-decoration: none;
+}
+
+.drt-guide-link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 480px) {
   .data-race-table {
     padding: var(--spacing-2);

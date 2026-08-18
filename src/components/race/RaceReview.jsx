@@ -10,6 +10,7 @@
  * データ出走表と共通化）。4〜6着の個別着順はDBに未保存のため「着外」で扱う。
  */
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { getRaceId } from "../../utils/raceId";
@@ -26,7 +27,7 @@ const markFor = (signal, good) => {
 const MARK = { match: "○", mismatch: "×", none: "−" };
 
 function RaceReview({ prediction, selectedRace }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const raceId = getRaceId(selectedRace);
   const finished = Boolean(prediction?.result?.finished);
   const analysis = useRaceAnalysisData(finished ? raceId : null, {
@@ -303,6 +304,14 @@ function RaceReview({ prediction, selectedRace }) {
           )}
 
           <p className="race-review-note">💡 {t("review.note")}</p>
+          {i18n.language === "ja" && (
+            <Link
+              to="/blog/race-review-guide"
+              className="race-review-guide-link"
+            >
+              📖 {t("review.guideLink")} →
+            </Link>
+          )}
         </>
       )}
     </div>

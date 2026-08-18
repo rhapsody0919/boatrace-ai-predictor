@@ -292,6 +292,18 @@
   color: var(--color-gray-500);
 }
 
+.race-review-guide-link {
+  display: inline-block;
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-700);
+  text-decoration: none;
+}
+
+.race-review-guide-link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 480px) {
   .race-review {
     padding: var(--spacing-2);

@@ -1,0 +1,128 @@
+{
+  "generatedAt": "2026-08-18T03:10:02.349Z",
+  "days": 30,
+  "byLanguage": {
+    "ja": {
+      "pv": 9570,
+      "users": 706
+    },
+    "en": {
+      "pv": 137,
+      "users": 66
+    },
+    "zh-TW": {
+      "pv": 3,
+      "users": 2
+    },
+    "ko": {
+      "pv": 2,
+      "users": 1
+    }
+  },
+  "shareOfPv": {
+    "en": 1.41,
+    "zh-TW": 0.03,
+    "ko": 0.02
+  },
+  "languageSwitches": 30,
+  "byCountry": {
+    "en": [
+      {
+        "country": "United States",
+        "users": 39,
+        "pv": 77
+      },
+      {
+        "country": "Japan",
+        "users": 13,
+        "pv": 31
+      },
+      {
+        "country": "Germany",
+        "users": 5,
+        "pv": 9
+      },
+      {
+        "country": "India",
+        "users": 3,
+        "pv": 6
+      },
+      {
+        "country": "China",
+        "users": 1,
+        "pv": 3
+      },
+      {
+        "country": "Ghana",
+        "users": 1,
+        "pv": 5
+      },
+      {
+        "country": "Hong Kong",
+        "users": 1,
+        "pv": 2
+      },
+      {
+        "country": "Poland",
+        "users": 1,
+        "pv": 2
+      },
+      {
+        "country": "Singapore",
+        "users": 1,
+        "pv": 2
+      }
+    ],
+    "zh-TW": [
+      {
+        "country": "Hong Kong",
+        "users": 1,
+        "pv": 1
+      },
+      {
+        "country": "Japan",
+        "users": 1,
+        "pv": 2
+      }
+    ],
+    "ko": [
+      {
+        "country": "Japan",
+        "users": 1,
+        "pv": 2
+      }
+    ]
+  },
+  "bySource": {
+    "en": [
+      {
+        "channel": "Direct",
+        "sessions": 50
+      },
+      {
+        "channel": "Organic Search",
+        "sessions": 17
+      },
+      {
+        "channel": "AI Assistant",
+        "sessions": 2
+      },
+      {
+        "channel": "Unassigned",
+        "sessions": 1
+      }
+    ],
+    "zh-TW": [
+      {
+        "channel": "Organic Search",
+        "sessions": 2
+      }
+    ],
+    "ko": [
+      {
+        "channel": "Organic Search",
+        "sessions": 1
+      }
+    ]
+  }
+}
