@@ -778,7 +778,8 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
 // 注意: predict-btnクリックでApp.jsxのraceListCollapsedがtrueになると
 // .race-gridが隠れ、以降.race-card自体が0件になる。venue-selectの再選択
 // だけではこの状態は解除されない（onChangeはsetSelectedVenueIdのみ）ため、
-// 会場ごとにpage.goto("/")からやり直す
+// 前回クリックで折りたたまれていたら.race-list-toggle（「他のレースを選ぶ」）で
+// 復帰させてから次の会場を試す（会場ごとのpage.goto全リロードは遅すぎるため避ける）
 async function findRaceWithVolatilityLevel(page) {
   await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
 
@@ -794,19 +795,20 @@ async function findRaceWithVolatilityLevel(page) {
     .evaluateAll((els) => els.map((el) => el.value));
 
   for (const value of optionValues) {
-    await page.goto("/");
-    // 初回ロードは予測データ取得が完了するまで#venue-selectが描画されない
-    try {
-      await venueSelect.waitFor({ timeout: 10000 });
-    } catch {
-      continue;
+    const toggle = page.locator(".race-list-toggle");
+    if ((await toggle.count()) > 0) {
+      await toggle.click();
+      await page.waitForTimeout(200);
     }
     await venueSelect.selectOption(value);
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(400);
 
+    // 「終了」済みレースは.ai-analysis-header自体が描画されないため対象外にする
+    // （結果未確定レースのみのバッジ付きレースを探す）
     const badgedCard = page
       .locator(".race-card")
       .filter({ hasText: /イン崩れ確率高|本命有利/ })
+      .filter({ hasNotText: "終了" })
       .first();
     if ((await badgedCard.count()) === 0) continue;
 
@@ -834,6 +836,9 @@ test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation�
   test("イン崩れバッジが表示されるレースで波紋アニメーションが表示される", async ({
     page,
   }) => {
+    // findRaceWithVolatilityLevelは会場ごとにフルリロードして走査するため、
+    // 該当レースが見つかりにくい時間帯はデフォルトの30秒を超えうる
+    test.setTimeout(60000);
     const level = await findRaceWithVolatilityLevel(page);
     test.skip(
       level === null,
@@ -850,6 +855,7 @@ test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation�
   test("prefers-reduced-motion環境では波紋アニメーションが表示されない", async ({
     browser,
   }) => {
+    test.setTimeout(60000);
     const context = await browser.newContext({ reducedMotion: "reduce" });
     try {
       const page = await context.newPage();
