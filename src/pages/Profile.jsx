@@ -4,9 +4,9 @@ import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import "./Profile.css";
 
-const TITLE = "運営者プロフィール | BoatAI";
+const TITLE = "運営者プロフィール | 龍神レーダー";
 const DESCRIPTION =
-  "BoatAI運営者「らぷそでぃ」のプロフィール。インフラエンジニアとしての経験を活かし、ボートレースAI予想サービスを開発した経緯と開発の裏話をご紹介します。";
+  "龍神レーダー運営者「らぷそでぃ」のプロフィール。インフラエンジニアとしての経験を活かし、ボートレースAI予想サービスを開発した経緯と開発の裏話をご紹介します。";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function Profile() {
     title: TITLE,
     description: DESCRIPTION,
     url: "https://www.boat-ai.jp/profile",
-    keywords: "BoatAI,運営者,プロフィール,らぷそでぃ,インフラエンジニア,AI開発",
+    keywords: "龍神レーダー,運営者,プロフィール,らぷそでぃ,インフラエンジニア,AI開発",
   });
 
   return (
@@ -33,7 +33,7 @@ export default function Profile() {
             "@type": "Person",
             name: "らぷそでぃ",
             jobTitle: "インフラエンジニア",
-            description: "BoatAI開発者",
+            description: "龍神レーダー開発者",
             url: "https://www.boat-ai.jp/profile",
             sameAs: ["https://x.com/kyouteiboatai"],
           },
@@ -67,7 +67,7 @@ export default function Profile() {
       <div className="profile-container">
         <div className="profile-header">
           <h1>運営者プロフィール</h1>
-          <p>BoatAIを作った人について</p>
+          <p>龍神レーダーを作った人について</p>
         </div>
 
         {/* プロフィールカード */}
@@ -80,7 +80,7 @@ export default function Profile() {
             </div>
             <div className="profile-info">
               <h2 className="profile-name">らぷそでぃ</h2>
-              <p className="profile-title">インフラエンジニア / BoatAI開発者</p>
+              <p className="profile-title">インフラエンジニア / 龍神レーダー開発者</p>
               <div className="profile-tags">
                 <span className="tag">インフラ構築</span>
                 <span className="tag">AI/機械学習</span>
@@ -98,13 +98,13 @@ export default function Profile() {
             はじめまして、らぷそでぃです。普段はインフラエンジニアとして、サーバー構築やクラウド環境の設計・運用を担当しています。
           </p>
           <p>
-            ボートレースとの出会いは5年前。最初は「ギャンブルなんて」と思っていましたが、データを分析すればするほど「これは運ではなく、確率と統計の世界だ」と気づきました。エンジニアの性分で「じゃあAIに予想させたらどうなる？」と思い立ち、BoatAIの開発を始めました。
+            ボートレースとの出会いは5年前。最初は「ギャンブルなんて」と思っていましたが、データを分析すればするほど「これは運ではなく、確率と統計の世界だ」と気づきました。エンジニアの性分で「じゃあAIに予想させたらどうなる？」と思い立ち、龍神レーダーの開発を始めました。
           </p>
         </section>
 
-        {/* なぜBoatAIを作ったか */}
+        {/* なぜ龍神レーダーを作ったか */}
         <section className="profile-section">
-          <h2>なぜBoatAIを作ったか</h2>
+          <h2>なぜ龍神レーダーを作ったか</h2>
           <div className="story-timeline">
             <div className="story-item">
               <div className="story-icon">💸</div>
@@ -129,7 +129,7 @@ export default function Profile() {
               <div className="story-content">
                 <h3>目指していること：完全無料で本物を届ける</h3>
                 <p>
-                  高額な予想情報に騙される人を一人でも減らしたい。だからBoatAIは完全無料。的中率も回収率も全て公開。「無料だから適当」ではなく、「無料でも本物」を証明し続けます。
+                  高額な予想情報に騙される人を一人でも減らしたい。だから龍神レーダーは完全無料。的中率も回収率も全て公開。「無料だから適当」ではなく、「無料でも本物」を証明し続けます。
                 </p>
               </div>
             </div>
@@ -173,14 +173,14 @@ export default function Profile() {
               <div className="experience-content">
                 <h3>インフラエンジニア</h3>
                 <p>
-                  サーバー構築、クラウド環境設計・運用、自動化ツール開発など。大規模システムの安定稼働を支えてきた経験が、BoatAIの安定運用に活きています。
+                  サーバー構築、クラウド環境設計・運用、自動化ツール開発など。大規模システムの安定稼働を支えてきた経験が、龍神レーダーの安定運用に活きています。
                 </p>
               </div>
             </div>
             <div className="experience-item">
               <div className="experience-period">2025年〜</div>
               <div className="experience-content">
-                <h3>BoatAI開発・運営</h3>
+                <h3>龍神レーダー開発・運営</h3>
                 <p>
                   機械学習モデルの開発、Webサービスの構築・運用。毎日のデータ更新と予想生成を自動化し、24時間365日稼働するシステムを構築。
                 </p>
@@ -211,7 +211,7 @@ export default function Profile() {
 
         {/* CTA */}
         <section className="profile-cta">
-          <h2>BoatAIを試してみる</h2>
+          <h2>龍神レーダーを試してみる</h2>
           <p>登録不要・完全無料でAI予想を確認できます</p>
           <button onClick={() => navigate("/")} className="cta-button">
             AI予想を見る

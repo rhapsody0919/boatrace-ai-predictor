@@ -4,9 +4,9 @@ import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import "./HowToUse.css";
 
-const TITLE = "使い方ガイド | BoatAI - 初心者でもわかる利用方法";
+const TITLE = "使い方ガイド | 龍神レーダー - 初心者でもわかる利用方法";
 const DESCRIPTION =
-  "BoatAIの使い方を5つのステップで解説。レース場の選び方、データ出走表・展開予測・イン崩れ指数の見方まで、初心者にもわかりやすく説明します。";
+  "龍神レーダーの使い方を5つのステップで解説。レース場の選び方、データ出走表・展開予測・イン崩れ指数の見方まで、初心者にもわかりやすく説明します。";
 
 export default function HowToUse() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function HowToUse() {
     description: DESCRIPTION,
     url: "https://www.boat-ai.jp/how-to-use",
     keywords:
-      "BoatAI使い方,ボートレース分析方法,初心者ガイド,データ出走表,展開予測,イン崩れ指数",
+      "龍神レーダー使い方,ボートレース分析方法,初心者ガイド,データ出走表,展開予測,イン崩れ指数",
   });
 
   const steps = [
@@ -111,7 +111,7 @@ export default function HowToUse() {
           <p>
             レースを選ぶと、まず
             <strong>データ出走表</strong>
-            （出走6選手×客観的なデータの一覧表）が表示されます。BoatAIは
+            （出走6選手×客観的なデータの一覧表）が表示されます。龍神レーダーは
             <strong>「予想モデルを選ぶ」機能は提供していません</strong>
             。誰が見ても同じ客観的なデータをもとに、自分で予想を組み立てる形です。
           </p>
@@ -231,7 +231,7 @@ export default function HowToUse() {
             <h4>⚠️ 重要な注意事項</h4>
             <div className="warning-box">
               <p>
-                <strong>BoatAIは分析情報のみを提供しています</strong>
+                <strong>龍神レーダーは分析情報のみを提供しています</strong>
               </p>
               <p>
                 舟券の購入は
@@ -262,8 +262,8 @@ export default function HowToUse() {
         {JSON.stringify({
           "@context": "https://schema.org",
           "@type": "HowTo",
-          name: "BoatAI（AIボートレース分析サービス）の使い方",
-          description: "BoatAIの使い方を5つのステップで解説",
+          name: "龍神レーダー（AIボートレース分析サービス）の使い方",
+          description: "龍神レーダーの使い方を5つのステップで解説",
           step: steps.map((step, index) => ({
             "@type": "HowToStep",
             position: index + 1,
@@ -300,7 +300,7 @@ export default function HowToUse() {
       <div className="how-to-use-container">
         <div className="how-to-use-header">
           <h1>📚 使い方ガイド</h1>
-          <p>BoatAIの使い方を初心者にもわかりやすく解説</p>
+          <p>龍神レーダーの使い方を初心者にもわかりやすく解説</p>
         </div>
 
         {/* ステップナビゲーション */}

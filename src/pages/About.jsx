@@ -4,9 +4,9 @@ import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import "./About.css";
 
-const TITLE = "BoatAIについて | AIボートレース予想サービスの詳細";
+const TITLE = "龍神レーダーについて | AIボートレース予想サービスの詳細";
 const DESCRIPTION =
-  "BoatAIは45項目以上のデータをAIが分析するボートレース予測サービス。データサイエンスに基づく高精度分析を完全無料・登録不要で提供します。";
+  "龍神レーダーは45項目以上のデータをAIが分析するボートレース予測サービス。データサイエンスに基づく高精度分析を完全無料・登録不要で提供します。";
 
 export default function About() {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ export default function About() {
     description: DESCRIPTION,
     url: "https://www.boat-ai.jp/about",
     keywords:
-      "BoatAI,ボートレース,AI分析,機械学習,データ分析,データサイエンス,無料",
+      "龍神レーダー,ボートレース,AI分析,機械学習,データ分析,データサイエンス,無料",
   });
 
   return (
@@ -49,7 +49,7 @@ export default function About() {
             {
               "@type": "ListItem",
               position: 2,
-              name: "BoatAIについて",
+              name: "龍神レーダーについて",
               item: "https://www.boat-ai.jp/about",
             },
           ],
@@ -60,7 +60,7 @@ export default function About() {
 
       <div className="about-container">
         <div className="about-header">
-          <h1>🚀 BoatAIについて</h1>
+          <h1>🚀 龍神レーダーについて</h1>
           <p>AI技術でボートレース予想を革新する</p>
         </div>
 
@@ -106,9 +106,9 @@ export default function About() {
         </section>
 
         <section className="about-section">
-          <h2>BoatAIとは</h2>
+          <h2>龍神レーダーとは</h2>
           <p>
-            BoatAIは、人工知能（AI）を活用したボートレース予想サービスです。
+            龍神レーダーは、人工知能（AI）を活用したボートレース予想サービスです。
             45項目以上のデータを総合的に分析し、高精度な予想を提供します。
           </p>
           <p>
@@ -177,7 +177,7 @@ export default function About() {
         </section>
 
         <section className="about-section">
-          <h2>✨ BoatAIの特徴</h2>
+          <h2>✨ 龍神レーダーの特徴</h2>
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">🆓</div>
@@ -270,13 +270,13 @@ export default function About() {
           <div className="terms">
             <h3>1. サービスの利用</h3>
             <p>
-              BoatAIは無料でご利用いただけます。予告なく内容を変更、または
+              龍神レーダーは無料でご利用いただけます。予告なく内容を変更、または
               サービスを停止する場合があります。
             </p>
 
             <h3>2. 免責事項</h3>
             <p>
-              BoatAIの予想は参考情報として提供しています。
+              龍神レーダーの予想は参考情報として提供しています。
               舟券の購入は自己責任で行ってください。
               当サービスの利用による損失について、一切の責任を負いません。
             </p>
