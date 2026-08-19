@@ -187,7 +187,7 @@ export default function BlogPost() {
     <>
       {/* Basic Meta Tags */}
       {/* keywords/OGP/Twitterカードはindex.htmlの静的タグをuseSocialMetaで直接書き換えている */}
-      <title>{`${post.title} | BoatAI`}</title>
+      <title>{`${post.title} | 龍神レーダー`}</title>
       <meta name="description" content={post.description} />
       <link rel="canonical" href={url} />
 

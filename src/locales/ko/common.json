@@ -13,14 +13,15 @@
     "profile": "👤 운영자 소개",
     "venues": "🏟️ 경기장 가이드",
     "menuLabel": "더 보기 메뉴",
-    "logoLabel": "BoatAI 홈으로 이동"
+    "logoLabel": "용신 레이더 홈으로 이동",
+    "logoText": "용신 레이더"
   },
   "language": {
     "switchLabel": "언어 변경",
     "notAvailable": "이 페이지는 {{lang}}로 제공되지 않습니다"
   },
   "meta": {
-    "title": "BoatAI - 일본 경정(쿄테이) AI 예측 | 무료",
+    "title": "용신 레이더 - 무료 경정 AI 예측 및 데이터 분석",
     "description": "일본 경정(BOAT RACE)을 AI가 무료로 예측합니다. 경주당 45개 데이터를 분석해 결과를 예측 — 완전 무료, 가입 불필요."
   },
   "venues": {
@@ -170,7 +171,7 @@
     "analysisToolsLink": "데이터 분석 도구로 이 레이스를 더 분석하기"
   },
   "home": {
-    "introBannerText": "복승 예상・전개 예측 등 45개 이상의 데이터를 분석 | BoatAI 자세히 보기 →",
+    "introBannerText": "복승 예상・전개 예측 등 45개 이상의 데이터를 분석 | 용신 레이더 자세히 보기 →",
     "introBannerClose": "닫기",
     "todayRaces": "오늘의 경주",
     "dataType": "경주 데이터",
@@ -605,7 +606,7 @@
   },
   "analysisPage": {
     "meta": {
-      "title": "데이터 분석 도구 - BoatAI",
+      "title": "데이터 분석 도구 - 용신 레이더",
       "description": "결과 조합 분포·결정수 데이터 분석·모터 컨디션·선수 컨디션·전시 ST/실전 ST의 차이·번호별 톱 스타트 분석·패배 시 결정수 분석·인빠지기 성공 시 결과 분포·전시 타임 최속정의 1착 전환율·선수별 전시 타임 추이·선수별 결정수 경향·오늘의 상승세·하락세 선수 랭킹·선수×보트 번호별 회수율 분석·심화 경주 데이터·출전표 데이터의 15가지 분석 기능으로 경기장·레이스별 경향을 확인할 수 있습니다. AI 예측을 뒷받침하는 근거로 활용할 수 있습니다."
     },
     "h1": "📊 데이터 분석 도구",
@@ -613,7 +614,7 @@
     "breadcrumbHome": "홈",
     "itemListName": "데이터 분석 도구",
     "itemListDescription": "경기장·레이스별 경향을 확인할 수 있는 15가지 분석 기능",
-    "footerText": "© {{year}} BoatAI - 보트레이스 AI 예측 지원",
+    "footerText": "© {{year}} 용신 레이더 - 무료 경정 AI 예측 및 데이터 분석",
     "tabs": {
       "outcome": "📊 결과 조합 분포",
       "technique": "🎯 결정수",
