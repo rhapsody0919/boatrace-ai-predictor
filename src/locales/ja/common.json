@@ -198,7 +198,8 @@
     "privacy": "プライバシーポリシー",
     "terms": "利用規約",
     "contact": "お問い合わせ",
-    "responsibleGambling": "責任あるギャンブル"
+    "responsibleGambling": "責任あるギャンブル",
+    "copyright": "© 2025 龍神レーダー - All Rights Reserved"
   },
   "errors": {
     "noPredictionData": "このレースの予想データがまだ生成されていません。しばらくしてから再度お試しください。",

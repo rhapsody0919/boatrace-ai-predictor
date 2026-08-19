@@ -19,6 +19,7 @@ import "./BlogPost.css";
 
 const UI_TEXT = {
   ja: {
+    brandName: "龍神レーダー",
     backToBlog: "← ブログ一覧に戻る",
     backHref: "/blog",
     loading: "記事を読み込み中...",
@@ -27,7 +28,7 @@ const UI_TEXT = {
     loadError: "記事の読み込みに失敗しました",
     relatedPosts: "📌 関連記事",
     readMore: "続きを読む →",
-    ctaTitle: "🚀 今すぐBoatAI予想を試してみる",
+    ctaTitle: "🚀 今すぐ龍神レーダー予想を試してみる",
     ctaDesc: "完全無料でAI予想を確認できます",
     ctaButton: "AI予想を見る",
     home: "ホーム",
@@ -35,6 +36,7 @@ const UI_TEXT = {
     homeHref: "/",
   },
   en: {
+    brandName: "Ryujin Radar",
     backToBlog: "← Back to blog list",
     backHref: "/en/blog",
     loading: "Loading article...",
@@ -43,7 +45,7 @@ const UI_TEXT = {
     loadError: "Failed to load article",
     relatedPosts: "📌 Related articles",
     readMore: "Read more →",
-    ctaTitle: "🚀 Try BoatAI predictions now",
+    ctaTitle: "🚀 Try Ryujin Radar predictions now",
     ctaDesc: "Check AI predictions completely free",
     ctaButton: "View AI Predictions",
     home: "Home",
@@ -51,6 +53,7 @@ const UI_TEXT = {
     homeHref: "/en/",
   },
   "zh-TW": {
+    brandName: "龍神雷達",
     backToBlog: "← 返回文章列表",
     backHref: "/zh-TW/blog",
     loading: "文章載入中...",
@@ -59,7 +62,7 @@ const UI_TEXT = {
     loadError: "文章載入失敗",
     relatedPosts: "📌 相關文章",
     readMore: "繼續閱讀 →",
-    ctaTitle: "🚀 立即試用BoatAI預測",
+    ctaTitle: "🚀 立即試用龍神雷達預測",
     ctaDesc: "完全免費查看AI預測",
     ctaButton: "查看AI預測",
     home: "首頁",
@@ -67,6 +70,7 @@ const UI_TEXT = {
     homeHref: "/zh-TW/",
   },
   ko: {
+    brandName: "용신 레이더",
     backToBlog: "← 블로그 목록으로 돌아가기",
     backHref: "/ko/blog",
     loading: "기사를 불러오는 중...",
@@ -75,7 +79,7 @@ const UI_TEXT = {
     loadError: "기사를 불러오지 못했습니다",
     relatedPosts: "📌 관련 기사",
     readMore: "더 읽기 →",
-    ctaTitle: "🚀 지금 바로 BoatAI 예측을 체험해보세요",
+    ctaTitle: "🚀 지금 바로 용신 레이더 예측을 체험해보세요",
     ctaDesc: "완전 무료로 AI 예측을 확인할 수 있습니다",
     ctaButton: "AI 예측 보기",
     home: "홈",
@@ -187,12 +191,12 @@ export default function BlogPost() {
     <>
       {/* Basic Meta Tags */}
       {/* keywords/OGP/Twitterカードはindex.htmlの静的タグをuseSocialMetaで直接書き換えている */}
-      <title>{`${post.title} | 龍神レーダー`}</title>
+      <title>{`${post.title} | ${t.brandName}`}</title>
       <meta name="description" content={post.description} />
       <link rel="canonical" href={url} />
 
       <meta property="article:published_time" content={post.date} />
-      <meta property="article:author" content="BoatAI" />
+      <meta property="article:author" content={t.brandName} />
       <meta property="article:section" content={post.category} />
       {post.tags.map((tag) => (
         <meta key={tag} property="article:tag" content={tag} />
@@ -210,12 +214,12 @@ export default function BlogPost() {
           dateModified: post.date,
           author: {
             "@type": "Organization",
-            name: "BoatAI",
+            name: t.brandName,
             url: "https://www.boat-ai.jp",
           },
           publisher: {
             "@type": "Organization",
-            name: "BoatAI",
+            name: t.brandName,
             logo: {
               "@type": "ImageObject",
               url: "https://www.boat-ai.jp/logo.png",

@@ -199,7 +199,8 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "contact": "Contact",
-    "responsibleGambling": "Responsible Gambling"
+    "responsibleGambling": "Responsible Gambling",
+    "copyright": "© 2025 Ryujin Radar - All Rights Reserved"
   },
   "errors": {
     "noPredictionData": "Prediction data for this race has not been generated yet. Please try again later.",
