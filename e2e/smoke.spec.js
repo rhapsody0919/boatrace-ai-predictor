@@ -4,7 +4,7 @@ test.describe("ホーム・基本ナビゲーション", () => {
   test("トップページが表示され、主要ナビが機能する", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator(".app-header")).toBeVisible();
-    await expect(page.locator(".logo h1")).toHaveText("BoatAI");
+    await expect(page.locator(".logo h1")).toHaveText("龍神レーダー");
   });
 
   test("日本語(ja)のハンバーガーメニューには会場ガイドが表示されない", async ({
@@ -876,11 +876,11 @@ test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation�
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {
   test("ブログ記事詳細ページのtitleが空にならない", async ({ page }) => {
     await page.goto("/blog/rough-race-signals");
-    await expect(page).toHaveTitle(/.+\| BoatAI$/);
+    await expect(page).toHaveTitle(/.+\| 龍神レーダー$/);
   });
 
   test("レース詳細ページのtitleが空にならない", async ({ page }) => {
     await page.goto("/races/2026-06-22");
-    await expect(page).toHaveTitle(/.+BoatAI$/);
+    await expect(page).toHaveTitle(/.+龍神レーダー$/);
   });
 });

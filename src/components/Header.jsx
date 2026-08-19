@@ -98,7 +98,7 @@ function Header() {
           aria-label={t("nav.logoLabel")}
         >
           <span className="logo-icon">🚤</span>
-          <h1>BoatAI</h1>
+          <h1>{t("nav.logoText")}</h1>
         </button>
         <nav className="nav">
           <button

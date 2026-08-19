@@ -209,7 +209,7 @@ function RaceDetail() {
 
   return (
     <>
-      <title>{`${formatDate(date)}のAI予想データ - BoatAI`}</title>
+      <title>{`${formatDate(date)}のAI予想データ - ${t("nav.logoText")}`}</title>
       <meta
         name="description"
         content={`${formatDate(date)}のボートレースAI予想データと的中実績。各レース場の予想結果を確認できます。`}

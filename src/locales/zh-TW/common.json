@@ -13,14 +13,15 @@
     "profile": "👤 營運者介紹",
     "venues": "🏟️ 賽場指南",
     "menuLabel": "更多選單",
-    "logoLabel": "回到 BoatAI 首頁"
+    "logoLabel": "回到龍神雷達首頁",
+    "logoText": "龍神雷達"
   },
   "language": {
     "switchLabel": "切換語言",
     "notAvailable": "此頁面尚未提供{{lang}}版本"
   },
   "meta": {
-    "title": "BoatAI - 日本賽艇（Kyotei）AI 預測 | 免費",
+    "title": "龍神雷達 - 免費賽艇AI預測與數據分析",
     "description": "AI 免費預測日本賽艇（BOAT RACE / Kyotei）。AI 分析每場比賽 45 項數據並預測結果 — 完全免費，無需註冊。"
   },
   "venues": {
@@ -170,7 +171,7 @@
     "analysisToolsLink": "用數據分析工具進一步分析本場比賽"
   },
   "home": {
-    "introBannerText": "分析複勝預測、展開預測等45項以上數據 | 了解更多BoatAI →",
+    "introBannerText": "分析複勝預測、展開預測等45項以上數據 | 了解更多龍神雷達 →",
     "introBannerClose": "關閉",
     "todayRaces": "今日賽事",
     "dataType": "比賽資料",
@@ -197,7 +198,8 @@
     "privacy": "隱私權政策",
     "terms": "服務條款",
     "contact": "聯絡我們",
-    "responsibleGambling": "負責任博彩"
+    "responsibleGambling": "負責任博彩",
+    "copyright": "© 2025 龍神雷達 - All Rights Reserved"
   },
   "errors": {
     "noPredictionData": "此比賽的預測資料尚未產生，請稍後再試。",
@@ -605,7 +607,7 @@
   },
   "analysisPage": {
     "meta": {
-      "title": "數據分析工具 - BoatAI",
+      "title": "數據分析工具 - 龍神雷達",
       "description": "透過名次組合分布、獲勝方式資料分析、馬達狀況、選手狀態、展示ST/正式ST的落差、艇號別搶先起航分析、落敗時獲勝方式分析、逃走成功時的名次分布、展示時間最快艇的第1名轉換率、選手別展示時間走勢、選手別獲勝方式傾向、本日狀態上升/下滑選手排行榜、選手×艇號別回收率分析、進階比賽數據、出賽表資料等15項分析功能，確認各賽場、各比賽的傾向，作為佐證AI預測的依據。"
     },
     "h1": "📊 數據分析工具",
@@ -613,7 +615,7 @@
     "breadcrumbHome": "首頁",
     "itemListName": "數據分析工具",
     "itemListDescription": "可確認各賽場、各比賽傾向的15項分析功能",
-    "footerText": "© {{year}} BoatAI - 賽艇 AI預測輔助",
+    "footerText": "© {{year}} 龍神雷達 - 免費賽艇AI預測與數據分析",
     "tabs": {
       "outcome": "📊 名次組合分布",
       "technique": "🎯 獲勝方式",

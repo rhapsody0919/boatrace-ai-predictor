@@ -910,7 +910,7 @@ function App({ tab = "races" }) {
             {t("footer.responsibleGambling")}
           </Link>
         </div>
-        <p>&copy; 2025 BoatAI - All Rights Reserved</p>
+        <p>{t("footer.copyright")}</p>
       </footer>
 
       {selectedRace && (

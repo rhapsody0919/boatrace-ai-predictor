@@ -13,15 +13,16 @@
     "profile": "👤 運営者プロフィール",
     "venues": "🏟️ 会場ガイド",
     "menuLabel": "その他のメニュー",
-    "logoLabel": "BoatAI トップページへ"
+    "logoLabel": "龍神レーダー トップページへ",
+    "logoText": "龍神レーダー"
   },
   "language": {
     "switchLabel": "言語切替",
     "notAvailable": "このページは{{lang}}未対応です"
   },
   "meta": {
-    "title": "BoatAI（ボートアイ）- AIボートレース予想 | 完全無料・実績公開中",
-    "description": "ボートアイ（boat-ai.jp）が提供する、45項目のデータをAIが分析するボートレース予測サービス。高精度なレース展開分析を完全無料・登録不要で今すぐ使えます。"
+    "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+    "description": "龍神レーダー（boat-ai.jp）が提供する、45項目のデータをAIが分析するボートレース予測サービス。高精度なレース展開分析を完全無料・登録不要で今すぐ使えます。"
   },
   "venues": {
     "1": "桐生",
@@ -170,7 +171,7 @@
     "analysisToolsLink": "データ分析ツールでこのレースをさらに分析する"
   },
   "home": {
-    "introBannerText": "複勝予想・展開予測など45項目のデータを分析 | BoatAIについて詳しくはこちら →",
+    "introBannerText": "複勝予想・展開予測など45項目のデータを分析 | 龍神レーダーについて詳しくはこちら →",
     "introBannerClose": "閉じる",
     "todayRaces": "本日開催中のレース",
     "dataType": "レースデータ",
@@ -197,7 +198,8 @@
     "privacy": "プライバシーポリシー",
     "terms": "利用規約",
     "contact": "お問い合わせ",
-    "responsibleGambling": "責任あるギャンブル"
+    "responsibleGambling": "責任あるギャンブル",
+    "copyright": "© 2025 龍神レーダー - All Rights Reserved"
   },
   "errors": {
     "noPredictionData": "このレースの予想データがまだ生成されていません。しばらくしてから再度お試しください。",
@@ -607,7 +609,7 @@
   },
   "analysisPage": {
     "meta": {
-      "title": "データ分析ツール - BoatAI",
+      "title": "データ分析ツール - 龍神レーダー",
       "description": "出目分布・決まり手データ分析・モーター調子・選手調子・展示ST/本番STのズレ・枠番別トップスタート分析・負け決まり手分析・逃げ成功時の複勝分布・展示タイム最速艇の1着転換率・選手別展示タイム推移・選手別決まり手傾向・本日の好調不調選手ランキング・選手×艇番別回収率分析・超展開データ・出走表データの15の分析機能で、会場・レースごとの傾向を確認できます。AIの予想を裏付ける根拠として活用できます。"
     },
     "h1": "📊 データ分析ツール",
@@ -615,7 +617,7 @@
     "breadcrumbHome": "ホーム",
     "itemListName": "データ分析ツール",
     "itemListDescription": "会場・レースごとの傾向を確認できる15の分析機能",
-    "footerText": "© {{year}} BoatAI - ボートレース AI予想支援",
+    "footerText": "© {{year}} 龍神レーダー - 無料のボートレースAI予想＆データ分析",
     "tabs": {
       "outcome": "📊 出目分布",
       "technique": "🎯 決まり手",

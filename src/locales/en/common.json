@@ -13,14 +13,15 @@
     "profile": "👤 Operator Profile",
     "venues": "🏟️ Venue Guides",
     "menuLabel": "More menu",
-    "logoLabel": "Go to BoatAI top page"
+    "logoLabel": "Go to Ryujin Radar top page",
+    "logoText": "Ryujin Radar"
   },
   "language": {
     "switchLabel": "Switch language",
     "notAvailable": "This page isn't available in {{lang}}"
   },
   "meta": {
-    "title": "BoatAI - AI Predictions for Japanese Boat Race (Kyotei) | Free",
+    "title": "Ryujin Radar - Free AI Boat Race Predictions & Data Analysis",
     "description": "AI-powered predictions for Japanese boat racing (Kyotei). Our AI analyzes 45 data points per race to forecast outcomes — completely free, no sign-up required."
   },
   "venues": {
@@ -171,7 +172,7 @@
     "analysisToolsLink": "Analyze this race further with the data analysis tools"
   },
   "home": {
-    "introBannerText": "45+ data points analyzed, including place picks and turn predictions | Learn more about BoatAI →",
+    "introBannerText": "45+ data points analyzed, including place picks and turn predictions | Learn more about Ryujin Radar →",
     "introBannerClose": "Close",
     "todayRaces": "Today's Races",
     "dataType": "Race data",
@@ -198,7 +199,8 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "contact": "Contact",
-    "responsibleGambling": "Responsible Gambling"
+    "responsibleGambling": "Responsible Gambling",
+    "copyright": "© 2025 Ryujin Radar - All Rights Reserved"
   },
   "errors": {
     "noPredictionData": "Prediction data for this race has not been generated yet. Please try again later.",
@@ -610,7 +612,7 @@
   },
   "analysisPage": {
     "meta": {
-      "title": "Analysis Tools - BoatAI",
+      "title": "Analysis Tools - Ryujin Radar",
       "description": "15 analysis tools — outcome distribution, winning technique, motor condition, racer form, exhibition vs actual ST gap, top start by lane, losing technique, outcome distribution after a Nige win, fastest exhibition time to win conversion, racer exhibition time trend, racer winning technique profile, today's hot & cold racers, racer x boat number ROI, advanced race data, and race card data — let you check tendencies by venue and race. Use them as evidence to back up the AI's predictions."
     },
     "h1": "📊 Analysis Tools",
@@ -618,7 +620,7 @@
     "breadcrumbHome": "Home",
     "itemListName": "Analysis Tools",
     "itemListDescription": "15 analysis features to check tendencies by venue and race",
-    "footerText": "© {{year}} BoatAI - AI Boat Racing Predictions",
+    "footerText": "© {{year}} Ryujin Radar - Free AI Boat Race Predictions & Data Analysis",
     "tabs": {
       "outcome": "📊 Outcome Distribution",
       "technique": "🎯 Winning Technique",
