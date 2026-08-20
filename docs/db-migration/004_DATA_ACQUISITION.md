@@ -118,7 +118,7 @@ class BoatraceClient {
         const response = await axios.get(url, {
             params,
             headers: {
-                'User-Agent': 'Mozilla/5.0 (compatible; BoatAI/1.0)',
+                'User-Agent': 'Mozilla/5.0 (compatible; 龍神レーダー/1.0)',
                 'Accept-Language': 'ja'
             },
             timeout: 10000

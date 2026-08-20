@@ -59,7 +59,7 @@
 
 ### Linear での操作
 1. Linear で **Create issue** をクリック
-2. **Project**: BoatAI
+2. **Project**: 龍神レーダー
 3. **Title**: 以下の内容を貼り付け
 4. **Description**: 以下の内容を貼り付け
 5. **Parent**: BOA-99 を指定

@@ -297,7 +297,7 @@ function transformResult(race) {
  */
 async function migrateAll() {
     console.log('='.repeat(60))
-    console.log('BoatAI Data Migration to Supabase')
+    console.log('龍神レーダー Data Migration to Supabase')
     console.log('='.repeat(60))
 
     // 日次ファイル一覧を取得
