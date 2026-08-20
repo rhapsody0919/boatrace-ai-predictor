@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "check:contrast": "node scripts/maintenance/check-token-contrast.js",
+    "generate:logotype-font": "bash scripts/maintenance/generate-logotype-font.sh",
     "test:e2e": "playwright test",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
@@ -44,6 +46,7 @@
     "twitter-api-v2": "^1.29.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.59.1",
     "@types/react": "^19.2.5",

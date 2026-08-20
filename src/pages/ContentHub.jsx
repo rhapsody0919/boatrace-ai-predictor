@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import "./ContentHub.css";
 
 // 会場データ
@@ -224,15 +225,14 @@ function ContentHub() {
         </div>
       </div>
 
-      <footer className="hub-footer">
-        <div className="footer-links">
-          <Link to="/blog">ブログ一覧</Link>
-          <Link to="/about">About</Link>
-          <Link to="/faq">FAQ</Link>
-          <Link to="/privacy">プライバシーポリシー</Link>
-        </div>
-        <p>&copy; 2025 龍神レーダー - All Rights Reserved</p>
-      </footer>
+      <Footer
+        links={[
+          { to: "/blog", label: "ブログ一覧" },
+          { to: "/about", label: "About" },
+          { to: "/faq", label: "FAQ" },
+          { to: "/privacy", label: "プライバシーポリシー" },
+        ]}
+      />
     </>
   );
 }

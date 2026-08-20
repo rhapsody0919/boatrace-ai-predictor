@@ -2,8 +2,8 @@
 
 .prediction-card {
   padding: var(--spacing-3);
-  background: #ffffff;
-  border: var(--border-width-1) solid var(--color-gray-200);
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-lg);
   margin-bottom: var(--spacing-3);
 }
@@ -15,8 +15,8 @@
 .prediction-card-title {
   margin: 0 0 var(--spacing-2);
   font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-gray-800);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
   text-align: center;
 }
 

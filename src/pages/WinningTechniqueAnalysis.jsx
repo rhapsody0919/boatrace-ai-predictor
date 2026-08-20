@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, Link } from "react-router-dom";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import { localizePath, getLanguage } from "../config/languages";
 import {
   WinningTechniqueChart,
@@ -293,11 +294,11 @@ function WinningTechniqueAnalysis() {
         </div>
       </main>
 
-      <footer className="page-footer">
-        <p>
-          {t("analysisPage.footerText", { year: new Date().getFullYear() })}
-        </p>
-      </footer>
+      <Footer
+        copyrightText={t("analysisPage.footerText", {
+          year: new Date().getFullYear(),
+        })}
+      />
     </div>
   );
 }

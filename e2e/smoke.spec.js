@@ -7,6 +7,41 @@ test.describe("ホーム・基本ナビゲーション", () => {
     await expect(page.locator(".logo h1")).toHaveText("龍神レーダー");
   });
 
+  // THEME_SWITCHING_ENABLED=falseによりThemeToggleは非表示中（BOA-206解消まで）。
+  // 有効化した時点でskipを外す
+  test.skip("ThemeToggleでライト/ダークを切替でき、リロード後も永続化される（BOA-201）", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.evaluate(() => localStorage.removeItem("ryujin-radar-theme"));
+    await page.reload();
+
+    const toggle = page.locator(".theme-toggle");
+    await expect(toggle).toBeVisible();
+
+    await toggle.click();
+    const themeAfterClick = await page.evaluate(
+      () => document.documentElement.dataset.theme,
+    );
+    expect(["light", "dark"]).toContain(themeAfterClick);
+
+    // リロード後もFOUC防止スクリプトにより同じテーマが即座に反映される
+    await page.reload();
+    const themeAfterReload = await page.evaluate(
+      () => document.documentElement.dataset.theme,
+    );
+    expect(themeAfterReload).toBe(themeAfterClick);
+
+    // 再クリックで反対のテーマに戻ることを確認
+    await page.locator(".theme-toggle").click();
+    const themeAfterSecondClick = await page.evaluate(
+      () => document.documentElement.dataset.theme,
+    );
+    expect(themeAfterSecondClick).not.toBe(themeAfterClick);
+
+    await page.evaluate(() => localStorage.removeItem("ryujin-radar-theme"));
+  });
+
   test("日本語(ja)のハンバーガーメニューには会場ガイドが表示されない", async ({
     page,
   }) => {
@@ -883,4 +918,45 @@ test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の�
     await page.goto("/races/2026-06-22");
     await expect(page).toHaveTitle(/.+龍神レーダー$/);
   });
+});
+
+test.describe("龍神レーダー ブランドトークンのコントラスト（axe-core、ADR 0017）", () => {
+  // scripts/maintenance/check-token-contrast.js はトークン単体の組み合わせを検証するが、
+  // ここでは実際にレンダリングされたページで色の組み合わせに問題が無いかを検証する。
+  // フェーズ4（データ密集画面の移行）が完了するまで、ページ本体には旧配色（#0ea5e9等）が
+  // 残っているため、スコープはブランドトークン移行済みの領域（Header/Footer/IntroBanner）
+  // に限定する。フェーズ4進行に合わせてINCLUDE_SELECTORSを拡張していく想定
+  const PAGES = ["/", "/about", "/accuracy"];
+  const INCLUDE_SELECTORS = [".app-header", ".site-footer", ".intro-banner"];
+
+  for (const path of PAGES) {
+    for (const theme of ["light", "dark"]) {
+      test(`${path}（${theme}テーマ）のブランドチロムでcolor-contrast違反が無い`, async ({
+        page,
+      }) => {
+        const { default: AxeBuilder } = await import("@axe-core/playwright");
+        await page.goto(path);
+        await page.evaluate(
+          (t) => localStorage.setItem("ryujin-radar-theme", t),
+          theme,
+        );
+        await page.reload();
+        await expect(page.locator(".app-header")).toBeVisible();
+
+        let builder = new AxeBuilder({ page }).withRules(["color-contrast"]);
+        for (const selector of INCLUDE_SELECTORS) {
+          if ((await page.locator(selector).count()) > 0) {
+            builder = builder.include(selector);
+          }
+        }
+
+        const results = await builder.analyze();
+
+        expect(
+          results.violations,
+          JSON.stringify(results.violations, null, 2),
+        ).toEqual([]);
+      });
+    }
+  }
 });

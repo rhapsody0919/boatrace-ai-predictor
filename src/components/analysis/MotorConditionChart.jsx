@@ -300,7 +300,7 @@ function MotorConditionChart({
                   type="stepAfter"
                   dataKey="motor_2rate"
                   name={t("analysis.motor.legend2")}
-                  stroke="#0ea5e9"
+                  stroke="var(--brand-accent-primary)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                 />
@@ -308,7 +308,7 @@ function MotorConditionChart({
                   type="stepAfter"
                   dataKey="motor_3rate"
                   name={t("analysis.motor.legend3")}
-                  stroke="#10b981"
+                  stroke="var(--brand-accent-secondary)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                 />

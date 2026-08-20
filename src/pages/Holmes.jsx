@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 import {
   HolmesSherlock,
   HolmesWatson,
@@ -134,9 +135,7 @@ function Holmes() {
         </div>
       </main>
 
-      <footer className="holmes-footer">
-        <p>© 2025 龍神レーダー - ホームズ予想 α版</p>
-      </footer>
+      <Footer copyrightText="© 2025 龍神レーダー - ホームズ予想 α版" />
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { parseLangFromPath, getAvailableLanguages } from "../config/languages";
 import LanguageSwitcher from "./LanguageSwitcher";
+import ThemeToggle from "./ThemeToggle";
+import { THEME_SWITCHING_ENABLED } from "../config/theme";
 import "./Header.css";
 
 function Header() {
@@ -97,7 +99,12 @@ function Header() {
           onClick={handleLogoClick}
           aria-label={t("nav.logoLabel")}
         >
-          <span className="logo-icon">🚤</span>
+          <img
+            className="logo-mark"
+            src="/logo-light.png"
+            alt=""
+            aria-hidden="true"
+          />
           <h1>{t("nav.logoText")}</h1>
         </button>
         <nav className="nav">
@@ -114,6 +121,7 @@ function Header() {
             {t("nav.hits")}
           </button>
           <LanguageSwitcher />
+          {THEME_SWITCHING_ENABLED && <ThemeToggle />}
           <button
             className="nav-btn menu-btn"
             onClick={() => setIsMenuOpen(!isMenuOpen)}

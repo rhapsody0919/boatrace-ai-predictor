@@ -214,39 +214,7 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
-/* フッター */
-.hub-footer {
-  background: #0ea5e9;
-  color: white;
-  text-align: center;
-  padding: 2rem;
-  margin-top: 3rem;
-}
-
-.footer-links {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.footer-links a {
-  color: rgba(255, 255, 255, 0.9);
-  text-decoration: none;
-  font-size: 0.95rem;
-  transition: color 0.3s ease;
-}
-
-.footer-links a:hover {
-  color: white;
-}
-
-.hub-footer p {
-  opacity: 0.8;
-  font-size: 0.9rem;
-  margin: 0;
-}
+/* フッターは src/components/Footer.css に集約（.site-footer* ） */
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
@@ -392,17 +360,6 @@
     font-size: 1rem;
   }
 
-  .hub-footer {
-    padding: 1.5rem 1rem;
-  }
-
-  .footer-links {
-    gap: 1rem;
-  }
-
-  .footer-links a {
-    font-size: 0.85rem;
-  }
 }
 
 @media (max-width: 320px) {

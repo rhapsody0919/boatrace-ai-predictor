@@ -1,10 +1,13 @@
-/* DataRaceTable - データ出走表（BOA-168） */
+/* DataRaceTable - データ出走表（BOA-168）
+   二層設計（docs/design/ryujin-radar-rebrand/spec.md）: 見出し・リンク・強調セルのみ
+   ブランドアクセント（金）を使い、データ行自体は機能重視でtext-primary/secondary中心。
+   モバイルでの最小フォントサイズは11px以上を維持する（--font-size-xs=12px以上を使用） */
 
 .data-race-table {
   margin: var(--spacing-4) 0 var(--spacing-6);
   padding: var(--spacing-4);
-  background: var(--color-gray-50);
-  border: var(--border-width-1) solid var(--color-gray-200);
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-lg);
 }
 
@@ -12,7 +15,7 @@
   margin: 0 0 var(--spacing-1);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
@@ -20,10 +23,10 @@
 }
 
 .drt-loading-chip {
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: var(--color-gray-500);
-  background: var(--color-gray-100);
+  color: var(--text-secondary);
+  background: var(--surface-page);
   padding: 2px var(--spacing-2);
   border-radius: var(--radius-full);
   animation: drt-pulse 1.4s ease-in-out infinite;
@@ -47,9 +50,9 @@
   border-radius: var(--radius-sm);
   background: linear-gradient(
     90deg,
-    var(--color-gray-100) 25%,
-    var(--color-gray-200) 50%,
-    var(--color-gray-100) 75%
+    var(--surface-page) 25%,
+    var(--border-hairline) 50%,
+    var(--surface-page) 75%
   );
   background-size: 200% 100%;
   animation: drt-shimmer 1.2s ease-in-out infinite;
@@ -68,7 +71,7 @@
 .drt-subtitle {
   margin: 0 0 var(--spacing-3);
   font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
 }
 
 .drt-table-wrapper {
@@ -78,7 +81,7 @@
 .drt-table {
   width: 100%;
   border-collapse: collapse;
-  background: #ffffff;
+  background: var(--surface-card);
   border-radius: var(--radius-md);
   overflow: hidden;
   font-size: var(--font-size-sm);
@@ -88,7 +91,7 @@
 .drt-table td {
   padding: var(--spacing-2);
   text-align: center;
-  border: var(--border-width-1) solid var(--color-gray-200);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .drt-boat-th {
@@ -99,28 +102,28 @@
 
 .drt-name-th {
   font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-2xs);
-  color: var(--color-gray-800);
-  background: var(--color-gray-100);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  background: var(--surface-page);
   word-break: break-all;
   line-height: var(--line-height-tight);
 }
 
 .drt-label-th {
-  background: var(--color-gray-100);
+  background: var(--surface-page);
 }
 
 .drt-label-cell {
   text-align: left;
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-xs);
-  color: var(--color-gray-800);
-  background: var(--color-gray-100);
+  color: var(--text-primary);
+  background: var(--surface-page);
   white-space: nowrap;
 }
 
 .drt-label-link {
-  color: var(--color-primary-600);
+  color: var(--brand-accent-primary);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -132,7 +135,7 @@
 }
 
 .drt-link-arrow {
-  color: var(--color-primary-400);
+  color: var(--brand-accent-primary);
   font-weight: var(--font-weight-bold);
 }
 
@@ -143,33 +146,34 @@
 
 .drt-label-note {
   display: block;
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-warning-dark, #b45309);
   margin-top: 2px;
 }
 
 .drt-cell {
-  color: var(--color-gray-800);
+  color: var(--text-primary);
 }
 
 /* ゼブラ縞（最良セルのハイライトが優先） */
 .drt-table tbody tr:nth-child(even) td {
-  background: var(--color-gray-50);
+  background: var(--surface-page);
 }
 
 .drt-table tbody tr:nth-child(even) .drt-label-cell {
-  background: var(--color-gray-100);
+  background: var(--surface-page);
 }
 
+/* 最良値セルの強調はブランドアクセント（金）を使う唯一の箇所 */
 .drt-cell.drt-best {
-  background: rgba(14, 165, 233, 0.14);
+  background: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
   font-weight: var(--font-weight-bold);
-  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.35);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-accent-primary) 40%, transparent);
 }
 
 .drt-table tbody tr:nth-child(even) .drt-cell.drt-best {
-  background: rgba(14, 165, 233, 0.14);
+  background: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
 }
 
 .drt-value {
@@ -181,13 +185,13 @@
 }
 
 .drt-grade {
-  font-size: var(--font-size-2xs);
-  color: var(--color-gray-500);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
 }
 
 .drt-sub {
-  font-size: var(--font-size-2xs);
-  color: var(--color-gray-500);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
 }
 
 .drt-up {
@@ -210,14 +214,14 @@
 .drt-note {
   margin: var(--spacing-3) 0 0;
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
 }
 
 .drt-guide-link {
   display: inline-block;
   margin-top: var(--spacing-2);
   font-size: var(--font-size-sm);
-  color: var(--color-primary-700);
+  color: var(--brand-accent-primary);
   text-decoration: none;
 }
 
@@ -240,12 +244,14 @@
     font-size: var(--font-size-xs);
   }
 
+  /* 最小フォントサイズは11px（--font-size-xs=12px）を下回らないようにする。
+     以前は0.55rem（8.8px）だった（docs/design/ryujin-radar-rebrand参照） */
   .drt-name-th {
-    font-size: 0.55rem;
+    font-size: var(--font-size-xs);
   }
 
   .drt-label-cell {
-    font-size: var(--font-size-2xs);
+    font-size: var(--font-size-xs);
     white-space: normal;
   }
 

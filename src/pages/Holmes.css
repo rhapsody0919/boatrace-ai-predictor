@@ -276,15 +276,7 @@
   font-size: var(--font-size-base);
 }
 
-/* ===== Footer ===== */
-.holmes-footer {
-  text-align: center;
-  padding: var(--spacing-6) var(--spacing-4);
-  color: var(--color-gray-500);
-  font-size: var(--font-size-sm);
-  border-top: var(--border-width-1) solid var(--color-gray-200);
-  background: var(--color-white);
-}
+/* フッターは src/components/Footer.css に集約（.site-footer* ） */
 
 /* ===== Mobile ===== */
 @media (max-width: 480px) {

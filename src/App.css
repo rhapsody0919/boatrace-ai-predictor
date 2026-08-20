@@ -36,7 +36,7 @@ body {
 
 .app {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--surface-page);
   position: relative;
 }
 
@@ -106,42 +106,9 @@ input:focus-visible,
   align-items: center;
 }
 
-.nav-btn {
-  padding: 0.625rem 1.25rem;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-}
-
-.nav-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-2px);
-}
-
-.nav-btn.active {
-  background: white;
-  color: #0ea5e9;
-  border-color: white;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
-}
-
-/* フォーカスインジケーター（アクセシビリティ） */
-.nav-btn:focus-visible {
-  outline: 3px solid white;
-  outline-offset: 2px;
-}
-
-.nav-btn.active:focus-visible {
-  outline: 3px solid #0ea5e9;
-  outline-offset: 2px;
-}
+/* .nav-btn / .menu-toggle-btn はHeader.jsxが共通コンポーネント化された際に
+   Header.css側へ移設済み。ここは死んだCSSだったため削除（BOA-203で残りの
+   dead CSS調査を別途実施） */
 
 /* ハンバーガーメニューボタン */
 .menu-toggle-btn {
@@ -205,19 +172,19 @@ input:focus-visible,
    レース一覧セクション
    ===================================================== */
 .race-list-section h2 {
-  color: #1e293b !important;
+  color: var(--text-primary);
   font-size: 2rem;
   margin-bottom: 2rem;
   text-shadow: none;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 /* レース場選択 */
 .race-list-section label {
   display: block;
   margin-bottom: 0.75rem;
-  font-weight: 600;
-  color: #1e293b !important;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
   font-size: 1.1rem;
 }
 
@@ -226,23 +193,21 @@ input:focus-visible,
   max-width: 400px;
   padding: 1rem 1.25rem;
   font-size: 1.05rem;
-  border-radius: 12px;
-  border: 2px solid var(--border-light);
-  background-color: white;
-  color: var(--text-dark);
+  border-radius: var(--radius-lg);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background-color: var(--surface-card);
+  color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: border-color var(--transition-base) var(--ease-in-out);
 }
 
 .race-list-section select:hover {
-  border-color: #0ea5e9;
+  border-color: var(--brand-accent-primary);
 }
 
 .race-list-section select:focus {
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+  border-color: var(--brand-accent-primary);
 }
 
 /* レースグリッド */
@@ -390,10 +355,10 @@ input:focus-visible,
 }
 
 .prediction-result {
-  background: white;
-  border-radius: 16px;
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
   padding: 2.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 
@@ -404,25 +369,7 @@ input:focus-visible,
 }
 
 
-/* =====================================================
-   フッター
-   ===================================================== */
-.footer {
-  background: #0ea5e9;
-  color: white !important;
-  text-align: center;
-  padding: 2.5rem 2rem;
-  margin-top: 4rem;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.footer p {
-  margin: 0.75rem 0;
-  font-size: 0.95rem;
-  opacity: 0.9;
-  line-height: 1.6;
-  color: white !important;
-}
+/* フッターは src/components/Footer.css に集約（.site-footer* ） */
 
 /* =====================================================
    アニメーション
@@ -938,15 +885,14 @@ input:focus-visible,
 .race-result {
   margin-top: 1.5rem;
   padding: 1.25rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
-  border-radius: 16px;
-  border: 2px solid #0ea5e9;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .race-result h4 {
   font-size: 1.2rem;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0 0 0.75rem 0;
   text-align: center;
 }
@@ -956,7 +902,7 @@ input:focus-visible,
 .result-verify-section {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px dashed rgba(14, 165, 233, 0.3);
+  border-top: var(--border-width-1) dashed var(--border-hairline);
 }
 
 .result-verify-section:first-of-type {
@@ -967,61 +913,59 @@ input:focus-visible,
 .result-verify-title {
   margin: 0 0 0.5rem;
   font-size: 0.85rem;
-  font-weight: 700;
-  color: #475569;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
   text-align: center;
 }
 
-/* ポジウム：ピル型横並び */
+/* ポジウム：罫線カード横並び（塗りピル・グラデーションは廃止） */
 .result-podium {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   justify-content: center;
-  gap: 0.75rem;
-  margin: 0.5rem 0;
+  gap: var(--spacing-3);
+  margin: var(--spacing-2) 0;
 }
 
 .podium-item {
   display: inline-flex;
   flex: 0 0 auto;
+  flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.9rem;
-  border-radius: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-md);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .podium-item.first {
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-  border: 2px solid #daa520;
+  border-color: var(--brand-accent-primary);
 }
 
 .podium-item.second {
-  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
-  border: 2px solid #a9a9a9;
+  border-color: var(--brand-accent-secondary);
 }
 
 .podium-item.third {
-  background: linear-gradient(135deg, #cd7f32 0%, #e4a672 100%);
-  border: 2px solid #b8732c;
+  border-color: var(--podium-bronze-text);
 }
 
 .podium-item .rank {
   font-size: 0.75rem;
-  font-weight: 600;
-  color: #475569;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
 }
 
 .podium-item .boat-number {
   font-size: 1.5rem;
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
   line-height: 1;
 }
 
-.podium-item.first .boat-number { color: #854d0e; }
-.podium-item.second .boat-number { color: #475569; }
-.podium-item.third .boat-number { color: #78350f; }
+.podium-item.first .boat-number { color: var(--brand-accent-primary); }
+.podium-item.second .boat-number { color: var(--brand-accent-secondary); }
+.podium-item.third .boat-number { color: var(--podium-bronze-text); }
 
 .accuracy-check {
   margin: 0.75rem auto 0;
@@ -1043,13 +987,11 @@ input:focus-visible,
 .hit {
   display: block;
   padding: 0.6rem 0.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  background: #0d7a56;
   color: white;
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
   font-size: 0.95rem;
-  border-radius: 10px;
-  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.3);
-  animation: pulse 2s infinite;
+  border-radius: var(--radius-md);
 }
 
 .hit .payout {
@@ -1061,24 +1003,14 @@ input:focus-visible,
   opacity: 0.9;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.03);
-  }
-}
-
 .miss {
   display: block;
   padding: 0.6rem 0.5rem;
-  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  background: var(--color-error-dark);
   color: white;
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
   font-size: 0.9rem;
-  border-radius: 10px;
-  box-shadow: 0 3px 8px rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
 }
 
 .top3-hit {
@@ -1261,9 +1193,9 @@ input:focus-visible,
    ===================================================== */
 .venue-guide-link {
   margin-top: 2rem;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .venue-guide-link a {
@@ -1271,14 +1203,13 @@ input:focus-visible,
   align-items: center;
   gap: 1rem;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  background: var(--surface-card);
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: border-color var(--transition-base) var(--ease-in-out);
 }
 
 .venue-guide-link a:hover {
-  background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%);
-  transform: translateX(4px);
+  border-color: var(--brand-accent-primary);
 }
 
 .venue-guide-icon {
@@ -1295,19 +1226,19 @@ input:focus-visible,
 
 .venue-guide-title {
   font-size: 1.1rem;
-  font-weight: 700;
-  color: #0369a1;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
 }
 
 .venue-guide-desc {
   font-size: 0.9rem;
-  color: #0284c7;
+  color: var(--text-secondary);
 }
 
 .venue-guide-arrow {
   font-size: 1.5rem;
-  color: #0ea5e9;
-  font-weight: 700;
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
 }
 
 /* =====================================================

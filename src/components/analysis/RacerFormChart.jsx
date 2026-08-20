@@ -321,7 +321,7 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
                   type="stepAfter"
                   dataKey="national_win_rate"
                   name={t("analysis.racerForm.legendNational")}
-                  stroke="#0ea5e9"
+                  stroke="var(--brand-accent-primary)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                 />
@@ -329,7 +329,7 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
                   type="stepAfter"
                   dataKey="local_win_rate"
                   name={t("analysis.racerForm.legendLocal")}
-                  stroke="#10b981"
+                  stroke="var(--brand-accent-secondary)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                 />

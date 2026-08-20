@@ -1,17 +1,18 @@
-/* 超展開データ — 自立型スタイル */
+/* 超展開データ — 自立型スタイル（二層設計: ボート色・決まり手の状態色は変更せず、
+   コンテナ・本文はトークン化する） */
 
 .ad-section {
   margin-top: 1.5rem;
-  background: #f8fafc;
-  border-radius: 12px;
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
   padding: 1.25rem;
 }
 
 .ad-section h4 {
   margin: 0 0 1rem;
   font-size: 1rem;
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
 }
 
 /* テーブル基本スタイル */
@@ -24,28 +25,28 @@
 
 .ad-table th {
   padding: 0.75rem 0.5rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-align: center;
   font-size: 0.85rem;
   color: white;
 }
 
-.ad-table th.ad-course1-th {
-  color: #1e293b !important;
-  background: #f1f5f9 !important;
-  border: 1px solid #e2e8f0;
+/* 1コースはBOAT_COLORS[1]が既に淡色/濃字なので、このクラスはborderのみ補足する
+   （background/colorは常にJSX側のinline styleで上書きされるため付与しない） */
+.ad-course1-th {
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .ad-table td {
   padding: 0.6rem 0.5rem;
   text-align: center;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
   font-size: 0.85rem;
-  color: #334155;
+  color: var(--text-primary);
 }
 
 .ad-table tbody tr:hover {
-  background: rgba(14, 165, 233, 0.04);
+  background: color-mix(in srgb, var(--brand-accent-primary) 6%, transparent);
 }
 
 .ad-role-sub {
@@ -56,12 +57,12 @@
 }
 
 .ad-label-cell {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   text-align: left;
 }
 
-/* 決まり手ラベル色分け */
+/* 決まり手ラベル色分け（状態色、変更対象外） */
 .ad-tech-defense {
   color: var(--color-error, #ef4444);
   font-size: 0.85rem;
@@ -69,28 +70,28 @@
 
 .ad-tech-sep {
   margin: 0 2px;
-  color: var(--color-gray-400, #9ca3af);
+  color: var(--text-secondary);
 }
 
 .ad-tech-attack {
-  color: var(--color-primary-500, #0ea5e9);
+  color: var(--brand-accent-primary);
   font-size: 0.85rem;
 }
 
 .ad-tech-nige {
   color: var(--color-success, #10b981);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 /* 凡例 */
 .ad-legend {
   margin-top: 0.75rem;
   padding: 0.75rem 1rem;
-  background: var(--color-gray-50, #f8fafc);
-  border-radius: 8px;
+  background: var(--surface-page);
+  border-radius: var(--radius-md);
   font-size: 0.8rem;
-  color: var(--color-gray-600, #475569);
+  color: var(--text-secondary);
   line-height: 1.7;
 }
 
@@ -101,17 +102,17 @@
 .ad-legend-example {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px solid var(--color-gray-200, #e2e8f0);
+  border-top: var(--border-width-1) solid var(--border-hairline);
 }
 
 .ad-legend-example-title {
-  font-weight: 600;
-  color: var(--color-gray-700, #334155);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 /* 全国平均値（薄字表示） */
 .ad-default-value {
-  color: var(--color-gray-400, #94a3b8);
+  color: var(--text-secondary);
   font-style: italic;
   font-size: 0.8em;
 }
@@ -130,9 +131,9 @@
 .ad-legend-supplement {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px solid var(--color-gray-200, #e2e8f0);
+  border-top: var(--border-width-1) solid var(--border-hairline);
   font-size: 0.78rem;
-  color: var(--color-gray-500, #64748b);
+  color: var(--text-secondary);
   line-height: 1.8;
 }
 
@@ -174,7 +175,7 @@
   .ad-table-mobile .ad-table th,
   .ad-table-mobile .ad-table td {
     padding: 0.6rem 0.5rem;
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
     white-space: nowrap;
   }
 
@@ -182,11 +183,11 @@
     position: sticky;
     left: 0;
     z-index: 1;
-    background: white;
+    background: var(--surface-card);
   }
 
   thead .ad-sticky-col {
-    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    background: var(--surface-page);
     z-index: 2;
   }
 }

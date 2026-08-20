@@ -2,9 +2,9 @@
 
 .rcd-table-wrapper {
   overflow-x: auto;
-  background: #ffffff;
+  background: var(--surface-card);
   border-radius: var(--radius-md);
-  border: var(--border-width-1) solid var(--color-gray-200);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .rcd-table {
@@ -18,15 +18,15 @@
 .rcd-table td {
   padding: var(--spacing-2);
   text-align: center;
-  border-bottom: var(--border-width-1) solid var(--color-gray-200);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
   white-space: nowrap;
-  color: var(--color-gray-800);
+  color: var(--text-primary);
 }
 
 .rcd-table thead th {
-  background: var(--color-gray-100);
+  background: var(--surface-page);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   font-size: var(--font-size-xs);
 }
 
@@ -49,7 +49,7 @@
 }
 
 .rcd-rank-3 {
-  color: var(--color-primary-600);
+  color: var(--brand-accent-primary);
   font-weight: var(--font-weight-semibold);
 }
 

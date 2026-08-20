@@ -41,12 +41,45 @@ function PredictionLoadingOverlay() {
 
           return (
             <div key={index} className={className}>
-              <span
-                className={`prediction-loading__icon ${isActive ? "prediction-loading__icon--pulse" : ""}`}
-              >
-                {isDone ? "✓" : step.icon}
+              <span className="prediction-loading__icon">
+                {isDone ? (
+                  "✓"
+                ) : isActive ? (
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="9"
+                      fill="none"
+                      stroke="var(--border-hairline)"
+                      strokeWidth="1.5"
+                    />
+                    <line
+                      x1="12"
+                      y1="12"
+                      x2="12"
+                      y2="3"
+                      stroke="var(--brand-accent-primary)"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      style={{
+                        transformOrigin: "12px 12px",
+                        animation: "radar-sweep 1.4s linear infinite",
+                      }}
+                    />
+                  </svg>
+                ) : (
+                  step.icon
+                )}
               </span>
-              <span className="prediction-loading__label">{t(step.labelKey)}</span>
+              <span className="prediction-loading__label">
+                {t(step.labelKey)}
+              </span>
             </div>
           );
         })}

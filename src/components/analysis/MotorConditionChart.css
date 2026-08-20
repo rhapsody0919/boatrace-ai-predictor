@@ -1,18 +1,18 @@
 .motor-condition-container {
   padding: 1.5rem;
-  background: #f8fafc;
-  border-radius: 8px;
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
   margin-bottom: 2rem;
 }
 
 .motor-condition-container h2 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .motor-condition-container .section-description {
-  color: #64748b;
+  color: var(--text-secondary);
   margin-bottom: 1.5rem;
   font-size: 0.95rem;
   line-height: 1.5;
@@ -27,17 +27,17 @@
 }
 
 .motor-condition-container .controls-section label {
-  font-weight: 600;
-  color: #334155;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .motor-condition-container .venue-select {
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
-  border-radius: 6px;
-  border: 2px solid #e2e8f0;
-  background-color: white;
-  color: #0f172a;
+  border-radius: var(--radius-sm);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background-color: var(--surface-page);
+  color: var(--text-primary);
   cursor: pointer;
   min-width: 150px;
   outline: none;
@@ -45,12 +45,11 @@
 }
 
 .motor-condition-container .venue-select:hover {
-  border-color: #0284c7;
+  border-color: var(--brand-accent-primary);
 }
 
 .motor-condition-container .venue-select:focus {
-  border-color: #0284c7;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+  border-color: var(--brand-accent-primary);
 }
 
 .motor-condition-container .loading-state,
@@ -58,32 +57,32 @@
 .motor-condition-container .empty-state {
   padding: 2rem;
   text-align: center;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
 .motor-condition-container .error-state {
-  background: #fee2e2;
-  color: #991b1b;
-  border-radius: 6px;
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--color-error);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
 }
 
 .motor-condition-container .table-note {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   margin-top: 1rem;
   padding: 0.75rem;
-  background: #f0f9ff;
-  border-left: 3px solid #0284c7;
-  border-radius: 4px;
+  background: var(--surface-page);
+  border-left: 3px solid var(--brand-accent-primary);
+  border-radius: var(--radius-sm);
 }
 
 .motor-condition-container .table-wrapper {
   overflow-x: auto;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .motor-ranking-table {
@@ -93,47 +92,47 @@
 }
 
 .motor-ranking-table thead {
-  background: #f8fafc;
-  border-bottom: 2px solid #e2e8f0;
+  background: var(--surface-page);
+  border-bottom: var(--border-width-2) solid var(--border-hairline);
 }
 
 .motor-ranking-table th {
   padding: 0.75rem;
   text-align: center;
-  font-weight: 600;
-  color: #334155;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
   font-size: 0.85rem;
 }
 
 .motor-ranking-table td {
   padding: 0.75rem;
   text-align: center;
-  color: #475569;
+  color: var(--text-primary);
 }
 
 .motor-ranking-table td.rank {
-  font-weight: 600;
-  color: #0f172a;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .motor-ranking-table td.motor-num {
-  font-weight: 600;
-  color: #0f172a;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .motor-ranking-table td.rate {
-  color: #16a34a;
-  font-weight: 500;
+  color: var(--color-success);
+  font-weight: var(--font-weight-medium);
 }
 
 .delta-up {
-  color: #dc2626;
-  font-weight: 600;
+  color: var(--color-error);
+  font-weight: var(--font-weight-semibold);
 }
 
 .delta-down {
-  color: #2563eb;
-  font-weight: 600;
+  color: var(--color-info);
+  font-weight: var(--font-weight-semibold);
 }
 
 .motor-ranking-row.non-clickable-row {
@@ -142,44 +141,44 @@
 
 .motor-ranking-row {
   cursor: pointer;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
   transition: background-color 0.15s ease;
 }
 
 .motor-ranking-row:hover {
-  background-color: #f0f9ff;
+  background-color: var(--surface-page);
 }
 
 .motor-ranking-row.best-motor {
-  background-color: #fef9c3;
-  font-weight: 600;
+  background-color: color-mix(in srgb, var(--brand-accent-primary) 16%, transparent);
+  font-weight: var(--font-weight-semibold);
 }
 
 .motor-ranking-row.best-motor:hover {
-  background-color: #fef08a;
+  background-color: color-mix(in srgb, var(--brand-accent-primary) 24%, transparent);
 }
 
 .back-to-ranking-btn {
   padding: 0.5rem 1rem;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  font-weight: 600;
-  border-radius: 6px;
-  border: 2px solid #e2e8f0;
-  background: white;
-  color: #334155;
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-sm);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .back-to-ranking-btn:hover {
-  border-color: #0284c7;
-  color: #0284c7;
+  border-color: var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
 }
 
 .selected-motor-heading {
   font-size: 1.1rem;
-  color: #0f172a;
+  color: var(--text-primary);
   margin-bottom: 1rem;
 }
 
@@ -228,6 +227,6 @@
 .volatility-accuracy-chart-note {
   margin: 0.75rem 0 0;
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--text-secondary);
   text-align: center;
 }

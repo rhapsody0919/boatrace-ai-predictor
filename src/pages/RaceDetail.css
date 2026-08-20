@@ -1,6 +1,6 @@
 .race-detail-page {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--surface-page);
   padding: 2rem 1rem;
 }
 
@@ -151,7 +151,7 @@
 
 .race-list-section h2 {
   font-size: 1.75rem;
-  color: #1e293b !important;
+  color: var(--text-primary);
   margin-bottom: 1.5rem;
   text-shadow: none;
 }
@@ -256,16 +256,16 @@
 
 /* レース結果 */
 .race-result {
-  background: #F0FDF4;
-  border-radius: 12px;
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
-  border: 2px solid #10B981;
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .race-result h4 {
   font-size: 1.25rem;
   margin-bottom: 1.5rem;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 /* result-podium / podium-item / accuracy-check / check-item / hit / miss は

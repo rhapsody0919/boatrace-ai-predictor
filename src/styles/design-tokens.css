@@ -70,6 +70,40 @@
   --color-silver: #c0c0c0;       /* 2着 */
   --color-bronze: #cd7f32;       /* 3着 */
 
+  /* ========================================
+     龍神レーダー ブランドトークン (Ryujin Radar Brand Tokens)
+     docs/design/ryujin-radar-rebrand/plan.md 参照
+     ======================================== */
+
+  /* Layer 1: ベースパレット - 生の色値、モード非依存 */
+  --ryujin-gold-300: #e8d089;    /* ハイライト・罫線の細い強調線（ダーク用） */
+  --ryujin-gold-500: #c9a227;    /* 本体色（ダーク用） */
+  --ryujin-gold-700: #8a6a1a;    /* 塗り用の深い色 */
+  --ryujin-gold-800: #6b500f;    /* ライト背景でのテキスト用（コントラスト確保） */
+  --ryujin-silver-300: #e2e6ea;  /* ハイライト（ダーク用） */
+  --ryujin-silver-500: #9aa3ad;  /* 本体色（ダーク用） */
+  --ryujin-silver-700: #5c636b;  /* ライト背景でのテキスト用（コントラスト確保） */
+  --ryujin-navy-100: #142842;    /* ダークテーマのカード背景 */
+  --ryujin-navy-300: #24344d;    /* ダークテーマの罫線 */
+  --ryujin-navy-600: #0d1b2e;    /* ダークテーマのページ背景 */
+  --ryujin-ivory-100: #fbf9f3;   /* ライトテーマのカード背景 */
+  --ryujin-ivory-300: #ddd4bf;   /* ライトテーマの罫線 */
+  --ryujin-ivory-600: #f7f3ea;   /* ライトテーマのページ背景 */
+
+  /* Layer 2: 意味トークン - コンポーネントが参照する値。ライトテーマをデフォルトとする
+     金銀アクセントはライト/ダークで背景の明度が逆転するため、テーマごとに異なる階調を割り当てる
+     （scripts/maintenance/check-token-contrast.js で検証済み） */
+  --surface-page: var(--ryujin-ivory-600);
+  --surface-card: var(--ryujin-ivory-100);
+  --border-hairline: var(--ryujin-ivory-300);
+  --text-primary: var(--color-gray-900);
+  --text-secondary: var(--color-gray-600);
+  --brand-accent-primary: var(--ryujin-gold-800);
+  --brand-accent-secondary: var(--ryujin-silver-700);
+  /* 3着表示専用。金銀と同じ理由でライト背景では--color-bronzeのままだと
+     コントラスト不足（2.99:1）になるため、テーマごとに階調を分ける */
+  --podium-bronze-text: #8f5419;
+
   /* 透明度バリエーション - プライマリーカラー */
   --color-primary-alpha-10: rgba(14, 165, 233, 0.1);
   --color-primary-alpha-20: rgba(14, 165, 233, 0.2);
@@ -251,13 +285,48 @@
 }
 
 /**
- * ダークモード用のトークン（将来の拡張用）
- * 現在は未使用ですが、将来的にダークモードを実装する際に使用できます
+ * Layer 3: テーマ層
+ * docs/adr/0016-ryujin-radar-theme-state-management.md 参照
+ *
+ * [data-theme="dark"] / [data-theme="light"] はユーザーの明示選択（src/utils/theme.js が
+ * document.documentElement に設定）。data-theme 未設定時は prefers-color-scheme に委ねる。
  */
+[data-theme="dark"] {
+  --surface-page: var(--ryujin-navy-600);
+  --surface-card: var(--ryujin-navy-100);
+  --border-hairline: var(--ryujin-navy-300);
+  --text-primary: var(--color-gray-50);
+  --text-secondary: var(--color-gray-300);
+  --brand-accent-primary: var(--ryujin-gold-500);
+  --brand-accent-secondary: var(--ryujin-silver-500);
+  --podium-bronze-text: var(--color-bronze);
+}
+
+[data-theme="light"] {
+  --surface-page: var(--ryujin-ivory-600);
+  --surface-card: var(--ryujin-ivory-100);
+  --border-hairline: var(--ryujin-ivory-300);
+  --text-primary: var(--color-gray-900);
+  --text-secondary: var(--color-gray-600);
+  --brand-accent-primary: var(--ryujin-gold-800);
+  --brand-accent-secondary: var(--ryujin-silver-700);
+  --podium-bronze-text: #8f5419;
+}
+
+/* OS設定によるダーク自動追従は一時無効化中（BOA-206解消・THEME_SWITCHING_ENABLED再有効化までのペア対応）。
+   App.css配下の未トークン化領域が白背景のまま浮くため、ThemeToggleを隠すだけでは
+   OSがダーク設定のユーザーがこの@media経由で意図せずダーク表示になってしまう。
+   再有効化する際はsrc/config/theme.jsのTHEME_SWITCHING_ENABLEDと合わせてコメントを外す。
 @media (prefers-color-scheme: dark) {
-  :root {
-    /* ダークモード時の色の上書き */
-    /* --color-gray-800: #f8fafc; */
-    /* --color-gray-50: #1e293b; */
+  :root:not([data-theme="light"]) {
+    --surface-page: var(--ryujin-navy-600);
+    --surface-card: var(--ryujin-navy-100);
+    --border-hairline: var(--ryujin-navy-300);
+    --text-primary: var(--color-gray-50);
+    --text-secondary: var(--color-gray-300);
+    --brand-accent-primary: var(--ryujin-gold-500);
+    --brand-accent-secondary: var(--ryujin-silver-500);
+    --podium-bronze-text: var(--color-bronze);
   }
 }
+*/
