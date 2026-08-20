@@ -19,7 +19,7 @@ spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・�
 
 ## フェーズ3: テーマ切替機能
 
-- [ ] 10. テーマ状態管理モジュールの実装（`src/config/theme.js`・`src/utils/theme.js`・`src/hooks/useTheme.js`。ADR 0016）
+- [x] 10. テーマ状態管理モジュールの実装（`src/config/theme.js`・`src/utils/theme.js`・`src/hooks/useTheme.js`。ADR 0016）。動的importでgetTheme/setTheme/data-theme同期/localStorage永続化を確認、実際に画面がライト/ダーク双方に切り替わることも視認済み
 - [ ] 11. index.htmlへのFOUC防止インラインスクリプト追加（初期表示前に`data-theme`をlocalStorageから同期）
 - [ ] 12. ThemeToggleコンポーネントの実装とHeaderへの設置
 - [ ] 13. `@axe-core/playwright`導入とe2e/smoke.spec.jsへのアクセシビリティスキャン追加（ライト/ダーク両テーマ。ADR 0017）。ここでフェーズ2のブランドチロムが両テーマで機械的に検証可能になる
