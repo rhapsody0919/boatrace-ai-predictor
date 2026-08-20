@@ -5,13 +5,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+    <!-- テーマのFOUC防止（ADR 0016）。data-theme属性をlocalStorageから初期表示前に同期する。
+         キー名はsrc/config/theme.jsのTHEME_STORAGE_KEYと一致させること -->
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem("ryujin-radar-theme");
+          if (theme === "light" || theme === "dark") {
+            document.documentElement.setAttribute("data-theme", theme);
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- Favicon & PWA -->
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#1e40af" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f3ea" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1b2e" />
 
     <!-- SEO Meta Tags（description / canonical はアプリが言語別に出力するため静的定義しない） -->
     <meta name="keywords" content="ボートレース,AI分析,予測精度,データサイエンス,無料,データ分析,モーター性能,選手データ,龍神レーダー" />

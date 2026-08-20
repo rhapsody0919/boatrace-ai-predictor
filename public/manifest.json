@@ -4,8 +4,8 @@
   "description": "完全無料のAIボートレース分析サービス。45項目のデータをAIが分析し、高精度なレース展開予測を提供。",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1e40af",
+  "background_color": "#0d1b2e",
+  "theme_color": "#0d1b2e",
   "icons": [
     {
       "src": "/icon-192.png",
