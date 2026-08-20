@@ -1,10 +1,9 @@
 .outcome-pattern-preview {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border-radius: 12px;
-  border: 2px solid #fbbf24;
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  border: var(--border-width-1) solid var(--border-hairline);
   margin-top: 2rem;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .expand-button {
@@ -12,58 +11,58 @@
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  background: linear-gradient(135deg, #fcd34d 0%, #fbca51 100%);
+  background: none;
   border: none;
   padding: 1.25rem;
   cursor: pointer;
   text-align: left;
   font-size: inherit;
-  transition: all 0.2s ease;
-  font-weight: 600;
+  transition: color var(--transition-base) var(--ease-in-out);
+  font-weight: var(--font-weight-semibold);
 }
 
-.expand-button:hover {
-  background: linear-gradient(135deg, #fbca51 0%, #f59e0b 100%);
-  transform: translateY(-1px);
+.expand-button:hover h3 {
+  color: var(--brand-accent-primary);
 }
 
 .expand-button .chevron {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
 .expand-button h3 {
   margin: 0;
   font-size: 1.1rem;
-  color: #78350f;
-  font-weight: 700;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.5px;
+  transition: color var(--transition-base) var(--ease-in-out);
 }
 
 .preview-content {
   padding: 1.5rem;
-  border-top: 2px solid #fbbf24;
-  background: white;
+  border-top: var(--border-width-1) solid var(--border-hairline);
 }
 
 .loading {
   text-align: center;
-  color: #64748b;
+  color: var(--text-secondary);
   padding: 1rem;
 }
 
 .error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--color-error);
+  color: var(--text-primary);
   padding: 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 0.9rem;
 }
 
 .no-data {
   text-align: center;
-  color: #94a3b8;
+  color: var(--text-secondary);
   padding: 1rem;
   font-size: 0.9rem;
 }
@@ -80,74 +79,74 @@
 }
 
 .pattern-table thead {
-  background: #f8fafc;
-  border-bottom: 2px solid #e2e8f0;
+  background: var(--surface-page);
+  border-bottom: var(--border-width-2) solid var(--border-hairline);
 }
 
 .pattern-table th {
   padding: 0.75rem;
   text-align: center;
-  font-weight: 600;
-  color: #334155;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
   font-size: 0.85rem;
 }
 
 .pattern-table tbody tr {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
   transition: background-color 0.15s ease;
 }
 
 .pattern-table tbody tr:hover {
-  background-color: #f8fafc;
+  background-color: var(--surface-page);
 }
 
 .pattern-table td {
   padding: 0.75rem;
   text-align: center;
-  color: #475569;
+  color: var(--text-primary);
 }
 
 .pattern-table td.rank {
-  font-weight: 600;
-  color: #0f172a;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .pattern-table td.trifecta {
-  font-weight: 600;
-  color: #0f172a;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
   text-align: left;
 }
 
 .pattern-table td.count {
-  background: #f0f9ff;
-  color: #0c4a6e;
-  font-weight: 500;
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .pattern-table td.probability {
-  color: #16a34a;
-  font-weight: 500;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .pattern-table td.payout {
-  color: #dc2626;
-  font-weight: 500;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .detail-link {
   display: inline-block;
   padding: 0.75rem 1rem;
-  background: #0284c7;
-  color: white;
+  background: none;
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
   text-decoration: none;
-  border-radius: 6px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-semibold);
   font-size: 0.9rem;
-  transition: background-color 0.2s ease;
+  transition: opacity var(--transition-base) var(--ease-in-out);
 }
 
 .detail-link:hover {
-  background: #0369a1;
+  opacity: 0.8;
 }
 
 /* モバイル対応 */
@@ -165,7 +164,7 @@
   }
 
   .pattern-table {
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
   }
 
   .pattern-table th,
@@ -175,6 +174,6 @@
 
   .detail-link {
     padding: 0.6rem 0.8rem;
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
   }
 }
