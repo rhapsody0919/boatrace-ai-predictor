@@ -186,7 +186,7 @@
 ---
 
 ### 収益化・ドメイン設定（2025-12-12完了）
-- [x] サービス名を「BoatAI」に変更
+- [x] サービス名を「龍神レーダー」に変更
   - [x] index.html（title、meta description）
   - [x] package.json
   - [x] README.md

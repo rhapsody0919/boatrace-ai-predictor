@@ -1,4 +1,4 @@
-# BoatAI プロジェクト - Claude Code 設定
+# 龍神レーダー プロジェクト - Claude Code 設定
 
 ## プロジェクト概要
 - ボートレースAI予想サービス

@@ -41,7 +41,7 @@ boat-ai.jpのユーザーが、AI予想や結果を自分のSNSアカウント�
 
 **パターンA: AI予想シェア**
 ```
-🏁 BoatAI予想【徳山12R】
+🏁 龍神レーダー予想【徳山12R】
 
 本命: 1号艇
 推奨: 1-2-4
@@ -51,7 +51,7 @@ AIスコア: 24.5
 ▼詳細を見る
 https://boat-ai.jp/#race-tokuyama-12
 
-#ボートレース #ボートレース #AI予想 #BoatAI
+#ボートレース #ボートレース #AI予想 #龍神レーダー
 ```
 
 **パターンB: 的中結果シェア**
@@ -62,12 +62,12 @@ https://boat-ai.jp/#race-tokuyama-12
 結果: 1-2-4 ✅
 配当: 1,250円
 
-BoatAIで予想的中🎉
+龍神レーダーで予想的中🎉
 
 ▼予想を見る
 https://boat-ai.jp/
 
-#ボートレース #ボートレース #的中 #BoatAI
+#ボートレース #ボートレース #的中 #龍神レーダー
 ```
 
 ---
@@ -168,7 +168,7 @@ import {
 
 function ShareButtons({ race }) {
   const shareUrl = `https://boat-ai.jp/#race-${race.id}`;
-  const title = `🏁 BoatAI予想【${race.venue}${race.raceNo}R】`;
+  const title = `🏁 龍神レーダー予想【${race.venue}${race.raceNo}R】`;
   const text = `本命: ${race.prediction.topPick}号艇\n推奨: ${race.prediction.top3.join('-')}`;
 
   return (
@@ -248,7 +248,7 @@ export const shareRacePredictionToX = (race) => {
   const top3 = race.prediction?.top3?.join('-') || '?-?-?';
   const aiScore = race.prediction?.aiScores?.[0]?.toFixed(1) || '?';
 
-  const text = `🏁 BoatAI予想【${venue}${raceNo}R】
+  const text = `🏁 龍神レーダー予想【${venue}${raceNo}R】
 
 本命: ${topPick}号艇
 推奨: ${top3}
@@ -258,7 +258,7 @@ AIスコア: ${aiScore}
 ▼詳細を見る
 https://boat-ai.jp/
 
-#ボートレース #ボートレース #AI予想 #BoatAI`;
+#ボートレース #ボートレース #AI予想 #龍神レーダー`;
 
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'width=600,height=400');
@@ -280,12 +280,12 @@ export const shareHitRaceToX = (race) => {
 結果: ${result} ✅
 配当: ${payout.toLocaleString()}円
 
-BoatAIで予想的中🎉
+龍神レーダーで予想的中🎉
 
 ▼予想を見る
 https://boat-ai.jp/
 
-#ボートレース #ボートレース #的中 #BoatAI`;
+#ボートレース #ボートレース #的中 #龍神レーダー`;
 
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'width=600,height=400');
@@ -304,7 +304,7 @@ export const shareDailyStatsToX = (stats) => {
 ✅ 単勝: ${stats.tanWins}/${stats.total}（${tanRate}%）
 ✅ 複勝: ${stats.fukuWins}/${stats.total}（${fukuRate}%）
 
-BoatAIのAI予想で的中率UP📈
+龍神レーダーのAI予想で的中率UP📈
 
 ▼無料で使える
 https://boat-ai.jp/
@@ -485,7 +485,7 @@ import { SocialShareButtons } from './components/SocialShareButtons';
 // レース詳細に追加
 <SocialShareButtons
   url={`https://boat-ai.jp/#race-${race.id}`}
-  title={`🏁 BoatAI予想【${race.venue}${race.raceNo}R】`}
+  title={`🏁 龍神レーダー予想【${race.venue}${race.raceNo}R】`}
   text={`本命: ${race.prediction.topPick}号艇\n推奨: ${race.prediction.top3.join('-')}`}
   size={32}
 />

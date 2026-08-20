@@ -1,4 +1,4 @@
-# BoatAI Supabase移行 要件定義書
+# 龍神レーダー Supabase移行 要件定義書
 
 ## 1. 概要
 
