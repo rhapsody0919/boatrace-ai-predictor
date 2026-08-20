@@ -96,7 +96,7 @@ export default function EnglishGuide() {
   return (
     <div className="app">
       <title>
-        What is Kyotei? Japanese Boat Racing & Betting Guide | Ryujin Radar
+        What is Kyotei? Rules, Betting & Free AI Guide | Ryujin Radar
       </title>
       <meta
         name="description"
@@ -170,8 +170,8 @@ export default function EnglishGuide() {
               {" "}
               will lane 1 hold, or will someone take it down?
             </strong>{" "}
-            Ryujin Radar&apos;s &quot;Lane-1 upset index&quot; measures exactly this
-            for every race.
+            Ryujin Radar&apos;s &quot;Lane-1 upset index&quot; measures exactly
+            this for every race.
           </p>
         </section>
 
@@ -180,8 +180,8 @@ export default function EnglishGuide() {
           <h2>🥇 The 6 Winning Techniques (Kimarite)</h2>
           <p>
             Every win is officially classified by <em>how</em> the boat won.
-            Learning these six terms unlocks Japanese race commentary and
-            Ryujin Radar&apos;s predictions.
+            Learning these six terms unlocks Japanese race commentary and Ryujin
+            Radar&apos;s predictions.
           </p>
           <div className="eg-technique-list">
             {TECHNIQUES.map((t) => (
@@ -304,9 +304,9 @@ export default function EnglishGuide() {
         <section className="eg-section">
           <h2>🏟️ Visit a Venue in Person</h2>
           <p>
-            Watching Kyotei live is cheap (¥100 entrance) and unforgettable.
-            We have English visitor guides for the venues easiest to reach as
-            a traveler — including Heiwajima near Haneda Airport and
+            Watching Kyotei live is cheap (¥100 entrance) and unforgettable. We
+            have English visitor guides for the venues easiest to reach as a
+            traveler — including Heiwajima near Haneda Airport and
             Suminoe&apos;s night races in Osaka.
           </p>
           <p>
@@ -326,8 +326,9 @@ export default function EnglishGuide() {
               <strong>20 years or older</strong>.
             </li>
             <li>
-              Ryujin Radar provides <strong>information and AI analysis only</strong>.
-              We do not accept bets, and predictions do not guarantee results.
+              Ryujin Radar provides{" "}
+              <strong>information and AI analysis only</strong>. We do not
+              accept bets, and predictions do not guarantee results.
             </li>
             <li>
               Please gamble responsibly. See our{" "}
