@@ -208,4 +208,4 @@ Move on from "gut feeling" predictions and start predicting with data. Master th
 
 **Check your predictions on Ryujin Radar now →** [https://boat-ai.jp/](https://boat-ai.jp/)
 
-**Tags:** #BoatRacing #Predictions #Tips #HowToPredict #AIPrediction #Ryujin Radar
+**Tags:** #BoatRacing #Predictions #Tips #HowToPredict #AIPrediction #RyujinRadar

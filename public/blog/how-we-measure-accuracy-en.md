@@ -229,4 +229,4 @@ If you have doubts about Ryujin Radar's track record, we genuinely encourage you
 
 ---
 
-**Tags:** #Ryujin Radar #TrackRecord #Transparency #HitRate #ReturnRate #DataDisclosure #Verification
+**Tags:** #RyujinRadar #TrackRecord #Transparency #HitRate #ReturnRate #DataDisclosure #Verification

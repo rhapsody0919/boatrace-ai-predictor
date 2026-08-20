@@ -159,4 +159,4 @@ SG races are hard, but with data on your side, there's real opportunity. Enjoy t
 
 **Check Ryujin Radar's SG race predictions →** [https://boat-ai.jp/](https://boat-ai.jp/)
 
-**Tags:** #SGBoatRacing2026 #GrandPrixPredictions #AllStarPredictions #SGRaceSchedule #BoatRacing #AIPrediction #Ryujin Radar
+**Tags:** #SGBoatRacing2026 #GrandPrixPredictions #AllStarPredictions #SGRaceSchedule #BoatRacing #AIPrediction #RyujinRadar

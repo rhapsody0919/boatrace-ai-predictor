@@ -176,4 +176,4 @@ Ryujin Radar publishes its predictions **in advance**, and checks the results on
 
 ---
 
-**Tags:** #Ryujin Radar #10000Races #AIPrediction #TrackRecordAnalysis #HitRate #ReturnRate #DataDisclosure #BoatRacing
+**Tags:** #RyujinRadar #10000Races #AIPrediction #TrackRecordAnalysis #HitRate #ReturnRate #DataDisclosure #BoatRacing

@@ -189,4 +189,4 @@ Predicting night races the same way you predict daytime races won't win. Underst
 
 ---
 
-**Tags:** #BoatRacing #NightRace #NightRaceStrategy #BoatRacingPredictions #NightRaceFeatures #AIPrediction #Ryujin Radar
+**Tags:** #BoatRacing #NightRace #NightRaceStrategy #BoatRacingPredictions #NightRaceFeatures #AIPrediction #RyujinRadar

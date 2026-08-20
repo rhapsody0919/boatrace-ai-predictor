@@ -208,4 +208,4 @@ It's recalculated using exhibition-run data (exhibition ST) captured about 30 mi
 
 ---
 
-**Tags:** #BoatRacing #TurnPrediction #FirstMark #WinningTechnique #AIPrediction #Ryujin Radar
+**Tags:** #BoatRacing #TurnPrediction #FirstMark #WinningTechnique #AIPrediction #RyujinRadar

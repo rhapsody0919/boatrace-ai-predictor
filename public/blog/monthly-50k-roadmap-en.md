@@ -516,4 +516,4 @@ Let a ¥50,000/month side income make your life a little richer.
 
 ---
 
-**Tags:** #BoatRacing #SideJob #SideIncome #50KPerMonth #AIPrediction #Ryujin Radar #BankrollManagement #Repeatability
+**Tags:** #BoatRacing #SideJob #SideIncome #50KPerMonth #AIPrediction #RyujinRadar #BankrollManagement #Repeatability

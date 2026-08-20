@@ -478,4 +478,4 @@ Boat racing shifts from "gambling" to "strategic investing."
 
 ---
 
-**Tags:** #BoatRacing #AIPrediction #Ryujin Radar #Verification #Data #HitRate #ReturnRate #Comparison
+**Tags:** #BoatRacing #AIPrediction #RyujinRadar #Verification #Data #HitRate #ReturnRate #Comparison

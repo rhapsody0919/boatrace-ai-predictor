@@ -152,4 +152,4 @@ Start by looking at the data and seeing what kind of races get selected.
 
 ---
 
-**Tags:** #BoatRacing #ReturnRate #HowToWin #BettingStrategy #BankrollManagement #DataAnalysis #Ryujin Radar
+**Tags:** #BoatRacing #ReturnRate #HowToWin #BettingStrategy #BankrollManagement #DataAnalysis #RyujinRadar

@@ -237,4 +237,4 @@ Starting with a formation bet of around 6 combinations is a good approach. Fewer
 
 ---
 
-**Tags:** #BoatRacing #Trifecta #HowToBet #BettingTickets #Ryujin Radar
+**Tags:** #BoatRacing #Trifecta #HowToBet #BettingTickets #RyujinRadar

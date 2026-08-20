@@ -146,4 +146,4 @@ If this piqued your interest, check out [Ryujin Radar's latest performance](/acc
 
 ---
 
-**Tags:** #Ryujin Radar #TodaysPicks #104PercentReturn #DataMining #BoatRacing #TrackRecord #2577Races
+**Tags:** #RyujinRadar #TodaysPicks #104PercentReturn #DataMining #BoatRacing #TrackRecord #2577Races

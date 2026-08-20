@@ -299,4 +299,4 @@ Starting tomorrow, boat racing shifts from "a costly hobby" to "a strategic inve
 
 ---
 
-**Tags:** #BoatRacing #CantWin #AIPrediction #Ryujin Radar #BettingTickets #BoatRacingBeginner #LosingPattern
+**Tags:** #BoatRacing #CantWin #AIPrediction #RyujinRadar #BettingTickets #BoatRacingBeginner #LosingPattern

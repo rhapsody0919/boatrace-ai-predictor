@@ -136,4 +136,4 @@ Ryujin Radar publishes its entire track record. See for yourself first.
 
 ---
 
-**Tags:** #AIPrediction #BoatRacing #HitRate #ReturnRate #AIAccuracyReview #Ryujin Radar #DataAnalysis
+**Tags:** #AIPrediction #BoatRacing #HitRate #ReturnRate #AIAccuracyReview #RyujinRadar #DataAnalysis

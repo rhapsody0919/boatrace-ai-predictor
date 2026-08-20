@@ -303,4 +303,4 @@ Think of suji as **a tool for narrowing down your bets**, not a complete answer 
 
 ---
 
-**Tags:** #BoatRacing #SujiBetting #BettingStrategy #RaceDevelopment #DataAnalysis #AIPrediction #Ryujin Radar
+**Tags:** #BoatRacing #SujiBetting #BettingStrategy #RaceDevelopment #DataAnalysis #AIPrediction #RyujinRadar

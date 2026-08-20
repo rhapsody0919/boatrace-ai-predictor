@@ -181,4 +181,4 @@ Yes. Odds shift continuously as bettors place wagers, right up until betting clo
 
 ---
 
-**Tags:** #BoatRacing #BoatRace #Odds #ExpectedValue #OddsDistortion #Overpopularity #BettingStrategy #ReturnRate #DataAnalysis #Ryujin Radar
+**Tags:** #BoatRacing #BoatRace #Odds #ExpectedValue #OddsDistortion #Overpopularity #BettingStrategy #ReturnRate #DataAnalysis #RyujinRadar
