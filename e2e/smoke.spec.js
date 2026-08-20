@@ -884,3 +884,44 @@ test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の�
     await expect(page).toHaveTitle(/.+龍神レーダー$/);
   });
 });
+
+test.describe("龍神レーダー ブランドトークンのコントラスト（axe-core、ADR 0017）", () => {
+  // scripts/maintenance/check-token-contrast.js はトークン単体の組み合わせを検証するが、
+  // ここでは実際にレンダリングされたページで色の組み合わせに問題が無いかを検証する。
+  // フェーズ4（データ密集画面の移行）が完了するまで、ページ本体には旧配色（#0ea5e9等）が
+  // 残っているため、スコープはブランドトークン移行済みの領域（Header/Footer/IntroBanner）
+  // に限定する。フェーズ4進行に合わせてINCLUDE_SELECTORSを拡張していく想定
+  const PAGES = ["/", "/about", "/accuracy"];
+  const INCLUDE_SELECTORS = [".app-header", ".site-footer", ".intro-banner"];
+
+  for (const path of PAGES) {
+    for (const theme of ["light", "dark"]) {
+      test(`${path}（${theme}テーマ）のブランドチロムでcolor-contrast違反が無い`, async ({
+        page,
+      }) => {
+        const { default: AxeBuilder } = await import("@axe-core/playwright");
+        await page.goto(path);
+        await page.evaluate(
+          (t) => localStorage.setItem("ryujin-radar-theme", t),
+          theme,
+        );
+        await page.reload();
+        await expect(page.locator(".app-header")).toBeVisible();
+
+        let builder = new AxeBuilder({ page }).withRules(["color-contrast"]);
+        for (const selector of INCLUDE_SELECTORS) {
+          if ((await page.locator(selector).count()) > 0) {
+            builder = builder.include(selector);
+          }
+        }
+
+        const results = await builder.analyze();
+
+        expect(
+          results.violations,
+          JSON.stringify(results.violations, null, 2),
+        ).toEqual([]);
+      });
+    }
+  }
+});

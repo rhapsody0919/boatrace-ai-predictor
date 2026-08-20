@@ -106,42 +106,9 @@ input:focus-visible,
   align-items: center;
 }
 
-.nav-btn {
-  padding: 0.625rem 1.25rem;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-}
-
-.nav-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-2px);
-}
-
-.nav-btn.active {
-  background: white;
-  color: #0ea5e9;
-  border-color: white;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
-}
-
-/* フォーカスインジケーター（アクセシビリティ） */
-.nav-btn:focus-visible {
-  outline: 3px solid white;
-  outline-offset: 2px;
-}
-
-.nav-btn.active:focus-visible {
-  outline: 3px solid #0ea5e9;
-  outline-offset: 2px;
-}
+/* .nav-btn / .menu-toggle-btn はHeader.jsxが共通コンポーネント化された際に
+   Header.css側へ移設済み。ここは死んだCSSだったため削除（BOA-203で残りの
+   dead CSS調査を別途実施） */
 
 /* ハンバーガーメニューボタン */
 .menu-toggle-btn {

@@ -35,5 +35,5 @@
 
 .site-footer-copyright {
   font-size: var(--font-size-xs);
-  opacity: 0.8;
+  color: var(--text-secondary);
 }

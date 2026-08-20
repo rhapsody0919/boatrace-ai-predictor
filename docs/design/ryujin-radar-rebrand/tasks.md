@@ -22,7 +22,7 @@ spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・�
 - [x] 10. テーマ状態管理モジュールの実装（`src/config/theme.js`・`src/utils/theme.js`・`src/hooks/useTheme.js`。ADR 0016）。動的importでgetTheme/setTheme/data-theme同期/localStorage永続化を確認、実際に画面がライト/ダーク双方に切り替わることも視認済み
 - [x] 11. index.htmlへのFOUC防止インラインスクリプト追加（初期表示前に`data-theme`をlocalStorageから同期）。あわせて`theme-color`（light/dark媒体クエリ）と`manifest.json`のtheme_color/background_colorも旧ブランド色から深紺に更新。localStorageに値を仕込んだ状態でのフルリロードでFOUC無しを確認
 - [x] 12. ThemeToggleコンポーネントの実装とHeaderへの設置。太陽/月の線画SVGアイコン（絵文字は使わず既存の意匠言語に合わせた）。クリックでの切替・リロード後の永続化を実機で確認済み
-- [ ] 13. `@axe-core/playwright`導入とe2e/smoke.spec.jsへのアクセシビリティスキャン追加（ライト/ダーク両テーマ。ADR 0017）。ここでフェーズ2のブランドチロムが両テーマで機械的に検証可能になる
+- [x] 13. `@axe-core/playwright`導入とe2e/smoke.spec.jsへのアクセシビリティスキャン追加（ライト/ダーク両テーマ。ADR 0017）。フェーズ4完了までページ全体は旧配色が残るため、スコープはブランドトークン移行済みの`.app-header`/`.site-footer`/`.intro-banner`に限定。**実行の結果2件の実バグを発見・修正**: ①Footer.cssの著作権表示に不要な`opacity: 0.8`が掛かりトークン単体では合格の`--text-secondary`が実描画で基準未達（4.22:1）→opacity削除で修正。②Header.jsx分離前の死んだCSS（App.css内の`.nav-btn`/`.nav-btn.active`）がHeader.css刷新後のスタイルを白背景で上書きしていた→削除して修正。関連の死んだCSS（`.menu-toggle-btn`等）はBOA-203として別チケット化
 
 ## フェーズ4: データ密集画面
 
