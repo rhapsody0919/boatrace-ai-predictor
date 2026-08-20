@@ -15,7 +15,7 @@ spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・�
 - [x] 6. Header.jsxのロゴ・ワードマーク刷新（新ロゴ画像、明朝体ワードマーク、意味トークン参照への置き換え）。ナビも塗りピル→下線インジケーターに変更、絵文字ロゴ・floatアニメーションは削除。ThemeToggle自体の設置はタスク12で対応
 - [x] 7. IntroBanner.jsxの意匠更新（罫線＋タイポグラフィ中心へ、塗り要素の削減）。あわせてコントラスト検証スクリプトに`--surface-card`×金銀アクセントのペアを追加
 - [x] 8. LoadingScreen.jsxへのレーダー掃引モーション追加（線1本、回転3〜4秒/周）。青グラデーション背景・スピナーをsurface-card+レーダー掃引SVGに置き換え
-- [ ] 9. LanguageSwitcher.jsx・Breadcrumb.jsxのトークン参照更新
+- [x] 9. LanguageSwitcher.jsx・Breadcrumb.jsxのトークン参照更新。白背景ヘッダー前提の配色（白半透明の塗りボタン等）を、罫線+テキスト色ベースの意匠に変更
 
 ## フェーズ3: テーマ切替機能
 

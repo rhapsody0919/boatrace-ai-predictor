@@ -19,24 +19,23 @@
 }
 
 .breadcrumb-item a {
-  color: #0ea5e9;
+  color: var(--brand-accent-primary);
   text-decoration: none;
-  transition: color 0.2s;
+  transition: opacity var(--transition-base) var(--ease-in-out);
 }
 
 .breadcrumb-item a:hover {
-  color: #0284c7;
   text-decoration: underline;
 }
 
 .breadcrumb-separator {
-  color: #64748b;
+  color: var(--text-secondary);
   user-select: none;
 }
 
 .breadcrumb-current {
-  color: #1e293b;
-  font-weight: 500;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 @media (max-width: 768px) {
