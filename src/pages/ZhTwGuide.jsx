@@ -73,10 +73,10 @@ const MODELS = [
 export default function ZhTwGuide() {
   return (
     <div className="app">
-      <title>什麼是日本賽艇（Kyotei）？規則與投注入門指南 | BoatAI</title>
+      <title>什麼是日本賽艇（Kyotei）？規則與投注入門指南 | 龍神雷達</title>
       <meta
         name="description"
-        content="日本賽艇（BOAT RACE / Kyotei）新手完全指南：比賽規則、獲勝方式、投注玩法，以及如何看懂 BoatAI 的免費 AI 預測。"
+        content="日本賽艇（BOAT RACE / Kyotei）新手完全指南：比賽規則、獲勝方式、投注玩法，以及如何看懂龍神雷達的免費 AI 預測。"
       />
       <link rel="canonical" href="https://www.boat-ai.jp/zh-TW/guide" />
 
@@ -138,7 +138,7 @@ export default function ZhTwGuide() {
           <p>
             賽艇預測幾乎都圍繞著同一個問題：
             <strong>1號位能守住嗎？還是會被誰擊敗？</strong>
-            BoatAI 的「1號位失守指數」正是為每場比賽量化這件事。
+            龍神雷達的「1號位失守指數」正是為每場比賽量化這件事。
           </p>
         </section>
 
@@ -147,7 +147,7 @@ export default function ZhTwGuide() {
           <h2>🥇 6 種獲勝方式（決まり手）</h2>
           <p>
             每一場勝利都會依「如何獲勝」被官方分類。 記住這 6
-            個詞，就能看懂日文賽事實況和 BoatAI 的預測。
+            個詞，就能看懂日文賽事實況和龍神雷達的預測。
           </p>
           <div className="eg-technique-list">
             {TECHNIQUES.map((t) => (
@@ -222,9 +222,9 @@ export default function ZhTwGuide() {
 
         {/* How to read boatAI */}
         <section className="eg-section">
-          <h2>🤖 如何看懂 BoatAI 的預測</h2>
+          <h2>🤖 如何看懂龍神雷達的預測</h2>
           <p>
-            BoatAI 為每場比賽分析 45 項數據 —
+            龍神雷達為每場比賽分析 45 項數據 —
             選手成績、馬達性能、賽場特性、起跑時機等 — 並清楚呈現每個選擇的
             <strong>理由</strong>。完全免費。
           </p>
@@ -284,7 +284,7 @@ export default function ZhTwGuide() {
               <strong>年滿 20 歲</strong>。
             </li>
             <li>
-              BoatAI 僅提供<strong>資訊與 AI 分析</strong>
+              龍神雷達僅提供<strong>資訊與 AI 分析</strong>
               。本站不受理投注，預測也不保證任何結果。
             </li>
             <li>

@@ -238,10 +238,10 @@ function HitRaces({
 
   return (
     <>
-      <title>展開予測 的中レース一覧 | BoatAI</title>
+      <title>展開予測 的中レース一覧 | 龍神レーダー</title>
       <meta
         name="description"
-        content="BoatAIの展開予測（1マーク展開）が的中したレース一覧。今日・昨日・過去14日間の的中レースと会場別的中実績を公開。"
+        content="龍神レーダーの展開予測（1マーク展開）が的中したレース一覧。今日・昨日・過去14日間の的中レースと会場別的中実績を公開。"
       />
       <link rel="canonical" href="https://www.boat-ai.jp/hit-races" />
       <div>

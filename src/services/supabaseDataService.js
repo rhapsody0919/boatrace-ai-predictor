@@ -144,7 +144,7 @@ const cache = {
   },
 
   /**
-   * localStorage内のBoatAIキャッシュを全削除
+   * localStorage内の龍神レーダーキャッシュを全削除
    */
   _clearAllLocalStorage() {
     try {

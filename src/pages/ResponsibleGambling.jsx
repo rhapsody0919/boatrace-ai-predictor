@@ -6,7 +6,7 @@ import './About.css';
 export default function ResponsibleGambling() {
     return (
         <>
-                <title>責任あるギャンブル | BoatAI</title>
+                <title>責任あるギャンブル | 龍神レーダー</title>
                 <meta name="description" content="ボートレースを楽しく続けるために。ギャンブル依存症の予防と相談窓口のご案内。" />
                 <link rel="canonical" href="https://www.boat-ai.jp/responsible-gambling" />
 
@@ -42,9 +42,9 @@ export default function ResponsibleGambling() {
                 </div>
 
                 <section className="about-section">
-                    <h2>BoatAIの基本方針</h2>
+                    <h2>龍神レーダーの基本方針</h2>
                     <p>
-                        BoatAIは、ボートレースの予測情報を提供するサービスです。
+                        龍神レーダーは、ボートレースの予測情報を提供するサービスです。
                         私たちは、ユーザーの皆様が健全にボートレースを楽しめるよう、
                         以下の方針を掲げています。
                     </p>
@@ -179,7 +179,7 @@ export default function ResponsibleGambling() {
             </div>
 
             <footer className="footer" style={{ marginTop: '3rem', padding: '2rem', background: '#1e293b', color: '#94a3b8', textAlign: 'center' }}>
-                <p>&copy; 2025 BoatAI - All Rights Reserved</p>
+                <p>&copy; 2025 龍神レーダー - All Rights Reserved</p>
             </footer>
         </>
     );

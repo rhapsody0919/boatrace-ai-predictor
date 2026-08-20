@@ -9,7 +9,7 @@ import { VenueRegionHub } from "./VenueRegionHub";
 import { VENUE_GUIDES_KO } from "../data/venueGuidesKo";
 
 const copy = {
-  listTitle: "일본 경정장 방문 가이드: 교통편과 입장료 정보 | BoatAI",
+  listTitle: "일본 경정장 방문 가이드: 교통편과 입장료 정보 | 용신 레이더",
   listDescription:
     "일본 보트레이스（경정） 경정장 방문 가이드: 가는 방법, 입장료, 나이터 경주, 베팅 팁까지. 기류 경정장을 시작으로 순차 추가 중입니다.",
   heroTitle: "🏟️ 경정장 방문 가이드",
@@ -26,7 +26,7 @@ const copy = {
   ctaButton: "🏁 무료 예측 보기",
   backToAll: "← 전체 경정장 목록",
   detailTitle: (venue) =>
-    `${venue.name} 경정장 교통·방문 가이드（${venue.kanji}） | BoatAI`,
+    `${venue.name} 경정장 교통·방문 가이드（${venue.kanji}） | 용신 레이더`,
   detailDescription: (venue) =>
     `${venue.region} ${venue.name} 경정장 방문 방법: 가까운 역에서 가는 법, 입장료, 수면 특성과 베팅 팁. ${venue.tagline}.`,
   detailHeading: (venue) => (
@@ -71,7 +71,7 @@ const copy = {
   beforeYouBet: "⚖️ 베팅 전 꼭 확인하세요",
   disclaimer: (
     <>
-      경정 베팅은 일본 현지에서, 만 20세 이상만 가능합니다. BoatAI는 정보와 AI
+      경정 베팅은 일본 현지에서, 만 20세 이상만 가능합니다. 용신 레이더는 정보와 AI
       분석만 제공합니다 — 규칙과 베팅 종류는{" "}
       <Link to="/ko/guide">초보자 가이드</Link>를 참고하세요.
     </>
@@ -79,7 +79,7 @@ const copy = {
   seeTodaysPredictions: (venue) =>
     `오늘의 AI 예측 보기${venue.facts.nightRace ? "（나이터 경주 포함）" : ""}`,
   regionTitle: (region) =>
-    `${region.labelKo} 경정장 방문 가이드: 교통편과 입장료 정보 | BoatAI`,
+    `${region.labelKo} 경정장 방문 가이드: 교통편과 입장료 정보 | 용신 레이더`,
   regionDescription: (region) =>
     `일본 ${region.labelKo} 지역 경정장 방문 가이드: 가는 방법, 입장료, 베팅 팁.`,
   regionHeading: (region) => `🏟️ ${region.labelKo} 경정장 방문 가이드`,

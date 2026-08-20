@@ -9,7 +9,7 @@ import { VenueRegionHub } from "./VenueRegionHub";
 import { VENUE_GUIDES_EN } from "../data/venueGuidesEn";
 
 const copy = {
-  listTitle: "Boat Race Venues in Japan: Visitor Guides | BoatAI",
+  listTitle: "Boat Race Venues in Japan: Visitor Guides | Ryujin Radar",
   listDescription:
     "English visitor guides to Japan's Kyotei (boat race) venues: how to get there, entrance fees, night races, and betting tips for Heiwajima, Suminoe, Edogawa, Tamagawa and Fukuoka.",
   heroTitle: "🏟️ Boat Race Venue Guides",
@@ -27,7 +27,7 @@ const copy = {
   ctaButton: "🏁 View Free Predictions",
   backToAll: "← All venues",
   detailTitle: (venue) =>
-    `Boat Race ${venue.name} (${venue.kanji}): Access & Visitor Guide | BoatAI`,
+    `Boat Race ${venue.name} (${venue.kanji}): Access & Visitor Guide | Ryujin Radar`,
   detailDescription: (venue) =>
     `How to visit Boat Race ${venue.name} in ${venue.region}: access from the nearest station, entrance fee, water characteristics and betting tips. ${venue.tagline}.`,
   detailHeading: (venue) => (
@@ -72,7 +72,7 @@ const copy = {
   beforeYouBet: "⚖️ Before you bet",
   disclaimer: (
     <>
-      Betting requires being physically in Japan and aged 20 or older. BoatAI
+      Betting requires being physically in Japan and aged 20 or older. Ryujin Radar
       provides information and AI analysis only — see our{" "}
       <Link to="/en/guide">beginner&apos;s guide</Link> for the rules and bet
       types.
@@ -81,7 +81,7 @@ const copy = {
   seeTodaysPredictions: (venue) =>
     `See today's AI predictions${venue.facts.nightRace ? " — including night races" : ""}`,
   regionTitle: (region) =>
-    `Boat Race Venues in ${region.label}: Visitor Guides | BoatAI`,
+    `Boat Race Venues in ${region.label}: Visitor Guides | Ryujin Radar`,
   regionDescription: (region) =>
     `English visitor guides to Kyotei (boat race) venues in ${region.label}: how to get there, entrance fees, and betting tips.`,
   regionHeading: (region) => `🏟️ Boat Race Venues in ${region.label}`,

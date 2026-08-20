@@ -32,12 +32,12 @@ const CORE_PAGES = [
   {
     title: "使い方ガイド",
     path: "/how-to-use",
-    description: "BoatAIの使い方を6ステップで解説",
+    description: "龍神レーダーの使い方を6ステップで解説",
   },
   {
     title: "よくある質問",
     path: "/faq",
-    description: "BoatAIの料金・精度・使い方に関するFAQ",
+    description: "龍神レーダーの料金・精度・使い方に関するFAQ",
   },
   {
     title: "予測実績",
@@ -45,15 +45,15 @@ const CORE_PAGES = [
     description: "AI予想の的中率・回収率の実績データを公開",
   },
   {
-    title: "BoatAIについて",
+    title: "龍神レーダーについて",
     path: "/about",
-    description: "BoatAIのサービス概要",
+    description: "龍神レーダーのサービス概要",
   },
 ];
 
 function buildLlmsTxt() {
   const lines = [];
-  lines.push("# BoatAI");
+  lines.push("# 龍神レーダー");
   lines.push("");
   lines.push(
     "> 45項目以上のデータをAIが分析するボートレース予想・データ分析サービス。全24ボートレース場に対応し、完全無料・登録不要で利用できる。的中率・回収率の実績を包み隠さず公開している。",

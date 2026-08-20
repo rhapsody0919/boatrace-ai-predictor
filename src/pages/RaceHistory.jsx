@@ -89,10 +89,10 @@ function RaceHistory() {
 
   return (
     <>
-      <title>過去のAI予想データ - BoatAI</title>
+      <title>過去のAI予想データ - 龍神レーダー</title>
       <meta
         name="description"
-        content="BoatAIの過去のレース予想データと的中実績を確認できます。日別の展開予測的中率をチェックして、AIの精度を検証してください。"
+        content="龍神レーダーの過去のレース予想データと的中実績を確認できます。日別の展開予測的中率をチェックして、AIの精度を検証してください。"
       />
       <link rel="canonical" href="https://www.boat-ai.jp/races" />
 

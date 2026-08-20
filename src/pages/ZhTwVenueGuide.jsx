@@ -9,7 +9,7 @@ import { VenueRegionHub } from "./VenueRegionHub";
 import { VENUE_GUIDES_ZH_TW } from "../data/venueGuidesZhTw";
 
 const copy = {
-  listTitle: "日本賽艇（Kyotei）景點導覽：交通與門票資訊 | BoatAI",
+  listTitle: "日本賽艇（Kyotei）景點導覽：交通與門票資訊 | 龍神雷達",
   listDescription:
     "日本賽艇（BOAT RACE／Kyotei）賽場旅遊指南：交通方式、入場費、夜間賽事與投注小技巧，涵蓋平和島、住之江、江戶川、多摩川與福岡賽場。",
   heroTitle: "🏟️ 賽艇賽場旅遊指南",
@@ -24,7 +24,7 @@ const copy = {
   ctaButton: "🏁 查看今日免費預測",
   backToAll: "← 返回賽場列表",
   detailTitle: (venue) =>
-    `${venue.name}賽艇場交通與參觀指南（${venue.kanji}）| BoatAI`,
+    `${venue.name}賽艇場交通與參觀指南（${venue.kanji}）| 龍神雷達`,
   detailDescription: (venue) =>
     `前往${venue.region}${venue.name}賽艇場的方法：從最近車站的交通方式、入場費、水面特性與投注小技巧。${venue.tagline}。`,
   detailHeading: (venue) => (
@@ -69,14 +69,14 @@ const copy = {
   beforeYouBet: "⚖️ 投注前須知",
   disclaimer: (
     <>
-      投注日本賽艇僅限透過日本官方管道，且必須人在日本境內並年滿20歲。BoatAI僅提供資訊與AI分析——投注規則與券種請參閱我們的{" "}
+      投注日本賽艇僅限透過日本官方管道，且必須人在日本境內並年滿20歲。龍神雷達僅提供資訊與AI分析——投注規則與券種請參閱我們的{" "}
       <Link to="/zh-TW/guide">新手入門指南</Link>。
     </>
   ),
   seeTodaysPredictions: (venue) =>
     `查看今日的AI預測${venue.facts.nightRace ? "（含夜間賽事）" : ""}`,
   regionTitle: (region) =>
-    `${region.labelZhTw}賽艇場旅遊指南：交通與門票資訊 | BoatAI`,
+    `${region.labelZhTw}賽艇場旅遊指南：交通與門票資訊 | 龍神雷達`,
   regionDescription: (region) =>
     `日本${region.labelZhTw}賽艇（Kyotei）賽場旅遊指南：交通方式、入場費與投注小技巧。`,
   regionHeading: (region) => `🏟️ ${region.labelZhTw}賽艇賽場旅遊指南`,

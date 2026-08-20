@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 export default function Terms() {
     return (
         <>
-                <title>利用規約 | BoatAI</title>
-                <meta name="description" content="BoatAI（AIボートレース分析サービス）の利用規約。サービス内容、利用条件、禁止事項、免責事項についてご説明します。" />
+                <title>利用規約 | 龍神レーダー</title>
+                <meta name="description" content="龍神レーダー（AIボートレース分析サービス）の利用規約。サービス内容、利用条件、禁止事項、免責事項についてご説明します。" />
                 <link rel="canonical" href="https://www.boat-ai.jp/terms" />
             <div style={{
             maxWidth: '900px',
@@ -40,7 +40,7 @@ export default function Terms() {
                     第1条（適用）
                 </h2>
                 <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
-                    本利用規約（以下「本規約」）は、BoatAI（以下「当サイト」）が提供するボートレースAI予想サービス（以下「本サービス」）の利用条件を定めるものです。
+                    本利用規約（以下「本規約」）は、龍神レーダー（以下「当サイト」）が提供するボートレースAI予想サービス（以下「本サービス」）の利用条件を定めるものです。
                 </p>
                 <p style={{ color: '#475569', lineHeight: '1.8' }}>
                     本サービスを利用されるすべてのユーザー（以下「利用者」）は、本規約に同意したものとみなします。
@@ -252,7 +252,7 @@ export default function Terms() {
                     利用者は、当サイトのコンテンツを、私的使用の範囲を超えて使用することはできません。
                 </p>
                 <p style={{ color: '#475569', lineHeight: '1.8' }}>
-                    「BoatAI」の名称およびロゴは、当サイトの商標または登録商標です。
+                    「龍神レーダー」の名称およびロゴは、当サイトの商標または登録商標です。
                 </p>
             </section>
 

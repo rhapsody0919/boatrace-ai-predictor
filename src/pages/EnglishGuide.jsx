@@ -96,11 +96,11 @@ export default function EnglishGuide() {
   return (
     <div className="app">
       <title>
-        What is Kyotei? Japanese Boat Racing & Betting Guide | BoatAI
+        What is Kyotei? Japanese Boat Racing & Betting Guide | Ryujin Radar
       </title>
       <meta
         name="description"
-        content="A complete beginner's guide to Kyotei (Japanese boat racing): rules, winning techniques, betting types, and how to read BoatAI's free AI predictions."
+        content="A complete beginner's guide to Kyotei (Japanese boat racing): rules, winning techniques, betting types, and how to read Ryujin Radar's free AI predictions."
       />
       <link rel="canonical" href="https://www.boat-ai.jp/en/guide" />
 
@@ -170,7 +170,7 @@ export default function EnglishGuide() {
               {" "}
               will lane 1 hold, or will someone take it down?
             </strong>{" "}
-            BoatAI&apos;s &quot;Lane-1 upset index&quot; measures exactly this
+            Ryujin Radar&apos;s &quot;Lane-1 upset index&quot; measures exactly this
             for every race.
           </p>
         </section>
@@ -181,7 +181,7 @@ export default function EnglishGuide() {
           <p>
             Every win is officially classified by <em>how</em> the boat won.
             Learning these six terms unlocks Japanese race commentary and
-            BoatAI&apos;s predictions.
+            Ryujin Radar&apos;s predictions.
           </p>
           <div className="eg-technique-list">
             {TECHNIQUES.map((t) => (
@@ -258,9 +258,9 @@ export default function EnglishGuide() {
 
         {/* How to read boatAI */}
         <section className="eg-section">
-          <h2>🤖 How to Read BoatAI&apos;s Predictions</h2>
+          <h2>🤖 How to Read Ryujin Radar&apos;s Predictions</h2>
           <p>
-            BoatAI analyzes 45 data points per race — racer stats, motor
+            Ryujin Radar analyzes 45 data points per race — racer stats, motor
             performance, venue bias, start timing and more — and shows you{" "}
             <strong>why</strong> behind every pick. Completely free.
           </p>
@@ -326,7 +326,7 @@ export default function EnglishGuide() {
               <strong>20 years or older</strong>.
             </li>
             <li>
-              BoatAI provides <strong>information and AI analysis only</strong>.
+              Ryujin Radar provides <strong>information and AI analysis only</strong>.
               We do not accept bets, and predictions do not guarantee results.
             </li>
             <li>

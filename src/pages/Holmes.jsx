@@ -51,7 +51,7 @@ function Holmes() {
   return (
     <div className="holmes-page">
       <>
-        <title>ホームズ予想 (α版) - BoatAI</title>
+        <title>ホームズ予想 (α版) - 龍神レーダー</title>
         <meta name="robots" content="noindex, nofollow" />
         <meta
           name="description"
@@ -135,7 +135,7 @@ function Holmes() {
       </main>
 
       <footer className="holmes-footer">
-        <p>© 2025 BoatAI - ホームズ予想 α版</p>
+        <p>© 2025 龍神レーダー - ホームズ予想 α版</p>
       </footer>
     </div>
   );
