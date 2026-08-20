@@ -312,7 +312,7 @@ function ExhibitionTimeTrendChart({
                   type="monotone"
                   dataKey="exhibition_time"
                   name={t("analysis.exTrend.legend")}
-                  stroke="#0ea5e9"
+                  stroke="var(--brand-accent-primary)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                 />

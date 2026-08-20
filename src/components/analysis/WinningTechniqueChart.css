@@ -1,18 +1,18 @@
 .winning-technique-container {
   padding: 1.5rem;
-  background: #f8fafc;
-  border-radius: 8px;
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
   margin-bottom: 2rem;
 }
 
 .winning-technique-container h2 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .winning-technique-container .section-description {
-  color: #64748b;
+  color: var(--text-secondary);
   margin-bottom: 1.5rem;
   font-size: 0.95rem;
   line-height: 1.5;
@@ -27,17 +27,17 @@
 }
 
 .winning-technique-container .controls-section label {
-  font-weight: 600;
-  color: #334155;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .winning-technique-container .venue-select {
   padding: 0.75rem 1rem;
   font-size: 0.95rem;
-  border-radius: 6px;
-  border: 2px solid #e2e8f0;
-  background-color: white;
-  color: #0f172a;
+  border-radius: var(--radius-sm);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background-color: var(--surface-page);
+  color: var(--text-primary);
   cursor: pointer;
   min-width: 180px;
   outline: none;
@@ -45,30 +45,29 @@
 }
 
 .winning-technique-container .venue-select:hover {
-  border-color: #0284c7;
+  border-color: var(--brand-accent-primary);
 }
 
 .winning-technique-container .venue-select:focus {
-  border-color: #0284c7;
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+  border-color: var(--brand-accent-primary);
 }
 
 .winning-technique-container .summary-info {
-  background: #e0f2fe;
+  background: var(--surface-page);
   padding: 1rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   margin-bottom: 1.5rem;
-  border-left: 4px solid #0284c7;
+  border-left: 4px solid var(--brand-accent-primary);
 }
 
 .winning-technique-container .summary-info p {
   margin: 0;
   font-size: 0.95rem;
-  color: #0c4a6e;
+  color: var(--text-primary);
 }
 
 .winning-technique-container .update-date {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   margin-left: 0.5rem;
 }
@@ -76,10 +75,9 @@
 .winning-technique-container .table-wrapper {
   overflow-x: auto;
   margin-top: 1.5rem;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .winning-technique-table {
@@ -89,48 +87,47 @@
 }
 
 .winning-technique-table thead {
-  background: #f8fafc;
-  border-bottom: 2px solid #e2e8f0;
+  background: var(--surface-page);
+  border-bottom: var(--border-width-2) solid var(--border-hairline);
 }
 
 .winning-technique-table th {
   padding: 0.75rem;
   text-align: center;
-  font-weight: 600;
-  color: #334155;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
   font-size: 0.85rem;
 }
 
 .winning-technique-table tbody tr {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
   transition: background-color 0.15s ease;
 }
 
 .winning-technique-table tbody tr:hover {
-  background-color: #f8fafc;
+  background-color: var(--surface-page);
 }
 
 .winning-technique-table td {
   padding: 0.75rem;
   text-align: center;
-  color: #475569;
+  color: var(--text-primary);
 }
 
 .winning-technique-table td.boat-num {
-  font-weight: 600;
-  color: #0f172a;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
   vertical-align: middle;
 }
 
 .winning-technique-table td.count {
-  background: #f0f9ff;
-  color: #0c4a6e;
-  font-weight: 500;
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .winning-technique-table td.percentage {
-  color: #16a34a;
-  font-weight: 500;
+  color: var(--color-success);
+  font-weight: var(--font-weight-medium);
 }
 
 .winning-technique-container .loading-state,
@@ -138,24 +135,25 @@
 .winning-technique-container .empty-state {
   padding: 2rem;
   text-align: center;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
 .winning-technique-container .error-state {
-  background: #fee2e2;
-  color: #991b1b;
-  border-radius: 6px;
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--color-error);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
 }
 
 .winning-technique-container .table-note {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   margin-top: 1rem;
   padding: 0.75rem;
-  background: #f0f9ff;
-  border-left: 3px solid #0284c7;
-  border-radius: 4px;
+  background: var(--surface-page);
+  border-left: 3px solid var(--brand-accent-primary);
+  border-radius: var(--radius-sm);
 }
 
 /* モバイル対応 */

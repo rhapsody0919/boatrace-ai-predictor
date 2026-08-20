@@ -173,12 +173,12 @@ function TopStartChart({ initialVenueCode = null }) {
           <Bar
             dataKey="top_start_rate"
             name={t("analysis.topStart.topStartRate")}
-            fill="#0ea5e9"
+            fill="var(--brand-accent-primary)"
           />
           <Bar
             dataKey="win_when_top_start"
             name={t("analysis.topStart.winWhenTopStart")}
-            fill="#10b981"
+            fill="var(--brand-accent-secondary)"
           />
         </BarChart>
       </ResponsiveContainer>

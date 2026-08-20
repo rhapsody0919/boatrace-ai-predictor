@@ -172,12 +172,12 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
           <Bar
             dataKey="fastest_rate"
             name={t("analysis.exTop.fastestRate")}
-            fill="#0ea5e9"
+            fill="var(--brand-accent-primary)"
           />
           <Bar
             dataKey="win_when_fastest"
             name={t("analysis.exTop.winWhenFastest")}
-            fill="#10b981"
+            fill="var(--brand-accent-secondary)"
           />
         </BarChart>
       </ResponsiveContainer>

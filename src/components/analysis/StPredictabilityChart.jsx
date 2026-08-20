@@ -312,7 +312,7 @@ function StPredictabilityChart({
                   type="monotone"
                   dataKey="deviation"
                   name={t("analysis.st.legend")}
-                  stroke="#0ea5e9"
+                  stroke="var(--brand-accent-primary)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                 />

@@ -31,7 +31,7 @@ spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・�
 - [x] 16. RaceBottomNav/RaceNavCard/VenueSelector/VolatilityDisplayのトークン参照更新。RaceBottomNav.css/RaceNavCard.cssで`--color-border`等、design-tokens.cssに存在しない未定義トークンを実トークンに置換（実質的な既存バグ）。VenueSelector.jsxは実はどこからもimportされておらず、App.jsxが独自にインライン重複実装していると判明（RaceDetail.jsxはVenueSelector.jsxを正しく使用）→両方修正。App.css `.race-list-section label`の`color: #1e293b !important`がトークン化を妨げていたバグも発見・修正。VolatilityDisplayは警戒度の意味色（オレンジ/緑/青）を変更対象外とし中立色のみトークン化。残る広範囲な未定義トークン・`!important`過多はBOA-205として別チケット化
 - [x] 17. DataRaceTable.cssのモバイル最小フォントサイズ是正（`0.55rem`→11px以上）と二層設計の適用。全面的にトークン化し、最小フォントサイズは`--font-size-xs`（12px）に統一（旧8.8px/10.4pxの箇所を是正）。二層設計として金のブランドアクセントはリンク・最良値セルの強調のみに限定し、データ本体はtext-primary/secondary中心の機能重視スタイルを維持
 - [x] 18. AttackDefenseTable/TurnPatternList/OutcomePatternPreview/TrifectaReferenceCard/RaceCardDataTableへの二層設計適用。TrifectaReferenceCardは実際にはどこからもimportされておらず廃止済み機能のデッドコードと判明したため編集不要と判断。OutcomePatternPreviewの黄色グラデーションカード・塗りボタンをトークン化。TurnPatternList/AttackDefenseTableは状態色のテキスト利用（BOA-204と同種のコントラスト問題）をtext-primaryに寄せて回避
-- [ ] 19. `src/components/analysis/`配下チャート群の色設定をトークン参照に更新（Rechartsのname prop経由で指定。data keyでの指定は避ける）
+- [x] 19. `src/components/analysis/`配下チャート群の色設定をトークン参照に更新。決まり手種別の定性パレット（逃げ/差し/まくり等の色分け）はグレード色・ボート色と同様に変更対象外と判断。コンテナ側3ファイル（MotorConditionChart/OutcomeDistributionTable/WinningTechniqueChart.css）を全面トークン化。2系列比較の折れ線・棒グラフ（モーター調子/選手調子/STのズレ/展示タイム/トップスタート）はbrand-accent-primary/secondaryの金銀ペアに変更。name prop経由の色指定（data key不使用）は既存で遵守済みと確認
 - [ ] 20. 全フェーズ通しでのE2Eスモークテスト最終実行、新規主要導線（ThemeToggle等）のスモークテスト追記
 
 ## スコープ外（別タスク・別チケット）
