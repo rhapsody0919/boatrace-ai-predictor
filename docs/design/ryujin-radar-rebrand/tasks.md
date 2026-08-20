@@ -1,0 +1,41 @@
+# 龍神レーダー ブランドビジュアル刷新 タスク分解
+
+spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・依存順に並んでいる。各タスクは1コミット〜1PRを目安に分割している。UI変更を伴うタスクは`.claude/CLAUDE.md`の方針通り、Claude自身がdevサーバーとPlaywrightで自己検証してから完了とする。
+
+## フェーズ1: 基盤
+
+- [x] 1. デザイントークン3層構造の実装（ベースパレット→意味トークン→`:root`/`[data-theme="dark"]`テーマ層。既存の`--color-primary-*`等は維持し共存させる。plan.md「トークン層構成」参照）
+- [ ] 2. トークンコントラスト自動検証スクリプトの追加（`scripts/maintenance/check-token-contrast.js`、ADR 0017）。新トークンペアを実行確認し、WCAG AA基準を満たさない組み合わせがあればトークン値を調整する
+- [ ] 3. ロゴ/favicon資産の書き出し（`source-assets/`から`favicon-16/32.png`・`apple-touch-icon.png`・`icon-192/512.png`・`logo.png`・`logo-light.png`を生成し`public/`へ配置。plan.mdの対応表参照）
+- [ ] 4. 明朝体ロゴタイプ用サブセットフォントの生成・自己ホスト設定（`pyftsubset`でNoto Serif JPをサブセット化、`public/fonts/`へ配置、`@font-face`定義。ADR 0018）
+
+## フェーズ2: ブランドチロム
+
+- [ ] 5. Footerコンポーネントの共通化（`src/components/Footer.jsx`新規作成。`App.jsx`・`Holmes.jsx`・`ContentHub.jsx`・`WinningTechniqueAnalysis.jsx`・`ResponsibleGambling.jsx`の重複`<footer>`を置き換え）
+- [ ] 6. Header.jsxのロゴ・ワードマーク刷新（新ロゴ画像、明朝体ワードマーク、意味トークン参照への置き換え）
+- [ ] 7. IntroBanner.jsxの意匠更新（罫線＋タイポグラフィ中心へ、塗り要素の削減）
+- [ ] 8. LoadingScreen.jsxへのレーダー掃引モーション追加（線1本、回転3〜4秒/周）
+- [ ] 9. LanguageSwitcher.jsx・Breadcrumb.jsxのトークン参照更新
+
+## フェーズ3: テーマ切替機能
+
+- [ ] 10. テーマ状態管理モジュールの実装（`src/config/theme.js`・`src/utils/theme.js`・`src/hooks/useTheme.js`。ADR 0016）
+- [ ] 11. index.htmlへのFOUC防止インラインスクリプト追加（初期表示前に`data-theme`をlocalStorageから同期）
+- [ ] 12. ThemeToggleコンポーネントの実装とHeaderへの設置
+- [ ] 13. `@axe-core/playwright`導入とe2e/smoke.spec.jsへのアクセシビリティスキャン追加（ライト/ダーク両テーマ。ADR 0017）。ここでフェーズ2のブランドチロムが両テーマで機械的に検証可能になる
+
+## フェーズ4: データ密集画面
+
+- [ ] 14. PredictionPanel/PredictionCard/AccuracyStatBadge/RaceResultの意匠刷新（塗りボタン・ピルバッジ廃止、着順の金銀とブランドカラーの統合）
+- [ ] 15. PredictionLoadingOverlayへのレーダー掃引モーション適用
+- [ ] 16. RaceBottomNav/RaceNavCard/VenueSelector/VolatilityDisplayのトークン参照更新
+- [ ] 17. DataRaceTable.cssのモバイル最小フォントサイズ是正（`0.55rem`→11px以上）と二層設計の適用
+- [ ] 18. AttackDefenseTable/TurnPatternList/OutcomePatternPreview/TrifectaReferenceCard/RaceCardDataTableへの二層設計適用
+- [ ] 19. `src/components/analysis/`配下チャート群の色設定をトークン参照に更新（Rechartsのname prop経由で指定。data keyでの指定は避ける）
+- [ ] 20. 全フェーズ通しでのE2Eスモークテスト最終実行、新規主要導線（ThemeToggle等）のスモークテスト追記
+
+## スコープ外（別タスク・別チケット）
+
+- 紹介動画（`/about`等）の刷新
+- 既存ブログ記事内のスクリーンショット差し替え
+- 管理画面（`AdminRules.jsx`）
