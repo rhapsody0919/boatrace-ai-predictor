@@ -5,6 +5,7 @@ import { useLocalizedPath } from "./hooks/useLocalizedPath";
 import { getLanguage, localizePath } from "./config/languages";
 import "./App.css";
 import Header from "./components/Header";
+import Footer from "./components/Footer";
 import AccuracyDashboard from "./components/AccuracyDashboard";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import Terms from "./components/Terms";
@@ -832,86 +833,36 @@ function App({ tab = "races" }) {
         </main>
       </div>
 
-      <footer className="footer">
-        <p>{t("home.disclaimer")}</p>
-        <p
-          className="last-updated"
-          style={{
-            fontSize: "0.9rem",
-            color: "white",
-            marginTop: "0.5rem",
-          }}
-        >
-          {(() => {
-            const latestPost = getLatestPosts(1)[0];
-            return latestPost
-              ? t("home.blogLastUpdated", {
-                  date: formatDateJP(latestPost.date),
-                })
-              : "";
-          })()}
-        </p>
-        <div
-          style={{
-            display: "flex",
-            gap: "1.5rem",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            marginTop: "0.75rem",
-            marginBottom: "0.75rem",
-          }}
-        >
-          <Link
-            to={localize("/blog")}
-            style={{ color: "white", textDecoration: "none" }}
-          >
-            {t("footer.blog")}
-          </Link>
-          <Link
-            to={localize("/about")}
-            style={{ color: "white", textDecoration: "none" }}
-          >
-            About
-          </Link>
-          <Link
-            to={localize("/profile")}
-            style={{ color: "white", textDecoration: "none" }}
-          >
-            {t("footer.operator")}
-          </Link>
-          <Link
-            to={localize("/faq")}
-            style={{ color: "white", textDecoration: "none" }}
-          >
-            FAQ
-          </Link>
-          <Link
-            to={localize("/privacy")}
-            style={{ color: "white", textDecoration: "none" }}
-          >
-            {t("footer.privacy")}
-          </Link>
-          <Link
-            to={localize("/terms")}
-            style={{ color: "white", textDecoration: "none" }}
-          >
-            {t("footer.terms")}
-          </Link>
-          <Link
-            to={localize("/contact")}
-            style={{ color: "white", textDecoration: "none" }}
-          >
-            {t("footer.contact")}
-          </Link>
-          <Link
-            to={localize("/responsible-gambling")}
-            style={{ color: "white", textDecoration: "none" }}
-          >
-            {t("footer.responsibleGambling")}
-          </Link>
-        </div>
-        <p>{t("footer.copyright")}</p>
-      </footer>
+      <Footer
+        links={[
+          { to: "/blog", label: t("footer.blog") },
+          { to: "/about", label: "About" },
+          { to: "/profile", label: t("footer.operator") },
+          { to: "/faq", label: "FAQ" },
+          { to: "/privacy", label: t("footer.privacy") },
+          { to: "/terms", label: t("footer.terms") },
+          { to: "/contact", label: t("footer.contact") },
+          {
+            to: "/responsible-gambling",
+            label: t("footer.responsibleGambling"),
+          },
+        ]}
+        extra={
+          <>
+            <p>{t("home.disclaimer")}</p>
+            <p className="site-footer-updated">
+              {(() => {
+                const latestPost = getLatestPosts(1)[0];
+                return latestPost
+                  ? t("home.blogLastUpdated", {
+                      date: formatDateJP(latestPost.date),
+                    })
+                  : "";
+              })()}
+            </p>
+          </>
+        }
+      />
 
       {selectedRace && (
         <RaceBottomNav

@@ -404,25 +404,7 @@ input:focus-visible,
 }
 
 
-/* =====================================================
-   フッター
-   ===================================================== */
-.footer {
-  background: #0ea5e9;
-  color: white !important;
-  text-align: center;
-  padding: 2.5rem 2rem;
-  margin-top: 4rem;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.footer p {
-  margin: 0.75rem 0;
-  font-size: 0.95rem;
-  opacity: 0.9;
-  line-height: 1.6;
-  color: white !important;
-}
+/* フッターは src/components/Footer.css に集約（.site-footer* ） */
 
 /* =====================================================
    アニメーション
