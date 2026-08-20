@@ -111,7 +111,7 @@ function LevelAccuracyStat({ level, venueCode, raceId }) {
       <div
         style={{
           fontSize: "0.8rem",
-          color: "#999",
+          color: "var(--text-secondary)",
           paddingLeft: "1.7rem",
           marginTop: "0.5rem",
         }}
@@ -128,7 +128,7 @@ function LevelAccuracyStat({ level, venueCode, raceId }) {
     <div
       style={{
         fontSize: "0.85rem",
-        color: "#334155",
+        color: "var(--text-secondary)",
         paddingLeft: "1.7rem",
         marginTop: "0.5rem",
       }}
@@ -147,7 +147,10 @@ function LevelAccuracyStat({ level, venueCode, raceId }) {
           {" "}
           <Link
             to={`/winning-technique?venue_code=${venueCode}&race_id=${raceId}&tab=volatility`}
-            style={{ color: "#0ea5e9", textDecoration: "none" }}
+            style={{
+              color: "var(--brand-accent-primary)",
+              textDecoration: "none",
+            }}
           >
             {t("volatility.accuracyLink")}
           </Link>

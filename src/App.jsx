@@ -561,7 +561,7 @@ function App({ tab = "races" }) {
                             marginBottom: "0.5rem",
                             fontWeight: "bold",
                             fontSize: "1.1rem",
-                            color: "white",
+                            color: "var(--text-primary)",
                           }}
                         >
                           {t("venueSelector.label")}
@@ -576,9 +576,9 @@ function App({ tab = "races" }) {
                             padding: "0.75rem 1rem",
                             fontSize: "1rem",
                             borderRadius: "8px",
-                            border: "2px solid #e2e8f0",
-                            backgroundColor: "white",
-                            color: "#1e293b",
+                            border: "1px solid var(--border-hairline)",
+                            backgroundColor: "var(--surface-card)",
+                            color: "var(--text-primary)",
                             cursor: "pointer",
                             minWidth: "250px",
                             outline: "none",
