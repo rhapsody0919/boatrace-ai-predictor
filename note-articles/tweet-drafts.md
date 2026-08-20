@@ -17,7 +17,7 @@
 
 👉 https://www.boat-ai.jp/blog/winning-technique-analysis-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -35,7 +35,7 @@
 
 👉 https://www.boat-ai.jp/blog/motor-condition-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -53,7 +53,7 @@
 
 👉 https://www.boat-ai.jp/blog/racer-form-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -71,7 +71,7 @@
 
 👉 https://www.boat-ai.jp/blog/st-timing-gap-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -89,7 +89,7 @@
 
 👉 https://www.boat-ai.jp/blog/top-start-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -107,7 +107,7 @@
 
 👉 https://www.boat-ai.jp/blog/losing-technique-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -125,7 +125,7 @@
 
 👉 https://www.boat-ai.jp/blog/nige-outcome-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -143,7 +143,7 @@
 
 👉 https://www.boat-ai.jp/blog/exhibition-time-top-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -161,7 +161,7 @@
 
 👉 https://www.boat-ai.jp/blog/exhibition-time-trend-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -179,7 +179,7 @@
 
 👉 https://www.boat-ai.jp/blog/racer-technique-profile-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -197,7 +197,7 @@
 
 👉 https://www.boat-ai.jp/blog/racer-form-ranking-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -215,7 +215,7 @@
 
 👉 https://www.boat-ai.jp/blog/racer-boat-return-rate-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -233,7 +233,7 @@
 
 👉 https://www.boat-ai.jp/blog/data-race-table-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -251,7 +251,7 @@
 
 👉 https://www.boat-ai.jp/blog/race-review-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -269,7 +269,7 @@
 
 👉 https://www.boat-ai.jp/blog/odds-expected-value-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -287,7 +287,7 @@
 
 👉 https://www.boat-ai.jp/blog/trifecta-betting-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -305,7 +305,7 @@
 
 👉 https://www.boat-ai.jp/blog/venue-visit-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -323,7 +323,7 @@
 
 👉 https://www.boat-ai.jp/blog/first-mark-prediction-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -341,7 +341,7 @@
 
 👉 https://www.boat-ai.jp/blog/suji-funaken-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -359,7 +359,7 @@
 
 👉 https://www.boat-ai.jp/blog/ai-vs-human
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -377,7 +377,7 @@
 
 👉 https://www.boat-ai.jp/blog/improve-recovery-rate
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -395,7 +395,7 @@
 
 👉 https://www.boat-ai.jp/blog/beginners-start-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -413,7 +413,7 @@
 
 👉 https://www.boat-ai.jp/blog/picks-performance-report
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -431,7 +431,7 @@
 
 👉 https://www.boat-ai.jp/blog/ai-prediction-accuracy-review
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -449,7 +449,7 @@
 
 👉 https://www.boat-ai.jp/blog/sg-g1-race-strategy
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -467,17 +467,17 @@
 
 👉 https://www.boat-ai.jp/blog/picks-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
 
-## 2025-12-29 BoatAIの実績は本物か？計測方法と透明性を徹底解説
+## 2025-12-29 龍神レーダーの実績は本物か？計測方法と透明性を徹底解説
 
 ```
 📝 新しい記事を公開しました
 
-【BoatAIの実績は本物か？計測方法と透明性を徹底解説】
+【龍神レーダーの実績は本物か？計測方法と透明性を徹底解説】
 
 ・実績
 ・的中率
@@ -485,7 +485,7 @@
 
 👉 https://www.boat-ai.jp/blog/how-we-measure-accuracy
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -503,7 +503,7 @@
 
 👉 https://www.boat-ai.jp/blog/night-race-strategy
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -521,7 +521,7 @@
 
 👉 https://www.boat-ai.jp/blog/sg-race-guide-2026
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -539,17 +539,17 @@
 
 👉 https://www.boat-ai.jp/blog/how-to-predict-races
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
 
-## 2026-02-16 BoatAI 1万レース突破 - データで振り返るAI予想の実力と限界
+## 2026-02-16 龍神レーダー 1万レース突破 - データで振り返るAI予想の実力と限界
 
 ```
 📝 新しい記事を公開しました
 
-【BoatAI 1万レース突破 - データで振り返るAI予想の実力と限界】
+【龍神レーダー 1万レース突破 - データで振り返るAI予想の実力と限界】
 
 ・1万レース
 ・実績分析
@@ -557,7 +557,7 @@
 
 👉 https://www.boat-ai.jp/blog/10000-races-analysis
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -575,7 +575,7 @@
 
 👉 https://www.boat-ai.jp/blog/special-planned-races
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -593,7 +593,7 @@
 
 👉 https://www.boat-ai.jp/blog/monthly-50k-roadmap
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -611,7 +611,7 @@
 
 👉 https://www.boat-ai.jp/blog/rough-race-signals
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -629,7 +629,7 @@
 
 👉 https://www.boat-ai.jp/blog/venue-ashiya
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -647,7 +647,7 @@
 
 👉 https://www.boat-ai.jp/blog/why-you-lose
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -665,7 +665,7 @@
 
 👉 https://www.boat-ai.jp/blog/stadium-strategy-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -683,7 +683,7 @@
 
 👉 https://www.boat-ai.jp/blog/race-ai-copy-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
@@ -701,7 +701,7 @@
 
 👉 https://www.boat-ai.jp/blog/race-mood-effect-guide
 
-#ボートレース #データ分析 #BoatAI
+#ボートレース #データ分析 #龍神レーダー
 ```
 
 ---
