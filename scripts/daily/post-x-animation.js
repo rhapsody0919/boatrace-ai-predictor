@@ -312,7 +312,7 @@ async function main() {
     "",
     `AIが予測した展開をチェック👇`,
     TARGET_URL,
-    "#ボートレース #AI予想 #BoatAI",
+    "#ボートレース #AI予想 #龍神レーダー",
   ].join("\n");
 
   fs.writeFileSync(path.join(ARTIFACT_DIR, "caption.txt"), caption, "utf8");

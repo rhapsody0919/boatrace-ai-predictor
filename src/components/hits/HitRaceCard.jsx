@@ -79,7 +79,7 @@ function HitRaceCard({
             winnerCourse: hitRace.winnerCourse,
             probability,
           })}
-          hashtags={["ボートレース", "展開予測", "BoatAI"]}
+          hashtags={["ボートレース", "展開予測", "龍神レーダー"]}
           size={36}
         />
       </div>

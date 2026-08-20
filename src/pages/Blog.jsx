@@ -13,11 +13,11 @@ import "./Blog.css";
 
 const UI_TEXT = {
   ja: {
-    title: "ブログ | BoatAI - ボートレース予想・データ分析・戦略情報",
+    title: "ブログ | 龍神レーダー - ボートレース予想・データ分析・戦略情報",
     description:
       "ボートレース予想、データ分析、舟券戦略に関する最新情報を発信。初心者向けの基本知識から、上級者向けの高度な戦略まで幅広くカバーしています。",
     keywords: "ボートレースブログ,予想戦略,データ分析,舟券購入,AI予想,勝ち方",
-    heading: "📚 BoatAI ブログ",
+    heading: "📚 龍神レーダー ブログ",
     subheading:
       "ボートレース予想・データ分析・戦略に関する情報を発信しています",
     featuredHeading: "🌟 注目記事",
@@ -27,11 +27,12 @@ const UI_TEXT = {
     blogLabel: "ブログ",
   },
   en: {
-    title: "Blog | BoatAI - Boat Racing Predictions, Data Analysis & Strategy",
+    title:
+      "Blog | Ryujin Radar - Boat Racing Predictions, Data Analysis & Strategy",
     description:
       "The latest on boat racing predictions, data analysis, and betting strategy — from beginner basics to advanced techniques.",
     keywords: "boat racing blog,betting strategy,data analysis,AI predictions",
-    heading: "📚 BoatAI Blog",
+    heading: "📚 Ryujin Radar Blog",
     subheading: "Boat racing predictions, data analysis, and strategy insights",
     featuredHeading: "🌟 Featured Articles",
     allButton: "All",
@@ -40,11 +41,11 @@ const UI_TEXT = {
     blogLabel: "Blog",
   },
   "zh-TW": {
-    title: "部落格 | BoatAI - 賽艇預測・數據分析・戰略資訊",
+    title: "部落格 | 龍神雷達 - 賽艇預測・數據分析・戰略資訊",
     description:
       "發布賽艇預測、數據分析、投注策略的最新資訊。從初學者的基礎知識到進階戰略，內容廣泛涵蓋。",
     keywords: "賽艇部落格,預測策略,數據分析,購買船票,AI預測,獲勝方法",
-    heading: "📚 BoatAI 部落格",
+    heading: "📚 龍神雷達 部落格",
     subheading: "發布賽艇預測、數據分析、戰略相關資訊",
     featuredHeading: "🌟 精選文章",
     allButton: "全部",
@@ -53,11 +54,11 @@ const UI_TEXT = {
     blogLabel: "部落格",
   },
   ko: {
-    title: "블로그 | BoatAI - 경정 예측・데이터 분석・전략 정보",
+    title: "블로그 | 용신 레이더 - 경정 예측・데이터 분석・전략 정보",
     description:
       "경정 예측, 데이터 분석, 마권 전략에 관한 최신 정보를 발신합니다. 초보자를 위한 기초 지식부터 상급자를 위한 고급 전략까지 폭넓게 다룹니다.",
     keywords: "경정블로그,예측전략,데이터분석,마권구매,AI예측,승리법",
-    heading: "📚 BoatAI 블로그",
+    heading: "📚 용신 레이더 블로그",
     subheading: "경정 예측・데이터 분석・전략에 관한 정보를 발신합니다",
     featuredHeading: "🌟 주목 기사",
     allButton: "전체",

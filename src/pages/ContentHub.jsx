@@ -33,7 +33,7 @@ const venues = [
 function ContentHub() {
   return (
     <>
-        <title>ボートレース完全ガイド - 初心者から上級者まで | BoatAI</title>
+        <title>ボートレース完全ガイド - 初心者から上級者まで | 龍神レーダー</title>
         <meta name="description" content="ボートレースの基礎知識から上級者向け戦略まで、体系的に学べる完全ガイド。24会場の攻略法、データ分析手法、予想のコツを詳しく解説。" />
         <link rel="canonical" href="https://www.boat-ai.jp/guide" />
         <script type="application/ld+json">
@@ -188,7 +188,7 @@ function ContentHub() {
                 <p>展示タイムの見方、伸び足・回り足の判断方法</p>
               </Link>
               <Link to="/blog/how-we-measure-accuracy" className="article-card">
-                <h3>BoatAIの実績は本物か？計測方法を解説</h3>
+                <h3>龍神レーダーの実績は本物か？計測方法を解説</h3>
                 <p>的中率・回収率の計測方法と透明性について</p>
               </Link>
             </div>
@@ -212,7 +212,7 @@ function ContentHub() {
           <Link to="/faq">FAQ</Link>
           <Link to="/privacy">プライバシーポリシー</Link>
         </div>
-        <p>&copy; 2025 BoatAI - All Rights Reserved</p>
+        <p>&copy; 2025 龍神レーダー - All Rights Reserved</p>
       </footer>
     </>
   )

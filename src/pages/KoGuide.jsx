@@ -110,10 +110,10 @@ const MODELS = [
 export default function KoGuide() {
   return (
     <div className="app">
-      <title>일본 경정(쿄테이)이란? 규칙·베팅 입문 가이드 | BoatAI</title>
+      <title>일본 경정(쿄테이)이란? 규칙·베팅 입문 가이드 | 용신 레이더</title>
       <meta
         name="description"
-        content="일본 경정(BOAT RACE) 입문 가이드: 규칙, 승리 전법, 베팅 방식, 한국 경정과의 차이, 그리고 BoatAI의 무료 AI 예측 보는 법."
+        content="일본 경정(BOAT RACE) 입문 가이드: 규칙, 승리 전법, 베팅 방식, 한국 경정과의 차이, 그리고 용신 레이더의 무료 AI 예측 보는 법."
       />
       <link rel="canonical" href="https://www.boat-ai.jp/ko/guide" />
 
@@ -164,7 +164,7 @@ export default function KoGuide() {
           <p className="eg-note">
             핵심 차이는 <strong>1코스 승률</strong>입니다. 일본은 약 50%로
             한국(약 34%)보다 훨씬 높아, 예측의 출발점이 「1코스가 지키느냐,
-            무너지느냐」가 됩니다. BoatAI의 「1코스 이변 지수」는 바로 이것을
+            무너지느냐」가 됩니다. 용신 레이더의 「1코스 이변 지수」는 바로 이것을
             경주마다 수치화한 것입니다.
           </p>
         </section>
@@ -205,7 +205,7 @@ export default function KoGuide() {
           <h2>🥇 6가지 승리 전법 (키마리테)</h2>
           <p>
             모든 승리는 「어떻게 이겼는가」로 공식 분류됩니다. 한국 경정과 같은
-            개념이지만 일본어 용어를 알아두면 일본 중계와 BoatAI 예측을 읽을 수
+            개념이지만 일본어 용어를 알아두면 일본 중계와 용신 레이더 예측을 읽을 수
             있습니다.
           </p>
           <div className="eg-technique-list">
@@ -282,9 +282,9 @@ export default function KoGuide() {
 
         {/* How to read boatAI */}
         <section className="eg-section">
-          <h2>🤖 BoatAI 예측 보는 법</h2>
+          <h2>🤖 용신 레이더 예측 보는 법</h2>
           <p>
-            BoatAI는 경주당 45개 데이터 — 선수 성적, 모터 성능, 경정장 특성,
+            용신 레이더는 경주당 45개 데이터 — 선수 성적, 모터 성능, 경정장 특성,
             스타트 타이밍 등 — 를 분석해 모든 추천의 <strong>이유</strong>까지
             보여줍니다. 완전 무료입니다.
           </p>
@@ -350,7 +350,7 @@ export default function KoGuide() {
               해외 불법 중계·사설 베팅 사이트 이용은 절대 하지 마십시오.
             </li>
             <li>
-              BoatAI는 <strong>정보와 AI 분석만을 제공</strong>합니다. 베팅을
+              용신 레이더는 <strong>정보와 AI 분석만을 제공</strong>합니다. 베팅을
               받지 않으며, 베팅을 권유하지 않고, 예측은 결과를 보장하지
               않습니다.
             </li>

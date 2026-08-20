@@ -305,7 +305,7 @@ async function migrateDay(dateStr) {
  */
 async function main() {
     console.log('='.repeat(60))
-    console.log('BoatAI Data Migration to Supabase')
+    console.log('龍神レーダー Data Migration to Supabase')
     console.log('='.repeat(60))
     if (isDryRun) console.log('** DRY RUN MODE **\n')
 

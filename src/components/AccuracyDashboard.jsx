@@ -44,10 +44,10 @@ function AccuracyDashboard({ onRefresh, isRefreshing }) {
   // メタタグは loading / error 分岐でも出力する（React 19 が <head> にホイスティング）
   const pageMeta = (
     <>
-      <title>成績 | BoatAI</title>
+      <title>成績 | 龍神レーダー</title>
       <meta
         name="description"
-        content="BoatAIのAI予想（展開予測・イン崩れ指数）の実測精度を公開中。過去のレース結果と機械的に照合した実績データです。"
+        content="龍神レーダーのAI予想（展開予測・イン崩れ指数）の実測精度を公開中。過去のレース結果と機械的に照合した実績データです。"
       />
       <link rel="canonical" href="https://www.boat-ai.jp/accuracy" />
     </>

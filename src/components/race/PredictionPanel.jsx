@@ -274,7 +274,7 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
             },
             "unified",
           )}
-          hashtags={["ボートレース", "AI予想", "BoatAI"]}
+          hashtags={["ボートレース", "AI予想", "龍神レーダー"]}
           size={40}
         />
       </div>

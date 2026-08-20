@@ -1,4 +1,4 @@
-# robots.txt for BoatAI (www.boat-ai.jp)
+# robots.txt for 龍神レーダー (www.boat-ai.jp)
 
 User-agent: *
 Allow: /
