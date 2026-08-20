@@ -7,7 +7,9 @@ test.describe("ホーム・基本ナビゲーション", () => {
     await expect(page.locator(".logo h1")).toHaveText("龍神レーダー");
   });
 
-  test("ThemeToggleでライト/ダークを切替でき、リロード後も永続化される（BOA-201）", async ({
+  // THEME_SWITCHING_ENABLED=falseによりThemeToggleは非表示中（BOA-206解消まで）。
+  // 有効化した時点でskipを外す
+  test.skip("ThemeToggleでライト/ダークを切替でき、リロード後も永続化される（BOA-201）", async ({
     page,
   }) => {
     await page.goto("/");

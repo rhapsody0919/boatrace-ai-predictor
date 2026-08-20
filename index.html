@@ -24,8 +24,9 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f3ea" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1b2e" />
+    <!-- ダークテーマは一時的に無効化中（BOA-206、src/config/theme.jsのTHEME_SWITCHING_ENABLED参照）。
+         ページ本体がライト固定のため、ブラウザChrome色もOS設定に関わらずライトに固定する -->
+    <meta name="theme-color" content="#f7f3ea" />
 
     <!-- SEO Meta Tags（description / canonical はアプリが言語別に出力するため静的定義しない） -->
     <meta name="keywords" content="ボートレース,AI分析,予測精度,データサイエンス,無料,データ分析,モーター性能,選手データ,龍神レーダー" />

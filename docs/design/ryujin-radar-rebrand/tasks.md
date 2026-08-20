@@ -44,6 +44,20 @@ spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・�
 
 セルフレビューで判明したその他の指摘（Cookie同意バナー・更新ステータス・ブログプレビューカードのコントラスト、App.css/RaceDetail.css/ResponsibleGambling.jsxに残る広範な未トークン化のハードコード色、axe-coreスキャン範囲の据え置き、VenueSelector重複、その他nit）は、今回のスコープ（フェーズ1-4で明示的に対象化した特定コンポーネント群）を超える別スコープの作業のため、[BOA-206](https://linear.app/boat-ai/issue/BOA-206)として起票し対応を見送った。
 
+## ダークテーマの一般公開見送り（マージ前のユーザー確認時に判明）
+
+マージ前、ローカルのdevサーバーで実画面をライト/ダーク両テーマで目視確認したところ、`/`のブログプレビューセクション（カード4枚分）・「レースデータ更新」バッジ・`/races/{日付}`のレース一覧カードグリッド・「他のレースを選ぶ」トグルバーが、ダークテーマでも白背景のまま浮いて見えることを確認（BOA-206に記載の指摘が実際に視認できるレベルで残っていた）。axe-coreの自動検証はHeader/Footer/IntroBannerのみを対象にしていたため機械的には検出できていなかった。
+
+ユーザー判断により、BOA-206解消までダークテーマの一般公開を見送ることに決定。以下の対応で実装：
+
+- `src/config/theme.js`に`THEME_SWITCHING_ENABLED = false`フラグを追加
+- `src/components/Header.jsx`でThemeToggleの描画を同フラグでガード（非表示）
+- `src/styles/design-tokens.css`の`@media (prefers-color-scheme: dark)`ブロックをコメントアウト（OSがダーク設定のユーザーが意図せずダーク表示になるのを防止。`[data-theme="dark"]`自体は開発・検証用に残置）
+- `index.html`の`theme-color` metaをライト固定に変更（ブラウザChrome色とページ内容の不一致を防止）
+- `e2e/smoke.spec.js`のThemeToggle E2Eテストを`test.skip`化（BOA-206解消時に解除）
+
+トークン基盤・状態管理・ThemeToggleコンポーネント自体は削除せず温存。BOA-206（App.css配下の未トークン化領域の解消）が完了次第、`THEME_SWITCHING_ENABLED`をtrueに戻し、上記のコメントアウト・skipを解除するだけで再有効化できる設計とした。
+
 ## スコープ外（別タスク・別チケット）
 
 - 紹介動画（`/about`等）の刷新
