@@ -7,7 +7,7 @@ Which hits more often — "tickets picked by AI" or "tickets picked by a human"?
 To answer this, we ran a real head-to-head test over **December 1–31, 2025**.
 
 **What we tested:**
-- AI prediction (BoatAI)
+- AI prediction (Ryujin Radar)
 - Human predictor A (a 15-year boat racing veteran)
 - Human predictor B (a boat racing YouTuber)
 - Human predictor C (a paid prediction site)
@@ -49,7 +49,7 @@ Every race at every boat racing venue (1,899 races)
 
 | Predictor | Hit rate | Wagered | Returned | Return rate |
 |--------|--------|--------|--------|--------|
-| **AI (BoatAI)** | **49.5%** | ¥189,700 | ¥161,900 | **85.3%** |
+| **AI (Ryujin Radar)** | **49.5%** | ¥189,700 | ¥161,900 | **85.3%** |
 | Human A (veteran) | 43.2% | ¥189,700 | ¥142,300 | 75.0% |
 | Human B (YouTuber) | 41.8% | ¥189,700 | ¥136,800 | 72.1% |
 | Human C (paid site) | 38.5% | ¥189,700 | ¥128,200 | 67.6% |
@@ -65,7 +65,7 @@ AI prediction ranked **1st on every metric**
 
 | Predictor | Hit rate | Wagered | Returned | Return rate |
 |--------|--------|--------|--------|--------|
-| **AI (BoatAI)** | **12.8%** | ¥189,700 | ¥152,950 | **80.6%** |
+| **AI (Ryujin Radar)** | **12.8%** | ¥189,700 | ¥152,950 | **80.6%** |
 | Human A (veteran) | 10.2% | ¥189,700 | ¥118,400 | 62.4% |
 | Human B (YouTuber) | 9.8% | ¥189,700 | ¥106,700 | 56.3% |
 | Human C (paid site) | 11.5% | ¥189,700 | ¥138,200 | 72.9% |
@@ -79,7 +79,7 @@ AI prediction ranked 1st on both hit rate and return rate
 
 | Predictor | Hit rate | Wagered | Returned | Return rate |
 |--------|--------|--------|--------|--------|
-| **AI (BoatAI)** | **2.5%** | ¥189,700 | ¥254,840 | **134.3%** |
+| **AI (Ryujin Radar)** | **2.5%** | ¥189,700 | ¥254,840 | **134.3%** |
 | Human A (veteran) | 1.8% | ¥189,700 | ¥186,300 | 98.2% |
 | Human B (YouTuber) | 2.1% | ¥189,700 | ¥208,400 | 109.9% |
 | Human C (paid site) | 2.3% | ¥189,700 | ¥224,100 | 118.2% |
@@ -304,7 +304,7 @@ AI isn't influenced by the previous day's result — it stays level-headed every
 
 ### Human C (paid prediction site, ¥5,000/month)
 
-"We charge ¥5,000 a month for our information, and we lost to BoatAI's free predictions.
+"We charge ¥5,000 a month for our information, and we lost to Ryujin Radar's free predictions.
 
 Honestly, that's a real gut punch.
 
@@ -349,8 +349,8 @@ Wave height 2m+
 
 In conditions this extreme, AI's prediction accuracy drops too.
 
-**How BoatAI handles it:**
-BoatAI displays a "warning" in severe weather and recommends against betting.
+**How Ryujin Radar handles it:**
+Ryujin Radar displays a "warning" in severe weather and recommends against betting.
 
 ---
 
@@ -391,7 +391,7 @@ It hits more often than a human does.
 
 ### Mr. A (38, office worker)
 
-"I used to pay ¥3,000 a month for a boat racing prediction service, but I switched because BoatAI's free predictions hit more often.
+"I used to pay ¥3,000 a month for a boat racing prediction service, but I switched because Ryujin Radar's free predictions hit more often.
 
 Saving ¥3,000 a month plus a higher hit rate — it's a win on both fronts."
 
@@ -401,9 +401,9 @@ Saving ¥3,000 a month plus a higher hit rate — it's a win on both fronts."
 
 "My husband loves boat racing, and he was losing money every month on his own picks.
 
-I showed him BoatAI, and at first he said 'no way an AI can predict this,' but a week later he'd completely changed his tune (laughs).
+I showed him Ryujin Radar, and at first he said 'no way an AI can predict this,' but a week later he'd completely changed his tune (laughs).
 
-Now we bet together while checking BoatAI as a couple."
+Now we bet together while checking Ryujin Radar as a couple."
 
 ---
 
@@ -439,9 +439,9 @@ After a month of real head-to-head testing, **AI prediction won overwhelmingly**
 
 ---
 
-## Start using BoatAI today
+## Start using Ryujin Radar today
 
-The AI prediction used in this test is **BoatAI**.
+The AI prediction used in this test is **Ryujin Radar**.
 
 👉 **[boat-ai.jp](https://boat-ai.jp/)**
 
@@ -472,10 +472,10 @@ Tested across a full month and 1,899 races, AI outperformed humans.
 
 Stop betting on "gut feeling" or "my favorite racer," and let AI do some of the heavy lifting.
 
-👉 **[Check today's predictions on BoatAI](https://boat-ai.jp/)**
+👉 **[Check today's predictions on Ryujin Radar](https://boat-ai.jp/)**
 
 Boat racing shifts from "gambling" to "strategic investing."
 
 ---
 
-**Tags:** #BoatRacing #AIPrediction #BoatAI #Verification #Data #HitRate #ReturnRate #Comparison
+**Tags:** #BoatRacing #AIPrediction #Ryujin Radar #Verification #Data #HitRate #ReturnRate #Comparison

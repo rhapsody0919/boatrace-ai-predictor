@@ -2,7 +2,7 @@
 
 The single biggest factor deciding a boat race is the **first turn mark**. All 6 boats launch at once, and who rounds that first turn first is said to decide about 80% of the race.
 
-BoatAI includes a **"Turn Prediction"** feature that statistically predicts how the race will unfold at that first-mark turn. This article breaks down how the feature works and how to use it.
+Ryujin Radar includes a **"Turn Prediction"** feature that statistically predicts how the race will unfold at that first-mark turn. This article breaks down how the feature works and how to use it.
 
 ---
 
@@ -27,9 +27,9 @@ Lane 1's wire-to-wire win accounts for about 55%, but in the remaining 45%, **a 
 
 ---
 
-## How BoatAI's turn prediction works
+## How Ryujin Radar's turn prediction works
 
-BoatAI's turn prediction is built from **a statistical model that integrates multiple data sources**. Rather than a simple "lane 1 is strong" rule, it multiplies each racer's individual tendencies against the specific race conditions to forecast how the race will develop.
+Ryujin Radar's turn prediction is built from **a statistical model that integrates multiple data sources**. Rather than a simple "lane 1 is strong" rule, it multiplies each racer's individual tendencies against the specific race conditions to forecast how the race will develop.
 
 ### The data it uses
 
@@ -59,7 +59,7 @@ If this racer is in lane 1, the model can predict a race where the inside lane h
 
 #### 3. Start timing (ST)
 
-Start timing is one of the most important inputs for the turn prediction. BoatAI combines two different ST data sources.
+Start timing is one of the most important inputs for the turn prediction. Ryujin Radar combines two different ST data sources.
 
 | Data | Weight | Character |
 |--------|------|------|
@@ -83,7 +83,7 @@ The model calculates **each racer's overall ability** from their national win ra
 
 ## How to read the turn prediction
 
-BoatAI's race detail page shows the turn prediction **two ways**.
+Ryujin Radar's race detail page shows the turn prediction **two ways**.
 
 ### 1. The turn-prediction animation
 
@@ -161,7 +161,7 @@ If a racer in the detailed turn-data table has a low race count, their turn pred
 The turn prediction is recalculated using **exhibition ST, which updates shortly before the race**.
 
 1. The exhibition run happens about 30 minutes before the race
-2. BoatAI automatically pulls in the exhibition ST
+2. Ryujin Radar automatically pulls in the exhibition ST
 3. The turn prediction updates with the latest data
 
 Checking the data right before the race gives you a more accurate prediction to work from.
@@ -170,7 +170,7 @@ Checking the data right before the race gives you a more accurate prediction to 
 
 ## Summary: turn predictions show you "why" a pick was made
 
-BoatAI's turn prediction provides **the reasoning behind a race's development** that a plain AI score alone can't show.
+Ryujin Radar's turn prediction provides **the reasoning behind a race's development** that a plain AI score alone can't show.
 
 1. **Each racer's attacking pattern**: which technique they're skilled at, by lane
 2. **Lane 1's defensive strength**: whether the inside can hold wire-to-wire
@@ -184,7 +184,7 @@ If you're not sure how to build your bet, check the turn prediction first. It sh
 
 ---
 
-**Check BoatAI's turn predictions now →** [https://boat-ai.jp/](https://boat-ai.jp/)
+**Check Ryujin Radar's turn predictions now →** [https://boat-ai.jp/](https://boat-ai.jp/)
 
 ---
 
@@ -208,4 +208,4 @@ It's recalculated using exhibition-run data (exhibition ST) captured about 30 mi
 
 ---
 
-**Tags:** #BoatRacing #TurnPrediction #FirstMark #WinningTechnique #AIPrediction #BoatAI
+**Tags:** #BoatRacing #TurnPrediction #FirstMark #WinningTechnique #AIPrediction #Ryujin Radar

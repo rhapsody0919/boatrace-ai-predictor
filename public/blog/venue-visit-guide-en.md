@@ -128,7 +128,7 @@ Things to check:
 - **Motor 2nd-place-or-better rate** (40%+ signals a good motor)
 - **Boat 2nd-place-or-better rate**
 
-If "there's too much information, I don't know where to start," checking BoatAI's predictions on your phone is a great option. The AI analyzes vast amounts of data and suggests racers and bets to watch.
+If "there's too much information, I don't know where to start," checking Ryujin Radar's predictions on your phone is a great option. The AI analyzes vast amounts of data and suggests racers and bets to watch.
 
 ---
 
@@ -231,7 +231,7 @@ Night races, held at 6 venues nationwide, have a different kind of appeal from d
 ### Checklist
 
 - **Cash**: Tickets are purchased with cash. There may not be an ATM on site, so bring enough beforehand
-- **Smartphone**: For checking BoatAI's predictions and official odds
+- **Smartphone**: For checking Ryujin Radar's predictions and official odds
 - **A pen**: For filling out the mark sheet (available on site too, but can run short when it's crowded)
 - **Sunscreen**: A must in summer, since you'll be watching outdoors a lot
 - **Warm clothing**: Waterfront venues get colder than you'd expect in winter
@@ -251,15 +251,15 @@ There's no dress code — casual is fine. Just dress for the season, since you'l
 
 Using your phone at the venue significantly boosts both the accuracy and the fun of your predictions.
 
-### How to use BoatAI
+### How to use Ryujin Radar
 
-Using BoatAI at the venue gives you information you can't get from the race program alone.
+Using Ryujin Radar at the venue gives you information you can't get from the race program alone.
 
 - **Data race table**: Compare all 6 racers' win rates, motor performance, and exhibition times on the spot
 - **Turn prediction & Upset Index**: See the likely 1st-place finishers alongside a "Favorite friendly" or "High upset chance" label
 - **Tracked hit rate**: The turn prediction's actual hit rate is always public
 
-Narrow down your picks from the race program, then use BoatAI's data race table to back it up — this combination is the strongest approach.
+Narrow down your picks from the race program, then use Ryujin Radar's data race table to back it up — this combination is the strongest approach.
 
 ---
 
@@ -320,7 +320,7 @@ A boat racing venue is a place you can enjoy even without buying a ticket.
 
 Just go and see for yourself. The thrill of boats racing through the spray simply doesn't come through on a screen.
 
-And for your predictions on site, put **BoatAI** to use. Combine the AI's data analysis with your own on-the-ground eye, and boat racing becomes many times more fun.
+And for your predictions on site, put **Ryujin Radar** to use. Combine the AI's data analysis with your own on-the-ground eye, and boat racing becomes many times more fun.
 
 ---
 

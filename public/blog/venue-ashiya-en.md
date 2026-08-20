@@ -1,4 +1,4 @@
-# Ashiya Boat Race Venue Strategy Guide — With BoatAI Track Record Data
+# Ashiya Boat Race Venue Strategy Guide — With Ryujin Radar Track Record Data
 
 ## Ashiya boat racing venue basics
 
@@ -13,9 +13,9 @@
 
 ---
 
-## Ashiya's BoatAI Data
+## Ashiya's Ryujin Radar Data
 
-BoatAI has since consolidated onto a single unified prediction model. The per-model (Favorite-focused / Longshot-focused / Standard) return-rate data previously published here no longer corresponds to the current product. You can check Ashiya's tracked turn-prediction hit rate and Upset Index accuracy on the [performance page](/accuracy).
+Ryujin Radar has since consolidated onto a single unified prediction model. The per-model (Favorite-focused / Longshot-focused / Standard) return-rate data previously published here no longer corresponds to the current product. You can check Ashiya's tracked turn-prediction hit rate and Upset Index accuracy on the [performance page](/accuracy).
 
 ---
 

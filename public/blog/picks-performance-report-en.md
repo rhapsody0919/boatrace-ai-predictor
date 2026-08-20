@@ -1,6 +1,6 @@
 # "Today's Picks" Hits a 104% Return Rate — Real Results from 2,577 Races
 
-> **Note**: The "Today's Picks" feature described in this article has since been folded into BoatAI's single unified prediction model and is no longer offered as a standalone feature. What follows is a record of that period's results. For current AI predictions and tracked hit rates, see the [performance page](/accuracy).
+> **Note**: The "Today's Picks" feature described in this article has since been folded into Ryujin Radar's single unified prediction model and is no longer offered as a standalone feature. What follows is a record of that period's results. For current AI predictions and tracked hit rates, see the [performance page](/accuracy).
 
 ## Introduction
 
@@ -8,7 +8,7 @@
 
 Do you think that too?
 
-BoatAI's "**Today's Picks**" feature has recorded a **cumulative 104% return rate** about a month and a half after launch. That means a **4% net profit** relative to the amount wagered.
+Ryujin Radar's "**Today's Picks**" feature has recorded a **cumulative 104% return rate** about a month and a half after launch. That means a **4% net profit** relative to the amount wagered.
 
 This article publishes the results from 2,577 races and explains what this number actually means.
 
@@ -42,8 +42,8 @@ Boat racing has a deduction rate (the operator's cut) of roughly **25%**. That m
 |--------|-----------|
 | Random betting | ~75% |
 | Typical prediction sites | 70–90% (*many don't disclose) |
-| BoatAI standard predictions | 88–94% |
-| **BoatAI Today's Picks** | **104%** |
+| Ryujin Radar standard predictions | 88–94% |
+| **Ryujin Radar Today's Picks** | **104%** |
 
 "Today's Picks" **turns the tables on** the 25% deduction rate and comes out ahead.
 
@@ -63,7 +63,7 @@ For reference:
 
 ### The difference between "predicting every race" and "curating"
 
-BoatAI's standard predictions cover **every single race**. Naturally, some races are easier to predict than others. Averaged across everything, the return rate falls short of 100%.
+Ryujin Radar's standard predictions cover **every single race**. Naturally, some races are easier to predict than others. Averaged across everything, the return rate falls short of 100%.
 
 "Today's Picks" takes a different approach:
 
@@ -107,7 +107,7 @@ both exist side by side. The overall return rate holds at 104%, but **individual
 
 Even statistically valid patterns can shift over time due to changes in the boat racing environment — racer turnover, venue renovations, seasonal variation, and more.
 
-BoatAI periodically re-validates each rule's effectiveness and revises any rule whose performance has deteriorated.
+Ryujin Radar periodically re-validates each rule's effectiveness and revises any rule whose performance has deteriorated.
 
 ---
 
@@ -115,7 +115,7 @@ BoatAI periodically re-validates each rule's effectiveness and revises any rule 
 
 ### Basic usage
 
-1. Go to the [BoatAI's latest performance](/accuracy) page
+1. Go to the [Ryujin Radar's latest performance](/accuracy) page
 2. Check today's recommended races
 3. Tap a race you're interested in to see the details
 4. Check the bet type (Win, Place, Trio, Trifecta) before deciding
@@ -138,12 +138,12 @@ BoatAI periodically re-validates each rule's effectiveness and revises any rule 
 | Strength | Turns the 25% deduction rate around into a net-positive return |
 | Caveat | Past performance, not a guarantee of future results |
 
-BoatAI's "Today's Picks" is a feature that **selects only "the races with the highest win probability" out of the 100+ races run each day**.
+Ryujin Radar's "Today's Picks" is a feature that **selects only "the races with the highest win probability" out of the 100+ races run each day**.
 
 Daily results are updated on the page in real time. We don't hide the bad numbers any more than the good ones.
 
-If this piqued your interest, check out [BoatAI's latest performance](/accuracy).
+If this piqued your interest, check out [Ryujin Radar's latest performance](/accuracy).
 
 ---
 
-**Tags:** #BoatAI #TodaysPicks #104PercentReturn #DataMining #BoatRacing #TrackRecord #2577Races
+**Tags:** #Ryujin Radar #TodaysPicks #104PercentReturn #DataMining #BoatRacing #TrackRecord #2577Races

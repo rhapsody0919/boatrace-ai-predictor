@@ -243,11 +243,11 @@ Always check the lineup for each individual race.
 
 ---
 
-## Combining BoatAI with planned races
+## Combining Ryujin Radar with planned races
 
-### Using BoatAI even on planned races
+### Using Ryujin Radar even on planned races
 
-**Use BoatAI's prediction to:**
+**Use Ryujin Radar's prediction to:**
 - Narrow your 2nd- and 3rd-place candidates
 - Check the confidence score
 - Check the motor data
@@ -256,7 +256,7 @@ Always check the lineup for each individual race.
 
 **The strongest combination:**
 - Lane 1 is favored by the planned race's rules
-- BoatAI's confidence score is also high
+- Ryujin Radar's confidence score is also high
 - When both line up, the race is often very predictable
 
 ---

@@ -6,7 +6,7 @@ Short answer: **yes, it's realistic**.
 
 That said, this isn't about chasing a lucky windfall — it requires treating it as **a strategic form of investing**.
 
-This article publishes a concrete roadmap for earning ¥50,000 a month, built from BoatAI's data analysis.
+This article publishes a concrete roadmap for earning ¥50,000 a month, built from Ryujin Radar's data analysis.
 
 **Note:**
 - Don't chase a single big comeback
@@ -82,7 +82,7 @@ First, aim to **avoid losing money**.
 
 ### What to do
 
-**1. Check BoatAI's predictions every day**
+**1. Check Ryujin Radar's predictions every day**
 
 👉 [boat-ai.jp](https://boat-ai.jp/)
 
@@ -116,7 +116,7 @@ Dec 18 | Ashiya R7 | ¥100 | ¥0 | -¥100
 
 ### Expected performance in month 1
 
-**Place hit rate: 52.1% (BoatAI's track record)**
+**Place hit rate: 52.1% (Ryujin Radar's track record)**
 
 ```
 Wagered: ¥30,000 (¥100 × 10 races × 30 days)
@@ -284,7 +284,7 @@ Total: +¥69,200
 ```
 
 **Comment:**
-"I was skeptical at first, but just betting mechanically according to BoatAI's predictions actually put me in the green. These days, all my drinking money comes out of my boat racing profits."
+"I was skeptical at first, but just betting mechanically according to Ryujin Radar's predictions actually put me in the green. These days, all my drinking money comes out of my boat racing profits."
 
 **What worked for Mr. C:**
 - Removed emotion (didn't chase losses)
@@ -305,7 +305,7 @@ Total: +¥83,800
 ```
 
 **Comment:**
-"I only check BoatAI and place bets between 10am and noon, while my kid is at kindergarten. ¥50,000 a month makes a real difference to our household budget."
+"I only check Ryujin Radar and place bets between 10am and noon, while my kid is at kindergarten. ¥50,000 a month makes a real difference to our household budget."
 
 **What worked for Ms. D:**
 - Set a fixed time window (only 10am–noon)
@@ -432,7 +432,7 @@ Total: ¥40,000
 **A:** About 30 minutes a day.
 
 ```
-Morning: check BoatAI's predictions (10 min)
+Morning: check Ryujin Radar's predictions (10 min)
 Midday: place your bets (10 min)
 Evening: check results and log them (10 min)
 ```
@@ -449,13 +449,13 @@ You'll have losing days on a day-by-day basis, but the strategy is designed to b
 
 **A:** Yes.
 
-BoatAI is mobile-friendly, and tickets can be purchased online too.
+Ryujin Radar is mobile-friendly, and tickets can be purchased online too.
 
 ---
 
 ## 3 steps to start today
 
-### Step 1: Check today's predictions on BoatAI
+### Step 1: Check today's predictions on Ryujin Radar
 
 👉 **[boat-ai.jp](https://boat-ai.jp/)**
 
@@ -494,11 +494,11 @@ What it takes:
 - Betting with emotion removed (following the rules strictly)
 - Ongoing tracking and improvement (a PDCA cycle)
 
-BoatAI supports all three of these.
+Ryujin Radar supports all three of these.
 
 **You can start today, for free.**
 
-👉 **[Check predictions on BoatAI](https://boat-ai.jp/)**
+👉 **[Check predictions on Ryujin Radar](https://boat-ai.jp/)**
 
 ---
 
@@ -516,4 +516,4 @@ Let a ¥50,000/month side income make your life a little richer.
 
 ---
 
-**Tags:** #BoatRacing #SideJob #SideIncome #50KPerMonth #AIPrediction #BoatAI #BankrollManagement #Repeatability
+**Tags:** #BoatRacing #SideJob #SideIncome #50KPerMonth #AIPrediction #Ryujin Radar #BankrollManagement #Repeatability

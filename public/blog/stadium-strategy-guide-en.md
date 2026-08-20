@@ -6,7 +6,7 @@ Boat racing is held at 24 venues nationwide, but **winning patterns differ compl
 
 Betting without understanding these differences is like walking an unfamiliar city without a map.
 
-This article is a complete guide to all 24 boat racing venues — their character, lane-1 win rate, and which venues favor the inside vs. the outside — combined with BoatAI's data analysis to give you a strategy for each venue.
+This article is a complete guide to all 24 boat racing venues — their character, lane-1 win rate, and which venues favor the inside vs. the outside — combined with Ryujin Radar's data analysis to give you a strategy for each venue.
 
 ---
 
@@ -41,7 +41,7 @@ These factors combine to shape each venue's individual character.
 
 ## Ranking all 24 venues by "inside-lane advantage"
 
-Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate, highest to lowest**.
+Using Ryujin Radar's analysis data, here are all 24 venues ranked by **lane-1 win rate, highest to lowest**.
 
 ### Extremely inside-favoring (lane-1 win rate 60%+)
 
@@ -57,7 +57,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Targeting 2nd/3rd with outside lanes is an effective approach
 - For Trifecta, anchoring 1st with a flow bet is more efficient than a box bet
 
-**BoatAI's Upset Index tendency:** Favorite friendly
+**Ryujin Radar's Upset Index tendency:** Favorite friendly
 
 ---
 
@@ -73,7 +73,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Target Trio bets around 2nd/3rd
 - Volatile races are rare here, so avoid targeting longshots
 
-**BoatAI's Upset Index tendency:** Favorite friendly
+**Ryujin Radar's Upset Index tendency:** Favorite friendly
 
 ---
 
@@ -89,7 +89,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Watch outside lanes with a motor 2nd-place-or-better rate of 40%+
 - Days with wind of 5m or more can turn volatile
 
-**BoatAI's Upset Index tendency:** Favorite friendly
+**Ryujin Radar's Upset Index tendency:** Favorite friendly
 
 ---
 
@@ -107,7 +107,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - At high tide, target racers with a fast exhibition time
 - Check the gap in motor 2nd-place-or-better rate
 
-**BoatAI's Upset Index tendency:** Standard
+**Ryujin Radar's Upset Index tendency:** Standard
 
 ---
 
@@ -123,7 +123,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Wind weakens during night races, favoring lane 1
 - A prediction weighted toward racer win rate works well
 
-**BoatAI's Upset Index tendency:** Favorite friendly
+**Ryujin Radar's Upset Index tendency:** Favorite friendly
 
 ---
 
@@ -141,7 +141,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Weight racers with a motor 2nd-place rate of 40%+
 - Target a longshot when the Upset Index shows "High upset chance"
 
-**BoatAI's Upset Index tendency:** Standard
+**Ryujin Radar's Upset Index tendency:** Standard
 
 ---
 
@@ -157,7 +157,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Weight racers with a fast exhibition time
 - Overtakes and inside passes land relatively often
 
-**BoatAI's Upset Index tendency:** Standard
+**Ryujin Radar's Upset Index tendency:** Standard
 
 ---
 
@@ -175,7 +175,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Avoid racers who looked close to a flying start in the exhibition
 - Inside passes from lanes 2–4 land often
 
-**BoatAI's Upset Index tendency:** Standard to high upset chance
+**Ryujin Radar's Upset Index tendency:** Standard to high upset chance
 
 ---
 
@@ -191,7 +191,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Always check the exhibition run
 - Target local racers who specialize in Edogawa's conditions
 
-**BoatAI's Upset Index tendency:** High upset chance
+**Ryujin Radar's Upset Index tendency:** High upset chance
 
 ---
 
@@ -207,7 +207,7 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 - Lighter racers have an advantage
 - Target racers skilled at motor tuning
 
-**BoatAI's Upset Index tendency:** Standard to high upset chance
+**Ryujin Radar's Upset Index tendency:** Standard to high upset chance
 
 ![Lane-1 win rate spectrum by venue. Led by Omura at 65.2%, through Tokuyama, Ashiya, Shimonoseki, Suminoe, Heiwajima, Hamanako, Toda, Kiryu, and Edogawa — representative venues color-coded across 4 tiers from extremely inside-favoring to outside-favoring](/images/blog/venue-winrate-spectrum-en.jpg)
 
@@ -265,9 +265,9 @@ Using BoatAI's analysis data, here are all 24 venues ranked by **lane-1 win rate
 
 ---
 
-## How BoatAI uses venue-specific data
+## How Ryujin Radar uses venue-specific data
 
-BoatAI analyzes each venue's character and factors it into its predictions.
+Ryujin Radar analyzes each venue's character and factors it into its predictions.
 
 ### 1. Reflects each venue's Upset Index tendency
 
@@ -343,13 +343,13 @@ Here are the key strategies for all 24 boat racing venues.
 - Prioritize wind speed and direction above all else
 - Stay mindful of upset potential to target a bigger payout
 
-### How to use BoatAI
+### How to use Ryujin Radar
 
 - Check each venue's "Upset Index"
 - Keep each venue's lane-1 win rate data in mind
 
-Understanding each venue's character reliably improves your prediction accuracy. Put venue-specific strategy into practice together with BoatAI!
+Understanding each venue's character reliably improves your prediction accuracy. Put venue-specific strategy into practice together with Ryujin Radar!
 
 ---
 
-**Check BoatAI's venue-specific data now →** [https://boat-ai.jp/](https://boat-ai.jp/)
+**Check Ryujin Radar's venue-specific data now →** [https://boat-ai.jp/](https://boat-ai.jp/)

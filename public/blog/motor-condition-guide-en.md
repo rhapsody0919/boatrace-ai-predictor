@@ -1,6 +1,6 @@
 # What Is Motor Condition? A New Way to See Today's 2nd-Place Rate by Lane
 
-We've added a new "Motor Condition" feature to BoatAI. Rather than a generic list of "motors that are running well," we designed this to be **directly usable for the race you're actually about to bet on today**. Here's what this feature shows and how to use it.
+We've added a new "Motor Condition" feature to Ryujin Radar. Rather than a generic list of "motors that are running well," we designed this to be **directly usable for the race you're actually about to bet on today**. Here's what this feature shows and how to use it.
 
 ---
 
@@ -74,4 +74,4 @@ The `races` table only contains data for races held that day, so the venue optio
 
 This data is for reference only — please don't base your bet selection on it alone. It reflects statistical tendencies and does not guarantee future outcomes. Always make your own analysis and judgment before placing a bet.
 
-BoatAI will keep expanding its data tools so you can "think and decide for yourself," not just rely on predictions.
+Ryujin Radar will keep expanding its data tools so you can "think and decide for yourself," not just rely on predictions.

@@ -4,7 +4,7 @@
 
 Many people don't feel confident predicting boat races. But prediction has **a clear process and set of techniques**. Betting on data instead of guesswork alone can dramatically change your hit rate.
 
-In this article, BoatAI shares the "how to actually predict a winner" process it has distilled from analyzing **over 10,000 races**. Whether you're a beginner or intermediate bettor, you'll walk away with a practical method you can use today.
+In this article, Ryujin Radar shares the "how to actually predict a winner" process it has distilled from analyzing **over 10,000 races**. Whether you're a beginner or intermediate bettor, you'll walk away with a practical method you can use today.
 
 ---
 
@@ -38,7 +38,7 @@ Predicting a boat race breaks down into 5 basic steps.
 - **5.00–5.99**: Mid-tier
 - **4.99 and below**: Worth extra caution
 
-✅ **Tip:** If a Class A1 racer (win rate 6.00+) is in lane 1, making them your core pick is the standard rule of thumb. BoatAI's analysis shows that **a Class A1 racer in lane 1 finishes 1st over 60% of the time**.
+✅ **Tip:** If a Class A1 racer (win rate 6.00+) is in lane 1, making them your core pick is the standard rule of thumb. Ryujin Radar's analysis shows that **a Class A1 racer in lane 1 finishes 1st over 60% of the time**.
 
 That said, judging by overall win rate alone is risky. Also check the racer's **venue-specific win rate**, since water conditions vary significantly by venue — a racer with a strong national win rate can still struggle at a particular venue.
 
@@ -130,7 +130,7 @@ Boat racing takes place outdoors, so weather has a strong influence.
 | Headwind 3m+ | Inside passes land more easily | Watch lane 2 |
 | Crosswind | Harder to control the boat | Weight racer skill more heavily |
 
-⚠️ **Wind of 5m or more raises the chance of a volatile race.** Use BoatAI's Upset Index too, to decide between a conservative or aggressive bet structure.
+⚠️ **Wind of 5m or more raises the chance of a volatile race.** Use Ryujin Radar's Upset Index too, to decide between a conservative or aggressive bet structure.
 
 ---
 
@@ -162,7 +162,7 @@ Betting big right after a loss is one of the worst things you can do. **Set a da
 
 Honestly, checking all 6 factors for every single race is a lot of work. This is where **AI-powered data analysis** comes in.
 
-### What BoatAI analyzes automatically
+### What Ryujin Radar analyzes automatically
 
 | Analysis item | What it covers |
 |---------|------|
@@ -175,7 +175,7 @@ Honestly, checking all 6 factors for every single race is a lot of work. This is
 
 ### How to predict using AI
 
-1. **Open the race you're interested in on BoatAI**
+1. **Open the race you're interested in on Ryujin Radar**
 2. **Check the AI's recommended bet**
 3. **Check the Upset Index to judge whether it's a solid or volatile race**
 4. **Use First-Mark Turn Predictions to visually see how the race is likely to unfold**
@@ -185,7 +185,7 @@ Honestly, checking all 6 factors for every single race is a lot of work. This is
 
 ### Accumulated data sharpens prediction accuracy
 
-BoatAI analyzes **over 10,000 past races**, learning venue-specific tendencies and patterns. AI prediction's real strength is turning the kind of intuition a human builds up over years of experience — "this venue tends to behave this way" — into visible, usable data.
+Ryujin Radar analyzes **over 10,000 past races**, learning venue-specific tendencies and patterns. AI prediction's real strength is turning the kind of intuition a human builds up over years of experience — "this venue tends to behave this way" — into visible, usable data.
 
 ---
 
@@ -206,6 +206,6 @@ Move on from "gut feeling" predictions and start predicting with data. Master th
 
 ---
 
-**Check your predictions on BoatAI now →** [https://boat-ai.jp/](https://boat-ai.jp/)
+**Check your predictions on Ryujin Radar now →** [https://boat-ai.jp/](https://boat-ai.jp/)
 
-**Tags:** #BoatRacing #Predictions #Tips #HowToPredict #AIPrediction #BoatAI
+**Tags:** #BoatRacing #Predictions #Tips #HowToPredict #AIPrediction #Ryujin Radar

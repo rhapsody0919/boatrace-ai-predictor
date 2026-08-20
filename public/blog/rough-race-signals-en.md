@@ -2,7 +2,7 @@
 
 Being able to sense "this race looks like it's going to be volatile" changes your entire betting strategy. Should you bet solidly on the favorite, or chase a longshot for a big payout? Getting this call right can dramatically change your return rate.
 
-BoatAI analyzed 1,899 past races and discovered **the shared traits of volatile races**. This article publishes the **5 signals** the AI uncovered.
+Ryujin Radar analyzed 1,899 past races and discovered **the shared traits of volatile races**. This article publishes the **5 signals** the AI uncovered.
 
 ---
 
@@ -16,7 +16,7 @@ Let's define this clearly first. In boat racing, a "volatile race" refers to a r
 
 In other words, "a race that doesn't go by standard theory and produces a large payout."
 
-BoatAI's analysis shows that about 15–20% of all races qualify as "volatile races." Spotting that 15–20% in advance lets you optimize your betting strategy.
+Ryujin Radar's analysis shows that about 15–20% of all races qualify as "volatile races." Spotting that 15–20% in advance lets you optimize your betting strategy.
 
 ---
 
@@ -37,7 +37,7 @@ Check the lane-1 racer's "national win rate" in the race program.
 - **5.5–6.0**: Somewhat uncertain
 - **Under 5.5**: High chance of a volatile race ⚠️
 
-You can also check each racer's win-rate data on BoatAI's prediction screen.
+You can also check each racer's win-rate data on Ryujin Radar's prediction screen.
 
 ---
 
@@ -60,7 +60,7 @@ Check the "motor 2nd-place-or-better rate" in the race program.
 
 → A 24-point gap, signaling a high chance of a volatile race
 
-BoatAI automatically calculates this gap and factors it into the "Upset Index."
+Ryujin Radar automatically calculates this gap and factors it into the "Upset Index."
 
 ---
 
@@ -102,7 +102,7 @@ Check the start timing in the exhibition run.
 - **0.05 or below**: close to a flying start, may overcorrect in the real race
 - **0.20 or above**: a slow start, cause for concern
 
-BoatAI factors exhibition-time data into its analysis as well.
+Ryujin Radar factors exhibition-time data into its analysis as well.
 
 ---
 
@@ -145,13 +145,13 @@ For example, a situation like this:
 
 → **3 signals stack up, and the race is very likely to be volatile**
 
-In a situation like this, using BoatAI's Upset Index to guide a longshot bet for a bigger payout is an effective approach.
+In a situation like this, using Ryujin Radar's Upset Index to guide a longshot bet for a bigger payout is an effective approach.
 
 ---
 
-## Put BoatAI's "Upset Index" to use
+## Put Ryujin Radar's "Upset Index" to use
 
-BoatAI analyzes these signals together and displays an "Upset Index" for every race.
+Ryujin Radar analyzes these signals together and displays an "Upset Index" for every race.
 
 ### How to read the Upset Index
 
@@ -189,7 +189,7 @@ Let's verify this with an actual race.
 - **3rd**: lane 2
 - **Trifecta**: 5-4-2 → payout of **¥28,340**
 
-BoatAI's Upset Index showed "High upset chance," and lane 5 did indeed take 1st place, hitting exactly.
+Ryujin Radar's Upset Index showed "High upset chance," and lane 5 did indeed take 1st place, hitting exactly.
 
 ---
 
@@ -205,14 +205,14 @@ Here are the 5 signals that predict a volatile race.
 
 **Be extra cautious when 2 or more of these signals show up.** Switch away from a favorite-focused bet and toward a longshot strategy targeting a bigger payout.
 
-### How to use BoatAI
+### How to use Ryujin Radar
 
 - Check the "Upset Index" for each race
 - If the Upset Index shows "😬 High upset chance" → consider a bet aimed at a bigger payout
 - Cross-check the signals yourself to raise your confidence further
 
-**Spotting a volatile race in advance** is a key skill for winning consistently at boat racing. Put data-driven predictions into practice with BoatAI!
+**Spotting a volatile race in advance** is a key skill for winning consistently at boat racing. Put data-driven predictions into practice with Ryujin Radar!
 
 ---
 
-**Check the Upset Index on BoatAI now →** [https://boat-ai.jp/](https://boat-ai.jp/)
+**Check the Upset Index on Ryujin Radar now →** [https://boat-ai.jp/](https://boat-ai.jp/)

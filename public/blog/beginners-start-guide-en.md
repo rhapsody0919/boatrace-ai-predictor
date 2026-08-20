@@ -104,13 +104,13 @@ The biggest mistake beginners make is **suddenly betting a large sum of money**.
 
 ---
 
-## How to use AI predictions — using BoatAI
+## How to use AI predictions — using Ryujin Radar
 
 Predicting a boat race requires a huge amount of data analysis. Racer ability, motor performance, lane-specific results, same-day weather conditions — analyzing all of this yourself is a lot of work.
 
-This is where **BoatAI (boat-ai.jp)**'s AI predictions come in.
+This is where **Ryujin Radar (boat-ai.jp)**'s AI predictions come in.
 
-### What you can do with BoatAI
+### What you can do with Ryujin Radar
 
 - **View AI predictions for every race, completely free**
 - Racer data, motor performance, and lane-specific results are analyzed automatically
@@ -148,10 +148,10 @@ Let's recap how to get started with boat racing.
 1. Understand the basic rules (6 boats, 3 laps, lane 1 is favored)
 2. Register for TELEBOAT (buy tickets from your phone)
 3. Start with a Quinella bet at ¥500–1,000
-4. Use AI predictions (BoatAI) to bet based on data
+4. Use AI predictions (Ryujin Radar) to bet based on data
 5. Set a budget and enjoy races with a level head
 
-**[BoatAI (boat-ai.jp)](https://www.boat-ai.jp)** publishes AI predictions for every race, completely free. Even as a beginner, you can bet based on data. Start by checking today's races.
+**[Ryujin Radar (boat-ai.jp)](https://www.boat-ai.jp)** publishes AI predictions for every race, completely free. Even as a beginner, you can bet based on data. Start by checking today's races.
 
 ---
 

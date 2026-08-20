@@ -1,8 +1,8 @@
-# BoatAI Passes 10,000 Races — What the Data Says About AI Prediction's Strengths and Limits
+# Ryujin Radar Passes 10,000 Races — What the Data Says About AI Prediction's Strengths and Limits
 
 ## Introduction
 
-BoatAI's cumulative analyzed race count has **passed 10,000 races**.
+Ryujin Radar's cumulative analyzed race count has **passed 10,000 races**.
 
 Many AI prediction services exist, but very few **publish their entire track record beyond 10,000 races**. This article honestly shares what 10,000 races of data reveal about AI prediction's "strengths" and "limits."
 
@@ -26,7 +26,7 @@ These numbers are based on **a total of 32,364 predictions**.
 
 Boat racing has 6 boats per race. A random pick has roughly a 16.7% (1/6) chance of hitting.
 
-BoatAI's standard model hits **47.4%**. That means:
+Ryujin Radar's standard model hits **47.4%**. That means:
 
 - About **2.8x** the accuracy of a random pick
 - The favorite wins roughly **1 out of every 2 races**
@@ -42,7 +42,7 @@ This is evidence that the AI's predictions aren't off base. Even when it misses 
 
 A Trio bet requires picking the top 3 boats regardless of order. Its probability is 1/20 (5%).
 
-BoatAI's standard model hits **18.0%** (about once every 5.5 races) — roughly **3.6x** better than random.
+Ryujin Radar's standard model hits **18.0%** (about once every 5.5 races) — roughly **3.6x** better than random.
 
 | Model | Trio hit rate | vs. random |
 |--------|-----------|----------|
@@ -85,12 +85,12 @@ What does that mean? **Betting ¥100 flatly on every race would, over the long r
 
 Boat racing's deduction rate is around 25% — meaning a ¥100 bet returns an average of only ¥75.
 
-BoatAI's 85.9% Win return rate clears "part of" that deduction wall, but doesn't fully break through it.
+Ryujin Radar's 85.9% Win return rate clears "part of" that deduction wall, but doesn't fully break through it.
 
 ```
 Random (expected value): ~75%
-BoatAI Standard:         85.9%  ← +10.9% improvement
-BoatAI Favorite-focused: 84.8%  ← +9.8% improvement
+Ryujin Radar Standard:         85.9%  ← +10.9% improvement
+Ryujin Radar Favorite-focused: 84.8%  ← +9.8% improvement
 Break-even point:        100%
 ```
 
@@ -111,11 +111,11 @@ Why:
 
 Instead of betting across all 24 venues, **concentrate on the venues where the AI performs best**.
 
-BoatAI has custom analysis rules built for 7 venues, and accuracy tends to be higher at these venues.
+Ryujin Radar has custom analysis rules built for 7 venues, and accuracy tends to be higher at these venues.
 
 ### Strategy 2: Filter by condition
 
-BoatAI's predictions include a "confidence" score. **Narrowing down to high-confidence predictions** improves both hit rate and return rate.
+Ryujin Radar's predictions include a "confidence" score. **Narrowing down to high-confidence predictions** improves both hit rate and return rate.
 
 ### Strategy 3: Use different bet types strategically
 
@@ -138,7 +138,7 @@ AI prediction is ultimately **a reference tool**. Always follow these rules:
 
 ### Continuous model improvement
 
-BoatAI analyzes new data every month to keep improving its models.
+Ryujin Radar analyzes new data every month to keep improving its models.
 
 - **Expanding venue-specific rules**: Currently 7 venues → targeting all 24
 - **Factoring in seasonal effects**: Analyzing the relationship between temperature, wind speed, and motor performance
@@ -154,13 +154,13 @@ The next milestone is 20,000 races. As data accumulates, the AI's analysis accur
 
 ### About the numbers in this report
 
-- Every number matches the data published on BoatAI's [accuracy page](/accuracy)
+- Every number matches the data published on Ryujin Radar's [accuracy page](/accuracy)
 - Good and bad numbers alike are published without exception
 - Calculated using a flat ¥100 bet per race (no bias in bet sizing)
 
 ### "Can I really trust this?"
 
-BoatAI publishes its predictions **in advance**, and checks the results only after the fact. There's no after-the-fact editing whatsoever. Every prediction can be verified retroactively in the [race history](/races).
+Ryujin Radar publishes its predictions **in advance**, and checks the results only after the fact. There's no after-the-fact editing whatsoever. Every prediction can be verified retroactively in the [race history](/races).
 
 ---
 
@@ -172,8 +172,8 @@ BoatAI publishes its predictions **in advance**, and checks the results only aft
 4. **Narrowing to specific venues or conditions can easily push return rate above 100%** (e.g., 1,258.9% for Ashiya Trifecta in December)
 5. AI prediction isn't infallible. **Best used as a reference, combined with your own judgment.**
 
-**BoatAI builds trust by publishing everything.**
+**Ryujin Radar builds trust by publishing everything.**
 
 ---
 
-**Tags:** #BoatAI #10000Races #AIPrediction #TrackRecordAnalysis #HitRate #ReturnRate #DataDisclosure #BoatRacing
+**Tags:** #Ryujin Radar #10000Races #AIPrediction #TrackRecordAnalysis #HitRate #ReturnRate #DataDisclosure #BoatRacing

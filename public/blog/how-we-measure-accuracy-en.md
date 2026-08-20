@@ -1,30 +1,30 @@
-# Is BoatAI's Track Record Real? A Full Breakdown of How We Measure It and Why It's Transparent
+# Is Ryujin Radar's Track Record Real? A Full Breakdown of How We Measure It and Why It's Transparent
 
 "49.5% hit rate." "134.3% return rate."
 
-These are the numbers displayed on BoatAI's homepage. Many of you are probably wondering, **can I actually trust these?**
+These are the numbers displayed on Ryujin Radar's homepage. Many of you are probably wondering, **can I actually trust these?**
 
 Let's be honest: **being skeptical is the right call.**
 
 The internet is full of sketchy prediction sites claiming "90% hit rate!" or "guaranteed ¥1,000,000 a month!" Plenty of them charge steep membership fees while showing you numbers with no real basis behind them.
 
-That's exactly why BoatAI **publishes its entire track record, in full**.
+That's exactly why Ryujin Radar **publishes its entire track record, in full**.
 
-This article breaks down exactly how BoatAI measures its track record, and why it publishes every bit of the data.
+This article breaks down exactly how Ryujin Radar measures its track record, and why it publishes every bit of the data.
 
 ---
 
 ## Why we publish our entire track record
 
-### BoatAI was born out of frustration with expensive prediction sites
+### Ryujin Radar was born out of frustration with expensive prediction sites
 
-I'm the developer of BoatAI, and I used to be a paying member of a prediction site that cost ¥30,000 a month.
+I'm the developer of Ryujin Radar, and I used to be a paying member of a prediction site that cost ¥30,000 a month.
 
 It claimed to offer "predictions from a pro," but never disclosed its hit rate or return rate. It loudly advertised its wins and stayed silent about its losses. I paid tens of thousands of yen to a site like that.
 
 The result? **A crushing loss.**
 
-That experience is what drove me to build BoatAI around one belief: if you're going to offer predictions, you should publish your entire track record.
+That experience is what drove me to build Ryujin Radar around one belief: if you're going to offer predictions, you should publish your entire track record.
 
 ### We don't cherry-pick favorable numbers
 
@@ -33,7 +33,7 @@ Many prediction sites only publish "the races that hit" as their track record.
 - "Hit a ¥100,000 Trifecta!" → doesn't mention the 20 misses before it
 - "200% monthly return rate!" → the measurement period and race scope are unclear
 
-BoatAI is different. **We publish every race, hits and misses alike.**
+Ryujin Radar is different. **We publish every race, hits and misses alike.**
 
 ---
 
@@ -41,7 +41,7 @@ BoatAI is different. **We publish every race, hits and misses alike.**
 
 ### 1. Which races count
 
-**Every race** BoatAI has published a prediction for counts.
+**Every race** Ryujin Radar has published a prediction for counts.
 
 - We never selectively measure only certain races
 - We never arbitrarily filter down to "only high-confidence races"
@@ -100,7 +100,7 @@ Return rate in this case:
 
 ### 4. The assumption behind the wager amount
 
-BoatAI's return rate calculation assumes **¥100 per combination**.
+Ryujin Radar's return rate calculation assumes **¥100 per combination**.
 
 For example, if the recommended Trifecta bet has 10 combinations:
 - Amount wagered: ¥100 × 10 combinations = ¥1,000
@@ -128,7 +128,7 @@ Pattern A hits half the time, but the odds are so low the return rate is only 80
 
 Pattern C, meanwhile, hits only 10% of the time, but the return rate is 150% — ¥10,000 wagered becomes ¥15,000.
 
-### The numbers BoatAI targets
+### The numbers Ryujin Radar targets
 
 | Metric | Target | Current track record |
 |------|------|-----------|
@@ -141,11 +141,11 @@ Pattern C, meanwhile, hits only 10% of the time, but the return rate is 150% —
 
 ---
 
-## Why you can trust BoatAI's numbers
+## Why you can trust Ryujin Radar's numbers
 
 ### 1. Every race's data is published
 
-BoatAI's "Accuracy" page shows day-by-day hit rate and return rate, in full.
+Ryujin Radar's "Accuracy" page shows day-by-day hit rate and return rate, in full.
 
 - Good days and bad days alike, published without exception
 - Results are also broken down by model (Standard, Favorite-focused, Longshot)
@@ -153,7 +153,7 @@ BoatAI's "Accuracy" page shows day-by-day hit rate and return rate, in full.
 
 ### 2. Predictions are published in advance
 
-BoatAI's predictions are published **before the race starts**.
+Ryujin Radar's predictions are published **before the race starts**.
 
 - There's no way to claim "actually, it hit" after the fact
 - The publish time is recorded
@@ -175,9 +175,9 @@ If you're wondering "is it really calculated this way?", you'll be able to check
 
 ---
 
-## How BoatAI differs from other prediction sites
+## How Ryujin Radar differs from other prediction sites
 
-| Item | BoatAI | Typical prediction sites |
+| Item | Ryujin Radar | Typical prediction sites |
 |------|--------|-------------------|
 | Price | **Completely free** | ¥thousands–¥tens of thousands/month |
 | Publishes track record for every race | **Yes** | No |
@@ -205,7 +205,7 @@ Days where the return rate dropped below 50% are published without exception too
 
 **A. Yes, you can.**
 
-1. Check BoatAI's predictions every day
+1. Check Ryujin Radar's predictions every day
 2. Compare them against the actual race results
 3. Calculate the hit rate and return rate yourself
 
@@ -215,7 +215,7 @@ Some users have actually done this verification themselves. If you're skeptical,
 
 ## Summary
 
-BoatAI measures and publishes its track record according to these principles:
+Ryujin Radar measures and publishes its track record according to these principles:
 
 1. **Every race counts**: we never cherry-pick favorable races
 2. **Hits and misses alike are published**: we don't only advertise our wins
@@ -225,8 +225,8 @@ BoatAI measures and publishes its track record according to these principles:
 
 Rather than "it's free, so who cares," we're committed to proving "free, but genuinely real."
 
-If you have doubts about BoatAI's track record, we genuinely encourage you to verify it yourself. And once you're convinced, we hope you'll put our predictions to use.
+If you have doubts about Ryujin Radar's track record, we genuinely encourage you to verify it yourself. And once you're convinced, we hope you'll put our predictions to use.
 
 ---
 
-**Tags:** #BoatAI #TrackRecord #Transparency #HitRate #ReturnRate #DataDisclosure #Verification
+**Tags:** #Ryujin Radar #TrackRecord #Transparency #HitRate #ReturnRate #DataDisclosure #Verification
