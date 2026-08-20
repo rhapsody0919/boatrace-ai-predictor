@@ -4,9 +4,9 @@ import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import "./Profile.css";
 
-const TITLE = "運営者プロフィール | 龍神レーダー";
+const TITLE = "なぜ完全無料？運営者プロフィール | 龍神レーダー";
 const DESCRIPTION =
-  "龍神レーダー運営者「らぷそでぃ」のプロフィール。インフラエンジニアとしての経験を活かし、ボートレースAI予想サービスを開発した経緯と開発の裏話をご紹介します。";
+  "なぜ完全無料で提供しているのか。龍神レーダー運営者「らぷそでぃ」のプロフィール。インフラエンジニアとしての経験を活かし、ボートレースAI予想サービスを開発した経緯と開発の裏話をご紹介します。";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -15,7 +15,8 @@ export default function Profile() {
     title: TITLE,
     description: DESCRIPTION,
     url: "https://www.boat-ai.jp/profile",
-    keywords: "龍神レーダー,運営者,プロフィール,らぷそでぃ,インフラエンジニア,AI開発",
+    keywords:
+      "龍神レーダー,運営者,プロフィール,らぷそでぃ,インフラエンジニア,AI開発",
   });
 
   return (
@@ -80,7 +81,9 @@ export default function Profile() {
             </div>
             <div className="profile-info">
               <h2 className="profile-name">らぷそでぃ</h2>
-              <p className="profile-title">インフラエンジニア / 龍神レーダー開発者</p>
+              <p className="profile-title">
+                インフラエンジニア / 龍神レーダー開発者
+              </p>
               <div className="profile-tags">
                 <span className="tag">インフラ構築</span>
                 <span className="tag">AI/機械学習</span>

@@ -35,20 +35,20 @@ function ContentHub() {
   return (
     <>
       <title>
-        ボートレース完全ガイド - 初心者から上級者まで | 龍神レーダー
+        ボートレースのルール・買い方 完全ガイド【24会場攻略】| 龍神レーダー
       </title>
       <meta
         name="description"
-        content="ボートレースの基礎知識から上級者向け戦略まで、体系的に学べる完全ガイド。24会場の攻略法、データ分析手法、予想のコツを詳しく解説。"
+        content="ボートレースのルール・買い方から24会場の攻略法、データ分析手法、予想のコツまで体系的に解説する完全ガイド。初心者から上級者まで学べます。"
       />
       <link rel="canonical" href="https://www.boat-ai.jp/guide" />
       <script type="application/ld+json">
         {JSON.stringify({
           "@context": "https://schema.org",
           "@type": "CollectionPage",
-          name: "ボートレース完全ガイド",
+          name: "ボートレースのルール・買い方 完全ガイド【24会場攻略】",
           description:
-            "ボートレースの基礎知識から上級者向け戦略まで、体系的に学べる完全ガイド",
+            "ボートレースのルール・買い方から24会場の攻略法、データ分析手法、予想のコツまで体系的に解説する完全ガイド",
           url: "https://www.boat-ai.jp/guide",
           mainEntity: {
             "@type": "ItemList",
