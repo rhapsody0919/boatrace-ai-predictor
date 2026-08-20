@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { parseLangFromPath, getAvailableLanguages } from "../config/languages";
 import LanguageSwitcher from "./LanguageSwitcher";
+import ThemeToggle from "./ThemeToggle";
 import "./Header.css";
 
 function Header() {
@@ -119,6 +120,7 @@ function Header() {
             {t("nav.hits")}
           </button>
           <LanguageSwitcher />
+          <ThemeToggle />
           <button
             className="nav-btn menu-btn"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
