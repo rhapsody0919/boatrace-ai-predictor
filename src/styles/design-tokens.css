@@ -99,7 +99,6 @@
   --text-primary: var(--color-gray-900);
   --text-secondary: var(--color-gray-600);
   --brand-accent-primary: var(--ryujin-gold-800);
-  --brand-accent-primary-strong: var(--ryujin-gold-700);
   --brand-accent-secondary: var(--ryujin-silver-700);
   /* 3着表示専用。金銀と同じ理由でライト背景では--color-bronzeのままだと
      コントラスト不足（2.99:1）になるため、テーマごとに階調を分ける */

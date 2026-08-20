@@ -1,6 +1,6 @@
 .race-detail-page {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--surface-page);
   padding: 2rem 1rem;
 }
 
@@ -151,7 +151,7 @@
 
 .race-list-section h2 {
   font-size: 1.75rem;
-  color: #1e293b !important;
+  color: var(--text-primary);
   margin-bottom: 1.5rem;
   text-shadow: none;
 }

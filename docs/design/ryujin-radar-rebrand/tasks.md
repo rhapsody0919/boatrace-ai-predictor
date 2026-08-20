@@ -34,8 +34,19 @@ spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・�
 - [x] 19. `src/components/analysis/`配下チャート群の色設定をトークン参照に更新。決まり手種別の定性パレット（逃げ/差し/まくり等の色分け）はグレード色・ボート色と同様に変更対象外と判断。コンテナ側3ファイル（MotorConditionChart/OutcomeDistributionTable/WinningTechniqueChart.css）を全面トークン化。2系列比較の折れ線・棒グラフ（モーター調子/選手調子/STのズレ/展示タイム/トップスタート）はbrand-accent-primary/secondaryの金銀ペアに変更。name prop経由の色指定（data key不使用）は既存で遵守済みと確認
 - [x] 20. 全フェーズ通しでのE2Eスモークテスト最終実行、新規主要導線（ThemeToggle等）のスモークテスト追記（`e2e/smoke.spec.js`にThemeToggleのクリック切替/リロード後永続化/再クリックでの反転を検証するテストを追加。単体実行・フルスイート実行とも新規テストは合格。フルスイートは842件合格・7件失敗・4件スキップで、失敗7件はいずれも「本日開催中のレース」依存の既知フレーキーテスト（データ分析ツール導線・レースページ再設計・的中レース一覧、タスク開始前の実行と完全に同一のテスト名）であり本刷新のCSS変更とは無関係と確認済み）
 
+## セルフレビュー（全タスク完了後）
+
+全20タスク完了後、PR作成前にエージェントによるセルフレビューを実施。以下の実バグを発見・修正した。
+
+- **`.app`/`.race-detail-page`ルートコンテナの背景が`#ffffff`固定のまま**で、ダークテーマに切り替えてもヘッダー/フッターだけが暗くなりページ本体が白いまま残るブロッカーを発見。`var(--surface-page)`に修正（`src/App.css`・`src/pages/RaceDetail.css`）
+- 上記修正後にaxe-coreでホームをダークテーマ全体スキャンした結果、`src/pages/RaceDetail.css`の`.race-list-section h2 { color: #1e293b !important; }`がCSSバンドル経由でホーム側の同名セレクタ（`src/App.css`、`!important`無し）を上書きしていた漏れを発見・修正（タスク16で見つけたのと同種の`!important`漏れバグの再発）
+- 未使用の`--brand-accent-primary-strong`トークン（`src/styles/design-tokens.css`）を削除
+
+セルフレビューで判明したその他の指摘（Cookie同意バナー・更新ステータス・ブログプレビューカードのコントラスト、App.css/RaceDetail.css/ResponsibleGambling.jsxに残る広範な未トークン化のハードコード色、axe-coreスキャン範囲の据え置き、VenueSelector重複、その他nit）は、今回のスコープ（フェーズ1-4で明示的に対象化した特定コンポーネント群）を超える別スコープの作業のため、[BOA-206](https://linear.app/boat-ai/issue/BOA-206)として起票し対応を見送った。
+
 ## スコープ外（別タスク・別チケット）
 
 - 紹介動画（`/about`等）の刷新
 - 既存ブログ記事内のスクリーンショット差し替え
 - 管理画面（`AdminRules.jsx`）
+- App.css/RaceDetail.css配下の広範な未トークン化ハードコード色、ダークテーマ非対応ウィジェット（[BOA-206](https://linear.app/boat-ai/issue/BOA-206)）
