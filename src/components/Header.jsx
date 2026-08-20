@@ -97,7 +97,12 @@ function Header() {
           onClick={handleLogoClick}
           aria-label={t("nav.logoLabel")}
         >
-          <span className="logo-icon">🚤</span>
+          <img
+            className="logo-mark"
+            src="/logo-light.png"
+            alt=""
+            aria-hidden="true"
+          />
           <h1>{t("nav.logoText")}</h1>
         </button>
         <nav className="nav">
