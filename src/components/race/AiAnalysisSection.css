@@ -92,8 +92,9 @@
   color: var(--color-primary-600);
 }
 
-/* 展開予測パネル（FR2）の実測的中率バッジ。2026-08-14: 実測値による信頼性訴求を
-   強化するため、控えめなテキストからピル型の目立つバッジに変更 */
+/* 展開予測パネル（FR2）の実測的中率バッジ。罫線ベースの意匠に統一（BOA-201）。
+   状態色（success系）は旧背景でもコントラスト基準未達のため（BOA-204）、
+   テキスト色には使わずtext-primaryに寄せ、絵文字のみで「実測値」を印象付ける */
 .ai-analysis-block-badge {
   display: flex;
   align-items: center;
@@ -103,11 +104,11 @@
   margin: 0 auto var(--spacing-3);
   padding: var(--spacing-2) var(--spacing-4);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  color: #ffffff;
-  background: var(--gradient-success);
-  border-radius: var(--radius-full);
-  box-shadow: var(--shadow-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
 }
 
 @media (max-width: 480px) {

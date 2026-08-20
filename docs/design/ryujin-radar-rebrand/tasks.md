@@ -26,7 +26,7 @@ spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・�
 
 ## フェーズ4: データ密集画面
 
-- [ ] 14. PredictionPanel/PredictionCard/AccuracyStatBadge/RaceResultの意匠刷新（塗りボタン・ピルバッジ廃止、着順の金銀とブランドカラーの統合）
+- [x] 14. PredictionPanel/PredictionCard/AccuracyStatBadge/RaceResultの意匠刷新（塗りボタン・ピルバッジ廃止、着順の金銀とブランドカラーの統合）。着順1〜3位は罫線カード化し金銀＋新設`--podium-bronze-text`トークンで色分け。副次的に`.hit`/`.miss`（実は本流では未使用、管理画面のみで実使用と判明）のコントラスト不足と常時パルスアニメーションも修正
 - [ ] 15. PredictionLoadingOverlayへのレーダー掃引モーション適用
 - [ ] 16. RaceBottomNav/RaceNavCard/VenueSelector/VolatilityDisplayのトークン参照更新
 - [ ] 17. DataRaceTable.cssのモバイル最小フォントサイズ是正（`0.55rem`→11px以上）と二層設計の適用

@@ -101,6 +101,9 @@
   --brand-accent-primary: var(--ryujin-gold-800);
   --brand-accent-primary-strong: var(--ryujin-gold-700);
   --brand-accent-secondary: var(--ryujin-silver-700);
+  /* 3着表示専用。金銀と同じ理由でライト背景では--color-bronzeのままだと
+     コントラスト不足（2.99:1）になるため、テーマごとに階調を分ける */
+  --podium-bronze-text: #8f5419;
 
   /* 透明度バリエーション - プライマリーカラー */
   --color-primary-alpha-10: rgba(14, 165, 233, 0.1);
@@ -297,6 +300,7 @@
   --text-secondary: var(--color-gray-300);
   --brand-accent-primary: var(--ryujin-gold-500);
   --brand-accent-secondary: var(--ryujin-silver-500);
+  --podium-bronze-text: var(--color-bronze);
 }
 
 [data-theme="light"] {
@@ -307,6 +311,7 @@
   --text-secondary: var(--color-gray-600);
   --brand-accent-primary: var(--ryujin-gold-800);
   --brand-accent-secondary: var(--ryujin-silver-700);
+  --podium-bronze-text: #8f5419;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -318,5 +323,6 @@
     --text-secondary: var(--color-gray-300);
     --brand-accent-primary: var(--ryujin-gold-500);
     --brand-accent-secondary: var(--ryujin-silver-500);
+    --podium-bronze-text: var(--color-bronze);
   }
 }
