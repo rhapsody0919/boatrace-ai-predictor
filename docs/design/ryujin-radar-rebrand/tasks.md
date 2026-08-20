@@ -7,7 +7,7 @@ spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・�
 - [x] 1. デザイントークン3層構造の実装（ベースパレット→意味トークン→`:root`/`[data-theme="dark"]`テーマ層。既存の`--color-primary-*`等は維持し共存させる。plan.md「トークン層構成」参照）
 - [x] 2. トークンコントラスト自動検証スクリプトの追加（`scripts/maintenance/check-token-contrast.js`、ADR 0017、`npm run check:contrast`）。実行の結果、ライトテーマの金銀アクセントがWCAG AA基準未達と判明したため`--ryujin-gold-800`/`--ryujin-silver-700`をライト専用の階調として追加し、`--brand-accent-primary`/`--brand-accent-secondary`をテーマごとに出し分ける形に修正した
 - [x] 3. ロゴ/favicon資産の書き出し（`source-assets/`から`favicon-16/32.png`・`apple-touch-icon.png`・`icon-192/512.png`・`logo.png`・`logo-light.png`を生成し`public/`へ配置。plan.mdの対応表参照。apple-touch-iconは透過だとiOSで見栄えが悪くなるため不透明の深紺背景に変更。OGP画像（`ogp-image.png`）は対応表に含まれないため対象外のまま）
-- [ ] 4. 明朝体ロゴタイプ用サブセットフォントの生成・自己ホスト設定（`pyftsubset`でNoto Serif JPをサブセット化、`public/fonts/`へ配置、`@font-face`定義。ADR 0018）
+- [x] 4. 明朝体ロゴタイプ用サブセットフォントの生成・自己ホスト設定（`pyftsubset`でNoto Serif JPをサブセット化、`public/fonts/`へ配置、`@font-face`定義。ADR 0018）。再生成用に`scripts/maintenance/generate-logotype-font.sh`（`npm run generate:logotype-font`）を作成。開発環境にPython/fonttools/brotliが必要（スクリプト内にエラーメッセージで明記）
 
 ## フェーズ2: ブランドチロム
 

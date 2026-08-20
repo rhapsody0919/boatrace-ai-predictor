@@ -1,3 +1,13 @@
+/* 龍神レーダーのロゴタイプ専用（ADR 0018）。「龍神レーダー」の6文字のみのサブセット
+   （scripts/maintenance/generate-logotype-font.sh参照）。UI本文には使わない */
+@font-face {
+  font-family: "Noto Serif JP Logotype";
+  src: url("/fonts/noto-serif-jp-logotype-subset.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
