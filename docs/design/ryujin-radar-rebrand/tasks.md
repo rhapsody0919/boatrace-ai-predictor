@@ -29,7 +29,7 @@ spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・�
 - [x] 14. PredictionPanel/PredictionCard/AccuracyStatBadge/RaceResultの意匠刷新（塗りボタン・ピルバッジ廃止、着順の金銀とブランドカラーの統合）。着順1〜3位は罫線カード化し金銀＋新設`--podium-bronze-text`トークンで色分け。副次的に`.hit`/`.miss`（実は本流では未使用、管理画面のみで実使用と判明）のコントラスト不足と常時パルスアニメーションも修正
 - [x] 15. PredictionLoadingOverlayへのレーダー掃引モーション適用。3ステップ中「進行中」のステップのみ絵文字パルスをレーダー掃引SVGに置き換え、完了/未着手は静的表示のまま。周辺のトークン化もあわせて実施
 - [x] 16. RaceBottomNav/RaceNavCard/VenueSelector/VolatilityDisplayのトークン参照更新。RaceBottomNav.css/RaceNavCard.cssで`--color-border`等、design-tokens.cssに存在しない未定義トークンを実トークンに置換（実質的な既存バグ）。VenueSelector.jsxは実はどこからもimportされておらず、App.jsxが独自にインライン重複実装していると判明（RaceDetail.jsxはVenueSelector.jsxを正しく使用）→両方修正。App.css `.race-list-section label`の`color: #1e293b !important`がトークン化を妨げていたバグも発見・修正。VolatilityDisplayは警戒度の意味色（オレンジ/緑/青）を変更対象外とし中立色のみトークン化。残る広範囲な未定義トークン・`!important`過多はBOA-205として別チケット化
-- [ ] 17. DataRaceTable.cssのモバイル最小フォントサイズ是正（`0.55rem`→11px以上）と二層設計の適用
+- [x] 17. DataRaceTable.cssのモバイル最小フォントサイズ是正（`0.55rem`→11px以上）と二層設計の適用。全面的にトークン化し、最小フォントサイズは`--font-size-xs`（12px）に統一（旧8.8px/10.4pxの箇所を是正）。二層設計として金のブランドアクセントはリンク・最良値セルの強調のみに限定し、データ本体はtext-primary/secondary中心の機能重視スタイルを維持
 - [ ] 18. AttackDefenseTable/TurnPatternList/OutcomePatternPreview/TrifectaReferenceCard/RaceCardDataTableへの二層設計適用
 - [ ] 19. `src/components/analysis/`配下チャート群の色設定をトークン参照に更新（Rechartsのname prop経由で指定。data keyでの指定は避ける）
 - [ ] 20. 全フェーズ通しでのE2Eスモークテスト最終実行、新規主要導線（ThemeToggle等）のスモークテスト追記
