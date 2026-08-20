@@ -221,9 +221,9 @@ Build your profit gradually, starting from the qualifying round.
 
 ---
 
-## How BoatAI handles grade races
+## How Ryujin Radar handles grade races
 
-BoatAI provides its usual predictions for grade races as well.
+Ryujin Radar provides its usual predictions for grade races as well.
 
 **Things to keep in mind:**
 - Since the gap in racer ability is small, prediction difficulty rises in grade races

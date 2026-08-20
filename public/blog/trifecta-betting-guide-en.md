@@ -40,7 +40,7 @@ The single most important decision in a Trifecta bet is **who to anchor for 1st 
 - A Class A1 racer in the inside lane
 - A racer with a motor 2nd-place-or-better rate of 40%+
 - A boat that's out front in the start exhibition
-- A racer BoatAI's prediction shows high confidence in for 1st
+- A racer Ryujin Radar's prediction shows high confidence in for 1st
 
 ### Step 2: Narrow your 2nd-place candidates to 3–4 boats
 
@@ -160,13 +160,13 @@ Hedge (4 combos): ¥100 each = ¥400
 
 ---
 
-## Building a Trifecta bet using BoatAI's turn predictions
+## Building a Trifecta bet using Ryujin Radar's turn predictions
 
-BoatAI publishes free **AI predictions** built from integrated racer, motor, exhibition, and lane-specific data. Here's how to use them to build a Trifecta bet.
+Ryujin Radar publishes free **AI predictions** built from integrated racer, motor, exhibition, and lane-specific data. Here's how to use them to build a Trifecta bet.
 
 ### Steps
 
-1. **Check BoatAI's prediction for the race**
+1. **Check Ryujin Radar's prediction for the race**
    - Pick races where the 1st-place prediction has high confidence
 
 2. **Check the First-Mark Turn Prediction**
@@ -184,7 +184,7 @@ BoatAI publishes free **AI predictions** built from integrated racer, motor, exh
 ### A worked example
 
 ```
-[BoatAI prediction]
+[Ryujin Radar prediction]
 1st: lane 1 (85% confidence)
 Predicted development: wire-to-wire
 Upset Index: Favorite friendly
@@ -207,13 +207,13 @@ Upset Index: Favorite friendly
 2. **Use formation betting to keep it to 6–12 combinations**
 3. **Allocate your bankroll with weight, not evenly** (flat betting is a mistake)
 4. **Never forget to check for break-even combinations**
-5. **Use BoatAI's turn predictions to streamline race selection and anchor picks**
+5. **Use Ryujin Radar's turn predictions to streamline race selection and anchor picks**
 
-The Trifecta is a difficult bet, but narrowed correctly, it becomes **the highest-return weapon in your arsenal**. Start with BoatAI's predictions as a reference, and try it with small amounts on races you feel confident about.
+The Trifecta is a difficult bet, but narrowed correctly, it becomes **the highest-return weapon in your arsenal**. Start with Ryujin Radar's predictions as a reference, and try it with small amounts on races you feel confident about.
 
 ---
 
-**Check your predictions on BoatAI now →** [https://boat-ai.jp/](https://boat-ai.jp/)
+**Check your predictions on Ryujin Radar now →** [https://boat-ai.jp/](https://boat-ai.jp/)
 
 ---
 
@@ -237,4 +237,4 @@ Starting with a formation bet of around 6 combinations is a good approach. Fewer
 
 ---
 
-**Tags:** #BoatRacing #Trifecta #HowToBet #BettingTickets #BoatAI
+**Tags:** #BoatRacing #Trifecta #HowToBet #BettingTickets #RyujinRadar

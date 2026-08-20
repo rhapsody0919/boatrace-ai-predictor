@@ -134,18 +134,18 @@ With a 25% deduction rate, the expected return rate on random bets is 75%. To be
 
 ---
 
-## Finding High-Expected-Value Bets with BoatAI
+## Finding High-Expected-Value Bets with Ryujin Radar
 
-BoatAI generates predictions by analyzing motor performance, racer data, course-specific records, exhibition times and more.
+Ryujin Radar generates predictions by analyzing motor performance, racer data, course-specific records, exhibition times and more.
 
-**How to use BoatAI for this:**
+**How to use Ryujin Radar for this:**
 
-- **Read the finish order with turn predictions** — visualize the race up to the first turn, cross-check against BoatAI's tracked hit rate, and spot gaps against the odds
+- **Read the finish order with turn predictions** — visualize the race up to the first turn, cross-check against Ryujin Radar's tracked hit rate, and spot gaps against the odds
 - **Use the Upset Index to read a race's character** — lean toward longshots in races flagged "High upset chance," and toward favorites in races flagged "Favorite friendly"
 
-Don't just bet on the odds — **cross-reference BoatAI's data-driven predictions with the odds to find bets with positive expected value**. That's the first step toward a stable long-term return rate.
+Don't just bet on the odds — **cross-reference Ryujin Radar's data-driven predictions with the odds to find bets with positive expected value**. That's the first step toward a stable long-term return rate.
 
-👉 **[Find odds distortions with BoatAI](https://boat-ai.jp)**
+👉 **[Find odds distortions with Ryujin Radar](https://boat-ai.jp)**
 
 ---
 
@@ -173,7 +173,7 @@ In theory, yes — but it isn't easy. Random betting converges to roughly a 75% 
 
 ### How do I estimate hit rate in the first place?
 
-Relying on gut feeling alone makes you prone to the overpopularity trap. A more solid approach combines multiple data points — motor 2-place rate, course-specific win rate, exhibition times, and more. BoatAI's analysis data and its tracked turn-prediction hit rate are useful reference points for estimating hit rate yourself.
+Relying on gut feeling alone makes you prone to the overpopularity trap. A more solid approach combines multiple data points — motor 2-place rate, course-specific win rate, exhibition times, and more. Ryujin Radar's analysis data and its tracked turn-prediction hit rate are useful reference points for estimating hit rate yourself.
 
 ### Do odds keep changing right up until the betting deadline? What are "final odds"?
 
@@ -181,4 +181,4 @@ Yes. Odds shift continuously as bettors place wagers, right up until betting clo
 
 ---
 
-**Tags:** #BoatRacing #BoatRace #Odds #ExpectedValue #OddsDistortion #Overpopularity #BettingStrategy #ReturnRate #DataAnalysis #BoatAI
+**Tags:** #BoatRacing #BoatRace #Odds #ExpectedValue #OddsDistortion #Overpopularity #BettingStrategy #ReturnRate #DataAnalysis #RyujinRadar

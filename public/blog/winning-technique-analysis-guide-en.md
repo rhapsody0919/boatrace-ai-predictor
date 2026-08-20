@@ -1,12 +1,12 @@
 # What Is Winning-Technique Analysis? A New Way to See Win Patterns by Venue and Lane
 
-We've added a new "Winning-Technique Analysis" feature to BoatAI. Rather than just taking the AI's predictions at face value, this is a data tool for **anyone who wants to check the data themselves and make their own call**. Here's what this feature shows and how to use it during an actual race.
+We've added a new "Winning-Technique Analysis" feature to Ryujin Radar. Rather than just taking the AI's predictions at face value, this is a data tool for **anyone who wants to check the data themselves and make their own call**. Here's what this feature shows and how to use it during an actual race.
 
 ---
 
 ## Why we built this feature
 
-BoatAI has focused mainly on providing AI-generated predictions so far, but we've shifted direction toward building out data tools that let **users form their own judgment backed by evidence**, rather than relying purely on prediction accuracy. Winning-Technique Analysis is the first feature in that direction.
+Ryujin Radar has focused mainly on providing AI-generated predictions so far, but we've shifted direction toward building out data tools that let **users form their own judgment backed by evidence**, rather than relying purely on prediction accuracy. Winning-Technique Analysis is the first feature in that direction.
 
 ---
 
@@ -73,4 +73,4 @@ Boat racing venues differ in water surface area, water type (fresh or salt water
 
 This data is for reference only — please don't base your bet selection on it alone. It reflects statistical tendencies and does not guarantee future outcomes. Always make your own analysis and judgment before placing a bet.
 
-BoatAI will keep expanding its data tools so you can "think and decide for yourself," not just rely on predictions.
+Ryujin Radar will keep expanding its data tools so you can "think and decide for yourself," not just rely on predictions.

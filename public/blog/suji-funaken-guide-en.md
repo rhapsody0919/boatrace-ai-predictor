@@ -226,7 +226,7 @@ Suji tendencies differ from venue to venue.
 
 ## Combining AI with suji
 
-Combining BoatAI's predictions with suji theory sharpens your accuracy even further.
+Combining Ryujin Radar's predictions with suji theory sharpens your accuracy even further.
 
 ### How to use it
 
@@ -303,4 +303,4 @@ Think of suji as **a tool for narrowing down your bets**, not a complete answer 
 
 ---
 
-**Tags:** #BoatRacing #SujiBetting #BettingStrategy #RaceDevelopment #DataAnalysis #AIPrediction #BoatAI
+**Tags:** #BoatRacing #SujiBetting #BettingStrategy #RaceDevelopment #DataAnalysis #AIPrediction #RyujinRadar

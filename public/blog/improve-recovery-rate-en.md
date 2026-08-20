@@ -95,9 +95,9 @@ AI can analyze every race in seconds and **extract only the statistically favora
 
 ---
 
-## How BoatAI's AI predictions put race curation into practice
+## How Ryujin Radar's AI predictions put race curation into practice
 
-BoatAI's AI predictions automate every one of the strategies above.
+Ryujin Radar's AI predictions automate every one of the strategies above.
 
 ### Why race curation is what drives return rate
 
@@ -144,12 +144,12 @@ You can check the latest hit rate and return rate on the [accuracy page](/accura
 
 Breaking a 100% return rate isn't magic. It's the steady accumulation of **race selection, combination discipline, and bankroll management** overcoming the 25% deduction rate.
 
-BoatAI's AI predictions run this exact strategy automatically, every day.
+Ryujin Radar's AI predictions run this exact strategy automatically, every day.
 
-👉 **[Check out BoatAI's AI predictions](https://boat-ai.jp/)**
+👉 **[Check out Ryujin Radar's AI predictions](https://boat-ai.jp/)**
 
 Start by looking at the data and seeing what kind of races get selected.
 
 ---
 
-**Tags:** #BoatRacing #ReturnRate #HowToWin #BettingStrategy #BankrollManagement #DataAnalysis #BoatAI
+**Tags:** #BoatRacing #ReturnRate #HowToWin #BettingStrategy #BankrollManagement #DataAnalysis #RyujinRadar

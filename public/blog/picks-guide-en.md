@@ -1,6 +1,6 @@
 # How to Use "Today's Picks" — High-Return Races Selected by Data Mining
 
-> **Note**: The "Today's Picks" feature described in this article has since been folded into BoatAI's single unified prediction model and is no longer offered as a standalone feature. What follows is a record of how it worked at the time. For current AI predictions and tracked hit rates, see the [performance page](/accuracy).
+> **Note**: The "Today's Picks" feature described in this article has since been folded into Ryujin Radar's single unified prediction model and is no longer offered as a standalone feature. What follows is a record of how it worked at the time. For current AI predictions and tracked hit rates, see the [performance page](/accuracy).
 
 ## Introduction
 
@@ -8,7 +8,7 @@
 
 Boat racing runs up to 144 races a day (24 venues × 12 races). Finding the races with a genuinely good expected return among all of those is extremely difficult.
 
-BoatAI's "**Today's Picks**" automatically surfaces only the races that match **patterns proven to exceed a 100% return rate**, discovered by mining a massive amount of past race data.
+Ryujin Radar's "**Today's Picks**" automatically surfaces only the races that match **patterns proven to exceed a 100% return rate**, discovered by mining a massive amount of past race data.
 
 ---
 
@@ -80,7 +80,7 @@ Recommended races come with the optimal bet type for that particular pattern.
 | **Trio** | Pick the top 3 finishers, any order | Mid-range payouts |
 | **Trifecta** | Pick the top 3 finishers in exact order | High payout, low hit rate |
 
-"A pattern with a high return rate for Win bets" and "a pattern with a high return rate for Trifecta bets" are completely different things. BoatAI mines the optimal pattern separately for each bet type.
+"A pattern with a high return rate for Win bets" and "a pattern with a high return rate for Trifecta bets" are completely different things. Ryujin Radar mines the optimal pattern separately for each bet type.
 
 ---
 
@@ -146,7 +146,7 @@ Trifecta has a lower hit rate, but a much bigger potential payout when it lands.
 
 ## Summary
 
-"Today's Picks" is one of the features BoatAI invests the most in.
+"Today's Picks" is one of the features Ryujin Radar invests the most in.
 
 - Automatically discovers **statistically favorable conditions** from historical data
 - Scans daily races across **15 venues and 34 patterns**
@@ -155,4 +155,4 @@ Trifecta has a lower hit rate, but a much bigger potential payout when it lands.
 
 Instead of betting blindly on every race, **narrow your focus to the conditions the data shows are winnable** — this is the most rational way to raise your return rate.
 
-👉 [Check BoatAI's latest performance](/accuracy)
+👉 [Check Ryujin Radar's latest performance](/accuracy)

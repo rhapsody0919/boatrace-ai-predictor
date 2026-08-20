@@ -42,7 +42,7 @@ export const blogPostsEn = [
     title:
       "Does Boat Racing AI Prediction Really Hit? — Results from 3 Months and 15,000 Races",
     description:
-      "We audited AI prediction hit rate and return rate across 15,000 races. An honest look at its strengths and weaknesses, how BoatAI differs from other services, and where AI prediction falls short.",
+      "We audited AI prediction hit rate and return rate across 15,000 races. An honest look at its strengths and weaknesses, how Ryujin Radar differs from other services, and where AI prediction falls short.",
     category: "Data Analysis",
     tags: [
       "AIPrediction",
@@ -70,7 +70,7 @@ export const blogPostsEn = [
     title:
       "The Complete 2026 SG Race Guide — Each Race's Character and Betting Strategy",
     description:
-      "A breakdown of all 8 SG races in 2026 — their character and betting strategy, from the Prime Minister's Cup to the Grand Prix, plus what makes predicting SG races different and how to use BoatAI for them.",
+      "A breakdown of all 8 SG races in 2026 — their character and betting strategy, from the Prime Minister's Cup to the Grand Prix, plus what makes predicting SG races different and how to use Ryujin Radar for them.",
     category: "Advanced",
     tags: ["SG", "GrandPrix", "AllStar", "GradeRaces", "2026"],
     readTime: "10 min",
@@ -116,7 +116,7 @@ export const blogPostsEn = [
     title:
       "How to Push Your Boat Racing Return Rate Above 100% — The Reality Shown by 10,000+ Races",
     description:
-      "5 data-backed strategies for clearing the 25% deduction wall — race selection, bet-type choice, combination discipline, bankroll management, and using AI. Includes BoatAI's real 104% return rate results.",
+      "5 data-backed strategies for clearing the 25% deduction wall — race selection, bet-type choice, combination discipline, bankroll management, and using AI. Includes Ryujin Radar's real 104% return rate results.",
     category: "Strategy",
     tags: [
       "ReturnRate",
@@ -150,7 +150,7 @@ export const blogPostsEn = [
     title:
       "What Are First-Mark Turn Predictions? How AI Reads the Way a Race Unfolds",
     description:
-      "A full breakdown of BoatAI's turn prediction feature — how it statistically forecasts the first-mark turn from each racer's winning-technique distribution, ST, and motor performance, and how to use it in your betting strategy.",
+      "A full breakdown of Ryujin Radar's turn prediction feature — how it statistically forecasts the first-mark turn from each racer's winning-technique distribution, ST, and motor performance, and how to use it in your betting strategy.",
     category: "How-To",
     tags: [
       "TurnPrediction",
@@ -167,7 +167,7 @@ export const blogPostsEn = [
     title:
       '"Today\'s Picks" Hits a 104% Return Rate — Real Results from 2,577 Races',
     description:
-      "BoatAI's \"Today's Picks\" feature recorded a 104% return rate across 2,577 races. An honest look at how it overcomes the 25% deduction rate to stay net-positive — including its real limitations.",
+      "Ryujin Radar's \"Today's Picks\" feature recorded a 104% return rate across 2,577 races. An honest look at how it overcomes the 25% deduction rate to stay net-positive — including its real limitations.",
     category: "Track Record",
     tags: ["TodaysPicks", "ReturnRate", "DataMining", "TrackRecord"],
     readTime: "7 min",
@@ -196,7 +196,7 @@ export const blogPostsEn = [
     title:
       'How to Use "Today\'s Picks" — High-Return Races Selected by Data Mining',
     description:
-      "A full breakdown of BoatAI's \"Today's Picks\" feature — how data mining across 15 venues and 34 patterns automatically surfaces races with a 100%+ return rate, how to read the screen, and how to use it by bet type.",
+      "A full breakdown of Ryujin Radar's \"Today's Picks\" feature — how data mining across 15 venues and 34 patterns automatically surfaces races with a 100%+ return rate, how to read the screen, and how to use it by bet type.",
     category: "How-To",
     tags: [
       "TodaysPicks",
@@ -211,9 +211,9 @@ export const blogPostsEn = [
   {
     id: "10000-races-analysis",
     title:
-      "BoatAI Passes 10,000 Races — What the Data Says About AI Prediction's Strengths and Limits",
+      "Ryujin Radar Passes 10,000 Races — What the Data Says About AI Prediction's Strengths and Limits",
     description:
-      "BoatAI's cumulative analyzed race count passed 10,000. An honest look at what 12,324 races reveal — a 47.4% Win hit rate, an 18.0% Trio hit rate, and the real challenges around return rate.",
+      "Ryujin Radar's cumulative analyzed race count passed 10,000. An honest look at what 12,324 races reveal — a 47.4% Win hit rate, an 18.0% Trio hit rate, and the real challenges around return rate.",
     category: "Track Record",
     tags: [
       "10000Races",
@@ -270,7 +270,7 @@ export const blogPostsEn = [
     title:
       "Ashiya Boat Race Venue Strategy Guide — One of Japan's Strongest Inside-Favoring Venues",
     description:
-      "Ashiya boat racing venue's character and strategy, with BoatAI track record data. One of Japan's strongest inside-favoring venues.",
+      "Ashiya boat racing venue's character and strategy, with Ryujin Radar track record data. One of Japan's strongest inside-favoring venues.",
     category: "Venue Strategy",
     tags: ["Ashiya", "BoatRacingVenue", "Strategy", "StrongInside"],
     readTime: "5 min",
@@ -279,9 +279,9 @@ export const blogPostsEn = [
   {
     id: "how-we-measure-accuracy",
     title:
-      "Is BoatAI's Track Record Real? A Full Breakdown of How We Measure It and Why It's Transparent",
+      "Is Ryujin Radar's Track Record Real? A Full Breakdown of How We Measure It and Why It's Transparent",
     description:
-      "How does BoatAI actually measure its hit rate and return rate? Why does it publish all the data? A full breakdown of the reliability and transparency behind BoatAI's track record.",
+      "How does Ryujin Radar actually measure its hit rate and return rate? Why does it publish all the data? A full breakdown of the reliability and transparency behind Ryujin Radar's track record.",
     category: "Data Analysis",
     tags: [
       "TrackRecord",
@@ -309,7 +309,7 @@ export const blogPostsEn = [
     title:
       "5 Signals That Predict a Volatile Boat Race — Discovered by AI Across 1,899 Races",
     description:
-      "Being able to sense a volatile race changes your betting strategy. BoatAI analyzed 1,899 races and found 5 signals shared by races that turn volatile.",
+      "Being able to sense a volatile race changes your betting strategy. Ryujin Radar analyzed 1,899 races and found 5 signals shared by races that turn volatile.",
     category: "Beginner",
     tags: ["VolatileRace", "Prediction", "Signals", "HowToSpot"],
     readTime: "10 min",
@@ -331,7 +331,7 @@ export const blogPostsEn = [
     title:
       "A Roadmap to Earning ¥50,000/Month in Side Income from Boat Racing [Built for Repeatability]",
     description:
-      "A bankroll-management approach for targeting ¥50,000/month, and how to use BoatAI's data analysis to guide your betting.",
+      "A bankroll-management approach for targeting ¥50,000/month, and how to use Ryujin Radar's data analysis to guide your betting.",
     category: "Strategy",
     tags: ["BoatRacing", "BankrollManagement", "50KPerMonth", "UsingData"],
     readTime: "12 min",

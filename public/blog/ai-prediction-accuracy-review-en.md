@@ -6,7 +6,7 @@ As more boat racing AI prediction services appear, many people are asking this q
 
 In an industry rife with exaggerated claims like "90%+ hit rate!" or "¥1,000,000 profit every month!", taking numbers at face value is risky.
 
-In this article, we share the results of BoatAI's own honest audit of its prediction accuracy, based on **3 months and over 15,000 races** of data — the good and the bad, all disclosed.
+In this article, we share the results of Ryujin Radar's own honest audit of its prediction accuracy, based on **3 months and over 15,000 races** of data — the good and the bad, all disclosed.
 
 ---
 
@@ -18,7 +18,7 @@ Distrust of AI predictions is well founded.
 - **The word "AI" is used as a marketing buzzword** — a service can call itself "AI-powered" even if it's really just a basic spreadsheet formula
 - **The verification period and sample size are often unclear** — a single good week gets presented as "our track record"
 
-To confront this problem head-on, BoatAI **publishes the results of every race it predicts, directly on the site**. Every win and every loss is there for anyone to check.
+To confront this problem head-on, Ryujin Radar **publishes the results of every race it predicts, directly on the site**. Every win and every loss is there for anyone to check.
 
 ---
 
@@ -50,7 +50,7 @@ A Trio bet requires correctly picking the 3 boats that finish in the top 3 (orde
 
 ## How AI prediction works, and reading each race's volatility
 
-BoatAI analyzes every race with a single unified AI model. On top of that, each race's volatility is visualized through the "Upset Index," a percentile-based indicator that classifies races as "High upset chance," "Standard," or "Favorite friendly."
+Ryujin Radar analyzes every race with a single unified AI model. On top of that, each race's volatility is visualized through the "Upset Index," a percentile-based indicator that classifies races as "High upset chance," "Standard," or "Favorite friendly."
 
 | Item | Description |
 |------|------|
@@ -70,7 +70,7 @@ This is the part that deserves the most honesty.
 
 Boat racing has a deduction rate of roughly 25% — meaning about a quarter of every yen wagered is taken out of the pool from the start.
 
-If you bet a flat amount on every single race, BoatAI's standard predictions return roughly **88–94%**. The hit rate is 3x random, but that alone isn't enough to fully overcome the 25% deduction.
+If you bet a flat amount on every single race, Ryujin Radar's standard predictions return roughly **88–94%**. The hit rate is 3x random, but that alone isn't enough to fully overcome the 25% deduction.
 
 ### Curating races tends to improve the return rate
 
@@ -82,18 +82,18 @@ That said, these numbers aren't a guarantee of future performance either — res
 
 ---
 
-## How BoatAI differs from other AI prediction services
+## How Ryujin Radar differs from other AI prediction services
 
 When choosing an AI prediction service, the most important question is **"can I actually verify the track record?"**
 
-| Comparison | Typical prediction sites | BoatAI |
+| Comparison | Typical prediction sites | Ryujin Radar |
 |---------|-------------------|--------|
 | Track record disclosure | Only wins are published | **Every race's result is published** |
 | Verifiability | Can't be checked by a third party | **Anyone can verify it on the site** |
 | Price | Often ¥thousands–¥tens of thousands / month | **Completely free** |
 | Basis for predictions | "Picked by a pro," and that's it | **Shows the actual data-analysis indicators** |
 
-BoatAI's defining trait is **transparency of track record**. Rather than cherry-picking favorable numbers, every day — wins and losses alike — is recorded.
+Ryujin Radar's defining trait is **transparency of track record**. Rather than cherry-picking favorable numbers, every day — wins and losses alike — is recorded.
 
 ---
 
@@ -130,10 +130,10 @@ Here's what 3 months and 15,000 races taught us:
 
 AI prediction isn't "a magic tool that guarantees you'll win." But used correctly, it can be **a real weapon that reliably improves your boat racing hit rate**.
 
-BoatAI publishes its entire track record. See for yourself first.
+Ryujin Radar publishes its entire track record. See for yourself first.
 
-**[BoatAI — Try AI predictions for free](https://www.boat-ai.jp)**
+**[Ryujin Radar — Try AI predictions for free](https://www.boat-ai.jp)**
 
 ---
 
-**Tags:** #AIPrediction #BoatRacing #HitRate #ReturnRate #AIAccuracyReview #BoatAI #DataAnalysis
+**Tags:** #AIPrediction #BoatRacing #HitRate #ReturnRate #AIAccuracyReview #RyujinRadar #DataAnalysis

@@ -143,9 +143,9 @@ Local racers, or racers who specialize in the host venue's water conditions, gai
 
 ---
 
-## Using BoatAI to tackle SG races
+## Using Ryujin Radar to tackle SG races
 
-BoatAI provides data-driven predictions for SG races too.
+Ryujin Radar provides data-driven predictions for SG races too.
 
 ### Tips for using it
 
@@ -153,10 +153,10 @@ BoatAI provides data-driven predictions for SG races too.
 - **Use the AI's data analysis** — an AI prediction combining racer, motor, exhibition, and weather data helps you gauge the race's character
 - **Use the Upset Index as a guide** — SG races tend to be volatile, so on races with a high Upset Index you can widen your bet spread accordingly
 
-SG races are hard, but with data on your side, there's real opportunity. Enjoy the 2026 SG season together with BoatAI.
+SG races are hard, but with data on your side, there's real opportunity. Enjoy the 2026 SG season together with Ryujin Radar.
 
 ---
 
-**Check BoatAI's SG race predictions →** [https://boat-ai.jp/](https://boat-ai.jp/)
+**Check Ryujin Radar's SG race predictions →** [https://boat-ai.jp/](https://boat-ai.jp/)
 
-**Tags:** #SGBoatRacing2026 #GrandPrixPredictions #AllStarPredictions #SGRaceSchedule #BoatRacing #AIPrediction #BoatAI
+**Tags:** #SGBoatRacing2026 #GrandPrixPredictions #AllStarPredictions #SGRaceSchedule #BoatRacing #AIPrediction #RyujinRadar

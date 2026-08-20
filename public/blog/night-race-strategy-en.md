@@ -158,11 +158,11 @@ Not all night-race venues are the same. Understanding each venue's traits matter
 
 ---
 
-## Streamline your night-race predictions with BoatAI
+## Streamline your night-race predictions with Ryujin Radar
 
 Night races are a genre where understanding the fundamentals can meaningfully raise your hit rate. But researching the water conditions, temperature swings, and each racer's night-racing aptitude across all 7 venues yourself is a lot of work.
 
-**With BoatAI:**
+**With Ryujin Radar:**
 - All night races across every venue are analyzed by AI in real time
 - Motor performance, racer data, and water conditions are judged holistically
 - First-Mark Turn Predictions visualize each lane's attacking and defensive positioning
@@ -170,7 +170,7 @@ Night races are a genre where understanding the fundamentals can meaningfully ra
 
 Don't rely on "the inside is favored" alone — start making **precise, data-driven predictions** for night races.
 
-👉 **[See BoatAI's night race predictions](https://boat-ai.jp/)**
+👉 **[See Ryujin Radar's night race predictions](https://boat-ai.jp/)**
 
 Completely free, with AI predictions published for every night race.
 
@@ -189,4 +189,4 @@ Predicting night races the same way you predict daytime races won't win. Underst
 
 ---
 
-**Tags:** #BoatRacing #NightRace #NightRaceStrategy #BoatRacingPredictions #NightRaceFeatures #AIPrediction #BoatAI
+**Tags:** #BoatRacing #NightRace #NightRaceStrategy #BoatRacingPredictions #NightRaceFeatures #AIPrediction #RyujinRadar

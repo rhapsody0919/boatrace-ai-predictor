@@ -33,7 +33,7 @@ Edogawa Race 3: lane 1's Win odds are 1.2x
 
 ### ✅ How AI prediction fixes this
 
-BoatAI doesn't bet "just because it's lane 1" — it **judges holistically from 45 data points**.
+Ryujin Radar doesn't bet "just because it's lane 1" — it **judges holistically from 45 data points**.
 
 **What it analyzes:**
 - Racer class, win rate, and venue-specific win rate
@@ -69,7 +69,7 @@ A Class B1 racer with a motor 2nd-place rate of 50%
 
 ### ✅ How AI prediction fixes this
 
-BoatAI **prioritizes motor 2nd-place-or-better rate above all else**.
+Ryujin Radar **prioritizes motor 2nd-place-or-better rate above all else**.
 
 **How it's judged:**
 - Motor 2nd-place rate 45%+: elite (worth actively targeting)
@@ -77,7 +77,7 @@ BoatAI **prioritizes motor 2nd-place-or-better rate above all else**.
 - Motor 2nd-place rate under 35%: a red flag (exclude from your anchor)
 
 **A success story from December 10:**
-BoatAI recommended lane 5 (a Class B1 racer) as its anchor, based on a motor 2nd-place rate of 46.7%
+Ryujin Radar recommended lane 5 (a Class B1 racer) as its anchor, based on a motor 2nd-place rate of 46.7%
 → It hit, achieving a 208.1% return rate
 
 ---
@@ -102,7 +102,7 @@ For a beginner, analyzing the exhibition run accurately is **nearly impossible**
 
 ### ✅ How AI prediction fixes this
 
-BoatAI analyzes the exhibition run **from multiple angles**.
+Ryujin Radar analyzes the exhibition run **from multiple angles**.
 
 **What it analyzes:**
 - Exhibition time
@@ -153,7 +153,7 @@ AI is **always level-headed**.
 3. Don't change your bet size even after a hit
 4. Don't chase a loss
 
-Betting **mechanically according to BoatAI's predictions** gives you a real shot at a net-positive result over the long run.
+Betting **mechanically according to Ryujin Radar's predictions** gives you a real shot at a net-positive result over the long run.
 
 ---
 
@@ -180,7 +180,7 @@ A high hit rate means nothing if the return rate falls below 100%.
 
 ### ✅ How AI prediction fixes this
 
-BoatAI **prioritizes return rate above all else**.
+Ryujin Radar **prioritizes return rate above all else**.
 
 **Strategy by bet type:**
 
@@ -212,7 +212,7 @@ Even a 30% hit rate is a real success if the return rate is 150%.
 - Bet roughly around lane 1, no real strategy
 - Monthly net: -¥15,000
 
-**After adopting BoatAI:**
+**After adopting Ryujin Radar:**
 - Bets Place according to the AI's prediction (¥100/race)
 - Monthly net: +¥4,200
 
@@ -227,12 +227,12 @@ Even a 30% hit rate is a real success if the return rate is 150%.
 - Paid for expensive information from an online prediction site
 - Monthly net: -¥30,000 (including the subscription cost)
 
-**After adopting BoatAI:**
+**After adopting Ryujin Radar:**
 - Bets Trio using the free AI predictions as a reference
 - Monthly net: +¥8,500
 
 **Comment:**
-"BoatAI's free predictions hit more than the paid service ever did. Being free made it easy to try, and the results were genuinely good."
+"Ryujin Radar's free predictions hit more than the paid service ever did. Being free made it easy to try, and the results were genuinely good."
 
 ---
 
@@ -253,13 +253,13 @@ That's exactly why it's worth putting AI to work.
 
 ---
 
-## Try BoatAI for free
+## Try Ryujin Radar for free
 
-BoatAI publishes AI predictions for every race, every day, **completely free**.
+Ryujin Radar publishes AI predictions for every race, every day, **completely free**.
 
 👉 **[Check today's predictions](https://boat-ai.jp/)**
 
-**BoatAI's features:**
+**Ryujin Radar's features:**
 - ✅ Completely free (no registration required)
 - ✅ Covers every race (all 24 boat racing venues)
 - ✅ Analyzes 45 data points
@@ -289,14 +289,14 @@ There's simply too much information to process — it exceeds what a human can r
 Putting AI to work makes analysis beyond even a professional's level possible.
 
 **3 things to change starting today:**
-1. Check BoatAI's free predictions
+1. Check Ryujin Radar's free predictions
 2. Always check the motor 2nd-place-or-better rate
 3. Start with a ¥100 bet per race
 
 Starting tomorrow, boat racing shifts from "a costly hobby" to "a strategic investment."
 
-👉 **[Check predictions on BoatAI](https://boat-ai.jp/)**
+👉 **[Check predictions on Ryujin Radar](https://boat-ai.jp/)**
 
 ---
 
-**Tags:** #BoatRacing #CantWin #AIPrediction #BoatAI #BettingTickets #BoatRacingBeginner #LosingPattern
+**Tags:** #BoatRacing #CantWin #AIPrediction #RyujinRadar #BettingTickets #BoatRacingBeginner #LosingPattern
