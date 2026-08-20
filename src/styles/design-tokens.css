@@ -76,12 +76,13 @@
      ======================================== */
 
   /* Layer 1: ベースパレット - 生の色値、モード非依存 */
-  --ryujin-gold-300: #e8d089;    /* ハイライト・罫線の細い強調線 */
-  --ryujin-gold-500: #c9a227;    /* 本体色 */
+  --ryujin-gold-300: #e8d089;    /* ハイライト・罫線の細い強調線（ダーク用） */
+  --ryujin-gold-500: #c9a227;    /* 本体色（ダーク用） */
   --ryujin-gold-700: #8a6a1a;    /* 塗り用の深い色 */
-  --ryujin-silver-300: #e2e6ea;  /* ハイライト */
-  --ryujin-silver-500: #9aa3ad;  /* 本体色 */
-  --ryujin-silver-700: #5c636b;  /* 塗り用の深い色 */
+  --ryujin-gold-800: #6b500f;    /* ライト背景でのテキスト用（コントラスト確保） */
+  --ryujin-silver-300: #e2e6ea;  /* ハイライト（ダーク用） */
+  --ryujin-silver-500: #9aa3ad;  /* 本体色（ダーク用） */
+  --ryujin-silver-700: #5c636b;  /* ライト背景でのテキスト用（コントラスト確保） */
   --ryujin-navy-100: #142842;    /* ダークテーマのカード背景 */
   --ryujin-navy-300: #24344d;    /* ダークテーマの罫線 */
   --ryujin-navy-600: #0d1b2e;    /* ダークテーマのページ背景 */
@@ -89,15 +90,17 @@
   --ryujin-ivory-300: #ddd4bf;   /* ライトテーマの罫線 */
   --ryujin-ivory-600: #f7f3ea;   /* ライトテーマのページ背景 */
 
-  /* Layer 2: 意味トークン - コンポーネントが参照する値。ライトテーマをデフォルトとする */
+  /* Layer 2: 意味トークン - コンポーネントが参照する値。ライトテーマをデフォルトとする
+     金銀アクセントはライト/ダークで背景の明度が逆転するため、テーマごとに異なる階調を割り当てる
+     （scripts/maintenance/check-token-contrast.js で検証済み） */
   --surface-page: var(--ryujin-ivory-600);
   --surface-card: var(--ryujin-ivory-100);
   --border-hairline: var(--ryujin-ivory-300);
   --text-primary: var(--color-gray-900);
   --text-secondary: var(--color-gray-600);
-  --brand-accent-primary: var(--ryujin-gold-500);
+  --brand-accent-primary: var(--ryujin-gold-800);
   --brand-accent-primary-strong: var(--ryujin-gold-700);
-  --brand-accent-secondary: var(--ryujin-silver-500);
+  --brand-accent-secondary: var(--ryujin-silver-700);
 
   /* 透明度バリエーション - プライマリーカラー */
   --color-primary-alpha-10: rgba(14, 165, 233, 0.1);
@@ -292,6 +295,8 @@
   --border-hairline: var(--ryujin-navy-300);
   --text-primary: var(--color-gray-50);
   --text-secondary: var(--color-gray-300);
+  --brand-accent-primary: var(--ryujin-gold-500);
+  --brand-accent-secondary: var(--ryujin-silver-500);
 }
 
 [data-theme="light"] {
@@ -300,6 +305,8 @@
   --border-hairline: var(--ryujin-ivory-300);
   --text-primary: var(--color-gray-900);
   --text-secondary: var(--color-gray-600);
+  --brand-accent-primary: var(--ryujin-gold-800);
+  --brand-accent-secondary: var(--ryujin-silver-700);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -309,5 +316,7 @@
     --border-hairline: var(--ryujin-navy-300);
     --text-primary: var(--color-gray-50);
     --text-secondary: var(--color-gray-300);
+    --brand-accent-primary: var(--ryujin-gold-500);
+    --brand-accent-secondary: var(--ryujin-silver-500);
   }
 }
