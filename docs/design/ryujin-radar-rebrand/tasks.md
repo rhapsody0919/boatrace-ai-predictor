@@ -32,7 +32,7 @@ spec.md / screens.md / plan.mdに基づく実装タスク。フェーズ順・�
 - [x] 17. DataRaceTable.cssのモバイル最小フォントサイズ是正（`0.55rem`→11px以上）と二層設計の適用。全面的にトークン化し、最小フォントサイズは`--font-size-xs`（12px）に統一（旧8.8px/10.4pxの箇所を是正）。二層設計として金のブランドアクセントはリンク・最良値セルの強調のみに限定し、データ本体はtext-primary/secondary中心の機能重視スタイルを維持
 - [x] 18. AttackDefenseTable/TurnPatternList/OutcomePatternPreview/TrifectaReferenceCard/RaceCardDataTableへの二層設計適用。TrifectaReferenceCardは実際にはどこからもimportされておらず廃止済み機能のデッドコードと判明したため編集不要と判断。OutcomePatternPreviewの黄色グラデーションカード・塗りボタンをトークン化。TurnPatternList/AttackDefenseTableは状態色のテキスト利用（BOA-204と同種のコントラスト問題）をtext-primaryに寄せて回避
 - [x] 19. `src/components/analysis/`配下チャート群の色設定をトークン参照に更新。決まり手種別の定性パレット（逃げ/差し/まくり等の色分け）はグレード色・ボート色と同様に変更対象外と判断。コンテナ側3ファイル（MotorConditionChart/OutcomeDistributionTable/WinningTechniqueChart.css）を全面トークン化。2系列比較の折れ線・棒グラフ（モーター調子/選手調子/STのズレ/展示タイム/トップスタート）はbrand-accent-primary/secondaryの金銀ペアに変更。name prop経由の色指定（data key不使用）は既存で遵守済みと確認
-- [ ] 20. 全フェーズ通しでのE2Eスモークテスト最終実行、新規主要導線（ThemeToggle等）のスモークテスト追記
+- [x] 20. 全フェーズ通しでのE2Eスモークテスト最終実行、新規主要導線（ThemeToggle等）のスモークテスト追記（`e2e/smoke.spec.js`にThemeToggleのクリック切替/リロード後永続化/再クリックでの反転を検証するテストを追加。単体実行・フルスイート実行とも新規テストは合格。フルスイートは842件合格・7件失敗・4件スキップで、失敗7件はいずれも「本日開催中のレース」依存の既知フレーキーテスト（データ分析ツール導線・レースページ再設計・的中レース一覧、タスク開始前の実行と完全に同一のテスト名）であり本刷新のCSS変更とは無関係と確認済み）
 
 ## スコープ外（別タスク・別チケット）
 

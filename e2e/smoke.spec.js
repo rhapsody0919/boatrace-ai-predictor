@@ -7,6 +7,39 @@ test.describe("ホーム・基本ナビゲーション", () => {
     await expect(page.locator(".logo h1")).toHaveText("龍神レーダー");
   });
 
+  test("ThemeToggleでライト/ダークを切替でき、リロード後も永続化される（BOA-201）", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.evaluate(() => localStorage.removeItem("ryujin-radar-theme"));
+    await page.reload();
+
+    const toggle = page.locator(".theme-toggle");
+    await expect(toggle).toBeVisible();
+
+    await toggle.click();
+    const themeAfterClick = await page.evaluate(
+      () => document.documentElement.dataset.theme,
+    );
+    expect(["light", "dark"]).toContain(themeAfterClick);
+
+    // リロード後もFOUC防止スクリプトにより同じテーマが即座に反映される
+    await page.reload();
+    const themeAfterReload = await page.evaluate(
+      () => document.documentElement.dataset.theme,
+    );
+    expect(themeAfterReload).toBe(themeAfterClick);
+
+    // 再クリックで反対のテーマに戻ることを確認
+    await page.locator(".theme-toggle").click();
+    const themeAfterSecondClick = await page.evaluate(
+      () => document.documentElement.dataset.theme,
+    );
+    expect(themeAfterSecondClick).not.toBe(themeAfterClick);
+
+    await page.evaluate(() => localStorage.removeItem("ryujin-radar-theme"));
+  });
+
   test("日本語(ja)のハンバーガーメニューには会場ガイドが表示されない", async ({
     page,
   }) => {
