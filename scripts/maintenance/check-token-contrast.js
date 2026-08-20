@@ -35,6 +35,16 @@ const PAIRS = [
     fg: "--brand-accent-secondary",
     label: "ページ背景 × 銀アクセント",
   },
+  {
+    bg: "--surface-card",
+    fg: "--brand-accent-primary",
+    label: "カード背景 × 金アクセント",
+  },
+  {
+    bg: "--surface-card",
+    fg: "--brand-accent-secondary",
+    label: "カード背景 × 銀アクセント",
+  },
 ];
 
 const AA_NORMAL_TEXT = 4.5;
