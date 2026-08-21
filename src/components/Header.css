@@ -62,13 +62,13 @@
 }
 
 .logo h1 {
-  font-family: "Noto Serif JP Logotype", serif;
+  /* 以前はNoto Serif JP Logotype（明朝体）を使用していたが、UI全体のサンセリフと
+     書体が異なり違和感があるため統一（ADR 0018参照、2026-08-21に方針転換） */
   color: var(--brand-accent-primary);
   font-size: 1.4rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   margin: 0;
-  padding-left: 0.08em;
   line-height: 1.2;
 }
 
@@ -218,7 +218,9 @@
   }
 
   .logo-tagline {
-    display: none;
+    font-size: 0.6rem;
+    white-space: normal;
+    line-height: 1.3;
   }
 
   .nav {

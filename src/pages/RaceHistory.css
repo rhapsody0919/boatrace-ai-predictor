@@ -9,23 +9,20 @@
   margin: 0 auto;
 }
 
-.page-header {
+/* .page-header/.page-header h1は他ページ（RaceDetail.css/OutcomeDistribution.css等）
+   にも同名クラスがあり、CSSが全ページ分1つのバンドルに結合されるため、ビルド順に
+   よって固定色（例: OutcomeDistribution.cssのcolor:#0f172a）が意図せず勝ってしまう。
+   親要素で詳細度を上げて確実にトークンを効かせる（BOA-206/BOA-207） */
+.race-history-page .page-header {
   text-align: center;
   margin-bottom: 2rem;
   color: var(--text-primary);
 }
 
-.page-header h1 {
+.race-history-page .page-header h1 {
   font-size: 2.5rem;
   margin-bottom: 1rem;
   text-shadow: none;
-}
-
-/* .page-header h1は他ページ（RaceDetail.css/OutcomeDistribution.css等）にも同名クラスがあり、
-   CSSが全ページ分1つのバンドルに結合されるため、ビルド順によって
-   固定色（例: OutcomeDistribution.cssのcolor:#0f172a）が意図せず勝ってしまう。
-   親要素で詳細度を上げて確実にトークンを効かせる */
-.race-history-page .page-header h1 {
   color: var(--text-primary);
 }
 
@@ -214,7 +211,7 @@
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
-  .page-header h1 {
+  .race-history-page .page-header h1 {
     font-size: 2rem;
   }
 
@@ -263,7 +260,7 @@
     padding: 0.75rem 0.375rem;
   }
 
-  .page-header h1 {
+  .race-history-page .page-header h1 {
     font-size: 1.5rem;
   }
 

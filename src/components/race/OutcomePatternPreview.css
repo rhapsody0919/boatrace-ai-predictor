@@ -6,7 +6,10 @@
   overflow: hidden;
 }
 
-.expand-button {
+/* .expand-buttonはsrc/components/analysis/OutcomeDistributionTable.cssにも
+   同名クラスがあり、CSSが全ページ分1つのバンドルに結合されるためビルド順で
+   意図しない側が勝つことがある。.outcome-pattern-previewでスコープする（BOA-207） */
+.outcome-pattern-preview .expand-button {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -21,17 +24,17 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.expand-button:hover h3 {
+.outcome-pattern-preview .expand-button:hover h3 {
   color: var(--brand-accent-primary);
 }
 
-.expand-button .chevron {
+.outcome-pattern-preview .expand-button .chevron {
   font-size: 0.9rem;
   color: var(--text-secondary);
   flex-shrink: 0;
 }
 
-.expand-button h3 {
+.outcome-pattern-preview .expand-button h3 {
   margin: 0;
   font-size: 1.1rem;
   color: var(--text-primary);

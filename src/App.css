@@ -78,26 +78,8 @@ input:focus-visible,
   gap: 1rem;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-shrink: 0;
-}
-
-.logo-icon {
-  font-size: 2.5rem;
-  animation: float 3s ease-in-out infinite;
-  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.logo h1 {
-  color: white;
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-}
+/* .logo / .logo-icon / .logo h1 はHeader.jsxが共通コンポーネント化された際に
+   Header.css側へ移設済み（BOA-207で残っていた死んだCSSと判明、削除） */
 
 .nav {
   display: flex;
@@ -107,15 +89,7 @@ input:focus-visible,
 }
 
 /* .nav-btn / .menu-toggle-btn はHeader.jsxが共通コンポーネント化された際に
-   Header.css側へ移設済み。ここは死んだCSSだったため削除（BOA-203で残りの
-   dead CSS調査を別途実施） */
-
-/* ハンバーガーメニューボタン */
-.menu-toggle-btn {
-  font-size: 1.5rem;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
+   Header.css側へ移設済み。ここは死んだCSSだったため削除（BOA-203/BOA-207） */
 
 /* ドロップダウンメニュー */
 .mobile-menu-dropdown {
@@ -171,7 +145,10 @@ input:focus-visible,
 /* =====================================================
    レース一覧セクション
    ===================================================== */
-.race-list-section h2 {
+/* .race-list-section h2はRaceDetail.cssにも同名クラスがあり、CSSが全ページ分
+   1つのバンドルに結合されるためビルド順で意図しない側が勝つ（BOA-206/BOA-207）。
+   .appでスコープして確実にホーム画面側が勝つようにする */
+.app .race-list-section h2 {
   color: var(--text-primary);
   font-size: 2rem;
   margin-bottom: 2rem;
@@ -218,15 +195,13 @@ input:focus-visible,
   margin-bottom: 3rem;
 }
 
-/* .race-cardはsrc/pages/admin/AdminRules.css・src/components/HitRaces.cssにも
-   同名クラスがあり、CSSが全ページ分1つのバンドルに結合されるためビルド順で
-   固定値（#f8fafc等）が意図せず勝つことがある。親スコープで詳細度を上げて確実に
-   トークンを効かせる（詳細はBOA-207: CSSクラス名衝突の恒久対応 参照） */
+/* .race-card/.race-card-headerはsrc/pages/admin/AdminRules.css・
+   src/components/HitRaces.css・src/pages/RaceDetail.cssにも同名クラスがあり、
+   CSSが全ページ分1つのバンドルに結合されるためビルド順で固定値（#f8fafc等）が
+   意図せず勝つことがある。.race-list-sectionでスコープして確実にホーム画面側の
+   スタイルを効かせる（詳細はBOA-207: CSSクラス名衝突の恒久対応 参照） */
 .race-list-section .race-card {
   background: var(--surface-card);
-}
-
-.race-card {
   border-radius: 16px;
   padding: 1.75rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -236,7 +211,7 @@ input:focus-visible,
   overflow: hidden;
 }
 
-.race-card::before {
+.race-list-section .race-card::before {
   content: '';
   position: absolute;
   top: 0;
@@ -246,13 +221,13 @@ input:focus-visible,
   background: linear-gradient(90deg, #0ea5e9 0%, #FF6B35 100%);
 }
 
-.race-card:hover {
+.race-list-section .race-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
   border-color: #0ea5e9;
 }
 
-.race-card-header {
+.race-list-section .race-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -261,7 +236,7 @@ input:focus-visible,
   border-bottom: 2px solid var(--border-hairline);
 }
 
-.race-card-header h3 {
+.race-list-section .race-card-header h3 {
   color: #0ea5e9;
   font-size: 1.5rem;
   font-weight: 700;
@@ -435,14 +410,6 @@ input:focus-visible,
     gap: 0.75rem;
   }
 
-  .logo h1 {
-    font-size: 1.4rem;
-  }
-
-  .logo-icon {
-    font-size: 2rem;
-  }
-
   .nav {
     width: 100%;
     justify-content: flex-start;
@@ -452,19 +419,6 @@ input:focus-visible,
     gap: 0.5rem;
     padding-bottom: 0.25rem;
     position: relative;
-  }
-
-  .nav-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-    min-height: 44px;
-    flex-shrink: 0;
-  }
-
-  .menu-toggle-btn {
-    font-size: 1.3rem;
-    min-width: 44px;
-    min-height: 44px;
   }
 
   .mobile-menu-item {
@@ -477,8 +431,8 @@ input:focus-visible,
     padding: 1rem 0.75rem;
   }
 
-  .race-list-section h2,
-  .prediction-section h2 {
+  .app .race-list-section h2,
+  .app .prediction-section h2 {
     font-size: 1.5rem;
     margin-bottom: 1.25rem;
   }
@@ -493,11 +447,11 @@ input:focus-visible,
     gap: 1rem;
   }
 
-  .race-card {
+  .race-list-section .race-card {
     padding: 1.25rem;
   }
 
-  .race-card-header h3 {
+  .race-list-section .race-card-header h3 {
     font-size: 1.3rem;
   }
 
@@ -529,30 +483,10 @@ input:focus-visible,
     padding: 0.875rem 0.625rem;
   }
 
-  .logo h1 {
-    font-size: 1.2rem;
-  }
-
-  .logo-icon {
-    font-size: 1.75rem;
-  }
-
   .nav {
     gap: 0.4rem;
     overflow: visible;
     flex-wrap: wrap;
-  }
-
-  .nav-btn {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
-    min-height: 40px;
-  }
-
-  .menu-toggle-btn {
-    font-size: 1.2rem;
-    min-width: 44px;
-    min-height: 44px;
   }
 
   .mobile-menu-item {
@@ -565,16 +499,16 @@ input:focus-visible,
     padding: 0.875rem 0.625rem;
   }
 
-  .race-list-section h2,
-  .prediction-section h2 {
+  .app .race-list-section h2,
+  .app .prediction-section h2 {
     font-size: 1.3rem;
   }
 
-  .race-card {
+  .race-list-section .race-card {
     padding: 1rem;
   }
 
-  .race-card-header h3 {
+  .race-list-section .race-card-header h3 {
     font-size: 1.2rem;
   }
 
@@ -1166,31 +1100,34 @@ input:focus-visible,
     padding: 0.4rem 0.8rem;
   }
 
-  /* 的中レースセクションのモバイル対応 */
-  .hit-races-section {
-    padding: 1rem !important;
+  /* 的中レースセクションのモバイル対応。.hit-races-sectionの基本スタイルは
+     HitRaces.cssにありメディアクエリを持たないため、ここでの上書きが唯一の
+     モバイル対応。!importantでビルド順に頼らず勝たせていたが、.appでスコープし
+     詳細度で確実に勝たせる方式に変更（BOA-207） */
+  .app .hit-races-section {
+    padding: 1rem;
   }
 
-  .hit-races-section h2 {
-    font-size: 1.3rem !important;
+  .app .hit-races-section h2 {
+    font-size: 1.3rem;
   }
 
-  .hit-races-section h3 {
-    font-size: 1rem !important;
+  .app .hit-races-section h3 {
+    font-size: 1rem;
   }
 
   /* カードグリッドを1カラムに */
-  .hit-races-section > div > div:first-of-type {
-    grid-template-columns: 1fr !important;
+  .app .hit-races-section > div > div:first-of-type {
+    grid-template-columns: 1fr;
   }
 
   /* 統計情報のレイアウト調整 */
-  .hit-races-section > div:last-of-type > div {
-    flex-direction: column !important;
-    gap: 0.75rem !important;
+  .app .hit-races-section > div:last-of-type > div {
+    flex-direction: column;
+    gap: 0.75rem;
   }
 
-  .hit-races-section > div:last-of-type > div > div {
+  .app .hit-races-section > div:last-of-type > div > div {
     width: 100%;
   }
 }
@@ -1468,34 +1405,20 @@ input:focus-visible,
     padding: 0.5rem 0.375rem;
   }
 
-  .logo h1 {
-    font-size: 1rem;
-  }
-
-  .logo-icon {
-    font-size: 1.5rem;
-  }
-
-  .nav-btn {
-    padding: 0.35rem 0.6rem;
-    font-size: 0.75rem;
-    min-height: 38px;
-  }
-
   .container {
     padding: 0.5rem 0.375rem;
   }
 
-  .race-list-section h2,
-  .prediction-section h2 {
+  .app .race-list-section h2,
+  .app .prediction-section h2 {
     font-size: 1.1rem;
   }
 
-  .race-card {
+  .race-list-section .race-card {
     padding: 0.75rem;
   }
 
-  .race-card-header h3 {
+  .race-list-section .race-card-header h3 {
     font-size: 1rem;
   }
 
@@ -1585,11 +1508,11 @@ input:focus-visible,
    PC ホバーエフェクト（タッチデバイスでは無効）
    ===================================================== */
 @media (hover: hover) {
-  .race-card {
+  .race-list-section .race-card {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .race-card:hover {
+  .race-list-section .race-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   }

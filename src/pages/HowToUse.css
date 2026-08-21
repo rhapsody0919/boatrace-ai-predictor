@@ -88,7 +88,9 @@
   font-size: 1.5rem;
 }
 
-.step-number {
+/* .step-numberはAbout.cssにも同名クラスがあり衝突するため.step-nav-btnで
+   スコープする（BOA-207） */
+.step-nav-btn .step-number {
   font-size: 0.85rem;
   font-weight: 600;
 }

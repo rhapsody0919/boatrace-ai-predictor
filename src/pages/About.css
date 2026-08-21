@@ -232,12 +232,15 @@
   border: none;
 }
 
-.step-number {
+/* .step-numberはHowToUse.cssにも同名クラスがあり、CSSが全ページ分1つの
+   バンドルに結合されるためビルド順で意図しない側が勝つことがある。.ai-stepで
+   スコープし、!importantに頼らず詳細度で確実に勝たせる（BOA-207） */
+.ai-step .step-number {
   flex-shrink: 0;
   width: 40px;
   height: 40px;
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white !important;
+  color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -280,13 +283,15 @@
   text-align: center;
 }
 
-.stat-value {
+/* .stat-value/.stat-labelはsrc/pages/admin/AdminRules.cssにも同名クラスが
+   あり衝突するため.stat-cardでスコープする（BOA-207） */
+.stat-card .stat-value {
   font-size: 3rem;
   font-weight: bold;
   margin-bottom: 0.5rem;
 }
 
-.stat-label {
+.stat-card .stat-label {
   font-size: 1.1rem;
   opacity: 0.9;
 }
@@ -345,11 +350,14 @@
   opacity: 0.9;
 }
 
-.cta-button {
+/* .cta-buttonはBlogPost.css/Profile.cssにも同名クラスがあり、CSSが全ページ分
+   1つのバンドルに結合されるためビルド順で意図しない側が勝つことがある。
+   .about-ctaでスコープし、!importantに頼らず詳細度で確実に勝たせる（BOA-207） */
+.about-cta .cta-button {
   background: white;
   /* #0ea5e9は白背景で2.77:1しかなくAA未達（axe-core検出）。
      CookieConsentのaccept釦と同じvar(--color-primary-700)に変更 */
-  color: var(--color-primary-700) !important;
+  color: var(--color-primary-700);
   border: none;
   padding: 1rem 3rem;
   font-size: 1.2rem;
@@ -359,7 +367,7 @@
   transition: all 0.3s ease;
 }
 
-.cta-button:hover {
+.about-cta .cta-button:hover {
   transform: scale(1.05);
   box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
@@ -430,7 +438,7 @@
     padding: 1.25rem;
   }
 
-  .stat-value {
+  .stat-card .stat-value {
     font-size: 2rem;
   }
 
@@ -442,7 +450,7 @@
     font-size: 1.4rem;
   }
 
-  .cta-button {
+  .about-cta .cta-button {
     padding: 0.75rem 2rem;
     font-size: 1rem;
   }

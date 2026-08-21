@@ -286,14 +286,15 @@
   color: white !important;
 }
 
-.cta-button {
+/* .cta-buttonはAbout.css/Profile.cssにも同名クラスがある。以前は!importantで
+   値を揃えて衝突を無害化していたが、値が将来食い違うと再発するため
+   .post-ctaでスコープする恒久対応に変更（BOA-207） */
+.post-cta .cta-button {
   display: inline-block;
   background: white;
   /* #0ea5e9は白背景で2.77:1しかなくAA未達。About.css/CookieConsentのaccept釦と
-     同じvar(--color-primary-700)に変更（.cta-buttonはAbout.css/Profile.cssにも
-     同名クラスがあるが、いずれも!importantで指定されており詳細度は同点のため
-     値を揃えることで衝突を無害化している） */
-  color: var(--color-primary-700) !important;
+     同じvar(--color-primary-700)に変更 */
+  color: var(--color-primary-700);
   border: none;
   padding: 1rem 2.5rem;
   font-size: 1.1rem;
@@ -303,7 +304,7 @@
   transition: all 0.3s ease;
 }
 
-.cta-button:hover {
+.post-cta .cta-button:hover {
   transform: scale(1.05);
   box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }

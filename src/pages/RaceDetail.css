@@ -9,38 +9,34 @@
   margin: 0 auto;
 }
 
-.page-header {
+/* .page-headerは他ページのCSSにも同名クラスがあり衝突するため親スコープで指定 */
+.race-detail-page .page-header {
   text-align: center;
   margin-bottom: 2rem;
   color: var(--text-primary);
 }
 
-.page-header h1 {
+/* .page-header h1は他ページ（OutcomeDistribution.css/AccuracyHistory.css/
+   RaceHistory.css）にも同名クラスがあり、CSSが全ページ分1つのバンドルに
+   結合されるためビルド順で意図しない側が勝ってしまう。親要素で詳細度を
+   上げて確実に自ページのスタイルを効かせる（BOA-206/BOA-207） */
+.race-detail-page .page-header h1 {
   font-size: 2.5rem;
   margin-bottom: 1rem;
   text-shadow: none;
   font-weight: 700;
-}
-
-/* .page-header h1は他ページ（OutcomeDistribution.css等）にも同名クラスがあり、
-   CSSが全ページ分1つのバンドルに結合されるため、ビルド順によって
-   color:#0f172a（固定・ライト専用）が意図せず勝ってしまう。
-   親要素で詳細度を上げて確実にトークンを効かせる */
-.race-detail-page .page-header h1 {
   color: var(--text-primary);
 }
 
-.back-link {
+/* .back-linkはAccuracyHistory.css/BlogPost.cssにも同名クラスがあり、CSSが全ページ分
+   1つのバンドルに結合されるためビルド順で意図しない側（#0ea5e9固定・コントラスト
+   不足やfont-sizeの違い等）が勝ってしまう。var(--color-primary-700)も試したが
+   ダーク時のページ背景(#0d1b2e)で2.92:1と未達のため、両テーマのページ背景で
+   検証済みのvar(--brand-accent-secondary)（銀）を親スコープで指定（BOA-206/BOA-207） */
+.race-detail-page .back-link {
   text-decoration: none;
   font-size: 1rem;
   transition: color 0.3s ease;
-}
-
-/* .back-linkはAccuracyHistory.css/BlogPost.cssにも同名クラスがあり、CSSが全ページ分
-   1つのバンドルに結合されるためビルド順で#0ea5e9（固定・コントラスト不足）が勝ってしまう。
-   var(--color-primary-700)も試したがダーク時のページ背景(#0d1b2e)で2.92:1と未達のため、
-   両テーマのページ背景で検証済みのvar(--brand-accent-secondary)（銀）を親スコープで指定 */
-.race-detail-page .back-link {
   color: var(--brand-accent-secondary);
 }
 
@@ -164,20 +160,26 @@
   margin-bottom: 2rem;
 }
 
-.race-list-section h2 {
+/* App.cssにも同名クラスがあり衝突するため.race-detail-pageでスコープする（BOA-207） */
+.race-detail-page .race-list-section h2 {
   font-size: 1.75rem;
   color: var(--text-primary);
   margin-bottom: 1.5rem;
   text-shadow: none;
 }
 
-.race-grid {
+/* race-grid〜spinnerまでの各セレクタはApp.css（ホーム画面）にも同名クラスが
+   存在し、意図的に異なるデザイン（余白・配色）を与えている。CSSが全ページ分
+   1つのバンドルに結合されビルド順で意図しない側が勝つ事故が過去にあったため
+   （BOA-206/BOA-207）、.race-detail-page配下に限定する詳細度スコープで
+   確実に自ページのスタイルが勝つようにする */
+.race-detail-page .race-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
-.race-card {
+.race-detail-page .race-card {
   background: var(--surface-card);
   border-radius: 16px;
   padding: 1.5rem;
@@ -186,26 +188,26 @@
   border: 2px solid transparent;
 }
 
-.race-card:hover {
+.race-detail-page .race-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
   border-color: #0ea5e9;
 }
 
-.race-card-header {
+.race-detail-page .race-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
 }
 
-.race-card-header h3 {
+.race-detail-page .race-card-header h3 {
   font-size: 1.25rem;
   color: var(--text-primary);
   font-weight: 600;
 }
 
-.race-number {
+.race-detail-page .race-number {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white !important;
   padding: 0.5rem 1rem;
@@ -214,7 +216,7 @@
   font-size: 1.1rem;
 }
 
-.predict-btn {
+.race-detail-page .predict-btn {
   width: 100%;
   padding: 0.875rem 1.5rem;
   background: linear-gradient(135deg, #FF6B35 0%, #FFB347 100%);
@@ -229,17 +231,17 @@
   margin-top: 1rem;
 }
 
-.predict-btn:hover {
+.race-detail-page .predict-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
 }
 
-.predict-btn:active {
+.race-detail-page .predict-btn:active {
   transform: translateY(0);
 }
 
 /* 予想結果セクション（App.cssと同じ） */
-.prediction-section {
+.race-detail-page .prediction-section {
   background: var(--surface-card);
   border-radius: 16px;
   padding: 2rem;
@@ -247,7 +249,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
-.prediction-section h2 {
+.race-detail-page .prediction-section h2 {
   font-size: 1.75rem;
   margin-bottom: 2rem;
   color: var(--text-primary) !important;
@@ -269,15 +271,15 @@
 }
 
 
-/* レース結果 */
-.race-result {
+/* レース結果（App.cssと同名クラスのため.race-detail-pageでスコープ、BOA-207） */
+.race-detail-page .race-result {
   background: var(--surface-card);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   border: var(--border-width-1) solid var(--border-hairline);
 }
 
-.race-result h4 {
+.race-detail-page .race-result h4 {
   font-size: 1.25rem;
   margin-bottom: 1.5rem;
   color: var(--text-primary);
@@ -303,7 +305,8 @@
   margin-top: 1rem;
 }
 
-.spinner {
+/* App.cssの.spinnerと同名のため.loading-container配下にスコープ（BOA-207） */
+.loading-container .spinner {
   border: 4px solid var(--border-hairline);
   border-top: 4px solid #0ea5e9;
   border-radius: 50%;
@@ -344,7 +347,7 @@
 
 /* レスポンシブ */
 @media (max-width: 768px) {
-  .page-header h1 {
+  .race-detail-page .page-header h1 {
     font-size: 2rem;
   }
 
@@ -371,7 +374,7 @@
     padding: 1.5rem 1rem;
   }
 
-  .page-header h1 {
+  .race-detail-page .page-header h1 {
     font-size: 1.75rem;
   }
 
@@ -385,55 +388,56 @@
 
 }
 
-/* 会場攻略ガイドリンク */
-.venue-guide-link {
+/* 会場攻略ガイドリンク（App.cssと同名クラスのため.race-detail-pageでスコープ。
+   あわせて薄い青グラデーション背景+濃色文字はダークテーマで浮くため、
+   App.css側と同じトークンに統一する、BOA-206/BOA-207） */
+.race-detail-page .venue-guide-link {
   margin-top: 2rem;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
-.venue-guide-link a {
+.race-detail-page .venue-guide-link a {
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  background: var(--surface-card);
   text-decoration: none;
   transition: all 0.3s ease;
 }
 
-.venue-guide-link a:hover {
-  background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%);
-  transform: translateX(4px);
+.race-detail-page .venue-guide-link a:hover {
+  border-color: var(--brand-accent-primary);
 }
 
-.venue-guide-icon {
+.race-detail-page .venue-guide-icon {
   font-size: 2rem;
   flex-shrink: 0;
 }
 
-.venue-guide-content {
+.race-detail-page .venue-guide-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.venue-guide-title {
+.race-detail-page .venue-guide-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #0369a1;
+  color: var(--text-primary);
 }
 
-.venue-guide-desc {
+.race-detail-page .venue-guide-desc {
   font-size: 0.9rem;
-  color: #0284c7;
+  color: var(--text-secondary);
 }
 
-.venue-guide-arrow {
+.race-detail-page .venue-guide-arrow {
   font-size: 1.5rem;
-  color: #0ea5e9;
+  color: var(--brand-accent-primary);
   font-weight: 700;
 }
 
@@ -485,7 +489,7 @@
     padding: 1rem 0.75rem;
   }
 
-  .page-header h1 {
+  .race-detail-page .page-header h1 {
     font-size: 1.4rem;
   }
 
@@ -495,18 +499,7 @@
     min-width: 80px;
   }
 
-  .podium-item {
-    padding: 0.75rem;
-    min-width: 70px;
-  }
-
-  .podium-item .boat-number {
-    font-size: 1.75rem;
-  }
-
-  .podium-item .rank {
-    font-size: 0.75rem;
-  }
+  /* .podium-item系はApp.cssで一元管理のためここでは定義しない（BOA-207） */
 }
 
 /* データ分析ツールへの導線（本日のレースのみ） */
