@@ -2,8 +2,8 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem;
-  background: #ffffff;
-  color: #1e293b;
+  background: var(--surface-page);
+  color: var(--text-primary);
   min-height: 100vh;
 }
 
@@ -15,15 +15,31 @@
 .how-to-use-header h1 {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
+  /* background-clip:textのグラデーション見出しはaxe-coreで検証できないコントラスト問題があった
+     （ライト背景で薄い青は2.5:1、逆に濃くするとダーク背景で沈む）ため、テーマごとに色調を変える */
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+[data-theme="light"] .how-to-use-header h1 {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .how-to-use-header h1 {
+    background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+}
+
 .how-to-use-header p {
   font-size: 1.1rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* ステップナビゲーション */
@@ -43,16 +59,16 @@
   align-items: center;
   gap: 0.5rem;
   padding: 1rem;
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
+  background: var(--surface-card);
+  border: 2px solid var(--border-hairline);
   border-radius: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .step-nav-btn:hover {
-  background: #f1f5f9;
+  background: var(--surface-page);
   border-color: rgba(14, 165, 233, 0.5);
   transform: translateY(-2px);
 }
@@ -79,8 +95,8 @@
 
 /* ステップコンテンツ */
 .step-content {
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
+  background: var(--surface-card);
+  border: 2px solid var(--border-hairline);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -93,7 +109,7 @@
   gap: 1rem;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--border-hairline);
 }
 
 .step-icon-large {
@@ -114,12 +130,14 @@
 }
 
 .step-body strong {
-  color: #0ea5e9;
+  /* #0ea5e9はカード背景上でコントラスト不足（axe-core検出）。両テーマのpage/card背景で
+     検証済みのvar(--brand-accent-secondary)（銀）に変更 */
+  color: var(--brand-accent-secondary);
   font-weight: 600;
 }
 
 .step-detail {
-  background: #f1f5f9;
+  background: var(--surface-page);
   border-left: 4px solid #0ea5e9;
   padding: 1.5rem;
   margin: 1.5rem 0;
@@ -127,7 +145,8 @@
 }
 
 .step-detail h4 {
-  color: #0ea5e9;
+  /* .step-body strongと同じ理由でvar(--brand-accent-secondary)に変更 */
+  color: var(--brand-accent-secondary);
   margin-top: 0;
   margin-bottom: 1rem;
   font-size: 1.2rem;
@@ -157,7 +176,9 @@
 
 .example-title {
   font-weight: bold;
-  color: #0ea5e9;
+  /* .step-body strongと同じ#0ea5e9コントラスト不足パターン。
+     var(--brand-accent-secondary)に変更 */
+  color: var(--brand-accent-secondary);
   margin-bottom: 0.5rem;
 }
 
@@ -272,12 +293,12 @@
 }
 
 .nav-button.prev {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--border-hairline);
+  color: var(--text-primary);
 }
 
 .nav-button.prev:hover {
-  background: #e2e8f0;
+  background: var(--border-hairline);
   transform: translateX(-4px);
 }
 
@@ -305,8 +326,8 @@
 .faq-link-section {
   text-align: center;
   padding: 2rem;
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
+  background: var(--surface-card);
+  border: 2px solid var(--border-hairline);
   border-radius: 16px;
 }
 
@@ -314,11 +335,11 @@
   margin-top: 0;
   margin-bottom: 0.5rem;
   font-size: 1.5rem;
-  color: #1e293b !important;
+  color: var(--text-primary) !important;
 }
 
 .faq-link-section p {
-  color: #64748b !important;
+  color: var(--text-secondary) !important;
   margin-bottom: 1.5rem;
 }
 

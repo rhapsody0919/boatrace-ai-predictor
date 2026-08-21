@@ -13,7 +13,8 @@ import { WatsonExplanation } from "./explanations";
 import BoatChip from "./BoatChip";
 import "./HolmesWatson.css";
 
-const THEME = "#0284c7";
+// #0284c7は白文字で4.10:1しかなくAA未達のため濃色に変更（axe-core検出、Holmes.jsxのTABS配列と統一）
+const THEME = "#0369a1";
 
 function formatJstTime(iso) {
   if (!iso) return null;

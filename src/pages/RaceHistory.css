@@ -1,6 +1,6 @@
 .race-history-page {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--surface-page);
   padding: 2rem 1rem;
 }
 
@@ -12,7 +12,7 @@
 .page-header {
   text-align: center;
   margin-bottom: 2rem;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .page-header h1 {
@@ -21,16 +21,29 @@
   text-shadow: none;
 }
 
+/* .page-header h1は他ページ（RaceDetail.css/OutcomeDistribution.css等）にも同名クラスがあり、
+   CSSが全ページ分1つのバンドルに結合されるため、ビルド順によって
+   固定色（例: OutcomeDistribution.cssのcolor:#0f172a）が意図せず勝ってしまう。
+   親要素で詳細度を上げて確実にトークンを効かせる */
+.race-history-page .page-header h1 {
+  color: var(--text-primary);
+}
+
+/* .page-descriptionはbackgroundが未設定で.race-history-pageの背景(旧#ffffff固定)を
+   継承していたが、ダークテーマ化に伴いテキスト側だけ淡色に振れ、
+   ページ背景が旧来通り白のままだと不可視になる（1.03:1）。背景・文字色とも明示指定する */
 .page-description {
   font-size: 1.1rem;
   opacity: 0.9;
   max-width: 600px;
   margin: 0 auto;
+  background: var(--surface-page);
+  color: var(--text-primary);
 }
 
 /* 日付一覧セクション */
 .dates-section {
-  background: white;
+  background: var(--surface-card);
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -38,10 +51,13 @@
 
 /* LoadingScreenコンポーネントを使用 */
 
-.no-data {
+/* .no-dataはAccuracyHistory.css/OutcomePatternPreview.cssにも同名クラスがあり、
+   CSSが全ページ分1つのバンドルに結合されるためビルド順で固定色（AccuracyHistory.css側の
+   color:#475569）が意図せず勝つ可能性がある。親スコープで詳細度を上げて確実にトークンを効かせる */
+.race-history-page .no-data {
   text-align: center;
   padding: 3rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* 月別グループ */
@@ -52,7 +68,7 @@
 }
 
 .month-group {
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--border-hairline);
   border-radius: 12px;
   transition: all 0.3s ease;
 }
@@ -67,13 +83,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: var(--surface-page);
   cursor: pointer;
   transition: background 0.3s ease;
 }
 
 .month-header:hover {
-  background: linear-gradient(135deg, #e8eaf0 0%, #b8c5d9 100%);
+  background: var(--border-hairline);
 }
 
 .month-title {
@@ -84,19 +100,21 @@
 
 .month-title h2 {
   font-size: 1.3rem;
-  color: #333;
+  color: var(--text-primary);
   margin: 0;
 }
 
+/* #0ea5e9はライト/ダーク双方のカード背景でコントラスト不足（2.5〜2.8:1）となるため、
+   両テーマの背景で検証済みのvar(--brand-accent-secondary)に置き換える */
 .expand-icon {
   font-size: 0.9rem;
-  color: #0ea5e9;
+  color: var(--brand-accent-secondary);
   transition: transform 0.3s ease;
 }
 
 .month-summary {
   font-size: 0.95rem;
-  color: #475569;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -104,12 +122,12 @@
   display: grid;
   gap: 1rem;
   padding: 1.5rem;
-  background: #fafafa;
+  background: var(--surface-page);
 }
 
 .date-card {
-  background: white;
-  border: 2px solid #e9ecef;
+  background: var(--surface-card);
+  border: 2px solid var(--border-hairline);
   border-radius: 12px;
   padding: 1.25rem;
   text-decoration: none;
@@ -131,19 +149,19 @@
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .date-card-header h3 {
   font-size: 1.2rem;
-  color: #333;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .race-count {
   font-size: 0.9rem;
-  color: #475569;
-  background: #e9ecef;
+  color: var(--text-secondary);
+  background: var(--surface-page);
   padding: 0.3rem 0.8rem;
   border-radius: 20px;
 }
@@ -157,35 +175,39 @@
 
 .date-card-turn-stat-label {
   font-size: 0.9rem;
-  color: #475569;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
+/* #0369a1(--color-primary-700)はライトカードでは5.93:1で問題ないが、
+   ダークカード背景(#142842)では2.51:1までしか出ずAA未達（既知の落とし穴）。
+   両テーマのカード背景で検証済みのvar(--brand-accent-secondary)に置き換える */
 .date-card-turn-stat-value {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #0369a1;
+  color: var(--brand-accent-secondary);
 }
 
 .date-card-turn-stat-count {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .date-card-turn-stat-empty {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .date-card-footer {
   text-align: right;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--border-hairline);
 }
 
+/* #0ea5e9はライト/ダーク双方のカード背景でコントラスト不足となるためbrand-accent-secondaryに置き換え */
 .view-detail {
-  color: #0ea5e9;
+  color: var(--brand-accent-secondary);
   font-weight: 600;
   font-size: 0.9rem;
 }

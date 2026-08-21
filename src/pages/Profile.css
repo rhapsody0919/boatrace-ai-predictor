@@ -3,7 +3,7 @@
     margin: 0 auto;
     padding: 2rem 1rem;
     min-height: 100vh;
-    background: #ffffff;
+    background: var(--surface-page);
 }
 
 .profile-header {
@@ -14,12 +14,12 @@
 .profile-header h1 {
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
-    color: #1e293b;
+    color: var(--text-primary);
 }
 
 .profile-header p {
     font-size: 1.2rem;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 /* Profile Card */
@@ -31,8 +31,8 @@
     display: flex;
     gap: 2rem;
     align-items: center;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border: 2px solid #e2e8f0;
+    background: var(--surface-card);
+    border: 2px solid var(--border-hairline);
     border-radius: 16px;
     padding: 2rem;
 }
@@ -66,13 +66,13 @@
 
 .profile-name {
     font-size: 2rem;
-    color: #1e293b;
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
 .profile-title {
     font-size: 1.1rem;
-    color: #64748b;
+    color: var(--text-secondary);
     margin-bottom: 1rem;
 }
 
@@ -82,8 +82,13 @@
     gap: 0.5rem;
 }
 
-.tag {
-    background: #0ea5e9;
+/* 同名クラス: src/pages/Blog.css にも .tag があり(白背景+青文字)、
+   全ページCSSが1バンドルに結合されるためこちらのスコープなしでは衝突する。
+   .profile-tags 配下に限定して両者が干渉しないようにする */
+.profile-tags .tag {
+    /* #0ea5e9背景+白文字は2.77:1でAA未達(axe-core検出)。
+       背景をvar(--color-primary-700)に濃くして白文字のコントラストを確保(5.93:1) */
+    background: var(--color-primary-700);
     color: white;
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
@@ -98,7 +103,7 @@
 .profile-section h2 {
     font-size: 1.75rem;
     margin-bottom: 1.5rem;
-    color: #1e293b;
+    color: var(--text-primary);
     border-left: 5px solid #0ea5e9;
     padding-left: 1rem;
 }
@@ -106,7 +111,7 @@
 .profile-section p {
     font-size: 1.1rem;
     line-height: 1.8;
-    color: #475569;
+    color: var(--text-secondary);
     margin-bottom: 1rem;
 }
 
@@ -120,7 +125,7 @@
     gap: 1.5rem;
     margin-bottom: 2rem;
     padding-bottom: 2rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-hairline);
 }
 
 .story-item:last-child {
@@ -141,7 +146,7 @@
 
 .story-content h3 {
     font-size: 1.3rem;
-    color: #1e293b;
+    color: var(--text-primary);
     margin-bottom: 0.75rem;
 }
 
@@ -151,11 +156,11 @@
 
 .story-example {
     font-size: 0.95rem;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-style: italic;
     margin-top: 0.5rem;
     padding-left: 1rem;
-    border-left: 2px solid #e2e8f0;
+    border-left: 2px solid var(--border-hairline);
 }
 
 /* Lessons Grid */
@@ -167,8 +172,8 @@
 }
 
 .lesson-card {
-    background: white;
-    border: 2px solid #e2e8f0;
+    background: var(--surface-card);
+    border: 2px solid var(--border-hairline);
     border-radius: 12px;
     padding: 1.5rem;
     transition: all 0.3s ease;
@@ -186,23 +191,23 @@
 
 .lesson-card h3 {
     font-size: 1.2rem;
-    color: #1e293b;
+    color: var(--text-primary);
     margin-bottom: 0.75rem;
 }
 
 .lesson-card p {
     font-size: 1rem;
-    color: #64748b;
+    color: var(--text-secondary);
     margin: 0;
 }
 
 .lesson-example {
     font-size: 0.9rem;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-style: italic;
     margin-top: 0.5rem;
     padding-left: 1rem;
-    border-left: 2px solid #e2e8f0;
+    border-left: 2px solid var(--border-hairline);
 }
 
 /* Experience List */
@@ -214,7 +219,7 @@
     display: flex;
     gap: 2rem;
     padding: 1.5rem 0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-hairline);
 }
 
 .experience-item:last-child {
@@ -225,19 +230,22 @@
     flex-shrink: 0;
     width: 120px;
     font-size: 0.95rem;
-    color: #0ea5e9;
+    /* #0ea5e9はテキスト色として2.5〜2.8:1しかなくAA未達(axe-core検出)。
+       ダークテーマではページ背景も暗転するため、両テーマ・両背景で安全な
+       var(--brand-accent-secondary)に変更 */
+    color: var(--brand-accent-secondary);
     font-weight: 600;
 }
 
 .experience-content h3 {
     font-size: 1.2rem;
-    color: #1e293b;
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
 .experience-content p {
     font-size: 1rem;
-    color: #64748b;
+    color: var(--text-secondary);
     margin: 0;
 }
 
@@ -285,11 +293,13 @@
 
 .contact-note {
     font-size: 1rem;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 .contact-note a {
-    color: #0ea5e9;
+    /* #0ea5e9はテキスト色として2.5〜2.8:1しかなくAA未達(axe-core検出)。
+       両テーマ・両背景で安全なvar(--brand-accent-secondary)に変更 */
+    color: var(--brand-accent-secondary);
     text-decoration: none;
 }
 
@@ -322,9 +332,14 @@
     opacity: 0.9;
 }
 
-.cta-button {
+/* 同名クラス: src/pages/About.css・src/pages/BlogPost.css にも .cta-button があり、
+   全ページCSSが1バンドルに結合されるためスコープなしではバンドル順で衝突する。
+   .profile-container 配下に限定して他ページの定義と干渉しないようにする。
+   あわせて #0ea5e9背景+白文字と同型の白背景+#0ea5e9文字(2.77:1でAA未達、axe-core検出)を
+   About.cssの.cta-button修正と同じvar(--color-primary-700)(5.93:1)で解消 */
+.profile-container .cta-button {
     background: white;
-    color: #0ea5e9;
+    color: var(--color-primary-700);
     border: none;
     padding: 1rem 2.5rem;
     font-size: 1.1rem;
@@ -334,7 +349,7 @@
     transition: all 0.3s ease;
 }
 
-.cta-button:hover {
+.profile-container .cta-button:hover {
     transform: scale(1.05);
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }

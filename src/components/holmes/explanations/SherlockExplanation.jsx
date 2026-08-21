@@ -348,7 +348,11 @@ function SherlockExplanation() {
 
       <ul className="explanation-key-points">
         <li>
-          <span style={{ color: "#059669", fontWeight: 600 }}>
+          <span
+            style={{ color: "var(--brand-accent-secondary)", fontWeight: 600 }}
+          >
+            {/* #059669は白/カード背景で3.6〜3.9:1しかなくAA未達（axe-core検出）。
+                単色の濃色化では片方のテーマで必ず失敗するため両テーマ対応の銀トークンに変更 */}
             市場オッズを「特徴量」として使う
           </span>
           のが最大の特徴。オッズには何万人分の情報が凝縮されており、

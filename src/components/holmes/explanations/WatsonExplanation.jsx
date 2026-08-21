@@ -243,7 +243,10 @@ function WatsonExplanation() {
 
       <ul className="explanation-key-points">
         <li style={{ "--bullet-color": "#0284c7" }}>
-          <span style={{ color: "#0284c7" }}>LambdaRank</span>{" "}
+          {/* #0284c7はカード背景で片方のテーマのみ通過のため両テーマ対応の銀トークンに変更 */}
+          <span style={{ color: "var(--brand-accent-secondary)" }}>
+            LambdaRank
+          </span>{" "}
           により、単純な回帰・分類でなく「6艇の順位」を直接最適化
         </li>
         <li>

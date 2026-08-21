@@ -19,7 +19,7 @@
 .watson-stat-value {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #0284c7;
+  color: #0369a1; /* axe-core: 白文字4.10:1未達につき濃色化と統一 */
 }
 
 .watson-stat-label {
@@ -30,7 +30,7 @@
 
 .watson-stat-sub {
   display: block;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.7rem;
 }
 
@@ -47,7 +47,7 @@
 
 /* ===== ライブ診断 ===== */
 .watson-loading {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   padding: 0.5rem 0;
 }
@@ -96,7 +96,7 @@
 }
 
 .watson-race-time {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
@@ -106,7 +106,7 @@
 }
 
 .watson-race-pick strong {
-  color: #0284c7;
+  color: #0369a1; /* axe-core: 白文字4.10:1未達につき濃色化と統一 */
 }
 
 .watson-prob-badge {
@@ -212,7 +212,7 @@
 }
 
 .watson-contrib-sign.plus {
-  color: #059669;
+  color: #047857; /* axe-core: #059669は白文字背景で3.77:1未達のため濃色化 */
 }
 
 .watson-contrib-sign.minus {
@@ -221,7 +221,7 @@
 
 .watson-contrib-value {
   margin-left: auto;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 

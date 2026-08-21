@@ -14,13 +14,15 @@ const TABS = [
   {
     key: "sherlock",
     label: "🔍 シャーロック",
-    color: "#059669",
+    // #059669は白文字で3.77:1しかなくAA未達のため濃色に変更（axe-core検出）
+    color: "#047857",
     Component: HolmesSherlock,
   },
   {
     key: "watson",
     label: "🩺 ワトソン",
-    color: "#0284c7",
+    // #0284c7は白文字で4.10:1しかなくAA未達のため濃色に変更（axe-core検出）
+    color: "#0369a1",
     Component: HolmesWatson,
   },
   {
@@ -32,7 +34,8 @@ const TABS = [
   {
     key: "mycroft",
     label: "🏛️ マイクロフト",
-    color: "#ca8a04",
+    // #ca8a04は白文字で2.94:1しかなくAA未達のため濃色に変更（axe-core検出）
+    color: "#92400e",
     Component: HolmesMycroft,
   },
   {

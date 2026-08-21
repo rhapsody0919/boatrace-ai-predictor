@@ -30,7 +30,7 @@
 
 .adler-stat-sub {
   display: block;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.7rem;
 }
 
@@ -47,7 +47,7 @@
 
 /* ===== ライブ推理 ===== */
 .adler-loading {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   padding: 0.5rem 0;
 }
@@ -96,7 +96,7 @@
 }
 
 .adler-race-time {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 

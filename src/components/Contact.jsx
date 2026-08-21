@@ -14,7 +14,7 @@ export default function Contact() {
           maxWidth: "900px",
           margin: "0 auto",
           padding: "2rem",
-          backgroundColor: "#ffffff",
+          backgroundColor: "var(--surface-page)",
           minHeight: "100vh",
         }}
       >
@@ -22,7 +22,7 @@ export default function Contact() {
           style={{
             fontSize: "2rem",
             fontWeight: "700",
-            color: "#0f172a",
+            color: "var(--text-primary)",
             marginBottom: "1.5rem",
             borderBottom: "3px solid #0ea5e9",
             paddingBottom: "0.5rem",
@@ -33,7 +33,7 @@ export default function Contact() {
 
         <p
           style={{
-            color: "#475569",
+            color: "var(--text-secondary)",
             lineHeight: "1.8",
             marginBottom: "2rem",
           }}
@@ -43,18 +43,18 @@ export default function Contact() {
 
         <div
           style={{
-            backgroundColor: "#f1f5f9",
+            backgroundColor: "var(--surface-card)",
             padding: "1.5rem",
             borderRadius: "8px",
             marginBottom: "2rem",
-            border: "1px solid #cbd5e1",
+            border: "1px solid var(--border-hairline)",
           }}
         >
           <h2
             style={{
               fontSize: "1.25rem",
               fontWeight: "600",
-              color: "#1e293b",
+              color: "var(--text-primary)",
               marginBottom: "1rem",
             }}
           >
@@ -62,7 +62,7 @@ export default function Contact() {
           </h2>
           <ul
             style={{
-              color: "#475569",
+              color: "var(--text-secondary)",
               lineHeight: "1.8",
               paddingLeft: "1.5rem",
             }}
@@ -101,7 +101,7 @@ export default function Contact() {
 
         <div
           style={{
-            backgroundColor: "#f1f5f9",
+            backgroundColor: "var(--surface-card)",
             padding: "1.5rem",
             borderRadius: "8px",
             marginBottom: "2rem",
@@ -111,7 +111,7 @@ export default function Contact() {
             style={{
               fontSize: "1.25rem",
               fontWeight: "600",
-              color: "#1e293b",
+              color: "var(--text-primary)",
               marginBottom: "1rem",
             }}
           >
@@ -123,7 +123,7 @@ export default function Contact() {
               style={{
                 fontSize: "1.1rem",
                 fontWeight: "600",
-                color: "#1e293b",
+                color: "var(--text-primary)",
                 marginBottom: "0.5rem",
               }}
             >
@@ -131,7 +131,7 @@ export default function Contact() {
             </h3>
             <p
               style={{
-                color: "#475569",
+                color: "var(--text-secondary)",
                 lineHeight: "1.8",
                 marginLeft: "1rem",
               }}
@@ -140,7 +140,10 @@ export default function Contact() {
               展開予測の的中率は約79%です（実測値）。複勝予想は実測精度の算出方法を見直し中のため、一時的に表示を停止しています。詳細は
               <Link
                 to="/accuracy"
-                style={{ color: "#0ea5e9", textDecoration: "underline" }}
+                style={{
+                  color: "var(--brand-accent-secondary)",
+                  textDecoration: "underline",
+                }}
               >
                 精度ダッシュボード
               </Link>
@@ -153,7 +156,7 @@ export default function Contact() {
               style={{
                 fontSize: "1.1rem",
                 fontWeight: "600",
-                color: "#1e293b",
+                color: "var(--text-primary)",
                 marginBottom: "0.5rem",
               }}
             >
@@ -161,7 +164,7 @@ export default function Contact() {
             </h3>
             <p
               style={{
-                color: "#475569",
+                color: "var(--text-secondary)",
                 lineHeight: "1.8",
                 marginLeft: "1rem",
               }}
@@ -176,7 +179,7 @@ export default function Contact() {
               style={{
                 fontSize: "1.1rem",
                 fontWeight: "600",
-                color: "#1e293b",
+                color: "var(--text-primary)",
                 marginBottom: "0.5rem",
               }}
             >
@@ -184,7 +187,7 @@ export default function Contact() {
             </h3>
             <p
               style={{
-                color: "#475569",
+                color: "var(--text-secondary)",
                 lineHeight: "1.8",
                 marginLeft: "1rem",
               }}
@@ -198,7 +201,7 @@ export default function Contact() {
               style={{
                 fontSize: "1.1rem",
                 fontWeight: "600",
-                color: "#1e293b",
+                color: "var(--text-primary)",
                 marginBottom: "0.5rem",
               }}
             >
@@ -206,7 +209,7 @@ export default function Contact() {
             </h3>
             <p
               style={{
-                color: "#475569",
+                color: "var(--text-secondary)",
                 lineHeight: "1.8",
                 marginLeft: "1rem",
               }}
@@ -222,7 +225,7 @@ export default function Contact() {
           style={{
             marginTop: "3rem",
             padding: "1.5rem",
-            backgroundColor: "#f1f5f9",
+            backgroundColor: "var(--surface-card)",
             borderRadius: "8px",
             textAlign: "center",
           }}
@@ -230,7 +233,7 @@ export default function Contact() {
           <Link
             to="/"
             style={{
-              color: "#0ea5e9",
+              color: "var(--brand-accent-secondary)",
               textDecoration: "none",
               fontSize: "1rem",
               fontWeight: "600",

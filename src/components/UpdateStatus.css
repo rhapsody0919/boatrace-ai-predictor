@@ -38,7 +38,8 @@
 
 .update-relative {
   font-size: 0.85rem;
-  opacity: 0.8;
+  /* opacity:0.8で白文字と.update-status.staleの濃色背景が合成されると
+     4.5:1未達になる（axe-core検出、旧Footerと同種のopacity起因バグ）ため外す */
 }
 
 /* 更新ボタン */

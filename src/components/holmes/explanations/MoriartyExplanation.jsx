@@ -375,7 +375,8 @@ function MoriartyExplanation() {
       <ul className="explanation-key-points">
         <li>
           他3モデルは「誰が勝つか」を予想するが、
-          <span style={{ color: "#1f2937", fontWeight: "600" }}>
+          {/* #1f2937はダーク時のカード背景で1.01:1（ほぼ不可視）だったためテーマ連動色に変更 */}
+          <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
             モリアーティは「どう賭ければ儲かるか」
           </span>
           を計算するメタモデル
