@@ -931,6 +931,7 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
     "/accuracy",
     "/races/2026-06-22",
     "/responsible-gambling",
+    "/hit-races",
   ];
 
   for (const path of PAGES) {
