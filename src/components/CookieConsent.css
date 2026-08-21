@@ -47,7 +47,9 @@
 }
 
 .cookie-consent__accept {
-  background: #0ea5e9;
+  /* axe-coreでcolor-contrast違反を検出済み（#0ea5e9背景+白文字は2.77:1でWCAG AA未達）。
+     既存トークンのvar(--color-primary-700)（#0369a1、白文字で5.93:1）に変更しAA(4.5:1)を確保 */
+  background: var(--color-primary-700);
   color: #fff;
   border: none;
   padding: 0.5rem 1.25rem;
@@ -59,7 +61,7 @@
 }
 
 .cookie-consent__accept:hover {
-  background: #0284c7;
+  background: color-mix(in srgb, var(--color-primary-700) 85%, black);
 }
 
 .cookie-consent__reject {

@@ -8,8 +8,6 @@ export const THEMES = {
   DARK: "dark",
 };
 
-// ダークテーマは基盤（トークン・状態管理・ThemeToggle）は実装済みだが、
-// App.css配下の広範な未トークン化領域（ブログプレビュー・レース一覧カード等）で
-// 白背景が浮いて見える不具合が残っているため一般公開を見送っている（BOA-206）。
-// BOA-206解消後にtrueへ変更してThemeToggleを表示する。
-export const THEME_SWITCHING_ENABLED = false;
+// BOA-206でApp.css/RaceDetail.css/About.css/AccuracyDashboard.css等の未トークン化領域を
+// 解消し、ThemeToggleを再有効化した（2026-08-21）。
+export const THEME_SWITCHING_ENABLED = true;

@@ -105,7 +105,10 @@ function Header() {
             alt=""
             aria-hidden="true"
           />
-          <h1>{t("nav.logoText")}</h1>
+          <span className="logo-text-group">
+            <h1>{t("nav.logoText")}</h1>
+            <span className="logo-tagline">{t("nav.logoTagline")}</span>
+          </span>
         </button>
         <nav className="nav">
           <button

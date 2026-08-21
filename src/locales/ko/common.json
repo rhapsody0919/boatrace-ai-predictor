@@ -14,7 +14,8 @@
     "venues": "🏟️ 경기장 가이드",
     "menuLabel": "더 보기 메뉴",
     "logoLabel": "용신 레이더 홈으로 이동",
-    "logoText": "용신 레이더"
+    "logoText": "용신 레이더",
+    "logoTagline": "경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요."
   },
   "language": {
     "switchLabel": "언어 변경",

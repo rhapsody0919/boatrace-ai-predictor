@@ -3,7 +3,7 @@
    ===================================================== */
 .content-hub-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  background: var(--surface-page);
   padding: 2rem 1rem;
 }
 
@@ -40,7 +40,7 @@
 /* セクション共通 */
 .hub-section {
   margin-bottom: 3rem;
-  background: white;
+  background: var(--surface-card);
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -59,13 +59,13 @@
 
 .section-header h2 {
   font-size: 1.5rem;
-  color: #1e293b;
+  color: var(--text-primary);
   font-weight: 700;
   margin: 0;
 }
 
 .section-desc {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 1rem;
   margin-bottom: 1.5rem;
   line-height: 1.6;
@@ -81,13 +81,16 @@
 .article-card {
   display: block;
   padding: 1.5rem;
-  background: #f8fafc;
+  background: var(--surface-page);
   border-radius: 12px;
   text-decoration: none;
   transition: all 0.3s ease;
   border: 2px solid transparent;
 }
 
+/* hover背景(#f0f9ff)・ボーダー(#0ea5e9)はCTAブルー系の装飾アクセントのため対象外
+   （.claude/CLAUDE.mdのピットフォール定義は#0ea5e9/#0284c7自体を対象とするが、
+   このホバー時のみの薄い色味も同系統の装飾として扱い、意図的に据え置く） */
 .article-card:hover {
   background: #f0f9ff;
   border-color: #0ea5e9;
@@ -97,7 +100,7 @@
 
 .article-card h3 {
   font-size: 1.05rem;
-  color: #1e293b;
+  color: var(--text-primary);
   font-weight: 700;
   margin-bottom: 0.5rem;
   line-height: 1.4;
@@ -105,14 +108,27 @@
 
 .article-card p {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.5;
   margin: 0;
 }
 
 /* 会場グリッド */
+/* venue-sectionの黄系グラデーションはテーマに関わらず常に明るい装飾背景のため
+   意図的にトークン化せず据え置く。ただしこの中の見出し・説明文は共有クラス
+   （.section-header h2 / .section-desc）経由でvar(--text-primary/secondary)を
+   継承しており、ダークテーマでは白系に反転して常に明るい背景の上で読めなくなる。
+   このセクション内だけ固定の濃色に上書きする */
 .venue-section {
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.venue-section .section-header h2 {
+  color: var(--color-gray-900);
+}
+
+.venue-section .section-desc {
+  color: var(--color-gray-700);
 }
 
 .venue-grid {
@@ -127,7 +143,7 @@
   flex-direction: column;
   align-items: center;
   padding: 0.75rem 0.5rem;
-  background: white;
+  background: var(--surface-page);
   border-radius: 8px;
   text-decoration: none;
   transition: all 0.3s ease;
@@ -143,13 +159,13 @@
 
 .venue-code {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
 .venue-name {
   font-size: 0.95rem;
-  color: #1e293b;
+  color: var(--text-primary);
   font-weight: 700;
 }
 
@@ -196,11 +212,15 @@
   margin-bottom: 1.5rem;
 }
 
+/* backgroundは.hub-cta（常時青系グラデーションの装飾CTA、テーマ非依存）の上に載る
+   固定白のピルボタンのため据え置き。文字色は常に白背景の上に乗るので、
+   ライト/ページ背景向けに検証済みのvar(--color-primary-700)（5.93:1）を使用する
+   （#0ea5e9はここでは2.77:1でAA未達） */
 .cta-btn {
   display: inline-block;
   padding: 1rem 2rem;
   background: white;
-  color: #0ea5e9;
+  color: var(--color-primary-700);
   text-decoration: none;
   border-radius: 50px;
   font-weight: 700;

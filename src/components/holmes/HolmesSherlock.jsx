@@ -8,7 +8,8 @@ import BoatChip from "./BoatChip";
 import { BOAT_COLORS } from "./boat-colors";
 import "./HolmesSherlock.css";
 
-const THEME = "#059669";
+// #059669は白文字で3.77:1しかなくAA未達のため濃色に変更（axe-core検出、Holmes.jsxのTABS配列と統一）
+const THEME = "#047857";
 
 function ProbBar({ boat, isTop }) {
   const pct = boat.prob * 100;

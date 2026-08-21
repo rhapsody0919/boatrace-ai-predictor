@@ -21,6 +21,10 @@
   height: 1.75rem;
 }
 
+.app-header.compressed .logo-tagline {
+  display: none;
+}
+
 
 .header-content {
   max-width: 1920px;
@@ -51,6 +55,12 @@
   transition: height var(--transition-medium) var(--ease-out);
 }
 
+.logo-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
 .logo h1 {
   font-family: "Noto Serif JP Logotype", serif;
   color: var(--brand-accent-primary);
@@ -59,6 +69,14 @@
   letter-spacing: 0.08em;
   margin: 0;
   padding-left: 0.08em;
+  line-height: 1.2;
+}
+
+.logo-tagline {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .nav {
@@ -197,6 +215,10 @@
 
   .logo-mark {
     height: 1.75rem;
+  }
+
+  .logo-tagline {
+    display: none;
   }
 
   .nav {

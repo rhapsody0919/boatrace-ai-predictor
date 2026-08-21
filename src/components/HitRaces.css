@@ -5,7 +5,7 @@
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--border-hairline);
   padding-bottom: 0;
   flex-wrap: wrap;
 }
@@ -13,7 +13,7 @@
 .period-selector button {
   padding: 0.75rem 1.5rem;
   background: transparent;
-  color: #64748b;
+  color: var(--text-secondary);
   border: none;
   border-bottom: 3px solid transparent;
   cursor: pointer;
@@ -27,9 +27,11 @@
 }
 
 .period-selector button.active {
-  background: #0ea5e9;
+  /* #0ea5e9は白文字で2.77:1しかなくAA未達（CookieConsentと同種の問題）。
+     var(--color-primary-700)に変更 */
+  background: var(--color-primary-700);
   color: white !important;
-  border-bottom: 3px solid #0ea5e9;
+  border-bottom: 3px solid var(--color-primary-700);
   font-weight: bold;
 }
 
@@ -37,7 +39,7 @@
 .venue-stats-section {
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: white;
+  background: var(--surface-card);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
@@ -48,7 +50,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 1.5rem;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 /* 統計テーブル */
@@ -59,15 +61,15 @@
 }
 
 .venue-stats-table thead tr {
-  background: #f8fafc;
-  border-bottom: 2px solid #e2e8f0;
+  background: var(--surface-page);
+  border-bottom: 2px solid var(--border-hairline);
 }
 
 .venue-stats-table th {
   padding: 1rem;
   text-align: left;
   font-weight: bold;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .venue-stats-table th.text-right {
@@ -75,7 +77,7 @@
 }
 
 .venue-stats-table tbody tr {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-hairline);
   transition: background 0.2s;
 }
 
@@ -100,31 +102,37 @@
 .rank-cell {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
+/* rank-1〜3はいずれもライトカードでAA未達（2〜3:1台）だったため、
+   両テーマでカード背景に対し検証済みのブランドトークンに変更 */
 .rank-cell.rank-1 {
-  color: #f59e0b;
+  color: var(--brand-accent-primary);
 }
 
 .rank-cell.rank-2 {
-  color: #94a3b8;
+  color: var(--brand-accent-secondary);
 }
 
 .rank-cell.rank-3 {
-  color: #cd7f32;
+  color: var(--podium-bronze-text);
 }
 
-/* ボートレース場名 */
-.venue-name {
+/* ボートレース場名。.venue-nameはsrc/pages/ContentHub.cssにも同名クラスがあり、
+   CSSが全ページ分1つのバンドルに結合されるためビルド順で固定値(#1e293b)が
+   意図せず勝つ（詳細はBOA-207参照）。親スコープで詳細度を上げて確実にトークンを効かせる */
+.venue-stats-table .venue-name {
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 /* 的中数 */
 .hit-count {
   font-weight: bold;
-  color: #0ea5e9;
+  /* #0ea5e9はライトカードで2.63:1しか出ずAA未達（ダークカードでは問題無し）。
+     両テーマで検証済みのvar(--brand-accent-secondary)（銀）に変更 */
+  color: var(--brand-accent-secondary);
 }
 
 /* 的中レースセクション */
@@ -136,11 +144,15 @@
 }
 
 .hit-races-section.today {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  /* #0ea5e9は白文字で2.77:1しかなくAA未達のため、両端とも白文字で4.5:1超になる
+     濃い青の組み合わせに変更 */
+  background: linear-gradient(135deg, var(--color-primary-700) 0%, #075985 100%);
 }
 
 .hit-races-section.yesterday {
-  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  /* #94a3b8は白文字で2.56:1しかなくAA未達のため、両端とも白文字で4.5:1超になる
+     濃いグレーの組み合わせに変更 */
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
 }
 
 .hit-races-section h2 {
@@ -158,9 +170,15 @@
   gap: 1rem;
 }
 
+/* .race-cardはsrc/pages/admin/AdminRules.css等にも同名クラスがあり、CSSが全ページ分
+   1つのバンドルに結合されるためビルド順で固定値（#f8fafc）が意図せず勝つ
+   （詳細はBOA-207参照）。親スコープで詳細度を上げて確実にトークンを効かせる */
+.race-cards-grid .race-card {
+  background: var(--surface-card);
+}
+
 /* レースカード */
 .race-card {
-  background: white;
   border-radius: 8px;
   padding: 1rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -186,16 +204,18 @@
 .race-card-venue {
   font-weight: bold;
   font-size: 1.1rem;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .race-card-number {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .hit-badge {
-  background: #22c55e;
+  /* #22c55eは白文字で2.28:1しかなくAA未達（ライト/ダーク共通の既存バグ）。
+     App.css/UpdateStatus.cssの.hit/.freshと同じ#0d7a56（5.34:1）に統一 */
+  background: #0d7a56;
   color: white;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
@@ -204,12 +224,13 @@
 }
 
 .hit-badge.yesterday {
-  background: #94a3b8;
+  /* #94a3b8は白文字で2.56:1しかなくAA未達。var(--text-secondary)相当の濃さに変更 */
+  background: #475569;
 }
 
 /* 展開予測的中の詳細（1マーク先頭コース・予想確率） */
 .turn-hit-detail {
-  border-top: 2px solid #e2e8f0;
+  border-top: 2px solid var(--border-hairline);
   padding-top: 0.75rem;
   margin-bottom: 0.75rem;
 }
@@ -221,7 +242,7 @@
 }
 
 .turn-hit-course-label {
-  color: #475569;
+  color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.9rem;
 }
@@ -229,13 +250,15 @@
 .turn-hit-course-value {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #0369a1;
+  /* #0369a1はダーク時のカード背景(#142842)で2.5:1しか出ずAA未達のため、
+     両テーマで検証済みのvar(--brand-accent-secondary)（銀）に変更 */
+  color: var(--brand-accent-secondary);
 }
 
 .turn-hit-probability {
   margin-top: 0.35rem;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--text-secondary);
   text-align: right;
 }
 
@@ -243,8 +266,8 @@
 .show-more-button {
   margin-top: 1rem;
   padding: 0.75rem 1.5rem;
-  background: white;
-  color: #0ea5e9;
+  background: var(--surface-card);
+  color: var(--brand-accent-secondary);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -254,11 +277,11 @@
 }
 
 .show-more-button:hover {
-  background: #f8fafc;
+  background: var(--surface-page);
 }
 
 .show-more-button.yesterday {
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* 統計情報ボックス */
@@ -299,7 +322,7 @@
 .no-data-container {
   padding: 3rem 2rem;
   text-align: center;
-  background: white;
+  background: var(--surface-card);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
@@ -310,12 +333,12 @@
 }
 
 .no-data-container h2 {
-  color: #64748b;
+  color: var(--text-secondary);
   margin-bottom: 0.5rem;
 }
 
 .no-data-container p {
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 /* レスポンシブデザイン */

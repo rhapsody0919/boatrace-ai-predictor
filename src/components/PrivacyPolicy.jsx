@@ -10,13 +10,13 @@ export default function PrivacyPolicy() {
             maxWidth: '900px',
             margin: '0 auto',
             padding: '2rem',
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--surface-page)',
             minHeight: '100vh'
         }}>
             <h1 style={{
                 fontSize: '2rem',
                 fontWeight: '700',
-                color: '#0f172a',
+                color: 'var(--text-primary)',
                 marginBottom: '1.5rem',
                 borderBottom: '3px solid #0ea5e9',
                 paddingBottom: '0.5rem'
@@ -24,7 +24,7 @@ export default function PrivacyPolicy() {
                 プライバシーポリシー
             </h1>
 
-            <p style={{ color: '#64748b', marginBottom: '2rem' }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
                 最終更新日: 2025年12月9日
             </p>
 
@@ -32,14 +32,14 @@ export default function PrivacyPolicy() {
                 <h2 style={{
                     fontSize: '1.5rem',
                     fontWeight: '600',
-                    color: '#1e293b',
+                    color: 'var(--text-primary)',
                     marginBottom: '1rem',
                     borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     1. 基本方針
                 </h2>
-                <p style={{ color: '#475569', lineHeight: '1.8' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                     ボートレースAI予測（以下「当サイト」）は、ユーザーの個人情報の重要性を認識し、個人情報の保護に関する法律及び関連法令を遵守し、適切に取り扱います。
                 </p>
             </section>
@@ -48,17 +48,17 @@ export default function PrivacyPolicy() {
                 <h2 style={{
                     fontSize: '1.5rem',
                     fontWeight: '600',
-                    color: '#1e293b',
+                    color: 'var(--text-primary)',
                     marginBottom: '1rem',
                     borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     2. 収集する情報
                 </h2>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     当サイトでは、以下の情報を収集する場合があります：
                 </p>
-                <ul style={{ color: '#475569', lineHeight: '1.8', paddingLeft: '1.5rem' }}>
+                <ul style={{ color: 'var(--text-secondary)', lineHeight: '1.8', paddingLeft: '1.5rem' }}>
                     <li>アクセス情報（IPアドレス、ブラウザ種類、訪問日時、閲覧ページ等）</li>
                     <li>Cookie及びこれに類する技術により取得した情報</li>
                     <li>お問い合わせフォームにご入力いただいた情報（メールアドレス、お名前等）</li>
@@ -69,17 +69,17 @@ export default function PrivacyPolicy() {
                 <h2 style={{
                     fontSize: '1.5rem',
                     fontWeight: '600',
-                    color: '#1e293b',
+                    color: 'var(--text-primary)',
                     marginBottom: '1rem',
                     borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     3. 情報の利用目的
                 </h2>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     収集した情報は、以下の目的で利用します：
                 </p>
-                <ul style={{ color: '#475569', lineHeight: '1.8', paddingLeft: '1.5rem' }}>
+                <ul style={{ color: 'var(--text-secondary)', lineHeight: '1.8', paddingLeft: '1.5rem' }}>
                     <li>サービスの提供、維持、改善のため</li>
                     <li>ユーザーサポート及びお問い合わせへの対応のため</li>
                     <li>サイトのアクセス解析及び利用状況の把握のため</li>
@@ -91,36 +91,36 @@ export default function PrivacyPolicy() {
                 <h2 style={{
                     fontSize: '1.5rem',
                     fontWeight: '600',
-                    color: '#1e293b',
+                    color: 'var(--text-primary)',
                     marginBottom: '1rem',
                     borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     4. 広告配信について
                 </h2>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     当サイトでは、第三者配信の広告サービス「Google AdSense」を利用しています。
                 </p>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     Google AdSenseは、ユーザーの興味に応じた広告を表示するためにCookieを使用することがあります。
                     Cookieを使用することで、当サイトや他のサイトへのアクセス情報に基づいて広告が配信されます。
                 </p>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     ユーザーは、Googleの
                     <a href="https://adssettings.google.com/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
+                        style={{ color: 'var(--brand-accent-secondary)', textDecoration: 'underline' }}>
                         広告設定ページ
                     </a>
                     からパーソナライズ広告を無効にすることができます。
                 </p>
-                <p style={{ color: '#475569', lineHeight: '1.8' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                     Googleの広告およびCookieの使用については、
                     <a href="https://policies.google.com/technologies/ads?hl=ja"
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
+                        style={{ color: 'var(--brand-accent-secondary)', textDecoration: 'underline' }}>
                         Googleの広告に関するポリシー
                     </a>
                     をご確認ください。
@@ -131,36 +131,36 @@ export default function PrivacyPolicy() {
                 <h2 style={{
                     fontSize: '1.5rem',
                     fontWeight: '600',
-                    color: '#1e293b',
+                    color: 'var(--text-primary)',
                     marginBottom: '1rem',
                     borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     5. Google Analyticsについて
                 </h2>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     当サイトでは、Googleによるアクセス解析ツール「Google Analytics」を使用しています。
                     Google Analyticsはトラフィックデータの収集のためにCookieを使用しています。
                 </p>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     このトラフィックデータは匿名で収集されており、個人を特定するものではありません。
                 </p>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     Google Analyticsによるデータ収集を無効にしたい場合は、Googleが提供する
                     <a href="https://tools.google.com/dlpage/gaoptout?hl=ja"
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
+                        style={{ color: 'var(--brand-accent-secondary)', textDecoration: 'underline' }}>
                         オプトアウトアドオン
                     </a>
                     をご利用ください。
                 </p>
-                <p style={{ color: '#475569', lineHeight: '1.8' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                     詳細については、
                     <a href="https://policies.google.com/privacy?hl=ja"
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
+                        style={{ color: 'var(--brand-accent-secondary)', textDecoration: 'underline' }}>
                         Googleのプライバシーポリシー
                     </a>
                     をご確認ください。
@@ -171,27 +171,27 @@ export default function PrivacyPolicy() {
                 <h2 style={{
                     fontSize: '1.5rem',
                     fontWeight: '600',
-                    color: '#1e293b',
+                    color: 'var(--text-primary)',
                     marginBottom: '1rem',
                     borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     6. Cookieについて
                 </h2>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     Cookieとは、Webサイトがユーザーのブラウザに送信する小さなテキストファイルです。
                     当サイトでは、以下の目的でCookieを使用します：
                 </p>
-                <ul style={{ color: '#475569', lineHeight: '1.8', paddingLeft: '1.5rem', marginBottom: '0.75rem' }}>
+                <ul style={{ color: 'var(--text-secondary)', lineHeight: '1.8', paddingLeft: '1.5rem', marginBottom: '0.75rem' }}>
                     <li>ユーザーの利便性向上のため</li>
                     <li>サイトの利用状況を把握するため（Google Analytics）</li>
                     <li>広告配信のため（Google AdSense）</li>
                     <li>Cookie同意設定の保存のため</li>
                 </ul>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     当サイトでは初回アクセス時にCookie同意バナーを表示し、ユーザーの同意を得た場合にのみGoogle Analytics及びGoogle AdSenseのCookieを使用します。
                 </p>
-                <p style={{ color: '#475569', lineHeight: '1.8' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                     ブラウザの設定でCookieを無効にすることも可能ですが、一部機能が利用できなくなる場合があります。
                 </p>
             </section>
@@ -200,17 +200,17 @@ export default function PrivacyPolicy() {
                 <h2 style={{
                     fontSize: '1.5rem',
                     fontWeight: '600',
-                    color: '#1e293b',
+                    color: 'var(--text-primary)',
                     marginBottom: '1rem',
                     borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     7. 個人情報の第三者提供
                 </h2>
-                <p style={{ color: '#475569', lineHeight: '1.8' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                     当サイトは、以下の場合を除き、個人情報を第三者に提供することはありません：
                 </p>
-                <ul style={{ color: '#475569', lineHeight: '1.8', paddingLeft: '1.5rem' }}>
+                <ul style={{ color: 'var(--text-secondary)', lineHeight: '1.8', paddingLeft: '1.5rem' }}>
                     <li>ユーザーの同意がある場合</li>
                     <li>法令に基づく場合</li>
                     <li>人の生命、身体または財産の保護のために必要がある場合</li>
@@ -221,21 +221,21 @@ export default function PrivacyPolicy() {
                 <h2 style={{
                     fontSize: '1.5rem',
                     fontWeight: '600',
-                    color: '#1e293b',
+                    color: 'var(--text-primary)',
                     marginBottom: '1rem',
                     borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     8. 免責事項
                 </h2>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     当サイトが提供するボートレース予測情報は、参考情報として提供するものです。
                 </p>
-                <p style={{ color: '#475569', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
                     当サイトの情報を利用して生じたいかなる損害についても、当サイトは一切の責任を負いません。
                     舟券の購入は自己責任で行ってください。
                 </p>
-                <p style={{ color: '#475569', lineHeight: '1.8' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                     また、当サイトから他のサイトへのリンクについても、リンク先の内容について責任を負いません。
                 </p>
             </section>
@@ -244,14 +244,14 @@ export default function PrivacyPolicy() {
                 <h2 style={{
                     fontSize: '1.5rem',
                     fontWeight: '600',
-                    color: '#1e293b',
+                    color: 'var(--text-primary)',
                     marginBottom: '1rem',
                     borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     9. プライバシーポリシーの変更
                 </h2>
-                <p style={{ color: '#475569', lineHeight: '1.8' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                     当サイトは、必要に応じて本プライバシーポリシーを変更することがあります。
                     変更後のプライバシーポリシーは、本ページに掲載した時点から効力を生じるものとします。
                 </p>
@@ -261,16 +261,16 @@ export default function PrivacyPolicy() {
                 <h2 style={{
                     fontSize: '1.5rem',
                     fontWeight: '600',
-                    color: '#1e293b',
+                    color: 'var(--text-primary)',
                     marginBottom: '1rem',
                     borderLeft: '4px solid #0ea5e9',
                     paddingLeft: '0.75rem'
                 }}>
                     10. お問い合わせ
                 </h2>
-                <p style={{ color: '#475569', lineHeight: '1.8' }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                     本プライバシーポリシーに関するお問い合わせは、
-                    <Link to="/contact" style={{ color: '#0ea5e9', textDecoration: 'underline' }}>
+                    <Link to="/contact" style={{ color: 'var(--brand-accent-secondary)', textDecoration: 'underline' }}>
                         お問い合わせページ
                     </Link>
                     からご連絡ください。
@@ -280,12 +280,12 @@ export default function PrivacyPolicy() {
             <div style={{
                 marginTop: '3rem',
                 padding: '1.5rem',
-                backgroundColor: '#f1f5f9',
+                backgroundColor: 'var(--surface-card)',
                 borderRadius: '8px',
                 textAlign: 'center'
             }}>
                 <Link to="/" style={{
-                    color: '#0ea5e9',
+                    color: 'var(--brand-accent-secondary)',
                     textDecoration: 'none',
                     fontSize: '1rem',
                     fontWeight: '600'

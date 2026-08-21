@@ -123,7 +123,7 @@ input:focus-visible,
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--surface-card);
   border-radius: 0 0 12px 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   z-index: 1000;
@@ -133,10 +133,10 @@ input:focus-visible,
 .mobile-menu-item {
   display: block;
   padding: 1rem 1.5rem;
-  color: var(--text-dark);
+  color: var(--text-primary);
   text-decoration: none;
   font-weight: 500;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .mobile-menu-item:last-child {
@@ -145,14 +145,14 @@ input:focus-visible,
 
 .mobile-menu-item:hover,
 .mobile-menu-item:active {
-  background: #f8fafc;
+  background: var(--surface-page);
   color: #0ea5e9;
 }
 
 .mobile-menu-item:focus-visible {
   outline: 2px solid #0ea5e9;
   outline-offset: -2px;
-  background: #f8fafc;
+  background: var(--surface-page);
 }
 
 /* =====================================================
@@ -218,8 +218,15 @@ input:focus-visible,
   margin-bottom: 3rem;
 }
 
+/* .race-cardはsrc/pages/admin/AdminRules.css・src/components/HitRaces.cssにも
+   同名クラスがあり、CSSが全ページ分1つのバンドルに結合されるためビルド順で
+   固定値（#f8fafc等）が意図せず勝つことがある。親スコープで詳細度を上げて確実に
+   トークンを効かせる（詳細はBOA-207: CSSクラス名衝突の恒久対応 参照） */
+.race-list-section .race-card {
+  background: var(--surface-card);
+}
+
 .race-card {
-  background: white;
   border-radius: 16px;
   padding: 1.75rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -251,7 +258,7 @@ input:focus-visible,
   align-items: center;
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #F1F5F9;
+  border-bottom: 2px solid var(--border-hairline);
 }
 
 .race-card-header h3 {
@@ -284,7 +291,7 @@ input:focus-visible,
 
 .info-item .label {
   font-size: 0.875rem;
-  color: var(--text-light);
+  color: var(--text-secondary);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -293,7 +300,7 @@ input:focus-visible,
 .info-item .value {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--text-primary);
 }
 
 .predict-btn {
@@ -331,7 +338,7 @@ input:focus-visible,
 .spinner {
   width: 64px;
   height: 64px;
-  border: 6px solid #F3F4F6;
+  border: 6px solid var(--border-hairline);
   border-top: 6px solid #0ea5e9;
   border-radius: 50%;
   margin: 0 auto 2rem;
@@ -347,7 +354,7 @@ input:focus-visible,
 }
 
 .prediction-section h2 {
-  color: #1e293b !important;
+  color: var(--text-primary) !important;
   font-size: 2rem;
   margin-bottom: 2rem;
   text-shadow: none;
@@ -642,13 +649,13 @@ input:focus-visible,
 .detailed-analysis {
   margin-top: 2.5rem;
   padding-top: 2.5rem;
-  border-top: 3px solid #E2E8F0;
+  border-top: 3px solid var(--border-hairline);
 }
 
 .detailed-analysis h3 {
   font-size: 1.75rem;
   margin-bottom: 1.5rem;
-  color: var(--text-dark);
+  color: var(--text-primary);
   font-weight: 700;
 }
 
@@ -663,7 +670,7 @@ input:focus-visible,
   min-width: 1100px;
   border-collapse: separate;
   border-spacing: 0;
-  background: white;
+  background: var(--surface-card);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
@@ -691,8 +698,8 @@ input:focus-visible,
 .players-table-detailed td {
   padding: 1rem 0.75rem;
   text-align: center;
-  border-bottom: 1px solid #F1F5F9;
-  color: var(--text-dark);
+  border-bottom: 1px solid var(--border-hairline);
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -701,7 +708,7 @@ input:focus-visible,
 }
 
 .players-table-detailed tbody tr:hover {
-  background: #F8FAFC;
+  background: var(--surface-page);
 }
 
 .players-table-detailed tbody tr:last-child td {
@@ -729,7 +736,7 @@ input:focus-visible,
 }
 
 .statistical-insights h4 {
-  color: var(--text-dark);
+  color: var(--text-primary);
   margin-bottom: 1.25rem;
   font-size: 1.4rem;
   font-weight: 700;
@@ -742,7 +749,7 @@ input:focus-visible,
 
 .statistical-insights li {
   padding: 0.875rem 0;
-  color: var(--text-dark);
+  color: var(--text-primary);
   font-size: 1.05rem;
   line-height: 1.6;
   border-bottom: 1px solid rgba(14, 165, 233, 0.1);
@@ -783,7 +790,7 @@ input:focus-visible,
 .data-guide summary::after {
   content: '▼';
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   transition: transform 0.2s ease;
 }
 
@@ -793,7 +800,7 @@ input:focus-visible,
 
 .data-guide summary h4 {
   margin: 0;
-  color: var(--text-dark);
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 700;
 }
@@ -810,7 +817,7 @@ input:focus-visible,
 }
 
 .guide-item {
-  background: white;
+  background: var(--surface-card);
   padding: 1.25rem;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -832,7 +839,7 @@ input:focus-visible,
 
 .guide-item p {
   font-size: 0.9rem;
-  color: var(--text-light);
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.5;
 }
@@ -979,7 +986,7 @@ input:focus-visible,
 .prediction-note {
   display: block;
   font-size: 0.72rem;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
   margin-bottom: 0.3rem;
 }
@@ -1027,14 +1034,14 @@ input:focus-visible,
 .comparison {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: white;
+  background: var(--surface-card);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .comparison h5 {
   font-size: 1.1rem;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0 0 1rem 0;
   text-align: center;
 }
@@ -1051,7 +1058,7 @@ input:focus-visible,
 
 .comparison-label {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--text-secondary);
   margin-bottom: 0.75rem;
   font-weight: 600;
 }
@@ -1072,8 +1079,8 @@ input:focus-visible,
   font-size: 1.2rem;
   font-weight: bold;
   border-radius: 8px;
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--surface-page);
+  color: var(--text-primary);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -1247,13 +1254,13 @@ input:focus-visible,
 .blog-preview-section {
   margin-top: 3rem;
   padding: 2.5rem;
-  background: white;
+  background: var(--surface-card);
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .blog-preview-section h2 {
-  color: #1e293b;
+  color: var(--text-primary);
   font-size: 1.75rem;
   margin-bottom: 0.75rem;
   text-align: center;
@@ -1261,7 +1268,7 @@ input:focus-visible,
 
 .blog-preview-lead {
   text-align: center;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 1rem;
   margin-bottom: 2rem;
   max-width: 600px;
@@ -1280,7 +1287,7 @@ input:focus-visible,
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
-  background: #f8fafc;
+  background: var(--surface-page);
   border-radius: 12px;
   text-decoration: none;
   transition: all 0.3s ease;
@@ -1309,7 +1316,7 @@ input:focus-visible,
 .blog-preview-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
   line-height: 1.4;
   display: -webkit-box;
@@ -1320,7 +1327,7 @@ input:focus-visible,
 
 .blog-preview-desc {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.5;
   flex: 1;
   display: -webkit-box;
@@ -1332,7 +1339,7 @@ input:focus-visible,
 
 .blog-preview-meta {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1628,7 +1635,7 @@ input:focus-visible,
   font-size: 0.95rem;
   font-weight: 600;
   color: #0284c7;
-  background: white;
+  background: var(--surface-card);
   border: 2px solid #0284c7;
   border-radius: 8px;
   text-decoration: none;
@@ -1654,7 +1661,7 @@ input:focus-visible,
   width: 100%;
   margin: 0.5rem 0;
   padding: 0.75rem;
-  background: #ffffff;
+  background: var(--surface-card);
   border: 1px dashed var(--color-gray-200);
   border-radius: var(--radius-md);
   color: var(--color-primary-600);

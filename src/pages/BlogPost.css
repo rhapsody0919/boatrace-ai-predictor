@@ -3,41 +3,48 @@
   margin: 0 auto;
   padding: 2rem 1rem;
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--surface-page);
 }
 
 /* Header */
 .blog-post-header {
   margin-bottom: 2rem;
   padding-bottom: 2rem;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--border-hairline);
 }
 
 .back-link {
   display: inline-block;
-  color: #0ea5e9;
   text-decoration: none;
   margin-bottom: 1rem;
   font-weight: 500;
   transition: color 0.3s ease;
 }
 
-.back-link:hover {
-  color: #0284c7;
+/* .back-linkはAccuracyHistory.cssにも同名クラスがあり、CSSが全ページ分1つのバンドルに
+   結合されるためビルド順で#0ea5e9（固定・コントラスト不足）が勝ってしまう。
+   RaceDetail.cssの.back-linkと同じ理由・同じトークンで親スコープを指定 */
+.blog-post-header .back-link {
+  color: var(--brand-accent-secondary);
+}
+
+.blog-post-header .back-link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
 }
 
 .blog-post-header h1 {
   font-size: 2.5rem;
   line-height: 1.3;
   margin: 1rem 0;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .post-meta {
   display: flex;
   gap: 1.5rem;
   margin: 1rem 0;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
@@ -45,9 +52,9 @@
 .blog-post-content {
   line-height: 1.8;
   font-size: 1.05rem;
-  color: #334155;
+  color: var(--text-primary);
   margin-bottom: 3rem;
-  background: white;
+  background: var(--surface-card);
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -56,7 +63,7 @@
 .blog-post-content h1 {
   font-size: 2rem;
   margin: 2.5rem 0 1rem 0;
-  color: #1e293b;
+  color: var(--text-primary);
   border-bottom: 3px solid #0ea5e9;
   padding-bottom: 0.5rem;
 }
@@ -64,7 +71,7 @@
 .blog-post-content h2 {
   font-size: 1.75rem;
   margin: 2rem 0 1rem 0;
-  color: #1e293b;
+  color: var(--text-primary);
   border-left: 4px solid #0ea5e9;
   padding-left: 1rem;
 }
@@ -72,13 +79,13 @@
 .blog-post-content h3 {
   font-size: 1.5rem;
   margin: 1.5rem 0 0.75rem 0;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .blog-post-content h4 {
   font-size: 1.25rem;
   margin: 1.25rem 0 0.5rem 0;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .blog-post-content p {
@@ -96,16 +103,19 @@
   margin: 0.5rem 0;
 }
 
+/* 本文中のリンク色。#0ea5e9はカード背景(.blog-post-content)上でダーク時2.5:1程度しか出ず
+   AA未達のため、両テーマで検証済みのvar(--brand-accent-secondary)（銀）に変更。
+   下線もリンク色に揃える */
 .blog-post-content a {
-  color: #0ea5e9;
+  color: var(--brand-accent-secondary);
   text-decoration: none;
-  border-bottom: 1px solid #0ea5e9;
+  border-bottom: 1px solid var(--brand-accent-secondary);
   transition: all 0.3s ease;
 }
 
 .blog-post-content a:hover {
-  color: #0284c7;
-  border-bottom-color: #0284c7;
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
 }
 
 .blog-post-content blockquote {
@@ -113,19 +123,31 @@
   padding-left: 1rem;
   margin: 1.5rem 0;
   font-style: italic;
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--text-secondary);
+  background: var(--surface-page);
   padding: 1rem 1rem 1rem 2rem;
   border-radius: 0 8px 8px 0;
 }
 
 .blog-post-content code {
-  background: #f1f5f9;
+  background: var(--surface-page);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
   font-family: 'Courier New', monospace;
   font-size: 0.9em;
-  color: #e91e63;
+  /* #e91e63は両テーマとも4:1弱でAA未達（axe-core検出）。ダーク用に明るいピンクを既定にし、
+     ライトテーマでは濃いピンクに切り替える */
+  color: #f06292;
+}
+
+[data-theme="light"] .blog-post-content code {
+  color: #c2185b;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .blog-post-content code {
+    color: #c2185b;
+  }
 }
 
 .blog-post-content pre {
@@ -154,19 +176,19 @@
 
 .blog-post-content th,
 .blog-post-content td {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-hairline);
   padding: 0.75rem;
   text-align: left;
 }
 
 .blog-post-content th {
-  background: #f1f5f9;
+  background: var(--surface-page);
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .blog-post-content tr:hover {
-  background: #f8fafc;
+  background: var(--surface-page);
 }
 
 .blog-post-content img {
@@ -178,7 +200,7 @@
 
 .blog-post-content hr {
   border: none;
-  border-top: 2px solid #e2e8f0;
+  border-top: 2px solid var(--border-hairline);
   margin: 2rem 0;
 }
 
@@ -186,13 +208,13 @@
 .related-posts {
   margin: 4rem 0 3rem 0;
   padding-top: 2rem;
-  border-top: 2px solid #e2e8f0;
+  border-top: 2px solid var(--border-hairline);
 }
 
 .related-posts h2 {
   font-size: 1.75rem;
   margin-bottom: 1.5rem;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .related-grid {
@@ -202,8 +224,8 @@
 }
 
 .related-card {
-  background: white;
-  border: 2px solid #e2e8f0;
+  background: var(--surface-card);
+  border: 2px solid var(--border-hairline);
   border-radius: 12px;
   padding: 1.5rem;
   text-decoration: none;
@@ -222,20 +244,22 @@
 .related-card h3 {
   font-size: 1.15rem;
   margin: 0.75rem 0 0.5rem 0;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.4;
 }
 
 .related-card p {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.95rem;
   line-height: 1.6;
   flex-grow: 1;
   margin: 0.5rem 0 1rem 0;
 }
 
+/* #0ea5e9はテキスト色としてカード背景(.related-card)上でダーク時2.5:1程度しか出ず
+   AA未達のため、両テーマで検証済みのvar(--brand-accent-secondary)（銀）に変更 */
 .read-more {
-  color: #0ea5e9;
+  color: var(--brand-accent-secondary);
   font-weight: 500;
   font-size: 0.9rem;
 }
@@ -265,7 +289,11 @@
 .cta-button {
   display: inline-block;
   background: white;
-  color: #0ea5e9 !important;
+  /* #0ea5e9は白背景で2.77:1しかなくAA未達。About.css/CookieConsentのaccept釦と
+     同じvar(--color-primary-700)に変更（.cta-buttonはAbout.css/Profile.cssにも
+     同名クラスがあるが、いずれも!importantで指定されており詳細度は同点のため
+     値を揃えることで衝突を無害化している） */
+  color: var(--color-primary-700) !important;
   border: none;
   padding: 1rem 2.5rem;
   font-size: 1.1rem;
@@ -281,17 +309,21 @@
 }
 
 /* Loading & Error */
-.loading,
-.error {
+/* .loading/.errorはsrc/components/race/OutcomePatternPreview.cssにも同名クラスがあり
+   （値・デザイン意図が異なるカード内インライン表示用）、CSSが全ページ分1つのバンドルに
+   結合されるためビルド順で意図しない方が勝つ。実際のラッパー(.blog-post-container)で
+   詳細度を上げて確実にこちらのページ全体用スタイルを効かせる */
+.blog-post-container .loading,
+.blog-post-container .error {
   text-align: center;
   padding: 4rem 2rem;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .loading .spinner {
   width: 50px;
   height: 50px;
-  border: 5px solid #e2e8f0;
+  border: 5px solid var(--border-hairline);
   border-top-color: #0ea5e9;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -303,15 +335,19 @@
 }
 
 .error h2 {
-  color: #ef4444;
+  color: var(--color-error);
   margin-bottom: 1rem;
 }
 
+/* #0ea5e9は白文字で2.77:1、hoverの#0284c7も4.09:1でいずれもAA未達（axe-core未検出だが
+   pitfall-1と同種のバグ）。ベースはHitRaces.cssの.period-selector button.activeと同じ
+   var(--color-primary-700)、hoverはHitRaces.cssの.hit-races-section.todayと同じ
+   #075985（白文字で7.57:1）に変更 */
 .back-button {
   display: inline-block;
   margin-top: 1rem;
   padding: 0.75rem 1.5rem;
-  background: #0ea5e9;
+  background: var(--color-primary-700);
   color: white !important;
   text-decoration: none;
   border-radius: 8px;
@@ -319,7 +355,7 @@
 }
 
 .back-button:hover {
-  background: #0284c7;
+  background: #075985;
   transform: scale(1.05);
 }
 

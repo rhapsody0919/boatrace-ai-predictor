@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { dataService } from "../services/dataService";
 import { MODEL_NAMES } from "../constants";
 import { formatPercent } from "../utils/formatters";
-import { getRecoveryColor } from "../utils/colors";
+import { getRecoveryColorClass } from "../utils/colors";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 import "./AccuracyHistory.css";
 
 function AccuracyHistory() {
@@ -31,31 +33,39 @@ function AccuracyHistory() {
 
   if (loading) {
     return (
-      <div className="accuracy-history-page">
-        <div className="page-header">
-          <Link to="/accuracy" className="back-link">
-            ← 成績ページへ戻る
-          </Link>
-          <h1>月別成績アーカイブ</h1>
+      <>
+        <Header />
+        <div className="accuracy-history-page">
+          <div className="page-header">
+            <Link to="/accuracy" className="back-link">
+              ← 成績ページへ戻る
+            </Link>
+            <h1>月別成績アーカイブ</h1>
+          </div>
+          <div className="loading">データを読み込み中...</div>
         </div>
-        <div className="loading">データを読み込み中...</div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
   if (error || !summary) {
     return (
-      <div className="accuracy-history-page">
-        <div className="page-header">
-          <Link to="/accuracy" className="back-link">
-            ← 成績ページへ戻る
-          </Link>
-          <h1>月別成績アーカイブ</h1>
+      <>
+        <Header />
+        <div className="accuracy-history-page">
+          <div className="page-header">
+            <Link to="/accuracy" className="back-link">
+              ← 成績ページへ戻る
+            </Link>
+            <h1>月別成績アーカイブ</h1>
+          </div>
+          <div className="error-message">
+            <p>データの読み込みに失敗しました。</p>
+          </div>
         </div>
-        <div className="error-message">
-          <p>データの読み込みに失敗しました。</p>
-        </div>
-      </div>
+        <Footer />
+      </>
     );
   }
 
@@ -149,6 +159,7 @@ function AccuracyHistory() {
         content="龍神レーダーのAI予測モデル別の月別成績アーカイブ。過去の予測精度と回収率の推移を確認できます。"
       />
       <link rel="canonical" href="https://www.boat-ai.jp/accuracy/history" />
+      <Header />
       <div className="accuracy-history-page">
         <div className="page-header">
           <Link to="/accuracy" className="back-link">
@@ -225,13 +236,9 @@ function AccuracyHistory() {
                               : "-"}
                           </td>
                           <td
-                            className="mct-recovery"
-                            style={{
-                              color:
-                                model.races > 0
-                                  ? getRecoveryColor(model.winRecoveryRate)
-                                  : "#64748b",
-                            }}
+                            className={`mct-recovery ${
+                              model.races > 0 ? getRecoveryColorClass(model.winRecoveryRate) : ""
+                            }`}
                           >
                             {model.races > 0
                               ? formatPercent(model.winRecoveryRate)
@@ -243,13 +250,9 @@ function AccuracyHistory() {
                               : "-"}
                           </td>
                           <td
-                            className="mct-recovery"
-                            style={{
-                              color:
-                                model.races > 0
-                                  ? getRecoveryColor(model.placeRecoveryRate)
-                                  : "#64748b",
-                            }}
+                            className={`mct-recovery ${
+                              model.races > 0 ? getRecoveryColorClass(model.placeRecoveryRate) : ""
+                            }`}
                           >
                             {model.races > 0
                               ? formatPercent(model.placeRecoveryRate)
@@ -261,13 +264,9 @@ function AccuracyHistory() {
                               : "-"}
                           </td>
                           <td
-                            className="mct-recovery"
-                            style={{
-                              color:
-                                model.races > 0
-                                  ? getRecoveryColor(model.trifectaRecoveryRate)
-                                  : "#64748b",
-                            }}
+                            className={`mct-recovery ${
+                              model.races > 0 ? getRecoveryColorClass(model.trifectaRecoveryRate) : ""
+                            }`}
                           >
                             {model.races > 0
                               ? formatPercent(model.trifectaRecoveryRate)
@@ -279,13 +278,9 @@ function AccuracyHistory() {
                               : "-"}
                           </td>
                           <td
-                            className="mct-recovery"
-                            style={{
-                              color:
-                                model.races > 0
-                                  ? getRecoveryColor(model.trioRecoveryRate)
-                                  : "#64748b",
-                            }}
+                            className={`mct-recovery ${
+                              model.races > 0 ? getRecoveryColorClass(model.trioRecoveryRate) : ""
+                            }`}
                           >
                             {model.races > 0
                               ? formatPercent(model.trioRecoveryRate)
@@ -301,6 +296,7 @@ function AccuracyHistory() {
           })
         )}
       </div>
+      <Footer />
     </>
   );
 }

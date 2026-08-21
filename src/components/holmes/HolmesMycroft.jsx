@@ -14,7 +14,8 @@ import { MycroftExplanation } from "./explanations";
 import BoatChip from "./BoatChip";
 import "./HolmesMycroft.css";
 
-const THEME = "#ca8a04";
+// #ca8a04は白文字で2.94:1しかなくAA未達のため濃色に変更（axe-core検出、Holmes.jsxのTABS配列と統一）
+const THEME = "#92400e";
 
 function formatJstTime(iso) {
   if (!iso) return null;

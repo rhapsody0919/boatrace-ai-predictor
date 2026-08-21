@@ -101,9 +101,10 @@
 }
 
 .moriarty-notice--warning {
-  background: #fffbeb;
-  border: var(--border-width-1) solid var(--color-warning);
-  color: #92400e;
+  /* 薄いアンバー背景+濃色文字はダークテーマ非対応のため、濃い単色背景+白文字に統一 */
+  background: #b45309;
+  border: none;
+  color: white;
 }
 
 /* ===== Charts ===== */

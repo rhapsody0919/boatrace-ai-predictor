@@ -4,14 +4,16 @@
  */
 
 /**
- * 回収率に基づく色を取得
+ * 回収率に基づくCSSクラス名を取得
+ * ライト/ダーク両テーマで単一のhex値だと必ず片方が未達になるため、
+ * テーマ別に色を出し分けるCSSクラス（.mct-recovery-*）を返す
  * @param {number} rate - 回収率 (1.0 = 100%)
- * @returns {string} カラーコード
+ * @returns {string} クラス名
  */
-export const getRecoveryColor = (rate) => {
-  if (rate >= 1.0) return "#10b981"; // green - 100%以上（利益）
-  if (rate >= 0.9) return "#f59e0b"; // yellow - 90%以上（ほぼ収支均衡）
-  return "#ef4444"; // red - 90%未満（損失）
+export const getRecoveryColorClass = (rate) => {
+  if (rate >= 1.0) return "mct-recovery-good"; // 100%以上（利益）
+  if (rate >= 0.9) return "mct-recovery-ok"; // 90%以上（ほぼ収支均衡）
+  return "mct-recovery-bad"; // 90%未満（損失）
 };
 
 /**

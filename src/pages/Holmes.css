@@ -2,13 +2,13 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--color-gray-50);
+  background: var(--surface-page);
 }
 
 .holmes-content {
   flex: 1;
   padding: var(--spacing-8) 0;
-  background: var(--color-gray-50);
+  background: var(--surface-page);
 }
 
 .holmes-container {
@@ -26,7 +26,9 @@
 .holmes-alpha-banner {
   display: inline-block;
   padding: var(--spacing-2) var(--spacing-4);
-  background: var(--color-warning);
+  /* var(--color-warning)は白文字で2.14:1しかなくAA未達のため、
+     UpdateStatus.css等で既に使われているアンバー系濃色(#b45309, 5.02:1)を使用 */
+  background: #b45309;
   color: var(--color-white);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
@@ -38,13 +40,13 @@
 .holmes-title {
   font-size: var(--font-size-7xl);
   margin: 0 0 var(--spacing-2) 0;
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   letter-spacing: 0.02em;
 }
 
 .holmes-subtitle {
   font-size: var(--font-size-lg);
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -61,19 +63,19 @@
   flex: 1;
   min-width: 140px;
   padding: var(--spacing-3) var(--spacing-4);
-  background: var(--color-white);
-  border: var(--border-width-2) solid var(--color-gray-200);
+  background: var(--surface-card);
+  border: var(--border-width-2) solid var(--border-hairline);
   border-radius: var(--radius-md);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-700);
+  color: var(--text-primary);
   cursor: pointer;
   transition: var(--transition-colors);
 }
 
 .holmes-tab:hover:not(.active) {
-  border-color: var(--color-gray-400);
-  background: var(--color-gray-100);
+  border-color: var(--border-hairline);
+  background: var(--surface-page);
 }
 
 .holmes-tab.active {
@@ -86,7 +88,7 @@
 }
 
 .holmes-detective-card {
-  background: var(--color-white);
+  background: var(--surface-card);
   border-radius: var(--radius-lg);
   padding: var(--spacing-6);
   box-shadow: var(--shadow-base);
@@ -98,7 +100,7 @@
   gap: var(--spacing-4);
   margin-bottom: var(--spacing-6);
   padding-bottom: var(--spacing-4);
-  border-bottom: var(--border-width-1) solid var(--color-gray-200);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
   flex-wrap: wrap;
 }
 
@@ -122,33 +124,34 @@
 .holmes-detective-name {
   font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   line-height: var(--line-height-tight);
 }
 
 .holmes-detective-title {
   font-size: var(--font-size-base);
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   margin-top: var(--spacing-1);
 }
 
 .holmes-detective-tech {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   margin-top: var(--spacing-2);
 }
 
 .holmes-detective-tech code {
-  background: var(--color-gray-100);
+  background: var(--surface-page);
   padding: 2px var(--spacing-2);
   border-radius: var(--radius-sm);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--color-gray-800);
+  color: var(--text-primary);
 }
 
 .holmes-status-badge {
   padding: var(--spacing-1) var(--spacing-3);
-  background: var(--color-warning-light);
+  /* var(--color-warning-light)(#ff9800)は白文字で2.16:1しかなくAA未達のため濃色に変更 */
+  background: #b45309;
   color: var(--color-white);
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
@@ -163,7 +166,7 @@
 
 .holmes-section h3 {
   font-size: var(--font-size-xl);
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   margin: 0 0 var(--spacing-3) 0;
 }
 
@@ -179,7 +182,7 @@
 .holmes-concept-list li {
   position: relative;
   padding-left: var(--spacing-6);
-  color: var(--color-gray-700);
+  color: var(--text-primary);
   line-height: var(--line-height-relaxed);
   font-size: var(--font-size-base);
 }
@@ -194,10 +197,10 @@
 
 /* ===== Mock prediction ===== */
 .holmes-mock-prediction {
-  background: var(--color-gray-50);
+  background: var(--surface-page);
   border-radius: var(--radius-md);
   padding: var(--spacing-4);
-  border: var(--border-width-1) dashed var(--color-gray-300);
+  border: var(--border-width-1) dashed var(--border-hairline);
 }
 
 .holmes-mock-row {
@@ -205,7 +208,7 @@
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-2) 0;
-  border-bottom: var(--border-width-1) solid var(--color-gray-200);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
 }
 
 .holmes-mock-row:last-child {
@@ -214,13 +217,13 @@
 
 .holmes-mock-label {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   font-weight: var(--font-weight-medium);
 }
 
 .holmes-mock-value {
   font-size: var(--font-size-base);
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   font-weight: var(--font-weight-semibold);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -232,7 +235,7 @@
 
 .holmes-mock-note {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   margin-top: var(--spacing-2);
   font-style: italic;
 }
@@ -244,7 +247,7 @@
 
 .holmes-info h2 {
   font-size: var(--font-size-4xl);
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   margin-bottom: var(--spacing-6);
   text-align: center;
 }
@@ -256,7 +259,7 @@
 }
 
 .holmes-info-card {
-  background: var(--color-white);
+  background: var(--surface-card);
   padding: var(--spacing-5);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
@@ -266,12 +269,12 @@
 .holmes-info-card h3 {
   margin: 0 0 var(--spacing-3) 0;
   font-size: var(--font-size-xl);
-  color: var(--color-gray-900);
+  color: var(--text-primary);
 }
 
 .holmes-info-card p {
   margin: 0;
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   line-height: var(--line-height-relaxed);
   font-size: var(--font-size-base);
 }

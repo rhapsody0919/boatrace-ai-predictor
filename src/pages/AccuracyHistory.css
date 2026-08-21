@@ -3,47 +3,54 @@
     margin: 0 auto;
     padding: 20px;
     min-height: 100vh;
-    background: #f5f5f5;
+    background: var(--surface-page);
 }
 
 .page-header {
     margin-bottom: 24px;
 }
 
-.back-link {
+/* .back-linkはRaceDetail.css/BlogPost.css等にも同名クラスがあり、CSSが全ページ分
+   1つのバンドルに結合されるためビルド順で固定値が意図せず勝つことがある。
+   親スコープで詳細度を上げて確実にトークンを効かせる */
+.accuracy-history-page .back-link {
     display: inline-block;
-    color: #0ea5e9;
+    /* #0ea5e9はページ背景でコントラスト不足のため、両テーマで検証済みの銀に変更 */
+    color: var(--brand-accent-secondary);
     text-decoration: none;
     font-size: 14px;
     margin-bottom: 12px;
 }
 
-.back-link:hover {
+.accuracy-history-page .back-link:hover {
+    color: var(--text-primary);
     text-decoration: underline;
 }
 
-.page-header h1 {
+/* .page-header h1はRaceDetail.css等にも同名クラスがあり同様の衝突があるため親スコープで指定 */
+.accuracy-history-page .page-header h1 {
     font-size: 24px;
-    color: #333;
+    color: var(--text-primary);
     margin: 0;
 }
 
 .archive-note {
-    background: #f1f5f9;
-    border-left: 4px solid #94a3b8;
+    background: var(--surface-card);
+    border-left: 4px solid var(--brand-accent-secondary);
     border-radius: 6px;
     padding: 12px 16px;
     margin-bottom: 20px;
     font-size: 14px;
-    color: #475569;
+    color: var(--text-secondary);
 }
 
-.no-data {
-    background: white;
+/* .no-dataはOutcomePatternPreview.css等にも同名クラスがあり衝突するため親スコープで指定 */
+.accuracy-history-page .no-data {
+    background: var(--surface-card);
     border-radius: 12px;
     padding: 40px 20px;
     text-align: center;
-    color: #475569;
+    color: var(--text-secondary);
 }
 
 .no-data p {
@@ -53,30 +60,31 @@
 .loading {
     text-align: center;
     padding: 40px;
-    color: #475569;
+    color: var(--text-secondary);
 }
 
 .error-message {
-    background: #fff3e0;
+    /* 薄いオレンジ背景+濃色文字はダークテーマ非対応のため、濃い単色背景+白文字に統一 */
+    background: #b45309;
     padding: 20px;
     border-radius: 8px;
     text-align: center;
-    color: #e65100;
+    color: white;
 }
 
 /* Model Comparison Section - same as AccuracyDashboard */
 .model-comparison-section {
-    background: white;
+    background: var(--surface-card);
     border-radius: 16px;
     padding: 2rem;
     margin-bottom: 2rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--border-hairline);
 }
 
 .mct-title {
     font-size: 1.5rem;
-    color: #1e293b;
+    color: var(--text-primary);
     margin: 0 0 1.5rem 0;
     font-weight: 800;
     text-align: center;
@@ -94,51 +102,91 @@
 }
 
 .mct-table th {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: var(--surface-page);
     padding: 1rem;
     text-align: center;
     font-weight: 700;
-    color: #1e293b;
-    border-bottom: 2px solid #e2e8f0;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--border-hairline);
 }
 
 .mct-table .mct-sub-header th {
     font-size: 0.85rem;
     padding: 0.5rem;
     font-weight: 600;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 .mct-table td {
     padding: 1rem;
     text-align: center;
-    border-bottom: 1px solid #e2e8f0;
-    color: #1e293b;
+    border-bottom: 1px solid var(--border-hairline);
+    color: var(--text-primary);
 }
 
 .mct-table tbody tr:hover {
-    background: #f8fafc;
+    background: var(--surface-page);
 }
 
 .mct-model-name {
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-primary);
     text-align: left !important;
     white-space: nowrap;
 }
 
 .mct-races {
-    color: #64748b;
+    color: var(--text-secondary);
     font-weight: 600;
 }
 
 .mct-hit {
-    color: #1e293b;
+    color: var(--text-primary);
     font-weight: 600;
 }
 
 .mct-recovery {
     font-weight: 700;
+}
+
+/* getRecoveryColorClass()用。単一のhex値だとライト/ダークいずれかで必ずAA未達になるため、
+   テーマごとに色を出し分ける（ダーク値を既定、ライトは[data-theme="light"]で上書き） */
+.mct-recovery-good {
+    color: #10b981;
+}
+
+.mct-recovery-ok {
+    color: #f59e0b;
+}
+
+.mct-recovery-bad {
+    color: #f87171;
+}
+
+[data-theme="light"] .mct-recovery-good {
+    color: #047857;
+}
+
+[data-theme="light"] .mct-recovery-ok {
+    color: #92400e;
+}
+
+[data-theme="light"] .mct-recovery-bad {
+    color: #dc2626;
+}
+
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .mct-recovery-good {
+        color: #047857;
+    }
+
+    :root:not([data-theme="dark"]) .mct-recovery-ok {
+        color: #92400e;
+    }
+
+    :root:not([data-theme="dark"]) .mct-recovery-bad {
+        color: #dc2626;
+    }
 }
 
 @media (max-width: 768px) {

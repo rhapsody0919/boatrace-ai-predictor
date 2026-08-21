@@ -2,20 +2,20 @@
 
 .explanation-section {
   margin-top: var(--spacing-6);
-  border-top: var(--border-width-1) solid var(--color-gray-200);
+  border-top: var(--border-width-1) solid var(--border-hairline);
   padding-top: var(--spacing-6);
 }
 
 .explanation-section h3 {
   font-size: var(--font-size-xl);
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   margin: 0 0 var(--spacing-3) 0;
 }
 
 /* ===== Summary (常に表示) ===== */
 .explanation-summary {
   font-size: var(--font-size-base);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   line-height: var(--line-height-relaxed);
   margin: 0 0 var(--spacing-4) 0;
 }
@@ -55,7 +55,7 @@
 .explanation-key-points li {
   position: relative;
   padding-left: var(--spacing-6);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   line-height: var(--line-height-relaxed);
   font-size: var(--font-size-base);
 }
@@ -70,7 +70,7 @@
 /* ===== 詳細折り畳み ===== */
 .explanation-details {
   margin-top: var(--spacing-2);
-  border: var(--border-width-1) solid var(--color-gray-200);
+  border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -78,8 +78,8 @@
 .explanation-details summary {
   cursor: pointer;
   padding: var(--spacing-3) var(--spacing-4);
-  background: var(--color-gray-50);
-  color: var(--color-gray-700);
+  background: var(--surface-card);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   list-style: none;
@@ -106,7 +106,7 @@
 }
 
 .explanation-details summary:hover {
-  background: var(--color-gray-100);
+  background: var(--surface-page);
 }
 
 /* ===== 詳細コンテンツ ===== */
@@ -120,13 +120,13 @@
 .explanation-detail-block h4 {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   margin: 0 0 var(--spacing-2) 0;
 }
 
 .explanation-detail-block p {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   line-height: var(--line-height-relaxed);
   margin: 0 0 var(--spacing-2) 0;
 }
@@ -145,20 +145,20 @@
 
 .explanation-detail-block ul li {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   line-height: var(--line-height-relaxed);
 }
 
 /* ===== 数式表示 ===== */
 .explanation-formula {
   display: block;
-  background: var(--color-gray-100);
+  background: var(--surface-page);
   border-left: var(--border-width-3) solid var(--color-primary-500);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: var(--spacing-2) var(--spacing-4);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: var(--font-size-sm);
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   margin: var(--spacing-2) 0;
   overflow-x: auto;
 }
@@ -172,7 +172,7 @@
 
 .explanation-pros,
 .explanation-cons {
-  background: var(--color-gray-50);
+  background: var(--surface-card);
   border-radius: var(--radius-sm);
   padding: var(--spacing-3);
 }
@@ -214,7 +214,7 @@
 .explanation-pros ul li,
 .explanation-cons ul li {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   line-height: var(--line-height-relaxed);
 }
 

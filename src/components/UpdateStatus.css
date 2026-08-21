@@ -10,16 +10,20 @@
   flex-wrap: wrap;
 }
 
+/* 薄い色味の背景+濃色文字はダークテーマ非対応のため、App.css の .hit/.miss と同じ
+   「濃い単色背景+白文字」パターンに統一（自己完結のバッジのためページ背景に依存しない） */
 .update-status.fresh {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #4caf50;
+  background: #0d7a56;
+  color: white;
+  border: none;
 }
 
 .update-status.stale {
-  background: #fff3e0;
-  color: #e65100;
-  border: 1px solid #ff9800;
+  /* var(--color-warning-dark)(#f57c00)は白文字で2.7:1しか出ずAA未達のため、
+     DataRaceTable.cssで既に使われているアンバー系の濃色(#b45309, 5.02:1)を使用 */
+  background: #b45309;
+  color: white;
+  border: none;
 }
 
 .update-icon {
@@ -34,7 +38,8 @@
 
 .update-relative {
   font-size: 0.85rem;
-  opacity: 0.8;
+  /* opacity:0.8で白文字と.update-status.staleの濃色背景が合成されると
+     4.5:1未達になる（axe-core検出、旧Footerと同種のopacity起因バグ）ため外す */
 }
 
 /* 更新ボタン */
@@ -99,7 +104,7 @@
   margin: 0;
   padding: 0 0.5rem;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 400;
 }
 

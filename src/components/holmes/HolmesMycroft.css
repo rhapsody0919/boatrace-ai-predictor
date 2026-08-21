@@ -19,7 +19,7 @@
 .mycroft-stat-value {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #ca8a04;
+  color: #92400e; /* axe-core: 白文字用テーマ濃色化と統一 */
 }
 
 .mycroft-stat-label {
@@ -30,7 +30,7 @@
 
 .mycroft-stat-sub {
   display: block;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.7rem;
 }
 
@@ -47,7 +47,7 @@
 
 /* ===== 本日の推理 ===== */
 .mycroft-loading {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   padding: 0.5rem 0;
 }
@@ -96,7 +96,7 @@
 }
 
 .mycroft-race-time {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
@@ -106,7 +106,7 @@
 }
 
 .mycroft-race-pick strong {
-  color: #ca8a04;
+  color: #92400e; /* axe-core: 白文字用テーマ濃色化と統一 */
 }
 
 .mycroft-prob-badge {
@@ -208,7 +208,7 @@
 }
 
 .mycroft-memory-date {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
@@ -224,7 +224,7 @@
 }
 
 .mycroft-memory-result.good {
-  color: #059669;
+  color: #92400e; /* axe-core: Mycroftテーマ濃色化と統一のため転用 */
 }
 
 .mycroft-memory-result.bad {

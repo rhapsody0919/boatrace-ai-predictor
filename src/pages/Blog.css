@@ -3,7 +3,7 @@
   margin: 0 auto;
   padding: 2rem 1rem;
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--surface-page);
 }
 
 .blog-header {
@@ -14,12 +14,12 @@
 .blog-header h1 {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .blog-header p {
   font-size: 1.1rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* Featured Section */
@@ -30,7 +30,7 @@
 .featured-section h2 {
   font-size: 1.8rem;
   margin-bottom: 1.5rem;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .featured-grid {
@@ -79,19 +79,21 @@
 
 .category-filter button {
   padding: 0.5rem 1.25rem;
-  border: 2px solid #e2e8f0;
-  background: white;
+  border: 2px solid var(--border-hairline);
+  background: var(--surface-page);
   border-radius: 25px;
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 500;
   transition: all 0.3s ease;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .category-filter button:hover {
   border-color: #0ea5e9;
-  color: #0ea5e9;
+  /* #0ea5e9はテキスト色としてダークカード背景で2.5:1程度しか出ずAA未達のため、
+     両テーマで検証済みのvar(--brand-accent-secondary)（銀）に変更 */
+  color: var(--brand-accent-secondary);
 }
 
 .category-filter button.active {
@@ -110,12 +112,12 @@
 
 .blog-card {
   position: relative;
-  background: white;
+  background: var(--surface-card);
   border-radius: 12px;
   padding: 1.5rem;
   text-decoration: none;
   color: inherit;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border-hairline);
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -130,12 +132,12 @@
 .blog-card-content h3 {
   font-size: 1.25rem;
   margin: 0.75rem 0 1rem 0;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.4;
 }
 
 .blog-card-content .description {
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 1rem;
   flex-grow: 1;
@@ -157,7 +159,7 @@
   display: flex;
   gap: 1rem;
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--text-secondary);
   margin-bottom: 0.75rem;
 }
 
@@ -181,10 +183,15 @@
   margin-top: 0.75rem;
 }
 
-.tag {
+/* .tagはsrc/pages/Profile.cssにも同名クラスがあり（白文字×#0ea5e9背景のバッジ形式で
+   値が異なる）、CSSが全ページ分1つのバンドルに結合されるためビルド順で意図しない方が勝つ。
+   実際のラッパー(.blog-grid)で詳細度を上げて確実にこちらのチップ形式を効かせる。
+   #0ea5e9はテキスト色としてダークカード背景で2.5:1程度しか出ずAA未達のため、
+   両テーマで検証済みのvar(--brand-accent-secondary)（銀）に変更 */
+.blog-grid .tag {
   font-size: 0.85rem;
-  color: #0ea5e9;
-  background: #f1f5f9;
+  color: var(--brand-accent-secondary);
+  background: var(--surface-page);
   padding: 0.25rem 0.75rem;
   border-radius: 15px;
 }
@@ -193,7 +200,7 @@
 .no-posts {
   text-align: center;
   padding: 4rem 2rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* Responsive */
@@ -242,7 +249,7 @@
     font-size: 0.85rem;
   }
 
-  .tag {
+  .blog-grid .tag {
     font-size: 0.75rem;
     padding: 0.2rem 0.5rem;
   }
@@ -253,7 +260,9 @@
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
-  background: #ef4444;
+  /* #ef4444は白文字で3.76:1しかなくAA未達（axe-core検出）。
+     var(--color-error-dark)（#dc2626、4.83:1）に変更 */
+  background: var(--color-error-dark);
   color: white;
   font-size: 0.7rem;
   font-weight: 700;
@@ -261,6 +270,6 @@
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
   z-index: 1;
 }
