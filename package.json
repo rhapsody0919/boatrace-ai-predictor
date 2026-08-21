@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "check:contrast": "node scripts/maintenance/check-token-contrast.js",
     "check:css-collisions": "node scripts/maintenance/check-css-class-collisions.js",
+    "verify:sitemap": "node scripts/maintenance/verify-sitemap-coverage.js",
     "test:e2e": "playwright test",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
