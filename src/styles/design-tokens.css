@@ -43,6 +43,23 @@
   --color-info: #2196f3;
   --color-info-light: #60a5fa;
 
+  /* テキスト色専用の状態色（BOA-204）。上のsuccess/warning/error/infoは背景色として
+     既に個別検証済みの値がある（例: src/pages/Blog.css の色エラー背景）ため、
+     ベース値自体は変更せず、テキスト用途にのみ安全な階調を別トークンとして持つ。
+     このファイルの他トークン（surface-page等）と同じ規約で、無印デフォルトは
+     ライトテーマのページ背景色に対し4.5:1以上になる値、下部の[data-theme="dark"]で
+     ダークテーマのカード背景色向けに上書きする。
+     注意: check-token-contrast.jsの簡易パーサはコメント内でも
+     ハイフン2つのトークン名の直後にコロンと値が続く記法をCSS宣言と誤認するため、
+     このコメント内ではその記法を使わない */
+  --color-success-text: #0b7a55;
+  --color-success-dark-text: #04704f;
+  --color-warning-text: #946006;
+  --color-warning-dark-text: #994e00;
+  --color-error-text: #d51212;
+  --color-error-dark-text: #bf1f1f;
+  --color-info-text: #0a6dbc;
+
   /* ボートレースグレード */
   --color-grade-sg: #7c3aed;      /* スーパーG */
   --color-grade-g1: #dc2626;      /* G1 */
@@ -300,6 +317,13 @@
   --brand-accent-primary: var(--ryujin-gold-500);
   --brand-accent-secondary: var(--ryujin-silver-500);
   --podium-bronze-text: var(--color-bronze);
+  --color-success-text: var(--color-success);
+  --color-success-dark-text: #06ab77;
+  --color-warning-text: var(--color-warning);
+  --color-warning-dark-text: var(--color-warning-dark);
+  --color-error-text: #f26b6b;
+  --color-error-dark-text: #e87272;
+  --color-info-text: var(--color-info);
 }
 
 [data-theme="light"] {
@@ -323,5 +347,12 @@
     --brand-accent-primary: var(--ryujin-gold-500);
     --brand-accent-secondary: var(--ryujin-silver-500);
     --podium-bronze-text: var(--color-bronze);
+    --color-success-text: var(--color-success);
+    --color-success-dark-text: #06ab77;
+    --color-warning-text: var(--color-warning);
+    --color-warning-dark-text: var(--color-warning-dark);
+    --color-error-text: #f26b6b;
+    --color-error-dark-text: #e87272;
+    --color-info-text: var(--color-info);
   }
 }

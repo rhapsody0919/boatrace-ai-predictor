@@ -195,11 +195,11 @@
 }
 
 .explanation-pros h5 {
-  color: var(--color-success-dark);
+  color: var(--color-success-dark-text);
 }
 
 .explanation-cons h5 {
-  color: var(--color-error-dark);
+  color: var(--color-error-dark-text);
 }
 
 .explanation-pros ul,

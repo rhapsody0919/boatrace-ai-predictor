@@ -76,7 +76,7 @@
 .step-nav-btn.active {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   border-color: #0ea5e9;
-  color: white !important;
+  color: white;
 }
 
 .step-nav-btn.completed {
@@ -306,7 +306,7 @@
 
 .nav-button.next {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white !important;
+  color: white;
 }
 
 .nav-button.next:hover {
@@ -316,7 +316,7 @@
 
 .nav-button.finish {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white !important;
+  color: white;
 }
 
 .nav-button.finish:hover {
@@ -337,11 +337,11 @@
   margin-top: 0;
   margin-bottom: 0.5rem;
   font-size: 1.5rem;
-  color: var(--text-primary) !important;
+  color: var(--text-primary);
 }
 
 .faq-link-section p {
-  color: var(--text-secondary) !important;
+  color: var(--text-secondary);
   margin-bottom: 1.5rem;
 }
 
@@ -350,7 +350,7 @@
   font-size: 1.1rem;
   font-weight: 600;
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white !important;
+  color: white;
   border: none;
   border-radius: 12px;
   cursor: pointer;

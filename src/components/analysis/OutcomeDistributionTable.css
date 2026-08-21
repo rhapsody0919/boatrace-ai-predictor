@@ -160,12 +160,12 @@
 }
 
 .outcome-table td.probability {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: var(--font-weight-medium);
 }
 
 .outcome-table td.payout {
-  color: var(--color-error);
+  color: var(--color-error-text);
   font-weight: var(--font-weight-medium);
 }
 
@@ -337,12 +337,12 @@
 }
 
 .top-patterns-table td.probability {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: var(--font-weight-medium);
 }
 
 .top-patterns-table td.payout {
-  color: var(--color-error);
+  color: var(--color-error-text);
   font-weight: var(--font-weight-medium);
 }
 

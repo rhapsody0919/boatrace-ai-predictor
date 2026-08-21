@@ -121,17 +121,17 @@
 }
 
 .motor-ranking-table td.rate {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: var(--font-weight-medium);
 }
 
 .delta-up {
-  color: var(--color-error);
+  color: var(--color-error-text);
   font-weight: var(--font-weight-semibold);
 }
 
 .delta-down {
-  color: var(--color-info);
+  color: var(--color-info-text);
   font-weight: var(--font-weight-semibold);
 }
 

@@ -39,12 +39,12 @@
 }
 
 .rcd-rank-1 {
-  color: var(--color-error);
+  color: var(--color-error-text);
   font-weight: var(--font-weight-bold);
 }
 
 .rcd-rank-2 {
-  color: var(--color-warning-dark, #b45309);
+  color: var(--color-warning-dark-text);
   font-weight: var(--font-weight-semibold);
 }
 
