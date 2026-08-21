@@ -94,6 +94,47 @@
   flex-shrink: 0;
 }
 
+/* low/medium/highの原色（バー塗り用）はテキストとして使うとライトカード背景
+   (#fbf9f3)でAA未達（medium 2.97:1、high 2.05:1、low 2.64:1）。ダーク背景では
+   問題無いためダークテーマ既定値を基準にライトテーマ用に濃い色で上書きする */
+.vas-text-low {
+  color: #4caf50;
+}
+
+.vas-text-medium {
+  color: #2196f3;
+}
+
+.vas-text-high {
+  color: #ff9800;
+}
+
+[data-theme="light"] .vas-text-low {
+  color: #2e7d32;
+}
+
+[data-theme="light"] .vas-text-medium {
+  color: #1565c0;
+}
+
+[data-theme="light"] .vas-text-high {
+  color: #b45309;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .vas-text-low {
+    color: #2e7d32;
+  }
+
+  :root:not([data-theme="dark"]) .vas-text-medium {
+    color: #1565c0;
+  }
+
+  :root:not([data-theme="dark"]) .vas-text-high {
+    color: #b45309;
+  }
+}
+
 /* 凡例 */
 .vas-legend {
   display: flex;

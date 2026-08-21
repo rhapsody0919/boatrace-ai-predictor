@@ -24,16 +24,19 @@
   margin: 0;
 }
 
-.loading,
-.error-message,
-.no-data-message {
+/* .loading/.error-message は他ページのCSSにも同名クラスがあり、CSSが全ページ分
+   1つのバンドルに結合されるためビルド順で意図しない側が勝つことがある。
+   .accuracy-dashboardでスコープする（BOA-207） */
+.accuracy-dashboard .loading,
+.accuracy-dashboard .error-message,
+.accuracy-dashboard .no-data-message {
   text-align: center;
   padding: 3rem 1rem;
   color: var(--text-secondary);
   font-size: 1.1rem;
 }
 
-.error-message {
+.accuracy-dashboard .error-message {
   /* 薄いアンバー背景+濃色文字はダークテーマ非対応のため、UpdateStatus.cssの
      staleバッジと同じ「濃い単色背景+白文字」パターンに統一 */
   background: #b45309;
@@ -43,7 +46,7 @@
   text-align: center;
 }
 
-.error-message p {
+.accuracy-dashboard .error-message p {
   margin-bottom: 1rem;
 }
 

@@ -6,7 +6,8 @@
     background: var(--surface-page);
 }
 
-.page-header {
+/* .page-headerは他ページのCSSにも同名クラスがあり衝突するため親スコープで指定 */
+.accuracy-history-page .page-header {
     margin-bottom: 24px;
 }
 
@@ -57,13 +58,16 @@
     margin: 8px 0;
 }
 
-.loading {
+/* .loading/.error-messageは他ページのCSSにも同名クラスがあり、CSSが全ページ分
+   1つのバンドルに結合されるためビルド順で意図しない側が勝つことがある。
+   .accuracy-history-pageでスコープする（BOA-207） */
+.accuracy-history-page .loading {
     text-align: center;
     padding: 40px;
     color: var(--text-secondary);
 }
 
-.error-message {
+.accuracy-history-page .error-message {
     /* 薄いオレンジ背景+濃色文字はダークテーマ非対応のため、濃い単色背景+白文字に統一 */
     background: #b45309;
     padding: 20px;
@@ -194,7 +198,7 @@
         padding: 16px;
     }
 
-    .page-header h1 {
+    .accuracy-history-page .page-header h1 {
         font-size: 20px;
     }
 
@@ -229,7 +233,7 @@
         padding: 12px;
     }
 
-    .page-header h1 {
+    .accuracy-history-page .page-header h1 {
         font-size: 1.1rem;
     }
 

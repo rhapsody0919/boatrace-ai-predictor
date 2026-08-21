@@ -51,7 +51,7 @@ function LevelBar({ t, level, data, baseline }) {
             })}
           />
         </div>
-        <div className="vas-rate" style={{ color: cfg.color }}>
+        <div className={`vas-rate vas-text-${level}`}>
           {data.upsetRate.toFixed(1)}%
         </div>
       </div>
@@ -122,7 +122,7 @@ function VolatilityAccuracySection({ stats }) {
       {highData && (
         <p className="vas-summary">
           {t("volatilityAccuracy.summaryPrefix")}{" "}
-          <strong style={{ color: "#ff9800", fontSize: "1.1em" }}>
+          <strong className="vas-text-high" style={{ fontSize: "1.1em" }}>
             {highData.upsetRate.toFixed(1)}%
           </strong>{" "}
           {t("volatilityAccuracy.summarySuffix")}

@@ -170,15 +170,11 @@
   gap: 1rem;
 }
 
-/* .race-cardはsrc/pages/admin/AdminRules.css等にも同名クラスがあり、CSSが全ページ分
-   1つのバンドルに結合されるためビルド順で固定値（#f8fafc）が意図せず勝つ
-   （詳細はBOA-207参照）。親スコープで詳細度を上げて確実にトークンを効かせる */
+/* .race-card/.race-card-headerはsrc/pages/admin/AdminRules.css等にも同名クラスがあり、
+   CSSが全ページ分1つのバンドルに結合されるためビルド順で固定値（#f8fafc等）が
+   意図せず勝つ（詳細はBOA-207参照）。親スコープで詳細度を上げて確実にトークンを効かせる */
 .race-cards-grid .race-card {
   background: var(--surface-card);
-}
-
-/* レースカード */
-.race-card {
   border-radius: 8px;
   padding: 1rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -186,15 +182,15 @@
   transition: transform 0.2s;
 }
 
-.race-card.clickable:hover {
+.race-cards-grid .race-card.clickable:hover {
   transform: translateY(-2px);
 }
 
-.race-card.yesterday {
+.race-cards-grid .race-card.yesterday {
   opacity: 0.95;
 }
 
-.race-card-header {
+.race-cards-grid .race-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;

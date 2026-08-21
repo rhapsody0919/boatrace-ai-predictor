@@ -17,12 +17,15 @@
   padding: 0 1rem;
 }
 
-.page-header {
+/* .page-header/.page-header h1は他ページのCSSにも同名クラスがあり、
+   CSSが全ページ分1つのバンドルに結合されるためビルド順で意図しない側が
+   勝ってしまう。親要素で詳細度を上げて確実に自ページのスタイルを効かせる（BOA-207） */
+.outcome-distribution-page .page-header {
   margin-bottom: 2rem;
   text-align: center;
 }
 
-.page-header h1 {
+.outcome-distribution-page .page-header h1 {
   font-size: 2rem;
   margin: 0 0 0.5rem 0;
   color: var(--text-primary);
@@ -104,11 +107,11 @@
     padding: 0 0.75rem;
   }
 
-  .page-header {
+  .outcome-distribution-page .page-header {
     margin-bottom: 1.5rem;
   }
 
-  .page-header h1 {
+  .outcome-distribution-page .page-header h1 {
     font-size: 1.5rem;
   }
 

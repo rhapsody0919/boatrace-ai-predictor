@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "check:contrast": "node scripts/maintenance/check-token-contrast.js",
-    "generate:logotype-font": "bash scripts/maintenance/generate-logotype-font.sh",
+    "check:css-collisions": "node scripts/maintenance/check-css-class-collisions.js",
     "test:e2e": "playwright test",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",

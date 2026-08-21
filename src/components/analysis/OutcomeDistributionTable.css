@@ -176,16 +176,19 @@
   font-size: 0.9rem;
 }
 
-.loading-state,
-.error-state,
-.empty-state {
+/* .loading-state/.error-stateは他ファイルにも同名クラスがあり、CSSが全ページ分
+   1つのバンドルに結合されるためビルド順で意図しない側が勝つことがある。
+   .outcome-distribution-containerでスコープする（BOA-207） */
+.outcome-distribution-container .loading-state,
+.outcome-distribution-container .error-state,
+.outcome-distribution-container .empty-state {
   padding: 2rem;
   text-align: center;
   color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
-.error-state {
+.outcome-distribution-container .error-state {
   background: var(--surface-page);
   border: var(--border-width-1) solid var(--color-error);
   color: var(--text-primary);
@@ -211,7 +214,10 @@
   gap: 1rem;
 }
 
-.expand-button {
+/* .expand-buttonはsrc/components/race/OutcomePatternPreview.cssにも同名クラスが
+   あり、CSSが全ページ分1つのバンドルに結合されるためビルド順で意図しない側が
+   勝つことがある。.outcome-distribution-containerでスコープする（BOA-207） */
+.outcome-distribution-container .expand-button {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -224,17 +230,17 @@
   min-width: 200px;
 }
 
-.expand-button:hover h3 {
+.outcome-distribution-container .expand-button:hover h3 {
   color: var(--brand-accent-primary);
 }
 
-.expand-button .chevron {
+.outcome-distribution-container .expand-button .chevron {
   font-size: 0.9rem;
   color: var(--text-secondary);
   transition: transform 0.2s ease;
 }
 
-.expand-button h3 {
+.outcome-distribution-container .expand-button h3 {
   margin: 0;
   font-size: 1.1rem;
   color: var(--text-primary);
