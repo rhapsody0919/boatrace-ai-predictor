@@ -65,13 +65,16 @@ export default function ResponsibleGambling() {
         <section
           className="about-section"
           style={{
-            background: "#fff3e0",
+            /* var(--color-warning-dark)(#f57c00)は白文字で2.7:1しかなくAA未達のため、
+               UpdateStatus.cssのstaleバッジと同じアンバー系濃色(#b45309, 5.02:1)を使用 */
+            background: "#b45309",
+            color: "white",
             padding: "1.5rem",
             borderRadius: "8px",
           }}
         >
-          <h2 style={{ color: "#e65100" }}>ギャンブル依存症について</h2>
-          <p>
+          <h2 style={{ color: "white" }}>ギャンブル依存症について</h2>
+          <p style={{ color: "white" }}>
             ギャンブル依存症は、自分の意志だけではギャンブルをやめられない状態です。
             以下のような症状がある場合は、専門家への相談をお勧めします。
           </p>
@@ -88,20 +91,26 @@ export default function ResponsibleGambling() {
         <section
           className="about-section"
           style={{
-            background: "#e3f2fd",
+            /* var(--color-info)(#2196f3)は白文字で3.12:1しかなくAA未達のため、
+               このセクション内の他要素で既に使われている#1565c0（5.75:1）を採用 */
+            background: "#1565c0",
+            color: "white",
             padding: "1.5rem",
             borderRadius: "8px",
           }}
         >
-          <h2 style={{ color: "#1565c0" }}>相談窓口</h2>
-          <p style={{ marginBottom: "1.5rem" }}>
+          <h2 style={{ color: "white" }}>相談窓口</h2>
+          <p style={{ marginBottom: "1.5rem", color: "white" }}>
             ギャンブルに関する悩みは、一人で抱え込まずに専門家に相談しましょう。
           </p>
 
           <div style={{ display: "grid", gap: "1rem" }}>
             <div
               style={{
-                background: "white",
+                background: "var(--surface-card)",
+                /* 親section(相談窓口)がcolor:whiteのため、白背景カード内で
+                   文字が見えなくならないよう明示的に上書きする */
+                color: "var(--text-primary)",
                 padding: "1rem",
                 borderRadius: "8px",
                 borderLeft: "4px solid #1565c0",
@@ -114,20 +123,29 @@ export default function ResponsibleGambling() {
                 style={{
                   fontSize: "1.5rem",
                   fontWeight: "bold",
-                  color: "#1565c0",
+                  color: "var(--brand-accent-secondary)",
                   margin: "0.5rem 0",
                 }}
               >
                 188（いやや）
               </p>
-              <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
+              <p
+                style={{
+                  fontSize: "0.9rem",
+                  color: "var(--text-secondary)",
+                  margin: 0,
+                }}
+              >
                 最寄りの消費生活センターにつながります
               </p>
             </div>
 
             <div
               style={{
-                background: "white",
+                background: "var(--surface-card)",
+                /* 親section(相談窓口)がcolor:whiteのため、白背景カード内で
+                   文字が見えなくならないよう明示的に上書きする */
+                color: "var(--text-primary)",
                 padding: "1rem",
                 borderRadius: "8px",
                 borderLeft: "4px solid #1565c0",
@@ -139,7 +157,7 @@ export default function ResponsibleGambling() {
               <p
                 style={{
                   fontSize: "0.9rem",
-                  color: "#666",
+                  color: "var(--text-secondary)",
                   margin: "0.5rem 0",
                 }}
               >
@@ -147,19 +165,28 @@ export default function ResponsibleGambling() {
                   href="https://www.ncasa-japan.jp/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: "#1565c0" }}
+                  style={{ color: "var(--brand-accent-secondary)" }}
                 >
                   https://www.ncasa-japan.jp/
                 </a>
               </p>
-              <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
+              <p
+                style={{
+                  fontSize: "0.9rem",
+                  color: "var(--text-secondary)",
+                  margin: 0,
+                }}
+              >
                 全国の相談窓口を検索できます
               </p>
             </div>
 
             <div
               style={{
-                background: "white",
+                background: "var(--surface-card)",
+                /* 親section(相談窓口)がcolor:whiteのため、白背景カード内で
+                   文字が見えなくならないよう明示的に上書きする */
+                color: "var(--text-primary)",
                 padding: "1rem",
                 borderRadius: "8px",
                 borderLeft: "4px solid #1565c0",
@@ -171,7 +198,7 @@ export default function ResponsibleGambling() {
               <p
                 style={{
                   fontSize: "0.9rem",
-                  color: "#666",
+                  color: "var(--text-secondary)",
                   margin: "0.5rem 0",
                 }}
               >
@@ -179,19 +206,28 @@ export default function ResponsibleGambling() {
                   href="https://scga.jp/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: "#1565c0" }}
+                  style={{ color: "var(--brand-accent-secondary)" }}
                 >
                   https://scga.jp/
                 </a>
               </p>
-              <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
+              <p
+                style={{
+                  fontSize: "0.9rem",
+                  color: "var(--text-secondary)",
+                  margin: 0,
+                }}
+              >
                 相談ダイヤル: 070-4501-9625（毎日10時〜22時）
               </p>
             </div>
 
             <div
               style={{
-                background: "white",
+                background: "var(--surface-card)",
+                /* 親section(相談窓口)がcolor:whiteのため、白背景カード内で
+                   文字が見えなくならないよう明示的に上書きする */
+                color: "var(--text-primary)",
                 padding: "1rem",
                 borderRadius: "8px",
                 borderLeft: "4px solid #1565c0",
@@ -204,13 +240,19 @@ export default function ResponsibleGambling() {
                 style={{
                   fontSize: "1.5rem",
                   fontWeight: "bold",
-                  color: "#1565c0",
+                  color: "var(--brand-accent-secondary)",
                   margin: "0.5rem 0",
                 }}
               >
                 0120-279-338
               </p>
-              <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
+              <p
+                style={{
+                  fontSize: "0.9rem",
+                  color: "var(--text-secondary)",
+                  margin: 0,
+                }}
+              >
                 24時間対応・通話無料
               </p>
             </div>
@@ -223,14 +265,16 @@ export default function ResponsibleGambling() {
             <div
               style={{
                 padding: "1rem",
-                background: "#f5f5f5",
+                background: "var(--surface-card)",
                 borderRadius: "8px",
               }}
             >
-              <h3 style={{ margin: "0 0 0.5rem 0", color: "#333" }}>
+              <h3
+                style={{ margin: "0 0 0.5rem 0", color: "var(--text-primary)" }}
+              >
                 1. 予算を決める
               </h3>
-              <p style={{ margin: 0, color: "#666" }}>
+              <p style={{ margin: 0, color: "var(--text-secondary)" }}>
                 1日・1週間・1ヶ月の上限を決め、必ず守りましょう。
                 生活費には絶対に手を付けないでください。
               </p>
@@ -238,14 +282,16 @@ export default function ResponsibleGambling() {
             <div
               style={{
                 padding: "1rem",
-                background: "#f5f5f5",
+                background: "var(--surface-card)",
                 borderRadius: "8px",
               }}
             >
-              <h3 style={{ margin: "0 0 0.5rem 0", color: "#333" }}>
+              <h3
+                style={{ margin: "0 0 0.5rem 0", color: "var(--text-primary)" }}
+              >
                 2. 負けを追わない
               </h3>
-              <p style={{ margin: 0, color: "#666" }}>
+              <p style={{ margin: 0, color: "var(--text-secondary)" }}>
                 負けた分を取り返そうとして追加で賭けるのは危険です。
                 予算を使い切ったら、その日は終わりにしましょう。
               </p>
@@ -253,14 +299,16 @@ export default function ResponsibleGambling() {
             <div
               style={{
                 padding: "1rem",
-                background: "#f5f5f5",
+                background: "var(--surface-card)",
                 borderRadius: "8px",
               }}
             >
-              <h3 style={{ margin: "0 0 0.5rem 0", color: "#333" }}>
+              <h3
+                style={{ margin: "0 0 0.5rem 0", color: "var(--text-primary)" }}
+              >
                 3. 休む日を作る
               </h3>
-              <p style={{ margin: 0, color: "#666" }}>
+              <p style={{ margin: 0, color: "var(--text-secondary)" }}>
                 毎日ボートレースを見る必要はありません。
                 週に何日かは完全に離れる日を作りましょう。
               </p>
@@ -272,10 +320,11 @@ export default function ResponsibleGambling() {
           <h2>20歳未満の方へ</h2>
           <p
             style={{
-              background: "#ffebee",
+              /* .miss (App.css) と同じvar(--color-error-dark)（#dc2626、白文字で4.83:1）を使用 */
+              background: "var(--color-error-dark)",
               padding: "1rem",
               borderRadius: "8px",
-              color: "#c62828",
+              color: "white",
             }}
           >
             <strong>20歳未満の方は舟券を購入できません。</strong>
@@ -290,7 +339,9 @@ export default function ResponsibleGambling() {
             style={{
               display: "inline-block",
               padding: "0.75rem 2rem",
-              background: "#0ea5e9",
+              // #0ea5e9は白文字で2.77:1しかなくAA未達（axe-core検出、ライト/ダーク共通）。
+              // CookieConsentのaccept釦と同じvar(--color-primary-700)に変更
+              background: "var(--color-primary-700)",
               color: "white",
               borderRadius: "8px",
               textDecoration: "none",

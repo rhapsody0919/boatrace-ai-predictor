@@ -313,10 +313,6 @@
   --podium-bronze-text: #8f5419;
 }
 
-/* OS設定によるダーク自動追従は一時無効化中（BOA-206解消・THEME_SWITCHING_ENABLED再有効化までのペア対応）。
-   App.css配下の未トークン化領域が白背景のまま浮くため、ThemeToggleを隠すだけでは
-   OSがダーク設定のユーザーがこの@media経由で意図せずダーク表示になってしまう。
-   再有効化する際はsrc/config/theme.jsのTHEME_SWITCHING_ENABLEDと合わせてコメントを外す。
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --surface-page: var(--ryujin-navy-600);
@@ -329,4 +325,3 @@
     --podium-bronze-text: var(--color-bronze);
   }
 }
-*/

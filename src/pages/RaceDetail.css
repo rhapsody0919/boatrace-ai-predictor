@@ -12,7 +12,7 @@
 .page-header {
   text-align: center;
   margin-bottom: 2rem;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .page-header h1 {
@@ -22,21 +22,36 @@
   font-weight: 700;
 }
 
+/* .page-header h1は他ページ（OutcomeDistribution.css等）にも同名クラスがあり、
+   CSSが全ページ分1つのバンドルに結合されるため、ビルド順によって
+   color:#0f172a（固定・ライト専用）が意図せず勝ってしまう。
+   親要素で詳細度を上げて確実にトークンを効かせる */
+.race-detail-page .page-header h1 {
+  color: var(--text-primary);
+}
+
 .back-link {
-  color: #0ea5e9;
   text-decoration: none;
   font-size: 1rem;
   transition: color 0.3s ease;
 }
 
-.back-link:hover {
-  color: #0284c7;
+/* .back-linkはAccuracyHistory.css/BlogPost.cssにも同名クラスがあり、CSSが全ページ分
+   1つのバンドルに結合されるためビルド順で#0ea5e9（固定・コントラスト不足）が勝ってしまう。
+   var(--color-primary-700)も試したがダーク時のページ背景(#0d1b2e)で2.92:1と未達のため、
+   両テーマのページ背景で検証済みのvar(--brand-accent-secondary)（銀）を親スコープで指定 */
+.race-detail-page .back-link {
+  color: var(--brand-accent-secondary);
+}
+
+.race-detail-page .back-link:hover {
+  color: var(--text-primary);
   text-decoration: underline;
 }
 
 /* 統計セクション */
 .stats-section {
-  background: white;
+  background: var(--surface-card);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -56,7 +71,7 @@
   padding: 0.75rem 1.5rem;
   background: rgba(14, 165, 233, 0.1);
   color: #0ea5e9;
-  border: 2px solid #E2E8F0;
+  border: 2px solid var(--border-hairline);
   border-radius: 12px;
   font-size: 1rem;
   font-weight: 600;
@@ -84,12 +99,12 @@
 .stats-table-container h3 {
   font-size: 1.5rem;
   margin-bottom: 1rem;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .stats-meta {
   font-size: 0.95rem;
-  color: #64748B;
+  color: var(--text-secondary);
   margin-bottom: 1rem;
 }
 
@@ -100,26 +115,26 @@
 .stats-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--surface-card);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .stats-table thead {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: var(--surface-page);
 }
 
 .stats-table th {
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  color: #1E293B;
-  border-bottom: 2px solid #E2E8F0;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-hairline);
 }
 
 .stats-table td {
   padding: 1rem;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .stats-table tbody tr:last-child td {
@@ -127,12 +142,12 @@
 }
 
 .stats-table tbody tr:hover {
-  background: #F8FAFC;
+  background: var(--surface-page);
 }
 
 .bet-type {
   font-weight: 600;
-  color: #1E293B;
+  color: var(--text-primary);
 }
 
 .hit-rate {
@@ -163,7 +178,7 @@
 }
 
 .race-card {
-  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+  background: var(--surface-card);
   border-radius: 16px;
   padding: 1.5rem;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
@@ -186,7 +201,7 @@
 
 .race-card-header h3 {
   font-size: 1.25rem;
-  color: #1E293B;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -225,7 +240,7 @@
 
 /* 予想結果セクション（App.cssと同じ） */
 .prediction-section {
-  background: white;
+  background: var(--surface-card);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -235,7 +250,7 @@
 .prediction-section h2 {
   font-size: 1.75rem;
   margin-bottom: 2rem;
-  color: #1E293B !important;
+  color: var(--text-primary) !important;
   border-bottom: 3px solid #0ea5e9;
   padding-bottom: 0.75rem;
 }
@@ -243,7 +258,7 @@
 .prediction-error {
   text-align: center;
   padding: 2rem;
-  color: #EF4444;
+  color: var(--color-error);
   font-weight: 600;
 }
 
@@ -277,19 +292,19 @@
 .error-container {
   text-align: center;
   padding: 3rem;
-  background: white;
+  background: var(--surface-card);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .loading-container p,
 .error-container p {
-  color: #1E293B;
+  color: var(--text-primary);
   margin-top: 1rem;
 }
 
 .spinner {
-  border: 4px solid #E2E8F0;
+  border: 4px solid var(--border-hairline);
   border-top: 4px solid #0ea5e9;
   border-radius: 50%;
   width: 50px;
@@ -304,7 +319,7 @@
 }
 
 .error-container h3 {
-  color: #EF4444;
+  color: var(--color-error);
   margin-bottom: 1rem;
   font-size: 1.5rem;
 }
@@ -506,7 +521,7 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: #0284c7;
-  background: white;
+  background: var(--surface-card);
   border: 2px solid #0284c7;
   border-radius: 8px;
   text-decoration: none;

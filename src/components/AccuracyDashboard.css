@@ -12,14 +12,15 @@
 .accuracy-dashboard h2 {
   font-size: 2rem;
   margin-bottom: 0.5rem;
-  color: #0ea5e9;
+  /* #0ea5e9はページ背景でコントラスト不足（axe-core検出）。テーマ両対応の銀に変更 */
+  color: var(--brand-accent-secondary);
   font-weight: 800;
   text-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
 }
 
 .last-updated {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -28,14 +29,16 @@
 .no-data-message {
   text-align: center;
   padding: 3rem 1rem;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 1.1rem;
 }
 
 .error-message {
-  background: #fff3cd;
+  /* 薄いアンバー背景+濃色文字はダークテーマ非対応のため、UpdateStatus.cssの
+     staleバッジと同じ「濃い単色背景+白文字」パターンに統一 */
+  background: #b45309;
   border-radius: 8px;
-  color: #856404;
+  color: white;
   padding: 1.5rem;
   text-align: center;
 }
@@ -67,7 +70,8 @@
   display: flex;
   gap: 1rem;
   padding: 1rem 1.5rem;
-  background: #fef3c7;
+  /* 薄いアンバー背景+濃色文字はダークテーマ非対応のため、濃い単色背景+白文字に統一 */
+  background: #b45309;
   border-left: 4px solid #f59e0b;
   border-radius: 8px;
   margin-bottom: 2rem;
@@ -85,13 +89,13 @@
 
 .reliability-warning strong {
   display: block;
-  color: #92400e;
+  color: white;
   margin-bottom: 0.5rem;
   font-size: 1rem;
 }
 
 .reliability-warning p {
-  color: #78350f;
+  color: white;
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.5;
@@ -99,7 +103,9 @@
 
 /* 展開予測の実測的中率（主役指標） */
 .turn-accuracy-hero {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  /* 薄い青グラデーションはダークテーマ非対応のため、通常のカード背景に変更し
+     枠線の青だけ装飾アクセントとして残す */
+  background: var(--surface-card);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -110,7 +116,7 @@
 
 .turn-accuracy-hero h3 {
   font-size: 1.3rem;
-  color: #0c4a6e;
+  color: var(--text-primary);
   margin: 0 0 1rem 0;
   font-weight: 800;
 }
@@ -118,14 +124,14 @@
 .turn-accuracy-hero-rate {
   font-size: 3rem;
   font-weight: 800;
-  color: #0369a1;
+  color: var(--brand-accent-primary);
   margin: 0 0 0.5rem 0;
   line-height: 1;
 }
 
 .turn-accuracy-hero-note {
   font-size: 0.9rem;
-  color: #075985;
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.6;
 }
@@ -138,7 +144,7 @@
 
 .turn-accuracy-venue-details summary {
   cursor: pointer;
-  color: #0369a1;
+  color: var(--brand-accent-secondary);
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -147,24 +153,24 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 0.75rem;
-  background: white;
+  background: var(--surface-page);
   border-radius: 8px;
   overflow: hidden;
   font-size: 0.9rem;
 }
 
 .turn-accuracy-venue-table th {
-  background: #f1f5f9;
+  background: var(--surface-card);
   padding: 0.5rem 0.75rem;
   text-align: left;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .turn-accuracy-venue-table td {
   padding: 0.5rem 0.75rem;
-  border-top: 1px solid #e2e8f0;
-  color: #1e293b;
+  border-top: 1px solid var(--border-hairline);
+  color: var(--text-primary);
 }
 
 .turn-accuracy-venue-table__name {
@@ -172,28 +178,28 @@
 }
 
 .turn-accuracy-venue-ref-note {
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
 .turn-accuracy-venue-ref-desc {
   margin-top: 0.5rem;
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* 的中率についての説明 */
 .accuracy-info {
-  background: #ffffff;
+  background: var(--surface-card);
   border-radius: 12px;
   padding: 2rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-hairline);
   border-left: 4px solid #0ea5e9;
 }
 
 .accuracy-info h4 {
   font-size: 1.2rem;
-  color: #0f172a;
+  color: var(--text-primary);
   margin: 0 0 1.5rem 0;
   font-weight: 700;
   text-align: center;
@@ -209,13 +215,13 @@
 
 .accuracy-info p {
   margin: 0;
-  color: #475569;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   line-height: 1.6;
 }
 
 .accuracy-info strong {
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 /* History Link */
@@ -227,7 +233,7 @@
 .history-link {
   display: inline-block;
   padding: 0.5rem 1rem;
-  color: #64748b;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 0.9rem;
   transition: all 0.2s;

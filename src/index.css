@@ -14,8 +14,13 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  /* Viteテンプレート初期値のrgba(255,255,255,0.87)/#242424はOS設定と連動しており、
+     アプリ独自の[data-theme]によるテーマ切替と無関係に文字色が決まってしまい、
+     data-theme="dark"の要素が明示的なcolor指定を持たない場合（例: ResponsibleGambling.jsxの
+     素の<ul><li>）に地の色に文字が溶け込むバグの原因になっていた（axe-core検出）。
+     var(--text-primary)にしてテーマ切替と連動させる */
+  color: var(--text-primary);
+  background-color: var(--surface-page);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -62,15 +67,3 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}

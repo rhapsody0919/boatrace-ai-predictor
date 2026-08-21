@@ -7,9 +7,7 @@ test.describe("ホーム・基本ナビゲーション", () => {
     await expect(page.locator(".logo h1")).toHaveText("龍神レーダー");
   });
 
-  // THEME_SWITCHING_ENABLED=falseによりThemeToggleは非表示中（BOA-206解消まで）。
-  // 有効化した時点でskipを外す
-  test.skip("ThemeToggleでライト/ダークを切替でき、リロード後も永続化される（BOA-201）", async ({
+  test("ThemeToggleでライト/ダークを切替でき、リロード後も永続化される（BOA-201）", async ({
     page,
   }) => {
     await page.goto("/");
@@ -923,15 +921,21 @@ test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の�
 test.describe("龍神レーダー ブランドトークンのコントラスト（axe-core、ADR 0017）", () => {
   // scripts/maintenance/check-token-contrast.js はトークン単体の組み合わせを検証するが、
   // ここでは実際にレンダリングされたページで色の組み合わせに問題が無いかを検証する。
-  // フェーズ4（データ密集画面の移行）が完了するまで、ページ本体には旧配色（#0ea5e9等）が
-  // 残っているため、スコープはブランドトークン移行済みの領域（Header/Footer/IntroBanner）
-  // に限定する。フェーズ4進行に合わせてINCLUDE_SELECTORSを拡張していく想定
-  const PAGES = ["/", "/about", "/accuracy"];
-  const INCLUDE_SELECTORS = [".app-header", ".site-footer", ".intro-banner"];
+  // BOA-206でApp.css/RaceDetail.css/About.css/AccuracyDashboard.css等の未トークン化領域を
+  // 解消したため、スコープをHeader/Footer/IntroBannerのみからページ全体に拡張した
+  // （ページごとにルート要素のクラスが異なる=.app/.race-detail-page/.about-container等の
+  // ため.include()では絞り込まず、document全体を対象にする）
+  const PAGES = [
+    "/",
+    "/about",
+    "/accuracy",
+    "/races/2026-06-22",
+    "/responsible-gambling",
+  ];
 
   for (const path of PAGES) {
     for (const theme of ["light", "dark"]) {
-      test(`${path}（${theme}テーマ）のブランドチロムでcolor-contrast違反が無い`, async ({
+      test(`${path}（${theme}テーマ）でcolor-contrast違反が無い`, async ({
         page,
       }) => {
         const { default: AxeBuilder } = await import("@axe-core/playwright");
@@ -943,14 +947,9 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
         await page.reload();
         await expect(page.locator(".app-header")).toBeVisible();
 
-        let builder = new AxeBuilder({ page }).withRules(["color-contrast"]);
-        for (const selector of INCLUDE_SELECTORS) {
-          if ((await page.locator(selector).count()) > 0) {
-            builder = builder.include(selector);
-          }
-        }
-
-        const results = await builder.analyze();
+        const results = await new AxeBuilder({ page })
+          .withRules(["color-contrast"])
+          .analyze();
 
         expect(
           results.violations,
