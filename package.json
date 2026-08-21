@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "check:contrast": "node scripts/maintenance/check-token-contrast.js",
+    "verify:sitemap": "node scripts/maintenance/verify-sitemap-coverage.js",
     "generate:logotype-font": "bash scripts/maintenance/generate-logotype-font.sh",
     "test:e2e": "playwright test",
     "preview": "vite preview",
