@@ -122,7 +122,7 @@ boatrace-ai-predictor/
 1. `/code-review` でセルフレビューを実行
 2. **新規のデータ集計・分析機能（新しい統計・ランキング・傾向表示等）を含む場合は、データの正確性を複数の視点で検証する**（詳細は `.claude/rules/analysis.md` の「データ精度の検証」を参照）。コードレビューとは別に「集計結果が実データと一致しているか」だけを見る検証を必ず行う。実データの見た目・コードスタイルが正しくても、集計ロジックの誤り（スケール不一致、JOIN漏れ、期間ズレ等）は見た目だけのレビューでは発見できないため、独立した検証ステップとして扱う
 3. 指摘事項を修正してコミット・push（判断が分かれる指摘は修正せず報告に含める）
-4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（`e2e/smoke.spec.js`、Playwright）も実行し、デグレが無いことを確認する。CI連携はせず、毎回Claude自身が手元で実行する。新しい主要導線を追加した場合はスモークテストにも追記する
+4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（`e2e/smoke.spec.js`、Playwright）も実行し、デグレが無いことを確認する。`AppRouter.jsx`に新しい静的ルートを追加した変更では`npm run verify:sitemap`も実行する。CI連携はせず、毎回Claude自身が手元で実行する。新しい主要導線を追加した場合はスモークテストにも追記する
 5. `/codex-review`（Codexセカンドオピニオンレビュー）は**2026-07時点で見送り中**。ChatGPT契約のコストに見合わないと判断（詳細は `docs/operation/sdd-and-codex-review.md`）。仕組み自体は用意済みなので、将来必要になったら有効化する
 6. **レビュー結果を PR にコメントで記載する**。内容: 指摘一覧（ファイル・行・内容）、各指摘の対応（修正コミット / スキップ理由）、修正後の検証結果（データ精度検証の結果を含む）
 7. **ユーザーへの完了報告（チャット本文）には以下を必ず全て含める**。PR コメントへのリンクや「詳細は PR 参照」で省略しない：
@@ -175,6 +175,8 @@ boatrace-ai-predictor/
 2026-07-31時点で、`/winning-technique`が`scripts/generate-sitemap.js`への追加漏れで長期間sitemap.xmlに未掲載、Google未インデックスのままだった実績あり（Search Console実データで検索クリック・表示回数0件と確認）。同じ漏れを繰り返さないため、新しい静的ページ・ルート（`AppRouter.jsx`に`<Route>`を追加するもの）を実装したら、**同じPRで**`scripts/generate-sitemap.js`の`staticPages`（多言語対応ページは`LOCALIZED_PAGES`/`LANGUAGE_ONLY_PAGES`）にも追記する。ページ単体の実装が完了した時点で完了とせず、sitemap反映まで含めて1タスクとして扱う。
 
 sitemap変更は`.github/workflows/update-sitemap.yml`で毎日自動反映され、変更があった場合はSearch Consoleへの再送信（`scripts/submit-sitemap.js`）も自動実行される。ただし個々のページの即時インデックス登録を保証するものではない（詳細は`docs/operation/search-console-report.md`）。
+
+登録漏れは`npm run verify:sitemap`（`scripts/maintenance/verify-sitemap-coverage.js`）で機械的に検知できる。AppRouter.jsxの静的ルートとgenerate-sitemap.jsのstaticPagesを突き合わせ、未登録があれば失敗する。新規ルート追加を含むPRでは実装完了後の自動レビュー（`npm run build`実行時）にこのコマンドも合わせて実行する。意図的にsitemap非対象とするルート（リダイレクト専用・管理画面・非公開ページ等）は、スクリプト内の`EXPECTED_EXCLUSIONS`に理由付きで登録する。
 
 ### SEO・集客施策の判断軸: SPAアーキテクチャによるクローラー制約
 boatAIは`vercel.json`で `/((?!api/).*) → /index.html` のみを行う純粋なクライアントサイドSPAで、SSR・プリレンダリングの仕組みが無い。ページ固有のtitle/meta/OGPタグはReactコンポーネントがマウント後にJSで書き換える方式のため、**JavaScriptを実行しないクローラー（Facebook等）にはページ固有の変更が反映されない**（Googlebotや一部のX(Twitter)クローラーはJSレンダリング対応のため反映される）。
@@ -249,6 +251,7 @@ node scripts/daily/calculate-accuracy.js
 | `/growth-report` | 集客状況レポート（Search Console先行指標の定点観測） |
 | `/i18n-growth-report` | 多言語集客状況レポート（GA4需要+Search Console言語パス） |
 | `/growth-pdca` | 集客状況の網羅分析→施策立案→小施策は即実行（「集客を分析して」等の自然言語でも起動） |
+| `/publish-blog {slug}` | ブログ記事の公開前品質チェック→note/X下書き生成までの一括実行 |
 
 ---
 

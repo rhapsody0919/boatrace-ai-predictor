@@ -55,3 +55,4 @@ __pycache__/
 
 # oh-my-claudecode local state
 .omc/
+.worktrees/
