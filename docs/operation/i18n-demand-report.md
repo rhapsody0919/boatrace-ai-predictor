@@ -38,9 +38,9 @@ node scripts/analysis/i18n-demand-report.js --days=90 # 直近90日
 ```
 
 出力:
-- コンソール: 言語別PV・各言語ページの国別ユーザー・流入チャネル・言語切替回数（対象言語は `src/config/languages.js` に追従）
+- コンソール: 言語別PV・各言語ページの国別ユーザー・流入チャネル・言語切替回数（対象言語は `src/config/languages.js` に追従）。**日本語ページ自体の流入チャネル内訳**も出力する（2026-08-22追加。パスプレフィックス無し=日本語という判定で、他言語ページを除外したセッションを集計。日本語がトラフィックの大半を占めるため、Search Console（オーガニック検索のみ）だけでは分からない「オーガニック以外のチャネルが伸びているか」をここで確認する）
 - JSON: `data/analysis/i18n-demand/report-YYYY-MM-DD.json`（推移比較用）
-  - フィールドは `shareOfPv` / `byCountry` / `bySource`（言語コード別）。2026-07-19 以前のレポートは英語のみの旧形式（`enShareOfPv` / `enByCountry` / `enBySource`）のため、推移比較時は読み替えが必要
+  - フィールドは `shareOfPv` / `byCountry` / `bySource`（言語コード別）/ `defaultLangSource`（日本語の流入チャネル、2026-08-22追加）。2026-07-19 以前のレポートは英語のみの旧形式（`enShareOfPv` / `enByCountry` / `enBySource`）のため、推移比較時は読み替えが必要
 
 ## 判断基準（3ヶ月後を目安）
 

@@ -49,7 +49,7 @@ function main() {
   }
 
   const draft = buildTweetDraft(post);
-  const entry = `## ${post.date} ${post.title}\n\n\`\`\`\n${draft}\n\`\`\`\n\n---\n\n`;
+  const entry = `## ${post.date} ${post.title}\n\n- [ ] 投稿済み\n\n\`\`\`\n${draft}\n\`\`\`\n\n---\n\n`;
 
   fs.appendFileSync(OUTPUT_PATH, entry, "utf-8");
   console.log(`✅ ツイート下書きを追記しました: ${OUTPUT_PATH}`);
