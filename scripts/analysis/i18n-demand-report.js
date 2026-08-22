@@ -165,19 +165,58 @@ async function reportLangBySource(code) {
   }));
 }
 
+// 5. 日本語（デフォルト言語、パスプレフィックス無し）の流入チャネル内訳（2026-08-22追加）
+// このスクリプトはi18n需要計測が目的でPREFIXED_LANGUAGES（en/zh-TW/ko）にしか
+// チャネル内訳が無く、トラフィックの大半を占める日本語のチャネル別内訳が
+// 完全な空白だった（天才マーケター・エンジニア・ビジネスマンでの議論で発覚）。
+// 「オーガニック検索は落ちているが全体PVは伸びている」といった観測をした際、
+// 実際にどのチャネルが埋め合わせているのかをこれで検証できるようにする
+function defaultLangPathFilter() {
+  return {
+    notExpression: {
+      orGroup: {
+        expressions: PREFIXED_LANGUAGES.map(({ code }) => ({
+          filter: {
+            fieldName: "pagePath",
+            stringFilter: { matchType: "BEGINS_WITH", value: `/${code}` },
+          },
+        })),
+      },
+    },
+  };
+}
+
+async function reportDefaultLangBySource() {
+  const rows = await runReport({
+    dimensions: [{ name: "sessionDefaultChannelGroup" }],
+    metrics: [{ name: "sessions" }],
+    dimensionFilter: defaultLangPathFilter(),
+    orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    limit: 10,
+  });
+  return rows.map((r) => ({
+    channel: r.dimensionValues[0].value,
+    sessions: parseInt(r.metricValues[0].value, 10),
+  }));
+}
+
 async function main() {
   console.log(
     `\n📊 i18n 需要計測レポート（直近${DAYS}日間）\n${"=".repeat(50)}`,
   );
 
-  const [byLang, switches, byCountryList, bySourceList] = await Promise.all([
-    reportByLanguagePath(),
-    reportLanguageSwitches(),
-    Promise.all(
-      PREFIXED_LANGUAGES.map(({ code }) => reportLangByCountry(code)),
-    ),
-    Promise.all(PREFIXED_LANGUAGES.map(({ code }) => reportLangBySource(code))),
-  ]);
+  const [byLang, switches, byCountryList, bySourceList, defaultLangSource] =
+    await Promise.all([
+      reportByLanguagePath(),
+      reportLanguageSwitches(),
+      Promise.all(
+        PREFIXED_LANGUAGES.map(({ code }) => reportLangByCountry(code)),
+      ),
+      Promise.all(
+        PREFIXED_LANGUAGES.map(({ code }) => reportLangBySource(code)),
+      ),
+      reportDefaultLangBySource(),
+    ]);
   const byCountry = Object.fromEntries(
     PREFIXED_LANGUAGES.map(({ code }, i) => [code, byCountryList[i]]),
   );
@@ -198,6 +237,17 @@ async function main() {
     );
   }
   console.log(`  言語切替イベント: ${switches.toLocaleString()} 回`);
+
+  console.log(`\n## 日本語ページの流入チャネル`);
+  if (defaultLangSource.length === 0) {
+    console.log("  （データなし）");
+  } else {
+    for (const s of defaultLangSource) {
+      console.log(
+        `  ${s.channel.padEnd(20)} ${String(s.sessions).padStart(6)} sessions`,
+      );
+    }
+  }
 
   for (const { code, label } of PREFIXED_LANGUAGES) {
     console.log(`\n## ${label}ページの国別ユーザー（上位）`);
@@ -249,6 +299,24 @@ async function main() {
         `  ${label.padEnd(8)}: PV/日 ${currPerDay.toFixed(1)} (前回 ${prevPerDay.toFixed(1)}、${pctDelta}%)`,
       );
     }
+    const prevDefaultSource = previous.data.defaultLangSource;
+    if (prevDefaultSource) {
+      console.log(`\n  日本語ページの流入チャネル比較:`);
+      const prevMap = new Map(
+        prevDefaultSource.map((s) => [s.channel, s.sessions]),
+      );
+      const currMap = new Map(
+        defaultLangSource.map((s) => [s.channel, s.sessions]),
+      );
+      const channels = new Set([...prevMap.keys(), ...currMap.keys()]);
+      for (const channel of channels) {
+        const curr = currMap.get(channel) ?? 0;
+        const prev = prevMap.get(channel) ?? 0;
+        console.log(
+          `    ${channel.padEnd(20)} ${String(curr).padStart(6)} sessions (前回 ${prev}、${formatDelta(curr - prev, 0)})`,
+        );
+      }
+    }
   } else {
     console.log(
       `\n## 前回レポートとの比較\n  （比較対象となる過去レポートが見つかりません。次回実行時から比較が有効になります）`,
@@ -274,6 +342,7 @@ async function main() {
         languageSwitches: switches,
         byCountry,
         bySource,
+        defaultLangSource,
       },
       null,
       2,

@@ -150,6 +150,50 @@ function findCtrGaps(rows) {
   return { titleCandidates, authorityCandidates };
 }
 
+// ページ×クエリのクロス集計（2026-08-22追加）
+// queryDimensions(["query"])とqueryDimensions(["page"])は別々にしか取得できず、
+// 「このページに実際にどのクエリで来ているか」が分からないままtitle/description
+// 改善の当てずっぽうになっていた（天才マーケター・エンジニア・ビジネスマンでの
+// 議論で発覚した欠陥）。Search Console APIは["query","page"]の複合ディメンションを
+// サポートしているため、それを使い対象ページごとの上位クエリを紐付ける
+async function queryPageQueryCross(rowLimit) {
+  return queryDimensions(["query", "page"], rowLimit);
+}
+
+function buildPageQueriesMap(pageQueryRows) {
+  const map = new Map();
+  for (const r of pageQueryRows) {
+    const [query, page] = r.keys;
+    if (!map.has(page)) map.set(page, []);
+    map.get(page).push({ query, clicks: r.clicks, impressions: r.impressions });
+  }
+  for (const rows of map.values()) {
+    rows.sort((a, b) => b.impressions - a.impressions);
+  }
+  return map;
+}
+
+function printTopQueriesForPages(pages, pageQueriesMap, label) {
+  console.log(`\n## ${label}のページ別クエリ内訳（上位3件）`);
+  if (pages.length === 0) {
+    console.log("  （対象ページなし）");
+    return;
+  }
+  for (const page of pages) {
+    const queries = pageQueriesMap.get(page) ?? [];
+    console.log(`  ${page}`);
+    if (queries.length === 0) {
+      console.log("    （クエリ内訳データなし。表示回数が少なすぎる可能性）");
+      continue;
+    }
+    for (const q of queries.slice(0, 3)) {
+      console.log(
+        `    - ${q.query.padEnd(30)} clicks:${q.clicks} impressions:${q.impressions}`,
+      );
+    }
+  }
+}
+
 async function main() {
   // rowLimit=1000: Search Console APIの実測上限（過去30日で数百件程度になることが多い）を
   // 十分にカバーする値。上位20件だけでは「ブランド名系クエリしか見えていない」状態になり、
@@ -161,6 +205,11 @@ async function main() {
   const featurePages = topPages.filter((r) =>
     isFeatureOrArticlePage(r.keys[0]),
   );
+
+  // ページ×クエリのクロス集計はrowLimit=2000（クエリ×ページの組み合わせは
+  // クエリ単体・ページ単体よりずっと多くなるため大きめに取る）
+  const pageQueryRows = await queryPageQueryCross(2000);
+  const pageQueriesMap = buildPageQueriesMap(pageQueryRows);
 
   const today = formatDate(new Date());
   const outDir = path.join(process.cwd(), "data", "analysis", "search-console");
@@ -346,6 +395,14 @@ async function main() {
       `    ${c.keys[0].padEnd(60)} position:${c.position.toFixed(1)} ctr:${(c.ctr * 100).toFixed(2)}% (目安${(c.expected * 100).toFixed(1)}%)`,
     );
   }
+
+  // タイトル/メタ改善候補ページの実際の検索クエリを紐付ける（当てずっぽうでの
+  // title書き換えを防ぐ。上位5件のみ、CTR改善作業で直接使う想定）
+  printTopQueriesForPages(
+    titleCandidates.slice(0, 5).map((c) => c.keys[0]),
+    pageQueriesMap,
+    "タイトル/メタディスクリプション改善候補",
+  );
 
   // JSON 保存（推移比較用）
   fs.mkdirSync(outDir, { recursive: true });
