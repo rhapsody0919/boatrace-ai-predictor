@@ -30,7 +30,7 @@ ${highlights}
 
 👉 ${SITE_URL}/blog/${post.id}
 
-#ボートレース #データ分析 #龍神レーダー`;
+#龍神レーダー`;
 }
 
 function main() {
