@@ -945,7 +945,6 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
     "/how-to-use",
     "/profile",
     "/guide",
-    "/holmes",
     "/poirot",
   ];
 
@@ -962,6 +961,53 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
         );
         await page.reload();
         await expect(page.locator(".app-header")).toBeVisible();
+
+        const results = await new AxeBuilder({ page })
+          .withRules(["color-contrast"])
+          .analyze();
+
+        expect(
+          results.violations,
+          JSON.stringify(results.violations, null, 2),
+        ).toEqual([]);
+      });
+    }
+  }
+});
+
+test.describe("龍神レーダー Holmesページの全タブでcolor-contrast違反が無い（BOA-208）", () => {
+  // /holmesは初期表示がシャーロックタブ固定のため、上のPAGESループでは
+  // ワトソン/アドラー/マイクロフト/モリアーティタブがDOMに描画されず未検証だった
+  // （axe-coreは可視要素のみスキャンする）。5タブ全てをクリックして検証する
+  const HOLMES_TABS = [
+    "シャーロック",
+    "ワトソン",
+    "アドラー",
+    "マイクロフト",
+    "モリアーティ",
+  ];
+
+  for (const tabLabel of HOLMES_TABS) {
+    for (const theme of ["light", "dark"]) {
+      test(`/holmes ${tabLabel}タブ（${theme}テーマ）でcolor-contrast違反が無い`, async ({
+        page,
+      }) => {
+        const { default: AxeBuilder } = await import("@axe-core/playwright");
+        await page.goto("/holmes");
+        await page.evaluate(
+          (t) => localStorage.setItem("ryujin-radar-theme", t),
+          theme,
+        );
+        await page.reload();
+        await expect(page.locator(".app-header")).toBeVisible();
+
+        if (tabLabel !== "シャーロック") {
+          await page.click(`.holmes-tab:has-text("${tabLabel}")`);
+          // .holmes-tab.activeはtransition-colors(300ms)で色が遷移するため、
+          // クリック直後にaxeを実行すると遷移中の中間色を誤検出することがある
+          await page.waitForTimeout(400);
+        }
+        await expect(page.locator(".holmes-detective-name")).toBeVisible();
 
         const results = await new AxeBuilder({ page })
           .withRules(["color-contrast"])

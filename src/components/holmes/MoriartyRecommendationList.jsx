@@ -6,9 +6,9 @@ function RecommendationCard({ rec }) {
 
   let hitLabel = null;
   if (rec.actual_hit === true)
-    hitLabel = { text: "的中", color: "var(--color-success)" };
+    hitLabel = { text: "的中", color: "var(--color-success-text)" };
   else if (rec.actual_hit === false)
-    hitLabel = { text: "外れ", color: "var(--color-error)" };
+    hitLabel = { text: "外れ", color: "var(--color-error-text)" };
 
   const reasons = Array.isArray(rec.reasons) ? rec.reasons : [];
 
