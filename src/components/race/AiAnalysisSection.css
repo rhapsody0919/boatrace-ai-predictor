@@ -63,7 +63,7 @@
 .ai-analysis-chevron {
   color: var(--color-gray-500);
   font-size: var(--font-size-xs);
-  transition: transform var(--transition-normal, 0.25s) ease;
+  transition: transform 0.25s ease;
 }
 
 .ai-analysis-chevron.open {
@@ -93,8 +93,9 @@
 }
 
 /* 展開予測パネル（FR2）の実測的中率バッジ。罫線ベースの意匠に統一（BOA-201）。
-   状態色（success系）は旧背景でもコントラスト基準未達のため（BOA-204）、
-   テキスト色には使わずtext-primaryに寄せ、絵文字のみで「実測値」を印象付ける */
+   以前は状態色（success系）が旧背景でコントラスト基準未達だったためtext-primaryに
+   逃がしていたが、BOA-204でテキスト専用の安全な階調（--color-success-text）を
+   用意したため本来のブランド色に戻した */
 .ai-analysis-block-badge {
   display: flex;
   align-items: center;
@@ -105,7 +106,7 @@
   padding: var(--spacing-2) var(--spacing-4);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--text-primary);
+  color: var(--color-success-text);
   background: var(--surface-page);
   border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-md);

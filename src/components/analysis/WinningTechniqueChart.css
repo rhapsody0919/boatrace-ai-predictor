@@ -126,7 +126,7 @@
 }
 
 .winning-technique-table td.percentage {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: var(--font-weight-medium);
 }
 

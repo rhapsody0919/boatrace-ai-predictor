@@ -4,7 +4,7 @@
 }
 
 .moriarty-status-badge {
-  background: var(--color-success) !important;
+  background: var(--color-success);
 }
 
 .moriarty-loading,
@@ -256,9 +256,9 @@
 }
 
 .moriarty-rec-empty-sub {
-  margin-top: var(--spacing-2) !important;
-  font-size: var(--font-size-xs) !important;
-  color: var(--color-gray-500) !important;
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
 }
 
 /* ===== Mobile ===== */

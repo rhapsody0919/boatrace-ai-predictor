@@ -50,6 +50,27 @@ const PAIRS = [
     fg: "--podium-bronze-text",
     label: "カード背景 × 銅（3着）",
   },
+  // 状態色のテキスト専用トークン（BOA-204）
+  ...[
+    "success",
+    "success-dark",
+    "warning",
+    "warning-dark",
+    "error",
+    "error-dark",
+    "info",
+  ].flatMap((state) => [
+    {
+      bg: "--surface-page",
+      fg: `--color-${state}-text`,
+      label: `ページ背景 × 状態色(${state})`,
+    },
+    {
+      bg: "--surface-card",
+      fg: `--color-${state}-text`,
+      label: `カード背景 × 状態色(${state})`,
+    },
+  ]),
 ];
 
 const AA_NORMAL_TEXT = 4.5;

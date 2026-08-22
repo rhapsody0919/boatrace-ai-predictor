@@ -277,7 +277,7 @@
 
 .stat-card {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white !important;
+  color: white;
   border-radius: 12px;
   padding: 2rem;
   text-align: center;
@@ -328,7 +328,7 @@
 /* CTA */
 .about-cta {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  color: white !important;
+  color: white;
   padding: 4rem 2rem;
   border-radius: 12px;
   text-align: center;
@@ -338,7 +338,7 @@
 .about-cta h2 {
   font-size: 2.5rem;
   margin-bottom: 1rem;
-  color: white !important;
+  color: white;
   border: none;
   padding: 0;
 }
@@ -346,7 +346,7 @@
 .about-cta p {
   font-size: 1.2rem;
   margin-bottom: 2rem;
-  color: white !important;
+  color: white;
   opacity: 0.9;
 }
 

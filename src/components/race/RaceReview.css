@@ -121,7 +121,7 @@
 }
 
 .race-review-grade.race-review-grade-a1 {
-  color: var(--color-error);
+  color: var(--color-error-text);
   font-weight: var(--font-weight-bold);
 }
 
@@ -140,12 +140,12 @@
 }
 
 .race-review-mark-match {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: var(--font-weight-bold);
 }
 
 .race-review-mark-mismatch {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-weight: var(--font-weight-bold);
 }
 

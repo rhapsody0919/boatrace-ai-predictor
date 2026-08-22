@@ -31,7 +31,7 @@
   font-weight: 700;
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
-  background: var(--color-accent, #ff6b35);
+  background: #ff6b35;
   color: #fff;
   letter-spacing: 0.05em;
 }
@@ -116,8 +116,8 @@
 
 .poirot-model-tab.is-active {
   /* #ff6b35は白文字で2.83:1しかなくAA未達のため濃色に変更（axe-core検出） */
-  background: var(--color-accent, #c2410c);
-  border-color: var(--color-accent, #c2410c);
+  background: #c2410c;
+  border-color: #c2410c;
   color: #fff;
 }
 
@@ -232,7 +232,7 @@
 }
 
 .poirot-prob-chip.is-top {
-  border-color: var(--color-accent, #ff6b35);
+  border-color: #ff6b35;
   color: var(--text-primary);
   font-weight: 600;
 }
