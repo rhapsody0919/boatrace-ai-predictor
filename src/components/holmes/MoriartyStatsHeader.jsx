@@ -10,10 +10,10 @@ function MoriartyStatsHeader({ stats }) {
   const winRatePercent = Math.round(win_rate * 1000) / 10;
   const roiColor =
     roiPercent >= 100
-      ? "var(--color-success)"
+      ? "var(--color-success-text)"
       : roiPercent >= 80
-        ? "var(--color-warning)"
-        : "var(--color-error)";
+        ? "var(--color-warning-text)"
+        : "var(--color-error-text)";
 
   return (
     <div className="moriarty-stats-header">

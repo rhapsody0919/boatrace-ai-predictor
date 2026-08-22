@@ -1,17 +1,20 @@
 /* ===== Moriarty Card ===== */
 .moriarty-card {
-  border-top: 4px solid #1f2937;
+  border-top: 4px solid var(--text-primary);
 }
 
 .moriarty-status-badge {
-  background: var(--color-success);
+  /* .holmes-status-badgeのcolor:white(Holmes.css)に対し、var(--color-success)
+     (#10b981)は2.4:1でAA未達。他箇所の.hit-badge等と同じ検証済みの緑(#0d7a56、
+     5.34:1)に変更 */
+  background: #0d7a56;
 }
 
 .moriarty-loading,
 .moriarty-error {
   padding: var(--spacing-8);
   text-align: center;
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   font-size: var(--font-size-base);
 }
 
@@ -23,32 +26,32 @@
 }
 
 .moriarty-stat-card {
-  background: var(--color-gray-50);
+  background: var(--surface-page);
   border-radius: var(--radius-md);
   padding: var(--spacing-4) var(--spacing-3);
   text-align: center;
-  border: var(--border-width-1) solid var(--color-gray-200);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .moriarty-stat-value {
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-bold);
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   line-height: var(--line-height-tight);
 }
 
 .moriarty-stat-label {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   margin-top: var(--spacing-1);
 }
 
 /* ===== Data Maturity ===== */
 .moriarty-maturity {
-  background: var(--color-gray-50);
+  background: var(--surface-page);
   border-radius: var(--radius-md);
   padding: var(--spacing-4);
-  border: var(--border-width-1) solid var(--color-gray-200);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .moriarty-maturity-header {
@@ -62,18 +65,18 @@
 
 .moriarty-maturity-label {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
 }
 
 .moriarty-maturity-count {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   font-weight: var(--font-weight-semibold);
 }
 
 .moriarty-progress-track {
   height: 8px;
-  background: var(--color-gray-200);
+  background: var(--border-hairline);
   border-radius: var(--radius-full);
   overflow: hidden;
 }
@@ -88,7 +91,7 @@
 /* ===== Stage Starting ===== */
 .moriarty-stage-desc {
   font-size: var(--font-size-base);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
   margin: 0 0 var(--spacing-3) 0;
 }
 
@@ -115,16 +118,16 @@
 .moriarty-chart-empty {
   padding: var(--spacing-6);
   text-align: center;
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
-  background: var(--color-gray-50);
+  background: var(--surface-page);
   border-radius: var(--radius-md);
-  border: var(--border-width-1) dashed var(--color-gray-300);
+  border: var(--border-width-1) dashed var(--border-hairline);
 }
 
 .moriarty-chart-notice {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   margin: 0 0 var(--spacing-2) 0;
   font-style: italic;
 }
@@ -144,16 +147,16 @@
 .moriarty-table th {
   text-align: left;
   padding: var(--spacing-2) var(--spacing-3);
-  background: var(--color-gray-100);
-  color: var(--color-gray-600);
+  background: var(--surface-page);
+  color: var(--text-secondary);
   font-weight: var(--font-weight-semibold);
-  border-bottom: var(--border-width-1) solid var(--color-gray-200);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
 }
 
 .moriarty-table td {
   padding: var(--spacing-2) var(--spacing-3);
-  color: var(--color-gray-800);
-  border-bottom: var(--border-width-1) solid var(--color-gray-100);
+  color: var(--text-primary);
+  border-bottom: var(--border-width-1) solid var(--surface-page);
 }
 
 .moriarty-table tr:last-child td {
@@ -168,10 +171,10 @@
 }
 
 .moriarty-rec-card {
-  background: var(--color-gray-50);
+  background: var(--surface-page);
   border-radius: var(--radius-md);
   padding: var(--spacing-4);
-  border: var(--border-width-1) solid var(--color-gray-200);
+  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .moriarty-rec-header {
@@ -184,7 +187,7 @@
 .moriarty-rec-venue {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-800);
+  color: var(--text-primary);
 }
 
 .moriarty-rec-hit {
@@ -207,13 +210,13 @@
 
 .moriarty-rec-metric-label {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
 }
 
 .moriarty-rec-metric-value {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -228,7 +231,7 @@
 
 .moriarty-rec-reasons li {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   padding-left: var(--spacing-4);
   position: relative;
   line-height: var(--line-height-relaxed);
@@ -244,21 +247,21 @@
 .moriarty-rec-empty {
   padding: var(--spacing-6);
   text-align: center;
-  background: var(--color-gray-50);
+  background: var(--surface-page);
   border-radius: var(--radius-md);
-  border: var(--border-width-1) dashed var(--color-gray-300);
+  border: var(--border-width-1) dashed var(--border-hairline);
 }
 
 .moriarty-rec-empty p {
   margin: 0;
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   font-size: var(--font-size-base);
 }
 
 .moriarty-rec-empty-sub {
   margin-top: var(--spacing-2);
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
 }
 
 /* ===== Mobile ===== */

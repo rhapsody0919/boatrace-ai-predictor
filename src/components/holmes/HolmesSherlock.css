@@ -8,9 +8,11 @@
   margin-top: 0.75rem;
 }
 
+/* .sherlock-stat/.sherlock-honesty-noteは薄いパステル背景+濃色文字の固定値で、
+   ダークテーマで浮く（BOA-208）。design-tokens.cssのトークンに置き換える */
 .sherlock-stat {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--surface-page);
+  border: 1px solid var(--border-hairline);
   border-radius: 8px;
   padding: 0.75rem;
   text-align: center;
@@ -19,27 +21,27 @@
 .sherlock-stat-value {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #047857; /* axe-core: 白文字3.77:1未達につき濃色化と統一 */
+  color: var(--brand-accent-secondary);
 }
 
 .sherlock-stat-label {
   font-size: 0.75rem;
-  color: #374151;
+  color: var(--text-secondary);
   margin-top: 0.25rem;
 }
 
 .sherlock-stat-sub {
   display: block;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.7rem;
 }
 
 .sherlock-honesty-note {
   margin-top: 0.75rem;
   font-size: 0.8rem;
-  color: #92400e;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  color: white;
+  background: #b45309;
+  border: none;
   border-radius: 6px;
   padding: 0.6rem 0.75rem;
   line-height: 1.5;
@@ -54,13 +56,13 @@
 
 .sherlock-summary-line {
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--text-secondary);
   margin-bottom: 0.75rem;
 }
 
 .sherlock-ev-picks {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--surface-page);
+  border: 1px solid var(--border-hairline);
   border-radius: 8px;
   padding: 0.75rem;
   margin-bottom: 1rem;
@@ -69,7 +71,7 @@
 .sherlock-ev-picks h4 {
   margin: 0 0 0.5rem;
   font-size: 0.85rem;
-  color: #065f46;
+  color: var(--color-success-text);
 }
 
 .sherlock-ev-pick-row {
@@ -78,7 +80,7 @@
   gap: 0.5rem;
   font-size: 0.85rem;
   padding: 0.25rem 0;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 .sherlock-race-list {
@@ -88,9 +90,9 @@
 }
 
 .sherlock-race-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-hairline);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--surface-page);
 }
 
 .sherlock-race-card summary {
@@ -109,17 +111,17 @@
 }
 
 .sherlock-race-card[open] summary {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .sherlock-race-title {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   min-width: 5.5rem;
 }
 
 .sherlock-race-time {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
@@ -127,7 +129,7 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  color: #374151;
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
@@ -137,7 +139,7 @@
 
 .sherlock-note {
   font-size: 0.75rem;
-  color: #92400e;
+  color: var(--color-warning-dark-text);
   margin: 0 0 0.5rem;
 }
 
@@ -159,12 +161,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #374151;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
 .sherlock-grade {
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-size: 0.7rem;
   margin-left: 0.25rem;
 }
@@ -172,7 +174,7 @@
 .sherlock-bar-track {
   flex: 1;
   height: 0.75rem;
-  background: #f3f4f6;
+  background: var(--border-hairline);
   border-radius: 4px;
   overflow: hidden;
   min-width: 3rem;
@@ -187,14 +189,14 @@
 .sherlock-prob-value {
   width: 3.2rem;
   text-align: right;
-  color: #1f2937;
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
 .sherlock-odds-value {
   width: 3.5rem;
   text-align: right;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   flex-shrink: 0;
 }
@@ -204,24 +206,24 @@
   font-weight: 600;
   padding: 0.15rem 0.45rem;
   border-radius: 999px;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--border-hairline);
+  color: var(--text-secondary);
   margin-left: auto;
 }
 
 .sherlock-ev-badge.positive {
-  background: #d1fae5;
-  color: #065f46;
+  background: #0d7a56;
+  color: white;
 }
 
 .sherlock-ev-badge.muted {
-  background: #f3f4f6;
-  color: #9ca3af;
+  background: var(--border-hairline);
+  color: var(--text-secondary);
 }
 
 .sherlock-ev-note {
   font-size: 0.7rem;
-  color: #9ca3af;
+  color: var(--text-secondary);
   margin: 0.5rem 0 0;
 }
 

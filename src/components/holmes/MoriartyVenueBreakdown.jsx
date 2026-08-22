@@ -26,9 +26,6 @@ function MoriartyVenueBreakdown({ data = [] }) {
     bets: v.bets,
   }));
 
-  const barColor = (roi) =>
-    roi >= 100 ? "var(--color-success)" : "var(--color-error-light)";
-
   return (
     <div className="moriarty-chart-wrapper">
       <ResponsiveContainer width="100%" height={220}>
@@ -84,8 +81,8 @@ function MoriartyVenueBreakdown({ data = [] }) {
                   style={{
                     color:
                       v.roi >= 100
-                        ? "var(--color-success)"
-                        : "var(--color-error)",
+                        ? "var(--color-success-text)"
+                        : "var(--color-error-text)",
                   }}
                 >
                   {v.roi !== null ? `${v.roi}%` : "—"}
