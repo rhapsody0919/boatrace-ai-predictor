@@ -251,6 +251,7 @@ node scripts/daily/calculate-accuracy.js
 | `/growth-report` | 集客状況レポート（Search Console先行指標の定点観測） |
 | `/i18n-growth-report` | 多言語集客状況レポート（GA4需要+Search Console言語パス） |
 | `/growth-pdca` | 集客状況の網羅分析→施策立案→小施策は即実行（「集客を分析して」等の自然言語でも起動） |
+| `/x-growth-report` | X（Twitter）自体の集客PDCA（自アカウント投稿実績＋競合定点観測、SNS動画運用の一環） |
 | `/publish-blog {slug}` | ブログ記事の公開前品質チェック→note/X下書き生成までの一括実行 |
 
 ---
