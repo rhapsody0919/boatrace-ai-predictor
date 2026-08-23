@@ -73,12 +73,13 @@ grep -c "^- \[ \] 投稿済み" note-articles/tweet-drafts.md
 
 - Xのインプレッション数は投稿後24〜48時間で大きく伸びが止まる傾向があるため、投稿直後（数時間以内）の数値だけで判断しない
 - フォロワー数が少ない段階（1万人未満目安）は母数が小さく、数件のバズ投稿で平均値が大きく歪むため、中央値や個別投稿の傾向も併記する
-- 「インプレッションが低い」原因が投稿内容なのか投稿頻度なのかタイミングなのかを切り分ける（`scratch-tiktok-pilot/posting-operations.md`の運用フローと照らし合わせる）
+- 「インプレッションが低い」原因が投稿内容なのか投稿頻度なのかタイミングなのかを切り分ける（`docs/operation/sns-posting-operations.md`の運用フローと照らし合わせる）
 - Xの投稿詳細アナリティクス画面が何らかの理由で開けない場合（権限・UI変更等）は、フィード上のいいね・リポスト数のみで代替した旨を明記し、精度が落ちることを報告に含める
 
 ## 関連
 
-- 運用フロー: `scratch-tiktok-pilot/posting-operations.md`
-- 動画制作: `scratch-tiktok-pilot/video-producer-prompt.md`・`viral-copywriter-prompt.md`
+- 運用フロー: `docs/operation/sns-posting-operations.md`
+- 動画制作: `docs/operation/sns-video-producer-prompt.md`・`docs/operation/sns-viral-copywriter-prompt.md`
+- 戦略の意思決定ログ: `docs/operation/sns-marketing-strategy.md`
 - 過去の競合・アルゴリズム調査: memory `sns_marketing_phased_strategy_2026_08_22`
 - ブログ側の集客PDCA: `/growth-report`・`/growth-pdca`
