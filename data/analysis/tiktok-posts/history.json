@@ -1,0 +1,16 @@
+{
+  "_comment": "TikTok投稿履歴。セッション開始時にこのファイルを見て、直近の型・題材のローテーション状況から本日の動画内容を判断する。運用ルールは docs/operation/sns-video-producer-prompt.md の「型選定ロジック」を参照。statusは produced(制作済み・未投稿) / posted(投稿済み) / skipped(その日は見送り) のいずれか。",
+  "posts": [
+    {
+      "date": "2026-08-23",
+      "format": "venue-ranking",
+      "axis": "nige-rate",
+      "content": "イン逃げ率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
+      "videoFile": "scratch-tiktok-pilot/remotion-pilot/out/venue-ranking-cm-v2.mp4",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "会場攻略・データ一覧型シリーズ第1弾。マスコットキャラは未使用（Xでの3体テスト結果待ち）"
+    }
+  ]
+}
