@@ -1,5 +1,5 @@
 {
-  "_comment": "TikTok投稿履歴。セッション開始時にこのファイルを見て、直近の型・題材のローテーション状況から本日の動画内容を判断する。運用ルールは docs/operation/sns-video-producer-prompt.md の「型選定ロジック」を参照。statusは produced(制作済み・未投稿) / posted(投稿済み) / skipped(その日は見送り) のいずれか。",
+  "_comment": "TikTok投稿履歴。セッション開始時にこのファイルを見て、直近の型・題材のローテーション状況から本日の動画内容を判断する。運用ルールは docs/operation/sns-video-producer-prompt.md の「型選定ロジック」を参照。statusは produced(制作済み・未投稿) / posted(投稿済み) / skipped(セッション内で確認した上で見送った日、専用)。そもそもその日セッションが開かれず確認自体が行われなかった日は、skippedを書き込まずエントリを作らない（無理に埋め合わせない）。metricsは24時間後の実績（いいね・保存・再生数）が分かれば追記、TikTok版の計測の仕組み自体はまだ未整備。",
   "posts": [
     {
       "date": "2026-08-23",
