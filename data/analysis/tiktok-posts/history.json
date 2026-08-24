@@ -29,10 +29,21 @@
       "axis": null,
       "content": "予想数値フック型（江戸川12R、締切16:25、1号艇AI逃げ確率42%・イン崩れ注意度「本命有利」）",
       "videoFile": "sns-video-studio/remotion/out/live-prediction-tiktok-edogawa12r-v3.mp4",
-      "status": "produced",
-      "postedAt": null,
+      "status": "posted",
+      "postedAt": "2026-08-24",
       "metrics": null,
       "notes": "初日3本目。X向けLivePredictionCM.jsxはマスコット前提・実画面スクショ前提の設計だったため、TikTok向けに新規実装（LivePredictionCM_TikTok.jsx）。マスコット未使用の方針とスクショ取得難航の2つの理由から、イン崩れ注意度カードをVenueRankingCMと同じ手法でテキストベース再現した。制作時、Browser paneが繰り返し真っ暗表示になる不具合が発生しClaude in Chromeに切り替えて対応（原因未特定）。2026-08-24: frame=0透明表示のサムネイル不具合を投稿前に発見・修正(v2)後、さらに視覚的インパクト強化のため巨大数字(42%)をSceneHookに追加・配色をGOLD系に変更し会場攻略型(青系)と差別化(v3)"
+    },
+    {
+      "date": "2026-08-24",
+      "format": "venue-ranking",
+      "axis": "win-rate",
+      "content": "1号艇勝率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
+      "videoFile": "sns-video-studio/remotion/out/venue-ranking-winrate-v8.mp4",
+      "status": "posted",
+      "postedAt": "2026-08-24",
+      "metrics": null,
+      "notes": "会場攻略・データ一覧型シリーズ第4弾。カバー画像設計を全面刷新（デザイナーエージェント案A: 非対称配置の巨大順位数字「1位」+実データ24会場分の棒グラフ背景+ベタ塗りゴールド帯での疑問形フック、配色はメタリックゴールド#d4af37に統一）。旧デザイン（全要素均等拡大）はユーザーに複数回却下され、7人パネル議論→デザイナーエージェント議論を経て刷新した。詳細はsns-video-producer-prompt.mdルール11参照。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（過去にも発生した既知の挙動）"
     }
   ]
 }
