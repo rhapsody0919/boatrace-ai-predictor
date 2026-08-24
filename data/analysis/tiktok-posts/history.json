@@ -11,6 +11,17 @@
       "postedAt": "2026-08-24",
       "metrics": null,
       "notes": "会場攻略・データ一覧型シリーズ第1弾。マスコットキャラは未使用（Xでの3体テスト結果待ち）"
+    },
+    {
+      "date": "2026-08-24",
+      "format": "venue-ranking",
+      "axis": "manshu-rate",
+      "content": "万舟率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
+      "videoFile": "sns-video-studio/remotion/out/venue-ranking-manshu-v1.mp4",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号"
     }
   ]
 }
