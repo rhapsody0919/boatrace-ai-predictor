@@ -22,7 +22,7 @@
 - [x] **6. scripts/lib/fortuneTelling/rokuseiSenjutsu.js 実装**
   六星占術（運気リズム、0-100スコア）を実装し`FORTUNE_SYSTEMS`に登録。サンプル照合を行う。
 
-- [ ] **7. scripts/maintenance/scrape-racer-profiles.js 実装**
+- [x] **7. scripts/maintenance/scrape-racer-profiles.js 実装**
   `backfill-racer-ids.js`と同じCLI規約（`--dry-run`/`--limit=N`/`--verbose`）で実装。`race_entries`のdistinct `racer_id`のうち`racer_profiles`未登録分を対象に、boatrace.jpプロフィールページを取得・`dl.list3`をcheerioでパースしupsertする。`dl.list3`が無い場合は失敗としてスキップ。レート制限500ms/リクエスト。`--limit=10`程度の小規模実行で正しく動くことを確認する。
 
 - [ ] **8. 全選手データのスクレイピング実行**
