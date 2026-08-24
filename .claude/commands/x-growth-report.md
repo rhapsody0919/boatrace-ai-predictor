@@ -60,9 +60,9 @@ Chrome in Claudeで`https://x.com/kyouteiboatai`を開き、直近の投稿（�
 grep -c "^- \[ \] 投稿済み" note-articles/tweet-drafts.md
 ```
 
-加えて、動画投稿用のキャプション下書きファイル（`scratch-tiktok-pilot/x-*-video-captions.md`等、プロジェクトによってファイル名は変わる）があれば同様に未消化件数を確認する。未消化が多い場合は他の施策より優先度を上げて報告する（`/growth-pdca`と同じ方針）。
+加えて、動画投稿用のキャプション下書きファイル（`sns-video-studio/captions/x-*-video-captions.md`等、プロジェクトによってファイル名は変わる）があれば同様に未消化件数を確認する。未消化が多い場合は他の施策より優先度を上げて報告する（`/growth-pdca`と同じ方針）。
 
-**リプライ戦略の送信率（2026-08-23追加）**: `scratch-tiktok-pilot/x-reply-drafts.md`があれば、`grep -c "^- \[ \] 送信済み"`と`grep -c "^- \[x\] 送信済み"`で未送信/送信済みの件数を確認し、送信率を算出する。この施策は4週間後（開始日は`docs/operation/x-operations-playbook.md`の「リプライ戦略」参照）に継続/縮小/拡大を判断する設計のため、開始から4週間以上経過している場合は必ずこの判断を行い、結果を`docs/operation/sns-marketing-strategy.md`の意思決定ログに追記する。
+**リプライ戦略の送信率（2026-08-23追加）**: `sns-video-studio/x-reply-drafts.md`があれば、`grep -c "^- \[ \] 送信済み"`と`grep -c "^- \[x\] 送信済み"`で未送信/送信済みの件数を確認し、送信率を算出する。この施策は4週間後（開始日は`docs/operation/x-operations-playbook.md`の「リプライ戦略」参照）に継続/縮小/拡大を判断する設計のため、開始から4週間以上経過している場合は必ずこの判断を行い、結果を`docs/operation/sns-marketing-strategy.md`の意思決定ログに追記する。
 
 ### 6. 統合分析・次の施策
 
