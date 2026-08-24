@@ -168,6 +168,8 @@ TikTok解禁時に実施した実地調査（複数キーワード横断検索�
 | 2026-08-23 | リプライ戦略の対象から直接競合アカウント（AI予想を掲げるアカウント）を除外 | ユーザー判断。比較・牽制と受け取られるリスクがあり、関係構築という目的にそぐわないため |
 | 2026-08-24 | X動画投稿を「型が実証されてから拡大」から「可能な範囲で毎日投稿」に前倒し。セッション開始時の確認＋`data/analysis/x-posts/history.json`での型・キャラローテーション管理を導入 | ユーザー指示。TikTokの毎日投稿方針と足並みを揃える形。Claudeが投稿履歴を見て本日の型・題材を判断し、ユーザーは「投稿するか」への回答と内容承認のみ行う運用にすることで継続のハードルを下げる |
 | 2026-08-24 | ドキュメントの誤りを修正: マスコットテスト期間中（3日間）は「1日1本」ではなく「1日3本」が正しい方針だった | day2（キャラB）の1本目投稿後、Claudeが「1日1本」と誤って解釈し2本目・3本目の制作を怠った。ユーザー指摘で発覚。`x-mascot-video-captions.md`に明記されていた「3日間・1日3本」の既存方針を`x-operations-playbook.md`作成時に正しく引き継げていなかった |
+| 2026-08-24 | TikTokプロフィールを設定（`@ryujinradar`、表示名「龍神レーダー」、bio）。アバター画像のみ手動設定待ち | それまで完全に未設定（TikTok自動割り当てのデフォルトID`user3496158245415`のまま）だったと判明。ユーザー名は`kyoutei`（競艇）を含まない新規IDを最初から採用し、Xの過去の反省（ハンドル名に`kyoutei`を含めてしまった）を踏まえた |
+| 2026-08-24 | TikTok動画添付・プロフィール写真アップロードの自動化不可を確認、`docs/operation/tiktok-posting-operations.md`を新設 | Xと同じ制約（Chrome拡張のfile_uploadツールがClaude生成/選択ファイルを受け付けない）がTikTokでも再現。同じ検証を繰り返さないよう記録した |
 
 ## 関連
 
@@ -175,3 +177,4 @@ TikTok解禁時に実施した実地調査（複数キーワード横断検索�
 - `docs/operation/sns-marketing-strategy.md`（このファイル）は意思決定ログ、memoryは実装の細部・教訓の保管庫という役割分担
 - `docs/reference/x-algorithm-and-growth-notes.md`: Xアルゴリズムの仕組み・調査結果（「なぜ」）
 - `docs/operation/x-operations-playbook.md`: 調査結果を日々の運用に翻訳した実践ガイド（「何をするか」）
+- `docs/operation/tiktok-posting-operations.md`: TikTok投稿準備〜追跡の運用フロー（Xの`sns-posting-operations.md`に相当）
