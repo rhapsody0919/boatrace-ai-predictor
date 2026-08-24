@@ -6,33 +6,33 @@
       "format": "venue-ranking",
       "axis": "nige-rate",
       "content": "イン逃げ率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
-      "videoFile": "sns-video-studio/remotion/out/venue-ranking-cm-v2.mp4",
+      "videoFile": "sns-video-studio/remotion/out/venue-ranking-cm-v3.mp4",
       "status": "posted",
       "postedAt": "2026-08-24",
       "metrics": null,
-      "notes": "会場攻略・データ一覧型シリーズ第1弾。マスコットキャラは未使用（Xでの3体テスト結果待ち）"
+      "notes": "会場攻略・データ一覧型シリーズ第1弾。マスコットキャラは未使用（Xでの3体テスト結果待ち）。2026-08-24: frame=0でフックテキストが透明表示になるサムネイル不具合を修正（Pop delayを-10に変更）、v2投稿済み分はTikTok Studioのカバー編集or差し替えでの事後対応が必要"
     },
     {
       "date": "2026-08-24",
       "format": "venue-ranking",
       "axis": "manshu-rate",
       "content": "万舟率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
-      "videoFile": "sns-video-studio/remotion/out/venue-ranking-manshu-v1.mp4",
+      "videoFile": "sns-video-studio/remotion/out/venue-ranking-manshu-v2.mp4",
       "status": "posted",
       "postedAt": "2026-08-24",
       "metrics": null,
-      "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（1本目には無かった挙動、TikTok側の自動審査プロセスと推測、通常は審査完了後に自動で公開範囲が戻る想定）"
+      "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（1本目には無かった挙動、TikTok側の自動審査プロセスと推測、通常は審査完了後に自動で公開範囲が戻る想定）。2026-08-24: frame=0でフックテキストが透明表示になるサムネイル不具合を修正（Pop delayを-10に変更）、v1投稿済み分はTikTok Studioのカバー編集or差し替えでの事後対応が必要"
     },
     {
       "date": "2026-08-24",
       "format": "live-prediction",
       "axis": null,
       "content": "予想数値フック型（江戸川12R、締切16:25、1号艇AI逃げ確率42%・イン崩れ注意度「本命有利」）",
-      "videoFile": "sns-video-studio/remotion/out/live-prediction-tiktok-edogawa12r.mp4",
+      "videoFile": "sns-video-studio/remotion/out/live-prediction-tiktok-edogawa12r-v2.mp4",
       "status": "produced",
       "postedAt": null,
       "metrics": null,
-      "notes": "初日3本目。X向けLivePredictionCM.jsxはマスコット前提・実画面スクショ前提の設計だったため、TikTok向けに新規実装（LivePredictionCM_TikTok.jsx）。マスコット未使用の方針とスクショ取得難航の2つの理由から、イン崩れ注意度カードをVenueRankingCMと同じ手法でテキストベース再現した。制作時、Browser paneが繰り返し真っ暗表示になる不具合が発生しClaude in Chromeに切り替えて対応（原因未特定）"
+      "notes": "初日3本目。X向けLivePredictionCM.jsxはマスコット前提・実画面スクショ前提の設計だったため、TikTok向けに新規実装（LivePredictionCM_TikTok.jsx）。マスコット未使用の方針とスクショ取得難航の2つの理由から、イン崩れ注意度カードをVenueRankingCMと同じ手法でテキストベース再現した。制作時、Browser paneが繰り返し真っ暗表示になる不具合が発生しClaude in Chromeに切り替えて対応（原因未特定）。2026-08-24: frame=0でフックテキストが透明表示になるサムネイル不具合を投稿前に発見・修正（Pop delayを-10に変更）"
     }
   ]
 }
