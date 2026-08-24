@@ -13,7 +13,7 @@
 - [x] **3. scripts/lib/fortuneTelling/ 共通インターフェース + 西洋占星術**
   `scripts/lib/fortuneTelling/index.js`に`FORTUNE_SYSTEMS`配列の型（`{ id, name, calculateScore(birthDate, targetDate) }`）を定義。`westernAstrology.js`（太陽星座ベーストランジット、0-100スコア）を実装し`FORTUNE_SYSTEMS`に登録する。既存の占いツール（オンライン等）でのサンプル数件と結果を照合する（spec.md受入基準）。
 
-- [ ] **4. scripts/lib/fortuneTelling/shichuSuimei.js 実装**
+- [x] **4. scripts/lib/fortuneTelling/shichuSuimei.js 実装**
   四柱推命（日柱まで、0-100スコア）を実装し`FORTUNE_SYSTEMS`に登録。サンプル照合を行う。
 
 - [ ] **5. scripts/lib/fortuneTelling/kyuseiKigaku.js 実装**
