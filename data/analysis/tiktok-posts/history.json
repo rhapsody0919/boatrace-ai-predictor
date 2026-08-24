@@ -18,10 +18,10 @@
       "axis": "manshu-rate",
       "content": "万舟率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
       "videoFile": "sns-video-studio/remotion/out/venue-ranking-manshu-v1.mp4",
-      "status": "produced",
-      "postedAt": null,
+      "status": "posted",
+      "postedAt": "2026-08-24",
       "metrics": null,
-      "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号"
+      "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（1本目には無かった挙動、TikTok側の自動審査プロセスと推測、通常は審査完了後に自動で公開範囲が戻る想定）"
     }
   ]
 }
