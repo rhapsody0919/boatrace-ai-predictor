@@ -10,7 +10,7 @@
 - [x] **2. scripts/lib/statisticalTests.js 実装**
   `normalCDF`・`pearsonCorrelation`・`pearsonPValue`・`proportionZTest`を実装（[ADR 0020](../../adr/0020-fortune-correlation-statistical-method.md)準拠）。`node -e`等で既知の入力（例: 完全相関r=1、独立データr≈0、既知の二項比率）に対する出力を手計算値と突き合わせて正しさを確認する。
 
-- [ ] **3. scripts/lib/fortuneTelling/ 共通インターフェース + 西洋占星術**
+- [x] **3. scripts/lib/fortuneTelling/ 共通インターフェース + 西洋占星術**
   `scripts/lib/fortuneTelling/index.js`に`FORTUNE_SYSTEMS`配列の型（`{ id, name, calculateScore(birthDate, targetDate) }`）を定義。`westernAstrology.js`（太陽星座ベーストランジット、0-100スコア）を実装し`FORTUNE_SYSTEMS`に登録する。既存の占いツール（オンライン等）でのサンプル数件と結果を照合する（spec.md受入基準）。
 
 - [ ] **4. scripts/lib/fortuneTelling/shichuSuimei.js 実装**
