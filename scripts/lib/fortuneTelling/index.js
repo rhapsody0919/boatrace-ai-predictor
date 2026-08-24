@@ -5,6 +5,7 @@
  */
 import * as westernAstrology from "./westernAstrology.js";
 import * as shichuSuimei from "./shichuSuimei.js";
+import * as kyuseiKigaku from "./kyuseiKigaku.js";
 
 export const FORTUNE_SYSTEMS = [
   {
@@ -16,5 +17,10 @@ export const FORTUNE_SYSTEMS = [
     id: "shichu-suimei",
     name: "四柱推命",
     calculateScore: shichuSuimei.calculateScore,
+  },
+  {
+    id: "kyusei-kigaku",
+    name: "九星気学",
+    calculateScore: kyuseiKigaku.calculateScore,
   },
 ];

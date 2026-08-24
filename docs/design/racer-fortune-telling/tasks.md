@@ -16,7 +16,7 @@
 - [x] **4. scripts/lib/fortuneTelling/shichuSuimei.js 実装**
   四柱推命（日柱まで、0-100スコア）を実装し`FORTUNE_SYSTEMS`に登録。サンプル照合を行う。
 
-- [ ] **5. scripts/lib/fortuneTelling/kyuseiKigaku.js 実装**
+- [x] **5. scripts/lib/fortuneTelling/kyuseiKigaku.js 実装**
   九星気学（本命星+年盤、0-100スコア）を実装し`FORTUNE_SYSTEMS`に登録。サンプル照合を行う。
 
 - [ ] **6. scripts/lib/fortuneTelling/rokuseiSenjutsu.js 実装**
