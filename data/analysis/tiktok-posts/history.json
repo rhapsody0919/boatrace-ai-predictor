@@ -22,6 +22,17 @@
       "postedAt": "2026-08-24",
       "metrics": null,
       "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（1本目には無かった挙動、TikTok側の自動審査プロセスと推測、通常は審査完了後に自動で公開範囲が戻る想定）"
+    },
+    {
+      "date": "2026-08-24",
+      "format": "live-prediction",
+      "axis": null,
+      "content": "予想数値フック型（江戸川12R、締切16:25、1号艇AI逃げ確率42%・イン崩れ注意度「本命有利」）",
+      "videoFile": "sns-video-studio/remotion/out/live-prediction-tiktok-edogawa12r.mp4",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "初日3本目。X向けLivePredictionCM.jsxはマスコット前提・実画面スクショ前提の設計だったため、TikTok向けに新規実装（LivePredictionCM_TikTok.jsx）。マスコット未使用の方針とスクショ取得難航の2つの理由から、イン崩れ注意度カードをVenueRankingCMと同じ手法でテキストベース再現した。制作時、Browser paneが繰り返し真っ暗表示になる不具合が発生しClaude in Chromeに切り替えて対応（原因未特定）"
     }
   ]
 }
