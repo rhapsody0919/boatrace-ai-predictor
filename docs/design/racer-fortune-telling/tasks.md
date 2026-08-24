@@ -7,7 +7,7 @@
 - [x] **1. マイグレーション適用: racer_profiles テーブル作成**
   [docs/db-migration/035_create_racer_profiles.sql](../../db-migration/035_create_racer_profiles.sql)（作成済み）をSupabaseに適用する。適用後、`racer_profiles`テーブルへservice role keyで1行INSERT/DELETEし、書き込み権限とRLS（匿名read-only）が設計通りか確認する。
 
-- [ ] **2. scripts/lib/statisticalTests.js 実装**
+- [x] **2. scripts/lib/statisticalTests.js 実装**
   `normalCDF`・`pearsonCorrelation`・`pearsonPValue`・`proportionZTest`を実装（[ADR 0020](../../adr/0020-fortune-correlation-statistical-method.md)準拠）。`node -e`等で既知の入力（例: 完全相関r=1、独立データr≈0、既知の二項比率）に対する出力を手計算値と突き合わせて正しさを確認する。
 
 - [ ] **3. scripts/lib/fortuneTelling/ 共通インターフェース + 西洋占星術**
