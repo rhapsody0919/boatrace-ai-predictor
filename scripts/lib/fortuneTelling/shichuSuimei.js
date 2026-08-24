@@ -1,36 +1,10 @@
 /**
  * 四柱推命（日柱まで。時柱は出生時刻不明のため省略、spec.md準拠）
- * 日柱の干支は連続する60干支周期のため、基準日からの経過日数で算出する。
- * 基準日: 2007-01-01=乙未(60干支の31番目、0=甲子起点)。
- * 1873-01-12=甲子、2008-02-06=丙子、2008-10-05=戊寅の3点でも一致することを確認済み。
+ * 日柱の干支計算(getDayGanzhiIndex)は sexagenaryCycle.js を参照（六星占術と共有）。
  */
+import { STEMS, BRANCHES, getDayGanzhiIndex } from "./sexagenaryCycle.js";
 
-const STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
-const BRANCHES = [
-  "子",
-  "丑",
-  "寅",
-  "卯",
-  "辰",
-  "巳",
-  "午",
-  "未",
-  "申",
-  "酉",
-  "戌",
-  "亥",
-];
 const ELEMENTS = ["木", "火", "土", "金", "水"];
-
-const ANCHOR_DATE_UTC = Date.UTC(2007, 0, 1);
-const ANCHOR_INDEX = 31; // 乙未
-
-function getDayGanzhiIndex(dateStr) {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const t = Date.UTC(y, m - 1, d);
-  const daysDiff = Math.round((t - ANCHOR_DATE_UTC) / 86400000);
-  return (((ANCHOR_INDEX + daysDiff) % 60) + 60) % 60;
-}
 
 function getStemIndex(ganzhiIndex) {
   return ganzhiIndex % 10;

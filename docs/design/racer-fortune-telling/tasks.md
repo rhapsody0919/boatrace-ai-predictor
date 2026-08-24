@@ -19,7 +19,7 @@
 - [x] **5. scripts/lib/fortuneTelling/kyuseiKigaku.js 実装**
   九星気学（本命星+年盤、0-100スコア）を実装し`FORTUNE_SYSTEMS`に登録。サンプル照合を行う。
 
-- [ ] **6. scripts/lib/fortuneTelling/rokuseiSenjutsu.js 実装**
+- [x] **6. scripts/lib/fortuneTelling/rokuseiSenjutsu.js 実装**
   六星占術（運気リズム、0-100スコア）を実装し`FORTUNE_SYSTEMS`に登録。サンプル照合を行う。
 
 - [ ] **7. scripts/maintenance/scrape-racer-profiles.js 実装**
