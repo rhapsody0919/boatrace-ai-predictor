@@ -347,15 +347,64 @@ async function getRacePages() {
   return racePages;
 }
 
+// 選手個別ページ（/racer/:racerId）を取得
+// racer_newsに1件でも行がある racer_id のみ対象とする（ニュース・占い情報が無い選手ページは
+// noindexにする方針、docs/design/racer-news-feature/plan.md「インデックス判定」参照）。
+// ページ側のnoindex条件（RacerProfile.jsxのuseRobotsMeta呼び出し）と同じ「racer_newsの有無」を見る
+async function getRacerPages() {
+  const racerPages = [];
+
+  try {
+    const { supabase, isSupabaseEnabled } =
+      await import("./lib/supabaseClient.js");
+    if (!isSupabaseEnabled()) {
+      console.warn("⚠️ Supabase未設定のため、選手ページはスキップします");
+      return racerPages;
+    }
+
+    const { data, error } = await supabase
+      .from("racer_news")
+      .select("racer_id, created_at");
+    if (error) throw new Error(error.message);
+
+    const latestByRacerId = new Map();
+    for (const row of data ?? []) {
+      const current = latestByRacerId.get(row.racer_id);
+      if (!current || row.created_at > current) {
+        latestByRacerId.set(row.racer_id, row.created_at);
+      }
+    }
+
+    for (const [racerId, createdAt] of latestByRacerId) {
+      racerPages.push({
+        loc: `/racer/${racerId}`,
+        lastmod: createdAt.slice(0, 10),
+        changefreq: "monthly",
+        priority: "0.5",
+      });
+    }
+
+    console.log(
+      `📊 Supabase からニュース掲載済みの選手ページを取得（${latestByRacerId.size}人）`,
+    );
+  } catch (err) {
+    console.error("選手ページ取得エラー:", err.message);
+  }
+
+  return racerPages;
+}
+
 // sitemap.xmlの生成
 async function generateSitemap() {
   const blogPosts = getBlogPosts();
   const racePages = await getRacePages();
+  const racerPages = await getRacerPages();
   const allPages = [
     ...staticPages,
     ...localizedPages,
     ...blogPosts,
     ...racePages,
+    ...racerPages,
   ];
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
