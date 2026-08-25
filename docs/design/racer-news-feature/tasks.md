@@ -28,7 +28,7 @@
 - [x] **8. sitemap対応**
   `scripts/generate-sitemap.js`に`getRacerPages()`（`racer_news`に1件でも行がある`racer_id`のみ対象）を追加し`generateSitemap()`に組み込む。`npm run verify:sitemap`を実行し通ることを確認（`racer/:racerId`は`:`を含む動的ルートのため抽出ロジックが自動除外し、`EXPECTED_EXCLUSIONS`への追記は不要と判明）。
 
-- [ ] **9. 実ニュース候補のリサーチ・承認・掲載（受入基準の実証）**
+- [x] **9. 実ニュース候補のリサーチ・承認・掲載（受入基準の実証）**
   対象選手を1名選び、Claudeが実際にニュース候補をリサーチしてチャットで提示、ユーザー承認を得てからタスク6のスクリプトで掲載する（spec.md受入基準「候補提示→ユーザー承認→掲載という一連の操作が実行できる」の実証）。掲載後、該当選手ページで表示・indexable判定（`noindex`が外れる）を確認する。
 
 - [ ] **10. 動作確認・PR作成**
