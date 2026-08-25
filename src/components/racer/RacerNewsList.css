@@ -5,12 +5,12 @@
 .racer-news-list h2 {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   margin: 0 0 var(--spacing-3) 0;
 }
 
 .racer-news-list-empty p {
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
 }
 

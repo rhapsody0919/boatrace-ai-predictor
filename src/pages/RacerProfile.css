@@ -9,7 +9,7 @@
 }
 
 .racer-profile-breadcrumb a {
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
   text-decoration: none;
 }
@@ -20,7 +20,7 @@
 
 .racer-profile-loading,
 .racer-profile-error {
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   padding: var(--spacing-6) 0;
   text-align: center;
 }

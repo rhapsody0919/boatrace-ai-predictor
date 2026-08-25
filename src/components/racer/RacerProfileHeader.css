@@ -5,7 +5,7 @@
 .racer-profile-header h1 {
   font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   margin: 0 0 var(--spacing-2) 0;
 }
 
