@@ -13,7 +13,7 @@
 - [x] **3. src/components/racer/ 新規コンポーネント実装**
   `RacerProfileHeader.jsx`（氏名`translate="no"`・支部・級別）、`RacerProfileCard.jsx`（`VenueGuide.jsx`の`eg-facts-grid`パターンで基本情報グリッド、値がある項目のみ表示）、`RacerNewsList.jsx`（ニュース一覧、0件時は空状態表示）、`index.js`（barrel export、`.claude/rules/component-reuse.md`準拠）を実装。
 
-- [ ] **4. src/components/RacerStructuredData.jsx 実装**
+- [x] **4. src/components/RacerStructuredData.jsx 実装**
   `VenueStructuredData.jsx`と同形式でPerson型JSON-LDを出力。プロフィール無しの選手では構造化データを出力しない分岐を入れる。
 
 - [ ] **5. src/pages/RacerProfile.jsx 新設 + ルート登録**
