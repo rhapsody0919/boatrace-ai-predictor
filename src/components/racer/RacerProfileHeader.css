@@ -30,8 +30,8 @@
 }
 
 .racer-profile-header-grade {
-  background: var(--color-primary-alpha-30);
-  color: var(--color-primary-700);
+  background: var(--color-primary-600);
+  color: var(--color-white);
 }
 
 @media (max-width: 480px) {
