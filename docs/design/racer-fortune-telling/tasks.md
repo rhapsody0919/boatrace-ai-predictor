@@ -25,7 +25,7 @@
 - [x] **7. scripts/maintenance/scrape-racer-profiles.js 実装**
   `backfill-racer-ids.js`と同じCLI規約（`--dry-run`/`--limit=N`/`--verbose`）で実装。`race_entries`のdistinct `racer_id`のうち`racer_profiles`未登録分を対象に、boatrace.jpプロフィールページを取得・`dl.list3`をcheerioでパースしupsertする。`dl.list3`が無い場合は失敗としてスキップ。レート制限500ms/リクエスト。`--limit=10`程度の小規模実行で正しく動くことを確認する。
 
-- [ ] **8. 全選手データのスクレイピング実行**
+- [x] **8. 全選手データのスクレイピング実行**
   `scrape-racer-profiles.js`を全件（約1,637人、`--dry-run`無し）で実行し、`racer_profiles`にデータを投入する。実行後、成功/失敗件数と`data/analysis/racer-fortune-telling/profile-scrape-report.json`の内容をユーザーに報告する（spec.md受入基準「成功・失敗の内訳を件数で報告」）。目標成功率の妥当性判断はこの実測値を見てからユーザーが行う（spec.md未確定事項）。
 
 - [ ] **9. scripts/analysis/racer-fortune-telling/validate-fortune-correlation.js 実装**
