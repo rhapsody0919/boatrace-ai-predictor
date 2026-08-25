@@ -7,7 +7,7 @@
 - [x] **1. マイグレーション適用: racer_news テーブル作成**
   [docs/db-migration/036_create_racer_news.sql](../../db-migration/036_create_racer_news.sql)をSupabaseに適用する。適用後、service role keyで1行INSERT/SELECT/DELETEし、書き込み権限とRLS（匿名read-only）が設計通りか確認する。
 
-- [ ] **2. src/services/racerService.js 実装**
+- [x] **2. src/services/racerService.js 実装**
   `getRacerPageData(racerId)`を実装。`racer_profiles`（1行）・`race_entries`（`race_id`降順1件、`grade`取得、[ADR 0023](../../adr/0023-racer-grade-freshness.md)）・`racer_news`（`racer_id`一致、`created_at`降順）を並行取得し`{ profile, grade, news }`を返す。実在する`racer_id`（例: 4327）とプロフィール無しの`racer_id`（例: 3081、[[racer-fortune-telling]]のスクレイピング失敗選手）の両方で動作確認する。
 
 - [ ] **3. src/components/racer/ 新規コンポーネント実装**
