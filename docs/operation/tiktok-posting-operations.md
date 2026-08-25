@@ -39,6 +39,7 @@
 
 1. `data/analysis/tiktok-posts/history.json`の該当エントリを`status: "posted"`に更新し、`postedAt`を記録する
 2. 24時間後を目安に、いいね数・保存数・再生数を確認できれば`metrics`に追記する（TikTok版の定点観測の仕組みはまだ未整備、`/x-growth-report`相当が必要）
+3. **投稿完了した動画ファイル（mp4・cover.png）を`sns-video-studio/remotion/out/`から`sns-video-studio/published/tiktok/`に移動する**（2026-08-25追加）。Xの`published/x/`と対称にする運用。`remotion/out/`は「未投稿・ボツ案・検討中」のファイルのみが残る状態を保ち、`history.json`の`videoFile`パスも移動先に更新する。この運用を怠ると`out/`に投稿済み・未投稿・不採用版が無秩序に混在し、2026-08-25時点で43ファイル・116MBまで肥大化した実績がある（旧バージョンの削除漏れも含む）
 
 ## 関連
 

@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "remotion-studio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "sns-video-studio/remotion", "run", "studio"],
+      "port": 3001
     }
   ]
 }
