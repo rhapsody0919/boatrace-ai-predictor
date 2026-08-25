@@ -1,0 +1,89 @@
+{
+  "generatedAt": "2026-08-25T02:00:00+09:00",
+  "followerCount": 10,
+  "followingCount": 5,
+  "totalLikes": 3,
+  "totalPosts": 5,
+  "historyReconciliation": {
+    "historyJsonCountAtSessionStart": 2,
+    "studioActualCount": 5,
+    "discrepancyResolved": true,
+    "note": "セッション開始時点でhistory.jsonには2件のみ記録されていたが、確認完了時点では別セッションにより5件全て正しく記録されていた（自分の初回確認時と再確認時の間にタイムラグがあり、並行して他セッションが更新していたと推測される）。「記録漏れ」という当初の指摘は誤りだった可能性が高い。次回はセッション内の1時点でのスナップショットとして扱い、断定を避ける"
+  },
+  "previousActionsReview": null,
+  "previousActionsReviewNote": "初回実行のためステップ0（前回提案の検証）はスキップ",
+  "posts": [
+    {
+      "postedAt": "2026-08-24",
+      "format": "venue-ranking",
+      "axis": "win-rate",
+      "summary": "1号艇勝率ランキング（会場攻略・データ一覧型シリーズ第4弾）",
+      "statusUrl": "https://www.tiktok.com/@ryujinradar/video/7677582316893424916",
+      "views": 58,
+      "likes": 3,
+      "comments": 0,
+      "privacy": "誰でも"
+    },
+    {
+      "postedAt": "2026-08-25",
+      "format": "venue-ranking",
+      "axis": "nige-rate",
+      "summary": "イン逃げ率ランキング（会場攻略・データ一覧型シリーズ第1弾、カバー画像刷新のため一度削除して再投稿）",
+      "statusUrl": "https://www.tiktok.com/@ryujinradar/video/7677744241140944148",
+      "views": 43,
+      "likes": 0,
+      "comments": 0,
+      "privacy": "誰でも",
+      "note": "削除前の旧投稿は視聴数145・いいね2を記録していたが、カバー画像刷新のため削除し実績を喪失。現在の43はゼロからの再スタート分"
+    },
+    {
+      "postedAt": "2026-08-25",
+      "format": "venue-ranking",
+      "axis": "manshu-rate",
+      "summary": "万舟率ランキング（会場攻略・データ一覧型シリーズ第2弾、カバー画像刷新のため一度削除して再投稿）",
+      "statusUrl": "https://www.tiktok.com/@ryujinradar/video/7677757665933675796",
+      "views": 23,
+      "likes": 0,
+      "comments": 0,
+      "privacy": "誰でも",
+      "note": "削除前の旧投稿は視聴数299・いいね2を記録していたが、カバー画像刷新のため削除し実績を喪失。現在の23はゼロからの再スタート分"
+    },
+    {
+      "postedAt": "2026-08-25",
+      "format": "hit-check",
+      "axis": null,
+      "summary": "答え合わせ型（江戸川12R、1号艇AI逃げ確率42%→結果的中）",
+      "statusUrl": "https://www.tiktok.com/@ryujinradar/video/7677758643265228053",
+      "views": 0,
+      "likes": 0,
+      "comments": 0,
+      "privacy": "誰でも",
+      "note": "投稿から日が浅く未計測の可能性"
+    },
+    {
+      "postedAt": "2026-08-25",
+      "format": "todays-racer-form",
+      "axis": null,
+      "summary": "本日の好調・不調選手ランキング（本日のデータ一覧型TikTok向け第1号）",
+      "statusUrl": "https://www.tiktok.com/@ryujinradar/video/7677781602356808981",
+      "views": 0,
+      "likes": 0,
+      "comments": 0,
+      "privacy": "誰でも",
+      "note": "投稿から日が浅く未計測の可能性"
+    }
+  ],
+  "insightsTabStatus": "機能せず（「トップ投稿はありません」、直近28日に広げても改善しない）。小規模アカウントの仕様上の制約と判断し、投稿一覧の基本指標を正として扱った",
+  "summary": {
+    "viewsRange": "0〜58（5投稿中、計測済み3投稿は23〜58）",
+    "likesTotal": 3,
+    "comparisonWithX": "同時期のX投稿（インプレッション12〜17、エンゲージメント0）と比較して、TikTokの方が視聴数・エンゲージメントとも明確に上回っている。フォロワー数はX(54人)よりTikTok(10人)の方が少ないにもかかわらずこの差が出ており、コールドスタート緩和機構（興味関心ベースの非フォロワー露出）が機能している証跡と考えられる"
+  },
+  "competitorCheck": "2026-08-23実施済み（sns_marketing_phased_strategy_2026_08_22参照）、1ヶ月未満のため今回省略",
+  "criticalFinding": "カバー画像刷新のため2投稿（イン逃げ率ランキング・万舟率ランキング）を削除して再投稿した結果、視聴実績（145件・299件、合計444件相当）を喪失した。TikTokのアルゴリズムは投稿の蓄積実績・初速を重視するため、デザイン改善のたびに削除→再投稿する運用は機会損失が大きい。今後カバー画像等を修正する場合は、削除・再投稿ではなく次回以降の新規投稿に反映する形を検討すべき",
+  "nextActions": [
+    "今後、投稿済み動画の軽微な修正（カバー画像等）のために削除→再投稿する運用は原則行わない。実績を保持したまま、改善は次回作以降に反映する",
+    "history.jsonの記録タイミング・並行セッションとの同期ズレに注意する。次回実行時は必ずその場でStudioの実数と突き合わせる",
+    "投稿5件が貯まった。あと5件程度投稿数を増やし、型ごとの視聴数比較（会場攻略型 vs 的中検証型 vs データ一覧型）を試みる段階に近づいている"
+  ]
+}
