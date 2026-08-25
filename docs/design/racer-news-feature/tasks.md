@@ -22,7 +22,7 @@
 - [x] **6. scripts/maintenance/add-racer-news.js 実装**
   CLI引数（`--racer-id`・`--title`・`--summary`・`--source-url`・`--source-name`・`--published-at`）を受け取り`racer_news`に1行INSERTするスクリプト（[ADR 0022](../../adr/0022-racer-news-approval-flow.md)）。`scripts/lib/supabaseClient.js`を再利用。
 
-- [ ] **7. Phase1: 既存コンポーネントの選手名リンク化**
+- [x] **7. Phase1: 既存コンポーネントの選手名リンク化**
   screens.md「4. 既存コンポーネントの改修」のPhase1対象6コンポーネント（`RacerFormChart.jsx`・`RacerBoatReturnRateChart.jsx`・`RacerFormRankingChart.jsx`・`RacerTechniqueProfileChart.jsx`・`ExhibitionTimeTrendChart.jsx`・`StPredictabilityChart.jsx`）の選手名表示を`<Link to={`/racer/${racerId}`}>`でラップする。データ取得層の変更は不要（既に`racer_id`が含まれる）。
 
 - [ ] **8. sitemap対応**

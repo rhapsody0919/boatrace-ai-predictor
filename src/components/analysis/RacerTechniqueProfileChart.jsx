@@ -5,6 +5,7 @@
  * 会場・枠番単位の「決まり手データ分析」（BOA-150）とは異なり、選手個人単位の傾向を見る機能。
  */
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   BarChart,
@@ -287,8 +288,10 @@ function RacerTechniqueProfileChart({
                     className="motor-ranking-row non-clickable-row"
                   >
                     <td className="rank">{row.boat_number}</td>
-                    <td translate="no">
-                      {row.player_name?.replace(/\s+/g, "")}
+                    <td>
+                      <Link to={`/racer/${row.racer_id}`} translate="no">
+                        {row.player_name?.replace(/\s+/g, "")}
+                      </Link>
                     </td>
                     <td className="rate">{row.win_count}</td>
                     <td className="rate">

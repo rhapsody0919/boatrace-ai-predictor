@@ -182,6 +182,28 @@
   margin-bottom: 1rem;
 }
 
+.racer-page-link {
+  display: inline-block;
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-600);
+  text-decoration: none;
+  margin-bottom: 1rem;
+}
+
+.racer-page-link:hover {
+  text-decoration: underline;
+}
+
+.racer-page-link-inline {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+  text-decoration: none;
+}
+
+.racer-page-link-inline:hover {
+  text-decoration: underline;
+}
+
 /* モバイル対応 */
 @media (max-width: 768px) {
   .motor-condition-container {
