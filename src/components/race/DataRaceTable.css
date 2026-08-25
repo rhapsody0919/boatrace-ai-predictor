@@ -109,6 +109,15 @@
   line-height: var(--line-height-tight);
 }
 
+.drt-name-th a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.drt-name-th a:hover {
+  text-decoration: underline;
+}
+
 .drt-label-th {
   background: var(--surface-page);
 }

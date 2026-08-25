@@ -69,8 +69,14 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
             <tr>
               <th className="drt-label-th"></th>
               {players.map((p) => (
-                <th key={p.number} className="drt-name-th" translate="no">
-                  {p.name?.replace(/\s+/g, "")}
+                <th key={p.number} className="drt-name-th">
+                  {p.racerId ? (
+                    <Link to={`/racer/${p.racerId}`} translate="no">
+                      {p.name?.replace(/\s+/g, "")}
+                    </Link>
+                  ) : (
+                    <span translate="no">{p.name?.replace(/\s+/g, "")}</span>
+                  )}
                 </th>
               ))}
             </tr>

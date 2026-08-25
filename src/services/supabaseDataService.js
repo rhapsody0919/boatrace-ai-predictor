@@ -329,6 +329,7 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
         .map((e) => ({
           number: e.number,
           name: e.name,
+          racerId: e.racerId ?? null,
           grade: e.grade,
           age: e.age,
           winRate: String(e.winRate || ""),
@@ -888,6 +889,7 @@ export const supabaseDataService = {
         race_entries (
           boat_number,
           player_name,
+          racer_id,
           grade,
           age,
           win_rate,
@@ -987,6 +989,7 @@ export const supabaseDataService = {
             .map((e) => ({
               number: e.boat_number,
               name: (e.player_name || "").replace(/\s+/g, ""),
+              racerId: e.racer_id ?? null,
               grade: e.grade,
               age: e.age,
               winRate: String(e.win_rate || ""),
