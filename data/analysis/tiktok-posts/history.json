@@ -6,22 +6,66 @@
       "format": "venue-ranking",
       "axis": "nige-rate",
       "content": "イン逃げ率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
-      "videoFile": "sns-video-studio/remotion/out/venue-ranking-cm-v2.mp4",
+      "videoFile": "sns-video-studio/remotion/out/venue-ranking-cm-remake-v2.mp4",
       "status": "posted",
-      "postedAt": "2026-08-24",
+      "postedAt": "2026-08-25",
       "metrics": null,
-      "notes": "会場攻略・データ一覧型シリーズ第1弾。マスコットキャラは未使用（Xでの3体テスト結果待ち）"
+      "notes": "会場攻略・データ一覧型シリーズ第1弾。マスコットキャラは未使用（Xでの3体テスト結果待ち）。2026-08-24〜25: カバー画像を旧デザイン（全要素均等拡大）からデザイナーエージェント案A（非対称巨大順位数字+実データ棒グラフ背景+ベタ塗りゴールド帯）に全面刷新するため、旧投稿を削除して作り直して再投稿した。削除前の視聴数145・いいね2は失われた（詳細はsns-video-producer-prompt.mdルール11参照）。下部フック文の誤り（1位＝決まりやすい会場を見せているのに「決まりにくい」と聞いていた）も修正"
     },
     {
       "date": "2026-08-24",
       "format": "venue-ranking",
       "axis": "manshu-rate",
       "content": "万舟率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
-      "videoFile": "sns-video-studio/remotion/out/venue-ranking-manshu-v1.mp4",
+      "videoFile": "sns-video-studio/remotion/out/venue-ranking-manshu-remake-v2.mp4",
+      "status": "posted",
+      "postedAt": "2026-08-25",
+      "metrics": null,
+      "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（1本目には無かった挙動、TikTok側の自動審査プロセスと推測、通常は審査完了後に自動で公開範囲が戻る想定）。2026-08-24〜25: カバー画像を旧デザインからデザイナーエージェント案Aに全面刷新するため、旧投稿を削除して作り直して再投稿した。削除前の視聴数299・いいね2は失われた。下部フック文の誤り（1位＝出やすい会場を見せているのに「出にくい」と聞いていた）も修正"
+    },
+    {
+      "date": "2026-08-24",
+      "format": "hit-check",
+      "axis": null,
+      "content": "答え合わせ型（江戸川12R、1号艇AI逃げ確率42%→結果「逃げ」で1着的中・単勝150円）",
+      "videoFile": "sns-video-studio/remotion/out/live-prediction-tiktok-edogawa12r-hitcheck-v2.mp4",
+      "status": "posted",
+      "postedAt": "2026-08-25",
+      "metrics": null,
+      "notes": "初日3本目。当初は予想数値フック型（LivePredictionCM_TikTok.jsx、「本日開催中・結果未確定」前提）として制作したが、カバー刷新のため作り直しているうちに締切16:25を過ぎてレースが終了し前提が崩れたため、結果（1号艇が予想通り逃げて的中、単勝150円）を使った答え合わせ型に転換した。SceneHookを「的中」を主役にした案Aデザイン（非対称配置+ベタ塗りゴールド帯）に刷新、SceneRevealとCTAの間に新規SceneResultを追加（尺450→475フレーム）。「的中」2文字は会場攻略型の1文字「1」より横幅を取るため、fontSizeを560→210に縮小してフレームからのはみ出しを回避した"
+    },
+    {
+      "date": "2026-08-24",
+      "format": "venue-ranking",
+      "axis": "win-rate",
+      "content": "1号艇勝率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
+      "videoFile": "sns-video-studio/remotion/out/venue-ranking-winrate-v8.mp4",
       "status": "posted",
       "postedAt": "2026-08-24",
       "metrics": null,
-      "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（1本目には無かった挙動、TikTok側の自動審査プロセスと推測、通常は審査完了後に自動で公開範囲が戻る想定）"
+      "notes": "会場攻略・データ一覧型シリーズ第4弾。カバー画像設計を全面刷新（デザイナーエージェント案A: 非対称配置の巨大順位数字「1位」+実データ24会場分の棒グラフ背景+ベタ塗りゴールド帯での疑問形フック、配色はメタリックゴールド#d4af37に統一）。旧デザイン（全要素均等拡大）はユーザーに複数回却下され、7人パネル議論→デザイナーエージェント議論を経て刷新した。詳細はsns-video-producer-prompt.mdルール11参照。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（過去にも発生した既知の挙動）"
+    },
+    {
+      "date": "2026-08-25",
+      "format": "todays-racer-form",
+      "axis": null,
+      "content": "本日の好調・不調選手ランキング（急上昇TOP5: 鈴木成美+1.26pt他／急下降TOP5: 宮本夏樹-1.37pt他）",
+      "videoFile": "sns-video-studio/remotion/out/todays-racer-form-v3.mp4",
+      "status": "posted",
+      "postedAt": "2026-08-25",
+      "metrics": null,
+      "notes": "「本日のデータ一覧型」TikTok向け第1号（新規実装: TodaysRacerFormCM.jsx）。実データ出典はboat-ai.jp「本日の好調・不調選手ランキング」機能（本日出走全選手の現在全国勝率と約90日前時点を比較）。90日前0.00%からの上昇（新人・長期休養明けバイアス、白石有美・出口飛龍）は除外し実質的な調子上昇のみでTOP5構成。会場攻略型と同じ案A（非対称配置+ベタ塗りフック帯）を選手データに適用。制作中に2つのユーザー指摘で修正: (1)巨大数字「+1.26」(5文字)がfontSize200でフレーム左端からはみ出す不具合、150に縮小して解消（会場攻略型の教訓と同型の再発）。(2)「根拠が伝わらない」指摘を受け、数字の直上に「過去90日間の全国勝率の変化」ラベルを追加、TOP5/WORST5リストにも「2.90→4.16（90日前比）」とbefore/after両方を表示するよう変更。フック文言も「本日出走する選手の中で、過去90日間で調子が上がっている選手」という正確な母集団・期間の表現に修正"
+    },
+    {
+      "date": "2026-08-25",
+      "format": "todays-motor-form",
+      "axis": null,
+      "content": "本日のモーター調子ランキング（好調TOP5: 柳瀬興志68号機53.16%他／要注意TOP5: 深川真二42号機14.1%他）",
+      "videoFile": "sns-video-studio/remotion/out/todays-motor-form-v1.mp4",
+      "status": "posted",
+      "postedAt": "2026-08-25",
+      "metrics": null,
+      "notes": "「本日のデータ一覧型」TikTok向け第2号（新規実装: TodaysMotorFormCM.jsx）。boat-ai.jp「モーター調子」タブは1レースずつ見る設計で横断ランキング機能が無いため、Supabase race_entries.motor_2rate/motor_3rateから本日開催全156レース・936エントリーを直接横断集計した。TodaysRacerFormCM.jsxの教訓（巨大数字はfontSize150程度に抑える、直上にラベルを添えて何の数字か明示する）を最初から反映させ、今回は修正無しで一発通過。1位と最下位で2連率に約4倍(53.16% vs 14.1%)の差があり訴求力のあるデータだった"
     }
   ]
 }
