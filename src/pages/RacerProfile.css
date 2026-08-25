@@ -1,0 +1,32 @@
+.racer-profile-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-4);
+}
+
+.racer-profile-breadcrumb {
+  margin-bottom: var(--spacing-3);
+}
+
+.racer-profile-breadcrumb a {
+  color: var(--color-gray-600);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.racer-profile-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.racer-profile-loading,
+.racer-profile-error {
+  color: var(--color-gray-500);
+  padding: var(--spacing-6) 0;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .racer-profile-page {
+    padding: var(--spacing-3);
+  }
+}

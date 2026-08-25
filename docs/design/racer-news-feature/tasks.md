@@ -16,7 +16,7 @@
 - [x] **4. src/components/RacerStructuredData.jsx 実装**
   `VenueStructuredData.jsx`と同形式でPerson型JSON-LDを出力。プロフィール無しの選手では構造化データを出力しない分岐を入れる。
 
-- [ ] **5. src/pages/RacerProfile.jsx 新設 + ルート登録**
+- [x] **5. src/pages/RacerProfile.jsx 新設 + ルート登録**
   `src/AppRouter.jsx`に`<Route path="racer/:racerId" element={<RacerProfile />} />`を追加（`races`/`blog`ブロックに並べる）。ページ本体はタスク2〜4のservice/componentを組み合わせ、title/description/canonical/条件付きnoindex（`news.length === 0`時に`<meta name="robots" content="noindex, follow" />`）・パンくず（`/`固定）を実装する。
 
 - [ ] **6. scripts/maintenance/add-racer-news.js 実装**
