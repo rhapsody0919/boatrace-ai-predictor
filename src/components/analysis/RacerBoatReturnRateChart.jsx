@@ -5,6 +5,7 @@
  * AI予想モデルの確率は使わず、過去の実績払戻金のみを集計する。
  */
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import "./MotorConditionChart.css";
@@ -213,7 +214,11 @@ function RacerBoatReturnRateChart({
                   }`}
                 >
                   <td className="rank">{row.boat_number}</td>
-                  <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
+                  <td>
+                    <Link to={`/racer/${row.racer_id}`} translate="no">
+                      {row.player_name?.replace(/\s+/g, "")}
+                    </Link>
+                  </td>
                   <td className="rate">{row.sample_count}</td>
                   <td className="rate">
                     {row.win_return_rate !== null

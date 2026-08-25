@@ -1,0 +1,41 @@
+.racer-profile-header {
+  padding: var(--spacing-4) 0;
+}
+
+.racer-profile-header h1 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.racer-profile-header-meta {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.racer-profile-header-branch,
+.racer-profile-header-grade {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.racer-profile-header-branch {
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+}
+
+.racer-profile-header-grade {
+  background: var(--color-primary-600);
+  color: var(--color-white);
+}
+
+@media (max-width: 480px) {
+  .racer-profile-header h1 {
+    font-size: var(--font-size-2xl);
+  }
+}

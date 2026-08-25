@@ -64,6 +64,12 @@ function RankingTable({ title, rows, emptyMessage }) {
                     translate="no"
                   >
                     {row.player_name?.replace(/\s+/g, "")}
+                  </Link>{" "}
+                  <Link
+                    to={`/racer/${row.racer_id}`}
+                    className="racer-page-link-inline"
+                  >
+                    選手ページ
                   </Link>
                 </td>
                 <td>

@@ -6,6 +6,7 @@
  * 気になる選手は節を問わず過去レースごとのズレ推移にドリルダウンできる。
  */
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   LineChart,
@@ -290,6 +291,9 @@ function StPredictabilityChart({
               name: drillDownRacerName?.replace(/\s+/g, ""),
             })}
           </h3>
+          <Link to={`/racer/${drillDownRacer}`} className="racer-page-link">
+            → 選手ページを見る
+          </Link>
 
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>

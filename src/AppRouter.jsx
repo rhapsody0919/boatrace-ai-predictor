@@ -22,6 +22,7 @@ import FAQ from "./pages/FAQ";
 import HowToUse from "./pages/HowToUse";
 import RaceHistory from "./pages/RaceHistory";
 import RaceDetail from "./pages/RaceDetail";
+import RacerProfile from "./pages/RacerProfile";
 import Profile from "./pages/Profile";
 import AccuracyHistory from "./pages/AccuracyHistory";
 import WinningTechniqueAnalysis from "./pages/WinningTechniqueAnalysis";
@@ -177,6 +178,9 @@ function LocalizedRoutes({ lng = "ja" }) {
       {/* Race History Routes */}
       <Route path="races" element={<RaceHistory />} />
       <Route path="races/:date" element={<RaceDetail />} />
+
+      {/* Racer Profile Route（ja専用、TRANSLATED_PATHS未登録） */}
+      <Route path="racer/:racerId" element={<RacerProfile />} />
 
       {/* Blog Routes */}
       <Route path="blog" element={<Blog />} />

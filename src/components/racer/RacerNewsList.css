@@ -1,0 +1,46 @@
+.racer-news-list {
+  margin: var(--spacing-6) 0;
+}
+
+.racer-news-list h2 {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-3) 0;
+}
+
+.racer-news-list-empty p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.racer-news-item {
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-3);
+}
+
+.racer-news-item h3 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-900);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.racer-news-item p {
+  color: var(--color-gray-700);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.racer-news-source {
+  color: var(--color-primary-600);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.racer-news-source:hover {
+  text-decoration: underline;
+}

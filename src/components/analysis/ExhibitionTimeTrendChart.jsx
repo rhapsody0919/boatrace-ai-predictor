@@ -5,6 +5,7 @@
  * 「展示タイム最速艇の1着転換率」（会場・枠番単位）とは異なり、選手個人単位の推移を見る機能。
  */
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   LineChart,
@@ -289,6 +290,9 @@ function ExhibitionTimeTrendChart({
               name: drillDownRacerName?.replace(/\s+/g, ""),
             })}
           </h3>
+          <Link to={`/racer/${drillDownRacer}`} className="racer-page-link">
+            → 選手ページを見る
+          </Link>
 
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
