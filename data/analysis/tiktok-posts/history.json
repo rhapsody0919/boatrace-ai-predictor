@@ -6,33 +6,33 @@
       "format": "venue-ranking",
       "axis": "nige-rate",
       "content": "イン逃げ率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
-      "videoFile": "sns-video-studio/remotion/out/venue-ranking-cm-v4.mp4",
+      "videoFile": "sns-video-studio/remotion/out/venue-ranking-cm-remake-v2.mp4",
       "status": "posted",
-      "postedAt": "2026-08-24",
+      "postedAt": "2026-08-25",
       "metrics": null,
-      "notes": "会場攻略・データ一覧型シリーズ第1弾。マスコットキャラは未使用（Xでの3体テスト結果待ち）。2026-08-24: frame=0透明表示のサムネイル不具合を修正(v3)後、さらに視覚的インパクト強化のため巨大数字(59.2%)をSceneHookに追加(v4)。投稿済み分はTikTok Studioの「カバーを編集」で差し替え対応"
+      "notes": "会場攻略・データ一覧型シリーズ第1弾。マスコットキャラは未使用（Xでの3体テスト結果待ち）。2026-08-24〜25: カバー画像を旧デザイン（全要素均等拡大）からデザイナーエージェント案A（非対称巨大順位数字+実データ棒グラフ背景+ベタ塗りゴールド帯）に全面刷新するため、旧投稿を削除して作り直して再投稿した。削除前の視聴数145・いいね2は失われた（詳細はsns-video-producer-prompt.mdルール11参照）。下部フック文の誤り（1位＝決まりやすい会場を見せているのに「決まりにくい」と聞いていた）も修正"
     },
     {
       "date": "2026-08-24",
       "format": "venue-ranking",
       "axis": "manshu-rate",
       "content": "万舟率ランキング（TOP5/ワースト5、全期間集計・約38,600レース）",
-      "videoFile": "sns-video-studio/remotion/out/venue-ranking-manshu-v3.mp4",
+      "videoFile": "sns-video-studio/remotion/out/venue-ranking-manshu-remake-v2.mp4",
       "status": "posted",
-      "postedAt": "2026-08-24",
+      "postedAt": "2026-08-25",
       "metrics": null,
-      "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（1本目には無かった挙動、TikTok側の自動審査プロセスと推測、通常は審査完了後に自動で公開範囲が戻る想定）。2026-08-24: frame=0透明表示のサムネイル不具合を修正(v2)後、さらに視覚的インパクト強化のため巨大数字(19.1%)をSceneHookに追加(v3)。投稿済み分はTikTok Studioの「カバーを編集」で差し替え対応"
+      "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（1本目には無かった挙動、TikTok側の自動審査プロセスと推測、通常は審査完了後に自動で公開範囲が戻る想定）。2026-08-24〜25: カバー画像を旧デザインからデザイナーエージェント案Aに全面刷新するため、旧投稿を削除して作り直して再投稿した。削除前の視聴数299・いいね2は失われた。下部フック文の誤り（1位＝出やすい会場を見せているのに「出にくい」と聞いていた）も修正"
     },
     {
       "date": "2026-08-24",
-      "format": "live-prediction",
+      "format": "hit-check",
       "axis": null,
-      "content": "予想数値フック型（江戸川12R、締切16:25、1号艇AI逃げ確率42%・イン崩れ注意度「本命有利」）",
-      "videoFile": "sns-video-studio/remotion/out/live-prediction-tiktok-edogawa12r-v3.mp4",
+      "content": "答え合わせ型（江戸川12R、1号艇AI逃げ確率42%→結果「逃げ」で1着的中・単勝150円）",
+      "videoFile": "sns-video-studio/remotion/out/live-prediction-tiktok-edogawa12r-hitcheck-v2.mp4",
       "status": "posted",
-      "postedAt": "2026-08-24",
+      "postedAt": "2026-08-25",
       "metrics": null,
-      "notes": "初日3本目。X向けLivePredictionCM.jsxはマスコット前提・実画面スクショ前提の設計だったため、TikTok向けに新規実装（LivePredictionCM_TikTok.jsx）。マスコット未使用の方針とスクショ取得難航の2つの理由から、イン崩れ注意度カードをVenueRankingCMと同じ手法でテキストベース再現した。制作時、Browser paneが繰り返し真っ暗表示になる不具合が発生しClaude in Chromeに切り替えて対応（原因未特定）。2026-08-24: frame=0透明表示のサムネイル不具合を投稿前に発見・修正(v2)後、さらに視覚的インパクト強化のため巨大数字(42%)をSceneHookに追加・配色をGOLD系に変更し会場攻略型(青系)と差別化(v3)"
+      "notes": "初日3本目。当初は予想数値フック型（LivePredictionCM_TikTok.jsx、「本日開催中・結果未確定」前提）として制作したが、カバー刷新のため作り直しているうちに締切16:25を過ぎてレースが終了し前提が崩れたため、結果（1号艇が予想通り逃げて的中、単勝150円）を使った答え合わせ型に転換した。SceneHookを「的中」を主役にした案Aデザイン（非対称配置+ベタ塗りゴールド帯）に刷新、SceneRevealとCTAの間に新規SceneResultを追加（尺450→475フレーム）。「的中」2文字は会場攻略型の1文字「1」より横幅を取るため、fontSizeを560→210に縮小してフレームからのはみ出しを回避した"
     },
     {
       "date": "2026-08-24",
