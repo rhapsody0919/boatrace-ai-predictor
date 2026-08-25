@@ -1,0 +1,110 @@
+{
+  "generatedAt": "2026-08-25T00:00:00+09:00",
+  "followerCount": 54,
+  "totalPosts": 202,
+  "previousActionsReview": null,
+  "previousActionsReviewNote": "初回実行のためステップ0（前回提案の検証）はスキップ",
+  "posts": [
+    {
+      "postedAt": "2026-08-23",
+      "type": "video-mascot",
+      "character": "A",
+      "format": "answer-check",
+      "summary": "答え合わせ型（児島2R、イン崩れ指数100%的中、payout920円）day1 1本目",
+      "statusId": "2091387629132779596",
+      "impressions": null,
+      "note": "詳細アナリティクス未確認（フィード表示14 views）"
+    },
+    {
+      "postedAt": "2026-08-23",
+      "type": "video-mascot",
+      "character": "A",
+      "format": "daily-data-list",
+      "summary": "本日のデータ一覧型（急上昇選手ランキング）day1 2本目",
+      "statusId": "2091381646188765491",
+      "impressions": 14,
+      "engagements": 0,
+      "detailExpands": 0,
+      "profileVisits": 0,
+      "videoUniqueViews": 1,
+      "videoViews": 2
+    },
+    {
+      "postedAt": "2026-08-23",
+      "type": "video-mascot",
+      "character": "A",
+      "format": "live-prediction-hook",
+      "summary": "予想数値フック型（若松2R）day1 3本目",
+      "statusId": "2091403470012371034",
+      "impressions": null,
+      "note": "詳細アナリティクス未確認（フィード表示11 views）"
+    },
+    {
+      "postedAt": "2026-08-24",
+      "type": "video-mascot",
+      "character": "B",
+      "format": "answer-check",
+      "summary": "答え合わせ型（児島2R、イン崩れ指数100%的中）day2 1本目",
+      "statusId": "2091680155425210430",
+      "impressions": 12,
+      "engagements": 0,
+      "detailExpands": 0,
+      "profileVisits": 0,
+      "videoUniqueViews": 1,
+      "videoViews": 1
+    },
+    {
+      "postedAt": "2026-08-24",
+      "type": "video-mascot",
+      "character": "B",
+      "format": "list-appeal",
+      "summary": "一覧アピール型（決まり手データ、江戸川1号艇逃げ率93.61%）day2 2本目",
+      "statusId": "2091690021590093934",
+      "impressions": null,
+      "note": "詳細アナリティクス未確認（フィード表示6 views）"
+    },
+    {
+      "postedAt": "2026-08-24",
+      "type": "video-mascot",
+      "character": "B",
+      "format": "live-prediction-hook",
+      "summary": "予想数値フック型（徳山8R）day2 3本目",
+      "statusId": "2091703556214845945",
+      "impressions": 17,
+      "engagements": 0,
+      "detailExpands": 0,
+      "profileVisits": 0,
+      "videoUniqueViews": 2,
+      "videoViews": 2
+    },
+    {
+      "postedAt": "2026-08-24",
+      "type": "blog-announcement",
+      "summary": "「AI用にコピー」新機能記事告知",
+      "statusId": "2091696013652447723",
+      "impressions": null,
+      "note": "詳細アナリティクス未確認（フィード表示12 views）"
+    },
+    {
+      "postedAt": "2026-08-25",
+      "type": "blog-announcement",
+      "summary": "「データで振り返る」新機能記事告知",
+      "statusId": "2092065196709937169",
+      "impressions": null,
+      "note": "投稿直後のため未計測"
+    }
+  ],
+  "summary": {
+    "impressionsRange": "12〜17（詳細確認した3投稿）",
+    "engagements": "全投稿0（いいね・RT・返信・詳細展開・プロフィール訪問すべて0）",
+    "videoUniqueViewers": "1〜2人（フォロワー54人中）",
+    "sampleSizeWarning": "母数が極端に少なく（3投稿）、型ごとの優劣比較は統計的に無意味なレベル。マスコットA/B/Cの勝者判定は時期尚早"
+  },
+  "competitorCheck": "2026-08-23実施済み（sns_marketing_phased_strategy_2026_08_22参照）、1ヶ月未満のため今回省略",
+  "tweetDraftsBacklog": 35,
+  "nextActions": [
+    "day3（キャラC）投稿を実施し、n=9まで増やしてから型・キャラ比較を検討する",
+    "day3完了時点でも母数は9件のみ。統計的判断にはさらに数週間〜数ヶ月の継続投稿が必要と認識する",
+    "フォロワー数54人という規模では、Xでのオーガニック露出は非フォロワーへの拡散（Out-of-Network）が鍵。x-operations-playbook.mdのリプライ戦略（/x-reply-drafts）の実行率を上げることが、フォロワー・インプレッション双方の底上げに直結する可能性が高い"
+  ]
+}
