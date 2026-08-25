@@ -4,7 +4,7 @@
 
 ## タスク一覧
 
-- [ ] **1. マイグレーション適用: racer_news テーブル作成**
+- [x] **1. マイグレーション適用: racer_news テーブル作成**
   [docs/db-migration/036_create_racer_news.sql](../../db-migration/036_create_racer_news.sql)をSupabaseに適用する。適用後、service role keyで1行INSERT/SELECT/DELETEし、書き込み権限とRLS（匿名read-only）が設計通りか確認する。
 
 - [ ] **2. src/services/racerService.js 実装**
