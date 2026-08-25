@@ -10,7 +10,7 @@
 - [x] **2. src/services/racerService.js 実装**
   `getRacerPageData(racerId)`を実装。`racer_profiles`（1行）・`race_entries`（`race_id`降順1件、`grade`取得、[ADR 0023](../../adr/0023-racer-grade-freshness.md)）・`racer_news`（`racer_id`一致、`created_at`降順）を並行取得し`{ profile, grade, news }`を返す。実在する`racer_id`（例: 4327）とプロフィール無しの`racer_id`（例: 3081、[[racer-fortune-telling]]のスクレイピング失敗選手）の両方で動作確認する。
 
-- [ ] **3. src/components/racer/ 新規コンポーネント実装**
+- [x] **3. src/components/racer/ 新規コンポーネント実装**
   `RacerProfileHeader.jsx`（氏名`translate="no"`・支部・級別）、`RacerProfileCard.jsx`（`VenueGuide.jsx`の`eg-facts-grid`パターンで基本情報グリッド、値がある項目のみ表示）、`RacerNewsList.jsx`（ニュース一覧、0件時は空状態表示）、`index.js`（barrel export、`.claude/rules/component-reuse.md`準拠）を実装。
 
 - [ ] **4. src/components/RacerStructuredData.jsx 実装**
