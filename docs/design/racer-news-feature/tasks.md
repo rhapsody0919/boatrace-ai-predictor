@@ -19,7 +19,7 @@
 - [x] **5. src/pages/RacerProfile.jsx 新設 + ルート登録**
   `src/AppRouter.jsx`に`<Route path="racer/:racerId" element={<RacerProfile />} />`を追加（`races`/`blog`ブロックに並べる）。ページ本体はタスク2〜4のservice/componentを組み合わせ、title/description/canonical/条件付きnoindex（`news.length === 0`時に`<meta name="robots" content="noindex, follow" />`）・パンくず（`/`固定）を実装する。
 
-- [ ] **6. scripts/maintenance/add-racer-news.js 実装**
+- [x] **6. scripts/maintenance/add-racer-news.js 実装**
   CLI引数（`--racer-id`・`--title`・`--summary`・`--source-url`・`--source-name`・`--published-at`）を受け取り`racer_news`に1行INSERTするスクリプト（[ADR 0022](../../adr/0022-racer-news-approval-flow.md)）。`scripts/lib/supabaseClient.js`を再利用。
 
 - [ ] **7. Phase1: 既存コンポーネントの選手名リンク化**
