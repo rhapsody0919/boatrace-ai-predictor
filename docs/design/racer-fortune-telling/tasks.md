@@ -28,7 +28,7 @@
 - [x] **8. 全選手データのスクレイピング実行**
   `scrape-racer-profiles.js`を全件（約1,637人、`--dry-run`無し）で実行し、`racer_profiles`にデータを投入する。実行後、成功/失敗件数と`data/analysis/racer-fortune-telling/profile-scrape-report.json`の内容をユーザーに報告する（spec.md受入基準「成功・失敗の内訳を件数で報告」）。目標成功率の妥当性判断はこの実測値を見てからユーザーが行う（spec.md未確定事項）。
 
-- [ ] **9. scripts/analysis/racer-fortune-telling/validate-fortune-correlation.js 実装**
+- [x] **9. scripts/analysis/racer-fortune-telling/validate-fortune-correlation.js 実装**
   `racer_profiles`×`race_entries`（`racer_id IS NOT NULL`）を結合し、`extractDateFromRaceId`で対象日を取得。4占術それぞれのスコアを計算し、複勝圏内フラグ（`race_results.rank1〜3`）との`proportionZTest`（5分位バケット）、ST（`race_start_timings.start_timing`）との`pearsonCorrelation`/`pearsonPValue`を実行して`data/analysis/racer-fortune-telling/correlation-report-{実行日}.json`に保存する。
 
 - [ ] **10. 検証実行・結果レポートの提示**
