@@ -1,6 +1,6 @@
 {
   "_comment": "X投稿履歴。セッション開始時にこのファイルを見て、直近の型・キャラのローテーション状況から本日の動画内容を判断する。運用ルールは docs/operation/x-operations-playbook.md の「X投稿頻度・型選定ロジック」を参照。statusは produced(制作済み・未投稿) / posted(投稿済み) / skipped(セッション内で確認した上で見送った日、専用)。そもそもその日セッションが開かれず確認自体が行われなかった日は、skippedを書き込まずエントリを作らない（無理に埋め合わせない）。metricsは/x-growth-reportで確認した実績（インプレッション・いいね・プロフィールクリック等）が分かれば追記。",
-  "mascotRotationStatus": "day1完了（キャラA、3本、2026-08-23）、day2完了（キャラB、3本、2026-08-24）。day3（キャラC）は未実施。3日間のテストが完了し次第、勝者キャラを確定し、以降は単一キャラでの毎日1投稿ペースに移行する想定。各日3本、同じキャラで型を変える運用（day1完了後に一度「1日1本」と誤解した事故があり修正済み）",
+  "mascotRotationStatus": "day1完了（キャラA、3本、2026-08-23）、day2完了（キャラB、3本、2026-08-24）、day3完了（キャラC、3本、2026-08-25）。3日間・9本のA/B/Cテストが完了。次は/x-growth-reportでキャラ別実績を比較し勝者キャラを確定、以降は単一キャラでの毎日1投稿ペースに移行する想定。各日3本、同じキャラで型を変える運用（day1完了後に一度「1日1本」と誤解した事故があり修正済み）",
   "posts": [
     {
       "date": "2026-08-23",
@@ -67,6 +67,39 @@
       "postedAt": "2026-08-24",
       "metrics": null,
       "notes": "2日目3本目。新規制作（LivePredictionCM2.jsx）。締切12:00に対し投稿は10:32、90分弱の余裕を確認してから投稿。これでマスコットテストday2が完了"
+    },
+    {
+      "date": "2026-08-25",
+      "character": "C",
+      "format": "answer-check",
+      "content": "答え合わせ型（児島2R、イン崩れ指数100%→1号艇沈み的中、払戻920円）",
+      "videoFile": "sns-video-studio/published/x/3日目_C_気品系龍神さま.mp4",
+      "status": "posted",
+      "postedAt": "2026-08-25",
+      "metrics": null,
+      "notes": "3日目1本目。既存の完成済み動画をそのまま投稿"
+    },
+    {
+      "date": "2026-08-25",
+      "character": "C",
+      "format": "accuracy-proof",
+      "content": "AI予想の実績証明型（イン崩れ指数の実績、過去90日1,632レースで「イン崩れ確率高」ラベルの実際のイン崩れ率63.3%、全体平均45.4%）",
+      "videoFile": "sns-video-studio/published/x/3日目_2本目_C_実績証明.mp4",
+      "status": "posted",
+      "postedAt": "2026-08-25",
+      "metrics": null,
+      "notes": "3日目2本目。新規制作（AccuracyProofCM.jsx）。個別レースの答え合わせではなく、AIの警告シグナルそのものの精度を証明する新フォーマット「実績証明型」を確立"
+    },
+    {
+      "date": "2026-08-25",
+      "character": "C",
+      "format": "live-prediction-hook",
+      "content": "予想数値フック型（芦屋8R、AI逃げ確率33%・イン崩れ指数会場内100パーセンタイル）",
+      "videoFile": "sns-video-studio/published/x/3日目_3本目_C_芦屋8R.mp4",
+      "status": "posted",
+      "postedAt": "2026-08-25",
+      "metrics": null,
+      "notes": "3日目3本目。新規制作（LivePredictionCM3.jsx）。締切11:53に対し投稿は11:09台、40分強の余裕を確認してから投稿。これでマスコットA/B/Cテスト（3日間・9本）が完了"
     }
   ]
 }
