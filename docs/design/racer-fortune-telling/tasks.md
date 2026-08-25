@@ -31,5 +31,5 @@
 - [x] **9. scripts/analysis/racer-fortune-telling/validate-fortune-correlation.js 実装**
   `racer_profiles`×`race_entries`（`racer_id IS NOT NULL`）を結合し、`extractDateFromRaceId`で対象日を取得。4占術それぞれのスコアを計算し、複勝圏内フラグ（`race_results.rank1〜3`）との`proportionZTest`（5分位バケット）、ST（`race_start_timings.start_timing`）との`pearsonCorrelation`/`pearsonPValue`を実行して`data/analysis/racer-fortune-telling/correlation-report-{実行日}.json`に保存する。
 
-- [ ] **10. 検証実行・結果レポートの提示**
+- [x] **10. 検証実行・結果レポートの提示**
   `validate-fortune-correlation.js`を全データで実行し、生成された`correlation-report-*.json`を4占術横並びで比較できる形にまとめてユーザーに提示する。有効性の解釈（統計的に有意か）はClaudeが提案し、「占術として採用するか」の最終判断をユーザーに仰ぐ（spec.md受入基準）。ここまででStep1完了とし、Step2（サイトUI化）は別チケットとして扱う。

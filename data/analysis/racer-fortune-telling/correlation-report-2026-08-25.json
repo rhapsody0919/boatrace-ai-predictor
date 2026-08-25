@@ -1,0 +1,207 @@
+{
+  "executedAt": "2026-08-25T04:11:58.777Z",
+  "targetEntryCount": 195239,
+  "targetRacerCount": 1627,
+  "systems": {
+    "western-astrology": {
+      "name": "西洋占星術",
+      "placeHitValidation": {
+        "baselinePlaceRate": 0.5004582368740299,
+        "baselineSampleSize": 188767,
+        "scoreGroups": [
+          {
+            "score": 25,
+            "sampleSize": 15498,
+            "placeRate": 0.49903213317847467,
+            "pValueVsBaseline": 0.7225341359140729
+          },
+          {
+            "score": 30,
+            "sampleSize": 31709,
+            "placeRate": 0.504210161152985,
+            "pValueVsBaseline": 0.1814799702740424
+          },
+          {
+            "score": 40,
+            "sampleSize": 31228,
+            "placeRate": 0.4989432560522608,
+            "pValueVsBaseline": 0.592346801603477
+          },
+          {
+            "score": 55,
+            "sampleSize": 31561,
+            "placeRate": 0.49659389753176386,
+            "pValueVsBaseline": 0.16974236744722626
+          },
+          {
+            "score": 75,
+            "sampleSize": 31503,
+            "placeRate": 0.5036980605021744,
+            "pValueVsBaseline": 0.2501116339524998
+          },
+          {
+            "score": 80,
+            "sampleSize": 16001,
+            "placeRate": 0.49953127929504404,
+            "pValueVsBaseline": 0.8145882292076472
+          },
+          {
+            "score": 90,
+            "sampleSize": 31267,
+            "placeRate": 0.4999840086992676,
+            "pValueVsBaseline": 0.8668109155289558
+          }
+        ]
+      },
+      "startTimingValidation": {
+        "sampleSize": 170974,
+        "correlation": 0.0009159940501894956,
+        "pValue": 0.7048718927054676
+      }
+    },
+    "shichu-suimei": {
+      "name": "四柱推命",
+      "placeHitValidation": {
+        "baselinePlaceRate": 0.5004582368740299,
+        "baselineSampleSize": 188767,
+        "scoreGroups": [
+          {
+            "score": 30,
+            "sampleSize": 37299,
+            "placeRate": 0.49617952223920214,
+            "pValueVsBaseline": 0.0983933993315973
+          },
+          {
+            "score": 55,
+            "sampleSize": 37861,
+            "placeRate": 0.5034996434325559,
+            "pValueVsBaseline": 0.2365761636559247
+          },
+          {
+            "score": 60,
+            "sampleSize": 37822,
+            "placeRate": 0.5005816720427264,
+            "pValueVsBaseline": 0.9617072914706568
+          },
+          {
+            "score": 65,
+            "sampleSize": 38199,
+            "placeRate": 0.5013220241367575,
+            "pValueVsBaseline": 0.7356293096420832
+          },
+          {
+            "score": 85,
+            "sampleSize": 37586,
+            "placeRate": 0.5006385356249667,
+            "pValueVsBaseline": 0.9442655846124433
+          }
+        ]
+      },
+      "startTimingValidation": {
+        "sampleSize": 170974,
+        "correlation": 0.001760389507459132,
+        "pValue": 0.46667443797250874
+      }
+    },
+    "kyusei-kigaku": {
+      "name": "九星気学",
+      "placeHitValidation": {
+        "baselinePlaceRate": 0.5004582368740299,
+        "baselineSampleSize": 188767,
+        "scoreGroups": [
+          {
+            "score": 30,
+            "sampleSize": 20243,
+            "placeRate": 0.5066442720940572,
+            "pValueVsBaseline": 0.07836145764223867
+          },
+          {
+            "score": 55,
+            "sampleSize": 61735,
+            "placeRate": 0.49902000485948006,
+            "pValueVsBaseline": 0.474793206622236
+          },
+          {
+            "score": 60,
+            "sampleSize": 39858,
+            "placeRate": 0.4892618796728386,
+            "pValueVsBaseline": 0.000007807408803461868
+          },
+          {
+            "score": 65,
+            "sampleSize": 21971,
+            "placeRate": 0.5177734286104411,
+            "pValueVsBaseline": 2.854720888567641e-7
+          },
+          {
+            "score": 85,
+            "sampleSize": 44960,
+            "placeRate": 0.5011120996441281,
+            "pValueVsBaseline": 0.7815596587294746
+          }
+        ]
+      },
+      "startTimingValidation": {
+        "sampleSize": 170974,
+        "correlation": -0.0045296038626143,
+        "pValue": 0.061074573641654695
+      }
+    },
+    "rokusei-senjutsu": {
+      "name": "六星占術",
+      "placeHitValidation": {
+        "baselinePlaceRate": 0.5004582368740299,
+        "baselineSampleSize": 188767,
+        "scoreGroups": [
+          {
+            "score": 25,
+            "sampleSize": 15840,
+            "placeRate": 0.4984848484848485,
+            "pValueVsBaseline": 0.6193795086493612
+          },
+          {
+            "score": 30,
+            "sampleSize": 30619,
+            "placeRate": 0.5020738756980959,
+            "pValueVsBaseline": 0.5717891237597907
+          },
+          {
+            "score": 40,
+            "sampleSize": 31474,
+            "placeRate": 0.5001588612823282,
+            "pValueVsBaseline": 0.9154045454155253
+          },
+          {
+            "score": 55,
+            "sampleSize": 31303,
+            "placeRate": 0.4969172283806664,
+            "pValueVsBaseline": 0.21020683500408155
+          },
+          {
+            "score": 75,
+            "sampleSize": 31817,
+            "placeRate": 0.5054216299462552,
+            "pValueVsBaseline": 0.0766149359906283
+          },
+          {
+            "score": 80,
+            "sampleSize": 15971,
+            "placeRate": 0.5036628889862876,
+            "pValueVsBaseline": 0.41794852362948776
+          },
+          {
+            "score": 90,
+            "sampleSize": 31743,
+            "placeRate": 0.49708597171029834,
+            "pValueVsBaseline": 0.22950155578268383
+          }
+        ]
+      },
+      "startTimingValidation": {
+        "sampleSize": 170974,
+        "correlation": -0.004150901217240347,
+        "pValue": 0.08609592405710975
+      }
+    }
+  }
+}
