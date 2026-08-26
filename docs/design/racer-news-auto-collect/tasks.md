@@ -2,7 +2,7 @@
 
 対応: [spec.md](./spec.md) / [plan.md](./plan.md)
 
-- [ ] **タスク1: 共通基盤（dedup / pendingReview / templates）**
+- [x] **タスク1: 共通基盤（dedup / pendingReview / templates）**
   - `scripts/lib/racerNews/dedup.js`: `racer_news.source_url`存在チェック＋`pending.json`内の同一`sourceUrl`チェックを行う`isAlreadyProcessed(sourceUrl)`
   - `scripts/lib/racerNews/pendingReview.js`: `data/analysis/racer-news-pending-review/pending.json`の読み書き（`addPendingItem()`/`listPending()`/`updateStatus()`）。ファイルが存在しない場合は`{ items: [] }`で初期化
   - `scripts/lib/racerNews/templates.js`: FR1/FR2の定型文生成関数（plan.md 5節のテンプレート例を実装）
