@@ -144,9 +144,14 @@ Search Consoleデータの反映ラグ（2〜3日）を踏まえると、**前�
 - `data/analysis/search-console/report-*.json`の直近ファイルの日付を確認し、前回実行から中1日以上空いていなければ「前回実行から日が浅く、Search Console側の反映ラグにより新規データがほぼ同じ可能性がある」旨を報告冒頭に明記した上で実行する
 - 定点観測目的で日次実行したいという要望が続く場合は、フルステップ（0〜6）ではなく、変化が出やすいステップ（1のSearch Console日割りトレンドのみ等）に絞った簡易実行を提案する
 
+## 月次統合サマリーへの誘導（2026-08-26追加）
+
+`data/analysis/growth-monthly-summary/`の最新ファイルの日付を確認し、前回の月次サマリーから1ヶ月以上経過している（またはファイル自体が無い）場合は、統合分析の最後に「そろそろ`/growth-monthly-summary`で月次の振り返りをしませんか」と一言提案する。SEO/X/TikTokの実績を横断して事業ゴールへの進捗を確認する場は、このスキル単体では担わないため。
+
 ## 関連
 
 - `/growth-report`: Search Console単体の定点観測（このスキルは内包しつつ施策立案まで踏み込む）
 - `/i18n-growth-report`: GA4多言語需要の定点観測（同上）
+- `/growth-monthly-summary`: SEO/X/TikTok集客PDCAの月次統合サマリー
 - `/analyze-vup-feature`, `/create-vup-ticket`: 大施策（新機能）の分析・チケット化
 - 会場ガイド拡充の経緯: memory `venue_guide_expansion_project`
