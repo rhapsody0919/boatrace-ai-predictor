@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-08-26T03:30:00+09:00",
+  "period": { "from": "2026-07-27", "to": "2026-08-26" },
+  "isFirstRun": true,
+  "note": "初回試行。X/TikTokの集客レポートは2026-08-25が初回実施のため月次比較データが無い。Search Consoleは7/27時点のレポートがtopQueries(上位20件)のみを保存する古い形式で、8/26時点のallQueries(314件)形式と単純合計できないため、正確な月次比較は次回以降に持ち越す",
+  "kpis": {
+    "searchConsole": {
+      "note": "7/27レポートはtopQueries形式(上位20件合計)、8/26はallQueries形式(314件)のため直接比較不可。次回以降、同一形式同士で比較する",
+      "current_2026_08_26": { "clicksPerDay_approx": 22.4, "impressionsPerDay_approx": 421.0 }
+    },
+    "ga4Language": {
+      "current_2026_08_26_30days": {
+        "ja": { "pv": 9973, "pvPerDay": 332.4 },
+        "en": { "pv": 106, "pvPerDay": 3.5, "shareOfPv": 1.05 },
+        "zh-TW": { "pv": 1, "pvPerDay": 0.0, "shareOfPv": 0.01 },
+        "ko": { "pv": 2, "pvPerDay": 0.1, "shareOfPv": 0.02 }
+      },
+      "note": "多言語PVは全て前月比横ばい〜微減の水準（動きが無いことも含めて記録）"
+    },
+    "x": {
+      "followerCount": 54,
+      "totalPostsTracked": 8,
+      "note": "初回実施(2026-08-25)のため月次比較なし。マスコットA/B/Cテスト中、インプレッション12〜17件・エンゲージメント0という厳しい実績"
+    },
+    "tiktok": {
+      "followerCount": 10,
+      "totalPostsTracked": 5,
+      "viewsRange": "0〜58",
+      "likesTotal": 3,
+      "note": "初回実施(2026-08-25)のため月次比較なし。フォロワー数はXより少ないが視聴数・エンゲージメントはXを上回る"
+    },
+    "tweetDraftsBacklog": {
+      "posted": 3,
+      "unposted": 34,
+      "consumptionRate": "8.1%"
+    },
+    "postingExecutionRate": {
+      "x": { "posted": 9, "skipped": 0, "total": 9, "rate": "100%" },
+      "tiktok": { "posted": 2, "skipped": 0, "total": 2, "rate": "100%" }
+    }
+  },
+  "midTermGoals": [
+    {
+      "title": "会場別ビジターガイド全会場化によるPV3-5倍",
+      "source": "memory: venue_guide_expansion_project",
+      "startDate": "2026-07-27",
+      "targetCheckDate": "2026-10-27",
+      "status": "進行中、判定時期にはまだ2ヶ月ある",
+      "note": "現時点で判断材料は不足。次回月次サマリー（9月分）でも中間経過として言及する"
+    }
+  ],
+  "majorInitiativesStatus": {
+    "source": "data/analysis/growth-pdca-major-initiatives.json",
+    "proposed": 1,
+    "in_progress": 0,
+    "deferred": 0,
+    "rejected": 0,
+    "note": "被リンク獲得施策が2026-08-20から未判断のまま。次回growth-pdca実行時（ステップ0-B）で判断を仰ぐ"
+  },
+  "nextMonthFocus": [
+    "note/Xツイート下書き消化率が8.1%と低い（BOA-212で棚卸し着手済み、効果を来月確認する）",
+    "被リンク獲得施策（growth-pdca-major-initiatives.json）の着手/見送り判断をユーザーに仰ぐ",
+    "X/TikTokの実績データが月次比較できるようになるのは来月から（今回が初回計測のため）"
+  ]
+}
