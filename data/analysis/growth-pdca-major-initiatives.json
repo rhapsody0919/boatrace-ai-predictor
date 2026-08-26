@@ -1,0 +1,22 @@
+{
+  "_comment": "growth-pdcaで検出した大施策候補の提示履歴。前回提示(lastProposedDate)から1ヶ月以上経過した候補があれば、次回growth-pdca実行時のステップ0-Bで再提示しユーザーの意思決定を仰ぐ。statusは proposed(提示のみ・未判断) / in_progress(着手決定) / deferred(保留継続) / rejected(見送り)。",
+  "initiatives": [
+    {
+      "title": "権威・被リンク不足ページ向けの被リンク獲得施策",
+      "firstProposedDate": "2026-08-20",
+      "lastProposedDate": "2026-08-26",
+      "status": "proposed",
+      "pages": [
+        "/blog",
+        "/about",
+        "/blog/first-mark-prediction-guide",
+        "/blog/what-pros-avoid",
+        "/blog/beginners-start-guide",
+        "/en/",
+        "/en/blog/odds-expected-value-guide",
+        "/zh-TW/blog/odds-expected-value-guide"
+      ],
+      "note": "CTR-vs-掲載順位ギャップ分析で「CTRは高いが順位が低い＝権威不足」に継続的に分類されているページ群。2026-08-20頃から複数回のレポートで同じ顔ぶれが再提示されているが、具体的な獲得手段（他サイトへの寄稿・相互紹介・プレスリリース等）についてユーザー判断がまだ行われていない。8人パネル議論（2026-08-26）で「技術的なtitle改善だけでなく人的なアプローチも検討すべき」との指摘あり"
+    }
+  ]
+}
