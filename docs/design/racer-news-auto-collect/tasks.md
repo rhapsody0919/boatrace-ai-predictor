@@ -8,7 +8,7 @@
   - `scripts/lib/racerNews/templates.js`: FR1/FR2の定型文生成関数（plan.md 5節のテンプレート例を実装）
   - 受入基準: 3ファイルとも単体でNode REPL/一時スクリプトから呼び出し、期待通りの入出力になることを確認する
 
-- [ ] **タスク2: FR1 グレードレース優勝の自動生成（`gradeRaceWins.js`）**
+- [x] **タスク2: FR1 グレードレース優勝の自動生成（`gradeRaceWins.js`）**
   - `races`（`race_grade IN ('SG','G1','G2','G3')`）×`race_results.rank1`×`race_entries.racer_id`から当日の1着選手を検出
   - `racer_profiles`に該当`racer_id`が無い場合は`pendingReview`へ記録
   - `dedup.js`で重複チェック後、`templates.js`で生成し`racer_news`へINSERT
