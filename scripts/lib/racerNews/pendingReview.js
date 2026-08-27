@@ -63,7 +63,7 @@ export function hasItemForSourceUrl(sourceUrl) {
 
 /**
  * 保留中候補を1件追加する
- * @param {{ id: string, source: "grade-race-win"|"grade-announcement"|"venue-comment",
+ * @param {{ id: string, source: "grade-announcement",
  *   reason: string, candidate: object, sourceUrl: string, sourceName?: string,
  *   detectedAt: string }} item
  */
