@@ -1,0 +1,37 @@
+{
+  "_comment": "SNSマーケティングハブ（docs/design/sns-marketing-hub/）のリスク自動チェック用ルール一元管理ファイル。生成Routineのプロンプトと自動チェックロジックの両方がこのファイルを参照し、ドリフトを防ぐ（spec.md要件5）。platformsが'all'なら全プラットフォーム共通、配列の場合は該当プラットフォームのみ適用する。ここでの検出は警告表示のみで、承認自体はブロックしない（第三者の判断に委ねる、spec.md要件5）。",
+  "rules": [
+    {
+      "id": "banned-term-kyoutei",
+      "category": "terminology",
+      "platforms": "all",
+      "description": "「競艇」表記は禁止。「ボートレース」で統一する（役所広告の出稿対象から外れるため）。SEOメタ情報のみ例外だが、SNS投稿本文・動画内テキストは例外対象外",
+      "patterns": ["競艇"],
+      "source": ".claude/rules/code-style.md"
+    },
+    {
+      "id": "deprecated-model-names",
+      "category": "accuracy",
+      "platforms": "all",
+      "description": "廃止済みの旧3モデル体系名。unified化（2026年）以降は存在しない",
+      "patterns": ["本命狙いモデル", "本命狙い", "スタンダードモデル", "穴狙いモデル", "穴狙い", "今日のおすすめ"],
+      "source": "docs/reference/i18n-glossary.md"
+    },
+    {
+      "id": "gambling-incitement",
+      "category": "brand-policy",
+      "platforms": "all",
+      "description": "射幸心を煽る表現（配当倍率・金額を主役にする演出、「儲かる」等の直接的な射幸心ワード）。TikTok規約とは別に、boatAI自身のブランド方針（的中率の透明性を軸にする）として全プラットフォーム共通で適用する",
+      "patterns": ["倍的中", "万舟券", "儲か", "一攫千金"],
+      "source": "docs/operation/sns-video-producer-prompt.md 絶対厳守3"
+    },
+    {
+      "id": "gambling-connotation-words",
+      "category": "platform-policy",
+      "platforms": ["tiktok", "youtube"],
+      "description": "予想・賭け事を直接連想させる言葉・構図。TikTokの実際のコミュニティガイドライン違反インシデント（対決煽り型`RivalryCM.jsx`削除、2026-08-26）に基づく。Xでは同種の実例が無いため対象外とする。YouTube Shortsもアルゴリズム型の自動モデレーションが厳格な傾向があるため、実運用開始（Phase 3）までは念のため同じ扱いに含める",
+      "patterns": ["本命", "対決", "VS", "vs"],
+      "source": "docs/operation/tiktok-posting-operations.md E節"
+    }
+  ]
+}

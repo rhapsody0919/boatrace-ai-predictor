@@ -20,6 +20,10 @@
 
 マイグレーション: [`docs/db-migration/035_sns_marketing_hub_schema.sql`](../../db-migration/035_sns_marketing_hub_schema.sql)
 
+### Storageバケット
+
+`sns-hub-media`（非公開バケット、2026-08-27作成済み）。`sns_drafts.video_storage_path`/`cover_image_path`はこのバケット内の相対パスを指す。フロントエンドへは`/api/admin/sns-hub/drafts`が都度署名付きURL（有効期限1時間）を発行して返す（ADR 0021、直接公開URLにはしない）。
+
 ### テーブル概要
 
 | テーブル | 役割 |
@@ -78,7 +82,9 @@ archived ──(7日経過)──▶ video_tier: original → compressed        
 
 ## リスクチェックルールの一元管理（要件5）
 
-`sns-video-studio/remotion/risk-rules.json`（新規、git管理下）に禁止パターン（ギャンブル連想表現・廃止済みモデル名・「競艇」表記等）を配列で持つ。生成Routineのプロンプトと自動チェックロジックの両方が、リポジトリからcloneした同じファイルを参照する（ドリフト防止）。更新は通常のコードPRを経る（ルール変更も一種のコード変更として扱う）。
+`sns-video-studio/remotion/risk-rules.json`（新規、git管理下、実装済み）に禁止パターンを配列で持つ。生成Routineのプロンプトと自動チェックロジックの両方が、リポジトリからcloneした同じファイルを参照する（ドリフト防止）。更新は通常のコードPRを経る（ルール変更も一種のコード変更として扱う）。
+
+各ルールは`platforms`（`"all"`または`["tiktok", "youtube"]`等の配列）を持ち、**プラットフォームによって適用範囲を分ける**（2026-08-27追加）。「競艇」表記・廃止済みモデル名・射幸心煽り表現は全プラットフォーム共通のbrand-policyだが、「本命」「対決」「VS」等のギャンブル連想表現はTikTok（実際のガイドライン違反インシデントあり）・YouTube限定とし、Xは対象外とする（Xで同種の実例が無いため）。自動チェックロジックは対象下書きの`platform`列と各ルールの`platforms`を照合してから警告を出す。
 
 ## フロントエンド構成
 
