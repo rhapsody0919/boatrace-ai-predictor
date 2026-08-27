@@ -56,3 +56,9 @@ __pycache__/
 # oh-my-claudecode local state
 .omc/
 .worktrees/
+
+# SNS動画生成(Remotion) - ソースコードのみ追跡、生成物・依存関係は除外
+sns-video-studio/remotion/node_modules/
+sns-video-studio/remotion/out/
+sns-video-studio/archive/
+sns-video-studio/published/
