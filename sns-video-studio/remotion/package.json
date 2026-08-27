@@ -1,0 +1,16 @@
+{
+  "name": "sns-video-studio-remotion",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "remotion render src/index.jsx AshiyaCM out/ashiya-cm.mp4",
+    "studio": "remotion studio src/index.jsx --port=3001"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.512",
+    "@remotion/cli": "^4.0.512"
+  }
+}
