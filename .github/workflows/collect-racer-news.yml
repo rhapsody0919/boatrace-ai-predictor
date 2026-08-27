@@ -1,0 +1,42 @@
+name: Collect Racer News
+
+on:
+  schedule:
+    - cron: '10 14 * * *' # JST 23:10（calculate-accuracy.ymlの23:30より前）
+  workflow_dispatch:
+
+concurrency:
+  group: collect-racer-news
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Collect racer news
+        run: node scripts/daily/collect-racer-news.js
+        continue-on-error: true # 他の日次ジョブに影響させない
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      - name: Commit pending-review updates if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/analysis/racer-news-pending-review/pending.json
+          git diff --staged --quiet || git commit -m "chore: 選手ニュース要確認リストを更新 [automated]"
+          git pull --rebase
+          git push
