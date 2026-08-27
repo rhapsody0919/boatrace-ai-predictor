@@ -18,6 +18,18 @@ export function isConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_SERVICE_KEY);
 }
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * URLパスから抽出したdraft idがUUID形式か検証する。
+ * 未検証のままSupabase REST APIのクエリ文字列に埋め込むと、意図しない文字
+ * （&や?等）でクエリ構造が壊れる可能性があるため、抽出直後に必ず通す。
+ */
+export function isValidDraftId(id) {
+  return typeof id === "string" && UUID_PATTERN.test(id);
+}
+
 export async function getDraftById(id) {
   const response = await fetch(
     `${SUPABASE_URL}/rest/v1/sns_drafts?id=eq.${id}&select=*`,

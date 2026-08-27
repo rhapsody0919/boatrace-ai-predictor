@@ -11,6 +11,7 @@
 import {
   jsonResponse,
   isConfigured,
+  isValidDraftId,
   getDraftById,
   updateDraft,
   fireRoutine,
@@ -37,8 +38,8 @@ export default async function handler(req) {
   }
 
   const id = req.url.match(/drafts\/([^/]+)\/revise/)?.[1];
-  if (!id) {
-    return jsonResponse({ error: "draft idが指定されていません" }, 400);
+  if (!isValidDraftId(id)) {
+    return jsonResponse({ error: "draft idの形式が不正です" }, 400);
   }
 
   let body;

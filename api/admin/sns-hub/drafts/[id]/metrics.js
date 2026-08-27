@@ -11,6 +11,7 @@
 import {
   jsonResponse,
   isConfigured,
+  isValidDraftId,
   getDraftById,
   SUPABASE_URL,
   SUPABASE_SERVICE_KEY,
@@ -32,8 +33,8 @@ export default async function handler(req) {
   }
 
   const id = req.url.match(/drafts\/([^/]+)\/metrics/)?.[1];
-  if (!id) {
-    return jsonResponse({ error: "draft idが指定されていません" }, 400);
+  if (!isValidDraftId(id)) {
+    return jsonResponse({ error: "draft idの形式が不正です" }, 400);
   }
 
   let body;
@@ -52,9 +53,13 @@ export default async function handler(req) {
       400,
     );
   }
-  if (typeof metricValue !== "number" || Number.isNaN(metricValue)) {
+  if (
+    typeof metricValue !== "number" ||
+    Number.isNaN(metricValue) ||
+    metricValue < 0
+  ) {
     return jsonResponse(
-      { error: "metricValueは数値である必要があります" },
+      { error: "metricValueは0以上の数値である必要があります" },
       400,
     );
   }
