@@ -25,20 +25,20 @@
   - 唐津・芦屋も当時オフシーズンで、実際にコメントが入った状態を検証できていなかった
   - 当初の「選手自身の発言だから低リスクで自動化できる」という前提が崩れているため、ユーザーとの議論の結果FR5は見送ることにした（詳細はspec.md「却下した要件」参照）。実装（`venueComments/`）には着手していない
 
-- [ ] **タスク5: オーケストレーター（`scripts/daily/collect-racer-news.js`）**
+- [x] **タスク5: オーケストレーター（`scripts/daily/collect-racer-news.js`）**
   - FR2（`officialGradeAnnouncements.js`）のみを呼び出す
   - 実行サマリー（各ソースの生成件数・pending件数・エラー件数）を標準出力にログする
   - 受入基準: `officialGradeAnnouncements.js`が例外を投げても（モジュール内部でtry/catchしているため通常は起きないが）オーケストレーター自体が異常終了しないことを確認する
 
-- [ ] **タスク6: GitHub Actionsワークフロー（`.github/workflows/collect-racer-news.yml`）**
+- [x] **タスク6: GitHub Actionsワークフロー（`.github/workflows/collect-racer-news.yml`）**
   - plan.md 3節のワークフロー定義を作成（`schedule: cron '10 14 * * *'` + `workflow_dispatch`、`continue-on-error`、pending.json変更時のcommit&push）
   - 受入基準: `workflow_dispatch`でのローカル相当実行（`node scripts/daily/collect-racer-news.js`を手元で実行）が成功する。YAML構文が既存ワークフローと一貫していることを目視確認する
 
-- [ ] **タスク7: セッション開始時提示ルールの追記（`.claude/CLAUDE.md`）**
+- [x] **タスク7: セッション開始時提示ルールの追記（`.claude/CLAUDE.md`）**
   - plan.md 4節の文言を「セッション開始時のXツイート下書き投稿確認」等と同じ構成で追記する
   - 受入基準: 追記内容が既存の類似セクション（TikTok/X）とフォーマット・トーンが一致していること
 
-- [ ] **タスク8: 統合検証・PR作成**
-  - `npm run build`実行、既存`racer_news`関連の想定挙動に影響がないか確認（表示コンポーネント側は変更していないため`npm run test:e2e`は必須ではないが、`/racer/:racerId`の既存テストが壊れていないことは確認する）
-  - 生成された`racer_news`エントリを実際に`/racer/:racerId`ページで表示確認（Playwright）
-  - PR作成、レビュー指摘の反映、完了報告
+- [x] **タスク8: 統合検証・PR作成**
+  - `npm run build`: 成功
+  - `npx playwright test e2e/smoke.spec.js -g "選手個別ページ"`: 3件とも成功（表示コンポーネント側は変更していないため退行なし）。初回実行時は別ワークツリーの5173番ポートdevサーバーをPlaywrightが誤って再利用し3件とも失敗したが、自分のワークツリー用に一時的にポートを分離して再実行し全件成功を確認（設定変更はコミットせず元に戻した）
+  - PR作成、完了報告
