@@ -5,14 +5,13 @@
 - [x] **タスク1: 共通基盤（dedup / pendingReview / templates）**
   - `scripts/lib/racerNews/dedup.js`: `racer_news.source_url`存在チェック＋`pending.json`内の同一`sourceUrl`チェックを行う`isAlreadyProcessed(sourceUrl)`
   - `scripts/lib/racerNews/pendingReview.js`: `data/analysis/racer-news-pending-review/pending.json`の読み書き（`addPendingItem()`/`listPending()`/`updateStatus()`）。ファイルが存在しない場合は`{ items: [] }`で初期化
-  - `scripts/lib/racerNews/templates.js`: FR1/FR2の定型文生成関数（plan.md 5節のテンプレート例を実装）
+  - `scripts/lib/racerNews/templates.js`: FR2の定型文生成関数（plan.md 5節のテンプレート例を実装。当初はFR1向け関数も実装したが後述の通り削除）
   - 受入基準: 3ファイルとも単体でNode REPL/一時スクリプトから呼び出し、期待通りの入出力になることを確認する
 
-- [x] **タスク2: FR1 グレードレース優勝の自動生成（`gradeRaceWins.js`）**
-  - `races`（`race_grade IN ('SG','G1','G2','G3')`）×`race_results.rank1`×`race_entries.racer_id`から当日の1着選手を検出
-  - `racer_profiles`に該当`racer_id`が無い場合は`pendingReview`へ記録
-  - `dedup.js`で重複チェック後、`templates.js`で生成し`racer_news`へINSERT
-  - 受入基準: 過去の実際のSG/G1レース（本日分ではなく既存データ）を対象に`--dry-run`相当のオプションで実行し、正しい選手・正しい文言が生成されることを確認する。同じレースを2回実行しても重複INSERTされないことを確認する
+- [x] **タスク2: FR1 グレードレース優勝の自動生成（`gradeRaceWins.js`）— 実装・検証後に見送り、コード削除済み**
+  - 実装当初の内容: `races`（`race_grade IN ('SG','G1','G2','G3')`）×`race_results.rank1`×`race_entries.racer_id`から当日の1着選手を検出し`racer_news`へ自動投入
+  - 実データ検証（2026-08-26）で1日17件生成された。中身を精査すると決勝戦の優勝と予選ヒートの1着を区別できておらず、「ニュース」として価値が薄いとユーザーとの議論の結果判断（詳細はspec.md「却下した要件」参照）
+  - `scripts/lib/racerNews/gradeRaceWins.js`と`templates.js`の`generateGradeRaceWinNews`は削除済み。決勝戦判定には会場・グレード・日付でのグルーピングという追加スコープが必要になり、そのコストに見合う価値が無いと判断した
 
 - [x] **タスク3: FR2 公式ニュースアーカイブの節目記録取り込み（`officialGradeAnnouncements.js`）**
   - **実装着手時の実HTML調査で判明**: 当初想定した「級別発表（勝率ランキング）」記事は「ニュース」カテゴリ（`is-pickup`）に属し「レーサーデータ」カテゴリ（`is-racer`）ではなかった。実際のレーサーデータカテゴリは`登録第{racer_id}号 {氏名}選手（{支部}支部）{達成内容}達成`という見出しで、登録番号が直接含まれる。spec.md/plan.md/ADR-0024を訂正済み（詳細は各ドキュメント参照）
@@ -21,17 +20,15 @@
   - 登録番号で`racer_profiles`を直接検索し支部が一致することを確認。一致すれば`templates.js`で生成し`racer_news`へINSERT。不一致・未存在は`pendingReview`へ
   - 受入基準: 実際に存在する記事（2026年7〜8月、菊地孝平/守田俊介/寺田祥/田中信一郎の4件）を対象に実行し、正しく抽出・照合・生成ができることを確認する（確認済み、4件とも正しい選手名・達成内容で生成、再実行で重複しないことも確認）
 
-- [ ] **タスク4: FR5 会場選手コメントの取り込み（1会場のみ、原文引用）**
-  - 実装着手時点で開催中（または直近開催予定）の会場を1つ選定し、「全選手コメント」ページのHTML構造を調査する
-  - `scripts/lib/racerNews/venueComments/{venueCode}.js`（選定会場の専用パーサー）と`index.js`（共通マッチングロジック：`races`×`race_entries`から今節の出走選手名一覧を取得し抽出結果と突合）を実装
-  - 一意一致時は原文ママで`racer_news`へINSERT、0件/複数件一致時は`pendingReview`へ
-  - 開催期間外（プレースホルダーのみ）の場合は何もせず正常終了することを確認する
-  - 受入基準: 選定会場が開催中のタイミングで実行し、実際のコメントが正しい選手に紐づいて取得できることを確認する。開催期間外URLでも例外を吐かずスキップされることを確認する
+- [ ] **タスク4: FR5 会場選手コメントの取り込み（1会場のみ、原文引用）— 方針未確定のため保留**
+  - 着手時に開催中の複数会場（常滑・徳山・びわこ・福岡等）を実際に調査した結果、「全選手コメント」ページは唐津・芦屋の2会場でしか確認できず、他会場は「レース展望」という第三者編集記事（1記事内で10人以上の選手に言及）が中心だった
+  - 唐津・芦屋も現在オフシーズンで、実際にコメントが入った状態を検証できていない
+  - この事実により当初の「選手自身の発言だから低リスクで自動化できる」という前提が崩れており、FR5の扱い（見送り／人手承認制に変更／唐津・芦屋のみ対象に絞り込み）はユーザー判断待ち。判断が出るまで実装は着手しない
 
 - [ ] **タスク5: オーケストレーター（`scripts/daily/collect-racer-news.js`）**
-  - タスク2〜4の3モジュールをFR1→FR2→FR5の順に呼び出す。各モジュールは独立してtry/catchし、1つの失敗が他を止めないようにする
+  - 現時点でFR2（`officialGradeAnnouncements.js`）のみを呼び出す。FR5の方針が確定し実装されたら追加する
   - 実行サマリー（各ソースの生成件数・pending件数・エラー件数）を標準出力にログする
-  - 受入基準: 3モジュールのうち1つを意図的にエラーさせても残り2つが実行されることを確認する
+  - 受入基準: `officialGradeAnnouncements.js`が例外を投げても（モジュール内部でtry/catchしているため通常は起きないが）オーケストレーター自体が異常終了しないことを確認する
 
 - [ ] **タスク6: GitHub Actionsワークフロー（`.github/workflows/collect-racer-news.yml`）**
   - plan.md 3節のワークフロー定義を作成（`schedule: cron '10 14 * * *'` + `workflow_dispatch`、`continue-on-error`、pending.json変更時のcommit&push）

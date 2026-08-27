@@ -5,7 +5,9 @@
 ## 1. データ設計
 
 ### 1.1 新規マイグレーションは不要
-`racer_news`（[036_create_racer_news.sql](../../db-migration/036_create_racer_news.sql)）は既存カラム（`racer_id`/`title`/`summary`/`source_url`/`source_name`/`published_at`）だけでFR1/FR2/FR5すべての挿入要件を満たせる。新規テーブル・カラムは追加しない。
+`racer_news`（[036_create_racer_news.sql](../../db-migration/036_create_racer_news.sql)）は既存カラム（`racer_id`/`title`/`summary`/`source_url`/`source_name`/`published_at`）だけでFR2/FR5の挿入要件を満たせる。新規テーブル・カラムは追加しない。
+
+**注: FR1（自社DBのグレードレース優勝自動生成）は実装・検証後に見送った**（spec.md「却下した要件」参照）。以下の記述に残るFR1への言及は経緯として残しているが、現在は実装対象外。
 
 ### 1.2 処理済み判定は新規テーブルを作らず既存データを再利用する
 新規の「処理済みID管理テーブル」は作らず、以下の既存データで冪等性を担保する（詳細は[ADR-0025](../../adr/0025-racer-news-dedup-without-new-table.md)）。
@@ -16,9 +18,8 @@
 `source_url`は各ソースで一意になるよう設計する:
 | ソース | source_urlの構成 |
 |---|---|
-| FR1（グレードレース優勝） | 当該レースの結果ページURL（`race_id`を含むため自然に一意） |
-| FR2（級別発表記事） | `boatrace.jp`記事URL（記事ごとに一意） |
-| FR5（選手コメント） | `会場公式サイトの選手コメントページURL#racerId-YYYYMMDD`（同じページを複数選手・複数節で参照するため、フラグメントで一意化） |
+| FR2（節目記録記事） | `boatrace.jp`記事URL（記事ごとに一意） |
+| FR5（選手コメント、方針未確定） | `会場公式サイトの選手コメントページURL#racerId-YYYYMMDD`（同じページを複数選手・複数節で参照するため、フラグメントで一意化） |
 
 ### 1.3 pending.json 構造
 ```json
@@ -50,24 +51,16 @@
 scripts/lib/racerNews/
   ├── dedup.js               # source_url重複チェック（racer_news + pending.json）
   ├── pendingReview.js        # pending.json の読み書き
-  ├── templates.js            # FR1/FR2の定型テンプレート生成
-  ├── gradeRaceWins.js         # FR1: 本日のSG/G1/G2/G3レース1着を検出
+  ├── templates.js            # FR2の定型テンプレート生成
   ├── officialGradeAnnouncements.js  # FR2: boatrace.jp「レーサーデータ」記事の取得・突合
   └── venueComments/
         ├── index.js           # 会場コード→パーサーのレジストリ、共通マッチングロジック
-        └── {venueCode}.js      # 会場ごとの専用パーサー（初回実装時に1会場のみ）
+        └── {venueCode}.js      # 会場ごとの専用パーサー（FR5の方針確定後に着手）
 
 scripts/daily/
-  └── collect-racer-news.js   # オーケストレーター。FR1→FR2→FR5の順に実行し、
+  └── collect-racer-news.js   # オーケストレーター。FR2→FR5の順に実行し、
                                  それぞれ独立してtry/catchする（1つの失敗が他を止めない）
 ```
-
-### 2.1 FR1: `gradeRaceWins.js`
-- `races`から`race_date = 今日`かつ`race_grade IN ('SG','G1','G2','G3')`を取得
-- 各レースについて`race_results.rank1`（艇番）と`race_entries`をrace_id+boat_numberで結合し`racer_id`を取得（**既にrace_entriesにracer_idが入っているため、氏名マッチングは不要**）
-- `racer_profiles`から表示用の氏名を取得。存在しなければ`pendingReview`に記録して終了
-- `dedup.js`でsource_url（結果ページURL）の重複を確認
-- `templates.js`で定型文を生成し`racer_news`へINSERT
 
 ### 2.2 FR2: `officialGradeAnnouncements.js`
 **`/step2`実装着手時の実HTML調査で判明した事実により、当初案（記事本文取得＋氏名+支部の曖昧一致＋勝率整合性チェック）から設計を変更した。**
@@ -78,13 +71,15 @@ scripts/daily/
 - 登録番号（racer_id）で`racer_profiles`を直接検索。存在しない、または支部が記事記載と一致しない場合は`pendingReview`へ「登録番号不一致/支部不一致」として記録
 - 一意特定できたら`templates.js`で定型文を生成し投入（勝率等の数値整合性チェックは不要になった。登録番号自体が一次キーであり曖昧性が無いため）
 
-### 2.3 FR5: `venueComments/`
+### 2.3 FR5: `venueComments/`（方針未確定、以下は当初設計。実装未着手）
 - 初回実装時点で開催中（または直近開催予定）の会場を1つ選んで検証する。会場を固定で決め打ちしない（開催スケジュールは常に変動するため、`/step3`着手時に`races`テーブルの直近開催会場を確認してから対象を選ぶ）
 - 選定会場の「全選手コメント」ページ構造を調査し専用パーサー（`venueComments/{venueCode}.js`）を実装。共通インターフェースは`{ scrape(venueCode): Promise<{ name: string, comment: string }[]> }`
 - 抽出した`name`を、`races`（`venue_code`=対象会場、`race_date`が直近開催期間内）と`race_entries`を結合して得られる「今節この会場に出走している選手名一覧」と突合
 - 一致が1件なら`racer_id`確定、0件/複数件は`pendingReview`へ
 - `summary`は原文ママ格納（テンプレート化しない。[spec.md](./spec.md) FR5参照）
 - 開催期間外でページが空（プレースホルダーのみ）の場合は何もせず正常終了する
+
+**`/step4`タスク4着手時の実会場調査で判明**: 「選手コメント」ページは唐津・芦屋の2会場でしか確認できず、他会場は第三者編集記事（「レース展望」）が中心だった。上記設計は前提が崩れているため、方針確定まで実装を保留している（spec.md FR5参照）。
 
 ## 3. GitHub Actions ワークフロー
 
@@ -127,9 +122,8 @@ jobs:
 
 > `data/analysis/racer-news-pending-review/pending.json`に`status: "pending"`の項目があれば、セッション開始時の最初の応答で自発的に提示し、`racer_news`への投入可否を確認する。承認されたら`scripts/maintenance/add-racer-news.js`でINSERTし該当項目を`status: "approved"`に、却下されたら`status: "rejected"`に更新する。
 
-## 5. 定型テンプレート例（FR1/FR2、確定は`/step3`）
-- FR1: `「{grade}優勝戦（{venue}第{raceNumber}R）で{name}選手が1着」` ※実際の言い回しは`/step3`のタスク分解時に調整
-- FR2: `「{name}選手（{branch}支部）が{achievement}を達成」`（`achievement`は見出しから抽出した達成内容の文字列、例:「2,000勝」「24場制覇」をそのまま使用）
+## 5. 定型テンプレート（FR2、実装・検証済み）
+- `「{name}選手が{achievement}を達成」`（`achievement`は見出しから抽出した達成内容の文字列、例:「2,000勝」「24場制覇」をそのまま使用）
 
 ## 6. 既存サービス層との連携
 `src/services/racerService.js`の`getRacerPageData`は`racer_news`を`created_at`降順で取得するだけの実装のため、**変更不要**。自動投入されたニュースも既存の`/racer/:racerId`ページにそのまま表示される。
