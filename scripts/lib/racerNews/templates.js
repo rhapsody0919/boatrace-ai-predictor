@@ -25,22 +25,18 @@ export function generateGradeRaceWinNews({
 }
 
 /**
- * FR2: 公式ニュースアーカイブ由来の級別発表ニュースのtitle/summaryを生成する
- * @param {{ racerName: string, branch: string, period: string,
- *   statLabel: string, statValue: string, rankLabel?: string }} params
+ * FR2: 公式ニュースアーカイブ由来の節目記録ニュースのtitle/summaryを生成する
+ * @param {{ racerName: string, branch: string, achievement: string }} params
+ *   achievement: 見出しから抽出した達成内容の文字列（例:「2,000勝」「24場制覇」）
  * @returns {{ title: string, summary: string }}
  */
 export function generateGradeAnnouncementNews({
   racerName,
   branch,
-  period,
-  statLabel,
-  statValue,
-  rankLabel,
+  achievement,
 }) {
-  const rankPhrase = rankLabel ? `${rankLabel}を` : "好成績を";
   return {
-    title: `${racerName}選手が${period}選手級別発表で${rankLabel ?? "好成績"}`,
-    summary: `${period}の選手級別が発表され、${racerName}選手（${branch}支部）が${statLabel}${statValue}を記録し、${rankPhrase}獲得しました。`,
+    title: `${racerName}選手が${achievement}を達成`,
+    summary: `${racerName}選手（${branch}支部）が${achievement}を達成しました。`,
   };
 }
