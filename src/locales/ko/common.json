@@ -68,6 +68,29 @@
     "label": "경정장 선택:",
     "raceCount": "{{count}}개 경주"
   },
+  "venueGrid": {
+    "noRacesToday": "오늘 개최 없음",
+    "nextRace": "다음 {{race}}R",
+    "allFinished": "전 경주 종료",
+    "timeOfDay": {
+      "morning": "모닝 레이스",
+      "summer": "서머타임 레이스",
+      "nighter": "나이터 레이스",
+      "midnight": "미드나이트 레이스"
+    }
+  },
+  "venueRaceList": {
+    "title": "경주 일람",
+    "metaTitle": "{{venue}} 오늘의 경주 일람・AI 데이터 분석 - 용신 레이더",
+    "metaDescription": "{{venue}} 경정장의 오늘 전체 경주 일람. 마감 시각과 등급을 확인하고 각 경주의 AI 데이터 분석을 볼 수 있습니다.",
+    "backToVenues": "← 경정장 목록으로"
+  },
+  "raceDetailPage": {
+    "metaTitle": "{{venue}} {{race}}R AI 데이터 분석 - 용신 레이더",
+    "metaDescription": "{{venue}} {{race}}R의 출주표 데이터・AI 데이터 분석・전개 예측을 무료로 확인할 수 있습니다.",
+    "backToList": "← 경주 일람으로",
+    "notFound": "경주를 찾을 수 없습니다"
+  },
   "volatility": {
     "levelHigh": "이변 가능성 높음",
     "levelLow": "인기 안정",

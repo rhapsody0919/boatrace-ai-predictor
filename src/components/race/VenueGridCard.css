@@ -1,0 +1,105 @@
+.venue-grid-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-card);
+  min-height: 108px;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.venue-grid-card--open {
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.venue-grid-card--open:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.venue-grid-card--closed {
+  opacity: 0.55;
+}
+
+.venue-grid-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+}
+
+.venue-grid-card__name {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.venue-grid-card__time-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* バッジ行はBOA-222（会場ランキングサマリー等）の将来追加を見込み、
+   グレード非表示時も高さを確保してレイアウトシフトを防ぐ */
+.venue-grid-card__badges {
+  display: flex;
+  gap: 0.3rem;
+  min-height: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.venue-grid-card__grade {
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-white);
+  letter-spacing: 0.05em;
+}
+
+.venue-grid-card__title {
+  font-size: 0.72rem;
+  color: var(--text-secondary, var(--color-gray-600));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.venue-grid-card__status {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.venue-grid-card__next-race {
+  font-size: 0.75rem;
+  color: var(--text-secondary, var(--color-gray-600));
+}
+
+.venue-grid-card__next-time {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.venue-grid-card__finished,
+.venue-grid-card__closed-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary, var(--color-gray-500));
+}
+
+@media (max-width: 480px) {
+  .venue-grid-card {
+    padding: 0.6rem;
+    min-height: 96px;
+  }
+
+  .venue-grid-card__name {
+    font-size: 0.9rem;
+  }
+}

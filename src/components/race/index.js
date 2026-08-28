@@ -1,7 +1,8 @@
 /**
  * Race components barrel export
  */
-export { default as VenueSelector } from "./VenueSelector";
+export { default as VenueGrid } from "./VenueGrid";
+export { default as VenueGridCard } from "./VenueGridCard";
 export { default as RaceCard } from "./RaceCard";
 export { default as VolatilityDisplay } from "./VolatilityDisplay";
 export { default as RaceResult } from "./RaceResult";

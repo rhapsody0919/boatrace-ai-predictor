@@ -69,6 +69,29 @@
     "raceCount": "{{count}} races",
     "raceCount_one": "{{count}} race"
   },
+  "venueGrid": {
+    "noRacesToday": "No races today",
+    "nextRace": "Next R{{race}}",
+    "allFinished": "All races finished",
+    "timeOfDay": {
+      "morning": "Morning race",
+      "summer": "Summer time race",
+      "nighter": "Night race",
+      "midnight": "Midnight race"
+    }
+  },
+  "venueRaceList": {
+    "title": "Race list",
+    "metaTitle": "Today's races at {{venue}} - AI data analysis | Ryujin Radar",
+    "metaDescription": "All of today's races at {{venue}} boat race stadium. Check deadlines and grades, then view AI data analysis for each race.",
+    "backToVenues": "← Back to venues"
+  },
+  "raceDetailPage": {
+    "metaTitle": "{{venue}} Race {{race}} AI data analysis - Ryujin Radar",
+    "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}}.",
+    "backToList": "← Back to race list",
+    "notFound": "Race not found"
+  },
   "volatility": {
     "levelHigh": "High upset chance",
     "levelLow": "Favorite friendly",

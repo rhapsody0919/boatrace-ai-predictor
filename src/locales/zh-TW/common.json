@@ -68,6 +68,29 @@
     "label": "選擇賽場：",
     "raceCount": "{{count}} 場比賽"
   },
+  "venueGrid": {
+    "noRacesToday": "今日未舉辦",
+    "nextRace": "下一場 {{race}}R",
+    "allFinished": "全部比賽已結束",
+    "timeOfDay": {
+      "morning": "晨間賽",
+      "summer": "夏令時段賽",
+      "nighter": "夜間賽",
+      "midnight": "深夜賽"
+    }
+  },
+  "venueRaceList": {
+    "title": "比賽一覽",
+    "metaTitle": "{{venue}}今日賽程・AI數據分析 - 龍神雷達",
+    "metaDescription": "{{venue}}賽艇場今日全部比賽一覽。確認截止時間與級別後，可查看各場比賽的AI數據分析。",
+    "backToVenues": "← 返回賽場一覽"
+  },
+  "raceDetailPage": {
+    "metaTitle": "{{venue}} 第{{race}}場 AI數據分析 - 龍神雷達",
+    "metaDescription": "免費查看{{venue}}第{{race}}場的出賽表資料、AI數據分析與展開預測。",
+    "backToList": "← 返回比賽一覽",
+    "notFound": "找不到比賽"
+  },
   "volatility": {
     "levelHigh": "冷門機率高",
     "levelLow": "熱門穩定",

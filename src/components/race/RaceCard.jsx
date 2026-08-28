@@ -86,6 +86,17 @@ function RaceCard({ race, onAnalyzeRace }) {
           <span className="race-number">{race.raceNumber}R</span>
         </div>
       </div>
+      {race.startTime && (
+        <div className="race-info">
+          <div className="info-item">
+            <span className="label">{t("home.deadline")}</span>
+            <span className="value">
+              {race.startTime}
+              {t("home.jstNote")}
+            </span>
+          </div>
+        </div>
+      )}
       {isFinished && unified && (
         <div
           style={{
