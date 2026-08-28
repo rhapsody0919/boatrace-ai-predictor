@@ -189,10 +189,10 @@ function SceneHook({ mascotSrc, hookLine }) {
           🔍 AI予想 的中検証
         </div>
       </div>
-      <Pop delay={0} style={{ marginBottom: 36 }}>
+      <Pop delay={-10} style={{ marginBottom: 36 }}>
         <Mascot src={mascotSrc} size={400} />
       </Pop>
-      <Pop delay={12}>
+      <Pop delay={-10}>
         <div
           style={{
             color: WHITE,
