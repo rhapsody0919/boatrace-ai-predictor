@@ -22,6 +22,17 @@
       "postedAt": "2026-08-24",
       "metrics": null,
       "notes": "会場攻略・データ一覧型シリーズ第2弾。初日にプロフィールへの信頼感を作る狙いで同日2本目として制作。VenueRankingCM.jsxをテンプレート化し、データ差し替えだけで量産できる設計に変更した第1号。投稿直後は「コンテンツ審査中」で公開範囲が一時的に「自分のみ」になった（1本目には無かった挙動、TikTok側の自動審査プロセスと推測、通常は審査完了後に自動で公開範囲が戻る想定）"
+    },
+    {
+      "date": "2026-08-29",
+      "format": "mascot",
+      "axis": null,
+      "content": "唐津9R 答え合わせ（イン崩れ指数83%警告→配当4,420円で的中、sns-hub-content-generation Routine生成・承認済み）",
+      "videoFile": "Supabase Storage sns-hub-media/f4a9d7b5-fd29-482a-8b04-7235eb6ec980/tiktok-ja.mp4（sns_drafts id=166b6dc7-c174-45a1-b795-fcb839c03575）",
+      "status": "skipped",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "TikTokアカウント（@ryujinradar）がシャドウバン中のため投稿を見送り（ユーザー判断）。下書きはapprovedのままsns_draftsにストックし、シャドウバン解消後に投稿可否を再判断する"
     }
   ]
 }
