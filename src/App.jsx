@@ -1,8 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocalizedPath } from "./hooks/useLocalizedPath";
-import { getLanguage, localizePath } from "./config/languages";
 import "./App.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -11,47 +8,18 @@ import PrivacyPolicy from "./components/PrivacyPolicy";
 import Terms from "./components/Terms";
 import Contact from "./components/Contact";
 import HitRaces from "./components/HitRaces";
-import UpdateStatus from "./components/UpdateStatus";
-import IntroBanner from "./components/IntroBanner";
-import { getFeaturedPosts, getLatestPosts } from "./data/blogPosts";
+import { getLatestPosts } from "./data/blogPosts";
 import { dataService } from "./services/dataService";
-import {
-  PredictionSection,
-  RaceBottomNav,
-  RaceNavCard,
-} from "./components/race";
-import { STADIUM_NAMES, WEEKDAYS } from "./constants";
-import { GRADE_CONFIG } from "./constants/gradeConfig";
-import { getTodayJST, formatDateJP } from "./utils/dateUtils";
-import LoadingScreen from "./components/LoadingScreen";
+import { formatDateJP } from "./utils/dateUtils";
 
-function App({ tab = "races" }) {
-  const { t, i18n } = useTranslation();
-  const localize = useLocalizedPath();
+// タブページ（/hit-races・/accuracy・/privacy・/terms・/contact）のシェル。
+// トップ（/）の開催場一覧はVenueGridPage、レース詳細は/race/:raceIdに分離済み
+// （docs/design/venue-list-redesign/参照）
+function App({ tab }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(tab);
-  const [selectedRace, setSelectedRace] = useState(null);
-  const [prediction, setPrediction] = useState(null);
-  const [raceListCollapsed, setRaceListCollapsed] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isRealData, setIsRealData] = useState(false);
-  const [allVenuesData, setAllVenuesData] = useState([]);
-  const [selectedVenueId, setSelectedVenueId] = useState(null);
-  const [races, setRaces] = useState([]);
-  const [lastUpdated, setLastUpdated] = useState(null); // データ更新時刻
-  const [isRefreshing, setIsRefreshing] = useState(false); // 手動更新中フラグ
-  const predictionRef = useRef(null);
-  const raceCardRefs = useRef({}); // 各レースカードへの参照を保持
-
-  // 本日の日付をフォーマット
-  const getTodayDateShort = () => {
-    const today = new Date();
-    const month = today.getMonth() + 1;
-    const day = today.getDate();
-    const weekday = WEEKDAYS[today.getDay()];
-    return `${month}/${day}(${weekday})`;
-  };
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // propsのtabが変わったらactiveTabを更新
   useEffect(() => {
@@ -63,13 +31,11 @@ function App({ tab = "races" }) {
     const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID;
 
     if (gaId && gaId !== "%VITE_GA_MEASUREMENT_ID%") {
-      // Google Analyticsスクリプトを動的に追加
       const script1 = document.createElement("script");
       script1.async = true;
       script1.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
       document.head.appendChild(script1);
 
-      // gtag初期化
       window.dataLayer = window.dataLayer || [];
       function gtag() {
         window.dataLayer.push(arguments);
@@ -79,7 +45,6 @@ function App({ tab = "races" }) {
         page_path: window.location.pathname,
       });
 
-      // グローバルに設定
       window.gtag = gtag;
 
       console.log("Google Analytics initialized:", gaId);
@@ -97,7 +62,7 @@ function App({ tab = "races" }) {
     }
   }, [activeTab]);
 
-  // リトライ機能付きfetch関数
+  // リトライ機能付きfetch関数（HitRacesが使用）
   const fetchWithRetry = async (url, maxRetries = 3, retryDelay = 2000) => {
     let lastError;
 
@@ -112,7 +77,6 @@ function App({ tab = "races" }) {
         lastError = error;
         console.warn(`取得失敗 (${i + 1}/${maxRetries}):`, error.message);
 
-        // 最後の試行でなければ待機してリトライ
         if (i < maxRetries - 1) {
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
         }
@@ -122,339 +86,27 @@ function App({ tab = "races" }) {
     throw lastError;
   };
 
-  // レースデータを取得（初回読み込み＆手動更新で使用）
-  const fetchRaceData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // データ更新時刻の取得（HitRacesのUpdateStatus表示用）
+  useEffect(() => {
+    if (activeTab !== "hit-races") return;
+    dataService.getRaces().then((result) => {
+      if (result?.scrapedAt) setLastUpdated(result.scrapedAt);
+    });
+  }, [activeTab]);
 
-      // データサービス経由で取得（DB移行に備えて抽象化）
-      const result = await dataService.getRaces();
-
-      if (!result.success || !result.data) {
-        throw new Error("有効なデータが取得できませんでした");
-      }
-
-      // レース場データを保存
-      console.log("📊 取得したデータ:", result.data);
-      console.log("📊 最初の会場のレース:", result.data[0]?.races);
-      console.log("📊 最初のレースのracers:", result.data[0]?.races[0]?.racers);
-      setAllVenuesData(result.data);
-      setIsRealData(true);
-
-      // データ更新時刻を保存
-      if (result.scrapedAt) {
-        setLastUpdated(result.scrapedAt);
-      }
-
-      // 最初に開催されているレース場を自動選択
-      if (result.data.length > 0) {
-        setSelectedVenueId(result.data[0].placeCd);
-      }
-    } catch (err) {
-      console.error("API取得エラー:", err);
-      setError(err.message);
-      setIsRealData(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 手動更新関数
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      // キャッシュをクリアして最新データを取得
       dataService.clearCache();
-      await fetchRaceData();
+      const result = await dataService.getRaces();
+      if (result?.scrapedAt) setLastUpdated(result.scrapedAt);
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  // 実際のAPIからデータを取得
-  useEffect(() => {
-    fetchRaceData();
-  }, []);
-
-  // レース場選択時にレース一覧を更新
-  useEffect(() => {
-    if (selectedVenueId && allVenuesData.length > 0) {
-      const venueData = allVenuesData.find(
-        (v) => v.placeCd === selectedVenueId,
-      );
-
-      if (venueData && venueData.races) {
-        // レースデータを表示用に変換
-        const formattedRaces = venueData.races.map((race) => {
-          return {
-            id: `${race.date}-${String(race.placeCd).padStart(2, "0")}-${String(race.raceNo).padStart(2, "0")}`,
-            venue: venueData.placeName,
-            venueCode: race.placeCd,
-            raceNumber: race.raceNo,
-            startTime: race.startTime || "未定", // スクレイピングした締切予定時刻を使用
-            weather: race.weather || "不明",
-            wave: race.waveHeight || 0,
-            wind: race.windVelocity || 0,
-            rawData: race, // 元のデータも保持
-          };
-        });
-
-        setRaces(formattedRaces);
-      } else {
-        setRaces([]);
-      }
-    }
-  }, [selectedVenueId, allVenuesData]);
-
-  // レース一覧が読み込まれたら、次に開催されるレースに自動スクロール
-  useEffect(() => {
-    if (races.length === 0 || loading) return;
-
-    // 現在時刻（JST）を取得
-    const now = new Date();
-    const jstOffset = 9 * 60; // JST is UTC+9
-    const jstNow = new Date(now.getTime() + jstOffset * 60 * 1000);
-    const currentHours = jstNow.getUTCHours();
-    const currentMinutes = jstNow.getUTCMinutes();
-    const currentTimeInMinutes = currentHours * 60 + currentMinutes;
-
-    // 次に開催されるレースを探す
-    let nextRace = null;
-    let minTimeDiff = Infinity;
-
-    races.forEach((race) => {
-      if (race.startTime && race.startTime !== "未定") {
-        const [hours, minutes] = race.startTime.split(":").map(Number);
-        const raceTimeInMinutes = hours * 60 + minutes;
-        const timeDiff = raceTimeInMinutes - currentTimeInMinutes;
-
-        // 現在時刻より後のレースで、最も近いものを選択
-        if (timeDiff > 0 && timeDiff < minTimeDiff) {
-          minTimeDiff = timeDiff;
-          nextRace = race;
-        }
-      }
-    });
-
-    // 次のレースが見つからない場合は、最後のレース（最も新しいレース）を選択
-    if (!nextRace && races.length > 0) {
-      nextRace = races.reduce((latest, race) => {
-        return race.raceNumber > latest.raceNumber ? race : latest;
-      }, races[0]);
-    }
-
-    // 次のレースが見つかった場合、そのレースカードにスクロール
-    if (nextRace && raceCardRefs.current[nextRace.id]) {
-      // 少し遅延させてDOM要素が確実に描画されてからスクロール
-      setTimeout(() => {
-        raceCardRefs.current[nextRace.id]?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }, 500);
-    }
-  }, [races, loading]);
-
-  // 予想データをSupabaseから読み込む
-  const loadPredictionData = async (race) => {
-    try {
-      // レースの日付を取得（rawDataから、なければ今日の日付）
-      const dateStr =
-        race.rawData?.date ||
-        (() => {
-          const now = new Date();
-          const jstOffset = 9 * 60;
-          const jstDate = new Date(now.getTime() + jstOffset * 60 * 1000);
-          return jstDate.toISOString().split("T")[0];
-        })();
-
-      // Supabaseから予想データを取得
-      const predictionData = await dataService.getPredictions(dateStr);
-
-      // レースIDを生成して該当する予想を探す
-      const venueCode = race.rawData?.placeCd || 0;
-      const raceId = `${dateStr}-${String(venueCode).padStart(2, "0")}-${String(race.raceNumber).padStart(2, "0")}`;
-      const racePrediction = predictionData.races?.find(
-        (r) => r.raceId === raceId,
-      );
-
-      if (!racePrediction) {
-        console.warn(`レースID ${raceId} の予想が見つかりません`);
-        return null;
-      }
-
-      return racePrediction;
-    } catch (error) {
-      console.error("❌ 予想データの読み込みエラー:", error);
-      return null;
-    }
-  };
-
-  const analyzeRace = async (race) => {
-    setSelectedRace(race);
-    setIsAnalyzing(true);
-    setPrediction(null);
-    // レース選択後は一覧を折りたたんでページ全長を抑える（モバイルで特に効果大）
-    setRaceListCollapsed(true);
-
-    // 次フレームで即座にスクロール（selectedRaceセットによりsectionがレンダリングされた後）
-    requestAnimationFrame(() => {
-      if (predictionRef.current) {
-        predictionRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    });
-
-    try {
-      // JSONファイルから予想データを読み込み
-      const racePrediction = await loadPredictionData(race);
-
-      if (!racePrediction) {
-        // データがない場合はエラーを表示
-        console.error("❌ 予想データが見つかりません");
-        setPrediction({
-          error: true,
-          errorMessage: t("errors.noPredictionData"),
-        });
-        setIsAnalyzing(false);
-        return;
-      }
-
-      // 予想データをUIの形式に変換（unifiedモデル、AI予想モデル大規模改修）
-      setTimeout(() => {
-        // データ出走表（DataRaceTable）はモデル非依存のため、race_entriesがあれば
-        // unifiedモデルの予測データが無い過去日付（2026-08-11より前）でも表示できるようにする
-        const players =
-          racePrediction.players || racePrediction.unified?.players || [];
-
-        if (players.length === 0) {
-          console.error("❌ 選手データが見つかりません");
-          setPrediction({
-            error: true,
-            errorMessage: t("errors.noPredictionData"),
-          });
-          setIsAnalyzing(false);
-          return;
-        }
-
-        const unified = racePrediction.unified || null;
-        const topPickPlayer = unified
-          ? players.find((p) => p.number === unified.topPick)
-          : null;
-
-        const aiPrediction = {
-          topPick: topPickPlayer,
-          allPlayers: players,
-          top3: unified
-            ? [unified.topPick, unified.top2nd].filter(Boolean)
-            : [],
-          result: racePrediction.result, // レース結果
-          turnPrediction: unified?.turnPrediction ?? null,
-          volatilityPercentile: unified?.volatilityPercentile ?? null,
-          volatilityPercentileIsFallback:
-            unified?.volatilityPercentileIsFallback ?? null,
-          volatilityReasons: unified?.volatilityReasons ?? [],
-          racerStats: racePrediction.racerStats || null,
-          exhibitionData: racePrediction.exhibitionData || null,
-        };
-        setPrediction(aiPrediction);
-        setIsAnalyzing(false);
-      }, 1000); // 読み込み演出のため1秒待機
-    } catch (error) {
-      console.error("❌ 予想の表示エラー:", error);
-      setIsAnalyzing(false);
-    }
-  };
-
-  const handleNavigate = useCallback(
-    (race) => {
-      analyzeRace(race);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    },
-    [analyzeRace],
-  );
-
-  const handleVenueChange = useCallback(
-    (placeCd) => {
-      setSelectedVenueId(placeCd);
-      // 新会場の最初のレースを自動選択
-      const venueData = allVenuesData.find((v) => v.placeCd === placeCd);
-      if (venueData?.races?.length > 0) {
-        const firstRace = venueData.races[0];
-        const formattedRace = {
-          id: `${firstRace.date}-${String(placeCd).padStart(2, "0")}-${String(firstRace.raceNo).padStart(2, "0")}`,
-          venue: venueData.placeName,
-          raceNumber: firstRace.raceNo,
-          startTime: firstRace.startTime || "未定",
-          rawData: firstRace,
-        };
-        analyzeRace(formattedRace);
-      }
-    },
-    [allVenuesData, analyzeRace],
-  );
-
-  const generatePlayers = (race) => {
-    // 実データから選手情報を取得
-    // raceはフォーマット済みオブジェクトで、実データはrawDataに格納されている
-    console.log("🔍 race:", race);
-    console.log("🔍 race.rawData:", race?.rawData);
-    console.log("🔍 race.rawData.racers:", race?.rawData?.racers);
-
-    const racers = race?.rawData?.racers;
-
-    if (!racers || racers.length === 0) {
-      console.error("❌ racers データがありません");
-      return null;
-    }
-
-    // 実データを使用
-    return racers
-      .map((racer, idx) => ({
-        number: racer.lane,
-        name: racer.name,
-        grade: racer.grade,
-        age: racer.age,
-        winRate: racer.globalWinRate.toFixed(3),
-        localWinRate: racer.localWinRate.toFixed(3),
-        motorNumber: racer.motorNumber,
-        motor2Rate: racer.motor2Rate.toFixed(1),
-        motorWinRate: racer.motor2Rate.toFixed(1), // 互換性のため
-        boatNumber: racer.boatNumber,
-        boat2Rate: racer.boat2Rate.toFixed(1),
-        // AIスコアは勝率などから簡易計算（実際のAIは後で実装）
-        aiScore: Math.floor(
-          racer.globalWinRate * 100 +
-            racer.local2Rate * 50 +
-            racer.motor2Rate * 30 +
-            racer.boat2Rate * 20 -
-            idx * 5,
-        ),
-      }))
-      .sort((a, b) => b.aiScore - a.aiScore);
-  };
-
-  // 統計的な注目ポイントを自動生成
   return (
     <div className="app">
-      {/* トップページのみ言語別メタタグ（React 19 が <head> にホイスティングする） */}
-      {activeTab === "races" && (
-        <>
-          <title>{t("meta.title")}</title>
-          <meta name="description" content={t("meta.description")} />
-          <meta
-            property="og:locale"
-            content={getLanguage(i18n.resolvedLanguage).ogLocale}
-          />
-          <link
-            rel="canonical"
-            href={`https://www.boat-ai.jp${localizePath("/", i18n.resolvedLanguage)}`}
-          />
-        </>
-      )}
       <Header />
 
       <div className="container">
@@ -472,364 +124,12 @@ function App({ tab = "races" }) {
             />
           ) : activeTab === "hit-races" ? (
             <HitRaces
-              allVenuesData={allVenuesData}
-              analyzeRace={analyzeRace}
-              stadiumNames={STADIUM_NAMES}
               fetchWithRetry={fetchWithRetry}
               lastUpdated={lastUpdated}
               onRefresh={handleRefresh}
               isRefreshing={isRefreshing}
             />
-          ) : (
-            <>
-              <section className="race-list-section">
-                <h2>
-                  🏁 {t("home.todayRaces")} {getTodayDateShort()}
-                </h2>
-                <UpdateStatus
-                  lastUpdated={lastUpdated}
-                  dataType={t("home.dataType")}
-                  onRefresh={handleRefresh}
-                  isRefreshing={isRefreshing}
-                />
-
-                <IntroBanner />
-
-                {loading ? (
-                  <LoadingScreen
-                    title={t("home.loadingTitle")}
-                    description={t("home.loadingDesc")}
-                  />
-                ) : (
-                  <>
-                    {error && (
-                      <div
-                        style={{
-                          padding: "1.5rem",
-                          background: "#fff3cd",
-                          borderRadius: "8px",
-                          marginBottom: "1rem",
-                          border: "2px solid #ffc107",
-                        }}
-                      >
-                        <p
-                          style={{
-                            color: "#856404",
-                            fontWeight: "bold",
-                            marginBottom: "0.5rem",
-                          }}
-                        >
-                          ⚠️ {t("home.fetchErrorTitle")}
-                        </p>
-                        <p style={{ color: "#856404", marginBottom: "1rem" }}>
-                          {error}
-                        </p>
-                        <p
-                          style={{
-                            color: "#856404",
-                            fontSize: "0.9rem",
-                            marginBottom: "1rem",
-                          }}
-                        >
-                          {t("home.fetchErrorDesc")}
-                        </p>
-                        <button
-                          onClick={() => window.location.reload()}
-                          style={{
-                            padding: "0.75rem 1.5rem",
-                            background: "#ffc107",
-                            color: "#000",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            fontWeight: "bold",
-                            fontSize: "1rem",
-                          }}
-                        >
-                          {t("home.reload")}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* レース場選択ドロップダウン */}
-                    {allVenuesData.length > 0 && (
-                      <div style={{ marginBottom: "1.5rem" }}>
-                        <label
-                          htmlFor="venue-select"
-                          style={{
-                            display: "block",
-                            marginBottom: "0.5rem",
-                            fontWeight: "bold",
-                            fontSize: "1.1rem",
-                            color: "var(--text-primary)",
-                          }}
-                        >
-                          {t("venueSelector.label")}
-                        </label>
-                        <select
-                          id="venue-select"
-                          value={selectedVenueId || ""}
-                          onChange={(e) =>
-                            setSelectedVenueId(parseInt(e.target.value))
-                          }
-                          style={{
-                            padding: "0.75rem 1rem",
-                            fontSize: "1rem",
-                            borderRadius: "8px",
-                            border: "1px solid var(--border-hairline)",
-                            backgroundColor: "var(--surface-card)",
-                            color: "var(--text-primary)",
-                            cursor: "pointer",
-                            minWidth: "250px",
-                            outline: "none",
-                          }}
-                        >
-                          {(allVenuesData || []).map((venue) => (
-                            <option key={venue.placeCd} value={venue.placeCd}>
-                              {t(`venues.${venue.placeCd}`, venue.placeName)} (
-                              {t("venueSelector.raceCount", {
-                                count: venue.races?.length || 0,
-                              })}
-                              )
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {races.length === 0 && !error ? (
-                      <div
-                        style={{
-                          padding: "2rem",
-                          textAlign: "center",
-                          color: "#64748b",
-                        }}
-                      >
-                        <p>{t("home.noRacesToday")}</p>
-                      </div>
-                    ) : raceListCollapsed ? (
-                      <button
-                        type="button"
-                        className="race-list-toggle"
-                        onClick={() => setRaceListCollapsed(false)}
-                      >
-                        {t("raceList.show")}
-                      </button>
-                    ) : (
-                      <div className="race-grid">
-                        {races.map((race) => {
-                          // レースが終了しているかチェック
-                          const isFinished = (() => {
-                            if (!race.startTime || race.startTime === "未定")
-                              return false;
-                            const now = new Date();
-                            const jstOffset = 9 * 60;
-                            const jstNow = new Date(
-                              now.getTime() + jstOffset * 60 * 1000,
-                            );
-                            const currentTimeInMinutes =
-                              jstNow.getUTCHours() * 60 +
-                              jstNow.getUTCMinutes();
-                            const [hours, minutes] = race.startTime
-                              .split(":")
-                              .map(Number);
-                            const raceTimeInMinutes = hours * 60 + minutes;
-                            return raceTimeInMinutes < currentTimeInMinutes;
-                          })();
-
-                          const volatility = race.rawData?.volatility;
-                          const isHighVol = volatility?.level === "high";
-                          const isLowVol = volatility?.level === "low";
-                          const showVolBadge = isHighVol || isLowVol;
-                          const volBadgeColor = isHighVol
-                            ? "#c62828"
-                            : "#2e7d32";
-                          const volBadgeLabel = isHighVol
-                            ? `🌪️ ${t("volatility.levelHigh")}`
-                            : `🎯 ${t("volatility.levelLow")}`;
-
-                          const raceGrade = race.rawData?.raceGrade;
-                          const gradeConfig = GRADE_CONFIG[raceGrade];
-
-                          return (
-                            <div
-                              key={race.id}
-                              className="race-card"
-                              ref={(el) => (raceCardRefs.current[race.id] = el)}
-                              style={
-                                showVolBadge
-                                  ? { borderLeft: `4px solid ${volBadgeColor}` }
-                                  : undefined
-                              }
-                            >
-                              <div className="race-card-header">
-                                <h3>
-                                  {t(`venues.${race.venueCode}`, race.venue)}
-                                </h3>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.5rem",
-                                  }}
-                                >
-                                  {showVolBadge && (
-                                    <span
-                                      style={{
-                                        padding: "0.2rem 0.55rem",
-                                        borderRadius: "8px",
-                                        fontSize: "0.7rem",
-                                        fontWeight: "700",
-                                        background: volBadgeColor,
-                                        color: "#fff",
-                                        letterSpacing: "0.02em",
-                                        whiteSpace: "nowrap",
-                                      }}
-                                    >
-                                      {volBadgeLabel}
-                                    </span>
-                                  )}
-                                  {gradeConfig && (
-                                    <span
-                                      style={{
-                                        padding: "0.2rem 0.5rem",
-                                        borderRadius: "6px",
-                                        fontSize: "0.7rem",
-                                        fontWeight: "700",
-                                        background: gradeConfig.color,
-                                        color: "#fff",
-                                        letterSpacing: "0.05em",
-                                        whiteSpace: "nowrap",
-                                      }}
-                                    >
-                                      {gradeConfig.label}
-                                    </span>
-                                  )}
-                                  <span className="race-number">
-                                    {race.raceNumber}R
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="race-info">
-                                <div className="info-item">
-                                  <span className="label">
-                                    {t("home.deadline")}
-                                  </span>
-                                  <span className="value">
-                                    {!race.startTime ||
-                                    race.startTime === "未定"
-                                      ? t("home.tbd")
-                                      : `${race.startTime}${t("home.jstNote")}`}
-                                  </span>
-                                </div>
-                                {isFinished && (
-                                  <div
-                                    style={{
-                                      marginTop: "0.5rem",
-                                      padding: "0.4rem 0.8rem",
-                                      background: "#e0e0e0",
-                                      borderRadius: "6px",
-                                      textAlign: "center",
-                                      fontSize: "0.85rem",
-                                      fontWeight: "600",
-                                      color: "#475569",
-                                    }}
-                                  >
-                                    {t("home.finished")}
-                                  </div>
-                                )}
-                              </div>
-                              <button
-                                className="predict-btn"
-                                onClick={() => analyzeRace(race)}
-                              >
-                                {t("home.viewPrediction")}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {!raceListCollapsed && selectedRace && races.length > 0 && (
-                      <button
-                        type="button"
-                        className="race-list-toggle"
-                        onClick={() => setRaceListCollapsed(true)}
-                      >
-                        {t("raceList.hide")}
-                      </button>
-                    )}
-                  </>
-                )}
-              </section>
-
-              {selectedRace && (
-                <PredictionSection
-                  ref={predictionRef}
-                  prediction={prediction}
-                  selectedRace={selectedRace}
-                  isAnalyzing={isAnalyzing}
-                  showExhibition={true}
-                />
-              )}
-
-              {selectedRace && (
-                <div className="analysis-tools-link-section">
-                  <Link
-                    to={`/winning-technique?venue_code=${selectedRace.venueCode}&race_id=${selectedRace.id}&tab=motor`}
-                    className="analysis-tools-link"
-                  >
-                    📊 {t("panel.analysisToolsLink")}
-                  </Link>
-                </div>
-              )}
-
-              {selectedRace && (
-                <RaceNavCard
-                  races={races}
-                  selectedRace={selectedRace}
-                  onNavigate={handleNavigate}
-                  venues={allVenuesData.map((v) => ({
-                    placeCd: v.placeCd,
-                    placeName: v.placeName,
-                  }))}
-                  selectedVenueId={selectedVenueId}
-                  onVenueChange={handleVenueChange}
-                />
-              )}
-
-              {/* ブログ記事セクション */}
-              <section className="blog-preview-section">
-                <h2>📝 {t("home.blogTitle")}</h2>
-                <p className="blog-preview-lead">{t("home.blogDesc")}</p>
-                <div className="blog-preview-grid">
-                  {getFeaturedPosts()
-                    .slice(0, 5)
-                    .map((post) => (
-                      <Link
-                        to={localize(`/blog/${post.id}`)}
-                        key={post.id}
-                        className="blog-preview-card"
-                      >
-                        <span className="blog-preview-category">
-                          {post.category}
-                        </span>
-                        <h3 className="blog-preview-title">{post.title}</h3>
-                        <p className="blog-preview-desc">{post.description}</p>
-                        <div className="blog-preview-meta">
-                          <span>{post.readTime}</span>
-                        </div>
-                      </Link>
-                    ))}
-                </div>
-                <div className="blog-preview-cta">
-                  <Link to={localize("/blog")} className="blog-preview-btn">
-                    {t("home.viewAllPosts")}
-                  </Link>
-                </div>
-              </section>
-            </>
-          )}
+          ) : null}
         </main>
       </div>
 
@@ -863,20 +163,6 @@ function App({ tab = "races" }) {
           </>
         }
       />
-
-      {selectedRace && (
-        <RaceBottomNav
-          races={races}
-          selectedRace={selectedRace}
-          onNavigate={handleNavigate}
-          venues={allVenuesData.map((v) => ({
-            placeCd: v.placeCd,
-            placeName: v.placeName,
-          }))}
-          selectedVenueId={selectedVenueId}
-          onVenueChange={handleVenueChange}
-        />
-      )}
     </div>
   );
 }
