@@ -23,8 +23,12 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.venue-grid-card--closed {
-  opacity: 0.55;
+/* 非開催カードは透明度でなく配色で落ち着かせる
+   （opacityでの減光はテキストコントラストがWCAG AA基準4.5:1を割るため。
+   --text-secondaryはコントラスト監査済みトークン、BOA-206） */
+.venue-grid-card--closed .venue-grid-card__name {
+  color: var(--text-secondary, var(--color-gray-600));
+  font-weight: 600;
 }
 
 .venue-grid-card__header {

@@ -684,10 +684,24 @@ test.describe("的中レース一覧のunified一本化（BOA-174）", () => {
     page,
   }) => {
     await page.goto("/hit-races");
+    // 朝の時間帯は「今日の的中」が0件（レース未消化）でも「昨日」に的中があると
+    // no-data-containerが出ない正当な状態がある（デフォルトは今日タブのため
+    // .race-cardも0枚）。ロード完了はタブ or no-data の表示で判定し、
+    // 今日タブが空なら昨日タブに切り替えて検証する
     await expect(
-      page.locator(".race-card, .no-data-container").first(),
-    ).toBeVisible({ timeout: 10000 });
+      page
+        .locator('button:has-text("昨日"), .no-data-container, .race-card')
+        .first(),
+    ).toBeVisible({ timeout: 20000 });
     await expect(page.locator(".model-selector")).toHaveCount(0);
+
+    if ((await page.locator(".no-data-container").count()) > 0) {
+      return; // 的中レースが1件も無い日は以降の検証対象なし
+    }
+    if ((await page.locator(".race-card").count()) === 0) {
+      await page.locator('button:has-text("昨日")').click();
+      await page.waitForTimeout(300);
+    }
 
     const raceCardCount = await page.locator(".race-card").count();
     if (raceCardCount > 0) {
