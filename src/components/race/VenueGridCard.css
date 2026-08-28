@@ -80,6 +80,7 @@
 .venue-grid-card__next-race {
   font-size: 0.75rem;
   color: var(--text-secondary, var(--color-gray-600));
+  white-space: nowrap;
 }
 
 .venue-grid-card__next-time {
