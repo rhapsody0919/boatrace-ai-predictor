@@ -44,6 +44,7 @@ import KoVenueGuide, {
   KoVenueRegionHub,
 } from "./pages/KoVenueGuide";
 import AdminRules from "./pages/admin/AdminRules";
+import SnsHubAdmin from "./pages/admin/SnsHubAdmin";
 import ResponsibleGambling from "./pages/ResponsibleGambling";
 import Poirot from "./pages/Poirot";
 import CookieConsent from "./components/CookieConsent";
@@ -214,6 +215,7 @@ function LocalizedRoutes({ lng = "ja" }) {
 
       {/* Admin Pages (Hidden) */}
       <Route path="admin/rules" element={<AdminRules />} />
+      <Route path="admin/sns-hub" element={<SnsHubAdmin />} />
 
       {/* α版・動線非公開ページ（Watson/Mycroft等の実験モデルが継続開発中のため維持） */}
       <Route path="holmes" element={<Holmes />} />
