@@ -69,14 +69,17 @@
   - `RaceDetail.jsx`削除。`RaceDetail.css`は新ページ群がレイアウトを流用するため残置（VenueGridPageからimport）
   - `HitRaces.jsx`の的中レースタップ遷移を`analyzeRace`+`navigate("/")`から`/race/:raceId`直接遷移に変更（propsから`allVenuesData`/`analyzeRace`を除去）
 
-- [ ] **T14. e2eスモークテスト追加・既存テスト修正**
-  - `e2e/smoke.spec.js`に新規主要導線（会場一覧→レース一覧→詳細、`/`・`/venue/:code`・`/race/:raceId`・`/races/:date`系）を追加
-  - 既存30件超のテストがルーティング変更に追随することを確認（`npm run test:e2e`）
+- [x] **T14. e2eスモークテスト追加・既存テスト修正**（2026-08-29完了）
+  - 新規テスト3件追加（24会場グリッド表示、会場一覧→レース一覧→詳細のディープリンク、非開催カード表示）
+  - 既存テスト6箇所を新導線（`.venue-grid-card--open`クリック経由）に追随修正、時間帯依存だった`/hit-races`テストの朝の時間帯フレークも解消
+  - `playwright.config.js`に`PW_PORT`環境変数対応を追加（並行worktreeでの誤ポート接続事故を防止）
+  - 全905件中903件パス・2件スキップ（意図通り）・失敗0件
 
-- [ ] **T15. ビルド・検証・ブログ記事**
-  - `npm run build`でビルドエラー無しを確認
-  - `.claude/CLAUDE.md`の「新機能リリース時のブログ記事ルール」に従い紹介記事1本を作成（1機能1記事、スクリーンショット・FAQ付き）。note/X下書きも同時生成
-  - `/code-review`でセルフレビュー→指摘修正→PRコメント記載
+- [x] **T15. ビルド・検証・ブログ記事**（2026-08-29完了）
+  - `npm run build`成功、`npm run verify:sitemap`成功
+  - ブログ記事`venue-grid-navigation`（スクリーンショット2枚・FAQ付き）＋note/Xツイート下書き生成済み
+  - PR #415作成、セルフレビューでパンくずバグ1件発見・修正（`VenueGridPage.jsx`の過去日付ビュー）、PRコメントに記載
+  - データ精度検証: Supabase直接SQL集計とブラウザ実行結果を突合し13会場で完全一致を確認
 
 ## 依存関係の補足
 
