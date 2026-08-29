@@ -13,11 +13,16 @@ export const config = {
   ],
 };
 
+// Cache-Control: no-storeが無いと、モバイルChromeがアドレスバー入力時の
+// プリフェッチで送るリクエストへの401レスポンスをキャッシュしてしまい、
+// 実際のナビゲーション時に認証ダイアログを経由せずキャッシュ済み401が
+// そのまま表示される不具合が発生する（2026-08-29、モバイルChromeで確認）
 const UNAUTHORIZED_RESPONSE = () =>
   new Response("Authentication required", {
     status: 401,
     headers: {
       "WWW-Authenticate": 'Basic realm="SNS Marketing Hub"',
+      "Cache-Control": "no-store",
     },
   });
 
