@@ -26,8 +26,17 @@ const PLATFORM_UPLOAD_URLS = {
   youtube: "https://studio.youtube.com",
 };
 
-function buildXIntentUrl(captionText) {
-  return `https://x.com/intent/post?text=${encodeURIComponent(captionText || "")}`;
+function buildXIntentUrl(postText) {
+  return `https://x.com/intent/post?text=${encodeURIComponent(postText || "")}`;
+}
+
+// キャプション本文＋ハッシュタグを投稿用の完成形テキストに組み立てる。
+// コピー・X Intent・共有の3経路で同じテキストになるよう必ずこれを使う
+// （X Intentだけcaption_text単体を渡していてハッシュタグが欠落する不具合が
+// 2026-08-29の初回実投稿で発覚したため共通化）
+function buildPostText(draft) {
+  const hashtagLine = (draft.hashtags || []).filter(Boolean).join(" ");
+  return [draft.caption_text, hashtagLine].filter(Boolean).join("\n\n");
 }
 
 function isIOSSafari() {
@@ -341,9 +350,7 @@ function PostingActionLinks({ draft, onMarkPosted }) {
   }, [draft.video_url]);
 
   async function handleCopyCaption() {
-    const text = [draft.caption_text, ...(draft.hashtags || [])]
-      .filter(Boolean)
-      .join("\n");
+    const text = buildPostText(draft);
     try {
       await navigator.clipboard.writeText(text);
       setCopyFeedback("コピーしました");
@@ -357,7 +364,7 @@ function PostingActionLinks({ draft, onMarkPosted }) {
   async function handleShare() {
     if (shareState.file) {
       try {
-        await shareVideoFile(shareState.file, draft.caption_text || "");
+        await shareVideoFile(shareState.file, buildPostText(draft));
       } catch (err) {
         console.error("共有エラー:", err);
       }
@@ -366,7 +373,7 @@ function PostingActionLinks({ draft, onMarkPosted }) {
 
   const platformUrl =
     draft.platform === "x"
-      ? buildXIntentUrl(draft.caption_text)
+      ? buildXIntentUrl(buildPostText(draft))
       : PLATFORM_UPLOAD_URLS[draft.platform];
 
   return (
