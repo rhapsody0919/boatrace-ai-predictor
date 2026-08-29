@@ -10,7 +10,7 @@
   `riskRules.js`: `sns-video-studio/remotion/risk-rules.json`を読み込み、`platforms`スコープを考慮した決定的パターンマッチ（`checkRiskRules(text, platform)`）を行う共通関数（ADR 0028）。
   `snsStrategyInsights.js`: `sns_strategy_insights`のCRUD・スコープ一致検索（`getActiveInsights({platform, format, language})`、`platform`等がnullのinsightも含めて取得）を行う共通関数。`scripts/lib/supabaseClient.js`の既存パターンに従う。
 
-- [ ] **3. `scripts/maintenance/promote-strategy-insights.js`新設**
+- [x] **3. `scripts/maintenance/promote-strategy-insights.js`新設**
   週次昇格処理のCLIスクリプト（ADR 0030）。`status='proposed'`かつ`created_at`が1週間以上前のレコードを取得 → タスク2の`checkRiskRules`で照合 → 問題なければ`active`(`activated_at`記録)、抵触すれば`retired`(`decision_note`に理由記録)に更新。実行結果（何件昇格・却下したか）を標準出力に出す。
 
 - [ ] **4. `api/admin/sns-hub/insights/*`エンドポイント新設**
