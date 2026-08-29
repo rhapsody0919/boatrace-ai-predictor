@@ -3,7 +3,9 @@
  * POST /api/admin/sns-hub/drafts/:id/mark-posted
  * body: { postedAt?: string (ISO8601、省略時は現在時刻) }
  *
- * ready_to_post状態の下書きにのみ適用できる（plan.mdのステータス遷移図参照）。
+ * approved（日本語版の承認直後）とready_to_post（翻訳版）のどちらからも
+ * 投稿済みにできる。管理画面（SnsHubAdmin.jsx）は両ステータスで投稿アクションを
+ * 表示しており、日本語版はapprovedのまま人間が投稿するのが通常フローのため。
  */
 
 import {
@@ -43,10 +45,10 @@ export default async function handler(req) {
     if (!draft) {
       return jsonResponse({ error: "下書きが見つかりません" }, 404);
     }
-    if (draft.status !== "ready_to_post") {
+    if (draft.status !== "approved" && draft.status !== "ready_to_post") {
       return jsonResponse(
         {
-          error: `status='${draft.status}'の下書きは投稿済みにできません（ready_to_postのみ）`,
+          error: `status='${draft.status}'の下書きは投稿済みにできません（approved/ready_to_postのみ）`,
         },
         409,
       );
