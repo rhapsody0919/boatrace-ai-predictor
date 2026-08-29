@@ -214,10 +214,17 @@
   width: fit-content;
 }
 
+.draft-background-details summary {
+  font-size: 0.8rem;
+  color: var(--color-gray-600);
+  cursor: pointer;
+  user-select: none;
+}
+
 .draft-background-text {
   font-size: 0.8rem;
   color: var(--color-gray-600);
-  margin: 0;
+  margin: 0.4rem 0 0;
 }
 
 .draft-caption-text {

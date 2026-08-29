@@ -247,7 +247,10 @@ function DraftCard({
         )}
 
         {draft.background_text && (
-          <p className="draft-background-text">{draft.background_text}</p>
+          <details className="draft-background-details">
+            <summary>生成メモ</summary>
+            <p className="draft-background-text">{draft.background_text}</p>
+          </details>
         )}
 
         {draft.caption_text && (
