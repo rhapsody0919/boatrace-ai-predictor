@@ -259,9 +259,9 @@ function PastVenueGridPage({ date }) {
   const { venuesData, loading, error } = usePastVenues(date);
 
   const breadcrumbItems = [
-    { label: "ホーム", path: "/" },
-    { label: "過去の予想", path: "/races" },
-    { label: formatDate(date), path: `/races/${date}` },
+    { name: "ホーム", url: "/" },
+    { name: "過去の予想", url: "/races" },
+    { name: formatDate(date), url: `/races/${date}` },
   ];
 
   return (
