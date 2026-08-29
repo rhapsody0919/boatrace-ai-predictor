@@ -26,6 +26,33 @@ export const formatDate = (dateStr) => {
   return `${year}年${month}月${day}日(${weekday})`;
 };
 
+// i18n言語コード → Intl.DateTimeFormat用ロケール
+const INTL_LOCALE_BY_LANG = {
+  ja: "ja-JP",
+  en: "en-US",
+  "zh-TW": "zh-TW",
+  ko: "ko-KR",
+};
+
+/**
+ * 日付フォーマット（言語対応版、フル形式）
+ * formatDate()は常に日本語（年月日+曜日）を返すため、翻訳対象ページ（/race/:raceId等）で
+ * 日本語以外のUI言語のときに文言が混在しないよう使う
+ * @param {string} dateStr - YYYY-MM-DD形式の日付
+ * @param {string} lang - i18nの言語コード（"ja"/"en"/"zh-TW"/"ko"）
+ * @returns {string} ロケールに応じた日付文字列
+ */
+export const formatDateLocalized = (dateStr, lang) => {
+  const date = new Date(dateStr + "T00:00:00+09:00");
+  const locale = INTL_LOCALE_BY_LANG[lang] || INTL_LOCALE_BY_LANG.ja;
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  }).format(date);
+};
+
 /**
  * 日付フォーマット（短縮形式）
  * @param {string} dateStr - YYYY-MM-DD形式の日付

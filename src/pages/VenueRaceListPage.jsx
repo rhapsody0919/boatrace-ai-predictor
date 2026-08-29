@@ -23,7 +23,11 @@ function VenueRaceListPage() {
 
   const isToday = !dateParam;
   const date = dateParam || getTodayJST();
-  const venueCode = parseInt(venueCodeParam, 10);
+  // parseIntは"5abc"のような末尾に余分な文字があるパラメータも5として通してしまうため、
+  // 全体が数字のみであることを正規表現で先に検証する
+  const venueCode = /^\d+$/.test(venueCodeParam || "")
+    ? parseInt(venueCodeParam, 10)
+    : NaN;
 
   const { races: allRaces, loading, error } = useDatePredictions(date);
 
@@ -61,13 +65,24 @@ function VenueRaceListPage() {
     ? `/venue/${venueCode}`
     : `/races/${date}/${venueCode}`;
 
+  // /races/:date/:venueCode（過去日付）はja専用パス（TRANSLATED_PATHS未登録）のため、
+  // 「本日」を前提にしたi18nの見出しをそのまま使い回さず日付入りの日本語文言にする
+  // （VenueGridPageのPastVenueGridPageと同じ方針。BOA-XXX的発見: 過去日付ページでも
+  // 「本日のレース一覧」というタイトルになっていた実装漏れの修正）
+  const metaTitle = isToday
+    ? t("venueRaceList.metaTitle", { venue: venueName })
+    : `${venueName} ${formatDate(date)}のレース一覧・AIデータ分析 - 龍神レーダー`;
+  const metaDescription = isToday
+    ? t("venueRaceList.metaDescription", { venue: venueName })
+    : `${venueName}ボートレース場の${formatDate(date)}の全レース一覧。各レースのAIデータ分析・結果を確認できます。`;
+  const noRacesMessage = isToday
+    ? t("home.noRacesToday")
+    : "このレース場のデータはありません";
+
   return (
     <>
-      <title>{t("venueRaceList.metaTitle", { venue: venueName })}</title>
-      <meta
-        name="description"
-        content={t("venueRaceList.metaDescription", { venue: venueName })}
-      />
+      <title>{metaTitle}</title>
+      <meta name="description" content={metaDescription} />
       <link rel="canonical" href={`https://www.boat-ai.jp${canonicalPath}`} />
       <Header />
 
@@ -92,7 +107,7 @@ function VenueRaceListPage() {
             />
           ) : error || venueRaces.length === 0 ? (
             <div className="venue-race-list-page__empty">
-              <p>{t("home.noRacesToday")}</p>
+              <p>{noRacesMessage}</p>
               <Link to={backLink} className="back-link">
                 {t("venueRaceList.backToVenues")}
               </Link>

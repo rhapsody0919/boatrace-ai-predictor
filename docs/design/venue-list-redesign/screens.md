@@ -81,8 +81,8 @@
 - 流用可能: `--color-grade-sg/g1/g2/g3`（グレードバッジ、`src/styles/design-tokens.css`）、`--surface-card`/`--border-hairline`（カード背景・枠線）、`--color-success`/`--color-error`（的中バッジ、`RaceCard.jsx`で使用中の色と統一）
 - 新規CSSが必要な箇所: 24枠固定グリッドのレイアウト（`grid-template-columns`等、モバイル320px〜で崩れない列数調整）、時間帯アイコンのビジュアル、開催日目/次開催表示のタイポグラフィ、日程タブのUI
 
-## 未解決点（`/step2`で決定）
+## 未解決点（解決済み、実装結果を記録）
 
-- `race_conditions`テーブルのJOINをどのAPI層（Edge API `/api/races/today`、Supabase RPC、フロントエンド直接クエリ）で追加するか
-- 過去日付の`series_day`データが欠損しているレース（機能追加前の過去データ）がある場合のフォールバック表示（「日目不明」等）
-- 一般戦（`race_grade`が`ippan`）のバッジ表示方針（現状`GRADE_CONFIG`に`ippan`エントリが無く、バッジ非表示になる）
+- ~~`race_conditions`テーブルのJOINをどのAPI層で追加するか~~ → RPC層（`get_today_races`/`get_predictions_by_date(_light)`）で追加した（`docs/db-migration/038_add_series_day_to_race_rpcs.sql`）
+- ~~過去日付の`series_day`データが欠損している場合のフォールバック表示~~ → `series_day`/`is_final_day`自体が実データ0件と判明したため、日程タブ・開催日目表示は今回スコープ外とし[BOA-226](https://linear.app/boat-ai/issue/BOA-226)に切り出した。フォールバック表示は不要になった
+- ~~一般戦（`race_grade`が`ippan`）のバッジ表示方針~~ → `GRADE_CONFIG`に`ippan`エントリを追加せず、現状維持（バッジ非表示）のまま実装した。一般戦はグレードレースと違って明示表示の必要性が低いと判断（暗黙の決定だったため実装時に明文化）

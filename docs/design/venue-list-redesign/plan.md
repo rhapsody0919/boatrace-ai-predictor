@@ -47,7 +47,7 @@ VenueGridPage(date)
           （非開催: リンクなし、「本日開催なし」表示のみ）
 
 VenueRaceListPage(date, venueCode)
-  └ 日程タブ（seriesDay/isFinalDayベース。開催が複数日にわたる場合のみ表示。1日開催の場合は非表示）
+  └ （日程タブは実装中にseriesDay/isFinalDayが実データ0件と判明したため今回は実装せず。BOA-226参照）
   └ RaceCard × N（既存コンポーネント流用）
       （onClick → navigate(/race/:raceId)）
 

@@ -89,7 +89,8 @@
     "metaTitle": "{{venue}} 第{{race}}場 AI數據分析 - 龍神雷達",
     "metaDescription": "免費查看{{venue}}第{{race}}場的出賽表資料、AI數據分析與展開預測。",
     "backToList": "← 返回比賽一覽",
-    "notFound": "找不到比賽"
+    "notFound": "找不到比賽",
+    "pastPredictionsBreadcrumb": "過往預測"
   },
   "volatility": {
     "levelHigh": "冷門機率高",

@@ -89,7 +89,8 @@
     "metaTitle": "{{venue}} {{race}}R AIデータ分析 - 龍神レーダー",
     "metaDescription": "{{venue}} {{race}}Rのデータ出走表・AIデータ分析・展開予測を無料で確認できます。",
     "backToList": "← レース一覧に戻る",
-    "notFound": "レースが見つかりませんでした"
+    "notFound": "レースが見つかりませんでした",
+    "pastPredictionsBreadcrumb": "過去の予想"
   },
   "volatility": {
     "levelHigh": "イン崩れ確率高",

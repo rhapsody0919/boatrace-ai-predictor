@@ -3,7 +3,7 @@
  * `/race/:raceId`（raceId = YYYY-MM-DD-VV-RR、本日・過去日付共通）。
  * 中身は既存のPredictionSection（PredictionPanel/RaceResult/RaceReview）を流用する。
  */
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
@@ -18,7 +18,7 @@ import { useDatePredictions } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
-import { formatDate } from "../utils/formatters";
+import { formatDateLocalized } from "../utils/formatters";
 import "./RaceDetailPage.css";
 
 // rawData（getPredictionsのrace）からPredictionSection用のprediction objectを構築
@@ -53,10 +53,9 @@ function buildPrediction(racePrediction, notFoundMessage) {
 
 function RaceDetailPage() {
   const { raceId } = useParams();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const localize = useLocalizedPath();
-  const predictionRef = useRef(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
 
   const parsed = parseRaceId(raceId);
@@ -142,8 +141,14 @@ function RaceDetailPage() {
     ...(isToday
       ? []
       : [
-          { name: "過去の予想", url: "/races" },
-          { name: formatDate(date), url: `/races/${date}` },
+          {
+            name: t("raceDetailPage.pastPredictionsBreadcrumb"),
+            url: "/races",
+          },
+          {
+            name: formatDateLocalized(date, i18n.resolvedLanguage),
+            url: `/races/${date}`,
+          },
         ]),
     { name: venueName, url: raceListLink },
     {
@@ -177,7 +182,8 @@ function RaceDetailPage() {
           <header className="page-header">
             <h1>
               🚤 {venueName} {parsed.raceNo}R
-              {!isToday && ` (${formatDate(date)})`}
+              {!isToday &&
+                ` (${formatDateLocalized(date, i18n.resolvedLanguage)})`}
             </h1>
             <Link to={raceListLink} className="back-link">
               {t("raceDetailPage.backToList")}
@@ -199,7 +205,6 @@ function RaceDetailPage() {
           ) : (
             <>
               <PredictionSection
-                ref={predictionRef}
                 prediction={prediction}
                 selectedRace={selectedRace}
                 isAnalyzing={isAnalyzing || loading}

@@ -99,7 +99,7 @@ kyoteibiyori.com・ボートレース公式サイト(boatrace.jp)のUIを参考�
 
 ## 未確定事項（ユーザー確認待ち）
 
-1. **新設URLの正式なパス構造**（会場別レース一覧・レース詳細それぞれのURL形式）: `/step2`（システム設計）で決定
+1. ~~新設URLの正式なパス構造~~: ADR-0026で決定（`/venue/:code`・`/races/:date/:code`・`/race/:raceId`、解決済み）
 2. ~~会場別レース一覧ページの日程タブの見せ方~~: `/step4`実装中に`series_day`/`is_final_day`が未取得（実データ0件）と判明したため、日程タブ自体を今回スコープから除外し[BOA-226](https://linear.app/boat-ai/issue/BOA-226)に切り出した（解決済み）
-3. **`VenueSelector.jsx`を削除するか維持するか**: 実装時に他の参照箇所を洗い出してから判断
-4. **sitemapの`EXPECTED_EXCLUSIONS`の線引き**（レース詳細ページを除外・会場別ページは含める、の妥当性）: `/step2`で確認
+3. ~~`VenueSelector.jsx`を削除するか維持するか~~: 実装時に他の参照箇所（App.jsx/RaceDetail.jsxのみ）を確認の上、両ファイルとも新実装で置き換え済みのため削除した（解決済み）
+4. ~~sitemapの`EXPECTED_EXCLUSIONS`の線引き~~: `/race/:raceId`（動的・検索需要が乏しい粒度）は非対象、`/venue/:code`（24件固定）・`/races/:date/:code`（直近7日、`/races/:date`と同方針）は対象とする方針で実装（解決済み、ADR-0026参照）

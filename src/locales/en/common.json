@@ -90,7 +90,8 @@
     "metaTitle": "{{venue}} Race {{race}} AI data analysis - Ryujin Radar",
     "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}}.",
     "backToList": "← Back to race list",
-    "notFound": "Race not found"
+    "notFound": "Race not found",
+    "pastPredictionsBreadcrumb": "Past Predictions"
   },
   "volatility": {
     "levelHigh": "High upset chance",
