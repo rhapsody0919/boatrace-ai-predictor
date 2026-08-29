@@ -479,6 +479,13 @@ input:focus-visible,
   text-align: center;
 }
 
+.result-volatility-outcome {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  text-align: center;
+}
+
 /* ポジウム：罫線カード横並び（塗りピル・グラデーションは廃止） */
 .result-podium {
   display: flex;

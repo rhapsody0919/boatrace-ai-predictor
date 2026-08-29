@@ -111,6 +111,12 @@ function Header() {
           </span>
         </button>
         <nav className="nav">
+          <Link
+            to={localize("/winning-technique")}
+            className={`nav-btn ${activeTab === "winning-technique" ? "active" : ""}`}
+          >
+            {t("nav.winningTechnique")}
+          </Link>
           <button
             className={`nav-btn ${activeTab === "races" ? "active" : ""}`}
             onClick={() => handleTabClick("races")}

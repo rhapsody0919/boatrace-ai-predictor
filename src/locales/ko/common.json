@@ -184,6 +184,10 @@
     "placeHit": "✅ 적중!（{{position}}착）",
     "placeMiss": "❌ 미적중",
     "turnSectionTitle": "🌊 전개 예측 검증",
+    "volatilitySectionTitle": "🌪️ 인 붕괴 위험도 돌아보기",
+    "volatilityPredicted": "예측: {{label}}",
+    "volatilityOutcomeFavorite": "결과: 1번 보트가 1착",
+    "volatilityOutcomeUpset": "결과: {{winner}}번 보트가 1착 (1번 보트 아님)",
     "payout": "배당금: ¥{{amount}}"
   },
   "panel": {

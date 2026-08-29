@@ -184,6 +184,10 @@
     "placeHit": "✅ 的中！（{{position}}着）",
     "placeMiss": "❌ 不的中",
     "turnSectionTitle": "🌊 展開予測の検証",
+    "volatilitySectionTitle": "🌪️ イン崩れ注意度の振り返り",
+    "volatilityPredicted": "予測: {{label}}",
+    "volatilityOutcomeFavorite": "結果: 1号艇が1着でした",
+    "volatilityOutcomeUpset": "結果: {{winner}}号艇が1着でした（1号艇以外）",
     "payout": "配当: {{amount}}円"
   },
   "panel": {

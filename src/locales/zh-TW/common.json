@@ -184,6 +184,10 @@
     "placeHit": "✅ 命中！（第{{position}}名）",
     "placeMiss": "❌ 未中",
     "turnSectionTitle": "🌊 展開預測驗證",
+    "volatilitySectionTitle": "🌪️ 冷門風險回顧",
+    "volatilityPredicted": "預測：{{label}}",
+    "volatilityOutcomeFavorite": "結果：1號艇獲得第1名",
+    "volatilityOutcomeUpset": "結果：{{winner}}號艇獲得第1名（非1號艇）",
     "payout": "派彩：¥{{amount}}"
   },
   "panel": {
