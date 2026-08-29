@@ -1,19 +1,29 @@
 .venue-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
-@media (max-width: 768px) {
+/* グリッドアイテムはデフォルトでmin-width:autoのため、内容（バッジ・時刻等）が
+   折り返せない場合にコンテナ幅を無視してカラムが広がり、グリッド全体が
+   横方向にはみ出す（既知のCSS Gridの罠）。min-width:0で1frどおりに縮められる
+   ようにする。狭い画面でも常に4列（kyoteibiyori.com等の競合と同じ密度）を
+   維持するため、カード側もこの前提でコンパクトに設計している */
+.venue-grid > * {
+  min-width: 0;
+}
+
+/* 4列のまま維持できる最小幅を実測した結果、375px幅（一般的なスマホ）では
+   4列だとカード内の情報がはみ出るため3列に落とす */
+@media (max-width: 420px) {
   .venue-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 320px) {
   .venue-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
   }
 }
