@@ -15,13 +15,15 @@ import {
 } from "./config/languages";
 import { refreshAdsOnRouteChange, trackPageView } from "./utils/analytics";
 import App from "./App";
+import VenueGridPage from "./pages/VenueGridPage";
+import VenueRaceListPage from "./pages/VenueRaceListPage";
+import RaceDetailPage from "./pages/RaceDetailPage";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import HowToUse from "./pages/HowToUse";
 import RaceHistory from "./pages/RaceHistory";
-import RaceDetail from "./pages/RaceDetail";
 import RacerProfile from "./pages/RacerProfile";
 import Profile from "./pages/Profile";
 import AccuracyHistory from "./pages/AccuracyHistory";
@@ -159,8 +161,10 @@ function LocalizedRoutes({ lng = "ja" }) {
   const VenueGuide = VENUE_GUIDE_BY_LANG[lng];
   return (
     <Routes>
-      {/* Main App - 予想ページ（トップ） */}
-      <Route path="/" element={<App tab="races" />} />
+      {/* 開催場一覧（トップ）: 会場一覧 → 会場別レース一覧 → レース詳細の3階層ナビ */}
+      <Route path="/" element={<VenueGridPage />} />
+      <Route path="venue/:venueCode" element={<VenueRaceListPage />} />
+      <Route path="race/:raceId" element={<RaceDetailPage />} />
 
       {/* タブページ（SEO対応: 個別URL） */}
       <Route path="hit-races" element={<App tab="hit-races" />} />
@@ -178,7 +182,8 @@ function LocalizedRoutes({ lng = "ja" }) {
 
       {/* Race History Routes */}
       <Route path="races" element={<RaceHistory />} />
-      <Route path="races/:date" element={<RaceDetail />} />
+      <Route path="races/:date" element={<VenueGridPage />} />
+      <Route path="races/:date/:venueCode" element={<VenueRaceListPage />} />
 
       {/* Racer Profile Route（ja専用、TRANSLATED_PATHS未登録） */}
       <Route path="racer/:racerId" element={<RacerProfile />} />

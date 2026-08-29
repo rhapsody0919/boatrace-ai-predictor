@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "venue-grid-navigation",
+    title: "開催場一覧ページを刷新！24会場から2タップで目的のレース分析へ",
+    description:
+      "トップページを24会場の開催場一覧にリニューアル。開催状況・グレード・時間帯アイコン・次のレース時刻が一目でわかり、会場→レース→データ分析へ最短2タップ。レースごとの専用URLでブックマーク・シェアにも対応した新しい使い方を解説します。",
+    date: "2026-08-29",
+    category: "新機能",
+    tags: ["新機能", "UI改善", "開催場一覧", "使い方"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/venue-list-grid.jpg",
+  },
+  {
     id: "race-mood-effect-guide",
     title:
       "イン崩れ注意度に波紋アニメーションを追加。荒れそうなレースがひと目でわかる",

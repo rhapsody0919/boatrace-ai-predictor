@@ -52,14 +52,7 @@ function extractHitRaces(predictions) {
     );
 }
 
-function HitRaces({
-  allVenuesData,
-  analyzeRace,
-  fetchWithRetry,
-  lastUpdated,
-  onRefresh,
-  isRefreshing,
-}) {
+function HitRaces({ fetchWithRetry, lastUpdated, onRefresh, isRefreshing }) {
   const navigate = useNavigate();
   const [rawToday, setRawToday] = useState([]);
   const [rawYesterday, setRawYesterday] = useState([]);
@@ -137,30 +130,9 @@ function HitRaces({
 
   const handleCardClick = useCallback(
     (hitRace) => {
-      const venueData = (allVenuesData || []).find(
-        (v) => v.placeCd === hitRace.placeCode,
-      );
-      if (venueData && venueData.races) {
-        const race = venueData.races.find(
-          (r) => r.raceNo === hitRace.raceNumber,
-        );
-        if (race) {
-          const formattedRace = {
-            id: `${race.date}-${race.placeCd}-${race.raceNo}`,
-            venue: venueData.placeName,
-            raceNumber: race.raceNo,
-            startTime: race.startTime || "未定",
-            weather: race.weather || "不明",
-            wave: race.waveHeight || 0,
-            wind: race.windVelocity || 0,
-            rawData: race,
-          };
-          analyzeRace(formattedRace);
-          navigate("/");
-        }
-      }
+      navigate(`/race/${hitRace.raceId}`);
     },
-    [allVenuesData, analyzeRace, navigate],
+    [navigate],
   );
 
   // ボートレース場別の統計を計算

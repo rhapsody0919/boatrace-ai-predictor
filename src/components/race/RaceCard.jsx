@@ -67,6 +67,27 @@ function RaceCard({ race, onAnalyzeRace }) {
               {badgeLabel}
             </span>
           )}
+          {isFinished && unified && (
+            <span
+              style={{
+                padding: "0.2rem 0.55rem",
+                borderRadius: "8px",
+                fontSize: "0.7rem",
+                fontWeight: "700",
+                background:
+                  hitBadges.length > 0
+                    ? "var(--color-success)"
+                    : "var(--color-error)",
+                color: "#fff",
+                letterSpacing: "0.02em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {hitBadges.length > 0
+                ? hitBadges[0].label
+                : t("raceCard.missBadge")}
+            </span>
+          )}
           {gradeConfig && (
             <span
               style={{
@@ -86,46 +107,15 @@ function RaceCard({ race, onAnalyzeRace }) {
           <span className="race-number">{race.raceNumber}R</span>
         </div>
       </div>
-      {isFinished && unified && (
-        <div
-          style={{
-            marginTop: "0.5rem",
-            display: "flex",
-            gap: "0.3rem",
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
-          {hitBadges.length > 0 ? (
-            hitBadges.map((badge, idx) => (
-              <span
-                key={idx}
-                style={{
-                  padding: "0.3rem 0.6rem",
-                  background: "#10b981",
-                  color: "white",
-                  borderRadius: "6px",
-                  fontSize: "0.75rem",
-                  fontWeight: "700",
-                }}
-              >
-                {badge.label}
-              </span>
-            ))
-          ) : (
-            <span
-              style={{
-                padding: "0.3rem 0.6rem",
-                background: "#ef4444",
-                color: "white",
-                borderRadius: "6px",
-                fontSize: "0.75rem",
-                fontWeight: "700",
-              }}
-            >
-              {t("raceCard.missBadge")}
+      {race.startTime && (
+        <div className="race-info">
+          <div className="info-item">
+            <span className="label">{t("home.deadline")}</span>
+            <span className="value">
+              {race.startTime}
+              {t("home.jstNote")}
             </span>
-          )}
+          </div>
         </div>
       )}
       <button className="predict-btn" onClick={() => onAnalyzeRace(race)}>

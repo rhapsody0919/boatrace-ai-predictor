@@ -120,6 +120,16 @@ const staticPages = [
     changefreq: "daily",
     priority: "0.8",
   },
+  // 会場別レース一覧（本日、/venue/1〜24。venue-list-redesign）
+  // 個別レース詳細（/race/:raceId）は1日最大288件の細粒度動的ページで
+  // 検索需要が見込めず、クロールバジェット浪費（BOA-84の教訓）を避けるため
+  // sitemap非対象とする（docs/adr/0026参照）
+  ...Array.from({ length: 24 }, (_, i) => ({
+    loc: `/venue/${i + 1}`,
+    lastmod: new Date().toISOString().split("T")[0],
+    changefreq: "daily",
+    priority: "0.7",
+  })),
 ];
 
 // 全言語で翻訳提供済みのページ（デフォルト言語以外の各言語 URL を登録。未翻訳の blog 等は含めない）
@@ -127,6 +137,12 @@ const LOCALIZED_PAGES = [
   { basePath: "/", changefreq: "daily", priority: "0.9" },
   { basePath: "/guide", changefreq: "monthly", priority: "0.8" },
   { basePath: "/winning-technique", changefreq: "daily", priority: "0.8" },
+  // 会場別レース一覧（本日）は4言語対応（venue-list-redesign）
+  ...Array.from({ length: 24 }, (_, i) => ({
+    basePath: `/venue/${i + 1}`,
+    changefreq: "daily",
+    priority: "0.6",
+  })),
 ];
 
 // blogPostsXx.js にエントリはあるが対応する -{suffix}.md が存在しない場合、sitemapが
@@ -321,7 +337,7 @@ async function getRacePages() {
 
     const { data, error } = await supabase
       .from("races")
-      .select("race_date")
+      .select("race_date, venue_code")
       .gte("race_date", cutoffStr)
       .order("race_date", { ascending: false });
     if (error) throw new Error(error.message);
@@ -337,8 +353,23 @@ async function getRacePages() {
       });
     }
 
+    // 会場別レース一覧（過去日付、/races/:date/:venueCode）も日付と同じ
+    // 直近7日ウィンドウで登録する（venue-list-redesign、docs/adr/0026参照）
+    const dateVenuePairs = [
+      ...new Set((data ?? []).map((r) => `${r.race_date}/${r.venue_code}`)),
+    ];
+    for (const pair of dateVenuePairs) {
+      const [dateStr] = pair.split("/");
+      racePages.push({
+        loc: `/races/${pair}`,
+        lastmod: dateStr,
+        changefreq: "weekly",
+        priority: "0.6",
+      });
+    }
+
     console.log(
-      `📊 Supabase から直近7日分のレースデータを取得（${uniqueDates.length}日分）`,
+      `📊 Supabase から直近7日分のレースデータを取得（${uniqueDates.length}日分・会場別${dateVenuePairs.length}件）`,
     );
   } catch (err) {
     console.error("レースページ取得エラー:", err.message);

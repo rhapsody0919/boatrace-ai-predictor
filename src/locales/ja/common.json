@@ -68,6 +68,30 @@
     "label": "レース場を選択:",
     "raceCount": "{{count}}レース"
   },
+  "venueGrid": {
+    "noRacesToday": "本日開催なし",
+    "nextRace": "次 {{race}}R",
+    "allFinished": "全レース終了",
+    "timeOfDay": {
+      "morning": "モーニング",
+      "summer": "サマータイム",
+      "nighter": "ナイター",
+      "midnight": "ミッドナイト"
+    }
+  },
+  "venueRaceList": {
+    "title": "レース一覧",
+    "metaTitle": "{{venue}}の本日のレース一覧・AIデータ分析 - 龍神レーダー",
+    "metaDescription": "{{venue}}ボートレース場の本日の全レース一覧。締切時刻・グレードを確認し、各レースのAIデータ分析へ進めます。",
+    "backToVenues": "← 会場一覧に戻る"
+  },
+  "raceDetailPage": {
+    "metaTitle": "{{venue}} {{race}}R AIデータ分析 - 龍神レーダー",
+    "metaDescription": "{{venue}} {{race}}Rのデータ出走表・AIデータ分析・展開予測を無料で確認できます。",
+    "backToList": "← レース一覧に戻る",
+    "notFound": "レースが見つかりませんでした",
+    "pastPredictionsBreadcrumb": "過去の予想"
+  },
   "volatility": {
     "levelHigh": "イン崩れ確率高",
     "levelLow": "本命有利",

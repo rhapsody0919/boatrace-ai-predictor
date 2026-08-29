@@ -20,6 +20,7 @@ const EXPECTED_EXCLUSIONS = {
   venues:
     "言語専用ページ。LANGUAGE_ONLY_PAGESで言語別に登録するためja版のstaticPages対象外",
   "admin/rules": "管理画面。非公開",
+  "admin/sns-hub": "管理画面（SNSマーケティングハブ）。非公開",
   holmes: "α版・動線非公開ページ",
   poirot: "α版・動線非公開ページ",
 };

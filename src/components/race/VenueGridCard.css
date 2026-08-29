@@ -1,0 +1,132 @@
+/* kyoteibiyori.com等の競合と同じ密度感（常に4列）を狭い画面でも保てるよう、
+   1セルの情報量を絞ったコンパクト設計にしている。大会名は表示せず
+   グレードバッジのtitle属性（ホバー/長押しで見える）に留める */
+.venue-grid-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.45rem 0.4rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-card);
+  min-height: 72px;
+  text-decoration: none;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.venue-grid-card--open {
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.venue-grid-card--open:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 非開催カードは透明度でなく配色で落ち着かせる
+   （opacityでの減光はテキストコントラストがWCAG AA基準4.5:1を割るため。
+   --surface-page×--text-secondaryはscripts/maintenance/check-token-contrast.jsで
+   検証済みの組み合わせ。背景をページ背景色に落とすことで開催中カードとの
+   区別も維持する、BOA-206） */
+.venue-grid-card--closed {
+  background: var(--surface-page);
+  border-color: var(--border-hairline);
+}
+
+.venue-grid-card--closed .venue-grid-card__name {
+  color: var(--text-secondary, var(--color-gray-600));
+  font-weight: 600;
+}
+
+.venue-grid-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.venue-grid-card__name {
+  font-weight: 700;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.venue-grid-card__time-icon {
+  font-size: 0.7rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* バッジ行はBOA-222（会場ランキングサマリー等）の将来追加を見込み、
+   グレード非表示時も高さを確保してレイアウトシフトを防ぐ */
+.venue-grid-card__badges {
+  display: flex;
+  gap: 0.2rem;
+  min-height: 0.95rem;
+  flex-wrap: wrap;
+}
+
+.venue-grid-card__grade {
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--color-white);
+  letter-spacing: 0.02em;
+}
+
+.venue-grid-card__title {
+  font-size: 0.6rem;
+  line-height: 1.2;
+  color: var(--text-secondary, var(--color-gray-600));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.venue-grid-card__status {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  margin-top: auto;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.venue-grid-card__next-race {
+  font-size: 0.62rem;
+  color: var(--text-secondary, var(--color-gray-600));
+  white-space: nowrap;
+}
+
+.venue-grid-card__next-time {
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.venue-grid-card__finished,
+.venue-grid-card__closed-label {
+  font-size: 0.65rem;
+  color: var(--text-secondary, var(--color-gray-500));
+}
+
+@media (max-width: 480px) {
+  .venue-grid-card {
+    padding: 0.35rem 0.3rem;
+    min-height: 64px;
+  }
+
+  .venue-grid-card__name {
+    font-size: 0.72rem;
+  }
+}

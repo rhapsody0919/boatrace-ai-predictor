@@ -120,6 +120,8 @@ export const TRANSLATED_PATHS = [
   "/",
   "/guide",
   "/venues",
+  "/venue",
+  "/race",
   "/winning-technique",
 ];
 

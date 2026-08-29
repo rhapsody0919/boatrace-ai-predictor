@@ -1,0 +1,27 @@
+/* 背景は独自のcolor-mix等を使わず、scripts/maintenance/check-token-contrast.jsで
+   検証済みの組み合わせ（--surface-card × --color-warning-dark-text）のみ使う */
+.venue-grid-page__error {
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 2px solid var(--color-warning);
+  color: var(--color-warning-dark-text);
+}
+
+.venue-grid-page__error-title {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.venue-grid-page__error-reload {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-warning);
+  color: var(--color-black);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+}

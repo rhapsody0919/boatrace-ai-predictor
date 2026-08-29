@@ -1,0 +1,68 @@
+.venue-race-list-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 2.5rem;
+}
+
+.venue-race-list-container .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.venue-race-list-container .page-header h1 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+/* .race-gridはApp.cssのホーム画面向け設計（768px以下で1カラムに強制収束）を
+   このページでもそのまま継承していた。591px幅等で1カラムになり間延びして
+   見えるため、列数だけこのページ専用に上書きする（カードの見た目自体は
+   .race-list-section .race-card をそのまま流用、詳細度を上げてApp.css側の
+   メディアクエリより優先させる） */
+.venue-race-list-container .race-grid {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .venue-race-list-container .race-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .venue-race-list-container .race-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 2カラム時、カードヘッダー（会場名+バッジ群+レース番号）が横一列に収まらず
+   会場名が「多摩」「川」のように意味の切れ目を無視して折り返すことがあった。
+   バッジ群を下の行に逃がし、会場名自体は折り返さないようにする */
+.venue-race-list-container .race-card-header {
+  flex-wrap: wrap;
+}
+
+.venue-race-list-page__empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary, var(--color-gray-500));
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+@media (max-width: 480px) {
+  .venue-race-list-page {
+    padding: 0.75rem 0.75rem 1.5rem;
+  }
+
+  .venue-race-list-container .page-header h1 {
+    font-size: 1.2rem;
+  }
+}
