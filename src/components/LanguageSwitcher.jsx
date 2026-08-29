@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -15,16 +16,33 @@ function LanguageSwitcher() {
   const { i18n, t } = useTranslation();
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef(null);
 
   // resolvedLanguage は 'en-US' → 'en' のように正規化済み
   const currentLang = i18n.resolvedLanguage || DEFAULT_LANGUAGE;
+  const currentLangConfig = SUPPORTED_LANGUAGES.find(
+    (lang) => lang.code === currentLang,
+  );
 
   // 現在のページが提供されていない言語はボタンを無効化する（例: /venues は ja/ko 非対応）
   const { basePath } = parseLangFromPath(pathname);
   const availableLangCodes = getAvailableLanguages(basePath).map((l) => l.code);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [isOpen]);
+
   // 言語切替時は URL も言語プレフィックスに同期させる（SEO: 言語別 URL）
   const handleChange = (code) => {
+    setIsOpen(false);
     if (code === currentLang) return;
     trackLanguageSwitch(currentLang, code);
 
@@ -40,38 +58,44 @@ function LanguageSwitcher() {
   };
 
   return (
-    <div
-      className="language-switcher"
-      role="group"
-      aria-label={t("language.switchLabel")}
-    >
-      <span className="language-switcher-icon" aria-hidden="true">
-        🌐
-      </span>
-      {SUPPORTED_LANGUAGES.map((lang) => {
-        const isAvailable = availableLangCodes.includes(lang.code);
-        return (
-          <button
-            key={lang.code}
-            className={`language-switcher-btn ${currentLang === lang.code ? "active" : ""} ${isAvailable ? "" : "unavailable"}`}
-            onClick={() => isAvailable && handleChange(lang.code)}
-            aria-pressed={currentLang === lang.code}
-            aria-disabled={!isAvailable}
-            title={
-              isAvailable
-                ? lang.label
-                : t("language.notAvailable", { lang: lang.label })
-            }
-            aria-label={
-              isAvailable
-                ? lang.label
-                : `${lang.label}: ${t("language.notAvailable", { lang: lang.label })}`
-            }
-          >
-            {lang.shortLabel ?? lang.code.toUpperCase()}
-          </button>
-        );
-      })}
+    <div className="language-switcher" ref={rootRef}>
+      <button
+        type="button"
+        className="language-switcher-trigger"
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-label={t("language.switchLabel")}
+        aria-expanded={isOpen}
+      >
+        <span aria-hidden="true">🌐</span>
+        <span className="language-switcher-current">
+          {currentLangConfig?.shortLabel ?? currentLang.toUpperCase()}
+        </span>
+      </button>
+      {isOpen && (
+        <div className="language-switcher-dropdown" role="menu">
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const isAvailable = availableLangCodes.includes(lang.code);
+            return (
+              <button
+                key={lang.code}
+                type="button"
+                role="menuitemradio"
+                className={`language-switcher-option ${currentLang === lang.code ? "active" : ""} ${isAvailable ? "" : "unavailable"}`}
+                onClick={() => isAvailable && handleChange(lang.code)}
+                aria-checked={currentLang === lang.code}
+                aria-disabled={!isAvailable}
+                title={
+                  isAvailable
+                    ? lang.label
+                    : t("language.notAvailable", { lang: lang.label })
+                }
+              >
+                {lang.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

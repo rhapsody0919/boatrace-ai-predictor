@@ -85,7 +85,8 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
   }) => {
     // 会場ガイドはja非対応（en/zh-TW/koの3言語フルセット、2026-08-11時点）
     await page.goto("/en/venues");
-    const jaBtn = page.locator('.language-switcher-btn:has-text("JA")');
+    await page.locator(".language-switcher-trigger").click();
+    const jaBtn = page.locator('.language-switcher-option:has-text("日本語")');
     await expect(jaBtn).toBeVisible();
     await expect(jaBtn).toHaveAttribute("aria-disabled", "true");
     await expect(jaBtn).toHaveClass(/unavailable/);
@@ -99,11 +100,15 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
     page,
   }) => {
     await page.goto("/en/venues");
-    const zhBtn = page.locator('.language-switcher-btn:has-text("中文")');
+    await page.locator(".language-switcher-trigger").click();
+    const zhBtn = page.locator(
+      '.language-switcher-option:has-text("繁體中文")',
+    );
     await zhBtn.click();
     await expect(page).toHaveURL(/\/zh-TW\/venues$/);
 
-    const koBtn = page.locator('.language-switcher-btn:has-text("한국어")');
+    await page.locator(".language-switcher-trigger").click();
+    const koBtn = page.locator('.language-switcher-option:has-text("한국어")');
     await koBtn.click();
     await expect(page).toHaveURL(/\/ko\/venues$/);
   });
