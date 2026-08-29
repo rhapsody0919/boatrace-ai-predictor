@@ -25,7 +25,14 @@
 
 /* 非開催カードは透明度でなく配色で落ち着かせる
    （opacityでの減光はテキストコントラストがWCAG AA基準4.5:1を割るため。
-   --text-secondaryはコントラスト監査済みトークン、BOA-206） */
+   --surface-page×--text-secondaryはscripts/maintenance/check-token-contrast.jsで
+   検証済みの組み合わせ。背景をページ背景色に落とすことで開催中カードとの
+   区別も維持する、BOA-206） */
+.venue-grid-card--closed {
+  background: var(--surface-page);
+  border-color: var(--border-hairline);
+}
+
 .venue-grid-card--closed .venue-grid-card__name {
   color: var(--text-secondary, var(--color-gray-600));
   font-weight: 600;
