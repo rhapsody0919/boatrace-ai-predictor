@@ -2,10 +2,11 @@
 
 `spec.md`・`plan.md`・`screens.md`を実現するための実装タスク。依存順に並べる。各タスクは目安1コミット〜1PR。
 
-- [ ] **1. マイグレーション適用**
+- [x] **1. マイグレーション適用**
   `docs/db-migration/039_sns_strategy_insights.sql`をSupabase Dashboardで実行する。`sns_strategy_insights`テーブル新設、`sns_drafts.referenced_insight_ids`・`sns_template_variants.created_by`列追加。他タスクの前提。
+  → ユーザーが実行済み、`information_schema.columns`で全カラムの反映を確認済み（2026-08-29）。
 
-- [ ] **2. `scripts/lib/riskRules.js`・`scripts/lib/snsStrategyInsights.js`新設**
+- [x] **2. `scripts/lib/riskRules.js`・`scripts/lib/snsStrategyInsights.js`新設**
   `riskRules.js`: `sns-video-studio/remotion/risk-rules.json`を読み込み、`platforms`スコープを考慮した決定的パターンマッチ（`checkRiskRules(text, platform)`）を行う共通関数（ADR 0028）。
   `snsStrategyInsights.js`: `sns_strategy_insights`のCRUD・スコープ一致検索（`getActiveInsights({platform, format, language})`、`platform`等がnullのinsightも含めて取得）を行う共通関数。`scripts/lib/supabaseClient.js`の既存パターンに従う。
 
