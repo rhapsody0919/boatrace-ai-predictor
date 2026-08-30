@@ -12,9 +12,12 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
   const volatility = racePrediction?.volatility;
   const result = racePrediction?.result;
   const isFinished = result?.finished;
-  const isAwaitingResult =
-    getRaceStatus({ startTime: race.startTime, result }, nowHHMM) ===
-    RACE_STATUS.AWAITING_RESULT;
+  const status = getRaceStatus({ startTime: race.startTime, result }, nowHHMM);
+  const isAwaitingResult = status === RACE_STATUS.AWAITING_RESULT;
+  // 締切前(UPCOMING)以外は見た目でも一目で分かるよう、トップバー・見出し・
+  // ボタンをグレーアウトする（バッジの発色は維持し、的中/外れ・結果反映待ちの
+  // 視認性を落とさない）
+  const isPastDeadline = status !== RACE_STATUS.UPCOMING;
 
   // フォールバック値（percentile=0.5）は「実測ではない」ため、high/lowの
   // 断定バッジを出さない（VolatilityDisplay.jsxの「データ収集中」表示と同じ方針）
@@ -49,7 +52,9 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
 
   return (
     <div
-      className="race-card"
+      className={
+        isPastDeadline ? "race-card race-card--deadline-passed" : "race-card"
+      }
       style={showBadge ? { borderLeft: `4px solid ${badgeColor}` } : undefined}
     >
       <div className="race-card-header">

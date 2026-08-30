@@ -152,6 +152,28 @@ input:focus-visible,
   border-color: #0ea5e9;
 }
 
+/* 締切前(UPCOMING)以外（結果反映待ち・結果確定）は一目で分かるよう
+   トップバー・見出し・ボタンをグレーアウトする。バッジ（的中/外れ・
+   結果反映待ち、RaceCard.jsx内でインラインstyle指定）の発色は
+   このルールの対象外なので視認性は維持される */
+.race-list-section .race-card--deadline-passed::before {
+  background: var(--border-hairline);
+}
+
+.race-list-section .race-card--deadline-passed .race-card-header h3 {
+  color: var(--text-secondary);
+}
+
+.race-list-section .race-card--deadline-passed .predict-btn {
+  background: var(--border-hairline);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.race-list-section .race-card--deadline-passed .predict-btn:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 .race-list-section .race-card-header {
   display: flex;
   justify-content: space-between;
