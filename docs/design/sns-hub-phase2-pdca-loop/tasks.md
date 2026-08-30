@@ -22,7 +22,7 @@
 - [x] **6. 「戦略メモ」タブUI実装**
   `SnsHubAdmin.jsx`の`TABS`に`insights`タブを追加。`InsightTab`（要判断/履歴の2セクション）・`InsightCard`（scope バッジ・本文・evidence・却下ボタン＋任意理由欄）・`InsightHistoryEntry`（日時・decision_note・superseded_byリンク・反映本数）を実装。`SnsHubAdmin.css`にスタイル追加（ステータス別バッジ色、既存の意味トークン運用ルールに従う）。実装後、ライト/ダークモード・モバイル幅でPlaywright確認する。
 
-- [ ] **7. `docs/reference/sns-brand-guideline.md`新設**
+- [x] **7. `docs/reference/sns-brand-guideline.md`新設**
   `BOAT_COLORS`（`src/utils/colors.js`参照）・金の龍ロゴ・GOLD統一トーンの説明、`risk-rules.json`への参照をまとめる（spec.md要件7）。
 
 - [ ] **8. `/x-growth-report`・`/tiktok-growth-report`スキル拡張**
