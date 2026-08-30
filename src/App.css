@@ -479,11 +479,27 @@ input:focus-visible,
   text-align: center;
 }
 
-.result-volatility-outcome {
-  margin: 0;
+.result-volatility-line {
+  margin: 0 0 0.35rem;
   font-size: 0.9rem;
   color: var(--text-primary);
   text-align: center;
+}
+
+.result-volatility-line:last-of-type {
+  margin-bottom: 0;
+}
+
+.result-volatility-caveat {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.result-volatility-caveat a {
+  color: var(--brand-accent-primary);
+  text-decoration: none;
 }
 
 /* ポジウム：罫線カード横並び（塗りピル・グラデーションは廃止） */

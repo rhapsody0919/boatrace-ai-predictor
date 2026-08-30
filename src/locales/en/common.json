@@ -189,9 +189,14 @@
     "placeMiss": "❌ Missed",
     "turnSectionTitle": "🌊 Turn prediction check",
     "volatilitySectionTitle": "🌪️ Upset-risk review",
-    "volatilityPredicted": "Predicted: {{label}}",
-    "volatilityOutcomeFavorite": "Result: Lane 1 finished 1st",
-    "volatilityOutcomeUpset": "Result: Lane {{winner}} finished 1st (not Lane 1)",
+    "volatilityPredictedWithPercentile": "Predicted: {{label}} (venue percentile {{percentile}})",
+    "volatilityOutcomeLabel": "Result",
+    "volatilityOutcomeCollapsed": "Upset",
+    "volatilityOutcomeSolid": "Favorite won",
+    "volatilityOutcomeDetailUpset": " (Lane {{winner}}, not Lane 1, finished 1st)",
+    "volatilityOutcomeDetailFavorite": " (Lane 1 finished 1st)",
+    "volatilityCaveat": "A single race result can't confirm or disprove the prediction.",
+    "volatilityCaveatLink": "See measured accuracy ›",
     "payout": "Payout: ¥{{amount}}"
   },
   "panel": {

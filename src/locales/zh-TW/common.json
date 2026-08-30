@@ -188,9 +188,14 @@
     "placeMiss": "❌ 未中",
     "turnSectionTitle": "🌊 展開預測驗證",
     "volatilitySectionTitle": "🌪️ 冷門風險回顧",
-    "volatilityPredicted": "預測：{{label}}",
-    "volatilityOutcomeFavorite": "結果：1號艇獲得第1名",
-    "volatilityOutcomeUpset": "結果：{{winner}}號艇獲得第1名（非1號艇）",
+    "volatilityPredictedWithPercentile": "預測：{{label}}（會場內百分位 {{percentile}}）",
+    "volatilityOutcomeLabel": "結果",
+    "volatilityOutcomeCollapsed": "冷門",
+    "volatilityOutcomeSolid": "熱門獲勝",
+    "volatilityOutcomeDetailUpset": "（非1號艇的{{winner}}號艇獲得第1名）",
+    "volatilityOutcomeDetailFavorite": "（1號艇獲得第1名）",
+    "volatilityCaveat": "※單一場次的結果無法證明預測的準確與否。",
+    "volatilityCaveatLink": "查看實測準確率 ›",
     "payout": "派彩：¥{{amount}}"
   },
   "panel": {
