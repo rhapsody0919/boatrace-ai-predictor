@@ -31,5 +31,5 @@
 - [ ] **9. `sns-hub-content-generation`Routineのjob_config更新**
   `RemoteTrigger update`でRoutineのプロンプトに以下を追加: (a) 月曜の週次バッチ実行時、タスク3のスクリプトを呼び出してinsight昇格処理を行う、(b) 生成対象のplatform/format/languageに一致する`active`なinsightを取得しプロンプトへ注入、生成した`sns_drafts`の`referenced_insight_ids`に記録、(c) 新規コンポジション試作時は`sns_template_variants`に`created_by='routine'`で登録しJSXファイルをコミットする指示を追加（既存の「コードの変更・コミット・PR作成は行わない」制約の例外として明記）。タスク7のブランドガードラインも試作前に参照する指示を含める。
 
-- [ ] **10. `.claude/CLAUDE.md`更新**
+- [x] **10. `.claude/CLAUDE.md`更新**
   「セッション開始時のXツイート下書き投稿確認」等と同じ節構成で、「セッション開始時の集客調査スキル実行確認」を追加（spec.md要件8）。`data/analysis/x-growth/`・TikTok版保存先の最新ファイル日付が1週間以上前なら`/x-growth-report`・`/tiktok-growth-report`の実行を提案する。
