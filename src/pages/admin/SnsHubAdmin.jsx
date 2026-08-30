@@ -16,6 +16,8 @@ import {
   redoDraft,
   markDraftPosted,
   addDraftMetric,
+  getInsights,
+  rejectInsight,
 } from "../../services/snsHubService";
 import { canShareVideo, shareVideoFile } from "../../utils/webShare";
 import Toast, { useToast } from "../../components/Toast";
@@ -43,6 +45,17 @@ function isIOSSafari() {
   return /iPhone|iPad|iPod/.test(navigator.userAgent);
 }
 
+function formatDateTime(isoString) {
+  if (!isoString) return "-";
+  return new Date(isoString).toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 const REVISION_REASONS = [
   { code: "time-expression-error", label: "時制表現の誤り" },
   { code: "gambling-connotation", label: "ギャンブル連想表現" },
@@ -63,12 +76,14 @@ const TABS = [
     statuses: ["approved", "ready_to_post"],
   },
   { id: "posted", label: "投稿済み", statuses: ["posted"] },
+  { id: "insights", label: "戦略メモ" },
 ];
 
 function SnsHubAdmin() {
   const [activeTab, setActiveTab] = useState("review");
   const [drafts, setDrafts] = useState([]);
   const [approvers, setApprovers] = useState([]);
+  const [insights, setInsights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { toast, showToast } = useToast();
@@ -77,12 +92,14 @@ function SnsHubAdmin() {
     setLoading(true);
     setError(null);
     try {
-      const [draftsData, approversData] = await Promise.all([
+      const [draftsData, approversData, insightsData] = await Promise.all([
         getDrafts(),
         getApprovers(),
+        getInsights(),
       ]);
       setDrafts(draftsData);
       setApprovers(approversData);
+      setInsights(insightsData);
     } catch (err) {
       console.error("下書き取得エラー:", err);
       setError(err.message);
@@ -131,9 +148,10 @@ function SnsHubAdmin() {
   }
 
   const activeTabDef = TABS.find((t) => t.id === activeTab);
-  const visibleDrafts = drafts.filter((d) =>
-    activeTabDef.statuses.includes(d.status),
-  );
+  const isInsightsTab = activeTab === "insights";
+  const visibleDrafts = isInsightsTab
+    ? []
+    : drafts.filter((d) => activeTabDef.statuses.includes(d.status));
 
   return (
     <div className="sns-hub-admin-page">
@@ -141,9 +159,10 @@ function SnsHubAdmin() {
 
       <div className="tab-navigation">
         {TABS.map((tab) => {
-          const count = drafts.filter((d) =>
-            tab.statuses.includes(d.status),
-          ).length;
+          const count =
+            tab.id === "insights"
+              ? insights.filter((i) => i.status === "proposed").length
+              : drafts.filter((d) => tab.statuses.includes(d.status)).length;
           return (
             <button
               key={tab.id}
@@ -157,7 +176,14 @@ function SnsHubAdmin() {
       </div>
 
       <div className="tab-content">
-        {visibleDrafts.length === 0 ? (
+        {isInsightsTab ? (
+          <InsightTab
+            insights={insights}
+            onReject={(insightId, reason) =>
+              handleAction(rejectInsight, insightId, reason)
+            }
+          />
+        ) : visibleDrafts.length === 0 ? (
           <div className="empty-state">
             <p>該当する下書きはありません。</p>
           </div>
@@ -196,6 +222,185 @@ function SnsHubAdmin() {
 
 const PLATFORM_LABELS = { x: "X", tiktok: "TikTok", youtube: "YouTube" };
 const LANGUAGE_LABELS = { ja: "日本語", en: "English" };
+const SOURCE_LABELS = {
+  "own-metrics": "自社実績",
+  "external-research": "外部調査",
+};
+
+// 「戦略メモ」タブ: 要判断(proposed)ビューと履歴(active/retired)ビューの2区分
+// （2026-08-29、ユーザー指摘によりPDCAの経緯を追える設計に追加）
+function InsightTab({ insights, onReject }) {
+  const proposed = insights.filter((i) => i.status === "proposed");
+  const history = insights
+    .filter((i) => i.status === "active" || i.status === "retired")
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  return (
+    <div className="insight-tab">
+      <section className="insight-section">
+        <h2 className="insight-section-title">要判断</h2>
+        {proposed.length === 0 ? (
+          <div className="empty-state">
+            <p>反映待ちの戦略メモはありません。</p>
+          </div>
+        ) : (
+          <div className="insight-list">
+            {proposed.map((insight) => (
+              <InsightCard
+                key={insight.id}
+                insight={insight}
+                onReject={(reason) => onReject(insight.id, reason)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="insight-section">
+        <h2 className="insight-section-title">履歴</h2>
+        {history.length === 0 ? (
+          <div className="empty-state">
+            <p>履歴はまだありません。</p>
+          </div>
+        ) : (
+          <div className="insight-list">
+            {history.map((insight) => (
+              <InsightHistoryEntry
+                key={insight.id}
+                insight={insight}
+                allInsights={insights}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function InsightScopeBadges({ insight }) {
+  return (
+    <div className="draft-card-badges">
+      <span className="draft-badge draft-badge-platform">
+        {insight.platform
+          ? PLATFORM_LABELS[insight.platform] || insight.platform
+          : "全プラットフォーム"}
+      </span>
+      <span className="draft-badge draft-badge-language">
+        {insight.language
+          ? LANGUAGE_LABELS[insight.language] || insight.language
+          : "全言語"}
+      </span>
+      {insight.format && (
+        <span className="draft-badge draft-badge-variant">
+          {insight.format}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function InsightCard({ insight, onReject }) {
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
+
+  function handleReject() {
+    onReject(reason.trim() || undefined);
+    setRejecting(false);
+    setReason("");
+  }
+
+  return (
+    <div className="insight-card">
+      <InsightScopeBadges insight={insight} />
+      <p className="insight-text">{insight.insight_text}</p>
+      {insight.evidence && (
+        <p className="insight-evidence">根拠: {insight.evidence}</p>
+      )}
+      <p className="insight-meta">
+        提案日時: {formatDateTime(insight.created_at)}
+        {" ・ "}
+        {SOURCE_LABELS[insight.source] || insight.source}
+        {insight.research_method && ` (${insight.research_method})`}
+      </p>
+
+      {rejecting ? (
+        <div className="insight-reject-form">
+          <input
+            type="text"
+            className="insight-reject-reason"
+            placeholder="却下理由（任意）"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+          <div className="insight-reject-actions">
+            <button
+              className="revision-cancel"
+              onClick={() => setRejecting(false)}
+            >
+              キャンセル
+            </button>
+            <button className="draft-action-btn redo" onClick={handleReject}>
+              却下する
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          className="draft-action-btn revise"
+          onClick={() => setRejecting(true)}
+        >
+          却下
+        </button>
+      )}
+    </div>
+  );
+}
+
+function InsightHistoryEntry({ insight, allInsights }) {
+  const supersededByInsight = insight.superseded_by
+    ? allInsights.find((i) => i.id === insight.superseded_by)
+    : null;
+
+  const isActive = insight.status === "active";
+
+  return (
+    <div className="insight-card insight-history-entry">
+      <div className="draft-card-badges">
+        <span
+          className={`insight-status-badge ${
+            isActive ? "insight-status-active" : "insight-status-retired"
+          }`}
+        >
+          {isActive ? "採用中" : "却下/失効"}
+        </span>
+      </div>
+      <InsightScopeBadges insight={insight} />
+      <p className="insight-text">{insight.insight_text}</p>
+      <p className="insight-meta">
+        提案: {formatDateTime(insight.created_at)}
+        {insight.activated_at &&
+          ` ・ 採用: ${formatDateTime(insight.activated_at)}`}
+        {insight.retired_at &&
+          ` ・ 却下/失効: ${formatDateTime(insight.retired_at)}`}
+      </p>
+      {insight.decision_note && (
+        <p className="insight-decision-note">理由: {insight.decision_note}</p>
+      )}
+      <p className="insight-usage-count">
+        反映本数:{" "}
+        {insight.referenced_draft_count === null
+          ? "取得できませんでした"
+          : `${insight.referenced_draft_count}件`}
+      </p>
+      {supersededByInsight && (
+        <p className="insight-superseded-link">
+          → 後継: {supersededByInsight.insight_text.slice(0, 30)}...
+        </p>
+      )}
+    </div>
+  );
+}
 
 function DraftCard({
   draft,

@@ -19,7 +19,7 @@
 - [x] **5. `src/services/snsHubService.js`拡張**
   `getInsights(status)`・`rejectInsight(insightId, reason)`を既存の`getDrafts`/`approveDraft`と同じ薄いラッパーパターンで追加。
 
-- [ ] **6. 「戦略メモ」タブUI実装**
+- [x] **6. 「戦略メモ」タブUI実装**
   `SnsHubAdmin.jsx`の`TABS`に`insights`タブを追加。`InsightTab`（要判断/履歴の2セクション）・`InsightCard`（scope バッジ・本文・evidence・却下ボタン＋任意理由欄）・`InsightHistoryEntry`（日時・decision_note・superseded_byリンク・反映本数）を実装。`SnsHubAdmin.css`にスタイル追加（ステータス別バッジ色、既存の意味トークン運用ルールに従う）。実装後、ライト/ダークモード・モバイル幅でPlaywright確認する。
 
 - [ ] **7. `docs/reference/sns-brand-guideline.md`新設**
