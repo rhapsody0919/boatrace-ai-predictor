@@ -16,6 +16,7 @@ import { VenueGrid } from "../components/race";
 import { dataService } from "../services/dataService";
 import { useDatePredictions } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
+import { useNowHHMM } from "../hooks/useNowHHMM";
 import { getLanguage, localizePath } from "../config/languages";
 import { getFeaturedPosts, getLatestPosts } from "../data/blogPosts";
 import { WEEKDAYS } from "../constants";
@@ -25,13 +26,6 @@ import "./VenueGridPage.css";
 // 過去日付ビューのレイアウト（.race-detail-page/.page-header/.back-link等）は
 // 旧RaceDetail.jsxのスタイルを流用する
 import "./RaceDetail.css";
-
-// JSTの現在時刻をHH:MM形式で返す
-function getNowHHMMJST() {
-  const now = new Date();
-  const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  return `${String(jst.getUTCHours()).padStart(2, "0")}:${String(jst.getUTCMinutes()).padStart(2, "0")}`;
-}
 
 function getTodayDateShort() {
   const today = new Date();
@@ -120,6 +114,7 @@ function usePastVenues(date) {
 function TodayVenueGridPage() {
   const { t, i18n } = useTranslation();
   const localize = useLocalizedPath();
+  const nowHHMM = useNowHHMM(true);
   const {
     venuesData,
     loading,
@@ -182,7 +177,7 @@ function TodayVenueGridPage() {
                 <VenueGrid
                   venuesData={venuesData}
                   getVenueLink={(code) => localize(`/venue/${code}`)}
-                  nowHHMM={getNowHHMMJST()}
+                  nowHHMM={nowHHMM}
                 />
               </>
             )}

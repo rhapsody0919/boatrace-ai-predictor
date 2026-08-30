@@ -90,7 +90,10 @@
     "metaDescription": "免費查看{{venue}}第{{race}}場的出賽表資料、AI數據分析與展開預測。",
     "backToList": "← 返回比賽一覽",
     "notFound": "找不到比賽",
-    "pastPredictionsBreadcrumb": "過往預測"
+    "pastPredictionsBreadcrumb": "過往預測",
+    "noDataForDate": "此日期尚無預測資料",
+    "invalidUrl": "找不到指定的比賽，請確認網址是否正確",
+    "backToHome": "← 返回首頁"
   },
   "volatility": {
     "levelHigh": "冷門機率高",
@@ -197,7 +200,8 @@
     "unknownVenue": "未知",
     "venueGuideLink": "查看{{venue}}賽場指南",
     "venueGuideDesc": "賽場特性與投注要點詳解",
-    "analysisToolsLink": "用數據分析工具進一步分析本場比賽"
+    "analysisToolsLink": "用數據分析工具進一步分析本場比賽",
+    "awaitingResultBanner": "已過截止時間，但結果尚未更新（資料約每小時更新一次）"
   },
   "home": {
     "introBannerText": "龍神雷達 - 免費賽艇AI預測與數據分析 | 分析複勝預測、展開預測等45項以上數據。了解更多 →",
@@ -343,6 +347,7 @@
     "noNextRace": "沒有下一場比賽"
   },
   "raceCard": {
+    "awaitingResult": "結果待反映",
     "badgePlace": "✅ 複勝命中",
     "badgeTurn": "✅ 展開命中",
     "missBadge": "❌ 未命中",

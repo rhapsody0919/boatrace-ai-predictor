@@ -16,9 +16,11 @@ const TIME_OF_DAY_ICON = {
   [TIME_OF_DAY.MIDNIGHT]: "⭐",
 };
 
-// 現在時刻（JST基準のHH:MM文字列）より後の最初のレースを返す
+// 現在時刻（JST基準のHH:MM文字列）より後の最初のレースを返す。
+// startTimeが欠損しているレース（データ取り込み遅延等）は「まだ判定できない」ため、
+// 安全側に倒して常に候補に含める（除外すると本当は残っているのに「終了」と誤表示されるため）
 function findNextRace(races, nowHHMM) {
-  return races.find((r) => r.startTime && r.startTime > nowHHMM) || null;
+  return races.find((r) => !r.startTime || r.startTime > nowHHMM) || null;
 }
 
 function VenueGridCard({ venueCode, venueData, linkTo, nowHHMM }) {
@@ -95,9 +97,11 @@ function VenueGridCard({ venueCode, venueData, linkTo, nowHHMM }) {
             <span className="venue-grid-card__next-race">
               {t("venueGrid.nextRace", { race: nextRace.raceNo })}
             </span>
-            <span className="venue-grid-card__next-time">
-              {nextRace.startTime}
-            </span>
+            {nextRace.startTime && (
+              <span className="venue-grid-card__next-time">
+                {nextRace.startTime}
+              </span>
+            )}
           </>
         ) : (
           <span className="venue-grid-card__finished">

@@ -11,6 +11,7 @@ import LoadingScreen from "../components/LoadingScreen";
 import { RaceCard } from "../components/race";
 import { useDatePredictions } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
+import { useNowHHMM } from "../hooks/useNowHHMM";
 import { getTodayJST } from "../utils/dateUtils";
 import { formatDate } from "../utils/formatters";
 import "./VenueRaceListPage.css";
@@ -30,6 +31,8 @@ function VenueRaceListPage() {
     : NaN;
 
   const { races: allRaces, loading, error } = useDatePredictions(date);
+  // Hooksはearly returnより前で無条件に呼ぶ必要があるため、venueCode不正時のNavigateより前に置く
+  const nowHHMM = useNowHHMM(isToday);
 
   if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
     return <Navigate to={isToday ? "/" : `/races/${date}`} replace />;
@@ -119,6 +122,7 @@ function VenueRaceListPage() {
                   <RaceCard
                     key={race.id}
                     race={race}
+                    nowHHMM={nowHHMM}
                     onAnalyzeRace={(r) => navigate(localize(`/race/${r.id}`))}
                   />
                 ))}

@@ -15,11 +15,20 @@ export const getJSTNow = () => {
 };
 
 /**
+ * 現在時刻をJSTのHH:MM文字列で取得
+ * @returns {string} "HH:MM"形式
+ */
+export const getNowHHMMJST = () => {
+  const jst = getJSTNow();
+  return `${String(jst.getUTCHours()).padStart(2, "0")}:${String(jst.getUTCMinutes()).padStart(2, "0")}`;
+};
+
+/**
  * 今日の日付をJSTで取得
  * @returns {string} YYYY-MM-DD形式
  */
 export const getTodayJST = () => {
-  return getJSTNow().toISOString().split('T')[0];
+  return getJSTNow().toISOString().split("T")[0];
 };
 
 /**
@@ -29,7 +38,7 @@ export const getTodayJST = () => {
 export const getYesterdayJST = () => {
   const jstNow = getJSTNow();
   const yesterday = new Date(jstNow.getTime() - 24 * 60 * 60 * 1000);
-  return yesterday.toISOString().split('T')[0];
+  return yesterday.toISOString().split("T")[0];
 };
 
 /**
@@ -40,7 +49,7 @@ export const getYesterdayJST = () => {
 export const getDaysAgoJST = (days) => {
   const jstNow = getJSTNow();
   const target = new Date(jstNow.getTime() - days * 24 * 60 * 60 * 1000);
-  return target.toISOString().split('T')[0];
+  return target.toISOString().split("T")[0];
 };
 
 /**
@@ -69,7 +78,7 @@ export const getDateListJST = (days) => {
  * @returns {Object} { year, month, day }
  */
 export const parseDateInfo = (dateStr) => {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  const [year, month, day] = dateStr.split("-").map(Number);
   return { year, month, day };
 };
 
@@ -81,8 +90,8 @@ export const getThisMonthRange = () => {
   const jstNow = getJSTNow();
   const year = jstNow.getUTCFullYear();
   const month = jstNow.getUTCMonth() + 1;
-  const start = `${year}-${String(month).padStart(2, '0')}-01`;
-  const end = `${year}-${String(month).padStart(2, '0')}-31`;
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = `${year}-${String(month).padStart(2, "0")}-31`;
   return { start, end, year, month };
 };
 
@@ -100,8 +109,8 @@ export const getLastMonthRange = () => {
     year -= 1;
   }
 
-  const start = `${year}-${String(month).padStart(2, '0')}-01`;
-  const end = `${year}-${String(month).padStart(2, '0')}-31`;
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = `${year}-${String(month).padStart(2, "0")}-31`;
   return { start, end, year, month };
 };
 
@@ -129,8 +138,8 @@ export const isYesterday = (dateStr) => {
  * @returns {string} YYYY年M月D日形式
  */
 export const formatDateJP = (dateStr) => {
-  if (!dateStr) return '';
-  const [year, month, day] = dateStr.split('-').map(Number);
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-").map(Number);
   return `${year}年${month}月${day}日`;
 };
 
