@@ -25,7 +25,7 @@
 - [x] **7. `docs/reference/sns-brand-guideline.md`新設**
   `BOAT_COLORS`（`src/utils/colors.js`参照）・金の龍ロゴ・GOLD統一トーンの説明、`risk-rules.json`への参照をまとめる（spec.md要件7）。
 
-- [ ] **8. `/x-growth-report`・`/tiktok-growth-report`スキル拡張**
+- [x] **8. `/x-growth-report`・`/tiktok-growth-report`スキル拡張**
   `.claude/commands/x-growth-report.md`・`.claude/commands/tiktok-growth-report.md`の最終ステップ後に、提案した「小施策（即実行）」を`sns_strategy_insights`へ`status='proposed'`で登録する新規ステップを追加（ADR 0027）。既存の静的ファイル保存は維持。
 
 - [ ] **9. `sns-hub-content-generation`Routineのjob_config更新**

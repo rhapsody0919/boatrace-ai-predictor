@@ -65,6 +65,22 @@ PDCAの「C→A」を閉じるための最重要ステップ。**新しいデー
 - 小施策（即実行）の例: 投稿時間帯の見直し、キャプション・ハッシュタグの調整、反応の良かった型の横展開、history.jsonの記録漏れ修正
 - 大施策（提案のみ）の例: マスコットキャラのTikTok投入タイミング、ビジネスアカウント化の再検討（フェーズB以降）、新しい型の開発
 
+### 7. 提案した小施策をinsightとしてDBに登録する（Phase 2、2026-08-29追加）
+
+SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）の入力として、ステップ6で挙げた「小施策（即実行）」を`sns_strategy_insights`テーブルに構造化して登録する。既存の`data/analysis/tiktok-growth/report-{日付}.json`への保存は維持したまま、追加で行う（ADR 0027）。
+
+- 各「小施策」1件につき1レコードを`createInsight`（`scripts/lib/snsStrategyInsights.js`）で登録する
+  - `platform`: `'tiktok'`
+  - `language`: `'ja'`（本スキルが観測しているのは日本語アカウントのみのため。英語アカウント開設後は別途判断する）
+  - `format`: 施策が特定の型に限定される場合はその型名、全体に関わる施策なら`null`
+  - `insightText`: 施策の内容（例:「会場攻略型の比重を7割に上げる」、次回生成に注入してそのまま参照できる粒度で書く）
+  - `evidence`: 根拠となった数値・観測
+  - `source`: 競合観測由来なら`'external-research'`、自アカウント実績由来なら`'own-metrics'`
+  - `researchMethod`: `'tiktok-growth-report-skill'`
+- 「大施策（提案のみ）」はinsight化しない（人間の戦略判断を要するため、次回生成へ自動反映すべきではない）
+- 登録は専用スクリプトが無いため`node -e`等の一時的なコードで行ってよい
+- 過去に蓄積済みの`data/analysis/tiktok-growth/report-*.json`にまだinsight化されていない小施策が残っていれば、このステップで遡って登録してもよい
+
 ## 解釈の注意点
 
 - TikTokの視聴数は投稿後数時間〜1日でカウントの大部分が確定する傾向がある（Xほど早くはないが、数日待ってから確認すると安定した数値が見られる）
