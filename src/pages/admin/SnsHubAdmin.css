@@ -475,6 +475,98 @@
   cursor: pointer;
 }
 
+/* 「戦略メモ」タブ（要判断・履歴の2区分、2026-08-29追加） */
+.insight-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.insight-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-gray-800);
+}
+
+.insight-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.insight-card {
+  border: 1px solid var(--color-gray-200);
+  border-radius: 12px;
+  background: white;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.insight-history-entry {
+  background: var(--color-gray-50);
+}
+
+.insight-status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.insight-status-active {
+  background: var(--color-success);
+  color: white;
+}
+
+.insight-status-retired {
+  background: var(--color-gray-300);
+  color: var(--color-gray-700);
+}
+
+.insight-text {
+  font-size: 0.875rem;
+  color: var(--color-gray-800);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.insight-evidence,
+.insight-meta,
+.insight-decision-note,
+.insight-usage-count,
+.insight-superseded-link {
+  font-size: 0.8rem;
+  color: var(--color-gray-600);
+  margin: 0;
+}
+
+.insight-reject-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.insight-reject-reason {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  box-sizing: border-box;
+}
+
+.insight-reject-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 /* レスポンシブ（スマホでの動画確認・承認操作を主用途とするため特に配慮する） */
 @media (max-width: 480px) {
   .sns-hub-admin-page {
