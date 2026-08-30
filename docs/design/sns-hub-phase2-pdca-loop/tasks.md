@@ -16,7 +16,7 @@
 - [x] **4. `api/admin/sns-hub/insights/*`エンドポイント新設**
   `api/_lib/snsHubHelpers.js`に`getInsightById`等を追加。`GET /api/admin/sns-hub/insights`（`status`クエリパラメータ対応、`active`/`retired`の場合は`referenced_insight_ids`から反映本数を計算して含める）、`POST /api/admin/sns-hub/insights/[id]/reject`（body: `{ reason?: string }`、`status='retired'`・`retired_at`・`decision_note`更新）を実装。
 
-- [ ] **5. `src/services/snsHubService.js`拡張**
+- [x] **5. `src/services/snsHubService.js`拡張**
   `getInsights(status)`・`rejectInsight(insightId, reason)`を既存の`getDrafts`/`approveDraft`と同じ薄いラッパーパターンで追加。
 
 - [ ] **6. 「戦略メモ」タブUI実装**

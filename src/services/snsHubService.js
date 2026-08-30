@@ -91,3 +91,21 @@ export async function addDraftMetric(
     body: JSON.stringify({ metricName, metricValue, source }),
   });
 }
+
+/**
+ * 「戦略メモ」insight一覧を取得する
+ * @param {string} [status] - 'proposed' | 'active' | 'retired' | undefined(全件)
+ */
+export async function getInsights(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  const { data } = await request(`/insights${query}`);
+  return data || [];
+}
+
+/** insightを却下する（理由は任意） */
+export async function rejectInsight(insightId, reason) {
+  return request(`/insights/${insightId}/reject`, {
+    method: "POST",
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
+}
