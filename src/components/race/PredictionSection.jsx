@@ -10,9 +10,10 @@ import RaceResult from "./RaceResult";
 import RaceReview from "./RaceReview";
 import { prefetchRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { getRaceId } from "../../utils/raceId";
+import { RACE_STATUS } from "../../utils/raceStatus";
 
 const PredictionSection = forwardRef(
-  ({ prediction, selectedRace, isAnalyzing, date }, ref) => {
+  ({ prediction, selectedRace, isAnalyzing, date, status }, ref) => {
     const { t } = useTranslation();
 
     // レース選択直後（AI分析演出の間）に分析データの取得を先行開始する。
@@ -26,8 +27,11 @@ const PredictionSection = forwardRef(
     if (!selectedRace) return null;
 
     // レース前は「予想の作業台」（データ出走表が主役）、
-    // 結果確定後は「検証の場」（結果・振り返りが主役）として順序を入れ替える
-    const finished = Boolean(prediction?.result?.finished);
+    // 結果確定後は「検証の場」（結果・振り返りが主役）として順序を入れ替える。
+    // statusが渡されない呼び出し元向けのフォールバックとして旧ロジックも残す
+    const finished = status
+      ? status === RACE_STATUS.FINISHED
+      : Boolean(prediction?.result?.finished);
 
     const panel = (
       <PredictionPanel
@@ -35,6 +39,7 @@ const PredictionSection = forwardRef(
         selectedRace={selectedRace}
         isAnalyzing={isAnalyzing}
         date={date}
+        status={status}
       />
     );
     const result = <RaceResult prediction={prediction} />;

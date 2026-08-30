@@ -4,7 +4,7 @@
  * 中身は既存のPredictionSection（PredictionPanel/RaceResult/RaceReview）を流用する。
  */
 import { useState, useEffect, useMemo } from "react";
-import { useParams, Link, useNavigate, Navigate } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
@@ -16,8 +16,10 @@ import {
 } from "../components/race";
 import { useDatePredictions } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
+import { useNowHHMM } from "../hooks/useNowHHMM";
 import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
+import { getRaceStatus } from "../utils/raceStatus";
 import { formatDateLocalized } from "../utils/formatters";
 import "./RaceDetailPage.css";
 
@@ -57,14 +59,23 @@ function RaceDetailPage() {
   const navigate = useNavigate();
   const localize = useLocalizedPath();
   const [isAnalyzing, setIsAnalyzing] = useState(true);
+  // raceIdが変わった瞬間、レンダー中に即座にisAnalyzingをtrueへ戻す
+  // （Reactの「レンダー中に前回値と比較して状態を調整する」公式パターン。
+  // useEffectでのsetState呼び出しは無駄な再レンダーを1回挟むため避ける）
+  const [prevRaceId, setPrevRaceId] = useState(raceId);
+  if (raceId !== prevRaceId) {
+    setPrevRaceId(raceId);
+    setIsAnalyzing(true);
+  }
 
   const parsed = parseRaceId(raceId);
   const date = parsed?.date;
   const isToday = date === getTodayJST();
 
   const { races: allRaces, loading, error } = useDatePredictions(date);
+  const nowHHMM = useNowHHMM(isToday);
 
-  // AI分析中の演出（初回マウント時のみ短時間表示）
+  // AI分析中の演出（500ms後に解除。raceId変更のたびに再セットされる）
   useEffect(() => {
     const timer = setTimeout(() => setIsAnalyzing(false), 500);
     return () => clearTimeout(timer);
@@ -101,7 +112,22 @@ function RaceDetailPage() {
   }, [allRaces]);
 
   if (!parsed) {
-    return <Navigate to="/" replace />;
+    return (
+      <>
+        <title>{t("meta.title")}</title>
+        <Header />
+        <div className="race-detail-page-v2">
+          <div className="race-detail-page-v2__container">
+            <div className="race-detail-page-v2__empty">
+              <p>{t("raceDetailPage.invalidUrl")}</p>
+              <Link to={localize("/")} className="back-link">
+                {t("raceDetailPage.backToHome")}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </>
+    );
   }
 
   const venueName = t(`venues.${parsed.venueCode}`);
@@ -120,10 +146,13 @@ function RaceDetailPage() {
       }
     : null;
 
-  const prediction =
-    racePrediction && !isAnalyzing
-      ? buildPrediction(racePrediction, t("errors.noPredictionData"))
-      : null;
+  const prediction = racePrediction
+    ? buildPrediction(racePrediction, t("errors.noPredictionData"))
+    : null;
+  const status = getRaceStatus(
+    { startTime: racePrediction?.startTime, result: racePrediction?.result },
+    nowHHMM,
+  );
 
   const navigateToRace = (race) => {
     navigate(localize(`/race/${race.id}`));
@@ -195,6 +224,13 @@ function RaceDetailPage() {
               title={t("home.loadingTitle")}
               description={t("home.loadingDesc")}
             />
+          ) : error === "no-data" ? (
+            <div className="race-detail-page-v2__empty">
+              <p>{t("raceDetailPage.noDataForDate")}</p>
+              <Link to={raceListLink} className="back-link">
+                {t("raceDetailPage.backToList")}
+              </Link>
+            </div>
           ) : error || !racePrediction ? (
             <div className="race-detail-page-v2__empty">
               <p>{t("raceDetailPage.notFound")}</p>
@@ -209,6 +245,7 @@ function RaceDetailPage() {
                 selectedRace={selectedRace}
                 isAnalyzing={isAnalyzing || loading}
                 date={isToday ? undefined : date}
+                status={status}
               />
 
               {isToday && (

@@ -91,7 +91,10 @@
     "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}}.",
     "backToList": "← Back to race list",
     "notFound": "Race not found",
-    "pastPredictionsBreadcrumb": "Past Predictions"
+    "pastPredictionsBreadcrumb": "Past Predictions",
+    "noDataForDate": "No prediction data is available for this date yet.",
+    "invalidUrl": "We couldn't find that race. Please check the URL.",
+    "backToHome": "← Back to home"
   },
   "volatility": {
     "levelHigh": "High upset chance",
@@ -198,7 +201,8 @@
     "unknownVenue": "Unknown",
     "venueGuideLink": "View the {{venue}} venue guide",
     "venueGuideDesc": "Detailed venue characteristics and betting angles",
-    "analysisToolsLink": "Analyze this race further with the data analysis tools"
+    "analysisToolsLink": "Analyze this race further with the data analysis tools",
+    "awaitingResultBanner": "The deadline has passed, but the result hasn't been posted yet (data updates about once an hour)."
   },
   "home": {
     "introBannerText": "Ryujin Radar - Free AI Boat Race Predictions & Data Analysis | 45+ data points analyzed, including place picks and turn predictions. Learn more →",
@@ -345,6 +349,7 @@
     "noNextRace": "No next race"
   },
   "raceCard": {
+    "awaitingResult": "Awaiting result",
     "badgePlace": "✅ Place hit",
     "badgeTurn": "✅ Turn hit",
     "missBadge": "❌ Missed",

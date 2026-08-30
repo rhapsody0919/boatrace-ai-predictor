@@ -90,7 +90,10 @@
     "metaDescription": "{{venue}} {{race}}Rのデータ出走表・AIデータ分析・展開予測を無料で確認できます。",
     "backToList": "← レース一覧に戻る",
     "notFound": "レースが見つかりませんでした",
-    "pastPredictionsBreadcrumb": "過去の予想"
+    "pastPredictionsBreadcrumb": "過去の予想",
+    "noDataForDate": "この日付の予測データはまだありません",
+    "invalidUrl": "指定されたレースが見つかりませんでした。URLをご確認ください",
+    "backToHome": "← ホームに戻る"
   },
   "volatility": {
     "levelHigh": "イン崩れ確率高",
@@ -197,7 +200,8 @@
     "unknownVenue": "不明",
     "venueGuideLink": "{{venue}}の攻略ガイドを見る",
     "venueGuideDesc": "会場の特徴と狙い目を詳しく解説",
-    "analysisToolsLink": "データ分析ツールでこのレースをさらに分析する"
+    "analysisToolsLink": "データ分析ツールでこのレースをさらに分析する",
+    "awaitingResultBanner": "締切を過ぎましたが、結果はまだ反映されていません（データは1時間おきに更新されます）"
   },
   "home": {
     "introBannerText": "龍神レーダー - 無料のボートレースAI予想＆データ分析 | 複勝予想・展開予測など45項目のデータを分析。詳しくはこちら →",
@@ -343,6 +347,7 @@
     "noNextRace": "次のレースなし"
   },
   "raceCard": {
+    "awaitingResult": "結果反映待ち",
     "badgePlace": "✅ 複勝的中",
     "badgeTurn": "✅ 展開的中",
     "missBadge": "❌ 外れ",

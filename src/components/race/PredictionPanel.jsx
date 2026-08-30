@@ -43,8 +43,15 @@ import AiCopyButton from "./AiCopyButton";
 import Toast, { useToast } from "../Toast";
 import { getRaceId } from "../../utils/raceId";
 import { AI_COPY_PROMPT_TYPES } from "../../utils/aiCopyPrompts";
+import { RACE_STATUS } from "../../utils/raceStatus";
 
-function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
+function PredictionPanel({
+  prediction,
+  selectedRace,
+  isAnalyzing,
+  date,
+  status,
+}) {
   const { t } = useTranslation();
   // フックはearly returnより前で無条件に呼ぶ必要があるため、selectedRace未確定時は空オブジェクトを渡す
   const { venueCode, venueName } = useRaceData(selectedRace || {});
@@ -80,6 +87,9 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
   // 結果確定済みレースでは未来志向のAIデータ分析（展開予測/イン崩れ）を表示しない。
   // 過去レースの検証は「データで振り返る」（RaceReview）が担う
   const isFinished = Boolean(prediction?.result?.finished);
+  // 締切は過ぎたが結果はまだ反映されていない状態（1時間おきのスクレイピングバッチのラグ）。
+  // AI分析パネル自体は表示を維持しつつ、案内バナーのみ追加する
+  const isAwaitingResult = status === RACE_STATUS.AWAITING_RESULT;
 
   // ローディング中
   if (isAnalyzing) {
@@ -146,6 +156,22 @@ function PredictionPanel({ prediction, selectedRace, isAnalyzing, date }) {
           >
             {t("panel.newTab")}
           </span>
+        </div>
+      )}
+
+      {isAwaitingResult && (
+        <div
+          style={{
+            marginTop: "1rem",
+            marginBottom: "1.5rem",
+            padding: "0.75rem 1rem",
+            background: "var(--color-gray-100)",
+            borderRadius: "8px",
+            borderLeft: "4px solid var(--color-gray-600)",
+            color: "var(--color-gray-700)",
+          }}
+        >
+          {t("panel.awaitingResultBanner")}
         </div>
       )}
 

@@ -4,13 +4,17 @@
 
 import { useTranslation } from "react-i18next";
 import { GRADE_CONFIG } from "../../constants/gradeConfig";
+import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
 
-function RaceCard({ race, onAnalyzeRace }) {
+function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
   const { t } = useTranslation();
   const racePrediction = race.rawData;
   const volatility = racePrediction?.volatility;
   const result = racePrediction?.result;
   const isFinished = result?.finished;
+  const isAwaitingResult =
+    getRaceStatus({ startTime: race.startTime, result }, nowHHMM) ===
+    RACE_STATUS.AWAITING_RESULT;
 
   // フォールバック値（percentile=0.5）は「実測ではない」ため、high/lowの
   // 断定バッジを出さない（VolatilityDisplay.jsxの「データ収集中」表示と同じ方針）
@@ -86,6 +90,22 @@ function RaceCard({ race, onAnalyzeRace }) {
               {hitBadges.length > 0
                 ? hitBadges[0].label
                 : t("raceCard.missBadge")}
+            </span>
+          )}
+          {isAwaitingResult && (
+            <span
+              style={{
+                padding: "0.2rem 0.55rem",
+                borderRadius: "8px",
+                fontSize: "0.7rem",
+                fontWeight: "700",
+                background: "var(--color-gray-600)",
+                color: "#fff",
+                letterSpacing: "0.02em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {t("raceCard.awaitingResult")}
             </span>
           )}
           {gradeConfig && (
