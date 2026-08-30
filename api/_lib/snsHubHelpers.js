@@ -22,13 +22,16 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * URLパスから抽出したdraft idがUUID形式か検証する。
+ * URLパスから抽出したIDがUUID形式か検証する（draft/insight等どのエンティティにも使う汎用関数）。
  * 未検証のままSupabase REST APIのクエリ文字列に埋め込むと、意図しない文字
  * （&や?等）でクエリ構造が壊れる可能性があるため、抽出直後に必ず通す。
  */
-export function isValidDraftId(id) {
+export function isValidUuid(id) {
   return typeof id === "string" && UUID_PATTERN.test(id);
 }
+
+/** @deprecated isValidUuidを使う。既存呼び出し元との後方互換のために残している */
+export const isValidDraftId = isValidUuid;
 
 export async function getDraftById(id) {
   const response = await fetch(
@@ -63,6 +66,44 @@ export async function updateDraft(id, patch) {
   );
   if (!response.ok) {
     throw new Error(`sns_drafts更新エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+export async function getInsightById(id) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_strategy_insights?id=eq.${id}&select=*`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_strategy_insights取得エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+export async function updateInsight(id, patch) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_strategy_insights?id=eq.${id}`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(patch),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_strategy_insights更新エラー: ${response.status}`);
   }
   const rows = await response.json();
   return rows[0] || null;

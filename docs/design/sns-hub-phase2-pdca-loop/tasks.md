@@ -13,7 +13,7 @@
 - [x] **3. `scripts/maintenance/promote-strategy-insights.js`新設**
   週次昇格処理のCLIスクリプト（ADR 0030）。`status='proposed'`かつ`created_at`が1週間以上前のレコードを取得 → タスク2の`checkRiskRules`で照合 → 問題なければ`active`(`activated_at`記録)、抵触すれば`retired`(`decision_note`に理由記録)に更新。実行結果（何件昇格・却下したか）を標準出力に出す。
 
-- [ ] **4. `api/admin/sns-hub/insights/*`エンドポイント新設**
+- [x] **4. `api/admin/sns-hub/insights/*`エンドポイント新設**
   `api/_lib/snsHubHelpers.js`に`getInsightById`等を追加。`GET /api/admin/sns-hub/insights`（`status`クエリパラメータ対応、`active`/`retired`の場合は`referenced_insight_ids`から反映本数を計算して含める）、`POST /api/admin/sns-hub/insights/[id]/reject`（body: `{ reason?: string }`、`status='retired'`・`retired_at`・`decision_note`更新）を実装。
 
 - [ ] **5. `src/services/snsHubService.js`拡張**
