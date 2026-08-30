@@ -2,6 +2,7 @@
  * RaceResult - レース結果表示コンポーネント
  */
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import TurnPatternList from "./TurnPatternList";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
 
@@ -32,6 +33,9 @@ function RaceResult({ prediction }) {
   const showVolatilityOutcome =
     volatilityLevel === "high" || volatilityLevel === "low";
   const isUpset = result.rank1 !== 1;
+  const volatilityPercentileValue = Math.round(
+    (prediction.volatilityPercentile ?? 0) * 100,
+  );
 
   return (
     <div className="race-result">
@@ -57,22 +61,41 @@ function RaceResult({ prediction }) {
           （1レースが堅く決まっても「高リスク」判定が誤りだったとは言えない）。
           2026-08-14: 従来ここに表示していた単発レースの的中/不的中判定を削除。
           精度検証は集計ベース（BOA-177、着手待ち）に委ねる方針で統一した。
-          2026-08-29: 判定なしの事実併記（予測レベル→実際の結果）のみ追加 */}
+          2026-08-29: 判定なしの事実併記（予測レベル→実際の結果）を追加。
+          2026-08-30: 分かりにくいとの指摘を受け、予測・結果を同じ語彙（堅い⇄崩れやすい）で
+          並べ対応関係を明確化。パーセンタイル数値も併記（数値を隠す方がむしろ「高い/低い」
+          の2値ラベルだけを見て的中/不的中と誤読されやすいとの判断、天気予報の降水確率と同じ
+          考え方）。単発レースの正誤は判断できない旨の注記と精度分析ページへの導線を追加 */}
       {showVolatilityOutcome && (
         <div className="result-verify-section">
           <h5 className="result-verify-title">
             {t("result.volatilitySectionTitle")}
           </h5>
-          <p className="result-volatility-outcome">
-            {t("result.volatilityPredicted", {
+          <p className="result-volatility-line">
+            {t("result.volatilityPredictedWithPercentile", {
               label: t(
                 `volatility.level${volatilityLevel === "high" ? "High" : "Low"}`,
               ),
+              percentile: volatilityPercentileValue,
             })}
-            {" / "}
+          </p>
+          <p className="result-volatility-line">
+            {t("result.volatilityOutcomeLabel")}
+            {": "}
+            <strong>
+              {isUpset
+                ? t("result.volatilityOutcomeCollapsed")
+                : t("result.volatilityOutcomeSolid")}
+            </strong>
             {isUpset
-              ? t("result.volatilityOutcomeUpset", { winner: result.rank1 })
-              : t("result.volatilityOutcomeFavorite")}
+              ? t("result.volatilityOutcomeDetailUpset", {
+                  winner: result.rank1,
+                })
+              : t("result.volatilityOutcomeDetailFavorite")}
+          </p>
+          <p className="result-volatility-caveat">
+            {t("result.volatilityCaveat")}{" "}
+            <Link to="/accuracy">{t("result.volatilityCaveatLink")}</Link>
           </p>
         </div>
       )}

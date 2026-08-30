@@ -188,9 +188,14 @@
     "placeMiss": "❌ 미적중",
     "turnSectionTitle": "🌊 전개 예측 검증",
     "volatilitySectionTitle": "🌪️ 인 붕괴 위험도 돌아보기",
-    "volatilityPredicted": "예측: {{label}}",
-    "volatilityOutcomeFavorite": "결과: 1번 보트가 1착",
-    "volatilityOutcomeUpset": "결과: {{winner}}번 보트가 1착 (1번 보트 아님)",
+    "volatilityPredictedWithPercentile": "예측: {{label}}（경기장 내 백분위 {{percentile}}）",
+    "volatilityOutcomeLabel": "결과",
+    "volatilityOutcomeCollapsed": "이변",
+    "volatilityOutcomeSolid": "본명 승리",
+    "volatilityOutcomeDetailUpset": "（1번 보트가 아닌 {{winner}}번 보트가 1착）",
+    "volatilityOutcomeDetailFavorite": "（1번 보트가 1착）",
+    "volatilityCaveat": "※단일 레이스 결과만으로는 예측의 정확 여부를 판단할 수 없습니다.",
+    "volatilityCaveatLink": "실측 정확도 보기 ›",
     "payout": "배당금: ¥{{amount}}"
   },
   "panel": {

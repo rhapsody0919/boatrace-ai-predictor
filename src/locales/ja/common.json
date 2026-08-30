@@ -188,9 +188,14 @@
     "placeMiss": "❌ 不的中",
     "turnSectionTitle": "🌊 展開予測の検証",
     "volatilitySectionTitle": "🌪️ イン崩れ注意度の振り返り",
-    "volatilityPredicted": "予測: {{label}}",
-    "volatilityOutcomeFavorite": "結果: 1号艇が1着でした",
-    "volatilityOutcomeUpset": "結果: {{winner}}号艇が1着でした（1号艇以外）",
+    "volatilityPredictedWithPercentile": "予測: {{label}}（会場内パーセンタイル{{percentile}}）",
+    "volatilityOutcomeLabel": "結果",
+    "volatilityOutcomeCollapsed": "崩れ",
+    "volatilityOutcomeSolid": "堅い決着",
+    "volatilityOutcomeDetailUpset": "（1号艇以外の{{winner}}号艇が1着）",
+    "volatilityOutcomeDetailFavorite": "（1号艇が1着）",
+    "volatilityCaveat": "※1回のレース結果だけでは予測の正誤は判断できません。",
+    "volatilityCaveatLink": "実測精度を見る ›",
     "payout": "配当: {{amount}}円"
   },
   "panel": {
