@@ -710,7 +710,8 @@ function RevisionPanel({ mode, onSubmit, onCancel }) {
     );
   }
 
-  const canSubmit = mode === "redo" || reasonCodes.length > 0;
+  const canSubmit =
+    mode === "redo" || reasonCodes.length > 0 || freeText.trim().length > 0;
 
   return (
     <div className="revision-panel">
