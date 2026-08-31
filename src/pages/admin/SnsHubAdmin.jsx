@@ -18,9 +18,16 @@ import {
   addDraftMetric,
   getInsights,
   rejectInsight,
+  getTemplateVariants,
 } from "../../services/snsHubService";
 import { canShareVideo, shareVideoFile } from "../../utils/webShare";
 import Toast, { useToast } from "../../components/Toast";
+import {
+  FORMAT_LIBRARY,
+  PERSONA_NOTES,
+  DESIGN_GUIDELINE_NOTES,
+  buildDocUrl,
+} from "../../data/snsFormatCatalogContent";
 import "./SnsHubAdmin.css";
 
 const PLATFORM_UPLOAD_URLS = {
@@ -77,6 +84,7 @@ const TABS = [
   },
   { id: "posted", label: "投稿済み", statuses: ["posted"] },
   { id: "insights", label: "戦略メモ" },
+  { id: "catalog", label: "フォーマットカタログ" },
 ];
 
 function SnsHubAdmin() {
@@ -84,6 +92,7 @@ function SnsHubAdmin() {
   const [drafts, setDrafts] = useState([]);
   const [approvers, setApprovers] = useState([]);
   const [insights, setInsights] = useState([]);
+  const [templateVariants, setTemplateVariants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { toast, showToast } = useToast();
@@ -92,14 +101,17 @@ function SnsHubAdmin() {
     setLoading(true);
     setError(null);
     try {
-      const [draftsData, approversData, insightsData] = await Promise.all([
-        getDrafts(),
-        getApprovers(),
-        getInsights(),
-      ]);
+      const [draftsData, approversData, insightsData, templateVariantsData] =
+        await Promise.all([
+          getDrafts(),
+          getApprovers(),
+          getInsights(),
+          getTemplateVariants(),
+        ]);
       setDrafts(draftsData);
       setApprovers(approversData);
       setInsights(insightsData);
+      setTemplateVariants(templateVariantsData);
     } catch (err) {
       console.error("下書き取得エラー:", err);
       setError(err.message);
@@ -149,9 +161,11 @@ function SnsHubAdmin() {
 
   const activeTabDef = TABS.find((t) => t.id === activeTab);
   const isInsightsTab = activeTab === "insights";
-  const visibleDrafts = isInsightsTab
-    ? []
-    : drafts.filter((d) => activeTabDef.statuses.includes(d.status));
+  const isCatalogTab = activeTab === "catalog";
+  const visibleDrafts =
+    isInsightsTab || isCatalogTab
+      ? []
+      : drafts.filter((d) => activeTabDef.statuses.includes(d.status));
 
   return (
     <div className="sns-hub-admin-page">
@@ -162,7 +176,9 @@ function SnsHubAdmin() {
           const count =
             tab.id === "insights"
               ? insights.filter((i) => i.status === "proposed").length
-              : drafts.filter((d) => tab.statuses.includes(d.status)).length;
+              : tab.id === "catalog"
+                ? templateVariants.length
+                : drafts.filter((d) => tab.statuses.includes(d.status)).length;
           return (
             <button
               key={tab.id}
@@ -176,7 +192,9 @@ function SnsHubAdmin() {
       </div>
 
       <div className="tab-content">
-        {isInsightsTab ? (
+        {isCatalogTab ? (
+          <CatalogTab templateVariants={templateVariants} />
+        ) : isInsightsTab ? (
           <InsightTab
             insights={insights}
             onReject={(insightId, reason) =>
@@ -226,6 +244,130 @@ const SOURCE_LABELS = {
   "own-metrics": "自社実績",
   "external-research": "外部調査",
 };
+
+// 「フォーマットカタログ」タブ: 型一覧(DB)＋ドキュメント要約(静的キュレーション)の2区画
+// （2026-08-31、ユーザー要望。既存の「戦略メモ」はinsight PDCA専用のため別タブとして新設、
+// docs/design/sns-hub-admin-ux-improvements/spec.md課題3参照）
+function CatalogTab({ templateVariants }) {
+  return (
+    <div className="catalog-tab">
+      <section className="catalog-section">
+        <h2 className="catalog-section-title">型一覧</h2>
+        <TemplateVariantList templateVariants={templateVariants} />
+      </section>
+      <section className="catalog-section">
+        <h2 className="catalog-section-title">デザイン・ペルソナ方針</h2>
+        <DocReferenceSection />
+      </section>
+    </div>
+  );
+}
+
+function TemplateVariantList({ templateVariants }) {
+  if (templateVariants.length === 0) {
+    return (
+      <div className="empty-state">
+        <p>登録されている型はありません。</p>
+      </div>
+    );
+  }
+
+  const grouped = templateVariants.reduce((acc, tv) => {
+    (acc[tv.format] ||= []).push(tv);
+    return acc;
+  }, {});
+
+  return (
+    <div className="template-variant-groups">
+      {Object.entries(grouped).map(([format, variants]) => (
+        <div key={format} className="template-variant-group">
+          <h3 className="template-variant-format">{format}</h3>
+          <table className="template-variant-table">
+            <thead>
+              <tr>
+                <th>デザイン名</th>
+                <th>コンポジション</th>
+                <th>作成者</th>
+                <th>状態</th>
+              </tr>
+            </thead>
+            <tbody>
+              {variants.map((tv) => (
+                <tr key={tv.id}>
+                  <td>{tv.variant_name}</td>
+                  <td>{tv.composition_name}</td>
+                  <td>{tv.created_by === "routine" ? "Routine" : "人間"}</td>
+                  <td>{tv.active ? "稼働中" : "停止中"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DocReferenceSection() {
+  return (
+    <div className="doc-reference-section">
+      <div className="doc-reference-group">
+        <h3 className="doc-reference-group-title">フォーマットライブラリ</h3>
+        {FORMAT_LIBRARY.map((f) => (
+          <div key={f.name} className="doc-reference-card">
+            <div className="doc-reference-card-header">
+              <span className="doc-reference-name">{f.name}</span>
+              <span className="doc-reference-status">{f.status}</span>
+            </div>
+            <p className="doc-reference-summary">{f.summary}</p>
+            <a
+              href={buildDocUrl(f.docPath)}
+              target="_blank"
+              rel="noreferrer"
+              className="doc-reference-link"
+            >
+              {f.docLabel} を見る →
+            </a>
+          </div>
+        ))}
+      </div>
+
+      <div className="doc-reference-group">
+        <h3 className="doc-reference-group-title">ペルソナ・キャラ選定</h3>
+        <div className="doc-reference-card">
+          <p className="doc-reference-summary">{PERSONA_NOTES.summary}</p>
+          <a
+            href={buildDocUrl(PERSONA_NOTES.docPath)}
+            target="_blank"
+            rel="noreferrer"
+            className="doc-reference-link"
+          >
+            {PERSONA_NOTES.docLabel} を見る →
+          </a>
+        </div>
+      </div>
+
+      <div className="doc-reference-group">
+        <h3 className="doc-reference-group-title">
+          デザイン・ブランドガイドライン
+        </h3>
+        <div className="doc-reference-card">
+          <p className="doc-reference-summary">
+            {DESIGN_GUIDELINE_NOTES.summary}
+          </p>
+          <a
+            href={buildDocUrl(DESIGN_GUIDELINE_NOTES.docPath)}
+            target="_blank"
+            rel="noreferrer"
+            className="doc-reference-link"
+          >
+            {DESIGN_GUIDELINE_NOTES.docLabel} を見る →
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // 「戦略メモ」タブ: 要判断(proposed)ビューと履歴(active/retired)ビューの2区分
 // （2026-08-29、ユーザー指摘によりPDCAの経緯を追える設計に追加）
