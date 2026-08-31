@@ -14,6 +14,7 @@ import {
   getDraftById,
   updateDraft,
   fireRoutine,
+  createInsight,
 } from "../../../../_lib/snsHubHelpers.js";
 
 export const config = {
@@ -40,7 +41,7 @@ export default async function handler(req) {
     return jsonResponse({ error: "リクエストボディが不正です" }, 400);
   }
 
-  const { approverId, freeText } = body;
+  const { approverId, freeText, saveAsInsight } = body;
   if (!approverId) {
     return jsonResponse({ error: "approverIdは必須です" }, 400);
   }
@@ -64,6 +65,10 @@ export default async function handler(req) {
       approver_id: approverId,
       revision_reason_codes: ["full-redo"],
       revision_reason_freetext: freeText || null,
+      // revision_requestedへの遷移時刻。sns_draftsにupdated_at自動更新トリガーが
+      // 無いため明示的にセットする（管理画面の「処理中」経過時間表示が参照する、
+      // spec.md課題2）
+      updated_at: new Date().toISOString(),
     });
 
     const routineResult = await fireRoutine("SNS_HUB_ROUTINE", {
@@ -74,6 +79,26 @@ export default async function handler(req) {
       language: draft.language,
       freeText: freeText || null,
     });
+
+    // ユーザーが選択した場合のみ、自由記述を今後の生成方針への提案(insight)として
+    // 登録する（revise.jsと同じ方針、spec.md課題4）。insight登録の失敗でredo本体を
+    // 失敗扱いにしないよう個別にcatchする（revise.jsと同じ理由）
+    if (saveAsInsight && freeText?.trim()) {
+      try {
+        await createInsight({
+          platform: draft.platform,
+          language: draft.language,
+          format: draft.format,
+          insight_text: freeText.trim(),
+          evidence: `redo操作(content_group_id=${draft.content_group_id})でのユーザー指摘: ${freeText.trim()}`,
+          source: "revision-feedback",
+          research_method: "manual",
+          status: "proposed",
+        });
+      } catch (insightError) {
+        console.error("SNS Hub redo insight登録エラー:", insightError);
+      }
+    }
 
     return jsonResponse({ data: updated, routine: routineResult });
   } catch (error) {

@@ -88,6 +88,32 @@ export async function getInsightById(id) {
   return rows[0] || null;
 }
 
+/**
+ * insightを新規作成する（revise/redoの自由記述フィードバックをユーザーが選択的に
+ * 恒久方針へ反映する機能用、spec.md課題4）。statusは常にproposedで作成し、既存の
+ * 週次昇格フロー（promote-strategy-insights.js）にそのまま乗せる。
+ */
+export async function createInsight(payload) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_strategy_insights`,
+    {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_strategy_insights作成エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
 export async function updateInsight(id, patch) {
   const response = await fetch(
     `${SUPABASE_URL}/rest/v1/sns_strategy_insights?id=eq.${id}`,

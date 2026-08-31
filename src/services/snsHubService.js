@@ -57,19 +57,22 @@ export async function approveDraft(draftId, approverId) {
 /** 下書きに一部修正を指摘する */
 export async function reviseDraft(
   draftId,
-  { approverId, reasonCodes, freeText },
+  { approverId, reasonCodes, freeText, saveAsInsight },
 ) {
   return request(`/drafts/${draftId}/revise`, {
     method: "POST",
-    body: JSON.stringify({ approverId, reasonCodes, freeText }),
+    body: JSON.stringify({ approverId, reasonCodes, freeText, saveAsInsight }),
   });
 }
 
 /** 下書きを全部作り直す */
-export async function redoDraft(draftId, { approverId, freeText }) {
+export async function redoDraft(
+  draftId,
+  { approverId, freeText, saveAsInsight },
+) {
   return request(`/drafts/${draftId}/redo`, {
     method: "POST",
-    body: JSON.stringify({ approverId, freeText }),
+    body: JSON.stringify({ approverId, freeText, saveAsInsight }),
   });
 }
 
@@ -108,4 +111,10 @@ export async function rejectInsight(insightId, reason) {
     method: "POST",
     body: JSON.stringify(reason ? { reason } : {}),
   });
+}
+
+/** 「フォーマットカタログ」タブ用、型(sns_template_variants)の一覧を取得する */
+export async function getTemplateVariants() {
+  const { data } = await request("/template-variants");
+  return data || [];
 }
