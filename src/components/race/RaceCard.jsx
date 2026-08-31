@@ -5,6 +5,7 @@
 import { useTranslation } from "react-i18next";
 import { GRADE_CONFIG } from "../../constants/gradeConfig";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
+import RaceCardDataTable from "./RaceCardDataTable";
 
 function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
   const { t } = useTranslation();
@@ -143,6 +144,7 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
           </div>
         </div>
       )}
+      <RaceCardDataTable raceId={race.id} players={racePrediction?.players} />
       <button className="predict-btn" onClick={() => onAnalyzeRace(race)}>
         {t("raceCard.view")}
       </button>

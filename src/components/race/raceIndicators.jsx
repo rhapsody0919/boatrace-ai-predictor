@@ -131,10 +131,16 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
       boat: p.number,
       value: toNumber(p.localWinRate),
     })),
-    motor: (motor ?? []).map((r) => ({
-      boat: r.boat_number,
-      value: toNumber(r.motor_2rate),
-    })),
+    // 詳細分析データ(analysis.motor)が無い場合はentries(players)のmotor2Rateに
+    // フォールバックする（一覧カードでの常時表示など、analysisを取得しない文脈でも
+    // 最良艇ハイライトが機能するようにするため）
+    motor: players.map((p) => {
+      const row = motorByBoat.get(p.number);
+      return {
+        boat: p.number,
+        value: toNumber(row?.motor_2rate ?? p.motor2Rate),
+      };
+    }),
     avgSt: (racerStats ?? []).map((s) => ({
       boat: s.boatNumber,
       value: toNumber(s.avgST),

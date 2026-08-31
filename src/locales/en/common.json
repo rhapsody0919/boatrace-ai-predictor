@@ -358,7 +358,8 @@
     "badgePlace": "✅ Place hit",
     "badgeTurn": "✅ Turn hit",
     "missBadge": "❌ Missed",
-    "view": "View Prediction"
+    "view": "View details",
+    "dataTableExpand": "See form, exhibition, return rate"
   },
   "turnPatternList": {
     "title": "Turn Prediction",
