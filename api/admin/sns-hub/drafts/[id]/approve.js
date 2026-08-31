@@ -4,7 +4,7 @@
  * body: { approverId: string }
  *
  * 承認は日本語版（pending_review状態）に対してのみ行える。
- * 承認後、英語版自動生成のためRoutineの/fireを呼ぶ（ADR 0020、spec.md要件6）。
+ * 英語版アカウント未開設のため、英語版自動生成のRoutine起動は行わない（2026-08-31停止）。
  */
 
 import {
@@ -13,7 +13,6 @@ import {
   isValidDraftId,
   getDraftById,
   updateDraft,
-  fireRoutine,
 } from "../../../../_lib/snsHubHelpers.js";
 
 export const config = {
@@ -65,13 +64,7 @@ export default async function handler(req) {
       approved_at: new Date().toISOString(),
     });
 
-    const routineResult = await fireRoutine("SNS_HUB_ROUTINE", {
-      action: "translate",
-      draftId: id,
-      contentGroupId: draft.content_group_id,
-    });
-
-    return jsonResponse({ data: updated, routine: routineResult });
+    return jsonResponse({ data: updated });
   } catch (error) {
     console.error("SNS Hub approve Edge function error:", error);
     return jsonResponse({ error: error.message }, 500);

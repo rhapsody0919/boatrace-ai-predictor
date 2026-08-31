@@ -772,10 +772,15 @@
   text-align: left;
   padding: 0.4rem 0.5rem;
   border-bottom: 1px solid var(--color-gray-200);
+  /* このページの背景(.sns-hub-admin-page)はcolor-gray-50固定でテーマ反転しないため、
+     文字色もbody継承のtext-primary（ダークモードで反転）ではなく固定値にする。
+     継承させるとダークモード選択時に明色×明色の背景で文字が埋もれて読めなくなる
+     （2026-08-31判明、フォーマットカタログタブ新規追加時の見落とし） */
+  color: var(--color-gray-800);
 }
 
 .template-variant-table th {
-  color: var(--color-gray-500);
+  color: var(--color-gray-700);
   font-weight: 600;
 }
 

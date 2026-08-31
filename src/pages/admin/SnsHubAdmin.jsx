@@ -795,27 +795,28 @@ function DraftCard({
           <TikTokMetricsForm onSubmit={onAddMetric} />
         )}
 
-        {confirmingArchive ? (
-          <div className="draft-hide-confirm">
-            <span>非表示にしますか？</span>
+        {draft.status !== "posted" &&
+          (confirmingArchive ? (
+            <div className="draft-hide-confirm">
+              <span>非表示にしますか？</span>
+              <button
+                className="revision-cancel"
+                onClick={() => setConfirmingArchive(false)}
+              >
+                キャンセル
+              </button>
+              <button className="draft-action-btn redo" onClick={onArchive}>
+                非表示にする
+              </button>
+            </div>
+          ) : (
             <button
-              className="revision-cancel"
-              onClick={() => setConfirmingArchive(false)}
+              className="draft-hide-btn"
+              onClick={() => setConfirmingArchive(true)}
             >
-              キャンセル
+              🗂️ 非表示にする
             </button>
-            <button className="draft-action-btn redo" onClick={onArchive}>
-              非表示にする
-            </button>
-          </div>
-        ) : (
-          <button
-            className="draft-hide-btn"
-            onClick={() => setConfirmingArchive(true)}
-          >
-            🗂️ 非表示にする
-          </button>
-        )}
+          ))}
       </div>
     </div>
   );
