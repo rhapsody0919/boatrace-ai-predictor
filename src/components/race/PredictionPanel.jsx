@@ -44,6 +44,7 @@ import RacerFormChart from "../analysis/RacerFormChart";
 import StPredictabilityChart from "../analysis/StPredictabilityChart";
 import ExhibitionTimeTrendChart from "../analysis/ExhibitionTimeTrendChart";
 import RacerTechniqueProfileChart from "../analysis/RacerTechniqueProfileChart";
+import RacerBoatReturnRateChart from "../analysis/RacerBoatReturnRateChart";
 import AiAnalysisSection from "./AiAnalysisSection";
 import AiCopyBanner from "./AiCopyBanner";
 import AiCopyButton from "./AiCopyButton";
@@ -247,6 +248,15 @@ function PredictionPanel({
       {venueCode && analysisRaceId && (
         <EmbeddedAnalysisSection title={t("analysisPage.tabs.techprofile")}>
           <RacerTechniqueProfileChart
+            embedded
+            initialVenueCode={venueCode}
+            initialRaceId={analysisRaceId}
+          />
+        </EmbeddedAnalysisSection>
+      )}
+      {venueCode && analysisRaceId && (
+        <EmbeddedAnalysisSection title={t("analysisPage.tabs.returnrate")}>
+          <RacerBoatReturnRateChart
             embedded
             initialVenueCode={venueCode}
             initialRaceId={analysisRaceId}
