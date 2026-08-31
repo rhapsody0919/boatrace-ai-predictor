@@ -36,19 +36,24 @@
 ### `sns_drafts`のステータス遷移
 
 ```
-pending_review ──✅承認──▶ approved ──(英語版自動生成)──▶ ready_to_post ──(投稿完了操作)──▶ posted
-      │                                                                                        │
-      ├──📝一部修正──▶ revision_requested ──(Routine再生成、新レコード)──▶ pending_review        │
-      │                                                                                        │
-      └──❌全部作り直し──▶ archived(このレコード) + 新規content_group_idで新レコード生成         │
-                                                                                                 │
-posted ──(30日経過)──▶ video_tier: original → compressed（ステータスはpostedのまま、ADR 0022）  │
-archived ──(7日経過)──▶ video_tier: original → compressed                                       ┘
+pending_review ──✅承認──▶ approved ──(投稿完了操作)──▶ posted
+      │                       ▲                            │
+      │                       └(英語版自動生成、2026-08-31停止中)─ ready_to_post
+      │                                                     │
+      ├──📝一部修正──▶ revision_requested ──(Routine再生成、新レコード)──▶ pending_review
+      │                                                     │
+      ├──❌全部作り直し──▶ archived(このレコード) + 新規content_group_idで新レコード生成
+      │                                                     │
+      └──🗂️非表示にする（status='posted'以外の任意ステータスから可能、2026-08-31追加）──▶ archived
+                                                             │
+posted ──(30日経過)──▶ video_tier: original → compressed（ステータスはpostedのまま、ADR 0022）
+archived ──(7日経過)──▶ video_tier: original → compressed
 ```
 
 - 「一部修正」は同じ`content_group_id`のまま`parent_draft_id`で旧レコードと紐付け、旧レコードは`archived`にする（要件13・14）
 - 「全部作り直し」は新しい`content_group_id`で全く別のアイデアとして生成し直す（旧レコードは`archived`）
-- 日本語版（`language='ja'`）のみが`pending_review`〜`revision_requested`のレビューサイクルを通る。英語版（`language='en'`）は日本語版承認と同時に`ready_to_post`で新規作成され、独自のレビューサイクルは持たない（spec.md要件6）
+- 日本語版（`language='ja'`）のみが`pending_review`〜`revision_requested`のレビューサイクルを通る。英語版（`language='en'`）は日本語版承認と同時に`ready_to_post`で新規作成される設計だったが、**2026-08-31時点で承認時の英語版自動生成Routine起動を停止した**（spec.md要件6参照、英語アカウント未開設のため）。そのため現状`ready_to_post`に遷移する経路は無く、下書きは`approved`のまま投稿完了操作を待つ。`mark-posted`・UI表示（`PostingActionLinks`等）は元々`approved`/`ready_to_post`を同列に扱う実装のため、コード変更なしでこの状態に対応できている
+- 「非表示にする」（アーカイブ）は元は却下（全部作り直し）フローの内部遷移だったが、2026-08-31にどのステータスからも手動で使える汎用機能として追加した。ただし`status='posted'`の下書きは対象外（archivedにすると動画保持期間がADR 0022の30日ルールから7日ルールに短縮されてしまうため、UI側で制限）
 
 ## Routine設計
 

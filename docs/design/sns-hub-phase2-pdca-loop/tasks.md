@@ -28,8 +28,9 @@
 - [x] **8. `/x-growth-report`・`/tiktok-growth-report`スキル拡張**
   `.claude/commands/x-growth-report.md`・`.claude/commands/tiktok-growth-report.md`の最終ステップ後に、提案した「小施策（即実行）」を`sns_strategy_insights`へ`status='proposed'`で登録する新規ステップを追加（ADR 0027）。既存の静的ファイル保存は維持。
 
-- [ ] **9. `sns-hub-content-generation`Routineのjob_config更新**
+- [x] **9. `sns-hub-content-generation`Routineのjob_config更新**
   `RemoteTrigger update`でRoutineのプロンプトに以下を追加: (a) 月曜の週次バッチ実行時、タスク3のスクリプトを呼び出してinsight昇格処理を行う、(b) 生成対象のplatform/format/languageに一致する`active`なinsightを取得しプロンプトへ注入、生成した`sns_drafts`の`referenced_insight_ids`に記録、(c) 新規コンポジション試作時は`sns_template_variants`に`created_by='routine'`で登録しJSXファイルをコミットする指示を追加（既存の「コードの変更・コミット・PR作成は行わない」制約の例外として明記）。タスク7のブランドガードラインも試作前に参照する指示を含める。
+  （2026-08-31、`RemoteTrigger get`で本番プロンプトへの反映を確認済み。同じRoutineに、管理画面からの手動生成トリガー用アクション`generate-daily`/`generate-evergreen`も別途追加済み）
 
 - [x] **10. `.claude/CLAUDE.md`更新**
   「セッション開始時のXツイート下書き投稿確認」等と同じ節構成で、「セッション開始時の集客調査スキル実行確認」を追加（spec.md要件8）。`data/analysis/x-growth/`・TikTok版保存先の最新ファイル日付が1週間以上前なら`/x-growth-report`・`/tiktok-growth-report`の実行を提案する。
