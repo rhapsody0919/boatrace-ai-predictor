@@ -245,24 +245,47 @@ function SceneHook({
         </div>
       </Pop>
 
-      {/* 主役: 巨大な変化量。「何の数字か」が伝わらないという指摘を受け、
-          直上に「全国勝率の変化（pt）」ラベルを追加した（2026-08-25）。
-          「+1.26」は5文字あり会場攻略型の1〜2文字より横幅を取るため、
-          frame=0のはみ出しを避けてfontSizeを大幅に縮小 */}
-      <Pop delay={-10} style={{ position: "absolute", left: 44, top: 250 }}>
+      {/* タイトル: 従来の小さいラベル(fontSize32)を「何の動画か」が最も目立つ
+          見出しへ格上げし、元の文言はサブキャプションとして残す（2026-08-31、
+          天才デザイナー・天才マーケター議論。ラベルが小さすぎて目立たないという指摘への対応） */}
+      <Pop
+        delay={-10}
+        style={{ position: "absolute", top: 180, left: 40, right: 40 }}
+      >
         <div
           style={{
             color: GOLD,
-            fontSize: 32,
-            fontWeight: 800,
+            fontSize: 76,
+            fontWeight: 900,
             fontFamily: FONT,
-            marginBottom: 8,
+            textAlign: "center",
+            lineHeight: 1.1,
+            textShadow: `0 0 40px ${GOLD}88`,
+          }}
+        >
+          急上昇選手ランキング
+        </div>
+      </Pop>
+      <Pop
+        delay={-10}
+        style={{ position: "absolute", top: 280, left: 40, right: 40 }}
+      >
+        <div
+          style={{
+            color: "rgba(248,250,252,0.55)",
+            fontSize: 28,
+            fontWeight: 700,
+            fontFamily: FONT,
+            textAlign: "center",
           }}
         >
           過去90日間の全国勝率の変化
         </div>
       </Pop>
-      <Pop delay={-10} style={{ position: "absolute", left: 40, top: 320 }}>
+
+      {/* 主役: 巨大な変化量。「+1.26」は5文字あり会場攻略型の1〜2文字より
+          横幅を取るため、frame=0のはみ出しを避けてfontSizeを抑えている（2026-08-25） */}
+      <Pop delay={-10} style={{ position: "absolute", left: 40, top: 400 }}>
         <div
           style={{
             fontSize: 150,
@@ -279,7 +302,7 @@ function SceneHook({
       </Pop>
 
       {/* 選手名＋レース情報バッジ */}
-      <div style={{ position: "absolute", left: 60, top: 700, right: 60 }}>
+      <div style={{ position: "absolute", left: 60, top: 780, right: 60 }}>
         <Pop delay={-10}>
           <div
             style={{

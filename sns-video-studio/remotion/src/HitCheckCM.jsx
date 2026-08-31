@@ -87,18 +87,18 @@ function Logo({ size = 44 }) {
           fontSize: size * 0.55,
         }}
       >
-        🚤
+        🐉
       </div>
       <span
         style={{
           color: WHITE,
-          fontSize: size * 0.62,
+          fontSize: size * 0.5,
           fontWeight: 900,
           fontFamily: FONT,
           letterSpacing: -1,
         }}
       >
-        BoatAI
+        龍神レーダー
       </span>
     </div>
   );
@@ -117,7 +117,7 @@ function SceneHook() {
       }}
     >
       <PulseRings />
-      <Pop delay={2}>
+      <Pop delay={-10}>
         <div
           style={{
             color: WHITE,
@@ -297,7 +297,7 @@ function SceneReveal() {
             border: `2px solid ${ACCENT}`,
           }}
         >
-          🎯 実際のBoatAI画面
+          🎯 実際の龍神レーダー画面
         </div>
       </div>
 
