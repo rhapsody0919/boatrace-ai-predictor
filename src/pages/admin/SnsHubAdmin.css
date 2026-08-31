@@ -216,6 +216,23 @@
   color: white;
 }
 
+/* プラットフォームごとに一目で区別できるよう配色を分ける（2026-08-31、
+   全プラットフォームが同じ青一色で見分けにくいという指摘への対応） */
+.draft-badge-platform-x {
+  background: #000000;
+  color: #ffffff;
+}
+
+.draft-badge-platform-tiktok {
+  background: #00f2ea;
+  color: #000000;
+}
+
+.draft-badge-platform-youtube {
+  background: #ff0000;
+  color: #ffffff;
+}
+
 .draft-badge-language {
   background: var(--color-gray-200);
   color: var(--color-gray-800);
@@ -224,6 +241,12 @@
 .draft-badge-variant {
   background: var(--color-gray-100);
   color: var(--color-gray-600);
+}
+
+.draft-meta-text {
+  font-size: 0.7rem;
+  color: var(--color-gray-500);
+  margin: 0;
 }
 
 .draft-risk-flags {
@@ -486,6 +509,33 @@
   color: var(--color-gray-500);
 }
 
+/* 不要な下書きを一覧から非表示にするボタン（どのタブの下書きにも表示、2026-08-31追加） */
+.draft-hide-btn {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-gray-200);
+  background: white;
+  color: var(--color-gray-400);
+  font-size: 0.75rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.draft-hide-btn:hover {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+}
+
+.draft-hide-confirm {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-gray-600);
+}
+
 /* TikTok指標の手動入力フォーム */
 .tiktok-metrics-form {
   margin-top: 0.5rem;
@@ -649,11 +699,22 @@
   gap: 1rem;
 }
 
+.template-variant-group {
+  border: 1px solid var(--color-gray-200);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+}
+
 .template-variant-format {
-  margin: 0 0 0.4rem;
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--color-primary-600);
+  cursor: pointer;
+  user-select: none;
+}
+
+.template-variant-group[open] .template-variant-format {
+  margin-bottom: 0.6rem;
 }
 
 .template-variant-table {

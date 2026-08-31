@@ -19,6 +19,7 @@ import {
   getInsights,
   rejectInsight,
   getTemplateVariants,
+  archiveDraft,
 } from "../../services/snsHubService";
 import {
   canShareVideo,
@@ -101,28 +102,45 @@ function SnsHubAdmin() {
   const [error, setError] = useState(null);
   const { toast, showToast } = useToast();
 
-  const loadDrafts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [draftsData, approversData, insightsData, templateVariantsData] =
-        await Promise.all([
-          getDrafts(),
-          getApprovers(),
-          getInsights(),
-          getTemplateVariants(),
-        ]);
-      setDrafts(draftsData);
-      setApprovers(approversData);
-      setInsights(insightsData);
-      setTemplateVariants(templateVariantsData);
-    } catch (err) {
-      console.error("下書き取得エラー:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // silent=trueの場合、全画面ローディング表示を出さずに裏側でデータだけ
+  // 更新する。承認等のアクション直後に画面全体がスピナーに切り替わる
+  // 体験が「うざい」という指摘への対応（2026-08-31）。初回マウント時のみ
+  // 全画面ローディングを見せる
+  const loadDrafts = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!silent) {
+        setLoading(true);
+        setError(null);
+      }
+      try {
+        const [draftsData, approversData, insightsData, templateVariantsData] =
+          await Promise.all([
+            getDrafts(),
+            getApprovers(),
+            getInsights(),
+            getTemplateVariants(),
+          ]);
+        setDrafts(draftsData);
+        setApprovers(approversData);
+        setInsights(insightsData);
+        setTemplateVariants(templateVariantsData);
+      } catch (err) {
+        console.error("下書き取得エラー:", err);
+        // silent時は全画面エラー表示に切り替えず、アクション自体は成功して
+        // いる可能性があるためトースト通知に留める（コードレビューで指摘:
+        // アクション成功直後にsetErrorすると全画面エラーに切り替わり、
+        // 開いていたパネル等の状態が失われる矛盾があった）
+        if (silent) {
+          showToast(`最新状態の取得に失敗しました: ${err.message}`, "error");
+        } else {
+          setError(err.message);
+        }
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [showToast],
+  );
 
   useEffect(() => {
     loadDrafts();
@@ -132,7 +150,7 @@ function SnsHubAdmin() {
     try {
       await actionFn(...args);
       showToast("操作を反映しました", "success");
-      await loadDrafts();
+      await loadDrafts({ silent: true });
     } catch (err) {
       console.error("アクションエラー:", err);
       showToast(err.message || "操作に失敗しました", "error");
@@ -233,6 +251,7 @@ function SnsHubAdmin() {
                 onAddMetric={(payload) =>
                   handleAction(addDraftMetric, draft.id, payload)
                 }
+                onArchive={() => handleAction(archiveDraft, draft.id)}
               />
             ))}
           </div>
@@ -290,8 +309,10 @@ function TemplateVariantList({ templateVariants }) {
   return (
     <div className="template-variant-groups">
       {Object.entries(grouped).map(([format, variants]) => (
-        <div key={format} className="template-variant-group">
-          <h3 className="template-variant-format">{format}</h3>
+        <details key={format} className="template-variant-group">
+          <summary className="template-variant-format">
+            {format}（{variants.length}件）
+          </summary>
           <table className="template-variant-table">
             <thead>
               <tr>
@@ -312,7 +333,7 @@ function TemplateVariantList({ templateVariants }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </details>
       ))}
     </div>
   );
@@ -562,11 +583,13 @@ function DraftCard({
   onRedo,
   onMarkPosted,
   onAddMetric,
+  onArchive,
 }) {
   const [selectedApproverId, setSelectedApproverId] = useState(
     approvers[0]?.id || null,
   );
   const [openPanel, setOpenPanel] = useState(null); // null | 'revise' | 'redo'
+  const [confirmingArchive, setConfirmingArchive] = useState(false);
 
   const variantLabel = draft.sns_template_variants
     ? `${draft.format} / ${draft.sns_template_variants.variant_name}`
@@ -584,7 +607,9 @@ function DraftCard({
 
       <div className="draft-card-body">
         <div className="draft-card-badges">
-          <span className="draft-badge draft-badge-platform">
+          <span
+            className={`draft-badge draft-badge-platform draft-badge-platform-${draft.platform}`}
+          >
             {PLATFORM_LABELS[draft.platform] || draft.platform}
           </span>
           <span className="draft-badge draft-badge-language">
@@ -594,6 +619,11 @@ function DraftCard({
             {variantLabel}
           </span>
         </div>
+
+        <p className="draft-meta-text">
+          生成: {formatDateTime(draft.created_at)}
+          {draft.parent_draft_id && "（修正版・再生成）"}
+        </p>
 
         {draft.status === "revision_requested" && (
           <ProcessingStatusBadge updatedAt={draft.updated_at} />
@@ -690,6 +720,28 @@ function DraftCard({
 
         {draft.status === "posted" && draft.platform === "tiktok" && (
           <TikTokMetricsForm onSubmit={onAddMetric} />
+        )}
+
+        {confirmingArchive ? (
+          <div className="draft-hide-confirm">
+            <span>非表示にしますか？</span>
+            <button
+              className="revision-cancel"
+              onClick={() => setConfirmingArchive(false)}
+            >
+              キャンセル
+            </button>
+            <button className="draft-action-btn redo" onClick={onArchive}>
+              非表示にする
+            </button>
+          </div>
+        ) : (
+          <button
+            className="draft-hide-btn"
+            onClick={() => setConfirmingArchive(true)}
+          >
+            🗂️ 非表示にする
+          </button>
         )}
       </div>
     </div>
