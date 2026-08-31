@@ -1,0 +1,43 @@
+# SNSハブ管理画面 UX改善 — タスク分解
+
+`spec.md`・`screens.md`・`plan.md`を実装可能な単位に分解。依存順に並べており、上から順に`/step4`で実装する。バックエンド/フロントエンドの分離はPhase 2実装（PR #423〜424等）の運用を踏襲。
+
+- [ ] **タスク1: 「一部修正」送信ボタンのバリデーション修正（課題1）**
+  - `RevisionPanel`の`canSubmit`を`reasonCodes.length > 0 || freeText.trim().length > 0`に修正（mode==="revise"時）
+  - `api/admin/sns-hub/drafts/[id]/revise.js`のバリデーションを「`reasonCodes`または`freeText`のいずれか必須」に緩和
+  - 受入基準: 自由記述のみ入力した状態で送信ボタンが有効になり、実際に送信できる
+
+- [ ] **タスク2: ダウンロードボタンのfetch+blob化（課題5）**
+  - `src/utils/webShare.js`に`downloadVideoBlob(videoUrl, fileName)`を追加
+  - `PostingActionLinks`の`<a href download>`をボタン+`onClick`ハンドラに置き換え、ローディング表示・エラーハンドリングを追加
+  - iOS Safariの`shareState.canShare`分岐は変更しない
+  - 受入基準: PC・Android等で動画が再生されずダウンロードされる。iOS共有導線は従来通り
+
+- [ ] **タスク3: 処理中バッジ＋手動更新ボタン（課題2）**
+  - `ProcessingStatusBadge`コンポーネント新設（`updated_at`からの経過時間で「処理中」/「時間がかかっています」を出し分け、閾値30分は定数化）
+  - `DraftCard`で`status==='revision_requested'`時にバッジを表示
+  - `SnsHubAdmin`本体に手動更新ボタンを追加し、`loadDrafts()`を再実行
+  - 受入基準: revise/redo後、元の下書きに処理中バッジが表示される。更新ボタンで最新状態を取得できる。30分超で警告表示に変わる
+
+- [ ] **タスク4: insight登録のバックエンド対応（課題4-a）**
+  - `api/_lib/snsHubHelpers.js`に`createInsight(payload)`を新設（`updateDraft`と同じRESTパターン）
+  - `docs/db-migration/040_sns_strategy_insights_source_comment.sql`を作成（コメント更新のみ）
+  - `api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`に、`saveAsInsight===true`かつ`freeText`入力時の`createInsight()`呼び出しを追加（`platform`/`format`/`language`は対象下書きから引き継ぎ、`source: "revision-feedback"`）
+  - 受入基準: `saveAsInsight: true`でrevise/redoを呼ぶと`sns_strategy_insights`に`status='proposed'`のレコードが作成される。既存の週次昇格処理に影響を与えない
+
+- [ ] **タスク5: insight登録のフロントエンド対応（課題4-b、タスク1・4に依存）**
+  - `RevisionPanel`に「この指摘を今後の生成方針に反映する」チェックボックスを追加（state: `saveAsInsight`）
+  - `DraftCard`の`onRevise`/`onRedo`呼び出しに`saveAsInsight`を透過
+  - `snsHubService.js`の`reviseDraft`/`redoDraft`にペイロード追加
+  - 受入基準: チェックボックスを選択して送信すると、タスク4のAPIが正しく呼ばれる。未選択時は従来通り
+
+- [ ] **タスク6: フォーマットカタログのバックエンド（課題3-a）**
+  - `api/admin/sns-hub/template-variants/index.js`新設（`insights/index.js`と同じ薄いGETラッパー、`format, created_at`でソート）
+  - `snsHubService.js`に`getTemplateVariants()`を追加
+  - 受入基準: `sns_template_variants`の全件が取得できる
+
+- [ ] **タスク7: フォーマットカタログのフロントエンド（課題3-b、タスク6に依存）**
+  - `src/data/snsFormatCatalogContent.js`新設（ADR 0031の静的キュレーションデータ、`docs/operation/sns-video-producer-prompt.md`・`x-operations-playbook.md`・`docs/reference/sns-brand-guideline.md`の要約＋GitHubリンク）
+  - `TemplateVariantList`・`DocReferenceSection`・`CatalogTab`コンポーネント新設
+  - `TABS`定数に`{id:"catalog", label:"フォーマットカタログ"}`追加、`SnsHubAdmin`本体で`getTemplateVariants()`を`loadDrafts()`に組み込み、`activeTab==="catalog"`時に`CatalogTab`をレンダリング
+  - 受入基準: 「フォーマットカタログ」タブで型一覧とドキュメント要約・リンクが確認できる
