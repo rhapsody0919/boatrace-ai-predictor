@@ -569,6 +569,38 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".ai-analysis-body")).toHaveCount(0);
   });
 
+  test("この会場の枠番別傾向パネルがデフォルト展開で表示され、折りたたみ操作ができる（race-detail-analysis-integration）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-language", "ja"),
+    );
+    const found = await selectUpcomingRace(page);
+    test.skip(
+      !found,
+      "本日開催中の未終了レースが見つからないため検証をスキップ",
+    );
+
+    const panel = page.locator(".venue-tendency-panel");
+    await expect(panel).toBeVisible({ timeout: 15000 });
+
+    // デフォルト展開: 4行（決まり手/トップスタート率/負け決まり手/展示最速転換率）×6艇
+    const content = panel.locator(".vtp-content");
+    await expect(content).toBeVisible({ timeout: 10000 });
+    await expect(panel.locator(".vtp-table tbody tr")).toHaveCount(4);
+    await expect(panel.locator(".vtp-table thead th.vtp-boat-th")).toHaveCount(
+      6,
+    );
+
+    // ヘッダクリックで折りたたみ、再クリックで再展開できる
+    await panel.locator(".vtp-header").click();
+    await expect(content).toHaveCount(0);
+    await panel.locator(".vtp-header").click();
+    await expect(panel.locator(".vtp-content")).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
   test("過去日付ページで結果確定レースを選ぶと「データで振り返る」が表示される", async ({
     page,
   }) => {

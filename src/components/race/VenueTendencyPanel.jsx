@@ -145,14 +145,24 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                       className="vtp-label-link"
                       onClick={onLinkClick("technique")}
                     >
-                      {t("venueTendency.rowTechnique")}
+                      <span className="vtp-label-full">
+                        {t("venueTendency.rowTechnique")}
+                      </span>
+                      <span className="vtp-label-short">
+                        {t("venueTendency.rowTechniqueShort")}
+                      </span>
                     </Link>
                     <Link
                       to={deepLink("nige")}
                       className="vtp-nige-link"
                       onClick={onLinkClick("nige")}
                     >
-                      {t("venueTendency.nigeLink")}
+                      <span className="vtp-label-full">
+                        {t("venueTendency.nigeLink")}
+                      </span>
+                      <span className="vtp-label-short">
+                        {t("venueTendency.nigeLinkShort")}
+                      </span>
                     </Link>
                   </td>
                   {BOATS.map((boat) => (
@@ -168,7 +178,12 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                       className="vtp-label-link"
                       onClick={onLinkClick("topstart")}
                     >
-                      {t("venueTendency.rowTopStart")}
+                      <span className="vtp-label-full">
+                        {t("venueTendency.rowTopStart")}
+                      </span>
+                      <span className="vtp-label-short">
+                        {t("venueTendency.rowTopStartShort")}
+                      </span>
                     </Link>
                   </td>
                   {BOATS.map((boat) => (
@@ -184,7 +199,12 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                       className="vtp-label-link"
                       onClick={onLinkClick("losing")}
                     >
-                      {t("venueTendency.rowLosing")}
+                      <span className="vtp-label-full">
+                        {t("venueTendency.rowLosing")}
+                      </span>
+                      <span className="vtp-label-short">
+                        {t("venueTendency.rowLosingShort")}
+                      </span>
                     </Link>
                   </td>
                   {BOATS.map((boat) => (
@@ -200,7 +220,12 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                       className="vtp-label-link"
                       onClick={onLinkClick("extime")}
                     >
-                      {t("venueTendency.rowExhibitionTop")}
+                      <span className="vtp-label-full">
+                        {t("venueTendency.rowExhibitionTop")}
+                      </span>
+                      <span className="vtp-label-short">
+                        {t("venueTendency.rowExhibitionTopShort")}
+                      </span>
                     </Link>
                   </td>
                   {BOATS.map((boat) => (

@@ -407,7 +407,12 @@
     "rowLosing": "Losing technique",
     "rowExhibitionTop": "Exhibition fastest → win",
     "boatLabel": "Lane {{n}}",
-    "nigeLink": "See outcomes when leading (Nige)"
+    "nigeLink": "See outcomes when leading (Nige)",
+    "rowTechniqueShort": "Technique",
+    "rowTopStartShort": "Top start",
+    "rowLosingShort": "Losing",
+    "rowExhibitionTopShort": "Ex. → win",
+    "nigeLinkShort": "Nige →"
   },
   "aiCopy": {
     "bannerLabel": "Copy for AI",

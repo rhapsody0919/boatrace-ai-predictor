@@ -94,6 +94,12 @@
   text-decoration: underline;
 }
 
+/* モバイルでは短縮ラベルに切り替える（DataRaceTableと同じパターン、
+   狭い列幅での1文字ずつの折り返しを防ぐ） */
+.vtp-label-short {
+  display: none;
+}
+
 .vtp-nige-link {
   display: block;
   margin-top: 2px;
@@ -164,7 +170,24 @@
     font-size: var(--font-size-xs);
   }
 
+  .vtp-label-full {
+    display: none;
+  }
+
+  .vtp-label-short {
+    display: inline;
+  }
+
   .vtp-label-cell {
     white-space: normal;
+    /* CJKは文字間に暗黙の改行位置があるため、幅を確保しないと1文字ずつ縦積みになる。
+       短縮ラベル（3〜4文字）が1行に収まる幅を確保する */
+    min-width: 4.4em;
+  }
+
+  /* nigeリンクは補助的な導線のため、幅が最も限られるモバイルでは非表示にし、
+     決まり手ラベルの可読性を優先する（デスクトップ/タブレットでは表示） */
+  .vtp-nige-link {
+    display: none;
   }
 }

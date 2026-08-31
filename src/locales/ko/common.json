@@ -405,7 +405,12 @@
     "rowLosing": "패배 시 결정수",
     "rowExhibitionTop": "전시 최고속→우승",
     "boatLabel": "{{n}}호정",
-    "nigeLink": "인빠지기 시 조합 보기"
+    "nigeLink": "인빠지기 시 조합 보기",
+    "rowTechniqueShort": "결정수",
+    "rowTopStartShort": "스타트율",
+    "rowLosingShort": "패배 시",
+    "rowExhibitionTopShort": "전시→우승",
+    "nigeLinkShort": "인빠지기→"
   },
   "aiCopy": {
     "bannerLabel": "AI용으로 복사",

@@ -406,7 +406,12 @@
     "rowLosing": "負けた際の相手決まり手",
     "rowExhibitionTop": "展示最速→1着",
     "boatLabel": "{{n}}号艇",
-    "nigeLink": "逃げた場合の目を見る"
+    "nigeLink": "逃げた場合の目を見る",
+    "rowTechniqueShort": "決まり手",
+    "rowTopStartShort": "発走率",
+    "rowLosingShort": "負け方",
+    "rowExhibitionTopShort": "展示転換",
+    "nigeLinkShort": "逃げの目→"
   },
   "aiCopy": {
     "bannerLabel": "AI用にコピー",

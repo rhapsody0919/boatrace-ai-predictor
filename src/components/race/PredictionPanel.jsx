@@ -37,6 +37,7 @@ import PredictionCard from "./PredictionCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
+import VenueTendencyPanel from "./VenueTendencyPanel";
 import AiAnalysisSection from "./AiAnalysisSection";
 import AiCopyBanner from "./AiCopyBanner";
 import AiCopyButton from "./AiCopyButton";
@@ -194,6 +195,10 @@ function PredictionPanel({
         prediction={prediction}
         venueCode={venueCode}
       />
+
+      {/* この会場の枠番別傾向（FR-2）: 会場×枠番の過去傾向。選手個人のデータ出走表とは
+          主語が異なるため別コンポーネントとして分離する */}
+      <VenueTendencyPanel venueCode={venueCode} raceId={analysisRaceId} />
 
       {!isFinished && (
         <AiCopyButton

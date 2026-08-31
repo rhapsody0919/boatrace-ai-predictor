@@ -405,7 +405,12 @@
     "rowLosing": "落敗方式",
     "rowExhibitionTop": "展示最快→獲勝",
     "boatLabel": "{{n}}號船",
-    "nigeLink": "查看逃走時的組合"
+    "nigeLink": "查看逃走時的組合",
+    "rowTechniqueShort": "獲勝方式",
+    "rowTopStartShort": "起航率",
+    "rowLosingShort": "落敗方式",
+    "rowExhibitionTopShort": "展示→獲勝",
+    "nigeLinkShort": "逃走→"
   },
   "aiCopy": {
     "bannerLabel": "複製給AI使用",
