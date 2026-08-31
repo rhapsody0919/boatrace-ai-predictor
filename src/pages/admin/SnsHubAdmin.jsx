@@ -20,6 +20,7 @@ import {
   rejectInsight,
   getTemplateVariants,
   archiveDraft,
+  triggerGeneration,
 } from "../../services/snsHubService";
 import {
   canShareVideo,
@@ -100,6 +101,10 @@ function SnsHubAdmin() {
   const [templateVariants, setTemplateVariants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [generating, setGenerating] = useState(null); // null | 'daily' | 'evergreen'
+  // 生成リクエスト成功後、手動更新ボタンを押すまで両ボタンを無効化し続ける
+  // （連打による多重起動を防ぐため）
+  const [generationLocked, setGenerationLocked] = useState(false);
   const { toast, showToast } = useToast();
 
   // silent=trueの場合、全画面ローディング表示を出さずに裏側でデータだけ
@@ -154,6 +159,39 @@ function SnsHubAdmin() {
     } catch (err) {
       console.error("アクションエラー:", err);
       showToast(err.message || "操作に失敗しました", "error");
+    }
+  }
+
+  // 承認済みストックが少ない時の手動補充用。fireRoutineは起動を指示する
+  // だけで完了を待たないため、生成完了までは数分〜十数分かかる（動画
+  // レンダリングを含む）。完了したかどうかは手動更新ボタンで確認する
+  async function handleGenerate(mode) {
+    setGenerating(mode);
+    try {
+      const result = await triggerGeneration(mode);
+      if (result?.routine?.fired === false) {
+        // fireRoutineはRoutine未構築・fire失敗時も例外を投げず
+        // {fired: false, reason: ...}を返す（コードレビューで指摘:
+        // これを無視すると実際は何も起動していないのに成功表示になる）
+        showToast(
+          `生成リクエストがRoutineに届いていません（${result.routine.reason}）。設定を確認してください`,
+          "error",
+        );
+      } else {
+        showToast(
+          "生成をリクエストしました。数分後に更新ボタンで確認してください",
+          "success",
+        );
+        // 手動更新するまで両ボタンを無効化し続ける（コードレビューで指摘:
+        // fire完了後すぐ再度押せてしまうと、数分かかる生成処理が連打で
+        // 何本も重複起動されるリスクがあった）
+        setGenerationLocked(true);
+      }
+    } catch (err) {
+      console.error("生成リクエストエラー:", err);
+      showToast(err.message || "生成リクエストに失敗しました", "error");
+    } finally {
+      setGenerating(null);
     }
   }
 
@@ -214,9 +252,44 @@ function SnsHubAdmin() {
             );
           })}
         </div>
-        <button className="refresh-btn" onClick={loadDrafts}>
+        <button
+          className="refresh-btn"
+          onClick={() => {
+            setGenerationLocked(false);
+            loadDrafts();
+          }}
+        >
           🔄 更新
         </button>
+      </div>
+
+      <div className="manual-generate-row">
+        <span className="manual-generate-label">
+          承認済みストックが少ない時の手動生成:
+        </span>
+        <button
+          className="manual-generate-btn"
+          disabled={generating !== null || generationLocked}
+          onClick={() => handleGenerate("daily")}
+        >
+          {generating === "daily"
+            ? "⏳ リクエスト中..."
+            : "🎬 当日ネタを今すぐ生成"}
+        </button>
+        <button
+          className="manual-generate-btn"
+          disabled={generating !== null || generationLocked}
+          onClick={() => handleGenerate("evergreen")}
+        >
+          {generating === "evergreen"
+            ? "⏳ リクエスト中..."
+            : "📦 会場攻略型などを今すぐ生成"}
+        </button>
+        {generationLocked && (
+          <span className="manual-generate-hint">
+            リクエスト済み。更新ボタンを押すと再度生成できます
+          </span>
+        )}
       </div>
 
       <div className="tab-content">

@@ -92,6 +92,17 @@ export async function archiveDraft(draftId) {
   });
 }
 
+/**
+ * 生成Routineを手動起動する（承認済みストックが少ない時の補充用）
+ * @param {'daily'|'evergreen'} mode
+ */
+export async function triggerGeneration(mode) {
+  return request("/generate", {
+    method: "POST",
+    body: JSON.stringify({ mode }),
+  });
+}
+
 /** TikTok等のエンゲージメント指標を手動入力する */
 export async function addDraftMetric(
   draftId,
