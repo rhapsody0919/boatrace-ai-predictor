@@ -65,5 +65,8 @@ export async function downloadVideoBlob(videoUrl, fileName = "video.mp4") {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(objectUrl);
+  // click()はブラウザに読み取り開始を指示するだけの同期呼び出しで、実際の
+  // ダウンロード処理は非同期。特にSafari系では直後にrevokeするとダウンロード
+  // 開始前にURLが無効化され失敗することがあるため、遅延させて解放する
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
