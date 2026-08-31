@@ -65,7 +65,9 @@ function VenueTendencyPanel({ venueCode, raceId }) {
           <span className="vtp-insufficient">
             {t("venueTendency.insufficientData")}
           </span>
-          <span className="vtp-n">n={top.count}</span>
+          <span className="vtp-n">
+            {t("venueTendency.sampleCount", { n: top.count })}
+          </span>
         </span>
       );
     }
@@ -74,7 +76,9 @@ function VenueTendencyPanel({ venueCode, raceId }) {
         <span className="vtp-main">
           {translateTechnique(t, top.technique)} {Math.round(top.percentage)}%
         </span>
-        <span className="vtp-n">n={top.count}</span>
+        <span className="vtp-n">
+          {t("venueTendency.sampleCount", { n: top.count })}
+        </span>
       </span>
     );
   };
@@ -85,7 +89,9 @@ function VenueTendencyPanel({ venueCode, raceId }) {
     return (
       <span className="vtp-value">
         <span className="vtp-main">{Math.round(row.top_start_rate)}%</span>
-        <span className="vtp-n">n={row.race_count}</span>
+        <span className="vtp-n">
+          {t("venueTendency.sampleCount", { n: row.race_count })}
+        </span>
       </span>
     );
   };
@@ -98,7 +104,9 @@ function VenueTendencyPanel({ venueCode, raceId }) {
         <span className="vtp-main">
           {Math.round(row.win_rate_when_fastest)}%
         </span>
-        <span className="vtp-n">n={row.fastest_count}</span>
+        <span className="vtp-n">
+          {t("venueTendency.sampleCount", { n: row.fastest_count })}
+        </span>
       </span>
     );
   };

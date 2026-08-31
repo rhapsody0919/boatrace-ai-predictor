@@ -411,7 +411,8 @@
     "rowTopStartShort": "発走率",
     "rowLosingShort": "負け方",
     "rowExhibitionTopShort": "展示転換",
-    "nigeLinkShort": "逃げの目→"
+    "nigeLinkShort": "逃げの目→",
+    "sampleCount": "{{n}}件"
   },
   "aiCopy": {
     "bannerLabel": "AI用にコピー",

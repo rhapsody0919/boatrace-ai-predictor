@@ -410,7 +410,8 @@
     "rowTopStartShort": "起航率",
     "rowLosingShort": "落敗方式",
     "rowExhibitionTopShort": "展示→獲勝",
-    "nigeLinkShort": "逃走→"
+    "nigeLinkShort": "逃走→",
+    "sampleCount": "{{n}}場"
   },
   "aiCopy": {
     "bannerLabel": "複製給AI使用",

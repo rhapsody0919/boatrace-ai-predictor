@@ -410,7 +410,8 @@
     "rowTopStartShort": "스타트율",
     "rowLosingShort": "패배 시",
     "rowExhibitionTopShort": "전시→우승",
-    "nigeLinkShort": "인빠지기→"
+    "nigeLinkShort": "인빠지기→",
+    "sampleCount": "{{n}}건"
   },
   "aiCopy": {
     "bannerLabel": "AI용으로 복사",

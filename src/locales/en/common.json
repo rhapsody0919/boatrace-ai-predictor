@@ -412,7 +412,8 @@
     "rowTopStartShort": "Top start",
     "rowLosingShort": "Losing",
     "rowExhibitionTopShort": "Ex. → win",
-    "nigeLinkShort": "Nige →"
+    "nigeLinkShort": "Nige →",
+    "sampleCount": "{{n}} races"
   },
   "aiCopy": {
     "bannerLabel": "Copy for AI",
