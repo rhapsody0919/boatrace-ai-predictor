@@ -9,7 +9,7 @@ FR-2「この会場の枠番別傾向」パネルは、`venue_code`単位で完�
 
 ## 決定
 
-新規フック`src/hooks/useVenueTendencyStats.js`を作成し、`venueCode`を引数に4関数を`Promise.all`で並列取得する。`useRaceAnalysisData`とは完全に独立したフックとし、`VenueTendencyPanel`コンポーネントから呼び出す。
+新規フック`src/hooks/useVenueTendencyStats.js`を作成し、`venueCode`を引数に4関数を個別に`.then()`で並列発火する（`useRaceAnalysisData`と同じprogressive loadingパターン。各クエリは独立して解決され、取得できたものから順次stateに反映される）。`useRaceAnalysisData`とは完全に独立したフックとし、`VenueTendencyPanel`コンポーネントから呼び出す。
 
 ## 却下した選択肢
 

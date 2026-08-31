@@ -10,7 +10,7 @@
 - [x] **2. 会場統計API層のレスポンス統一**
   `src/services/supabaseDataService.js`の`getTopStartStats`/`getExhibitionTimeTopStats`が返すレスポンスに、`getWinningTechniqueStats`/`getLosingTechniqueStats`と同じ形で`last_updated`をトップレベルに正規化する。DBスキーマ変更なし、アプリ層のみ。
 
-- [ ] **3. useVenueTendencyStats フック実装**
+- [x] **3. useVenueTendencyStats フック実装**
   `src/hooks/useVenueTendencyStats.js`を新規作成（ADR-0024）。`venueCode`を引数に、`getWinningTechniqueStats`/`getTopStartStats`/`getLosingTechniqueStats`/`getExhibitionTimeTopStats`を`Promise.all`で並列取得し、各データソース・`last_updated`・ローディング状態を返す。
 
 - [x] **4. i18nキー追加（会場パネル用）**

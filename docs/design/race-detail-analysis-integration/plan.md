@@ -16,7 +16,7 @@ RaceDetail.jsx
       └ PredictionPanel.jsx（venueCode, raceId, predictionを保持）
           ├ DataRaceTable（既存・無変更、行リンクにtrackEvent追加のみ）
           ├ VenueTendencyPanel（新規、venueCodeのみ必要）
-          │   └ useVenueTendencyStats(venueCode) → 4関数をPromise.allで並列取得
+          │   └ useVenueTendencyStats(venueCode) → 4関数を個別に.then()で並列発火
           │       マウント時（デフォルト展開のため）即座にフェッチ開始
           ├ EmbeddedAnalysisSection × 7（新規ラッパー、venueCode+raceIdを子へ渡す）
           │   └ expanded=false の間は children を一切マウントしない
