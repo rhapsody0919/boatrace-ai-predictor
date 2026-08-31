@@ -797,6 +797,53 @@ const MOTOR2RATE_ALL = [
 ];
 const MOTOR2RATE_TOP_INDEX = 7; // 常滑(venue_code=8)
 
+// VenueRankingCM（イン逃げ率ランキング、第1弾）の英語版（2026-08-31、translate action）。
+// ビジュアル・データはJA版と同一、テキストのみ翻訳（venue名はdocs/reference/i18n-glossary.md準拠）。
+// このパイプラインの動画は元々ナレーション無し（BGMのみ）のため、字幕＝画面焼き込みテキストの翻訳が全て
+const NIGE_RATE_TOP5_EN = [
+  { venue: "Amagasaki", value: "59.2%", sample: "1,838", ratio: 100 },
+  { venue: "Tokuyama", value: "58.8%", sample: "1,812", ratio: 99 },
+  { venue: "Omura", value: "57.6%", sample: "1,642", ratio: 97 },
+  { venue: "Ashiya", value: "57.2%", sample: "1,608", ratio: 97 },
+  { venue: "Wakamatsu", value: "56.5%", sample: "1,610", ratio: 95 },
+];
+
+const NIGE_RATE_WORST5_EN = [
+  { rank: 24, venue: "Toda", value: "39.9%", sample: "1,558", ratio: 67 },
+  { rank: 23, venue: "Heiwajima", value: "42.4%", sample: "1,548", ratio: 72 },
+  { rank: 22, venue: "Edogawa", value: "43.2%", sample: "1,421", ratio: 73 },
+  { rank: 21, venue: "Kiryu", value: "47.3%", sample: "1,677", ratio: 80 },
+  { rank: 20, venue: "Mikuni", value: "47.7%", sample: "1,555", ratio: 81 },
+];
+
+export function VenueRankingCM_EN() {
+  return (
+    <VenueRankingTemplate
+      topVenue="Amagasaki"
+      axisTitle="Nige (Wire-to-Wire) Rate"
+      rateLabel="Nige rate 59.2%"
+      hookQuestion="Which venue makes wire-to-wire wins easiest?"
+      subCaption="24 venues · 38,600 races analyzed"
+      categoryTag="24-Venue Ranking"
+      allRates={NIGE_RATE_ALL}
+      topRateIndex={NIGE_RATE_TOP_INDEX}
+      accentColor={GOLD}
+      top5Heading="🚤 Top 5 venues by Nige rate"
+      top5Data={NIGE_RATE_TOP5_EN}
+      worst5Heading="🌊 Where wire-to-wire is hardest to pull off"
+      worst5Data={NIGE_RATE_WORST5_EN}
+      barColorTop={GOLD}
+      barColorWorst={RED}
+      ctaLines={["Full 24-venue data,", "free to view"]}
+      subLine="Where does your venue rank?"
+      sampleSuffix=" races analyzed"
+      brandName="Ryujin Radar"
+      avgLabel="Avg"
+      rankLabel="st"
+    />
+  );
+}
+
 // --- Scene 2: TOP5（75-263f, 約6.3s） ---
 function SceneTop5({ heading, data, barColor, sampleSuffix }) {
   return (

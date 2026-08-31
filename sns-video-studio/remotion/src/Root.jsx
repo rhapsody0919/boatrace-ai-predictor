@@ -20,6 +20,7 @@ import { ToolCM_A } from "./ToolCM.jsx";
 import { LivePredictionCM_A } from "./LivePredictionCM.jsx";
 import {
   VenueRankingCM,
+  VenueRankingCM_EN,
   VenueRankingCM_Manshu,
   VenueRankingCM_Manshu_EN,
   VenueRankingCM_WinRate,
@@ -228,6 +229,14 @@ export function RemotionRoot() {
       <Composition
         id="VenueRankingCM"
         component={VenueRankingCM}
+        durationInFrames={600}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="VenueRankingCM-EN"
+        component={VenueRankingCM_EN}
         durationInFrames={600}
         fps={30}
         width={1080}
