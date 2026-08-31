@@ -22,29 +22,29 @@
 - [x] **6. VenueTendencyPanelのPredictionPanel統合＋スモークテスト**
   `src/components/race/PredictionPanel.jsx`の`DataRaceTable`直下に`VenueTendencyPanel`を追加。`src/components/race/index.js`のbarrel exportに追加。`e2e/smoke.spec.js`に会場パネルの表示確認テストを追加する。
 
-- [ ] **7. EmbeddedAnalysisSection 共通ラッパー実装**
+- [x] **7. EmbeddedAnalysisSection 共通ラッパー実装**
   `src/components/race/EmbeddedAnalysisSection.jsx`＋`.css`を新規作成（ヘッダ+アイコン+タイトル+chevron、デフォルト`expanded=false`、`expanded`時のみchildrenをマウントするlazy mount）。7セクション分のタイトルi18nキー（`embeddedSection.motor`等）を4言語分`common.json`に追加する。
 
-- [ ] **8. MotorConditionChartのembedded対応＋統合（FR-3）**
+- [x] **8. MotorConditionChartのembedded対応＋統合（FR-3）**
   `src/components/analysis/MotorConditionChart.jsx`に`embedded`prop（ADR-0023）を追加し、`embedded=true`時は会場・レース選択プルダウンを非表示にする。`PredictionPanel.jsx`に`EmbeddedAnalysisSection`でラップした本コンポーネントを追加し、embedded modeの改修・統合パターンをここで確立する。
 
-- [ ] **9. RacerFormChartのembedded対応＋統合（FR-4）**
+- [x] **9. RacerFormChartのembedded対応＋統合（FR-4）**
   `src/components/analysis/RacerFormChart.jsx`に同様の`embedded`propを追加し、`PredictionPanel.jsx`に統合する。
 
-- [ ] **10. StPredictabilityChartのembedded対応＋統合（FR-5）**
+- [x] **10. StPredictabilityChartのembedded対応＋統合（FR-5）**
   `src/components/analysis/StPredictabilityChart.jsx`に同様の対応を行い統合する。
 
-- [ ] **11. ExhibitionTimeTrendChartのembedded対応＋統合（FR-6）**
+- [x] **11. ExhibitionTimeTrendChartのembedded対応＋統合（FR-6）**
   `src/components/analysis/ExhibitionTimeTrendChart.jsx`に同様の対応を行い統合する。
 
-- [ ] **12. RacerTechniqueProfileChartのembedded対応＋統合（FR-7）**
+- [x] **12. RacerTechniqueProfileChartのembedded対応＋統合（FR-7）**
   `src/components/analysis/RacerTechniqueProfileChart.jsx`に同様の対応を行い統合する。
 
-- [ ] **13. RacerBoatReturnRateChartのembedded対応＋統合（FR-8）**
+- [x] **13. RacerBoatReturnRateChartのembedded対応＋統合（FR-8）**
   `src/components/analysis/RacerBoatReturnRateChart.jsx`に同様の対応を行い統合する。
 
-- [ ] **14. AttackDefenseAnalysisのembedded対応＋統合（FR-9）**
+- [x] **14. AttackDefenseAnalysisのembedded対応＋統合（FR-9）**
   `src/components/analysis/AttackDefenseAnalysis.jsx`に同様の対応を行い統合する。データソースが`DataRaceTable`と同じ`racerStats`であるため、`PredictionPanel`側で既に取得済みの値を渡せないか確認し、可能なら追加フェッチを避ける。
 
-- [ ] **15. 全体動作確認・E2Eスモークテスト仕上げ・PR作成**
+- [x] **15. 全体動作確認・E2Eスモークテスト仕上げ・PR作成**
   会場パネル＋7つの埋め込みセクションが揃った状態でローカル確認（`npm run dev`、Playwright）。会場パネルの表示・n数閾値の非表示挙動・各アコーディオンの開閉（閉じている間はネットワークリクエストが発生しないことを含む）・モバイル幅（375px等）でのレイアウト崩れがないことを確認する。`e2e/smoke.spec.js`に7セクションぶんの開閉スモークテストを追加。`npm run build`・`npm run test:e2e`実行後、`/create-pr`でPR作成する。

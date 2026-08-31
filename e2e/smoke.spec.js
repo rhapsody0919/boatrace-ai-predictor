@@ -601,6 +601,52 @@ test.describe("レースページ再設計（BOA-168）", () => {
     });
   });
 
+  test("分析ツール7コンポーネントの埋め込みセクションがデフォルト閉で並び、開くと会場/レース選択プルダウン無しで実データが表示される（race-detail-analysis-integration FR-3〜9）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-language", "ja"),
+    );
+    const found = await selectUpcomingRace(page);
+    test.skip(
+      !found,
+      "本日開催中の未終了レースが見つからないため検証をスキップ",
+    );
+
+    const sections = page.locator(".embedded-analysis-section");
+    await expect(sections).toHaveCount(7);
+
+    const expectedTitles = [
+      "モーター調子",
+      "選手調子",
+      "STのズレ",
+      "展示タイム推移",
+      "選手別決まり手傾向",
+      "回収率分析",
+      "超展開データ",
+    ];
+    for (const title of expectedTitles) {
+      await expect(sections.filter({ hasText: title })).toHaveCount(1);
+    }
+
+    // デフォルトは全セクション閉（中身は一切マウントされない）
+    await expect(page.locator(".eas-content")).toHaveCount(0);
+
+    // 1つずつ開いて、会場/レース選択プルダウンが無いこと・中身が表示されることを確認し、
+    // 閉じたら再びアンマウントされることを確認する
+    const count = await sections.count();
+    for (let i = 0; i < count; i++) {
+      const section = sections.nth(i);
+      await section.locator(".eas-header").click();
+      const content = section.locator(".eas-content");
+      await expect(content).toBeVisible({ timeout: 15000 });
+      await expect(content.locator(".controls-section")).toHaveCount(0);
+      await expect(content.locator("h2")).toHaveCount(0);
+      await section.locator(".eas-header").click();
+      await expect(content).toHaveCount(0);
+    }
+  });
+
   test("過去日付ページで結果確定レースを選ぶと「データで振り返る」が表示される", async ({
     page,
   }) => {
