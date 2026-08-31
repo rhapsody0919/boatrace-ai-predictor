@@ -15,5 +15,6 @@ export { default as OutcomePatternPreview } from "./OutcomePatternPreview";
 export { default as PredictionSection } from "./PredictionSection";
 export { default as DataRaceTable } from "./DataRaceTable";
 export { default as VenueTendencyPanel } from "./VenueTendencyPanel";
+export { default as EmbeddedAnalysisSection } from "./EmbeddedAnalysisSection";
 export { default as AiAnalysisSection } from "./AiAnalysisSection";
 export { default as RaceReview } from "./RaceReview";
