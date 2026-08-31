@@ -396,6 +396,18 @@
     "loading": "分析データを読み込み中…",
     "motorResetNote": "交換直後"
   },
+  "venueTendency": {
+    "title": "この会場の枠番別傾向",
+    "note": "選手個人の実績ではなく、この会場・この枠番の過去傾向です",
+    "insufficientData": "データ不足",
+    "lastUpdated": "集計基準 {{date}}時点（過去90日・前夜更新、当日結果は未反映）",
+    "rowTechnique": "決まり手",
+    "rowTopStart": "トップスタート率",
+    "rowLosing": "負けた際の相手決まり手",
+    "rowExhibitionTop": "展示最速→1着",
+    "boatLabel": "{{n}}号艇",
+    "nigeLink": "逃げた場合の目を見る"
+  },
   "aiCopy": {
     "bannerLabel": "AI用にコピー",
     "bannerCatchphrase": "あなたのAIに聞ける！",
