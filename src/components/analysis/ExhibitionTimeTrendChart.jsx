@@ -65,7 +65,10 @@ function ExhibitionTimeTrendChart({
 
   const pendingInitialRaceId = useRef(initialRaceId);
 
+  // embedded時は過去日・確定済みレースも対象になり得るため、「本日開催」一覧に無い
+  // 場合のフォールバック選択を行わず、渡されたinitialVenueCode/initialRaceIdを使う
   useEffect(() => {
+    if (embedded) return;
     const loadVenues = async () => {
       try {
         setLoading(true);
@@ -89,6 +92,7 @@ function ExhibitionTimeTrendChart({
   }, []);
 
   useEffect(() => {
+    if (embedded) return;
     if (selectedVenue === null) {
       setRaces([]);
       return;
@@ -114,7 +118,7 @@ function ExhibitionTimeTrendChart({
       }
     };
     loadRaces();
-  }, [selectedVenue]);
+  }, [selectedVenue, embedded]);
 
   useEffect(() => {
     if (selectedRace === null) return;

@@ -67,7 +67,11 @@ function MotorConditionChart({
   const pendingInitialRaceId = useRef(initialRaceId);
 
   // 本日開催中の会場一覧を取得
+  // embedded時（レース詳細への埋め込み）は過去日・確定済みレースも対象になり得るため、
+  // 「本日開催」一覧に無い場合のフォールバック選択を行わず、渡されたinitialVenueCode/
+  // initialRaceIdをそのまま使う（selectedVenue/selectedRaceは既にその初期値のまま）
   useEffect(() => {
+    if (embedded) return;
     const loadVenues = async () => {
       try {
         setLoading(true);
@@ -90,8 +94,9 @@ function MotorConditionChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 会場変更時: 本日のレース一覧を取得
+  // 会場変更時: 本日のレース一覧を取得（embedded時はスキップ、理由は上記コメント参照）
   useEffect(() => {
+    if (embedded) return;
     if (selectedVenue === null) {
       setRaces([]);
       return;
@@ -117,7 +122,7 @@ function MotorConditionChart({
       }
     };
     loadRaces();
-  }, [selectedVenue]);
+  }, [selectedVenue, embedded]);
 
   // レース選択時: 枠番別モーター調子を取得
   useEffect(() => {

@@ -647,6 +647,41 @@ test.describe("レースページ再設計（BOA-168）", () => {
     }
   });
 
+  test("過去日・結果確定済みレースの埋め込みセクションが、無関係な「本日開催」レースにフォールバックせず当該レースのデータを表示する（race-detail-analysis-integration 回帰確認）", async ({
+    page,
+  }) => {
+    // 過去日は「本日開催中の会場」一覧に含まれないため、embedded対応前は
+    // getVenuesWithTodaysRaces()のフォールバック（list[0]）により無関係なレースの
+    // データが無警告表示されていた。DataRaceTableの選手名と、埋め込みセクション
+    // （モーター調子）が表示する選手名が一致することを確認する
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+    await expect(page).toHaveURL(/\/race\/2026-08-11-\d{2}-\d{2}$/);
+
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 15000,
+    });
+    const expectedNames = (
+      await page.locator(".drt-name-th").allTextContents()
+    ).map((n) => n.trim());
+    expect(expectedNames.length).toBe(6);
+
+    const motorSection = page
+      .locator(".embedded-analysis-section")
+      .filter({ hasText: "モーター調子" });
+    await motorSection.locator(".eas-header").click();
+    await expect(motorSection.locator(".motor-ranking-row")).toHaveCount(6, {
+      timeout: 15000,
+    });
+    const actualNames = (
+      await motorSection
+        .locator(".motor-ranking-row td:nth-child(2)")
+        .allTextContents()
+    ).map((n) => n.trim());
+    expect(new Set(actualNames)).toEqual(new Set(expectedNames));
+  });
+
   test("過去日付ページで結果確定レースを選ぶと「データで振り返る」が表示される", async ({
     page,
   }) => {
