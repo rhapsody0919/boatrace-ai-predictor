@@ -15,6 +15,7 @@ import {
   getDraftById,
   updateDraft,
   fireRoutine,
+  createInsight,
 } from "../../../../_lib/snsHubHelpers.js";
 
 export const config = {
@@ -49,7 +50,7 @@ export default async function handler(req) {
     return jsonResponse({ error: "リクエストボディが不正です" }, 400);
   }
 
-  const { approverId, reasonCodes, freeText } = body;
+  const { approverId, reasonCodes, freeText, saveAsInsight } = body;
   if (!approverId) {
     return jsonResponse({ error: "approverIdは必須です" }, 400);
   }
@@ -93,6 +94,29 @@ export default async function handler(req) {
       reasonCodes,
       freeText: freeText || null,
     });
+
+    // ユーザーが選択した場合のみ、自由記述を今後の生成方針への提案(insight)として
+    // 登録する。既存の週次昇格フロー(promote-strategy-insights.js)にそのまま乗せる
+    // ため、statusは常にproposed（spec.md課題4）。insight登録はあくまで付随的な
+    // 処理のため、fireRoutineと同様に失敗してもrevise本体は成功として扱う
+    // （コードレビューで指摘: createInsightが例外を投げると、既に成功している
+    // ステータス更新・Routine起動まで500エラーに巻き込まれてしまう）
+    if (saveAsInsight && freeText?.trim()) {
+      try {
+        await createInsight({
+          platform: draft.platform,
+          language: draft.language,
+          format: draft.format,
+          insight_text: freeText.trim(),
+          evidence: `revise操作(content_group_id=${draft.content_group_id})でのユーザー指摘: ${freeText.trim()}`,
+          source: "revision-feedback",
+          research_method: "manual",
+          status: "proposed",
+        });
+      } catch (insightError) {
+        console.error("SNS Hub revise insight登録エラー:", insightError);
+      }
+    }
 
     return jsonResponse({ data: updated, routine: routineResult });
   } catch (error) {
