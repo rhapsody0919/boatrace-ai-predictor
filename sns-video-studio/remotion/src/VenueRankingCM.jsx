@@ -198,6 +198,7 @@ function RankRow({ rank, venue, value, sample, delay, barColor, barRatio }) {
 // 「全要素を均等に大きくする」旧アプローチをやめ、非対称配置で主役（巨大な順位
 // 数字）を1つに絞り、色のベタ塗り分割・実データの棒グラフ背景で階層をつける
 function SceneHook({
+  axisTitle,
   topVenue,
   rateLabel,
   hookQuestion,
@@ -213,9 +214,13 @@ function SceneHook({
   });
   const minRate = Math.min(...allRates);
   const maxRate = Math.max(...allRates);
+  const avgRate = allRates.reduce((a, b) => a + b, 0) / allRates.length;
+  const avgHeight = interpolate(avgRate, [minRate, maxRate], [50, 620]);
   return (
     <AbsoluteFill style={{ background: NAVY_DARK, transform: `scale(${kb})` }}>
-      {/* 実データの可視化: 24会場分のミニバーチャートを背景に敷く。装飾ではなくデータそのもの */}
+      {/* 実データの可視化: 会場・艇番等のミニバーチャートを背景に敷く。装飾ではなくデータそのもの。
+          2026-08-31: 「何についての動画か伝わらない」というユーザー指摘を受け、平均線と
+          1位バーの実数値ラベルを追加し、チャート自体を「裏付けデータ」として格上げした */}
       <AbsoluteFill
         style={{
           flexDirection: "row",
@@ -232,104 +237,162 @@ function SceneHook({
             <div
               key={i}
               style={{
+                position: "relative",
                 width: 26,
                 height: h,
                 background: isTop ? accentColor : "rgba(255,255,255,0.08)",
                 borderRadius: "4px 4px 0 0",
               }}
-            />
+            >
+              {isTop && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: -46,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    color: accentColor,
+                    fontSize: 30,
+                    fontWeight: 900,
+                    fontFamily: FONT,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {r}%
+                </div>
+              )}
+            </div>
           );
         })}
       </AbsoluteFill>
+
+      {/* 平均線: 1位の数値がどれだけ突出しているかを視覚的に裏付ける */}
+      <div
+        style={{
+          position: "absolute",
+          left: 36,
+          right: 36,
+          bottom: 340 + avgHeight,
+          borderTop: "2px dashed rgba(248,250,252,0.45)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          right: 36,
+          bottom: 340 + avgHeight + 8,
+          color: "rgba(248,250,252,0.65)",
+          fontSize: 22,
+          fontWeight: 700,
+          fontFamily: FONT,
+        }}
+      >
+        平均 {avgRate.toFixed(1)}%
+      </div>
 
       <Pop delay={-10} style={{ position: "absolute", top: 44, left: 44 }}>
         <Logo size={38} />
       </Pop>
 
-      <Pop delay={-10} style={{ position: "absolute", top: 50, right: 44 }}>
+      {/* 見出し: 何についての動画かを最優先で伝える（2026-08-31追加）。
+          旧デザインではcategoryTagが右上の極小バッジのみで、軸名（何のランキングか）が
+          伝わらないという指摘があったため新設。視線誘導は見出し→1位→チャート裏付けの順 */}
+      <Pop
+        delay={-10}
+        style={{ position: "absolute", top: 150, left: 40, right: 40 }}
+      >
         <div
           style={{
-            background: "rgba(255,255,255,0.1)",
-            border: `1px solid ${accentColor}`,
-            borderRadius: 999,
-            padding: "6px 18px",
             color: accentColor,
-            fontSize: 24,
+            fontSize: 78,
+            fontWeight: 900,
+            fontFamily: FONT,
+            textAlign: "center",
+            lineHeight: 1.1,
+            textShadow: `0 0 40px ${accentColor}88`,
+          }}
+        >
+          {axisTitle}
+        </div>
+      </Pop>
+      <Pop
+        delay={-10}
+        style={{ position: "absolute", top: 250, left: 40, right: 40 }}
+      >
+        <div
+          style={{
+            color: "rgba(248,250,252,0.55)",
+            fontSize: 28,
             fontWeight: 700,
             fontFamily: FONT,
+            textAlign: "center",
           }}
         >
           {categoryTag}
         </div>
       </Pop>
 
-      {/* 主役: 巨大な順位数字。「1」単体だと何の数字か伝わらないため「位」を添える。
-          左端からはみ出す非対称配置で「静的すぎ」を回避 */}
+      {/* 主役: 巨大な順位数字＋会場名。1つのグループとして中央寄せに配置する
+          （2026-08-31: 左端はみ出しの非対称配置がバランス悪い・右側の余白が目立つ
+          というユーザー指摘を受け、中央寄せ＋間隔確保に変更） */}
       <Pop
         delay={-10}
         style={{
           position: "absolute",
-          left: -50,
-          top: 250,
+          top: 340,
+          left: 0,
+          right: 0,
           display: "flex",
           alignItems: "flex-end",
+          justifyContent: "center",
+          gap: 44,
         }}
       >
-        <div
-          style={{
-            fontSize: 560,
-            fontWeight: 900,
-            fontFamily: FONT,
-            color: accentColor,
-            lineHeight: 0.8,
-            textShadow: `0 0 130px ${accentColor}aa`,
-          }}
-        >
-          1
+        <div style={{ display: "flex", alignItems: "flex-end" }}>
+          <div
+            style={{
+              fontSize: 400,
+              fontWeight: 900,
+              fontFamily: FONT,
+              color: accentColor,
+              lineHeight: 0.8,
+              textShadow: `0 0 130px ${accentColor}aa`,
+            }}
+          >
+            1
+          </div>
+          <div
+            style={{
+              fontSize: 100,
+              fontWeight: 900,
+              fontFamily: FONT,
+              color: accentColor,
+              marginBottom: 46,
+              marginLeft: 4,
+            }}
+          >
+            位
+          </div>
         </div>
-        <div
-          style={{
-            fontSize: 130,
-            fontWeight: 900,
-            fontFamily: FONT,
-            color: accentColor,
-            marginBottom: 64,
-            marginLeft: 4,
-          }}
-        >
-          位
-        </div>
-      </Pop>
-
-      {/* 会場名＋実数値バッジ。巨大数字の右下に重ねて配置 */}
-      <div
-        style={{
-          position: "absolute",
-          left: 520,
-          top: 780,
-          right: 60,
-        }}
-      >
-        <Pop delay={-10}>
+        <div style={{ textAlign: "left", marginBottom: 24 }}>
           <div
             style={{
               color: WHITE,
-              fontSize: 118,
+              fontSize: 108,
               fontWeight: 900,
               fontFamily: FONT,
               lineHeight: 1,
-              marginBottom: 22,
+              marginBottom: 18,
             }}
           >
             {topVenue}
           </div>
-        </Pop>
-        <Pop delay={-10} style={{ display: "inline-block" }}>
           <div
             style={{
+              display: "inline-block",
               background: accentColor,
               color: NAVY_DARK,
-              fontSize: 38,
+              fontSize: 40,
               fontWeight: 900,
               fontFamily: FONT,
               borderRadius: 14,
@@ -339,8 +402,8 @@ function SceneHook({
           >
             {rateLabel}
           </div>
-        </Pop>
-      </div>
+        </div>
+      </Pop>
 
       {/* 下部フック帯: ベタ塗り・ハードエッジで色の塊を作り、疑問形で続きへの動機を作る */}
       <div
@@ -845,6 +908,7 @@ function SceneCTA({ ctaLines, subLine }) {
 
 // 共通テンプレート。会場攻略・データ一覧型は指標軸だけ差し替えて量産する設計
 function VenueRankingTemplate({
+  axisTitle,
   topVenue,
   rateLabel,
   hookQuestion,
@@ -866,6 +930,7 @@ function VenueRankingTemplate({
     <AbsoluteFill style={{ background: NAVY_DARK }}>
       <Sequence from={0} durationInFrames={75}>
         <SceneHook
+          axisTitle={axisTitle}
           topVenue={topVenue}
           rateLabel={rateLabel}
           hookQuestion={hookQuestion}
@@ -908,6 +973,7 @@ export function VenueRankingCM() {
   return (
     <VenueRankingTemplate
       topVenue="尼崎"
+      axisTitle="イン逃げ率ランキング"
       rateLabel="イン逃げ率 59.2%"
       hookQuestion="イン逃げが決まりやすい会場は？"
       subCaption="24会場・38,600レースで検証"
@@ -931,6 +997,7 @@ export function VenueRankingCM_Manshu() {
   return (
     <VenueRankingTemplate
       topVenue="江戸川"
+      axisTitle="万舟率ランキング"
       rateLabel="万舟率 19.1%"
       hookQuestion="万舟が出やすい会場は？"
       subCaption="24会場・38,600レースで検証"
@@ -956,6 +1023,7 @@ export function VenueRankingCM_WinRate() {
   return (
     <VenueRankingTemplate
       topVenue="尼崎"
+      axisTitle="1号艇勝率ランキング"
       rateLabel="1号艇 勝率 61.1%"
       hookQuestion="1号艇が勝ちやすい会場は？"
       subCaption="24会場・38,600レースで検証"
@@ -979,6 +1047,7 @@ export function VenueRankingCM_Motor2Rate() {
   return (
     <VenueRankingTemplate
       topVenue="常滑"
+      axisTitle="モーター2連率ランキング"
       rateLabel="モーター2連率 34.1%"
       hookQuestion="モーターが強い会場は？"
       subCaption="24会場・38,600レースで検証"
@@ -1029,6 +1098,7 @@ export function VenueRankingCM_TopStart() {
   return (
     <VenueRankingTemplate
       topVenue="尼崎"
+      axisTitle="最速スタート勝率ランキング"
       rateLabel="最速スタート勝率 82.8%"
       hookQuestion="スタートで先手を取ったら、一番勝てる会場は？"
       subCaption="1号艇・24会場・サンプル計2,720走で検証"
@@ -1079,6 +1149,7 @@ export function VenueRankingCM_ExTime() {
   return (
     <VenueRankingTemplate
       topVenue="徳山"
+      axisTitle="展示タイム別勝率ランキング"
       rateLabel="展示最速時の勝率 72.4%"
       hookQuestion="展示タイムが一番当てになる会場は？"
       subCaption="1号艇・24会場・サンプル計3,090走で検証"
@@ -1117,6 +1188,7 @@ export function VenueRankingCM_EdogawaLosing() {
       <Sequence from={0} durationInFrames={75}>
         <SceneHook
           topVenue="まくり"
+          axisTitle="江戸川 負け決まり手ランキング"
           rateLabel="負け決まり手 37.6%"
           hookQuestion="江戸川で1号艇が負けるとしたら、何で負ける？"
           subCaption="1号艇・過去90日271敗で検証"
@@ -1174,6 +1246,7 @@ export function VenueRankingCM_Top3Rate() {
   return (
     <VenueRankingTemplate
       topVenue="下関"
+      axisTitle="1号艇3連率ランキング"
       rateLabel="1号艇3連率 86.4%"
       hookQuestion="1号艇が3着以内に踏みとどまりやすい会場は？"
       subCaption="24会場・のべ約39,600レースで検証"
@@ -1197,6 +1270,7 @@ export function VenueRankingCM_Top3Rate() {
 // 艇番別（6項目）・決まり手別（6項目）等、少数項目のランキングを1つのリストで見せる。
 // VenueRankingTemplateと異なりTOP/WORSTの分割は行わず、SceneHook+単一リスト+CTAの3構成
 function BoatRankingTemplate({
+  axisTitle,
   topLabel,
   rateLabel,
   hookQuestion,
@@ -1212,6 +1286,7 @@ function BoatRankingTemplate({
     <AbsoluteFill style={{ background: NAVY_DARK }}>
       <Sequence from={0} durationInFrames={75}>
         <SceneHook
+          axisTitle={axisTitle}
           topVenue={topLabel}
           rateLabel={rateLabel}
           hookQuestion={hookQuestion}
@@ -1251,6 +1326,7 @@ export function BoatRankingCM_PlaceReturn() {
   return (
     <BoatRankingTemplate
       topLabel="1号艇"
+      axisTitle="複勝回収率ランキング"
       rateLabel="複勝回収率 94.8%"
       hookQuestion="複勝でも、堅いのは結局1号艇？"
       subCaption="全艇番・全期間39,728レースで検証"
@@ -1279,6 +1355,7 @@ export function BoatRankingCM_RunnerUp() {
   return (
     <BoatRankingTemplate
       topLabel="2号艇"
+      axisTitle="1号艇飛び時の浮上率"
       rateLabel="1号艇が飛んだ時の浮上率 30.0%"
       hookQuestion="1号艇が飛んだら、代わりに来るのは？"
       subCaption="1号艇が1着を逃した17,883レースで検証"
@@ -1308,6 +1385,7 @@ export function BoatRankingCM_TechniqueShare() {
   return (
     <BoatRankingTemplate
       topLabel="逃げ"
+      axisTitle="決まり手シェア"
       rateLabel="決まり手シェア 53.0%"
       hookQuestion="レースの決着、一番多い型は？"
       subCaption="全国39,728レースの決まり手を集計"
@@ -1337,6 +1415,7 @@ export function BoatRankingCM_NarutoNigeWin() {
   return (
     <BoatRankingTemplate
       topLabel="鳴門"
+      axisTitle="鳴門 逃げ勝率"
       rateLabel="逃げで勝つ確率 98.28%"
       hookQuestion="鳴門で1号艇が勝つとき、ほぼ確実にコレ"
       subCaption="1号艇が勝った232レース中228レースが逃げ"
