@@ -138,11 +138,48 @@ function SceneHook({ venue, raceNumber, startTime, raceGrade, nigePercent }) {
         </div>
       </Pop>
 
-      {/* 主役: AI逃げ確率の数値 */}
-      <Pop delay={-10} style={{ position: "absolute", left: 40, top: 300 }}>
+      {/* タイトル: 「何の動画か」を最も目立つ要素として明示（2026-08-31、天才デザイナー・
+          天才マーケター議論。数値だけでは何を示すか伝わらないという指摘への対応） */}
+      <Pop
+        delay={-10}
+        style={{ position: "absolute", top: 180, left: 40, right: 40 }}
+      >
         <div
           style={{
-            fontSize: 220,
+            color: GOLD,
+            fontSize: 88,
+            fontWeight: 900,
+            fontFamily: FONT,
+            textAlign: "center",
+            lineHeight: 1.1,
+            textShadow: `0 0 40px ${GOLD}88`,
+          }}
+        >
+          AI逃げ確率
+        </div>
+      </Pop>
+      <Pop
+        delay={-10}
+        style={{ position: "absolute", top: 290, left: 40, right: 40 }}
+      >
+        <div
+          style={{
+            color: "rgba(248,250,252,0.55)",
+            fontSize: 30,
+            fontWeight: 700,
+            fontFamily: FONT,
+            textAlign: "center",
+          }}
+        >
+          1号艇のスタート展開をAIが予測
+        </div>
+      </Pop>
+
+      {/* 主役: AI逃げ確率の数値 */}
+      <Pop delay={-10} style={{ position: "absolute", left: 40, top: 400 }}>
+        <div
+          style={{
+            fontSize: 260,
             fontWeight: 900,
             fontFamily: FONT,
             color: GOLD,
@@ -154,7 +191,7 @@ function SceneHook({ venue, raceNumber, startTime, raceGrade, nigePercent }) {
         </div>
       </Pop>
 
-      <div style={{ position: "absolute", left: 60, top: 700, right: 60 }}>
+      <div style={{ position: "absolute", left: 60, top: 820, right: 60 }}>
         <Pop delay={-10}>
           <div
             style={{
