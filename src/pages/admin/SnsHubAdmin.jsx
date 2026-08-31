@@ -19,7 +19,11 @@ import {
   getInsights,
   rejectInsight,
 } from "../../services/snsHubService";
-import { canShareVideo, shareVideoFile } from "../../utils/webShare";
+import {
+  canShareVideo,
+  shareVideoFile,
+  downloadVideoBlob,
+} from "../../utils/webShare";
 import Toast, { useToast } from "../../components/Toast";
 import "./SnsHubAdmin.css";
 
@@ -542,6 +546,10 @@ function PostingActionLinks({ draft, onMarkPosted }) {
     file: null,
   });
   const [copyFeedback, setCopyFeedback] = useState(null);
+  const [downloadState, setDownloadState] = useState({
+    downloading: false,
+    error: null,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -579,6 +587,27 @@ function PostingActionLinks({ draft, onMarkPosted }) {
     }
   }
 
+  async function handleDownload() {
+    setDownloadState({ downloading: true, error: null });
+    try {
+      await downloadVideoBlob(
+        draft.video_url,
+        `${draft.platform}-${draft.language}.mp4`,
+      );
+      setDownloadState({ downloading: false, error: null });
+    } catch (err) {
+      console.error("ダウンロードエラー:", err);
+      setDownloadState({
+        downloading: false,
+        error: "ダウンロードに失敗しました",
+      });
+      setTimeout(
+        () => setDownloadState({ downloading: false, error: null }),
+        3000,
+      );
+    }
+  }
+
   const platformUrl =
     draft.platform === "x"
       ? buildXIntentUrl(buildPostText(draft))
@@ -592,13 +621,20 @@ function PostingActionLinks({ draft, onMarkPosted }) {
         </button>
       ) : (
         draft.video_url && (
-          <a
-            className="posting-action-btn download"
-            href={draft.video_url}
-            download
-          >
-            ⬇️ 動画をダウンロード
-          </a>
+          <>
+            <button
+              className="posting-action-btn download"
+              onClick={handleDownload}
+              disabled={downloadState.downloading}
+            >
+              {downloadState.downloading
+                ? "⏳ ダウンロード準備中..."
+                : "⬇️ 動画をダウンロード"}
+            </button>
+            {downloadState.error && (
+              <span className="copy-feedback">{downloadState.error}</span>
+            )}
+          </>
         )
       )}
 

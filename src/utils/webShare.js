@@ -40,3 +40,30 @@ export async function canShareVideo(videoUrl, fileName = "video.mp4") {
 export async function shareVideoFile(file, title = "") {
   await navigator.share({ files: [file], title });
 }
+
+/**
+ * クロスオリジンの動画URL（Supabase Storage署名付きURL等）を、再生させずに
+ * ファイルとしてダウンロードさせる。
+ *
+ * `<a href={crossOriginUrl} download>`のdownload属性はクロスオリジンURLに対して
+ * ブラウザ仕様上無視されるため、リンク先へ直接遷移してしまい動画再生UIが表示される
+ * （2026-08-31判明）。fetchでBlobとして取得し、同一オリジンのblob URL経由で
+ * ダウンロードをトリガーすることでこれを回避する。
+ * @param {string} videoUrl
+ * @param {string} [fileName]
+ */
+export async function downloadVideoBlob(videoUrl, fileName = "video.mp4") {
+  const response = await fetch(videoUrl);
+  if (!response.ok) {
+    throw new Error(`動画の取得に失敗しました: ${response.status}`);
+  }
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(objectUrl);
+}
