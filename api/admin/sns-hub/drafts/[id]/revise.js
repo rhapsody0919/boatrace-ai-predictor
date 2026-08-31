@@ -49,12 +49,17 @@ export default async function handler(req) {
     return jsonResponse({ error: "リクエストボディが不正です" }, 400);
   }
 
-  const { approverId, reasonCodes, freeText } = body;
+  const { approverId, freeText } = body;
   if (!approverId) {
     return jsonResponse({ error: "approverIdは必須です" }, 400);
   }
-  if (!Array.isArray(reasonCodes) || reasonCodes.length === 0) {
-    return jsonResponse({ error: "reasonCodesは1件以上必須です" }, 400);
+  const reasonCodes = Array.isArray(body.reasonCodes) ? body.reasonCodes : [];
+  const trimmedFreeText = typeof freeText === "string" ? freeText.trim() : "";
+  if (reasonCodes.length === 0 && !trimmedFreeText) {
+    return jsonResponse(
+      { error: "reasonCodesまたはfreeTextのいずれかが必須です" },
+      400,
+    );
   }
   const invalidCodes = reasonCodes.filter(
     (c) => !VALID_REASON_CODES.includes(c),
