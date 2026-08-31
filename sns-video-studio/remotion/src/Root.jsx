@@ -21,6 +21,7 @@ import { LivePredictionCM_A } from "./LivePredictionCM.jsx";
 import {
   VenueRankingCM,
   VenueRankingCM_Manshu,
+  VenueRankingCM_Manshu_EN,
   VenueRankingCM_WinRate,
   VenueRankingCM_WinRate_VariantB,
   VenueRankingCM_Motor2Rate,
@@ -235,6 +236,14 @@ export function RemotionRoot() {
       <Composition
         id="VenueRankingCM-Manshu"
         component={VenueRankingCM_Manshu}
+        durationInFrames={600}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="VenueRankingCM-Manshu-EN"
+        component={VenueRankingCM_Manshu_EN}
         durationInFrames={600}
         fps={30}
         width={1080}
