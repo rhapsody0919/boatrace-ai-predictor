@@ -63,8 +63,14 @@ ffmpeg -y -i trimmed.wav -af "afade=t=out:st=23:d=2" final.wav
 
 1. **YouTube限定公開でアップロードする**（noteに直接動画ファイルを埋め込む機能は無いため）。アップロード自体は手動（YouTube Studioの操作、公開ボタンはユーザーが押す）
 2. 確認は`remotion still`でキーフレームを静止画として書き出し、目視確認する（Remotion StudioのUIプレビューはブラウザ操作のタイミングによって不安定になることがある。2026-08-31、frame移動しても画面が固まる現象が発生、still書き出しでは問題なく確認できた）
-3. `sns-video-studio/`はgit管理外でworktreeに複製されない点に注意（詳細はメモリ`sns_video_studio_worktree_isolation_2026_08_31`参照）。worktreeで作業した場合は完成後にメインリポジトリ側の`sns-video-studio/remotion/`にもファイルをコピーする
+3. `sns-video-studio/`はgit管理下だが、`remotion-studio`プレビュー/レンダリング実行環境はメインリポジトリ側にしかない（`.claude/launch.json`の設定がworktreeに無いため）。worktreeで正式に編集・コミットし、プレビュー確認・レンダリングだけメインリポジトリ側の`sns-video-studio/remotion/`にファイルをコピーして行う（詳細はメモリ`sns_video_studio_worktree_isolation_2026_08_31`参照）
+4. `Root.jsx`はメインリポジトリ側で他セッションの動画制作と共有されているため、直接上書きせず一意な文字列ブロックをPythonスクリプトで置換する方式で安全に追記する
 
 ## 実装済みコンポーネント
 
-- `NoteExplainerCM.jsx`の`NoteExplainerCM_DataRaceTable`: データ出走表機能の解説動画。ハイライト+字幕の共通実装パターンとして今後の型のベースにする
+Hook/特徴解説/CTAの共通実装は`noteVideoShared.jsx`に切り出し済み（2026-09-01、3本目の動画制作で同一パターンの再利用が3箇所目に達したため共通化）。新しい機能の動画を作る際は、この共通モジュールをimportし、対象画像のPlaywright実測座標・ハイライト内容・タイトルのみを新規ファイルに書けばよい。
+
+- `NoteExplainerCM.jsx`の`NoteExplainerCM_DataRaceTable`: データ出走表機能の解説動画（50秒、6特徴）
+- `NoteExplainerReturnRate.jsx`の`NoteExplainerCM_ReturnRate`: 選手×艇番別回収率分析の解説動画（30秒、4特徴）
+- `NoteExplainerFormRanking.jsx`の`NoteExplainerCM_FormRanking`: 好調・不調選手ランキングの解説動画（50秒、急上昇/急下降の2テーブルをそれぞれ3行ハイライト）。1機能で複数テーブルを扱う場合は、特徴解説パートを`SceneFeatures`の複数`Sequence`に分け、`imageSrc`と`badgeLabel`をテーブルごとに切り替える
+- タイトルが長い機能名の場合、`SceneHook`の`titleFontSize`propで縮小しないと1080px幅で折り返してsubtitleと重なる（2026-09-01、好調・不調ランキングで発生・修正）。目安は13文字を超える場合に80px程度へ縮小する

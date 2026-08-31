@@ -49,6 +49,8 @@ import { TodaysMotorFormCM } from "./TodaysMotorFormCM.jsx";
 import { OutcomeDistributionCM } from "./OutcomeDistributionCM.jsx";
 import { ReturnRateCM } from "./ReturnRateCM.jsx";
 import { NoteExplainerCM_DataRaceTable } from "./NoteExplainerCM.jsx";
+import { NoteExplainerCM_ReturnRate } from "./NoteExplainerReturnRate.jsx";
+import { NoteExplainerCM_FormRanking } from "./NoteExplainerFormRanking.jsx";
 
 export function RemotionRoot() {
   return (
@@ -424,6 +426,22 @@ export function RemotionRoot() {
       <Composition
         id="NoteExplainerCM-DataRaceTable"
         component={NoteExplainerCM_DataRaceTable}
+        durationInFrames={1500}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="NoteExplainerCM-ReturnRate"
+        component={NoteExplainerCM_ReturnRate}
+        durationInFrames={1100}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="NoteExplainerCM-FormRanking"
+        component={NoteExplainerCM_FormRanking}
         durationInFrames={1500}
         fps={30}
         width={1920}
