@@ -38,6 +38,8 @@ import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
 import VenueTendencyPanel from "./VenueTendencyPanel";
+import EmbeddedAnalysisSection from "./EmbeddedAnalysisSection";
+import MotorConditionChart from "../analysis/MotorConditionChart";
 import AiAnalysisSection from "./AiAnalysisSection";
 import AiCopyBanner from "./AiCopyBanner";
 import AiCopyButton from "./AiCopyButton";
@@ -199,6 +201,18 @@ function PredictionPanel({
       {/* この会場の枠番別傾向（FR-2）: 会場×枠番の過去傾向。選手個人のデータ出走表とは
           主語が異なるため別コンポーネントとして分離する */}
       <VenueTendencyPanel venueCode={venueCode} raceId={analysisRaceId} />
+
+      {/* 分析ツールコンポーネントの埋め込み（FR-3〜9）: デフォルト閉、開いた時だけ
+          データ取得する。まずモーター調子でembedded modeのパターンを確立する */}
+      {venueCode && analysisRaceId && (
+        <EmbeddedAnalysisSection title={t("analysisPage.tabs.motor")}>
+          <MotorConditionChart
+            embedded
+            initialVenueCode={venueCode}
+            initialRaceId={analysisRaceId}
+          />
+        </EmbeddedAnalysisSection>
+      )}
 
       {!isFinished && (
         <AiCopyButton

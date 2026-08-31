@@ -50,6 +50,7 @@ const VENUE_NAMES = {
 function MotorConditionChart({
   initialVenueCode = null,
   initialRaceId = null,
+  embedded = false,
 }) {
   const { t } = useTranslation();
   const [venues, setVenues] = useState([]);
@@ -174,53 +175,60 @@ function MotorConditionChart({
 
   return (
     <div className="motor-condition-container">
-      <h2>{t("analysis.motor.title")}</h2>
-      <p className="section-description">{t("analysis.motor.description")}</p>
-
-      {venues.length === 0 && !loading ? (
-        <div className="empty-state">{t("analysis.noRacesToday")}</div>
-      ) : (
-        <div className="controls-section">
-          <label htmlFor="motor-venue-select">
-            {t("analysis.venueSelectTodayLabel")}
-          </label>
-          <select
-            id="motor-venue-select"
-            value={selectedVenue ?? ""}
-            onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
-            className="venue-select"
-          >
-            {venues.map((v) => (
-              <option key={v} value={v}>
-                {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-              </option>
-            ))}
-          </select>
-
-          {races.length > 0 && (
-            <>
-              <label htmlFor="motor-race-select">
-                {t("analysis.raceSelectLabel")}
-              </label>
-              <select
-                id="motor-race-select"
-                value={selectedRace ?? ""}
-                onChange={(e) => setSelectedRace(e.target.value)}
-                className="venue-select"
-              >
-                {races.map((r) => (
-                  <option key={r.race_id} value={r.race_id}>
-                    {t("analysis.raceOption", {
-                      number: r.race_number,
-                      time: r.start_time?.slice(0, 5),
-                    })}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
-        </div>
+      {!embedded && (
+        <>
+          <h2>{t("analysis.motor.title")}</h2>
+          <p className="section-description">
+            {t("analysis.motor.description")}
+          </p>
+        </>
       )}
+
+      {!embedded &&
+        (venues.length === 0 && !loading ? (
+          <div className="empty-state">{t("analysis.noRacesToday")}</div>
+        ) : (
+          <div className="controls-section">
+            <label htmlFor="motor-venue-select">
+              {t("analysis.venueSelectTodayLabel")}
+            </label>
+            <select
+              id="motor-venue-select"
+              value={selectedVenue ?? ""}
+              onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
+              className="venue-select"
+            >
+              {venues.map((v) => (
+                <option key={v} value={v}>
+                  {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
+                </option>
+              ))}
+            </select>
+
+            {races.length > 0 && (
+              <>
+                <label htmlFor="motor-race-select">
+                  {t("analysis.raceSelectLabel")}
+                </label>
+                <select
+                  id="motor-race-select"
+                  value={selectedRace ?? ""}
+                  onChange={(e) => setSelectedRace(e.target.value)}
+                  className="venue-select"
+                >
+                  {races.map((r) => (
+                    <option key={r.race_id} value={r.race_id}>
+                      {t("analysis.raceOption", {
+                        number: r.race_number,
+                        time: r.start_time?.slice(0, 5),
+                      })}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+          </div>
+        ))}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
