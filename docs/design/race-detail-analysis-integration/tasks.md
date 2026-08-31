@@ -4,22 +4,22 @@
 
 ## タスク一覧
 
-- [ ] **1. FR-1: 深掘りリンクのクリック計測追加**
+- [x] **1. FR-1: 深掘りリンクのクリック計測追加**
   `src/components/race/DataRaceTable.jsx`の`deepLink`を使う各`Link`、`src/components/race/VolatilityDisplay.jsx`の`/winning-technique?tab=volatility`リンク、`src/components/race/OutcomePatternPreview.jsx`の`detailLink`に、`onClick={() => trackEvent("deep_link_click", { tab, source })}`を追加する（`src/utils/analytics.js`の既存`trackEvent`を利用）。他タスクと依存関係がなく、ベースライン計測を最速で開始するため最初に実装する。
 
-- [ ] **2. 会場統計API層のレスポンス統一**
+- [x] **2. 会場統計API層のレスポンス統一**
   `src/services/supabaseDataService.js`の`getTopStartStats`/`getExhibitionTimeTopStats`が返すレスポンスに、`getWinningTechniqueStats`/`getLosingTechniqueStats`と同じ形で`last_updated`をトップレベルに正規化する。DBスキーマ変更なし、アプリ層のみ。
 
 - [ ] **3. useVenueTendencyStats フック実装**
   `src/hooks/useVenueTendencyStats.js`を新規作成（ADR-0024）。`venueCode`を引数に、`getWinningTechniqueStats`/`getTopStartStats`/`getLosingTechniqueStats`/`getExhibitionTimeTopStats`を`Promise.all`で並列取得し、各データソース・`last_updated`・ローディング状態を返す。
 
-- [ ] **4. i18nキー追加（会場パネル用）**
+- [x] **4. i18nキー追加（会場パネル用）**
   `src/locales/{ja,en,zh-TW,ko}/common.json`に`venueTendency`名前空間を追加。行ラベル（決まり手/トップ発走率/負け決まり手/展示最速転換率）、「選手個人の実績ではなく〜」の注記文言、「データ不足」表示文言、集計基準日の文言を定義する。
 
-- [ ] **5. VenueTendencyPanel コンポーネント実装**
+- [x] **5. VenueTendencyPanel コンポーネント実装**
   `src/components/race/VenueTendencyPanel.jsx`＋`.css`を新規作成。4行（決まり手/トップ発走率/負け決まり手/展示最速転換率）×6艇（枠番）のテーブル。`useVenueTendencyStats`からデータを取得し、各セルにn数を併記。カテゴリ分割指標（決まり手・負け決まり手）はn未満（Wilson区間目安でn<20〜30）で「データ不足」表示、2値指標（トップ発走率・展示最速転換率）はn数併記のみで常に表示。決まり手行に`nige`タブへの追加リンクを併設。デフォルト展開、集計基準日をパネル下部に表示。
 
-- [ ] **6. VenueTendencyPanelのPredictionPanel統合＋スモークテスト**
+- [x] **6. VenueTendencyPanelのPredictionPanel統合＋スモークテスト**
   `src/components/race/PredictionPanel.jsx`の`DataRaceTable`直下に`VenueTendencyPanel`を追加。`src/components/race/index.js`のbarrel exportに追加。`e2e/smoke.spec.js`に会場パネルの表示確認テストを追加する。
 
 - [ ] **7. EmbeddedAnalysisSection 共通ラッパー実装**
