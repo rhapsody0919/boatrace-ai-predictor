@@ -37,6 +37,15 @@ import PredictionCard from "./PredictionCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
+import VenueTendencyPanel from "./VenueTendencyPanel";
+import EmbeddedAnalysisSection from "./EmbeddedAnalysisSection";
+import MotorConditionChart from "../analysis/MotorConditionChart";
+import RacerFormChart from "../analysis/RacerFormChart";
+import StPredictabilityChart from "../analysis/StPredictabilityChart";
+import ExhibitionTimeTrendChart from "../analysis/ExhibitionTimeTrendChart";
+import RacerTechniqueProfileChart from "../analysis/RacerTechniqueProfileChart";
+import RacerBoatReturnRateChart from "../analysis/RacerBoatReturnRateChart";
+import AttackDefenseAnalysis from "../analysis/AttackDefenseAnalysis";
 import AiAnalysisSection from "./AiAnalysisSection";
 import AiCopyBanner from "./AiCopyBanner";
 import AiCopyButton from "./AiCopyButton";
@@ -194,6 +203,76 @@ function PredictionPanel({
         prediction={prediction}
         venueCode={venueCode}
       />
+
+      {/* この会場の枠番別傾向（FR-2）: 会場×枠番の過去傾向。選手個人のデータ出走表とは
+          主語が異なるため別コンポーネントとして分離する */}
+      <VenueTendencyPanel venueCode={venueCode} raceId={analysisRaceId} />
+
+      {/* 分析ツールコンポーネントの埋め込み（FR-3〜9）: デフォルト閉、開いた時だけ
+          データ取得する。まずモーター調子でembedded modeのパターンを確立する */}
+      {venueCode && analysisRaceId && (
+        <EmbeddedAnalysisSection title={t("analysisPage.tabs.motor")}>
+          <MotorConditionChart
+            embedded
+            initialVenueCode={venueCode}
+            initialRaceId={analysisRaceId}
+          />
+        </EmbeddedAnalysisSection>
+      )}
+      {venueCode && analysisRaceId && (
+        <EmbeddedAnalysisSection title={t("analysisPage.tabs.racer")}>
+          <RacerFormChart
+            embedded
+            initialVenueCode={venueCode}
+            initialRaceId={analysisRaceId}
+          />
+        </EmbeddedAnalysisSection>
+      )}
+      {venueCode && analysisRaceId && (
+        <EmbeddedAnalysisSection title={t("analysisPage.tabs.st")}>
+          <StPredictabilityChart
+            embedded
+            initialVenueCode={venueCode}
+            initialRaceId={analysisRaceId}
+          />
+        </EmbeddedAnalysisSection>
+      )}
+      {venueCode && analysisRaceId && (
+        <EmbeddedAnalysisSection title={t("analysisPage.tabs.extrend")}>
+          <ExhibitionTimeTrendChart
+            embedded
+            initialVenueCode={venueCode}
+            initialRaceId={analysisRaceId}
+          />
+        </EmbeddedAnalysisSection>
+      )}
+      {venueCode && analysisRaceId && (
+        <EmbeddedAnalysisSection title={t("analysisPage.tabs.techprofile")}>
+          <RacerTechniqueProfileChart
+            embedded
+            initialVenueCode={venueCode}
+            initialRaceId={analysisRaceId}
+          />
+        </EmbeddedAnalysisSection>
+      )}
+      {venueCode && analysisRaceId && (
+        <EmbeddedAnalysisSection title={t("analysisPage.tabs.returnrate")}>
+          <RacerBoatReturnRateChart
+            embedded
+            initialVenueCode={venueCode}
+            initialRaceId={analysisRaceId}
+          />
+        </EmbeddedAnalysisSection>
+      )}
+      {venueCode && analysisRaceId && (
+        <EmbeddedAnalysisSection title={t("analysisPage.tabs.attackdefense")}>
+          <AttackDefenseAnalysis
+            embedded
+            initialVenueCode={venueCode}
+            initialRaceId={analysisRaceId}
+          />
+        </EmbeddedAnalysisSection>
+      )}
 
       {!isFinished && (
         <AiCopyButton

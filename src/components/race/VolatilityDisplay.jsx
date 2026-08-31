@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useUnifiedVolatilityAccuracy } from "../../hooks/useUnifiedVolatilityAccuracy";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
+import { trackEvent } from "../../utils/analytics";
 import RaceMoodEffect from "./RaceMoodEffect";
 
 // VolatilityDisplayのlevel（high/low/standard）→ calculate-unified-volatility-accuracy.js
@@ -151,6 +152,12 @@ function LevelAccuracyStat({ level, venueCode, raceId }) {
               color: "var(--brand-accent-primary)",
               textDecoration: "none",
             }}
+            onClick={() =>
+              trackEvent("deep_link_click", {
+                tab: "volatility",
+                source: "volatility_display",
+              })
+            }
           >
             {t("volatility.accuracyLink")}
           </Link>

@@ -40,6 +40,7 @@ const VENUE_NAMES = {
 function RacerBoatReturnRateChart({
   initialVenueCode = null,
   initialRaceId = null,
+  embedded = false,
 }) {
   const { t } = useTranslation();
   const [venues, setVenues] = useState([]);
@@ -52,7 +53,10 @@ function RacerBoatReturnRateChart({
 
   const pendingInitialRaceId = useRef(initialRaceId);
 
+  // embedded時は過去日・確定済みレースも対象になり得るため、「本日開催」一覧に無い
+  // 場合のフォールバック選択を行わず、渡されたinitialVenueCode/initialRaceIdを使う
   useEffect(() => {
+    if (embedded) return;
     const loadVenues = async () => {
       try {
         setLoading(true);
@@ -76,6 +80,7 @@ function RacerBoatReturnRateChart({
   }, []);
 
   useEffect(() => {
+    if (embedded) return;
     if (selectedVenue === null) {
       setRaces([]);
       return;
@@ -101,7 +106,7 @@ function RacerBoatReturnRateChart({
       }
     };
     loadRaces();
-  }, [selectedVenue]);
+  }, [selectedVenue, embedded]);
 
   useEffect(() => {
     if (selectedRace === null) return;
@@ -133,55 +138,60 @@ function RacerBoatReturnRateChart({
 
   return (
     <div className="motor-condition-container">
-      <h2>{t("analysis.returnRate.title")}</h2>
-      <p className="section-description">
-        {t("analysis.returnRate.description")}
-      </p>
-
-      {venues.length === 0 && !loading ? (
-        <div className="empty-state">{t("analysis.noRacesToday")}</div>
-      ) : (
-        <div className="controls-section">
-          <label htmlFor="return-rate-venue-select">
-            {t("analysis.venueSelectTodayLabel")}
-          </label>
-          <select
-            id="return-rate-venue-select"
-            value={selectedVenue ?? ""}
-            onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
-            className="venue-select"
-          >
-            {venues.map((v) => (
-              <option key={v} value={v}>
-                {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-              </option>
-            ))}
-          </select>
-
-          {races.length > 0 && (
-            <>
-              <label htmlFor="return-rate-race-select">
-                {t("analysis.raceSelectLabel")}
-              </label>
-              <select
-                id="return-rate-race-select"
-                value={selectedRace ?? ""}
-                onChange={(e) => setSelectedRace(e.target.value)}
-                className="venue-select"
-              >
-                {races.map((r) => (
-                  <option key={r.race_id} value={r.race_id}>
-                    {t("analysis.raceOption", {
-                      number: r.race_number,
-                      time: r.start_time?.slice(0, 5),
-                    })}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
-        </div>
+      {!embedded && (
+        <>
+          <h2>{t("analysis.returnRate.title")}</h2>
+          <p className="section-description">
+            {t("analysis.returnRate.description")}
+          </p>
+        </>
       )}
+
+      {!embedded &&
+        (venues.length === 0 && !loading ? (
+          <div className="empty-state">{t("analysis.noRacesToday")}</div>
+        ) : (
+          <div className="controls-section">
+            <label htmlFor="return-rate-venue-select">
+              {t("analysis.venueSelectTodayLabel")}
+            </label>
+            <select
+              id="return-rate-venue-select"
+              value={selectedVenue ?? ""}
+              onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
+              className="venue-select"
+            >
+              {venues.map((v) => (
+                <option key={v} value={v}>
+                  {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
+                </option>
+              ))}
+            </select>
+
+            {races.length > 0 && (
+              <>
+                <label htmlFor="return-rate-race-select">
+                  {t("analysis.raceSelectLabel")}
+                </label>
+                <select
+                  id="return-rate-race-select"
+                  value={selectedRace ?? ""}
+                  onChange={(e) => setSelectedRace(e.target.value)}
+                  className="venue-select"
+                >
+                  {races.map((r) => (
+                    <option key={r.race_id} value={r.race_id}>
+                      {t("analysis.raceOption", {
+                        number: r.race_number,
+                        time: r.start_time?.slice(0, 5),
+                      })}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+          </div>
+        ))}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (

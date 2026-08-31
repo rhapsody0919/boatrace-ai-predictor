@@ -3331,7 +3331,7 @@ export const supabaseDataService = {
     return withCache(`top-start-stats-${venueCode}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
-        return { venue_code: venueCode, data: [] };
+        return { venue_code: venueCode, last_updated: null, data: [] };
       }
 
       const { data, error } = await supabase
@@ -3342,10 +3342,14 @@ export const supabaseDataService = {
 
       if (error) {
         console.error("Supabase getTopStartStats error:", error.message);
-        return { venue_code: venueCode, data: [] };
+        return { venue_code: venueCode, last_updated: null, data: [] };
       }
 
-      return { venue_code: venueCode, data: data ?? [] };
+      return {
+        venue_code: venueCode,
+        last_updated: data?.[0]?.last_updated ?? null,
+        data: data ?? [],
+      };
     });
   },
 
@@ -3567,7 +3571,7 @@ export const supabaseDataService = {
     return withCache(`exhibition-time-top-stats-${venueCode}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
-        return { venue_code: venueCode, data: [] };
+        return { venue_code: venueCode, last_updated: null, data: [] };
       }
 
       const { data, error } = await supabase
@@ -3581,10 +3585,14 @@ export const supabaseDataService = {
           "Supabase getExhibitionTimeTopStats error:",
           error.message,
         );
-        return { venue_code: venueCode, data: [] };
+        return { venue_code: venueCode, last_updated: null, data: [] };
       }
 
-      return { venue_code: venueCode, data: data ?? [] };
+      return {
+        venue_code: venueCode,
+        last_updated: data?.[0]?.last_updated ?? null,
+        data: data ?? [],
+      };
     });
   },
 

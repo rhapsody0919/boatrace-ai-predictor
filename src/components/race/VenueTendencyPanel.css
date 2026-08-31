@@ -1,0 +1,193 @@
+/* VenueTendencyPanel - この会場の枠番別傾向（race-detail-analysis-integration FR-2）
+   DataRaceTable.cssの二層設計・drt-*命名パターンを踏襲しつつ、vtp-*で別コンポーネントと
+   分かるようにする。選手個人の指標（DataRaceTable）と会場の傾向（本パネル）を
+   視覚的に区別するため、強調色はブランドアクセントを使わずグレー系に留める */
+
+.venue-tendency-panel {
+  margin: var(--spacing-4) 0 var(--spacing-6);
+  padding: var(--spacing-4);
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+}
+
+.vtp-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.vtp-chevron {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.vtp-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.vtp-content {
+  margin-top: var(--spacing-3);
+}
+
+.vtp-note {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.vtp-table-wrapper {
+  overflow-x: auto;
+}
+
+.vtp-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+}
+
+.vtp-table th,
+.vtp-table td {
+  padding: var(--spacing-2);
+  text-align: center;
+  border: var(--border-width-1) solid var(--border-hairline);
+}
+
+.vtp-boat-th {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  width: calc(100% / 7);
+}
+
+.vtp-label-th {
+  background: var(--surface-page);
+}
+
+.vtp-label-cell {
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  background: var(--surface-page);
+  white-space: nowrap;
+}
+
+.vtp-label-link {
+  color: var(--text-primary);
+  text-decoration: none;
+  display: block;
+}
+
+.vtp-label-link:hover {
+  text-decoration: underline;
+}
+
+/* モバイルでは短縮ラベルに切り替える（DataRaceTableと同じパターン、
+   狭い列幅での1文字ずつの折り返しを防ぐ） */
+.vtp-label-short {
+  display: none;
+}
+
+.vtp-nige-link {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--brand-accent-primary);
+  text-decoration: none;
+  white-space: normal;
+}
+
+.vtp-nige-link:hover {
+  text-decoration: underline;
+}
+
+.vtp-cell {
+  color: var(--text-primary);
+}
+
+.vtp-table tbody tr:nth-child(even) td {
+  background: var(--surface-page);
+}
+
+.vtp-value {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: var(--line-height-tight);
+}
+
+.vtp-main {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.vtp-n {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.vtp-insufficient {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.vtp-empty {
+  color: var(--text-secondary);
+}
+
+.vtp-updated {
+  margin: var(--spacing-3) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .venue-tendency-panel {
+    padding: var(--spacing-2);
+    margin: var(--spacing-2) 0 var(--spacing-4);
+  }
+
+  .vtp-table th,
+  .vtp-table td {
+    padding: var(--spacing-1);
+  }
+
+  .vtp-table {
+    font-size: var(--font-size-xs);
+  }
+
+  .vtp-label-full {
+    display: none;
+  }
+
+  .vtp-label-short {
+    display: inline;
+  }
+
+  .vtp-label-cell {
+    white-space: normal;
+    /* CJKは文字間に暗黙の改行位置があるため、幅を確保しないと1文字ずつ縦積みになる。
+       短縮ラベル（3〜4文字）が1行に収まる幅を確保する */
+    min-width: 4.4em;
+  }
+
+  /* nigeリンクは補助的な導線のため、幅が最も限られるモバイルでは非表示にし、
+     決まり手ラベルの可読性を優先する（デスクトップ/タブレットでは表示） */
+  .vtp-nige-link {
+    display: none;
+  }
+}

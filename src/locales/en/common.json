@@ -397,6 +397,24 @@
     "loading": "Loading analytics…",
     "motorResetNote": "New motors"
   },
+  "venueTendency": {
+    "title": "Venue tendency by lane",
+    "note": "This is the venue's historical tendency by lane, not the racer's own record",
+    "insufficientData": "Not enough data",
+    "lastUpdated": "As of {{date}} (last 90 days, updated overnight — today's results not yet included)",
+    "rowTechnique": "Winning technique",
+    "rowTopStart": "Top start rate",
+    "rowLosing": "Losing technique",
+    "rowExhibitionTop": "Exhibition fastest → win",
+    "boatLabel": "Lane {{n}}",
+    "nigeLink": "See outcomes when leading (Nige)",
+    "rowTechniqueShort": "Technique",
+    "rowTopStartShort": "Top start",
+    "rowLosingShort": "Losing",
+    "rowExhibitionTopShort": "Ex. → win",
+    "nigeLinkShort": "Nige →",
+    "sampleCount": "{{n}} races"
+  },
   "aiCopy": {
     "bannerLabel": "Copy for AI",
     "bannerCatchphrase": "Ask your AI!",

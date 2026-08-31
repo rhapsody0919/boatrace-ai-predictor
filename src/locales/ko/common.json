@@ -395,6 +395,24 @@
     "loading": "분석 데이터 로딩 중…",
     "motorResetNote": "교체 직후"
   },
+  "venueTendency": {
+    "title": "이 경기장의 코스별 경향",
+    "note": "선수 개인의 실적이 아닌, 이 경기장・이 코스의 과거 경향입니다",
+    "insufficientData": "데이터 부족",
+    "lastUpdated": "집계 기준 {{date}}（최근 90일・전날 밤 갱신, 오늘 결과는 미반영）",
+    "rowTechnique": "결정수",
+    "rowTopStart": "톱 스타트율",
+    "rowLosing": "패배 시 결정수",
+    "rowExhibitionTop": "전시 최고속→우승",
+    "boatLabel": "{{n}}호정",
+    "nigeLink": "인빠지기 시 조합 보기",
+    "rowTechniqueShort": "결정수",
+    "rowTopStartShort": "스타트율",
+    "rowLosingShort": "패배 시",
+    "rowExhibitionTopShort": "전시→우승",
+    "nigeLinkShort": "인빠지기→",
+    "sampleCount": "{{n}}건"
+  },
   "aiCopy": {
     "bannerLabel": "AI용으로 복사",
     "bannerCatchphrase": "당신의 AI에게 물어보세요!",

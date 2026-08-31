@@ -395,6 +395,24 @@
     "loading": "數據載入中…",
     "motorResetNote": "剛更換"
   },
+  "venueTendency": {
+    "title": "本場館各航道傾向",
+    "note": "此為本場館・該航道的過去傾向，非選手個人實績",
+    "insufficientData": "數據不足",
+    "lastUpdated": "統計基準 {{date}}（過去90天・前一晚更新，尚未反映今日結果）",
+    "rowTechnique": "獲勝方式",
+    "rowTopStart": "搶先起航率",
+    "rowLosing": "落敗方式",
+    "rowExhibitionTop": "展示最快→獲勝",
+    "boatLabel": "{{n}}號船",
+    "nigeLink": "查看逃走時的組合",
+    "rowTechniqueShort": "獲勝方式",
+    "rowTopStartShort": "起航率",
+    "rowLosingShort": "落敗方式",
+    "rowExhibitionTopShort": "展示→獲勝",
+    "nigeLinkShort": "逃走→",
+    "sampleCount": "{{n}}場"
+  },
   "aiCopy": {
     "bannerLabel": "複製給AI使用",
     "bannerCatchphrase": "讓你的AI也能分析！",

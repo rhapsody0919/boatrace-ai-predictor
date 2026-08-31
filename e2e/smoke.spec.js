@@ -569,6 +569,119 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".ai-analysis-body")).toHaveCount(0);
   });
 
+  test("この会場の枠番別傾向パネルがデフォルト展開で表示され、折りたたみ操作ができる（race-detail-analysis-integration）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-language", "ja"),
+    );
+    const found = await selectUpcomingRace(page);
+    test.skip(
+      !found,
+      "本日開催中の未終了レースが見つからないため検証をスキップ",
+    );
+
+    const panel = page.locator(".venue-tendency-panel");
+    await expect(panel).toBeVisible({ timeout: 15000 });
+
+    // デフォルト展開: 4行（決まり手/トップスタート率/負け決まり手/展示最速転換率）×6艇
+    const content = panel.locator(".vtp-content");
+    await expect(content).toBeVisible({ timeout: 10000 });
+    await expect(panel.locator(".vtp-table tbody tr")).toHaveCount(4);
+    await expect(panel.locator(".vtp-table thead th.vtp-boat-th")).toHaveCount(
+      6,
+    );
+
+    // ヘッダクリックで折りたたみ、再クリックで再展開できる
+    await panel.locator(".vtp-header").click();
+    await expect(content).toHaveCount(0);
+    await panel.locator(".vtp-header").click();
+    await expect(panel.locator(".vtp-content")).toBeVisible({
+      timeout: 10000,
+    });
+  });
+
+  test("分析ツール7コンポーネントの埋め込みセクションがデフォルト閉で並び、開くと会場/レース選択プルダウン無しで実データが表示される（race-detail-analysis-integration FR-3〜9）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai-language", "ja"),
+    );
+    const found = await selectUpcomingRace(page);
+    test.skip(
+      !found,
+      "本日開催中の未終了レースが見つからないため検証をスキップ",
+    );
+
+    const sections = page.locator(".embedded-analysis-section");
+    await expect(sections).toHaveCount(7);
+
+    const expectedTitles = [
+      "モーター調子",
+      "選手調子",
+      "STのズレ",
+      "展示タイム推移",
+      "選手別決まり手傾向",
+      "回収率分析",
+      "超展開データ",
+    ];
+    for (const title of expectedTitles) {
+      await expect(sections.filter({ hasText: title })).toHaveCount(1);
+    }
+
+    // デフォルトは全セクション閉（中身は一切マウントされない）
+    await expect(page.locator(".eas-content")).toHaveCount(0);
+
+    // 1つずつ開いて、会場/レース選択プルダウンが無いこと・中身が表示されることを確認し、
+    // 閉じたら再びアンマウントされることを確認する
+    const count = await sections.count();
+    for (let i = 0; i < count; i++) {
+      const section = sections.nth(i);
+      await section.locator(".eas-header").click();
+      const content = section.locator(".eas-content");
+      await expect(content).toBeVisible({ timeout: 15000 });
+      await expect(content.locator(".controls-section")).toHaveCount(0);
+      await expect(content.locator("h2")).toHaveCount(0);
+      await section.locator(".eas-header").click();
+      await expect(content).toHaveCount(0);
+    }
+  });
+
+  test("過去日・結果確定済みレースの埋め込みセクションが、無関係な「本日開催」レースにフォールバックせず当該レースのデータを表示する（race-detail-analysis-integration 回帰確認）", async ({
+    page,
+  }) => {
+    // 過去日は「本日開催中の会場」一覧に含まれないため、embedded対応前は
+    // getVenuesWithTodaysRaces()のフォールバック（list[0]）により無関係なレースの
+    // データが無警告表示されていた。DataRaceTableの選手名と、埋め込みセクション
+    // （モーター調子）が表示する選手名が一致することを確認する
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+    await expect(page).toHaveURL(/\/race\/2026-08-11-\d{2}-\d{2}$/);
+
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 15000,
+    });
+    const expectedNames = (
+      await page.locator(".drt-name-th").allTextContents()
+    ).map((n) => n.trim());
+    expect(expectedNames.length).toBe(6);
+
+    const motorSection = page
+      .locator(".embedded-analysis-section")
+      .filter({ hasText: "モーター調子" });
+    await motorSection.locator(".eas-header").click();
+    await expect(motorSection.locator(".motor-ranking-row")).toHaveCount(6, {
+      timeout: 15000,
+    });
+    const actualNames = (
+      await motorSection
+        .locator(".motor-ranking-row td:nth-child(2)")
+        .allTextContents()
+    ).map((n) => n.trim());
+    expect(new Set(actualNames)).toEqual(new Set(expectedNames));
+  });
+
   test("過去日付ページで結果確定レースを選ぶと「データで振り返る」が表示される", async ({
     page,
   }) => {
