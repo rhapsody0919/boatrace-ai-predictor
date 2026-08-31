@@ -1,0 +1,122 @@
+/* RaceCardDataTable - レース一覧カード内のミニ出走表
+   勝率・当地・モーターの3行は常時表示、残りは折りたたみ。
+   DataRaceTable.cssと同じトークン・配色パターンを踏襲する */
+
+.rcdt {
+  margin-top: 0.75rem;
+}
+
+.rcdt-table-wrapper {
+  overflow-x: auto;
+}
+
+.rcdt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+  min-width: 300px;
+}
+
+.rcdt-table th,
+.rcdt-table td {
+  padding: 4px;
+  text-align: center;
+  border: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rcdt-boat-th {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xs);
+  width: calc(100% / 7);
+}
+
+.rcdt-name-th {
+  font-weight: var(--font-weight-medium);
+  font-size: 10.5px;
+  color: var(--text-primary);
+  background: var(--surface-page);
+  word-break: break-all;
+  line-height: var(--line-height-tight);
+}
+
+.rcdt-label-th {
+  background: var(--surface-page);
+}
+
+.rcdt-label-cell {
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  background: var(--surface-page);
+  white-space: nowrap;
+}
+
+.rcdt-cell {
+  color: var(--text-primary);
+}
+
+.rcdt-table tbody tr:nth-child(even) td {
+  background: var(--surface-page);
+}
+
+.rcdt-cell.rcdt-best {
+  background: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
+  font-weight: var(--font-weight-bold);
+}
+
+.rcdt .drt-skeleton {
+  display: inline-block;
+  width: 2.2em;
+  height: 0.85em;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--surface-page) 25%,
+    var(--border-hairline) 50%,
+    var(--surface-page) 75%
+  );
+  background-size: 200% 100%;
+  animation: rcdt-shimmer 1.2s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes rcdt-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.rcdt-expand-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+  background: transparent;
+  border: var(--border-width-1) solid var(--border-hairline);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding: 6px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.rcdt-chevron {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.rcdt-chevron-open {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 480px) {
+  .rcdt-table {
+    font-size: 10.5px;
+  }
+}

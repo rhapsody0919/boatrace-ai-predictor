@@ -356,7 +356,8 @@
     "badgePlace": "✅ 복승 적중",
     "badgeTurn": "✅ 전개 적중",
     "missBadge": "❌ 미적중",
-    "view": "예측 보기"
+    "view": "상세 보기",
+    "dataTableExpand": "컨디션・전시・회수율까지 보기"
   },
   "turnPatternList": {
     "title": "전개 예측",

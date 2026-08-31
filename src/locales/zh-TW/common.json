@@ -356,7 +356,8 @@
     "badgePlace": "✅ 複勝命中",
     "badgeTurn": "✅ 展開命中",
     "missBadge": "❌ 未命中",
-    "view": "查看預測"
+    "view": "查看詳情",
+    "dataTableExpand": "查看調子、展示、回收率"
   },
   "turnPatternList": {
     "title": "轉彎預測",

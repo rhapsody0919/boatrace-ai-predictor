@@ -356,7 +356,8 @@
     "badgePlace": "✅ 複勝的中",
     "badgeTurn": "✅ 展開的中",
     "missBadge": "❌ 外れ",
-    "view": "予想を見る"
+    "view": "詳細を見る",
+    "dataTableExpand": "調子・展示・回収率まで見る"
   },
   "turnPatternList": {
     "title": "展開予測",

@@ -518,6 +518,36 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
     });
   });
 
+  test("レース一覧カードに出走表（勝率・当地・モーター）が常時表示され、折りたたみを開くと残りの指標が表示される", async ({
+    page,
+  }) => {
+    // 過去日付は開催会場・出走表データが確定しているため安定してテストできる
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await expect(page.locator(".race-card").first()).toBeVisible({
+      timeout: 10000,
+    });
+
+    const firstCard = page.locator(".race-card").first();
+    await expect(firstCard.locator(".rcdt-table").first()).toBeVisible();
+    const alwaysLabels = await firstCard
+      .locator(".rcdt-label-cell")
+      .allTextContents();
+    expect(alwaysLabels).toEqual(["勝率", "当地", "モーター"]);
+
+    // 折りたたみは開く前は残りの指標（調子等）が存在しない
+    await expect(firstCard.locator("tr", { hasText: "調子" })).toHaveCount(0);
+
+    await firstCard.locator(".rcdt-expand-btn").click();
+    await expect(firstCard.locator("tr", { hasText: "調子" })).toBeVisible({
+      timeout: 10000,
+    });
+    const expandedLabels = await firstCard
+      .locator(".rcdt-label-cell")
+      .allTextContents();
+    expect(expandedLabels.length).toBe(11);
+  });
+
   test("非開催の会場カードは「本日開催なし」でリンクを持たない", async ({
     page,
   }) => {
