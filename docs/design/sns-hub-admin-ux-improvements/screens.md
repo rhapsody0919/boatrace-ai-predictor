@@ -18,10 +18,12 @@
 | `api/admin/sns-hub/template-variants/index.js` | ー | 3 | **新規API** | `sns_template_variants`一覧を返すEdge Function。既存`api/admin/sns-hub/insights/index.js`と同じ薄いGETラッパーパターン |
 | `api/admin/sns-hub/drafts/[id]/revise.js` | 既存 | 1, 4 | **拡張（バックエンド）** | `reasonCodes`必須バリデーションを`reasonCodes`または`freeText`いずれか必須に緩和。`saveAsInsight`受け取り時に`sns_strategy_insights`へのINSERT処理を追加 |
 | `api/admin/sns-hub/drafts/[id]/redo.js` | 既存 | 4 | **拡張（バックエンド）** | 同上（`saveAsInsight`対応） |
+| `PostingActionLinks` | 既存(`SnsHubAdmin.jsx:538`) | 5 | **拡張** | 「投稿準備完了」タブのダウンロード導線。既存の`<a href download>`をfetch+blob方式のダウンロード処理に置き換える。iOS Safari向け「共有して投稿」の分岐（`shareState.canShare`）はそのまま維持し、フォールバック側のみ変更 |
+| `webShare.js` | 既存(`src/utils/webShare.js`) | 5 | **拡張** | `canShareVideo`と同じfetch+blobパターンで、`downloadVideoBlob(videoUrl, fileName)`（仮称）を新規追加。同一オリジンのblob URLを生成し、一時的な`<a download>`要素をクリックしてダウンロードをトリガーする |
 
 ## デザイントークンで表現できる部分 / 新規CSSが必要な部分
 
-- **トークンで足りる**: `ProcessingStatusBadge`は既存`.risk-warning-badge`と同じ`var(--color-warning)`/`var(--color-warning-text)`系トークンをそのまま流用できる（`SnsHubAdmin.css:206-209`参照）。手動更新ボタンも既存の`.tab-btn`相当のスタイルパターンを流用可能
+- **トークンで足りる**: `ProcessingStatusBadge`は既存`.risk-warning-badge`と同じ`var(--color-warning)`/`var(--color-warning-text)`系トークンをそのまま流用できる（`SnsHubAdmin.css:206-209`参照）。手動更新ボタンも既存の`.tab-btn`相当のスタイルパターンを流用可能。ダウンロードボタンのローディング表示（課題5）も既存`.spinner`（`SnsHubAdmin.jsx`のloading-state）と同系統のインジケーターで表現でき、新規デザインは不要
 - **新規CSSが必要**: `CatalogTab`内の型一覧表示（テーブルまたはカードグリッド）と`DocReferenceSection`のレイアウトは、既存の`insight-card`/`insight-list`パターンを一部踏襲しつつ、新規クラスの追加が必要（`SnsHubAdmin.css`に追記する形、新規CSSファイルは作らない）
 
 ## 未確定事項（spec.mdからの引き継ぎ、この時点でも未解決）
