@@ -69,7 +69,7 @@ function SlideIn({ children, delay = 0, style }) {
   );
 }
 
-function Logo({ size = 40 }) {
+function Logo({ size = 40, brandName = "龍神レーダー" }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div
@@ -95,14 +95,23 @@ function Logo({ size = 40 }) {
           letterSpacing: -1,
         }}
       >
-        龍神レーダー
+        {brandName}
       </span>
     </div>
   );
 }
 
 // --- 会場ランキング行 ---
-function RankRow({ rank, venue, value, sample, delay, barColor, barRatio }) {
+function RankRow({
+  rank,
+  venue,
+  value,
+  sample,
+  delay,
+  barColor,
+  barRatio,
+  sampleSuffix = "レースを集計",
+}) {
   return (
     <SlideIn
       delay={delay}
@@ -185,7 +194,8 @@ function RankRow({ rank, venue, value, sample, delay, barColor, barRatio }) {
             fontFamily: FONT,
           }}
         >
-          {sample}レースを集計
+          {sample}
+          {sampleSuffix}
         </span>
       </div>
     </SlideIn>
@@ -207,6 +217,9 @@ function SceneHook({
   allRates,
   topRateIndex,
   accentColor = GOLD,
+  brandName,
+  avgLabel = "平均",
+  rankLabel = "位",
 }) {
   const frame = useCurrentFrame();
   const kb = interpolate(frame, [0, 75], [1, 1.04], {
@@ -287,11 +300,11 @@ function SceneHook({
           fontFamily: FONT,
         }}
       >
-        平均 {avgRate.toFixed(1)}%
+        {avgLabel} {avgRate.toFixed(1)}%
       </div>
 
       <Pop delay={-10} style={{ position: "absolute", top: 44, left: 44 }}>
-        <Logo size={38} />
+        <Logo size={38} brandName={brandName} />
       </Pop>
 
       {/* 見出し: 何についての動画かを最優先で伝える（2026-08-31追加）。
@@ -371,7 +384,7 @@ function SceneHook({
               marginLeft: 4,
             }}
           >
-            位
+            {rankLabel}
           </div>
         </div>
         <div style={{ textAlign: "left", marginBottom: 24 }}>
@@ -785,7 +798,7 @@ const MOTOR2RATE_ALL = [
 const MOTOR2RATE_TOP_INDEX = 7; // 常滑(venue_code=8)
 
 // --- Scene 2: TOP5（75-263f, 約6.3s） ---
-function SceneTop5({ heading, data, barColor }) {
+function SceneTop5({ heading, data, barColor, sampleSuffix }) {
   return (
     <AbsoluteFill
       style={{
@@ -817,6 +830,7 @@ function SceneTop5({ heading, data, barColor }) {
           barRatio={r.ratio}
           barColor={barColor}
           delay={10 + i * 8}
+          sampleSuffix={sampleSuffix}
         />
       ))}
     </AbsoluteFill>
@@ -824,7 +838,7 @@ function SceneTop5({ heading, data, barColor }) {
 }
 
 // --- Scene 3: ワースト5（263-450f, 約6.3s） ---
-function SceneWorst5({ heading, data, barColor }) {
+function SceneWorst5({ heading, data, barColor, sampleSuffix }) {
   return (
     <AbsoluteFill
       style={{
@@ -856,6 +870,7 @@ function SceneWorst5({ heading, data, barColor }) {
           barRatio={r.ratio}
           barColor={barColor}
           delay={10 + i * 8}
+          sampleSuffix={sampleSuffix}
         />
       ))}
     </AbsoluteFill>
@@ -863,7 +878,7 @@ function SceneWorst5({ heading, data, barColor }) {
 }
 
 // --- Scene 4: CTA（450-600f, 5s） ---
-function SceneCTA({ ctaLines, subLine }) {
+function SceneCTA({ ctaLines, subLine, brandName }) {
   return (
     <AbsoluteFill
       style={{
@@ -900,7 +915,20 @@ function SceneCTA({ ctaLines, subLine }) {
         </div>
       </Pop>
       <Pop delay={28}>
-        <Logo size={48} />
+        <Logo size={48} brandName={brandName} />
+      </Pop>
+      <Pop delay={34} style={{ marginTop: 14 }}>
+        <div
+          style={{
+            color: ACCENT,
+            fontSize: 24,
+            fontWeight: 700,
+            fontFamily: FONT,
+            letterSpacing: 0.5,
+          }}
+        >
+          boat-ai.jp
+        </div>
       </Pop>
     </AbsoluteFill>
   );
@@ -925,6 +953,10 @@ function VenueRankingTemplate({
   barColorWorst,
   ctaLines,
   subLine,
+  sampleSuffix,
+  brandName,
+  avgLabel,
+  rankLabel,
 }) {
   return (
     <AbsoluteFill style={{ background: NAVY_DARK }}>
@@ -939,6 +971,9 @@ function VenueRankingTemplate({
           allRates={allRates}
           topRateIndex={topRateIndex}
           accentColor={accentColor}
+          brandName={brandName}
+          avgLabel={avgLabel}
+          rankLabel={rankLabel}
         />
       </Sequence>
       <Sequence from={75} durationInFrames={188}>
@@ -946,6 +981,7 @@ function VenueRankingTemplate({
           heading={top5Heading}
           data={top5Data}
           barColor={barColorTop}
+          sampleSuffix={sampleSuffix}
         />
       </Sequence>
       <Sequence from={263} durationInFrames={187}>
@@ -953,12 +989,13 @@ function VenueRankingTemplate({
           heading={worst5Heading}
           data={worst5Data}
           barColor={barColorWorst}
+          sampleSuffix={sampleSuffix}
         />
       </Sequence>
       <Sequence from={450} durationInFrames={150}>
-        <SceneCTA ctaLines={ctaLines} subLine={subLine} />
+        <SceneCTA ctaLines={ctaLines} subLine={subLine} brandName={brandName} />
       </Sequence>
-      <Audio src={staticFile("soundtrack-hitcheck.wav")} />
+      <Audio src={staticFile("soundtrack-hitcheck.wav")} loop />
     </AbsoluteFill>
   );
 }
@@ -1114,6 +1151,53 @@ export function VenueRankingCM_TopStart() {
       barColorWorst={RED}
       ctaLines={["全24会場のデータ、", "無料で見れる"]}
       subLine="あなたが狙う会場は、何位？"
+    />
+  );
+}
+
+// VenueRankingCM_TopStartの英語版（2026-08-31、translate action初回実行）。
+// ビジュアル・データはJA版と同一、テキストのみ翻訳（venue名はdocs/reference/i18n-glossary.md準拠）。
+// このパイプラインの動画は元々ナレーション無し（BGMのみ）のため、字幕＝画面焼き込みテキストの翻訳が全て
+const TOPSTART_TOP5_EN = [
+  { venue: "Amagasaki", value: "82.8%", sample: "99", ratio: 100 },
+  { venue: "Suminoe", value: "82.8%", sample: "64", ratio: 100 },
+  { venue: "Tokoname", value: "80.4%", sample: "199", ratio: 97 },
+  { venue: "Miyajima", value: "80.3%", sample: "117", ratio: 97 },
+  { venue: "Fukuoka", value: "79.4%", sample: "136", ratio: 96 },
+];
+
+const TOPSTART_WORST5_EN = [
+  { rank: 24, venue: "Heiwajima", value: "59.1%", sample: "115", ratio: 71 },
+  { rank: 23, venue: "Mikuni", value: "61.9%", sample: "147", ratio: 75 },
+  { rank: 22, venue: "Edogawa", value: "63.5%", sample: "156", ratio: 77 },
+  { rank: 21, venue: "Kojima", value: "67.0%", sample: "100", ratio: 81 },
+  { rank: 20, venue: "Toda", value: "67.9%", sample: "109", ratio: 82 },
+];
+
+export function VenueRankingCM_TopStart_EN() {
+  return (
+    <VenueRankingTemplate
+      topVenue="Amagasaki"
+      axisTitle="Fastest-Start Win Rate"
+      rateLabel="Fastest-start win rate 82.8%"
+      hookQuestion="Which venue rewards a fast start the most?"
+      subCaption="Boat 1 · 24 venues · 2,720 starts analyzed"
+      categoryTag="24-Venue Ranking"
+      allRates={TOPSTART_ALL}
+      topRateIndex={TOPSTART_TOP_INDEX}
+      accentColor={GOLD}
+      top5Heading="🚀 Top 5 venues by fastest-start win rate"
+      top5Data={TOPSTART_TOP5_EN}
+      worst5Heading="🌊 Where a fast start still isn't safe"
+      worst5Data={TOPSTART_WORST5_EN}
+      barColorTop={GOLD}
+      barColorWorst={RED}
+      ctaLines={["Full 24-venue data,", "free to view"]}
+      subLine="Where does your venue rank?"
+      sampleSuffix=" races analyzed"
+      brandName="Ryujin Radar"
+      avgLabel="Avg"
+      rankLabel="st"
     />
   );
 }
@@ -1281,6 +1365,7 @@ function BoatRankingTemplate({
   listData,
   ctaLines,
   subLine,
+  brandName,
 }) {
   return (
     <AbsoluteFill style={{ background: NAVY_DARK }}>
@@ -1301,7 +1386,7 @@ function BoatRankingTemplate({
         <SceneTop5 heading={listHeading} data={listData} barColor={GOLD} />
       </Sequence>
       <Sequence from={263} durationInFrames={150}>
-        <SceneCTA ctaLines={ctaLines} subLine={subLine} />
+        <SceneCTA ctaLines={ctaLines} subLine={subLine} brandName={brandName} />
       </Sequence>
       <Audio src={staticFile("soundtrack-hitcheck.wav")} />
     </AbsoluteFill>

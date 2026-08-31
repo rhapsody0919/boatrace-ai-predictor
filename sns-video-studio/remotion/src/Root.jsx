@@ -25,6 +25,7 @@ import {
   VenueRankingCM_WinRate_VariantB,
   VenueRankingCM_Motor2Rate,
   VenueRankingCM_TopStart,
+  VenueRankingCM_TopStart_EN,
   VenueRankingCM_ExTime,
   VenueRankingCM_EdogawaLosing,
   VenueRankingCM_Top3Rate,
@@ -266,6 +267,14 @@ export function RemotionRoot() {
       <Composition
         id="VenueRankingCM-TopStart"
         component={VenueRankingCM_TopStart}
+        durationInFrames={600}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="VenueRankingCM-TopStart-EN"
+        component={VenueRankingCM_TopStart_EN}
         durationInFrames={600}
         fps={30}
         width={1080}
