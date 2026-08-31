@@ -159,6 +159,11 @@
   color: var(--color-gray-500);
 }
 
+.manual-generate-hint a {
+  color: var(--color-primary-500);
+  font-weight: 600;
+}
+
 .tab-btn {
   padding: 0.6rem 1.25rem;
   background: white;
