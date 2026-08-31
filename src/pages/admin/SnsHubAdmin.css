@@ -78,12 +78,41 @@
   cursor: pointer;
 }
 
+.tab-navigation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .tab-navigation {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.refresh-btn {
+  flex-shrink: 0;
+  padding: 0.6rem 1rem;
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 8px;
+  color: var(--color-gray-600);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.refresh-btn:hover {
+  background: var(--color-gray-100);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .tab-btn {
@@ -212,6 +241,25 @@
   font-size: 0.75rem;
   font-weight: 600;
   width: fit-content;
+}
+
+/* 処理中バッジ。risk-warning-badgeとは意味が異なる（コンテンツのリスク警告ではなく
+   処理状況の表示）ため、警告色ではなく情報色をデフォルトにし、時間超過時のみ
+   警告色に切り替える */
+.processing-status-badge {
+  display: inline-block;
+  background: color-mix(in srgb, var(--color-info) 15%, white);
+  color: var(--color-info-text);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.processing-status-badge.stale {
+  background: color-mix(in srgb, var(--color-warning) 15%, white);
+  color: var(--color-warning-text);
 }
 
 .draft-background-details summary {
@@ -596,6 +644,11 @@
   }
 
   .tab-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .refresh-btn {
     padding: 0.5rem 0.75rem;
     font-size: 0.8rem;
   }

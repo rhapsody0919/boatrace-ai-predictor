@@ -682,6 +682,65 @@ test.describe("レースページ再設計（BOA-168）", () => {
     expect(new Set(actualNames)).toEqual(new Set(expectedNames));
   });
 
+  test("出現パターンプレビューの出現率が、本命艇が1着だった場合を分母にした値になっている（回帰確認）", async ({
+    page,
+  }) => {
+    // 修正前は会場全体のレース数を分母にしており、本命艇の勝率が高い会場ほど
+    // 実際より小さい数値になっていた（例: 勝率55%の艇なら実際の約半分）。
+    // 各行の「出現回数 ÷ (出現率/100)」で逆算した分母が、同じ艇の行同士で
+    // ほぼ一致することを確認する（全行が同じ分母＝該当艇の1着回数を使っている証拠）
+    const found = await selectUpcomingRace(page);
+    test.skip(
+      !found,
+      "本日開催中の未終了レースが見つからないため検証をスキップ",
+    );
+
+    // AIデータ分析セクション（本命艇の予想確定後に描画される）の読み込みを待つ
+    const aiHeader = page.locator(".ai-analysis-header");
+    try {
+      await aiHeader.waitFor({ timeout: 15000 });
+    } catch {
+      test.skip(
+        true,
+        "AIデータ分析セクションが表示されないレースのため検証をスキップ",
+      );
+      return;
+    }
+
+    const previewButton = page.locator(".expand-button", {
+      hasText: "コースが1着の場合の出現パターン",
+    });
+    if ((await previewButton.count()) === 0) {
+      test.skip(true, "このレースには出現パターンプレビューが表示されない");
+      return;
+    }
+    await previewButton.click();
+
+    const rows = page.locator(".pattern-table tbody tr");
+    await expect(rows.first()).toBeVisible({ timeout: 15000 });
+    const rowCount = await rows.count();
+    test.skip(rowCount < 2, "比較に十分な行数が無いため検証をスキップ");
+
+    const impliedDenominators = [];
+    for (let i = 0; i < rowCount; i++) {
+      const row = rows.nth(i);
+      const count = Number(
+        (await row.locator("td.count").textContent()).trim(),
+      );
+      const rateText = (
+        await row.locator("td.probability").textContent()
+      ).trim();
+      const rate = Number(rateText.replace("%", ""));
+      expect(rate).toBeGreaterThan(0);
+      impliedDenominators.push(count / (rate / 100));
+    }
+
+    const maxDenom = Math.max(...impliedDenominators);
+    const minDenom = Math.min(...impliedDenominators);
+    // 丸め誤差を許容しつつ、全行が同じ分母を使っていることを確認する
+    expect(maxDenom - minDenom).toBeLessThan(maxDenom * 0.05);
+  });
+
   test("過去日付ページで結果確定レースを選ぶと「データで振り返る」が表示される", async ({
     page,
   }) => {

@@ -17,7 +17,9 @@ COMMENT ON COLUMN sns_strategy_insights.source IS
 
 ### 2. `revision_requested`の経過時間判定（課題2）
 
-新規カラムは不要。既存の`sns_drafts.updated_at`（`updateDraft()`実行時に自動更新される）を「revision_requestedへの遷移時刻」の近似値として使う。`revise.js`/`redo.js`は`updateDraft(id, {status: "revision_requested", ...})`を呼んだ直後に`updated_at`が更新されるため、以降このレコードが再度更新されない限り経過時間の起点として使える。
+新規カラムは不要。既存の`sns_drafts.updated_at`を「revision_requestedへの遷移時刻」として使う。
+
+**訂正（2026-08-31、実装時のコードレビューで発覚）**: 当初「`updateDraft()`実行時に自動更新される」としていたが誤り。`sns_drafts`にはPostgreSQLの`updated_at`自動更新トリガーが無く、`updateDraft()`もpatchオブジェクトをそのままPATCHするだけで`updated_at`を自動付与しない。そのため`revise.js`/`redo.js`の`updateDraft`呼び出しで`updated_at: new Date().toISOString()`を明示的にpatchへ含める必要がある（実装済み）。
 
 ### 3. `sns_template_variants`（課題3）— 既存テーブルをそのまま読み取り専用で利用
 
