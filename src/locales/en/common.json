@@ -104,7 +104,7 @@
     "attentionHigh": "High upset chance",
     "attentionLow": "Favorite friendly",
     "attentionStandard": "Average",
-    "percentileBarLabel": "Venue percentile",
+    "percentileBarLabel": "Compared to venue races",
     "percentileBarMin": "Stable",
     "percentileBarMedian": "Average",
     "percentileBarMax": "Upset-prone",
