@@ -105,6 +105,19 @@ function SnsHubAdmin() {
   // 生成リクエスト成功後、手動更新ボタンを押すまで両ボタンを無効化し続ける
   // （連打による多重起動を防ぐため）
   const [generationLocked, setGenerationLocked] = useState(false);
+  // fireRoutineは起動を指示するだけで完了を待たないため、Routine自体の詳細な
+  // 進捗（今何をしているか）はアプリ側から取得できない。代わりに(a)実行セッション
+  // へのリンク(b)新しい下書きが増えたかの自動検知、の2つで代替する（ユーザー要望、
+  // 2026-08-31）
+  const [generationSessionUrl, setGenerationSessionUrl] = useState(null);
+  // 経過時間の表示用（クライアント時計、多少ずれても表示上の目安なので実害なし）
+  const [generationFiredAt, setGenerationFiredAt] = useState(null);
+  const [generationElapsedMinutes, setGenerationElapsedMinutes] = useState(0);
+  // 完了検知用の基準時刻はfire時点の下書き一覧から取った「既存の最新created_at」
+  // （サーバー時刻同士の比較にすることで、クライアント/サーバーの時計ずれで
+  // 検知漏れが起きないようにする。コードレビューで指摘）
+  const [generationBaselineCreatedAt, setGenerationBaselineCreatedAt] =
+    useState(null);
   const { toast, showToast } = useToast();
 
   // silent=trueの場合、全画面ローディング表示を出さずに裏側でデータだけ
@@ -164,7 +177,8 @@ function SnsHubAdmin() {
 
   // 承認済みストックが少ない時の手動補充用。fireRoutineは起動を指示する
   // だけで完了を待たないため、生成完了までは数分〜十数分かかる（動画
-  // レンダリングを含む）。完了したかどうかは手動更新ボタンで確認する
+  // レンダリングを含む）。完了したかどうかは手動更新ボタン、または下記の
+  // 自動検知（新しい下書きの出現）で確認する
   async function handleGenerate(mode) {
     setGenerating(mode);
     try {
@@ -179,13 +193,24 @@ function SnsHubAdmin() {
         );
       } else {
         showToast(
-          "生成をリクエストしました。数分後に更新ボタンで確認してください",
+          result.routine.sessionUrl
+            ? "生成をリクエストしました。実行ログのリンクは下に表示されます"
+            : "生成をリクエストしました。数分後に更新ボタンで確認してください",
           "success",
         );
         // 手動更新するまで両ボタンを無効化し続ける（コードレビューで指摘:
         // fire完了後すぐ再度押せてしまうと、数分かかる生成処理が連打で
         // 何本も重複起動されるリスクがあった）
         setGenerationLocked(true);
+        setGenerationSessionUrl(result.routine.sessionUrl || null);
+        setGenerationFiredAt(Date.now());
+        setGenerationElapsedMinutes(0);
+        setGenerationBaselineCreatedAt(
+          drafts.reduce((max, d) => {
+            const t = new Date(d.created_at).getTime();
+            return t > max ? t : max;
+          }, 0),
+        );
       }
     } catch (err) {
       console.error("生成リクエストエラー:", err);
@@ -194,6 +219,43 @@ function SnsHubAdmin() {
       setGenerating(null);
     }
   }
+
+  // 生成リクエスト中、30秒おきに下書き一覧を裏側で再取得し、fire時刻より
+  // 後に作成された下書きが現れたら自動的にロックを解除する（ユーザー要望、
+  // 2026-08-31: 「生成されているのかわからない」への対応）
+  useEffect(() => {
+    if (!generationLocked || !generationFiredAt) return;
+    const interval = setInterval(() => {
+      setGenerationElapsedMinutes(
+        Math.max(0, Math.round((Date.now() - generationFiredAt) / 60000)),
+      );
+      loadDrafts({ silent: true });
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [generationLocked, generationFiredAt, loadDrafts]);
+
+  useEffect(() => {
+    if (!generationLocked || generationBaselineCreatedAt === null) return;
+    // revise/redoも同じSNS_HUB_ROUTINEをfireするため、ポーリング中に別の下書きへ
+    // 一部修正/全部作り直しを行うとその結果が新規下書きとして現れ、今回の手動生成
+    // (generate-daily/evergreen)が完了したと誤検知してしまう（コードレビューで指摘）。
+    // revise/redo由来の下書きは必ずparent_draft_idを持つため、それが無い
+    // （新規content_group_idで作られた）下書きだけを対象にして区別する。
+    // 比較基準もクライアント時計(generationFiredAt)ではなく、fire時点の下書き
+    // 一覧から取ったサーバー側の最新created_atにして時計ずれによる検知漏れを防ぐ
+    const newDraftsCount = drafts.filter(
+      (d) =>
+        new Date(d.created_at).getTime() > generationBaselineCreatedAt &&
+        !d.parent_draft_id,
+    ).length;
+    if (newDraftsCount > 0) {
+      showToast(`✅ ${newDraftsCount}件生成完了しました`, "success");
+      setGenerationLocked(false);
+      setGenerationSessionUrl(null);
+      setGenerationFiredAt(null);
+      setGenerationBaselineCreatedAt(null);
+    }
+  }, [drafts, generationLocked, generationBaselineCreatedAt, showToast]);
 
   if (loading) {
     return (
@@ -256,6 +318,9 @@ function SnsHubAdmin() {
           className="refresh-btn"
           onClick={() => {
             setGenerationLocked(false);
+            setGenerationSessionUrl(null);
+            setGenerationFiredAt(null);
+            setGenerationBaselineCreatedAt(null);
             loadDrafts();
           }}
         >
@@ -287,7 +352,20 @@ function SnsHubAdmin() {
         </button>
         {generationLocked && (
           <span className="manual-generate-hint">
-            リクエスト済み。更新ボタンを押すと再度生成できます
+            ⏳ 生成中...（{generationElapsedMinutes}
+            分経過）30秒おきに自動で確認します
+            {generationSessionUrl && (
+              <>
+                {" ・ "}
+                <a
+                  href={generationSessionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  実行ログを見る
+                </a>
+              </>
+            )}
           </span>
         )}
       </div>
