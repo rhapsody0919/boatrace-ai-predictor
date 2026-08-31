@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { buildIndicatorRows } from "./raceIndicators";
+import { trackEvent } from "../../utils/analytics";
 import "./DataRaceTable.css";
 
 function DataRaceTable({ raceId, prediction, venueCode }) {
@@ -86,7 +87,16 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
               <tr key={row.key}>
                 <td className="drt-label-cell">
                   {row.tab ? (
-                    <Link to={deepLink(row.tab)} className="drt-label-link">
+                    <Link
+                      to={deepLink(row.tab)}
+                      className="drt-label-link"
+                      onClick={() =>
+                        trackEvent("deep_link_click", {
+                          tab: row.tab,
+                          source: "data_race_table",
+                        })
+                      }
+                    >
                       <span className="drt-label-full">{row.label}</span>
                       <span className="drt-label-short">{row.shortLabel}</span>
                       <span className="drt-link-arrow">›</span>

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { trackEvent } from "../../utils/analytics";
 import "./OutcomePatternPreview.css";
 
 function OutcomePatternPreview({
@@ -131,6 +132,12 @@ function OutcomePatternPreview({
               <Link
                 to={`/winning-technique?venue_code=${venueCode}&tab=outcome`}
                 className="detail-link"
+                onClick={() =>
+                  trackEvent("deep_link_click", {
+                    tab: "outcome",
+                    source: "outcome_pattern_preview",
+                  })
+                }
               >
                 {t("outcomePreview.detailLink", { venue: venueName })}
               </Link>
