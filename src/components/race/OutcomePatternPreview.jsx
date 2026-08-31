@@ -18,6 +18,7 @@ function OutcomePatternPreview({
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [outcomeData, setOutcomeData] = useState(null);
+  const [boatTotalRaces, setBoatTotalRaces] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [firstBoat, setFirstBoat] = useState(null);
@@ -55,9 +56,19 @@ function OutcomePatternPreview({
       try {
         setLoading(true);
         setError(null);
-        const data =
-          await supabaseDataService.getOutcomeDistribution(venueCode);
+        // outcome_distributionのprobability列は「会場の総レース数」を分母にした
+        // 出現率のため、この艇が1着だった場合の確率としては過小評価になる
+        // （例: 1号艇の勝率55%の会場では実際の約半分の数値になる）。
+        // winning_technique_stats.total_races（=この枠番が1着だった回数、
+        // 決まり手行の分母と同一）を分母に取り直して再計算する
+        const [data, techniqueStats] = await Promise.all([
+          supabaseDataService.getOutcomeDistribution(venueCode),
+          supabaseDataService.getWinningTechniqueStats(venueCode),
+        ]);
         setOutcomeData(data);
+        setBoatTotalRaces(
+          techniqueStats?.data?.[firstBoat]?.total_races ?? null,
+        );
       } catch (err) {
         setError(err.message || t("outcomePreview.fetchError"));
         console.error("Failed to load outcome data:", err);
@@ -76,6 +87,13 @@ function OutcomePatternPreview({
 
   const patterns = outcomeData?.data?.[firstBoat] || [];
   const topPatterns = patterns.slice(0, 10);
+
+  // この艇が1着だった場合の確率に補正する。分母データが取得できない場合のみ
+  // 元の値（会場全体のレース数が分母、実際より過小な数値）にフォールバックする
+  const displayRate = (pattern) =>
+    boatTotalRaces
+      ? (pattern.count / boatTotalRaces) * 100
+      : pattern.probability;
 
   return (
     <div className="outcome-pattern-preview">
@@ -117,7 +135,7 @@ function OutcomePatternPreview({
                       </td>
                       <td className="count">{pattern.count}</td>
                       <td className="probability">
-                        {pattern.probability.toFixed(2)}%
+                        {displayRate(pattern).toFixed(2)}%
                       </td>
                       <td className="payout">
                         {pattern.avg_payout

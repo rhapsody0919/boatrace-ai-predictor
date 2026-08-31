@@ -50,12 +50,17 @@ export default async function handler(req) {
     return jsonResponse({ error: "リクエストボディが不正です" }, 400);
   }
 
-  const { approverId, reasonCodes, freeText, saveAsInsight } = body;
+  const { approverId, freeText, saveAsInsight } = body;
   if (!approverId) {
     return jsonResponse({ error: "approverIdは必須です" }, 400);
   }
-  if (!Array.isArray(reasonCodes) || reasonCodes.length === 0) {
-    return jsonResponse({ error: "reasonCodesは1件以上必須です" }, 400);
+  const reasonCodes = Array.isArray(body.reasonCodes) ? body.reasonCodes : [];
+  const trimmedFreeText = typeof freeText === "string" ? freeText.trim() : "";
+  if (reasonCodes.length === 0 && !trimmedFreeText) {
+    return jsonResponse(
+      { error: "reasonCodesまたはfreeTextのいずれかが必須です" },
+      400,
+    );
   }
   const invalidCodes = reasonCodes.filter(
     (c) => !VALID_REASON_CODES.includes(c),
@@ -86,6 +91,10 @@ export default async function handler(req) {
       approver_id: approverId,
       revision_reason_codes: reasonCodes,
       revision_reason_freetext: freeText || null,
+      // revision_requestedへの遷移時刻。sns_draftsにupdated_at自動更新トリガーが
+      // 無いため明示的にセットする（管理画面の「処理中」経過時間表示が参照する、
+      // spec.md課題2）
+      updated_at: new Date().toISOString(),
     });
 
     const routineResult = await fireRoutine("SNS_HUB_ROUTINE", {

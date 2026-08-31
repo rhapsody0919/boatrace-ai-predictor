@@ -65,6 +65,10 @@ export default async function handler(req) {
       approver_id: approverId,
       revision_reason_codes: ["full-redo"],
       revision_reason_freetext: freeText || null,
+      // revision_requestedへの遷移時刻。sns_draftsにupdated_at自動更新トリガーが
+      // 無いため明示的にセットする（管理画面の「処理中」経過時間表示が参照する、
+      // spec.md課題2）
+      updated_at: new Date().toISOString(),
     });
 
     const routineResult = await fireRoutine("SNS_HUB_ROUTINE", {

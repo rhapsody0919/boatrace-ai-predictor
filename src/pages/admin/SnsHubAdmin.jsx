@@ -19,7 +19,11 @@ import {
   getInsights,
   rejectInsight,
 } from "../../services/snsHubService";
-import { canShareVideo, shareVideoFile } from "../../utils/webShare";
+import {
+  canShareVideo,
+  shareVideoFile,
+  downloadVideoBlob,
+} from "../../utils/webShare";
 import Toast, { useToast } from "../../components/Toast";
 import "./SnsHubAdmin.css";
 
@@ -157,22 +161,27 @@ function SnsHubAdmin() {
     <div className="sns-hub-admin-page">
       <Header />
 
-      <div className="tab-navigation">
-        {TABS.map((tab) => {
-          const count =
-            tab.id === "insights"
-              ? insights.filter((i) => i.status === "proposed").length
-              : drafts.filter((d) => tab.statuses.includes(d.status)).length;
-          return (
-            <button
-              key={tab.id}
-              className={`tab-btn ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label} ({count})
-            </button>
-          );
-        })}
+      <div className="tab-navigation-row">
+        <div className="tab-navigation">
+          {TABS.map((tab) => {
+            const count =
+              tab.id === "insights"
+                ? insights.filter((i) => i.status === "proposed").length
+                : drafts.filter((d) => tab.statuses.includes(d.status)).length;
+            return (
+              <button
+                key={tab.id}
+                className={`tab-btn ${activeTab === tab.id ? "active" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+        <button className="refresh-btn" onClick={loadDrafts}>
+          🔄 更新
+        </button>
       </div>
 
       <div className="tab-content">
@@ -443,6 +452,10 @@ function DraftCard({
           </span>
         </div>
 
+        {draft.status === "revision_requested" && (
+          <ProcessingStatusBadge updatedAt={draft.updated_at} />
+        )}
+
         {draft.risk_flags?.length > 0 && (
           <div className="draft-risk-flags">
             {draft.risk_flags.map((flag, idx) => (
@@ -542,6 +555,10 @@ function PostingActionLinks({ draft, onMarkPosted }) {
     file: null,
   });
   const [copyFeedback, setCopyFeedback] = useState(null);
+  const [downloadState, setDownloadState] = useState({
+    downloading: false,
+    error: null,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -579,6 +596,27 @@ function PostingActionLinks({ draft, onMarkPosted }) {
     }
   }
 
+  async function handleDownload() {
+    setDownloadState({ downloading: true, error: null });
+    try {
+      await downloadVideoBlob(
+        draft.video_url,
+        `${draft.platform}-${draft.language}.mp4`,
+      );
+      setDownloadState({ downloading: false, error: null });
+    } catch (err) {
+      console.error("ダウンロードエラー:", err);
+      setDownloadState({
+        downloading: false,
+        error: "ダウンロードに失敗しました",
+      });
+      setTimeout(
+        () => setDownloadState({ downloading: false, error: null }),
+        3000,
+      );
+    }
+  }
+
   const platformUrl =
     draft.platform === "x"
       ? buildXIntentUrl(buildPostText(draft))
@@ -592,13 +630,20 @@ function PostingActionLinks({ draft, onMarkPosted }) {
         </button>
       ) : (
         draft.video_url && (
-          <a
-            className="posting-action-btn download"
-            href={draft.video_url}
-            download
-          >
-            ⬇️ 動画をダウンロード
-          </a>
+          <>
+            <button
+              className="posting-action-btn download"
+              onClick={handleDownload}
+              disabled={downloadState.downloading}
+            >
+              {downloadState.downloading
+                ? "⏳ ダウンロード準備中..."
+                : "⬇️ 動画をダウンロード"}
+            </button>
+            {downloadState.error && (
+              <span className="copy-feedback">{downloadState.error}</span>
+            )}
+          </>
         )
       )}
 
@@ -710,7 +755,8 @@ function RevisionPanel({ mode, onSubmit, onCancel }) {
     );
   }
 
-  const canSubmit = mode === "redo" || reasonCodes.length > 0;
+  const canSubmit =
+    mode === "redo" || reasonCodes.length > 0 || freeText.trim().length > 0;
 
   return (
     <div className="revision-panel">
@@ -778,6 +824,26 @@ function VideoPreview({ videoUrl, coverImageUrl }) {
         preload="metadata"
       />
     </div>
+  );
+}
+
+// revision_requestedからの経過時間の目安（この時間を超えたら「時間がかかっています」表示に切り替える）
+const PROCESSING_STALE_THRESHOLD_MINUTES = 30;
+
+// revise/redo実行後、新規下書きの生成・旧下書きのarchived化は非同期Routine任せで
+// 画面には完了検知の仕組みが無いため、updated_at（revision_requestedへの遷移時刻の
+// 近似値）からの経過時間で「処理中」「時間がかかっています」を出し分ける（spec.md課題2）
+function ProcessingStatusBadge({ updatedAt }) {
+  const minutesElapsed = updatedAt
+    ? (Date.now() - new Date(updatedAt).getTime()) / 60000
+    : 0;
+  const isStale = minutesElapsed > PROCESSING_STALE_THRESHOLD_MINUTES;
+  return (
+    <span className={`processing-status-badge ${isStale ? "stale" : ""}`}>
+      {isStale
+        ? "⏱️ 時間がかかっています（Routineの状況を確認してください）"
+        : "⏳ 処理中"}
+    </span>
   );
 }
 
