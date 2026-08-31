@@ -41,6 +41,7 @@ import { KimariteCM_B } from "./KimariteCM.jsx";
 import { LivePredictionCM_B } from "./LivePredictionCM2.jsx";
 import { LivePredictionCM_TikTok } from "./LivePredictionCM_TikTok.jsx";
 import { LivePredictionHookCM_Demo } from "./LivePredictionHookCM.jsx";
+import { AnswerCheckHookCM_Demo } from "./AnswerCheckHookCM.jsx";
 import { AccuracyProofCM_C } from "./AccuracyProofCM.jsx";
 import { LivePredictionCM_C } from "./LivePredictionCM3.jsx";
 import { TodaysRacerFormCM } from "./TodaysRacerFormCM.jsx";
@@ -360,6 +361,14 @@ export function RemotionRoot() {
         id="LivePredictionHookCM-Demo"
         component={LivePredictionHookCM_Demo}
         durationInFrames={505}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="AnswerCheckHookCM-Demo"
+        component={AnswerCheckHookCM_Demo}
+        durationInFrames={610}
         fps={30}
         width={1080}
         height={1920}
