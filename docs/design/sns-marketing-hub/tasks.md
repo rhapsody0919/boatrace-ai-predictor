@@ -65,9 +65,6 @@
   Routine「`sns-hub-video-compaction`」（ID: `trig_01JXV2cDnzEBHxS2zvrCbLLy`）を作成。日次スケジュール（`0 18 * * *` UTC = 3:00 JST）。ADR 0022の方針通り完全削除ではなく軽量版への置き換え。こちらもAPIトリガー不要で完結するが、Storageファイルを不可逆に上書きするため同様に無効化状態で作成
   （作成時、プロンプト文中で「軽量化」を「軍量化」と誤字したため`update`で修正済み）
 
-- [ ] **Task 15: 動画軽量化Routine構築**
-  日次スケジュールで、期限切れ（投稿済み30日/却下7日）の`video_tier='original'`レコードを検出し、ffmpegで圧縮版に置き換えるRoutineを実装（ADR 0022）
-
 ## 検証
 
 - [x] **Task 16: 通しの動作確認（範囲限定）**
