@@ -84,6 +84,14 @@ export async function markDraftPosted(draftId, postedAt) {
   });
 }
 
+/** 下書きを一覧から非表示にする（アーカイブ化、実データは残る） */
+export async function archiveDraft(draftId) {
+  return request(`/drafts/${draftId}/archive`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
 /** TikTok等のエンゲージメント指標を手動入力する */
 export async function addDraftMetric(
   draftId,
