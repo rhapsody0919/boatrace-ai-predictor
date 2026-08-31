@@ -648,6 +648,15 @@ function InsightHistoryEntry({ insight, allInsights }) {
   );
 }
 
+// スマホ幅(2列グリッド)では詳細・操作ボタンを畳んだ状態で開く。デスクトップ幅では
+// 従来通り常に展開（auto-fillグリッドで元々カード自体が大きく、畳む必要が無いため）。
+// 判定基準はCSS側の2列グリッド切り替え（.draft-listの@media (max-width: 480px)）と
+// 必ず同じ値にする（ズレるとカードが1列表示なのに折りたたまれる幅域ができてしまう）
+function getDefaultDraftCardExpanded() {
+  if (typeof window === "undefined") return true;
+  return window.matchMedia("(min-width: 481px)").matches;
+}
+
 function DraftCard({
   draft,
   approvers,
@@ -663,6 +672,7 @@ function DraftCard({
   );
   const [openPanel, setOpenPanel] = useState(null); // null | 'revise' | 'redo'
   const [confirmingArchive, setConfirmingArchive] = useState(false);
+  const [expanded, setExpanded] = useState(getDefaultDraftCardExpanded);
 
   const variantLabel = draft.sns_template_variants
     ? `${draft.format} / ${draft.sns_template_variants.variant_name}`
@@ -671,8 +681,13 @@ function DraftCard({
   // 承認・修正・作り直しはpending_reviewの下書きにのみ許可される（api/admin/sns-hub側の検証と一致）
   const canAct = draft.status === "pending_review";
 
+  // 一部修正/全部作り直しパネルを開いている間は、トグルで折りたたんでも
+  // パネルをアンマウントしない（コードレビューで指摘: 折りたたむと入力中の
+  // freeText等がRevisionPanelごと消え、ユーザーに無警告でデータが失われるため）
+  const isOpen = expanded || openPanel !== null;
+
   return (
-    <div className="draft-card">
+    <div className={`draft-card${isOpen ? " draft-card--expanded" : ""}`}>
       <VideoPreview
         videoUrl={draft.video_url}
         coverImageUrl={draft.cover_image_url}
@@ -702,121 +717,139 @@ function DraftCard({
           <ProcessingStatusBadge updatedAt={draft.updated_at} />
         )}
 
-        {draft.risk_flags?.length > 0 && (
-          <div className="draft-risk-flags">
-            {draft.risk_flags.map((flag, idx) => (
-              <RiskWarningBadge key={idx} flag={flag} />
-            ))}
-          </div>
-        )}
+        <button
+          type="button"
+          className="draft-card-expand-toggle"
+          disabled={openPanel !== null}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {openPanel !== null
+            ? "▲ 修正内容を確定/キャンセルすると閉じられます"
+            : isOpen
+              ? "▲ 閉じる"
+              : "▼ 詳細・操作を見る"}
+        </button>
 
-        {draft.background_text && (
-          <details className="draft-background-details">
-            <summary>生成メモ</summary>
-            <p className="draft-background-text">{draft.background_text}</p>
-          </details>
-        )}
-
-        {draft.caption_text && (
-          <p className="draft-caption-text">{draft.caption_text}</p>
-        )}
-
-        {canAct && (
+        {isOpen && (
           <>
-            <ApproverChips
-              approvers={approvers}
-              selectedId={selectedApproverId}
-              onSelect={setSelectedApproverId}
-            />
-
-            <div className="draft-actions">
-              <button
-                className="draft-action-btn approve"
-                disabled={!selectedApproverId}
-                onClick={() => onApprove(selectedApproverId)}
-              >
-                ✅ 承認
-              </button>
-              <button
-                className="draft-action-btn revise"
-                onClick={() =>
-                  setOpenPanel(openPanel === "revise" ? null : "revise")
-                }
-              >
-                📝 一部修正
-              </button>
-              <button
-                className="draft-action-btn redo"
-                onClick={() =>
-                  setOpenPanel(openPanel === "redo" ? null : "redo")
-                }
-              >
-                ❌ 全部作り直し
-              </button>
-            </div>
-
-            {openPanel === "revise" && (
-              <RevisionPanel
-                mode="revise"
-                onCancel={() => setOpenPanel(null)}
-                onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
-                  onRevise({
-                    approverId: selectedApproverId,
-                    reasonCodes,
-                    freeText,
-                    saveAsInsight,
-                  });
-                  setOpenPanel(null);
-                }}
-              />
+            {draft.risk_flags?.length > 0 && (
+              <div className="draft-risk-flags">
+                {draft.risk_flags.map((flag, idx) => (
+                  <RiskWarningBadge key={idx} flag={flag} />
+                ))}
+              </div>
             )}
-            {openPanel === "redo" && (
-              <RevisionPanel
-                mode="redo"
-                onCancel={() => setOpenPanel(null)}
-                onSubmit={({ freeText, saveAsInsight }) => {
-                  onRedo({
-                    approverId: selectedApproverId,
-                    freeText,
-                    saveAsInsight,
-                  });
-                  setOpenPanel(null);
-                }}
-              />
+
+            {draft.background_text && (
+              <details className="draft-background-details">
+                <summary>生成メモ</summary>
+                <p className="draft-background-text">{draft.background_text}</p>
+              </details>
             )}
+
+            {draft.caption_text && (
+              <p className="draft-caption-text">{draft.caption_text}</p>
+            )}
+
+            {canAct && (
+              <>
+                <ApproverChips
+                  approvers={approvers}
+                  selectedId={selectedApproverId}
+                  onSelect={setSelectedApproverId}
+                />
+
+                <div className="draft-actions">
+                  <button
+                    className="draft-action-btn approve"
+                    disabled={!selectedApproverId}
+                    onClick={() => onApprove(selectedApproverId)}
+                  >
+                    ✅ 承認
+                  </button>
+                  <button
+                    className="draft-action-btn revise"
+                    onClick={() =>
+                      setOpenPanel(openPanel === "revise" ? null : "revise")
+                    }
+                  >
+                    📝 一部修正
+                  </button>
+                  <button
+                    className="draft-action-btn redo"
+                    onClick={() =>
+                      setOpenPanel(openPanel === "redo" ? null : "redo")
+                    }
+                  >
+                    ❌ 全部作り直し
+                  </button>
+                </div>
+
+                {openPanel === "revise" && (
+                  <RevisionPanel
+                    mode="revise"
+                    onCancel={() => setOpenPanel(null)}
+                    onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
+                      onRevise({
+                        approverId: selectedApproverId,
+                        reasonCodes,
+                        freeText,
+                        saveAsInsight,
+                      });
+                      setOpenPanel(null);
+                    }}
+                  />
+                )}
+                {openPanel === "redo" && (
+                  <RevisionPanel
+                    mode="redo"
+                    onCancel={() => setOpenPanel(null)}
+                    onSubmit={({ freeText, saveAsInsight }) => {
+                      onRedo({
+                        approverId: selectedApproverId,
+                        freeText,
+                        saveAsInsight,
+                      });
+                      setOpenPanel(null);
+                    }}
+                  />
+                )}
+              </>
+            )}
+
+            {(draft.status === "approved" ||
+              draft.status === "ready_to_post") && (
+              <PostingActionLinks draft={draft} onMarkPosted={onMarkPosted} />
+            )}
+
+            {draft.status === "posted" && draft.platform === "tiktok" && (
+              <TikTokMetricsForm onSubmit={onAddMetric} />
+            )}
+
+            {draft.status !== "posted" &&
+              (confirmingArchive ? (
+                <div className="draft-hide-confirm">
+                  <span>非表示にしますか？</span>
+                  <button
+                    className="revision-cancel"
+                    onClick={() => setConfirmingArchive(false)}
+                  >
+                    キャンセル
+                  </button>
+                  <button className="draft-action-btn redo" onClick={onArchive}>
+                    非表示にする
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="draft-hide-btn"
+                  onClick={() => setConfirmingArchive(true)}
+                >
+                  🗂️ 非表示にする
+                </button>
+              ))}
           </>
         )}
-
-        {(draft.status === "approved" || draft.status === "ready_to_post") && (
-          <PostingActionLinks draft={draft} onMarkPosted={onMarkPosted} />
-        )}
-
-        {draft.status === "posted" && draft.platform === "tiktok" && (
-          <TikTokMetricsForm onSubmit={onAddMetric} />
-        )}
-
-        {draft.status !== "posted" &&
-          (confirmingArchive ? (
-            <div className="draft-hide-confirm">
-              <span>非表示にしますか？</span>
-              <button
-                className="revision-cancel"
-                onClick={() => setConfirmingArchive(false)}
-              >
-                キャンセル
-              </button>
-              <button className="draft-action-btn redo" onClick={onArchive}>
-                非表示にする
-              </button>
-            </div>
-          ) : (
-            <button
-              className="draft-hide-btn"
-              onClick={() => setConfirmingArchive(true)}
-            >
-              🗂️ 非表示にする
-            </button>
-          ))}
       </div>
     </div>
   );
