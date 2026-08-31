@@ -68,10 +68,23 @@ UI機能（`/admin/sns-hub`の画面・コンポーネント変更を含む）�
 - チェックしない場合は、従来通り単発の再生成コンテキストとしてのみ使われ、`sns_strategy_insights`への登録は行われない
 - 週次のinsight昇格判定（Monday実行の`promote-strategy-insights.js`）は`source`の値を問わず既存ロジックのまま動作する（`revision-feedback`由来のinsightも他のinsightと同じ基準でactive/retired判定される）
 
+### 5. ダウンロードボタンを押すと動画が再生されてしまう問題を修正
+
+**優先度**: 高（明確なバグ）
+
+**現状の原因**: `PostingActionLinks`の`<a href={draft.video_url} download>`が指す`video_url`はSupabase Storageの署名付きURLであり、管理画面(`www.boat-ai.jp`)とは別オリジン。HTML仕様上、`download`属性はクロスオリジンのURLに対してはブラウザに無視されるため、クリック時にリンク先URLへ直接遷移し、ブラウザの標準動画再生UIが表示されてしまう。PC・モバイル（Android等、Web Share非対応環境）の両方で同様に発生しうる。
+
+**受入基準**:
+- ダウンロードボタンを押すと、動画が再生されることなく、ファイルとしてダウンロードが開始される（PC・モバイル問わず）
+- 実装方式: fetchで動画データをBlobとして取得し、同一オリジンのblob URLを経由して`<a download>`をトリガーする（クロスオリジンのdownload属性制約を回避する標準的な方法）。`src/utils/webShare.js`の`canShareVideo`と同じfetch+blobパターンを踏襲する
+- fetch完了までダウンロードが開始されないため、ボタンにローディング表示を出す（動画ファイルサイズによっては数秒かかりうる。反応が無いことで「押せていない」と誤解されないようにする）
+- 既存のiOS Safari向け「共有して投稿」ボタン（Web Share API、`canShareVideo`判定）の挙動・分岐条件は変更しない。あくまでWeb Share非対応環境（iOSでシェア不可の場合・Android・PC）のフォールバックである「ダウンロード」ボタンのみを対象とする
+- fetch失敗時（ネットワークエラー等）は、既存の`copyFeedback`と同様のインラインエラーメッセージを表示する
+
 ## スコープ
 
 ### やること
-- 上記4機能要件（バグ修正1件、UX改善1件、新規タブ1件、フィードバック恒久化1件）
+- 上記5機能要件（バグ修正2件、UX改善1件、新規タブ1件、フィードバック恒久化1件）
 - `sns_strategy_insights.source`のenum値追加（マイグレーション）
 
 ### やらないこと
@@ -82,7 +95,8 @@ UI機能（`/admin/sns-hub`の画面・コンポーネント変更を含む）�
 
 ## 非機能要件
 
-なし（内部管理画面、Basic認証の既存ユーザーのみが対象。既存の`/admin/sns-hub`のモバイル対応方針をそのまま踏襲し、新たな数値要件は設けない）
+- 課題5（ダウンロードボタン修正）はPC・モバイル（Android Chrome等）の両方で動作すること。iOS Safariは既存のWeb Share分岐が優先されるため対象外
+- それ以外は特になし（内部管理画面、Basic認証の既存ユーザーのみが対象。既存の`/admin/sns-hub`のモバイル対応方針をそのまま踏襲し、新たな数値要件は設けない）
 
 ## 制約・前提
 
