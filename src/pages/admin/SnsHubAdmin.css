@@ -212,6 +212,38 @@
   flex-direction: column;
 }
 
+/* スマホ幅では2列グリッドにしてスクロール量を減らす（2026-08-31）。
+   通常カードは1列分の幅のまま、詳細・操作を開いた(draft-card--expanded)
+   カードのみ2列分にまたがせて窮屈にならないようにする */
+@media (max-width: 480px) {
+  .draft-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .draft-card--expanded {
+    grid-column: 1 / -1;
+  }
+}
+
+.draft-card-expand-toggle {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0.5rem 0;
+  border: none;
+  background: none;
+  color: var(--color-primary-500);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.draft-card-expand-toggle:disabled {
+  color: var(--color-gray-400);
+  cursor: not-allowed;
+}
+
 .video-preview {
   width: 100%;
   aspect-ratio: 9 / 16;
