@@ -34,7 +34,7 @@ import {
 const NAVY = "#0f2c46";
 const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
-const GOLD = "#f5b942";
+const GOLD = "#d4af37"; // X/TikTok版と統一（sns-marketing-strategy.mdの「案A」ブランドカラー）
 const FONT =
   '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
 
@@ -110,45 +110,210 @@ function Logo({ size = 40 }) {
   );
 }
 
+// 「龍神レーダー」のレーダーを視覚化する六角形グラフィック。
+// 2026-08-31追加: CTAシーン中央の空白が単なる区切り線では物足りないとの指摘を受け、
+// ブランド名を象徴する装飾として採用（天才デザイナー案）。
+function RadarDecoration({ size = 300 }) {
+  const center = size / 2;
+  const radius = size / 2 - 24;
+  const points = 6;
+  const angleStep = (Math.PI * 2) / points;
+
+  const ring = (r) =>
+    Array.from({ length: points }, (_, i) => {
+      const angle = angleStep * i - Math.PI / 2;
+      return `${center + r * Math.cos(angle)},${center + r * Math.sin(angle)}`;
+    }).join(" ");
+
+  const outerPts = Array.from({ length: points }, (_, i) => {
+    const angle = angleStep * i - Math.PI / 2;
+    return [
+      center + radius * Math.cos(angle),
+      center + radius * Math.sin(angle),
+    ];
+  });
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <polygon
+        points={ring(radius)}
+        fill="none"
+        stroke={GOLD}
+        strokeWidth="1.5"
+        opacity="0.5"
+      />
+      <polygon
+        points={ring(radius * 0.66)}
+        fill="none"
+        stroke={GOLD}
+        strokeWidth="1"
+        opacity="0.35"
+      />
+      <polygon
+        points={ring(radius * 0.33)}
+        fill="none"
+        stroke={GOLD}
+        strokeWidth="1"
+        opacity="0.25"
+      />
+      {outerPts.map((p, i) => (
+        <React.Fragment key={i}>
+          <line
+            x1={center}
+            y1={center}
+            x2={p[0]}
+            y2={p[1]}
+            stroke={GOLD}
+            strokeWidth="1"
+            opacity="0.2"
+          />
+          <circle cx={p[0]} cy={p[1]} r="5" fill={GOLD} opacity="0.85" />
+        </React.Fragment>
+      ))}
+      <circle
+        cx={center}
+        cy={center}
+        r={radius * 0.5}
+        fill="none"
+        stroke={GOLD}
+        strokeWidth="0.75"
+        opacity="0.15"
+      />
+      <text
+        x={center}
+        y={center + 10}
+        textAnchor="middle"
+        fontSize="34"
+        fill={GOLD}
+        opacity="0.9"
+      >
+        🐉
+      </text>
+    </svg>
+  );
+}
+
 // --- Scene 1: Hook（0-90f, 3秒） ---
-function SceneHook({ title, subtitle }) {
+// 2026-08-31再改訂: sns-marketing-strategy.mdの「案A」原則（frame=0で完成された見た目、
+// ロゴ固定表示、GOLD統一、画面全体を使う非対称配置）をnote版にも適用。
+// 主要要素は全てdelay=-10（frame=0時点で既に表示済み）にし、frame=0問題を構造的に回避する。
+function SceneHook({ title, subtitle, featureCount, previewImageSrc }) {
   return (
     <AbsoluteFill
       style={{
-        background: `linear-gradient(135deg, #163a5c 0%, ${NAVY} 60%, #081521 100%)`,
-        justifyContent: "center",
-        alignItems: "center",
+        background: `linear-gradient(135deg, #163a5c 0%, ${NAVY} 55%, #081521 100%)`,
         overflow: "hidden",
       }}
     >
-      <Fade delay={0} durationIn={18}>
+      {/* 右下の装飾円: 空白を埋めつつ奥行きを出す */}
+      <div
+        style={{
+          position: "absolute",
+          right: -180,
+          bottom: -220,
+          width: 640,
+          height: 640,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${GOLD}22 0%, transparent 70%)`,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: -140,
+          top: -160,
+          width: 420,
+          height: 420,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${ACCENT}18 0%, transparent 70%)`,
+        }}
+      />
+
+      {/* 右半分: 実際の画面プレビューを薄く敷き、「これから見る本物の画面」を予告する
+          （2026-08-31追加、右半分が空白でユーザー指摘） */}
+      <div
+        style={{
+          position: "absolute",
+          top: 120,
+          right: -60,
+          width: 980,
+          opacity: 0.4,
+          maskImage:
+            "linear-gradient(90deg, transparent 0%, black 22%, black 100%)",
+          WebkitMaskImage:
+            "linear-gradient(90deg, transparent 0%, black 22%, black 100%)",
+        }}
+      >
+        <Img
+          src={staticFile(previewImageSrc)}
+          style={{
+            width: "100%",
+            display: "block",
+            borderRadius: 16,
+          }}
+        />
+      </div>
+
+      <Pop delay={-10} style={{ position: "absolute", top: 56, left: 64 }}>
+        <Logo size={54} />
+      </Pop>
+
+      <Pop
+        delay={-10}
+        style={{
+          position: "absolute",
+          top: 340,
+          left: 64,
+          width: 1080,
+        }}
+      >
         <div
           style={{
-            color: WHITE,
-            fontSize: 72,
+            color: GOLD,
+            fontSize: 96,
             fontWeight: 900,
             fontFamily: FONT,
-            textAlign: "center",
-            lineHeight: 1.4,
-            padding: "0 120px",
+            lineHeight: 1.25,
+            textShadow: `0 0 50px ${GOLD}66`,
           }}
         >
           {title}
         </div>
-      </Fade>
-      <Fade delay={16} durationIn={18} style={{ marginTop: 28 }}>
+      </Pop>
+      <Pop
+        delay={-10}
+        style={{ position: "absolute", top: 590, left: 64, width: 1000 }}
+      >
         <div
           style={{
-            color: ACCENT,
-            fontSize: 34,
+            color: WHITE,
+            fontSize: 38,
             fontWeight: 700,
             fontFamily: FONT,
-            textAlign: "center",
           }}
         >
           {subtitle}
         </div>
-      </Fade>
+      </Pop>
+
+      <Pop delay={-10} style={{ position: "absolute", bottom: 64, left: 64 }}>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 12,
+            color: NAVY,
+            background: GOLD,
+            fontSize: 26,
+            fontWeight: 900,
+            fontFamily: FONT,
+            padding: "12px 28px",
+            borderRadius: 999,
+          }}
+        >
+          🎯 {featureCount}つのポイントを解説
+        </div>
+      </Pop>
     </AbsoluteFill>
   );
 }
@@ -279,13 +444,13 @@ function SceneFeatures({ imageSrc, features }) {
         <div
           style={{
             background: "rgba(15,44,70,0.85)",
-            color: WHITE,
+            color: GOLD,
             fontFamily: FONT,
             fontWeight: 800,
             fontSize: 26,
             padding: "10px 26px",
             borderRadius: 999,
-            border: `2px solid ${ACCENT}`,
+            border: `2px solid ${GOLD}`,
           }}
         >
           🎯 実際の龍神レーダー画面
@@ -334,48 +499,192 @@ function SceneFeatures({ imageSrc, features }) {
   );
 }
 
-// --- Scene 3: CTA（4秒） ---
-function SceneCTA() {
+// --- Scene 3: CTA（7秒） ---
+// 2026-08-31 全面再設計（天才デザイナー案）: 左右2カラム構成が視線の往復と不自然な
+// 空白を生む根本原因だったため、中央集約・縦積み構成にゼロから作り直した。
+// CTAボタン自体を動画内で最大の要素にし「最後の着地点」として画面下部に主役配置する。
+// 視線の流れ: ロゴ→タグライン→見出し→3特徴（横並びピル）→巨大CTA、上から下へ一直線。
+function SceneCTA({ featureDigest }) {
   return (
     <AbsoluteFill
       style={{
         background: `linear-gradient(135deg, #163a5c 0%, ${NAVY} 55%, #050e18 100%)`,
-        justifyContent: "center",
-        alignItems: "center",
         overflow: "hidden",
       }}
     >
-      <Fade delay={0} durationIn={15}>
-        <Logo size={90} />
-      </Fade>
-      <Fade delay={12} durationIn={15} style={{ marginTop: 36 }}>
+      {/* 背景装飾: 「龍神レーダー」を象徴する六角形を画面中央にごく薄く敷く */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          opacity: 0.07,
+        }}
+      >
+        <RadarDecoration size={880} />
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          right: -160,
+          top: -200,
+          width: 560,
+          height: 560,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${GOLD}18 0%, transparent 70%)`,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: -160,
+          bottom: -220,
+          width: 520,
+          height: 520,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${GOLD}12 0%, transparent 70%)`,
+        }}
+      />
+
+      {/* 上部: ロゴ+タグライン（中央揃え、控えめ） */}
+      <Pop
+        delay={-10}
+        style={{
+          position: "absolute",
+          top: 64,
+          left: 0,
+          right: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <Logo size={52} />
+        <div
+          style={{
+            marginTop: 16,
+            color: "rgba(248,250,252,0.7)",
+            fontSize: 23,
+            fontWeight: 700,
+            fontFamily: FONT,
+          }}
+        >
+          ボートレースを見える化。迷ったら、データを信じる。
+        </div>
+      </Pop>
+
+      {/* メインメッセージ: 画面中央に大きく */}
+      <Pop
+        delay={-10}
+        style={{
+          position: "absolute",
+          top: 220,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+        }}
+      >
         <div
           style={{
             color: WHITE,
-            fontSize: 32,
-            fontWeight: 700,
+            fontSize: 54,
+            fontWeight: 900,
             fontFamily: FONT,
-            textAlign: "center",
+            lineHeight: 1.35,
           }}
         >
-          無料・登録不要で今すぐチェック
+          この動画で見た内容、
+          <br />
+          全部無料で使えます
         </div>
-      </Fade>
-      <Fade delay={22} durationIn={15} style={{ marginTop: 30 }}>
+      </Pop>
+
+      {/* 3特徴: 横並びピルで画面幅を自然に使う */}
+      <Pop
+        delay={-10}
+        style={{
+          position: "absolute",
+          top: 420,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          gap: 20,
+          padding: "0 64px",
+        }}
+      >
+        {featureDigest.map((text) => (
+          <div
+            key={text}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              background: "rgba(255,255,255,0.06)",
+              border: `1.5px solid ${GOLD}77`,
+              borderRadius: 999,
+              padding: "16px 26px",
+            }}
+          >
+            <span style={{ color: GOLD, fontSize: 24, fontWeight: 900 }}>
+              ✓
+            </span>
+            <span
+              style={{
+                color: WHITE,
+                fontSize: 23,
+                fontWeight: 700,
+                fontFamily: FONT,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {text}
+            </span>
+          </div>
+        ))}
+      </Pop>
+
+      {/* 巨大CTA: 動画内で最大の要素、最後の着地点として画面下部の主役に */}
+      <Pop
+        delay={-10}
+        style={{
+          position: "absolute",
+          top: 570,
+          left: 0,
+          right: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
         <div
           style={{
-            padding: "18px 46px",
+            color: GOLD,
+            fontSize: 36,
+            fontWeight: 900,
+            fontFamily: FONT,
+            marginBottom: 30,
+            textShadow: `0 0 30px ${GOLD}55`,
+          }}
+        >
+          👉 無料・登録不要で今すぐ
+        </div>
+        <div
+          style={{
+            padding: "34px 100px",
             borderRadius: 999,
             background: GOLD,
             color: NAVY,
-            fontSize: 38,
+            fontSize: 68,
             fontWeight: 900,
             fontFamily: FONT,
+            boxShadow: `0 24px 70px ${GOLD}55`,
           }}
         >
           boat-ai.jp
         </div>
-      </Fade>
+      </Pop>
     </AbsoluteFill>
   );
 }
@@ -428,6 +737,8 @@ export function NoteExplainerCM_DataRaceTable() {
         <SceneHook
           title="データ出走表とは？"
           subtitle="6選手の分析データを1画面で比較できる新機能"
+          featureCount={FEATURES.length}
+          previewImageSrc="note-data-race-table.png"
         />
       </Sequence>
       <Sequence from={HOOK_DURATION} durationInFrames={FEATURES_DURATION}>
@@ -440,7 +751,13 @@ export function NoteExplainerCM_DataRaceTable() {
         from={HOOK_DURATION + FEATURES_DURATION}
         durationInFrames={CTA_DURATION}
       >
-        <SceneCTA />
+        <SceneCTA
+          featureDigest={[
+            "実力を数値で比較",
+            "勢いのある選手がわかる",
+            "勝率だけじゃない、儲かるかも見える",
+          ]}
+        />
       </Sequence>
     </AbsoluteFill>
   );
