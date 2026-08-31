@@ -513,11 +513,12 @@ function DraftCard({
               <RevisionPanel
                 mode="revise"
                 onCancel={() => setOpenPanel(null)}
-                onSubmit={({ reasonCodes, freeText }) => {
+                onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
                   onRevise({
                     approverId: selectedApproverId,
                     reasonCodes,
                     freeText,
+                    saveAsInsight,
                   });
                   setOpenPanel(null);
                 }}
@@ -527,8 +528,12 @@ function DraftCard({
               <RevisionPanel
                 mode="redo"
                 onCancel={() => setOpenPanel(null)}
-                onSubmit={({ freeText }) => {
-                  onRedo({ approverId: selectedApproverId, freeText });
+                onSubmit={({ freeText, saveAsInsight }) => {
+                  onRedo({
+                    approverId: selectedApproverId,
+                    freeText,
+                    saveAsInsight,
+                  });
                   setOpenPanel(null);
                 }}
               />
@@ -748,6 +753,7 @@ function ApproverChips({ approvers, selectedId, onSelect }) {
 function RevisionPanel({ mode, onSubmit, onCancel }) {
   const [reasonCodes, setReasonCodes] = useState([]);
   const [freeText, setFreeText] = useState("");
+  const [saveAsInsight, setSaveAsInsight] = useState(false);
 
   function toggleReason(code) {
     setReasonCodes((prev) =>
@@ -757,6 +763,7 @@ function RevisionPanel({ mode, onSubmit, onCancel }) {
 
   const canSubmit =
     mode === "redo" || reasonCodes.length > 0 || freeText.trim().length > 0;
+  const hasFreeText = freeText.trim().length > 0;
 
   return (
     <div className="revision-panel">
@@ -785,6 +792,16 @@ function RevisionPanel({ mode, onSubmit, onCancel }) {
         onChange={(e) => setFreeText(e.target.value)}
       />
 
+      <label className="revision-save-insight">
+        <input
+          type="checkbox"
+          checked={saveAsInsight}
+          disabled={!hasFreeText}
+          onChange={(e) => setSaveAsInsight(e.target.checked)}
+        />
+        この指摘を今後の生成方針に反映する
+      </label>
+
       <div className="revision-panel-actions">
         <button className="revision-cancel" onClick={onCancel}>
           キャンセル
@@ -792,7 +809,17 @@ function RevisionPanel({ mode, onSubmit, onCancel }) {
         <button
           className="revision-submit"
           disabled={!canSubmit}
-          onClick={() => onSubmit({ reasonCodes, freeText })}
+          onClick={() =>
+            onSubmit({
+              reasonCodes,
+              freeText,
+              // チェックボックスはdisabledでもcheckedのstate自体はリセットされない
+              // ため、自由記述を消してから送信した場合に備え送信時点で再検証する
+              // （コードレビューで指摘: 空のfreeTextとsaveAsInsight:trueが
+              // 同時に送信されうる不整合があった）
+              saveAsInsight: saveAsInsight && hasFreeText,
+            })
+          }
         >
           送信
         </button>

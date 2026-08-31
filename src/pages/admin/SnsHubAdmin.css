@@ -393,6 +393,20 @@
   box-sizing: border-box;
 }
 
+.revision-save-insight {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-gray-600);
+  cursor: pointer;
+}
+
+.revision-save-insight:has(input:disabled) {
+  color: var(--color-gray-300);
+  cursor: not-allowed;
+}
+
 .revision-panel-actions {
   display: flex;
   justify-content: flex-end;
