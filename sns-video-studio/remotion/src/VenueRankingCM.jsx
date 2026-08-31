@@ -1148,6 +1148,56 @@ export function VenueRankingCM_Manshu_EN() {
   );
 }
 
+// VenueRankingCM_Manshuの英語版・バリアントB（2026-08-31、translate action）。
+// 別のJA下書き(content_group_id 8ca1fd46-4332-4d18-b179-2a8af924382e、draftId d545faa1)の
+// 承認を受けたtranslate実行が、同時刻に別のJA下書き(draftId 621650d6)のtranslate実行と
+// 競合し、先に上のVenueRankingCM_Manshu_ENがmasterへpushされていたため、名前衝突を避けて
+// バリアントBとして追加した。文言はVenueRankingCM_Manshu_ENと同義（データ・レイアウトは同一）。
+// venue名はdocs/reference/i18n-glossary.md準拠
+const MANSHU_RATE_TOP5_EN_B = [
+  { venue: "Edogawa", value: "19.1%", sample: "1,421", ratio: 100 },
+  { venue: "Naruto", value: "18.7%", sample: "1,341", ratio: 98 },
+  { venue: "Kiryu", value: "18.5%", sample: "1,677", ratio: 97 },
+  { venue: "Mikuni", value: "18.3%", sample: "1,555", ratio: 96 },
+  { venue: "Toda", value: "18.0%", sample: "1,558", ratio: 94 },
+];
+
+const MANSHU_RATE_WORST5_EN_B = [
+  { rank: 24, venue: "Fukuoka", value: "12.4%", sample: "1,521", ratio: 65 },
+  { rank: 23, venue: "Amagasaki", value: "14.3%", sample: "1,838", ratio: 75 },
+  { rank: 22, venue: "Wakamatsu", value: "14.5%", sample: "1,610", ratio: 76 },
+  { rank: 21, venue: "Shimonoseki", value: "14.6%", sample: "1,613", ratio: 76 },
+  { rank: 20, venue: "Gamagori", value: "15.0%", sample: "1,749", ratio: 79 },
+];
+
+export function VenueRankingCM_Manshu_EN_VariantB() {
+  return (
+    <VenueRankingTemplate
+      topVenue="Edogawa"
+      axisTitle="Big-Payout Rate"
+      rateLabel="Big-payout rate 19.1%"
+      hookQuestion="Which venue throws the most big payouts?"
+      subCaption="24 venues · 38,600 races analyzed"
+      categoryTag="24-Venue Ranking"
+      allRates={MANSHU_RATE_ALL}
+      topRateIndex={MANSHU_TOP_INDEX}
+      accentColor={GOLD}
+      top5Heading="💰 Top 5 venues for big payouts"
+      top5Data={MANSHU_RATE_TOP5_EN_B}
+      worst5Heading="🎯 Where big payouts are rare"
+      worst5Data={MANSHU_RATE_WORST5_EN_B}
+      barColorTop={GOLD}
+      barColorWorst={RED}
+      ctaLines={["Full 24-venue data,", "free to view"]}
+      subLine="Where does your venue rank?"
+      sampleSuffix=" races analyzed"
+      brandName="Ryujin Radar"
+      avgLabel="Avg"
+      rankLabel="st"
+    />
+  );
+}
+
 // 2026-08-24: 新カバー方針（デザイナーエージェント案A: 非対称巨大順位数字＋
 // 実データ棒グラフ背景＋下部フック帯）の第1号
 export function VenueRankingCM_WinRate() {
