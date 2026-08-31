@@ -40,6 +40,7 @@ import DataRaceTable from "./DataRaceTable";
 import VenueTendencyPanel from "./VenueTendencyPanel";
 import EmbeddedAnalysisSection from "./EmbeddedAnalysisSection";
 import MotorConditionChart from "../analysis/MotorConditionChart";
+import RacerFormChart from "../analysis/RacerFormChart";
 import AiAnalysisSection from "./AiAnalysisSection";
 import AiCopyBanner from "./AiCopyBanner";
 import AiCopyButton from "./AiCopyButton";
@@ -207,6 +208,15 @@ function PredictionPanel({
       {venueCode && analysisRaceId && (
         <EmbeddedAnalysisSection title={t("analysisPage.tabs.motor")}>
           <MotorConditionChart
+            embedded
+            initialVenueCode={venueCode}
+            initialRaceId={analysisRaceId}
+          />
+        </EmbeddedAnalysisSection>
+      )}
+      {venueCode && analysisRaceId && (
+        <EmbeddedAnalysisSection title={t("analysisPage.tabs.racer")}>
+          <RacerFormChart
             embedded
             initialVenueCode={venueCode}
             initialRaceId={analysisRaceId}

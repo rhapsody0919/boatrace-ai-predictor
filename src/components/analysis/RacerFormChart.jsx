@@ -47,7 +47,11 @@ const VENUE_NAMES = {
   24: "大村",
 };
 
-function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
+function RacerFormChart({
+  initialVenueCode = null,
+  initialRaceId = null,
+  embedded = false,
+}) {
   const { t } = useTranslation();
   const [venues, setVenues] = useState([]);
   const [selectedVenue, setSelectedVenue] = useState(initialVenueCode);
@@ -171,55 +175,60 @@ function RacerFormChart({ initialVenueCode = null, initialRaceId = null }) {
 
   return (
     <div className="motor-condition-container">
-      <h2>{t("analysis.racerForm.title")}</h2>
-      <p className="section-description">
-        {t("analysis.racerForm.description")}
-      </p>
-
-      {venues.length === 0 && !loading ? (
-        <div className="empty-state">{t("analysis.noRacesToday")}</div>
-      ) : (
-        <div className="controls-section">
-          <label htmlFor="racer-venue-select">
-            {t("analysis.venueSelectTodayLabel")}
-          </label>
-          <select
-            id="racer-venue-select"
-            value={selectedVenue ?? ""}
-            onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
-            className="venue-select"
-          >
-            {venues.map((v) => (
-              <option key={v} value={v}>
-                {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-              </option>
-            ))}
-          </select>
-
-          {races.length > 0 && (
-            <>
-              <label htmlFor="racer-race-select">
-                {t("analysis.raceSelectLabel")}
-              </label>
-              <select
-                id="racer-race-select"
-                value={selectedRace ?? ""}
-                onChange={(e) => setSelectedRace(e.target.value)}
-                className="venue-select"
-              >
-                {races.map((r) => (
-                  <option key={r.race_id} value={r.race_id}>
-                    {t("analysis.raceOption", {
-                      number: r.race_number,
-                      time: r.start_time?.slice(0, 5),
-                    })}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
-        </div>
+      {!embedded && (
+        <>
+          <h2>{t("analysis.racerForm.title")}</h2>
+          <p className="section-description">
+            {t("analysis.racerForm.description")}
+          </p>
+        </>
       )}
+
+      {!embedded &&
+        (venues.length === 0 && !loading ? (
+          <div className="empty-state">{t("analysis.noRacesToday")}</div>
+        ) : (
+          <div className="controls-section">
+            <label htmlFor="racer-venue-select">
+              {t("analysis.venueSelectTodayLabel")}
+            </label>
+            <select
+              id="racer-venue-select"
+              value={selectedVenue ?? ""}
+              onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
+              className="venue-select"
+            >
+              {venues.map((v) => (
+                <option key={v} value={v}>
+                  {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
+                </option>
+              ))}
+            </select>
+
+            {races.length > 0 && (
+              <>
+                <label htmlFor="racer-race-select">
+                  {t("analysis.raceSelectLabel")}
+                </label>
+                <select
+                  id="racer-race-select"
+                  value={selectedRace ?? ""}
+                  onChange={(e) => setSelectedRace(e.target.value)}
+                  className="venue-select"
+                >
+                  {races.map((r) => (
+                    <option key={r.race_id} value={r.race_id}>
+                      {t("analysis.raceOption", {
+                        number: r.race_number,
+                        time: r.start_time?.slice(0, 5),
+                      })}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+          </div>
+        ))}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
