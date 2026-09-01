@@ -141,7 +141,7 @@ boatrace-ai-predictor/
 1. `/code-review` でセルフレビューを実行
 2. **新規のデータ集計・分析機能（新しい統計・ランキング・傾向表示等）を含む場合は、データの正確性を複数の視点で検証する**（詳細は `.claude/rules/analysis.md` の「データ精度の検証」を参照）。コードレビューとは別に「集計結果が実データと一致しているか」だけを見る検証を必ず行う。実データの見た目・コードスタイルが正しくても、集計ロジックの誤り（スケール不一致、JOIN漏れ、期間ズレ等）は見た目だけのレビューでは発見できないため、独立した検証ステップとして扱う
 3. 指摘事項を修正してコミット・push（判断が分かれる指摘は修正せず報告に含める）
-4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（`e2e/smoke.spec.js`、Playwright）も実行し、デグレが無いことを確認する。`AppRouter.jsx`に新しい静的ルートを追加した変更では`npm run verify:sitemap`も実行する。CI連携はせず、毎回Claude自身が手元で実行する。新しい主要導線を追加した場合はスモークテストにも追記する
+4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（`e2e/smoke.spec.js`、Playwright）も実行し、デグレが無いことを確認する。`AppRouter.jsx`に新しい静的ルートを追加した変更では`npm run verify:sitemap`も実行する。**新機能（ユーザー向けの新しいページ・分析タブ・主要機能）を実装した変更では`npm run verify:content-index`も実行し、対応する`docs/design/{slug}/content-index.json`を作成済み（または`not_applicable: true`で対象外を明記済み）であることを確認する**（フローA-2参照）。CI連携はせず、毎回Claude自身が手元で実行する。新しい主要導線を追加した場合はスモークテストにも追記する
 5. `/codex-review`（Codexセカンドオピニオンレビュー）は**2026-07時点で見送り中**。ChatGPT契約のコストに見合わないと判断（詳細は `docs/operation/sdd-and-codex-review.md`）。仕組み自体は用意済みなので、将来必要になったら有効化する
 6. **レビュー結果を PR にコメントで記載する**。内容: 指摘一覧（ファイル・行・内容）、各指摘の対応（修正コミット / スキップ理由）、修正後の検証結果（データ精度検証の結果を含む）
 7. **ユーザーへの完了報告（チャット本文）には以下を必ず全て含める**。PR コメントへのリンクや「詳細は PR 参照」で省略しない：
@@ -153,7 +153,25 @@ boatrace-ai-predictor/
    - 最後にマージ可否の確認
 8. マージはユーザー承認後に実行（勝手にマージしない）。**マージ確認を求める際は、単に「マージしてよいか」だけを聞かない**。毎回、7の内容（実装内容・レビュー指摘・修正内容・検証結果）を簡潔にまとめたサマリーと、ユーザーが何を確認すればよいか（例: 見た目を確認したいならこのURL、事実確認したいならこの記述、等）を添えて聞く。連続してタスクをこなす場合も、都度このサマリー付きで確認を求める（「マージしてよいか」の一言だけに省略しない）
 
-### 新機能リリース時のブログ記事ルール
+---
+
+## フローA: 新機能マルチチャネル展開
+
+新機能の実装完了からYouTube解説動画・ブログ記事・X投稿・note投稿へ展開する一連の流れ。全体設計・現状の課題分析は [`docs/design/content-ops-flow/spec.md`](../docs/design/content-ops-flow/spec.md) を参照（2026-09-01策定）。
+
+### フローA-1: 並列着手とチャネル展開の基本ルール
+- 機能実装完了（PRマージ）を単一トリガーとし、YouTube解説動画制作とブログ記事執筆は**並列で着手できる**（互いを待つ理由がない）。X・note投稿は両方の完成を待ってから着手する（記事だけ先に公開されて動画が後追いだとリンクが死ぬため）
+- ブランド一貫性: 新しいチャネル向け画像・動画を作成する前に、必ず [`docs/reference/brand-kit.md`](../docs/reference/brand-kit.md) のギャラリーを確認する。既存の採用実例と矛盾する独自デザイン（新しいロゴバッジの発明、実ヘッダーと異なるフォント処理等）を作らない。承認されたら、その場で`brand-kit.md`のギャラリーに実例を追記する（後日まとめての更新にしない）
+- 重複制作防止: フローA着手時、対応するLinearチケットを`In Progress`に変更する。新規の排他制御機構は作らない（複数セッション並行時の実害は「同じ動画を2回作る」程度に留まるため、厳密な排他制御より軽い運用で十分と判断）
+
+### フローA-2: トレーサビリティ索引（content-index.json）
+機能変更のたびに「どのページ・どのコンテンツが影響を受けるか」を機械的に特定する手段がなかったことへの対策。
+
+- 新機能ごとに `docs/design/{feature-slug}/content-index.json` を作成する（テンプレート: `docs/design/_template/content-index.json`）。その機能に言及する静的ページ・note記事・ブログ記事・YouTube動画・X投稿を記録する
+- 対象チャネルが無い機能は、空配列のまま放置せず `not_applicable: true` を明記する（「対象チャネルなしと確認済み」と「確認自体をしていない」を機械的に見分けるため）
+- **実装完了後の自動レビュー（上記4番）で`npm run verify:content-index`を実行**し、既存の`content-index.json`の形式が壊れていないかを確認する。「本来必要なのに作られていない」の全自動検出はしない（機能の一覧を機械的に列挙する手段がsitemapのルートほど自明ではないため）。新規作成自体は、このPRの完了条件として人間（多くはClaude自身）が判断する
+
+### フローA-3: 新機能リリース時のブログ記事ルール
 2026-07-30時点で「新機能リリースは必ずブログ記事とセットで出す」運用を再開した（4月以降ブログ更新が止まったことがPV下落の一因だったため）。記事作成時は以下を守る。
 
 - **1機能1記事**: 複数機能をまとめた1記事にしない。SEOで異なる検索クエリを個別に拾うため、機能ごとに記事を分ける
@@ -163,56 +181,96 @@ boatrace-ai-predictor/
 - **「よくある質問」セクションを設ける**: `BlogPost.jsx`が`## よくある質問`セクションを自動検出してFAQPage構造化データを生成する（`src/utils/blogFaqSchema.js`）ため、`### 質問文` + 回答段落の形式でFAQセクションを含めると追加コード不要でSEO/AI引用対策になる
 - **note.com向け下書きを同時生成する（2026-08-04〜）**: 新規ブログ記事作成時は`python3 convert_to_note_markdown.py public/blog/{slug}.md`を実行し、出力された`{slug}_note.md`を`note-articles/{slug}.md`にリネームして配置する。note.comへの実際の投稿・公開は自動化できない（公開APIが存在しない）ため、生成した下書きをユーザーがnoteエディタに貼り付けて手動公開する
 - **note下書きは画像か動画を最低1枚含める（2026-08-31〜）**: 文章のみのnote下書きは閲覧時の質が低い（2026-08-31指摘）。ブログ記事作成時に配置した画像（`public/images/blog/{slug}.jpg`等）を流用し、note下書き（`note-articles/{slug}.md`）にも埋め込む。対応する画像が無い記事は、Playwrightで撮影したスクリーンショットを新たに用意する
-- **note埋め込み用動画に`sns-video-studio/remotion/public/soundtrack.wav`を使わない（2026-08-31〜）**: X/TikTok用の縦型ショート動画で既に使い回されている楽曲で、note用に流用したところ「使い回し感がある」と却下された。note用動画には別途新規に著作権フリー楽曲（Pixabay Content License等）を選定して使う。詳細な制作ルール（構成・字幕・BGM候補）は`docs/operation/note-video-producer-prompt.md`参照
+- **note埋め込み用動画に`sns-video-studio/remotion/public/soundtrack.wav`を使わない（2026-08-31〜）**: X/TikTok用の縦型ショート動画で既に使い回されている楽曲で、note用に流用したところ「使い回し感がある」と却下された。note用動画には別途新規に著作権フリー楽曲（Pixabay Content License等）を選定して使う。詳細な制作ルール（構成・字幕・BGM候補）は`docs/operation/note-video-producer-prompt.md`参照（着手前に`docs/reference/brand-kit.md`も確認する）
 - **Xツイート下書きも同時生成する（2026-08-04〜）**: 新規ブログ記事作成時は`node scripts/generate-tweet-draft.js {post-id}`を実行し、`note-articles/tweet-drafts.md`に下書きを追記する。投稿はユーザーが内容を確認の上、手動でXに行う（2025-12時点の同種の取り組みが下書き作成後1週間で止まった実績があるため、「記事公開のたびに機械的に生成する」運用に固定し、単発の週次計画には戻さない）
 - **note/X投稿のリマインドを毎回行う（2026-08-08〜）**: ブログ記事を作成したPRの完了報告・マージ確認には、必ず「note/Xへの投稿依頼」を含める。具体的には①note下書きのファイルパス（`note-articles/{slug}.md`）②tweet-drafts.md内の該当セクション（日付見出し）③「noteエディタに貼り付けて公開→対応ツイートをXに投稿」の手順を明示する。リマインドなしで記事だけ公開して投稿が溜まった実績（2026-07-30〜08-08の14記事が未投稿で滞留）があるため、下書き生成だけで完了とせず、リマインド提示までを記事作成タスクの完了条件とする
 - **featured記事は英訳も同時作成する（2026-08-11〜）**: featured記事（`blogPosts.js`の`featured: true`）を新規公開する際は、英語版（`public/blog/{slug}-en.md` + `src/data/blogPostsEn.js`へのエントリ追加）も同一PRまたは近接PRで作成する。対象言語は英語のみ（zh-TW/koは対象外、需要が確認できるまで見送り）。ブログi18nの実装パターン・設計判断は`docs/design/blog-i18n/`（spec/screens/plan/tasks）・`docs/adr/0005〜0007`を参照
 
-### セッション開始時のXツイート下書き投稿確認（2026-08-23〜、2026-08-24更新）
-`note-articles/tweet-drafts.md`は下書き生成だけでは投稿が進まず滞留する実績が繰り返しあった（2025-12の取り組みが1週間で停止、2026-08-08時点で14記事滞留、2026-08-23時点で38記事滞留）。この対策として、以下をセッション開始時に必ず行う。
+### フローA-4: 新規ページ追加時のsitemap登録（必須）
+2026-07-31時点で、`/winning-technique`が`scripts/generate-sitemap.js`への追加漏れで長期間sitemap.xmlに未掲載、Google未インデックスのままだった実績あり（Search Console実データで検索クリック・表示回数0件と確認）。同じ漏れを繰り返さないため、新しい静的ページ・ルート（`AppRouter.jsx`に`<Route>`を追加するもの）を実装したら、**同じPRで**`scripts/generate-sitemap.js`の`staticPages`（多言語対応ページは`LOCALIZED_PAGES`/`LANGUAGE_ONLY_PAGES`）にも追記する。ページ単体の実装が完了した時点で完了とせず、sitemap反映まで含めて1タスクとして扱う。
+
+sitemap変更は`.github/workflows/update-sitemap.yml`で毎日自動反映され、変更があった場合はSearch Consoleへの再送信（`scripts/submit-sitemap.js`）も自動実行される。ただし個々のページの即時インデックス登録を保証するものではない（詳細は`docs/operation/search-console-report.md`）。
+
+登録漏れは`npm run verify:sitemap`（`scripts/maintenance/verify-sitemap-coverage.js`）で機械的に検知できる。AppRouter.jsxの静的ルートとgenerate-sitemap.jsのstaticPagesを突き合わせ、未登録があれば失敗する。新規ルート追加を含むPRでは実装完了後の自動レビュー（`npm run build`実行時）にこのコマンドも合わせて実行する。意図的にsitemap非対象とするルート（リダイレクト専用・管理画面・非公開ページ等）は、スクリプト内の`EXPECTED_EXCLUSIONS`に理由付きで登録する。
+
+---
+
+## フローB: sns-hub日常運用
+
+X/TikTokへの定常投稿は `src/pages/admin/SnsHubAdmin.jsx` 等で構築中のSNSマーケティングハブ（Phase 1稼働中、Phase 2でPDCAループ設計中、`docs/design/sns-marketing-hub/`参照）が担う。フローAの「新機能ローンチ」とは独立した、既存ユーザー向けの継続的なコンテンツサイクル。詳細な運用ルールは`docs/design/sns-marketing-hub/`・`docs/design/sns-hub-phase2-pdca-loop/`を参照。
+
+- sns-hubの動画・画像生成プロンプトも、着手前に[`docs/reference/brand-kit.md`](../docs/reference/brand-kit.md)を参照する。色・フォントを個別プロンプト内に直書きしない
+- 無人のクラウドRoutineは外部サイト（X/TikTok等）を自律的に閲覧できないと確定済み（WebFetch/curlは許可リスト外ドメインに一律`EGRESS_BLOCKED`、ヘッドレスChromiumも外部接続不可。`docs/design/sns-hub-phase2-pdca-loop/spec.md`参照）。外部閲覧・生成・投稿が絡む作業は、Routineではなく対話セッションに委ねる設計を維持する
+
+---
+
+## フローC: 既存コンテンツの品質・鮮度維持
+
+機能追加・UI変更・モデル変更のたびに静的ページ・過去のnote/ブログ記事・視覚素材が陳腐化しうる問題、および各チャネルの画像・動画・CTAがセッションごとに場当たり的に作られ統一感を欠く問題への対策。設計の全体像・検討過程は [`docs/design/content-ops-flow/spec.md`](../docs/design/content-ops-flow/spec.md) を参照。
+
+**核心の方針**: 「人間が覚えている」ことに依存する仕組みは遅かれ早かれ形骸化する（tweet-draftsが14件→38件まで滞留した実績あり）。機械的に判定できるものは実装完了チェックリスト（フローA-2参照）またはGitHub Actions、判断が要るものはセッション開始時の能動チェックまたはSlack通知のいずれかに必ず寄せる。
+
+### フローC-0: セッション開始時チェックの統合（session-start-check.js）
+以下5つの既存確認ルール（フローC-1〜C-5）に加え、トレーサビリティ索引カバレッジ・視覚素材鮮度・品質バックログの3項目を、`node scripts/maintenance/session-start-check.js`が1回の実行で集約する。**セッション開始時、このスクリプトを実行し、結果をこのセッションの最初の応答で報告する**（各項目の判定ロジック詳細はスクリプト冒頭のコメントを参照。以下フローC-1〜C-5の本文は、確認後に実際に何をするか＝実行手順として引き続き有効）。
+
+### フローC-1: セッション開始時のXツイート下書き投稿確認（2026-08-23〜、2026-08-24更新）
+`note-articles/tweet-drafts.md`は下書き生成だけでは投稿が進まず滞留する実績が繰り返しあった（2025-12の取り組みが1週間で停止、2026-08-08時点で14記事滞留、2026-08-23時点で38記事滞留）。この対策として、以下をセッション開始時に必ず行う（未消化件数は`session-start-check.js`の`tweetDrafts.pendingCount`で機械的に取得できる）。
 
 - `note-articles/tweet-drafts.md`に未投稿（`- [ ] 投稿済み`）の下書きがあれば、**このセッションの最初の応答で**優先度の高いものから**2〜3件**を自発的に提示し、「投稿しますか？」と確認する（ユーザーから話しかけられるのを待たない）。1件ずつの提示では新規記事の生成ペースに消化が追いつかず滞留が続いた実績（2026-08-08時点14件→2026-08-22時点38件→2026-08-26時点35件）があるため、2026-08-26にペースを引き上げた
 - 優先順位は鮮度優先: 直近の新機能記事を最優先とし、半年以上前の記事は普遍的なノウハウ系のみ対象とする。数値実績系（「◯万レース突破」等）は投稿前に鮮度（数値が古くなっていないか）を一言添える
 - 提示前に、その下書きが**廃止済み機能・旧モデル体系（本命狙い/スタンダード/穴狙いの3モデル等）に言及していないか**をリンク先記事本文で確認する（2026-08-23、「今日のおすすめ」機能廃止後もそれを紹介する下書きが2件残っていた実例あり）。該当すれば提示せず削除する
-- **投稿の実行手順（2026-08-24確立）**: ユーザーが「投稿する」と答えたら、Claude自身がブラウザ（claude-in-chrome）で`https://x.com/compose/post`を開き、テキストエリアに本文を入力するところまで行う。**「Post」ボタンのクリックは必ずユーザー自身が行う**（送信を伴う最終アクションは1件ごとの明示的な人手操作が必要）。`https://x.com/home`等ホームフィードへの遷移は自動モード分類器にブロックされるが、`https://x.com/compose/post`への直接遷移とテキスト入力はブロックされないことを確認済み
+- **投稿の実行手順（2026-08-24確立、2026-09-01複数件対応を追記）**: ユーザーが「投稿する」と答えたら、Claude自身がブラウザ（claude-in-chrome）で`https://x.com/compose/post`を開き、テキストエリアに本文を入力するところまで行う。**「Post」ボタンのクリックは必ずユーザー自身が行う**（送信を伴う最終アクションは1件ごとの明示的な人手操作が必要）。`https://x.com/home`等ホームフィードへの遷移は自動モード分類器にブロックされるが、`https://x.com/compose/post`への直接遷移とテキスト入力はブロックされないことを確認済み
+  - **複数件を同時に投稿する場合**: 1件ずつ順番に「入力→ユーザーのPost待ち→次の1件」を繰り返さない。`tabs_create_mcp`で下書きの件数分タブを開き、それぞれに`https://x.com/compose/post`を読み込んで本文を入力し、全件の入力が完了した状態でまとめてユーザーに提示する。ユーザーは各タブのPostボタンを順に押すだけで済む（2026-09-01、3件連続投稿で「別タブで一度にPostできるようにして」とユーザー指摘）
 - X API経由の自動投稿（`twitter-api-v2`等）は、`bypassPermissions`モードでも自動モード分類器にブロックされるため実現不可と判断済み（2026-08-24検証済み、再検討不要）
 - ユーザーが投稿完了を伝えたら、該当行の`- [ ] 投稿済み`を`- [x] 投稿済み`に変更する
 
-### セッション開始時のX動画投稿確認（2026-08-24〜）
-X運用の長期戦略議論を経て、Xも「可能な範囲で毎日投稿する」運用に変更した（`docs/operation/x-operations-playbook.md`の「X投稿頻度・型選定ロジック」参照）。上記のXツイート下書き（noteブログ告知等のテキスト投稿）とは別に、**動画投稿**については以下をセッション開始時に必ず行う。
+### フローC-2: セッション開始時のX動画投稿確認（2026-08-24〜）
+X運用の長期戦略議論を経て、Xも「可能な範囲で毎日投稿する」運用に変更した（`docs/operation/x-operations-playbook.md`の「X投稿頻度・型選定ロジック」参照）。上記のXツイート下書き（noteブログ告知等のテキスト投稿）とは別に、**動画投稿**については以下をセッション開始時に必ず行う（本日の投稿状況は`session-start-check.js`の`xVideo`で機械的に取得できる）。
 
 - `data/analysis/x-posts/history.json`を確認し、本日の投稿本数が目標本数（マスコットテスト期間中は3本/日、`docs/operation/x-operations-playbook.md`参照）に達していなければ、**このセッションの最初の応答で**「本日Xに動画を投稿しますか？」と自発的に確認する（ユーザーから話しかけられるのを待たない）。「1本投稿した＝その日は完了」と早合点しない
-- 「はい」と回答があれば、`docs/operation/x-operations-playbook.md`の「型・キャラ選定ロジック」に従って本日の内容を判断し、一言で提案してから動画制作（または既存ストック動画の選定）に着手する
+- 「はい」と回答があれば、`docs/operation/x-operations-playbook.md`の「型・キャラ選定ロジック」に従って本日の内容を判断し、一言で提案してから動画制作（または既存ストック動画の選定）に着手する。制作前に`docs/reference/brand-kit.md`を確認する
 - セッション内で確認して「いいえ」または反応が無ければ、その日はスキップし`history.json`に`status: "skipped"`として記録、次のタスクに進む（催促を続けない）。この`skipped`は「確認した上で見送った日」専用で、セッションが一度も開かれなかった日はエントリを作らない
 - **SNS投稿の自動化・自動承認は行わない**（1件ごとの明示的承認が必須という制約は不変）。動画が完成したらユーザーに提示し、承認を得てから投稿操作に進む
 - 投稿完了後、`data/analysis/x-posts/history.json`に日付・キャラ・型・題材・動画ファイルパス・投稿ステータスを追記する
 
-### セッション開始時のTikTok投稿確認（2026-08-24〜）
-TikTokは運用が軌道に乗り次第「毎日投稿」を目標とする運用に合意した（`docs/operation/sns-marketing-strategy.md`のフェーズ設計を参照）。Xの下書きと異なり事前に用意された下書きは無く、**その日の題材・型をClaudeが投稿履歴から判断して新規に考える**運用のため、以下をセッション開始時に必ず行う。
+### フローC-3: セッション開始時のTikTok投稿確認（2026-08-24〜）
+TikTokは運用が軌道に乗り次第「毎日投稿」を目標とする運用に合意した（`docs/operation/sns-marketing-strategy.md`のフェーズ設計を参照）。Xの下書きと異なり事前に用意された下書きは無く、**その日の題材・型をClaudeが投稿履歴から判断して新規に考える**運用のため、以下をセッション開始時に必ず行う（本日の投稿状況は`session-start-check.js`の`tiktok`で機械的に取得できる）。
 
 - `data/analysis/tiktok-posts/history.json`を確認し、本日まだ投稿していなければ、**このセッションの最初の応答で**「本日TikTokに動画を投稿しますか？」と自発的に確認する（ユーザーから話しかけられるのを待たない）
-- 「はい」と回答があれば、`docs/operation/sns-video-producer-prompt.md`の「TikTok投稿頻度・型選定ロジック」に従って本日の型・題材を判断し、一言で提案してから動画制作に着手する
+- 「はい」と回答があれば、`docs/operation/sns-video-producer-prompt.md`の「TikTok投稿頻度・型選定ロジック」に従って本日の型・題材を判断し、一言で提案してから動画制作に着手する。制作前に`docs/reference/brand-kit.md`を確認する
 - セッション内で確認して「いいえ」または反応が無ければ、その日はスキップし`history.json`に`status: "skipped"`として記録、次のタスクに進む（催促を続けない）。**この`skipped`は「確認した上で見送った日」専用**であり、そもそもその日セッションが一度も開かれなかった日は誰も確認していないため`skipped`を書き込まない（無理に埋め合わせない、記録が単に存在しない日として扱う）
 - **SNS投稿の自動化・自動承認は行わない**（Xツイート下書きと同じ制約。送信を伴うアクションは1件ごとの明示的承認が必須）。動画が完成したらユーザーに提示し、承認を得てから投稿操作に進む
 - 投稿完了後、`data/analysis/tiktok-posts/history.json`に日付・型・題材・動画ファイルパス・投稿ステータスを追記する
 
-### セッション開始時の選手ニュース要確認リスト提示（2026-08-27〜）
-選手ニュース自動収集（`racer-news-auto-collect`）はGitHub Actionsで毎日自動実行され、`boatrace.jp`公式ニュースアーカイブ（レーサーデータカテゴリ）から選手の節目記録（通算◯勝達成等）を検出し、登録番号によるDB照合を通過したものは人手承認なしで`racer_news`へ自動投入する（ADR-0024参照）。ただし選手の特定に失敗した候補（登録番号がDBに無い、支部が一致しない等）は自動投入されず、`data/analysis/racer-news-pending-review/pending.json`に記録される。
+### フローC-4: セッション開始時の選手ニュース要確認リスト提示（2026-08-27〜）
+選手ニュース自動収集（`racer-news-auto-collect`）はGitHub Actionsで毎日自動実行され、`boatrace.jp`公式ニュースアーカイブ（レーサーデータカテゴリ）から選手の節目記録（通算◯勝達成等）を検出し、登録番号によるDB照合を通過したものは人手承認なしで`racer_news`へ自動投入する（ADR-0024参照）。ただし選手の特定に失敗した候補（登録番号がDBに無い、支部が一致しない等）は自動投入されず、`data/analysis/racer-news-pending-review/pending.json`に記録される（未確認件数は`session-start-check.js`の`racerNews.pendingCount`で機械的に取得できる）。
 
 - `pending.json`に`status: "pending"`の項目があれば、**このセッションの最初の応答で**自発的に提示し、`racer_news`への投入可否を確認する（ユーザーから話しかけられるのを待たない）
 - 承認されたら`scripts/maintenance/add-racer-news.js`でINSERTし該当項目の`status`を`approved`に、却下されたら`rejected`に更新する
 - 掲載頻度自体が月1〜2件と低いため、このリストは頻繁には溜まらない想定。溜まっている場合はGitHub Actionsの実行状況（`.github/workflows/collect-racer-news.yml`）も確認する
 
-### セッション開始時の集客調査スキル実行確認（2026-08-29〜）
-SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）は、`/x-growth-report`・`/tiktok-growth-report`の定期実行結果をinsightとしてDBに登録し（ADR 0027）、週次で生成Routineへの反映を判定する（ADR 0030）設計。外部調査（競合・隣接ジャンル観測）はクラウドRoutineでは技術的に実行できないと確定しているため（`sns_marketing_hub_operational_state.md`メモリ参照）、対話セッション側でのスキル定期実行に運用が依存する。過去にX戦略の定期施策が「決めただけで仕組み化されず自然消滅した」実績（2025-12）があるため、以下をセッション開始時に必ず行う。
+### フローC-5: セッション開始時の集客調査スキル実行確認（2026-08-29〜）
+SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）は、`/x-growth-report`・`/tiktok-growth-report`の定期実行結果をinsightとしてDBに登録し（ADR 0027）、週次で生成Routineへの反映を判定する（ADR 0030）設計。外部調査（競合・隣接ジャンル観測）はクラウドRoutineでは技術的に実行できないと確定しているため（`sns_marketing_hub_operational_state.md`メモリ参照）、対話セッション側でのスキル定期実行に運用が依存する。過去にX戦略の定期施策が「決めただけで仕組み化されず自然消滅した」実績（2025-12）があるため、以下をセッション開始時に必ず行う（鮮度は`session-start-check.js`の`growthSkills`で機械的に取得できる）。
 
 - `data/analysis/x-growth/`・`data/analysis/tiktok-growth/`それぞれの最新レポートファイルの日付を確認し、いずれかが1週間以上前であれば、**このセッションの最初の応答で**該当スキル（`/x-growth-report`・`/tiktok-growth-report`）の実行を自発的に提案する（ユーザーから話しかけられるのを待たない）
 - 「はい」と回答があれば該当スキルを実行する（複数プラットフォームが該当する場合、両方まとめて提案してよい）
 - 「いいえ」または反応が無ければその日はスキップし、次のタスクに進む（催促を続けない）
 
-### 自然言語「集客状況を調査して」トリガー時は3スキルセットで実行（2026-08-31〜）
+### フローC-6: 自然言語「集客状況を調査して」トリガー時は3スキルセットで実行（2026-08-31〜）
 「集客を分析して」「集客状況どう？」等の自然言語依頼（`/growth-pdca`と明示コマンド指定しない場合）では、`/growth-pdca`（Search Console/GA4、検索流入・ブログ側）に加えて`/x-growth-report`（Xプラットフォーム自体の実績）・`/tiktok-growth-report`（TikTokプラットフォーム自体の実績）も続けてまとめて実行する。3スキル合計でChrome in Claudeでの画面操作（X/TikTokは実績確認のため）を含み実行時間が伸びる点、Search Console等の反映ラグ（2〜3日）と比べて高頻度で聞くと同じデータの再取得になりやすい点を踏まえた上でユーザーが合意済み（2026-08-31）。`/growth-pdca`と明示コマンドで呼ばれた場合は対象外（これまで通りSearch Console/GA4単体で実行、X/TikTok分析は含めない）。
 - 過去レポートが1件も無い場合は「初回実行の提案」として扱う
+
+### フローC-7: 視覚素材の鮮度チェック
+テキストのgrepでは検知できない`/about`のヒーロー動画のような素材の陳腐化に対応する。`node scripts/maintenance/session-start-check.js`の`visualAssetAge`で、`public/videos/`・`public/images/blog/`配下の主要素材の最終更新日一覧が確認できる（90日以上未更新の素材数を`staleCount`で提示）。**陳腐化の自動判定はしない**（判断は人間）。過去に「モデル刷新後も古い動画のまま5日間放置」が実際に発生している（`promo_video_stale_after_model_change.md`メモリ参照）。
+
+### フローC-8: 「気づいたが手が回らない」品質課題の軽量バックログ化
+陳腐化だけでなく、そもそもデザイン・CTA・画像の質が最適でないという課題を、都度フルスペックで指摘しなくても拾える仕組み。Linearの`content-quality`ラベル（2026-09-01新設）で軽量起票する（このセッションの`spawn_task`相当の代替）。粒度は「詳細な要件定義」ではなく「後で拾えるチケットの種」でよい。
+
+- `node scripts/maintenance/session-start-check.js`の`qualityBacklog`で、ラベル付きIssueのうち起票日が古い順に2〜3件を提示する（tweet-draftsと同じ鮮度優先ペース）
+- ブランド・デザイン品質に関する気づき（新しい画像・動画の制作時、既存チャネルのレビュー時等）は、都度この`content-quality`ラベルで起票する。起票して終わりにせず、`session-start-check.js`経由で定期的に拾われる前提の運用とする
+
+### フローC-9: 押す（push）層 — GitHub Actions定期チェック＋Slack通知
+`session-start-check.js`は「セッションが開かれたら実行される」引く仕組みであり、セッションが長期間開かれなければ一度も実行されない。この穴を埋めるため、判断・生成が要らない機械的チェック（トレーサビリティのカバレッジ・視覚素材の鮮度・品質バックログの件数）は`.github/workflows/content-ops-nightly-check.yml`で毎日夜間に定期実行し、閾値超過時（視覚素材90日超・品質バックログ10件超・content-index形式エラーあり）のみ既存の`SLACK_WEBHOOK_URL`（`slack-notify-pr.yml`と同経路）へ通知する。無人Routineが外部サイトを閲覧できない制約（フローB参照）とは異なり、このワークフローはリポジトリ内スクリプト＋Linear APIのみで完結するため無人実行に適する。
 
 ### ブログ記事の公開前品質チェック（新規作成・改稿とも必須）
 2026-08-16時点で、ビルド成功やE2Eといった構造面の検証だけでは記事の中身の質を担保できないことが判明した（既存featured記事に旧モデル廃止済み機能への言及が残ったまま公開されていた実例あり）。新規記事・既存記事の改稿（画像追加、FAQ追加等）を問わず、公開前に以下の観点を実際に検証し、パス/フェイルを明確にしてから完了報告する。
@@ -230,20 +288,13 @@ SNSマーケティングハブPhase 2（改善案の自律立案ループ、`doc
 新しいページ・機能を実装する際は、必ず以下の3区分のどれに該当するかを決めてから着手する（2026-08-09合意、i18n監査で「未翻訳ページを全言語URLで配信しlang=enを宣言する」構造欠陥が発覚したため）。
 
 1. **翻訳対象（translated）**: ユーザー獲得に直結する主要導線（ホーム・分析ツール・ガイド・会場ガイド等）。UI文言は直書き禁止で`t()`経由、**4言語のi18nキーを同じPRで追加**し、`src/config/languages.js`の`TRANSLATED_PATHS`に登録する。用語は`docs/reference/i18n-glossary.md`準拠（新用語はglossaryに追記してから翻訳）
-2. **ja専用（ja-only）**: 規約・管理画面・成績ページ等、翻訳コストに見合わないもの。`TRANSLATED_PATHS`に登録しない（=言語プレフィックスURLはja版へ自動リダイレクトされ、`lang=ja`で配信されてブラウザのGoogle翻訳に委ねられる。hreflang非出力・言語スイッチャー無効化も自動で連動）。ブログは原則この区分だが、featured記事のうち英語対応済みのものは`src/config/languages.js`の`PARTIALLY_TRANSLATED_PATHS`で記事単位に例外扱いする（下記「新機能リリース時のブログ記事ルール」参照）
+2. **ja専用（ja-only）**: 規約・管理画面・成績ページ等、翻訳コストに見合わないもの。`TRANSLATED_PATHS`に登録しない（=言語プレフィックスURLはja版へ自動リダイレクトされ、`lang=ja`で配信されてブラウザのGoogle翻訳に委ねられる。hreflang非出力・言語スイッチャー無効化も自動で連動）。ブログは原則この区分だが、featured記事のうち英語対応済みのものは`src/config/languages.js`の`PARTIALLY_TRANSLATED_PATHS`で記事単位に例外扱いする（フローA-3「新機能リリース時のブログ記事ルール」参照）
 3. **特定言語専用**: `/venues`系のような言語別コンテンツ。`LANGUAGE_ONLY_PATHS`に登録
 
 共通ルール:
 - 選手名等の固有名詞を表示する要素には`translate="no"`を付ける（ブラウザ自動翻訳で名前が壊れるのを防ぐ）
 - 会場名は`venues.*`i18nキーを使う。日本語のVENUE_NAMES定数を新規に作らない
 - 時刻表示は非ja言語で「JST」を付記する（`t("home.jstNote")`）
-
-### 新規ページ追加時のsitemap登録（必須）
-2026-07-31時点で、`/winning-technique`が`scripts/generate-sitemap.js`への追加漏れで長期間sitemap.xmlに未掲載、Google未インデックスのままだった実績あり（Search Console実データで検索クリック・表示回数0件と確認）。同じ漏れを繰り返さないため、新しい静的ページ・ルート（`AppRouter.jsx`に`<Route>`を追加するもの）を実装したら、**同じPRで**`scripts/generate-sitemap.js`の`staticPages`（多言語対応ページは`LOCALIZED_PAGES`/`LANGUAGE_ONLY_PAGES`）にも追記する。ページ単体の実装が完了した時点で完了とせず、sitemap反映まで含めて1タスクとして扱う。
-
-sitemap変更は`.github/workflows/update-sitemap.yml`で毎日自動反映され、変更があった場合はSearch Consoleへの再送信（`scripts/submit-sitemap.js`）も自動実行される。ただし個々のページの即時インデックス登録を保証するものではない（詳細は`docs/operation/search-console-report.md`）。
-
-登録漏れは`npm run verify:sitemap`（`scripts/maintenance/verify-sitemap-coverage.js`）で機械的に検知できる。AppRouter.jsxの静的ルートとgenerate-sitemap.jsのstaticPagesを突き合わせ、未登録があれば失敗する。新規ルート追加を含むPRでは実装完了後の自動レビュー（`npm run build`実行時）にこのコマンドも合わせて実行する。意図的にsitemap非対象とするルート（リダイレクト専用・管理画面・非公開ページ等）は、スクリプト内の`EXPECTED_EXCLUSIONS`に理由付きで登録する。
 
 ### SEO・集客施策の判断軸: SPAアーキテクチャによるクローラー制約
 boatAIは`vercel.json`で `/((?!api/).*) → /index.html` のみを行う純粋なクライアントサイドSPAで、SSR・プリレンダリングの仕組みが無い。ページ固有のtitle/meta/OGPタグはReactコンポーネントがマウント後にJSで書き換える方式のため、**JavaScriptを実行しないクローラー（Facebook等）にはページ固有の変更が反映されない**（Googlebotや一部のX(Twitter)クローラーはJSレンダリング対応のため反映される）。
