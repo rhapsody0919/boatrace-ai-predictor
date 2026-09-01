@@ -39,6 +39,19 @@
   line-height: 1.6;
 }
 
+.first-visit-guide-card__link {
+  display: inline-block;
+  margin-top: var(--spacing-3);
+  color: var(--brand-accent-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.first-visit-guide-card__link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 480px) {
   .first-visit-guide-card {
     padding: var(--spacing-3) var(--spacing-3-5);

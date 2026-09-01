@@ -74,16 +74,21 @@
   color: var(--text-secondary);
 }
 
+/* 行数が多いと画面をはみ出すため、内部スクロール＋見出し行・ラベル列の
+   sticky固定にする（2026-09-01追加）。sticky対象はここではなく
+   .drt-boat-th/.drt-name-th/.drt-label-th/.drt-label-cell側で指定する
+   （theadとtdの両方から参照するため） */
 .drt-table-wrapper {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: 70vh;
 }
 
 .drt-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--surface-card);
   border-radius: var(--radius-md);
-  overflow: hidden;
   font-size: var(--font-size-sm);
 }
 
@@ -98,6 +103,9 @@
   font-weight: var(--font-weight-bold);
   font-size: var(--font-size-base);
   width: calc(100% / 7);
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
 .drt-name-th {
@@ -107,6 +115,9 @@
   background: var(--surface-page);
   word-break: break-all;
   line-height: var(--line-height-tight);
+  position: sticky;
+  top: 32px;
+  z-index: 3;
 }
 
 .drt-name-th a {
@@ -120,6 +131,17 @@
 
 .drt-label-th {
   background: var(--surface-page);
+  position: sticky;
+  left: 0;
+  z-index: 4;
+}
+
+thead tr:first-child .drt-label-th {
+  top: 0;
+}
+
+thead tr:last-child .drt-label-th {
+  top: 32px;
 }
 
 .drt-label-cell {
@@ -129,6 +151,9 @@
   color: var(--text-primary);
   background: var(--surface-page);
   white-space: nowrap;
+  position: sticky;
+  left: 0;
+  z-index: 2;
 }
 
 .drt-label-link {
