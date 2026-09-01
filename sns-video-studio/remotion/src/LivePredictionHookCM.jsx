@@ -31,6 +31,23 @@ const GOLD = "#f59e0b";
 const FONT =
   '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
 
+// SceneHook（カバー）とSceneVolatilityで共有するレベル別の配色・アイコン・ラベル。
+// 判定基準（getVolatilityLevel）はSceneVolatility節で定義（2026-09-01、カバーにも
+// イン崩れ注意度を出すB案採用にあたり、従来SceneVolatility内にインラインだった
+// 三項演算子をここに集約し二重管理を解消）
+const VOLATILITY_ICON = { high: "🌪️", low: "🎯", standard: "⚖️" };
+const VOLATILITY_COLOR = {
+  high: "#ff9800",
+  low: "#4caf50",
+  standard: "#2196f3",
+};
+const VOLATILITY_LABEL = { high: "警戒", low: "本命有利", standard: "標準" };
+const HOOK_COPY_BY_LEVEL = {
+  high: "逃げ切れるか、それとも荒れるか。",
+  standard: "堅く決まるか、まさかの波乱か。",
+  low: "順当に決まるか、一撃の波乱か。",
+};
+
 // 艇番別カラー（公式カラー、src/utils/colors.jsのBOAT_COLORSと同じ配色）
 const BOAT_COLORS = {
   1: { bg: "#ffffff", text: "#000000" },
@@ -111,11 +128,25 @@ function Logo({ size = 44 }) {
 }
 
 // --- Scene 1: フック（0-75f, 2.5s） カバー画像（frame=0）としても使われる ---
-function SceneHook({ venue, raceNumber, startTime, raceGrade, nigePercent }) {
+// 2026-09-01、B案採用（ユーザー指摘: 数字ブロックだけ左寄せ固定で上のタイトルと
+// ズレる／イン崩れ注意度がカバーに一切出ておらず訴求が弱い）。逃げ確率とイン崩れ
+// 注意度の2つを中央揃えの統計チップとして並べ、帯コピーもレベル別に出し分ける。
+function SceneHook({
+  venue,
+  raceNumber,
+  startTime,
+  raceGrade,
+  nigePercent,
+  percentile,
+}) {
   const frame = useCurrentFrame();
   const kb = interpolate(frame, [0, 75], [1, 1.04], {
     extrapolateRight: "clamp",
   });
+  const volatilityLevel = getVolatilityLevel(percentile);
+  const volatilityIcon = VOLATILITY_ICON[volatilityLevel];
+  const volatilityColor = VOLATILITY_COLOR[volatilityLevel];
+  const hookCopy = HOOK_COPY_BY_LEVEL[volatilityLevel];
   return (
     <AbsoluteFill style={{ background: NAVY_DARK, transform: `scale(${kb})` }}>
       <Pop delay={-10} style={{ position: "absolute", top: 44, left: 44 }}>
@@ -142,57 +173,109 @@ function SceneHook({ venue, raceNumber, startTime, raceGrade, nigePercent }) {
           天才マーケター議論。数値だけでは何を示すか伝わらないという指摘への対応） */}
       <Pop
         delay={-10}
-        style={{ position: "absolute", top: 180, left: 40, right: 40 }}
+        style={{ position: "absolute", top: 172, left: 40, right: 40 }}
       >
         <div
           style={{
             color: GOLD,
-            fontSize: 88,
+            fontSize: 58,
             fontWeight: 900,
             fontFamily: FONT,
             textAlign: "center",
-            lineHeight: 1.1,
-            textShadow: `0 0 40px ${GOLD}88`,
+            lineHeight: 1.15,
+            textShadow: `0 0 30px ${GOLD}88`,
           }}
         >
-          AI逃げ確率
+          AIが見る1号艇のスタート
         </div>
       </Pop>
+
+      {/* 主役: 逃げ確率とイン崩れ注意度、2つの統計を中央揃えで並べる */}
       <Pop
         delay={-10}
-        style={{ position: "absolute", top: 290, left: 40, right: 40 }}
+        style={{
+          position: "absolute",
+          top: 300,
+          left: 40,
+          right: 40,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 40,
+        }}
       >
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              color: "rgba(248,250,252,0.55)",
+              fontSize: 26,
+              fontWeight: 700,
+              fontFamily: FONT,
+              marginBottom: 4,
+            }}
+          >
+            逃げ確率
+          </div>
+          <div
+            style={{
+              fontSize: 180,
+              fontWeight: 900,
+              fontFamily: FONT,
+              color: GOLD,
+              lineHeight: 0.85,
+              textShadow: `0 0 90px ${GOLD}aa`,
+            }}
+          >
+            {nigePercent}%
+          </div>
+        </div>
         <div
           style={{
-            color: "rgba(248,250,252,0.55)",
-            fontSize: 30,
-            fontWeight: 700,
-            fontFamily: FONT,
+            color: "rgba(255,255,255,0.25)",
+            fontSize: 56,
+            fontWeight: 300,
+            marginTop: 60,
+          }}
+        >
+          ×
+        </div>
+        <div
+          style={{
             textAlign: "center",
+            background: `${volatilityColor}20`,
+            border: `2px solid ${volatilityColor}90`,
+            borderRadius: 20,
+            padding: "20px 26px",
           }}
         >
-          1号艇のスタート展開をAIが予測
+          <div
+            style={{
+              color: volatilityColor,
+              fontSize: 20,
+              fontWeight: 800,
+              fontFamily: FONT,
+              marginBottom: 6,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {volatilityIcon} イン崩れ注意度
+          </div>
+          <div
+            style={{
+              fontSize: 84,
+              fontWeight: 900,
+              fontFamily: FONT,
+              color: volatilityColor,
+              lineHeight: 1,
+            }}
+          >
+            {percentile}
+          </div>
         </div>
       </Pop>
 
-      {/* 主役: AI逃げ確率の数値 */}
-      <Pop delay={-10} style={{ position: "absolute", left: 40, top: 400 }}>
-        <div
-          style={{
-            fontSize: 260,
-            fontWeight: 900,
-            fontFamily: FONT,
-            color: GOLD,
-            lineHeight: 0.9,
-            textShadow: `0 0 130px ${GOLD}aa`,
-          }}
-        >
-          {nigePercent}%
-        </div>
-      </Pop>
-
-      <div style={{ position: "absolute", left: 60, top: 820, right: 60 }}>
-        <Pop delay={-10}>
+      <div style={{ position: "absolute", left: 60, top: 620, right: 60 }}>
+        <Pop delay={-10} style={{ textAlign: "center" }}>
           <div
             style={{
               color: WHITE,
@@ -207,7 +290,14 @@ function SceneHook({ venue, raceNumber, startTime, raceGrade, nigePercent }) {
             {raceNumber}R
           </div>
         </Pop>
-        <Pop delay={-10} style={{ display: "inline-block", marginBottom: 44 }}>
+        <Pop
+          delay={-10}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: 44,
+          }}
+        >
           <div
             style={{
               background: GOLD,
@@ -231,7 +321,7 @@ function SceneHook({ venue, raceNumber, startTime, raceGrade, nigePercent }) {
           bottom: 0,
           left: 0,
           right: 0,
-          background: GOLD,
+          background: `linear-gradient(100deg, ${GOLD} 0%, ${volatilityColor} 100%)`,
           padding: "40px 60px 84px",
         }}
       >
@@ -246,9 +336,7 @@ function SceneHook({ venue, raceNumber, startTime, raceGrade, nigePercent }) {
               lineHeight: 1.3,
             }}
           >
-            このレース、AIが見る
-            <br />
-            1号艇の逃げ確率はたった{nigePercent}%
+            {hookCopy}
           </div>
         </Pop>
       </div>
@@ -383,11 +471,9 @@ function getVolatilityLevel(percentile) {
 
 function SceneVolatility({ boatGrade, boatWinRate, percentile, reasons }) {
   const level = getVolatilityLevel(percentile);
-  const icon = level === "high" ? "🌪️" : level === "low" ? "🎯" : "⚖️";
-  const accentColor =
-    level === "high" ? "#ff9800" : level === "low" ? "#4caf50" : "#2196f3";
-  const label =
-    level === "high" ? "警戒" : level === "low" ? "本命有利" : "標準";
+  const icon = VOLATILITY_ICON[level];
+  const accentColor = VOLATILITY_COLOR[level];
+  const label = VOLATILITY_LABEL[level];
 
   return (
     <AbsoluteFill
@@ -636,6 +722,7 @@ function LivePredictionHookTemplate({
           startTime={startTime}
           raceGrade={raceGrade}
           nigePercent={nigePercent}
+          percentile={percentile}
         />
       </Sequence>
       <Sequence from={75} durationInFrames={150}>
