@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "trifecta-outcome-pattern-analysis",
+    title:
+      "3連単の出目パターンを直近13,386走で分析｜1号艇1着率は会場で最大22ポイント差",
+    description:
+      "龍神レーダーの出目分布データ（過去90日間・24会場・合計13,386走）を集計。全国の1号艇1着率は54.56%だが、会場別では下関61.32%〜平和島39.49%と21.83ポイントの差があった。全国で最も多い3連単パターンも公開。",
+    date: "2026-09-01",
+    category: "データ分析",
+    tags: ["出目分布", "データ分析", "3連単", "1号艇", "会場別"],
+    readTime: "7分",
+    featured: false,
+  },
+  {
     id: "venue-grid-navigation",
     title: "開催場一覧ページを刷新！24会場から2タップで目的のレース分析へ",
     description:
