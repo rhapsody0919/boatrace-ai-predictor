@@ -161,6 +161,7 @@ boatrace-ai-predictor/
 
 ### フローA-1: 並列着手とチャネル展開の基本ルール
 - 機能実装完了（PRマージ）を単一トリガーとし、YouTube解説動画制作とブログ記事執筆は**並列で着手できる**（互いを待つ理由がない）。X・note投稿は両方の完成を待ってから着手する（記事だけ先に公開されて動画が後追いだとリンクが死ぬため）
+- 「PRマージを単一トリガーとする」だけでは、別セッションが機能PRをマージして終了した場合に誰も気づかず埋もれるリスクがあった（2026-09-01発覚）。`session-start-check.js`の`missingContentIndex`が、AppRouter.jsxの新規ルートのうちcontent-index.json未カバーのものを機械的に検知し提示する（新ルート＝ブログが要る新機能とは限らないため強制はせず提示のみ）
 - ブランド一貫性: 新しいチャネル向け画像・動画を作成する前に、必ず [`docs/reference/brand-kit.md`](../docs/reference/brand-kit.md) のギャラリーを確認する。既存の採用実例と矛盾する独自デザイン（新しいロゴバッジの発明、実ヘッダーと異なるフォント処理等）を作らない。承認されたら、その場で`brand-kit.md`のギャラリーに実例を追記する（後日まとめての更新にしない）
 - 重複制作防止: フローA着手時、対応するLinearチケットを`In Progress`に変更する。新規の排他制御機構は作らない（複数セッション並行時の実害は「同じ動画を2回作る」程度に留まるため、厳密な排他制御より軽い運用で十分と判断）
 - sns-hubへの連携: `content-index.json`（フローA-2）は`session-start-check.js`の`recentFlowAContent`経由でsns-hubの型・キャラ選定ロジック（`docs/operation/x-operations-playbook.md`・`docs/operation/sns-video-producer-prompt.md`）からも参照される。新機能そのものの告知ではなく、その機能で見えるようになった実データ・実画面を推し活・人間味のある文脈の"素材"として使う位置づけ（「新機能告知単体は選ばない」という既存ルールは変更しない）
@@ -336,6 +337,10 @@ SEO・集客施策を検討・実装する際は、その施策が「JS実行後
 | `SENDGRID_API_KEY` | メール送信 |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Google Sheets連携 |
 | `GOOGLE_PRIVATE_KEY` | Google Sheets認証 |
+| `GITHUB_MERGE_TOKEN` | ブログ記事Draft PRの自動マージ（sns-hub admin、Fine-grained PAT、ADR 0034） |
+| `YOUTUBE_CLIENT_ID` | YouTube Data API v3連携（ADR 0035） |
+| `YOUTUBE_CLIENT_SECRET` | YouTube Data API v3連携（ADR 0035） |
+| `YOUTUBE_REFRESH_TOKEN` | YouTube Data API v3連携、ユーザー自身のOAuth同意で取得（ADR 0035） |
 
 ローカルは `.env.local`、本番は Vercel環境変数で管理。
 
