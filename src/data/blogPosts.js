@@ -40,6 +40,17 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "venue-guide-expansion",
+    title: "英語版「会場ガイド」が全24会場に対応。インバウンド向けSEOを大幅強化",
+    description:
+      "龍神レーダー英語版の会場ガイドを5会場から全24会場に拡充。地域別ハブページ・構造化データ（schema.org）・Search Console連携も実装し、英語圏からのボートレース場検索に対応しやすくなった経緯を解説します。",
+    date: "2026-09-01",
+    category: "新機能",
+    tags: ["新機能", "会場ガイド", "SEO", "多言語対応"],
+    readTime: "5分",
+    featured: false,
+  },
+  {
     id: "venue-grid-navigation",
     title: "開催場一覧ページを刷新！24会場から2タップで目的のレース分析へ",
     description:
