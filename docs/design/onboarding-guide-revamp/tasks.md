@@ -60,9 +60,11 @@
   → **スコープ拡大分も実装**: `termHints.js`は最終的に21キー（データ出走表11 + AIデータ分析2 + 埋め込み分析セクション8）を格納。`EmbeddedAnalysisSection.jsx`に`hintKey`propを新設し、7セクション（モーター調子/選手調子/STのズレ/展示タイム推移/選手別決まり手傾向/回収率分析/超展開データ）をこの1箇所の変更でまとめてカバー。`VenueTendencyPanel.jsx`（この会場の枠番別傾向）・`PredictionCard.jsx`（展開予測、`hintKey`prop新設）・`VolatilityDisplay.jsx`（イン崩れ指数、fallback/通常の両表示に追加）にも組み込んだ。**実装中に発見した既存バグ**: `EmbeddedAnalysisSection`と`VenueTendencyPanel`のヘッダーはどちらもアコーディオン全体が`<button>`要素だったため、その中に`TermHintButton`（内部で`<button>`を使う）をそのまま入れるとbuttonのネスト（無効なHTML）になり、かつヒントクリックでアコーディオンも一緒に開閉してしまう問題があった。ヘッダーを「開閉トグル用の`<button>`」と「その外側の`TermHintButton`」に分離する構造に直し、CSSも追従修正した。
   → 実際の対象ファイルはmasterでは`VenueGridPage.jsx`/`RaceDetailPage.jsx`経由（Task5の訂正メモ参照）。本番相当データで動作確認済み: データ出走表11行・AIデータ分析2箇所・埋め込みセクション8箇所すべてで「?」→説明ポップオーバー表示、アコーディオン開閉との干渉なしを確認（`vite preview`+実データ、`.env.local`をworktreeにコピーして検証）。
 
-- [ ] **8. 動作確認・PR作成①（フェーズ1〜3: 初回訪問者向け導線一式）**
+- [x] **8. 動作確認・PR作成①（フェーズ1〜3: 初回訪問者向け導線一式）**
   ローカルで`npm run dev`起動、Playwrightでモバイル幅（375px）での見た目・動作を確認する。`npm run build`・`npm run test:e2e`実行後、`/code-review`セルフレビューを実行し指摘を修正、`/create-pr`でPR作成。
-  → `npm run build`成功済み。`npm run test:e2e`は16件失敗したが、うち2件（選手個別ページ・開催場一覧の過去日付遷移）を`git stash`でこのタスクの変更を退避した状態（クリーンなmaster）でも同一理由で再現することを確認し、既存の環境依存の失敗（テストが参照する特定日付・選手IDのデータ不足）で本タスクとは無関係と判断した。残り14件も同種のテストタイトル（言語切替・複勝予想UI撤去・AI用にコピー等、本タスクが一切触っていない機能）のため同様と推定。`/code-review`セルフレビュー・PR作成はこれから実施。
+  → `npm run build`成功済み。`npm run test:e2e`は16件失敗したが、うち2件（選手個別ページ・開催場一覧の過去日付遷移）を`git stash`でこのタスクの変更を退避した状態（クリーンなmaster）でも同一理由で再現することを確認し、既存の環境依存の失敗（テストが参照する特定日付・選手IDのデータ不足）で本タスクとは無関係と判断した。残り14件も同種のテストタイトル（言語切替・複勝予想UI撤去・AI用にコピー等、本タスクが一切触っていない機能）のため同様と推定。
+  → セルフレビューで新規CSS（`FirstVisitGuideCard.css`・`TermHintButton.css`）の一部が`design-tokens.css`のスペーシングトークンを使わず生のrem値になっていた点を発見・修正（`--spacing-*`に置換）。「競艇」表記・`!important`・console.log残留・ハードコードされた秘密情報は無し。
+  → [PR #462](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/462)を作成済み（`feature/onboarding-guide-revamp` → `master`）。
 
 ## フェーズ4: ガイドページ（`/how-to-use`）刷新
 
