@@ -12,6 +12,7 @@
     "verify:sitemap": "node scripts/maintenance/verify-sitemap-coverage.js",
     "verify:content-index": "node scripts/maintenance/verify-content-index-coverage.js",
     "check:session-start": "node scripts/maintenance/session-start-check.js",
+    "check:deprecated-terms": "node scripts/maintenance/check-deprecated-terms.js",
     "test:e2e": "playwright test",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",

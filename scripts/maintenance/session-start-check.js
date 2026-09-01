@@ -17,6 +17,8 @@
  * 5) growthSkills  … data/analysis/{x,tiktok}-growth/ の最新レポート鮮度
  * 6) contentIndex  … docs/design/content-ops-flow/spec.md C5
  * 7) qualityBacklog… docs/design/content-ops-flow/spec.md C6
+ * 8) recentFlowA   … docs/design/content-ops-flow/spec.md A4（sns-hub型選定ロジックへの素材提示）
+ * 9) deprecatedTerms… docs/reference/deprecated-terms.json に対する grep 検知（フローC-7）
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -28,6 +30,8 @@ import { fileURLToPath } from "url";
 import { checkContentIndexCoverage } from "./content-ops-checks/check-content-index-coverage.js";
 import { checkVisualAssetAge } from "./content-ops-checks/check-visual-asset-age.js";
 import { checkQualityBacklog } from "./content-ops-checks/check-quality-backlog.js";
+import { checkRecentFlowAContent } from "./content-ops-checks/check-recent-flow-a-content.js";
+import { checkDeprecatedTerms } from "./content-ops-checks/check-deprecated-terms.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
@@ -149,6 +153,8 @@ async function main() {
     contentIndexCoverage,
     visualAssetAge,
     qualityBacklog,
+    recentFlowAContent,
+    deprecatedTerms,
   ] = await Promise.all([
     checkTweetDrafts(),
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
@@ -163,6 +169,8 @@ async function main() {
       items: [],
       error: error.message,
     })),
+    checkRecentFlowAContent(),
+    checkDeprecatedTerms(),
   ]);
 
   const staleVisualAssets = visualAssetAge.assets.filter(
@@ -184,6 +192,15 @@ async function main() {
       oldest: visualAssetAge.assets.slice(0, 5),
     },
     qualityBacklog,
+    recentFlowAContent,
+    deprecatedTerms: {
+      hitCount: deprecatedTerms.hits.length,
+      affectedFileCount: new Set(deprecatedTerms.hits.map((h) => h.file)).size,
+      note:
+        deprecatedTerms.hits.length > 0
+          ? "詳細は `node scripts/maintenance/check-deprecated-terms.js` を実行"
+          : undefined,
+    },
   };
 
   if (process.argv.includes("--json")) {

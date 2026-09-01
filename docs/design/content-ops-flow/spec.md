@@ -31,7 +31,7 @@
 | A1 | YouTube動画とブログ記事の並列着手 | 中 | 機能実装完了（PRマージ）を単一トリガーとし、YouTube解説動画制作とブログ記事執筆が同時に着手できる運用ルールに更新する。X・note投稿は両方の完成を待つ |
 | A2 | トレーサビリティ索引の新設 | 高 | 機能ごとに `docs/design/{slug}/content-index.json` を新設し、その機能に言及する静的ページ・note記事・ブログ記事・YouTube動画・X投稿のURL/パスを記録する形式を定義する |
 | A3 | 索引作成の実装完了チェックリスト組み込み | 高 | 既存の「実装完了後の自動レビュー」手順（`/code-review`実行・`npm run build`・新規ルートなら`verify:sitemap`）に、「`content-index.json`の新規作成または『対象外』の明記」を追加項目として組み込む。人間が別途思い出す前提にしない |
-| A4 | フローA成果物のsns-hub連携 | 中 | フローAで生成したYouTube動画・ブログ記事のメタデータを、sns-hubの投稿ネタプールに引き渡す接続を追加する（実装詳細はplan.mdで検討） |
+| A4 | フローA成果物のsns-hub連携 | 中 | フローAで生成したYouTube動画・ブログ記事のメタデータを、sns-hubの型・キャラ選定ロジックが参照できる形で提示する。`sns_drafts`テーブルへの直接挿入はしない（同テーブルは「投稿直前の完成品」を前提にした設計で、素材段階のコンテンツを挿入すると管理画面の前提が壊れるため）。代わりに`content-index.json`（A2）を再利用し、`session-start-check.js`の`recentFlowAContent`で「直近21日以内に公開され、まだ活用されていない可能性のある機能」を一覧化する。x-operations-playbook.md/sns-video-producer-prompt.mdの型・キャラ選定ロジックにこの一覧を追加の題材候補源として組み込む（「新機能告知単体は選ばない」という既存ルールは変更しない） |
 | A5 | 重複制作防止（着手宣言） | 低 | フローA着手時、対応するLinearチケットを `In Progress` に変更することを実装着手の手順に含める。新規の排他制御機構は作らない（実害が小さいため人間の運用に委ねると明示的に許容） |
 
 ### フローB: sns-hub日常運用
@@ -54,13 +54,14 @@
 | C7 | セッション開始時チェックの統合 | 高 | `scripts/maintenance/session-start-check.js` を新設し、以下7項目を1回の実行で集約する。CLAUDE.mdの既存5節（Xツイート下書き・X動画・TikTok・選手ニュース・集客調査スキル）を、このスクリプトを呼び出す1つの指示に統合する: <br>1) tweet-drafts未投稿件数 2) X動画本日投稿状況 3) TikTok本日投稿状況 4) 選手ニュース要確認リスト 5) 集客調査スキル実行鮮度 6) `content-index.json`カバレッジ結果 7) `content-quality`ラベル未処理件数（tweet-draftsと同じ鮮度優先ペースで2〜3件提示） |
 | C8 | 押す（push）層: GitHub Actions定期チェック＋Slack通知 | 中 | C4・C5・C6の機械的チェック（LLM推論不要・外部サイト閲覧不要）を新規GitHub Actionsワークフローとして定期実行し（`update-sitemap.yml`・`collect-racer-news.yml`と同パターン）、閾値超過時に既存の`SLACK_WEBHOOK_URL`（`slack-notify-pr.yml`と同経路）へ通知する。これにより「セッションが長期間開かれない」場合でも滞留が可視化される |
 | C9 | CLAUDE.mdの再編 | 中 | CLAUDE.mdに「フローA」「フローB」「フローC」の3見出しを新設し、既存の細切れルール（新機能リリース時のブログ記事ルール、各種セッション開始時確認等）をそれぞれの配下に移動・統合する。ルールの削除はなく、置き場所を変えるだけで既存の挙動は変えない |
+| C10 | 廃止済み用語の機械的検知 | 中 | `docs/reference/deprecated-terms.json`に廃止済み用語を一元管理し、`scripts/maintenance/check-deprecated-terms.js`が静的ページ・オンボーディングUI（`FirstVisitGuideCard.jsx`）・note下書き・ブログ記事に対してgrep検知する。意味理解による陳腐化判定はできない（完全自動判定は不可能と割り切る）が、「廃止確定済みの具体的な用語が残っていないか」は機械的に検知できる。ブログ記事の公開前チェックで既に確立していた手法の横展開 |
 
 ---
 
 ## スコープ
 
 ### やる
-- 上記A1〜A5、B2、C1〜C9
+- 上記A1〜A5、B2、C1〜C10
 - `docs/reference/brand-kit.md` の新設（初回実例としてnoteヘッダーA〜Eを収録）
 - `docs/design/{slug}/content-index.json` のテンプレート新設
 - `scripts/maintenance/session-start-check.js`・`list-visual-assets-age.js`・`verify-content-index-coverage.js` の新規実装

@@ -25,6 +25,7 @@
 docs/
   reference/
     brand-kit.md                          # 新規: C1・C2・C3
+    deprecated-terms.json                 # 新規: C10の用語マスタ
   design/
     content-ops-flow/
       spec.md / plan.md / tasks.md
@@ -37,8 +38,12 @@ scripts/
       check-content-index-coverage.js     # 新規: C5のロジック本体
       check-visual-asset-age.js           # 新規: C4のロジック本体
       check-quality-backlog.js            # 新規: C6のロジック本体（Linear API）
-    session-start-check.js                # 新規: C7（上記3つ＋既存5項目を集約）
+      check-recent-flow-a-content.js      # 新規: A4のロジック本体
+      check-deprecated-terms.js           # 新規: C10のロジック本体
+      nightly-summary.js                  # 新規: C8のGitHub Actionsから呼ぶ集約スクリプト
+    session-start-check.js                # 新規: C7（上記5つ＋既存5項目を集約）
     verify-content-index-coverage.js      # 新規: C5のCLIラッパー（build時にも呼べる形）
+    check-deprecated-terms.js             # 新規: C10のCLIラッパー
 
 .github/
   workflows/
