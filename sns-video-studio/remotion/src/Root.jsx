@@ -17,6 +17,7 @@ import {
   MascotCM_C3,
 } from "./MascotCM.jsx";
 import { ToolCM_A } from "./ToolCM.jsx";
+import { ToolTallyCM } from "./ToolTallyCM.jsx";
 import { LivePredictionCM_A } from "./LivePredictionCM.jsx";
 import {
   VenueRankingCM,
@@ -219,6 +220,14 @@ export function RemotionRoot() {
         id="ToolCM-A"
         component={ToolCM_A}
         durationInFrames={425}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="ToolTallyCM"
+        component={ToolTallyCM}
+        durationInFrames={420}
         fps={30}
         width={1080}
         height={1920}

@@ -10,15 +10,18 @@ import {
 } from "remotion";
 
 /**
- * 豆知識型（第1弾: 年齢と勝率の関係）— 龍神レーダー TikTok Shorts
+ * 豆知識型（第1弾: 年齢と実際の1着率の関係）— 龍神レーダー TikTok Shorts
  *
- * 2026-08-25新設。意外なデータ傾向を1つ紹介、宣伝色を薄めてバズを狙う型。
- * 実データ出典: 2026-08-25本日出走選手584名（race_entries、reace_date=2026-08-25）を
- * 年代別に集計した平均全国勝率。20代4.72%→30代5.88%（ピーク）→40代5.71%→
- * 50代5.14%（20代を上回る）という結果で、「体力より経験がものを言う」という
- * 意外性のあるトリビア。実例として本日出走選手中トップクラスの勝率を持つ
- * ベテラン（深川真二・52歳・7.48%）を添える。会場攻略型との違い：会場軸ではなく
- * 選手の年齢という別の切り口、かつ日付非依存の恒久トリビアとして使い回せる。
+ * 2026-08-25新設、2026-09-01データ再検証・再構成（generate-evergreen Routine）。
+ * 旧版は本日出走選手584名（特定1日分）の「全国勝率」（レーティング値）平均を使っており、
+ * 「本日」framing自体が別日に使い回すと不正確になる問題があった。会場攻略型の「全期間・
+ * 実際の結果ベース」という設計方針に揃え、race_results×race_entries全件（race_id一致・
+ * is_cancelled/is_no_race除外）から年代別「実際に1着になった割合」を集計し直した
+ * （20代13.80%・n=58,651／30代19.87%・n=66,896←ピーク／40代17.98%・n=70,205／
+ * 50代14.00%・n=42,979、計約23.9万走）。50代が20代をわずかに上回る点は旧版の
+ * 「体力より経験」という結論と一致。日付非依存の恒久トリビアとして使い回せる。
+ * 実例は特定日に紐づく「本日出走」ではなく、直近実績のある現役ベテラン
+ * （松井繁選手・56歳、2026-08-30出走時点の全国勝率レーティング7.16）を使用。
  */
 
 const NAVY = "#0f2c46";
@@ -84,7 +87,7 @@ function Logo({ size = 40 }) {
 // 背景データ可視化ゼロ」と要修正判定を受け、VenueRankingCMと同じ非対称配置＋
 // 実データ背景バーのパターンに作り直した。「30代」を主役に据え、ピーク値を
 // 右下バッジで添える構成。
-const AGE_RATES = [4.72, 5.88, 5.71, 5.14]; // 20代/30代/40代/50代の平均全国勝率
+const AGE_RATES = [13.8, 19.87, 17.98, 14.0]; // 20代/30代/40代/50代の実際の1着率(%)
 function SceneHook() {
   const frame = useCurrentFrame();
   const kb = interpolate(frame, [0, 70], [1, 1.04], {
@@ -137,7 +140,7 @@ function SceneHook() {
             fontFamily: FONT,
           }}
         >
-          年代別・実データ
+          年代別・全期間実績
         </div>
       </Pop>
 
@@ -184,7 +187,7 @@ function SceneHook() {
               marginBottom: 22,
             }}
           >
-            が勝率のピーク
+            が1着率のピーク
           </div>
         </Pop>
         <Pop delay={-10} style={{ display: "inline-block" }}>
@@ -200,7 +203,7 @@ function SceneHook() {
               whiteSpace: "nowrap",
             }}
           >
-            平均勝率 5.88%
+            実際の1着率 19.87%
           </div>
         </Pop>
       </div>
@@ -241,7 +244,7 @@ function SceneHook() {
               textAlign: "center",
             }}
           >
-            本日出走584人のデータで検証
+            全国のべ約23.9万走で検証
           </div>
         </Pop>
       </div>
@@ -362,7 +365,7 @@ function SceneCompare() {
               textAlign: "center",
             }}
           >
-            年代別・平均全国勝率
+            年代別・実際の1着率
           </div>
         </Pop>
       </div>
@@ -375,10 +378,10 @@ function SceneCompare() {
           gap: 46,
         }}
       >
-        <AgeBar label="20代" value={4.72} maxValue={6.5} delay={10} />
-        <AgeBar label="30代" value={5.88} maxValue={6.5} isPeak delay={22} />
-        <AgeBar label="40代" value={5.71} maxValue={6.5} delay={34} />
-        <AgeBar label="50代" value={5.14} maxValue={6.5} delay={46} />
+        <AgeBar label="20代" value={13.8} maxValue={22} delay={10} />
+        <AgeBar label="30代" value={19.87} maxValue={22} isPeak delay={22} />
+        <AgeBar label="40代" value={17.98} maxValue={22} delay={34} />
+        <AgeBar label="50代" value={14.0} maxValue={22} delay={46} />
       </div>
 
       <div
@@ -406,7 +409,7 @@ function SceneCompare() {
               textAlign: "center",
             }}
           >
-            50代でも、20代の平均を上回る
+            50代でも、20代の実績を上回る
           </div>
         </Pop>
       </div>
@@ -435,7 +438,7 @@ function SceneExample() {
             fontFamily: FONT,
           }}
         >
-          本日出走・52歳のベテラン
+          56歳、現役トップクラスの一例
         </div>
       </Pop>
       <Pop delay={16}>
@@ -448,7 +451,7 @@ function SceneExample() {
             marginTop: 10,
           }}
         >
-          深川真二選手
+          松井繁選手
         </div>
       </Pop>
       <Pop delay={32}>
@@ -462,7 +465,7 @@ function SceneExample() {
             textShadow: `0 0 100px ${GOLD}aa`,
           }}
         >
-          勝率7.48%
+          全国勝率7.16
         </div>
       </Pop>
       <Pop delay={44}>
@@ -476,7 +479,7 @@ function SceneExample() {
             textAlign: "center",
           }}
         >
-          本日出走選手の中でもトップクラス
+          経験を武器にするベテランの好例
         </div>
       </Pop>
     </AbsoluteFill>
