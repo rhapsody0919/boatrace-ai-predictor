@@ -13,7 +13,7 @@
 
 ## Routine
 
-- [ ] 9. 新規Routine `content-multi-channel-pipeline`のプロンプト作成・one-offテスト実行（タスク2〜8の動作確認）
+- [x] 9. 新規Routine `content-multi-channel-pipeline`のプロンプト作成・one-offテスト実行 — 完走を確認（2026-09-01）。新機能ネタ0件のためデータ知見系（出目分布タブ）を選定→blog/note/xチャネルを選定→実データ（過去90日24会場13,386走）で執筆→`race_results`テーブルから独立再計算し数値完全一致を確認→`sns_drafts`に実INSERT（`content_group_id`共有、`pr_url`列も正しく保存）→Draft [PR #471](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/471)作成まで成功。検証後PRはクローズ、DB行は削除依頼済み
 - [ ] 10. one-offテスト結果を確認し、問題なければ毎晩cron実行として標準運用に組み込む ⚠️（標準運用化の最終判断）
 - [ ] 11. 既存Routine`sns-hub-content-generation`の`generate-daily`/`generate-evergreen`にYouTube対応を追加（`api/admin/sns-hub/generate.js`の`VALID_PLATFORMS`に`"youtube"`追加）
 
