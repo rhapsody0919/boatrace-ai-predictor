@@ -12,9 +12,8 @@ import Breadcrumb from "../components/Breadcrumb";
 import UpdateStatus from "../components/UpdateStatus";
 import IntroBanner from "../components/IntroBanner";
 import FirstVisitGuideCard from "../components/FirstVisitGuideCard";
-import LoadingScreen from "../components/LoadingScreen";
 import { useFirstVisit } from "../hooks/useFirstVisit";
-import { VenueGrid } from "../components/race";
+import { VenueGrid, VenueGridSkeleton } from "../components/race";
 import { dataService } from "../services/dataService";
 import { useDatePredictions } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
@@ -160,10 +159,7 @@ function TodayVenueGridPage() {
             )}
 
             {loading ? (
-              <LoadingScreen
-                title={t("home.loadingTitle")}
-                description={t("home.loadingDesc")}
-              />
+              <VenueGridSkeleton />
             ) : (
               <>
                 {error && (
