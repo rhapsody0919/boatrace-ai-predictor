@@ -18,8 +18,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
 const DIST_DIR = path.join(ROOT, "dist");
 const SNAPSHOT_DIR = path.join(DIST_DIR, "ai-snapshots");
-const PORT = 4315;
-const BASE_URL = `http://localhost:${PORT}`;
 const CONCURRENCY = 4;
 
 function escapeHtml(str) {
@@ -48,32 +46,49 @@ function dedupeDefaultTitle(html) {
   return result;
 }
 
-async function waitForServer(url, timeoutMs = 20000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return;
-    } catch {
-      // サーバー起動待ち、無視して再試行
-    }
-    await new Promise((r) => setTimeout(r, 300));
-  }
-  throw new Error(
-    `ローカルプレビューサーバーが${timeoutMs}ms以内に起動しませんでした: ${url}`,
-  );
+// 固定ポートだと、同一マシンで複数のビルド（別セッション・別worktree等）が
+// 並行実行された際に衝突する（このリポジトリで実際に発生した事故パターン、
+// docs/design/ai-crawler-snapshot参照）。--strictPortを付けずvite自身に
+// 空きポートを選ばせ、実際に採用されたポートをstdoutから読み取る
+function startPreviewServer(timeoutMs = 20000) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn("npx", ["vite", "preview", "--port", "0"], {
+      cwd: ROOT,
+      stdio: "pipe",
+    });
+
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      proc.kill();
+      reject(
+        new Error(
+          `ローカルプレビューサーバーが${timeoutMs}ms以内に起動しませんでした`,
+        ),
+      );
+    }, timeoutMs);
+
+    const onData = (chunk) => {
+      const match = chunk.toString().match(/Local:\s+https?:\/\/[^:]+:(\d+)/);
+      if (match && !settled) {
+        settled = true;
+        clearTimeout(timer);
+        proc.stdout.off("data", onData);
+        resolve({ proc, baseUrl: `http://localhost:${match[1]}` });
+      }
+    };
+    proc.stdout.on("data", onData);
+    proc.on("error", (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(err);
+    });
+  });
 }
 
-function startPreviewServer() {
-  const proc = spawn(
-    "npx",
-    ["vite", "preview", "--port", String(PORT), "--strictPort"],
-    { cwd: ROOT, stdio: "pipe" },
-  );
-  return proc;
-}
-
-async function generateBlogSnapshots(browser) {
+async function generateBlogSnapshots(browser, baseUrl) {
   const outDir = path.join(SNAPSHOT_DIR, "blog");
   mkdirSync(outDir, { recursive: true });
 
@@ -88,7 +103,7 @@ async function generateBlogSnapshots(browser) {
         const post = blogPosts[index];
         index += 1;
         try {
-          await page.goto(`${BASE_URL}/blog/${post.id}`, {
+          await page.goto(`${baseUrl}/blog/${post.id}`, {
             waitUntil: "networkidle",
             timeout: 15000,
           });
@@ -185,12 +200,11 @@ async function main() {
 
   generateWinningTechniqueSnapshot();
 
-  const previewProc = startPreviewServer();
+  const { proc: previewProc, baseUrl } = await startPreviewServer();
   let browser;
   try {
-    await waitForServer(BASE_URL);
     browser = await chromium.launch();
-    const failed = await generateBlogSnapshots(browser);
+    const failed = await generateBlogSnapshots(browser, baseUrl);
     if (failed.length > 0) {
       process.exitCode = 1;
     }
