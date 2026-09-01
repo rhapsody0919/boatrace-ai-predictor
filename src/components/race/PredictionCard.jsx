@@ -9,15 +9,19 @@
  */
 import { useUnifiedModelAccuracy } from "../../hooks/useUnifiedModelAccuracy";
 import AccuracyStatBadge from "./AccuracyStatBadge";
+import TermHintButton from "./TermHintButton";
 import "./PredictionCard.css";
 
-function PredictionCard({ title, statKey, children }) {
+function PredictionCard({ title, statKey, hintKey, children }) {
   const { accuracy, loading } = useUnifiedModelAccuracy();
   const stat = accuracy?.[statKey];
 
   return (
     <div className="prediction-card">
-      <h5 className="prediction-card-title">{title}</h5>
+      <h5 className="prediction-card-title">
+        {title}
+        {hintKey && <TermHintButton termKey={hintKey} />}
+      </h5>
       <AccuracyStatBadge
         loading={loading}
         hitRate={stat?.hitRate}

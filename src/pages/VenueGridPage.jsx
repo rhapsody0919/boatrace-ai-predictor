@@ -11,7 +11,9 @@ import Footer from "../components/Footer";
 import Breadcrumb from "../components/Breadcrumb";
 import UpdateStatus from "../components/UpdateStatus";
 import IntroBanner from "../components/IntroBanner";
+import FirstVisitGuideCard from "../components/FirstVisitGuideCard";
 import LoadingScreen from "../components/LoadingScreen";
+import { useFirstVisit } from "../hooks/useFirstVisit";
 import { VenueGrid } from "../components/race";
 import { dataService } from "../services/dataService";
 import { useDatePredictions } from "../hooks/useDatePredictions";
@@ -115,6 +117,7 @@ function TodayVenueGridPage() {
   const { t, i18n } = useTranslation();
   const localize = useLocalizedPath();
   const nowHHMM = useNowHHMM(true);
+  const isFirstVisit = useFirstVisit();
   const {
     venuesData,
     loading,
@@ -150,7 +153,11 @@ function TodayVenueGridPage() {
               onRefresh={handleRefresh}
               isRefreshing={isRefreshing}
             />
-            <IntroBanner />
+            {isFirstVisit && i18n.language === "ja" ? (
+              <FirstVisitGuideCard />
+            ) : (
+              <IntroBanner />
+            )}
 
             {loading ? (
               <LoadingScreen

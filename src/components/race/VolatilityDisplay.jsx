@@ -10,6 +10,7 @@ import { useUnifiedVolatilityAccuracy } from "../../hooks/useUnifiedVolatilityAc
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { trackEvent } from "../../utils/analytics";
 import RaceMoodEffect from "./RaceMoodEffect";
+import TermHintButton from "./TermHintButton";
 
 // VolatilityDisplayのlevel（high/low/standard）→ calculate-unified-volatility-accuracy.js
 // の集計キー（high/low/medium）への対応
@@ -207,6 +208,7 @@ function VolatilityDisplay({
           <span style={{ fontWeight: "600", color: "#333" }}>
             {t("volatility.attentionTitle")}
           </span>
+          <TermHintButton termKey="inKuzureIndex" />
           <span
             style={{
               padding: "0.25rem 0.75rem",
@@ -304,6 +306,7 @@ function VolatilityDisplay({
         <span style={{ fontWeight: "600", color: "#333" }}>
           {t("volatility.attentionTitle")}
         </span>
+        <TermHintButton termKey="inKuzureIndex" />
         <span
           style={{
             padding: "0.25rem 0.75rem",

@@ -209,7 +209,7 @@
     "awaitingResultBanner": "已過截止時間，但結果尚未更新（資料約每小時更新一次）"
   },
   "home": {
-    "introBannerText": "龍神雷達 - 免費賽艇AI預測與數據分析 | 分析複勝預測、展開預測等45項以上數據。了解更多 →",
+    "introBannerText": "龍神雷達 - 免費賽艇AI預測與數據分析 | 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
     "introBannerClose": "關閉",
     "todayRaces": "今日賽事",
     "dataType": "比賽資料",

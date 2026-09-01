@@ -16,6 +16,14 @@
   align-items: center;
   gap: var(--spacing-2);
   width: 100%;
+}
+
+.vtp-header-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   padding: 0;

@@ -13,6 +13,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { buildIndicatorRows } from "./raceIndicators";
 import { trackEvent } from "../../utils/analytics";
+import TermHintButton from "./TermHintButton";
 import "./DataRaceTable.css";
 
 function DataRaceTable({ raceId, prediction, venueCode }) {
@@ -107,6 +108,7 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
                       <span className="drt-label-short">{row.shortLabel}</span>
                     </>
                   )}
+                  <TermHintButton termKey={row.key} />
                   {row.note && (
                     <span className="drt-label-note">{row.note}</span>
                   )}
