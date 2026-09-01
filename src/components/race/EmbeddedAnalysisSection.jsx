@@ -8,21 +8,25 @@
  * 回収率/超展開データ）で共通利用する。
  */
 import { useState } from "react";
+import TermHintButton from "./TermHintButton";
 import "./EmbeddedAnalysisSection.css";
 
-function EmbeddedAnalysisSection({ title, children }) {
+function EmbeddedAnalysisSection({ title, hintKey, children }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="embedded-analysis-section">
-      <button
-        className="eas-header"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-      >
-        <span className="eas-title">{title}</span>
-        <span className="eas-chevron">{expanded ? "▼" : "▶"}</span>
-      </button>
+      <div className="eas-header">
+        <button
+          className="eas-header-toggle"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+        >
+          <span className="eas-title">{title}</span>
+          <span className="eas-chevron">{expanded ? "▼" : "▶"}</span>
+        </button>
+        {hintKey && <TermHintButton termKey={hintKey} />}
+      </div>
       {expanded && <div className="eas-content">{children}</div>}
     </div>
   );

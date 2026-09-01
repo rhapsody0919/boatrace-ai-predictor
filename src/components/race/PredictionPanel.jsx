@@ -211,7 +211,10 @@ function PredictionPanel({
       {/* 分析ツールコンポーネントの埋め込み（FR-3〜9）: デフォルト閉、開いた時だけ
           データ取得する。まずモーター調子でembedded modeのパターンを確立する */}
       {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection title={t("analysisPage.tabs.motor")}>
+        <EmbeddedAnalysisSection
+          title={t("analysisPage.tabs.motor")}
+          hintKey="motorCondition"
+        >
           <MotorConditionChart
             embedded
             initialVenueCode={venueCode}
@@ -220,7 +223,10 @@ function PredictionPanel({
         </EmbeddedAnalysisSection>
       )}
       {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection title={t("analysisPage.tabs.racer")}>
+        <EmbeddedAnalysisSection
+          title={t("analysisPage.tabs.racer")}
+          hintKey="racerForm"
+        >
           <RacerFormChart
             embedded
             initialVenueCode={venueCode}
@@ -229,7 +235,10 @@ function PredictionPanel({
         </EmbeddedAnalysisSection>
       )}
       {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection title={t("analysisPage.tabs.st")}>
+        <EmbeddedAnalysisSection
+          title={t("analysisPage.tabs.st")}
+          hintKey="stDeviation"
+        >
           <StPredictabilityChart
             embedded
             initialVenueCode={venueCode}
@@ -238,7 +247,10 @@ function PredictionPanel({
         </EmbeddedAnalysisSection>
       )}
       {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection title={t("analysisPage.tabs.extrend")}>
+        <EmbeddedAnalysisSection
+          title={t("analysisPage.tabs.extrend")}
+          hintKey="exhibitionTimeTrend"
+        >
           <ExhibitionTimeTrendChart
             embedded
             initialVenueCode={venueCode}
@@ -247,7 +259,10 @@ function PredictionPanel({
         </EmbeddedAnalysisSection>
       )}
       {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection title={t("analysisPage.tabs.techprofile")}>
+        <EmbeddedAnalysisSection
+          title={t("analysisPage.tabs.techprofile")}
+          hintKey="racerTechniqueProfile"
+        >
           <RacerTechniqueProfileChart
             embedded
             initialVenueCode={venueCode}
@@ -256,7 +271,10 @@ function PredictionPanel({
         </EmbeddedAnalysisSection>
       )}
       {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection title={t("analysisPage.tabs.returnrate")}>
+        <EmbeddedAnalysisSection
+          title={t("analysisPage.tabs.returnrate")}
+          hintKey="returnRateAnalysis"
+        >
           <RacerBoatReturnRateChart
             embedded
             initialVenueCode={venueCode}
@@ -265,7 +283,10 @@ function PredictionPanel({
         </EmbeddedAnalysisSection>
       )}
       {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection title={t("analysisPage.tabs.attackdefense")}>
+        <EmbeddedAnalysisSection
+          title={t("analysisPage.tabs.attackdefense")}
+          hintKey="attackDefense"
+        >
           <AttackDefenseAnalysis
             embedded
             initialVenueCode={venueCode}
@@ -319,6 +340,7 @@ function PredictionPanel({
                   <PredictionCard
                     title={`🌊 ${t("turnPatternList.title")}`}
                     statKey="turn"
+                    hintKey="turnPrediction"
                   >
                     <TurnPatternList
                       patterns={prediction.turnPrediction.patterns}

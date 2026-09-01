@@ -1,0 +1,46 @@
+.first-visit-guide-card {
+  position: relative;
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4) var(--spacing-4-5);
+  margin-bottom: var(--spacing-4);
+}
+
+.first-visit-guide-card__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem 0.4rem;
+  opacity: 0.7;
+}
+
+.first-visit-guide-card__close:hover {
+  opacity: 1;
+}
+
+.first-visit-guide-card__title {
+  margin: 0 0 var(--spacing-1-5);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+}
+
+.first-visit-guide-card__body {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+@media (max-width: 480px) {
+  .first-visit-guide-card {
+    padding: var(--spacing-3) var(--spacing-3-5);
+  }
+}

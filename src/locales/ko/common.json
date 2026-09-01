@@ -209,7 +209,7 @@
     "awaitingResultBanner": "마감 시간이 지났지만 아직 결과가 반영되지 않았습니다 (데이터는 약 1시간마다 갱신됩니다)"
   },
   "home": {
-    "introBannerText": "용신 레이더 - 무료 경정 AI 예측 및 데이터 분석 | 복승 예상・전개 예측 등 45개 이상의 데이터를 분석. 자세히 보기 →",
+    "introBannerText": "용신 레이더 - 무료 경정 AI 예측 및 데이터 분석 | 전개 예측・인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
     "introBannerClose": "닫기",
     "todayRaces": "오늘의 경주",
     "dataType": "경주 데이터",

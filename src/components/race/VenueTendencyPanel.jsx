@@ -15,6 +15,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import { useVenueTendencyStats } from "../../hooks/useVenueTendencyStats";
 import { translateTechnique } from "./raceIndicators";
 import { trackEvent } from "../../utils/analytics";
+import TermHintButton from "./TermHintButton";
 import "./VenueTendencyPanel.css";
 
 const MIN_CATEGORY_SAMPLE = 20;
@@ -113,14 +114,17 @@ function VenueTendencyPanel({ venueCode, raceId }) {
 
   return (
     <div className="venue-tendency-panel">
-      <button
-        className="vtp-header"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-      >
-        <span className="vtp-chevron">{expanded ? "▼" : "▶"}</span>
-        <h3 className="vtp-title">📍 {t("venueTendency.title")}</h3>
-      </button>
+      <div className="vtp-header">
+        <button
+          className="vtp-header-toggle"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+        >
+          <span className="vtp-chevron">{expanded ? "▼" : "▶"}</span>
+          <h3 className="vtp-title">📍 {t("venueTendency.title")}</h3>
+        </button>
+        <TermHintButton termKey="venueTendency" />
+      </div>
 
       {expanded && (
         <div className="vtp-content">
@@ -172,6 +176,7 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                         {t("venueTendency.nigeLinkShort")}
                       </span>
                     </Link>
+                    <TermHintButton termKey="venueTendencyTechnique" />
                   </td>
                   {BOATS.map((boat) => (
                     <td key={boat} className="vtp-cell">
@@ -193,6 +198,7 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                         {t("venueTendency.rowTopStartShort")}
                       </span>
                     </Link>
+                    <TermHintButton termKey="venueTendencyTopStart" />
                   </td>
                   {BOATS.map((boat) => (
                     <td key={boat} className="vtp-cell">
@@ -214,6 +220,7 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                         {t("venueTendency.rowLosingShort")}
                       </span>
                     </Link>
+                    <TermHintButton termKey="venueTendencyLosing" />
                   </td>
                   {BOATS.map((boat) => (
                     <td key={boat} className="vtp-cell">
@@ -235,6 +242,7 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                         {t("venueTendency.rowExhibitionTopShort")}
                       </span>
                     </Link>
+                    <TermHintButton termKey="venueTendencyExhibitionTop" />
                   </td>
                   {BOATS.map((boat) => (
                     <td key={boat} className="vtp-cell">
