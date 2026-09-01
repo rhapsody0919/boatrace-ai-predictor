@@ -115,14 +115,14 @@
   cursor: not-allowed;
 }
 
-/* 承認済みストックが少ない時の手動生成トリガー（2026-08-31追加） */
-.manual-generate-row {
+/* 承認済みストックが少ない時の手動生成トリガー（2026-08-31追加、
+   2026-09-01にプラットフォーム選択・本数指定を追加） */
+.manual-generate-panel {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.6rem;
   margin-bottom: 1rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.75rem;
   background: var(--color-gray-50);
   border: 1px solid var(--color-gray-200);
   border-radius: 8px;
@@ -131,6 +131,61 @@
 .manual-generate-label {
   font-size: 0.8rem;
   color: var(--color-gray-500);
+}
+
+.manual-generate-block {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.generate-platform-chips {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.generate-platform-chip {
+  padding: 0.3rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-gray-300);
+  background: white;
+  color: var(--color-gray-500);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.generate-platform-chip.selected {
+  background: var(--color-primary-500);
+  border-color: var(--color-primary-500);
+  color: white;
+}
+
+.generate-platform-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.generate-count-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+}
+
+.generate-count-input {
+  width: 3rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.generate-count-max {
+  color: var(--color-gray-400);
 }
 
 .manual-generate-btn {

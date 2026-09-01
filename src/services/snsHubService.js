@@ -96,10 +96,16 @@ export async function archiveDraft(draftId) {
  * 生成Routineを手動起動する（承認済みストックが少ない時の補充用）
  * @param {'daily'|'evergreen'} mode
  */
-export async function triggerGeneration(mode) {
+/**
+ * @param {string} mode - 'daily' | 'evergreen'
+ * @param {object} [options]
+ * @param {string[]} [options.platforms] - 省略時はAPI側で全プラットフォーム対象になる
+ * @param {number} [options.count] - 省略時はAPI側のデフォルト範囲になる
+ */
+export async function triggerGeneration(mode, { platforms, count } = {}) {
   return request("/generate", {
     method: "POST",
-    body: JSON.stringify({ mode }),
+    body: JSON.stringify({ mode, platforms, count }),
   });
 }
 
