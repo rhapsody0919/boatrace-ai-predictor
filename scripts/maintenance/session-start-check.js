@@ -19,6 +19,10 @@
  * 7) qualityBacklog… docs/design/content-ops-flow/spec.md C6
  * 8) recentFlowA   … docs/design/content-ops-flow/spec.md A4（sns-hub型選定ロジックへの素材提示）
  * 9) deprecatedTerms… docs/reference/deprecated-terms.json に対する grep 検知（フローC-7）
+ * 10) missingContentIndex… AppRouter.jsxの新規ルートのうちcontent-index.json
+ *     未カバーのものを検知（フローA-1、2026-09-01追加）。「PRマージを単一
+ *     トリガーとする」という運用ルール自体には検知機構が無かった穴を埋める。
+ *     新ルート＝ブログが要る新機能とは限らないため強制はせず提示のみ
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -32,6 +36,7 @@ import { checkVisualAssetAge } from "./content-ops-checks/check-visual-asset-age
 import { checkQualityBacklog } from "./content-ops-checks/check-quality-backlog.js";
 import { checkRecentFlowAContent } from "./content-ops-checks/check-recent-flow-a-content.js";
 import { checkDeprecatedTerms } from "./content-ops-checks/check-deprecated-terms.js";
+import { checkMissingContentIndex } from "./content-ops-checks/check-missing-content-index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
@@ -155,6 +160,7 @@ async function main() {
     qualityBacklog,
     recentFlowAContent,
     deprecatedTerms,
+    missingContentIndex,
   ] = await Promise.all([
     checkTweetDrafts(),
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
@@ -171,6 +177,10 @@ async function main() {
     })),
     checkRecentFlowAContent(),
     checkDeprecatedTerms(),
+    checkMissingContentIndex().catch((error) => ({
+      missingRoutes: [],
+      error: error.message,
+    })),
   ]);
 
   const staleVisualAssets = visualAssetAge.assets.filter(
@@ -193,6 +203,7 @@ async function main() {
     },
     qualityBacklog,
     recentFlowAContent,
+    missingContentIndex,
     deprecatedTerms: {
       hitCount: deprecatedTerms.hits.length,
       affectedFileCount: new Set(deprecatedTerms.hits.map((h) => h.file)).size,
