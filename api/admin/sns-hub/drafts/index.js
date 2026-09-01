@@ -32,6 +32,13 @@ async function fetchDrafts(status) {
   });
   if (status && status !== "all") {
     params.set("status", `eq.${status}`);
+  } else if (!status) {
+    // statusを指定しないデフォルト呼び出しはarchivedを除外する（2026-09-01対応）。
+    // SnsHubAdmin.jsxのどのタブもarchivedを表示対象にしていないのに、絞り込み無しで
+    // 呼ばれ続けていたため、承認・非表示等のアクションのたびにアーカイブ済み分（実測
+    // 全体の4割超）まで再取得・署名付きURL発行される無駄が生じていた。archivedを含む
+    // 全件が本当に必要な場合は明示的に?status=allを指定する
+    params.set("status", "neq.archived");
   }
 
   const response = await fetch(
