@@ -4,7 +4,7 @@
 
 ## 基盤（スキーマ・共通ロジック）
 
-- [ ] 1. `docs/db-migration/042_content_drafts_columns.sql`をSupabaseへ適用 ⚠️（本番DBへの変更。`SUPABASE_ACCESS_TOKEN`要確認）
+- [x] 1. `docs/db-migration/042_content_drafts_columns.sql`をSupabaseへ適用 — ユーザー実施済み、`sns_drafts`に`title`/`embed_video_url`/`pr_url`列の存在を確認済み（2026-09-01）
 - [x] 2. `scripts/lib/contentTopics/`実装（レジストリ+4モジュール: 新機能/会場特性/データ知見/成績）— 動作確認済み（new-feature:0件/venue-characteristic:96件/data-insight:17件/daily-result:0件、いずれも想定通り）
 - [x] 3. `data/analysis/content-topics/`履歴JSON初期化 — 実装は遅延生成方式（`recordUsage`初回呼び出し時に自動作成）のため、事前の個別初期化は不要と判断
 - [x] 4. `scripts/lib/contentChannels/channelMatrix.js`実装（ネタ種別→チャネル対応表）— 動作確認済み
