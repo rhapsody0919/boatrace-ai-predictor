@@ -124,24 +124,38 @@ function SnsHubAdmin() {
   // 更新する。承認等のアクション直後に画面全体がスピナーに切り替わる
   // 体験が「うざい」という指摘への対応（2026-08-31）。初回マウント時のみ
   // 全画面ローディングを見せる
+  // fetchで指定した種類だけを再取得する。承認者・戦略メモ・フォーマットカタログは
+  // 下書きへの操作(承認・非表示等)の大半では変化しないため、アクションのたびに
+  // 4種類全部を再取得していたのを見直した（2026-09-01対応、ユーザーから「ボタン
+  // 操作のたびに遅い」と指摘）。ただし「一部修正」「全部作り直し」の指摘を戦略メモに
+  // 保存するチェック（saveAsInsight）や、戦略メモの却下操作はinsightsも変化させるため、
+  // その呼び出し元だけはinsightsもtrueにする（コードレビューで指摘: draftsだけ再取得
+  // すると戦略メモタブが古いまま表示され続け、二重に却下しようとして409エラーになる
+  // 不具合があった）。すべて省略した場合は従来通りフル再取得（初回マウント・手動更新
+  // ボタン用）
   const loadDrafts = useCallback(
-    async ({ silent = false } = {}) => {
+    async ({
+      silent = false,
+      fetch: fetchScope = {
+        drafts: true,
+        approvers: true,
+        insights: true,
+        templateVariants: true,
+      },
+    } = {}) => {
       if (!silent) {
         setLoading(true);
         setError(null);
       }
       try {
-        const [draftsData, approversData, insightsData, templateVariantsData] =
-          await Promise.all([
-            getDrafts(),
-            getApprovers(),
-            getInsights(),
-            getTemplateVariants(),
-          ]);
-        setDrafts(draftsData);
-        setApprovers(approversData);
-        setInsights(insightsData);
-        setTemplateVariants(templateVariantsData);
+        await Promise.all([
+          fetchScope.drafts ? getDrafts().then(setDrafts) : null,
+          fetchScope.approvers ? getApprovers().then(setApprovers) : null,
+          fetchScope.insights ? getInsights().then(setInsights) : null,
+          fetchScope.templateVariants
+            ? getTemplateVariants().then(setTemplateVariants)
+            : null,
+        ]);
       } catch (err) {
         console.error("下書き取得エラー:", err);
         // silent時は全画面エラー表示に切り替えず、アクション自体は成功して
@@ -164,11 +178,15 @@ function SnsHubAdmin() {
     loadDrafts();
   }, [loadDrafts]);
 
-  async function handleAction(actionFn, ...args) {
+  // reloadScope: このアクション後にloadDraftsへ渡すfetch指定。省略時はdraftsのみ
+  // （大半のアクションはdraftsだけ変化するため）。戦略メモに影響するアクション
+  // （却下、saveAsInsight付きの一部修正/全部作り直し）を呼ぶ箇所はinsights: true
+  // も指定すること
+  async function handleAction(actionFn, args, reloadScope = { drafts: true }) {
     try {
       await actionFn(...args);
       showToast("操作を反映しました", "success");
-      await loadDrafts({ silent: true });
+      await loadDrafts({ silent: true, fetch: reloadScope });
     } catch (err) {
       console.error("アクションエラー:", err);
       showToast(err.message || "操作に失敗しました", "error");
@@ -229,7 +247,7 @@ function SnsHubAdmin() {
       setGenerationElapsedMinutes(
         Math.max(0, Math.round((Date.now() - generationFiredAt) / 60000)),
       );
-      loadDrafts({ silent: true });
+      loadDrafts({ silent: true, fetch: { drafts: true } });
     }, 30000);
     return () => clearInterval(interval);
   }, [generationLocked, generationFiredAt, loadDrafts]);
@@ -377,7 +395,10 @@ function SnsHubAdmin() {
           <InsightTab
             insights={insights}
             onReject={(insightId, reason) =>
-              handleAction(rejectInsight, insightId, reason)
+              handleAction(rejectInsight, [insightId, reason], {
+                drafts: true,
+                insights: true,
+              })
             }
           />
         ) : visibleDrafts.length === 0 ? (
@@ -392,17 +413,25 @@ function SnsHubAdmin() {
                 draft={draft}
                 approvers={approvers}
                 onApprove={(approverId) =>
-                  handleAction(approveDraft, draft.id, approverId)
+                  handleAction(approveDraft, [draft.id, approverId])
                 }
                 onRevise={(payload) =>
-                  handleAction(reviseDraft, draft.id, payload)
+                  handleAction(reviseDraft, [draft.id, payload], {
+                    drafts: true,
+                    insights: true,
+                  })
                 }
-                onRedo={(payload) => handleAction(redoDraft, draft.id, payload)}
-                onMarkPosted={() => handleAction(markDraftPosted, draft.id)}
+                onRedo={(payload) =>
+                  handleAction(redoDraft, [draft.id, payload], {
+                    drafts: true,
+                    insights: true,
+                  })
+                }
+                onMarkPosted={() => handleAction(markDraftPosted, [draft.id])}
                 onAddMetric={(payload) =>
-                  handleAction(addDraftMetric, draft.id, payload)
+                  handleAction(addDraftMetric, [draft.id, payload])
                 }
-                onArchive={() => handleAction(archiveDraft, draft.id)}
+                onArchive={() => handleAction(archiveDraft, [draft.id])}
               />
             ))}
           </div>
@@ -769,6 +798,7 @@ function DraftCard({
       <VideoPreview
         videoUrl={draft.video_url}
         coverImageUrl={draft.cover_image_url}
+        active={isOpen}
       />
 
       <div className="draft-card-body">
@@ -1208,7 +1238,12 @@ function RevisionPanel({ mode, onSubmit, onCancel }) {
   );
 }
 
-function VideoPreview({ videoUrl, coverImageUrl }) {
+// active=falseの間（モバイルでカードが折りたたまれている等）は<video>をマウント
+// せずカバー画像のみ表示する（2026-09-01対応）。一覧に多数のカードが並ぶと
+// <video preload="metadata">が同時に何本もロードされ、体感速度に影響していた
+// （ユーザー指摘）ため、実際に見る操作（カードを展開する）をした時だけ動画を
+// 読み込むようにした
+function VideoPreview({ videoUrl, coverImageUrl, active = true }) {
   if (!videoUrl) {
     return (
       <div className="video-preview video-preview-empty">
@@ -1217,6 +1252,19 @@ function VideoPreview({ videoUrl, coverImageUrl }) {
         ) : (
           <p>動画準備中</p>
         )}
+      </div>
+    );
+  }
+
+  if (!active) {
+    return (
+      <div className="video-preview video-preview-inactive">
+        {coverImageUrl ? (
+          <img src={coverImageUrl} alt="" className="video-preview-cover" />
+        ) : (
+          <p>動画準備中</p>
+        )}
+        <span className="video-preview-play-badge">▶</span>
       </div>
     );
   }

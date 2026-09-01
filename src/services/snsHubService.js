@@ -32,7 +32,7 @@ async function request(path, options = {}) {
 
 /**
  * 下書き一覧を取得する
- * @param {string} [status] - 'pending_review' | 'revision_requested' | 'approved' | 'ready_to_post' | 'posted' | 'archived' | undefined(全件)
+ * @param {string} [status] - 'pending_review' | 'revision_requested' | 'approved' | 'ready_to_post' | 'posted' | 'archived' | 'all'(文字通り全件) | undefined(archivedを除く全件、2026-09-01〜)
  */
 export async function getDrafts(status) {
   const query = status ? `?status=${encodeURIComponent(status)}` : "";
