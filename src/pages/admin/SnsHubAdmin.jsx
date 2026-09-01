@@ -93,6 +93,32 @@ const TABS = [
   { id: "catalog", label: "フォーマットカタログ" },
 ];
 
+// 手動生成の対象プラットフォーム選択肢。Routineが対応するプラットフォームが
+// 増えたら（例: YouTube）ここに1件足すだけでよい（2026-09-01、api/admin/sns-hub/
+// generate.jsのVALID_PLATFORMSと合わせて更新すること）
+const GENERATE_PLATFORM_OPTIONS = [
+  { value: "x", label: "X" },
+  { value: "tiktok", label: "TikTok" },
+];
+
+// countMaxはapi/admin/sns-hub/generate.jsのCOUNT_MAX_BY_MODEと一致させる
+const GENERATE_MODES = [
+  {
+    mode: "daily",
+    icon: "🎬",
+    label: "当日ネタ",
+    countMax: 5,
+    defaultCount: 2,
+  },
+  {
+    mode: "evergreen",
+    icon: "📦",
+    label: "会場攻略型など",
+    countMax: 10,
+    defaultCount: 3,
+  },
+];
+
 function SnsHubAdmin() {
   const [activeTab, setActiveTab] = useState("review");
   const [drafts, setDrafts] = useState([]);
@@ -102,6 +128,19 @@ function SnsHubAdmin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [generating, setGenerating] = useState(null); // null | 'daily' | 'evergreen'
+  // 手動生成の対象プラットフォーム・本数（モードごとに独立、2026-09-01追加）。
+  // TikTokがシャドウバン気味の時期にX限定で生成したい等の要望への対応
+  const [generatePlatforms, setGeneratePlatforms] = useState(() =>
+    Object.fromEntries(
+      GENERATE_MODES.map((m) => [
+        m.mode,
+        GENERATE_PLATFORM_OPTIONS.map((p) => p.value),
+      ]),
+    ),
+  );
+  const [generateCounts, setGenerateCounts] = useState(() =>
+    Object.fromEntries(GENERATE_MODES.map((m) => [m.mode, m.defaultCount])),
+  );
   // 生成リクエスト成功後、手動更新ボタンを押すまで両ボタンを無効化し続ける
   // （連打による多重起動を防ぐため）
   const [generationLocked, setGenerationLocked] = useState(false);
@@ -197,10 +236,40 @@ function SnsHubAdmin() {
   // だけで完了を待たないため、生成完了までは数分〜十数分かかる（動画
   // レンダリングを含む）。完了したかどうかは手動更新ボタン、または下記の
   // 自動検知（新しい下書きの出現）で確認する
+  function toggleGeneratePlatform(mode, platform) {
+    setGeneratePlatforms((prev) => {
+      const current = prev[mode];
+      const next = current.includes(platform)
+        ? current.filter((p) => p !== platform)
+        : [...current, platform];
+      return { ...prev, [mode]: next };
+    });
+  }
+
+  function handleGenerateCountChange(mode, rawValue, countMax) {
+    const parsed = parseInt(rawValue, 10);
+    // 入力欄を一時的に空にした場合(NaN)にstate更新をスキップすると、画面表示は
+    // 空欄なのに実際に送信される本数は直前の値のまま、という食い違いが生まれる
+    // （コードレビューで指摘）。空にした場合は最小値1にスナップし、表示とstateを
+    // 常に一致させる
+    const clamped = Number.isNaN(parsed)
+      ? 1
+      : Math.min(Math.max(parsed, 1), countMax);
+    setGenerateCounts((prev) => ({ ...prev, [mode]: clamped }));
+  }
+
   async function handleGenerate(mode) {
+    const platforms = generatePlatforms[mode];
+    if (platforms.length === 0) {
+      showToast("生成対象のプラットフォームを1つ以上選んでください", "error");
+      return;
+    }
     setGenerating(mode);
     try {
-      const result = await triggerGeneration(mode);
+      const result = await triggerGeneration(mode, {
+        platforms,
+        count: generateCounts[mode],
+      });
       if (result?.routine?.fired === false) {
         // fireRoutineはRoutine未構築・fire失敗時も例外を投げず
         // {fired: false, reason: ...}を返す（コードレビューで指摘:
@@ -346,28 +415,67 @@ function SnsHubAdmin() {
         </button>
       </div>
 
-      <div className="manual-generate-row">
+      <div className="manual-generate-panel">
         <span className="manual-generate-label">
           承認済みストックが少ない時の手動生成:
         </span>
-        <button
-          className="manual-generate-btn"
-          disabled={generating !== null || generationLocked}
-          onClick={() => handleGenerate("daily")}
-        >
-          {generating === "daily"
-            ? "⏳ リクエスト中..."
-            : "🎬 当日ネタを今すぐ生成"}
-        </button>
-        <button
-          className="manual-generate-btn"
-          disabled={generating !== null || generationLocked}
-          onClick={() => handleGenerate("evergreen")}
-        >
-          {generating === "evergreen"
-            ? "⏳ リクエスト中..."
-            : "📦 会場攻略型などを今すぐ生成"}
-        </button>
+        {GENERATE_MODES.map((modeConfig) => (
+          <div className="manual-generate-block" key={modeConfig.mode}>
+            <div className="generate-platform-chips">
+              {GENERATE_PLATFORM_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`generate-platform-chip${
+                    generatePlatforms[modeConfig.mode].includes(opt.value)
+                      ? " selected"
+                      : ""
+                  }`}
+                  disabled={generating !== null || generationLocked}
+                  onClick={() =>
+                    toggleGeneratePlatform(modeConfig.mode, opt.value)
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <label className="generate-count-label">
+              本数
+              <input
+                type="number"
+                className="generate-count-input"
+                min={1}
+                max={modeConfig.countMax}
+                value={generateCounts[modeConfig.mode]}
+                disabled={generating !== null || generationLocked}
+                onChange={(e) =>
+                  handleGenerateCountChange(
+                    modeConfig.mode,
+                    e.target.value,
+                    modeConfig.countMax,
+                  )
+                }
+              />
+              <span className="generate-count-max">
+                / 最大{modeConfig.countMax}
+              </span>
+            </label>
+            <button
+              className="manual-generate-btn"
+              disabled={
+                generating !== null ||
+                generationLocked ||
+                generatePlatforms[modeConfig.mode].length === 0
+              }
+              onClick={() => handleGenerate(modeConfig.mode)}
+            >
+              {generating === modeConfig.mode
+                ? "⏳ リクエスト中..."
+                : `${modeConfig.icon} ${modeConfig.label}を今すぐ生成`}
+            </button>
+          </div>
+        ))}
         {generationLocked && (
           <span className="manual-generate-hint">
             ⏳ 生成中...（{generationElapsedMinutes}
