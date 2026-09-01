@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import GuideVideoPlayer from "./GuideVideoPlayer";
 import "./FirstVisitGuideCard.css";
@@ -28,6 +29,9 @@ export default function FirstVisitGuideCard() {
         videoSrc="/videos/onboarding-flow.mp4"
         posterSrc="/videos/onboarding-flow-poster.jpg"
       />
+      <Link to="/how-to-use" className="first-visit-guide-card__link">
+        もっと詳しい使い方ガイドを見る →
+      </Link>
     </div>
   );
 }

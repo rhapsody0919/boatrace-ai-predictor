@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import "./About.css";
@@ -261,39 +261,17 @@ export default function About() {
           </div>
           <p className="stats-note">
             ※
-            実測値。各レースの予想画面・データで振り返るセクションで、毎回の的中/不的中を確認できます。複勝予想は実測精度の算出方法を見直し中のため一時的に表示を停止しています
+            実測値。各レースの予想画面・データで振り返るセクションで、毎回の的中/不的中を確認できます
           </p>
         </section>
 
         <section className="about-section">
-          <h2>📜 利用規約</h2>
-          <div className="terms">
-            <h3>1. サービスの利用</h3>
-            <p>
-              龍神レーダーは無料でご利用いただけます。予告なく内容を変更、または
-              サービスを停止する場合があります。
-            </p>
-
-            <h3>2. 免責事項</h3>
-            <p>
-              龍神レーダーの予想は参考情報として提供しています。
-              舟券の購入は自己責任で行ってください。
-              当サービスの利用による損失について、一切の責任を負いません。
-            </p>
-
-            <h3>3. データの正確性</h3>
-            <p>
-              可能な限り正確なデータを提供するよう努めていますが、
-              データの正確性、完全性を保証するものではありません。
-            </p>
-
-            <h3>4. 禁止事項</h3>
-            <ul>
-              <li>サービスの不正利用</li>
-              <li>データの無断転載・商用利用</li>
-              <li>サーバーに負荷をかける行為</li>
-            </ul>
-          </div>
+          <h2>📜 利用規約・免責事項</h2>
+          <p>
+            龍神レーダーの分析結果は参考情報であり、結果を保証するものではありません。舟券の購入は自己責任で行ってください。詳しい利用条件・禁止事項は
+            <Link to="/terms">利用規約</Link>
+            をご確認ください。
+          </p>
         </section>
 
         <section className="about-cta">
