@@ -1,0 +1,21 @@
+{
+  "feature": "AI予想モデル大規模改修（複勝予想・展開予測・イン崩れ指数の3本柱化）",
+  "released": "2026-08-14",
+  "content": {
+    "static_pages": [],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": [
+      "data/analysis/x-posts/history.json | 2026-08-23: 答え合わせ型（児島2R、イン崩れ指数100%→1号艇沈み的中、払戻920円）",
+      "data/analysis/x-posts/history.json | 2026-08-23: 予想数値フック型（若松2R、AI逃げ確率37%・イン崩れ指数83パーセンタイル）",
+      "data/analysis/x-posts/history.json | 2026-08-24: 答え合わせ型（児島2R、イン崩れ指数100%→1号艇沈み的中）",
+      "data/analysis/x-posts/history.json | 2026-08-24: 予想数値フック型（徳山8R、AI逃げ確率35%・イン崩れ指数100パーセンタイル）",
+      "data/analysis/x-posts/history.json | 2026-08-25: 答え合わせ型（児島2R、イン崩れ指数100%→1号艇沈み的中、払戻920円）",
+      "data/analysis/x-posts/history.json | 2026-08-25: AI予想の実績証明型（イン崩れ指数の実績、過去90日1,632レースで「イン崩れ確率高」ラベルの実際のイン崩れ率63.3%、全体平均45.4%）",
+      "data/analysis/x-posts/history.json | 2026-08-25: 予想数値フック型（芦屋8R、AI逃げ確率33%・イン崩れ指数会場内100パーセンタイル）",
+      "data/analysis/tiktok-posts/history.json | 2026-08-29: 唐津9R 答え合わせ（イン崩れ指数83%警告→配当4,420円で的中）"
+    ]
+  },
+  "not_applicable": false
+}

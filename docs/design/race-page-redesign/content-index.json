@@ -1,0 +1,18 @@
+{
+  "feature": "レースページ再設計（データ出走表・データで振り返る）",
+  "released": "2026-08-08",
+  "content": {
+    "static_pages": [],
+    "note_articles": [
+      "note-articles/data-race-table-guide.md",
+      "note-articles/race-review-guide.md"
+    ],
+    "blog_posts": [
+      "public/blog/data-race-table-guide.md",
+      "public/blog/race-review-guide.md"
+    ],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

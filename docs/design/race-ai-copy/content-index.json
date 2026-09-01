@@ -1,0 +1,12 @@
+{
+  "feature": "レースデータ+プロンプトのAI用コピー機能",
+  "released": "2026-08-18",
+  "content": {
+    "static_pages": [],
+    "note_articles": ["note-articles/race-ai-copy-guide.md"],
+    "blog_posts": ["public/blog/race-ai-copy-guide.md"],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

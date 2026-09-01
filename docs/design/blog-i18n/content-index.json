@@ -1,0 +1,38 @@
+{
+  "feature": "ブログ記事の英語版本格インフラ化（featured25記事）",
+  "released": "2026-08-11",
+  "content": {
+    "static_pages": [],
+    "note_articles": [],
+    "blog_posts": [
+      "public/blog/winning-technique-analysis-guide-en.md",
+      "public/blog/motor-condition-guide-en.md",
+      "public/blog/ai-prediction-accuracy-review-en.md",
+      "public/blog/odds-expected-value-guide-en.md",
+      "public/blog/night-race-strategy-en.md",
+      "public/blog/sg-race-guide-2026-en.md",
+      "public/blog/how-to-predict-races-en.md",
+      "public/blog/trifecta-betting-guide-en.md",
+      "public/blog/improve-recovery-rate-en.md",
+      "public/blog/beginners-start-guide-en.md",
+      "public/blog/first-mark-prediction-guide-en.md",
+      "public/blog/picks-performance-report-en.md",
+      "public/blog/venue-visit-guide-en.md",
+      "public/blog/picks-guide-en.md",
+      "public/blog/10000-races-analysis-en.md",
+      "public/blog/suji-funaken-guide-en.md",
+      "public/blog/sg-g1-race-strategy-en.md",
+      "public/blog/special-planned-races-en.md",
+      "public/blog/venue-ashiya-en.md",
+      "public/blog/how-we-measure-accuracy-en.md",
+      "public/blog/ai-vs-human-en.md",
+      "public/blog/rough-race-signals-en.md",
+      "public/blog/stadium-strategy-guide-en.md",
+      "public/blog/monthly-50k-roadmap-en.md",
+      "public/blog/why-you-lose-en.md"
+    ],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}
