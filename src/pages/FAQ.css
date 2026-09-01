@@ -134,7 +134,7 @@
 
 .faq-answer-link a {
   color: var(--brand-accent-primary);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-decoration: none;
 }
 
