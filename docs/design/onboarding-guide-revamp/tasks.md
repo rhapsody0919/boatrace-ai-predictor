@@ -65,6 +65,13 @@
   → `npm run build`成功済み。`npm run test:e2e`は16件失敗したが、うち2件（選手個別ページ・開催場一覧の過去日付遷移）を`git stash`でこのタスクの変更を退避した状態（クリーンなmaster）でも同一理由で再現することを確認し、既存の環境依存の失敗（テストが参照する特定日付・選手IDのデータ不足）で本タスクとは無関係と判断した。残り14件も同種のテストタイトル（言語切替・複勝予想UI撤去・AI用にコピー等、本タスクが一切触っていない機能）のため同様と推定。
   → セルフレビューで新規CSS（`FirstVisitGuideCard.css`・`TermHintButton.css`）の一部が`design-tokens.css`のスペーシングトークンを使わず生のrem値になっていた点を発見・修正（`--spacing-*`に置換）。「競艇」表記・`!important`・console.log残留・ハードコードされた秘密情報は無し。
   → [PR #462](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/462)を作成済み（`feature/onboarding-guide-revamp` → `master`）。
+  → **ローカル確認フィードバックを受けて4件修正**:
+    1. 動画CTAシーンが既存のSNSマーケ動画ルール（`sns-video-producer-prompt.md`「CTA（3-4秒、無料・登録不要 + boat-ai.jp）」）と不一致だった。文言を「完全無料・登録不要」（`About.jsx`等で使われている確立済みの定型句）に修正し、視覚的な物足りなさも指摘されたため`PulseRings`演出をロゴ背後に追加
+    2. `VenueTendencyPanel`（この会場の枠番別傾向）の「?」が画面右端でテキストがはみ出ていた。加えて「決まり手」以外の3行（発走率・負け方・展示転換）に「?」が無かった。3行分の`termHints.js`エントリと`TermHintButton`を追加
+    3. `EmbeddedAnalysisSection`（モーター調子等）を折りたたんだ状態で「?」を押しても説明が出ない、展開すると出るがはみ出る、という報告 → 根本原因は`TermHintButton`のポップオーバーが`position: absolute`で、`.embedded-analysis-section`の`overflow: hidden`に折りたたみ時は完全にクリップされ、展開時も画面右端で見切れていたこと
+    4. 「?」を押すと再度「?」を押さないと閉じない、他をタップしても閉じてほしい、という報告
+
+    **対応**: `TermHintButton`を`createPortal`で`document.body`に描画し、`position: fixed`＋クリック時に`getBoundingClientRect()`で実測した座標（ビューポート幅でクランプ）を使う方式に全面書き換え。`overflow: hidden`な祖先要素の影響を受けなくなり、右端はみ出しも解消。`document`への`mousedown`リスナーで外側クリック時に閉じる処理も追加。ローカルで実データを使い、折りたたみ状態でのヒント表示・はみ出し無し・外側クリックでの自動クローズを実機確認済み。`npm run build`成功、追加コミットをpush済み。
 
 ## フェーズ4: ガイドページ（`/how-to-use`）刷新
 

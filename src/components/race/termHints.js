@@ -25,6 +25,14 @@ export const TERM_HINTS = {
 
   venueTendency:
     "この会場での枠番（コース）ごとの決まり手・勝率などの過去の傾向をまとめたものです",
+  venueTendencyTechnique:
+    "この枠番が過去に勝った際の決まり手（逃げ・差し・まくり等）の傾向です",
+  venueTendencyTopStart:
+    "この枠番から最も早くスタートを切った（トップスタート）割合です",
+  venueTendencyLosing:
+    "この枠番が負けた際、相手のどの決まり手にやられることが多いかの傾向です",
+  venueTendencyExhibitionTop:
+    "展示タイムが最も速かった艇が、そのまま1着になった割合です",
   motorCondition:
     "このレース場のモーターごとの、最近の調子（勝率の推移）を示すグラフです",
   racerForm:

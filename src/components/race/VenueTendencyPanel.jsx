@@ -176,6 +176,7 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                         {t("venueTendency.nigeLinkShort")}
                       </span>
                     </Link>
+                    <TermHintButton termKey="venueTendencyTechnique" />
                   </td>
                   {BOATS.map((boat) => (
                     <td key={boat} className="vtp-cell">
@@ -197,6 +198,7 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                         {t("venueTendency.rowTopStartShort")}
                       </span>
                     </Link>
+                    <TermHintButton termKey="venueTendencyTopStart" />
                   </td>
                   {BOATS.map((boat) => (
                     <td key={boat} className="vtp-cell">
@@ -218,6 +220,7 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                         {t("venueTendency.rowLosingShort")}
                       </span>
                     </Link>
+                    <TermHintButton termKey="venueTendencyLosing" />
                   </td>
                   {BOATS.map((boat) => (
                     <td key={boat} className="vtp-cell">
@@ -239,6 +242,7 @@ function VenueTendencyPanel({ venueCode, raceId }) {
                         {t("venueTendency.rowExhibitionTopShort")}
                       </span>
                     </Link>
+                    <TermHintButton termKey="venueTendencyExhibitionTop" />
                   </td>
                   {BOATS.map((boat) => (
                     <td key={boat} className="vtp-cell">

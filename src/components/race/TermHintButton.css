@@ -29,10 +29,8 @@
 }
 
 .term-hint__popover {
-  position: absolute;
+  position: fixed;
   z-index: var(--z-index-popover);
-  top: calc(100% + 0.35rem);
-  left: 0;
   width: 220px;
   background: var(--surface-card);
   border: var(--border-width-1) solid var(--border-hairline);
