@@ -673,10 +673,10 @@ export function VenueRankingCM_WinRate_VariantB() {
       <Sequence from={0} durationInFrames={75}>
         <SceneHookDiagonal
           topVenue="尼崎"
-          topRateLabel="61.1%"
+          topRateLabel="60.9%"
           bottomVenue="戸田"
           bottomRateLabel="41.6%"
-          diffLabel="19.5pt"
+          diffLabel="19.3pt"
           hookQuestion="1号艇の勝率、会場でこんなに違う"
           categoryTag="24会場ランキング"
           accentColor={GOLD}
@@ -741,29 +741,31 @@ const MANSHU_RATE_WORST5 = [
   { rank: 20, venue: "蒲郡", value: "15.0%", sample: "1,749", ratio: 79 },
 ];
 
-// 1号艇勝率ランキング（2026-08-24、第3弾・試作）のデータ。全期間集計、TOP1位(尼崎61.1%)を100とした相対比率
+// 1号艇勝率ランキング（2026-09-01、generate-evergreen Routineでデータ再検証・更新）のデータ。
+// race_results.rank1===1（1号艇1着）/ 全解決済みレース(is_cancelled/is_no_race除外)、venue_code(1〜24)順、全期間集計。
+// 全24会場40,471レースで再計算（2026-08-24試作時の集計より母数が増加）。TOP1位(尼崎60.9%)を100とした相対比率
 const WIN_RATE_TOP5 = [
-  { venue: "尼崎", value: "61.1%", sample: "1,850", ratio: 100 },
-  { venue: "徳山", value: "61.1%", sample: "1,824", ratio: 100 },
+  { venue: "尼崎", value: "60.9%", sample: "1,910", ratio: 100 },
+  { venue: "徳山", value: "60.7%", sample: "1,877", ratio: 100 },
+  { venue: "下関", value: "60.5%", sample: "1,670", ratio: 99 },
+  { venue: "芦屋", value: "60.5%", sample: "1,649", ratio: 99 },
   { venue: "大村", value: "60.4%", sample: "1,654", ratio: 99 },
-  { venue: "下関", value: "60.4%", sample: "1,625", ratio: 99 },
-  { venue: "芦屋", value: "60.4%", sample: "1,620", ratio: 99 },
 ];
 
 const WIN_RATE_WORST5 = [
   { rank: 24, venue: "戸田", value: "41.6%", sample: "1,559", ratio: 68 },
-  { rank: 23, venue: "平和島", value: "44.0%", sample: "1,551", ratio: 72 },
-  { rank: 22, venue: "江戸川", value: "46.5%", sample: "1,433", ratio: 76 },
-  { rank: 21, venue: "桐生", value: "49.5%", sample: "1,677", ratio: 81 },
-  { rank: 20, venue: "鳴門", value: "49.8%", sample: "1,341", ratio: 82 },
+  { rank: 23, venue: "平和島", value: "43.8%", sample: "1,611", ratio: 72 },
+  { rank: 22, venue: "江戸川", value: "46.4%", sample: "1,457", ratio: 76 },
+  { rank: 21, venue: "鳴門", value: "49.7%", sample: "1,401", ratio: 82 },
+  { rank: 20, venue: "桐生", value: "50.3%", sample: "1,749", ratio: 83 },
 ];
 
 // SceneHookの背景データバー用。venue_code(1〜24)順、全期間集計。
-// 2026-08-24: 1号艇勝率は全24会場を再取得(尼崎が1位、index12)。
+// 2026-09-01更新: 1号艇勝率は全24会場を再取得(尼崎が1位、index12)。
 // イン逃げ率・万舟率はTOP5/WORST5の10件のみのため暫定的に同じ配列を流用
 const WIN_RATE_ALL = [
-  49.5, 41.6, 46.5, 44.0, 54.8, 53.7, 54.9, 57.5, 56.8, 50.7, 53.8, 58.3, 61.1,
-  49.8, 55.5, 55.1, 56.9, 61.1, 60.4, 58.7, 60.4, 59.4, 55.5, 60.4,
+  50.3, 41.6, 46.4, 43.8, 54.8, 53.6, 54.8, 57.5, 56.5, 50.8, 53.6, 58.3, 60.9,
+  49.7, 55.6, 54.9, 57.1, 60.7, 60.5, 58.6, 60.5, 59.6, 55.9, 60.4,
 ];
 const WIN_RATE_TOP_INDEX = 12; // 尼崎(venue_code=13)
 
@@ -773,27 +775,28 @@ const NIGE_RATE_ALL = [
 ];
 const NIGE_RATE_TOP_INDEX = 12; // 尼崎(venue_code=13)
 
-// 1号艇モーター2連率ランキング（2026-08-25、第5弾）のデータ。races.first_boat_motor_2rateの
-// 全期間平均、venue_code(1〜24)順。TOP1位(常滑34.1%)を100とした相対比率
+// 1号艇モーター2連率ランキング（2026-09-01、generate-evergreen Routineでデータ再検証・更新）のデータ。
+// races.first_boat_motor_2rateの全期間平均、venue_code(1〜24)順。全24会場41,940レースで再計算
+// （2026-08-25試作時の集計より母数が増加）。TOP1位(常滑34.1%)を100とした相対比率
 const MOTOR2RATE_TOP5 = [
-  { venue: "常滑", value: "34.1%", sample: "1,868", ratio: 100 },
-  { venue: "丸亀", value: "34.0%", sample: "1,776", ratio: 100 },
-  { venue: "宮島", value: "33.9%", sample: "1,680", ratio: 99 },
-  { venue: "唐津", value: "33.6%", sample: "1,776", ratio: 99 },
-  { venue: "平和島", value: "33.6%", sample: "1,608", ratio: 99 },
+  { venue: "常滑", value: "34.1%", sample: "1,916", ratio: 100 },
+  { venue: "丸亀", value: "34.1%", sample: "1,812", ratio: 100 },
+  { venue: "宮島", value: "34.0%", sample: "1,740", ratio: 100 },
+  { venue: "唐津", value: "33.6%", sample: "1,824", ratio: 99 },
+  { venue: "平和島", value: "33.5%", sample: "1,668", ratio: 98 },
 ];
 
 const MOTOR2RATE_WORST5 = [
-  { rank: 24, venue: "福岡", value: "30.7%", sample: "1,632", ratio: 90 },
-  { rank: 23, venue: "鳴門", value: "31.6%", sample: "1,380", ratio: 93 },
-  { rank: 22, venue: "芦屋", value: "31.9%", sample: "1,692", ratio: 94 },
-  { rank: 21, venue: "津", value: "31.9%", sample: "1,557", ratio: 94 },
-  { rank: 20, venue: "住之江", value: "31.9%", sample: "1,512", ratio: 94 },
+  { rank: 24, venue: "福岡", value: "30.7%", sample: "1,656", ratio: 90 },
+  { rank: 23, venue: "鳴門", value: "31.6%", sample: "1,440", ratio: 93 },
+  { rank: 22, venue: "津", value: "31.9%", sample: "1,617", ratio: 94 },
+  { rank: 21, venue: "住之江", value: "31.9%", sample: "1,512", ratio: 94 },
+  { rank: 20, venue: "芦屋", value: "31.9%", sample: "1,716", ratio: 94 },
 ];
 
 const MOTOR2RATE_ALL = [
-  32.4, 32.3, 32.1, 33.6, 32.1, 32.3, 32.5, 34.1, 31.9, 32.0, 32.0, 31.9, 32.1,
-  31.6, 34.0, 32.7, 33.9, 32.2, 32.2, 32.6, 31.9, 30.7, 33.6, 32.3,
+  32.5, 32.3, 32.1, 33.5, 32.3, 32.3, 32.3, 34.1, 31.9, 32.1, 32.0, 31.9, 32.2,
+  31.6, 34.1, 32.7, 34.0, 32.2, 32.3, 32.6, 31.9, 30.7, 33.6, 32.3,
 ];
 const MOTOR2RATE_TOP_INDEX = 7; // 常滑(venue_code=8)
 
@@ -1231,7 +1234,7 @@ export function VenueRankingCM_Motor2Rate() {
       axisTitle="モーター2連率ランキング"
       rateLabel="モーター2連率 34.1%"
       hookQuestion="モーターが強い会場は？"
-      subCaption="24会場・38,600レースで検証"
+      subCaption="24会場・約41,900レースで検証"
       categoryTag="24会場ランキング"
       allRates={MOTOR2RATE_ALL}
       topRateIndex={MOTOR2RATE_TOP_INDEX}
