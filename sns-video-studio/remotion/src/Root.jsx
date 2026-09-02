@@ -55,6 +55,10 @@ import { NoteExplainerCM_ReturnRate } from "./NoteExplainerReturnRate.jsx";
 import { NoteExplainerCM_FormRanking } from "./NoteExplainerFormRanking.jsx";
 import { DataQuoteCard } from "./DataQuoteCard.jsx";
 import {
+  YoutubeChannelAvatar,
+  YoutubeChannelBanner,
+} from "./YoutubeChannelBranding.jsx";
+import {
   TechniqueConsistencyCM,
   TECHNIQUE_CONSISTENCY_DURATION,
 } from "./TechniqueConsistencyCM.jsx";
@@ -497,6 +501,22 @@ export function RemotionRoot() {
           statLabel: "",
           caption: "",
         }}
+      />
+      <Composition
+        id="YoutubeChannelAvatar"
+        component={YoutubeChannelAvatar}
+        durationInFrames={1}
+        fps={30}
+        width={800}
+        height={800}
+      />
+      <Composition
+        id="YoutubeChannelBanner"
+        component={YoutubeChannelBanner}
+        durationInFrames={1}
+        fps={30}
+        width={2560}
+        height={1440}
       />
       <Composition
         id="TechniqueConsistencyCM"
