@@ -52,6 +52,7 @@ import { ReturnRateCM } from "./ReturnRateCM.jsx";
 import { NoteExplainerCM_DataRaceTable } from "./NoteExplainerCM.jsx";
 import { NoteExplainerCM_ReturnRate } from "./NoteExplainerReturnRate.jsx";
 import { NoteExplainerCM_FormRanking } from "./NoteExplainerFormRanking.jsx";
+import { DataQuoteCard } from "./DataQuoteCard.jsx";
 
 export function RemotionRoot() {
   return (
@@ -455,6 +456,34 @@ export function RemotionRoot() {
         fps={30}
         width={1920}
         height={1080}
+      />
+      <Composition
+        id="DataQuoteCard-Cover"
+        component={DataQuoteCard}
+        durationInFrames={1}
+        fps={30}
+        width={1200}
+        height={630}
+        defaultProps={{
+          headline: "サンプル見出し",
+          statValue: "",
+          statLabel: "",
+          caption: "",
+        }}
+      />
+      <Composition
+        id="DataQuoteCard-YouTubeThumbnail"
+        component={DataQuoteCard}
+        durationInFrames={1}
+        fps={30}
+        width={1280}
+        height={720}
+        defaultProps={{
+          headline: "サンプル見出し",
+          statValue: "",
+          statLabel: "",
+          caption: "",
+        }}
       />
     </>
   );

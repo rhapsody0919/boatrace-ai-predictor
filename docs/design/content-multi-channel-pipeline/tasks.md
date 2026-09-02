@@ -51,3 +51,14 @@
 - [x] 29. `npm run build`成功確認 — 成功（2026-09-02、task 18/21実装分含む再確認）
 - [x] 30. E2Eスモークテスト実行（既存の管理画面ルーティングに影響が無いか）— 886件成功・16件失敗、失敗は全てこのworktreeにSupabase接続情報が無いことによる既存ページの実行時エラーで今回の変更と無関係（admin関連の失敗なし、2026-09-02再確認）
 - [ ] 31. 実際に1サイクル（ネタ選定→生成→自己採点→管理画面表示→承認→公開）を通しで確認 — Blog/YouTube自動公開の実クレデンシャルでのエンドツーエンド検証。実際にPRをマージ・動画を公開する不可逆操作を伴うため、実行前にユーザーへの確認が必要
+
+## チャネル品質検証の準備（2026-09-02、構造的な穴を先に閉じる）
+
+「1チャネルずつクオリティを検証する」着手前レビューで、FR3（画像/動画必須要件）とFR5（却下フィードバックの反映）が実装上未完だったことが判明（PR #471は「内容の質は問わず」の配管検証のみで、画像0枚・content-index.json無しだった）。cronの本格運用化（task 10）前に以下を実装した。
+
+- [x] 32. `sns-video-studio/remotion/src/DataQuoteCard.jsx`新設 — 実画面スクリーンショットが無いネタ（会場特性・成績）向けのカバー画像/YouTubeサムネイル静止画。ユーザーレビュー3往復を経て確定（詳細は`docs/reference/brand-kit.md`「YouTube / ブログ / note カバー画像・サムネイル」参照）
+- [x] 33. `sns-video-studio/remotion/src/textFit.js`新設 — 見出しの改行崩れ（熟語途中での折り返り）防止。canvas.measureTextで実測しフォントサイズ自動縮小＋助詞等の安全な位置でのみ改行
+- [x] 34. `scripts/lib/contentChannels/coverImageStrategy.js`・`captureScreenshot.js`・`renderCoverCard.js`実装 — ネタ種別ごとのカバー画像調達方法（スクリーンショット/DataQuoteCard）の判定・実行、動作確認済み
+- [x] 35. `scripts/lib/contentRevisionHistory.js`・`scripts/maintenance/content-ops-checks/check-revision-escalation.js`実装 — 却下フィードバック（`revision_reason_codes`）の恒久反映。生成前に直近30日分を必ず参照、同一理由が3回累積したら`content-ops-nightly-check.yml`が自動でLinear起票（既存の`content-quality`ラベル運用に合流、`check-quality-backlog.js`が拾う）
+- [x] 36. `content-multi-channel-pipeline-prompt.md`にステップ0（却下理由確認）・ステップ5（カバー画像生成）を追加、「画像は人間が用意する」制約を撤去
+- [x] 37. ブログ承認→PRマージ画面に、承認前にDraft PR（Vercel Preview含む）へのリンクを表示する — `TextDraftPreview`にタイトル直下でPRリンクを表示、モックデータで表示確認済み

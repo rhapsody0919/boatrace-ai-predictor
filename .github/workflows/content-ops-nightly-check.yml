@@ -40,6 +40,14 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
 
+      - name: 却下フィードバックの閾値エスカレーション（content-multi-channel-pipeline）
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: node scripts/maintenance/content-ops-checks/check-revision-escalation.js
+
       - name: Notify Slack (閾値超過時のみ)
         if: steps.checks.outputs.exit_code == '1'
         env:

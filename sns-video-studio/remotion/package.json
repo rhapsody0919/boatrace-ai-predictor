@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "render": "remotion render src/index.jsx AshiyaCM out/ashiya-cm.mp4",
-    "studio": "remotion studio src/index.jsx --port=3001"
+    "studio": "remotion studio src/index.jsx --port=3001",
+    "still": "remotion still src/index.jsx"
   },
   "dependencies": {
     "react": "^18.3.1",

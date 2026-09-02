@@ -479,6 +479,20 @@
   width: fit-content;
 }
 
+.text-draft-pr-link {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  /* .text-draft-preview同様、固定背景(--color-gray-50)とのペアなので
+     生パレット値を使う（Layer1/2ルール） */
+  background: var(--color-gray-800);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  width: fit-content;
+}
+
 .text-draft-body {
   margin: 0;
   font-size: 0.875rem;

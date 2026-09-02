@@ -1480,6 +1480,17 @@ function TextDraftPreview({ draft }) {
     <div className="text-draft-preview">
       {draft.title && <h3 className="text-draft-title">{draft.title}</h3>}
 
+      {draft.platform === "blog" && draft.pr_url && (
+        <a
+          className="text-draft-pr-link"
+          href={draft.pr_url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          🔗 Draft PRでレンダリング結果を確認（承認前に必ず見る）
+        </a>
+      )}
+
       {draft.cover_image_url ? (
         <img
           src={draft.cover_image_url}
