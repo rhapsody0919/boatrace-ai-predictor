@@ -129,25 +129,47 @@ export default async function handler(req) {
 
     const uploaded = await uploadVideo(accessToken, draft, videoBlob);
     const youtubeVideoId = uploaded.id;
+    const youtubeUrl = `https://youtu.be/${youtubeVideoId}`;
 
+    // サムネイル設定は動画本体のアップロードとは独立した成否として扱う。
+    // ここで例外を投げると、動画自体はYouTube上に既に公開済み（取り消し不可）
+    // にもかかわらずstatusがpending_reviewのまま残り、下書きを再承認すると
+    // 動画が重複投稿される事故につながる（2026-09-02、実クレデンシャルでの
+    // 検証時にサムネイル権限エラーで実際に発生した不具合）
+    let thumbnailError = null;
     if (draft.cover_image_path) {
-      const thumbResponse = await fetch(draft.cover_image_path);
-      if (thumbResponse.ok) {
+      try {
+        const thumbResponse = await fetch(draft.cover_image_path);
+        if (!thumbResponse.ok) {
+          throw new Error(
+            `サムネイル取得に失敗しました (${thumbResponse.status})`,
+          );
+        }
         const thumbBlob = await thumbResponse.blob();
         await uploadThumbnail(accessToken, youtubeVideoId, thumbBlob);
+      } catch (error) {
+        console.error("SNS Hub publish-youtube thumbnail error:", error);
+        thumbnailError = error.message;
       }
     }
 
-    const youtubeUrl = `https://youtu.be/${youtubeVideoId}`;
     const updated = await updateDraft(id, {
       status: "posted",
       approver_id: approverId,
       approved_at: new Date().toISOString(),
       posted_at: new Date().toISOString(),
-      source_data: { ...(draft.source_data || {}), youtube_url: youtubeUrl },
+      source_data: {
+        ...(draft.source_data || {}),
+        youtube_url: youtubeUrl,
+        ...(thumbnailError && { youtube_thumbnail_error: thumbnailError }),
+      },
     });
 
-    return jsonResponse({ data: updated, youtubeUrl });
+    return jsonResponse({
+      data: updated,
+      youtubeUrl,
+      ...(thumbnailError && { thumbnailWarning: thumbnailError }),
+    });
   } catch (error) {
     console.error("SNS Hub publish-youtube Edge function error:", error);
     return jsonResponse({ error: error.message }, 500);

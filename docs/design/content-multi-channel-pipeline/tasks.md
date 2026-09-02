@@ -50,7 +50,9 @@
 
 - [x] 29. `npm run build`成功確認 — 成功（2026-09-02、task 18/21実装分含む再確認）
 - [x] 30. E2Eスモークテスト実行（既存の管理画面ルーティングに影響が無いか）— 886件成功・16件失敗、失敗は全てこのworktreeにSupabase接続情報が無いことによる既存ページの実行時エラーで今回の変更と無関係（admin関連の失敗なし、2026-09-02再確認）
-- [ ] 31. 実際に1サイクル（ネタ選定→生成→自己採点→管理画面表示→承認→公開）を通しで確認 — Blog/YouTube自動公開の実クレデンシャルでのエンドツーエンド検証。実際にPRをマージ・動画を公開する不可逆操作を伴うため、実行前にユーザーへの確認が必要
+- [x] 31a. YouTube自動公開の実クレデンシャルend-to-end検証 — ユーザー承認済み（production環境・一般公開OK、2026-09-02）で実施。`sns_drafts`に実レコードを作成（Supabase Storageへのアップロード・署名付きURL発行含む）→本番`/api/admin/sns-hub/drafts/[id]/publish-youtube`をBasic認証付きで実際に呼び出し→動画本体のアップロードは成功、実際に[YouTube上で公開](https://youtu.be/VPauSM8CfuQ)されたことを確認。**発見した不具合**: カスタムサムネイル設定がYouTube API側で403エラー（`The authenticated user doesn't have permissions to upload and set custom video thumbnails` — チャンネルが電話番号認証未完了のため。ユーザー側の対応が必要、[YouTube公式の確認手順](https://www.youtube.com/verify)）。この403がハンドラー内で無条件に例外化されており、動画自体は投稿済みなのにDBのstatusがpending_reviewのまま残り再承認で動画が二重投稿される事故につながる実装ミスも同時に発覚・修正済み（サムネイル失敗を動画投稿の成否から分離、`thumbnailWarning`として返す形に変更）。テスト用下書きレコードのstatusは実際の結果に合わせてposted・source_dataにyoutube_url記録済み、Storage上のテストアップロードファイルは削除済み
+- [ ] 31b. ブログPR自動マージの実クレデンシャルend-to-end検証（`GITHUB_MERGE_TOKEN`もVercel上でSecret型のため、31aと同じ「production環境で実際にPRをマージする」形での検証が必要。実行前にユーザー確認）
+- [ ] 31c. YouTubeチャンネルの電話番号認証（カスタムサムネイル権限の取得、ユーザー本人の対応が必要）
 
 ## チャネル品質検証の準備（2026-09-02、構造的な穴を先に閉じる）
 
