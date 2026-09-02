@@ -130,6 +130,16 @@ export async function triggerGeneration(
   });
 }
 
+/**
+ * ネタ駆動マルチチャネルパイプライン（content-multi-channel-pipeline、
+ * trig_01BAymvDLFw9ZbFUBXk6h8Nq）を手動実行する。daily/evergreen（Pipeline A）
+ * とは別のRoutineで、ネタ・チャネル選定を自律判断するためパラメータは無い
+ * （2026-09-02追加）
+ */
+export async function triggerTopicPipelineGeneration() {
+  return request("/generate-topic-pipeline", { method: "POST" });
+}
+
 /** TikTok等のエンゲージメント指標を手動入力する */
 export async function addDraftMetric(
   draftId,

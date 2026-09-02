@@ -23,6 +23,7 @@ import {
   getTemplateVariants,
   archiveDraft,
   triggerGeneration,
+  triggerTopicPipelineGeneration,
 } from "../../services/snsHubService";
 import {
   canShareVideo,
@@ -196,6 +197,19 @@ function SnsHubAdmin() {
   // （サーバー時刻同士の比較にすることで、クライアント/サーバーの時計ずれで
   // 検知漏れが起きないようにする。コードレビューで指摘）
   const [generationBaselineCreatedAt, setGenerationBaselineCreatedAt] =
+    useState(null);
+  // ネタ駆動マルチチャネルパイプライン（content-multi-channel-pipeline）用の
+  // 手動実行state。daily/evergreen（Pipeline A）とは別のRoutineであり、
+  // パラメータ（プラットフォーム/本数/型）を選ばせる余地が無いため単純な
+  // ボタン1つで完結する。ロック・完了検知の仕組みは上記と同じパターンだが、
+  // 別Routineなので独立したstateで管理する（2026-09-02追加）
+  const [topicPipelineGenerating, setTopicPipelineGenerating] = useState(false);
+  const [topicPipelineLocked, setTopicPipelineLocked] = useState(false);
+  const [topicPipelineSessionUrl, setTopicPipelineSessionUrl] = useState(null);
+  const [topicPipelineFiredAt, setTopicPipelineFiredAt] = useState(null);
+  const [topicPipelineElapsedMinutes, setTopicPipelineElapsedMinutes] =
+    useState(0);
+  const [topicPipelineBaselineCreatedAt, setTopicPipelineBaselineCreatedAt] =
     useState(null);
   const { toast, showToast } = useToast();
 
@@ -398,6 +412,70 @@ function SnsHubAdmin() {
     }
   }, [drafts, generationLocked, generationBaselineCreatedAt, showToast]);
 
+  // ネタ駆動マルチチャネルパイプラインの手動実行。パラメータは無く、常に
+  // 新規ネタの選定から開始する（2026-09-02追加）
+  async function handleGenerateTopicPipeline() {
+    setTopicPipelineGenerating(true);
+    try {
+      const result = await triggerTopicPipelineGeneration();
+      if (result?.routine?.fired === false) {
+        showToast(
+          `生成リクエストがRoutineに届いていません（${result.routine.reason}）。設定を確認してください`,
+          "error",
+        );
+      } else {
+        showToast(
+          result.routine.sessionUrl
+            ? "生成をリクエストしました。実行ログのリンクは下に表示されます"
+            : "生成をリクエストしました。数分後に更新ボタンで確認してください",
+          "success",
+        );
+        setTopicPipelineLocked(true);
+        setTopicPipelineSessionUrl(result.routine.sessionUrl || null);
+        setTopicPipelineFiredAt(Date.now());
+        setTopicPipelineElapsedMinutes(0);
+        setTopicPipelineBaselineCreatedAt(
+          drafts.reduce((max, d) => {
+            const t = new Date(d.created_at).getTime();
+            return t > max ? t : max;
+          }, 0),
+        );
+      }
+    } catch (err) {
+      console.error("ネタ駆動パイプライン生成リクエストエラー:", err);
+      showToast(err.message || "生成リクエストに失敗しました", "error");
+    } finally {
+      setTopicPipelineGenerating(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!topicPipelineLocked || !topicPipelineFiredAt) return;
+    const interval = setInterval(() => {
+      setTopicPipelineElapsedMinutes(
+        Math.max(0, Math.round((Date.now() - topicPipelineFiredAt) / 60000)),
+      );
+      loadDrafts({ silent: true, fetch: { drafts: true } });
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [topicPipelineLocked, topicPipelineFiredAt, loadDrafts]);
+
+  useEffect(() => {
+    if (!topicPipelineLocked || topicPipelineBaselineCreatedAt === null) return;
+    const newDraftsCount = drafts.filter(
+      (d) =>
+        new Date(d.created_at).getTime() > topicPipelineBaselineCreatedAt &&
+        !d.parent_draft_id,
+    ).length;
+    if (newDraftsCount > 0) {
+      showToast(`✅ ${newDraftsCount}件生成完了しました`, "success");
+      setTopicPipelineLocked(false);
+      setTopicPipelineSessionUrl(null);
+      setTopicPipelineFiredAt(null);
+      setTopicPipelineBaselineCreatedAt(null);
+    }
+  }, [drafts, topicPipelineLocked, topicPipelineBaselineCreatedAt, showToast]);
+
   if (loading) {
     return (
       <div className="sns-hub-admin-page">
@@ -595,6 +673,41 @@ function SnsHubAdmin() {
                 {" ・ "}
                 <a
                   href={generationSessionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  実行ログを見る
+                </a>
+              </>
+            )}
+          </span>
+        )}
+      </div>
+
+      <div className="manual-generate-panel topic-pipeline-panel">
+        <span className="manual-generate-label">
+          ネタ駆動マルチチャネルパイプライン（新機能/会場特性/データ知見/成績から自動選定・全チャネルへ展開）:
+        </span>
+        <div className="manual-generate-block">
+          <button
+            className="manual-generate-btn"
+            disabled={topicPipelineGenerating || topicPipelineLocked}
+            onClick={handleGenerateTopicPipeline}
+          >
+            {topicPipelineGenerating
+              ? "⏳ リクエスト中..."
+              : "🧵 ネタ駆動パイプラインを今すぐ実行"}
+          </button>
+        </div>
+        {topicPipelineLocked && (
+          <span className="manual-generate-hint">
+            ⏳ 生成中...（{topicPipelineElapsedMinutes}
+            分経過）30秒おきに自動で確認します
+            {topicPipelineSessionUrl && (
+              <>
+                {" ・ "}
+                <a
+                  href={topicPipelineSessionUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

@@ -133,6 +133,13 @@
   color: var(--color-gray-500);
 }
 
+/* ネタ駆動マルチチャネルパイプライン（Pipeline B）の手動実行パネル。
+   daily/evergreen（Pipeline A）とは別Routineであることが分かるよう
+   independent panel として visually separate する（2026-09-02追加） */
+.topic-pipeline-panel {
+  margin-top: -0.4rem;
+}
+
 .manual-generate-block {
   display: flex;
   align-items: center;
