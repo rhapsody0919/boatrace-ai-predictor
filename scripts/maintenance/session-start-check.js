@@ -23,6 +23,9 @@
  *     未カバーのものを検知（フローA-1、2026-09-01追加）。「PRマージを単一
  *     トリガーとする」という運用ルール自体には検知機構が無かった穴を埋める。
  *     新ルート＝ブログが要る新機能とは限らないため強制はせず提示のみ
+ * 11) contentQualityAudit… 直近公開ブログ/note記事のスポットチェック対象を
+ *     ローテーション提示（FR4b、content-multi-channel-pipeline/spec.md）。
+ *     生成時の自己採点だけでは気づけない盲点を人間の目で拾う
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -37,6 +40,7 @@ import { checkQualityBacklog } from "./content-ops-checks/check-quality-backlog.
 import { checkRecentFlowAContent } from "./content-ops-checks/check-recent-flow-a-content.js";
 import { checkDeprecatedTerms } from "./content-ops-checks/check-deprecated-terms.js";
 import { checkMissingContentIndex } from "./content-ops-checks/check-missing-content-index.js";
+import { checkContentQualityAudit } from "./content-ops-checks/check-content-quality-audit.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
@@ -161,6 +165,7 @@ async function main() {
     recentFlowAContent,
     deprecatedTerms,
     missingContentIndex,
+    contentQualityAudit,
   ] = await Promise.all([
     checkTweetDrafts(),
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
@@ -179,6 +184,11 @@ async function main() {
     checkDeprecatedTerms(),
     checkMissingContentIndex().catch((error) => ({
       missingRoutes: [],
+      error: error.message,
+    })),
+    checkContentQualityAudit().catch((error) => ({
+      targets: [],
+      recentCount: 0,
       error: error.message,
     })),
   ]);
@@ -204,6 +214,7 @@ async function main() {
     qualityBacklog,
     recentFlowAContent,
     missingContentIndex,
+    contentQualityAudit,
     deprecatedTerms: {
       hitCount: deprecatedTerms.hits.length,
       affectedFileCount: new Set(deprecatedTerms.hits.map((h) => h.file)).size,

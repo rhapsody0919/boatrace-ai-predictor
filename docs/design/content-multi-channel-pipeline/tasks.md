@@ -28,26 +28,26 @@
 
 ## 外部連携（承認アクション）
 
-- [ ] 18. `GITHUB_MERGE_TOKEN`発行（Fine-grained PAT、ADR 0034） ⚠️（ユーザー自身のGitHubアカウント操作が必要、手順は`docs/operation/content-pipeline-token-setup-guide.md`）
+- [x] 18. `GITHUB_MERGE_TOKEN`発行（Fine-grained PAT、ADR 0034） — 発行・Vercel登録完了（2026-09-02）
 - [x] 19. `api/admin/sns-hub/drafts/[id]/merge-blog-pr.js`実装（実クレデンシャル未設定のため実行時テストは未実施、コードレベルの実装完了）
 - [x] 20. `BlogApproveAction`コンポーネント実装・`snsHubService.js`に`mergeBlogPr()`追加 — ボタン文言・確認ダイアログ込みで表示検証済み
-- [ ] 21. Google Cloud ConsoleでYouTube Data API v3有効化・OAuth同意・リフレッシュトークン取得（ADR 0035） ⚠️（ユーザー自身のGoogleログインが必要、手順は`docs/operation/content-pipeline-token-setup-guide.md`）
+- [x] 21. Google Cloud ConsoleでYouTube Data API v3有効化・OAuth同意・リフレッシュトークン取得（ADR 0035） — 完了（2026-09-02）。当初デスクトップアプリ型クライアントでOAuth Playground認可を試み`redirect_uri_mismatch`が発生、ウェブアプリケーション型クライアント（`content-pipeline-youtube-upload-web`）を作り直して解決。`YOUTUBE_CLIENT_ID`/`YOUTUBE_CLIENT_SECRET`/`YOUTUBE_REFRESH_TOKEN`をVercelに登録済み
 - [x] 22. `api/admin/sns-hub/drafts/[id]/publish-youtube.js`実装（実クレデンシャル未設定のため実行時テストは未実施。動画サイズが大きい場合Edge Function実行時間制約に抵触する可能性がありコード内に注記済み）
 - [x] 23. `YouTubeApproveAction`コンポーネント実装・`snsHubService.js`に`publishYoutube()`追加 — 表示検証済み
 
 ## 品質監査・調査ループ
 
-- [ ] 24. `session-start-check.js`に`checkContentQualityAudit()`追加（FR4b、公開済みコンテンツの抜き打ち監査）
-- [ ] 25. `scripts/lib/snsStrategyInsights.js`の呼び出し元（`/growth-pdca`等）でblog/noteスコープのinsight書き込みに対応
+- [x] 24. `session-start-check.js`に`checkContentQualityAudit()`追加（FR4b、公開済みコンテンツの抜き打ち監査）— 直近60日公開のブログ記事から未監査優先で1〜2件提示、動作確認済み
+- [x] 25. `scripts/lib/snsStrategyInsights.js`の呼び出し元（`/growth-pdca`等）でblog/noteスコープのinsight書き込みに対応 — `createInsight`自体は`platform`列に制約が無く元々対応済みだったため、`/growth-pdca`にステップ7（小施策のinsight登録、platform:'blog'/'note'）を追加、生成側プロンプト（3.ブログ本文執筆）に`getActiveInsights({platform:"blog"})`参照を追加して閉じたループにした
 
 ## ドキュメント更新
 
-- [ ] 26. `docs/reference/brand-kit.md`にblog/note向けの制作ルール節を追加（着手前の参照先として）
+- [x] 26. `docs/reference/brand-kit.md`にblog/note向けの制作ルール節を追加（着手前の参照先として）— 既存ルールへの参照リンクを一元化する形で追加
 - [x] 27. `.claude/CLAUDE.md`フローAにこのパイプラインの運用手順を追記（`docs/operation/content-multi-channel-pipeline-prompt.md`への参照込み）
 - [x] 28. `docs/operation/content-pipeline-token-setup-guide.md`にGitHub PAT・YouTube OAuthの取得手順を追加（ローテーション運用の記載は今後の課題として残す）
 
 ## 検証
 
-- [ ] 29. `npm run build`成功確認
-- [ ] 30. E2Eスモークテスト実行（既存の管理画面ルーティングに影響が無いか）
-- [ ] 31. 実際に1サイクル（ネタ選定→生成→自己採点→管理画面表示→承認→公開）を通しで確認
+- [x] 29. `npm run build`成功確認 — 成功（2026-09-02、task 18/21実装分含む再確認）
+- [x] 30. E2Eスモークテスト実行（既存の管理画面ルーティングに影響が無いか）— 886件成功・16件失敗、失敗は全てこのworktreeにSupabase接続情報が無いことによる既存ページの実行時エラーで今回の変更と無関係（admin関連の失敗なし、2026-09-02再確認）
+- [ ] 31. 実際に1サイクル（ネタ選定→生成→自己採点→管理画面表示→承認→公開）を通しで確認 — Blog/YouTube自動公開の実クレデンシャルでのエンドツーエンド検証。実際にPRをマージ・動画を公開する不可逆操作を伴うため、実行前にユーザーへの確認が必要

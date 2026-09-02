@@ -26,6 +26,8 @@
 - 実データに基づく記述（`scripts/lib/supabaseClient.js`パターンで取得。取得できない場合は1.の見送りルールに従う）
 - 既存記事（`public/blog/`配下の同系統記事）を参考に構成・文体を揃える
 
+執筆前に`getActiveInsights({ platform: "blog" })`（`scripts/lib/snsStrategyInsights.js`）でactive状態のinsightを取得し、構成・訴求の判断に反映する（`/growth-pdca`ステップ7・ADR 0027参照。Search Console/GA4実績から導かれた「こう書くと効く」という知見が蓄積される設計）。insightが無ければ通常通り進めてよい。
+
 ## 4. note下書きの作成
 
 1. 3.のブログ本文をもとに、`convert_to_note_markdown.py`と同じ変換ロジックでnote向けフォーマットに変換する（見出し記法・埋め込み構文の違いを吸収。ブログ本文と完全一致はさせない、ADR 0032参照）
