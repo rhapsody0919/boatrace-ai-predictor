@@ -188,6 +188,22 @@
   color: var(--color-gray-400);
 }
 
+.generate-format-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+}
+
+.generate-format-select {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  max-width: 12rem;
+}
+
 .manual-generate-btn {
   padding: 0.4rem 0.75rem;
   border-radius: 8px;

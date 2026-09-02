@@ -6,7 +6,7 @@
  * （docs/design/sns-marketing-hub/screens.md参照）。
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   getDrafts,
@@ -175,6 +175,12 @@ function SnsHubAdmin() {
   const [generateCounts, setGenerateCounts] = useState(() =>
     Object.fromEntries(GENERATE_MODES.map((m) => [m.mode, m.defaultCount])),
   );
+  // 手動生成する型の指定（モードごとに独立、2026-09-02追加）。既定は""＝
+  // 「おまかせ（自動選定）」で、Routine側の型選定ロジックに従う。「会場攻略型など」
+  // という曖昧な指定しかできなかったのをユーザー指摘を受けて拡張した
+  const [generateFormats, setGenerateFormats] = useState(() =>
+    Object.fromEntries(GENERATE_MODES.map((m) => [m.mode, ""])),
+  );
   // 生成リクエスト成功後、手動更新ボタンを押すまで両ボタンを無効化し続ける
   // （連打による多重起動を防ぐため）
   const [generationLocked, setGenerationLocked] = useState(false);
@@ -192,6 +198,15 @@ function SnsHubAdmin() {
   const [generationBaselineCreatedAt, setGenerationBaselineCreatedAt] =
     useState(null);
   const { toast, showToast } = useToast();
+
+  // 手動生成の型選択肢。フォーマットカタログ（sns_template_variants、"型一覧"タブと
+  // 同じデータ源）から重複を除いた型名一覧を出す。ハードコードした一覧を別途持つと
+  // カタログと食い違うため、既に画面にロード済みのtemplateVariantsをそのまま使う
+  // （2026-09-02追加）
+  const evergreenFormatOptions = useMemo(() => {
+    const names = new Set(templateVariants.map((tv) => tv.format));
+    return [...names].sort();
+  }, [templateVariants]);
 
   // silent=trueの場合、全画面ローディング表示を出さずに裏側でデータだけ
   // 更新する。承認等のアクション直後に画面全体がスピナーに切り替わる
@@ -292,6 +307,10 @@ function SnsHubAdmin() {
     setGenerateCounts((prev) => ({ ...prev, [mode]: clamped }));
   }
 
+  function handleGenerateFormatChange(mode, value) {
+    setGenerateFormats((prev) => ({ ...prev, [mode]: value }));
+  }
+
   async function handleGenerate(mode) {
     const platforms = generatePlatforms[mode];
     if (platforms.length === 0) {
@@ -303,6 +322,7 @@ function SnsHubAdmin() {
       const result = await triggerGeneration(mode, {
         platforms,
         count: generateCounts[mode],
+        format: generateFormats[mode] || undefined,
       });
       if (result?.routine?.fired === false) {
         // fireRoutineはRoutine未構築・fire失敗時も例外を投げず
@@ -506,6 +526,30 @@ function SnsHubAdmin() {
                 </button>
               ))}
             </div>
+            {modeConfig.mode === "evergreen" &&
+              evergreenFormatOptions.length > 0 && (
+                <label className="generate-format-label">
+                  型
+                  <select
+                    className="generate-format-select"
+                    value={generateFormats[modeConfig.mode]}
+                    disabled={generating !== null || generationLocked}
+                    onChange={(e) =>
+                      handleGenerateFormatChange(
+                        modeConfig.mode,
+                        e.target.value,
+                      )
+                    }
+                  >
+                    <option value="">おまかせ（自動選定）</option>
+                    {evergreenFormatOptions.map((format) => (
+                      <option key={format} value={format}>
+                        {format}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             <label className="generate-count-label">
               本数
               <input

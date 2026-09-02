@@ -117,11 +117,16 @@ export async function archiveDraft(draftId) {
  * @param {object} [options]
  * @param {string[]} [options.platforms] - 省略時はAPI側で全プラットフォーム対象になる
  * @param {number} [options.count] - 省略時はAPI側のデフォルト範囲になる
+ * @param {string} [options.format] - 省略時はRoutine側の自動選定ロジックに従う
+ *   （2026-09-02追加、ユーザー要望: どの型を生成するか選びたい）
  */
-export async function triggerGeneration(mode, { platforms, count } = {}) {
+export async function triggerGeneration(
+  mode,
+  { platforms, count, format } = {},
+) {
   return request("/generate", {
     method: "POST",
-    body: JSON.stringify({ mode, platforms, count }),
+    body: JSON.stringify({ mode, platforms, count, format }),
   });
 }
 
