@@ -70,5 +70,6 @@ Xチャネル検証完了後、TikTokチャネル検証に着手する直前に�
 - [x] 38. `channelMatrix.js`をネタ種別単位からネタ単位のTikTok判定に変更 — 既存4系統（新機能・会場特性・データ知見・成績）はCHANNEL_MATRIX上でTikTokを含めず、`getChannelsForTopic(sourceId, {isGamblingRelevant: false})`で個別ネタごとに例外的に安全と判定した場合のみ追加できるようにした。既定は安全側（TikTok除外）
 - [x] 39. 常磐（evergreen）ネタ種別3系統を新設 — `competition-trivia`（競技解説・技術トリビア）・`overseas-intro`（海外向けKyotei入門、英語字幕）・`service-trust`（サービス信頼性・スケール訴求）。成績・確率を扱わない設計のため既定でTikTokを含める。案5「観戦体験型」は実レース映像素材が必要で現行のRemotionベース制作フローでは作れないため見送り
 - [x] 40. `spec.md`のFR1・FR2を更新 — 新設3系統・`new-feature`のライフハック型拡張・ネタ単位TikTok判定の設計をドキュメント化
-- [ ] 41. 新設3系統の候補生成ロジック・Remotionコンポジションテンプレートを実装（今回は設計・チャネルマトリクスまで。実際のトピック選定ロジック・映像テンプレート制作は別セッションで着手）
-- [ ] 42. `docs/proposal/tiktok-non-gambling-content-ideas.md`の「現状の運用方針」節を更新（統合しない方針→統合済みに変更）、BOA-237をクローズ
+- [ ] 41. 新設3系統の候補生成ロジック（`scripts/lib/contentTopics/`への`xxxSource.js`追加・`index.js`のレジストリ登録）・Remotionコンポジションテンプレートを実装（今回は設計・チャネルマトリクスまで。3系統ともまだ`topicSources`に登録されておらず、実際に候補が出てくる状態ではない）
+- [x] 42. `docs/proposal/tiktok-non-gambling-content-ideas.md`の「現状の運用方針」節を更新（統合しない方針→統合済みに変更）— 完了。BOA-237のクローズはLinear未認証のため今回は未実施、次回セッションで対応
+- [ ] 43. `newFeatureSource.js`を拡張し、`missingContentIndex`（新規ルート検知）だけでなく既存機能（言語切替・選手ニュース等）の使い方紹介も候補として出せるようにする — spec.md FR1には反映済みだが、実コードは新規ルート検知のみのまま（2026-09-02判明、ドキュメントが実装より先行している状態）
