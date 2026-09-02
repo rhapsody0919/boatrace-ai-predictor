@@ -54,6 +54,22 @@ export async function approveDraft(draftId, approverId) {
   });
 }
 
+/** ブログ下書きを承認し、対応するDraft PRを自動マージする（platform='blog'専用） */
+export async function mergeBlogPr(draftId, approverId) {
+  return request(`/drafts/${draftId}/merge-blog-pr`, {
+    method: "POST",
+    body: JSON.stringify({ approverId }),
+  });
+}
+
+/** YouTube下書きを承認し、YouTube Data API v3で自動投稿する（platform='youtube'専用） */
+export async function publishYoutube(draftId, approverId) {
+  return request(`/drafts/${draftId}/publish-youtube`, {
+    method: "POST",
+    body: JSON.stringify({ approverId }),
+  });
+}
+
 /** 下書きに一部修正を指摘する */
 export async function reviseDraft(
   draftId,

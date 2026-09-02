@@ -243,6 +243,38 @@
   color: white;
 }
 
+/* プラットフォームタブ内のステータス副フィルタ（2026-09-01追加）。
+   主タブ(.tab-btn)より軽い見た目にして、階層が違うことを示す */
+.status-filter-row {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.status-filter-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-gray-200);
+  background: var(--color-gray-50);
+  color: var(--color-gray-500);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.status-filter-btn:hover {
+  background: var(--color-gray-100);
+}
+
+.status-filter-btn.active {
+  background: var(--color-gray-800);
+  border-color: var(--color-gray-800);
+  color: white;
+}
+
 .tab-content {
   background: white;
   border-radius: 12px;
@@ -394,6 +426,117 @@
 .draft-badge-platform-youtube {
   background: #ff0000;
   color: #ffffff;
+}
+
+.draft-badge-platform-blog {
+  background: var(--ryujin-gold-500, #c9a227);
+  color: #ffffff;
+}
+
+.draft-badge-platform-note {
+  background: #41c9b4;
+  color: #ffffff;
+}
+
+/* ブログ/note下書きのプレビュー（2026-09-01追加）。VideoPreviewと違い
+   縦横比を固定しない（本文の長さが可変のため） */
+.text-draft-preview {
+  padding: 1rem 0.75rem 0.75rem;
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.text-draft-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  /* .text-draft-previewの背景(--color-gray-50)は固定値でダークモードでも
+     反転しないため、テキストも.draft-badge-language等と同じ固定の
+     生パレット値でペアにする（.claude/rules/code-style.mdのLayer1/2ルール） */
+  color: var(--color-gray-800);
+  line-height: 1.4;
+}
+
+.text-draft-cover-image {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.text-draft-embed-video-link {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  background: #ff0000;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.text-draft-body {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-gray-600);
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.text-draft-expand-toggle {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--color-primary-600, var(--color-primary-500));
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.text-draft-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.text-draft-tag {
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--color-gray-200);
+  color: var(--color-gray-700);
+  font-size: 0.7rem;
+}
+
+.copy-to-clipboard {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.thumbnail-preview {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--color-gray-800);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.thumbnail-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnail-preview-empty {
+  color: var(--color-gray-300);
+  font-size: 0.8rem;
 }
 
 .draft-badge-language {
