@@ -53,6 +53,10 @@ import { NoteExplainerCM_DataRaceTable } from "./NoteExplainerCM.jsx";
 import { NoteExplainerCM_ReturnRate } from "./NoteExplainerReturnRate.jsx";
 import { NoteExplainerCM_FormRanking } from "./NoteExplainerFormRanking.jsx";
 import { DataQuoteCard } from "./DataQuoteCard.jsx";
+import {
+  TechniqueConsistencyCM,
+  TECHNIQUE_CONSISTENCY_DURATION,
+} from "./TechniqueConsistencyCM.jsx";
 
 export function RemotionRoot() {
   return (
@@ -484,6 +488,14 @@ export function RemotionRoot() {
           statLabel: "",
           caption: "",
         }}
+      />
+      <Composition
+        id="TechniqueConsistencyCM"
+        component={TechniqueConsistencyCM}
+        durationInFrames={TECHNIQUE_CONSISTENCY_DURATION}
+        fps={30}
+        width={1920}
+        height={1080}
       />
     </>
   );

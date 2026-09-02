@@ -24,96 +24,40 @@ import {
   getDraftById,
   updateDraft,
 } from "../../../../_lib/snsHubHelpers.js";
+import {
+  getYoutubeAccessToken,
+  uploadYoutubeVideo,
+  uploadYoutubeThumbnail,
+} from "../../../../_lib/youtubeUpload.js";
 
 export const config = {
   runtime: "edge",
 };
 
-const YOUTUBE_UPLOAD_URL =
-  "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status";
-const YOUTUBE_THUMBNAIL_URL_BASE =
-  "https://www.googleapis.com/upload/youtube/v3/thumbnails/set";
-
 async function getAccessToken() {
-  const clientId = process.env.YOUTUBE_CLIENT_ID;
-  const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-  const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
-  if (!clientId || !clientSecret || !refreshToken) return null;
-
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
+  return getYoutubeAccessToken({
+    clientId: process.env.YOUTUBE_CLIENT_ID,
+    clientSecret: process.env.YOUTUBE_CLIENT_SECRET,
+    refreshToken: process.env.YOUTUBE_REFRESH_TOKEN,
   });
-  if (!response.ok) {
-    throw new Error(
-      `YouTube OAuthトークン取得に失敗しました (${response.status})`,
-    );
-  }
-  const { access_token } = await response.json();
-  return access_token;
 }
 
 async function uploadVideo(accessToken, draft, videoBlob) {
-  const metadata = {
-    snippet: {
+  return uploadYoutubeVideo(
+    accessToken,
+    {
       title: draft.title,
       description: draft.caption_text || "",
       tags: draft.hashtags || [],
+      // 下書き承認フローはこれまで通り公開投稿する（既存挙動を維持）
+      privacyStatus: "public",
     },
-    status: { privacyStatus: "public" },
-  };
-
-  const boundary = "boatai-youtube-upload-boundary";
-  const body =
-    `--${boundary}\r\n` +
-    `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
-    `${JSON.stringify(metadata)}\r\n` +
-    `--${boundary}\r\n` +
-    `Content-Type: video/mp4\r\n\r\n`;
-  const bodyBytes = new Blob([body, videoBlob, `\r\n--${boundary}--`]);
-
-  const response = await fetch(YOUTUBE_UPLOAD_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": `multipart/related; boundary=${boundary}`,
-    },
-    body: bodyBytes,
-  });
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(
-      `YouTube動画アップロードに失敗しました (${response.status}): ${errorBody}`,
-    );
-  }
-  return response.json();
+    videoBlob,
+  );
 }
 
 async function uploadThumbnail(accessToken, videoId, thumbnailBlob) {
-  const response = await fetch(
-    `${YOUTUBE_THUMBNAIL_URL_BASE}?videoId=${videoId}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "image/jpeg",
-      },
-      body: thumbnailBlob,
-    },
-  );
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(
-      `YouTubeサムネイル設定に失敗しました (${response.status}): ${errorBody}`,
-    );
-  }
-  return response.json();
+  return uploadYoutubeThumbnail(accessToken, videoId, thumbnailBlob);
 }
 
 export default async function handler(req) {
