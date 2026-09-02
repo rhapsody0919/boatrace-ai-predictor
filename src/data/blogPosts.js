@@ -1082,6 +1082,19 @@ export const blogPosts = [
     featured: true,
     image: "/images/blog/venue-winrate-spectrum-ja.jpg",
   },
+  {
+    id: "racer-profile-page-guide",
+    title:
+      "選手個人ページとは？プロフィール・節目記録をまとめてチェックできる機能",
+    description:
+      "選手名から1タップで開ける選手個人ページの使い方を解説。生年月日・支部・登録期等のプロフィールと、通算◯勝達成等の節目の記録をまとめて確認できる機能を紹介します。",
+    date: "2026-09-02",
+    category: "使い方",
+    tags: ["選手プロフィール", "選手ニュース", "使い方", "龍神レーダー"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-profile-page-guide.jpg",
+  },
 ];
 
 // Get featured posts
