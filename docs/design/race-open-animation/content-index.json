@@ -1,0 +1,12 @@
+{
+  "feature": "イン崩れ指数の波紋ムード演出アニメーション",
+  "released": "2026-08-18",
+  "content": {
+    "static_pages": [],
+    "note_articles": ["note-articles/race-mood-effect-guide.md"],
+    "blog_posts": ["public/blog/race-mood-effect-guide.md"],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

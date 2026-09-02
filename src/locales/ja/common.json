@@ -209,7 +209,7 @@
     "awaitingResultBanner": "締切を過ぎましたが、結果はまだ反映されていません（データは1時間おきに更新されます）"
   },
   "home": {
-    "introBannerText": "龍神レーダー - 無料のボートレースAI予想＆データ分析 | 展開予測・イン崩れ指数など45項目のデータを分析。詳しくはこちら →",
+    "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| 展開予測・イン崩れ指数など45項目のデータを分析。詳しくはこちら →",
     "introBannerClose": "閉じる",
     "todayRaces": "本日開催中のレース",
     "dataType": "レースデータ",
@@ -675,7 +675,7 @@
     "breadcrumbHome": "ホーム",
     "itemListName": "データ分析ツール",
     "itemListDescription": "会場・レースごとの傾向を確認できる15の分析機能",
-    "footerText": "© {{year}} 龍神レーダー - 無料のボートレースAI予想＆データ分析",
+    "footerText": "© {{year}} 龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。",
     "tabs": {
       "outcome": "📊 出目分布",
       "technique": "🎯 決まり手",

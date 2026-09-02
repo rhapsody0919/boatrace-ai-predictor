@@ -67,29 +67,23 @@ export function Pop({ children, delay = 0, style }) {
 }
 
 export function Logo({ size = 40 }) {
+  // 実際のサイトロゴ（/logo-light.png、龍の紋章）を使う。絵文字🐉ベースの
+  // バッジは環境依存でカラフルなイラストとして表示され浮くため不採用
+  // （2026-09-01、noteヘッダー/アイコン制作時に確立した方針をここにも適用。
+  // docs/reference/brand-kit.md参照）
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size / 4,
-          background: ACCENT,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: size * 0.55,
-        }}
-      >
-        🐉
-      </div>
+      <Img
+        src={staticFile("logo-light.png")}
+        style={{ width: size, height: size, objectFit: "contain" }}
+      />
       <span
         style={{
           color: WHITE,
           fontSize: size * 0.5,
-          fontWeight: 900,
+          fontWeight: 700,
           fontFamily: FONT,
-          letterSpacing: -1,
+          letterSpacing: 0,
         }}
       >
         龍神レーダー

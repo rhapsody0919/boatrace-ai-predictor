@@ -1,0 +1,13 @@
+{
+  "_comment": "新機能リリース時のトレーサビリティ索引テンプレート。docs/design/{feature-slug}/content-index.json としてコピーし、_commentキーは削除して使う。詳細: docs/design/content-ops-flow/plan.md",
+  "feature": "BOA-XXX 機能名をここに記載",
+  "released": "YYYY-MM-DD",
+  "content": {
+    "static_pages": [],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

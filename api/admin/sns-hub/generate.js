@@ -12,8 +12,9 @@
  *
  * platforms/countは2026-09-01追加（ユーザー要望: TikTokがシャドウバン気味の
  * 時期にX限定で生成したい、生成本数も自分で決めたい）。platformsは配列にして
- * あり、将来YouTube等が追加された際もVALID_PLATFORMSに1件足すだけで拡張できる
- * ようにしている（現時点でRoutineが生成できるのはx/tiktokのみ）。
+ * あり、将来プラットフォームが追加された際もVALID_PLATFORMSに1件足すだけで
+ * 拡張できるようにしている。youtubeは2026-09-01追加（content-multi-channel-pipeline、
+ * spec.md FR7）。
  *
  * fireRoutineは起動を指示するだけで完了を待たない。実際の生成完了までは
  * 動画レンダリングを含め数分〜十数分かかる。
@@ -30,7 +31,7 @@ export const config = {
 };
 
 const VALID_MODES = ["daily", "evergreen"];
-const VALID_PLATFORMS = ["x", "tiktok"];
+const VALID_PLATFORMS = ["x", "tiktok", "youtube"];
 const COUNT_MAX_BY_MODE = { daily: 5, evergreen: 10 };
 
 export default async function handler(req) {

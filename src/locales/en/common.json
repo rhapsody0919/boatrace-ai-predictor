@@ -210,7 +210,7 @@
     "awaitingResultBanner": "The deadline has passed, but the result hasn't been posted yet (data updates about once an hour)."
   },
   "home": {
-    "introBannerText": "Ryujin Radar - Free AI Boat Race Predictions & Data Analysis | 45+ data points analyzed, including turn predictions and the Upset Index. Learn more →",
+    "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | 45+ data points analyzed, including turn predictions and the Upset Index. Learn more →",
     "introBannerClose": "Close",
     "todayRaces": "Today's Races",
     "dataType": "Race data",
@@ -678,7 +678,7 @@
     "breadcrumbHome": "Home",
     "itemListName": "Analysis Tools",
     "itemListDescription": "15 analysis features to check tendencies by venue and race",
-    "footerText": "© {{year}} Ryujin Radar - Free AI Boat Race Predictions & Data Analysis",
+    "footerText": "© {{year}} Ryujin Radar - Visualize boat racing. When in doubt, trust the data.",
     "tabs": {
       "outcome": "📊 Outcome Distribution",
       "technique": "🎯 Winning Technique",

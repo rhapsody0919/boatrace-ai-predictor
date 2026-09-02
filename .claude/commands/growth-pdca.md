@@ -131,6 +131,21 @@ WebSearch等で以下2軸を調査する。
 
 大施策は具体案を会話で提示し、実行はユーザー判断を仰ぐ。新機能はLinearチケット化（VUPループと同じ運用）。
 
+### 7. 提案した小施策をinsightとしてDBに登録する（2026-09-02追加）
+
+content-multi-channel-pipeline（`docs/design/content-multi-channel-pipeline/`）のブログ/noteチャネル生成Routineが次回のネタ選定・執筆時に参照できるよう、ステップ6で挙げた「小施策（即実行）」を`sns_strategy_insights`テーブルに構造化して登録する。`/x-growth-report`ステップ7・ADR 0027と同じパターン（`sns_drafts`のplatform列と同様、`sns_strategy_insights`のplatform列にも`'blog'`/`'note'`を含め既存の値との重複・enum制約は無い）。
+
+- 各「小施策」1件につき1レコードを`createInsight`（`scripts/lib/snsStrategyInsights.js`）で登録する
+  - `platform`: `'blog'`（note向けにも当てはまる施策は`'note'`でも追加登録、両方に有効な場合は`null`）
+  - `language`: `'ja'`
+  - `format`: 特定の記事カテゴリ・タブに限定される施策はその名前、全体に関わる施策なら`null`
+  - `insightText`: 施策の内容（例:「会場ガイド記事には観光情報セクションを厚めに書く」、次回生成に注入してそのまま参照できる粒度で書く）
+  - `evidence`: 根拠となった数値・観測（例:「◯◯記事のCTRが掲載順位相応の期待値の1.8倍」）
+  - `source`: `'own-metrics'`（Search Console/GA4実績由来）または`'external-research'`（競合・キーワード需要調査由来）
+  - `researchMethod`: `'growth-pdca-skill'`
+- 「大施策（提案のみ）」はinsight化しない（人間の戦略判断を要するため）
+- 登録は専用スクリプトが無いため`node -e`等の一時的なコードで行ってよい
+
 ## 判断基準（小 / 大）
 - 小 = 1ファイル程度の軽微な変更、既存パターンの踏襲、リスクが低いもの
 - 大 = 新規ページ・新規機能・新規コンテンツ作成、設計判断を伴うもの

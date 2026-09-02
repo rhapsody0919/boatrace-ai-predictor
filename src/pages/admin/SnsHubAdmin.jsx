@@ -12,6 +12,8 @@ import {
   getDrafts,
   getApprovers,
   approveDraft,
+  mergeBlogPr,
+  publishYoutube,
   reviseDraft,
   redoDraft,
   markDraftPosted,
@@ -77,7 +79,30 @@ const REVISION_REASONS = [
   { code: "format-or-topic-change", label: "型・題材の変更" },
 ];
 
-const TABS = [
+// ブログ/note下書き向けの却下理由（spec.md FR5、2026-09-01追加）。
+// 動画下書きとは性質が異なる却下理由（検索意図・数値正確性等）を別リストにする
+const CONTENT_REVISION_REASONS = [
+  { code: "search-intent-mismatch", label: "検索意図とズレている" },
+  { code: "data-accuracy-error", label: "数値・データの誤り" },
+  { code: "too-similar-to-existing", label: "既存記事と似すぎている" },
+  { code: "typo-or-data-error", label: "誤字・データの誤り" },
+  { code: "tone-adjustment", label: "トーン調整" },
+];
+
+// 2026-09-01、content-multi-channel-pipeline（spec.md FR6・screens.md）で
+// ステータス軸タブからプラットフォーム軸タブへ再構成した。以前は「承認待ち/
+// 投稿準備完了/投稿済み」が主タブだったが、note/blog/youtubeが増えチャネルを
+// 横断して見づらくなったため、プラットフォームを主タブ・ステータスを
+// 副フィルタにした。
+const PLATFORM_TABS = [
+  { id: "tiktok", label: "TikTok", platform: "tiktok" },
+  { id: "x", label: "X", platform: "x" },
+  { id: "youtube", label: "YouTube", platform: "youtube" },
+  { id: "note", label: "Note", platform: "note" },
+  { id: "blog", label: "Blog", platform: "blog" },
+];
+
+const STATUS_FILTERS = [
   {
     id: "review",
     label: "承認待ち",
@@ -89,16 +114,22 @@ const TABS = [
     statuses: ["approved", "ready_to_post"],
   },
   { id: "posted", label: "投稿済み", statuses: ["posted"] },
+];
+
+const NON_PLATFORM_TABS = [
   { id: "insights", label: "戦略メモ" },
   { id: "catalog", label: "フォーマットカタログ" },
 ];
 
+const TABS = [...PLATFORM_TABS, ...NON_PLATFORM_TABS];
+
 // 手動生成の対象プラットフォーム選択肢。Routineが対応するプラットフォームが
-// 増えたら（例: YouTube）ここに1件足すだけでよい（2026-09-01、api/admin/sns-hub/
-// generate.jsのVALID_PLATFORMSと合わせて更新すること）
+// 増えたらここに1件足すだけでよい（api/admin/sns-hub/generate.jsの
+// VALID_PLATFORMSと合わせて更新すること）。youtubeは2026-09-01追加
 const GENERATE_PLATFORM_OPTIONS = [
   { value: "x", label: "X" },
   { value: "tiktok", label: "TikTok" },
+  { value: "youtube", label: "YouTube" },
 ];
 
 // countMaxはapi/admin/sns-hub/generate.jsのCOUNT_MAX_BY_MODEと一致させる
@@ -120,7 +151,10 @@ const GENERATE_MODES = [
 ];
 
 function SnsHubAdmin() {
-  const [activeTab, setActiveTab] = useState("review");
+  // activeTab: プラットフォーム軸の主タブ（tiktok/x/youtube/note/blog/insights/catalog）
+  // activeStatusFilter: プラットフォームタブ内のステータス副フィルタ
+  const [activeTab, setActiveTab] = useState("tiktok");
+  const [activeStatusFilter, setActiveStatusFilter] = useState("review");
   const [drafts, setDrafts] = useState([]);
   const [approvers, setApprovers] = useState([]);
   const [insights, setInsights] = useState([]);
@@ -368,13 +402,19 @@ function SnsHubAdmin() {
     );
   }
 
-  const activeTabDef = TABS.find((t) => t.id === activeTab);
   const isInsightsTab = activeTab === "insights";
   const isCatalogTab = activeTab === "catalog";
-  const visibleDrafts =
-    isInsightsTab || isCatalogTab
-      ? []
-      : drafts.filter((d) => activeTabDef.statuses.includes(d.status));
+  const isPlatformTab = !isInsightsTab && !isCatalogTab;
+  const activeStatusDef = STATUS_FILTERS.find(
+    (f) => f.id === activeStatusFilter,
+  );
+  const visibleDrafts = isPlatformTab
+    ? drafts.filter(
+        (d) =>
+          d.platform === activeTab &&
+          activeStatusDef.statuses.includes(d.status),
+      )
+    : [];
 
   return (
     <div className="sns-hub-admin-page">
@@ -388,8 +428,14 @@ function SnsHubAdmin() {
                 ? insights.filter((i) => i.status === "proposed").length
                 : tab.id === "catalog"
                   ? templateVariants.length
-                  : drafts.filter((d) => tab.statuses.includes(d.status))
-                      .length;
+                  : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
+                    // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
+                    // 対応が必要な件数という意味が薄れるため）
+                    drafts.filter(
+                      (d) =>
+                        d.platform === tab.id &&
+                        STATUS_FILTERS[0].statuses.includes(d.status),
+                    ).length;
             return (
               <button
                 key={tab.id}
@@ -414,6 +460,26 @@ function SnsHubAdmin() {
           🔄 更新
         </button>
       </div>
+
+      {isPlatformTab && (
+        <div className="status-filter-row">
+          {STATUS_FILTERS.map((filter) => {
+            const count = drafts.filter(
+              (d) =>
+                d.platform === activeTab && filter.statuses.includes(d.status),
+            ).length;
+            return (
+              <button
+                key={filter.id}
+                className={`status-filter-btn ${activeStatusFilter === filter.id ? "active" : ""}`}
+                onClick={() => setActiveStatusFilter(filter.id)}
+              >
+                {filter.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="manual-generate-panel">
         <span className="manual-generate-label">
@@ -523,6 +589,12 @@ function SnsHubAdmin() {
                 onApprove={(approverId) =>
                   handleAction(approveDraft, [draft.id, approverId])
                 }
+                onMergeBlogPr={(approverId) =>
+                  handleAction(mergeBlogPr, [draft.id, approverId])
+                }
+                onPublishYoutube={(approverId) =>
+                  handleAction(publishYoutube, [draft.id, approverId])
+                }
                 onRevise={(payload) =>
                   handleAction(reviseDraft, [draft.id, payload], {
                     drafts: true,
@@ -555,7 +627,13 @@ function SnsHubAdmin() {
   );
 }
 
-const PLATFORM_LABELS = { x: "X", tiktok: "TikTok", youtube: "YouTube" };
+const PLATFORM_LABELS = {
+  x: "X",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  blog: "ブログ",
+  note: "note",
+};
 const LANGUAGE_LABELS = { ja: "日本語", en: "English" };
 const SOURCE_LABELS = {
   "own-metrics": "自社実績",
@@ -872,10 +950,17 @@ function getDefaultDraftCardExpanded() {
   return window.matchMedia("(min-width: 481px)").matches;
 }
 
+// blog/youtubeは承認操作自体がPRマージ/YouTube投稿まで行うため、
+// 承認後は"approved"状態を経由せず直接"posted"になる（ADR 0034, 0035）
+const AUTO_PUBLISH_PLATFORMS = new Set(["blog", "youtube"]);
+const TEXT_DRAFT_PLATFORMS = new Set(["blog", "note"]);
+
 function DraftCard({
   draft,
   approvers,
   onApprove,
+  onMergeBlogPr,
+  onPublishYoutube,
   onRevise,
   onRedo,
   onMarkPosted,
@@ -903,11 +988,18 @@ function DraftCard({
 
   return (
     <div className={`draft-card${isOpen ? " draft-card--expanded" : ""}`}>
-      <VideoPreview
-        videoUrl={draft.video_url}
-        coverImageUrl={draft.cover_image_url}
-        active={isOpen}
-      />
+      {TEXT_DRAFT_PLATFORMS.has(draft.platform) ? (
+        <TextDraftPreview draft={draft} />
+      ) : (
+        <VideoPreview
+          videoUrl={draft.video_url}
+          coverImageUrl={draft.cover_image_url}
+          active={isOpen}
+        />
+      )}
+      {draft.platform === "youtube" && (
+        <ThumbnailPreview thumbnailUrl={draft.cover_image_url} />
+      )}
 
       <div className="draft-card-body">
         <div className="draft-card-badges">
@@ -976,13 +1068,25 @@ function DraftCard({
                 />
 
                 <div className="draft-actions">
-                  <button
-                    className="draft-action-btn approve"
-                    disabled={!selectedApproverId}
-                    onClick={() => onApprove(selectedApproverId)}
-                  >
-                    ✅ 承認
-                  </button>
+                  {draft.platform === "blog" ? (
+                    <BlogApproveAction
+                      disabled={!selectedApproverId}
+                      onApprove={() => onMergeBlogPr(selectedApproverId)}
+                    />
+                  ) : draft.platform === "youtube" ? (
+                    <YouTubeApproveAction
+                      disabled={!selectedApproverId}
+                      onApprove={() => onPublishYoutube(selectedApproverId)}
+                    />
+                  ) : (
+                    <button
+                      className="draft-action-btn approve"
+                      disabled={!selectedApproverId}
+                      onClick={() => onApprove(selectedApproverId)}
+                    >
+                      ✅ 承認
+                    </button>
+                  )}
                   <button
                     className="draft-action-btn revise"
                     onClick={() =>
@@ -1004,6 +1108,11 @@ function DraftCard({
                 {openPanel === "revise" && (
                   <RevisionPanel
                     mode="revise"
+                    reasons={
+                      TEXT_DRAFT_PLATFORMS.has(draft.platform)
+                        ? CONTENT_REVISION_REASONS
+                        : REVISION_REASONS
+                    }
                     onCancel={() => setOpenPanel(null)}
                     onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
                       onRevise({
@@ -1034,9 +1143,15 @@ function DraftCard({
             )}
 
             {(draft.status === "approved" ||
-              draft.status === "ready_to_post") && (
-              <PostingActionLinks draft={draft} onMarkPosted={onMarkPosted} />
-            )}
+              draft.status === "ready_to_post") &&
+              (draft.platform === "note" ? (
+                <NoteCopyActionLinks
+                  draft={draft}
+                  onMarkPosted={onMarkPosted}
+                />
+              ) : (
+                <PostingActionLinks draft={draft} onMarkPosted={onMarkPosted} />
+              ))}
 
             {draft.status === "posted" && draft.platform === "tiktok" && (
               <TikTokMetricsForm onSubmit={onAddMetric} />
@@ -1268,7 +1383,12 @@ function ApproverChips({ approvers, selectedId, onSelect }) {
   );
 }
 
-function RevisionPanel({ mode, onSubmit, onCancel }) {
+function RevisionPanel({
+  mode,
+  reasons = REVISION_REASONS,
+  onSubmit,
+  onCancel,
+}) {
   const [reasonCodes, setReasonCodes] = useState([]);
   const [freeText, setFreeText] = useState("");
   const [saveAsInsight, setSaveAsInsight] = useState(false);
@@ -1287,7 +1407,7 @@ function RevisionPanel({ mode, onSubmit, onCancel }) {
     <div className="revision-panel">
       {mode === "revise" && (
         <div className="revision-reason-chips">
-          {REVISION_REASONS.map((r) => (
+          {reasons.map((r) => (
             <button
               key={r.code}
               className={`revision-reason-chip ${
@@ -1343,6 +1463,206 @@ function RevisionPanel({ mode, onSubmit, onCancel }) {
         </button>
       </div>
     </div>
+  );
+}
+
+// ブログ/note下書きのプレビュー（2026-09-01追加、screens.md参照）。
+// VideoPreviewの文章版。タイトル・本文（折りたたみ可）・タグ・画像or
+// YouTube動画リンクを表示する
+function TextDraftPreview({ draft }) {
+  const [bodyExpanded, setBodyExpanded] = useState(false);
+  const bodyText = draft.caption_text || "";
+  const isLong = bodyText.length > 200;
+  const displayText =
+    isLong && !bodyExpanded ? `${bodyText.slice(0, 200)}…` : bodyText;
+
+  return (
+    <div className="text-draft-preview">
+      {draft.title && <h3 className="text-draft-title">{draft.title}</h3>}
+
+      {draft.platform === "blog" && draft.pr_url && (
+        <a
+          className="text-draft-pr-link"
+          href={draft.pr_url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          🔗 Draft PRでレンダリング結果を確認（承認前に必ず見る）
+        </a>
+      )}
+
+      {draft.cover_image_url ? (
+        <img
+          src={draft.cover_image_url}
+          alt=""
+          className="text-draft-cover-image"
+        />
+      ) : (
+        draft.embed_video_url && (
+          <a
+            className="text-draft-embed-video-link"
+            href={draft.embed_video_url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            🎬 埋め込み動画を見る
+          </a>
+        )
+      )}
+
+      {bodyText && (
+        <>
+          <p className="text-draft-body">{displayText}</p>
+          {isLong && (
+            <button
+              type="button"
+              className="text-draft-expand-toggle"
+              onClick={() => setBodyExpanded((v) => !v)}
+            >
+              {bodyExpanded ? "▲ 折りたたむ" : "▼ 全文を見る"}
+            </button>
+          )}
+        </>
+      )}
+
+      {draft.hashtags?.length > 0 && (
+        <div className="text-draft-tags">
+          {draft.hashtags.map((tag) => (
+            <span key={tag} className="text-draft-tag">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// クリップボードへのコピー汎用ボタン（2026-09-01追加）。note下書きの
+// 本文・タグをワンタップでコピーする用途で新設したが、他画面でも再利用できる
+// 汎用コンポーネントとして実装している
+function CopyToClipboardButton({ text, label }) {
+  const [feedback, setFeedback] = useState(null);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setFeedback("コピーしました");
+    } catch (err) {
+      console.error("コピーエラー:", err);
+      setFeedback("コピーに失敗しました");
+    }
+    setTimeout(() => setFeedback(null), 2000);
+  }
+
+  return (
+    <span className="copy-to-clipboard">
+      <button
+        type="button"
+        className="posting-action-btn copy"
+        onClick={handleCopy}
+      >
+        📋 {label}
+      </button>
+      {feedback && <span className="copy-feedback">{feedback}</span>}
+    </span>
+  );
+}
+
+// note下書きの投稿導線（2026-09-01追加）。PostingActionLinks（動画向け）の
+// note版。noteは公開APIが無いため自動投稿はできず、本文・タグをコピーして
+// 手動でnoteエディタに貼り付けてもらう運用（.claude/CLAUDE.mdフローC-1と同じ
+// 「コピペ＋人間が最終操作」パターン）
+function NoteCopyActionLinks({ draft, onMarkPosted }) {
+  const tagsText = (draft.hashtags || []).join(" ");
+  return (
+    <div className="posting-action-links">
+      <CopyToClipboardButton
+        text={draft.title || ""}
+        label="タイトルをコピー"
+      />
+      <CopyToClipboardButton
+        text={draft.caption_text || ""}
+        label="本文をコピー"
+      />
+      {tagsText && (
+        <CopyToClipboardButton text={tagsText} label="タグをコピー" />
+      )}
+      <a
+        className="posting-action-btn platform-link"
+        href="https://note.com/notes/new"
+        target="_blank"
+        rel="noreferrer"
+      >
+        noteエディタを開く
+      </a>
+      <button className="posting-action-btn mark-posted" onClick={onMarkPosted}>
+        投稿済みにする
+      </button>
+    </div>
+  );
+}
+
+// YouTube下書きのサムネイルプレビュー（2026-09-01追加）。VideoPreviewの
+// 画像版だが、YouTube固有（1280x720固定）のため独立コンポーネントにしている
+function ThumbnailPreview({ thumbnailUrl }) {
+  if (!thumbnailUrl) {
+    return (
+      <div className="thumbnail-preview thumbnail-preview-empty">
+        サムネイル未生成
+      </div>
+    );
+  }
+  return (
+    <div className="thumbnail-preview">
+      <img src={thumbnailUrl} alt="" className="thumbnail-preview-image" />
+    </div>
+  );
+}
+
+// blogの「承認」は同時にDraft PRをマージする不可逆操作のため、確認ダイアログを
+// 挟む（ADR 0034）。ボタン文言も「承認」ではなく明示的にする
+function BlogApproveAction({ disabled, onApprove }) {
+  function handleClick() {
+    if (
+      window.confirm(
+        "承認すると、対応するDraft PRが即座にマージされます。よろしいですか？",
+      )
+    ) {
+      onApprove();
+    }
+  }
+  return (
+    <button
+      className="draft-action-btn approve"
+      disabled={disabled}
+      onClick={handleClick}
+    >
+      ✅ 承認してPRをマージ
+    </button>
+  );
+}
+
+// YouTubeの「承認」も同時に実投稿する不可逆操作のため、確認ダイアログを挟む
+// （ADR 0035）
+function YouTubeApproveAction({ disabled, onApprove }) {
+  function handleClick() {
+    if (
+      window.confirm(
+        "承認すると、YouTubeへ即座に動画が公開されます。よろしいですか？",
+      )
+    ) {
+      onApprove();
+    }
+  }
+  return (
+    <button
+      className="draft-action-btn approve"
+      disabled={disabled}
+      onClick={handleClick}
+    >
+      ✅ 承認してYouTubeに公開
+    </button>
   );
 }
 

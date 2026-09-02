@@ -1,0 +1,72 @@
+name: Content Ops Nightly Check
+
+on:
+  schedule:
+    # JST 深夜0:00 = UTC 15:00
+    - cron: '0 15 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: content-ops-nightly-check
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Run content-ops checks
+        id: checks
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          set +e
+          OUTPUT=$(node scripts/maintenance/content-ops-checks/nightly-summary.js)
+          EXIT_CODE=$?
+          echo "$OUTPUT"
+          {
+            echo "summary<<EOF"
+            echo "$OUTPUT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: 却下フィードバックの閾値エスカレーション（content-multi-channel-pipeline）
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: node scripts/maintenance/content-ops-checks/check-revision-escalation.js
+
+      - name: Notify Slack (閾値超過時のみ)
+        if: steps.checks.outputs.exit_code == '1'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SUMMARY: ${{ steps.checks.outputs.summary }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"#c9a227\",
+                \"blocks\": [
+                  {
+                    \"type\": \"section\",
+                    \"text\": {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \":warning: *コンテンツ運用の夜間チェックで滞留を検知*\n\`\`\`${SUMMARY}\`\`\`\n詳細: session-start-check.js または該当スクリプトを次回セッションで実行してください\"
+                    }
+                  }
+                ]
+              }]
+            }"

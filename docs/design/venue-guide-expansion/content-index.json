@@ -1,0 +1,16 @@
+{
+  "feature": "会場別ビジターガイド 全24会場化・SEOフル拡充（英語版）",
+  "released": "2026-07-27",
+  "content": {
+    "static_pages": [
+      "/en/venues",
+      "/en/venues/:slug",
+      "/en/venues/region/:regionSlug"
+    ],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

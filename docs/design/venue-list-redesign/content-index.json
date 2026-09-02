@@ -1,0 +1,17 @@
+{
+  "feature": "開催場一覧ページ再設計（会場一覧→会場別レース一覧→レース詳細の3階層ナビ）",
+  "released": "2026-08-29",
+  "content": {
+    "static_pages": [
+      "/",
+      "/venue/:venueCode",
+      "/race/:raceId",
+      "/races/:date/:venueCode"
+    ],
+    "note_articles": ["note-articles/venue-grid-navigation.md"],
+    "blog_posts": ["public/blog/venue-grid-navigation.md"],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

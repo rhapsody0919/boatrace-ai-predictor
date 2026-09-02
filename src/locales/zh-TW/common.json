@@ -209,7 +209,7 @@
     "awaitingResultBanner": "已過截止時間，但結果尚未更新（資料約每小時更新一次）"
   },
   "home": {
-    "introBannerText": "龍神雷達 - 免費賽艇AI預測與數據分析 | 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
+    "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
     "introBannerClose": "關閉",
     "todayRaces": "今日賽事",
     "dataType": "比賽資料",
@@ -673,7 +673,7 @@
     "breadcrumbHome": "首頁",
     "itemListName": "數據分析工具",
     "itemListDescription": "可確認各賽場、各比賽傾向的15項分析功能",
-    "footerText": "© {{year}} 龍神雷達 - 免費賽艇AI預測與數據分析",
+    "footerText": "© {{year}} 龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。",
     "tabs": {
       "outcome": "📊 名次組合分布",
       "technique": "🎯 獲勝方式",

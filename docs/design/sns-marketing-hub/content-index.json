@@ -1,0 +1,12 @@
+{
+  "feature": "SNSマーケティングハブ Phase1（承認・多言語化・投稿橋渡し基盤）",
+  "released": "2026-08-27",
+  "content": {
+    "static_pages": ["/admin/sns-hub"],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}
