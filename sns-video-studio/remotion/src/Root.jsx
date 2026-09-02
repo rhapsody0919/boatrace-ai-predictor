@@ -37,6 +37,7 @@ import {
   BoatRankingCM_RunnerUp,
   BoatRankingCM_TechniqueShare,
   BoatRankingCM_NarutoNigeWin,
+  BoatRankingCM_TechniqueConsistency,
 } from "./VenueRankingCM.jsx";
 import { KimariteCM_B } from "./KimariteCM.jsx";
 import { LivePredictionCM_B } from "./LivePredictionCM2.jsx";
@@ -97,6 +98,14 @@ export function RemotionRoot() {
         id="BoatRankingCM-NarutoNigeWin"
         component={BoatRankingCM_NarutoNigeWin}
         durationInFrames={413}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="BoatRankingCM-TechniqueConsistency"
+        component={BoatRankingCM_TechniqueConsistency}
+        durationInFrames={601}
         fps={30}
         width={1080}
         height={1920}
