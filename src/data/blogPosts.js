@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "boat-number-technique-consistency",
+    title: "1号艇はどこでも「逃げ」、4号艇の決まり手は会場でバラバラ",
+    description:
+      "決まり手データ分析の実データで、1号艇と4号艇の「会場による決まり手のブレやすさ」を比較。1号艇は全24会場で逃げ率90%超と安定する一方、4号艇はまくり・差し・まくり差しと会場ごとに主役の決まり手が変わり、そのブレ幅は5倍以上でした。",
+    date: "2026-09-02",
+    category: "データ分析",
+    tags: ["決まり手", "まくり", "逃げ", "会場別データ", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/boat-number-technique-consistency.jpg",
+  },
+  {
     id: "venue-grid-navigation",
     title: "開催場一覧ページを刷新！24会場から2タップで目的のレース分析へ",
     description:
