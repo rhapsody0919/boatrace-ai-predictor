@@ -88,16 +88,35 @@ def optimize_for_note(md_text):
             i += 1
             continue
         
-        # テーブル行をスキップ（既に箇条書きに変換済み）
-        if line.strip().startswith('|') and '---' not in line:
-            i += 1
+        # テーブル（noteは表記法非対応のため箇条書きに変換する。
+        # 以前はテーブル行を無条件でスキップしており、変換されずに表の
+        # 内容ごと本文から消えるバグがあった。2026-09-02、
+        # boat-number-technique-consistency記事のnote下書き作成時に発覚）
+        if (
+            line.strip().startswith('|')
+            and '---' not in line
+            and i + 1 < len(lines)
+            and re.match(r'^\s*\|[\s:|-]+\|\s*$', lines[i + 1])
+        ):
+            header_cells = [c.strip() for c in line.strip().strip('|').split('|')]
+            j = i + 2  # ヘッダー行・区切り行の次からデータ行
+            data_rows = []
+            while j < len(lines) and lines[j].strip().startswith('|'):
+                data_rows.append(
+                    [c.strip() for c in lines[j].strip().strip('|').split('|')]
+                )
+                j += 1
+
+            if output and output[-1].strip():
+                output.append('')
+            output.append(f"**{' / '.join(header_cells)}**")
+            output.append('')
+            for row in data_rows:
+                output.append(f"- {' / '.join(row)}")
+            output.append('')
+            i = j
             continue
-        
-        # テーブルの区切り線をスキップ
-        if '|---' in line or '|------' in line:
-            i += 1
-            continue
-        
+
         # 通常のテキスト（Markdown記法はそのまま）
         # リンクをnote形式に変換 [text](url) → [text](url)（そのまま）
         output.append(line)
