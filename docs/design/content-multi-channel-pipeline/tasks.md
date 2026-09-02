@@ -9,7 +9,7 @@
 - [x] 3. `data/analysis/content-topics/`履歴JSON初期化 — 実装は遅延生成方式（`recordUsage`初回呼び出し時に自動作成）のため、事前の個別初期化は不要と判断
 - [x] 4. `scripts/lib/contentChannels/channelMatrix.js`実装（ネタ種別→チャネル対応表）— 動作確認済み
 - [x] 5〜6・8. **設計を修正**: ブログ/note本文の執筆・品質採点は決定的なJS関数にできない（LLM判断そのもののため）。既存の`sns-video-producer-prompt.md`等と同じ形式の運用プロンプト文書として実装した: [`docs/operation/content-multi-channel-pipeline-prompt.md`](../../operation/content-multi-channel-pipeline-prompt.md)（ネタ選定・チャネル選定・ブログ執筆・note変換・多層品質レビュー・下書き永続化・履歴更新の手順を網羅）。当初`renderer.js`/`contentQualityReview.js`という実装方針を計画していたが、実装段階で「文章生成・品質判断はコードにできない」ことを踏まえ方針転換
-- [ ] 7. YouTubeサムネイル生成のRemotion still実行スクリプト（`scripts/lib/contentChannels/youtubeThumbnail.js`、Remotion CLI呼び出しのみのため決定的コードとして実装可能。ただしサムネイル用Remotionコンポジション自体が未作成——先にコンポジションを用意する必要あり）
+- [x] 7. YouTubeサムネイル生成のRemotion still実行スクリプト — 当初想定していた`youtubeThumbnail.js`単体ではなく、`renderCoverCard.js`（task 34）＋`DataQuoteCard-YouTubeThumbnail`コンポジション（task 32）として実装済みだったと2026-09-02判明。実際にこの仕組みで`technique-consistency-youtube-thumb.jpg`を生成し使用済み（動作確認済み）
 
 ## Routine
 
@@ -72,4 +72,4 @@ Xチャネル検証完了後、TikTokチャネル検証に着手する直前に�
 - [x] 40. `spec.md`のFR1・FR2を更新 — 新設3系統・`new-feature`のライフハック型拡張・ネタ単位TikTok判定の設計をドキュメント化
 - [ ] 41. 新設3系統の候補生成ロジック（`scripts/lib/contentTopics/`への`xxxSource.js`追加・`index.js`のレジストリ登録）・Remotionコンポジションテンプレートを実装（今回は設計・チャネルマトリクスまで。3系統ともまだ`topicSources`に登録されておらず、実際に候補が出てくる状態ではない）
 - [x] 42. `docs/proposal/tiktok-non-gambling-content-ideas.md`の「現状の運用方針」節を更新（統合しない方針→統合済みに変更）— 完了。BOA-237のクローズはLinear未認証のため今回は未実施、次回セッションで対応
-- [ ] 43. `newFeatureSource.js`を拡張し、`missingContentIndex`（新規ルート検知）だけでなく既存機能（言語切替・選手ニュース等）の使い方紹介も候補として出せるようにする — spec.md FR1には反映済みだが、実コードは新規ルート検知のみのまま（2026-09-02判明、ドキュメントが実装より先行している状態）
+- [x] 43. `newFeatureSource.js`を拡張し、`missingContentIndex`（新規ルート検知）だけでなく既存機能（言語切替・レース間ナビゲーション・選手ニュース・会場ガイド）の使い方紹介も候補として出せるようにした。各候補に`isGamblingRelevant`フィールドを持たせ（新規ルート由来はtrue=安全側、ライフハック候補はfalse=TikTok可）、`content-multi-channel-pipeline-prompt.md`のチャネル選定手順にもこのフィールドを`getChannelsForTopic`へ渡す手順を追記。動作確認済み（候補4件、いずれも`isGamblingRelevant: false`で出力）

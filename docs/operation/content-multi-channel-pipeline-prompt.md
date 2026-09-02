@@ -21,7 +21,10 @@
 
 ## 2. チャネル選定
 
-`scripts/lib/contentChannels/channelMatrix.js`の`getChannelsForTopic(sourceId)`で、選んだネタが展開すべきチャネル一覧を取得する。
+`scripts/lib/contentChannels/channelMatrix.js`の`getChannelsForTopic(sourceId, options)`で、選んだネタが展開すべきチャネル一覧を取得する。
+
+- **2026-09-02追加（TikTokガイドライン対応）**: 選んだ候補オブジェクトに`isGamblingRelevant`フィールドがある場合（`new-feature`系統の候補、`newFeatureSource.js`参照）、そのまま`getChannelsForTopic(sourceId, {isGamblingRelevant: candidate.isGamblingRelevant})`に渡す。フィールドが無い場合（`venue-characteristic`・`data-insight`・`daily-result`）は既定値（TikTok除外）のまま使う——個別ネタの安全性を独自に判断してオプションを付け足さない。安全と確信できる新しいネタ種別が必要な場合は、`docs/proposal/tiktok-non-gambling-content-ideas.md`のように新しいトピックモジュールとして設計してから追加する
+- `competition-trivia`・`overseas-intro`・`service-trust`の3系統は現時点で`scripts/lib/contentTopics/`に候補生成ロジックが無い（`docs/design/content-multi-channel-pipeline/tasks.md`タスク41）ため、このRoutineでは選択できない
 
 ## 3. ブログ本文の執筆
 
