@@ -62,3 +62,13 @@
 - [x] 35. `scripts/lib/contentRevisionHistory.js`・`scripts/maintenance/content-ops-checks/check-revision-escalation.js`実装 — 却下フィードバック（`revision_reason_codes`）の恒久反映。生成前に直近30日分を必ず参照、同一理由が3回累積したら`content-ops-nightly-check.yml`が自動でLinear起票（既存の`content-quality`ラベル運用に合流、`check-quality-backlog.js`が拾う）
 - [x] 36. `content-multi-channel-pipeline-prompt.md`にステップ0（却下理由確認）・ステップ5（カバー画像生成）を追加、「画像は人間が用意する」制約を撤去
 - [x] 37. ブログ承認→PRマージ画面に、承認前にDraft PR（Vercel Preview含む）へのリンクを表示する — `TextDraftPreview`にタイトル直下でPRリンクを表示、モックデータで表示確認済み
+
+## TikTokギャンブルポリシー対応（2026-09-02、BOA-237）
+
+Xチャネル検証完了後、TikTokチャネル検証に着手する直前に、既存フォーマットの大半がTikTok広告ポリシー（賭けの結果に影響する統計・インサイトの規制）に抵触して新規制作停止になっていたことが判明（`docs/proposal/tiktok-non-gambling-content-ideas.md`）。channelMatrix.jsの「会場攻略型TikTokローテーションに乗る」という前提コメントが誤りだった状態（BOA-237）を含めて対応。
+
+- [x] 38. `channelMatrix.js`をネタ種別単位からネタ単位のTikTok判定に変更 — 既存4系統（新機能・会場特性・データ知見・成績）はCHANNEL_MATRIX上でTikTokを含めず、`getChannelsForTopic(sourceId, {isGamblingRelevant: false})`で個別ネタごとに例外的に安全と判定した場合のみ追加できるようにした。既定は安全側（TikTok除外）
+- [x] 39. 常磐（evergreen）ネタ種別3系統を新設 — `competition-trivia`（競技解説・技術トリビア）・`overseas-intro`（海外向けKyotei入門、英語字幕）・`service-trust`（サービス信頼性・スケール訴求）。成績・確率を扱わない設計のため既定でTikTokを含める。案5「観戦体験型」は実レース映像素材が必要で現行のRemotionベース制作フローでは作れないため見送り
+- [x] 40. `spec.md`のFR1・FR2を更新 — 新設3系統・`new-feature`のライフハック型拡張・ネタ単位TikTok判定の設計をドキュメント化
+- [ ] 41. 新設3系統の候補生成ロジック・Remotionコンポジションテンプレートを実装（今回は設計・チャネルマトリクスまで。実際のトピック選定ロジック・映像テンプレート制作は別セッションで着手）
+- [ ] 42. `docs/proposal/tiktok-non-gambling-content-ideas.md`の「現状の運用方針」節を更新（統合しない方針→統合済みに変更）、BOA-237をクローズ
