@@ -105,10 +105,11 @@ ON CONFLICT (category_id, platform) DO UPDATE SET enabled = true;
 
 INSERT INTO sns_topic_category_channels (category_id, platform, enabled)
 SELECT id, 'tiktok', false FROM sns_topic_categories WHERE category_key IN
-    ('volatility-index', 'payout-rate', 'outcome-distribution', 'prediction-accuracy', 'prediction-hook')
+    ('volatility-index', 'payout-rate', 'outcome-distribution', 'prediction-accuracy', 'prediction-hook',
+     'confrontation-hype')
 ON CONFLICT (category_id, platform) DO UPDATE SET enabled = false;
 
--- 対決煽り型は廃止のため全チャネルOFF
+-- 対決煽り型は廃止のため全チャネルOFF（tiktok以外の4チャネルは上のCROSS JOINで作成済み）
 UPDATE sns_topic_category_channels SET enabled = false
 WHERE category_id = (SELECT id FROM sns_topic_categories WHERE category_key = 'confrontation-hype');
 
