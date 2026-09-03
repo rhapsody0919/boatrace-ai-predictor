@@ -26,13 +26,17 @@
 
 ## 3. チャネル判定
 
-`scripts/lib/contentChannels/channelMatrix.js`の`getChannelsForTopic("venue-characteristic")`を呼び、対象プラットフォーム一覧を取得する（現状`["blog", "note", "x", "youtube"]`、TikTokは既定で対象外——成績データを扱う性質上、TikTokガイドライン対応のため。詳細はコメント参照）。**ここで得た一覧をそのまま使う。個別ネタごとに独自判断でTikTokを追加しない**（`isGamblingRelevant`オプションは、成績データを一切含まない切り口を新規に設計した場合のみ検討する）。
+`scripts/lib/contentChannels/channelMatrix.js`の`getChannelsForTopic("venue-characteristic")`を呼び、対象プラットフォーム一覧を取得する（現状`["blog", "note", "x", "youtube"]`、TikTokは既定で対象外——成績データを扱う性質上、TikTokガイドライン対応のため。詳細はコメント参照）。
+
+**TikTok可否の個別ネタ判定（2026-09-03更新）**: `angle`が`access`（アクセス）等の勝率・決まり手等の成績データを一切含まない切り口の場合のみ、`getChannelsForTopic("venue-characteristic", { isGamblingRelevant: false })`を呼びTikTokも含める。`technique-tendency`（決まり手傾向）・`water-type`（水面特性が展開・決まり手に直結する場合）等、成績・確率に触れる切り口は`isGamblingRelevant`を渡さず既定（除外）のままにする。判断に迷う場合は安全側（除外）に倒す。
+
+**除外したチャネルもsns_topic_targets行自体は作られる**（4.参照）。TikTokを既定除外にしても、そのネタが実際には安全だと人間が判断すれば、sns-hub「ネタ承認」画面のチャネルトグルで個別にpendingへ変更できる。
 
 ## 4. ネタの登録
 
 1. `getContentTypeByKey("venue-feature")`（`scripts/lib/snsTopics.js`）で型IDを取得する
-2. `getTargetAccounts()`（同ファイル）でactiveな配信先アカウント一覧を取得し、3.で得たプラットフォーム名に該当するものだけ`target_account_id`を集める
-3. `createTopicWithTargets({ topicText, contentTypeId, sourceInsightIds, autoApprove: false, targetAccountIds })`を呼ぶ。`venue-feature`型は`requires_topic_approval=true`のため`autoApprove: false`固定（`status='proposed'`のまま作成され、人間の承認を待つ）
+2. `getTargetAccounts()`（同ファイル）でactiveな配信先アカウント一覧を取得し、3.で得たプラットフォーム名に該当するものを`targetAccountIds`（`status='pending'`にするアカウント）として集める
+3. `createTopicWithTargets({ topicText, contentTypeId, sourceInsightIds, autoApprove: false, targetAccountIds })`を呼ぶ。`venue-feature`型は`requires_topic_approval=true`のため`autoApprove: false`固定（`status='proposed'`のまま作成され、人間の承認を待つ）。`targetAccountIds`に含まれないアカウント（既定でTikTok）も行は作られるが`status='skipped'`になる（既定除外、人間が個別に変更可能）
 4. `sourceInsightIds`には0.で参照した根拠insightのIDを入れる（無ければ空配列でよい）
 
 ## 5. 使用履歴の更新

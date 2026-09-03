@@ -75,14 +75,27 @@ export async function getTargetAccounts({ platform } = {}) {
 }
 
 /**
- * ネタを新規作成し、対象アカウント分の sns_topic_targets を同時に作成する。
+ * ネタを新規作成し、**activeな全配信先アカウント分**の sns_topic_targets を
+ * 同時に作成する。`targetAccountIds`に含まれるアカウントは`status='pending'`
+ * （対象）、含まれないアカウントも行自体は作るが`status='skipped'`（既定除外）
+ * で作成する。
+ *
+ * 2026-09-03修正: 以前は`targetAccountIds`に無いアカウントの行を単に作らない
+ *実装だった。この場合ChannelTargetToggle（sns-hub UI）はexistingな行の
+ * pending⇔skipped切替しかできず、「既定でCHANNEL_MATRIXから除外された
+ * チャネル（例: TikTok）を、個別ネタの人間判断で後から対象に含める」という
+ * 逆方向の操作ができなかった（ユーザー指摘）。全アカウント分の行を必ず作成する
+ * ことで、どのチャネルも双方向にトグル可能になる。
  * @param {object} params
  * @param {string} params.topicText
  * @param {string} params.contentTypeId
  * @param {string[]} [params.sourceInsightIds] - sns_strategy_insights.id の配列
  * @param {boolean} [params.autoApprove] - true の場合、作成と同時にstatus='approved'にする
  *   （requires_topic_approval=falseの型向け。人間承認を待つ型はfalseのまま'proposed'で作る）
- * @param {string[]} [params.targetAccountIds] - 省略時はactiveな全アカウントを対象にする
+ * @param {string[]} [params.targetAccountIds] - `status='pending'`にするアカウントID。
+ *   省略時はactiveな全アカウントをpendingにする（skipped行は発生しない）
+ * @param {string} [params.skipReason] - targetAccountIdsに含まれないアカウントの
+ *   skip_reasonに入れる文言
  * @returns {Promise<{topic: object, targets: object[]}>}
  */
 export async function createTopicWithTargets({
@@ -91,6 +104,7 @@ export async function createTopicWithTargets({
   sourceInsightIds = [],
   autoApprove = false,
   targetAccountIds,
+  skipReason = "ネタ種別の既定でチャネル対象外（人間の承認画面から個別に対象へ変更可能）",
 }) {
   assertSupabaseEnabled();
 
@@ -109,18 +123,21 @@ export async function createTopicWithTargets({
     throw new Error(`sns_topics作成エラー: ${topicError.message}`);
   }
 
-  const accountIds =
+  const allAccounts = await getTargetAccounts();
+  const includedIds = new Set(
     targetAccountIds && targetAccountIds.length > 0
       ? targetAccountIds
-      : (await getTargetAccounts()).map((a) => a.id);
+      : allAccounts.map((a) => a.id),
+  );
 
   const { data: targets, error: targetsError } = await supabase
     .from(TOPIC_TARGETS_TABLE)
     .insert(
-      accountIds.map((targetAccountId) => ({
+      allAccounts.map((account) => ({
         topic_id: topic.id,
-        target_account_id: targetAccountId,
-        status: "pending",
+        target_account_id: account.id,
+        status: includedIds.has(account.id) ? "pending" : "skipped",
+        skip_reason: includedIds.has(account.id) ? null : skipReason,
       })),
     )
     .select();

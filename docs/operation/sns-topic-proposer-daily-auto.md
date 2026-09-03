@@ -27,13 +27,21 @@
 
 ## 3. チャネル判定
 
-`scripts/lib/contentChannels/channelMatrix.js`の`getChannelsForTopic("daily-result")`を呼び、対象プラットフォーム一覧を取得する（現状`["blog", "note", "x", "youtube"]`、TikTokは既定で対象外）。個別ネタごとに独自判断でTikTokを追加しない。
+`scripts/lib/contentChannels/channelMatrix.js`の`getChannelsForTopic("daily-result")`を呼び、対象プラットフォーム一覧を取得する（現状`["blog", "note", "x", "youtube"]`、TikTokは既定で対象外）。
+
+**TikTok可否の個別ネタ判定（2026-09-03更新）**: `daily-result`ソースは題材によって性質が異なるため、以下の基準で判定する。
+
+- **選手の調子（全国勝率の急上昇・急下降ランキング）**: `getChannelsForTopic("daily-result", { isGamblingRelevant: false })`を呼びTikTokも含める。実際にTikTokへ投稿し再生されている実績で安全と判断済み（2026-09-03、ユーザー確認）。ただしTikTok側の「おすすめ対象外」判定（削除を伴わない配信制限）が付くリスクは許容する前提——**削除・アカウント違反に至らない限りは許容**という運用方針であり、「制限なしを保証する」という意味ではない
+- **イン崩れ指数・的中検証等、勝敗確率・回収率に直結する統計**: 既定（除外）のまま。個別に安全と確信できない限り`isGamblingRelevant`は渡さない
+- 上記以外の新しい題材を扱う場合は、`docs/operation/sns-video-producer-prompt.md`絶対厳守13の判断基準（「この数字・情報は、視聴者が今日の賭け目を選ぶ判断材料に直結するか？」）で都度判断し、Yesなら除外のままにする
+
+**除外したチャネルもsns_topic_targets行自体は作られる**（4.参照）。人間がsns-hub「ネタ承認」画面のチャネルトグルで個別にpendingへ変更できる（ただし`daily-auto`型は`requires_topic_approval=false`のため、承認待ちには出ず進捗マトリクスにのみ表示される）。
 
 ## 4. ネタの登録（承認レス）
 
 1. `getContentTypeByKey("daily-auto")`（`scripts/lib/snsTopics.js`）で型IDを取得する
-2. `getTargetAccounts()`（同ファイル）でactiveな配信先アカウント一覧を取得し、3.で得たプラットフォーム名に該当するものだけ`target_account_id`を集める
-3. `createTopicWithTargets({ topicText, contentTypeId, sourceInsightIds, autoApprove: true, targetAccountIds })`を呼ぶ。**`autoApprove: true`固定**（`status='approved'`で即座に作成され、各チャネル別パイプラインのポーリング対象になる）
+2. `getTargetAccounts()`（同ファイル）でactiveな配信先アカウント一覧を取得し、3.で得たプラットフォーム名に該当するものを`targetAccountIds`（`status='pending'`にするアカウント）として集める
+3. `createTopicWithTargets({ topicText, contentTypeId, sourceInsightIds, autoApprove: true, targetAccountIds })`を呼ぶ。**`autoApprove: true`固定**（`status='approved'`で即座に作成され、各チャネル別パイプラインのポーリング対象になる）。`targetAccountIds`に含まれないアカウントも行は作られるが`status='skipped'`になる（既定除外、人間が個別に変更可能）
 
 ## 制約（絶対厳守）
 
