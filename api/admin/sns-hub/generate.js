@@ -1,7 +1,7 @@
 /**
  * Vercel Edge Function: 手動生成トリガー
  * POST /api/admin/sns-hub/generate
- * body: { mode: 'daily' | 'evergreen', platforms?: string[], count?: number, format?: string }
+ * body: { mode: 'daily' | 'evergreen', platforms?: string[], count?: number }
  *
  * 承認済みストックが少ない場合に、管理画面から生成Routineを即時起動する
  * （ユーザー要望、2026-08-31）。'daily'は当日開催中のレースを使う型
@@ -15,16 +15,6 @@
  * あり、将来プラットフォームが追加された際もVALID_PLATFORMSに1件足すだけで
  * 拡張できるようにしている。youtubeは2026-09-01追加（content-multi-channel-pipeline、
  * spec.md FR7）。
- *
- * formatは2026-09-02追加（ユーザー要望: 「会場攻略型など」という曖昧な指定でなく、
- * どの型を生成するか具体的に選びたい）。省略時はRoutine側の自動選定ロジック
- * （sns-video-producer-prompt.mdの型選定ロジック）に従う。値の妥当性は
- * sns_template_variantsテーブルに対して検証せず、そのままRoutineへ渡す
- * （フォーマットカタログは運用で増減するため、この関数を毎回更新しなくて済むように
- * 空でない文字列であること以外はチェックしない。存在しない型名を渡した場合の
- * 挙動はRoutine側の解釈に委ねる）。TikTokギャンブルポリシー対応
- * （channelMatrix.jsのisGamblingRelevant判定）との連携は未実装——特定の型が
- * TikTokで安全かどうかをこの選択画面側で自動判定してはいない
  *
  * fireRoutineは起動を指示するだけで完了を待たない。実際の生成完了までは
  * 動画レンダリングを含め数分〜十数分かかる。
@@ -59,7 +49,7 @@ export default async function handler(req) {
     return jsonResponse({ error: "リクエストボディが不正です" }, 400);
   }
 
-  const { mode, platforms, count, format } = body;
+  const { mode, platforms, count } = body;
   if (!VALID_MODES.includes(mode)) {
     return jsonResponse(
       { error: `modeは${VALID_MODES.join("または")}のいずれかが必要です` },
@@ -101,16 +91,11 @@ export default async function handler(req) {
     );
   }
 
-  // format省略時（未指定・null・空文字）はRoutine側の自動選定に委ねる
-  const resolvedFormat =
-    typeof format === "string" && format.trim() !== "" ? format.trim() : null;
-
   try {
     const routineResult = await fireRoutine("SNS_HUB_ROUTINE", {
       action: mode === "daily" ? "generate-daily" : "generate-evergreen",
       platforms: resolvedPlatforms,
       count: resolvedCount,
-      format: resolvedFormat,
     });
 
     return jsonResponse({ routine: routineResult });

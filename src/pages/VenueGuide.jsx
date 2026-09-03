@@ -9,6 +9,7 @@ import {
   VenueDetailStructuredData,
 } from "../components/VenueStructuredData";
 import VenueMap from "../components/VenueMap";
+import { VENUE_IMAGE_DIMENSIONS } from "../data/venueImageDimensions";
 import "./EnglishGuide.css";
 import "./EnglishVenueGuide.css";
 
@@ -107,7 +108,13 @@ export function VenueGuideDetail({ lang, guides, copy }) {
 
         {venue.image && (
           <figure className="evg-photo">
-            <img src={venue.image.src} alt={venue.image.alt} loading="lazy" />
+            <img
+              src={venue.image.src}
+              alt={venue.image.alt}
+              loading="lazy"
+              width={VENUE_IMAGE_DIMENSIONS[venue.image.src]?.width}
+              height={VENUE_IMAGE_DIMENSIONS[venue.image.src]?.height}
+            />
             <figcaption>
               <a
                 href={venue.image.creditUrl}

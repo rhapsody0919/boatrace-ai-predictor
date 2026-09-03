@@ -2,9 +2,15 @@
   "feature": "選手個人ニュース機能（選手個別ページ新設）",
   "released": "2026-08-25",
   "content": {
-    "static_pages": ["/racer/:racerId"],
-    "note_articles": [],
-    "blog_posts": [],
+    "static_pages": [
+      "/racer/:racerId"
+    ],
+    "note_articles": [
+      "racer-profile-page-guide"
+    ],
+    "blog_posts": [
+      "racer-profile-page-guide"
+    ],
     "youtube_videos": [],
     "x_posts": []
   },

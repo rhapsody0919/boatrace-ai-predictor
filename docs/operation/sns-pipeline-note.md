@@ -4,6 +4,8 @@
 
 **このRoutineは`sns-pipeline-blog.md`が生成したブログ本文に依存する**（note下書きはブログ記事をnote形式に変換して作る設計、既存の`content-multi-channel-pipeline-prompt.md`の設計を踏襲）。ブログ側がまだ生成していない場合は本Routineは**生成せず、claimしたターゲットを`pending`に戻して次回ポーリングに委ねる**（note-YouTube動画の依存関係と同じ「未完了ならスキップ」方式、2026-09-03合意）。
 
+**YouTube動画URLについて（2026-09-03追加）**: noteはURLをそのまま貼ると自動でプレイヤーが展開され、文章だけの下書きより視覚的にわかりやすくなる。ただし**生成時点でYouTube公開を待つブロッキング依存にはしない**（YouTube側は人間の承認が必要なため、待つと生成が大幅に遅れる）。同じネタのYouTube下書きが承認・公開済みであれば、sns-hub管理画面の投稿導線（「YouTube動画URLをコピー」ボタン）で人間が投稿時にコピーして本文に貼り付けられる。このRoutine自身が本文中にURLを埋め込む必要は無い。
+
 **新機能ネタ（`new-feature`型）の場合のみ、動画埋め込み型（`docs/operation/note-video-producer-prompt.md`）を使う**。本Routineが現時点で扱う型（`venue-feature`/`daily-auto`）は画像＋本文型のみを対象とする。将来`new-feature`型の週次/日次提案が追加された場合は、この節を拡張して`note-video-producer-prompt.md`の制作フローに分岐させる。
 
 ## 実行トリガー

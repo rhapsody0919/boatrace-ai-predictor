@@ -260,6 +260,27 @@ function SnsHubAdmin() {
     return map;
   }, [topics]);
 
+  // 同じネタ（content_group_id）から派生したYouTube下書きの公開URLの逆引き。
+  // note下書きの投稿導線で「YouTube動画URLをコピー」ボタンを出すために使う
+  // （2026-09-03、ユーザー要望: noteは文章だけだと読みにくく、YouTubeリンクを
+  // 貼ると自動展開されるため。noteは元々手動コピペ運用のため、生成時に
+  // YouTube公開を待つブロッキング依存にはせず、投稿時にリンクを取得できれば
+  // 十分という判断）。YouTubeは承認と同時に公開されるためsource_data.youtube_url
+  // が入っていれば常に実際に有効なURL
+  const youtubeUrlByGroupId = useMemo(() => {
+    const map = {};
+    for (const d of drafts) {
+      if (
+        d.platform === "youtube" &&
+        d.content_group_id &&
+        d.source_data?.youtube_url
+      ) {
+        map[d.content_group_id] = d.source_data.youtube_url;
+      }
+    }
+    return map;
+  }, [drafts]);
+
   // silent=trueの場合、全画面ローディング表示を出さずに裏側でデータだけ
   // 更新する。承認等のアクション直後に画面全体がスピナーに切り替わる
   // 体験が「うざい」という指摘への対応（2026-08-31）。初回マウント時のみ
@@ -835,6 +856,7 @@ function SnsHubAdmin() {
                 key={draft.id}
                 draft={draft}
                 contentType={contentTypeByGroupId[draft.content_group_id]}
+                youtubeUrl={youtubeUrlByGroupId[draft.content_group_id]}
                 approvers={approvers}
                 onApprove={(approverId) =>
                   handleAction(approveDraft, [draft.id, approverId])
@@ -1307,6 +1329,7 @@ const TEXT_DRAFT_PLATFORMS = new Set(["blog", "note"]);
 function DraftCard({
   draft,
   contentType,
+  youtubeUrl,
   approvers,
   onApprove,
   onMergeBlogPr,
@@ -1498,6 +1521,7 @@ function DraftCard({
               (draft.platform === "note" ? (
                 <NoteCopyActionLinks
                   draft={draft}
+                  youtubeUrl={youtubeUrl}
                   onMarkPosted={onMarkPosted}
                 />
               ) : (
@@ -1924,7 +1948,7 @@ function CopyToClipboardButton({ text, label }) {
 // note版。noteは公開APIが無いため自動投稿はできず、本文・タグをコピーして
 // 手動でnoteエディタに貼り付けてもらう運用（.claude/CLAUDE.mdフローC-1と同じ
 // 「コピペ＋人間が最終操作」パターン）
-function NoteCopyActionLinks({ draft, onMarkPosted }) {
+function NoteCopyActionLinks({ draft, youtubeUrl, onMarkPosted }) {
   const tagsText = (draft.hashtags || []).join(" ");
   return (
     <div className="posting-action-links">
@@ -1938,6 +1962,16 @@ function NoteCopyActionLinks({ draft, onMarkPosted }) {
       />
       {tagsText && (
         <CopyToClipboardButton text={tagsText} label="タグをコピー" />
+      )}
+      {youtubeUrl && (
+        // noteはURLをそのまま貼ると自動でプレイヤーが展開されるため、
+        // 文章だけの下書きより視覚的に分かりやすくなる（2026-09-03、
+        // ユーザー要望）。生成時にYouTube公開を待つ強い依存にはせず、
+        // 承認済みYouTube下書きが既にあれば投稿時にコピーできるようにする
+        <CopyToClipboardButton
+          text={youtubeUrl}
+          label="YouTube動画URLをコピー"
+        />
       )}
       <a
         className="posting-action-btn platform-link"
