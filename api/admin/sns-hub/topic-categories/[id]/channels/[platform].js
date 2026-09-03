@@ -11,7 +11,7 @@ import {
   isConfigured,
   isValidUuid,
   updateTopicCategoryChannel,
-} from "../../../../../../_lib/snsHubHelpers.js";
+} from "../../../../../_lib/snsHubHelpers.js";
 
 export const config = {
   runtime: "edge",
