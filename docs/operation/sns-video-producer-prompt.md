@@ -36,7 +36,7 @@
 ## 制作フロー（毎回このステップを踏む）
 
 0. **蓄積されたフィードバックを確認する**（2026-09-03追加）: 生成前に必ず以下2種類を確認し、生成方針に反映する。いずれも`content-multi-channel-pipeline-prompt.md`側で先行実装済みだった仕組みで、Pipeline A（このドキュメント）には未接続だったため今回接続した
-   - **直近の却下理由**: `getRecentRevisions({ platform: "x" })`・`getRecentRevisions({ platform: "tiktok" })`・`getRecentRevisions({ platform: "youtube" })`（`scripts/lib/contentRevisionHistory.js`）で、これから生成するプラットフォームの直近30日の修正依頼・却下理由を取得する。理由コード（`revision_reason_codes`、下記「一部修正」の選択式チップに対応）だけでなく`revision_reason_freetext`（自由記述）も必ず読む。同じ理由が3回以上累積した場合はGitHub Actions（`content-ops-nightly-check.yml`）が自動でLinearにcontent-qualityラベル付きIssueを起票するため、このRoutine側で追加対応は不要
+   - **直近の却下理由**: `getRecentRevisions({ platform: "x" })`・`getRecentRevisions({ platform: "tiktok" })`・`getRecentRevisions({ platform: "youtube" })`（`scripts/lib/contentRevisionHistory.js`）で、これから生成するプラットフォームの直近30日の修正依頼・却下理由を取得する。理由コード（`revisionReasonCodes`、下記「一部修正」の選択式チップに対応）だけでなく`revisionReasonFreetext`（自由記述）も必ず読む。同じ理由が3回以上累積した場合はGitHub Actions（`content-ops-nightly-check.yml`）が自動でLinearにcontent-qualityラベル付きIssueを起票するため、このRoutine側で追加対応は不要
    - **蓄積された戦略insight**: `getActiveInsights({ platform: "x" })`・`getActiveInsights({ platform: "tiktok" })`・`getActiveInsights({ platform: "youtube" })`（`scripts/lib/snsStrategyInsights.js`）でactive状態のinsightを取得する（`/growth-pdca`ステップ7・ADR 0027参照。Search Console/GA4実績や`saveAsInsight`チェックボックス経由での修正指摘から「こう作ると効く」という知見が蓄積される設計）
    - どちらも該当が無ければ通常通り進めてよい
 1. **題材を選ぶ**: 下記フォーマットライブラリから1つ選ぶか、新規パターンを1つ提案する。**管理画面の手動生成リクエストに`format`（型名、`sns_template_variants.format`と同じ表記）が指定されている場合はそれを優先する**（2026-09-02追加、admin/sns-hubの「会場攻略型など」ボタンに型選択ドロップダウンを追加。ユーザーが具体的な型を選んでいる場合、Routine側の自動選定ロジックより優先する）。`format`が空・未指定の場合のみ、これまで通りRoutine側で自動選定する

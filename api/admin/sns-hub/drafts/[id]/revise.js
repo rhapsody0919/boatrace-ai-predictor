@@ -33,6 +33,12 @@ const VALID_REASON_CODES = [
   "design-color",
   "design-font-size",
   "design-visual-material",
+  // blog/note向け（SnsHubAdmin.jsxのCONTENT_REVISION_REASONSと一致させる。
+  // 2026-09-03のコードレビューで発覚: この3件が欠落しており、blog/note下書きへの
+  // 「一部修正」がこれらの理由で常に400エラーになっていた既存バグを修正）
+  "search-intent-mismatch",
+  "data-accuracy-error",
+  "too-similar-to-existing",
 ];
 
 export default async function handler(req) {

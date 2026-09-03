@@ -135,10 +135,11 @@
 
 /* ネタ駆動マルチチャネルパイプライン（Pipeline B）の手動実行パネル。
    daily/evergreen（Pipeline A）とは別Routineであることが分かるよう
-   independent panel として visually separate する（2026-09-02追加） */
-.topic-pipeline-panel {
-  margin-top: -0.4rem;
-}
+   .manual-generate-panelを共有しつつ独立したブロックとして配置する
+   （2026-09-02追加）。.manual-generate-panel自体のmargin-bottom: 1remで
+   上のパネルとの間隔は既に確保されているため、.topic-pipeline-panel固有の
+   追加スタイルは無い（2026-09-03、コードレビューで指摘: 以前のmargin-top:
+   -0.4remは逆に2パネルを近づけてしまい、視覚的に分離する意図と矛盾していた） */
 
 .manual-generate-block {
   display: flex;

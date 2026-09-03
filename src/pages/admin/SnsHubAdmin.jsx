@@ -209,7 +209,13 @@ function SnsHubAdmin() {
   // 手動実行state。daily/evergreen（Pipeline A）とは別のRoutineであり、
   // パラメータ（プラットフォーム/本数/型）を選ばせる余地が無いため単純な
   // ボタン1つで完結する。ロック・完了検知の仕組みは上記と同じパターンだが、
-  // 別Routineなので独立したstateで管理する（2026-09-02追加）
+  // 別Routineなので独立したstateで管理する（2026-09-02追加）。
+  // 2026-09-03、コードレビューで指摘: 両ロックとも同じdrafts配列・同じ
+  // 「!parent_draft_idの新規行が現れたら完了」ヒューリスティックを見ているため、
+  // 片方のRoutineが先に1行INSERTすると、もう片方のuseEffectもそれを「自分の
+  // 生成完了」と誤検知してロック解除してしまう競合状態がある（根本解決には
+  // sns_drafts.routine_run_idへの記録・参照が必要だが未実装）。当面の緩和策として
+  // 両ボタンのdisabled条件に相手のLocked状態も加え、同時実行自体を防ぐ
   const [topicPipelineGenerating, setTopicPipelineGenerating] = useState(false);
   const [topicPipelineLocked, setTopicPipelineLocked] = useState(false);
   const [topicPipelineSessionUrl, setTopicPipelineSessionUrl] = useState(null);
@@ -602,7 +608,11 @@ function SnsHubAdmin() {
                       ? " selected"
                       : ""
                   }`}
-                  disabled={generating !== null || generationLocked}
+                  disabled={
+                    generating !== null ||
+                    generationLocked ||
+                    topicPipelineLocked
+                  }
                   onClick={() =>
                     toggleGeneratePlatform(modeConfig.mode, opt.value)
                   }
@@ -618,7 +628,11 @@ function SnsHubAdmin() {
                   <select
                     className="generate-format-select"
                     value={generateFormats[modeConfig.mode]}
-                    disabled={generating !== null || generationLocked}
+                    disabled={
+                      generating !== null ||
+                      generationLocked ||
+                      topicPipelineLocked
+                    }
                     onChange={(e) =>
                       handleGenerateFormatChange(
                         modeConfig.mode,
@@ -643,7 +657,9 @@ function SnsHubAdmin() {
                 min={1}
                 max={modeConfig.countMax}
                 value={generateCounts[modeConfig.mode]}
-                disabled={generating !== null || generationLocked}
+                disabled={
+                  generating !== null || generationLocked || topicPipelineLocked
+                }
                 onChange={(e) =>
                   handleGenerateCountChange(
                     modeConfig.mode,
@@ -661,6 +677,7 @@ function SnsHubAdmin() {
               disabled={
                 generating !== null ||
                 generationLocked ||
+                topicPipelineLocked ||
                 generatePlatforms[modeConfig.mode].length === 0
               }
               onClick={() => handleGenerate(modeConfig.mode)}
@@ -698,7 +715,9 @@ function SnsHubAdmin() {
         <div className="manual-generate-block">
           <button
             className="manual-generate-btn"
-            disabled={topicPipelineGenerating || topicPipelineLocked}
+            disabled={
+              topicPipelineGenerating || topicPipelineLocked || generationLocked
+            }
             onClick={handleGenerateTopicPipeline}
           >
             {topicPipelineGenerating

@@ -8,7 +8,7 @@
 
 ## 0. 蓄積されたフィードバックの確認（2026-09-02追加、2026-09-03に戦略insightを統合）
 
-2.で選定したチャネルの分だけ、以下2種類を確認し生成方針に反映する:
+まだネタ・チャネルが決まっていない時点で実行するため、5プラットフォーム分すべてを確認しておく（2.でチャネルが決まった後、該当しないプラットフォーム分の情報は単に使わない）:
 
 - **直近の却下理由**: `getRecentRevisions({ platform: "blog" })`・`getRecentRevisions({ platform: "note" })`・`getRecentRevisions({ platform: "x" })`・`getRecentRevisions({ platform: "tiktok" })`・`getRecentRevisions({ platform: "youtube" })`（`scripts/lib/contentRevisionHistory.js`）で直近30日の修正依頼・却下理由を取得する。理由コード（`revision_reason_codes`）だけでなく`revisionReasonFreetext`（自由記述）も必ず読む。同じ理由が3回以上累積した場合はGitHub Actions（`content-ops-nightly-check.yml`）が自動でLinearにcontent-qualityラベル付きIssueを起票する（`scripts/maintenance/content-ops-checks/check-revision-escalation.js`）ため、このRoutine側で追加の対応は不要
 - **蓄積された戦略insight**: `getActiveInsights({ platform })`（`scripts/lib/snsStrategyInsights.js`、対象プラットフォームごとに呼ぶ）でactive状態のinsightを取得する（`/growth-pdca`ステップ7・ADR 0027参照。Search Console/GA4実績や修正指摘の`saveAsInsight`チェックボックス経由で「こう作ると効く」という知見が蓄積される設計）
