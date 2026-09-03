@@ -75,4 +75,4 @@ Hook/特徴解説/CTAの共通実装は`noteVideoShared.jsx`に切り出し済�
 - `NoteExplainerCM.jsx`の`NoteExplainerCM_DataRaceTable`: データ出走表機能の解説動画（50秒、6特徴）
 - `NoteExplainerReturnRate.jsx`の`NoteExplainerCM_ReturnRate`: 選手×艇番別回収率分析の解説動画（30秒、4特徴）
 - `NoteExplainerFormRanking.jsx`の`NoteExplainerCM_FormRanking`: 好調・不調選手ランキングの解説動画（50秒、急上昇/急下降の2テーブルをそれぞれ3行ハイライト）。1機能で複数テーブルを扱う場合は、特徴解説パートを`SceneFeatures`の複数`Sequence`に分け、`imageSrc`と`badgeLabel`をテーブルごとに切り替える
-- タイトルが長い機能名の場合、`SceneHook`の`titleFontSize`propで縮小しないと1080px幅で折り返してsubtitleと重なる（2026-09-01、好調・不調ランキングで発生・修正）。目安は13文字を超える場合に80px程度へ縮小する
+- タイトルが長い機能名の場合、1080px幅で折り返してsubtitleと重なることがある（2026-09-01、好調・不調ランキングで発生）。**2026-09-03、`titleFontSize`propでの目視調整（目安13文字超で80px）から`brand-kit.md`「技術ルール（フォーマット横断で適用）」の`fitHeadline()`に統一した**。新しい動画を作る際は`SceneHook`のタイトル部分でも`fitHeadline()`を使い、手動でのフォントサイズ指定に頼らない
