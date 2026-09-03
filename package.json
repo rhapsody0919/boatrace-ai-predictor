@@ -15,6 +15,7 @@
     "check:deprecated-terms": "node scripts/maintenance/check-deprecated-terms.js",
     "verify:routine-routing": "node scripts/maintenance/verify-routine-routing.js",
     "verify:topic-target-claim": "node scripts/maintenance/verify-topic-target-claim.js",
+    "verify:format-column-migration": "node scripts/maintenance/verify-format-column-migration.js",
     "test:e2e": "playwright test",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",

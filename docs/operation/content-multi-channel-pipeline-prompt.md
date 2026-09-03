@@ -64,7 +64,7 @@
 
 - Supabase Storageの非公開バケット`sns-hub-media`に動画・カバー画像をアップロードする（パス例: `{content_group_id}/{platform}-{language}.mp4`）
 - `sns_drafts.video_storage_path`/`cover_image_path`には、**アップロード時に指定した生のStorageパス（例: `{content_group_id}/x-ja.mp4`）をそのまま保存する**（署名付きURLを保存しない）。読み取り側（管理画面の一覧取得`api/admin/sns-hub/drafts/index.js`・YouTube公開`publish-youtube.js`）が`api/_lib/snsHubHelpers.js`の`signStoragePath()`/`signStoragePaths()`で都度署名する設計に統一されている（2026-09-03確定）。**2026-09-02〜03に実際に発生した不具合**: 生成Routine側が`createSignedUrl()`で署名済みURLを直接列に保存した結果、読み取り側が「列の値は生パス」という前提で再署名しようとして失敗し、有効期限（当時は600秒→7日に延長して対処したが根本原因ではなかった）に関わらず管理画面が「動画準備中」表示のまま止まる不具合が発生した。生パス保存・都度署名への統一で解消済み
-- `sns_drafts`テーブルにINSERTする。**`content_group_id`はブログ/note行（8.参照）と同じものを使う**（同一ネタであることをDB上で追跡できるようにする）。列: `format`（ネタのsourceId）・`template_variant_id`・`language`（'ja'）・`platform`（'x'/'tiktok'/'youtube'）・`status`（'pending_review'）・`video_storage_path`・`cover_image_path`・`caption_text`・`hashtags`・`background_text`・`source_data`（使用した実データのJSON）・`risk_flags`
+- `sns_drafts`テーブルにINSERTする。**`content_group_id`はブログ/note行（8.参照）と同じものを使う**（同一ネタであることをDB上で追跡できるようにする）。列: `format`（**ビジュアルテンプレート名のみ**。`sns_template_variants.format`と同じ語彙、Pipeline A（`sns-video-producer-prompt.md`）と統一する。ネタのsourceIdを入れない、2026-09-03修正）・`template_variant_id`・`language`（'ja'）・`platform`（'x'/'tiktok'/'youtube'）・`status`（'pending_review'）・`video_storage_path`・`cover_image_path`・`caption_text`・`hashtags`・`background_text`・`source_data`（使用した実データのJSON）・`risk_flags`
 - キャプション・ハッシュタグは`docs/operation/x-operations-playbook.md`（X）・`docs/operation/sns-viral-copywriter-prompt.md`（TikTok）の作法に従う
 
 ## 4. ブログ本文の執筆
@@ -111,7 +111,7 @@
 `sns_drafts`テーブルに以下の形でINSERTする（ADR 0032）。X/TikTok/YouTube動画分の下書きは3-5で既に永続化済みのため、ここではblog/note行のみを扱う:
 - 同一ネタから派生するblog行・note行・（3.で作成した）x/tiktok/youtube行は同じ`content_group_id`を共有
 - `platform`: `'blog'` / `'note'`
-- `format`: ネタのsourceId（`new-feature`/`venue-characteristic`/`data-insight`/`daily-result`）
+- `format`: **ビジュアルテンプレート名のみ**（6.で判定した`getCoverImageStrategy(topic).type`をそのまま使う、`'screenshot'`または`'data-card'`）。ネタのsourceIdをformat列に入れない（2026-09-03修正、要件12）。ネタ種別を後から知りたい場合は`content_group_id`経由で`sns_topics.content_type_id`を参照する設計に移行する（`docs/design/sns-topic-gate/`、ネタ生成ライン統合後）
 - `title`・`caption_text`（本文）・`hashtags`（noteタグ）・`cover_image_path`または`embed_video_url`
 - `status`: `'pending_review'`
 
