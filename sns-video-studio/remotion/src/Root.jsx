@@ -64,6 +64,7 @@ import {
   TechniqueConsistencyCM,
   TECHNIQUE_CONSISTENCY_DURATION,
 } from "./TechniqueConsistencyCM.jsx";
+import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
 
 export function RemotionRoot() {
   return (
@@ -543,6 +544,32 @@ export function RemotionRoot() {
         fps={30}
         width={1920}
         height={1080}
+      />
+      <Composition
+        id="RaceInsightYoutubeCM"
+        component={RaceInsightYoutubeTemplate}
+        durationInFrames={600}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{
+          venue: "住之江",
+          raceNumber: 6,
+          raceDate: "9/3",
+          indexPercent: 100,
+          boatWinRate: "2.61",
+          nigePercent: 33,
+          reasons: [
+            "1号艇の全国勝率が非常に低い（2.61）→ イン崩れリスク高",
+            "1号艇の今節STが遅い（平均0.190秒）→ イン崩れリスク",
+          ],
+          patterns: [
+            { winnerCourse: 1, technique: "nige", probability: 0.33 },
+            { winnerCourse: 3, technique: "makurizashi", probability: 0.1 },
+            { winnerCourse: 5, technique: "makurizashi", probability: 0.08 },
+          ],
+          featureDigest: ["AI予想", "イン崩れ指数", "無料"],
+        }}
       />
     </>
   );
