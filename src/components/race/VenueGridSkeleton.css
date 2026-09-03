@@ -1,0 +1,35 @@
+.venue-grid-skeleton-card {
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.venue-grid-skeleton-bar {
+  border-radius: var(--radius-sm, 4px);
+  background: linear-gradient(
+    90deg,
+    var(--surface-page) 25%,
+    var(--border-hairline) 50%,
+    var(--surface-page) 75%
+  );
+  background-size: 200% 100%;
+  animation: venue-grid-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.venue-grid-skeleton-bar--name {
+  width: 70%;
+  height: 0.8rem;
+}
+
+.venue-grid-skeleton-bar--status {
+  width: 45%;
+  height: 0.65rem;
+}
+
+@keyframes venue-grid-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

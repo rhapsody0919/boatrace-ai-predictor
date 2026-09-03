@@ -4,6 +4,8 @@
 
 **このRoutineは`sns-pipeline-blog.md`が生成したブログ本文に依存する**（note下書きはブログ記事をnote形式に変換して作る設計、既存の`content-multi-channel-pipeline-prompt.md`の設計を踏襲）。ブログ側がまだ生成していない場合は本Routineは**生成せず、claimしたターゲットを`pending`に戻して次回ポーリングに委ねる**（note-YouTube動画の依存関係と同じ「未完了ならスキップ」方式、2026-09-03合意）。
 
+**YouTube動画URLについて（2026-09-03追加）**: noteはURLをそのまま貼ると自動でプレイヤーが展開され、文章だけの下書きより視覚的にわかりやすくなる。ただし**生成時点でYouTube公開を待つブロッキング依存にはしない**（YouTube側は人間の承認が必要なため、待つと生成が大幅に遅れる）。同じネタのYouTube下書きが承認・公開済みであれば、sns-hub管理画面の投稿導線（「YouTube動画URLをコピー」ボタン）で人間が投稿時にコピーして本文に貼り付けられる。このRoutine自身が本文中にURLを埋め込む必要は無い。
+
 **新機能ネタ（`new-feature`型）の場合のみ、動画埋め込み型（`docs/operation/note-video-producer-prompt.md`）を使う**。本Routineが現時点で扱う型（`venue-feature`/`daily-auto`）は画像＋本文型のみを対象とする。将来`new-feature`型の週次/日次提案が追加された場合は、この節を拡張して`note-video-producer-prompt.md`の制作フローに分岐させる。
 
 ## 実行トリガー
@@ -45,6 +47,7 @@ claimしたターゲットの`topic_id`と同じ`sns_topics.id`（`sns_drafts.co
 ## 制約（絶対厳守）
 
 - 1回の実行で処理するネタは1件まで
+- **1つのclaim済みターゲットにつき、`sns_drafts`行は必ず1件だけ作る**。生成後に内容の誤りに自分で気づいた場合も、同一セッション内で2件目を作り直さない。5.の完了処理（`markTopicTargetGenerated`）を済ませたら、その回の生成物が最終版であり、修正は人間の下書き承認画面からのrevise/redo操作に委ねる（2026-09-03、Blogパイプラインで同種の不具合が発生し判明。本パイプラインにも同じ制約を横展開）
 - ブログ本文が未生成の場合は生成せず、ターゲットを`pending`に戻す（claimしたまま放置しない）
 - 「競艇」表記禁止（本文は「ボートレース」）
 - 本文に画像を必ず含める（文字だけの下書きにしない）

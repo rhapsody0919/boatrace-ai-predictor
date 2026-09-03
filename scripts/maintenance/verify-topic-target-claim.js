@@ -55,7 +55,16 @@ async function main() {
     autoApprove: true,
     targetAccountIds: [account.id],
   });
-  const target = targets[0];
+  // 2026-09-03修正: createTopicWithTargetsがactiveな全アカウント分の行を
+  // 返すようになったため（除外分はstatus='skipped'）、targets[0]が
+  // targetAccountIdsで指定したアカウントとは限らなくなった。該当行を
+  // 明示的に探す
+  const target = targets.find((t) => t.target_account_id === account.id);
+  if (!target) {
+    throw new Error(
+      `テスト用ターゲット（account=${account.id}）がtargetsに見つかりません`,
+    );
+  }
 
   try {
     // 2つの独立したパイプライン実行を模して同時にclaimを試みる

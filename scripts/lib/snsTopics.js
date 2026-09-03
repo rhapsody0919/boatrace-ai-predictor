@@ -19,6 +19,8 @@ const CONTENT_TYPES_TABLE = "sns_content_types";
 const TARGET_ACCOUNTS_TABLE = "sns_target_accounts";
 const TOPICS_TABLE = "sns_topics";
 const TOPIC_TARGETS_TABLE = "sns_topic_targets";
+const TOPIC_CATEGORIES_TABLE = "sns_topic_categories";
+const TOPIC_CATEGORY_CHANNELS_TABLE = "sns_topic_category_channels";
 
 function assertSupabaseEnabled() {
   if (!isSupabaseEnabled()) {
@@ -57,6 +59,87 @@ export async function getContentTypeByKey(typeKey) {
   return data;
 }
 
+/**
+ * ネタの型（カテゴリ）一覧をチャネル設定つきで取得する（sns-hub「ネタ型設定」画面用）。
+ * @param {object} [options]
+ * @param {boolean} [options.activeOnly] - trueの場合、廃止済み（active=false）の型を除外する
+ */
+export async function getTopicCategories({ activeOnly = false } = {}) {
+  assertSupabaseEnabled();
+  let query = supabase
+    .from(TOPIC_CATEGORIES_TABLE)
+    .select(
+      `*, ${CONTENT_TYPES_TABLE}(type_key, label, cadence), ${TOPIC_CATEGORY_CHANNELS_TABLE}(id, platform, enabled)`,
+    )
+    .order("created_at");
+  if (activeOnly) {
+    query = query.eq("active", true);
+  }
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(`${TOPIC_CATEGORIES_TABLE}取得エラー: ${error.message}`);
+  }
+  return data || [];
+}
+
+/**
+ * 指定した型（カテゴリ）で有効なチャネル（platform）一覧を取得する。
+ * 提案Routineが「このネタはどのチャネルに配るか」を判断する入口として使う
+ * （2026-09-03新設、以前のchannelMatrix.js + isGamblingRelevantフラグに代わる
+ * データ駆動の仕組み。型の追加・チャネル可否の変更はsns-hub管理画面から行い、
+ * コード・複数ドキュメントの同時修正を不要にする）。
+ * @param {string} categoryKey - 例: 'racer-condition'
+ * @returns {Promise<string[]>} enabled=trueのplatform名の配列
+ */
+export async function getEnabledChannelsForCategory(categoryKey) {
+  assertSupabaseEnabled();
+  const { data: category, error: categoryError } = await supabase
+    .from(TOPIC_CATEGORIES_TABLE)
+    .select(`*, ${TOPIC_CATEGORY_CHANNELS_TABLE}(platform, enabled)`)
+    .eq("category_key", categoryKey)
+    .maybeSingle();
+  if (categoryError) {
+    throw new Error(
+      `${TOPIC_CATEGORIES_TABLE}取得エラー(${categoryKey}): ${categoryError.message}`,
+    );
+  }
+  if (!category) {
+    throw new Error(
+      `未知のネタの型 "${categoryKey}" です。sns_topic_categoriesに登録するか、既存の型から選んでください`,
+    );
+  }
+  if (!category.active) {
+    throw new Error(
+      `ネタの型 "${categoryKey}"（${category.label}）は廃止済み（active=false）です。使用禁止: ${category.notes || "理由未記録"}`,
+    );
+  }
+  return (category[TOPIC_CATEGORY_CHANNELS_TABLE] || [])
+    .filter((c) => c.enabled)
+    .map((c) => c.platform);
+}
+
+/** 型×チャネルのON/OFFを更新する（sns-hub管理画面用） */
+export async function updateTopicCategoryChannel(
+  categoryId,
+  platform,
+  enabled,
+) {
+  assertSupabaseEnabled();
+  const { data, error } = await supabase
+    .from(TOPIC_CATEGORY_CHANNELS_TABLE)
+    .update({ enabled, updated_at: new Date().toISOString() })
+    .eq("category_id", categoryId)
+    .eq("platform", platform)
+    .select()
+    .single();
+  if (error) {
+    throw new Error(
+      `${TOPIC_CATEGORY_CHANNELS_TABLE}更新エラー(category=${categoryId}, platform=${platform}): ${error.message}`,
+    );
+  }
+  return data;
+}
+
 /** activeな配信先アカウントを取得する。platform指定時はそのプラットフォームのみ */
 export async function getTargetAccounts({ platform } = {}) {
   assertSupabaseEnabled();
@@ -75,14 +158,32 @@ export async function getTargetAccounts({ platform } = {}) {
 }
 
 /**
- * ネタを新規作成し、対象アカウント分の sns_topic_targets を同時に作成する。
+ * ネタを新規作成し、**activeな全配信先アカウント分**の sns_topic_targets を
+ * 同時に作成する。`targetAccountIds`に含まれるアカウントは`status='pending'`
+ * （対象）、含まれないアカウントも行自体は作るが`status='skipped'`（既定除外）
+ * で作成する。
+ *
+ * 2026-09-03修正: 以前は`targetAccountIds`に無いアカウントの行を単に作らない
+ * 実装だった。この場合ChannelTargetToggle（sns-hub UI）はexistingな行の
+ * pending⇔skipped切替しかできず、「既定でCHANNEL_MATRIXから除外された
+ * チャネル（例: TikTok）を、個別ネタの人間判断で後から対象に含める」という
+ * 逆方向の操作ができなかった（ユーザー指摘）。全アカウント分の行を必ず作成する
+ * ことで、そのチャネルは双方向にトグル可能になる。
+ * **既知の制約**: ChannelTargetToggleは`requires_topic_approval=true`の型
+ * （venue-feature、「ネタ承認」画面）でのみ到達可能。`autoApprove: true`で
+ * 即座にstatus='approved'になる型（daily-auto/race-time-critical）は
+ * 承認待ち一覧に出ず`TopicProgressMatrix`（表示専用、クリック不可）にのみ
+ * 現れるため、作成時点の判定を人間が後から変更する手段が現状無い。
  * @param {object} params
  * @param {string} params.topicText
  * @param {string} params.contentTypeId
  * @param {string[]} [params.sourceInsightIds] - sns_strategy_insights.id の配列
  * @param {boolean} [params.autoApprove] - true の場合、作成と同時にstatus='approved'にする
  *   （requires_topic_approval=falseの型向け。人間承認を待つ型はfalseのまま'proposed'で作る）
- * @param {string[]} [params.targetAccountIds] - 省略時はactiveな全アカウントを対象にする
+ * @param {string[]} [params.targetAccountIds] - `status='pending'`にするアカウントID。
+ *   省略時はactiveな全アカウントをpendingにする（skipped行は発生しない）
+ * @param {string} [params.skipReason] - targetAccountIdsに含まれないアカウントの
+ *   skip_reasonに入れる文言
  * @returns {Promise<{topic: object, targets: object[]}>}
  */
 export async function createTopicWithTargets({
@@ -91,6 +192,7 @@ export async function createTopicWithTargets({
   sourceInsightIds = [],
   autoApprove = false,
   targetAccountIds,
+  skipReason = "ネタ種別の既定でチャネル対象外",
 }) {
   assertSupabaseEnabled();
 
@@ -109,18 +211,21 @@ export async function createTopicWithTargets({
     throw new Error(`sns_topics作成エラー: ${topicError.message}`);
   }
 
-  const accountIds =
+  const allAccounts = await getTargetAccounts();
+  const includedIds = new Set(
     targetAccountIds && targetAccountIds.length > 0
       ? targetAccountIds
-      : (await getTargetAccounts()).map((a) => a.id);
+      : allAccounts.map((a) => a.id),
+  );
 
   const { data: targets, error: targetsError } = await supabase
     .from(TOPIC_TARGETS_TABLE)
     .insert(
-      accountIds.map((targetAccountId) => ({
+      allAccounts.map((account) => ({
         topic_id: topic.id,
-        target_account_id: targetAccountId,
-        status: "pending",
+        target_account_id: account.id,
+        status: includedIds.has(account.id) ? "pending" : "skipped",
+        skip_reason: includedIds.has(account.id) ? null : skipReason,
       })),
     )
     .select();

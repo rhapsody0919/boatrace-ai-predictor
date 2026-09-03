@@ -192,8 +192,13 @@
 }
 
 .blog-post-content img {
+  width: 100%;
   max-width: 100%;
-  height: auto;
+  /* 記事画像はほぼPlaywrightスクリーンショット（実測比率約1.68〜1.78:1）のため、
+     16:9で確保してロード前後の高さジャンプ（CLS）を防ぐ。実比率とのズレは
+     object-fit: coverで軽微なトリミングに留める */
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
   border-radius: 8px;
   margin: 1.5rem 0;
 }

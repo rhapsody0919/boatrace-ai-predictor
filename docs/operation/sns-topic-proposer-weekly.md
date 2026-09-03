@@ -26,13 +26,17 @@
 
 ## 3. チャネル判定
 
-`scripts/lib/contentChannels/channelMatrix.js`の`getChannelsForTopic("venue-characteristic")`を呼び、対象プラットフォーム一覧を取得する（現状`["blog", "note", "x", "youtube"]`、TikTokは既定で対象外——成績データを扱う性質上、TikTokガイドライン対応のため。詳細はコメント参照）。**ここで得た一覧をそのまま使う。個別ネタごとに独自判断でTikTokを追加しない**（`isGamblingRelevant`オプションは、成績データを一切含まない切り口を新規に設計した場合のみ検討する）。
+`getEnabledChannelsForCategory("venue-characteristic")`（`scripts/lib/snsTopics.js`）を呼び、有効なプラットフォーム一覧を取得する（2026-09-03更新、以前のchannelMatrix.js + isGamblingRelevantフラグから、`sns_topic_categories`/`sns_topic_category_channels`テーブルによるデータ駆動の判定に変更した）。
+
+**現在の方針（ユーザー設定、sns-hub「ネタ型設定」画面でいつでも変更可能）**: `venue-characteristic`は`angle`に関わらずTikTokを含める全面許容運用。「TikTokで削除・アカウント制限（コミュニティガイドライン違反）に至らない限り、配信制限（『おすすめ対象外』）は許容する」というリスク許容方針（`docs/operation/tiktok-posting-operations.md`D・F節参照）。**新たに違反判定・削除を受けた場合は、都度sns-hub「ネタ型設定」画面でTikTokをOFFに切り替え、`docs/operation/tiktok-posting-operations.md`に該当する`angle`・投稿内容を記録する**（推測で先回り除外しない。実際に違反判定を受けた実績が出てから対応する運用）。このRoutine自身はチャネル可否をハードコードせず、テーブルの設定値をそのまま使う。
+
+**除外したチャネルもsns_topic_targets行自体は作られる**（4.参照）。sns-hub「ネタ承認」画面のチャネルトグルで、人間が個別にpending⇔skippedを変更できる。
 
 ## 4. ネタの登録
 
 1. `getContentTypeByKey("venue-feature")`（`scripts/lib/snsTopics.js`）で型IDを取得する
-2. `getTargetAccounts()`（同ファイル）でactiveな配信先アカウント一覧を取得し、3.で得たプラットフォーム名に該当するものだけ`target_account_id`を集める
-3. `createTopicWithTargets({ topicText, contentTypeId, sourceInsightIds, autoApprove: false, targetAccountIds })`を呼ぶ。`venue-feature`型は`requires_topic_approval=true`のため`autoApprove: false`固定（`status='proposed'`のまま作成され、人間の承認を待つ）
+2. `getTargetAccounts()`（同ファイル）でactiveな配信先アカウント一覧を取得し、3.で得たプラットフォーム名に該当するものを`targetAccountIds`（`status='pending'`にするアカウント）として集める
+3. `createTopicWithTargets({ topicText, contentTypeId, sourceInsightIds, autoApprove: false, targetAccountIds })`を呼ぶ。`venue-feature`型は`requires_topic_approval=true`のため`autoApprove: false`固定（`status='proposed'`のまま作成され、人間の承認を待つ）。`targetAccountIds`に含まれないアカウント（既定でTikTok）も行は作られるが`status='skipped'`になる（既定除外、人間が個別に変更可能）
 4. `sourceInsightIds`には0.で参照した根拠insightのIDを入れる（無ければ空配列でよい）
 
 ## 5. 使用履歴の更新

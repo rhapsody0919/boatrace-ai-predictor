@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-09-01T15:30:00+09:00",
+  "followerCount": 54,
+  "followingCount": 243,
+  "totalPostsCounter": 261,
+  "previousActionsReview": {
+    "previousReportDate": "2026-08-25",
+    "recommendedActions": [
+      "day3（キャラC）投稿を実施しn=9まで増やす",
+      "統計的判断にはさらに数週間〜数ヶ月の継続投稿が必要と認識する",
+      "フォロワー54人という規模ではOut-of-Network拡散が鍵。リプライ戦略(/x-reply-drafts)の実行率を上げることがフォロワー・インプレッション双方の底上げに直結する可能性が高い"
+    ],
+    "executed": {
+      "day3Mascot": "実施済み（2026-08-25、child history: data/analysis/x-posts/history.json）。ただしマスコットA/B/C比較企画自体はその後継続されず、以降は単発の一覧アピール型・ブログ告知に移行",
+      "replyStrategy": "実行されている（当初『ファイルが見当たらないため未実行では』と疑ったが、X上の実際のReplies欄で直接確認。2026-08-25〜26、08-30〜31、09-01の複数日にわたり実行痕跡あり）。ただし毎日ではなくバースト的（数日おきにまとめて数件）"
+    },
+    "impact": "フォロワー数は前回レポート(54人)から今回(54人)まで1週間以上ゼロ変動。リプライ戦略は実行されているが、フォロワー転換に至った確証は今回の調査範囲では確認できず"
+  },
+  "postsSampled": [
+    {"postedAt": "2026-09-01 (30分前)", "type": "video-list-appeal", "summary": "会場別決まり手データ（差し、若松35.9%）", "impressions": null, "note": "投稿直後のため未計測"},
+    {"postedAt": "2026-09-01 (3時間前)", "type": "video-list-appeal", "summary": "支部別データ（江戸川、大阪支部20.7%）", "impressions": 40},
+    {"postedAt": "2026-09-01 (6時間前)", "type": "video-list-appeal", "summary": "会場別スタートデータ（1号艇一番手、江戸川31.5%）", "impressions": 8, "engagements": 0, "likes": 0, "reposts": 0, "replies": 0},
+    {"postedAt": "2026-09-01 (7時間前)", "type": "blog-announcement", "summary": "「選手×艇番別回収率分析」新機能記事告知", "impressions": 6, "note": "重複投稿: 同一記事を2026-08-31にも告知済み"},
+    {"postedAt": "2026-09-01 (7時間前)", "type": "blog-announcement", "summary": "「データ出走表」新機能記事告知", "impressions": 13, "note": "重複投稿: 同一記事を2026-08-31にも告知済み"},
+    {"postedAt": "2026-09-01 (7時間前)", "type": "blog-announcement", "summary": "「本日の好調・不調選手ランキング」新機能記事告知", "impressions": 6},
+    {"postedAt": "2026-09-01 (9時間前)", "type": "video-live-prediction-hook", "summary": "予想数値フック型（芦屋8R、AI逃げ確率34%）", "impressions": 8, "note": "旧カバーデザイン（本セッションで新デザインに刷新、PR#465、まだ本番投稿には反映されていない過去分）"},
+    {"postedAt": "2026-09-01 (10時間前)", "type": "video-list-appeal", "summary": "会場別まくり差しデータ（尼崎73.5%）", "impressions": 9},
+    {"postedAt": "2026-09-01 (21時間前)", "type": "video-list-appeal", "summary": "会場別まくりデータ（常滑65.4%）", "impressions": null},
+    {"postedAt": "2026-08-31", "type": "video-list-appeal", "summary": "会場別まくりデータ（戸田67.6%）", "impressions": 8, "engagements": 0, "likes": 0, "reposts": 0, "replies": 0, "detailExpands": 0, "profileVisits": 0, "linkClicks": 0, "videoUniqueViews": 1, "videoViews": 1, "note": "詳細アナリティクス確認済み。動画20秒中、視聴維持率は約8秒地点で0%まで低下（最後まで見た人は実質いない）"},
+    {"postedAt": "2026-08-31", "type": "blog-announcement", "summary": "「選手×艇番別回収率分析」新機能記事告知", "impressions": 13, "note": "上記2026-09-01の同一タイトル投稿と重複"},
+    {"postedAt": "2026-08-31", "type": "blog-announcement", "summary": "「データ出走表」新機能記事告知", "impressions": null}
+  ],
+  "replyStrategyExecution": [
+    {"date": "2026-08-25/26", "count": "複数件（クラスタ）", "sampleImpressions": [12, 16, 19, 102, 320], "note": "320はリプライ先の元投稿自体が高リーチだった影響（自分のリプライ単体の見られ方ではなく、スレッド全体のimpressionの可能性）"},
+    {"date": "2026-08-30/31", "count": "複数件", "sampleImpressions": [7]},
+    {"date": "2026-09-01", "count": "1件（確認範囲内）", "impressions": 53, "engagement": "リプライ先アカウント本人からいいね1件＋返信1件（実際の2者間のやり取りが成立した唯一の確認例）", "replyContent": "戸田がホームとのことですが、実は戸田は1号艇の単勝率が41.6%で全国24会場中もっとも低い会場なんです（2位平和島43.8%）。羨ましい限りです、全場制覇17/24すごい！", "targetContext": "相手の投稿は「8月の振り返り」という個人的な内容で、リプライは会場データの豆知識という文脈のズレがあったが、相手は好意的に反応した"}
+  ],
+  "avatarBannerCheck": {
+    "status": "正常",
+    "note": "初回スクリーンショットでアバターが灰色の空円に見えたため『アバター未設定では』と疑ったが、画像の遅延読み込みが原因と判明。再読み込み後は龍神ロゴのアバター・バナーとも正常表示を確認。誤検知として記録"
+  },
+  "otherBacklogs": {
+    "tweetDraftsMd": {"unposted": 35, "posted": 3, "oldestUnposted": "2026-07-30", "note": "テキストツイート下書き。ブログ機能告知の別チャネル。1ヶ月以上未消化のまま滞留"},
+    "xPostsHistoryLog": {
+      "lastEntry": "2026-08-25",
+      "note": "data/analysis/x-posts/history.jsonが2026-08-25（マスコットA/B/C 3日間テスト完了時点）以降更新されていない。実際の投稿はその後も継続・増加しているにもかかわらず記録が止まっており、本スキルのステップ0（前回施策の検証）の精度を損なっている"
+    }
+  },
+  "competitorCheck": "2026-08-23実施済み（sns_marketing_phased_strategy_2026_08_22参照）、1ヶ月未満のため今回省略",
+  "summary": {
+    "followerGrowth": "54→54、1週間以上ゼロ",
+    "impressionsRange": "6〜40（本日分）、大半が10前後",
+    "engagements": "確認した投稿はほぼ全て いいね・RT・返信0。詳細アナリティクスで確認した1件は視聴完了率も実質0",
+    "postingVolume": "直近24時間で7〜9本（動画+ブログ告知）、従来のマスコット期(1日3本)から大幅増加",
+    "duplicateContent": "同一ブログ記事の告知投稿が2026-08-31と09-01の2日にわたり重複投稿されている（複数記事で確認）",
+    "keyInsight": "フォロワー54人という母数に対しては、本日の1桁〜数十インプレッションという数字自体は必ずしも『異常に低い』わけではない（競合の2.9万フォロワーに対する数千インプレッションと比例計算するとほぼ同水準）。真の問題は個々の投稿の出来ではなく、フォロワー数という配信母数そのものが1週間以上ゼロ成長である点。リプライ戦略はOut-of-Network露出の唯一の実証済みチャネルだが、実行が散発的で、かつ確認できたフォロワー転換は今回無し"
+  },
+  "nextActions": [
+    "data/analysis/x-posts/history.jsonの記録を再開し、以降の投稿を毎回記録する（PDCAの前提が壊れているため最優先）",
+    "同一ブログ記事の重複告知を止める（直近7日分の投稿履歴と照合してから告知する運用に変更）",
+    "投稿本数を54フォロワーという規模に見合う水準（1日2〜3本程度）に戻すか、増やすなら増やした理由・狙いを明確にする",
+    "リプライ戦略を散発实行からdaily実行に戻し、リプライ先はある程度リーチのある投稿（バズっている投稿・フォロワー数の多いアカウント）を優先する",
+    "note-articles/tweet-drafts.mdの35件の滞留を消化するか、消化しない場合は運用自体を終了する意思決定を行う"
+  ]
+}

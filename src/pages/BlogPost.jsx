@@ -308,6 +308,11 @@ export default function BlogPost() {
                   />
                 );
               },
+              // 実際の画像サイズが不明でもCLSを抑えるため、CSS側で
+              // aspect-ratioを固定確保している（BlogPost.css参照）
+              img: ({ node, ...props }) => (
+                <img {...props} loading="lazy" decoding="async" />
+              ),
             }}
           >
             {content}
