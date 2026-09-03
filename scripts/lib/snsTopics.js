@@ -81,11 +81,16 @@ export async function getTargetAccounts({ platform } = {}) {
  * で作成する。
  *
  * 2026-09-03修正: 以前は`targetAccountIds`に無いアカウントの行を単に作らない
- *実装だった。この場合ChannelTargetToggle（sns-hub UI）はexistingな行の
+ * 実装だった。この場合ChannelTargetToggle（sns-hub UI）はexistingな行の
  * pending⇔skipped切替しかできず、「既定でCHANNEL_MATRIXから除外された
  * チャネル（例: TikTok）を、個別ネタの人間判断で後から対象に含める」という
  * 逆方向の操作ができなかった（ユーザー指摘）。全アカウント分の行を必ず作成する
- * ことで、どのチャネルも双方向にトグル可能になる。
+ * ことで、そのチャネルは双方向にトグル可能になる。
+ * **既知の制約**: ChannelTargetToggleは`requires_topic_approval=true`の型
+ * （venue-feature、「ネタ承認」画面）でのみ到達可能。`autoApprove: true`で
+ * 即座にstatus='approved'になる型（daily-auto/race-time-critical）は
+ * 承認待ち一覧に出ず`TopicProgressMatrix`（表示専用、クリック不可）にのみ
+ * 現れるため、作成時点の判定を人間が後から変更する手段が現状無い。
  * @param {object} params
  * @param {string} params.topicText
  * @param {string} params.contentTypeId
@@ -104,7 +109,7 @@ export async function createTopicWithTargets({
   sourceInsightIds = [],
   autoApprove = false,
   targetAccountIds,
-  skipReason = "ネタ種別の既定でチャネル対象外（人間の承認画面から個別に対象へ変更可能）",
+  skipReason = "ネタ種別の既定でチャネル対象外",
 }) {
   assertSupabaseEnabled();
 
