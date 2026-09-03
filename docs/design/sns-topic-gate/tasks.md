@@ -72,11 +72,11 @@
 
 ## チャネル別パイプライン（Xを最初の1本として実装）
 
-- [ ] **19. 週次提案Routine・日次自動提案Routineのプロンプト新設**
-  `docs/operation/`配下に新規ファイル。`sns_strategy_insights`のactiveなinsightを根拠に`sns_topics`+`sns_topic_targets`を作成する手順を記述。タスク2・18に依存。
+- [x] **19. 週次提案Routine・日次自動提案Routineのプロンプト新設**
+  `docs/operation/sns-topic-proposer-weekly.md`・`sns-topic-proposer-daily-auto.md`を作成済み。既存のネタ供給モジュール（`venueCharacteristicSource.js`/`dailyResultSource.js`）・`channelMatrix.js`を再利用する設計にした。
 
-- [ ] **20. X向けチャネル別パイプラインのプロンプト新設**
-  既存`sns-video-producer-prompt.md`のX関連部分・`content-multi-channel-pipeline-prompt.md`のX関連部分を統合・分割し、`docs/operation/sns-pipeline-x.md`（仮）として独立させる。claim（タスク3の`claimTopicTarget`相当の手順）→生成→`sns_drafts` INSERT→`sns_topic_targets.status='generated'`更新の一連の手順を記述。タスク3・18に依存。
+- [x] **20. X向けチャネル別パイプラインのプロンプト新設**
+  `docs/operation/sns-pipeline-x.md`を作成済み。claim（`claimTopicTarget`）→生成→`sns_drafts` INSERT→`markTopicTargetGenerated`の一連の手順を記述、`sns-video-producer-prompt.md`（技術手順）・`x-operations-playbook.md`（キャプション設計）を再利用する構成。
 
 - [ ] **21. Routine発火トークンの登録（ユーザー手動作業）**
   週次提案・日次自動提案・Xパイプラインの3 Routineを`RemoteTrigger`等で作成し、発火トークンをVercel環境変数に登録する。Claude Codeからは自動化不可（2026-09-03検証済み）。タスク19・20完了後。
