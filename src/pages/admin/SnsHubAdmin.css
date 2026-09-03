@@ -1169,3 +1169,181 @@
     padding: 0.5rem;
   }
 }
+
+/* 「ネタ承認」タブ（docs/design/sns-topic-gate/screens.md #2〜#6） */
+
+.topic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.topic-card {
+  border: 1px solid var(--color-gray-200);
+  border-radius: 12px;
+  background: white;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.topic-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.content-type-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.content-type-badge-venue-feature {
+  background: var(--color-primary-500);
+  color: white;
+}
+
+.content-type-badge-daily-auto {
+  background: var(--color-success);
+  color: white;
+}
+
+.content-type-badge-race-time-critical {
+  background: var(--color-warning);
+  color: white;
+}
+
+.topic-card-text {
+  font-size: 0.9rem;
+  color: var(--color-gray-800);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.topic-card-meta {
+  font-size: 0.8rem;
+  color: var(--color-gray-600);
+  margin: 0;
+}
+
+.channel-target-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.channel-target-chip {
+  padding: 0.3rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-gray-300);
+  background: white;
+  color: var(--color-gray-600);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.channel-target-chip-pending {
+  background: var(--color-primary-500);
+  border-color: var(--color-primary-500);
+  color: white;
+}
+
+.channel-target-chip-skipped {
+  background: white;
+  color: var(--color-gray-400);
+  text-decoration: line-through;
+}
+
+.channel-target-chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.topic-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.topic-approve-btn,
+.topic-reject-btn {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.topic-approve-btn {
+  border: none;
+  background: var(--color-success);
+  color: white;
+}
+
+.topic-reject-btn {
+  border: 1px solid var(--color-gray-300);
+  background: white;
+  color: var(--color-gray-600);
+}
+
+.topic-progress-matrix-wrap {
+  margin-top: 1.5rem;
+}
+
+.topic-progress-matrix-title {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
+
+/* テーブル自体が横に長くなりやすい（ネタ×アカウント数）ため、ページ本体は
+   横スクロールさせずこのラッパーだけでスクロールを吸収する */
+.topic-progress-matrix-scroll {
+  overflow-x: auto;
+}
+
+.topic-progress-matrix {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8rem;
+}
+
+.topic-progress-matrix td {
+  border: 1px solid var(--color-gray-200);
+  padding: 0.4rem 0.6rem;
+  white-space: nowrap;
+}
+
+.topic-progress-matrix-topic-text {
+  color: var(--color-gray-800);
+  font-weight: 600;
+  max-width: 220px;
+  white-space: normal;
+}
+
+.topic-progress-matrix-cell-pending {
+  color: var(--color-gray-500);
+}
+
+.topic-progress-matrix-cell-claimed {
+  color: var(--color-primary-500);
+}
+
+.topic-progress-matrix-cell-generated {
+  color: var(--color-success);
+}
+
+.topic-progress-matrix-cell-skipped {
+  color: var(--color-gray-400);
+  text-decoration: line-through;
+}
+
+.topic-progress-matrix-generated-mark {
+  font-weight: 700;
+}

@@ -24,6 +24,10 @@ import {
   archiveDraft,
   triggerGeneration,
   triggerTopicPipelineGeneration,
+  getTopics,
+  approveTopic,
+  rejectTopic,
+  updateTopicTargetLabel,
 } from "../../services/snsHubService";
 import {
   canShareVideo,
@@ -125,6 +129,7 @@ const STATUS_FILTERS = [
 ];
 
 const NON_PLATFORM_TABS = [
+  { id: "topics", label: "ネタ承認" },
   { id: "insights", label: "戦略メモ" },
   { id: "catalog", label: "フォーマットカタログ" },
 ];
@@ -167,6 +172,7 @@ function SnsHubAdmin() {
   const [approvers, setApprovers] = useState([]);
   const [insights, setInsights] = useState([]);
   const [templateVariants, setTemplateVariants] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [generating, setGenerating] = useState(null); // null | 'daily' | 'evergreen'
@@ -235,6 +241,19 @@ function SnsHubAdmin() {
     return [...names].sort();
   }, [templateVariants]);
 
+  // 下書きのcontent_group_id → ネタの型、の逆引き。ネタ駆動で生成された下書きに
+  // ContentTypeBadgeを表示するために使う（要件15由来、単発投稿にはネタが無いため
+  // 何も表示しない）
+  const contentTypeByGroupId = useMemo(() => {
+    const map = {};
+    for (const topic of topics) {
+      if (topic.sns_content_types) {
+        map[topic.id] = topic.sns_content_types;
+      }
+    }
+    return map;
+  }, [topics]);
+
   // silent=trueの場合、全画面ローディング表示を出さずに裏側でデータだけ
   // 更新する。承認等のアクション直後に画面全体がスピナーに切り替わる
   // 体験が「うざい」という指摘への対応（2026-08-31）。初回マウント時のみ
@@ -256,6 +275,7 @@ function SnsHubAdmin() {
         approvers: true,
         insights: true,
         templateVariants: true,
+        topics: true,
       },
     } = {}) => {
       if (!silent) {
@@ -270,6 +290,7 @@ function SnsHubAdmin() {
           fetchScope.templateVariants
             ? getTemplateVariants().then(setTemplateVariants)
             : null,
+          fetchScope.topics ? getTopics().then(setTopics) : null,
         ]);
       } catch (err) {
         console.error("下書き取得エラー:", err);
@@ -515,7 +536,8 @@ function SnsHubAdmin() {
 
   const isInsightsTab = activeTab === "insights";
   const isCatalogTab = activeTab === "catalog";
-  const isPlatformTab = !isInsightsTab && !isCatalogTab;
+  const isTopicsTab = activeTab === "topics";
+  const isPlatformTab = !isInsightsTab && !isCatalogTab && !isTopicsTab;
   const activeStatusDef = STATUS_FILTERS.find(
     (f) => f.id === activeStatusFilter,
   );
@@ -535,18 +557,20 @@ function SnsHubAdmin() {
         <div className="tab-navigation">
           {TABS.map((tab) => {
             const count =
-              tab.id === "insights"
-                ? insights.filter((i) => i.status === "proposed").length
-                : tab.id === "catalog"
-                  ? templateVariants.length
-                  : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
-                    // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
-                    // 対応が必要な件数という意味が薄れるため）
-                    drafts.filter(
-                      (d) =>
-                        d.platform === tab.id &&
-                        STATUS_FILTERS[0].statuses.includes(d.status),
-                    ).length;
+              tab.id === "topics"
+                ? topics.filter((t) => t.status === "proposed").length
+                : tab.id === "insights"
+                  ? insights.filter((i) => i.status === "proposed").length
+                  : tab.id === "catalog"
+                    ? templateVariants.length
+                    : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
+                      // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
+                      // 対応が必要な件数という意味が薄れるため）
+                      drafts.filter(
+                        (d) =>
+                          d.platform === tab.id &&
+                          STATUS_FILTERS[0].statuses.includes(d.status),
+                      ).length;
             return (
               <button
                 key={tab.id}
@@ -746,7 +770,29 @@ function SnsHubAdmin() {
       </div>
 
       <div className="tab-content">
-        {isCatalogTab ? (
+        {isTopicsTab ? (
+          <TopicApprovalTab
+            topics={topics}
+            approvers={approvers}
+            onApprove={(topicId, approverId) =>
+              handleAction(approveTopic, [topicId, approverId], {
+                topics: true,
+              })
+            }
+            onReject={(topicId, approverId) =>
+              handleAction(rejectTopic, [topicId, approverId], {
+                topics: true,
+              })
+            }
+            onUpdateTargetLabel={(topicId, targetId, status) =>
+              handleAction(
+                updateTopicTargetLabel,
+                [topicId, targetId, status],
+                { topics: true },
+              )
+            }
+          />
+        ) : isCatalogTab ? (
           <CatalogTab templateVariants={templateVariants} />
         ) : isInsightsTab ? (
           <InsightTab
@@ -768,6 +814,7 @@ function SnsHubAdmin() {
               <DraftCard
                 key={draft.id}
                 draft={draft}
+                contentType={contentTypeByGroupId[draft.content_group_id]}
                 approvers={approvers}
                 onApprove={(approverId) =>
                   handleAction(approveDraft, [draft.id, approverId])
@@ -1140,6 +1187,7 @@ const TEXT_DRAFT_PLATFORMS = new Set(["blog", "note"]);
 
 function DraftCard({
   draft,
+  contentType,
   approvers,
   onApprove,
   onMergeBlogPr,
@@ -1197,6 +1245,7 @@ function DraftCard({
           <span className="draft-badge draft-badge-variant">
             {variantLabel}
           </span>
+          {contentType && <ContentTypeBadge contentType={contentType} />}
         </div>
 
         <p className="draft-meta-text">
@@ -1919,6 +1968,199 @@ function RiskWarningBadge({ flag }) {
       ? flag
       : flag.description || flag.ruleId || "リスク検出";
   return <span className="risk-warning-badge">⚠️ {label}</span>;
+}
+
+// 型（週次/日次・一般/日次・時間制約）を表す小バッジ。TopicCardとDraftCardの
+// 両方で使う共通部品（screens.md #4）
+function ContentTypeBadge({ contentType }) {
+  return (
+    <span
+      className={`content-type-badge content-type-badge-${contentType.type_key}`}
+    >
+      {contentType.label}
+    </span>
+  );
+}
+
+// sns_topic_targetsの各アカウントをpending⇔skippedで切り替えるチップ群
+// （spec.md要件14、screens.md #5）。claim済み・生成済みのターゲットは
+// クリック不可（既にパイプラインが着手しているため）
+function ChannelTargetToggle({ targets, onToggle }) {
+  return (
+    <div className="channel-target-toggle">
+      {targets.map((target) => {
+        const account = target.sns_target_accounts;
+        const label = account
+          ? `${PLATFORM_LABELS[account.platform] || account.platform}`
+          : "unknown";
+        const isLocked =
+          target.status === "claimed" || target.status === "generated";
+        return (
+          <button
+            key={target.id}
+            type="button"
+            className={`channel-target-chip channel-target-chip-${target.status}`}
+            disabled={isLocked}
+            title={
+              target.status === "skipped" && target.skip_reason
+                ? target.skip_reason
+                : undefined
+            }
+            onClick={() =>
+              onToggle(
+                target.id,
+                target.status === "skipped" ? "pending" : "skipped",
+              )
+            }
+          >
+            {label}
+            {target.status === "skipped" && " (除外)"}
+            {isLocked &&
+              ` (${target.status === "claimed" ? "生成中" : "生成済み"})`}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// 「ネタ承認」タブの個別ネタカード（screens.md #3）。TextDraftPreview/VideoPreview
+// とは別役割（動画・本文のプレビューでなく、ネタ本文＋メタ情報の確認）のため
+// 軽量な新規実装とする
+function TopicCard({
+  topic,
+  approvers,
+  onApprove,
+  onReject,
+  onUpdateTargetLabel,
+}) {
+  const [selectedApproverId, setSelectedApproverId] = useState(
+    approvers[0]?.id || null,
+  );
+  const targets = topic.sns_topic_targets || [];
+
+  return (
+    <div className="topic-card">
+      <div className="topic-card-badges">
+        {topic.sns_content_types && (
+          <ContentTypeBadge contentType={topic.sns_content_types} />
+        )}
+      </div>
+      <p className="topic-card-text">{topic.topic_text}</p>
+      <p className="topic-card-meta">
+        提案: {formatDateTime(topic.proposed_at)}
+        {topic.source_insight_ids?.length > 0 &&
+          ` ・根拠insight ${topic.source_insight_ids.length}件`}
+      </p>
+      <ChannelTargetToggle
+        targets={targets}
+        onToggle={(targetId, status) =>
+          onUpdateTargetLabel(topic.id, targetId, status)
+        }
+      />
+      <ApproverChips
+        approvers={approvers}
+        selectedId={selectedApproverId}
+        onSelect={setSelectedApproverId}
+      />
+      <div className="topic-card-actions">
+        <button
+          type="button"
+          className="topic-approve-btn"
+          onClick={() => onApprove(topic.id, selectedApproverId)}
+        >
+          ✅ 承認
+        </button>
+        <button
+          type="button"
+          className="topic-reject-btn"
+          onClick={() => onReject(topic.id, selectedApproverId)}
+        >
+          却下
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 承認済みネタ×アカウントの生成状況をテーブル形式で表示する（要件15、screens.md #6）
+function TopicProgressMatrix({ topics }) {
+  const approvedTopics = topics.filter((t) => t.status === "approved");
+  if (approvedTopics.length === 0) {
+    return null;
+  }
+  return (
+    <div className="topic-progress-matrix-wrap">
+      <h3 className="topic-progress-matrix-title">承認済みネタの進捗</h3>
+      <div className="topic-progress-matrix-scroll">
+        <table className="topic-progress-matrix">
+          <tbody>
+            {approvedTopics.map((topic) => (
+              <tr key={topic.id}>
+                <td className="topic-progress-matrix-topic-text">
+                  {topic.topic_text}
+                </td>
+                {(topic.sns_topic_targets || []).map((target) => (
+                  <td
+                    key={target.id}
+                    className={`topic-progress-matrix-cell topic-progress-matrix-cell-${target.status}`}
+                  >
+                    {target.sns_target_accounts?.platform || "?"}:{" "}
+                    {target.status}
+                    {target.status === "generated" && target.draft_id && (
+                      <span className="topic-progress-matrix-generated-mark">
+                        {" "}
+                        ✓
+                      </span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// 「ネタ承認」タブ本体（screens.md #2）。status='proposed'（承認要否の型のみ）を
+// 一覧表示し、承認済みネタの進捗マトリクスも合わせて表示する
+function TopicApprovalTab({
+  topics,
+  approvers,
+  onApprove,
+  onReject,
+  onUpdateTargetLabel,
+}) {
+  const proposedTopics = topics.filter((t) => t.status === "proposed");
+
+  return (
+    <div className="topic-approval-tab">
+      {proposedTopics.length === 0 ? (
+        <div className="empty-state">
+          <p>
+            承認待ちのネタはありません（日次・一般/日次・時間制約型はネタ承認を
+            経ずに生成されるため、ここには表示されません）。
+          </p>
+        </div>
+      ) : (
+        <div className="topic-list">
+          {proposedTopics.map((topic) => (
+            <TopicCard
+              key={topic.id}
+              topic={topic}
+              approvers={approvers}
+              onApprove={onApprove}
+              onReject={onReject}
+              onUpdateTargetLabel={onUpdateTargetLabel}
+            />
+          ))}
+        </div>
+      )}
+      <TopicProgressMatrix topics={topics} />
+    </div>
+  );
 }
 
 function Header() {
