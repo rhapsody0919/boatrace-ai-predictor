@@ -78,6 +78,13 @@ const REVISION_REASONS = [
   { code: "typo-or-data-error", label: "誤字・データの誤り" },
   { code: "tone-adjustment", label: "トーン調整" },
   { code: "format-or-topic-change", label: "型・題材の変更" },
+  // デザイン系の理由（2026-09-03追加、ユーザー要望: 「無駄なスペース、色使い、
+  // フォントサイズ、画像など」を選択式で指摘できるようにしてほしい）。既存の
+  // RevisionPanel（チップ選択+自由記述）をそのまま流用し、新規UIは作らない
+  { code: "design-spacing", label: "余白・スペースが無駄" },
+  { code: "design-color", label: "配色が合わない" },
+  { code: "design-font-size", label: "フォントサイズが不適切" },
+  { code: "design-visual-material", label: "画像・素材の質が低い" },
 ];
 
 // ブログ/note下書き向けの却下理由（spec.md FR5、2026-09-01追加）。

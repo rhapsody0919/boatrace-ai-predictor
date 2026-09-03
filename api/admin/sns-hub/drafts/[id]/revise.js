@@ -28,6 +28,11 @@ const VALID_REASON_CODES = [
   "typo-or-data-error",
   "tone-adjustment",
   "format-or-topic-change",
+  // デザイン系（2026-09-03追加、SnsHubAdmin.jsxのREVISION_REASONSと一致させる）
+  "design-spacing",
+  "design-color",
+  "design-font-size",
+  "design-visual-material",
 ];
 
 export default async function handler(req) {

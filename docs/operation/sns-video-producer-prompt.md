@@ -35,6 +35,7 @@
 
 ## 制作フロー（毎回このステップを踏む）
 
+0. **直近の却下理由を確認する**（2026-09-03追加）: `getRecentRevisions({ platform: "x" })`・`getRecentRevisions({ platform: "tiktok" })`・`getRecentRevisions({ platform: "youtube" })`（`scripts/lib/contentRevisionHistory.js`）で、これから生成するプラットフォームの直近30日の修正依頼・却下理由を取得し、同じ間違いを繰り返さないよう題材選定・台本執筆に反映する。理由コード（`revision_reason_codes`、下記「一部修正」の選択式チップに対応）だけでなく`revision_reason_freetext`（自由記述）も必ず読む。該当が無ければ通常通り進めてよい。同じ理由が3回以上累積した場合はGitHub Actions（`content-ops-nightly-check.yml`）が自動でLinearにcontent-qualityラベル付きIssueを起票するため、このRoutine側で追加対応は不要（`docs/operation/content-multi-channel-pipeline-prompt.md`の同じ仕組みと共通の関数を使う）
 1. **題材を選ぶ**: 下記フォーマットライブラリから1つ選ぶか、新規パターンを1つ提案する。**管理画面の手動生成リクエストに`format`（型名、`sns_template_variants.format`と同じ表記）が指定されている場合はそれを優先する**（2026-09-02追加、admin/sns-hubの「会場攻略型など」ボタンに型選択ドロップダウンを追加。ユーザーが具体的な型を選んでいる場合、Routine側の自動選定ロジックより優先する）。`format`が空・未指定の場合のみ、これまで通りRoutine側で自動選定する
 2. **実データを取得する**
    - **DBに実データがあることと、そのデータが今の本番UIで実際に表示・再現できることは別物**（2026-08-22追加、教訓は`feedback_data_premise_must_match_live_ui`）。台本の題材をDBクエリだけで確定せず、必ずPlaywrightで実際にその画面を開いてスクショが撮れるか（廃止済みモデル・`isFinished`等の条件分岐で非表示化されていないか）を先に確認してから3の台本執筆に進む。この手順を飛ばして2回手戻りが発生した実績あり
