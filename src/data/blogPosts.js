@@ -52,6 +52,18 @@ export const blogPosts = [
     image: "/images/blog/language-switcher-guide.jpg",
   },
   {
+    id: "volatility-index-case-study",
+    title: "イン崩れ指数100%は当たるのか？9/3住之江6Rの実例で検証",
+    description:
+      "龍神レーダーのレース詳細ページに表示される「イン崩れ指数」。2026年9月3日・住之江6Rで表示された「イン崩れ指数100%」という予測が、実際のレース結果とどう対応したのかを実データで検証します。",
+    date: "2026-09-03",
+    category: "データ分析",
+    tags: ["イン崩れ指数", "データ分析", "予想的中検証", "住之江", "AI予想"],
+    readTime: "5分",
+    featured: false,
+    image: "/images/blog/volatility-index-case-study.jpg",
+  },
+  {
     id: "boat-number-technique-consistency",
     title: "1号艇はどこでも「逃げ」、4号艇の決まり手は会場でバラバラ",
     description:

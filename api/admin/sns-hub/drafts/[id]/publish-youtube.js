@@ -23,97 +23,42 @@ import {
   isValidDraftId,
   getDraftById,
   updateDraft,
+  signStoragePath,
 } from "../../../../_lib/snsHubHelpers.js";
+import {
+  getYoutubeAccessToken,
+  uploadYoutubeVideo,
+  uploadYoutubeThumbnail,
+} from "../../../../_lib/youtubeUpload.js";
 
 export const config = {
   runtime: "edge",
 };
 
-const YOUTUBE_UPLOAD_URL =
-  "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status";
-const YOUTUBE_THUMBNAIL_URL_BASE =
-  "https://www.googleapis.com/upload/youtube/v3/thumbnails/set";
-
 async function getAccessToken() {
-  const clientId = process.env.YOUTUBE_CLIENT_ID;
-  const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-  const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
-  if (!clientId || !clientSecret || !refreshToken) return null;
-
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
+  return getYoutubeAccessToken({
+    clientId: process.env.YOUTUBE_CLIENT_ID,
+    clientSecret: process.env.YOUTUBE_CLIENT_SECRET,
+    refreshToken: process.env.YOUTUBE_REFRESH_TOKEN,
   });
-  if (!response.ok) {
-    throw new Error(
-      `YouTube OAuthトークン取得に失敗しました (${response.status})`,
-    );
-  }
-  const { access_token } = await response.json();
-  return access_token;
 }
 
 async function uploadVideo(accessToken, draft, videoBlob) {
-  const metadata = {
-    snippet: {
+  return uploadYoutubeVideo(
+    accessToken,
+    {
       title: draft.title,
       description: draft.caption_text || "",
       tags: draft.hashtags || [],
+      // 下書き承認フローはこれまで通り公開投稿する（既存挙動を維持）
+      privacyStatus: "public",
     },
-    status: { privacyStatus: "public" },
-  };
-
-  const boundary = "boatai-youtube-upload-boundary";
-  const body =
-    `--${boundary}\r\n` +
-    `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
-    `${JSON.stringify(metadata)}\r\n` +
-    `--${boundary}\r\n` +
-    `Content-Type: video/mp4\r\n\r\n`;
-  const bodyBytes = new Blob([body, videoBlob, `\r\n--${boundary}--`]);
-
-  const response = await fetch(YOUTUBE_UPLOAD_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": `multipart/related; boundary=${boundary}`,
-    },
-    body: bodyBytes,
-  });
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(
-      `YouTube動画アップロードに失敗しました (${response.status}): ${errorBody}`,
-    );
-  }
-  return response.json();
+    videoBlob,
+  );
 }
 
 async function uploadThumbnail(accessToken, videoId, thumbnailBlob) {
-  const response = await fetch(
-    `${YOUTUBE_THUMBNAIL_URL_BASE}?videoId=${videoId}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "image/jpeg",
-      },
-      body: thumbnailBlob,
-    },
-  );
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(
-      `YouTubeサムネイル設定に失敗しました (${response.status}): ${errorBody}`,
-    );
-  }
-  return response.json();
+  return uploadYoutubeThumbnail(accessToken, videoId, thumbnailBlob);
 }
 
 export default async function handler(req) {
@@ -174,7 +119,16 @@ export default async function handler(req) {
       );
     }
 
-    const videoResponse = await fetch(draft.video_storage_path);
+    // 2026-09-03修正: video_storage_pathは生のStorageパスを保存する規約
+    // （drafts/index.jsの読み取り時署名と統一）のため、fetchする前に必ず署名する
+    const videoUrl = await signStoragePath(draft.video_storage_path);
+    if (!videoUrl) {
+      return jsonResponse(
+        { error: "動画の署名付きURL発行に失敗しました" },
+        502,
+      );
+    }
+    const videoResponse = await fetch(videoUrl);
     if (!videoResponse.ok) {
       return jsonResponse(
         { error: `動画取得に失敗しました (${videoResponse.status})` },
@@ -185,25 +139,51 @@ export default async function handler(req) {
 
     const uploaded = await uploadVideo(accessToken, draft, videoBlob);
     const youtubeVideoId = uploaded.id;
+    const youtubeUrl = `https://youtu.be/${youtubeVideoId}`;
 
+    // サムネイル設定は動画本体のアップロードとは独立した成否として扱う。
+    // ここで例外を投げると、動画自体はYouTube上に既に公開済み（取り消し不可）
+    // にもかかわらずstatusがpending_reviewのまま残り、下書きを再承認すると
+    // 動画が重複投稿される事故につながる（2026-09-02、実クレデンシャルでの
+    // 検証時にサムネイル権限エラーで実際に発生した不具合）
+    let thumbnailError = null;
     if (draft.cover_image_path) {
-      const thumbResponse = await fetch(draft.cover_image_path);
-      if (thumbResponse.ok) {
+      try {
+        const thumbnailUrl = await signStoragePath(draft.cover_image_path);
+        if (!thumbnailUrl) {
+          throw new Error("サムネイルの署名付きURL発行に失敗しました");
+        }
+        const thumbResponse = await fetch(thumbnailUrl);
+        if (!thumbResponse.ok) {
+          throw new Error(
+            `サムネイル取得に失敗しました (${thumbResponse.status})`,
+          );
+        }
         const thumbBlob = await thumbResponse.blob();
         await uploadThumbnail(accessToken, youtubeVideoId, thumbBlob);
+      } catch (error) {
+        console.error("SNS Hub publish-youtube thumbnail error:", error);
+        thumbnailError = error.message;
       }
     }
 
-    const youtubeUrl = `https://youtu.be/${youtubeVideoId}`;
     const updated = await updateDraft(id, {
       status: "posted",
       approver_id: approverId,
       approved_at: new Date().toISOString(),
       posted_at: new Date().toISOString(),
-      source_data: { ...(draft.source_data || {}), youtube_url: youtubeUrl },
+      source_data: {
+        ...(draft.source_data || {}),
+        youtube_url: youtubeUrl,
+        ...(thumbnailError && { youtube_thumbnail_error: thumbnailError }),
+      },
     });
 
-    return jsonResponse({ data: updated, youtubeUrl });
+    return jsonResponse({
+      data: updated,
+      youtubeUrl,
+      ...(thumbnailError && { thumbnailWarning: thumbnailError }),
+    });
   } catch (error) {
     console.error("SNS Hub publish-youtube Edge function error:", error);
     return jsonResponse({ error: error.message }, 500);

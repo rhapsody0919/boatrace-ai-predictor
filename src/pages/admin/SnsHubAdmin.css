@@ -133,6 +133,14 @@
   color: var(--color-gray-500);
 }
 
+/* ネタ駆動マルチチャネルパイプライン（Pipeline B）の手動実行パネル。
+   daily/evergreen（Pipeline A）とは別Routineであることが分かるよう
+   .manual-generate-panelを共有しつつ独立したブロックとして配置する
+   （2026-09-02追加）。.manual-generate-panel自体のmargin-bottom: 1remで
+   上のパネルとの間隔は既に確保されているため、.topic-pipeline-panel固有の
+   追加スタイルは無い（2026-09-03、コードレビューで指摘: 以前のmargin-top:
+   -0.4remは逆に2パネルを近づけてしまい、視覚的に分離する意図と矛盾していた） */
+
 .manual-generate-block {
   display: flex;
   align-items: center;
@@ -186,6 +194,22 @@
 
 .generate-count-max {
   color: var(--color-gray-400);
+}
+
+.generate-format-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+}
+
+.generate-format-select {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  max-width: 12rem;
 }
 
 .manual-generate-btn {
@@ -1144,4 +1168,337 @@
   .tab-content {
     padding: 0.5rem;
   }
+}
+
+/* 「ネタ承認」セクション（docs/design/sns-topic-gate/screens.md #2〜#6）。
+   2026-09-03、ユーザー指摘によりタブでなくtab-navigation-rowの上に常時表示する
+   専用セクションに変更（「承認→各チャネルタブに生成される」流れを分かりやすくするため） */
+
+.topic-approval-section {
+  margin-bottom: 1rem;
+  border: 1px solid var(--ryujin-gold-500, #c9a227);
+  border-radius: 8px;
+  background: var(--color-gray-50);
+  overflow: hidden;
+}
+
+.topic-approval-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.topic-approval-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.topic-approval-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.4rem;
+  border-radius: 9999px;
+  background: var(--ryujin-gold-500, #c9a227);
+  color: white;
+  font-size: 0.75rem;
+}
+
+.topic-approval-section-hint {
+  font-size: 0.75rem;
+  color: var(--color-gray-600);
+  flex: 1;
+}
+
+.topic-approval-section-toggle {
+  font-size: 0.7rem;
+  color: var(--color-gray-500);
+}
+
+.topic-approval-section-body {
+  padding: 0 0.75rem 0.75rem;
+}
+
+.topic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.topic-card {
+  border: 1px solid var(--color-gray-200);
+  border-radius: 12px;
+  background: white;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.topic-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.content-type-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.content-type-badge-venue-feature {
+  background: var(--color-primary-500);
+  color: white;
+}
+
+.content-type-badge-daily-auto {
+  background: var(--color-success);
+  color: white;
+}
+
+.content-type-badge-race-time-critical {
+  background: var(--color-warning);
+  color: white;
+}
+
+.topic-card-text {
+  font-size: 0.9rem;
+  color: var(--color-gray-800);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.topic-card-meta {
+  font-size: 0.8rem;
+  color: var(--color-gray-600);
+  margin: 0;
+}
+
+.channel-target-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.channel-target-chip {
+  padding: 0.3rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-gray-300);
+  background: white;
+  color: var(--color-gray-600);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.channel-target-chip-pending {
+  background: var(--color-primary-500);
+  border-color: var(--color-primary-500);
+  color: white;
+}
+
+.channel-target-chip-skipped {
+  background: white;
+  color: var(--color-gray-400);
+  text-decoration: line-through;
+}
+
+.channel-target-chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.topic-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.topic-approve-btn,
+.topic-reject-btn {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.topic-approve-btn {
+  border: none;
+  background: var(--color-success);
+  color: white;
+}
+
+.topic-reject-btn {
+  border: 1px solid var(--color-gray-300);
+  background: white;
+  color: var(--color-gray-600);
+}
+
+.topic-progress-matrix-wrap {
+  margin-top: 1.5rem;
+}
+
+.topic-progress-matrix-title {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
+
+/* テーブル自体が横に長くなりやすい（ネタ×アカウント数）ため、ページ本体は
+   横スクロールさせずこのラッパーだけでスクロールを吸収する */
+.topic-progress-matrix-scroll {
+  overflow-x: auto;
+}
+
+.topic-progress-matrix {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8rem;
+}
+
+.topic-progress-matrix td {
+  border: 1px solid var(--color-gray-200);
+  padding: 0.4rem 0.6rem;
+  white-space: nowrap;
+}
+
+.topic-progress-matrix-topic-text {
+  color: var(--color-gray-800);
+  font-weight: 600;
+  max-width: 220px;
+  white-space: normal;
+}
+
+.topic-progress-matrix-cell-pending {
+  color: var(--color-gray-500);
+}
+
+.topic-progress-matrix-cell-claimed {
+  color: var(--color-primary-500);
+}
+
+.topic-progress-matrix-cell-generated {
+  color: var(--color-success);
+}
+
+.topic-progress-matrix-cell-skipped {
+  color: var(--color-gray-400);
+  text-decoration: line-through;
+}
+
+.topic-progress-matrix-generated-mark {
+  font-weight: 700;
+}
+
+.topic-category-settings-hint {
+  font-size: 0.85rem;
+  color: var(--color-gray-500);
+  margin: 0 0 1rem;
+}
+
+.topic-category-settings-scroll {
+  overflow-x: auto;
+}
+
+.topic-category-settings-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.topic-category-settings-table th,
+.topic-category-settings-table td {
+  border: 1px solid var(--color-gray-200);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.topic-category-settings-table th {
+  background: var(--color-gray-50);
+  color: var(--color-gray-600);
+  font-weight: 600;
+}
+
+.topic-category-row-inactive {
+  background: var(--color-gray-50);
+  color: var(--color-gray-400);
+}
+
+.topic-category-label-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.topic-category-label {
+  font-weight: 600;
+  color: var(--color-gray-800);
+}
+
+.topic-category-row-inactive .topic-category-label {
+  color: var(--color-gray-400);
+  text-decoration: line-through;
+}
+
+.topic-category-inactive-badge {
+  font-size: 0.7rem;
+  color: var(--color-error-text);
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+}
+
+.topic-category-notes {
+  cursor: help;
+}
+
+.topic-category-cadence-cell {
+  color: var(--color-gray-500);
+}
+
+.topic-category-channel-cell {
+  text-align: center;
+}
+
+.topic-category-channel-toggle {
+  border: none;
+  border-radius: 6px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.topic-category-channel-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.topic-category-channel-toggle.on {
+  background: var(--color-success);
+  color: white;
+}
+
+.topic-category-channel-toggle.off {
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
 }

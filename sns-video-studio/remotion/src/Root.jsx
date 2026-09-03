@@ -37,6 +37,7 @@ import {
   BoatRankingCM_RunnerUp,
   BoatRankingCM_TechniqueShare,
   BoatRankingCM_NarutoNigeWin,
+  BoatRankingCM_TechniqueConsistency,
 } from "./VenueRankingCM.jsx";
 import { KimariteCM_B } from "./KimariteCM.jsx";
 import { LivePredictionCM_B } from "./LivePredictionCM2.jsx";
@@ -55,6 +56,15 @@ import { NoteExplainerCM_FormRanking } from "./NoteExplainerFormRanking.jsx";
 import { NoteExplainerCM_LanguageSwitcher } from "./NoteExplainerLanguageSwitcherCM.jsx";
 import { LanguageSwitcherCM } from "./LanguageSwitcherCM.jsx";
 import { DataQuoteCard } from "./DataQuoteCard.jsx";
+import {
+  YoutubeChannelAvatar,
+  YoutubeChannelBanner,
+} from "./YoutubeChannelBranding.jsx";
+import {
+  TechniqueConsistencyCM,
+  TECHNIQUE_CONSISTENCY_DURATION,
+} from "./TechniqueConsistencyCM.jsx";
+import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
 
 export function RemotionRoot() {
   return (
@@ -95,6 +105,14 @@ export function RemotionRoot() {
         id="BoatRankingCM-NarutoNigeWin"
         component={BoatRankingCM_NarutoNigeWin}
         durationInFrames={413}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="BoatRankingCM-TechniqueConsistency"
+        component={BoatRankingCM_TechniqueConsistency}
+        durationInFrames={601}
         fps={30}
         width={1080}
         height={1920}
@@ -501,6 +519,56 @@ export function RemotionRoot() {
           statValue: "",
           statLabel: "",
           caption: "",
+        }}
+      />
+      <Composition
+        id="YoutubeChannelAvatar"
+        component={YoutubeChannelAvatar}
+        durationInFrames={1}
+        fps={30}
+        width={800}
+        height={800}
+      />
+      <Composition
+        id="YoutubeChannelBanner"
+        component={YoutubeChannelBanner}
+        durationInFrames={1}
+        fps={30}
+        width={2560}
+        height={1440}
+      />
+      <Composition
+        id="TechniqueConsistencyCM"
+        component={TechniqueConsistencyCM}
+        durationInFrames={TECHNIQUE_CONSISTENCY_DURATION}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="RaceInsightYoutubeCM"
+        component={RaceInsightYoutubeTemplate}
+        durationInFrames={600}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{
+          venue: "住之江",
+          raceNumber: 6,
+          raceDate: "9/3",
+          indexPercent: 100,
+          boatWinRate: "2.61",
+          nigePercent: 33,
+          reasons: [
+            "1号艇の全国勝率が非常に低い（2.61）→ イン崩れリスク高",
+            "1号艇の今節STが遅い（平均0.190秒）→ イン崩れリスク",
+          ],
+          patterns: [
+            { winnerCourse: 1, technique: "nige", probability: 0.33 },
+            { winnerCourse: 3, technique: "makurizashi", probability: 0.1 },
+            { winnerCourse: 5, technique: "makurizashi", probability: 0.08 },
+          ],
+          featureDigest: ["AI予想", "イン崩れ指数", "無料"],
         }}
       />
     </>

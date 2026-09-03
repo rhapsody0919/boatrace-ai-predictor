@@ -49,7 +49,7 @@ export async function renderCoverCard({
         outputPath,
         `--props=${propsPath}`,
       ],
-      { stdio: "inherit" },
+      { stdio: "inherit", cwd: REMOTION_DIR },
     );
   } finally {
     await fs.unlink(propsPath).catch(() => {});

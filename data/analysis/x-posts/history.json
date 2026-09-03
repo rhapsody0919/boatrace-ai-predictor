@@ -100,6 +100,17 @@
       "postedAt": "2026-08-25",
       "metrics": null,
       "notes": "3日目3本目。新規制作（LivePredictionCM3.jsx）。締切11:53に対し投稿は11:09台、40分強の余裕を確認してから投稿。これでマスコットA/B/Cテスト（3日間・9本）が完了"
+    },
+    {
+      "date": "2026-09-02",
+      "character": null,
+      "format": "venue-data-comparison",
+      "content": "1号艇/4号艇の決まり手安定度比較（全24会場、1号艇逃げ率97.41〜91.54%・4号艇1位決まり手66.07〜36.17%）",
+      "videoFile": "sns-video-studio/published/x/2026-09-02_1gou-4gou-kimarite-consistency.mp4",
+      "status": "posted",
+      "postedAt": "2026-09-02",
+      "metrics": null,
+      "notes": "content-multi-channel-pipelineのチャネル品質検証、Xチャネル編。ブログ/note/YouTube解説動画（16:9）と同じネタ・同じ実データをYouTube Shorts/TikTok/X共通テンプレート（9:16）で制作。マスコットローテーションとは別系統（新機能ではなくデータ知見ネタのため、まくり成分無し）"
     }
   ]
 }
