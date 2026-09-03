@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "in-kuzure-index-reading-guide",
+    title:
+      "「イン崩れ指数100%」は何を意味する？住之江6R(9/3)の実データで読み方を解説",
+    description:
+      "龍神レーダーの「イン崩れ指数」バッジが示す意味を、2026年9月3日・住之江6Rの実データ（1号艇全国勝率2.61・AI逃げ確率33%）を使って解説。指数の算出理由や決まり手予測の内訳を読み解く方法を紹介します。",
+    date: "2026-09-03",
+    category: "データ分析",
+    tags: ["イン崩れ指数", "AI逃げ確率", "データ分析", "住之江", "読み方"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/in-kuzure-index-reading-guide.jpg",
+  },
+  {
     id: "boat-number-technique-consistency",
     title: "1号艇はどこでも「逃げ」、4号艇の決まり手は会場でバラバラ",
     description:
