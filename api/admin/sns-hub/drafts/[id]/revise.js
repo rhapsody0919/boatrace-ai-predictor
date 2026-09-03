@@ -16,6 +16,7 @@ import {
   updateDraft,
   fireRoutine,
   createInsight,
+  resolveRoutineEnvPrefix,
 } from "../../../../_lib/snsHubHelpers.js";
 
 export const config = {
@@ -108,12 +109,19 @@ export default async function handler(req) {
       updated_at: new Date().toISOString(),
     });
 
-    const routineResult = await fireRoutine("SNS_HUB_ROUTINE", {
-      action: "revise",
-      draftId: id,
-      reasonCodes,
-      freeText: freeText || null,
-    });
+    // ADR 0038: 下書きのplatformから正しいチャネル別パイプラインの発火先を解決する。
+    // 修正前は生成元パイプラインに関わらず一律SNS_HUB_ROUTINEを発火しており、
+    // Pipeline B（ネタ駆動）産の下書きの修正指摘がPipeline A用Routineに誤発火する
+    // バグがあった（2026-09-03発覚）
+    const routineResult = await fireRoutine(
+      resolveRoutineEnvPrefix(draft.platform),
+      {
+        action: "revise",
+        draftId: id,
+        reasonCodes,
+        freeText: freeText || null,
+      },
+    );
 
     // ユーザーが選択した場合のみ、自由記述を今後の生成方針への提案(insight)として
     // 登録する。既存の週次昇格フロー(promote-strategy-insights.js)にそのまま乗せる

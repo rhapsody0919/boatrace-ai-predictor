@@ -15,6 +15,7 @@ import {
   updateDraft,
   fireRoutine,
   createInsight,
+  resolveRoutineEnvPrefix,
 } from "../../../../_lib/snsHubHelpers.js";
 
 export const config = {
@@ -71,14 +72,18 @@ export default async function handler(req) {
       updated_at: new Date().toISOString(),
     });
 
-    const routineResult = await fireRoutine("SNS_HUB_ROUTINE", {
-      action: "redo",
-      draftId: id,
-      format: draft.format,
-      platform: draft.platform,
-      language: draft.language,
-      freeText: freeText || null,
-    });
+    // ADR 0038: revise.jsと同じくplatformベースで正しいチャネル別パイプラインへ発火する
+    const routineResult = await fireRoutine(
+      resolveRoutineEnvPrefix(draft.platform),
+      {
+        action: "redo",
+        draftId: id,
+        format: draft.format,
+        platform: draft.platform,
+        language: draft.language,
+        freeText: freeText || null,
+      },
+    );
 
     // ユーザーが選択した場合のみ、自由記述を今後の生成方針への提案(insight)として
     // 登録する（revise.jsと同じ方針、spec.md課題4）。insight登録の失敗でredo本体を
