@@ -6,9 +6,20 @@
 
 ## 実行トリガー
 
-- 週次型（`venue-feature`）: 12時間おきのcronでポーリングする（初期値、運用実績を見て変更可）
-- 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする（同じcron間隔でも自然に拾える）
-- 日次・時間制約型（`race-time-critical`）: このパイプラインでは扱わない。既存の`sns-hub-content-generation`（`sns-video-producer-prompt.md`）の手動生成ボタン系が担当する（type選択UIの実装後）
+このRoutineは2つの起動方法を持つ。まず`<routine-fire-payload>`ブロックの有無を確認する。
+
+- **無い場合（スケジュール起動）**: 定期ポーリング。以下「0.」以降にそのまま進む
+  - 週次型（`venue-feature`）: 12時間おきのcronでポーリングする（初期値、運用実績を見て変更可）
+  - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする（同じcron間隔でも自然に拾える）
+  - 日次・時間制約型（`race-time-critical`）: このパイプラインでは扱わない。既存の`sns-hub-content-generation`（`sns-video-producer-prompt.md`）の手動生成ボタン系が担当する（type選択UIの実装後）
+- **ある場合（API起動）**: `api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`（ADR 0038、`resolveRoutineEnvPrefix`で`platform='x'`の下書きのみこのRoutineに発火する）からの「一部修正」「全部作り直し」操作。ペイロード（`{action: 'revise'|'redo', draftId, reasonCodes, freeText}`）を読み、下記「A'. 修正対応フロー」に進む（0.〜6.はスキップ）
+
+### A'. 修正対応フロー（API起動時）
+
+`sns-hub-content-generation`（`docs/operation/sns-video-producer-prompt.md`が担うRoutine）の同種フローと同じ設計思想を踏襲する。
+
+- `revise`: `draftId`の下書きを取得し、`reasonCodes`/`freeText`を反映して修正版を再生成する（3.以降と同じ映像設計・レンダリング手順）。新レコードをINSERT（`parent_draft_id`に元の`draftId`、`content_group_id`は元の下書きと同じ値を維持、`status: 'pending_review'`）し、元レコードを`status: 'archived'`・`archived_at`更新する
+- `redo`: 同様だが題材選定からやり直す。元の下書きに紐づく`sns_topic_targets`行を確認し、まだ`generated`のままなら`pending`に戻して1.のclaimを再実行するか、同じネタのまま作り直すかは`freeText`の内容から判断する（「別のネタにしてほしい」という指摘であれば、対応する`sns_topic_targets`を`skipped`にし、人間に別ネタの承認を委ねる）
 
 ## 0. 蓄積されたフィードバックの確認
 
