@@ -63,7 +63,7 @@
 ### 3-5. アップロード・永続化
 
 - Supabase Storageの非公開バケット`sns-hub-media`に動画・カバー画像をアップロードする（パス例: `{content_group_id}/{platform}-{language}.mp4`）
-- `sns_drafts.video_storage_path`/`cover_image_path`には、アップロード直後に`createSignedUrl()`で発行した署名付きURLを保存する。**有効期限は7日以上を指定する**（2026-09-02の検証で600秒（10分）指定にしたところ、管理画面での確認前にURLが失効し「動画準備中」表示のまま止まる不具合が発生した実績あり）。バケットは非公開のため、生の保存パスをそのまま列に入れても管理画面・`publish-youtube.js`のどちらからも再生・取得できない
+- `sns_drafts.video_storage_path`/`cover_image_path`には、**アップロード時に指定した生のStorageパス（例: `{content_group_id}/x-ja.mp4`）をそのまま保存する**（署名付きURLを保存しない）。読み取り側（管理画面の一覧取得`api/admin/sns-hub/drafts/index.js`・YouTube公開`publish-youtube.js`）が`api/_lib/snsHubHelpers.js`の`signStoragePath()`/`signStoragePaths()`で都度署名する設計に統一されている（2026-09-03確定）。**2026-09-02〜03に実際に発生した不具合**: 生成Routine側が`createSignedUrl()`で署名済みURLを直接列に保存した結果、読み取り側が「列の値は生パス」という前提で再署名しようとして失敗し、有効期限（当時は600秒→7日に延長して対処したが根本原因ではなかった）に関わらず管理画面が「動画準備中」表示のまま止まる不具合が発生した。生パス保存・都度署名への統一で解消済み
 - `sns_drafts`テーブルにINSERTする。**`content_group_id`はブログ/note行（8.参照）と同じものを使う**（同一ネタであることをDB上で追跡できるようにする）。列: `format`（ネタのsourceId）・`template_variant_id`・`language`（'ja'）・`platform`（'x'/'tiktok'/'youtube'）・`status`（'pending_review'）・`video_storage_path`・`cover_image_path`・`caption_text`・`hashtags`・`background_text`・`source_data`（使用した実データのJSON）・`risk_flags`
 - キャプション・ハッシュタグは`docs/operation/x-operations-playbook.md`（X）・`docs/operation/sns-viral-copywriter-prompt.md`（TikTok）の作法に従う
 

@@ -23,6 +23,7 @@ import {
   isValidDraftId,
   getDraftById,
   updateDraft,
+  signStoragePath,
 } from "../../../../_lib/snsHubHelpers.js";
 import {
   getYoutubeAccessToken,
@@ -118,7 +119,16 @@ export default async function handler(req) {
       );
     }
 
-    const videoResponse = await fetch(draft.video_storage_path);
+    // 2026-09-03修正: video_storage_pathは生のStorageパスを保存する規約
+    // （drafts/index.jsの読み取り時署名と統一）のため、fetchする前に必ず署名する
+    const videoUrl = await signStoragePath(draft.video_storage_path);
+    if (!videoUrl) {
+      return jsonResponse(
+        { error: "動画の署名付きURL発行に失敗しました" },
+        502,
+      );
+    }
+    const videoResponse = await fetch(videoUrl);
     if (!videoResponse.ok) {
       return jsonResponse(
         { error: `動画取得に失敗しました (${videoResponse.status})` },
@@ -139,7 +149,11 @@ export default async function handler(req) {
     let thumbnailError = null;
     if (draft.cover_image_path) {
       try {
-        const thumbResponse = await fetch(draft.cover_image_path);
+        const thumbnailUrl = await signStoragePath(draft.cover_image_path);
+        if (!thumbnailUrl) {
+          throw new Error("サムネイルの署名付きURL発行に失敗しました");
+        }
+        const thumbResponse = await fetch(thumbnailUrl);
         if (!thumbResponse.ok) {
           throw new Error(
             `サムネイル取得に失敗しました (${thumbResponse.status})`,
