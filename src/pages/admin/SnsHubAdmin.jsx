@@ -6,7 +6,7 @@
  * （docs/design/sns-marketing-hub/screens.md参照）。
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   getDrafts,
@@ -23,6 +23,13 @@ import {
   getTemplateVariants,
   archiveDraft,
   triggerGeneration,
+  triggerTopicPipelineGeneration,
+  getTopics,
+  approveTopic,
+  rejectTopic,
+  updateTopicTargetLabel,
+  getTopicCategories,
+  updateTopicCategoryChannel,
 } from "../../services/snsHubService";
 import {
   canShareVideo,
@@ -77,6 +84,13 @@ const REVISION_REASONS = [
   { code: "typo-or-data-error", label: "誤字・データの誤り" },
   { code: "tone-adjustment", label: "トーン調整" },
   { code: "format-or-topic-change", label: "型・題材の変更" },
+  // デザイン系の理由（2026-09-03追加、ユーザー要望: 「無駄なスペース、色使い、
+  // フォントサイズ、画像など」を選択式で指摘できるようにしてほしい）。既存の
+  // RevisionPanel（チップ選択+自由記述）をそのまま流用し、新規UIは作らない
+  { code: "design-spacing", label: "余白・スペースが無駄" },
+  { code: "design-color", label: "配色が合わない" },
+  { code: "design-font-size", label: "フォントサイズが不適切" },
+  { code: "design-visual-material", label: "画像・素材の質が低い" },
 ];
 
 // ブログ/note下書き向けの却下理由（spec.md FR5、2026-09-01追加）。
@@ -116,9 +130,13 @@ const STATUS_FILTERS = [
   { id: "posted", label: "投稿済み", statuses: ["posted"] },
 ];
 
+// 「ネタ承認」は2026-09-03のユーザー指摘によりタブではなく専用セクション
+// （tab-navigation-rowの上、常時表示）に変更した。「承認→各プラットフォーム
+// タブに生成される」という流れが、同列のタブに埋もれると分かりにくいため
 const NON_PLATFORM_TABS = [
   { id: "insights", label: "戦略メモ" },
   { id: "catalog", label: "フォーマットカタログ" },
+  { id: "topic-categories", label: "ネタ型設定" },
 ];
 
 const TABS = [...PLATFORM_TABS, ...NON_PLATFORM_TABS];
@@ -159,6 +177,8 @@ function SnsHubAdmin() {
   const [approvers, setApprovers] = useState([]);
   const [insights, setInsights] = useState([]);
   const [templateVariants, setTemplateVariants] = useState([]);
+  const [topics, setTopics] = useState([]);
+  const [topicCategories, setTopicCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [generating, setGenerating] = useState(null); // null | 'daily' | 'evergreen'
@@ -174,6 +194,12 @@ function SnsHubAdmin() {
   );
   const [generateCounts, setGenerateCounts] = useState(() =>
     Object.fromEntries(GENERATE_MODES.map((m) => [m.mode, m.defaultCount])),
+  );
+  // 手動生成する型の指定（モードごとに独立、2026-09-02追加）。既定は""＝
+  // 「おまかせ（自動選定）」で、Routine側の型選定ロジックに従う。「会場攻略型など」
+  // という曖昧な指定しかできなかったのをユーザー指摘を受けて拡張した
+  const [generateFormats, setGenerateFormats] = useState(() =>
+    Object.fromEntries(GENERATE_MODES.map((m) => [m.mode, ""])),
   );
   // 生成リクエスト成功後、手動更新ボタンを押すまで両ボタンを無効化し続ける
   // （連打による多重起動を防ぐため）
@@ -191,7 +217,69 @@ function SnsHubAdmin() {
   // 検知漏れが起きないようにする。コードレビューで指摘）
   const [generationBaselineCreatedAt, setGenerationBaselineCreatedAt] =
     useState(null);
+  // ネタ駆動マルチチャネルパイプライン（content-multi-channel-pipeline）用の
+  // 手動実行state。daily/evergreen（Pipeline A）とは別のRoutineであり、
+  // パラメータ（プラットフォーム/本数/型）を選ばせる余地が無いため単純な
+  // ボタン1つで完結する。ロック・完了検知の仕組みは上記と同じパターンだが、
+  // 別Routineなので独立したstateで管理する（2026-09-02追加）。
+  // 2026-09-03、コードレビューで指摘: 両ロックとも同じdrafts配列・同じ
+  // 「!parent_draft_idの新規行が現れたら完了」ヒューリスティックを見ているため、
+  // 片方のRoutineが先に1行INSERTすると、もう片方のuseEffectもそれを「自分の
+  // 生成完了」と誤検知してロック解除してしまう競合状態がある（根本解決には
+  // sns_drafts.routine_run_idへの記録・参照が必要だが未実装）。当面の緩和策として
+  // 両ボタンのdisabled条件に相手のLocked状態も加え、同時実行自体を防ぐ
+  const [topicPipelineGenerating, setTopicPipelineGenerating] = useState(false);
+  const [topicPipelineLocked, setTopicPipelineLocked] = useState(false);
+  const [topicPipelineSessionUrl, setTopicPipelineSessionUrl] = useState(null);
+  const [topicPipelineFiredAt, setTopicPipelineFiredAt] = useState(null);
+  const [topicPipelineElapsedMinutes, setTopicPipelineElapsedMinutes] =
+    useState(0);
+  const [topicPipelineBaselineCreatedAt, setTopicPipelineBaselineCreatedAt] =
+    useState(null);
   const { toast, showToast } = useToast();
+
+  // 手動生成の型選択肢。フォーマットカタログ（sns_template_variants、"型一覧"タブと
+  // 同じデータ源）から重複を除いた型名一覧を出す。ハードコードした一覧を別途持つと
+  // カタログと食い違うため、既に画面にロード済みのtemplateVariantsをそのまま使う
+  // （2026-09-02追加）
+  const evergreenFormatOptions = useMemo(() => {
+    const names = new Set(templateVariants.map((tv) => tv.format));
+    return [...names].sort();
+  }, [templateVariants]);
+
+  // 下書きのcontent_group_id → ネタの型、の逆引き。ネタ駆動で生成された下書きに
+  // ContentTypeBadgeを表示するために使う（要件15由来、単発投稿にはネタが無いため
+  // 何も表示しない）
+  const contentTypeByGroupId = useMemo(() => {
+    const map = {};
+    for (const topic of topics) {
+      if (topic.sns_content_types) {
+        map[topic.id] = topic.sns_content_types;
+      }
+    }
+    return map;
+  }, [topics]);
+
+  // 同じネタ（content_group_id）から派生したYouTube下書きの公開URLの逆引き。
+  // note下書きの投稿導線で「YouTube動画URLをコピー」ボタンを出すために使う
+  // （2026-09-03、ユーザー要望: noteは文章だけだと読みにくく、YouTubeリンクを
+  // 貼ると自動展開されるため。noteは元々手動コピペ運用のため、生成時に
+  // YouTube公開を待つブロッキング依存にはせず、投稿時にリンクを取得できれば
+  // 十分という判断）。YouTubeは承認と同時に公開されるためsource_data.youtube_url
+  // が入っていれば常に実際に有効なURL
+  const youtubeUrlByGroupId = useMemo(() => {
+    const map = {};
+    for (const d of drafts) {
+      if (
+        d.platform === "youtube" &&
+        d.content_group_id &&
+        d.source_data?.youtube_url
+      ) {
+        map[d.content_group_id] = d.source_data.youtube_url;
+      }
+    }
+    return map;
+  }, [drafts]);
 
   // silent=trueの場合、全画面ローディング表示を出さずに裏側でデータだけ
   // 更新する。承認等のアクション直後に画面全体がスピナーに切り替わる
@@ -214,6 +302,8 @@ function SnsHubAdmin() {
         approvers: true,
         insights: true,
         templateVariants: true,
+        topics: true,
+        topicCategories: true,
       },
     } = {}) => {
       if (!silent) {
@@ -227,6 +317,10 @@ function SnsHubAdmin() {
           fetchScope.insights ? getInsights().then(setInsights) : null,
           fetchScope.templateVariants
             ? getTemplateVariants().then(setTemplateVariants)
+            : null,
+          fetchScope.topics ? getTopics().then(setTopics) : null,
+          fetchScope.topicCategories
+            ? getTopicCategories().then(setTopicCategories)
             : null,
         ]);
       } catch (err) {
@@ -292,6 +386,10 @@ function SnsHubAdmin() {
     setGenerateCounts((prev) => ({ ...prev, [mode]: clamped }));
   }
 
+  function handleGenerateFormatChange(mode, value) {
+    setGenerateFormats((prev) => ({ ...prev, [mode]: value }));
+  }
+
   async function handleGenerate(mode) {
     const platforms = generatePlatforms[mode];
     if (platforms.length === 0) {
@@ -303,6 +401,7 @@ function SnsHubAdmin() {
       const result = await triggerGeneration(mode, {
         platforms,
         count: generateCounts[mode],
+        format: generateFormats[mode] || undefined,
       });
       if (result?.routine?.fired === false) {
         // fireRoutineはRoutine未構築・fire失敗時も例外を投げず
@@ -378,6 +477,70 @@ function SnsHubAdmin() {
     }
   }, [drafts, generationLocked, generationBaselineCreatedAt, showToast]);
 
+  // ネタ駆動マルチチャネルパイプラインの手動実行。パラメータは無く、常に
+  // 新規ネタの選定から開始する（2026-09-02追加）
+  async function handleGenerateTopicPipeline() {
+    setTopicPipelineGenerating(true);
+    try {
+      const result = await triggerTopicPipelineGeneration();
+      if (result?.routine?.fired === false) {
+        showToast(
+          `生成リクエストがRoutineに届いていません（${result.routine.reason}）。設定を確認してください`,
+          "error",
+        );
+      } else {
+        showToast(
+          result.routine.sessionUrl
+            ? "生成をリクエストしました。実行ログのリンクは下に表示されます"
+            : "生成をリクエストしました。数分後に更新ボタンで確認してください",
+          "success",
+        );
+        setTopicPipelineLocked(true);
+        setTopicPipelineSessionUrl(result.routine.sessionUrl || null);
+        setTopicPipelineFiredAt(Date.now());
+        setTopicPipelineElapsedMinutes(0);
+        setTopicPipelineBaselineCreatedAt(
+          drafts.reduce((max, d) => {
+            const t = new Date(d.created_at).getTime();
+            return t > max ? t : max;
+          }, 0),
+        );
+      }
+    } catch (err) {
+      console.error("ネタ駆動パイプライン生成リクエストエラー:", err);
+      showToast(err.message || "生成リクエストに失敗しました", "error");
+    } finally {
+      setTopicPipelineGenerating(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!topicPipelineLocked || !topicPipelineFiredAt) return;
+    const interval = setInterval(() => {
+      setTopicPipelineElapsedMinutes(
+        Math.max(0, Math.round((Date.now() - topicPipelineFiredAt) / 60000)),
+      );
+      loadDrafts({ silent: true, fetch: { drafts: true } });
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [topicPipelineLocked, topicPipelineFiredAt, loadDrafts]);
+
+  useEffect(() => {
+    if (!topicPipelineLocked || topicPipelineBaselineCreatedAt === null) return;
+    const newDraftsCount = drafts.filter(
+      (d) =>
+        new Date(d.created_at).getTime() > topicPipelineBaselineCreatedAt &&
+        !d.parent_draft_id,
+    ).length;
+    if (newDraftsCount > 0) {
+      showToast(`✅ ${newDraftsCount}件生成完了しました`, "success");
+      setTopicPipelineLocked(false);
+      setTopicPipelineSessionUrl(null);
+      setTopicPipelineFiredAt(null);
+      setTopicPipelineBaselineCreatedAt(null);
+    }
+  }, [drafts, topicPipelineLocked, topicPipelineBaselineCreatedAt, showToast]);
+
   if (loading) {
     return (
       <div className="sns-hub-admin-page">
@@ -404,7 +567,9 @@ function SnsHubAdmin() {
 
   const isInsightsTab = activeTab === "insights";
   const isCatalogTab = activeTab === "catalog";
-  const isPlatformTab = !isInsightsTab && !isCatalogTab;
+  const isTopicCategoriesTab = activeTab === "topic-categories";
+  const isPlatformTab =
+    !isInsightsTab && !isCatalogTab && !isTopicCategoriesTab;
   const activeStatusDef = STATUS_FILTERS.find(
     (f) => f.id === activeStatusFilter,
   );
@@ -420,6 +585,26 @@ function SnsHubAdmin() {
     <div className="sns-hub-admin-page">
       <Header />
 
+      <TopicApprovalSection
+        topics={topics}
+        approvers={approvers}
+        onApprove={(topicId, approverId) =>
+          handleAction(approveTopic, [topicId, approverId], {
+            topics: true,
+          })
+        }
+        onReject={(topicId, approverId) =>
+          handleAction(rejectTopic, [topicId, approverId], {
+            topics: true,
+          })
+        }
+        onUpdateTargetLabel={(topicId, targetId, status) =>
+          handleAction(updateTopicTargetLabel, [topicId, targetId, status], {
+            topics: true,
+          })
+        }
+      />
+
       <div className="tab-navigation-row">
         <div className="tab-navigation">
           {TABS.map((tab) => {
@@ -428,14 +613,16 @@ function SnsHubAdmin() {
                 ? insights.filter((i) => i.status === "proposed").length
                 : tab.id === "catalog"
                   ? templateVariants.length
-                  : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
-                    // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
-                    // 対応が必要な件数という意味が薄れるため）
-                    drafts.filter(
-                      (d) =>
-                        d.platform === tab.id &&
-                        STATUS_FILTERS[0].statuses.includes(d.status),
-                    ).length;
+                  : tab.id === "topic-categories"
+                    ? topicCategories.length
+                    : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
+                      // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
+                      // 対応が必要な件数という意味が薄れるため）
+                      drafts.filter(
+                        (d) =>
+                          d.platform === tab.id &&
+                          STATUS_FILTERS[0].statuses.includes(d.status),
+                      ).length;
             return (
               <button
                 key={tab.id}
@@ -497,7 +684,11 @@ function SnsHubAdmin() {
                       ? " selected"
                       : ""
                   }`}
-                  disabled={generating !== null || generationLocked}
+                  disabled={
+                    generating !== null ||
+                    generationLocked ||
+                    topicPipelineLocked
+                  }
                   onClick={() =>
                     toggleGeneratePlatform(modeConfig.mode, opt.value)
                   }
@@ -506,6 +697,34 @@ function SnsHubAdmin() {
                 </button>
               ))}
             </div>
+            {modeConfig.mode === "evergreen" &&
+              evergreenFormatOptions.length > 0 && (
+                <label className="generate-format-label">
+                  型
+                  <select
+                    className="generate-format-select"
+                    value={generateFormats[modeConfig.mode]}
+                    disabled={
+                      generating !== null ||
+                      generationLocked ||
+                      topicPipelineLocked
+                    }
+                    onChange={(e) =>
+                      handleGenerateFormatChange(
+                        modeConfig.mode,
+                        e.target.value,
+                      )
+                    }
+                  >
+                    <option value="">おまかせ（自動選定）</option>
+                    {evergreenFormatOptions.map((format) => (
+                      <option key={format} value={format}>
+                        {format}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             <label className="generate-count-label">
               本数
               <input
@@ -514,7 +733,9 @@ function SnsHubAdmin() {
                 min={1}
                 max={modeConfig.countMax}
                 value={generateCounts[modeConfig.mode]}
-                disabled={generating !== null || generationLocked}
+                disabled={
+                  generating !== null || generationLocked || topicPipelineLocked
+                }
                 onChange={(e) =>
                   handleGenerateCountChange(
                     modeConfig.mode,
@@ -532,6 +753,7 @@ function SnsHubAdmin() {
               disabled={
                 generating !== null ||
                 generationLocked ||
+                topicPipelineLocked ||
                 generatePlatforms[modeConfig.mode].length === 0
               }
               onClick={() => handleGenerate(modeConfig.mode)}
@@ -562,9 +784,57 @@ function SnsHubAdmin() {
         )}
       </div>
 
+      <div className="manual-generate-panel topic-pipeline-panel">
+        <span className="manual-generate-label">
+          ネタ駆動マルチチャネルパイプライン（新機能/会場特性/データ知見/成績から自動選定・全チャネルへ展開）:
+        </span>
+        <div className="manual-generate-block">
+          <button
+            className="manual-generate-btn"
+            disabled={
+              topicPipelineGenerating || topicPipelineLocked || generationLocked
+            }
+            onClick={handleGenerateTopicPipeline}
+          >
+            {topicPipelineGenerating
+              ? "⏳ リクエスト中..."
+              : "🧵 ネタ駆動パイプラインを今すぐ実行"}
+          </button>
+        </div>
+        {topicPipelineLocked && (
+          <span className="manual-generate-hint">
+            ⏳ 生成中...（{topicPipelineElapsedMinutes}
+            分経過）30秒おきに自動で確認します
+            {topicPipelineSessionUrl && (
+              <>
+                {" ・ "}
+                <a
+                  href={topicPipelineSessionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  実行ログを見る
+                </a>
+              </>
+            )}
+          </span>
+        )}
+      </div>
+
       <div className="tab-content">
         {isCatalogTab ? (
           <CatalogTab templateVariants={templateVariants} />
+        ) : isTopicCategoriesTab ? (
+          <TopicCategorySettingsTab
+            categories={topicCategories}
+            onToggleChannel={(categoryId, platform, enabled) =>
+              handleAction(
+                updateTopicCategoryChannel,
+                [categoryId, platform, enabled],
+                { topicCategories: true },
+              )
+            }
+          />
         ) : isInsightsTab ? (
           <InsightTab
             insights={insights}
@@ -585,6 +855,8 @@ function SnsHubAdmin() {
               <DraftCard
                 key={draft.id}
                 draft={draft}
+                contentType={contentTypeByGroupId[draft.content_group_id]}
+                youtubeUrl={youtubeUrlByGroupId[draft.content_group_id]}
                 approvers={approvers}
                 onApprove={(approverId) =>
                   handleAction(approveDraft, [draft.id, approverId])
@@ -654,6 +926,105 @@ function CatalogTab({ templateVariants }) {
         <h2 className="catalog-section-title">デザイン・ペルソナ方針</h2>
         <DocReferenceSection />
       </section>
+    </div>
+  );
+}
+
+// PLATFORM_TABSと同じ表示順・ラベルを使う（sns_target_accounts.platformの語彙と一致）
+const CATEGORY_CHANNEL_PLATFORMS = ["blog", "note", "x", "tiktok", "youtube"];
+const CATEGORY_CHANNEL_LABELS = {
+  blog: "Blog",
+  note: "Note",
+  x: "X",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+};
+
+// ネタの型（会場特性・選手調子・イン崩れ注意度等）×チャネルのON/OFF設定画面
+// （2026-09-03新設）。TikTokはガイドライン上センシティブなため、型ごとに
+// チャネル可否を人間が直接編集できるようにする（channelMatrix.js・各Routineの
+// プロンプト文言に散在していた判断をデータに寄せる）
+function TopicCategorySettingsTab({ categories, onToggleChannel }) {
+  if (categories.length === 0) {
+    return (
+      <div className="empty-state">
+        <p>登録されているネタの型はありません。</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="topic-category-settings">
+      <p className="topic-category-settings-hint">
+        ネタの型ごとに、各チャネルへの生成対象可否を設定できます。特にTikTokはガイドライン上センシティブなため、実績を見ながら個別に調整してください。廃止済みの型は行がグレーアウトします。
+      </p>
+      <div className="topic-category-settings-scroll">
+        <table className="topic-category-settings-table">
+          <thead>
+            <tr>
+              <th>型</th>
+              <th>頻度区分</th>
+              {CATEGORY_CHANNEL_PLATFORMS.map((platform) => (
+                <th key={platform}>{CATEGORY_CHANNEL_LABELS[platform]}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map((category) => (
+              <tr
+                key={category.id}
+                className={
+                  category.active
+                    ? "topic-category-row"
+                    : "topic-category-row topic-category-row-inactive"
+                }
+              >
+                <td className="topic-category-label-cell">
+                  <span className="topic-category-label">{category.label}</span>
+                  {!category.active && (
+                    <span className="topic-category-inactive-badge">
+                      廃止済み
+                    </span>
+                  )}
+                  {category.notes && (
+                    <span
+                      className="topic-category-notes"
+                      title={category.notes}
+                    >
+                      ℹ️
+                    </span>
+                  )}
+                </td>
+                <td className="topic-category-cadence-cell">
+                  {category.sns_content_types?.label || "未接続"}
+                </td>
+                {CATEGORY_CHANNEL_PLATFORMS.map((platform) => {
+                  const channel = (
+                    category.sns_topic_category_channels || []
+                  ).find((c) => c.platform === platform);
+                  const enabled = channel?.enabled ?? false;
+                  return (
+                    <td key={platform} className="topic-category-channel-cell">
+                      <button
+                        type="button"
+                        className={`topic-category-channel-toggle${
+                          enabled ? " on" : " off"
+                        }`}
+                        disabled={!category.active || !channel}
+                        onClick={() =>
+                          onToggleChannel(category.id, platform, !enabled)
+                        }
+                      >
+                        {enabled ? "ON" : "OFF"}
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -957,6 +1328,8 @@ const TEXT_DRAFT_PLATFORMS = new Set(["blog", "note"]);
 
 function DraftCard({
   draft,
+  contentType,
+  youtubeUrl,
   approvers,
   onApprove,
   onMergeBlogPr,
@@ -1014,6 +1387,7 @@ function DraftCard({
           <span className="draft-badge draft-badge-variant">
             {variantLabel}
           </span>
+          {contentType && <ContentTypeBadge contentType={contentType} />}
         </div>
 
         <p className="draft-meta-text">
@@ -1147,6 +1521,7 @@ function DraftCard({
               (draft.platform === "note" ? (
                 <NoteCopyActionLinks
                   draft={draft}
+                  youtubeUrl={youtubeUrl}
                   onMarkPosted={onMarkPosted}
                 />
               ) : (
@@ -1573,7 +1948,7 @@ function CopyToClipboardButton({ text, label }) {
 // note版。noteは公開APIが無いため自動投稿はできず、本文・タグをコピーして
 // 手動でnoteエディタに貼り付けてもらう運用（.claude/CLAUDE.mdフローC-1と同じ
 // 「コピペ＋人間が最終操作」パターン）
-function NoteCopyActionLinks({ draft, onMarkPosted }) {
+function NoteCopyActionLinks({ draft, youtubeUrl, onMarkPosted }) {
   const tagsText = (draft.hashtags || []).join(" ");
   return (
     <div className="posting-action-links">
@@ -1587,6 +1962,16 @@ function NoteCopyActionLinks({ draft, onMarkPosted }) {
       />
       {tagsText && (
         <CopyToClipboardButton text={tagsText} label="タグをコピー" />
+      )}
+      {youtubeUrl && (
+        // noteはURLをそのまま貼ると自動でプレイヤーが展開されるため、
+        // 文章だけの下書きより視覚的に分かりやすくなる（2026-09-03、
+        // ユーザー要望）。生成時にYouTube公開を待つ強い依存にはせず、
+        // 承認済みYouTube下書きが既にあれば投稿時にコピーできるようにする
+        <CopyToClipboardButton
+          text={youtubeUrl}
+          label="YouTube動画URLをコピー"
+        />
       )}
       <a
         className="posting-action-btn platform-link"
@@ -1736,6 +2121,228 @@ function RiskWarningBadge({ flag }) {
       ? flag
       : flag.description || flag.ruleId || "リスク検出";
   return <span className="risk-warning-badge">⚠️ {label}</span>;
+}
+
+// 型（週次/日次・一般/日次・時間制約）を表す小バッジ。TopicCardとDraftCardの
+// 両方で使う共通部品（screens.md #4）
+function ContentTypeBadge({ contentType }) {
+  return (
+    <span
+      className={`content-type-badge content-type-badge-${contentType.type_key}`}
+    >
+      {contentType.label}
+    </span>
+  );
+}
+
+// sns_topic_targetsの各アカウントをpending⇔skippedで切り替えるチップ群
+// （spec.md要件14、screens.md #5）。claim済み・生成済みのターゲットは
+// クリック不可（既にパイプラインが着手しているため）
+function ChannelTargetToggle({ targets, onToggle }) {
+  return (
+    <div className="channel-target-toggle">
+      {targets.map((target) => {
+        const account = target.sns_target_accounts;
+        const label = account
+          ? `${PLATFORM_LABELS[account.platform] || account.platform}`
+          : "unknown";
+        const isLocked =
+          target.status === "claimed" || target.status === "generated";
+        return (
+          <button
+            key={target.id}
+            type="button"
+            className={`channel-target-chip channel-target-chip-${target.status}`}
+            disabled={isLocked}
+            title={
+              target.status === "skipped" && target.skip_reason
+                ? target.skip_reason
+                : undefined
+            }
+            onClick={() =>
+              onToggle(
+                target.id,
+                target.status === "skipped" ? "pending" : "skipped",
+              )
+            }
+          >
+            {label}
+            {target.status === "skipped" && " (除外)"}
+            {isLocked &&
+              ` (${target.status === "claimed" ? "生成中" : "生成済み"})`}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// 「ネタ承認」タブの個別ネタカード（screens.md #3）。TextDraftPreview/VideoPreview
+// とは別役割（動画・本文のプレビューでなく、ネタ本文＋メタ情報の確認）のため
+// 軽量な新規実装とする
+function TopicCard({
+  topic,
+  approvers,
+  onApprove,
+  onReject,
+  onUpdateTargetLabel,
+}) {
+  const [selectedApproverId, setSelectedApproverId] = useState(
+    approvers[0]?.id || null,
+  );
+  const targets = topic.sns_topic_targets || [];
+
+  return (
+    <div className="topic-card">
+      <div className="topic-card-badges">
+        {topic.sns_content_types && (
+          <ContentTypeBadge contentType={topic.sns_content_types} />
+        )}
+      </div>
+      <p className="topic-card-text">{topic.topic_text}</p>
+      <p className="topic-card-meta">
+        提案: {formatDateTime(topic.proposed_at)}
+        {topic.source_insight_ids?.length > 0 &&
+          ` ・根拠insight ${topic.source_insight_ids.length}件`}
+      </p>
+      <ChannelTargetToggle
+        targets={targets}
+        onToggle={(targetId, status) =>
+          onUpdateTargetLabel(topic.id, targetId, status)
+        }
+      />
+      <ApproverChips
+        approvers={approvers}
+        selectedId={selectedApproverId}
+        onSelect={setSelectedApproverId}
+      />
+      <div className="topic-card-actions">
+        <button
+          type="button"
+          className="topic-approve-btn"
+          onClick={() => onApprove(topic.id, selectedApproverId)}
+        >
+          ✅ 承認
+        </button>
+        <button
+          type="button"
+          className="topic-reject-btn"
+          onClick={() => onReject(topic.id, selectedApproverId)}
+        >
+          却下
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 承認済みネタ×アカウントの生成状況をテーブル形式で表示する（要件15、screens.md #6）
+function TopicProgressMatrix({ topics }) {
+  const approvedTopics = topics.filter((t) => t.status === "approved");
+  if (approvedTopics.length === 0) {
+    return null;
+  }
+  return (
+    <div className="topic-progress-matrix-wrap">
+      <h3 className="topic-progress-matrix-title">承認済みネタの進捗</h3>
+      <div className="topic-progress-matrix-scroll">
+        <table className="topic-progress-matrix">
+          <tbody>
+            {approvedTopics.map((topic) => (
+              <tr key={topic.id}>
+                <td className="topic-progress-matrix-topic-text">
+                  {topic.topic_text}
+                </td>
+                {(topic.sns_topic_targets || []).map((target) => (
+                  <td
+                    key={target.id}
+                    className={`topic-progress-matrix-cell topic-progress-matrix-cell-${target.status}`}
+                  >
+                    {target.sns_target_accounts?.platform || "?"}:{" "}
+                    {target.status}
+                    {target.status === "generated" && target.draft_id && (
+                      <span className="topic-progress-matrix-generated-mark">
+                        {" "}
+                        ✓
+                      </span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// 「ネタ承認」タブ本体（screens.md #2）。status='proposed'（承認要否の型のみ）を
+// 一覧表示し、承認済みネタの進捗マトリクスも合わせて表示する
+// タブではなく専用セクションとして、下書き承認タブ群(TABS)の上に常時表示する
+// （2026-09-03ユーザー指摘: 「承認→各プラットフォームタブに生成される」という
+// 流れが、同列の1タブに埋もれると分かりにくいため）
+function TopicApprovalSection({
+  topics,
+  approvers,
+  onApprove,
+  onReject,
+  onUpdateTargetLabel,
+}) {
+  const proposedTopics = topics.filter((t) => t.status === "proposed");
+  const [expanded, setExpanded] = useState(true);
+
+  return (
+    <div className="topic-approval-section">
+      <button
+        type="button"
+        className="topic-approval-section-header"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <span className="topic-approval-section-title">
+          📋 ネタ承認{" "}
+          {proposedTopics.length > 0 && (
+            <span className="topic-approval-section-count">
+              {proposedTopics.length}
+            </span>
+          )}
+        </span>
+        <span className="topic-approval-section-hint">
+          ここで承認すると、対応するチャネルタブ（下）に下書きが生成されます
+        </span>
+        <span className="topic-approval-section-toggle">
+          {expanded ? "▲" : "▼"}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="topic-approval-section-body">
+          {proposedTopics.length === 0 ? (
+            <div className="empty-state">
+              <p>
+                承認待ちのネタはありません（日次・一般/日次・時間制約型はネタ
+                承認を経ずに生成されるため、ここには表示されません）。
+              </p>
+            </div>
+          ) : (
+            <div className="topic-list">
+              {proposedTopics.map((topic) => (
+                <TopicCard
+                  key={topic.id}
+                  topic={topic}
+                  approvers={approvers}
+                  onApprove={onApprove}
+                  onReject={onReject}
+                  onUpdateTargetLabel={onUpdateTargetLabel}
+                />
+              ))}
+            </div>
+          )}
+          <TopicProgressMatrix topics={topics} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Header() {

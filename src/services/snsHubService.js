@@ -117,12 +117,27 @@ export async function archiveDraft(draftId) {
  * @param {object} [options]
  * @param {string[]} [options.platforms] - 省略時はAPI側で全プラットフォーム対象になる
  * @param {number} [options.count] - 省略時はAPI側のデフォルト範囲になる
+ * @param {string} [options.format] - 省略時はRoutine側の自動選定ロジックに従う
+ *   （2026-09-02追加、ユーザー要望: どの型を生成するか選びたい）
  */
-export async function triggerGeneration(mode, { platforms, count } = {}) {
+export async function triggerGeneration(
+  mode,
+  { platforms, count, format } = {},
+) {
   return request("/generate", {
     method: "POST",
-    body: JSON.stringify({ mode, platforms, count }),
+    body: JSON.stringify({ mode, platforms, count, format }),
   });
+}
+
+/**
+ * ネタ駆動マルチチャネルパイプライン（content-multi-channel-pipeline、
+ * trig_01BAymvDLFw9ZbFUBXk6h8Nq）を手動実行する。daily/evergreen（Pipeline A）
+ * とは別のRoutineで、ネタ・チャネル選定を自律判断するためパラメータは無い
+ * （2026-09-02追加）
+ */
+export async function triggerTopicPipelineGeneration() {
+  return request("/generate-topic-pipeline", { method: "POST" });
 }
 
 /** TikTok等のエンゲージメント指標を手動入力する */
@@ -158,4 +173,67 @@ export async function rejectInsight(insightId, reason) {
 export async function getTemplateVariants() {
   const { data } = await request("/template-variants");
   return data || [];
+}
+
+/**
+ * 「ネタ承認」タブ用、ネタ一覧を取得する（型情報・進捗マトリクス用のターゲット一覧を含む）
+ * @param {string} [status] - 'proposed' | 'approved' | 'rejected' | 'all' | undefined(全件)
+ */
+export async function getTopics(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  const { data } = await request(`/topics${query}`);
+  return data || [];
+}
+
+/** ネタを承認する */
+export async function approveTopic(topicId, approverId) {
+  return request(`/topics/${topicId}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ approverId }),
+  });
+}
+
+/** ネタを却下する */
+export async function rejectTopic(topicId, approverId) {
+  return request(`/topics/${topicId}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ approverId }),
+  });
+}
+
+/** チャネルラベル（sns_topic_targets）をpending⇔skippedで切り替える */
+export async function updateTopicTargetLabel(
+  topicId,
+  targetId,
+  status,
+  reason,
+) {
+  return request(`/topics/${topicId}/targets/${targetId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, reason }),
+  });
+}
+
+/** 手動生成パネルの型選択ドロップダウン用、ネタの型(sns_content_types)一覧を取得する */
+export async function getContentTypes() {
+  const { data } = await request("/content-types");
+  return data || [];
+}
+
+/** 「ネタ型設定」画面用、ネタの型（カテゴリ）一覧をチャネル設定つきで取得する */
+export async function getTopicCategories() {
+  const { data } = await request("/topic-categories");
+  return data || [];
+}
+
+/** 型×チャネルのON/OFFを切り替える */
+export async function updateTopicCategoryChannel(
+  categoryId,
+  platform,
+  enabled,
+) {
+  return request(`/topic-categories/${categoryId}/channels/${platform}`, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
 }

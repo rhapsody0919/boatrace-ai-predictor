@@ -18,6 +18,63 @@ export function isConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_SERVICE_KEY);
 }
 
+export const SNS_HUB_STORAGE_BUCKET = "sns-hub-media";
+
+/**
+ * sns-hub-media（非公開バケット）内の複数パスをまとめて署名付きURLに変換する。
+ * `sns_drafts.video_storage_path`/`cover_image_path`は生のStorageパスを保存する
+ * 規約（2026-09-03確定、下記参照）のため、実際にfetchする側は必ずこの関数で
+ * 署名してから使う。
+ *
+ * 2026-09-03、コードレビューで発覚した不具合の修正: 以前は生成Routine側が
+ * `createSignedUrl()`で発行した署名付きURLをそのまま列に保存する運用だったが、
+ * `drafts/index.js`（管理画面の一覧取得）は列の値を生パスとして扱い読み取り時に
+ * 再署名する設計だったため、両者の前提が食い違い「動画準備中」表示のまま
+ * 進めなくなっていた。生パス保存・都度署名に統一し、この関数を両方の呼び出し元
+ * （`drafts/index.js`・`publish-youtube.js`）で共有する。
+ *
+ * @param {string[]} paths - バケット相対の生パス（例: `{content_group_id}/x-ja.mp4`）
+ * @param {number} [expiresIn] - 秒数、既定1時間
+ * @returns {Promise<Record<string, string>>} path -> 署名付きURLのマップ（署名失敗分は含まれない）
+ */
+export async function signStoragePaths(paths, expiresIn = 3600) {
+  if (!paths || paths.length === 0) return {};
+
+  const response = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/sign/${SNS_HUB_STORAGE_BUCKET}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expiresIn, paths }),
+    },
+  );
+
+  if (!response.ok) {
+    console.error(`Storage署名エラー: ${response.status}`);
+    return {};
+  }
+
+  const results = await response.json();
+  const map = {};
+  for (const r of results) {
+    if (r.signedURL) {
+      map[r.path] = `${SUPABASE_URL}/storage/v1${r.signedURL}`;
+    }
+  }
+  return map;
+}
+
+/** 単一パスを署名付きURLに変換する。見つからない/失敗した場合はnull */
+export async function signStoragePath(path, expiresIn = 3600) {
+  if (!path) return null;
+  const map = await signStoragePaths([path], expiresIn);
+  return map[path] || null;
+}
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -130,6 +187,188 @@ export async function updateInsight(id, patch) {
   );
   if (!response.ok) {
     throw new Error(`sns_strategy_insights更新エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+// platformごとの発火先環境変数プレフィックス（ADR 0038）。revise/redoが下書きの
+// 生成元パイプラインに関わらず一律SNS_HUB_ROUTINEを発火していたバグの修正に使う。
+// チャネル別パイプラインが段階展開（ADR 0037）で未整備のプラットフォームは
+// フォールバックとしてSNS_HUB_ROUTINEへ発火する。
+export const PLATFORM_ROUTINE_ENV_PREFIX = {
+  blog: "SNS_BLOG_ROUTINE",
+  note: "SNS_NOTE_ROUTINE",
+  x: "SNS_X_ROUTINE",
+  tiktok: "SNS_TIKTOK_ROUTINE",
+  youtube: "SNS_YOUTUBE_ROUTINE",
+};
+
+const FALLBACK_ROUTINE_ENV_PREFIX = "SNS_HUB_ROUTINE";
+
+/**
+ * 下書きのplatformから発火すべきRoutineの環境変数プレフィックスを解決する。
+ * 対応するチャネル別パイプラインが未展開（環境変数未設定）の場合は、
+ * fireRoutine側で自動的にnot_configured判定になりフォールバックの挙動になる。
+ */
+export function resolveRoutineEnvPrefix(platform) {
+  return PLATFORM_ROUTINE_ENV_PREFIX[platform] || FALLBACK_ROUTINE_ENV_PREFIX;
+}
+
+export async function getTopicById(id) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topics?id=eq.${id}&select=*`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topics取得エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+export async function updateTopic(id, patch) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topics?id=eq.${id}`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(patch),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topics更新エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+/** 進捗マトリクスUI用。ネタに紐づく全ターゲット（アカウント×生成状況）を取得する */
+export async function getTopicTargets(topicId) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topic_targets?topic_id=eq.${topicId}&select=*,sns_target_accounts(platform,account_label)`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topic_targets取得エラー: ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * ターゲットをpending⇔skippedで切り替える（要件14、チャネルラベルの手動調整）。
+ * claim済み・生成済みのターゲットは対象外（statusがpending/skippedの場合のみ許可）。
+ */
+export async function updateTopicTargetLabel(id, status, reason) {
+  if (status !== "pending" && status !== "skipped") {
+    throw new Error(
+      `updateTopicTargetLabelはpending/skippedのみ許可: ${status}`,
+    );
+  }
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topic_targets?id=eq.${id}&status=in.(pending,skipped)`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        status,
+        skip_reason: status === "skipped" ? reason || null : null,
+        // pendingへ戻す＝未claim状態に戻すことを意味するため、claim系メタデータも
+        // 必ずクリアする（scripts/lib/snsTopics.jsの同名関数と同じ修正、2026-09-03）
+        ...(status === "pending" ? { claimed_by: null, claimed_at: null } : {}),
+      }),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topic_targetsラベル更新エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+export async function getActiveContentTypes() {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_content_types?active=eq.true&select=*`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_content_types取得エラー: ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * ネタの型（カテゴリ）一覧をチャネル設定つきで取得する（sns-hub「ネタ型設定」画面用）。
+ * scripts/lib/snsTopics.jsのgetTopicCategoriesと同じクエリ（Node版とEdge版で
+ * 二重管理になっているが、既存のgetActiveContentTypes等と同じ構成を踏襲）。
+ */
+export async function getTopicCategories() {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topic_categories?select=*,sns_content_types(type_key,label,cadence),sns_topic_category_channels(id,platform,enabled)&order=created_at`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topic_categories取得エラー: ${response.status}`);
+  }
+  return response.json();
+}
+
+/** 型×チャネルのON/OFFを更新する */
+export async function updateTopicCategoryChannel(
+  categoryId,
+  platform,
+  enabled,
+) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topic_category_channels?category_id=eq.${categoryId}&platform=eq.${platform}`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        enabled,
+        updated_at: new Date().toISOString(),
+      }),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(
+      `sns_topic_category_channels更新エラー: ${response.status}`,
+    );
   }
   const rows = await response.json();
   return rows[0] || null;

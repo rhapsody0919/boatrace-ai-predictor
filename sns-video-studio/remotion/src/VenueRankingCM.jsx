@@ -2,6 +2,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Audio,
+  Img,
   Sequence,
   interpolate,
   spring,
@@ -69,23 +70,19 @@ function SlideIn({ children, delay = 0, style }) {
   );
 }
 
+// 実際のサイトロゴ（/logo-light.png、龍の紋章）を使う。絵文字🐉ベースの
+// バッジは環境依存でカラフルなイラストとして表示され浮くため不採用
+// （2026-09-01、note埋め込み動画側で確立した方針をこちらにも適用。
+// docs/reference/brand-kit.md参照。2026-09-02、この修正がTikTok/X用
+// 動画群（本ファイルの全コンポジション）に反映されていなかった指摘を受け
+// 統一）
 function Logo({ size = 40, brandName = "龍神レーダー" }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size / 4,
-          background: ACCENT,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: size * 0.55,
-        }}
-      >
-        🐉
-      </div>
+      <Img
+        src={staticFile("logo-light.png")}
+        style={{ width: size, height: size, objectFit: "contain" }}
+      />
       <span
         style={{
           color: WHITE,
@@ -888,7 +885,15 @@ function SceneTop5({ heading, data, barColor, sampleSuffix }) {
 }
 
 // --- Scene 3: ワースト5（263-450f, 約6.3s） ---
-function SceneWorst5({ heading, data, barColor, sampleSuffix }) {
+// headingColorは既定で従来の水色を維持（既存呼び出し元との互換性維持のため）。
+// rankが1〜5の連番でない任意の実データ（例: 23位・24位）も表示できる
+function SceneWorst5({
+  heading,
+  data,
+  barColor,
+  sampleSuffix,
+  headingColor = "#7dd3fc",
+}) {
   return (
     <AbsoluteFill
       style={{
@@ -900,7 +905,7 @@ function SceneWorst5({ heading, data, barColor, sampleSuffix }) {
       <Pop delay={2}>
         <div
           style={{
-            color: "#7dd3fc",
+            color: headingColor,
             fontSize: 38,
             fontWeight: 900,
             fontFamily: FONT,
@@ -1119,7 +1124,13 @@ const MANSHU_RATE_WORST5_EN = [
   { rank: 24, venue: "Fukuoka", value: "12.4%", sample: "1,521", ratio: 65 },
   { rank: 23, venue: "Amagasaki", value: "14.3%", sample: "1,838", ratio: 75 },
   { rank: 22, venue: "Wakamatsu", value: "14.5%", sample: "1,610", ratio: 76 },
-  { rank: 21, venue: "Shimonoseki", value: "14.6%", sample: "1,613", ratio: 76 },
+  {
+    rank: 21,
+    venue: "Shimonoseki",
+    value: "14.6%",
+    sample: "1,613",
+    ratio: 76,
+  },
   { rank: 20, venue: "Gamagori", value: "15.0%", sample: "1,749", ratio: 79 },
 ];
 
@@ -1169,7 +1180,13 @@ const MANSHU_RATE_WORST5_EN_B = [
   { rank: 24, venue: "Fukuoka", value: "12.4%", sample: "1,521", ratio: 65 },
   { rank: 23, venue: "Amagasaki", value: "14.3%", sample: "1,838", ratio: 75 },
   { rank: 22, venue: "Wakamatsu", value: "14.5%", sample: "1,610", ratio: 76 },
-  { rank: 21, venue: "Shimonoseki", value: "14.6%", sample: "1,613", ratio: 76 },
+  {
+    rank: 21,
+    venue: "Shimonoseki",
+    value: "14.6%",
+    sample: "1,613",
+    ratio: 76,
+  },
   { rank: 20, venue: "Gamagori", value: "15.0%", sample: "1,749", ratio: 79 },
 ];
 
@@ -1658,5 +1675,191 @@ export function BoatRankingCM_NarutoNigeWin() {
       ctaLines={["会場ごとの必勝パターンも、", "無料で見れる"]}
       subLine="鳴門の1号艇は、ほぼ逃げ一択"
     />
+  );
+}
+
+// --- 決まり手の安定度比較（YouTube Shorts用、2026-09-02新設） ---
+// boat-number-technique-consistency記事・note・YouTube解説動画（16:9）と同じネタ・
+// 同じ実データをYouTube Shorts / TikTok / X向け縦型（9:16）に再構成したもの。
+// 1号艇は「1位/2位/3位/23位/24位」という明確な順位がブログ記事に明記されている
+// ためRankRow（既存のランキング表現）をそのまま使う。一方4号艇側は記事本文に
+// 明確な全国順位の記載が無く（「1位の決まり手」が変わる代表例として6会場を提示
+// しているだけ）、RankRowの「順位バッジ」を使うと無い順位を捏造することになる
+// ため、順位バッジ無しの横棒リスト（SceneVenueBars、新設）で表現する
+function SceneVenueBars({ heading, data, note }) {
+  return (
+    <AbsoluteFill
+      style={{
+        background: NAVY_DARK,
+        padding: "0 70px",
+        justifyContent: "center",
+      }}
+    >
+      <Pop delay={2}>
+        <div
+          style={{
+            color: ACCENT,
+            fontSize: 36,
+            fontWeight: 900,
+            fontFamily: FONT,
+            marginBottom: 26,
+            lineHeight: 1.3,
+            whiteSpace: "pre-line",
+          }}
+        >
+          {heading}
+        </div>
+      </Pop>
+      {data.map((r, i) => (
+        <SlideIn key={r.venue} delay={10 + i * 8} style={{ marginBottom: 20 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+              marginBottom: 6,
+            }}
+          >
+            <span
+              style={{
+                color: WHITE,
+                fontSize: 30,
+                fontWeight: 800,
+                fontFamily: FONT,
+              }}
+            >
+              {r.venue}
+            </span>
+            <span
+              style={{
+                fontFamily: FONT,
+                fontWeight: 900,
+                fontSize: 32,
+                color: r.emphasis ? ACCENT : GOLD,
+              }}
+            >
+              {r.value}
+              <span
+                style={{
+                  color: WHITE,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  opacity: 0.75,
+                  marginLeft: 8,
+                }}
+              >
+                {r.technique}
+              </span>
+            </span>
+          </div>
+          <div
+            style={{
+              height: 12,
+              borderRadius: 6,
+              background: "rgba(255,255,255,0.1)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${r.ratio}%`,
+                background: r.emphasis ? ACCENT : GOLD,
+                borderRadius: 6,
+              }}
+            />
+          </div>
+        </SlideIn>
+      ))}
+      {note && (
+        <Pop delay={10 + data.length * 8 + 10} style={{ marginTop: 14 }}>
+          <div
+            style={{
+              color: "rgba(248,250,252,0.6)",
+              fontSize: 20,
+              fontFamily: FONT,
+            }}
+          >
+            {note}
+          </div>
+        </Pop>
+      )}
+    </AbsoluteFill>
+  );
+}
+
+// 1号艇の逃げ率（記事本文の表の「1位/2位/3位/23位/24位」をそのまま使用）
+const NIGE_CONSISTENCY_TOP5 = [
+  { rank: 1, venue: "鳴門", value: "97.41%", sample: "226/232", ratio: 97 },
+  { rank: 2, venue: "戸田", value: "97.22%", sample: "175/180", ratio: 97 },
+  { rank: 3, venue: "尼崎", value: "96.82%", sample: "396/409", ratio: 97 },
+  { rank: 23, venue: "江戸川", value: "91.94%", sample: "194/211", ratio: 92 },
+  { rank: 24, venue: "浜名湖", value: "91.54%", sample: "292/319", ratio: 92 },
+];
+const NIGE_CONSISTENCY_ALL = [97.41, 97.22, 96.82, 91.94, 91.54];
+
+// 4号艇の1位の決まり手（記事本文の表と同じ6会場。全国順位は記事に記載が無いため
+// 順位バッジは使わず、venue+値+決まり手のみを提示）
+const BOAT4_TECHNIQUE_BARS = [
+  { venue: "蒲郡", value: "66.07%", technique: "まくり", ratio: 66 },
+  { venue: "桐生", value: "64.71%", technique: "まくり", ratio: 65 },
+  { venue: "常滑", value: "62.50%", technique: "まくり", ratio: 63 },
+  {
+    venue: "若松",
+    value: "38.46%",
+    technique: "差し",
+    ratio: 38,
+    emphasis: true,
+  },
+  {
+    venue: "三国",
+    value: "36.36%",
+    technique: "まくり差し",
+    ratio: 36,
+    emphasis: true,
+  },
+  { venue: "丸亀", value: "36.17%", technique: "まくり", ratio: 36 },
+];
+
+export function BoatRankingCM_TechniqueConsistency() {
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK }}>
+      <Sequence from={0} durationInFrames={75}>
+        <SceneHook
+          axisTitle="決まり手の安定度格差"
+          topVenue="鳴門"
+          rateLabel="1号艇 逃げ率 97.41%"
+          hookQuestion="でも4号艇の決まり手は、会場でバラバラ"
+          subCaption="全24会場の実データで比較すると…"
+          categoryTag="決まり手データ"
+          allRates={NIGE_CONSISTENCY_ALL}
+          topRateIndex={0}
+          accentColor={GOLD}
+        />
+      </Sequence>
+      <Sequence from={75} durationInFrames={188}>
+        <SceneWorst5
+          heading="🎯 1号艇の逃げ率（上位3・下位2）"
+          data={NIGE_CONSISTENCY_TOP5}
+          barColor={GOLD}
+          headingColor={GOLD}
+          sampleSuffix="レースで集計"
+        />
+      </Sequence>
+      <Sequence from={263} durationInFrames={188}>
+        <SceneVenueBars
+          heading={"🌊 4号艇の1位の決まり手\n会場によって主役が変わる"}
+          data={BOAT4_TECHNIQUE_BARS}
+          note="若松・三国は「まくり」以外が1位"
+        />
+      </Sequence>
+      <Sequence from={451} durationInFrames={150}>
+        <SceneCTA
+          ctaLines={["会場ごとの決まり手データ、", "無料で見れる"]}
+          subLine="1号艇は逃げ一強、4号艇は会場で戦い方が変わる"
+        />
+      </Sequence>
+      <Audio src={staticFile("soundtrack-hitcheck.wav")} />
+    </AbsoluteFill>
   );
 }

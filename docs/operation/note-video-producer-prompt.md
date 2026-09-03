@@ -75,4 +75,4 @@ Hook/特徴解説/CTAの共通実装は`noteVideoShared.jsx`に切り出し済�
 - `NoteExplainerCM.jsx`の`NoteExplainerCM_DataRaceTable`: データ出走表機能の解説動画（50秒、6特徴）
 - `NoteExplainerReturnRate.jsx`の`NoteExplainerCM_ReturnRate`: 選手×艇番別回収率分析の解説動画（30秒、4特徴）
 - `NoteExplainerFormRanking.jsx`の`NoteExplainerCM_FormRanking`: 好調・不調選手ランキングの解説動画（50秒、急上昇/急下降の2テーブルをそれぞれ3行ハイライト）。1機能で複数テーブルを扱う場合は、特徴解説パートを`SceneFeatures`の複数`Sequence`に分け、`imageSrc`と`badgeLabel`をテーブルごとに切り替える
-- タイトルが長い機能名の場合、`SceneHook`の`titleFontSize`propで縮小しないと1080px幅で折り返してsubtitleと重なる（2026-09-01、好調・不調ランキングで発生・修正）。目安は13文字を超える場合に80px程度へ縮小する
+- タイトルが長い機能名の場合、1080px幅で折り返してsubtitleと重なることがある（2026-09-01、好調・不調ランキングで発生）。**2026-09-03、`titleFontSize`propでの目視調整（目安13文字超で80px）を廃止し、`brand-kit.md`「技術ルール（フォーマット横断で適用）」の`fitHeadline()`で計算する方式に切り替えた**。ただし`SceneHook`自体は現時点で単一の`title`文字列＋`titleFontSize`（数値）propしか受け付けず、`fitHeadline()`が返す`lines`配列を複数行として描画する仕組みは無い（`noteVideoShared.jsx`は未修正）。そのため新しい動画を作る際は、呼び出し側で`fitHeadline(title, { maxWidth: 1080, maxLines: 1, fontFamily: FONT, fontWeight: 900, maxFontSize: 96, minFontSize: 56 })`を呼び、返り値の`fontSize`を`titleFontSize`にそのまま渡す（`maxLines: 1`前提、1行に収まる前提のタイトルのみ対応）。2行以上に折り返す長さのタイトルが必要になった場合は、`SceneHook`側に`lines`配列を受け付ける改修が別途必要

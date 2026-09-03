@@ -9,7 +9,7 @@
 - [x] 3. `data/analysis/content-topics/`履歴JSON初期化 — 実装は遅延生成方式（`recordUsage`初回呼び出し時に自動作成）のため、事前の個別初期化は不要と判断
 - [x] 4. `scripts/lib/contentChannels/channelMatrix.js`実装（ネタ種別→チャネル対応表）— 動作確認済み
 - [x] 5〜6・8. **設計を修正**: ブログ/note本文の執筆・品質採点は決定的なJS関数にできない（LLM判断そのもののため）。既存の`sns-video-producer-prompt.md`等と同じ形式の運用プロンプト文書として実装した: [`docs/operation/content-multi-channel-pipeline-prompt.md`](../../operation/content-multi-channel-pipeline-prompt.md)（ネタ選定・チャネル選定・ブログ執筆・note変換・多層品質レビュー・下書き永続化・履歴更新の手順を網羅）。当初`renderer.js`/`contentQualityReview.js`という実装方針を計画していたが、実装段階で「文章生成・品質判断はコードにできない」ことを踏まえ方針転換
-- [ ] 7. YouTubeサムネイル生成のRemotion still実行スクリプト（`scripts/lib/contentChannels/youtubeThumbnail.js`、Remotion CLI呼び出しのみのため決定的コードとして実装可能。ただしサムネイル用Remotionコンポジション自体が未作成——先にコンポジションを用意する必要あり）
+- [x] 7. YouTubeサムネイル生成のRemotion still実行スクリプト — 当初想定していた`youtubeThumbnail.js`単体ではなく、`renderCoverCard.js`（task 34）＋`DataQuoteCard-YouTubeThumbnail`コンポジション（task 32）として実装済みだったと2026-09-02判明。実際にこの仕組みで`technique-consistency-youtube-thumb.jpg`を生成し使用済み（動作確認済み）
 
 ## Routine
 
@@ -50,7 +50,9 @@
 
 - [x] 29. `npm run build`成功確認 — 成功（2026-09-02、task 18/21実装分含む再確認）
 - [x] 30. E2Eスモークテスト実行（既存の管理画面ルーティングに影響が無いか）— 886件成功・16件失敗、失敗は全てこのworktreeにSupabase接続情報が無いことによる既存ページの実行時エラーで今回の変更と無関係（admin関連の失敗なし、2026-09-02再確認）
-- [ ] 31. 実際に1サイクル（ネタ選定→生成→自己採点→管理画面表示→承認→公開）を通しで確認 — Blog/YouTube自動公開の実クレデンシャルでのエンドツーエンド検証。実際にPRをマージ・動画を公開する不可逆操作を伴うため、実行前にユーザーへの確認が必要
+- [x] 31a. YouTube自動公開の実クレデンシャルend-to-end検証 — ユーザー承認済み（production環境・一般公開OK、2026-09-02）で実施。`sns_drafts`に実レコードを作成（Supabase Storageへのアップロード・署名付きURL発行含む）→本番`/api/admin/sns-hub/drafts/[id]/publish-youtube`をBasic認証付きで実際に呼び出し→動画本体のアップロードは成功、実際に[YouTube上で公開](https://youtu.be/VPauSM8CfuQ)されたことを確認。**発見した不具合**: カスタムサムネイル設定がYouTube API側で403エラー（`The authenticated user doesn't have permissions to upload and set custom video thumbnails` — チャンネルが電話番号認証未完了のため。ユーザー側の対応が必要、[YouTube公式の確認手順](https://www.youtube.com/verify)）。この403がハンドラー内で無条件に例外化されており、動画自体は投稿済みなのにDBのstatusがpending_reviewのまま残り再承認で動画が二重投稿される事故につながる実装ミスも同時に発覚・修正済み（サムネイル失敗を動画投稿の成否から分離、`thumbnailWarning`として返す形に変更）。テスト用下書きレコードのstatusは実際の結果に合わせてposted・source_dataにyoutube_url記録済み、Storage上のテストアップロードファイルは削除済み
+- [ ] 31b. ブログPR自動マージの実クレデンシャルend-to-end検証（`GITHUB_MERGE_TOKEN`もVercel上でSecret型のため、31aと同じ「production環境で実際にPRをマージする」形での検証が必要。実行前にユーザー確認）
+- [ ] 31c. YouTubeチャンネルの電話番号認証（カスタムサムネイル権限の取得、ユーザー本人の対応が必要）
 
 ## チャネル品質検証の準備（2026-09-02、構造的な穴を先に閉じる）
 
@@ -62,3 +64,14 @@
 - [x] 35. `scripts/lib/contentRevisionHistory.js`・`scripts/maintenance/content-ops-checks/check-revision-escalation.js`実装 — 却下フィードバック（`revision_reason_codes`）の恒久反映。生成前に直近30日分を必ず参照、同一理由が3回累積したら`content-ops-nightly-check.yml`が自動でLinear起票（既存の`content-quality`ラベル運用に合流、`check-quality-backlog.js`が拾う）
 - [x] 36. `content-multi-channel-pipeline-prompt.md`にステップ0（却下理由確認）・ステップ5（カバー画像生成）を追加、「画像は人間が用意する」制約を撤去
 - [x] 37. ブログ承認→PRマージ画面に、承認前にDraft PR（Vercel Preview含む）へのリンクを表示する — `TextDraftPreview`にタイトル直下でPRリンクを表示、モックデータで表示確認済み
+
+## TikTokギャンブルポリシー対応（2026-09-02、BOA-237）
+
+Xチャネル検証完了後、TikTokチャネル検証に着手する直前に、既存フォーマットの大半がTikTok広告ポリシー（賭けの結果に影響する統計・インサイトの規制）に抵触して新規制作停止になっていたことが判明（`docs/proposal/tiktok-non-gambling-content-ideas.md`）。channelMatrix.jsの「会場攻略型TikTokローテーションに乗る」という前提コメントが誤りだった状態（BOA-237）を含めて対応。
+
+- [x] 38. `channelMatrix.js`をネタ種別単位からネタ単位のTikTok判定に変更 — 既存4系統（新機能・会場特性・データ知見・成績）はCHANNEL_MATRIX上でTikTokを含めず、`getChannelsForTopic(sourceId, {isGamblingRelevant: false})`で個別ネタごとに例外的に安全と判定した場合のみ追加できるようにした。既定は安全側（TikTok除外）
+- [x] 39. 常磐（evergreen）ネタ種別3系統を新設 — `competition-trivia`（競技解説・技術トリビア）・`overseas-intro`（海外向けKyotei入門、英語字幕）・`service-trust`（サービス信頼性・スケール訴求）。成績・確率を扱わない設計のため既定でTikTokを含める。案5「観戦体験型」は実レース映像素材が必要で現行のRemotionベース制作フローでは作れないため見送り
+- [x] 40. `spec.md`のFR1・FR2を更新 — 新設3系統・`new-feature`のライフハック型拡張・ネタ単位TikTok判定の設計をドキュメント化
+- [ ] 41. 新設3系統の候補生成ロジック（`scripts/lib/contentTopics/`への`xxxSource.js`追加・`index.js`のレジストリ登録）・Remotionコンポジションテンプレートを実装（今回は設計・チャネルマトリクスまで。3系統ともまだ`topicSources`に登録されておらず、実際に候補が出てくる状態ではない）
+- [x] 42. `docs/proposal/tiktok-non-gambling-content-ideas.md`の「現状の運用方針」節を更新（統合しない方針→統合済みに変更）— 完了。BOA-237のクローズはLinear未認証のため今回は未実施、次回セッションで対応
+- [x] 43. `newFeatureSource.js`を拡張し、`missingContentIndex`（新規ルート検知）だけでなく既存機能（言語切替・レース間ナビゲーション・選手ニュース・会場ガイド）の使い方紹介も候補として出せるようにした。各候補に`isGamblingRelevant`フィールドを持たせ（新規ルート由来はtrue=安全側、ライフハック候補はfalse=TikTok可）、`content-multi-channel-pipeline-prompt.md`のチャネル選定手順にもこのフィールドを`getChannelsForTopic`へ渡す手順を追記。動作確認済み（候補4件、いずれも`isGamblingRelevant: false`で出力）
