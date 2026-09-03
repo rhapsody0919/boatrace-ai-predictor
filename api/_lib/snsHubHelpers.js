@@ -192,6 +192,133 @@ export async function updateInsight(id, patch) {
   return rows[0] || null;
 }
 
+// platformごとの発火先環境変数プレフィックス（ADR 0038）。revise/redoが下書きの
+// 生成元パイプラインに関わらず一律SNS_HUB_ROUTINEを発火していたバグの修正に使う。
+// チャネル別パイプラインが段階展開（ADR 0037）で未整備のプラットフォームは
+// フォールバックとしてSNS_HUB_ROUTINEへ発火する。
+export const PLATFORM_ROUTINE_ENV_PREFIX = {
+  blog: "SNS_BLOG_ROUTINE",
+  note: "SNS_NOTE_ROUTINE",
+  x: "SNS_X_ROUTINE",
+  tiktok: "SNS_TIKTOK_ROUTINE",
+  youtube: "SNS_YOUTUBE_ROUTINE",
+};
+
+const FALLBACK_ROUTINE_ENV_PREFIX = "SNS_HUB_ROUTINE";
+
+/**
+ * 下書きのplatformから発火すべきRoutineの環境変数プレフィックスを解決する。
+ * 対応するチャネル別パイプラインが未展開（環境変数未設定）の場合は、
+ * fireRoutine側で自動的にnot_configured判定になりフォールバックの挙動になる。
+ */
+export function resolveRoutineEnvPrefix(platform) {
+  return PLATFORM_ROUTINE_ENV_PREFIX[platform] || FALLBACK_ROUTINE_ENV_PREFIX;
+}
+
+export async function getTopicById(id) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topics?id=eq.${id}&select=*`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topics取得エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+export async function updateTopic(id, patch) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topics?id=eq.${id}`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(patch),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topics更新エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+/** 進捗マトリクスUI用。ネタに紐づく全ターゲット（アカウント×生成状況）を取得する */
+export async function getTopicTargets(topicId) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topic_targets?topic_id=eq.${topicId}&select=*,sns_target_accounts(platform,account_label)`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topic_targets取得エラー: ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * ターゲットをpending⇔skippedで切り替える（要件14、チャネルラベルの手動調整）。
+ * claim済み・生成済みのターゲットは対象外（statusがpending/skippedの場合のみ許可）。
+ */
+export async function updateTopicTargetLabel(id, status, reason) {
+  if (status !== "pending" && status !== "skipped") {
+    throw new Error(
+      `updateTopicTargetLabelはpending/skippedのみ許可: ${status}`,
+    );
+  }
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topic_targets?id=eq.${id}&status=in.(pending,skipped)`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        status,
+        skip_reason: status === "skipped" ? reason || null : null,
+      }),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topic_targetsラベル更新エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+export async function getActiveContentTypes() {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_content_types?active=eq.true&select=*`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_content_types取得エラー: ${response.status}`);
+  }
+  return response.json();
+}
+
 /**
  * RoutineのAPIトリガー（/fireエンドポイント）を呼ぶ（ADR 0020）。
  * Task13/14でRoutineを実際に構築するまでは対応する環境変数が未設定のため、

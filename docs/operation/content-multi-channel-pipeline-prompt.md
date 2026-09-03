@@ -54,7 +54,7 @@
 - `sns-video-studio/remotion/`で`npm install`後レンダリングする。Remotion標準のヘッドレスChromeダウンロードはネットワーク許可リストでブロックされるため、環境にプリインストール済みのPlaywright用Chromiumヘッドレスシェルを明示的に指定する（`/opt/pw-browsers/`配下の`headless_shell`バイナリのパスを確認し、`--browser-executable`フラグまたは`remotion.config.mjs`の`Config.setBrowserExecutable()`で指定）
 - ffmpegが無ければ`apt-get install -y ffmpeg`する
 - 同ドキュメントのセルフレビューチェックリストで自己採点し、Failがあれば直して再レンダリングする
-- `sns-video-studio/risk-rules.json`の各ルールを照合する。該当があれば`risk_flags`に記録する（ブロックしない、警告記録のみ）
+- `sns-video-studio/remotion/risk-rules.json`の各ルールを照合する。該当があれば`risk_flags`に記録する（ブロックしない、警告記録のみ）
 
 ### 3-4. サムネイル（YouTubeのみ）
 

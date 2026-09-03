@@ -174,3 +174,48 @@ export async function getTemplateVariants() {
   const { data } = await request("/template-variants");
   return data || [];
 }
+
+/**
+ * 「ネタ承認」タブ用、ネタ一覧を取得する（型情報・進捗マトリクス用のターゲット一覧を含む）
+ * @param {string} [status] - 'proposed' | 'approved' | 'rejected' | 'all' | undefined(全件)
+ */
+export async function getTopics(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  const { data } = await request(`/topics${query}`);
+  return data || [];
+}
+
+/** ネタを承認する */
+export async function approveTopic(topicId, approverId) {
+  return request(`/topics/${topicId}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ approverId }),
+  });
+}
+
+/** ネタを却下する */
+export async function rejectTopic(topicId, approverId) {
+  return request(`/topics/${topicId}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ approverId }),
+  });
+}
+
+/** チャネルラベル（sns_topic_targets）をpending⇔skippedで切り替える */
+export async function updateTopicTargetLabel(
+  topicId,
+  targetId,
+  status,
+  reason,
+) {
+  return request(`/topics/${topicId}/targets/${targetId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, reason }),
+  });
+}
+
+/** 手動生成パネルの型選択ドロップダウン用、ネタの型(sns_content_types)一覧を取得する */
+export async function getContentTypes() {
+  const { data } = await request("/content-types");
+  return data || [];
+}
