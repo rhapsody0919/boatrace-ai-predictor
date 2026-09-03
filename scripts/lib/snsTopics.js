@@ -257,6 +257,10 @@ export async function updateTopicTargetLabel(targetId, status, reason) {
     .update({
       status,
       skip_reason: status === "skipped" ? reason || null : null,
+      // pendingへ戻す＝未claim状態に戻すことを意味するため、claim系メタデータも
+      // 必ずクリアする。片方だけ更新すると「statusはpendingなのにclaimed_byが
+      // 残る」不整合状態になる（2026-09-03、実際のRoutine実行で発生・発覚）
+      ...(status === "pending" ? { claimed_by: null, claimed_at: null } : {}),
     })
     .eq("id", targetId)
     .select()

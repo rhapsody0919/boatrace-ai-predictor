@@ -293,6 +293,9 @@ export async function updateTopicTargetLabel(id, status, reason) {
       body: JSON.stringify({
         status,
         skip_reason: status === "skipped" ? reason || null : null,
+        // pendingへ戻す＝未claim状態に戻すことを意味するため、claim系メタデータも
+        // 必ずクリアする（scripts/lib/snsTopics.jsの同名関数と同じ修正、2026-09-03）
+        ...(status === "pending" ? { claimed_by: null, claimed_at: null } : {}),
       }),
     },
   );
