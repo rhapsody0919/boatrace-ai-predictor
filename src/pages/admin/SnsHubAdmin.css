@@ -1170,7 +1170,67 @@
   }
 }
 
-/* 「ネタ承認」タブ（docs/design/sns-topic-gate/screens.md #2〜#6） */
+/* 「ネタ承認」セクション（docs/design/sns-topic-gate/screens.md #2〜#6）。
+   2026-09-03、ユーザー指摘によりタブでなくtab-navigation-rowの上に常時表示する
+   専用セクションに変更（「承認→各チャネルタブに生成される」流れを分かりやすくするため） */
+
+.topic-approval-section {
+  margin-bottom: 1rem;
+  border: 1px solid var(--ryujin-gold-500, #c9a227);
+  border-radius: 8px;
+  background: var(--color-gray-50);
+  overflow: hidden;
+}
+
+.topic-approval-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.topic-approval-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.topic-approval-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.4rem;
+  border-radius: 9999px;
+  background: var(--ryujin-gold-500, #c9a227);
+  color: white;
+  font-size: 0.75rem;
+}
+
+.topic-approval-section-hint {
+  font-size: 0.75rem;
+  color: var(--color-gray-600);
+  flex: 1;
+}
+
+.topic-approval-section-toggle {
+  font-size: 0.7rem;
+  color: var(--color-gray-500);
+}
+
+.topic-approval-section-body {
+  padding: 0 0.75rem 0.75rem;
+}
 
 .topic-list {
   display: flex;

@@ -128,8 +128,10 @@ const STATUS_FILTERS = [
   { id: "posted", label: "投稿済み", statuses: ["posted"] },
 ];
 
+// 「ネタ承認」は2026-09-03のユーザー指摘によりタブではなく専用セクション
+// （tab-navigation-rowの上、常時表示）に変更した。「承認→各プラットフォーム
+// タブに生成される」という流れが、同列のタブに埋もれると分かりにくいため
 const NON_PLATFORM_TABS = [
-  { id: "topics", label: "ネタ承認" },
   { id: "insights", label: "戦略メモ" },
   { id: "catalog", label: "フォーマットカタログ" },
 ];
@@ -536,8 +538,7 @@ function SnsHubAdmin() {
 
   const isInsightsTab = activeTab === "insights";
   const isCatalogTab = activeTab === "catalog";
-  const isTopicsTab = activeTab === "topics";
-  const isPlatformTab = !isInsightsTab && !isCatalogTab && !isTopicsTab;
+  const isPlatformTab = !isInsightsTab && !isCatalogTab;
   const activeStatusDef = STATUS_FILTERS.find(
     (f) => f.id === activeStatusFilter,
   );
@@ -553,24 +554,42 @@ function SnsHubAdmin() {
     <div className="sns-hub-admin-page">
       <Header />
 
+      <TopicApprovalSection
+        topics={topics}
+        approvers={approvers}
+        onApprove={(topicId, approverId) =>
+          handleAction(approveTopic, [topicId, approverId], {
+            topics: true,
+          })
+        }
+        onReject={(topicId, approverId) =>
+          handleAction(rejectTopic, [topicId, approverId], {
+            topics: true,
+          })
+        }
+        onUpdateTargetLabel={(topicId, targetId, status) =>
+          handleAction(updateTopicTargetLabel, [topicId, targetId, status], {
+            topics: true,
+          })
+        }
+      />
+
       <div className="tab-navigation-row">
         <div className="tab-navigation">
           {TABS.map((tab) => {
             const count =
-              tab.id === "topics"
-                ? topics.filter((t) => t.status === "proposed").length
-                : tab.id === "insights"
-                  ? insights.filter((i) => i.status === "proposed").length
-                  : tab.id === "catalog"
-                    ? templateVariants.length
-                    : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
-                      // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
-                      // 対応が必要な件数という意味が薄れるため）
-                      drafts.filter(
-                        (d) =>
-                          d.platform === tab.id &&
-                          STATUS_FILTERS[0].statuses.includes(d.status),
-                      ).length;
+              tab.id === "insights"
+                ? insights.filter((i) => i.status === "proposed").length
+                : tab.id === "catalog"
+                  ? templateVariants.length
+                  : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
+                    // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
+                    // 対応が必要な件数という意味が薄れるため）
+                    drafts.filter(
+                      (d) =>
+                        d.platform === tab.id &&
+                        STATUS_FILTERS[0].statuses.includes(d.status),
+                    ).length;
             return (
               <button
                 key={tab.id}
@@ -770,29 +789,7 @@ function SnsHubAdmin() {
       </div>
 
       <div className="tab-content">
-        {isTopicsTab ? (
-          <TopicApprovalTab
-            topics={topics}
-            approvers={approvers}
-            onApprove={(topicId, approverId) =>
-              handleAction(approveTopic, [topicId, approverId], {
-                topics: true,
-              })
-            }
-            onReject={(topicId, approverId) =>
-              handleAction(rejectTopic, [topicId, approverId], {
-                topics: true,
-              })
-            }
-            onUpdateTargetLabel={(topicId, targetId, status) =>
-              handleAction(
-                updateTopicTargetLabel,
-                [topicId, targetId, status],
-                { topics: true },
-              )
-            }
-          />
-        ) : isCatalogTab ? (
+        {isCatalogTab ? (
           <CatalogTab templateVariants={templateVariants} />
         ) : isInsightsTab ? (
           <InsightTab
@@ -2126,7 +2123,10 @@ function TopicProgressMatrix({ topics }) {
 
 // 「ネタ承認」タブ本体（screens.md #2）。status='proposed'（承認要否の型のみ）を
 // 一覧表示し、承認済みネタの進捗マトリクスも合わせて表示する
-function TopicApprovalTab({
+// タブではなく専用セクションとして、下書き承認タブ群(TABS)の上に常時表示する
+// （2026-09-03ユーザー指摘: 「承認→各プラットフォームタブに生成される」という
+// 流れが、同列の1タブに埋もれると分かりにくいため）
+function TopicApprovalSection({
   topics,
   approvers,
   onApprove,
@@ -2134,31 +2134,57 @@ function TopicApprovalTab({
   onUpdateTargetLabel,
 }) {
   const proposedTopics = topics.filter((t) => t.status === "proposed");
+  const [expanded, setExpanded] = useState(true);
 
   return (
-    <div className="topic-approval-tab">
-      {proposedTopics.length === 0 ? (
-        <div className="empty-state">
-          <p>
-            承認待ちのネタはありません（日次・一般/日次・時間制約型はネタ承認を
-            経ずに生成されるため、ここには表示されません）。
-          </p>
-        </div>
-      ) : (
-        <div className="topic-list">
-          {proposedTopics.map((topic) => (
-            <TopicCard
-              key={topic.id}
-              topic={topic}
-              approvers={approvers}
-              onApprove={onApprove}
-              onReject={onReject}
-              onUpdateTargetLabel={onUpdateTargetLabel}
-            />
-          ))}
+    <div className="topic-approval-section">
+      <button
+        type="button"
+        className="topic-approval-section-header"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <span className="topic-approval-section-title">
+          📋 ネタ承認{" "}
+          {proposedTopics.length > 0 && (
+            <span className="topic-approval-section-count">
+              {proposedTopics.length}
+            </span>
+          )}
+        </span>
+        <span className="topic-approval-section-hint">
+          ここで承認すると、対応するチャネルタブ（下）に下書きが生成されます
+        </span>
+        <span className="topic-approval-section-toggle">
+          {expanded ? "▲" : "▼"}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="topic-approval-section-body">
+          {proposedTopics.length === 0 ? (
+            <div className="empty-state">
+              <p>
+                承認待ちのネタはありません（日次・一般/日次・時間制約型はネタ
+                承認を経ずに生成されるため、ここには表示されません）。
+              </p>
+            </div>
+          ) : (
+            <div className="topic-list">
+              {proposedTopics.map((topic) => (
+                <TopicCard
+                  key={topic.id}
+                  topic={topic}
+                  approvers={approvers}
+                  onApprove={onApprove}
+                  onReject={onReject}
+                  onUpdateTargetLabel={onUpdateTargetLabel}
+                />
+              ))}
+            </div>
+          )}
+          <TopicProgressMatrix topics={topics} />
         </div>
       )}
-      <TopicProgressMatrix topics={topics} />
     </div>
   );
 }
