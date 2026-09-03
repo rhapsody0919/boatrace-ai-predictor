@@ -8,6 +8,12 @@
 -- 判断していたが、型が増えるたびにコード・複数ドキュメントを触る必要があり
 -- 保守性が低かった。型×チャネルのON/OFFをデータとして持ち、sns-hub管理画面
 -- から直接編集できるようにする（2026-09-03、ユーザー要望）。
+--
+-- 2026-09-03修正: 当初DO $$ ... $$ ブロック（PL/pgSQL）で変数経由で
+-- content_type_idを解決していたが、SQL実行環境によってはブロックが
+-- セミコロン区切りで分割されてしまい、"relation v_venue_feature does not
+-- exist" のようなエラーになった。migration 043と同じ、変数を使わない
+-- 素のSQL（サブクエリ）に書き直す。
 
 -- ============================================================================
 -- 1. sns_topic_categories（ネタの型/カテゴリのレジストリ）
@@ -44,90 +50,54 @@ CREATE TABLE IF NOT EXISTS sns_topic_category_channels (
 ALTER TABLE sns_topic_category_channels ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
--- 3. 初期データ
+-- 3. 初期データ: 型本体（content_type_idはtype_keyからのサブクエリで解決）
 -- ============================================================================
+INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active, notes) VALUES
+    ('venue-characteristic', '会場特性',
+        (SELECT id FROM sns_content_types WHERE type_key = 'venue-feature'),
+        'venue-characteristic', true, NULL),
+    ('racer-condition', '選手調子',
+        (SELECT id FROM sns_content_types WHERE type_key = 'daily-auto'),
+        'daily-result', true, NULL),
+    ('motor-condition', 'モーター調子',
+        (SELECT id FROM sns_content_types WHERE type_key = 'daily-auto'),
+        'daily-result', true, NULL),
+    ('volatility-index', 'イン崩れ注意度',
+        (SELECT id FROM sns_content_types WHERE type_key = 'daily-auto'),
+        'daily-result', true, NULL),
+    ('payout-rate', '選手×艇番回収率型',
+        (SELECT id FROM sns_content_types WHERE type_key = 'daily-auto'),
+        'daily-result', true, NULL),
+    ('outcome-distribution', '出目分布型',
+        (SELECT id FROM sns_content_types WHERE type_key = 'daily-auto'),
+        'daily-result', true, NULL),
+    ('prediction-accuracy', '展開予想的中（答え合わせ型）',
+        (SELECT id FROM sns_content_types WHERE type_key = 'race-time-critical'),
+        NULL, true,
+        'topic-gateにはまだ未接続。既存のsns-hub-content-generation（sns-video-producer-prompt.md）が担当'),
+    ('prediction-hook', '予想数値フック型',
+        (SELECT id FROM sns_content_types WHERE type_key = 'race-time-critical'),
+        NULL, true,
+        'topic-gateにはまだ未接続。既存のsns-hub-content-generationが担当'),
+    ('feature-intro', '機能紹介型（一覧アピール型）',
+        NULL, 'new-feature', true,
+        'topic-gateにはまだ未接続。フローA（新機能マルチチャネル展開）のcontent-multi-channel-pipelineが担当'),
+    ('trivia', '豆知識型',
+        NULL, NULL, true, '未実装。提案元モジュール未着手'),
+    ('confrontation-hype', '対決煽り型',
+        NULL, NULL, false,
+        'TikTokガイドライン違反で削除・異議申し立ても却下済み（2026-09-01）。新規制作禁止')
+ON CONFLICT (category_key) DO NOTHING;
 
--- 型本体。content_type_idはtype_keyから引く（DO $$ ブロックで動的に解決）
-DO $$
-DECLARE
-    v_venue_feature UUID;
-    v_daily_auto UUID;
-    v_race_time_critical UUID;
-    v_category UUID;
-BEGIN
-    SELECT id INTO v_venue_feature FROM sns_content_types WHERE type_key = 'venue-feature';
-    SELECT id INTO v_daily_auto FROM sns_content_types WHERE type_key = 'daily-auto';
-    SELECT id INTO v_race_time_critical FROM sns_content_types WHERE type_key = 'race-time-critical';
+-- ============================================================================
+-- 4. 初期データ: チャネル設定（blog/note/x/youtubeは全型でON、TikTokのみ型ごとに設定）
+-- ============================================================================
+INSERT INTO sns_topic_category_channels (category_id, platform, enabled)
+SELECT c.id, p.platform, true
+FROM sns_topic_categories c
+CROSS JOIN (VALUES ('blog'), ('note'), ('x'), ('youtube')) AS p(platform)
+ON CONFLICT (category_id, platform) DO NOTHING;
 
-    -- 会場特性
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active)
-    VALUES ('venue-characteristic', '会場特性', v_venue_feature, 'venue-characteristic', true)
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- 選手調子
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active)
-    VALUES ('racer-condition', '選手調子', v_daily_auto, 'daily-result', true)
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- モーター調子
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active)
-    VALUES ('motor-condition', 'モーター調子', v_daily_auto, 'daily-result', true)
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- イン崩れ注意度
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active)
-    VALUES ('volatility-index', 'イン崩れ注意度', v_daily_auto, 'daily-result', true)
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- 選手×艇番回収率型
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active)
-    VALUES ('payout-rate', '選手×艇番回収率型', v_daily_auto, 'daily-result', true)
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- 出目分布型
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active)
-    VALUES ('outcome-distribution', '出目分布型', v_daily_auto, 'daily-result', true)
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- 展開予想的中（答え合わせ型）: content_typeは存在するがsource_id未接続
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active, notes)
-    VALUES ('prediction-accuracy', '展開予想的中（答え合わせ型）', v_race_time_critical, NULL, true,
-            'topic-gateにはまだ未接続。既存のsns-hub-content-generation（sns-video-producer-prompt.md）が担当')
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- 予想数値フック型
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active, notes)
-    VALUES ('prediction-hook', '予想数値フック型', v_race_time_critical, NULL, true,
-            'topic-gateにはまだ未接続。既存のsns-hub-content-generationが担当')
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- 機能紹介型（一覧アピール型）: content_type未確定（新機能リリース起点のイベント駆動のため）
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active, notes)
-    VALUES ('feature-intro', '機能紹介型（一覧アピール型）', NULL, 'new-feature', true,
-            'topic-gateにはまだ未接続。フローA（新機能マルチチャネル展開）のcontent-multi-channel-pipelineが担当')
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- 豆知識型: 未実装
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active, notes)
-    VALUES ('trivia', '豆知識型', NULL, NULL, true, '未実装。提案元モジュール未着手')
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- 対決煽り型: 廃止・使用禁止
-    INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_id, active, notes)
-    VALUES ('confrontation-hype', '対決煽り型', NULL, NULL, false,
-            'TikTokガイドライン違反で削除・異議申し立ても却下済み（2026-09-01）。新規制作禁止')
-    ON CONFLICT (category_key) DO NOTHING;
-
-    -- 各カテゴリのチャネル設定を投入するヘルパー（存在すれば何もしない）
-    FOR v_category IN SELECT id FROM sns_topic_categories LOOP
-        INSERT INTO sns_topic_category_channels (category_id, platform, enabled)
-        SELECT v_category, platform, true
-        FROM unnest(ARRAY['blog', 'note', 'x', 'youtube']) AS platform
-        ON CONFLICT (category_id, platform) DO NOTHING;
-    END LOOP;
-END $$;
-
--- TikTokのみ型ごとに個別設定（上のループでblog/note/x/youtubeは全てtrueで入っている前提）
 INSERT INTO sns_topic_category_channels (category_id, platform, enabled)
 SELECT id, 'tiktok', true FROM sns_topic_categories WHERE category_key IN
     ('venue-characteristic', 'racer-condition', 'motor-condition', 'feature-intro', 'trivia')
