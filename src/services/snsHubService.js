@@ -219,3 +219,21 @@ export async function getContentTypes() {
   const { data } = await request("/content-types");
   return data || [];
 }
+
+/** 「ネタ型設定」画面用、ネタの型（カテゴリ）一覧をチャネル設定つきで取得する */
+export async function getTopicCategories() {
+  const { data } = await request("/topic-categories");
+  return data || [];
+}
+
+/** 型×チャネルのON/OFFを切り替える */
+export async function updateTopicCategoryChannel(
+  categoryId,
+  platform,
+  enabled,
+) {
+  return request(`/topic-categories/${categoryId}/channels/${platform}`, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
+}

@@ -2,9 +2,9 @@
 
 承認済みネタ（`sns_topics.status='approved'`）のうち、TikTok向けに割り当てられた`sns_topic_targets`をポーリングして下書きを生成するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。`docs/operation/sns-pipeline-x.md`と同じ構成をテンプレートにする。
 
-**このRoutineはネタを自分で選定しない**。`sns-topic-proposer-weekly.md`・`sns-topic-proposer-daily-auto.md`が、個別ネタ単位でTikTok可否を判定（`isGamblingRelevant`）した上で作った承認済みネタを拾って生成するだけの、疎結合な下流工程。
+**このRoutineはネタを自分で選定しない**。`sns-topic-proposer-weekly.md`・`sns-topic-proposer-daily-auto.md`が、扱う題材の型（`sns_topic_categories.category_key`）を分類し、その型のTikTok設定（`sns_topic_category_channels`、sns-hub「ネタ型設定」画面でユーザーが編集）に従って作った承認済みネタを拾って生成するだけの、疎結合な下流工程（2026-09-03、以前のchannelMatrix.js + isGamblingRelevantフラグから型×チャネルのデータ駆動設定に変更）。
 
-**TikTokは他チャネル（`new-feature`/`competition-trivia`/`overseas-intro`/`service-trust`型）と違い、`venue-characteristic`/`daily-result`型では既定でTikTok対象外**（`scripts/lib/contentChannels/channelMatrix.js`のCHANNEL_MATRIX参照）。このRoutインがclaimできるのは、提案Routine側が個別ネタで安全と判定した（`isGamblingRelevant: false`を渡した）、または人間がsns-hub「ネタ承認」画面のチャネルトグルで個別にpendingへ変更したターゲットのみ。
+このRoutineがclaimできるのは、対応する型のTikTok設定がON、または人間がsns-hub「ネタ承認」画面のチャネルトグルで個別にpendingへ変更したターゲットのみ。
 
 ## 実行トリガー
 
@@ -30,6 +30,7 @@
 
 `sns-pipeline-x.md`の「2.」と同じ手順に加えて、**このRoutine自身でもう一度TikTok可否を確認する**（提案Routine側の判定を無条件に信用しない、二重チェック）。
 
+- claimしたネタの`content_type_id`・題材から、対応する`sns_topic_categories`行を確認する。`active=false`（廃止済み、例: 対決煽り型）の型に該当する内容だと分かった場合は、`sns_topic_category_channels`の設定に関わらず**必ず生成せずskipする**
 - `docs/operation/sns-video-producer-prompt.md`絶対厳守13の判断基準（「この数字・情報は、視聴者が今日の賭け目を選ぶ判断材料に直結するか？」）にYesと言える内容なら、**このターゲットは生成せず`markTopicTargetSkipped(targetId, reason)`でskip_reasonに理由を記録して終了する**（claimしたまま放置しない）
 - 迷う場合も安全側（skip）に倒す
 

@@ -323,6 +323,58 @@ export async function getActiveContentTypes() {
 }
 
 /**
+ * ネタの型（カテゴリ）一覧をチャネル設定つきで取得する（sns-hub「ネタ型設定」画面用）。
+ * scripts/lib/snsTopics.jsのgetTopicCategoriesと同じクエリ（Node版とEdge版で
+ * 二重管理になっているが、既存のgetActiveContentTypes等と同じ構成を踏襲）。
+ */
+export async function getTopicCategories() {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topic_categories?select=*,sns_content_types(type_key,label,cadence),sns_topic_category_channels(id,platform,enabled)&order=created_at`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topic_categories取得エラー: ${response.status}`);
+  }
+  return response.json();
+}
+
+/** 型×チャネルのON/OFFを更新する */
+export async function updateTopicCategoryChannel(
+  categoryId,
+  platform,
+  enabled,
+) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topic_category_channels?category_id=eq.${categoryId}&platform=eq.${platform}`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        enabled,
+        updated_at: new Date().toISOString(),
+      }),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(
+      `sns_topic_category_channels更新エラー: ${response.status}`,
+    );
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+/**
  * RoutineのAPIトリガー（/fireエンドポイント）を呼ぶ（ADR 0020）。
  * Task13/14でRoutineを実際に構築するまでは対応する環境変数が未設定のため、
  * その場合はfireをスキップして{fired: false}を返す（DB更新自体は独立してテストできるようにする）。

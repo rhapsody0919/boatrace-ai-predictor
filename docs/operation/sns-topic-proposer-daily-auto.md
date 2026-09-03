@@ -16,24 +16,30 @@
 
 候補（`{sourceId, topicKey: date, date, raceCount}`）が得られたら、当日の実データから具体的な注目ポイントを1つ探す。`scripts/daily/todays-volatility-digest.js`と同種のアプローチ（`predictions.feature_contributions`のイン崩れ注意度・的中実績等から、その日ならではの数字を拾う）を参考にする。「選手の調子」（直近成績の好調・不調）を扱う場合は`racer_aggregated_stats`等の実データで裏付けを取る。
 
-## 2. ネタ本文（topic_text）の作成
+## 2. ネタ本文（topic_text）の作成・型（カテゴリ）の分類
 
-1〜2文。例:
+1〜2文で本文を作る。例:
 
 > 直近の勝率が急上昇している選手を、実データランキングで紹介
 
 - 「競艇」表記禁止、射幸心を煽らない
 - 承認レス運用のため、**数値の裏付けが弱い・解釈が分かれる題材は選ばない**。明確に説明できる実データのみ扱う
 
+**同時に、扱う題材が`sns_topic_categories`のどの型に該当するかを分類する**（2026-09-03更新、型ごとのチャネル可否はコードでなくデータで管理する方式に変更した）。`daily-result`ソースに対応する既知の型（`category_key`）は以下の通り:
+
+| 題材 | category_key |
+|---|---|
+| 選手の調子（全国勝率の急上昇・急下降ランキング） | `racer-condition` |
+| モーター調子ランキング | `motor-condition` |
+| イン崩れ注意度 | `volatility-index` |
+| 選手×艇番回収率型 | `payout-rate` |
+| 出目分布型 | `outcome-distribution` |
+
+**上記のいずれにも該当しない新しい題材の場合**、`sns_topic_categories`に新しい行が無いため、その日は保守的に`volatility-index`等の既存の近い型として扱うか、提案を見送る（新しい型を独自に作らない。型の新設はsns-hub「ネタ型設定」画面からのユーザー操作に委ねる）。
+
 ## 3. チャネル判定
 
-`scripts/lib/contentChannels/channelMatrix.js`の`getChannelsForTopic("daily-result")`を呼び、対象プラットフォーム一覧を取得する（現状`["blog", "note", "x", "youtube"]`、TikTokは既定で対象外）。
-
-**TikTok可否の個別ネタ判定（2026-09-03更新）**: `daily-result`ソースは題材によって性質が異なるため、以下の基準で判定する。
-
-- **選手の調子（全国勝率の急上昇・急下降ランキング）**: `getChannelsForTopic("daily-result", { isGamblingRelevant: false })`を呼びTikTokも含める。実際にTikTokへ投稿し再生されている実績で安全と判断済み（2026-09-03、ユーザー確認）。ただしTikTok側の「おすすめ対象外」判定（削除を伴わない配信制限）が付くリスクは許容する前提——**削除・アカウント違反に至らない限りは許容**という運用方針であり、「制限なしを保証する」という意味ではない
-- **イン崩れ指数・的中検証等、勝敗確率・回収率に直結する統計**: 既定（除外）のまま。個別に安全と確信できない限り`isGamblingRelevant`は渡さない
-- 上記以外の新しい題材を扱う場合は、`docs/operation/sns-video-producer-prompt.md`絶対厳守13の判断基準（「この数字・情報は、視聴者が今日の賭け目を選ぶ判断材料に直結するか？」）で都度判断し、Yesなら除外のままにする
+`getEnabledChannelsForCategory(categoryKey)`（`scripts/lib/snsTopics.js`）を、2.で分類したcategory_keyで呼び、有効なプラットフォーム一覧を取得する。**チャネル可否は`sns_topic_categories`/`sns_topic_category_channels`テーブルにデータとして持っており、sns-hub管理画面「ネタ型設定」でユーザーが随時変更する**（型を新設・調整する際はコード変更でなくこのテーブルへの行追加/更新で対応する）。TikTokが「制限された投稿」（削除を伴わない配信制限）になっても、そのこと自体は許容する運用方針——ガイドライン違反（削除・アカウント制限）を受けた場合のみ、ユーザーが管理画面でOFFに切り替える。
 
 **除外したチャネルもsns_topic_targets行自体は作られる**（4.参照）。人間がsns-hub「ネタ承認」画面のチャネルトグルで個別にpendingへ変更できる（ただし`daily-auto`型は`requires_topic_approval=false`のため、承認待ちには出ず進捗マトリクスにのみ表示される）。
 

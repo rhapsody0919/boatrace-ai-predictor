@@ -1407,3 +1407,98 @@
 .topic-progress-matrix-generated-mark {
   font-weight: 700;
 }
+
+.topic-category-settings-hint {
+  font-size: 0.85rem;
+  color: var(--color-gray-500);
+  margin: 0 0 1rem;
+}
+
+.topic-category-settings-scroll {
+  overflow-x: auto;
+}
+
+.topic-category-settings-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.topic-category-settings-table th,
+.topic-category-settings-table td {
+  border: 1px solid var(--color-gray-200);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.topic-category-settings-table th {
+  background: var(--color-gray-50);
+  color: var(--color-gray-600);
+  font-weight: 600;
+}
+
+.topic-category-row-inactive {
+  background: var(--color-gray-50);
+  color: var(--color-gray-400);
+}
+
+.topic-category-label-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.topic-category-label {
+  font-weight: 600;
+  color: var(--color-gray-800);
+}
+
+.topic-category-row-inactive .topic-category-label {
+  color: var(--color-gray-400);
+  text-decoration: line-through;
+}
+
+.topic-category-inactive-badge {
+  font-size: 0.7rem;
+  color: var(--color-error-text);
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+}
+
+.topic-category-notes {
+  cursor: help;
+}
+
+.topic-category-cadence-cell {
+  color: var(--color-gray-500);
+}
+
+.topic-category-channel-cell {
+  text-align: center;
+}
+
+.topic-category-channel-toggle {
+  border: none;
+  border-radius: 6px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.topic-category-channel-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.topic-category-channel-toggle.on {
+  background: var(--color-success);
+  color: white;
+}
+
+.topic-category-channel-toggle.off {
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
+}

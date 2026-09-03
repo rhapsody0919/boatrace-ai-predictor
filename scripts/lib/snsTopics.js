@@ -19,6 +19,8 @@ const CONTENT_TYPES_TABLE = "sns_content_types";
 const TARGET_ACCOUNTS_TABLE = "sns_target_accounts";
 const TOPICS_TABLE = "sns_topics";
 const TOPIC_TARGETS_TABLE = "sns_topic_targets";
+const TOPIC_CATEGORIES_TABLE = "sns_topic_categories";
+const TOPIC_CATEGORY_CHANNELS_TABLE = "sns_topic_category_channels";
 
 function assertSupabaseEnabled() {
   if (!isSupabaseEnabled()) {
@@ -52,6 +54,87 @@ export async function getContentTypeByKey(typeKey) {
   if (error) {
     throw new Error(
       `${CONTENT_TYPES_TABLE}取得エラー(${typeKey}): ${error.message}`,
+    );
+  }
+  return data;
+}
+
+/**
+ * ネタの型（カテゴリ）一覧をチャネル設定つきで取得する（sns-hub「ネタ型設定」画面用）。
+ * @param {object} [options]
+ * @param {boolean} [options.activeOnly] - trueの場合、廃止済み（active=false）の型を除外する
+ */
+export async function getTopicCategories({ activeOnly = false } = {}) {
+  assertSupabaseEnabled();
+  let query = supabase
+    .from(TOPIC_CATEGORIES_TABLE)
+    .select(
+      `*, ${CONTENT_TYPES_TABLE}(type_key, label, cadence), ${TOPIC_CATEGORY_CHANNELS_TABLE}(id, platform, enabled)`,
+    )
+    .order("created_at");
+  if (activeOnly) {
+    query = query.eq("active", true);
+  }
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(`${TOPIC_CATEGORIES_TABLE}取得エラー: ${error.message}`);
+  }
+  return data || [];
+}
+
+/**
+ * 指定した型（カテゴリ）で有効なチャネル（platform）一覧を取得する。
+ * 提案Routineが「このネタはどのチャネルに配るか」を判断する入口として使う
+ * （2026-09-03新設、以前のchannelMatrix.js + isGamblingRelevantフラグに代わる
+ * データ駆動の仕組み。型の追加・チャネル可否の変更はsns-hub管理画面から行い、
+ * コード・複数ドキュメントの同時修正を不要にする）。
+ * @param {string} categoryKey - 例: 'racer-condition'
+ * @returns {Promise<string[]>} enabled=trueのplatform名の配列
+ */
+export async function getEnabledChannelsForCategory(categoryKey) {
+  assertSupabaseEnabled();
+  const { data: category, error: categoryError } = await supabase
+    .from(TOPIC_CATEGORIES_TABLE)
+    .select(`*, ${TOPIC_CATEGORY_CHANNELS_TABLE}(platform, enabled)`)
+    .eq("category_key", categoryKey)
+    .maybeSingle();
+  if (categoryError) {
+    throw new Error(
+      `${TOPIC_CATEGORIES_TABLE}取得エラー(${categoryKey}): ${categoryError.message}`,
+    );
+  }
+  if (!category) {
+    throw new Error(
+      `未知のネタの型 "${categoryKey}" です。sns_topic_categoriesに登録するか、既存の型から選んでください`,
+    );
+  }
+  if (!category.active) {
+    throw new Error(
+      `ネタの型 "${categoryKey}"（${category.label}）は廃止済み（active=false）です。使用禁止: ${category.notes || "理由未記録"}`,
+    );
+  }
+  return (category[TOPIC_CATEGORY_CHANNELS_TABLE] || [])
+    .filter((c) => c.enabled)
+    .map((c) => c.platform);
+}
+
+/** 型×チャネルのON/OFFを更新する（sns-hub管理画面用） */
+export async function updateTopicCategoryChannel(
+  categoryId,
+  platform,
+  enabled,
+) {
+  assertSupabaseEnabled();
+  const { data, error } = await supabase
+    .from(TOPIC_CATEGORY_CHANNELS_TABLE)
+    .update({ enabled, updated_at: new Date().toISOString() })
+    .eq("category_id", categoryId)
+    .eq("platform", platform)
+    .select()
+    .single();
+  if (error) {
+    throw new Error(
+      `${TOPIC_CATEGORY_CHANNELS_TABLE}更新エラー(category=${categoryId}, platform=${platform}): ${error.message}`,
     );
   }
   return data;

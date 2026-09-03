@@ -28,6 +28,8 @@ import {
   approveTopic,
   rejectTopic,
   updateTopicTargetLabel,
+  getTopicCategories,
+  updateTopicCategoryChannel,
 } from "../../services/snsHubService";
 import {
   canShareVideo,
@@ -134,6 +136,7 @@ const STATUS_FILTERS = [
 const NON_PLATFORM_TABS = [
   { id: "insights", label: "戦略メモ" },
   { id: "catalog", label: "フォーマットカタログ" },
+  { id: "topic-categories", label: "ネタ型設定" },
 ];
 
 const TABS = [...PLATFORM_TABS, ...NON_PLATFORM_TABS];
@@ -175,6 +178,7 @@ function SnsHubAdmin() {
   const [insights, setInsights] = useState([]);
   const [templateVariants, setTemplateVariants] = useState([]);
   const [topics, setTopics] = useState([]);
+  const [topicCategories, setTopicCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [generating, setGenerating] = useState(null); // null | 'daily' | 'evergreen'
@@ -278,6 +282,7 @@ function SnsHubAdmin() {
         insights: true,
         templateVariants: true,
         topics: true,
+        topicCategories: true,
       },
     } = {}) => {
       if (!silent) {
@@ -293,6 +298,9 @@ function SnsHubAdmin() {
             ? getTemplateVariants().then(setTemplateVariants)
             : null,
           fetchScope.topics ? getTopics().then(setTopics) : null,
+          fetchScope.topicCategories
+            ? getTopicCategories().then(setTopicCategories)
+            : null,
         ]);
       } catch (err) {
         console.error("下書き取得エラー:", err);
@@ -538,7 +546,9 @@ function SnsHubAdmin() {
 
   const isInsightsTab = activeTab === "insights";
   const isCatalogTab = activeTab === "catalog";
-  const isPlatformTab = !isInsightsTab && !isCatalogTab;
+  const isTopicCategoriesTab = activeTab === "topic-categories";
+  const isPlatformTab =
+    !isInsightsTab && !isCatalogTab && !isTopicCategoriesTab;
   const activeStatusDef = STATUS_FILTERS.find(
     (f) => f.id === activeStatusFilter,
   );
@@ -582,14 +592,16 @@ function SnsHubAdmin() {
                 ? insights.filter((i) => i.status === "proposed").length
                 : tab.id === "catalog"
                   ? templateVariants.length
-                  : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
-                    // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
-                    // 対応が必要な件数という意味が薄れるため）
-                    drafts.filter(
-                      (d) =>
-                        d.platform === tab.id &&
-                        STATUS_FILTERS[0].statuses.includes(d.status),
-                    ).length;
+                  : tab.id === "topic-categories"
+                    ? topicCategories.length
+                    : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
+                      // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
+                      // 対応が必要な件数という意味が薄れるため）
+                      drafts.filter(
+                        (d) =>
+                          d.platform === tab.id &&
+                          STATUS_FILTERS[0].statuses.includes(d.status),
+                      ).length;
             return (
               <button
                 key={tab.id}
@@ -791,6 +803,17 @@ function SnsHubAdmin() {
       <div className="tab-content">
         {isCatalogTab ? (
           <CatalogTab templateVariants={templateVariants} />
+        ) : isTopicCategoriesTab ? (
+          <TopicCategorySettingsTab
+            categories={topicCategories}
+            onToggleChannel={(categoryId, platform, enabled) =>
+              handleAction(
+                updateTopicCategoryChannel,
+                [categoryId, platform, enabled],
+                { topicCategories: true },
+              )
+            }
+          />
         ) : isInsightsTab ? (
           <InsightTab
             insights={insights}
@@ -881,6 +904,105 @@ function CatalogTab({ templateVariants }) {
         <h2 className="catalog-section-title">デザイン・ペルソナ方針</h2>
         <DocReferenceSection />
       </section>
+    </div>
+  );
+}
+
+// PLATFORM_TABSと同じ表示順・ラベルを使う（sns_target_accounts.platformの語彙と一致）
+const CATEGORY_CHANNEL_PLATFORMS = ["blog", "note", "x", "tiktok", "youtube"];
+const CATEGORY_CHANNEL_LABELS = {
+  blog: "Blog",
+  note: "Note",
+  x: "X",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+};
+
+// ネタの型（会場特性・選手調子・イン崩れ注意度等）×チャネルのON/OFF設定画面
+// （2026-09-03新設）。TikTokはガイドライン上センシティブなため、型ごとに
+// チャネル可否を人間が直接編集できるようにする（channelMatrix.js・各Routineの
+// プロンプト文言に散在していた判断をデータに寄せる）
+function TopicCategorySettingsTab({ categories, onToggleChannel }) {
+  if (categories.length === 0) {
+    return (
+      <div className="empty-state">
+        <p>登録されているネタの型はありません。</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="topic-category-settings">
+      <p className="topic-category-settings-hint">
+        ネタの型ごとに、各チャネルへの生成対象可否を設定できます。特にTikTokはガイドライン上センシティブなため、実績を見ながら個別に調整してください。廃止済みの型は行がグレーアウトします。
+      </p>
+      <div className="topic-category-settings-scroll">
+        <table className="topic-category-settings-table">
+          <thead>
+            <tr>
+              <th>型</th>
+              <th>頻度区分</th>
+              {CATEGORY_CHANNEL_PLATFORMS.map((platform) => (
+                <th key={platform}>{CATEGORY_CHANNEL_LABELS[platform]}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map((category) => (
+              <tr
+                key={category.id}
+                className={
+                  category.active
+                    ? "topic-category-row"
+                    : "topic-category-row topic-category-row-inactive"
+                }
+              >
+                <td className="topic-category-label-cell">
+                  <span className="topic-category-label">{category.label}</span>
+                  {!category.active && (
+                    <span className="topic-category-inactive-badge">
+                      廃止済み
+                    </span>
+                  )}
+                  {category.notes && (
+                    <span
+                      className="topic-category-notes"
+                      title={category.notes}
+                    >
+                      ℹ️
+                    </span>
+                  )}
+                </td>
+                <td className="topic-category-cadence-cell">
+                  {category.sns_content_types?.label || "未接続"}
+                </td>
+                {CATEGORY_CHANNEL_PLATFORMS.map((platform) => {
+                  const channel = (
+                    category.sns_topic_category_channels || []
+                  ).find((c) => c.platform === platform);
+                  const enabled = channel?.enabled ?? false;
+                  return (
+                    <td key={platform} className="topic-category-channel-cell">
+                      <button
+                        type="button"
+                        className={`topic-category-channel-toggle${
+                          enabled ? " on" : " off"
+                        }`}
+                        disabled={!category.active || !channel}
+                        onClick={() =>
+                          onToggleChannel(category.id, platform, !enabled)
+                        }
+                      >
+                        {enabled ? "ON" : "OFF"}
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
