@@ -1214,7 +1214,7 @@
 
 .ch-chip-ready {
   border-color: var(--color-success);
-  color: var(--color-success);
+  color: var(--color-success-text, var(--color-success));
 }
 
 .ch-chip-wait {
@@ -1228,10 +1228,11 @@
 }
 
 .ch-chip-fire {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 700;
   margin-left: 0.1rem;
-  padding: 0.05rem 0.4rem;
+  padding: 0.3rem 0.55rem;
+  min-height: 24px;
   border: none;
   border-radius: 999px;
   background: var(--text-primary);
@@ -1247,7 +1248,7 @@
 .topic-card {
   border: 1px solid var(--color-gray-200);
   border-radius: 12px;
-  background: white;
+  background: var(--surface-card);
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
