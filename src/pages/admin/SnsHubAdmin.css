@@ -1555,6 +1555,31 @@
   color: var(--color-gray-600);
 }
 
+/* 承認済みネタの却下（承認取り消し）。未承認ネタの単純却下（.topic-reject-btn、
+   実害が小さい）と視覚的に区別する（2026-09-04、UI/UXレビュー指摘: 両者が
+   同一スタイルで誤操作を誘発しやすかった） */
+.topic-withdraw-btn {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--color-warning);
+  background: white;
+  color: var(--color-warning);
+}
+
+.topic-reject-warning {
+  font-size: 0.8rem;
+  color: var(--color-warning);
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-warning);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0 0.5rem;
+}
+
 .topic-category-settings-hint {
   font-size: 0.85rem;
   color: var(--color-gray-500);

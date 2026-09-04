@@ -538,13 +538,11 @@ function SnsHubAdmin() {
 
       <div className="tab-content">
         {isCatalogTab ? (
-          <CatalogTab
-            templateVariants={templateVariants}
-            revisions={revisions}
-          />
+          <CatalogTab templateVariants={templateVariants} />
         ) : isInsightsTab ? (
           <InsightTab
             insights={insights}
+            revisions={revisions}
             onReject={(insightId, reason) =>
               handleAction(rejectInsight, [insightId, reason], {
                 drafts: true,
@@ -686,7 +684,7 @@ function RecentRevisionsSection({ revisions }) {
   );
 }
 
-function CatalogTab({ templateVariants, revisions }) {
+function CatalogTab({ templateVariants }) {
   return (
     <div className="catalog-tab">
       <section className="catalog-section">
@@ -694,14 +692,12 @@ function CatalogTab({ templateVariants, revisions }) {
         <TemplateVariantList templateVariants={templateVariants} />
       </section>
       <section className="catalog-section">
-        <h2 className="catalog-section-title">デザイン・ペルソナ方針</h2>
-        <DocReferenceSection />
+        <h2 className="catalog-section-title">生成ルール</h2>
+        <RulesReferenceSection />
       </section>
       <section className="catalog-section">
-        <h2 className="catalog-section-title">
-          📝 過去の修正フィードバック（直近30日）
-        </h2>
-        <RecentRevisionsSection revisions={revisions} />
+        <h2 className="catalog-section-title">デザイン・ペルソナ方針</h2>
+        <DocReferenceSection />
       </section>
     </div>
   );
@@ -859,7 +855,12 @@ function TemplateVariantList({ templateVariants }) {
   );
 }
 
-function DocReferenceSection() {
+// 全体ルール（Tier1）・チャネル別ルール（Tier2）へのリンク集。デザイン・
+// ペルソナ方針（DocReferenceSection）とは意味が異なる（技術ルール vs
+// 制作方針）ため別コンポーネントに分離した（2026-09-04、UI/UXレビュー指摘:
+// 「デザイン・ペルソナ方針」の見出し下に技術ルールを入れると見出しと
+// 中身が一致しない）
+function RulesReferenceSection() {
   return (
     <div className="doc-reference-section">
       <div className="doc-reference-group">
@@ -901,7 +902,13 @@ function DocReferenceSection() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
 
+function DocReferenceSection() {
+  return (
+    <div className="doc-reference-section">
       <div className="doc-reference-group">
         <h3 className="doc-reference-group-title">フォーマットライブラリ</h3>
         {FORMAT_LIBRARY.map((f) => (
@@ -967,20 +974,22 @@ function DocReferenceSection() {
 // DBスキーマ・API変更はせず、既存のplatformカラム（nullが全体を表す既存規約、
 // getActiveInsightsのwildcard判定と同じ）でUI表示だけをグルーピングする
 // 軽量案を採用した）
-function InsightScopeGroup({ title, items, emptyMessage, renderItem }) {
+// items.length===0の場合はグループごと非表示にする（2026-09-04、UI/UX
+// レビュー指摘: 全体戦略insightが実データ上0件のため、常時「〜はありません」
+// という空状態文だけが表示され続けノイズになっていた。0件でも枠組み自体は
+// 残したいという意図は「反映待ちの戦略メモはありません」等の上位の空状態
+// （InsightTab側、proposed/history全体が0件の場合）で既にカバーされている）
+function InsightScopeGroup({ title, items, renderItem }) {
+  if (items.length === 0) return null;
   return (
     <div className="insight-scope-group">
       <h3 className="insight-scope-title">{title}</h3>
-      {items.length === 0 ? (
-        <p className="insight-scope-empty">{emptyMessage}</p>
-      ) : (
-        <div className="insight-list">{items.map(renderItem)}</div>
-      )}
+      <div className="insight-list">{items.map(renderItem)}</div>
     </div>
   );
 }
 
-function InsightTab({ insights, onReject }) {
+function InsightTab({ insights, onReject, revisions }) {
   const proposed = insights.filter((i) => i.status === "proposed");
   const history = insights
     .filter((i) => i.status === "active" || i.status === "retired")
@@ -999,7 +1008,6 @@ function InsightTab({ insights, onReject }) {
             <InsightScopeGroup
               title="🌐 全体戦略"
               items={proposed.filter((i) => !i.platform)}
-              emptyMessage="全体戦略の反映待ちはありません。"
               renderItem={(insight) => (
                 <InsightCard
                   key={insight.id}
@@ -1011,7 +1019,6 @@ function InsightTab({ insights, onReject }) {
             <InsightScopeGroup
               title="📡 チャネル別戦略"
               items={proposed.filter((i) => i.platform)}
-              emptyMessage="チャネル別戦略の反映待ちはありません。"
               renderItem={(insight) => (
                 <InsightCard
                   key={insight.id}
@@ -1035,7 +1042,6 @@ function InsightTab({ insights, onReject }) {
             <InsightScopeGroup
               title="🌐 全体戦略"
               items={history.filter((i) => !i.platform)}
-              emptyMessage="全体戦略の履歴はありません。"
               renderItem={(insight) => (
                 <InsightHistoryEntry
                   key={insight.id}
@@ -1047,7 +1053,6 @@ function InsightTab({ insights, onReject }) {
             <InsightScopeGroup
               title="📡 チャネル別戦略"
               items={history.filter((i) => i.platform)}
-              emptyMessage="チャネル別戦略の履歴はありません。"
               renderItem={(insight) => (
                 <InsightHistoryEntry
                   key={insight.id}
@@ -1058,6 +1063,13 @@ function InsightTab({ insights, onReject }) {
             />
           </>
         )}
+      </section>
+
+      <section className="insight-section">
+        <h2 className="insight-section-title">
+          📝 過去の修正フィードバック（直近30日）
+        </h2>
+        <RecentRevisionsSection revisions={revisions} />
       </section>
     </div>
   );
@@ -2337,12 +2349,20 @@ function TopicFanoutCard({
     approvers?.[0]?.id || null,
   );
   const [showRejectPanel, setShowRejectPanel] = useState(false);
+  // claimed（生成中）・generated（生成済み）のターゲットが既にある場合、
+  // reject.jsのコメント通り却下してもバックグラウンドの生成は止まらない。
+  // この既知の制約をUIで初めて明示する（2026-09-04、UI/UXレビュー指摘:
+  // 後戻りしにくい操作なのに副作用が画面のどこにも表示されていなかった）
+  const targets = topic.sns_topic_targets || [];
+  const hasInFlightTarget = targets.some(
+    (t) => t.status === "claimed" || t.status === "generated",
+  );
 
   return (
     <div className="mini-card">
       <p className="mini-card-topic">{topic.topic_text}</p>
       <div className="chip-row">
-        {(topic.sns_topic_targets || []).map((target) => (
+        {targets.map((target) => (
           <TargetChip
             key={target.id}
             target={target}
@@ -2354,16 +2374,23 @@ function TopicFanoutCard({
       </div>
       {onReject &&
         (showRejectPanel ? (
-          <RevisionPanel
-            mode="topic-reject"
-            reasons={TOPIC_REJECTION_REASONS}
-            onCancel={() => setShowRejectPanel(false)}
-            onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
-              const reason = buildTopicRejectionReason(reasonCodes, freeText);
-              onReject(topic.id, selectedApproverId, reason, saveAsInsight);
-              setShowRejectPanel(false);
-            }}
-          />
+          <>
+            <p className="topic-reject-warning">
+              {hasInFlightTarget
+                ? "⚠️ 生成中/生成済みのチャネルがあります。却下してもその生成は止まりません。生成済みの下書きは各プラットフォームタブで個別にarchiveしてください。"
+                : "却下すると承認状態が取り消されます。まだ生成されていないチャネルは以後生成されなくなります。"}
+            </p>
+            <RevisionPanel
+              mode="topic-reject"
+              reasons={TOPIC_REJECTION_REASONS}
+              onCancel={() => setShowRejectPanel(false)}
+              onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
+                const reason = buildTopicRejectionReason(reasonCodes, freeText);
+                onReject(topic.id, selectedApproverId, reason, saveAsInsight);
+                setShowRejectPanel(false);
+              }}
+            />
+          </>
         ) : (
           <div className="mini-card-actions">
             <ApproverChips
@@ -2373,7 +2400,7 @@ function TopicFanoutCard({
             />
             <button
               type="button"
-              className="topic-reject-btn"
+              className="topic-withdraw-btn"
               onClick={() => setShowRejectPanel(true)}
             >
               却下（承認取り消し）
