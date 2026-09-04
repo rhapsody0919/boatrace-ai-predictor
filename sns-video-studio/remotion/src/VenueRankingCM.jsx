@@ -10,6 +10,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * 会場攻略・データ一覧型（第1弾: イン逃げ率ランキング）— 龍神レーダー TikTok/X Shorts
@@ -1859,6 +1860,380 @@ export function BoatRankingCM_TechniqueConsistency() {
         />
       </Sequence>
       <Audio src={staticFile("soundtrack-hitcheck.wav")} />
+    </AbsoluteFill>
+  );
+}
+
+// --- Scene: 少数項目の比較フック（2026-09-04新設） ---
+// SceneHook（24会場ランキング前提の背景バー、gap7pxの細い棒×多数を想定）を
+// 3〜4項目の少数比較にそのまま流用すると、棒が画面中央に小さく固まり左右に
+// 不自然な余白が生じる（セルフレビュー「余白が不自然に大きくなっていないか」で
+// Fail）。加えて「1位」の表示はSceneHookでは全国順位を意味する設計のため、
+// 24会場中では上位ではない会場を目的別の少数比較で見せる場合、SceneHookの
+// 全国チャートの流用は「全国1位」という誤解を招くリスクがある。この2点から
+// 専用のコンパクト比較フックシーンを新設した。
+function SceneHookCompare({
+  headline,
+  categoryTag,
+  items,
+  hookQuestion,
+  subCaption,
+  accentColor = GOLD,
+}) {
+  const frame = useCurrentFrame();
+  const kb = interpolate(frame, [0, 75], [1, 1.04], {
+    extrapolateRight: "clamp",
+  });
+  const maxRate = Math.max(...items.map((it) => it.rate)) * 1.1;
+  const barWidth = 190;
+  const gap = 56;
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK, transform: `scale(${kb})` }}>
+      <Pop delay={-10} style={{ position: "absolute", top: 44, left: 44 }}>
+        <Logo size={38} />
+      </Pop>
+
+      <Pop
+        delay={-10}
+        style={{ position: "absolute", top: 130, left: 40, right: 40 }}
+      >
+        <div
+          style={{
+            color: accentColor,
+            fontSize: 66,
+            fontWeight: 900,
+            fontFamily: FONT,
+            textAlign: "center",
+            lineHeight: 1.15,
+            textShadow: `0 0 40px ${accentColor}88`,
+          }}
+        >
+          {headline}
+        </div>
+      </Pop>
+      <Pop
+        delay={-10}
+        style={{ position: "absolute", top: 258, left: 40, right: 40 }}
+      >
+        <div
+          style={{
+            color: "rgba(248,250,252,0.55)",
+            fontSize: 26,
+            fontWeight: 700,
+            fontFamily: FONT,
+            textAlign: "center",
+          }}
+        >
+          {categoryTag}
+        </div>
+      </Pop>
+
+      {/* 比較バー: 少数項目（3〜4個）を実際の割合に応じた高さで幅広く見せる。
+          SceneHookの24会場チャートと違い項目数が少ないため、棒を太く・間隔を
+          広く取って画面幅を自然に使う */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 260,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-end",
+          gap,
+        }}
+      >
+        {items.map((it) => {
+          const h = interpolate(it.rate, [0, maxRate], [120, 820]);
+          return (
+            // delay<=0固定（brand-kit.md「frame=0で主要テキスト・マスコットが
+            // 完全に見えているか」参照）。Hookシーンはframe=0がそのままX/TikTokの
+            // プレビュー静止画になるため、正のdelayで段階的に表示すると
+            // カバー画像だけ棒グラフが空白になる不具合を招く。SceneHook本体も
+            // 同じ理由で全要素delay={-10}に統一している
+            <SlideIn
+              key={it.venue}
+              delay={-14}
+              style={{
+                width: barWidth,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  color: it.emphasis ? accentColor : "rgba(248,250,252,0.75)",
+                  fontSize: it.emphasis ? 38 : 30,
+                  fontWeight: 900,
+                  fontFamily: FONT,
+                  marginBottom: 10,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {it.rate}%
+              </div>
+              <div
+                style={{
+                  width: "100%",
+                  height: h,
+                  background: it.emphasis ? accentColor : "rgba(255,255,255,0.16)",
+                  borderRadius: "10px 10px 0 0",
+                }}
+              />
+              <div
+                style={{
+                  marginTop: 14,
+                  color: it.emphasis ? WHITE : "rgba(248,250,252,0.7)",
+                  fontSize: 26,
+                  fontWeight: 800,
+                  fontFamily: FONT,
+                  textAlign: "center",
+                  lineHeight: 1.3,
+                }}
+              >
+                {it.venue}
+              </div>
+            </SlideIn>
+          );
+        })}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: accentColor,
+          padding: "40px 60px 84px",
+        }}
+      >
+        <Pop delay={-10}>
+          <div
+            style={{
+              color: NAVY_DARK,
+              fontSize: 48,
+              fontWeight: 900,
+              fontFamily: FONT,
+              textAlign: "center",
+              lineHeight: 1.3,
+              marginBottom: 10,
+            }}
+          >
+            {hookQuestion}
+          </div>
+        </Pop>
+        <Pop delay={-10}>
+          <div
+            style={{
+              color: `${NAVY_DARK}cc`,
+              fontSize: 24,
+              fontWeight: 700,
+              fontFamily: FONT,
+              textAlign: "center",
+            }}
+          >
+            {subCaption}
+          </div>
+        </Pop>
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+// --- Scene: 因果説明（2026-09-04新設） ---
+// 「なぜ差が出るか」を短い箇条書きで見せる、会場攻略・データ一覧型の新シーン。
+// 却下履歴（「会場ごとのモーターの実力なんて意味のない比較」「当たり前の内容なので
+// 別の台本に」）を踏まえ、単純な数値ランキングで終わらせず、因果の説明を主役に
+// 据えるために追加した。可変長テキストはbrand-kit.md「技術ルール」に従い
+// fitHeadline()でサイズ・折り返しを決める（新規テキストブロックのため必須）。
+function SceneExplain({ heading, bullets, footer }) {
+  const headlineMaxWidth = 1080 - 70 * 2;
+  const { fontSize: headlineFontSize, lines: headlineLines } = fitHeadline(
+    heading,
+    {
+      maxWidth: headlineMaxWidth,
+      maxLines: 2,
+      fontFamily: FONT,
+      fontWeight: 900,
+      maxFontSize: 44,
+      minFontSize: 28,
+    },
+  );
+  return (
+    <AbsoluteFill
+      style={{
+        background: NAVY_DARK,
+        padding: "0 70px",
+        justifyContent: "center",
+      }}
+    >
+      <Pop delay={2} style={{ marginBottom: 40 }}>
+        <div
+          style={{
+            color: GOLD,
+            fontSize: headlineFontSize,
+            fontWeight: 900,
+            fontFamily: FONT,
+            lineHeight: 1.3,
+          }}
+        >
+          {headlineLines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+      </Pop>
+      {bullets.map((b, i) => {
+        const bulletMaxWidth = headlineMaxWidth - 14 - 16;
+        const { fontSize: bulletFontSize, lines: bulletLines } = fitHeadline(
+          b,
+          {
+            maxWidth: bulletMaxWidth,
+            maxLines: 2,
+            fontFamily: FONT,
+            fontWeight: 700,
+            maxFontSize: 32,
+            minFontSize: 22,
+          },
+        );
+        return (
+          <SlideIn
+            key={i}
+            delay={14 + i * 14}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 16,
+              marginBottom: 28,
+            }}
+          >
+            <div
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: 7,
+                background: ACCENT,
+                marginTop: 12,
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                color: WHITE,
+                fontSize: bulletFontSize,
+                fontWeight: 700,
+                fontFamily: FONT,
+                lineHeight: 1.4,
+              }}
+            >
+              {bulletLines.map((line, j) => (
+                <div key={j}>{line}</div>
+              ))}
+            </div>
+          </SlideIn>
+        );
+      })}
+      {footer && (
+        <Pop delay={14 + bullets.length * 14 + 10} style={{ marginTop: 20 }}>
+          <div
+            style={{
+              color: "rgba(248,250,252,0.55)",
+              fontSize: 22,
+              fontFamily: FONT,
+            }}
+          >
+            {footer}
+          </div>
+        </Pop>
+      )}
+    </AbsoluteFill>
+  );
+}
+
+// --- 淡水vs汽水 イン逃げ率 因果解説型（2026-09-04、Xチャネル別パイプライン
+// sns-topic-gate体系 初回実行、venue-feature型） ---
+// 過去90日（2026-06-06〜2026-09-04）・race_results×racesの実測。
+// course_1===rank1 かつ winning_technique==='逃げ' の割合で算出。
+// 桐生(淡水,573レース)=51.7%、浜名湖(汽水,624レース)=49.5%、江戸川(汽水,444レース)=41.8%
+// （検証スクリプトで再計算し、sns_topics.topic_textの数値と一致確認済み）。
+// 桐生は24会場全体では15位（1位ではない）が、このネタは「24会場ランキングで
+// 何位か」ではなく「汐の影響を受ける代表的な汽水2会場と比べて、なぜ差が出るか」
+// という因果比較が主眼のため、標準のVenueRankingTemplate（24会場TOP5/WORST5型、
+// SceneHookの「1位」表記は文字通り全国1位を指す設計）は使わず、この3項目に
+// スコープした個別Sequence構成にした。フックシーンも24会場の背景バーを想定した
+// 既存SceneHookを流用すると項目数が少なすぎて棒が中央に固まり不自然な余白が
+// 生じる（かつ「1位」表記が全国順位の誤解を招く）ため、専用のSceneHookCompare
+// （3〜4項目向けの幅広棒グラフ、「1位」表記なし）を新設して使用する。
+// 直近の却下履歴（「会場ごとのモーターの実力なんて意味のない比較なので今後一切
+// 生成しないように」「当たり前の内容なので別の台本に」）を踏まえ、単純な数値の
+// 羅列で終わらせず、SceneExplainで「なぜ差が出るか」の因果説明を主役に据えた。
+const FRESH_BRACKISH_ITEMS = [
+  { venue: "桐生（淡水）", rate: 51.7, emphasis: true },
+  { venue: "浜名湖（汽水）", rate: 49.5 },
+  { venue: "江戸川（汽水）", rate: 41.8 },
+];
+
+const FRESH_BRACKISH_BARS = [
+  {
+    venue: "桐生（淡水）",
+    value: "51.7%",
+    technique: "水面が安定・573レース",
+    ratio: 100,
+    emphasis: true,
+  },
+  {
+    venue: "浜名湖（汽水）",
+    value: "49.5%",
+    technique: "遠州灘の潮の影響・624レース",
+    ratio: 96,
+  },
+  {
+    venue: "江戸川（汽水）",
+    value: "41.8%",
+    technique: "利根川水系の潮の影響・444レース",
+    ratio: 81,
+  },
+];
+
+export function VenueRankingCM_FreshBrackish() {
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK }}>
+      <Sequence from={0} durationInFrames={75}>
+        <SceneHookCompare
+          headline="淡水コースの逃げやすさ"
+          categoryTag="水質差データ・イン逃げ率"
+          items={FRESH_BRACKISH_ITEMS}
+          hookQuestion="汐のある会場と、こんなに差が出る"
+          subCaption="淡水・桐生 vs 汽水2会場・過去90日573レースで検証"
+          accentColor={GOLD}
+        />
+      </Sequence>
+      <Sequence from={75} durationInFrames={150}>
+        <SceneVenueBars
+          heading={"🌊 汐の影響が、\nコース取りを乱す"}
+          data={FRESH_BRACKISH_BARS}
+          note="汽水2会場の平均は45.6%（桐生より6.1pt低い）"
+        />
+      </Sequence>
+      <Sequence from={225} durationInFrames={150}>
+        <SceneExplain
+          heading="なぜ汽水会場は逃げが決まりにくい？"
+          bullets={[
+            "汽水会場は潮の満ち引きで水位・流れが変化する",
+            "水面が不安定だと、インコースの選手も進路を保ちにくい",
+            "淡水の桐生は年間を通して水面が安定している",
+          ]}
+          footer="過去90日・race_resultsの実測データより"
+        />
+      </Sequence>
+      <Sequence from={375} durationInFrames={150}>
+        <SceneCTA
+          ctaLines={["会場ごとのイン逃げ率、", "無料で見れる"]}
+          subLine="あなたの応援会場は、淡水？汽水？"
+        />
+      </Sequence>
+      <Audio src={staticFile("soundtrack-hitcheck.wav")} loop />
     </AbsoluteFill>
   );
 }

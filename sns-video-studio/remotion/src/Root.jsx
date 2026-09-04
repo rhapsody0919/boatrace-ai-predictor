@@ -38,6 +38,7 @@ import {
   BoatRankingCM_TechniqueShare,
   BoatRankingCM_NarutoNigeWin,
   BoatRankingCM_TechniqueConsistency,
+  VenueRankingCM_FreshBrackish,
 } from "./VenueRankingCM.jsx";
 import { KimariteCM_B } from "./KimariteCM.jsx";
 import { LivePredictionCM_B } from "./LivePredictionCM2.jsx";
@@ -361,6 +362,14 @@ export function RemotionRoot() {
         id="VenueRankingCM-Top3Rate"
         component={VenueRankingCM_Top3Rate}
         durationInFrames={600}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="VenueRankingCM-FreshBrackish"
+        component={VenueRankingCM_FreshBrackish}
+        durationInFrames={525}
         fps={30}
         width={1080}
         height={1920}
