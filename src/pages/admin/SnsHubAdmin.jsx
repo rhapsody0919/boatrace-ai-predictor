@@ -29,6 +29,7 @@ import {
   updateTopicTargetLabel,
   getTopicCategories,
   updateTopicCategoryChannel,
+  triggerWeeklyProposer,
 } from "../../services/snsHubService";
 import {
   canShareVideo,
@@ -554,6 +555,10 @@ function SnsHubAdmin() {
             { topicCategories: true },
           )
         }
+        onReloadTopics={() =>
+          loadDrafts({ silent: true, fetch: { topics: true } })
+        }
+        showToast={showToast}
       />
 
       <div className="tab-navigation-row">
@@ -2181,6 +2186,8 @@ function TopicApprovalSection({
   onUpdateTargetLabel,
   topicCategories,
   onToggleCategoryChannel,
+  onReloadTopics,
+  showToast,
 }) {
   const proposedTopics = topics.filter((t) => t.status === "proposed");
   const [expanded, setExpanded] = useState(true);
@@ -2189,6 +2196,74 @@ function TopicApprovalSection({
   // 型ごとのチャネルON/OFFはネタ承認の前提となる設定であり、ネタ承認と同じ
   // セクション内から開閉するパネルに変更した（2026-09-04）
   const [showCategorySettings, setShowCategorySettings] = useState(false);
+
+  // 週次ネタ提案Routine（sns-topic-proposer-weekly）の手動起動。通常週次cron
+  // のみで動くRoutineを、承認済みストックが少ない・動作確認したい場面で
+  // 即時起動できるようにする（2026-09-04追加）。この状態はネタ承認セクション
+  // 自身に閉じているため、他の生成系ボタン（親コンポーネント側）と違い
+  // 親のstateには持ち上げない
+  const [weeklyProposerTriggering, setWeeklyProposerTriggering] =
+    useState(false);
+  const [weeklyProposerLocked, setWeeklyProposerLocked] = useState(false);
+  const [weeklyProposerSessionUrl, setWeeklyProposerSessionUrl] =
+    useState(null);
+  const [weeklyProposerFiredAt, setWeeklyProposerFiredAt] = useState(null);
+  const [weeklyProposerElapsedMinutes, setWeeklyProposerElapsedMinutes] =
+    useState(0);
+  const [weeklyProposerIdsAtFire, setWeeklyProposerIdsAtFire] = useState(null);
+
+  async function handleTriggerWeeklyProposer() {
+    setWeeklyProposerTriggering(true);
+    try {
+      const result = await triggerWeeklyProposer();
+      if (result?.routine?.fired === false) {
+        showToast(
+          `起動リクエストがRoutineに届いていません（${result.routine.reason}）。Vercel環境変数TOPIC_PROPOSER_WEEKLY_ROUTINE_FIRE_URL/_FIRE_TOKENの設定を確認してください`,
+          "error",
+        );
+      } else {
+        showToast(
+          result.routine.sessionUrl
+            ? "週次ネタ提案を起動しました。実行ログのリンクは下に表示されます"
+            : "週次ネタ提案を起動しました。数分後に更新ボタンで確認してください",
+          "success",
+        );
+        setWeeklyProposerLocked(true);
+        setWeeklyProposerSessionUrl(result.routine.sessionUrl || null);
+        setWeeklyProposerFiredAt(Date.now());
+        setWeeklyProposerElapsedMinutes(0);
+        setWeeklyProposerIdsAtFire(new Set(topics.map((t) => t.id)));
+      }
+    } catch (err) {
+      console.error("週次ネタ提案起動リクエストエラー:", err);
+      showToast(err.message || "起動リクエストに失敗しました", "error");
+    } finally {
+      setWeeklyProposerTriggering(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!weeklyProposerLocked || !weeklyProposerFiredAt) return;
+    const interval = setInterval(() => {
+      setWeeklyProposerElapsedMinutes(
+        Math.max(0, Math.round((Date.now() - weeklyProposerFiredAt) / 60000)),
+      );
+      onReloadTopics();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [weeklyProposerLocked, weeklyProposerFiredAt, onReloadTopics]);
+
+  useEffect(() => {
+    if (!weeklyProposerLocked || !weeklyProposerIdsAtFire) return;
+    const hasNewTopic = topics.some((t) => !weeklyProposerIdsAtFire.has(t.id));
+    if (hasNewTopic) {
+      showToast("✅ 新しいネタが登録されました", "success");
+      setWeeklyProposerLocked(false);
+      setWeeklyProposerSessionUrl(null);
+      setWeeklyProposerFiredAt(null);
+      setWeeklyProposerIdsAtFire(null);
+    }
+  }, [topics, weeklyProposerLocked, weeklyProposerIdsAtFire, showToast]);
 
   return (
     <div className="topic-approval-section">
@@ -2216,11 +2291,40 @@ function TopicApprovalSection({
         <button
           type="button"
           className="topic-approval-section-settings-btn"
+          disabled={weeklyProposerTriggering || weeklyProposerLocked}
+          onClick={handleTriggerWeeklyProposer}
+        >
+          {weeklyProposerTriggering
+            ? "⏳ リクエスト中..."
+            : "📅 週次ネタ提案を今すぐ実行"}
+        </button>
+        <button
+          type="button"
+          className="topic-approval-section-settings-btn"
           onClick={() => setShowCategorySettings((v) => !v)}
         >
           ⚙️ ネタ型設定
         </button>
       </div>
+
+      {weeklyProposerLocked && (
+        <div className="topic-approval-section-weekly-proposer-hint">
+          ⏳ 週次ネタ提案を実行中...（{weeklyProposerElapsedMinutes}
+          分経過）30秒おきに自動で確認します
+          {weeklyProposerSessionUrl && (
+            <>
+              {" ・ "}
+              <a
+                href={weeklyProposerSessionUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                実行ログを見る
+              </a>
+            </>
+          )}
+        </div>
+      )}
 
       {showCategorySettings && (
         <div className="topic-category-settings-panel">
