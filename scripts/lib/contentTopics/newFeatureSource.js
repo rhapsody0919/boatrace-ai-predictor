@@ -11,8 +11,6 @@
  *    を吸収したもの。成績・確率と無関係と選定済みの機能のみを対象にしているため
  *    `isGamblingRelevant: false`（TikTok展開可）を明示する。使用履歴は
  *    data/analysis/content-topics/new-feature-lifehack-history.json で管理する
- *
- * 詳細: docs/design/content-multi-channel-pipeline/plan.md
  */
 
 import { promises as fs } from "fs";

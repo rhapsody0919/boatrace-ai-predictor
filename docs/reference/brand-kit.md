@@ -101,7 +101,7 @@
 視覚素材（画像・動画）のルールは上記各節を参照。本文・構成のルールは以下に一元化されている。着手前にこのファイル（ビジュアル）と合わせて必ず確認する:
 
 - **ブログ本文の構成・文字数・FAQ・note/Xセット生成ルール**: `.claude/CLAUDE.md`フローA-3「新機能リリース時のブログ記事ルール」
-- **ネタ駆動パイプラインでの自動生成時の執筆手順・品質自己レビュー**: [`docs/operation/content-multi-channel-pipeline-prompt.md`](../operation/content-multi-channel-pipeline-prompt.md)
+- **ネタ駆動パイプラインでの自動生成時の執筆手順・品質自己レビュー**: チャネル別パイプライン各ドキュメント（[`docs/operation/sns-pipeline-blog.md`](../operation/sns-pipeline-blog.md)・[`sns-pipeline-note.md`](../operation/sns-pipeline-note.md)・[`sns-pipeline-x.md`](../operation/sns-pipeline-x.md)・[`sns-pipeline-tiktok.md`](../operation/sns-pipeline-tiktok.md)・[`sns-pipeline-youtube.md`](../operation/sns-pipeline-youtube.md)、2026-09-04時点。旧`content-multi-channel-pipeline-prompt.md`はsns-topic-gate体系への移行に伴い`docs/archive/`へ移動済み）
 - **公開前の品質チェック6項目**（数値整合性・現行仕様整合性・検索意図網羅性・用語表記・多言語一貫性・構造要件）: `.claude/CLAUDE.md`「ブログ記事の公開前品質チェック」
 - **noteは文章のみの下書きを作らない**: 画像かYouTube動画リンクを最低1枚/1本含める（`.claude/CLAUDE.md`フローA-3、2026-08-31〜）。動画CTAシーンは上記「note 埋め込み動画のCTAシーン」節のロゴ差し替え済みコンポーネントを使う
 - **note埋め込み動画のBGM**: X/TikTok用と同じ`soundtrack.wav`を使い回さない。詳細は`docs/operation/note-video-producer-prompt.md`参照

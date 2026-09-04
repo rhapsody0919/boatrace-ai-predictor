@@ -159,7 +159,7 @@ boatrace-ai-predictor/
 
 新機能の実装完了からYouTube解説動画・ブログ記事・X投稿・note投稿へ展開する一連の流れ。全体設計・現状の課題分析は [`docs/design/content-ops-flow/spec.md`](../docs/design/content-ops-flow/spec.md) を参照（2026-09-01策定）。
 
-**ネタ駆動マルチチャネルパイプライン（2026-09-01設計・基盤実装済み）**: 新機能／会場特性／データ知見／成績の4系統のネタから、チャネルごとに最適化したブログ・note・X・TikTok・YouTubeコンテンツを生成する仕組み。設計は[`docs/design/content-multi-channel-pipeline/`](../docs/design/content-multi-channel-pipeline/)（spec/screens/plan/tasks、ADR 0032〜0035）、Routineの実行手順は[`docs/operation/content-multi-channel-pipeline-prompt.md`](../docs/operation/content-multi-channel-pipeline-prompt.md)を参照。sns-hub管理画面（`/admin/sns-hub`）にTikTok/X/YouTube/Note/Blogの5プラットフォームタブが追加されており、下書きの承認・却下・（blog/youtubeは）自動公開をここで行う。
+**ネタ駆動マルチチャネルパイプライン（2026-09-04時点: sns-topic-gate体系へ移行済み）**: 新機能／会場特性／データ知見／成績の4系統のネタから、チャネルごとに最適化したブログ・note・X・TikTok・YouTubeコンテンツを生成する仕組み。2026-09-01策定の初期設計（`content-multi-channel-pipeline-prompt.md`、単一Routineが5チャネル全生成を担当する方式）は、ネタ承認前に全チャネル分を生成してしまう・修正ルールが伝播しないという課題から`docs/design/sns-topic-gate/`（spec/plan、ADR 0036〜0038）へ再設計され、`sns_topics`/`sns_topic_targets`によるネタゲート＋チャネル別パイプライン（`docs/operation/sns-pipeline-{blog,note,x,tiktok,youtube}.md`）に置き換わった（旧設計文書は`docs/archive/`へ移動済み）。sns-hub管理画面（`/admin/sns-hub`）にTikTok/X/YouTube/Note/Blogの5プラットフォームタブが追加されており、下書きの承認・却下・（blog/youtubeは）自動公開をここで行う。
 
 ### フローA-1: 並列着手とチャネル展開の基本ルール
 - 機能実装完了（PRマージ）を単一トリガーとし、YouTube解説動画制作とブログ記事執筆は**並列で着手できる**（互いを待つ理由がない）。X・note投稿は両方の完成を待ってから着手する（記事だけ先に公開されて動画が後追いだとリンクが死ぬため）

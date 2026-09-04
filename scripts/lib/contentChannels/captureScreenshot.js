@@ -2,7 +2,7 @@
  * ブログ/note/YouTubeサムネイル用のスクリーンショット取得。
  * `npm run dev`で起動済みのローカルサーバーに対し、指定パスを
  * Playwrightで撮影する（Routineサンドボックスでのlocalhost接続は
- * 2026-09-01の技術検証で確認済み、docs/design/content-multi-channel-pipeline/spec.md参照）。
+ * 2026-09-01の技術検証で確認済み、docs/archive/content-multi-channel-pipeline-spec.md参照）。
  */
 
 import { chromium } from "@playwright/test";

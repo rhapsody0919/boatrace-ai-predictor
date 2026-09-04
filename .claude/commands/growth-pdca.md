@@ -133,7 +133,7 @@ WebSearch等で以下2軸を調査する。
 
 ### 7. 提案した小施策をinsightとしてDBに登録する（2026-09-02追加）
 
-content-multi-channel-pipeline（`docs/design/content-multi-channel-pipeline/`）のブログ/noteチャネル生成Routineが次回のネタ選定・執筆時に参照できるよう、ステップ6で挙げた「小施策（即実行）」を`sns_strategy_insights`テーブルに構造化して登録する。`/x-growth-report`ステップ7・ADR 0027と同じパターン（`sns_drafts`のplatform列と同様、`sns_strategy_insights`のplatform列にも`'blog'`/`'note'`を含め既存の値との重複・enum制約は無い）。
+ブログ/noteチャネル別パイプラインRoutine（`docs/operation/sns-pipeline-blog.md`・`sns-pipeline-note.md`、`docs/design/sns-topic-gate/`）が次回のネタ選定・執筆時に参照できるよう、ステップ6で挙げた「小施策（即実行）」を`sns_strategy_insights`テーブルに構造化して登録する。`/x-growth-report`ステップ7・ADR 0027と同じパターン（`sns_drafts`のplatform列と同様、`sns_strategy_insights`のplatform列にも`'blog'`/`'note'`を含め既存の値との重複・enum制約は無い）。
 
 - 各「小施策」1件につき1レコードを`createInsight`（`scripts/lib/snsStrategyInsights.js`）で登録する
   - `platform`: `'blog'`（note向けにも当てはまる施策は`'note'`でも追加登録、両方に有効な場合は`null`）
