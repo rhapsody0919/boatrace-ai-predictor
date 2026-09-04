@@ -40,6 +40,10 @@ const VALID_REASON_CODES = [
   "search-intent-mismatch",
   "data-accuracy-error",
   "too-similar-to-existing",
+  // 2026-09-04追加、SnsHubAdmin.jsxの3リスト（REVISION_REASONS/
+  // CONTENT_REVISION_REASONS/TOPIC_REJECTION_REASONS）共通で追加した
+  // 「不自然な日本語」チップと一致させる
+  "unnatural-japanese",
 ];
 
 export default async function handler(req) {

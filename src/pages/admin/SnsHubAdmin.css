@@ -1402,11 +1402,11 @@
 
 .topic-category-label {
   font-weight: 600;
-  color: var(--color-gray-800);
+  color: var(--text-primary);
 }
 
 .topic-category-row-inactive .topic-category-label {
-  color: var(--color-gray-400);
+  color: var(--text-secondary);
   text-decoration: line-through;
 }
 

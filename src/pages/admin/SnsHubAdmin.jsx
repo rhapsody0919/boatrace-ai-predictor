@@ -102,6 +102,9 @@ const REVISION_REASONS = [
   { code: "design-color", label: "配色が合わない" },
   { code: "design-font-size", label: "フォントサイズが不適切" },
   { code: "design-visual-material", label: "画像・素材の質が低い" },
+  // 2026-09-04追加、ユーザー指摘: 生成テキストが不自然な日本語（中国語的な
+  // 言い回し）になるケースが多いため専用チップを新設
+  { code: "unnatural-japanese", label: "不自然な日本語（中国語的な言い回し）" },
 ];
 
 // ブログ/note下書き向けの却下理由（spec.md FR5、2026-09-01追加）。
@@ -112,6 +115,7 @@ const CONTENT_REVISION_REASONS = [
   { code: "too-similar-to-existing", label: "既存記事と似すぎている" },
   { code: "typo-or-data-error", label: "誤字・データの誤り" },
   { code: "tone-adjustment", label: "トーン調整" },
+  { code: "unnatural-japanese", label: "不自然な日本語（中国語的な言い回し）" },
 ];
 
 // ネタ承認の却下理由（2026-09-04追加、ユーザー要望: 自由記述だけだと面倒なので
@@ -124,6 +128,7 @@ const TOPIC_REJECTION_REASONS = [
   { code: "overhyped-wording", label: "表現が誇大・煽り気味" },
   { code: "policy-risk", label: "TikTok等ガイドライン抵触の懸念" },
   { code: "wrong-data-selection", label: "会場・データの選定ミス" },
+  { code: "unnatural-japanese", label: "不自然な日本語（中国語的な言い回し）" },
 ];
 
 // 2026-09-01、content-multi-channel-pipeline（spec.md FR6・screens.md）で
@@ -588,6 +593,12 @@ function TopicCategorySettingsTab({ categories, onToggleChannel }) {
     <div className="topic-category-settings">
       <p className="topic-category-settings-hint">
         ネタの型ごとに、各チャネルへの生成対象可否を設定できます。特にTikTokはガイドライン上センシティブなため、実績を見ながら個別に調整してください。廃止済みの型は行がグレーアウトします。
+      </p>
+      <p className="topic-category-settings-hint">
+        例1: 「イン崩れ注意度」でTikTokの投稿が制限を受けた
+        →「イン崩れ注意度」行のTikTok列をOFFにする（他チャネルはそのまま）。
+        例2: 「豆知識型」は成績・確率と無関係
+        →全チャネルONのままでよい。ℹ️アイコンがある行は除外理由をホバーで確認できる。
       </p>
       <div className="topic-category-settings-scroll">
         <table className="topic-category-settings-table">
