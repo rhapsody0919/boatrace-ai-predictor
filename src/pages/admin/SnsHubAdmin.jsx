@@ -2515,7 +2515,8 @@ function TopicApprovalSection({
       c.active &&
       ["daily-auto", "race-time-critical"].includes(
         c.sns_content_types?.type_key,
-      ),
+      ) &&
+      !TIKTOK_PERMANENTLY_EXCLUDED_CATEGORY_KEYS.includes(c.category_key),
   );
 
   const weeklyProposer = useTopicProposerTrigger({
