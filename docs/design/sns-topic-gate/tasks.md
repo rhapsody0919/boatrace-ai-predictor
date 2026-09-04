@@ -104,8 +104,8 @@
 - [x] **26. 「⚡今すぐ生成」ボタンの追加**
   `sns_topic_targets`の各行（`status='pending'`）に対し、対象チャネルパイプラインを即時発火するAPIエンドポイント（`api/admin/sns-hub/topics/[id]/targets/[targetId]/fire.js`）・UIボタン（進捗マトリクスのpendingチップ）を追加した。`fireRoutine`の既存パターンを再利用し、`{action: 'generate_now', targetId}`ペイロードを渡す。5チャネル別パイプラインドキュメント（blog/note/tiktok/x/youtube）に対応する即時生成フローを追記済み。
 
-- [ ] **27. sns-hub UI再設計（🌅当日の運用／📦ストック管理の2ブロック化）**
-  `requires_topic_approval`で2ブロックに分割。両ブロックとも「ネタ本文＋チャネル別チップ」の共通カード構造にする（チップ状態: generated/pending/skipped + ⚡今すぐ生成）。承認待ちカードにのみ承認/却下ボタンを追加表示。タスク25・26に依存。
+- [x] **27. sns-hub UI再設計（🌅当日の運用／📦ストック管理の2ブロック化）**
+  `requires_topic_approval`で2ブロックに分割した（承認済みワイヤーフレーム: https://claude.ai/code/artifact/64dd749b-d1fe-4b20-88a3-560d69545ed9 のv2に準拠）。両ブロックとも「ネタ本文＋チャネル別チップ」の共通カード構造（`TopicFanoutCard`/`TargetChip`）。承認待ちカード（📦ブロックのみ）は既存`TopicCard`をそのまま再利用し承認/却下ボタンを表示。旧`TopicProgressMatrix`・「📋ネタ承認」の開閉ヘッダーは廃止し、常時両ブロック表示に変更。⚙️チャネル設定パネルは両ブロック共通の単一パネルのまま。タスク25・26に依存。
 
 - [ ] **28. evergreen残り4型のネタ提案Routine新設（別イテレーション）**
   一覧アピール型・豆知識型・新機能紹介型・レース考察型それぞれの候補選定ロジックを個別に設計する。型ごとに編集判断が必要なため、本タスクリストでは着手順・詳細設計を確定しない。着手時に型ごとのサブタスクとして分解する。

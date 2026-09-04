@@ -1888,61 +1888,57 @@ function TopicCard({
 // セルがoverflowし隣接セルと視覚的に重なる不具合が発生したため、
 // カード（topic_textは通常のブロック要素として自然に折り返す）+
 // チャネルステータスをchip群で並べる形に再設計した（2026-09-04）
-function TopicProgressMatrix({ topics, onFireTarget }) {
-  // 「⚡今すぐ生成」の発火中状態。target.id単位で管理し、他のターゲットの
-  // ボタン操作をブロックしないようにする
-  const [firingTargetId, setFiringTargetId] = useState(null);
-  const approvedTopics = topics.filter((t) => t.status === "approved");
-  if (approvedTopics.length === 0) {
-    return null;
+// 承認済みネタ1件×アカウントのチャネル別生成状況チップ。sns-hub UI再設計
+// （2026-09-04、要件26/27）で🌅当日の運用・📦ネタのストック管理どちらの
+// ブロックでも同じカード構造を使う共通部品にした
+function TargetChip({ target, topicId, onFireTarget, firingTargetId }) {
+  const label = PLATFORM_LABELS[target.sns_target_accounts?.platform] || "?";
+  if (target.status === "generated") {
+    return <span className="ch-chip ch-chip-ready">✓ {label} 生成済み</span>;
   }
-
-  async function handleFire(topicId, targetId) {
-    setFiringTargetId(targetId);
-    try {
-      await onFireTarget(topicId, targetId);
-    } finally {
-      setFiringTargetId(null);
-    }
+  if (target.status === "claimed") {
+    return <span className="ch-chip ch-chip-wait">{label} 生成中</span>;
   }
-
+  if (target.status === "skipped") {
+    return (
+      <span
+        className="ch-chip ch-chip-dim"
+        title={target.skip_reason || undefined}
+      >
+        {label} 対象外
+      </span>
+    );
+  }
+  // pending
   return (
-    <div className="topic-progress-matrix-wrap">
-      <h3 className="topic-progress-matrix-title">承認済みネタの進捗</h3>
-      <div className="topic-progress-matrix-list">
-        {approvedTopics.map((topic) => (
-          <div key={topic.id} className="topic-progress-matrix-card">
-            <p className="topic-progress-matrix-topic-text">
-              {topic.topic_text}
-            </p>
-            <div className="topic-progress-matrix-chips">
-              {(topic.sns_topic_targets || []).map((target) => (
-                <span
-                  key={target.id}
-                  className={`topic-progress-matrix-chip topic-progress-matrix-chip-${target.status}`}
-                >
-                  {target.sns_target_accounts?.platform || "?"}: {target.status}
-                  {target.status === "generated" && target.draft_id && (
-                    <span className="topic-progress-matrix-generated-mark">
-                      {" "}
-                      ✓
-                    </span>
-                  )}
-                  {target.status === "pending" && (
-                    <button
-                      type="button"
-                      className="topic-progress-matrix-fire-btn"
-                      disabled={firingTargetId === target.id}
-                      title="対象チャネルのパイプラインを今すぐ起動します（放っておいても通常のポーリングでいずれ生成されます）"
-                      onClick={() => handleFire(topic.id, target.id)}
-                    >
-                      {firingTargetId === target.id ? "⏳" : "⚡今すぐ生成"}
-                    </button>
-                  )}
-                </span>
-              ))}
-            </div>
-          </div>
+    <span className="ch-chip ch-chip-wait">
+      {label} 待機中
+      <button
+        type="button"
+        className="ch-chip-fire"
+        disabled={firingTargetId === target.id}
+        title="対象チャネルのパイプラインを今すぐ起動します（放っておいても通常のポーリングでいずれ生成されます）"
+        onClick={() => onFireTarget(topicId, target.id)}
+      >
+        {firingTargetId === target.id ? "⏳" : "⚡今すぐ"}
+      </button>
+    </span>
+  );
+}
+
+function TopicFanoutCard({ topic, onFireTarget, firingTargetId }) {
+  return (
+    <div className="mini-card">
+      <p className="mini-card-topic">{topic.topic_text}</p>
+      <div className="chip-row">
+        {(topic.sns_topic_targets || []).map((target) => (
+          <TargetChip
+            key={target.id}
+            target={target}
+            topicId={topic.id}
+            onFireTarget={onFireTarget}
+            firingTargetId={firingTargetId}
+          />
         ))}
       </div>
     </div>
@@ -2034,13 +2030,32 @@ function TopicApprovalSection({
   onReloadTopics,
   showToast,
 }) {
-  const proposedTopics = topics.filter((t) => t.status === "proposed");
-  const [expanded, setExpanded] = useState(true);
-  // 「ネタ型設定」は元は他のプラットフォームタブ（TikTok/X/YouTube等）と同列の
-  // タブだったが、コンテンツレビュー用タブに紛れて発見しづらいと指摘された。
-  // 型ごとのチャネルON/OFFはネタ承認の前提となる設定であり、ネタ承認と同じ
-  // セクション内から開閉するパネルに変更した（2026-09-04）
+  // 承認要否（sns_content_types.requires_topic_approval）で🌅当日の運用／
+  // 📦ネタのストック管理の2ブロックに分ける（要件27、2026-09-04再設計）。
+  // 裏側のデータはどちらも同じsns_topics/sns_topic_targetsで、分岐点は
+  // この1フラグだけ
+  const directTopics = topics.filter(
+    (t) =>
+      t.status === "approved" &&
+      t.sns_content_types?.requires_topic_approval === false,
+  );
+  const gateProposedTopics = topics.filter((t) => t.status === "proposed");
+  const gateApprovedTopics = topics.filter(
+    (t) =>
+      t.status === "approved" &&
+      t.sns_content_types?.requires_topic_approval === true,
+  );
+  const directTargets = directTopics.flatMap((t) => t.sns_topic_targets || []);
+  const directGeneratedCount = directTargets.filter(
+    (t) => t.status === "generated",
+  ).length;
+
+  // 「ネタ型設定」は🌅/📦どちらのブロックからも開閉できるが、実体は
+  // sns_topic_categories全体を扱う単一パネル（要件27の設計判断）
   const [showCategorySettings, setShowCategorySettings] = useState(false);
+  // 「⚡今すぐ生成」の発火中状態。target.id単位で管理し、他のターゲットの
+  // ボタン操作をブロックしないようにする。🌅/📦両ブロックのカードで共有する
+  const [firingTargetId, setFiringTargetId] = useState(null);
 
   const weeklyProposer = useTopicProposerTrigger({
     triggerFn: triggerWeeklyProposer,
@@ -2066,98 +2081,170 @@ function TopicApprovalSection({
     return () => clearInterval(interval);
   }, [weeklyProposer.locked, dailyAutoProposer.locked, onReloadTopics]);
 
+  async function handleFire(topicId, targetId) {
+    setFiringTargetId(targetId);
+    try {
+      await onFireTarget(topicId, targetId);
+    } finally {
+      setFiringTargetId(null);
+    }
+  }
+
   return (
     <div className="topic-approval-section">
-      <div className="topic-approval-section-header-row">
-        <button
-          type="button"
-          className="topic-approval-section-header"
-          onClick={() => setExpanded((v) => !v)}
-        >
-          <span className="topic-approval-section-title">
-            📋 ネタ承認{" "}
-            {proposedTopics.length > 0 && (
-              <span className="topic-approval-section-count">
-                {proposedTopics.length}
-              </span>
-            )}
+      <div className="topic-section-card topic-section-direct">
+        <div className="topic-section-title">🌅 当日の運用</div>
+        <p className="topic-section-desc">
+          選手調子・モーター調子・イン崩れ・予想数値フック・的中 —
+          自動承認、朝すぐ投稿できる状態を目指す
+        </p>
+        <div className="topic-stat-row">
+          <span className="topic-stat-chip">
+            <b>{directTopics.length}件</b>本日ネタ登録済み（自動承認）
           </span>
-          <span className="topic-approval-section-hint">
-            ここで承認すると、対応するチャネルタブ（下）に下書きが生成されます
-          </span>
-          <span className="topic-approval-section-toggle">
-            {expanded ? "▲" : "▼"}
-          </span>
-        </button>
-        <button
-          type="button"
-          className="topic-approval-section-settings-btn"
-          disabled={weeklyProposer.triggering || weeklyProposer.locked}
-          onClick={weeklyProposer.trigger}
-        >
-          {weeklyProposer.triggering
-            ? "⏳ リクエスト中..."
-            : "📅 週次ネタ提案を今すぐ実行"}
-        </button>
-        <button
-          type="button"
-          className="topic-approval-section-settings-btn"
-          disabled={dailyAutoProposer.triggering || dailyAutoProposer.locked}
-          onClick={dailyAutoProposer.trigger}
-        >
-          {dailyAutoProposer.triggering
-            ? "⏳ リクエスト中..."
-            : "🌅 日次ネタ自動提案を今すぐ実行"}
-        </button>
-        <button
-          type="button"
-          className="topic-approval-section-settings-btn"
-          onClick={() => setShowCategorySettings((v) => !v)}
-        >
-          ⚙️ ネタ型設定
-        </button>
-      </div>
-
-      {(weeklyProposer.locked || dailyAutoProposer.locked) && (
-        <div className="topic-approval-section-weekly-proposer-hint">
-          {weeklyProposer.locked && (
-            <div>
-              ⏳ 週次ネタ提案を実行中...（{weeklyProposer.elapsedMinutes}
-              分経過）30秒おきに自動で確認します
-              {weeklyProposer.sessionUrl && (
-                <>
-                  {" ・ "}
-                  <a
-                    href={weeklyProposer.sessionUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    実行ログを見る
-                  </a>
-                </>
-              )}
-            </div>
-          )}
-          {dailyAutoProposer.locked && (
-            <div>
-              ⏳ 日次ネタ自動提案を実行中...（{dailyAutoProposer.elapsedMinutes}
-              分経過）30秒おきに自動で確認します
-              {dailyAutoProposer.sessionUrl && (
-                <>
-                  {" ・ "}
-                  <a
-                    href={dailyAutoProposer.sessionUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    実行ログを見る
-                  </a>
-                </>
-              )}
-            </div>
+          {directTargets.length > 0 && (
+            <span className="topic-stat-chip">
+              <b>
+                {directGeneratedCount}/{directTargets.length}
+              </b>
+              チャネル生成完了
+            </span>
           )}
         </div>
-      )}
+        {directTopics.length === 0 ? (
+          <p className="topic-section-empty">
+            本日はまだネタが登録されていません
+          </p>
+        ) : (
+          <div className="mini-card-list">
+            {directTopics.map((topic) => (
+              <TopicFanoutCard
+                key={topic.id}
+                topic={topic}
+                onFireTarget={handleFire}
+                firingTargetId={firingTargetId}
+              />
+            ))}
+          </div>
+        )}
+        <div className="topic-section-btn-row">
+          <button
+            type="button"
+            className="topic-section-trigger-btn topic-section-trigger-direct"
+            disabled={dailyAutoProposer.triggering || dailyAutoProposer.locked}
+            onClick={dailyAutoProposer.trigger}
+          >
+            {dailyAutoProposer.triggering
+              ? "⏳ リクエスト中..."
+              : "🌅 日次ネタ自動提案を今すぐ実行"}
+          </button>
+          <button
+            type="button"
+            className="topic-section-settings-btn"
+            onClick={() => setShowCategorySettings((v) => !v)}
+          >
+            ⚙️ この区分のチャネル設定
+          </button>
+        </div>
+        {dailyAutoProposer.locked && (
+          <div className="topic-section-proposer-hint">
+            ⏳ 日次ネタ自動提案を実行中...（{dailyAutoProposer.elapsedMinutes}
+            分経過）30秒おきに自動で確認します
+            {dailyAutoProposer.sessionUrl && (
+              <>
+                {" ・ "}
+                <a
+                  href={dailyAutoProposer.sessionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  実行ログを見る
+                </a>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="topic-section-card topic-section-gate">
+        <div className="topic-section-title">📦 ネタのストック管理</div>
+        <p className="topic-section-desc">
+          会場特性・一覧アピール型など —
+          承認して在庫を積む、時間制約なし。承認すると対応するチャネルタブ
+          （下）に下書きが生成されます
+        </p>
+        <div className="topic-stat-row">
+          <span className="topic-stat-chip">
+            <b>{gateProposedTopics.length}件</b>承認待ち
+          </span>
+          <span className="topic-stat-chip">
+            <b>{gateApprovedTopics.length}件</b>承認済み・生成中
+          </span>
+        </div>
+        {gateProposedTopics.length === 0 && gateApprovedTopics.length === 0 ? (
+          <p className="topic-section-empty">
+            承認待ち・生成中のネタはありません
+          </p>
+        ) : (
+          <div className="mini-card-list">
+            {gateProposedTopics.map((topic) => (
+              <TopicCard
+                key={topic.id}
+                topic={topic}
+                approvers={approvers}
+                onApprove={onApprove}
+                onReject={onReject}
+                onUpdateTargetLabel={onUpdateTargetLabel}
+              />
+            ))}
+            {gateApprovedTopics.map((topic) => (
+              <TopicFanoutCard
+                key={topic.id}
+                topic={topic}
+                onFireTarget={handleFire}
+                firingTargetId={firingTargetId}
+              />
+            ))}
+          </div>
+        )}
+        <div className="topic-section-btn-row">
+          <button
+            type="button"
+            className="topic-section-trigger-btn topic-section-trigger-gate"
+            disabled={weeklyProposer.triggering || weeklyProposer.locked}
+            onClick={weeklyProposer.trigger}
+          >
+            {weeklyProposer.triggering
+              ? "⏳ リクエスト中..."
+              : "📅 週次ネタ提案を今すぐ実行"}
+          </button>
+          <button
+            type="button"
+            className="topic-section-settings-btn"
+            onClick={() => setShowCategorySettings((v) => !v)}
+          >
+            ⚙️ この区分のチャネル設定
+          </button>
+        </div>
+        {weeklyProposer.locked && (
+          <div className="topic-section-proposer-hint">
+            ⏳ 週次ネタ提案を実行中...（{weeklyProposer.elapsedMinutes}
+            分経過）30秒おきに自動で確認します
+            {weeklyProposer.sessionUrl && (
+              <>
+                {" ・ "}
+                <a
+                  href={weeklyProposer.sessionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  実行ログを見る
+                </a>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {showCategorySettings && (
         <div className="topic-category-settings-panel">
@@ -2165,33 +2252,6 @@ function TopicApprovalSection({
             categories={topicCategories}
             onToggleChannel={onToggleCategoryChannel}
           />
-        </div>
-      )}
-
-      {expanded && (
-        <div className="topic-approval-section-body">
-          {proposedTopics.length === 0 ? (
-            <div className="empty-state">
-              <p>
-                承認待ちのネタはありません（日次・一般/日次・時間制約型はネタ
-                承認を経ずに生成されるため、ここには表示されません）。
-              </p>
-            </div>
-          ) : (
-            <div className="topic-list">
-              {proposedTopics.map((topic) => (
-                <TopicCard
-                  key={topic.id}
-                  topic={topic}
-                  approvers={approvers}
-                  onApprove={onApprove}
-                  onReject={onReject}
-                  onUpdateTargetLabel={onUpdateTargetLabel}
-                />
-              ))}
-            </div>
-          )}
-          <TopicProgressMatrix topics={topics} onFireTarget={onFireTarget} />
         </div>
       )}
     </div>
