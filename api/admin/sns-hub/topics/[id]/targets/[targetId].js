@@ -27,7 +27,13 @@ export default async function handler(req) {
     return jsonResponse({ error: "Supabase環境変数が未設定です" }, 500);
   }
 
-  const targetId = req.url.match(/targets\/([^/]+)$/)?.[1];
+  // Vercelの複数動的セグメントを持つルート（[id]/targets/[targetId]）では、
+  // req.urlに抽出済みパラメータがクエリ文字列として付与される
+  // （例: ?id=...&targetId=...）。$アンカーで生のreq.urlに直接マッチさせると
+  // クエリ文字列ごと誤って取り込んでしまいUUID検証に失敗する
+  // （2026-09-04、本番でチャネルラベルのトグルが常に400になる不具合として発覚）。
+  // 必ずpathnameのみを対象にする
+  const targetId = new URL(req.url).pathname.match(/targets\/([^/]+)$/)?.[1];
   if (!isValidUuid(targetId)) {
     return jsonResponse({ error: "target idの形式が不正です" }, 400);
   }

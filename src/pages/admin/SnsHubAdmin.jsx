@@ -104,6 +104,18 @@ const CONTENT_REVISION_REASONS = [
   { code: "tone-adjustment", label: "トーン調整" },
 ];
 
+// ネタ承認の却下理由（2026-09-04追加、ユーザー要望: 自由記述だけだと面倒なので
+// 選択式でタップできるようにしてほしい）。下書きの却下理由（表現・デザイン等）
+// とは性質が異なり、ネタ選定自体の問題を扱うため専用リストにする
+const TOPIC_REJECTION_REASONS = [
+  { code: "outdated-or-inaccurate", label: "内容が古い・不正確" },
+  { code: "duplicate-topic", label: "既出のネタと重複" },
+  { code: "weak-appeal", label: "訴求が弱い" },
+  { code: "overhyped-wording", label: "表現が誇大・煽り気味" },
+  { code: "policy-risk", label: "TikTok等ガイドライン抵触の懸念" },
+  { code: "wrong-data-selection", label: "会場・データの選定ミス" },
+];
+
 // 2026-09-01、content-multi-channel-pipeline（spec.md FR6・screens.md）で
 // ステータス軸タブからプラットフォーム軸タブへ再構成した。以前は「承認待ち/
 // 投稿準備完了/投稿済み」が主タブだったが、note/blog/youtubeが増えチャネルを
@@ -538,10 +550,12 @@ function SnsHubAdmin() {
             topics: true,
           })
         }
-        onReject={(topicId, approverId) =>
-          handleAction(rejectTopic, [topicId, approverId], {
-            topics: true,
-          })
+        onReject={(topicId, approverId, reason, saveAsInsight) =>
+          handleAction(
+            rejectTopic,
+            [topicId, approverId, reason, saveAsInsight],
+            { topics: true },
+          )
         }
         onUpdateTargetLabel={(topicId, targetId, status) =>
           handleAction(updateTopicTargetLabel, [topicId, targetId, status], {
@@ -2087,6 +2101,11 @@ function TopicCard({
     approvers[0]?.id || null,
   );
   const targets = topic.sns_topic_targets || [];
+  // 却下理由の入力パネル。即時却下ではなく、簡単な理由フィードバックを
+  // 挟めるようにする（2026-09-04ユーザー要望）。draft revise/redoと同じ
+  // RevisionPanel（チップ選択+自由記述）をTOPIC_REJECTION_REASONSで流用し、
+  // タップだけで理由を選べるようにする（自由記述だけだと面倒との指摘）
+  const [showRejectPanel, setShowRejectPanel] = useState(false);
 
   return (
     <div className="topic-card">
@@ -2112,22 +2131,43 @@ function TopicCard({
         selectedId={selectedApproverId}
         onSelect={setSelectedApproverId}
       />
-      <div className="topic-card-actions">
-        <button
-          type="button"
-          className="topic-approve-btn"
-          onClick={() => onApprove(topic.id, selectedApproverId)}
-        >
-          ✅ 承認
-        </button>
-        <button
-          type="button"
-          className="topic-reject-btn"
-          onClick={() => onReject(topic.id, selectedApproverId)}
-        >
-          却下
-        </button>
-      </div>
+      {showRejectPanel ? (
+        <RevisionPanel
+          mode="revise"
+          reasons={TOPIC_REJECTION_REASONS}
+          onCancel={() => setShowRejectPanel(false)}
+          onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
+            const reasonLabels = reasonCodes
+              .map(
+                (code) =>
+                  TOPIC_REJECTION_REASONS.find((r) => r.code === code)?.label,
+              )
+              .filter(Boolean);
+            const reason = [reasonLabels.join("、"), freeText.trim()]
+              .filter(Boolean)
+              .join(" / ");
+            onReject(topic.id, selectedApproverId, reason, saveAsInsight);
+            setShowRejectPanel(false);
+          }}
+        />
+      ) : (
+        <div className="topic-card-actions">
+          <button
+            type="button"
+            className="topic-approve-btn"
+            onClick={() => onApprove(topic.id, selectedApproverId)}
+          >
+            ✅ 承認
+          </button>
+          <button
+            type="button"
+            className="topic-reject-btn"
+            onClick={() => setShowRejectPanel(true)}
+          >
+            却下
+          </button>
+        </div>
+      )}
     </div>
   );
 }

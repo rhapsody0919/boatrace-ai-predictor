@@ -203,10 +203,10 @@ export async function approveTopic(topicId, approverId) {
 }
 
 /** ネタを却下する */
-export async function rejectTopic(topicId, approverId) {
+export async function rejectTopic(topicId, approverId, reason, saveAsInsight) {
   return request(`/topics/${topicId}/reject`, {
     method: "POST",
-    body: JSON.stringify({ approverId }),
+    body: JSON.stringify({ approverId, reason, saveAsInsight }),
   });
 }
 
