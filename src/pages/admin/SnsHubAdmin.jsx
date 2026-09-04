@@ -360,6 +360,38 @@ function SnsHubAdmin() {
     }
   }
 
+  // ブログ「承認してPR」後の反映確認（要件82）。handleActionの汎用トースト
+  // 「操作を反映しました」だけでは実際にマージされたか判断できないという
+  // 指摘を受け、GitHubのマージレスポンス（merge.merged/merge.sha）を見て
+  // 個別にメッセージを出し分ける。マージ自体はエンドポイント側で同期的に
+  // 完結する設計のため（api/admin/sns-hub/drafts/[id]/merge-blog-pr.js）、
+  // ここでの確認はポーリングではなく単発のレスポンス確認で足りる。
+  // Toastは2秒で自動消滅・white-space: nowrap設計のため、PR URLは埋め込まず
+  // 短い確認メッセージのみ表示する（URL自体は下書きプレビューに別途表示済み）
+  async function handleMergeBlogPr(draftId, approverId) {
+    try {
+      const result = await mergeBlogPr(draftId, approverId);
+      if (result?.merge?.merged) {
+        const shaLabel = result.merge.sha
+          ? `(${result.merge.sha.slice(0, 7)})`
+          : "";
+        showToast(
+          `PRをマージしました${shaLabel}。本番反映まで通常1〜2分`,
+          "success",
+        );
+      } else {
+        showToast(
+          "マージ結果を確認できません。GitHub側を確認してください",
+          "error",
+        );
+      }
+      await loadDrafts({ silent: true, fetch: { drafts: true } });
+    } catch (err) {
+      console.error("ブログPRマージエラー:", err);
+      showToast(err.message || "マージに失敗しました", "error");
+    }
+  }
+
   if (loading) {
     return (
       <div className="sns-hub-admin-page">
@@ -519,7 +551,7 @@ function SnsHubAdmin() {
                   handleAction(approveDraft, [draft.id, approverId])
                 }
                 onMergeBlogPr={(approverId) =>
-                  handleAction(mergeBlogPr, [draft.id, approverId])
+                  handleMergeBlogPr(draft.id, approverId)
                 }
                 onPublishYoutube={(approverId) =>
                   handleAction(publishYoutube, [draft.id, approverId])
@@ -1702,6 +1734,39 @@ function CopyToClipboardButton({ text, label }) {
   );
 }
 
+// カバー画像のダウンロードボタン（2026-09-04追加）。downloadVideoBlob（動画向け、
+// クロスオリジンURLのdownload属性無視問題を回避するfetch→Blob方式）は
+// 画像URLに対しても中身が汎用的にそのまま使える
+function DownloadImageButton({ imageUrl, fileName, label }) {
+  const [state, setState] = useState({ downloading: false, error: null });
+
+  async function handleDownload() {
+    setState({ downloading: true, error: null });
+    try {
+      await downloadVideoBlob(imageUrl, fileName);
+      setState({ downloading: false, error: null });
+    } catch (err) {
+      console.error("カバー画像ダウンロードエラー:", err);
+      setState({ downloading: false, error: "ダウンロードに失敗しました" });
+      setTimeout(() => setState({ downloading: false, error: null }), 3000);
+    }
+  }
+
+  return (
+    <span className="copy-to-clipboard">
+      <button
+        type="button"
+        className="posting-action-btn download"
+        onClick={handleDownload}
+        disabled={state.downloading}
+      >
+        {state.downloading ? "⏳ ダウンロード準備中..." : `⬇️ ${label}`}
+      </button>
+      {state.error && <span className="copy-feedback">{state.error}</span>}
+    </span>
+  );
+}
+
 // note下書きの投稿導線（2026-09-01追加）。PostingActionLinks（動画向け）の
 // note版。noteは公開APIが無いため自動投稿はできず、本文・タグをコピーして
 // 手動でnoteエディタに貼り付けてもらう運用（.claude/CLAUDE.mdフローC-1と同じ
@@ -1720,6 +1785,13 @@ function NoteCopyActionLinks({ draft, youtubeUrl, onMarkPosted }) {
       />
       {tagsText && (
         <CopyToClipboardButton text={tagsText} label="タグをコピー" />
+      )}
+      {draft.cover_image_url && (
+        <DownloadImageButton
+          imageUrl={draft.cover_image_url}
+          fileName={`${draft.platform}-${draft.language}-cover.jpg`}
+          label="カバー画像をダウンロード"
+        />
       )}
       {youtubeUrl && (
         // noteはURLをそのまま貼ると自動でプレイヤーが展開されるため、

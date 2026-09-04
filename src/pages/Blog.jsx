@@ -25,6 +25,8 @@ const UI_TEXT = {
     noPosts: "このカテゴリの記事はまだありません。",
     home: "ホーム",
     blogLabel: "ブログ",
+    sortNewest: "新着順",
+    sortOldest: "古い順",
   },
   en: {
     title:
@@ -39,6 +41,8 @@ const UI_TEXT = {
     noPosts: "No articles in this category yet.",
     home: "Home",
     blogLabel: "Blog",
+    sortNewest: "Newest",
+    sortOldest: "Oldest",
   },
   "zh-TW": {
     title: "部落格 | 龍神雷達 - 賽艇預測・數據分析・戰略資訊",
@@ -52,6 +56,8 @@ const UI_TEXT = {
     noPosts: "此分類目前尚無文章。",
     home: "首頁",
     blogLabel: "部落格",
+    sortNewest: "最新排序",
+    sortOldest: "最舊排序",
   },
   ko: {
     title: "블로그 | 용신 레이더 - 경정 예측・데이터 분석・전략 정보",
@@ -65,12 +71,15 @@ const UI_TEXT = {
     noPosts: "이 카테고리의 기사는 아직 없습니다.",
     home: "홈",
     blogLabel: "블로그",
+    sortNewest: "최신순",
+    sortOldest: "오래된순",
   },
 };
 
 export default function Blog() {
   const { pathname } = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest");
 
   const { lng } = parseLangFromPath(pathname);
   const isTranslated = lng !== "ja" && Boolean(UI_TEXT[lng]);
@@ -93,8 +102,10 @@ export default function Blog() {
       ? basePosts
       : basePosts.filter((post) => post.category === selectedCategory);
 
-  const sortedPosts = [...filteredPosts].sort(
-    (a, b) => new Date(b.date) - new Date(a.date),
+  const sortedPosts = [...filteredPosts].sort((a, b) =>
+    sortOrder === "oldest"
+      ? new Date(a.date) - new Date(b.date)
+      : new Date(b.date) - new Date(a.date),
   );
 
   const blogHref = localizePath("/blog", isTranslated ? lng : "ja");
@@ -192,6 +203,22 @@ export default function Blog() {
               {category}
             </button>
           ))}
+        </div>
+
+        {/* Sort Order */}
+        <div className="sort-filter">
+          <button
+            className={sortOrder === "newest" ? "active" : ""}
+            onClick={() => setSortOrder("newest")}
+          >
+            {t.sortNewest}
+          </button>
+          <button
+            className={sortOrder === "oldest" ? "active" : ""}
+            onClick={() => setSortOrder("oldest")}
+          >
+            {t.sortOldest}
+          </button>
         </div>
 
         {/* Blog Posts Grid */}
