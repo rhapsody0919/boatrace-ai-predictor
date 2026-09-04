@@ -26,6 +26,7 @@ import {
   approveTopic,
   rejectTopic,
   updateTopicTargetLabel,
+  fireTopicTargetNow,
   getTopicCategories,
   updateTopicCategoryChannel,
   triggerWeeklyProposer,
@@ -301,6 +302,28 @@ function SnsHubAdmin() {
     }
   }
 
+  // 「⚡今すぐ生成」。fireRoutineはRoutine未構築・fire失敗時も例外を投げず
+  // {fired: false, reason: ...}を返すため、handleActionの汎用成功トーストでは
+  // 実際には起動していない場合に誤って成功表示になる（useTopicProposerTriggerの
+  // 既存パターンを踏襲）
+  async function handleFireTarget(topicId, targetId) {
+    try {
+      const result = await fireTopicTargetNow(topicId, targetId);
+      if (result?.routine?.fired === false) {
+        showToast(
+          `起動リクエストがRoutineに届いていません（${result.routine.reason}）。Vercel環境変数の設定を確認してください`,
+          "error",
+        );
+      } else {
+        showToast("生成をリクエストしました", "success");
+      }
+      await loadDrafts({ silent: true, fetch: { topics: true } });
+    } catch (err) {
+      console.error("今すぐ生成エラー:", err);
+      showToast(err.message || "起動リクエストに失敗しました", "error");
+    }
+  }
+
   if (loading) {
     return (
       <div className="sns-hub-admin-page">
@@ -363,6 +386,7 @@ function SnsHubAdmin() {
             topics: true,
           })
         }
+        onFireTarget={handleFireTarget}
         topicCategories={topicCategories}
         onToggleCategoryChannel={(categoryId, platform, enabled) =>
           handleAction(
@@ -1864,11 +1888,24 @@ function TopicCard({
 // セルがoverflowし隣接セルと視覚的に重なる不具合が発生したため、
 // カード（topic_textは通常のブロック要素として自然に折り返す）+
 // チャネルステータスをchip群で並べる形に再設計した（2026-09-04）
-function TopicProgressMatrix({ topics }) {
+function TopicProgressMatrix({ topics, onFireTarget }) {
+  // 「⚡今すぐ生成」の発火中状態。target.id単位で管理し、他のターゲットの
+  // ボタン操作をブロックしないようにする
+  const [firingTargetId, setFiringTargetId] = useState(null);
   const approvedTopics = topics.filter((t) => t.status === "approved");
   if (approvedTopics.length === 0) {
     return null;
   }
+
+  async function handleFire(topicId, targetId) {
+    setFiringTargetId(targetId);
+    try {
+      await onFireTarget(topicId, targetId);
+    } finally {
+      setFiringTargetId(null);
+    }
+  }
+
   return (
     <div className="topic-progress-matrix-wrap">
       <h3 className="topic-progress-matrix-title">承認済みネタの進捗</h3>
@@ -1890,6 +1927,17 @@ function TopicProgressMatrix({ topics }) {
                       {" "}
                       ✓
                     </span>
+                  )}
+                  {target.status === "pending" && (
+                    <button
+                      type="button"
+                      className="topic-progress-matrix-fire-btn"
+                      disabled={firingTargetId === target.id}
+                      title="対象チャネルのパイプラインを今すぐ起動します（放っておいても通常のポーリングでいずれ生成されます）"
+                      onClick={() => handleFire(topic.id, target.id)}
+                    >
+                      {firingTargetId === target.id ? "⏳" : "⚡今すぐ生成"}
+                    </button>
                   )}
                 </span>
               ))}
@@ -1980,6 +2028,7 @@ function TopicApprovalSection({
   onApprove,
   onReject,
   onUpdateTargetLabel,
+  onFireTarget,
   topicCategories,
   onToggleCategoryChannel,
   onReloadTopics,
@@ -2142,7 +2191,7 @@ function TopicApprovalSection({
               ))}
             </div>
           )}
-          <TopicProgressMatrix topics={topics} />
+          <TopicProgressMatrix topics={topics} onFireTarget={onFireTarget} />
         </div>
       )}
     </div>

@@ -101,8 +101,8 @@
 - [ ] **25. `generate.js`/`SNS_HUB_ROUTINE`・手動生成パネルの全廃止**
   `api/admin/sns-hub/generate.js`・`triggerGeneration`（`snsHubService.js`）・`GENERATE_MODES`/`manual-generate-panel`関連のJSX・CSSを削除する。既存の週次/日次ネタ提案ボタンに完全統合済みであることを確認してから削除する。タスク24に依存（daily-autoの対象拡大が先）。
 
-- [ ] **26. 「⚡今すぐ生成」ボタンの追加**
-  `sns_topic_targets`の各行（`status='pending'`）に対し、対象チャネルパイプラインを即時発火するAPIエンドポイント・UIボタンを追加する。`fireRoutine`の既存パターンを再利用し、対象1件のみを狙って処理させるペイロード（`targetId`等）を渡す。タスク3の`fireRoutine`基盤に依存。
+- [x] **26. 「⚡今すぐ生成」ボタンの追加**
+  `sns_topic_targets`の各行（`status='pending'`）に対し、対象チャネルパイプラインを即時発火するAPIエンドポイント（`api/admin/sns-hub/topics/[id]/targets/[targetId]/fire.js`）・UIボタン（進捗マトリクスのpendingチップ）を追加した。`fireRoutine`の既存パターンを再利用し、`{action: 'generate_now', targetId}`ペイロードを渡す。5チャネル別パイプラインドキュメント（blog/note/tiktok/x/youtube）に対応する即時生成フローを追記済み。
 
 - [ ] **27. sns-hub UI再設計（🌅当日の運用／📦ストック管理の2ブロック化）**
   `requires_topic_approval`で2ブロックに分割。両ブロックとも「ネタ本文＋チャネル別チップ」の共通カード構造にする（チップ状態: generated/pending/skipped + ⚡今すぐ生成）。承認待ちカードにのみ承認/却下ボタンを追加表示。タスク25・26に依存。

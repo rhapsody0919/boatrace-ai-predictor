@@ -201,10 +201,16 @@ export async function updateTopicTargetLabel(
   });
 }
 
-/** 手動生成パネルの型選択ドロップダウン用、ネタの型(sns_content_types)一覧を取得する */
-export async function getContentTypes() {
-  const { data } = await request("/content-types");
-  return data || [];
+/**
+ * 「⚡今すぐ生成」ボタン。status='pending'のターゲットに対し、対象チャネルの
+ * パイプラインRoutineを即時発火する。ポーリングでもいずれ拾われるが、
+ * 起動タイミングを早めるショートカット（生成結果自体は変わらない）
+ */
+export async function fireTopicTargetNow(topicId, targetId) {
+  return request(`/topics/${topicId}/targets/${targetId}/fire`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
 }
 
 /** 「ネタ型設定」画面用、ネタの型（カテゴリ）一覧をチャネル設定つきで取得する */

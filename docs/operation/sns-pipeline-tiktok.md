@@ -14,7 +14,9 @@
   - 週次型（`venue-feature`）: 12時間おきのcronでポーリングする（初期値、運用実績を見て変更可）
   - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする（同じcron間隔でも自然に拾える）
   - 日次・時間制約型（`race-time-critical`）: このパイプラインでは扱わない。既存の`sns-hub-content-generation`（`sns-video-producer-prompt.md`）の手動生成ボタン系が担当する
-- **ある場合（API起動）**: `api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`（ADR 0038、`resolveRoutineEnvPrefix`で`platform='tiktok'`の下書きのみこのRoutineに発火する）からの「一部修正」「全部作り直し」操作。ペイロード（`{action: 'revise'|'redo', draftId, reasonCodes, freeText}`）を読み、`sns-pipeline-x.md`の「A'. 修正対応フロー」と同じ思想で対応する（0.〜6.はスキップ）
+- **ある場合（API起動）**: ペイロードの`action`で分岐する
+  - `revise`/`redo`: `api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`（ADR 0038、`resolveRoutineEnvPrefix`で`platform='tiktok'`の下書きのみこのRoutineに発火する）からの「一部修正」「全部作り直し」操作。ペイロード（`{action: 'revise'|'redo', draftId, reasonCodes, freeText}`）を読み、`sns-pipeline-x.md`の「A'. 修正対応フロー」と同じ思想で対応する（0.〜6.はスキップ）
+  - `generate_now`: `api/admin/sns-hub/topics/[id]/targets/[targetId]/fire.js`（要件26、「⚡今すぐ生成」ボタン）からの即時生成リクエスト。ペイロード（`{action: 'generate_now', targetId}`）を読み、`sns-pipeline-x.md`の「A''. 即時生成フロー」と同じ思想で対応する（1.をスキップして2.以降に進む）
 
 ## 0. 蓄積されたフィードバックの確認
 

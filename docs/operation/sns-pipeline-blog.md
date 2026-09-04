@@ -11,6 +11,7 @@
 - 週次型（`venue-feature`）: 12時間おきのcronでポーリングする
 - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする
 - API起動（revise/redo）: `api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`（`platform='blog'`の下書きのみ）
+- API起動（今すぐ生成、要件26）: `api/admin/sns-hub/topics/[id]/targets/[targetId]/fire.js`からのペイロード（`{action: 'generate_now', targetId}`）。`status='pending'`であることは検証済みの1件のみが対象。「1. claim対象の取得・claim」を丸ごとスキップし、`claimTopicTarget(targetId, routineRunId)`（`scripts/lib/snsTopics.js`）を`targetId`に対して直接呼ぶ（`docs/operation/sns-pipeline-x.md`の「A''. 即時生成フロー」と同じ思想）。戻り値がnullなら生成せず終了する（ADR 0036）
 
 ## 0. 蓄積されたフィードバックの確認
 
