@@ -1,0 +1,12 @@
+{
+  "feature": "既存機能ライフハック紹介: 4言語切替（言語切替UI）",
+  "released": "2026-09-03",
+  "content": {
+    "static_pages": [],
+    "note_articles": ["note-articles/language-switcher-guide.md"],
+    "blog_posts": ["public/blog/language-switcher-guide.md"],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}
