@@ -8,6 +8,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { FONT } from "./fonts.js";
 
 /**
  * 豆知識型（第1弾: 年齢と実際の1着率の関係）— 龍神レーダー TikTok Shorts
@@ -28,8 +29,6 @@ const NAVY = "#0f2c46";
 const NAVY_DARK = "#081b2e";
 const WHITE = "#f8fafc";
 const GOLD = "#d4af37";
-const FONT =
-  '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();

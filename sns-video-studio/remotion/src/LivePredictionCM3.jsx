@@ -10,6 +10,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { FONT } from "./fonts.js";
 
 /**
  * 予想数値フック型 — 龍神レーダー Shorts（キャラC版）
@@ -26,8 +27,6 @@ const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
 const WARN = "#ff9800";
-const FONT =
-  '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();

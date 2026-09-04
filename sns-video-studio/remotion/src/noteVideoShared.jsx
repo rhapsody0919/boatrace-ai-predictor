@@ -8,6 +8,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { FONT } from "./fonts.js";
 
 /**
  * note埋め込み用・機能解説型（横型 1920x1080）— 龍神レーダー 共通コンポーネント
@@ -23,8 +24,7 @@ export const NAVY = "#0f2c46";
 export const ACCENT = "#38bdf8";
 export const WHITE = "#f8fafc";
 export const GOLD = "#d4af37";
-export const FONT =
-  '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
+export { FONT };
 
 export function Fade({ children, delay = 0, durationIn = 15, style }) {
   const frame = useCurrentFrame();

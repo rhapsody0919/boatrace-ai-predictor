@@ -9,9 +9,10 @@
     "still": "remotion still src/index.jsx"
   },
   "dependencies": {
+    "@remotion/cli": "^4.0.512",
+    "@remotion/google-fonts": "4.0.512",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "remotion": "^4.0.512",
-    "@remotion/cli": "^4.0.512"
+    "remotion": "^4.0.512"
   }
 }
