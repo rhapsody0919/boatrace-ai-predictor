@@ -224,6 +224,8 @@
     "viewPrediction": "데이터 분석 보기",
     "blogTitle": "경정 공략 블로그",
     "blogDesc": "적중률을 높이는 예측 팁, 경정장 가이드, 데이터 분석",
+    "popularArticles": "인기 기사",
+    "newArticles": "신착 기사",
     "viewAllPosts": "전체 글 보기 →",
     "disclaimer": "* 본 사이트는 AI가 생성한 예측 정보를 제공하며 결과를 보장하지 않습니다",
     "blogLastUpdated": "블로그 최종 업데이트: {{date}}",
