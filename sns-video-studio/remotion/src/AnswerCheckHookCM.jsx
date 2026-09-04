@@ -8,6 +8,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { FONT } from "./fonts.js";
 
 /**
  * 答え合わせ型（TikTok/X向け・マスコット無し・実画面スクショ不要・props駆動テンプレート）
@@ -37,8 +38,6 @@ const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GOLD = "#f59e0b";
 const HIT_GREEN = "#22c55e";
-const FONT =
-  '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
 
 // 艇番別カラー（公式カラー、src/utils/colors.jsのBOAT_COLORSと同じ配色）
 const BOAT_COLORS = {

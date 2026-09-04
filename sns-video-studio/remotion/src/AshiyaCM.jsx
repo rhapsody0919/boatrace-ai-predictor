@@ -9,6 +9,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { FONT } from "./fonts.js";
 
 /**
  * 会場紹介型（第2弾: 芦屋、2026-08-26修正） — 龍神レーダー Shorts
@@ -29,8 +30,6 @@ const NAVY = "#0f2c46";
 const NAVY_DARK = "#081b2e";
 const GOLD = "#d4af37";
 const WHITE = "#f8fafc";
-const FONT =
-  '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
 
 function FadeUp({ children, delay = 0, style }) {
   const frame = useCurrentFrame();

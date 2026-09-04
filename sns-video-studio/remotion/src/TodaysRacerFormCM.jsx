@@ -8,6 +8,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { FONT } from "./fonts.js";
 
 /**
  * 本日のデータ一覧型（第1弾: 本日の好調・不調選手ランキング）— 龍神レーダー TikTok Shorts
@@ -32,8 +33,6 @@ const NAVY_DARK = "#081b2e";
 const WHITE = "#f8fafc";
 const GOLD = "#d4af37";
 const RED = "#f87171";
-const FONT =
-  '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();

@@ -9,6 +9,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { FONT } from "./fonts.js";
 
 /**
  * 一覧アピール型（第2弾: 分析ツール物量アピール）— 龍神レーダー X Shorts
@@ -28,8 +29,6 @@ const NAVY_DARK = "#081b2e";
 const NAVY = "#0f2c46";
 const WHITE = "#f8fafc";
 const GOLD = "#d4af37";
-const FONT =
-  '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
 
 const TOOL_COUNT = 17;
 
