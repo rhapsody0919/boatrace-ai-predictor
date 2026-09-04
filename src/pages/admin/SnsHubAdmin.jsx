@@ -22,11 +22,11 @@ import {
   rejectInsight,
   getTemplateVariants,
   archiveDraft,
-  triggerGeneration,
   getTopics,
   approveTopic,
   rejectTopic,
   updateTopicTargetLabel,
+  fireTopicTargetNow,
   getTopicCategories,
   updateTopicCategoryChannel,
   triggerWeeklyProposer,
@@ -157,15 +157,6 @@ const NON_PLATFORM_TABS = [
 
 const TABS = [...PLATFORM_TABS, ...NON_PLATFORM_TABS];
 
-// 手動生成の対象プラットフォーム選択肢。Routineが対応するプラットフォームが
-// 増えたらここに1件足すだけでよい（api/admin/sns-hub/generate.jsの
-// VALID_PLATFORMSと合わせて更新すること）。youtubeは2026-09-01追加
-const GENERATE_PLATFORM_OPTIONS = [
-  { value: "x", label: "X" },
-  { value: "tiktok", label: "TikTok" },
-  { value: "youtube", label: "YouTube" },
-];
-
 // sns_template_variants.formatの日本語ラベル。DB側にlabel列が無く英語の
 // kebab-case識別子のみのため、docs/operation/sns-video-producer-prompt.md
 // のフォーマットライブラリの呼称に合わせてここで翻訳する（2026-09-04追加）。
@@ -183,28 +174,6 @@ const FORMAT_LABELS = {
   "venue-ranking": "会場攻略・データ一覧型",
 };
 
-// マスコット型は現状クオリティが低く一時的に生成対象から外す
-// （2026-09-04ユーザー指摘）。sns_template_variants自体は削除しない
-const EXCLUDED_GENERATE_FORMATS = new Set(["mascot"]);
-
-// countMaxはapi/admin/sns-hub/generate.jsのCOUNT_MAX_BY_MODEと一致させる
-const GENERATE_MODES = [
-  {
-    mode: "daily",
-    icon: "🎬",
-    label: "当日ネタ",
-    countMax: 5,
-    defaultCount: 2,
-  },
-  {
-    mode: "evergreen",
-    icon: "📦",
-    label: "会場攻略型など",
-    countMax: 10,
-    defaultCount: 3,
-  },
-];
-
 function SnsHubAdmin() {
   // activeTab: プラットフォーム軸の主タブ（tiktok/x/youtube/note/blog/insights/catalog）
   // activeStatusFilter: プラットフォームタブ内のステータス副フィルタ
@@ -218,57 +187,7 @@ function SnsHubAdmin() {
   const [topicCategories, setTopicCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [generating, setGenerating] = useState(null); // null | 'daily' | 'evergreen'
-  // 手動生成の対象プラットフォーム・本数（モードごとに独立、2026-09-01追加）。
-  // TikTokがシャドウバン気味の時期にX限定で生成したい等の要望への対応
-  const [generatePlatforms, setGeneratePlatforms] = useState(() =>
-    Object.fromEntries(
-      GENERATE_MODES.map((m) => [
-        m.mode,
-        GENERATE_PLATFORM_OPTIONS.map((p) => p.value),
-      ]),
-    ),
-  );
-  const [generateCounts, setGenerateCounts] = useState(() =>
-    Object.fromEntries(GENERATE_MODES.map((m) => [m.mode, m.defaultCount])),
-  );
-  // 手動生成する型の指定（モードごとに独立、2026-09-02追加）。既定は""＝
-  // 「おまかせ（自動選定）」で、Routine側の型選定ロジックに従う。「会場攻略型など」
-  // という曖昧な指定しかできなかったのをユーザー指摘を受けて拡張した
-  const [generateFormats, setGenerateFormats] = useState(() =>
-    Object.fromEntries(GENERATE_MODES.map((m) => [m.mode, ""])),
-  );
-  // 生成リクエスト成功後、手動更新ボタンを押すまで両ボタンを無効化し続ける
-  // （連打による多重起動を防ぐため）
-  const [generationLocked, setGenerationLocked] = useState(false);
-  // fireRoutineは起動を指示するだけで完了を待たないため、Routine自体の詳細な
-  // 進捗（今何をしているか）はアプリ側から取得できない。代わりに(a)実行セッション
-  // へのリンク(b)新しい下書きが増えたかの自動検知、の2つで代替する（ユーザー要望、
-  // 2026-08-31）
-  const [generationSessionUrl, setGenerationSessionUrl] = useState(null);
-  // 経過時間の表示用（クライアント時計、多少ずれても表示上の目安なので実害なし）
-  const [generationFiredAt, setGenerationFiredAt] = useState(null);
-  const [generationElapsedMinutes, setGenerationElapsedMinutes] = useState(0);
-  // 完了検知用の基準時刻はfire時点の下書き一覧から取った「既存の最新created_at」
-  // （サーバー時刻同士の比較にすることで、クライアント/サーバーの時計ずれで
-  // 検知漏れが起きないようにする。コードレビューで指摘）
-  const [generationBaselineCreatedAt, setGenerationBaselineCreatedAt] =
-    useState(null);
   const { toast, showToast } = useToast();
-
-  // 手動生成の型選択肢。フォーマットカタログ（sns_template_variants、"型一覧"タブと
-  // 同じデータ源）から重複を除いた型名一覧を出す。ハードコードした一覧を別途持つと
-  // カタログと食い違うため、既に画面にロード済みのtemplateVariantsをそのまま使う
-  // （2026-09-02追加）。EXCLUDED_GENERATE_FORMATSに含まれる型（現状マスコットのみ、
-  // クオリティ低のため一時除外）は生成候補から外す（2026-09-04）
-  const evergreenFormatOptions = useMemo(() => {
-    const names = new Set(
-      templateVariants
-        .map((tv) => tv.format)
-        .filter((format) => !EXCLUDED_GENERATE_FORMATS.has(format)),
-    );
-    return [...names].sort();
-  }, [templateVariants]);
 
   // 下書きのcontent_group_id → ネタの型、の逆引き。ネタ駆動で生成された下書きに
   // ContentTypeBadgeを表示するために使う（要件15由来、単発投稿にはネタが無いため
@@ -383,122 +302,27 @@ function SnsHubAdmin() {
     }
   }
 
-  // 承認済みストックが少ない時の手動補充用。fireRoutineは起動を指示する
-  // だけで完了を待たないため、生成完了までは数分〜十数分かかる（動画
-  // レンダリングを含む）。完了したかどうかは手動更新ボタン、または下記の
-  // 自動検知（新しい下書きの出現）で確認する
-  function toggleGeneratePlatform(mode, platform) {
-    setGeneratePlatforms((prev) => {
-      const current = prev[mode];
-      const next = current.includes(platform)
-        ? current.filter((p) => p !== platform)
-        : [...current, platform];
-      return { ...prev, [mode]: next };
-    });
-  }
-
-  function handleGenerateCountChange(mode, rawValue, countMax) {
-    const parsed = parseInt(rawValue, 10);
-    // 入力欄を一時的に空にした場合(NaN)にstate更新をスキップすると、画面表示は
-    // 空欄なのに実際に送信される本数は直前の値のまま、という食い違いが生まれる
-    // （コードレビューで指摘）。空にした場合は最小値1にスナップし、表示とstateを
-    // 常に一致させる
-    const clamped = Number.isNaN(parsed)
-      ? 1
-      : Math.min(Math.max(parsed, 1), countMax);
-    setGenerateCounts((prev) => ({ ...prev, [mode]: clamped }));
-  }
-
-  function handleGenerateFormatChange(mode, value) {
-    setGenerateFormats((prev) => ({ ...prev, [mode]: value }));
-  }
-
-  async function handleGenerate(mode) {
-    const platforms = generatePlatforms[mode];
-    if (platforms.length === 0) {
-      showToast("生成対象のプラットフォームを1つ以上選んでください", "error");
-      return;
-    }
-    setGenerating(mode);
+  // 「⚡今すぐ生成」。fireRoutineはRoutine未構築・fire失敗時も例外を投げず
+  // {fired: false, reason: ...}を返すため、handleActionの汎用成功トーストでは
+  // 実際には起動していない場合に誤って成功表示になる（useTopicProposerTriggerの
+  // 既存パターンを踏襲）
+  async function handleFireTarget(topicId, targetId) {
     try {
-      const result = await triggerGeneration(mode, {
-        platforms,
-        count: generateCounts[mode],
-        format: generateFormats[mode] || undefined,
-      });
+      const result = await fireTopicTargetNow(topicId, targetId);
       if (result?.routine?.fired === false) {
-        // fireRoutineはRoutine未構築・fire失敗時も例外を投げず
-        // {fired: false, reason: ...}を返す（コードレビューで指摘:
-        // これを無視すると実際は何も起動していないのに成功表示になる）
         showToast(
-          `生成リクエストがRoutineに届いていません（${result.routine.reason}）。設定を確認してください`,
+          `起動リクエストがRoutineに届いていません（${result.routine.reason}）。Vercel環境変数の設定を確認してください`,
           "error",
         );
       } else {
-        showToast(
-          result.routine.sessionUrl
-            ? "生成をリクエストしました。実行ログのリンクは下に表示されます"
-            : "生成をリクエストしました。数分後に更新ボタンで確認してください",
-          "success",
-        );
-        // 手動更新するまで両ボタンを無効化し続ける（コードレビューで指摘:
-        // fire完了後すぐ再度押せてしまうと、数分かかる生成処理が連打で
-        // 何本も重複起動されるリスクがあった）
-        setGenerationLocked(true);
-        setGenerationSessionUrl(result.routine.sessionUrl || null);
-        setGenerationFiredAt(Date.now());
-        setGenerationElapsedMinutes(0);
-        setGenerationBaselineCreatedAt(
-          drafts.reduce((max, d) => {
-            const t = new Date(d.created_at).getTime();
-            return t > max ? t : max;
-          }, 0),
-        );
+        showToast("生成をリクエストしました", "success");
       }
+      await loadDrafts({ silent: true, fetch: { topics: true } });
     } catch (err) {
-      console.error("生成リクエストエラー:", err);
-      showToast(err.message || "生成リクエストに失敗しました", "error");
-    } finally {
-      setGenerating(null);
+      console.error("今すぐ生成エラー:", err);
+      showToast(err.message || "起動リクエストに失敗しました", "error");
     }
   }
-
-  // 生成リクエスト中、30秒おきに下書き一覧を裏側で再取得し、fire時刻より
-  // 後に作成された下書きが現れたら自動的にロックを解除する（ユーザー要望、
-  // 2026-08-31: 「生成されているのかわからない」への対応）
-  useEffect(() => {
-    if (!generationLocked || !generationFiredAt) return;
-    const interval = setInterval(() => {
-      setGenerationElapsedMinutes(
-        Math.max(0, Math.round((Date.now() - generationFiredAt) / 60000)),
-      );
-      loadDrafts({ silent: true, fetch: { drafts: true } });
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [generationLocked, generationFiredAt, loadDrafts]);
-
-  useEffect(() => {
-    if (!generationLocked || generationBaselineCreatedAt === null) return;
-    // revise/redoも同じSNS_HUB_ROUTINEをfireするため、ポーリング中に別の下書きへ
-    // 一部修正/全部作り直しを行うとその結果が新規下書きとして現れ、今回の手動生成
-    // (generate-daily/evergreen)が完了したと誤検知してしまう（コードレビューで指摘）。
-    // revise/redo由来の下書きは必ずparent_draft_idを持つため、それが無い
-    // （新規content_group_idで作られた）下書きだけを対象にして区別する。
-    // 比較基準もクライアント時計(generationFiredAt)ではなく、fire時点の下書き
-    // 一覧から取ったサーバー側の最新created_atにして時計ずれによる検知漏れを防ぐ
-    const newDraftsCount = drafts.filter(
-      (d) =>
-        new Date(d.created_at).getTime() > generationBaselineCreatedAt &&
-        !d.parent_draft_id,
-    ).length;
-    if (newDraftsCount > 0) {
-      showToast(`✅ ${newDraftsCount}件生成完了しました`, "success");
-      setGenerationLocked(false);
-      setGenerationSessionUrl(null);
-      setGenerationFiredAt(null);
-      setGenerationBaselineCreatedAt(null);
-    }
-  }, [drafts, generationLocked, generationBaselineCreatedAt, showToast]);
 
   if (loading) {
     return (
@@ -562,6 +386,7 @@ function SnsHubAdmin() {
             topics: true,
           })
         }
+        onFireTarget={handleFireTarget}
         topicCategories={topicCategories}
         onToggleCategoryChannel={(categoryId, platform, enabled) =>
           handleAction(
@@ -603,16 +428,7 @@ function SnsHubAdmin() {
             );
           })}
         </div>
-        <button
-          className="refresh-btn"
-          onClick={() => {
-            setGenerationLocked(false);
-            setGenerationSessionUrl(null);
-            setGenerationFiredAt(null);
-            setGenerationBaselineCreatedAt(null);
-            loadDrafts();
-          }}
-        >
+        <button className="refresh-btn" onClick={() => loadDrafts()}>
           🔄 更新
         </button>
       </div>
@@ -636,111 +452,6 @@ function SnsHubAdmin() {
           })}
         </div>
       )}
-
-      <div className="manual-generate-panel">
-        <span className="manual-generate-label">
-          承認済みストックが少ない時の手動生成:
-        </span>
-        {GENERATE_MODES.map((modeConfig) => (
-          <div className="manual-generate-block" key={modeConfig.mode}>
-            <div className="generate-platform-chips">
-              {GENERATE_PLATFORM_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className={`generate-platform-chip${
-                    generatePlatforms[modeConfig.mode].includes(opt.value)
-                      ? " selected"
-                      : ""
-                  }`}
-                  disabled={generating !== null || generationLocked}
-                  onClick={() =>
-                    toggleGeneratePlatform(modeConfig.mode, opt.value)
-                  }
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            {modeConfig.mode === "evergreen" &&
-              evergreenFormatOptions.length > 0 && (
-                <label className="generate-format-label">
-                  型
-                  <select
-                    className="generate-format-select"
-                    value={generateFormats[modeConfig.mode]}
-                    disabled={generating !== null || generationLocked}
-                    onChange={(e) =>
-                      handleGenerateFormatChange(
-                        modeConfig.mode,
-                        e.target.value,
-                      )
-                    }
-                  >
-                    <option value="">おまかせ（自動選定）</option>
-                    {evergreenFormatOptions.map((format) => (
-                      <option key={format} value={format}>
-                        {FORMAT_LABELS[format] || format}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            <label className="generate-count-label">
-              本数
-              <input
-                type="number"
-                className="generate-count-input"
-                min={1}
-                max={modeConfig.countMax}
-                value={generateCounts[modeConfig.mode]}
-                disabled={generating !== null || generationLocked}
-                onChange={(e) =>
-                  handleGenerateCountChange(
-                    modeConfig.mode,
-                    e.target.value,
-                    modeConfig.countMax,
-                  )
-                }
-              />
-              <span className="generate-count-max">
-                / 最大{modeConfig.countMax}
-              </span>
-            </label>
-            <button
-              className="manual-generate-btn"
-              disabled={
-                generating !== null ||
-                generationLocked ||
-                generatePlatforms[modeConfig.mode].length === 0
-              }
-              onClick={() => handleGenerate(modeConfig.mode)}
-            >
-              {generating === modeConfig.mode
-                ? "⏳ リクエスト中..."
-                : `${modeConfig.icon} ${modeConfig.label}を今すぐ生成`}
-            </button>
-          </div>
-        ))}
-        {generationLocked && (
-          <span className="manual-generate-hint">
-            ⏳ 生成中...（{generationElapsedMinutes}
-            分経過）30秒おきに自動で確認します
-            {generationSessionUrl && (
-              <>
-                {" ・ "}
-                <a
-                  href={generationSessionUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  実行ログを見る
-                </a>
-              </>
-            )}
-          </span>
-        )}
-      </div>
 
       <div className="tab-content">
         {isCatalogTab ? (
@@ -958,7 +669,7 @@ function TemplateVariantList({ templateVariants }) {
       {Object.entries(grouped).map(([format, variants]) => (
         <details key={format} className="template-variant-group">
           <summary className="template-variant-format">
-            {format}（{variants.length}件）
+            {FORMAT_LABELS[format] || format}（{variants.length}件）
           </summary>
           <table className="template-variant-table">
             <thead>
@@ -2177,37 +1888,57 @@ function TopicCard({
 // セルがoverflowし隣接セルと視覚的に重なる不具合が発生したため、
 // カード（topic_textは通常のブロック要素として自然に折り返す）+
 // チャネルステータスをchip群で並べる形に再設計した（2026-09-04）
-function TopicProgressMatrix({ topics }) {
-  const approvedTopics = topics.filter((t) => t.status === "approved");
-  if (approvedTopics.length === 0) {
-    return null;
+// 承認済みネタ1件×アカウントのチャネル別生成状況チップ。sns-hub UI再設計
+// （2026-09-04、要件26/27）で🌅当日の運用・📦ネタのストック管理どちらの
+// ブロックでも同じカード構造を使う共通部品にした
+function TargetChip({ target, topicId, onFireTarget, firingTargetId }) {
+  const label = PLATFORM_LABELS[target.sns_target_accounts?.platform] || "?";
+  if (target.status === "generated") {
+    return <span className="ch-chip ch-chip-ready">✓ {label} 生成済み</span>;
   }
+  if (target.status === "claimed") {
+    return <span className="ch-chip ch-chip-wait">{label} 生成中</span>;
+  }
+  if (target.status === "skipped") {
+    return (
+      <span
+        className="ch-chip ch-chip-dim"
+        title={target.skip_reason || undefined}
+      >
+        {label} 対象外
+      </span>
+    );
+  }
+  // pending
   return (
-    <div className="topic-progress-matrix-wrap">
-      <h3 className="topic-progress-matrix-title">承認済みネタの進捗</h3>
-      <div className="topic-progress-matrix-list">
-        {approvedTopics.map((topic) => (
-          <div key={topic.id} className="topic-progress-matrix-card">
-            <p className="topic-progress-matrix-topic-text">
-              {topic.topic_text}
-            </p>
-            <div className="topic-progress-matrix-chips">
-              {(topic.sns_topic_targets || []).map((target) => (
-                <span
-                  key={target.id}
-                  className={`topic-progress-matrix-chip topic-progress-matrix-chip-${target.status}`}
-                >
-                  {target.sns_target_accounts?.platform || "?"}: {target.status}
-                  {target.status === "generated" && target.draft_id && (
-                    <span className="topic-progress-matrix-generated-mark">
-                      {" "}
-                      ✓
-                    </span>
-                  )}
-                </span>
-              ))}
-            </div>
-          </div>
+    <span className="ch-chip ch-chip-wait">
+      {label} 待機中
+      <button
+        type="button"
+        className="ch-chip-fire"
+        disabled={firingTargetId === target.id}
+        title="対象チャネルのパイプラインを今すぐ起動します（放っておいても通常のポーリングでいずれ生成されます）"
+        onClick={() => onFireTarget(topicId, target.id)}
+      >
+        {firingTargetId === target.id ? "⏳" : "⚡今すぐ"}
+      </button>
+    </span>
+  );
+}
+
+function TopicFanoutCard({ topic, onFireTarget, firingTargetId }) {
+  return (
+    <div className="mini-card">
+      <p className="mini-card-topic">{topic.topic_text}</p>
+      <div className="chip-row">
+        {(topic.sns_topic_targets || []).map((target) => (
+          <TargetChip
+            key={target.id}
+            target={target}
+            topicId={topic.id}
+            onFireTarget={onFireTarget}
+            firingTargetId={firingTargetId}
+          />
         ))}
       </div>
     </div>
@@ -2293,18 +2024,38 @@ function TopicApprovalSection({
   onApprove,
   onReject,
   onUpdateTargetLabel,
+  onFireTarget,
   topicCategories,
   onToggleCategoryChannel,
   onReloadTopics,
   showToast,
 }) {
-  const proposedTopics = topics.filter((t) => t.status === "proposed");
-  const [expanded, setExpanded] = useState(true);
-  // 「ネタ型設定」は元は他のプラットフォームタブ（TikTok/X/YouTube等）と同列の
-  // タブだったが、コンテンツレビュー用タブに紛れて発見しづらいと指摘された。
-  // 型ごとのチャネルON/OFFはネタ承認の前提となる設定であり、ネタ承認と同じ
-  // セクション内から開閉するパネルに変更した（2026-09-04）
+  // 承認要否（sns_content_types.requires_topic_approval）で🌅当日の運用／
+  // 📦ネタのストック管理の2ブロックに分ける（要件27、2026-09-04再設計）。
+  // 裏側のデータはどちらも同じsns_topics/sns_topic_targetsで、分岐点は
+  // この1フラグだけ
+  const directTopics = topics.filter(
+    (t) =>
+      t.status === "approved" &&
+      t.sns_content_types?.requires_topic_approval === false,
+  );
+  const gateProposedTopics = topics.filter((t) => t.status === "proposed");
+  const gateApprovedTopics = topics.filter(
+    (t) =>
+      t.status === "approved" &&
+      t.sns_content_types?.requires_topic_approval === true,
+  );
+  const directTargets = directTopics.flatMap((t) => t.sns_topic_targets || []);
+  const directGeneratedCount = directTargets.filter(
+    (t) => t.status === "generated",
+  ).length;
+
+  // 「ネタ型設定」は🌅/📦どちらのブロックからも開閉できるが、実体は
+  // sns_topic_categories全体を扱う単一パネル（要件27の設計判断）
   const [showCategorySettings, setShowCategorySettings] = useState(false);
+  // 「⚡今すぐ生成」の発火中状態。target.id単位で管理し、他のターゲットの
+  // ボタン操作をブロックしないようにする。🌅/📦両ブロックのカードで共有する
+  const [firingTargetId, setFiringTargetId] = useState(null);
 
   const weeklyProposer = useTopicProposerTrigger({
     triggerFn: triggerWeeklyProposer,
@@ -2330,98 +2081,170 @@ function TopicApprovalSection({
     return () => clearInterval(interval);
   }, [weeklyProposer.locked, dailyAutoProposer.locked, onReloadTopics]);
 
+  async function handleFire(topicId, targetId) {
+    setFiringTargetId(targetId);
+    try {
+      await onFireTarget(topicId, targetId);
+    } finally {
+      setFiringTargetId(null);
+    }
+  }
+
   return (
     <div className="topic-approval-section">
-      <div className="topic-approval-section-header-row">
-        <button
-          type="button"
-          className="topic-approval-section-header"
-          onClick={() => setExpanded((v) => !v)}
-        >
-          <span className="topic-approval-section-title">
-            📋 ネタ承認{" "}
-            {proposedTopics.length > 0 && (
-              <span className="topic-approval-section-count">
-                {proposedTopics.length}
-              </span>
-            )}
+      <div className="topic-section-card topic-section-direct">
+        <div className="topic-section-title">🌅 当日の運用</div>
+        <p className="topic-section-desc">
+          選手調子・モーター調子・イン崩れ・予想数値フック・的中 —
+          自動承認、朝すぐ投稿できる状態を目指す
+        </p>
+        <div className="topic-stat-row">
+          <span className="topic-stat-chip">
+            <b>{directTopics.length}件</b>本日ネタ登録済み（自動承認）
           </span>
-          <span className="topic-approval-section-hint">
-            ここで承認すると、対応するチャネルタブ（下）に下書きが生成されます
-          </span>
-          <span className="topic-approval-section-toggle">
-            {expanded ? "▲" : "▼"}
-          </span>
-        </button>
-        <button
-          type="button"
-          className="topic-approval-section-settings-btn"
-          disabled={weeklyProposer.triggering || weeklyProposer.locked}
-          onClick={weeklyProposer.trigger}
-        >
-          {weeklyProposer.triggering
-            ? "⏳ リクエスト中..."
-            : "📅 週次ネタ提案を今すぐ実行"}
-        </button>
-        <button
-          type="button"
-          className="topic-approval-section-settings-btn"
-          disabled={dailyAutoProposer.triggering || dailyAutoProposer.locked}
-          onClick={dailyAutoProposer.trigger}
-        >
-          {dailyAutoProposer.triggering
-            ? "⏳ リクエスト中..."
-            : "🌅 日次ネタ自動提案を今すぐ実行"}
-        </button>
-        <button
-          type="button"
-          className="topic-approval-section-settings-btn"
-          onClick={() => setShowCategorySettings((v) => !v)}
-        >
-          ⚙️ ネタ型設定
-        </button>
-      </div>
-
-      {(weeklyProposer.locked || dailyAutoProposer.locked) && (
-        <div className="topic-approval-section-weekly-proposer-hint">
-          {weeklyProposer.locked && (
-            <div>
-              ⏳ 週次ネタ提案を実行中...（{weeklyProposer.elapsedMinutes}
-              分経過）30秒おきに自動で確認します
-              {weeklyProposer.sessionUrl && (
-                <>
-                  {" ・ "}
-                  <a
-                    href={weeklyProposer.sessionUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    実行ログを見る
-                  </a>
-                </>
-              )}
-            </div>
-          )}
-          {dailyAutoProposer.locked && (
-            <div>
-              ⏳ 日次ネタ自動提案を実行中...（{dailyAutoProposer.elapsedMinutes}
-              分経過）30秒おきに自動で確認します
-              {dailyAutoProposer.sessionUrl && (
-                <>
-                  {" ・ "}
-                  <a
-                    href={dailyAutoProposer.sessionUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    実行ログを見る
-                  </a>
-                </>
-              )}
-            </div>
+          {directTargets.length > 0 && (
+            <span className="topic-stat-chip">
+              <b>
+                {directGeneratedCount}/{directTargets.length}
+              </b>
+              チャネル生成完了
+            </span>
           )}
         </div>
-      )}
+        {directTopics.length === 0 ? (
+          <p className="topic-section-empty">
+            本日はまだネタが登録されていません
+          </p>
+        ) : (
+          <div className="mini-card-list">
+            {directTopics.map((topic) => (
+              <TopicFanoutCard
+                key={topic.id}
+                topic={topic}
+                onFireTarget={handleFire}
+                firingTargetId={firingTargetId}
+              />
+            ))}
+          </div>
+        )}
+        <div className="topic-section-btn-row">
+          <button
+            type="button"
+            className="topic-section-trigger-btn topic-section-trigger-direct"
+            disabled={dailyAutoProposer.triggering || dailyAutoProposer.locked}
+            onClick={dailyAutoProposer.trigger}
+          >
+            {dailyAutoProposer.triggering
+              ? "⏳ リクエスト中..."
+              : "🌅 日次ネタ自動提案を今すぐ実行"}
+          </button>
+          <button
+            type="button"
+            className="topic-section-settings-btn"
+            onClick={() => setShowCategorySettings((v) => !v)}
+          >
+            ⚙️ この区分のチャネル設定
+          </button>
+        </div>
+        {dailyAutoProposer.locked && (
+          <div className="topic-section-proposer-hint">
+            ⏳ 日次ネタ自動提案を実行中...（{dailyAutoProposer.elapsedMinutes}
+            分経過）30秒おきに自動で確認します
+            {dailyAutoProposer.sessionUrl && (
+              <>
+                {" ・ "}
+                <a
+                  href={dailyAutoProposer.sessionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  実行ログを見る
+                </a>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="topic-section-card topic-section-gate">
+        <div className="topic-section-title">📦 ネタのストック管理</div>
+        <p className="topic-section-desc">
+          会場特性・一覧アピール型など —
+          承認して在庫を積む、時間制約なし。承認すると対応するチャネルタブ
+          （下）に下書きが生成されます
+        </p>
+        <div className="topic-stat-row">
+          <span className="topic-stat-chip">
+            <b>{gateProposedTopics.length}件</b>承認待ち
+          </span>
+          <span className="topic-stat-chip">
+            <b>{gateApprovedTopics.length}件</b>承認済み・生成中
+          </span>
+        </div>
+        {gateProposedTopics.length === 0 && gateApprovedTopics.length === 0 ? (
+          <p className="topic-section-empty">
+            承認待ち・生成中のネタはありません
+          </p>
+        ) : (
+          <div className="mini-card-list">
+            {gateProposedTopics.map((topic) => (
+              <TopicCard
+                key={topic.id}
+                topic={topic}
+                approvers={approvers}
+                onApprove={onApprove}
+                onReject={onReject}
+                onUpdateTargetLabel={onUpdateTargetLabel}
+              />
+            ))}
+            {gateApprovedTopics.map((topic) => (
+              <TopicFanoutCard
+                key={topic.id}
+                topic={topic}
+                onFireTarget={handleFire}
+                firingTargetId={firingTargetId}
+              />
+            ))}
+          </div>
+        )}
+        <div className="topic-section-btn-row">
+          <button
+            type="button"
+            className="topic-section-trigger-btn topic-section-trigger-gate"
+            disabled={weeklyProposer.triggering || weeklyProposer.locked}
+            onClick={weeklyProposer.trigger}
+          >
+            {weeklyProposer.triggering
+              ? "⏳ リクエスト中..."
+              : "📅 週次ネタ提案を今すぐ実行"}
+          </button>
+          <button
+            type="button"
+            className="topic-section-settings-btn"
+            onClick={() => setShowCategorySettings((v) => !v)}
+          >
+            ⚙️ この区分のチャネル設定
+          </button>
+        </div>
+        {weeklyProposer.locked && (
+          <div className="topic-section-proposer-hint">
+            ⏳ 週次ネタ提案を実行中...（{weeklyProposer.elapsedMinutes}
+            分経過）30秒おきに自動で確認します
+            {weeklyProposer.sessionUrl && (
+              <>
+                {" ・ "}
+                <a
+                  href={weeklyProposer.sessionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  実行ログを見る
+                </a>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {showCategorySettings && (
         <div className="topic-category-settings-panel">
@@ -2429,33 +2252,6 @@ function TopicApprovalSection({
             categories={topicCategories}
             onToggleChannel={onToggleCategoryChannel}
           />
-        </div>
-      )}
-
-      {expanded && (
-        <div className="topic-approval-section-body">
-          {proposedTopics.length === 0 ? (
-            <div className="empty-state">
-              <p>
-                承認待ちのネタはありません（日次・一般/日次・時間制約型はネタ
-                承認を経ずに生成されるため、ここには表示されません）。
-              </p>
-            </div>
-          ) : (
-            <div className="topic-list">
-              {proposedTopics.map((topic) => (
-                <TopicCard
-                  key={topic.id}
-                  topic={topic}
-                  approvers={approvers}
-                  onApprove={onApprove}
-                  onReject={onReject}
-                  onUpdateTargetLabel={onUpdateTargetLabel}
-                />
-              ))}
-            </div>
-          )}
-          <TopicProgressMatrix topics={topics} />
         </div>
       )}
     </div>

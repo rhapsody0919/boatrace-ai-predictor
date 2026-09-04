@@ -12,7 +12,9 @@
   - 週次型（`venue-feature`）: 12時間おきのcronでポーリングする（初期値、運用実績を見て変更可）
   - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする（同じcron間隔でも自然に拾える）
   - 日次・時間制約型（`race-time-critical`）: このパイプラインでは扱わない。既存の`sns-hub-content-generation`（`sns-video-producer-prompt.md`）の手動生成ボタン系が担当する（type選択UIの実装後）
-- **ある場合（API起動）**: `api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`（ADR 0038、`resolveRoutineEnvPrefix`で`platform='x'`の下書きのみこのRoutineに発火する）からの「一部修正」「全部作り直し」操作。ペイロード（`{action: 'revise'|'redo', draftId, reasonCodes, freeText}`）を読み、下記「A'. 修正対応フロー」に進む（0.〜6.はスキップ）
+- **ある場合（API起動）**: ペイロードの`action`で分岐する
+  - `revise`/`redo`: `api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`（ADR 0038、`resolveRoutineEnvPrefix`で`platform='x'`の下書きのみこのRoutineに発火する）からの「一部修正」「全部作り直し」操作。ペイロード（`{action: 'revise'|'redo', draftId, reasonCodes, freeText}`）を読み、下記「A'. 修正対応フロー」に進む（0.〜6.はスキップ）
+  - `generate_now`: `api/admin/sns-hub/topics/[id]/targets/[targetId]/fire.js`（要件26、「⚡今すぐ生成」ボタン）からの即時生成リクエスト。ペイロード（`{action: 'generate_now', targetId}`）を読み、下記「A''. 即時生成フロー」に進む（0.はそのまま実施、1.をスキップして2.以降に進む）
 
 ### A'. 修正対応フロー（API起動時）
 
@@ -20,6 +22,10 @@
 
 - `revise`: `draftId`の下書きを取得し、`reasonCodes`/`freeText`を反映して修正版を再生成する（3.以降と同じ映像設計・レンダリング手順）。新レコードをINSERT（`parent_draft_id`に元の`draftId`、`content_group_id`は元の下書きと同じ値を維持、`status: 'pending_review'`）し、元レコードを`status: 'archived'`・`archived_at`更新する
 - `redo`: 同様だが題材選定からやり直す。元の下書きに紐づく`sns_topic_targets`行を確認し、まだ`generated`のままなら`pending`に戻して1.のclaimを再実行するか、同じネタのまま作り直すかは`freeText`の内容から判断する（「別のネタにしてほしい」という指摘であれば、対応する`sns_topic_targets`を`skipped`にし、人間に別ネタの承認を委ねる）
+
+### A''. 即時生成フロー（API起動時、要件26）
+
+対象は既に`status='pending'`であることがAPI側（`fire.js`）で検証済みの1件のみ。ポーリング起動の「1. claim対象の取得・claim」を丸ごとスキップし、`claimTopicTarget(targetId, routineRunId)`（`scripts/lib/snsTopics.js`）を`targetId`に対して直接呼ぶ。**戻り値がnullの場合**（ボタンを押した直後に通常ポーリングの別実行に先取りされた等）は、生成を行わずそのまま終了する（エラーではない、ADR 0036と同じ扱い）。claimに成功したら「2. ネタ本文・根拠insightの確認」以降は通常フローと同一。
 
 ## 0. 蓄積されたフィードバックの確認
 

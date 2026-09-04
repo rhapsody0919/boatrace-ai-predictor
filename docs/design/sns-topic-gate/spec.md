@@ -84,6 +84,27 @@
 - **用語ルール**: 「競艇」使用禁止等、`.claude/rules/code-style.md`準拠
 - **法的制約**: TikTok向けチャネルは既存のガンブル関連ポリシー制約（`docs/operation/tiktok-posting-operations.md`、2026-09-01/02確立）を、分離後の専用パイプラインにそのまま引き継ぐ
 
+## 2026-09-04追記: 経路統合・カテゴリ修正
+
+sns-topic-gate実装後、`generate.js`/`SNS_HUB_ROUTINE`（Pipeline A、要件17で「拡張する」としていた既存の手動生成ボタン）を別経路として残す設計を、ユーザーとの議論を経て撤回した。1つのネタが複数チャネルでそれぞれ独自の内容（メッセージ・動画構成・デザイン）で生成される、という要件自体が`sns_topic_targets`のfan-out構造と一致するため、別経路を維持する理由が無いと判断した。
+
+### 修正後の方針
+
+- **経路は1本**（`sns_topics`→`sns_topic_targets`→チャネル別パイプライン）。分岐点は`sns_content_types.requires_topic_approval`のみ
+- **`requires_topic_approval=false`（自動承認・当日運用）の対象を拡大**: 選手調子（racer-condition）・モーター調子（motor-condition）に加え、イン崩れ注意度（volatility-index）・予想数値フック型（prediction-hook）・的中/答え合わせ型（prediction-accuracy）を含める。理由: これらは時間制約があり、人間が承認を待つと投稿機会を逃す。人間の判断は「型×チャネル設定でONにするか」と「⚡今すぐ生成を押すか」に集約する
+- **`requires_topic_approval=true`（要承認・ストック管理）の対象を拡大**: 会場特性（venue-characteristic）に加え、evergreenの残り4型（一覧アピール型・豆知識型・新機能紹介型・レース考察型）を将来的に含める。それぞれ専用の候補選定ロジック（ネタ提案Routine）が必要（本追記時点では未着手、要件23参照）
+- **`generate.js`/`SNS_HUB_ROUTINE`・手動生成パネル（`GENERATE_MODES`）は全廃止**。既存の週次/日次ネタ提案ボタン（要件17で言及していたものとは別に、tasks.mdタスク19で先行実装済み）に完全統合する
+- **`sns_topic_targets`の各行に「⚡今すぐ生成」ボタンを追加**（新要件23）。ポーリング待ちを省略し、対象チャネルパイプラインを即時発火する。承認要否に関わらず全ターゲット行に共通で使える
+
+### 新要件
+
+| # | 要件 | 優先度 | 受入基準 |
+|---|---|---|---|
+| 23 | 「⚡今すぐ生成」ボタン | 高 | `sns_topic_targets.status='pending'`の行に対し、対象チャネルパイプラインのRoutineを即時発火するボタンをUIに追加する。既存の`fireRoutine`パターンを再利用し、対象1件のみを狙って処理させるペイロードを渡す |
+| 24 | daily-auto Routineの対象カテゴリ修正 | 高 | `docs/operation/sns-topic-proposer-daily-auto.md`の型一覧から古い前提（回収率型・出目分布型を含む）を修正し、選手調子・モーター調子・イン崩れ・予想数値フック型・的中の5型に揃える |
+| 25 | evergreen残り4型のネタ提案Routine新設 | 中（別イテレーション） | 一覧アピール型・豆知識型・新機能紹介型・レース考察型それぞれに専用の候補選定ロジックを設計し、`sns_topic_categories`へ登録した上でネタ提案Routineに組み込む。型ごとに編集判断が必要なため、本追記では設計を確定せず個別に着手する |
+| 26 | sns-hub UI再設計（🌅当日の運用／📦ストック管理の2ブロック化） | 高 | `requires_topic_approval`で2ブロックに分け、両ブロックとも「ネタ本文＋チャネル別チップ（generated/pending/skipped + ⚡今すぐ生成）」の共通カード構造にする。承認待ちカードにのみ承認/却下ボタンを追加で表示する |
+
 ## 未確定事項
 
 | # | 項目 | いつ・誰が決めるか |

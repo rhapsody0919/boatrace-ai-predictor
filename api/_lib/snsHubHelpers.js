@@ -270,6 +270,24 @@ export async function getTopicTargets(topicId) {
   return response.json();
 }
 
+/** 「⚡今すぐ生成」ボタン用。単一ターゲットをplatform付きで取得する（要件26） */
+export async function getTopicTargetById(id) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_topic_targets?id=eq.${id}&select=*,sns_target_accounts(platform,account_label)`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_topic_targets取得エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
 /**
  * ターゲットをpending⇔skippedで切り替える（要件14、チャネルラベルの手動調整）。
  * claim済み・生成済みのターゲットは対象外（statusがpending/skippedの場合のみ許可）。
