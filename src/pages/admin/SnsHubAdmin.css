@@ -133,14 +133,6 @@
   color: var(--color-gray-500);
 }
 
-/* ネタ駆動マルチチャネルパイプライン（Pipeline B）の手動実行パネル。
-   daily/evergreen（Pipeline A）とは別Routineであることが分かるよう
-   .manual-generate-panelを共有しつつ独立したブロックとして配置する
-   （2026-09-02追加）。.manual-generate-panel自体のmargin-bottom: 1remで
-   上のパネルとの間隔は既に確保されているため、.topic-pipeline-panel固有の
-   追加スタイルは無い（2026-09-03、コードレビューで指摘: 以前のmargin-top:
-   -0.4remは逆に2パネルを近づけてしまい、視覚的に分離する意図と矛盾していた） */
-
 .manual-generate-block {
   display: flex;
   align-items: center;
@@ -1182,8 +1174,15 @@
   overflow: hidden;
 }
 
+.topic-approval-section-header-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
 .topic-approval-section-header {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -1193,6 +1192,28 @@
   background: none;
   cursor: pointer;
   text-align: left;
+}
+
+/* 「ネタ型設定」は元は他のプラットフォームタブと同列だったが発見しづらいと
+   指摘され、ネタ承認セクションのヘッダーから開閉するボタンに変更した
+   （2026-09-04）。開閉トグル(topic-approval-section-header)とは独立した
+   ボタンにするため、header-row内の兄弟要素として配置する */
+.topic-approval-section-settings-btn {
+  flex-shrink: 0;
+  margin: 0.4rem 0.6rem 0.4rem 0;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 6px;
+  background: white;
+  color: var(--color-gray-700);
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.topic-category-settings-panel {
+  padding: 0 0.75rem 0.75rem;
+  border-top: 1px solid var(--color-gray-200);
 }
 
 .topic-approval-section-title {
@@ -1362,44 +1383,59 @@
   margin: 0 0 0.5rem;
 }
 
-/* テーブル自体が横に長くなりやすい（ネタ×アカウント数）ため、ページ本体は
-   横スクロールさせずこのラッパーだけでスクロールを吸収する */
-.topic-progress-matrix-scroll {
-  overflow-x: auto;
+/* 元はtable実装（tdにwhite-space:nowrap指定）だったが、実データの長文
+   topic_text（80〜100字）でセルoverflowにより隣接セルと視覚的に重なる
+   不具合が発生したため、カード+chip群のレイアウトに再設計した（2026-09-04） */
+.topic-progress-matrix-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.topic-progress-matrix {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 0.8rem;
-}
-
-.topic-progress-matrix td {
+.topic-progress-matrix-card {
   border: 1px solid var(--color-gray-200);
-  padding: 0.4rem 0.6rem;
-  white-space: nowrap;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  background: var(--surface-card);
 }
 
 .topic-progress-matrix-topic-text {
-  color: var(--color-gray-800);
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  max-width: 220px;
-  white-space: normal;
+  color: var(--text-primary);
+  line-height: 1.5;
 }
 
-.topic-progress-matrix-cell-pending {
+.topic-progress-matrix-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.topic-progress-matrix-chip {
+  display: inline-block;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.topic-progress-matrix-chip-pending {
   color: var(--color-gray-500);
 }
 
-.topic-progress-matrix-cell-claimed {
+.topic-progress-matrix-chip-claimed {
   color: var(--color-primary-500);
 }
 
-.topic-progress-matrix-cell-generated {
+.topic-progress-matrix-chip-generated {
   color: var(--color-success);
+  border-color: var(--color-success);
 }
 
-.topic-progress-matrix-cell-skipped {
+.topic-progress-matrix-chip-skipped {
   color: var(--color-gray-400);
   text-decoration: line-through;
 }

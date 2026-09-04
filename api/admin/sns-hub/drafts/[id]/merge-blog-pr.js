@@ -32,6 +32,53 @@ function extractPrNumber(prUrl) {
   return match ? Number(match[1]) : null;
 }
 
+// ブログ下書きのPRは`docs/operation/sns-pipeline-blog.md`の手順で常に
+// `gh pr create --draft`で作られる（人間承認前にマージされるのを防ぐ意図）。
+// GitHubの通常マージAPI（PUT /pulls/:n/merge）はDraft PRを拒否するため、
+// マージ前にGraphQL `markPullRequestReadyForReview`でReady化する必要がある
+// （REST APIにはDraft→Ready変換の手段が無い）。2026-09-04、この変換が
+// 未実装のままだったため「承認してもPRがマージされない」不具合が発生していた
+async function markPullRequestReadyIfDraft(githubToken, prNumber) {
+  const prResponse = await fetch(
+    `https://api.github.com/repos/${GITHUB_REPO}/pulls/${prNumber}`,
+    {
+      headers: {
+        Authorization: `Bearer ${githubToken}`,
+        Accept: "application/vnd.github+json",
+      },
+    },
+  );
+  if (!prResponse.ok) {
+    const errorBody = await prResponse.text();
+    throw new Error(
+      `GitHub PR情報の取得に失敗しました (${prResponse.status}): ${errorBody}`,
+    );
+  }
+  const pr = await prResponse.json();
+  if (!pr.draft) {
+    return;
+  }
+
+  const graphqlResponse = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${githubToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query:
+        "mutation($id: ID!) { markPullRequestReadyForReview(input: { pullRequestId: $id }) { pullRequest { id } } }",
+      variables: { id: pr.node_id },
+    }),
+  });
+  const graphqlResult = await graphqlResponse.json();
+  if (!graphqlResponse.ok || graphqlResult.errors) {
+    throw new Error(
+      `Draft PRのReady化に失敗しました: ${JSON.stringify(graphqlResult.errors || graphqlResult)}`,
+    );
+  }
+}
+
 export default async function handler(req) {
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
@@ -85,6 +132,12 @@ export default async function handler(req) {
         { error: "この下書きにはpr_urlが設定されていません" },
         409,
       );
+    }
+
+    try {
+      await markPullRequestReadyIfDraft(githubToken, prNumber);
+    } catch (error) {
+      return jsonResponse({ error: error.message }, 502);
     }
 
     const mergeResponse = await fetch(
