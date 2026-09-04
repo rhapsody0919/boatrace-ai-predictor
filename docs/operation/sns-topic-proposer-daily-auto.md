@@ -49,13 +49,13 @@
 
 ## 4. ネタの登録（承認レス）
 
-1. `getContentTypeByKey("daily-auto")`（`scripts/lib/snsTopics.js`）で型IDを取得する
+1. **型ID（`contentTypeId`）は2.で分類したcategory_key経由で解決する**（`getContentTypeByKey("daily-auto")`の固定呼び出しは使わない）。`getTopicCategories()`（`scripts/lib/snsTopics.js`）でカテゴリ一覧を取得し、category_keyが一致する行の`content_type_id`列をそのまま`contentTypeId`として使う。理由: `racer-condition`/`motor-condition`/`volatility-index`は`sns_topic_categories`上で`daily-auto`型に紐づくが、`prediction-hook`/`prediction-accuracy`は同じテーブル上で**`race-time-critical`型に紐づいている**（`docs/db-migration/044_sns_topic_categories.sql`参照、当初「topic-gateにはまだ未接続」として登録されていた名残）。固定で`daily-auto`を使うと、この2型のネタが誤った`content_type_id`で登録されてしまう（2026-09-04、コードレビューで発覚）
 2. `getTargetAccounts()`（同ファイル）でactiveな配信先アカウント一覧を取得し、3.で得たプラットフォーム名に該当するものを`targetAccountIds`（`status='pending'`にするアカウント）として集める
 3. `createTopicWithTargets({ topicText, contentTypeId, sourceInsightIds, autoApprove: true, targetAccountIds })`を呼ぶ。**`autoApprove: true`固定**（`status='approved'`で即座に作成され、各チャネル別パイプラインのポーリング対象になる）。`targetAccountIds`に含まれないアカウントも行は作られるが`status='skipped'`になる（既定除外、人間が個別に変更可能）
 
 ## 制約（絶対厳守）
 
-- 頻度上限は1日1本（`sns_content_types.daily-auto`の`cadence='daily'`と一致させる）
+- 頻度上限は1日1本、ただしこれは**早朝cronでの自動実行**（`racer-condition`/`motor-condition`/`volatility-index`、`sns_content_types.daily-auto`の`trigger_mode='auto'`）に適用する上限（`cadence='daily'`と一致させる）。`prediction-hook`/`prediction-accuracy`（`race-time-critical`型、`trigger_mode='manual'`＝そもそも自動cronの対象外）は日中に人間が🌅ボタンでレースごとに複数回手動発火することを想定しており、この上限の対象外
 - 当日レース開催が無い日、または実データの裏付けが取れない日は提案しない（見送りであり不具合ではない）
 - 承認レス運用のため、このRoutineの判断品質が全体の信頼性に直結する。迷う題材は選ばず、より明確な題材か非該当（提案なし）を選ぶ
 - このRoutineは`sns_drafts`（下書き）を一切生成しない。ネタの登録（`sns_topics`/`sns_topic_targets`）のみ

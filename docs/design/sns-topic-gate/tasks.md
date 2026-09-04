@@ -95,10 +95,10 @@
 
 ## 経路統合・カテゴリ修正（2026-09-04追記、spec.md追記節に対応）
 
-- [ ] **24. daily-auto Routineの対象カテゴリ修正**
-  `docs/operation/sns-topic-proposer-daily-auto.md`の型一覧表から回収率型・出目分布型を除外し（TikTokポリシー上どのみち新規制作停止中）、イン崩れ注意度・予想数値フック型・的中/答え合わせ型を対象に追加する。`sns_topic_categories`側の該当カテゴリが`active=true`であることも確認する。依存なし。
+- [x] **24. daily-auto Routineの対象カテゴリ修正**
+  `docs/operation/sns-topic-proposer-daily-auto.md`の型一覧表から回収率型・出目分布型を除外し（TikTokポリシー上どのみち新規制作停止中）、イン崩れ注意度・予想数値フック型・的中/答え合わせ型を対象に追加する。`sns_topic_categories`側の該当カテゴリが`active=true`であることも確認する。依存なし。**2026-09-04コードレビューで追加修正**: `prediction-hook`/`prediction-accuracy`は`sns_topic_categories`上で`race-time-critical`型に紐づく（`daily-auto`ではない）ことが判明。ステップ4の型ID解決を`getContentTypeByKey("daily-auto")`固定からcategory_key経由の解決に修正し、頻度上限（1日1本）の適用範囲もtrigger_mode='auto'のカテゴリのみに限定する記述に修正した。
 
-- [ ] **25. `generate.js`/`SNS_HUB_ROUTINE`・手動生成パネルの全廃止**
+- [x] **25. `generate.js`/`SNS_HUB_ROUTINE`・手動生成パネルの全廃止**
   `api/admin/sns-hub/generate.js`・`triggerGeneration`（`snsHubService.js`）・`GENERATE_MODES`/`manual-generate-panel`関連のJSX・CSSを削除する。既存の週次/日次ネタ提案ボタンに完全統合済みであることを確認してから削除する。タスク24に依存（daily-autoの対象拡大が先）。
 
 - [x] **26. 「⚡今すぐ生成」ボタンの追加**
