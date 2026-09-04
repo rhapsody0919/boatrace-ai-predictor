@@ -27,7 +27,15 @@ export default async function handler(req) {
     return jsonResponse({ error: "Supabase環境変数が未設定です" }, 500);
   }
 
-  const match = req.url.match(/topic-categories\/([^/]+)\/channels\/([^/]+)$/);
+  // Vercelの複数動的セグメントを持つルート（[id]/channels/[platform]）では、
+  // req.urlに抽出済みパラメータがクエリ文字列として付与される
+  // （例: ?id=...&platform=...）。$アンカーで生のreq.urlに直接マッチさせると
+  // クエリ文字列ごと誤って取り込んでしまいUUID検証に失敗する
+  // （2026-09-04、topics/[id]/targets/[targetId].jsで発覚した同型の不具合）。
+  // 必ずpathnameのみを対象にする
+  const match = new URL(req.url).pathname.match(
+    /topic-categories\/([^/]+)\/channels\/([^/]+)$/,
+  );
   const categoryId = match?.[1];
   const platform = match?.[2];
   if (!isValidUuid(categoryId)) {

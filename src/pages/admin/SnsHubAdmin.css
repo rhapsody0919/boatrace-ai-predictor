@@ -798,49 +798,6 @@
   cursor: not-allowed;
 }
 
-.topic-reject-panel {
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  background: var(--color-gray-50);
-  border: 1px solid var(--color-gray-200);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.topic-reject-panel-textarea {
-  width: 100%;
-  min-height: 4.5rem;
-  padding: 0.5rem;
-  border: 1px solid var(--color-gray-200);
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-family: inherit;
-  resize: vertical;
-  box-sizing: border-box;
-}
-
-.topic-reject-panel-insight {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  color: var(--color-gray-600);
-  cursor: pointer;
-}
-
-.topic-reject-panel-insight:has(input:disabled) {
-  color: var(--color-gray-300);
-  cursor: not-allowed;
-}
-
-.topic-reject-panel-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
 @media (max-width: 480px) {
   .draft-actions {
     flex-direction: column;

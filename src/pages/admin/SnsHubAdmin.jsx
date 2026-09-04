@@ -104,6 +104,18 @@ const CONTENT_REVISION_REASONS = [
   { code: "tone-adjustment", label: "トーン調整" },
 ];
 
+// ネタ承認の却下理由（2026-09-04追加、ユーザー要望: 自由記述だけだと面倒なので
+// 選択式でタップできるようにしてほしい）。下書きの却下理由（表現・デザイン等）
+// とは性質が異なり、ネタ選定自体の問題を扱うため専用リストにする
+const TOPIC_REJECTION_REASONS = [
+  { code: "outdated-or-inaccurate", label: "内容が古い・不正確" },
+  { code: "duplicate-topic", label: "既出のネタと重複" },
+  { code: "weak-appeal", label: "訴求が弱い" },
+  { code: "overhyped-wording", label: "表現が誇大・煽り気味" },
+  { code: "policy-risk", label: "TikTok等ガイドライン抵触の懸念" },
+  { code: "wrong-data-selection", label: "会場・データの選定ミス" },
+];
+
 // 2026-09-01、content-multi-channel-pipeline（spec.md FR6・screens.md）で
 // ステータス軸タブからプラットフォーム軸タブへ再構成した。以前は「承認待ち/
 // 投稿準備完了/投稿済み」が主タブだったが、note/blog/youtubeが増えチャネルを
@@ -2090,8 +2102,9 @@ function TopicCard({
   );
   const targets = topic.sns_topic_targets || [];
   // 却下理由の入力パネル。即時却下ではなく、簡単な理由フィードバックを
-  // 挟めるようにする（2026-09-04ユーザー要望、draftのRevisionPanelと同じ
-  // 「自由記述＋今後の生成方針に反映するか」のパターンを踏襲）
+  // 挟めるようにする（2026-09-04ユーザー要望）。draft revise/redoと同じ
+  // RevisionPanel（チップ選択+自由記述）をTOPIC_REJECTION_REASONSで流用し、
+  // タップだけで理由を選べるようにする（自由記述だけだと面倒との指摘）
   const [showRejectPanel, setShowRejectPanel] = useState(false);
 
   return (
@@ -2119,9 +2132,20 @@ function TopicCard({
         onSelect={setSelectedApproverId}
       />
       {showRejectPanel ? (
-        <TopicRejectPanel
+        <RevisionPanel
+          mode="revise"
+          reasons={TOPIC_REJECTION_REASONS}
           onCancel={() => setShowRejectPanel(false)}
-          onSubmit={({ reason, saveAsInsight }) => {
+          onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
+            const reasonLabels = reasonCodes
+              .map(
+                (code) =>
+                  TOPIC_REJECTION_REASONS.find((r) => r.code === code)?.label,
+              )
+              .filter(Boolean);
+            const reason = [reasonLabels.join("、"), freeText.trim()]
+              .filter(Boolean)
+              .join(" / ");
             onReject(topic.id, selectedApproverId, reason, saveAsInsight);
             setShowRejectPanel(false);
           }}
@@ -2144,52 +2168,6 @@ function TopicCard({
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-// ネタ却下時の理由入力パネル（2026-09-04新設）。RevisionPanelと違い、ネタの
-// 却下理由は事前に決め打てる型が少ないため、理由コードのチップは持たず
-// 自由記述のみのシンプルな構成にする
-function TopicRejectPanel({ onCancel, onSubmit }) {
-  const [reason, setReason] = useState("");
-  const [saveAsInsight, setSaveAsInsight] = useState(false);
-  const hasReason = reason.trim().length > 0;
-
-  return (
-    <div className="topic-reject-panel">
-      <textarea
-        className="topic-reject-panel-textarea"
-        placeholder="却下理由（任意）"
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-      />
-      <label className="topic-reject-panel-insight">
-        <input
-          type="checkbox"
-          checked={saveAsInsight}
-          disabled={!hasReason}
-          onChange={(e) => setSaveAsInsight(e.target.checked)}
-        />
-        この理由を今後のネタ選定方針に反映する
-      </label>
-      <div className="topic-reject-panel-actions">
-        <button type="button" className="revision-cancel" onClick={onCancel}>
-          キャンセル
-        </button>
-        <button
-          type="button"
-          className="topic-reject-btn"
-          onClick={() =>
-            onSubmit({
-              reason: reason.trim(),
-              saveAsInsight: saveAsInsight && hasReason,
-            })
-          }
-        >
-          却下する
-        </button>
-      </div>
     </div>
   );
 }
