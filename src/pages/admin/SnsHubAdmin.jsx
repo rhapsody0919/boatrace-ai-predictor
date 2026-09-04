@@ -538,10 +538,12 @@ function SnsHubAdmin() {
             topics: true,
           })
         }
-        onReject={(topicId, approverId) =>
-          handleAction(rejectTopic, [topicId, approverId], {
-            topics: true,
-          })
+        onReject={(topicId, approverId, reason, saveAsInsight) =>
+          handleAction(
+            rejectTopic,
+            [topicId, approverId, reason, saveAsInsight],
+            { topics: true },
+          )
         }
         onUpdateTargetLabel={(topicId, targetId, status) =>
           handleAction(updateTopicTargetLabel, [topicId, targetId, status], {
@@ -2087,6 +2089,10 @@ function TopicCard({
     approvers[0]?.id || null,
   );
   const targets = topic.sns_topic_targets || [];
+  // 却下理由の入力パネル。即時却下ではなく、簡単な理由フィードバックを
+  // 挟めるようにする（2026-09-04ユーザー要望、draftのRevisionPanelと同じ
+  // 「自由記述＋今後の生成方針に反映するか」のパターンを踏襲）
+  const [showRejectPanel, setShowRejectPanel] = useState(false);
 
   return (
     <div className="topic-card">
@@ -2112,20 +2118,76 @@ function TopicCard({
         selectedId={selectedApproverId}
         onSelect={setSelectedApproverId}
       />
-      <div className="topic-card-actions">
-        <button
-          type="button"
-          className="topic-approve-btn"
-          onClick={() => onApprove(topic.id, selectedApproverId)}
-        >
-          ✅ 承認
+      {showRejectPanel ? (
+        <TopicRejectPanel
+          onCancel={() => setShowRejectPanel(false)}
+          onSubmit={({ reason, saveAsInsight }) => {
+            onReject(topic.id, selectedApproverId, reason, saveAsInsight);
+            setShowRejectPanel(false);
+          }}
+        />
+      ) : (
+        <div className="topic-card-actions">
+          <button
+            type="button"
+            className="topic-approve-btn"
+            onClick={() => onApprove(topic.id, selectedApproverId)}
+          >
+            ✅ 承認
+          </button>
+          <button
+            type="button"
+            className="topic-reject-btn"
+            onClick={() => setShowRejectPanel(true)}
+          >
+            却下
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ネタ却下時の理由入力パネル（2026-09-04新設）。RevisionPanelと違い、ネタの
+// 却下理由は事前に決め打てる型が少ないため、理由コードのチップは持たず
+// 自由記述のみのシンプルな構成にする
+function TopicRejectPanel({ onCancel, onSubmit }) {
+  const [reason, setReason] = useState("");
+  const [saveAsInsight, setSaveAsInsight] = useState(false);
+  const hasReason = reason.trim().length > 0;
+
+  return (
+    <div className="topic-reject-panel">
+      <textarea
+        className="topic-reject-panel-textarea"
+        placeholder="却下理由（任意）"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+      />
+      <label className="topic-reject-panel-insight">
+        <input
+          type="checkbox"
+          checked={saveAsInsight}
+          disabled={!hasReason}
+          onChange={(e) => setSaveAsInsight(e.target.checked)}
+        />
+        この理由を今後のネタ選定方針に反映する
+      </label>
+      <div className="topic-reject-panel-actions">
+        <button type="button" className="revision-cancel" onClick={onCancel}>
+          キャンセル
         </button>
         <button
           type="button"
           className="topic-reject-btn"
-          onClick={() => onReject(topic.id, selectedApproverId)}
+          onClick={() =>
+            onSubmit({
+              reason: reason.trim(),
+              saveAsInsight: saveAsInsight && hasReason,
+            })
+          }
         >
-          却下
+          却下する
         </button>
       </div>
     </div>
