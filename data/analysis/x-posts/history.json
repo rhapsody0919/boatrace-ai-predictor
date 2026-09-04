@@ -111,6 +111,17 @@
       "postedAt": "2026-09-02",
       "metrics": null,
       "notes": "content-multi-channel-pipelineのチャネル品質検証、Xチャネル編。ブログ/note/YouTube解説動画（16:9）と同じネタ・同じ実データをYouTube Shorts/TikTok/X共通テンプレート（9:16）で制作。マスコットローテーションとは別系統（新機能ではなくデータ知見ネタのため、まくり成分無し）"
+    },
+    {
+      "date": "2026-09-04",
+      "character": null,
+      "format": "trivia",
+      "content": "豆知識型（年代別・実際の1着率、全期間約23.9万走。ピーク30代19.87%、50代14.00%が20代13.80%をわずかに上回る。現役ベテラン松井繁選手56歳・全国勝率7.16を実例に）",
+      "videoFile": "Supabase Storage sns-hub-media/ea44f9c2-74d6-4ec4-8ffb-0231a10b4dcc/x-ja.mp4（sns_drafts id=6b9aa046-f38f-415b-9536-b5151df02ff0）",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行）。既存TriviaCM.jsx（2026-09-01評価済み・日付非依存の恒久トリビア）を再利用、コード変更無し。直近3投稿（accuracy-proof/live-prediction-hook/venue-data-comparison）と型重複なし。active insight(d4678ad4)を踏まえ松井繁選手を主語にした断定的キャプションに調整。sns_drafts承認待ち。"
     }
   ]
 }
