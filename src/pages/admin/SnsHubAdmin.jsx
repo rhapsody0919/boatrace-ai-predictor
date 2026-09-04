@@ -14,8 +14,8 @@ import {
   approveDraft,
   mergeBlogPr,
   publishYoutube,
-  reviseDraft,
   redoDraft,
+  requestSpecChange,
   markDraftPosted,
   addDraftMetric,
   getInsights,
@@ -245,8 +245,8 @@ function SnsHubAdmin() {
   // fetchで指定した種類だけを再取得する。承認者・戦略メモ・フォーマットカタログは
   // 下書きへの操作(承認・非表示等)の大半では変化しないため、アクションのたびに
   // 4種類全部を再取得していたのを見直した（2026-09-01対応、ユーザーから「ボタン
-  // 操作のたびに遅い」と指摘）。ただし「一部修正」「全部作り直し」の指摘を戦略メモに
-  // 保存するチェック（saveAsInsight）や、戦略メモの却下操作はinsightsも変化させるため、
+  // 操作のたびに遅い」と指摘）。ただし修正指摘（恒久ルール化を選んだ場合）や
+  // 戦略メモの却下操作はinsightsも変化させるため、
   // その呼び出し元だけはinsightsもtrueにする（コードレビューで指摘: draftsだけ再取得
   // すると戦略メモタブが古いまま表示され続け、二重に却下しようとして409エラーになる
   // 不具合があった）。すべて省略した場合は従来通りフル再取得（初回マウント・手動更新
@@ -304,8 +304,7 @@ function SnsHubAdmin() {
 
   // reloadScope: このアクション後にloadDraftsへ渡すfetch指定。省略時はdraftsのみ
   // （大半のアクションはdraftsだけ変化するため）。戦略メモに影響するアクション
-  // （却下、saveAsInsight付きの一部修正/全部作り直し）を呼ぶ箇所はinsights: true
-  // も指定すること
+  // （却下、恒久ルール化を選んだ修正指摘）を呼ぶ箇所はinsights: trueも指定すること
   async function handleAction(actionFn, args, reloadScope = { drafts: true }) {
     try {
       await actionFn(...args);
@@ -336,6 +335,28 @@ function SnsHubAdmin() {
     } catch (err) {
       console.error("今すぐ生成エラー:", err);
       showToast(err.message || "起動リクエストに失敗しました", "error");
+    }
+  }
+
+  // 「制作仕様の変更要望」。handleActionの汎用成功トーストだと、
+  // LINEAR_API_KEY未設定でissueResult.created===falseの場合も「操作を
+  // 反映しました」と表示されてしまい、要望が実際には記録されていないのに
+  // 成功したと誤解される（コードレビューで指摘、handleFireTargetと同じ
+  // 理由でfireRoutineのnot_configuredチェックを個別に行う）
+  async function handleRequestSpecChange(draftId, payload) {
+    try {
+      const result = await requestSpecChange(draftId, payload);
+      if (result?.issue?.created === false) {
+        showToast(
+          `Linear起票がスキップされました（${result.issue.reason}）。要望内容は記録されていません`,
+          "error",
+        );
+      } else {
+        showToast("Linearに起票しました", "success");
+      }
+    } catch (err) {
+      console.error("制作仕様変更要望エラー:", err);
+      showToast(err.message || "起票に失敗しました", "error");
     }
   }
 
@@ -504,16 +525,13 @@ function SnsHubAdmin() {
                   handleAction(publishYoutube, [draft.id, approverId])
                 }
                 onRevise={(payload) =>
-                  handleAction(reviseDraft, [draft.id, payload], {
-                    drafts: true,
-                    insights: true,
-                  })
-                }
-                onRedo={(payload) =>
                   handleAction(redoDraft, [draft.id, payload], {
                     drafts: true,
                     insights: true,
                   })
+                }
+                onRequestSpecChange={(payload) =>
+                  handleRequestSpecChange(draft.id, payload)
                 }
                 onMarkPosted={() => handleAction(markDraftPosted, [draft.id])}
                 onAddMetric={(payload) =>
@@ -977,7 +995,7 @@ function DraftCard({
   onMergeBlogPr,
   onPublishYoutube,
   onRevise,
-  onRedo,
+  onRequestSpecChange,
   onMarkPosted,
   onAddMetric,
   onArchive,
@@ -985,7 +1003,7 @@ function DraftCard({
   const [selectedApproverId, setSelectedApproverId] = useState(
     approvers[0]?.id || null,
   );
-  const [openPanel, setOpenPanel] = useState(null); // null | 'revise' | 'redo'
+  const [openPanel, setOpenPanel] = useState(null); // null | 'feedback'
   const [confirmingArchive, setConfirmingArchive] = useState(false);
   const [expanded, setExpanded] = useState(getDefaultDraftCardExpanded);
 
@@ -993,10 +1011,10 @@ function DraftCard({
     ? `${draft.format} / ${draft.sns_template_variants.variant_name}`
     : draft.format;
 
-  // 承認・修正・作り直しはpending_reviewの下書きにのみ許可される（api/admin/sns-hub側の検証と一致）
+  // 承認・修正はpending_reviewの下書きにのみ許可される（api/admin/sns-hub側の検証と一致）
   const canAct = draft.status === "pending_review";
 
-  // 一部修正/全部作り直しパネルを開いている間は、トグルで折りたたんでも
+  // 修正指摘パネルを開いている間は、トグルで折りたたんでも
   // パネルをアンマウントしない（コードレビューで指摘: 折りたたむと入力中の
   // freeText等がRevisionPanelごと消え、ユーザーに無警告でデータが失われるため）
   const isOpen = expanded || openPanel !== null;
@@ -1106,51 +1124,38 @@ function DraftCard({
                   <button
                     className="draft-action-btn revise"
                     onClick={() =>
-                      setOpenPanel(openPanel === "revise" ? null : "revise")
+                      setOpenPanel(openPanel === "feedback" ? null : "feedback")
                     }
                   >
-                    📝 一部修正
-                  </button>
-                  <button
-                    className="draft-action-btn redo"
-                    onClick={() =>
-                      setOpenPanel(openPanel === "redo" ? null : "redo")
-                    }
-                  >
-                    ❌ 全部作り直し
+                    📝 修正を依頼
                   </button>
                 </div>
 
-                {openPanel === "revise" && (
+                {openPanel === "feedback" && (
                   <RevisionPanel
-                    mode="revise"
+                    mode="draft-feedback"
                     reasons={
                       TEXT_DRAFT_PLATFORMS.has(draft.platform)
                         ? CONTENT_REVISION_REASONS
                         : REVISION_REASONS
                     }
                     onCancel={() => setOpenPanel(null)}
-                    onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
-                      onRevise({
-                        approverId: selectedApproverId,
-                        reasonCodes,
-                        freeText,
-                        saveAsInsight,
-                      });
-                      setOpenPanel(null);
-                    }}
-                  />
-                )}
-                {openPanel === "redo" && (
-                  <RevisionPanel
-                    mode="redo"
-                    onCancel={() => setOpenPanel(null)}
-                    onSubmit={({ freeText, saveAsInsight }) => {
-                      onRedo({
-                        approverId: selectedApproverId,
-                        freeText,
-                        saveAsInsight,
-                      });
+                    onSubmit={(payload) => {
+                      if (payload.category === "spec") {
+                        onRequestSpecChange({
+                          approverId: selectedApproverId,
+                          platform: draft.platform,
+                          message: payload.freeText,
+                        });
+                      } else {
+                        onRevise({
+                          approverId: selectedApproverId,
+                          reasonCodes: payload.reasonCodes,
+                          freeText: payload.freeText,
+                          saveAsInsight: payload.permanent,
+                          scope: payload.scope,
+                        });
+                      }
                       setOpenPanel(null);
                     }}
                   />
@@ -1400,15 +1405,31 @@ function ApproverChips({ approvers, selectedId, onSelect }) {
   );
 }
 
+// mode:
+//  - "topic-reject": ネタ却下用（TopicCard）。理由チップ+自由記述+「今後に反映」
+//    チェックボックスのみのシンプルな形（2026-09-04以前と同じ挙動を維持）
+//  - "draft-feedback": 下書きへの修正指摘用（DraftCard、2026-09-04再設計）。
+//    「一部修正」「全部作り直し」は実務上ほぼ全部作り直しになっていたため
+//    1つのフローに統合した上で、指摘の性質を明示的に2分岐させる:
+//    - コンテンツ品質の指摘: 理由チップ+自由記述。反映期間（今回限り/恒久）と
+//      適用範囲（このチャネルのみ/全チャネル共通）を明示的に選ばせる
+//      （旧「この指摘を今後の生成方針に反映する」チェックボックス1個だと、
+//      恒久化した際の適用範囲が下書きから自動推定される曖昧な挙動だった）
+//    - 制作仕様の変更要望: 尺・BGM等、個別の下書き修正では解決しない要望。
+//      Linear起票のみ行い、下書き自体のステータスは変更しない
 function RevisionPanel({
   mode,
   reasons = REVISION_REASONS,
   onSubmit,
   onCancel,
 }) {
+  const isDraftFeedback = mode === "draft-feedback";
+  const [category, setCategory] = useState("quality"); // "quality" | "spec"
   const [reasonCodes, setReasonCodes] = useState([]);
   const [freeText, setFreeText] = useState("");
-  const [saveAsInsight, setSaveAsInsight] = useState(false);
+  const [saveAsInsight, setSaveAsInsight] = useState(false); // topic-reject用
+  const [permanent, setPermanent] = useState(false); // draft-feedback用（旧saveAsInsight相当）
+  const [scope, setScope] = useState("channel"); // "channel" | "all"
 
   function toggleReason(code) {
     setReasonCodes((prev) =>
@@ -1416,13 +1437,34 @@ function RevisionPanel({
     );
   }
 
-  const canSubmit =
-    mode === "redo" || reasonCodes.length > 0 || freeText.trim().length > 0;
+  const isSpecCategory = isDraftFeedback && category === "spec";
   const hasFreeText = freeText.trim().length > 0;
+  const canSubmit = isSpecCategory
+    ? hasFreeText
+    : reasonCodes.length > 0 || hasFreeText;
 
   return (
     <div className="revision-panel">
-      {mode === "revise" && (
+      {isDraftFeedback && (
+        <div className="revision-category-toggle">
+          <button
+            type="button"
+            className={`revision-category-btn ${category === "quality" ? "selected" : ""}`}
+            onClick={() => setCategory("quality")}
+          >
+            📋 コンテンツ品質の指摘
+          </button>
+          <button
+            type="button"
+            className={`revision-category-btn ${category === "spec" ? "selected" : ""}`}
+            onClick={() => setCategory("spec")}
+          >
+            🔧 制作仕様の変更要望
+          </button>
+        </div>
+      )}
+
+      {!isSpecCategory && (
         <div className="revision-reason-chips">
           {reasons.map((r) => (
             <button
@@ -1441,30 +1483,92 @@ function RevisionPanel({
       <textarea
         className="revision-freetext"
         placeholder={
-          mode === "revise" ? "自由記述（任意）" : "作り直しの意図（任意）"
+          isSpecCategory
+            ? "例: BGMをもっと軽快な曲にしてほしい、尺を20秒に伸ばしてほしい"
+            : "自由記述（任意）"
         }
         value={freeText}
         onChange={(e) => setFreeText(e.target.value)}
       />
 
-      {/* BGM・デザイン等の抜本的な作り込みはこのUIでは行わない設計
-          （.claude/CLAUDE.mdフローB参照）。ここで気づいてもらうための
-          軽いヒントのみ表示する */}
-      <p className="revision-refine-hint">
-        💡 デザイン・BGM等を作り込みたい場合は、Claude Codeで
-        <code>/refine-creative</code>を使ってください（このフォームでは
-        軽微な修正のみ対応）
-      </p>
+      {isSpecCategory ? (
+        <p className="revision-spec-hint">
+          この内容でLinearにチケットを起票します。この下書き自体は変更されません（承認/修正指摘は別途行ってください）。
+          今すぐ複数案を比較しながら作り込みたい場合は、Claude Codeで
+          <code>/refine-creative</code>を使う方が早い場合があります。
+        </p>
+      ) : (
+        <>
+          {/* BGM・デザイン等の抜本的な作り込みはこのUIでは行わない設計
+              （.claude/CLAUDE.mdフローB参照）。ここで気づいてもらうための
+              軽いヒントのみ表示する */}
+          {isDraftFeedback && (
+            <p className="revision-refine-hint">
+              💡 尺・BGM等の制作仕様そのものを変えたい場合は、上の「🔧
+              制作仕様の変更要望」を選んでください
+            </p>
+          )}
 
-      <label className="revision-save-insight">
-        <input
-          type="checkbox"
-          checked={saveAsInsight}
-          disabled={!hasFreeText}
-          onChange={(e) => setSaveAsInsight(e.target.checked)}
-        />
-        この指摘を今後の生成方針に反映する
-      </label>
+          {isDraftFeedback ? (
+            <div className="revision-permanence-group">
+              <span className="revision-permanence-label">反映期間:</span>
+              <label className="revision-radio">
+                <input
+                  type="radio"
+                  name="revision-permanent"
+                  checked={!permanent}
+                  disabled={!hasFreeText}
+                  onChange={() => setPermanent(false)}
+                />
+                今回限り
+              </label>
+              <label className="revision-radio">
+                <input
+                  type="radio"
+                  name="revision-permanent"
+                  checked={permanent}
+                  disabled={!hasFreeText}
+                  onChange={() => setPermanent(true)}
+                />
+                恒久ルール化
+              </label>
+              {permanent && (
+                <>
+                  <span className="revision-permanence-label">適用範囲:</span>
+                  <label className="revision-radio">
+                    <input
+                      type="radio"
+                      name="revision-scope"
+                      checked={scope === "channel"}
+                      onChange={() => setScope("channel")}
+                    />
+                    このチャネルのみ
+                  </label>
+                  <label className="revision-radio">
+                    <input
+                      type="radio"
+                      name="revision-scope"
+                      checked={scope === "all"}
+                      onChange={() => setScope("all")}
+                    />
+                    全チャネル共通
+                  </label>
+                </>
+              )}
+            </div>
+          ) : (
+            <label className="revision-save-insight">
+              <input
+                type="checkbox"
+                checked={saveAsInsight}
+                disabled={!hasFreeText}
+                onChange={(e) => setSaveAsInsight(e.target.checked)}
+              />
+              この指摘を今後の生成方針に反映する
+            </label>
+          )}
+        </>
+      )}
 
       <div className="revision-panel-actions">
         <button className="revision-cancel" onClick={onCancel}>
@@ -1475,13 +1579,16 @@ function RevisionPanel({
           disabled={!canSubmit}
           onClick={() =>
             onSubmit({
+              category: isDraftFeedback ? category : undefined,
               reasonCodes,
               freeText,
-              // チェックボックスはdisabledでもcheckedのstate自体はリセットされない
+              // ラジオ/チェックボックスはdisabledでもstate自体はリセットされない
               // ため、自由記述を消してから送信した場合に備え送信時点で再検証する
               // （コードレビューで指摘: 空のfreeTextとsaveAsInsight:trueが
               // 同時に送信されうる不整合があった）
               saveAsInsight: saveAsInsight && hasFreeText,
+              permanent: permanent && hasFreeText,
+              scope,
             })
           }
         >
@@ -1874,7 +1981,7 @@ function TopicCard({
       />
       {showRejectPanel ? (
         <RevisionPanel
-          mode="revise"
+          mode="topic-reject"
           reasons={TOPIC_REJECTION_REASONS}
           onCancel={() => setShowRejectPanel(false)}
           onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
