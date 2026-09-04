@@ -108,28 +108,6 @@ export async function archiveDraft(draftId) {
   });
 }
 
-/**
- * 生成Routineを手動起動する（承認済みストックが少ない時の補充用）
- * @param {'daily'|'evergreen'} mode
- */
-/**
- * @param {string} mode - 'daily' | 'evergreen'
- * @param {object} [options]
- * @param {string[]} [options.platforms] - 省略時はAPI側で全プラットフォーム対象になる
- * @param {number} [options.count] - 省略時はAPI側のデフォルト範囲になる
- * @param {string} [options.format] - 省略時はRoutine側の自動選定ロジックに従う
- *   （2026-09-02追加、ユーザー要望: どの型を生成するか選びたい）
- */
-export async function triggerGeneration(
-  mode,
-  { platforms, count, format } = {},
-) {
-  return request("/generate", {
-    method: "POST",
-    body: JSON.stringify({ mode, platforms, count, format }),
-  });
-}
-
 /** TikTok等のエンゲージメント指標を手動入力する */
 export async function addDraftMetric(
   draftId,
