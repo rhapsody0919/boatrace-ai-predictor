@@ -35,7 +35,7 @@ import {
 import {
   canShareVideo,
   shareVideoFile,
-  downloadVideoBlob,
+  downloadFileBlob,
 } from "../../utils/webShare";
 import Toast, { useToast } from "../../components/Toast";
 import {
@@ -366,8 +366,11 @@ function SnsHubAdmin() {
   // 個別にメッセージを出し分ける。マージ自体はエンドポイント側で同期的に
   // 完結する設計のため（api/admin/sns-hub/drafts/[id]/merge-blog-pr.js）、
   // ここでの確認はポーリングではなく単発のレスポンス確認で足りる。
-  // Toastは2秒で自動消滅・white-space: nowrap設計のため、PR URLは埋め込まず
-  // 短い確認メッセージのみ表示する（URL自体は下書きプレビューに別途表示済み）
+  // Toastは2秒で自動消滅・white-space: nowrap・max-width指定無しで画面中央
+  // 固定表示する設計（Toast.jsx）のため、既存メッセージ（15文字前後）より
+  // 大幅に長い文言はモバイル幅で画面外にはみ出すリスクがある（コードレビュー
+  // で指摘）。PR URL等の詳細は埋め込まず短い確認メッセージのみ表示する
+  // （URL自体は下書きプレビューに別途表示済み）
   async function handleMergeBlogPr(draftId, approverId) {
     try {
       const result = await mergeBlogPr(draftId, approverId);
@@ -375,15 +378,9 @@ function SnsHubAdmin() {
         const shaLabel = result.merge.sha
           ? `(${result.merge.sha.slice(0, 7)})`
           : "";
-        showToast(
-          `PRをマージしました${shaLabel}。本番反映まで通常1〜2分`,
-          "success",
-        );
+        showToast(`マージしました${shaLabel}`, "success");
       } else {
-        showToast(
-          "マージ結果を確認できません。GitHub側を確認してください",
-          "error",
-        );
+        showToast("マージ結果を確認できません", "error");
       }
       await loadDrafts({ silent: true, fetch: { drafts: true } });
     } catch (err) {
@@ -1291,7 +1288,7 @@ function PostingActionLinks({ draft, onMarkPosted }) {
   async function handleDownload() {
     setDownloadState({ downloading: true, error: null });
     try {
-      await downloadVideoBlob(
+      await downloadFileBlob(
         draft.video_url,
         `${draft.platform}-${draft.language}.mp4`,
       );
@@ -1734,16 +1731,15 @@ function CopyToClipboardButton({ text, label }) {
   );
 }
 
-// カバー画像のダウンロードボタン（2026-09-04追加）。downloadVideoBlob（動画向け、
-// クロスオリジンURLのdownload属性無視問題を回避するfetch→Blob方式）は
-// 画像URLに対しても中身が汎用的にそのまま使える
+// カバー画像のダウンロードボタン（2026-09-04追加）。downloadFileBlob（クロス
+// オリジンURLのdownload属性無視問題を回避するfetch→Blob方式）を画像URLにも使う
 function DownloadImageButton({ imageUrl, fileName, label }) {
   const [state, setState] = useState({ downloading: false, error: null });
 
   async function handleDownload() {
     setState({ downloading: true, error: null });
     try {
-      await downloadVideoBlob(imageUrl, fileName);
+      await downloadFileBlob(imageUrl, fileName);
       setState({ downloading: false, error: null });
     } catch (err) {
       console.error("カバー画像ダウンロードエラー:", err);
