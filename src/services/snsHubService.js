@@ -166,6 +166,25 @@ export async function getTemplateVariants() {
 }
 
 /**
+ * 週次ネタ提案Routine（sns-topic-proposer-weekly）を手動起動する。通常は
+ * 週次cronのみで起動するため、承認済みストックが少ない・動作確認したい
+ * 場面向け（2026-09-04追加）。ネタ登録のみでdraft生成は行わない
+ */
+export async function triggerWeeklyProposer() {
+  return request("/trigger-weekly-proposer", { method: "POST" });
+}
+
+/**
+ * 日次・一般ネタ自動提案Routine（sns-topic-proposer-daily-auto）を手動起動する。
+ * 通常は深夜〜早朝のcronのみで起動するため、承認済みストックが少ない・動作確認
+ * したい場面向け（2026-09-04追加）。autoApprove固定のためネタは即座に
+ * status='approved'で登録される（ネタ承認は経由しない）
+ */
+export async function triggerDailyAutoProposer() {
+  return request("/trigger-daily-auto-proposer", { method: "POST" });
+}
+
+/**
  * 「ネタ承認」タブ用、ネタ一覧を取得する（型情報・進捗マトリクス用のターゲット一覧を含む）
  * @param {string} [status] - 'proposed' | 'approved' | 'rejected' | 'all' | undefined(全件)
  */
