@@ -52,6 +52,18 @@ export const blogPosts = [
     image: "/images/blog/language-switcher-guide.jpg",
   },
   {
+    id: "volatility-index-fukuoka-0904",
+    title: "イン崩れ指数100%のレースの見方 - 本日9/4福岡5Rを実例に判定根拠を解説",
+    description:
+      "龍神レーダーのレース詳細ページに表示される「イン崩れ指数」。2026年9月4日・福岡5Rの発走前データを実例に、指数の算出根拠と会場ごとの効きやすさの違いを実データで解説します。",
+    date: "2026-09-04",
+    category: "データ分析",
+    tags: ["イン崩れ指数", "データ分析", "福岡", "AI予想"],
+    readTime: "5分",
+    featured: false,
+    image: "/images/blog/volatility-index-fukuoka-0904.jpg",
+  },
+  {
     id: "volatility-index-case-study",
     title: "イン崩れ指数100%は当たるのか？9/3住之江6Rの実例で検証",
     description:

@@ -12,14 +12,21 @@
   - 週次型（`venue-feature`）: 12時間おきのcronでポーリングする（初期値、運用実績を見て変更可）
   - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする（同じcron間隔でも自然に拾える）
   - 日次・時間制約型（`race-time-critical`）: このパイプラインでは扱わない。既存の`sns-hub-content-generation`（`sns-video-producer-prompt.md`）の手動生成ボタン系が担当する（type選択UIの実装後）
-- **ある場合（API起動）**: `api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`（ADR 0038、`resolveRoutineEnvPrefix`で`platform='x'`の下書きのみこのRoutineに発火する）からの「一部修正」「全部作り直し」操作。ペイロード（`{action: 'revise'|'redo', draftId, reasonCodes, freeText}`）を読み、下記「A'. 修正対応フロー」に進む（0.〜6.はスキップ）
+- **ある場合（API起動）**: ペイロードの`action`で分岐する
+  - `redo`: `api/admin/sns-hub/drafts/[id]/redo.js`（ADR 0038、`resolveRoutineEnvPrefix`で`platform='x'`の下書きのみこのRoutineに発火する）からの修正指摘操作（2026-09-04、旧「一部修正」`revise.js`と統合済み）。ペイロード（`{action: 'redo', draftId, reasonCodes, freeText}`）を読み、下記「A'. 修正対応フロー」に進む（0.〜6.はスキップ）
+  - `generate_now`: `api/admin/sns-hub/topics/[id]/targets/[targetId]/fire.js`（要件26、「⚡今すぐ生成」ボタン）からの即時生成リクエスト。ペイロード（`{action: 'generate_now', targetId}`）を読み、下記「A''. 即時生成フロー」に進む（0.はそのまま実施、1.をスキップして2.以降に進む）
 
 ### A'. 修正対応フロー（API起動時）
 
-`sns-hub-content-generation`（`docs/operation/sns-video-producer-prompt.md`が担うRoutine）の同種フローと同じ設計思想を踏襲する。
+`sns-hub-content-generation`（`docs/operation/sns-video-producer-prompt.md`が担うRoutine）の同種フローと同じ設計思想を踏襲する。**軽微な修正か題材選定からのやり直しかは、`reasonCodes`/`freeText`の内容から自分で判断する**（2026-09-04、UI側で「一部修正」「全部作り直し」を分けて選ばせていたが実務上ほぼ全部作り直しになっていたため、UIの選択ステップを無くしRoutine側の判断に一本化した）:
 
-- `revise`: `draftId`の下書きを取得し、`reasonCodes`/`freeText`を反映して修正版を再生成する（3.以降と同じ映像設計・レンダリング手順）。新レコードをINSERT（`parent_draft_id`に元の`draftId`、`content_group_id`は元の下書きと同じ値を維持、`status: 'pending_review'`）し、元レコードを`status: 'archived'`・`archived_at`更新する
-- `redo`: 同様だが題材選定からやり直す。元の下書きに紐づく`sns_topic_targets`行を確認し、まだ`generated`のままなら`pending`に戻して1.のclaimを再実行するか、同じネタのまま作り直すかは`freeText`の内容から判断する（「別のネタにしてほしい」という指摘であれば、対応する`sns_topic_targets`を`skipped`にし、人間に別ネタの承認を委ねる）
+- **軽微な修正で足りる場合**（誤字・トーン調整・デザイン指摘等、`reasonCodes`が`typo-or-data-error`/`tone-adjustment`/`design-*`等）: `draftId`の下書きを取得し、`reasonCodes`/`freeText`を反映して修正版を再生成する（3.以降と同じ映像設計・レンダリング手順）。新レコードをINSERT（`parent_draft_id`に元の`draftId`、`content_group_id`は元の下書きと同じ値を維持、`status: 'pending_review'`）し、元レコードを`status: 'archived'`・`archived_at`更新する
+- **題材選定からやり直す場合**（`reasonCodes`に`format-or-topic-change`が含まれる、または`freeText`が「別のネタにしてほしい」等ネタそのものへの不満を示している場合）: 元の下書きに紐づく`sns_topic_targets`行を確認し、まだ`generated`のままなら`pending`に戻して1.のclaimを再実行する。対応する`sns_topic_targets`を`skipped`にし、人間に別ネタの承認を委ねてもよい
+- 迷う場合は軽微な修正（前者）を優先する。安全側に倒すことで、意図せず全く別の題材が生成される事態を避ける
+
+### A''. 即時生成フロー（API起動時、要件26）
+
+対象は既に`status='pending'`であることがAPI側（`fire.js`）で検証済みの1件のみ。ポーリング起動の「1. claim対象の取得・claim」を丸ごとスキップし、`claimTopicTarget(targetId, routineRunId)`（`scripts/lib/snsTopics.js`）を`targetId`に対して直接呼ぶ。**戻り値がnullの場合**（ボタンを押した直後に通常ポーリングの別実行に先取りされた等）は、生成を行わずそのまま終了する（エラーではない、ADR 0036と同じ扱い）。claimに成功したら「2. ネタ本文・根拠insightの確認」以降は通常フローと同一。
 
 ## 0. 蓄積されたフィードバックの確認
 
@@ -71,7 +78,7 @@ claim対象が0件の場合はここで終了する（正常系、失敗では�
 ## 制約（絶対厳守）
 
 - 1回の実行で処理するネタは1件まで
-- **1つのclaim済みターゲットにつき、`sns_drafts`行は必ず1件だけ作る**。生成後に内容の誤り・前提の古さ（レース結果が出た後だった等）に自分で気づいた場合も、同一セッション内で2件目の`sns_drafts`行を作り直さない。6.の完了処理（`markTopicTargetGenerated`）を済ませたら、その回の生成物が最終版であり、修正が必要なら人間の下書き承認画面からのrevise/redo操作（A'節）に委ねる（2026-09-03、Blogパイプラインで同一セッション内に2件のPRが作られる不具合が発生し判明）
+- **1つのclaim済みターゲットにつき、`sns_drafts`行は必ず1件だけ作る**。生成後に内容の誤り・前提の古さ（レース結果が出た後だった等）に自分で気づいた場合も、同一セッション内で2件目の`sns_drafts`行を作り直さない。6.の完了処理（`markTopicTargetGenerated`）を済ませたら、その回の生成物が最終版であり、修正が必要なら人間の下書き承認画面からの修正指摘操作（A'節）に委ねる（2026-09-03、Blogパイプラインで同一セッション内に2件のPRが作られる不具合が発生し判明）
 - claim対象が0件、または実データの裏付けが取れない場合は生成せず終了する（見送りであり不具合ではない）。claim済みのまま放置しない（claim解放の仕組みは未実装のため、途中で断念する場合は`sns_topic_targets.status`を`pending`に手動で戻す）
 - masterへの直接コミット・マージは行わない（このRoutineはデータ登録のみで、コード変更を伴わない）
 - 「競艇」表記禁止、射幸心を煽らない、実データ以外は使わない（`sns-video-producer-prompt.md`絶対厳守1〜3と同じ）

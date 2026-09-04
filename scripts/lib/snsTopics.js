@@ -170,10 +170,12 @@ export async function getTargetAccounts({ platform } = {}) {
  * 逆方向の操作ができなかった（ユーザー指摘）。全アカウント分の行を必ず作成する
  * ことで、そのチャネルは双方向にトグル可能になる。
  * **既知の制約**: ChannelTargetToggleは`requires_topic_approval=true`の型
- * （venue-feature、「ネタ承認」画面）でのみ到達可能。`autoApprove: true`で
- * 即座にstatus='approved'になる型（daily-auto/race-time-critical）は
- * 承認待ち一覧に出ず`TopicProgressMatrix`（表示専用、クリック不可）にのみ
- * 現れるため、作成時点の判定を人間が後から変更する手段が現状無い。
+ * （venue-feature、「ネタ承認」画面の承認待ちカード）でのみ到達可能。
+ * `autoApprove: true`で即座にstatus='approved'になる型（daily-auto/
+ * race-time-critical）は承認待ち一覧に出ず、sns-hub UI再設計後（2026-09-04）は
+ * 🌅当日の運用ブロックのTopicFanoutCard（チャネル別チップ+「⚡今すぐ生成」の
+ * み、pending⇔skipped切替は不可）にのみ現れるため、作成時点の判定を人間が
+ * 後から変更する手段が現状無い。
  * @param {object} params
  * @param {string} params.topicText
  * @param {string} params.contentTypeId

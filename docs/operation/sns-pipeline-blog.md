@@ -4,13 +4,14 @@
 
 **このRoutineはネタを自分で選定しない**。`sns-topic-proposer-weekly.md`・`sns-topic-proposer-daily-auto.md`が作った承認済みネタを拾って生成するだけの、疎結合な下流工程。
 
-**noteパイプライン（`sns-pipeline-note.md`）はこのRoutineが生成した記事本文に依存する**（note下書きはblog記事をnote形式に変換して作る、既存の`content-multi-channel-pipeline-prompt.md`の設計を踏襲）。そのため、このRoutineは他チャネルより先に処理されることが望ましいが、厳密な順序保証はしない（noteパイプライン側がblog未完了時にスキップ・再試行する設計、`sns-pipeline-note.md`参照）。
+**noteパイプライン（`sns-pipeline-note.md`）はこのRoutineが生成した記事本文に依存する**（note下書きはblog記事をnote形式に変換して作る設計）。そのため、このRoutineは他チャネルより先に処理されることが望ましいが、厳密な順序保証はしない（noteパイプライン側がblog未完了時にスキップ・再試行する設計、`sns-pipeline-note.md`参照）。
 
 ## 実行トリガー
 
 - 週次型（`venue-feature`）: 12時間おきのcronでポーリングする
 - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする
-- API起動（revise/redo）: `api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`（`platform='blog'`の下書きのみ）
+- API起動（修正指摘）: `api/admin/sns-hub/drafts/[id]/redo.js`（2026-09-04、旧revise.jsと統合済み）（`platform='blog'`の下書きのみ）
+- API起動（今すぐ生成、要件26）: `api/admin/sns-hub/topics/[id]/targets/[targetId]/fire.js`からのペイロード（`{action: 'generate_now', targetId}`）。`status='pending'`であることは検証済みの1件のみが対象。「1. claim対象の取得・claim」を丸ごとスキップし、`claimTopicTarget(targetId, routineRunId)`（`scripts/lib/snsTopics.js`）を`targetId`に対して直接呼ぶ（`docs/operation/sns-pipeline-x.md`の「A''. 即時生成フロー」と同じ思想）。戻り値がnullなら生成せず終了する（ADR 0036）
 
 ## 0. 蓄積されたフィードバックの確認
 
@@ -60,7 +61,7 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 ## 制約（絶対厳守）
 
 - 1回の実行で処理するネタは1件まで
-- **1つのclaim済みターゲットにつき、`sns_drafts`行・Draft PRは必ず1件だけ作る**。3.の執筆後、レース結果が出ている・前提が古い等の理由で自分で内容の誤りに気づいた場合も、同一セッション内で2件目の記事・PRを作り直さない。誤りに気づいたら、まだINSERT/PR作成前ならその場で書き直してよいが、**一度`sns_drafts`にINSERTしてPRを作った後は、その回の生成物が最終版**とし、7.の完了処理（`markTopicTargetGenerated`）まで進める。修正は人間の下書き承認画面からのrevise/redo操作に委ねる（2026-09-03、レース発走前提で書いた記事とレース結果を反映した記事の2件を同一セッションで作ってしまう不具合が発生し判明。誤った方のPRは`gh pr close`でクローズして解決した）
+- **1つのclaim済みターゲットにつき、`sns_drafts`行・Draft PRは必ず1件だけ作る**。3.の執筆後、レース結果が出ている・前提が古い等の理由で自分で内容の誤りに気づいた場合も、同一セッション内で2件目の記事・PRを作り直さない。誤りに気づいたら、まだINSERT/PR作成前ならその場で書き直してよいが、**一度`sns_drafts`にINSERTしてPRを作った後は、その回の生成物が最終版**とし、7.の完了処理（`markTopicTargetGenerated`）まで進める。修正は人間の下書き承認画面からの修正指摘操作に委ねる（2026-09-03、レース発走前提で書いた記事とレース結果を反映した記事の2件を同一セッションで作ってしまう不具合が発生し判明。誤った方のPRは`gh pr close`でクローズして解決した）
 - claim対象が0件、または実データの裏付けが取れない場合は生成せず終了する
 - masterへの直接コミットは行わない（Draft PRのみ）
 - 「競艇」表記禁止（本文は「ボートレース」）

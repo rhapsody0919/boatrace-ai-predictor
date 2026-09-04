@@ -1,6 +1,7 @@
 /**
- * 公開済みブログ/note記事の定期抜き打ち監査（FR4b、
- * docs/design/content-multi-channel-pipeline/spec.md参照）。
+ * 公開済みブログ/note記事の定期抜き打ち監査
+ * （旧content-multi-channel-pipeline仕様のFR4bとして新設、
+ * 現在は`docs/archive/content-multi-channel-pipeline-spec.md`参照）。
  *
  * FR4の生成時品質ゲート（採点パス）だけでは、採点基準自体の盲点に
  * 気づけない。直近公開された記事から1〜2件をローテーションで人間に

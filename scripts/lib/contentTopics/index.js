@@ -1,8 +1,7 @@
 /**
  * ネタ供給モジュールのレジストリ。
- * 新規5系統目を追加する時は、この配列に1行足すだけでよい
+ * 新規系統を追加する時は、この配列に1行足すだけでよい
  * （各モジュールの内部ロジックには一切触れない）。
- * 詳細: docs/design/content-multi-channel-pipeline/plan.md
  */
 
 import * as newFeatureSource from "./newFeatureSource.js";

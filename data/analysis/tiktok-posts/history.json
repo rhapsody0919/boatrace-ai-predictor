@@ -33,6 +33,17 @@
       "postedAt": null,
       "metrics": null,
       "notes": "TikTokアカウント（@ryujinradar）がシャドウバン中のため投稿を見送り（ユーザー判断）。下書きはapprovedのままsns_draftsにストックし、シャドウバン解消後に投稿可否を再判断する"
+    },
+    {
+      "date": "2026-09-04",
+      "format": "tool-showcase",
+      "axis": null,
+      "content": "一覧アピール型（分析ツール17種類の物量アピール、/winning-technique実タブ数）",
+      "videoFile": "Supabase Storage sns-hub-media/67bb5f3f-4851-4f0d-93a5-640f026cecef/tiktok-ja.mp4（sns_drafts id=b2d723e6-12cc-45b5-9773-1b99180f01bf）",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行）。sns-video-producer-prompt.md絶対厳守13（TikTok向け新規制作は賭けの結果に影響する統計・インサイトを扱わない題材に限定、2026-09-01/02方針転換）に該当しない唯一の型として選定。既存ToolTallyCM.jsx（2026-09-01評価済み・日付非依存の恒久コンテンツ）を再利用、コード変更無し。@ryujinradarのシャドウバンは解消未確認のため、下書きは承認待ちストックとして生成のみ行い、投稿判断はユーザーに委ねる。"
     }
   ]
 }

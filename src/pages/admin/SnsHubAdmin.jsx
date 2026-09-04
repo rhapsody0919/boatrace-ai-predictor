@@ -14,22 +14,23 @@ import {
   approveDraft,
   mergeBlogPr,
   publishYoutube,
-  reviseDraft,
   redoDraft,
+  requestSpecChange,
   markDraftPosted,
   addDraftMetric,
   getInsights,
   rejectInsight,
   getTemplateVariants,
   archiveDraft,
-  triggerGeneration,
-  triggerTopicPipelineGeneration,
   getTopics,
   approveTopic,
   rejectTopic,
   updateTopicTargetLabel,
+  fireTopicTargetNow,
   getTopicCategories,
   updateTopicCategoryChannel,
+  triggerWeeklyProposer,
+  triggerDailyAutoProposer,
 } from "../../services/snsHubService";
 import {
   canShareVideo,
@@ -78,6 +79,16 @@ function formatDateTime(isoString) {
   });
 }
 
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/** JST基準で「今日」の日付（YYYY-MM-DD）かどうかを判定する */
+function isTodayJST(isoString) {
+  if (!isoString) return false;
+  const toJstDateKey = (date) =>
+    new Date(date.getTime() + JST_OFFSET_MS).toISOString().split("T")[0];
+  return toJstDateKey(new Date(isoString)) === toJstDateKey(new Date());
+}
+
 const REVISION_REASONS = [
   { code: "time-expression-error", label: "時制表現の誤り" },
   { code: "gambling-connotation", label: "ギャンブル連想表現" },
@@ -91,6 +102,9 @@ const REVISION_REASONS = [
   { code: "design-color", label: "配色が合わない" },
   { code: "design-font-size", label: "フォントサイズが不適切" },
   { code: "design-visual-material", label: "画像・素材の質が低い" },
+  // 2026-09-04追加、ユーザー指摘: 生成テキストが不自然な日本語（中国語的な
+  // 言い回し）になるケースが多いため専用チップを新設
+  { code: "unnatural-japanese", label: "不自然な日本語（中国語的な言い回し）" },
 ];
 
 // ブログ/note下書き向けの却下理由（spec.md FR5、2026-09-01追加）。
@@ -101,6 +115,20 @@ const CONTENT_REVISION_REASONS = [
   { code: "too-similar-to-existing", label: "既存記事と似すぎている" },
   { code: "typo-or-data-error", label: "誤字・データの誤り" },
   { code: "tone-adjustment", label: "トーン調整" },
+  { code: "unnatural-japanese", label: "不自然な日本語（中国語的な言い回し）" },
+];
+
+// ネタ承認の却下理由（2026-09-04追加、ユーザー要望: 自由記述だけだと面倒なので
+// 選択式でタップできるようにしてほしい）。下書きの却下理由（表現・デザイン等）
+// とは性質が異なり、ネタ選定自体の問題を扱うため専用リストにする
+const TOPIC_REJECTION_REASONS = [
+  { code: "outdated-or-inaccurate", label: "内容が古い・不正確" },
+  { code: "duplicate-topic", label: "既出のネタと重複" },
+  { code: "weak-appeal", label: "訴求が弱い" },
+  { code: "overhyped-wording", label: "表現が誇大・煽り気味" },
+  { code: "policy-risk", label: "TikTok等ガイドライン抵触の懸念" },
+  { code: "wrong-data-selection", label: "会場・データの選定ミス" },
+  { code: "unnatural-japanese", label: "不自然な日本語（中国語的な言い回し）" },
 ];
 
 // 2026-09-01、content-multi-channel-pipeline（spec.md FR6・screens.md）で
@@ -132,41 +160,34 @@ const STATUS_FILTERS = [
 
 // 「ネタ承認」は2026-09-03のユーザー指摘によりタブではなく専用セクション
 // （tab-navigation-rowの上、常時表示）に変更した。「承認→各プラットフォーム
-// タブに生成される」という流れが、同列のタブに埋もれると分かりにくいため
+// タブに生成される」という流れが、同列のタブに埋もれると分かりにくいため。
+// 「ネタ型設定」も同じ理由で2026-09-04にタブ列から外し、ネタ承認セクションの
+// ヘッダーから開く設定パネルに変更した（型ごとのチャネルON/OFFは「ネタ承認」の
+// 前提となる設定であり、コンテンツレビュー用のプラットフォームタブとは
+// 性質が異なるため、5プラットフォームタブと並べると発見しづらいという指摘）
 const NON_PLATFORM_TABS = [
   { id: "insights", label: "戦略メモ" },
   { id: "catalog", label: "フォーマットカタログ" },
-  { id: "topic-categories", label: "ネタ型設定" },
 ];
 
 const TABS = [...PLATFORM_TABS, ...NON_PLATFORM_TABS];
 
-// 手動生成の対象プラットフォーム選択肢。Routineが対応するプラットフォームが
-// 増えたらここに1件足すだけでよい（api/admin/sns-hub/generate.jsの
-// VALID_PLATFORMSと合わせて更新すること）。youtubeは2026-09-01追加
-const GENERATE_PLATFORM_OPTIONS = [
-  { value: "x", label: "X" },
-  { value: "tiktok", label: "TikTok" },
-  { value: "youtube", label: "YouTube" },
-];
-
-// countMaxはapi/admin/sns-hub/generate.jsのCOUNT_MAX_BY_MODEと一致させる
-const GENERATE_MODES = [
-  {
-    mode: "daily",
-    icon: "🎬",
-    label: "当日ネタ",
-    countMax: 5,
-    defaultCount: 2,
-  },
-  {
-    mode: "evergreen",
-    icon: "📦",
-    label: "会場攻略型など",
-    countMax: 10,
-    defaultCount: 3,
-  },
-];
+// sns_template_variants.formatの日本語ラベル。DB側にlabel列が無く英語の
+// kebab-case識別子のみのため、docs/operation/sns-video-producer-prompt.md
+// のフォーマットライブラリの呼称に合わせてここで翻訳する（2026-09-04追加）。
+// race-insightは同ドキュメントに記載が無く由来不明のため、キー名からの
+// 推測ラベル。未知の型（今後Routineが新規登録した場合）は生の英語キーの
+// ままフォールバック表示する
+const FORMAT_LABELS = {
+  "answer-check": "答え合わせ型",
+  "daily-data-list": "本日のデータ一覧型",
+  "live-prediction-hook": "予想数値フック型",
+  "new-feature": "新機能紹介型",
+  "race-insight": "レース考察型",
+  "tool-showcase": "一覧アピール型",
+  trivia: "豆知識型",
+  "venue-ranking": "会場攻略・データ一覧型",
+};
 
 function SnsHubAdmin() {
   // activeTab: プラットフォーム軸の主タブ（tiktok/x/youtube/note/blog/insights/catalog）
@@ -181,71 +202,7 @@ function SnsHubAdmin() {
   const [topicCategories, setTopicCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [generating, setGenerating] = useState(null); // null | 'daily' | 'evergreen'
-  // 手動生成の対象プラットフォーム・本数（モードごとに独立、2026-09-01追加）。
-  // TikTokがシャドウバン気味の時期にX限定で生成したい等の要望への対応
-  const [generatePlatforms, setGeneratePlatforms] = useState(() =>
-    Object.fromEntries(
-      GENERATE_MODES.map((m) => [
-        m.mode,
-        GENERATE_PLATFORM_OPTIONS.map((p) => p.value),
-      ]),
-    ),
-  );
-  const [generateCounts, setGenerateCounts] = useState(() =>
-    Object.fromEntries(GENERATE_MODES.map((m) => [m.mode, m.defaultCount])),
-  );
-  // 手動生成する型の指定（モードごとに独立、2026-09-02追加）。既定は""＝
-  // 「おまかせ（自動選定）」で、Routine側の型選定ロジックに従う。「会場攻略型など」
-  // という曖昧な指定しかできなかったのをユーザー指摘を受けて拡張した
-  const [generateFormats, setGenerateFormats] = useState(() =>
-    Object.fromEntries(GENERATE_MODES.map((m) => [m.mode, ""])),
-  );
-  // 生成リクエスト成功後、手動更新ボタンを押すまで両ボタンを無効化し続ける
-  // （連打による多重起動を防ぐため）
-  const [generationLocked, setGenerationLocked] = useState(false);
-  // fireRoutineは起動を指示するだけで完了を待たないため、Routine自体の詳細な
-  // 進捗（今何をしているか）はアプリ側から取得できない。代わりに(a)実行セッション
-  // へのリンク(b)新しい下書きが増えたかの自動検知、の2つで代替する（ユーザー要望、
-  // 2026-08-31）
-  const [generationSessionUrl, setGenerationSessionUrl] = useState(null);
-  // 経過時間の表示用（クライアント時計、多少ずれても表示上の目安なので実害なし）
-  const [generationFiredAt, setGenerationFiredAt] = useState(null);
-  const [generationElapsedMinutes, setGenerationElapsedMinutes] = useState(0);
-  // 完了検知用の基準時刻はfire時点の下書き一覧から取った「既存の最新created_at」
-  // （サーバー時刻同士の比較にすることで、クライアント/サーバーの時計ずれで
-  // 検知漏れが起きないようにする。コードレビューで指摘）
-  const [generationBaselineCreatedAt, setGenerationBaselineCreatedAt] =
-    useState(null);
-  // ネタ駆動マルチチャネルパイプライン（content-multi-channel-pipeline）用の
-  // 手動実行state。daily/evergreen（Pipeline A）とは別のRoutineであり、
-  // パラメータ（プラットフォーム/本数/型）を選ばせる余地が無いため単純な
-  // ボタン1つで完結する。ロック・完了検知の仕組みは上記と同じパターンだが、
-  // 別Routineなので独立したstateで管理する（2026-09-02追加）。
-  // 2026-09-03、コードレビューで指摘: 両ロックとも同じdrafts配列・同じ
-  // 「!parent_draft_idの新規行が現れたら完了」ヒューリスティックを見ているため、
-  // 片方のRoutineが先に1行INSERTすると、もう片方のuseEffectもそれを「自分の
-  // 生成完了」と誤検知してロック解除してしまう競合状態がある（根本解決には
-  // sns_drafts.routine_run_idへの記録・参照が必要だが未実装）。当面の緩和策として
-  // 両ボタンのdisabled条件に相手のLocked状態も加え、同時実行自体を防ぐ
-  const [topicPipelineGenerating, setTopicPipelineGenerating] = useState(false);
-  const [topicPipelineLocked, setTopicPipelineLocked] = useState(false);
-  const [topicPipelineSessionUrl, setTopicPipelineSessionUrl] = useState(null);
-  const [topicPipelineFiredAt, setTopicPipelineFiredAt] = useState(null);
-  const [topicPipelineElapsedMinutes, setTopicPipelineElapsedMinutes] =
-    useState(0);
-  const [topicPipelineBaselineCreatedAt, setTopicPipelineBaselineCreatedAt] =
-    useState(null);
   const { toast, showToast } = useToast();
-
-  // 手動生成の型選択肢。フォーマットカタログ（sns_template_variants、"型一覧"タブと
-  // 同じデータ源）から重複を除いた型名一覧を出す。ハードコードした一覧を別途持つと
-  // カタログと食い違うため、既に画面にロード済みのtemplateVariantsをそのまま使う
-  // （2026-09-02追加）
-  const evergreenFormatOptions = useMemo(() => {
-    const names = new Set(templateVariants.map((tv) => tv.format));
-    return [...names].sort();
-  }, [templateVariants]);
 
   // 下書きのcontent_group_id → ネタの型、の逆引き。ネタ駆動で生成された下書きに
   // ContentTypeBadgeを表示するために使う（要件15由来、単発投稿にはネタが無いため
@@ -288,8 +245,8 @@ function SnsHubAdmin() {
   // fetchで指定した種類だけを再取得する。承認者・戦略メモ・フォーマットカタログは
   // 下書きへの操作(承認・非表示等)の大半では変化しないため、アクションのたびに
   // 4種類全部を再取得していたのを見直した（2026-09-01対応、ユーザーから「ボタン
-  // 操作のたびに遅い」と指摘）。ただし「一部修正」「全部作り直し」の指摘を戦略メモに
-  // 保存するチェック（saveAsInsight）や、戦略メモの却下操作はinsightsも変化させるため、
+  // 操作のたびに遅い」と指摘）。ただし修正指摘（恒久ルール化を選んだ場合）や
+  // 戦略メモの却下操作はinsightsも変化させるため、
   // その呼び出し元だけはinsightsもtrueにする（コードレビューで指摘: draftsだけ再取得
   // すると戦略メモタブが古いまま表示され続け、二重に却下しようとして409エラーになる
   // 不具合があった）。すべて省略した場合は従来通りフル再取得（初回マウント・手動更新
@@ -347,8 +304,7 @@ function SnsHubAdmin() {
 
   // reloadScope: このアクション後にloadDraftsへ渡すfetch指定。省略時はdraftsのみ
   // （大半のアクションはdraftsだけ変化するため）。戦略メモに影響するアクション
-  // （却下、saveAsInsight付きの一部修正/全部作り直し）を呼ぶ箇所はinsights: true
-  // も指定すること
+  // （却下、恒久ルール化を選んだ修正指摘）を呼ぶ箇所はinsights: trueも指定すること
   async function handleAction(actionFn, args, reloadScope = { drafts: true }) {
     try {
       await actionFn(...args);
@@ -360,186 +316,49 @@ function SnsHubAdmin() {
     }
   }
 
-  // 承認済みストックが少ない時の手動補充用。fireRoutineは起動を指示する
-  // だけで完了を待たないため、生成完了までは数分〜十数分かかる（動画
-  // レンダリングを含む）。完了したかどうかは手動更新ボタン、または下記の
-  // 自動検知（新しい下書きの出現）で確認する
-  function toggleGeneratePlatform(mode, platform) {
-    setGeneratePlatforms((prev) => {
-      const current = prev[mode];
-      const next = current.includes(platform)
-        ? current.filter((p) => p !== platform)
-        : [...current, platform];
-      return { ...prev, [mode]: next };
-    });
-  }
-
-  function handleGenerateCountChange(mode, rawValue, countMax) {
-    const parsed = parseInt(rawValue, 10);
-    // 入力欄を一時的に空にした場合(NaN)にstate更新をスキップすると、画面表示は
-    // 空欄なのに実際に送信される本数は直前の値のまま、という食い違いが生まれる
-    // （コードレビューで指摘）。空にした場合は最小値1にスナップし、表示とstateを
-    // 常に一致させる
-    const clamped = Number.isNaN(parsed)
-      ? 1
-      : Math.min(Math.max(parsed, 1), countMax);
-    setGenerateCounts((prev) => ({ ...prev, [mode]: clamped }));
-  }
-
-  function handleGenerateFormatChange(mode, value) {
-    setGenerateFormats((prev) => ({ ...prev, [mode]: value }));
-  }
-
-  async function handleGenerate(mode) {
-    const platforms = generatePlatforms[mode];
-    if (platforms.length === 0) {
-      showToast("生成対象のプラットフォームを1つ以上選んでください", "error");
-      return;
-    }
-    setGenerating(mode);
+  // 「⚡今すぐ生成」。fireRoutineはRoutine未構築・fire失敗時も例外を投げず
+  // {fired: false, reason: ...}を返すため、handleActionの汎用成功トーストでは
+  // 実際には起動していない場合に誤って成功表示になる（useTopicProposerTriggerの
+  // 既存パターンを踏襲）
+  async function handleFireTarget(topicId, targetId) {
     try {
-      const result = await triggerGeneration(mode, {
-        platforms,
-        count: generateCounts[mode],
-        format: generateFormats[mode] || undefined,
-      });
+      const result = await fireTopicTargetNow(topicId, targetId);
       if (result?.routine?.fired === false) {
-        // fireRoutineはRoutine未構築・fire失敗時も例外を投げず
-        // {fired: false, reason: ...}を返す（コードレビューで指摘:
-        // これを無視すると実際は何も起動していないのに成功表示になる）
         showToast(
-          `生成リクエストがRoutineに届いていません（${result.routine.reason}）。設定を確認してください`,
+          `起動リクエストがRoutineに届いていません（${result.routine.reason}）。Vercel環境変数の設定を確認してください`,
           "error",
         );
       } else {
-        showToast(
-          result.routine.sessionUrl
-            ? "生成をリクエストしました。実行ログのリンクは下に表示されます"
-            : "生成をリクエストしました。数分後に更新ボタンで確認してください",
-          "success",
-        );
-        // 手動更新するまで両ボタンを無効化し続ける（コードレビューで指摘:
-        // fire完了後すぐ再度押せてしまうと、数分かかる生成処理が連打で
-        // 何本も重複起動されるリスクがあった）
-        setGenerationLocked(true);
-        setGenerationSessionUrl(result.routine.sessionUrl || null);
-        setGenerationFiredAt(Date.now());
-        setGenerationElapsedMinutes(0);
-        setGenerationBaselineCreatedAt(
-          drafts.reduce((max, d) => {
-            const t = new Date(d.created_at).getTime();
-            return t > max ? t : max;
-          }, 0),
-        );
+        showToast("生成をリクエストしました", "success");
       }
+      await loadDrafts({ silent: true, fetch: { topics: true } });
     } catch (err) {
-      console.error("生成リクエストエラー:", err);
-      showToast(err.message || "生成リクエストに失敗しました", "error");
-    } finally {
-      setGenerating(null);
+      console.error("今すぐ生成エラー:", err);
+      showToast(err.message || "起動リクエストに失敗しました", "error");
     }
   }
 
-  // 生成リクエスト中、30秒おきに下書き一覧を裏側で再取得し、fire時刻より
-  // 後に作成された下書きが現れたら自動的にロックを解除する（ユーザー要望、
-  // 2026-08-31: 「生成されているのかわからない」への対応）
-  useEffect(() => {
-    if (!generationLocked || !generationFiredAt) return;
-    const interval = setInterval(() => {
-      setGenerationElapsedMinutes(
-        Math.max(0, Math.round((Date.now() - generationFiredAt) / 60000)),
-      );
-      loadDrafts({ silent: true, fetch: { drafts: true } });
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [generationLocked, generationFiredAt, loadDrafts]);
-
-  useEffect(() => {
-    if (!generationLocked || generationBaselineCreatedAt === null) return;
-    // revise/redoも同じSNS_HUB_ROUTINEをfireするため、ポーリング中に別の下書きへ
-    // 一部修正/全部作り直しを行うとその結果が新規下書きとして現れ、今回の手動生成
-    // (generate-daily/evergreen)が完了したと誤検知してしまう（コードレビューで指摘）。
-    // revise/redo由来の下書きは必ずparent_draft_idを持つため、それが無い
-    // （新規content_group_idで作られた）下書きだけを対象にして区別する。
-    // 比較基準もクライアント時計(generationFiredAt)ではなく、fire時点の下書き
-    // 一覧から取ったサーバー側の最新created_atにして時計ずれによる検知漏れを防ぐ
-    const newDraftsCount = drafts.filter(
-      (d) =>
-        new Date(d.created_at).getTime() > generationBaselineCreatedAt &&
-        !d.parent_draft_id,
-    ).length;
-    if (newDraftsCount > 0) {
-      showToast(`✅ ${newDraftsCount}件生成完了しました`, "success");
-      setGenerationLocked(false);
-      setGenerationSessionUrl(null);
-      setGenerationFiredAt(null);
-      setGenerationBaselineCreatedAt(null);
-    }
-  }, [drafts, generationLocked, generationBaselineCreatedAt, showToast]);
-
-  // ネタ駆動マルチチャネルパイプラインの手動実行。パラメータは無く、常に
-  // 新規ネタの選定から開始する（2026-09-02追加）
-  async function handleGenerateTopicPipeline() {
-    setTopicPipelineGenerating(true);
+  // 「制作仕様の変更要望」。handleActionの汎用成功トーストだと、
+  // LINEAR_API_KEY未設定でissueResult.created===falseの場合も「操作を
+  // 反映しました」と表示されてしまい、要望が実際には記録されていないのに
+  // 成功したと誤解される（コードレビューで指摘、handleFireTargetと同じ
+  // 理由でfireRoutineのnot_configuredチェックを個別に行う）
+  async function handleRequestSpecChange(draftId, payload) {
     try {
-      const result = await triggerTopicPipelineGeneration();
-      if (result?.routine?.fired === false) {
+      const result = await requestSpecChange(draftId, payload);
+      if (result?.issue?.created === false) {
         showToast(
-          `生成リクエストがRoutineに届いていません（${result.routine.reason}）。設定を確認してください`,
+          `Linear起票がスキップされました（${result.issue.reason}）。要望内容は記録されていません`,
           "error",
         );
       } else {
-        showToast(
-          result.routine.sessionUrl
-            ? "生成をリクエストしました。実行ログのリンクは下に表示されます"
-            : "生成をリクエストしました。数分後に更新ボタンで確認してください",
-          "success",
-        );
-        setTopicPipelineLocked(true);
-        setTopicPipelineSessionUrl(result.routine.sessionUrl || null);
-        setTopicPipelineFiredAt(Date.now());
-        setTopicPipelineElapsedMinutes(0);
-        setTopicPipelineBaselineCreatedAt(
-          drafts.reduce((max, d) => {
-            const t = new Date(d.created_at).getTime();
-            return t > max ? t : max;
-          }, 0),
-        );
+        showToast("Linearに起票しました", "success");
       }
     } catch (err) {
-      console.error("ネタ駆動パイプライン生成リクエストエラー:", err);
-      showToast(err.message || "生成リクエストに失敗しました", "error");
-    } finally {
-      setTopicPipelineGenerating(false);
+      console.error("制作仕様変更要望エラー:", err);
+      showToast(err.message || "起票に失敗しました", "error");
     }
   }
-
-  useEffect(() => {
-    if (!topicPipelineLocked || !topicPipelineFiredAt) return;
-    const interval = setInterval(() => {
-      setTopicPipelineElapsedMinutes(
-        Math.max(0, Math.round((Date.now() - topicPipelineFiredAt) / 60000)),
-      );
-      loadDrafts({ silent: true, fetch: { drafts: true } });
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [topicPipelineLocked, topicPipelineFiredAt, loadDrafts]);
-
-  useEffect(() => {
-    if (!topicPipelineLocked || topicPipelineBaselineCreatedAt === null) return;
-    const newDraftsCount = drafts.filter(
-      (d) =>
-        new Date(d.created_at).getTime() > topicPipelineBaselineCreatedAt &&
-        !d.parent_draft_id,
-    ).length;
-    if (newDraftsCount > 0) {
-      showToast(`✅ ${newDraftsCount}件生成完了しました`, "success");
-      setTopicPipelineLocked(false);
-      setTopicPipelineSessionUrl(null);
-      setTopicPipelineFiredAt(null);
-      setTopicPipelineBaselineCreatedAt(null);
-    }
-  }, [drafts, topicPipelineLocked, topicPipelineBaselineCreatedAt, showToast]);
 
   if (loading) {
     return (
@@ -567,9 +386,7 @@ function SnsHubAdmin() {
 
   const isInsightsTab = activeTab === "insights";
   const isCatalogTab = activeTab === "catalog";
-  const isTopicCategoriesTab = activeTab === "topic-categories";
-  const isPlatformTab =
-    !isInsightsTab && !isCatalogTab && !isTopicCategoriesTab;
+  const isPlatformTab = !isInsightsTab && !isCatalogTab;
   const activeStatusDef = STATUS_FILTERS.find(
     (f) => f.id === activeStatusFilter,
   );
@@ -593,16 +410,31 @@ function SnsHubAdmin() {
             topics: true,
           })
         }
-        onReject={(topicId, approverId) =>
-          handleAction(rejectTopic, [topicId, approverId], {
-            topics: true,
-          })
+        onReject={(topicId, approverId, reason, saveAsInsight) =>
+          handleAction(
+            rejectTopic,
+            [topicId, approverId, reason, saveAsInsight],
+            { topics: true },
+          )
         }
         onUpdateTargetLabel={(topicId, targetId, status) =>
           handleAction(updateTopicTargetLabel, [topicId, targetId, status], {
             topics: true,
           })
         }
+        onFireTarget={handleFireTarget}
+        topicCategories={topicCategories}
+        onToggleCategoryChannel={(categoryId, platform, enabled) =>
+          handleAction(
+            updateTopicCategoryChannel,
+            [categoryId, platform, enabled],
+            { topicCategories: true },
+          )
+        }
+        onReloadTopics={() =>
+          loadDrafts({ silent: true, fetch: { topics: true } })
+        }
+        showToast={showToast}
       />
 
       <div className="tab-navigation-row">
@@ -613,16 +445,14 @@ function SnsHubAdmin() {
                 ? insights.filter((i) => i.status === "proposed").length
                 : tab.id === "catalog"
                   ? templateVariants.length
-                  : tab.id === "topic-categories"
-                    ? topicCategories.length
-                    : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
-                      // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
-                      // 対応が必要な件数という意味が薄れるため）
-                      drafts.filter(
-                        (d) =>
-                          d.platform === tab.id &&
-                          STATUS_FILTERS[0].statuses.includes(d.status),
-                      ).length;
+                  : // プラットフォームタブの件数バッジは「承認待ち」件数のみを表示する
+                    // （投稿準備完了・投稿済みまで含めると常に大きい数字になり、
+                    // 対応が必要な件数という意味が薄れるため）
+                    drafts.filter(
+                      (d) =>
+                        d.platform === tab.id &&
+                        STATUS_FILTERS[0].statuses.includes(d.status),
+                    ).length;
             return (
               <button
                 key={tab.id}
@@ -634,16 +464,7 @@ function SnsHubAdmin() {
             );
           })}
         </div>
-        <button
-          className="refresh-btn"
-          onClick={() => {
-            setGenerationLocked(false);
-            setGenerationSessionUrl(null);
-            setGenerationFiredAt(null);
-            setGenerationBaselineCreatedAt(null);
-            loadDrafts();
-          }}
-        >
+        <button className="refresh-btn" onClick={() => loadDrafts()}>
           🔄 更新
         </button>
       </div>
@@ -668,173 +489,9 @@ function SnsHubAdmin() {
         </div>
       )}
 
-      <div className="manual-generate-panel">
-        <span className="manual-generate-label">
-          承認済みストックが少ない時の手動生成:
-        </span>
-        {GENERATE_MODES.map((modeConfig) => (
-          <div className="manual-generate-block" key={modeConfig.mode}>
-            <div className="generate-platform-chips">
-              {GENERATE_PLATFORM_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className={`generate-platform-chip${
-                    generatePlatforms[modeConfig.mode].includes(opt.value)
-                      ? " selected"
-                      : ""
-                  }`}
-                  disabled={
-                    generating !== null ||
-                    generationLocked ||
-                    topicPipelineLocked
-                  }
-                  onClick={() =>
-                    toggleGeneratePlatform(modeConfig.mode, opt.value)
-                  }
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            {modeConfig.mode === "evergreen" &&
-              evergreenFormatOptions.length > 0 && (
-                <label className="generate-format-label">
-                  型
-                  <select
-                    className="generate-format-select"
-                    value={generateFormats[modeConfig.mode]}
-                    disabled={
-                      generating !== null ||
-                      generationLocked ||
-                      topicPipelineLocked
-                    }
-                    onChange={(e) =>
-                      handleGenerateFormatChange(
-                        modeConfig.mode,
-                        e.target.value,
-                      )
-                    }
-                  >
-                    <option value="">おまかせ（自動選定）</option>
-                    {evergreenFormatOptions.map((format) => (
-                      <option key={format} value={format}>
-                        {format}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            <label className="generate-count-label">
-              本数
-              <input
-                type="number"
-                className="generate-count-input"
-                min={1}
-                max={modeConfig.countMax}
-                value={generateCounts[modeConfig.mode]}
-                disabled={
-                  generating !== null || generationLocked || topicPipelineLocked
-                }
-                onChange={(e) =>
-                  handleGenerateCountChange(
-                    modeConfig.mode,
-                    e.target.value,
-                    modeConfig.countMax,
-                  )
-                }
-              />
-              <span className="generate-count-max">
-                / 最大{modeConfig.countMax}
-              </span>
-            </label>
-            <button
-              className="manual-generate-btn"
-              disabled={
-                generating !== null ||
-                generationLocked ||
-                topicPipelineLocked ||
-                generatePlatforms[modeConfig.mode].length === 0
-              }
-              onClick={() => handleGenerate(modeConfig.mode)}
-            >
-              {generating === modeConfig.mode
-                ? "⏳ リクエスト中..."
-                : `${modeConfig.icon} ${modeConfig.label}を今すぐ生成`}
-            </button>
-          </div>
-        ))}
-        {generationLocked && (
-          <span className="manual-generate-hint">
-            ⏳ 生成中...（{generationElapsedMinutes}
-            分経過）30秒おきに自動で確認します
-            {generationSessionUrl && (
-              <>
-                {" ・ "}
-                <a
-                  href={generationSessionUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  実行ログを見る
-                </a>
-              </>
-            )}
-          </span>
-        )}
-      </div>
-
-      <div className="manual-generate-panel topic-pipeline-panel">
-        <span className="manual-generate-label">
-          ネタ駆動マルチチャネルパイプライン（新機能/会場特性/データ知見/成績から自動選定・全チャネルへ展開）:
-        </span>
-        <div className="manual-generate-block">
-          <button
-            className="manual-generate-btn"
-            disabled={
-              topicPipelineGenerating || topicPipelineLocked || generationLocked
-            }
-            onClick={handleGenerateTopicPipeline}
-          >
-            {topicPipelineGenerating
-              ? "⏳ リクエスト中..."
-              : "🧵 ネタ駆動パイプラインを今すぐ実行"}
-          </button>
-        </div>
-        {topicPipelineLocked && (
-          <span className="manual-generate-hint">
-            ⏳ 生成中...（{topicPipelineElapsedMinutes}
-            分経過）30秒おきに自動で確認します
-            {topicPipelineSessionUrl && (
-              <>
-                {" ・ "}
-                <a
-                  href={topicPipelineSessionUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  実行ログを見る
-                </a>
-              </>
-            )}
-          </span>
-        )}
-      </div>
-
       <div className="tab-content">
         {isCatalogTab ? (
           <CatalogTab templateVariants={templateVariants} />
-        ) : isTopicCategoriesTab ? (
-          <TopicCategorySettingsTab
-            categories={topicCategories}
-            onToggleChannel={(categoryId, platform, enabled) =>
-              handleAction(
-                updateTopicCategoryChannel,
-                [categoryId, platform, enabled],
-                { topicCategories: true },
-              )
-            }
-          />
         ) : isInsightsTab ? (
           <InsightTab
             insights={insights}
@@ -868,16 +525,13 @@ function SnsHubAdmin() {
                   handleAction(publishYoutube, [draft.id, approverId])
                 }
                 onRevise={(payload) =>
-                  handleAction(reviseDraft, [draft.id, payload], {
-                    drafts: true,
-                    insights: true,
-                  })
-                }
-                onRedo={(payload) =>
                   handleAction(redoDraft, [draft.id, payload], {
                     drafts: true,
                     insights: true,
                   })
+                }
+                onRequestSpecChange={(payload) =>
+                  handleRequestSpecChange(draft.id, payload)
                 }
                 onMarkPosted={() => handleAction(markDraftPosted, [draft.id])}
                 onAddMetric={(payload) =>
@@ -957,6 +611,12 @@ function TopicCategorySettingsTab({ categories, onToggleChannel }) {
     <div className="topic-category-settings">
       <p className="topic-category-settings-hint">
         ネタの型ごとに、各チャネルへの生成対象可否を設定できます。特にTikTokはガイドライン上センシティブなため、実績を見ながら個別に調整してください。廃止済みの型は行がグレーアウトします。
+      </p>
+      <p className="topic-category-settings-hint">
+        例1: 「イン崩れ注意度」でTikTokの投稿が制限を受けた
+        →「イン崩れ注意度」行のTikTok列をOFFにする（他チャネルはそのまま）。
+        例2: 「豆知識型」は成績・確率と無関係
+        →全チャネルONのままでよい。ℹ️アイコンがある行は除外理由をホバーで確認できる。
       </p>
       <div className="topic-category-settings-scroll">
         <table className="topic-category-settings-table">
@@ -1048,7 +708,7 @@ function TemplateVariantList({ templateVariants }) {
       {Object.entries(grouped).map(([format, variants]) => (
         <details key={format} className="template-variant-group">
           <summary className="template-variant-format">
-            {format}（{variants.length}件）
+            {FORMAT_LABELS[format] || format}（{variants.length}件）
           </summary>
           <table className="template-variant-table">
             <thead>
@@ -1335,7 +995,7 @@ function DraftCard({
   onMergeBlogPr,
   onPublishYoutube,
   onRevise,
-  onRedo,
+  onRequestSpecChange,
   onMarkPosted,
   onAddMetric,
   onArchive,
@@ -1343,7 +1003,7 @@ function DraftCard({
   const [selectedApproverId, setSelectedApproverId] = useState(
     approvers[0]?.id || null,
   );
-  const [openPanel, setOpenPanel] = useState(null); // null | 'revise' | 'redo'
+  const [openPanel, setOpenPanel] = useState(null); // null | 'feedback'
   const [confirmingArchive, setConfirmingArchive] = useState(false);
   const [expanded, setExpanded] = useState(getDefaultDraftCardExpanded);
 
@@ -1351,10 +1011,10 @@ function DraftCard({
     ? `${draft.format} / ${draft.sns_template_variants.variant_name}`
     : draft.format;
 
-  // 承認・修正・作り直しはpending_reviewの下書きにのみ許可される（api/admin/sns-hub側の検証と一致）
+  // 承認・修正はpending_reviewの下書きにのみ許可される（api/admin/sns-hub側の検証と一致）
   const canAct = draft.status === "pending_review";
 
-  // 一部修正/全部作り直しパネルを開いている間は、トグルで折りたたんでも
+  // 修正指摘パネルを開いている間は、トグルで折りたたんでも
   // パネルをアンマウントしない（コードレビューで指摘: 折りたたむと入力中の
   // freeText等がRevisionPanelごと消え、ユーザーに無警告でデータが失われるため）
   const isOpen = expanded || openPanel !== null;
@@ -1464,51 +1124,38 @@ function DraftCard({
                   <button
                     className="draft-action-btn revise"
                     onClick={() =>
-                      setOpenPanel(openPanel === "revise" ? null : "revise")
+                      setOpenPanel(openPanel === "feedback" ? null : "feedback")
                     }
                   >
-                    📝 一部修正
-                  </button>
-                  <button
-                    className="draft-action-btn redo"
-                    onClick={() =>
-                      setOpenPanel(openPanel === "redo" ? null : "redo")
-                    }
-                  >
-                    ❌ 全部作り直し
+                    📝 修正を依頼
                   </button>
                 </div>
 
-                {openPanel === "revise" && (
+                {openPanel === "feedback" && (
                   <RevisionPanel
-                    mode="revise"
+                    mode="draft-feedback"
                     reasons={
                       TEXT_DRAFT_PLATFORMS.has(draft.platform)
                         ? CONTENT_REVISION_REASONS
                         : REVISION_REASONS
                     }
                     onCancel={() => setOpenPanel(null)}
-                    onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
-                      onRevise({
-                        approverId: selectedApproverId,
-                        reasonCodes,
-                        freeText,
-                        saveAsInsight,
-                      });
-                      setOpenPanel(null);
-                    }}
-                  />
-                )}
-                {openPanel === "redo" && (
-                  <RevisionPanel
-                    mode="redo"
-                    onCancel={() => setOpenPanel(null)}
-                    onSubmit={({ freeText, saveAsInsight }) => {
-                      onRedo({
-                        approverId: selectedApproverId,
-                        freeText,
-                        saveAsInsight,
-                      });
+                    onSubmit={(payload) => {
+                      if (payload.category === "spec") {
+                        onRequestSpecChange({
+                          approverId: selectedApproverId,
+                          platform: draft.platform,
+                          message: payload.freeText,
+                        });
+                      } else {
+                        onRevise({
+                          approverId: selectedApproverId,
+                          reasonCodes: payload.reasonCodes,
+                          freeText: payload.freeText,
+                          saveAsInsight: payload.permanent,
+                          scope: payload.scope,
+                        });
+                      }
                       setOpenPanel(null);
                     }}
                   />
@@ -1758,15 +1405,31 @@ function ApproverChips({ approvers, selectedId, onSelect }) {
   );
 }
 
+// mode:
+//  - "topic-reject": ネタ却下用（TopicCard）。理由チップ+自由記述+「今後に反映」
+//    チェックボックスのみのシンプルな形（2026-09-04以前と同じ挙動を維持）
+//  - "draft-feedback": 下書きへの修正指摘用（DraftCard、2026-09-04再設計）。
+//    「一部修正」「全部作り直し」は実務上ほぼ全部作り直しになっていたため
+//    1つのフローに統合した上で、指摘の性質を明示的に2分岐させる:
+//    - コンテンツ品質の指摘: 理由チップ+自由記述。反映期間（今回限り/恒久）と
+//      適用範囲（このチャネルのみ/全チャネル共通）を明示的に選ばせる
+//      （旧「この指摘を今後の生成方針に反映する」チェックボックス1個だと、
+//      恒久化した際の適用範囲が下書きから自動推定される曖昧な挙動だった）
+//    - 制作仕様の変更要望: 尺・BGM等、個別の下書き修正では解決しない要望。
+//      Linear起票のみ行い、下書き自体のステータスは変更しない
 function RevisionPanel({
   mode,
   reasons = REVISION_REASONS,
   onSubmit,
   onCancel,
 }) {
+  const isDraftFeedback = mode === "draft-feedback";
+  const [category, setCategory] = useState("quality"); // "quality" | "spec"
   const [reasonCodes, setReasonCodes] = useState([]);
   const [freeText, setFreeText] = useState("");
-  const [saveAsInsight, setSaveAsInsight] = useState(false);
+  const [saveAsInsight, setSaveAsInsight] = useState(false); // topic-reject用
+  const [permanent, setPermanent] = useState(false); // draft-feedback用（旧saveAsInsight相当）
+  const [scope, setScope] = useState("channel"); // "channel" | "all"
 
   function toggleReason(code) {
     setReasonCodes((prev) =>
@@ -1774,13 +1437,34 @@ function RevisionPanel({
     );
   }
 
-  const canSubmit =
-    mode === "redo" || reasonCodes.length > 0 || freeText.trim().length > 0;
+  const isSpecCategory = isDraftFeedback && category === "spec";
   const hasFreeText = freeText.trim().length > 0;
+  const canSubmit = isSpecCategory
+    ? hasFreeText
+    : reasonCodes.length > 0 || hasFreeText;
 
   return (
     <div className="revision-panel">
-      {mode === "revise" && (
+      {isDraftFeedback && (
+        <div className="revision-category-toggle">
+          <button
+            type="button"
+            className={`revision-category-btn ${category === "quality" ? "selected" : ""}`}
+            onClick={() => setCategory("quality")}
+          >
+            📋 コンテンツ品質の指摘
+          </button>
+          <button
+            type="button"
+            className={`revision-category-btn ${category === "spec" ? "selected" : ""}`}
+            onClick={() => setCategory("spec")}
+          >
+            🔧 制作仕様の変更要望
+          </button>
+        </div>
+      )}
+
+      {!isSpecCategory && (
         <div className="revision-reason-chips">
           {reasons.map((r) => (
             <button
@@ -1799,21 +1483,92 @@ function RevisionPanel({
       <textarea
         className="revision-freetext"
         placeholder={
-          mode === "revise" ? "自由記述（任意）" : "作り直しの意図（任意）"
+          isSpecCategory
+            ? "例: BGMをもっと軽快な曲にしてほしい、尺を20秒に伸ばしてほしい"
+            : "自由記述（任意）"
         }
         value={freeText}
         onChange={(e) => setFreeText(e.target.value)}
       />
 
-      <label className="revision-save-insight">
-        <input
-          type="checkbox"
-          checked={saveAsInsight}
-          disabled={!hasFreeText}
-          onChange={(e) => setSaveAsInsight(e.target.checked)}
-        />
-        この指摘を今後の生成方針に反映する
-      </label>
+      {isSpecCategory ? (
+        <p className="revision-spec-hint">
+          この内容でLinearにチケットを起票します。この下書き自体は変更されません（承認/修正指摘は別途行ってください）。
+          今すぐ複数案を比較しながら作り込みたい場合は、Claude Codeで
+          <code>/refine-creative</code>を使う方が早い場合があります。
+        </p>
+      ) : (
+        <>
+          {/* BGM・デザイン等の抜本的な作り込みはこのUIでは行わない設計
+              （.claude/CLAUDE.mdフローB参照）。ここで気づいてもらうための
+              軽いヒントのみ表示する */}
+          {isDraftFeedback && (
+            <p className="revision-refine-hint">
+              💡 尺・BGM等の制作仕様そのものを変えたい場合は、上の「🔧
+              制作仕様の変更要望」を選んでください
+            </p>
+          )}
+
+          {isDraftFeedback ? (
+            <div className="revision-permanence-group">
+              <span className="revision-permanence-label">反映期間:</span>
+              <label className="revision-radio">
+                <input
+                  type="radio"
+                  name="revision-permanent"
+                  checked={!permanent}
+                  disabled={!hasFreeText}
+                  onChange={() => setPermanent(false)}
+                />
+                今回限り
+              </label>
+              <label className="revision-radio">
+                <input
+                  type="radio"
+                  name="revision-permanent"
+                  checked={permanent}
+                  disabled={!hasFreeText}
+                  onChange={() => setPermanent(true)}
+                />
+                恒久ルール化
+              </label>
+              {permanent && (
+                <>
+                  <span className="revision-permanence-label">適用範囲:</span>
+                  <label className="revision-radio">
+                    <input
+                      type="radio"
+                      name="revision-scope"
+                      checked={scope === "channel"}
+                      onChange={() => setScope("channel")}
+                    />
+                    このチャネルのみ
+                  </label>
+                  <label className="revision-radio">
+                    <input
+                      type="radio"
+                      name="revision-scope"
+                      checked={scope === "all"}
+                      onChange={() => setScope("all")}
+                    />
+                    全チャネル共通
+                  </label>
+                </>
+              )}
+            </div>
+          ) : (
+            <label className="revision-save-insight">
+              <input
+                type="checkbox"
+                checked={saveAsInsight}
+                disabled={!hasFreeText}
+                onChange={(e) => setSaveAsInsight(e.target.checked)}
+              />
+              この指摘を今後の生成方針に反映する
+            </label>
+          )}
+        </>
+      )}
 
       <div className="revision-panel-actions">
         <button className="revision-cancel" onClick={onCancel}>
@@ -1824,13 +1579,16 @@ function RevisionPanel({
           disabled={!canSubmit}
           onClick={() =>
             onSubmit({
+              category: isDraftFeedback ? category : undefined,
               reasonCodes,
               freeText,
-              // チェックボックスはdisabledでもcheckedのstate自体はリセットされない
+              // ラジオ/チェックボックスはdisabledでもstate自体はリセットされない
               // ため、自由記述を消してから送信した場合に備え送信時点で再検証する
               // （コードレビューで指摘: 空のfreeTextとsaveAsInsight:trueが
               // 同時に送信されうる不整合があった）
               saveAsInsight: saveAsInsight && hasFreeText,
+              permanent: permanent && hasFreeText,
+              scope,
             })
           }
         >
@@ -2191,6 +1949,11 @@ function TopicCard({
     approvers[0]?.id || null,
   );
   const targets = topic.sns_topic_targets || [];
+  // 却下理由の入力パネル。即時却下ではなく、簡単な理由フィードバックを
+  // 挟めるようにする（2026-09-04ユーザー要望）。draft revise/redoと同じ
+  // RevisionPanel（チップ選択+自由記述）をTOPIC_REJECTION_REASONSで流用し、
+  // タップだけで理由を選べるようにする（自由記述だけだと面倒との指摘）
+  const [showRejectPanel, setShowRejectPanel] = useState(false);
 
   return (
     <div className="topic-card">
@@ -2216,62 +1979,104 @@ function TopicCard({
         selectedId={selectedApproverId}
         onSelect={setSelectedApproverId}
       />
-      <div className="topic-card-actions">
-        <button
-          type="button"
-          className="topic-approve-btn"
-          onClick={() => onApprove(topic.id, selectedApproverId)}
-        >
-          ✅ 承認
-        </button>
-        <button
-          type="button"
-          className="topic-reject-btn"
-          onClick={() => onReject(topic.id, selectedApproverId)}
-        >
-          却下
-        </button>
-      </div>
+      {showRejectPanel ? (
+        <RevisionPanel
+          mode="topic-reject"
+          reasons={TOPIC_REJECTION_REASONS}
+          onCancel={() => setShowRejectPanel(false)}
+          onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
+            const reasonLabels = reasonCodes
+              .map(
+                (code) =>
+                  TOPIC_REJECTION_REASONS.find((r) => r.code === code)?.label,
+              )
+              .filter(Boolean);
+            const reason = [reasonLabels.join("、"), freeText.trim()]
+              .filter(Boolean)
+              .join(" / ");
+            onReject(topic.id, selectedApproverId, reason, saveAsInsight);
+            setShowRejectPanel(false);
+          }}
+        />
+      ) : (
+        <div className="topic-card-actions">
+          <button
+            type="button"
+            className="topic-approve-btn"
+            onClick={() => onApprove(topic.id, selectedApproverId)}
+          >
+            ✅ 承認
+          </button>
+          <button
+            type="button"
+            className="topic-reject-btn"
+            onClick={() => setShowRejectPanel(true)}
+          >
+            却下
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-// 承認済みネタ×アカウントの生成状況をテーブル形式で表示する（要件15、screens.md #6）
-function TopicProgressMatrix({ topics }) {
-  const approvedTopics = topics.filter((t) => t.status === "approved");
-  if (approvedTopics.length === 0) {
-    return null;
+// 承認済みネタ×アカウントの生成状況をカード形式で表示する（要件15、screens.md #6）
+// 元はtable実装だったが、実データの長文topic_text（80〜100字の完全な文）で
+// セルがoverflowし隣接セルと視覚的に重なる不具合が発生したため、
+// カード（topic_textは通常のブロック要素として自然に折り返す）+
+// チャネルステータスをchip群で並べる形に再設計した（2026-09-04）
+// 承認済みネタ1件×アカウントのチャネル別生成状況チップ。sns-hub UI再設計
+// （2026-09-04、要件26/27）で🌅当日の運用・📦ネタのストック管理どちらの
+// ブロックでも同じカード構造を使う共通部品にした
+function TargetChip({ target, topicId, onFireTarget, firingTargetId }) {
+  const label = PLATFORM_LABELS[target.sns_target_accounts?.platform] || "?";
+  if (target.status === "generated") {
+    return <span className="ch-chip ch-chip-ready">✓ {label} 生成済み</span>;
   }
+  if (target.status === "claimed") {
+    return <span className="ch-chip ch-chip-wait">{label} 生成中</span>;
+  }
+  if (target.status === "skipped") {
+    return (
+      <span
+        className="ch-chip ch-chip-dim"
+        title={target.skip_reason || undefined}
+      >
+        {label} 対象外
+      </span>
+    );
+  }
+  // pending
   return (
-    <div className="topic-progress-matrix-wrap">
-      <h3 className="topic-progress-matrix-title">承認済みネタの進捗</h3>
-      <div className="topic-progress-matrix-scroll">
-        <table className="topic-progress-matrix">
-          <tbody>
-            {approvedTopics.map((topic) => (
-              <tr key={topic.id}>
-                <td className="topic-progress-matrix-topic-text">
-                  {topic.topic_text}
-                </td>
-                {(topic.sns_topic_targets || []).map((target) => (
-                  <td
-                    key={target.id}
-                    className={`topic-progress-matrix-cell topic-progress-matrix-cell-${target.status}`}
-                  >
-                    {target.sns_target_accounts?.platform || "?"}:{" "}
-                    {target.status}
-                    {target.status === "generated" && target.draft_id && (
-                      <span className="topic-progress-matrix-generated-mark">
-                        {" "}
-                        ✓
-                      </span>
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <span className="ch-chip ch-chip-wait">
+      {label} 待機中
+      <button
+        type="button"
+        className="ch-chip-fire"
+        disabled={firingTargetId === target.id}
+        title="対象チャネルのパイプラインを今すぐ起動します（放っておいても通常のポーリングでいずれ生成されます）"
+        onClick={() => onFireTarget(topicId, target.id)}
+      >
+        {firingTargetId === target.id ? "⏳" : "⚡今すぐ"}
+      </button>
+    </span>
+  );
+}
+
+function TopicFanoutCard({ topic, onFireTarget, firingTargetId }) {
+  return (
+    <div className="mini-card">
+      <p className="mini-card-topic">{topic.topic_text}</p>
+      <div className="chip-row">
+        {(topic.sns_topic_targets || []).map((target) => (
+          <TargetChip
+            key={target.id}
+            target={target}
+            topicId={topic.id}
+            onFireTarget={onFireTarget}
+            firingTargetId={firingTargetId}
+          />
+        ))}
       </div>
     </div>
   );
@@ -2282,63 +2087,317 @@ function TopicProgressMatrix({ topics }) {
 // タブではなく専用セクションとして、下書き承認タブ群(TABS)の上に常時表示する
 // （2026-09-03ユーザー指摘: 「承認→各プラットフォームタブに生成される」という
 // 流れが、同列の1タブに埋もれると分かりにくいため）
+// ネタ提案Routine（週次・日次いずれも）の手動起動状態を管理する共通フック。
+// 通常cronのみで動くRoutineを、承認済みストックが少ない・動作確認したい場面で
+// 即時起動できるようにする（2026-09-04追加、週次で先に実装し日次追加時に
+// フック化した）。この状態はTopicApprovalSection自身に閉じているため、他の
+// 生成系ボタン（親コンポーネント側）と違い親のstateには持ち上げない
+function useTopicProposerTrigger({ triggerFn, topics, showToast, label }) {
+  const [triggering, setTriggering] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [sessionUrl, setSessionUrl] = useState(null);
+  const [firedAt, setFiredAt] = useState(null);
+  const [elapsedMinutes, setElapsedMinutes] = useState(0);
+  const [idsAtFire, setIdsAtFire] = useState(null);
+
+  async function trigger() {
+    setTriggering(true);
+    try {
+      const result = await triggerFn();
+      if (result?.routine?.fired === false) {
+        showToast(
+          `起動リクエストがRoutineに届いていません（${result.routine.reason}）。Vercel環境変数の設定を確認してください`,
+          "error",
+        );
+      } else {
+        showToast(
+          result.routine.sessionUrl
+            ? `${label}を起動しました。実行ログのリンクは下に表示されます`
+            : `${label}を起動しました。数分後に更新ボタンで確認してください`,
+          "success",
+        );
+        setLocked(true);
+        setSessionUrl(result.routine.sessionUrl || null);
+        setFiredAt(Date.now());
+        setElapsedMinutes(0);
+        setIdsAtFire(new Set(topics.map((t) => t.id)));
+      }
+    } catch (err) {
+      console.error(`${label}起動リクエストエラー:`, err);
+      showToast(err.message || "起動リクエストに失敗しました", "error");
+    } finally {
+      setTriggering(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!locked || !firedAt) return;
+    const interval = setInterval(() => {
+      setElapsedMinutes(
+        Math.max(0, Math.round((Date.now() - firedAt) / 60000)),
+      );
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [locked, firedAt]);
+
+  useEffect(() => {
+    if (!locked || !idsAtFire) return;
+    const hasNewTopic = topics.some((t) => !idsAtFire.has(t.id));
+    if (hasNewTopic) {
+      showToast("✅ 新しいネタが登録されました", "success");
+      setLocked(false);
+      setSessionUrl(null);
+      setFiredAt(null);
+      setIdsAtFire(null);
+    }
+  }, [topics, locked, idsAtFire, showToast]);
+
+  return { triggering, locked, sessionUrl, elapsedMinutes, trigger };
+}
+
 function TopicApprovalSection({
   topics,
   approvers,
   onApprove,
   onReject,
   onUpdateTargetLabel,
+  onFireTarget,
+  topicCategories,
+  onToggleCategoryChannel,
+  onReloadTopics,
+  showToast,
 }) {
-  const proposedTopics = topics.filter((t) => t.status === "proposed");
-  const [expanded, setExpanded] = useState(true);
+  // 承認要否（sns_content_types.requires_topic_approval）で🌅当日の運用／
+  // 📦ネタのストック管理の2ブロックに分ける（要件27、2026-09-04再設計）。
+  // 裏側のデータはどちらも同じsns_topics/sns_topic_targetsで、分岐点は
+  // この1フラグだけ。トピックはgetTopics()で全期間分取得されるため、期間・
+  // 完了状態で絞らないと「本日」ラベルが嘘になり、両ブロックとも過去の
+  // 完了済みネタが無期限に積み上がる（2026-09-04、コードレビューで発覚）
+  const directTopics = topics.filter(
+    (t) =>
+      t.status === "approved" &&
+      t.sns_content_types?.requires_topic_approval === false &&
+      isTodayJST(t.approved_at || t.proposed_at),
+  );
+  const gateProposedTopics = topics.filter((t) => t.status === "proposed");
+  // 「承認済み・生成中」を名乗る以上、全ターゲットがgenerated/skippedで
+  // 完結したネタは表示対象から外す（下書き自体は各プラットフォームタブに
+  // 残るため情報は失われない）
+  const gateApprovedTopics = topics.filter(
+    (t) =>
+      t.status === "approved" &&
+      t.sns_content_types?.requires_topic_approval === true &&
+      (t.sns_topic_targets || []).some(
+        (target) => target.status === "pending" || target.status === "claimed",
+      ),
+  );
+  const directTargets = directTopics.flatMap((t) => t.sns_topic_targets || []);
+  const directGeneratedCount = directTargets.filter(
+    (t) => t.status === "generated",
+  ).length;
+
+  // 「ネタ型設定」は🌅/📦どちらのブロックからも開閉できるが、実体は
+  // sns_topic_categories全体を扱う単一パネル（要件27の設計判断）
+  const [showCategorySettings, setShowCategorySettings] = useState(false);
+  // 「⚡今すぐ生成」の発火中状態。target.id単位で管理し、他のターゲットの
+  // ボタン操作をブロックしないようにする。🌅/📦両ブロックのカードで共有する
+  const [firingTargetId, setFiringTargetId] = useState(null);
+
+  const weeklyProposer = useTopicProposerTrigger({
+    triggerFn: triggerWeeklyProposer,
+    topics,
+    showToast,
+    label: "週次ネタ提案",
+  });
+  const dailyAutoProposer = useTopicProposerTrigger({
+    triggerFn: triggerDailyAutoProposer,
+    topics,
+    showToast,
+    label: "日次ネタ自動提案",
+  });
+
+  // ロック中（Routine実行中）は30秒おきにネタ一覧をポーリングする。
+  // triggerFn自体は完了検知しないため、新規ネタの出現有無で判定する
+  // （useTopicProposerTrigger側の完了検知useEffectとセット）
+  useEffect(() => {
+    if (!weeklyProposer.locked && !dailyAutoProposer.locked) return;
+    const interval = setInterval(() => {
+      onReloadTopics();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [weeklyProposer.locked, dailyAutoProposer.locked, onReloadTopics]);
+
+  async function handleFire(topicId, targetId) {
+    setFiringTargetId(targetId);
+    try {
+      await onFireTarget(topicId, targetId);
+    } finally {
+      setFiringTargetId(null);
+    }
+  }
 
   return (
     <div className="topic-approval-section">
-      <button
-        type="button"
-        className="topic-approval-section-header"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        <span className="topic-approval-section-title">
-          📋 ネタ承認{" "}
-          {proposedTopics.length > 0 && (
-            <span className="topic-approval-section-count">
-              {proposedTopics.length}
+      <div className="topic-section-card topic-section-direct">
+        <div className="topic-section-title">🌅 当日の運用</div>
+        <p className="topic-section-desc">
+          選手調子・モーター調子・イン崩れ・予想数値フック・的中 —
+          自動承認、朝すぐ投稿できる状態を目指す
+        </p>
+        <div className="topic-stat-row">
+          <span className="topic-stat-chip">
+            <b>{directTopics.length}件</b>本日ネタ登録済み（自動承認）
+          </span>
+          {directTargets.length > 0 && (
+            <span className="topic-stat-chip">
+              <b>
+                {directGeneratedCount}/{directTargets.length}
+              </b>
+              チャネル生成完了
             </span>
           )}
-        </span>
-        <span className="topic-approval-section-hint">
-          ここで承認すると、対応するチャネルタブ（下）に下書きが生成されます
-        </span>
-        <span className="topic-approval-section-toggle">
-          {expanded ? "▲" : "▼"}
-        </span>
-      </button>
+        </div>
+        {directTopics.length === 0 ? (
+          <p className="topic-section-empty">
+            本日はまだネタが登録されていません
+          </p>
+        ) : (
+          <div className="mini-card-list">
+            {directTopics.map((topic) => (
+              <TopicFanoutCard
+                key={topic.id}
+                topic={topic}
+                onFireTarget={handleFire}
+                firingTargetId={firingTargetId}
+              />
+            ))}
+          </div>
+        )}
+        <div className="topic-section-btn-row">
+          <button
+            type="button"
+            className="topic-section-trigger-btn topic-section-trigger-direct"
+            disabled={dailyAutoProposer.triggering || dailyAutoProposer.locked}
+            onClick={dailyAutoProposer.trigger}
+          >
+            {dailyAutoProposer.triggering
+              ? "⏳ リクエスト中..."
+              : "🌅 日次ネタ自動提案を今すぐ実行"}
+          </button>
+          <button
+            type="button"
+            className="topic-section-settings-btn"
+            onClick={() => setShowCategorySettings((v) => !v)}
+          >
+            ⚙️ ネタ型設定
+          </button>
+        </div>
+        {dailyAutoProposer.locked && (
+          <div className="topic-section-proposer-hint">
+            ⏳ 日次ネタ自動提案を実行中...（{dailyAutoProposer.elapsedMinutes}
+            分経過）30秒おきに自動で確認します
+            {dailyAutoProposer.sessionUrl && (
+              <>
+                {" ・ "}
+                <a
+                  href={dailyAutoProposer.sessionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  実行ログを見る
+                </a>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
-      {expanded && (
-        <div className="topic-approval-section-body">
-          {proposedTopics.length === 0 ? (
-            <div className="empty-state">
-              <p>
-                承認待ちのネタはありません（日次・一般/日次・時間制約型はネタ
-                承認を経ずに生成されるため、ここには表示されません）。
-              </p>
-            </div>
-          ) : (
-            <div className="topic-list">
-              {proposedTopics.map((topic) => (
-                <TopicCard
-                  key={topic.id}
-                  topic={topic}
-                  approvers={approvers}
-                  onApprove={onApprove}
-                  onReject={onReject}
-                  onUpdateTargetLabel={onUpdateTargetLabel}
-                />
-              ))}
-            </div>
-          )}
-          <TopicProgressMatrix topics={topics} />
+      <div className="topic-section-card topic-section-gate">
+        <div className="topic-section-title">📦 ネタのストック管理</div>
+        <p className="topic-section-desc">
+          会場特性・一覧アピール型など —
+          承認して在庫を積む、時間制約なし。承認すると対応するチャネルタブ
+          （下）に下書きが生成されます
+        </p>
+        <div className="topic-stat-row">
+          <span className="topic-stat-chip">
+            <b>{gateProposedTopics.length}件</b>承認待ち
+          </span>
+          <span className="topic-stat-chip">
+            <b>{gateApprovedTopics.length}件</b>承認済み・生成中
+          </span>
+        </div>
+        {gateProposedTopics.length === 0 && gateApprovedTopics.length === 0 ? (
+          <p className="topic-section-empty">
+            承認待ち・生成中のネタはありません
+          </p>
+        ) : (
+          <div className="mini-card-list">
+            {gateProposedTopics.map((topic) => (
+              <TopicCard
+                key={topic.id}
+                topic={topic}
+                approvers={approvers}
+                onApprove={onApprove}
+                onReject={onReject}
+                onUpdateTargetLabel={onUpdateTargetLabel}
+              />
+            ))}
+            {gateApprovedTopics.map((topic) => (
+              <TopicFanoutCard
+                key={topic.id}
+                topic={topic}
+                onFireTarget={handleFire}
+                firingTargetId={firingTargetId}
+              />
+            ))}
+          </div>
+        )}
+        <div className="topic-section-btn-row">
+          <button
+            type="button"
+            className="topic-section-trigger-btn topic-section-trigger-gate"
+            disabled={weeklyProposer.triggering || weeklyProposer.locked}
+            onClick={weeklyProposer.trigger}
+          >
+            {weeklyProposer.triggering
+              ? "⏳ リクエスト中..."
+              : "📅 週次ネタ提案を今すぐ実行"}
+          </button>
+          <button
+            type="button"
+            className="topic-section-settings-btn"
+            onClick={() => setShowCategorySettings((v) => !v)}
+          >
+            ⚙️ ネタ型設定
+          </button>
+        </div>
+        {weeklyProposer.locked && (
+          <div className="topic-section-proposer-hint">
+            ⏳ 週次ネタ提案を実行中...（{weeklyProposer.elapsedMinutes}
+            分経過）30秒おきに自動で確認します
+            {weeklyProposer.sessionUrl && (
+              <>
+                {" ・ "}
+                <a
+                  href={weeklyProposer.sessionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  実行ログを見る
+                </a>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {showCategorySettings && (
+        <div className="topic-category-settings-panel">
+          <TopicCategorySettingsTab
+            categories={topicCategories}
+            onToggleChannel={onToggleCategoryChannel}
+          />
         </div>
       )}
     </div>

@@ -70,25 +70,35 @@ export async function publishYoutube(draftId, approverId) {
   });
 }
 
-/** 下書きに一部修正を指摘する */
-export async function reviseDraft(
-  draftId,
-  { approverId, reasonCodes, freeText, saveAsInsight },
-) {
-  return request(`/drafts/${draftId}/revise`, {
-    method: "POST",
-    body: JSON.stringify({ approverId, reasonCodes, freeText, saveAsInsight }),
-  });
-}
-
-/** 下書きを全部作り直す */
+/**
+ * 下書きに修正を指摘する（2026-09-04、旧「一部修正」「全部作り直し」を統合）。
+ * saveAsInsight=trueの場合、scopeで反映範囲を選ぶ:
+ * 'channel'（既定、この下書きのチャネルのみ）| 'all'（全チャネル共通）
+ */
 export async function redoDraft(
   draftId,
-  { approverId, freeText, saveAsInsight },
+  { approverId, reasonCodes, freeText, saveAsInsight, scope },
 ) {
   return request(`/drafts/${draftId}/redo`, {
     method: "POST",
-    body: JSON.stringify({ approverId, freeText, saveAsInsight }),
+    body: JSON.stringify({
+      approverId,
+      reasonCodes,
+      freeText,
+      saveAsInsight,
+      scope,
+    }),
+  });
+}
+
+/**
+ * 制作仕様の変更要望をLinearに起票する（要件85、2026-09-04新設）。
+ * この下書き自体のstatusは変更しない
+ */
+export async function requestSpecChange(draftId, { approverId, message }) {
+  return request(`/drafts/${draftId}/request-spec-change`, {
+    method: "POST",
+    body: JSON.stringify({ approverId, message }),
   });
 }
 
@@ -106,38 +116,6 @@ export async function archiveDraft(draftId) {
     method: "POST",
     body: JSON.stringify({}),
   });
-}
-
-/**
- * 生成Routineを手動起動する（承認済みストックが少ない時の補充用）
- * @param {'daily'|'evergreen'} mode
- */
-/**
- * @param {string} mode - 'daily' | 'evergreen'
- * @param {object} [options]
- * @param {string[]} [options.platforms] - 省略時はAPI側で全プラットフォーム対象になる
- * @param {number} [options.count] - 省略時はAPI側のデフォルト範囲になる
- * @param {string} [options.format] - 省略時はRoutine側の自動選定ロジックに従う
- *   （2026-09-02追加、ユーザー要望: どの型を生成するか選びたい）
- */
-export async function triggerGeneration(
-  mode,
-  { platforms, count, format } = {},
-) {
-  return request("/generate", {
-    method: "POST",
-    body: JSON.stringify({ mode, platforms, count, format }),
-  });
-}
-
-/**
- * ネタ駆動マルチチャネルパイプライン（content-multi-channel-pipeline、
- * trig_01BAymvDLFw9ZbFUBXk6h8Nq）を手動実行する。daily/evergreen（Pipeline A）
- * とは別のRoutineで、ネタ・チャネル選定を自律判断するためパラメータは無い
- * （2026-09-02追加）
- */
-export async function triggerTopicPipelineGeneration() {
-  return request("/generate-topic-pipeline", { method: "POST" });
 }
 
 /** TikTok等のエンゲージメント指標を手動入力する */
@@ -176,6 +154,25 @@ export async function getTemplateVariants() {
 }
 
 /**
+ * 週次ネタ提案Routine（sns-topic-proposer-weekly）を手動起動する。通常は
+ * 週次cronのみで起動するため、承認済みストックが少ない・動作確認したい
+ * 場面向け（2026-09-04追加）。ネタ登録のみでdraft生成は行わない
+ */
+export async function triggerWeeklyProposer() {
+  return request("/trigger-weekly-proposer", { method: "POST" });
+}
+
+/**
+ * 日次・一般ネタ自動提案Routine（sns-topic-proposer-daily-auto）を手動起動する。
+ * 通常は深夜〜早朝のcronのみで起動するため、承認済みストックが少ない・動作確認
+ * したい場面向け（2026-09-04追加）。autoApprove固定のためネタは即座に
+ * status='approved'で登録される（ネタ承認は経由しない）
+ */
+export async function triggerDailyAutoProposer() {
+  return request("/trigger-daily-auto-proposer", { method: "POST" });
+}
+
+/**
  * 「ネタ承認」タブ用、ネタ一覧を取得する（型情報・進捗マトリクス用のターゲット一覧を含む）
  * @param {string} [status] - 'proposed' | 'approved' | 'rejected' | 'all' | undefined(全件)
  */
@@ -194,10 +191,10 @@ export async function approveTopic(topicId, approverId) {
 }
 
 /** ネタを却下する */
-export async function rejectTopic(topicId, approverId) {
+export async function rejectTopic(topicId, approverId, reason, saveAsInsight) {
   return request(`/topics/${topicId}/reject`, {
     method: "POST",
-    body: JSON.stringify({ approverId }),
+    body: JSON.stringify({ approverId, reason, saveAsInsight }),
   });
 }
 
@@ -214,10 +211,16 @@ export async function updateTopicTargetLabel(
   });
 }
 
-/** 手動生成パネルの型選択ドロップダウン用、ネタの型(sns_content_types)一覧を取得する */
-export async function getContentTypes() {
-  const { data } = await request("/content-types");
-  return data || [];
+/**
+ * 「⚡今すぐ生成」ボタン。status='pending'のターゲットに対し、対象チャネルの
+ * パイプラインRoutineを即時発火する。ポーリングでもいずれ拾われるが、
+ * 起動タイミングを早めるショートカット（生成結果自体は変わらない）
+ */
+export async function fireTopicTargetNow(topicId, targetId) {
+  return request(`/topics/${topicId}/targets/${targetId}/fire`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
 }
 
 /** 「ネタ型設定」画面用、ネタの型（カテゴリ）一覧をチャネル設定つきで取得する */

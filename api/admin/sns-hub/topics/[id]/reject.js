@@ -1,11 +1,17 @@
 /**
  * Vercel Edge Function: 「ネタ承認」ネタの却下
  * POST /api/admin/sns-hub/topics/:id/reject
- * body: { approverId: string }
+ * body: { approverId: string, reason?: string, saveAsInsight?: boolean }
  *
  * status=proposedのネタのみ却下できる。却下されたネタに紐づくsns_topic_targetsは
  * そのままpendingで残るが、topic.status='approved'を条件にclaimするため
  * 各チャネル別パイプラインからは自然に無視される（別途クリーンアップは不要）。
+ *
+ * reasonはsns_topics.rejection_reasonに監査用として保存する（2026-09-04追加、
+ * migration 045）。saveAsInsightがtrueかつreasonがある場合のみ、drafts側の
+ * revise機能と同じ要領でsns_strategy_insightsにも登録し、週次/日次ネタ提案
+ * Routineの「0. 蓄積されたフィードバックの確認」ステップ（getActiveInsights）
+ * から次回以降のネタ選定に反映されるようにする
  */
 
 import {
@@ -14,6 +20,7 @@ import {
   isValidUuid,
   getTopicById,
   updateTopic,
+  createInsight,
 } from "../../../../_lib/snsHubHelpers.js";
 
 export const config = {
@@ -39,7 +46,7 @@ export default async function handler(req) {
   } catch {
     return jsonResponse({ error: "リクエストボディが不正です" }, 400);
   }
-  const { approverId } = body;
+  const { approverId, reason, saveAsInsight } = body;
   if (!approverId) {
     return jsonResponse({ error: "approverIdは必須です" }, 400);
   }
@@ -61,7 +68,27 @@ export default async function handler(req) {
     const updated = await updateTopic(id, {
       status: "rejected",
       approver_id: approverId,
+      rejection_reason: reason?.trim() || null,
     });
+
+    // insight登録はあくまで付随的な処理のため、失敗してもreject本体は成功として
+    // 扱う（revise.jsのcreateInsight呼び出しと同じ方針）
+    if (saveAsInsight && reason?.trim()) {
+      try {
+        await createInsight({
+          platform: null,
+          language: null,
+          format: null,
+          insight_text: reason.trim(),
+          evidence: `ネタ却下(topic_id=${id})でのユーザー指摘: ${reason.trim()}`,
+          source: "topic-rejection-feedback",
+          research_method: "manual",
+          status: "proposed",
+        });
+      } catch (insightError) {
+        console.error("SNS Hub topic reject insight登録エラー:", insightError);
+      }
+    }
 
     return jsonResponse({ data: updated });
   } catch (error) {
