@@ -12,7 +12,7 @@
 
 - 週次型（`venue-feature`）: 12時間おきのcronでポーリングする
 - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする
-- API起動（revise/redo）: `api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`（`platform='note'`の下書きのみ）
+- API起動（修正指摘）: `api/admin/sns-hub/drafts/[id]/redo.js`（2026-09-04、旧revise.jsと統合済み）（`platform='note'`の下書きのみ）
 - API起動（今すぐ生成、要件26）: `api/admin/sns-hub/topics/[id]/targets/[targetId]/fire.js`からのペイロード（`{action: 'generate_now', targetId}`）。`status='pending'`であることは検証済みの1件のみが対象。「1. claim対象の取得・claim」を丸ごとスキップし、`claimTopicTarget(targetId, routineRunId)`（`scripts/lib/snsTopics.js`）を`targetId`に対して直接呼ぶ（`docs/operation/sns-pipeline-x.md`の「A''. 即時生成フロー」と同じ思想）。戻り値がnullなら生成せず終了する（ADR 0036）
 
 ## 0. 蓄積されたフィードバックの確認
@@ -48,7 +48,7 @@ claimしたターゲットの`topic_id`と同じ`sns_topics.id`（`sns_drafts.co
 ## 制約（絶対厳守）
 
 - 1回の実行で処理するネタは1件まで
-- **1つのclaim済みターゲットにつき、`sns_drafts`行は必ず1件だけ作る**。生成後に内容の誤りに自分で気づいた場合も、同一セッション内で2件目を作り直さない。5.の完了処理（`markTopicTargetGenerated`）を済ませたら、その回の生成物が最終版であり、修正は人間の下書き承認画面からのrevise/redo操作に委ねる（2026-09-03、Blogパイプラインで同種の不具合が発生し判明。本パイプラインにも同じ制約を横展開）
+- **1つのclaim済みターゲットにつき、`sns_drafts`行は必ず1件だけ作る**。生成後に内容の誤りに自分で気づいた場合も、同一セッション内で2件目を作り直さない。5.の完了処理（`markTopicTargetGenerated`）を済ませたら、その回の生成物が最終版であり、修正は人間の下書き承認画面からの修正指摘操作に委ねる（2026-09-03、Blogパイプラインで同種の不具合が発生し判明。本パイプラインにも同じ制約を横展開）
 - ブログ本文が未生成の場合は生成せず、ターゲットを`pending`に戻す（claimしたまま放置しない）
 - 「競艇」表記禁止（本文は「ボートレース」）
 - 本文に画像を必ず含める（文字だけの下書きにしない）

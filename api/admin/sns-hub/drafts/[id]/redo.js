@@ -1,10 +1,13 @@
 /**
- * Vercel Edge Function: 下書きの全部作り直し
+ * Vercel Edge Function: 下書きへの修正指摘（統合版）
  * POST /api/admin/sns-hub/drafts/:id/redo
- * body: { approverId: string, freeText?: string }
+ * body: { approverId: string, reasonCodes?: string[], freeText?: string,
+ *          saveAsInsight?: boolean, scope?: 'channel'|'all' }
  *
- * 「一部修正」と異なり、新しいcontent_group_idで全く別のアイデアとして
- * 作り直すことをRoutineに指示する（plan.mdのステータス遷移図参照）。
+ * 2026-09-04、旧「一部修正」（revise.js）と「全部作り直し」を1つのフローに
+ * 統合した（実務上ほぼ全部作り直しになっていたため）。Routine側は
+ * freeText/reasonCodesの内容から、同じネタのまま直すか題材選定からやり直すか
+ * を判断する（各sns-pipeline-*.mdの「A'. 修正対応フロー」参照）。
  */
 
 import {
@@ -21,6 +24,22 @@ import {
 export const config = {
   runtime: "edge",
 };
+
+const VALID_REASON_CODES = [
+  "time-expression-error",
+  "gambling-connotation",
+  "typo-or-data-error",
+  "tone-adjustment",
+  "format-or-topic-change",
+  "design-spacing",
+  "design-color",
+  "design-font-size",
+  "design-visual-material",
+  "unnatural-japanese",
+  "search-intent-mismatch",
+  "data-accuracy-error",
+  "too-similar-to-existing",
+];
 
 export default async function handler(req) {
   if (req.method !== "POST") {
@@ -42,9 +61,26 @@ export default async function handler(req) {
     return jsonResponse({ error: "リクエストボディが不正です" }, 400);
   }
 
-  const { approverId, freeText, saveAsInsight } = body;
+  const { approverId, freeText, saveAsInsight, scope } = body;
   if (!approverId) {
     return jsonResponse({ error: "approverIdは必須です" }, 400);
+  }
+  const reasonCodes = Array.isArray(body.reasonCodes) ? body.reasonCodes : [];
+  const trimmedFreeText = typeof freeText === "string" ? freeText.trim() : "";
+  if (reasonCodes.length === 0 && !trimmedFreeText) {
+    return jsonResponse(
+      { error: "reasonCodesまたはfreeTextのいずれかが必須です" },
+      400,
+    );
+  }
+  const invalidCodes = reasonCodes.filter(
+    (c) => !VALID_REASON_CODES.includes(c),
+  );
+  if (invalidCodes.length > 0) {
+    return jsonResponse(
+      { error: `不正なreasonCodes: ${invalidCodes.join(", ")}` },
+      400,
+    );
   }
 
   try {
@@ -55,7 +91,7 @@ export default async function handler(req) {
     if (draft.status !== "pending_review") {
       return jsonResponse(
         {
-          error: `status='${draft.status}'の下書きは作り直せません（pending_reviewのみ）`,
+          error: `status='${draft.status}'の下書きには修正指摘できません（pending_reviewのみ）`,
         },
         409,
       );
@@ -64,7 +100,7 @@ export default async function handler(req) {
     const updated = await updateDraft(id, {
       status: "revision_requested",
       approver_id: approverId,
-      revision_reason_codes: ["full-redo"],
+      revision_reason_codes: reasonCodes,
       revision_reason_freetext: freeText || null,
       // revision_requestedへの遷移時刻。sns_draftsにupdated_at自動更新トリガーが
       // 無いため明示的にセットする（管理画面の「処理中」経過時間表示が参照する、
@@ -72,12 +108,13 @@ export default async function handler(req) {
       updated_at: new Date().toISOString(),
     });
 
-    // ADR 0038: revise.jsと同じくplatformベースで正しいチャネル別パイプラインへ発火する
+    // ADR 0038: 下書きのplatformから正しいチャネル別パイプラインの発火先を解決する
     const routineResult = await fireRoutine(
       resolveRoutineEnvPrefix(draft.platform),
       {
         action: "redo",
         draftId: id,
+        reasonCodes,
         format: draft.format,
         platform: draft.platform,
         language: draft.language,
@@ -85,17 +122,20 @@ export default async function handler(req) {
       },
     );
 
-    // ユーザーが選択した場合のみ、自由記述を今後の生成方針への提案(insight)として
-    // 登録する（revise.jsと同じ方針、spec.md課題4）。insight登録の失敗でredo本体を
-    // 失敗扱いにしないよう個別にcatchする（revise.jsと同じ理由）
-    if (saveAsInsight && freeText?.trim()) {
+    // 「恒久ルール化」を選んだ場合のみ、自由記述を今後の生成方針への提案(insight)
+    // として登録する。scope==='all'なら全チャネル共通（platform/language/format
+    // すべてnull）、既定（'channel'）ならこの下書きのplatform/language/formatに
+    // 限定する（2026-09-04、旧実装は下書きから常に自動セットしておりユーザーが
+    // 適用範囲を選べなかった）。insight登録の失敗でredo本体を失敗扱いにしない
+    if (saveAsInsight && trimmedFreeText) {
       try {
+        const isAllScope = scope === "all";
         await createInsight({
-          platform: draft.platform,
-          language: draft.language,
-          format: draft.format,
-          insight_text: freeText.trim(),
-          evidence: `redo操作(content_group_id=${draft.content_group_id})でのユーザー指摘: ${freeText.trim()}`,
+          platform: isAllScope ? null : draft.platform,
+          language: isAllScope ? null : draft.language,
+          format: isAllScope ? null : draft.format,
+          insight_text: trimmedFreeText,
+          evidence: `修正指摘(content_group_id=${draft.content_group_id})でのユーザー指摘: ${trimmedFreeText}`,
           source: "revision-feedback",
           research_method: "manual",
           status: "proposed",

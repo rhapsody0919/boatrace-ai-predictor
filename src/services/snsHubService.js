@@ -70,25 +70,35 @@ export async function publishYoutube(draftId, approverId) {
   });
 }
 
-/** 下書きに一部修正を指摘する */
-export async function reviseDraft(
-  draftId,
-  { approverId, reasonCodes, freeText, saveAsInsight },
-) {
-  return request(`/drafts/${draftId}/revise`, {
-    method: "POST",
-    body: JSON.stringify({ approverId, reasonCodes, freeText, saveAsInsight }),
-  });
-}
-
-/** 下書きを全部作り直す */
+/**
+ * 下書きに修正を指摘する（2026-09-04、旧「一部修正」「全部作り直し」を統合）。
+ * saveAsInsight=trueの場合、scopeで反映範囲を選ぶ:
+ * 'channel'（既定、この下書きのチャネルのみ）| 'all'（全チャネル共通）
+ */
 export async function redoDraft(
   draftId,
-  { approverId, freeText, saveAsInsight },
+  { approverId, reasonCodes, freeText, saveAsInsight, scope },
 ) {
   return request(`/drafts/${draftId}/redo`, {
     method: "POST",
-    body: JSON.stringify({ approverId, freeText, saveAsInsight }),
+    body: JSON.stringify({
+      approverId,
+      reasonCodes,
+      freeText,
+      saveAsInsight,
+      scope,
+    }),
+  });
+}
+
+/**
+ * 制作仕様の変更要望をLinearに起票する（要件85、2026-09-04新設）。
+ * この下書き自体のstatusは変更しない
+ */
+export async function requestSpecChange(draftId, { approverId, message }) {
+  return request(`/drafts/${draftId}/request-spec-change`, {
+    method: "POST",
+    body: JSON.stringify({ approverId, message }),
   });
 }
 

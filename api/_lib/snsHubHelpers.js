@@ -430,3 +430,84 @@ export async function fireRoutine(envPrefix, payload) {
   const result = await response.json();
   return { fired: true, sessionUrl: result.claude_code_session_url };
 }
+
+const LINEAR_API_URL = "https://api.linear.app/graphql";
+const CONTENT_QUALITY_LABEL = "content-quality";
+
+async function linearGraphqlRequest(apiKey, query, variables) {
+  const response = await fetch(LINEAR_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: apiKey },
+    body: JSON.stringify({ query, variables }),
+  });
+  if (!response.ok) {
+    throw new Error(`Linear API error: ${response.status}`);
+  }
+  const json = await response.json();
+  if (json.errors) {
+    throw new Error(json.errors.map((e) => e.message).join(", "));
+  }
+  return json.data;
+}
+
+async function resolveLinearTeamId(apiKey) {
+  if (process.env.LINEAR_TEAM_ID) return process.env.LINEAR_TEAM_ID;
+  const data = await linearGraphqlRequest(
+    apiKey,
+    `query { viewer { teams { nodes { id } } } }`,
+    {},
+  );
+  const teams = data?.viewer?.teams?.nodes ?? [];
+  if (teams.length === 0) throw new Error("Linearにチームが見つかりません");
+  return teams[0].id;
+}
+
+async function getLinearLabelId(apiKey, teamId, labelName) {
+  const data = await linearGraphqlRequest(
+    apiKey,
+    `query TeamLabels($teamId: String!) {
+      team(id: $teamId) { labels { nodes { id name } } }
+    }`,
+    { teamId },
+  );
+  const label = data.team.labels.nodes.find((l) => l.name === labelName);
+  return label?.id ?? null;
+}
+
+/**
+ * 制作仕様変更FB（要件85）用のLinear起票。scripts/maintenance/
+ * content-ops-checks/check-revision-escalation.jsと同じGraphQL直叩き
+ * パターンをEdge Function向けに移植したもの（fsを使わない点のみ異なる）。
+ * LINEAR_API_KEY未設定の場合は起票をスキップし、その旨を返す
+ * （fireRoutineと同じ「未設定なら静かにスキップ」方針）。
+ *
+ * @param {{title: string, description: string}} params
+ * @returns {Promise<{created: boolean, url?: string, reason?: string}>}
+ */
+export async function createLinearIssue({ title, description }) {
+  const apiKey = process.env.LINEAR_API_KEY;
+  if (!apiKey) {
+    console.warn("Linear起票をスキップ: LINEAR_API_KEY未設定");
+    return { created: false, reason: "not_configured" };
+  }
+  const teamId = await resolveLinearTeamId(apiKey);
+  const labelId = await getLinearLabelId(apiKey, teamId, CONTENT_QUALITY_LABEL);
+  const data = await linearGraphqlRequest(
+    apiKey,
+    `mutation CreateIssue($input: IssueCreateInput!) {
+      issueCreate(input: $input) {
+        success
+        issue { id identifier title url }
+      }
+    }`,
+    {
+      input: {
+        teamId,
+        title,
+        description,
+        labelIds: labelId ? [labelId] : [],
+      },
+    },
+  );
+  return { created: true, url: data.issueCreate.issue.url };
+}
