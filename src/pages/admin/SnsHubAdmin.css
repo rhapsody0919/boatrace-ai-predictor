@@ -632,6 +632,16 @@
   box-sizing: border-box;
 }
 
+.revision-refine-hint {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin: -0.2rem 0 0;
+}
+
+.revision-refine-hint code {
+  font-size: 0.9em;
+}
+
 .revision-save-insight {
   display: flex;
   align-items: center;

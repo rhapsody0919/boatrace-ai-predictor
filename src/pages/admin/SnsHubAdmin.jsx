@@ -1447,6 +1447,15 @@ function RevisionPanel({
         onChange={(e) => setFreeText(e.target.value)}
       />
 
+      {/* BGM・デザイン等の抜本的な作り込みはこのUIでは行わない設計
+          （.claude/CLAUDE.mdフローB参照）。ここで気づいてもらうための
+          軽いヒントのみ表示する */}
+      <p className="revision-refine-hint">
+        💡 デザイン・BGM等を作り込みたい場合は、Claude Codeで
+        <code>/refine-creative</code>を使ってください（このフォームでは
+        軽微な修正のみ対応）
+      </p>
+
       <label className="revision-save-insight">
         <input
           type="checkbox"
