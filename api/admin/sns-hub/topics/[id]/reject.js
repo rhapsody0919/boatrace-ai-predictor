@@ -3,9 +3,15 @@
  * POST /api/admin/sns-hub/topics/:id/reject
  * body: { approverId: string, reason?: string, saveAsInsight?: boolean }
  *
- * status=proposedのネタのみ却下できる。却下されたネタに紐づくsns_topic_targetsは
- * そのままpendingで残るが、topic.status='approved'を条件にclaimするため
- * 各チャネル別パイプラインからは自然に無視される（別途クリーンアップは不要）。
+ * status=proposed/approvedのネタを却下できる（2026-09-04、承認済みネタも
+ * 却下できるようにする要望を受けapprovedも許可。要件: 承認取り消し後の
+ * 後始末は運用者が下書きタブで個別にarchiveする最小実装とし、reject自体が
+ * 生成済み下書きを連動して非表示にする処理は持たない）。
+ * 却下されたネタに紐づくsns_topic_targetsはそのままpendingで残るが、
+ * topic.status='approved'を条件にclaimするため各チャネル別パイプライン
+ * からは自然に無視される（別途クリーンアップは不要）。claimed（生成中）の
+ * ターゲットが既に走っている場合はreject後も生成が完了しうる点は既知の
+ * 制約として許容し、その場合も生成された下書きは下書きタブでarchiveする。
  *
  * reasonはsns_topics.rejection_reasonに監査用として保存する（2026-09-04追加、
  * migration 045）。saveAsInsightがtrueかつreasonがある場合のみ、drafts側の
@@ -56,10 +62,10 @@ export default async function handler(req) {
     if (!topic) {
       return jsonResponse({ error: "ネタが見つかりません" }, 404);
     }
-    if (topic.status !== "proposed") {
+    if (topic.status !== "proposed" && topic.status !== "approved") {
       return jsonResponse(
         {
-          error: `status='${topic.status}'のネタは却下できません（proposedのみ）`,
+          error: `status='${topic.status}'のネタは却下できません（proposed/approvedのみ）`,
         },
         409,
       );
