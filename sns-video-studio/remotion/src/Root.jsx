@@ -53,7 +53,7 @@ import { ReturnRateCM } from "./ReturnRateCM.jsx";
 import { NoteExplainerCM_DataRaceTable } from "./NoteExplainerCM.jsx";
 import { NoteExplainerCM_ReturnRate } from "./NoteExplainerReturnRate.jsx";
 import { NoteExplainerCM_FormRanking } from "./NoteExplainerFormRanking.jsx";
-import { NoteExplainerCM_LanguageSwitcher } from "./NoteExplainerLanguageSwitcher.jsx";
+import { NoteExplainerCM_LanguageSwitcher } from "./NoteExplainerLanguageSwitcherCM.jsx";
 import { LanguageSwitcherCM } from "./LanguageSwitcherCM.jsx";
 import { DataQuoteCard } from "./DataQuoteCard.jsx";
 import {
@@ -478,20 +478,20 @@ export function RemotionRoot() {
         height={1080}
       />
       <Composition
-        id="LanguageSwitcherCM"
-        component={LanguageSwitcherCM}
-        durationInFrames={430}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
         id="NoteExplainerCM-LanguageSwitcher"
         component={NoteExplainerCM_LanguageSwitcher}
         durationInFrames={900}
         fps={30}
         width={1920}
         height={1080}
+      />
+      <Composition
+        id="LanguageSwitcherCM"
+        component={LanguageSwitcherCM}
+        durationInFrames={420}
+        fps={30}
+        width={1080}
+        height={1920}
       />
       <Composition
         id="DataQuoteCard-Cover"

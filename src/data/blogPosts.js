@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "language-switcher-guide",
+    title: "4言語切替とは？海外からのアクセスにも対応する龍神レーダーの言語機能",
+    description:
+      "ヘッダー右上の🌐ボタンから日本語・English・繁體中文・한국어の4言語をワンタップで切り替えられる機能を解説。言語ごとの専用URL、ブックマーク・SNSシェアへの対応、対応ページの範囲まで使い方を紹介します。",
+    date: "2026-09-03",
+    category: "使い方",
+    tags: ["言語切替", "多言語対応", "使い方", "UI機能"],
+    readTime: "5分",
+    featured: false,
+    image: "/images/blog/language-switcher-guide.jpg",
+  },
+  {
     id: "volatility-index-fukuoka-0904",
     title: "イン崩れ指数100%のレースの見方 - 本日9/4福岡5Rを実例に判定根拠を解説",
     description:
