@@ -79,6 +79,16 @@ function formatDateTime(isoString) {
   });
 }
 
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/** JST基準で「今日」の日付（YYYY-MM-DD）かどうかを判定する */
+function isTodayJST(isoString) {
+  if (!isoString) return false;
+  const toJstDateKey = (date) =>
+    new Date(date.getTime() + JST_OFFSET_MS).toISOString().split("T")[0];
+  return toJstDateKey(new Date(isoString)) === toJstDateKey(new Date());
+}
+
 const REVISION_REASONS = [
   { code: "time-expression-error", label: "時制表現の誤り" },
   { code: "gambling-connotation", label: "ギャンブル連想表現" },
@@ -2033,17 +2043,26 @@ function TopicApprovalSection({
   // 承認要否（sns_content_types.requires_topic_approval）で🌅当日の運用／
   // 📦ネタのストック管理の2ブロックに分ける（要件27、2026-09-04再設計）。
   // 裏側のデータはどちらも同じsns_topics/sns_topic_targetsで、分岐点は
-  // この1フラグだけ
+  // この1フラグだけ。トピックはgetTopics()で全期間分取得されるため、期間・
+  // 完了状態で絞らないと「本日」ラベルが嘘になり、両ブロックとも過去の
+  // 完了済みネタが無期限に積み上がる（2026-09-04、コードレビューで発覚）
   const directTopics = topics.filter(
     (t) =>
       t.status === "approved" &&
-      t.sns_content_types?.requires_topic_approval === false,
+      t.sns_content_types?.requires_topic_approval === false &&
+      isTodayJST(t.approved_at || t.proposed_at),
   );
   const gateProposedTopics = topics.filter((t) => t.status === "proposed");
+  // 「承認済み・生成中」を名乗る以上、全ターゲットがgenerated/skippedで
+  // 完結したネタは表示対象から外す（下書き自体は各プラットフォームタブに
+  // 残るため情報は失われない）
   const gateApprovedTopics = topics.filter(
     (t) =>
       t.status === "approved" &&
-      t.sns_content_types?.requires_topic_approval === true,
+      t.sns_content_types?.requires_topic_approval === true &&
+      (t.sns_topic_targets || []).some(
+        (target) => target.status === "pending" || target.status === "claimed",
+      ),
   );
   const directTargets = directTopics.flatMap((t) => t.sns_topic_targets || []);
   const directGeneratedCount = directTargets.filter(
@@ -2143,7 +2162,7 @@ function TopicApprovalSection({
             className="topic-section-settings-btn"
             onClick={() => setShowCategorySettings((v) => !v)}
           >
-            ⚙️ この区分のチャネル設定
+            ⚙️ ネタ型設定
           </button>
         </div>
         {dailyAutoProposer.locked && (
@@ -2223,7 +2242,7 @@ function TopicApprovalSection({
             className="topic-section-settings-btn"
             onClick={() => setShowCategorySettings((v) => !v)}
           >
-            ⚙️ この区分のチャネル設定
+            ⚙️ ネタ型設定
           </button>
         </div>
         {weeklyProposer.locked && (
