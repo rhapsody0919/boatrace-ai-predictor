@@ -4,7 +4,7 @@
 
 **このRoutineはネタを自分で選定しない**。`sns-topic-proposer-weekly.md`・`sns-topic-proposer-daily-auto.md`が作った承認済みネタを拾って生成するだけの、疎結合な下流工程。
 
-**noteパイプライン（`sns-pipeline-note.md`）はこのRoutineが生成した記事本文に依存する**（note下書きはblog記事をnote形式に変換して作る、既存の`content-multi-channel-pipeline-prompt.md`の設計を踏襲）。そのため、このRoutineは他チャネルより先に処理されることが望ましいが、厳密な順序保証はしない（noteパイプライン側がblog未完了時にスキップ・再試行する設計、`sns-pipeline-note.md`参照）。
+**noteパイプライン（`sns-pipeline-note.md`）はこのRoutineが生成した記事本文に依存する**（note下書きはblog記事をnote形式に変換して作る設計）。そのため、このRoutineは他チャネルより先に処理されることが望ましいが、厳密な順序保証はしない（noteパイプライン側がblog未完了時にスキップ・再試行する設計、`sns-pipeline-note.md`参照）。
 
 ## 実行トリガー
 

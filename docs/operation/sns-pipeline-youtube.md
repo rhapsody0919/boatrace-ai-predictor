@@ -34,7 +34,7 @@
 
 ## 4. サムネイルの生成
 
-`scripts/lib/contentChannels/renderCoverCard.js`の`COMPOSITION_IDS.youtubeThumbnail`（1280×720）で生成する。3.の動画と同じ実データ・見出しを使い、チャネル間で見た目がバラバラにならないようにする（`content-multi-channel-pipeline-prompt.md`の既存手順と同じ）。
+`scripts/lib/contentChannels/renderCoverCard.js`の`COMPOSITION_IDS.youtubeThumbnail`（1280×720）で生成する。3.の動画と同じ実データ・見出しを使い、チャネル間で見た目がバラバラにならないようにする。
 
 ## 5. アップロード・永続化
 

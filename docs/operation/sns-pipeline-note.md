@@ -2,7 +2,7 @@
 
 承認済みネタ（`sns_topics.status='approved'`）のうち、note向けに割り当てられた`sns_topic_targets`をポーリングしてnote下書きを生成するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。`docs/operation/sns-pipeline-x.md`と同じ構成をテンプレートにしている。
 
-**このRoutineは`sns-pipeline-blog.md`が生成したブログ本文に依存する**（note下書きはブログ記事をnote形式に変換して作る設計、既存の`content-multi-channel-pipeline-prompt.md`の設計を踏襲）。ブログ側がまだ生成していない場合は本Routineは**生成せず、claimしたターゲットを`pending`に戻して次回ポーリングに委ねる**（note-YouTube動画の依存関係と同じ「未完了ならスキップ」方式、2026-09-03合意）。
+**このRoutineは`sns-pipeline-blog.md`が生成したブログ本文に依存する**（note下書きはブログ記事をnote形式に変換して作る設計）。ブログ側がまだ生成していない場合は本Routineは**生成せず、claimしたターゲットを`pending`に戻して次回ポーリングに委ねる**（note-YouTube動画の依存関係と同じ「未完了ならスキップ」方式、2026-09-03合意）。
 
 **YouTube動画URLについて（2026-09-03追加）**: noteはURLをそのまま貼ると自動でプレイヤーが展開され、文章だけの下書きより視覚的にわかりやすくなる。ただし**生成時点でYouTube公開を待つブロッキング依存にはしない**（YouTube側は人間の承認が必要なため、待つと生成が大幅に遅れる）。同じネタのYouTube下書きが承認・公開済みであれば、sns-hub管理画面の投稿導線（「YouTube動画URLをコピー」ボタン）で人間が投稿時にコピーして本文に貼り付けられる。このRoutine自身が本文中にURLを埋め込む必要は無い。
 
