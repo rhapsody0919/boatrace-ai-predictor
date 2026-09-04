@@ -30,6 +30,7 @@ import {
   getTopicCategories,
   updateTopicCategoryChannel,
   triggerWeeklyProposer,
+  triggerDailyAutoProposer,
 } from "../../services/snsHubService";
 import {
   canShareVideo,
@@ -2178,6 +2179,74 @@ function TopicProgressMatrix({ topics }) {
 // タブではなく専用セクションとして、下書き承認タブ群(TABS)の上に常時表示する
 // （2026-09-03ユーザー指摘: 「承認→各プラットフォームタブに生成される」という
 // 流れが、同列の1タブに埋もれると分かりにくいため）
+// ネタ提案Routine（週次・日次いずれも）の手動起動状態を管理する共通フック。
+// 通常cronのみで動くRoutineを、承認済みストックが少ない・動作確認したい場面で
+// 即時起動できるようにする（2026-09-04追加、週次で先に実装し日次追加時に
+// フック化した）。この状態はTopicApprovalSection自身に閉じているため、他の
+// 生成系ボタン（親コンポーネント側）と違い親のstateには持ち上げない
+function useTopicProposerTrigger({ triggerFn, topics, showToast, label }) {
+  const [triggering, setTriggering] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [sessionUrl, setSessionUrl] = useState(null);
+  const [firedAt, setFiredAt] = useState(null);
+  const [elapsedMinutes, setElapsedMinutes] = useState(0);
+  const [idsAtFire, setIdsAtFire] = useState(null);
+
+  async function trigger() {
+    setTriggering(true);
+    try {
+      const result = await triggerFn();
+      if (result?.routine?.fired === false) {
+        showToast(
+          `起動リクエストがRoutineに届いていません（${result.routine.reason}）。Vercel環境変数の設定を確認してください`,
+          "error",
+        );
+      } else {
+        showToast(
+          result.routine.sessionUrl
+            ? `${label}を起動しました。実行ログのリンクは下に表示されます`
+            : `${label}を起動しました。数分後に更新ボタンで確認してください`,
+          "success",
+        );
+        setLocked(true);
+        setSessionUrl(result.routine.sessionUrl || null);
+        setFiredAt(Date.now());
+        setElapsedMinutes(0);
+        setIdsAtFire(new Set(topics.map((t) => t.id)));
+      }
+    } catch (err) {
+      console.error(`${label}起動リクエストエラー:`, err);
+      showToast(err.message || "起動リクエストに失敗しました", "error");
+    } finally {
+      setTriggering(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!locked || !firedAt) return;
+    const interval = setInterval(() => {
+      setElapsedMinutes(
+        Math.max(0, Math.round((Date.now() - firedAt) / 60000)),
+      );
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [locked, firedAt]);
+
+  useEffect(() => {
+    if (!locked || !idsAtFire) return;
+    const hasNewTopic = topics.some((t) => !idsAtFire.has(t.id));
+    if (hasNewTopic) {
+      showToast("✅ 新しいネタが登録されました", "success");
+      setLocked(false);
+      setSessionUrl(null);
+      setFiredAt(null);
+      setIdsAtFire(null);
+    }
+  }, [topics, locked, idsAtFire, showToast]);
+
+  return { triggering, locked, sessionUrl, elapsedMinutes, trigger };
+}
+
 function TopicApprovalSection({
   topics,
   approvers,
@@ -2197,73 +2266,29 @@ function TopicApprovalSection({
   // セクション内から開閉するパネルに変更した（2026-09-04）
   const [showCategorySettings, setShowCategorySettings] = useState(false);
 
-  // 週次ネタ提案Routine（sns-topic-proposer-weekly）の手動起動。通常週次cron
-  // のみで動くRoutineを、承認済みストックが少ない・動作確認したい場面で
-  // 即時起動できるようにする（2026-09-04追加）。この状態はネタ承認セクション
-  // 自身に閉じているため、他の生成系ボタン（親コンポーネント側）と違い
-  // 親のstateには持ち上げない
-  const [weeklyProposerTriggering, setWeeklyProposerTriggering] =
-    useState(false);
-  const [weeklyProposerLocked, setWeeklyProposerLocked] = useState(false);
-  const [weeklyProposerSessionUrl, setWeeklyProposerSessionUrl] =
-    useState(null);
-  const [weeklyProposerFiredAt, setWeeklyProposerFiredAt] = useState(null);
-  const [weeklyProposerElapsedMinutes, setWeeklyProposerElapsedMinutes] =
-    useState(0);
-  const [weeklyProposerIdsAtFire, setWeeklyProposerIdsAtFire] = useState(null);
+  const weeklyProposer = useTopicProposerTrigger({
+    triggerFn: triggerWeeklyProposer,
+    topics,
+    showToast,
+    label: "週次ネタ提案",
+  });
+  const dailyAutoProposer = useTopicProposerTrigger({
+    triggerFn: triggerDailyAutoProposer,
+    topics,
+    showToast,
+    label: "日次ネタ自動提案",
+  });
 
-  async function handleTriggerWeeklyProposer() {
-    setWeeklyProposerTriggering(true);
-    try {
-      const result = await triggerWeeklyProposer();
-      if (result?.routine?.fired === false) {
-        showToast(
-          `起動リクエストがRoutineに届いていません（${result.routine.reason}）。Vercel環境変数TOPIC_PROPOSER_WEEKLY_ROUTINE_FIRE_URL/_FIRE_TOKENの設定を確認してください`,
-          "error",
-        );
-      } else {
-        showToast(
-          result.routine.sessionUrl
-            ? "週次ネタ提案を起動しました。実行ログのリンクは下に表示されます"
-            : "週次ネタ提案を起動しました。数分後に更新ボタンで確認してください",
-          "success",
-        );
-        setWeeklyProposerLocked(true);
-        setWeeklyProposerSessionUrl(result.routine.sessionUrl || null);
-        setWeeklyProposerFiredAt(Date.now());
-        setWeeklyProposerElapsedMinutes(0);
-        setWeeklyProposerIdsAtFire(new Set(topics.map((t) => t.id)));
-      }
-    } catch (err) {
-      console.error("週次ネタ提案起動リクエストエラー:", err);
-      showToast(err.message || "起動リクエストに失敗しました", "error");
-    } finally {
-      setWeeklyProposerTriggering(false);
-    }
-  }
-
+  // ロック中（Routine実行中）は30秒おきにネタ一覧をポーリングする。
+  // triggerFn自体は完了検知しないため、新規ネタの出現有無で判定する
+  // （useTopicProposerTrigger側の完了検知useEffectとセット）
   useEffect(() => {
-    if (!weeklyProposerLocked || !weeklyProposerFiredAt) return;
+    if (!weeklyProposer.locked && !dailyAutoProposer.locked) return;
     const interval = setInterval(() => {
-      setWeeklyProposerElapsedMinutes(
-        Math.max(0, Math.round((Date.now() - weeklyProposerFiredAt) / 60000)),
-      );
       onReloadTopics();
     }, 30000);
     return () => clearInterval(interval);
-  }, [weeklyProposerLocked, weeklyProposerFiredAt, onReloadTopics]);
-
-  useEffect(() => {
-    if (!weeklyProposerLocked || !weeklyProposerIdsAtFire) return;
-    const hasNewTopic = topics.some((t) => !weeklyProposerIdsAtFire.has(t.id));
-    if (hasNewTopic) {
-      showToast("✅ 新しいネタが登録されました", "success");
-      setWeeklyProposerLocked(false);
-      setWeeklyProposerSessionUrl(null);
-      setWeeklyProposerFiredAt(null);
-      setWeeklyProposerIdsAtFire(null);
-    }
-  }, [topics, weeklyProposerLocked, weeklyProposerIdsAtFire, showToast]);
+  }, [weeklyProposer.locked, dailyAutoProposer.locked, onReloadTopics]);
 
   return (
     <div className="topic-approval-section">
@@ -2291,12 +2316,22 @@ function TopicApprovalSection({
         <button
           type="button"
           className="topic-approval-section-settings-btn"
-          disabled={weeklyProposerTriggering || weeklyProposerLocked}
-          onClick={handleTriggerWeeklyProposer}
+          disabled={weeklyProposer.triggering || weeklyProposer.locked}
+          onClick={weeklyProposer.trigger}
         >
-          {weeklyProposerTriggering
+          {weeklyProposer.triggering
             ? "⏳ リクエスト中..."
             : "📅 週次ネタ提案を今すぐ実行"}
+        </button>
+        <button
+          type="button"
+          className="topic-approval-section-settings-btn"
+          disabled={dailyAutoProposer.triggering || dailyAutoProposer.locked}
+          onClick={dailyAutoProposer.trigger}
+        >
+          {dailyAutoProposer.triggering
+            ? "⏳ リクエスト中..."
+            : "🌅 日次ネタ自動提案を今すぐ実行"}
         </button>
         <button
           type="button"
@@ -2307,21 +2342,43 @@ function TopicApprovalSection({
         </button>
       </div>
 
-      {weeklyProposerLocked && (
+      {(weeklyProposer.locked || dailyAutoProposer.locked) && (
         <div className="topic-approval-section-weekly-proposer-hint">
-          ⏳ 週次ネタ提案を実行中...（{weeklyProposerElapsedMinutes}
-          分経過）30秒おきに自動で確認します
-          {weeklyProposerSessionUrl && (
-            <>
-              {" ・ "}
-              <a
-                href={weeklyProposerSessionUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                実行ログを見る
-              </a>
-            </>
+          {weeklyProposer.locked && (
+            <div>
+              ⏳ 週次ネタ提案を実行中...（{weeklyProposer.elapsedMinutes}
+              分経過）30秒おきに自動で確認します
+              {weeklyProposer.sessionUrl && (
+                <>
+                  {" ・ "}
+                  <a
+                    href={weeklyProposer.sessionUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    実行ログを見る
+                  </a>
+                </>
+              )}
+            </div>
+          )}
+          {dailyAutoProposer.locked && (
+            <div>
+              ⏳ 日次ネタ自動提案を実行中...（{dailyAutoProposer.elapsedMinutes}
+              分経過）30秒おきに自動で確認します
+              {dailyAutoProposer.sessionUrl && (
+                <>
+                  {" ・ "}
+                  <a
+                    href={dailyAutoProposer.sessionUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    実行ログを見る
+                  </a>
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
