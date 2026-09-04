@@ -152,6 +152,27 @@ const GENERATE_PLATFORM_OPTIONS = [
   { value: "youtube", label: "YouTube" },
 ];
 
+// sns_template_variants.formatの日本語ラベル。DB側にlabel列が無く英語の
+// kebab-case識別子のみのため、docs/operation/sns-video-producer-prompt.md
+// のフォーマットライブラリの呼称に合わせてここで翻訳する（2026-09-04追加）。
+// race-insightは同ドキュメントに記載が無く由来不明のため、キー名からの
+// 推測ラベル。未知の型（今後Routineが新規登録した場合）は生の英語キーの
+// ままフォールバック表示する
+const FORMAT_LABELS = {
+  "answer-check": "答え合わせ型",
+  "daily-data-list": "本日のデータ一覧型",
+  "live-prediction-hook": "予想数値フック型",
+  "new-feature": "新機能紹介型",
+  "race-insight": "レース考察型",
+  "tool-showcase": "一覧アピール型",
+  trivia: "豆知識型",
+  "venue-ranking": "会場攻略・データ一覧型",
+};
+
+// マスコット型は現状クオリティが低く一時的に生成対象から外す
+// （2026-09-04ユーザー指摘）。sns_template_variants自体は削除しない
+const EXCLUDED_GENERATE_FORMATS = new Set(["mascot"]);
+
 // countMaxはapi/admin/sns-hub/generate.jsのCOUNT_MAX_BY_MODEと一致させる
 const GENERATE_MODES = [
   {
@@ -224,9 +245,14 @@ function SnsHubAdmin() {
   // 手動生成の型選択肢。フォーマットカタログ（sns_template_variants、"型一覧"タブと
   // 同じデータ源）から重複を除いた型名一覧を出す。ハードコードした一覧を別途持つと
   // カタログと食い違うため、既に画面にロード済みのtemplateVariantsをそのまま使う
-  // （2026-09-02追加）
+  // （2026-09-02追加）。EXCLUDED_GENERATE_FORMATSに含まれる型（現状マスコットのみ、
+  // クオリティ低のため一時除外）は生成候補から外す（2026-09-04）
   const evergreenFormatOptions = useMemo(() => {
-    const names = new Set(templateVariants.map((tv) => tv.format));
+    const names = new Set(
+      templateVariants
+        .map((tv) => tv.format)
+        .filter((format) => !EXCLUDED_GENERATE_FORMATS.has(format)),
+    );
     return [...names].sort();
   }, [templateVariants]);
 
@@ -634,7 +660,7 @@ function SnsHubAdmin() {
                     <option value="">おまかせ（自動選定）</option>
                     {evergreenFormatOptions.map((format) => (
                       <option key={format} value={format}>
-                        {format}
+                        {FORMAT_LABELS[format] || format}
                       </option>
                     ))}
                   </select>
