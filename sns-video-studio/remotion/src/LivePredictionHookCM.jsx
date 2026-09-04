@@ -8,6 +8,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { FONT } from "./fonts.js";
 
 /**
  * 予想数値フック型（TikTok向け・マスコット無し・実画面スクショ不要）
@@ -28,8 +29,6 @@ const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
 const GOLD = "#f59e0b";
-const FONT =
-  '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
 
 // SceneHook（カバー）とSceneVolatilityで共有するレベル別の配色・アイコン・ラベル。
 // 判定基準（getVolatilityLevel）はSceneVolatility節で定義（2026-09-01、カバーにも

@@ -10,6 +10,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { FONT } from "./fonts.js";
 
 /**
  * 一覧アピール型（イン崩れ指数の実績証明）— 龍神レーダー Shorts
@@ -26,8 +27,6 @@ const NAVY = "#0f2c46";
 const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
-const FONT =
-  '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();

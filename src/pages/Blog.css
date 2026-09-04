@@ -102,6 +102,40 @@
   border-color: #0ea5e9;
 }
 
+.sort-filter {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: -1rem;
+  margin-bottom: 2rem;
+}
+
+.sort-filter button {
+  padding: 0.35rem 1rem;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-page);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.sort-filter button:hover {
+  border-color: #0ea5e9;
+  color: var(--brand-accent-secondary);
+}
+
+.sort-filter button.active {
+  /* #0ea5e9はテキスト色としてライト背景で2.5:1程度しか出ずAA未達のため、
+     category-filterのhoverと同じ検証済みvar(--brand-accent-secondary)を使う
+     （2026-09-04、E2E axe-coreで検出・修正） */
+  background: var(--surface-page);
+  border-color: #0ea5e9;
+  color: var(--brand-accent-secondary);
+  font-weight: 600;
+}
+
 /* Blog Grid */
 .blog-grid {
   display: grid;
