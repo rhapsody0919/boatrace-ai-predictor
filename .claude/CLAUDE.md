@@ -205,6 +205,7 @@ X/TikTokへの定常投稿は `src/pages/admin/SnsHubAdmin.jsx` 等で構築中�
 
 - sns-hubの動画・画像生成プロンプトも、着手前に[`docs/reference/brand-kit.md`](../docs/reference/brand-kit.md)を参照する。色・フォントを個別プロンプト内に直書きしない
 - 無人のクラウドRoutineは外部サイト（X/TikTok等）を自律的に閲覧できないと確定済み（WebFetch/curlは許可リスト外ドメインに一律`EGRESS_BLOCKED`、ヘッドレスChromiumも外部接続不可。`docs/design/sns-hub-phase2-pdca-loop/spec.md`参照）。外部閲覧・生成・投稿が絡む作業は、Routineではなく対話セッションに委ねる設計を維持する
+- **デザイン・BGM等の抜本的な作り込みはsns-hub UI上では行わない**（2026-09-04）。sns-hub UIは運用（生成物の承認・却下・軽微な修正指摘）に専念し、複数案を比較しながら作り込みたい場合は`/refine-creative`スキルをClaude Codeとの対話で使う。sns-hub UI上で「制作仕様を変えたい」というフィードバックを受けた場合も、その旨をユーザーに伝え`/refine-creative`の利用を案内する
 
 ---
 
