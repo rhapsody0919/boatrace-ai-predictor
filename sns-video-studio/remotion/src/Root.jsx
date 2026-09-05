@@ -66,6 +66,7 @@ import {
   TECHNIQUE_CONSISTENCY_DURATION,
 } from "./TechniqueConsistencyCM.jsx";
 import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
+import { VenueComparisonYoutubeTemplate } from "./VenueComparisonYoutubeCM.jsx";
 
 export function RemotionRoot() {
   return (
@@ -578,6 +579,34 @@ export function RemotionRoot() {
             { winnerCourse: 5, technique: "makurizashi", probability: 0.08 },
           ],
           featureDigest: ["AI予想", "イン崩れ指数", "無料"],
+        }}
+      />
+      <Composition
+        id="VenueComparisonYoutubeCM"
+        component={VenueComparisonYoutubeTemplate}
+        durationInFrames={600}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{
+          headline: "桐生のイン逃げ率は51.7%",
+          subCaption: "汽水会場平均45.8%より高い（過去90日実データ）",
+          categoryTag: "会場データで比較",
+          compareHeading: "📊 イン逃げ率（1号艇の逃げ勝ち）比較",
+          bars: [
+            { venue: "桐生（淡水）", value: "51.7%", sample: "573", ratio: 100, highlight: true },
+            { venue: "浜名湖（汽水）", value: "49.8%", sample: "624", ratio: 96 },
+            { venue: "江戸川（汽水）", value: "41.7%", sample: "444", ratio: 81 },
+          ],
+          avgLabel: "汽水会場平均（江戸川・浜名湖）",
+          avgValue: "45.8%",
+          explainHeading: "🌊 なぜ差が出るのか",
+          reasons: [
+            "桐生は淡水コースで、潮の満ち引きの影響を受けず水面が安定しやすい",
+            "江戸川・浜名湖は汽水（海水が混ざる水域）で、潮位・流れの変化が水面コンディションに影響しやすい",
+            "水面が安定するほど1号艇はスタートで進入コースを守りやすく、逃げ勝ちにつながりやすい",
+          ],
+          featureDigest: ["AI予想", "会場データ", "無料"],
         }}
       />
     </>
