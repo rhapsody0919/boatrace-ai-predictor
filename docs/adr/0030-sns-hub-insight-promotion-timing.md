@@ -1,7 +1,7 @@
 # ADR 0030: SNSハブPhase 2 — insight昇格・注入処理の実行タイミング
 
 ## ステータス
-採用
+一部改訂（昇格処理の実行主体を変更、2026-09-05追記参照）
 
 ## 背景
 insightの`proposed`→`active`昇格（週次デフォルト採用、spec.md要件4）と、生成Routineへの`active`なinsightの注入（要件5）は、いずれも「週次」で行う設計が決まっている。この処理をどのRoutine・スケジュールで実行するかが未確定だった。
@@ -17,3 +17,11 @@ insightの`proposed`→`active`昇格（週次デフォルト採用、spec.md要
 - `sns-hub-content-generation`Routineのプロンプト（`.claude/CLAUDE.md`等ではなくRoutine自体のjob_config）に新規ステップを追記する必要がある（`RemoteTrigger update`で全体を送り直す）
 - 日次実行（当日ネタ生成、月曜以外）ではinsightの昇格処理は行わない。生成時の`active`なinsight読み込みのみ行う（要件5は毎日実施、要件4の昇格判定は週次のみという非対称な設計になる。spec.mdの非機能要件「反映サイクルは週次のみ」と整合）
 - 将来、昇格処理が重くなった場合（insight数の増加、より複雑な照合ロジック）は、本ADRを見直し独立Routine化を検討する余地を残す
+
+## 2026-09-05追記: 昇格処理が孤立し、手動承認に切り替え
+
+本ADRが処理の統合先とした`sns-hub-content-generation`Routine自体が、その後のsns-topic-gateへの経路統合作業（タスク#74「generate.js/SNS_HUB_ROUTINE・手動生成パネルの全廃止」、2026-09-04）で完全に廃止された。結果、`scripts/maintenance/promote-strategy-insights.js`（本ADRを受けて実装済みだったスクリプト）はどのRoutine・cronからも呼び出されない孤立コードになり、insightが`proposed`のまま昇格されない状態が続いていた（2026-09-05、実データで`sns_strategy_insights`のtiktok分2件が作成から4日間未昇格のまま放置されていたことを確認）。
+
+**是正**: 週次自動昇格の復元は行わず、`sns-hub`管理画面「戦略メモ」タブの`InsightCard`に手動の「採用」ボタンを追加し、人間が個別にactive化する運用に切り替えた（`api/admin/sns-hub/insights/[id]/approve.js`）。risk-rules照合は参考の警告表示として同エンドポイント内で行うが、承認自体はブロックしない（risk-rules.json自体の既存方針を踏襲）。`getProposedInsightsForPromotion()`/`activateInsight()`/`retireInsight()`（`scripts/lib/snsStrategyInsights.js`）と`promote-strategy-insights.js`本体は削除した。
+
+この変更により、上記「却下した選択肢」の1点目・2点目で比較したトレードオフの前提（Routine側で行うか・独立cronにするか）自体が変わり、「そもそも自動処理にしない」という第3の選択肢を採用したことになる。理由: 本プロジェクトのSNS投稿系はドラフト承認・ネタ承認を含め一貫して人間の個別承認を必須とする設計になっており、insight昇格だけを唯一の自動判定にする一貫性の無さより、既存の承認UIパターン（却下ボタンと対になる採用ボタン）に揃える方が実装・運用コストの両面で合理的と判断した。

@@ -152,6 +152,11 @@ export async function rejectInsight(insightId, reason) {
   });
 }
 
+/** insightを採用する（active化、次回生成から参照される） */
+export async function approveInsight(insightId) {
+  return request(`/insights/${insightId}/approve`, { method: "POST" });
+}
+
 /** 「フォーマットカタログ」タブ用、型(sns_template_variants)の一覧を取得する */
 export async function getTemplateVariants() {
   const { data } = await request("/template-variants");

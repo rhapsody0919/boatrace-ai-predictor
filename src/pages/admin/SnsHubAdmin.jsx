@@ -20,6 +20,7 @@ import {
   addDraftMetric,
   getInsights,
   getRecentRevisions,
+  approveInsight,
   rejectInsight,
   getTemplateVariants,
   archiveDraft,
@@ -543,6 +544,12 @@ function SnsHubAdmin() {
           <InsightTab
             insights={insights}
             revisions={revisions}
+            onApprove={(insightId) =>
+              handleAction(approveInsight, [insightId], {
+                drafts: true,
+                insights: true,
+              })
+            }
             onReject={(insightId, reason) =>
               handleAction(rejectInsight, [insightId, reason], {
                 drafts: true,
@@ -989,7 +996,7 @@ function InsightScopeGroup({ title, items, renderItem }) {
   );
 }
 
-function InsightTab({ insights, onReject, revisions }) {
+function InsightTab({ insights, onApprove, onReject, revisions }) {
   const proposed = insights.filter((i) => i.status === "proposed");
   const history = insights
     .filter((i) => i.status === "active" || i.status === "retired")
@@ -1012,6 +1019,7 @@ function InsightTab({ insights, onReject, revisions }) {
                 <InsightCard
                   key={insight.id}
                   insight={insight}
+                  onApprove={() => onApprove(insight.id)}
                   onReject={(reason) => onReject(insight.id, reason)}
                 />
               )}
@@ -1023,6 +1031,7 @@ function InsightTab({ insights, onReject, revisions }) {
                 <InsightCard
                   key={insight.id}
                   insight={insight}
+                  onApprove={() => onApprove(insight.id)}
                   onReject={(reason) => onReject(insight.id, reason)}
                 />
               )}
@@ -1097,14 +1106,24 @@ function InsightScopeBadges({ insight }) {
   );
 }
 
-function InsightCard({ insight, onReject }) {
+function InsightCard({ insight, onApprove, onReject }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
+  const [approving, setApproving] = useState(false);
 
   function handleReject() {
     onReject(reason.trim() || undefined);
     setRejecting(false);
     setReason("");
+  }
+
+  async function handleApprove() {
+    setApproving(true);
+    try {
+      await onApprove();
+    } finally {
+      setApproving(false);
+    }
   }
 
   return (
@@ -1143,12 +1162,21 @@ function InsightCard({ insight, onReject }) {
           </div>
         </div>
       ) : (
-        <button
-          className="draft-action-btn revise"
-          onClick={() => setRejecting(true)}
-        >
-          却下
-        </button>
+        <div className="draft-actions">
+          <button
+            className="draft-action-btn approve"
+            onClick={handleApprove}
+            disabled={approving}
+          >
+            {approving ? "採用中…" : "採用"}
+          </button>
+          <button
+            className="draft-action-btn revise"
+            onClick={() => setRejecting(true)}
+          >
+            却下
+          </button>
+        </div>
       )}
     </div>
   );
