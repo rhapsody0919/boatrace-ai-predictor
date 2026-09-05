@@ -15,6 +15,10 @@ SNS投稿コンテンツ（ブログ/note/X/TikTok/YouTube）を生成するす�
 
 見出し・タイトルテキストをビジュアルに配置する際は、`fitHeadline()`（`docs/reference/brand-kit.md`参照）を使う。`whiteSpace: nowrap`による見切れや、手動の`fontSize`調整による独自ヒューリスティックは使わない。
 
+## グラフ・比較ビジュアルの配置
+
+棒グラフ・2値比較等のデータビジュアルは、意図的な非対称デザインでない限り必ずflexで中央寄せにする（詳細・既存の再利用コンポーネントは`docs/reference/brand-kit.md`「グラフ・比較ビジュアルの中央寄せ」参照）。masterへコードをコミットしないパイプライン（venue-feature型等）では、既存の使い回しコンポーネントでカバーできない新しい形状が必要になった際にその場限りのコードを書きがちで、中央寄せ等のレイアウトルールが再現されない不具合が繰り返し発生している。
+
 ## Supabase Storageのパス規約
 
 `sns_drafts.video_storage_path`・`cover_image_path`には**生のStorageパス**（例: `{content_group_id}/x-ja.mp4`）を保存する。署名付きURLをそのまま保存しない。読み取り側は`signStoragePath()`/`signStoragePaths()`（`api/_lib/snsHubHelpers.js`）で都度署名する設計に統一されている（2026-09-03確定）。
