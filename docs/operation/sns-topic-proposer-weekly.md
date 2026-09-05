@@ -6,7 +6,9 @@
 
 **2026-09-05追記（機能紹介ネタの追加）**: `feature-intro`カテゴリは当初「新機能紹介型（一覧アピール型）」の未接続プレースホルダーとして登録され、実際にはフローA（新機能マルチチャネル展開）が担当する別概念だった。ユーザーとの対話で「分析ツール(`/winning-technique`)の既存17タブを1つずつ紹介するネタ」という第3の概念が必要と判明し、既に実装済みだが未接続だった`scripts/lib/contentTopics/dataInsightSource.js`をこの行に繋ぎ直した（`docs/db-migration/047_sns_topic_categories_feature_intro_repurpose.sql`参照）。「一覧アピール型」自体・フローAの新機能告知は本Routineの対象外のまま（BOA-239参照）。
 
-**2026-09-05追記（豆知識ネタの追加）**: `trivia`カテゴリも同様に「未実装、提案元モジュール未着手」のプレースホルダーだった（チャネル設定は先行してblog/note/x/youtube/tiktok全てON済み）。ユーザー要望（フォロワー獲得・集客のための新しい週次ネタ軸）を受け、新規実装した`scripts/lib/contentTopics/triviaSource.js`（選手の級別・年代・体重・支部・経験年数・身長別の勝率格差、6軸ローテーション）をこの行に接続した（`docs/db-migration/049_sns_topic_categories_trivia_connect.sql`参照）。会場特性ネタ（1会場 vs 全国平均）・機能紹介ネタ（ツールタブの紹介）のどちらとも異なり、**特定の会場・ツールに紐づかない全国横断の選手属性ネタ**という第3の軸を担う。本文作成の考え方は「2-C. 豆知識ネタの本文作成」参照。
+**2026-09-05追記（豆知識ネタの追加）**: `trivia`カテゴリも同様に「未実装、提案元モジュール未着手」のプレースホルダーだった（チャネル設定は先行してblog/note/x/youtube/tiktok全てON済み）。ユーザー要望（フォロワー獲得・集客のための新しい週次ネタ軸）を受け、新規実装した`scripts/lib/contentTopics/triviaSource.js`をこの行に接続した（`docs/db-migration/049_sns_topic_categories_trivia_connect.sql`参照）。会場特性ネタ（1会場 vs 全国平均）・機能紹介ネタ（ツールタブの紹介）のどちらとも異なり、**特定の会場・ツールに紐づかない全国横断の選手属性ネタ**という第3の軸を担う。本文作成の考え方は「2-C. 豆知識ネタの本文作成」参照。
+
+**2026-09-06追記（15軸への拡張・再利用ルールの変更）**: 初版は6軸（級別・年代・体重・支部・経験年数・身長）で「直近3回を避ける」カウントベースの再利用回避だったが、ユーザー指摘（軸が少ないと十数週で同じ軸が一巡し「またこの話か」という繰り返し感が出る、理想は毎回別の軸、無理なら軸を15個程度に増やしてほしい）を受け、出身地・スタート・フライング率・地元成績ギャップ・コース配置・級別年齢・支部別A1比率・モーター運の8軸を追加し15軸に拡張した。再利用ルールも「直近180日以内に使った軸を避ける」長期クールダウン方式に変更し、軸が尽きて型自体が枯渇する事態（`getCandidates()`が空配列を返し続ける）を避けつつ、実運用上は長期間同じ軸が再登場しないようにした。
 
 ## 0. 蓄積されたフィードバックの確認
 
@@ -80,6 +82,8 @@
 
 会場特性ネタ（1会場 vs 全国平均）・機能紹介ネタ（ツールタブの紹介）はどちらも「見せる対象」が最初から決まっている。豆知識ネタは対象を自分で選ぶ分、**同じ実データでも切り口次第でバズるかどうかが大きく変わる**。以下は「どの2群を対比させるか」「どう言い換えるか」を判断するための実務プロンプトで、venue-feature型が使う`SceneHookCompareTwo`（`VenueRankingCM.jsx`、`docs/operation/sns-pipeline-x.md`3.参照）が「対比する2つの値」をそのまま主役にする設計のため、`topic_text`の時点で**必ず2群の対比に絞り込む**（3群以上の分布をそのまま書かない）。
 
+**軸は15種類あり、`triviaSource.js`は直近180日以内に使った軸を候補から除外する長期クールダウン方式でローテーションする**（2026-09-06、6軸・直近3回避けの旧方式から変更。軸が少ないと十数週で同じ軸が一巡し「またこの話か」という繰り返し感が出るため、軸数を増やした上でクールダウン期間も長くした）。
+
 ### データ取得
 
 | angle | データ源（テーブル・列） | 対比する2群の選び方 |
@@ -90,9 +94,19 @@
 | `branch-win-rate` | `racer_profiles.branch` × `race_entries.win_rate`（`racer_id`でJOIN、同上の重複排除） | 支部別平均`win_rate`の上位1支部と全国平均（または下位1支部）を対比する |
 | `experience-win-rate` | `racer_profiles.registration_period` × `race_entries.win_rate`（`racer_id`でJOIN、同上の重複排除） | 登録期を経過年数の目安に変換し、最も浅い層と最も深い層（ベテラン）を対比する |
 | `height-win-rate` | `racer_profiles.height_cm` × `race_entries.win_rate`（`racer_id`でJOIN、同上の重複排除） | 高身長層・低身長層を対比する。相関が弱い/無い結果になった場合は無理に対比を作らず、「身長は勝率に関係なかった」という結果自体を意外性として使ってよい |
+| `hometown-win-rate` | `racer_profiles.hometown` × `race_entries.win_rate`（`racer_id`でJOIN、同上の重複排除） | `branch`（支部）とは別の実データ列（出身都道府県、47種）。上位1都道府県と全国平均（または下位1都道府県）を対比する |
+| `start-timing-by-grade` | `racer_aggregated_stats.avg_st`（`racer_id`ごとに全会場平均してから級別集計） | 最高位と最低位のスタートタイミング平均を対比する（値が小さいほどスタートが早い） |
+| `flying-rate-by-grade` | `racer_aggregated_stats.flying_rate`（同上、級別集計） | 最高位と最低位のフライング率を対比する |
+| `local-vs-national-gap` | `race_entries.local_win_rate` と `win_rate` の全国平均ギャップ | 級別等のグループ分けはせず、「全国勝率」と「地元開催時の勝率」という2つの平均値そのものを対比する |
+| `course-assignment-by-grade` | `race_entries`（`racer_id`ごと直近1件の`boat_number`。1号艇＝true/falseの比率を級別集計） | 最高位と最低位で「1号艇（イン）に入る割合」を対比する |
+| `age-by-grade` | `race_entries`（`racer_id`ごと直近1件の`age`、級別集計）。`age-win-rate`とは切り口が異なる（年齢→勝率ではなく級→年齢） | 最も平均年齢が低い級と高い級を対比する |
+| `branch-elite-ratio` | `racer_profiles`（支部別の`grade_at_scrape='A1級'`比率）。`branch-win-rate`とは別metric | 上位1支部と全国平均（または下位1支部）のA1級比率を対比する |
+| `motor-luck` | `race_entries.motor_2rate` × `race_results.rank1`（`race_id`でJOIN、`motor_2rate`を5分位程度に分け実際の1着率を集計） | 最上位分位と最下位分位で実際の1着率を対比する |
+| `flying-rate-by-experience` | `racer_aggregated_stats.flying_rate` × `racer_profiles.registration_period`（経験年数帯別集計）。`flying-rate-by-grade`とは異なるグルーピング軸 | 最も浅い層と最も深い層（ベテラン）のフライング率を対比する |
 
 - 「競艇」表記禁止、射幸心を煽らない（`sns-video-producer-prompt.md`絶対厳守1〜3と同じ制約がネタの時点から適用される）
-- `race_entries`は同一選手が複数レース分の行を持つため、**必ず`racer_id`ごとに直近1件へ絞ってから平均を取る**（絞らずに集計すると出走数の多い選手の値が重複加算され、平均が歪む）
+- `race_entries`は同一選手が複数レース分の行を持つため、**必ず`racer_id`ごとに直近1件へ絞ってから平均を取る**（絞らずに集計すると出走数の多い選手の値が重複加算され、平均が歪む）。`racer_aggregated_stats`は`racer_id`×`venue_code`単位のため、級別・経験年数別集計の前に`racer_id`ごとに全会場平均を取ってから集計する
+- 血液型（`racer_profiles.blood_type`）は軸に含めない。相関があっても因果を主張できず、データの正確性を重視するブランド方針（`.claude/rules/`参照）に反する疑似科学的な訴求になりやすいため
 - 定性的な説明だけで数値の裏付けが無い場合、または対比が実データ上ほとんど差が無い場合は、`getCandidates()`の次点候補に切り替える
 
 ### 訴求の型（フォロー獲得のための言い換え）
