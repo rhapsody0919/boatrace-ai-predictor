@@ -28,6 +28,7 @@ import {
   VenueRankingCM_WinRate,
   VenueRankingCM_WinRate_VariantB,
   VenueRankingCM_WinRateCompareDemo,
+  TriviaCM_GradeWinRateCompareDemo,
   VenueRankingCM_Motor2Rate,
   VenueRankingCM_TopStart,
   VenueRankingCM_TopStart_EN,
@@ -324,6 +325,14 @@ export function RemotionRoot() {
         id="VenueRankingCM-WinRateCompareDemo"
         component={VenueRankingCM_WinRateCompareDemo}
         durationInFrames={1}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="TriviaCM-GradeWinRateCompareDemo"
+        component={TriviaCM_GradeWinRateCompareDemo}
+        durationInFrames={90}
         fps={30}
         width={1080}
         height={1920}
