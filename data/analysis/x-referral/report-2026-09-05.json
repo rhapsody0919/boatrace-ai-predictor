@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-09-05T13:11:03.072Z",
+  "days": 30,
+  "organicSocialTotal": {
+    "sessions": 13,
+    "activeUsers": 7,
+    "conversions": 0
+  },
+  "totals": {
+    "sessions": 13,
+    "activeUsers": 7,
+    "newUsers": 5,
+    "conversions": 0
+  },
+  "bySource": [
+    {
+      "source": "t.co",
+      "sessions": 13,
+      "activeUsers": 7,
+      "newUsers": 5,
+      "conversions": 0
+    }
+  ],
+  "topLandingPages": [
+    {
+      "source": "t.co",
+      "landingPage": "/",
+      "sessions": 5,
+      "engagementRate": 1,
+      "avgSessionDuration": 71.1697448
+    },
+    {
+      "source": "t.co",
+      "landingPage": "/admin/sns-hub",
+      "sessions": 3,
+      "engagementRate": 1,
+      "avgSessionDuration": 816.2074640000001
+    }
+  ],
+  "dailyTrend": [
+    {
+      "date": "20260820",
+      "sessions": 1
+    },
+    {
+      "date": "20260828",
+      "sessions": 1
+    },
+    {
+      "date": "20260829",
+      "sessions": 1
+    },
+    {
+      "date": "20260830",
+      "sessions": 1
+    },
+    {
+      "date": "20260831",
+      "sessions": 5
+    },
+    {
+      "date": "20260901",
+      "sessions": 3
+    },
+    {
+      "date": "20260902",
+      "sessions": 1
+    }
+  ],
+  "comparison": null
+}
