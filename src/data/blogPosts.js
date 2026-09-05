@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "heiwajima-course1-winrate",
+    title: "平和島の1号艇勝率は39.5%、全国24会場で最下位——実データで理由を検証",
+    description:
+      "龍神レーダーの会場別データで、平和島の1号艇勝率（直近90日）が全国24会場で最も低い39.5%であることが判明。全国平均54.3%との14.8ポイント差の理由を、海水×潮の影響と1マークの振りという会場特性から実データで検証します。",
+    date: "2026-09-05",
+    category: "データ分析",
+    tags: ["1号艇勝率", "会場特性", "平和島", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/heiwajima-course1-winrate.jpg",
+  },
+  {
     id: "volatility-ranking-0905",
     title:
       "本日(9/5)129レース中、イン崩れ指数が最も高いのは戸田6R・宮島4R — AIランキングTOP5を解説",
