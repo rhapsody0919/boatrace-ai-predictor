@@ -2115,3 +2115,54 @@ export function BoatRankingCM_TechniqueConsistency() {
     </AbsoluteFill>
   );
 }
+
+// --- 本日のデータ一覧型: イン崩れ警戒レースランキング（daily-auto型、2026-09-06投稿用） ---
+// scripts/daily/todays-volatility-digest.js と同じ実データ（predictions.feature_contributions
+// のvolatilityPercentile、model_id='unified'、当日開催の全レース対象）を使い、当日開催レースを
+// イン崩れ指数（1号艇が崩れやすいと判定された度合い）でランキング化する。会場攻略型（恒久データ）
+// と異なり日替わりで差し替える「本日のデータ一覧型」（sns-video-producer-prompt.md参照）。
+// sample列は5レース共通の指標（1号艇の全国勝率、0〜8程度のスケールでパーセンテージではない）で揃え、
+// 横断比較しやすくしている。
+const VOLATILITY_DIGEST_ALL = [99, 99, 98, 98, 96];
+const VOLATILITY_DIGEST_TOP5 = [
+  { venue: "平和島8R", value: "99%", sample: "1号艇全国勝率2.60", ratio: 100 },
+  { venue: "桐生1R", value: "99%", sample: "1号艇全国勝率2.85", ratio: 100 },
+  { venue: "江戸川8R", value: "98%", sample: "1号艇全国勝率1.67", ratio: 99 },
+  { venue: "びわこ2R", value: "98%", sample: "1号艇全国勝率3.04", ratio: 99 },
+  { venue: "戸田4R", value: "96%", sample: "1号艇全国勝率3.77", ratio: 97 },
+];
+
+export function BoatRankingCM_VolatilityDigest0906() {
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK }}>
+      <Sequence from={0} durationInFrames={75}>
+        <SceneHook
+          axisTitle="イン崩れ警戒レース"
+          topVenue="平和島8R"
+          rateLabel="イン崩れ指数 99%"
+          hookQuestion="AIが1号艇の崩れを警告したレースは？"
+          subCaption="本日開催132レースを分析（9/6）"
+          categoryTag="本日のデータ一覧"
+          allRates={VOLATILITY_DIGEST_ALL}
+          topRateIndex={0}
+          accentColor={GOLD}
+        />
+      </Sequence>
+      <Sequence from={75} durationInFrames={188}>
+        <SceneTop5
+          heading="🌊 本日のイン崩れ警戒レース TOP5"
+          data={VOLATILITY_DIGEST_TOP5}
+          barColor={GOLD}
+          sampleSuffix=""
+        />
+      </Sequence>
+      <Sequence from={263} durationInFrames={150}>
+        <SceneCTA
+          ctaLines={["今日のレース予想を", "無料でチェック"]}
+          subLine="あなたの狙い目レースは、何位？"
+        />
+      </Sequence>
+      <Audio src={staticFile("soundtrack-hitcheck.wav")} />
+    </AbsoluteFill>
+  );
+}
