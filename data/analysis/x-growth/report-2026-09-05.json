@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2026-09-05T20:30:00+09:00",
+  "followerCount": 56,
+  "followingCount": 250,
+  "totalPosts": 311,
+  "previousActionsReview": {
+    "previousReportDate": "2026-09-01",
+    "recommendedActions": [
+      "x-posts/history.jsonの記録を再開する",
+      "同一ブログ記事の重複告知を止める",
+      "投稿本数をフォロワー規模に見合う水準に戻す",
+      "リプライ戦略をdaily実行に戻す",
+      "tweet-drafts.mdの滞留を消化するか運用終了を決める"
+    ],
+    "executed": "直近投稿（1h〜14h前の6件）を確認した範囲では、同一記事の重複告知は見当たらなかった（改善の兆候）。投稿本数は直近24時間で6件以上と依然高め。リプライ/引用の実行痕跡は1件確認（他アカウント投稿への言及ツイート）。x-posts/history.jsonの更新状況・tweet-drafts.md消化状況は本レポートでは未確認（別途セッション開始時チェックの対象）",
+    "impact": "フォロワーは54→56人（+2、4日間）。ゼロ成長からわずかに動いたが依然として微増"
+  },
+  "postsSampled": [
+    {"postedAt": "1h前", "summary": "24会場の1号艇勝率データ（平和島39.5%〜下関63.1%）", "views": 48, "likes": 1},
+    {"postedAt": "11h前", "summary": "他アカウント（東スポボートレース）投稿への言及", "impressions": 20},
+    {"postedAt": "14h前", "summary": "分析ツール17種類の物量アピール", "impressions": 49},
+    {"postedAt": "直近", "summary": "SG第73回ボートレースダービー ドリーム戦出場選手決定告知", "impressions": 57, "likes": 1},
+    {"postedAt": "Sep4", "summary": "「勝負の体力ピークは20代」年代別1着率データ", "note": "詳細インプレッション未確認"}
+  ],
+  "platformConstraintChange": {
+    "note": "個別投稿の詳細アナリティクス（視聴完了率・プロフィールクリック等）が今回確認したところ「Access your post analytics - Unlock advanced analytics with X Premium」という課金誘導表示に変わっていた。前回9/1レポートでは無料で詳細画面が見れていたため、X側の仕様変更（無料枠縮小）の可能性がある。プロフィール画面では「直近7日で4,000インプレッション」という集計値のみ無料で確認できた"
+  },
+  "summary": {
+    "followerGrowth": "54→56、4日間で+2",
+    "impressionsRange": "20〜57（サンプル5件）、前回9/1（6〜40）と同水準〜やや改善",
+    "engagements": "いいねは0〜1件が中心、大きな変化なし",
+    "duplicateContent": "今回確認した範囲（直近6件）では重複告知は見当たらず、前回指摘した問題は改善している可能性がある",
+    "keyInsight": "詳細アナリティクスが事実上X Premium課金前提になったため、今後は投稿一覧の基本指標（インプレッション・いいね）とプロフィール画面の7日間集計値で代替する必要がある"
+  },
+  "nextActions": {
+    "small": [
+      "詳細アナリティクスが見れなくなった前提で、次回以降は「プロフィール画面の7日間集計値」を主要指標として定点観測する",
+      "x-posts/history.jsonの更新有無・tweet-drafts.md消化状況を次回のセッション開始時チェックで確認する"
+    ],
+    "large": [
+      "フォロワー56人という規模でのOut-of-Network拡散策（リプライ・引用戦略）の実行頻度を上げるか改めて判断する"
+    ]
+  }
+}
