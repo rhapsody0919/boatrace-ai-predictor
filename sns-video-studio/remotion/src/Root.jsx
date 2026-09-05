@@ -39,6 +39,7 @@ import {
   BoatRankingCM_TechniqueShare,
   BoatRankingCM_NarutoNigeWin,
   BoatRankingCM_TechniqueConsistency,
+  BoatRankingCM_EdogawaNigeVsAverage,
 } from "./VenueRankingCM.jsx";
 import { KimariteCM_B } from "./KimariteCM.jsx";
 import { LivePredictionCM_B } from "./LivePredictionCM2.jsx";
@@ -114,6 +115,14 @@ export function RemotionRoot() {
         id="BoatRankingCM-TechniqueConsistency"
         component={BoatRankingCM_TechniqueConsistency}
         durationInFrames={601}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="BoatRankingCM-EdogawaNigeVsAverage"
+        component={BoatRankingCM_EdogawaNigeVsAverage}
+        durationInFrames={480}
         fps={30}
         width={1080}
         height={1920}

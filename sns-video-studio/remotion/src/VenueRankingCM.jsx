@@ -1097,7 +1097,7 @@ export function VenueRankingCM_EN() {
 }
 
 // --- Scene 2: TOP5（75-263f, 約6.3s） ---
-function SceneTop5({ heading, data, barColor, sampleSuffix }) {
+function SceneTop5({ heading, data, barColor, sampleSuffix, note }) {
   return (
     <AbsoluteFill
       style={{
@@ -1132,6 +1132,23 @@ function SceneTop5({ heading, data, barColor, sampleSuffix }) {
           sampleSuffix={sampleSuffix}
         />
       ))}
+      {/* 項目数が少ない（3件等）場合、justifyContent:centerだけでは1920px縦の
+          上下に不自然な余白が残るため、補足情報で埋める（2026-09-05追加、
+          brand-kit.md「各シーンで余白が不自然に大きくならないように」参照）。
+          既存呼び出し元はnote未指定のため表示挙動は変わらない */}
+      {note && (
+        <Pop delay={10 + data.length * 8 + 12} style={{ marginTop: 30 }}>
+          <div
+            style={{
+              color: "rgba(248,250,252,0.55)",
+              fontSize: 22,
+              fontFamily: FONT,
+            }}
+          >
+            {note}
+          </div>
+        </Pop>
+      )}
     </AbsoluteFill>
   );
 }
@@ -2113,5 +2130,108 @@ export function BoatRankingCM_TechniqueConsistency() {
       </Sequence>
       <Audio src={staticFile("soundtrack-hitcheck.wav")} />
     </AbsoluteFill>
+  );
+}
+
+// --- YouTube Shorts向け「単一会場 vs 全国平均」テンプレート（2026-09-05新設） ---
+// venue-featureパイプライン（docs/operation/sns-pipeline-youtube.md）のネタは
+// 「◯◯会場のXXXはYY%で、全国平均ZZ%よりN pt低い/高い」という単一指標の
+// 会場vs全国平均比較が主形状（決まり手構成比・トップスタート勝率・負け決まり手
+// 構成比・逃げ複勝分布など、claim可能なネタが複数同じ形状で並んでいることを
+// 2026-09-05実行時に確認）。この形状はSceneHookCompareTwo（本ファイル、
+// 2026-08-31新設）が既に対応しているため、Hook→内訳（SceneTop5を流用）→CTAの
+// 3幕構成にまとめて量産可能なテンプレート化した（VenueRankingTemplate/
+// BoatRankingTemplateと同じ「Template関数+実データ付き薄いexport」設計を踏襲）。
+// YouTube Shorts方針転換（16:9→9:16、docs/operation/sns-pipeline-youtube.md
+// 2026-09-05）を受け、既存のTikTok/X向け9:16コンポーネント群をそのまま流用する。
+function VenueVsAverageShortsTemplate({
+  diffValueLabel,
+  headlineLines,
+  rangeLabel,
+  venueLabel,
+  venueValue,
+  venueValueLabel,
+  averageValueLabel,
+  hookQuestion,
+  categoryTag,
+  detailHeading,
+  detailData,
+  detailSampleSuffix,
+  detailNote,
+  ctaLines,
+  subLine,
+}) {
+  const HOOK_DURATION = 105;
+  const DETAIL_DURATION = 180;
+  const CTA_DURATION = 195;
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK }}>
+      <Sequence from={0} durationInFrames={HOOK_DURATION}>
+        <SceneHookCompareTwo
+          diffValueLabel={diffValueLabel}
+          headlineLines={headlineLines}
+          rangeLabel={rangeLabel}
+          lowVenue={venueLabel}
+          lowValue={venueValue}
+          lowValueLabel={venueValueLabel}
+          highVenue="全国平均"
+          highValue={parseFloat(averageValueLabel)}
+          highValueLabel={averageValueLabel}
+          hookQuestion={hookQuestion}
+          categoryTag={categoryTag}
+        />
+      </Sequence>
+      <Sequence from={HOOK_DURATION} durationInFrames={DETAIL_DURATION}>
+        <SceneTop5
+          heading={detailHeading}
+          data={detailData}
+          barColor={GOLD}
+          sampleSuffix={detailSampleSuffix}
+          note={detailNote}
+        />
+      </Sequence>
+      <Sequence
+        from={HOOK_DURATION + DETAIL_DURATION}
+        durationInFrames={CTA_DURATION}
+      >
+        <SceneCTA ctaLines={ctaLines} subLine={subLine} />
+      </Sequence>
+      <Audio src={staticFile("soundtrack-hitcheck.wav")} loop />
+    </AbsoluteFill>
+  );
+}
+
+// 決まり手データ（過去90日、winning_technique_stats）実測値。
+// 江戸川(venue_code=3)・1号艇の「逃げ」構成比90.91%は全国24会場中最下位
+// （2026-09-05取得。ネタ提案時点の91.2%/95.2%/差4.0ptからは日次更新で
+// 若干ドリフトしているため、生成時点の再計算値を採用する既存方針
+// ―桐生・戸田・江戸川の1号艇勝率下書き―に倣った）。全国平均は24会場の
+// percentage単純平均（加重平均でも95.17%とほぼ一致）。江戸川で「逃げ」以外の
+// 内訳は抜き8.56%・恵まれ0.53%（まくり・差しは0件）
+const EDOGAWA_NIGE_DETAIL = [
+  { venue: "逃げ", value: "90.9%", sample: "170/187", ratio: 100 },
+  { venue: "抜き", value: "8.6%", sample: "16/187", ratio: 9 },
+  { venue: "恵まれ", value: "0.5%", sample: "1/187", ratio: 1 },
+];
+
+export function BoatRankingCM_EdogawaNigeVsAverage() {
+  return (
+    <VenueVsAverageShortsTemplate
+      diffValueLabel="-4.3pt"
+      headlineLines={["江戸川の「逃げ」、", "全国平均より低い"]}
+      rangeLabel="江戸川90.9% ~ 全国平均95.2%"
+      venueLabel="江戸川"
+      venueValue={90.9}
+      venueValueLabel="90.9%"
+      averageValueLabel="95.2%"
+      hookQuestion="1号艇の「逃げ」決まり手、江戸川はなぜ少ない？"
+      categoryTag="決まり手データ"
+      detailHeading="🎯 江戸川・1号艇の決まり手内訳"
+      detailData={EDOGAWA_NIGE_DETAIL}
+      detailSampleSuffix="レースで集計"
+      detailNote="「まくり」「差し」「まくり差し」は江戸川・1号艇では過去90日0件"
+      ctaLines={["会場ごとの決まり手内訳も、", "無料で見れる"]}
+      subLine="江戸川の1号艇は「逃げ」構成比が全国最下位（24会場中24位）"
+    />
   );
 }
