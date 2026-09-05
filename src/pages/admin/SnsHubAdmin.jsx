@@ -46,6 +46,7 @@ import {
   FORMAT_LIBRARY,
   PERSONA_NOTES,
   DESIGN_GUIDELINE_NOTES,
+  SHARED_COMPONENTS,
   buildDocUrl,
 } from "../../data/snsFormatCatalogContent";
 import {
@@ -673,6 +674,10 @@ function CatalogTab({ templateVariants }) {
         <RulesReferenceSection />
       </section>
       <section className="catalog-section">
+        <h2 className="catalog-section-title">共有コンポーネント</h2>
+        <SharedComponentsSection />
+      </section>
+      <section className="catalog-section">
         <h2 className="catalog-section-title">デザイン・ペルソナ方針</h2>
         <DocReferenceSection />
       </section>
@@ -878,6 +883,36 @@ function RulesReferenceSection() {
             </a>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// 再利用可能なRemotion共有コンポーネント一覧。venue-feature等のパイプラインは
+// masterへコードをコミットしないため、既存の共有コンポーネントを知らずに
+// 新しい形状のコードを書き捨ててしまう不具合が起きた（2026-09-05、棒グラフ
+// 左偏りバグ）。ユーザー指摘を受け、生成ルール（RulesReferenceSection）とは
+// 別に「実際にどんなコードが再利用できるか」を一覧できるようにした
+function SharedComponentsSection() {
+  return (
+    <div className="doc-reference-section">
+      <div className="doc-reference-group">
+        {SHARED_COMPONENTS.map((c) => (
+          <div key={c.name} className="doc-reference-card">
+            <div className="doc-reference-card-header">
+              <span className="doc-reference-name">{c.name}</span>
+            </div>
+            <p className="doc-reference-summary">{c.summary}</p>
+            <a
+              href={buildDocUrl(c.docPath)}
+              target="_blank"
+              rel="noreferrer"
+              className="doc-reference-link"
+            >
+              {c.docLabel} を見る →
+            </a>
+          </div>
+        ))}
       </div>
     </div>
   );

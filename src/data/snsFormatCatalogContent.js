@@ -15,6 +15,13 @@
  * 2026-09-04、BOA-240対応: sns-topic-gate移行後にTier1/Tier2ドキュメントへの
  * 参照が一切無く、実際に何のルールで生成されているか確認できないという
  * ギャップが判明したため、GLOBAL_RULES/CHANNEL_RULESを新設した
+ *
+ * 2026-09-05追加: ルール文書（brand-kit.md等）へのリンクだけでは、その中で
+ * 参照されている再利用可能なコード（Remotionの共有Sceneコンポーネント・
+ * 関数）が実際にどれだけあるか分からないというユーザー指摘を受け、
+ * SHARED_COMPONENTSを新設した。venue-featureパイプライン等はmasterへコードを
+ * コミットしないため、既存の共有コンポーネントを知らずに書き捨てコードを
+ * 書いてしまう（左偏りバグの再発等）ことを防ぐ狙い
  */
 
 const REPO_BASE_URL =
@@ -147,6 +154,56 @@ export const DESIGN_GUIDELINE_NOTES = {
   docPath: "docs/reference/sns-brand-guideline.md",
   docLabel: "sns-brand-guideline.md",
 };
+
+// 再利用可能なRemotionの共有Sceneコンポーネント・関数。venue-feature等の
+// パイプラインはmasterへコードをコミットしないため、この一覧を見ずに
+// 新しい形状が必要になるたびゼロから書いてしまう（2026-09-05に発生した
+// 棒グラフ左偏りバグの根本原因）ことを防ぐのが目的。新しい共有コンポーネント
+// を追加した際は、このファイルへの追記を忘れないこと（ADR 0031と同じ手動
+// 同期の運用）
+export const SHARED_COMPONENTS = [
+  {
+    name: "SceneHook（会場攻略・データ一覧型、案Aデザイン）",
+    summary:
+      "巨大な順位数字を画面左端からはみ出させる、意図的な非対称配置。TikTokプロフィールグリッドの縮小表示（横幅120px程度）でも視認できるよう、2026-08-24に複数回のレビューを経て採用した設計。新しい非対称配置を検討する際はこの前例を踏襲する",
+    docPath: "sns-video-studio/remotion/src/VenueRankingCM.jsx",
+    docLabel: "VenueRankingCM.jsx",
+  },
+  {
+    name: "SceneHookCompareTwo（2値比較、中央寄せ固定）",
+    summary:
+      "最高値vs最低値のような2値だけを比較する構成。書き捨てコードのたびに中央寄せが再現されず棒グラフが左に偏る事故が発生したため、2026-09-05に新設。2値比較の可視化が必要な場合は必ずこれを再利用する",
+    docPath: "sns-video-studio/remotion/src/VenueRankingCM.jsx",
+    docLabel: "VenueRankingCM.jsx",
+  },
+  {
+    name: "SceneHookDiagonal（対角分割Before/After型）",
+    summary:
+      "TOP1位とWORST1位を斜め境界線で対比させる型。現在の会場攻略・データ一覧型では案Aを採用したため未使用だが、的中検証型等でBefore/After訴求が必要になった際の再利用候補としてコードを残置している",
+    docPath: "sns-video-studio/remotion/src/VenueRankingCM.jsx",
+    docLabel: "VenueRankingCM.jsx",
+  },
+  {
+    name: "noteVideoShared.jsx（Fade/Pop/Logo/SceneHook/SceneFeatures/SceneCTA等）",
+    summary:
+      "note埋め込み解説動画・YouTube系（決まり手データCM、言語切替CM等）で共通利用する基礎コンポーネント群。8ファイル以上から再利用されている、最も広く共有されているモジュール",
+    docPath: "sns-video-studio/remotion/src/noteVideoShared.jsx",
+    docLabel: "noteVideoShared.jsx",
+  },
+  {
+    name: "fitHeadline()（可変長見出しの自動折り返し・縮小）",
+    summary:
+      "熟語・単語の途中で改行崩れを起こさず、指定行数に収まる最大フォントサイズを自動選択する。新しいテキストブロックを追加する際は、生の<div>で複数行になりうる可変長テキストを描画せず必ずこれを使う",
+    docPath: "sns-video-studio/remotion/src/textFit.js",
+    docLabel: "textFit.js",
+  },
+  {
+    name: "snsVideoShared.jsx: SceneCTA",
+    summary: "X/TikTok向け動画の共通CTAシーン",
+    docPath: "sns-video-studio/remotion/src/snsVideoShared.jsx",
+    docLabel: "snsVideoShared.jsx",
+  },
+];
 
 export function buildDocUrl(docPath) {
   return `${REPO_BASE_URL}/${docPath}`;
