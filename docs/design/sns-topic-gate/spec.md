@@ -32,7 +32,7 @@
 | 3 | `sns_topics`テーブル新設 | 高 | 列: `topic_text`・`status`（`proposed`/`approved`/`rejected`）・`content_type_id`（→要件1）・`source_insight_ids`（UUID[]、`sns_strategy_insights.id`を参照）・`proposed_at`・`approved_at`・`approver_id`（→`sns_approvers`） |
 | 4 | `sns_topic_targets`テーブル新設（ネタ×アカウントの中間テーブル） | 高 | 列: `topic_id`（→要件3）・`target_account_id`（→要件2）・`status`（`pending`/`claimed`/`generated`/`skipped`）・`claimed_by`（`routine_run_id`）・`claimed_at`・`draft_id`（→`sns_drafts`、生成後に設定）。ネタ提案時、`active`な全アカウント分の行がデフォルトで`pending`作成される。人間・または生成側パイプラインが`skipped`に変更できる（要件12・13参照） |
 | 5 | claim機構のアトミック実装 | 高 | 各チャネル別パイプラインは、担当`target_account_id`かつ`status='pending'`（型が`requires_topic_approval=true`の場合は紐づく`sns_topics.status='approved'`も条件）な`sns_topic_targets`行を、`UPDATE ... WHERE status='pending' RETURNING *`のようなアトミックなSQLで1件ずつclaimする。読んでから書く（read-then-write）実装は禁止する。同じ行が複数パイプラインに二重生成されないことをテストで確認する |
-| 6 | 週次型パイプラインの定期実行 | 高 | 型`cadence='weekly'`の承認済みネタについて、各チャネル別パイプラインが12時間おきのcronで起動し、要件5のclaim→生成→`sns_drafts`作成→対応する`sns_topic_targets.status='generated'`更新を行う。cron間隔（12時間）は初期値として明記し、運用実績を見て変更可能とする |
+| 6 | 週次型パイプラインの定期実行 | 高 | 型`cadence='weekly'`の承認済みネタについて、各チャネル別パイプラインが1時間おきのcronで起動し、要件5のclaim→生成→`sns_drafts`作成→対応する`sns_topic_targets.status='generated'`更新を行う（2026-09-05、初期値の12時間おきから変更。ネタのストック管理で多数のネタを承認した際に、下書き生成が早く回るようにするため） |
 | 7 | 日次・一般型パイプラインの自動実行 | 高 | 型`requires_topic_approval=false`かつ`trigger_mode='auto'`のネタについて、ネタ提案から下書き生成までを人間の承認を挟まず自動で行う。深夜〜早朝に実行し、朝には下書きが承認待ちの状態になっていることを目安とする |
 | 8 | 日次・時間制約型パイプラインの手動起動 | 高 | 型`trigger_mode='manual'`のネタは、既存の「今すぐ生成」ボタン相当の手動トリガーで起動する（要件17のUI拡張と統合）。ネタ承認は行わず、生成後の下書き承認のみとする。レース選定ロジックは既存の`sns-video-producer-prompt.md`の実装をそのまま引き継ぐ |
 | 9 | `.claude/rules/sns-content-generation.md`新設・master直マージ | 高 | フロントマター無しのファイルとして、全パイプライン共通の技術ルール（`getRecentRevisions()`/`getActiveInsights()`の使い方、`fitHeadline()`、ストレージパス署名規約等、本セッション中に伝播漏れが発覚した項目）を集約する。チャネル固有ルール（TikTokガンブル規制等）は各チャネル別パイプラインの専用プロンプトファイルに残し、この共通ファイルには入れない |
@@ -112,5 +112,5 @@ sns-topic-gate実装後、`generate.js`/`SNS_HUB_ROUTINE`（Pipeline A、要件1
 | 1 | `sns_content_types`・`sns_target_accounts`の具体的なカラム型・制約 | `/step2`（システム設計）で確定 |
 | 2 | 進捗マトリクスUIの詳細レイアウト・型バッジの配色 | `/step1-screens`で画面設計時に確定 |
 | 3 | claimのタイムアウト・解放ロジック（claimしたパイプラインが異常終了した場合の扱い） | `/step2`で確定。当面は手動でのステータス修正で対応する案もある |
-| 4 | 週次型cronの実行時刻（12時間おきの起点） | 実装時にVercel Cron/RemoteTriggerの設定可能な粒度を見て確定 |
+| 4 | 週次型cronの実行時刻（1時間おきの起点） | 実装時にVercel Cron/RemoteTriggerの設定可能な粒度を見て確定（2026-09-05、12時間おきから変更） |
 | 5 | チャネル別パイプライン新設に伴う発火トークンの実際の登録作業スケジュール | ユーザーが実装完了後に手動で実施 |

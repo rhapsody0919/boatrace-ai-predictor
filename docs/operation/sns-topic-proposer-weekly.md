@@ -1,6 +1,6 @@
 # 週次ネタ提案Routine 制作ガイド
 
-週1回（月曜想定）、会場特性ネタ（型`venue-feature`）を1件提案し、sns-hubの「ネタ承認」セクションに人間の承認待ちとして登録するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。
+週1回（月曜想定）、会場特性ネタ（型`venue-feature`）を1件提案し、sns-hubの「ネタ承認」セクションに人間の承認待ちとして登録するRoutine向けの実行手順。API起動（sns-hub「📅 週次ネタ提案を今すぐ実行」ボタン）の場合は、在庫をまとめて積みたい場面向けに1回の実行で最大10件提案する（2026-09-05追加、件数の考え方は「1. ネタ候補の選定」参照）。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。
 
 **このRoutineは下書き（動画・記事）を生成しない**。ネタを1件作り承認キューに乗せるところまでが役割。承認後の実際の生成は、チャネル別パイプライン（`docs/operation/sns-pipeline-x.md`等）が`sns_topic_targets`をポーリングして行う（疎結合、ADR 0036）。
 
@@ -10,7 +10,13 @@
 
 ## 1. ネタ候補の選定
 
-`scripts/lib/contentTopics/venueCharacteristicSource.js`の`getCandidates()`を呼ぶ。戻り値は`{sourceId, topicKey, venueCode, angle, lastUsedAt}`の配列で、未使用（`lastUsedAt: null`）優先・次に最も古く使われた順にソート済み。**先頭の1件を選べばよい**（このRoutine自身でソートし直さない）。
+`scripts/lib/contentTopics/venueCharacteristicSource.js`の`getCandidates()`を呼ぶ。戻り値は`{sourceId, topicKey, venueCode, angle, lastUsedAt}`の配列で、未使用（`lastUsedAt: null`）優先・次に最も古く使われた順にソート済み（このRoutine自身でソートし直さない）。
+
+**今回提案する件数（目標件数）**:
+- スケジュール起動（月曜cron）: 1件
+- API起動（手動実行ボタン）: 10件
+
+先頭から順に候補を1件ずつ検証し、2〜5の手順（本文作成→チャネル判定→登録→使用履歴更新）を最後まで実施できた候補を「登録成功」としてカウントする。目標件数に達するまで、または候補が尽きるまで次の候補に進む。実データの裏付けが取れない・射幸心を煽る等で不適格と判断した候補は登録せず、使用履歴も更新せずに次点候補へ切り替える（1で失敗した候補を消費したことにしない）。目標件数に届かず候補が尽きた場合は、そこまでの登録成功分だけを結果として報告する（不足分を無理に埋めない）。
 
 - `venueCode`の表示名は`VENUE_NAMES[venueCode]`（`scripts/lib/supabaseClient.js`）から取得する。手打ち禁止（`sns-video-producer-prompt.md`絶対厳守12と同じ理由）
 - `angle`（`access`/`water-type`/`technique-tendency`/`seasonal`）に応じて、その会場の実データ（`race_results`・`races`テーブル等、`scripts/lib/supabaseClient.js`経由）を確認し、具体的な数値を伴うネタ本文を組み立てる。定性的な説明だけで数値の裏付けが無い場合は、`getCandidates()`の次点候補に切り替える
@@ -45,7 +51,7 @@
 
 ## 制約（絶対厳守）
 
-- 頻度上限は週1本（`sns_content_types.venue-feature`の`cadence='weekly'`と一致させる）
+- 頻度上限は週1本（`sns_content_types.venue-feature`の`cadence='weekly'`と一致させる）、ただしこれは**月曜cronでのスケジュール起動**に適用する上限。API起動（sns-hub「📅 週次ネタ提案を今すぐ実行」ボタン）はこの上限の対象外とし、今週分が登録・承認済みかどうかに関わらず、押すたびに新規ネタ候補を最大10件まとめて提案する（`docs/operation/sns-topic-proposer-daily-auto.md`の`race-time-critical`型と同じ扱い。2026-09-05、手動実行しても「今週分は生成済み」で毎回スキップされ何も生成されない不具合が発覚したための変更。同日、在庫をまとめて積みたいというユーザー要望を受け1件→最大10件に変更）
 - 実データの裏付けが取れない候補は提案せず、次点候補に切り替える。プレースホルダーでの提案はしない
 - このRoutineは`sns_drafts`（下書き）を一切生成しない。ネタの登録（`sns_topics`/`sns_topic_targets`）のみ
 - コード・ドキュメントの変更・コミット・PR作成は行わない（データ登録のみのRoutine）
