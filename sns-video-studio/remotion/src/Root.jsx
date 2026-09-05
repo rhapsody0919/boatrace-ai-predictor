@@ -5,6 +5,7 @@ import { HitCheckCM } from "./HitCheckCM.jsx";
 import { ToolShowcaseCM } from "./ToolShowcaseCM.jsx";
 import { RivalryCM } from "./RivalryCM.jsx";
 import { TriviaCM } from "./TriviaCM.jsx";
+import { VenueStatCheckCM_KiryuFirstCourse } from "./VenueStatCheckCM.jsx";
 import {
   MascotCM_A,
   MascotCM_A2,
@@ -160,6 +161,14 @@ export function RemotionRoot() {
       <Composition
         id="TriviaCM"
         component={TriviaCM}
+        durationInFrames={420}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="VenueStatCheckCM-KiryuFirstCourse"
+        component={VenueStatCheckCM_KiryuFirstCourse}
         durationInFrames={420}
         fps={30}
         width={1080}
