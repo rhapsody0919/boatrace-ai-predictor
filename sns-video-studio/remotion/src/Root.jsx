@@ -66,6 +66,8 @@ import {
   TECHNIQUE_CONSISTENCY_DURATION,
 } from "./TechniqueConsistencyCM.jsx";
 import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
+import { OnboardingFlowCM } from "./OnboardingFlowCM.jsx";
+import { AboutHeroDesktop, AboutHeroMobile } from "./AboutHeroCM.jsx";
 
 export function RemotionRoot() {
   return (
@@ -579,6 +581,30 @@ export function RemotionRoot() {
           ],
           featureDigest: ["AI予想", "イン崩れ指数", "無料"],
         }}
+      />
+      <Composition
+        id="OnboardingFlowCM"
+        component={OnboardingFlowCM}
+        durationInFrames={1350}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="AboutHeroDesktop"
+        component={AboutHeroDesktop}
+        durationInFrames={1680}
+        fps={30}
+        width={1600}
+        height={976}
+      />
+      <Composition
+        id="AboutHeroMobile"
+        component={AboutHeroMobile}
+        durationInFrames={1680}
+        fps={30}
+        width={840}
+        height={1434}
       />
     </>
   );
