@@ -168,6 +168,7 @@ export const SHARED_COMPONENTS = [
       "巨大な順位数字を画面左端からはみ出させる、意図的な非対称配置。TikTokプロフィールグリッドの縮小表示（横幅120px程度）でも視認できるよう、2026-08-24に複数回のレビューを経て採用した設計。新しい非対称配置を検討する際はこの前例を踏襲する",
     docPath: "sns-video-studio/remotion/src/VenueRankingCM.jsx",
     docLabel: "VenueRankingCM.jsx",
+    imagePath: "/sns-hub-catalog/scene-hook.png",
   },
   {
     name: "SceneHookCompareTwo（2値比較、中央寄せ固定）",
@@ -175,6 +176,7 @@ export const SHARED_COMPONENTS = [
       "最高値vs最低値のような2値だけを比較する構成。書き捨てコードのたびに中央寄せが再現されず棒グラフが左に偏る事故が発生したため、2026-09-05に新設。2値比較の可視化が必要な場合は必ずこれを再利用する",
     docPath: "sns-video-studio/remotion/src/VenueRankingCM.jsx",
     docLabel: "VenueRankingCM.jsx",
+    imagePath: "/sns-hub-catalog/scene-hook-compare-two.png",
   },
   {
     name: "SceneHookDiagonal（対角分割Before/After型）",
@@ -182,6 +184,7 @@ export const SHARED_COMPONENTS = [
       "TOP1位とWORST1位を斜め境界線で対比させる型。現在の会場攻略・データ一覧型では案Aを採用したため未使用だが、的中検証型等でBefore/After訴求が必要になった際の再利用候補としてコードを残置している",
     docPath: "sns-video-studio/remotion/src/VenueRankingCM.jsx",
     docLabel: "VenueRankingCM.jsx",
+    imagePath: "/sns-hub-catalog/scene-hook-diagonal.png",
   },
   {
     name: "noteVideoShared.jsx（Fade/Pop/Logo/SceneHook/SceneFeatures/SceneCTA等）",

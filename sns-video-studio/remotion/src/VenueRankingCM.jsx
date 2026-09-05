@@ -895,6 +895,27 @@ function SceneHookCompareTwo({
   );
 }
 
+// 管理画面「型一覧」タブの共有コンポーネントカタログ用サンプル画像（2026-09-05）。
+// 実データ（1号艇勝率ランキング、下関60.5%・平和島43.8%、WIN_RATE_TOP5/WORST5と同じ
+// 実測値）を使用。frame=0がそのまま静止画として使われる想定
+export function VenueRankingCM_WinRateCompareDemo() {
+  return (
+    <SceneHookCompareTwo
+      diffValueLabel="16.7pt"
+      headlineLines={["1号艇の強さ、", "会場でこんなに違う"]}
+      rangeLabel="平和島43.8% ~ 下関60.5%"
+      lowVenue="平和島"
+      lowValue={43.8}
+      lowValueLabel="43.8%"
+      highVenue="下関"
+      highValue={60.5}
+      highValueLabel="60.5%"
+      hookQuestion="会場ごとの差、続きをチェック"
+      categoryTag="会場データ検証"
+    />
+  );
+}
+
 export function VenueRankingCM_WinRate_VariantB() {
   return (
     <AbsoluteFill style={{ background: NAVY_DARK }}>

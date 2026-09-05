@@ -898,19 +898,31 @@ function SharedComponentsSection() {
     <div className="doc-reference-section">
       <div className="doc-reference-group">
         {SHARED_COMPONENTS.map((c) => (
-          <div key={c.name} className="doc-reference-card">
-            <div className="doc-reference-card-header">
-              <span className="doc-reference-name">{c.name}</span>
+          <div
+            key={c.name}
+            className="doc-reference-card shared-component-card"
+          >
+            {c.imagePath && (
+              <img
+                src={c.imagePath}
+                alt={`${c.name}のサンプル画像`}
+                className="shared-component-thumb"
+              />
+            )}
+            <div className="shared-component-card-body">
+              <div className="doc-reference-card-header">
+                <span className="doc-reference-name">{c.name}</span>
+              </div>
+              <p className="doc-reference-summary">{c.summary}</p>
+              <a
+                href={buildDocUrl(c.docPath)}
+                target="_blank"
+                rel="noreferrer"
+                className="doc-reference-link"
+              >
+                {c.docLabel} を見る →
+              </a>
             </div>
-            <p className="doc-reference-summary">{c.summary}</p>
-            <a
-              href={buildDocUrl(c.docPath)}
-              target="_blank"
-              rel="noreferrer"
-              className="doc-reference-link"
-            >
-              {c.docLabel} を見る →
-            </a>
           </div>
         ))}
       </div>
