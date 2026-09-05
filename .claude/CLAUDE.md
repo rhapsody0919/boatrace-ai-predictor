@@ -376,7 +376,7 @@ node scripts/daily/calculate-accuracy.js
 | `/x-reply-drafts` | X返信下書き生成（リプライ戦略の半自動化、1件ずつ承認） |
 | `/tiktok-growth-report` | TikTok自体の集客PDCA（自アカウント投稿実績＋競合定点観測、SNS動画運用の一環） |
 | `/growth-monthly-summary` | SEO/X/TikTok集客PDCAの月次統合サマリー（事業ゴールへの進捗確認） |
-| `/publish-blog {slug}` | ブログ記事の公開前品質チェック→note/X下書き生成までの一括実行 |
+| `/publish-blog {slug}` | ブログ記事の公開前品質チェック一括実行（note/X展開はsns-hubパイプラインが別途担当） |
 | `/channel-algorithm-research {youtube\|tiktok\|note}` | プラットフォーム側のアルゴリズム・成長戦術を深堀り調査し`docs/reference/{platform}-algorithm-and-growth-notes.md`にまとめる（自アカウント実績を見る`/x-growth-report`等とは別役割） |
 
 ---
