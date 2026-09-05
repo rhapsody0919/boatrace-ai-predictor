@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "mikuni-outcome-124-rate",
+    title:
+      "三国の3連単「1-2-4」出現率は6.3%、全国平均4.9%より1.4ポイント高い理由を実データで検証",
+    description:
+      "過去90日間の実レース結果で、三国の3連単「1-2-4」出現率は6.3%（600レース中38回）、全国平均4.9%より1.4ポイント高く24会場中5位という結果に。しかも三国自身の最頻出パターンでもあるこの出目がなぜ出やすいのかを実データで解説します。",
+    date: "2026-09-05",
+    category: "データ分析",
+    tags: ["出目分布", "3連単", "三国", "データ分析"],
+    readTime: "5分",
+    featured: false,
+    image: "/images/blog/mikuni-outcome-124-rate.jpg",
+  },
+  {
     id: "edogawa-course1-win-rate",
     title: "江戸川の1コース勝率は45.5%、全国平均54.3%より8.8ポイント低い理由を実データで検証",
     description:
