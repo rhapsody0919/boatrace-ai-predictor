@@ -703,6 +703,76 @@ export function VenueRankingCM_WinRate_VariantB() {
   );
 }
 
+// 1号艇勝率ランキング・直近90日版（2026-09-05、YouTube Shorts第1弾）のデータ。
+// venues.avg_first_win_rate（scripts/maintenance/update-venue-stats.jsと同じ集計、
+// races.race_date>=90日前 × race_results.rank1、venue_code別）を独立に再クエリして検証。
+// 上記WIN_RATE_TOP5/WORST5（全期間集計）とは時間軸が異なるため別配列として保持する。
+// TOP1位(下関63.1%)を100とした相対比率
+const WIN_RATE_90D_TOP5 = [
+  { venue: "下関", value: "63.1%", sample: "636", ratio: 100 },
+  { venue: "常滑", value: "61.5%", sample: "660", ratio: 98 },
+  { venue: "尼崎", value: "61.0%", sample: "695", ratio: 97 },
+  { venue: "大村", value: "59.6%", sample: "564", ratio: 94 },
+  { venue: "福岡", value: "59.4%", sample: "572", ratio: 94 },
+];
+
+const WIN_RATE_90D_WORST5 = [
+  { rank: 24, venue: "平和島", value: "39.5%", sample: "552", ratio: 63 },
+  { rank: 23, venue: "戸田", value: "41.2%", sample: "454", ratio: 65 },
+  { rank: 22, venue: "江戸川", value: "44.9%", sample: "432", ratio: 71 },
+  { rank: 21, venue: "住之江", value: "50.9%", sample: "458", ratio: 81 },
+  { rank: 20, venue: "蒲郡", value: "51.8%", sample: "494", ratio: 82 },
+];
+
+/**
+ * YouTube Shorts向け 第1弾（2026-09-05、Shorts化方針転換後の初弾）。
+ * `docs/operation/sns-pipeline-youtube.md`の2026-09-05変更（16:9ロングフォームから
+ * 9:16 Shorts化）を受け、既存の9:16テンプレート群（SceneHookDiagonal/SceneTop5/
+ * SceneWorst5/SceneCTA）をそのまま流用する。venue-feature型ネタ「平和島の1号艇
+ * 勝率は全国平均より低い」の裏付けデータとして、24会場の直近90日ランキング
+ * （TOP5・WORST5）を見せる構成。VenueRankingCM_WinRate_VariantBと同じシーン構成・
+ * 尺だが、データが全期間集計ではなく直近90日集計である点が異なる。
+ */
+export function VenueRankingCM_WinRate90d() {
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK }}>
+      <Sequence from={0} durationInFrames={75}>
+        <SceneHookDiagonal
+          topVenue="下関"
+          topRateLabel="63.1%"
+          bottomVenue="平和島"
+          bottomRateLabel="39.5%"
+          diffLabel="23.6pt"
+          hookQuestion="1号艇の勝率、会場でこんなに差がある"
+          categoryTag="24会場ランキング・直近90日"
+          accentColor={GOLD}
+        />
+      </Sequence>
+      <Sequence from={75} durationInFrames={188}>
+        <SceneTop5
+          heading="🏆 1号艇が勝ちやすい会場 TOP5"
+          data={WIN_RATE_90D_TOP5}
+          barColor={GOLD}
+        />
+      </Sequence>
+      <Sequence from={263} durationInFrames={187}>
+        <SceneWorst5
+          heading="🌊 1号艇が苦戦する会場は？"
+          data={WIN_RATE_90D_WORST5}
+          barColor={RED}
+        />
+      </Sequence>
+      <Sequence from={450} durationInFrames={150}>
+        <SceneCTA
+          ctaLines={["全24会場のデータ、", "無料で見れる"]}
+          subLine="あなたが狙う会場は、何位？"
+        />
+      </Sequence>
+      <Audio src={staticFile("soundtrack-hitcheck.wav")} loop />
+    </AbsoluteFill>
+  );
+}
+
 // イン逃げ率ランキング（2026-08-23、第1弾）のデータ
 const NIGE_RATE_TOP5 = [
   { venue: "尼崎", value: "59.2%", sample: "1,838", ratio: 100 },

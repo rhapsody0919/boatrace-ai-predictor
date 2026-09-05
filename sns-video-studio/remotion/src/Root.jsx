@@ -27,6 +27,7 @@ import {
   VenueRankingCM_Manshu_EN_VariantB,
   VenueRankingCM_WinRate,
   VenueRankingCM_WinRate_VariantB,
+  VenueRankingCM_WinRate90d,
   VenueRankingCM_Motor2Rate,
   VenueRankingCM_TopStart,
   VenueRankingCM_TopStart_EN,
@@ -312,6 +313,14 @@ export function RemotionRoot() {
       <Composition
         id="VenueRankingCM-WinRate-VariantB"
         component={VenueRankingCM_WinRate_VariantB}
+        durationInFrames={600}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="VenueRankingCM-WinRate90d"
+        component={VenueRankingCM_WinRate90d}
         durationInFrames={600}
         fps={30}
         width={1080}
