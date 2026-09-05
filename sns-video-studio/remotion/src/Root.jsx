@@ -65,6 +65,7 @@ import {
   TECHNIQUE_CONSISTENCY_DURATION,
 } from "./TechniqueConsistencyCM.jsx";
 import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
+import { DailyAccuracyDigestTemplate } from "./DailyAccuracyDigestCM.jsx";
 
 export function RemotionRoot() {
   return (
@@ -569,6 +570,22 @@ export function RemotionRoot() {
             { winnerCourse: 5, technique: "makurizashi", probability: 0.08 },
           ],
           featureDigest: ["AI予想", "イン崩れ指数", "無料"],
+        }}
+      />
+      <Composition
+        id="DailyAccuracyDigestCM"
+        component={DailyAccuracyDigestTemplate}
+        durationInFrames={570}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          dateLabel: "9/5",
+          finishedCount: 120,
+          courseHitCount: 78,
+          courseHitRate: "65.0",
+          techniqueHitCount: 71,
+          techniqueHitRate: "59.2",
         }}
       />
     </>
