@@ -2160,13 +2160,34 @@ function TopicFanoutCard({ topic, onFireTarget, firingTargetId }) {
 // 即時起動できるようにする（2026-09-04追加、週次で先に実装し日次追加時に
 // フック化した）。この状態はTopicApprovalSection自身に閉じているため、他の
 // 生成系ボタン（親コンポーネント側）と違い親のstateには持ち上げない
-function useTopicProposerTrigger({ triggerFn, topics, showToast, label }) {
+// expectedCount: このトリガーで何件の新規ネタ登録を待つか。週次(最大10件)は
+// 「新規1件検知で即完了扱い」にすると9件を確認しないまま自動更新が止まって
+// しまうため、日次自動提案(常に1件)と挙動を分けている（2026-09-05）。
+// maxWaitMinutesは、想定件数に届かないまま（候補切れ・エラー等で）ポーリング
+// し続けることを避けるための上限
+function useTopicProposerTrigger({
+  triggerFn,
+  topics,
+  showToast,
+  label,
+  expectedCount = 1,
+  maxWaitMinutes = 20,
+}) {
   const [triggering, setTriggering] = useState(false);
   const [locked, setLocked] = useState(false);
   const [sessionUrl, setSessionUrl] = useState(null);
   const [firedAt, setFiredAt] = useState(null);
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
   const [idsAtFire, setIdsAtFire] = useState(null);
+  const [registeredCount, setRegisteredCount] = useState(0);
+
+  function reset() {
+    setLocked(false);
+    setSessionUrl(null);
+    setFiredAt(null);
+    setIdsAtFire(null);
+    setRegisteredCount(0);
+  }
 
   async function trigger() {
     setTriggering(true);
@@ -2189,6 +2210,7 @@ function useTopicProposerTrigger({ triggerFn, topics, showToast, label }) {
         setFiredAt(Date.now());
         setElapsedMinutes(0);
         setIdsAtFire(new Set(topics.map((t) => t.id)));
+        setRegisteredCount(0);
       }
     } catch (err) {
       console.error(`${label}起動リクエストエラー:`, err);
@@ -2208,19 +2230,57 @@ function useTopicProposerTrigger({ triggerFn, topics, showToast, label }) {
     return () => clearInterval(interval);
   }, [locked, firedAt]);
 
+  // 新規ネタ検知。目標件数に届くまでは「n/m件確認済み」を都度通知しつつ
+  // ポーリングを継続し、届いた時点で完了扱いにしてポーリングを止める
   useEffect(() => {
     if (!locked || !idsAtFire) return;
-    const hasNewTopic = topics.some((t) => !idsAtFire.has(t.id));
-    if (hasNewTopic) {
-      showToast("✅ 新しいネタが登録されました", "success");
-      setLocked(false);
-      setSessionUrl(null);
-      setFiredAt(null);
-      setIdsAtFire(null);
-    }
-  }, [topics, locked, idsAtFire, showToast]);
+    const newTopics = topics.filter((t) => !idsAtFire.has(t.id));
+    if (newTopics.length === 0) return;
 
-  return { triggering, locked, sessionUrl, elapsedMinutes, trigger };
+    const nextIds = new Set(idsAtFire);
+    newTopics.forEach((t) => nextIds.add(t.id));
+    const nextCount = registeredCount + newTopics.length;
+    setIdsAtFire(nextIds);
+    setRegisteredCount(nextCount);
+
+    if (nextCount >= expectedCount) {
+      showToast(
+        expectedCount > 1
+          ? `✅ ${nextCount}件のネタが登録されました`
+          : "✅ 新しいネタが登録されました",
+        "success",
+      );
+      reset();
+    } else {
+      showToast(
+        `✅ ${nextCount}/${expectedCount}件のネタが登録されました（続けて確認します）`,
+        "success",
+      );
+    }
+  }, [topics, locked, idsAtFire, registeredCount, expectedCount, showToast]);
+
+  // タイムアウト: 想定件数に届かないまま長時間経過した場合、ポーリングを止める
+  // （候補切れで目標未達のまま正常終了した場合・エラーで途中停止した場合の両方に対応）
+  useEffect(() => {
+    if (!locked || elapsedMinutes < maxWaitMinutes) return;
+    showToast(
+      registeredCount > 0
+        ? `⏱ ${maxWaitMinutes}分経過したため自動確認を終了します（${registeredCount}件確認済み）。続きは更新ボタンで確認してください`
+        : `⏱ ${maxWaitMinutes}分経過しても新しいネタを確認できませんでした。実行ログを確認してください`,
+      registeredCount > 0 ? "success" : "error",
+    );
+    reset();
+  }, [locked, elapsedMinutes, maxWaitMinutes, registeredCount, showToast]);
+
+  return {
+    triggering,
+    locked,
+    sessionUrl,
+    elapsedMinutes,
+    registeredCount,
+    expectedCount,
+    trigger,
+  };
 }
 
 function TopicApprovalSection({
@@ -2276,6 +2336,7 @@ function TopicApprovalSection({
     topics,
     showToast,
     label: "週次ネタ提案",
+    expectedCount: 10,
   });
   const dailyAutoProposer = useTopicProposerTrigger({
     triggerFn: triggerDailyAutoProposer,
@@ -2443,7 +2504,8 @@ function TopicApprovalSection({
         {weeklyProposer.locked && (
           <div className="topic-section-proposer-hint">
             ⏳ 週次ネタ提案を実行中...（{weeklyProposer.elapsedMinutes}
-            分経過）30秒おきに自動で確認します
+            分経過・{weeklyProposer.registeredCount}/
+            {weeklyProposer.expectedCount}件確認済み）30秒おきに自動で確認します
             {weeklyProposer.sessionUrl && (
               <>
                 {" ・ "}
