@@ -1716,6 +1716,75 @@ export function VenueRankingCM_EdogawaLosing() {
   );
 }
 
+// 戸田・1号艇が負ける時の「まくり」構成比 vs 全国平均（YouTube Shorts、2026-09-05）。
+// losing_technique_stats（venue_code=2、boat_number=1、過去90日集計）。
+// sns_topicsのネタ提案時点(2026-09-05T10:25)の元数値は戸田51.2%・全国平均33.7%・
+// 差17.5ptだったが、生成時点(2026-09-05T23:03)で再取得した最新値は戸田50.94%
+// （136/267敗）・全国平均(24会場の加重平均、count_90days合計2044/total_losses_90days
+// 合計6051=33.78%)33.8%・差17.1ptだった。日次バッチによる90日ローリング窓の更新
+// でのドリフトと判断し（VENUE_NAMES手打ちミス等の前提崩れとは異なる軽微な数値
+// ドリフト）、生成時点の再計算値を採用した。全国平均の算出方法（24会場の加重平均）は
+// 同日生成済みの他venue-feature下書き（例: 桐生「まくり」構成比、draft
+// b11822d8-d5f4-4e1b-8695-4fb0bc77160b）と揃えている。戸田は24会場中1位（最大値）
+const TODA_LOSING_MAKURI_ALL_VENUES = [
+  35.89, 50.94, 35.62, 32.93, 37.68, 32.49, 41.45, 38.15, 27.53, 27.18, 31.98,
+  32.47, 31.37, 35.11, 22.82, 28.14, 43.89, 29.92, 33.19, 25.91, 37.84, 42.49,
+  30.38, 28.83,
+]; // 戸田(50.94)が24会場中最大であることの確認用（単純平均33.9%とは別軸）
+const TODA_LOSING_NATIONAL_AVG = 33.8; // 加重平均: 2044 / 6051 * 100 = 33.78%
+const TODA_LOSING_MAKURI_RATE = 50.9;
+const TODA_LOSING_DIFF_PT = (
+  TODA_LOSING_MAKURI_RATE - TODA_LOSING_NATIONAL_AVG
+).toFixed(1);
+
+// 戸田・1号艇の負け決まり手TOP5（EDOGAWA_LOSING_TOP5と同じ相対比率方式、TOP1位を100とする）
+const TODA_LOSING_TOP5 = [
+  { venue: "まくり", value: "50.9%", sample: "136/267", ratio: 100 },
+  { venue: "まくり差し", value: "19.9%", sample: "53/267", ratio: 39 },
+  { venue: "差し", value: "19.5%", sample: "52/267", ratio: 38 },
+  { venue: "抜き", value: "7.9%", sample: "21/267", ratio: 15 },
+  { venue: "恵まれ", value: "1.5%", sample: "4/267", ratio: 3 },
+];
+
+export function VenueRankingCM_TodaLosingCompare() {
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK }}>
+      <Sequence from={0} durationInFrames={90}>
+        <SceneHookCompareTwo
+          diffValueLabel={`${TODA_LOSING_DIFF_PT}pt`}
+          headlineLines={[
+            "1号艇が「まくり」で負ける確率",
+            "戸田は全国平均よりずっと高い",
+          ]}
+          rangeLabel={`全国平均${TODA_LOSING_NATIONAL_AVG}% ~ 戸田${TODA_LOSING_MAKURI_RATE}%`}
+          lowVenue="全国平均"
+          lowValue={TODA_LOSING_NATIONAL_AVG}
+          lowValueLabel={`${TODA_LOSING_NATIONAL_AVG}%`}
+          highVenue="戸田"
+          highValue={TODA_LOSING_MAKURI_RATE}
+          highValueLabel={`${TODA_LOSING_MAKURI_RATE}%`}
+          hookQuestion="戸田の負けパターン、続きをチェック"
+          categoryTag="決まり手データ"
+        />
+      </Sequence>
+      <Sequence from={90} durationInFrames={225}>
+        <SceneTop5
+          heading="🎯 戸田・1号艇の負け決まり手 TOP5"
+          data={TODA_LOSING_TOP5}
+          barColor={GOLD}
+        />
+      </Sequence>
+      <Sequence from={315} durationInFrames={180}>
+        <SceneCTA
+          ctaLines={["戸田の負けパターンも、", "無料で見れる"]}
+          subLine={`まくり構成比は全国1位（24会場中）`}
+        />
+      </Sequence>
+      <Audio src={staticFile("soundtrack-hitcheck.wav")} />
+    </AbsoluteFill>
+  );
+}
+
 // 1号艇3連率（3着以内率）ランキング（2026-08-27、第9弾）のデータ。
 // race_results×racesの全件集計（rank1/rank2/rank3のいずれかが1号艇か）、venue_code(1〜24)順。
 // モーター2連率ランキング（機材の抽選由来で会場差が3.4pt程度しか無く実質ノイズだったため不採用）の

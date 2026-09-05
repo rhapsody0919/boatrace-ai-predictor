@@ -33,6 +33,7 @@ import {
   VenueRankingCM_TopStart_EN,
   VenueRankingCM_ExTime,
   VenueRankingCM_EdogawaLosing,
+  VenueRankingCM_TodaLosingCompare,
   VenueRankingCM_Top3Rate,
   BoatRankingCM_PlaceReturn,
   BoatRankingCM_RunnerUp,
@@ -364,6 +365,14 @@ export function RemotionRoot() {
         id="VenueRankingCM-EdogawaLosing"
         component={VenueRankingCM_EdogawaLosing}
         durationInFrames={413}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="VenueRankingCM-TodaLosingCompare"
+        component={VenueRankingCM_TodaLosingCompare}
+        durationInFrames={495}
         fps={30}
         width={1080}
         height={1920}
