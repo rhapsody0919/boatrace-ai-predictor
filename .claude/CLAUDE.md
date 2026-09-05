@@ -240,15 +240,15 @@ TikTokは運用が軌道に乗り次第「毎日投稿」を目標とする運�
 - 承認されたら`scripts/maintenance/add-racer-news.js`でINSERTし該当項目の`status`を`approved`に、却下されたら`rejected`に更新する
 - 掲載頻度自体が月1〜2件と低いため、このリストは頻繁には溜まらない想定。溜まっている場合はGitHub Actionsの実行状況（`.github/workflows/collect-racer-news.yml`）も確認する
 
-### フローC-5: セッション開始時の集客調査スキル実行確認（2026-08-29〜）
-SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）は、`/x-growth-report`・`/tiktok-growth-report`の定期実行結果をinsightとしてDBに登録し（ADR 0027）、週次で生成Routineへの反映を判定する（ADR 0030）設計。外部調査（競合・隣接ジャンル観測）はクラウドRoutineでは技術的に実行できないと確定しているため（`sns_marketing_hub_operational_state.md`メモリ参照）、対話セッション側でのスキル定期実行に運用が依存する。過去にX戦略の定期施策が「決めただけで仕組み化されず自然消滅した」実績（2025-12）があるため、以下をセッション開始時に必ず行う（鮮度は`session-start-check.js`の`growthSkills`で機械的に取得できる）。
+### フローC-5: セッション開始時の集客調査スキル実行確認（2026-08-29〜、2026-09-05にnote追加）
+SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）は、`/x-growth-report`・`/tiktok-growth-report`・`/note-growth-report`の定期実行結果をinsightとしてDBに登録し（ADR 0027）、週次で生成Routineへの反映を判定する（ADR 0030）設計。外部調査（競合・隣接ジャンル観測）はクラウドRoutineでは技術的に実行できないと確定しているため（`sns_marketing_hub_operational_state.md`メモリ参照）、対話セッション側でのスキル定期実行に運用が依存する。過去にX戦略の定期施策が「決めただけで仕組み化されず自然消滅した」実績（2025-12）があるため、以下をセッション開始時に必ず行う（鮮度は`session-start-check.js`の`growthSkills`で機械的に取得できる）。
 
-- `data/analysis/x-growth/`・`data/analysis/tiktok-growth/`それぞれの最新レポートファイルの日付を確認し、いずれかが1週間以上前であれば、**このセッションの最初の応答で**該当スキル（`/x-growth-report`・`/tiktok-growth-report`）の実行を自発的に提案する（ユーザーから話しかけられるのを待たない）
-- 「はい」と回答があれば該当スキルを実行する（複数プラットフォームが該当する場合、両方まとめて提案してよい）
+- `data/analysis/x-growth/`・`data/analysis/tiktok-growth/`・`data/analysis/note-growth/`それぞれの最新レポートファイルの日付を確認し、いずれかが1週間以上前であれば、**このセッションの最初の応答で**該当スキル（`/x-growth-report`・`/tiktok-growth-report`・`/note-growth-report`）の実行を自発的に提案する（ユーザーから話しかけられるのを待たない）
+- 「はい」と回答があれば該当スキルを実行する（複数プラットフォームが該当する場合、まとめて提案してよい）
 - 「いいえ」または反応が無ければその日はスキップし、次のタスクに進む（催促を続けない）
 
-### フローC-6: 自然言語「集客状況を調査して」トリガー時は3スキルセットで実行（2026-08-31〜）
-「集客を分析して」「集客状況どう？」等の自然言語依頼（`/growth-pdca`と明示コマンド指定しない場合）では、`/growth-pdca`（Search Console/GA4、検索流入・ブログ側）に加えて`/x-growth-report`（Xプラットフォーム自体の実績）・`/tiktok-growth-report`（TikTokプラットフォーム自体の実績）も続けてまとめて実行する。3スキル合計でChrome in Claudeでの画面操作（X/TikTokは実績確認のため）を含み実行時間が伸びる点、Search Console等の反映ラグ（2〜3日）と比べて高頻度で聞くと同じデータの再取得になりやすい点を踏まえた上でユーザーが合意済み（2026-08-31）。`/growth-pdca`と明示コマンドで呼ばれた場合は対象外（これまで通りSearch Console/GA4単体で実行、X/TikTok分析は含めない）。
+### フローC-6: 自然言語「集客状況を調査して」トリガー時は4スキルセットで実行（2026-08-31〜、2026-09-05にnote追加）
+「集客を分析して」「集客状況どう？」等の自然言語依頼（`/growth-pdca`と明示コマンド指定しない場合）では、`/growth-pdca`（Search Console/GA4、検索流入・ブログ側）に加えて`/x-growth-report`（Xプラットフォーム自体の実績）・`/tiktok-growth-report`（TikTokプラットフォーム自体の実績）・`/note-growth-report`（noteプラットフォーム自体の実績）も続けてまとめて実行する。4スキル合計でChrome in Claudeでの画面操作（X/TikTok/noteは実績確認のため）を含み実行時間が伸びる点、Search Console等の反映ラグ（2〜3日）と比べて高頻度で聞くと同じデータの再取得になりやすい点を踏まえた上でユーザーが合意済み（2026-08-31、note追加は2026-09-05）。`/growth-pdca`と明示コマンドで呼ばれた場合は対象外（これまで通りSearch Console/GA4単体で実行、X/TikTok/note分析は含めない）。
 - 過去レポートが1件も無い場合は「初回実行の提案」として扱う
 
 ### フローC-7: 視覚素材の鮮度チェック
@@ -375,6 +375,7 @@ node scripts/daily/calculate-accuracy.js
 | `/x-growth-report` | X（Twitter）自体の集客PDCA（自アカウント投稿実績＋競合定点観測、SNS動画運用の一環） |
 | `/x-reply-drafts` | X返信下書き生成（リプライ戦略の半自動化、1件ずつ承認） |
 | `/tiktok-growth-report` | TikTok自体の集客PDCA（自アカウント投稿実績＋競合定点観測、SNS動画運用の一環） |
+| `/note-growth-report` | note自体の集客PDCA（自アカウント記事実績の定点観測） |
 | `/growth-monthly-summary` | SEO/X/TikTok集客PDCAの月次統合サマリー（事業ゴールへの進捗確認） |
 | `/publish-blog {slug}` | ブログ記事の公開前品質チェック一括実行（note/X展開はsns-hubパイプラインが別途担当） |
 | `/channel-algorithm-research {youtube\|tiktok\|note}` | プラットフォーム側のアルゴリズム・成長戦術を深堀り調査し`docs/reference/{platform}-algorithm-and-growth-notes.md`にまとめる（自アカウント実績を見る`/x-growth-report`等とは別役割） |

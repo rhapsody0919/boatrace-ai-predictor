@@ -14,7 +14,7 @@
  * 2) xVideo        … data/analysis/x-posts/history.json の本日投稿状況
  * 3) tiktok        … data/analysis/tiktok-posts/history.json の本日投稿状況
  * 4) racerNews     … data/analysis/racer-news-pending-review/pending.json の pending件数
- * 5) growthSkills  … data/analysis/{x,tiktok}-growth/ の最新レポート鮮度
+ * 5) growthSkills  … data/analysis/{x,tiktok,note}-growth/ の最新レポート鮮度
  * 6) contentIndex  … docs/design/content-ops-flow/spec.md C5
  * 7) qualityBacklog… docs/design/content-ops-flow/spec.md C6
  * 8) recentFlowA   … docs/design/content-ops-flow/spec.md A4（sns-hub型選定ロジックへの素材提示）
@@ -142,13 +142,15 @@ async function latestReportAgeDays(dirRelPath) {
 }
 
 async function checkGrowthSkillsFreshness() {
-  const [xGrowth, tiktokGrowth] = await Promise.all([
+  const [xGrowth, tiktokGrowth, noteGrowth] = await Promise.all([
     latestReportAgeDays("data/analysis/x-growth"),
     latestReportAgeDays("data/analysis/tiktok-growth"),
+    latestReportAgeDays("data/analysis/note-growth"),
   ]);
   return {
     xGrowth,
     tiktokGrowth,
+    noteGrowth,
   };
 }
 
