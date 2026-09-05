@@ -48,50 +48,20 @@ import {
   DESIGN_GUIDELINE_NOTES,
   buildDocUrl,
 } from "../../data/snsFormatCatalogContent";
+import {
+  buildXIntentUrl,
+  buildPostText,
+  isIOSSafari,
+  formatDateTime,
+  isTodayJST,
+  getDefaultDraftCardExpanded,
+} from "./sns-hub/utils";
 import "./SnsHubAdmin.css";
 
 const PLATFORM_UPLOAD_URLS = {
   tiktok: "https://www.tiktok.com/tiktokstudio/upload",
   youtube: "https://studio.youtube.com",
 };
-
-function buildXIntentUrl(postText) {
-  return `https://x.com/intent/post?text=${encodeURIComponent(postText || "")}`;
-}
-
-// キャプション本文＋ハッシュタグを投稿用の完成形テキストに組み立てる。
-// コピー・X Intent・共有の3経路で同じテキストになるよう必ずこれを使う
-// （X Intentだけcaption_text単体を渡していてハッシュタグが欠落する不具合が
-// 2026-08-29の初回実投稿で発覚したため共通化）
-function buildPostText(draft) {
-  const hashtagLine = (draft.hashtags || []).filter(Boolean).join(" ");
-  return [draft.caption_text, hashtagLine].filter(Boolean).join("\n\n");
-}
-
-function isIOSSafari() {
-  return /iPhone|iPad|iPod/.test(navigator.userAgent);
-}
-
-function formatDateTime(isoString) {
-  if (!isoString) return "-";
-  return new Date(isoString).toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
-
-/** JST基準で「今日」の日付（YYYY-MM-DD）かどうかを判定する */
-function isTodayJST(isoString) {
-  if (!isoString) return false;
-  const toJstDateKey = (date) =>
-    new Date(date.getTime() + JST_OFFSET_MS).toISOString().split("T")[0];
-  return toJstDateKey(new Date(isoString)) === toJstDateKey(new Date());
-}
 
 const REVISION_REASONS = [
   { code: "time-expression-error", label: "時制表現の誤り" },
@@ -1225,15 +1195,6 @@ function InsightHistoryEntry({ insight, allInsights }) {
       )}
     </div>
   );
-}
-
-// スマホ幅(2列グリッド)では詳細・操作ボタンを畳んだ状態で開く。デスクトップ幅では
-// 従来通り常に展開（auto-fillグリッドで元々カード自体が大きく、畳む必要が無いため）。
-// 判定基準はCSS側の2列グリッド切り替え（.draft-listの@media (max-width: 480px)）と
-// 必ず同じ値にする（ズレるとカードが1列表示なのに折りたたまれる幅域ができてしまう）
-function getDefaultDraftCardExpanded() {
-  if (typeof window === "undefined") return true;
-  return window.matchMedia("(min-width: 481px)").matches;
 }
 
 // blog/youtubeは承認操作自体がPRマージ/YouTube投稿まで行うため、
@@ -2596,7 +2557,15 @@ function useTopicProposerTrigger({
         "success",
       );
     }
-  }, [topics, locked, idsAtFire, registeredCount, expectedCount, matchesTopic, showToast]);
+  }, [
+    topics,
+    locked,
+    idsAtFire,
+    registeredCount,
+    expectedCount,
+    matchesTopic,
+    showToast,
+  ]);
 
   return {
     triggering,

@@ -44,6 +44,26 @@ export async function getActiveInsights({ platform, format, language } = {}) {
 }
 
 /**
+ * status='proposed'（要判断、承認待ち）のinsight件数と一覧を取得する。
+ * セッション開始時チェック（session-start-check.js）が、承認待ちinsightを
+ * 見落とさず提示するために使う（2026-09-05追加、tweet-drafts.md等と同じ
+ * 「セッション開始時チェックが無いと滞留する」パターンの再発防止）。
+ * @returns {Promise<Array<{id: string, platform: string|null, insight_text: string, created_at: string}>>}
+ */
+export async function getProposedInsights() {
+  assertSupabaseEnabled();
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("id, platform, format, language, insight_text, created_at")
+    .eq("status", "proposed")
+    .order("created_at", { ascending: true });
+  if (error) {
+    throw new Error(`${TABLE}取得エラー（proposed）: ${error.message}`);
+  }
+  return data || [];
+}
+
+/**
  * 新規insightを提案する（/x-growth-report・/tiktok-growth-reportからの登録用）
  * @param {{platform?: string, language?: string, format?: string, insightText: string, evidence?: string, source: string, researchMethod?: string}} payload
  */
