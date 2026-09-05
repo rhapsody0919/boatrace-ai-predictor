@@ -52,6 +52,18 @@ export const blogPosts = [
     image: "/images/blog/language-switcher-guide.jpg",
   },
   {
+    id: "volatility-top5-0905",
+    title: "本日9/5、132レース中「イン崩れ警戒」トップは戸田6R（99%） — 本日のイン崩れ警戒レースTOP5",
+    description:
+      "2026年9月5日開催132レース中、イン崩れ指数トップは戸田6R（99.2%）。1号艇の今節平均ST0.248秒・AI逃げ確率20%という発走前データを基に、本日のイン崩れ警戒レースTOP5と会場ごとの効きやすさの違いを実データで解説します。",
+    date: "2026-09-05",
+    category: "データ分析",
+    tags: ["イン崩れ指数", "データ分析", "戸田", "AI予想"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/volatility-top5-0905.jpg",
+  },
+  {
     id: "kiryu-freshwater-nige-rate",
     title: "桐生のイン逃げ率は51.7%、汽水会場より最大10ポイント高い理由を実データで検証",
     description:
