@@ -663,6 +663,259 @@ function SceneHookDiagonal({
   );
 }
 
+// --- Scene 1 案C: 2値比較（最高 vs 最低）型 ---
+// 「◯◯pt」という最大差を主役にし、根拠となる2本の棒グラフを画面中央に配置する。
+//
+// 2026-09-05: X承認待ち動画で棒グラフが画面左に偏り右側が空白になる不具合が報告された。
+// 原因調査の結果、venue-featureパイプライン（docs/operation/sns-pipeline-x.md）は
+// masterへコードをコミットしないため（データ登録のみの疎結合Routine）、「2値だけの
+// 比較」という形状はSceneHook/SceneHookDiagonalのように使い回される既存コンポーネントが
+// 無く、Routineがその都度ゼロから書いていたことが分かった。2026-08-31にSceneHookの
+// 非対称配置を個別に中央寄せへ修正した教訓が、レビューされないその場限りのコードには
+// 伝播しなかった形。この形状専用の共通コンポーネントとして新設し、中央寄せをコード側で
+// 固定する（`docs/reference/brand-kit.md`「グラフ・比較ビジュアルの中央寄せ」参照）。
+function SceneHookCompareTwo({
+  diffValueLabel,
+  headlineLines,
+  rangeLabel,
+  lowVenue,
+  lowValue,
+  lowValueLabel,
+  highVenue,
+  highValue,
+  highValueLabel,
+  hookQuestion,
+  categoryTag,
+  accentColor = GOLD,
+}) {
+  const frame = useCurrentFrame();
+  const kb = interpolate(frame, [0, 75], [1, 1.04], {
+    extrapolateRight: "clamp",
+  });
+  const barHeight = (value) =>
+    interpolate(
+      value,
+      [Math.min(lowValue, highValue) * 0.85, Math.max(lowValue, highValue)],
+      [70, 420],
+    );
+  const bars = [
+    { venue: lowVenue, value: lowValue, label: lowValueLabel, emphasis: false },
+    {
+      venue: highVenue,
+      value: highValue,
+      label: highValueLabel,
+      emphasis: true,
+    },
+  ];
+
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK, transform: `scale(${kb})` }}>
+      <Pop delay={-10} style={{ position: "absolute", top: 44, left: 44 }}>
+        <Logo size={38} />
+      </Pop>
+      <Pop delay={-10} style={{ position: "absolute", top: 50, right: 44 }}>
+        <div
+          style={{
+            background: "rgba(255,255,255,0.1)",
+            border: `1px solid ${accentColor}`,
+            borderRadius: 999,
+            padding: "6px 18px",
+            color: accentColor,
+            fontSize: 24,
+            fontWeight: 700,
+            fontFamily: FONT,
+          }}
+        >
+          {categoryTag}
+        </div>
+      </Pop>
+
+      <Pop
+        delay={-10}
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: 160,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 130,
+            fontWeight: 900,
+            fontFamily: FONT,
+            color: accentColor,
+            lineHeight: 0.9,
+            textShadow: `0 0 130px ${accentColor}aa`,
+          }}
+        >
+          {diffValueLabel}
+        </div>
+      </Pop>
+      <Pop
+        delay={-6}
+        style={{
+          position: "absolute",
+          left: 60,
+          right: 60,
+          top: 340,
+          textAlign: "center",
+        }}
+      >
+        {headlineLines.map((line, i) => (
+          <div
+            key={i}
+            style={{
+              color: WHITE,
+              fontSize: 44,
+              fontWeight: 900,
+              fontFamily: FONT,
+              lineHeight: 1.3,
+            }}
+          >
+            {line}
+          </div>
+        ))}
+      </Pop>
+      <Pop
+        delay={-4}
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: 470,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-block",
+            background: accentColor,
+            color: NAVY_DARK,
+            fontSize: 28,
+            fontWeight: 900,
+            fontFamily: FONT,
+            borderRadius: 14,
+            padding: "8px 20px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {rangeLabel}
+        </div>
+      </Pop>
+
+      {/* 2本の比較棒グラフ。flexのjustifyContent:"center"で必ずフレーム中央に配置する
+          （左右どちらの値が大きくても、固定left/right pxで置かないことで偏りを防ぐ） */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 260,
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          gap: 70,
+        }}
+      >
+        {bars.map((bar) => (
+          <div
+            key={bar.venue}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                color: bar.emphasis ? accentColor : "rgba(248,250,252,0.6)",
+                fontSize: 30,
+                fontWeight: 900,
+                fontFamily: FONT,
+                whiteSpace: "nowrap",
+                marginBottom: 10,
+              }}
+            >
+              {bar.label}
+            </div>
+            <div
+              style={{
+                width: 150,
+                height: barHeight(bar.value),
+                background: bar.emphasis
+                  ? accentColor
+                  : "rgba(255,255,255,0.14)",
+                borderRadius: "10px 10px 0 0",
+              }}
+            />
+            <div
+              style={{
+                color: WHITE,
+                fontSize: 26,
+                fontWeight: 700,
+                fontFamily: FONT,
+                whiteSpace: "nowrap",
+                marginTop: 12,
+              }}
+            >
+              {bar.venue}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: accentColor,
+          padding: "40px 60px 84px",
+        }}
+      >
+        <Pop delay={-10}>
+          <div
+            style={{
+              color: NAVY_DARK,
+              fontSize: 44,
+              fontWeight: 900,
+              fontFamily: FONT,
+              textAlign: "center",
+              lineHeight: 1.3,
+            }}
+          >
+            {hookQuestion}
+          </div>
+        </Pop>
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+// 管理画面「型一覧」タブの共有コンポーネントカタログ用サンプル画像（2026-09-05）。
+// 実データ（1号艇勝率ランキング、下関60.5%・平和島43.8%、WIN_RATE_TOP5/WORST5と同じ
+// 実測値）を使用。frame=0がそのまま静止画として使われる想定
+export function VenueRankingCM_WinRateCompareDemo() {
+  return (
+    <SceneHookCompareTwo
+      diffValueLabel="16.7pt"
+      headlineLines={["1号艇の強さ、", "会場でこんなに違う"]}
+      rangeLabel="平和島43.8% ~ 下関60.5%"
+      lowVenue="平和島"
+      lowValue={43.8}
+      lowValueLabel="43.8%"
+      highVenue="下関"
+      highValue={60.5}
+      highValueLabel="60.5%"
+      hookQuestion="会場ごとの差、続きをチェック"
+      categoryTag="会場データ検証"
+    />
+  );
+}
+
 export function VenueRankingCM_WinRate_VariantB() {
   return (
     <AbsoluteFill style={{ background: NAVY_DARK }}>

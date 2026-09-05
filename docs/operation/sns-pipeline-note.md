@@ -33,9 +33,10 @@ claimしたターゲットの`topic_id`と同じ`sns_topics.id`（`sns_drafts.co
 
 ## 3. note下書きへの変換
 
-1. 2.で取得したブログ本文を、`convert_to_note_markdown.py`と同じ変換ロジックでnote向けフォーマットに変換する（見出し記法・埋め込み構文の違いを吸収。完全一致はさせない）
-2. カバー画像は、ブログ側の`sns_drafts.cover_image_path`と同じ画像を使う（同一ネタのため使い回してよい、`docs/reference/brand-kit.md`のトーン統一目的とも合致）
-3. タグを付与する
+1. 2.で取得したブログ本文を、`convert_to_note_markdown.py`と同じ変換ロジックでnote向けフォーマットに変換する（見出し記法・埋め込み構文の違いを吸収。完全一致はさせない）。**ブログ本文をそのまま機械変換するだけで終わらせず、note側の一次情報性重視の評価方針（`docs/reference/note-algorithm-and-growth-notes.md`）に合わせて、実データ・独自分析であることが伝わる一人称寄りの導入文に調整する**（2026-09-05追加）
+2. **タイトルは15〜25文字程度に収める**（2026-09-05追加、`note-algorithm-and-growth-notes.md`より。ブログ側のタイトルをそのまま流用せず、note向けに短縮・調整する）
+3. カバー画像は、ブログ側の`sns_drafts.cover_image_path`と同じ画像を使う（同一ネタのため使い回してよい、`docs/reference/brand-kit.md`のトーン統一目的とも合致）
+4. **ハッシュタグは2〜4個、ジャンル大タグ（`#ボートレース` `#ボートレース予想`等）と龍神レーダー独自タグを組み合わせる**（2026-09-05追加、`note-algorithm-and-growth-notes.md`より。「競艇」表記はハッシュタグでも使わない、TikTokと同じ理由）
 
 ## 4. 下書きの永続化
 

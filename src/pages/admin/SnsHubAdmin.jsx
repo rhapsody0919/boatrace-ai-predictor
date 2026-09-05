@@ -46,52 +46,23 @@ import {
   FORMAT_LIBRARY,
   PERSONA_NOTES,
   DESIGN_GUIDELINE_NOTES,
+  SHARED_COMPONENTS,
   buildDocUrl,
 } from "../../data/snsFormatCatalogContent";
+import {
+  buildXIntentUrl,
+  buildPostText,
+  isIOSSafari,
+  formatDateTime,
+  isTodayJST,
+  getDefaultDraftCardExpanded,
+} from "./sns-hub/utils";
 import "./SnsHubAdmin.css";
 
 const PLATFORM_UPLOAD_URLS = {
   tiktok: "https://www.tiktok.com/tiktokstudio/upload",
   youtube: "https://studio.youtube.com",
 };
-
-function buildXIntentUrl(postText) {
-  return `https://x.com/intent/post?text=${encodeURIComponent(postText || "")}`;
-}
-
-// キャプション本文＋ハッシュタグを投稿用の完成形テキストに組み立てる。
-// コピー・X Intent・共有の3経路で同じテキストになるよう必ずこれを使う
-// （X Intentだけcaption_text単体を渡していてハッシュタグが欠落する不具合が
-// 2026-08-29の初回実投稿で発覚したため共通化）
-function buildPostText(draft) {
-  const hashtagLine = (draft.hashtags || []).filter(Boolean).join(" ");
-  return [draft.caption_text, hashtagLine].filter(Boolean).join("\n\n");
-}
-
-function isIOSSafari() {
-  return /iPhone|iPad|iPod/.test(navigator.userAgent);
-}
-
-function formatDateTime(isoString) {
-  if (!isoString) return "-";
-  return new Date(isoString).toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
-
-/** JST基準で「今日」の日付（YYYY-MM-DD）かどうかを判定する */
-function isTodayJST(isoString) {
-  if (!isoString) return false;
-  const toJstDateKey = (date) =>
-    new Date(date.getTime() + JST_OFFSET_MS).toISOString().split("T")[0];
-  return toJstDateKey(new Date(isoString)) === toJstDateKey(new Date());
-}
 
 const REVISION_REASONS = [
   { code: "time-expression-error", label: "時制表現の誤り" },
@@ -703,6 +674,10 @@ function CatalogTab({ templateVariants }) {
         <RulesReferenceSection />
       </section>
       <section className="catalog-section">
+        <h2 className="catalog-section-title">共有コンポーネント</h2>
+        <SharedComponentsSection />
+      </section>
+      <section className="catalog-section">
         <h2 className="catalog-section-title">デザイン・ペルソナ方針</h2>
         <DocReferenceSection />
       </section>
@@ -908,6 +883,48 @@ function RulesReferenceSection() {
             </a>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// 再利用可能なRemotion共有コンポーネント一覧。venue-feature等のパイプラインは
+// masterへコードをコミットしないため、既存の共有コンポーネントを知らずに
+// 新しい形状のコードを書き捨ててしまう不具合が起きた（2026-09-05、棒グラフ
+// 左偏りバグ）。ユーザー指摘を受け、生成ルール（RulesReferenceSection）とは
+// 別に「実際にどんなコードが再利用できるか」を一覧できるようにした
+function SharedComponentsSection() {
+  return (
+    <div className="doc-reference-section">
+      <div className="doc-reference-group">
+        {SHARED_COMPONENTS.map((c) => (
+          <div
+            key={c.name}
+            className="doc-reference-card shared-component-card"
+          >
+            {c.imagePath && (
+              <img
+                src={c.imagePath}
+                alt={`${c.name}のサンプル画像`}
+                className="shared-component-thumb"
+              />
+            )}
+            <div className="shared-component-card-body">
+              <div className="doc-reference-card-header">
+                <span className="doc-reference-name">{c.name}</span>
+              </div>
+              <p className="doc-reference-summary">{c.summary}</p>
+              <a
+                href={buildDocUrl(c.docPath)}
+                target="_blank"
+                rel="noreferrer"
+                className="doc-reference-link"
+              >
+                {c.docLabel} を見る →
+              </a>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1225,15 +1242,6 @@ function InsightHistoryEntry({ insight, allInsights }) {
       )}
     </div>
   );
-}
-
-// スマホ幅(2列グリッド)では詳細・操作ボタンを畳んだ状態で開く。デスクトップ幅では
-// 従来通り常に展開（auto-fillグリッドで元々カード自体が大きく、畳む必要が無いため）。
-// 判定基準はCSS側の2列グリッド切り替え（.draft-listの@media (max-width: 480px)）と
-// 必ず同じ値にする（ズレるとカードが1列表示なのに折りたたまれる幅域ができてしまう）
-function getDefaultDraftCardExpanded() {
-  if (typeof window === "undefined") return true;
-  return window.matchMedia("(min-width: 481px)").matches;
 }
 
 // blog/youtubeは承認操作自体がPRマージ/YouTube投稿まで行うため、
@@ -2596,7 +2604,15 @@ function useTopicProposerTrigger({
         "success",
       );
     }
-  }, [topics, locked, idsAtFire, registeredCount, expectedCount, matchesTopic, showToast]);
+  }, [
+    topics,
+    locked,
+    idsAtFire,
+    registeredCount,
+    expectedCount,
+    matchesTopic,
+    showToast,
+  ]);
 
   return {
     triggering,

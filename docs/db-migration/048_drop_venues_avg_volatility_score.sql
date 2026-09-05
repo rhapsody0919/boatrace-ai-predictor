@@ -1,0 +1,21 @@
+-- venues.avg_volatility_score列の削除（2026-09-05）
+-- Supabase Dashboard > SQL Editor で実行する。
+--
+-- 背景: この列は races.volatility_score（旧3モデル`generate-predictions.js`が
+-- 今も書き込み続けているが読み手が無い値、src/services/supabaseDataService.js
+-- のコメントで既に明記済み）の90日平均を`scripts/maintenance/update-venue-stats.js`
+-- が算出・書き込んでいたが、この列自体も読み手が存在しなかった
+-- （grep調査で自スクリプト自身のコンソール出力以外に参照無しと確認）。
+-- 現行のunifiedモデルとは無関係な旧モデル由来の値であり、そのまま
+-- 会場特性ネタ等の新機能に使うと実態と矛盾するリスクがあるため、
+-- 書き込み処理ごと削除する（scripts/maintenance/update-venue-stats.js側は
+-- 同日の別コミットで対応済み）。
+--
+-- 関連して見つかったが今回は対象外（別途判断が必要、削除しない）:
+-- - venues.cluster列（'in_strong'/'out_strong'/'balanced'）: コードベース内で
+--   完全に未使用。update_venue_stats() Postgres関数（このファイルでは触れない）
+--   が計算式を持つが、その関数自体の呼び出し元も見つからなかった
+-- - v_prediction_performance VIEW: venue_clusterを含むが参照する
+--   フロントエンド・スクリプトが見つからなかった
+
+ALTER TABLE venues DROP COLUMN IF EXISTS avg_volatility_score;
