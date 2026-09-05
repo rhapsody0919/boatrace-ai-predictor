@@ -1,0 +1,48 @@
+[
+  {
+    "query": "ボートレース予想サイト おすすめ",
+    "date": "2026-08-25",
+    "topDomains": [
+      "omurakyotei.jp",
+      "boatrace-research.jp",
+      "boat-race.jp",
+      "boat-fan.jp",
+      "apaie.org",
+      "eurorvvv.org",
+      "cosboa.org",
+      "fukuoka-kyotei.com",
+      "apps.apple.com (一撃くん)"
+    ],
+    "note": "前回2026-08-23比: boat-fan.jpが再表示(前回は圏外だった)。他8ドメインは変わらず。boat-ai.jpは引き続き圏外"
+  },
+  {
+    "query": "ボートレースAI予想",
+    "date": "2026-08-25",
+    "topDomains": [
+      "infoworld.co.jp",
+      "apps.apple.com (boat.ai)",
+      "ai.boatrace-biwako.jp",
+      "ai-shisu.com",
+      "boatraceai.com",
+      "boat-race.jp",
+      "umepyon.com",
+      "poseidon-boatrace.net",
+      "boaters-boatrace.com"
+    ],
+    "note": "前回2026-08-23比: ai-shisu.comが新規表示。他8ドメインは変わらず。boat-ai.jpは引き続き圏外"
+  },
+  {
+    "query": "競艇AI予想 無料",
+    "date": "2026-08-25",
+    "topDomains": [
+      "apps.apple.com",
+      "ai-shisu.com",
+      "poseidon-boatrace.net",
+      "umepyon.com",
+      "cosboa.org",
+      "fukuoka-kyotei.com",
+      "blu-express.com"
+    ],
+    "note": "前回2026-08-23比: boaters-boatrace.comが圏外に。他は変わらず。boat-ai.jpは引き続き圏外"
+  }
+]
