@@ -147,8 +147,9 @@ export async function getInsightById(id) {
 
 /**
  * insightを新規作成する（revise/redoの自由記述フィードバックをユーザーが選択的に
- * 恒久方針へ反映する機能用、spec.md課題4）。statusは常にproposedで作成し、既存の
- * 週次昇格フロー（promote-strategy-insights.js）にそのまま乗せる。
+ * 恒久方針へ反映する機能用、spec.md課題4）。statusは常にproposedで作成する。
+ * proposed→activeへの昇格は「戦略メモ」タブの手動採用ボタン（insights/[id]/approve.js）で行う
+ * （2026-09-05、週次自動昇格の想定Routineが後の統合作業で廃止され孤立したため手動運用に変更）。
  */
 export async function createInsight(payload) {
   const response = await fetch(

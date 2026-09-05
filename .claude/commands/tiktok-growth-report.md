@@ -29,9 +29,16 @@ PDCAの「C→A」を閉じるための最重要ステップ。**新しいデー
    - 視聴数・いいね数・コメント数（一覧の列にそのまま表示される）
    - プライバシー設定（誰でも/フォロワーのみ等、意図しない設定になっていないか）
 2. `https://www.tiktok.com/@ryujinradar`（プロフィールページ）を開き、フォロワー数・フォロー数・累計いいね数・投稿数を記録する。
-3. **「インサイト」画面（`https://www.tiktok.com/tiktokstudio/analytics/content`）の「コンテンツ」タブは、小規模アカウント（投稿数・フォロワー数が少ない段階）では「トップ投稿はありません」と表示され機能しないことを確認済み（2026-08-25）**。日付範囲を「直近28日」等に広げても改善しない場合がある。この画面が機能しない間は、ステップ1の投稿一覧の数値を正とする。アカウントが育ってこの画面が機能するようになったら、保存数・シェア数・完視聴率・トラフィックソースなど、より詳細な指標を追加で確認する（`sns-marketing-strategy.md`のフェーズB以降の判断材料として重要になる）。
+3. **「インサイト」画面（`https://www.tiktok.com/tiktokstudio/analytics/content`）の「コンテンツ」タブは、2026-08-25時点では小規模アカウントで「トップ投稿はありません」と表示され機能しなかったが、2026-09-05に再確認したところ機能するようになっていた**（アカウント成長または時間経過によるものと見られる、原因は未確定）。「あなたのトップ投稿」一覧の各行にある「データを表示」から個別動画の詳細ページ（`概要`タブ）を開くと、以下の指標が取得できる:
+   - **完視聴率**（「動画をフル視聴」欄、例: 2.1%）: TikTokアルゴリズムが最重視する指標（`tiktok-algorithm-and-growth-notes.md`項目1）
+   - **平均視聴時間**（例: 3.64秒）・総再生時間
+   - **継続率の離脱ポイント**（「多くの視聴者が0:0X でこの動画の視聴を停止しました」という文章で表示される）
+   - **保存数**（ページ上部のブックマークアイコンの数値）・シェア数
+   - **トラフィックのソース**（おすすめ/検索/プロフィール等の内訳、検索経由の割合が分かる）
+   - 概要ページ上部の「概要」タブに加え、動画一覧のタブから「視聴者」「エンゲージメント」タブでも追加データ（いいねのタイミング分布等）が見られる
+   - 主要投稿（直近の上位4〜5件程度）についてこの詳細ページを開き、上記指標を記録する。全投稿を毎回見る必要はない
 
-結果を`data/analysis/tiktok-growth/report-{日付}.json`に保存する（構造: `{generatedAt, followerCount, followingCount, totalLikes, totalPosts, historyReconciliation: {historyJsonCount, studioActualCount, discrepancyResolved}, previousActionsReview: [...], posts: [{postedAt, format, summary, statusUrl, views, likes, comments, privacy}]}`）。専用スクリプトは無い（TikTok APIが無いため）。Writeツールで直接書き込む。
+結果を`data/analysis/tiktok-growth/report-{日付}.json`に保存する（構造: `{generatedAt, followerCount, followingCount, totalLikes, totalPosts, historyReconciliation: {historyJsonCount, studioActualCount, discrepancyResolved}, previousActionsReview: [...], posts: [{postedAt, format, summary, statusUrl, views, likes, comments, privacy, completionRate, avgWatchTime, dropOffPoint, saves, shares, trafficSource}]}`）。`completionRate`以降は「データを表示」で確認できた投稿のみ埋める（無い場合は`null`）。専用スクリプトは無い（TikTok APIが無いため）。Writeツールで直接書き込む。
 
 ### 3. 判断基準（しきい値）— 分析を「なんとなく」で終わらせないために
 
