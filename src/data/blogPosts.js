@@ -64,6 +64,18 @@ export const blogPosts = [
     image: "/images/blog/language-switcher-guide.jpg",
   },
   {
+    id: "toda-course1-winrate-low",
+    title: "戸田の1コース勝率は41.5%、全国平均54.4%より12.9ポイント低い理由を実データで検証",
+    description:
+      "龍神レーダーの実レース結果データで、戸田の1コース勝率を全国24会場と比較。戸田41.5%は全国平均54.4%より12.9ポイント低く、全国ワースト2位という結果に。全国最狭コースという物理的な理由と、舟券への活かし方を解説します。",
+    date: "2026-09-05",
+    category: "データ分析",
+    tags: ["会場特性", "戸田", "1コース勝率", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/toda-course1-winrate-low.jpg",
+  },
+  {
     id: "kiryu-freshwater-nige-rate",
     title: "桐生のイン逃げ率は51.7%、汽水会場より最大10ポイント高い理由を実データで検証",
     description:
