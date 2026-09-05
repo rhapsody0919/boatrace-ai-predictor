@@ -23,10 +23,14 @@ export const id = "venue-characteristic";
 const VENUE_CODES = Array.from({ length: 24 }, (_, i) => i + 1);
 
 const ANGLES = [
-  "access", // 最寄り駅からのアクセス・所要時間
-  "water-type", // 水面特性（海水・淡水・汽水）
-  "technique-tendency", // 決まり手傾向（イン逃げやすさ等）
-  "seasonal", // 季節ごとの特徴
+  "water-type", // 水面特性（海水・淡水・汽水、venues.avg_first_win_rate）
+  "technique-tendency", // 決まり手傾向（1号艇の決まり手構成、winning_technique_stats）
+  "outcome-distribution", // 出目傾向（outcome_distributionテーブル、90日集計）
+  "top-start", // トップスタート傾向（top_start_statsテーブル、90日集計）
+  "losing-technique", // 1号艇が負けた時の決まり手傾向（losing_technique_statsテーブル、90日集計）
+  "nige-outcome", // 1号艇逃げ決着時の2-3着傾向（nige_outcome_distributionテーブル、90日集計）
+  "exhibition-time-top", // 展示タイム最速艇の信頼度（exhibition_time_top_statsテーブル、90日集計）
+  "seasonal", // 季節ごとの特徴（月別集計クエリ未実装のため現状は生成時にスキップされる、BOA-245参照）
 ];
 
 async function readHistory() {

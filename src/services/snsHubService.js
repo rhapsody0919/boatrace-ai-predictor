@@ -139,12 +139,22 @@ export async function getInsights(status) {
   return data || [];
 }
 
+export async function getRecentRevisions() {
+  const { data } = await request("/revisions");
+  return data || [];
+}
+
 /** insightを却下する（理由は任意） */
 export async function rejectInsight(insightId, reason) {
   return request(`/insights/${insightId}/reject`, {
     method: "POST",
     body: JSON.stringify(reason ? { reason } : {}),
   });
+}
+
+/** insightを採用する（active化、次回生成から参照される） */
+export async function approveInsight(insightId) {
+  return request(`/insights/${insightId}/approve`, { method: "POST" });
 }
 
 /** 「フォーマットカタログ」タブ用、型(sns_template_variants)の一覧を取得する */
@@ -168,8 +178,11 @@ export async function triggerWeeklyProposer() {
  * したい場面向け（2026-09-04追加）。autoApprove固定のためネタは即座に
  * status='approved'で登録される（ネタ承認は経由しない）
  */
-export async function triggerDailyAutoProposer() {
-  return request("/trigger-daily-auto-proposer", { method: "POST" });
+export async function triggerDailyAutoProposer(categoryKey) {
+  return request("/trigger-daily-auto-proposer", {
+    method: "POST",
+    body: JSON.stringify({ categoryKey: categoryKey || undefined }),
+  });
 }
 
 /**
