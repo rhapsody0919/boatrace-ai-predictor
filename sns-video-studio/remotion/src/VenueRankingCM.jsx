@@ -696,7 +696,7 @@ function SceneHookCompareTwo({
     interpolate(
       value,
       [Math.min(lowValue, highValue) * 0.85, Math.max(lowValue, highValue)],
-      [70, 420],
+      [70, 560],
     );
   const bars = [
     { venue: lowVenue, value: lowValue, label: lowValueLabel, emphasis: false },
@@ -812,7 +812,7 @@ function SceneHookCompareTwo({
           position: "absolute",
           left: 0,
           right: 0,
-          bottom: 260,
+          top: 660,
           display: "flex",
           alignItems: "flex-end",
           justifyContent: "center",
@@ -1691,6 +1691,56 @@ export function VenueRankingCM_EdogawaLosing() {
         />
       </Sequence>
       <Audio src={staticFile("soundtrack-hitcheck.wav")} />
+    </AbsoluteFill>
+  );
+}
+
+// 江戸川・1号艇「逃げ」決まり手構成比（sns-topic-gate、2026-09-05）のデータ。
+// winning_technique_stats（boat_number=1、winning_technique=逃げ、直近90日）。
+// 江戸川91.24%は全国平均95.24%より4.0pt低く、24会場中最下位（全国ワースト）。
+// 単一会場と全国平均の2値比較のフックのため、SceneHookCompareTwo（未使用のまま
+// 用意されていた再利用コンポーネント）を初めて採用する（sns-pipeline-x.md「3.」参照）。
+const EDOGAWA_NIGE_WORST5 = [
+  { rank: 24, venue: "江戸川", value: "91.2%", sample: "177/194", ratio: 94 },
+  { rank: 23, venue: "浜名湖", value: "91.9%", sample: "305/332", ratio: 94 },
+  { rank: 22, venue: "福岡", value: "92.8%", sample: "311/335", ratio: 95 },
+  { rank: 21, venue: "下関", value: "93.0%", sample: "373/401", ratio: 95 },
+  { rank: 20, venue: "大村", value: "93.7%", sample: "314/335", ratio: 96 },
+];
+
+export function VenueRankingCM_EdogawaNige() {
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK }}>
+      <Sequence from={0} durationInFrames={75}>
+        <SceneHookCompareTwo
+          diffValueLabel="-4.0pt"
+          headlineLines={["江戸川の1号艇、", "「逃げ」が決まりにくい？"]}
+          rangeLabel="全国ワースト（24会場中24位）"
+          lowVenue="江戸川"
+          lowValue={91.2}
+          lowValueLabel="91.2%"
+          highVenue="全国平均"
+          highValue={95.2}
+          highValueLabel="95.2%"
+          hookQuestion="1号艇の「逃げ」決まり手比率、会場でこんなに差がある"
+          categoryTag="決まり手データ"
+          accentColor={GOLD}
+        />
+      </Sequence>
+      <Sequence from={75} durationInFrames={188}>
+        <SceneWorst5
+          heading="🌊 1号艇「逃げ」が決まりにくい会場 WORST5"
+          data={EDOGAWA_NIGE_WORST5}
+          barColor={RED}
+        />
+      </Sequence>
+      <Sequence from={263} durationInFrames={150}>
+        <SceneCTA
+          ctaLines={["会場ごとの決まり手データ、", "無料で見れる"]}
+          subLine="あなたの地元は、何%だと思う？"
+        />
+      </Sequence>
+      <Audio src={staticFile("soundtrack-hitcheck.wav")} loop />
     </AbsoluteFill>
   );
 }
