@@ -23,10 +23,9 @@ export const id = "venue-characteristic";
 const VENUE_CODES = Array.from({ length: 24 }, (_, i) => i + 1);
 
 const ANGLES = [
-  "access", // 最寄り駅からのアクセス・所要時間
   "water-type", // 水面特性（海水・淡水・汽水）
   "technique-tendency", // 決まり手傾向（イン逃げやすさ等）
-  "seasonal", // 季節ごとの特徴
+  "seasonal", // 季節ごとの特徴（月別集計クエリ未実装のため現状は生成時にスキップされる、BOA-245参照）
 ];
 
 async function readHistory() {
