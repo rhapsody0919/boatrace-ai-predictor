@@ -76,9 +76,10 @@ function SceneHook({
   highlightIndex,
   hookQuestion,
   subCaption,
+  headlineText,
 }) {
   const { fontSize: headlineFontSize, lines: headlineLines } = fitHeadline(
-    `${venueName}の${axisTitle}は全国平均とほぼ同じ`,
+    headlineText,
     {
       maxWidth: 1500,
       maxLines: 2,
@@ -407,7 +408,7 @@ function VenueRow({ label, name, value, delay, accentColor }) {
   );
 }
 
-function SceneContext({ axisTitle, topVenue, worstVenue, venueName, venueRate }) {
+function SceneContext({ axisTitle, topVenue, worstVenue, venueName, venueRate, contextSummary }) {
   return (
     <AbsoluteFill style={{ background: NAVY, padding: "0 120px", justifyContent: "center" }}>
       <Pop delay={2}>
@@ -420,7 +421,7 @@ function SceneContext({ axisTitle, topVenue, worstVenue, venueName, venueRate })
       <VenueRow label="最も低い会場" name={worstVenue.name} value={worstVenue.rate} delay={36} accentColor="#f87171" />
       <SlideIn delay={50} style={{ marginTop: 20 }}>
         <div style={{ color: "rgba(248,250,252,0.6)", fontSize: 26, fontFamily: FONT }}>
-          {axisTitle}は会場によって大きく異なるが、{venueName}は全国平均に近い水準
+          {contextSummary}
         </div>
       </SlideIn>
     </AbsoluteFill>
@@ -446,6 +447,8 @@ export function VenueVsAverageYoutubeTemplate({
   hookQuestion,
   subCaption,
   featureDigest,
+  headlineText,
+  contextSummary,
 }) {
   return (
     <AbsoluteFill style={{ background: NAVY }}>
@@ -460,6 +463,7 @@ export function VenueVsAverageYoutubeTemplate({
           highlightIndex={highlightIndex}
           hookQuestion={hookQuestion}
           subCaption={subCaption}
+          headlineText={headlineText}
         />
       </Sequence>
       <Sequence from={90} durationInFrames={180}>
@@ -482,12 +486,13 @@ export function VenueVsAverageYoutubeTemplate({
           worstVenue={worstVenue}
           venueName={venueName}
           venueRate={venueRate}
+          contextSummary={contextSummary}
         />
       </Sequence>
       <Sequence from={450} durationInFrames={150}>
         <SceneCTA featureDigest={featureDigest} />
       </Sequence>
-      <Audio src={staticFile("soundtrack-hitcheck.wav")} />
+      <Audio src={staticFile("soundtrack-hitcheck.wav")} loop />
     </AbsoluteFill>
   );
 }
@@ -517,6 +522,8 @@ export function VenueVsAverageYoutubeCM_Demo() {
       hookQuestion="会場によって、実はここまで差がある"
       subCaption="24会場・13,447レースで検証"
       featureDigest={["24会場のデータ", "無料", "登録不要"]}
+      headlineText="桐生の1号艇勝率は全国平均とほぼ同じ"
+      contextSummary="1号艇勝率は会場によって大きく異なるが、桐生は全国平均に近い水準"
     />
   );
 }
