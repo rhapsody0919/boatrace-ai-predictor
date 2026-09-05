@@ -5,6 +5,31 @@
       "venueCode": 1,
       "angle": "water-type",
       "usedAt": "2026-09-04T01:30:58.001Z"
+    },
+    {
+      "venueCode": 1,
+      "angle": "technique-tendency",
+      "usedAt": "2026-09-05T10:25:23.234Z"
+    },
+    {
+      "venueCode": 1,
+      "angle": "outcome-distribution",
+      "usedAt": "2026-09-05T10:25:23.234Z"
+    },
+    {
+      "venueCode": 1,
+      "angle": "top-start",
+      "usedAt": "2026-09-05T10:25:23.234Z"
+    },
+    {
+      "venueCode": 1,
+      "angle": "losing-technique",
+      "usedAt": "2026-09-05T10:25:23.234Z"
+    },
+    {
+      "venueCode": 1,
+      "angle": "nige-outcome",
+      "usedAt": "2026-09-05T10:25:23.234Z"
     }
   ]
 }
