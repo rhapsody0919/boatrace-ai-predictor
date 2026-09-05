@@ -48,38 +48,15 @@ async function updateVenueStats() {
     if (rank1 === 1) venueStats[venueCode].firstWins++;
   });
 
-  // イン崩れ指数の平均（90日）
-  const racesWithVolatility = await fetchAll((from, to) =>
-    supabase
-      .from("races")
-      .select("venue_code, volatility_score")
-      .not("volatility_score", "is", null)
-      .gte("race_date", sinceStr)
-      .range(from, to),
-  );
-
-  const volatilityStats = {};
-  racesWithVolatility.forEach((r) => {
-    if (!volatilityStats[r.venue_code]) {
-      volatilityStats[r.venue_code] = { sum: 0, count: 0 };
-    }
-    volatilityStats[r.venue_code].sum += r.volatility_score;
-    volatilityStats[r.venue_code].count++;
-  });
-
   // venues テーブルを更新
   const now = new Date().toISOString();
   for (const [venueCode, stats] of Object.entries(venueStats)) {
     const winRate = stats.total > 0 ? stats.firstWins / stats.total : null;
-    const volStats = volatilityStats[venueCode];
-    const avgVolatility =
-      volStats && volStats.count > 0 ? volStats.sum / volStats.count : null;
 
     const { error } = await supabase
       .from("venues")
       .update({
         avg_first_win_rate: winRate,
-        avg_volatility_score: avgVolatility,
         updated_at: now,
       })
       .eq("code", parseInt(venueCode));
@@ -90,7 +67,7 @@ async function updateVenueStats() {
   // 結果表示
   const { data: venues } = await supabase
     .from("venues")
-    .select("code, name, avg_first_win_rate, avg_volatility_score")
+    .select("code, name, avg_first_win_rate")
     .not("avg_first_win_rate", "is", null)
     .order("avg_first_win_rate", { ascending: false });
 
@@ -100,12 +77,7 @@ async function updateVenueStats() {
     const winRate = v.avg_first_win_rate
       ? (v.avg_first_win_rate * 100).toFixed(1) + "%"
       : "-";
-    const volatility = v.avg_volatility_score
-      ? v.avg_volatility_score.toFixed(1)
-      : "-";
-    console.log(
-      `  ${v.name}: 1コース勝率=${winRate}, イン崩れ指数avg=${volatility}`,
-    );
+    console.log(`  ${v.name}: 1コース勝率=${winRate}`);
   });
 }
 
