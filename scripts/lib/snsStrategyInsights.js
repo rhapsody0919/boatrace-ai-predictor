@@ -9,7 +9,6 @@
 import { supabase, isSupabaseEnabled } from "./supabaseClient.js";
 
 const TABLE = "sns_strategy_insights";
-const PROMOTION_WINDOW_DAYS = 7;
 
 function assertSupabaseEnabled() {
   if (!isSupabaseEnabled()) {
@@ -45,54 +44,23 @@ export async function getActiveInsights({ platform, format, language } = {}) {
 }
 
 /**
- * 週次昇格判定の対象（status=proposedかつ提案から一定期間経過）を取得する。
- * @returns {Promise<Array>}
+ * status='proposed'（要判断、承認待ち）のinsight件数と一覧を取得する。
+ * セッション開始時チェック（session-start-check.js）が、承認待ちinsightを
+ * 見落とさず提示するために使う（2026-09-05追加、tweet-drafts.md等と同じ
+ * 「セッション開始時チェックが無いと滞留する」パターンの再発防止）。
+ * @returns {Promise<Array<{id: string, platform: string|null, insight_text: string, created_at: string}>>}
  */
-export async function getProposedInsightsForPromotion() {
+export async function getProposedInsights() {
   assertSupabaseEnabled();
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - PROMOTION_WINDOW_DAYS);
   const { data, error } = await supabase
     .from(TABLE)
-    .select("*")
+    .select("id, platform, format, language, insight_text, created_at")
     .eq("status", "proposed")
-    .lte("created_at", cutoff.toISOString());
+    .order("created_at", { ascending: true });
   if (error) {
     throw new Error(`${TABLE}取得エラー（proposed）: ${error.message}`);
   }
   return data || [];
-}
-
-/** insightをactiveへ昇格する */
-export async function activateInsight(id) {
-  assertSupabaseEnabled();
-  const { error } = await supabase
-    .from(TABLE)
-    .update({ status: "active", activated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) {
-    throw new Error(`insight昇格エラー(${id}): ${error.message}`);
-  }
-}
-
-/**
- * insightをretiredにする（risk-rules抵触時の自動却下、または人間による却下操作の両方で使う）
- * @param {string} id
- * @param {string} [decisionNote] - 却下理由（任意）
- */
-export async function retireInsight(id, decisionNote) {
-  assertSupabaseEnabled();
-  const { error } = await supabase
-    .from(TABLE)
-    .update({
-      status: "retired",
-      retired_at: new Date().toISOString(),
-      ...(decisionNote ? { decision_note: decisionNote } : {}),
-    })
-    .eq("id", id);
-  if (error) {
-    throw new Error(`insight却下エラー(${id}): ${error.message}`);
-  }
 }
 
 /**

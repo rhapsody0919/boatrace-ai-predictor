@@ -9,7 +9,7 @@
 このRoutineは2つの起動方法を持つ。まず`<routine-fire-payload>`ブロックの有無を確認する。
 
 - **無い場合（スケジュール起動）**: 定期ポーリング。以下「0.」以降にそのまま進む
-  - 週次型（`venue-feature`）: 12時間おきのcronでポーリングする（初期値、運用実績を見て変更可）
+  - 週次型（`venue-feature`）: 1時間おきのcronでポーリングする（2026-09-05、初期値の12時間おきから変更）
   - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする（同じcron間隔でも自然に拾える）
   - 日次・時間制約型（`race-time-critical`）: このパイプラインでは扱わない。既存の`sns-hub-content-generation`（`sns-video-producer-prompt.md`）の手動生成ボタン系が担当する（type選択UIの実装後）
 - **ある場合（API起動）**: ペイロードの`action`で分岐する
@@ -54,7 +54,7 @@ claim対象が0件の場合はここで終了する（正常系、失敗では�
 
 - DBに実データがあることと、本番UIで実際に表示・再現できることは別物。台本確定前に必ずPlaywrightで実際の画面を確認する（同ドキュメント「制作フロー」2.参照）
 - ネタの型に応じたフォーマットを選ぶ:
-  - `venue-feature`型: `VenueRankingCM.jsx`の`VenueRankingTemplate`（ランキング・比較型）を優先して再利用する
+  - `venue-feature`型: `VenueRankingCM.jsx`の`VenueRankingTemplate`（ランキング・比較型）を優先して再利用する。**「最高値 vs 最低値」の2値だけを見せるフック（差分◯ptを主役にする構成）は`SceneHookCompareTwo`（同ファイル）を必ず再利用する**。このRoutineはmasterへコードをコミットしないため、この形状を毎回ゼロから書くと中央寄せ等のレイアウトルールが再現されない（2026-09-05、棒グラフが画面左に偏る不具合が発生し判明。`docs/reference/brand-kit.md`「グラフ・比較ビジュアルの中央寄せ」参照）
   - `daily-auto`型: ネタの内容に応じて既存フォーマットライブラリ（`sns-video-producer-prompt.md`「フォーマットライブラリ」節）から最も近いものを選ぶ。新しいデータ形状の場合のみ新規コンポジションを検討する
 - X向けは9:16（1080x1920）
 - `sns-video-studio/remotion/`でのレンダリング手順（Chromiumヘッドレスシェルの指定、ffmpeg導入）は同ドキュメント「制作フロー」4.と同じ

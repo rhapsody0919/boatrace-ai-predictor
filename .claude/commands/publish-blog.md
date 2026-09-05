@@ -1,10 +1,9 @@
 # ブログ記事公開パイプライン
 
-新規ブログ記事（`public/blog/{slug}.md`）の公開前品質チェックからnote/X下書き生成までを1コマンドで実行します。CLAUDE.mdの「新機能リリース時のブログ記事ルール」「ブログ記事の公開前品質チェック」の実務手順です。
+新規ブログ記事（`public/blog/{slug}.md`）の公開前品質チェックを1コマンドで実行します。CLAUDE.mdの「新機能リリース時のブログ記事ルール」「ブログ記事の公開前品質チェック」の実務手順です。note/Xチャネルへの展開はsns-hubパイプライン（ネタ→チャネル別下書き自動生成→admin承認）が別途担うため、このコマンドの対象外（2026-09-05〜）。
 
 過去に以下の抜け漏れが実際に起きているため、各ステップは省略せず全て実行してください:
 - sitemap登録漏れ（`/winning-technique`が長期未インデックス）
-- note/X下書き14記事が未投稿で滞留
 - featured記事に旧モデル廃止済み機能への言及が残ったまま公開
 
 ## 引数
@@ -44,22 +43,7 @@ CLAUDE.mdの基準に従い、以下を実際に検証する。チェックリ�
    grep -n "## よくある質問\|!\[" public/blog/$ARGUMENTS.md
    ```
 
-### 3. note.com下書き生成
-
-```bash
-python3 convert_to_note_markdown.py public/blog/$ARGUMENTS.md
-mv public/blog/${ARGUMENTS}_note.md note-articles/$ARGUMENTS.md
-```
-
-### 4. Xツイート下書き生成
-
-```bash
-node scripts/generate-tweet-draft.js $ARGUMENTS
-```
-
-`note-articles/tweet-drafts.md` に追記される。
-
-### 5. featured記事の場合: 英語版作成
+### 3. featured記事の場合: 英語版作成
 
 `blogPosts.js`で`featured: true`なら、同一PRまたは近接PRで英語版を作成する:
 - `public/blog/$ARGUMENTS-en.md`
@@ -67,7 +51,7 @@ node scripts/generate-tweet-draft.js $ARGUMENTS
 
 対象言語は英語のみ（zh-TW/koは需要確認前のため対象外）。
 
-### 6. sitemap反映確認
+### 4. sitemap反映確認
 
 ブログ記事自体は`scripts/generate-sitemap.js`の`getBlogPosts()`が`public/blog/`を自動スキャンするため追加登録は不要。ただし本記事に伴い新しい静的ページ・ルートを追加した場合は:
 
@@ -75,11 +59,8 @@ node scripts/generate-tweet-draft.js $ARGUMENTS
 npm run verify:sitemap
 ```
 
-### 7. 完了報告（省略不可）
+### 5. 完了報告（省略不可）
 
 チャット本文に必ず含める:
 - 品質チェック6項目の結果（パス/フェイル、フェイルへの対応）
-- note下書きのファイルパス: `note-articles/$ARGUMENTS.md`
-- tweet-drafts.md内の該当セクション（日付見出し）
-- リマインド文言: 「noteエディタに貼り付けて公開 → 対応ツイートをXに投稿してください」
 - featured記事の場合は英語版の有無

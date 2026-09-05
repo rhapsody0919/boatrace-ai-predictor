@@ -183,11 +183,6 @@ boatrace-ai-predictor/
 - **画像を組み合わせる**: 実際の機能のスクリーンショット（Playwrightで撮影したもので良い）を最低1枚、記事内に配置する。装飾目的の画像は不要
 - 用語・文体は `.claude/rules/code-style.md`（「競艇」使用禁止等）に従う
 - **「よくある質問」セクションを設ける**: `BlogPost.jsx`が`## よくある質問`セクションを自動検出してFAQPage構造化データを生成する（`src/utils/blogFaqSchema.js`）ため、`### 質問文` + 回答段落の形式でFAQセクションを含めると追加コード不要でSEO/AI引用対策になる
-- **note.com向け下書きを同時生成する（2026-08-04〜）**: 新規ブログ記事作成時は`python3 convert_to_note_markdown.py public/blog/{slug}.md`を実行し、出力された`{slug}_note.md`を`note-articles/{slug}.md`にリネームして配置する。note.comへの実際の投稿・公開は自動化できない（公開APIが存在しない）ため、生成した下書きをユーザーがnoteエディタに貼り付けて手動公開する
-- **note下書きは画像か動画を最低1枚含める（2026-08-31〜）**: 文章のみのnote下書きは閲覧時の質が低い（2026-08-31指摘）。ブログ記事作成時に配置した画像（`public/images/blog/{slug}.jpg`等）を流用し、note下書き（`note-articles/{slug}.md`）にも埋め込む。対応する画像が無い記事は、Playwrightで撮影したスクリーンショットを新たに用意する
-- **note埋め込み用動画に`sns-video-studio/remotion/public/soundtrack.wav`を使わない（2026-08-31〜）**: X/TikTok用の縦型ショート動画で既に使い回されている楽曲で、note用に流用したところ「使い回し感がある」と却下された。note用動画には別途新規に著作権フリー楽曲（Pixabay Content License等）を選定して使う。詳細な制作ルール（構成・字幕・BGM候補）は`docs/operation/note-video-producer-prompt.md`参照（着手前に`docs/reference/brand-kit.md`も確認する）
-- **Xツイート下書きも同時生成する（2026-08-04〜）**: 新規ブログ記事作成時は`node scripts/generate-tweet-draft.js {post-id}`を実行し、`note-articles/tweet-drafts.md`に下書きを追記する。投稿はユーザーが内容を確認の上、手動でXに行う（2025-12時点の同種の取り組みが下書き作成後1週間で止まった実績があるため、「記事公開のたびに機械的に生成する」運用に固定し、単発の週次計画には戻さない）
-- **note/X投稿のリマインドを毎回行う（2026-08-08〜）**: ブログ記事を作成したPRの完了報告・マージ確認には、必ず「note/Xへの投稿依頼」を含める。具体的には①note下書きのファイルパス（`note-articles/{slug}.md`）②tweet-drafts.md内の該当セクション（日付見出し）③「noteエディタに貼り付けて公開→対応ツイートをXに投稿」の手順を明示する。リマインドなしで記事だけ公開して投稿が溜まった実績（2026-07-30〜08-08の14記事が未投稿で滞留）があるため、下書き生成だけで完了とせず、リマインド提示までを記事作成タスクの完了条件とする
 - **featured記事は英訳も同時作成する（2026-08-11〜）**: featured記事（`blogPosts.js`の`featured: true`）を新規公開する際は、英語版（`public/blog/{slug}-en.md` + `src/data/blogPostsEn.js`へのエントリ追加）も同一PRまたは近接PRで作成する。対象言語は英語のみ（zh-TW/koは対象外、需要が確認できるまで見送り）。ブログi18nの実装パターン・設計判断は`docs/design/blog-i18n/`（spec/screens/plan/tasks）・`docs/adr/0005〜0007`を参照
 
 ### フローA-4: 新規ページ追加時のsitemap登録（必須）
@@ -216,18 +211,9 @@ X/TikTokへの定常投稿は `src/pages/admin/SnsHubAdmin.jsx` 等で構築中�
 **核心の方針**: 「人間が覚えている」ことに依存する仕組みは遅かれ早かれ形骸化する（tweet-draftsが14件→38件まで滞留した実績あり）。機械的に判定できるものは実装完了チェックリスト（フローA-2参照）またはGitHub Actions、判断が要るものはセッション開始時の能動チェックまたはSlack通知のいずれかに必ず寄せる。
 
 ### フローC-0: セッション開始時チェックの統合（session-start-check.js）
-以下5つの既存確認ルール（フローC-1〜C-5）に加え、トレーサビリティ索引カバレッジ・視覚素材鮮度・品質バックログの3項目を、`node scripts/maintenance/session-start-check.js`が1回の実行で集約する。**セッション開始時、このスクリプトを実行し、結果をこのセッションの最初の応答で報告する**（各項目の判定ロジック詳細はスクリプト冒頭のコメントを参照。以下フローC-1〜C-5の本文は、確認後に実際に何をするか＝実行手順として引き続き有効）。
+以下の既存確認ルール（フローC-2〜C-5）に加え、トレーサビリティ索引カバレッジ・視覚素材鮮度・品質バックログの3項目を、`node scripts/maintenance/session-start-check.js`が1回の実行で集約する。**セッション開始時、このスクリプトを実行し、結果をこのセッションの最初の応答で報告する**（各項目の判定ロジック詳細はスクリプト冒頭のコメントを参照。以下フローC-2〜C-5の本文は、確認後に実際に何をするか＝実行手順として引き続き有効）。
 
-### フローC-1: セッション開始時のXツイート下書き投稿確認（2026-08-23〜、2026-08-24更新）
-`note-articles/tweet-drafts.md`は下書き生成だけでは投稿が進まず滞留する実績が繰り返しあった（2025-12の取り組みが1週間で停止、2026-08-08時点で14記事滞留、2026-08-23時点で38記事滞留）。この対策として、以下をセッション開始時に必ず行う（未消化件数は`session-start-check.js`の`tweetDrafts.pendingCount`で機械的に取得できる）。
-
-- `note-articles/tweet-drafts.md`に未投稿（`- [ ] 投稿済み`）の下書きがあれば、**このセッションの最初の応答で**優先度の高いものから**2〜3件**を自発的に提示し、「投稿しますか？」と確認する（ユーザーから話しかけられるのを待たない）。1件ずつの提示では新規記事の生成ペースに消化が追いつかず滞留が続いた実績（2026-08-08時点14件→2026-08-22時点38件→2026-08-26時点35件）があるため、2026-08-26にペースを引き上げた
-- 優先順位は鮮度優先: 直近の新機能記事を最優先とし、半年以上前の記事は普遍的なノウハウ系のみ対象とする。数値実績系（「◯万レース突破」等）は投稿前に鮮度（数値が古くなっていないか）を一言添える
-- 提示前に、その下書きが**廃止済み機能・旧モデル体系（本命狙い/スタンダード/穴狙いの3モデル等）に言及していないか**をリンク先記事本文で確認する（2026-08-23、「今日のおすすめ」機能廃止後もそれを紹介する下書きが2件残っていた実例あり）。該当すれば提示せず削除する
-- **投稿の実行手順（2026-08-24確立、2026-09-01複数件対応を追記）**: ユーザーが「投稿する」と答えたら、Claude自身がブラウザ（claude-in-chrome）で`https://x.com/compose/post`を開き、テキストエリアに本文を入力するところまで行う。**「Post」ボタンのクリックは必ずユーザー自身が行う**（送信を伴う最終アクションは1件ごとの明示的な人手操作が必要）。`https://x.com/home`等ホームフィードへの遷移は自動モード分類器にブロックされるが、`https://x.com/compose/post`への直接遷移とテキスト入力はブロックされないことを確認済み
-  - **複数件を同時に投稿する場合**: 1件ずつ順番に「入力→ユーザーのPost待ち→次の1件」を繰り返さない。`tabs_create_mcp`で下書きの件数分タブを開き、それぞれに`https://x.com/compose/post`を読み込んで本文を入力し、全件の入力が完了した状態でまとめてユーザーに提示する。ユーザーは各タブのPostボタンを順に押すだけで済む（2026-09-01、3件連続投稿で「別タブで一度にPostできるようにして」とユーザー指摘）
-- X API経由の自動投稿（`twitter-api-v2`等）は、`bypassPermissions`モードでも自動モード分類器にブロックされるため実現不可と判断済み（2026-08-24検証済み、再検討不要）
-- ユーザーが投稿完了を伝えたら、該当行の`- [ ] 投稿済み`を`- [x] 投稿済み`に変更する
+note.com向け下書き生成・Xツイート下書き生成・投稿滞留チェック（旧フローC-1）は、sns-hubパイプライン（ネタ→チャネル別下書き自動生成→admin承認）に代替されたため廃止した（2026-09-05）。`note-articles/tweet-drafts.md`・`convert_to_note_markdown.py`・`scripts/generate-tweet-draft.js`自体は削除せず残置している。
 
 ### フローC-2: セッション開始時のX動画投稿確認（2026-08-24〜）
 X運用の長期戦略議論を経て、Xも「可能な範囲で毎日投稿する」運用に変更した（`docs/operation/x-operations-playbook.md`の「X投稿頻度・型選定ロジック」参照）。上記のXツイート下書き（noteブログ告知等のテキスト投稿）とは別に、**動画投稿**については以下をセッション開始時に必ず行う（本日の投稿状況は`session-start-check.js`の`xVideo`で機械的に取得できる）。
@@ -254,15 +240,15 @@ TikTokは運用が軌道に乗り次第「毎日投稿」を目標とする運�
 - 承認されたら`scripts/maintenance/add-racer-news.js`でINSERTし該当項目の`status`を`approved`に、却下されたら`rejected`に更新する
 - 掲載頻度自体が月1〜2件と低いため、このリストは頻繁には溜まらない想定。溜まっている場合はGitHub Actionsの実行状況（`.github/workflows/collect-racer-news.yml`）も確認する
 
-### フローC-5: セッション開始時の集客調査スキル実行確認（2026-08-29〜）
-SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）は、`/x-growth-report`・`/tiktok-growth-report`の定期実行結果をinsightとしてDBに登録し（ADR 0027）、週次で生成Routineへの反映を判定する（ADR 0030）設計。外部調査（競合・隣接ジャンル観測）はクラウドRoutineでは技術的に実行できないと確定しているため（`sns_marketing_hub_operational_state.md`メモリ参照）、対話セッション側でのスキル定期実行に運用が依存する。過去にX戦略の定期施策が「決めただけで仕組み化されず自然消滅した」実績（2025-12）があるため、以下をセッション開始時に必ず行う（鮮度は`session-start-check.js`の`growthSkills`で機械的に取得できる）。
+### フローC-5: セッション開始時の集客調査スキル実行確認（2026-08-29〜、2026-09-05にnote追加）
+SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）は、`/x-growth-report`・`/tiktok-growth-report`・`/note-growth-report`の定期実行結果をinsightとしてDBに登録し（ADR 0027）、週次で生成Routineへの反映を判定する（ADR 0030）設計。外部調査（競合・隣接ジャンル観測）はクラウドRoutineでは技術的に実行できないと確定しているため（`sns_marketing_hub_operational_state.md`メモリ参照）、対話セッション側でのスキル定期実行に運用が依存する。過去にX戦略の定期施策が「決めただけで仕組み化されず自然消滅した」実績（2025-12）があるため、以下をセッション開始時に必ず行う（鮮度は`session-start-check.js`の`growthSkills`で機械的に取得できる）。
 
-- `data/analysis/x-growth/`・`data/analysis/tiktok-growth/`それぞれの最新レポートファイルの日付を確認し、いずれかが1週間以上前であれば、**このセッションの最初の応答で**該当スキル（`/x-growth-report`・`/tiktok-growth-report`）の実行を自発的に提案する（ユーザーから話しかけられるのを待たない）
-- 「はい」と回答があれば該当スキルを実行する（複数プラットフォームが該当する場合、両方まとめて提案してよい）
+- `data/analysis/x-growth/`・`data/analysis/tiktok-growth/`・`data/analysis/note-growth/`それぞれの最新レポートファイルの日付を確認し、いずれかが1週間以上前であれば、**このセッションの最初の応答で**該当スキル（`/x-growth-report`・`/tiktok-growth-report`・`/note-growth-report`）の実行を自発的に提案する（ユーザーから話しかけられるのを待たない）
+- 「はい」と回答があれば該当スキルを実行する（複数プラットフォームが該当する場合、まとめて提案してよい）
 - 「いいえ」または反応が無ければその日はスキップし、次のタスクに進む（催促を続けない）
 
-### フローC-6: 自然言語「集客状況を調査して」トリガー時は3スキルセットで実行（2026-08-31〜）
-「集客を分析して」「集客状況どう？」等の自然言語依頼（`/growth-pdca`と明示コマンド指定しない場合）では、`/growth-pdca`（Search Console/GA4、検索流入・ブログ側）に加えて`/x-growth-report`（Xプラットフォーム自体の実績）・`/tiktok-growth-report`（TikTokプラットフォーム自体の実績）も続けてまとめて実行する。3スキル合計でChrome in Claudeでの画面操作（X/TikTokは実績確認のため）を含み実行時間が伸びる点、Search Console等の反映ラグ（2〜3日）と比べて高頻度で聞くと同じデータの再取得になりやすい点を踏まえた上でユーザーが合意済み（2026-08-31）。`/growth-pdca`と明示コマンドで呼ばれた場合は対象外（これまで通りSearch Console/GA4単体で実行、X/TikTok分析は含めない）。
+### フローC-6: 自然言語「集客状況を調査して」トリガー時は4スキルセットで実行（2026-08-31〜、2026-09-05にnote追加）
+「集客を分析して」「集客状況どう？」等の自然言語依頼（`/growth-pdca`と明示コマンド指定しない場合）では、`/growth-pdca`（Search Console/GA4、検索流入・ブログ側）に加えて`/x-growth-report`（Xプラットフォーム自体の実績）・`/tiktok-growth-report`（TikTokプラットフォーム自体の実績）・`/note-growth-report`（noteプラットフォーム自体の実績）も続けてまとめて実行する。4スキル合計でChrome in Claudeでの画面操作（X/TikTok/noteは実績確認のため）を含み実行時間が伸びる点、Search Console等の反映ラグ（2〜3日）と比べて高頻度で聞くと同じデータの再取得になりやすい点を踏まえた上でユーザーが合意済み（2026-08-31、note追加は2026-09-05）。`/growth-pdca`と明示コマンドで呼ばれた場合は対象外（これまで通りSearch Console/GA4単体で実行、X/TikTok/note分析は含めない）。
 - 過去レポートが1件も無い場合は「初回実行の提案」として扱う
 
 ### フローC-7: 視覚素材の鮮度チェック
@@ -284,6 +270,13 @@ SNSマーケティングハブPhase 2（改善案の自律立案ループ、`doc
 - `node scripts/maintenance/check-deprecated-terms.js`が、静的ページ（`About.jsx`・`FAQ.jsx`・`HowToUse.jsx`・各言語版ガイド）・オンボーディングUI（`FirstVisitGuideCard.jsx`）・note下書き（`note-articles/`）・ブログ記事（`public/blog/`）を対象にgrepし、ヒット件数を報告する
 - `docs/reference/`配下の内部ドキュメント（用語集・DB設計等）は対象外（歴史的経緯の記録として旧用語を含んでいてよいため）
 - 検知できるのは「この単語が存在すること」だけで、文脈が本当に矛盾しているかは目視確認が必要。ヒット件数は`session-start-check.js`の`deprecatedTerms`で件数のみ機械的に取得できる
+
+### フローC-11: セッション開始時の戦略メモ（insight）承認待ち確認（2026-09-05〜）
+`sns_strategy_insights`の`status='proposed'`（要判断）は、sns-hub「戦略メモ」タブの手動採用ボタン（PR #514）で人間が個別に承認する設計。tweet-drafts.md（最大38件滞留）・X動画投稿・TikTok投稿と同じ「セッション開始時チェックが無いと人間が承認を忘れて滞留する」パターンの再発を防ぐため、以下をセッション開始時に必ず行う（件数は`session-start-check.js`の`pendingInsights`で機械的に取得できる）。
+
+- `pendingInsights.pendingCount`が1件以上あれば、**このセッションの最初の応答で**最も古い1件（`oldest`）の内容を自発的に提示し、「戦略メモの承認画面で確認しますか？」と一言確認する（ユーザーから話しかけられるのを待たない）
+- 承認・却下の判断自体はsns-hub管理画面（`/admin/sns-hub`「戦略メモ」タブ）で行う（Claude Code側から代理で採用・却下しない、insight内容の妥当性判断は人間に委ねる）
+- 「いいえ」または反応が無ければその日はスキップし、次のタスクに進む（催促を続けない）
 
 ### ブログ記事の公開前品質チェック（新規作成・改稿とも必須）
 2026-08-16時点で、ビルド成功やE2Eといった構造面の検証だけでは記事の中身の質を担保できないことが判明した（既存featured記事に旧モデル廃止済み機能への言及が残ったまま公開されていた実例あり）。新規記事・既存記事の改稿（画像追加、FAQ追加等）を問わず、公開前に以下の観点を実際に検証し、パス/フェイルを明確にしてから完了報告する。
@@ -389,8 +382,10 @@ node scripts/daily/calculate-accuracy.js
 | `/x-growth-report` | X（Twitter）自体の集客PDCA（自アカウント投稿実績＋競合定点観測、SNS動画運用の一環） |
 | `/x-reply-drafts` | X返信下書き生成（リプライ戦略の半自動化、1件ずつ承認） |
 | `/tiktok-growth-report` | TikTok自体の集客PDCA（自アカウント投稿実績＋競合定点観測、SNS動画運用の一環） |
+| `/note-growth-report` | note自体の集客PDCA（自アカウント記事実績の定点観測） |
 | `/growth-monthly-summary` | SEO/X/TikTok集客PDCAの月次統合サマリー（事業ゴールへの進捗確認） |
-| `/publish-blog {slug}` | ブログ記事の公開前品質チェック→note/X下書き生成までの一括実行 |
+| `/publish-blog {slug}` | ブログ記事の公開前品質チェック一括実行（note/X展開はsns-hubパイプラインが別途担当） |
+| `/channel-algorithm-research {youtube\|tiktok\|note}` | プラットフォーム側のアルゴリズム・成長戦術を深堀り調査し`docs/reference/{platform}-algorithm-and-growth-notes.md`にまとめる（自アカウント実績を見る`/x-growth-report`等とは別役割） |
 
 ---
 

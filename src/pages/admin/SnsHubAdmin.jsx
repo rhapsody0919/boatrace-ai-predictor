@@ -19,6 +19,8 @@ import {
   markDraftPosted,
   addDraftMetric,
   getInsights,
+  getRecentRevisions,
+  approveInsight,
   rejectInsight,
   getTemplateVariants,
   archiveDraft,
@@ -39,55 +41,28 @@ import {
 } from "../../utils/webShare";
 import Toast, { useToast } from "../../components/Toast";
 import {
+  GLOBAL_RULES,
+  CHANNEL_RULES,
   FORMAT_LIBRARY,
   PERSONA_NOTES,
   DESIGN_GUIDELINE_NOTES,
+  SHARED_COMPONENTS,
   buildDocUrl,
 } from "../../data/snsFormatCatalogContent";
+import {
+  buildXIntentUrl,
+  buildPostText,
+  isIOSSafari,
+  formatDateTime,
+  isTodayJST,
+  getDefaultDraftCardExpanded,
+} from "./sns-hub/utils";
 import "./SnsHubAdmin.css";
 
 const PLATFORM_UPLOAD_URLS = {
   tiktok: "https://www.tiktok.com/tiktokstudio/upload",
   youtube: "https://studio.youtube.com",
 };
-
-function buildXIntentUrl(postText) {
-  return `https://x.com/intent/post?text=${encodeURIComponent(postText || "")}`;
-}
-
-// キャプション本文＋ハッシュタグを投稿用の完成形テキストに組み立てる。
-// コピー・X Intent・共有の3経路で同じテキストになるよう必ずこれを使う
-// （X Intentだけcaption_text単体を渡していてハッシュタグが欠落する不具合が
-// 2026-08-29の初回実投稿で発覚したため共通化）
-function buildPostText(draft) {
-  const hashtagLine = (draft.hashtags || []).filter(Boolean).join(" ");
-  return [draft.caption_text, hashtagLine].filter(Boolean).join("\n\n");
-}
-
-function isIOSSafari() {
-  return /iPhone|iPad|iPod/.test(navigator.userAgent);
-}
-
-function formatDateTime(isoString) {
-  if (!isoString) return "-";
-  return new Date(isoString).toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
-
-/** JST基準で「今日」の日付（YYYY-MM-DD）かどうかを判定する */
-function isTodayJST(isoString) {
-  if (!isoString) return false;
-  const toJstDateKey = (date) =>
-    new Date(date.getTime() + JST_OFFSET_MS).toISOString().split("T")[0];
-  return toJstDateKey(new Date(isoString)) === toJstDateKey(new Date());
-}
 
 const REVISION_REASONS = [
   { code: "time-expression-error", label: "時制表現の誤り" },
@@ -129,6 +104,18 @@ const TOPIC_REJECTION_REASONS = [
   { code: "policy-risk", label: "TikTok等ガイドライン抵触の懸念" },
   { code: "wrong-data-selection", label: "会場・データの選定ミス" },
   { code: "unnatural-japanese", label: "不自然な日本語（中国語的な言い回し）" },
+];
+
+// payout-rate（選手×艇番回収率型）・outcome-distribution（出目分布型）は
+// TikTokガイドライン上新規制作を全面停止中で、DB上はactive=trueのまま
+// daily-auto Routineの候補選定から恒久的に除外されている
+// （docs/db-migration/046_sns_topic_categories_exclusion_notes.sql、
+// sns-topic-proposer-daily-auto.md参照）。日次ネタ型選択ドロップダウンでも
+// 同じ理由で選択肢から外す（2026-09-04、レビューで指摘: active判定だけの
+// フィルタだとこの2型が選択可能になってしまっていた）
+const TIKTOK_PERMANENTLY_EXCLUDED_CATEGORY_KEYS = [
+  "payout-rate",
+  "outcome-distribution",
 ];
 
 // 2026-09-01、content-multi-channel-pipeline（spec.md FR6・screens.md）で
@@ -197,6 +184,7 @@ function SnsHubAdmin() {
   const [drafts, setDrafts] = useState([]);
   const [approvers, setApprovers] = useState([]);
   const [insights, setInsights] = useState([]);
+  const [revisions, setRevisions] = useState([]);
   const [templateVariants, setTemplateVariants] = useState([]);
   const [topics, setTopics] = useState([]);
   const [topicCategories, setTopicCategories] = useState([]);
@@ -258,6 +246,7 @@ function SnsHubAdmin() {
         drafts: true,
         approvers: true,
         insights: true,
+        revisions: true,
         templateVariants: true,
         topics: true,
         topicCategories: true,
@@ -272,6 +261,7 @@ function SnsHubAdmin() {
           fetchScope.drafts ? getDrafts().then(setDrafts) : null,
           fetchScope.approvers ? getApprovers().then(setApprovers) : null,
           fetchScope.insights ? getInsights().then(setInsights) : null,
+          fetchScope.revisions ? getRecentRevisions().then(setRevisions) : null,
           fetchScope.templateVariants
             ? getTemplateVariants().then(setTemplateVariants)
             : null,
@@ -524,6 +514,13 @@ function SnsHubAdmin() {
         ) : isInsightsTab ? (
           <InsightTab
             insights={insights}
+            revisions={revisions}
+            onApprove={(insightId) =>
+              handleAction(approveInsight, [insightId], {
+                drafts: true,
+                insights: true,
+              })
+            }
             onReject={(insightId, reason) =>
               handleAction(rejectInsight, [insightId, reason], {
                 drafts: true,
@@ -598,12 +595,87 @@ const SOURCE_LABELS = {
 // 「フォーマットカタログ」タブ: 型一覧(DB)＋ドキュメント要約(静的キュレーション)の2区画
 // （2026-08-31、ユーザー要望。既存の「戦略メモ」はinsight PDCA専用のため別タブとして新設、
 // docs/design/sns-hub-admin-ux-improvements/spec.md課題3参照）
+// REVISION_REASONS（動画向け）・CONTENT_REVISION_REASONS（ブログ/note向け）を
+// 統合したcode→labelの逆引き表。共通するcode（typo-or-data-error等）は
+// 両リストで同じlabelのため単純mergeで問題ない（2026-09-04、過去のFB表示用）
+const REVISION_REASON_LABELS = Object.fromEntries(
+  [...REVISION_REASONS, ...CONTENT_REVISION_REASONS].map((r) => [
+    r.code,
+    r.label,
+  ]),
+);
+
+// 「過去のFB」表示（2026-09-04追加）。sns_draftsのrevision_reason_codes/
+// revision_reason_freetextは、生成Routine側は毎回getRecentRevisions()で
+// 参照しているが（.claude/rules/sns-content-generation.md）、人間側がUI上で
+// 直近の指摘傾向を確認する手段がこれまで無かった
+function RecentRevisionsSection({ revisions }) {
+  if (revisions.length === 0) {
+    return (
+      <div className="empty-state">
+        <p>直近30日間の修正フィードバックはありません。</p>
+      </div>
+    );
+  }
+
+  const grouped = revisions.reduce((acc, rev) => {
+    (acc[rev.platform] ||= []).push(rev);
+    return acc;
+  }, {});
+
+  return (
+    <div className="revision-feed">
+      {Object.entries(grouped).map(([platform, items]) => (
+        <div key={platform} className="revision-feed-group">
+          <h3 className="doc-reference-group-title">
+            {PLATFORM_LABELS[platform] || platform}（{items.length}件）
+          </h3>
+          <ul className="revision-feed-list">
+            {items.map((rev) => (
+              <li key={rev.id} className="revision-feed-item">
+                <div className="revision-feed-item-header">
+                  <span className="revision-feed-title">
+                    {rev.title || "（無題）"}
+                  </span>
+                  <span className="revision-feed-date">
+                    {formatDateTime(rev.updatedAt)}
+                  </span>
+                </div>
+                {rev.revisionReasonCodes.length > 0 && (
+                  <p className="revision-feed-reasons">
+                    {rev.revisionReasonCodes
+                      .map((code) => REVISION_REASON_LABELS[code] || code)
+                      .join("、")}
+                  </p>
+                )}
+                {rev.revisionReasonFreetext && (
+                  <p className="revision-feed-freetext">
+                    {rev.revisionReasonFreetext}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CatalogTab({ templateVariants }) {
   return (
     <div className="catalog-tab">
       <section className="catalog-section">
         <h2 className="catalog-section-title">型一覧</h2>
         <TemplateVariantList templateVariants={templateVariants} />
+      </section>
+      <section className="catalog-section">
+        <h2 className="catalog-section-title">生成ルール</h2>
+        <RulesReferenceSection />
+      </section>
+      <section className="catalog-section">
+        <h2 className="catalog-section-title">共有コンポーネント</h2>
+        <SharedComponentsSection />
       </section>
       <section className="catalog-section">
         <h2 className="catalog-section-title">デザイン・ペルソナ方針</h2>
@@ -765,6 +837,99 @@ function TemplateVariantList({ templateVariants }) {
   );
 }
 
+// 全体ルール（Tier1）・チャネル別ルール（Tier2）へのリンク集。デザイン・
+// ペルソナ方針（DocReferenceSection）とは意味が異なる（技術ルール vs
+// 制作方針）ため別コンポーネントに分離した（2026-09-04、UI/UXレビュー指摘:
+// 「デザイン・ペルソナ方針」の見出し下に技術ルールを入れると見出しと
+// 中身が一致しない）
+function RulesReferenceSection() {
+  return (
+    <div className="doc-reference-section">
+      <div className="doc-reference-group">
+        <h3 className="doc-reference-group-title">
+          🌐 全体ルール（全チャネル共通）
+        </h3>
+        {GLOBAL_RULES.map((r) => (
+          <div key={r.name} className="doc-reference-card">
+            <div className="doc-reference-card-header">
+              <span className="doc-reference-name">{r.name}</span>
+            </div>
+            <p className="doc-reference-summary">{r.summary}</p>
+            <a
+              href={buildDocUrl(r.docPath)}
+              target="_blank"
+              rel="noreferrer"
+              className="doc-reference-link"
+            >
+              {r.docLabel} を見る →
+            </a>
+          </div>
+        ))}
+      </div>
+
+      <div className="doc-reference-group">
+        <h3 className="doc-reference-group-title">📡 チャネル別ルール</h3>
+        <div className="doc-reference-channel-grid">
+          {CHANNEL_RULES.map((r) => (
+            <a
+              key={r.platform}
+              href={buildDocUrl(r.docPath)}
+              target="_blank"
+              rel="noreferrer"
+              className="doc-reference-channel-link"
+            >
+              <span className="doc-reference-channel-label">{r.label}</span>
+              <span className="doc-reference-channel-doc">{r.docLabel}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 再利用可能なRemotion共有コンポーネント一覧。venue-feature等のパイプラインは
+// masterへコードをコミットしないため、既存の共有コンポーネントを知らずに
+// 新しい形状のコードを書き捨ててしまう不具合が起きた（2026-09-05、棒グラフ
+// 左偏りバグ）。ユーザー指摘を受け、生成ルール（RulesReferenceSection）とは
+// 別に「実際にどんなコードが再利用できるか」を一覧できるようにした
+function SharedComponentsSection() {
+  return (
+    <div className="doc-reference-section">
+      <div className="doc-reference-group">
+        {SHARED_COMPONENTS.map((c) => (
+          <div
+            key={c.name}
+            className="doc-reference-card shared-component-card"
+          >
+            {c.imagePath && (
+              <img
+                src={c.imagePath}
+                alt={`${c.name}のサンプル画像`}
+                className="shared-component-thumb"
+              />
+            )}
+            <div className="shared-component-card-body">
+              <div className="doc-reference-card-header">
+                <span className="doc-reference-name">{c.name}</span>
+              </div>
+              <p className="doc-reference-summary">{c.summary}</p>
+              <a
+                href={buildDocUrl(c.docPath)}
+                target="_blank"
+                rel="noreferrer"
+                className="doc-reference-link"
+              >
+                {c.docLabel} を見る →
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DocReferenceSection() {
   return (
     <div className="doc-reference-section">
@@ -828,7 +993,27 @@ function DocReferenceSection() {
 
 // 「戦略メモ」タブ: 要判断(proposed)ビューと履歴(active/retired)ビューの2区分
 // （2026-08-29、ユーザー指摘によりPDCAの経緯を追える設計に追加）
-function InsightTab({ insights, onReject }) {
+// 全体戦略（platform=null）とチャネル別戦略を分けて表示する（2026-09-04追加、
+// ユーザー指摘: 各チャネルのアルゴリズムは違うため戦略メモも区別すべき。
+// DBスキーマ・API変更はせず、既存のplatformカラム（nullが全体を表す既存規約、
+// getActiveInsightsのwildcard判定と同じ）でUI表示だけをグルーピングする
+// 軽量案を採用した）
+// items.length===0の場合はグループごと非表示にする（2026-09-04、UI/UX
+// レビュー指摘: 全体戦略insightが実データ上0件のため、常時「〜はありません」
+// という空状態文だけが表示され続けノイズになっていた。0件でも枠組み自体は
+// 残したいという意図は「反映待ちの戦略メモはありません」等の上位の空状態
+// （InsightTab側、proposed/history全体が0件の場合）で既にカバーされている）
+function InsightScopeGroup({ title, items, renderItem }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="insight-scope-group">
+      <h3 className="insight-scope-title">{title}</h3>
+      <div className="insight-list">{items.map(renderItem)}</div>
+    </div>
+  );
+}
+
+function InsightTab({ insights, onApprove, onReject, revisions }) {
   const proposed = insights.filter((i) => i.status === "proposed");
   const history = insights
     .filter((i) => i.status === "active" || i.status === "retired")
@@ -843,15 +1028,32 @@ function InsightTab({ insights, onReject }) {
             <p>反映待ちの戦略メモはありません。</p>
           </div>
         ) : (
-          <div className="insight-list">
-            {proposed.map((insight) => (
-              <InsightCard
-                key={insight.id}
-                insight={insight}
-                onReject={(reason) => onReject(insight.id, reason)}
-              />
-            ))}
-          </div>
+          <>
+            <InsightScopeGroup
+              title="🌐 全体戦略"
+              items={proposed.filter((i) => !i.platform)}
+              renderItem={(insight) => (
+                <InsightCard
+                  key={insight.id}
+                  insight={insight}
+                  onApprove={() => onApprove(insight.id)}
+                  onReject={(reason) => onReject(insight.id, reason)}
+                />
+              )}
+            />
+            <InsightScopeGroup
+              title="📡 チャネル別戦略"
+              items={proposed.filter((i) => i.platform)}
+              renderItem={(insight) => (
+                <InsightCard
+                  key={insight.id}
+                  insight={insight}
+                  onApprove={() => onApprove(insight.id)}
+                  onReject={(reason) => onReject(insight.id, reason)}
+                />
+              )}
+            />
+          </>
         )}
       </section>
 
@@ -862,16 +1064,38 @@ function InsightTab({ insights, onReject }) {
             <p>履歴はまだありません。</p>
           </div>
         ) : (
-          <div className="insight-list">
-            {history.map((insight) => (
-              <InsightHistoryEntry
-                key={insight.id}
-                insight={insight}
-                allInsights={insights}
-              />
-            ))}
-          </div>
+          <>
+            <InsightScopeGroup
+              title="🌐 全体戦略"
+              items={history.filter((i) => !i.platform)}
+              renderItem={(insight) => (
+                <InsightHistoryEntry
+                  key={insight.id}
+                  insight={insight}
+                  allInsights={insights}
+                />
+              )}
+            />
+            <InsightScopeGroup
+              title="📡 チャネル別戦略"
+              items={history.filter((i) => i.platform)}
+              renderItem={(insight) => (
+                <InsightHistoryEntry
+                  key={insight.id}
+                  insight={insight}
+                  allInsights={insights}
+                />
+              )}
+            />
+          </>
         )}
+      </section>
+
+      <section className="insight-section">
+        <h2 className="insight-section-title">
+          📝 過去の修正フィードバック（直近30日）
+        </h2>
+        <RecentRevisionsSection revisions={revisions} />
       </section>
     </div>
   );
@@ -899,14 +1123,24 @@ function InsightScopeBadges({ insight }) {
   );
 }
 
-function InsightCard({ insight, onReject }) {
+function InsightCard({ insight, onApprove, onReject }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
+  const [approving, setApproving] = useState(false);
 
   function handleReject() {
     onReject(reason.trim() || undefined);
     setRejecting(false);
     setReason("");
+  }
+
+  async function handleApprove() {
+    setApproving(true);
+    try {
+      await onApprove();
+    } finally {
+      setApproving(false);
+    }
   }
 
   return (
@@ -945,12 +1179,21 @@ function InsightCard({ insight, onReject }) {
           </div>
         </div>
       ) : (
-        <button
-          className="draft-action-btn revise"
-          onClick={() => setRejecting(true)}
-        >
-          却下
-        </button>
+        <div className="draft-actions">
+          <button
+            className="draft-action-btn approve"
+            onClick={handleApprove}
+            disabled={approving}
+          >
+            {approving ? "採用中…" : "採用"}
+          </button>
+          <button
+            className="draft-action-btn revise"
+            onClick={() => setRejecting(true)}
+          >
+            却下
+          </button>
+        </div>
       )}
     </div>
   );
@@ -999,15 +1242,6 @@ function InsightHistoryEntry({ insight, allInsights }) {
       )}
     </div>
   );
-}
-
-// スマホ幅(2列グリッド)では詳細・操作ボタンを畳んだ状態で開く。デスクトップ幅では
-// 従来通り常に展開（auto-fillグリッドで元々カード自体が大きく、畳む必要が無いため）。
-// 判定基準はCSS側の2列グリッド切り替え（.draft-listの@media (max-width: 480px)）と
-// 必ず同じ値にする（ズレるとカードが1列表示なのに折りたたまれる幅域ができてしまう）
-function getDefaultDraftCardExpanded() {
-  if (typeof window === "undefined") return true;
-  return window.matchMedia("(min-width: 481px)").matches;
 }
 
 // blog/youtubeは承認操作自体がPRマージ/YouTube投稿まで行うため、
@@ -2003,6 +2237,18 @@ function ChannelTargetToggle({ targets, onToggle }) {
   );
 }
 
+// RevisionPanel（mode="topic-reject"）のreasonCodes/freeTextを、却下理由の
+// 表示文字列に変換する共通関数（2026-09-04、コードレビューで指摘: TopicCard/
+// TopicFanoutCardで一字一句同じロジックが重複しており、片方だけ修正されて
+// もう一方に伝播しない不具合の温床になっていた。sns-content-generation.mdの
+// 「片方のパイプラインだけ実装され他方に伝播しない」既知パターンと同種）
+function buildTopicRejectionReason(reasonCodes, freeText) {
+  const reasonLabels = reasonCodes
+    .map((code) => TOPIC_REJECTION_REASONS.find((r) => r.code === code)?.label)
+    .filter(Boolean);
+  return [reasonLabels.join("、"), freeText.trim()].filter(Boolean).join(" / ");
+}
+
 // 「ネタ承認」タブの個別ネタカード（screens.md #3）。TextDraftPreview/VideoPreview
 // とは別役割（動画・本文のプレビューでなく、ネタ本文＋メタ情報の確認）のため
 // 軽量な新規実装とする
@@ -2053,15 +2299,7 @@ function TopicCard({
           reasons={TOPIC_REJECTION_REASONS}
           onCancel={() => setShowRejectPanel(false)}
           onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
-            const reasonLabels = reasonCodes
-              .map(
-                (code) =>
-                  TOPIC_REJECTION_REASONS.find((r) => r.code === code)?.label,
-              )
-              .filter(Boolean);
-            const reason = [reasonLabels.join("、"), freeText.trim()]
-              .filter(Boolean)
-              .join(" / ");
+            const reason = buildTopicRejectionReason(reasonCodes, freeText);
             onReject(topic.id, selectedApproverId, reason, saveAsInsight);
             setShowRejectPanel(false);
           }}
@@ -2131,12 +2369,36 @@ function TargetChip({ target, topicId, onFireTarget, firingTargetId }) {
   );
 }
 
-function TopicFanoutCard({ topic, onFireTarget, firingTargetId }) {
+// onReject/approversは「📦ネタのストック管理」（承認済みネタ）でのみ渡す。
+// 「🌅当日の運用」（自動承認・即日消化）は却下UIを出さない（2026-09-04、
+// 要件: 承認済みネタを却下できるようにする。生成済みターゲットに紐づく
+// 下書きは連動して非表示にせず、運用者が下書きタブで個別にarchiveする
+// 最小実装とする方針）
+function TopicFanoutCard({
+  topic,
+  onFireTarget,
+  firingTargetId,
+  onReject,
+  approvers,
+}) {
+  const [selectedApproverId, setSelectedApproverId] = useState(
+    approvers?.[0]?.id || null,
+  );
+  const [showRejectPanel, setShowRejectPanel] = useState(false);
+  // claimed（生成中）・generated（生成済み）のターゲットが既にある場合、
+  // reject.jsのコメント通り却下してもバックグラウンドの生成は止まらない。
+  // この既知の制約をUIで初めて明示する（2026-09-04、UI/UXレビュー指摘:
+  // 後戻りしにくい操作なのに副作用が画面のどこにも表示されていなかった）
+  const targets = topic.sns_topic_targets || [];
+  const hasInFlightTarget = targets.some(
+    (t) => t.status === "claimed" || t.status === "generated",
+  );
+
   return (
     <div className="mini-card">
       <p className="mini-card-topic">{topic.topic_text}</p>
       <div className="chip-row">
-        {(topic.sns_topic_targets || []).map((target) => (
+        {targets.map((target) => (
           <TargetChip
             key={target.id}
             target={target}
@@ -2146,6 +2408,41 @@ function TopicFanoutCard({ topic, onFireTarget, firingTargetId }) {
           />
         ))}
       </div>
+      {onReject &&
+        (showRejectPanel ? (
+          <>
+            <p className="topic-reject-warning">
+              {hasInFlightTarget
+                ? "⚠️ 生成中/生成済みのチャネルがあります。却下してもその生成は止まりません。生成済みの下書きは各プラットフォームタブで個別にarchiveしてください。"
+                : "却下すると承認状態が取り消されます。まだ生成されていないチャネルは以後生成されなくなります。"}
+            </p>
+            <RevisionPanel
+              mode="topic-reject"
+              reasons={TOPIC_REJECTION_REASONS}
+              onCancel={() => setShowRejectPanel(false)}
+              onSubmit={({ reasonCodes, freeText, saveAsInsight }) => {
+                const reason = buildTopicRejectionReason(reasonCodes, freeText);
+                onReject(topic.id, selectedApproverId, reason, saveAsInsight);
+                setShowRejectPanel(false);
+              }}
+            />
+          </>
+        ) : (
+          <div className="mini-card-actions">
+            <ApproverChips
+              approvers={approvers}
+              selectedId={selectedApproverId}
+              onSelect={setSelectedApproverId}
+            />
+            <button
+              type="button"
+              className="topic-withdraw-btn"
+              onClick={() => setShowRejectPanel(true)}
+            >
+              却下（承認取り消し）
+            </button>
+          </div>
+        ))}
     </div>
   );
 }
@@ -2160,18 +2457,50 @@ function TopicFanoutCard({ topic, onFireTarget, firingTargetId }) {
 // 即時起動できるようにする（2026-09-04追加、週次で先に実装し日次追加時に
 // フック化した）。この状態はTopicApprovalSection自身に閉じているため、他の
 // 生成系ボタン（親コンポーネント側）と違い親のstateには持ち上げない
-function useTopicProposerTrigger({ triggerFn, topics, showToast, label }) {
+// expectedCount: このトリガーで何件の新規ネタ登録を待つか。週次(最大10件)は
+// 「新規1件検知で即完了扱い」にすると9件を確認しないまま自動更新が止まって
+// しまうため、日次自動提案(常に1件)と挙動を分けている（2026-09-05）。
+// matchesTopic: topics配列は週次・日次両プロポーザーで共有しているため、
+// 他方が同時に作成したネタを誤ってカウントしないよう、自分のcontent_type
+// 由来のネタだけに絞り込むための述語（コードレビューで指摘、2026-09-05）。
+// maxWaitMinutesは、想定件数に届かないまま（候補切れ・エラー等で）ポーリング
+// し続けることを避けるための上限。quietMinutesは、複数件(expectedCount>1)を
+// 待つ場合に、1件以上登録できた後にしばらく新規登録が無ければ「候補切れ等で
+// 正常終了した」とみなして想定件数未達のままmaxWaitMinutesを待たずに確認を
+// 打ち切るための閾値（週次ドキュメント上、候補切れで10件未満のまま終わるのが
+// 正常挙動のため。コードレビューで指摘、2026-09-05）
+function useTopicProposerTrigger({
+  triggerFn,
+  topics,
+  showToast,
+  label,
+  expectedCount = 1,
+  matchesTopic = () => true,
+  quietMinutes = 4,
+  maxWaitMinutes = 20,
+}) {
   const [triggering, setTriggering] = useState(false);
   const [locked, setLocked] = useState(false);
   const [sessionUrl, setSessionUrl] = useState(null);
   const [firedAt, setFiredAt] = useState(null);
+  const [lastActivityAt, setLastActivityAt] = useState(null);
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
   const [idsAtFire, setIdsAtFire] = useState(null);
+  const [registeredCount, setRegisteredCount] = useState(0);
 
-  async function trigger() {
+  function reset() {
+    setLocked(false);
+    setSessionUrl(null);
+    setFiredAt(null);
+    setLastActivityAt(null);
+    setIdsAtFire(null);
+    setRegisteredCount(0);
+  }
+
+  async function trigger(arg) {
     setTriggering(true);
     try {
-      const result = await triggerFn();
+      const result = await triggerFn(arg);
       if (result?.routine?.fired === false) {
         showToast(
           `起動リクエストがRoutineに届いていません（${result.routine.reason}）。Vercel環境変数の設定を確認してください`,
@@ -2184,11 +2513,14 @@ function useTopicProposerTrigger({ triggerFn, topics, showToast, label }) {
             : `${label}を起動しました。数分後に更新ボタンで確認してください`,
           "success",
         );
+        const now = Date.now();
         setLocked(true);
         setSessionUrl(result.routine.sessionUrl || null);
-        setFiredAt(Date.now());
+        setFiredAt(now);
+        setLastActivityAt(now);
         setElapsedMinutes(0);
-        setIdsAtFire(new Set(topics.map((t) => t.id)));
+        setIdsAtFire(new Set(topics.filter(matchesTopic).map((t) => t.id)));
+        setRegisteredCount(0);
       }
     } catch (err) {
       console.error(`${label}起動リクエストエラー:`, err);
@@ -2198,29 +2530,99 @@ function useTopicProposerTrigger({ triggerFn, topics, showToast, label }) {
     }
   }
 
+  // 経過時間の更新と、長時間・無音状態が続いた場合の打ち切り判定を30秒おきに行う
   useEffect(() => {
     if (!locked || !firedAt) return;
     const interval = setInterval(() => {
-      setElapsedMinutes(
-        Math.max(0, Math.round((Date.now() - firedAt) / 60000)),
-      );
+      const now = Date.now();
+      setElapsedMinutes(Math.max(0, Math.round((now - firedAt) / 60000)));
+
+      if (
+        expectedCount > 1 &&
+        registeredCount > 0 &&
+        lastActivityAt &&
+        (now - lastActivityAt) / 60000 >= quietMinutes
+      ) {
+        showToast(
+          `✅ ${registeredCount}件のネタ登録を確認し、その後新規登録が無いため確認を終了しました`,
+          "success",
+        );
+        reset();
+        return;
+      }
+
+      if ((now - firedAt) / 60000 >= maxWaitMinutes) {
+        showToast(
+          registeredCount > 0
+            ? `⏱ ${maxWaitMinutes}分経過したため自動確認を終了します（${registeredCount}件確認済み）。続きは更新ボタンで確認してください`
+            : `⏱ ${maxWaitMinutes}分経過しても新しいネタを確認できませんでした。実行ログを確認してください`,
+          registeredCount > 0 ? "success" : "error",
+        );
+        reset();
+      }
     }, 30000);
     return () => clearInterval(interval);
-  }, [locked, firedAt]);
+  }, [
+    locked,
+    firedAt,
+    lastActivityAt,
+    registeredCount,
+    expectedCount,
+    quietMinutes,
+    maxWaitMinutes,
+    showToast,
+  ]);
 
+  // 新規ネタ検知（matchesTopicで自分のcontent_type由来のものだけに絞り込む）。
+  // 目標件数に届くまでは「n/m件確認済み」を都度通知しつつポーリングを継続し、
+  // 届いた時点で完了扱いにしてポーリングを止める
   useEffect(() => {
     if (!locked || !idsAtFire) return;
-    const hasNewTopic = topics.some((t) => !idsAtFire.has(t.id));
-    if (hasNewTopic) {
-      showToast("✅ 新しいネタが登録されました", "success");
-      setLocked(false);
-      setSessionUrl(null);
-      setFiredAt(null);
-      setIdsAtFire(null);
-    }
-  }, [topics, locked, idsAtFire, showToast]);
+    const newTopics = topics.filter(
+      (t) => matchesTopic(t) && !idsAtFire.has(t.id),
+    );
+    if (newTopics.length === 0) return;
 
-  return { triggering, locked, sessionUrl, elapsedMinutes, trigger };
+    const nextIds = new Set(idsAtFire);
+    newTopics.forEach((t) => nextIds.add(t.id));
+    const nextCount = registeredCount + newTopics.length;
+    setIdsAtFire(nextIds);
+    setRegisteredCount(nextCount);
+    setLastActivityAt(Date.now());
+
+    if (nextCount >= expectedCount) {
+      showToast(
+        expectedCount > 1
+          ? `✅ ${nextCount}件のネタが登録されました`
+          : "✅ 新しいネタが登録されました",
+        "success",
+      );
+      reset();
+    } else {
+      showToast(
+        `✅ ${nextCount}/${expectedCount}件のネタが登録されました（続けて確認します）`,
+        "success",
+      );
+    }
+  }, [
+    topics,
+    locked,
+    idsAtFire,
+    registeredCount,
+    expectedCount,
+    matchesTopic,
+    showToast,
+  ]);
+
+  return {
+    triggering,
+    locked,
+    sessionUrl,
+    elapsedMinutes,
+    registeredCount,
+    expectedCount,
+    trigger,
+  };
 }
 
 function TopicApprovalSection({
@@ -2270,18 +2672,39 @@ function TopicApprovalSection({
   // 「⚡今すぐ生成」の発火中状態。target.id単位で管理し、他のターゲットの
   // ボタン操作をブロックしないようにする。🌅/📦両ブロックのカードで共有する
   const [firingTargetId, setFiringTargetId] = useState(null);
+  // 日次ネタ自動提案の型（カテゴリ）を人間が優先指定できるようにする
+  // （2026-09-04、2026-09-02に一度実装された機能がsns-topic-gate移行時に
+  // UIごと削除されていたため再接続。空文字はRoutine側の自動選定に委ねる
+  // 「おまかせ」を意味する）。対象は🌅当日の運用（daily-auto/
+  // race-time-critical型）のうちactiveなもののみ
+  const [selectedDailyCategoryKey, setSelectedDailyCategoryKey] = useState("");
+  const dailyAutoCategoryOptions = topicCategories.filter(
+    (c) =>
+      c.active &&
+      ["daily-auto", "race-time-critical"].includes(
+        c.sns_content_types?.type_key,
+      ) &&
+      !TIKTOK_PERMANENTLY_EXCLUDED_CATEGORY_KEYS.includes(c.category_key),
+  );
 
   const weeklyProposer = useTopicProposerTrigger({
     triggerFn: triggerWeeklyProposer,
     topics,
     showToast,
     label: "週次ネタ提案",
+    expectedCount: 10,
+    // このRoutineは常にvenue-feature型のみを登録する（手順書参照）
+    matchesTopic: (t) => t.sns_content_types?.type_key === "venue-feature",
   });
   const dailyAutoProposer = useTopicProposerTrigger({
     triggerFn: triggerDailyAutoProposer,
     topics,
     showToast,
     label: "日次ネタ自動提案",
+    // trigger_mode='auto'のカテゴリ（racer-condition等）のみを登録する。
+    // race-time-critical型（🌅ボタンとは別の手動発火、trigger_mode='manual'）
+    // と区別するため type_key ではなく trigger_mode で絞り込む
+    matchesTopic: (t) => t.sns_content_types?.trigger_mode === "auto",
   });
 
   // ロック中（Routine実行中）は30秒おきにネタ一覧をポーリングする。
@@ -2342,11 +2765,31 @@ function TopicApprovalSection({
           </div>
         )}
         <div className="topic-section-btn-row">
+          {dailyAutoCategoryOptions.length > 0 && (
+            <select
+              className="topic-section-category-select"
+              value={selectedDailyCategoryKey}
+              onChange={(e) => setSelectedDailyCategoryKey(e.target.value)}
+              disabled={
+                dailyAutoProposer.triggering || dailyAutoProposer.locked
+              }
+              aria-label="日次ネタ自動提案の型を指定"
+            >
+              <option value="">おまかせ（自動選定）</option>
+              {dailyAutoCategoryOptions.map((c) => (
+                <option key={c.id} value={c.category_key}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             type="button"
             className="topic-section-trigger-btn topic-section-trigger-direct"
             disabled={dailyAutoProposer.triggering || dailyAutoProposer.locked}
-            onClick={dailyAutoProposer.trigger}
+            onClick={() =>
+              dailyAutoProposer.trigger(selectedDailyCategoryKey || undefined)
+            }
           >
             {dailyAutoProposer.triggering
               ? "⏳ リクエスト中..."
@@ -2417,6 +2860,8 @@ function TopicApprovalSection({
                 topic={topic}
                 onFireTarget={handleFire}
                 firingTargetId={firingTargetId}
+                onReject={onReject}
+                approvers={approvers}
               />
             ))}
           </div>
@@ -2443,7 +2888,8 @@ function TopicApprovalSection({
         {weeklyProposer.locked && (
           <div className="topic-section-proposer-hint">
             ⏳ 週次ネタ提案を実行中...（{weeklyProposer.elapsedMinutes}
-            分経過）30秒おきに自動で確認します
+            分経過・{weeklyProposer.registeredCount}/
+            {weeklyProposer.expectedCount}件確認済み）30秒おきに自動で確認します
             {weeklyProposer.sessionUrl && (
               <>
                 {" ・ "}

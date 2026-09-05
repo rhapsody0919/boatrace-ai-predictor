@@ -1,0 +1,36 @@
+{
+  "generatedAt": "2026-09-05T16:00:00+09:00",
+  "note": "/note-growth-report スキル新設後の初回実行。過去レポート無し（previousActionsReviewは対象外）。フォロワー数はプロフィールページの遷移確認が取れず未取得（次回確認）。",
+  "followerCount": null,
+  "totalViews": 105,
+  "totalComments": 0,
+  "totalLikes": 3,
+  "previousActionsReview": [],
+  "articles": [
+    { "title": "AIはどうやってボートレースを予想しているのか？BoatAIの仕組みを徹底解説", "titleLength": 39, "views": 22, "comments": 0, "likes": 2 },
+    { "title": "BoatAI - AIがボートレース予想を無料で公開。使い方ガイド", "titleLength": 33, "views": 21, "comments": 0, "likes": 1 },
+    { "title": "【12/10実績】BoatAI AI予想の的中レポート - 3連単回収率1343%達成！", "titleLength": 44, "views": 9, "comments": 0, "likes": 0 },
+    { "title": "【ボートレース初心者向け】データの見方を徹底解説 - 勝率、モーター2率、何を見るべきか", "titleLength": 44, "views": 7, "comments": 0, "likes": 0 },
+    { "title": "モーター性能で勝率が変わる理由【2連対率40%超えを狙え】", "titleLength": 29, "views": 7, "comments": 0, "likes": 0 },
+    { "title": "AIが分析する選手データの見方【勝率・2連対率の正しい解釈】", "titleLength": 30, "views": 6, "comments": 0, "likes": 0 },
+    { "title": "【BoatAI実績レポート】2025年12月16日 - 複勝的中率52.3%を達成！", "titleLength": 42, "views": 5, "comments": 0, "likes": 0 },
+    { "title": "1万円を確実に増やす舟券戦略【負けないための買い方】", "titleLength": 26, "views": 5, "comments": 0, "likes": 0, "complianceFlag": "「確実に増やす」が利益保証表現に該当する可能性。note利用規約・risk-rules.jsonの観点で要確認" },
+    { "title": "プロが絶対に買わない舟券の特徴7選【初心者必見】", "titleLength": 24, "views": 5, "comments": 0, "likes": 0 },
+    { "title": "ボートレース初心者が知るべき5つの基本【2025年版】", "titleLength": 27, "views": 4, "comments": 0, "likes": 0 },
+    { "title": "月5万円の副収入をボートレースで稼ぐロードマップ【再現性重視】", "titleLength": 31, "views": 4, "comments": 0, "likes": 0, "complianceFlag": "「稼ぐロードマップ」「再現性重視」が利益保証・再現性の断定表現に該当する可能性。risk-rules.jsonの観点で要確認" },
+    { "title": "ボートレースで勝てない人の5つの共通点とAI予想による解決策", "titleLength": 30, "views": 3, "comments": 0, "likes": 0 }
+  ],
+  "findings": [
+    "母数12記事は統計的判断には少なすぎるため、タイトル長と閲覧数の相関は参考程度に留める",
+    "12記事全てがタイトル長25文字を超えている（最短24字、最長44字）。sns-pipeline-note.mdの新基準（15〜25文字）に合致する記事が現状ゼロ。ただしこれらは旧手動フロー（sns-hubパイプライン移行前）由来の記事の可能性が高く、新基準がまだ適用されていない",
+    "2記事（「1万円を確実に増やす」「月5万円の副収入を...稼ぐロードマップ」）のタイトルに利益保証・再現性を断定する表現があり、risk-rules.json・note利用規約の観点で要確認。既に公開済みのため編集の要否はユーザー判断が必要（Claude側で公開コンテンツの編集は無許可では行わない）"
+  ],
+  "nextActions": {
+    "small": [
+      "次回以降にsns-hubパイプライン経由で生成される新規note記事で、タイトル15〜25文字ルールが実際に守られているか確認する"
+    ],
+    "large": [
+      "上記2記事の利益保証表現について、修正または削除の要否をユーザーに確認する"
+    ]
+  }
+}
