@@ -65,6 +65,7 @@ import {
   TECHNIQUE_CONSISTENCY_DURATION,
 } from "./TechniqueConsistencyCM.jsx";
 import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
+import { VenueVsAverageYoutubeTemplate } from "./VenueVsAverageYoutubeCM.jsx";
 
 export function RemotionRoot() {
   return (
@@ -569,6 +570,38 @@ export function RemotionRoot() {
             { winnerCourse: 5, technique: "makurizashi", probability: 0.08 },
           ],
           featureDigest: ["AI予想", "イン崩れ指数", "無料"],
+        }}
+      />
+      <Composition
+        id="VenueVsAverageYoutubeCM"
+        component={VenueVsAverageYoutubeTemplate}
+        durationInFrames={600}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{
+          venueName: "桐生",
+          axisTitle: "1号艇勝率",
+          venueRate: 54.8,
+          venueSample: 560,
+          nationalAvg: 54.5,
+          nationalVenueCount: 24,
+          nationalSampleTotal: 13447,
+          windowLabel: "直近90日",
+          diffLabel: "+0.3pt",
+          rankPosition: 15,
+          totalVenues: 24,
+          topVenue: { name: "下関", rate: 63.1 },
+          worstVenue: { name: "平和島", rate: 39.6 },
+          allRates: [
+            54.8, 41.6, 44.9, 39.6, 55.3, 54.3, 52.0, 61.5, 54.9, 52.8, 55.9,
+            51.2, 61.1, 55.2, 56.3, 52.7, 57.3, 57.1, 63.1, 56.0, 58.0, 59.4,
+            54.9, 59.7,
+          ],
+          highlightIndex: 0,
+          hookQuestion: "会場によって、実はここまで差がある",
+          subCaption: "24会場・13,447レースで検証",
+          featureDigest: ["24会場のデータ", "無料", "登録不要"],
         }}
       />
     </>
