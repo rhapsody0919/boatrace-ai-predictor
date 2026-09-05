@@ -878,6 +878,12 @@ input:focus-visible,
   margin-right: auto;
 }
 
+.blog-preview-subheading {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
 .blog-preview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

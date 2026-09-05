@@ -190,26 +190,53 @@ function TodayVenueGridPage() {
           <section className="blog-preview-section">
             <h2>📝 {t("home.blogTitle")}</h2>
             <p className="blog-preview-lead">{t("home.blogDesc")}</p>
-            <div className="blog-preview-grid">
-              {getFeaturedPosts()
-                .slice(0, 5)
-                .map((post) => (
-                  <Link
-                    to={localize(`/blog/${post.id}`)}
-                    key={post.id}
-                    className="blog-preview-card"
-                  >
-                    <span className="blog-preview-category">
-                      {post.category}
-                    </span>
-                    <h3 className="blog-preview-title">{post.title}</h3>
-                    <p className="blog-preview-desc">{post.description}</p>
-                    <div className="blog-preview-meta">
-                      <span>{post.readTime}</span>
-                    </div>
-                  </Link>
-                ))}
-            </div>
+
+            {(() => {
+              // 従来はfeatured記事のみ表示していたため、直近の新着記事が
+              // featured未設定の場合ホームに一切出ない問題があった
+              // （2026-09-04、直近10記事が全てfeatured:falseと判明）。
+              // 人気（featured）/新着（日付順）の2セクションに分け、
+              // 新着側にはfeatured枠と重複する記事を出さない
+              const popularPosts = getFeaturedPosts().slice(0, 3);
+              const popularIds = new Set(popularPosts.map((post) => post.id));
+              const newPosts = getLatestPosts(6)
+                .filter((post) => !popularIds.has(post.id))
+                .slice(0, 3);
+
+              const renderCard = (post) => (
+                <Link
+                  to={localize(`/blog/${post.id}`)}
+                  key={post.id}
+                  className="blog-preview-card"
+                >
+                  <span className="blog-preview-category">{post.category}</span>
+                  <h3 className="blog-preview-title">{post.title}</h3>
+                  <p className="blog-preview-desc">{post.description}</p>
+                  <div className="blog-preview-meta">
+                    <span>{post.readTime}</span>
+                  </div>
+                </Link>
+              );
+
+              return (
+                <>
+                  <h3 className="blog-preview-subheading">
+                    🌟 {t("home.popularArticles")}
+                  </h3>
+                  <div className="blog-preview-grid">
+                    {popularPosts.map(renderCard)}
+                  </div>
+
+                  <h3 className="blog-preview-subheading">
+                    🆕 {t("home.newArticles")}
+                  </h3>
+                  <div className="blog-preview-grid">
+                    {newPosts.map(renderCard)}
+                  </div>
+                </>
+              );
+            })()}
+
             <div className="blog-preview-cta">
               <Link to={localize("/blog")} className="blog-preview-btn">
                 {t("home.viewAllPosts")}

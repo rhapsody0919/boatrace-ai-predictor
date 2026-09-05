@@ -1,17 +1,79 @@
 /**
  * SNSハブ管理画面「フォーマットカタログ」タブ用の静的キュレーションデータ。
  *
- * docs/operation/sns-video-producer-prompt.md・x-operations-playbook.md・
- * docs/reference/sns-brand-guideline.md の内容を要約し、元ドキュメントへの
+ * .claude/rules/sns-content-generation.md・docs/reference/brand-kit.md
+ * （全体ルール、Tier1）、docs/operation/sns-pipeline-{platform}.md
+ * （チャネル別ルール、Tier2）、docs/operation/sns-video-producer-prompt.md・
+ * x-operations-playbook.md・docs/reference/sns-brand-guideline.md
+ * （X/TikTok動画制作の実装詳細）の内容を要約し、元ドキュメントへの
  * GitHubリンクを添えたもの（ADR 0031参照）。
  *
  * 元ドキュメントが更新されても自動追従しない。ドキュメント更新時は
  * このファイルも手動で同期する（自動同期の仕組みは意図的に作っていない、
  * ADR 0031参照）。
+ *
+ * 2026-09-04、BOA-240対応: sns-topic-gate移行後にTier1/Tier2ドキュメントへの
+ * 参照が一切無く、実際に何のルールで生成されているか確認できないという
+ * ギャップが判明したため、GLOBAL_RULES/CHANNEL_RULESを新設した
  */
 
 const REPO_BASE_URL =
   "https://github.com/rhapsody0919/boatrace-ai-predictor/blob/master";
+
+// 全体ルール（Tier1、全チャネル共通）。2026-09-04追加（BOA-240、sns-topic-gate
+// 移行後にこのカタログがチャネル別パイプライン体系を全く参照していなかった
+// ことが判明したため、Tier1/Tier2の参照を新設して補う）
+export const GLOBAL_RULES = [
+  {
+    name: "生成前の必須確認事項（getRecentRevisions/getActiveInsights）",
+    summary:
+      "全Routineが生成前に必ず確認する共通ルール。過去の修正・却下理由（getRecentRevisions）と蓄積された戦略insight（getActiveInsights）の参照方法、テキストのフィット処理（fitHeadline）、Supabase Storageのパス規約、リスクチェックの手順を定義する。フロントマターを持たないため全Routineセッションに自動的に読み込まれる。",
+    docPath: ".claude/rules/sns-content-generation.md",
+    docLabel: "sns-content-generation.md",
+  },
+  {
+    name: "ブランドキット（色・フォント・承認済み実例ギャラリー）",
+    summary:
+      "ロゴ・カラー・フォント使用ルールと、チャネル別の承認済み実例ギャラリーをまとめた資料。新しいチャネル向け画像・動画を作る前に必ず確認する。承認された実例はその場でここに追記される運用（後日まとめての更新にしない）。",
+    docPath: "docs/reference/brand-kit.md",
+    docLabel: "brand-kit.md",
+  },
+];
+
+// チャネル別ルール（Tier2）。sns-topic-gate体系（ADR 0036〜0038）以降、
+// ネタ承認済み下書き生成はこの5ドキュメントが担う（2026-09-04追加）
+export const CHANNEL_RULES = [
+  {
+    platform: "blog",
+    label: "Blog",
+    docPath: "docs/operation/sns-pipeline-blog.md",
+    docLabel: "sns-pipeline-blog.md",
+  },
+  {
+    platform: "note",
+    label: "Note",
+    docPath: "docs/operation/sns-pipeline-note.md",
+    docLabel: "sns-pipeline-note.md",
+  },
+  {
+    platform: "x",
+    label: "X",
+    docPath: "docs/operation/sns-pipeline-x.md",
+    docLabel: "sns-pipeline-x.md",
+  },
+  {
+    platform: "tiktok",
+    label: "TikTok",
+    docPath: "docs/operation/sns-pipeline-tiktok.md",
+    docLabel: "sns-pipeline-tiktok.md",
+  },
+  {
+    platform: "youtube",
+    label: "YouTube",
+    docPath: "docs/operation/sns-pipeline-youtube.md",
+    docLabel: "sns-pipeline-youtube.md",
+  },
+];
 
 export const FORMAT_LIBRARY = [
   {

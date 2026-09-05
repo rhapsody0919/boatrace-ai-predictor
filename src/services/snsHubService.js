@@ -139,6 +139,11 @@ export async function getInsights(status) {
   return data || [];
 }
 
+export async function getRecentRevisions() {
+  const { data } = await request("/revisions");
+  return data || [];
+}
+
 /** insightを却下する（理由は任意） */
 export async function rejectInsight(insightId, reason) {
   return request(`/insights/${insightId}/reject`, {
@@ -168,8 +173,11 @@ export async function triggerWeeklyProposer() {
  * したい場面向け（2026-09-04追加）。autoApprove固定のためネタは即座に
  * status='approved'で登録される（ネタ承認は経由しない）
  */
-export async function triggerDailyAutoProposer() {
-  return request("/trigger-daily-auto-proposer", { method: "POST" });
+export async function triggerDailyAutoProposer(categoryKey) {
+  return request("/trigger-daily-auto-proposer", {
+    method: "POST",
+    body: JSON.stringify({ categoryKey: categoryKey || undefined }),
+  });
 }
 
 /**
