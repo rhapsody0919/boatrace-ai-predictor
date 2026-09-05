@@ -601,6 +601,8 @@ export function RemotionRoot() {
           highlightIndex: 0,
           hookQuestion: "会場によって、実はここまで差がある",
           subCaption: "24会場・13,447レースで検証",
+          headlineText: "桐生の1号艇勝率は全国平均とほぼ同じ",
+          contextSummary: "1号艇勝率は会場によって大きく異なるが、桐生は全国平均に近い水準",
           featureDigest: ["24会場のデータ", "無料", "登録不要"],
         }}
       />
