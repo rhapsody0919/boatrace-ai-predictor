@@ -1,0 +1,59 @@
+[
+  {
+    "query": "ボートレース予想サイト おすすめ",
+    "date": "2026-09-05",
+    "topDomains": [
+      "boatrace-research.jp",
+      "freeboatrace.com",
+      "boat-race.jp",
+      "eurorvvv.org",
+      "boaters-boatrace.com",
+      "apaie.org",
+      "cosboa.org",
+      "fukuoka-kyotei.com",
+      "apps.apple.com (B80)"
+    ],
+    "note": "前回2026-08-27比: apps.apple.com(一撃くん)がapps.apple.com(B80)に、boaters-boatrace.comが新規表示。他ドメインは概ね変わらず。boat-ai.jpは引き続き圏外"
+  },
+  {
+    "query": "ボートレースAI予想",
+    "date": "2026-09-05",
+    "topDomains": [
+      "apps.apple.com (boat.ai)",
+      "ai.boatrace-biwako.jp",
+      "ai-shisu.com",
+      "infoworld.co.jp",
+      "boatraceai.com",
+      "boat-race.jp",
+      "umepyon.com",
+      "poseidon-boatrace.net",
+      "boaters-boatrace.com"
+    ],
+    "note": "前回2026-08-27比: 顔ぶれ完全一致、変化なし。boat-ai.jpは引き続き圏外"
+  },
+  {
+    "query": "競艇AI予想 無料",
+    "date": "2026-09-05",
+    "topDomains": [
+      "apps.apple.com",
+      "ai-shisu.com",
+      "poseidon-boatrace.net",
+      "umepyon.com",
+      "cosboa.org",
+      "blu-express.com"
+    ],
+    "note": "前回2026-08-27比: 顔ぶれ完全一致、変化なし。boat-ai.jpは引き続き圏外"
+  },
+  {
+    "query": "競艇予想サイト",
+    "date": "2026-09-05",
+    "topDomains": [
+      "boatrace-research.jp",
+      "apaie.org",
+      "eurorvvv.org",
+      "fukuoka-kyotei.com",
+      "kyoutei-navi.com"
+    ],
+    "note": "新規追加クエリ（Search Consoleで順位-18.8pt下落が確認されたため対象化）。上位5件はすべてアフィリエイト系比較・ランキングサイトで独占されており、実予想提供サイト（boatAI含む）が入り込む構造ではない。boat-ai.jpは圏外"
+  }
+]

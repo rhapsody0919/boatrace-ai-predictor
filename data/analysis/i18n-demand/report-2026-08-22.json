@@ -1,0 +1,136 @@
+{
+  "generatedAt": "2026-08-22T06:37:24.523Z",
+  "days": 30,
+  "byLanguage": {
+    "ja": {
+      "pv": 9478,
+      "users": 730
+    },
+    "en": {
+      "pv": 116,
+      "users": 57
+    },
+    "zh-TW": {
+      "pv": 1,
+      "users": 1
+    },
+    "ko": {
+      "pv": 2,
+      "users": 1
+    }
+  },
+  "shareOfPv": {
+    "en": 1.21,
+    "zh-TW": 0.01,
+    "ko": 0.02
+  },
+  "languageSwitches": 30,
+  "byCountry": {
+    "en": [
+      {
+        "country": "United States",
+        "users": 35,
+        "pv": 69
+      },
+      {
+        "country": "Japan",
+        "users": 10,
+        "pv": 21
+      },
+      {
+        "country": "Germany",
+        "users": 4,
+        "pv": 8
+      },
+      {
+        "country": "India",
+        "users": 3,
+        "pv": 6
+      },
+      {
+        "country": "China",
+        "users": 1,
+        "pv": 3
+      },
+      {
+        "country": "Ghana",
+        "users": 1,
+        "pv": 5
+      },
+      {
+        "country": "Hong Kong",
+        "users": 1,
+        "pv": 2
+      },
+      {
+        "country": "Singapore",
+        "users": 1,
+        "pv": 2
+      }
+    ],
+    "zh-TW": [
+      {
+        "country": "Hong Kong",
+        "users": 1,
+        "pv": 1
+      }
+    ],
+    "ko": [
+      {
+        "country": "Japan",
+        "users": 1,
+        "pv": 2
+      }
+    ]
+  },
+  "bySource": {
+    "en": [
+      {
+        "channel": "Direct",
+        "sessions": 46
+      },
+      {
+        "channel": "Organic Search",
+        "sessions": 13
+      }
+    ],
+    "zh-TW": [
+      {
+        "channel": "Organic Search",
+        "sessions": 1
+      }
+    ],
+    "ko": [
+      {
+        "channel": "Organic Search",
+        "sessions": 1
+      }
+    ]
+  },
+  "defaultLangSource": [
+    {
+      "channel": "Organic Search",
+      "sessions": 1454
+    },
+    {
+      "channel": "Direct",
+      "sessions": 698
+    },
+    {
+      "channel": "AI Assistant",
+      "sessions": 28
+    },
+    {
+      "channel": "Unassigned",
+      "sessions": 25
+    },
+    {
+      "channel": "Referral",
+      "sessions": 24
+    },
+    {
+      "channel": "Organic Social",
+      "sessions": 11
+    }
+  ]
+}

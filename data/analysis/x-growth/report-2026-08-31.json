@@ -1,0 +1,114 @@
+{
+  "generatedAt": "2026-08-31",
+  "isFirstRun": true,
+  "previousActionsReview": [],
+  "notes": "初回実行。過去レポートが無いためステップ0（前回施策の実施・効果検証）はスキップ。",
+  "followerCount": 52,
+  "followingCount": 239,
+  "totalPosts": 247,
+  "joinedAt": "2025-12",
+  "analyticsLimitation": "個別投稿の「Post Analytics」詳細画面（Impressions/Engagements/Profile visits/Link clicks）は投稿から数時間〜1日以上経過した投稿でも一貫して0を返し、同じ投稿のフィード上のview count（グラフアイコン横の数値）と矛盾した。そのため本レポートはフィード上のview count・いいね数・リポスト数・返信数で代替した（プロフィールクリック数・リンククリック数は取得できず）。",
+  "analyticsLimitationInvestigation": {
+    "date": "2026-08-31",
+    "conclusion": "アカウント固有の設定不備（Premium未加入・フォロワー数要件）が原因ではなく、Xプラットフォーム側の既知の表示バグの可能性が高い",
+    "findings": [
+      "@kyouteiboataiには青いチェックマークが付いており、2026年時点の仕様上これはX Premium加入済みを意味する（無料の認証パスは廃止済み）。Premium未加入が原因という仮説は否定できる",
+      "X仕様として「views」（フィード表示）と「Impressions」（Post Analytics内）は本来同一指標の別名（1 view=1 impression、2022年末に旧impressionsをviewsとして一般公開）。views>0かつImpressions=0という状態は仕様上ありえない不一致であり、表示バグと判断できる",
+      "X Developer Communityで「Analytics dashboard is frozen/stuck」という同種の報告が複数あり、直近では2026年3月にも報告されている。Xプラットフォーム側の技術的な不具合とされ、数日〜数週間で自然回復した例もある",
+      "参考: 新規・低フォロワーアカウントには「コールドスタート期間」（Grokアルゴリズムが投稿内容を学習する2〜4週間、リーチが制限される）があるが、これは「アナリティクス数値が0と表示される」表示バグとは別問題"
+    ],
+    "recommendation": "原因究明のこれ以上の深追いは価値が低い（個人アカウントでのXサポート問い合わせは対応されにくい）。実務上はフィード上のview/likes/reposts/repliesでの代替を継続し、数週間後に同じ投稿のPost Analyticsを再確認して回復しているか定点観測する",
+    "sources": [
+      "https://devcommunity.x.com/t/analytics-page-showing-less-impressions-since-aug-25th-update/159012",
+      "https://devcommunity.x.com/t/x-analytics-dashboard-is-frozen-stuck-since-march-17/260311",
+      "https://www.blackhatworld.com/seo/twitter-analytics-suddenly-shows-0-impressions.1176092/",
+      "https://tweepml.org/blog/how-to-verify-your-x-account-in-2026-x-premium-blue-check-and-what-it-actually-gets-you/",
+      "https://postplanify.com/blog/views-on-twitter",
+      "https://opentweet.io/blog/why-your-x-account-is-not-growing"
+    ]
+  },
+  "posts": [
+    {
+      "postedAt": "2026-08-31 (50m経過時点)",
+      "type": "video",
+      "summary": "2号艇が勝つ場合の「差し」決まり手、会場別ランキング（三国75.3%）",
+      "views": 2,
+      "likes": 0,
+      "reposts": 0,
+      "replies": 0,
+      "note": "投稿直後のため母数不足、参考値としてのみ記録"
+    },
+    {
+      "postedAt": "2026-08-31 (3h経過)",
+      "type": "video",
+      "summary": "1号艇の複勝率72.0%、艇番別比較",
+      "views": 13,
+      "likes": 0,
+      "reposts": 0,
+      "replies": 0
+    },
+    {
+      "postedAt": "2026-08-31 (7h経過)",
+      "type": "video",
+      "summary": "レースグレードが上がるほど1号艇が堅くなる、グレード別1号艇勝率データ",
+      "views": 11,
+      "likes": 2,
+      "reposts": 2,
+      "replies": 0
+    },
+    {
+      "postedAt": "2026-08-31 (18h経過)",
+      "type": "video",
+      "summary": "艇番ごとの必勝パターン（決まり手を艇番別に集計）",
+      "views": 14,
+      "likes": 1,
+      "reposts": 1,
+      "replies": 0
+    },
+    {
+      "postedAt": "2026-08-31 (21h経過)",
+      "type": "video",
+      "summary": "1号艇の勝率、級別（A1級71.1%等）の差",
+      "views": 11,
+      "likes": 1,
+      "reposts": 1,
+      "replies": 0
+    },
+    {
+      "postedAt": "2026-08-30",
+      "type": "video",
+      "summary": "ボートレース徳山、1号艇勝率61.1%・展示的中率72.4%で「徳山最強」データ",
+      "views": 51,
+      "likes": 0,
+      "reposts": 0,
+      "replies": 0,
+      "note": "母数8件の中で突出（中央値の約3.7倍）。会場を主語にした断定的な見出し（「徳山最強」）＋複数指標の組み合わせという切り口が他投稿と異なる"
+    },
+    {
+      "postedAt": "2026-08-30",
+      "type": "video",
+      "summary": "出身支部別、1号艇の強さの違い（香川60.5%、東京48.4%等）",
+      "views": 15,
+      "likes": 0,
+      "reposts": 0,
+      "replies": 0
+    },
+    {
+      "postedAt": "2026-08-30",
+      "type": "video",
+      "summary": "戸田で1号艇が負けるとしたら何で負けるか、まくり52.4%",
+      "views": 15,
+      "likes": 2,
+      "reposts": 1,
+      "replies": 0
+    }
+  ],
+  "analysis": {
+    "sampleSizeWarning": "投稿8件（うち1件は直後で参考外の実質7件）は統計的な断定には不十分な母数。傾向としての言及に留める。",
+    "medianViews": 13.5,
+    "outlier": {
+      "summary": "「徳山最強」動画（views 51）が中央値の約3.7倍で明確な外れ値。会場を主語にした断定的タイトル＋複数指標の組み合わせという構成が他と異なる点が要因の仮説（n=1のため検証には追加データが必要）"
+    },
+    "engagementObservation": "8件中4件でいいね・リポストが1件以上付いており、フォロワー52人の規模としては反応が完全にゼロではない。ただしいずれも単発（1〜2件）で、明確なフォーマット間の優劣を論じるにはまだ早い"
+  }
+}
