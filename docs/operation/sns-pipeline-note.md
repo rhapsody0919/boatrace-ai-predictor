@@ -8,6 +8,8 @@
 
 **新機能ネタ（`new-feature`型）の場合のみ、動画埋め込み型（`docs/operation/note-video-producer-prompt.md`）を使う**。本Routineが現時点で扱う型（`venue-feature`/`daily-auto`）は画像＋本文型のみを対象とする。将来`new-feature`型の週次/日次提案が追加された場合は、この節を拡張して`note-video-producer-prompt.md`の制作フローに分岐させる。
 
+**note下書きの承認・公開ペースについて（2026-09-05追加）**: `docs/reference/note-algorithm-and-growth-notes.md`の調査により、noteは投稿頻度の期待値がX（1日4本以下）・TikTok（1日6本上限）と全く異なり、**週2回程度**が読者・レコメンド双方の観点で目安とされる。本Routine自身のポーリング頻度（1時間おき等）は下書きの**生成**ペースであり、下書きが溜まること自体は問題ない。sns-hub管理画面で下書きを**承認・公開する側**が、週2回程度のペースを目安に間引いて選ぶことを想定する（生成された下書きを機械的に全件即承認しない）。
+
 ## 実行トリガー
 
 - 週次型（`venue-feature`）: 1時間おきのcronでポーリングする（2026-09-05、初期値の12時間おきから変更）
