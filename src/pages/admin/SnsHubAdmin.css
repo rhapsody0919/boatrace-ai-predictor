@@ -1483,14 +1483,14 @@
 
 .topic-card-text {
   font-size: 0.9rem;
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   margin: 0;
   white-space: pre-wrap;
 }
 
 .topic-card-meta {
   font-size: 0.8rem;
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   margin: 0;
 }
 
