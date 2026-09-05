@@ -26,6 +26,9 @@
  * 11) contentQualityAudit… 直近公開ブログ/note記事のスポットチェック対象を
  *     ローテーション提示（FR4b、content-multi-channel-pipeline/spec.md）。
  *     生成時の自己採点だけでは気づけない盲点を人間の目で拾う
+ * 12) pendingInsights… sns_strategy_insightsのstatus='proposed'（要判断）件数
+ *     （フローC-8、2026-09-05追加）。戦略メモの手動採用ボタン（PR #514）が
+ *     セッション開始時チェックを欠いたまま滞留するのを防ぐ
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -41,6 +44,7 @@ import { checkRecentFlowAContent } from "./content-ops-checks/check-recent-flow-
 import { checkDeprecatedTerms } from "./content-ops-checks/check-deprecated-terms.js";
 import { checkMissingContentIndex } from "./content-ops-checks/check-missing-content-index.js";
 import { checkContentQualityAudit } from "./content-ops-checks/check-content-quality-audit.js";
+import { checkPendingInsights } from "./content-ops-checks/check-pending-insights.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
@@ -168,6 +172,7 @@ async function main() {
     deprecatedTerms,
     missingContentIndex,
     contentQualityAudit,
+    pendingInsights,
   ] = await Promise.all([
     checkTweetDrafts(),
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
@@ -193,6 +198,7 @@ async function main() {
       recentCount: 0,
       error: error.message,
     })),
+    checkPendingInsights(),
   ]);
 
   const staleVisualAssets = visualAssetAge.assets.filter(
@@ -225,6 +231,7 @@ async function main() {
           ? "詳細は `node scripts/maintenance/check-deprecated-terms.js` を実行"
           : undefined,
     },
+    pendingInsights,
   };
 
   if (process.argv.includes("--json")) {
