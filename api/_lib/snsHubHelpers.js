@@ -75,6 +75,30 @@ export async function signStoragePath(path, expiresIn = 3600) {
   return map[path] || null;
 }
 
+export const SITE_BASE_URL = "https://www.boat-ai.jp";
+
+/**
+ * `cover_image_path`をブラウザで表示可能なURLに変換する。
+ *
+ * blog/noteチャネルは`docs/operation/sns-pipeline-blog.md`/`sns-pipeline-note.md`の
+ * 設計により、Supabase Storageにアップロードせず`public/images/blog/{slug}.jpg`
+ * （リポジトリにコミット済みの静的アセット、本番では`{SITE_BASE_URL}/images/blog/{slug}.jpg`
+ * として配信される）をそのまま`cover_image_path`に記録する。X/TikTok/YouTubeは
+ * `{content_group_id}/x-ja.jpg`のようなsns-hub-media（Storage）内の生パスを使う。
+ * 両者は同じ列に異なる種類のパスが混在するため、形状で判定して分岐する
+ * （2026-09-05発覚: この分岐が無く全パスをStorage署名対象として扱っていたため、
+ * blog/noteのカバー画像プレビュー・ダウンロードボタンが常に表示されない不具合が
+ * あった。承認済み下書きの画像はブログPRマージ後に本番へ反映されるため、
+ * マージ前（pending_review）はまだ404になりうる制約が残る）
+ */
+export function resolvePublicAssetUrl(path) {
+  if (!path) return null;
+  if (path.startsWith("public/")) {
+    return `${SITE_BASE_URL}/${path.slice("public/".length)}`;
+  }
+  return null;
+}
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

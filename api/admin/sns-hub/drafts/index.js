@@ -13,6 +13,7 @@ import {
   jsonResponse,
   isConfigured,
   signStoragePaths,
+  resolvePublicAssetUrl,
 } from "../../../_lib/snsHubHelpers.js";
 
 export const config = {
@@ -68,11 +69,15 @@ export default async function handler(req) {
 
     const drafts = await fetchDrafts(status);
 
+    // blog/noteのcover_image_pathは`public/images/blog/...`（Storageではなく
+    // リポジトリのコミット済み静的アセット）のため、署名対象から除外する
+    // （resolvePublicAssetUrl参照）
     const pathsToSign = [
       ...new Set(
         drafts
           .flatMap((d) => [d.video_storage_path, d.cover_image_path])
-          .filter(Boolean),
+          .filter(Boolean)
+          .filter((p) => !resolvePublicAssetUrl(p)),
       ),
     ];
     const signedUrlMap = await signStoragePaths(pathsToSign);
@@ -83,7 +88,9 @@ export default async function handler(req) {
         ? signedUrlMap[d.video_storage_path] || null
         : null,
       cover_image_url: d.cover_image_path
-        ? signedUrlMap[d.cover_image_path] || null
+        ? resolvePublicAssetUrl(d.cover_image_path) ||
+          signedUrlMap[d.cover_image_path] ||
+          null
         : null,
     }));
 

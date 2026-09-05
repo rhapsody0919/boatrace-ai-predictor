@@ -1,0 +1,10 @@
+{
+  "generatedAt": "2026-09-05T13:12:50.723Z",
+  "days": 30,
+  "dailyPostLimitViolations": [],
+  "duplicateAnnouncements": [],
+  "formatRepetitions": [],
+  "byFormatImpressions": [],
+  "mascotRotationStatus": "day1完了（キャラA、3本、2026-08-23）、day2完了（キャラB、3本、2026-08-24）、day3完了（キャラC、3本、2026-08-25）。3日間・9本のA/B/Cテストが完了。次は/x-growth-reportでキャラ別実績を比較し勝者キャラを確定、以降は単一キャラでの毎日1投稿ペースに移行する想定。各日3本、同じキャラで型を変える運用（day1完了後に一度「1日1本」と誤解した事故があり修正済み）",
+  "dataQualityNote": "postedAtTime（時刻）フィールドが未記録のため時間帯仮説は検証不能"
+}

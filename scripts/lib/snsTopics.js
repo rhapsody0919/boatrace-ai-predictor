@@ -21,6 +21,7 @@ const TOPICS_TABLE = "sns_topics";
 const TOPIC_TARGETS_TABLE = "sns_topic_targets";
 const TOPIC_CATEGORIES_TABLE = "sns_topic_categories";
 const TOPIC_CATEGORY_CHANNELS_TABLE = "sns_topic_category_channels";
+const DRAFTS_TABLE = "sns_drafts";
 
 function assertSupabaseEnabled() {
   if (!isSupabaseEnabled()) {
@@ -293,6 +294,28 @@ export async function getClaimableTopicTargets(targetAccountId) {
     );
   }
   return data || [];
+}
+
+/**
+ * platform='blog'の未マージDraft PR（sns_drafts.status='pending_review'）が
+ * 既に存在するか確認する。blogチャネルの生成Routineは記事メタデータを
+ * src/data/blogPosts.jsの同じ挿入位置に書き込むため、複数のDraft PRが同時に
+ * オープンしていると片方がマージされた時点でもう片方が必ずコンフリクトする
+ * （実例: PR #519とPR #509/#512/#525が相互に何度もコンフリクトし直した）。
+ * blog向けのclaim前にこれを呼び、trueならclaimせず終了する。
+ */
+export async function hasOpenBlogDraft() {
+  assertSupabaseEnabled();
+  const { data, error } = await supabase
+    .from(DRAFTS_TABLE)
+    .select("id")
+    .eq("platform", "blog")
+    .eq("status", "pending_review")
+    .limit(1);
+  if (error) {
+    throw new Error(`sns_drafts確認エラー（platform=blog）: ${error.message}`);
+  }
+  return (data || []).length > 0;
 }
 
 /**

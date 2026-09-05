@@ -52,6 +52,19 @@ export const blogPosts = [
     image: "/images/blog/heiwajima-course1-winrate.jpg",
   },
   {
+    id: "volatility-ranking-0905",
+    title:
+      "本日(9/5)129レース中、イン崩れ指数が最も高いのは戸田6R・宮島4R — AIランキングTOP5を解説",
+    description:
+      "龍神レーダーの「イン崩れ指数」で2026年9月5日開催129レースをランキング。戸田6R・宮島4Rが指数99%で本日最高値となった判定根拠と、過去の実測データから見た指数の使い方を解説します。",
+    date: "2026-09-05",
+    category: "データ分析",
+    tags: ["イン崩れ指数", "データ分析", "戸田", "宮島", "AI予想"],
+    readTime: "5分",
+    featured: false,
+    image: "/images/blog/volatility-ranking-0905.jpg",
+  },
+  {
     id: "mikuni-outcome-124-rate",
     title:
       "三国の3連単「1-2-4」出現率は6.3%、全国平均4.9%より1.4ポイント高い理由を実データで検証",
