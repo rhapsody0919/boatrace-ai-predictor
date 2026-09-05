@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "edogawa-course1-win-rate",
+    title: "江戸川の1コース勝率は45.5%、全国平均54.3%より8.8ポイント低い理由を実データで検証",
+    description:
+      "過去90日間の実レース結果で、江戸川の1コース勝率は45.5%（444レース中202勝）、全国平均54.3%より8.8ポイント低く24会場中下から3番目という結果に。潮の影響が強い水面特性がなぜ1コース勝率を下げるのかを実データで解説します。",
+    date: "2026-09-05",
+    category: "データ分析",
+    tags: ["1コース勝率", "会場特性", "江戸川", "データ分析"],
+    readTime: "5分",
+    featured: false,
+    image: "/images/blog/edogawa-course1-win-rate.jpg",
+  },
+  {
     id: "language-switcher-guide",
     title: "4言語切替とは？海外からのアクセスにも対応する龍神レーダーの言語機能",
     description:
