@@ -1862,3 +1862,65 @@ export function BoatRankingCM_TechniqueConsistency() {
     </AbsoluteFill>
   );
 }
+
+// 1号艇「逃げ」決着比率ランキング（YouTube Shorts、2026-09-05投稿用）のデータ。
+// winning_technique_stats（boat_number=1、winning_technique='逃げ'、直近90日）を
+// 全24会場で比較。percentage = 1号艇が勝ったレースのうち、決まり手が「逃げ」だった
+// 割合（分母は1号艇の勝利数=total_races、分子はcount_90days）。venue_code(1〜24)順。
+//
+// venue-featureネタ提案（sns_topics）は「桐生は95.4%で全国平均(95.2%)を上回り
+// 全国トップクラスの堅い決まり手が続いている」という桐生単体の切り口だったが、
+// 生成時点でwinning_technique_statsを再クエリしたところ桐生は95.44%・24会場中13位
+// （鳴門97.41%が1位）と、実際には上位でも下位でもない中位の水準だった。「トップ
+// クラス」という評価は実データと整合しないため、桐生単体を主役にする構成は採用せず、
+// 同じデータ軸（1号艇の逃げ決着比率）を24会場ランキングとして見せる構成に変更した
+// （既存のNIGE_WIN_TOP5=BoatRankingCM_NarutoNigeWin、2026-08-29投稿用と同一軸だが、
+// あちらはTOP5のみ・X/TikTok向け。本コンポジションはVenueRankingTemplateで
+// TOP5+WORST5を両方見せるYouTube Shorts版として新設）。
+const NIGE_1ST_ALL = [
+  95.44, 97.3, 91.24, 94.5, 94.17, 91.87, 96.48, 96.31, 95.64, 96.19, 96.12,
+  97.0, 97.11, 97.41, 96.03, 95.44, 96.61, 95.29, 93.02, 95.32, 95.53, 92.84,
+  95.25, 93.73,
+];
+const NIGE_1ST_TOP_INDEX = 13; // 鳴門(venue_code=14)
+
+const NIGE_1ST_TOP5 = [
+  { venue: "鳴門", value: "97.4%", sample: "232", ratio: 100 },
+  { venue: "戸田", value: "97.3%", sample: "185", ratio: 100 },
+  { venue: "尼崎", value: "97.1%", sample: "415", ratio: 100 },
+  { venue: "住之江", value: "97.0%", sample: "233", ratio: 100 },
+  { venue: "宮島", value: "96.6%", sample: "295", ratio: 99 },
+];
+
+const NIGE_1ST_WORST5 = [
+  { rank: 24, venue: "江戸川", value: "91.2%", sample: "194", ratio: 94 },
+  { rank: 23, venue: "浜名湖", value: "91.9%", sample: "332", ratio: 94 },
+  { rank: 22, venue: "福岡", value: "92.8%", sample: "335", ratio: 95 },
+  { rank: 21, venue: "下関", value: "93.0%", sample: "401", ratio: 95 },
+  { rank: 20, venue: "大村", value: "93.7%", sample: "335", ratio: 96 },
+];
+
+export function VenueRankingCM_Nige1stTechnique() {
+  return (
+    <VenueRankingTemplate
+      topVenue="鳴門"
+      axisTitle="1号艇 逃げ決着比率"
+      rateLabel="逃げ決着比率 97.4%"
+      hookQuestion="1号艇が勝つ時、逃げで決める割合は？"
+      subCaption="24会場・直近90日・7,349レースで検証"
+      categoryTag="24会場ランキング"
+      allRates={NIGE_1ST_ALL}
+      topRateIndex={NIGE_1ST_TOP_INDEX}
+      accentColor={GOLD}
+      top5Heading="🚤 1号艇の勝ちがほぼ逃げの会場 TOP5"
+      top5Data={NIGE_1ST_TOP5}
+      worst5Heading="🌊 1号艇が逃げ以外でも勝つ会場は？"
+      worst5Data={NIGE_1ST_WORST5}
+      barColorTop={GOLD}
+      barColorWorst={RED}
+      ctaLines={["会場ごとの決まり手データ、", "無料で見れる"]}
+      subLine="1号艇の勝ち方、実は会場で差がある"
+      sampleSuffix="回の1号艇勝利中"
+    />
+  );
+}
