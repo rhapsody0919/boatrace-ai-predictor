@@ -17,6 +17,9 @@ playwright-report/
 blob-report/
 playwright/.cache/
 
+# サンドボックス環境専用のexecutablePath上書き設定（環境依存、コミット対象外）
+playwright.config.local.js
+
 # Claude Code local settings (personal overrides)
 .claude/settings.local.json
 
