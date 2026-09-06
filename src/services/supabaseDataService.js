@@ -2259,7 +2259,9 @@ export const supabaseDataService = {
 
       const { data, error } = await supabase
         .from("racer_aggregated_stats")
-        .select("avg_st, avg_st_last_30, st_stddev, flying_rate, total_races")
+        .select(
+          "avg_st, avg_st_last_30, st_stddev, flying_rate, total_races, course_race_counts",
+        )
         .eq("racer_id", racerId)
         .eq("venue_code", 0)
         .maybeSingle();
@@ -2269,6 +2271,77 @@ export const supabaseDataService = {
         return null;
       }
       return data;
+    });
+  },
+
+  /**
+   * 指定選手の会場別（当地）成績を取得する（選手個人ページ用）
+   * racer_aggregated_statsは本番では venue_code=0（全会場合算）の行しか
+   * 存在せず（会場別集計は日次自動化に未組み込み、2026-09-06確認）、
+   * 会場別行を前提にはできない。そのためgetRacerBoatReturnRate等と同じ
+   * 「対象は1選手のみなのでその場でライブ集計する」方式で
+   * race_entries×races×race_resultsから直接算出する
+   */
+  getRacerVenueStats(racerId) {
+    return withCache(`racer-venue-stats-${racerId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      // 過去2年分を対象（他のracer_id単体集計は90〜180日窓だが、
+      // 会場別成績は会場ごとの出走機会自体が少ないため長めに取る）
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 730);
+      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+      const { data: entries, error: entriesError } = await supabase
+        .from("race_entries")
+        .select("race_id, boat_number")
+        .eq("racer_id", racerId)
+        .gte("race_id", cutoffStr);
+
+      if (entriesError || !entries || entries.length === 0) {
+        if (entriesError)
+          console.error("race_entries取得エラー:", entriesError.message);
+        return [];
+      }
+
+      const raceIds = [...new Set(entries.map((e) => e.race_id))];
+      const [raceRows, resultRows] = await Promise.all([
+        fetchAllByIn("races", "race_id, venue_code", "race_id", raceIds),
+        fetchAllByIn("race_results", "race_id, rank1", "race_id", raceIds),
+      ]);
+
+      const venueByRaceId = new Map(
+        raceRows.map((r) => [r.race_id, r.venue_code]),
+      );
+      const resultByRaceId = new Map(
+        resultRows.map((r) => [r.race_id, r.rank1]),
+      );
+
+      const byVenue = new Map();
+      entries.forEach((entry) => {
+        const venueCode = venueByRaceId.get(entry.race_id);
+        const rank1 = resultByRaceId.get(entry.race_id);
+        if (!venueCode || rank1 === undefined) return;
+
+        if (!byVenue.has(venueCode)) {
+          byVenue.set(venueCode, { total: 0, wins: 0 });
+        }
+        const stat = byVenue.get(venueCode);
+        stat.total += 1;
+        if (rank1 === entry.boat_number) stat.wins += 1;
+      });
+
+      return [...byVenue.entries()]
+        .map(([venueCode, stat]) => ({
+          venue_code: venueCode,
+          total_races: stat.total,
+          win_rate: stat.total > 0 ? stat.wins / stat.total : null,
+        }))
+        .filter((row) => row.total_races >= 5)
+        .sort((a, b) => b.total_races - a.total_races);
     });
   },
 

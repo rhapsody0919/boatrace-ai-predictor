@@ -1,0 +1,47 @@
+.venue-characteristics-card {
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.venue-characteristics-card h2 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.venue-characteristics-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-700);
+  margin: 0 0 var(--spacing-3) 0;
+}
+
+.venue-characteristics-card .table-wrapper {
+  overflow-x: auto;
+}
+
+.venue-characteristics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.venue-characteristics-table th,
+.venue-characteristics-table td {
+  padding: var(--spacing-2);
+  text-align: center;
+  border-bottom: 1px solid var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.venue-characteristics-table th {
+  font-weight: var(--font-weight-semibold);
+}
+
+.venue-characteristics-footnote {
+  margin: var(--spacing-3) 0 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}
