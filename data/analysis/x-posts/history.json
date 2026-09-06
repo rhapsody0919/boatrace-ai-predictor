@@ -122,6 +122,17 @@
       "postedAt": null,
       "metrics": null,
       "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行）。既存TriviaCM.jsx（2026-09-01評価済み・日付非依存の恒久トリビア）を再利用、コード変更無し。直近3投稿（accuracy-proof/live-prediction-hook/venue-data-comparison）と型重複なし。active insight(d4678ad4)を踏まえ松井繁選手を主語にした断定的キャプションに調整。sns_drafts承認待ち。"
+    },
+    {
+      "date": "2026-09-06",
+      "character": null,
+      "format": "live-prediction-hook",
+      "content": "予想数値フック型（戸田3R、本日11:45発走・一般戦、AI逃げ確率28%・イン崩れ注意度88〈会場内パーセンタイル0.879〉、1号艇B1級・全国勝率4.58）",
+      "videoFile": "Supabase Storage sns-hub-media/0437d207-fb1f-4705-84c2-dd59eb88b86d/x-ja.mp4（sns_drafts id=5c32cec0-ec7a-48a4-98ae-c0e63cd56512）",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、日曜のため当日ネタ生成日）。既存LivePredictionHookCM.jsx（データはprops経由）を再利用。レンダリングのためLivePredictionHookTemplateの一時export化とRoot.jsxへの一時Composition追加を行ったが、レンダリング後にgit checkoutで元に戻し、コード変更は残していない。締切まで155分の余裕を確認済み。直近3投稿（venue-stat-check/in-kuzure-warning-top5/venue-ranking、いずれもsns-topic-gate系）と型重複なし。getRecentRevisions/getActiveInsights確認済み（該当フィードバック無し、CJKフォント化け指摘は既存fonts.js対応済みで再発無しを目視確認）。risk-rules.json照合、risk_flags無し。sns_drafts承認待ち。"
     }
   ]
 }
