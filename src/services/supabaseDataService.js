@@ -2123,6 +2123,234 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定選手の現在の全国勝率と約90日前時点の全国勝率を比較する（選手個人ページ用）
+   * getRaceRacerFormBreakdownと同じ比較ロジックをracer_id単体向けに転用したもの
+   */
+  getRacerFormSummary(racerId) {
+    return withCache(`racer-form-summary-${racerId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      const { data: current, error: curError } = await supabase
+        .from("race_entries")
+        .select("race_id, win_rate, local_win_rate")
+        .eq("racer_id", racerId)
+        .order("race_id", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (curError || !current) {
+        if (curError)
+          console.error("race_entries取得エラー:", curError.message);
+        return null;
+      }
+
+      // 約90日前時点の直近の記録を探す（cutoff以前・探索窓2週間で最新のもの）
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const cutoff = ninetyDaysAgo.toISOString().split("T")[0];
+      const windowStart = new Date(ninetyDaysAgo);
+      windowStart.setDate(windowStart.getDate() - 14);
+      const windowStartStr = windowStart.toISOString().split("T")[0];
+
+      const { data: past, error: pastError } = await supabase
+        .from("race_entries")
+        .select("win_rate")
+        .eq("racer_id", racerId)
+        .gte("race_id", windowStartStr)
+        .lte("race_id", cutoff)
+        .order("race_id", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pastError) {
+        console.error("過去データ取得エラー:", pastError.message);
+      }
+
+      const pastWinRate = past?.win_rate ?? null;
+      return {
+        racer_id: racerId,
+        current_win_rate: current.win_rate,
+        current_local_win_rate: current.local_win_rate,
+        past_win_rate: pastWinRate,
+        delta: pastWinRate !== null ? current.win_rate - pastWinRate : null,
+      };
+    });
+  },
+
+  /**
+   * 指定選手が過去90日間で勝った時の決まり手構成比を取得する（選手個人ページ用）
+   * getRaceTechniqueProfileBreakdownのクライアント集計ロジックをracer_id単体向けに
+   * 転用したもの。対象が1選手のみのためRPC化は不要（egress負荷が小さい）
+   */
+  getRacerTechniqueProfile(racerId) {
+    return withCache(`racer-technique-profile-${racerId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return { racer_id: racerId, win_count: 0, techniques: [] };
+      }
+
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
+
+      const { data: entries, error: entriesError } = await supabase
+        .from("race_entries")
+        .select("race_id, boat_number")
+        .eq("racer_id", racerId)
+        .gte("race_id", cutoffStr);
+
+      if (entriesError || !entries || entries.length === 0) {
+        if (entriesError)
+          console.error("race_entries取得エラー:", entriesError.message);
+        return { racer_id: racerId, win_count: 0, techniques: [] };
+      }
+
+      const raceIds = [...new Set(entries.map((e) => e.race_id))];
+      const resultRows = await fetchAllByIn(
+        "race_results",
+        "race_id, rank1, winning_technique",
+        "race_id",
+        raceIds,
+      );
+
+      const resultByRaceId = new Map();
+      resultRows.forEach((r) => {
+        if (!r.winning_technique || r.rank1 === null) return;
+        resultByRaceId.set(r.race_id, r);
+      });
+
+      const counts = new Map();
+      entries.forEach((e) => {
+        const result = resultByRaceId.get(e.race_id);
+        if (!result || result.rank1 !== e.boat_number) return; // この選手が勝ったレースのみ集計
+        counts.set(
+          result.winning_technique,
+          (counts.get(result.winning_technique) ?? 0) + 1,
+        );
+      });
+
+      const winCount = [...counts.values()].reduce((s, c) => s + c, 0);
+      const techniques = [...counts.entries()]
+        .map(([technique, count]) => ({
+          technique,
+          count,
+          percentage: winCount > 0 ? (count / winCount) * 100 : 0,
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      return { racer_id: racerId, win_count: winCount, techniques };
+    });
+  },
+
+  /**
+   * 指定選手の平均ST等の集計統計を取得する（選手個人ページ用）
+   * scripts/analysis/aggregate-racer-stats.jsが日次で事前集計したracer_aggregated_stats
+   * （venue_code=0は全会場合算のレコード）を参照する
+   */
+  getRacerAggregatedStats(racerId) {
+    return withCache(`racer-aggregated-stats-${racerId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from("racer_aggregated_stats")
+        .select("avg_st, avg_st_last_30, st_stddev, flying_rate, total_races")
+        .eq("racer_id", racerId)
+        .eq("venue_code", 0)
+        .maybeSingle();
+
+      if (error) {
+        console.error("racer_aggregated_stats取得エラー:", error.message);
+        return null;
+      }
+      return data;
+    });
+  },
+
+  /**
+   * 指定選手の過去180日間の枠番別回収率を取得する（選手個人ページ用）
+   * getRaceRacerBoatReturnRateと同じ集計ロジック（racer_id+boat_numberキー）を
+   * racer_id単体向けに転用したもの。対象が1選手のみのためRPC化は不要
+   */
+  getRacerBoatReturnRate(racerId) {
+    return withCache(`racer-boat-return-rate-${racerId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 180);
+      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+      const { data: entries, error: entriesError } = await supabase
+        .from("race_entries")
+        .select("race_id, boat_number")
+        .eq("racer_id", racerId)
+        .gte("race_id", cutoffStr);
+
+      if (entriesError || !entries || entries.length === 0) {
+        if (entriesError)
+          console.error("race_entries取得エラー:", entriesError.message);
+        return [];
+      }
+
+      const raceIds = [...new Set(entries.map((e) => e.race_id))];
+      const resultRows = await fetchAllByIn(
+        "race_results",
+        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+        "race_id",
+        raceIds,
+      );
+      const resultByRaceId = new Map(resultRows.map((r) => [r.race_id, r]));
+
+      // boat_numberごとに集計（同じ選手でも枠番が違えば別集計）
+      const statsByBoat = new Map();
+      entries.forEach((e) => {
+        const result = resultByRaceId.get(e.race_id);
+        if (!result || result.is_cancelled || result.is_no_race) return;
+
+        if (!statsByBoat.has(e.boat_number)) {
+          statsByBoat.set(e.boat_number, {
+            sampleCount: 0,
+            winPayoutSum: 0,
+            placePayoutSum: 0,
+          });
+        }
+        const stats = statsByBoat.get(e.boat_number);
+        stats.sampleCount += 1;
+
+        if (result.rank1 === e.boat_number) {
+          stats.winPayoutSum += result.payout_win ?? 0;
+          stats.placePayoutSum += result.payout_place_1 ?? 0;
+        } else if (result.rank2 === e.boat_number) {
+          stats.placePayoutSum += result.payout_place_2 ?? 0;
+        }
+      });
+
+      return [...statsByBoat.entries()]
+        .map(([boatNumber, stats]) => ({
+          boat_number: boatNumber,
+          sample_count: stats.sampleCount,
+          win_return_rate:
+            stats.sampleCount > 0
+              ? (stats.winPayoutSum / (stats.sampleCount * 100)) * 100
+              : null,
+          place_return_rate:
+            stats.sampleCount > 0
+              ? (stats.placePayoutSum / (stats.sampleCount * 100)) * 100
+              : null,
+        }))
+        .sort((a, b) => a.boat_number - b.boat_number);
+    });
+  },
+
+  /**
    * 指定会場・モーター番号の2連率/3連率の節ごとの推移を取得する（BOA-151）
    * race_entries.motor_2rate/3rate は節単位でのみ更新されるため、
    * 日付単位でdedupeして推移として扱う

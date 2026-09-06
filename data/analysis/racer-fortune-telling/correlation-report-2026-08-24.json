@@ -1,0 +1,123 @@
+{
+  "executedAt": "2026-08-24T23:31:25.199Z",
+  "targetEntryCount": 25,
+  "targetRacerCount": 4,
+  "systems": {
+    "western-astrology": {
+      "name": "西洋占星術",
+      "placeHitValidation": {
+        "baselinePlaceRate": 0.375,
+        "baselineSampleSize": 24,
+        "scoreGroups": [
+          {
+            "score": 40,
+            "sampleSize": 15,
+            "placeRate": 0.26666666666666666,
+            "pValueVsBaseline": 0.3861245920670786
+          },
+          {
+            "score": 55,
+            "sampleSize": 9,
+            "placeRate": 0.5555555555555556,
+            "pValueVsBaseline": 0.263199176934815
+          }
+        ]
+      },
+      "startTimingValidation": {
+        "sampleSize": 25,
+        "correlation": -0.057193121949786305,
+        "pValue": 0.7835174413273474
+      }
+    },
+    "shichu-suimei": {
+      "name": "四柱推命",
+      "placeHitValidation": {
+        "baselinePlaceRate": 0.375,
+        "baselineSampleSize": 24,
+        "scoreGroups": [
+          {
+            "score": 55,
+            "sampleSize": 7,
+            "placeRate": 0.5714285714285714,
+            "pValueVsBaseline": 0.2830513594966586
+          },
+          {
+            "score": 60,
+            "sampleSize": 11,
+            "placeRate": 0.36363636363636365,
+            "pValueVsBaseline": 0.9379473217694159
+          },
+          {
+            "score": 65,
+            "sampleSize": 6,
+            "placeRate": 0.16666666666666666,
+            "pValueVsBaseline": 0.2918406047000697
+          }
+        ]
+      },
+      "startTimingValidation": {
+        "sampleSize": 25,
+        "correlation": -0.16834336603923747,
+        "pValue": 0.4127661326879992
+      }
+    },
+    "kyusei-kigaku": {
+      "name": "九星気学",
+      "placeHitValidation": {
+        "baselinePlaceRate": 0.375,
+        "baselineSampleSize": 24,
+        "scoreGroups": [
+          {
+            "score": 55,
+            "sampleSize": 9,
+            "placeRate": 0.5555555555555556,
+            "pValueVsBaseline": 0.263199176934815
+          },
+          {
+            "score": 85,
+            "sampleSize": 15,
+            "placeRate": 0.26666666666666666,
+            "pValueVsBaseline": 0.3861245920670786
+          }
+        ]
+      },
+      "startTimingValidation": {
+        "sampleSize": 25,
+        "correlation": 0.03997708221099649,
+        "pValue": 0.8478387964049567
+      }
+    },
+    "rokusei-senjutsu": {
+      "name": "六星占術",
+      "placeHitValidation": {
+        "baselinePlaceRate": 0.375,
+        "baselineSampleSize": 24,
+        "scoreGroups": [
+          {
+            "score": 30,
+            "sampleSize": 7,
+            "placeRate": 0.42857142857142855,
+            "pValueVsBaseline": 0.7696980786275269
+          },
+          {
+            "score": 75,
+            "sampleSize": 9,
+            "placeRate": 0.5555555555555556,
+            "pValueVsBaseline": 0.263199176934815
+          },
+          {
+            "score": 90,
+            "sampleSize": 8,
+            "placeRate": 0.125,
+            "pValueVsBaseline": 0.1441271158101045
+          }
+        ]
+      },
+      "startTimingValidation": {
+        "sampleSize": 25,
+        "correlation": 0.21790490697131007,
+        "pValue": 0.2842748564789077
+      }
+    }
+  }
+}

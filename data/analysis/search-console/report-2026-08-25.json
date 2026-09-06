@@ -1,0 +1,4361 @@
+{
+  "generatedAt": "2026-08-25T04:02:57.369Z",
+  "days": 30,
+  "allQueries": [
+    {
+      "keys": [
+        "ボートai"
+      ],
+      "clicks": 127,
+      "impressions": 793,
+      "ctr": 0.1601513240857503,
+      "position": 6.941992433795712
+    },
+    {
+      "keys": [
+        "boatai"
+      ],
+      "clicks": 102,
+      "impressions": 160,
+      "ctr": 0.6375,
+      "position": 1.80625
+    },
+    {
+      "keys": [
+        "ボートレースai予想"
+      ],
+      "clicks": 80,
+      "impressions": 278,
+      "ctr": 0.28776978417266186,
+      "position": 5.402877697841727
+    },
+    {
+      "keys": [
+        "ボートレースai"
+      ],
+      "clicks": 38,
+      "impressions": 673,
+      "ctr": 0.05646359583952452,
+      "position": 6.8484398216939075
+    },
+    {
+      "keys": [
+        "競艇ai予想 無料"
+      ],
+      "clicks": 28,
+      "impressions": 688,
+      "ctr": 0.040697674418604654,
+      "position": 7.27906976744186
+    },
+    {
+      "keys": [
+        "競艇 全レース予想 無料"
+      ],
+      "clicks": 26,
+      "impressions": 188,
+      "ctr": 0.13829787234042554,
+      "position": 15.941489361702128
+    },
+    {
+      "keys": [
+        "boat ai"
+      ],
+      "clicks": 25,
+      "impressions": 37,
+      "ctr": 0.6756756756756757,
+      "position": 1.027027027027027
+    },
+    {
+      "keys": [
+        "ボートアイ"
+      ],
+      "clicks": 23,
+      "impressions": 2344,
+      "ctr": 0.009812286689419795,
+      "position": 4.547354948805461
+    },
+    {
+      "keys": [
+        "競艇ai"
+      ],
+      "clicks": 20,
+      "impressions": 449,
+      "ctr": 0.044543429844097995,
+      "position": 9.057906458797328
+    },
+    {
+      "keys": [
+        "ボートレース ai予想"
+      ],
+      "clicks": 19,
+      "impressions": 146,
+      "ctr": 0.13013698630136986,
+      "position": 7.493150684931507
+    },
+    {
+      "keys": [
+        "ボートレース予想ai"
+      ],
+      "clicks": 18,
+      "impressions": 370,
+      "ctr": 0.04864864864864865,
+      "position": 7.22972972972973
+    },
+    {
+      "keys": [
+        "競艇 荒れるレースの見極め"
+      ],
+      "clicks": 17,
+      "impressions": 64,
+      "ctr": 0.265625,
+      "position": 2.265625
+    },
+    {
+      "keys": [
+        "競艇 ai"
+      ],
+      "clicks": 12,
+      "impressions": 237,
+      "ctr": 0.05063291139240506,
+      "position": 12
+    },
+    {
+      "keys": [
+        "競艇ai予想"
+      ],
+      "clicks": 11,
+      "impressions": 428,
+      "ctr": 0.02570093457943925,
+      "position": 9.151869158878505
+    },
+    {
+      "keys": [
+        "競艇予想ai"
+      ],
+      "clicks": 8,
+      "impressions": 471,
+      "ctr": 0.016985138004246284,
+      "position": 9.021231422505307
+    },
+    {
+      "keys": [
+        "ボートレース ai"
+      ],
+      "clicks": 7,
+      "impressions": 446,
+      "ctr": 0.01569506726457399,
+      "position": 11.612107623318385
+    },
+    {
+      "keys": [
+        "ボート ai"
+      ],
+      "clicks": 6,
+      "impressions": 73,
+      "ctr": 0.0821917808219178,
+      "position": 6.835616438356165
+    },
+    {
+      "keys": [
+        "ボートレース予想"
+      ],
+      "clicks": 6,
+      "impressions": 67,
+      "ctr": 0.08955223880597014,
+      "position": 26.91044776119403
+    },
+    {
+      "keys": [
+        "競艇予想"
+      ],
+      "clicks": 5,
+      "impressions": 51,
+      "ctr": 0.09803921568627451,
+      "position": 79.01960784313725
+    },
+    {
+      "keys": [
+        "ボートレースai予想アプリ"
+      ],
+      "clicks": 4,
+      "impressions": 129,
+      "ctr": 0.031007751937984496,
+      "position": 7.224806201550388
+    },
+    {
+      "keys": [
+        "競艇 ai 予想"
+      ],
+      "clicks": 4,
+      "impressions": 113,
+      "ctr": 0.035398230088495575,
+      "position": 8.68141592920354
+    },
+    {
+      "keys": [
+        "競艇a i"
+      ],
+      "clicks": 4,
+      "impressions": 38,
+      "ctr": 0.10526315789473684,
+      "position": 9.710526315789474
+    },
+    {
+      "keys": [
+        "競艇ai予想アプリ"
+      ],
+      "clicks": 4,
+      "impressions": 388,
+      "ctr": 0.010309278350515464,
+      "position": 7.780927835051546
+    },
+    {
+      "keys": [
+        "競艇荒れるレースの見分け方"
+      ],
+      "clicks": 4,
+      "impressions": 14,
+      "ctr": 0.2857142857142857,
+      "position": 2.2142857142857144
+    },
+    {
+      "keys": [
+        "ボート ai予想"
+      ],
+      "clicks": 3,
+      "impressions": 17,
+      "ctr": 0.17647058823529413,
+      "position": 7.176470588235294
+    },
+    {
+      "keys": [
+        "ボートレース 予想 ai"
+      ],
+      "clicks": 3,
+      "impressions": 45,
+      "ctr": 0.06666666666666667,
+      "position": 9.911111111111111
+    },
+    {
+      "keys": [
+        "ボートレース 予想サイト"
+      ],
+      "clicks": 3,
+      "impressions": 15,
+      "ctr": 0.2,
+      "position": 25.666666666666668
+    },
+    {
+      "keys": [
+        "aiボートレース"
+      ],
+      "clicks": 2,
+      "impressions": 2,
+      "ctr": 1,
+      "position": 8
+    },
+    {
+      "keys": [
+        "aiボートレース予想"
+      ],
+      "clicks": 2,
+      "impressions": 88,
+      "ctr": 0.022727272727272728,
+      "position": 7.1022727272727275
+    },
+    {
+      "keys": [
+        "ai競艇"
+      ],
+      "clicks": 2,
+      "impressions": 23,
+      "ctr": 0.08695652173913043,
+      "position": 7.521739130434782
+    },
+    {
+      "keys": [
+        "よく当たる無料競艇予想ai"
+      ],
+      "clicks": 2,
+      "impressions": 59,
+      "ctr": 0.03389830508474576,
+      "position": 9.525423728813559
+    },
+    {
+      "keys": [
+        "ボートai予想"
+      ],
+      "clicks": 2,
+      "impressions": 133,
+      "ctr": 0.015037593984962405,
+      "position": 9.398496240601503
+    },
+    {
+      "keys": [
+        "ボートレース ai 予想"
+      ],
+      "clicks": 2,
+      "impressions": 66,
+      "ctr": 0.030303030303030304,
+      "position": 8.424242424242424
+    },
+    {
+      "keys": [
+        "競艇予想 無料"
+      ],
+      "clicks": 2,
+      "impressions": 40,
+      "ctr": 0.05,
+      "position": 28.075
+    },
+    {
+      "keys": [
+        "競艇荒れるレース"
+      ],
+      "clicks": 2,
+      "impressions": 69,
+      "ctr": 0.028985507246376812,
+      "position": 7.478260869565218
+    },
+    {
+      "keys": [
+        "ai boat"
+      ],
+      "clicks": 1,
+      "impressions": 33,
+      "ctr": 0.030303030303030304,
+      "position": 7.090909090909091
+    },
+    {
+      "keys": [
+        "ai boat race"
+      ],
+      "clicks": 1,
+      "impressions": 6,
+      "ctr": 0.16666666666666666,
+      "position": 15.666666666666666
+    },
+    {
+      "keys": [
+        "ai 競艇"
+      ],
+      "clicks": 1,
+      "impressions": 6,
+      "ctr": 0.16666666666666666,
+      "position": 15.333333333333334
+    },
+    {
+      "keys": [
+        "ai競艇予想"
+      ],
+      "clicks": 1,
+      "impressions": 30,
+      "ctr": 0.03333333333333333,
+      "position": 14.133333333333333
+    },
+    {
+      "keys": [
+        "ai競艇予想ウェブ"
+      ],
+      "clicks": 1,
+      "impressions": 71,
+      "ctr": 0.014084507042253521,
+      "position": 6.957746478873239
+    },
+    {
+      "keys": [
+        "boat.ai"
+      ],
+      "clicks": 1,
+      "impressions": 2,
+      "ctr": 0.5,
+      "position": 1
+    },
+    {
+      "keys": [
+        "boatrace ai"
+      ],
+      "clicks": 1,
+      "impressions": 2,
+      "ctr": 0.5,
+      "position": 13
+    },
+    {
+      "keys": [
+        "えーあいboat"
+      ],
+      "clicks": 1,
+      "impressions": 4,
+      "ctr": 0.25,
+      "position": 4.5
+    },
+    {
+      "keys": [
+        "えーあいボート"
+      ],
+      "clicks": 1,
+      "impressions": 88,
+      "ctr": 0.011363636363636364,
+      "position": 10.602272727272727
+    },
+    {
+      "keys": [
+        "ボートレース ai予想アプリ"
+      ],
+      "clicks": 1,
+      "impressions": 66,
+      "ctr": 0.015151515151515152,
+      "position": 7.53030303030303
+    },
+    {
+      "keys": [
+        "ボートレース api"
+      ],
+      "clicks": 1,
+      "impressions": 3,
+      "ctr": 0.3333333333333333,
+      "position": 27.333333333333332
+    },
+    {
+      "keys": [
+        "ボートレース 予想"
+      ],
+      "clicks": 1,
+      "impressions": 15,
+      "ctr": 0.06666666666666667,
+      "position": 16.866666666666667
+    },
+    {
+      "keys": [
+        "ボートレース 予想 無料"
+      ],
+      "clicks": 1,
+      "impressions": 2,
+      "ctr": 0.5,
+      "position": 5
+    },
+    {
+      "keys": [
+        "ボートレース 分析"
+      ],
+      "clicks": 1,
+      "impressions": 4,
+      "ctr": 0.25,
+      "position": 26
+    },
+    {
+      "keys": [
+        "ボートレース 荒れるレース"
+      ],
+      "clicks": 1,
+      "impressions": 46,
+      "ctr": 0.021739130434782608,
+      "position": 8.456521739130434
+    },
+    {
+      "keys": [
+        "ボートレース 荒れる条件"
+      ],
+      "clicks": 1,
+      "impressions": 16,
+      "ctr": 0.0625,
+      "position": 9.0625
+    },
+    {
+      "keys": [
+        "ボートレース予想 ai"
+      ],
+      "clicks": 1,
+      "impressions": 46,
+      "ctr": 0.021739130434782608,
+      "position": 8.304347826086957
+    },
+    {
+      "keys": [
+        "ボートレース予想 無料"
+      ],
+      "clicks": 1,
+      "impressions": 19,
+      "ctr": 0.05263157894736842,
+      "position": 12.68421052631579
+    },
+    {
+      "keys": [
+        "ボートレース予想サイト"
+      ],
+      "clicks": 1,
+      "impressions": 4,
+      "ctr": 0.25,
+      "position": 10
+    },
+    {
+      "keys": [
+        "ボートレース予想サイト ai"
+      ],
+      "clicks": 1,
+      "impressions": 7,
+      "ctr": 0.14285714285714285,
+      "position": 9.428571428571429
+    },
+    {
+      "keys": [
+        "ボートレース予想無料"
+      ],
+      "clicks": 1,
+      "impressions": 3,
+      "ctr": 0.3333333333333333,
+      "position": 19
+    },
+    {
+      "keys": [
+        "日本賽艇"
+      ],
+      "clicks": 1,
+      "impressions": 1,
+      "ctr": 1,
+      "position": 10
+    },
+    {
+      "keys": [
+        "無料競艇予想"
+      ],
+      "clicks": 1,
+      "impressions": 2,
+      "ctr": 0.5,
+      "position": 24.5
+    },
+    {
+      "keys": [
+        "競艇 ai予想"
+      ],
+      "clicks": 1,
+      "impressions": 26,
+      "ctr": 0.038461538461538464,
+      "position": 10.461538461538462
+    },
+    {
+      "keys": [
+        "競艇 データ分析"
+      ],
+      "clicks": 1,
+      "impressions": 1,
+      "ctr": 1,
+      "position": 28
+    },
+    {
+      "keys": [
+        "競艇 ビッグデータ 無料"
+      ],
+      "clicks": 1,
+      "impressions": 12,
+      "ctr": 0.08333333333333333,
+      "position": 7.25
+    },
+    {
+      "keys": [
+        "競艇 予想"
+      ],
+      "clicks": 1,
+      "impressions": 29,
+      "ctr": 0.034482758620689655,
+      "position": 65.06896551724138
+    },
+    {
+      "keys": [
+        "競艇 予想 ai"
+      ],
+      "clicks": 1,
+      "impressions": 56,
+      "ctr": 0.017857142857142856,
+      "position": 15.017857142857142
+    },
+    {
+      "keys": [
+        "競艇 予想サイト"
+      ],
+      "clicks": 1,
+      "impressions": 15,
+      "ctr": 0.06666666666666667,
+      "position": 56.4
+    },
+    {
+      "keys": [
+        "競艇 全レース予想無料"
+      ],
+      "clicks": 1,
+      "impressions": 17,
+      "ctr": 0.058823529411764705,
+      "position": 22.88235294117647
+    },
+    {
+      "keys": [
+        "競艇 堅いレース 見分け方"
+      ],
+      "clicks": 1,
+      "impressions": 13,
+      "ctr": 0.07692307692307693,
+      "position": 7.153846153846154
+    },
+    {
+      "keys": [
+        "競艇 指数"
+      ],
+      "clicks": 1,
+      "impressions": 3,
+      "ctr": 0.3333333333333333,
+      "position": 22.666666666666668
+    },
+    {
+      "keys": [
+        "競艇 指数 予想"
+      ],
+      "clicks": 1,
+      "impressions": 3,
+      "ctr": 0.3333333333333333,
+      "position": 10.333333333333334
+    },
+    {
+      "keys": [
+        "競艇 期待値"
+      ],
+      "clicks": 1,
+      "impressions": 2,
+      "ctr": 0.5,
+      "position": 29
+    },
+    {
+      "keys": [
+        "競艇 無料予想ai"
+      ],
+      "clicks": 1,
+      "impressions": 33,
+      "ctr": 0.030303030303030304,
+      "position": 7.515151515151516
+    },
+    {
+      "keys": [
+        "競艇 荒れるレース"
+      ],
+      "clicks": 1,
+      "impressions": 221,
+      "ctr": 0.004524886877828055,
+      "position": 6.158371040723982
+    },
+    {
+      "keys": [
+        "競艇ai指数"
+      ],
+      "clicks": 1,
+      "impressions": 110,
+      "ctr": 0.00909090909090909,
+      "position": 8.318181818181818
+    },
+    {
+      "keys": [
+        "競艇予想 ai"
+      ],
+      "clicks": 1,
+      "impressions": 69,
+      "ctr": 0.014492753623188406,
+      "position": 19.231884057971016
+    },
+    {
+      "keys": [
+        "競艇予想 無料ai"
+      ],
+      "clicks": 1,
+      "impressions": 34,
+      "ctr": 0.029411764705882353,
+      "position": 6.823529411764706
+    },
+    {
+      "keys": [
+        "競艇予想サイト"
+      ],
+      "clicks": 1,
+      "impressions": 25,
+      "ctr": 0.04,
+      "position": 62.6
+    },
+    {
+      "keys": [
+        "競艇全レース予想無料"
+      ],
+      "clicks": 1,
+      "impressions": 12,
+      "ctr": 0.08333333333333333,
+      "position": 23.583333333333332
+    },
+    {
+      "keys": [
+        "競艇穴予想"
+      ],
+      "clicks": 1,
+      "impressions": 1,
+      "ctr": 1,
+      "position": 79
+    },
+    {
+      "keys": [
+        "\"勝力\" 赤字 or 買収 or 行政処分 or 業務停止"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 36.666666666666664
+    },
+    {
+      "keys": [
+        "2026年 sg"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 10.5
+    },
+    {
+      "keys": [
+        "2026年sg"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "keys": [
+        "2連率 3連率とは"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 9.5
+    },
+    {
+      "keys": [
+        "ai bort"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 6
+    },
+    {
+      "keys": [
+        "ai ボート"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 6.25
+    },
+    {
+      "keys": [
+        "ai ボートレース"
+      ],
+      "clicks": 0,
+      "impressions": 18,
+      "ctr": 0,
+      "position": 9.055555555555555
+    },
+    {
+      "keys": [
+        "ai ボートレース予想"
+      ],
+      "clicks": 0,
+      "impressions": 14,
+      "ctr": 0,
+      "position": 8.714285714285715
+    },
+    {
+      "keys": [
+        "ai ポセイドン"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 37
+    },
+    {
+      "keys": [
+        "ai 予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 59
+    },
+    {
+      "keys": [
+        "ai 予想 競艇"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "keys": [
+        "ai 競艇予想"
+      ],
+      "clicks": 0,
+      "impressions": 23,
+      "ctr": 0,
+      "position": 7.695652173913044
+    },
+    {
+      "keys": [
+        "aiboat"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 3
+    },
+    {
+      "keys": [
+        "aiで競艇予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 12
+    },
+    {
+      "keys": [
+        "aiボート"
+      ],
+      "clicks": 0,
+      "impressions": 112,
+      "ctr": 0,
+      "position": 12.705357142857142
+    },
+    {
+      "keys": [
+        "aiボート 口コミ"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 12.5
+    },
+    {
+      "keys": [
+        "aiボート予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "keys": [
+        "ai予想 競艇"
+      ],
+      "clicks": 0,
+      "impressions": 47,
+      "ctr": 0,
+      "position": 7.680851063829787
+    },
+    {
+      "keys": [
+        "ai競艇予想アプリ"
+      ],
+      "clicks": 0,
+      "impressions": 75,
+      "ctr": 0,
+      "position": 7.933333333333334
+    },
+    {
+      "keys": [
+        "biwa ko"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 58
+    },
+    {
+      "keys": [
+        "boat race ai"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 7.714285714285714
+    },
+    {
+      "keys": [
+        "boat race ashiya"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    },
+    {
+      "keys": [
+        "boat race biwako"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "keys": [
+        "boat raceびわこ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 26
+    },
+    {
+      "keys": [
+        "bortrace"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 88
+    },
+    {
+      "keys": [
+        "bost race"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 67
+    },
+    {
+      "keys": [
+        "fuchu tokyo"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 1
+    },
+    {
+      "keys": [
+        "katsuni boat"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 46
+    },
+    {
+      "keys": [
+        "kyotei"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 27.5
+    },
+    {
+      "keys": [
+        "kyotei japan"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 55
+    },
+    {
+      "keys": [
+        "kyotei tip"
+      ],
+      "clicks": 0,
+      "impressions": 9,
+      "ctr": 0,
+      "position": 14.222222222222221
+    },
+    {
+      "keys": [
+        "kyoutei"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 58
+    },
+    {
+      "keys": [
+        "sgグランプリ2026"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "suji bets"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 14
+    },
+    {
+      "keys": [
+        "teleboat"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 5
+    },
+    {
+      "keys": [
+        "trifecta chart"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 57
+    },
+    {
+      "keys": [
+        "wakamatsu boat race"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "keys": [
+        "えーあいぼーと"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 20
+    },
+    {
+      "keys": [
+        "えーあいボート 口コミ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 56
+    },
+    {
+      "keys": [
+        "えーあいボート 競艇"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 6.5
+    },
+    {
+      "keys": [
+        "えーあいボート 競艇予想サイト"
+      ],
+      "clicks": 0,
+      "impressions": 14,
+      "ctr": 0,
+      "position": 13.928571428571429
+    },
+    {
+      "keys": [
+        "すじ舟券"
+      ],
+      "clicks": 0,
+      "impressions": 15,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "keys": [
+        "ぼーたーすai"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "keys": [
+        "よく当たる無料競艇予想"
+      ],
+      "clicks": 0,
+      "impressions": 10,
+      "ctr": 0,
+      "position": 30
+    },
+    {
+      "keys": [
+        "アイボート"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 2
+    },
+    {
+      "keys": [
+        "オッズ と は 競艇"
+      ],
+      "clicks": 0,
+      "impressions": 29,
+      "ctr": 0,
+      "position": 54.310344827586206
+    },
+    {
+      "keys": [
+        "オンラインボート"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 72
+    },
+    {
+      "keys": [
+        "オートレース予想 ai"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 46
+    },
+    {
+      "keys": [
+        "オールレディース ヴィーナスシリーズ 違い"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 15
+    },
+    {
+      "keys": [
+        "コース取り"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "スジ舟券"
+      ],
+      "clicks": 0,
+      "impressions": 100,
+      "ctr": 0,
+      "position": 10.22
+    },
+    {
+      "keys": [
+        "スジ舟券 早見表"
+      ],
+      "clicks": 0,
+      "impressions": 21,
+      "ctr": 0,
+      "position": 5.904761904761905
+    },
+    {
+      "keys": [
+        "スジ舟券とは"
+      ],
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 9.23076923076923
+    },
+    {
+      "keys": [
+        "スタート展示 見方"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 29
+    },
+    {
+      "keys": [
+        "セーフギャンブル"
+      ],
+      "clicks": 0,
+      "impressions": 22,
+      "ctr": 0,
+      "position": 79.0909090909091
+    },
+    {
+      "keys": [
+        "チャットgpt ボートレース予想"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 35
+    },
+    {
+      "keys": [
+        "テレボートai予想"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "keys": [
+        "ボートレース 枠番 コース 違い 進入コース"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "keys": [
+        "ボーターズ ai"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 43.5
+    },
+    {
+      "keys": [
+        "ボーターズ アプリ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 33
+    },
+    {
+      "keys": [
+        "ボーターズ 予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 44
+    },
+    {
+      "keys": [
+        "ボーターズai 無料"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 40
+    },
+    {
+      "keys": [
+        "ボーダーズai"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 24.5
+    },
+    {
+      "keys": [
+        "ボート レース ai"
+      ],
+      "clicks": 0,
+      "impressions": 11,
+      "ctr": 0,
+      "position": 35.81818181818182
+    },
+    {
+      "keys": [
+        "ボート レース ai 予想 アプリ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 17
+    },
+    {
+      "keys": [
+        "ボート レース オッズ と は"
+      ],
+      "clicks": 0,
+      "impressions": 33,
+      "ctr": 0,
+      "position": 35.878787878787875
+    },
+    {
+      "keys": [
+        "ボート レース オッズ 見方"
+      ],
+      "clicks": 0,
+      "impressions": 28,
+      "ctr": 0,
+      "position": 40.5
+    },
+    {
+      "keys": [
+        "ボート レース 予想"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 61.2
+    },
+    {
+      "keys": [
+        "ボート レース 予想 ai"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 31
+    },
+    {
+      "keys": [
+        "ボート レース 予想 無料"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 32.5
+    },
+    {
+      "keys": [
+        "ボート レース 確定 オッズ"
+      ],
+      "clicks": 0,
+      "impressions": 10,
+      "ctr": 0,
+      "position": 46.3
+    },
+    {
+      "keys": [
+        "ボート レース 複 勝 オッズ"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 36.5
+    },
+    {
+      "keys": [
+        "ボート レース 賭け 方"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 48.666666666666664
+    },
+    {
+      "keys": [
+        "ボート 予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 57
+    },
+    {
+      "keys": [
+        "ボート 予想ai"
+      ],
+      "clicks": 0,
+      "impressions": 15,
+      "ctr": 0,
+      "position": 9.733333333333333
+    },
+    {
+      "keys": [
+        "ボート 賭け 方"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 41.833333333333336
+    },
+    {
+      "keys": [
+        "ボートあい"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 4.857142857142858
+    },
+    {
+      "keys": [
+        "ボートとデータ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 54
+    },
+    {
+      "keys": [
+        "ボートアプリ"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 37.333333333333336
+    },
+    {
+      "keys": [
+        "ボートスマホ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 42
+    },
+    {
+      "keys": [
+        "ボートデータ"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 33.8
+    },
+    {
+      "keys": [
+        "ボートポセイドン"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 35
+    },
+    {
+      "keys": [
+        "ボートレース ai予想 的中率"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "keys": [
+        "ボートレース びより"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 26
+    },
+    {
+      "keys": [
+        "ボートレース スジ"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 10.5
+    },
+    {
+      "keys": [
+        "ボートレース スジ舟券"
+      ],
+      "clicks": 0,
+      "impressions": 15,
+      "ctr": 0,
+      "position": 9.2
+    },
+    {
+      "keys": [
+        "ボートレース データ分析"
+      ],
+      "clicks": 0,
+      "impressions": 12,
+      "ctr": 0,
+      "position": 25.5
+    },
+    {
+      "keys": [
+        "ボートレース デート"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "keys": [
+        "ボートレース 予想の仕方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 73
+    },
+    {
+      "keys": [
+        "ボートレース 予想アプリ"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "keys": [
+        "ボートレース 初心者 買い方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 25
+    },
+    {
+      "keys": [
+        "ボートレース 女子戦 特徴"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "ボートレース 展示 何分前"
+      ],
+      "clicks": 0,
+      "impressions": 22,
+      "ctr": 0,
+      "position": 9.090909090909092
+    },
+    {
+      "keys": [
+        "ボートレース 展開予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 146
+    },
+    {
+      "keys": [
+        "ボートレース 期待値"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 21.5
+    },
+    {
+      "keys": [
+        "ボートレース 楽しみ方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 16
+    },
+    {
+      "keys": [
+        "ボートレース 無料予想"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 7.666666666666667
+    },
+    {
+      "keys": [
+        "ボートレース 直前情報"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 32
+    },
+    {
+      "keys": [
+        "ボートレース 荒れる"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 9.5
+    },
+    {
+      "keys": [
+        "ボートレース 観戦"
+      ],
+      "clicks": 0,
+      "impressions": 10,
+      "ctr": 0,
+      "position": 10.1
+    },
+    {
+      "keys": [
+        "ボートレースあい"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "ボートレースの楽しみ方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "ボートレースびより"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 27.5
+    },
+    {
+      "keys": [
+        "ボートレースアプリ 予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "ボートレース予想の仕方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 73
+    },
+    {
+      "keys": [
+        "ボートレース予想の達人"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 43.75
+    },
+    {
+      "keys": [
+        "ボートレース予想アプリ"
+      ],
+      "clicks": 0,
+      "impressions": 8,
+      "ctr": 0,
+      "position": 8.625
+    },
+    {
+      "keys": [
+        "ボートレース予想ポセイドン"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 42
+    },
+    {
+      "keys": [
+        "ボートレース桐生ai予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "keys": [
+        "ボートレース無料予想"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 35.166666666666664
+    },
+    {
+      "keys": [
+        "ボート予想"
+      ],
+      "clicks": 0,
+      "impressions": 56,
+      "ctr": 0,
+      "position": 7.392857142857143
+    },
+    {
+      "keys": [
+        "ボート予想ai"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 6
+    },
+    {
+      "keys": [
+        "ボート予想サイト"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 17.5
+    },
+    {
+      "keys": [
+        "ポセイドン ai"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 40
+    },
+    {
+      "keys": [
+        "モーター 二連率とは"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 10.25
+    },
+    {
+      "keys": [
+        "モーター2連率とは"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 11.333333333333334
+    },
+    {
+      "keys": [
+        "下関競艇予想無料"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 58.5
+    },
+    {
+      "keys": [
+        "九州 競艇場"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    },
+    {
+      "keys": [
+        "予想 競艇"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 62.333333333333336
+    },
+    {
+      "keys": [
+        "今日のボートレース 予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 62
+    },
+    {
+      "keys": [
+        "今日の競艇 予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 53
+    },
+    {
+      "keys": [
+        "住之江 競艇 ai予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 32
+    },
+    {
+      "keys": [
+        "住之江ai予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 16
+    },
+    {
+      "keys": [
+        "住之江競艇 ai予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 30
+    },
+    {
+      "keys": [
+        "住之江競艇ai予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 30
+    },
+    {
+      "keys": [
+        "住之江賽艇"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 9.8
+    },
+    {
+      "keys": [
+        "多摩川競艇予想ai"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 37
+    },
+    {
+      "keys": [
+        "展示タイム"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 16
+    },
+    {
+      "keys": [
+        "展示航走"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 32
+    },
+    {
+      "keys": [
+        "展示航走 見方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 18
+    },
+    {
+      "keys": [
+        "常滑競艇予想 ai"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 23
+    },
+    {
+      "keys": [
+        "平和島 アクセス"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 76
+    },
+    {
+      "keys": [
+        "平和島劇場"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "keys": [
+        "平和島競艇ai予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 20
+    },
+    {
+      "keys": [
+        "戸田 競艇予想 ai"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "keys": [
+        "本日 の ボート レース 無料 予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "keys": [
+        "本日のボートレース 無料予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 32
+    },
+    {
+      "keys": [
+        "枠なり"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "枠なりとは"
+      ],
+      "clicks": 0,
+      "impressions": 26,
+      "ctr": 0,
+      "position": 11.153846153846153
+    },
+    {
+      "keys": [
+        "枠なり進入"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 10.75
+    },
+    {
+      "keys": [
+        "桐生競艇 ai予想"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 17.5
+    },
+    {
+      "keys": [
+        "桐生競艇予想 ai"
+      ],
+      "clicks": 0,
+      "impressions": 32,
+      "ctr": 0,
+      "position": 9.78125
+    },
+    {
+      "keys": [
+        "桐生競艇予想ai"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 10.6
+    },
+    {
+      "keys": [
+        "梅吉ai"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 29
+    },
+    {
+      "keys": [
+        "梅吉aiの競艇予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 6
+    },
+    {
+      "keys": [
+        "江戸川競艇予想 ai"
+      ],
+      "clicks": 0,
+      "impressions": 16,
+      "ctr": 0,
+      "position": 9.875
+    },
+    {
+      "keys": [
+        "無料競艇"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 73.5
+    },
+    {
+      "keys": [
+        "琵琶湖 ai"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 37
+    },
+    {
+      "keys": [
+        "福岡競艇予想 ai"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 30
+    },
+    {
+      "keys": [
+        "福岡競艇予想 無料"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 50
+    },
+    {
+      "keys": [
+        "福岡賽艇"
+      ],
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 9.23076923076923
+    },
+    {
+      "keys": [
+        "競艇 1マーク 展開予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 2
+    },
+    {
+      "keys": [
+        "競艇 3 連 単"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 74
+    },
+    {
+      "keys": [
+        "競艇 ai 予想 ランキング"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "keys": [
+        "競艇 ai 作り方 スマホ"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 21
+    },
+    {
+      "keys": [
+        "競艇 ai 回収率"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 10.166666666666666
+    },
+    {
+      "keys": [
+        "競艇 st とは"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 64
+    },
+    {
+      "keys": [
+        "競艇 よく当たるai予想"
+      ],
+      "clicks": 0,
+      "impressions": 16,
+      "ctr": 0,
+      "position": 11.25
+    },
+    {
+      "keys": [
+        "競艇 オッズ と は"
+      ],
+      "clicks": 0,
+      "impressions": 31,
+      "ctr": 0,
+      "position": 36.12903225806452
+    },
+    {
+      "keys": [
+        "競艇 オッズ 予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 60
+    },
+    {
+      "keys": [
+        "競艇 オッズ 見方"
+      ],
+      "clicks": 0,
+      "impressions": 35,
+      "ctr": 0,
+      "position": 36.42857142857143
+    },
+    {
+      "keys": [
+        "競艇 オッズ 計算"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 34
+    },
+    {
+      "keys": [
+        "競艇 オッズ買い"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 72
+    },
+    {
+      "keys": [
+        "競艇 コンピュータ 予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 48
+    },
+    {
+      "keys": [
+        "競艇 スジ"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "keys": [
+        "競艇 スジ舟券"
+      ],
+      "clicks": 0,
+      "impressions": 15,
+      "ctr": 0,
+      "position": 9.8
+    },
+    {
+      "keys": [
+        "競艇 ターン マーク"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 38
+    },
+    {
+      "keys": [
+        "競艇 ナビ"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 48
+    },
+    {
+      "keys": [
+        "競艇 ビッグ データアプリ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 41
+    },
+    {
+      "keys": [
+        "競艇 モーター ボート 見方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 24
+    },
+    {
+      "keys": [
+        "競艇 予想 アプリ"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "keys": [
+        "競艇 予想 オッズ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 63
+    },
+    {
+      "keys": [
+        "競艇 予想 サイト"
+      ],
+      "clicks": 0,
+      "impressions": 14,
+      "ctr": 0,
+      "position": 48.714285714285715
+    },
+    {
+      "keys": [
+        "競艇 予想 無料"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 52.666666666666664
+    },
+    {
+      "keys": [
+        "競艇 予想ai"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 8.5
+    },
+    {
+      "keys": [
+        "競艇 予想の仕方"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 60.333333333333336
+    },
+    {
+      "keys": [
+        "競艇 予想サイト 無料"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 68.33333333333333
+    },
+    {
+      "keys": [
+        "競艇 予測 ai"
+      ],
+      "clicks": 0,
+      "impressions": 29,
+      "ctr": 0,
+      "position": 21.344827586206897
+    },
+    {
+      "keys": [
+        "競艇 全 レース 予想 無料"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 34
+    },
+    {
+      "keys": [
+        "競艇 全レース予想 無料 ポセイドン"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 55
+    },
+    {
+      "keys": [
+        "競艇 出足 見方"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 68.5
+    },
+    {
+      "keys": [
+        "競艇 分析"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 43
+    },
+    {
+      "keys": [
+        "競艇 初心者"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 51
+    },
+    {
+      "keys": [
+        "競艇 初心者 賭け 方"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 63.4
+    },
+    {
+      "keys": [
+        "競艇 勉強"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 76
+    },
+    {
+      "keys": [
+        "競艇 大穴予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 45
+    },
+    {
+      "keys": [
+        "競艇 展示 何分前"
+      ],
+      "clicks": 0,
+      "impressions": 26,
+      "ctr": 0,
+      "position": 7.576923076923077
+    },
+    {
+      "keys": [
+        "競艇 展示タイム 必勝法"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 15
+    },
+    {
+      "keys": [
+        "競艇 展示航走 見方"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 28.25
+    },
+    {
+      "keys": [
+        "競艇 展開予想"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 46
+    },
+    {
+      "keys": [
+        "競艇 攻略"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 50.5
+    },
+    {
+      "keys": [
+        "競艇 新概念データ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 29
+    },
+    {
+      "keys": [
+        "競艇 決まり手 データ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    },
+    {
+      "keys": [
+        "競艇 無料 予想"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 59.333333333333336
+    },
+    {
+      "keys": [
+        "競艇 無料予想"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 60.75
+    },
+    {
+      "keys": [
+        "競艇 確定 オッズ"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 55.5
+    },
+    {
+      "keys": [
+        "競艇 荒れる"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 9.571428571428571
+    },
+    {
+      "keys": [
+        "競艇 荒れるレース 今日"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 22.714285714285715
+    },
+    {
+      "keys": [
+        "競艇 荒れるレース予想"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 7.5
+    },
+    {
+      "keys": [
+        "競艇 複 勝 オッズ"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 35
+    },
+    {
+      "keys": [
+        "競艇 見方"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 69.16666666666667
+    },
+    {
+      "keys": [
+        "競艇ai ポセイドン"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 6
+    },
+    {
+      "keys": [
+        "競艇ai 作り方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 38
+    },
+    {
+      "keys": [
+        "競艇ai 作り方 スマホ"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 12
+    },
+    {
+      "keys": [
+        "競艇ai予想 回収率"
+      ],
+      "clicks": 0,
+      "impressions": 41,
+      "ctr": 0,
+      "position": 10.268292682926829
+    },
+    {
+      "keys": [
+        "競艇ai予想ランキング"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "keys": [
+        "競艇スジ舟券"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "keys": [
+        "競艇予想 サイト"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 55
+    },
+    {
+      "keys": [
+        "競艇予想ai 作り方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 46
+    },
+    {
+      "keys": [
+        "競艇予想アプリ"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 16.857142857142858
+    },
+    {
+      "keys": [
+        "競艇予想サイト ai"
+      ],
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 10.384615384615385
+    },
+    {
+      "keys": [
+        "競艇予想サイト 無料"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 67.6
+    },
+    {
+      "keys": [
+        "競艇予想仕方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 66
+    },
+    {
+      "keys": [
+        "競艇指数"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 8.5
+    },
+    {
+      "keys": [
+        "競艇無料予想"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 37
+    },
+    {
+      "keys": [
+        "競艇無料予想サイト"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 73.33333333333333
+    },
+    {
+      "keys": [
+        "競艇荒れそうなレース"
+      ],
+      "clicks": 0,
+      "impressions": 8,
+      "ctr": 0,
+      "position": 9.75
+    },
+    {
+      "keys": [
+        "筋舟券"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 10.333333333333334
+    },
+    {
+      "keys": [
+        "舟券 買い方"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 46
+    },
+    {
+      "keys": [
+        "荒れるボートレース場"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 21
+    },
+    {
+      "keys": [
+        "荒れるレースの見分け方"
+      ],
+      "clicks": 0,
+      "impressions": 23,
+      "ctr": 0,
+      "position": 8.217391304347826
+    },
+    {
+      "keys": [
+        "荒れる競艇"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "keys": [
+        "蒲郡競艇予想ai"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 34
+    },
+    {
+      "keys": [
+        "責任あるギャンブル"
+      ],
+      "clicks": 0,
+      "impressions": 56,
+      "ctr": 0,
+      "position": 32.48214285714286
+    },
+    {
+      "keys": [
+        "超展開データ"
+      ],
+      "clicks": 0,
+      "impressions": 24,
+      "ctr": 0,
+      "position": 8.125
+    },
+    {
+      "keys": [
+        "進入予想"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 6.833333333333333
+    },
+    {
+      "keys": [
+        "鳴門競艇予想 ai"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 33
+    },
+    {
+      "keys": [
+        "일본 경정"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 17.5
+    }
+  ],
+  "topQueries": [
+    {
+      "keys": [
+        "ボートai"
+      ],
+      "clicks": 127,
+      "impressions": 793,
+      "ctr": 0.1601513240857503,
+      "position": 6.941992433795712
+    },
+    {
+      "keys": [
+        "boatai"
+      ],
+      "clicks": 102,
+      "impressions": 160,
+      "ctr": 0.6375,
+      "position": 1.80625
+    },
+    {
+      "keys": [
+        "ボートレースai予想"
+      ],
+      "clicks": 80,
+      "impressions": 278,
+      "ctr": 0.28776978417266186,
+      "position": 5.402877697841727
+    },
+    {
+      "keys": [
+        "ボートレースai"
+      ],
+      "clicks": 38,
+      "impressions": 673,
+      "ctr": 0.05646359583952452,
+      "position": 6.8484398216939075
+    },
+    {
+      "keys": [
+        "競艇ai予想 無料"
+      ],
+      "clicks": 28,
+      "impressions": 688,
+      "ctr": 0.040697674418604654,
+      "position": 7.27906976744186
+    },
+    {
+      "keys": [
+        "競艇 全レース予想 無料"
+      ],
+      "clicks": 26,
+      "impressions": 188,
+      "ctr": 0.13829787234042554,
+      "position": 15.941489361702128
+    },
+    {
+      "keys": [
+        "boat ai"
+      ],
+      "clicks": 25,
+      "impressions": 37,
+      "ctr": 0.6756756756756757,
+      "position": 1.027027027027027
+    },
+    {
+      "keys": [
+        "ボートアイ"
+      ],
+      "clicks": 23,
+      "impressions": 2344,
+      "ctr": 0.009812286689419795,
+      "position": 4.547354948805461
+    },
+    {
+      "keys": [
+        "競艇ai"
+      ],
+      "clicks": 20,
+      "impressions": 449,
+      "ctr": 0.044543429844097995,
+      "position": 9.057906458797328
+    },
+    {
+      "keys": [
+        "ボートレース ai予想"
+      ],
+      "clicks": 19,
+      "impressions": 146,
+      "ctr": 0.13013698630136986,
+      "position": 7.493150684931507
+    },
+    {
+      "keys": [
+        "ボートレース予想ai"
+      ],
+      "clicks": 18,
+      "impressions": 370,
+      "ctr": 0.04864864864864865,
+      "position": 7.22972972972973
+    },
+    {
+      "keys": [
+        "競艇 荒れるレースの見極め"
+      ],
+      "clicks": 17,
+      "impressions": 64,
+      "ctr": 0.265625,
+      "position": 2.265625
+    },
+    {
+      "keys": [
+        "競艇 ai"
+      ],
+      "clicks": 12,
+      "impressions": 237,
+      "ctr": 0.05063291139240506,
+      "position": 12
+    },
+    {
+      "keys": [
+        "競艇ai予想"
+      ],
+      "clicks": 11,
+      "impressions": 428,
+      "ctr": 0.02570093457943925,
+      "position": 9.151869158878505
+    },
+    {
+      "keys": [
+        "競艇予想ai"
+      ],
+      "clicks": 8,
+      "impressions": 471,
+      "ctr": 0.016985138004246284,
+      "position": 9.021231422505307
+    },
+    {
+      "keys": [
+        "ボートレース ai"
+      ],
+      "clicks": 7,
+      "impressions": 446,
+      "ctr": 0.01569506726457399,
+      "position": 11.612107623318385
+    },
+    {
+      "keys": [
+        "ボート ai"
+      ],
+      "clicks": 6,
+      "impressions": 73,
+      "ctr": 0.0821917808219178,
+      "position": 6.835616438356165
+    },
+    {
+      "keys": [
+        "ボートレース予想"
+      ],
+      "clicks": 6,
+      "impressions": 67,
+      "ctr": 0.08955223880597014,
+      "position": 26.91044776119403
+    },
+    {
+      "keys": [
+        "競艇予想"
+      ],
+      "clicks": 5,
+      "impressions": 51,
+      "ctr": 0.09803921568627451,
+      "position": 79.01960784313725
+    },
+    {
+      "keys": [
+        "ボートレースai予想アプリ"
+      ],
+      "clicks": 4,
+      "impressions": 129,
+      "ctr": 0.031007751937984496,
+      "position": 7.224806201550388
+    }
+  ],
+  "topPages": [
+    {
+      "keys": [
+        "https://www.boat-ai.jp/"
+      ],
+      "clicks": 717,
+      "impressions": 13219,
+      "ctr": 0.05424010893410999,
+      "position": 9.209244269611922
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/rough-race-signals"
+      ],
+      "clicks": 36,
+      "impressions": 808,
+      "ctr": 0.04455445544554455,
+      "position": 7.178217821782178
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/first-mark-prediction-guide"
+      ],
+      "clicks": 14,
+      "impressions": 127,
+      "ctr": 0.11023622047244094,
+      "position": 12.606299212598426
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/venue-visit-guide"
+      ],
+      "clicks": 10,
+      "impressions": 150,
+      "ctr": 0.06666666666666667,
+      "position": 9.426666666666666
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/about"
+      ],
+      "clicks": 8,
+      "impressions": 187,
+      "ctr": 0.0427807486631016,
+      "position": 15.866310160427808
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog"
+      ],
+      "clicks": 7,
+      "impressions": 239,
+      "ctr": 0.029288702928870293,
+      "position": 16.523012552301253
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/win-place-comparison"
+      ],
+      "clicks": 7,
+      "impressions": 201,
+      "ctr": 0.03482587064676617,
+      "position": 9.029850746268657
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/what-pros-avoid"
+      ],
+      "clicks": 6,
+      "impressions": 30,
+      "ctr": 0.2,
+      "position": 11.733333333333333
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review"
+      ],
+      "clicks": 5,
+      "impressions": 135,
+      "ctr": 0.037037037037037035,
+      "position": 9.948148148148148
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/exhibition-run-guide"
+      ],
+      "clicks": 5,
+      "impressions": 281,
+      "ctr": 0.017793594306049824,
+      "position": 10.729537366548042
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/about"
+      ],
+      "clicks": 5,
+      "impressions": 45,
+      "ctr": 0.1111111111111111,
+      "position": 8.6
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/motor-performance"
+      ],
+      "clicks": 3,
+      "impressions": 88,
+      "ctr": 0.03409090909090909,
+      "position": 9.318181818181818
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/odds-expected-value-guide"
+      ],
+      "clicks": 3,
+      "impressions": 239,
+      "ctr": 0.012552301255230125,
+      "position": 30.05857740585774
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/zh-TW/guide"
+      ],
+      "clicks": 3,
+      "impressions": 43,
+      "ctr": 0.06976744186046512,
+      "position": 9.069767441860465
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/beginners-start-guide"
+      ],
+      "clicks": 2,
+      "impressions": 30,
+      "ctr": 0.06666666666666667,
+      "position": 36.9
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/"
+      ],
+      "clicks": 2,
+      "impressions": 19,
+      "ctr": 0.10526315789473684,
+      "position": 13.263157894736842
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/zh-TW/venues/fukuoka"
+      ],
+      "clicks": 2,
+      "impressions": 49,
+      "ctr": 0.04081632653061224,
+      "position": 8.46938775510204
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/zh-TW/venues/heiwajima"
+      ],
+      "clicks": 2,
+      "impressions": 19,
+      "ctr": 0.10526315789473684,
+      "position": 32.84210526315789
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/exhibition-time-top-guide"
+      ],
+      "clicks": 1,
+      "impressions": 4,
+      "ctr": 0.25,
+      "position": 5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/womens-race-strategy"
+      ],
+      "clicks": 1,
+      "impressions": 32,
+      "ctr": 0.03125,
+      "position": 9.1875
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/contact"
+      ],
+      "clicks": 1,
+      "impressions": 5,
+      "ctr": 0.2,
+      "position": 6.2
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/beginners-start-guide"
+      ],
+      "clicks": 1,
+      "impressions": 47,
+      "ctr": 0.02127659574468085,
+      "position": 10.617021276595745
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/night-race-strategy"
+      ],
+      "clicks": 1,
+      "impressions": 14,
+      "ctr": 0.07142857142857142,
+      "position": 13.857142857142858
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/biwako"
+      ],
+      "clicks": 1,
+      "impressions": 12,
+      "ctr": 0.08333333333333333,
+      "position": 18.25
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/tamagawa"
+      ],
+      "clicks": 1,
+      "impressions": 8,
+      "ctr": 0.125,
+      "position": 9.25
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/zh-TW/blog/odds-expected-value-guide"
+      ],
+      "clicks": 1,
+      "impressions": 23,
+      "ctr": 0.043478260869565216,
+      "position": 33.21739130434783
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/zh-TW/venues/suminoe"
+      ],
+      "clicks": 1,
+      "impressions": 36,
+      "ctr": 0.027777777777777776,
+      "position": 8.583333333333332
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/accuracy/history"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 1
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/course-prediction-tips"
+      ],
+      "clicks": 0,
+      "impressions": 107,
+      "ctr": 0,
+      "position": 9.560747663551401
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/data-race-table-guide"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 39
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/how-we-measure-accuracy"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 3.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/improve-recovery-rate"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/losing-technique-guide"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 8.333333333333332
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/motor-condition-guide"
+      ],
+      "clicks": 0,
+      "impressions": 40,
+      "ctr": 0,
+      "position": 9.675
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/picks-guide"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 11.6
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/race-ai-copy-guide"
+      ],
+      "clicks": 0,
+      "impressions": 9,
+      "ctr": 0,
+      "position": 3.4444444444444446
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/race-review-guide"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 31.4
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/st-timing-gap-guide"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 6.428571428571429
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/suji-funaken-guide"
+      ],
+      "clicks": 0,
+      "impressions": 298,
+      "ctr": 0,
+      "position": 9.271812080536913
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/trifecta-betting-guide"
+      ],
+      "clicks": 0,
+      "impressions": 12,
+      "ctr": 0,
+      "position": 18.833333333333332
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/venue-heiwajima"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/venue-tokuyama"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 10.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/why-you-lose"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 4.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/winning-technique-analysis-guide"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 15.714285714285714
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/ai-prediction-accuracy-review"
+      ],
+      "clicks": 0,
+      "impressions": 11,
+      "ctr": 0,
+      "position": 20.454545454545453
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/improve-recovery-rate"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 67
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/monthly-50k-roadmap"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/motor-condition-guide"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 9.6
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/sg-g1-race-strategy"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 89
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/special-planned-races"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 20
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/trifecta-betting-guide"
+      ],
+      "clicks": 0,
+      "impressions": 9,
+      "ctr": 0,
+      "position": 22
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/venue-ashiya"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 12.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/venue-omura"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/faq"
+      ],
+      "clicks": 0,
+      "impressions": 30,
+      "ctr": 0,
+      "position": 5.833333333333333
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/guide"
+      ],
+      "clicks": 0,
+      "impressions": 39,
+      "ctr": 0,
+      "position": 8.307692307692307
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/privacy"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 30
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/responsible-gambling"
+      ],
+      "clicks": 0,
+      "impressions": 47,
+      "ctr": 0,
+      "position": 58.191489361702125
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues"
+      ],
+      "clicks": 0,
+      "impressions": 18,
+      "ctr": 0,
+      "position": 7.944444444444445
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/amagasaki"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 5.666666666666667
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/ashiya"
+      ],
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 8.76923076923077
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/edogawa"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 18
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/fukuoka"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 12.6
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/gamagori"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 15.142857142857142
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/hamanako"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 25.857142857142858
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/heiwajima"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 9.333333333333334
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/kiryu"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 16.833333333333336
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/kojima"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 16.25
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/marugame"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 4.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/mikuni"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 21
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/miyajima"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 9.285714285714286
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/naruto"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/omura"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 3
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/region/kanto"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 33
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/region/kyushu"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/shimonoseki"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/suminoe"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 7.666666666666667
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/toda"
+      ],
+      "clicks": 0,
+      "impressions": 8,
+      "ctr": 0,
+      "position": 11.125
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/tokuyama"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/tsu"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 7.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/wakamatsu"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 10.166666666666666
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/guide"
+      ],
+      "clicks": 0,
+      "impressions": 50,
+      "ctr": 0,
+      "position": 37.46
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/10000-races-analysis"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 76.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/beginners-start-guide"
+      ],
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 7.846153846153846
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/night-race-strategy"
+      ],
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 9.76923076923077
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/odds-expected-value-guide"
+      ],
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 41.38461538461539
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/rough-race-signals"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/sg-g1-race-strategy"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 96
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/sg-race-guide-2026"
+      ],
+      "clicks": 0,
+      "impressions": 12,
+      "ctr": 0,
+      "position": 10.333333333333334
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/venue-heiwajima"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/guide"
+      ],
+      "clicks": 0,
+      "impressions": 10,
+      "ctr": 0,
+      "position": 13.1
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/races/2026-02-11"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 38
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 7.75
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/ashiya"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/fukuoka"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/heiwajima"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 2
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/miyajima"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/omura"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 5.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/region/kinki"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    }
+  ],
+  "venuePages": [
+    {
+      "keys": [
+        "https://www.boat-ai.jp/zh-TW/venues/fukuoka"
+      ],
+      "clicks": 2,
+      "impressions": 49,
+      "ctr": 0.04081632653061224,
+      "position": 8.46938775510204
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/zh-TW/venues/heiwajima"
+      ],
+      "clicks": 2,
+      "impressions": 19,
+      "ctr": 0.10526315789473684,
+      "position": 32.84210526315789
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/biwako"
+      ],
+      "clicks": 1,
+      "impressions": 12,
+      "ctr": 0.08333333333333333,
+      "position": 18.25
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/tamagawa"
+      ],
+      "clicks": 1,
+      "impressions": 8,
+      "ctr": 0.125,
+      "position": 9.25
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/zh-TW/venues/suminoe"
+      ],
+      "clicks": 1,
+      "impressions": 36,
+      "ctr": 0.027777777777777776,
+      "position": 8.583333333333332
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues"
+      ],
+      "clicks": 0,
+      "impressions": 18,
+      "ctr": 0,
+      "position": 7.944444444444445
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/amagasaki"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 5.666666666666667
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/ashiya"
+      ],
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 8.76923076923077
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/edogawa"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 18
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/fukuoka"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 12.6
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/gamagori"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 15.142857142857142
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/hamanako"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 25.857142857142858
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/heiwajima"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 9.333333333333334
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/kiryu"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 16.833333333333336
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/kojima"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 16.25
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/marugame"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 4.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/mikuni"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 21
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/miyajima"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 9.285714285714286
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/naruto"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/omura"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 3
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/region/kanto"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 33
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/region/kyushu"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/shimonoseki"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/suminoe"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 7.666666666666667
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/toda"
+      ],
+      "clicks": 0,
+      "impressions": 8,
+      "ctr": 0,
+      "position": 11.125
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/tokuyama"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/tsu"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 7.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/venues/wakamatsu"
+      ],
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 10.166666666666666
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues"
+      ],
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 7.75
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/ashiya"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/fukuoka"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/heiwajima"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 2
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/miyajima"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/omura"
+      ],
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 5.5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/venues/region/kinki"
+      ],
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    }
+  ],
+  "featurePages": [
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/first-mark-prediction-guide"
+      ],
+      "clicks": 14,
+      "impressions": 127,
+      "ctr": 0.11023622047244094,
+      "position": 12.606299212598426
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/venue-visit-guide"
+      ],
+      "clicks": 10,
+      "impressions": 150,
+      "ctr": 0.06666666666666667,
+      "position": 9.426666666666666
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/exhibition-run-guide"
+      ],
+      "clicks": 5,
+      "impressions": 281,
+      "ctr": 0.017793594306049824,
+      "position": 10.729537366548042
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/odds-expected-value-guide"
+      ],
+      "clicks": 3,
+      "impressions": 239,
+      "ctr": 0.012552301255230125,
+      "position": 30.05857740585774
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/beginners-start-guide"
+      ],
+      "clicks": 2,
+      "impressions": 30,
+      "ctr": 0.06666666666666667,
+      "position": 36.9
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/exhibition-time-top-guide"
+      ],
+      "clicks": 1,
+      "impressions": 4,
+      "ctr": 0.25,
+      "position": 5
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/beginners-start-guide"
+      ],
+      "clicks": 1,
+      "impressions": 47,
+      "ctr": 0.02127659574468085,
+      "position": 10.617021276595745
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/zh-TW/blog/odds-expected-value-guide"
+      ],
+      "clicks": 1,
+      "impressions": 23,
+      "ctr": 0.043478260869565216,
+      "position": 33.21739130434783
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/data-race-table-guide"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 39
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/losing-technique-guide"
+      ],
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 8.333333333333332
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/motor-condition-guide"
+      ],
+      "clicks": 0,
+      "impressions": 40,
+      "ctr": 0,
+      "position": 9.675
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/picks-guide"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 11.6
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/race-ai-copy-guide"
+      ],
+      "clicks": 0,
+      "impressions": 9,
+      "ctr": 0,
+      "position": 3.4444444444444446
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/race-review-guide"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 31.4
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/st-timing-gap-guide"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 6.428571428571429
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/suji-funaken-guide"
+      ],
+      "clicks": 0,
+      "impressions": 298,
+      "ctr": 0,
+      "position": 9.271812080536913
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/trifecta-betting-guide"
+      ],
+      "clicks": 0,
+      "impressions": 12,
+      "ctr": 0,
+      "position": 18.833333333333332
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/blog/winning-technique-analysis-guide"
+      ],
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 15.714285714285714
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/motor-condition-guide"
+      ],
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 9.6
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/en/blog/trifecta-betting-guide"
+      ],
+      "clicks": 0,
+      "impressions": 9,
+      "ctr": 0,
+      "position": 22
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/beginners-start-guide"
+      ],
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 7.846153846153846
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/odds-expected-value-guide"
+      ],
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 41.38461538461539
+    },
+    {
+      "keys": [
+        "https://www.boat-ai.jp/ko/blog/sg-race-guide-2026"
+      ],
+      "clicks": 0,
+      "impressions": 12,
+      "ctr": 0,
+      "position": 10.333333333333334
+    }
+  ]
+}

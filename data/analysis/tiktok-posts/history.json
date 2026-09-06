@@ -44,6 +44,17 @@
       "postedAt": null,
       "metrics": null,
       "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行）。sns-video-producer-prompt.md絶対厳守13（TikTok向け新規制作は賭けの結果に影響する統計・インサイトを扱わない題材に限定、2026-09-01/02方針転換）に該当しない唯一の型として選定。既存ToolTallyCM.jsx（2026-09-01評価済み・日付非依存の恒久コンテンツ）を再利用、コード変更無し。@ryujinradarのシャドウバンは解消未確認のため、下書きは承認待ちストックとして生成のみ行い、投稿判断はユーザーに委ねる。"
+    },
+    {
+      "date": "2026-09-06",
+      "format": "language-switcher",
+      "axis": null,
+      "content": "使い方ライフハック型（4言語切替の使い方、日本語/English/繁體中文/한국어、実画面スクショ使用）",
+      "videoFile": "Supabase Storage sns-hub-media/8f561ed6-6cad-4fa5-9533-748ed67ec6a1/tiktok-ja.mp4（sns_drafts id=1b8a4fc2-ed38-4db0-8e8f-286b9f444850）",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行）。絶対厳守13により会場攻略・答え合わせ・予想数値フック等が新規制作停止中のため、成績・確率を一切扱わない使い方ライフハック型のLanguageSwitcherCM.jsx（2026-09-03新設・成績データ不使用のため元々TikTok可）を選定。直近3投稿（venue-ranking系×2〈いずれも絶対厳守13により現在は新規制作停止対象〉・mascot）と型重複なし。既存コンポジションの再利用、コード変更無し。@ryujinradarのシャドウバンは解消未確認のため、下書きは承認待ちストックとして生成のみ行い、投稿判断はユーザーに委ねる。"
     }
   ]
 }

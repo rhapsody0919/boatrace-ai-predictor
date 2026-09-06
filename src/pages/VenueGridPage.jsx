@@ -22,7 +22,7 @@ import { getLanguage, localizePath } from "../config/languages";
 import { getFeaturedPosts, getLatestPosts } from "../data/blogPosts";
 import { WEEKDAYS } from "../constants";
 import { formatDate } from "../utils/formatters";
-import { formatDateJP } from "../utils/dateUtils";
+import { formatDateJP, getTodayJST } from "../utils/dateUtils";
 import "./VenueGridPage.css";
 // 過去日付ビューのレイアウト（.race-detail-page/.page-header/.back-link等）は
 // 旧RaceDetail.jsxのスタイルを流用する
@@ -190,26 +190,53 @@ function TodayVenueGridPage() {
           <section className="blog-preview-section">
             <h2>📝 {t("home.blogTitle")}</h2>
             <p className="blog-preview-lead">{t("home.blogDesc")}</p>
-            <div className="blog-preview-grid">
-              {getFeaturedPosts()
-                .slice(0, 5)
-                .map((post) => (
-                  <Link
-                    to={localize(`/blog/${post.id}`)}
-                    key={post.id}
-                    className="blog-preview-card"
-                  >
-                    <span className="blog-preview-category">
-                      {post.category}
-                    </span>
-                    <h3 className="blog-preview-title">{post.title}</h3>
-                    <p className="blog-preview-desc">{post.description}</p>
-                    <div className="blog-preview-meta">
-                      <span>{post.readTime}</span>
-                    </div>
-                  </Link>
-                ))}
-            </div>
+
+            {(() => {
+              // 従来はfeatured記事のみ表示していたため、直近の新着記事が
+              // featured未設定の場合ホームに一切出ない問題があった
+              // （2026-09-04、直近10記事が全てfeatured:falseと判明）。
+              // 人気（featured）/新着（日付順）の2セクションに分け、
+              // 新着側にはfeatured枠と重複する記事を出さない
+              const popularPosts = getFeaturedPosts().slice(0, 3);
+              const popularIds = new Set(popularPosts.map((post) => post.id));
+              const newPosts = getLatestPosts(6)
+                .filter((post) => !popularIds.has(post.id))
+                .slice(0, 3);
+
+              const renderCard = (post) => (
+                <Link
+                  to={localize(`/blog/${post.id}`)}
+                  key={post.id}
+                  className="blog-preview-card"
+                >
+                  <span className="blog-preview-category">{post.category}</span>
+                  <h3 className="blog-preview-title">{post.title}</h3>
+                  <p className="blog-preview-desc">{post.description}</p>
+                  <div className="blog-preview-meta">
+                    <span>{post.readTime}</span>
+                  </div>
+                </Link>
+              );
+
+              return (
+                <>
+                  <h3 className="blog-preview-subheading">
+                    🌟 {t("home.popularArticles")}
+                  </h3>
+                  <div className="blog-preview-grid">
+                    {popularPosts.map(renderCard)}
+                  </div>
+
+                  <h3 className="blog-preview-subheading">
+                    🆕 {t("home.newArticles")}
+                  </h3>
+                  <div className="blog-preview-grid">
+                    {newPosts.map(renderCard)}
+                  </div>
+                </>
+              );
+            })()}
+
             <div className="blog-preview-cta">
               <Link to={localize("/blog")} className="blog-preview-btn">
                 {t("home.viewAllPosts")}
@@ -255,6 +282,10 @@ function TodayVenueGridPage() {
 
 function PastVenueGridPage({ date }) {
   const { venuesData, loading, error } = usePastVenues(date);
+  // /races/{today}のように「過去日付ビュー」経由で本日の日付が指定された場合も
+  // 時刻比較を有効にする（無効のままだと本日の未終了レースが「全レース終了」と
+  // 誤表示される）。真に過去の日付ではnullのまま（時刻比較不要）
+  const nowHHMM = useNowHHMM(date === getTodayJST());
 
   const breadcrumbItems = [
     { name: "ホーム", url: "/" },
@@ -299,7 +330,7 @@ function PastVenueGridPage({ date }) {
             <VenueGrid
               venuesData={venuesData}
               getVenueLink={(code) => `/races/${date}/${code}`}
-              nowHHMM={null}
+              nowHHMM={nowHHMM}
             />
           )}
         </div>

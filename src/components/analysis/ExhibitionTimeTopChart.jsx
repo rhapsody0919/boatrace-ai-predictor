@@ -157,7 +157,7 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="boat_number" />
+          <XAxis dataKey="boat_number" interval={0} tick={{ fontSize: 11 }} />
           <YAxis
             label={{
               value: t("analysis.probabilityYAxis"),

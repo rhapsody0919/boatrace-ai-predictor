@@ -11,7 +11,7 @@
 このRoutineは2つの起動方法を持つ。まず`<routine-fire-payload>`ブロックの有無を確認する。
 
 - **無い場合（スケジュール起動）**: 定期ポーリング
-  - 週次型（`venue-feature`）: 12時間おきのcronでポーリングする（初期値、運用実績を見て変更可）
+  - 週次型（`venue-feature`）: 1時間おきのcronでポーリングする（2026-09-05、初期値の12時間おきから変更）
   - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする（同じcron間隔でも自然に拾える）
   - 日次・時間制約型（`race-time-critical`）: このパイプラインでは扱わない。既存の`sns-hub-content-generation`（`sns-video-producer-prompt.md`）の手動生成ボタン系が担当する
 - **ある場合（API起動）**: ペイロードの`action`で分岐する

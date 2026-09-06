@@ -8,16 +8,23 @@
 
 ## 実行トリガー
 
-- 週次型（`venue-feature`）: 12時間おきのcronでポーリングする
+- 週次型（`venue-feature`）: 1時間おきのcronでポーリングする（2026-09-05、初期値の12時間おきから変更）
 - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする
 - API起動（修正指摘）: `api/admin/sns-hub/drafts/[id]/redo.js`（2026-09-04、旧revise.jsと統合済み）（`platform='blog'`の下書きのみ）
-- API起動（今すぐ生成、要件26）: `api/admin/sns-hub/topics/[id]/targets/[targetId]/fire.js`からのペイロード（`{action: 'generate_now', targetId}`）。`status='pending'`であることは検証済みの1件のみが対象。「1. claim対象の取得・claim」を丸ごとスキップし、`claimTopicTarget(targetId, routineRunId)`（`scripts/lib/snsTopics.js`）を`targetId`に対して直接呼ぶ（`docs/operation/sns-pipeline-x.md`の「A''. 即時生成フロー」と同じ思想）。戻り値がnullなら生成せず終了する（ADR 0036）
+- API起動（今すぐ生成、要件26）: `api/admin/sns-hub/topics/[id]/targets/[targetId]/fire.js`からのペイロード（`{action: 'generate_now', targetId}`）。`status='pending'`であることは検証済みの1件のみが対象。「1. claim対象の取得・claim」を丸ごとスキップし、`claimTopicTarget(targetId, routineRunId)`（`scripts/lib/snsTopics.js`）を`targetId`に対して直接呼ぶ（`docs/operation/sns-pipeline-x.md`の「A''. 即時生成フロー」と同じ思想）。戻り値がnullなら生成せず終了する（ADR 0036）。ただし0.5のチェックは省略しない
 
 ## 0. 蓄積されたフィードバックの確認
 
 - `getRecentRevisions({ platform: "blog" })`（`scripts/lib/contentRevisionHistory.js`）
 - `getActiveInsights({ platform: "blog" })`（`scripts/lib/snsStrategyInsights.js`）
 - どちらも該当が無ければ通常通り進めてよい
+
+## 0.5. 未マージDraft PRの重複防止チェック
+
+`hasOpenBlogDraft()`（`scripts/lib/snsTopics.js`）を呼ぶ。trueなら**claimせずここで終了する**（通常ポーリング・今すぐ生成の両方で必須、省略しない）。
+
+- 理由: blogチャネルの生成物（`src/data/blogPosts.js`の記事メタデータ配列）は全ての記事が同じ挿入位置に追記される共有ファイルのため、未マージのDraft PRが複数同時に存在すると、先にマージされた方が後発のPRを必ずコンフリクトさせる（2026-09-05、PR #519とPR #509/#512/#525が相互に複数回コンフリクトし直した実績あり）
+- 恒久対策は`src/data/blogPosts.js`を手書き配列から個別ファイル由来の自動生成に置き換えること（未着手、将来のリファクタ課題）。それまでの間はclaim側を直列化して同時オープンPRの発生自体を防ぐ
 
 ## 1. claim対象の取得・claim
 
@@ -61,6 +68,7 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 ## 制約（絶対厳守）
 
 - 1回の実行で処理するネタは1件まで
+- **platform='blog'の未マージDraft PRが存在する間は新規claimしない**（0.5参照）。通常ポーリング・今すぐ生成のどちらの起動経路でも例外なく適用する
 - **1つのclaim済みターゲットにつき、`sns_drafts`行・Draft PRは必ず1件だけ作る**。3.の執筆後、レース結果が出ている・前提が古い等の理由で自分で内容の誤りに気づいた場合も、同一セッション内で2件目の記事・PRを作り直さない。誤りに気づいたら、まだINSERT/PR作成前ならその場で書き直してよいが、**一度`sns_drafts`にINSERTしてPRを作った後は、その回の生成物が最終版**とし、7.の完了処理（`markTopicTargetGenerated`）まで進める。修正は人間の下書き承認画面からの修正指摘操作に委ねる（2026-09-03、レース発走前提で書いた記事とレース結果を反映した記事の2件を同一セッションで作ってしまう不具合が発生し判明。誤った方のPRは`gh pr close`でクローズして解決した）
 - claim対象が0件、または実データの裏付けが取れない場合は生成せず終了する
 - masterへの直接コミットは行わない（Draft PRのみ）

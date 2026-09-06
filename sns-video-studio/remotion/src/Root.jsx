@@ -27,6 +27,8 @@ import {
   VenueRankingCM_Manshu_EN_VariantB,
   VenueRankingCM_WinRate,
   VenueRankingCM_WinRate_VariantB,
+  VenueRankingCM_WinRateCompareDemo,
+  TriviaCM_GradeWinRateCompareDemo,
   VenueRankingCM_Motor2Rate,
   VenueRankingCM_TopStart,
   VenueRankingCM_TopStart_EN,
@@ -65,6 +67,8 @@ import {
   TECHNIQUE_CONSISTENCY_DURATION,
 } from "./TechniqueConsistencyCM.jsx";
 import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
+import { OnboardingFlowCM } from "./OnboardingFlowCM.jsx";
+import { AboutHeroDesktop, AboutHeroMobile } from "./AboutHeroCM.jsx";
 
 export function RemotionRoot() {
   return (
@@ -313,6 +317,22 @@ export function RemotionRoot() {
         id="VenueRankingCM-WinRate-VariantB"
         component={VenueRankingCM_WinRate_VariantB}
         durationInFrames={600}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="VenueRankingCM-WinRateCompareDemo"
+        component={VenueRankingCM_WinRateCompareDemo}
+        durationInFrames={1}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="TriviaCM-GradeWinRateCompareDemo"
+        component={TriviaCM_GradeWinRateCompareDemo}
+        durationInFrames={90}
         fps={30}
         width={1080}
         height={1920}
@@ -570,6 +590,30 @@ export function RemotionRoot() {
           ],
           featureDigest: ["AI予想", "イン崩れ指数", "無料"],
         }}
+      />
+      <Composition
+        id="OnboardingFlowCM"
+        component={OnboardingFlowCM}
+        durationInFrames={1350}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="AboutHeroDesktop"
+        component={AboutHeroDesktop}
+        durationInFrames={1680}
+        fps={30}
+        width={1600}
+        height={976}
+      />
+      <Composition
+        id="AboutHeroMobile"
+        component={AboutHeroMobile}
+        durationInFrames={1680}
+        fps={30}
+        width={840}
+        height={1434}
       />
     </>
   );

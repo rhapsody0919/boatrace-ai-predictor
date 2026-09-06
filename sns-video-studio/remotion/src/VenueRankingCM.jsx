@@ -10,6 +10,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * 会場攻略・データ一覧型（第1弾: イン逃げ率ランキング）— 龍神レーダー TikTok/X Shorts
@@ -660,6 +661,270 @@ function SceneHookDiagonal({
         </Pop>
       </div>
     </AbsoluteFill>
+  );
+}
+
+// --- Scene 1 案C: 2値比較（最高 vs 最低）型（2026-09-06、全面再設計） ---
+// 文章見出しを主役にし、2本の棒グラフを画面中央に大きく配置する。
+//
+// 2026-09-05: X承認待ち動画で棒グラフが画面左に偏り右側が空白になる不具合が報告され、
+// この形状専用の共通コンポーネントとして新設した（`docs/reference/brand-kit.md`
+// 「グラフ・比較ビジュアルの中央寄せ」参照）。
+//
+// 2026-09-06: 初版（豆知識型`grade-win-rate`のデザインレビューで発覚）に3つの
+// 問題があったため全面再設計した。
+// 1. 見出しブロックとバーの間、画面の3割程度が何も無い空白になっていた
+// 2. 「2.5倍」（孤立した巨大数字）→2行見出し→レンジピル→バーのラベルと、
+//    同じ情報を4層のテキストで繰り返しており密度が低かった
+// 3. バーの高さがmin*0.85を起点にした相対スケールで、実際の倍率より視覚的な差を
+//    誇張していた（データを誠実に見せるというブランド方針に反する）
+// ユーザーレビューを経て、孤立した数字ではなく文章そのもの（例:「A1級の勝率は、
+// B2級の2.5倍」）を主役の見出しにし、浮いた分の縦幅を0起点の実比率スケールの
+// バーに回す構成に変更した。`diffValueLabel`・`rangeLabel`は廃止（見出し文と
+// バーのラベルに情報を統合したため不要になった）
+function SceneHookCompareTwo({
+  headlineLines, // [文脈行, 数字を含む結論行] の2行想定。両方accentColorで表示する
+  lowVenue,
+  lowValue,
+  lowValueLabel,
+  highVenue,
+  highValue,
+  highValueLabel,
+  hookQuestion,
+  categoryTag,
+  accentColor = GOLD,
+}) {
+  const frame = useCurrentFrame();
+  const kb = interpolate(frame, [0, 75], [1, 1.04], {
+    extrapolateRight: "clamp",
+  });
+  const MAX_BAR_HEIGHT = 1050;
+  const MIN_BAR_HEIGHT = 90;
+  // 0起点の実比率スケール。honest scale——実データの倍率が視覚的な高さの比率と
+  // 一致するようにする（min*0.85を起点にした旧実装は差を誇張して見せていた）
+  const barHeight = (value) =>
+    Math.max(MIN_BAR_HEIGHT, (value / highValue) * MAX_BAR_HEIGHT);
+  const bars = [
+    { venue: lowVenue, value: lowValue, label: lowValueLabel, emphasis: false },
+    {
+      venue: highVenue,
+      value: highValue,
+      label: highValueLabel,
+      emphasis: true,
+    },
+  ];
+
+  // 見出し2行は長さが題材ごとに変わる（会場名・級名等）ため、固定フォントサイズだと
+  // はみ出し・改行崩れが起きる（2026-09-06、「平和島より16.7pt高い」が3行に
+  // 崩れて発覚）。docs/reference/brand-kit.md「技術ルール」に従いfitHeadline()で
+  // 1行に収まる最大サイズへ動的に縮小する
+  const HEADLINE_MAX_WIDTH = 980; // フレーム幅1080 - left/right各50
+  const line0Fit = fitHeadline(headlineLines[0], {
+    maxWidth: HEADLINE_MAX_WIDTH,
+    maxLines: 1,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 74,
+    minFontSize: 40,
+  });
+  const line1Fit = fitHeadline(headlineLines[1], {
+    maxWidth: HEADLINE_MAX_WIDTH,
+    maxLines: 1,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 100,
+    minFontSize: 50,
+  });
+
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK, transform: `scale(${kb})` }}>
+      <Pop delay={-10} style={{ position: "absolute", top: 44, left: 44 }}>
+        <Logo size={38} />
+      </Pop>
+      <Pop delay={-10} style={{ position: "absolute", top: 50, right: 44 }}>
+        <div
+          style={{
+            background: "rgba(255,255,255,0.1)",
+            border: `1px solid ${accentColor}`,
+            borderRadius: 999,
+            padding: "6px 18px",
+            color: accentColor,
+            fontSize: 24,
+            fontWeight: 700,
+            fontFamily: FONT,
+          }}
+        >
+          {categoryTag}
+        </div>
+      </Pop>
+
+      {/* 文章見出しが主役。孤立した数字ブロックを置かず、2行とも見出しの一部として
+          accentColorで表示する（1行目やや小さく文脈、2行目一回り大きく結論）。
+          フォントサイズはfitHeadline()が題材の文字数に応じて動的に決める */}
+      <Pop
+        delay={-10}
+        style={{
+          position: "absolute",
+          left: 50,
+          right: 50,
+          top: 210,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            color: accentColor,
+            fontSize: line0Fit.fontSize,
+            fontWeight: 900,
+            fontFamily: FONT,
+            lineHeight: 1.2,
+            marginBottom: 6,
+          }}
+        >
+          {line0Fit.lines[0]}
+        </div>
+        <div
+          style={{
+            color: accentColor,
+            fontSize: line1Fit.fontSize,
+            fontWeight: 900,
+            fontFamily: FONT,
+            lineHeight: 1.15,
+            textShadow: `0 0 90px ${accentColor}aa`,
+          }}
+        >
+          {line1Fit.lines[0]}
+        </div>
+      </Pop>
+
+      {/* 2本の比較棒グラフ。0起点の実比率スケール（barHeight参照）で、
+          画面下部（bottom: 260）から見出しのすぐ下まで大きく使う。
+          flexのjustifyContent:"center"で必ずフレーム中央に配置する
+          （左右どちらの値が大きくても、固定left/right pxで置かないことで偏りを防ぐ） */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 260,
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "center",
+          gap: 90,
+        }}
+      >
+        {bars.map((bar) => (
+          <div
+            key={bar.venue}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                color: bar.emphasis ? accentColor : "rgba(248,250,252,0.6)",
+                fontSize: 34,
+                fontWeight: 900,
+                fontFamily: FONT,
+                whiteSpace: "nowrap",
+                marginBottom: 14,
+              }}
+            >
+              {bar.label}
+            </div>
+            <div
+              style={{
+                width: 170,
+                height: barHeight(bar.value),
+                background: bar.emphasis
+                  ? accentColor
+                  : "rgba(255,255,255,0.14)",
+                borderRadius: "10px 10px 0 0",
+              }}
+            />
+            <div
+              style={{
+                color: WHITE,
+                fontSize: 30,
+                fontWeight: 700,
+                fontFamily: FONT,
+                whiteSpace: "nowrap",
+                marginTop: 14,
+              }}
+            >
+              {bar.venue}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: accentColor,
+          padding: "40px 60px 84px",
+        }}
+      >
+        <Pop delay={-10}>
+          <div
+            style={{
+              color: NAVY_DARK,
+              fontSize: 44,
+              fontWeight: 900,
+              fontFamily: FONT,
+              textAlign: "center",
+              lineHeight: 1.3,
+            }}
+          >
+            {hookQuestion}
+          </div>
+        </Pop>
+      </div>
+    </AbsoluteFill>
+  );
+}
+
+// 管理画面「型一覧」タブの共有コンポーネントカタログ用サンプル画像（2026-09-05、
+// 2026-09-06デザイン刷新）。実データ（1号艇勝率ランキング、下関60.5%・平和島43.8%、
+// WIN_RATE_TOP5/WORST5と同じ実測値）を使用。frame=0がそのまま静止画として使われる想定
+export function VenueRankingCM_WinRateCompareDemo() {
+  return (
+    <SceneHookCompareTwo
+      headlineLines={["下関の1号艇勝率は、", "平和島より16.7pt高い"]}
+      lowVenue="平和島"
+      lowValue={43.8}
+      lowValueLabel="43.8%"
+      highVenue="下関"
+      highValue={60.5}
+      highValueLabel="60.5%"
+      hookQuestion="会場ごとの差、続きをチェック"
+      categoryTag="会場データ検証"
+    />
+  );
+}
+
+// 豆知識型（trivia、grade-win-rateネタ）のフックscene（2026-09-06、デザイン
+// レビュー3往復を経て確定）。実データ（race_entries直近30日、racer_idごと
+// 重複排除後の級別平均win_rate: A1 6.74% ・ B2 2.69%、約2.5倍）を使用。上記の
+// 会場版と同じSceneHookCompareTwoを再利用しているため、他の14軸も同じ見た目になる
+export function TriviaCM_GradeWinRateCompareDemo() {
+  return (
+    <SceneHookCompareTwo
+      headlineLines={["A1級の勝率は、", "B2級の2.5倍"]}
+      lowVenue="B2級"
+      lowValue={2.69}
+      lowValueLabel="2.69%"
+      highVenue="A1級"
+      highValue={6.74}
+      highValueLabel="6.74%"
+      hookQuestion="あなたの推し選手は何級？"
+      categoryTag="選手データ検証"
+    />
   );
 }
 

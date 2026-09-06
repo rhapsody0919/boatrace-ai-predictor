@@ -1,0 +1,115 @@
+{
+  "generatedAt": "2026-08-20T05:48:45.185Z",
+  "days": 30,
+  "byLanguage": {
+    "ja": {
+      "pv": 9559,
+      "users": 731
+    },
+    "en": {
+      "pv": 129,
+      "users": 62
+    },
+    "zh-TW": {
+      "pv": 1,
+      "users": 1
+    },
+    "ko": {
+      "pv": 2,
+      "users": 1
+    }
+  },
+  "shareOfPv": {
+    "en": 1.33,
+    "zh-TW": 0.01,
+    "ko": 0.02
+  },
+  "languageSwitches": 30,
+  "byCountry": {
+    "en": [
+      {
+        "country": "United States",
+        "users": 37,
+        "pv": 73
+      },
+      {
+        "country": "Japan",
+        "users": 12,
+        "pv": 28
+      },
+      {
+        "country": "Germany",
+        "users": 4,
+        "pv": 8
+      },
+      {
+        "country": "India",
+        "users": 3,
+        "pv": 6
+      },
+      {
+        "country": "China",
+        "users": 1,
+        "pv": 3
+      },
+      {
+        "country": "Ghana",
+        "users": 1,
+        "pv": 5
+      },
+      {
+        "country": "Hong Kong",
+        "users": 1,
+        "pv": 2
+      },
+      {
+        "country": "Poland",
+        "users": 1,
+        "pv": 2
+      },
+      {
+        "country": "Singapore",
+        "users": 1,
+        "pv": 2
+      }
+    ],
+    "zh-TW": [
+      {
+        "country": "Hong Kong",
+        "users": 1,
+        "pv": 1
+      }
+    ],
+    "ko": [
+      {
+        "country": "Japan",
+        "users": 1,
+        "pv": 2
+      }
+    ]
+  },
+  "bySource": {
+    "en": [
+      {
+        "channel": "Direct",
+        "sessions": 49
+      },
+      {
+        "channel": "Organic Search",
+        "sessions": 15
+      }
+    ],
+    "zh-TW": [
+      {
+        "channel": "Organic Search",
+        "sessions": 1
+      }
+    ],
+    "ko": [
+      {
+        "channel": "Organic Search",
+        "sessions": 1
+      }
+    ]
+  }
+}
