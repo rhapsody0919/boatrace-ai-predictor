@@ -618,16 +618,20 @@ async function scrapeAndSaveResults(races, targetDate) {
 
     console.log(`  ✅ 単勝的中: ${winHits}件, 複勝的中: ${placeHits}件`);
     console.log(`  ✅ 3連複的中: ${trifectaHits}件, 3連単的中: ${trioHits}件`);
-    // 欠落した的中フラグを修正（新結果取得時のみ）
-    // 直近10日分を対象にすることで、当日限定では拾えない過去日の
-    // 一時的な書き込み失敗を後続の実行で自己修復できるようにする
-    await fixMissingHitFlags(getDateDaysAgo(9), targetDate);
-
-    return { updated: true, count: newResults.length };
   } else {
     console.log("\n📤 結果: 新規データなし");
-    return { updated: false, count: 0 };
   }
+
+  // 欠落した的中フラグを修正（新結果の有無に関わらず毎回実行）
+  // 直近10日分を対象にすることで、当日限定では拾えない過去日の
+  // 一時的な書き込み失敗を後続の実行で自己修復できるようにする。
+  // newResults.length > 0の時だけに限定すると、対象日の結果が既に
+  // 全件scrape済みになった時点で「新規データなし」が続き、二度と
+  // このチェックが走らなくなる（2026-09-06、当日分の的中フラグが
+  // 132件全件NULLのまま固着していた実例で発覚）
+  await fixMissingHitFlags(getDateDaysAgo(9), targetDate);
+
+  return { updated: newResults.length > 0, count: newResults.length };
 }
 
 // Main function（スタンドアローン実行用の後方互換ラッパー）
@@ -676,22 +680,48 @@ async function scrapeResults(dateStr = null) {
   await scrapeAndSaveResults(races, targetDate);
 }
 
+// Supabaseのデフォルトlimit(1000行)を超えるクエリを.range()でページネーションして全件取得する
+async function fetchAllRange(table, select, buildQuery) {
+  const results = [];
+  const pageSize = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await buildQuery(
+      supabase.from(table).select(select),
+    ).range(from, from + pageSize - 1);
+    if (error) {
+      console.error(`  ❌ ${table}取得エラー:`, error.message);
+      break;
+    }
+    if (!data || data.length === 0) break;
+    results.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return results;
+}
+
 // 結果があるのにis_hit_winがNULLの予測を修正
 // startDate〜endDate（両端含む、race_id昇順比較）の範囲で欠落を検知・修復する。
 // 通常呼び出しは直近数日分の範囲を渡し、当日限定では拾えない過去日の
 // 一時的な書き込み失敗（2026-09-06発覚）を後続の実行で自己修復できるようにする。
 export async function fixMissingHitFlags(startDate, endDate = startDate) {
   // is_hit_winがNULLの予測を取得
-  const { data: missingPredictions, error: predError } = await supabase
-    .from("predictions")
-    .select(
-      "prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions",
-    )
-    .gte("race_id", startDate)
-    .lt("race_id", `${endDate}~`)
-    .is("is_hit_win", null);
+  // ⚠️ Supabaseのデフォルトlimit(1000行)を超える可能性があるため.range()でページネーションする
+  // （2026-09-06発覚: 日付範囲を広げた際に無ページネーションのままだったため、範囲内の件数が
+  // 1000件を超えると挿入順で末尾＝直近日（当日）の結果が切り捨てられ、当日分の欠落が
+  // 一切修復されないまま固着していた）
+  const missingPredictions = await fetchAllRange(
+    "predictions",
+    "prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions",
+    (q) =>
+      q
+        .gte("race_id", startDate)
+        .lt("race_id", `${endDate}~`)
+        .is("is_hit_win", null),
+  );
 
-  if (predError || !missingPredictions || missingPredictions.length === 0) {
+  if (missingPredictions.length === 0) {
     return; // 欠落なし
   }
 
@@ -699,19 +729,12 @@ export async function fixMissingHitFlags(startDate, endDate = startDate) {
     `\n🔧 欠落した的中フラグを修正中... (${missingPredictions.length}件, ${startDate}〜${endDate})`,
   );
 
-  // 結果データを取得
-  const { data: results, error: resError } = await supabase
-    .from("race_results")
-    .select(
-      "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio",
-    )
-    .gte("race_id", startDate)
-    .lt("race_id", `${endDate}~`);
-
-  if (resError || !results) {
-    console.error("  ❌ 結果取得エラー");
-    return;
-  }
+  // 結果データを取得（同様にページネーション）
+  const results = await fetchAllRange(
+    "race_results",
+    "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio",
+    (q) => q.gte("race_id", startDate).lt("race_id", `${endDate}~`),
+  );
 
   const resultsMap = new Map();
   for (const r of results) {
