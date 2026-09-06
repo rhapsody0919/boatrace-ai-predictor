@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "kiryu-outcome-123-rate",
+    title:
+      "桐生の3連単「1-2-3」出現率は7.65%、全国平均7.21%より0.44ポイント高い理由を実データで検証",
+    description:
+      "過去90日間の実レース結果で、桐生の3連単「1-2-3」出現率は7.65%（549レース中42回）、全国平均7.21%より0.44ポイント高く24会場中9位という結果に。桐生自身の最頻出パターンでもあるこの出目がなぜ出やすいのかを実データで解説します。",
+    date: "2026-09-05",
+    category: "データ分析",
+    tags: ["出目分布", "3連単", "桐生", "データ分析"],
+    readTime: "5分",
+    featured: false,
+    image: "/images/blog/kiryu-outcome-123-rate.jpg",
+  },
+  {
     id: "heiwajima-course1-winrate",
     title: "平和島の1号艇勝率は39.5%、全国24会場で最下位——実データで理由を検証",
     description:
