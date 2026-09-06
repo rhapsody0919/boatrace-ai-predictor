@@ -206,7 +206,8 @@
     "venueGuideLink": "{{venue}} 경정장 가이드 보기",
     "venueGuideDesc": "경정장 특성과 베팅 포인트 상세",
     "analysisToolsLink": "데이터 분석 도구로 이 레이스를 더 분석하기",
-    "awaitingResultBanner": "마감 시간이 지났지만 아직 결과가 반영되지 않았습니다 (데이터는 약 1시간마다 갱신됩니다)"
+    "awaitingResultBanner": "마감 시간이 지났지만 아직 결과가 반영되지 않았습니다 (데이터는 약 1시간마다 갱신됩니다)",
+    "cancelledBanner": "이 레이스는 중지되었습니다"
   },
   "home": {
     "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측・인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
@@ -353,6 +354,7 @@
   },
   "raceCard": {
     "awaitingResult": "결과 반영 대기중",
+    "cancelled": "중지",
     "badgePlace": "✅ 복승 적중",
     "badgeTurn": "✅ 전개 적중",
     "missBadge": "❌ 미적중",
