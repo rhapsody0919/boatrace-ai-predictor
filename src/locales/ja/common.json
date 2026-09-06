@@ -85,6 +85,15 @@
     "metaDescription": "{{venue}}ボートレース場の本日の全レース一覧。締切時刻・グレードを確認し、各レースのAIデータ分析へ進めます。",
     "backToVenues": "← 会場一覧に戻る"
   },
+  "venueCharacteristics": {
+    "title": "この会場の特徴（過去90日）",
+    "note": "AIデータ分析が参照しているのと同じ会場別データです。枠番ごとの1着率と、勝った際に多い決まり手を確認できます。",
+    "boatHeader": "枠番",
+    "winRateHeader": "1着率",
+    "techniqueHeader": "主な決まり手",
+    "footnote": "直近{{count}}走を集計（{{date}}時点）。過去のレース傾向であり、当日の結果を保証するものではありません。",
+    "unknownDate": "更新日不明"
+  },
   "raceDetailPage": {
     "metaTitle": "{{venue}} {{race}}R AIデータ分析 - 龍神レーダー",
     "metaDescription": "{{venue}} {{race}}Rのデータ出走表・AIデータ分析・展開予測を無料で確認できます。",

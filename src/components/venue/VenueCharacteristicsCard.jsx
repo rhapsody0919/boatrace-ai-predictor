@@ -4,15 +4,19 @@
  * （winning_technique_stats）を組み合わせ、この会場の傾向を表示する。
  * AI予想（超展開予測・データ分析）が参照しているのと同じ会場別データを
  * 選手・レースデータと絡めて見せることで、会場別レース一覧ページの回遊性を高める。
+ * /venueはTRANSLATED_PATHS対象のため、文言はi18nキー経由にする。
  */
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { translateTechnique } from "../race/raceIndicators";
 import "./VenueCharacteristicsCard.css";
 
 // このサンプル数を下回る会場は表示しない（ノイズが大きいため）
 const MIN_TOTAL_RACES = 20;
 
 export default function VenueCharacteristicsCard({ venueCode }) {
+  const { t } = useTranslation();
   const [outcomeData, setOutcomeData] = useState(null);
   const [techniqueData, setTechniqueData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,17 +67,17 @@ export default function VenueCharacteristicsCard({ venueCode }) {
 
   return (
     <div className="venue-characteristics-card">
-      <h2>この会場の特徴（過去90日）</h2>
+      <h2>{t("venueCharacteristics.title")}</h2>
       <p className="venue-characteristics-note">
-        AIデータ分析が参照しているのと同じ会場別データです。枠番ごとの1着率と、勝った際に多い決まり手を確認できます。
+        {t("venueCharacteristics.note")}
       </p>
       <div className="table-wrapper">
         <table className="venue-characteristics-table">
           <thead>
             <tr>
-              <th>枠番</th>
-              <th>1着率</th>
-              <th>主な決まり手</th>
+              <th>{t("venueCharacteristics.boatHeader")}</th>
+              <th>{t("venueCharacteristics.winRateHeader")}</th>
+              <th>{t("venueCharacteristics.techniqueHeader")}</th>
             </tr>
           </thead>
           <tbody>
@@ -83,7 +87,7 @@ export default function VenueCharacteristicsCard({ venueCode }) {
                 <td>{row.winRate.toFixed(1)}%</td>
                 <td>
                   {row.topTechnique
-                    ? `${row.topTechnique.technique} ${row.topTechnique.percentage.toFixed(0)}%`
+                    ? `${translateTechnique(t, row.topTechnique.technique)} ${row.topTechnique.percentage.toFixed(0)}%`
                     : "-"}
                 </td>
               </tr>
@@ -92,9 +96,11 @@ export default function VenueCharacteristicsCard({ venueCode }) {
         </table>
       </div>
       <p className="venue-characteristics-footnote">
-        直近{outcomeData.total_races}走を集計（
-        {outcomeData.last_updated ?? "更新日不明"}
-        時点）。過去のレース傾向であり、当日の結果を保証するものではありません。
+        {t("venueCharacteristics.footnote", {
+          count: outcomeData.total_races,
+          date:
+            outcomeData.last_updated ?? t("venueCharacteristics.unknownDate"),
+        })}
       </p>
     </div>
   );
