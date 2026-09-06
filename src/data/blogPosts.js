@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "edogawa-nige-technique-share",
+    title:
+      "江戸川の1号艇「逃げ」構成比は90.9%、全国24会場で最下位——実データで理由を検証",
+    description:
+      "決まり手データ分析の実データで、1号艇が1着になったときの決まり手を24会場で比較。江戸川は90.9%（187レース中170勝）で全国平均95.2%より4.3ポイント低く、24会場中最下位という結果に。代わりに全国トップの構成比となった「抜き」というもう一つの決まり手から、江戸川の水面特性を読み解きます。",
+    date: "2026-09-06",
+    category: "データ分析",
+    tags: ["決まり手データ分析", "決まり手", "逃げ", "江戸川", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/edogawa-nige-technique-share.jpg",
+  },
+  {
     id: "kiryu-outcome-123-rate",
     title:
       "桐生の3連単「1-2-3」出現率は7.65%、全国平均7.21%より0.44ポイント高い理由を実データで検証",
