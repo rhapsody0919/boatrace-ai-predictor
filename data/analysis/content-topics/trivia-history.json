@@ -1,0 +1,45 @@
+{
+  "category": "trivia",
+  "entries": [
+    {
+      "angle": "grade-win-rate",
+      "usedAt": "2026-09-06T13:18:48.781Z"
+    },
+    {
+      "angle": "age-win-rate",
+      "usedAt": "2026-09-06T13:18:48.781Z"
+    },
+    {
+      "angle": "weight-win-rate",
+      "usedAt": "2026-09-06T13:18:48.781Z"
+    },
+    {
+      "angle": "branch-win-rate",
+      "usedAt": "2026-09-06T13:18:48.781Z"
+    },
+    {
+      "angle": "experience-win-rate",
+      "usedAt": "2026-09-06T13:18:48.781Z"
+    },
+    {
+      "angle": "height-win-rate",
+      "usedAt": "2026-09-06T13:18:48.781Z"
+    },
+    {
+      "angle": "hometown-win-rate",
+      "usedAt": "2026-09-06T13:18:48.781Z"
+    },
+    {
+      "angle": "start-timing-by-grade",
+      "usedAt": "2026-09-06T13:18:48.781Z"
+    },
+    {
+      "angle": "flying-rate-by-grade",
+      "usedAt": "2026-09-06T13:18:48.781Z"
+    },
+    {
+      "angle": "local-vs-national-gap",
+      "usedAt": "2026-09-06T13:18:48.781Z"
+    }
+  ]
+}
