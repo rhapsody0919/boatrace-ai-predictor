@@ -4,7 +4,7 @@
 
 ## タスク一覧
 
-- [ ] **Task 1**: `docs/db-migration/047_race_cancellation_status.sql`をSupabaseに適用する（`races.cancellation_status`・`cancellation_check_streak`カラム追加）。**本番DBへのスキーマ変更のため、実行前にユーザー確認を取ってから行う**
+- [x] **Task 1**: `docs/db-migration/047_race_cancellation_status.sql`をSupabaseに適用する（`races.cancellation_status`・`cancellation_check_streak`カラム追加）。**本番DBへのスキーマ変更のため、実行前にユーザー確認を取ってから行う**（2026-09-06、ユーザーがSupabase Dashboardで実行済み）
 - [ ] **Task 2**: `scripts/lib/raceSchedule.js`に`getRacesPastResultWindow(schedule, maxMinutesAfter = 90)`を追加する（既存`getRacesAfterStart`と対になるヘルパー、ADR 0040）。「発走90分超」のレースを返す
 - [ ] **Task 3**: `scripts/daily/update-race-info.js`を拡張する（FR1）。`run()`内で`cancellation_status`/`cancellation_check_streak`を取得し、選手情報0人検出時のstreak加算・3回連続到達時の`tentative`昇格・正常検知時のリセットを実装する。streak計算ロジックは純粋関数として切り出し、ユニットテスト（3回連続で昇格、2回以下では変化なし、正常検知でリセット、`confirmed`は上書きされない）を追加する
 - [ ] **Task 4**: `scripts/daily/scrape-results.js`を拡張する（FR2）。Task 2のヘルパーを使い「発走90分超・`race_results`未作成・`cancellation_status`が`confirmed`でない」レースを`confirmed`に更新する処理を追加する。既存の結果取得ロジック（`scrapeRaceResult`・`scrapeAndSaveResults`）には手を入れない
