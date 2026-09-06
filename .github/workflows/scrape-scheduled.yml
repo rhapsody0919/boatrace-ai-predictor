@@ -24,6 +24,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # scripts/daily/morning-init.js が `git log -1 -- <file>` で
+          # generate-predictions.js の最終変更日時を判定するため、デフォルトの
+          # 浅いclone（depth=1）だと「HEADコミットの日時」が常に返り、そのコミットが
+          # 実際にこのファイルを変更していなくても「変更された」と誤判定していた。
+          # このリポジトリは頻繁にコミットが入るため、5分毎の実行のたびに
+          # 本日全レースの予測が丸ごと再生成され、的中判定フラグがリセットされ
+          # 続けていた（2026-09-06発覚）。フル履歴を取得して正しく判定できるようにする
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
