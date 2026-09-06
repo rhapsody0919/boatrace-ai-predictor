@@ -253,10 +253,17 @@ function RacerTechniqueProfileChart({
             <ResponsiveContainer width="100%" height={360}>
               <BarChart
                 data={chartData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                margin={{ top: 5, right: 30, left: 20, bottom: 40 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="boat_number" />
+                <XAxis
+                  dataKey="boat_number"
+                  interval={0}
+                  tick={{ fontSize: 11 }}
+                  angle={-35}
+                  textAnchor="end"
+                  height={60}
+                />
                 <YAxis
                   label={{
                     value: t("analysis.techProfile.yAxis"),
