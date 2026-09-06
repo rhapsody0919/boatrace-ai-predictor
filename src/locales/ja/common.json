@@ -355,6 +355,9 @@
   "raceCard": {
     "awaitingResult": "結果反映待ち",
     "cancelled": "中止",
+    "accepting": "受付中",
+    "closingSoon": "まもなく締切",
+    "deadlineCountdown": "締切まで {{time}}",
     "badgePlace": "✅ 複勝的中",
     "badgeTurn": "✅ 展開的中",
     "missBadge": "❌ 外れ",

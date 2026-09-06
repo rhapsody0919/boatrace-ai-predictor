@@ -357,6 +357,9 @@
   "raceCard": {
     "awaitingResult": "Awaiting result",
     "cancelled": "Cancelled",
+    "accepting": "Accepting bets",
+    "closingSoon": "Closing soon",
+    "deadlineCountdown": "Closes in {{time}}",
     "badgePlace": "✅ Place hit",
     "badgeTurn": "✅ Turn hit",
     "missBadge": "❌ Missed",

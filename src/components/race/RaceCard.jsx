@@ -5,7 +5,9 @@
 import { useTranslation } from "react-i18next";
 import { GRADE_CONFIG } from "../../constants/gradeConfig";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
+import { getDeadlineStatus, DEADLINE_STATUS } from "../../utils/raceDeadlineStatus";
 import RaceCardDataTable from "./RaceCardDataTable";
+import RaceDeadlineCountdown from "./RaceDeadlineCountdown";
 
 function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
   const { t } = useTranslation();
@@ -18,6 +20,11 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
   // 中止・順延の確定検知（BOA-254）。暫定検知（"tentative"）はまだ誤検出の
   // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
   const isCancelled = racePrediction?.cancellationStatus === "confirmed";
+  // 締切ステータスのライブ表示（BOA-243）。中止確定レースは既存の中止表示を
+  // 優先し、この新バッジ・カウントダウンは出さない（FR3）
+  const deadlineStatus = isCancelled
+    ? null
+    : getDeadlineStatus(race.id, race.startTime, new Date());
   // 締切前(UPCOMING)以外は見た目でも一目で分かるよう、トップバー・見出し・
   // ボタンをグレーアウトする（バッジの発色は維持し、的中/外れ・結果反映待ちの
   // 視認性を落とさない）
@@ -134,6 +141,38 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
               </span>
             )
           )}
+          {deadlineStatus === DEADLINE_STATUS.CLOSING_SOON && (
+            <span
+              style={{
+                padding: "0.2rem 0.55rem",
+                borderRadius: "8px",
+                fontSize: "0.7rem",
+                fontWeight: "700",
+                background: "var(--color-warning)",
+                color: "#fff",
+                letterSpacing: "0.02em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {t("raceCard.closingSoon")}
+            </span>
+          )}
+          {deadlineStatus === DEADLINE_STATUS.ACCEPTING && (
+            <span
+              style={{
+                padding: "0.2rem 0.55rem",
+                borderRadius: "8px",
+                fontSize: "0.7rem",
+                fontWeight: "700",
+                background: "var(--color-gray-600)",
+                color: "#fff",
+                letterSpacing: "0.02em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {t("raceCard.accepting")}
+            </span>
+          )}
           {gradeConfig && (
             <span
               style={{
@@ -162,6 +201,11 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
               {t("home.jstNote")}
             </span>
           </div>
+          {deadlineStatus && deadlineStatus !== DEADLINE_STATUS.CLOSED && (
+            <div className="info-item">
+              <RaceDeadlineCountdown raceId={race.id} startTime={race.startTime} />
+            </div>
+          )}
         </div>
       )}
       <RaceCardDataTable raceId={race.id} players={racePrediction?.players} />

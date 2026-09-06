@@ -355,6 +355,9 @@
   "raceCard": {
     "awaitingResult": "결과 반영 대기중",
     "cancelled": "중지",
+    "accepting": "접수중",
+    "closingSoon": "마감 임박",
+    "deadlineCountdown": "마감까지 {{time}}",
     "badgePlace": "✅ 복승 적중",
     "badgeTurn": "✅ 전개 적중",
     "missBadge": "❌ 미적중",
