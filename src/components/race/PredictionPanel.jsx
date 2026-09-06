@@ -99,6 +99,9 @@ function PredictionPanel({
   // 締切は過ぎたが結果はまだ反映されていない状態（1時間おきのスクレイピングバッチのラグ）。
   // AI分析パネル自体は表示を維持しつつ、案内バナーのみ追加する
   const isAwaitingResult = status === RACE_STATUS.AWAITING_RESULT;
+  // 中止・順延の確定検知（BOA-254）。暫定検知（"tentative"）はまだ誤検出の
+  // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
+  const isCancelled = prediction?.cancellationStatus === "confirmed";
 
   // ローディング中
   if (isAnalyzing) {
@@ -168,7 +171,7 @@ function PredictionPanel({
         </div>
       )}
 
-      {isAwaitingResult && (
+      {isCancelled ? (
         <div
           style={{
             marginTop: "1rem",
@@ -180,8 +183,24 @@ function PredictionPanel({
             color: "var(--color-gray-700)",
           }}
         >
-          {t("panel.awaitingResultBanner")}
+          {t("panel.cancelledBanner")}
         </div>
+      ) : (
+        isAwaitingResult && (
+          <div
+            style={{
+              marginTop: "1rem",
+              marginBottom: "1.5rem",
+              padding: "0.75rem 1rem",
+              background: "var(--color-gray-100)",
+              borderRadius: "8px",
+              borderLeft: "4px solid var(--color-gray-600)",
+              color: "var(--color-gray-700)",
+            }}
+          >
+            {t("panel.awaitingResultBanner")}
+          </div>
+        )
       )}
 
       {/* AI用にコピー（BOA-194）: 結果未確定レースのみ、外部AIツールで独自分析したいユーザー向け */}
