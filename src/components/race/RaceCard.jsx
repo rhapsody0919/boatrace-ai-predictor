@@ -15,6 +15,9 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
   const isFinished = result?.finished;
   const status = getRaceStatus({ startTime: race.startTime, result }, nowHHMM);
   const isAwaitingResult = status === RACE_STATUS.AWAITING_RESULT;
+  // 中止・順延の確定検知（BOA-254）。暫定検知（"tentative"）はまだ誤検出の
+  // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
+  const isCancelled = racePrediction?.cancellationStatus === "confirmed";
   // 締切前(UPCOMING)以外は見た目でも一目で分かるよう、トップバー・見出し・
   // ボタンをグレーアウトする（バッジの発色は維持し、的中/外れ・結果反映待ちの
   // 視認性を落とさない）
@@ -98,7 +101,7 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
                 : t("raceCard.missBadge")}
             </span>
           )}
-          {isAwaitingResult && (
+          {isCancelled ? (
             <span
               style={{
                 padding: "0.2rem 0.55rem",
@@ -111,8 +114,25 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
                 whiteSpace: "nowrap",
               }}
             >
-              {t("raceCard.awaitingResult")}
+              {t("raceCard.cancelled")}
             </span>
+          ) : (
+            isAwaitingResult && (
+              <span
+                style={{
+                  padding: "0.2rem 0.55rem",
+                  borderRadius: "8px",
+                  fontSize: "0.7rem",
+                  fontWeight: "700",
+                  background: "var(--color-gray-600)",
+                  color: "#fff",
+                  letterSpacing: "0.02em",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t("raceCard.awaitingResult")}
+              </span>
+            )
           )}
           {gradeConfig && (
             <span

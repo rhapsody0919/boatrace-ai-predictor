@@ -207,7 +207,8 @@
     "venueGuideLink": "View the {{venue}} venue guide",
     "venueGuideDesc": "Detailed venue characteristics and betting angles",
     "analysisToolsLink": "Analyze this race further with the data analysis tools",
-    "awaitingResultBanner": "The deadline has passed, but the result hasn't been posted yet (data updates about once an hour)."
+    "awaitingResultBanner": "The deadline has passed, but the result hasn't been posted yet (data updates about once an hour).",
+    "cancelledBanner": "This race has been cancelled."
   },
   "home": {
     "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | 45+ data points analyzed, including turn predictions and the Upset Index. Learn more →",
@@ -357,6 +358,7 @@
   },
   "raceCard": {
     "awaitingResult": "Awaiting result",
+    "cancelled": "Cancelled",
     "badgePlace": "✅ Place hit",
     "badgeTurn": "✅ Turn hit",
     "missBadge": "❌ Missed",

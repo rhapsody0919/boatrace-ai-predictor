@@ -14,7 +14,11 @@ import {
   parseDateArg,
 } from "../lib/dateUtils.js";
 import { calculateHits, isTurnHit } from "../lib/hitCalculator.js";
-import { getRaceSchedule, getRacesAfterStart } from "../lib/raceSchedule.js";
+import {
+  getRaceSchedule,
+  getRacesAfterStart,
+  getRacesPastResultWindow,
+} from "../lib/raceSchedule.js";
 
 // Generate race result page URL
 function getRaceResultUrl(venueCode, raceNo, dateStr) {
@@ -276,20 +280,81 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
  */
 export async function run(schedule, date) {
   const startedRaces = getRacesAfterStart(schedule, 5);
+
+  let resultSummary = { updated: false, count: 0 };
   if (startedRaces.length === 0) {
     console.log("📭 結果: 発走後5分以上経過したレースなし");
-    return { updated: false, count: 0 };
+  } else {
+    console.log(`🎯 結果取得: ${startedRaces.length}レース（発走後5分以上）`);
+
+    // schedule から直接 races 情報を構築（追加 DB 呼び出し不要）
+    const races = startedRaces.map((r) => ({
+      race_id: r.race_id,
+      venue_code: r.venue_code,
+      race_number: r.race_no,
+    }));
+
+    resultSummary = await scrapeAndSaveResults(races, date);
   }
-  console.log(`🎯 結果取得: ${startedRaces.length}レース（発走後5分以上）`);
 
-  // schedule から直接 races 情報を構築（追加 DB 呼び出し不要）
-  const races = startedRaces.map((r) => ({
-    race_id: r.race_id,
-    venue_code: r.venue_code,
-    race_number: r.race_no,
-  }));
+  // 発走90分超・結果未取得のレースを中止・順延「確定」として扱う（BOA-254 FR2、ADR 0040）。
+  // startedRaces（5〜90分後ウィンドウ）が0件の日でも、90分を超えて見捨てられた
+  // レースは別途存在しうるため、上のearly returnとは独立して必ず実行する
+  await confirmOverdueCancellations(schedule);
 
-  return scrapeAndSaveResults(races, date);
+  return resultSummary;
+}
+
+/**
+ * 発走90分超で結果が取得できていないレースを中止・順延「確定」として扱う（BOA-254 FR2）。
+ * getRacesAfterStart(schedule, 5) が対象とする5〜90分後ウィンドウを抜けた
+ * レースが対象。既存の結果取得ロジック（scrapeAndSaveResults）は変更しない。
+ *
+ * @param {Array} schedule - getRaceSchedule() の返り値
+ */
+async function confirmOverdueCancellations(schedule) {
+  const overdueRaces = getRacesPastResultWindow(schedule, 90);
+  if (overdueRaces.length === 0) return;
+
+  const overdueIds = overdueRaces.map((r) => r.race_id);
+
+  const [{ data: existingResults }, { data: raceRows }] = await Promise.all([
+    supabase.from("race_results").select("race_id").in("race_id", overdueIds),
+    supabase
+      .from("races")
+      .select("race_id, cancellation_status")
+      .in("race_id", overdueIds),
+  ]);
+
+  const hasResult = new Set((existingResults || []).map((r) => r.race_id));
+  const alreadyConfirmed = new Set(
+    (raceRows || [])
+      .filter((r) => r.cancellation_status === "confirmed")
+      .map((r) => r.race_id),
+  );
+
+  const toConfirm = overdueIds.filter(
+    (id) => !hasResult.has(id) && !alreadyConfirmed.has(id),
+  );
+  if (toConfirm.length === 0) return;
+
+  const { error } = await supabase
+    .from("races")
+    .update({ cancellation_status: "confirmed" })
+    .in("race_id", toConfirm);
+  if (error) {
+    console.error(
+      "❌ races (cancellation_status確定) 一括更新エラー:",
+      error.message,
+    );
+    return;
+  }
+  const confirmedCount = toConfirm.length;
+  if (confirmedCount > 0) {
+    console.log(
+      `  ⚠️ 中止・順延を確定: ${confirmedCount}件（発走90分超・結果未取得）`,
+    );
+  }
 }
 
 /**

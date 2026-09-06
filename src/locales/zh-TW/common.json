@@ -206,7 +206,8 @@
     "venueGuideLink": "查看{{venue}}賽場指南",
     "venueGuideDesc": "賽場特性與投注要點詳解",
     "analysisToolsLink": "用數據分析工具進一步分析本場比賽",
-    "awaitingResultBanner": "已過截止時間，但結果尚未更新（資料約每小時更新一次）"
+    "awaitingResultBanner": "已過截止時間，但結果尚未更新（資料約每小時更新一次）",
+    "cancelledBanner": "本場比賽已中止"
   },
   "home": {
     "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
@@ -355,6 +356,7 @@
   },
   "raceCard": {
     "awaitingResult": "結果待反映",
+    "cancelled": "中止",
     "badgePlace": "✅ 複勝命中",
     "badgeTurn": "✅ 展開命中",
     "missBadge": "❌ 未命中",
