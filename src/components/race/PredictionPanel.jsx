@@ -110,6 +110,26 @@ function PredictionPanel({
 
   // エラー
   if (prediction.error) {
+    // 中止・順延（BOA-254）で選手情報が無く出走表自体が組めないレースは、
+    // 汎用の「予想データが利用できません」ではなく専用メッセージを出す
+    if (isCancelled) {
+      return (
+        <div
+          className="prediction-cancelled"
+          style={{
+            padding: "2rem",
+            background: "var(--color-gray-100)",
+            borderRadius: "12px",
+            border: "2px solid var(--color-gray-600)",
+            textAlign: "center",
+          }}
+        >
+          <h3 style={{ color: "var(--color-gray-700)" }}>
+            {t("panel.cancelledBanner")}
+          </h3>
+        </div>
+      );
+    }
     return (
       <div
         className="prediction-error"

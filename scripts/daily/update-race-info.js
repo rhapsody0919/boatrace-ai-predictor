@@ -318,22 +318,28 @@ export async function run(schedule, date) {
     );
 
     for (const { r, data } of results) {
-      // 中止・順延の暫定検知（BOA-254 FR1）: data有無に関わらず全レース分計算する
-      const cancellationCurrent = cancellationMap.get(r.race_id) || {
-        cancellation_status: null,
-        cancellation_check_streak: 0,
-      };
-      const cancellationNext = computeCancellationTransition({
-        currentStatus: cancellationCurrent.cancellation_status,
-        currentStreak: cancellationCurrent.cancellation_check_streak,
-        racersFound: Boolean(data),
-      });
-      if (cancellationNext.changed) {
-        cancellationUpdates.push({
-          race_id: r.race_id,
-          cancellation_status: cancellationNext.nextStatus,
-          cancellation_check_streak: cancellationNext.nextStreak,
+      // 中止・順延の暫定検知（BOA-254 FR1）: data有無に関わらず全レース分計算する。
+      // 現在の状態の取得自体に失敗している場合、全レースがcancellationMapに
+      // 存在しない=デフォルト値（null/0）にフォールバックしてしまい、既に
+      // tentativeへ昇格済みのレースのstreakを誤ってリセットする恐れがあるため、
+      // その回はまるごと計算をスキップする（cancellationFetchErrorのログ通り）
+      if (!cancellationFetchError) {
+        const cancellationCurrent = cancellationMap.get(r.race_id) || {
+          cancellation_status: null,
+          cancellation_check_streak: 0,
+        };
+        const cancellationNext = computeCancellationTransition({
+          currentStatus: cancellationCurrent.cancellation_status,
+          currentStreak: cancellationCurrent.cancellation_check_streak,
+          racersFound: Boolean(data),
         });
+        if (cancellationNext.changed) {
+          cancellationUpdates.push({
+            race_id: r.race_id,
+            cancellation_status: cancellationNext.nextStatus,
+            cancellation_check_streak: cancellationNext.nextStreak,
+          });
+        }
       }
 
       if (!data) continue;

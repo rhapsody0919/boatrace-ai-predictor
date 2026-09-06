@@ -366,6 +366,7 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
       venueCode: race.venueCode,
       raceNumber: race.raceNumber,
       startTime: race.startTime || "",
+      cancellationStatus: race.cancellationStatus ?? null,
       raceGrade: race.raceGrade ?? null,
       raceTitle: race.raceTitle ?? null,
       seriesDay: race.seriesDay ?? null,

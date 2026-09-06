@@ -279,22 +279,26 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
  */
 export async function run(schedule, date) {
   const startedRaces = getRacesAfterStart(schedule, 5);
+
+  let resultSummary = { updated: false, count: 0 };
   if (startedRaces.length === 0) {
     console.log("📭 結果: 発走後5分以上経過したレースなし");
-    return { updated: false, count: 0 };
+  } else {
+    console.log(`🎯 結果取得: ${startedRaces.length}レース（発走後5分以上）`);
+
+    // schedule から直接 races 情報を構築（追加 DB 呼び出し不要）
+    const races = startedRaces.map((r) => ({
+      race_id: r.race_id,
+      venue_code: r.venue_code,
+      race_number: r.race_no,
+    }));
+
+    resultSummary = await scrapeAndSaveResults(races, date);
   }
-  console.log(`🎯 結果取得: ${startedRaces.length}レース（発走後5分以上）`);
 
-  // schedule から直接 races 情報を構築（追加 DB 呼び出し不要）
-  const races = startedRaces.map((r) => ({
-    race_id: r.race_id,
-    venue_code: r.venue_code,
-    race_number: r.race_no,
-  }));
-
-  const resultSummary = await scrapeAndSaveResults(races, date);
-
-  // 発走90分超・結果未取得のレースを中止・順延「確定」として扱う（BOA-254 FR2、ADR 0040）
+  // 発走90分超・結果未取得のレースを中止・順延「確定」として扱う（BOA-254 FR2、ADR 0040）。
+  // startedRaces（5〜90分後ウィンドウ）が0件の日でも、90分を超えて見捨てられた
+  // レースは別途存在しうるため、上のearly returnとは独立して必ず実行する
   await confirmOverdueCancellations(schedule);
 
   return resultSummary;
@@ -333,19 +337,18 @@ async function confirmOverdueCancellations(schedule) {
   );
   if (toConfirm.length === 0) return;
 
-  let confirmedCount = 0;
-  for (const race_id of toConfirm) {
-    const { error } = await supabase
-      .from("races")
-      .update({ cancellation_status: "confirmed" })
-      .eq("race_id", race_id);
-    if (!error) confirmedCount++;
-    else
-      console.error(
-        `❌ races (cancellation_status確定) 更新エラー [${race_id}]:`,
-        error.message,
-      );
+  const { error } = await supabase
+    .from("races")
+    .update({ cancellation_status: "confirmed" })
+    .in("race_id", toConfirm);
+  if (error) {
+    console.error(
+      "❌ races (cancellation_status確定) 一括更新エラー:",
+      error.message,
+    );
+    return;
   }
+  const confirmedCount = toConfirm.length;
   if (confirmedCount > 0) {
     console.log(
       `  ⚠️ 中止・順延を確定: ${confirmedCount}件（発走90分超・結果未取得）`,
