@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "heiwajima-topstart-winrate",
+    title:
+      "平和島は1号艇がトップスタートを取っても勝率58.7%、全国24会場で最下位という実データ",
+    description:
+      "龍神レーダーのトップスタート分析の実データで、平和島の1号艇トップスタート時勝率は58.7%（126回中74勝）、全国平均73.8%より15.1ポイント低く24会場中最下位という結果に。1マークの振りと海水会場の潮の影響から、なぜ「先手を取っても押し切れない」のかを実データで検証します。",
+    date: "2026-09-06",
+    category: "データ分析",
+    tags: ["トップスタート", "会場特性", "平和島", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/heiwajima-topstart-winrate.jpg",
+  },
+  {
     id: "kiryu-topstart-rate",
     title:
       "桐生の1号艇トップスタート率は17.15%、全国平均より5.79ポイント低いのに勝率はほぼ互角という実データ",
