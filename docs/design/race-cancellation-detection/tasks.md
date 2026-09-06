@@ -10,6 +10,6 @@
 - [x] **Task 4**: `scripts/daily/scrape-results.js`を拡張する（FR2）。Task 2のヘルパーを使い「発走90分超・`race_results`未作成・`cancellation_status`が`confirmed`でない」レースを`confirmed`に更新する処理を、独立した新規関数`confirmOverdueCancellations()`として追加した。既存の結果取得ロジック（`scrapeRaceResult`・`scrapeAndSaveResults`）は無変更（構文チェックOK）
 - [x] **Task 5**: `src/services/supabaseDataService.js`の`getPredictions()`を拡張する（FR3）。select句に`cancellation_status`を追加し、`raceData`オブジェクト構築箇所に`cancellationStatus`フィールドを追加した。同じ変更を`getRaces()`（別関数、現状未使用だが同一テーブル）にも適用済み。構文チェックOK
 - [x] **Task 6**: `src/locales/{ja,en,ko,zh-TW}/common.json`に`raceCard.cancelled`・`panel.cancelledBanner`キーを追加した（4言語、「競艇」表記は使用なし）。`node -e`で4言語ともJSON構文・値を検証済み
-- [ ] **Task 7**: `src/components/race/RaceCard.jsx`を拡張する（FR4）。`cancellationStatus === "confirmed"`のときに既存の「結果反映待ち」バッジを「中止」バッジに置き換える排他分岐を追加する。`tentative`・`null`では現行表示を維持する
+- [x] **Task 7**: `src/components/race/RaceCard.jsx`を拡張する（FR4）。`cancellationStatus === "confirmed"`のときに既存の「結果反映待ち」バッジを「中止」バッジに置き換える排他分岐を追加した。`tentative`・`null`では現行表示を維持（`isAwaitingResult`分岐は変更なし）。括弧バランス確認OK（node_modules未導入のためJSXパーサでの構文チェックは不可、Task 9でのbuild実行時に最終確認する）
 - [ ] **Task 8**: `src/components/race/PredictionPanel.jsx`を拡張する（FR5）。`cancellationStatus === "confirmed"`のときに既存の結果反映待ちバナーを「中止」バナーに置き換える排他分岐を追加する
 - [ ] **Task 9**: 検証・PR作成。`npm run build`・`npm run test:e2e`（`RaceCard`は共通コンポーネントのため必須）を実行し、Playwrightで模擬データ（`cancellationStatus`を`confirmed`/`tentative`/`null`にした状態）を使い会場ページ・レース詳細ページの表示をライト/ダーク両テーマで目視確認する。`/code-review`でセルフレビューを実施し、指摘を修正した上でPRを作成する（マージはユーザー承認後）
