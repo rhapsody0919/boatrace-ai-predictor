@@ -32,8 +32,14 @@ function RaceDeadlineCountdown({ raceId, startTime }) {
   }
 
   const totalSec = Math.floor(remainingMs / 1000);
-  const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
   const ss = String(totalSec % 60).padStart(2, "0");
+  const totalMin = Math.floor(totalSec / 60);
+  // 締切まで1時間以上ある場合はMM:SSが3桁以上になり見た目が崩れるため、
+  // H:MM:SS表記に切り替える（1R目を早朝に開くと発生しうる、レビュー指摘で発見）
+  const time =
+    totalMin >= 60
+      ? `${Math.floor(totalMin / 60)}:${String(totalMin % 60).padStart(2, "0")}:${ss}`
+      : `${String(totalMin).padStart(2, "0")}:${ss}`;
 
   return (
     <span
@@ -44,7 +50,7 @@ function RaceDeadlineCountdown({ raceId, startTime }) {
         fontVariantNumeric: "tabular-nums",
       }}
     >
-      {t("raceCard.deadlineCountdown", { time: `${mm}:${ss}` })}
+      {t("raceCard.deadlineCountdown", { time })}
     </span>
   );
 }
