@@ -573,6 +573,202 @@ input:focus-visible,
 .podium-item.second .boat-number { color: var(--brand-accent-secondary); }
 .podium-item.third .boat-number { color: var(--podium-bronze-text); }
 
+/* BOA-238: 4〜6着の補助行（表彰台ほど強調しない） */
+.result-late-ranks {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  margin: var(--spacing-1) 0 var(--spacing-2);
+}
+
+.result-late-rank-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.result-late-rank-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* BOA-238: 決まり手バッジ。RaceReview.css の .race-review-technique と同トーン */
+.result-technique-badge {
+  display: flex;
+  justify-content: center;
+  margin: var(--spacing-2) 0 0;
+}
+
+.result-technique-badge span {
+  display: inline-block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-info-text);
+  background: rgba(14, 165, 233, 0.1);
+  border-radius: var(--radius-full);
+  padding: 0.25rem var(--spacing-3);
+}
+
+/* BOA-238: 艇番カラーチップ（公式配色、BOAT_COLORS） */
+.result-boat-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  border: var(--border-width-1) solid var(--border-hairline);
+}
+
+/* BOA-238: 払戻金テーブル */
+.result-payout-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--border-width-1);
+  background: var(--border-hairline);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.result-payout-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  background: var(--surface-card);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.result-payout-type {
+  flex: 0 0 3.4rem;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
+.result-payout-combo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.result-payout-combo-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.result-combo-sep {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.result-payout-popularity {
+  flex: 0 0 auto;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.result-payout-amount {
+  flex: 0 0 auto;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* BOA-238: スタート情報（水面配置図） */
+.lane-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.lane-diagram-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.lane-diagram-bar {
+  position: relative;
+  flex: 1;
+  height: 1.5rem;
+  background: rgba(14, 165, 233, 0.06);
+  border-radius: var(--radius-sm);
+  border: var(--border-width-1) solid var(--border-hairline);
+}
+
+.lane-diagram-dot {
+  position: absolute;
+  top: 50%;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--color-info-text);
+  transform: translate(-50%, -50%);
+}
+
+.lane-diagram-dot.flying {
+  background: var(--color-error-text);
+}
+
+.lane-diagram-value {
+  flex: 0 0 2.8rem;
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.lane-diagram-value.flying {
+  color: var(--color-error-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.lane-diagram-tag {
+  flex: 0 0 auto;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-info-text);
+  background: rgba(14, 165, 233, 0.1);
+  border-radius: var(--radius-full);
+  padding: 0.1rem var(--spacing-2);
+  white-space: nowrap;
+}
+
+/* BOA-238: 中止・不成立の空状態表示 */
+.result-empty-state {
+  text-align: center;
+  padding: var(--spacing-2) 0;
+}
+
+.result-empty-icon {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-1);
+}
+
+.result-empty-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-1);
+}
+
+.result-empty-body {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
 .accuracy-check {
   margin: 0.75rem auto 0;
   max-width: 320px;

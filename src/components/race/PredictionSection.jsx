@@ -42,7 +42,9 @@ const PredictionSection = forwardRef(
         status={status}
       />
     );
-    const result = <RaceResult prediction={prediction} />;
+    const result = (
+      <RaceResult prediction={prediction} raceId={prefetchRaceId} />
+    );
     const review = (
       <RaceReview prediction={prediction} selectedRace={selectedRace} />
     );
