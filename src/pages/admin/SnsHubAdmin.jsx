@@ -2686,6 +2686,17 @@ function TopicApprovalSection({
       ) &&
       !TIKTOK_PERMANENTLY_EXCLUDED_CATEGORY_KEYS.includes(c.category_key),
   );
+  // 週次ネタ提案の型（カテゴリ）を人間が優先指定できるようにする（2026-09-06、
+  // ユーザー要望。日次ネタ自動提案の型指定と同じ仕組みをvenue-feature型にも
+  // 展開した）。空文字はRoutine側の交互取り出し自動選定（従来通り）を意味する
+  const [selectedWeeklyCategoryKey, setSelectedWeeklyCategoryKey] =
+    useState("");
+  const weeklyCategoryOptions = topicCategories.filter(
+    (c) =>
+      c.active &&
+      c.sns_content_types?.type_key === "venue-feature" &&
+      !TIKTOK_PERMANENTLY_EXCLUDED_CATEGORY_KEYS.includes(c.category_key),
+  );
 
   const weeklyProposer = useTopicProposerTrigger({
     triggerFn: triggerWeeklyProposer,
@@ -2867,11 +2878,29 @@ function TopicApprovalSection({
           </div>
         )}
         <div className="topic-section-btn-row">
+          {weeklyCategoryOptions.length > 0 && (
+            <select
+              className="topic-section-category-select"
+              value={selectedWeeklyCategoryKey}
+              onChange={(e) => setSelectedWeeklyCategoryKey(e.target.value)}
+              disabled={weeklyProposer.triggering || weeklyProposer.locked}
+              aria-label="週次ネタ提案の型を指定"
+            >
+              <option value="">おまかせ（自動選定）</option>
+              {weeklyCategoryOptions.map((c) => (
+                <option key={c.id} value={c.category_key}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             type="button"
             className="topic-section-trigger-btn topic-section-trigger-gate"
             disabled={weeklyProposer.triggering || weeklyProposer.locked}
-            onClick={weeklyProposer.trigger}
+            onClick={() =>
+              weeklyProposer.trigger(selectedWeeklyCategoryKey || undefined)
+            }
           >
             {weeklyProposer.triggering
               ? "⏳ リクエスト中..."

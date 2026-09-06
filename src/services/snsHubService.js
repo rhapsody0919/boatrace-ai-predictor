@@ -166,10 +166,15 @@ export async function getTemplateVariants() {
 /**
  * 週次ネタ提案Routine（sns-topic-proposer-weekly）を手動起動する。通常は
  * 週次cronのみで起動するため、承認済みストックが少ない・動作確認したい
- * 場面向け（2026-09-04追加）。ネタ登録のみでdraft生成は行わない
+ * 場面向け（2026-09-04追加）。ネタ登録のみでdraft生成は行わない。
+ * `categoryKey`指定時は交互取り出しの自動選定より優先してその型のみ生成する
+ * （2026-09-06追加、日次ネタ自動提案の型指定と同じ仕組み）
  */
-export async function triggerWeeklyProposer() {
-  return request("/trigger-weekly-proposer", { method: "POST" });
+export async function triggerWeeklyProposer(categoryKey) {
+  return request("/trigger-weekly-proposer", {
+    method: "POST",
+    body: JSON.stringify({ categoryKey: categoryKey || undefined }),
+  });
 }
 
 /**
