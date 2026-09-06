@@ -7,6 +7,7 @@
  */
 
 import { supabase } from "./supabaseClient";
+import { supabaseDataService } from "./supabaseDataService";
 
 async function getRacerProfile(racerId) {
   if (!supabase) return null;
@@ -49,6 +50,8 @@ async function getRacerNews(racerId) {
 
 /**
  * 選手個別ページの表示に必要なデータを一括取得する
+ * タイトル・メタ情報に関わるprofile/grade/newsのみを対象にする。
+ * 成績・調子セクション（getRacerStats）は表示をブロックしないよう別経路で取得する
  * @param {number|string} racerId
  * @returns {Promise<{ profile: object|null, grade: string|null, news: object[] }>}
  */
@@ -59,4 +62,20 @@ export async function getRacerPageData(racerId) {
     getRacerNews(racerId),
   ]);
   return { profile, grade, news };
+}
+
+/**
+ * 選手個別ページの成績・調子セクション用データを取得する
+ * @param {number|string} racerId
+ * @returns {Promise<{ formSummary: object|null, formTrend: object|null, techniqueProfile: object|null, aggregatedStats: object|null }>}
+ */
+export async function getRacerStats(racerId) {
+  const [formSummary, formTrend, techniqueProfile, aggregatedStats] =
+    await Promise.all([
+      supabaseDataService.getRacerFormSummary(racerId),
+      supabaseDataService.getRacerFormTrend(racerId),
+      supabaseDataService.getRacerTechniqueProfile(racerId),
+      supabaseDataService.getRacerAggregatedStats(racerId),
+    ]);
+  return { formSummary, formTrend, techniqueProfile, aggregatedStats };
 }
