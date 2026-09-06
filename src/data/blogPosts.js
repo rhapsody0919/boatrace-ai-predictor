@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "kiryu-topstart-rate",
+    title:
+      "桐生の1号艇トップスタート率は17.15%、全国平均より5.79ポイント低いのに勝率はほぼ互角という実データ",
+    description:
+      "龍神レーダーのトップスタート分析の実データで、桐生の1号艇トップスタート率は17.15%（548レース中94回）、全国平均22.94%より5.79ポイント低く24会場中下から4番目という結果に。一方でトップスタートを取った時の1着率は72.34%と全国平均73.80%とほぼ変わらない、桐生特有の傾向を実データで検証します。",
+    date: "2026-09-06",
+    category: "データ分析",
+    tags: ["トップスタート", "会場特性", "桐生", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/kiryu-topstart-rate.jpg",
+  },
+  {
     id: "edogawa-nige-technique-share",
     title:
       "江戸川の1号艇「逃げ」構成比は90.9%、全国24会場で最下位——実データで理由を検証",
