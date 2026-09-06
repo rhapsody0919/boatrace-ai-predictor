@@ -34,6 +34,7 @@ import {
   VenueRankingCM_ExTime,
   VenueRankingCM_EdogawaLosing,
   VenueRankingCM_Top3Rate,
+  VenueRankingCM_NigeOutcome,
   BoatRankingCM_PlaceReturn,
   BoatRankingCM_RunnerUp,
   BoatRankingCM_TechniqueShare,
@@ -371,6 +372,14 @@ export function RemotionRoot() {
       <Composition
         id="VenueRankingCM-Top3Rate"
         component={VenueRankingCM_Top3Rate}
+        durationInFrames={600}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="VenueRankingCM-NigeOutcome"
+        component={VenueRankingCM_NigeOutcome}
         durationInFrames={600}
         fps={30}
         width={1080}

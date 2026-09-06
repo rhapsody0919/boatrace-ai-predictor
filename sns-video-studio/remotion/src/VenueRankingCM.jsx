@@ -1766,6 +1766,58 @@ export function VenueRankingCM_Top3Rate() {
   );
 }
 
+// 逃げ複勝分布（1号艇が逃げて1着になった際の2-3着傾向）ランキング（2026-09-06、第10弾）のデータ。
+// nige_outcome_distributionテーブル（first_boat=1, second_boat=2, third_boat=3、直近90日集計）を
+// venue_code(1〜24)順に集計。全国平均は加重平均（Σcount_90days / Σtotal_races）で13.17%、
+// 唐津が19.61%で突出（全国平均比+6.4pt）。トップ2値ずつの取り合い型パターンのため、
+// 逃げ以外の決まり手混在よりノイズが小さく会場差が明確
+const NIGE_OUTCOME_TOP5 = [
+  { venue: "唐津", value: "19.6%", sample: "311", ratio: 100 },
+  { venue: "大村", value: "19.3%", sample: "311", ratio: 98 },
+  { venue: "若松", value: "16.7%", sample: "342", ratio: 85 },
+  { venue: "徳山", value: "16.2%", sample: "328", ratio: 82 },
+  { venue: "戸田", value: "14.7%", sample: "184", ratio: 75 },
+];
+
+const NIGE_OUTCOME_WORST5 = [
+  { rank: 24, venue: "平和島", value: "8.1%", sample: "209", ratio: 41 },
+  { rank: 23, venue: "丸亀", value: "9.5%", sample: "264", ratio: 48 },
+  { rank: 22, venue: "鳴門", value: "9.7%", sample: "226", ratio: 50 },
+  { rank: 21, venue: "尼崎", value: "10.4%", sample: "414", ratio: 53 },
+  { rank: 20, venue: "江戸川", value: "10.6%", sample: "170", ratio: 54 },
+];
+
+const NIGE_OUTCOME_ALL = [
+  14.24, 14.67, 10.59, 8.13, 11.36, 13.82, 14.17, 12.69, 12.94, 11.22, 12.46,
+  13.91, 10.39, 9.73, 9.47, 11.71, 12.24, 16.16, 11.87, 16.67, 11.56, 14.42,
+  19.61, 19.29,
+];
+const NIGE_OUTCOME_TOP_INDEX = 22; // 唐津(venue_code=23)
+
+export function VenueRankingCM_NigeOutcome() {
+  return (
+    <VenueRankingTemplate
+      topVenue="唐津"
+      axisTitle="逃げ複勝分布ランキング"
+      rateLabel="2着②3着③ 19.6%"
+      hookQuestion="1号艇が逃げた後、2・3着はどの艇？"
+      subCaption="24会場・逃げ成功7,056レースで検証（直近90日）"
+      categoryTag="24会場ランキング"
+      allRates={NIGE_OUTCOME_ALL}
+      topRateIndex={NIGE_OUTCOME_TOP_INDEX}
+      accentColor={GOLD}
+      top5Heading="🎯 2着②3着③になりやすい会場 TOP5"
+      top5Data={NIGE_OUTCOME_TOP5}
+      worst5Heading="🌊 2着②3着③になりにくい会場は？"
+      worst5Data={NIGE_OUTCOME_WORST5}
+      barColorTop={GOLD}
+      barColorWorst={RED}
+      ctaLines={["全24会場のデータ、", "無料で見れる"]}
+      subLine="あなたの狙い目会場は、何位？"
+    />
+  );
+}
+
 // 汎用「小規模ランキング型」テンプレート（2026-08-27追加）。24会場ランキングと違い
 // 艇番別（6項目）・決まり手別（6項目）等、少数項目のランキングを1つのリストで見せる。
 // VenueRankingTemplateと異なりTOP/WORSTの分割は行わず、SceneHook+単一リスト+CTAの3構成
