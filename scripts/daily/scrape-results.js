@@ -9,6 +9,7 @@ import {
 } from "../lib/supabaseClient.js";
 import {
   getTodayDateJST,
+  getDateDaysAgo,
   formatDateForUrl,
   parseDateArg,
 } from "../lib/dateUtils.js";
@@ -553,7 +554,9 @@ async function scrapeAndSaveResults(races, targetDate) {
     console.log(`  ✅ 単勝的中: ${winHits}件, 複勝的中: ${placeHits}件`);
     console.log(`  ✅ 3連複的中: ${trifectaHits}件, 3連単的中: ${trioHits}件`);
     // 欠落した的中フラグを修正（新結果取得時のみ）
-    await fixMissingHitFlags(targetDate);
+    // 直近10日分を対象にすることで、当日限定では拾えない過去日の
+    // 一時的な書き込み失敗を後続の実行で自己修復できるようにする
+    await fixMissingHitFlags(getDateDaysAgo(9), targetDate);
 
     return { updated: true, count: newResults.length };
   } else {
@@ -609,15 +612,18 @@ async function scrapeResults(dateStr = null) {
 }
 
 // 結果があるのにis_hit_winがNULLの予測を修正
-async function fixMissingHitFlags(targetDate) {
+// startDate〜endDate（両端含む、race_id昇順比較）の範囲で欠落を検知・修復する。
+// 通常呼び出しは直近数日分の範囲を渡し、当日限定では拾えない過去日の
+// 一時的な書き込み失敗（2026-09-06発覚）を後続の実行で自己修復できるようにする。
+export async function fixMissingHitFlags(startDate, endDate = startDate) {
   // is_hit_winがNULLの予測を取得
   const { data: missingPredictions, error: predError } = await supabase
     .from("predictions")
     .select(
       "prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions",
     )
-    .gte("race_id", targetDate)
-    .lt("race_id", `${targetDate}~`)
+    .gte("race_id", startDate)
+    .lt("race_id", `${endDate}~`)
     .is("is_hit_win", null);
 
   if (predError || !missingPredictions || missingPredictions.length === 0) {
@@ -625,7 +631,7 @@ async function fixMissingHitFlags(targetDate) {
   }
 
   console.log(
-    `\n🔧 欠落した的中フラグを修正中... (${missingPredictions.length}件)`,
+    `\n🔧 欠落した的中フラグを修正中... (${missingPredictions.length}件, ${startDate}〜${endDate})`,
   );
 
   // 結果データを取得
@@ -634,8 +640,8 @@ async function fixMissingHitFlags(targetDate) {
     .select(
       "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio",
     )
-    .gte("race_id", targetDate)
-    .lt("race_id", `${targetDate}~`);
+    .gte("race_id", startDate)
+    .lt("race_id", `${endDate}~`);
 
   if (resError || !results) {
     console.error("  ❌ 結果取得エラー");
