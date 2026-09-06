@@ -1,0 +1,60 @@
+{
+  "generatedAt": "2026-09-06T13:00:00+09:00",
+  "followerCount": 62,
+  "followingCount": 261,
+  "totalPosts": 319,
+  "followerQualityNote": "フォロワー一覧の詳細サンプリングは今回未実施（62人規模、時間配分の都合）。プロフィール画面のサイドバー「Who to follow」にはボートレース関連の同ジャンルアカウント（予想家・公式系）が並んでおり、明らかなbot混入の兆候は今回のブラウジング範囲では確認できなかった。次回は実際にフォロワー一覧を数十件開いて定性チェックする",
+  "previousActionsReview": {
+    "previousReportDate": "2026-09-05",
+    "recommendedActions": [
+      "詳細アナリティクスが見れなくなった前提で、プロフィール画面の7日間集計値を主指標にする",
+      "x-posts/history.jsonの更新有無・tweet-drafts.md消化状況を次回のセッション開始時チェックで確認する",
+      "（大施策）フォロワー56人規模でのOut-of-Network拡散策（リプライ・引用戦略）の実行頻度を上げるか改めて判断する"
+    ],
+    "executed": {
+      "profileWeeklyImpressions": "今回は「直近7日間インプレッション」の集計表示自体がプロフィール画面に出現しなかった（前回は表示された）。X側の表示条件がまた変化した可能性がある。個別投稿のビュー数・いいね数で代替した",
+      "historyJsonCheck": "実施済み（本レポートのステップ0.5参照）。運用ルール違反なし",
+      "replyFrequency": "未判断のまま。x-reply-sent-log.mdを確認したところ2026-09-01〜09-06の6日間で実行件数は約26件（1日平均4.3件）、目標の1日10〜20件に対し明確に未達。詳細はnextActions参照"
+    },
+    "impact": "フォロワーは54→62人（+8、6日間）と2週間ぶりに明確な増加傾向。リプライ・引用リツイート戦略は目標未達ながら継続的に実行されており、複数の投稿で送信直後のフォロワー増加が確認されている（x-reply-sent-log.md記載）"
+  },
+  "operationsCompliance": {
+    "dailyPostLimitViolations": 0,
+    "duplicateAnnouncements": 0,
+    "formatRepetition": 0,
+    "note": "node scripts/analysis/x-operations-compliance-report.js --days=30 で確認、全項目クリア。ただしhistory.json対象日数はわずか4日分のみで、9/2・9/4・9/6分はstatus=producedのまま投稿記録が確定していない投稿が含まれる"
+  },
+  "siteReferral": {
+    "sessions30d": 13,
+    "note": "前回(9/5)と完全に同数（30日ローリングウィンドウのため1日の経過では変化が出ない）。着地ページは「/」5件・「/admin/sns-hub」3件。admin/sns-hubは開発者自身のアクセスの可能性が高くノイズとして扱う"
+  },
+  "trend": {
+    "followerCount": "2026-08-25:54→08-31:52→09-01:54→09-05:56（改善2回連続）に今回62を加えると4回連続の改善",
+    "totalPosts": "改善3回連続（08-25:202→08-31:247→09-01:261→09-05:311）に今回319を加えると4回連続",
+    "xReferralSessions": "データ不足（前回9/5が実質初回、まだ2時点のみ）"
+  },
+  "postsSampled": [
+    {"postedAt": "2026-09-06 10:01", "summary": "戸田1号艇がまくられて負ける割合51.2%（24会場で最も高い）", "views": 22, "likes": 2, "type": "video-data"},
+    {"postedAt": "2026-09-06 (2h前)", "summary": "戸田3R、AIが見てる1号艇の逃げ確率28%", "views": 21, "likes": 2, "type": "live-prediction"},
+    {"postedAt": "2026-09-06 (3h前)", "summary": "本日9/6、AIが「1号艇が崩れやすい」と判定したレースTOP5集計", "views": 103, "likes": 1, "type": "daily-data-list"},
+    {"postedAt": "2026-09-05 (14h前)", "summary": "田口節子選手、当地勝率8.67のデータを添えたBOATRACE鳴門公式投稿への引用リツイート", "views": 47, "type": "quote-tweet"},
+    {"postedAt": "不明（投稿一覧下部）", "summary": "選手が実機ボートを整備する動画（自社制作コンテンツ）", "views": 47, "type": "video"}
+  ],
+  "summary": {
+    "followerGrowth": "54(8/25)→62(9/6)、2週間で+8人。直近1週間だけで+6人と加速傾向",
+    "postingVolume": "直近確認できた投稿は1日3〜4件程度で運用ルール（上限4本）の範囲内",
+    "engagementLevel": "ビュー数21〜103、いいねは0〜2件が中心。前回9/5と同水準、大きな変化なし",
+    "siteReferral": "X経由セッション13/30日で横ばい。着地ページの多様性が乏しく「/」への流入が中心",
+    "replyStrategyGap": "目標1日10〜20件に対し実績約4.3件/日（2026-09-01〜06の6日間で約26件）。継続はしているが目標に対して明確に未達"
+  },
+  "nextActions": {
+    "small": [
+      "リプライ・引用リツイートの入力操作は座標クリックではなくfindツールでrefを取得してからクリックする（2026-09-05/06に入力暴走・誤字が2件発生し記録済みの教訓を今後も徹底する）",
+      "history.jsonのstatus=producedのまま止まっている投稿（9/2・9/4・9/6分）を、実際の投稿有無を確認しposted/skippedに更新する"
+    ],
+    "large": [
+      "リプライ戦略の目標値（1日10〜20件）と実績（1日平均4.3件）の乖離をどう扱うか判断する: (a)1件ずつ承認するフロー自体がボトルネックなので目標値を現実的な水準に下げる、(b)承認フローを効率化する方法を検討する、(c)このままのペースを許容し量より質を優先する、のいずれかをユーザーと相談する",
+      "月次統合サマリー（/growth-monthly-summary）の前回実行が2026-08-26で11日経過。そろそろ次回実行のタイミングとして提案する"
+    ]
+  }
+}
