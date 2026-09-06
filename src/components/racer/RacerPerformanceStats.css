@@ -81,6 +81,43 @@
   background: var(--color-gray-50);
   border-radius: var(--radius-md);
   padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.racer-performance-stats .table-wrapper {
+  overflow-x: auto;
+}
+
+.racer-return-rate-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.racer-return-rate-table th,
+.racer-return-rate-table td {
+  padding: var(--spacing-2);
+  text-align: center;
+  border-bottom: 1px solid var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.racer-return-rate-table th {
+  font-weight: var(--font-weight-semibold);
+}
+
+.racer-analysis-tools-link {
+  margin: var(--spacing-4) 0 0 0;
+  font-size: var(--font-size-sm);
+}
+
+.racer-analysis-tools-link a {
+  color: var(--color-primary-600);
+  text-decoration: none;
+}
+
+.racer-analysis-tools-link a:hover {
+  text-decoration: underline;
 }
 
 .racer-technique-bar {

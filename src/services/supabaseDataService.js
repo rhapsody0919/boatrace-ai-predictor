@@ -2268,6 +2268,84 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定選手の過去180日間の枠番別回収率を取得する（選手個人ページ用）
+   * getRaceRacerBoatReturnRateと同じ集計ロジック（racer_id+boat_numberキー）を
+   * racer_id単体向けに転用したもの。対象が1選手のみのためRPC化は不要
+   */
+  getRacerBoatReturnRate(racerId) {
+    return withCache(`racer-boat-return-rate-${racerId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 180);
+      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+      const { data: entries, error: entriesError } = await supabase
+        .from("race_entries")
+        .select("race_id, boat_number")
+        .eq("racer_id", racerId)
+        .gte("race_id", cutoffStr);
+
+      if (entriesError || !entries || entries.length === 0) {
+        if (entriesError)
+          console.error("race_entries取得エラー:", entriesError.message);
+        return [];
+      }
+
+      const raceIds = [...new Set(entries.map((e) => e.race_id))];
+      const resultRows = await fetchAllByIn(
+        "race_results",
+        "race_id, rank1, rank2, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+        "race_id",
+        raceIds,
+      );
+      const resultByRaceId = new Map(resultRows.map((r) => [r.race_id, r]));
+
+      // boat_numberごとに集計（同じ選手でも枠番が違えば別集計）
+      const statsByBoat = new Map();
+      entries.forEach((e) => {
+        const result = resultByRaceId.get(e.race_id);
+        if (!result || result.is_cancelled || result.is_no_race) return;
+
+        if (!statsByBoat.has(e.boat_number)) {
+          statsByBoat.set(e.boat_number, {
+            sampleCount: 0,
+            winPayoutSum: 0,
+            placePayoutSum: 0,
+          });
+        }
+        const stats = statsByBoat.get(e.boat_number);
+        stats.sampleCount += 1;
+
+        if (result.rank1 === e.boat_number) {
+          stats.winPayoutSum += result.payout_win ?? 0;
+          stats.placePayoutSum += result.payout_place_1 ?? 0;
+        } else if (result.rank2 === e.boat_number) {
+          stats.placePayoutSum += result.payout_place_2 ?? 0;
+        }
+      });
+
+      return [...statsByBoat.entries()]
+        .map(([boatNumber, stats]) => ({
+          boat_number: boatNumber,
+          sample_count: stats.sampleCount,
+          win_return_rate:
+            stats.sampleCount > 0
+              ? (stats.winPayoutSum / (stats.sampleCount * 100)) * 100
+              : null,
+          place_return_rate:
+            stats.sampleCount > 0
+              ? (stats.placePayoutSum / (stats.sampleCount * 100)) * 100
+              : null,
+        }))
+        .sort((a, b) => a.boat_number - b.boat_number);
+    });
+  },
+
+  /**
    * 指定会場・モーター番号の2連率/3連率の節ごとの推移を取得する（BOA-151）
    * race_entries.motor_2rate/3rate は節単位でのみ更新されるため、
    * 日付単位でdedupeして推移として扱う

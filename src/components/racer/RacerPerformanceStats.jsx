@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -25,13 +26,21 @@ function techniqueColor(technique) {
 
 /**
  * 選手個別ページの成績・調子セクション
- * 選手調子（全国勝率推移）・平均ST・決まり手傾向をまとめて表示する。
+ * 選手調子（全国勝率推移）・平均ST・決まり手傾向・展示タイム推移・
+ * 枠番別回収率をまとめて表示する。/winning-technique の同種タブと
+ * 同じ指標を選手個人ページ単体でも見られるようにする。
  * データが一切無い選手（デビュー直後等）ではセクション自体を非表示にする。
  * profile/grade/newsとは別経路で取得するため、読み込み中は簡易表示にする
  */
 export default function RacerPerformanceStats({ stats, loading }) {
-  const { formSummary, formTrend, techniqueProfile, aggregatedStats } =
-    stats ?? {};
+  const {
+    formSummary,
+    formTrend,
+    techniqueProfile,
+    aggregatedStats,
+    exhibitionTimeTrend,
+    boatReturnRate,
+  } = stats ?? {};
 
   const chartData = (formTrend?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
@@ -39,13 +48,21 @@ export default function RacerPerformanceStats({ stats, loading }) {
     local_win_rate: row.local_win_rate,
   }));
 
+  const exhibitionChartData = (exhibitionTimeTrend?.trend ?? []).map((row) => ({
+    date: row.date.slice(5),
+    avg_exhibition_time: row.avg_exhibition_time,
+  }));
+
   const hasTechniques = (techniqueProfile?.techniques?.length ?? 0) > 0;
+  const hasReturnRate = (boatReturnRate?.length ?? 0) > 0;
 
   const hasAnyData =
     formSummary != null ||
     chartData.length > 0 ||
     hasTechniques ||
-    aggregatedStats != null;
+    aggregatedStats != null ||
+    exhibitionChartData.length > 0 ||
+    hasReturnRate;
 
   if (loading) {
     return (
@@ -186,6 +203,73 @@ export default function RacerPerformanceStats({ stats, loading }) {
           </ul>
         </div>
       )}
+
+      {exhibitionChartData.length > 0 && (
+        <div className="racer-stat-chart">
+          <h3>展示タイムの推移</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart
+              data={exhibitionChartData}
+              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} domain={["auto", "auto"]} />
+              <Tooltip formatter={(value) => value?.toFixed(2)} />
+              <Line
+                type="stepAfter"
+                dataKey="avg_exhibition_time"
+                name="展示タイム"
+                stroke="var(--brand-accent-primary)"
+                strokeWidth={2}
+                dot={{ r: 2 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {hasReturnRate && (
+        <div className="racer-technique-profile">
+          <h3>枠番別回収率（過去180日）</h3>
+          <div className="table-wrapper">
+            <table className="racer-return-rate-table">
+              <thead>
+                <tr>
+                  <th>枠番</th>
+                  <th>出走数</th>
+                  <th>単勝回収率</th>
+                  <th>複勝回収率</th>
+                </tr>
+              </thead>
+              <tbody>
+                {boatReturnRate.map((row) => (
+                  <tr key={row.boat_number}>
+                    <td>{row.boat_number}</td>
+                    <td>{row.sample_count}</td>
+                    <td>
+                      {row.win_return_rate !== null
+                        ? `${row.win_return_rate.toFixed(0)}%`
+                        : "-"}
+                    </td>
+                    <td>
+                      {row.place_return_rate !== null
+                        ? `${row.place_return_rate.toFixed(0)}%`
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      <p className="racer-analysis-tools-link">
+        <Link to="/winning-technique?tab=techprofile">
+          データ分析ツールで本日開催中の会場・レース単位の傾向も見る →
+        </Link>
+      </p>
     </div>
   );
 }
