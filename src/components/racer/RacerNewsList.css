@@ -36,7 +36,9 @@
 }
 
 .racer-news-source {
-  color: var(--color-primary-600);
+  /* カード背景はcolor-gray-50固定（テーマ非依存）のため、文字色もその背景に対して
+     WCAG AA（4.5:1）を満たす固定色を使う。color-primary-600だと3.91で未達 */
+  color: var(--color-primary-700);
   font-size: var(--font-size-sm);
   text-decoration: none;
 }
