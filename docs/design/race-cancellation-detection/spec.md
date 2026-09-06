@@ -39,6 +39,12 @@ UI機能（画面・コンポーネントが関わる）。次工程は `/step1-
 - 誤って確定してしまった場合の手動取り消し機能は作らない
 - 受入基準: 確定状態のレースカードに「中止」バッジが表示される。暫定状態・状態なしのレースカードは現行の表示と変わらない
 
+### FR5: RaceDetailPage（PredictionPanel）表示分岐（優先度: 必須）
+`RaceDetailPage.jsx`は`RaceCard`自体を描画しておらず、「結果反映待ち」相当の表示は`PredictionPanel.jsx`が独自の`isAwaitingResult`判定・バナー（`panel.awaitingResultBanner`）で持っている（`RaceCard.jsx`の`raceCard.awaitingResult`とは別のi18nキー・別UI）。FR4と同じ「中止」状態を`PredictionPanel.jsx`側にも反映し、RaceCard・PredictionPanelの両方が同じデータに基づいて矛盾なく「中止」を表示できるようにする。
+- 確定状態のレースは、既存の結果反映待ちバナーの代わりに「中止」を示すバナーを表示する
+- 暫定状態は通常表示のまま変更しない（FR4と同じ方針）
+- 受入基準: 確定状態のレース詳細ページで「中止」を示すバナーが表示される。暫定状態・状態なしのレースは現行の表示と変わらない
+
 ## スコープ
 
 ### やること
@@ -47,9 +53,13 @@ UI機能（画面・コンポーネントが関わる）。次工程は `/step1-
 - `scrape-results.js`（または新規バッチ）：確定検知ロジックの実装
 - `getPredictions()`等、取得クエリの拡張
 - `RaceCard.jsx`：中止バッジの表示分岐
-- 中止バッジの多言語対応（`/venue`は`TRANSLATED_PATHS`に含まれる翻訳対象パスのため、4言語分のi18nキー追加が必要）
+- `PredictionPanel.jsx`（`RaceDetailPage.jsx`側）：既存の結果反映待ちバナーに中止分岐を追加（FR5、`/step1-screens`調査で判明した矛盾リスクを踏まえ追加）
+- 中止バッジ・バナーの多言語対応（`/venue`・レース詳細ページは`TRANSLATED_PATHS`に含まれる翻訳対象パスのため、4言語分のi18nキー追加が必要）
 
 ### やらないこと
+- `src/components/holmes/`配下（HolmesSherlock/Watson/Adler/Mycroft.jsx）の対応: これらは`src/components/race/RaceCard.jsx`とは無関係の同名ローカル関数を独自実装しており、本機能の影響を受けない（`/step1-screens`調査で確認済み）
+- `VenueGridCard.jsx`/`VenueGridPage.jsx`（日別会場グリッド）の対応: 会場単位の集約表示のみで個別レースの状態バッジを持たないため対象外。ただし`VenueGridCard.jsx`の`findNextRace`が中止レースをスキップしない点はBOA-243側の課題として申し送る
+- `AdminRules.jsx`（`/admin/rules`）の集計ロジックの調整: 中止レースが「本日」「履歴」タブの回収率集計に混入する可能性があるが、実害の確認・対応は別途判断する（本チケットでは表示分岐のみ対応し、管理画面の集計修正はスコープ外）
 - BOA-243本体（会場ページの締切ライブステータス「受付中/まもなく締切/締切済み」表示）は別チケット。本チケット完了後に着手する
 - 公式の中止発表ページ（boatrace.jp等）との突き合わせ（今回はヒューリスティック＋連続検知による確定のみ）
 - 誤確定時の手動取り消しUI・管理画面機能
