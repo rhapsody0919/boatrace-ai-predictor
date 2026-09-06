@@ -22,7 +22,7 @@ import { getLanguage, localizePath } from "../config/languages";
 import { getFeaturedPosts, getLatestPosts } from "../data/blogPosts";
 import { WEEKDAYS } from "../constants";
 import { formatDate } from "../utils/formatters";
-import { formatDateJP } from "../utils/dateUtils";
+import { formatDateJP, getTodayJST } from "../utils/dateUtils";
 import "./VenueGridPage.css";
 // 過去日付ビューのレイアウト（.race-detail-page/.page-header/.back-link等）は
 // 旧RaceDetail.jsxのスタイルを流用する
@@ -282,6 +282,10 @@ function TodayVenueGridPage() {
 
 function PastVenueGridPage({ date }) {
   const { venuesData, loading, error } = usePastVenues(date);
+  // /races/{today}のように「過去日付ビュー」経由で本日の日付が指定された場合も
+  // 時刻比較を有効にする（無効のままだと本日の未終了レースが「全レース終了」と
+  // 誤表示される）。真に過去の日付ではnullのまま（時刻比較不要）
+  const nowHHMM = useNowHHMM(date === getTodayJST());
 
   const breadcrumbItems = [
     { name: "ホーム", url: "/" },
@@ -326,7 +330,7 @@ function PastVenueGridPage({ date }) {
             <VenueGrid
               venuesData={venuesData}
               getVenueLink={(code) => `/races/${date}/${code}`}
-              nowHHMM={null}
+              nowHHMM={nowHHMM}
             />
           )}
         </div>
