@@ -109,6 +109,10 @@ export const VENUE_GUIDES_EN = [
       note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the prepaid card "JUMPY CARD+", which you charge in advance; it also works as your entry pass at the gates.',
       url: "https://www.boatrace-suminoe.jp/sp/cashless.html",
     },
+    languageSupport: {
+      note: "Suminoe runs its own dedicated multilingual visitor guide website (separate from the main venue site), with pages in English, Korean, Simplified Chinese and Traditional Chinese covering the rules, how to buy tickets, and how to collect payouts. We could not confirm whether on-site staff or ticket machines themselves support foreign languages.",
+      url: "http://guide.boatrace-suminoe.jp/en/index.html",
+    },
     facts: {
       water: "Freshwater pool",
       character: "Balanced racing; hosts many premier (SG/G1) events",
@@ -353,6 +357,10 @@ export const VENUE_GUIDES_EN = [
     cashless: {
       note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the prepaid "Perabo Card", which doubles as a Rakuten Edy e-money card; charge it at the on-site machines before you bet.',
       url: "https://www.boatrace-fukuoka.com/sp/index.php?page=service-perabo",
+    },
+    languageSupport: {
+      note: "Fukuoka is the one venue where we could confirm genuine on-site multilingual support: multilingual automatic ticket machines and English-language betting explanations available at the information desk, according to Fukuoka City's official tourism guide.",
+      url: "https://gofukuoka.jp/articles/detail/11c09fbc-eb35-413d-a49f-e3d64f15a662",
     },
     facts: {
       water: "Brackish (river mouth) — distinctive swell",
@@ -610,6 +618,10 @@ export const VENUE_GUIDES_EN = [
     cashless: {
       note: 'The venue is cash-only for regular purchases — no credit cards. For cashless betting, sign up for the free "Hamana Po!" IC card, which you charge at on-site machines; ¥100 wagered earns 1 point, redeemable for cash or venue goods.',
       url: "https://www.boatrace-hamanako.jp/sp/index.php?page=service-point",
+    },
+    languageSupport: {
+      note: 'Hamanako offers a paid, reservation-required "Speedboat Racing Experience" tour (about 2.5 hours, book 7+ days ahead) that includes a facility tour and hands-on betting guidance in English and Japanese. We could not confirm English support for walk-in visitors outside this program.',
+      url: "https://exploreshizuoka.jp/activities/places/speedboat-racing-experience-lake-hamana/",
     },
     facts: {
       water:
@@ -1811,6 +1823,10 @@ export const VENUE_GUIDES_EN = [
       note: "The venue uses the \"KARAMO\" card, free to join with no annual fee and available for same-day sign-up. It earns 0.5 points per ¥100 wagered plus 2 points per visit, and also supports palm-vein authentication for purchases. It's only usable at the main venue — there's no coverage at off-track outlets.",
       url: "https://www.infoworld.co.jp/karatsu_cl/cashless.html",
     },
+    languageSupport: {
+      note: "Karatsu has a dedicated foreign-language section of its official site (English, Simplified Chinese, Traditional Chinese, Korean), and the venue's general information counter is staffed at all times. We could not confirm whether that counter staff speaks a foreign language.",
+      url: "https://www.boatrace-karatsu.jp/sp/index.php?page=lang-lang_index&target=lang_title_ct",
+    },
     facts: {
       water: "Freshwater pool — one of the widest courses in Japan",
       character:
@@ -1891,6 +1907,10 @@ export const VENUE_GUIDES_EN = [
     cashless: {
       note: 'The venue uses the "ORICA" card, valid across all three of the venue\'s facilities — the main stadium, Blue Dragon and BTS Omura (the off-track outlet) — for both ticket purchases and entrance fees. Load cash at an in-venue deposit machine; wagers earn 0.5 points per ¥100, and visits earn 1-2 bonus points depending on the facility and event.',
       url: "https://omurakyotei.jp/orica/",
+    },
+    languageSupport: {
+      note: 'According to the operator\'s own customer-feedback minutes, the duty-free shop "Blue Dragon" inside the venue posts Chinese-language notices and stocks multilingual pamphlets for overseas visitors. This is limited to that shop area — we found no evidence of venue-wide multilingual staff, signage or ticket machines.',
+      url: "https://omurakyotei.jp/iken/detail.php?id=40",
     },
     facts: {
       water: "Seawater, wind-screened for night racing",

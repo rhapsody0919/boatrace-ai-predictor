@@ -184,6 +184,10 @@ export const VENUE_GUIDES_KO = [
       note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 무료 'Hamana Po!' IC카드를 발급받아 현장 기계에서 충전하세요. 100엔당 1포인트가 적립되며 현금이나 경정장 상품으로 교환할 수 있습니다.",
       url: "https://www.boatrace-hamanako.jp/sp/index.php?page=service-point",
     },
+    languageSupport: {
+      note: "하마나코는 사전 예약제(최소 7일 전) 유료 체험 프로그램 'Speedboat Racing Experience'(약 2.5시간)를 운영하며, 시설 안내와 영어·일본어 투표 가이드를 제공합니다. 이 프로그램 외에 일반 방문객을 위한 외국어 지원은 확인되지 않았습니다.",
+      url: "https://exploreshizuoka.jp/activities/places/speedboat-racing-experience-lake-hamana/",
+    },
     facts: {
       water: "기수（호수, 바닷물과 민물 혼합）— 일본에서 가장 넓은 수로",
       character: "고속 수면 — 바깥쪽 정의 추월이 흔함",
@@ -1368,6 +1372,10 @@ export const VENUE_GUIDES_KO = [
       note: "이곳은 'KARAMO' 카드를 사용합니다. 가입비・연회비 무료이며 당일 가입도 가능합니다. 100엔당 0.5포인트, 방문 시 2포인트가 적립되며, 손바닥 정맥 인증 결제도 지원합니다. 본장에서만 사용 가능하며 장외 발매소에서는 사용할 수 없습니다.",
       url: "https://www.infoworld.co.jp/karatsu_cl/cashless.html",
     },
+    languageSupport: {
+      note: "가라쓰는 공식 사이트에 별도의 외국어 전용 페이지(영어・중국어 간체・중국어 번체・한국어)를 두고 있으며, 현장 종합 안내소에는 상시 직원이 배치되어 있습니다. 다만 해당 직원이 외국어로 응대 가능한지는 확인되지 않았습니다.",
+      url: "https://www.boatrace-karatsu.jp/sp/index.php?page=lang-lang_index&target=lang_title_ct",
+    },
     facts: {
       water: "담수풀 — 일본에서 손꼽히게 넓은 코스",
       character: "초반 맞바람, 후반 순풍 — 그 외 특별한 특징은 없음",
@@ -1446,6 +1454,10 @@ export const VENUE_GUIDES_KO = [
     cashless: {
       note: "이곳은 'ORICA' 카드를 사용하며, 경정장의 세 시설（본장, 블루드래곤, 장외 발매소 BTS오무라） 모두에서 티켓 구매와 입장료 결제에 사용할 수 있습니다. 현장 입출금기에서 현금을 충전하며, 투표 시 100엔당 0.5포인트가 적립되고 방문 시에도 시설・행사에 따라 1~2포인트의 보너스 포인트가 적립됩니다.",
       url: "https://omurakyotei.jp/orica/",
+    },
+    languageSupport: {
+      note: "운영사가 공개한 고객 간담회 회의록에 따르면, 장내 면세점 '블루드래곤'에는 중국어 안내문이 게시되어 있고 해외 방문객을 위한 다국어 팸플릿도 비치되어 있습니다. 다만 이는 해당 매장에 한정된 대응이며, 경정장 전체에 다국어 직원・표지판・발매기가 있다는 근거는 확인되지 않았습니다.",
+      url: "https://omurakyotei.jp/iken/detail.php?id=40",
     },
     facts: {
       water: "해수, 야간 경주를 위한 방풍벽 설치",
@@ -1610,6 +1622,10 @@ export const VENUE_GUIDES_KO = [
     cashless: {
       note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 선불카드 'JUMPY CARD+'를 발급받아 미리 충전하세요. 입장권으로도 사용할 수 있습니다.",
       url: "https://www.boatrace-suminoe.jp/sp/cashless.html",
+    },
+    languageSupport: {
+      note: "스미노에는 본 공식 사이트와 별도로 다국어 방문 안내 전용 사이트를 운영하며, 영어・한국어・중국어 간체・중국어 번체로 규칙, 티켓 구매법, 환급 방법을 안내합니다. 현장 직원이나 발매기 자체의 외국어 지원 여부는 확인되지 않았습니다.",
+      url: "http://guide.boatrace-suminoe.jp/en/index.html",
     },
     facts: {
       water: "담수풀",
@@ -1855,6 +1871,10 @@ export const VENUE_GUIDES_KO = [
     cashless: {
       note: "일반 구매는 현금만 가능하며 신용카드는 사용할 수 없습니다. 캐시리스 투표를 원한다면 선불카드 '페라보 카드'를 발급받으세요. 라쿠텐 에디 전자화폐 카드로도 겸용되며, 베팅 전 현장 기계에서 충전할 수 있습니다.",
       url: "https://www.boatrace-fukuoka.com/sp/index.php?page=service-perabo",
+    },
+    languageSupport: {
+      note: "후쿠오카는 실제 현장 다국어 지원이 확인된 유일한 경정장입니다: 후쿠오카시 공식 관광 가이드에 따르면 다국어 자동 발매기가 설치되어 있고, 안내 데스크에서 영어로 투표 방법을 설명받을 수 있습니다.",
+      url: "https://gofukuoka.jp/articles/detail/11c09fbc-eb35-413d-a49f-e3d64f15a662",
     },
     facts: {
       water: "기수（하구）— 독특한 너울",
