@@ -43,6 +43,8 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 - 実データに基づく記述（`scripts/lib/supabaseClient.js`パターンで取得）
 - 既存記事（`public/blog/`配下の同系統記事）を参考に構成・文体を揃える。**ただしカバー画像の挿入位置は4.のルールを優先する**（同系統の過去記事が4.のルール制定前に生成されたものだと、画像が文中に埋もれた構成をそのまま踏襲してしまうため）
 - 0.で確認済みの却下理由・戦略insightを構成・訴求の判断に反映する
+- **`src/data/blogPosts.js`の`title`は30〜60字、`description`は120〜160字に収める**（2026-09-08追加。6.5の機械的品質チェックの合格基準と一致させている。「既存記事を参考に」だけでは長さが揃う保証が無く、実際にこの2項目が原因で自動マージが働かないケースが判明したため明記した）
+- **本文中に、サイト内の別ページへの内部リンク（`/blog/{slug}`・`/winning-technique?tab=...`等）を最低1本含める**（同上の理由で明記。既存記事を書き起こす際、関連する過去記事や分析ツールへの導線を必ず1箇所は入れる）
 
 ## 4. カバー画像の生成
 
@@ -52,6 +54,7 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 - **`{ type: "data-card" }`**（会場特性・成績ネタは基本こちら）: `scripts/lib/contentChannels/renderCoverCard.js`の`renderCoverCard()`で`DataQuoteCard`をレンダリング（`COMPOSITION_IDS.blogOrNote`、1200×630）。`docs/reference/brand-kit.md`「YouTube / ブログ / note カバー画像・サムネイル」の制作ルールに従う
 - 保存先は`public/images/blog/{slug}.jpg`（Draft PRに含める）
 - **Markdown本文への挿入位置は記事の一番上に固定する**: タイトル見出し（`#`、存在する場合）の直後・本文の最初の段落（「はじめに」等の導入文）より前に配置する。「## はじめに」セクションの後や、データ解説セクションの直前など文中に挿入しない（2026-09-07、既存記事の構成を参考にする過程で画像が文中に埋もれるパターンが自己再生産され、複数記事で発生していたため明記。既存公開済み記事の位置修正はスコープ外、本ルールは以降の新規生成のみに適用する）
+- **`![alt](path)`のaltは空文字にせず、画像の内容を要約した説明を必ず入れる**（2026-09-08追加。画像SEO・6.5の機械的品質チェックの合格基準）
 
 ## 5. 品質自己レビュー
 
@@ -61,6 +64,15 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 
 - `sns_drafts`テーブルにINSERTする。`content_group_id`はclaimしたネタの`sns_topics.id`をそのまま使う。列: `platform`（'blog'）・`format`（4.で判定したカバー画像戦略の`type`、`'screenshot'`または`'data-card'`）・`title`・`caption_text`（本文）・`cover_image_path`・`status`（'pending_review'）・`routine_run_id`
 - `git checkout -b`→ファイル作成（`public/blog/{slug}.md`）→コミット→push→`gh pr create --draft`（`master`をベースブランチにする）。作成したPR URLを`pr_url`列に保存する。4.のカバー画像も同じPRに含める
+
+## 6.5. 機械的な品質チェック→合格時のみ自動マージ
+
+`node scripts/maintenance/finalize-blog-draft.js <draftId>`を実行する（2026-09-07追加、ユーザー要望: ブログの承認ステップを、自動チェック合格時のみ省略できるようにしたい）。6.でINSERTした`sns_drafts`のidをそのまま渡す。**このRoutine自身が実行する**（別セッション・GitHub Actions等を待たない）。
+
+- `scripts/maintenance/verify-blog-draft-quality.js`が、文字数・サムネ画像の位置・旧モデル廃止済み機能への言及・禁止用語（「競艇」）・メタディスクリプションの文字長・タイトルの文字長・画像alt属性・内部リンクの有無・よくある質問セクションの9項目を機械的にチェックする
+- **全項目合格の場合のみ**、このスクリプトがPRを自動マージ（`gh pr merge --squash`）し、`sns_drafts.status`を`'posted'`・`approver_id`を`sns_approvers`の「自動承認（品質チェック合格）」行に更新する。これで7.に進んでよい
+- **1項目でも不合格の場合は何もしない**。`sns_drafts`は`status='pending_review'`のまま残り、これまで通りsns-hub管理画面で人間が確認・承認する（本節が無かった場合と同じ状態）
+- ここでチェックできるのは文字列・構造として機械的に判定できる項目のみ。`.claude/CLAUDE.md`「ブログ記事の公開前品質チェック」6項目のうち、数値・データ整合性／検索意図の網羅性／多言語間の内容一貫性は意味理解が要るため対象外（この3項目に問題がある記事も、他の9項目さえ揃っていれば自動マージされうる、という残存リスクを認識しておく）
 
 ## 7. claimしたターゲットの完了処理
 
