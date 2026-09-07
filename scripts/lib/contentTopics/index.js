@@ -9,6 +9,7 @@ import * as venueCharacteristicSource from "./venueCharacteristicSource.js";
 import * as dataInsightSource from "./dataInsightSource.js";
 import * as dailyResultSource from "./dailyResultSource.js";
 import * as triviaSource from "./triviaSource.js";
+import * as humorSource from "./humorSource.js";
 
 export const topicSources = [
   newFeatureSource,
@@ -16,6 +17,7 @@ export const topicSources = [
   dataInsightSource,
   dailyResultSource,
   triviaSource,
+  humorSource,
 ];
 
 // 全ソースを回して候補を集める。1つのソースが例外を投げても他を止めない
