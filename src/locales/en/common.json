@@ -130,7 +130,8 @@
     "collectingDataDesc": "We're still building up a track record for this venue's upset tendency. This will appear once enough data has been collected",
     "accuracyLoading": "Loading track record...",
     "accuracyStat": "Track record: races labeled \"{{level}}\" actually had a {{rate}}% upset rate (last {{count}} races, overall average {{baseline}}%)",
-    "accuracyLink": "See details ›"
+    "accuracyLink": "See details ›",
+    "reasonsJaOnly": "Detailed AI reasoning is currently available in Japanese only."
   },
   "volatilityAccuracy": {
     "title": "🌪️ Upset Index Track Record (last 90 days)",
