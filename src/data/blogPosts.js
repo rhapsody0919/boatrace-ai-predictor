@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "karatsu-nige-outcome-123-rate",
+    title:
+      "唐津は1号艇が逃げ切った際「2着2号艇・3着3号艇」の出現率19.61%で全国1位、全国平均13.05%より6.56ポイント高い実データ",
+    description:
+      "逃げ成功時の複勝分布の実データで、唐津で1号艇が『逃げ』で1着になった311レースを集計。「2着2号艇・3着3号艇」が19.61%で24会場中1位、全国平均13.05%より6.56ポイント高いという結果に。上位会場が淡水・海水混在という実データも踏まえ、1号艇逃げ切り後の2・3着傾向を検証します。",
+    date: "2026-09-07",
+    category: "データ分析",
+    tags: ["逃げ成功時の複勝分布", "イン逃げ", "唐津", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/karatsu-nige-outcome-123-rate.jpg",
+  },
+  {
     id: "kiryu-nige-outcome-123-rate",
     title:
       "桐生は1号艇が逃げ切った際「2着2号艇・3着3号艇」の出現率14.14%、全国平均13.05%より1.09ポイント高い実データ",
