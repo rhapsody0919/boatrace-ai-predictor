@@ -1,0 +1,98 @@
+.racer-search {
+  position: relative;
+}
+
+.racer-search-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.6rem;
+  background: none;
+  color: var(--text-secondary);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  transition: color var(--transition-base) var(--ease-in-out),
+    border-color var(--transition-base) var(--ease-in-out);
+}
+
+.racer-search-trigger:hover {
+  color: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+}
+
+.racer-search-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: 260px;
+  max-width: calc(100vw - 2rem);
+  padding: 0.75rem;
+  z-index: 1001;
+  animation: racer-search-slide-down 0.2s ease-out;
+}
+
+@keyframes racer-search-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.racer-search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+}
+
+.racer-search-input:focus {
+  outline: none;
+  border-color: var(--brand-accent-primary);
+}
+
+.racer-search-status {
+  margin: 0.6rem 0 0 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.racer-search-results {
+  list-style: none;
+  margin: 0.5rem 0 0 0;
+  padding: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.racer-search-result {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.5rem;
+  background: none;
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+}
+
+.racer-search-result:hover {
+  color: var(--brand-accent-primary);
+  background: var(--surface-page);
+}

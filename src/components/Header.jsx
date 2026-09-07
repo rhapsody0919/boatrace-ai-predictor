@@ -5,6 +5,7 @@ import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { parseLangFromPath, getAvailableLanguages } from "../config/languages";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeToggle from "./ThemeToggle";
+import RacerSearchBox from "./RacerSearchBox";
 import { THEME_SWITCHING_ENABLED } from "../config/theme";
 import "./Header.css";
 
@@ -129,6 +130,7 @@ function Header() {
           >
             {t("nav.hits")}
           </button>
+          {currentLng === "ja" && <RacerSearchBox />}
           <LanguageSwitcher />
           {THEME_SWITCHING_ENABLED && <ThemeToggle />}
           <button
