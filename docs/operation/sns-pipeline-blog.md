@@ -62,6 +62,15 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 - `sns_drafts`テーブルにINSERTする。`content_group_id`はclaimしたネタの`sns_topics.id`をそのまま使う。列: `platform`（'blog'）・`format`（4.で判定したカバー画像戦略の`type`、`'screenshot'`または`'data-card'`）・`title`・`caption_text`（本文）・`cover_image_path`・`status`（'pending_review'）・`routine_run_id`
 - `git checkout -b`→ファイル作成（`public/blog/{slug}.md`）→コミット→push→`gh pr create --draft`（`master`をベースブランチにする）。作成したPR URLを`pr_url`列に保存する。4.のカバー画像も同じPRに含める
 
+## 6.5. 機械的な品質チェック→合格時のみ自動マージ
+
+`node scripts/maintenance/finalize-blog-draft.js <draftId>`を実行する（2026-09-07追加、ユーザー要望: ブログの承認ステップを、自動チェック合格時のみ省略できるようにしたい）。6.でINSERTした`sns_drafts`のidをそのまま渡す。**このRoutine自身が実行する**（別セッション・GitHub Actions等を待たない）。
+
+- `scripts/maintenance/verify-blog-draft-quality.js`が、文字数・サムネ画像の位置・旧モデル廃止済み機能への言及・禁止用語（「競艇」）・メタディスクリプションの文字長・タイトルの文字長・画像alt属性・内部リンクの有無・よくある質問セクションの9項目を機械的にチェックする
+- **全項目合格の場合のみ**、このスクリプトがPRを自動マージ（`gh pr merge --squash`）し、`sns_drafts.status`を`'posted'`・`approver_id`を`sns_approvers`の「自動承認（品質チェック合格）」行に更新する。これで7.に進んでよい
+- **1項目でも不合格の場合は何もしない**。`sns_drafts`は`status='pending_review'`のまま残り、これまで通りsns-hub管理画面で人間が確認・承認する（本節が無かった場合と同じ状態）
+- ここでチェックできるのは文字列・構造として機械的に判定できる項目のみ。`.claude/CLAUDE.md`「ブログ記事の公開前品質チェック」6項目のうち、数値・データ整合性／検索意図の網羅性／多言語間の内容一貫性は意味理解が要るため対象外（この3項目に問題がある記事も、他の9項目さえ揃っていれば自動マージされうる、という残存リスクを認識しておく）
+
 ## 7. claimしたターゲットの完了処理
 
 `markTopicTargetGenerated(targetId, draftId)`（`scripts/lib/snsTopics.js`）を呼ぶ。
