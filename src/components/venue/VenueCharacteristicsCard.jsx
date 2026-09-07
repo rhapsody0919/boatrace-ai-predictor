@@ -94,6 +94,14 @@ export default function VenueCharacteristicsCard({ venueCode }) {
       <p className="venue-characteristics-note">
         {t("venueCharacteristics.note")}
       </p>
+      <div className="venue-hud-header-row" aria-hidden="true">
+        <span />
+        <span>{t("venueCharacteristics.winRateHeader")}</span>
+        <span>{t("venueCharacteristics.deltaHeader")}</span>
+        <span className="venue-hud-header-technique">
+          {t("venueCharacteristics.techniqueHeader")}
+        </span>
+      </div>
       <div className="venue-hud-rows">
         {boatRows.map((row, index) => {
           const boatColor = BOAT_COLORS[row.boat] ?? {};

@@ -89,6 +89,9 @@
     "title": "本賽場的特徵（近90天）",
     "note": "與AI數據分析所參考的相同賽場數據。可查看各艇號的第1名機率，以及獲勝時最常見的獲勝方式。",
     "nationalAverageTooltip": "全國平均{{value}}%",
+    "winRateHeader": "第1名機率",
+    "deltaHeader": "全國差",
+    "techniqueHeader": "主要獲勝方式",
     "footnote": "統計最近{{count}}場比賽（截至{{date}}）。僅反映過去的比賽傾向，不保證當日結果。",
     "unknownDate": "更新日期不明",
     "waterType": {
