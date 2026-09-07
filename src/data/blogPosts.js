@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-grade-win-rate-gap",
+    title: "A1級とB2級、平均勝率は2.6倍差 - 実データで見る級別の壁",
+    description:
+      "龍神レーダーの実レース出走データで、直近30日間の級別平均勝率を集計しました。A1級選手の平均勝率6.72%はB2級選手2.60%の約2.6倍という大きな差がついていることが実データでわかりました。級別が分かれる仕組みと、舟券選びへの活かし方をあわせて解説します。",
+    date: "2026-09-07",
+    category: "データ分析",
+    tags: ["選手データ", "級別", "A1級", "B2級", "勝率", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-grade-win-rate-gap.jpg",
+  },
+  {
     id: "karatsu-nige-outcome-123-rate",
     title:
       "唐津は1号艇が逃げ切った際「2着2号艇・3着3号艇」の出現率19.61%で全国1位、全国平均13.05%より6.56ポイント高い実データ",
