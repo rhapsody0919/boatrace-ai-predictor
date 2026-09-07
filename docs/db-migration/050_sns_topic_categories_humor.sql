@@ -16,7 +16,7 @@ INSERT INTO sns_topic_categories (category_key, label, content_type_id, source_i
     ('humor', 'ゆるユーモア型',
         (SELECT id FROM sns_content_types WHERE type_key = 'daily-auto'),
         'humor', true,
-        '選手個人の成績データには触れない、競技ルール・観戦文化のあるあるネタ（scripts/lib/contentTopics/humorSource.jsの固定ネタバンクをクールダウン方式でローテーション）。日次・Xのみ。動画は作らずテキスト投稿のみ（2026-09-07決定、経緯はdocs/operation/sns-topic-proposer-daily-auto.md参照）')
+        '選手個人の成績データには触れない、競技ルール・観戦文化のあるあるネタ（scripts/lib/contentTopics/humorSource.jsの題材リストをクールダウン方式でローテーション、本文は固定文でなく毎回新しく書く）。日次・Xのみ。動画は作らずテキスト投稿のみ（2026-09-07決定、経緯はdocs/operation/sns-topic-proposer-daily-auto.md参照）')
 ON CONFLICT (category_key) DO NOTHING;
 
 -- チャネル設定: Xのみ既定ON、他は既定OFF（あとでsns-hub管理画面から変更可能）
