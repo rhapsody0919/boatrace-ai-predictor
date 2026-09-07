@@ -40,9 +40,8 @@
 
 .volatility-highlights__race-link {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.15rem;
   background: var(--surface-card);
   border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-lg);
@@ -56,10 +55,27 @@
   border-color: var(--brand-accent-primary);
 }
 
+.volatility-highlights__race-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.volatility-highlights__time {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
 .volatility-highlights__percentile {
   color: var(--brand-accent-primary);
   font-weight: var(--font-weight-medium);
   flex-shrink: 0;
+}
+
+.volatility-highlights__turn {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
 }
 
 @media (max-width: 480px) {

@@ -256,6 +256,7 @@
     "freeAccessNoticeRest": "— use every feature right now, no bank account or membership required",
     "todayRaces": "Today's Races",
     "volatilityHighlightsTitle": "🌪️ Today's Upset Index Highlights",
+    "volatilityHighlightsTurnPrediction": "Predicted winner: Boat {{course}} ({{technique}}, {{probability}}%)",
     "dataType": "Race data",
     "loadingTitle": "Loading race data...",
     "loadingDesc": "Fetching today's race information",

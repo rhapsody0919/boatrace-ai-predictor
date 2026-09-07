@@ -27,7 +27,11 @@ function flattenRaces(venuesData) {
         raceId: getRaceId({ rawData: race }),
         venueName: venue.placeName,
         raceNo: race.raceNo,
+        startTime: race.startTime || null,
         percentile: race.volatility.percentile,
+        // turnPrediction は get_today_races RPC（052マイグレーション）が返す場合のみ
+        // 存在する。未適用環境ではundefinedのため、無いものとして扱う
+        turnPrediction: race.turnPrediction || null,
       });
     }
   }
@@ -52,17 +56,35 @@ function HighlightList({ title, races, t }) {
 
 function RaceLink({ race, t }) {
   const localize = useLocalizedPath();
+  const tp = race.turnPrediction;
   return (
     <Link
       to={localize(`/race/${race.raceId}`)}
       className="volatility-highlights__race-link"
     >
-      <span translate="no">
-        {race.venueName} {race.raceNo}R
-      </span>
-      <span className="volatility-highlights__percentile">
-        {Math.round(race.percentile * 100)}%
-      </span>
+      <div className="volatility-highlights__race-main">
+        <span translate="no">
+          {race.venueName} {race.raceNo}R
+          {race.startTime && (
+            <span className="volatility-highlights__time">
+              {" "}
+              {race.startTime}
+            </span>
+          )}
+        </span>
+        <span className="volatility-highlights__percentile">
+          {Math.round(race.percentile * 100)}%
+        </span>
+      </div>
+      {tp && typeof tp.probability === "number" && (
+        <div className="volatility-highlights__turn">
+          {t("home.volatilityHighlightsTurnPrediction", {
+            course: tp.winnerCourse,
+            technique: t(`techniques.${tp.technique}`, tp.technique),
+            probability: Math.round(tp.probability * 100),
+          })}
+        </div>
+      )}
     </Link>
   );
 }

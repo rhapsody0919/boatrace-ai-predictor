@@ -255,6 +255,7 @@
     "freeAccessNoticeRest": "— 無需開戶或加入會員，現在就能使用所有功能",
     "todayRaces": "今日賽事",
     "volatilityHighlightsTitle": "🌪️ 今日內道崩盤指數精選",
+    "volatilityHighlightsTurnPrediction": "預測第1名：{{course}}號艇（{{technique}}・{{probability}}%）",
     "dataType": "比賽資料",
     "loadingTitle": "正在載入比賽資料...",
     "loadingDesc": "正在取得今日的比賽資訊",
