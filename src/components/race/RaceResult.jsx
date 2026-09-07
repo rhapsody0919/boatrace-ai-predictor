@@ -270,8 +270,8 @@ function RaceResult({ prediction, raceId }) {
   if (result.isCancelled || result.isNoRace) {
     return (
       <div className="race-result">
-        <h4>🏁 {t("result.title")}</h4>
         <div className="result-empty-state">
+          <h4>🏁 {t("result.title")}</h4>
           <div className="result-empty-icon">🚫</div>
           <p className="result-empty-title">
             {result.isCancelled
