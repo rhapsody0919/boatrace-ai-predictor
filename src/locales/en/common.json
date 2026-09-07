@@ -86,6 +86,22 @@
     "metaDescription": "All of today's races at {{venue}} boat race stadium. Check deadlines and grades, then view AI data analysis for each race.",
     "backToVenues": "← Back to venues"
   },
+  "venueCharacteristics": {
+    "title": "This Venue's Tendencies (last 90 days)",
+    "note": "Same venue-level data our AI data analysis uses. See each boat's 1st-place rate and its most common winning technique.",
+    "footnote": "Based on the last {{count}} races (as of {{date}}). Reflects past tendencies only and does not guarantee today's results.",
+    "unknownDate": "unknown",
+    "waterType": {
+      "fresh": "Freshwater",
+      "brackish": "Brackish water",
+      "sea": "Seawater"
+    },
+    "cluster": {
+      "in_strong": "Inside-lane favoring",
+      "out_strong": "Outside-lane favoring",
+      "balanced": "Balanced"
+    }
+  },
   "raceDetailPage": {
     "metaTitle": "{{venue}} Race {{race}} AI data analysis - Ryujin Radar",
     "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}}.",

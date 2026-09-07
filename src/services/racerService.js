@@ -67,7 +67,7 @@ export async function getRacerPageData(racerId) {
 /**
  * 選手個別ページの成績・調子セクション用データを取得する
  * @param {number|string} racerId
- * @returns {Promise<{ formSummary: object|null, formTrend: object|null, techniqueProfile: object|null, aggregatedStats: object|null, exhibitionTimeTrend: object|null, boatReturnRate: object[] }>}
+ * @returns {Promise<{ formSummary: object|null, formTrend: object|null, techniqueProfile: object|null, aggregatedStats: object|null, exhibitionTimeTrend: object|null, boatReturnRate: object[], venueStats: object[] }>}
  */
 export async function getRacerStats(racerId) {
   const [
@@ -77,6 +77,7 @@ export async function getRacerStats(racerId) {
     aggregatedStats,
     exhibitionTimeTrend,
     boatReturnRate,
+    venueStats,
   ] = await Promise.all([
     supabaseDataService.getRacerFormSummary(racerId),
     supabaseDataService.getRacerFormTrend(racerId),
@@ -84,6 +85,7 @@ export async function getRacerStats(racerId) {
     supabaseDataService.getRacerAggregatedStats(racerId),
     supabaseDataService.getExhibitionTimeTrend(racerId),
     supabaseDataService.getRacerBoatReturnRate(racerId),
+    supabaseDataService.getRacerVenueStats(racerId),
   ]);
   return {
     formSummary,
@@ -92,5 +94,6 @@ export async function getRacerStats(racerId) {
     aggregatedStats,
     exhibitionTimeTrend,
     boatReturnRate,
+    venueStats,
   };
 }
