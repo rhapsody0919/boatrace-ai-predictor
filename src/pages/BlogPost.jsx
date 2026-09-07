@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -34,6 +34,8 @@ const UI_TEXT = {
     home: "ホーム",
     blogLabel: "ブログ",
     homeHref: "/",
+    tocTitle: "目次",
+    backToTop: "ページ上部に戻る",
   },
   en: {
     brandName: "Ryujin Radar",
@@ -51,6 +53,8 @@ const UI_TEXT = {
     home: "Home",
     blogLabel: "Blog",
     homeHref: "/en/",
+    tocTitle: "Table of Contents",
+    backToTop: "Back to top",
   },
   "zh-TW": {
     brandName: "龍神雷達",
@@ -68,6 +72,8 @@ const UI_TEXT = {
     home: "首頁",
     blogLabel: "部落格",
     homeHref: "/zh-TW/",
+    tocTitle: "目錄",
+    backToTop: "回到頂部",
   },
   ko: {
     brandName: "용신 레이더",
@@ -85,8 +91,61 @@ const UI_TEXT = {
     home: "홈",
     blogLabel: "블로그",
     homeHref: "/ko/",
+    tocTitle: "목차",
+    backToTop: "위로 이동",
   },
 };
+
+// ReactMarkdownのh2/h3 componentsが受け取るchildren（文字列 or 入れ子のReact要素）から
+// プレーンテキストを取り出す。見出しに強調構文等が含まれる場合も再帰的にテキストを結合する
+function headingTextFromChildren(children) {
+  if (typeof children === "string" || typeof children === "number") {
+    return String(children);
+  }
+  if (Array.isArray(children)) {
+    return children.map(headingTextFromChildren).join("");
+  }
+  if (children && typeof children === "object" && children.props) {
+    return headingTextFromChildren(children.props.children);
+  }
+  return "";
+}
+
+// 目次生成用に本文Markdownからh2/h3見出しを抽出する（コードブロック内は除外）。
+// ReactMarkdown側のcomponentsは、ここで得たテキストとの一致でidを引く（レンダー回数に
+// 依存する連番カウンタは、StrictModeの二重レンダーで値がズレるため使わない）
+function extractHeadings(markdown) {
+  if (!markdown) return [];
+  const lines = markdown.split("\n");
+  const headings = [];
+  let inCodeBlock = false;
+  let index = 0;
+  for (const line of lines) {
+    if (line.trim().startsWith("```")) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+    const h2Match = line.match(/^##\s+(.+)$/);
+    const h3Match = line.match(/^###\s+(.+)$/);
+    if (h2Match) {
+      headings.push({
+        level: 2,
+        text: h2Match[1].replace(/[*_`]/g, "").trim(),
+        id: `toc-heading-${index}`,
+      });
+      index++;
+    } else if (h3Match) {
+      headings.push({
+        level: 3,
+        text: h3Match[1].replace(/[*_`]/g, "").trim(),
+        id: `toc-heading-${index}`,
+      });
+      index++;
+    }
+  }
+  return headings;
+}
 
 export default function BlogPost() {
   const { id } = useParams();
@@ -94,6 +153,8 @@ export default function BlogPost() {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [readProgress, setReadProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   const { lng } = parseLangFromPath(pathname);
   const isTranslated = lng !== "ja" && isBlogLangAvailable(id, lng);
@@ -150,6 +211,23 @@ export default function BlogPost() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mdPath/t は id/isTranslated から導出される
   }, [id, basePost, mdPath]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      setReadProgress(
+        docHeight > 0 ? Math.min(100, (scrollTop / docHeight) * 100) : 0,
+      );
+      setShowBackToTop(scrollTop > 600);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [id]);
+
+  const headings = useMemo(() => extractHeadings(content), [content]);
+
   useSocialMeta({
     title: post?.title,
     description: post?.description,
@@ -186,6 +264,9 @@ export default function BlogPost() {
   const url = postUrl;
   const imageUrl = postImageUrl;
   const faqItems = extractFaqItems(content);
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <>
@@ -272,6 +353,22 @@ export default function BlogPost() {
 
       <Header />
 
+      <div
+        className="reading-progress-bar"
+        style={{ width: `${readProgress}%` }}
+      />
+
+      {showBackToTop && (
+        <button
+          type="button"
+          className="back-to-top-button"
+          onClick={scrollToTop}
+          aria-label={t.backToTop}
+        >
+          ↑
+        </button>
+      )}
+
       <div className="blog-post-container">
         <div className="blog-post-header">
           <Link to={t.backHref} className="back-link">
@@ -292,6 +389,25 @@ export default function BlogPost() {
           </div>
         </div>
 
+        {headings.length > 0 && (
+          <details className="toc-section">
+            <summary className="toc-summary">
+              📑 {t.tocTitle} ({headings.length})
+            </summary>
+            <nav className="toc-list" aria-label={t.tocTitle}>
+              {headings.map((h) => (
+                <a
+                  key={h.id}
+                  href={`#${h.id}`}
+                  className={`toc-link toc-link-level-${h.level}`}
+                >
+                  {h.text}
+                </a>
+              ))}
+            </nav>
+          </details>
+        )}
+
         <article className="blog-post-content">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -308,11 +424,28 @@ export default function BlogPost() {
                   />
                 );
               },
-              // 実際の画像サイズが不明でもCLSを抑えるため、CSS側で
-              // aspect-ratioを固定確保している（BlogPost.css参照）
+              // 実際の画像サイズが不明なため自然なアスペクト比のまま表示する
+              // （BlogPost.css参照。以前のaspect-ratio固定はトリミングで画像が
+              // 大きく欠ける実害があったため撤回）
               img: ({ node, ...props }) => (
                 <img {...props} loading="lazy" decoding="async" />
               ),
+              // 目次(toc-section)のリンク先として、見出しテキストが一致するheadings
+              // エントリのidを付与する（レンダー回数に依存しない純粋な対応付け）
+              h2: ({ node, ...props }) => {
+                const text = headingTextFromChildren(props.children).trim();
+                const match = headings.find(
+                  (h) => h.level === 2 && h.text === text,
+                );
+                return <h2 id={match?.id} {...props} />;
+              },
+              h3: ({ node, ...props }) => {
+                const text = headingTextFromChildren(props.children).trim();
+                const match = headings.find(
+                  (h) => h.level === 3 && h.text === text,
+                );
+                return <h3 id={match?.id} {...props} />;
+              },
             }}
           >
             {content}
