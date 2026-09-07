@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-age-win-rate-30s-peak",
+    title: "30代と20代以下、平均勝率は1.3倍差 - 実データで見る年代の壁",
+    description:
+      "龍神レーダーの実レース出走データで、直近30日間の年代別平均勝率を集計しました。30代選手の平均勝率5.59%は、体力全盛期のイメージがある20代以下選手4.21%の約1.3倍という結果が実データでわかりました。年代と成績の関係、40代・50代以上の傾向、舟券選びへの活かし方をあわせて解説します。",
+    date: "2026-09-08",
+    category: "データ分析",
+    tags: ["選手データ", "年代", "30代", "勝率", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-age-win-rate-30s-peak.jpg",
+  },
+  {
     id: "racer-grade-win-rate-gap",
     title: "A1級とB2級、平均勝率は2.6倍差 - 実データで見る級別の壁",
     description:
