@@ -20,3 +20,4 @@ export { default as VenueTendencyPanel } from "./VenueTendencyPanel";
 export { default as EmbeddedAnalysisSection } from "./EmbeddedAnalysisSection";
 export { default as AiAnalysisSection } from "./AiAnalysisSection";
 export { default as RaceReview } from "./RaceReview";
+export { default as TodaysVolatilityHighlights } from "./TodaysVolatilityHighlights";

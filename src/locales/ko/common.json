@@ -254,6 +254,8 @@
     "freeAccessNoticeStrong": "완전 무료・가입 불필요",
     "freeAccessNoticeRest": "— 계좌 개설이나 회원 가입 없이 지금 바로 모든 기능을 이용하세요",
     "todayRaces": "오늘의 경주",
+    "volatilityHighlightsTitle": "🌪️ 오늘의 인코스 붕괴 지수 하이라이트",
+    "volatilityHighlightsTurnPrediction": "1착 예상: {{course}}호정（{{technique}}・{{probability}}%）",
     "dataType": "경주 데이터",
     "loadingTitle": "경주 데이터 로딩 중...",
     "loadingDesc": "오늘의 경주 정보를 가져오는 중입니다",

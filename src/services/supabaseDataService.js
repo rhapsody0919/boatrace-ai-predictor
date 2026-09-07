@@ -846,15 +846,25 @@ export const supabaseDataService = {
           races.map((r) => r.race_id),
         );
       const volatilityByRaceId = new Map();
+      // 展開予測（先頭パターンのみ）。get_today_races RPC（052マイグレーション）と
+      // 同じ情報源・同じ抜き出し方に揃える
+      const turnPredictionByRaceId = new Map();
       for (const pred of unifiedPreds || []) {
         const percentile = pred.feature_contributions?.volatilityPercentile;
-        if (typeof percentile !== "number") continue;
-        volatilityByRaceId.set(pred.race_id, {
-          percentile,
-          isFallback:
-            pred.feature_contributions?.volatilityPercentileIsFallback ?? false,
-          level: getVolatilityLevel(percentile),
-        });
+        if (typeof percentile === "number") {
+          volatilityByRaceId.set(pred.race_id, {
+            percentile,
+            isFallback:
+              pred.feature_contributions?.volatilityPercentileIsFallback ??
+              false,
+            level: getVolatilityLevel(percentile),
+          });
+        }
+        const topPattern =
+          pred.feature_contributions?.turnPrediction?.patterns?.[0];
+        if (topPattern) {
+          turnPredictionByRaceId.set(pred.race_id, topPattern);
+        }
       }
 
       // 会場ごとにグループ化
@@ -888,6 +898,7 @@ export const supabaseDataService = {
                 venueWinRate: venueWinRateMap[race.venue_code] ?? null,
               }
             : null,
+          turnPrediction: turnPredictionByRaceId.get(race.race_id) ?? null,
           racers: (race.race_entries || []).map((entry) => ({
             waku: entry.boat_number,
             name: (entry.player_name || "").replace(/\s+/g, ""),

@@ -254,6 +254,8 @@
     "freeAccessNoticeStrong": "完全無料・登録不要",
     "freeAccessNoticeRest": "— 口座開設や会員登録なしで、今すぐ全機能をお使いいただけます",
     "todayRaces": "本日開催中のレース",
+    "volatilityHighlightsTitle": "🌪️ 本日のイン崩れ注意度ハイライト",
+    "volatilityHighlightsTurnPrediction": "1着予想: {{course}}号艇（{{technique}}・{{probability}}%）",
     "dataType": "レースデータ",
     "loadingTitle": "レースデータを読み込み中...",
     "loadingDesc": "本日のレース情報を取得しています",

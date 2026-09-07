@@ -1,0 +1,92 @@
+/* トークン組み合わせはscripts/maintenance/check-token-contrast.jsで検証済みのもののみ使う。
+   タイトル・列見出しはページ背景に直接乗るためLayer2（--text-primary/--text-secondary）、
+   レース行は自前のカード背景(--surface-card)を持つためLayer1同等に金アクセントを使える */
+.volatility-highlights {
+  margin: 0.5rem 0 1.5rem;
+}
+
+.volatility-highlights__title {
+  font-size: 1.15rem;
+  margin: 0 0 0.5rem;
+  color: var(--text-primary);
+}
+
+.volatility-highlights__columns {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.volatility-highlights__column {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.volatility-highlights__column-title {
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  margin: 0 0 0.4rem;
+}
+
+.volatility-highlights__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.volatility-highlights__race-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: 0.5rem 0.75rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.volatility-highlights__race-link:hover {
+  border-color: var(--brand-accent-primary);
+}
+
+.volatility-highlights__race-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.volatility-highlights__time {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.volatility-highlights__percentile {
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-medium);
+  flex-shrink: 0;
+}
+
+.volatility-highlights__turn {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 480px) {
+  .volatility-highlights__columns {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* flex-basis(240px)は横並び時の幅基準。縦積みでは高さ基準として解釈され
+     列の間に余計な空白ができるため、縦積み時はautoに戻す */
+  .volatility-highlights__column {
+    flex: 1 1 auto;
+  }
+}

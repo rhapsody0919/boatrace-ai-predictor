@@ -13,7 +13,11 @@ import UpdateStatus from "../components/UpdateStatus";
 import IntroBanner from "../components/IntroBanner";
 import FirstVisitGuideCard from "../components/FirstVisitGuideCard";
 import { useFirstVisit } from "../hooks/useFirstVisit";
-import { VenueGrid, VenueGridSkeleton } from "../components/race";
+import {
+  VenueGrid,
+  VenueGridSkeleton,
+  TodaysVolatilityHighlights,
+} from "../components/race";
 import { dataService } from "../services/dataService";
 import { useDatePredictions } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
@@ -181,6 +185,7 @@ function TodayVenueGridPage() {
                     </button>
                   </div>
                 )}
+                <TodaysVolatilityHighlights venuesData={venuesData} />
                 <VenueGrid
                   venuesData={venuesData}
                   getVenueLink={(code) => localize(`/venue/${code}`)}
