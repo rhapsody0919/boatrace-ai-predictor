@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-weight-win-rate-53-55kg",
+    title: "53~55kg帯と55kg超、平均勝率は1.09倍差 - 実データで見る体重の壁",
+    description:
+      "龍神レーダーの実レース出走データで、直近30日間の体重帯別平均勝率を集計しました。53~55kg帯の選手の平均勝率5.28%は、55kg超の選手4.86%の約1.09倍という結果が実データでわかりました。体重と成績の関係、舟券選びへの活かし方をあわせて解説します。",
+    date: "2026-09-08",
+    category: "データ分析",
+    tags: ["選手データ", "体重", "勝率", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-weight-win-rate-53-55kg.jpg",
+  },
+  {
     id: "racer-age-win-rate-30s-peak",
     title: "30代と20代以下、平均勝率は1.3倍差 - 実データで見る年代の壁",
     description:
