@@ -41,7 +41,7 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 - 「よくある質問」セクション（`### 質問文`+回答形式、`## よくある質問`見出し必須）
 - 「競艇」表記禁止（本文は「ボートレース」）
 - 実データに基づく記述（`scripts/lib/supabaseClient.js`パターンで取得）
-- 既存記事（`public/blog/`配下の同系統記事）を参考に構成・文体を揃える
+- 既存記事（`public/blog/`配下の同系統記事）を参考に構成・文体を揃える。**ただしカバー画像の挿入位置は4.のルールを優先する**（同系統の過去記事が4.のルール制定前に生成されたものだと、画像が文中に埋もれた構成をそのまま踏襲してしまうため）
 - 0.で確認済みの却下理由・戦略insightを構成・訴求の判断に反映する
 
 ## 4. カバー画像の生成
@@ -51,6 +51,7 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 - **`{ type: "screenshot", path }`**: `scripts/lib/contentChannels/captureScreenshot.js`の`captureScreenshot()`でPlaywright撮影（1200×630）
 - **`{ type: "data-card" }`**（会場特性・成績ネタは基本こちら）: `scripts/lib/contentChannels/renderCoverCard.js`の`renderCoverCard()`で`DataQuoteCard`をレンダリング（`COMPOSITION_IDS.blogOrNote`、1200×630）。`docs/reference/brand-kit.md`「YouTube / ブログ / note カバー画像・サムネイル」の制作ルールに従う
 - 保存先は`public/images/blog/{slug}.jpg`（Draft PRに含める）
+- **Markdown本文への挿入位置は記事の一番上に固定する**: タイトル見出し（`#`、存在する場合）の直後・本文の最初の段落（「はじめに」等の導入文）より前に配置する。「## はじめに」セクションの後や、データ解説セクションの直前など文中に挿入しない（2026-09-07、既存記事の構成を参考にする過程で画像が文中に埋もれるパターンが自己再生産され、複数記事で発生していたため明記。既存公開済み記事の位置修正はスコープ外、本ルールは以降の新規生成のみに適用する）
 
 ## 5. 品質自己レビュー
 
