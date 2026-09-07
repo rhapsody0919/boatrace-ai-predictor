@@ -476,8 +476,8 @@ input:focus-visible,
 .race-result h4 {
   font-size: 1.2rem;
   color: var(--text-primary);
-  margin: 0 0 0.75rem 0;
-  text-align: center;
+  margin: 0;
+  text-align: left;
 }
 
 /* 複勝予想の検証・展開予測の検証を独立したセクションとして区切る
@@ -524,109 +524,234 @@ input:focus-visible,
   text-decoration: none;
 }
 
-/* ポジウム：罫線カード横並び（塗りピル・グラデーションは廃止） */
-.result-podium {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  justify-content: center;
-  gap: var(--spacing-3);
-  margin: var(--spacing-2) 0;
-}
-
-.podium-item {
-  display: inline-flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-1);
-  padding: var(--spacing-2) var(--spacing-4);
-  border-radius: var(--radius-md);
-  border: var(--border-width-1) solid var(--border-hairline);
-}
-
-.podium-item.first {
-  border-color: var(--brand-accent-primary);
-}
-
-.podium-item.second {
-  border-color: var(--brand-accent-secondary);
-}
-
-.podium-item.third {
-  border-color: var(--podium-bronze-text);
-}
-
-.podium-item .rank {
-  font-size: 0.75rem;
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-}
-
-.podium-item .boat-number {
-  font-size: 1.5rem;
-  font-weight: var(--font-weight-bold);
-  line-height: 1;
-}
-
-.podium-item.first .boat-number { color: var(--brand-accent-primary); }
-.podium-item.second .boat-number { color: var(--brand-accent-secondary); }
-.podium-item.third .boat-number { color: var(--podium-bronze-text); }
-
-/* BOA-238: 4〜6着の補助行（表彰台ほど強調しない） */
-.result-late-ranks {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-3);
-  margin: var(--spacing-1) 0 var(--spacing-2);
-}
-
-.result-late-rank-item {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-}
-
-.result-late-rank-time {
+.num {
   font-variant-numeric: tabular-nums;
 }
 
-/* BOA-238: 決まり手バッジ。RaceReview.css の .race-review-technique と同トーン */
-.result-technique-badge {
+/* BOA-238: 統一結果テーブルのヘッダー。決まり手はレース標番風の斜めカットタグで右上に配置
+   （近未来感の演出は装飾でなく、金一色のアクセント＋斜めカットの図形処理のみで表現する方針。
+   「AI感」の出るシアン発光・グリッド地紋・走査線シマーは採用しない） */
+.rr-head {
   display: flex;
-  justify-content: center;
-  margin: var(--spacing-2) 0 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
 }
 
-.result-technique-badge span {
-  display: inline-block;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-info-text);
-  background: rgba(14, 165, 233, 0.1);
-  border-radius: var(--radius-full);
-  padding: 0.25rem var(--spacing-3);
+.rr-tag {
+  flex: 0 0 auto;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-extrabold);
+  padding: 0.28rem 0.9rem 0.28rem 0.7rem;
+  clip-path: polygon(10% 0, 100% 0, 100% 100%, 0 100%);
+  background: var(--ryujin-gold-500);
+  color: var(--color-gray-900);
+  white-space: nowrap;
 }
 
-/* BOA-238: 艇番カラーチップ（公式配色、BOAT_COLORS） */
-.result-boat-chip {
+/* BOA-238: 統一結果テーブル（着／艇／選手名／ST／タイム）。表彰台＋4〜6着の補助行＋
+   別セクションのスタート情報という3分割をやめ、kyoteibiyori.com・公式サイトと同じ
+   1テーブル形式に統合した */
+.rr-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.rr-row {
+  display: grid;
+  grid-template-columns: 2.6rem 1.8rem 1fr 6.5rem 3.6rem;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) 0;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rr-row:first-child {
+  border-top: none;
+}
+
+.rr-row.is-winner {
+  background: rgba(201, 162, 39, 0.1);
+}
+
+.rr-pos {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-secondary);
+}
+
+.rr-row.is-winner .rr-pos {
+  color: var(--brand-accent-primary);
+}
+
+.rr-row.is-second .rr-pos {
+  color: var(--brand-accent-secondary);
+}
+
+.rr-row.is-third .rr-pos {
+  color: var(--podium-bronze-text);
+}
+
+/* BOA-238: 艇番カラーチップ（公式配色、BOAT_COLORS）。結果テーブルと払戻金の組番表示で共用 */
+.rr-boat-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.4rem;
-  height: 1.4rem;
-  border-radius: var(--radius-full);
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-extrabold);
   line-height: 1;
   border: var(--border-width-1) solid var(--border-hairline);
 }
 
-/* BOA-238: 払戻金テーブル */
-.result-payout-table {
+.rr-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rr-name small {
+  margin-left: var(--spacing-1);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
+.rr-time {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+/* ===== スタート情報: 全艇アニメーション（実ST比例の距離×実ST比例の到達時間） =====
+   反時計回り（左→右）のためスタートラインはトラック右寄り（84%、参考位置として表示）。
+   各艇は号砲(t=0)から自艇の静止位置（実STに応じた距離感）まで動き、そこで静止する。
+   到達までの時間もSTに比例させ、STが小さい艇（早いスタート）ほど短時間で、STが大きい艇
+   ほど長い時間をかけて到達する。見た目の動きの速さ自体が実際のスタートの速さを表す。
+   キーフレームはSTの値・レース内最遅STから動的に決まるためCSSの@keyframesでは表現できず、
+   RaceResult.jsxのStartTimingTrackがWeb Animations API（element.animate()）で生成する */
+.rr-st-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.12rem;
+}
+
+.rr-st-track {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  overflow: visible;
+  background: rgba(128, 128, 128, 0.08);
+  border-radius: var(--radius-sm);
+}
+
+.rr-st-line {
+  position: absolute;
+  left: 84%;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--ryujin-gold-500);
+}
+
+/* 号砲の光。全艇共通でt=0に一度だけ光る */
+.rr-st-line::after {
+  content: "";
+  position: absolute;
+  inset: -4px -6px;
+  border-radius: var(--radius-sm);
+  background: var(--ryujin-gold-500);
+  opacity: 0;
+  animation: rr-flash 7s ease-out infinite;
+}
+
+@keyframes rr-flash {
+  0% {
+    opacity: 0.9;
+    transform: scaleX(2.2);
+  }
+  7% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
+/* 船シルエット（進行方向=右に舳先を向けた矢尻型）。色は艇番の公式配色をJSから指定する */
+.rr-st-dot {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 9px;
+  clip-path: polygon(100% 50%, 62% 0%, 0% 18%, 0% 82%, 62% 100%);
+  transform: translate(-50%, -50%);
+}
+
+.rr-st-streak {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  border-radius: var(--radius-sm);
+  transform: translateY(-50%);
+}
+
+.rr-st-impact {
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  border-width: 2px;
+  border-style: solid;
+  transform: translate(-50%, -50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rr-st-line::after {
+    animation: none;
+  }
+}
+
+.rr-st-value {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.rr-st-fastest-tag {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--brand-accent-primary);
+  background: rgba(201, 162, 39, 0.16);
+  border-radius: var(--radius-full);
+  padding: 0.02rem var(--spacing-2);
+}
+
+.rr-note {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+/* BOA-238: 払戻金セクション */
+.rr-section-title {
+  margin: var(--spacing-4) 0 var(--spacing-2);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-primary);
+}
+
+.rr-payout-table {
   display: flex;
   flex-direction: column;
   gap: var(--border-width-1);
@@ -636,7 +761,7 @@ input:focus-visible,
   overflow: hidden;
 }
 
-.result-payout-row {
+.rr-payout-row {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
@@ -644,14 +769,18 @@ input:focus-visible,
   padding: var(--spacing-2) var(--spacing-3);
 }
 
-.result-payout-type {
+.rr-payout-row.is-best {
+  background: rgba(201, 162, 39, 0.12);
+}
+
+.rr-payout-type {
   flex: 0 0 3.4rem;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   color: var(--text-secondary);
 }
 
-.result-payout-combo {
+.rr-combo {
   flex: 1;
   display: flex;
   align-items: center;
@@ -659,25 +788,25 @@ input:focus-visible,
   gap: var(--spacing-1);
 }
 
-.result-payout-combo-item {
+.rr-combo-item {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-1);
 }
 
-.result-combo-sep {
+.rr-combo .sep {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
 }
 
-.result-payout-popularity {
+.rr-pop {
   flex: 0 0 auto;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
 }
 
-.result-payout-amount {
+.rr-amount {
   flex: 0 0 auto;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
@@ -685,64 +814,8 @@ input:focus-visible,
   color: var(--text-primary);
 }
 
-/* BOA-238: スタート情報（水面配置図） */
-.lane-diagram {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-1);
-}
-
-.lane-diagram-row {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-}
-
-.lane-diagram-bar {
-  position: relative;
-  flex: 1;
-  height: 1.5rem;
-  background: rgba(14, 165, 233, 0.06);
-  border-radius: var(--radius-sm);
-  border: var(--border-width-1) solid var(--border-hairline);
-}
-
-.lane-diagram-dot {
-  position: absolute;
-  top: 50%;
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
-  background: var(--color-info-text);
-  transform: translate(-50%, -50%);
-}
-
-.lane-diagram-dot.flying {
-  background: var(--color-error-text);
-}
-
-.lane-diagram-value {
-  flex: 0 0 2.8rem;
-  font-size: var(--font-size-sm);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-  text-align: right;
-}
-
-.lane-diagram-value.flying {
-  color: var(--color-error-text);
-  font-weight: var(--font-weight-bold);
-}
-
-.lane-diagram-tag {
-  flex: 0 0 auto;
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-info-text);
-  background: rgba(14, 165, 233, 0.1);
-  border-radius: var(--radius-full);
-  padding: 0.1rem var(--spacing-2);
-  white-space: nowrap;
+.rr-payout-row.is-best .rr-amount {
+  color: var(--brand-accent-primary);
 }
 
 /* BOA-238: 中止・不成立の空状態表示 */
@@ -907,25 +980,15 @@ input:focus-visible,
 
   .race-result h4 {
     font-size: 0.95rem;
-    margin: 0 0 0.4rem 0;
   }
 
-  .result-podium {
-    gap: 0.5rem;
-    margin: 0.4rem 0;
+  .rr-row {
+    grid-template-columns: 2.1rem 1.6rem 1fr 5.4rem 2.8rem;
+    gap: 0.35rem;
   }
 
-  .podium-item {
-    padding: 0.3rem 0.65rem;
-    gap: 0.28rem;
-  }
-
-  .podium-item .rank {
-    font-size: 0.68rem;
-  }
-
-  .podium-item .boat-number {
-    font-size: 1.25rem;
+  .rr-name {
+    font-size: 0.8rem;
   }
 
   .accuracy-check {
@@ -1304,21 +1367,13 @@ input:focus-visible,
     padding: 0.75rem;
   }
 
-  .result-podium {
-    gap: 0.4rem;
+  .rr-row {
+    grid-template-columns: 1.9rem 1.5rem 1fr 4.6rem 2.4rem;
+    gap: 0.25rem;
   }
 
-  .podium-item {
-    padding: 0.25rem 0.55rem;
-    gap: 0.22rem;
-  }
-
-  .podium-item .rank {
-    font-size: 0.62rem;
-  }
-
-  .podium-item .boat-number {
-    font-size: 1.1rem;
+  .rr-time {
+    font-size: 0.75rem;
   }
 
   .hit, .miss {

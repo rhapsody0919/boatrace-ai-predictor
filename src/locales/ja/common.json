@@ -197,7 +197,8 @@
       "wide": "拡連複"
     },
     "popularity": "{{rank}}人気",
-    "startTimingSectionTitle": "🚦 スタート情報",
+    "fastestStartTag": "最速",
+    "courseNote": "※進入コースは現在表示していません（データの精度確認中です）",
     "cancelledTitle": "このレースは中止となりました",
     "cancelledBody": "天候・水面状況等によりレースが中止されたため、結果データはありません。",
     "noRaceTitle": "このレースは不成立でした",

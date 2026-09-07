@@ -198,7 +198,8 @@
       "wide": "Wide"
     },
     "popularity": "#{{rank}} favorite",
-    "startTimingSectionTitle": "🚦 Start timing",
+    "fastestStartTag": "Fastest",
+    "courseNote": "※Approach course is not shown yet (data accuracy under review).",
     "cancelledTitle": "This race was cancelled",
     "cancelledBody": "The race was cancelled due to weather or water conditions, so no result data is available.",
     "noRaceTitle": "This race did not take place",

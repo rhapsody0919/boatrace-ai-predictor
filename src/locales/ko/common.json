@@ -197,7 +197,8 @@
       "wide": "확연복"
     },
     "popularity": "인기 {{rank}}위",
-    "startTimingSectionTitle": "🚦 스타트 정보",
+    "fastestStartTag": "최속",
+    "courseNote": "※진입 코스는 현재 표시하지 않습니다(데이터 정확도 확인 중입니다)",
     "cancelledTitle": "이 레이스는 중지되었습니다",
     "cancelledBody": "날씨나 수면 상태 등으로 인해 레이스가 중지되어 결과 데이터가 없습니다.",
     "noRaceTitle": "이 레이스는 불성립되었습니다",

@@ -197,7 +197,8 @@
       "wide": "拡連複"
     },
     "popularity": "人氣第{{rank}}名",
-    "startTimingSectionTitle": "🚦 起跑資訊",
+    "fastestStartTag": "最快",
+    "courseNote": "※目前未顯示進入航線（資料準確度確認中）",
     "cancelledTitle": "本場比賽已中止",
     "cancelledBody": "因天候或水面狀況等因素，本場比賽已中止，因此沒有結果資料。",
     "noRaceTitle": "本場比賽未成立",
