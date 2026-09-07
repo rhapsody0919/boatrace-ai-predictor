@@ -251,6 +251,8 @@
   "home": {
     "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
     "introBannerClose": "關閉",
+    "freeAccessNoticeStrong": "完全免費・無需註冊",
+    "freeAccessNoticeRest": "— 無需開戶或加入會員，現在就能使用所有功能",
     "todayRaces": "今日賽事",
     "dataType": "比賽資料",
     "loadingTitle": "正在載入比賽資料...",

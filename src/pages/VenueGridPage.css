@@ -1,3 +1,17 @@
+/* カード背景を持たずページ背景に直接乗るテキストのため、
+   scripts/maintenance/check-token-contrast.jsで検証済みの組み合わせ
+   （--surface-page × --text-secondary、--surface-page × --brand-accent-primary）のみ使う */
+.free-access-notice {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.free-access-notice strong {
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-medium);
+}
+
 /* 背景は独自のcolor-mix等を使わず、scripts/maintenance/check-token-contrast.jsで
    検証済みの組み合わせ（--surface-card × --color-warning-dark-text）のみ使う */
 .venue-grid-page__error {

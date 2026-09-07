@@ -252,6 +252,8 @@
   "home": {
     "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | 45+ data points analyzed, including turn predictions and the Upset Index. Learn more →",
     "introBannerClose": "Close",
+    "freeAccessNoticeStrong": "100% Free, No Sign-up",
+    "freeAccessNoticeRest": "— use every feature right now, no bank account or membership required",
     "todayRaces": "Today's Races",
     "dataType": "Race data",
     "loadingTitle": "Loading race data...",
