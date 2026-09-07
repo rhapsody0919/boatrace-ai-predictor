@@ -93,7 +93,17 @@
     "winRateHeader": "1st-place rate",
     "techniqueHeader": "Top technique",
     "footnote": "Based on the last {{count}} races (as of {{date}}). Reflects past tendencies only and does not guarantee today's results.",
-    "unknownDate": "unknown"
+    "unknownDate": "unknown",
+    "waterType": {
+      "fresh": "Freshwater",
+      "brackish": "Brackish water",
+      "sea": "Seawater"
+    },
+    "cluster": {
+      "in_strong": "Inside-lane favoring",
+      "out_strong": "Outside-lane favoring",
+      "balanced": "Balanced"
+    }
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} Race {{race}} AI data analysis - Ryujin Radar",

@@ -19,6 +19,7 @@ export default function VenueCharacteristicsCard({ venueCode }) {
   const { t } = useTranslation();
   const [outcomeData, setOutcomeData] = useState(null);
   const [techniqueData, setTechniqueData] = useState(null);
+  const [venueInfo, setVenueInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,13 +28,15 @@ export default function VenueCharacteristicsCard({ venueCode }) {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [outcome, technique] = await Promise.all([
+        const [outcome, technique, info] = await Promise.all([
           supabaseDataService.getOutcomeDistribution(venueCode),
           supabaseDataService.getWinningTechniqueStats(venueCode),
+          supabaseDataService.getVenueCharacteristics(venueCode),
         ]);
         if (cancelled) return;
         setOutcomeData(outcome);
         setTechniqueData(technique);
+        setVenueInfo(info);
         setLoading(false);
       } catch (err) {
         if (cancelled) return;
@@ -68,6 +71,13 @@ export default function VenueCharacteristicsCard({ venueCode }) {
   return (
     <div className="venue-characteristics-card">
       <h2>{t("venueCharacteristics.title")}</h2>
+      {venueInfo && (
+        <p className="venue-characteristics-summary">
+          {t(`venueCharacteristics.waterType.${venueInfo.waterType}`)}
+          {" ・ "}
+          {t(`venueCharacteristics.cluster.${venueInfo.cluster}`)}
+        </p>
+      )}
       <p className="venue-characteristics-note">
         {t("venueCharacteristics.note")}
       </p>

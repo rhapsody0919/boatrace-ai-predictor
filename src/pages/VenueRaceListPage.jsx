@@ -104,6 +104,8 @@ function VenueRaceListPage() {
             </Link>
           </header>
 
+          <VenueCharacteristicsCard venueCode={venueCode} />
+
           {loading ? (
             <LoadingScreen
               title={t("home.loadingTitle")}
@@ -130,8 +132,6 @@ function VenueRaceListPage() {
               </div>
             </section>
           )}
-
-          <VenueCharacteristicsCard venueCode={venueCode} />
         </div>
       </div>
     </>

@@ -92,7 +92,17 @@
     "winRateHeader": "第1名機率",
     "techniqueHeader": "主要獲勝方式",
     "footnote": "統計最近{{count}}場比賽（截至{{date}}）。僅反映過去的比賽傾向，不保證當日結果。",
-    "unknownDate": "更新日期不明"
+    "unknownDate": "更新日期不明",
+    "waterType": {
+      "fresh": "淡水",
+      "brackish": "汽水",
+      "sea": "海水"
+    },
+    "cluster": {
+      "in_strong": "內道優勢",
+      "out_strong": "外道優勢",
+      "balanced": "平衡型"
+    }
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} 第{{race}}場 AI數據分析 - 龍神雷達",

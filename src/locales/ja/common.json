@@ -92,7 +92,17 @@
     "winRateHeader": "1着率",
     "techniqueHeader": "主な決まり手",
     "footnote": "直近{{count}}走を集計（{{date}}時点）。過去のレース傾向であり、当日の結果を保証するものではありません。",
-    "unknownDate": "更新日不明"
+    "unknownDate": "更新日不明",
+    "waterType": {
+      "fresh": "淡水",
+      "brackish": "汽水",
+      "sea": "海水"
+    },
+    "cluster": {
+      "in_strong": "イン強い",
+      "out_strong": "アウト強い",
+      "balanced": "バランス型"
+    }
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} {{race}}R AIデータ分析 - 龍神レーダー",

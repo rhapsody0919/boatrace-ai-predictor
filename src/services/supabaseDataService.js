@@ -1688,6 +1688,36 @@ export const supabaseDataService = {
   },
 
   /**
+   * 会場固有の水面特性（水質・イン/アウト傾向のクラスタ分類）を取得する
+   * venuesテーブルはモデル調整（softmax-temperature-calibration）用に
+   * water_type/clusterを保持しているが、フロントエンドでは未使用だった
+   * @param {number} venueCode - 会場コード（1-24）
+   * @returns {Promise<{ waterType: string, cluster: string } | null>}
+   */
+  getVenueCharacteristics(venueCode) {
+    return withCache(`venue-characteristics-${venueCode}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from("venues")
+        .select("water_type, cluster")
+        .eq("code", venueCode)
+        .maybeSingle();
+
+      if (error) {
+        console.error("venues取得エラー:", error.message);
+        return null;
+      }
+      if (!data) return null;
+
+      return { waterType: data.water_type, cluster: data.cluster };
+    });
+  },
+
+  /**
    * 出目分布データを取得（会場別の3連単パターン）
    * @param {number} venueCode - 会場コード（1-24）
    * @returns {Promise<Object>} - { venue_code, venue_name, total_races, last_updated, data: { first_boat: [...] } }
