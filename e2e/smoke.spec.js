@@ -977,7 +977,13 @@ test.describe("複勝予想UI撤去の完全性（レース結果パネル）", 
     await button.click();
     const resultPanel = page.locator(".race-result");
     await expect(resultPanel).toBeVisible({ timeout: 10000 });
-    await expect(resultPanel).not.toContainText("複勝");
+    // BOA-238で払戻金セクション（単勝/複勝/3連複/3連単等）を追加したため、
+    // 「複勝」という文字列自体は払戻金の券種ラベルとして正当に表示されるようになった。
+    // ここで再発防止したいのは複勝予想の検証UI（「複勝◯位予想」「的中！」「不的中」）の方なので、
+    // 判定もそちらに絞る
+    await expect(resultPanel).not.toContainText("複勝予想");
+    await expect(resultPanel).not.toContainText("的中！");
+    await expect(resultPanel).not.toContainText("不的中");
   });
 });
 

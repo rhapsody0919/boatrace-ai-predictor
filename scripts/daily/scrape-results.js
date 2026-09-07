@@ -115,14 +115,19 @@ function scrapeWinningTechnique($) {
 
 // Scrape payout data
 function scrapePayouts($) {
-  // ⚠️ 命名注意: DB列名と英語名が逆転している（歴史的経緯）
+  // ⚠️ 命名注意: 既存の単勝/複勝/3連複/3連単のみDB列名と英語名が逆転している（歴史的経緯）
   //   trifecta (英語=3連単) → 実際は3連複の値を格納
   //   trio (英語=3連複)     → 実際は3連単の値を格納
+  // 2026-09追加のexacta(2連単)/quinella(2連複)/wide(拡連複)は逆転を踏襲せず正しい意味で命名。
+  // 各comboの値は{amount, popularity}（人気=払戻金テーブルに直接表示されている人気順位）
   const payouts = {
     win: {}, // 単勝
     place: {}, // 複勝
     trifecta: {}, // → DB: payout_trifecta（実態: 3連複の払戻金）
     trio: {}, // → DB: payout_trio（実態: 3連単の払戻金）
+    exacta: {}, // 2連単
+    quinella: {}, // 2連複
+    wide: {}, // 拡連複（最大3コンボ）
   };
 
   try {
@@ -135,60 +140,68 @@ function scrapePayouts($) {
       return payouts;
     }
 
+    const TYPE_LABELS = [
+      "単勝",
+      "複勝",
+      "3連単",
+      "3連複",
+      "2連単",
+      "2連複",
+      "拡連複",
+    ];
+    const TYPE_TO_KEY = {
+      単勝: "win",
+      複勝: "place",
+      "3連複": "trifecta",
+      "3連単": "trio",
+      "2連単": "exacta",
+      "2連複": "quinella",
+      拡連複: "wide",
+    };
+
     let currentType = "";
 
+    const normalizeCombo = (combo) =>
+      combo
+        .replace(/[０-９]/g, (s) =>
+          String.fromCharCode(s.charCodeAt(0) - 0xfee0),
+        )
+        .replace(/[→－−ー=]/g, "-")
+        .replace(/\s+/g, "");
+
+    const storeEntry = (combo, amountText, popularityText) => {
+      const amount = parseInt(amountText.replace(/[^0-9]/g, ""));
+      if (isNaN(amount) || amount <= 0 || !combo || !currentType) return;
+      const popularity = parseInt(
+        (popularityText || "").replace(/[^0-9]/g, ""),
+      );
+      payouts[TYPE_TO_KEY[currentType]][normalizeCombo(combo)] = {
+        amount,
+        popularity: !isNaN(popularity) && popularity > 0 ? popularity : null,
+      };
+    };
+
+    // 型ラベル行は4セル（型名/組番/配当/人気）、継続行（複勝2口目・拡連複2〜3口目）は
+    // 3セル（組番/配当/人気）。人気は複勝には表示されず空文字になる
     payoutTable.find("tbody tr").each((i, row) => {
-      const $row = $(row);
-      const cells = $row.find("td");
+      const cells = $(row).find("td");
 
-      if (cells.length >= 2) {
-        const col0 = cells.eq(0).text().trim();
-        const col1 = cells.eq(1).text().trim();
-        const col2 = cells.length >= 3 ? cells.eq(2).text().trim() : "";
-
-        // 券種が記載されている場合
-        if (
-          col0 &&
-          (col0 === "単勝" ||
-            col0 === "複勝" ||
-            col0 === "3連単" ||
-            col0 === "3連複" ||
-            col0 === "2連単" ||
-            col0 === "2連複" ||
-            col0 === "拡連複")
-        ) {
-          currentType = col0;
+      if (cells.length === 4) {
+        const typeLabel = cells.eq(0).text().trim();
+        if (TYPE_LABELS.includes(typeLabel)) {
+          currentType = typeLabel;
         }
-
-        // パターン1: col2に配当がある場合（通常）
-        let payout = parseInt(col2.replace(/[^0-9]/g, ""));
-        let combo = col1;
-
-        // パターン2: col1に配当がある場合（複勝の2行目以降など）
-        if ((isNaN(payout) || payout === 0) && col1.includes("¥")) {
-          payout = parseInt(col1.replace(/[^0-9]/g, ""));
-          combo = col0;
-        }
-
-        if (!isNaN(payout) && payout > 0 && combo) {
-          // 組み合わせを正規化
-          const normalizedCombo = combo
-            .replace(/[０-９]/g, (s) =>
-              String.fromCharCode(s.charCodeAt(0) - 0xfee0),
-            )
-            .replace(/[→－−ー=]/g, "-")
-            .replace(/\s+/g, "");
-
-          if (currentType === "単勝") {
-            payouts.win[normalizedCombo] = payout;
-          } else if (currentType === "複勝") {
-            payouts.place[normalizedCombo] = payout;
-          } else if (currentType === "3連複") {
-            payouts.trifecta[normalizedCombo] = payout;
-          } else if (currentType === "3連単") {
-            payouts.trio[normalizedCombo] = payout;
-          }
-        }
+        storeEntry(
+          cells.eq(1).text().trim(),
+          cells.eq(2).text().trim(),
+          cells.eq(3).text().trim(),
+        );
+      } else if (cells.length === 3) {
+        storeEntry(
+          cells.eq(0).text().trim(),
+          cells.eq(1).text().trim(),
+          cells.eq(2).text().trim(),
+        );
       }
     });
   } catch (error) {
@@ -228,14 +241,18 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
       return null;
     }
 
-    // Get top 3 boat numbers
+    // Get all 6 boat numbers + race times, ordered by finish position
+    // （5〜6着はタイムが空欄のことがある）
     const rankings = [];
+    const raceTimes = [];
     $(".is-w495 tbody tr").each((index, row) => {
-      if (index < 3) {
+      if (index < 6) {
         const $row = $(row);
-        const boatNumber = parseInt($row.find("td").eq(1).text().trim());
+        const cells = $row.find("td");
+        const boatNumber = parseInt(cells.eq(1).text().trim());
         if (boatNumber && !isNaN(boatNumber)) {
           rankings.push(boatNumber);
+          raceTimes.push(cells.eq(3).text().trim() || null);
         }
       }
     });
@@ -261,6 +278,15 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
       rank1: rankings[0],
       rank2: rankings[1],
       rank3: rankings[2],
+      rank4: rankings[3] || null,
+      rank5: rankings[4] || null,
+      rank6: rankings[5] || null,
+      raceTime1: raceTimes[0] || null,
+      raceTime2: raceTimes[1] || null,
+      raceTime3: raceTimes[2] || null,
+      raceTime4: raceTimes[3] || null,
+      raceTime5: raceTimes[4] || null,
+      raceTime6: raceTimes[5] || null,
       payouts: payouts,
       winningTechnique: winningTechnique,
       courseInfo: courseInfo,
@@ -414,27 +440,62 @@ async function scrapeAndSaveResults(races, targetDate) {
       scrapeCache.set(race.race_id, result);
 
       const payouts = result.payouts || {};
-      const winPayout = payouts.win ? Object.values(payouts.win)[0] : null;
-      const placePayouts = payouts.place ? Object.entries(payouts.place) : [];
-      const place1Payout =
-        placePayouts.find(([k]) => k === String(result.rank1))?.[1] || null;
-      const place2Payout =
-        placePayouts.find(([k]) => k === String(result.rank2))?.[1] || null;
-      const trioPayout = payouts.trio ? Object.values(payouts.trio)[0] : null;
-      const trifectaPayout = payouts.trifecta
+      // combo単位で{amount, popularity}を格納しているscrapePayouts()の構造から
+      // 実際の着順に対応するコンボを引き当てる
+      const sortedPairKey = (a, b) => [a, b].sort((x, y) => x - y).join("-");
+      const winEntry = payouts.win ? Object.values(payouts.win)[0] : null;
+      const placeEntries = payouts.place ? Object.entries(payouts.place) : [];
+      const place1Entry = placeEntries.find(
+        ([k]) => k === String(result.rank1),
+      )?.[1];
+      const place2Entry = placeEntries.find(
+        ([k]) => k === String(result.rank2),
+      )?.[1];
+      const trioEntry = payouts.trio ? Object.values(payouts.trio)[0] : null;
+      const trifectaEntry = payouts.trifecta
         ? Object.values(payouts.trifecta)[0]
         : null;
+      const exactaEntry = payouts.exacta?.[`${result.rank1}-${result.rank2}`];
+      const quinellaEntry =
+        payouts.quinella?.[sortedPairKey(result.rank1, result.rank2)];
+      const wide1Entry =
+        payouts.wide?.[sortedPairKey(result.rank1, result.rank2)];
+      const wide2Entry =
+        payouts.wide?.[sortedPairKey(result.rank1, result.rank3)];
+      const wide3Entry =
+        payouts.wide?.[sortedPairKey(result.rank2, result.rank3)];
 
       newResults.push({
         race_id: race.race_id,
         rank1: result.rank1,
         rank2: result.rank2,
         rank3: result.rank3,
-        payout_win: winPayout,
-        payout_place_1: place1Payout,
-        payout_place_2: place2Payout,
-        payout_trifecta: trifectaPayout,
-        payout_trio: trioPayout,
+        rank4: result.rank4,
+        rank5: result.rank5,
+        rank6: result.rank6,
+        race_time_1: result.raceTime1,
+        race_time_2: result.raceTime2,
+        race_time_3: result.raceTime3,
+        race_time_4: result.raceTime4,
+        race_time_5: result.raceTime5,
+        race_time_6: result.raceTime6,
+        payout_win: winEntry?.amount ?? null,
+        payout_place_1: place1Entry?.amount ?? null,
+        payout_place_2: place2Entry?.amount ?? null,
+        payout_trifecta: trifectaEntry?.amount ?? null,
+        payout_trio: trioEntry?.amount ?? null,
+        payout_exacta: exactaEntry?.amount ?? null,
+        payout_quinella: quinellaEntry?.amount ?? null,
+        payout_wide_1: wide1Entry?.amount ?? null,
+        payout_wide_2: wide2Entry?.amount ?? null,
+        payout_wide_3: wide3Entry?.amount ?? null,
+        popularity_trifecta: trifectaEntry?.popularity ?? null,
+        popularity_trio: trioEntry?.popularity ?? null,
+        popularity_exacta: exactaEntry?.popularity ?? null,
+        popularity_quinella: quinellaEntry?.popularity ?? null,
+        popularity_wide_1: wide1Entry?.popularity ?? null,
+        popularity_wide_2: wide2Entry?.popularity ?? null,
+        popularity_wide_3: wide3Entry?.popularity ?? null,
         winning_technique: result.winningTechnique,
         course_1: result.courseInfo?.course_1 || null,
         course_2: result.courseInfo?.course_2 || null,
