@@ -11,19 +11,24 @@
 
 .eg-hero h1 {
   font-size: 2rem;
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   margin-bottom: var(--spacing-4);
 }
 
 .eg-hero-lead {
   font-size: var(--font-size-lg);
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   line-height: 1.8;
   text-align: left;
 }
 
+/* .eg-sectionは自前のカード背景(--surface-card)を持つため、直下の見出し・本文は
+   Layer1相当のtext-primary/text-secondaryで問題ない（カード背景に対して検証済み）。
+   ネスト要素(.eg-fact/.eg-technique/.eg-note/.eg-model)はカードより一段沈んだ見た目にする
+   ため--surface-pageを使う（scripts/maintenance/check-token-contrast.jsで
+   カード背景×text-primary/text-secondaryの組み合わせは検証済み） */
 .eg-section {
-  background: white;
+  background: var(--surface-card);
   border-radius: var(--radius-lg);
   padding: var(--spacing-6);
   margin-bottom: var(--spacing-6);
@@ -32,21 +37,21 @@
 
 .eg-section h2 {
   font-size: 1.35rem;
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   margin-bottom: var(--spacing-4);
   border-bottom: 2px solid var(--color-primary-500);
   padding-bottom: var(--spacing-2);
 }
 
 .eg-section p {
-  color: var(--color-gray-700);
+  color: var(--text-primary);
   line-height: 1.8;
   margin-bottom: var(--spacing-3);
 }
 
 .eg-highlight {
   border-left: 4px solid var(--color-primary-500);
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  background: var(--surface-page);
 }
 
 .eg-facts-grid {
@@ -56,7 +61,7 @@
 }
 
 .eg-fact {
-  background: var(--color-gray-50);
+  background: var(--surface-page);
   border-radius: var(--radius-md);
   padding: var(--spacing-3);
   display: flex;
@@ -70,7 +75,7 @@
 }
 
 .eg-fact span {
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
 }
 
@@ -81,14 +86,14 @@
 }
 
 .eg-technique {
-  background: var(--color-gray-50);
+  background: var(--surface-page);
   border-radius: var(--radius-md);
   padding: var(--spacing-3) var(--spacing-4);
 }
 
 .eg-technique-name {
   margin-bottom: var(--spacing-1);
-  color: var(--color-gray-800);
+  color: var(--text-primary);
 }
 
 .eg-technique-name strong {
@@ -97,19 +102,19 @@
 }
 
 .eg-kanji {
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
 }
 
 .eg-technique p {
   margin: 0;
   font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
 }
 
 .eg-list {
   padding-left: 1.4rem;
-  color: var(--color-gray-700);
+  color: var(--text-primary);
   line-height: 1.9;
 }
 
@@ -119,8 +124,8 @@
 
 .eg-note {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
-  background: var(--color-gray-50);
+  color: var(--text-secondary);
+  background: var(--surface-page);
   border-radius: var(--radius-md);
   padding: var(--spacing-3);
 }
@@ -138,19 +143,19 @@
 .eg-table th,
 .eg-table td {
   padding: var(--spacing-2) var(--spacing-3);
-  border-bottom: 1px solid var(--color-gray-200);
+  border-bottom: 1px solid var(--border-hairline);
   text-align: left;
-  color: var(--color-gray-700);
+  color: var(--text-primary);
 }
 
 .eg-table th {
-  background: var(--color-gray-50);
-  color: var(--color-gray-800);
+  background: var(--surface-page);
+  color: var(--text-primary);
 }
 
 .eg-steps {
   padding-left: 1.4rem;
-  color: var(--color-gray-700);
+  color: var(--text-primary);
   line-height: 1.8;
 }
 
@@ -166,7 +171,7 @@
 }
 
 .eg-model {
-  background: var(--color-gray-50);
+  background: var(--surface-page);
   border-radius: var(--radius-md);
   padding: var(--spacing-3);
 }
@@ -179,12 +184,12 @@
 .eg-model p {
   margin: var(--spacing-1) 0 0;
   font-size: var(--font-size-sm);
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
 }
 
 .eg-disclaimer {
   border-left: 4px solid var(--color-warning, #f59e0b);
-  background: #fffbeb;
+  background: var(--surface-page);
 }
 
 .eg-cta {
@@ -193,7 +198,7 @@
 }
 
 .eg-cta h2 {
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   margin-bottom: var(--spacing-4);
 }
 

@@ -108,6 +108,10 @@ export const VENUE_GUIDES_ZH_TW = [
       note: "現場沒有信用卡收單，僅能用現金或會場發行的投注專用預付卡「JUMPY CARD+」，需先加值才能投注，入場閘門也可用這張卡感應通過。",
       url: "https://www.boatrace-suminoe.jp/sp/cashless.html",
     },
+    languageSupport: {
+      note: "住之江設有獨立於主官網之外的多語觀光指南網站，提供英文、韓文、簡體中文、繁體中文版本，說明規則、購票方式與兌獎方法。現場工作人員或售票機本身是否支援外語，目前無法確認。",
+      url: "http://guide.boatrace-suminoe.jp/en/index.html",
+    },
     image: {
       src: "/images/venues/suminoe.jpg",
       alt: "住之江賽艇場看台",
@@ -349,6 +353,10 @@ export const VENUE_GUIDES_ZH_TW = [
       note: "現場沒有信用卡收單，僅能用現金或會場自己發行的投注專用預付卡「ペラ坊卡」（Perabo Card），卡片內建樂天Edy功能，需先在場內儲值機加值後才能投注。",
       url: "https://www.boatrace-fukuoka.com/sp/index.php?page=service-perabo",
     },
+    languageSupport: {
+      note: "福岡是唯一一個確認有真正現場多語支援的賽場：根據福岡市官方觀光指南，現場設有多語自動售票機，服務台也提供英語投注說明。",
+      url: "https://gofukuoka.jp/articles/detail/11c09fbc-eb35-413d-a49f-e3d64f15a662",
+    },
     image: {
       src: "/images/venues/fukuoka.jpg",
       alt: "福岡賽艇場正門入口",
@@ -524,6 +532,10 @@ export const VENUE_GUIDES_ZH_TW = [
     cashless: {
       note: "現場僅收現金，不支援信用卡。若想使用電子支付投注，可申請免費的「Hamana Po!」IC卡，可在場內機台加值，每100日圓投注可獲得1點，點數可兌換現金或場館周邊商品。",
       url: "https://www.boatrace-hamanako.jp/sp/index.php?page=service-point",
+    },
+    languageSupport: {
+      note: "濱名湖提供需事先預約（至少7天前）的付費體驗行程「Speedboat Racing Experience」，約2.5小時，包含場館導覽與英日雙語的投注教學。除此行程外，無法確認一般散客是否有英語服務。",
+      url: "https://exploreshizuoka.jp/activities/places/speedboat-racing-experience-lake-hamana/",
     },
     image: {
       src: "/images/venues/hamanako.jpg",
@@ -1743,6 +1755,10 @@ export const VENUE_GUIDES_ZH_TW = [
       note: "現場使用「KARAMO」卡，入會免入會金、免年費，當天即可申請使用。每投注100日圓可獲得0.5點，每次到場再加贈2點，也支援手掌靜脈認證購票。此卡僅限本場使用，場外發售所不適用。",
       url: "https://www.infoworld.co.jp/karatsu_cl/cashless.html",
     },
+    languageSupport: {
+      note: "唐津官網設有專屬的外語頁面（英文、簡體中文、繁體中文、韓文），場內綜合服務台全天有工作人員常駐。但無法確認該服務台人員是否具備外語應對能力。",
+      url: "https://www.boatrace-karatsu.jp/sp/index.php?page=lang-lang_index&target=lang_title_ct",
+    },
     image: {
       src: "/images/venues/karatsu.jpg",
       alt: "唐津賽艇場",
@@ -1816,6 +1832,10 @@ export const VENUE_GUIDES_ZH_TW = [
     cashless: {
       note: "現場使用「ORICA」卡，可通用於大村本場、Blue Dragon與場外發售所BTS大村三處設施，購票與入場費皆可使用。可在場內機台以現金儲值；每投注100日圓可獲得0.5點，依設施與活動不同，每次到場另可獲得1至2點的加碼點數。",
       url: "https://omurakyotei.jp/orica/",
+    },
+    languageSupport: {
+      note: "根據營運方公開的顧客意見交流會紀錄，場內免稅店「Blue Dragon」設有中文告示並備有多語文宣品供海外遊客索取。此對應僅限該店舖範圍，並無證據顯示全場範圍有多語工作人員、標示或售票機。",
+      url: "https://omurakyotei.jp/iken/detail.php?id=40",
     },
     image: {
       src: "/images/venues/omura.jpg",
