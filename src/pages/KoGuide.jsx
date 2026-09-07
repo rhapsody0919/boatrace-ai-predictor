@@ -89,22 +89,11 @@ const BET_TYPES = [
   },
 ];
 
-const MODELS = [
-  {
-    icon: "🎯",
-    name: "안정형",
-    desc: "가장 가능성 높은 전개를 따릅니다. 꾸준한 적중을 원할 때.",
-  },
-  {
-    icon: "⚖️",
-    name: "표준형",
-    desc: "두 번째로 가능성 높은 전개에 기반한 균형 잡힌 선택.",
-  },
-  {
-    icon: "🌪️",
-    name: "고배당형",
-    desc: "세 번째 전개로 고배당을 노립니다. 혼전 경주에 적합.",
-  },
+const DATA_POINTS = [
+  { icon: "🏅", name: "급별·승률", desc: "선수의 실력 등급과 통산 승률." },
+  { icon: "⚙️", name: "모터 성능", desc: "배정된 모터의 2연대율." },
+  { icon: "📈", name: "최근 컨디션", desc: "최근 승률이 오르는지 내리는지." },
+  { icon: "⏱️", name: "스타트 안정도", desc: "스타트 타이밍의 일관성." },
 ];
 
 export default function KoGuide() {
@@ -164,8 +153,8 @@ export default function KoGuide() {
           <p className="eg-note">
             핵심 차이는 <strong>1코스 승률</strong>입니다. 일본은 약 50%로
             한국(약 34%)보다 훨씬 높아, 예측의 출발점이 「1코스가 지키느냐,
-            무너지느냐」가 됩니다. 용신 레이더의 「1코스 이변 지수」는 바로 이것을
-            경주마다 수치화한 것입니다.
+            무너지느냐」가 됩니다. 용신 레이더의 「1코스 이변 지수」는 바로
+            이것을 경주마다 수치화한 것입니다.
           </p>
         </section>
 
@@ -205,8 +194,8 @@ export default function KoGuide() {
           <h2>🥇 6가지 승리 전법 (키마리테)</h2>
           <p>
             모든 승리는 「어떻게 이겼는가」로 공식 분류됩니다. 한국 경정과 같은
-            개념이지만 일본어 용어를 알아두면 일본 중계와 용신 레이더 예측을 읽을 수
-            있습니다.
+            개념이지만 일본어 용어를 알아두면 일본 중계와 용신 레이더 예측을
+            읽을 수 있습니다.
           </p>
           <div className="eg-technique-list">
             {TECHNIQUES.map((t) => (
@@ -284,9 +273,9 @@ export default function KoGuide() {
         <section className="eg-section">
           <h2>🤖 용신 레이더 예측 보는 법</h2>
           <p>
-            용신 레이더는 경주당 45개 데이터 — 선수 성적, 모터 성능, 경정장 특성,
-            스타트 타이밍 등 — 를 분석해 모든 추천의 <strong>이유</strong>까지
-            보여줍니다. 완전 무료입니다.
+            용신 레이더는 경주당 45개 데이터 — 선수 성적, 모터 성능, 경정장
+            특성, 스타트 타이밍 등 — 를 분석해 모든 추천의 <strong>이유</strong>
+            까지 보여줍니다. 완전 무료입니다.
           </p>
           <ol className="eg-steps">
             <li>
@@ -295,13 +284,15 @@ export default function KoGuide() {
               마감 시각과 예상 전개가 표시됩니다.
             </li>
             <li>
-              <strong>스타일에 맞는 예측 모델을 선택</strong>합니다:
+              <strong>6척의 객관적 데이터 표</strong>를 확인합니다. 용신
+              레이더는 예측 모델을 고르게 하지 않습니다 — 모두가 같은 데이터를
+              보고 직접 판단합니다:
               <div className="eg-models">
-                {MODELS.map((m) => (
-                  <div key={m.name} className="eg-model">
-                    <span className="eg-model-icon">{m.icon}</span>
-                    <strong>{m.name}</strong>
-                    <p>{m.desc}</p>
+                {DATA_POINTS.map((d) => (
+                  <div key={d.name} className="eg-model">
+                    <span className="eg-model-icon">{d.icon}</span>
+                    <strong>{d.name}</strong>
+                    <p>{d.desc}</p>
                   </div>
                 ))}
               </div>
@@ -350,8 +341,8 @@ export default function KoGuide() {
               해외 불법 중계·사설 베팅 사이트 이용은 절대 하지 마십시오.
             </li>
             <li>
-              용신 레이더는 <strong>정보와 AI 분석만을 제공</strong>합니다. 베팅을
-              받지 않으며, 베팅을 권유하지 않고, 예측은 결과를 보장하지
+              용신 레이더는 <strong>정보와 AI 분석만을 제공</strong>합니다.
+              베팅을 받지 않으며, 베팅을 권유하지 않고, 예측은 결과를 보장하지
               않습니다.
             </li>
             <li>
