@@ -2,10 +2,11 @@
  * VenueCharacteristicsCard - 会場固有の水面特性カード（HUDテレメトリ表示）
  * 枠番別の1着率（過去90日、outcome_distributionの集計）と主な決まり手
  * （winning_technique_stats）を、コックピット計器盤風の発光バーで表示する。
- * バーは0-100%の絶対スケールで固定し、全国平均（24会場プール値）の位置を
- * トラック上のティックマークで、実数値との差分をチップで示す（2026-09-07、
- * UI/UXレビューで「浮動ラベルと差分チップが同じ情報の二重表現」との指摘を
- * 受けて浮動ラベルを廃止し、正確な全国平均値はtitle属性でのみ提供する形に整理）。
+ * バーは0-100%の絶対スケールで固定し、上部に0/25/50/75/100%の軸目盛りを表示。
+ * 全国平均（24会場プール値）はトラック上のティックマーク＋浮動ラベルで示し、
+ * 実数値との差分はピル型チップ（pt表示）で示す（2026-09-07、Artifactで承認済みの
+ * デザイン案を踏襲。実装時に浮動ラベルを一度省略したがユーザー確認の結果、
+ * 元の案通り浮動ラベルを表示する形に戻した）。
  * AI予想（超展開予測・データ分析）が参照しているのと同じ会場別データを
  * 選手・レースデータと絡めて見せることで、会場別レース一覧ページの回遊性を高める。
  * デザイン案はArtifact（レーダースイープ/HUDテレメトリ/ソナーリング）から
@@ -96,7 +97,13 @@ export default function VenueCharacteristicsCard({ venueCode }) {
       </p>
       <div className="venue-hud-header-row" aria-hidden="true">
         <span />
-        <span>{t("venueCharacteristics.winRateHeader")}</span>
+        <span className="venue-hud-axis-labels">
+          <span>0</span>
+          <span>25</span>
+          <span>50</span>
+          <span>75</span>
+          <span>100%</span>
+        </span>
         <span>{t("venueCharacteristics.deltaHeader")}</span>
         <span className="venue-hud-header-technique">
           {t("venueCharacteristics.techniqueHeader")}
@@ -115,6 +122,9 @@ export default function VenueCharacteristicsCard({ venueCode }) {
                 {row.boat}
               </span>
               <span className="venue-hud-track">
+                <span className="venue-hud-grid-line" style={{ left: "25%" }} />
+                <span className="venue-hud-grid-line" style={{ left: "50%" }} />
+                <span className="venue-hud-grid-line" style={{ left: "75%" }} />
                 <span
                   className="venue-hud-fill"
                   style={{
@@ -123,13 +133,21 @@ export default function VenueCharacteristicsCard({ venueCode }) {
                   }}
                 />
                 {row.national != null && (
-                  <span
-                    className="venue-hud-national-tick"
-                    style={{ left: `${row.national}%` }}
-                    title={t("venueCharacteristics.nationalAverageTooltip", {
-                      value: row.national.toFixed(1),
-                    })}
-                  />
+                  <>
+                    <span
+                      className="venue-hud-national-tick"
+                      style={{ left: `${row.national}%` }}
+                    />
+                    <span
+                      className="venue-hud-national-label"
+                      style={{ left: `${row.national}%` }}
+                    >
+                      {t("venueCharacteristics.nationalAverageTooltip", {
+                        value: row.national.toFixed(1),
+                      })}
+                      <span className="venue-hud-national-label-line" />
+                    </span>
+                  </>
                 )}
               </span>
               <span className="venue-hud-value-group">
@@ -139,9 +157,6 @@ export default function VenueCharacteristicsCard({ venueCode }) {
                 {row.delta != null && (
                   <span
                     className={`venue-hud-delta ${deltaUp ? "up" : "down"}`}
-                    title={t("venueCharacteristics.nationalAverageTooltip", {
-                      value: row.national.toFixed(1),
-                    })}
                   >
                     {deltaUp ? "+" : ""}
                     {row.delta.toFixed(1)}pt
