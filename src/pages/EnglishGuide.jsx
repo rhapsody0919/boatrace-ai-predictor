@@ -74,21 +74,26 @@ const BET_TYPES = [
   },
 ];
 
-const MODELS = [
+const DATA_POINTS = [
   {
-    icon: "🎯",
-    name: "Safe Bet",
-    desc: "Follows the most likely race pattern. Best when you want steady hits.",
+    icon: "🏅",
+    name: "Class & win rate",
+    desc: "Racer skill level and career win rate.",
   },
   {
-    icon: "⚖️",
-    name: "Standard",
-    desc: "Balanced picks based on the second most likely pattern.",
+    icon: "⚙️",
+    name: "Motor performance",
+    desc: "2-boat win rate of the racer's assigned motor.",
   },
   {
-    icon: "🌪️",
-    name: "Upset Focus",
-    desc: "Targets high payouts from the third most likely pattern. Best for chaotic races.",
+    icon: "📈",
+    name: "Recent form",
+    desc: "Whether the racer's win rate is trending up or down lately.",
+  },
+  {
+    icon: "⏱️",
+    name: "Start stability",
+    desc: "How consistent the racer's start timing is.",
   },
 ];
 
@@ -271,14 +276,15 @@ export default function EnglishGuide() {
               deadline and a forecast preview.
             </li>
             <li>
-              <strong>Choose a prediction model</strong> that matches your
-              style:
+              <strong>View the objective Data Table</strong> for all 6 boats.
+              Ryujin Radar doesn&apos;t make you choose a prediction model —
+              everyone sees the same data and builds their own read:
               <div className="eg-models">
-                {MODELS.map((m) => (
-                  <div key={m.name} className="eg-model">
-                    <span className="eg-model-icon">{m.icon}</span>
-                    <strong>{m.name}</strong>
-                    <p>{m.desc}</p>
+                {DATA_POINTS.map((d) => (
+                  <div key={d.name} className="eg-model">
+                    <span className="eg-model-icon">{d.icon}</span>
+                    <strong>{d.name}</strong>
+                    <p>{d.desc}</p>
                   </div>
                 ))}
               </div>

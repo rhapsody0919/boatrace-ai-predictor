@@ -52,22 +52,11 @@ const BET_TYPES = [
   },
 ];
 
-const MODELS = [
-  {
-    icon: "🎯",
-    name: "穩健型",
-    desc: "跟隨最有可能的比賽展開。適合想穩定命中的你。",
-  },
-  {
-    icon: "⚖️",
-    name: "標準型",
-    desc: "根據第二可能的展開做出平衡選擇。",
-  },
-  {
-    icon: "🌪️",
-    name: "冷門型",
-    desc: "瞄準第三可能展開帶來的高派彩。適合混戰賽事。",
-  },
+const DATA_POINTS = [
+  { icon: "🏅", name: "級別與勝率", desc: "選手的實力等級與生涯勝率。" },
+  { icon: "⚙️", name: "馬達性能", desc: "選手所配馬達的2連率。" },
+  { icon: "📈", name: "近期調子", desc: "選手勝率最近是上升還是下滑。" },
+  { icon: "⏱️", name: "起跑穩定度", desc: "選手起跑時機的穩定程度。" },
 ];
 
 export default function ZhTwGuide() {
@@ -235,13 +224,15 @@ export default function ZhTwGuide() {
               。每張賽事卡片都顯示投注截止時間與預測預覽。
             </li>
             <li>
-              <strong>選擇符合你風格的預測模型</strong>：
+              <strong>查看6艇的客觀數據表</strong>。
+              龍神雷達不會要你選擇預測模型 —
+              所有人看到的都是同一份數據，自行判斷：
               <div className="eg-models">
-                {MODELS.map((m) => (
-                  <div key={m.name} className="eg-model">
-                    <span className="eg-model-icon">{m.icon}</span>
-                    <strong>{m.name}</strong>
-                    <p>{m.desc}</p>
+                {DATA_POINTS.map((d) => (
+                  <div key={d.name} className="eg-model">
+                    <span className="eg-model-icon">{d.icon}</span>
+                    <strong>{d.name}</strong>
+                    <p>{d.desc}</p>
                   </div>
                 ))}
               </div>
