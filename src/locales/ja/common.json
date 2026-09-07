@@ -257,6 +257,7 @@
     "todayRaces": "本日開催中のレース",
     "volatilityHighlightsTitle": "🌪️ 本日のイン崩れ注意度ハイライト",
     "volatilityHighlightsTurnPrediction": "1着予想: {{course}}号艇（{{technique}}・{{probability}}%）",
+    "volatilityHighlightsAccuracyLink": "実測精度を見る →",
     "dataType": "レースデータ",
     "loadingTitle": "レースデータを読み込み中...",
     "loadingDesc": "本日のレース情報を取得しています",

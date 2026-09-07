@@ -258,6 +258,7 @@
     "todayRaces": "Today's Races",
     "volatilityHighlightsTitle": "🌪️ Today's Upset Index Highlights",
     "volatilityHighlightsTurnPrediction": "Predicted winner: Boat {{course}} ({{technique}}, {{probability}}%)",
+    "volatilityHighlightsAccuracyLink": "See our track record →",
     "dataType": "Race data",
     "loadingTitle": "Loading race data...",
     "loadingDesc": "Fetching today's race information",

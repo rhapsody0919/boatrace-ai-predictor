@@ -117,7 +117,21 @@ function TodaysVolatilityHighlights({ venuesData }) {
           t={t}
         />
       </div>
+      <AccuracyLink t={t} />
     </section>
+  );
+}
+
+// BOA-248: イン崩れ指数を根拠にレースを選んだユーザーが、その指数自体の
+// 実測精度をすぐ確認できるよう、ハイライト直後に導線を置く
+function AccuracyLink({ t }) {
+  const localize = useLocalizedPath();
+  return (
+    <p className="volatility-highlights__accuracy-link">
+      <Link to={localize("/accuracy")}>
+        📈 {t("home.volatilityHighlightsAccuracyLink")}
+      </Link>
+    </p>
   );
 }
 

@@ -257,6 +257,7 @@
     "todayRaces": "오늘의 경주",
     "volatilityHighlightsTitle": "🌪️ 오늘의 인코스 붕괴 지수 하이라이트",
     "volatilityHighlightsTurnPrediction": "1착 예상: {{course}}호정（{{technique}}・{{probability}}%）",
+    "volatilityHighlightsAccuracyLink": "실측 정확도 보기 →",
     "dataType": "경주 데이터",
     "loadingTitle": "경주 데이터 로딩 중...",
     "loadingDesc": "오늘의 경주 정보를 가져오는 중입니다",
