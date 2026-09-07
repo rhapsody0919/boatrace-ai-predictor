@@ -92,7 +92,8 @@
 
 ## 制約（絶対厳守）
 
-- 頻度上限は1日1本、ただしこれは**早朝cronでの自動実行**（`racer-condition`/`motor-condition`/`volatility-index`、`sns_content_types.daily-auto`の`trigger_mode='auto'`）に適用する上限（`cadence='daily'`と一致させる）。`prediction-hook`/`prediction-accuracy`（`race-time-critical`型、`trigger_mode='manual'`＝そもそも自動cronの対象外）は日中に人間が🌅ボタンでレースごとに複数回手動発火することを想定しており、この上限の対象外
+- 頻度上限は1日1本、ただしこれは**早朝cronでの自動実行**（`racer-condition`/`motor-condition`/`volatility-index`、`sns_content_types.daily-auto`の`trigger_mode='auto'`）に適用する上限（`cadence='daily'`と一致させる）。この上限は、性質が近い実データ集計投稿（当日の選手・モーター調子ランキング等）が同日に重複するのを防ぐためのもの。`prediction-hook`/`prediction-accuracy`（`race-time-critical`型、`trigger_mode='manual'`＝そもそも自動cronの対象外）は日中に人間が🌅ボタンでレースごとに複数回手動発火することを想定しており、この上限の対象外
+  - **`humor`もこの上限の対象外とする**（2026-09-07追加）。同じ`daily-auto`型に属するが、実データに依存しない別ジャンルのコンテンツであり、`racer-condition`等との重複を防ぐ目的の上限を適用する理由が無い。重複防止自体は`humorSource.js`の30日クールダウン（題材単位）で別途行っている。今日すでに`racer-condition`等が1本登録済みでも、`categoryKey: "humor"`が指定された場合は登録してよい（逆も同様、`humor`が1本登録済みでも他の型の自動選定は妨げない）
 - 当日レース開催が無い日、または実データの裏付けが取れない日は提案しない（見送りであり不具合ではない）
 - 承認レス運用のため、このRoutineの判断品質が全体の信頼性に直結する。迷う題材は選ばず、より明確な題材か非該当（提案なし）を選ぶ
 - このRoutineは`sns_drafts`（下書き）を一切生成しない。ネタの登録（`sns_topics`/`sns_topic_targets`）のみ
