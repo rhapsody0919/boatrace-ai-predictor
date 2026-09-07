@@ -477,7 +477,6 @@ input:focus-visible,
   font-size: 1.2rem;
   color: var(--text-primary);
   margin: 0;
-  text-align: left;
 }
 
 /* 複勝予想の検証・展開予測の検証を独立したセクションとして区切る

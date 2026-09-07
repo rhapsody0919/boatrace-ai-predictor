@@ -86,6 +86,18 @@ boatrace-ai-predictor/
 - 複雑な修正を何度も試すより、**シンプルに再実装**を優先する
 - 3回以上同じ問題で失敗したら、一度立ち止まって別のアプローチを提案する
 
+### Linear MCPが認証切れの場合は`scripts/linear-cli.js`にフォールバック
+Linear MCP（`mcp__linear__*`）はユーザーのブラウザ経由のOAuth認証であり、ターミナル経由のClaude Codeセッションからは再認証フローを開始できない（`.env.local`の`LINEAR_API_KEY`とは別物で、Claude側からは直せない）。MCP呼び出しが認証エラーになった場合、都度ユーザーに確認を求めず、`LINEAR_API_KEY`（`.env.local`に設定済み）を使う`scripts/linear-cli.js`に自動でフォールバックしてタスクを続行する。
+
+```bash
+node --env-file=.env.local scripts/linear-cli.js get BOA-123
+node --env-file=.env.local scripts/linear-cli.js update BOA-123 "Done" "PR #999マージ済み"
+node --env-file=.env.local scripts/linear-cli.js create "タイトル" "説明"
+```
+
+- `update`の状態名は完全一致（大文字小文字は無視）が必要。不明な場合は該当チームのworkflow状態一覧を先にGraphQLで確認してから指定する（本プロジェクト＝BOAチームの主要状態: `Backlog`/`Todo`/`In Progress`/`Done`/`Canceled`/`Duplicate`）。一致しないと`In Progress`相当の状態に誤って変更されるため、状態名を推測で決め打ちしない
+- MCP接続自体の再認証（ユーザー側の対応）が必要な場合のみユーザーに案内する
+
 ### フロントエンド変更の確認は自己完結させる
 - UI変更後の目視確認で `npm run dev` をユーザーに毎回打たせない。Claude自身が `run_in_background` でdevサーバーを起動し、確認後は停止する
 - ブラウザでの確認はPlaywright（プロジェクト依存関係、Chrome拡張MCPの認証状態に左右されない）で自己検証する
