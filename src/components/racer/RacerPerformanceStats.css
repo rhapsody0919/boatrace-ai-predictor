@@ -17,7 +17,7 @@
 .racer-performance-stats h3 {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-900);
+  color: var(--text-primary);
   margin: 0 0 var(--spacing-2) 0;
 }
 
@@ -29,7 +29,8 @@
 }
 
 .racer-stat-card {
-  background: var(--color-gray-50);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
   border-radius: var(--radius-md);
   padding: var(--spacing-4);
 }
@@ -43,42 +44,44 @@
 .racer-stat-value {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
-  color: var(--color-primary-600);
+  color: var(--brand-accent-primary);
 }
 
 .racer-stat-sub {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
 }
 
 .racer-stat-delta {
   font-size: var(--font-size-base);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
 }
 
 .racer-stat-delta-up {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .racer-stat-delta-down {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .racer-stat-note {
   margin: var(--spacing-2) 0 0 0;
   font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
 }
 
 .racer-stat-chart {
-  background: var(--color-gray-50);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
   border-radius: var(--radius-md);
   padding: var(--spacing-4);
   margin-bottom: var(--spacing-4);
 }
 
 .racer-technique-profile {
-  background: var(--color-gray-50);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
   border-radius: var(--radius-md);
   padding: var(--spacing-4);
   margin-bottom: var(--spacing-4);
@@ -98,12 +101,13 @@
 .racer-return-rate-table td {
   padding: var(--spacing-2);
   text-align: center;
-  border-bottom: 1px solid var(--color-gray-200);
-  color: var(--color-gray-700);
+  border-bottom: 1px solid var(--border-hairline);
+  color: var(--text-secondary);
 }
 
 .racer-return-rate-table th {
   font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .racer-analysis-tools-link {
@@ -112,7 +116,7 @@
 }
 
 .racer-analysis-tools-link a {
-  color: var(--color-primary-600);
+  color: var(--brand-accent-secondary);
   text-decoration: none;
 }
 
@@ -147,7 +151,7 @@
   align-items: center;
   gap: 0.35rem;
   font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
+  color: var(--text-secondary);
 }
 
 .racer-technique-dot {
