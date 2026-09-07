@@ -89,6 +89,7 @@
   "venueCharacteristics": {
     "title": "This Venue's Tendencies (last 90 days)",
     "note": "Same venue-level data our AI data analysis uses. See each boat's 1st-place rate and its most common winning technique.",
+    "nationalAverageTooltip": "National average: {{value}}%",
     "footnote": "Based on the last {{count}} races (as of {{date}}). Reflects past tendencies only and does not guarantee today's results.",
     "unknownDate": "unknown",
     "waterType": {

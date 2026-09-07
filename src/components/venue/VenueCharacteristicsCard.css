@@ -64,7 +64,7 @@
 
 .venue-hud-row {
   display: grid;
-  grid-template-columns: 2.2rem 1fr 4rem 8rem;
+  grid-template-columns: 2.2rem 1fr 4.6rem 8rem;
   align-items: center;
   gap: var(--spacing-3);
 }
@@ -81,6 +81,9 @@
   font-weight: var(--font-weight-bold);
   font-size: var(--font-size-base);
   flex-shrink: 0;
+  /* 1号艇(白背景)がライトモードのカード背景(ほぼ白のivory)に対して
+     輪郭が消える問題への対応。他の艇番色でも一律に付けて統一感を保つ */
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
 }
 
 .venue-hud-track {
@@ -111,6 +114,24 @@
   }
 }
 
+/* 全国平均（24会場プール値）の位置を示す縦線。トラック自体はoverflow:hiddenで
+   バー端の丸みをクリップしているため、ティックはトラックの高さ内に収める */
+.venue-hud-national-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text-secondary);
+  opacity: 0.75;
+}
+
+.venue-hud-value-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
 .venue-hud-value {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
     monospace;
@@ -118,6 +139,25 @@
   font-weight: var(--font-weight-bold);
   text-align: right;
   color: var(--brand-accent-primary);
+}
+
+/* 全国平均との差分（pt）。正確な全国平均の値はtitle属性のツールチップで示す
+   （UI/UXレビューで浮動ラベルとの二重表現を指摘され、こちらに一本化した） */
+.venue-hud-delta {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
+    monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  cursor: help;
+}
+
+.venue-hud-delta.up {
+  color: var(--color-success-text);
+}
+
+.venue-hud-delta.down {
+  color: var(--color-error-text);
 }
 
 .venue-hud-technique {
@@ -146,7 +186,7 @@
 
 @media (max-width: 480px) {
   .venue-hud-row {
-    grid-template-columns: 1.8rem 1fr 3.2rem;
+    grid-template-columns: 1.8rem 1fr 3.6rem;
   }
 
   .venue-hud-technique {

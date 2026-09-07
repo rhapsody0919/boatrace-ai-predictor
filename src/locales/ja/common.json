@@ -88,6 +88,7 @@
   "venueCharacteristics": {
     "title": "この会場の特徴（過去90日）",
     "note": "AIデータ分析が参照しているのと同じ会場別データです。枠番ごとの1着率と、勝った際に多い決まり手を確認できます。",
+    "nationalAverageTooltip": "全国平均{{value}}%",
     "footnote": "直近{{count}}走を集計（{{date}}時点）。過去のレース傾向であり、当日の結果を保証するものではありません。",
     "unknownDate": "更新日不明",
     "waterType": {
