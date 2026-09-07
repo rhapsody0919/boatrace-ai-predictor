@@ -88,6 +88,8 @@
   "venueCharacteristics": {
     "title": "이 경정장의 특징 (최근 90일)",
     "note": "AI 데이터 분석이 참고하는 것과 동일한 경정장별 데이터입니다. 번호별 1착률과, 우승 시 가장 많이 나온 결정수를 확인할 수 있습니다.",
+    "nationalAverageTooltip": "전국 평균 {{value}}%",
+    "techniqueHeader": "주요 결정수",
     "footnote": "최근 {{count}}경주를 집계 ({{date}} 기준). 과거 경주 경향이며 당일 결과를 보장하지 않습니다.",
     "unknownDate": "갱신일 불명",
     "waterType": {

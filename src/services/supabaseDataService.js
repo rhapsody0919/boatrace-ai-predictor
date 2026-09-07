@@ -1809,6 +1809,63 @@ export const supabaseDataService = {
   },
 
   /**
+   * 枠番別の1着率の全国平均（24会場プール値）を取得する
+   * outcome_distributionは会場ごとの行を持つが、first_boatでgroup byして
+   * count_90daysを合算すれば1クエリで全国平均が算出できる（24会場を
+   * 個別に取得する必要はない）。会場を問わず同じ値のためracer_id等と
+   * 違い引数を取らず、キャッシュキーも固定にする
+   */
+  getNationalAverageOutcomeDistribution() {
+    return withCache("national-average-outcome-distribution", async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      // outcome_distributionは2500行超あり、Supabaseのデフォルトlimit(1000行)を
+      // 超えるため.range()でページネーションして全件取得する必要がある
+      // （2026-09-07、ページネーション漏れで全国平均が偏っていたバグを発見・修正）
+      const data = [];
+      const pageSize = 1000;
+      let from = 0;
+      while (true) {
+        const { data: page, error } = await supabase
+          .from("outcome_distribution")
+          .select("first_boat, count_90days")
+          .range(from, from + pageSize - 1);
+
+        if (error) {
+          console.error(
+            "outcome_distribution(全国平均)取得エラー:",
+            error.message,
+          );
+          return null;
+        }
+        if (!page || page.length === 0) break;
+        data.push(...page);
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+      if (data.length === 0) return null;
+
+      const countByBoat = {};
+      let total = 0;
+      data.forEach((row) => {
+        countByBoat[row.first_boat] =
+          (countByBoat[row.first_boat] ?? 0) + (row.count_90days ?? 0);
+        total += row.count_90days ?? 0;
+      });
+      if (total === 0) return null;
+
+      const rateByBoat = {};
+      Object.entries(countByBoat).forEach(([boat, count]) => {
+        rateByBoat[boat] = (count / total) * 100;
+      });
+      return rateByBoat;
+    });
+  },
+
+  /**
    * 出目分布データを取得（会場別の3連単パターン）
    * @param {number} venueCode - 会場コード（1-24）
    * @returns {Promise<Object>} - { venue_code, venue_name, total_races, last_updated, data: { first_boat: [...] } }
