@@ -20,6 +20,7 @@ export function getCoverImageStrategy(topic) {
       };
     case "venue-characteristic":
     case "daily-result":
+    case "trivia":
       // 対応する実画面が無いためDataQuoteCardで代替する
       return { type: "data-card" };
     default:
