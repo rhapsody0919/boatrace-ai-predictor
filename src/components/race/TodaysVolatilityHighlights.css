@@ -78,6 +78,21 @@
   font-size: 0.8rem;
 }
 
+.volatility-highlights__accuracy-link {
+  margin: 0.6rem 0 0;
+  text-align: right;
+}
+
+.volatility-highlights__accuracy-link a {
+  color: var(--brand-accent-primary);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.volatility-highlights__accuracy-link a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 480px) {
   .volatility-highlights__columns {
     flex-direction: column;
