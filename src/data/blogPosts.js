@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "kiryu-losing-makuri-share",
+    title:
+      "桐生で1号艇を負かす決まり手「まくり」構成比35.3%、まくり系全体では全国5位の66.3%という実データ",
+    description:
+      "決まり手データ分析の実データで、桐生でコース1が敗れた252レースの決まり手を集計。最多は「まくり」35.32%で、「まくり差し」と合わせた「まくり系」は66.27%、全国平均61.28%より約5ポイント高く24会場中5位という結果に。1マークの振りとナイター特有の穏やかな水面から、なぜ「差し」より「まくり」で負けやすいのかを実データで検証します。",
+    date: "2026-09-06",
+    category: "データ分析",
+    tags: ["決まり手データ分析", "決まり手", "まくり", "桐生", "会場特性"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/kiryu-losing-makuri-share.jpg",
+  },
+  {
     id: "heiwajima-topstart-winrate",
     title:
       "平和島は1号艇がトップスタートを取っても勝率58.7%、全国24会場で最下位という実データ",
