@@ -75,15 +75,16 @@
   border-left: 4px solid #0ea5e9;
   padding-left: 1rem;
   /* stickyヘッダー+読了進捗バーの下に見出しが隠れないよう、目次リンクの
-     ジャンプ先に余白を確保する */
-  scroll-margin-top: 100px;
+     ジャンプ先に余白を確保する。モバイルはHeader.jsxがcompressed状態を
+     無効化しており常時約137px（実測）のため、その分の余白を確保する */
+  scroll-margin-top: 160px;
 }
 
 .blog-post-content h3 {
   font-size: 1.5rem;
   margin: 1.5rem 0 0.75rem 0;
   color: var(--text-primary);
-  scroll-margin-top: 100px;
+  scroll-margin-top: 160px;
 }
 
 .blog-post-content h4 {

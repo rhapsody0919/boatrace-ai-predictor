@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -96,57 +96,6 @@ const UI_TEXT = {
   },
 };
 
-// ReactMarkdownのh2/h3 componentsが受け取るchildren（文字列 or 入れ子のReact要素）から
-// プレーンテキストを取り出す。見出しに強調構文等が含まれる場合も再帰的にテキストを結合する
-function headingTextFromChildren(children) {
-  if (typeof children === "string" || typeof children === "number") {
-    return String(children);
-  }
-  if (Array.isArray(children)) {
-    return children.map(headingTextFromChildren).join("");
-  }
-  if (children && typeof children === "object" && children.props) {
-    return headingTextFromChildren(children.props.children);
-  }
-  return "";
-}
-
-// 目次生成用に本文Markdownからh2/h3見出しを抽出する（コードブロック内は除外）。
-// ReactMarkdown側のcomponentsは、ここで得たテキストとの一致でidを引く（レンダー回数に
-// 依存する連番カウンタは、StrictModeの二重レンダーで値がズレるため使わない）
-function extractHeadings(markdown) {
-  if (!markdown) return [];
-  const lines = markdown.split("\n");
-  const headings = [];
-  let inCodeBlock = false;
-  let index = 0;
-  for (const line of lines) {
-    if (line.trim().startsWith("```")) {
-      inCodeBlock = !inCodeBlock;
-      continue;
-    }
-    if (inCodeBlock) continue;
-    const h2Match = line.match(/^##\s+(.+)$/);
-    const h3Match = line.match(/^###\s+(.+)$/);
-    if (h2Match) {
-      headings.push({
-        level: 2,
-        text: h2Match[1].replace(/[*_`]/g, "").trim(),
-        id: `toc-heading-${index}`,
-      });
-      index++;
-    } else if (h3Match) {
-      headings.push({
-        level: 3,
-        text: h3Match[1].replace(/[*_`]/g, "").trim(),
-        id: `toc-heading-${index}`,
-      });
-      index++;
-    }
-  }
-  return headings;
-}
-
 export default function BlogPost() {
   const { id } = useParams();
   const { pathname } = useLocation();
@@ -155,6 +104,8 @@ export default function BlogPost() {
   const [error, setError] = useState(null);
   const [readProgress, setReadProgress] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [headings, setHeadings] = useState([]);
+  const articleRef = useRef(null);
 
   const { lng } = parseLangFromPath(pathname);
   const isTranslated = lng !== "ja" && isBlogLangAvailable(id, lng);
@@ -212,21 +163,87 @@ export default function BlogPost() {
   }, [id, basePost, mdPath]);
 
   useEffect(() => {
+    // rAFで間引き、フリングスクロール中に毎イベントscrollHeight（強制リフロー）や
+    // setStateを連発しないようにする
+    let rafId = null;
     const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-      setReadProgress(
-        docHeight > 0 ? Math.min(100, (scrollTop / docHeight) * 100) : 0,
-      );
-      setShowBackToTop(scrollTop > 600);
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const scrollTop = window.scrollY;
+        const docHeight =
+          document.documentElement.scrollHeight - window.innerHeight;
+        setReadProgress(
+          docHeight > 0
+            ? Math.max(0, Math.min(100, (scrollTop / docHeight) * 100))
+            : 0,
+        );
+        setShowBackToTop(scrollTop > 600);
+      });
     };
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, [id]);
 
-  const headings = useMemo(() => extractHeadings(content), [content]);
+  // 目次のid/テキストは、実際にDOMへレンダーされたh2/h3から収集する（見出しテキストの
+  // 一致判定に頼らないため、同名見出しの重複やMarkdownリンクを含む見出しでもズレない）
+  useEffect(() => {
+    if (!articleRef.current) {
+      setHeadings([]);
+      return;
+    }
+    const elements = Array.from(articleRef.current.querySelectorAll("h2, h3"));
+    setHeadings(
+      elements.map((el, i) => {
+        const headingId = `toc-heading-${i}`;
+        el.id = headingId;
+        return {
+          level: el.tagName === "H2" ? 2 : 3,
+          text: el.textContent,
+          id: headingId,
+        };
+      }),
+    );
+  }, [content]);
+
+  const faqItems = useMemo(() => extractFaqItems(content), [content]);
+
+  const articleContent = useMemo(
+    () => (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
+        components={{
+          // Custom link renderer to open external links in new tab
+          a: ({ node, ...props }) => {
+            const isExternal = props.href?.startsWith("http");
+            return (
+              <a
+                {...props}
+                target={isExternal ? "_blank" : undefined}
+                rel={isExternal ? "noopener noreferrer" : undefined}
+              />
+            );
+          },
+          // 実際の画像サイズが不明なため自然なアスペクト比のまま表示する
+          // （BlogPost.css参照。以前のaspect-ratio固定はトリミングで画像が
+          // 大きく欠ける実害があったため撤回）
+          img: ({ node, ...props }) => (
+            <img {...props} loading="lazy" decoding="async" />
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    ),
+    // contentが変わらない限りReactMarkdown要素を再生成しない。読了進捗バーの
+    // scroll起因の再レンダーのたびに記事全文を再パースしていた問題への対処
+    [content],
+  );
 
   useSocialMeta({
     title: post?.title,
@@ -263,7 +280,6 @@ export default function BlogPost() {
 
   const url = postUrl;
   const imageUrl = postImageUrl;
-  const faqItems = extractFaqItems(content);
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -408,48 +424,8 @@ export default function BlogPost() {
           </details>
         )}
 
-        <article className="blog-post-content">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeRaw]}
-            components={{
-              // Custom link renderer to open external links in new tab
-              a: ({ node, ...props }) => {
-                const isExternal = props.href?.startsWith("http");
-                return (
-                  <a
-                    {...props}
-                    target={isExternal ? "_blank" : undefined}
-                    rel={isExternal ? "noopener noreferrer" : undefined}
-                  />
-                );
-              },
-              // 実際の画像サイズが不明なため自然なアスペクト比のまま表示する
-              // （BlogPost.css参照。以前のaspect-ratio固定はトリミングで画像が
-              // 大きく欠ける実害があったため撤回）
-              img: ({ node, ...props }) => (
-                <img {...props} loading="lazy" decoding="async" />
-              ),
-              // 目次(toc-section)のリンク先として、見出しテキストが一致するheadings
-              // エントリのidを付与する（レンダー回数に依存しない純粋な対応付け）
-              h2: ({ node, ...props }) => {
-                const text = headingTextFromChildren(props.children).trim();
-                const match = headings.find(
-                  (h) => h.level === 2 && h.text === text,
-                );
-                return <h2 id={match?.id} {...props} />;
-              },
-              h3: ({ node, ...props }) => {
-                const text = headingTextFromChildren(props.children).trim();
-                const match = headings.find(
-                  (h) => h.level === 3 && h.text === text,
-                );
-                return <h3 id={match?.id} {...props} />;
-              },
-            }}
-          >
-            {content}
-          </ReactMarkdown>
+        <article className="blog-post-content" ref={articleRef}>
+          {articleContent}
         </article>
 
         {/* Related Posts */}
