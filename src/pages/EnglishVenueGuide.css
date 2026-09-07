@@ -7,7 +7,7 @@
 
 .evg-card {
   display: block;
-  background: white;
+  background: var(--surface-card);
   border-radius: var(--radius-lg);
   padding: var(--spacing-5);
   box-shadow: var(--shadow-base);
@@ -37,12 +37,12 @@
 
 .evg-region {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .evg-tagline {
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
   line-height: 1.6;
   margin-bottom: var(--spacing-3);
@@ -61,8 +61,8 @@
 }
 
 .evg-badge {
-  background: var(--color-gray-100);
-  color: var(--color-gray-600);
+  background: var(--surface-page);
+  color: var(--text-secondary);
   border-radius: var(--radius-xl);
   padding: 0.2rem 0.7rem;
   font-size: var(--font-size-xs);
@@ -87,7 +87,7 @@
 
 .evg-photo figcaption {
   font-size: var(--font-size-xs);
-  color: var(--color-gray-500);
+  color: var(--text-secondary);
   margin-top: var(--spacing-1);
   text-align: right;
 }
@@ -98,7 +98,7 @@
 
 .eg-subheading {
   font-size: 1.05rem;
-  color: var(--color-gray-800);
+  color: var(--text-primary);
   margin-top: var(--spacing-4);
   margin-bottom: var(--spacing-2);
 }
@@ -108,7 +108,7 @@
   margin-bottom: var(--spacing-1);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-gray-600);
+  color: var(--text-secondary);
 }
 
 .evg-map {
