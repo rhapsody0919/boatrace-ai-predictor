@@ -1,15 +1,18 @@
 /**
- * VenueCharacteristicsCard - 会場固有の水面特性カード
+ * VenueCharacteristicsCard - 会場固有の水面特性カード（HUDテレメトリ表示）
  * 枠番別の1着率（過去90日、outcome_distributionの集計）と主な決まり手
- * （winning_technique_stats）を組み合わせ、この会場の傾向を表示する。
+ * （winning_technique_stats）を、コックピット計器盤風の発光バーで表示する。
  * AI予想（超展開予測・データ分析）が参照しているのと同じ会場別データを
  * 選手・レースデータと絡めて見せることで、会場別レース一覧ページの回遊性を高める。
+ * デザイン案はArtifact（レーダースイープ/HUDテレメトリ/ソナーリング）から
+ * HUDテレメトリ案を採用（2026-09-07）。
  * /venueはTRANSLATED_PATHS対象のため、文言はi18nキー経由にする。
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
+import { BOAT_COLORS } from "../../utils/colors";
 import "./VenueCharacteristicsCard.css";
 
 // このサンプル数を下回る会場は表示しない（ノイズが大きいため）
@@ -68,8 +71,11 @@ export default function VenueCharacteristicsCard({ venueCode }) {
   const hasAnyWinRate = boatRows.some((row) => row.winRate > 0);
   if (!hasAnyWinRate) return null;
 
+  const maxWinRate = Math.max(...boatRows.map((row) => row.winRate));
+
   return (
     <div className="venue-characteristics-card">
+      <div className="venue-hud-scanbar" aria-hidden="true" />
       <h2>{t("venueCharacteristics.title")}</h2>
       {venueInfo && (
         <p className="venue-characteristics-summary">
@@ -81,29 +87,35 @@ export default function VenueCharacteristicsCard({ venueCode }) {
       <p className="venue-characteristics-note">
         {t("venueCharacteristics.note")}
       </p>
-      <div className="table-wrapper">
-        <table className="venue-characteristics-table">
-          <thead>
-            <tr>
-              <th>{t("venueCharacteristics.boatHeader")}</th>
-              <th>{t("venueCharacteristics.winRateHeader")}</th>
-              <th>{t("venueCharacteristics.techniqueHeader")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {boatRows.map((row) => (
-              <tr key={row.boat}>
-                <td>{row.boat}</td>
-                <td>{row.winRate.toFixed(1)}%</td>
-                <td>
-                  {row.topTechnique
-                    ? `${translateTechnique(t, row.topTechnique.technique)} ${row.topTechnique.percentage.toFixed(0)}%`
-                    : "-"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="venue-hud-rows">
+        {boatRows.map((row, index) => {
+          const boatColor = BOAT_COLORS[row.boat] ?? {};
+          return (
+            <div className="venue-hud-row" key={row.boat}>
+              <span
+                className="venue-hud-lane"
+                style={{ background: boatColor.bg, color: boatColor.text }}
+              >
+                {row.boat}
+              </span>
+              <span className="venue-hud-track">
+                <span
+                  className="venue-hud-fill"
+                  style={{
+                    width: `${maxWinRate > 0 ? (row.winRate / maxWinRate) * 100 : 0}%`,
+                    animationDelay: `${index * 0.08}s`,
+                  }}
+                />
+              </span>
+              <span className="venue-hud-value">{row.winRate.toFixed(1)}%</span>
+              <span className="venue-hud-technique">
+                {row.topTechnique
+                  ? `${translateTechnique(t, row.topTechnique.technique)} ${row.topTechnique.percentage.toFixed(0)}%`
+                  : "-"}
+              </span>
+            </div>
+          );
+        })}
       </div>
       <p className="venue-characteristics-footnote">
         {t("venueCharacteristics.footnote", {

@@ -1,9 +1,39 @@
 .venue-characteristics-card {
+  position: relative;
+  overflow: hidden;
   background: var(--surface-card);
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-md);
   padding: var(--spacing-4);
   margin-bottom: var(--spacing-4);
+}
+
+/* HUD計器盤の走査線。カード上端を左右に光が流れ、常時計測している印象を作る */
+.venue-hud-scanbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--brand-accent-primary),
+    transparent
+  );
+  animation: venue-hud-scan 2.6s ease-in-out infinite;
+}
+
+@keyframes venue-hud-scan {
+  0%,
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(100%);
+    opacity: 0.9;
+  }
 }
 
 .venue-characteristics-card h2 {
@@ -26,31 +56,100 @@
   margin: 0 0 var(--spacing-3) 0;
 }
 
-.venue-characteristics-card .table-wrapper {
-  overflow-x: auto;
+.venue-hud-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
 }
 
-.venue-characteristics-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--font-size-sm);
+.venue-hud-row {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr 4rem 8rem;
+  align-items: center;
+  gap: var(--spacing-3);
 }
 
-.venue-characteristics-table th,
-.venue-characteristics-table td {
-  padding: var(--spacing-2);
-  text-align: center;
-  border-bottom: 1px solid var(--border-hairline);
+.venue-hud-lane {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
+    monospace;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  flex-shrink: 0;
+}
+
+.venue-hud-track {
+  display: block;
+  height: 0.6rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--border-hairline) 55%, transparent);
+  overflow: hidden;
+  position: relative;
+}
+
+.venue-hud-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-accent-primary) 55%, transparent),
+    var(--brand-accent-primary)
+  );
+  transform-origin: left;
+  animation: venue-hud-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes venue-hud-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.venue-hud-value {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
+    monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  text-align: right;
+  color: var(--brand-accent-primary);
+}
+
+.venue-hud-technique {
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
-}
-
-.venue-characteristics-table th {
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
+  text-align: right;
 }
 
 .venue-characteristics-footnote {
   margin: var(--spacing-3) 0 0 0;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .venue-hud-scanbar {
+    animation: none;
+    opacity: 0.5;
+    transform: none;
+  }
+
+  .venue-hud-fill {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .venue-hud-row {
+    grid-template-columns: 1.8rem 1fr 3.2rem;
+  }
+
+  .venue-hud-technique {
+    display: none;
+  }
 }
