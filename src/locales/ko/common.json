@@ -251,6 +251,8 @@
   "home": {
     "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측・인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
     "introBannerClose": "닫기",
+    "freeAccessNoticeStrong": "완전 무료・가입 불필요",
+    "freeAccessNoticeRest": "— 계좌 개설이나 회원 가입 없이 지금 바로 모든 기능을 이용하세요",
     "todayRaces": "오늘의 경주",
     "dataType": "경주 데이터",
     "loadingTitle": "경주 데이터 로딩 중...",

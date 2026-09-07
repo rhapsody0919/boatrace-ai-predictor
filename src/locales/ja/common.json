@@ -251,6 +251,8 @@
   "home": {
     "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| 展開予測・イン崩れ指数など45項目のデータを分析。詳しくはこちら →",
     "introBannerClose": "閉じる",
+    "freeAccessNoticeStrong": "完全無料・登録不要",
+    "freeAccessNoticeRest": "— 口座開設や会員登録なしで、今すぐ全機能をお使いいただけます",
     "todayRaces": "本日開催中のレース",
     "dataType": "レースデータ",
     "loadingTitle": "レースデータを読み込み中...",

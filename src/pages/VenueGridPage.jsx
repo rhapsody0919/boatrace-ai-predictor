@@ -146,6 +146,10 @@ function TodayVenueGridPage() {
             <h2>
               🏁 {t("home.todayRaces")} {getTodayDateShort()}
             </h2>
+            <p className="free-access-notice">
+              ✅ <strong>{t("home.freeAccessNoticeStrong")}</strong>{" "}
+              {t("home.freeAccessNoticeRest")}
+            </p>
             <UpdateStatus
               lastUpdated={lastUpdated}
               dataType={t("home.dataType")}
