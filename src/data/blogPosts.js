@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "toda-losing-makuri-share",
+    title:
+      "戸田で1号艇を負かす決まり手「まくり」51.5%、全国平均(33.9%)より17.6pt高く全国1位という実データ",
+    description:
+      "決まり手データ分析の実データで、戸田でコース1が敗れた272レースの決まり手を集計。最多は「まくり」51.47%で全国平均33.90%より17.57ポイント高く24会場中1位という結果に。「戸田は差しが強い会場」という定説を踏まえつつ、実際には「まくり」のほうが1号艇を負かす決まり手として多いという実データを検証します。",
+    date: "2026-09-07",
+    category: "データ分析",
+    tags: ["決まり手データ分析", "決まり手", "まくり", "戸田", "会場特性"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/toda-losing-makuri-share.jpg",
+  },
+  {
     id: "kiryu-losing-makuri-share",
     title:
       "桐生で1号艇を負かす決まり手「まくり」構成比35.3%、まくり系全体では全国5位の66.3%という実データ",
