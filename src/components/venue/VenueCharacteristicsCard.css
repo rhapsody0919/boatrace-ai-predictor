@@ -58,7 +58,7 @@
 
 .venue-hud-header-row {
   display: grid;
-  grid-template-columns: 2.2rem 1fr 4.6rem 8rem;
+  grid-template-columns: 2.2rem 1fr 8rem;
   align-items: end;
   gap: var(--spacing-3);
   margin-bottom: var(--spacing-2);
@@ -108,16 +108,16 @@
   transform: translateX(-100%);
 }
 
-/* 浮動ラベル分の上余白を確保するため行間を広めに取る */
+/* 上下の浮動ラベル分の余白を確保するため行間を広めに取る */
 .venue-hud-rows {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
+  gap: var(--spacing-7);
 }
 
 .venue-hud-row {
   display: grid;
-  grid-template-columns: 2.2rem 1fr 4.6rem 8rem;
+  grid-template-columns: 2.2rem 1fr 8rem;
   align-items: center;
   gap: var(--spacing-3);
 }
@@ -188,10 +188,11 @@
   opacity: 0.9;
 }
 
-/* トラック上に浮かせる「全国XX.X%」ラベル。ティックの真上に小さな接続線付きで表示する */
+/* トラック下に浮かせる「全国XX.X%」ラベル（参考値、控えめな配色）。
+   会場自体の数値（venue-hud-own-label、トラック上側）と上下で分離し重なりを避ける */
 .venue-hud-national-label {
   position: absolute;
-  bottom: 0.7rem;
+  top: calc(100% + 0.15rem);
   transform: translateX(-50%);
   white-space: nowrap;
   font-size: var(--font-size-xs);
@@ -208,45 +209,35 @@
   width: 1px;
   height: 0.4rem;
   background: var(--text-secondary);
-  margin-top: 0.1rem;
+  margin-bottom: 0.1rem;
   opacity: 0.9;
 }
 
-.venue-hud-value-group {
+/* トラック上に浮かせる、その会場自体の1着率ラベル（主役の数値のため強調表示） */
+.venue-hud-own-label {
+  position: absolute;
+  bottom: calc(100% + 0.15rem);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
+    monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 0.2rem;
+  align-items: center;
+  line-height: 1.2;
+  pointer-events: none;
 }
 
-.venue-hud-value {
-  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
-    monospace;
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--font-weight-bold);
-  text-align: right;
-  color: var(--brand-accent-primary);
-}
-
-/* 全国平均との差分（pt）。ピル型チップで表示する */
-.venue-hud-delta {
-  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
-    monospace;
-  font-variant-numeric: tabular-nums;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  padding: 0.1rem 0.5rem;
-  border-radius: var(--radius-full);
-}
-
-.venue-hud-delta.up {
-  color: var(--color-success-text);
-  background: color-mix(in srgb, var(--color-success-text) 15%, transparent);
-}
-
-.venue-hud-delta.down {
-  color: var(--color-error-text);
-  background: color-mix(in srgb, var(--color-error-text) 15%, transparent);
+.venue-hud-own-label-line {
+  width: 1px;
+  height: 0.4rem;
+  background: var(--brand-accent-primary);
+  margin-top: 0.1rem;
+  opacity: 0.9;
 }
 
 .venue-hud-technique {
@@ -276,7 +267,7 @@
 @media (max-width: 480px) {
   .venue-hud-row,
   .venue-hud-header-row {
-    grid-template-columns: 1.8rem 1fr 3.6rem;
+    grid-template-columns: 1.8rem 1fr;
   }
 
   .venue-hud-technique,

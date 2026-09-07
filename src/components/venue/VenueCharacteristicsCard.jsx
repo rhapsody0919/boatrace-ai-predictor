@@ -3,10 +3,9 @@
  * 枠番別の1着率（過去90日、outcome_distributionの集計）と主な決まり手
  * （winning_technique_stats）を、コックピット計器盤風の発光バーで表示する。
  * バーは0-100%の絶対スケールで固定し、上部に0/25/50/75/100%の軸目盛りを表示。
- * 全国平均（24会場プール値）はトラック上のティックマーク＋浮動ラベルで示し、
- * 実数値との差分はピル型チップ（pt表示）で示す（2026-09-07、Artifactで承認済みの
- * デザイン案を踏襲。実装時に浮動ラベルを一度省略したがユーザー確認の結果、
- * 元の案通り浮動ラベルを表示する形に戻した）。
+ * その会場自体の1着率はバー上部の浮動ラベルで、全国平均（24会場プール値）は
+ * バー下部のティックマーク＋浮動ラベルで示す（2026-09-07、右側に数値と差分を
+ * 列挙する構成は冗長との指摘を受け、バー上に直接数値を載せる形に整理した）。
  * AI予想（超展開予測・データ分析）が参照しているのと同じ会場別データを
  * 選手・レースデータと絡めて見せることで、会場別レース一覧ページの回遊性を高める。
  * デザイン案はArtifact（レーダースイープ/HUDテレメトリ/ソナーリング）から
@@ -74,8 +73,7 @@ export default function VenueCharacteristicsCard({ venueCode }) {
     const winRate = patterns.reduce((sum, p) => sum + (p.probability ?? 0), 0);
     const topTechnique = techniqueData?.data?.[boat]?.techniques?.[0] ?? null;
     const national = nationalAverage?.[boat] ?? null;
-    const delta = national != null ? winRate - national : null;
-    return { boat, winRate, topTechnique, national, delta };
+    return { boat, winRate, topTechnique, national };
   });
 
   const hasAnyWinRate = boatRows.some((row) => row.winRate > 0);
@@ -104,7 +102,6 @@ export default function VenueCharacteristicsCard({ venueCode }) {
           <span>75</span>
           <span>100%</span>
         </span>
-        <span>{t("venueCharacteristics.deltaHeader")}</span>
         <span className="venue-hud-header-technique">
           {t("venueCharacteristics.techniqueHeader")}
         </span>
@@ -112,7 +109,6 @@ export default function VenueCharacteristicsCard({ venueCode }) {
       <div className="venue-hud-rows">
         {boatRows.map((row, index) => {
           const boatColor = BOAT_COLORS[row.boat] ?? {};
-          const deltaUp = row.delta != null && row.delta >= 0;
           return (
             <div className="venue-hud-row" key={row.boat}>
               <span
@@ -132,6 +128,13 @@ export default function VenueCharacteristicsCard({ venueCode }) {
                     animationDelay: `${index * 0.08}s`,
                   }}
                 />
+                <span
+                  className="venue-hud-own-label"
+                  style={{ left: `${row.winRate}%` }}
+                >
+                  {row.winRate.toFixed(1)}%
+                  <span className="venue-hud-own-label-line" />
+                </span>
                 {row.national != null && (
                   <>
                     <span
@@ -142,25 +145,12 @@ export default function VenueCharacteristicsCard({ venueCode }) {
                       className="venue-hud-national-label"
                       style={{ left: `${row.national}%` }}
                     >
+                      <span className="venue-hud-national-label-line" />
                       {t("venueCharacteristics.nationalAverageTooltip", {
                         value: row.national.toFixed(1),
                       })}
-                      <span className="venue-hud-national-label-line" />
                     </span>
                   </>
-                )}
-              </span>
-              <span className="venue-hud-value-group">
-                <span className="venue-hud-value">
-                  {row.winRate.toFixed(1)}%
-                </span>
-                {row.delta != null && (
-                  <span
-                    className={`venue-hud-delta ${deltaUp ? "up" : "down"}`}
-                  >
-                    {deltaUp ? "+" : ""}
-                    {row.delta.toFixed(1)}pt
-                  </span>
                 )}
               </span>
               <span className="venue-hud-technique">
