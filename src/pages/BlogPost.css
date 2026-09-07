@@ -74,12 +74,17 @@
   color: var(--text-primary);
   border-left: 4px solid #0ea5e9;
   padding-left: 1rem;
+  /* stickyヘッダー+読了進捗バーの下に見出しが隠れないよう、目次リンクの
+     ジャンプ先に余白を確保する。モバイルはHeader.jsxがcompressed状態を
+     無効化しており常時約137px（実測）のため、その分の余白を確保する */
+  scroll-margin-top: 160px;
 }
 
 .blog-post-content h3 {
   font-size: 1.5rem;
   margin: 1.5rem 0 0.75rem 0;
   color: var(--text-primary);
+  scroll-margin-top: 160px;
 }
 
 .blog-post-content h4 {
@@ -193,14 +198,14 @@
 
 .blog-post-content img {
   width: 100%;
+  height: auto;
   max-width: 100%;
-  /* 記事画像はほぼPlaywrightスクリーンショット（実測比率約1.68〜1.78:1）のため、
-     16:9で確保してロード前後の高さジャンプ（CLS）を防ぐ。実比率とのズレは
-     object-fit: coverで軽微なトリミングに留める */
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
+  /* 以前はaspect-ratio:16/9固定+object-fit:coverで確保していたが、実際の記事画像の
+     約半数は16:9から大きく外れた比率（横長バナー等）で、左右が大きくトリミングされ
+     文言が欠落する実害があったため撤回。自然な比率で表示する */
   border-radius: 8px;
   margin: 1.5rem 0;
+  display: block;
 }
 
 .blog-post-content hr {
@@ -376,6 +381,9 @@
   }
 
   .blog-post-content {
+    /* 従来2rem固定だったため.blog-post-containerの1remと二重に効き、
+       375px幅で本文実効幅が279pxまで圧迫されていた問題を解消 */
+    padding: 1rem;
     font-size: 1rem;
   }
 
@@ -398,4 +406,98 @@
   .post-cta {
     padding: 2rem 1rem;
   }
+}
+
+/* Reading Progress Bar */
+.reading-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  z-index: 2000;
+  transition: width 0.1s ease-out;
+}
+
+/* Back to Top Button */
+.back-to-top-button {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: white;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.back-to-top-button:hover {
+  transform: translateY(-3px);
+}
+
+/* Table of Contents */
+.toc-section {
+  margin-bottom: 2rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+  padding: 0.25rem 1rem;
+}
+
+.toc-summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.75rem 0;
+  color: var(--text-primary);
+  list-style: none;
+}
+
+.toc-summary::-webkit-details-marker {
+  display: none;
+}
+
+.toc-summary::before {
+  content: "▶";
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 0.75em;
+  transition: transform 0.2s ease;
+}
+
+.toc-section[open] .toc-summary::before {
+  transform: rotate(90deg);
+}
+
+.toc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.25rem 0 1rem 0;
+}
+
+.toc-link {
+  color: var(--brand-accent-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.toc-link:hover {
+  text-decoration: underline;
+}
+
+.toc-link-level-3 {
+  padding-left: 1.25rem;
+  font-size: 0.88rem;
+  opacity: 0.9;
 }
