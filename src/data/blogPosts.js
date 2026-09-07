@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "kiryu-nige-outcome-123-rate",
+    title:
+      "桐生は1号艇が逃げ切った際「2着2号艇・3着3号艇」の出現率14.14%、全国平均13.05%より1.09ポイント高い実データ",
+    description:
+      "逃げ成功時の複勝分布の実データで、桐生で1号艇が『逃げ』で1着になった290レースを集計。「2着2号艇・3着3号艇」が最多の14.14%で全国平均13.05%より1.09ポイント高く24会場中6位という結果に。1号艇逃げ切り後の2・3着争いの傾向を実データで検証します。",
+    date: "2026-09-07",
+    category: "データ分析",
+    tags: ["逃げ成功時の複勝分布", "イン逃げ", "桐生", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/kiryu-nige-outcome-123-rate.jpg",
+  },
+  {
     id: "toda-losing-makuri-share",
     title:
       "戸田で1号艇を負かす決まり手「まくり」51.5%、全国平均(33.9%)より17.6pt高く全国1位という実データ",
