@@ -42,7 +42,10 @@ function RacerCompactRow({ racer, isExpanded, onToggleExpand }) {
         <span className="racer-compact-row-branch">{racer.branch}</span>
         <span className="racer-compact-row-spacer" />
         <span className="racer-compact-row-win-rate">
-          {racer.winRate != null ? racer.winRate.toFixed(2) : "-"}
+          <span className="racer-compact-row-win-rate-label">勝率</span>
+          <span className="racer-compact-row-win-rate-value">
+            {racer.winRate != null ? racer.winRate.toFixed(2) : "-"}
+          </span>
         </span>
         <button
           type="button"

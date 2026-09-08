@@ -33,6 +33,18 @@
 
 .racer-compact-row-win-rate {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.racer-compact-row-win-rate-label {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.racer-compact-row-win-rate-value {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
