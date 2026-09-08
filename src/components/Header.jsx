@@ -32,6 +32,7 @@ function Header() {
     if (pathname === "/winning-technique") return "winning-technique";
     if (pathname === "/picks") return "picks";
     if (pathname.startsWith("/races")) return "past-races";
+    if (pathname === "/racers") return "racers";
     if (pathname === "/how-to-use") return "how-to-use";
     if (pathname === "/guide") return "guide";
     if (pathname.startsWith("/venues")) return "venues";
@@ -194,6 +195,15 @@ function Header() {
             >
               {t("nav.pastRaces")}
             </Link>
+            {currentLng === "ja" && (
+              <Link
+                to="/racers"
+                className={`submenu-item ${activeTab === "racers" ? "active" : ""}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                選手一覧
+              </Link>
+            )}
             <Link
               to={localize("/how-to-use")}
               className={`submenu-item ${activeTab === "how-to-use" ? "active" : ""}`}
