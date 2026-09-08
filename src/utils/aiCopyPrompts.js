@@ -6,6 +6,7 @@ export const AI_COPY_PROMPT_TYPES = {
   WIN: "win",
   TRIFECTA: "trifecta",
   TRIO: "trio",
+  VOLATILITY_TRIFECTA: "volatilityTrifecta",
 };
 
 const PROMPT_KEY_MAP = {
@@ -20,6 +21,10 @@ const PROMPT_KEY_MAP = {
   [AI_COPY_PROMPT_TYPES.TRIO]: {
     promptKey: "aiCopy.promptTrio",
     labelKey: "aiCopy.promptSelectorTrio",
+  },
+  [AI_COPY_PROMPT_TYPES.VOLATILITY_TRIFECTA]: {
+    promptKey: "aiCopy.promptVolatilityTrifecta",
+    labelKey: "aiCopy.promptSelectorVolatilityTrifecta",
   },
 };
 
