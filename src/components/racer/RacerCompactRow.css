@@ -66,12 +66,16 @@
   border-top: 1px dashed var(--border-hairline);
 }
 
-.racer-compact-row-detail dt {
-  color: var(--text-secondary);
-  margin: 0;
+.racer-compact-row-detail-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 
-.racer-compact-row-detail dd {
-  margin: 0;
+.racer-compact-row-detail-pair .detail-label {
+  color: var(--text-secondary);
+}
+
+.racer-compact-row-detail-pair .detail-value {
   font-weight: var(--font-weight-semibold);
 }
