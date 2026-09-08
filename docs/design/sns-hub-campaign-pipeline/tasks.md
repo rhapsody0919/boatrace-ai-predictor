@@ -39,4 +39,6 @@
 
 - [x] **14. X向け投稿カードの実装**（2026-09-09新設）: 「各チャネルの動画・投稿仕様」のうちXを実装。ユーザーとモックアップで合意した仕様（テキスト+静止画像2枚、内部スコアは見せず分析ツールの実データのみ提示）に基づき`sns-video-studio/remotion/src/CampaignEntryCard.jsx`（買い目・収支カード）・`CampaignDataExcerptCard.jsx`（データ出走表・展開予測抜粋カード）・`scripts/lib/contentChannels/renderCampaignCard.js`（レンダリングラッパー）を実装。`sns-pipeline-x.md`に「3'. 企画由来ネタの画像生成」を追加し、`docs/reference/brand-kit.md`に採用実例を追記した。実際のバックテストデータでの静止画レンダリングを確認済み
 
-- [ ] **15. ブログ向け「日記型記事・逐次更新」の実装**: ユーザーと合意済み（1件の日記型記事を作り、日次でエントリを追記していく構成）。既存の`sns-pipeline-blog.md`は「新規Draft PR作成」フロー前提のため、「既存記事への追記PR」フローの手順化が必要（未着手）
+- [x] **15. ブログ向け「日記型記事・逐次更新」の実装**（2026-09-09）: `sns-pipeline-blog.md`に「3'. 企画由来ネタの本文執筆（日記型記事の追記）」を追加。ファイル名は`sns_campaigns.tone_spec.blogSlug`で企画作成時に決め打ち（既存パイロット企画にも追記済み: `campaign-ai-900yen-inkuzure-week`）。1日目は新規記事、2日目以降は既存ファイルへの追記PRにする設計。事前発表ネタ（②）はブログでは日記化せず結果確定後にまとめて書く方針も明記
+
+- [x] **16. target_channelsが実際の配信対象フィルタに使われていなかった不具合を修正**（2026-09-09、実装中に発見）: Phase A/Bの`createCampaignEntryWithTopic`/`createResultAnnouncementTopic`が`targetAccountIds`を指定せず、`sns_campaigns.target_channels`（x/blogのみ）に関わらず全チャネル（tiktok/youtube/note含む）に配信対象を作ってしまっていた。`getTargetAccountIdsForChannels()`を追加し、必ず`campaign.target_channels`で絞り込むよう修正した

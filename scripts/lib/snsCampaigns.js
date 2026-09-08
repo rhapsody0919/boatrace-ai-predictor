@@ -11,7 +11,7 @@
  */
 
 import { supabase, isSupabaseEnabled } from "./supabaseClient.js";
-import { createTopicWithTargets } from "./snsTopics.js";
+import { createTopicWithTargets, getTargetAccounts } from "./snsTopics.js";
 
 const CAMPAIGNS_TABLE = "sns_campaigns";
 const ENTRIES_TABLE = "sns_campaign_entries";
@@ -199,6 +199,8 @@ export async function getRaceEntriesForScoring(raceId) {
  * @param {string[]} params.aiPicks - 例: ["1-2-3", "1-3-2", "2-1-3"]
  * @param {number} params.purchaseAmountYen
  * @param {string} params.topicText
+ * @param {string[]} params.targetChannels - 例: ['x','blog']。sns_campaigns.target_channelsを
+ *   そのまま渡す。省略時は全チャネル配信になってしまうため呼び出し元で必ず渡すこと
  * @returns {Promise<{entry:object, topic:object}>}
  */
 export async function createCampaignEntryWithTopic({
@@ -210,6 +212,7 @@ export async function createCampaignEntryWithTopic({
   aiPicks,
   purchaseAmountYen,
   topicText,
+  targetChannels,
 }) {
   assertSupabaseEnabled();
 
@@ -238,7 +241,11 @@ export async function createCampaignEntryWithTopic({
   // 二度と再試行されなくなる。失敗時はentryを削除し、次回実行での
   // 再試行を可能にする
   try {
-    const topic = await createCampaignTopic(campaignId, topicText);
+    const topic = await createCampaignTopic(
+      campaignId,
+      topicText,
+      targetChannels,
+    );
     return { entry, topic };
   } catch (error) {
     await supabase.from(ENTRIES_TABLE).delete().eq("id", entry.id);
@@ -247,16 +254,38 @@ export async function createCampaignEntryWithTopic({
 }
 
 /**
+ * sns_campaigns.target_channelsに含まれるplatformのactiveなアカウントIDのみを返す。
+ * 指定しない（省略・空配列）場合は全チャネル配信になってしまう既知の罠を防ぐため、
+ * createCampaignTopicは必ずこれを通してtargetAccountIdsを絞り込む
+ * （2026-09-09、target_channelsが単なるメタデータとして保存されるだけで
+ * 実際の配信対象フィルタに使われていなかった不具合を発見・修正）。
+ */
+async function getTargetAccountIdsForChannels(targetChannels) {
+  if (!targetChannels || targetChannels.length === 0) {
+    throw new Error(
+      "getTargetAccountIdsForChannels: targetChannelsが空です。全チャネル配信を防ぐため必須です",
+    );
+  }
+  const allAccounts = await getTargetAccounts();
+  return allAccounts
+    .filter((a) => targetChannels.includes(a.platform))
+    .map((a) => a.id);
+}
+
+/**
  * 企画に紐づくネタ（venue-feature型、要人間承認）を1件作成する。
  * createCampaignEntryWithTopic（対象レース検出時）とcreateResultAnnouncementTopic
  * （結果確定後）の共通処理。
  */
-async function createCampaignTopic(campaignId, topicText) {
+async function createCampaignTopic(campaignId, topicText, targetChannels) {
   const contentType = await getVenueFeatureContentType();
+  const targetAccountIds = await getTargetAccountIdsForChannels(targetChannels);
   const { topic } = await createTopicWithTargets({
     topicText,
     contentTypeId: contentType.id,
     autoApprove: false,
+    targetAccountIds,
+    skipReason: "企画のtarget_channelsに含まれないチャネルのため対象外",
   });
 
   const { error: linkError } = await supabase
@@ -280,11 +309,16 @@ async function createCampaignTopic(campaignId, topicText) {
  * 呼び出し元スクリプトの責務）。
  * @param {string} campaignId
  * @param {string} topicText
+ * @param {string[]} targetChannels - 例: ['x','blog']。sns_campaigns.target_channelsをそのまま渡す
  * @returns {Promise<object>} topic
  */
-export async function createResultAnnouncementTopic(campaignId, topicText) {
+export async function createResultAnnouncementTopic(
+  campaignId,
+  topicText,
+  targetChannels,
+) {
   assertSupabaseEnabled();
-  return createCampaignTopic(campaignId, topicText);
+  return createCampaignTopic(campaignId, topicText, targetChannels);
 }
 
 async function getVenueFeatureContentType() {
