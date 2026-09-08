@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-height-win-rate-gap",
+    title: "167cm超と162cm以下、平均勝率は1.1倍差 - 実データで見る身長の壁",
+    description:
+      "龍神レーダーの実レース出走データで、直近30日間の身長帯別平均勝率を集計しました。167cm超の選手の平均勝率5.24%は、162cm以下の選手4.78%の約1.1倍という結果が実データでわかりました。身長と成績の関係、舟券選びへの活かし方をあわせて解説します。",
+    date: "2026-09-08",
+    category: "データ分析",
+    tags: ["選手データ", "身長", "勝率", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-height-win-rate-gap.jpg",
+  },
+  {
     id: "racer-hometown-win-rate-gap",
     title:
       "出身地別の平均勝率、滋賀県出身が最高5.65% - 支部とは別の実データで検証",
