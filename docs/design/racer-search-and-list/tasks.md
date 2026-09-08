@@ -42,7 +42,7 @@
 - [x] **T10: `RacerFilterToolbar.jsx`（一覧ページ用フィルタツールバー）の新規作成**
   T4の5コンポーネントを一覧ページ用の横並びレイアウトで束ねる。フィルタ状態自体は`RacersPage.jsx`（T11）から受け取る
 
-- [ ] **T11: `RacersPage.jsx`本体の新規作成 + ルーティング追加**
+- [x] **T11: `RacersPage.jsx`本体の新規作成 + ルーティング追加**
   T3のデータ、T7・T8・T9・T10を統合。`useSearchParams`でフィルタ・ソート・ページ状態をURLと同期（FR4）。480px以下でT8（折りたたみ行）、それ以外でT7（テーブル）を出し分ける（FR5）。`src/AppRouter.jsx`に`/racers`ルートを`racer/:racerId`と同じパターン（ja専用、`TRANSLATED_PATHS`未登録）で追加
   受入基準: spec.md FR2・FR4・FR5の受入基準一式
 
