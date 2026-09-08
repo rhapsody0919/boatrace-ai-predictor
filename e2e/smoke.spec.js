@@ -14,6 +14,9 @@ test.describe("ホーム・基本ナビゲーション", () => {
     await page.evaluate(() => localStorage.removeItem("ryujin-radar-theme"));
     await page.reload();
 
+    // ThemeToggleは2026-09-08〜ハンバーガーメニュー内に移設（常時表示のnavには
+    // 検索・データ分析ツールのみを残し、モバイル幅でのアイコン折り返しを防ぐため）
+    await page.click(".menu-btn");
     const toggle = page.locator(".theme-toggle");
     await expect(toggle).toBeVisible();
 
@@ -30,7 +33,8 @@ test.describe("ホーム・基本ナビゲーション", () => {
     );
     expect(themeAfterReload).toBe(themeAfterClick);
 
-    // 再クリックで反対のテーマに戻ることを確認
+    // 再クリックで反対のテーマに戻ることを確認（リロードでメニューが閉じるため再度開く）
+    await page.click(".menu-btn");
     await page.locator(".theme-toggle").click();
     const themeAfterSecondClick = await page.evaluate(
       () => document.documentElement.dataset.theme,
@@ -84,7 +88,9 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
     page,
   }) => {
     // 会場ガイドはja非対応（en/zh-TW/koの3言語フルセット、2026-08-11時点）
+    // LanguageSwitcherは2026-09-08〜ハンバーガーメニュー内に移設
     await page.goto("/en/venues");
+    await page.click(".menu-btn");
     await page.locator(".language-switcher-trigger").click();
     const jaBtn = page.locator('.language-switcher-option:has-text("日本語")');
     await expect(jaBtn).toBeVisible();
@@ -100,6 +106,7 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
     page,
   }) => {
     await page.goto("/en/venues");
+    await page.click(".menu-btn");
     await page.locator(".language-switcher-trigger").click();
     const zhBtn = page.locator(
       '.language-switcher-option:has-text("繁體中文")',
@@ -107,6 +114,8 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
     await zhBtn.click();
     await expect(page).toHaveURL(/\/zh-TW\/venues$/);
 
+    // 言語切替のページ遷移でハンバーガーメニューが閉じるため再度開く
+    await page.click(".menu-btn");
     await page.locator(".language-switcher-trigger").click();
     const koBtn = page.locator('.language-switcher-option:has-text("한국어")');
     await koBtn.click();

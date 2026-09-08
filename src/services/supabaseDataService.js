@@ -2464,6 +2464,35 @@ export const supabaseDataService = {
   },
 
   /**
+   * 選手検索UI向けに全選手の軽量一覧（racer_id/name/name_kana）を取得する。
+   * 対象約1,600件・数十KB程度のため都度クエリではなく一括取得し長期キャッシュする
+   * （選手数の変動は月数件程度、egress削減のため24時間キャッシュ）。
+   * 検索自体はこのデータをクライアント側でフィルタする（RacerSearchBox.jsx参照）
+   */
+  getAllRacersLite() {
+    return withCache(
+      "all-racers-lite",
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return [];
+        }
+        const { data, error } = await supabase
+          .from("racer_profiles")
+          .select("racer_id, name, name_kana, branch")
+          .order("racer_id");
+
+        if (error) {
+          console.error("racer_profiles取得エラー:", error.message);
+          return [];
+        }
+        return data ?? [];
+      },
+      24 * 60 * 60 * 1000,
+    );
+  },
+
+  /**
    * 指定選手の会場別（当地）成績を取得する（選手個人ページ用）
    * racer_aggregated_statsは本番では venue_code=0（全会場合算）の行しか
    * 存在せず（会場別集計は日次自動化に未組み込み、2026-09-06確認）、

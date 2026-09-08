@@ -124,6 +124,27 @@
   padding: 1rem 1.5rem;
 }
 
+/* 言語・テーマ切替（2026-09-08〜サブメニューに移設。常時表示のnavには
+   検索・データ分析ツールのみを残し、モバイル幅でのアイコン折り返しを防ぐ） */
+.submenu-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+}
+
+/* 常時表示させたいnav-btn（検索・データ分析ツール・ハンバーガー）は
+   .nav-btn:not(.menu-btn)の非表示対象から除外する */
+.nav-btn-primary {
+  display: flex;
+  align-items: center;
+}
+
+.nav-btn-label-short {
+  display: none;
+}
+
 /* メニュー背景オーバーレイ */
 .menu-overlay {
   position: fixed;
@@ -209,6 +230,17 @@
     gap: 0.75rem;
   }
 
+  /* ロゴ（特にタグライン）が縮まないと、検索・データ分析ツールを常時表示する
+     幅がnavに残らず縦積みになる。ロゴ側を縮小可能にしてタグラインを折り返す */
+  .logo {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .logo-text-group {
+    min-width: 0;
+  }
+
   .logo h1 {
     font-size: 1.1rem;
   }
@@ -225,10 +257,12 @@
 
   .nav {
     display: flex;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
     gap: 0.5rem;
   }
 
-  .nav-btn:not(.menu-btn) {
+  .nav-btn:not(.menu-btn):not(.nav-btn-primary) {
     display: none;
   }
 
@@ -237,6 +271,14 @@
     font-size: 0.8rem;
     min-height: 40px;
     flex-shrink: 0;
+  }
+
+  .nav-btn-label-full {
+    display: none;
+  }
+
+  .nav-btn-label-short {
+    display: inline;
   }
 
   .menu-btn {
