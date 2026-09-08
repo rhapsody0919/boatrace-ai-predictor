@@ -232,24 +232,34 @@ export async function createCampaignEntryWithTopic({
     );
   }
 
-  const contentType = await getVenueFeatureContentType();
-  const { topic } = await createTopicWithTargets({
-    topicText,
-    contentTypeId: contentType.id,
-    autoApprove: false,
-  });
+  // ここから先で失敗すると、sns_campaign_entriesだけが作成されsns_topicsが
+  // 無い孤立行になる。呼び出し元（campaign-detect-and-generate.js）は
+  // 既存エントリの有無でスキップ判定するため、孤立行が残ると当該レースは
+  // 二度と再試行されなくなる。失敗時はentryを削除し、次回実行での
+  // 再試行を可能にする
+  try {
+    const contentType = await getVenueFeatureContentType();
+    const { topic } = await createTopicWithTargets({
+      topicText,
+      contentTypeId: contentType.id,
+      autoApprove: false,
+    });
 
-  const { error: linkError } = await supabase
-    .from("sns_topics")
-    .update({ campaign_id: campaignId })
-    .eq("id", topic.id);
-  if (linkError) {
-    throw new Error(
-      `sns_topics.campaign_id更新エラー(topic=${topic.id}): ${linkError.message}`,
-    );
+    const { error: linkError } = await supabase
+      .from("sns_topics")
+      .update({ campaign_id: campaignId })
+      .eq("id", topic.id);
+    if (linkError) {
+      throw new Error(
+        `sns_topics.campaign_id更新エラー(topic=${topic.id}): ${linkError.message}`,
+      );
+    }
+
+    return { entry, topic: { ...topic, campaign_id: campaignId } };
+  } catch (error) {
+    await supabase.from(ENTRIES_TABLE).delete().eq("id", entry.id);
+    throw error;
   }
-
-  return { entry, topic: { ...topic, campaign_id: campaignId } };
 }
 
 async function getVenueFeatureContentType() {

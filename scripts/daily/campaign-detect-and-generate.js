@@ -120,20 +120,26 @@ async function main() {
         metricValue: q.metricValue,
       });
 
-      const { entry, topic } = await createCampaignEntryWithTopic({
-        campaignId: campaign.id,
-        raceId: q.raceId,
-        selectionMetricValue: q.metricValue,
-        aiPromptText: promptText,
-        aiModelName: MODEL_NAME,
-        aiPicks: picks.picks,
-        purchaseAmountYen: campaign.purchase_amount_yen,
-        topicText: `【${campaign.name}】${q.raceId} イン崩れ注意度${Math.round(q.metricValue * 100)}% 買い目: ${picks.picks.join(" / ")}`,
-      });
+      // 1レースのエントリ作成失敗で残りのレース・企画の処理を止めない
+      // （1日に複数レースがヒットしうる想定のため）
+      try {
+        const { entry, topic } = await createCampaignEntryWithTopic({
+          campaignId: campaign.id,
+          raceId: q.raceId,
+          selectionMetricValue: q.metricValue,
+          aiPromptText: promptText,
+          aiModelName: MODEL_NAME,
+          aiPicks: picks.picks,
+          purchaseAmountYen: campaign.purchase_amount_yen,
+          topicText: `【${campaign.name}】${q.raceId} イン崩れ注意度${Math.round(q.metricValue * 100)}% 買い目: ${picks.picks.join(" / ")}`,
+        });
 
-      console.log(
-        `  ✅ ${q.raceId}: エントリ作成（買い目: ${picks.picks.join(", ")}, entry=${entry.id}, topic=${topic.id}, 承認待ち）`,
-      );
+        console.log(
+          `  ✅ ${q.raceId}: エントリ作成（買い目: ${picks.picks.join(", ")}, entry=${entry.id}, topic=${topic.id}, 承認待ち）`,
+        );
+      } catch (error) {
+        console.log(`  ❌ ${q.raceId}: エントリ作成エラー（${error.message}）`);
+      }
     }
   }
 }
