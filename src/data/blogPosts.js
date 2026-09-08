@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-local-win-rate-gap",
+    title:
+      "当地勝率の平均は4.64%、全国勝率5.06%より低い理由を実データで検証",
+    description:
+      "龍神レーダーの実レース出走データで、直近30日間の全国勝率と当地勝率を選手ごとに比較しました。当地勝率の平均4.64%は全国勝率の平均5.06%より約0.42ポイント低いという結果が実データでわかりました。当地勝率の意味と舟券選びへの活かし方をあわせて解説します。",
+    date: "2026-09-08",
+    category: "データ分析",
+    tags: ["選手データ", "当地勝率", "全国勝率", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-local-win-rate-gap.jpg",
+  },
+  {
     id: "racer-branch-win-rate-gap",
     title: "滋賀支部と長崎支部、平均勝率は1.19倍差 - 実データで見る支部の壁",
     description:
