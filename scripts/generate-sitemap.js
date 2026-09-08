@@ -120,6 +120,12 @@ const staticPages = [
     changefreq: "daily",
     priority: "0.8",
   },
+  {
+    loc: "/racers",
+    lastmod: new Date().toISOString().split("T")[0],
+    changefreq: "weekly",
+    priority: "0.7",
+  },
   // 会場別レース一覧（本日、/venue/1〜24。venue-list-redesign）
   // 個別レース詳細（/race/:raceId）は1日最大288件の細粒度動的ページで
   // 検索需要が見込めず、クロールバジェット浪費（BOA-84の教訓）を避けるため

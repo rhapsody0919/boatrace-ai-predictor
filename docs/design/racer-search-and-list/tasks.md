@@ -48,10 +48,10 @@
 
 ## FR7（残り）・FR6
 
-- [ ] **T12: `Header.jsx`ハンバーガーメニューへの「選手一覧」リンク追加**（FR7の残り）
+- [x] **T12: `Header.jsx`ハンバーガーメニューへの「選手一覧」リンク追加**（FR7の残り）
   既存の`submenu-item`パターンをそのまま踏襲
 
-- [ ] **T13: sitemap登録**（FR6）
+- [x] **T13: sitemap登録**（FR6）
   `scripts/generate-sitemap.js`の`staticPages`に`/racers`を追加。`npm run verify:sitemap`がパスすることを確認
 
 ## 検証・仕上げ
