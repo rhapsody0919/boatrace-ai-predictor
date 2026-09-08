@@ -238,28 +238,53 @@ export async function createCampaignEntryWithTopic({
   // 二度と再試行されなくなる。失敗時はentryを削除し、次回実行での
   // 再試行を可能にする
   try {
-    const contentType = await getVenueFeatureContentType();
-    const { topic } = await createTopicWithTargets({
-      topicText,
-      contentTypeId: contentType.id,
-      autoApprove: false,
-    });
-
-    const { error: linkError } = await supabase
-      .from("sns_topics")
-      .update({ campaign_id: campaignId })
-      .eq("id", topic.id);
-    if (linkError) {
-      throw new Error(
-        `sns_topics.campaign_id更新エラー(topic=${topic.id}): ${linkError.message}`,
-      );
-    }
-
-    return { entry, topic: { ...topic, campaign_id: campaignId } };
+    const topic = await createCampaignTopic(campaignId, topicText);
+    return { entry, topic };
   } catch (error) {
     await supabase.from(ENTRIES_TABLE).delete().eq("id", entry.id);
     throw error;
   }
+}
+
+/**
+ * 企画に紐づくネタ（venue-feature型、要人間承認）を1件作成する。
+ * createCampaignEntryWithTopic（対象レース検出時）とcreateResultAnnouncementTopic
+ * （結果確定後）の共通処理。
+ */
+async function createCampaignTopic(campaignId, topicText) {
+  const contentType = await getVenueFeatureContentType();
+  const { topic } = await createTopicWithTargets({
+    topicText,
+    contentTypeId: contentType.id,
+    autoApprove: false,
+  });
+
+  const { error: linkError } = await supabase
+    .from("sns_topics")
+    .update({ campaign_id: campaignId })
+    .eq("id", topic.id);
+  if (linkError) {
+    throw new Error(
+      `sns_topics.campaign_id更新エラー(topic=${topic.id}): ${linkError.message}`,
+    );
+  }
+
+  return { ...topic, campaign_id: campaignId };
+}
+
+/**
+ * 結果確定後の「結果発表」用ネタを作成する（運用フロー③）。
+ * Phase A（対象レース検出時）が作るネタ（②事前の買い目発表）とは別の、
+ * 2件目のネタを同じ企画に対して作る。呼び出し元でエントリごとに1回だけ
+ * 呼ぶこと（backfillEntryResultとは独立しているため、二重生成防止は
+ * 呼び出し元スクリプトの責務）。
+ * @param {string} campaignId
+ * @param {string} topicText
+ * @returns {Promise<object>} topic
+ */
+export async function createResultAnnouncementTopic(campaignId, topicText) {
+  assertSupabaseEnabled();
+  return createCampaignTopic(campaignId, topicText);
 }
 
 async function getVenueFeatureContentType() {
