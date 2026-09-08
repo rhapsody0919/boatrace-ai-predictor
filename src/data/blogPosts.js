@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-branch-win-rate-gap",
+    title: "滋賀支部と長崎支部、平均勝率は1.19倍差 - 実データで見る支部の壁",
+    description:
+      "龍神レーダーの実レース出走データで、直近30日間の支部別平均勝率を集計しました。滋賀支部の平均勝率5.55%は、最も低い長崎支部4.68%の約1.19倍という結果が実データでわかりました。支部と成績の関係、舟券選びへの活かし方をあわせて解説します。",
+    date: "2026-09-08",
+    category: "データ分析",
+    tags: ["選手データ", "支部", "滋賀支部", "長崎支部", "勝率", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-branch-win-rate-gap.jpg",
+  },
+  {
     id: "racer-weight-win-rate-53-55kg",
     title: "53~55kg帯と55kg超、平均勝率は1.09倍差 - 実データで見る体重の壁",
     description:
