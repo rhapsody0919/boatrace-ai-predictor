@@ -1,0 +1,43 @@
+.racer-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.racer-pagination-btn {
+  min-width: 1.9rem;
+  height: 1.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.racer-pagination-btn:hover:not(:disabled) {
+  border-color: var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
+}
+
+.racer-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.racer-pagination-btn.is-current {
+  background: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  color: var(--surface-card);
+  font-weight: var(--font-weight-bold);
+}
+
+.racer-pagination-ellipsis {
+  padding: 0 0.2rem;
+}

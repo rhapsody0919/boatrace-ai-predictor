@@ -1,0 +1,45 @@
+.racer-filter-toolbar {
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  box-shadow: var(--shadow-md);
+}
+
+.racer-filter-toolbar-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.racer-filter-toolbar-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  padding-top: 0.7rem;
+}
+
+.racer-filter-toolbar-reset {
+  background: none;
+  border: none;
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  padding: 0;
+}
+
+.racer-filter-toolbar-reset:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .racer-filter-toolbar-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
