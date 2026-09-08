@@ -42,6 +42,10 @@ export async function getYoutubeAccessToken({
  * @param {Blob} videoBlob
  */
 export async function uploadYoutubeVideo(accessToken, meta, videoBlob) {
+  if (!meta.title || !meta.title.trim()) {
+    throw new Error("動画タイトル（title）が未設定です");
+  }
+
   const metadata = {
     snippet: {
       title: meta.title,
@@ -74,6 +78,50 @@ export async function uploadYoutubeVideo(accessToken, meta, videoBlob) {
     const errorBody = await response.text();
     throw new Error(
       `YouTube動画アップロードに失敗しました (${response.status}): ${errorBody}`,
+    );
+  }
+  return response.json();
+}
+
+export async function getYoutubeVideoSnippet(accessToken, videoId) {
+  const response = await fetch(
+    `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      `YouTube動画情報の取得に失敗しました (${response.status}): ${errorBody}`,
+    );
+  }
+  const { items } = await response.json();
+  return items?.[0]?.snippet || null;
+}
+
+export async function updateYoutubeVideoTitle(
+  accessToken,
+  videoId,
+  snippet,
+  newTitle,
+) {
+  const response = await fetch(
+    "https://www.googleapis.com/youtube/v3/videos?part=snippet",
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: videoId,
+        snippet: { ...snippet, title: newTitle },
+      }),
+    },
+  );
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(
+      `YouTube動画タイトルの更新に失敗しました (${response.status}): ${errorBody}`,
     );
   }
   return response.json();

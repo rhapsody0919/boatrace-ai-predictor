@@ -107,6 +107,15 @@ export default async function handler(req) {
     if (!draft.video_storage_path) {
       return jsonResponse({ error: "video_storage_pathが未設定です" }, 409);
     }
+    if (!draft.title || !draft.title.trim()) {
+      return jsonResponse(
+        {
+          error:
+            "titleが未設定です。動画タイトルを設定してから承認してください",
+        },
+        409,
+      );
+    }
 
     const accessToken = await getAccessToken();
     if (!accessToken) {
