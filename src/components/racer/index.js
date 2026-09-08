@@ -11,3 +11,10 @@ export { default as RacerTable } from "./RacerTable";
 export { default as RacerCompactRow } from "./RacerCompactRow";
 export { default as RacerListPagination } from "./RacerListPagination";
 export { default as RacerFilterToolbar } from "./RacerFilterToolbar";
+export { default as RacerGradeBadge } from "./RacerGradeBadge";
+export {
+  extractPeriodNumber,
+  calcAge,
+  uniqueSorted,
+  matchesRacerFilters,
+} from "./racerFilterUtils";

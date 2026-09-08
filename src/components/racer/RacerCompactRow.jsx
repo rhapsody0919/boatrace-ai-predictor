@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import "./RacerGradeBadge.css";
+import RacerGradeBadge from "./RacerGradeBadge";
 import "./RacerCompactRow.css";
 
 /**
@@ -31,13 +31,7 @@ function RacerCompactRow({ racer, isExpanded, onToggleExpand }) {
           if (e.key === "Enter" && e.target === e.currentTarget) goToRacer();
         }}
       >
-        {racer.grade && (
-          <span
-            className={`racer-grade-badge racer-grade-${racer.grade.toLowerCase()}`}
-          >
-            {racer.grade}
-          </span>
-        )}
+        <RacerGradeBadge grade={racer.grade} />
         <span className="racer-compact-row-name" translate="no">
           {racer.name?.replace(/\s+/g, "")}
         </span>

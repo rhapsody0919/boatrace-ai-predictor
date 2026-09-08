@@ -6,6 +6,11 @@ import RangeFilterInput from "./racer/RangeFilterInput";
 import GradeFilterChips from "./racer/GradeFilterChips";
 import RegistrationPeriodFilterSelect from "./racer/RegistrationPeriodFilterSelect";
 import HometownFilterSelect from "./racer/HometownFilterSelect";
+import {
+  extractPeriodNumber,
+  uniqueSorted,
+  matchesRacerFilters,
+} from "./racer/racerFilterUtils";
 import "./RacerSearchBox.css";
 
 const MAX_RESULTS = 8;
@@ -21,18 +26,6 @@ function normalize(str) {
     .replace(/[ぁ-ゖ]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) + 0x60))
     .replace(/\s+/g, "")
     .toLowerCase();
-}
-
-// 「99期」のような登録期文字列から数値部分を抽出する（新しい順ソート用）
-function extractPeriodNumber(period) {
-  const match = /^(\d+)/.exec(period ?? "");
-  return match ? Number(match[1]) : 0;
-}
-
-function uniqueSorted(values) {
-  return Array.from(new Set(values.filter(Boolean))).sort((a, b) =>
-    a.localeCompare(b, "ja"),
-  );
 }
 
 /**
@@ -147,36 +140,14 @@ function RacerSearchBox() {
         normalize(r.name_kana).includes(normalizedQuery);
       if (!nameMatch) return false;
     }
-    if (branchFilter && r.branch !== branchFilter) return false;
-    if (
-      heightRange.min != null &&
-      (r.height_cm == null || r.height_cm < heightRange.min)
-    )
-      return false;
-    if (
-      heightRange.max != null &&
-      (r.height_cm == null || r.height_cm > heightRange.max)
-    )
-      return false;
-    if (
-      weightRange.min != null &&
-      (r.weight_kg == null || r.weight_kg < weightRange.min)
-    )
-      return false;
-    if (
-      weightRange.max != null &&
-      (r.weight_kg == null || r.weight_kg > weightRange.max)
-    )
-      return false;
-    if (gradeFilter.length > 0 && !gradeFilter.includes(r.grade)) return false;
-    if (
-      periodFilter.length > 0 &&
-      !periodFilter.includes(r.registration_period)
-    )
-      return false;
-    if (hometownFilter.length > 0 && !hometownFilter.includes(r.hometown))
-      return false;
-    return true;
+    return matchesRacerFilters(r, {
+      branch: branchFilter,
+      heightRange,
+      weightRange,
+      grade: gradeFilter,
+      period: periodFilter,
+      hometown: hometownFilter,
+    });
   };
 
   const allMatches =

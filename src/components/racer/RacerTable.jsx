@@ -1,5 +1,5 @@
 import { useNavigate, Link } from "react-router-dom";
-import "./RacerGradeBadge.css";
+import RacerGradeBadge from "./RacerGradeBadge";
 import "./RacerTable.css";
 
 const COLUMNS = [
@@ -62,15 +62,7 @@ function RacerTable({ racers, sortKey, sortDir, onSortChange }) {
               <td>{racer.height_cm != null ? `${racer.height_cm}cm` : "-"}</td>
               <td>{racer.weight_kg != null ? `${racer.weight_kg}kg` : "-"}</td>
               <td>
-                {racer.grade ? (
-                  <span
-                    className={`racer-grade-badge racer-grade-${racer.grade.toLowerCase()}`}
-                  >
-                    {racer.grade}
-                  </span>
-                ) : (
-                  "-"
-                )}
+                {racer.grade ? <RacerGradeBadge grade={racer.grade} /> : "-"}
               </td>
               <td>{racer.registration_period ?? "-"}</td>
               <td>{racer.hometown ?? "-"}</td>

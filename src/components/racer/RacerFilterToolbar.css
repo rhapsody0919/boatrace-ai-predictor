@@ -38,7 +38,11 @@
   text-decoration: underline;
 }
 
-@media (max-width: 768px) {
+/* RacersPage.cssのテーブル⇔折りたたみ行の切替（480px）とブレークポイントを
+   揃える。ここだけ768pxのままだと481〜768px幅でモバイル用2列レイアウトの
+   ツールバーとデスクトップ用9列テーブルが同居し見た目が崩れる
+   （2026-09-08コードレビューで発見） */
+@media (max-width: 480px) {
   .racer-filter-toolbar-grid {
     grid-template-columns: repeat(2, 1fr);
   }

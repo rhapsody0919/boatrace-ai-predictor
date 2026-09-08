@@ -6,6 +6,10 @@ import {
   RacerCompactRow,
   RacerListPagination,
   RacerFilterToolbar,
+  extractPeriodNumber,
+  calcAge,
+  uniqueSorted,
+  matchesRacerFilters,
 } from "../components/racer";
 import { supabaseDataService } from "../services/supabaseDataService";
 import "./RacersPage.css";
@@ -14,30 +18,6 @@ const PAGE_SIZE = 50;
 const EMPTY_RANGE = { min: null, max: null };
 const DEFAULT_SORT_KEY = "winRate";
 const DEFAULT_SORT_DIR = "desc";
-
-// 「99期」のような登録期文字列から数値部分を抽出する（新しい順ソート用）
-function extractPeriodNumber(period) {
-  const match = /^(\d+)/.exec(period ?? "");
-  return match ? Number(match[1]) : 0;
-}
-
-function calcAge(birthDate) {
-  if (!birthDate) return null;
-  const today = new Date();
-  const birth = new Date(birthDate);
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return age;
-}
-
-function uniqueSorted(values) {
-  return Array.from(new Set(values.filter(Boolean))).sort((a, b) =>
-    a.localeCompare(b, "ja"),
-  );
-}
 
 function parseListParam(searchParams, key) {
   const raw = searchParams.get(key);
@@ -102,12 +82,18 @@ export default function RacersPage() {
 
   const sortKey = searchParams.get("sort") || DEFAULT_SORT_KEY;
   const sortDir = searchParams.get("dir") || DEFAULT_SORT_DIR;
-  const currentPage = Number(searchParams.get("page") || "1");
+  // ?page=abc等の不正な値はNaNになりうるため、有効な正の整数以外は1にフォールバックする
+  const rawPage = Number(searchParams.get("page"));
+  const currentPage = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1;
 
   const updateSearchParams = (updates) => {
     const next = new URLSearchParams(searchParams);
     for (const [key, value] of Object.entries(updates)) {
-      if (value === null || value === "" || (Array.isArray(value) && value.length === 0)) {
+      if (
+        value === null ||
+        value === "" ||
+        (Array.isArray(value) && value.length === 0)
+      ) {
         next.delete(key);
       } else if (Array.isArray(value)) {
         next.set(key, value.join(","));
@@ -138,7 +124,10 @@ export default function RacersPage() {
 
   const handleSortChange = (key) => {
     if (key === sortKey) {
-      updateSearchParams({ dir: sortDir === "asc" ? "desc" : "asc", page: null });
+      updateSearchParams({
+        dir: sortDir === "asc" ? "desc" : "asc",
+        page: null,
+      });
     } else {
       updateSearchParams({ sort: key, dir: "desc", page: null });
     }
@@ -158,41 +147,24 @@ export default function RacersPage() {
     () => ({
       branches: uniqueSorted(racersWithAge.map((r) => r.branch)),
       periods: Array.from(
-        new Set(racersWithAge.map((r) => r.registration_period).filter(Boolean)),
+        new Set(
+          racersWithAge.map((r) => r.registration_period).filter(Boolean),
+        ),
       ).sort((a, b) => extractPeriodNumber(b) - extractPeriodNumber(a)),
       hometowns: uniqueSorted(racersWithAge.map((r) => r.hometown)),
     }),
     [racersWithAge],
   );
 
-  const matchesFilters = (r) => {
-    if (filters.branch && r.branch !== filters.branch) return false;
-    const { heightRange, weightRange } = filters;
-    if (heightRange.min != null && (r.height_cm == null || r.height_cm < heightRange.min))
-      return false;
-    if (heightRange.max != null && (r.height_cm == null || r.height_cm > heightRange.max))
-      return false;
-    if (weightRange.min != null && (r.weight_kg == null || r.weight_kg < weightRange.min))
-      return false;
-    if (weightRange.max != null && (r.weight_kg == null || r.weight_kg > weightRange.max))
-      return false;
-    if (filters.grade.length > 0 && !filters.grade.includes(r.grade)) return false;
-    if (filters.period.length > 0 && !filters.period.includes(r.registration_period))
-      return false;
-    if (filters.hometown.length > 0 && !filters.hometown.includes(r.hometown))
-      return false;
-    return true;
-  };
-
   const filtered = useMemo(
-    () => racersWithAge.filter(matchesFilters),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => racersWithAge.filter((r) => matchesRacerFilters(r, filters)),
     [racersWithAge, filters],
   );
 
   const sorted = useMemo(() => {
     const withCompareValue = (r) => {
-      if (sortKey === "registration_period") return extractPeriodNumber(r[sortKey]);
+      if (sortKey === "registration_period")
+        return extractPeriodNumber(r[sortKey]);
       return r[sortKey];
     };
     return [...filtered].sort((a, b) => {
@@ -202,11 +174,12 @@ export default function RacersPage() {
       if (va == null) return 1;
       if (vb == null) return -1;
       if (typeof va === "string") {
-        return sortDir === "asc" ? va.localeCompare(vb, "ja") : vb.localeCompare(va, "ja");
+        return sortDir === "asc"
+          ? va.localeCompare(vb, "ja")
+          : vb.localeCompare(va, "ja");
       }
       return sortDir === "asc" ? va - vb : vb - va;
     });
-     
   }, [filtered, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
