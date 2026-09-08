@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "volatility-index-naruto-0908",
+    title: "イン崩れ指数100%は当たるのか？9/8鳴門8Rの実例で検証",
+    description:
+      "龍神レーダーのレース詳細ページに表示される「イン崩れ指数」。2026年9月8日・鳴門8Rで発走前に示されていた「イン崩れ指数100%」という予測が、実際のレース結果とどう対応したのかを、1号艇の全国勝率やAI逃げ確率などの実データとあわせてそのまま検証します。",
+    date: "2026-09-08",
+    category: "データ分析",
+    tags: ["イン崩れ指数", "データ分析", "予想的中検証", "鳴門", "AI予想"],
+    readTime: "5分",
+    featured: false,
+    image: "/images/blog/volatility-index-naruto-0908.jpg",
+  },
+  {
     id: "racer-grade-flying-rate-gap",
     title:
       "A1級とB2級、フライング率は2.6倍差 - 実データで見るフライングの壁",
