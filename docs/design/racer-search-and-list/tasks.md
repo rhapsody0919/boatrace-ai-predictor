@@ -30,16 +30,16 @@
 
 ## FR2・FR5: 選手一覧ページ本体
 
-- [ ] **T7: `RacerTable.jsx`（デスクトップ用ソート可能テーブル）の新規作成**
+- [x] **T7: `RacerTable.jsx`（デスクトップ用ソート可能テーブル）の新規作成**
   選手名・支部・身長・体重・級別・登録期・出身地・勝率・年齢の列、`<th>`クリックでソート方向トグル、行クリックで`/racer/:racerId`へ`<Link>`遷移。登録期は数値抽出コンパレータでソートする専用ロジックを実装（spec.md FR2「100期」問題への対応）。年齢は`birth_date`から算出
 
-- [ ] **T8: `RacerCompactRow.jsx`（モバイル用折りたたみ行）の新規作成**
+- [x] **T8: `RacerCompactRow.jsx`（モバイル用折りたたみ行）の新規作成**
   行本体は`<Link>`（選手ページへ遷移）、▼アイコンは`onClick`で`preventDefault`+`stopPropagation`し展開状態を独立してトグル。展開時に身長・体重・登録期・出身地・年齢を表示。モックアップで確定したタップ領域分離（[選手検索・一覧モック](https://claude.ai/code/artifact/1c1c9fc1-3ad3-422b-bf8c-5014ca17007d)参照）を再現する
 
-- [ ] **T9: `RacerListPagination.jsx`（ページ番号方式ページネーション）の新規作成**
+- [x] **T9: `RacerListPagination.jsx`（ページ番号方式ページネーション）の新規作成**
   50件/ページ、現在ページ強調表示、前後ページ・省略記号（…）表示に対応
 
-- [ ] **T10: `RacerFilterToolbar.jsx`（一覧ページ用フィルタツールバー）の新規作成**
+- [x] **T10: `RacerFilterToolbar.jsx`（一覧ページ用フィルタツールバー）の新規作成**
   T4の5コンポーネントを一覧ページ用の横並びレイアウトで束ねる。フィルタ状態自体は`RacersPage.jsx`（T11）から受け取る
 
 - [ ] **T11: `RacersPage.jsx`本体の新規作成 + ルーティング追加**

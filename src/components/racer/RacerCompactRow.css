@@ -1,0 +1,77 @@
+.racer-compact-row {
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.racer-compact-row-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  cursor: pointer;
+}
+
+.racer-compact-row-name {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.racer-compact-row-branch {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.racer-compact-row-spacer {
+  flex: 1;
+}
+
+.racer-compact-row-win-rate {
+  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.racer-compact-row-chevron {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  transition: transform var(--transition-base) var(--ease-in-out);
+}
+
+.racer-compact-row.is-expanded .racer-compact-row-chevron {
+  transform: rotate(180deg);
+}
+
+.racer-compact-row-detail {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem 0.6rem;
+  margin: 0;
+  padding: 0.5rem 0.7rem 0.65rem;
+  font-size: var(--font-size-xs);
+  border-top: 1px dashed var(--border-hairline);
+}
+
+.racer-compact-row-detail dt {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.racer-compact-row-detail dd {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
