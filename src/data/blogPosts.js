@@ -40,6 +40,18 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "volatility-index-biwako-0909",
+    title: "イン崩れ指数99%のレースの見方 - 9/9びわこ2Rを実例に判定根拠を解説",
+    description:
+      "龍神レーダーのレース詳細ページに表示される「イン崩れ指数」。2026年9月9日開催レースの中で最も数値が高かったびわこ2R（99%）を実例に、1号艇の全国勝率3.07・AI逃げ確率28%・今節平均ST0.215秒という発走前データと、会場ごとの効きやすさの違いを実データで解説します。",
+    date: "2026-09-09",
+    category: "データ分析",
+    tags: ["イン崩れ指数", "データ分析", "びわこ", "AI予想"],
+    readTime: "5分",
+    featured: false,
+    image: "/images/blog/volatility-index-biwako-0909.jpg",
+  },
+  {
     id: "volatility-index-naruto-0908",
     title: "イン崩れ指数100%は当たるのか？9/8鳴門8Rの実例で検証",
     description:
