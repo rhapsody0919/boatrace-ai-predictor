@@ -2470,11 +2470,15 @@ export const supabaseDataService = {
    * 検索自体はこのデータをクライアント側でフィルタする（RacerSearchBox.jsx参照）。
    * racer_profilesは1,627件でSupabaseのデフォルトlimit(1000行)を超えるため、
    * .range()でページネーションして全件取得する必要がある
-   * （2026-09-08、ページネーション漏れで約4割の選手が検索に出てこないバグを発見・修正）
+   * （2026-09-08、ページネーション漏れで約4割の選手が検索に出てこないバグを発見・修正）。
+   * キャッシュキーは取得列を変更するたびにサフィックスを上げる（v2で列追加）。
+   * 24時間TTLのため、キー名を変えずに列だけ増やすと、変更前にキャッシュ済みの
+   * ブラウザが新しい列（登録期・出身地等）を含まない古いデータを最大24時間
+   * 表示し続けてしまう（2026-09-08、実機確認で発覚）
    */
   getAllRacersLite() {
     return withCache(
-      "all-racers-lite",
+      "all-racers-lite-v2",
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
