@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-grade-flying-rate-gap",
+    title:
+      "A1級とB2級、フライング率は2.6倍差 - 実データで見るフライングの壁",
+    description:
+      "龍神レーダーが保有する実レースデータで、選手ごとに算出したフライング率を級別に集計しました。B2級選手の平均フライング率0.92%はA1級選手0.36%の約2.6倍という結果が実データでわかりました。級によってフライングの起きやすさが変わる理由と、舟券選びへの活かし方をあわせて解説します。",
+    date: "2026-09-08",
+    category: "データ分析",
+    tags: ["選手データ", "級別", "フライング", "A1級", "B2級", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-grade-flying-rate-gap.jpg",
+  },
+  {
     id: "racer-grade-start-timing-gap",
     title:
       "A1級とB2級、平均スタートタイミングは1.27倍差 - 実データで見るスタートの壁",
