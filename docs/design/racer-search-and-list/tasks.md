@@ -16,7 +16,7 @@
 
 ## 共通コンポーネント（FR1・FR2で共有）
 
-- [ ] **T4: フィルタ入力コンポーネント一式の新規作成**（`src/components/racer/`）
+- [x] **T4: フィルタ入力コンポーネント一式の新規作成**（`src/components/racer/`）
   `BranchFilterSelect.jsx`・`RangeFilterInput.jsx`（身長・体重で共用）・`GradeFilterChips.jsx`・`RegistrationPeriodFilterSelect.jsx`・`HometownFilterSelect.jsx`。個々は小さいプレゼンテーショナルコンポーネントのため1タスクにまとめる。T3のマージ済みデータ形状を前提に、選択肢（支部一覧・登録期一覧・出身地一覧）は呼び出し側から渡す設計にする（コンポーネント自体はデータ取得しない）
 
 ## FR1: ヘッダー選手検索へのフィルタ追加

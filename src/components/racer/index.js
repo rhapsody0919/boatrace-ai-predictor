@@ -2,3 +2,8 @@ export { default as RacerProfileHeader } from "./RacerProfileHeader";
 export { default as RacerProfileCard } from "./RacerProfileCard";
 export { default as RacerPerformanceStats } from "./RacerPerformanceStats";
 export { default as RacerNewsList } from "./RacerNewsList";
+export { default as BranchFilterSelect } from "./BranchFilterSelect";
+export { default as RangeFilterInput } from "./RangeFilterInput";
+export { default as GradeFilterChips } from "./GradeFilterChips";
+export { default as RegistrationPeriodFilterSelect } from "./RegistrationPeriodFilterSelect";
+export { default as HometownFilterSelect } from "./HometownFilterSelect";

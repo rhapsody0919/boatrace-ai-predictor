@@ -1,0 +1,76 @@
+/* BranchFilterSelect / RangeFilterInput / GradeFilterChips /
+   RegistrationPeriodFilterSelect / HometownFilterSelect 共通スタイル
+   （docs/design/racer-search-and-list/screens.md参照） */
+
+.racer-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.racer-filter-field label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.racer-filter-select {
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.racer-filter-select[multiple] {
+  min-height: 6rem;
+}
+
+.racer-filter-range {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.racer-filter-range input {
+  width: 4rem;
+  min-width: 0;
+  padding: 0.35rem 0.4rem;
+  border-radius: var(--radius-sm);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.racer-filter-range .unit {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.racer-filter-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.racer-filter-chip {
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.racer-filter-chip.is-selected {
+  border-color: var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
+  /* ライト/ダーク両テーマで--brand-accent-primaryが自動反転するため、
+     固定rgba値ではなくcolor-mixで薄い背景色を導出する
+     （.claude/rules/code-style.mdのLayer1誤用防止ルール参照） */
+  background: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
+  font-weight: var(--font-weight-semibold);
+}
