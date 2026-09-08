@@ -114,9 +114,14 @@ function Header() {
         <nav className="nav">
           <Link
             to={localize("/winning-technique")}
-            className={`nav-btn ${activeTab === "winning-technique" ? "active" : ""}`}
+            className={`nav-btn nav-btn-primary ${activeTab === "winning-technique" ? "active" : ""}`}
           >
-            {t("nav.winningTechnique")}
+            <span className="nav-btn-label-full">
+              {t("nav.winningTechnique")}
+            </span>
+            <span className="nav-btn-label-short">
+              {t("nav.winningTechniqueShort")}
+            </span>
           </Link>
           <button
             className={`nav-btn ${activeTab === "races" ? "active" : ""}`}
@@ -131,8 +136,6 @@ function Header() {
             {t("nav.hits")}
           </button>
           {currentLng === "ja" && <RacerSearchBox />}
-          <LanguageSwitcher />
-          {THEME_SWITCHING_ENABLED && <ThemeToggle />}
           <button
             className="nav-btn menu-btn"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -148,6 +151,10 @@ function Header() {
         )}
         {isMenuOpen && (
           <div className="submenu">
+            <div className="submenu-settings-row">
+              <LanguageSwitcher />
+              {THEME_SWITCHING_ENABLED && <ThemeToggle />}
+            </div>
             <button
               className={`submenu-item submenu-item-button ${activeTab === "races" ? "active" : ""}`}
               onClick={() => {

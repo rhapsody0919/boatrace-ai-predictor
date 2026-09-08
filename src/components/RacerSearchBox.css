@@ -36,7 +36,11 @@
   max-width: calc(100vw - 2rem);
   padding: 0.75rem;
   z-index: 1001;
-  animation: racer-search-slide-down 0.2s ease-out;
+  animation: racer-search-slide-down 0.15s ease-out;
+}
+
+.racer-search-panel.is-closing {
+  animation: racer-search-slide-up 0.15s ease-in forwards;
 }
 
 @keyframes racer-search-slide-down {
@@ -50,8 +54,26 @@
   }
 }
 
+@keyframes racer-search-slide-up {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.racer-search-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .racer-search-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 0.5rem 0.75rem;
   background: var(--surface-page);
   color: var(--text-primary);
@@ -65,7 +87,30 @@
   border-color: var(--brand-accent-primary);
 }
 
-.racer-search-status {
+.racer-search-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: none;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.racer-search-close:hover {
+  color: var(--brand-accent-primary);
+  background: var(--surface-page);
+}
+
+.racer-search-status,
+.racer-search-hint,
+.racer-search-more {
   margin: 0.6rem 0 0 0;
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
@@ -80,7 +125,10 @@
 }
 
 .racer-search-result {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
   width: 100%;
   text-align: left;
   padding: 0.6rem 0.5rem;
@@ -92,7 +140,37 @@
   font-size: var(--font-size-base);
 }
 
-.racer-search-result:hover {
+.racer-search-result:hover,
+.racer-search-result.is-active {
   color: var(--brand-accent-primary);
   background: var(--surface-page);
+}
+
+.racer-search-result-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.racer-search-result-branch {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 480px) {
+  .racer-search-panel {
+    /* position:absoluteのままだと.racer-search（検索アイコン自身）が
+       起点になり画面右端に張り付いた狭いボックスのままになるため、
+       position:fixedでヘッダー下に画面幅いっぱいに配置する。
+       topはヘッダーの実測高さ（約70px、モバイル幅で1行に収まる構成）に
+       余裕を持たせた固定値 */
+    position: fixed;
+    top: 4.75rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    margin-top: 0;
+    width: auto;
+    max-width: none;
+  }
 }

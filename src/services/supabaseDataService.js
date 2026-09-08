@@ -2479,7 +2479,7 @@ export const supabaseDataService = {
         }
         const { data, error } = await supabase
           .from("racer_profiles")
-          .select("racer_id, name, name_kana")
+          .select("racer_id, name, name_kana, branch")
           .order("racer_id");
 
         if (error) {
