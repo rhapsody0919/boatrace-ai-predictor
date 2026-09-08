@@ -27,14 +27,19 @@ node --env-file=.env.local scripts/daily/campaign-backfill-results.js
    - `cumulative_net_yen`: この企画内で、このエントリより前に作成された全エントリの
      収支合計＋このエントリの収支
 4. `sns_campaign_entries`をUPDATEする
+5. **運用フロー③（結果発表投稿）**: 4.で結果を書き戻した各エントリについて、
+   `createResultAnnouncementTopic()`（`scripts/lib/snsCampaigns.js`）で「結果発表」用の
+   `sns_topics`（`venue-feature`型、要人間承認）を1件作成する。Phase A（対象レース検出時）が
+   作る「事前の買い目発表」（運用フロー②）とは別の、2件目のネタになる
+6. **運用フロー④（企画終了時の最終まとめ投稿）**: `start_date + duration_days`が経過し、
+   かつ企画内の全エントリの結果が確定済みなら、`createResultAnnouncementTopic()`で
+   最終まとめ用の`sns_topics`を1件作成し、`sns_campaigns.status`を`'completed'`に
+   更新する。以後`getActiveCampaigns()`の対象から外れるため、この処理は企画ごとに
+   実質1回しか実行されない
 
 ## 人間の作業
 
-書き戻された`actual_result`/`hit`/`payout_yen`/`cumulative_net_yen`は、対象チャネル
-（x/blog）の生成Routineが「前回までの結果を踏まえた本文」を書く際のデータ源になる
-（タスク8、別PR対応予定）。人間が直接この結果を編集する必要は無い。
-
-## 企画終了時の扱い
-
-`duration_days`経過後、`sns_campaigns.status`を`'completed'`に手動で更新する
-（自動化はしない。最終まとめ投稿の内容を人間が確認してから区切りたいため）。
+作成された「結果発表」「企画終了まとめ」の`sns_topics`は、通常のネタと同じく
+sns-hub管理画面の「ネタ承認」で人間が確認・承認する。承認後の本文生成は対象チャネル
+（x/blog）の生成Routineが担う。過去エントリを踏まえた継続性のある本文の書き方は
+`docs/operation/sns-pipeline-x.md`「2. 企画（キャンペーン）由来のネタの場合」を参照。

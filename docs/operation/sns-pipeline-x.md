@@ -48,6 +48,12 @@ claim対象が0件の場合はここで終了する（正常系、失敗では�
 
 `sns_topics`テーブルから、claimしたターゲットに紐づくネタ本文（`topic_text`）・型（`content_type_id`経由で`sns_content_types`）・根拠insight（`source_insight_ids`）を取得する。0.で確認済みのX向け却下理由・insightと合わせて、構成・訴求の判断材料にする。
 
+### 企画（キャンペーン）由来のネタの場合
+
+`sns_topics.campaign_id`が設定されている場合、単発ネタではなく複数日にまたがる企画の1エントリ（`docs/design/sns-hub-campaign-pipeline/`参照）。`getCampaignEntries(campaignId)`（`scripts/lib/snsCampaigns.js`）で同じ企画の過去エントリ（対象レース・買い目・実際の結果・払戻・通算収支）を取得し、**前回までの結果を踏まえた継続性のある本文**にする（例: 「◯日目、ここまで◯勝◯敗、通算収支◯円」）。過去エントリが0件（企画の1件目）の場合は、企画の趣旨・ルール（`sns_campaigns.purpose`）を紹介する導入回として書く。
+
+このネタ自身が指す`sns_campaign_entries`行の`hit`が`null`（結果未確定）なら「事前の買い目発表」（運用フロー②）であり、まだ結果には触れられない。`hit`が確定済みなら「結果発表」（運用フロー③）または企画終了時の「最終まとめ」（運用フロー④、`campaign_status='completed'`）であり、`actual_result`・`payout_yen`・`cumulative_net_yen`を本文の中心に据える。`topic_text`自体に「結果発表」「企画終了まとめ」等の文言が含まれるため、どちらのネタかは`topic_text`を読めば判別できる。
+
 ## 3. 実データ取得・映像設計
 
 `sns-video-producer-prompt.md`で確立済みの技術手順をそのまま踏襲する（車輪の再発明をしない）。

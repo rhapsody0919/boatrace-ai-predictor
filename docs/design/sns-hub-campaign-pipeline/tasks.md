@@ -23,7 +23,9 @@
 
 - [x] **7. `docs/operation/sns-campaign-result-backfill.md`新設**（フェーズB運用手順書）: 本ファイルで作成
 
-- [ ] **8. チャネル別パイプライン文書へのcampaign_id分岐追記**: `docs/operation/sns-pipeline-{x,tiktok,youtube,note,blog}.md`の「ネタ本文の確認」章に、`campaign_id`がある場合は`getCampaignEntries()`で過去エントリを取得し継続性のある本文を書く旨、および対応する`sns_campaign_entries.hit`が未確定の間は生成を待つ旨を追記する
+- [x] **8. チャネル別パイプライン文書へのcampaign_id分岐追記**: `sns-pipeline-x.md`の「2. ネタ本文・根拠insightの確認」に追記済み。tiktok/youtube/blogの同節は元々「x.mdの2.と同じ」参照のため自動的に反映される。noteは本文をブログから変換する構成のため、ブログ側で反映済みである旨を明記した
+
+- [x] **8.5. Phase Bで結果発表・最終まとめ投稿のネタも作成する**（tasks.md新設、実装中に判明した設計漏れ）: 当初のPhase B実装は`sns_campaign_entries`のDB更新のみで、運用フロー③（結果発表）④（企画終了まとめ）用の`sns_topics`を作っていなかった。`scripts/lib/snsCampaigns.js`に`createResultAnnouncementTopic()`を追加し、`campaign-backfill-results.js`が結果確定時に③のネタを、企画期間経過・全エントリ確定時に④のネタを作成し企画を`completed`にするよう実装した
 
 - [x] **9. `finalize-blog-draft.js`に企画ガードを追加**: `campaign_id`を持つ下書きは機械チェックによる自動マージの対象外とし、常に`pending_review`のまま人間承認に回るようにした（PR #594）
 
