@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-experience-win-rate-gap",
+    title:
+      "登録23年以上と11年未満、平均勝率は1.18倍差 - 実データで見る経験年数の壁",
+    description:
+      "龍神レーダーの実レース出走データで、直近30日間の登録期(経験年数)別平均勝率を集計しました。登録23年以上のベテラン層の平均勝率5.17%は、登録11年未満の若手層4.39%の約1.18倍という結果が実データでわかりました。経験年数と成績の関係、舟券選びへの活かし方をあわせて解説します。",
+    date: "2026-09-08",
+    category: "データ分析",
+    tags: ["選手データ", "経験年数", "登録期", "勝率", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-experience-win-rate-gap.jpg",
+  },
+  {
     id: "racer-height-win-rate-gap",
     title: "167cm超と162cm以下、平均勝率は1.1倍差 - 実データで見る身長の壁",
     description:
