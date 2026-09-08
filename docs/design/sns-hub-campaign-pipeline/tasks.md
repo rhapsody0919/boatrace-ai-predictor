@@ -25,7 +25,7 @@
 
 - [ ] **8. チャネル別パイプライン文書へのcampaign_id分岐追記**: `docs/operation/sns-pipeline-{x,tiktok,youtube,note,blog}.md`の「ネタ本文の確認」章に、`campaign_id`がある場合は`getCampaignEntries()`で過去エントリを取得し継続性のある本文を書く旨、および対応する`sns_campaign_entries.hit`が未確定の間は生成を待つ旨を追記する
 
-- [ ] **9. `finalize-blog-draft.js`に企画ガードを追加**: `campaign_id`を持つ下書きは機械チェックによる自動マージの対象外とし、常に`pending_review`のまま人間承認に回るようにする（要件8）
+- [x] **9. `finalize-blog-draft.js`に企画ガードを追加**: `campaign_id`を持つ下書きは機械チェックによる自動マージの対象外とし、常に`pending_review`のまま人間承認に回るようにした（PR #594）
 
 - [x] **10. パイロット企画の作成**: 実行済み（2026-09-08、企画ID `00263d28-3856-4bf9-b375-bb71f3d0889e`、`status='active'`）。`selection_criteria`: volatilityPercentile≥0.99、`purchase_amount_yen`: 900、対象チャネル: x/blog、TikTok対象外
 

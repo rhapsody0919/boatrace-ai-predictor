@@ -100,6 +100,28 @@ async function main() {
     return;
   }
 
+  // 企画（campaign）由来の下書きは機械チェック合格でも自動マージしない。
+  // 企画は「シミュレーション開示」「回収率が悪くても正直に発信する」等、
+  // 機械的な品質チェック（誤字脱字・構造要件等）では担保できない人間判断が
+  // 必須のため（docs/design/sns-hub-campaign-pipeline/spec.md要件8）。
+  const { data: topicTarget, error: topicTargetError } = await supabase
+    .from("sns_topic_targets")
+    .select("sns_topics(campaign_id)")
+    .eq("draft_id", draft.id)
+    .maybeSingle();
+  if (topicTargetError) {
+    console.error(
+      `❌ sns_topic_targets確認エラー: ${topicTargetError.message}`,
+    );
+    process.exit(1);
+  }
+  if (topicTarget?.sns_topics?.campaign_id) {
+    console.log(
+      `ℹ️ 企画（campaign_id=${topicTarget.sns_topics.campaign_id}）由来の下書きのため自動マージ対象外。sns-hub管理画面で人間が確認・承認してください（status='pending_review'のまま）。`,
+    );
+    return;
+  }
+
   const prNumber = extractPrNumber(draft.pr_url);
   if (!prNumber) {
     console.error("❌ この下書きにはpr_urlが設定されていません");
