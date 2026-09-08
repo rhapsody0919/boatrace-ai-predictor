@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-hometown-win-rate-gap",
+    title:
+      "出身地別の平均勝率、滋賀県出身が最高5.65% - 支部とは別の実データで検証",
+    description:
+      "龍神レーダーの実レース出走データで、直近30日間の出身地(都道府県)別平均勝率を集計しました。滋賀県出身選手の平均勝率5.65%は、最も低い長崎県出身選手4.74%の約1.19倍という結果が実データでわかりました。支部データとの違い、舟券選びへの活かし方をあわせて解説します。",
+    date: "2026-09-08",
+    category: "データ分析",
+    tags: ["選手データ", "出身地", "滋賀県", "長崎県", "勝率", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-hometown-win-rate-gap.jpg",
+  },
+  {
     id: "racer-local-win-rate-gap",
     title:
       "当地勝率の平均は4.64%、全国勝率5.06%より低い理由を実データで検証",
