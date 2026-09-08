@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "racer-grade-start-timing-gap",
+    title:
+      "A1級とB2級、平均スタートタイミングは1.27倍差 - 実データで見るスタートの壁",
+    description:
+      "龍神レーダーが保有する実レースデータで、フライングを除いた級別の平均スタートタイミングを集計しました。A1級選手の平均ST0.146秒はB2級選手0.186秒より約1.27倍速いという結果が実データでわかりました。級によってスタート技術に差が生まれる理由と、舟券選びへの活かし方をあわせて解説します。",
+    date: "2026-09-08",
+    category: "データ分析",
+    tags: ["選手データ", "級別", "スタートタイミング", "A1級", "B2級", "データ分析"],
+    readTime: "6分",
+    featured: false,
+    image: "/images/blog/racer-grade-start-timing-gap.jpg",
+  },
+  {
     id: "racer-experience-win-rate-gap",
     title:
       "登録23年以上と11年未満、平均勝率は1.18倍差 - 実データで見る経験年数の壁",
