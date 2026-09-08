@@ -98,7 +98,14 @@ export async function getActiveCampaigns() {
  * 指定日のpredictionsから、選定条件（selection_criteria）を満たすレースを検出する。
  * campaign-backtest-fetch-races.jsと同じロジック（同一race_idの重複predictions行は
  * predicted_at最新のみ残す）を本番用に移植。
- * @param {string} date - 'YYYY-MM-DD'（対象日、この日のpredicted_atで絞り込む）
+ *
+ * ⚠️ predicted_atではなくrace_idで絞り込む（2026-09-09、実運用で発見した不具合）:
+ * 当初predicted_atの日付範囲（UTC）で絞り込んでいたが、predicted_atはUTC保存な
+ * のに対しレースはJST基準の日付で運用されるため、JST朝（UTC前日夜）に生成された
+ * predictionsが「対象日」の範囲外と誤判定され0件になった（本番で実際に発生）。
+ * race_idは"YYYY-MM-DD-会場-レース番号"形式でJST日付を直接含むため、こちらで
+ * 絞り込めばタイムゾーンの問題が起きない。
+ * @param {string} date - 'YYYY-MM-DD'（対象日、race_idのJST日付で絞り込む）
  * @param {{metric:string, operator:'>='|'<=', value:number}} criteria
  * @returns {Promise<Array<{raceId:string, metricValue:number, turnPrediction:object|null}>>}
  */
@@ -112,16 +119,16 @@ export async function findQualifyingRaces(date, criteria) {
   const PAGE_SIZE = 1000;
   const rows = [];
   for (let page = 0; ; page++) {
-    // model_idでの絞り込みは付けない（standard/safeBet/upsetFocusの3行とも
-    // 同じfeature_contributions.turnPrediction/volatilityPercentileを共有しており
-    // 後段でrace_id単位に重複排除するため不要な上、.eq('model_id',...)を足すと
-    // 単純なpredicted_at範囲検索よりクエリプランが悪化しstatement timeoutになる
+    // model_idでの絞り込みは付けない（standard/safeBet/upsetFocus/unifiedの
+    // 各行とも同じfeature_contributions.turnPrediction/volatilityPercentileを
+    // 共有しており後段でrace_id単位に重複排除するため不要な上、
+    // .eq('model_id',...)を足すとクエリプランが悪化しstatement timeoutになる
     // 実測結果があった）
     const { data, error } = await supabase
       .from("predictions")
       .select("race_id, predicted_at, feature_contributions")
-      .gte("predicted_at", date)
-      .lte("predicted_at", `${date} 23:59:59`)
+      .gte("race_id", date)
+      .lte("race_id", `${date}-99-99`)
       .not("feature_contributions", "is", null)
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
     if (error) throw new Error(`predictions取得エラー: ${error.message}`);
