@@ -12,7 +12,11 @@ import {
   courseRateOf,
   translateTechnique,
 } from "../components/race/raceIndicators";
-import { getAiCopyPromptText } from "../utils/aiCopyPrompts";
+import { TECHNIQUE_NAMES } from "../utils/turnPrediction";
+import {
+  AI_COPY_PROMPT_TYPES,
+  getAiCopyPromptText,
+} from "../utils/aiCopyPrompts";
 
 const DASH = "—";
 
@@ -148,6 +152,95 @@ function buildRows(t, players, analysis) {
   ];
 }
 
+function boatLabel(t, boatNumber, playerByBoat) {
+  const name = playerByBoat.get(boatNumber)?.name;
+  const n = t("analysis.boatN", { n: boatNumber });
+  return name ? `${n} ${name}` : n;
+}
+
+// {course: probability}形式の分布から最有力の艇番を1つ選ぶ（無ければnull）
+function topCandidate(dist) {
+  if (!dist) return null;
+  const entries = Object.entries(dist);
+  if (entries.length === 0) return null;
+  const [course, prob] = entries.reduce((best, cur) =>
+    cur[1] > best[1] ? cur : best,
+  );
+  return { boatNumber: Number(course), probability: prob };
+}
+
+// イン崩れ注意度に最適化したプロンプト用: turnPrediction（決まり手×コース別の
+// 勝利確率・2着3着分布・boatStrengths）をMarkdown化する。generate-predictions.js
+// が日次で計算・保存済みのデータをそのまま使うため、追加のデータ取得は発生しない
+function buildTurnPredictionSection(t, players, turnPrediction) {
+  if (!turnPrediction?.patterns?.length) return "";
+
+  const playerByBoat = byBoat(players, "number");
+
+  const header = [
+    t("aiCopy.turnPredictionColTechnique"),
+    t("aiCopy.turnPredictionColWinner"),
+    t("aiCopy.turnPredictionColProbability"),
+    t("aiCopy.turnPredictionColSecond"),
+    t("aiCopy.turnPredictionColThird"),
+  ];
+  const toLine = (cells) => `| ${cells.join(" | ")} |`;
+
+  const rows = turnPrediction.patterns.map((p) => {
+    const techniqueLabel = t(
+      `techniques.${p.technique}`,
+      TECHNIQUE_NAMES[p.technique] ?? p.technique,
+    );
+    const second = topCandidate(p.secondPlace);
+    const third = topCandidate(p.thirdPlace);
+    return toLine([
+      techniqueLabel,
+      boatLabel(t, p.winnerCourse, playerByBoat),
+      `${Math.round(p.probability * 100)}%`,
+      second
+        ? `${boatLabel(t, second.boatNumber, playerByBoat)}（${Math.round(second.probability * 100)}%）`
+        : DASH,
+      third
+        ? `${boatLabel(t, third.boatNumber, playerByBoat)}（${Math.round(third.probability * 100)}%）`
+        : DASH,
+    ]);
+  });
+
+  const table = [toLine(header), toLine(header.map(() => "---")), ...rows].join(
+    "\n",
+  );
+
+  const distributionLine = Object.entries(turnPrediction.distribution ?? {})
+    .sort((a, b) => b[1] - a[1])
+    .map(
+      ([technique, prob]) =>
+        `${t(`techniques.${technique}`, TECHNIQUE_NAMES[technique] ?? technique)} ${Math.round(prob * 100)}%`,
+    )
+    .join(" / ");
+
+  const strengths = turnPrediction.boatStrengths ?? [];
+  const strengthRanking = strengths
+    .map((score, i) => ({ boatNumber: i + 1, score }))
+    .sort((a, b) => b.score - a.score)
+    .map((b) => boatLabel(t, b.boatNumber, playerByBoat))
+    .join(" > ");
+
+  const lines = [`### ${t("aiCopy.turnPredictionHeading")}`, "", table];
+  if (distributionLine) {
+    lines.push(
+      "",
+      `${t("aiCopy.turnPredictionDistributionLabel")}: ${distributionLine}`,
+    );
+  }
+  if (strengthRanking) {
+    lines.push(
+      "",
+      `${t("aiCopy.turnPredictionStrengthLabel")}: ${strengthRanking}`,
+    );
+  }
+  return lines.join("\n");
+}
+
 function toMarkdownTable(t, players, rows) {
   const header = [
     t("aiCopy.tableItemHeader"),
@@ -185,7 +278,14 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
     });
     const prompt = getAiCopyPromptText(t, promptType);
 
-    return `## ${heading}\n\n${table}\n\n${prompt}`;
+    const turnPredictionSection =
+      promptType === AI_COPY_PROMPT_TYPES.VOLATILITY_TRIFECTA
+        ? buildTurnPredictionSection(t, players, prediction?.turnPrediction)
+        : "";
+
+    return [`## ${heading}`, table, turnPredictionSection, prompt]
+      .filter(Boolean)
+      .join("\n\n");
   };
 
   // analysisは複数クエリの並列取得（30分TTLキャッシュ）で、DataRaceTableと
