@@ -1,9 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { getAiCopyPromptOptions } from "../../utils/aiCopyPrompts";
 
-export default function AiCopyPromptSelector({ value, onChange }) {
+export default function AiCopyPromptSelector({
+  value,
+  onChange,
+  volatilityPercentile,
+}) {
   const { t } = useTranslation();
-  const options = getAiCopyPromptOptions(t);
+  const options = getAiCopyPromptOptions(t, { volatilityPercentile });
 
   return (
     <div
