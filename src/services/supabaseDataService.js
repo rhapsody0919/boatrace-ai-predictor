@@ -2497,8 +2497,11 @@ export const supabaseDataService = {
             .range(from, from + pageSize - 1);
 
           if (error) {
-            console.error("racer_profiles取得エラー:", error.message);
-            return [];
+            // withCacheは成功時（.then）のみキャッシュするため、ここは[]を返さず
+            // throwする。[]を返すと一時的なエラーが24時間キャッシュされ、
+            // 取得済み分のデータも道連れで破棄されてしまう
+            // （2026-09-08、コードレビューで発見）
+            throw new Error(`racer_profiles取得エラー: ${error.message}`);
           }
           if (!page || page.length === 0) break;
           data.push(...page);
@@ -2531,8 +2534,9 @@ export const supabaseDataService = {
           .single();
 
         if (error) {
-          console.error("racer_grade_cache取得エラー:", error.message);
-          return [];
+          // withCacheは成功時（.then）のみキャッシュするため、ここは[]を返さず
+          // throwする（getAllRacersLiteと同じ理由、2026-09-08コードレビューで発見）
+          throw new Error(`racer_grade_cache取得エラー: ${error.message}`);
         }
         return data?.data ?? [];
       },

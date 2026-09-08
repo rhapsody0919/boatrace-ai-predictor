@@ -26,7 +26,9 @@ function RacerCompactRow({ racer, isExpanded, onToggleExpand }) {
         tabIndex={0}
         onClick={goToRacer}
         onKeyDown={(e) => {
-          if (e.key === "Enter") goToRacer();
+          // ▼ボタン（子要素）でのEnter操作がバブリングして遷移しないよう、
+          // 行本体自身がフォーカスされている場合のみ遷移する
+          if (e.key === "Enter" && e.target === e.currentTarget) goToRacer();
         }}
       >
         {racer.grade && (

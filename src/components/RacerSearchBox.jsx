@@ -67,6 +67,12 @@ function RacerSearchBox() {
       setIsClosing(false);
       setQuery("");
       setActiveIndex(0);
+      setBranchFilter("");
+      setHeightRange(EMPTY_RANGE);
+      setWeightRange(EMPTY_RANGE);
+      setGradeFilter([]);
+      setPeriodFilter([]);
+      setHometownFilter([]);
     }, CLOSE_ANIMATION_MS);
   };
 
