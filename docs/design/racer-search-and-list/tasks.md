@@ -4,14 +4,15 @@
 
 ## データ層
 
-- [ ] **T1: DBマイグレーション適用**（`054_racer_grade_cache_table.sql`・`055_get_latest_racer_grades_rpc.sql`）
+- [x] **T1: DBマイグレーション適用**（`054_racer_grade_cache_table.sql`・`055_get_latest_racer_grades_rpc.sql`）
   Supabase Dashboard > SQL Editorで適用する（`055`の`CREATE INDEX CONCURRENTLY`はトランザクション外・単独実行が必須）。適用後、`get_latest_racer_grades()`を試しに1回呼び出し、選手数分（約1,627行）返ることを確認する
 
-- [ ] **T2: 級別・勝率キャッシュ夜間バッチの新設**（`scripts/daily/update-racer-grade-cache.js`）
+- [x] **T2: 級別・勝率キャッシュ夜間バッチの新設**（`scripts/daily/update-racer-grade-cache.js`）
   `get_latest_racer_grades()`を呼び出し`racer_grade_cache`へupsertするスクリプトを`update-race-history-cache.js`と同じ構成で実装。`.github/workflows/calculate-accuracy.yml`に1ステップ追加。ローカルで一度手動実行し、`racer_grade_cache`に実データが入ることを確認する（T4以降のUI実装がこのデータに依存するため、モックデータで進めず実データを先に用意する）
 
-- [ ] **T3: サービス層の拡張**（`src/services/supabaseDataService.js`）
+- [x] **T3: サービス層の拡張**（`src/services/supabaseDataService.js`）
   `getAllRacersLite()`のselect列に`registration_period`/`hometown`/`birth_date`を追加。`getRacerGradeCache()`（新規）と`getAllRacersWithGrade()`（新規、両者をマージ）を追加。T1・T2完了後、実データで動作確認する
+  **副産物**: `getAllRacersLite()`が`.range()`ページネーション無しで実装されており、Supabaseのデフォルト1000件制限により全1,627選手中1,000人しか返さない（約4割が検索対象外）既存バグを発見・修正した（PR #578以来の潜在バグ）
 
 ## 共通コンポーネント（FR1・FR2で共有）
 

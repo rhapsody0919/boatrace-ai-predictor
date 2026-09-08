@@ -2464,10 +2464,13 @@ export const supabaseDataService = {
   },
 
   /**
-   * 選手検索UI向けに全選手の軽量一覧（racer_id/name/name_kana）を取得する。
-   * 対象約1,600件・数十KB程度のため都度クエリではなく一括取得し長期キャッシュする
+   * 選手検索UI向けに全選手の軽量一覧を取得する。
+   * 対象約1,627件・数十KB程度のため都度クエリではなく一括取得し長期キャッシュする
    * （選手数の変動は月数件程度、egress削減のため24時間キャッシュ）。
-   * 検索自体はこのデータをクライアント側でフィルタする（RacerSearchBox.jsx参照）
+   * 検索自体はこのデータをクライアント側でフィルタする（RacerSearchBox.jsx参照）。
+   * racer_profilesは1,627件でSupabaseのデフォルトlimit(1000行)を超えるため、
+   * .range()でページネーションして全件取得する必要がある
+   * （2026-09-08、ページネーション漏れで約4割の選手が検索に出てこないバグを発見・修正）
    */
   getAllRacersLite() {
     return withCache(
@@ -2477,19 +2480,81 @@ export const supabaseDataService = {
           console.error("Supabase client not initialized");
           return [];
         }
-        const { data, error } = await supabase
-          .from("racer_profiles")
-          .select("racer_id, name, name_kana, branch")
-          .order("racer_id");
+        const data = [];
+        const pageSize = 1000;
+        let from = 0;
+        while (true) {
+          const { data: page, error } = await supabase
+            .from("racer_profiles")
+            .select(
+              "racer_id, name, name_kana, branch, height_cm, weight_kg, registration_period, hometown, birth_date",
+            )
+            .order("racer_id")
+            .range(from, from + pageSize - 1);
 
-        if (error) {
-          console.error("racer_profiles取得エラー:", error.message);
-          return [];
+          if (error) {
+            console.error("racer_profiles取得エラー:", error.message);
+            return [];
+          }
+          if (!page || page.length === 0) break;
+          data.push(...page);
+          if (page.length < pageSize) break;
+          from += pageSize;
         }
-        return data ?? [];
+        return data;
       },
       24 * 60 * 60 * 1000,
     );
+  },
+
+  /**
+   * 選手ごとの最新級別・勝率（race_entriesの最新行、ADR-0023準拠）を
+   * racer_grade_cache（scripts/daily/update-racer-grade-cache.jsが夜間更新）
+   * から取得する（docs/adr/0043-racer-grade-win-rate-cache-strategy.md）
+   */
+  getRacerGradeCache() {
+    return withCache(
+      "racer-grade-cache",
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return [];
+        }
+        const { data, error } = await supabase
+          .from("racer_grade_cache")
+          .select("data")
+          .eq("key", "latest_grades")
+          .single();
+
+        if (error) {
+          console.error("racer_grade_cache取得エラー:", error.message);
+          return [];
+        }
+        return data?.data ?? [];
+      },
+      24 * 60 * 60 * 1000,
+    );
+  },
+
+  /**
+   * 選手検索・一覧（RacerSearchBox・/racers）向けに、選手プロフィールと
+   * 最新級別・勝率をマージした一覧を取得する
+   * （docs/design/racer-search-and-list/plan.md参照）
+   */
+  async getAllRacersWithGrade() {
+    const [racers, grades] = await Promise.all([
+      this.getAllRacersLite(),
+      this.getRacerGradeCache(),
+    ]);
+    const gradeByRacerId = new Map(grades.map((g) => [g.racer_id, g]));
+    return racers.map((racer) => {
+      const gradeInfo = gradeByRacerId.get(racer.racer_id);
+      return {
+        ...racer,
+        grade: gradeInfo?.grade ?? null,
+        winRate: gradeInfo?.win_rate ?? null,
+      };
+    });
   },
 
   /**
