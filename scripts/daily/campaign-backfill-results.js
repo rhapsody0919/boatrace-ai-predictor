@@ -59,6 +59,7 @@ async function maybeFinalizeCampaign(campaign, entries) {
     const topic = await createResultAnnouncementTopic(
       campaign.id,
       `【${campaign.name}】企画終了まとめ: 全${entries.length}レース中${hits}的中、購入${totalSpend}円→払戻${totalPayout}円（回収率${recoveryRate}%）`,
+      campaign.target_channels,
     );
     console.log(`最終まとめネタ作成: topic=${topic.id}（承認待ち）`);
   }
@@ -134,6 +135,7 @@ async function main() {
         const topic = await createResultAnnouncementTopic(
           campaign.id,
           `【${campaign.name}】${entry.race_id} 結果発表: ${hit ? "🎯的中" : "❌不的中"}（実際=${actual}、買い目=${picks.join("/")}）払戻${payoutYen}円 通算収支${updated.cumulative_net_yen}円`,
+          campaign.target_channels,
         );
         console.log(`     結果発表ネタ作成: topic=${topic.id}（承認待ち）`);
       }
