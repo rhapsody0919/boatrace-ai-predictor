@@ -56,6 +56,53 @@ test.describe("ホーム・基本ナビゲーション", () => {
   });
 });
 
+test.describe("選手一覧ページ (/racers)", () => {
+  test("ハンバーガーメニューから選手一覧へ遷移できる", async ({ page }) => {
+    await page.goto("/");
+    await page.click(".menu-btn");
+    await page.click('a.submenu-item:has-text("選手一覧")');
+    await expect(page).toHaveURL(/\/racers$/);
+    await expect(page.locator(".racers-page-title")).toHaveText("選手一覧");
+  });
+
+  test("級別フィルタで絞り込み、ソート・ページネーションが機能する", async ({
+    page,
+  }) => {
+    // Cookie同意バナー（position:fixed、z-index:9999）がページ下部の
+    // ページネーションと重なりクリックを阻害するため、既定済みとして進める
+    await page.addInitScript(() => {
+      localStorage.setItem("boatai:cookie-consent", "accepted");
+    });
+    await page.goto("/racers");
+    await expect(page.locator(".racer-table tbody tr").first()).toBeVisible();
+
+    // 級別フィルタ（A1）で絞り込むと件数が減りURLに反映される
+    await page.click('.racer-filter-chip:has-text("A1")');
+    await expect(page).toHaveURL(/grade=A1/);
+    await expect(page.locator(".racer-filter-toolbar-foot")).toContainText(
+      "が条件に一致",
+    );
+
+    // 身長列ヘッダクリックでソート方向がURLに反映される
+    await page.locator(".racer-table th", { hasText: "身長" }).click();
+    await expect(page).toHaveURL(/sort=height_cm/);
+
+    // ページネーションで2ページ目に遷移できる
+    const page2Btn = page.locator(".racer-pagination-btn", { hasText: "2" });
+    if ((await page2Btn.count()) > 0) {
+      await page2Btn.click();
+      await expect(page).toHaveURL(/page=2/);
+    }
+  });
+
+  test("選手一覧の行から選手個別ページへ遷移できる", async ({ page }) => {
+    await page.goto("/racers");
+    const firstRow = page.locator(".racer-table tbody tr").first();
+    await firstRow.click();
+    await expect(page).toHaveURL(/\/racer\/\d+$/);
+  });
+});
+
 test.describe("会場ガイド (venues)", () => {
   test("/en のハンバーガーメニューから会場ガイドへ遷移できる", async ({
     page,
@@ -1277,6 +1324,7 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
     "/guide",
     "/poirot",
     "/racer/4320",
+    "/racers",
   ];
 
   for (const path of PAGES) {

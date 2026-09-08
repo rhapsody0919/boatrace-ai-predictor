@@ -1,0 +1,67 @@
+.racer-table-wrap {
+  overflow-x: auto;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-md);
+}
+
+.racer-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  font-variant-numeric: tabular-nums;
+}
+
+.racer-table th,
+.racer-table td {
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  font-size: var(--font-size-sm);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+  white-space: nowrap;
+}
+
+.racer-table thead th {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+  user-select: none;
+}
+
+.racer-table thead th.is-sorted {
+  color: var(--brand-accent-primary);
+}
+
+.racer-table-sort-arrow {
+  margin-left: 0.2rem;
+  font-size: 0.7em;
+}
+
+.racer-table tbody tr {
+  cursor: pointer;
+}
+
+.racer-table tbody tr:hover {
+  background: var(--surface-page);
+}
+
+.racer-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.racer-table-name-cell {
+  font-weight: var(--font-weight-semibold);
+}
+
+.racer-table-name-cell a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.racer-table-name-cell a:hover {
+  color: var(--brand-accent-primary);
+  text-decoration: underline;
+}
+
+/* 級別バッジのスタイルはRacerGradeBadge.css（RacerTable.jsx側でimport済み）を参照 */

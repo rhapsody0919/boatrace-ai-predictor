@@ -2464,32 +2464,105 @@ export const supabaseDataService = {
   },
 
   /**
-   * 選手検索UI向けに全選手の軽量一覧（racer_id/name/name_kana）を取得する。
-   * 対象約1,600件・数十KB程度のため都度クエリではなく一括取得し長期キャッシュする
+   * 選手検索UI向けに全選手の軽量一覧を取得する。
+   * 対象約1,627件・数十KB程度のため都度クエリではなく一括取得し長期キャッシュする
    * （選手数の変動は月数件程度、egress削減のため24時間キャッシュ）。
-   * 検索自体はこのデータをクライアント側でフィルタする（RacerSearchBox.jsx参照）
+   * 検索自体はこのデータをクライアント側でフィルタする（RacerSearchBox.jsx参照）。
+   * racer_profilesは1,627件でSupabaseのデフォルトlimit(1000行)を超えるため、
+   * .range()でページネーションして全件取得する必要がある
+   * （2026-09-08、ページネーション漏れで約4割の選手が検索に出てこないバグを発見・修正）。
+   * キャッシュキーは取得列を変更するたびにサフィックスを上げる（v2で列追加）。
+   * 24時間TTLのため、キー名を変えずに列だけ増やすと、変更前にキャッシュ済みの
+   * ブラウザが新しい列（登録期・出身地等）を含まない古いデータを最大24時間
+   * 表示し続けてしまう（2026-09-08、実機確認で発覚）
    */
   getAllRacersLite() {
     return withCache(
-      "all-racers-lite",
+      "all-racers-lite-v2",
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return [];
+        }
+        const data = [];
+        const pageSize = 1000;
+        let from = 0;
+        while (true) {
+          const { data: page, error } = await supabase
+            .from("racer_profiles")
+            .select(
+              "racer_id, name, name_kana, branch, height_cm, weight_kg, registration_period, hometown, birth_date",
+            )
+            .order("racer_id")
+            .range(from, from + pageSize - 1);
+
+          if (error) {
+            // withCacheは成功時（.then）のみキャッシュするため、ここは[]を返さず
+            // throwする。[]を返すと一時的なエラーが24時間キャッシュされ、
+            // 取得済み分のデータも道連れで破棄されてしまう
+            // （2026-09-08、コードレビューで発見）
+            throw new Error(`racer_profiles取得エラー: ${error.message}`);
+          }
+          if (!page || page.length === 0) break;
+          data.push(...page);
+          if (page.length < pageSize) break;
+          from += pageSize;
+        }
+        return data;
+      },
+      24 * 60 * 60 * 1000,
+    );
+  },
+
+  /**
+   * 選手ごとの最新級別・勝率（race_entriesの最新行、ADR-0023準拠）を
+   * racer_grade_cache（scripts/daily/update-racer-grade-cache.jsが夜間更新）
+   * から取得する（docs/adr/0043-racer-grade-win-rate-cache-strategy.md）
+   */
+  getRacerGradeCache() {
+    return withCache(
+      "racer-grade-cache",
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
           return [];
         }
         const { data, error } = await supabase
-          .from("racer_profiles")
-          .select("racer_id, name, name_kana, branch")
-          .order("racer_id");
+          .from("racer_grade_cache")
+          .select("data")
+          .eq("key", "latest_grades")
+          .single();
 
         if (error) {
-          console.error("racer_profiles取得エラー:", error.message);
-          return [];
+          // withCacheは成功時（.then）のみキャッシュするため、ここは[]を返さず
+          // throwする（getAllRacersLiteと同じ理由、2026-09-08コードレビューで発見）
+          throw new Error(`racer_grade_cache取得エラー: ${error.message}`);
         }
-        return data ?? [];
+        return data?.data ?? [];
       },
       24 * 60 * 60 * 1000,
     );
+  },
+
+  /**
+   * 選手検索・一覧（RacerSearchBox・/racers）向けに、選手プロフィールと
+   * 最新級別・勝率をマージした一覧を取得する
+   * （docs/design/racer-search-and-list/plan.md参照）
+   */
+  async getAllRacersWithGrade() {
+    const [racers, grades] = await Promise.all([
+      this.getAllRacersLite(),
+      this.getRacerGradeCache(),
+    ]);
+    const gradeByRacerId = new Map(grades.map((g) => [g.racer_id, g]));
+    return racers.map((racer) => {
+      const gradeInfo = gradeByRacerId.get(racer.racer_id);
+      return {
+        ...racer,
+        grade: gradeInfo?.grade ?? null,
+        winRate: gradeInfo?.win_rate ?? null,
+      };
+    });
   },
 
   /**

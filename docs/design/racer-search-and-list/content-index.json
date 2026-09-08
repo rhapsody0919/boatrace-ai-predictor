@@ -1,0 +1,12 @@
+{
+  "feature": "選手検索フィルタ拡張・選手一覧ページ（/racers）",
+  "released": "2026-09-08",
+  "content": {
+    "static_pages": ["/racers"],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

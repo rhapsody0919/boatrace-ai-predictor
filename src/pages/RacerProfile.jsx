@@ -87,6 +87,7 @@ export default function RacerProfile() {
       <div className="racer-profile-page">
         <nav className="racer-profile-breadcrumb">
           <Link to="/">← ホームに戻る</Link>
+          <Link to="/racers">選手一覧へ →</Link>
         </nav>
 
         {loading && <p className="racer-profile-loading">読み込み中...</p>}
