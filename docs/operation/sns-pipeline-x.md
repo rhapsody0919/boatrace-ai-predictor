@@ -56,6 +56,8 @@ claim対象が0件の場合はここで終了する（正常系、失敗では�
 
 ## 3. 実データ取得・映像設計
 
+**企画（キャンペーン）由来のネタの場合は、このセクションを丸ごとスキップし「3'. 企画由来ネタの画像生成」に進む。** 以下は非企画ネタ（通常の`venue-feature`/`daily-auto`型）向けの手順。
+
 `sns-video-producer-prompt.md`で確立済みの技術手順をそのまま踏襲する（車輪の再発明をしない）。
 
 - DBに実データがあることと、本番UIで実際に表示・再現できることは別物。台本確定前に必ずPlaywrightで実際の画面を確認する（同ドキュメント「制作フロー」2.参照）
@@ -67,15 +69,30 @@ claim対象が0件の場合はここで終了する（正常系、失敗では�
 - `sns-video-studio/remotion/risk-rules.json`の各ルールを照合する。該当があれば`risk_flags`に記録する（ブロックしない、警告記録のみ）
 - 同ドキュメントの「セルフレビュー チェックリスト」で自己採点し、Failがあれば直して再レンダリングする
 
+## 3'. 企画由来ネタの画像生成
+
+企画（`campaign_id`あり）のネタは9:16動画ではなく、**テキスト+静止画像2枚**（1200x675）を作る（ユーザー確認済み、2026-09-09。理由: 龍神レーダーは「AI予想を当てるサービス」ではなく「分析ツール」としてPRする方針のため、動画演出より実データの提示を優先する）。
+
+1. `scripts/lib/contentChannels/renderCampaignCard.js`の`renderCampaignEntryCard()`で1枚目（買い目・収支カード）を生成する。
+   - `variant: 'picks'`（事前発表、`sns_campaign_entries.hit`が`null`）: `picks`（3連単3点）・`points`（分析ツールで見えたポイント、最大3行）を渡す
+   - `variant: 'result'`（結果発表・最終まとめ、`hit`が確定済み）: `hit`・`actualResult`・`payoutYen`を渡す
+   - **`points`には内部の計算式・スコアを書かない**。`race_entries`（勝率・モーター2連率）と`feature_contributions.turnPrediction`（展開予測）から読み取れる、分析ツールに実在する項目名だけで書く（例:「1号艇の全国勝率が低め」「展開予測で◯号艇に◯◯の勝ち筋あり」）。「◯号艇のスコアが◯◯だから」のような独自算出値には触れない
+2. `renderCampaignDataExcerptCard()`で2枚目（データ出走表・展開予測の抜粋カード）を生成する。`boats`（`race_entries`から取得）・`pickedBoatNumbers`（買い目に含まれる艇番）・`turnPredictionTop3`（`feature_contributions.turnPrediction.patterns`の上位3件）を渡す
+3. 2枚とも`sns_drafts.video_storage_path`ではなく、画像2枚のパスを別途保存する必要がある（現状`sns_drafts`は単一の`cover_image_path`しか持たないため、1枚目を`cover_image_path`、2枚目は`source_data`にパスを記録する運用とする）
+4. リスクルール照合・セルフレビューは通常フローと同じ（`sns-video-studio/remotion/risk-rules.json`、該当があれば`risk_flags`に記録）
+
 ## 4. キャプション・ハッシュタグ
 
 `docs/operation/x-operations-playbook.md`「投稿設計の優先順位」に従う。公式告知単体にせず、推し活・体験談・データの体系整理のいずれかの切り口を必ず添える。本文には視聴者が反応したくなる「問いかけ」を1つ入れる。
+
+**企画由来のネタの場合**: 「必ず当たる」「稼げる」等の射幸心を煽る表現は使わない（`sns-video-studio/remotion/risk-rules.json`と同じ基準）。回収率が悪い日も誇張・言い訳をせず数字をそのまま書く（企画の趣旨が透明性であるため）。「問いかけ」の代わりに、前回までの通算収支を一言で触れて継続性を出す。
 
 ## 5. アップロード・永続化
 
 - Supabase Storageの非公開バケット`sns-hub-media`に動画・カバー画像をアップロードする（パス例: `{content_group_id}/x-ja.mp4`）
 - `sns_drafts.video_storage_path`/`cover_image_path`には**生のStorageパスをそのまま保存する**（署名付きURLを保存しない、`.claude/rules/sns-content-generation.md`参照）
 - `sns_drafts`テーブルにINSERTする。列: `content_group_id`（claimしたネタの`sns_topics.id`をそのまま使う）・`format`（ビジュアルテンプレート名のみ、3.で選んだフォーマット名。ネタ種別を入れない）・`template_variant_id`・`language`（'ja'）・`platform`（'x'）・`status`（'pending_review'）・`video_storage_path`・`cover_image_path`・`caption_text`・`hashtags`・`background_text`・`source_data`・`risk_flags`・`routine_run_id`（1.で生成した識別子）
+- **企画由来のネタの場合**: `video_storage_path`は空にする（動画ではないため）。`cover_image_path`に1枚目（買い目・収支カード）のStorageパスを、`source_data`に2枚目（データ出走表・展開予測カード）のStorageパスを含める（`{dataCardPath: "..."}`形式）。`format`列には`'CampaignEntryCard'`を入れる
 
 ## 6. claimしたターゲットの完了処理
 
