@@ -116,6 +116,44 @@
   font-size: var(--font-size-sm);
 }
 
+.racer-search-filter-block {
+  border-top: 1px dashed var(--border-hairline);
+  padding-top: 0.6rem;
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.racer-search-filter-title {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.racer-search-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.racer-search-list-link {
+  display: block;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border-hairline);
+  text-align: center;
+  color: var(--brand-accent-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.racer-search-list-link:hover {
+  text-decoration: underline;
+}
+
 .racer-search-results {
   list-style: none;
   margin: 0.5rem 0 0 0;
