@@ -31,9 +31,15 @@ node --env-file=.env.local scripts/daily/campaign-detect-and-generate.js [YYYY-M
 ## 処理内容
 
 1. `sns_campaigns.status='active'`の企画を全件取得する
-2. 各企画の`selection_criteria`（例: `{metric:'volatilityPercentile', operator:'>=', value:0.99}`）を、
+2. 各企画の`selection_criteria`（例: `{metric:'volatilityPercentile', operator:'>=', value:0.985}`。単一条件だけでなく
+   配列（AND結合の複合条件）も指定できる、`findQualifyingRaces()`のJSDoc参照）を、
    対象日の`predictions.feature_contributions`と照合し、条件を満たすレースを検出する
    （`predictions`は同一race_idに複数行が存在しうるため、`predicted_at`最新の1件のみを見る）
+   ⚠️ パイロット企画の`value`は0.985であり0.99ではない。ホーム画面
+   （`TodaysVolatilityHighlights.jsx`）が`Math.round(値×100)`で四捨五入して
+   「99%」と表示するため、生の閾値は「表示上99%以上に見えるレース」の下限
+   （98.5%）に合わせている（2026-09-09、稼働中にユーザー指摘で調整。詳細は
+   `scripts/maintenance/create-campaign.js`のコメント参照）
 3. 既に`race_results`が確定しているレース、既に同企画でエントリ済みのレースは除外する
 4. 対象レースについて`race_entries`（6艇分の勝率・モーター2連率）と
    `feature_contributions.turnPrediction`（1マーク展開予測）を取得し、

@@ -54,3 +54,5 @@
   - **下書き生成Routineの停止を検知する仕組み**: 下書き生成は本リポジトリ外の生成Routineに全面依存しており、その稼働を直接監視する手段が無かった。`scripts/maintenance/content-ops-checks/check-campaign-draft-lag.js`を新設し、承認済みネタなのに3時間以上下書きが作られていないものを症状ベースで検知、`session-start-check.js`の13番目のチェック項目として追加した
   - **失敗時のSlack通知**: `campaign-pipeline.yml`に`content-ops-nightly-check.yml`と同じ`SLACK_WEBHOOK_URL`経路での失敗通知ステップを追加した
   - **既知の残課題**（今回は対応見送り）: `campaign-backfill-results.js`で1エントリの結果書き戻し（`backfillEntryResult`）自体は成功したが後続の結果発表ネタ作成（`createResultAnnouncementTopic`）が失敗した場合、そのエントリは次回実行時に`actual_result`が既に埋まっているため「結果未確定」の再試行対象から外れ、結果発表ネタだけが永久に作られなくなる。発生頻度は低い（一時的なDBエラー等）上、Slack通知で人間が気づいて手動でネタを作成できるため、書き戻しとネタ作成の順序入れ替え等の抜本対応は見送った
+
+- [x] **20. 選定閾値をUI表示値に合わせて0.985に調整**（2026-09-09、稼働中に発見・対応）: ホーム画面（`TodaysVolatilityHighlights.jsx`）が`Math.round(値×100)`で四捨五入して「99%」と表示する一方、`selection_criteria.value`は生の値0.99だったため、実値98.8%（表示は「99%」）のレースが対象外になる食い違いをユーザーが発見。「UI表示で99%に見えるレースは対象に含めるべき」との判断で閾値を0.985（四捨五入で99%になる下限）に変更した（DBを直接更新、`scripts/maintenance/create-campaign.js`も追随）。透明性企画の趣旨上、条件緩和の経緯を`spec.md`に明記し、キャプション文言も「99%以上」→「99%（表示値）以上」に統一した（`sns-pipeline-x.md`）。変更直後にPhase Aを再実行し、当日の桐生2R（実値98.8%）を実際に新規エントリとして捕捉できることを確認済み
