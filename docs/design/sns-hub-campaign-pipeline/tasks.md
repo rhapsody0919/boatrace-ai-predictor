@@ -33,7 +33,7 @@
 
 - [x] **11. フェーズAの初回実行・動作確認**: 実施済み（2026-09-08）。試験実行で「結果確定済みレースを誤って登録しかける」不具合を発見・修正（`getRaceIdsWithResults()`必須チェック追加）。**本物の初回エントリはまだ無い**（次回のcron/朝実行で作成される想定）
 
-- [ ] **12. フェーズBの初回実行・動作確認**: タスク11で本物のエントリが作成された後、レース終了後に結果確定が正しく動くことを確認する
+- [x] **12. フェーズBの初回実行・動作確認**: 実施済み（2026-09-09、タスク19の修正後の動作確認として実行）。1件目（びわこ2R）の結果は実際の着順2-1-6、買い目（3-2-4/3-4-2/2-3-4）不的中、通算収支-900円。結果書き戻し・結果発表ネタ作成とも正しく動作した
 
 - [ ] **13. チャネル別下書き生成の初回確認**: タスク8の分岐が実際に機能し、2件目以降のエントリで前回の結果を踏まえた本文が生成されることを確認する（1件目のみでは検証できないため、最低2エントリ分の実行後に確認する）
 
@@ -46,3 +46,11 @@
 - [x] **17. Xカードv4〜v5デザイン改善・ダウンロード不具合修正**（2026-09-09、PR #601/#602）: 実際に生成した1件目の投稿を見た指摘（ゴールド不足・余白・ダウンロード不可・発走時刻欠落・CTA見切れ）を受け、`CampaignEntryCard.jsx`/`CampaignDataExcerptCard.jsx`を全面改訂。キャンバスも16:9横型（1200x675）→4:5縦型（1080x1350、スマホ閲覧が主のため）に変更。sns-hub側の画像ダウンロード不具合（`source_data.dataCardPath`未署名、`PostingActionLinks`が画像ダウンロード未対応）も修正
 
 - [x] **18. Phase A/B・1日のまとめの自動化**（2026-09-09）: `.github/workflows/campaign-pipeline.yml`を新設し、`campaign-detect-and-generate.js`（Phase A）・`campaign-backfill-results.js`（Phase B）をJST 6:00-23:59の間30分おきに自動実行するようにした。新規`scripts/daily/campaign-daily-summary.js`＋`createDailySummaryTopic()`（`snsCampaigns.js`）で「1日のまとめ」投稿（ナイター終了後21:30 JST）を追加。下書き（X画像・ブログ記事）の生成自体は既存のsns-topic-gate基盤（チャネル別生成Routineの自律ポーリング）がそのまま担うため追加実装不要と判明（実際にパイロット企画1件目の下書きも`x-pipeline-*`識別子で既に自動生成されていたことを確認）。実装の過程で2件の見落としを発見・修正した: ①PR #599（`findQualifyingRaces`のUTC/JST境界バグ修正・`autoApproveTopics`実装）が作成済みのままマージされずmasterに未反映だったため本タスクの前提としてマージ、②`campaign-detect-and-generate.js`の日付引数省略時のデフォルト値が`toISOString()`（UTC基準）のままで、JST 0-9時台の自動実行で前日日付になる同種のバグが呼び出し元に残っていたため`getTodayDateJST()`に修正
+
+- [x] **19. 天才エンジニアレビューを受けた堅牢性・拡張性の修正**（2026-09-09）: タスク18の自動化コードを依存関係・堅牢性・拡張性・観測性の観点でレビューし、指摘5点すべてに対応した。
+  - **企画・エントリ単位のエラー分離**: `campaign-detect-and-generate.js`・`campaign-backfill-results.js`の企画ループが無防備で、1企画（または1エントリ）の例外が他の企画・エントリの処理まで巻き込んで止める構造だった。企画単位（両ファイル）・エントリ単位（backfill側）でtry/catchを追加し、失敗時は`process.exitCode = 1`でCI側の失敗検知につなげるよう分離した
+  - **ワークフローの多重実行対策**: `campaign-pipeline.yml`に`concurrency`グループを追加（`scrape-scheduled.yml`に倣う）。また「1日のまとめ」のcronが通常サイクルの`*/30`と同時刻（21:30）にマッチし2つのワークフロー実行が同時に走っていたため、21:45にずらして重複を解消した
+  - **複合条件（selection_criteria）への対応**: `findQualifyingRaces()`が単一メトリクスの比較にしか対応しておらず、将来「イン崩れ99%以上 かつ SG戦のみ」等の複合条件を持つ企画を作れなかった。配列（AND結合）も受け付けるよう拡張（既存の単一条件企画は後方互換で挙動不変）
+  - **下書き生成Routineの停止を検知する仕組み**: 下書き生成は本リポジトリ外の生成Routineに全面依存しており、その稼働を直接監視する手段が無かった。`scripts/maintenance/content-ops-checks/check-campaign-draft-lag.js`を新設し、承認済みネタなのに3時間以上下書きが作られていないものを症状ベースで検知、`session-start-check.js`の13番目のチェック項目として追加した
+  - **失敗時のSlack通知**: `campaign-pipeline.yml`に`content-ops-nightly-check.yml`と同じ`SLACK_WEBHOOK_URL`経路での失敗通知ステップを追加した
+  - **既知の残課題**（今回は対応見送り）: `campaign-backfill-results.js`で1エントリの結果書き戻し（`backfillEntryResult`）自体は成功したが後続の結果発表ネタ作成（`createResultAnnouncementTopic`）が失敗した場合、そのエントリは次回実行時に`actual_result`が既に埋まっているため「結果未確定」の再試行対象から外れ、結果発表ネタだけが永久に作られなくなる。発生頻度は低い（一時的なDBエラー等）上、Slack通知で人間が気づいて手動でネタを作成できるため、書き戻しとネタ作成の順序入れ替え等の抜本対応は見送った

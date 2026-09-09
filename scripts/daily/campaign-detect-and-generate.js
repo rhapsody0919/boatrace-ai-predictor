@@ -67,87 +67,106 @@ async function main() {
     return;
   }
 
+  // 企画1件の異常（selection_criteriaの設定ミス、DB一時エラー等）で他の企画の
+  // 処理まで止まらないよう、企画ごとにtry/catchで分離する（2026-09-09、
+  // 天才エンジニアレビューで指摘: 元々このループ自体は無防備で、
+  // findQualifyingRaces()等が例外を投げるとmain()の外側catchまで一気に
+  // 抜けて後続の企画が一切処理されない構造だった）。失敗した企画があれば
+  // 最後にexit code 1で終了し、CI側の失敗検知（Slack通知）につなげる。
+  let hadCampaignError = false;
   for (const campaign of campaigns) {
     console.log(`\n--- 企画: ${campaign.name} ---`);
-    const qualifying = await findQualifyingRaces(
-      targetDate,
-      campaign.selection_criteria,
-    );
-    console.log(`対象条件を満たすレース: ${qualifying.length}件`);
-    if (qualifying.length === 0) continue;
+    try {
+      await processCampaign(campaign, targetDate);
+    } catch (error) {
+      hadCampaignError = true;
+      console.log(
+        `❌ 企画「${campaign.name}」の処理中にエラー: ${error.message}`,
+      );
+    }
+  }
+  if (hadCampaignError) process.exitCode = 1;
+}
 
-    const existingEntries = await getCampaignEntries(campaign.id);
-    const existingRaceIds = new Set(existingEntries.map((e) => e.race_id));
-    // 企画は「結果が出る前に賭ける」ことが前提のため、既に確定済みのレースは
-    // 買い目が生成できても対象外にする（2026-09-08、日中実行時に確定済み
-    // レースを登録しかけた反省を踏まえた必須チェック）
-    const confirmedRaceIds = await getRaceIdsWithResults(
-      qualifying.map((q) => q.raceId),
-    );
+async function processCampaign(campaign, targetDate) {
+  const qualifying = await findQualifyingRaces(
+    targetDate,
+    campaign.selection_criteria,
+  );
+  console.log(`対象条件を満たすレース: ${qualifying.length}件`);
+  if (qualifying.length === 0) return;
 
-    for (const q of qualifying) {
-      if (existingRaceIds.has(q.raceId)) {
-        console.log(`  ${q.raceId}: 既にエントリ済みのためスキップ`);
-        continue;
-      }
-      if (confirmedRaceIds.has(q.raceId)) {
-        console.log(
-          `  ${q.raceId}: 既に結果確定済みのためスキップ（企画の前提上、対象外）`,
-        );
-        continue;
-      }
-      if (!q.turnPrediction) {
-        console.log(`  ${q.raceId}: turnPredictionデータ無しのためスキップ`);
-        continue;
-      }
+  const existingEntries = await getCampaignEntries(campaign.id);
+  const existingRaceIds = new Set(existingEntries.map((e) => e.race_id));
+  // 企画は「結果が出る前に賭ける」ことが前提のため、既に確定済みのレースは
+  // 買い目が生成できても対象外にする（2026-09-08、日中実行時に確定済み
+  // レースを登録しかけた反省を踏まえた必須チェック）
+  const confirmedRaceIds = await getRaceIdsWithResults(
+    qualifying.map((q) => q.raceId),
+  );
 
-      const boats = await getRaceEntriesForScoring(q.raceId);
-      if (boats.length !== 6) {
-        console.log(
-          `  ${q.raceId}: race_entriesが6艇揃っていないためスキップ（${boats.length}艇）`,
-        );
-        continue;
-      }
+  for (const q of qualifying) {
+    if (existingRaceIds.has(q.raceId)) {
+      console.log(`  ${q.raceId}: 既にエントリ済みのためスキップ`);
+      continue;
+    }
+    if (confirmedRaceIds.has(q.raceId)) {
+      console.log(
+        `  ${q.raceId}: 既に結果確定済みのためスキップ（企画の前提上、対象外）`,
+      );
+      continue;
+    }
+    if (!q.turnPrediction) {
+      console.log(`  ${q.raceId}: turnPredictionデータ無しのためスキップ`);
+      continue;
+    }
 
-      let picks;
-      try {
-        picks = computeCampaignPicks(boats, q.turnPrediction);
-      } catch (error) {
-        console.log(
-          `  ${q.raceId}: 買い目生成エラー（${error.message}）のためスキップ`,
-        );
-        continue;
-      }
+    const boats = await getRaceEntriesForScoring(q.raceId);
+    if (boats.length !== 6) {
+      console.log(
+        `  ${q.raceId}: race_entriesが6艇揃っていないためスキップ（${boats.length}艇）`,
+      );
+      continue;
+    }
 
-      const promptText = buildPromptText({
+    let picks;
+    try {
+      picks = computeCampaignPicks(boats, q.turnPrediction);
+    } catch (error) {
+      console.log(
+        `  ${q.raceId}: 買い目生成エラー（${error.message}）のためスキップ`,
+      );
+      continue;
+    }
+
+    const promptText = buildPromptText({
+      raceId: q.raceId,
+      boats,
+      turnPrediction: q.turnPrediction,
+      metricValue: q.metricValue,
+    });
+
+    // 1レースのエントリ作成失敗で残りのレース・企画の処理を止めない
+    // （1日に複数レースがヒットしうる想定のため）
+    try {
+      const { entry, topic } = await createCampaignEntryWithTopic({
+        campaignId: campaign.id,
         raceId: q.raceId,
-        boats,
-        turnPrediction: q.turnPrediction,
-        metricValue: q.metricValue,
+        selectionMetricValue: q.metricValue,
+        aiPromptText: promptText,
+        aiModelName: MODEL_NAME,
+        aiPicks: picks.picks,
+        purchaseAmountYen: campaign.purchase_amount_yen,
+        topicText: `【${campaign.name}】${q.raceId} イン崩れ注意度${Math.round(q.metricValue * 100)}% 買い目: ${picks.picks.join(" / ")}`,
+        targetChannels: campaign.target_channels,
+        autoApproveTopic: campaign.tone_spec?.autoApproveTopics === true,
       });
 
-      // 1レースのエントリ作成失敗で残りのレース・企画の処理を止めない
-      // （1日に複数レースがヒットしうる想定のため）
-      try {
-        const { entry, topic } = await createCampaignEntryWithTopic({
-          campaignId: campaign.id,
-          raceId: q.raceId,
-          selectionMetricValue: q.metricValue,
-          aiPromptText: promptText,
-          aiModelName: MODEL_NAME,
-          aiPicks: picks.picks,
-          purchaseAmountYen: campaign.purchase_amount_yen,
-          topicText: `【${campaign.name}】${q.raceId} イン崩れ注意度${Math.round(q.metricValue * 100)}% 買い目: ${picks.picks.join(" / ")}`,
-          targetChannels: campaign.target_channels,
-          autoApproveTopic: campaign.tone_spec?.autoApproveTopics === true,
-        });
-
-        console.log(
-          `  ✅ ${q.raceId}: エントリ作成（買い目: ${picks.picks.join(", ")}, entry=${entry.id}, topic=${topic.id}, 承認待ち）`,
-        );
-      } catch (error) {
-        console.log(`  ❌ ${q.raceId}: エントリ作成エラー（${error.message}）`);
-      }
+      console.log(
+        `  ✅ ${q.raceId}: エントリ作成（買い目: ${picks.picks.join(", ")}, entry=${entry.id}, topic=${topic.id}, 承認待ち）`,
+      );
+    } catch (error) {
+      console.log(`  ❌ ${q.raceId}: エントリ作成エラー（${error.message}）`);
     }
   }
 }

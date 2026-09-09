@@ -106,14 +106,28 @@ export async function getActiveCampaigns() {
  * race_idは"YYYY-MM-DD-会場-レース番号"形式でJST日付を直接含むため、こちらで
  * 絞り込めばタイムゾーンの問題が起きない。
  * @param {string} date - 'YYYY-MM-DD'（対象日、race_idのJST日付で絞り込む）
- * @param {{metric:string, operator:'>='|'<=', value:number}} criteria
- * @returns {Promise<Array<{raceId:string, metricValue:number, turnPrediction:object|null}>>}
+ * @param {{metric:string, operator:'>='|'<=', value:number} | Array<{metric:string, operator:'>='|'<=', value:number}>} criteria
+ *   単一条件、または複合条件（配列、AND結合。例: イン崩れ99%以上 かつ SG戦のみ）
+ * @returns {Promise<Array<{raceId:string, metricValue:number, matchedMetrics:Record<string,number>, turnPrediction:object|null}>>}
+ *   metricValueは後方互換用（1つ目の条件の値）。複合条件の全メトリクス値はmatchedMetricsを参照
  */
 export async function findQualifyingRaces(date, criteria) {
   assertSupabaseEnabled();
-  const { metric, operator, value } = criteria;
-  if (operator !== ">=" && operator !== "<=") {
-    throw new Error(`findQualifyingRaces: 未対応のoperatorです（${operator}）`);
+  // 単一条件（{metric, operator, value}）と複合条件（配列、AND結合）の両方を
+  // 受け付ける（2026-09-09、天才エンジニアレビューで指摘: 元は単一メトリクスの
+  // 比較にしか対応しておらず、将来「イン崩れ99%以上 かつ SG戦のみ」のような
+  // 複合条件が要る企画を作れなかった）。既存のパイロット企画（単一条件）は
+  // 配列でないため`[criteria]`にラップされ、挙動は変わらない
+  const criteriaList = Array.isArray(criteria) ? criteria : [criteria];
+  if (criteriaList.length === 0) {
+    throw new Error("findQualifyingRaces: criteriaが空です");
+  }
+  for (const { operator } of criteriaList) {
+    if (operator !== ">=" && operator !== "<=") {
+      throw new Error(
+        `findQualifyingRaces: 未対応のoperatorです（${operator}）`,
+      );
+    }
   }
 
   const PAGE_SIZE = 1000;
@@ -149,14 +163,32 @@ export async function findQualifyingRaces(date, criteria) {
 
   const qualifying = [];
   for (const row of latestByRaceId.values()) {
-    const metricValue = row.feature_contributions?.[metric];
-    if (typeof metricValue !== "number") continue;
-    const matches =
-      operator === ">=" ? metricValue >= value : metricValue <= value;
-    if (!matches) continue;
+    // 複合条件はAND結合: 1つでもメトリクスが無い・条件を満たさなければ対象外
+    const matchedMetrics = {};
+    let allMatch = true;
+    for (const { metric, operator, value } of criteriaList) {
+      const metricValue = row.feature_contributions?.[metric];
+      if (typeof metricValue !== "number") {
+        allMatch = false;
+        break;
+      }
+      const matches =
+        operator === ">=" ? metricValue >= value : metricValue <= value;
+      if (!matches) {
+        allMatch = false;
+        break;
+      }
+      matchedMetrics[metric] = metricValue;
+    }
+    if (!allMatch) continue;
+
     qualifying.push({
       raceId: row.race_id,
-      metricValue,
+      // 既存の呼び出し元（campaign-detect-and-generate.js等）が単一条件
+      // 前提でq.metricValueをそのまま使っているため、後方互換として
+      // 1つ目の条件の値を残す。複合条件を使う場合はmatchedMetricsを見る
+      metricValue: matchedMetrics[criteriaList[0].metric],
+      matchedMetrics,
       turnPrediction: row.feature_contributions?.turnPrediction || null,
     });
   }

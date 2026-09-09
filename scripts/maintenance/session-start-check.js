@@ -29,6 +29,11 @@
  * 12) pendingInsights… sns_strategy_insightsのstatus='proposed'（要判断）件数
  *     （フローC-8、2026-09-05追加）。戦略メモの手動採用ボタン（PR #514）が
  *     セッション開始時チェックを欠いたまま滞留するのを防ぐ
+ * 13) campaignDraftLag… 稼働中企画のネタ（sns_topics）のうち、承認済みなのに
+ *     チャネル別生成Routineが下書きをまだ作っていないもの（sns_topic_targets.status
+ *     が'pending'のまま3時間以上経過）の件数（2026-09-09追加）。下書き生成は
+ *     このリポジトリ外の生成Routineに依存しており、その稼働状況を直接監視する
+ *     手段が無いため、症状（承認済みなのに下書きが作られない）で間接的に検知する
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -45,6 +50,7 @@ import { checkDeprecatedTerms } from "./content-ops-checks/check-deprecated-term
 import { checkMissingContentIndex } from "./content-ops-checks/check-missing-content-index.js";
 import { checkContentQualityAudit } from "./content-ops-checks/check-content-quality-audit.js";
 import { checkPendingInsights } from "./content-ops-checks/check-pending-insights.js";
+import { checkCampaignDraftLag } from "./content-ops-checks/check-campaign-draft-lag.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
@@ -173,6 +179,7 @@ async function main() {
     missingContentIndex,
     contentQualityAudit,
     pendingInsights,
+    campaignDraftLag,
   ] = await Promise.all([
     checkTweetDrafts(),
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
@@ -199,6 +206,7 @@ async function main() {
       error: error.message,
     })),
     checkPendingInsights(),
+    checkCampaignDraftLag(),
   ]);
 
   const staleVisualAssets = visualAssetAge.assets.filter(
@@ -232,6 +240,7 @@ async function main() {
           : undefined,
     },
     pendingInsights,
+    campaignDraftLag,
   };
 
   if (process.argv.includes("--json")) {
