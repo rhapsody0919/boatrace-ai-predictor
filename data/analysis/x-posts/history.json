@@ -133,6 +133,17 @@
       "postedAt": null,
       "metrics": null,
       "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、日曜のため当日ネタ生成日）。既存LivePredictionHookCM.jsx（データはprops経由）を再利用。レンダリングのためLivePredictionHookTemplateの一時export化とRoot.jsxへの一時Composition追加を行ったが、レンダリング後にgit checkoutで元に戻し、コード変更は残していない。締切まで155分の余裕を確認済み。直近3投稿（venue-stat-check/in-kuzure-warning-top5/venue-ranking、いずれもsns-topic-gate系）と型重複なし。getRecentRevisions/getActiveInsights確認済み（該当フィードバック無し、CJKフォント化け指摘は既存fonts.js対応済みで再発無しを目視確認）。risk-rules.json照合、risk_flags無し。sns_drafts承認待ち。"
+    },
+    {
+      "date": "2026-09-09",
+      "character": null,
+      "format": "answer-check",
+      "content": "答え合わせ型（鳴門1R、AIは1号艇の逃げを45%〈unifiedモデル〉と予想、結果も1号艇の逃げで的中。イン崩れ注意度23〈本命有利〉、3連単¥1,360）",
+      "videoFile": "Supabase Storage sns-hub-media/e93f0043-0879-4a50-9818-29a542863c94/x-ja.mp4（sns_drafts id=54783fb5-56c6-455b-a4fc-04bf4a5f9af1）",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、水曜のため当日ネタ生成日）。09:09 JST時点で本日唯一結果確定済みだった鳴門1Rを使用。直近3投稿（live-prediction-hook×2・trivia）と型重複を避けるため答え合わせ型を選定（live-prediction-hookは直近2連続のため選ぶと3連続になるため回避）。既存AnswerCheckHookCM.jsxのAnswerCheckHookTemplateを再利用し、一時的に新規exportを追加してレンダリング後にgit checkoutで元に戻した（コード変更は残していない）。getRecentRevisions/getActiveInsights確認、該当フィードバック無し。risk-rules.json照合、risk_flags無し。sns_drafts承認待ち。"
     }
   ]
 }
