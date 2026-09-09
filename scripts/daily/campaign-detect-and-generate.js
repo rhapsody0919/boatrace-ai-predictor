@@ -133,6 +133,7 @@ async function main() {
           purchaseAmountYen: campaign.purchase_amount_yen,
           topicText: `【${campaign.name}】${q.raceId} イン崩れ注意度${Math.round(q.metricValue * 100)}% 買い目: ${picks.picks.join(" / ")}`,
           targetChannels: campaign.target_channels,
+          autoApproveTopic: campaign.tone_spec?.autoApproveTopics === true,
         });
 
         console.log(

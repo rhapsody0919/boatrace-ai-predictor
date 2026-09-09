@@ -208,6 +208,11 @@ export async function getRaceEntriesForScoring(raceId) {
  * @param {string} params.topicText
  * @param {string[]} params.targetChannels - 例: ['x','blog']。sns_campaigns.target_channelsを
  *   そのまま渡す。省略時は全チャネル配信になってしまうため呼び出し元で必ず渡すこと
+ * @param {boolean} [params.autoApproveTopic] - trueならネタ承認（sns_topics.status）を
+ *   自動でapprovedにする。sns_campaigns.tone_spec.autoApproveTopicsが立っている企画のみ
+ *   trueを渡すこと（既定はfalse=要人間承認）。**投稿自体の自動承認とは別レイヤー**
+ *   （下書き生成後の実際の投稿承認は、この設定に関わらず常に人間が行う。
+ *   docs/design/sns-hub-campaign-pipeline/spec.md「シミュレーション開示」参照）
  * @returns {Promise<{entry:object, topic:object}>}
  */
 export async function createCampaignEntryWithTopic({
@@ -220,6 +225,7 @@ export async function createCampaignEntryWithTopic({
   purchaseAmountYen,
   topicText,
   targetChannels,
+  autoApproveTopic = false,
 }) {
   assertSupabaseEnabled();
 
@@ -252,6 +258,7 @@ export async function createCampaignEntryWithTopic({
       campaignId,
       topicText,
       targetChannels,
+      autoApproveTopic,
     );
     return { entry, topic };
   } catch (error) {
@@ -284,13 +291,18 @@ async function getTargetAccountIdsForChannels(targetChannels) {
  * createCampaignEntryWithTopic（対象レース検出時）とcreateResultAnnouncementTopic
  * （結果確定後）の共通処理。
  */
-async function createCampaignTopic(campaignId, topicText, targetChannels) {
+async function createCampaignTopic(
+  campaignId,
+  topicText,
+  targetChannels,
+  autoApprove = false,
+) {
   const contentType = await getVenueFeatureContentType();
   const targetAccountIds = await getTargetAccountIdsForChannels(targetChannels);
   const { topic } = await createTopicWithTargets({
     topicText,
     contentTypeId: contentType.id,
-    autoApprove: false,
+    autoApprove,
     targetAccountIds,
     skipReason: "企画のtarget_channelsに含まれないチャネルのため対象外",
   });
@@ -317,15 +329,22 @@ async function createCampaignTopic(campaignId, topicText, targetChannels) {
  * @param {string} campaignId
  * @param {string} topicText
  * @param {string[]} targetChannels - 例: ['x','blog']。sns_campaigns.target_channelsをそのまま渡す
+ * @param {boolean} [autoApproveTopic] - createCampaignEntryWithTopicと同じ意味
  * @returns {Promise<object>} topic
  */
 export async function createResultAnnouncementTopic(
   campaignId,
   topicText,
   targetChannels,
+  autoApproveTopic = false,
 ) {
   assertSupabaseEnabled();
-  return createCampaignTopic(campaignId, topicText, targetChannels);
+  return createCampaignTopic(
+    campaignId,
+    topicText,
+    targetChannels,
+    autoApproveTopic,
+  );
 }
 
 async function getVenueFeatureContentType() {
