@@ -83,22 +83,43 @@ async function main() {
     return;
   }
 
+  // 企画1件・エントリ1件の異常で他の企画・他のエントリの処理まで止まらない
+  // よう、両方の粒度でtry/catchを入れる（2026-09-09、天才エンジニアレビューで
+  // 指摘: 元々このループには一切try/catchが無く、1エントリのDB一時エラーで
+  // 同じ企画の残りエントリ・他の企画・maybeFinalizeCampaign()まで全部
+  // 巻き込んで止まる構造だった）。失敗があれば最後にexit code 1で終了し、
+  // CI側の失敗検知（Slack通知）につなげる。
+  let hadError = false;
   for (const campaign of campaigns) {
     console.log(`\n--- 企画: ${campaign.name} ---`);
-    const entries = await getCampaignEntries(campaign.id);
-    const pending = entries.filter((e) => e.actual_result == null);
-    console.log(`結果未確定のエントリ: ${pending.length}件`);
+    try {
+      await processCampaign(campaign);
+    } catch (error) {
+      hadError = true;
+      console.log(
+        `❌ 企画「${campaign.name}」の処理中にエラー: ${error.message}`,
+      );
+    }
+  }
+  if (hadError) process.exitCode = 1;
+}
 
-    if (pending.length > 0) {
-      const raceIds = pending.map((e) => e.race_id);
-      const { data: results, error } = await supabase
-        .from("race_results")
-        .select("race_id, rank1, rank2, rank3, payout_trio")
-        .in("race_id", raceIds);
-      if (error) throw new Error(`race_results取得エラー: ${error.message}`);
-      const resultByRaceId = new Map(results.map((r) => [r.race_id, r]));
+async function processCampaign(campaign) {
+  const entries = await getCampaignEntries(campaign.id);
+  const pending = entries.filter((e) => e.actual_result == null);
+  console.log(`結果未確定のエントリ: ${pending.length}件`);
 
-      for (const entry of pending) {
+  if (pending.length > 0) {
+    const raceIds = pending.map((e) => e.race_id);
+    const { data: results, error } = await supabase
+      .from("race_results")
+      .select("race_id, rank1, rank2, rank3, payout_trio")
+      .in("race_id", raceIds);
+    if (error) throw new Error(`race_results取得エラー: ${error.message}`);
+    const resultByRaceId = new Map(results.map((r) => [r.race_id, r]));
+
+    for (const entry of pending) {
+      try {
         const result = resultByRaceId.get(entry.race_id);
         if (!result || result.rank1 == null) {
           console.log(`  ${entry.race_id}: まだ結果未確定`);
@@ -140,12 +161,17 @@ async function main() {
           campaign.tone_spec?.autoApproveTopics === true,
         );
         console.log(`     結果発表ネタ作成: topic=${topic.id}（承認待ち）`);
+      } catch (error) {
+        // 1エントリの書き戻し失敗で、同じ企画の他エントリの処理を止めない
+        console.log(
+          `  ❌ ${entry.race_id}: 結果書き戻しエラー（${error.message}）`,
+        );
       }
     }
-
-    // 運用フロー④（企画終了時の最終まとめ投稿）
-    await maybeFinalizeCampaign(campaign, entries);
   }
+
+  // 運用フロー④（企画終了時の最終まとめ投稿）
+  await maybeFinalizeCampaign(campaign, entries);
 }
 
 main().catch((error) => {
