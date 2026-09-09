@@ -31,6 +31,15 @@ const FONT =
  * 内容量が日によって変動しても（ポイント数の増減等）中央に不自然な空白が
  * できないようにしている（v4での「余白が事故る」問題の教訓、内容を
  * 上から自然に積んで余りをフッター前の1箇所に集約する設計）。
+ *
+ * v6（2026-09-09、結果カードの改善）: variant='result'向けに
+ * retrospectiveMatches/retrospectiveMismatches（サイトの「データで振り返る」と
+ * 同じ✅/⚠️形式の振り返り文）を追加。ピックのハイライトはvariantで意味を
+ * 分離した（picks: 先頭ピックに常時ゴールドの「本命」、result: 実際に
+ * 的中したピックのみ緑の「的中」、外れたピックは無強調）。「実際の着順」は
+ * 地の文からhit有無で色分けした枠付きボックスに格上げした。これらの追加で
+ * 増えた縦方向の分だけ、既存要素の余白・フォントサイズを詰めて
+ * marginTop:"auto"フッターがキャンバス外に溢れないようにしている。
  */
 export function CampaignEntryCard({
   variant = "picks",
@@ -46,6 +55,8 @@ export function CampaignEntryCard({
   payoutYen,
   cumulativeNetYen,
   record,
+  retrospectiveMatches = [],
+  retrospectiveMismatches = [],
 }) {
   const { width } = useVideoConfig();
   const scale = width / 1080;
@@ -170,14 +181,14 @@ export function CampaignEntryCard({
               background: `linear-gradient(90deg, ${GOLD}29, ${GOLD}00)`,
               borderLeft: `4px solid ${GOLD}`,
               borderRadius: 6 * scale,
-              padding: `${26 * scale}px ${28 * scale}px`,
-              marginBottom: 40 * scale,
+              padding: `${20 * scale}px ${28 * scale}px`,
+              marginBottom: 28 * scale,
             }}
           >
             <span
               style={{
                 color: GOLD,
-                fontSize: 72 * scale,
+                fontSize: 64 * scale,
                 fontWeight: 800,
                 lineHeight: 1,
               }}
@@ -214,7 +225,7 @@ export function CampaignEntryCard({
             fontWeight: 700,
             padding: `${10 * scale}px ${20 * scale}px`,
             borderRadius: 999,
-            marginBottom: 32 * scale,
+            marginBottom: 24 * scale,
           }}
         >
           {variant === "picks"
@@ -228,68 +239,173 @@ export function CampaignEntryCard({
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 18 * scale,
-            marginBottom: 40 * scale,
+            gap: 12 * scale,
+            marginBottom: 28 * scale,
           }}
         >
-          {picks.map((combo, i) => (
-            <div
-              key={combo}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 16 * scale,
-                background:
-                  i === 0
-                    ? `linear-gradient(135deg, ${GOLD}38, ${CARD_BG})`
-                    : CARD_BG,
-                border:
-                  i === 0
-                    ? `1px solid ${GOLD}`
-                    : "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 12 * scale,
-                padding: `${24 * scale}px ${26 * scale}px`,
-              }}
-            >
-              {i === 0 && (
-                <span
-                  style={{
-                    color: NAVY,
-                    background: GOLD,
-                    fontSize: 15 * scale,
-                    fontWeight: 700,
-                    padding: `${4 * scale}px ${12 * scale}px`,
-                    borderRadius: 999,
-                    flex: "none",
-                  }}
-                >
-                  本命
-                </span>
-              )}
-              <span
+          {picks.map((combo, i) => {
+            // 本命（picks[0]）を強調するのはvariant='picks'（事前発表）のときだけ。
+            // 結果が出た後に外れた買い目をゴールドで演出すると「外れたのに主役
+            // 扱い」に見えてしまうため（2026-09-09、天才デザイナー・天才
+            // マーケターレビューで指摘）、resultバリアントでは的中した買い目
+            // （あれば）だけをSUCCESS色で示す
+            const isTopPick = variant === "picks" && i === 0;
+            const isWinningPick =
+              variant === "result" && hit && combo === actualResult;
+            const highlighted = isTopPick || isWinningPick;
+            const highlightColor = isWinningPick ? SUCCESS : GOLD;
+            return (
+              <div
+                key={combo}
                 style={{
-                  fontSize: 32 * scale,
-                  fontWeight: 700,
-                  letterSpacing: 1.5,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16 * scale,
+                  background: highlighted
+                    ? `linear-gradient(135deg, ${highlightColor}38, ${CARD_BG})`
+                    : CARD_BG,
+                  border: highlighted
+                    ? `1px solid ${highlightColor}`
+                    : "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 12 * scale,
+                  padding: `${18 * scale}px ${26 * scale}px`,
                 }}
               >
-                {combo}
-              </span>
-            </div>
-          ))}
+                {(isTopPick || isWinningPick) && (
+                  <span
+                    style={{
+                      color: NAVY,
+                      background: highlightColor,
+                      fontSize: 15 * scale,
+                      fontWeight: 700,
+                      padding: `${4 * scale}px ${12 * scale}px`,
+                      borderRadius: 999,
+                      flex: "none",
+                    }}
+                  >
+                    {isTopPick ? "本命" : "的中"}
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: 32 * scale,
+                    fontWeight: 700,
+                    letterSpacing: 1.5,
+                  }}
+                >
+                  {combo}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
         {variant === "result" && actualResult && (
           <div
             style={{
-              color: "#cfd6dd",
-              fontSize: 20 * scale,
-              marginBottom: 32 * scale,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: hit
+                ? "rgba(16,185,129,0.12)"
+                : "rgba(239,68,68,0.12)",
+              border: `1px solid ${hit ? SUCCESS : ERROR}55`,
+              borderRadius: 10 * scale,
+              padding: `${14 * scale}px ${24 * scale}px`,
+              marginBottom: 24 * scale,
             }}
           >
-            実際の着順: {actualResult}
+            <span
+              style={{ fontSize: 16 * scale, color: MUTED, fontWeight: 700 }}
+            >
+              実際の着順
+            </span>
+            <span
+              style={{
+                fontSize: 32 * scale,
+                fontWeight: 800,
+                letterSpacing: 1.5,
+                color: hit ? SUCCESS : ERROR,
+              }}
+            >
+              {actualResult}
+            </span>
           </div>
         )}
+
+        {variant === "result" &&
+          (retrospectiveMatches.length > 0 ||
+            retrospectiveMismatches.length > 0) && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 12 * scale,
+                marginBottom: 20 * scale,
+              }}
+            >
+              {retrospectiveMatches.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      color: SUCCESS,
+                      fontSize: 15 * scale,
+                      fontWeight: 700,
+                      marginBottom: 6 * scale,
+                    }}
+                  >
+                    ✅ データと整合した点
+                  </div>
+                  <ul
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      listStyle: "none",
+                      fontSize: 17 * scale,
+                      lineHeight: 1.55,
+                      color: "#e7ebef",
+                    }}
+                  >
+                    {retrospectiveMatches.map((m) => (
+                      <li key={m} style={{ marginBottom: 6 * scale }}>
+                        {m}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {retrospectiveMismatches.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      color: ERROR,
+                      fontSize: 15 * scale,
+                      fontWeight: 700,
+                      marginBottom: 6 * scale,
+                    }}
+                  >
+                    ⚠️ データと違った点
+                  </div>
+                  <ul
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      listStyle: "none",
+                      fontSize: 17 * scale,
+                      lineHeight: 1.55,
+                      color: "#e7ebef",
+                    }}
+                  >
+                    {retrospectiveMismatches.map((m) => (
+                      <li key={m} style={{ marginBottom: 6 * scale }}>
+                        {m}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
 
         {variant === "picks" && points.length > 0 && (
           <>
@@ -327,7 +443,7 @@ export function CampaignEntryCard({
             display: "flex",
             justifyContent: "space-between",
             borderTop: `1px solid ${GOLD}4d`,
-            paddingTop: 32 * scale,
+            paddingTop: 24 * scale,
             marginTop: "auto",
             flex: "none",
           }}
