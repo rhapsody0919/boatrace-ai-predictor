@@ -15,7 +15,28 @@ import {
   getCampaignEntries,
   backfillEntryResult,
   createResultAnnouncementTopic,
+  getRaceEntriesForScoring,
 } from "../lib/snsCampaigns.js";
+import { buildResultRetrospective } from "../lib/campaignResultRetrospective.js";
+
+/**
+ * レースの1マーク展開予測（feature_contributions.turnPrediction）を取得する。
+ * findQualifyingRaces()と同じ「predicted_at最新の1件のみを見る」ロジックだが、
+ * 対象は既に発走済みのレースのため、通常は朝の初期バッチ時点の値のまま
+ * （結果確定後に再予測は行われないため、ここでの取得は事後の振り返り専用）。
+ */
+async function fetchTurnPrediction(raceId) {
+  const { data, error } = await supabase
+    .from("predictions")
+    .select("predicted_at, feature_contributions")
+    .eq("race_id", raceId)
+    .not("feature_contributions", "is", null)
+    .order("predicted_at", { ascending: false })
+    .limit(1);
+  if (error)
+    throw new Error(`predictions取得エラー(${raceId}): ${error.message}`);
+  return data?.[0]?.feature_contributions?.turnPrediction || null;
+}
 
 function summarize(entries) {
   const totalSpend = entries.reduce(
@@ -150,13 +171,39 @@ async function processCampaign(campaign) {
           `  ${hit ? "🎯" : "❌"} ${entry.race_id}: 実際=${actual} 買い目=${picks.join(",")} 払戻=${payoutYen}円 通算収支=${updated.cumulative_net_yen}円`,
         );
 
+        // なぜ当たった/外れたかを実データで説明する振り返り文を組み立てる
+        // （2026-09-09、ユーザー要望: サイトの「データで振り返る」と同じ
+        // ✅整合/⚠️不整合の枠組みを企画のキャプションにも反映したい）。
+        // 取得・計算に失敗しても結果発表自体は止めない（振り返りは付加情報のため）
+        let retrospectiveText = "";
+        try {
+          const boats = await getRaceEntriesForScoring(entry.race_id);
+          const turnPrediction = await fetchTurnPrediction(entry.race_id);
+          const pickedBoatNumbers = picks[0]
+            ? picks[0].split("-").map(Number)
+            : [];
+          const { matches, mismatches } = buildResultRetrospective({
+            boats,
+            actualResult: actual,
+            turnPrediction,
+            pickedBoatNumbers,
+          });
+          const parts = [];
+          if (matches.length > 0) parts.push(`✅整合: ${matches.join("／")}`);
+          if (mismatches.length > 0)
+            parts.push(`⚠️不整合: ${mismatches.join("／")}`);
+          if (parts.length > 0) retrospectiveText = `\n${parts.join("\n")}`;
+        } catch (error) {
+          console.log(`     振り返り生成をスキップ（${error.message}）`);
+        }
+
         // 運用フロー③（対象レース確定後の結果発表投稿）用のネタを作成する。
         // ②の買い目発表とは別の2件目のネタ。backfillEntryResultは
         // actual_result未確定のエントリだけを対象にするため、このブロックは
         // エントリごとに1回だけ実行される（二重生成の心配は無い）
         const topic = await createResultAnnouncementTopic(
           campaign.id,
-          `【${campaign.name}】${entry.race_id} 結果発表: ${hit ? "🎯的中" : "❌不的中"}（実際=${actual}、買い目=${picks.join("/")}）払戻${payoutYen}円 通算収支${updated.cumulative_net_yen}円`,
+          `【${campaign.name}】${entry.race_id} 結果発表: ${hit ? "🎯的中" : "❌不的中"}（実際=${actual}、買い目=${picks.join("/")}）払戻${payoutYen}円 通算収支${updated.cumulative_net_yen}円${retrospectiveText}`,
           campaign.target_channels,
           campaign.tone_spec?.autoApproveTopics === true,
         );
