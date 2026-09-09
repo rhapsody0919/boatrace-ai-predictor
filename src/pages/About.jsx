@@ -199,7 +199,9 @@ export default function About() {
             <div className="feature-card">
               <div className="feature-icon">🔄</div>
               <h3>毎日更新</h3>
-              <p>1時間ごとに最新のレースデータを分析します。</p>
+              <p>
+                発走が近いレースから順次、最新の直前情報を取り込んで予想を更新します。
+              </p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">📱</div>
