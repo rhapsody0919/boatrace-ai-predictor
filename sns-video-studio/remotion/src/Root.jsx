@@ -548,13 +548,14 @@ export function RemotionRoot() {
         component={CampaignEntryCard}
         durationInFrames={1}
         fps={30}
-        width={1200}
-        height={675}
+        width={1080}
+        height={1350}
         defaultProps={{
           variant: "picks",
           dayLabel: "1日目・1レース目",
           headline: "サンプル見出し",
           raceLine: "",
+          heroStat: { value: "99%", label: "イン崩れ注意度" },
           picks: ["1-2-3", "1-3-2", "2-1-3"],
           points: [],
           hit: false,
@@ -570,8 +571,8 @@ export function RemotionRoot() {
         component={CampaignDataExcerptCard}
         durationInFrames={1}
         fps={30}
-        width={1200}
-        height={675}
+        width={1080}
+        height={1350}
         defaultProps={{
           raceLine: "",
           boats: [],

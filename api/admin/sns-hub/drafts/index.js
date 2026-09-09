@@ -72,27 +72,49 @@ export default async function handler(req) {
     // blog/noteのcover_image_pathは`public/images/blog/...`（Storageではなく
     // リポジトリのコミット済み静的アセット）のため、署名対象から除外する
     // （resolvePublicAssetUrl参照）
+    //
+    // 企画型パイプライン（format='CampaignEntryCard'）は2枚目の画像パスを
+    // source_data.dataCardPathに保存している（sns_drafts.cover_image_pathは
+    // 1枚しか持てないため）。ここで署名しないと2枚目のURLがフロントエンドに
+    // 一切渡らず、プレビューもダウンロードも不可能になる不具合があった
+    // （2026-09-09発覚）。
+    const dataCardPaths = drafts
+      .map((d) => d.source_data?.dataCardPath)
+      .filter(Boolean);
     const pathsToSign = [
       ...new Set(
         drafts
           .flatMap((d) => [d.video_storage_path, d.cover_image_path])
+          .concat(dataCardPaths)
           .filter(Boolean)
           .filter((p) => !resolvePublicAssetUrl(p)),
       ),
     ];
     const signedUrlMap = await signStoragePaths(pathsToSign);
 
-    const enriched = drafts.map((d) => ({
-      ...d,
-      video_url: d.video_storage_path
-        ? signedUrlMap[d.video_storage_path] || null
-        : null,
-      cover_image_url: d.cover_image_path
-        ? resolvePublicAssetUrl(d.cover_image_path) ||
-          signedUrlMap[d.cover_image_path] ||
-          null
-        : null,
-    }));
+    const enriched = drafts.map((d) => {
+      const dataCardPath = d.source_data?.dataCardPath;
+      return {
+        ...d,
+        video_url: d.video_storage_path
+          ? signedUrlMap[d.video_storage_path] || null
+          : null,
+        cover_image_url: d.cover_image_path
+          ? resolvePublicAssetUrl(d.cover_image_path) ||
+            signedUrlMap[d.cover_image_path] ||
+            null
+          : null,
+        source_data: dataCardPath
+          ? {
+              ...d.source_data,
+              dataCardUrl:
+                resolvePublicAssetUrl(dataCardPath) ||
+                signedUrlMap[dataCardPath] ||
+                null,
+            }
+          : d.source_data,
+      };
+    });
 
     return jsonResponse({ data: enriched });
   } catch (error) {
