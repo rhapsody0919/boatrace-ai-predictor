@@ -308,7 +308,7 @@
     "refreshTooltip": "Clear browser cache and reload data",
     "refreshing": "Loading...",
     "refresh": "Reload",
-    "autoUpdateNote": "💡 Data auto-updates every hour"
+    "autoUpdateNote": "💡 Updates roll out gradually as races approach start time"
   },
   "betting": {
     "title": "Picks & Odds",

@@ -306,7 +306,7 @@
     "refreshTooltip": "清除瀏覽器快取並重新載入資料",
     "refreshing": "載入中...",
     "refresh": "重新載入",
-    "autoUpdateNote": "💡 資料每小時自動更新"
+    "autoUpdateNote": "💡 資料會隨著發走時間接近而陸續更新"
   },
   "betting": {
     "title": "投注組合與賠率",

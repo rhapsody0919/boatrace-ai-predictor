@@ -306,7 +306,7 @@
     "refreshTooltip": "브라우저 캐시를 지우고 데이터 다시 불러오기",
     "refreshing": "로딩 중...",
     "refresh": "새로고침",
-    "autoUpdateNote": "💡 데이터는 매시간 자동 업데이트됩니다"
+    "autoUpdateNote": "💡 경주 시작 시각이 가까워질수록 순차적으로 업데이트됩니다"
   },
   "betting": {
     "title": "추천 조합과 배당률",

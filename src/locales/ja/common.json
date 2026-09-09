@@ -306,7 +306,7 @@
     "refreshTooltip": "ブラウザのキャッシュをクリアしてデータを再読み込み",
     "refreshing": "読み込み中...",
     "refresh": "再読み込み",
-    "autoUpdateNote": "💡 データは1時間ごとに自動更新されます"
+    "autoUpdateNote": "💡 発走が近いレースから順次更新されます"
   },
   "betting": {
     "title": "買い目・オッズ",

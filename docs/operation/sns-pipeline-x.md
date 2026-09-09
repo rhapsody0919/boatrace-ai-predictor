@@ -2,14 +2,14 @@
 
 承認済みネタ（`sns_topics.status='approved'`）のうち、X向けに割り当てられた`sns_topic_targets`をポーリングして下書きを生成するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。チャネル別パイプライン分離の最初の1本（ADR 0037）として、note/blog/tiktok/youtubeへの展開時もこのドキュメントの構成をテンプレートにする。
 
-**このRoutineはネタを自分で選定しない**。`sns-topic-proposer-weekly.md`・`sns-topic-proposer-daily-auto.md`・sns-hubの手動生成ボタン（日次・時間制約型、実装後）のいずれかが作った承認済みネタを拾って生成するだけの、疎結合な下流工程。
+**このRoutineはネタを自分で選定しない**。`sns-topic-proposer-weekly.md`・`sns-topic-proposer-daily-auto.md`・sns-hubの手動生成ボタン（日次・時間制約型、実装後）・企画型パイプライン（`scripts/daily/campaign-*.js`、`campaign_id`ありのネタ、後述「3'.」参照）のいずれかが作った承認済みネタを拾って生成するだけの、疎結合な下流工程。企画由来のネタは`sns-topic-proposer-daily-auto`とは無関係の別経路（このリポジトリ内のGitHub Actionsが自動生成）である点に注意（2026-09-09、ユーザーからの確認を受けて明記）。
 
 ## 実行トリガー
 
 このRoutineは2つの起動方法を持つ。まず`<routine-fire-payload>`ブロックの有無を確認する。
 
 - **無い場合（スケジュール起動）**: 定期ポーリング。以下「0.」以降にそのまま進む
-  - 週次型（`venue-feature`）: 1時間おきのcronでポーリングする（2026-09-05、初期値の12時間おきから変更）
+  - 週次型（`venue-feature`）: 1時間おきのcronでポーリングする（2026-09-05、初期値の12時間おきから変更）。**企画型パイプラインのネタも`content_type_id`は`venue-feature`を流用しているため、この同じ周期で自然にポーリングされる**（`campaign_id`の有無で「3'.」の企画向け分岐に進む）
   - 日次・一般型（`daily-auto`）: 日次自動提案Routineの完了後にポーリングする（同じcron間隔でも自然に拾える）
   - 日次・時間制約型（`race-time-critical`）: このパイプラインでは扱わない。既存の`sns-hub-content-generation`（`sns-video-producer-prompt.md`）の手動生成ボタン系が担当する（type選択UIの実装後）
 - **ある場合（API起動）**: ペイロードの`action`で分岐する
