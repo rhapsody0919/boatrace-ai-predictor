@@ -157,7 +157,7 @@ async function processCampaign(campaign, targetDate) {
         aiModelName: MODEL_NAME,
         aiPicks: picks.picks,
         purchaseAmountYen: campaign.purchase_amount_yen,
-        topicText: `【${campaign.name}】${q.raceId} イン崩れ注意度${Math.round(q.metricValue * 100)}% 買い目: ${picks.picks.join(" / ")}`,
+        topicText: `【${campaign.name}】${q.raceId} イン崩れ注意度${Math.round(q.metricValue * 100)}% 買い目: ${picks.picks.join(" / ")} レースページ: https://www.boat-ai.jp/race/${q.raceId}`,
         targetChannels: campaign.target_channels,
         autoApproveTopic: campaign.tone_spec?.autoApproveTopics === true,
       });

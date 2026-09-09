@@ -203,7 +203,7 @@ async function processCampaign(campaign) {
         // エントリごとに1回だけ実行される（二重生成の心配は無い）
         const topic = await createResultAnnouncementTopic(
           campaign.id,
-          `【${campaign.name}】${entry.race_id} 結果発表: ${hit ? "🎯的中" : "❌不的中"}（実際=${actual}、買い目=${picks.join("/")}）払戻${payoutYen}円 通算収支${updated.cumulative_net_yen}円${retrospectiveText}`,
+          `【${campaign.name}】${entry.race_id} 結果発表: ${hit ? "🎯的中" : "❌不的中"}（実際=${actual}、買い目=${picks.join("/")}）払戻${payoutYen}円 通算収支${updated.cumulative_net_yen}円 レースページ: https://www.boat-ai.jp/race/${entry.race_id}${retrospectiveText}`,
           campaign.target_channels,
           campaign.tone_spec?.autoApproveTopics === true,
         );
