@@ -18,11 +18,13 @@ const MEDALS = ["🥇", "🥈", "🥉"];
  * （データ出走表・展開予測）をそのまま抜粋する構成にしている
  * （ユーザー確認済み、2026-09-09）。
  *
- * 縦方向は固定キャンバス（675px）に対して常に「6艇の出走表＋展開予測最大3件
- * ＋CTA」が収まるよう、余白・フォントサイズを固定値でチューニングしている
- * （2026-09-09、CTA行がキャンバス下端で見切れる不具合を修正。marginTop:"auto"
- * で下端に押し出す構成だったため、内容量が想定よりわずかに多いだけで
- * キャンバス外にはみ出し、文字が上半分だけ描画される形で崩れて見えていた）。
+ * v5（2026-09-09、縦型化）: 主な閲覧環境がスマホのタイムラインであることを
+ * 踏まえ、キャンバスを16:9横型（1200x675）から4:5縦型（1080x1350）に変更した。
+ * 縦方向の余白が増えたことで、以前発生していた「CTA行がキャンバス下端で
+ * 見切れる」不具合（`marginTop:"auto"`で下端に押し出す構成に対し、6艇の
+ * 出走表＋展開予測3件を積んだ実際の内容量がキャンバス高を超えていた）の
+ * 再発リスクは大きく下がったが、フォントサイズ・余白は縦型キャンバス基準
+ * （scale = width/1080）で再チューニングしている。
  *
  * @param {{boat_number:number, player_name:string, win_rate:number, motor_2rate:number}[]} boats
  * @param {number[]} pickedBoatNumbers - データ出走表で★を付ける艇番（買い目に含まれる艇）
@@ -35,7 +37,7 @@ export function CampaignDataExcerptCard({
   turnPredictionTop3 = [],
 }) {
   const { width } = useVideoConfig();
-  const scale = width / 1200;
+  const scale = width / 1080;
   const pickedSet = new Set(pickedBoatNumbers);
 
   return (
@@ -56,7 +58,7 @@ export function CampaignDataExcerptCard({
           top: 0,
           left: 0,
           right: 0,
-          height: 6 * scale,
+          height: 8 * scale,
           background: GOLD,
         }}
       />
@@ -64,11 +66,11 @@ export function CampaignDataExcerptCard({
       <div
         style={{
           position: "absolute",
-          top: 6 * scale,
+          top: 8 * scale,
           left: 0,
           right: 0,
           bottom: 0,
-          padding: `${56 * scale}px ${72 * scale}px`,
+          padding: `${64 * scale}px`,
           display: "flex",
           flexDirection: "column",
         }}
@@ -77,28 +79,28 @@ export function CampaignDataExcerptCard({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 10 * scale,
-            marginBottom: 14 * scale,
+            gap: 12 * scale,
+            marginBottom: 32 * scale,
           }}
         >
           <div
             style={{
-              width: 9 * scale,
-              height: 9 * scale,
+              width: 11 * scale,
+              height: 11 * scale,
               borderRadius: "50%",
               background: GOLD,
             }}
           />
-          <span style={{ color: GOLD, fontWeight: 700, fontSize: 20 * scale }}>
+          <span style={{ color: GOLD, fontWeight: 700, fontSize: 24 * scale }}>
             龍神レーダー
           </span>
         </div>
 
         <div
           style={{
-            fontSize: 20 * scale,
+            fontSize: 28 * scale,
             fontWeight: 700,
-            marginBottom: 4 * scale,
+            marginBottom: 14 * scale,
           }}
         >
           {raceLine} データ出走表（抜粋）
@@ -106,8 +108,8 @@ export function CampaignDataExcerptCard({
         <div
           style={{
             color: MUTED,
-            fontSize: 13 * scale,
-            marginBottom: 16 * scale,
+            fontSize: 17 * scale,
+            marginBottom: 40 * scale,
           }}
         >
           分析ツールで全艇・全項目を確認できます
@@ -117,8 +119,8 @@ export function CampaignDataExcerptCard({
           style={{
             width: "100%",
             borderCollapse: "collapse",
-            fontSize: 14 * scale,
-            marginBottom: 16 * scale,
+            fontSize: 21 * scale,
+            marginBottom: 48 * scale,
           }}
         >
           <thead>
@@ -130,8 +132,8 @@ export function CampaignDataExcerptCard({
                     textAlign: i === 0 ? "left" : "center",
                     color: MUTED,
                     fontWeight: 700,
-                    fontSize: 12 * scale,
-                    paddingBottom: 6 * scale,
+                    fontSize: 15 * scale,
+                    paddingBottom: 18 * scale,
                     borderBottom: "1px solid rgba(255,255,255,0.15)",
                   }}
                 >
@@ -144,7 +146,7 @@ export function CampaignDataExcerptCard({
             {boats.map((boat) => {
               const picked = pickedSet.has(boat.boat_number);
               const cellStyle = {
-                padding: `${6 * scale}px 0`,
+                padding: `${24 * scale}px 0`,
                 borderBottom: "1px solid rgba(255,255,255,0.06)",
                 textAlign: "center",
                 color: picked ? GOLD : WHITE,
@@ -173,10 +175,10 @@ export function CampaignDataExcerptCard({
           <>
             <div
               style={{
-                fontSize: 13 * scale,
+                fontSize: 18 * scale,
                 color: MUTED,
                 fontWeight: 700,
-                marginBottom: 8 * scale,
+                marginBottom: 24 * scale,
               }}
             >
               展開予測（1着候補・確率順）
@@ -184,8 +186,8 @@ export function CampaignDataExcerptCard({
             <div
               style={{
                 display: "flex",
-                gap: 10 * scale,
-                marginBottom: 16 * scale,
+                gap: 16 * scale,
+                marginBottom: 48 * scale,
               }}
             >
               {turnPredictionTop3.map((p, i) => (
@@ -195,32 +197,32 @@ export function CampaignDataExcerptCard({
                   style={{
                     flex: 1,
                     background: CARD_BG,
-                    borderRadius: 8 * scale,
+                    borderRadius: 12 * scale,
                     border: "1px solid rgba(212,175,55,0.25)",
-                    padding: `${10 * scale}px ${10 * scale}px`,
+                    padding: `${32 * scale}px ${14 * scale}px`,
                     textAlign: "center",
                   }}
                 >
                   <div
-                    style={{ fontSize: 17 * scale, marginBottom: 3 * scale }}
+                    style={{ fontSize: 38 * scale, marginBottom: 10 * scale }}
                   >
                     {MEDALS[i]}
                   </div>
-                  <div style={{ fontSize: 14 * scale, fontWeight: 700 }}>
+                  <div style={{ fontSize: 24 * scale, fontWeight: 700 }}>
                     {p.winnerCourse}号艇
                   </div>
                   <div
                     style={{
-                      fontSize: 11 * scale,
+                      fontSize: 18 * scale,
                       color: "#cfd6dd",
-                      margin: `${2 * scale}px 0`,
+                      margin: `${6 * scale}px 0`,
                     }}
                   >
                     {p.technique}
                   </div>
                   <div
                     style={{
-                      fontSize: 12 * scale,
+                      fontSize: 20 * scale,
                       color: GOLD,
                       fontWeight: 700,
                     }}
@@ -236,9 +238,10 @@ export function CampaignDataExcerptCard({
         <div
           style={{
             marginTop: "auto",
-            paddingTop: 14 * scale,
+            paddingTop: 40 * scale,
             borderTop: "1px solid rgba(212,175,55,0.3)",
-            fontSize: 13 * scale,
+            fontSize: 19 * scale,
+            lineHeight: 1.6,
             color: MUTED,
           }}
         >

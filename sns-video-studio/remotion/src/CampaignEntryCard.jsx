@@ -23,14 +23,14 @@ const FONT =
  * variant='picks'（事前発表、運用フロー②）: hit/actualResultは表示しない
  * variant='result'（結果発表、運用フロー③）: hit/actualResultを表示する
  *
- * v4（2026-09-09、デザイン改善）: 「ゴールドが使われておらず地味」「余白の
- * 無駄」という指摘を受けて全面調整。見出しをゴールドにし、縦中央寄せ
- * （flex:1 + justify-content:center）をやめて上詰めにした（内容が短い日は
- * 見出し〜フッターの間に意図しない空白ができていた）。空いた分は
- * heroStat（企画の選定基準値、例:「イン崩れ注意度99%」）を大きく
- * 見せる帯に充てている。heroStatは企画のselection_criteria.metricに
- * 依存しない汎用propとして設計し、他の指標を使う将来の企画でも再利用できる
- * ようにしている。
+ * v5（2026-09-09、縦型化）: 主な閲覧環境がスマホのタイムラインであることを
+ * 踏まえ、キャンバスを16:9横型（1200x675）から4:5縦型（1080x1350）に変更した。
+ * 単純な引き伸ばしではなく、増えた縦方向の余白を活かして買い目3点を横並び
+ * ではなく縦積みにし（本命に「本命」バッジを追加）、見出し・heroStatの
+ * フォントも拡大した。フッターは`marginTop:"auto"`でカード下端に固定し、
+ * 内容量が日によって変動しても（ポイント数の増減等）中央に不自然な空白が
+ * できないようにしている（v4での「余白が事故る」問題の教訓、内容を
+ * 上から自然に積んで余りをフッター前の1箇所に集約する設計）。
  */
 export function CampaignEntryCard({
   variant = "picks",
@@ -48,17 +48,18 @@ export function CampaignEntryCard({
   record,
 }) {
   const { width } = useVideoConfig();
-  const scale = width / 1200;
+  const scale = width / 1080;
+  const padX = 64 * scale;
 
   const { fontSize: headlineFontSize, lines: headlineLines } = fitHeadline(
     headline,
     {
-      maxWidth: width - 72 * scale * 2,
-      maxLines: 2,
+      maxWidth: width - padX * 2,
+      maxLines: 3,
       fontFamily: FONT,
       fontWeight: 700,
-      maxFontSize: 44 * scale,
-      minFontSize: 28 * scale,
+      maxFontSize: 58 * scale,
+      minFontSize: 34 * scale,
     },
   );
 
@@ -82,7 +83,7 @@ export function CampaignEntryCard({
           top: 0,
           left: 0,
           right: 0,
-          height: 6 * scale,
+          height: 8 * scale,
           background: GOLD,
         }}
       />
@@ -90,11 +91,11 @@ export function CampaignEntryCard({
       <div
         style={{
           position: "absolute",
-          top: 6 * scale,
+          top: 8 * scale,
           left: 0,
           right: 0,
           bottom: 0,
-          padding: `${56 * scale}px ${72 * scale}px`,
+          padding: `${56 * scale}px ${padX}px`,
           display: "flex",
           flexDirection: "column",
         }}
@@ -103,234 +104,245 @@ export function CampaignEntryCard({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 10 * scale,
-            marginBottom: 16 * scale,
-            flex: "none",
+            gap: 12 * scale,
+            marginBottom: 28 * scale,
           }}
         >
           <div
             style={{
-              width: 9 * scale,
-              height: 9 * scale,
+              width: 11 * scale,
+              height: 11 * scale,
               borderRadius: "50%",
               background: GOLD,
             }}
           />
-          <span style={{ color: GOLD, fontWeight: 700, fontSize: 20 * scale }}>
+          <span style={{ color: GOLD, fontWeight: 700, fontSize: 24 * scale }}>
             龍神レーダー
           </span>
         </div>
 
+        {dayLabel && (
+          <div
+            style={{
+              color: MUTED,
+              fontSize: 18 * scale,
+              marginBottom: 8 * scale,
+            }}
+          >
+            {dayLabel}
+          </div>
+        )}
+
         <div
           style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-start",
-            minHeight: 0,
+            color: GOLD,
+            fontWeight: 700,
+            fontSize: headlineFontSize,
+            lineHeight: 1.35,
+            marginBottom: 32 * scale,
+            textShadow: `0 0 30px ${GOLD}44`,
           }}
         >
-          {dayLabel && (
-            <div
-              style={{
-                color: MUTED,
-                fontSize: 15 * scale,
-                marginBottom: 4 * scale,
-              }}
-            >
-              {dayLabel}
-            </div>
-          )}
+          {headlineLines.map((line, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div key={i}>{line}</div>
+          ))}
+        </div>
 
+        {raceLine && (
           <div
             style={{
-              color: GOLD,
-              fontWeight: 700,
-              fontSize: headlineFontSize,
-              lineHeight: 1.35,
-              marginBottom: 12 * scale,
-              textShadow: `0 0 30px ${GOLD}44`,
+              color: "#cfd6dd",
+              fontSize: 22 * scale,
+              marginBottom: 32 * scale,
             }}
           >
-            {headlineLines.map((line, i) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <div key={i}>{line}</div>
-            ))}
+            {raceLine}
           </div>
+        )}
 
-          {raceLine && (
-            <div
-              style={{
-                color: "#cfd6dd",
-                fontSize: 16 * scale,
-                marginBottom: 16 * scale,
-              }}
-            >
-              {raceLine}
-            </div>
-          )}
-
-          {heroStat && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                gap: 12 * scale,
-                background: `linear-gradient(90deg, ${GOLD}29, ${GOLD}00)`,
-                borderLeft: `3px solid ${GOLD}`,
-                borderRadius: 4 * scale,
-                padding: `${8 * scale}px ${14 * scale}px`,
-                marginBottom: 18 * scale,
-              }}
-            >
-              <span
-                style={{
-                  color: GOLD,
-                  fontSize: 34 * scale,
-                  fontWeight: 800,
-                  lineHeight: 1,
-                }}
-              >
-                {heroStat.value}
-              </span>
-              <span
-                style={{
-                  color: WHITE,
-                  fontSize: 14 * scale,
-                  fontWeight: 700,
-                  opacity: 0.9,
-                }}
-              >
-                {heroStat.label}
-              </span>
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "inline-flex",
-              alignSelf: "flex-start",
-              alignItems: "center",
-              gap: 6 * scale,
-              background:
-                variant === "picks"
-                  ? "rgba(201,162,39,0.15)"
-                  : hit
-                    ? "rgba(16,185,129,0.15)"
-                    : "rgba(239,68,68,0.15)",
-              color: variant === "picks" ? "#e8c96a" : hit ? SUCCESS : ERROR,
-              fontSize: 13 * scale,
-              fontWeight: 700,
-              padding: `${5 * scale}px ${13 * scale}px`,
-              borderRadius: 999,
-              marginBottom: 18 * scale,
-            }}
-          >
-            {variant === "picks"
-              ? "事前発表・結果はまだ出ていません"
-              : hit
-                ? "的中"
-                : "不的中"}
-          </div>
-
+        {heroStat && (
           <div
             style={{
               display: "flex",
-              gap: 9 * scale,
-              marginBottom: 18 * scale,
+              alignItems: "baseline",
+              gap: 18 * scale,
+              background: `linear-gradient(90deg, ${GOLD}29, ${GOLD}00)`,
+              borderLeft: `4px solid ${GOLD}`,
+              borderRadius: 6 * scale,
+              padding: `${26 * scale}px ${28 * scale}px`,
+              marginBottom: 40 * scale,
             }}
           >
-            {picks.map((combo, i) => (
-              <div
-                key={combo}
+            <span
+              style={{
+                color: GOLD,
+                fontSize: 72 * scale,
+                fontWeight: 800,
+                lineHeight: 1,
+              }}
+            >
+              {heroStat.value}
+            </span>
+            <span
+              style={{
+                color: WHITE,
+                fontSize: 20 * scale,
+                fontWeight: 700,
+                opacity: 0.9,
+              }}
+            >
+              {heroStat.label}
+            </span>
+          </div>
+        )}
+
+        <div
+          style={{
+            display: "inline-flex",
+            alignSelf: "flex-start",
+            alignItems: "center",
+            gap: 8 * scale,
+            background:
+              variant === "picks"
+                ? "rgba(201,162,39,0.15)"
+                : hit
+                  ? "rgba(16,185,129,0.15)"
+                  : "rgba(239,68,68,0.15)",
+            color: variant === "picks" ? "#e8c96a" : hit ? SUCCESS : ERROR,
+            fontSize: 16 * scale,
+            fontWeight: 700,
+            padding: `${10 * scale}px ${20 * scale}px`,
+            borderRadius: 999,
+            marginBottom: 32 * scale,
+          }}
+        >
+          {variant === "picks"
+            ? "事前発表・結果はまだ出ていません"
+            : hit
+              ? "的中"
+              : "不的中"}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 18 * scale,
+            marginBottom: 40 * scale,
+          }}
+        >
+          {picks.map((combo, i) => (
+            <div
+              key={combo}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16 * scale,
+                background:
+                  i === 0
+                    ? `linear-gradient(135deg, ${GOLD}38, ${CARD_BG})`
+                    : CARD_BG,
+                border:
+                  i === 0
+                    ? `1px solid ${GOLD}`
+                    : "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 12 * scale,
+                padding: `${24 * scale}px ${26 * scale}px`,
+              }}
+            >
+              {i === 0 && (
+                <span
+                  style={{
+                    color: NAVY,
+                    background: GOLD,
+                    fontSize: 15 * scale,
+                    fontWeight: 700,
+                    padding: `${4 * scale}px ${12 * scale}px`,
+                    borderRadius: 999,
+                    flex: "none",
+                  }}
+                >
+                  本命
+                </span>
+              )}
+              <span
                 style={{
-                  flex: 1,
-                  background:
-                    i === 0
-                      ? `linear-gradient(135deg, ${GOLD}38, ${CARD_BG})`
-                      : CARD_BG,
-                  border:
-                    i === 0
-                      ? `1px solid ${GOLD}`
-                      : "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: 8 * scale,
-                  textAlign: "center",
-                  padding: `${13 * scale}px 0`,
-                  fontSize: 21 * scale,
+                  fontSize: 32 * scale,
                   fontWeight: 700,
-                  letterSpacing: 1,
+                  letterSpacing: 1.5,
                 }}
               >
                 {combo}
-              </div>
-            ))}
-          </div>
+              </span>
+            </div>
+          ))}
+        </div>
 
-          {variant === "result" && actualResult && (
+        {variant === "result" && actualResult && (
+          <div
+            style={{
+              color: "#cfd6dd",
+              fontSize: 20 * scale,
+              marginBottom: 32 * scale,
+            }}
+          >
+            実際の着順: {actualResult}
+          </div>
+        )}
+
+        {variant === "picks" && points.length > 0 && (
+          <>
             <div
               style={{
-                color: "#cfd6dd",
-                fontSize: 15 * scale,
-                marginBottom: 18 * scale,
+                color: MUTED,
+                fontSize: 16 * scale,
+                fontWeight: 700,
+                marginBottom: 14 * scale,
               }}
             >
-              実際の着順: {actualResult}
+              分析ツールで見えたポイント
             </div>
-          )}
-
-          {variant === "picks" && points.length > 0 && (
-            <>
-              <div
-                style={{
-                  color: MUTED,
-                  fontSize: 13 * scale,
-                  fontWeight: 700,
-                  marginBottom: 8 * scale,
-                }}
-              >
-                分析ツールで見えたポイント
-              </div>
-              <ul
-                style={{
-                  margin: 0,
-                  padding: 0,
-                  listStyle: "none",
-                  fontSize: 15 * scale,
-                  lineHeight: 1.7,
-                  color: "#e7ebef",
-                }}
-              >
-                {points.map((point) => (
-                  <li key={point} style={{ marginBottom: 6 * scale }}>
-                    {point}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
+            <ul
+              style={{
+                margin: 0,
+                padding: 0,
+                listStyle: "none",
+                fontSize: 20 * scale,
+                lineHeight: 1.85,
+                color: "#e7ebef",
+              }}
+            >
+              {points.map((point) => (
+                <li key={point} style={{ marginBottom: 12 * scale }}>
+                  {point}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
 
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             borderTop: `1px solid ${GOLD}4d`,
-            paddingTop: 16 * scale,
-            marginTop: 16 * scale,
+            paddingTop: 32 * scale,
+            marginTop: "auto",
             flex: "none",
           }}
         >
           <div>
             <div
               style={{
-                fontSize: 11 * scale,
+                fontSize: 15 * scale,
                 color: MUTED,
-                marginBottom: 4 * scale,
+                marginBottom: 6 * scale,
               }}
             >
               {variant === "picks" ? "購入額" : "払戻"}
             </div>
-            <div style={{ fontSize: 19 * scale, fontWeight: 700 }}>
+            <div style={{ fontSize: 28 * scale, fontWeight: 700 }}>
               {variant === "picks"
                 ? `${purchaseAmountYen}円`
                 : `${payoutYen}円`}
@@ -339,16 +351,16 @@ export function CampaignEntryCard({
           <div>
             <div
               style={{
-                fontSize: 11 * scale,
+                fontSize: 15 * scale,
                 color: MUTED,
-                marginBottom: 4 * scale,
+                marginBottom: 6 * scale,
               }}
             >
               通算収支
             </div>
             <div
               style={{
-                fontSize: 19 * scale,
+                fontSize: 24 * scale,
                 fontWeight: 700,
                 color: netPositive ? SUCCESS : ERROR,
               }}
@@ -361,14 +373,14 @@ export function CampaignEntryCard({
             <div>
               <div
                 style={{
-                  fontSize: 11 * scale,
+                  fontSize: 15 * scale,
                   color: MUTED,
-                  marginBottom: 4 * scale,
+                  marginBottom: 6 * scale,
                 }}
               >
                 ここまで
               </div>
-              <div style={{ fontSize: 19 * scale, fontWeight: 700 }}>
+              <div style={{ fontSize: 28 * scale, fontWeight: 700 }}>
                 {record}
               </div>
             </div>

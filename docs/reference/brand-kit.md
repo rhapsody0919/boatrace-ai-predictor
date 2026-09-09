@@ -83,7 +83,7 @@
 
 ### 企画（キャンペーン）型X投稿カード（2026-09-09、企画型SNSパイプライン新設）
 
-- **採用**: [`sns-video-studio/remotion/src/CampaignEntryCard.jsx`](../../sns-video-studio/remotion/src/CampaignEntryCard.jsx)（買い目・収支カード）＋[`CampaignDataExcerptCard.jsx`](../../sns-video-studio/remotion/src/CampaignDataExcerptCard.jsx)（データ出走表・展開予測の抜粋カード）。1200x675、2枚1組でX投稿に添付する
+- **採用**: [`sns-video-studio/remotion/src/CampaignEntryCard.jsx`](../../sns-video-studio/remotion/src/CampaignEntryCard.jsx)（買い目・収支カード）＋[`CampaignDataExcerptCard.jsx`](../../sns-video-studio/remotion/src/CampaignDataExcerptCard.jsx)（データ出走表・展開予測の抜粋カード）。1080x1350（4:5縦型）、2枚1組でX投稿に添付する
 - **動画ではなくテキスト+静止画像2枚にした理由（2026-09-09、ユーザー確認済み）**: 企画型パイプラインの他の投稿（会場特性・成績等）は動画（9:16、`sns-video-producer-prompt.md`）が基本だが、企画型は金銭シミュレーション結果を扱う趣旨のため、動画演出より実データの正直な提示を優先した
 - **内部スコア・独自算出値は一切見せない（重要な方針）**: 龍神レーダーは「AI予想を当てるサービス」ではなく「分析ツール」としてPRする方針。買い目を決めた根拠は、内部の計算式（`scripts/lib/campaignVolatilityModel.js`）のスコア値ではなく、分析ツールに実在する項目名（勝率・モーター2連率・展開予測の決まり手等）だけで書く。2枚目のカードも「データ出走表」「展開予測」という実際のUI機能名をそのまま見出しにし、末尾に「このデータは龍神レーダーの分析ツールで毎レース無料で見られます」という誘導文を入れる
 - **却下の経緯（1st案: 内部スコアの積み上げ棒グラフ）**: 各艇のスコアを「出走表データ由来」「展開予測ボーナス由来」に色分けした積み上げ棒グラフを提案したが、「内部のロジックは出す必要はない、分析ツールとしてPRしたい」という理由で却下された。実データの抜粋（勝率表・展開予測の1着候補）に差し替えた
@@ -96,6 +96,8 @@
 - 最有力買い目（`picks[0]`）にゴールド枠、カード上端にゴールドの帯を追加（2枚目のデータカードにも同じ帯を追加し2枚のセットで統一感を出す）。フッターの区切り線もゴールドに変更（ただし通算収支の色は勝敗を表す意味トークン（緑=プラス／赤=マイナス）のまま維持し、ブランド色で上書きしない）
 - 併せて、2枚目（データ抜粋カード）でCTA文言がキャンバス下端で見切れる不具合（`marginTop:"auto"`による下端押し出し＋固定パディングの組み合わせが実際の6艇分の出走表＋展開予測3件と合わせるとキャンバス高を超えていた）を発見・修正した
 - 実装: [`CampaignEntryCard.jsx`](../../sns-video-studio/remotion/src/CampaignEntryCard.jsx)・[`CampaignDataExcerptCard.jsx`](../../sns-video-studio/remotion/src/CampaignDataExcerptCard.jsx)
+
+**v5改訂（同日、2026-09-09）**: 「スマホで見ることが多いはずなので縦型にしてほしい」との指摘を受け、キャンバスを16:9横型（1200x675）から4:5縦型（1080x1350）に変更した。単純な引き伸ばしではなく、増えた縦の余白を使って買い目3点を横並びから縦積みに変更し（本命に「本命」バッジを追加）、見出し・heroStat・出走表・展開予測カードのフォントサイズも拡大した。フッターは`marginTop:"auto"`でカード下端に固定し、内容量の変動があっても中央に不自然な空白ができない設計にしている。
 
 ### アプリ内公式文言の使い分け（2026-09-01確定）
 

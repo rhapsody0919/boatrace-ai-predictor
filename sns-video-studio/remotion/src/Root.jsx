@@ -548,8 +548,8 @@ export function RemotionRoot() {
         component={CampaignEntryCard}
         durationInFrames={1}
         fps={30}
-        width={1200}
-        height={675}
+        width={1080}
+        height={1350}
         defaultProps={{
           variant: "picks",
           dayLabel: "1日目・1レース目",
@@ -571,8 +571,8 @@ export function RemotionRoot() {
         component={CampaignDataExcerptCard}
         durationInFrames={1}
         fps={30}
-        width={1200}
-        height={675}
+        width={1080}
+        height={1350}
         defaultProps={{
           raceLine: "",
           boats: [],
