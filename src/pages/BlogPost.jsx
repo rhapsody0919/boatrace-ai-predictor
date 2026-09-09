@@ -15,6 +15,7 @@ import { parseLangFromPath, localizePath } from "../config/languages";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
+import { BLOG_IMAGE_DIMENSIONS } from "../data/blogImageDimensions";
 import "./BlogPost.css";
 
 const UI_TEXT = {
@@ -229,11 +230,18 @@ export default function BlogPost() {
               />
             );
           },
-          // 実際の画像サイズが不明なため自然なアスペクト比のまま表示する
-          // （BlogPost.css参照。以前のaspect-ratio固定はトリミングで画像が
-          // 大きく欠ける実害があったため撤回）
+          // 実寸法をwidth/height属性で渡し、ブラウザに事前スペースを確保させる
+          // （CLS対策）。一律のaspect-ratio指定は使わない — 記事画像は比率が
+          // 様々でトリミングにより画像が欠ける実害があったため撤回された経緯がある
+          // （2026-09-07 PR#559）。実寸法ベースなら自然な比率のままCLSも防げる
           img: ({ node, ...props }) => (
-            <img {...props} loading="lazy" decoding="async" />
+            <img
+              {...props}
+              loading="lazy"
+              decoding="async"
+              width={BLOG_IMAGE_DIMENSIONS[props.src]?.width}
+              height={BLOG_IMAGE_DIMENSIONS[props.src]?.height}
+            />
           ),
         }}
       >

@@ -202,7 +202,10 @@
   max-width: 100%;
   /* 以前はaspect-ratio:16/9固定+object-fit:coverで確保していたが、実際の記事画像の
      約半数は16:9から大きく外れた比率（横長バナー等）で、左右が大きくトリミングされ
-     文言が欠落する実害があったため撤回。自然な比率で表示する */
+     文言が欠落する実害があったため撤回（PR#559）。現在はBlogPost.jsx側でimgに
+     実寸法のwidth/height属性を付与しており、ブラウザがそれを元に自動でこの
+     height:autoの実際の高さを計算する（UA標準のaspect-ratio推論）ため、
+     自然な比率のままCLSも防げる */
   border-radius: 8px;
   margin: 1.5rem 0;
   display: block;
