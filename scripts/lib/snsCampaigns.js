@@ -428,3 +428,63 @@ export async function backfillEntryResult(
     throw new Error(`${ENTRIES_TABLE}更新エラー(${entryId}): ${error.message}`);
   return data;
 }
+
+/**
+ * 「1日のまとめ」ネタ（運用フロー③と④の間に挟まる、日次のダイジェスト投稿）を
+ * 作成する。ナイター終了後（21:30頃を想定）に呼ぶことを前提とし、対象日の
+ * race_idを持つエントリのうち結果確定済みのものだけを集計する。
+ *
+ * レースごとの「結果発表」（createResultAnnouncementTopic）とは別物: あちらは
+ * エントリ1件＝1トピックだが、こちらは1日分をまとめて1トピックにする。
+ * 対象日に結果確定済みのエントリが1件も無い日（対象レースが無かった日、
+ * まだ結果未確定の日）は投稿を作らずnullを返す。同じ日に複数回実行されても
+ * 重複投稿しないよう、生成予定のtopic_textと同じものが既に存在すれば
+ * スキップする（GitHub Actionsの手動再実行・リトライ対策）。
+ *
+ * @param {object} campaign
+ * @param {string} date - 'YYYY-MM-DD'（race_idの日付部分と一致させる、JST基準）
+ * @returns {Promise<object|null>} 作成したtopic、または対象が無い/既存の場合null
+ */
+export async function createDailySummaryTopic(campaign, date) {
+  assertSupabaseEnabled();
+  const entries = await getCampaignEntries(campaign.id);
+  const todaysResolved = entries.filter(
+    (e) => e.race_id.startsWith(date) && e.actual_result != null,
+  );
+  if (todaysResolved.length === 0) return null;
+
+  const totalSpend = todaysResolved.reduce(
+    (s, e) => s + (e.purchase_amount_yen || 0),
+    0,
+  );
+  const totalPayout = todaysResolved.reduce(
+    (s, e) => s + (e.payout_yen || 0),
+    0,
+  );
+  const hits = todaysResolved.filter((e) => e.hit).length;
+  const recoveryRate =
+    totalSpend > 0 ? ((totalPayout / totalSpend) * 100).toFixed(1) : "—";
+  // 通算収支は企画開始からの累計なので、当日分に限らず全エントリの最新値を使う
+  const cumulativeNetYen = entries[entries.length - 1]?.cumulative_net_yen ?? 0;
+
+  const [, month, day] = date.split("-");
+  const dateLabel = `${Number(month)}/${Number(day)}`;
+  const topicText = `【${campaign.name}】${dateLabel}のまとめ: 本日${todaysResolved.length}戦${hits}的中、購入${totalSpend}円→払戻${totalPayout}円（回収率${recoveryRate}%）。通算収支${cumulativeNetYen}円`;
+
+  const { data: existing, error: existingError } = await supabase
+    .from("sns_topics")
+    .select("id")
+    .eq("campaign_id", campaign.id)
+    .eq("topic_text", topicText)
+    .maybeSingle();
+  if (existingError)
+    throw new Error(`sns_topics確認エラー: ${existingError.message}`);
+  if (existing) return null;
+
+  return createCampaignTopic(
+    campaign.id,
+    topicText,
+    campaign.target_channels,
+    campaign.tone_spec?.autoApproveTopics === true,
+  );
+}

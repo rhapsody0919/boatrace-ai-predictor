@@ -23,6 +23,7 @@ import {
   computeCampaignPicks,
   MODEL_NAME,
 } from "../lib/campaignVolatilityModel.js";
+import { getTodayDateJST } from "../lib/dateUtils.js";
 
 function buildPromptText({ raceId, boats, turnPrediction, metricValue }) {
   const table = boats
@@ -52,7 +53,12 @@ function buildPromptText({ raceId, boats, turnPrediction, metricValue }) {
 }
 
 async function main() {
-  const targetDate = process.argv[2] || new Date().toISOString().slice(0, 10);
+  // 引数省略時はJSTの本日日付を使う（UTC基準のtoISOString()だと、JST 0-9時台に
+  // 実行した場合に前日の日付になってしまう既知の罠。2026-09-09にfindQualifyingRaces
+  // 側のrace_id基準フィルタで直した同種のバグが、この呼び出し元のデフォルト値
+  // 計算にも残っていたため合わせて修正した。1日複数回の自動実行では朝の時間帯に
+  // 必ず踏む）
+  const targetDate = process.argv[2] || getTodayDateJST();
   console.log(`対象日: ${targetDate}`);
 
   const campaigns = await getActiveCampaigns();
