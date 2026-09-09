@@ -131,12 +131,20 @@ function scrapePayouts($) {
   };
 
   try {
-    // 払戻金テーブルを取得（.is-w495の3番目 = index 2）
-    const allTables = $(".is-w495");
+    // 払戻金テーブルをヘッダー内容（勝式/組番）で特定する。
+    // 位置（.is-w495の何番目か）に依存すると、結果ページの上部セクション
+    // （着順・スタート情報テーブル）が欠落する稀なケースで払戻金テーブルの
+    // 位置がズレ、取得漏れになる（2026-09-09、桐生2Rで実際に発生）
+    let payoutTable = null;
+    $(".is-w495").each((_, table) => {
+      const headerText = $(table).find("thead").first().text();
+      if (headerText.includes("勝式") && headerText.includes("組番")) {
+        payoutTable = $(table);
+        return false;
+      }
+    });
 
-    const payoutTable = allTables.eq(2);
-
-    if (payoutTable.length === 0) {
+    if (!payoutTable) {
       return payouts;
     }
 
@@ -234,36 +242,78 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    // Check if result table exists
-    const resultTable = $(".is-w495");
-    if (resultTable.length === 0) {
-      console.log(`  Not published yet`);
-      return null;
-    }
-
-    // Get all 6 boat numbers + race times, ordered by finish position
-    // （5〜6着はタイムが空欄のことがある）
-    const rankings = [];
-    const raceTimes = [];
-    $(".is-w495 tbody tr").each((index, row) => {
-      if (index < 6) {
-        const $row = $(row);
-        const cells = $row.find("td");
-        const boatNumber = parseInt(cells.eq(1).text().trim());
-        if (boatNumber && !isNaN(boatNumber)) {
-          rankings.push(boatNumber);
-          raceTimes.push(cells.eq(3).text().trim() || null);
-        }
+    // 着順テーブルをヘッダー内容（着/ボートレーサー）で特定する。
+    // 位置（.is-w495の1番目）に依存すると、稀に着順テーブル自体が
+    // ページに存在しないケース（払戻金テーブルのみ存在）で、無関係な
+    // 払戻金テーブルを誤って着順として誤認識してしまう（2026-09-09、
+    // 桐生2Rで実際に発生: 払戻金テーブルの「組番」欄先頭の数字が艇番として
+    // 誤読され、全着順が同じ艇番になる不具合があった）
+    let resultTable = null;
+    $(".is-w495").each((_, table) => {
+      const headerText = $(table).find("thead").first().text();
+      if (headerText.includes("着") && headerText.includes("ボートレーサー")) {
+        resultTable = table;
+        return false;
       }
     });
 
-    if (rankings.length < 3) {
-      console.log(`  Incomplete data (got ${rankings.length} boats)`);
-      return null;
+    // 払戻金データは着順テーブルの有無に関わらず必要（着順テーブルが
+    // 無い場合のフォールバック復元にも使うため先に取得する）
+    const payouts = scrapePayouts($);
+
+    let rankings = [];
+    let raceTimes = [];
+
+    if (resultTable) {
+      // Get all 6 boat numbers + race times, ordered by finish position
+      // （5〜6着はタイムが空欄のことがある）
+      $(resultTable)
+        .find("tbody tr")
+        .each((index, row) => {
+          if (index < 6) {
+            const $row = $(row);
+            const cells = $row.find("td");
+            const boatNumber = parseInt(cells.eq(1).text().trim());
+            if (boatNumber && !isNaN(boatNumber)) {
+              rankings.push(boatNumber);
+              raceTimes.push(cells.eq(3).text().trim() || null);
+            }
+          }
+        });
     }
 
-    // Get payout data
-    const payouts = scrapePayouts($);
+    // 着順に重複がある場合（テーブル誤認識時の典型症状）は無効データとして扱う
+    const hasDuplicates =
+      rankings.length > 0 && new Set(rankings).size !== rankings.length;
+
+    if (!resultTable || rankings.length < 3 || hasDuplicates) {
+      // 着順テーブルを取得できない場合、3連単（DB上のキー名は"trio"、
+      // 命名の歴史的経緯によりねじれている）の払戻金コンボは1〜3着の
+      // 艇番をそのまま表すため、それだけは復元できる
+      const trifectaCombo = Object.keys(payouts.trio || {})[0];
+      const trifectaBoats = trifectaCombo
+        ? trifectaCombo.split("-").map((n) => parseInt(n, 10))
+        : [];
+      const trifectaValid =
+        trifectaBoats.length === 3 &&
+        trifectaBoats.every((n) => n >= 1 && n <= 6) &&
+        new Set(trifectaBoats).size === 3;
+
+      if (!trifectaValid) {
+        console.log(
+          hasDuplicates
+            ? `  Incomplete data (duplicate boat numbers: ${rankings.join("-")})`
+            : `  Incomplete data (got ${rankings.length} boats)`,
+        );
+        return null;
+      }
+
+      console.log(
+        `  着順テーブル欠落、3連単払戻(${trifectaCombo})から上位3着を復元`,
+      );
+      rankings = trifectaBoats;
+      raceTimes = [null, null, null];
+    }
 
     // Get winning technique (決まり手)
     const winningTechnique = scrapeWinningTechnique($);
