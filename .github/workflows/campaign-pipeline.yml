@@ -1,0 +1,66 @@
+name: Campaign Pipeline
+
+# 企画型SNS投稿パイプライン（docs/design/sns-hub-campaign-pipeline/）の
+# 対象レース検出・結果書き戻し・1日のまとめを自動実行する。
+# 下書き（X画像・ブログ記事）の生成自体はここでは行わない。既存の
+# チャネル別生成Routine（sns-hub、docs/operation/sns-pipeline-*.md）が
+# ここで作成されたネタ（sns_topics）を自律的に拾って生成する。
+# 実際の投稿承認は常に人間がsns-hub管理画面で行う（自動化しない）。
+
+on:
+  schedule:
+    # 通常サイクル: JST 6:00-23:59、30分おき
+    # （対象レース検出＝レース前、結果書き戻し＝レース後の両方をこの周期で回す。
+    # レース前後どちらの処理も、対象が無ければ即終了する設計のため
+    # 1つの周期にまとめて問題ない）
+    - cron: '*/30 21-23,0-14 * * *'
+    # 1日のまとめ: JST 21:30（ナイター終了後）に1回
+    - cron: '30 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read  # Supabase書き込みのみ、git pushなし
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  campaign-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 対象レース検出・買い目生成（Phase A）
+        if: github.event.schedule != '30 12 * * *'
+        run: node scripts/daily/campaign-detect-and-generate.js
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: 結果確定後の書き戻し（Phase B）
+        if: github.event.schedule != '30 12 * * *'
+        run: node scripts/daily/campaign-backfill-results.js
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: 1日のまとめ
+        if: github.event.schedule == '30 12 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/daily/campaign-daily-summary.js
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
