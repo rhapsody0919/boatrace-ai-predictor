@@ -77,6 +77,9 @@ claim対象が0件の場合はここで終了する（正常系、失敗では�
    - `variant: 'picks'`（事前発表、`sns_campaign_entries.hit`が`null`）: `picks`（3連単3点）・`points`（分析ツールで見えたポイント、最大3行）を渡す
    - `variant: 'result'`（結果発表・最終まとめ、`hit`が確定済み）: `hit`・`actualResult`・`payoutYen`を渡す
    - **`points`には内部の計算式・スコアを書かない**。`race_entries`（勝率・モーター2連率）と`feature_contributions.turnPrediction`（展開予測）から読み取れる、分析ツールに実在する項目名だけで書く（例:「1号艇の全国勝率が低め」「展開予測で◯号艇に◯◯の勝ち筋あり」）。「◯号艇のスコアが◯◯だから」のような独自算出値には触れない
+   - **`heroStat`（v4、2026-09-09追加）**: `{value: "99%", label: "イン崩れ注意度"}`の形で必ず渡す。`value`は企画の`selection_criteria`（例:`{metric:'volatilityPercentile', value:0.99}`）が対象とした指標の実際の値、`label`はその指標の日本語名。「一目で何をやっているか分からない・地味」という指摘を受けて追加した、カードの視覚的な主役（ゴールドの大きな数字）を担う要素のため省略しない
+   - **`raceLine`には発走時刻を含める**（例:「9/9 びわこ 2R ｜ 発走 10:52」）。`races`テーブルの`start_time`列（`race_id`で引ける）を取得する。「今日この後発走する」という切迫感を出す目的（2026-09-09追加）。`イン崩れ注意度`等の指標値は`heroStat`が担うため、`raceLine`では重複させない
+   - 買い目3点のうち`picks[0]`（`computeCampaignPicks()`が返す最有力順の並び）が自動的にゴールド枠で強調表示される。並び順を変えずにそのまま渡せばよい
 2. `renderCampaignDataExcerptCard()`で2枚目（データ出走表・展開予測の抜粋カード）を生成する。`boats`（`race_entries`から取得）・`pickedBoatNumbers`（買い目に含まれる艇番）・`turnPredictionTop3`（`feature_contributions.turnPrediction.patterns`の上位3件）を渡す
 3. 2枚とも`sns_drafts.video_storage_path`ではなく、画像2枚のパスを別途保存する必要がある（現状`sns_drafts`は単一の`cover_image_path`しか持たないため、1枚目を`cover_image_path`、2枚目は`source_data`にパスを記録する運用とする）
 4. リスクルール照合・セルフレビューは通常フローと同じ（`sns-video-studio/remotion/risk-rules.json`、該当があれば`risk_flags`に記録）

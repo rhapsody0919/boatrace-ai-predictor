@@ -18,6 +18,12 @@ const MEDALS = ["🥇", "🥈", "🥉"];
  * （データ出走表・展開予測）をそのまま抜粋する構成にしている
  * （ユーザー確認済み、2026-09-09）。
  *
+ * 縦方向は固定キャンバス（675px）に対して常に「6艇の出走表＋展開予測最大3件
+ * ＋CTA」が収まるよう、余白・フォントサイズを固定値でチューニングしている
+ * （2026-09-09、CTA行がキャンバス下端で見切れる不具合を修正。marginTop:"auto"
+ * で下端に押し出す構成だったため、内容量が想定よりわずかに多いだけで
+ * キャンバス外にはみ出し、文字が上半分だけ描画される形で崩れて見えていた）。
+ *
  * @param {{boat_number:number, player_name:string, win_rate:number, motor_2rate:number}[]} boats
  * @param {number[]} pickedBoatNumbers - データ出走表で★を付ける艇番（買い目に含まれる艇）
  * @param {{technique:string, winnerCourse:number, probability:number}[]} turnPredictionTop3 - 展開予測の1着候補（確率降順、最大3件）
@@ -38,171 +44,210 @@ export function CampaignDataExcerptCard({
         background: NAVY,
         fontFamily: FONT,
         color: WHITE,
-        padding: 72 * scale,
         boxSizing: "border-box",
-        display: "flex",
-        flexDirection: "column",
+        overflow: "hidden",
       }}
     >
+      {/* ブランドの主色（ゴールド）を一目で識別できるよう、カード上端に帯を敷く
+          （2026-09-09、企画カード全体が紺一色で地味という指摘を受けて追加） */}
       <div
         style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 6 * scale,
+          background: GOLD,
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          top: 6 * scale,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          padding: `${56 * scale}px ${72 * scale}px`,
           display: "flex",
-          alignItems: "center",
-          gap: 10 * scale,
-          marginBottom: 18 * scale,
+          flexDirection: "column",
         }}
       >
         <div
           style={{
-            width: 9 * scale,
-            height: 9 * scale,
-            borderRadius: "50%",
-            background: GOLD,
+            display: "flex",
+            alignItems: "center",
+            gap: 10 * scale,
+            marginBottom: 14 * scale,
           }}
-        />
-        <span style={{ color: GOLD, fontWeight: 700, fontSize: 20 * scale }}>
-          龍神レーダー
-        </span>
-      </div>
-
-      <div
-        style={{
-          fontSize: 20 * scale,
-          fontWeight: 700,
-          marginBottom: 4 * scale,
-        }}
-      >
-        {raceLine} データ出走表（抜粋）
-      </div>
-      <div
-        style={{ color: MUTED, fontSize: 13 * scale, marginBottom: 22 * scale }}
-      >
-        分析ツールで全艇・全項目を確認できます
-      </div>
-
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          fontSize: 15 * scale,
-          marginBottom: 22 * scale,
-        }}
-      >
-        <thead>
-          <tr>
-            {["艇番", "選手", "勝率", "モーター2連率"].map((label, i) => (
-              <th
-                key={label}
-                style={{
-                  textAlign: i === 0 ? "left" : "center",
-                  color: MUTED,
-                  fontWeight: 700,
-                  fontSize: 13 * scale,
-                  paddingBottom: 8 * scale,
-                  borderBottom: "1px solid rgba(255,255,255,0.15)",
-                }}
-              >
-                {label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {boats.map((boat) => {
-            const picked = pickedSet.has(boat.boat_number);
-            const cellStyle = {
-              padding: `${9 * scale}px 0`,
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
-              textAlign: "center",
-              color: picked ? GOLD : WHITE,
-            };
-            return (
-              <tr key={boat.boat_number}>
-                <td
-                  style={{ ...cellStyle, textAlign: "left", fontWeight: 700 }}
-                >
-                  {boat.boat_number}号艇{picked ? " ★" : ""}
-                </td>
-                <td style={cellStyle}>{boat.player_name}</td>
-                <td style={cellStyle}>{boat.win_rate?.toFixed(2)}</td>
-                <td style={cellStyle}>{boat.motor_2rate?.toFixed(1)}%</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {turnPredictionTop3.length > 0 && (
-        <>
+        >
           <div
             style={{
-              fontSize: 13 * scale,
-              color: MUTED,
-              fontWeight: 700,
-              marginBottom: 10 * scale,
+              width: 9 * scale,
+              height: 9 * scale,
+              borderRadius: "50%",
+              background: GOLD,
             }}
-          >
-            展開予測（1着候補・確率順）
-          </div>
-          <div
-            style={{
-              display: "flex",
-              gap: 10 * scale,
-              marginBottom: 22 * scale,
-            }}
-          >
-            {turnPredictionTop3.map((p, i) => (
-              <div
-                // eslint-disable-next-line react/no-array-index-key
-                key={i}
-                style={{
-                  flex: 1,
-                  background: CARD_BG,
-                  borderRadius: 8 * scale,
-                  padding: `${12 * scale}px ${10 * scale}px`,
-                  textAlign: "center",
-                }}
-              >
-                <div style={{ fontSize: 18 * scale, marginBottom: 4 * scale }}>
-                  {MEDALS[i]}
-                </div>
-                <div style={{ fontSize: 15 * scale, fontWeight: 700 }}>
-                  {p.winnerCourse}号艇
-                </div>
-                <div
+          />
+          <span style={{ color: GOLD, fontWeight: 700, fontSize: 20 * scale }}>
+            龍神レーダー
+          </span>
+        </div>
+
+        <div
+          style={{
+            fontSize: 20 * scale,
+            fontWeight: 700,
+            marginBottom: 4 * scale,
+          }}
+        >
+          {raceLine} データ出走表（抜粋）
+        </div>
+        <div
+          style={{
+            color: MUTED,
+            fontSize: 13 * scale,
+            marginBottom: 16 * scale,
+          }}
+        >
+          分析ツールで全艇・全項目を確認できます
+        </div>
+
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            fontSize: 14 * scale,
+            marginBottom: 16 * scale,
+          }}
+        >
+          <thead>
+            <tr>
+              {["艇番", "選手", "勝率", "モーター2連率"].map((label, i) => (
+                <th
+                  key={label}
                   style={{
+                    textAlign: i === 0 ? "left" : "center",
+                    color: MUTED,
+                    fontWeight: 700,
                     fontSize: 12 * scale,
-                    color: "#cfd6dd",
-                    margin: `${2 * scale}px 0`,
+                    paddingBottom: 6 * scale,
+                    borderBottom: "1px solid rgba(255,255,255,0.15)",
                   }}
                 >
-                  {p.technique}
-                </div>
-                <div
-                  style={{ fontSize: 13 * scale, color: GOLD, fontWeight: 700 }}
-                >
-                  {Math.round(p.probability * 100)}%
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {boats.map((boat) => {
+              const picked = pickedSet.has(boat.boat_number);
+              const cellStyle = {
+                padding: `${6 * scale}px 0`,
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                textAlign: "center",
+                color: picked ? GOLD : WHITE,
+              };
+              return (
+                <tr key={boat.boat_number}>
+                  <td
+                    style={{
+                      ...cellStyle,
+                      textAlign: "left",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {boat.boat_number}号艇{picked ? " ★" : ""}
+                  </td>
+                  <td style={cellStyle}>{boat.player_name}</td>
+                  <td style={cellStyle}>{boat.win_rate?.toFixed(2)}</td>
+                  <td style={cellStyle}>{boat.motor_2rate?.toFixed(1)}%</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
-      <div
-        style={{
-          marginTop: "auto",
-          paddingTop: 16 * scale,
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-          fontSize: 13 * scale,
-          color: MUTED,
-        }}
-      >
-        このデータは
-        <span style={{ color: GOLD, fontWeight: 700 }}>
-          龍神レーダーの分析ツール
-        </span>
-        で毎レース無料で見られます
+        {turnPredictionTop3.length > 0 && (
+          <>
+            <div
+              style={{
+                fontSize: 13 * scale,
+                color: MUTED,
+                fontWeight: 700,
+                marginBottom: 8 * scale,
+              }}
+            >
+              展開予測（1着候補・確率順）
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 10 * scale,
+                marginBottom: 16 * scale,
+              }}
+            >
+              {turnPredictionTop3.map((p, i) => (
+                <div
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={i}
+                  style={{
+                    flex: 1,
+                    background: CARD_BG,
+                    borderRadius: 8 * scale,
+                    border: "1px solid rgba(212,175,55,0.25)",
+                    padding: `${10 * scale}px ${10 * scale}px`,
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{ fontSize: 17 * scale, marginBottom: 3 * scale }}
+                  >
+                    {MEDALS[i]}
+                  </div>
+                  <div style={{ fontSize: 14 * scale, fontWeight: 700 }}>
+                    {p.winnerCourse}号艇
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11 * scale,
+                      color: "#cfd6dd",
+                      margin: `${2 * scale}px 0`,
+                    }}
+                  >
+                    {p.technique}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12 * scale,
+                      color: GOLD,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {Math.round(p.probability * 100)}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        <div
+          style={{
+            marginTop: "auto",
+            paddingTop: 14 * scale,
+            borderTop: "1px solid rgba(212,175,55,0.3)",
+            fontSize: 13 * scale,
+            color: MUTED,
+          }}
+        >
+          このデータは
+          <span style={{ color: GOLD, fontWeight: 700 }}>
+            龍神レーダーの分析ツール
+          </span>
+          で毎レース無料で見られます
+        </div>
       </div>
     </AbsoluteFill>
   );

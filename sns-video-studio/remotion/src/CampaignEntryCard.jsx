@@ -22,12 +22,22 @@ const FONT =
  *
  * variant='picks'（事前発表、運用フロー②）: hit/actualResultは表示しない
  * variant='result'（結果発表、運用フロー③）: hit/actualResultを表示する
+ *
+ * v4（2026-09-09、デザイン改善）: 「ゴールドが使われておらず地味」「余白の
+ * 無駄」という指摘を受けて全面調整。見出しをゴールドにし、縦中央寄せ
+ * （flex:1 + justify-content:center）をやめて上詰めにした（内容が短い日は
+ * 見出し〜フッターの間に意図しない空白ができていた）。空いた分は
+ * heroStat（企画の選定基準値、例:「イン崩れ注意度99%」）を大きく
+ * 見せる帯に充てている。heroStatは企画のselection_criteria.metricに
+ * 依存しない汎用propとして設計し、他の指標を使う将来の企画でも再利用できる
+ * ようにしている。
  */
 export function CampaignEntryCard({
   variant = "picks",
   dayLabel,
   headline,
   raceLine,
+  heroStat,
   picks = [],
   points = [],
   hit,
@@ -47,7 +57,7 @@ export function CampaignEntryCard({
       maxLines: 2,
       fontFamily: FONT,
       fontWeight: 700,
-      maxFontSize: 46 * scale,
+      maxFontSize: 44 * scale,
       minFontSize: 28 * scale,
     },
   );
@@ -60,218 +70,256 @@ export function CampaignEntryCard({
         background: NAVY,
         fontFamily: FONT,
         color: WHITE,
-        padding: 72 * scale,
         boxSizing: "border-box",
-        display: "flex",
-        flexDirection: "column",
+        overflow: "hidden",
       }}
     >
+      {/* ブランドの主色（ゴールド）を一目で識別できるよう、カード上端に帯を敷く
+          （CampaignDataExcerptCardと共通、2026-09-09） */}
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10 * scale,
-          marginBottom: 18 * scale,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 6 * scale,
+          background: GOLD,
         }}
-      >
-        <div
-          style={{
-            width: 9 * scale,
-            height: 9 * scale,
-            borderRadius: "50%",
-            background: GOLD,
-          }}
-        />
-        <span style={{ color: GOLD, fontWeight: 700, fontSize: 20 * scale }}>
-          龍神レーダー
-        </span>
-      </div>
+      />
 
       <div
         style={{
-          flex: 1,
+          position: "absolute",
+          top: 6 * scale,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          padding: `${56 * scale}px ${72 * scale}px`,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
         }}
       >
-        {dayLabel && (
-          <div
-            style={{
-              color: MUTED,
-              fontSize: 15 * scale,
-              marginBottom: 4 * scale,
-            }}
-          >
-            {dayLabel}
-          </div>
-        )}
-
         <div
           style={{
-            color: WHITE,
-            fontWeight: 700,
-            fontSize: headlineFontSize,
-            lineHeight: 1.35,
-            marginBottom: 14 * scale,
-          }}
-        >
-          {headlineLines.map((line, i) => (
-            // eslint-disable-next-line react/no-array-index-key
-            <div key={i}>{line}</div>
-          ))}
-        </div>
-
-        {raceLine && (
-          <div
-            style={{
-              color: "#cfd6dd",
-              fontSize: 16 * scale,
-              marginBottom: 16 * scale,
-            }}
-          >
-            {raceLine}
-          </div>
-        )}
-
-        <div
-          style={{
-            display: "inline-flex",
-            alignSelf: "flex-start",
+            display: "flex",
             alignItems: "center",
-            gap: 6 * scale,
-            background:
-              variant === "picks"
-                ? "rgba(201,162,39,0.15)"
-                : hit
-                  ? "rgba(16,185,129,0.15)"
-                  : "rgba(239,68,68,0.15)",
-            color: variant === "picks" ? "#e8c96a" : hit ? SUCCESS : ERROR,
-            fontSize: 13 * scale,
-            fontWeight: 700,
-            padding: `${5 * scale}px ${13 * scale}px`,
-            borderRadius: 999,
-            marginBottom: 18 * scale,
+            gap: 10 * scale,
+            marginBottom: 16 * scale,
+            flex: "none",
           }}
         >
-          {variant === "picks"
-            ? "事前発表・結果はまだ出ていません"
-            : hit
-              ? "的中"
-              : "不的中"}
+          <div
+            style={{
+              width: 9 * scale,
+              height: 9 * scale,
+              borderRadius: "50%",
+              background: GOLD,
+            }}
+          />
+          <span style={{ color: GOLD, fontWeight: 700, fontSize: 20 * scale }}>
+            龍神レーダー
+          </span>
         </div>
 
         <div
-          style={{ display: "flex", gap: 9 * scale, marginBottom: 18 * scale }}
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-start",
+            minHeight: 0,
+          }}
         >
-          {picks.map((combo) => (
-            <div
-              key={combo}
-              style={{
-                flex: 1,
-                background: CARD_BG,
-                borderRadius: 8 * scale,
-                textAlign: "center",
-                padding: `${13 * scale}px 0`,
-                fontSize: 21 * scale,
-                fontWeight: 700,
-                letterSpacing: 1,
-              }}
-            >
-              {combo}
-            </div>
-          ))}
-        </div>
-
-        {variant === "result" && actualResult && (
-          <div
-            style={{
-              color: "#cfd6dd",
-              fontSize: 15 * scale,
-              marginBottom: 18 * scale,
-            }}
-          >
-            実際の着順: {actualResult}
-          </div>
-        )}
-
-        {variant === "picks" && points.length > 0 && (
-          <>
+          {dayLabel && (
             <div
               style={{
                 color: MUTED,
-                fontSize: 13 * scale,
-                fontWeight: 700,
-                marginBottom: 8 * scale,
-              }}
-            >
-              分析ツールで見えたポイント
-            </div>
-            <ul
-              style={{
-                margin: 0,
-                padding: 0,
-                listStyle: "none",
                 fontSize: 15 * scale,
-                lineHeight: 1.7,
-                color: "#e7ebef",
-                marginBottom: 24 * scale,
+                marginBottom: 4 * scale,
               }}
             >
-              {points.map((point) => (
-                <li key={point} style={{ marginBottom: 6 * scale }}>
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
+              {dayLabel}
+            </div>
+          )}
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-          paddingTop: 18 * scale,
-        }}
-      >
-        <div>
           <div
             style={{
-              fontSize: 11 * scale,
-              color: MUTED,
-              marginBottom: 4 * scale,
-            }}
-          >
-            {variant === "picks" ? "購入額" : "払戻"}
-          </div>
-          <div style={{ fontSize: 19 * scale, fontWeight: 700 }}>
-            {variant === "picks" ? `${purchaseAmountYen}円` : `${payoutYen}円`}
-          </div>
-        </div>
-        <div>
-          <div
-            style={{
-              fontSize: 11 * scale,
-              color: MUTED,
-              marginBottom: 4 * scale,
-            }}
-          >
-            通算収支
-          </div>
-          <div
-            style={{
-              fontSize: 19 * scale,
+              color: GOLD,
               fontWeight: 700,
-              color: netPositive ? SUCCESS : ERROR,
+              fontSize: headlineFontSize,
+              lineHeight: 1.35,
+              marginBottom: 12 * scale,
+              textShadow: `0 0 30px ${GOLD}44`,
             }}
           >
-            {netPositive ? "+" : ""}
-            {cumulativeNetYen}円
+            {headlineLines.map((line, i) => (
+              // eslint-disable-next-line react/no-array-index-key
+              <div key={i}>{line}</div>
+            ))}
           </div>
+
+          {raceLine && (
+            <div
+              style={{
+                color: "#cfd6dd",
+                fontSize: 16 * scale,
+                marginBottom: 16 * scale,
+              }}
+            >
+              {raceLine}
+            </div>
+          )}
+
+          {heroStat && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 12 * scale,
+                background: `linear-gradient(90deg, ${GOLD}29, ${GOLD}00)`,
+                borderLeft: `3px solid ${GOLD}`,
+                borderRadius: 4 * scale,
+                padding: `${8 * scale}px ${14 * scale}px`,
+                marginBottom: 18 * scale,
+              }}
+            >
+              <span
+                style={{
+                  color: GOLD,
+                  fontSize: 34 * scale,
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}
+              >
+                {heroStat.value}
+              </span>
+              <span
+                style={{
+                  color: WHITE,
+                  fontSize: 14 * scale,
+                  fontWeight: 700,
+                  opacity: 0.9,
+                }}
+              >
+                {heroStat.label}
+              </span>
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "inline-flex",
+              alignSelf: "flex-start",
+              alignItems: "center",
+              gap: 6 * scale,
+              background:
+                variant === "picks"
+                  ? "rgba(201,162,39,0.15)"
+                  : hit
+                    ? "rgba(16,185,129,0.15)"
+                    : "rgba(239,68,68,0.15)",
+              color: variant === "picks" ? "#e8c96a" : hit ? SUCCESS : ERROR,
+              fontSize: 13 * scale,
+              fontWeight: 700,
+              padding: `${5 * scale}px ${13 * scale}px`,
+              borderRadius: 999,
+              marginBottom: 18 * scale,
+            }}
+          >
+            {variant === "picks"
+              ? "事前発表・結果はまだ出ていません"
+              : hit
+                ? "的中"
+                : "不的中"}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 9 * scale,
+              marginBottom: 18 * scale,
+            }}
+          >
+            {picks.map((combo, i) => (
+              <div
+                key={combo}
+                style={{
+                  flex: 1,
+                  background:
+                    i === 0
+                      ? `linear-gradient(135deg, ${GOLD}38, ${CARD_BG})`
+                      : CARD_BG,
+                  border:
+                    i === 0
+                      ? `1px solid ${GOLD}`
+                      : "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 8 * scale,
+                  textAlign: "center",
+                  padding: `${13 * scale}px 0`,
+                  fontSize: 21 * scale,
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                }}
+              >
+                {combo}
+              </div>
+            ))}
+          </div>
+
+          {variant === "result" && actualResult && (
+            <div
+              style={{
+                color: "#cfd6dd",
+                fontSize: 15 * scale,
+                marginBottom: 18 * scale,
+              }}
+            >
+              実際の着順: {actualResult}
+            </div>
+          )}
+
+          {variant === "picks" && points.length > 0 && (
+            <>
+              <div
+                style={{
+                  color: MUTED,
+                  fontSize: 13 * scale,
+                  fontWeight: 700,
+                  marginBottom: 8 * scale,
+                }}
+              >
+                分析ツールで見えたポイント
+              </div>
+              <ul
+                style={{
+                  margin: 0,
+                  padding: 0,
+                  listStyle: "none",
+                  fontSize: 15 * scale,
+                  lineHeight: 1.7,
+                  color: "#e7ebef",
+                }}
+              >
+                {points.map((point) => (
+                  <li key={point} style={{ marginBottom: 6 * scale }}>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
-        {record && (
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            borderTop: `1px solid ${GOLD}4d`,
+            paddingTop: 16 * scale,
+            marginTop: 16 * scale,
+            flex: "none",
+          }}
+        >
           <div>
             <div
               style={{
@@ -280,13 +328,52 @@ export function CampaignEntryCard({
                 marginBottom: 4 * scale,
               }}
             >
-              ここまで
+              {variant === "picks" ? "購入額" : "払戻"}
             </div>
             <div style={{ fontSize: 19 * scale, fontWeight: 700 }}>
-              {record}
+              {variant === "picks"
+                ? `${purchaseAmountYen}円`
+                : `${payoutYen}円`}
             </div>
           </div>
-        )}
+          <div>
+            <div
+              style={{
+                fontSize: 11 * scale,
+                color: MUTED,
+                marginBottom: 4 * scale,
+              }}
+            >
+              通算収支
+            </div>
+            <div
+              style={{
+                fontSize: 19 * scale,
+                fontWeight: 700,
+                color: netPositive ? SUCCESS : ERROR,
+              }}
+            >
+              {netPositive ? "+" : ""}
+              {cumulativeNetYen}円
+            </div>
+          </div>
+          {record && (
+            <div>
+              <div
+                style={{
+                  fontSize: 11 * scale,
+                  color: MUTED,
+                  marginBottom: 4 * scale,
+                }}
+              >
+                ここまで
+              </div>
+              <div style={{ fontSize: 19 * scale, fontWeight: 700 }}>
+                {record}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </AbsoluteFill>
   );

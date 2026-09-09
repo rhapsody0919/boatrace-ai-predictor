@@ -555,6 +555,7 @@ export function RemotionRoot() {
           dayLabel: "1日目・1レース目",
           headline: "サンプル見出し",
           raceLine: "",
+          heroStat: { value: "99%", label: "イン崩れ注意度" },
           picks: ["1-2-3", "1-3-2", "2-1-3"],
           points: [],
           hit: false,

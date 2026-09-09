@@ -1296,6 +1296,19 @@ function DraftCard({
       {draft.platform === "youtube" && (
         <ThumbnailPreview thumbnailUrl={draft.cover_image_url} />
       )}
+      {/* 企画型パイプラインは1投稿に画像2枚（cover_image_url + 2枚目の
+          source_data.dataCardUrl）を添付する。2枚目はこれまでプレビュー自体が
+          出ておらずダウンロードもできなかったため、1枚目と同じ見た目で追加する
+          （2026-09-09） */}
+      {!draft.video_url && draft.source_data?.dataCardUrl && (
+        <div className="video-preview video-preview-empty">
+          <img
+            src={draft.source_data.dataCardUrl}
+            alt=""
+            className="video-preview-cover"
+          />
+        </div>
+      )}
 
       <div className="draft-card-body">
         <div className="draft-card-badges">
@@ -1568,6 +1581,25 @@ function PostingActionLinks({ draft, onMarkPosted }) {
             )}
           </>
         )
+      )}
+
+      {/* 企画型パイプライン等、動画ではなく静止画像2枚（cover_image_url +
+          source_data.dataCardUrl）で構成される投稿には、動画用の
+          handleDownloadでは対応できないため画像専用のダウンロードボタンを
+          出す（2026-09-09、画像がダウンロードできない不具合の修正） */}
+      {!draft.video_url && draft.cover_image_url && (
+        <DownloadImageButton
+          imageUrl={draft.cover_image_url}
+          fileName={`${draft.platform}-${draft.language}-1.png`}
+          label="画像①をダウンロード"
+        />
+      )}
+      {!draft.video_url && draft.source_data?.dataCardUrl && (
+        <DownloadImageButton
+          imageUrl={draft.source_data.dataCardUrl}
+          fileName={`${draft.platform}-${draft.language}-2.png`}
+          label="画像②をダウンロード"
+        />
       )}
 
       {draft.caption_text && (
