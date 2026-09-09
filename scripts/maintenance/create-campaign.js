@@ -18,10 +18,17 @@ async function main() {
       "イン崩れ注意度99%以上のレースだけを対象に3連単900円（300円×3点）を1週間購入シミュレーションする。" +
       "回収率が良いかどうかにかかわらず、実際の結果をそのまま発信する透明性企画。",
     persona: "AI予想を試してみたい・的中率や回収率の実態に関心がある層",
-    // blogSlug: ブログ側は「1件の日記型記事を逐次更新」する設計のため、
-    // 企画作成時にファイル名（public/blog/{blogSlug}.md）を決め打ちする
-    // （docs/operation/sns-pipeline-blog.md「3'.」参照）
-    toneSpec: { blogSlug: "campaign-ai-900yen-inkuzure-week" },
+    toneSpec: {
+      // blogSlug: ブログ側は「1件の日記型記事を逐次更新」する設計のため、
+      // 企画作成時にファイル名（public/blog/{blogSlug}.md）を決め打ちする
+      // （docs/operation/sns-pipeline-blog.md「3'.」参照）
+      blogSlug: "campaign-ai-900yen-inkuzure-week",
+      // autoApproveTopics: ネタ承認（sns_topics.status）を自動でapprovedにする
+      // （ユーザー承認済み、2026-09-09）。**投稿自体の自動承認とは別レイヤー**。
+      // 下書き（実際のX画像・ブログ記事）の承認は、この設定に関わらず常に
+      // 人間が行う（`.claude/CLAUDE.md`「SNS投稿の自動化・自動承認は行わない」）
+      autoApproveTopics: true,
+    },
     startDate: today,
     durationDays: 7,
     targetChannels: ["x", "blog"],

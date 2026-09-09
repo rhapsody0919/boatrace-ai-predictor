@@ -98,7 +98,14 @@ export async function getActiveCampaigns() {
  * 指定日のpredictionsから、選定条件（selection_criteria）を満たすレースを検出する。
  * campaign-backtest-fetch-races.jsと同じロジック（同一race_idの重複predictions行は
  * predicted_at最新のみ残す）を本番用に移植。
- * @param {string} date - 'YYYY-MM-DD'（対象日、この日のpredicted_atで絞り込む）
+ *
+ * ⚠️ predicted_atではなくrace_idで絞り込む（2026-09-09、実運用で発見した不具合）:
+ * 当初predicted_atの日付範囲（UTC）で絞り込んでいたが、predicted_atはUTC保存な
+ * のに対しレースはJST基準の日付で運用されるため、JST朝（UTC前日夜）に生成された
+ * predictionsが「対象日」の範囲外と誤判定され0件になった（本番で実際に発生）。
+ * race_idは"YYYY-MM-DD-会場-レース番号"形式でJST日付を直接含むため、こちらで
+ * 絞り込めばタイムゾーンの問題が起きない。
+ * @param {string} date - 'YYYY-MM-DD'（対象日、race_idのJST日付で絞り込む）
  * @param {{metric:string, operator:'>='|'<=', value:number}} criteria
  * @returns {Promise<Array<{raceId:string, metricValue:number, turnPrediction:object|null}>>}
  */
@@ -112,16 +119,16 @@ export async function findQualifyingRaces(date, criteria) {
   const PAGE_SIZE = 1000;
   const rows = [];
   for (let page = 0; ; page++) {
-    // model_idでの絞り込みは付けない（standard/safeBet/upsetFocusの3行とも
-    // 同じfeature_contributions.turnPrediction/volatilityPercentileを共有しており
-    // 後段でrace_id単位に重複排除するため不要な上、.eq('model_id',...)を足すと
-    // 単純なpredicted_at範囲検索よりクエリプランが悪化しstatement timeoutになる
+    // model_idでの絞り込みは付けない（standard/safeBet/upsetFocus/unifiedの
+    // 各行とも同じfeature_contributions.turnPrediction/volatilityPercentileを
+    // 共有しており後段でrace_id単位に重複排除するため不要な上、
+    // .eq('model_id',...)を足すとクエリプランが悪化しstatement timeoutになる
     // 実測結果があった）
     const { data, error } = await supabase
       .from("predictions")
       .select("race_id, predicted_at, feature_contributions")
-      .gte("predicted_at", date)
-      .lte("predicted_at", `${date} 23:59:59`)
+      .gte("race_id", date)
+      .lte("race_id", `${date}-99-99`)
       .not("feature_contributions", "is", null)
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
     if (error) throw new Error(`predictions取得エラー: ${error.message}`);
@@ -201,6 +208,11 @@ export async function getRaceEntriesForScoring(raceId) {
  * @param {string} params.topicText
  * @param {string[]} params.targetChannels - 例: ['x','blog']。sns_campaigns.target_channelsを
  *   そのまま渡す。省略時は全チャネル配信になってしまうため呼び出し元で必ず渡すこと
+ * @param {boolean} [params.autoApproveTopic] - trueならネタ承認（sns_topics.status）を
+ *   自動でapprovedにする。sns_campaigns.tone_spec.autoApproveTopicsが立っている企画のみ
+ *   trueを渡すこと（既定はfalse=要人間承認）。**投稿自体の自動承認とは別レイヤー**
+ *   （下書き生成後の実際の投稿承認は、この設定に関わらず常に人間が行う。
+ *   docs/design/sns-hub-campaign-pipeline/spec.md「シミュレーション開示」参照）
  * @returns {Promise<{entry:object, topic:object}>}
  */
 export async function createCampaignEntryWithTopic({
@@ -213,6 +225,7 @@ export async function createCampaignEntryWithTopic({
   purchaseAmountYen,
   topicText,
   targetChannels,
+  autoApproveTopic = false,
 }) {
   assertSupabaseEnabled();
 
@@ -245,6 +258,7 @@ export async function createCampaignEntryWithTopic({
       campaignId,
       topicText,
       targetChannels,
+      autoApproveTopic,
     );
     return { entry, topic };
   } catch (error) {
@@ -277,13 +291,18 @@ async function getTargetAccountIdsForChannels(targetChannels) {
  * createCampaignEntryWithTopic（対象レース検出時）とcreateResultAnnouncementTopic
  * （結果確定後）の共通処理。
  */
-async function createCampaignTopic(campaignId, topicText, targetChannels) {
+async function createCampaignTopic(
+  campaignId,
+  topicText,
+  targetChannels,
+  autoApprove = false,
+) {
   const contentType = await getVenueFeatureContentType();
   const targetAccountIds = await getTargetAccountIdsForChannels(targetChannels);
   const { topic } = await createTopicWithTargets({
     topicText,
     contentTypeId: contentType.id,
-    autoApprove: false,
+    autoApprove,
     targetAccountIds,
     skipReason: "企画のtarget_channelsに含まれないチャネルのため対象外",
   });
@@ -310,15 +329,22 @@ async function createCampaignTopic(campaignId, topicText, targetChannels) {
  * @param {string} campaignId
  * @param {string} topicText
  * @param {string[]} targetChannels - 例: ['x','blog']。sns_campaigns.target_channelsをそのまま渡す
+ * @param {boolean} [autoApproveTopic] - createCampaignEntryWithTopicと同じ意味
  * @returns {Promise<object>} topic
  */
 export async function createResultAnnouncementTopic(
   campaignId,
   topicText,
   targetChannels,
+  autoApproveTopic = false,
 ) {
   assertSupabaseEnabled();
-  return createCampaignTopic(campaignId, topicText, targetChannels);
+  return createCampaignTopic(
+    campaignId,
+    topicText,
+    targetChannels,
+    autoApproveTopic,
+  );
 }
 
 async function getVenueFeatureContentType() {

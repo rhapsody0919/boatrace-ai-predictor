@@ -33,7 +33,11 @@ node --env-file=.env.local scripts/daily/campaign-detect-and-generate.js [YYYY-M
    （1号艇を除いた5艇のうち上位3艇、3連単3点）を生成する
 5. `sns_campaign_entries`を1件作成し、同時に`sns_topics`（`venue-feature`型、
    `requires_topic_approval=true`）を作成して`campaign_id`を紐付ける
-   （人間承認が必要な状態で作成される。自動承認はしない）
+   （ネタ承認: `sns_campaigns.tone_spec.autoApproveTopics`が`true`の企画は
+   `status='approved'`で作成される。falseの企画は人間承認が必要な状態
+   （`status='proposed'`）で作成される。**ネタ承認とは別レイヤーの「下書き
+   （実際のX画像・ブログ記事）の投稿承認」は、この設定に関わらず常に人間が行う**、
+   `.claude/CLAUDE.md`「SNS投稿の自動化・自動承認は行わない」参照）
 
 ## 買い目生成モデルについて
 
