@@ -67,7 +67,7 @@
 - **数字を文章より先に・大きく**: 「A1級はB2級の2.6倍」ではなく「2.6倍」を独立した最大要素にし、説明文を補助テキストに格下げする
 - **対決構図（VS）**: 比較データを棒グラフではなく左右対決構図で見せる案。brand-kit.mdに前例のない新しい表現パターンのため、採用する場合はこの節への追記とセットで判断する（現時点では未採用）
 
-**2026-09-10監査結果（初回、26ファイル・全コンポジション対象）**: ほぼ全ファイルで「Hookシーンのみ基準を満たし、本編中盤のランキング/データシーンとCTAシーンは26〜54px程度のテキストのみで基準未達」という共通パターンが判明した。加えて`ToolCM.jsx`・`ToolShowcaseCM.jsx`・`YoungPersonaCM.jsx`はGOLDを一切使わずACCENT/GREENを主役色にしており色基準にも抵触。`AboutHeroCM.jsx`は全10シーンが基準未達（Captionコンポーネント共通の構造的要因）。`NoteExplainerCM.jsx`/`NoteExplainerLanguageSwitcherCM.jsx`/`RaceInsightYoutubeCM.jsx`（1920×1080横型）・`OnboardingFlowCM.jsx`（サイト埋め込み専用の可能性）はShorts棚の対象外の可能性が高く、本ルールをそのまま適用すべきか要確認として対象外にした。詳細な監査表・改善案はPR参照。
+**2026-09-10監査結果（初回、26ファイル・全コンポジション対象）**: ほぼ全ファイルで「Hookシーンのみ基準を満たし、本編中盤のランキング/データシーンとCTAシーンは26〜54px程度のテキストのみで基準未達」という共通パターンが判明した。加えて`ToolCM.jsx`・`ToolShowcaseCM.jsx`・`YoungPersonaCM.jsx`はGOLDを一切使わずACCENT/GREENを主役色にしており色基準にも抵触。`AboutHeroCM.jsx`は全10シーンが基準未達（Captionコンポーネント共通の構造的要因）。`NoteExplainerCM.jsx`/`NoteExplainerLanguageSwitcherCM.jsx`/`RaceInsightYoutubeCM.jsx`（1920×1080横型）・`OnboardingFlowCM.jsx`（サイト埋め込み専用の可能性）はShorts棚の対象外の可能性が高く、本ルールをそのまま適用すべきか要確認として対象外にした。ファイル別の詳細な監査表・改善案は[`docs/reference/shorts-hook-strength-audit-2026-09-10.md`](./shorts-hook-strength-audit-2026-09-10.md)を参照。
 
 - **恒久対策・実施済み**: `VenueRankingCM.jsx`の共通シーン（`SceneTop5`/`SceneWorst5`/`SceneVenueBars`/`SceneCTA`）を基準を満たすよう修正した。これら4関数は同ファイル内20コンポジションが共有しているため、1箇所の修正で20コンポジション全てに波及する（`fitHeadline()`と同じ「書き捨てず共通化して直す」パターン）
 - **未対応（バックログ）**: 上記以外の個別`*CM.jsx`（`AboutHeroCM`・`ToolCM`・`ToolShowcaseCM`・`YoungPersonaCM`・マスコット系5ファイル等）は、既存投稿済み動画の遡及的な作り直しは行わず（BOA-232と同じ判断基準）、**新規制作・再利用時にこの節の基準で書き直す**運用とする
