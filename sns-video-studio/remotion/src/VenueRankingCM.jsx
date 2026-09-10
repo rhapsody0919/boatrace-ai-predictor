@@ -1109,6 +1109,41 @@ export function VenueRankingCM_EN() {
 }
 
 // --- Scene 2: TOP5（75-263f, 約6.3s） ---
+// Shorts一覧はカスタムサムネイルを表示せず、動画本編内から任意のフレームを
+// 自動選択して表示する（docs/reference/brand-kit.md「シーンのフック強度均一化」
+// 参照）。ランキングシーンが選ばれても地味にならないよう、1位の数値を
+// GOLD・150px級の主役要素として先出しする（情報は削らず、視覚的な強さだけを
+// SceneHookに揃える）
+function HeroStat({ value, label, color }) {
+  return (
+    <Pop delay={0} style={{ textAlign: "center", marginBottom: 24 }}>
+      <div
+        style={{
+          color,
+          fontSize: 150,
+          fontWeight: 900,
+          fontFamily: FONT,
+          lineHeight: 1,
+          textShadow: `0 0 60px ${color}66`,
+        }}
+      >
+        {value}
+      </div>
+      <div
+        style={{
+          color: WHITE,
+          fontSize: 34,
+          fontWeight: 800,
+          fontFamily: FONT,
+          marginTop: 8,
+        }}
+      >
+        {label}
+      </div>
+    </Pop>
+  );
+}
+
 function SceneTop5({ heading, data, barColor, sampleSuffix }) {
   return (
     <AbsoluteFill
@@ -1118,6 +1153,13 @@ function SceneTop5({ heading, data, barColor, sampleSuffix }) {
         justifyContent: "center",
       }}
     >
+      {data[0] && (
+        <HeroStat
+          value={data[0].value}
+          label={data[0].venue}
+          color={barColor}
+        />
+      )}
       <Pop delay={2}>
         <div
           style={{
@@ -1156,7 +1198,7 @@ function SceneWorst5({
   data,
   barColor,
   sampleSuffix,
-  headingColor = "#7dd3fc",
+  headingColor = WHITE,
 }) {
   return (
     <AbsoluteFill
@@ -1166,6 +1208,11 @@ function SceneWorst5({
         justifyContent: "center",
       }}
     >
+      {data[0] && (
+        // barColor(Worst5では常にRED)ではなくWHITEを使う。ヒーロー数値は
+        // brand-kit.mdのルール（GOLD or WHITE+900のみ）に従う必要があるため
+        <HeroStat value={data[0].value} label={data[0].venue} color={WHITE} />
+      )}
       <Pop delay={2}>
         <div
           style={{
@@ -1198,6 +1245,26 @@ function SceneWorst5({
 
 // --- Scene 4: CTA（450-600f, 5s） ---
 function SceneCTA({ ctaLines, subLine, brandName }) {
+  // CTA文言は題材ごとに文字数が変わるため固定44pxのままでは基準未達(108px未満)。
+  // fitHeadline()で1行に収まる最大サイズへ動的に拡大する
+  // （docs/reference/brand-kit.md「シーンのフック強度均一化」参照）
+  const CTA_MAX_WIDTH = 980;
+  const line0Fit = fitHeadline(ctaLines[0], {
+    maxWidth: CTA_MAX_WIDTH,
+    maxLines: 1,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 108,
+    minFontSize: 44,
+  });
+  const line1Fit = fitHeadline(ctaLines[1], {
+    maxWidth: CTA_MAX_WIDTH,
+    maxLines: 1,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 108,
+    minFontSize: 44,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -1210,16 +1277,14 @@ function SceneCTA({ ctaLines, subLine, brandName }) {
         <div
           style={{
             color: WHITE,
-            fontSize: 44,
             fontWeight: 900,
             fontFamily: FONT,
             textAlign: "center",
             marginBottom: 16,
           }}
         >
-          {ctaLines[0]}
-          <br />
-          {ctaLines[1]}
+          <div style={{ fontSize: line0Fit.fontSize }}>{ctaLines[0]}</div>
+          <div style={{ fontSize: line1Fit.fontSize }}>{ctaLines[1]}</div>
         </div>
       </Pop>
       <Pop delay={16} style={{ marginBottom: 40 }}>
@@ -1959,10 +2024,13 @@ function SceneVenueBars({ heading, data, note }) {
         justifyContent: "center",
       }}
     >
+      {data[0] && (
+        <HeroStat value={data[0].value} label={data[0].venue} color={GOLD} />
+      )}
       <Pop delay={2}>
         <div
           style={{
-            color: ACCENT,
+            color: GOLD,
             fontSize: 36,
             fontWeight: 900,
             fontFamily: FONT,
