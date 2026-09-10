@@ -1111,81 +1111,89 @@ export function VenueRankingCM_EN() {
 // --- Scene 2: TOP5（75-263f, 約6.3s） ---
 // Shorts一覧はカスタムサムネイルを表示せず、動画本編内から任意のフレームを
 // 自動選択して表示する（docs/reference/brand-kit.md「シーンのフック強度均一化」
-// 参照）。ランキングシーンが選ばれても地味にならないよう、1位の数値を
-// GOLD・150px級の主役要素として先出しする（情報は削らず、視覚的な強さだけを
-// SceneHookに揃える）
-function HeroStat({ value, label, color }) {
-  return (
-    <Pop delay={0} style={{ textAlign: "center", marginBottom: 24 }}>
-      <div
-        style={{
-          color,
-          fontSize: 150,
-          fontWeight: 900,
-          fontFamily: FONT,
-          lineHeight: 1,
-          textShadow: `0 0 60px ${color}66`,
-        }}
-      >
-        {value}
-      </div>
-      <div
-        style={{
-          color: WHITE,
-          fontSize: 34,
-          fontWeight: 800,
-          fontFamily: FONT,
-          marginTop: 8,
-        }}
-      >
-        {label}
-      </div>
-    </Pop>
-  );
-}
-
-function SceneTop5({ heading, data, barColor, sampleSuffix }) {
+// 参照）。1位の数値を別枠で巨大化する案は「情報の重複で間延びする」との指摘で
+// 却下し、見出し自体をfitHeadline()で大きく強調する方式に変更した（2026-09-10）。
+// さらに「見出し＋5行のリストだけだと上下の余白が勿体無い」との指摘を受け、
+// SceneHookで既に使っている「全会場の実データを背景バーチャートとして敷く」
+// パターン（装飾ではなく実データ）をTOP5/WORST5にも流用し、キャンバス全体を
+// 実データで埋める（背景は低不透明度でリストの可読性を妨げない）
+function AllVenuesBackdrop({ allRates }) {
+  if (!allRates || allRates.length === 0) return null;
+  const minRate = Math.min(...allRates);
+  const maxRate = Math.max(...allRates);
   return (
     <AbsoluteFill
       style={{
-        background: NAVY_DARK,
-        padding: "0 70px",
+        flexDirection: "row",
+        alignItems: "flex-end",
         justifyContent: "center",
+        gap: 6,
+        padding: "0 24px",
+        opacity: 0.14,
       }}
     >
-      {data[0] && (
-        <HeroStat
-          value={data[0].value}
-          label={data[0].venue}
-          color={barColor}
-        />
-      )}
-      <Pop delay={2}>
-        <div
-          style={{
-            color: barColor,
-            fontSize: 38,
-            fontWeight: 900,
-            fontFamily: FONT,
-            marginBottom: 30,
-          }}
-        >
-          {heading}
-        </div>
-      </Pop>
-      {data.map((r, i) => (
-        <RankRow
-          key={r.venue}
-          rank={i + 1}
-          venue={r.venue}
-          value={r.value}
-          sample={r.sample}
-          barRatio={r.ratio}
-          barColor={barColor}
-          delay={10 + i * 8}
-          sampleSuffix={sampleSuffix}
-        />
-      ))}
+      {allRates.map((r, i) => {
+        const h = interpolate(r, [minRate, maxRate], [60, 1920]);
+        return (
+          <div
+            key={i}
+            style={{
+              width: 26,
+              height: h,
+              background: WHITE,
+              borderRadius: "4px 4px 0 0",
+            }}
+          />
+        );
+      })}
+    </AbsoluteFill>
+  );
+}
+
+const RANKING_HEADING_MAX_WIDTH = 940; // フレーム幅1080 - left/right各70
+function SceneTop5({ heading, data, barColor, sampleSuffix, allRates }) {
+  const headingFit = fitHeadline(heading, {
+    maxWidth: RANKING_HEADING_MAX_WIDTH,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 64,
+    minFontSize: 38,
+  });
+  return (
+    <AbsoluteFill style={{ background: NAVY_DARK }}>
+      <AllVenuesBackdrop allRates={allRates} />
+      <AbsoluteFill style={{ padding: "0 70px", justifyContent: "center" }}>
+        <Pop delay={2}>
+          <div
+            style={{
+              color: barColor,
+              fontSize: headingFit.fontSize,
+              fontWeight: 900,
+              fontFamily: FONT,
+              marginBottom: 36,
+              lineHeight: 1.25,
+            }}
+          >
+            {headingFit.lines.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
+          </div>
+        </Pop>
+        {data.map((r, i) => (
+          <RankRow
+            key={r.venue}
+            rank={i + 1}
+            venue={r.venue}
+            value={r.value}
+            sample={r.sample}
+            barRatio={r.ratio}
+            barColor={barColor}
+            delay={10 + i * 8}
+            sampleSuffix={sampleSuffix}
+          />
+        ))}
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 }
@@ -1199,46 +1207,50 @@ function SceneWorst5({
   barColor,
   sampleSuffix,
   headingColor = WHITE,
+  allRates,
 }) {
+  const headingFit = fitHeadline(heading, {
+    maxWidth: RANKING_HEADING_MAX_WIDTH,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 64,
+    minFontSize: 38,
+  });
   return (
-    <AbsoluteFill
-      style={{
-        background: NAVY_DARK,
-        padding: "0 70px",
-        justifyContent: "center",
-      }}
-    >
-      {data[0] && (
-        // barColor(Worst5では常にRED)ではなくWHITEを使う。ヒーロー数値は
-        // brand-kit.mdのルール（GOLD or WHITE+900のみ）に従う必要があるため
-        <HeroStat value={data[0].value} label={data[0].venue} color={WHITE} />
-      )}
-      <Pop delay={2}>
-        <div
-          style={{
-            color: headingColor,
-            fontSize: 38,
-            fontWeight: 900,
-            fontFamily: FONT,
-            marginBottom: 30,
-          }}
-        >
-          {heading}
-        </div>
-      </Pop>
-      {data.map((r, i) => (
-        <RankRow
-          key={r.venue}
-          rank={r.rank}
-          venue={r.venue}
-          value={r.value}
-          sample={r.sample}
-          barRatio={r.ratio}
-          barColor={barColor}
-          delay={10 + i * 8}
-          sampleSuffix={sampleSuffix}
-        />
-      ))}
+    <AbsoluteFill style={{ background: NAVY_DARK }}>
+      <AllVenuesBackdrop allRates={allRates} />
+      <AbsoluteFill style={{ padding: "0 70px", justifyContent: "center" }}>
+        <Pop delay={2}>
+          <div
+            style={{
+              color: headingColor,
+              fontSize: headingFit.fontSize,
+              fontWeight: 900,
+              fontFamily: FONT,
+              marginBottom: 36,
+              lineHeight: 1.25,
+            }}
+          >
+            {headingFit.lines.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
+          </div>
+        </Pop>
+        {data.map((r, i) => (
+          <RankRow
+            key={r.venue}
+            rank={r.rank}
+            venue={r.venue}
+            value={r.value}
+            sample={r.sample}
+            barRatio={r.ratio}
+            barColor={barColor}
+            delay={10 + i * 8}
+            sampleSuffix={sampleSuffix}
+          />
+        ))}
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 }
@@ -1366,6 +1378,7 @@ function VenueRankingTemplate({
           data={top5Data}
           barColor={barColorTop}
           sampleSuffix={sampleSuffix}
+          allRates={allRates}
         />
       </Sequence>
       <Sequence from={263} durationInFrames={187}>
@@ -1374,6 +1387,7 @@ function VenueRankingTemplate({
           data={worst5Data}
           barColor={barColorWorst}
           sampleSuffix={sampleSuffix}
+          allRates={allRates}
         />
       </Sequence>
       <Sequence from={450} durationInFrames={150}>
@@ -2024,17 +2038,14 @@ function SceneVenueBars({ heading, data, note }) {
         justifyContent: "center",
       }}
     >
-      {data[0] && (
-        <HeroStat value={data[0].value} label={data[0].venue} color={GOLD} />
-      )}
       <Pop delay={2}>
         <div
           style={{
             color: GOLD,
-            fontSize: 36,
+            fontSize: 52,
             fontWeight: 900,
             fontFamily: FONT,
-            marginBottom: 26,
+            marginBottom: 32,
             lineHeight: 1.3,
             whiteSpace: "pre-line",
           }}
