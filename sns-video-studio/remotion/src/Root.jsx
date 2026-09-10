@@ -5,17 +5,6 @@ import { HitCheckCM } from "./HitCheckCM.jsx";
 import { ToolShowcaseCM } from "./ToolShowcaseCM.jsx";
 import { RivalryCM } from "./RivalryCM.jsx";
 import { TriviaCM } from "./TriviaCM.jsx";
-import {
-  MascotCM_A,
-  MascotCM_A2,
-  MascotCM_A3,
-  MascotCM_B,
-  MascotCM_B2,
-  MascotCM_B3,
-  MascotCM_C,
-  MascotCM_C2,
-  MascotCM_C3,
-} from "./MascotCM.jsx";
 import { ToolCM_A } from "./ToolCM.jsx";
 import { ToolTallyCM } from "./ToolTallyCM.jsx";
 import { LivePredictionCM_A } from "./LivePredictionCM.jsx";
@@ -167,78 +156,6 @@ export function RemotionRoot() {
         id="TriviaCM"
         component={TriviaCM}
         durationInFrames={420}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="MascotCM-A"
-        component={MascotCM_A}
-        durationInFrames={425}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="MascotCM-B"
-        component={MascotCM_B}
-        durationInFrames={425}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="MascotCM-C"
-        component={MascotCM_C}
-        durationInFrames={425}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="MascotCM-A2"
-        component={MascotCM_A2}
-        durationInFrames={425}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="MascotCM-A3"
-        component={MascotCM_A3}
-        durationInFrames={425}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="MascotCM-B2"
-        component={MascotCM_B2}
-        durationInFrames={425}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="MascotCM-B3"
-        component={MascotCM_B3}
-        durationInFrames={425}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="MascotCM-C2"
-        component={MascotCM_C2}
-        durationInFrames={425}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="MascotCM-C3"
-        component={MascotCM_C3}
-        durationInFrames={425}
         fps={30}
         width={1080}
         height={1920}
