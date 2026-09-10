@@ -18,6 +18,7 @@ import {
 } from "./MascotCM.jsx";
 import { ToolCM_A } from "./ToolCM.jsx";
 import { ToolTallyCM } from "./ToolTallyCM.jsx";
+import { ServiceScaleCM } from "./ServiceScaleCM.jsx";
 import { LivePredictionCM_A } from "./LivePredictionCM.jsx";
 import {
   VenueRankingCM,
@@ -255,6 +256,14 @@ export function RemotionRoot() {
         id="ToolTallyCM"
         component={ToolTallyCM}
         durationInFrames={420}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="ServiceScaleCM"
+        component={ServiceScaleCM}
+        durationInFrames={375}
         fps={30}
         width={1080}
         height={1920}
