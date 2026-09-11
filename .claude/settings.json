@@ -22,7 +22,18 @@
             "Skill(collect-stats)",
             "Skill(analyze-venue)",
             "Skill(daily-report)",
-            "Skill(deploy-preview)"
+            "Skill(deploy-preview)",
+            "mcp__Claude_Browser__read_page",
+            "mcp__Claude_Browser__get_page_text",
+            "mcp__Claude_Browser__find",
+            "mcp__Claude_Browser__read_console_messages",
+            "mcp__Claude_Browser__read_network_requests",
+            "mcp__claude-in-chrome__find",
+            "mcp__claude-in-chrome__get_page_text",
+            "Bash(gh run watch *)",
+            "mcp__aws-knowledge__aws___search_documentation",
+            "mcp__aws-knowledge__aws___read_documentation",
+            "mcp__34bf5277-1acd-4c0b-a358-72580d08586c__list_issues"
         ],
         "deny": [
             "Bash(rm -rf:*)",
