@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-ai-snapshots.js",
     "lint": "eslint .",
     "check:contrast": "node scripts/maintenance/check-token-contrast.js",
     "check:css-collisions": "node scripts/maintenance/check-css-class-collisions.js",
@@ -30,6 +30,7 @@
     "@mseep/linear-mcp": "^78.0.1",
     "@sendgrid/mail": "^8.1.6",
     "@supabase/supabase-js": "^2.89.0",
+    "@vercel/functions": "^3.9.5",
     "cheerio": "^1.1.2",
     "framer-motion": "^12.35.0",
     "googleapis": "^168.0.0",
