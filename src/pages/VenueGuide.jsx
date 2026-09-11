@@ -278,6 +278,19 @@ export function VenueGuideDetail({ lang, guides, copy }) {
               </a>
             </>
           )}
+          {venue.languageSupport && (
+            <>
+              <h3 className="eg-subheading">{copy.languageSupportHeading}</h3>
+              <p>{venue.languageSupport.note}</p>
+              <a
+                href={venue.languageSupport.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {copy.languageSupportLinkLabel}
+              </a>
+            </>
+          )}
         </section>
 
         <section className="eg-section eg-highlight">

@@ -17,6 +17,7 @@ import {
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
+import { computeCancellationTransition } from "../lib/cancellationStatus.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -270,10 +271,30 @@ export async function run(schedule, date) {
     `🎯 レース情報更新: ${targetRaces.length}レース（発走${WINDOW_MINUTES}分前ウィンドウ）`,
   );
 
+  // 中止・順延の暫定検知（BOA-254 FR1）用に、対象レースの現在の状態を取得
+  const { data: cancellationRows, error: cancellationFetchError } =
+    await supabase
+      .from("races")
+      .select("race_id, cancellation_status, cancellation_check_streak")
+      .in(
+        "race_id",
+        targetRaces.map((r) => r.race_id),
+      );
+  if (cancellationFetchError) {
+    console.error(
+      "⚠️ cancellation_status取得エラー（今回は暫定検知をスキップ）:",
+      cancellationFetchError.message,
+    );
+  }
+  const cancellationMap = new Map(
+    (cancellationRows || []).map((r) => [r.race_id, r]),
+  );
+
   // 会場ごとにグループ化して並列取得
   const entriesRows = [];
   const conditionsRows = [];
   const racesGradeUpdates = [];
+  const cancellationUpdates = [];
 
   const byVenue = new Map();
   for (const r of targetRaces) {
@@ -297,6 +318,30 @@ export async function run(schedule, date) {
     );
 
     for (const { r, data } of results) {
+      // 中止・順延の暫定検知（BOA-254 FR1）: data有無に関わらず全レース分計算する。
+      // 現在の状態の取得自体に失敗している場合、全レースがcancellationMapに
+      // 存在しない=デフォルト値（null/0）にフォールバックしてしまい、既に
+      // tentativeへ昇格済みのレースのstreakを誤ってリセットする恐れがあるため、
+      // その回はまるごと計算をスキップする（cancellationFetchErrorのログ通り）
+      if (!cancellationFetchError) {
+        const cancellationCurrent = cancellationMap.get(r.race_id) || {
+          cancellation_status: null,
+          cancellation_check_streak: 0,
+        };
+        const cancellationNext = computeCancellationTransition({
+          currentStatus: cancellationCurrent.cancellation_status,
+          currentStreak: cancellationCurrent.cancellation_check_streak,
+          racersFound: Boolean(data),
+        });
+        if (cancellationNext.changed) {
+          cancellationUpdates.push({
+            race_id: r.race_id,
+            cancellation_status: cancellationNext.nextStatus,
+            cancellation_check_streak: cancellationNext.nextStreak,
+          });
+        }
+      }
+
       if (!data) continue;
       const { racers, raceGrade, raceTitle, conditions } = data;
 
@@ -364,6 +409,31 @@ export async function run(schedule, date) {
     if (vi < venueEntries.length - 1) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
+  }
+
+  // races.cancellation_status / cancellation_check_streak を更新（BOA-254 FR1）
+  // entriesRowsが空（対象レース全てが中止疑い等）でも早期returnより前に書き込む
+  let cancellationUpdateCount = 0;
+  for (const {
+    race_id,
+    cancellation_status,
+    cancellation_check_streak,
+  } of cancellationUpdates) {
+    const { error } = await supabase
+      .from("races")
+      .update({ cancellation_status, cancellation_check_streak })
+      .eq("race_id", race_id);
+    if (!error) cancellationUpdateCount++;
+    else
+      console.error(
+        `❌ races (cancellation_status) 更新エラー [${race_id}]:`,
+        error.message,
+      );
+  }
+  if (cancellationUpdateCount > 0) {
+    console.log(
+      `  ⚠️ races (cancellation_status): ${cancellationUpdateCount}件`,
+    );
   }
 
   if (entriesRows.length === 0) {

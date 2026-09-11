@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   LineChart,
   Line,
@@ -33,6 +34,7 @@ function techniqueColor(technique) {
  * profile/grade/newsとは別経路で取得するため、読み込み中は簡易表示にする
  */
 export default function RacerPerformanceStats({ stats, loading }) {
+  const { t } = useTranslation();
   const {
     formSummary,
     formTrend,
@@ -40,6 +42,7 @@ export default function RacerPerformanceStats({ stats, loading }) {
     aggregatedStats,
     exhibitionTimeTrend,
     boatReturnRate,
+    venueStats,
   } = stats ?? {};
 
   const chartData = (formTrend?.trend ?? []).map((row) => ({
@@ -56,13 +59,29 @@ export default function RacerPerformanceStats({ stats, loading }) {
   const hasTechniques = (techniqueProfile?.techniques?.length ?? 0) > 0;
   const hasReturnRate = (boatReturnRate?.length ?? 0) > 0;
 
+  // course_race_counts: { "1": { total, wins }, ... } → コース番号昇順の配列に変換
+  const courseStats = Object.entries(aggregatedStats?.course_race_counts ?? {})
+    .map(([course, counts]) => ({
+      course: Number(course),
+      total: counts.total ?? 0,
+      wins: counts.wins ?? 0,
+      winRate: counts.total > 0 ? counts.wins / counts.total : null,
+    }))
+    .filter((row) => row.total >= 5)
+    .sort((a, b) => a.course - b.course);
+  const hasCourseStats = courseStats.length > 0;
+
+  const hasVenueStats = (venueStats?.length ?? 0) > 0;
+
   const hasAnyData =
     formSummary != null ||
     chartData.length > 0 ||
     hasTechniques ||
     aggregatedStats != null ||
     exhibitionChartData.length > 0 ||
-    hasReturnRate;
+    hasReturnRate ||
+    hasCourseStats ||
+    hasVenueStats;
 
   if (loading) {
     return (
@@ -204,6 +223,38 @@ export default function RacerPerformanceStats({ stats, loading }) {
         </div>
       )}
 
+      {hasCourseStats && (
+        <div className="racer-technique-profile">
+          <h3>コース別成績（全会場計）</h3>
+          <div className="table-wrapper">
+            <table className="racer-return-rate-table">
+              <thead>
+                <tr>
+                  <th>コース</th>
+                  <th>出走数</th>
+                  <th>勝数</th>
+                  <th>勝率</th>
+                </tr>
+              </thead>
+              <tbody>
+                {courseStats.map((row) => (
+                  <tr key={row.course}>
+                    <td>{row.course}</td>
+                    <td>{row.total}</td>
+                    <td>{row.wins}</td>
+                    <td>
+                      {row.winRate !== null
+                        ? `${(row.winRate * 100).toFixed(1)}%`
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {exhibitionChartData.length > 0 && (
         <div className="racer-stat-chart">
           <h3>展示タイムの推移</h3>
@@ -255,6 +306,36 @@ export default function RacerPerformanceStats({ stats, loading }) {
                     <td>
                       {row.place_return_rate !== null
                         ? `${row.place_return_rate.toFixed(0)}%`
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {hasVenueStats && (
+        <div className="racer-technique-profile">
+          <h3>会場別成績（当地成績、過去2年・出走5走以上）</h3>
+          <div className="table-wrapper">
+            <table className="racer-return-rate-table" translate="no">
+              <thead>
+                <tr>
+                  <th>会場</th>
+                  <th>出走数</th>
+                  <th>勝率</th>
+                </tr>
+              </thead>
+              <tbody>
+                {venueStats.map((row) => (
+                  <tr key={row.venue_code}>
+                    <td>{t(`venues.${row.venue_code}`)}</td>
+                    <td>{row.total_races}</td>
+                    <td>
+                      {row.win_rate !== null
+                        ? `${(row.win_rate * 100).toFixed(1)}%`
                         : "-"}
                     </td>
                   </tr>

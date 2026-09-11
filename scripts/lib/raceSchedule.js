@@ -106,6 +106,25 @@ export function getRacesAfterStart(schedule, minutesAfter = 5, maxMinutesAfter =
 }
 
 /**
+ * 発走から maxMinutesAfter 分を超えて経過したレースを返す（結果取得を諦めるレース）
+ *
+ * getRacesAfterStart(schedule, 5, 90) が対象とする「発走5〜90分後」の
+ * ウィンドウを抜けた（＝90分経過しても結果が取得できなかった）レースを
+ * 特定するために使う。中止・順延の確定判定（BOA-254 FR2、docs/adr/0040）用。
+ *
+ * @param {Array} schedule - getRaceSchedule() の返り値
+ * @param {number} [maxMinutesAfter=90] - 発走から何分を超えたら対象にするか
+ * @returns {Array}
+ */
+export function getRacesPastResultWindow(schedule, maxMinutesAfter = 90) {
+  const now = new Date();
+  return schedule.filter((r) => {
+    const minAfterStart = (now - r.start_time) / 1000 / 60;
+    return minAfterStart > maxMinutesAfter;
+  });
+}
+
+/**
  * 発走前のレースを返す（オッズがまだ変動中のレース）
  *
  * 例: getRacesBeforeStart(schedule, 60)

@@ -14,6 +14,9 @@ test.describe("ホーム・基本ナビゲーション", () => {
     await page.evaluate(() => localStorage.removeItem("ryujin-radar-theme"));
     await page.reload();
 
+    // ThemeToggleは2026-09-08〜ハンバーガーメニュー内に移設（常時表示のnavには
+    // 検索・データ分析ツールのみを残し、モバイル幅でのアイコン折り返しを防ぐため）
+    await page.click(".menu-btn");
     const toggle = page.locator(".theme-toggle");
     await expect(toggle).toBeVisible();
 
@@ -30,7 +33,8 @@ test.describe("ホーム・基本ナビゲーション", () => {
     );
     expect(themeAfterReload).toBe(themeAfterClick);
 
-    // 再クリックで反対のテーマに戻ることを確認
+    // 再クリックで反対のテーマに戻ることを確認（リロードでメニューが閉じるため再度開く）
+    await page.click(".menu-btn");
     await page.locator(".theme-toggle").click();
     const themeAfterSecondClick = await page.evaluate(
       () => document.documentElement.dataset.theme,
@@ -49,6 +53,53 @@ test.describe("ホーム・基本ナビゲーション", () => {
     await expect(
       page.locator('a.submenu-item:has-text("会場ガイド")'),
     ).toHaveCount(0);
+  });
+});
+
+test.describe("選手一覧ページ (/racers)", () => {
+  test("ハンバーガーメニューから選手一覧へ遷移できる", async ({ page }) => {
+    await page.goto("/");
+    await page.click(".menu-btn");
+    await page.click('a.submenu-item:has-text("選手一覧")');
+    await expect(page).toHaveURL(/\/racers$/);
+    await expect(page.locator(".racers-page-title")).toHaveText("選手一覧");
+  });
+
+  test("級別フィルタで絞り込み、ソート・ページネーションが機能する", async ({
+    page,
+  }) => {
+    // Cookie同意バナー（position:fixed、z-index:9999）がページ下部の
+    // ページネーションと重なりクリックを阻害するため、既定済みとして進める
+    await page.addInitScript(() => {
+      localStorage.setItem("boatai:cookie-consent", "accepted");
+    });
+    await page.goto("/racers");
+    await expect(page.locator(".racer-table tbody tr").first()).toBeVisible();
+
+    // 級別フィルタ（A1）で絞り込むと件数が減りURLに反映される
+    await page.click('.racer-filter-chip:has-text("A1")');
+    await expect(page).toHaveURL(/grade=A1/);
+    await expect(page.locator(".racer-filter-toolbar-foot")).toContainText(
+      "が条件に一致",
+    );
+
+    // 身長列ヘッダクリックでソート方向がURLに反映される
+    await page.locator(".racer-table th", { hasText: "身長" }).click();
+    await expect(page).toHaveURL(/sort=height_cm/);
+
+    // ページネーションで2ページ目に遷移できる
+    const page2Btn = page.locator(".racer-pagination-btn", { hasText: "2" });
+    if ((await page2Btn.count()) > 0) {
+      await page2Btn.click();
+      await expect(page).toHaveURL(/page=2/);
+    }
+  });
+
+  test("選手一覧の行から選手個別ページへ遷移できる", async ({ page }) => {
+    await page.goto("/racers");
+    const firstRow = page.locator(".racer-table tbody tr").first();
+    await firstRow.click();
+    await expect(page).toHaveURL(/\/racer\/\d+$/);
   });
 });
 
@@ -84,7 +135,9 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
     page,
   }) => {
     // 会場ガイドはja非対応（en/zh-TW/koの3言語フルセット、2026-08-11時点）
+    // LanguageSwitcherは2026-09-08〜ハンバーガーメニュー内に移設
     await page.goto("/en/venues");
+    await page.click(".menu-btn");
     await page.locator(".language-switcher-trigger").click();
     const jaBtn = page.locator('.language-switcher-option:has-text("日本語")');
     await expect(jaBtn).toBeVisible();
@@ -100,6 +153,7 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
     page,
   }) => {
     await page.goto("/en/venues");
+    await page.click(".menu-btn");
     await page.locator(".language-switcher-trigger").click();
     const zhBtn = page.locator(
       '.language-switcher-option:has-text("繁體中文")',
@@ -107,6 +161,8 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
     await zhBtn.click();
     await expect(page).toHaveURL(/\/zh-TW\/venues$/);
 
+    // 言語切替のページ遷移でハンバーガーメニューが閉じるため再度開く
+    await page.click(".menu-btn");
     await page.locator(".language-switcher-trigger").click();
     const koBtn = page.locator('.language-switcher-option:has-text("한국어")');
     await koBtn.click();
@@ -977,7 +1033,13 @@ test.describe("複勝予想UI撤去の完全性（レース結果パネル）", 
     await button.click();
     const resultPanel = page.locator(".race-result");
     await expect(resultPanel).toBeVisible({ timeout: 10000 });
-    await expect(resultPanel).not.toContainText("複勝");
+    // BOA-238で払戻金セクション（単勝/複勝/3連複/3連単等）を追加したため、
+    // 「複勝」という文字列自体は払戻金の券種ラベルとして正当に表示されるようになった。
+    // ここで再発防止したいのは複勝予想の検証UI（「複勝◯位予想」「的中！」「不的中」）の方なので、
+    // 判定もそちらに絞る
+    await expect(resultPanel).not.toContainText("複勝予想");
+    await expect(resultPanel).not.toContainText("的中！");
+    await expect(resultPanel).not.toContainText("不的中");
   });
 });
 
@@ -1262,6 +1324,7 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
     "/guide",
     "/poirot",
     "/racer/4320",
+    "/racers",
   ];
 
   for (const path of PAGES) {

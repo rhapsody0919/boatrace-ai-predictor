@@ -9,6 +9,7 @@ import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
 import LoadingScreen from "../components/LoadingScreen";
 import { RaceCard } from "../components/race";
+import VenueCharacteristicsCard from "../components/venue/VenueCharacteristicsCard";
 import { useDatePredictions } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
@@ -102,6 +103,8 @@ function VenueRaceListPage() {
               {t("venueRaceList.backToVenues")}
             </Link>
           </header>
+
+          <VenueCharacteristicsCard venueCode={venueCode} />
 
           {loading ? (
             <LoadingScreen

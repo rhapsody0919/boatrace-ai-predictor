@@ -52,22 +52,70 @@ const BET_TYPES = [
   },
 ];
 
-const MODELS = [
-  {
-    icon: "🎯",
-    name: "穩健型",
-    desc: "跟隨最有可能的比賽展開。適合想穩定命中的你。",
-  },
-  {
-    icon: "⚖️",
-    name: "標準型",
-    desc: "根據第二可能的展開做出平衡選擇。",
-  },
-  {
-    icon: "🌪️",
-    name: "冷門型",
-    desc: "瞄準第三可能展開帶來的高派彩。適合混戰賽事。",
-  },
+// 実データを使った実例（BOA-250）。英語版EnglishGuide.jsxと同じ実レースを使う
+const EXAMPLE_RACE = {
+  raceId: "2026-09-06-12-11",
+  venue: "住之江",
+  date: "2026年9月6日",
+  raceNo: 11,
+  entries: [
+    {
+      boat: 1,
+      name: "徳増　　秀樹",
+      grade: "A1",
+      winRate: "6.16",
+      localWinRate: "6.59",
+      motor2Rate: "32.2%",
+    },
+    {
+      boat: 2,
+      name: "近江　　翔吾",
+      grade: "A2",
+      winRate: "6.49",
+      localWinRate: "6.24",
+      motor2Rate: "28.2%",
+    },
+    {
+      boat: 3,
+      name: "山本　　修一",
+      grade: "A2",
+      winRate: "5.68",
+      localWinRate: "6.62",
+      motor2Rate: "38.0%",
+    },
+    {
+      boat: 4,
+      name: "佐々木　翔斗",
+      grade: "A2",
+      winRate: "5.30",
+      localWinRate: "5.43",
+      motor2Rate: "33.7%",
+    },
+    {
+      boat: 5,
+      name: "白水　　勝也",
+      grade: "A1",
+      winRate: "6.38",
+      localWinRate: "6.50",
+      motor2Rate: "23.5%",
+    },
+    {
+      boat: 6,
+      name: "間庭　　菜摘",
+      grade: "B1",
+      winRate: "4.67",
+      localWinRate: "4.56",
+      motor2Rate: "27.8%",
+    },
+  ],
+  payout: "¥1,010",
+};
+
+const DATA_POINTS = [
+  { icon: "🏅", name: "級別與勝率", desc: "選手的實力等級與生涯勝率。" },
+  { icon: "⚙️", name: "馬達性能", desc: "選手所配馬達的2連率。" },
+  { icon: "📈", name: "近期調子", desc: "選手勝率最近是上升還是下滑。" },
+  { icon: "⏱️", name: "起跑穩定度", desc: "選手起跑時機的穩定程度。" },
 ];
 
 export default function ZhTwGuide() {
@@ -235,13 +283,15 @@ export default function ZhTwGuide() {
               。每張賽事卡片都顯示投注截止時間與預測預覽。
             </li>
             <li>
-              <strong>選擇符合你風格的預測模型</strong>：
+              <strong>查看6艇的客觀數據表</strong>。
+              龍神雷達不會要你選擇預測模型 —
+              所有人看到的都是同一份數據，自行判斷：
               <div className="eg-models">
-                {MODELS.map((m) => (
-                  <div key={m.name} className="eg-model">
-                    <span className="eg-model-icon">{m.icon}</span>
-                    <strong>{m.name}</strong>
-                    <p>{m.desc}</p>
+                {DATA_POINTS.map((d) => (
+                  <div key={d.name} className="eg-model">
+                    <span className="eg-model-icon">{d.icon}</span>
+                    <strong>{d.name}</strong>
+                    <p>{d.desc}</p>
                   </div>
                 ))}
               </div>
@@ -259,6 +309,63 @@ export default function ZhTwGuide() {
               每艘推薦艇背後的主要統計依據（起跑時機排名、馬達強度、當地勝率）。
             </li>
           </ol>
+        </section>
+
+        {/* Real example (BOA-250): actual past race data */}
+        <section className="eg-section">
+          <h2>📋 實際案例：解讀數據並填寫投注單</h2>
+          <p>
+            許多新手指南只用虛構的數字說明。這裡用一場真實比賽 —{" "}
+            {EXAMPLE_RACE.date} {EXAMPLE_RACE.venue} 第{EXAMPLE_RACE.raceNo}場 —
+            帶你看真實的出走表數據、真實的買法，以及真實的配當。
+          </p>
+          <div className="eg-table-wrapper">
+            <table className="eg-table">
+              <thead>
+                <tr>
+                  <th>艇號</th>
+                  <th>選手</th>
+                  <th>級別</th>
+                  <th>勝率</th>
+                  <th>當地勝率</th>
+                  <th>馬達2連率</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EXAMPLE_RACE.entries.map((e) => (
+                  <tr key={e.boat}>
+                    <td>
+                      <strong>{e.boat}</strong>
+                    </td>
+                    <td translate="no">{e.name}</td>
+                    <td>{e.grade}</td>
+                    <td>{e.winRate}</td>
+                    <td>{e.localWinRate}</td>
+                    <td>{e.motor2Rate}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <strong>怎麼解讀：</strong>{" "}
+            1號艇是A1級別，且本場當地勝率全場最高（6.59）——是典型的「1號位逃げ」熱門。3號艇雖然只是A2級別，但馬達2連率（38.0%）明顯優於其他艇——這是很多人不單看級別、而多考慮馬達表現來選2着的常見理由。
+          </p>
+          <p>
+            <strong>投注方式：</strong> 3連單，依序選擇
+            <strong>1 → 3 → 4</strong>
+            ——在投注單對應這場的欄位中，1着欄填「1」、2着欄填「3」、3着欄填「4」。
+          </p>
+          <p className="eg-note">
+            <strong>結果：</strong>{" "}
+            1號艇以逃げ獲勝，3號艇第2、4號艇第3——與預測完全一致。每投注¥100，配當為{" "}
+            <strong>{EXAMPLE_RACE.payout}</strong>。
+          </p>
+          <p>
+            <Link to={`/zh-TW/race/${EXAMPLE_RACE.raceId}`}>
+              → 查看龍神雷達對這場比賽的完整數據分析
+            </Link>
+          </p>
         </section>
 
         {/* Venue guides */}

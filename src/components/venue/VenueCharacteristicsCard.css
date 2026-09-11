@@ -1,0 +1,277 @@
+.venue-characteristics-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+/* HUD計器盤の走査線。カード上端を左右に光が流れ、常時計測している印象を作る */
+.venue-hud-scanbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--brand-accent-primary),
+    transparent
+  );
+  animation: venue-hud-scan 2.6s ease-in-out infinite;
+}
+
+@keyframes venue-hud-scan {
+  0%,
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(100%);
+    opacity: 0.9;
+  }
+}
+
+.venue-characteristics-card h2 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.venue-characteristics-summary {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--brand-accent-secondary);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.venue-characteristics-note {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-3) 0;
+}
+
+.venue-hud-header-row {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr 8rem;
+  align-items: end;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-2);
+}
+
+.venue-hud-header-row > span {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-align: right;
+  line-height: 1.3;
+}
+
+/* 0/25/50/75/100%の軸目盛り。トラックと同じ幅に重ねて表示する */
+.venue-hud-axis-labels {
+  position: relative;
+  height: 0.9rem;
+}
+
+.venue-hud-axis-labels span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.venue-hud-axis-labels span:first-child {
+  left: 0;
+  transform: translateX(0);
+}
+
+.venue-hud-axis-labels span:nth-child(2) {
+  left: 25%;
+}
+
+.venue-hud-axis-labels span:nth-child(3) {
+  left: 50%;
+}
+
+.venue-hud-axis-labels span:nth-child(4) {
+  left: 75%;
+}
+
+.venue-hud-axis-labels span:last-child {
+  left: 100%;
+  transform: translateX(-100%);
+}
+
+/* 上下の浮動ラベル分の余白を確保するため行間を広めに取る */
+.venue-hud-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-7);
+}
+
+.venue-hud-row {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr 8rem;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.venue-hud-lane {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
+    monospace;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  flex-shrink: 0;
+  /* 1号艇(白背景)がライトモードのカード背景(ほぼ白のivory)に対して
+     輪郭が消える問題への対応。他の艇番色でも一律に付けて統一感を保つ */
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+
+.venue-hud-track {
+  display: block;
+  height: 0.6rem;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--border-hairline) 55%, transparent);
+  position: relative;
+  /* 浮動ラベルをトラックの上に出すためクリップしない。バー・グリッド線は
+     それぞれ自身の丸み・幅で完結するため、親でクリップする必要が無い */
+  overflow: visible;
+}
+
+.venue-hud-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-accent-primary) 55%, transparent),
+    var(--brand-accent-primary)
+  );
+  transform-origin: left;
+  animation: venue-hud-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes venue-hud-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* 25/50/75%の目安線 */
+.venue-hud-grid-line {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: color-mix(in srgb, var(--text-secondary) 30%, transparent);
+}
+
+/* 全国平均（24会場プール値）の位置を示す縦線 */
+.venue-hud-national-tick {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--text-secondary);
+  opacity: 0.9;
+}
+
+/* トラック下に浮かせる「全国XX.X%」ラベル（参考値、控えめな配色）。
+   会場自体の数値（venue-hud-own-label、トラック上側）と上下で分離し重なりを避ける */
+.venue-hud-national-label {
+  position: absolute;
+  top: calc(100% + 0.15rem);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+.venue-hud-national-label-line {
+  width: 1px;
+  height: 0.4rem;
+  background: var(--text-secondary);
+  margin-bottom: 0.1rem;
+  opacity: 0.9;
+}
+
+/* トラック上に浮かせる、その会場自体の1着率ラベル（主役の数値のため強調表示） */
+.venue-hud-own-label {
+  position: absolute;
+  bottom: calc(100% + 0.15rem);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
+    monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+.venue-hud-own-label-line {
+  width: 1px;
+  height: 0.4rem;
+  background: var(--brand-accent-primary);
+  margin-top: 0.1rem;
+  opacity: 0.9;
+}
+
+.venue-hud-technique {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.venue-characteristics-footnote {
+  margin: var(--spacing-3) 0 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .venue-hud-scanbar {
+    animation: none;
+    opacity: 0.5;
+    transform: none;
+  }
+
+  .venue-hud-fill {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .venue-hud-row,
+  .venue-hud-header-row {
+    grid-template-columns: 1.8rem 1fr;
+  }
+
+  .venue-hud-technique,
+  .venue-hud-header-technique {
+    display: none;
+  }
+}

@@ -58,6 +58,8 @@ import { NoteExplainerCM_FormRanking } from "./NoteExplainerFormRanking.jsx";
 import { NoteExplainerCM_LanguageSwitcher } from "./NoteExplainerLanguageSwitcherCM.jsx";
 import { LanguageSwitcherCM } from "./LanguageSwitcherCM.jsx";
 import { DataQuoteCard } from "./DataQuoteCard.jsx";
+import { CampaignEntryCard } from "./CampaignEntryCard.jsx";
+import { CampaignDataExcerptCard } from "./CampaignDataExcerptCard.jsx";
 import {
   YoutubeChannelAvatar,
   YoutubeChannelBanner,
@@ -539,6 +541,43 @@ export function RemotionRoot() {
           statValue: "",
           statLabel: "",
           caption: "",
+        }}
+      />
+      <Composition
+        id="CampaignEntryCard"
+        component={CampaignEntryCard}
+        durationInFrames={1}
+        fps={30}
+        width={1080}
+        height={1350}
+        defaultProps={{
+          variant: "picks",
+          dayLabel: "1日目・1レース目",
+          headline: "サンプル見出し",
+          raceLine: "",
+          heroStat: { value: "99%", label: "イン崩れ注意度" },
+          picks: ["1-2-3", "1-3-2", "2-1-3"],
+          points: [],
+          hit: false,
+          actualResult: "",
+          purchaseAmountYen: 900,
+          payoutYen: 0,
+          cumulativeNetYen: 0,
+          record: "",
+        }}
+      />
+      <Composition
+        id="CampaignDataExcerptCard"
+        component={CampaignDataExcerptCard}
+        durationInFrames={1}
+        fps={30}
+        width={1080}
+        height={1350}
+        defaultProps={{
+          raceLine: "",
+          boats: [],
+          pickedBoatNumbers: [],
+          turnPredictionTop3: [],
         }}
       />
       <Composition

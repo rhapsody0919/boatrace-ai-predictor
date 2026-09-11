@@ -55,6 +55,17 @@
       "postedAt": null,
       "metrics": null,
       "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行）。絶対厳守13により会場攻略・答え合わせ・予想数値フック等が新規制作停止中のため、成績・確率を一切扱わない使い方ライフハック型のLanguageSwitcherCM.jsx（2026-09-03新設・成績データ不使用のため元々TikTok可）を選定。直近3投稿（venue-ranking系×2〈いずれも絶対厳守13により現在は新規制作停止対象〉・mascot）と型重複なし。既存コンポジションの再利用、コード変更無し。@ryujinradarのシャドウバンは解消未確認のため、下書きは承認待ちストックとして生成のみ行い、投稿判断はユーザーに委ねる。"
+    },
+    {
+      "date": "2026-09-09",
+      "format": "language-switcher",
+      "axis": null,
+      "content": "使い方ライフハック型（4言語切替の使い方、日本語/English/繁體中文/한국어、実画面スクショ使用）",
+      "videoFile": "Supabase Storage sns-hub-media/76535b4e-8b6e-4188-8300-16e4f18ac874/tiktok-ja.mp4（sns_drafts id=81a770c9-d381-4a37-8f17-9eae7125b649）",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行）。【重要な発見】直近のTikTok drafts6件が連続で'trivia'フォーマットだったが、内容を確認したところ出身地別勝率・支部別勝率・体重別勝率・級別スタートタイミング・級別フライング率など選手属性別の成績統計比較であり、絶対厳守13（賭けの結果に影響する統計・インサイトを扱うコンテンツの新規制作停止、2026-09-01/02方針転換）に抵触する疑いが強いと判断した。committed済みのTriviaCM.jsx（年代別1着率）も同種の懸念がある。ローテーションルール（直近3投稿と同じ型を連続させない）にも違反していたため、今回はtrivia以外の安全な型としてLanguageSwitcherCM.jsxを再選定した。既存コンポジションの再利用、コード変更無し。詳細はRoutine実行結果報告を参照。"
     }
   ]
 }

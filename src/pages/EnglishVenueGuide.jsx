@@ -68,12 +68,14 @@ const copy = {
   languageBarrierLinkLabel: "See the official BOATRACE English guide →",
   cashlessHeading: "💳 How to pay here",
   cashlessLinkLabel: "See the official payment guide →",
+  languageSupportHeading: "🗣️ On-site language support at this venue",
+  languageSupportLinkLabel: "See the source →",
   bettingTip: "💡 Betting tip",
   beforeYouBet: "⚖️ Before you bet",
   disclaimer: (
     <>
-      Betting requires being physically in Japan and aged 20 or older. Ryujin Radar
-      provides information and AI analysis only — see our{" "}
+      Betting requires being physically in Japan and aged 20 or older. Ryujin
+      Radar provides information and AI analysis only — see our{" "}
       <Link to="/en/guide">beginner&apos;s guide</Link> for the rules and bet
       types.
     </>

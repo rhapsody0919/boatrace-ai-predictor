@@ -1,0 +1,221 @@
+[
+  {
+    "raceId": "2026-09-05-17-04",
+    "volatilityPercentile": 0.9880952380952381,
+    "buckets": [
+      "ge_90",
+      "ge_95"
+    ],
+    "picks": [
+      "1-4-2",
+      "1-2-4",
+      "4-1-2"
+    ],
+    "actual": "2-1-3",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-04-17-03",
+    "volatilityPercentile": 0.9551282051282052,
+    "buckets": [
+      "ge_90",
+      "ge_95"
+    ],
+    "picks": [
+      "3-1-5",
+      "3-5-1",
+      "1-3-5"
+    ],
+    "actual": "3-2-4",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-04-22-05",
+    "volatilityPercentile": 1,
+    "buckets": [
+      "ge_90",
+      "ge_95",
+      "ge_99",
+      "ge_100"
+    ],
+    "picks": [
+      "5-3-2",
+      "3-5-2",
+      "5-1-3"
+    ],
+    "actual": "2-1-3",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-04-12-01",
+    "volatilityPercentile": 0.9791666666666666,
+    "buckets": [
+      "ge_90",
+      "ge_95"
+    ],
+    "picks": [
+      "4-3-1",
+      "3-4-1",
+      "4-1-3"
+    ],
+    "actual": "4-3-2",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-04-12-04",
+    "volatilityPercentile": 0.9791666666666666,
+    "buckets": [
+      "ge_90",
+      "ge_95"
+    ],
+    "picks": [
+      "5-2-1",
+      "2-5-1",
+      "5-1-2"
+    ],
+    "actual": "2-1-5",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-04-02-02",
+    "volatilityPercentile": 0.9722222222222222,
+    "buckets": [
+      "ge_90",
+      "ge_95"
+    ],
+    "picks": [
+      "3-5-1",
+      "3-1-5",
+      "5-3-1"
+    ],
+    "actual": "4-3-5",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-04-10-06",
+    "volatilityPercentile": 0.9652777777777778,
+    "buckets": [
+      "ge_90",
+      "ge_95"
+    ],
+    "picks": [
+      "3-2-6",
+      "3-6-2",
+      "2-3-6"
+    ],
+    "actual": "2-1-4",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-04-22-03",
+    "volatilityPercentile": 0.9513888888888888,
+    "buckets": [
+      "ge_90",
+      "ge_95"
+    ],
+    "picks": [
+      "4-5-1",
+      "5-4-1",
+      "4-1-5"
+    ],
+    "actual": "4-1-3",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-04-02-09",
+    "volatilityPercentile": 0.9722222222222222,
+    "buckets": [
+      "ge_90",
+      "ge_95"
+    ],
+    "picks": [
+      "4-5-6",
+      "5-4-6",
+      "4-6-5"
+    ],
+    "actual": "2-5-3",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-05-02-06",
+    "volatilityPercentile": 0.9916666666666667,
+    "buckets": [
+      "ge_90",
+      "ge_95",
+      "ge_99"
+    ],
+    "picks": [
+      "2-1-6",
+      "2-6-1",
+      "1-2-6"
+    ],
+    "actual": "2-3-1",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-05-02-10",
+    "volatilityPercentile": 0.95,
+    "buckets": [
+      "ge_90",
+      "ge_95"
+    ],
+    "picks": [
+      "1-3-6",
+      "3-1-6",
+      "1-6-3"
+    ],
+    "actual": "4-5-2",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  },
+  {
+    "raceId": "2026-09-05-02-04",
+    "volatilityPercentile": 0.975,
+    "buckets": [
+      "ge_90",
+      "ge_95"
+    ],
+    "picks": [
+      "3-5-4",
+      "3-4-5",
+      "5-3-4"
+    ],
+    "actual": "5-3-2",
+    "hit": false,
+    "spend": 900,
+    "payout": 0,
+    "net": -900
+  }
+]

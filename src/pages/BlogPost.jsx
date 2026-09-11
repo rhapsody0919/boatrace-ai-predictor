@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -15,6 +15,7 @@ import { parseLangFromPath, localizePath } from "../config/languages";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
+import { BLOG_IMAGE_DIMENSIONS } from "../data/blogImageDimensions";
 import "./BlogPost.css";
 
 const UI_TEXT = {
@@ -34,6 +35,8 @@ const UI_TEXT = {
     home: "ホーム",
     blogLabel: "ブログ",
     homeHref: "/",
+    tocTitle: "目次",
+    backToTop: "ページ上部に戻る",
   },
   en: {
     brandName: "Ryujin Radar",
@@ -51,6 +54,8 @@ const UI_TEXT = {
     home: "Home",
     blogLabel: "Blog",
     homeHref: "/en/",
+    tocTitle: "Table of Contents",
+    backToTop: "Back to top",
   },
   "zh-TW": {
     brandName: "龍神雷達",
@@ -68,6 +73,8 @@ const UI_TEXT = {
     home: "首頁",
     blogLabel: "部落格",
     homeHref: "/zh-TW/",
+    tocTitle: "目錄",
+    backToTop: "回到頂部",
   },
   ko: {
     brandName: "용신 레이더",
@@ -85,6 +92,8 @@ const UI_TEXT = {
     home: "홈",
     blogLabel: "블로그",
     homeHref: "/ko/",
+    tocTitle: "목차",
+    backToTop: "위로 이동",
   },
 };
 
@@ -94,6 +103,10 @@ export default function BlogPost() {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [readProgress, setReadProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [headings, setHeadings] = useState([]);
+  const articleRef = useRef(null);
 
   const { lng } = parseLangFromPath(pathname);
   const isTranslated = lng !== "ja" && isBlogLangAvailable(id, lng);
@@ -150,6 +163,96 @@ export default function BlogPost() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mdPath/t は id/isTranslated から導出される
   }, [id, basePost, mdPath]);
 
+  useEffect(() => {
+    // rAFで間引き、フリングスクロール中に毎イベントscrollHeight（強制リフロー）や
+    // setStateを連発しないようにする
+    let rafId = null;
+    const handleScroll = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const scrollTop = window.scrollY;
+        const docHeight =
+          document.documentElement.scrollHeight - window.innerHeight;
+        setReadProgress(
+          docHeight > 0
+            ? Math.max(0, Math.min(100, (scrollTop / docHeight) * 100))
+            : 0,
+        );
+        setShowBackToTop(scrollTop > 600);
+      });
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
+  }, [id]);
+
+  // 目次のid/テキストは、実際にDOMへレンダーされたh2/h3から収集する（見出しテキストの
+  // 一致判定に頼らないため、同名見出しの重複やMarkdownリンクを含む見出しでもズレない）
+  useEffect(() => {
+    if (!articleRef.current) {
+      setHeadings([]);
+      return;
+    }
+    const elements = Array.from(articleRef.current.querySelectorAll("h2, h3"));
+    setHeadings(
+      elements.map((el, i) => {
+        const headingId = `toc-heading-${i}`;
+        el.id = headingId;
+        return {
+          level: el.tagName === "H2" ? 2 : 3,
+          text: el.textContent,
+          id: headingId,
+        };
+      }),
+    );
+  }, [content]);
+
+  const faqItems = useMemo(() => extractFaqItems(content), [content]);
+
+  const articleContent = useMemo(
+    () => (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
+        components={{
+          // Custom link renderer to open external links in new tab
+          a: ({ node, ...props }) => {
+            const isExternal = props.href?.startsWith("http");
+            return (
+              <a
+                {...props}
+                target={isExternal ? "_blank" : undefined}
+                rel={isExternal ? "noopener noreferrer" : undefined}
+              />
+            );
+          },
+          // 実寸法をwidth/height属性で渡し、ブラウザに事前スペースを確保させる
+          // （CLS対策）。一律のaspect-ratio指定は使わない — 記事画像は比率が
+          // 様々でトリミングにより画像が欠ける実害があったため撤回された経緯がある
+          // （2026-09-07 PR#559）。実寸法ベースなら自然な比率のままCLSも防げる
+          img: ({ node, ...props }) => (
+            <img
+              {...props}
+              loading="lazy"
+              decoding="async"
+              width={BLOG_IMAGE_DIMENSIONS[props.src]?.width}
+              height={BLOG_IMAGE_DIMENSIONS[props.src]?.height}
+            />
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    ),
+    // contentが変わらない限りReactMarkdown要素を再生成しない。読了進捗バーの
+    // scroll起因の再レンダーのたびに記事全文を再パースしていた問題への対処
+    [content],
+  );
+
   useSocialMeta({
     title: post?.title,
     description: post?.description,
@@ -185,7 +288,9 @@ export default function BlogPost() {
 
   const url = postUrl;
   const imageUrl = postImageUrl;
-  const faqItems = extractFaqItems(content);
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <>
@@ -272,6 +377,22 @@ export default function BlogPost() {
 
       <Header />
 
+      <div
+        className="reading-progress-bar"
+        style={{ width: `${readProgress}%` }}
+      />
+
+      {showBackToTop && (
+        <button
+          type="button"
+          className="back-to-top-button"
+          onClick={scrollToTop}
+          aria-label={t.backToTop}
+        >
+          ↑
+        </button>
+      )}
+
       <div className="blog-post-container">
         <div className="blog-post-header">
           <Link to={t.backHref} className="back-link">
@@ -292,31 +413,27 @@ export default function BlogPost() {
           </div>
         </div>
 
-        <article className="blog-post-content">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeRaw]}
-            components={{
-              // Custom link renderer to open external links in new tab
-              a: ({ node, ...props }) => {
-                const isExternal = props.href?.startsWith("http");
-                return (
-                  <a
-                    {...props}
-                    target={isExternal ? "_blank" : undefined}
-                    rel={isExternal ? "noopener noreferrer" : undefined}
-                  />
-                );
-              },
-              // 実際の画像サイズが不明でもCLSを抑えるため、CSS側で
-              // aspect-ratioを固定確保している（BlogPost.css参照）
-              img: ({ node, ...props }) => (
-                <img {...props} loading="lazy" decoding="async" />
-              ),
-            }}
-          >
-            {content}
-          </ReactMarkdown>
+        {headings.length > 0 && (
+          <details className="toc-section">
+            <summary className="toc-summary">
+              📑 {t.tocTitle} ({headings.length})
+            </summary>
+            <nav className="toc-list" aria-label={t.tocTitle}>
+              {headings.map((h) => (
+                <a
+                  key={h.id}
+                  href={`#${h.id}`}
+                  className={`toc-link toc-link-level-${h.level}`}
+                >
+                  {h.text}
+                </a>
+              ))}
+            </nav>
+          </details>
+        )}
+
+        <article className="blog-post-content" ref={articleRef}>
+          {articleContent}
         </article>
 
         {/* Related Posts */}

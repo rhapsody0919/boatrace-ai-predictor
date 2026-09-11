@@ -30,7 +30,13 @@ function buildPrediction(racePrediction, notFoundMessage) {
     racePrediction?.players || racePrediction?.unified?.players || [];
 
   if (players.length === 0) {
-    return { error: true, errorMessage: notFoundMessage };
+    return {
+      error: true,
+      errorMessage: notFoundMessage,
+      // 中止・順延（BOA-254）で選手情報が存在しないレースも、この分岐に入る。
+      // PredictionPanel側でcancellationStatusを見て専用メッセージに出し分ける
+      cancellationStatus: racePrediction?.cancellationStatus ?? null,
+    };
   }
 
   const unified = racePrediction?.unified || null;
@@ -43,6 +49,7 @@ function buildPrediction(racePrediction, notFoundMessage) {
     allPlayers: players,
     top3: unified ? [unified.topPick, unified.top2nd].filter(Boolean) : [],
     result: racePrediction.result,
+    cancellationStatus: racePrediction?.cancellationStatus ?? null,
     turnPrediction: unified?.turnPrediction ?? null,
     volatilityPercentile: unified?.volatilityPercentile ?? null,
     volatilityPercentileIsFallback:

@@ -315,6 +315,91 @@ async function fetchVenueWinRateMap() {
 }
 
 /**
+ * race_results 1件分（camelCaseに正規化済み）から raceData.result を組み立てる共通ヘルパー
+ * （BOA-238。Edge API経路/直接クエリ経路の2箇所から呼ばれるため重複を避けるために切り出した）
+ * rank4〜6・追加payout種別・人気はバックフィルしていない過去データではnullのため、
+ * 各セクションはpayoutが存在する場合のみエントリを持つ設計にしている
+ *
+ * ⚠️ 命名注意: 引数r（DB race_results由来）のpayoutTrifecta/payoutTrioは歴史的経緯で
+ * 英語名と実態が逆転している（Trifecta=3連単/Trio=3連複が正しい英語ギャンブル用語で、
+ * アプリ内の他機能（TrifectaReferenceCard.jsx等）もこの正しい意味で使っている）。
+ * この関数の出力オブジェクトでは同じ混乱を持ち込まないよう、実際の意味で
+ * sanrenpuku（3連複）/sanrentan（3連単）という曖昧さの無いキー名で正規化する
+ */
+function buildRaceResult(r) {
+  if (!r || !r.rank1) return null;
+
+  const sortAsc = (nums) => [...nums].sort((a, b) => a - b);
+  const wideEntry = (amount, popularity, boats) =>
+    amount
+      ? { boats: sortAsc(boats), amount, popularity: popularity ?? null }
+      : null;
+
+  return {
+    finished: true,
+    isCancelled: r.isCancelled || false,
+    isNoRace: r.isNoRace || false,
+    rank1: r.rank1,
+    rank2: r.rank2,
+    rank3: r.rank3,
+    rank4: r.rank4 ?? null,
+    rank5: r.rank5 ?? null,
+    rank6: r.rank6 ?? null,
+    raceTimes: [
+      r.raceTime1,
+      r.raceTime2,
+      r.raceTime3,
+      r.raceTime4,
+      r.raceTime5,
+      r.raceTime6,
+    ].map((t) => t || null),
+    winningTechnique: r.winningTechnique || null,
+    payouts: {
+      win: r.payoutWin ? { boats: [r.rank1], amount: r.payoutWin } : null,
+      place: [
+        r.payoutPlace1 ? { boat: r.rank1, amount: r.payoutPlace1 } : null,
+        r.payoutPlace2 ? { boat: r.rank2, amount: r.payoutPlace2 } : null,
+      ].filter(Boolean),
+      // DB列名はpayout_trifectaだが実態は3連複（順不同）
+      sanrenpuku: r.payoutTrifecta
+        ? {
+            boats: sortAsc([r.rank1, r.rank2, r.rank3]),
+            amount: r.payoutTrifecta,
+            popularity: r.popularityTrifecta ?? null,
+          }
+        : null,
+      // DB列名はpayout_trioだが実態は3連単（着順通り）
+      sanrentan: r.payoutTrio
+        ? {
+            boats: [r.rank1, r.rank2, r.rank3],
+            amount: r.payoutTrio,
+            popularity: r.popularityTrio ?? null,
+          }
+        : null,
+      exacta: r.payoutExacta
+        ? {
+            boats: [r.rank1, r.rank2],
+            amount: r.payoutExacta,
+            popularity: r.popularityExacta ?? null,
+          }
+        : null,
+      quinella: r.payoutQuinella
+        ? {
+            boats: sortAsc([r.rank1, r.rank2]),
+            amount: r.payoutQuinella,
+            popularity: r.popularityQuinella ?? null,
+          }
+        : null,
+      wide: [
+        wideEntry(r.payoutWide1, r.popularityWide1, [r.rank1, r.rank2]),
+        wideEntry(r.payoutWide2, r.popularityWide2, [r.rank1, r.rank3]),
+        wideEntry(r.payoutWide3, r.popularityWide3, [r.rank2, r.rank3]),
+      ].filter(Boolean),
+    },
+  };
+}
+
+/**
  * Edge APIレスポンスをフロント期待形式に変換
  * Edge API(RPC)とSupabase直接クエリの構造差異を吸収する
  */
@@ -366,6 +451,7 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
       venueCode: race.venueCode,
       raceNumber: race.raceNumber,
       startTime: race.startTime || "",
+      cancellationStatus: race.cancellationStatus ?? null,
       raceGrade: race.raceGrade ?? null,
       raceTitle: race.raceTitle ?? null,
       seriesDay: race.seriesDay ?? null,
@@ -449,31 +535,9 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
       };
     }
 
-    // 結果データ
-    if (race.result && race.result.rank1) {
-      const r = race.result;
-      const trifectaKey = [r.rank1, r.rank2, r.rank3]
-        .sort((a, b) => a - b)
-        .join("-");
-      const trioKey = `${r.rank1}-${r.rank2}-${r.rank3}`;
-
-      raceData.result = {
-        finished: true,
-        rank1: r.rank1,
-        rank2: r.rank2,
-        rank3: r.rank3,
-        payouts: {
-          win: r.payoutWin ? { [r.rank1]: r.payoutWin } : {},
-          place: {},
-          trifecta: r.payoutTrifecta ? { [trifectaKey]: r.payoutTrifecta } : {},
-          trio: r.payoutTrio ? { [trioKey]: r.payoutTrio } : {},
-        },
-      };
-      if (r.payoutPlace1)
-        raceData.result.payouts.place[r.rank1] = r.payoutPlace1;
-      if (r.payoutPlace2)
-        raceData.result.payouts.place[r.rank2] = r.payoutPlace2;
-    }
+    // 結果データ（051マイグレーションでresultのjson_build_objectに追加したキーは
+    // 既にcamelCaseのためbuildRaceResult()にそのまま渡せる）
+    raceData.result = buildRaceResult(race.result);
 
     return raceData;
   });
@@ -737,6 +801,7 @@ export const supabaseDataService = {
         race_number,
         start_time,
         race_grade,
+        cancellation_status,
         race_conditions (
           series_day,
           is_final_day,
@@ -781,15 +846,25 @@ export const supabaseDataService = {
           races.map((r) => r.race_id),
         );
       const volatilityByRaceId = new Map();
+      // 展開予測（先頭パターンのみ）。get_today_races RPC（052マイグレーション）と
+      // 同じ情報源・同じ抜き出し方に揃える
+      const turnPredictionByRaceId = new Map();
       for (const pred of unifiedPreds || []) {
         const percentile = pred.feature_contributions?.volatilityPercentile;
-        if (typeof percentile !== "number") continue;
-        volatilityByRaceId.set(pred.race_id, {
-          percentile,
-          isFallback:
-            pred.feature_contributions?.volatilityPercentileIsFallback ?? false,
-          level: getVolatilityLevel(percentile),
-        });
+        if (typeof percentile === "number") {
+          volatilityByRaceId.set(pred.race_id, {
+            percentile,
+            isFallback:
+              pred.feature_contributions?.volatilityPercentileIsFallback ??
+              false,
+            level: getVolatilityLevel(percentile),
+          });
+        }
+        const topPattern =
+          pred.feature_contributions?.turnPrediction?.patterns?.[0];
+        if (topPattern) {
+          turnPredictionByRaceId.set(pred.race_id, topPattern);
+        }
       }
 
       // 会場ごとにグループ化
@@ -810,6 +885,7 @@ export const supabaseDataService = {
         const raceData = {
           raceNo: race.race_number,
           startTime: race.start_time?.substring(0, 5) || "",
+          cancellationStatus: race.cancellation_status ?? null,
           date: race.race_date,
           placeCd: race.venue_code,
           raceGrade: race.race_grade ?? null,
@@ -822,6 +898,7 @@ export const supabaseDataService = {
                 venueWinRate: venueWinRateMap[race.venue_code] ?? null,
               }
             : null,
+          turnPrediction: turnPredictionByRaceId.get(race.race_id) ?? null,
           racers: (race.race_entries || []).map((entry) => ({
             waku: entry.boat_number,
             name: (entry.player_name || "").replace(/\s+/g, ""),
@@ -897,6 +974,7 @@ export const supabaseDataService = {
         race_number,
         start_time,
         race_grade,
+        cancellation_status,
         race_conditions (
           series_day,
           is_final_day,
@@ -933,11 +1011,34 @@ export const supabaseDataService = {
           rank1,
           rank2,
           rank3,
+          rank4,
+          rank5,
+          rank6,
+          race_time_1,
+          race_time_2,
+          race_time_3,
+          race_time_4,
+          race_time_5,
+          race_time_6,
+          is_cancelled,
+          is_no_race,
           payout_win,
           payout_place_1,
           payout_place_2,
           payout_trifecta,
           payout_trio,
+          payout_exacta,
+          payout_quinella,
+          payout_wide_1,
+          payout_wide_2,
+          payout_wide_3,
+          popularity_trifecta,
+          popularity_trio,
+          popularity_exacta,
+          popularity_quinella,
+          popularity_wide_1,
+          popularity_wide_2,
+          popularity_wide_3,
           winning_technique
         ),
         exhibition_data (
@@ -1064,6 +1165,7 @@ export const supabaseDataService = {
           venueCode: race.venue_code,
           raceNumber: race.race_number,
           startTime: race.start_time?.substring(0, 5) || "",
+          cancellationStatus: race.cancellation_status ?? null,
           raceGrade: race.race_grade ?? null,
           raceTitle: race.race_conditions?.race_title ?? null,
           seriesDay: race.race_conditions?.series_day ?? null,
@@ -1168,40 +1270,45 @@ export const supabaseDataService = {
           };
         }
 
-        // 結果データ
-        if (result && result.rank1) {
-          // 3連複用のソート済みキー（順不同なのでソートが必要）
-          const trifectaKey = [result.rank1, result.rank2, result.rank3]
-            .sort((a, b) => a - b)
-            .join("-");
-          // 3連単用のキー（順序が重要なのでソートしない）
-          const trioKey = `${result.rank1}-${result.rank2}-${result.rank3}`;
-
-          raceData.result = {
-            finished: true,
-            rank1: result.rank1,
-            rank2: result.rank2,
-            rank3: result.rank3,
-            winningTechnique: result.winning_technique || null,
-            payouts: {
-              win: result.payout_win
-                ? { [result.rank1]: result.payout_win }
-                : {},
-              place: {},
-              trifecta: result.payout_trifecta
-                ? { [trifectaKey]: result.payout_trifecta }
-                : {},
-              trio: result.payout_trio ? { [trioKey]: result.payout_trio } : {},
-            },
-          };
-
-          if (result.payout_place_1) {
-            raceData.result.payouts.place[result.rank1] = result.payout_place_1;
-          }
-          if (result.payout_place_2) {
-            raceData.result.payouts.place[result.rank2] = result.payout_place_2;
-          }
-        }
+        // 結果データ（直接クエリはsnake_caseのためbuildRaceResult()向けにcamelCaseへ変換）
+        raceData.result = buildRaceResult(
+          result && result.rank1
+            ? {
+                rank1: result.rank1,
+                rank2: result.rank2,
+                rank3: result.rank3,
+                rank4: result.rank4,
+                rank5: result.rank5,
+                rank6: result.rank6,
+                raceTime1: result.race_time_1,
+                raceTime2: result.race_time_2,
+                raceTime3: result.race_time_3,
+                raceTime4: result.race_time_4,
+                raceTime5: result.race_time_5,
+                raceTime6: result.race_time_6,
+                isCancelled: result.is_cancelled,
+                isNoRace: result.is_no_race,
+                winningTechnique: result.winning_technique,
+                payoutWin: result.payout_win,
+                payoutPlace1: result.payout_place_1,
+                payoutPlace2: result.payout_place_2,
+                payoutTrifecta: result.payout_trifecta,
+                payoutTrio: result.payout_trio,
+                payoutExacta: result.payout_exacta,
+                payoutQuinella: result.payout_quinella,
+                payoutWide1: result.payout_wide_1,
+                payoutWide2: result.payout_wide_2,
+                payoutWide3: result.payout_wide_3,
+                popularityTrifecta: result.popularity_trifecta,
+                popularityTrio: result.popularity_trio,
+                popularityExacta: result.popularity_exacta,
+                popularityQuinella: result.popularity_quinella,
+                popularityWide1: result.popularity_wide_1,
+                popularityWide2: result.popularity_wide_2,
+                popularityWide3: result.popularity_wide_3,
+              }
+            : null,
+        );
 
         return raceData;
       });
@@ -1679,6 +1786,93 @@ export const supabaseDataService = {
         return { days: [] };
       }
       return rows?.data || { days: [] };
+    });
+  },
+
+  /**
+   * 会場固有の水面特性（水質・イン/アウト傾向のクラスタ分類）を取得する
+   * venuesテーブルはモデル調整（softmax-temperature-calibration）用に
+   * water_type/clusterを保持しているが、フロントエンドでは未使用だった
+   * @param {number} venueCode - 会場コード（1-24）
+   * @returns {Promise<{ waterType: string, cluster: string } | null>}
+   */
+  getVenueCharacteristics(venueCode) {
+    return withCache(`venue-characteristics-${venueCode}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from("venues")
+        .select("water_type, cluster")
+        .eq("code", venueCode)
+        .maybeSingle();
+
+      if (error) {
+        console.error("venues取得エラー:", error.message);
+        return null;
+      }
+      if (!data) return null;
+
+      return { waterType: data.water_type, cluster: data.cluster };
+    });
+  },
+
+  /**
+   * 枠番別の1着率の全国平均（24会場プール値）を取得する
+   * outcome_distributionは会場ごとの行を持つが、first_boatでgroup byして
+   * count_90daysを合算すれば1クエリで全国平均が算出できる（24会場を
+   * 個別に取得する必要はない）。会場を問わず同じ値のためracer_id等と
+   * 違い引数を取らず、キャッシュキーも固定にする
+   */
+  getNationalAverageOutcomeDistribution() {
+    return withCache("national-average-outcome-distribution", async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return null;
+      }
+
+      // outcome_distributionは2500行超あり、Supabaseのデフォルトlimit(1000行)を
+      // 超えるため.range()でページネーションして全件取得する必要がある
+      // （2026-09-07、ページネーション漏れで全国平均が偏っていたバグを発見・修正）
+      const data = [];
+      const pageSize = 1000;
+      let from = 0;
+      while (true) {
+        const { data: page, error } = await supabase
+          .from("outcome_distribution")
+          .select("first_boat, count_90days")
+          .range(from, from + pageSize - 1);
+
+        if (error) {
+          console.error(
+            "outcome_distribution(全国平均)取得エラー:",
+            error.message,
+          );
+          return null;
+        }
+        if (!page || page.length === 0) break;
+        data.push(...page);
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+      if (data.length === 0) return null;
+
+      const countByBoat = {};
+      let total = 0;
+      data.forEach((row) => {
+        countByBoat[row.first_boat] =
+          (countByBoat[row.first_boat] ?? 0) + (row.count_90days ?? 0);
+        total += row.count_90days ?? 0;
+      });
+      if (total === 0) return null;
+
+      const rateByBoat = {};
+      Object.entries(countByBoat).forEach(([boat, count]) => {
+        rateByBoat[boat] = (count / total) * 100;
+      });
+      return rateByBoat;
     });
   },
 
@@ -2254,7 +2448,9 @@ export const supabaseDataService = {
 
       const { data, error } = await supabase
         .from("racer_aggregated_stats")
-        .select("avg_st, avg_st_last_30, st_stddev, flying_rate, total_races")
+        .select(
+          "avg_st, avg_st_last_30, st_stddev, flying_rate, total_races, course_race_counts",
+        )
         .eq("racer_id", racerId)
         .eq("venue_code", 0)
         .maybeSingle();
@@ -2264,6 +2460,179 @@ export const supabaseDataService = {
         return null;
       }
       return data;
+    });
+  },
+
+  /**
+   * 選手検索UI向けに全選手の軽量一覧を取得する。
+   * 対象約1,627件・数十KB程度のため都度クエリではなく一括取得し長期キャッシュする
+   * （選手数の変動は月数件程度、egress削減のため24時間キャッシュ）。
+   * 検索自体はこのデータをクライアント側でフィルタする（RacerSearchBox.jsx参照）。
+   * racer_profilesは1,627件でSupabaseのデフォルトlimit(1000行)を超えるため、
+   * .range()でページネーションして全件取得する必要がある
+   * （2026-09-08、ページネーション漏れで約4割の選手が検索に出てこないバグを発見・修正）。
+   * キャッシュキーは取得列を変更するたびにサフィックスを上げる（v2で列追加）。
+   * 24時間TTLのため、キー名を変えずに列だけ増やすと、変更前にキャッシュ済みの
+   * ブラウザが新しい列（登録期・出身地等）を含まない古いデータを最大24時間
+   * 表示し続けてしまう（2026-09-08、実機確認で発覚）
+   */
+  getAllRacersLite() {
+    return withCache(
+      "all-racers-lite-v2",
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return [];
+        }
+        const data = [];
+        const pageSize = 1000;
+        let from = 0;
+        while (true) {
+          const { data: page, error } = await supabase
+            .from("racer_profiles")
+            .select(
+              "racer_id, name, name_kana, branch, height_cm, weight_kg, registration_period, hometown, birth_date",
+            )
+            .order("racer_id")
+            .range(from, from + pageSize - 1);
+
+          if (error) {
+            // withCacheは成功時（.then）のみキャッシュするため、ここは[]を返さず
+            // throwする。[]を返すと一時的なエラーが24時間キャッシュされ、
+            // 取得済み分のデータも道連れで破棄されてしまう
+            // （2026-09-08、コードレビューで発見）
+            throw new Error(`racer_profiles取得エラー: ${error.message}`);
+          }
+          if (!page || page.length === 0) break;
+          data.push(...page);
+          if (page.length < pageSize) break;
+          from += pageSize;
+        }
+        return data;
+      },
+      24 * 60 * 60 * 1000,
+    );
+  },
+
+  /**
+   * 選手ごとの最新級別・勝率（race_entriesの最新行、ADR-0023準拠）を
+   * racer_grade_cache（scripts/daily/update-racer-grade-cache.jsが夜間更新）
+   * から取得する（docs/adr/0043-racer-grade-win-rate-cache-strategy.md）
+   */
+  getRacerGradeCache() {
+    return withCache(
+      "racer-grade-cache",
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return [];
+        }
+        const { data, error } = await supabase
+          .from("racer_grade_cache")
+          .select("data")
+          .eq("key", "latest_grades")
+          .single();
+
+        if (error) {
+          // withCacheは成功時（.then）のみキャッシュするため、ここは[]を返さず
+          // throwする（getAllRacersLiteと同じ理由、2026-09-08コードレビューで発見）
+          throw new Error(`racer_grade_cache取得エラー: ${error.message}`);
+        }
+        return data?.data ?? [];
+      },
+      24 * 60 * 60 * 1000,
+    );
+  },
+
+  /**
+   * 選手検索・一覧（RacerSearchBox・/racers）向けに、選手プロフィールと
+   * 最新級別・勝率をマージした一覧を取得する
+   * （docs/design/racer-search-and-list/plan.md参照）
+   */
+  async getAllRacersWithGrade() {
+    const [racers, grades] = await Promise.all([
+      this.getAllRacersLite(),
+      this.getRacerGradeCache(),
+    ]);
+    const gradeByRacerId = new Map(grades.map((g) => [g.racer_id, g]));
+    return racers.map((racer) => {
+      const gradeInfo = gradeByRacerId.get(racer.racer_id);
+      return {
+        ...racer,
+        grade: gradeInfo?.grade ?? null,
+        winRate: gradeInfo?.win_rate ?? null,
+      };
+    });
+  },
+
+  /**
+   * 指定選手の会場別（当地）成績を取得する（選手個人ページ用）
+   * racer_aggregated_statsは本番では venue_code=0（全会場合算）の行しか
+   * 存在せず（会場別集計は日次自動化に未組み込み、2026-09-06確認）、
+   * 会場別行を前提にはできない。そのためgetRacerBoatReturnRate等と同じ
+   * 「対象は1選手のみなのでその場でライブ集計する」方式で
+   * race_entries×races×race_resultsから直接算出する
+   */
+  getRacerVenueStats(racerId) {
+    return withCache(`racer-venue-stats-${racerId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      // 過去2年分を対象（他のracer_id単体集計は90〜180日窓だが、
+      // 会場別成績は会場ごとの出走機会自体が少ないため長めに取る）
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 730);
+      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+      const { data: entries, error: entriesError } = await supabase
+        .from("race_entries")
+        .select("race_id, boat_number")
+        .eq("racer_id", racerId)
+        .gte("race_id", cutoffStr);
+
+      if (entriesError || !entries || entries.length === 0) {
+        if (entriesError)
+          console.error("race_entries取得エラー:", entriesError.message);
+        return [];
+      }
+
+      const raceIds = [...new Set(entries.map((e) => e.race_id))];
+      const [raceRows, resultRows] = await Promise.all([
+        fetchAllByIn("races", "race_id, venue_code", "race_id", raceIds),
+        fetchAllByIn("race_results", "race_id, rank1", "race_id", raceIds),
+      ]);
+
+      const venueByRaceId = new Map(
+        raceRows.map((r) => [r.race_id, r.venue_code]),
+      );
+      const resultByRaceId = new Map(
+        resultRows.map((r) => [r.race_id, r.rank1]),
+      );
+
+      const byVenue = new Map();
+      entries.forEach((entry) => {
+        const venueCode = venueByRaceId.get(entry.race_id);
+        const rank1 = resultByRaceId.get(entry.race_id);
+        if (!venueCode || rank1 === undefined) return;
+
+        if (!byVenue.has(venueCode)) {
+          byVenue.set(venueCode, { total: 0, wins: 0 });
+        }
+        const stat = byVenue.get(venueCode);
+        stat.total += 1;
+        if (rank1 === entry.boat_number) stat.wins += 1;
+      });
+
+      return [...byVenue.entries()]
+        .map(([venueCode, stat]) => ({
+          venue_code: venueCode,
+          total_races: stat.total,
+          win_rate: stat.total > 0 ? stat.wins / stat.total : null,
+        }))
+        .filter((row) => row.total_races >= 5)
+        .sort((a, b) => b.total_races - a.total_races);
     });
   },
 
@@ -3850,5 +4219,29 @@ export const supabaseDataService = {
       combo: data.reasons?.combo ?? null,
       odds: data.reasons?.odds ?? null,
     };
+  },
+
+  /**
+   * 1レース分の各艇スタートタイミングを取得する（BOA-238）。
+   * race_start_timingsは1レースにつき最大6行の1対多テーブルのため、一覧表示用の
+   * getPredictions()/RPCには含めず、レース詳細ページ表示時にRaceResult.jsxから
+   * この関数で個別に軽量フェッチする
+   */
+  async getRaceStartTimings(raceId) {
+    if (!supabase || !raceId) return [];
+    const { data, error } = await supabase
+      .from("race_start_timings")
+      .select("boat_number, start_timing, is_flying, is_late_start")
+      .eq("race_id", raceId)
+      .order("boat_number");
+
+    if (error || !data) return [];
+
+    return data.map((row) => ({
+      boatNumber: row.boat_number,
+      startTiming: row.start_timing,
+      isFlying: row.is_flying,
+      isLateStart: row.is_late_start,
+    }));
   },
 };

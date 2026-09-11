@@ -74,21 +74,88 @@ const BET_TYPES = [
   },
 ];
 
-const MODELS = [
+// 実データを使った実例（BOA-250）。localbetjapan.com等の既存英語リソースは
+// 架空の数値で説明する形式にとどまっていたため、実際の過去レース
+// （2026-09-06 住之江11R）を差別化ポイントとして使う。
+const EXAMPLE_RACE = {
+  raceId: "2026-09-06-12-11",
+  venue: "Suminoe",
+  date: "September 6, 2026",
+  raceNo: 11,
+  entries: [
+    {
+      boat: 1,
+      name: "徳増　　秀樹",
+      grade: "A1",
+      winRate: "6.16",
+      localWinRate: "6.59",
+      motor2Rate: "32.2%",
+    },
+    {
+      boat: 2,
+      name: "近江　　翔吾",
+      grade: "A2",
+      winRate: "6.49",
+      localWinRate: "6.24",
+      motor2Rate: "28.2%",
+    },
+    {
+      boat: 3,
+      name: "山本　　修一",
+      grade: "A2",
+      winRate: "5.68",
+      localWinRate: "6.62",
+      motor2Rate: "38.0%",
+    },
+    {
+      boat: 4,
+      name: "佐々木　翔斗",
+      grade: "A2",
+      winRate: "5.30",
+      localWinRate: "5.43",
+      motor2Rate: "33.7%",
+    },
+    {
+      boat: 5,
+      name: "白水　　勝也",
+      grade: "A1",
+      winRate: "6.38",
+      localWinRate: "6.50",
+      motor2Rate: "23.5%",
+    },
+    {
+      boat: 6,
+      name: "間庭　　菜摘",
+      grade: "B1",
+      winRate: "4.67",
+      localWinRate: "4.56",
+      motor2Rate: "27.8%",
+    },
+  ],
+  pick: [1, 3, 4],
+  payout: "¥1,010",
+};
+
+const DATA_POINTS = [
   {
-    icon: "🎯",
-    name: "Safe Bet",
-    desc: "Follows the most likely race pattern. Best when you want steady hits.",
+    icon: "🏅",
+    name: "Class & win rate",
+    desc: "Racer skill level and career win rate.",
   },
   {
-    icon: "⚖️",
-    name: "Standard",
-    desc: "Balanced picks based on the second most likely pattern.",
+    icon: "⚙️",
+    name: "Motor performance",
+    desc: "2-boat win rate of the racer's assigned motor.",
   },
   {
-    icon: "🌪️",
-    name: "Upset Focus",
-    desc: "Targets high payouts from the third most likely pattern. Best for chaotic races.",
+    icon: "📈",
+    name: "Recent form",
+    desc: "Whether the racer's win rate is trending up or down lately.",
+  },
+  {
+    icon: "⏱️",
+    name: "Start stability",
+    desc: "How consistent the racer's start timing is.",
   },
 ];
 
@@ -271,14 +338,15 @@ export default function EnglishGuide() {
               deadline and a forecast preview.
             </li>
             <li>
-              <strong>Choose a prediction model</strong> that matches your
-              style:
+              <strong>View the objective Data Table</strong> for all 6 boats.
+              Ryujin Radar doesn&apos;t make you choose a prediction model —
+              everyone sees the same data and builds their own read:
               <div className="eg-models">
-                {MODELS.map((m) => (
-                  <div key={m.name} className="eg-model">
-                    <span className="eg-model-icon">{m.icon}</span>
-                    <strong>{m.name}</strong>
-                    <p>{m.desc}</p>
+                {DATA_POINTS.map((d) => (
+                  <div key={d.name} className="eg-model">
+                    <span className="eg-model-icon">{d.icon}</span>
+                    <strong>{d.name}</strong>
+                    <p>{d.desc}</p>
                   </div>
                 ))}
               </div>
@@ -298,6 +366,69 @@ export default function EnglishGuide() {
               strength, local win rate).
             </li>
           </ol>
+        </section>
+
+        {/* Real example (BOA-250): actual past race data, not a fictional walkthrough */}
+        <section className="eg-section">
+          <h2>📋 A Real Example: Reading the Data &amp; Marking a Slip</h2>
+          <p>
+            Most beginner guides use made-up numbers. Here&apos;s an actual race
+            — Boat Race {EXAMPLE_RACE.venue}, {EXAMPLE_RACE.date}, Race{" "}
+            {EXAMPLE_RACE.raceNo} — with the real entry data, the real bet, and
+            the real payout.
+          </p>
+          <div className="eg-table-wrapper">
+            <table className="eg-table">
+              <thead>
+                <tr>
+                  <th>Boat</th>
+                  <th>Racer</th>
+                  <th>Class</th>
+                  <th>Win rate</th>
+                  <th>Local win rate</th>
+                  <th>Motor 2-rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EXAMPLE_RACE.entries.map((e) => (
+                  <tr key={e.boat}>
+                    <td>
+                      <strong>{e.boat}</strong>
+                    </td>
+                    <td translate="no">{e.name}</td>
+                    <td>{e.grade}</td>
+                    <td>{e.winRate}</td>
+                    <td>{e.localWinRate}</td>
+                    <td>{e.motor2Rate}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <strong>Reading it:</strong> Boat 1 is A1 class with this
+            venue&apos;s best local win rate (6.59) — the textbook favorite to
+            Nige from lane 1. Boat 3 is only A2 class, but its motor has a
+            noticeably stronger 2-rate (38.0%) than the field — a common reason
+            to look past class ranking alone for the 2nd-place pick.
+          </p>
+          <p>
+            <strong>The bet:</strong> Trifecta (3連単), picking boats{" "}
+            <strong>1 → 3 → 4</strong> in that exact order on the mark sheet —
+            filling in the &quot;1&quot; oval in the 1st-place column,
+            &quot;3&quot; in the 2nd-place column, and &quot;4&quot; in the
+            3rd-place column, next to this race&apos;s number on the card.
+          </p>
+          <p className="eg-note">
+            <strong>The result:</strong> Boat 1 won by Nige, boat 3 took 2nd,
+            boat 4 took 3rd — exactly as picked. Payout:{" "}
+            <strong>{EXAMPLE_RACE.payout}</strong> for every ¥100 wagered.
+          </p>
+          <p>
+            <Link to={`/en/race/${EXAMPLE_RACE.raceId}`}>
+              → See Ryujin Radar&apos;s full data breakdown for this race
+            </Link>
+          </p>
         </section>
 
         {/* Venue guides */}

@@ -14,7 +14,11 @@ import {
   parseDateArg,
 } from "../lib/dateUtils.js";
 import { calculateHits, isTurnHit } from "../lib/hitCalculator.js";
-import { getRaceSchedule, getRacesAfterStart } from "../lib/raceSchedule.js";
+import {
+  getRaceSchedule,
+  getRacesAfterStart,
+  getRacesPastResultWindow,
+} from "../lib/raceSchedule.js";
 
 // Generate race result page URL
 function getRaceResultUrl(venueCode, raceNo, dateStr) {
@@ -111,80 +115,101 @@ function scrapeWinningTechnique($) {
 
 // Scrape payout data
 function scrapePayouts($) {
-  // ⚠️ 命名注意: DB列名と英語名が逆転している（歴史的経緯）
+  // ⚠️ 命名注意: 既存の単勝/複勝/3連複/3連単のみDB列名と英語名が逆転している（歴史的経緯）
   //   trifecta (英語=3連単) → 実際は3連複の値を格納
   //   trio (英語=3連複)     → 実際は3連単の値を格納
+  // 2026-09追加のexacta(2連単)/quinella(2連複)/wide(拡連複)は逆転を踏襲せず正しい意味で命名。
+  // 各comboの値は{amount, popularity}（人気=払戻金テーブルに直接表示されている人気順位）
   const payouts = {
     win: {}, // 単勝
     place: {}, // 複勝
     trifecta: {}, // → DB: payout_trifecta（実態: 3連複の払戻金）
     trio: {}, // → DB: payout_trio（実態: 3連単の払戻金）
+    exacta: {}, // 2連単
+    quinella: {}, // 2連複
+    wide: {}, // 拡連複（最大3コンボ）
   };
 
   try {
-    // 払戻金テーブルを取得（.is-w495の3番目 = index 2）
-    const allTables = $(".is-w495");
+    // 払戻金テーブルをヘッダー内容（勝式/組番）で特定する。
+    // 位置（.is-w495の何番目か）に依存すると、結果ページの上部セクション
+    // （着順・スタート情報テーブル）が欠落する稀なケースで払戻金テーブルの
+    // 位置がズレ、取得漏れになる（2026-09-09、桐生2Rで実際に発生）
+    let payoutTable = null;
+    $(".is-w495").each((_, table) => {
+      const headerText = $(table).find("thead").first().text();
+      if (headerText.includes("勝式") && headerText.includes("組番")) {
+        payoutTable = $(table);
+        return false;
+      }
+    });
 
-    const payoutTable = allTables.eq(2);
-
-    if (payoutTable.length === 0) {
+    if (!payoutTable) {
       return payouts;
     }
 
+    const TYPE_LABELS = [
+      "単勝",
+      "複勝",
+      "3連単",
+      "3連複",
+      "2連単",
+      "2連複",
+      "拡連複",
+    ];
+    const TYPE_TO_KEY = {
+      単勝: "win",
+      複勝: "place",
+      "3連複": "trifecta",
+      "3連単": "trio",
+      "2連単": "exacta",
+      "2連複": "quinella",
+      拡連複: "wide",
+    };
+
     let currentType = "";
 
+    const normalizeCombo = (combo) =>
+      combo
+        .replace(/[０-９]/g, (s) =>
+          String.fromCharCode(s.charCodeAt(0) - 0xfee0),
+        )
+        .replace(/[→－−ー=]/g, "-")
+        .replace(/\s+/g, "");
+
+    const storeEntry = (combo, amountText, popularityText) => {
+      const amount = parseInt(amountText.replace(/[^0-9]/g, ""));
+      if (isNaN(amount) || amount <= 0 || !combo || !currentType) return;
+      const popularity = parseInt(
+        (popularityText || "").replace(/[^0-9]/g, ""),
+      );
+      payouts[TYPE_TO_KEY[currentType]][normalizeCombo(combo)] = {
+        amount,
+        popularity: !isNaN(popularity) && popularity > 0 ? popularity : null,
+      };
+    };
+
+    // 型ラベル行は4セル（型名/組番/配当/人気）、継続行（複勝2口目・拡連複2〜3口目）は
+    // 3セル（組番/配当/人気）。人気は複勝には表示されず空文字になる
     payoutTable.find("tbody tr").each((i, row) => {
-      const $row = $(row);
-      const cells = $row.find("td");
+      const cells = $(row).find("td");
 
-      if (cells.length >= 2) {
-        const col0 = cells.eq(0).text().trim();
-        const col1 = cells.eq(1).text().trim();
-        const col2 = cells.length >= 3 ? cells.eq(2).text().trim() : "";
-
-        // 券種が記載されている場合
-        if (
-          col0 &&
-          (col0 === "単勝" ||
-            col0 === "複勝" ||
-            col0 === "3連単" ||
-            col0 === "3連複" ||
-            col0 === "2連単" ||
-            col0 === "2連複" ||
-            col0 === "拡連複")
-        ) {
-          currentType = col0;
+      if (cells.length === 4) {
+        const typeLabel = cells.eq(0).text().trim();
+        if (TYPE_LABELS.includes(typeLabel)) {
+          currentType = typeLabel;
         }
-
-        // パターン1: col2に配当がある場合（通常）
-        let payout = parseInt(col2.replace(/[^0-9]/g, ""));
-        let combo = col1;
-
-        // パターン2: col1に配当がある場合（複勝の2行目以降など）
-        if ((isNaN(payout) || payout === 0) && col1.includes("¥")) {
-          payout = parseInt(col1.replace(/[^0-9]/g, ""));
-          combo = col0;
-        }
-
-        if (!isNaN(payout) && payout > 0 && combo) {
-          // 組み合わせを正規化
-          const normalizedCombo = combo
-            .replace(/[０-９]/g, (s) =>
-              String.fromCharCode(s.charCodeAt(0) - 0xfee0),
-            )
-            .replace(/[→－−ー=]/g, "-")
-            .replace(/\s+/g, "");
-
-          if (currentType === "単勝") {
-            payouts.win[normalizedCombo] = payout;
-          } else if (currentType === "複勝") {
-            payouts.place[normalizedCombo] = payout;
-          } else if (currentType === "3連複") {
-            payouts.trifecta[normalizedCombo] = payout;
-          } else if (currentType === "3連単") {
-            payouts.trio[normalizedCombo] = payout;
-          }
-        }
+        storeEntry(
+          cells.eq(1).text().trim(),
+          cells.eq(2).text().trim(),
+          cells.eq(3).text().trim(),
+        );
+      } else if (cells.length === 3) {
+        storeEntry(
+          cells.eq(0).text().trim(),
+          cells.eq(1).text().trim(),
+          cells.eq(2).text().trim(),
+        );
       }
     });
   } catch (error) {
@@ -217,32 +242,78 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    // Check if result table exists
-    const resultTable = $(".is-w495");
-    if (resultTable.length === 0) {
-      console.log(`  Not published yet`);
-      return null;
-    }
-
-    // Get top 3 boat numbers
-    const rankings = [];
-    $(".is-w495 tbody tr").each((index, row) => {
-      if (index < 3) {
-        const $row = $(row);
-        const boatNumber = parseInt($row.find("td").eq(1).text().trim());
-        if (boatNumber && !isNaN(boatNumber)) {
-          rankings.push(boatNumber);
-        }
+    // 着順テーブルをヘッダー内容（着/ボートレーサー）で特定する。
+    // 位置（.is-w495の1番目）に依存すると、稀に着順テーブル自体が
+    // ページに存在しないケース（払戻金テーブルのみ存在）で、無関係な
+    // 払戻金テーブルを誤って着順として誤認識してしまう（2026-09-09、
+    // 桐生2Rで実際に発生: 払戻金テーブルの「組番」欄先頭の数字が艇番として
+    // 誤読され、全着順が同じ艇番になる不具合があった）
+    let resultTable = null;
+    $(".is-w495").each((_, table) => {
+      const headerText = $(table).find("thead").first().text();
+      if (headerText.includes("着") && headerText.includes("ボートレーサー")) {
+        resultTable = table;
+        return false;
       }
     });
 
-    if (rankings.length < 3) {
-      console.log(`  Incomplete data (got ${rankings.length} boats)`);
-      return null;
+    // 払戻金データは着順テーブルの有無に関わらず必要（着順テーブルが
+    // 無い場合のフォールバック復元にも使うため先に取得する）
+    const payouts = scrapePayouts($);
+
+    let rankings = [];
+    let raceTimes = [];
+
+    if (resultTable) {
+      // Get all 6 boat numbers + race times, ordered by finish position
+      // （5〜6着はタイムが空欄のことがある）
+      $(resultTable)
+        .find("tbody tr")
+        .each((index, row) => {
+          if (index < 6) {
+            const $row = $(row);
+            const cells = $row.find("td");
+            const boatNumber = parseInt(cells.eq(1).text().trim());
+            if (boatNumber && !isNaN(boatNumber)) {
+              rankings.push(boatNumber);
+              raceTimes.push(cells.eq(3).text().trim() || null);
+            }
+          }
+        });
     }
 
-    // Get payout data
-    const payouts = scrapePayouts($);
+    // 着順に重複がある場合（テーブル誤認識時の典型症状）は無効データとして扱う
+    const hasDuplicates =
+      rankings.length > 0 && new Set(rankings).size !== rankings.length;
+
+    if (!resultTable || rankings.length < 3 || hasDuplicates) {
+      // 着順テーブルを取得できない場合、3連単（DB上のキー名は"trio"、
+      // 命名の歴史的経緯によりねじれている）の払戻金コンボは1〜3着の
+      // 艇番をそのまま表すため、それだけは復元できる
+      const trifectaCombo = Object.keys(payouts.trio || {})[0];
+      const trifectaBoats = trifectaCombo
+        ? trifectaCombo.split("-").map((n) => parseInt(n, 10))
+        : [];
+      const trifectaValid =
+        trifectaBoats.length === 3 &&
+        trifectaBoats.every((n) => n >= 1 && n <= 6) &&
+        new Set(trifectaBoats).size === 3;
+
+      if (!trifectaValid) {
+        console.log(
+          hasDuplicates
+            ? `  Incomplete data (duplicate boat numbers: ${rankings.join("-")})`
+            : `  Incomplete data (got ${rankings.length} boats)`,
+        );
+        return null;
+      }
+
+      console.log(
+        `  着順テーブル欠落、3連単払戻(${trifectaCombo})から上位3着を復元`,
+      );
+      rankings = trifectaBoats;
+      raceTimes = [null, null, null];
+    }
 
     // Get winning technique (決まり手)
     const winningTechnique = scrapeWinningTechnique($);
@@ -257,6 +328,15 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
       rank1: rankings[0],
       rank2: rankings[1],
       rank3: rankings[2],
+      rank4: rankings[3] || null,
+      rank5: rankings[4] || null,
+      rank6: rankings[5] || null,
+      raceTime1: raceTimes[0] || null,
+      raceTime2: raceTimes[1] || null,
+      raceTime3: raceTimes[2] || null,
+      raceTime4: raceTimes[3] || null,
+      raceTime5: raceTimes[4] || null,
+      raceTime6: raceTimes[5] || null,
       payouts: payouts,
       winningTechnique: winningTechnique,
       courseInfo: courseInfo,
@@ -276,20 +356,81 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
  */
 export async function run(schedule, date) {
   const startedRaces = getRacesAfterStart(schedule, 5);
+
+  let resultSummary = { updated: false, count: 0 };
   if (startedRaces.length === 0) {
     console.log("📭 結果: 発走後5分以上経過したレースなし");
-    return { updated: false, count: 0 };
+  } else {
+    console.log(`🎯 結果取得: ${startedRaces.length}レース（発走後5分以上）`);
+
+    // schedule から直接 races 情報を構築（追加 DB 呼び出し不要）
+    const races = startedRaces.map((r) => ({
+      race_id: r.race_id,
+      venue_code: r.venue_code,
+      race_number: r.race_no,
+    }));
+
+    resultSummary = await scrapeAndSaveResults(races, date);
   }
-  console.log(`🎯 結果取得: ${startedRaces.length}レース（発走後5分以上）`);
 
-  // schedule から直接 races 情報を構築（追加 DB 呼び出し不要）
-  const races = startedRaces.map((r) => ({
-    race_id: r.race_id,
-    venue_code: r.venue_code,
-    race_number: r.race_no,
-  }));
+  // 発走90分超・結果未取得のレースを中止・順延「確定」として扱う（BOA-254 FR2、ADR 0040）。
+  // startedRaces（5〜90分後ウィンドウ）が0件の日でも、90分を超えて見捨てられた
+  // レースは別途存在しうるため、上のearly returnとは独立して必ず実行する
+  await confirmOverdueCancellations(schedule);
 
-  return scrapeAndSaveResults(races, date);
+  return resultSummary;
+}
+
+/**
+ * 発走90分超で結果が取得できていないレースを中止・順延「確定」として扱う（BOA-254 FR2）。
+ * getRacesAfterStart(schedule, 5) が対象とする5〜90分後ウィンドウを抜けた
+ * レースが対象。既存の結果取得ロジック（scrapeAndSaveResults）は変更しない。
+ *
+ * @param {Array} schedule - getRaceSchedule() の返り値
+ */
+async function confirmOverdueCancellations(schedule) {
+  const overdueRaces = getRacesPastResultWindow(schedule, 90);
+  if (overdueRaces.length === 0) return;
+
+  const overdueIds = overdueRaces.map((r) => r.race_id);
+
+  const [{ data: existingResults }, { data: raceRows }] = await Promise.all([
+    supabase.from("race_results").select("race_id").in("race_id", overdueIds),
+    supabase
+      .from("races")
+      .select("race_id, cancellation_status")
+      .in("race_id", overdueIds),
+  ]);
+
+  const hasResult = new Set((existingResults || []).map((r) => r.race_id));
+  const alreadyConfirmed = new Set(
+    (raceRows || [])
+      .filter((r) => r.cancellation_status === "confirmed")
+      .map((r) => r.race_id),
+  );
+
+  const toConfirm = overdueIds.filter(
+    (id) => !hasResult.has(id) && !alreadyConfirmed.has(id),
+  );
+  if (toConfirm.length === 0) return;
+
+  const { error } = await supabase
+    .from("races")
+    .update({ cancellation_status: "confirmed" })
+    .in("race_id", toConfirm);
+  if (error) {
+    console.error(
+      "❌ races (cancellation_status確定) 一括更新エラー:",
+      error.message,
+    );
+    return;
+  }
+  const confirmedCount = toConfirm.length;
+  if (confirmedCount > 0) {
+    console.log(
+      `  ⚠️ 中止・順延を確定: ${confirmedCount}件（発走90分超・結果未取得）`,
+    );
+  }
 }
 
 /**
@@ -349,27 +490,62 @@ async function scrapeAndSaveResults(races, targetDate) {
       scrapeCache.set(race.race_id, result);
 
       const payouts = result.payouts || {};
-      const winPayout = payouts.win ? Object.values(payouts.win)[0] : null;
-      const placePayouts = payouts.place ? Object.entries(payouts.place) : [];
-      const place1Payout =
-        placePayouts.find(([k]) => k === String(result.rank1))?.[1] || null;
-      const place2Payout =
-        placePayouts.find(([k]) => k === String(result.rank2))?.[1] || null;
-      const trioPayout = payouts.trio ? Object.values(payouts.trio)[0] : null;
-      const trifectaPayout = payouts.trifecta
+      // combo単位で{amount, popularity}を格納しているscrapePayouts()の構造から
+      // 実際の着順に対応するコンボを引き当てる
+      const sortedPairKey = (a, b) => [a, b].sort((x, y) => x - y).join("-");
+      const winEntry = payouts.win ? Object.values(payouts.win)[0] : null;
+      const placeEntries = payouts.place ? Object.entries(payouts.place) : [];
+      const place1Entry = placeEntries.find(
+        ([k]) => k === String(result.rank1),
+      )?.[1];
+      const place2Entry = placeEntries.find(
+        ([k]) => k === String(result.rank2),
+      )?.[1];
+      const trioEntry = payouts.trio ? Object.values(payouts.trio)[0] : null;
+      const trifectaEntry = payouts.trifecta
         ? Object.values(payouts.trifecta)[0]
         : null;
+      const exactaEntry = payouts.exacta?.[`${result.rank1}-${result.rank2}`];
+      const quinellaEntry =
+        payouts.quinella?.[sortedPairKey(result.rank1, result.rank2)];
+      const wide1Entry =
+        payouts.wide?.[sortedPairKey(result.rank1, result.rank2)];
+      const wide2Entry =
+        payouts.wide?.[sortedPairKey(result.rank1, result.rank3)];
+      const wide3Entry =
+        payouts.wide?.[sortedPairKey(result.rank2, result.rank3)];
 
       newResults.push({
         race_id: race.race_id,
         rank1: result.rank1,
         rank2: result.rank2,
         rank3: result.rank3,
-        payout_win: winPayout,
-        payout_place_1: place1Payout,
-        payout_place_2: place2Payout,
-        payout_trifecta: trifectaPayout,
-        payout_trio: trioPayout,
+        rank4: result.rank4,
+        rank5: result.rank5,
+        rank6: result.rank6,
+        race_time_1: result.raceTime1,
+        race_time_2: result.raceTime2,
+        race_time_3: result.raceTime3,
+        race_time_4: result.raceTime4,
+        race_time_5: result.raceTime5,
+        race_time_6: result.raceTime6,
+        payout_win: winEntry?.amount ?? null,
+        payout_place_1: place1Entry?.amount ?? null,
+        payout_place_2: place2Entry?.amount ?? null,
+        payout_trifecta: trifectaEntry?.amount ?? null,
+        payout_trio: trioEntry?.amount ?? null,
+        payout_exacta: exactaEntry?.amount ?? null,
+        payout_quinella: quinellaEntry?.amount ?? null,
+        payout_wide_1: wide1Entry?.amount ?? null,
+        payout_wide_2: wide2Entry?.amount ?? null,
+        payout_wide_3: wide3Entry?.amount ?? null,
+        popularity_trifecta: trifectaEntry?.popularity ?? null,
+        popularity_trio: trioEntry?.popularity ?? null,
+        popularity_exacta: exactaEntry?.popularity ?? null,
+        popularity_quinella: quinellaEntry?.popularity ?? null,
+        popularity_wide_1: wide1Entry?.popularity ?? null,
+        popularity_wide_2: wide2Entry?.popularity ?? null,
+        popularity_wide_3: wide3Entry?.popularity ?? null,
         winning_technique: result.winningTechnique,
         course_1: result.courseInfo?.course_1 || null,
         course_2: result.courseInfo?.course_2 || null,
@@ -553,16 +729,20 @@ async function scrapeAndSaveResults(races, targetDate) {
 
     console.log(`  ✅ 単勝的中: ${winHits}件, 複勝的中: ${placeHits}件`);
     console.log(`  ✅ 3連複的中: ${trifectaHits}件, 3連単的中: ${trioHits}件`);
-    // 欠落した的中フラグを修正（新結果取得時のみ）
-    // 直近10日分を対象にすることで、当日限定では拾えない過去日の
-    // 一時的な書き込み失敗を後続の実行で自己修復できるようにする
-    await fixMissingHitFlags(getDateDaysAgo(9), targetDate);
-
-    return { updated: true, count: newResults.length };
   } else {
     console.log("\n📤 結果: 新規データなし");
-    return { updated: false, count: 0 };
   }
+
+  // 欠落した的中フラグを修正（新結果の有無に関わらず毎回実行）
+  // 直近10日分を対象にすることで、当日限定では拾えない過去日の
+  // 一時的な書き込み失敗を後続の実行で自己修復できるようにする。
+  // newResults.length > 0の時だけに限定すると、対象日の結果が既に
+  // 全件scrape済みになった時点で「新規データなし」が続き、二度と
+  // このチェックが走らなくなる（2026-09-06、当日分の的中フラグが
+  // 132件全件NULLのまま固着していた実例で発覚）
+  await fixMissingHitFlags(getDateDaysAgo(9), targetDate);
+
+  return { updated: newResults.length > 0, count: newResults.length };
 }
 
 // Main function（スタンドアローン実行用の後方互換ラッパー）
@@ -611,22 +791,48 @@ async function scrapeResults(dateStr = null) {
   await scrapeAndSaveResults(races, targetDate);
 }
 
+// Supabaseのデフォルトlimit(1000行)を超えるクエリを.range()でページネーションして全件取得する
+async function fetchAllRange(table, select, buildQuery) {
+  const results = [];
+  const pageSize = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await buildQuery(
+      supabase.from(table).select(select),
+    ).range(from, from + pageSize - 1);
+    if (error) {
+      console.error(`  ❌ ${table}取得エラー:`, error.message);
+      break;
+    }
+    if (!data || data.length === 0) break;
+    results.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return results;
+}
+
 // 結果があるのにis_hit_winがNULLの予測を修正
 // startDate〜endDate（両端含む、race_id昇順比較）の範囲で欠落を検知・修復する。
 // 通常呼び出しは直近数日分の範囲を渡し、当日限定では拾えない過去日の
 // 一時的な書き込み失敗（2026-09-06発覚）を後続の実行で自己修復できるようにする。
 export async function fixMissingHitFlags(startDate, endDate = startDate) {
   // is_hit_winがNULLの予測を取得
-  const { data: missingPredictions, error: predError } = await supabase
-    .from("predictions")
-    .select(
-      "prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions",
-    )
-    .gte("race_id", startDate)
-    .lt("race_id", `${endDate}~`)
-    .is("is_hit_win", null);
+  // ⚠️ Supabaseのデフォルトlimit(1000行)を超える可能性があるため.range()でページネーションする
+  // （2026-09-06発覚: 日付範囲を広げた際に無ページネーションのままだったため、範囲内の件数が
+  // 1000件を超えると挿入順で末尾＝直近日（当日）の結果が切り捨てられ、当日分の欠落が
+  // 一切修復されないまま固着していた）
+  const missingPredictions = await fetchAllRange(
+    "predictions",
+    "prediction_id, race_id, top_pick, top_2nd, top_3rd, feature_contributions",
+    (q) =>
+      q
+        .gte("race_id", startDate)
+        .lt("race_id", `${endDate}~`)
+        .is("is_hit_win", null),
+  );
 
-  if (predError || !missingPredictions || missingPredictions.length === 0) {
+  if (missingPredictions.length === 0) {
     return; // 欠落なし
   }
 
@@ -634,19 +840,12 @@ export async function fixMissingHitFlags(startDate, endDate = startDate) {
     `\n🔧 欠落した的中フラグを修正中... (${missingPredictions.length}件, ${startDate}〜${endDate})`,
   );
 
-  // 結果データを取得
-  const { data: results, error: resError } = await supabase
-    .from("race_results")
-    .select(
-      "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio",
-    )
-    .gte("race_id", startDate)
-    .lt("race_id", `${endDate}~`);
-
-  if (resError || !results) {
-    console.error("  ❌ 結果取得エラー");
-    return;
-  }
+  // 結果データを取得（同様にページネーション）
+  const results = await fetchAllRange(
+    "race_results",
+    "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio",
+    (q) => q.gte("race_id", startDate).lt("race_id", `${endDate}~`),
+  );
 
   const resultsMap = new Map();
   for (const r of results) {

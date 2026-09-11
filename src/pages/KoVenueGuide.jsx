@@ -67,12 +67,14 @@ const copy = {
   languageBarrierLinkLabel: "BOATRACE 공식 영어 가이드 보기 →",
   cashlessHeading: "💳 이곳의 결제 방법",
   cashlessLinkLabel: "공식 결제 안내 보기 →",
+  languageSupportHeading: "🗣️ 이 경기장의 현장 언어 지원",
+  languageSupportLinkLabel: "출처 보기 →",
   bettingTip: "💡 베팅 팁",
   beforeYouBet: "⚖️ 베팅 전 꼭 확인하세요",
   disclaimer: (
     <>
-      경정 베팅은 일본 현지에서, 만 20세 이상만 가능합니다. 용신 레이더는 정보와 AI
-      분석만 제공합니다 — 규칙과 베팅 종류는{" "}
+      경정 베팅은 일본 현지에서, 만 20세 이상만 가능합니다. 용신 레이더는 정보와
+      AI 분석만 제공합니다 — 규칙과 베팅 종류는{" "}
       <Link to="/ko/guide">초보자 가이드</Link>를 참고하세요.
     </>
   ),

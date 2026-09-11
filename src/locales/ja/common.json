@@ -4,6 +4,7 @@
     "hits": "✅ 的中",
     "accuracy": "📈 精度分析",
     "winningTechnique": "📊 データ分析ツール",
+    "winningTechniqueShort": "📊 分析",
     "pastRaces": "📅 過去の予想",
     "howToUse": "📚 使い方",
     "guide": "📖 完全ガイド",
@@ -85,6 +86,24 @@
     "metaDescription": "{{venue}}ボートレース場の本日の全レース一覧。締切時刻・グレードを確認し、各レースのAIデータ分析へ進めます。",
     "backToVenues": "← 会場一覧に戻る"
   },
+  "venueCharacteristics": {
+    "title": "この会場の特徴（過去90日）",
+    "note": "AIデータ分析が参照しているのと同じ会場別データです。枠番ごとの1着率と、勝った際に多い決まり手を確認できます。",
+    "nationalAverageTooltip": "全国平均{{value}}%",
+    "techniqueHeader": "主な決まり手",
+    "footnote": "直近{{count}}走を集計（{{date}}時点）。過去のレース傾向であり、当日の結果を保証するものではありません。",
+    "unknownDate": "更新日不明",
+    "waterType": {
+      "fresh": "淡水",
+      "brackish": "汽水",
+      "sea": "海水"
+    },
+    "cluster": {
+      "in_strong": "イン強い",
+      "out_strong": "アウト強い",
+      "balanced": "バランス型"
+    }
+  },
   "raceDetailPage": {
     "metaTitle": "{{venue}} {{race}}R AIデータ分析 - 龍神レーダー",
     "metaDescription": "{{venue}} {{race}}Rのデータ出走表・AIデータ分析・展開予測を無料で確認できます。",
@@ -111,7 +130,8 @@
     "collectingDataDesc": "この会場のイン崩れ傾向を判定するための実績データを蓄積中です。運用開始から一定期間が経過すると表示されます",
     "accuracyLoading": "実測精度を読み込み中...",
     "accuracyStat": "実測: 「{{level}}」ラベルの実際のイン崩れ率は{{rate}}%です（過去{{count}}件、全体平均{{baseline}}%）",
-    "accuracyLink": "詳しく見る ›"
+    "accuracyLink": "詳しく見る ›",
+    "reasonsJaOnly": "AIによる詳しい判定根拠は現在日本語のみで提供しています。"
   },
   "volatilityAccuracy": {
     "title": "🌪️ イン崩れ予測の実績（直近90日）",
@@ -182,6 +202,27 @@
     "rank1": "1着",
     "rank2": "2着",
     "rank3": "3着",
+    "rank4": "4着",
+    "rank5": "5着",
+    "rank6": "6着",
+    "winningTechniqueLabel": "決まり手: {{technique}}",
+    "payoutSectionTitle": "💰 払戻金",
+    "payoutType": {
+      "win": "単勝",
+      "place": "複勝",
+      "trifecta": "3連単",
+      "trio": "3連複",
+      "exacta": "2連単",
+      "quinella": "2連複",
+      "wide": "拡連複"
+    },
+    "popularity": "{{rank}}人気",
+    "fastestStartTag": "最速",
+    "courseNote": "※進入コースは現在表示していません（データの精度確認中です）",
+    "cancelledTitle": "このレースは中止となりました",
+    "cancelledBody": "天候・水面状況等によりレースが中止されたため、結果データはありません。",
+    "noRaceTitle": "このレースは不成立でした",
+    "noRaceBody": "出走条件を満たさなかったため、このレースは不成立となりました。",
     "placeSectionTitle": "🎯 複勝予想の検証",
     "placePredicted": "複勝{{rank}}位予想: {{number}}号艇",
     "placeHit": "✅ 的中！（{{position}}着）",
@@ -206,12 +247,18 @@
     "venueGuideLink": "{{venue}}の攻略ガイドを見る",
     "venueGuideDesc": "会場の特徴と狙い目を詳しく解説",
     "analysisToolsLink": "データ分析ツールでこのレースをさらに分析する",
-    "awaitingResultBanner": "締切を過ぎましたが、結果はまだ反映されていません（データは1時間おきに更新されます）"
+    "awaitingResultBanner": "締切を過ぎましたが、結果はまだ反映されていません（データは1時間おきに更新されます）",
+    "cancelledBanner": "このレースは中止となりました"
   },
   "home": {
     "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| 展開予測・イン崩れ指数など45項目のデータを分析。詳しくはこちら →",
     "introBannerClose": "閉じる",
+    "freeAccessNoticeStrong": "完全無料・登録不要",
+    "freeAccessNoticeRest": "— 口座開設や会員登録なしで、今すぐ全機能をお使いいただけます",
     "todayRaces": "本日開催中のレース",
+    "volatilityHighlightsTitle": "🌪️ 本日のイン崩れ注意度ハイライト",
+    "volatilityHighlightsTurnPrediction": "1着予想: {{course}}号艇（{{technique}}・{{probability}}%）",
+    "volatilityHighlightsAccuracyLink": "実測精度を見る →",
     "dataType": "レースデータ",
     "loadingTitle": "レースデータを読み込み中...",
     "loadingDesc": "本日のレース情報を取得しています",
@@ -259,7 +306,7 @@
     "refreshTooltip": "ブラウザのキャッシュをクリアしてデータを再読み込み",
     "refreshing": "読み込み中...",
     "refresh": "再読み込み",
-    "autoUpdateNote": "💡 データは1時間ごとに自動更新されます"
+    "autoUpdateNote": "💡 発走が近いレースから順次更新されます"
   },
   "betting": {
     "title": "買い目・オッズ",
@@ -355,6 +402,10 @@
   },
   "raceCard": {
     "awaitingResult": "結果反映待ち",
+    "cancelled": "中止",
+    "accepting": "受付中",
+    "closingSoon": "まもなく締切",
+    "deadlineCountdown": "締切まで {{time}}",
     "badgePlace": "✅ 複勝的中",
     "badgeTurn": "✅ 展開的中",
     "missBadge": "❌ 外れ",
@@ -426,12 +477,22 @@
     "promptSelectorWin": "単勝",
     "promptSelectorTrifecta": "3連単",
     "promptSelectorTrio": "3連複",
+    "promptSelectorVolatilityTrifecta": "イン崩れ狙い",
     "markdownHeading": "ボートレース出走表データ（{{venue}} 第{{race}}レース）",
     "tableItemHeader": "項目",
     "playerNameLabel": "選手名",
     "promptWin": "上記はボートレースの出走表データです。このデータをもとに、1着になる可能性が最も高い艇番を、根拠とともに教えてください。",
     "promptTrifecta": "上記はボートレースの出走表データです。このデータをもとに、3連単（1着・2着・3着を着順通りに当てる）で狙うべき組み合わせを3つ、根拠とともに提案してください。",
     "promptTrio": "上記はボートレースの出走表データです。このデータをもとに、3連複（1〜3着に入る3艇を着順不問で当てる）で狙うべき組み合わせを3つ、根拠とともに提案してください。",
+    "turnPredictionHeading": "1マーク展開予測（決まり手別の勝利確率）",
+    "turnPredictionColTechnique": "決まり手",
+    "turnPredictionColWinner": "勝利艇",
+    "turnPredictionColProbability": "確率",
+    "turnPredictionColSecond": "2着有力",
+    "turnPredictionColThird": "3着有力",
+    "turnPredictionDistributionLabel": "決まり手全体の傾向",
+    "turnPredictionStrengthLabel": "1マーク展開予測ベースの総合力順位",
+    "promptVolatilityTrifecta": "上記は「イン崩れ注意度」が高い（1号艇が通常より逃げ切れない可能性がある）と判定されたレースの出走表データと、1マーク展開予測（決まり手別の勝利確率・2着3着の有力艇）です。この展開予測データを踏まえて、実際に1着になる可能性が高い艇とその決まり手を根拠とともに判断し、3連単で狙うべき組み合わせを3つ提案してください。1号艇の逃げ確率が依然として高い場合は、それを除外せず候補に含めてください。",
     "previewToggleLabel": "コピーされる質問文を見る"
   },
   "aiSection": {

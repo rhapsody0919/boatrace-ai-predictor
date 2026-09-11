@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-09-06T19:30:00+09:00",
+  "followerCount": 63,
+  "followingCount": 261,
+  "totalPosts": 321,
+  "followerQualityNote": "今回もフォロワー一覧の詳細サンプリングは未実施（63人規模、時間配分の都合）。前回と同様、明らかなbot混入の兆候はブラウジング範囲では確認できていない。この項目は複数回連続で「未実施」のままであり、次回は必ず実施することを申し送る",
+  "previousActionsReview": {
+    "previousReportDate": "2026-09-06（同日、13:00生成分）",
+    "note": "同日中の2回目実行のため、施策実行までの経過時間は約6.5時間と短い。大きな進展は無いことを前提に検証する",
+    "recommendedActions": [
+      "リプライ・引用リツイートの入力操作をfind+ref徹底する",
+      "history.jsonのstatus=producedの投稿をposted/skippedに更新する",
+      "（大施策）リプライ戦略の目標と実績の乖離への対応をユーザーと相談する",
+      "月次統合サマリー（/growth-monthly-summary）の実行を提案する"
+    ],
+    "executed": {
+      "findRefEnforcement": "スキル定義（x-reply-drafts.md）に必須手順として明記済み（PR#547）。ただし本レポート作成時点で新規のリプライ送信は発生しておらず、実運用での遵守は未検証",
+      "historyJsonStatusUpdate": "未実施。9/2・9/4・9/6分は引き続きstatus=producedのまま",
+      "replyStrategyGap": "ユーザーが「(b)承認フローを効率化する」を選択し、x-reply-drafts.mdの承認フローをバッチ化する変更を実施済み（PR#547）。フェーズA/Bとも一覧提示・一括承認方式に変更し、送信のみ1件ずつ間隔を空ける設計にした。理論上1セットの往復を20回超→4回程度に削減できる見込みだが、実際の効果（送信件数の増加）はまだ検証できていない（変更後にフェーズA/Bを実行した記録が無いため）",
+      "monthlySummary": "まだ提案・実行していない。前回実行(2026-08-26)から12日経過"
+    },
+    "impact": "フォロワー62→63人（+1）、投稿319→321（+2）。同日中の短時間経過のため微増に留まる。施策の効果検証には次回以降の日をまたいだ実行が必要"
+  },
+  "operationsCompliance": {
+    "dailyPostLimitViolations": 0,
+    "duplicateAnnouncements": 0,
+    "formatRepetition": 0,
+    "note": "node scripts/analysis/x-operations-compliance-report.js --days=30 で確認、全項目クリア（前回と同結果）。history.json対象日数は依然4日分のみ"
+  },
+  "siteReferral": {
+    "sessions30d": 13,
+    "note": "前回(9/5・9/6同日分とも)と完全に同数。30日ローリングウィンドウ+同日再実行のため変化が出ないのは想定通り。着地ページも変化なし（「/」5件・「/admin/sns-hub」3件）"
+  },
+  "trend": {
+    "followerCount": "2026-08-25:54→08-31:52→09-01:54→09-05:56（改善2回連続）。今回63を加えると引き続き改善傾向が継続していると見られるが、正式なトレンド判定は次回report保存後に計算される",
+    "totalPosts": "改善3回連続（08-25:202→08-31:247→09-01:261→09-05:311）。今回321を加えても改善傾向継続",
+    "xReferralSessions": "データ不足（9/5・9/6とも13で変化なし、実質1時点）"
+  },
+  "postsSampled": [
+    {"postedAt": "2026-09-06 (3h前)", "summary": "桐生で1号艇が逃げ切ったとき、2着に一番多いのは2号艇（14.2%）", "views": 22, "type": "video-data", "note": "前回レポート後に新規投稿されたもの"},
+    {"postedAt": "2026-09-06 (8h前、前回確認時は当日朝)", "summary": "戸田1号艇がまくられて負ける割合51.2%", "views": 35, "likes": 2, "type": "video-data", "note": "前回確認時はビュー22だったが35に増加（時間経過による自然増）"},
+    {"postedAt": "2026-09-06 (8h前)", "summary": "戸田3R、AIが見てる1号艇の逃げ確率28%", "views": "未確認（前回21）", "type": "live-prediction"}
+  ],
+  "summary": {
+    "followerGrowth": "54(8/25)→63(9/6夜)、2週間で+9人。増加ペースは継続しているが、同日内の変化は小さい",
+    "postingVolume": "1日3〜4件程度で運用ルール（上限4本）の範囲内、前回から変化なし",
+    "engagementLevel": "ビュー数22〜35が中心。前回確認した投稿のビュー数が時間経過で伸びていることを確認（22→35）",
+    "siteReferral": "X経由セッション13/30日で変化なし",
+    "replyStrategyGap": "承認フロー効率化(PR#547)は実装済みだが、実際にフェーズA/Bを回した記録がまだ無く効果未検証。次回セッションでの実践が必要"
+  },
+  "nextActions": {
+    "small": [
+      "承認フロー効率化(PR#547)後の初回実行で、実際に往復回数・送信件数が改善したかを記録する",
+      "history.jsonのstatus=produced（9/2・9/4・9/6）を、実際の投稿有無を確認しposted/skippedに更新する",
+      "フォロワー一覧の質チェックを次回こそ実施する（2回連続で未実施のまま）"
+    ],
+    "large": [
+      "月次統合サマリー（/growth-monthly-summary）の実行。前回(2026-08-26)から12日経過しており、そろそろ実行時期"
+    ]
+  }
+}

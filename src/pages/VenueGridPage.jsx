@@ -13,7 +13,11 @@ import UpdateStatus from "../components/UpdateStatus";
 import IntroBanner from "../components/IntroBanner";
 import FirstVisitGuideCard from "../components/FirstVisitGuideCard";
 import { useFirstVisit } from "../hooks/useFirstVisit";
-import { VenueGrid, VenueGridSkeleton } from "../components/race";
+import {
+  VenueGrid,
+  VenueGridSkeleton,
+  TodaysVolatilityHighlights,
+} from "../components/race";
 import { dataService } from "../services/dataService";
 import { useDatePredictions } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
@@ -146,6 +150,10 @@ function TodayVenueGridPage() {
             <h2>
               🏁 {t("home.todayRaces")} {getTodayDateShort()}
             </h2>
+            <p className="free-access-notice">
+              ✅ <strong>{t("home.freeAccessNoticeStrong")}</strong>{" "}
+              {t("home.freeAccessNoticeRest")}
+            </p>
             <UpdateStatus
               lastUpdated={lastUpdated}
               dataType={t("home.dataType")}
@@ -177,6 +185,7 @@ function TodayVenueGridPage() {
                     </button>
                   </div>
                 )}
+                <TodaysVolatilityHighlights venuesData={venuesData} />
                 <VenueGrid
                   venuesData={venuesData}
                   getVenueLink={(code) => localize(`/venue/${code}`)}

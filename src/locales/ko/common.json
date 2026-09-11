@@ -4,6 +4,7 @@
     "hits": "✅ 적중 기록",
     "accuracy": "📈 적중률",
     "winningTechnique": "📊 데이터 분석 도구",
+    "winningTechniqueShort": "📊 분석",
     "pastRaces": "📅 지난 예측",
     "howToUse": "📚 이용 방법",
     "guide": "📖 입문 가이드",
@@ -85,6 +86,24 @@
     "metaDescription": "{{venue}} 경정장의 오늘 전체 경주 일람. 마감 시각과 등급을 확인하고 각 경주의 AI 데이터 분석을 볼 수 있습니다.",
     "backToVenues": "← 경정장 목록으로"
   },
+  "venueCharacteristics": {
+    "title": "이 경정장의 특징 (최근 90일)",
+    "note": "AI 데이터 분석이 참고하는 것과 동일한 경정장별 데이터입니다. 번호별 1착률과, 우승 시 가장 많이 나온 결정수를 확인할 수 있습니다.",
+    "nationalAverageTooltip": "전국 평균 {{value}}%",
+    "techniqueHeader": "주요 결정수",
+    "footnote": "최근 {{count}}경주를 집계 ({{date}} 기준). 과거 경주 경향이며 당일 결과를 보장하지 않습니다.",
+    "unknownDate": "갱신일 불명",
+    "waterType": {
+      "fresh": "담수",
+      "brackish": "기수",
+      "sea": "해수"
+    },
+    "cluster": {
+      "in_strong": "인코스 강세",
+      "out_strong": "아웃코스 강세",
+      "balanced": "균형형"
+    }
+  },
   "raceDetailPage": {
     "metaTitle": "{{venue}} {{race}}R AI 데이터 분석 - 용신 레이더",
     "metaDescription": "{{venue}} {{race}}R의 출주표 데이터・AI 데이터 분석・전개 예측을 무료로 확인할 수 있습니다.",
@@ -111,7 +130,8 @@
     "collectingDataDesc": "이 경정장의 1코스 이변 경향을 판단하기 위한 실적 데이터를 수집하고 있습니다. 운영 개시 후 일정 기간이 지나면 표시됩니다",
     "accuracyLoading": "실측 정확도 불러오는 중...",
     "accuracyStat": "실측: 「{{level}}」라벨 레이스의 실제 이변 발생률은 {{rate}}%입니다（지난 {{count}}건, 전체 평균 {{baseline}}%）",
-    "accuracyLink": "자세히 보기 ›"
+    "accuracyLink": "자세히 보기 ›",
+    "reasonsJaOnly": "AI의 상세 판단 근거는 현재 일본어로만 제공됩니다."
   },
   "volatilityAccuracy": {
     "title": "🌪️ 인코스 붕괴 예측 실적（최근 90일）",
@@ -182,6 +202,27 @@
     "rank1": "1착",
     "rank2": "2착",
     "rank3": "3착",
+    "rank4": "4착",
+    "rank5": "5착",
+    "rank6": "6착",
+    "winningTechniqueLabel": "결정 기술: {{technique}}",
+    "payoutSectionTitle": "💰 배당금",
+    "payoutType": {
+      "win": "단승",
+      "place": "복승",
+      "trifecta": "삼쌍승",
+      "trio": "삼복승",
+      "exacta": "2연단",
+      "quinella": "2연복",
+      "wide": "확연복"
+    },
+    "popularity": "인기 {{rank}}위",
+    "fastestStartTag": "최속",
+    "courseNote": "※진입 코스는 현재 표시하지 않습니다(데이터 정확도 확인 중입니다)",
+    "cancelledTitle": "이 레이스는 중지되었습니다",
+    "cancelledBody": "날씨나 수면 상태 등으로 인해 레이스가 중지되어 결과 데이터가 없습니다.",
+    "noRaceTitle": "이 레이스는 불성립되었습니다",
+    "noRaceBody": "출주 조건을 충족하지 못해 이 레이스는 불성립되었습니다.",
     "placeSectionTitle": "🎯 복승 예측 검증",
     "placePredicted": "복승 {{rank}}위 예측: {{number}}호정",
     "placeHit": "✅ 적중!（{{position}}착）",
@@ -206,12 +247,18 @@
     "venueGuideLink": "{{venue}} 경정장 가이드 보기",
     "venueGuideDesc": "경정장 특성과 베팅 포인트 상세",
     "analysisToolsLink": "데이터 분석 도구로 이 레이스를 더 분석하기",
-    "awaitingResultBanner": "마감 시간이 지났지만 아직 결과가 반영되지 않았습니다 (데이터는 약 1시간마다 갱신됩니다)"
+    "awaitingResultBanner": "마감 시간이 지났지만 아직 결과가 반영되지 않았습니다 (데이터는 약 1시간마다 갱신됩니다)",
+    "cancelledBanner": "이 레이스는 중지되었습니다"
   },
   "home": {
     "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측・인코스 붕괴 지수 등 45개 이상의 데이터를 분석. 자세히 보기 →",
     "introBannerClose": "닫기",
+    "freeAccessNoticeStrong": "완전 무료・가입 불필요",
+    "freeAccessNoticeRest": "— 계좌 개설이나 회원 가입 없이 지금 바로 모든 기능을 이용하세요",
     "todayRaces": "오늘의 경주",
+    "volatilityHighlightsTitle": "🌪️ 오늘의 인코스 붕괴 지수 하이라이트",
+    "volatilityHighlightsTurnPrediction": "1착 예상: {{course}}호정（{{technique}}・{{probability}}%）",
+    "volatilityHighlightsAccuracyLink": "실측 정확도 보기 →",
     "dataType": "경주 데이터",
     "loadingTitle": "경주 데이터 로딩 중...",
     "loadingDesc": "오늘의 경주 정보를 가져오는 중입니다",
@@ -259,7 +306,7 @@
     "refreshTooltip": "브라우저 캐시를 지우고 데이터 다시 불러오기",
     "refreshing": "로딩 중...",
     "refresh": "새로고침",
-    "autoUpdateNote": "💡 데이터는 매시간 자동 업데이트됩니다"
+    "autoUpdateNote": "💡 경주 시작 시각이 가까워질수록 순차적으로 업데이트됩니다"
   },
   "betting": {
     "title": "추천 조합과 배당률",
@@ -355,6 +402,10 @@
   },
   "raceCard": {
     "awaitingResult": "결과 반영 대기중",
+    "cancelled": "중지",
+    "accepting": "접수중",
+    "closingSoon": "마감 임박",
+    "deadlineCountdown": "마감까지 {{time}}",
     "badgePlace": "✅ 복승 적중",
     "badgeTurn": "✅ 전개 적중",
     "missBadge": "❌ 미적중",
@@ -425,12 +476,22 @@
     "promptSelectorWin": "단승",
     "promptSelectorTrifecta": "삼쌍승",
     "promptSelectorTrio": "삼복승",
+    "promptSelectorVolatilityTrifecta": "인코스 붕괴 노림수",
     "markdownHeading": "경정 출주표 데이터（{{venue}} 제{{race}}레이스）",
     "tableItemHeader": "항목",
     "playerNameLabel": "선수명",
     "promptWin": "위는 경정 출주표 데이터입니다. 이 데이터를 바탕으로 1착이 될 가능성이 가장 높은 정번을 근거와 함께 알려주세요.",
     "promptTrifecta": "위는 경정 출주표 데이터입니다. 이 데이터를 바탕으로 삼쌍승(1착・2착・3착을 순서대로 맞히는 방식)으로 노려볼 만한 조합을 3가지, 근거와 함께 제안해주세요.",
     "promptTrio": "위는 경정 출주표 데이터입니다. 이 데이터를 바탕으로 삼복승(1~3착에 들어오는 3척을 순서 상관없이 맞히는 방식)으로 노려볼 만한 조합을 3가지, 근거와 함께 제안해주세요.",
+    "turnPredictionHeading": "1마크 전개 예측(결정技별 승리 확률)",
+    "turnPredictionColTechnique": "결정技",
+    "turnPredictionColWinner": "승리 艇",
+    "turnPredictionColProbability": "확률",
+    "turnPredictionColSecond": "2착 유력",
+    "turnPredictionColThird": "3착 유력",
+    "turnPredictionDistributionLabel": "결정技 전체 경향",
+    "turnPredictionStrengthLabel": "1마크 전개 예측 기반 종합력 순위",
+    "promptVolatilityTrifecta": "위는 「인코스 붕괴 주의도」가 높다고(1호정이 평소보다 선행하지 못할 가능성이 있다고) 판정된 레이스의 출주표 데이터와, 1마크 전개 예측(결정技별 승리 확률・2착3착 유력 艇)입니다. 이 전개 예측 데이터를 바탕으로 실제로 1착이 될 가능성이 높은 艇과 그 결정技를 근거와 함께 판단하여, 삼쌍승으로 노려볼 만한 조합을 3가지 제안해주세요. 1호정의 선행 확률이 여전히 높다면 배제하지 말고 후보에 포함해주세요.",
     "previewToggleLabel": "복사될 질문 내용 보기"
   },
   "aiSection": {

@@ -281,12 +281,12 @@
 
 .race-detail-page .race-result h4 {
   font-size: 1.25rem;
-  margin-bottom: 1.5rem;
+  margin: 0;
   color: var(--text-primary);
 }
 
-/* result-podium / podium-item / accuracy-check / check-item / hit / miss は
-   App.css で一元管理しているため RaceDetail.css では定義しない */
+/* .rr-* / accuracy-check / check-item / hit / miss は
+   App.css で一元管理しているため RaceDetail.css では定義しない（BOA-207/BOA-238） */
 
 
 /* ローディング・エラー */
@@ -499,7 +499,7 @@
     min-width: 80px;
   }
 
-  /* .podium-item系はApp.cssで一元管理のためここでは定義しない（BOA-207） */
+  /* .rr-*系はApp.cssで一元管理のためここでは定義しない（BOA-207/BOA-238） */
 }
 
 /* データ分析ツールへの導線（本日のレースのみ） */

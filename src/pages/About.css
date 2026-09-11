@@ -45,11 +45,17 @@
 .hero-video-mobile {
   display: block;
   max-width: 360px;
+  /* poster画像(about-hero-mobile-poster.jpg)の実寸法。preload="none"のため
+     posterが読み込まれるまでUA既定サイズ(300x150程度)で描画され、poster読込完了時に
+     高さが変わってCLSを起こしていた。実寸法を先に確保して防止する */
+  aspect-ratio: 840 / 1434;
 }
 
 .hero-video-desktop {
   display: none;
   max-width: 800px;
+  /* poster画像(about-hero-desktop-poster.jpg)の実寸法。理由は上記モバイル版と同じ */
+  aspect-ratio: 1600 / 976;
 }
 
 @media (min-width: 768px) {

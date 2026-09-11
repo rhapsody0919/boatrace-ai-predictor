@@ -4,6 +4,7 @@
     "hits": "✅ 命中紀錄",
     "accuracy": "📈 準確率",
     "winningTechnique": "📊 數據分析工具",
+    "winningTechniqueShort": "📊 分析",
     "pastRaces": "📅 過往預測",
     "howToUse": "📚 使用說明",
     "guide": "📖 入門指南",
@@ -85,6 +86,24 @@
     "metaDescription": "{{venue}}賽艇場今日全部比賽一覽。確認截止時間與級別後，可查看各場比賽的AI數據分析。",
     "backToVenues": "← 返回賽場一覽"
   },
+  "venueCharacteristics": {
+    "title": "本賽場的特徵（近90天）",
+    "note": "與AI數據分析所參考的相同賽場數據。可查看各艇號的第1名機率，以及獲勝時最常見的獲勝方式。",
+    "nationalAverageTooltip": "全國平均{{value}}%",
+    "techniqueHeader": "主要獲勝方式",
+    "footnote": "統計最近{{count}}場比賽（截至{{date}}）。僅反映過去的比賽傾向，不保證當日結果。",
+    "unknownDate": "更新日期不明",
+    "waterType": {
+      "fresh": "淡水",
+      "brackish": "汽水",
+      "sea": "海水"
+    },
+    "cluster": {
+      "in_strong": "內道優勢",
+      "out_strong": "外道優勢",
+      "balanced": "平衡型"
+    }
+  },
   "raceDetailPage": {
     "metaTitle": "{{venue}} 第{{race}}場 AI數據分析 - 龍神雷達",
     "metaDescription": "免費查看{{venue}}第{{race}}場的出賽表資料、AI數據分析與展開預測。",
@@ -111,7 +130,8 @@
     "collectingDataDesc": "此賽場的1號位失守傾向所需的實績數據仍在累積中，運用開始一段時間後將會顯示",
     "accuracyLoading": "實測準確度載入中...",
     "accuracyStat": "實測：標示「{{level}}」的比賽，實際崩盤率為{{rate}}%（過去{{count}}場，整體平均{{baseline}}%）",
-    "accuracyLink": "查看詳情 ›"
+    "accuracyLink": "查看詳情 ›",
+    "reasonsJaOnly": "AI詳細判定依據目前僅提供日文版本。"
   },
   "volatilityAccuracy": {
     "title": "🌪️ 內道崩盤預測實績（過去90天）",
@@ -182,6 +202,27 @@
     "rank1": "第1名",
     "rank2": "第2名",
     "rank3": "第3名",
+    "rank4": "第4名",
+    "rank5": "第5名",
+    "rank6": "第6名",
+    "winningTechniqueLabel": "致勝招式：{{technique}}",
+    "payoutSectionTitle": "💰 派彩",
+    "payoutType": {
+      "win": "單勝",
+      "place": "複勝",
+      "trifecta": "3連單",
+      "trio": "3連複",
+      "exacta": "2連單",
+      "quinella": "2連複",
+      "wide": "拡連複"
+    },
+    "popularity": "人氣第{{rank}}名",
+    "fastestStartTag": "最快",
+    "courseNote": "※目前未顯示進入航線（資料準確度確認中）",
+    "cancelledTitle": "本場比賽已中止",
+    "cancelledBody": "因天候或水面狀況等因素，本場比賽已中止，因此沒有結果資料。",
+    "noRaceTitle": "本場比賽未成立",
+    "noRaceBody": "因未滿足出賽條件，本場比賽未能成立。",
     "placeSectionTitle": "🎯 複勝預測驗證",
     "placePredicted": "複勝第{{rank}}名預測：{{number}}號艇",
     "placeHit": "✅ 命中！（第{{position}}名）",
@@ -206,12 +247,18 @@
     "venueGuideLink": "查看{{venue}}賽場指南",
     "venueGuideDesc": "賽場特性與投注要點詳解",
     "analysisToolsLink": "用數據分析工具進一步分析本場比賽",
-    "awaitingResultBanner": "已過截止時間，但結果尚未更新（資料約每小時更新一次）"
+    "awaitingResultBanner": "已過截止時間，但結果尚未更新（資料約每小時更新一次）",
+    "cancelledBanner": "本場比賽已中止"
   },
   "home": {
     "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等45項以上數據。了解更多 →",
     "introBannerClose": "關閉",
+    "freeAccessNoticeStrong": "完全免費・無需註冊",
+    "freeAccessNoticeRest": "— 無需開戶或加入會員，現在就能使用所有功能",
     "todayRaces": "今日賽事",
+    "volatilityHighlightsTitle": "🌪️ 今日內道崩盤指數精選",
+    "volatilityHighlightsTurnPrediction": "預測第1名：{{course}}號艇（{{technique}}・{{probability}}%）",
+    "volatilityHighlightsAccuracyLink": "查看實測準確率 →",
     "dataType": "比賽資料",
     "loadingTitle": "正在載入比賽資料...",
     "loadingDesc": "正在取得今日的比賽資訊",
@@ -259,7 +306,7 @@
     "refreshTooltip": "清除瀏覽器快取並重新載入資料",
     "refreshing": "載入中...",
     "refresh": "重新載入",
-    "autoUpdateNote": "💡 資料每小時自動更新"
+    "autoUpdateNote": "💡 資料會隨著發走時間接近而陸續更新"
   },
   "betting": {
     "title": "投注組合與賠率",
@@ -355,6 +402,10 @@
   },
   "raceCard": {
     "awaitingResult": "結果待反映",
+    "cancelled": "中止",
+    "accepting": "受理中",
+    "closingSoon": "即將截止",
+    "deadlineCountdown": "距截止 {{time}}",
     "badgePlace": "✅ 複勝命中",
     "badgeTurn": "✅ 展開命中",
     "missBadge": "❌ 未命中",
@@ -425,12 +476,22 @@
     "promptSelectorWin": "單勝",
     "promptSelectorTrifecta": "3連單",
     "promptSelectorTrio": "3連複",
+    "promptSelectorVolatilityTrifecta": "內圈崩盤狙擊",
     "markdownHeading": "賽艇出賽表數據（{{venue}} 第{{race}}場）",
     "tableItemHeader": "項目",
     "playerNameLabel": "選手姓名",
     "promptWin": "以上是賽艇的出賽表數據。請根據這些數據，告訴我最有可能獲得第一名的艇號，並說明理由。",
     "promptTrifecta": "以上是賽艇的出賽表數據。請根據這些數據，提出3組值得鎖定的3連單（依序命中第1・2・3名）組合，並說明理由。",
     "promptTrio": "以上是賽艇的出賽表數據。請根據這些數據，提出3組值得鎖定的3連複（命中前3名，順序不拘）組合，並說明理由。",
+    "turnPredictionHeading": "第一標展開預測（依決勝招式分類的獲勝機率）",
+    "turnPredictionColTechnique": "決勝招式",
+    "turnPredictionColWinner": "獲勝艇",
+    "turnPredictionColProbability": "機率",
+    "turnPredictionColSecond": "第2名熱門",
+    "turnPredictionColThird": "第3名熱門",
+    "turnPredictionDistributionLabel": "整體決勝招式傾向",
+    "turnPredictionStrengthLabel": "依第一標展開預測計算的綜合實力排名",
+    "promptVolatilityTrifecta": "以上是被判定為「內圈崩盤注意度」偏高（1號艇可能無法像平常一樣順利搶得領先）的比賽出賽表數據，以及第一標展開預測（依決勝招式分類的獲勝機率、第2・3名熱門艇）。請根據這份展開預測數據，判斷實際最有可能獲得第一名的艇號與決勝招式，並提出3組值得鎖定的3連單組合，附上理由。若1號艇的搶先機率依然偏高，請不要排除，將其納入候選。",
     "previewToggleLabel": "查看將複製的提問內容"
   },
   "aiSection": {

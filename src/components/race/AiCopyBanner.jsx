@@ -118,7 +118,11 @@ export default function AiCopyBanner({
           {t("aiCopy.bannerCatchphrase")}
         </motion.span>
       </div>
-      <AiCopyPromptSelector value={promptType} onChange={onPromptTypeChange} />
+      <AiCopyPromptSelector
+        value={promptType}
+        onChange={onPromptTypeChange}
+        volatilityPercentile={prediction?.volatilityPercentile}
+      />
 
       <button
         type="button"

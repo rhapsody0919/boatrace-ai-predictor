@@ -168,6 +168,55 @@ function LevelAccuracyStat({ level, venueCode, raceId }) {
   );
 }
 
+// AIが生成する根拠文（volatilityReasons）は日本語の自然文でDBに保存されており、
+// 翻訳インフラの外にある（構造化データ化・DBスキーマ変更が必要な大きめの作業、
+// BOA-252で将来対応検討）。日本語以外のロケールでは未翻訳の日本語文をそのまま
+// 出さず、「日本語のみで利用可能」という誠実な注記に差し替える
+function ReasonsList({ reasons, language, t }) {
+  if (!reasons || reasons.length === 0) return null;
+
+  if (language !== "ja") {
+    return (
+      <div
+        style={{
+          fontSize: "0.85rem",
+          color: "#777",
+          paddingLeft: "1.7rem",
+          marginTop: "0.5rem",
+          fontStyle: "italic",
+        }}
+      >
+        {t("volatility.reasonsJaOnly")}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        fontSize: "0.9rem",
+        color: "#555",
+        paddingLeft: "1.7rem",
+        marginTop: "0.5rem",
+      }}
+    >
+      <ul
+        style={{
+          margin: "0",
+          paddingLeft: "1.2rem",
+          listStyleType: "disc",
+        }}
+      >
+        {reasons.map((reason, index) => (
+          <li key={index} style={{ marginBottom: "0.25rem" }}>
+            {reason}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function VolatilityDisplay({
   percentile,
   reasons,
@@ -175,7 +224,7 @@ function VolatilityDisplay({
   venueCode,
   raceId,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (percentile === null || percentile === undefined) {
     return null;
@@ -231,30 +280,7 @@ function VolatilityDisplay({
         >
           {t("volatility.collectingDataDesc")}
         </div>
-        {reasons && reasons.length > 0 && (
-          <div
-            style={{
-              fontSize: "0.9rem",
-              color: "#555",
-              paddingLeft: "1.7rem",
-              marginTop: "0.5rem",
-            }}
-          >
-            <ul
-              style={{
-                margin: "0",
-                paddingLeft: "1.2rem",
-                listStyleType: "disc",
-              }}
-            >
-              {reasons.map((reason, index) => (
-                <li key={index} style={{ marginBottom: "0.25rem" }}>
-                  {reason}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <ReasonsList reasons={reasons} language={i18n.language} t={t} />
       </div>
     );
   }
@@ -336,30 +362,7 @@ function VolatilityDisplay({
 
       <PercentileBar percentile={percentile} />
 
-      {reasons && reasons.length > 0 && (
-        <div
-          style={{
-            fontSize: "0.9rem",
-            color: "#555",
-            paddingLeft: "1.7rem",
-            marginTop: "0.5rem",
-          }}
-        >
-          <ul
-            style={{
-              margin: "0",
-              paddingLeft: "1.2rem",
-              listStyleType: "disc",
-            }}
-          >
-            {reasons.map((reason, index) => (
-              <li key={index} style={{ marginBottom: "0.25rem" }}>
-                {reason}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <ReasonsList reasons={reasons} language={i18n.language} t={t} />
     </div>
   );
 }

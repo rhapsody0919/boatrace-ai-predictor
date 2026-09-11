@@ -4,6 +4,7 @@
     "hits": "✅ Hits",
     "accuracy": "📈 Accuracy",
     "winningTechnique": "📊 Analysis Tools",
+    "winningTechniqueShort": "📊 Analysis",
     "pastRaces": "📅 Past Predictions",
     "howToUse": "📚 How to Use",
     "guide": "📖 Complete Guide",
@@ -86,6 +87,24 @@
     "metaDescription": "All of today's races at {{venue}} boat race stadium. Check deadlines and grades, then view AI data analysis for each race.",
     "backToVenues": "← Back to venues"
   },
+  "venueCharacteristics": {
+    "title": "This Venue's Tendencies (last 90 days)",
+    "note": "Same venue-level data our AI data analysis uses. See each boat's 1st-place rate and its most common winning technique.",
+    "nationalAverageTooltip": "National average: {{value}}%",
+    "techniqueHeader": "Top technique",
+    "footnote": "Based on the last {{count}} races (as of {{date}}). Reflects past tendencies only and does not guarantee today's results.",
+    "unknownDate": "unknown",
+    "waterType": {
+      "fresh": "Freshwater",
+      "brackish": "Brackish water",
+      "sea": "Seawater"
+    },
+    "cluster": {
+      "in_strong": "Inside-lane favoring",
+      "out_strong": "Outside-lane favoring",
+      "balanced": "Balanced"
+    }
+  },
   "raceDetailPage": {
     "metaTitle": "{{venue}} Race {{race}} AI data analysis - Ryujin Radar",
     "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}}.",
@@ -112,7 +131,8 @@
     "collectingDataDesc": "We're still building up a track record for this venue's upset tendency. This will appear once enough data has been collected",
     "accuracyLoading": "Loading track record...",
     "accuracyStat": "Track record: races labeled \"{{level}}\" actually had a {{rate}}% upset rate (last {{count}} races, overall average {{baseline}}%)",
-    "accuracyLink": "See details ›"
+    "accuracyLink": "See details ›",
+    "reasonsJaOnly": "Detailed AI reasoning is currently available in Japanese only."
   },
   "volatilityAccuracy": {
     "title": "🌪️ Upset Index Track Record (last 90 days)",
@@ -183,6 +203,27 @@
     "rank1": "1st",
     "rank2": "2nd",
     "rank3": "3rd",
+    "rank4": "4th",
+    "rank5": "5th",
+    "rank6": "6th",
+    "winningTechniqueLabel": "Winning move: {{technique}}",
+    "payoutSectionTitle": "💰 Payouts",
+    "payoutType": {
+      "win": "Win",
+      "place": "Place",
+      "trifecta": "Trifecta",
+      "trio": "Trio",
+      "exacta": "Exacta",
+      "quinella": "Quinella",
+      "wide": "Wide"
+    },
+    "popularity": "#{{rank}} favorite",
+    "fastestStartTag": "Fastest",
+    "courseNote": "※Approach course is not shown yet (data accuracy under review).",
+    "cancelledTitle": "This race was cancelled",
+    "cancelledBody": "The race was cancelled due to weather or water conditions, so no result data is available.",
+    "noRaceTitle": "This race did not take place",
+    "noRaceBody": "The race did not take place because the starting conditions were not met.",
     "placeSectionTitle": "🎯 Place prediction check",
     "placePredicted": "Place pick #{{rank}}: Boat {{number}}",
     "placeHit": "✅ Hit! (finished #{{position}})",
@@ -207,12 +248,18 @@
     "venueGuideLink": "View the {{venue}} venue guide",
     "venueGuideDesc": "Detailed venue characteristics and betting angles",
     "analysisToolsLink": "Analyze this race further with the data analysis tools",
-    "awaitingResultBanner": "The deadline has passed, but the result hasn't been posted yet (data updates about once an hour)."
+    "awaitingResultBanner": "The deadline has passed, but the result hasn't been posted yet (data updates about once an hour).",
+    "cancelledBanner": "This race has been cancelled."
   },
   "home": {
     "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | 45+ data points analyzed, including turn predictions and the Upset Index. Learn more →",
     "introBannerClose": "Close",
+    "freeAccessNoticeStrong": "100% Free, No Sign-up",
+    "freeAccessNoticeRest": "— use every feature right now, no bank account or membership required",
     "todayRaces": "Today's Races",
+    "volatilityHighlightsTitle": "🌪️ Today's Upset Index Highlights",
+    "volatilityHighlightsTurnPrediction": "Predicted winner: Boat {{course}} ({{technique}}, {{probability}}%)",
+    "volatilityHighlightsAccuracyLink": "See our track record →",
     "dataType": "Race data",
     "loadingTitle": "Loading race data...",
     "loadingDesc": "Fetching today's race information",
@@ -261,7 +308,7 @@
     "refreshTooltip": "Clear browser cache and reload data",
     "refreshing": "Loading...",
     "refresh": "Reload",
-    "autoUpdateNote": "💡 Data auto-updates every hour"
+    "autoUpdateNote": "💡 Updates roll out gradually as races approach start time"
   },
   "betting": {
     "title": "Picks & Odds",
@@ -357,6 +404,10 @@
   },
   "raceCard": {
     "awaitingResult": "Awaiting result",
+    "cancelled": "Cancelled",
+    "accepting": "Accepting bets",
+    "closingSoon": "Closing soon",
+    "deadlineCountdown": "Closes in {{time}}",
     "badgePlace": "✅ Place hit",
     "badgeTurn": "✅ Turn hit",
     "missBadge": "❌ Missed",
@@ -427,12 +478,22 @@
     "promptSelectorWin": "Win",
     "promptSelectorTrifecta": "Trifecta",
     "promptSelectorTrio": "Trio",
+    "promptSelectorVolatilityTrifecta": "Upset Watch",
     "markdownHeading": "Boat Race Entry Data ({{venue}} Race {{race}})",
     "tableItemHeader": "Item",
     "playerNameLabel": "Racer",
     "promptWin": "The above is boat race entry data. Based on this data, tell me which boat is most likely to finish 1st, along with your reasoning.",
     "promptTrifecta": "The above is boat race entry data. Based on this data, suggest 3 combinations to target for a Trifecta bet (picking the exact 1st, 2nd, and 3rd place finishers in order), along with your reasoning.",
     "promptTrio": "The above is boat race entry data. Based on this data, suggest 3 combinations to target for a Trio bet (picking the 3 boats that finish in the top 3, in any order), along with your reasoning.",
+    "turnPredictionHeading": "First-Mark Move Forecast (win probability by winning move)",
+    "turnPredictionColTechnique": "Move",
+    "turnPredictionColWinner": "Winning boat",
+    "turnPredictionColProbability": "Probability",
+    "turnPredictionColSecond": "Likely 2nd",
+    "turnPredictionColThird": "Likely 3rd",
+    "turnPredictionDistributionLabel": "Overall move tendency",
+    "turnPredictionStrengthLabel": "Overall strength ranking (from the first-mark forecast)",
+    "promptVolatilityTrifecta": "The above is entry data for a race flagged as high \"upset risk\" (Boat 1 may be less likely than usual to hold the lead), plus a first-mark move forecast (win probability by winning move, with likely 2nd/3rd place boats). Using this forecast data, judge which boat is actually most likely to finish 1st and by which move, and suggest 3 combinations to target for a Trifecta bet, with your reasoning. If Boat 1's lead-off probability is still high, include it as a candidate rather than ruling it out.",
     "previewToggleLabel": "Show the question that will be copied"
   },
   "aiSection": {

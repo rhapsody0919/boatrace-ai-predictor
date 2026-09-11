@@ -1,0 +1,59 @@
+/**
+ * 企画型SNS投稿パイプラインの企画（sns_campaigns）を新規作成するCLI。
+ *
+ * パイロット企画「龍神レーダーのAIに900円を託してみた——イン崩れ99%レースだけ1週間」
+ * を作成する。docs/design/sns-hub-campaign-pipeline/spec.md・tasks.md参照。
+ *
+ * 使い方: node --env-file=.env.local scripts/maintenance/create-campaign.js
+ */
+import { createCampaign } from "../lib/snsCampaigns.js";
+
+async function main() {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const campaign = await createCampaign({
+    name: "龍神レーダーのAIに900円を託してみた——イン崩れ99%レースだけ1週間",
+    purpose:
+      "龍神レーダーが実際にUI上で提供している「イン崩れ注意度」「1マーク展開予測」機能を使い、" +
+      "イン崩れ注意度99%（表示値）以上のレースだけを対象に3連単900円（300円×3点）を1週間購入シミュレーションする。" +
+      "回収率が良いかどうかにかかわらず、実際の結果をそのまま発信する透明性企画。",
+    persona: "AI予想を試してみたい・的中率や回収率の実態に関心がある層",
+    toneSpec: {
+      // blogSlug: ブログ側は「1件の日記型記事を逐次更新」する設計のため、
+      // 企画作成時にファイル名（public/blog/{blogSlug}.md）を決め打ちする
+      // （docs/operation/sns-pipeline-blog.md「3'.」参照）
+      blogSlug: "campaign-ai-900yen-inkuzure-week",
+      // autoApproveTopics: ネタ承認（sns_topics.status）を自動でapprovedにする
+      // （ユーザー承認済み、2026-09-09）。**投稿自体の自動承認とは別レイヤー**。
+      // 下書き（実際のX画像・ブログ記事）の承認は、この設定に関わらず常に
+      // 人間が行う（`.claude/CLAUDE.md`「SNS投稿の自動化・自動承認は行わない」）
+      autoApproveTopics: true,
+    },
+    startDate: today,
+    durationDays: 7,
+    targetChannels: ["x", "blog"],
+    tiktokDecisionNote:
+      "ギャンブル結果を扱う内容のためTikTokは対象外とする（人間判断、要件9）",
+    selectionCriteria: {
+      metric: "volatilityPercentile",
+      operator: ">=",
+      // 0.985: ホーム画面（TodaysVolatilityHighlights.jsx）はMath.round(値×100)で
+      // 四捨五入して「99%」と表示するため、この生の閾値は「表示上99%以上に
+      // 見えるレース」の下限に合わせている（2026-09-09、パイロット企画稼働中に
+      // ユーザー指摘で調整。当初0.99だったが、実際は98.8%でも「99%」と表示され
+      // 対象外になっており「表示と条件が食い違う」との指摘を受けた）。
+      // キャプション文言も「イン崩れ注意度99%（表示値）以上」に統一する
+      // （docs/operation/sns-pipeline-x.md参照）
+      value: 0.985,
+    },
+    purchaseAmountYen: 900,
+  });
+
+  console.log("✅ 企画を作成した:");
+  console.log(JSON.stringify(campaign, null, 2));
+}
+
+main().catch((error) => {
+  console.error("❌ 実行中にエラーが発生しました:", error.message);
+  process.exit(1);
+});

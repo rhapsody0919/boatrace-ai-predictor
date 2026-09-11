@@ -7,7 +7,9 @@
  * - 全艇の照合サマリー: 全指標×全艇の○×一覧テーブル
  * - 全艇の言語化: 1〜3着（好走）・着外の各艇について「整合した点/違った点」を列挙
  * 判定は全てレース内順位・一致判定のみ（指標定義はraceIndicators.jsxで
- * データ出走表と共通化）。4〜6着の個別着順はDBに未保存のため「着外」で扱う。
+ * データ出走表と共通化）。4〜6着の個別着順はBOA-238でrace_results.rank4〜6として
+ * 保存するようになったが、過去データはバックフィルしていないためnullのままになる。
+ * その場合は従来通り「着外」として一括表示する（下記knownFinishers参照）。
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -63,15 +65,21 @@ function RaceReview({ prediction, selectedRace }) {
     return key ? t(`techniques.${key}`, name) : name;
   };
 
-  // 着順順の艇リスト（1〜3着 + 着外を枠番順）
+  // 着順順の艇リスト。rank4〜6はBOA-238で追加したためバックフィルしていない過去データでは
+  // nullのままになる。その場合は従来通り「着外」として一括表示する
   const rank2 = resultSummary?.rank2 ?? prediction.result.rank2 ?? null;
   const rank3 = resultSummary?.rank3 ?? prediction.result.rank3 ?? null;
-  const topFinishers = [winner, rank2, rank3].filter((b) => b !== null);
+  const rank4 = resultSummary?.rank4 ?? prediction.result.rank4 ?? null;
+  const rank5 = resultSummary?.rank5 ?? prediction.result.rank5 ?? null;
+  const rank6 = resultSummary?.rank6 ?? prediction.result.rank6 ?? null;
+  const knownFinishers = [winner, rank2, rank3, rank4, rank5, rank6].filter(
+    (b) => b !== null,
+  );
   const outBoats = players
     .map((p) => p.number)
-    .filter((b) => !topFinishers.includes(b));
+    .filter((b) => !knownFinishers.includes(b));
   const orderedBoats = [
-    ...topFinishers.map((b, i) => ({ boat: b, position: i + 1 })),
+    ...knownFinishers.map((b, i) => ({ boat: b, position: i + 1 })),
     ...outBoats.map((b) => ({ boat: b, position: null })),
   ];
 

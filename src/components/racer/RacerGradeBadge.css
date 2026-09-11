@@ -1,0 +1,36 @@
+/* 選手級別バッジ（RacerTable・RacerCompactRowで共用）。
+   レースのグレード（--color-grade-sg等）とは意味が異なるため転用せず、
+   選手級別用の配色を新規に定義する（docs/design/racer-search-and-list/screens.md参照） */
+
+.racer-grade-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.racer-grade-a1 {
+  background: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
+  color: var(--brand-accent-primary);
+  border: var(--border-width-1) solid
+    color-mix(in srgb, var(--brand-accent-primary) 45%, transparent);
+}
+
+.racer-grade-a2 {
+  background: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.racer-grade-b1 {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+}
+
+.racer-grade-b2 {
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
+}

@@ -5,6 +5,7 @@ import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { parseLangFromPath, getAvailableLanguages } from "../config/languages";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeToggle from "./ThemeToggle";
+import RacerSearchBox from "./RacerSearchBox";
 import { THEME_SWITCHING_ENABLED } from "../config/theme";
 import "./Header.css";
 
@@ -31,6 +32,7 @@ function Header() {
     if (pathname === "/winning-technique") return "winning-technique";
     if (pathname === "/picks") return "picks";
     if (pathname.startsWith("/races")) return "past-races";
+    if (pathname === "/racers") return "racers";
     if (pathname === "/how-to-use") return "how-to-use";
     if (pathname === "/guide") return "guide";
     if (pathname.startsWith("/venues")) return "venues";
@@ -113,9 +115,14 @@ function Header() {
         <nav className="nav">
           <Link
             to={localize("/winning-technique")}
-            className={`nav-btn ${activeTab === "winning-technique" ? "active" : ""}`}
+            className={`nav-btn nav-btn-primary ${activeTab === "winning-technique" ? "active" : ""}`}
           >
-            {t("nav.winningTechnique")}
+            <span className="nav-btn-label-full">
+              {t("nav.winningTechnique")}
+            </span>
+            <span className="nav-btn-label-short">
+              {t("nav.winningTechniqueShort")}
+            </span>
           </Link>
           <button
             className={`nav-btn ${activeTab === "races" ? "active" : ""}`}
@@ -129,8 +136,7 @@ function Header() {
           >
             {t("nav.hits")}
           </button>
-          <LanguageSwitcher />
-          {THEME_SWITCHING_ENABLED && <ThemeToggle />}
+          {currentLng === "ja" && <RacerSearchBox />}
           <button
             className="nav-btn menu-btn"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -146,6 +152,10 @@ function Header() {
         )}
         {isMenuOpen && (
           <div className="submenu">
+            <div className="submenu-settings-row">
+              <LanguageSwitcher />
+              {THEME_SWITCHING_ENABLED && <ThemeToggle />}
+            </div>
             <button
               className={`submenu-item submenu-item-button ${activeTab === "races" ? "active" : ""}`}
               onClick={() => {
@@ -185,6 +195,15 @@ function Header() {
             >
               {t("nav.pastRaces")}
             </Link>
+            {currentLng === "ja" && (
+              <Link
+                to="/racers"
+                className={`submenu-item ${activeTab === "racers" ? "active" : ""}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                選手一覧
+              </Link>
+            )}
             <Link
               to={localize("/how-to-use")}
               className={`submenu-item ${activeTab === "how-to-use" ? "active" : ""}`}

@@ -42,7 +42,8 @@
 
 - Supabase Storageの非公開バケット`sns-hub-media`に動画・サムネイルをアップロードする（パス例: `{content_group_id}/youtube-ja.mp4`）
 - `sns_drafts.video_storage_path`/`cover_image_path`には**生のStorageパスをそのまま保存する**（署名付きURLを保存しない、`.claude/rules/sns-content-generation.md`参照）
-- `sns_drafts`テーブルにINSERTする。列: `content_group_id`（claimしたネタの`sns_topics.id`）・`format`（ビジュアルテンプレート名のみ）・`template_variant_id`・`language`（'ja'）・`platform`（'youtube'）・`status`（'pending_review'）・`video_storage_path`・`cover_image_path`・`caption_text`・`hashtags`・`background_text`・`source_data`・`risk_flags`・`routine_run_id`
+- `sns_drafts`テーブルにINSERTする。列: `content_group_id`（claimしたネタの`sns_topics.id`）・`format`（ビジュアルテンプレート名のみ）・`template_variant_id`・`language`（'ja'）・`platform`（'youtube'）・`status`（'pending_review'）・`video_storage_path`・`cover_image_path`・`caption_text`・`hashtags`・`background_text`・`source_data`・`risk_flags`・`routine_run_id`・**`title`（必須）**
+- **`title`は空にしない**（2026-09-08、この列がINSERT対象から漏れていたためタイトル未設定のままYouTubeへ自動投稿され、YouTube上で動画タイトルが表示されない不具合が発生した実績あり。`publish-youtube.js`は`title`が空の下書きを投稿前にエラーで弾く）。`caption_text`本文とは別に、40〜60字程度の動画タイトルを`title`列に設定する。既存の投稿タイトルの型を踏襲する: trivia型は「{A}と{B}、{指標}の差は約{倍率}倍【実データ検証】」、venue-ranking/venue-comparison型は「{会場}は{フック}？全国平均と比較【龍神レーダー】」または「{テーマ}、{会場}は全国平均より{pt}高い/低い【龍神レーダー】」、race-insight型は「イン崩れ指数{値}%のレースとは？{会場}{R}をAI実データで解説【龍神レーダー】」
 
 ## 6. claimしたターゲットの完了処理
 

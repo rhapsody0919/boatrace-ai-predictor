@@ -89,22 +89,70 @@ const BET_TYPES = [
   },
 ];
 
-const MODELS = [
-  {
-    icon: "🎯",
-    name: "안정형",
-    desc: "가장 가능성 높은 전개를 따릅니다. 꾸준한 적중을 원할 때.",
-  },
-  {
-    icon: "⚖️",
-    name: "표준형",
-    desc: "두 번째로 가능성 높은 전개에 기반한 균형 잡힌 선택.",
-  },
-  {
-    icon: "🌪️",
-    name: "고배당형",
-    desc: "세 번째 전개로 고배당을 노립니다. 혼전 경주에 적합.",
-  },
+// 実データを使った実例（BOA-250）。英語版EnglishGuide.jsxと同じ実レースを使う
+const EXAMPLE_RACE = {
+  raceId: "2026-09-06-12-11",
+  venue: "스미노에",
+  date: "2026년 9월 6일",
+  raceNo: 11,
+  entries: [
+    {
+      boat: 1,
+      name: "徳増　　秀樹",
+      grade: "A1",
+      winRate: "6.16",
+      localWinRate: "6.59",
+      motor2Rate: "32.2%",
+    },
+    {
+      boat: 2,
+      name: "近江　　翔吾",
+      grade: "A2",
+      winRate: "6.49",
+      localWinRate: "6.24",
+      motor2Rate: "28.2%",
+    },
+    {
+      boat: 3,
+      name: "山本　　修一",
+      grade: "A2",
+      winRate: "5.68",
+      localWinRate: "6.62",
+      motor2Rate: "38.0%",
+    },
+    {
+      boat: 4,
+      name: "佐々木　翔斗",
+      grade: "A2",
+      winRate: "5.30",
+      localWinRate: "5.43",
+      motor2Rate: "33.7%",
+    },
+    {
+      boat: 5,
+      name: "白水　　勝也",
+      grade: "A1",
+      winRate: "6.38",
+      localWinRate: "6.50",
+      motor2Rate: "23.5%",
+    },
+    {
+      boat: 6,
+      name: "間庭　　菜摘",
+      grade: "B1",
+      winRate: "4.67",
+      localWinRate: "4.56",
+      motor2Rate: "27.8%",
+    },
+  ],
+  payout: "¥1,010",
+};
+
+const DATA_POINTS = [
+  { icon: "🏅", name: "급별·승률", desc: "선수의 실력 등급과 통산 승률." },
+  { icon: "⚙️", name: "모터 성능", desc: "배정된 모터의 2연대율." },
+  { icon: "📈", name: "최근 컨디션", desc: "최근 승률이 오르는지 내리는지." },
+  { icon: "⏱️", name: "스타트 안정도", desc: "스타트 타이밍의 일관성." },
 ];
 
 export default function KoGuide() {
@@ -164,8 +212,8 @@ export default function KoGuide() {
           <p className="eg-note">
             핵심 차이는 <strong>1코스 승률</strong>입니다. 일본은 약 50%로
             한국(약 34%)보다 훨씬 높아, 예측의 출발점이 「1코스가 지키느냐,
-            무너지느냐」가 됩니다. 용신 레이더의 「1코스 이변 지수」는 바로 이것을
-            경주마다 수치화한 것입니다.
+            무너지느냐」가 됩니다. 용신 레이더의 「1코스 이변 지수」는 바로
+            이것을 경주마다 수치화한 것입니다.
           </p>
         </section>
 
@@ -205,8 +253,8 @@ export default function KoGuide() {
           <h2>🥇 6가지 승리 전법 (키마리테)</h2>
           <p>
             모든 승리는 「어떻게 이겼는가」로 공식 분류됩니다. 한국 경정과 같은
-            개념이지만 일본어 용어를 알아두면 일본 중계와 용신 레이더 예측을 읽을 수
-            있습니다.
+            개념이지만 일본어 용어를 알아두면 일본 중계와 용신 레이더 예측을
+            읽을 수 있습니다.
           </p>
           <div className="eg-technique-list">
             {TECHNIQUES.map((t) => (
@@ -284,9 +332,9 @@ export default function KoGuide() {
         <section className="eg-section">
           <h2>🤖 용신 레이더 예측 보는 법</h2>
           <p>
-            용신 레이더는 경주당 45개 데이터 — 선수 성적, 모터 성능, 경정장 특성,
-            스타트 타이밍 등 — 를 분석해 모든 추천의 <strong>이유</strong>까지
-            보여줍니다. 완전 무료입니다.
+            용신 레이더는 경주당 45개 데이터 — 선수 성적, 모터 성능, 경정장
+            특성, 스타트 타이밍 등 — 를 분석해 모든 추천의 <strong>이유</strong>
+            까지 보여줍니다. 완전 무료입니다.
           </p>
           <ol className="eg-steps">
             <li>
@@ -295,13 +343,15 @@ export default function KoGuide() {
               마감 시각과 예상 전개가 표시됩니다.
             </li>
             <li>
-              <strong>스타일에 맞는 예측 모델을 선택</strong>합니다:
+              <strong>6척의 객관적 데이터 표</strong>를 확인합니다. 용신
+              레이더는 예측 모델을 고르게 하지 않습니다 — 모두가 같은 데이터를
+              보고 직접 판단합니다:
               <div className="eg-models">
-                {MODELS.map((m) => (
-                  <div key={m.name} className="eg-model">
-                    <span className="eg-model-icon">{m.icon}</span>
-                    <strong>{m.name}</strong>
-                    <p>{m.desc}</p>
+                {DATA_POINTS.map((d) => (
+                  <div key={d.name} className="eg-model">
+                    <span className="eg-model-icon">{d.icon}</span>
+                    <strong>{d.name}</strong>
+                    <p>{d.desc}</p>
                   </div>
                 ))}
               </div>
@@ -319,6 +369,66 @@ export default function KoGuide() {
               근거 (스타트 순위, 모터 성능, 현지 승률)입니다.
             </li>
           </ol>
+        </section>
+
+        {/* Real example (BOA-250): actual past race data */}
+        <section className="eg-section">
+          <h2>📋 실제 사례: 데이터 읽고 투표용지 작성하기</h2>
+          <p>
+            많은 입문 가이드는 가상의 숫자로 설명합니다. 여기서는 실제 경주 —{" "}
+            {EXAMPLE_RACE.date} {EXAMPLE_RACE.venue} {EXAMPLE_RACE.raceNo}R — 의
+            실제 출주표 데이터, 실제 베팅, 실제 배당금을 보여드립니다.
+          </p>
+          <div className="eg-table-wrapper">
+            <table className="eg-table">
+              <thead>
+                <tr>
+                  <th>정번호</th>
+                  <th>선수</th>
+                  <th>급별</th>
+                  <th>승률</th>
+                  <th>현지 승률</th>
+                  <th>모터 2연대율</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EXAMPLE_RACE.entries.map((e) => (
+                  <tr key={e.boat}>
+                    <td>
+                      <strong>{e.boat}</strong>
+                    </td>
+                    <td translate="no">{e.name}</td>
+                    <td>{e.grade}</td>
+                    <td>{e.winRate}</td>
+                    <td>{e.localWinRate}</td>
+                    <td>{e.motor2Rate}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <strong>해석:</strong> 1호정은 A1급이며 이 경정장 현지 승률이 가장
+            높습니다(6.59) — 1코스에서 인빠지기로 이기는 전형적인 유력
+            후보입니다. 3호정은 A2급이지만 모터 2연대율(38.0%)이 다른 정보다
+            눈에 띄게 높습니다 — 급별만 보지 않고 모터 성능까지 고려해 2착
+            후보로 꼽는 흔한 이유입니다.
+          </p>
+          <p>
+            <strong>베팅:</strong> 3연단(트리펙타)으로{" "}
+            <strong>1 → 3 → 4</strong> 순서를 선택 — 투표용지의 해당 경주 칸에서
+            1착란에 「1」, 2착란에 「3」, 3착란에 「4」를 표시합니다.
+          </p>
+          <p className="eg-note">
+            <strong>결과:</strong> 1호정이 인빠지기로 우승, 3호정이 2착, 4호정이
+            3착 — 예상과 정확히 일치했습니다. 배당금은 100엔당{" "}
+            <strong>{EXAMPLE_RACE.payout}</strong>입니다.
+          </p>
+          <p>
+            <Link to={`/ko/race/${EXAMPLE_RACE.raceId}`}>
+              → 이 경주에 대한 용신 레이더의 전체 데이터 분석 보기
+            </Link>
+          </p>
         </section>
 
         {/* Venue guides */}
@@ -350,8 +460,8 @@ export default function KoGuide() {
               해외 불법 중계·사설 베팅 사이트 이용은 절대 하지 마십시오.
             </li>
             <li>
-              용신 레이더는 <strong>정보와 AI 분석만을 제공</strong>합니다. 베팅을
-              받지 않으며, 베팅을 권유하지 않고, 예측은 결과를 보장하지
+              용신 레이더는 <strong>정보와 AI 분석만을 제공</strong>합니다.
+              베팅을 받지 않으며, 베팅을 권유하지 않고, 예측은 결과를 보장하지
               않습니다.
             </li>
             <li>

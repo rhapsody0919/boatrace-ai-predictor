@@ -1,0 +1,100 @@
+name: Campaign Pipeline
+
+# 企画型SNS投稿パイプライン（docs/design/sns-hub-campaign-pipeline/）の
+# 対象レース検出・結果書き戻し・1日のまとめを自動実行する。
+# 下書き（X画像・ブログ記事）の生成自体はここでは行わない。既存の
+# チャネル別生成Routine（sns-hub、docs/operation/sns-pipeline-*.md）が
+# ここで作成されたネタ（sns_topics）を自律的に拾って生成する。
+# 実際の投稿承認は常に人間がsns-hub管理画面で行う（自動化しない）。
+
+on:
+  schedule:
+    # 通常サイクル: JST 6:00-23:59、30分おき
+    # （対象レース検出＝レース前、結果書き戻し＝レース後の両方をこの周期で回す。
+    # レース前後どちらの処理も、対象が無ければ即終了する設計のため
+    # 1つの周期にまとめて問題ない）
+    - cron: '*/30 21-23,0-14 * * *'
+    # 1日のまとめ: JST 21:45（ナイター終了・通常サイクルの21:30実行の15分後）に1回。
+    # 通常サイクルの`*/30`と同時刻にならない分を選んでいる（2026-09-09、天才
+    # エンジニアレビューで指摘: 元は21:30ちょうどで、通常サイクルの30分周期と
+    # 同時刻が重なりワークフロー実行が2本同時に走っていた。実害は無いが意図しない
+    # 重複だったため時刻をずらした。15分のバッファはその日最後のPhase B実行の
+    # 結果書き戻しが確実に終わってから集計するための余裕でもある）
+    - cron: '45 12 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: campaign-pipeline
+  cancel-in-progress: false  # DB書き込み途中でのキャンセルによる不整合を避ける
+
+permissions:
+  contents: read  # Supabase書き込みのみ、git pushなし
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  campaign-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 対象レース検出・買い目生成（Phase A）
+        if: github.event.schedule != '45 12 * * *'
+        run: node scripts/daily/campaign-detect-and-generate.js
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: 結果確定後の書き戻し（Phase B）
+        if: github.event.schedule != '45 12 * * *'
+        run: node scripts/daily/campaign-backfill-results.js
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: 1日のまとめ
+        if: github.event.schedule == '45 12 * * *' || github.event_name == 'workflow_dispatch'
+        run: node scripts/daily/campaign-daily-summary.js
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      # 実際の金銭シミュレーションを扱う企画が無人で7日間動くため、失敗を
+      # 検知できないと誰にも気づかれないまま滞留する（2026-09-09、天才エンジニア
+      # レビューで指摘。content-ops-nightly-check.ymlと同じSLACK_WEBHOOK_URL経路を使う）
+      - name: Notify Slack on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"#c0392b\",
+                \"blocks\": [
+                  {
+                    \"type\": \"section\",
+                    \"text\": {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \":rotating_light: *企画型SNSパイプラインの自動実行が失敗しました*\nワークフロー: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|実行ログを見る>\n次回のcronでも失敗が続く場合は手動実行して原因を確認してください。\"
+                    }
+                  }
+                ]
+              }]
+            }"

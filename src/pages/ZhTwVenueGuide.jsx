@@ -65,6 +65,8 @@ const copy = {
   languageBarrierLinkLabel: "查看BOATRACE官方英語指南 →",
   cashlessHeading: "💳 這裡的付款方式",
   cashlessLinkLabel: "查看官方付款方式說明 →",
+  languageSupportHeading: "🗣️ 本場館的現場語言支援",
+  languageSupportLinkLabel: "查看資料來源 →",
   bettingTip: "💡 投注小技巧",
   beforeYouBet: "⚖️ 投注前須知",
   disclaimer: (
