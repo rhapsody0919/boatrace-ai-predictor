@@ -1,6 +1,6 @@
 # 選手検索フィルタ拡張・選手一覧ページ タスク分解
 
-`spec.md`・`screens.md`・`plan.md`（[ADR-0043](../../adr/0043-racer-grade-win-rate-cache-strategy.md)）に基づく実装タスク。依存順に並べる。各タスクは目安として1コミット〜1PR相当。
+`spec.md`・`screens.md`・`plan.md`（[ADR-0052](../../adr/0052-racer-grade-win-rate-cache-strategy.md)）に基づく実装タスク。依存順に並べる。各タスクは目安として1コミット〜1PR相当。
 
 ## データ層
 

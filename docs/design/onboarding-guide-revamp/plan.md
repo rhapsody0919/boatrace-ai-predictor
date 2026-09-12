@@ -51,7 +51,7 @@ const isFirstVisit = useFirstVisit();
 - Props: `videoSrc`, `posterSrc`
 - 実装は素の`<video controls preload="none" poster={posterSrc}><source src={videoSrc} type="video/mp4" /></video>`のラッパー。`preload="none"`により自動読み込みを防ぎ、`poster`でサムネイル表示、ネイティブの再生ボタンでクリック再生する。カスタムの再生ボタン・再生状態管理は持たない（KISS。ブラウザ標準機能で要件V-2をそのまま満たせる）
 - `HowToUse.jsx`（A-5）と`FirstVisitGuideCard.jsx`（B-1）の両方から同じpropsで呼び出す共通コンポーネント（`.claude/rules/component-reuse.md`の「同じUIパターンが2箇所以上で使われる場合、必ず共通コンポーネントに切り出す」に該当）
-- 動画ファイルの配置先は「動画配信方式」ADR（`docs/adr/0023-onboarding-video-hosting.md`）を参照
+- 動画ファイルの配置先は「動画配信方式」ADR（`docs/adr/0049-onboarding-video-hosting.md`）を参照
 
 ### 5. `TermHintButton.jsx`（新規、`src/components/race/`）
 
@@ -87,7 +87,7 @@ App.jsx マウント
 
 ## 技術判断（ADR）
 
-動画ファイルの配信方式について複数案を比較検討したため、[docs/adr/0023-onboarding-video-hosting.md](../../adr/0023-onboarding-video-hosting.md)を参照。
+動画ファイルの配信方式について複数案を比較検討したため、[docs/adr/0049-onboarding-video-hosting.md](../../adr/0049-onboarding-video-hosting.md)を参照。
 
 ## 実装順序の提案
 

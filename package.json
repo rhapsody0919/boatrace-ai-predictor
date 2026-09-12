@@ -10,6 +10,7 @@
     "check:contrast": "node scripts/maintenance/check-token-contrast.js",
     "check:css-collisions": "node scripts/maintenance/check-css-class-collisions.js",
     "verify:sitemap": "node scripts/maintenance/verify-sitemap-coverage.js",
+    "verify:adr-numbers": "node scripts/maintenance/verify-adr-numbers.js",
     "verify:content-index": "node scripts/maintenance/verify-content-index-coverage.js",
     "check:session-start": "node scripts/maintenance/session-start-check.js",
     "check:deprecated-terms": "node scripts/maintenance/check-deprecated-terms.js",
