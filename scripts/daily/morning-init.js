@@ -16,6 +16,7 @@ import {
   fetchAll,
 } from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
+import { getTodayVenues } from "../scrape-to-json.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,6 +71,56 @@ async function ensureUnifiedPredictions(date) {
   }
 }
 
+// 2026-09-12判明: 朝一番のスクレイプ実行時点でboatrace.jpトップページが本日分に
+// 完全ロールオーバーしておらず、新節初日の会場（前日終了の会場と入れ替わりで
+// 掲載されるタイミングのズレ）が取りこぼされることがある。「当日のracesが1件でも
+// あれば初期化済み」という日単位の判定だけではこの部分的な取りこぼしを検知できず、
+// 徳山ほか3会場が終日「開催なし」表示のまま残った実例あり。ensureUnifiedPredictions
+// と同じ発想で、現在ページに掲載されている開催会場集合とracesテーブルの会場集合の
+// 差分をチェックし、あれば該当会場だけ追加スクレイプする。
+async function ensureAllVenuesScraped(date) {
+  const [currentVenues, existingRows] = await Promise.all([
+    getTodayVenues(),
+    supabase
+      .from("races")
+      .select("venue_code")
+      .gte("race_id", date)
+      .lt("race_id", `${date}~`),
+  ]);
+
+  if (currentVenues.length === 0) {
+    return;
+  }
+
+  const existingVenueCodes = new Set(
+    (existingRows.data || []).map((r) => r.venue_code),
+  );
+  const missingVenues = currentVenues.filter(
+    (v) => !existingVenueCodes.has(v),
+  );
+
+  if (missingVenues.length === 0) {
+    return;
+  }
+
+  console.log(
+    `\n⚠️ 会場の取得漏れを検出: [${missingVenues.join(", ")}] → 追加スクレイプします`,
+  );
+  try {
+    execSync(
+      `node ${path.join(ROOT, "scripts", "scrape-to-json.js")} --venues=${missingVenues.join(",")}`,
+      { stdio: "inherit", env: { ...process.env } },
+    );
+    execSync(
+      `node ${path.join(ROOT, "scripts", "daily", "generate-predictions.js")}`,
+      { stdio: "inherit", env: { ...process.env } },
+    );
+    console.log("✅ 取得漏れ会場の追加スクレイプ完了");
+  } catch (e) {
+    console.warn("⚠️ 追加スクレイプで一部エラー（処理は継続）:", e.message);
+  }
+}
+
 async function main() {
   console.log("🌅 朝の初期化チェック");
   console.log(`⏰ ${new Date().toISOString()}`);
@@ -95,6 +146,12 @@ async function main() {
   }
 
   if ((count || 0) > 0) {
+    // 過去日付を明示指定した再実行では、boatrace.jpのトップページはもう当日分を
+    // 表示していないため、この取得漏れチェックは「今日」の対象日でのみ行う
+    if (date === getTodayDateJST()) {
+      await ensureAllVenuesScraped(date);
+    }
+
     // generate-predictions.js がDB更新後にコード変更されていた場合のみ予測を再生成する
     let shouldRegen = false;
     try {

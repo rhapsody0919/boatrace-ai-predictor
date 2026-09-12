@@ -334,7 +334,7 @@ async function getRacelist(date, placeCd, raceNo) {
 // dateUtils.jsのgetTodayDateJST()を使用
 
 // 本日開催中のレース場リストを取得
-async function getTodayVenues() {
+export async function getTodayVenues() {
   try {
     const url = 'https://www.boatrace.jp/owpc/pc/race/index';
 
@@ -386,8 +386,12 @@ async function main() {
     const date = getTodayDateJST();
     console.log(`Date: ${date}`);
 
-    // 本日開催中のレース場リストを取得
-    const todayVenues = await getTodayVenues();
+    // --venues=8,9,10,18 が指定されていれば、その会場のみをスクレイプ対象にする
+    // （新節初日の会場がトップページのロールオーバー境界で取り漏れた場合の追加取得用）
+    const venuesArg = process.argv.find(arg => arg.startsWith("--venues="));
+    const todayVenues = venuesArg
+      ? venuesArg.replace("--venues=", "").split(",").map(v => parseInt(v.trim(), 10)).filter(v => !isNaN(v))
+      : await getTodayVenues();
 
     if (todayVenues.length === 0) {
       console.log('No venues found for today');
@@ -488,5 +492,7 @@ async function main() {
   }
 }
 
-// スクリプト実行
-main();
+// スクリプト実行（他スクリプトから getTodayVenues のみ import された場合は実行しない）
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}
