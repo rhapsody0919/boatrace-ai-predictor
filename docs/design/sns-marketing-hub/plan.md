@@ -97,10 +97,10 @@ archived ──(7日経過)──▶ video_tier: original → compressed
 
 ## ADR一覧
 
-- [ADR 0019: SNSマーケティングハブの運用データ保存先](../../adr/0019-sns-hub-operational-data-storage.md)（Supabase採用、git管理は却下）
-- [ADR 0020: 承認操作から自動処理への引き継ぎ方式](../../adr/0020-sns-hub-approval-automation-handoff.md)（RoutineのAPIトリガー採用）
-- [ADR 0021: SNSマーケティングハブのデータアクセス方式](../../adr/0021-sns-hub-data-access-pattern.md)（Vercel Functions+service role key採用、anon key直接アクセスは却下）
-- [ADR 0022: 動画バイナリの長期保持戦略](../../adr/0022-sns-hub-video-retention-strategy.md)（圧縮保持を採用、完全削除・無期限オリジナル保持は却下）
+- [ADR 0044: SNSマーケティングハブの運用データ保存先](../../adr/0044-sns-hub-operational-data-storage.md)（Supabase採用、git管理は却下）
+- [ADR 0045: 承認操作から自動処理への引き継ぎ方式](../../adr/0045-sns-hub-approval-automation-handoff.md)（RoutineのAPIトリガー採用）
+- [ADR 0046: SNSマーケティングハブのデータアクセス方式](../../adr/0046-sns-hub-data-access-pattern.md)（Vercel Functions+service role key採用、anon key直接アクセスは却下）
+- [ADR 0047: 動画バイナリの長期保持戦略](../../adr/0047-sns-hub-video-retention-strategy.md)（圧縮保持を採用、完全削除・無期限オリジナル保持は却下）
 
 ## `/step3`への未確定事項の持ち越し
 

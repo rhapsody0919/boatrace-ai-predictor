@@ -1,6 +1,6 @@
 # 選手検索フィルタ拡張・選手一覧ページ システム設計
 
-`spec.md`（FR1〜FR7）・`screens.md`を実現するためのデータ設計・コンポーネント構成・データフロー。技術選定の比較は[ADR-0043](../../adr/0043-racer-grade-win-rate-cache-strategy.md)参照。
+`spec.md`（FR1〜FR7）・`screens.md`を実現するためのデータ設計・コンポーネント構成・データフロー。技術選定の比較は[ADR-0052](../../adr/0052-racer-grade-win-rate-cache-strategy.md)参照。
 
 ## データ設計
 

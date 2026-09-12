@@ -40,5 +40,5 @@ RaceDetail.jsx
 
 ## 主要な技術判断（ADR）
 
-- [ADR-0023: 分析ツールコンポーネントのレース詳細埋め込み方式](../../adr/0023-embedded-analysis-component-mode.md) — `embedded`propによる条件分岐方式を採用。コンテナ/プレゼンテーション分離、コンポーネント複製は却下
-- [ADR-0024: 会場統計データ取得フックの分離](../../adr/0024-venue-tendency-stats-hook-separation.md) — `useVenueTendencyStats`を独立フックとして新設。`useRaceAnalysisData`拡張、コンポーネント内直接取得は却下
+- [ADR-0048: 分析ツールコンポーネントのレース詳細埋め込み方式](../../adr/0048-embedded-analysis-component-mode.md) — `embedded`propによる条件分岐方式を採用。コンテナ/プレゼンテーション分離、コンポーネント複製は却下
+- [ADR-0050: 会場統計データ取得フックの分離](../../adr/0050-venue-tendency-stats-hook-separation.md) — `useVenueTendencyStats`を独立フックとして新設。`useRaceAnalysisData`拡張、コンポーネント内直接取得は却下
