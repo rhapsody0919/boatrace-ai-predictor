@@ -32,6 +32,27 @@
   color: var(--color-error-text);
 }
 
+.racer-motor-status-note {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-3);
+  padding: var(--spacing-2);
+  background: var(--surface-page);
+  border-left: 3px solid var(--brand-accent-primary);
+  border-radius: var(--radius-sm);
+}
+
+.racer-motor-status-chart-caption {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-2);
+}
+
+.racer-motor-status-empty {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
 .racer-motor-status-link {
   display: inline-block;
   margin-top: var(--spacing-3);
