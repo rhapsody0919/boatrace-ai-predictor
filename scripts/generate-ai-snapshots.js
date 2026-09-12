@@ -8,8 +8,9 @@
  *   i18n JSONから直接HTMLテンプレートとして生成する（ライブAPI非依存、ビルドの決定性を保つ）
  */
 import { chromium } from "playwright";
-import { spawn } from "node:child_process";
+import { createServer } from "node:http";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { blogPosts } from "../src/data/blogPosts.js";
@@ -19,6 +20,23 @@ const ROOT = path.join(__dirname, "..");
 const DIST_DIR = path.join(ROOT, "dist");
 const SNAPSHOT_DIR = path.join(DIST_DIR, "ai-snapshots");
 const CONCURRENCY = 4;
+
+const MIME_TYPES = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".webmanifest": "application/manifest+json",
+};
 
 function escapeHtml(str) {
   return String(str)
@@ -46,44 +64,50 @@ function dedupeDefaultTitle(html) {
   return result;
 }
 
-// 固定ポートだと、同一マシンで複数のビルド（別セッション・別worktree等）が
-// 並行実行された際に衝突する（このリポジトリで実際に発生した事故パターン、
-// docs/design/ai-crawler-snapshot参照）。--strictPortを付けずvite自身に
-// 空きポートを選ばせ、実際に採用されたポートをstdoutから読み取る
-function startPreviewServer(timeoutMs = 20000) {
+// 当初はvite previewを子プロセス（npx経由）で起動していたが、Vercelの
+// ビルドサンドボックス環境では起動が20秒のタイムアウト内に完了せず、
+// npm run build全体を失敗させ本番デプロイを10時間以上止めた実績がある
+// （2026-09-11〜09-12インシデント、詳細はPR#624参照）。npx解決・子プロセス
+// spawn・stdoutの正規表現マッチという複数の不確実要素を排除するため、
+// 同一プロセス内で完結する最小限の静的サーバーに置き換えた。
+// SPAのクライアントサイドルーティングに対応するため、存在しないパスは
+// index.htmlにフォールバックする（history APIルーティングと同じ挙動）。
+function startStaticServer() {
   return new Promise((resolve, reject) => {
-    const proc = spawn("npx", ["vite", "preview", "--port", "0"], {
-      cwd: ROOT,
-      stdio: "pipe",
+    const server = createServer((req, res) => {
+      (async () => {
+        try {
+          const urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
+          let filePath = path.join(DIST_DIR, urlPath);
+
+          let fileExists = false;
+          try {
+            fileExists = (await stat(filePath)).isFile();
+          } catch {
+            fileExists = false;
+          }
+
+          if (!fileExists) {
+            filePath = path.join(DIST_DIR, "index.html");
+          }
+
+          const content = await readFile(filePath);
+          const ext = path.extname(filePath);
+          res.writeHead(200, {
+            "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+          });
+          res.end(content);
+        } catch (err) {
+          res.writeHead(500);
+          res.end(String(err));
+        }
+      })();
     });
 
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      proc.kill();
-      reject(
-        new Error(
-          `ローカルプレビューサーバーが${timeoutMs}ms以内に起動しませんでした`,
-        ),
-      );
-    }, timeoutMs);
-
-    const onData = (chunk) => {
-      const match = chunk.toString().match(/Local:\s+https?:\/\/[^:]+:(\d+)/);
-      if (match && !settled) {
-        settled = true;
-        clearTimeout(timer);
-        proc.stdout.off("data", onData);
-        resolve({ proc, baseUrl: `http://localhost:${match[1]}` });
-      }
-    };
-    proc.stdout.on("data", onData);
-    proc.on("error", (err) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      reject(err);
+    server.on("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      resolve({ server, baseUrl: `http://127.0.0.1:${address.port}` });
     });
   });
 }
@@ -200,14 +224,13 @@ async function main() {
 
   generateWinningTechniqueSnapshot();
 
-  // ブログ記事スナップショット（Playwright依存）はVercelのビルド環境で
-  // vite previewのローカルサーバーがタイムアウトし本番デプロイ自体を止めた実績がある
-  // （2026-09-11〜09-12、PR#468マージ後10時間以上デプロイ失敗が継続）。
-  // ここで失敗してもビルド全体は成功させ、/winning-technique分だけは配信を継続する。
-  let previewProc;
+  // ブログ記事スナップショット生成が万一失敗しても、ビルド全体は成功させ
+  // /winning-technique分だけは配信を継続する（2026-09-11〜09-12インシデントの
+  // 再発防止、詳細はPR#624参照）。
+  let server;
   try {
-    const started = await startPreviewServer();
-    previewProc = started.proc;
+    const started = await startStaticServer();
+    server = started.server;
     const baseUrl = started.baseUrl;
     let browser;
     try {
@@ -227,7 +250,7 @@ async function main() {
       err.message,
     );
   } finally {
-    if (previewProc) previewProc.kill();
+    if (server) server.close();
   }
 
   console.log("スナップショット生成が完了しました。");
