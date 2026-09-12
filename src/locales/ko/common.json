@@ -447,7 +447,9 @@
     "rowExSt": "전시 ST",
     "rowCourseRate": "진입 코스 승률",
     "loading": "분석 데이터 로딩 중…",
-    "motorResetNote": "교체 직후"
+    "motorResetNote": "교체 직후",
+    "motorBadgeUp": "기력↑",
+    "motorBadgeDown": "기력↓"
   },
   "venueTendency": {
     "title": "이 경기장의 코스별 경향",

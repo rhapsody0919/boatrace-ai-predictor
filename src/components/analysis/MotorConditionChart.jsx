@@ -5,7 +5,7 @@
  * 調子いいか」を直接示すことで、賭ける判断にそのまま使えるようにする。
  * 気になるモーターは節ごとの推移グラフにドリルダウンできる。
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
@@ -17,6 +17,7 @@ import "./MotorConditionChart.css";
 function MotorConditionChart({
   initialVenueCode = null,
   initialRaceId = null,
+  initialMotorNumber = null,
   embedded = false,
 }) {
   const { t } = useTranslation();
@@ -38,10 +39,16 @@ function MotorConditionChart({
   const [trendData, setTrendData] = useState(null);
 
   const [powerIndex, setPowerIndex] = useState(null);
+  const pendingInitialMotorNumber = useRef(initialMotorNumber);
 
   // レース選択時: 枠番別モーター調子を取得（機力指数はvenue確定後に別途取得）
   useEffect(() => {
     if (selectedRace === null) return;
+    // StrictMode（開発時）の2回実行対策: 使い捨ての1回目でpendingを消費しきって
+    // しまわないよう、cleanup側で未適用（cancelled）なら元に戻す
+    const pendingSnapshot = pendingInitialMotorNumber.current;
+    let cancelled = false;
+    let applied = false;
     const loadBreakdown = async () => {
       try {
         setLoading(true);
@@ -51,15 +58,31 @@ function MotorConditionChart({
           selectedRace,
           selectedVenue,
         );
+        if (cancelled) return;
         setBreakdown(data);
+        // 機力バッジ等からのディープリンク（?motor=）で指定されたモーターが
+        // 今回のレースに実在すれば、そのままドリルダウン画面を開く
+        const pendingExists =
+          pendingSnapshot !== null &&
+          data.some((r) => r.motor_number === pendingSnapshot);
+        if (pendingExists) {
+          setDrillDownMotor(pendingSnapshot);
+          pendingInitialMotorNumber.current = null;
+        }
+        applied = true;
       } catch (err) {
+        if (cancelled) return;
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load race motor breakdown:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     loadBreakdown();
+    return () => {
+      cancelled = true;
+      if (!applied) pendingInitialMotorNumber.current = pendingSnapshot;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRace, selectedVenue]);
 

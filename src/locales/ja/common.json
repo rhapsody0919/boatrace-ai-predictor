@@ -448,7 +448,9 @@
     "rowExSt": "展示ST",
     "rowCourseRate": "進入コース勝率",
     "loading": "分析データを読み込み中…",
-    "motorResetNote": "交換直後"
+    "motorResetNote": "交換直後",
+    "motorBadgeUp": "機力↑",
+    "motorBadgeDown": "機力↓"
   },
   "venueTendency": {
     "title": "この会場の枠番別傾向",

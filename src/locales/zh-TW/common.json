@@ -447,7 +447,9 @@
     "rowExSt": "展示ST",
     "rowCourseRate": "進入航道勝率",
     "loading": "數據載入中…",
-    "motorResetNote": "剛更換"
+    "motorResetNote": "剛更換",
+    "motorBadgeUp": "機力↑",
+    "motorBadgeDown": "機力↓"
   },
   "venueTendency": {
     "title": "本場館各航道傾向",

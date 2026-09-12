@@ -449,7 +449,9 @@
     "rowExSt": "Exhibition ST",
     "rowCourseRate": "Entry course win rate",
     "loading": "Loading analytics…",
-    "motorResetNote": "New motors"
+    "motorResetNote": "New motors",
+    "motorBadgeUp": "Motor ↑",
+    "motorBadgeDown": "Motor ↓"
   },
   "venueTendency": {
     "title": "Venue tendency by lane",

@@ -10,6 +10,7 @@
  * ロード中の未取得セルはソース別pendingに基づきスケルトン表示する
  * （プログレッシブ表示: 取得できた行から順次値が入る）
  */
+import { Link } from "react-router-dom";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 
 export const TECHNIQUE_KEY_BY_NAME = Object.fromEntries(
@@ -92,7 +93,13 @@ function bestOf(candidates, dir = "max") {
  * @param {Object} analysis - useRaceAnalysisDataの戻り値
  * @param {Object} pending - ソース別ロード中フラグ（useRaceAnalysisDataのpending）
  */
-export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
+export function buildIndicatorRows({
+  t,
+  players,
+  analysis,
+  pending = {},
+  motorDeepLink = null,
+}) {
   const {
     motor,
     racerForm,
@@ -242,7 +249,24 @@ export function buildIndicatorRows({ t, players, analysis, pending = {} }) {
         const values = cand.motor.map((c) => c.value).filter((v) => v !== null);
         const allZero = values.length > 0 && values.every((v) => v === 0);
         if (allZero) return "—";
-        return <span className="drt-value">{rate.toFixed(1)}%</span>;
+        const powerIndex = toNumber(row?.power_index);
+        return (
+          <span className="drt-value">
+            {rate.toFixed(1)}%
+            {motorDeepLink && powerIndex !== null && powerIndex !== 0 && (
+              <Link
+                to={motorDeepLink(row.motor_number)}
+                className={`drt-motor-badge ${
+                  powerIndex > 0 ? "drt-motor-badge-up" : "drt-motor-badge-down"
+                }`}
+              >
+                {powerIndex > 0
+                  ? t("dataTable.motorBadgeUp")
+                  : t("dataTable.motorBadgeDown")}
+              </Link>
+            )}
+          </span>
+        );
       },
     },
     {
