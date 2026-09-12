@@ -15,7 +15,11 @@ import {
   isSupabaseEnabled,
   fetchAll,
 } from "../lib/supabaseClient.js";
-import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
+import {
+  getTodayDateJST,
+  parseDateArg,
+  getJSTNow,
+} from "../lib/dateUtils.js";
 import { getTodayVenues } from "../scrape-to-json.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -73,14 +77,16 @@ async function ensureUnifiedPredictions(date) {
 
 // 2026-09-12判明: 朝一番のスクレイプ実行時点でboatrace.jpトップページが本日分に
 // 完全ロールオーバーしておらず、新節初日の会場（前日終了の会場と入れ替わりで
-// 掲載されるタイミングのズレ）が取りこぼされることがある。「当日のracesが1件でも
-// あれば初期化済み」という日単位の判定だけではこの部分的な取りこぼしを検知できず、
-// 徳山ほか3会場が終日「開催なし」表示のまま残った実例あり。ensureUnifiedPredictions
-// と同じ発想で、現在ページに掲載されている開催会場集合とracesテーブルの会場集合の
-// 差分をチェックし、あれば該当会場だけ追加スクレイプする。
+// 掲載されるタイミングのズレ）が取りこぼされることがある。根本原因は
+// getTodayVenues() 側で hd=（対象日）を明示指定する形に修正済みだが、
+// 万が一の取りこぼしに備えた保険として、現在ページに掲載されている開催会場集合と
+// racesテーブルの会場集合の差分をチェックし、あれば該当会場だけ追加スクレイプする。
+// ロールオーバーの曖昧さが起こりうるのは深夜〜早朝に限られるため、cronが1日中
+// 呼び出す中でも JST 9時までに限定し、無駄な外部サイトアクセスを避ける。
+// 戻り値は実際に追加スクレイプを行ったか（呼び出し元がDeploy Hookを打つかの判定に使う）。
 async function ensureAllVenuesScraped(date) {
   const [currentVenues, existingRows] = await Promise.all([
-    getTodayVenues(),
+    getTodayVenues(date),
     supabase
       .from("races")
       .select("venue_code")
@@ -89,7 +95,15 @@ async function ensureAllVenuesScraped(date) {
   ]);
 
   if (currentVenues.length === 0) {
-    return;
+    return false;
+  }
+
+  if (existingRows.error) {
+    console.error(
+      "❌ races テーブル確認エラー（会場取得漏れチェックをスキップ）:",
+      existingRows.error.message,
+    );
+    return false;
   }
 
   const existingVenueCodes = new Set(
@@ -100,7 +114,7 @@ async function ensureAllVenuesScraped(date) {
   );
 
   if (missingVenues.length === 0) {
-    return;
+    return false;
   }
 
   console.log(
@@ -116,8 +130,24 @@ async function ensureAllVenuesScraped(date) {
       { stdio: "inherit", env: { ...process.env } },
     );
     console.log("✅ 取得漏れ会場の追加スクレイプ完了");
+    return true;
   } catch (e) {
     console.warn("⚠️ 追加スクレイプで一部エラー（処理は継続）:", e.message);
+    return false;
+  }
+}
+
+// Vercel Deploy Hook をトリガー（フロントエンドの CDN キャッシュをリセット）
+async function triggerDeployHook() {
+  const deployHook = process.env.VERCEL_DEPLOY_HOOK;
+  if (!deployHook) {
+    return;
+  }
+  try {
+    await fetch(deployHook, { method: "POST" });
+    console.log("🚀 Vercel Deploy Hook トリガー済み");
+  } catch (e) {
+    console.warn("⚠️ Vercel Deploy Hook 失敗:", e.message);
   }
 }
 
@@ -147,9 +177,15 @@ async function main() {
 
   if ((count || 0) > 0) {
     // 過去日付を明示指定した再実行では、boatrace.jpのトップページはもう当日分を
-    // 表示していないため、この取得漏れチェックは「今日」の対象日でのみ行う
-    if (date === getTodayDateJST()) {
-      await ensureAllVenuesScraped(date);
+    // 表示していないため、この取得漏れチェックは「今日」かつロールオーバーが
+    // 起こりうる早朝（JST 9時まで）でのみ行う
+    if (date === getTodayDateJST() && getJSTNow().getUTCHours() < 9) {
+      const scraped = await ensureAllVenuesScraped(date);
+      if (scraped) {
+        // 取得漏れ会場をDBに反映しても、CDNキャッシュが更新されなければ
+        // フロント側は「開催なし」表示のまま残ってしまう（今回の不具合と同じ症状）
+        await triggerDeployHook();
+      }
     }
 
     // generate-predictions.js がDB更新後にコード変更されていた場合のみ予測を再生成する
@@ -262,16 +298,7 @@ async function main() {
 
   console.log("\n✅ 朝の初期化完了");
 
-  // Vercel Deploy Hook をトリガー（フロントエンドの CDN キャッシュをリセット）
-  const deployHook = process.env.VERCEL_DEPLOY_HOOK;
-  if (deployHook) {
-    try {
-      await fetch(deployHook, { method: "POST" });
-      console.log("🚀 Vercel Deploy Hook トリガー済み");
-    } catch (e) {
-      console.warn("⚠️ Vercel Deploy Hook 失敗:", e.message);
-    }
-  }
+  await triggerDeployHook();
 }
 
 main().catch((error) => {
