@@ -1,5 +1,6 @@
 export { default as RacerProfileHeader } from "./RacerProfileHeader";
 export { default as RacerProfileCard } from "./RacerProfileCard";
+export { default as RacerMotorStatusCard } from "./RacerMotorStatusCard";
 export { default as RacerPerformanceStats } from "./RacerPerformanceStats";
 export { default as RacerNewsList } from "./RacerNewsList";
 export { default as BranchFilterSelect } from "./BranchFilterSelect";

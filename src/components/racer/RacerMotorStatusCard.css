@@ -1,0 +1,52 @@
+.racer-motor-status-card {
+  margin: var(--spacing-4) 0;
+  padding: var(--spacing-4);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+
+.racer-motor-status-title {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+}
+
+.racer-motor-status-subtitle {
+  margin: 0 0 var(--spacing-2);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.racer-motor-status-index {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--spacing-3);
+}
+
+.racer-motor-status-index.power-index-good {
+  color: var(--color-success-text);
+}
+
+.racer-motor-status-index.power-index-bad {
+  color: var(--color-error-text);
+}
+
+.racer-motor-status-link {
+  display: inline-block;
+  margin-top: var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--brand-accent-primary);
+  text-decoration: none;
+}
+
+.racer-motor-status-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .racer-motor-status-card {
+    padding: var(--spacing-2);
+    margin: var(--spacing-2) 0;
+  }
+}

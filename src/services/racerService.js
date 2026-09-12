@@ -65,6 +65,51 @@ export async function getRacerPageData(racerId) {
 }
 
 /**
+ * 選手の直近出走から今節（開催中の会場）のモーター番号を特定し、
+ * そのモーターの機力指数・節ごとの推移を取得する（BOA-265）
+ * race_idは「YYYY-MM-DD-会場コード-レース番号」形式のため、会場コードは
+ * 追加クエリ無しでrace_idから直接取り出せる
+ * @param {number|string} racerId
+ * @returns {Promise<{ raceId: string, venueCode: number, motorNumber: number, powerIndex: object, trend: object } | null>}
+ */
+export async function getRacerCurrentMotorStatus(racerId) {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("race_entries")
+    .select("race_id, motor_number")
+    .eq("racer_id", racerId)
+    .order("race_id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("直近出走取得エラー:", error.message);
+    return null;
+  }
+  if (!data || data.motor_number === null || data.motor_number === undefined) {
+    return null;
+  }
+
+  const venueCodePart = data.race_id.split("-")[3];
+  const venueCode = parseInt(venueCodePart, 10);
+  if (!Number.isFinite(venueCode)) return null;
+
+  const [powerIndex, trend] = await Promise.all([
+    supabaseDataService.getMotorPowerIndex(venueCode, data.motor_number),
+    supabaseDataService.getMotorConditionTrend(venueCode, data.motor_number),
+  ]);
+
+  return {
+    raceId: data.race_id,
+    venueCode,
+    motorNumber: data.motor_number,
+    powerIndex,
+    trend,
+  };
+}
+
+/**
  * 選手個別ページの成績・調子セクション用データを取得する
  * @param {number|string} racerId
  * @returns {Promise<{ formSummary: object|null, formTrend: object|null, techniqueProfile: object|null, aggregatedStats: object|null, exhibitionTimeTrend: object|null, boatReturnRate: object[], venueStats: object[] }>}
