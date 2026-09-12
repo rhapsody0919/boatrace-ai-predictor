@@ -100,7 +100,9 @@ boatrace-ai-predictor/
 - 3回以上同じ問題で失敗したら、一度立ち止まって別のアプローチを提案する
 
 ### Linear MCPが認証切れの場合は`scripts/linear-cli.js`にフォールバック
-Linear MCP（`mcp__linear__*`）はユーザーのブラウザ経由のOAuth認証であり、ターミナル経由のClaude Codeセッションからは再認証フローを開始できない（`.env.local`の`LINEAR_API_KEY`とは別物で、Claude側からは直せない）。MCP呼び出しが認証エラーになった場合、都度ユーザーに確認を求めず、`LINEAR_API_KEY`（`.env.local`に設定済み）を使う`scripts/linear-cli.js`に自動でフォールバックしてタスクを続行する。
+Linear MCP（`.mcp.json`で`https://mcp.linear.app/mcp`を指す公式リモートMCPサーバーとして定義、2026-09-12更新）はユーザーのブラウザ経由のOAuth認証であり、ターミナル経由のClaude Codeセッションからは再認証フローを開始できない（`.env.local`の`LINEAR_API_KEY`とは別物で、Claude側からは直せない）。MCP呼び出しが認証エラーになった場合、都度ユーザーに確認を求めず、`LINEAR_API_KEY`（`.env.local`に設定済み）を使う`scripts/linear-cli.js`に自動でフォールバックしてタスクを続行する。
+
+**2026-09-12判明**: `.mcp.json`は元々`node_modules/linear-mcp`パッケージ経由のAPIキー認証で定義されていたが、これは接続エラー（`CONNECTION_CLOSED`）で機能しておらず、実際に動いていたのはClaude Code自体が別途保持していた公式リモートMCPサーバーへのネイティブ接続だった。`.mcp.json`を公式リモートMCPサーバーの定義に統一し、不要になった`linear-mcp`・`@mseep/linear-mcp`パッケージ依存を削除した。
 
 ```bash
 node --env-file=.env.local scripts/linear-cli.js get BOA-123

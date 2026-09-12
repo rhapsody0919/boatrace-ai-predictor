@@ -1,13 +1,8 @@
 {
   "mcpServers": {
     "linear": {
-      "command": "node",
-      "args": [
-        "node_modules/linear-mcp/build/index.js"
-      ],
-      "env": {
-        "LINEAR_ACCESS_TOKEN": "${LINEAR_API_KEY}"
-      }
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
     },
     "supabase": {
       "type": "stdio",
