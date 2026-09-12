@@ -649,6 +649,11 @@
       "trendHeading": "{{n}}號機的走勢",
       "trendEmpty": "找不到此馬達的走勢資料",
       "yAxis": "比率 (%)",
+      "exhibitionTrendHeading": "展示時間走勢",
+      "exhibitionLegend": "展示時間",
+      "exhibitionYAxis": "展示時間 (秒)",
+      "exhibitionTrendEmpty": "找不到此馬達的展示時間資料",
+      "exhibitionTrendNote": "💡 即使是同一台馬達，也可能因保養調整或選手操控方式不同而使展示時間出現變化。數值越小代表時間越快。",
       "note": "💡 點擊表格列可查看該馬達各賽節的走勢。強調顯示的列為本場比賽中2連率最高的艇。"
     },
     "racerForm": {

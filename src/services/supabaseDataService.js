@@ -2840,7 +2840,9 @@ export const supabaseDataService = {
    */
   getMotorConditionTrend(venueCode, motorNumber) {
     return withCache(
-      `motor-condition-${venueCode}-${motorNumber}`,
+      // v2: 展示タイム(exhibition_time)を追加(BOA-265軸B)。旧キャッシュ形状には
+      // 無いフィールドのため、旧キーのままだと古いキャッシュがしばらく残ってしまう
+      `motor-condition-v2-${venueCode}-${motorNumber}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2870,7 +2872,7 @@ export const supabaseDataService = {
           chunks.map((chunk) =>
             supabase
               .from("race_entries")
-              .select("race_id, motor_2rate, motor_3rate")
+              .select("race_id, boat_number, motor_2rate, motor_3rate")
               .in("race_id", chunk)
               .eq("motor_number", motorNumber),
           ),
@@ -2885,6 +2887,25 @@ export const supabaseDataService = {
           entries = entries.concat(data);
         });
 
+        // 節内適応トレンド（軸B）: このモーターが出走したレースの展示タイムを
+        // race_id-boat_numberで突き合わせ、同じ日付単位の推移に載せる
+        const exhibitionRows =
+          entries.length > 0
+            ? await fetchAllByIn(
+                "exhibition_data",
+                "race_id, boat_number, exhibition_time",
+                "race_id",
+                entries.map((e) => e.race_id),
+              )
+            : [];
+        const exhibitionTimeByKey = new Map();
+        exhibitionRows.forEach((e) => {
+          exhibitionTimeByKey.set(
+            `${e.race_id}-${e.boat_number}`,
+            e.exhibition_time,
+          );
+        });
+
         // 日付単位でdedupe（同日の複数レースは同じ値のため最初の1件を採用）
         const byDate = new Map();
         entries
@@ -2893,10 +2914,15 @@ export const supabaseDataService = {
           .sort((a, b) => a.race_date.localeCompare(b.race_date))
           .forEach((e) => {
             if (!byDate.has(e.race_date)) {
+              const exhibitionTime = exhibitionTimeByKey.get(
+                `${e.race_id}-${e.boat_number}`,
+              );
               byDate.set(e.race_date, {
                 date: e.race_date,
                 motor_2rate: e.motor_2rate,
                 motor_3rate: e.motor_3rate,
+                exhibition_time:
+                  exhibitionTime !== undefined ? exhibitionTime : null,
               });
             }
           });

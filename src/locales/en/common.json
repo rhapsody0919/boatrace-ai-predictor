@@ -654,6 +654,11 @@
       "trendHeading": "Motor {{n}} trend",
       "trendEmpty": "No trend data found for this motor",
       "yAxis": "Rate (%)",
+      "exhibitionTrendHeading": "Trial run time trend",
+      "exhibitionLegend": "Trial run time",
+      "exhibitionYAxis": "Trial run time (sec)",
+      "exhibitionTrendEmpty": "No trial run time data found for this motor",
+      "exhibitionTrendNote": "💡 Even the same motor's trial run time can change with maintenance and how well the rider handles it. A smaller number means a faster time.",
       "note": "💡 Click a table row to see that motor's trend across meets. The highlighted row is the boat with the highest motor top-2 rate in this race."
     },
     "racerForm": {

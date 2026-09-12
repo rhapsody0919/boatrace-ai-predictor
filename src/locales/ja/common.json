@@ -651,6 +651,11 @@
       "trendHeading": "{{n}}号機の推移",
       "trendEmpty": "このモーターの推移データが見つかりません",
       "yAxis": "出現率 (%)",
+      "exhibitionTrendHeading": "展示タイムの推移",
+      "exhibitionLegend": "展示タイム",
+      "exhibitionYAxis": "展示タイム (秒)",
+      "exhibitionTrendEmpty": "このモーターの展示タイムデータが見つかりません",
+      "exhibitionTrendNote": "💡 同じモーターでも、整備や選手の使いこなしによって展示タイムが変化することがあります。数値が小さいほど速いタイムです。",
       "note": "💡 表の行をクリックするとそのモーターの節ごとの推移が見られます。ハイライトされた行はこのレースで最も2連率が高い艇です。"
     },
     "racerForm": {

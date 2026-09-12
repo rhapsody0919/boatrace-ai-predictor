@@ -96,6 +96,13 @@ function MotorConditionChart({
     motor_3rate: row.motor_3rate,
   }));
 
+  const exhibitionChartData = (trendData?.trend ?? [])
+    .filter((row) => row.exhibition_time !== null)
+    .map((row) => ({
+      date: row.date.slice(5),
+      exhibition_time: row.exhibition_time,
+    }));
+
   const bestMotor2Rate =
     breakdown.length > 0
       ? Math.max(...breakdown.map((r) => r.motor_2rate ?? 0))
@@ -272,6 +279,32 @@ function MotorConditionChart({
           ) : (
             <div className="empty-state">{t("analysis.motor.trendEmpty")}</div>
           )}
+
+          <h3 className="selected-motor-heading">
+            {t("analysis.motor.exhibitionTrendHeading")}
+          </h3>
+          {exhibitionChartData.length > 0 ? (
+            <TrendLineChart
+              data={exhibitionChartData}
+              yAxisLabel={t("analysis.motor.exhibitionYAxis")}
+              tooltipFormatter={(value) => value.toFixed(2)}
+              series={[
+                {
+                  dataKey: "exhibition_time",
+                  name: t("analysis.motor.exhibitionLegend"),
+                  stroke: "var(--brand-accent-primary)",
+                  type: "monotone",
+                },
+              ]}
+            />
+          ) : (
+            <div className="empty-state">
+              {t("analysis.motor.exhibitionTrendEmpty")}
+            </div>
+          )}
+          <p className="table-note">
+            {t("analysis.motor.exhibitionTrendNote")}
+          </p>
         </>
       )}
 

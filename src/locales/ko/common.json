@@ -649,6 +649,11 @@
       "trendHeading": "{{n}}호기의 추이",
       "trendEmpty": "이 모터의 추이 데이터가 없습니다",
       "yAxis": "비율 (%)",
+      "exhibitionTrendHeading": "전시 타임 추이",
+      "exhibitionLegend": "전시 타임",
+      "exhibitionYAxis": "전시 타임 (초)",
+      "exhibitionTrendEmpty": "이 모터의 전시 타임 데이터가 없습니다",
+      "exhibitionTrendNote": "💡 같은 모터라도 정비나 선수의 다루는 방식에 따라 전시 타임이 달라질 수 있습니다. 수치가 작을수록 빠른 타임입니다.",
       "note": "💡 표의 행을 클릭하면 해당 모터의 회차별 추이를 볼 수 있습니다. 강조 표시된 행은 이 레이스에서 2연대율이 가장 높은 보트입니다."
     },
     "racerForm": {
