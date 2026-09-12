@@ -9,7 +9,15 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { NAVY, GOLD, WHITE, ACCENT, FONT, Logo, SceneCTA } from "./noteVideoShared.jsx";
+import {
+  NAVY,
+  GOLD,
+  WHITE,
+  ACCENT,
+  FONT,
+  Logo,
+  SceneCTA,
+} from "./noteVideoShared.jsx";
 import { fitHeadline } from "./textFit.js";
 
 /**
@@ -49,7 +57,11 @@ function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const local = frame - delay;
-  const scale = spring({ frame: local, fps, config: { damping: 12, mass: 0.5 } });
+  const scale = spring({
+    frame: local,
+    fps,
+    config: { damping: 12, mass: 0.5 },
+  });
   const opacity = interpolate(local, [0, 6], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -81,6 +93,8 @@ function SlideIn({ children, delay = 0, style }) {
 
 // --- Scene 1: フック（frame=0でサムネイルとしても成立、GOLD統一） ---
 function SceneHook({ venue, raceNumber, raceDate, indexPercent }) {
+  // Shorts棚フック強度対応（2026-09-12）: maxFontSizeを192px閾値以上に引き上げ
+  // （docs/reference/brand-kit.md「シーンのフック強度均一化」参照）
   const { fontSize: headlineFontSize, lines: headlineLines } = fitHeadline(
     `イン崩れ指数 ${indexPercent}%`,
     {
@@ -88,7 +102,7 @@ function SceneHook({ venue, raceNumber, raceDate, indexPercent }) {
       maxLines: 1,
       fontFamily: FONT,
       fontWeight: 900,
-      maxFontSize: 128,
+      maxFontSize: 200,
       minFontSize: 72,
     },
   );
@@ -145,7 +159,13 @@ function SceneHook({ venue, raceNumber, raceDate, indexPercent }) {
 
       <Pop
         delay={-10}
-        style={{ position: "absolute", top: 250, left: 0, right: 0, textAlign: "center" }}
+        style={{
+          position: "absolute",
+          top: 250,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+        }}
       >
         <div
           style={{
@@ -162,7 +182,13 @@ function SceneHook({ venue, raceNumber, raceDate, indexPercent }) {
 
       <Pop
         delay={-10}
-        style={{ position: "absolute", top: 330, left: 0, right: 0, textAlign: "center" }}
+        style={{
+          position: "absolute",
+          top: 330,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+        }}
       >
         <div
           style={{
@@ -182,7 +208,13 @@ function SceneHook({ venue, raceNumber, raceDate, indexPercent }) {
 
       <Pop
         delay={-10}
-        style={{ position: "absolute", top: 560, left: 0, right: 0, textAlign: "center" }}
+        style={{
+          position: "absolute",
+          top: 560,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+        }}
       >
         <div
           style={{
@@ -196,7 +228,16 @@ function SceneHook({ venue, raceNumber, raceDate, indexPercent }) {
         </div>
       </Pop>
 
-      <Pop delay={-10} style={{ position: "absolute", bottom: 64, left: 0, right: 0, textAlign: "center" }}>
+      <Pop
+        delay={-10}
+        style={{
+          position: "absolute",
+          bottom: 64,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+        }}
+      >
         <div
           style={{
             display: "inline-flex",
@@ -219,6 +260,9 @@ function SceneHook({ venue, raceNumber, raceDate, indexPercent }) {
 }
 
 // --- Scene 2: 実データ3指標（横並び、16:9の横幅を活かす） ---
+// Shorts棚フック強度対応（2026-09-12）: valueを192px閾値以上に拡大。
+// カード幅・横paddingも合わせて拡げ、拡大後の数値がカード外にはみ出さない
+// ようにする（docs/reference/brand-kit.md「シーンのフック強度均一化」参照）。
 function StatCard({ label, value, unit, accentColor, delay }) {
   return (
     <Pop
@@ -227,8 +271,8 @@ function StatCard({ label, value, unit, accentColor, delay }) {
         background: "rgba(255,255,255,0.06)",
         border: `2px solid ${accentColor}90`,
         borderRadius: 24,
-        padding: "36px 32px",
-        width: 480,
+        padding: "36px 24px",
+        width: 520,
         textAlign: "center",
       }}
     >
@@ -244,10 +288,17 @@ function StatCard({ label, value, unit, accentColor, delay }) {
       >
         {label}
       </div>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "center",
+          gap: 6,
+        }}
+      >
         <span
           style={{
-            fontSize: 96,
+            fontSize: 200,
             fontWeight: 900,
             fontFamily: FONT,
             color: WHITE,
@@ -280,7 +331,16 @@ function SceneStats({ indexPercent, boatWinRate, nigePercent, reasons }) {
         alignItems: "center",
       }}
     >
-      <Pop delay={2} style={{ position: "absolute", top: 90, left: 0, right: 0, textAlign: "center" }}>
+      <Pop
+        delay={2}
+        style={{
+          position: "absolute",
+          top: 90,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+        }}
+      >
         <div
           style={{
             color: ACCENT,
@@ -338,7 +398,12 @@ function SceneStats({ indexPercent, boatWinRate, nigePercent, reasons }) {
 }
 
 // --- Scene 3: 展開予測TOP3 ---
+// Shorts棚フック強度対応（2026-09-12）: TOP1のみ数字として抜き出し、
+// GOLD・fontWeight900・192px閾値以上に強調表示する（既存の3行リストは
+// 補足情報としてそのまま維持、docs/reference/brand-kit.md
+// 「シーンのフック強度均一化」参照）。
 function SceneTurnPrediction({ venue, raceNumber, patterns }) {
+  const top1 = patterns[0];
   return (
     <AbsoluteFill
       style={{
@@ -360,6 +425,43 @@ function SceneTurnPrediction({ venue, raceNumber, patterns }) {
           {raceNumber}R）
         </div>
       </Pop>
+
+      {top1 && (
+        <Pop
+          delay={10}
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "center",
+            gap: 16,
+            marginBottom: 20,
+          }}
+        >
+          <span
+            style={{
+              color: WHITE,
+              fontSize: 40,
+              fontWeight: 900,
+              fontFamily: FONT,
+            }}
+          >
+            本命 {TECHNIQUE_NAMES[top1.technique] || top1.technique}
+          </span>
+          <span
+            style={{
+              color: GOLD,
+              fontSize: 200,
+              fontWeight: 900,
+              fontFamily: FONT,
+              lineHeight: 1,
+              textShadow: `0 0 40px ${GOLD}66`,
+            }}
+          >
+            {Math.round(top1.probability * 100)}%
+          </span>
+        </Pop>
+      )}
+
       <Pop delay={8} style={{ marginBottom: 36 }}>
         <div
           style={{
@@ -377,7 +479,11 @@ function SceneTurnPrediction({ venue, raceNumber, patterns }) {
         {patterns.map((pattern, i) => {
           const color = BOAT_COLORS[pattern.winnerCourse];
           return (
-            <SlideIn key={pattern.winnerCourse} delay={20 + i * 14} style={{ marginBottom: 22 }}>
+            <SlideIn
+              key={pattern.winnerCourse}
+              delay={20 + i * 14}
+              style={{ marginBottom: 22 }}
+            >
               <div
                 style={{
                   display: "flex",
@@ -403,7 +509,10 @@ function SceneTurnPrediction({ venue, raceNumber, patterns }) {
                     fontWeight: 900,
                     fontFamily: FONT,
                     flexShrink: 0,
-                    border: pattern.winnerCourse === 1 ? "2px solid rgba(0,0,0,0.15)" : "none",
+                    border:
+                      pattern.winnerCourse === 1
+                        ? "2px solid rgba(0,0,0,0.15)"
+                        : "none",
                   }}
                 >
                   {pattern.winnerCourse}
@@ -468,10 +577,19 @@ export function RaceInsightYoutubeTemplate({
         />
       </Sequence>
       <Sequence from={270} durationInFrames={180}>
-        <SceneTurnPrediction venue={venue} raceNumber={raceNumber} patterns={patterns} />
+        <SceneTurnPrediction
+          venue={venue}
+          raceNumber={raceNumber}
+          patterns={patterns}
+        />
       </Sequence>
       <Sequence from={450} durationInFrames={150}>
-        <SceneCTA featureDigest={featureDigest} />
+        <SceneCTA
+          featureDigest={featureDigest}
+          headlineFontSize={200}
+          headlineMinFontSize={192}
+          showRadarDecoration={false}
+        />
       </Sequence>
       <Audio src={staticFile("note-bgm-calm-corporate-relax.wav")} />
     </AbsoluteFill>

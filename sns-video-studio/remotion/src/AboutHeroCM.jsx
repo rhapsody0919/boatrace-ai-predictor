@@ -8,6 +8,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * /aboutページのヒーロー動画（デスクトップ・モバイル共通ロジック、幅高さのみ variant で分岐）
@@ -20,14 +21,33 @@ import {
  * 撮影し、変わらない部分は新規タイトルカードで構成）で作り直す。
  * BGMは既存音源（Rocket Power by Kevin MacLeod、CC BY 4.0）を継続使用。
  * 実データ: 住之江1R（2026-09-02、締切15:17、結果未確定）。
+ *
+ * 2026-09-10: YouTube Shorts一覧のサムネイル自動選択対策（フック強度均一化、
+ * docs/reference/brand-kit.md「シーンのフック強度均一化」参照）として、
+ * 全10シーンの主役テキストをGOLD(#d4af37)＋fontWeight900・画面幅10%以上に
+ * 統一。長さが可変な見出しは`fitHeadline()`で自動サイズ調整する。
  */
 
 const NAVY = "#0d1b2e";
-const GOLD = "#c9a227";
+const GOLD = "#d4af37";
 const WHITE = "#f8fafc";
 const GRAY = "#94a3b8";
 const FONT =
   '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
+
+// フック強度ルール（画面幅の10%以上・GOLD・fontWeight900）を満たす見出しサイズを
+// 自動計算する共通ヘルパー。実キャンバス幅はdesktop=1600/mobile=840（Root.jsx参照）で、
+// 10%閾値はそれぞれ160px/84pxだが、余裕を持って108px/165pxを下限に設定する。
+function heroFit(text, variant, maxLines = 2) {
+  return fitHeadline(text, {
+    maxWidth: variant === "mobile" ? 720 : 1350,
+    maxLines,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: variant === "mobile" ? 130 : 190,
+    minFontSize: variant === "mobile" ? 108 : 165,
+  });
+}
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
@@ -62,42 +82,79 @@ function KenBurns({ children, durationInFrames, from = 1, to = 1.06 }) {
   );
 }
 
-function Caption({ children, delay = 0, variant }) {
-  const bottom = variant === "mobile" ? 56 : 40;
-  const fontSize = variant === "mobile" ? 34 : 30;
+// スクリーンショット系シーンの主役テキスト。数字・断定文を抽出しGOLD・900・
+// fitHeadline()自動サイズで表示、残りの文脈はtop/bottomに小さく添える
+// （2026-09-10、フック強度対策。元の30/34px w700単色キャプションを置き換え）。
+function HeroCaption({ top, big, bottom, delay = 0, variant }) {
+  const bottomOffset = variant === "mobile" ? 56 : 40;
+  const sideMargin = variant === "mobile" ? 28 : 60;
+  const smallFontSize = variant === "mobile" ? 20 : 22;
+  const bigFit = heroFit(big, variant, 3);
   return (
     <Pop
       delay={delay}
       style={{
         position: "absolute",
-        bottom,
-        left: variant === "mobile" ? 28 : 60,
-        right: variant === "mobile" ? 28 : 60,
+        bottom: bottomOffset,
+        left: sideMargin,
+        right: sideMargin,
         display: "flex",
         justifyContent: "center",
       }}
     >
       <div
         style={{
-          background: "rgba(13,27,46,0.92)",
-          color: WHITE,
+          // display:"inline-block"必須: 親がflexコンテナのため、通常のblock
+          // divのままだと大きいfontSize（190px級）のテキスト幅に対して
+          // 背景ボックスの見た目上の境界が正しく追従せず、テキストが
+          // ボックスからはみ出す不具合があった（2026-09-12発覚）
+          display: "inline-block",
+          background: "rgba(13,27,46,0.97)",
           fontFamily: FONT,
-          fontWeight: 700,
-          fontSize,
-          lineHeight: 1.4,
-          padding: variant === "mobile" ? "16px 24px" : "14px 28px",
           borderRadius: 20,
           border: `2px solid ${GOLD}`,
+          padding: variant === "mobile" ? "18px 26px" : "16px 30px",
           textAlign: "center",
         }}
       >
-        {children}
+        {top && (
+          <div
+            style={{
+              color: WHITE,
+              fontWeight: 600,
+              fontSize: smallFontSize,
+              marginBottom: 6,
+            }}
+          >
+            {top}
+          </div>
+        )}
+        <div style={{ color: GOLD, fontWeight: 900, lineHeight: 1.25 }}>
+          {bigFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: bigFit.fontSize }}>
+              {line}
+            </div>
+          ))}
+        </div>
+        {bottom && (
+          <div
+            style={{
+              color: WHITE,
+              fontWeight: 600,
+              fontSize: smallFontSize,
+              marginTop: 6,
+            }}
+          >
+            {bottom}
+          </div>
+        )}
       </div>
     </Pop>
   );
 }
 
-function TitleCard({ eyebrow, title, children }) {
+function TitleCard({ eyebrow, lead, title, subtitle, variant, children }) {
+  const titleFit = title ? heroFit(title, variant, 2) : null;
   return (
     <AbsoluteFill
       style={{
@@ -122,17 +179,47 @@ function TitleCard({ eyebrow, title, children }) {
             {eyebrow}
           </div>
         )}
-        {title && (
+        {lead && (
           <div
             style={{
               color: WHITE,
               fontFamily: FONT,
-              fontWeight: 800,
-              fontSize: 46,
-              lineHeight: 1.35,
+              fontWeight: 600,
+              fontSize: variant === "mobile" ? 22 : 26,
+              marginBottom: 14,
             }}
           >
-            {title}
+            {lead}
+          </div>
+        )}
+        {titleFit && (
+          <div
+            style={{
+              color: GOLD,
+              fontFamily: FONT,
+              fontWeight: 900,
+              lineHeight: 1.3,
+            }}
+          >
+            {titleFit.lines.map((line, i) => (
+              <div key={i} style={{ fontSize: titleFit.fontSize }}>
+                {line}
+              </div>
+            ))}
+          </div>
+        )}
+        {subtitle && (
+          <div
+            style={{
+              color: WHITE,
+              fontFamily: FONT,
+              fontWeight: 600,
+              fontSize: variant === "mobile" ? 22 : 26,
+              marginTop: 16,
+              lineHeight: 1.5,
+            }}
+          >
+            {subtitle}
           </div>
         )}
       </Pop>
@@ -143,6 +230,7 @@ function TitleCard({ eyebrow, title, children }) {
 
 // --- Scene 1: Opening (0-4s, 120f) ---
 function SceneOpening({ variant }) {
+  const brandFit = heroFit("龍神レーダー", variant, 1);
   return (
     <AbsoluteFill
       style={{
@@ -154,14 +242,18 @@ function SceneOpening({ variant }) {
       <Pop delay={0} style={{ textAlign: "center" }}>
         <div
           style={{
-            color: WHITE,
+            color: GOLD,
             fontFamily: FONT,
-            fontWeight: 800,
-            fontSize: variant === "mobile" ? 64 : 88,
+            fontWeight: 900,
             letterSpacing: 2,
+            lineHeight: 1.2,
           }}
         >
-          龍神レーダー
+          {brandFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: brandFit.fontSize }}>
+              {line}
+            </div>
+          ))}
         </div>
         <div
           style={{
@@ -224,21 +316,34 @@ function SceneOpening({ variant }) {
 
 // --- Scene 2: 課題提起 (4-9s, 150f) ---
 function SceneProblem({ variant }) {
+  const highlightFit = heroFit("3連単は120通り。", variant, 2);
   return (
-    <TitleCard>
+    <TitleCard variant={variant}>
       <Pop delay={0} style={{ textAlign: "center", marginTop: 20 }}>
         <div
           style={{
             color: WHITE,
             fontFamily: FONT,
-            fontWeight: 800,
-            fontSize: variant === "mobile" ? 40 : 52,
-            lineHeight: 1.5,
+            fontWeight: 700,
+            fontSize: variant === "mobile" ? 32 : 40,
+            marginBottom: 16,
           }}
         >
           6艇 × 3着。
-          <br />
-          3連単は<span style={{ color: GOLD }}>120通り</span>。
+        </div>
+        <div
+          style={{
+            color: GOLD,
+            fontFamily: FONT,
+            fontWeight: 900,
+            lineHeight: 1.25,
+          }}
+        >
+          {highlightFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: highlightFit.fontSize }}>
+              {line}
+            </div>
+          ))}
         </div>
         <div
           style={{
@@ -263,7 +368,15 @@ function SceneProblem({ variant }) {
 }
 
 // --- Full-bleed screenshot scene (screenshot already matches canvas size) ---
-function ScreenshotScene({ src, caption, delay, durationInFrames, variant }) {
+function ScreenshotScene({
+  src,
+  top,
+  big,
+  bottom,
+  delay,
+  durationInFrames,
+  variant,
+}) {
   return (
     <AbsoluteFill style={{ background: NAVY }}>
       <KenBurns durationInFrames={durationInFrames}>
@@ -272,9 +385,13 @@ function ScreenshotScene({ src, caption, delay, durationInFrames, variant }) {
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       </KenBurns>
-      <Caption delay={delay} variant={variant}>
-        {caption}
-      </Caption>
+      <HeroCaption
+        top={top}
+        big={big}
+        bottom={bottom}
+        delay={delay}
+        variant={variant}
+      />
     </AbsoluteFill>
   );
 }
@@ -285,7 +402,9 @@ function CardScreenshotScene({
   nativeWidth,
   nativeHeight,
   targetWidth,
-  caption,
+  top,
+  big,
+  bottom,
   delay,
   variant,
 }) {
@@ -309,9 +428,13 @@ function CardScreenshotScene({
           }}
         />
       </Pop>
-      <Caption delay={delay} variant={variant}>
-        {caption}
-      </Caption>
+      <HeroCaption
+        top={top}
+        big={big}
+        bottom={bottom}
+        delay={delay}
+        variant={variant}
+      />
     </AbsoluteFill>
   );
 }
@@ -332,7 +455,9 @@ function SceneDataItems({ variant }) {
   return (
     <TitleCard
       eyebrow="DATA ANALYSIS"
-      title="45項目のデータを、AIが毎レース分析。"
+      title="45項目"
+      subtitle="のデータを、AIが毎レース分析。"
+      variant={variant}
     >
       <div
         style={{
@@ -378,7 +503,9 @@ function SceneBlogTools({ variant }) {
   return (
     <TitleCard
       eyebrow="BLOG & TOOLS"
-      title="攻略コンテンツも分析ツールも、無料。"
+      lead="攻略コンテンツも分析ツールも"
+      title="無料。"
+      variant={variant}
     >
       <div
         style={{
@@ -445,6 +572,7 @@ function SceneBlogTools({ variant }) {
 
 // --- Closing ---
 function SceneClosing({ variant }) {
+  const brandFit = heroFit("龍神レーダー", variant, 1);
   return (
     <AbsoluteFill
       style={{
@@ -456,14 +584,18 @@ function SceneClosing({ variant }) {
       <Pop delay={0} style={{ textAlign: "center" }}>
         <div
           style={{
-            color: WHITE,
+            color: GOLD,
             fontFamily: FONT,
-            fontWeight: 800,
-            fontSize: variant === "mobile" ? 52 : 72,
+            fontWeight: 900,
             marginBottom: 20,
+            lineHeight: 1.2,
           }}
         >
-          龍神レーダー
+          {brandFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: brandFit.fontSize }}>
+              {line}
+            </div>
+          ))}
         </div>
         <div
           style={{
@@ -511,7 +643,9 @@ function SceneHome(p) {
     <ScreenshotScene
       {...p}
       src={`about-hero-${p.variant}-home.png`}
-      caption="今日開催中の24会場を一目で確認"
+      top="今日開催中の"
+      big="24会場"
+      bottom="を一目で確認"
       delay={10}
       durationInFrames={150}
     />
@@ -523,7 +657,9 @@ function ScenePrediction(p) {
     <ScreenshotScene
       {...p}
       src={`about-hero-${p.variant}-prediction.png`}
-      caption="AIが展開・荒れやすさを毎レース分析"
+      top="AIが毎レース"
+      big="展開・荒れやすさ"
+      bottom="を分析"
       delay={15}
       durationInFrames={240}
     />
@@ -538,7 +674,8 @@ function SceneDataTable(p) {
       nativeWidth={p.variant === "mobile" ? 728 : 1152}
       nativeHeight={p.variant === "mobile" ? 1398 : 698}
       targetWidth={p.variant === "mobile" ? 760 : 1360}
-      caption="45項目以上のデータを比較できる出走表"
+      big="45項目以上"
+      bottom="のデータを比較できる出走表"
       delay={12}
     />
   );
@@ -549,7 +686,8 @@ function SceneTools(p) {
     <ScreenshotScene
       {...p}
       src={`about-hero-${p.variant}-tools.png`}
-      caption="16種類以上の分析タブでさらに深掘り"
+      big="16種類以上"
+      bottom="の分析タブでさらに深掘り"
       delay={15}
       durationInFrames={210}
     />
@@ -561,7 +699,7 @@ function SceneAccuracy(p) {
     <ScreenshotScene
       {...p}
       src={`about-hero-${p.variant}-accuracy.png`}
-      caption="実測値をすべて公開"
+      big="実測値をすべて公開"
       delay={12}
       durationInFrames={180}
     />

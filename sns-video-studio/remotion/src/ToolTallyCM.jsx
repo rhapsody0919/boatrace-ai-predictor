@@ -116,10 +116,7 @@ function SceneHook() {
       <Pop delay={-10} style={{ position: "absolute", top: 44, left: 44 }}>
         <Logo size={38} />
       </Pop>
-      <Pop
-        delay={-10}
-        style={{ position: "absolute", top: 50, right: 44 }}
-      >
+      <Pop delay={-10} style={{ position: "absolute", top: 50, right: 44 }}>
         <div
           style={{
             background: "rgba(255,255,255,0.1)",
@@ -341,26 +338,39 @@ function SceneReveal() {
         delay={30}
         style={{
           position: "absolute",
-          top: IMG_TOP + IMG_DISPLAY_HEIGHT + 40,
+          top: IMG_TOP + IMG_DISPLAY_HEIGHT + 30,
           left: 0,
           right: 0,
           display: "flex",
-          justifyContent: "center",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 6,
         }}
       >
         <div
           style={{
+            color: GOLD,
+            fontSize: 116,
+            fontWeight: 900,
+            fontFamily: FONT,
+            lineHeight: 1,
+            textShadow: `0 0 50px ${GOLD}aa`,
+          }}
+        >
+          {TOOL_COUNT}種類
+        </div>
+        <div
+          style={{
             color: WHITE,
-            fontSize: 32,
+            fontSize: 28,
             fontWeight: 800,
             fontFamily: FONT,
             textAlign: "center",
             padding: "0 60px",
+            marginTop: 6,
           }}
         >
-          決まり手・モーター・展示タイム…
-          <br />
-          気になる切り口を全部カバー
+          決まり手・モーター・展示タイム…気になる切り口を全部カバー
         </div>
       </Pop>
     </AbsoluteFill>
@@ -381,21 +391,32 @@ function SceneCTA() {
       <Pop delay={2}>
         <div
           style={{
-            color: WHITE,
-            fontSize: 40,
+            color: GOLD,
+            fontSize: 132,
             fontWeight: 900,
+            fontFamily: FONT,
+            lineHeight: 1,
+            textAlign: "center",
+            textShadow: `0 0 50px ${GOLD}aa`,
+          }}
+        >
+          {TOOL_COUNT}種類
+        </div>
+        <div
+          style={{
+            color: WHITE,
+            fontSize: 34,
+            fontWeight: 800,
             fontFamily: FONT,
             textAlign: "center",
             padding: "0 60px",
-            marginBottom: 16,
+            marginTop: 10,
           }}
         >
-          {TOOL_COUNT}種類のツール、
-          <br />
           今すぐ無料で使える
         </div>
       </Pop>
-      <Pop delay={16} style={{ marginBottom: 40 }}>
+      <Pop delay={16} style={{ marginTop: 30, marginBottom: 40 }}>
         <div
           style={{
             color: "rgba(248,250,252,0.7)",

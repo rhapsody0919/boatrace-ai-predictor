@@ -10,6 +10,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * 会場紹介型（第2弾: 芦屋、2026-08-26修正） — 龍神レーダー Shorts
@@ -110,7 +111,18 @@ function Logo({ size = 44 }) {
 // --- Scene 1: フック（0-75f, 2.5s） ---
 // photoFileが無い会場（実写素材未取得）は、VenueRankingCM系と同じダークグラデーション
 // 背景にフォールバックする（写真の有無で見た目が破綻しないようにするため）
+const HOOK_TITLE_MAX_WIDTH = 940; // 1080 - 左右余白
 function SceneHook({ photoFile, venueTitle, tagline }) {
+  // 2026-09-12: venueTitleは40px WHITE w900でフック強度基準未達だった。
+  // 会場名の長さに関わらず108px以上・1行で収まる最大サイズをfitHeadline()で決める
+  const titleFit = fitHeadline(venueTitle, {
+    maxWidth: HOOK_TITLE_MAX_WIDTH,
+    maxLines: 1,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill style={{ background: NAVY }}>
       {photoFile ? (
@@ -139,14 +151,18 @@ function SceneHook({ photoFile, venueTitle, tagline }) {
           <div
             style={{
               color: WHITE,
-              fontSize: 40,
+              fontFamily: FONT,
               fontWeight: 900,
               textAlign: "center",
               lineHeight: 1.3,
               textShadow: "0 4px 20px rgba(0,0,0,0.4)",
             }}
           >
-            {venueTitle}
+            {titleFit.lines.map((line, i) => (
+              <div key={i} style={{ fontSize: titleFit.fontSize }}>
+                {line}
+              </div>
+            ))}
           </div>
         </FadeUp>
         <FadeUp delay={-10}>
@@ -270,7 +286,18 @@ function CompareRow({ venue, value, delay, highlight }) {
   );
 }
 
+const COMPARE_HEADING_MAX_WIDTH = 940; // 1080 - 左右padding60px*2弱
 function SceneCompare({ heading, rows }) {
+  // 2026-09-12: 見出し32pxはフック強度基準未達。見出し自体をfitHeadline()で
+  // 108px以上に拡大する（比較行はデータ部分として現状サイズを維持）
+  const headingFit = fitHeadline(heading, {
+    maxWidth: COMPARE_HEADING_MAX_WIDTH,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -283,14 +310,18 @@ function SceneCompare({ heading, rows }) {
         <div
           style={{
             color: GOLD,
-            fontSize: 32,
-            fontWeight: 900,
             fontFamily: FONT,
+            fontWeight: 900,
             marginBottom: 24,
             textAlign: "center",
+            lineHeight: 1.2,
           }}
         >
-          {heading}
+          {headingFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: headingFit.fontSize }}>
+              {line}
+            </div>
+          ))}
         </div>
       </FadeUp>
       {rows.map((r, i) => (
@@ -307,7 +338,17 @@ function SceneCompare({ heading, rows }) {
 }
 
 // --- Scene 4: CTA（255-330f, 2.5s） ---
+const CTA_HEADLINE_MAX_WIDTH = 940; // 1080 - 左右余白
 function SceneCTA() {
+  // 2026-09-12: 見出し44pxはフック強度基準未達。108px以上にfitHeadline()で拡大
+  const headlineFit = fitHeadline("全24会場のデータ、無料で見れる", {
+    maxWidth: CTA_HEADLINE_MAX_WIDTH,
+    maxLines: 3,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 140,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -320,16 +361,18 @@ function SceneCTA() {
         <div
           style={{
             color: WHITE,
-            fontSize: 44,
             fontWeight: 900,
             fontFamily: FONT,
             textAlign: "center",
             marginBottom: 16,
+            lineHeight: 1.2,
           }}
         >
-          全24会場のデータ、
-          <br />
-          無料で見れる
+          {headlineFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: headlineFit.fontSize }}>
+              {line}
+            </div>
+          ))}
         </div>
       </FadeUp>
       <FadeUp delay={16} style={{ marginBottom: 40 }}>

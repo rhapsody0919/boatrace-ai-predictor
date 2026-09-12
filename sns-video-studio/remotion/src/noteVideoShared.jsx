@@ -9,6 +9,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * note埋め込み用・機能解説型（横型 1920x1080）— 龍神レーダー 共通コンポーネント
@@ -174,12 +175,16 @@ export function RadarDecoration({ size = 300 }) {
 }
 
 // --- Scene 1: Hook（frame=0で完成表示、sns-marketing-strategy.mdの「案A」原則） ---
+// subtitleTop: titleFontSizeを拡大し2行以上になった際に、subtitleとの重なりを
+// 避けるためのオプトインprop（2026-09-12、Shorts棚フック強度改善バッチ）。
+// 未指定時は既存の590pxを維持し他の呼び出し元の見た目を変えない。
 export function SceneHook({
   title,
   subtitle,
   featureCount,
   previewImageSrc,
   titleFontSize = 96,
+  subtitleTop = 590,
 }) {
   return (
     <AbsoluteFill
@@ -262,7 +267,12 @@ export function SceneHook({
       </Pop>
       <Pop
         delay={-10}
-        style={{ position: "absolute", top: 590, left: 64, width: 1000 }}
+        style={{
+          position: "absolute",
+          top: subtitleTop,
+          left: 64,
+          width: 1000,
+        }}
       >
         <div
           style={{
@@ -326,7 +336,10 @@ export function HighlightBox({ box, from, durationInFrames }) {
   );
 }
 
-export function Caption({ text, from, durationInFrames }) {
+// fontSize: 主役キャプションを拡大するオプトインprop（2026-09-12、Shorts棚
+// フック強度改善バッチ）。未指定時は既存の単一サイズ44px・単一行表示を維持し
+// 他の呼び出し元の見た目を変えない。指定時はfitHeadline()で画面幅内に収める。
+export function Caption({ text, from, durationInFrames, fontSize }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const local = frame - from - 8;
@@ -346,6 +359,19 @@ export function Caption({ text, from, durationInFrames }) {
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
   const opacity = Math.min(fadeIn, fadeOut);
+  const enlarged = typeof fontSize === "number";
+  const fitted = enlarged
+    ? fitHeadline(text, {
+        maxWidth: 1700,
+        maxLines: 2,
+        fontFamily: FONT,
+        fontWeight: 900,
+        maxFontSize: fontSize,
+        minFontSize: 60,
+      })
+    : null;
+  const displayFontSize = fitted ? fitted.fontSize : 44;
+  const lines = fitted ? fitted.lines : [text];
   return (
     <div
       style={{
@@ -364,7 +390,8 @@ export function Caption({ text, from, durationInFrames }) {
           color: WHITE,
           fontFamily: FONT,
           fontWeight: 900,
-          fontSize: 44,
+          fontSize: displayFontSize,
+          lineHeight: 1.3,
           background: "rgba(15,44,70,0.92)",
           border: `2px solid ${GOLD}`,
           borderRadius: 16,
@@ -372,7 +399,10 @@ export function Caption({ text, from, durationInFrames }) {
           textAlign: "center",
         }}
       >
-        {text}
+        {lines.map((line, i) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <div key={i}>{line}</div>
+        ))}
       </div>
     </div>
   );
@@ -394,6 +424,9 @@ export function scaleRect(
 
 // --- Scene 2: 特徴解説（表全体を見せたまま、行ごとにハイライト+字幕が切り替わる） ---
 // features: [{ box, caption, from, durationInFrames }]（boxはscaleRectで計算済みの表示矩形）
+// captionFontSize: 各特徴キャプションを拡大するオプトインprop（2026-09-12、
+// Shorts棚フック強度改善バッチ）。未指定時はCaption側の既存デフォルト(44px)を
+// 維持し他の呼び出し元の見た目を変えない。
 export function SceneFeatures({
   imageSrc,
   imageWidth,
@@ -401,6 +434,7 @@ export function SceneFeatures({
   imageLeft,
   badgeLabel = "🎯 実際の龍神レーダー画面",
   features,
+  captionFontSize,
 }) {
   return (
     <AbsoluteFill style={{ background: NAVY, overflow: "hidden" }}>
@@ -466,6 +500,7 @@ export function SceneFeatures({
           text={f.caption}
           from={f.from}
           durationInFrames={f.durationInFrames}
+          fontSize={f.captionFontSize ?? captionFontSize}
         />
       ))}
     </AbsoluteFill>
@@ -473,7 +508,77 @@ export function SceneFeatures({
 }
 
 // --- Scene 3: CTA（中央集約・縦積み構成、2026-08-31全面再設計版） ---
-export function SceneCTA({ featureDigest }) {
+// showRadarDecoration: 六角形紋章の背景装飾（brand-kit.mdで却下済み）を非表示にする
+// オプトアウトprop。デフォルトはtrueで既存呼び出し元の見た目を変えない
+// （2026-09-12、TechniqueConsistencyCM.jsxのフック強度改善時に追加。既存の紋章却下
+// 方針をこのシーンでも徹底するため、この呼び出し元だけ非表示にする）。
+// emphasisFontSize/emphasisMinFontSize: 「👉 無料・登録不要で今すぐ」見出しの
+// フォントサイズをfitHeadline()経由で拡大できるようにするオプトインprop。
+// デフォルト値は変更前と同じ36pxのため既存呼び出し元の見た目は変わらない
+// headlineFontSize/headlineMinFontSize: 「この動画で見た内容、全部無料で
+// 使えます」見出しをfitHeadline()経由で拡大できるようにするオプトインprop
+// （2026-09-12、Shorts棚フック強度改善バッチ）。デフォルト値は変更前と同じ
+// 54pxのため既存呼び出し元の見た目は変わらない。拡大時は見出しの実測高さに
+// 応じてdigest/emphasis/domainブロックの位置を下にずらし重なりを避ける。
+// domainFontSize:「boat-ai.jp」バッジのフォントサイズを拡大するオプトイン
+// prop。デフォルト値は変更前と同じ68pxのため既存呼び出し元の見た目は変わらない
+export function SceneCTA({
+  featureDigest,
+  showRadarDecoration = true,
+  emphasisFontSize = 36,
+  emphasisMinFontSize = 28,
+  headlineFontSize = 54,
+  headlineMinFontSize = 40,
+  domainFontSize = 68,
+}) {
+  const { width } = useVideoConfig();
+  const emphasisText = "👉 無料・登録不要で今すぐ";
+  const { fontSize: emphasisFitSize, lines: emphasisLines } = fitHeadline(
+    emphasisText,
+    {
+      maxWidth: width * 0.82,
+      maxLines: 2,
+      fontFamily: FONT,
+      fontWeight: 900,
+      maxFontSize: emphasisFontSize,
+      minFontSize: emphasisMinFontSize,
+    },
+  );
+
+  const headlineEnlarged = headlineFontSize > 54;
+  // 192px級まで拡大する場合、通常サイズ用の全文（19文字）だと
+  // maxLines:2に収まらずfitHeadline()が末尾を省略記号で切り詰めてしまう
+  // （2026-09-12発覚）。拡大時は同じ主旨を保った短縮文言を使う
+  const headlineText = headlineEnlarged
+    ? "全部、無料で使える"
+    : "この動画で見た内容、全部無料で使えます";
+  const headlineFit = headlineEnlarged
+    ? fitHeadline(headlineText, {
+        maxWidth: width * 0.85,
+        maxLines: 2,
+        fontFamily: FONT,
+        fontWeight: 900,
+        maxFontSize: headlineFontSize,
+        minFontSize: headlineMinFontSize,
+      })
+    : {
+        fontSize: 54,
+        lines: ["この動画で見た内容、", "全部無料で使えます"],
+      };
+  // headlineEnlarged時は192px級の見出し2行＋digest＋domainピルを1080px高の
+  // キャンバスに収める必要があるため、通常時より詰めたトップ位置・間隔を使う
+  // （2026-09-12発覚: 元の値のままだとdomainピルが画面下にはみ出た）
+  const headlineTop = headlineEnlarged ? 180 : 220;
+  const headlineLineHeight = 1.35;
+  // 元デザイン(54px・2行)の実測相当の高さ。拡大時はfitHeadlineの実測サイズから算出
+  const headlineBlockHeight = headlineEnlarged
+    ? headlineFit.lines.length * headlineFit.fontSize * headlineLineHeight
+    : 146;
+  const digestTop = headlineEnlarged
+    ? headlineTop + headlineBlockHeight + 24
+    : 420;
+  const domainTop = headlineEnlarged ? digestTop + 90 : 570;
+
   return (
     <AbsoluteFill
       style={{
@@ -481,17 +586,19 @@ export function SceneCTA({ featureDigest }) {
         overflow: "hidden",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          opacity: 0.07,
-        }}
-      >
-        <RadarDecoration size={880} />
-      </div>
+      {showRadarDecoration && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            opacity: 0.07,
+          }}
+        >
+          <RadarDecoration size={880} />
+        </div>
+      )}
       <div
         style={{
           position: "absolute",
@@ -545,7 +652,7 @@ export function SceneCTA({ featureDigest }) {
         delay={-10}
         style={{
           position: "absolute",
-          top: 220,
+          top: headlineTop,
           left: 0,
           right: 0,
           textAlign: "center",
@@ -554,15 +661,16 @@ export function SceneCTA({ featureDigest }) {
         <div
           style={{
             color: WHITE,
-            fontSize: 54,
+            fontSize: headlineFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
-            lineHeight: 1.35,
+            lineHeight: headlineLineHeight,
           }}
         >
-          この動画で見た内容、
-          <br />
-          全部無料で使えます
+          {headlineFit.lines.map((line, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div key={i}>{line}</div>
+          ))}
         </div>
       </Pop>
 
@@ -570,7 +678,7 @@ export function SceneCTA({ featureDigest }) {
         delay={-10}
         style={{
           position: "absolute",
-          top: 420,
+          top: digestTop,
           left: 0,
           right: 0,
           display: "flex",
@@ -614,7 +722,7 @@ export function SceneCTA({ featureDigest }) {
         delay={-10}
         style={{
           position: "absolute",
-          top: 570,
+          top: domainTop,
           left: 0,
           right: 0,
           display: "flex",
@@ -625,22 +733,27 @@ export function SceneCTA({ featureDigest }) {
         <div
           style={{
             color: GOLD,
-            fontSize: 36,
             fontWeight: 900,
             fontFamily: FONT,
             marginBottom: 30,
+            textAlign: "center",
             textShadow: `0 0 30px ${GOLD}55`,
           }}
         >
-          👉 無料・登録不要で今すぐ
+          {emphasisLines.map((line, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div key={i} style={{ fontSize: emphasisFitSize, lineHeight: 1.2 }}>
+              {line}
+            </div>
+          ))}
         </div>
         <div
           style={{
-            padding: "34px 100px",
+            padding: headlineEnlarged ? "26px 90px" : "34px 100px",
             borderRadius: 999,
             background: GOLD,
             color: NAVY,
-            fontSize: 68,
+            fontSize: domainFontSize,
             fontWeight: 900,
             fontFamily: FONT,
             boxShadow: `0 24px 70px ${GOLD}55`,

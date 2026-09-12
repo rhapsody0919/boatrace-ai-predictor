@@ -8,6 +8,7 @@ import {
   staticFile,
   useCurrentFrame,
 } from "remotion";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * オンボーディング操作キャプチャ動画（9:16縦長、サイト埋め込み用）
@@ -24,10 +25,15 @@ import {
  */
 
 const NAVY = "#0d1b2e";
-const GOLD = "#c9a227";
+// ブランド標準GOLD(#d4af37)へ統一（2026-09-12、Shorts棚フック強度改善バッチ。
+// 旧値#c9a227はこのファイル独自の値だったが、迷ったらブランドトークンに統一する
+// 方針に合わせて変更。docs/reference/brand-kit.md参照）
+const GOLD = "#d4af37";
 const WHITE = "#f8fafc";
 const FONT =
   '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif';
+// Captionの主役テキスト折り返し用（108px閾値対応、2026-09-12）
+const CAPTION_MAX_WIDTH = 900;
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
@@ -48,7 +54,19 @@ function Pop({ children, delay = 0, style }) {
   );
 }
 
+// Shorts棚フック強度対応（2026-09-12）: 主役キャプションを108px閾値以上・
+// GOLD・fontWeight900に変更。fitHeadline()でCAPTION_MAX_WIDTH内に折り返す
+// （docs/reference/brand-kit.md「シーンのフック強度均一化」参照）。
 function Caption({ children, delay = 0 }) {
+  const text = typeof children === "string" ? children : String(children);
+  const { fontSize, lines } = fitHeadline(text, {
+    maxWidth: CAPTION_MAX_WIDTH,
+    maxLines: 3,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 120,
+    minFontSize: 70,
+  });
   return (
     <Pop
       delay={delay}
@@ -64,18 +82,21 @@ function Caption({ children, delay = 0 }) {
       <div
         style={{
           background: "rgba(13,27,46,0.92)",
-          color: WHITE,
+          color: GOLD,
           fontFamily: FONT,
-          fontWeight: 700,
-          fontSize: 44,
-          lineHeight: 1.4,
+          fontWeight: 900,
+          fontSize,
+          lineHeight: 1.35,
           padding: "24px 32px",
           borderRadius: 28,
           border: `2px solid ${GOLD}`,
           textAlign: "center",
         }}
       >
-        {children}
+        {lines.map((line, i) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <div key={i}>{line}</div>
+        ))}
       </div>
     </Pop>
   );

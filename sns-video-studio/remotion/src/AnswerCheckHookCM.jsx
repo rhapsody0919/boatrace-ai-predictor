@@ -9,6 +9,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * 答え合わせ型（TikTok/X向け・マスコット無し・実画面スクショ不要・props駆動テンプレート）
@@ -36,7 +37,9 @@ import { FONT } from "./fonts.js";
 const NAVY_DARK = "#081b2e";
 const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
-const GOLD = "#f59e0b";
+// 2026-09-12: 独自のアンバー色(#f59e0b)を使っていたが、brand-kit.md承認色の
+// GOLD(#d4af37)に統一（フック強度基準の色要件はGOLD/WHITEのいずれかのみ）
+const GOLD = "#d4af37";
 const HIT_GREEN = "#22c55e";
 
 // 艇番別カラー（公式カラー、src/utils/colors.jsのBOAT_COLORSと同じ配色）
@@ -137,6 +140,7 @@ function getVolatilityLevel(percentile) {
 // --- Scene 1: フック（B案） カバー画像（frame=0）としても使われる ---
 // AI予想 vs 結果の2値比較＋イン崩れ注意度の縮小バーを1画面に収め、frame=0でも
 // 「何を検証する動画か」が静止画のまま伝わるようにする（アニメーション完了を待たない）
+const HOOK_HEADLINE_MAX_WIDTH = 984; // 1080 - 左右48px*2
 function SceneHook({
   venue,
   raceNumber,
@@ -167,6 +171,16 @@ function SceneHook({
       : level === "low"
         ? "注意度 低"
         : "注意度 標準";
+  // 2026-09-12: スポイラー見出し62px WHITE w900はフック強度基準未達（108px未満）。
+  // レースごとに文字数が変わるためfitHeadline()で108px以上に動的拡大する
+  const headlineFit = fitHeadline(resultHeadline, {
+    maxWidth: HOOK_HEADLINE_MAX_WIDTH,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
 
   return (
     <AbsoluteFill style={{ background: NAVY_DARK }}>
@@ -193,19 +207,21 @@ function SceneHook({
       {/* スポイラー見出し: 何が起きたレースかを一言で明示する（B案の主訴求） */}
       <Pop
         delay={-10}
-        style={{ position: "absolute", top: 160, left: 48, right: 48 }}
+        style={{ position: "absolute", top: 140, left: 48, right: 48 }}
       >
         <div
           style={{
             color: WHITE,
-            fontSize: 62,
             fontWeight: 900,
             fontFamily: FONT,
-            lineHeight: 1.25,
-            textWrap: "balance",
+            lineHeight: 1.2,
           }}
         >
-          {resultHeadline}
+          {headlineFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: headlineFit.fontSize }}>
+              {line}
+            </div>
+          ))}
         </div>
       </Pop>
 
@@ -409,7 +425,18 @@ function SceneHook({
 }
 
 // --- Scene 2: 展開予測TOP3（TurnPatternList.jsxの実UIをRemotion移植、LivePredictionHookCM.jsxと共通） ---
+const TURN_HEADING_MAX_WIDTH = 960; // 1080 - 左右padding60px*2弱
 function SceneTurnPrediction({ venue, raceNumber, patterns }) {
+  // 2026-09-12: 見出し34px ACCENT(水色)はフック強度基準未達（色・サイズとも）。
+  // GOLD・108px以上にfitHeadline()で統一する
+  const headingFit = fitHeadline(`🌀 AIの予想TOP3（${venue}${raceNumber}R）`, {
+    maxWidth: TURN_HEADING_MAX_WIDTH,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -421,15 +448,18 @@ function SceneTurnPrediction({ venue, raceNumber, patterns }) {
       <Pop delay={2}>
         <div
           style={{
-            color: ACCENT,
-            fontSize: 34,
+            color: GOLD,
             fontWeight: 900,
             fontFamily: FONT,
             marginBottom: 8,
+            lineHeight: 1.2,
           }}
         >
-          🌀 AIの予想TOP3（{venue}
-          {raceNumber}R）
+          {headingFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: headingFit.fontSize }}>
+              {line}
+            </div>
+          ))}
         </div>
       </Pop>
       <Pop delay={8}>
@@ -607,10 +637,11 @@ function SceneVolatility({ boatGrade, boatWinRate, percentile, reasons }) {
             </span>
             <span
               style={{
-                color: accentColor,
-                fontSize: 40,
+                color: GOLD,
+                fontSize: 120,
                 fontWeight: 900,
                 fontFamily: FONT,
+                lineHeight: 1,
               }}
             >
               {percentileInt}
@@ -710,7 +741,23 @@ function SceneVolatility({ boatGrade, boatWinRate, percentile, reasons }) {
 // （見出しの単一予想が当たったか）とは別の問いであり、混同すると「2つの表示が
 // 違う問いに答えて分かりにくい」という過去の撤去事例（FirstMarkAnimation）と
 // 同じ失敗になる（2026-08-31コードレビューで発覚・修正）
+const RESULT_HEADLINE_MAX_WIDTH = 940; // 1080 - 左右余白
 function SceneResult({ top3Hit, actualBoat, actualTechnique, payoutText }) {
+  // 2026-09-12: 52px（的中/外れの色分け表示）はフック強度基準未達
+  // （色がHIT_GREEN/オレンジでGOLD/WHITE以外・サイズも108px未満）。
+  // 色はGOLDに統一し、108px以上にfitHeadline()で拡大する（的中/外れの区別は
+  // 上の絵文字🎯/🌀と下のactualBoat表示で引き続き伝わる）
+  const resultTextFit = fitHeadline(
+    top3Hit ? "AI予想TOP3で的中" : "AI予想TOP3も外れる結果に",
+    {
+      maxWidth: RESULT_HEADLINE_MAX_WIDTH,
+      maxLines: 2,
+      fontFamily: FONT,
+      fontWeight: 900,
+      maxFontSize: 130,
+      minFontSize: 108,
+    },
+  );
   return (
     <AbsoluteFill
       style={{
@@ -733,14 +780,19 @@ function SceneResult({ top3Hit, actualBoat, actualTechnique, payoutText }) {
       <Pop delay={10}>
         <div
           style={{
-            color: top3Hit ? HIT_GREEN : "#ffb74d",
-            fontSize: 52,
+            color: GOLD,
             fontWeight: 900,
             fontFamily: FONT,
             marginBottom: 20,
+            textAlign: "center",
+            lineHeight: 1.2,
           }}
         >
-          {top3Hit ? "AI予想TOP3で的中" : "AI予想TOP3も外れる結果に"}
+          {resultTextFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: resultTextFit.fontSize }}>
+              {line}
+            </div>
+          ))}
         </div>
       </Pop>
       <Pop delay={18}>
@@ -775,7 +827,17 @@ function SceneResult({ top3Hit, actualBoat, actualTechnique, payoutText }) {
 }
 
 // --- Scene 5: CTA ---
+const CTA_HEADLINE_MAX_WIDTH = 960; // 1080 - 左右padding60px*2弱
 function SceneCTA() {
+  // 2026-09-12: 見出し44pxはフック強度基準未達。108px以上にfitHeadline()で拡大
+  const headlineFit = fitHeadline("こういう答え合わせ、無料で毎日見れます", {
+    maxWidth: CTA_HEADLINE_MAX_WIDTH,
+    maxLines: 3,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 140,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -788,17 +850,19 @@ function SceneCTA() {
         <div
           style={{
             color: WHITE,
-            fontSize: 44,
             fontWeight: 900,
             fontFamily: FONT,
             textAlign: "center",
             marginBottom: 16,
             padding: "0 60px",
+            lineHeight: 1.2,
           }}
         >
-          こういう答え合わせ、
-          <br />
-          無料で毎日見れます
+          {headlineFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: headlineFit.fontSize }}>
+              {line}
+            </div>
+          ))}
         </div>
       </Pop>
       <Pop delay={16} style={{ marginBottom: 40 }}>

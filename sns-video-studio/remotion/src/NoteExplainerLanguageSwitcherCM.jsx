@@ -5,6 +5,9 @@ import {
   SceneFeatures,
   SceneCTA,
   scaleRect,
+  FONT,
+  GOLD,
+  WHITE,
 } from "./noteVideoShared.jsx";
 
 /**
@@ -62,6 +65,22 @@ const HOOK_DURATION = 90;
 const FEATURES_DURATION = FEATURES.length * FEATURE_DURATION;
 const CTA_DURATION = 210;
 
+// Shorts棚フック強度対応（2026-09-12）: 「4言語」を数字として抜き出し
+// GOLD・fontWeight900・192px閾値以上に強調する（docs/reference/brand-kit.md
+// 「シーンのフック強度均一化」参照）。サイズが固定値のため実測レイアウトを
+// 事前に計算できる（データ依存のfitHeadlineは不要）。
+const HOOK_NUMBER_FONT_SIZE = 200;
+const HOOK_NUMBER_LINE_HEIGHT = 1.1;
+const HOOK_REST_FONT_SIZE = 56;
+const HOOK_REST_LINE_HEIGHT = 1.2;
+const HOOK_GAP = 12;
+const HOOK_SUBTITLE_TOP =
+  340 +
+  HOOK_NUMBER_FONT_SIZE * HOOK_NUMBER_LINE_HEIGHT +
+  HOOK_GAP +
+  HOOK_REST_FONT_SIZE * HOOK_REST_LINE_HEIGHT +
+  40;
+
 export function NoteExplainerCM_LanguageSwitcher() {
   return (
     <AbsoluteFill>
@@ -71,7 +90,39 @@ export function NoteExplainerCM_LanguageSwitcher() {
       />
       <Sequence from={0} durationInFrames={HOOK_DURATION}>
         <SceneHook
-          title="実は4言語対応してるって知ってた？"
+          title={
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: HOOK_GAP,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: HOOK_NUMBER_FONT_SIZE,
+                  fontWeight: 900,
+                  color: GOLD,
+                  fontFamily: FONT,
+                  lineHeight: HOOK_NUMBER_LINE_HEIGHT,
+                }}
+              >
+                4言語
+              </span>
+              <span
+                style={{
+                  fontSize: HOOK_REST_FONT_SIZE,
+                  fontWeight: 800,
+                  color: WHITE,
+                  fontFamily: FONT,
+                  lineHeight: HOOK_REST_LINE_HEIGHT,
+                }}
+              >
+                実は対応してるって知ってた？
+              </span>
+            </div>
+          }
+          subtitleTop={HOOK_SUBTITLE_TOP}
           subtitle="日本語・English・繁體中文・한국어をワンタップで切替"
           featureCount={FEATURES.length}
           previewImageSrc="language-switcher-dropdown.png"
@@ -84,6 +135,7 @@ export function NoteExplainerCM_LanguageSwitcher() {
           imageTop={IMAGE_TOP}
           imageLeft={IMAGE_LEFT}
           features={FEATURES}
+          captionFontSize={200}
         />
       </Sequence>
       <Sequence
@@ -96,6 +148,9 @@ export function NoteExplainerCM_LanguageSwitcher() {
             "ブックマーク・SNSシェアも快適",
             "選んだ言語は次回も引き継がれる",
           ]}
+          headlineFontSize={200}
+          headlineMinFontSize={192}
+          showRadarDecoration={false}
         />
       </Sequence>
     </AbsoluteFill>

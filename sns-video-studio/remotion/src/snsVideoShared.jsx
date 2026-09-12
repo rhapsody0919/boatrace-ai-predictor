@@ -1,6 +1,7 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import { Pop, Logo, NAVY, WHITE, GOLD, FONT } from "./noteVideoShared.jsx";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * X/TikTok向けショート動画（縦型 1080x1920）共通CTAコンポーネント。
@@ -15,8 +16,22 @@ import { Pop, Logo, NAVY, WHITE, GOLD, FONT } from "./noteVideoShared.jsx";
  * @param {string[]} ctaLines - 2行のCTA文言。基本型「[話題]、無料で見れる/使える」
  *   例: ["全24会場のデータ、", "無料で見れる"]
  * @param {string} [subLine] - ctaLinesの下に表示する補足文（省略可）
+ *
+ * シーンのフック強度均一化（docs/reference/brand-kit.md）: 従来は本文44px WHITE・
+ * ドメイン24px GOLDのいずれも画面幅10%(108px)未満で「弱いシーン」判定だった。
+ * ドメイン表記「boat-ai.jp」をfitHeadline()で108px以上のGOLD・fontWeight900の
+ * 主役テキストへ拡大する（1箇所の修正で本コンポーネントを使う全コンポジションに
+ * 波及する）。
  */
 export function SceneCTA({ ctaLines, subLine }) {
+  const domainFit = fitHeadline("boat-ai.jp", {
+    maxWidth: 940,
+    maxLines: 1,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 160,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -42,7 +57,7 @@ export function SceneCTA({ ctaLines, subLine }) {
         </div>
       </Pop>
       {subLine && (
-        <Pop delay={16} style={{ marginBottom: 40 }}>
+        <Pop delay={16} style={{ marginBottom: 32 }}>
           <div
             style={{
               color: "rgba(248,250,252,0.7)",
@@ -54,20 +69,21 @@ export function SceneCTA({ ctaLines, subLine }) {
           </div>
         </Pop>
       )}
-      <Pop delay={28}>
+      <Pop delay={28} style={{ marginBottom: 20 }}>
         <Logo size={48} />
       </Pop>
-      <Pop delay={34} style={{ marginTop: 14 }}>
+      <Pop delay={34}>
         <div
           style={{
             color: GOLD,
-            fontSize: 24,
-            fontWeight: 700,
+            fontSize: domainFit.fontSize,
+            fontWeight: 900,
             fontFamily: FONT,
             letterSpacing: 0.5,
+            textShadow: `0 0 60px ${GOLD}66`,
           }}
         >
-          boat-ai.jp
+          {domainFit.lines[0]}
         </div>
       </Pop>
     </AbsoluteFill>

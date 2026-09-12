@@ -10,11 +10,13 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 const NAVY = "#0f2c46";
 const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
+const GOLD = "#d4af37";
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
@@ -80,25 +82,25 @@ function Logo({ size = 44 }) {
           width: size,
           height: size,
           borderRadius: size / 4,
-          background: ACCENT,
+          background: GOLD,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           fontSize: size * 0.55,
         }}
       >
-        🚤
+        🐉
       </div>
       <span
         style={{
           color: WHITE,
-          fontSize: size * 0.62,
+          fontSize: size * 0.5,
           fontWeight: 900,
           fontFamily: FONT,
           letterSpacing: -1,
         }}
       >
-        BoatAI
+        龍神レーダー
       </span>
     </div>
   );
@@ -149,13 +151,13 @@ function SceneHook() {
       <Pop delay={36}>
         <div
           style={{
-            color: ACCENT,
+            color: GOLD,
             fontSize: 200,
             fontWeight: 900,
             fontFamily: FONT,
             lineHeight: 1,
             marginTop: 4,
-            textShadow: "0 8px 40px rgba(56,189,248,0.55)",
+            textShadow: `0 8px 40px ${GOLD}aa`,
           }}
         >
           41%
@@ -186,11 +188,11 @@ function SceneBridge() {
         <div
           style={{
             color: WHITE,
-            fontSize: 64,
+            fontSize: 116,
             fontWeight: 900,
             fontFamily: FONT,
             textAlign: "center",
-            lineHeight: 1.25,
+            lineHeight: 1.15,
             transform: `rotate(${shake}deg)`,
           }}
         >
@@ -276,6 +278,23 @@ function SceneScreen() {
   const frame = useCurrentFrame();
   const SWITCH_AT = 100; // 「41%」→「83」へ注目を切り替えるタイミング
   const { durationInFrames } = useVideoConfig();
+  const badgeText = frame < SWITCH_AT ? "🤖 AIの展開予測" : "🌪️ イン崩れ注意度";
+  const badgeFit = fitHeadline(badgeText, {
+    maxWidth: 940,
+    maxLines: 1,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 140,
+    minFontSize: 108,
+  });
+  const reactionFit = fitHeadline("え、ここまで見えるんだ…", {
+    maxWidth: 900,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 132,
+    minFontSize: 108,
+  });
 
   return (
     <AbsoluteFill style={{ background: "#0b1b2b", overflow: "hidden" }}>
@@ -292,11 +311,11 @@ function SceneScreen() {
         />
       )}
 
-      {/* 上部キャプション: 何を見ているか常に明示 */}
+      {/* 上部キャプション: 何を見ているか常に明示、GOLDの帯として主役級に強調 */}
       <div
         style={{
           position: "absolute",
-          top: 40,
+          top: 30,
           left: 0,
           right: 0,
           display: "flex",
@@ -305,17 +324,25 @@ function SceneScreen() {
       >
         <div
           style={{
-            background: "rgba(15,44,70,0.85)",
-            color: WHITE,
-            fontFamily: FONT,
-            fontWeight: 800,
-            fontSize: 26,
-            padding: "10px 24px",
-            borderRadius: 999,
-            border: `2px solid ${ACCENT}`,
+            background: GOLD,
+            borderRadius: 20,
+            padding: "16px 32px",
           }}
         >
-          {frame < SWITCH_AT ? "🤖 AIの展開予測" : "🌪️ イン崩れ注意度"}
+          <div
+            style={{
+              color: NAVY,
+              fontFamily: FONT,
+              fontWeight: 900,
+              fontSize: badgeFit.fontSize,
+              textAlign: "center",
+              lineHeight: 1.1,
+            }}
+          >
+            {badgeFit.lines.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -329,19 +356,24 @@ function SceneScreen() {
             right: 0,
             display: "flex",
             justifyContent: "center",
+            padding: "0 40px",
           }}
         >
           <Pop delay={durationInFrames - 55}>
             <div
               style={{
-                color: GREEN,
+                color: GOLD,
                 fontFamily: FONT,
                 fontWeight: 900,
-                fontSize: 34,
-                textShadow: "0 4px 20px rgba(0,0,0,0.4)",
+                fontSize: reactionFit.fontSize,
+                textAlign: "center",
+                lineHeight: 1.15,
+                textShadow: `0 0 40px ${GOLD}aa`,
               }}
             >
-              え、ここまで見えるんだ…
+              {reactionFit.lines.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
             </div>
           </Pop>
         </div>
@@ -352,6 +384,14 @@ function SceneScreen() {
 
 // --- Scene 4: CTA（325-390f, 2.17s） ---
 function SceneCTA() {
+  const ctaFit = fitHeadline("こんな予想が、全部無料で見れる", {
+    maxWidth: 940,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 120,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -365,16 +405,20 @@ function SceneCTA() {
       <Pop delay={2}>
         <div
           style={{
-            color: GREEN,
-            fontSize: 30,
+            color: GOLD,
+            fontSize: ctaFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
             marginBottom: 22,
             textAlign: "center",
+            lineHeight: 1.15,
             padding: "0 60px",
+            textShadow: `0 0 40px ${GOLD}aa`,
           }}
         >
-          こんな予想が、全部無料で見れる
+          {ctaFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
         </div>
       </Pop>
       <Pop delay={10}>
