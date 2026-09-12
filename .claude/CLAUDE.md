@@ -400,32 +400,41 @@ node scripts/daily/calculate-accuracy.js
 
 ### スラッシュコマンド
 
+#### 開発フロー
 | コマンド | 用途 |
 |---------|------|
 | `/create-pr {ブランチ名}` | featureブランチ作成 → PR作成 |
 | `/review-pr {PR番号}` | PRレビュー（ルール準拠チェック） |
 | `/deploy-preview {PR番号}` | Vercel Preview URL確認 |
-| `/analyze-venue {コード}` | 会場別詳細分析 |
-| `/collect-stats` | 24会場の統計一括収集 |
-| `/daily-report` | 本日の予測結果レポート |
-| `/check-env` | 環境変数確認 |
-| `/onboarding` | 環境セットアップ確認 |
+| `/codex-review [base]` | Codex (OpenAI) セカンドオピニオンレビュー |
 | `/step1-spec {slug} [チケット番号]` | SDD Step1: 仕様書作成 |
 | `/step1-screens {slug}` | SDD Step1: 画面洗い出し（UI機能） |
 | `/step2 {slug}` | SDD Step2: システム設計 |
 | `/step3 {slug}` | SDD Step3: タスク分解 |
 | `/step4 {slug}` | SDD Step4: 次タスク実装 |
-| `/codex-review [base]` | Codex (OpenAI) セカンドオピニオンレビュー |
-| `/growth-report` | 集客状況レポート（Search Console先行指標の定点観測） |
-| `/i18n-growth-report` | 多言語集客状況レポート（GA4需要+Search Console言語パス） |
-| `/growth-pdca` | 集客状況の網羅分析→施策立案→小施策は即実行（「集客を分析して」等の自然言語でも起動） |
-| `/x-growth-report` | X（Twitter）自体の集客PDCA（自アカウント投稿実績＋競合定点観測、SNS動画運用の一環） |
-| `/x-reply-drafts` | X返信下書き生成（リプライ戦略の半自動化、1件ずつ承認） |
-| `/tiktok-growth-report` | TikTok自体の集客PDCA（自アカウント投稿実績＋競合定点観測、SNS動画運用の一環） |
-| `/note-growth-report` | note自体の集客PDCA（自アカウント記事実績の定点観測） |
-| `/growth-monthly-summary` | SEO/X/TikTok集客PDCAの月次統合サマリー（事業ゴールへの進捗確認） |
+
+#### 分析・運用
+| コマンド | 用途 |
+|---------|------|
+| `/analyze-venue {コード}` | 会場別詳細分析 |
+| `/collect-stats` | 24会場の統計一括収集 |
+| `/daily-report` | 本日の予測結果レポート |
+| `/check-env` | 環境変数確認 |
+| `/onboarding` | 環境セットアップ確認 |
 | `/publish-blog {slug}` | ブログ記事の公開前品質チェック一括実行（note/X展開はsns-hubパイプラインが別途担当） |
-| `/channel-algorithm-research {youtube\|tiktok\|note}` | プラットフォーム側のアルゴリズム・成長戦術を深堀り調査し`docs/reference/{platform}-algorithm-and-growth-notes.md`にまとめる（自アカウント実績を見る`/x-growth-report`等とは別役割） |
+
+#### 集客分析（観測 → チャネル別PDCA → 統合サマリーの3階層）
+| コマンド | 用途 |
+|---------|------|
+| `/growth-report` | **観測**: SEO（Search Console先行指標）の定点観測レポートのみ。施策立案はしない |
+| `/i18n-growth-report` | **観測**: 多言語版のSEO定点観測（GA4需要+Search Console言語パス） |
+| `/x-growth-report` | **チャネル別PDCA**: X自体の実績（自アカウント投稿＋競合定点観測）を分析し施策立案 |
+| `/tiktok-growth-report` | **チャネル別PDCA**: TikTok自体の実績（自アカウント投稿＋競合定点観測）を分析し施策立案 |
+| `/note-growth-report` | **チャネル別PDCA**: note自体の実績（自アカウント記事）を分析し施策立案 |
+| `/x-reply-drafts` | X返信下書き生成（リプライ戦略の半自動化、1件ずつ承認） |
+| `/channel-algorithm-research {youtube\|tiktok\|note}` | プラットフォーム側のアルゴリズム・成長戦術そのものを調査（自アカウント実績を見る上記PDCA系とは別役割） |
+| `/growth-pdca` | **横断PDCA**: `/growth-report`の観測結果に加えGA4・競合・キーワード需要を横断分析→施策立案→小施策は即実行。「集客を分析して」等の自然言語でも起動 |
+| `/growth-monthly-summary` | **統合サマリー**: SEO（`/growth-pdca`）+X+TikTokの各PDCA結果を月次で1枚に集約、事業ゴールへの進捗確認 |
 
 ---
 
