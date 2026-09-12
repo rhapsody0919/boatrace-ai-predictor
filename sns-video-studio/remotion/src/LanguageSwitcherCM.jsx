@@ -10,8 +10,9 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { Fade, Logo, RadarDecoration, NAVY, GOLD, WHITE, FONT } from "./noteVideoShared.jsx";
+import { Fade, Logo, NAVY, GOLD, WHITE, FONT } from "./noteVideoShared.jsx";
 import { SceneCTA } from "./snsVideoShared.jsx";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * X/TikTok向けショート動画（縦型 1080x1920）— 龍神レーダー「4言語切替」
@@ -27,12 +28,23 @@ import { SceneCTA } from "./snsVideoShared.jsx";
  * を踏まえて最も目立つ位置に常設する。
  */
 
+// シーンのフック強度均一化（docs/reference/brand-kit.md）: 64px止まりだったため
+// fitHeadline()で108px以上へ拡大する。2行に伸びうるため呼び出し側は下の要素との
+// クリアランスを確保すること（SceneScreenshotのバッジをtop:400へ移動済み）
 function TitleBar({ text }) {
+  const fit = fitHeadline(text, {
+    maxWidth: 940,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
   return (
     <div
       style={{
         position: "absolute",
-        top: 90,
+        top: 70,
         left: 0,
         right: 0,
         display: "flex",
@@ -45,13 +57,15 @@ function TitleBar({ text }) {
           color: GOLD,
           fontFamily: FONT,
           fontWeight: 900,
-          fontSize: 64,
-          lineHeight: 1.3,
+          fontSize: fit.fontSize,
+          lineHeight: 1.15,
           textAlign: "center",
           textShadow: `0 0 40px ${GOLD}55`,
         }}
       >
-        {text}
+        {fit.lines.map((line, i) => (
+          <div key={i}>{line}</div>
+        ))}
       </div>
     </div>
   );
@@ -163,7 +177,22 @@ const HOOK_DURATION = 75;
 const SCREEN_DURATION = 240;
 const CTA_DURATION = 105;
 
+// シーンのフック強度均一化（docs/reference/brand-kit.md）: 従来の「実は4言語対応
+// してるって知ってた？」は問いかけのみ（判定基準4に抵触）かつ76px止まり（基準1に
+// 抵触）だったため、断定文＋数字の見出し「4言語に完全対応」に変更しfitHeadline()で
+// 108px以上へ拡大する。六角形の紋章イラスト（RadarDecoration）はbrand-kit.mdで
+// 明示的に却下済みのため削除した
+const HOOK_HEADLINE_FIT = {
+  maxWidth: 900,
+  maxLines: 2,
+  fontFamily: FONT,
+  fontWeight: 900,
+  maxFontSize: 150,
+  minFontSize: 108,
+};
+
 function SceneHook() {
+  const headlineFit = fitHeadline("4言語に完全対応", HOOK_HEADLINE_FIT);
   return (
     <AbsoluteFill
       style={{
@@ -171,39 +200,34 @@ function SceneHook() {
         overflow: "hidden",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: "38%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          opacity: 0.1,
-        }}
-      >
-        <RadarDecoration size={640} />
-      </div>
       <div style={{ position: "absolute", top: 56, left: 48 }}>
         <Logo size={44} />
       </div>
-      <Fade delay={-10} style={{ position: "absolute", top: 500, left: 0, right: 0 }}>
+      <Fade
+        delay={-10}
+        style={{ position: "absolute", top: 500, left: 0, right: 0 }}
+      >
         <div
           style={{
             color: GOLD,
             fontFamily: FONT,
             fontWeight: 900,
-            fontSize: 76,
-            lineHeight: 1.3,
+            fontSize: headlineFit.fontSize,
+            lineHeight: 1.15,
             textAlign: "center",
             padding: "0 60px",
             textShadow: `0 0 50px ${GOLD}66`,
           }}
         >
-          実は4言語対応
-          <br />
-          してるって知ってた？
+          {headlineFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
         </div>
       </Fade>
-      <Fade delay={-10} style={{ position: "absolute", top: 900, left: 0, right: 0 }}>
+      <Fade
+        delay={-10}
+        style={{ position: "absolute", top: 900, left: 0, right: 0 }}
+      >
         <div
           style={{
             color: WHITE,
@@ -223,8 +247,18 @@ function SceneHook() {
 function SceneScreenshot() {
   const frame = useCurrentFrame();
   const features = [
-    { box: scaleRect(RECTS.trigger), caption: "🌐ボタンをタップ", from: 0, durationInFrames: 120 },
-    { box: scaleRect(RECTS.dropdown), caption: "好きな言語を選ぶだけ", from: 120, durationInFrames: 120 },
+    {
+      box: scaleRect(RECTS.trigger),
+      caption: "🌐ボタンをタップ",
+      from: 0,
+      durationInFrames: 120,
+    },
+    {
+      box: scaleRect(RECTS.dropdown),
+      caption: "好きな言語を選ぶだけ",
+      from: 120,
+      durationInFrames: 120,
+    },
   ];
   return (
     <AbsoluteFill style={{ background: NAVY, overflow: "hidden" }}>
@@ -232,7 +266,7 @@ function SceneScreenshot() {
       <div
         style={{
           position: "absolute",
-          top: 260,
+          top: 420,
           left: 0,
           right: 0,
           display: "flex",
@@ -275,10 +309,20 @@ function SceneScreenshot() {
         </div>
       </Fade>
       {features.map((f) => (
-        <HighlightBox key={f.caption} box={f.box} from={f.from} durationInFrames={f.durationInFrames} />
+        <HighlightBox
+          key={f.caption}
+          box={f.box}
+          from={f.from}
+          durationInFrames={f.durationInFrames}
+        />
       ))}
       {features.map((f) => (
-        <Caption key={f.caption} text={f.caption} from={f.from} durationInFrames={f.durationInFrames} />
+        <Caption
+          key={f.caption}
+          text={f.caption}
+          from={f.from}
+          durationInFrames={f.durationInFrames}
+        />
       ))}
     </AbsoluteFill>
   );
@@ -294,7 +338,10 @@ export function LanguageSwitcherCM() {
       <Sequence from={HOOK_DURATION} durationInFrames={SCREEN_DURATION}>
         <SceneScreenshot />
       </Sequence>
-      <Sequence from={HOOK_DURATION + SCREEN_DURATION} durationInFrames={CTA_DURATION}>
+      <Sequence
+        from={HOOK_DURATION + SCREEN_DURATION}
+        durationInFrames={CTA_DURATION}
+      >
         <SceneCTA
           ctaLines={["4言語対応してるって、", "無料で使える"]}
           subLine="日本語 / English / 繁體中文 / 한국어"

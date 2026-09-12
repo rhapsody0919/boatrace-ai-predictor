@@ -11,6 +11,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { SceneCTA } from "./snsVideoShared.jsx";
 
 /**
  * 予想数値フック型 — 龍神レーダー Shorts（キャラC版）
@@ -27,6 +28,7 @@ const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
 const WARN = "#ff9800";
+const GOLD = "#d4af37";
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
@@ -80,38 +82,6 @@ function PulseRings({ color = ACCENT, size = 420, top = "50%" }) {
         );
       })}
     </>
-  );
-}
-
-function Logo({ size = 44 }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      <div
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size / 4,
-          background: ACCENT,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: size * 0.55,
-        }}
-      >
-        🐉
-      </div>
-      <span
-        style={{
-          color: WHITE,
-          fontSize: size * 0.5,
-          fontWeight: 900,
-          fontFamily: FONT,
-          letterSpacing: -1,
-        }}
-      >
-        龍神レーダー
-      </span>
-    </div>
   );
 }
 
@@ -212,24 +182,43 @@ function SceneHook({ mascotSrc }) {
       <Pop delay={-10} style={{ marginBottom: 36 }}>
         <Mascot src={mascotSrc} size={380} />
       </Pop>
-      <Pop delay={-10}>
+      <Pop delay={-10} style={{ textAlign: "center" }}>
         <div
           style={{
             color: WHITE,
-            fontSize: 46,
-            fontWeight: 900,
+            fontSize: 36,
+            fontWeight: 800,
             fontFamily: FONT,
-            textAlign: "center",
-            lineHeight: 1.4,
+            lineHeight: 1.3,
           }}
         >
           このレースは、
           <br />
-          1号艇の逃げ確率が
-          <br />
-          わずか33%——
-          <br />
-          少し様子が違います
+          1号艇の逃げ確率がわずか
+        </div>
+        <div
+          style={{
+            color: GOLD,
+            fontSize: 190,
+            fontWeight: 900,
+            fontFamily: FONT,
+            lineHeight: 0.9,
+            margin: "4px 0",
+            textShadow: `0 0 90px ${GOLD}aa`,
+          }}
+        >
+          33%
+        </div>
+        <div
+          style={{
+            color: WHITE,
+            fontSize: 36,
+            fontWeight: 800,
+            fontFamily: FONT,
+            lineHeight: 1.3,
+          }}
+        >
+          ——少し様子が違います
         </div>
       </Pop>
     </AbsoluteFill>
@@ -299,92 +288,55 @@ function SceneReveal({ mascotSrc }) {
       <div
         style={{
           position: "absolute",
-          top: CARD_TOP + CARD_DISPLAY_HEIGHT + 90,
+          top: CARD_TOP + CARD_DISPLAY_HEIGHT + 70,
           left: 0,
           right: 0,
           display: "flex",
-          justifyContent: "center",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
-        <Pop delay={40}>
+        <Pop delay={40} style={{ textAlign: "center" }}>
+          <div
+            style={{
+              color: WHITE,
+              fontFamily: FONT,
+              fontWeight: 800,
+              fontSize: 32,
+              lineHeight: 1.2,
+            }}
+          >
+            イン崩れ指数、会場内
+          </div>
+          <div
+            style={{
+              color: GOLD,
+              fontFamily: FONT,
+              fontWeight: 900,
+              fontSize: 200,
+              lineHeight: 0.85,
+              margin: "4px 0",
+              textShadow: `0 0 90px ${GOLD}aa`,
+            }}
+          >
+            100
+          </div>
           <div
             style={{
               color: WARN,
               fontFamily: FONT,
-              fontWeight: 900,
-              fontSize: 44,
-              textAlign: "center",
+              fontWeight: 800,
+              fontSize: 32,
+              lineHeight: 1.2,
             }}
           >
-            イン崩れ指数、会場内100…！
+            パーセンタイル——要注意！
           </div>
         </Pop>
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          top: CARD_TOP + CARD_DISPLAY_HEIGHT + 190,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "center",
-        }}
-      >
-        <Pop delay={55}>
-          <Mascot src={mascotSrc} size={300} />
+        <Pop delay={55} style={{ marginTop: 28 }}>
+          <Mascot src={mascotSrc} size={260} />
         </Pop>
       </div>
-    </AbsoluteFill>
-  );
-}
-
-// --- Scene 3: CTA（350-425f, 2.5s） ---
-function SceneCTA() {
-  return (
-    <AbsoluteFill
-      style={{
-        background: `radial-gradient(circle at 50% 40%, #163a5c 0%, ${NAVY} 55%, #050e18 100%)`,
-        justifyContent: "center",
-        alignItems: "center",
-        overflow: "hidden",
-      }}
-    >
-      <PulseRings color={GREEN} size={760} />
-      <Pop delay={2}>
-        <div
-          style={{
-            color: GREEN,
-            fontSize: 34,
-            fontWeight: 900,
-            fontFamily: FONT,
-            marginBottom: 34,
-            textAlign: "center",
-            padding: "0 60px",
-          }}
-        >
-          本日の予想、無料で見れます
-        </div>
-      </Pop>
-      <Pop delay={10}>
-        <Logo size={110} />
-      </Pop>
-      <Pop delay={20}>
-        <div
-          style={{
-            marginTop: 40,
-            padding: "20px 50px",
-            borderRadius: 999,
-            background: ACCENT,
-            color: NAVY,
-            fontSize: 40,
-            fontWeight: 900,
-            fontFamily: FONT,
-          }}
-        >
-          boat-ai.jp
-        </div>
-      </Pop>
     </AbsoluteFill>
   );
 }
@@ -401,7 +353,10 @@ export function LivePredictionCM_C() {
         <SceneReveal mascotSrc={mascotSrc} />
       </Sequence>
       <Sequence from={350} durationInFrames={75}>
-        <SceneCTA />
+        <SceneCTA
+          ctaLines={["本日の予想、", "無料で見れる"]}
+          subLine="AI予想とデータ分析でレースを見える化"
+        />
       </Sequence>
     </AbsoluteFill>
   );

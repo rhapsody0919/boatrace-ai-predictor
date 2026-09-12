@@ -10,11 +10,13 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 const NAVY = "#0f2c46";
 const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
+const GOLD = "#d4af37";
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
@@ -133,12 +135,12 @@ function SceneHook() {
       <Pop delay={22}>
         <div
           style={{
-            color: ACCENT,
-            fontSize: 96,
+            color: GOLD,
+            fontSize: 116,
             fontWeight: 900,
             fontFamily: FONT,
             marginTop: 10,
-            textShadow: "0 8px 40px rgba(56,189,248,0.55)",
+            textShadow: `0 8px 40px ${GOLD}aa`,
           }}
         >
           分析ツール17個
@@ -168,6 +170,14 @@ function SceneProof() {
   const kb = interpolate(frame, [0, durationInFrames], [1, 1.05], {
     extrapolateRight: "clamp",
   });
+  const proofFit = fitHeadline("🎯 これ、全部無料で使える", {
+    maxWidth: 900,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 120,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -181,9 +191,9 @@ function SceneProof() {
       <div
         style={{
           position: "absolute",
-          top: 130,
-          left: 0,
-          right: 0,
+          top: 90,
+          left: 40,
+          right: 40,
           display: "flex",
           justifyContent: "center",
         }}
@@ -191,13 +201,26 @@ function SceneProof() {
         <Pop delay={0}>
           <div
             style={{
-              color: ACCENT,
-              fontFamily: FONT,
-              fontWeight: 900,
-              fontSize: 30,
+              background: GOLD,
+              borderRadius: 24,
+              padding: "22px 40px",
+              display: "inline-block",
             }}
           >
-            🎯 これ、全部無料で使える
+            <div
+              style={{
+                color: NAVY,
+                fontFamily: FONT,
+                fontWeight: 900,
+                fontSize: proofFit.fontSize,
+                lineHeight: 1.15,
+                textAlign: "center",
+              }}
+            >
+              {proofFit.lines.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
           </div>
         </Pop>
       </div>
@@ -247,6 +270,14 @@ function ZoomedTool({ src, delay = 0 }) {
 }
 
 function ToolSlide({ src, label, desc, delay = 0 }) {
+  const labelFit = fitHeadline(label, {
+    maxWidth: 980,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 132,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill style={{ background: "#0b1b2b", overflow: "hidden" }}>
       <ZoomedTool src={src} delay={delay} />
@@ -258,19 +289,23 @@ function ToolSlide({ src, label, desc, delay = 0 }) {
           right: 0,
           padding: "40px 50px 90px",
           background:
-            "linear-gradient(to top, rgba(11,27,43,0.98) 30%, rgba(11,27,43,0))",
+            "linear-gradient(to top, rgba(11,27,43,0.98) 45%, rgba(11,27,43,0))",
         }}
       >
         <Pop delay={delay + 3}>
           <div
             style={{
-              color: ACCENT,
+              color: GOLD,
               fontFamily: FONT,
               fontWeight: 900,
-              fontSize: 40,
+              fontSize: labelFit.fontSize,
+              lineHeight: 1.15,
+              textShadow: `0 0 30px ${GOLD}aa`,
             }}
           >
-            {label}
+            {labelFit.lines.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
           </div>
           <div
             style={{
@@ -326,6 +361,14 @@ function SceneMontage() {
 
 // --- Scene 4: CTA（300-390f, 3s） ---
 function SceneCTA() {
+  const ctaFit = fitHeadline("これが全部、無料。", {
+    maxWidth: 940,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 132,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -339,16 +382,20 @@ function SceneCTA() {
       <Pop delay={2}>
         <div
           style={{
-            color: GREEN,
-            fontSize: 32,
+            color: GOLD,
+            fontSize: ctaFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
             marginBottom: 22,
             textAlign: "center",
+            lineHeight: 1.15,
             padding: "0 60px",
+            textShadow: `0 0 40px ${GOLD}aa`,
           }}
         >
-          これが全部、無料。
+          {ctaFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
         </div>
       </Pop>
       <Pop delay={10}>

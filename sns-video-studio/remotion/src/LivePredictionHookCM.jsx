@@ -9,6 +9,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { SceneCTA } from "./snsVideoShared.jsx";
 
 /**
  * 予想数値フック型（TikTok向け・マスコット無し・実画面スクショ不要）
@@ -28,7 +29,7 @@ const NAVY_DARK = "#081b2e";
 const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
-const GOLD = "#f59e0b";
+const GOLD = "#d4af37";
 
 // SceneHook（カバー）とSceneVolatilityで共有するレベル別の配色・アイコン・ラベル。
 // 判定基準（getVolatilityLevel）はSceneVolatility節で定義（2026-09-01、カバーにも
@@ -383,10 +384,44 @@ function SceneTurnPrediction({ venue, raceNumber, patterns }) {
             color: "rgba(248,250,252,0.55)",
             fontSize: 20,
             fontFamily: FONT,
-            marginBottom: 36,
+            marginBottom: 16,
           }}
         >
           龍神レーダー独自AIが読む、1着候補ランキング
+        </div>
+      </Pop>
+
+      {/* シーンのフック強度均一化（brand-kit.md）: 主役テキストをGOLD・150px級に
+          再掲し、リスト単体では26〜40px止まりだった強度をHookシーンと揃える */}
+      <Pop
+        delay={16}
+        style={{
+          textAlign: "center",
+          marginBottom: 24,
+        }}
+      >
+        <div
+          style={{
+            color: "rgba(248,250,252,0.55)",
+            fontSize: 22,
+            fontWeight: 700,
+            fontFamily: FONT,
+            marginBottom: 4,
+          }}
+        >
+          1位候補の確率
+        </div>
+        <div
+          style={{
+            fontSize: 150,
+            fontWeight: 900,
+            fontFamily: FONT,
+            color: GOLD,
+            lineHeight: 0.9,
+            textShadow: `0 0 80px ${GOLD}99`,
+          }}
+        >
+          {Math.round(patterns[0].probability * 100)}%
         </div>
       </Pop>
 
@@ -482,6 +517,33 @@ function SceneVolatility({ boatGrade, boatWinRate, percentile, reasons }) {
         justifyContent: "center",
       }}
     >
+      {/* シーンのフック強度均一化（brand-kit.md）: パーセンタイル値をGOLD・150px級で
+          再掲する。カード内表示は{accentColor}のためGOLD/WHITE基準を満たさない */}
+      <SlideIn delay={0} style={{ textAlign: "center", marginBottom: 20 }}>
+        <div
+          style={{
+            color: "rgba(248,250,252,0.55)",
+            fontSize: 22,
+            fontWeight: 700,
+            fontFamily: FONT,
+            marginBottom: 4,
+          }}
+        >
+          会場内パーセンタイル
+        </div>
+        <div
+          style={{
+            fontSize: 150,
+            fontWeight: 900,
+            fontFamily: FONT,
+            color: GOLD,
+            lineHeight: 0.9,
+            textShadow: `0 0 80px ${GOLD}99`,
+          }}
+        >
+          {percentile}
+        </div>
+      </SlideIn>
       <SlideIn delay={2}>
         <div
           style={{
@@ -655,50 +717,9 @@ function SceneVolatility({ boatGrade, boatWinRate, percentile, reasons }) {
 // --- Scene 3: CTA ---
 // 時刻訴求（旧: 「{startTime}発走までに」）は投稿タイミングが締切に間に合わない
 // 場合に文言が破綻するリスクがある（2026-08-24の実例、天才マーケター議論での指摘）
-// ため、時刻に依存しない文言に変更
-function SceneCTA() {
-  return (
-    <AbsoluteFill
-      style={{
-        background: `radial-gradient(circle at 50% 40%, ${NAVY} 0%, ${NAVY_DARK} 100%)`,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Pop delay={4}>
-        <div
-          style={{
-            color: WHITE,
-            fontSize: 44,
-            fontWeight: 900,
-            fontFamily: FONT,
-            textAlign: "center",
-            marginBottom: 16,
-            padding: "0 60px",
-          }}
-        >
-          今すぐ無料で
-          <br />
-          予想をチェック
-        </div>
-      </Pop>
-      <Pop delay={16} style={{ marginBottom: 40 }}>
-        <div
-          style={{
-            color: "rgba(248,250,252,0.7)",
-            fontSize: 24,
-            fontFamily: FONT,
-          }}
-        >
-          あなたの狙う艇は、堅い？崩れやすい？
-        </div>
-      </Pop>
-      <Pop delay={28}>
-        <Logo size={48} />
-      </Pop>
-    </AbsoluteFill>
-  );
-}
+// ため、時刻に依存しない文言に変更。CTAシーンの主役テキストが44px WHITE止まりで
+// フック強度基準未達だったため、snsVideoShared.jsxの共通SceneCTA（boat-ai.jpを
+// GOLD・108px以上で再掲）に差し替えた（brand-kit.md「シーンのフック強度均一化」）
 
 function LivePredictionHookTemplate({
   venue,
@@ -740,7 +761,10 @@ function LivePredictionHookTemplate({
         />
       </Sequence>
       <Sequence from={405} durationInFrames={100}>
-        <SceneCTA />
+        <SceneCTA
+          ctaLines={["展開予測とイン崩れ注意度、", "無料で見れる"]}
+          subLine="あなたの狙う艇は、堅い？崩れやすい？"
+        />
       </Sequence>
       <Audio src={staticFile("soundtrack-hitcheck.wav")} />
     </AbsoluteFill>

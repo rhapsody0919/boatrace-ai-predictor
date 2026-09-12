@@ -9,6 +9,8 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
+import { SceneCTA as SharedSceneCTA } from "./snsVideoShared.jsx";
 
 /**
  * 出目分布型（第1弾: 1号艇の粘り込み率）— 龍神レーダー TikTok Shorts
@@ -339,8 +341,23 @@ function RankRow({ rank, label, rate, delay, maxRate }) {
 }
 
 // --- Scene 2: ランキング（75-280f, 約6.8s） ---
+// 2026-09-12改訂: 単体で切り取られても成立するよう、1位の数値を見出しとして
+// 108px以上GOLDで先頭に再掲してから、既存のランキング一覧を展開する構成に変更
+// （docs/reference/brand-kit.md「シーンのフック強度均一化」）
+// 見出し自体を1位の実数値で構成する（フック強度基準対応）。「見出し＋別枠の
+// 巨大数値」は、直後のランキング1行目と数値が重複して間延びする
+// （brand-kit.md「シーンのフック強度均一化」で却下済みのパターン）ため採用しない
 function SceneRanking() {
   const maxRate = SECOND_PLACE_DATA[0].rate;
+  const top = SECOND_PLACE_DATA[0];
+  const headlineFit = fitHeadline(`1号艇が2着に粘る確率、最高${top.rate}%`, {
+    maxWidth: 940,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 108,
+    minFontSize: 76,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -349,17 +366,33 @@ function SceneRanking() {
         justifyContent: "center",
       }}
     >
-      <Pop delay={2}>
+      <Pop delay={0} style={{ marginBottom: 20 }}>
         <div
           style={{
             color: GOLD,
-            fontSize: 34,
+            fontSize: headlineFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
-            marginBottom: 26,
+            lineHeight: 1.2,
+            textShadow: `0 0 60px ${GOLD}66`,
           }}
         >
-          📌 1号艇が2着に粘り込む確率
+          {headlineFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+      </Pop>
+      <Pop delay={10} style={{ marginBottom: 30 }}>
+        <div
+          style={{
+            color: WHITE,
+            fontSize: 22,
+            fontWeight: 700,
+            fontFamily: FONT,
+            opacity: 0.8,
+          }}
+        >
+          （{top.winner}が1着でも）
         </div>
       </Pop>
       {SECOND_PLACE_DATA.map((d, i) => (
@@ -389,7 +422,19 @@ function SceneRanking() {
 }
 
 // --- Scene 3: 種明かし（280-380f, 3.33s） ---
+// 2026-09-12改訂: 結論のGOLD数値を44px→150px級に拡大（フック強度基準）
 function SceneTwist() {
+  const { fontSize: punchFontSize, lines: punchLines } = fitHeadline(
+    "実際は42.7%",
+    {
+      maxWidth: 920,
+      maxLines: 1,
+      fontFamily: FONT,
+      fontWeight: 900,
+      maxFontSize: 150,
+      minFontSize: 108,
+    },
+  );
   return (
     <AbsoluteFill
       style={{
@@ -415,18 +460,23 @@ function SceneTwist() {
         </div>
       </Pop>
       <Pop delay={20}>
-        <div
-          style={{
-            color: GOLD,
-            fontSize: 44,
-            fontWeight: 900,
-            fontFamily: FONT,
-            textAlign: "center",
-            marginTop: 10,
-          }}
-        >
-          実際は最大42.7%
-        </div>
+        {punchLines.map((line, i) => (
+          <div
+            key={i}
+            style={{
+              color: GOLD,
+              fontSize: punchFontSize,
+              fontWeight: 900,
+              fontFamily: FONT,
+              textAlign: "center",
+              marginTop: 14,
+              lineHeight: 1.05,
+              textShadow: `0 0 60px ${GOLD}66`,
+            }}
+          >
+            {line}
+          </div>
+        ))}
       </Pop>
       <Pop delay={44}>
         <div
@@ -446,49 +496,6 @@ function SceneTwist() {
   );
 }
 
-// --- Scene 4: CTA（380-450f, 2.33s） ---
-function SceneCTA() {
-  return (
-    <AbsoluteFill
-      style={{
-        background: `radial-gradient(circle at 50% 40%, ${NAVY} 0%, ${NAVY_DARK} 100%)`,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Pop delay={4}>
-        <div
-          style={{
-            color: WHITE,
-            fontSize: 40,
-            fontWeight: 900,
-            fontFamily: FONT,
-            textAlign: "center",
-            marginBottom: 16,
-            padding: "0 60px",
-          }}
-        >
-          出目データ、無料で見れる
-        </div>
-      </Pop>
-      <Pop delay={16} style={{ marginBottom: 40 }}>
-        <div
-          style={{
-            color: "rgba(248,250,252,0.7)",
-            fontSize: 26,
-            fontFamily: FONT,
-          }}
-        >
-          会場別・コース別の出現パターンをチェック
-        </div>
-      </Pop>
-      <Pop delay={28}>
-        <Logo size={48} />
-      </Pop>
-    </AbsoluteFill>
-  );
-}
-
 export function OutcomeDistributionCM() {
   return (
     <AbsoluteFill style={{ background: NAVY_DARK }}>
@@ -502,7 +509,10 @@ export function OutcomeDistributionCM() {
         <SceneTwist />
       </Sequence>
       <Sequence from={380} durationInFrames={70}>
-        <SceneCTA />
+        <SharedSceneCTA
+          ctaLines={["出目データ、", "無料で見れる"]}
+          subLine="会場別・コース別の出現パターンをチェック"
+        />
       </Sequence>
       <Audio src={staticFile("soundtrack-hitcheck.wav")} />
     </AbsoluteFill>

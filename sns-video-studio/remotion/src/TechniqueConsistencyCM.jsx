@@ -11,6 +11,11 @@ import {
   FONT,
 } from "./noteVideoShared.jsx";
 import { DataQuoteCard } from "./DataQuoteCard.jsx";
+import { fitHeadline } from "./textFit.js";
+
+const CANVAS_WIDTH = 1920;
+const HERO_MAX_FONT_SIZE = 210;
+const HERO_MIN_FONT_SIZE = 192; // 画面幅1920の10%（Shorts一覧フック強度基準の閾値）
 
 /**
  * YouTube解説動画 — 「1号艇は逃げ一強、4号艇の決まり手は会場でバラバラ」
@@ -45,6 +50,20 @@ const BAR2_DURATION = 260;
 const COMPARE_DURATION = 160;
 const CTA_DURATION = 210;
 
+// Shorts一覧のフック強度基準（画面幅の10%＝192px以上・GOLD/900）を満たす主役数値を
+// fitHeadline()で安全にフィットさせる共通ヘルパー（2026-09-12、
+// docs/reference/brand-kit.md「シーンのフック強度均一化」対応）
+function fitHero(text, { maxWidth = CANVAS_WIDTH * 0.8 } = {}) {
+  return fitHeadline(text, {
+    maxWidth,
+    maxLines: 1,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: HERO_MAX_FONT_SIZE,
+    minFontSize: HERO_MIN_FONT_SIZE,
+  });
+}
+
 function BgDecoration() {
   return (
     <>
@@ -76,14 +95,23 @@ function BgDecoration() {
 
 // 会場別の横棒グラフ（記事本文の表と同じ実数値）。barColorが指定された行は
 // 「1位の決まり手が他と違う」ことを示す強調色にする（4号艇シーン用）。
+//
+// heroLabel/heroValue: Shorts一覧のフック強度基準対応（2026-09-12）。
+// 「見出し自体をランキング1位の情報で構成する」扱いとして、リストの1位の数値を
+// GOLD・192px以上の主役テキストとして先頭に配置する（ヒーロー数値の"追加"ではなく、
+// 既存の見出しをこの情報で構成する対応。docs/reference/brand-kit.md参照）。
+// 一覧表示（bars）自体は維持する。
 function VenueBarChartScene({
   label,
+  heroLabel,
+  heroValue,
   headline,
   excerptNote,
   bars,
   maxValue,
   note,
 }) {
+  const { fontSize: heroFontSize, lines: heroLines } = fitHero(heroValue);
   return (
     <AbsoluteFill
       style={{
@@ -98,7 +126,7 @@ function VenueBarChartScene({
         delay={0}
         style={{
           position: "absolute",
-          top: 64,
+          top: 30,
           left: 0,
           right: 0,
           textAlign: "center",
@@ -109,9 +137,9 @@ function VenueBarChartScene({
             display: "inline-flex",
             color: NAVY,
             background: GOLD,
-            fontSize: 28,
+            fontSize: 24,
             fontWeight: 900,
-            padding: "9px 30px",
+            padding: "8px 26px",
             borderRadius: 999,
           }}
         >
@@ -120,10 +148,52 @@ function VenueBarChartScene({
       </Pop>
 
       <Pop
-        delay={8}
+        delay={6}
         style={{
           position: "absolute",
-          top: 138,
+          top: 92,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{ color: WHITE, fontSize: 26, fontWeight: 700, opacity: 0.85 }}
+        >
+          {heroLabel}
+        </div>
+      </Pop>
+
+      <Pop
+        delay={10}
+        style={{
+          position: "absolute",
+          top: 128,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            color: GOLD,
+            fontSize: heroFontSize,
+            fontWeight: 900,
+            lineHeight: 1.05,
+            textShadow: `0 0 90px ${GOLD}77`,
+          }}
+        >
+          {heroLines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+      </Pop>
+
+      <Pop
+        delay={16}
+        style={{
+          position: "absolute",
+          top: 372,
           left: 0,
           right: 0,
           textAlign: "center",
@@ -132,7 +202,7 @@ function VenueBarChartScene({
         <div
           style={{
             color: WHITE,
-            fontSize: 40,
+            fontSize: 32,
             fontWeight: 900,
             lineHeight: 1.3,
           }}
@@ -143,22 +213,22 @@ function VenueBarChartScene({
 
       {excerptNote && (
         <Fade
-          delay={12}
+          delay={20}
           style={{
             position: "absolute",
-            top: 200,
+            top: 424,
             left: 0,
             right: 0,
             textAlign: "center",
           }}
         >
-          <div style={{ color: WHITE, fontSize: 20, opacity: 0.6 }}>
+          <div style={{ color: WHITE, fontSize: 18, opacity: 0.6 }}>
             {excerptNote}
           </div>
         </Fade>
       )}
 
-      <div style={{ position: "absolute", top: 250, left: 160, right: 160 }}>
+      <div style={{ position: "absolute", top: 470, left: 160, right: 160 }}>
         {bars.map((bar, i) => {
           const widthPct = (bar.value / maxValue) * 100;
           const barColor = bar.emphasis ? ACCENT : GOLD;
@@ -251,7 +321,15 @@ function VenueBarChartScene({
   );
 }
 
+// 「差はなんと5倍以上」— フック強度基準対応（2026-09-12）。既存の強調テキストの
+// フォントサイズをfitHeadline()で192px以上に拡大（新規要素の追加ではない）
+const COMPARE_HERO_TEXT = "差はなんと5倍以上";
+
 function CompareScene() {
+  const { fontSize: heroFontSize, lines: heroLines } = fitHero(
+    COMPARE_HERO_TEXT,
+    { maxWidth: CANVAS_WIDTH * 0.85 },
+  );
   return (
     <AbsoluteFill
       style={{
@@ -306,12 +384,16 @@ function CompareScene() {
           style={{
             marginTop: 40,
             color: GOLD,
-            fontSize: 40,
             fontWeight: 900,
-            textShadow: `0 0 30px ${GOLD}55`,
+            textShadow: `0 0 90px ${GOLD}77`,
           }}
         >
-          差はなんと5倍以上
+          {heroLines.map((line, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div key={i} style={{ fontSize: heroFontSize, lineHeight: 1.1 }}>
+              {line}
+            </div>
+          ))}
         </div>
       </Pop>
     </AbsoluteFill>
@@ -367,6 +449,58 @@ const BOAT4_BARS = [
   },
 ];
 
+// Hookシーン（DataQuoteCard）専用のGOLD192px級オーバーレイ。DataQuoteCardの
+// コンテンツブロックは左半分・垂直中央寄せのため、下部の余白に統計値
+// （24会場）を大きく重ねる（フック強度基準対応、2026-09-12。DataQuoteCard自体は
+// ブログ/note/YouTubeサムネイル共通のため変更しない）
+const HOOK_HERO_TEXT = "24会場";
+
+function HookHeroOverlay() {
+  const { fontSize: heroFontSize, lines: heroLines } = fitHero(HOOK_HERO_TEXT, {
+    maxWidth: CANVAS_WIDTH * 0.7,
+  });
+  return (
+    <AbsoluteFill>
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 90,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-block",
+            color: GOLD,
+            fontSize: heroFontSize,
+            fontWeight: 900,
+            fontFamily: FONT,
+            lineHeight: 1,
+            textShadow: `0 0 90px ${GOLD}77`,
+          }}
+        >
+          {heroLines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+        <div
+          style={{
+            marginTop: 12,
+            color: WHITE,
+            fontSize: 32,
+            fontWeight: 700,
+            fontFamily: FONT,
+          }}
+        >
+          過去90日の決まり手データを比較
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+}
+
 export function TechniqueConsistencyCM() {
   return (
     <AbsoluteFill>
@@ -376,17 +510,25 @@ export function TechniqueConsistencyCM() {
       />
       {/* サムネイルと全く同じカバー画像から動画を開始する（2026-09-02、
           「最初の画面が低クオリティ、サムネと同じ画像から入れば良いのでは」
-          という指摘を受けてDataQuoteCardをそのまま再利用に変更） */}
+          という指摘を受けてDataQuoteCardをそのまま再利用に変更）。
+          DataQuoteCard自体はブログ/note/YouTubeサムネイル共通のフォールバック
+          コンポーネントで、複数チャネルの承認済みデザイン（brand-kit.md参照）の
+          ため、statValue等の基本フォントサイズはそのまま変更せず、このシーン
+          専用のGOLD192px級オーバーレイをこのファイル側だけに追加する
+          （フック強度基準対応、2026-09-12） */}
       <Sequence from={0} durationInFrames={HOOK_DURATION}>
-        <DataQuoteCard
-          headline="1号艇は逃げ一強、4号艇は会場でバラバラ"
-          statValue="24会場"
-          statLabel="過去90日の決まり手データを比較"
-        />
+        {/* statValue/statLabelはDataQuoteCard内では表示せず、HookHeroOverlay側の
+            GOLD192px級表示に一本化する（statValueをそのまま渡すと同じ「24会場」が
+            小さい表示と巨大表示で二重に出てしまうため。DataQuoteCardはstatValue
+            未指定時のレイアウトも元々サポートしている） */}
+        <DataQuoteCard headline="1号艇は逃げ一強、4号艇は会場でバラバラ" />
+        <HookHeroOverlay />
       </Sequence>
       <Sequence from={HOOK_DURATION} durationInFrames={BAR1_DURATION}>
         <VenueBarChartScene
           label="1号艇の決まり手（逃げ率）"
+          heroLabel={`1号艇 逃げ率 全国1位は${BOAT1_BARS[0].venue}`}
+          heroValue={BOAT1_BARS[0].displayValue}
           headline="全24会場、逃げ率はすべて90%超"
           excerptNote="全24会場中、上位3・下位2を抜粋"
           bars={BOAT1_BARS}
@@ -400,6 +542,8 @@ export function TechniqueConsistencyCM() {
       >
         <VenueBarChartScene
           label="4号艇の1位の決まり手"
+          heroLabel="4号艇 1位決まり手の会場差"
+          heroValue="約30pt"
           headline="会場によって主役の決まり手が変わる"
           excerptNote="全24会場中、上位3・「まくり」以外が1位の3会場を抜粋"
           bars={BOAT4_BARS}
@@ -423,6 +567,9 @@ export function TechniqueConsistencyCM() {
             "枠番別の勝ちパターン",
             "無料・登録不要で確認",
           ]}
+          showRadarDecoration={false}
+          headlineFontSize={HERO_MAX_FONT_SIZE}
+          headlineMinFontSize={HERO_MIN_FONT_SIZE}
         />
       </Sequence>
     </AbsoluteFill>

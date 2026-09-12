@@ -9,6 +9,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * 豆知識型（第1弾: 年齢と実際の1着率の関係）— 龍神レーダー TikTok Shorts
@@ -330,6 +331,14 @@ function AgeBar({ label, value, maxValue, isPeak, delay }) {
 }
 
 function SceneCompare() {
+  const headlineFit = fitHeadline("30代19.87%、全年代で最高", {
+    maxWidth: 940,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 108,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -347,7 +356,7 @@ function SceneCompare() {
       <div
         style={{
           position: "absolute",
-          top: 220,
+          top: 130,
           left: 0,
           right: 0,
           display: "flex",
@@ -360,11 +369,15 @@ function SceneCompare() {
               color: GOLD,
               fontFamily: FONT,
               fontWeight: 900,
-              fontSize: 38,
+              fontSize: headlineFit.fontSize,
+              lineHeight: 1.2,
               textAlign: "center",
+              textShadow: "0 0 40px rgba(212,175,55,0.4)",
             }}
           >
-            年代別・実際の1着率
+            {headlineFit.lines.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
           </div>
         </Pop>
       </div>
@@ -457,7 +470,7 @@ function SceneExample() {
         <div
           style={{
             color: GOLD,
-            fontSize: 90,
+            fontSize: 118,
             fontWeight: 900,
             fontFamily: FONT,
             marginTop: 14,
@@ -485,7 +498,7 @@ function SceneExample() {
   );
 }
 
-// --- Scene 4: ソフトCTA（330-420f, 3s）宣伝色を薄める ---
+// --- Scene 4: ソフトCTA（330-420f, 3s） ---
 function SceneCTA() {
   return (
     <AbsoluteFill
@@ -499,18 +512,19 @@ function SceneCTA() {
       <Pop delay={2}>
         <div
           style={{
-            color: WHITE,
-            fontSize: 34,
-            fontWeight: 800,
+            color: GOLD,
+            fontSize: 108,
+            fontWeight: 900,
             fontFamily: FONT,
             textAlign: "center",
             padding: "0 70px",
-            lineHeight: 1.4,
+            lineHeight: 1.25,
+            textShadow: "0 0 40px rgba(212,175,55,0.4)",
           }}
         >
-          こういう選手データ、
+          選手データ、
           <br />
-          龍神レーダーで無料で見れます
+          無料で見れる
         </div>
       </Pop>
       <Pop delay={22}>

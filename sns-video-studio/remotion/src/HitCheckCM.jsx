@@ -10,11 +10,13 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 const NAVY = "#0f2c46";
 const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
+const GOLD = "#d4af37";
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
@@ -105,6 +107,17 @@ function Logo({ size = 44 }) {
 
 // --- Scene 1: フック（0-70f, 2.33s）懐疑から入る「AI予想とか、話盛ってるだけっしょ」 ---
 function SceneHook() {
+  // シーンのフック強度均一化（docs/reference/brand-kit.md）: 主役テキストは
+  // 画面幅10%(108px)以上・GOLD/WHITE+900のいずれかが必須。既にWHITE+900のため
+  // fitHeadline()でサイズのみ108px以上へ拡大する
+  const headlineFit = fitHeadline("「AI予想とか話盛ってるだけっしょ」", {
+    maxWidth: 940,
+    maxLines: 3,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -120,16 +133,16 @@ function SceneHook() {
         <div
           style={{
             color: WHITE,
-            fontSize: 52,
+            fontSize: headlineFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
             textAlign: "center",
-            lineHeight: 1.35,
+            lineHeight: 1.3,
           }}
         >
-          「AI予想とか
-          <br />
-          話盛ってるだけっしょ」
+          {headlineFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
         </div>
       </Pop>
       <Pop delay={40}>
@@ -152,6 +165,15 @@ function SceneHook() {
 
 // --- Scene 2: つなぎ（70-115f, 1.5s）AIの予想内容を一瞬だけ見せる ---
 function SceneTease() {
+  // 主役テキスト「1号艇が「逃げ」41%」をACCENT→GOLD・108px以上に拡大
+  const statFit = fitHeadline("1号艇が「逃げ」41%", {
+    maxWidth: 960,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -178,15 +200,18 @@ function SceneTease() {
       <Pop delay={8}>
         <div
           style={{
-            color: ACCENT,
-            fontSize: 58,
+            color: GOLD,
+            fontSize: statFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
             textAlign: "center",
             marginTop: 12,
+            lineHeight: 1.25,
           }}
         >
-          1号艇が「逃げ」41%
+          {statFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
         </div>
       </Pop>
       <Pop delay={24}>
@@ -254,6 +279,15 @@ function SceneReveal() {
   const kb = interpolate(frame, [0, durationInFrames], [1, 1.06], {
     extrapolateRight: "clamp",
   });
+  // 主役テキスト「え、ガチで当たってる…」をGREEN→GOLD・108px以上に拡大
+  const revealFit = fitHeadline("え、ガチで当たってる…", {
+    maxWidth: 900,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
 
   return (
     <AbsoluteFill style={{ background: NAVY, overflow: "hidden" }}>
@@ -308,19 +342,24 @@ function SceneReveal() {
           right: 0,
           display: "flex",
           justifyContent: "center",
+          padding: "0 60px",
         }}
       >
         <Pop delay={40}>
           <div
             style={{
-              color: GREEN,
+              color: GOLD,
               fontFamily: FONT,
               fontWeight: 900,
-              fontSize: 38,
+              fontSize: revealFit.fontSize,
+              textAlign: "center",
+              lineHeight: 1.25,
               textShadow: "0 4px 20px rgba(0,0,0,0.4)",
             }}
           >
-            え、ガチで当たってる…
+            {revealFit.lines.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
           </div>
         </Pop>
       </div>
@@ -330,6 +369,15 @@ function SceneReveal() {
 
 // --- Scene 3: CTA（270-390f, 4s） ---
 function SceneCTA() {
+  // 主役テキスト「こういう答え合わせ、無料で見れる」をGREEN→GOLD・108px以上に拡大
+  const ctaFit = fitHeadline("こういう答え合わせ、無料で見れる", {
+    maxWidth: 940,
+    maxLines: 3,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -343,16 +391,19 @@ function SceneCTA() {
       <Pop delay={2}>
         <div
           style={{
-            color: GREEN,
-            fontSize: 32,
+            color: GOLD,
+            fontSize: ctaFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
             marginBottom: 22,
             textAlign: "center",
             padding: "0 60px",
+            lineHeight: 1.25,
           }}
         >
-          こういう答え合わせ、無料で見れる
+          {ctaFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
         </div>
       </Pop>
       <Pop delay={10}>

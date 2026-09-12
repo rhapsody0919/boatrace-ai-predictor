@@ -5,7 +5,9 @@ import {
   SceneFeatures,
   SceneCTA,
   scaleRect,
+  FONT,
 } from "./noteVideoShared.jsx";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * note埋め込み用・機能解説型（横型 1920x1080）— 龍神レーダー「データ出走表」
@@ -80,7 +82,27 @@ const HOOK_DURATION = 90;
 const FEATURES_DURATION = FEATURES.length * FEATURE_DURATION;
 const CTA_DURATION = 210;
 
+// Shorts棚フック強度対応（2026-09-12）: Hookタイトルを192px閾値以上に拡大。
+// fitHeadline()で1080px幅内に折り返し、実測の行数・フォントサイズに応じて
+// subtitleの位置を下にずらし重なりを避ける（docs/reference/brand-kit.md
+// 「シーンのフック強度均一化」参照）。
+const HOOK_TITLE_TEXT = "データ出走表とは？";
+
 export function NoteExplainerCM_DataRaceTable() {
+  const { fontSize: hookTitleFontSize, lines: hookTitleLines } = fitHeadline(
+    HOOK_TITLE_TEXT,
+    {
+      maxWidth: 1000,
+      maxLines: 2,
+      fontFamily: FONT,
+      fontWeight: 900,
+      maxFontSize: 200,
+      minFontSize: 90,
+    },
+  );
+  const hookSubtitleTop =
+    340 + hookTitleLines.length * hookTitleFontSize * 1.25 + 40;
+
   return (
     <AbsoluteFill>
       <Audio
@@ -89,7 +111,12 @@ export function NoteExplainerCM_DataRaceTable() {
       />
       <Sequence from={0} durationInFrames={HOOK_DURATION}>
         <SceneHook
-          title="データ出走表とは？"
+          title={hookTitleLines.map((line, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div key={i}>{line}</div>
+          ))}
+          titleFontSize={hookTitleFontSize}
+          subtitleTop={hookSubtitleTop}
           subtitle="6選手の分析データを1画面で比較できる新機能"
           featureCount={FEATURES.length}
           previewImageSrc="note-data-race-table.png"
@@ -102,6 +129,7 @@ export function NoteExplainerCM_DataRaceTable() {
           imageTop={IMAGE_TOP}
           imageLeft={IMAGE_LEFT}
           features={FEATURES}
+          captionFontSize={200}
         />
       </Sequence>
       <Sequence
@@ -114,6 +142,9 @@ export function NoteExplainerCM_DataRaceTable() {
             "勢いのある選手がわかる",
             "勝率だけじゃない、儲かるかも見える",
           ]}
+          headlineFontSize={200}
+          headlineMinFontSize={192}
+          showRadarDecoration={false}
         />
       </Sequence>
     </AbsoluteFill>

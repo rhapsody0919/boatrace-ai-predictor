@@ -9,6 +9,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * 対決煽り型（第1弾: 大村6R 1号艇vs6号艇）— 龍神レーダー TikTok Shorts
@@ -372,7 +373,20 @@ function StatRow({ label, boat1Value, boat6Value, delay, boat6Win }) {
   );
 }
 
+// 2026-09-12改訂: 結論のGOLD文言を52px→108px級に拡大（フック強度基準、
+// docs/reference/brand-kit.md「シーンのフック強度均一化」）
 function SceneCompare() {
+  const { fontSize: verdictFontSize, lines: verdictLines } = fitHeadline(
+    "全国勝率+2.65pt上",
+    {
+      maxWidth: 940,
+      maxLines: 2,
+      fontFamily: FONT,
+      fontWeight: 900,
+      maxFontSize: 130,
+      minFontSize: 108,
+    },
+  );
   return (
     <AbsoluteFill
       style={{
@@ -480,21 +494,21 @@ function SceneCompare() {
       />
 
       <Pop delay={54} style={{ marginTop: 50, textAlign: "center" }}>
-        <div
-          style={{
-            display: "inline-block",
-            background: `${GOLD}22`,
-            border: `2px solid ${GOLD}`,
-            borderRadius: 999,
-            padding: "16px 32px",
-            color: GOLD,
-            fontSize: 32,
-            fontWeight: 900,
-            fontFamily: FONT,
-          }}
-        >
-          全国勝率は6号艇が+2.65pt上
-        </div>
+        {verdictLines.map((line, i) => (
+          <div
+            key={i}
+            style={{
+              color: GOLD,
+              fontSize: verdictFontSize,
+              fontWeight: 900,
+              fontFamily: FONT,
+              lineHeight: 1.1,
+              textShadow: `0 0 50px ${GOLD}66`,
+            }}
+          >
+            {line}
+          </div>
+        ))}
       </Pop>
     </AbsoluteFill>
   );
@@ -578,7 +592,19 @@ function SceneTwist() {
 }
 
 // --- Scene 4: CTA（320-390f, 2.33s） ---
+// 2026-09-12改訂: 主役文言を42px WHITE→108px級GOLDに拡大（フック強度基準）
 function SceneCTA() {
+  const { fontSize: ctaFontSize, lines: ctaLines } = fitHeadline(
+    "この対決、無料で見られる",
+    {
+      maxWidth: 940,
+      maxLines: 2,
+      fontFamily: FONT,
+      fontWeight: 900,
+      maxFontSize: 130,
+      minFontSize: 108,
+    },
+  );
   return (
     <AbsoluteFill
       style={{
@@ -588,19 +614,24 @@ function SceneCTA() {
       }}
     >
       <Pop delay={4}>
-        <div
-          style={{
-            color: WHITE,
-            fontSize: 42,
-            fontWeight: 900,
-            fontFamily: FONT,
-            textAlign: "center",
-            marginBottom: 16,
-            padding: "0 60px",
-          }}
-        >
-          この対決、無料で見られる
-        </div>
+        {ctaLines.map((line, i) => (
+          <div
+            key={i}
+            style={{
+              color: GOLD,
+              fontSize: ctaFontSize,
+              fontWeight: 900,
+              fontFamily: FONT,
+              textAlign: "center",
+              marginBottom: 16,
+              padding: "0 40px",
+              lineHeight: 1.1,
+              textShadow: `0 0 50px ${GOLD}66`,
+            }}
+          >
+            {line}
+          </div>
+        ))}
       </Pop>
       <Pop delay={16} style={{ marginBottom: 40 }}>
         <div

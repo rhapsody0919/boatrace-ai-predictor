@@ -11,6 +11,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * 一覧アピール型（分析ツール紹介）— 龍神レーダー Shorts
@@ -25,6 +26,7 @@ const NAVY = "#0f2c46";
 const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
+const GOLD = "#d4af37";
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
@@ -210,22 +212,42 @@ function SceneHook({ mascotSrc }) {
       <Pop delay={0} style={{ marginBottom: 36 }}>
         <Mascot src={mascotSrc} size={400} />
       </Pop>
-      <Pop delay={12}>
+      <Pop delay={12} style={{ textAlign: "center" }}>
         <div
           style={{
             color: WHITE,
-            fontSize: 50,
-            fontWeight: 900,
+            fontSize: 40,
+            fontWeight: 800,
             fontFamily: FONT,
-            textAlign: "center",
-            lineHeight: 1.4,
+            lineHeight: 1.3,
           }}
         >
           知ってた？
-          <br />
-          急上昇中の選手が
-          <br />
-          一発でわかる機能
+        </div>
+        <div
+          style={{
+            color: GOLD,
+            fontSize: 120,
+            fontWeight: 900,
+            fontFamily: FONT,
+            lineHeight: 1.05,
+            marginTop: 6,
+            textShadow: `0 0 50px ${GOLD}aa`,
+          }}
+        >
+          急上昇中
+        </div>
+        <div
+          style={{
+            color: WHITE,
+            fontSize: 40,
+            fontWeight: 800,
+            fontFamily: FONT,
+            lineHeight: 1.3,
+            marginTop: 6,
+          }}
+        >
+          選手が一発でわかる機能
         </div>
       </Pop>
     </AbsoluteFill>
@@ -238,6 +260,14 @@ function SceneReveal({ mascotSrc }) {
   const { durationInFrames } = useVideoConfig();
   const kb = interpolate(frame, [0, durationInFrames], [1, 1.04], {
     extrapolateRight: "clamp",
+  });
+  const revealFit = fitHeadline("これ、無料で見れるの!?", {
+    maxWidth: 900,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 128,
+    minFontSize: 108,
   });
 
   return (
@@ -294,28 +324,33 @@ function SceneReveal({ mascotSrc }) {
       <div
         style={{
           position: "absolute",
-          top: CARD_TOP + CARD_DISPLAY_HEIGHT + 40,
+          top: CARD_TOP + CARD_DISPLAY_HEIGHT + 24,
           left: 0,
           right: 0,
           display: "flex",
-          justifyContent: "center",
-          gap: 20,
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 8,
         }}
       >
         <Pop delay={45}>
-          <Mascot src={mascotSrc} size={130} />
+          <Mascot src={mascotSrc} size={90} />
         </Pop>
-        <Pop delay={50} style={{ alignSelf: "center" }}>
+        <Pop delay={50}>
           <div
             style={{
-              color: GREEN,
+              color: GOLD,
               fontFamily: FONT,
               fontWeight: 900,
-              fontSize: 34,
+              fontSize: revealFit.fontSize,
+              lineHeight: 1.1,
               textAlign: "center",
+              textShadow: `0 0 40px ${GOLD}aa`,
             }}
           >
-            これ、無料で見れるの!?
+            {revealFit.lines.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
           </div>
         </Pop>
       </div>
@@ -325,6 +360,14 @@ function SceneReveal({ mascotSrc }) {
 
 // --- Scene 3: CTA（350-425f, 2.5s） ---
 function SceneCTA() {
+  const ctaFit = fitHeadline("分析ツール、他にもたくさんある", {
+    maxWidth: 940,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 120,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -338,16 +381,20 @@ function SceneCTA() {
       <Pop delay={2}>
         <div
           style={{
-            color: GREEN,
-            fontSize: 34,
+            color: GOLD,
+            fontSize: ctaFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
             marginBottom: 34,
             textAlign: "center",
-            padding: "0 60px",
+            lineHeight: 1.15,
+            padding: "0 40px",
+            textShadow: `0 0 40px ${GOLD}aa`,
           }}
         >
-          分析ツール、他にもたくさんある
+          {ctaFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
         </div>
       </Pop>
       <Pop delay={10}>

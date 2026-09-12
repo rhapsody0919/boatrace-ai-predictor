@@ -11,6 +11,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * 予想数値フック型 — 龍神レーダー Shorts（キャラB版）
@@ -27,6 +28,7 @@ const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
 const WARN = "#ff9800";
+const GOLD = "#d4af37";
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
@@ -173,6 +175,20 @@ function HighlightRing({ delay = 0 }) {
 
 // --- Scene 1: フック（0-75f, 2.5s） ---
 function SceneHook({ mascotSrc }) {
+  // シーンのフック強度均一化（docs/reference/brand-kit.md）: 主役テキストは
+  // 画面幅10%(108px)以上・GOLD/WHITE+900のいずれかが必須。既にWHITE+900のため
+  // fitHeadline()でサイズのみ108px以上へ拡大する
+  const headlineFit = fitHeadline(
+    "このレース、AIは1号艇の逃げ確率をわずか35%としか見ていない…",
+    {
+      maxWidth: 940,
+      maxLines: 5,
+      fontFamily: FONT,
+      fontWeight: 900,
+      maxFontSize: 120,
+      minFontSize: 108,
+    },
+  );
   return (
     <AbsoluteFill
       style={{
@@ -216,20 +232,16 @@ function SceneHook({ mascotSrc }) {
         <div
           style={{
             color: WHITE,
-            fontSize: 46,
+            fontSize: headlineFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
             textAlign: "center",
-            lineHeight: 1.4,
+            lineHeight: 1.3,
           }}
         >
-          このレース、AIは
-          <br />
-          1号艇の逃げ確率を
-          <br />
-          わずか35%としか
-          <br />
-          見ていない…
+          {headlineFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
         </div>
       </Pop>
     </AbsoluteFill>
@@ -243,6 +255,19 @@ function SceneReveal({ mascotSrc }) {
   const kb = interpolate(frame, [0, durationInFrames], [1, 1.04], {
     extrapolateRight: "clamp",
   });
+  // 主役テキスト「荒れ度、まさかの100…！」をWARN→GOLD・108px以上に拡大。
+  // 拡大後にマスコットと重なるため、実際の行数に応じてマスコット位置を動的に下げる
+  const statFit = fitHeadline("荒れ度、まさかの100…！", {
+    maxWidth: 900,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 120,
+    minFontSize: 108,
+  });
+  const statTop = CARD_TOP + CARD_DISPLAY_HEIGHT + 90;
+  const statBlockHeight = statFit.lines.length * statFit.fontSize * 1.3;
+  const mascotTop = statTop + statBlockHeight + 40;
 
   return (
     <AbsoluteFill style={{ background: NAVY, overflow: "hidden" }}>
@@ -299,24 +324,28 @@ function SceneReveal({ mascotSrc }) {
       <div
         style={{
           position: "absolute",
-          top: CARD_TOP + CARD_DISPLAY_HEIGHT + 90,
+          top: statTop,
           left: 0,
           right: 0,
           display: "flex",
           justifyContent: "center",
+          padding: "0 60px",
         }}
       >
         <Pop delay={40}>
           <div
             style={{
-              color: WARN,
+              color: GOLD,
               fontFamily: FONT,
               fontWeight: 900,
-              fontSize: 44,
+              fontSize: statFit.fontSize,
               textAlign: "center",
+              lineHeight: 1.3,
             }}
           >
-            荒れ度、まさかの100…！
+            {statFit.lines.map((line, i) => (
+              <div key={i}>{line}</div>
+            ))}
           </div>
         </Pop>
       </div>
@@ -324,7 +353,7 @@ function SceneReveal({ mascotSrc }) {
       <div
         style={{
           position: "absolute",
-          top: CARD_TOP + CARD_DISPLAY_HEIGHT + 190,
+          top: mascotTop,
           left: 0,
           right: 0,
           display: "flex",
@@ -341,6 +370,15 @@ function SceneReveal({ mascotSrc }) {
 
 // --- Scene 3: CTA（350-425f, 2.5s） ---
 function SceneCTA() {
+  // 主役テキスト「本日の予想、無料で見れる」をGREEN→GOLD・108px以上に拡大
+  const ctaFit = fitHeadline("本日の予想、無料で見れる", {
+    maxWidth: 940,
+    maxLines: 3,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -354,16 +392,19 @@ function SceneCTA() {
       <Pop delay={2}>
         <div
           style={{
-            color: GREEN,
-            fontSize: 34,
+            color: GOLD,
+            fontSize: ctaFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
             marginBottom: 34,
             textAlign: "center",
             padding: "0 60px",
+            lineHeight: 1.25,
           }}
         >
-          本日の予想、無料で見れる
+          {ctaFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
         </div>
       </Pop>
       <Pop delay={10}>

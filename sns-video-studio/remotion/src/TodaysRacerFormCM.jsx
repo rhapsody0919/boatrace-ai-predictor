@@ -9,6 +9,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * 本日のデータ一覧型（第1弾: 本日の好調・不調選手ランキング）— 龍神レーダー TikTok Shorts
@@ -33,6 +34,24 @@ const NAVY_DARK = "#081b2e";
 const WHITE = "#f8fafc";
 const GOLD = "#d4af37";
 const RED = "#f87171";
+
+const CANVAS_WIDTH = 1080;
+const HERO_MAX_FONT_SIZE = 120;
+const HERO_MIN_FONT_SIZE = 108; // 画面幅1080の10%（Shorts一覧フック強度基準の閾値）
+
+// Shorts一覧のフック強度基準（画面幅の10%＝108px以上・GOLD/RED+900）を満たす
+// 主役数値をfitHeadline()で安全にフィットさせる共通ヘルパー
+// （2026-09-12、docs/reference/brand-kit.md「シーンのフック強度均一化」対応）
+function fitHero(text, { maxWidth = CANVAS_WIDTH * 0.86, maxLines = 1 } = {}) {
+  return fitHeadline(text, {
+    maxWidth,
+    maxLines,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: HERO_MAX_FONT_SIZE,
+    minFontSize: HERO_MIN_FONT_SIZE,
+  });
+}
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
@@ -379,7 +398,16 @@ function SceneHook({
 }
 
 // --- Scene 2: 急上昇TOP5（75-263f, 約6.3s） ---
+// 見出し自体を1位選手のdelta実数値で構成する（フック強度基準対応、2026-09-12）。
+// 「見出し＋別枠の巨大数値」は、リスト1行目と数値が重複して間延びする
+// （brand-kit.md「シーンのフック強度均一化」で却下済みのパターン）ため、
+// 見出しの文言自体に1位の数値を組み込みfitHeadline()で108px以上にする
 function SceneRising({ data }) {
+  const top = data[0];
+  const headlineFit = fitHero(`急上昇1位は+${top.delta.toFixed(2)}pt`, {
+    maxWidth: CANVAS_WIDTH * 0.86,
+    maxLines: 2,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -388,17 +416,33 @@ function SceneRising({ data }) {
         justifyContent: "center",
       }}
     >
-      <Pop delay={2}>
+      <Pop delay={0} style={{ marginBottom: 20 }}>
         <div
           style={{
-            color: GOLD,
-            fontSize: 38,
+            fontSize: headlineFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
-            marginBottom: 30,
+            color: GOLD,
+            lineHeight: 1.2,
+            textShadow: `0 0 70px ${GOLD}88`,
           }}
         >
-          🔥 本日の急上昇選手 TOP5
+          {headlineFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+      </Pop>
+      <Pop delay={10} style={{ marginBottom: 30 }}>
+        <div
+          style={{
+            color: WHITE,
+            fontSize: 22,
+            fontWeight: 700,
+            fontFamily: FONT,
+            opacity: 0.8,
+          }}
+        >
+          1位: {top.name}（{top.race}）
         </div>
       </Pop>
       {data.map((row, i) => (
@@ -410,7 +454,7 @@ function SceneRising({ data }) {
           current={row.current}
           past={row.past}
           delta={row.delta}
-          delay={20 + i * 10}
+          delay={40 + i * 10}
           barColor={GOLD}
           barRatio={(row.delta / data[0].delta) * 100}
         />
@@ -420,7 +464,13 @@ function SceneRising({ data }) {
 }
 
 // --- Scene 3: 急下降TOP5（263-450f, 約6.2s） ---
+// 見出し自体を急下降1位選手のdelta実数値で構成する（フック強度基準対応、2026-09-12）
 function SceneFalling({ data }) {
+  const worst = data[0];
+  const headlineFit = fitHero(`急下降1位は${worst.delta.toFixed(2)}pt`, {
+    maxWidth: CANVAS_WIDTH * 0.86,
+    maxLines: 2,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -429,17 +479,33 @@ function SceneFalling({ data }) {
         justifyContent: "center",
       }}
     >
-      <Pop delay={2}>
+      <Pop delay={0} style={{ marginBottom: 20 }}>
         <div
           style={{
-            color: RED,
-            fontSize: 38,
+            fontSize: headlineFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
-            marginBottom: 30,
+            color: RED,
+            lineHeight: 1.2,
+            textShadow: `0 0 70px ${RED}88`,
           }}
         >
-          📉 本日の急下降選手 TOP5
+          {headlineFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+      </Pop>
+      <Pop delay={10} style={{ marginBottom: 30 }}>
+        <div
+          style={{
+            color: WHITE,
+            fontSize: 22,
+            fontWeight: 700,
+            fontFamily: FONT,
+            opacity: 0.8,
+          }}
+        >
+          ワースト1位: {worst.name}（{worst.race}）
         </div>
       </Pop>
       {data.map((row, i) => (
@@ -451,12 +517,12 @@ function SceneFalling({ data }) {
           current={row.current}
           past={row.past}
           delta={row.delta}
-          delay={20 + i * 10}
+          delay={40 + i * 10}
           barColor={RED}
           barRatio={(Math.abs(row.delta) / Math.abs(data[0].delta)) * 100}
         />
       ))}
-      <Pop delay={80}>
+      <Pop delay={100}>
         <div
           style={{
             color: "rgba(248,250,252,0.5)",
@@ -473,7 +539,13 @@ function SceneFalling({ data }) {
 }
 
 // --- Scene 4: CTA（450-600f, 5s） ---
+// GOLD強調語（ctaLines[1]、「無料で見れる」）を108px級に拡大する
+// （フック強度基準対応、2026-09-12。文言・記述内容は変更せず既存の見出しの
+// サイズ・色のみ変更）
 function SceneCTA({ ctaLines, subLine }) {
+  const { fontSize: heroFontSize, lines: heroLines } = fitHero(ctaLines[1], {
+    maxWidth: CANVAS_WIDTH * 0.86,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -486,17 +558,34 @@ function SceneCTA({ ctaLines, subLine }) {
         <div
           style={{
             color: WHITE,
-            fontSize: 44,
-            fontWeight: 900,
+            fontSize: 34,
+            fontWeight: 800,
             fontFamily: FONT,
             textAlign: "center",
-            marginBottom: 16,
+            marginBottom: 10,
             padding: "0 60px",
           }}
         >
           {ctaLines[0]}
-          <br />
-          {ctaLines[1]}
+        </div>
+      </Pop>
+      <Pop delay={10}>
+        <div
+          style={{
+            color: GOLD,
+            fontWeight: 900,
+            fontFamily: FONT,
+            textAlign: "center",
+            marginBottom: 24,
+            textShadow: `0 0 70px ${GOLD}88`,
+          }}
+        >
+          {heroLines.map((line, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div key={i} style={{ fontSize: heroFontSize, lineHeight: 1.1 }}>
+              {line}
+            </div>
+          ))}
         </div>
       </Pop>
       <Pop delay={16} style={{ marginBottom: 40 }}>

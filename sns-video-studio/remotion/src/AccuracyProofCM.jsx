@@ -11,6 +11,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
 
 /**
  * 一覧アピール型（イン崩れ指数の実績証明）— 龍神レーダー Shorts
@@ -27,6 +28,7 @@ const NAVY = "#0f2c46";
 const ACCENT = "#38bdf8";
 const WHITE = "#f8fafc";
 const GREEN = "#22c55e";
+const GOLD = "#d4af37";
 
 function Pop({ children, delay = 0, style }) {
   const frame = useCurrentFrame();
@@ -172,6 +174,10 @@ function HighlightRing({ delay = 0 }) {
 }
 
 // --- Scene 1: フック（0-75f, 2.5s） ---
+// 2026-09-12: 「AIが警告したレース、実際どれくらい当たってるのか」という
+// 問いかけのみの構成はフック強度基準未達（docs/reference/brand-kit.md
+// 「シーンのフック強度均一化」）。ヒーロー数値を別枠追加するのではなく、
+// 見出し自体を実数値（63.3% / 平均45.4%）に差し替えてGOLD・108px以上にした
 function SceneHook({ mascotSrc }) {
   return (
     <AbsoluteFill
@@ -187,7 +193,7 @@ function SceneHook({ mascotSrc }) {
       <div
         style={{
           position: "absolute",
-          top: 140,
+          top: 110,
           left: 0,
           right: 0,
           display: "flex",
@@ -200,8 +206,8 @@ function SceneHook({ mascotSrc }) {
             color: WHITE,
             fontFamily: FONT,
             fontWeight: 800,
-            fontSize: 28,
-            padding: "12px 28px",
+            fontSize: 26,
+            padding: "10px 26px",
             borderRadius: 999,
             border: `2px solid ${ACCENT}`,
           }}
@@ -209,39 +215,77 @@ function SceneHook({ mascotSrc }) {
           🔍 AI予想の実績証明
         </div>
       </div>
-      <Pop delay={-10} style={{ marginBottom: 36 }}>
-        <Mascot src={mascotSrc} size={400} />
-      </Pop>
-      <Pop delay={-10}>
+      <Pop delay={-10} style={{ textAlign: "center" }}>
         <div
           style={{
             color: WHITE,
-            fontSize: 46,
-            fontWeight: 900,
+            fontSize: 28,
+            fontWeight: 700,
             fontFamily: FONT,
-            textAlign: "center",
-            lineHeight: 1.4,
+            marginBottom: 4,
           }}
         >
-          AIが「荒れる」と
-          <br />
-          警告したレース、
-          <br />
-          実際どれくらい
-          <br />
-          当たってるのか
+          AIが「荒れる」と警告したレースは
         </div>
+        <div
+          style={{
+            color: GOLD,
+            fontSize: 138,
+            fontWeight: 900,
+            fontFamily: FONT,
+            lineHeight: 1,
+          }}
+        >
+          63.3%
+        </div>
+        <div
+          style={{
+            color: WHITE,
+            fontSize: 28,
+            fontWeight: 700,
+            fontFamily: FONT,
+            marginTop: 10,
+            marginBottom: 4,
+          }}
+        >
+          で1号艇が1着を外れる（全体平均）
+        </div>
+        <div
+          style={{
+            color: GOLD,
+            fontSize: 112,
+            fontWeight: 900,
+            fontFamily: FONT,
+            lineHeight: 1,
+          }}
+        >
+          45.4%
+        </div>
+      </Pop>
+      <Pop delay={-10} style={{ marginTop: 28 }}>
+        <Mascot src={mascotSrc} size={160} />
       </Pop>
     </AbsoluteFill>
   );
 }
 
 // --- Scene 2: 実画面（75-350f, 9.2s） ---
+const REVEAL_HIGHLIGHT_MAX_WIDTH = 940; // 1080 - 左右余白70px*2弱
 function SceneReveal({ mascotSrc }) {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const kb = interpolate(frame, [0, durationInFrames], [1, 1.04], {
     extrapolateRight: "clamp",
+  });
+  // 2026-09-12: 「平均より18ポイントも高い…！」40px GREENはフック強度基準未達。
+  // GOLD・108px以上に統一し、可変長でも崩れないようfitHeadline()でサイズを決める
+  const highlightFit = fitHeadline("平均より18ポイント高い", {
+    maxWidth: REVEAL_HIGHLIGHT_MAX_WIDTH,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 140,
+    minFontSize: 108,
   });
 
   return (
@@ -298,39 +342,33 @@ function SceneReveal({ mascotSrc }) {
       <div
         style={{
           position: "absolute",
-          top: CARD_TOP + CARD_DISPLAY_HEIGHT + 70,
+          top: CARD_TOP + CARD_DISPLAY_HEIGHT + 50,
           left: 0,
           right: 0,
           display: "flex",
-          justifyContent: "center",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "0 70px",
         }}
       >
         <Pop delay={40}>
           <div
             style={{
-              color: GREEN,
+              color: GOLD,
               fontFamily: FONT,
               fontWeight: 900,
-              fontSize: 40,
+              lineHeight: 1.15,
               textAlign: "center",
             }}
           >
-            平均より18ポイントも高い…！
+            {highlightFit.lines.map((line, i) => (
+              <div key={i} style={{ fontSize: highlightFit.fontSize }}>
+                {line}
+              </div>
+            ))}
           </div>
         </Pop>
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          top: CARD_TOP + CARD_DISPLAY_HEIGHT + 170,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "center",
-        }}
-      >
-        <Pop delay={55}>
+        <Pop delay={55} style={{ marginTop: 24 }}>
           <Mascot src={mascotSrc} size={200} />
         </Pop>
       </div>
@@ -339,7 +377,18 @@ function SceneReveal({ mascotSrc }) {
 }
 
 // --- Scene 3: CTA（350-425f, 2.5s） ---
+const CTA_HEADLINE_MAX_WIDTH = 940; // 1080 - 左右padding60px*2弱
 function SceneCTA() {
+  // 2026-09-12: 「AI予想の実績、全部公開中」34px GREENはフック強度基準未達。
+  // GOLD・108px以上・fitHeadline()で統一
+  const headlineFit = fitHeadline("AI予想の実績、全部公開中", {
+    maxWidth: CTA_HEADLINE_MAX_WIDTH,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 130,
+    minFontSize: 108,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -353,16 +402,20 @@ function SceneCTA() {
       <Pop delay={2}>
         <div
           style={{
-            color: GREEN,
-            fontSize: 34,
+            color: GOLD,
             fontWeight: 900,
             fontFamily: FONT,
             marginBottom: 34,
             textAlign: "center",
             padding: "0 60px",
+            lineHeight: 1.2,
           }}
         >
-          AI予想の実績、全部公開中
+          {headlineFit.lines.map((line, i) => (
+            <div key={i} style={{ fontSize: headlineFit.fontSize }}>
+              {line}
+            </div>
+          ))}
         </div>
       </Pop>
       <Pop delay={10}>

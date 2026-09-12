@@ -9,6 +9,8 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "./fonts.js";
+import { fitHeadline } from "./textFit.js";
+import { SceneCTA as SharedSceneCTA } from "./snsVideoShared.jsx";
 
 /**
  * 選手×艇番回収率型（第1弾: 艇番別・単勝回収率）— 龍神レーダー TikTok Shorts
@@ -366,8 +368,23 @@ function RankRow({ rank, label, rate, delay, maxRate, isWorst }) {
 }
 
 // --- Scene 2: 艇番別ランキング（75-280f, 約6.8s） ---
+// 2026-09-12改訂: 単体で切り取られても成立するよう、1位の数値を見出しとして
+// 108px以上GOLDで先頭に再掲してから、既存のランキング一覧を展開する構成に変更
+// （docs/reference/brand-kit.md「シーンのフック強度均一化」）
+// 見出し自体を1位の実数値で構成する（フック強度基準対応）。「見出し＋別枠の
+// 巨大数値」は、直後のランキング1行目と数値が重複して間延びする
+// （brand-kit.md「シーンのフック強度均一化」で却下済みのパターン）ため採用しない
 function SceneRanking() {
   const maxRate = RETURN_RATE_DATA[0].rate;
+  const top = RETURN_RATE_DATA[0];
+  const headlineFit = fitHeadline(`単勝回収率No.1は${top.rate}%`, {
+    maxWidth: 940,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 108,
+    minFontSize: 76,
+  });
   return (
     <AbsoluteFill
       style={{
@@ -376,17 +393,33 @@ function SceneRanking() {
         justifyContent: "center",
       }}
     >
-      <Pop delay={2}>
+      <Pop delay={0} style={{ marginBottom: 20 }}>
         <div
           style={{
             color: GOLD,
-            fontSize: 34,
+            fontSize: headlineFit.fontSize,
             fontWeight: 900,
             fontFamily: FONT,
-            marginBottom: 26,
+            lineHeight: 1.2,
+            textShadow: `0 0 60px ${GOLD}66`,
           }}
         >
-          💰 艇番別・単勝回収率ランキング
+          {headlineFit.lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+      </Pop>
+      <Pop delay={10} style={{ marginBottom: 28 }}>
+        <div
+          style={{
+            color: WHITE,
+            fontSize: 22,
+            fontWeight: 700,
+            fontFamily: FONT,
+            opacity: 0.8,
+          }}
+        >
+          （{top.boat}）
         </div>
       </Pop>
       {RETURN_RATE_DATA.map((d, i) => (
@@ -417,7 +450,19 @@ function SceneRanking() {
 }
 
 // --- Scene 3: 種明かし（280-380f, 3.33s） ---
+// 2026-09-12改訂: 結論のGOLD文言を40px→150px級に拡大（フック強度基準）
 function SceneTwist() {
+  const { fontSize: punchFontSize, lines: punchLines } = fitHeadline(
+    "1号艇が効率もNo.1",
+    {
+      maxWidth: 920,
+      maxLines: 2,
+      fontFamily: FONT,
+      fontWeight: 900,
+      maxFontSize: 150,
+      minFontSize: 108,
+    },
+  );
   return (
     <AbsoluteFill
       style={{
@@ -432,7 +477,7 @@ function SceneTwist() {
         <div
           style={{
             color: WHITE,
-            fontSize: 38,
+            fontSize: 34,
             fontWeight: 900,
             fontFamily: FONT,
             textAlign: "center",
@@ -445,61 +490,23 @@ function SceneTwist() {
         </div>
       </Pop>
       <Pop delay={26}>
-        <div
-          style={{
-            color: GOLD,
-            fontSize: 40,
-            fontWeight: 900,
-            fontFamily: FONT,
-            textAlign: "center",
-            marginTop: 16,
-          }}
-        >
-          勝率No.1の1号艇が、効率もNo.1
-        </div>
-      </Pop>
-    </AbsoluteFill>
-  );
-}
-
-// --- Scene 4: CTA（380-450f, 2.33s） ---
-function SceneCTA() {
-  return (
-    <AbsoluteFill
-      style={{
-        background: `radial-gradient(circle at 50% 40%, ${NAVY} 0%, ${NAVY_DARK} 100%)`,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Pop delay={4}>
-        <div
-          style={{
-            color: WHITE,
-            fontSize: 40,
-            fontWeight: 900,
-            fontFamily: FONT,
-            textAlign: "center",
-            marginBottom: 16,
-            padding: "0 60px",
-          }}
-        >
-          回収率データ、無料で見れる
-        </div>
-      </Pop>
-      <Pop delay={16} style={{ marginBottom: 40 }}>
-        <div
-          style={{
-            color: "rgba(248,250,252,0.7)",
-            fontSize: 26,
-            fontFamily: FONT,
-          }}
-        >
-          選手×艇番別の回収率も本日出走選手で見れる
-        </div>
-      </Pop>
-      <Pop delay={28}>
-        <Logo size={48} />
+        {punchLines.map((line, i) => (
+          <div
+            key={i}
+            style={{
+              color: GOLD,
+              fontSize: punchFontSize,
+              fontWeight: 900,
+              fontFamily: FONT,
+              textAlign: "center",
+              marginTop: 16,
+              lineHeight: 1.05,
+              textShadow: `0 0 60px ${GOLD}66`,
+            }}
+          >
+            {line}
+          </div>
+        ))}
       </Pop>
     </AbsoluteFill>
   );
@@ -518,7 +525,10 @@ export function ReturnRateCM() {
         <SceneTwist />
       </Sequence>
       <Sequence from={380} durationInFrames={70}>
-        <SceneCTA />
+        <SharedSceneCTA
+          ctaLines={["回収率データ、", "無料で見れる"]}
+          subLine="選手×艇番別の回収率も本日出走選手で見れる"
+        />
       </Sequence>
       <Audio src={staticFile("soundtrack-hitcheck.wav")} />
     </AbsoluteFill>
