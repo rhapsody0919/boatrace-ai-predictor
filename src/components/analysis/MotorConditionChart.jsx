@@ -37,7 +37,9 @@ function MotorConditionChart({
   const [drillDownMotor, setDrillDownMotor] = useState(null);
   const [trendData, setTrendData] = useState(null);
 
-  // レース選択時: 枠番別モーター調子を取得
+  const [powerIndex, setPowerIndex] = useState(null);
+
+  // レース選択時: 枠番別モーター調子を取得（機力指数はvenue確定後に別途取得）
   useEffect(() => {
     if (selectedRace === null) return;
     const loadBreakdown = async () => {
@@ -45,8 +47,10 @@ function MotorConditionChart({
         setLoading(true);
         setError(null);
         setDrillDownMotor(null);
-        const data =
-          await supabaseDataService.getRaceMotorBreakdown(selectedRace);
+        const data = await supabaseDataService.getRaceMotorBreakdown(
+          selectedRace,
+          selectedVenue,
+        );
         setBreakdown(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
@@ -57,20 +61,24 @@ function MotorConditionChart({
     };
     loadBreakdown();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRace]);
+  }, [selectedRace, selectedVenue]);
 
-  // モーター選択時: 節ごとの推移を取得
+  // モーター選択時: 節ごとの推移と機力指数を取得
   useEffect(() => {
     if (drillDownMotor === null || selectedVenue === null) return;
     const loadTrend = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await supabaseDataService.getMotorConditionTrend(
-          selectedVenue,
-          drillDownMotor,
-        );
-        setTrendData(data);
+        const [trend, power] = await Promise.all([
+          supabaseDataService.getMotorConditionTrend(
+            selectedVenue,
+            drillDownMotor,
+          ),
+          supabaseDataService.getMotorPowerIndex(selectedVenue, drillDownMotor),
+        ]);
+        setTrendData(trend);
+        setPowerIndex(power);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
@@ -170,6 +178,7 @@ function MotorConditionChart({
                   <th>{t("analysis.motor.motorNumberHeader")}</th>
                   <th>{t("analysis.motor.rate2Header")}</th>
                   <th>{t("analysis.motor.rate3Header")}</th>
+                  <th>{t("analysis.motor.powerIndexHeader")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -188,6 +197,19 @@ function MotorConditionChart({
                     </td>
                     <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
                     <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
+                    <td
+                      className={`rate power-index ${
+                        row.power_index > 0
+                          ? "power-index-good"
+                          : row.power_index < 0
+                            ? "power-index-bad"
+                            : ""
+                      }`}
+                    >
+                      {row.power_index !== null && row.power_index !== undefined
+                        ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
+                        : "-"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -202,6 +224,30 @@ function MotorConditionChart({
             backLabel={t("analysis.backToList")}
             heading={t("analysis.motor.trendHeading", { n: drillDownMotor })}
           />
+
+          {powerIndex?.power_index !== null &&
+            powerIndex?.power_index !== undefined && (
+              <p
+                className={`power-index-summary ${
+                  powerIndex.power_index > 0
+                    ? "power-index-good"
+                    : powerIndex.power_index < 0
+                      ? "power-index-bad"
+                      : ""
+                }`}
+              >
+                {t("analysis.motor.powerIndexSummary", {
+                  index: `${powerIndex.power_index > 0 ? "+" : ""}${powerIndex.power_index.toFixed(1)}`,
+                  count: powerIndex.sample_count,
+                })}
+                {" — "}
+                {powerIndex.power_index > 0
+                  ? t("analysis.motor.powerIndexGood")
+                  : powerIndex.power_index < 0
+                    ? t("analysis.motor.powerIndexBad")
+                    : ""}
+              </p>
+            )}
 
           {chartData.length > 0 ? (
             <TrendLineChart
@@ -230,6 +276,7 @@ function MotorConditionChart({
       )}
 
       <p className="table-note">{t("analysis.motor.note")}</p>
+      <p className="table-note">{t("analysis.motor.powerIndexNote")}</p>
     </div>
   );
 }
