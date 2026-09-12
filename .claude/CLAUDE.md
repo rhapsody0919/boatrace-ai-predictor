@@ -366,7 +366,7 @@ SEO・集客施策を検討・実装する際は、その施策が「JS実行後
 | 変数 | 用途 |
 |------|------|
 | `SUPABASE_URL` | Supabase接続 |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase管理者操作 |
+| `SUPABASE_SERVICE_KEY` | Supabase管理者操作（`SUPABASE_SERVICE_ROLE_KEY`ではない。2026-09-12訂正、`scripts/lib/supabaseClient.js`が正） |
 | `VITE_SUPABASE_URL` | フロントエンド用Supabase |
 | `VITE_SUPABASE_ANON_KEY` | フロントエンド用Supabaseキー |
 | `VITE_GA_MEASUREMENT_ID` | Google Analytics |
