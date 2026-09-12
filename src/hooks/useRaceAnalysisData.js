@@ -36,11 +36,14 @@ const ALL_PENDING = Object.fromEntries(
 /**
  * レース選択直後に呼ぶと分析データの取得を先行開始できる（fire-and-forget）。
  * withCacheのin-flightデデュープにより、後続のフック側の取得と重複しない
+ * （venueCodeは後続のuseRaceAnalysisData呼び出しと同じキャッシュキーになるよう
+ * 必ず揃える。省略するとmotorソースのキャッシュキーが分岐し、このprefetch自体が
+ * 無駄撃ちになる上、本来のデデュープ効果も得られない）
  */
-export function prefetchRaceAnalysisData(raceId) {
+export function prefetchRaceAnalysisData(raceId, venueCode = null) {
   if (!raceId) return;
   Object.values(SOURCES).forEach((fn) => {
-    fn(raceId).catch(() => {});
+    fn(raceId, venueCode).catch(() => {});
   });
 }
 

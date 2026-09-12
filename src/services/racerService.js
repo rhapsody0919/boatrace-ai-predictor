@@ -8,6 +8,7 @@
 
 import { supabase } from "./supabaseClient";
 import { supabaseDataService } from "./supabaseDataService";
+import { parseRaceId } from "../utils/raceId";
 
 async function getRacerProfile(racerId) {
   if (!supabase) return null;
@@ -91,9 +92,9 @@ export async function getRacerCurrentMotorStatus(racerId) {
     return null;
   }
 
-  const venueCodePart = data.race_id.split("-")[3];
-  const venueCode = parseInt(venueCodePart, 10);
-  if (!Number.isFinite(venueCode)) return null;
+  const parsed = parseRaceId(data.race_id);
+  if (!parsed) return null;
+  const { venueCode } = parsed;
 
   const [powerIndex, trend] = await Promise.all([
     supabaseDataService.getMotorPowerIndex(venueCode, data.motor_number),

@@ -136,9 +136,9 @@
 }
 
 .power-index-summary {
-  font-size: 0.95rem;
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-4);
 }
 
 .power-index-summary.power-index-good {

@@ -8,6 +8,14 @@ import { supabaseDataService } from "../services/supabaseDataService";
  * embedded時（レース詳細への埋め込み）は過去日・確定済みレースも対象になり得るため、
  * 「本日開催」一覧に無い場合のフォールバック選択を行わず、渡された
  * initialVenueCode/initialRaceIdをそのまま使う。
+ *
+ * embedded=false（/winning-technique経由）でも、initialVenueCode/initialRaceIdが
+ * 明示的に渡された場合は同様に「本日開催」一覧の有無を問わず信頼する（BOA-265、
+ * 選手ページ「今節のモーター状況カード」・データ出走表「機力↑/↓」バッジのように、
+ * 過去レース・当日終了済みレースへの具体的なディープリンクが実際に存在するため）。
+ * 会場・レースの選択肢（venues/races）自体は引き続き「本日開催」一覧から表示する
+ * （純粋な素通り訪問時のブラウズ用）。ディープリンク先の会場・レースがその
+ * 一覧に無い場合、選択肢UIには反映されないがデータ取得自体は正しいIDで行われる
  */
 export function useVenueRaceSelector({
   initialVenueCode = null,
@@ -33,10 +41,9 @@ export function useVenueRaceSelector({
         setError(null);
         const list = await supabaseDataService.getVenuesWithTodaysRaces();
         setVenues(list);
+        // 明示的なディープリンクは「本日開催」一覧の有無に関わらず信頼する
         const preferred =
-          initialVenueCode !== null && list.includes(initialVenueCode)
-            ? initialVenueCode
-            : (list[0] ?? null);
+          initialVenueCode !== null ? initialVenueCode : (list[0] ?? null);
         setSelectedVenue(preferred);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
@@ -72,13 +79,14 @@ export function useVenueRaceSelector({
         if (cancelled) return;
         setRaces(list);
 
-        const pendingExists =
-          pendingSnapshot !== null &&
-          list.some((r) => r.race_id === pendingSnapshot);
+        // 明示的なディープリンクは「本日開催」一覧に無くても信頼する
+        // （過去レース・当日終了済みレースへの具体的なリンクが実在するため）
         setSelectedRace(
-          pendingExists ? pendingSnapshot : (list[0]?.race_id ?? null),
+          pendingSnapshot !== null
+            ? pendingSnapshot
+            : (list[0]?.race_id ?? null),
         );
-        if (pendingExists) pendingInitialRaceId.current = null;
+        pendingInitialRaceId.current = null;
         applied = true;
       } catch (err) {
         if (cancelled) return;

@@ -20,9 +20,10 @@ const PredictionSection = forwardRef(
     // withCacheのin-flightデデュープにより後続のDataRaceTable/RaceReviewの
     // 取得と重複せず、データ出走表の体感ロード時間を短縮する
     const prefetchRaceId = getRaceId(selectedRace);
+    const prefetchVenueCode = selectedRace?.venueCode ?? null;
     useEffect(() => {
-      prefetchRaceAnalysisData(prefetchRaceId);
-    }, [prefetchRaceId]);
+      prefetchRaceAnalysisData(prefetchRaceId, prefetchVenueCode);
+    }, [prefetchRaceId, prefetchVenueCode]);
 
     if (!selectedRace) return null;
 

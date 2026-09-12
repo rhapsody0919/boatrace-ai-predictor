@@ -2178,7 +2178,11 @@ export const supabaseDataService = {
    */
   getRaceMotorBreakdown(raceId, venueCode = null) {
     return withCache(
-      `race-motor-breakdown-${raceId}-${venueCode}`,
+      // raceIdを末尾に置く: inferTtlFromKey()は末尾の「YYYY-MM-DD-会場-レース番号」
+      // パターンで過去レースを検知し7日キャッシュを付与する。venueCodeを末尾に
+      // 付けるとこのパターンにマッチしなくなり、過去レースでも30分キャッシュに
+      // 格下げされてしまうため、raceIdより前に置く
+      `race-motor-breakdown-${venueCode}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2289,6 +2293,7 @@ export const supabaseDataService = {
 
         const residuals = [];
         let actualHits = 0;
+        let baselineSum = 0;
         entries.forEach((e) => {
           const result = resultByRaceId.get(e.race_id);
           if (!result || e.global_2rate === null) return;
@@ -2296,14 +2301,13 @@ export const supabaseDataService = {
             result.rank1 === e.boat_number || result.rank2 === e.boat_number;
           if (isTop2) actualHits += 1;
           residuals.push((isTop2 ? 100 : 0) - e.global_2rate);
+          baselineSum += e.global_2rate;
         });
         if (residuals.length === 0) return empty;
 
         const powerIndex =
           residuals.reduce((sum, v) => sum + v, 0) / residuals.length;
-        const avgBaseline =
-          entries.reduce((sum, e) => sum + (e.global_2rate ?? 0), 0) /
-          residuals.length;
+        const avgBaseline = baselineSum / residuals.length;
 
         return {
           venue_code: venueCode,

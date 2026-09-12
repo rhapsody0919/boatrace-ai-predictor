@@ -61,14 +61,17 @@ function MotorConditionChart({
         if (cancelled) return;
         setBreakdown(data);
         // 機力バッジ等からのディープリンク（?motor=）で指定されたモーターが
-        // 今回のレースに実在すれば、そのままドリルダウン画面を開く
+        // 今回のレースに実在すれば、そのままドリルダウン画面を開く。
+        // マッチしなかった場合もpendingは消費する（消費せず残すと、後で
+        // ユーザーが手動で選んだ別レースがたまたま同じモーター番号を含んでいた際に
+        // 意図せず自動ドリルダウンしてしまうため）
         const pendingExists =
           pendingSnapshot !== null &&
           data.some((r) => r.motor_number === pendingSnapshot);
         if (pendingExists) {
           setDrillDownMotor(pendingSnapshot);
-          pendingInitialMotorNumber.current = null;
         }
+        pendingInitialMotorNumber.current = null;
         applied = true;
       } catch (err) {
         if (cancelled) return;
