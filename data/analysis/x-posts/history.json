@@ -144,6 +144,28 @@
       "postedAt": null,
       "metrics": null,
       "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、水曜のため当日ネタ生成日）。09:09 JST時点で本日唯一結果確定済みだった鳴門1Rを使用。直近3投稿（live-prediction-hook×2・trivia）と型重複を避けるため答え合わせ型を選定（live-prediction-hookは直近2連続のため選ぶと3連続になるため回避）。既存AnswerCheckHookCM.jsxのAnswerCheckHookTemplateを再利用し、一時的に新規exportを追加してレンダリング後にgit checkoutで元に戻した（コード変更は残していない）。getRecentRevisions/getActiveInsights確認、該当フィードバック無し。risk-rules.json照合、risk_flags無し。sns_drafts承認待ち。"
+    },
+    {
+      "date": "2026-09-12",
+      "character": null,
+      "format": "answer-check",
+      "content": "答え合わせ型（芦屋1R、AIは1号艇の逃げを50%〈unifiedモデル〉と予想、結果も1号艇の逃げで的中。イン崩れ注意度53〈標準〉、単勝¥120）",
+      "videoFile": "Supabase Storage sns-hub-media/ae3794d0-88b8-465e-b85f-3d2fd6611a5c/x-ja.mp4（sns_drafts id=088bed8f-d2e4-4f29-8522-86a5b3dc56da）",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、土曜のため当日ネタ生成日）。09:10 JST時点で本日唯一結果確定済みだった芦屋1Rを使用。winning_technique列がDB未バックフィル（null）だったため、実際の技術名はis_hit_turn=trueの根拠となった一致パターンから導出（scripts/analysis/find-video-worthy-race.jsと同じ手法）。直近3投稿（trivia・live-prediction-hook・answer-check）のうち直前がanswer-checkのため連続2本目だが3連続にはならないため許容。既存AnswerCheckHookCM.jsxのAnswerCheckHookTemplateを再利用し、一時的に新規exportを追加、Audio loop追加（soundtrack-hitcheck.wav 13.06秒<動画尺20.39秒で末尾無音になる既知バグの回避）を行い、レンダリング後にgit checkoutで元に戻した（コード変更は残していない）。getRecentRevisions/getActiveInsights確認、該当フィードバック・active insightなし。risk-rules.json照合、risk_flags無し。frame書き出しで安全マージン・中央寄せを目視確認済み。sns_drafts承認待ち。"
+    },
+    {
+      "date": "2026-09-12",
+      "character": null,
+      "format": "live-prediction-hook",
+      "content": "予想数値フック型（戸田1R、本日10:47発走・一般戦、AI逃げ確率29%・イン崩れ注意度71〈会場内パーセンタイル0.708〉、1号艇B1級・全国勝率5.18）",
+      "videoFile": "Supabase Storage sns-hub-media/1fead13d-ae5c-4dc8-b040-29d981052844/x-ja.mp4（sns_drafts id=0ee3f350-5a98-4201-8566-60b7b6ad89d9）",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、土曜のため当日ネタ生成日）。締切まで96分の余裕を確認済み（09:10時点、レンダリング完了後09:20時点でも87分の余裕を再確認）。イン崩れ注意度71パーセンタイル（70以上を優先する基準に合致）。直近3投稿と型重複なし（直前がanswer-checkのため許容）。既存LivePredictionHookCM.jsxのLivePredictionHookTemplateを再利用し、一時的に新規exportを追加してレンダリングする過程で新規バグを発見: このファイルのSceneHookはpercentileを0-100の整数として直接描画する実装（AnswerCheckHookCM.jsxとは異なりMath.round(percentile*100)の変換をしない）のため、DBの生値0.7083333...をそのまま渡すと画面左右がフレーム外にはみ出す不具合をframe=0の目視確認で発見・71に修正して再レンダリングした。Audio loop追加（soundtrack-hitcheck.wav 13.06秒<動画尺16.90秒で末尾無音になる既知バグの回避）も実施。レンダリング後にgit checkoutで元に戻した（コード変更は残していない）。getRecentRevisions/getActiveInsights確認、該当フィードバック・active insightなし。risk-rules.json照合、risk_flags無し。sns_drafts承認待ち。"
     }
   ]
 }

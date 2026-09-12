@@ -66,6 +66,28 @@
       "postedAt": null,
       "metrics": null,
       "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行）。【重要な発見】直近のTikTok drafts6件が連続で'trivia'フォーマットだったが、内容を確認したところ出身地別勝率・支部別勝率・体重別勝率・級別スタートタイミング・級別フライング率など選手属性別の成績統計比較であり、絶対厳守13（賭けの結果に影響する統計・インサイトを扱うコンテンツの新規制作停止、2026-09-01/02方針転換）に抵触する疑いが強いと判断した。committed済みのTriviaCM.jsx（年代別1着率）も同種の懸念がある。ローテーションルール（直近3投稿と同じ型を連続させない）にも違反していたため、今回はtrivia以外の安全な型としてLanguageSwitcherCM.jsxを再選定した。既存コンポジションの再利用、コード変更無し。詳細はRoutine実行結果報告を参照。"
+    },
+    {
+      "date": "2026-09-10",
+      "format": "service-scale",
+      "axis": null,
+      "content": "サービスの信頼性・スケール訴求型（分析済みレース数・出走データ件数・分析軸数17種類、的中率等の結果指標は不使用）",
+      "videoFile": "Supabase Storage sns-hub-media/（sns_drafts id=d0421355-fdea-44a2-9d06-0bd461ff626d、詳細パスは同レコード参照）",
+      "status": "produced",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "【2026-09-12のRoutine実行時に本エントリの欠落を発見し、事後追記】sns_drafts上には2026-09-10作成のservice-scale下書き（ADR 0029に基づく新規コンポジション試作、docs/proposal/tiktok-non-gambling-content-ideas.md案3）が存在するが、history.jsonへの追記が漏れていた。加えて、当時のsns_template_variantsノートは「ServiceScaleCM.jsxをコミット済み」としていたが、2026-09-12時点でgit log --all上に同ファイルの追加コミットは見つからず、実際にはコミットされていない（過去セッションの自己申告と実態の不一致）。本Routineの責務外のため、コード自体の復元・再コミットはこの回では行わず、事実として記録するのみ。"
+    },
+    {
+      "date": "2026-09-12",
+      "format": null,
+      "axis": null,
+      "content": null,
+      "videoFile": null,
+      "status": "not_generated_by_routine_judgment",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、土曜）。今回はTikTok向け新規動画を生成しなかった（Routine自身の判断、ユーザーへの事前確認は無し）。理由: (1)絶対厳守13により当日ネタ系の主力フォーマット（会場攻略・答え合わせ・予想数値フック・本日のデータ一覧等）が軒並み新規制作停止中で、残る安全な型はToolShowcaseCM（ハードコード・非パラメータ化、2026-09-04に同一内容で使用済みのため実質的な重複になる）とLanguageSwitcherCM（直近2投稿で連続使用済み、3連続は不可）のみだった。(2)pending_review状態のTikTok下書きが既に11件溜留しており、うち9件（live-prediction-hook/daily-data-list/answer-check/venue-ranking/trivia）は絶対厳守13により今後投稿できない可能性が高い型で、2026-08-31〜09-01作成のまま2週間近く滞留している。(3)最新のservice-scale下書き（2026-09-10作成、絶対厳守13準拠）も未投稿のまま2日間残っており、ここに類似コンテンツをさらに積み増す前に人間によるレビュー・整理（非準拠9件のアーカイブ判断、@ryujinradarのシャドウバン状況確認）が先に必要と判断した。次回セッションでは、上記アーカイブが進んだ場合、または新しい非ギャンブル系コンポジション（例: 買い方ガイド・会場の観光/設備紹介等、統計を伴わない切り口）を新規に試作した場合に生成を再開する。"
     }
   ]
 }
