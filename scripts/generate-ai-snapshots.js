@@ -200,23 +200,44 @@ async function main() {
 
   generateWinningTechniqueSnapshot();
 
-  const { proc: previewProc, baseUrl } = await startPreviewServer();
-  let browser;
+  // ブログ記事スナップショット（Playwright依存）はVercelのビルド環境で
+  // vite previewのローカルサーバーがタイムアウトし本番デプロイ自体を止めた実績がある
+  // （2026-09-11〜09-12、PR#468マージ後10時間以上デプロイ失敗が継続）。
+  // ここで失敗してもビルド全体は成功させ、/winning-technique分だけは配信を継続する。
+  let previewProc;
   try {
-    browser = await chromium.launch();
-    const failed = await generateBlogSnapshots(browser, baseUrl);
-    if (failed.length > 0) {
-      process.exitCode = 1;
+    const started = await startPreviewServer();
+    previewProc = started.proc;
+    const baseUrl = started.baseUrl;
+    let browser;
+    try {
+      browser = await chromium.launch();
+      const failed = await generateBlogSnapshots(browser, baseUrl);
+      if (failed.length > 0) {
+        console.error(
+          `⚠️ ${failed.length}件のブログ記事スナップショット生成に失敗しましたが、ビルドは継続します。`,
+        );
+      }
+    } finally {
+      if (browser) await browser.close();
     }
+  } catch (err) {
+    console.error(
+      "⚠️ ブログ記事スナップショットの生成に失敗しましたが、ビルドは継続します（/winning-technique分は生成済み）:",
+      err.message,
+    );
   } finally {
-    if (browser) await browser.close();
-    previewProc.kill();
+    if (previewProc) previewProc.kill();
   }
 
   console.log("スナップショット生成が完了しました。");
 }
 
 main().catch((err) => {
+  // ここに到達するのはgenerateWinningTechniqueSnapshot()自体の失敗のみ
+  // （ブログ側のエラーは上のtry-catchで既に吸収済み）。同期的なテンプレート
+  // 生成なので、失敗する場合は環境差異ではなく実際のバグの可能性が高く、
+  // ビルドを失敗させて気づけるようにする。
   console.error("スナップショット生成中にエラーが発生しました:", err);
   process.exit(1);
 });
