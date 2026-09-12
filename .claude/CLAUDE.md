@@ -405,9 +405,17 @@ node scripts/daily/calculate-accuracy.js
 | `/create-pr {ブランチ名}` | featureブランチ作成 → PR作成 |
 | `/review-pr {PR番号}` | PRレビュー（ルール準拠チェック） |
 | `/deploy-preview {PR番号}` | Vercel Preview URL確認 |
+| `/implement {Linearチケット}` | Linearチケット自動実装 |
+| `/implement-batch {チケットIDのカンマ区切り}` | Linearチケット一括実装 |
+| `/brushup {Linearチケット}` | Linearチケットのブラッシュアップ |
 | `/analyze-venue {コード}` | 会場別詳細分析 |
 | `/collect-stats` | 24会場の統計一括収集 |
 | `/daily-report` | 本日の予測結果レポート |
+| `/calibration-report` | 展開予測の確率キャリブレーション精度を分析 |
+| `/analyze-vup-features` | ボートレース日和の全バージョンアップ機能を一覧表示 |
+| `/analyze-vup-feature {機能名}` | ボートレース日和の指定機能をboatAI向けに詳細分析 |
+| `/create-vup-ticket {機能名}` | ボートレース日和の機能をLinearチケット化 |
+| `/refine-creative {作り込む対象}` | デザイン・音楽の反復作り込み（複数案提示→フィードバック→再生成） |
 | `/check-env` | 環境変数確認 |
 | `/onboarding` | 環境セットアップ確認 |
 | `/step1-spec {slug} [チケット番号]` | SDD Step1: 仕様書作成 |

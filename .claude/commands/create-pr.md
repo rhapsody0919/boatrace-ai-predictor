@@ -1,3 +1,8 @@
+---
+description: featureブランチ作成 → PR作成
+argument-hint: "[ブランチ名のサフィックス]（省略時はコミット内容から自動生成）"
+---
+
 # PR 作成
 
 現在の作業内容からfeatureブランチを作成し、PRを作成します。

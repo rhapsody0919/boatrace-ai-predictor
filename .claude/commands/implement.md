@@ -1,3 +1,8 @@
+---
+description: Linear チケット自動実装
+argument-hint: "<Linear チケットID>（例: BOAT-123）"
+---
+
 # Linear チケット自動実装
 
 引数: $ARGUMENTS (Linear チケットID。例: BOAT-123)
