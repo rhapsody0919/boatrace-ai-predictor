@@ -1,3 +1,8 @@
+---
+description: PRレビュー（ルール準拠チェック）
+argument-hint: "[PR番号またはPR URL]（省略時は現在のブランチのPRをレビュー）"
+---
+
 # PR レビュー
 
 指定されたPRの内容を確認し、CLAUDE.mdおよびrules/のルールに照らしてレビューを行います。

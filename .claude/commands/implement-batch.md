@@ -1,3 +1,8 @@
+---
+description: Linear チケット一括実装
+argument-hint: "<カンマ区切りのLinearチケットID>（例: BOAT-123,BOAT-124,BOAT-125）"
+---
+
 # Linear チケット一括実装
 
 引数: $ARGUMENTS (カンマ区切りのLinearチケットID。例: BOAT-123,BOAT-124,BOAT-125)

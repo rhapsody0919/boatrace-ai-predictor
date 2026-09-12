@@ -1,3 +1,8 @@
+---
+description: Vercel Preview URL確認
+argument-hint: "[PR番号]（省略時は現在のブランチのPRを検索）"
+---
+
 # Vercel Preview 確認
 
 PRのVercel Preview URLを確認します。

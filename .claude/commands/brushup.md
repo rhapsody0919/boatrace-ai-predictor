@@ -1,3 +1,8 @@
+---
+description: Linear チケット ブラッシュアップ
+argument-hint: "<Linear チケットID>（例: BOAT-123）"
+---
+
 # Linear チケット ブラッシュアップ
 
 引数: $ARGUMENTS (Linear チケットID。例: BOAT-123)
