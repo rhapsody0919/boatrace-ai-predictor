@@ -330,7 +330,11 @@ function fetchMotorDailySeries(venueCode, motorNumber, days) {
         exhibitionRows.map((e) => [`${e.race_id}-${e.boat_number}`, e]),
       );
 
-      // 日付単位でdedupe（同日複数レースは、race_idで安定ソート済みの先頭を採用）
+      // 日付単位でdedupe。motor_2rate/motor_3rate/exhibitionTimeは節単位でほぼ
+      // 一定のためrace_idで安定ソート済みの先頭を採用するが、部品交換・プロペラ
+      // 交換は「同日の特定の1レースだけに記録されるイベント」のため先頭決め打ちでは
+      // 取りこぼす（例: 同日中の途中交換で、交換後のレースにしか記録されない）。
+      // 同日の全レース分をOR/合算してdedupeする
       const byDate = new Map();
       entries
         .map((e) => ({
@@ -345,15 +349,26 @@ function fetchMotorDailySeries(venueCode, motorNumber, days) {
             a.race_id.localeCompare(b.race_id),
         )
         .forEach((e) => {
-          if (!byDate.has(e.race_date)) {
+          const propellerChanged = !!e.exhibition?.propeller_change;
+          const parts = e.exhibition?.parts_changed ?? null;
+          const existing = byDate.get(e.race_date);
+          if (!existing) {
             byDate.set(e.race_date, {
               date: e.race_date,
               motor_2rate: e.motor_2rate,
               motor_3rate: e.motor_3rate,
               exhibitionTime: e.exhibition?.exhibition_time ?? null,
-              propellerChanged: !!e.exhibition?.propeller_change,
-              parts: e.exhibition?.parts_changed ?? null,
+              propellerChanged,
+              parts,
             });
+            return;
+          }
+          existing.propellerChanged =
+            existing.propellerChanged || propellerChanged;
+          if (parts && parts.length > 0) {
+            existing.parts = [
+              ...new Set([...(existing.parts ?? []), ...parts]),
+            ];
           }
         });
 
