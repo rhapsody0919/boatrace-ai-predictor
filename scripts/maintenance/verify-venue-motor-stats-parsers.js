@@ -138,6 +138,35 @@ function check(label, actual, expected) {
   check("尼崎 23号機 優勝回数", m23.championshipCount, 1);
 }
 
+// ④asp/htmlmade型（見出し語が「優勝回数」ではなく「優勝」等の略記）
+{
+  const $ = loadFixture("kojima");
+  const { data } = parseGenericMotorTable($);
+  const m20 = data.find((d) => d.motorNumber === 20);
+  check("児島 20号機 出走回数（略記見出しでも取得できる）", m20.raceCount, 211);
+  check("児島 20号機 最高タイム(秒)", m20.bestTime, 106.4);
+  check(
+    "児島 全モーターがユニーク（凡例行の混入なし）",
+    new Set(data.map((d) => d.motorNumber)).size,
+    data.length,
+  );
+}
+
+// ⑦大村（完全独自CMS、1モーター2行構成: 主要13列 + 4/5/6着のみの3列継続行）
+{
+  const $ = loadFixture("omura");
+  const { data } = parseGenericMotorTable($);
+  const m41 = data.find((d) => d.motorNumber === 41);
+  check("大村 41号機 出走回数", m41.raceCount, 75);
+  check("大村 41号機 算出期間開始", m41.statsPeriodStart, "2026-05-24");
+  check("大村 41号機 最高タイム(秒)", m41.bestTime, 109.3);
+  check(
+    "大村 全モーターがユニーク（4/5/6着継続行が混入していない）",
+    new Set(data.map((d) => d.motorNumber)).size,
+    data.length,
+  );
+}
+
 // ③簡易ランキング型・見出し表記が「2連率」（対の字が無い）会場
 {
   const $ = loadFixture("tsu");

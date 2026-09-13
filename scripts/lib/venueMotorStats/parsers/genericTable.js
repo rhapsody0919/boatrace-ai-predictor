@@ -19,7 +19,17 @@ function normalizeText(text) {
     .trim();
 }
 
-// フィールド名 → 見出しテキストの候補（会場により表記が揺れるため複数候補を持つ)
+// 見出しセル専用の正規化。データ値と違い、見出しは会場により
+// ・「優勝回数」を「優勝」と略す（児島等）
+// ・並び替え矢印(▼)や改行・空白が埋め込まれる（「最高\nタイム\n(1800m)▼」等）
+// といった表記揺れが激しいため、空白・記号を全て除去した上でルート語で
+// 前方一致させる（HEADER_ALIASESは意図的に短いルート語を使う）
+function normalizeHeader(text) {
+  return normalizeText(text).replace(/[\s▼▲△▽☆★]/g, "");
+}
+
+// フィールド名 → 見出しテキストの候補（会場により「◯◯回数」/「◯◯」等表記が
+// 揺れるため、短いルート語を使いstartsWithで前方一致させる）
 const HEADER_ALIASES = {
   motorNumber: ["モーター番号", "No", "No.", "機番"],
   meetCount: ["節数"],
@@ -31,27 +41,26 @@ const HEADER_ALIASES = {
   firstPlace: ["1着"],
   secondPlace: ["2着"],
   thirdPlace: ["3着"],
-  raceCount: ["出走回数"],
-  finalCount: ["優出回数"],
-  championshipCount: ["優勝回数"],
+  raceCount: ["出走"],
+  finalCount: ["優出"],
+  championshipCount: ["優勝"],
   avgExhibitionTime: ["平均展示タイム"],
-  bestTime: ["最高タイム(1800m)", "最高タイム(1800ｍ)"],
+  bestTime: ["最高タイム"],
 };
 
-// 「優勝回数」+「出走回数」or「2連対率」を両方含む見出し行を持つテーブルを
+// 「優勝」+「出走」or「2連対率/2連率」を両方含む見出し行を持つテーブルを
 // モーター成績テーブルと判定する（同じページに無関係な表が複数存在するため）
 function isMotorStatsHeaderRow(cells) {
-  const normalized = cells.map(normalizeText);
-  const hasChampionship = normalized.some((c) => c.includes("優勝回数"));
+  const normalized = cells.map(normalizeHeader);
+  const hasChampionship = normalized.some((c) => c.includes("優勝"));
   const hasRaceCountOrRate = normalized.some(
-    (c) =>
-      c.includes("出走回数") || c.includes("2連対率") || c.includes("2連率"),
+    (c) => c.includes("出走") || c.includes("2連対率") || c.includes("2連率"),
   );
   return hasChampionship && hasRaceCountOrRate;
 }
 
 function buildHeaderMap(headerCells) {
-  const normalized = headerCells.map(normalizeText);
+  const normalized = headerCells.map(normalizeHeader);
   const map = {};
   for (const [field, aliases] of Object.entries(HEADER_ALIASES)) {
     const idx = normalized.findIndex((cell) =>
@@ -66,6 +75,22 @@ function toIntOrNull(value) {
   if (value === undefined || value === null || value === "") return null;
   const n = parseInt(normalizeText(value), 10);
   return Number.isFinite(n) ? n : null;
+}
+
+// モーター番号セルは「4着」のような凡例行の断片を parseInt が誤って4と
+// 読んでしまう（数字プレフィックスだけで判定が緩すぎる）ため、モーター番号は
+// セル全体が純粋な整数であることを要求する厳格版を使う
+// モーター番号セルは、数字の直後に別の文字列が続くケースが2パターンある:
+// (a) "4着"のような凡例行の断片 → 数字の直後に文字が直接続く（拒否したい）
+// (b) 津の「44\n\n\n44番モーターの節間成績...」のように、数字の後に改行を挟んで
+//     常時表示のキャプション文が続く（受理したい、有効なモーター番号のため）
+// 「数字の直後が空白/改行 or 文字列末尾」の場合のみ有効な番号として扱うことで
+// この2つを区別する
+function toStrictIntOrNull(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const normalized = normalizeText(value);
+  const m = normalized.match(/^(\d+)(?=\s|$)/);
+  return m ? parseInt(m[1], 10) : null;
 }
 
 function toFloatOrNull(value) {
@@ -107,10 +132,20 @@ function directRows($, table) {
 }
 
 // tr直下のセルだけを返す（同様にネストしたテーブルのセルを巻き込まないため）
+// セルの.text()はネストしたtableの中身も再帰的に連結してしまう
+// （津のモーター番号セルには「節間成績」というポップアップ用のネストテーブルが
+// 埋め込まれており、.text()だけでは何百文字もの無関係な文字列が混入する）。
+// ネストしたtableを除いてから文字列化する
+function cellText($, cell) {
+  const clone = $(cell).clone();
+  clone.find("table").remove();
+  return clone.text().trim();
+}
+
 function directCells($, tr) {
   return $(tr)
     .children("td,th")
-    .map((_, c) => $(c).text().trim())
+    .map((_, c) => cellText($, c))
     .get();
 }
 
@@ -122,6 +157,7 @@ export function parseGenericMotorTable($) {
   const tables = $("table");
   let headerMap = null;
   let dataRows = [];
+  let headerCellCount = 0;
 
   for (let i = 0; i < tables.length; i++) {
     const table = tables.eq(i);
@@ -133,6 +169,7 @@ export function parseGenericMotorTable($) {
 
     headerMap = buildHeaderMap(headerCells);
     dataRows = rows.toArray().slice(1);
+    headerCellCount = headerCells.length;
     break;
   }
 
@@ -147,8 +184,12 @@ export function parseGenericMotorTable($) {
   for (const tr of dataRows) {
     const cells = directCells($, tr);
     if (cells.length === 0) continue;
+    // 一部会場（大村）は1モーターにつき2行構成で、2行目は4〜6着数のみの
+    // 3セルの継続行（本パーサーでは使わない項目のため、見出しより明らかに
+    // セル数が少ない行は継続行とみなしてスキップする）
+    if (cells.length < headerCellCount) continue;
 
-    const motorNumber = toIntOrNull(cells[headerMap.motorNumber]);
+    const motorNumber = toStrictIntOrNull(cells[headerMap.motorNumber]);
     // 決まり手分析の凡例行（"逃げ","まくり",...）等、モーター番号が数値でない
     // 行はデータ行ではないためスキップする
     if (motorNumber === null) continue;

@@ -94,16 +94,40 @@ export const VENUE_MOTOR_STATS_CONFIG = [
     url: "https://www.boatrace-amagasaki.jp/modules/datafile/",
   },
 
+  // ④asp/htmlmade型 — 児島は実データで汎用パーサーが動作することを確認済み
+  // （見出しが「優勝」等の略記だったため、genericTable側でルート語の前方一致に対応した）
+  {
+    venueCode: 16,
+    name: "児島",
+    parser: "genericTable",
+    url: "https://www.kojimaboat.jp/asp/htmlmade/kojima/motor/motor02.htm",
+  },
+  {
+    venueCode: 15,
+    name: "丸亀",
+    parser: "genericTable",
+    url: "https://www.marugameboat.jp/asp/htmlmade/marugame/motor/motor02.htm",
+    // 2026-09-13時点、新モーター切替期間中（9/17より新モーター使用）でデータ非表示。
+    // 児島と同一ベンダーテンプレートのため、データ復活後は同じparserで動作する見込み
+    // （唐津と同様、当時は実データで検証できなかった）
+  },
+
+  // ⑦完全独自CMS — 大村は実データで汎用パーサーが動作することを確認済み
+  // （1モーターにつき主要13列の行＋4/5/6着数のみの3列継続行、という2行1組の構成
+  // だったため、見出しよりセル数が少ない行は継続行とみなしてスキップするよう対応した）
+  {
+    venueCode: 24,
+    name: "大村",
+    parser: "genericTable",
+    url: "https://omurakyotei.jp/data/motor.php",
+  },
+
   // 以下、専用パーサーが必要な会場（実装予定）
-  // ④asp/htmlmade型
-  // { venueCode: 15, name: "丸亀", parser: "marugame", url: "..." }, // JS描画のため要ブラウザ取得
-  // { venueCode: 16, name: "児島", parser: "kojima", url: "https://www.kojimaboat.jp/asp/htmlmade/kojima/motor/motor02.htm" },
   // ⑤独自asp legacy型
   // { venueCode: 7, name: "蒲郡", parser: "gamagori", url: "..." },
   // { venueCode: 12, name: "住之江", parser: "suminoe", url: "..." },
-  // ⑦PDF配布/完全独自CMS
+  // ⑦PDF配布のみ
   // { venueCode: 17, name: "宮島", parser: "miyajimaPdf", url: "..." }, // PDF解析が必要
-  // { venueCode: 24, name: "大村", parser: "omura", url: "https://omurakyotei.jp/data/motor.php" },
 ];
 
 // 対象外会場（データ自体が存在しないため、明示的に除外理由を記録しておく）
