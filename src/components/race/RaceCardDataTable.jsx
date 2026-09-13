@@ -2,7 +2,7 @@
  * RaceCardDataTable - レース一覧カード内のミニ出走表
  * 勝率・当地・モーターの3行はentries（一覧APIレスポンス）だけで表示でき、
  * 追加のデータ取得は発生しない。折りたたみを開いた時だけそのレースの
- * useRaceAnalysisDataを取得し、残り8行（調子〜単勝回収率）を表示する。
+ * useRaceAnalysisDataを取得し、残りの行（調子〜単勝回収率、チルト・調整重量含む）を表示する。
  * 行定義はDataRaceTableと同じraceIndicators.jsxのbuildIndicatorRowsを共有する。
  */
 import { useState } from "react";

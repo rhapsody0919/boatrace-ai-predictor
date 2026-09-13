@@ -18,6 +18,8 @@ const SOURCES = {
     supabaseDataService.getRaceStPredictabilityBreakdown(raceId),
   exhibitionTime: (raceId) =>
     supabaseDataService.getRaceExhibitionTimeBreakdown(raceId),
+  motorMaintenance: (raceId) =>
+    supabaseDataService.getRaceMotorMaintenanceBreakdown(raceId),
   techniqueProfile: (raceId) =>
     supabaseDataService.getRaceTechniqueProfileBreakdown(raceId),
   returnRate: (raceId) =>

@@ -437,6 +437,8 @@
     "rowForm": "컨디션（승률Δ）",
     "rowSt": "ST 안정도",
     "rowExhibition": "전시 타임",
+    "rowTilt": "틸트",
+    "rowAdjustmentWeight": "조정 중량",
     "rowTechnique": "결정수 유형",
     "rowReturnRate": "단승 회수율",
     "noWins": "승리 없음",
@@ -533,6 +535,8 @@
       "st": "ST안정",
       "exSt": "전시ST",
       "exhibition": "전시T",
+      "tilt": "틸트",
+      "adjustmentWeight": "조정중량",
       "courseRate": "코스",
       "returnRate": "회수율",
       "technique": "결정수"
@@ -662,6 +666,15 @@
       "usageHistoryRank": "{{n}}착",
       "usageHistoryEmpty": "이 모터의 사용 이력 데이터가 없습니다",
       "usageHistoryNote": "💡 과거 이 모터를 사용한 선수를 회차(연속 개최일) 단위로 최신순 표시합니다. 2연대율/3연대율은 해당 회차의 이 모터 자체 실적입니다. 배지는 사용 선수의 급별입니다.",
+      "partsHistoryHeading": "🔧 부품 교환・프로펠러 교환 이력",
+      "propellerChanged": "프로펠러 교환",
+      "partsInterpretation": {
+        "improved": "교환 후 전시 타임 개선",
+        "declined": "교환 후 전시 타임 악화",
+        "neutral": "교환 전후 큰 변화 없음"
+      },
+      "partsHistoryEmpty": "이 모터의 부품 교환・프로펠러 교환 기록이 없습니다",
+      "partsHistoryNote": "💡 부품 교환・프로펠러 교환은 그 자체만으로는 기력 저하의 신호일 수도, 정비 직후의 호전 신호일 수도 있습니다. 배지는 교환 전후 평균 전시 타임을 비교한 참고값이며 결과를 보장하지 않습니다.",
       "note": "💡 표의 행을 클릭하면 해당 모터의 회차별 추이를 볼 수 있습니다. 강조 표시된 행은 이 레이스에서 2연대율이 가장 높은 보트입니다."
     },
     "racerForm": {

@@ -17,7 +17,14 @@ import "./RacerMotorStatusCard.css";
 export default function RacerMotorStatusCard({ status }) {
   if (!status) return null;
 
-  const { raceId, venueCode, motorNumber, powerIndex, meetTrend } = status;
+  const {
+    raceId,
+    venueCode,
+    motorNumber,
+    powerIndex,
+    meetTrend,
+    latestPartsEvent,
+  } = status;
   const venueName = VENUE_NAMES[venueCode] ?? `${venueCode}`;
   const chartData = (meetTrend ?? []).map((row) => ({
     date: row.date.slice(5),
@@ -83,6 +90,16 @@ export default function RacerMotorStatusCard({ status }) {
       ) : (
         <p className="racer-motor-status-empty">
           今節はまだこのモーターでの出走数が少なく、推移は表示できません。
+        </p>
+      )}
+
+      {latestPartsEvent && (
+        <p className="racer-motor-status-parts">
+          🔧 {latestPartsEvent.date}
+          {latestPartsEvent.parts && latestPartsEvent.parts.length > 0
+            ? `：${latestPartsEvent.parts.join("・")}交換`
+            : ""}
+          {latestPartsEvent.propellerChanged ? "：プロペラ交換" : ""}
         </p>
       )}
 

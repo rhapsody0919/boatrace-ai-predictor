@@ -437,6 +437,8 @@
     "rowForm": "調子（勝率Δ）",
     "rowSt": "ST安定度",
     "rowExhibition": "展示タイム",
+    "rowTilt": "チルト",
+    "rowAdjustmentWeight": "調整重量",
     "rowTechnique": "決まり手型",
     "rowReturnRate": "単勝回収率",
     "noWins": "勝利なし",
@@ -535,6 +537,8 @@
       "st": "ST安定",
       "exSt": "展示ST",
       "exhibition": "展示T",
+      "tilt": "チルト",
+      "adjustmentWeight": "調整重量",
       "courseRate": "コース",
       "returnRate": "回収率",
       "technique": "決まり手"
@@ -664,6 +668,15 @@
       "usageHistoryRank": "{{n}}着",
       "usageHistoryEmpty": "このモーターの使用履歴データが見つかりません",
       "usageHistoryNote": "💡 過去にこのモーターを使用した選手を節（連続開催日）ごとに新しい順で表示しています。2連率・3連率はその節でのこのモーター自体の実績です。バッジは使用選手の級別です。",
+      "partsHistoryHeading": "🔧 部品交換・プロペラ交換履歴",
+      "propellerChanged": "プロペラ交換",
+      "partsInterpretation": {
+        "improved": "交換後に展示タイム改善",
+        "declined": "交換後に展示タイム悪化",
+        "neutral": "交換前後で大きな変化なし"
+      },
+      "partsHistoryEmpty": "このモーターの部品交換・プロペラ交換の記録は見つかりません",
+      "partsHistoryNote": "💡 部品交換・プロペラ交換は単独では機力低下のサインにも整備直後の好転サインにもなり得ます。交換前後の展示タイム平均を比較した目安を添えていますが、参考値であり結果を保証するものではありません。",
       "note": "💡 表の行をクリックするとそのモーターの節ごとの推移が見られます。ハイライトされた行はこのレースで最も2連率が高い艇です。"
     },
     "racerForm": {
