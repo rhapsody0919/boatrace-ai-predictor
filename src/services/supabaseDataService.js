@@ -2976,11 +2976,12 @@ export const supabaseDataService = {
    * race_entries.motor_2rate/3rate は節単位でのみ更新されるため、
    * 日付単位でdedupeして推移として扱う
    */
-  getMotorConditionTrend(venueCode, motorNumber) {
+  getMotorConditionTrend(venueCode, motorNumber, days = 90) {
     return withCache(
       // v2: 展示タイム(exhibition_time)を追加(BOA-265軸B)。旧キャッシュ形状には
-      // 無いフィールドのため、旧キーのままだと古いキャッシュがしばらく残ってしまう
-      `motor-condition-v2-${venueCode}-${motorNumber}`,
+      // 無いフィールドのため、旧キーのままだと古いキャッシュがしばらく残ってしまう。
+      // daysも末尾以外に含める（BOA-283の期間切り替え）
+      `motor-condition-v2-${venueCode}-${motorNumber}-${days}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2991,7 +2992,7 @@ export const supabaseDataService = {
           };
         }
 
-        const races = await getRacesForVenue(venueCode);
+        const races = await getRacesForVenue(venueCode, days);
         if (races.length === 0) {
           return {
             venue_code: venueCode,

@@ -110,6 +110,7 @@ function MotorConditionChart({
           supabaseDataService.getMotorConditionTrend(
             selectedVenue,
             drillDownMotor,
+            periodDays,
           ),
           supabaseDataService.getMotorPowerIndex(
             selectedVenue,
