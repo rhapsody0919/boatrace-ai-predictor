@@ -649,7 +649,9 @@
       "powerIndexHeader": "Power index",
       "powerIndexGood": "Outperforming the rider's own level",
       "powerIndexBad": "Underperforming the rider's own level",
-      "powerIndexSummary": "Power index {{index}} (average over {{count}} races, last 90 days)",
+      "powerIndexSummary": "Power index {{index}} (average over {{count}} races, {{period}})",
+      "period90": "last 90 days",
+      "period30": "last month",
       "powerIndexNote": "💡 The power index averages, across every past race this motor has run, the gap between \"did the boat actually finish top-2 (0/1)\" and \"that rider's own national top-2 rate at the time.\" A larger positive value means the motor is outperforming whichever rider is on it.",
       "legend2": "Top-2 rate",
       "legend3": "Top-3 rate",
@@ -662,11 +664,9 @@
       "exhibitionTrendEmpty": "No trial run time data found for this motor",
       "exhibitionTrendNote": "💡 Even the same motor's trial run time can change with maintenance and how well the rider handles it. A smaller number means a faster time.",
       "usageHistoryHeading": "📜 Usage history",
-      "usageHistoryYAxis": "Power index",
-      "usageHistoryLegend": "Power index",
       "usageHistoryRank": "{{n}}th",
       "usageHistoryEmpty": "No usage history found for this motor",
-      "usageHistoryNote": "💡 Riders who used this motor in the past, newest first, grouped by meet (consecutive racing days). The power index is that meet's \"actual top-2 finish rate\" minus \"that rider's own national top-2 rate.\"",
+      "usageHistoryNote": "💡 Riders who used this motor in the past, newest first, grouped by meet (consecutive racing days). Top-2/top-3 rate is the motor's own record for that meet. The badge shows the rider's class.",
       "note": "💡 Click a table row to see that motor's trend across meets. The highlighted row is the boat with the highest motor top-2 rate in this race."
     },
     "racerForm": {

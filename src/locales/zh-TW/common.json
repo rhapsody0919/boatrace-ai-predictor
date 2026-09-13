@@ -644,7 +644,9 @@
       "powerIndexHeader": "機力指數",
       "powerIndexGood": "表現優於選手本身實力",
       "powerIndexBad": "表現低於選手本身實力",
-      "powerIndexSummary": "機力指數 {{index}}（近90天、{{count}}場的平均值）",
+      "powerIndexSummary": "機力指數 {{index}}（{{period}}、{{count}}場的平均值）",
+      "period90": "近90天",
+      "period30": "近1個月",
       "powerIndexNote": "💡 機力指數是將這台馬達過去每一場比賽的「該場是否實際跑進前2名（0/1）」減去「當時該選手本身的全國2連率」，再取全部場次平均而得。數值越大，代表這台馬達的表現越超出所搭載選手的實力。",
       "legend2": "2連率",
       "legend3": "3連率",
@@ -657,11 +659,9 @@
       "exhibitionTrendEmpty": "找不到此馬達的展示時間資料",
       "exhibitionTrendNote": "💡 即使是同一台馬達，也可能因保養調整或選手操控方式不同而使展示時間出現變化。數值越小代表時間越快。",
       "usageHistoryHeading": "📜 使用履歷",
-      "usageHistoryYAxis": "機力指數",
-      "usageHistoryLegend": "機力指數",
       "usageHistoryRank": "第{{n}}名",
       "usageHistoryEmpty": "找不到此馬達的使用履歷資料",
-      "usageHistoryNote": "💡 依賽節（連續開催日）由新到舊顯示過去使用過這台馬達的選手。機力指數為該賽節「實際跑進前2名的比率」減去「該選手本身的全國2連率」。",
+      "usageHistoryNote": "💡 依賽節（連續開催日）由新到舊顯示過去使用過這台馬達的選手。2連率/3連率為該賽節這台馬達本身的實績，徽章顯示使用選手的級別。",
       "note": "💡 點擊表格列可查看該馬達各賽節的走勢。強調顯示的列為本場比賽中2連率最高的艇。"
     },
     "racerForm": {

@@ -251,13 +251,13 @@ async function fetchAllByIn(table, select, column, values) {
 }
 
 // 指定会場の直近90日のレース一覧を取得する（BOA-151、複数メソッドで共有するためキャッシュする）
-function getRacesForVenue(venueCode) {
-  return withCache(`races-for-venue-${venueCode}`, async () => {
+function getRacesForVenue(venueCode, days = 90) {
+  return withCache(`races-for-venue-${venueCode}-${days}`, async () => {
     if (!supabase) return [];
 
-    const ninetyDaysAgo = new Date();
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-    const cutoff = ninetyDaysAgo.toISOString().split("T")[0];
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - days);
+    const cutoff = daysAgo.toISOString().split("T")[0];
 
     const { data, error } = await supabase
       .from("races")
@@ -2176,13 +2176,13 @@ export const supabaseDataService = {
    * 「このレースのどの艇のモーターが調子いいか」を直接示す
    * venueCodeを渡すと各艇のモーターの機力指数（BOA-265）も合わせて取得する
    */
-  getRaceMotorBreakdown(raceId, venueCode = null) {
+  getRaceMotorBreakdown(raceId, venueCode = null, days = 90) {
     return withCache(
       // raceIdを末尾に置く: inferTtlFromKey()は末尾の「YYYY-MM-DD-会場-レース番号」
-      // パターンで過去レースを検知し7日キャッシュを付与する。venueCodeを末尾に
-      // 付けるとこのパターンにマッチしなくなり、過去レースでも30分キャッシュに
+      // パターンで過去レースを検知し7日キャッシュを付与する。venueCode/daysを
+      // 末尾に付けるとこのパターンにマッチしなくなり、過去レースでも30分キャッシュに
       // 格下げされてしまうため、raceIdより前に置く
-      `race-motor-breakdown-${venueCode}-${raceId}`,
+      `race-motor-breakdown-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2206,7 +2206,7 @@ export const supabaseDataService = {
 
         const powerIndexes = await Promise.all(
           rows.map((row) =>
-            this.getMotorPowerIndex(venueCode, row.motor_number),
+            this.getMotorPowerIndex(venueCode, row.motor_number, days),
           ),
         );
         return rows.map((row, i) => ({
@@ -2227,10 +2227,11 @@ export const supabaseDataService = {
    * 単純に motor_2rate − 現在の選手のglobal_2rate を引き算するだけでは
    * 過去の使用選手の実力とモーター自体の性能を区別できないため、
    * この残差平均方式を採用している（ユーザー指摘を受けて修正、2026-09-12）。
+   * daysで集計期間を指定できる（既定90日=「過去90日」、30日=「直近1ヶ月」、BOA-283）
    */
-  getMotorPowerIndex(venueCode, motorNumber) {
+  getMotorPowerIndex(venueCode, motorNumber, days = 90) {
     return withCache(
-      `motor-power-index-${venueCode}-${motorNumber}`,
+      `motor-power-index-${venueCode}-${motorNumber}-${days}`,
       async () => {
         const empty = {
           venue_code: venueCode,
@@ -2245,7 +2246,7 @@ export const supabaseDataService = {
           return empty;
         }
 
-        const races = await getRacesForVenue(venueCode);
+        const races = await getRacesForVenue(venueCode, days);
         if (races.length === 0) return empty;
 
         const raceIds = races.map((r) => r.race_id);
@@ -2325,7 +2326,11 @@ export const supabaseDataService = {
    * 指定会場・モーター番号を過去に使用した選手の履歴を、節ごとにグループ化して
    * 取得する（BOA-283）。「誰がこのモーターに乗っていたか」を辿れるようにする。
    * 節の境目は「同一選手が同一モーターに乗り続けた出走の間隔が2日以内か」で
-   * 判定する（BOA-265のgetRacerCurrentMotorStatusと同じ考え方を一般化したもの）
+   * 判定する（BOA-265のgetRacerCurrentMotorStatusと同じ考え方を一般化したもの）。
+   * 各節の2連率/3連率はそのモーター・その選手のその節内の実績（機力指数のような
+   * 選手実力の差し引きはしない、素の成績）を返す。選手の実力水準は級別バッジで
+   * 別途示す（ユーザーフィードバック、2026-09-13: 機力指数を軸にすると選手間の
+   * 比較がしづらいため、素の連対率＋級別表示に変更）
    */
   getMotorUsageHistory(venueCode, motorNumber) {
     return withCache(
@@ -2345,9 +2350,7 @@ export const supabaseDataService = {
           chunks.map((chunk) =>
             supabase
               .from("race_entries")
-              .select(
-                "race_id, boat_number, racer_id, player_name, global_2rate",
-              )
+              .select("race_id, boat_number, racer_id, player_name, grade")
               .in("race_id", chunk)
               .eq("motor_number", motorNumber),
           ),
@@ -2412,6 +2415,7 @@ export const supabaseDataService = {
           current = {
             racerId: e.racer_id,
             playerName: e.player_name,
+            grade: e.grade,
             entries: [e],
             firstDate: date,
             lastDate: date,
@@ -2421,27 +2425,29 @@ export const supabaseDataService = {
 
         return meets
           .map((meet) => {
-            let hits = 0;
+            let hits2 = 0;
+            let hits3 = 0;
             let n = 0;
             const races = meet.entries.map((e) => {
               const result = resultByRaceId.get(e.race_id);
               const rank = rankOf(result, e.boat_number);
-              if (result && e.global_2rate !== null) {
+              if (rank !== null) {
                 n += 1;
-                if (rank === 1 || rank === 2) hits += 1;
+                if (rank <= 2) hits2 += 1;
+                if (rank <= 3) hits3 += 1;
               }
               return { date: e.race_id.slice(0, 10), rank };
             });
-            const baseline = meet.entries[0]?.global_2rate ?? null;
             return {
               racerId: meet.racerId,
               playerName: meet.playerName,
+              grade: meet.grade,
               firstDate: meet.firstDate,
               lastDate: meet.lastDate,
               races,
               sampleCount: n,
-              powerIndex:
-                n > 0 && baseline !== null ? (hits / n) * 100 - baseline : null,
+              rate2: n > 0 ? (hits2 / n) * 100 : null,
+              rate3: n > 0 ? (hits3 / n) * 100 : null,
             };
           })
           .reverse();

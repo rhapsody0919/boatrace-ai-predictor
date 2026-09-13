@@ -52,6 +52,36 @@
   border-color: var(--brand-accent-primary);
 }
 
+.period-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.period-toggle-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-sm);
+  border: var(--border-width-2) solid var(--border-hairline);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.period-toggle-btn:hover {
+  border-color: var(--brand-accent-secondary);
+  color: var(--brand-accent-secondary);
+}
+
+.period-toggle-btn.active {
+  background: var(--color-primary-700);
+  border-color: var(--color-primary-700);
+  color: white;
+}
+
 .motor-condition-container .loading-state,
 .motor-condition-container .error-state,
 .motor-condition-container .empty-state {
@@ -180,16 +210,9 @@
   color: var(--text-primary);
 }
 
-.usage-history-index {
+.usage-history-rate {
   font-weight: var(--font-weight-semibold);
-}
-
-.usage-history-index.power-index-good {
   color: var(--color-success-text);
-}
-
-.usage-history-index.power-index-bad {
-  color: var(--color-error-text);
 }
 
 .usage-history-ranks {
