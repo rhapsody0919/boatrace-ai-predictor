@@ -646,7 +646,9 @@
       "powerIndexHeader": "機力指数",
       "powerIndexGood": "実力以上に走っている",
       "powerIndexBad": "選手の実力より低調",
-      "powerIndexSummary": "機力指数 {{index}}（過去90日・{{count}}走の平均）",
+      "powerIndexSummary": "機力指数 {{index}}（{{period}}・{{count}}走の平均）",
+      "period90": "過去90日",
+      "period30": "直近1ヶ月",
       "powerIndexNote": "💡 機力指数は「このモーターに乗った過去のレースで実際に2着以内だったか」−「その時乗っていた選手自身の全国2連率」の差を全レース分平均した値です。プラスが大きいほど、乗った選手の実力を超えて走っているモーターと言えます。",
       "legend2": "2連率",
       "legend3": "3連率",
@@ -658,6 +660,10 @@
       "exhibitionYAxis": "展示タイム (秒)",
       "exhibitionTrendEmpty": "このモーターの展示タイムデータが見つかりません",
       "exhibitionTrendNote": "💡 同じモーターでも、整備や選手の使いこなしによって展示タイムが変化することがあります。数値が小さいほど速いタイムです。",
+      "usageHistoryHeading": "📜 使用履歴",
+      "usageHistoryRank": "{{n}}着",
+      "usageHistoryEmpty": "このモーターの使用履歴データが見つかりません",
+      "usageHistoryNote": "💡 過去にこのモーターを使用した選手を節（連続開催日）ごとに新しい順で表示しています。2連率・3連率はその節でのこのモーター自体の実績です。バッジは使用選手の級別です。",
       "note": "💡 表の行をクリックするとそのモーターの節ごとの推移が見られます。ハイライトされた行はこのレースで最も2連率が高い艇です。"
     },
     "racerForm": {

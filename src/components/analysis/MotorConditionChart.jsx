@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
+import RacerGradeBadge from "../racer/RacerGradeBadge";
 import TrendLineChart from "./TrendLineChart";
 import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
@@ -39,11 +40,19 @@ function MotorConditionChart({
   const [trendData, setTrendData] = useState(null);
 
   const [powerIndex, setPowerIndex] = useState(null);
+  const [usageHistory, setUsageHistory] = useState([]);
+  const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
+  // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
+  // 変更でドリルダウン中の画面が一覧に戻されてしまわないようにするため）
+  const lastRaceVenueRef = useRef(null);
 
   // レース選択時: 枠番別モーター調子を取得（機力指数はvenue確定後に別途取得）
   useEffect(() => {
     if (selectedRace === null) return;
+    const raceVenueKey = `${selectedRace}-${selectedVenue}`;
+    const isNewRaceOrVenue = lastRaceVenueRef.current !== raceVenueKey;
+    lastRaceVenueRef.current = raceVenueKey;
     // StrictMode（開発時）の2回実行対策: 使い捨ての1回目でpendingを消費しきって
     // しまわないよう、cleanup側で未適用（cancelled）なら元に戻す
     const pendingSnapshot = pendingInitialMotorNumber.current;
@@ -53,10 +62,11 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
-        setDrillDownMotor(null);
+        if (isNewRaceOrVenue) setDrillDownMotor(null);
         const data = await supabaseDataService.getRaceMotorBreakdown(
           selectedRace,
           selectedVenue,
+          periodDays,
         );
         if (cancelled) return;
         setBreakdown(data);
@@ -87,7 +97,7 @@ function MotorConditionChart({
       if (!applied) pendingInitialMotorNumber.current = pendingSnapshot;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRace, selectedVenue]);
+  }, [selectedRace, selectedVenue, periodDays]);
 
   // モーター選択時: 節ごとの推移と機力指数を取得
   useEffect(() => {
@@ -96,15 +106,25 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
-        const [trend, power] = await Promise.all([
+        const [trend, power, history] = await Promise.all([
           supabaseDataService.getMotorConditionTrend(
             selectedVenue,
             drillDownMotor,
+            periodDays,
           ),
-          supabaseDataService.getMotorPowerIndex(selectedVenue, drillDownMotor),
+          supabaseDataService.getMotorPowerIndex(
+            selectedVenue,
+            drillDownMotor,
+            periodDays,
+          ),
+          supabaseDataService.getMotorUsageHistory(
+            selectedVenue,
+            drillDownMotor,
+          ),
         ]);
         setTrendData(trend);
         setPowerIndex(power);
+        setUsageHistory(history);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
@@ -114,7 +134,7 @@ function MotorConditionChart({
     };
     loadTrend();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedVenue, drillDownMotor]);
+  }, [selectedVenue, drillDownMotor, periodDays]);
 
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
@@ -127,6 +147,14 @@ function MotorConditionChart({
     .map((row) => ({
       date: row.date.slice(5),
       exhibition_time: row.exhibition_time,
+    }));
+
+  const usageHistoryChartData = usageHistory
+    .filter((meet) => meet.rate2 !== null)
+    .map((meet) => ({
+      date: meet.playerName?.replace(/\s+/g, "") ?? "",
+      rate2: meet.rate2,
+      rate3: meet.rate3,
     }));
 
   const bestMotor2Rate =
@@ -190,6 +218,23 @@ function MotorConditionChart({
             )}
           </div>
         ))}
+
+      <div className="period-toggle" role="group">
+        <button
+          type="button"
+          className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
+          onClick={() => setPeriodDays(90)}
+        >
+          {t("analysis.motor.period90")}
+        </button>
+        <button
+          type="button"
+          className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
+          onClick={() => setPeriodDays(30)}
+        >
+          {t("analysis.motor.period30")}
+        </button>
+      </div>
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
@@ -272,6 +317,7 @@ function MotorConditionChart({
                 {t("analysis.motor.powerIndexSummary", {
                   index: `${powerIndex.power_index > 0 ? "+" : ""}${powerIndex.power_index.toFixed(1)}`,
                   count: powerIndex.sample_count,
+                  period: t(`analysis.motor.period${periodDays}`),
                 })}
                 {" — "}
                 {powerIndex.power_index > 0
@@ -331,6 +377,68 @@ function MotorConditionChart({
           <p className="table-note">
             {t("analysis.motor.exhibitionTrendNote")}
           </p>
+
+          <h3 className="selected-motor-heading">
+            {t("analysis.motor.usageHistoryHeading")}
+          </h3>
+          {usageHistoryChartData.length > 1 && (
+            <TrendLineChart
+              data={usageHistoryChartData}
+              yAxisLabel={t("analysis.motor.yAxis")}
+              tooltipFormatter={(value) => `${value.toFixed(1)}%`}
+              series={[
+                {
+                  dataKey: "rate2",
+                  name: t("analysis.motor.legend2"),
+                  stroke: "var(--brand-accent-primary)",
+                  type: "monotone",
+                },
+                {
+                  dataKey: "rate3",
+                  name: t("analysis.motor.legend3"),
+                  stroke: "var(--brand-accent-secondary)",
+                  type: "monotone",
+                },
+              ]}
+            />
+          )}
+          {usageHistory.length > 0 ? (
+            <ul className="usage-history-list">
+              {usageHistory.map((meet, i) => (
+                <li key={`${meet.racerId}-${meet.firstDate}-${i}`}>
+                  <span className="usage-history-period">
+                    {meet.firstDate}
+                    {meet.firstDate !== meet.lastDate && `〜${meet.lastDate}`}
+                  </span>
+                  <span translate="no" className="usage-history-player">
+                    {meet.playerName?.replace(/\s+/g, "")}
+                  </span>
+                  <RacerGradeBadge grade={meet.grade} />
+                  {meet.rate2 !== null && (
+                    <span className="usage-history-rate">
+                      {t("analysis.motor.rate2Header")} {meet.rate2.toFixed(1)}%
+                    </span>
+                  )}
+                  <span className="usage-history-ranks">
+                    {meet.races
+                      .map((r) =>
+                        r.rank !== null
+                          ? t("analysis.motor.usageHistoryRank", {
+                              n: r.rank,
+                            })
+                          : "-",
+                      )
+                      .join(" ")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="empty-state">
+              {t("analysis.motor.usageHistoryEmpty")}
+            </div>
+          )}
+          <p className="table-note">{t("analysis.motor.usageHistoryNote")}</p>
         </>
       )}
 

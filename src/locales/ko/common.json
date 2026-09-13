@@ -644,7 +644,9 @@
       "powerIndexHeader": "기력 지수",
       "powerIndexGood": "선수 실력 이상으로 질주 중",
       "powerIndexBad": "선수 실력보다 저조",
-      "powerIndexSummary": "기력 지수 {{index}}（최근 90일・{{count}}경주 평균）",
+      "powerIndexSummary": "기력 지수 {{index}}（{{period}}・{{count}}경주 평균）",
+      "period90": "최근 90일",
+      "period30": "최근 1개월",
       "powerIndexNote": "💡 기력 지수는 이 모터가 뛴 과거 모든 레이스에 대해 「그 레이스에서 실제로 2착 이내였는지(0/1)」 − 「그때 타고 있던 선수 본인의 전국 2연대율」의 차이를 전체 레이스 평균한 값입니다. 값이 클수록 탑승한 선수의 실력을 뛰어넘어 달리는 모터라고 할 수 있습니다.",
       "legend2": "2연대율",
       "legend3": "3연대율",
@@ -656,6 +658,10 @@
       "exhibitionYAxis": "전시 타임 (초)",
       "exhibitionTrendEmpty": "이 모터의 전시 타임 데이터가 없습니다",
       "exhibitionTrendNote": "💡 같은 모터라도 정비나 선수의 다루는 방식에 따라 전시 타임이 달라질 수 있습니다. 수치가 작을수록 빠른 타임입니다.",
+      "usageHistoryHeading": "📜 사용 이력",
+      "usageHistoryRank": "{{n}}착",
+      "usageHistoryEmpty": "이 모터의 사용 이력 데이터가 없습니다",
+      "usageHistoryNote": "💡 과거 이 모터를 사용한 선수를 회차(연속 개최일) 단위로 최신순 표시합니다. 2연대율/3연대율은 해당 회차의 이 모터 자체 실적입니다. 배지는 사용 선수의 급별입니다.",
       "note": "💡 표의 행을 클릭하면 해당 모터의 회차별 추이를 볼 수 있습니다. 강조 표시된 행은 이 레이스에서 2연대율이 가장 높은 보트입니다."
     },
     "racerForm": {
