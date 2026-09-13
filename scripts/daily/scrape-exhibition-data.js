@@ -266,13 +266,54 @@ export async function run(schedule, date) {
   if (allRows.length > 0) {
     console.log(`\n💾 exhibition_data: ${allRows.length}件書き込み中...`);
 
+    // BOA-221の新列（tilt/propeller_change/parts_changed/adjustment_weight）は
+    // マイグレーション（docs/db-migration/056_exhibition_data_tilt_parts.sql）適用が
+    // 前提。未適用環境でこの新列を含むupsertがそのまま失敗すると、既存の
+    // exhibition_time/start_timing（展示タイム）まで書き込めなくなり、既存機能を
+    // 巻き添えで壊してしまう。列不在エラーを検知したら新列を除いたペイロードで
+    // リトライし、既存機能だけは動かし続ける
+    const NEW_COLUMNS = [
+      "tilt",
+      "propeller_change",
+      "parts_changed",
+      "adjustment_weight",
+    ];
+    const stripNewColumns = (batch) =>
+      batch.map((row) => {
+        const legacyRow = { ...row };
+        NEW_COLUMNS.forEach((col) => delete legacyRow[col]);
+        return legacyRow;
+      });
+
+    let legacyOnly = false;
     for (let i = 0; i < allRows.length; i += 1000) {
       const batch = allRows.slice(i, i + 1000);
+      const payload = legacyOnly ? stripNewColumns(batch) : batch;
       const { error } = await supabase
         .from("exhibition_data")
-        .upsert(batch, { onConflict: "race_id,boat_number" });
+        .upsert(payload, { onConflict: "race_id,boat_number" });
 
-      if (error) {
+      if (
+        error &&
+        !legacyOnly &&
+        /column .* does not exist/i.test(error.message)
+      ) {
+        console.warn(
+          `⚠️ exhibition_data: 新列が未適用のため旧列のみでリトライします（マイグレーション056未適用の可能性）: ${error.message}`,
+        );
+        legacyOnly = true;
+        const { error: retryError } = await supabase
+          .from("exhibition_data")
+          .upsert(stripNewColumns(batch), {
+            onConflict: "race_id,boat_number",
+          });
+        if (retryError) {
+          console.error(
+            `❌ exhibition_data 書き込みエラー:`,
+            retryError.message,
+          );
+        }
+      } else if (error) {
         console.error(`❌ exhibition_data 書き込みエラー:`, error.message);
       }
     }

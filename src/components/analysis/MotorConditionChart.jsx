@@ -125,6 +125,7 @@ function MotorConditionChart({
           supabaseDataService.getMotorPartsHistory(
             selectedVenue,
             drillDownMotor,
+            periodDays,
           ),
         ]);
         setTrendData(trend);
@@ -409,10 +410,10 @@ function MotorConditionChart({
             />
           )}
           {usageHistory.length > 0 ? (
-            <ul className="usage-history-list">
+            <ul className="history-list">
               {usageHistory.map((meet, i) => (
                 <li key={`${meet.racerId}-${meet.firstDate}-${i}`}>
-                  <span className="usage-history-period">
+                  <span className="history-date">
                     {meet.firstDate}
                     {meet.firstDate !== meet.lastDate && `〜${meet.lastDate}`}
                   </span>
@@ -450,10 +451,10 @@ function MotorConditionChart({
             {t("analysis.motor.partsHistoryHeading")}
           </h3>
           {partsHistory.length > 0 ? (
-            <ul className="parts-history-list">
+            <ul className="history-list">
               {partsHistory.map((event, i) => (
                 <li key={`${event.date}-${i}`}>
-                  <span className="parts-history-date">{event.date}</span>
+                  <span className="history-date">{event.date}</span>
                   <span className="parts-history-items">
                     {event.parts && event.parts.length > 0 && (
                       <span className="parts-history-tag">

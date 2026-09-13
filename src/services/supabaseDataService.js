@@ -274,6 +274,94 @@ function getRacesForVenue(venueCode, days = 90) {
   });
 }
 
+const NEUTRAL_EXHIBITION_DIFF_SEC = 0.02; // これ未満は展示タイムの日次ブレの範囲内とみなす
+const INTERPRETATION_WINDOW_DAYS = 3; // 前後何日分の平均で比較するか
+
+/**
+ * 指定会場・モーター番号の日次系列（race_entries+exhibition_data結合、日付単位
+ * dedupe済み）を取得する内部共通ヘルパー。getMotorConditionTrend/
+ * getMotorPartsHistoryの両方が同じrace_entries+exhibition_data結合パターンを
+ * 必要とするため共通化（BOA-221）。withCacheで結果を共有することで、両関数が
+ * 同じ(venueCode, motorNumber, days)を同時に要求した場合の二重フェッチも防ぐ
+ */
+function fetchMotorDailySeries(venueCode, motorNumber, days) {
+  return withCache(
+    `motor-daily-series-${venueCode}-${motorNumber}-${days}`,
+    async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const races = await getRacesForVenue(venueCode, days);
+      if (races.length === 0) return [];
+
+      const raceDateById = new Map(races.map((r) => [r.race_id, r.race_date]));
+      const raceIds = races.map((r) => r.race_id);
+      const chunks = chunkArray(raceIds, 500);
+
+      const results = await Promise.all(
+        chunks.map((chunk) =>
+          supabase
+            .from("race_entries")
+            .select("race_id, boat_number, motor_2rate, motor_3rate")
+            .in("race_id", chunk)
+            .eq("motor_number", motorNumber)
+            .order("race_id"),
+        ),
+      );
+      let entries = [];
+      results.forEach(({ data, error }) => {
+        if (error) {
+          console.error("race_entries取得エラー:", error.message);
+          return;
+        }
+        entries = entries.concat(data);
+      });
+      if (entries.length === 0) return [];
+
+      const exhibitionRows = await fetchAllByIn(
+        "exhibition_data",
+        "race_id, boat_number, exhibition_time, propeller_change, parts_changed",
+        "race_id",
+        entries.map((e) => e.race_id),
+      );
+      const exhibitionByKey = new Map(
+        exhibitionRows.map((e) => [`${e.race_id}-${e.boat_number}`, e]),
+      );
+
+      // 日付単位でdedupe（同日複数レースは、race_idで安定ソート済みの先頭を採用）
+      const byDate = new Map();
+      entries
+        .map((e) => ({
+          ...e,
+          race_date: raceDateById.get(e.race_id),
+          exhibition: exhibitionByKey.get(`${e.race_id}-${e.boat_number}`),
+        }))
+        .filter((e) => e.race_date)
+        .sort(
+          (a, b) =>
+            a.race_date.localeCompare(b.race_date) ||
+            a.race_id.localeCompare(b.race_id),
+        )
+        .forEach((e) => {
+          if (!byDate.has(e.race_date)) {
+            byDate.set(e.race_date, {
+              date: e.race_date,
+              motor_2rate: e.motor_2rate,
+              motor_3rate: e.motor_3rate,
+              exhibitionTime: e.exhibition?.exhibition_time ?? null,
+              propellerChanged: !!e.exhibition?.propeller_change,
+              parts: e.exhibition?.parts_changed ?? null,
+            });
+          }
+        });
+
+      return [...byDate.values()];
+    },
+  );
+}
+
 /**
  * 会場コード→会場名のマッピング
  */
@@ -2998,93 +3086,20 @@ export const supabaseDataService = {
       // daysも末尾以外に含める（BOA-283の期間切り替え）
       `motor-condition-v2-${venueCode}-${motorNumber}-${days}`,
       async () => {
-        if (!supabase) {
-          console.error("Supabase client not initialized");
-          return {
-            venue_code: venueCode,
-            motor_number: motorNumber,
-            trend: [],
-          };
-        }
-
-        const races = await getRacesForVenue(venueCode, days);
-        if (races.length === 0) {
-          return {
-            venue_code: venueCode,
-            motor_number: motorNumber,
-            trend: [],
-          };
-        }
-
-        const raceDateById = new Map(
-          races.map((r) => [r.race_id, r.race_date]),
+        const series = await fetchMotorDailySeries(
+          venueCode,
+          motorNumber,
+          days,
         );
-        const raceIds = races.map((r) => r.race_id);
-        const chunks = chunkArray(raceIds, 500);
-
-        const results = await Promise.all(
-          chunks.map((chunk) =>
-            supabase
-              .from("race_entries")
-              .select("race_id, boat_number, motor_2rate, motor_3rate")
-              .in("race_id", chunk)
-              .eq("motor_number", motorNumber),
-          ),
-        );
-
-        let entries = [];
-        results.forEach(({ data, error }) => {
-          if (error) {
-            console.error("race_entries取得エラー:", error.message);
-            return;
-          }
-          entries = entries.concat(data);
-        });
-
-        // 節内適応トレンド（軸B）: このモーターが出走したレースの展示タイムを
-        // race_id-boat_numberで突き合わせ、同じ日付単位の推移に載せる
-        const exhibitionRows =
-          entries.length > 0
-            ? await fetchAllByIn(
-                "exhibition_data",
-                "race_id, boat_number, exhibition_time",
-                "race_id",
-                entries.map((e) => e.race_id),
-              )
-            : [];
-        const exhibitionTimeByKey = new Map();
-        exhibitionRows.forEach((e) => {
-          exhibitionTimeByKey.set(
-            `${e.race_id}-${e.boat_number}`,
-            e.exhibition_time,
-          );
-        });
-
-        // 日付単位でdedupe（同日の複数レースは同じ値のため最初の1件を採用）
-        const byDate = new Map();
-        entries
-          .map((e) => ({ ...e, race_date: raceDateById.get(e.race_id) }))
-          .filter((e) => e.race_date)
-          .sort((a, b) => a.race_date.localeCompare(b.race_date))
-          .forEach((e) => {
-            if (!byDate.has(e.race_date)) {
-              const exhibitionTime = exhibitionTimeByKey.get(
-                `${e.race_id}-${e.boat_number}`,
-              );
-              byDate.set(e.race_date, {
-                date: e.race_date,
-                motor_2rate: e.motor_2rate,
-                motor_3rate: e.motor_3rate,
-                exhibition_time:
-                  exhibitionTime !== undefined ? exhibitionTime : null,
-              });
-            }
-          });
-
         return {
           venue_code: venueCode,
           motor_number: motorNumber,
-          trend: [...byDate.values()],
+          trend: series.map((d) => ({
+            date: d.date,
+            motor_2rate: d.motor_2rate,
+            motor_3rate: d.motor_3rate,
+            exhibition_time: d.exhibitionTime,
+          })),
         };
       },
     );
@@ -3102,87 +3117,12 @@ export const supabaseDataService = {
     return withCache(
       `motor-parts-history-${venueCode}-${motorNumber}-${days}`,
       async () => {
-        if (!supabase) {
-          console.error("Supabase client not initialized");
-          return {
-            venue_code: venueCode,
-            motor_number: motorNumber,
-            events: [],
-          };
-        }
-
-        const races = await getRacesForVenue(venueCode, days);
-        if (races.length === 0) {
-          return {
-            venue_code: venueCode,
-            motor_number: motorNumber,
-            events: [],
-          };
-        }
-
-        const raceDateById = new Map(
-          races.map((r) => [r.race_id, r.race_date]),
-        );
-        const raceIds = races.map((r) => r.race_id);
-        const chunks = chunkArray(raceIds, 500);
-
-        const results = await Promise.all(
-          chunks.map((chunk) =>
-            supabase
-              .from("race_entries")
-              .select("race_id, boat_number")
-              .in("race_id", chunk)
-              .eq("motor_number", motorNumber),
-          ),
-        );
-        let entries = [];
-        results.forEach(({ data, error }) => {
-          if (error) {
-            console.error("race_entries取得エラー:", error.message);
-            return;
-          }
-          entries = entries.concat(data);
-        });
-        if (entries.length === 0) {
-          return {
-            venue_code: venueCode,
-            motor_number: motorNumber,
-            events: [],
-          };
-        }
-
-        const exhibitionRows = await fetchAllByIn(
-          "exhibition_data",
-          "race_id, boat_number, exhibition_time, propeller_change, parts_changed",
-          "race_id",
-          entries.map((e) => e.race_id),
-        );
-        const exhibitionByKey = new Map(
-          exhibitionRows.map((e) => [`${e.race_id}-${e.boat_number}`, e]),
+        const dateSeries = await fetchMotorDailySeries(
+          venueCode,
+          motorNumber,
+          days,
         );
 
-        // 日付単位でdedupe（同日複数レースは最初の1件）、日付昇順に整列
-        const byDate = new Map();
-        entries
-          .map((e) => ({
-            ...e,
-            race_date: raceDateById.get(e.race_id),
-            exhibition: exhibitionByKey.get(`${e.race_id}-${e.boat_number}`),
-          }))
-          .filter((e) => e.race_date)
-          .sort((a, b) => a.race_date.localeCompare(b.race_date))
-          .forEach((e) => {
-            if (!byDate.has(e.race_date)) {
-              byDate.set(e.race_date, {
-                date: e.race_date,
-                exhibitionTime: e.exhibition?.exhibition_time ?? null,
-                propellerChanged: !!e.exhibition?.propeller_change,
-                parts: e.exhibition?.parts_changed ?? null,
-              });
-            }
-          });
-
-        const dateSeries = [...byDate.values()];
         const avgOf = (list) => {
           const values = list
             .map((d) => d.exhibitionTime)
@@ -3192,31 +3132,33 @@ export const supabaseDataService = {
             : null;
         };
 
-        const events = dateSeries
-          .map((d, i) => ({ ...d, index: i }))
-          .filter((d) => d.propellerChanged || (d.parts && d.parts.length > 0))
-          .map((d) => {
-            const before = avgOf(
-              dateSeries.slice(Math.max(0, d.index - 3), d.index),
-            );
-            const after = avgOf(dateSeries.slice(d.index + 1, d.index + 4));
-            let interpretation = null;
-            if (before !== null && after !== null) {
-              // 展示タイムは速いほど良い（小さいほど良い）ため、after<beforeは好転
-              const diff = before - after;
-              if (Math.abs(diff) >= 0.02) {
-                interpretation = diff > 0 ? "improved" : "declined";
-              } else {
-                interpretation = "neutral";
-              }
+        const events = [];
+        dateSeries.forEach((d, i) => {
+          if (!d.propellerChanged && !(d.parts && d.parts.length > 0)) return;
+
+          const before = avgOf(
+            dateSeries.slice(Math.max(0, i - INTERPRETATION_WINDOW_DAYS), i),
+          );
+          const after = avgOf(
+            dateSeries.slice(i + 1, i + 1 + INTERPRETATION_WINDOW_DAYS),
+          );
+          let interpretation = null;
+          if (before !== null && after !== null) {
+            // 展示タイムは速いほど良い（小さいほど良い）ため、after<beforeは好転
+            const diff = before - after;
+            if (Math.abs(diff) >= NEUTRAL_EXHIBITION_DIFF_SEC) {
+              interpretation = diff > 0 ? "improved" : "declined";
+            } else {
+              interpretation = "neutral";
             }
-            return {
-              date: d.date,
-              propellerChanged: d.propellerChanged,
-              parts: d.parts,
-              interpretation,
-            };
+          }
+          events.push({
+            date: d.date,
+            propellerChanged: d.propellerChanged,
+            parts: d.parts,
+            interpretation,
           });
+        });
 
         return {
           venue_code: venueCode,

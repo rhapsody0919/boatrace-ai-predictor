@@ -447,7 +447,8 @@ export function buildIndicatorRows({
       itemText: () => null,
       render: (p) => {
         const row = maintenanceByBoat.get(p.number);
-        const weight = toNumber(row?.adjustment_weight);
+        if (!row) return ph("motorMaintenance");
+        const weight = toNumber(row.adjustment_weight);
         return weight !== null ? (
           <span className="drt-value">{weight.toFixed(1)}kg</span>
         ) : (
