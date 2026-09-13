@@ -2181,8 +2181,10 @@ export const supabaseDataService = {
       // raceIdを末尾に置く: inferTtlFromKey()は末尾の「YYYY-MM-DD-会場-レース番号」
       // パターンで過去レースを検知し7日キャッシュを付与する。venueCode/daysを
       // 末尾に付けるとこのパターンにマッチしなくなり、過去レースでも30分キャッシュに
-      // 格下げされてしまうため、raceIdより前に置く
-      `race-motor-breakdown-${venueCode}-${days}-${raceId}`,
+      // 格下げされてしまうため、raceIdより前に置く。
+      // v2: motor_2rate/3rateを選択期間に応じた値に差し替えるよう変更(BOA-283)。
+      // 旧キーのままだと古いキャッシュが期間切り替えに反映されない
+      `race-motor-breakdown-v2-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2209,8 +2211,14 @@ export const supabaseDataService = {
             this.getMotorPowerIndex(venueCode, row.motor_number, days),
           ),
         );
+        // 2連率/3連率も選択中の期間（過去90日/直近1ヶ月）に応じた値に差し替える。
+        // race_entries.motor_2rate/3rateは公式サイトの「モーター抽選日からの通算」
+        // 値でperiod非依存のため、そのまま使うと機力指数だけ期間が変わり
+        // 2連率/3連率が変わらないという不整合が生じる（ユーザー指摘、2026-09-13）
         return rows.map((row, i) => ({
           ...row,
+          motor_2rate: powerIndexes[i]?.actual_rate2 ?? row.motor_2rate,
+          motor_3rate: powerIndexes[i]?.actual_rate3 ?? row.motor_3rate,
           power_index: powerIndexes[i]?.power_index ?? null,
         }));
       },
@@ -2231,13 +2239,16 @@ export const supabaseDataService = {
    */
   getMotorPowerIndex(venueCode, motorNumber, days = 90) {
     return withCache(
-      `motor-power-index-${venueCode}-${motorNumber}-${days}`,
+      // v2: actual_rate3を追加(BOA-283)。旧キャッシュ形状には無いフィールドのため、
+      // 旧キーのままだと古いキャッシュが2連率/3連率の期間切り替えに反映されない
+      `motor-power-index-v2-${venueCode}-${motorNumber}-${days}`,
       async () => {
         const empty = {
           venue_code: venueCode,
           motor_number: motorNumber,
           sample_count: 0,
           actual_rate2: null,
+          actual_rate3: null,
           avg_baseline_rate2: null,
           power_index: null,
         };
@@ -2279,7 +2290,7 @@ export const supabaseDataService = {
           resultChunks.map((chunk) =>
             supabase
               .from("race_results")
-              .select("race_id, rank1, rank2")
+              .select("race_id, rank1, rank2, rank3")
               .in("race_id", chunk),
           ),
         );
@@ -2293,14 +2304,17 @@ export const supabaseDataService = {
         });
 
         const residuals = [];
-        let actualHits = 0;
+        let actualHits2 = 0;
+        let actualHits3 = 0;
         let baselineSum = 0;
         entries.forEach((e) => {
           const result = resultByRaceId.get(e.race_id);
           if (!result || e.global_2rate === null) return;
           const isTop2 =
             result.rank1 === e.boat_number || result.rank2 === e.boat_number;
-          if (isTop2) actualHits += 1;
+          const isTop3 = isTop2 || result.rank3 === e.boat_number;
+          if (isTop2) actualHits2 += 1;
+          if (isTop3) actualHits3 += 1;
           residuals.push((isTop2 ? 100 : 0) - e.global_2rate);
           baselineSum += e.global_2rate;
         });
@@ -2314,7 +2328,8 @@ export const supabaseDataService = {
           venue_code: venueCode,
           motor_number: motorNumber,
           sample_count: residuals.length,
-          actual_rate2: (actualHits / residuals.length) * 100,
+          actual_rate2: (actualHits2 / residuals.length) * 100,
+          actual_rate3: (actualHits3 / residuals.length) * 100,
           avg_baseline_rate2: avgBaseline,
           power_index: powerIndex,
         };
