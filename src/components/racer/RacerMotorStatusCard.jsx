@@ -53,15 +53,25 @@ export default function RacerMotorStatusCard({ status }) {
         venueMotorStats?.raceCount !== undefined) ||
       (venueMotorStats?.meetCount !== null &&
         venueMotorStats?.meetCount !== undefined) ? (
-        <p className="racer-motor-status-freshness">
-          🔧{" "}
-          {venueMotorStats.raceCount !== null &&
-            venueMotorStats.raceCount !== undefined &&
-            `抽選後${venueMotorStats.raceCount}走目`}
-          {venueMotorStats.meetCount !== null &&
-            venueMotorStats.meetCount !== undefined &&
-            `（${venueMotorStats.meetCount}節目）`}
-        </p>
+        <div className="racer-motor-status-freshness">
+          <span className="racer-motor-status-freshness-label">
+            🔧 モーター鮮度
+          </span>
+          <div className="racer-motor-status-freshness-badges">
+            {venueMotorStats.raceCount !== null &&
+              venueMotorStats.raceCount !== undefined && (
+                <span className="racer-motor-status-freshness-badge">
+                  {venueMotorStats.raceCount}走目
+                </span>
+              )}
+            {venueMotorStats.meetCount !== null &&
+              venueMotorStats.meetCount !== undefined && (
+                <span className="racer-motor-status-freshness-badge">
+                  {venueMotorStats.meetCount}節目
+                </span>
+              )}
+          </div>
+        </div>
       ) : null}
 
       {hasPowerIndex && (

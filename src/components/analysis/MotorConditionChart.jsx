@@ -342,22 +342,29 @@ function MotorConditionChart({
             venueMotorStats?.raceCount !== undefined) ||
           (venueMotorStats?.meetCount !== null &&
             venueMotorStats?.meetCount !== undefined) ? (
-            <p className="venue-motor-freshness">
-              🔧{" "}
-              {venueMotorStats.raceCount !== null &&
-                venueMotorStats.raceCount !== undefined &&
-                t("analysis.motor.freshnessSummary", {
-                  raceCount: venueMotorStats.raceCount,
-                })}
-              {venueMotorStats.meetCount !== null &&
-                venueMotorStats.meetCount !== undefined && (
-                  <span className="venue-motor-freshness-sub">
-                    {t("analysis.motor.freshnessMeetCount", {
-                      meetCount: venueMotorStats.meetCount,
-                    })}
-                  </span>
-                )}
-            </p>
+            <div className="venue-motor-freshness">
+              <span className="venue-motor-freshness-label">
+                🔧 {t("analysis.motor.freshnessLabel")}
+              </span>
+              <div className="venue-motor-freshness-badges">
+                {venueMotorStats.raceCount !== null &&
+                  venueMotorStats.raceCount !== undefined && (
+                    <span className="venue-motor-freshness-badge">
+                      {t("analysis.motor.freshnessRaceBadge", {
+                        raceCount: venueMotorStats.raceCount,
+                      })}
+                    </span>
+                  )}
+                {venueMotorStats.meetCount !== null &&
+                  venueMotorStats.meetCount !== undefined && (
+                    <span className="venue-motor-freshness-badge">
+                      {t("analysis.motor.freshnessMeetBadge", {
+                        meetCount: venueMotorStats.meetCount,
+                      })}
+                    </span>
+                  )}
+              </div>
+            </div>
           ) : null}
 
           {chartData.length > 0 ? (

@@ -83,6 +83,8 @@ boatAI 多言語化における対訳の基準表。翻訳キー追加時はこ�
 | 全国2連率 | National top-2 rate | 全國2連率 | 전국 연대율 | 2着以内率。연대율は韓国公営競技の公式用語 |
 | 当地勝率 | Local win rate | 當地勝率 | 현지 승률 | その会場での勝率 |
 | モーター2率 | Motor top-2 rate | 馬達2連率 | 모터 연대율 | |
+| 節（開催） | Meet | 節 | 절 | ボートレースの4〜7日間の開催単位 |
+| モーター鮮度 | Motor freshness | 馬達新鮮度 | 모터 신선도 | 抽選後の出走回数・節数（BOA-264） |
 | 平均ST | Avg. ST | 平均ST | 평균 ST | ST = Start Timing（そのまま使用） |
 | 展示タイム | Exhibition time | 展示時間 | 전시 타임 | |
 | 展示ST | Exhibition ST | 展示ST | 전시 ST | |

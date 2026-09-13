@@ -19,9 +19,31 @@
 }
 
 .racer-motor-status-freshness {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
   margin: 0 0 var(--spacing-2);
+}
+
+.racer-motor-status-freshness-label {
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
+}
+
+.racer-motor-status-freshness-badges {
+  display: flex;
+  gap: var(--spacing-1-5);
+}
+
+.racer-motor-status-freshness-badge {
+  padding: var(--spacing-1) var(--spacing-2-5);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--surface-page);
 }
 
 .racer-motor-status-index {
