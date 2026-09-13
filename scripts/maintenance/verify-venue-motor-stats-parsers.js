@@ -14,6 +14,8 @@
 import fs from "node:fs";
 import * as cheerio from "cheerio";
 import { parseGenericMotorTable } from "../lib/venueMotorStats/parsers/genericTable.js";
+import { parseGamagoriMotorTable } from "../lib/venueMotorStats/parsers/gamagori.js";
+import { parseMiyajimaMotorPdf } from "../lib/venueMotorStats/parsers/miyajimaPdf.js";
 
 const FIXTURE_DIR = new URL(
   "../lib/venueMotorStats/__fixtures__/",
@@ -187,6 +189,74 @@ function check(label, actual, expected) {
   const { data, reason } = parseGenericMotorTable($);
   check("唐津（切替期間中でデータ無し）", data, null);
   check("唐津 失敗理由", reason, "motor_stats_table_not_found");
+}
+
+// 当初の7系統分類では見落としていたが、実際は汎用パーサーでそのまま動作する会場
+{
+  const $ = loadFixture("edogawa");
+  const { data } = parseGenericMotorTable($);
+  const m30 = data.find((d) => d.motorNumber === 30);
+  check("江戸川 30号機 出走回数", m30.raceCount, 70);
+  check("江戸川 30号機 事故率", m30.accidentRate, 0.2);
+}
+{
+  const $ = loadFixture("hamanako");
+  const { data } = parseGenericMotorTable($);
+  const m55 = data.find((d) => d.motorNumber === 55);
+  check("浜名湖 55号機 優出回数", m55.finalCount, 1);
+  check("浜名湖 55号機 2連対率", m55.top2Rate, 50.48);
+}
+{
+  const $ = loadFixture("tokuyama");
+  const { data } = parseGenericMotorTable($);
+  const m68 = data.find((d) => d.motorNumber === 68);
+  check("徳山 68号機 出走回数", m68.raceCount, 91);
+  check("徳山 68号機 最高タイム(秒)", m68.bestTime, 110.2);
+}
+
+// ⑤蒲郡専用パーサー（rowspan/colspanの独自レイアウト）
+{
+  const $ = loadFixture("gamagori");
+  const { data } = parseGamagoriMotorTable($);
+  const m31 = data.find((d) => d.motorNumber === 31);
+  check("蒲郡 31号機 出走回数", m31.raceCount, 28);
+  check("蒲郡 31号機 通算勝率", m31.winRate, 8.39);
+  check("蒲郡 31号機 通算2連対率", m31.top2Rate, 85.7);
+  check(
+    "蒲郡 全モーターがユニーク（rowspan/colspanの巻き込みなし）",
+    new Set(data.map((d) => d.motorNumber)).size,
+    data.length,
+  );
+}
+
+// ⑤住之江（簡易ランキングページ、汎用パーサーで動作。出走回数は別ページ必要のためnull）
+{
+  const $ = loadFixture("suminoe");
+  const { data } = parseGenericMotorTable($);
+  const m64 = data.find((d) => d.motorNumber === 64);
+  check("住之江 64号機 優出回数", m64.finalCount, 5);
+  check(
+    "住之江 64号機 出走回数（簡易ページのため取得不可でnull）",
+    m64.raceCount,
+    null,
+  );
+}
+
+// ⑦宮島（PDF配布、座標ベースの専用パーサー）
+{
+  const buf = fs.readFileSync(new URL("miyajima-motor.pdf", FIXTURE_DIR));
+  const { data } = await parseMiyajimaMotorPdf(buf);
+  const m11 = data.find((d) => d.motorNumber === 11);
+  check("宮島 011号機 節数", m11.meetCount, 25);
+  check("宮島 011号機 出走回数", m11.raceCount, 236);
+  check("宮島 011号機 優出回数", m11.finalCount, 4);
+  check("宮島 011号機 最高タイム(秒)", m11.bestTime, 108.1);
+  check("宮島 011号機 算出期間開始", m11.statsPeriodStart, "2025-10-19");
+  check(
+    "宮島 全モーターがユニーク",
+    new Set(data.map((d) => d.motorNumber)).size,
+    data.length,
+  );
 }
 
 console.log(`\n${failures === 0 ? "✅ 全て合格" : `❌ ${failures}件失敗`}`);
