@@ -49,14 +49,20 @@ export default function RacerMotorStatusCard({ status }) {
         {venueName}・{motorNumber}号機
       </p>
 
-      {venueMotorStats?.raceCount !== null &&
-        venueMotorStats?.raceCount !== undefined && (
-          <p className="racer-motor-status-freshness">
-            🔧 抽選後{venueMotorStats.raceCount}走目
-            {venueMotorStats.meetCount !== null &&
-              `（${venueMotorStats.meetCount}節目）`}
-          </p>
-        )}
+      {(venueMotorStats?.raceCount !== null &&
+        venueMotorStats?.raceCount !== undefined) ||
+      (venueMotorStats?.meetCount !== null &&
+        venueMotorStats?.meetCount !== undefined) ? (
+        <p className="racer-motor-status-freshness">
+          🔧{" "}
+          {venueMotorStats.raceCount !== null &&
+            venueMotorStats.raceCount !== undefined &&
+            `抽選後${venueMotorStats.raceCount}走目`}
+          {venueMotorStats.meetCount !== null &&
+            venueMotorStats.meetCount !== undefined &&
+            `（${venueMotorStats.meetCount}節目）`}
+        </p>
+      ) : null}
 
       {hasPowerIndex && (
         <>

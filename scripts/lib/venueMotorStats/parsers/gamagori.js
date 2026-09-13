@@ -17,35 +17,12 @@
  * 将来必要になれば拡張する）。節数・事故率・1〜3着数・最高タイムはこのページに
  * 存在しないため取得不可（他会場と同様、無いものはnullのまま）。
  */
-
-function toStrictIntOrNull(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const m = value.trim().match(/^(\d+)(?=\s|$)/);
-  return m ? parseInt(m[1], 10) : null;
-}
-
-function toFloatOrNull(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const n = parseFloat(value.trim());
-  return Number.isFinite(n) ? n : null;
-}
-
-function directRows($, table) {
-  return table.find("> thead > tr, > tbody > tr, > tr");
-}
-
-function cellText($, cell) {
-  const clone = $(cell).clone();
-  clone.find("table").remove();
-  return clone.text().trim();
-}
-
-function directCells($, tr) {
-  return $(tr)
-    .children("td,th")
-    .map((_, c) => cellText($, c))
-    .get();
-}
+import {
+  toStrictIntOrNull,
+  toFloatOrNull,
+  directRows,
+  directCells,
+} from "../parserUtils.js";
 
 const EXPECTED_CELL_COUNT = 14;
 
@@ -61,13 +38,25 @@ export function parseGamagoriMotorTable($) {
 
   const table = tables.eq(0);
   const rows = directRows($, table).toArray();
-  // 先頭2行（順位/No./出走回数/... の見出し行 + 勝率/2連率の副見出し行）を飛ばす
+  // 先頭2行（順位/No./出走回数/... の見出し行 + 勝率/2連率の副見出し行）を飛ばす。
+  // ページ構造の前提が崩れていないか最低限の内容確認をしてから読み進める
+  // （無関係な表がページ先頭に紛れ込んだ場合に誤読するのを防ぐ）
+  // 蒲郡は見出しが縦書き（1文字ずつ改行区切り）のため、空白類を除去してから
+  // 判定する（除去しないと「出走」が「出\n走」のまま連続文字列にならず不一致になる）
+  const headerText = $(rows[0]).text().replace(/\s/g, "");
+  if (!headerText.includes("出走") || !headerText.includes("優勝")) {
+    return { data: null, reason: "unexpected_table_header" };
+  }
   const dataRows = rows.slice(2);
 
   const results = [];
+  let skippedRows = 0;
   for (const tr of dataRows) {
     const cells = directCells($, tr);
-    if (cells.length !== EXPECTED_CELL_COUNT) continue;
+    if (cells.length !== EXPECTED_CELL_COUNT) {
+      if (cells.length > 0) skippedRows++;
+      continue;
+    }
 
     const motorNumber = toStrictIntOrNull(cells[1]);
     if (motorNumber === null) continue;
@@ -90,6 +79,12 @@ export function parseGamagoriMotorTable($) {
       statsPeriodStart: null,
       statsPeriodEnd: null,
     });
+  }
+
+  if (skippedRows > 0) {
+    console.warn(
+      `⚠️ 蒲郡: セル数が想定(${EXPECTED_CELL_COUNT})と異なる行を${skippedRows}件スキップしました。ページ構造が変わった可能性があります。`,
+    );
   }
 
   if (results.length === 0) {

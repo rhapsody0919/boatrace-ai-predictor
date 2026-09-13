@@ -10,14 +10,16 @@
  * 対応できないほど構造が異なる会場（丸亀のJS描画、宮島のPDF配布、蒲郡・住之江の
  * 独自legacy構造等）は、このパーサーではなく専用パーサーを使うこと。
  */
-
-// 全角数字・記号を半角に正規化（会場により「２連対率」「1着」等の全角/半角が混在）
-function normalizeText(text) {
-  return text
-    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
-    .replace(/[（）]/g, (c) => (c === "（" ? "(" : ")"))
-    .trim();
-}
+import {
+  normalizeText,
+  toIntOrNull,
+  toFloatOrNull,
+  toStrictIntOrNull,
+  parseBestTime,
+  parseStatsPeriod,
+  directRows,
+  directCells,
+} from "../parserUtils.js";
 
 // 見出しセル専用の正規化。データ値と違い、見出しは会場により
 // ・「優勝回数」を「優勝」と略す（児島等）
@@ -29,7 +31,10 @@ function normalizeHeader(text) {
 }
 
 // フィールド名 → 見出しテキストの候補（会場により「◯◯回数」/「◯◯」等表記が
-// 揺れるため、短いルート語を使いstartsWithで前方一致させる）
+// 揺れるため、短いルート語を使いstartsWithで前方一致させる）。
+// 「このテーブルはモーター成績テーブルか」の判定（isMotorStatsHeaderRow）も
+// このエイリアスの championshipCount/raceCount/top2Rate から導出する
+// （別々にハードコードすると片方だけ更新され食い違うため）
 const HEADER_ALIASES = {
   motorNumber: ["モーター番号", "No", "No.", "機番"],
   meetCount: ["節数"],
@@ -48,15 +53,18 @@ const HEADER_ALIASES = {
   bestTime: ["最高タイム"],
 };
 
-// 「優勝」+「出走」or「2連対率/2連率」を両方含む見出し行を持つテーブルを
-// モーター成績テーブルと判定する（同じページに無関係な表が複数存在するため）
+// 「優勝」+「出走 or 2連対率/2連率」を両方含む見出し行を持つテーブルを
+// モーター成績テーブルと判定する（同じページに無関係な表が複数存在するため）。
+// 判定に使う語はHEADER_ALIASESそのものを参照する（DRY、上記コメント参照）
 function isMotorStatsHeaderRow(cells) {
   const normalized = cells.map(normalizeHeader);
-  const hasChampionship = normalized.some((c) => c.includes("優勝"));
-  const hasRaceCountOrRate = normalized.some(
-    (c) => c.includes("出走") || c.includes("2連対率") || c.includes("2連率"),
+  const matchesAnyAlias = (aliases) =>
+    normalized.some((c) => aliases.some((alias) => c.includes(alias)));
+  return (
+    matchesAnyAlias(HEADER_ALIASES.championshipCount) &&
+    (matchesAnyAlias(HEADER_ALIASES.raceCount) ||
+      matchesAnyAlias(HEADER_ALIASES.top2Rate))
   );
-  return hasChampionship && hasRaceCountOrRate;
 }
 
 function buildHeaderMap(headerCells) {
@@ -69,84 +77,6 @@ function buildHeaderMap(headerCells) {
     if (idx !== -1) map[field] = idx;
   }
   return map;
-}
-
-function toIntOrNull(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const n = parseInt(normalizeText(value), 10);
-  return Number.isFinite(n) ? n : null;
-}
-
-// モーター番号セルは「4着」のような凡例行の断片を parseInt が誤って4と
-// 読んでしまう（数字プレフィックスだけで判定が緩すぎる）ため、モーター番号は
-// セル全体が純粋な整数であることを要求する厳格版を使う
-// モーター番号セルは、数字の直後に別の文字列が続くケースが2パターンある:
-// (a) "4着"のような凡例行の断片 → 数字の直後に文字が直接続く（拒否したい）
-// (b) 津の「44\n\n\n44番モーターの節間成績...」のように、数字の後に改行を挟んで
-//     常時表示のキャプション文が続く（受理したい、有効なモーター番号のため）
-// 「数字の直後が空白/改行 or 文字列末尾」の場合のみ有効な番号として扱うことで
-// この2つを区別する
-function toStrictIntOrNull(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const normalized = normalizeText(value);
-  const m = normalized.match(/^(\d+)(?=\s|$)/);
-  return m ? parseInt(m[1], 10) : null;
-}
-
-function toFloatOrNull(value) {
-  if (value === undefined || value === null || value === "") return null;
-  const n = parseFloat(normalizeText(value));
-  return Number.isFinite(n) ? n : null;
-}
-
-// "1'48\"5" 形式（分'秒"コンマ1秒）を合計秒数(DECIMAL)に変換する。
-// 例: 1'48"5 → 60 + 48 + 0.5 = 108.5
-function parseBestTime(value) {
-  if (!value) return null;
-  const normalized = normalizeText(value);
-  const m = normalized.match(/(\d+)'(\d+)"(\d)/);
-  if (!m) return null;
-  const [, minutes, seconds, tenths] = m;
-  return Number(minutes) * 60 + Number(seconds) + Number(tenths) / 10;
-}
-
-function parseStatsPeriod(value) {
-  if (!value) return { start: null, end: null };
-  const normalized = normalizeText(value).replace(/[～〜~]/g, "~");
-  const [start, end] = normalized.split("~");
-  const toIso = (d) => {
-    const m = d?.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
-    if (!m) return null;
-    return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
-  };
-  return { start: toIso(start), end: toIso(end) };
-}
-
-// tableの直接の行だけを返す（find("tr")だと、セル内に埋め込まれた節間成績等の
-// ネストしたテーブルの行まで巻き込んでしまう会場があるため、直接の子孫のみを辿る）。
-// 会場により<thead>/<tbody>の有無・組み合わせが異なる（theadに見出し行のみ、
-// tbodyに見出し・データ行を両方、theadなしでtbody直下に全行、等）ため、
-// 起点からの子孫コンビネータ(">")で3パターンを一括カバーする
-function directRows($, table) {
-  return table.find("> thead > tr, > tbody > tr, > tr");
-}
-
-// tr直下のセルだけを返す（同様にネストしたテーブルのセルを巻き込まないため）
-// セルの.text()はネストしたtableの中身も再帰的に連結してしまう
-// （津のモーター番号セルには「節間成績」というポップアップ用のネストテーブルが
-// 埋め込まれており、.text()だけでは何百文字もの無関係な文字列が混入する）。
-// ネストしたtableを除いてから文字列化する
-function cellText($, cell) {
-  const clone = $(cell).clone();
-  clone.find("table").remove();
-  return clone.text().trim();
-}
-
-function directCells($, tr) {
-  return $(tr)
-    .children("td,th")
-    .map((_, c) => cellText($, c))
-    .get();
 }
 
 /**

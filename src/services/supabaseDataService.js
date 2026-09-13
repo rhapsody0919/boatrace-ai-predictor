@@ -2591,33 +2591,49 @@ export const supabaseDataService = {
           return null;
         }
 
-        const { data, error } = await supabase
-          .from("venue_motor_stats")
-          .select("*")
-          .eq("venue_code", venueCode)
-          .eq("motor_number", motorNumber)
-          .order("scraped_date", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        // このメソッドはRaceDetailの機力指数・モーター調子ドリルダウンの
+        // Promise.allに同居させて呼ぶ想定のため、ネットワークレベルの例外
+        // （supabase-jsが{data,error}を返さずreject自体する稀なケース）が
+        // Promise.all全体を巻き込んで他の取得済みデータまで消さないよう、
+        // 内部でtry/catchして安全側（null）にフォールバックする
+        try {
+          const { data, error } = await supabase
+            .from("venue_motor_stats")
+            .select("*")
+            .eq("venue_code", venueCode)
+            .eq("motor_number", motorNumber)
+            .order("scraped_date", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-        if (error) {
-          console.error("venue_motor_stats取得エラー:", error.message);
+          if (error) {
+            console.error("venue_motor_stats取得エラー:", error.message);
+            return null;
+          }
+          if (!data) return null;
+
+          return {
+            scrapedDate: data.scraped_date,
+            meetCount: data.meet_count,
+            raceCount: data.race_count,
+            finalCount: data.final_count,
+            championshipCount: data.championship_count,
+            firstPlaceCount: data.first_place_count,
+            secondPlaceCount: data.second_place_count,
+            thirdPlaceCount: data.third_place_count,
+            winRate: data.win_rate,
+            top2Rate: data.top2_rate,
+            top3Rate: data.top3_rate,
+            accidentRate: data.accident_rate,
+            bestTime: data.best_time,
+            avgExhibitionTime: data.avg_exhibition_time,
+            statsPeriodStart: data.stats_period_start,
+            statsPeriodEnd: data.stats_period_end,
+          };
+        } catch (err) {
+          console.error("venue_motor_stats取得エラー(例外):", err.message);
           return null;
         }
-        if (!data) return null;
-
-        return {
-          scrapedDate: data.scraped_date,
-          meetCount: data.meet_count,
-          raceCount: data.race_count,
-          finalCount: data.final_count,
-          championshipCount: data.championship_count,
-          winRate: data.win_rate,
-          top2Rate: data.top2_rate,
-          top3Rate: data.top3_rate,
-          accidentRate: data.accident_rate,
-          bestTime: data.best_time,
-        };
       },
     );
   },

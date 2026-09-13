@@ -338,22 +338,27 @@ function MotorConditionChart({
               </p>
             )}
 
-          {venueMotorStats?.raceCount !== null &&
-            venueMotorStats?.raceCount !== undefined && (
-              <p className="venue-motor-freshness">
-                🔧{" "}
-                {t("analysis.motor.freshnessSummary", {
+          {(venueMotorStats?.raceCount !== null &&
+            venueMotorStats?.raceCount !== undefined) ||
+          (venueMotorStats?.meetCount !== null &&
+            venueMotorStats?.meetCount !== undefined) ? (
+            <p className="venue-motor-freshness">
+              🔧{" "}
+              {venueMotorStats.raceCount !== null &&
+                venueMotorStats.raceCount !== undefined &&
+                t("analysis.motor.freshnessSummary", {
                   raceCount: venueMotorStats.raceCount,
                 })}
-                {venueMotorStats.meetCount !== null && (
+              {venueMotorStats.meetCount !== null &&
+                venueMotorStats.meetCount !== undefined && (
                   <span className="venue-motor-freshness-sub">
                     {t("analysis.motor.freshnessMeetCount", {
                       meetCount: venueMotorStats.meetCount,
                     })}
                   </span>
                 )}
-              </p>
-            )}
+            </p>
+          ) : null}
 
           {chartData.length > 0 ? (
             <TrendLineChart

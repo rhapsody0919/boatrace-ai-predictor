@@ -6,8 +6,9 @@
  * 会場ごとにテンプレートが異なるため、venueConfig.jsのparser指定に従って
  * scripts/lib/venueMotorStats/parsers/ 配下の対応パーサーを呼び分ける。
  *
- * 実行時間: 会場数分のHTTPリクエスト（22件）+ 宮島のPDF解決1件、直列実行で
- * 会場間1秒待機するため約1分程度を想定。
+ * 実行時間: 会場数分のHTTPリクエスト（22件）+ 宮島のPDF解決1件。各会場は
+ * 完全に別ドメインのため会場間の待機は不要（同一ドメインへの連続アクセスでは
+ * ないため、他会場のレート制限に配慮する理由がない）。
  */
 import * as cheerio from "cheerio";
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
@@ -49,26 +50,33 @@ async function resolveMiyajimaPdfUrl(listingUrl) {
       return false;
     }
   });
-  return pdfHref;
+  if (pdfHref) return new URL(pdfHref, listingUrl).href;
+  return null;
 }
 
-async function fetchAndParse(venue) {
-  if (venue.parser === "miyajimaPdf") {
+const PARSERS = {
+  genericTable: async (venue) => {
+    const html = await fetchHtml(venue.url);
+    return parseGenericMotorTable(cheerio.load(html));
+  },
+  gamagori: async (venue) => {
+    const html = await fetchHtml(venue.url);
+    return parseGamagoriMotorTable(cheerio.load(html));
+  },
+  miyajimaPdf: async (venue) => {
     const pdfUrl = await resolveMiyajimaPdfUrl(venue.listingUrl);
     if (!pdfUrl) return { data: null, reason: "pdf_link_not_found" };
     const res = await fetch(pdfUrl, { headers: FETCH_HEADERS });
     if (!res.ok) return { data: null, reason: `http_${res.status}` };
     const buffer = Buffer.from(await res.arrayBuffer());
     return parseMiyajimaMotorPdf(buffer);
-  }
+  },
+};
 
-  const html = await fetchHtml(venue.url);
-  const $ = cheerio.load(html);
-
-  if (venue.parser === "gamagori") {
-    return parseGamagoriMotorTable($);
-  }
-  return parseGenericMotorTable($);
+async function fetchAndParse(venue) {
+  const parser = PARSERS[venue.parser];
+  if (!parser) throw new Error(`unknown_parser:${venue.parser}`);
+  return parser(venue);
 }
 
 export async function run() {

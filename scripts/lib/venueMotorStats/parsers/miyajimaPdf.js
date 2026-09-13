@@ -18,6 +18,12 @@
  * バイナリを要求するため、テキスト抽出だけの用途には過剰と判断し不採用とした）。
  */
 import PDFParser from "pdf2json";
+import {
+  toStrictIntOrNull,
+  toFloatOrNull,
+  parseBestTime,
+  toIsoDate,
+} from "../parserUtils.js";
 
 const COLUMN_X = {
   motorNumber: 0.7,
@@ -50,33 +56,6 @@ function nearestTokenValue(row, targetX) {
     }
   }
   return best;
-}
-
-function toStrictIntOrNull(value) {
-  if (value === undefined || value === null) return null;
-  const trimmed = value.trim();
-  if (!/^\d+$/.test(trimmed)) return null;
-  return parseInt(trimmed, 10);
-}
-
-function toFloatOrNull(value) {
-  if (value === undefined || value === null) return null;
-  const n = parseFloat(value.trim());
-  return Number.isFinite(n) ? n : null;
-}
-
-function parseBestTime(value) {
-  if (!value) return null;
-  const m = value.trim().match(/(\d+)'(\d+)"(\d)/);
-  if (!m) return null;
-  const [, minutes, seconds, tenths] = m;
-  return Number(minutes) * 60 + Number(seconds) + Number(tenths) / 10;
-}
-
-function toIsoDate(value) {
-  const m = value?.trim().match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
-  if (!m) return null;
-  return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
 }
 
 /**

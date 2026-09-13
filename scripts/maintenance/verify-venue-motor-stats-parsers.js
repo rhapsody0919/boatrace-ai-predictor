@@ -16,6 +16,11 @@ import * as cheerio from "cheerio";
 import { parseGenericMotorTable } from "../lib/venueMotorStats/parsers/genericTable.js";
 import { parseGamagoriMotorTable } from "../lib/venueMotorStats/parsers/gamagori.js";
 import { parseMiyajimaMotorPdf } from "../lib/venueMotorStats/parsers/miyajimaPdf.js";
+import { VENUE_MOTOR_STATS_CONFIG } from "../lib/venueMotorStats/venueConfig.js";
+
+// scripts/daily/scrape-venue-motor-stats.js の PARSERS レジストリのキーと一致させる。
+// venueConfig.js側のtypoを、実際にスクレイピングを実行する前に機械的に検知するための重複定義。
+const KNOWN_PARSERS = new Set(["genericTable", "gamagori", "miyajimaPdf"]);
 
 const FIXTURE_DIR = new URL(
   "../lib/venueMotorStats/__fixtures__/",
@@ -256,6 +261,18 @@ function check(label, actual, expected) {
     "宮島 全モーターがユニーク",
     new Set(data.map((d) => d.motorNumber)).size,
     data.length,
+  );
+}
+
+// venueConfig.jsの全エントリがPARSERSレジストリの既知キーを指しているか確認
+{
+  const unknown = VENUE_MOTOR_STATS_CONFIG.filter(
+    (v) => !KNOWN_PARSERS.has(v.parser),
+  );
+  check(
+    "venueConfig.jsの全parser指定が既知のパーサーキー",
+    unknown.map((v) => `${v.name}:${v.parser}`),
+    [],
   );
 }
 
