@@ -42,6 +42,7 @@ function MotorConditionChart({
   const [powerIndex, setPowerIndex] = useState(null);
   const [usageHistory, setUsageHistory] = useState([]);
   const [partsHistory, setPartsHistory] = useState([]);
+  const [venueMotorStats, setVenueMotorStats] = useState(null);
   const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
   // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
@@ -107,7 +108,7 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
-        const [trend, power, history, parts] = await Promise.all([
+        const [trend, power, history, parts, venueStats] = await Promise.all([
           supabaseDataService.getMotorConditionTrend(
             selectedVenue,
             drillDownMotor,
@@ -127,11 +128,13 @@ function MotorConditionChart({
             drillDownMotor,
             periodDays,
           ),
+          supabaseDataService.getVenueMotorStats(selectedVenue, drillDownMotor),
         ]);
         setTrendData(trend);
         setPowerIndex(power);
         setUsageHistory(history);
         setPartsHistory(parts.events ?? []);
+        setVenueMotorStats(venueStats);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
@@ -332,6 +335,23 @@ function MotorConditionChart({
                   : powerIndex.power_index < 0
                     ? t("analysis.motor.powerIndexBad")
                     : ""}
+              </p>
+            )}
+
+          {venueMotorStats?.raceCount !== null &&
+            venueMotorStats?.raceCount !== undefined && (
+              <p className="venue-motor-freshness">
+                🔧{" "}
+                {t("analysis.motor.freshnessSummary", {
+                  raceCount: venueMotorStats.raceCount,
+                })}
+                {venueMotorStats.meetCount !== null && (
+                  <span className="venue-motor-freshness-sub">
+                    {t("analysis.motor.freshnessMeetCount", {
+                      meetCount: venueMotorStats.meetCount,
+                    })}
+                  </span>
+                )}
               </p>
             )}
 

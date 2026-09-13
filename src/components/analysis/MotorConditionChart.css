@@ -179,6 +179,16 @@
   color: var(--color-error-text);
 }
 
+.venue-motor-freshness {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+.venue-motor-freshness-sub {
+  margin-left: var(--spacing-1);
+}
+
 /* usage-history（BOA-283）とparts-history（BOA-221）で共通の履歴リスト表示 */
 .history-list {
   list-style: none;
