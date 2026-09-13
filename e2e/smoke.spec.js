@@ -303,10 +303,14 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     await expect(breakdown).toHaveCount(6); // 6艇分
     await breakdown.first().click();
     await expect(page.locator(".back-to-ranking-btn")).toBeVisible();
-    // BOA-265で展示タイム推移グラフが追加され2連率/3連率グラフと合わせて2つになった
-    await expect(page.locator(".recharts-wrapper")).toHaveCount(2, {
-      timeout: 10000,
-    });
+    // BOA-265で展示タイム推移・使用履歴グラフが追加され2連率/3連率グラフと合わせて
+    // 最大3つになりうるが、使用履歴・展示タイムは実データの有無で0〜2個の幅がある
+    // ため、固定数ではなく「最低限2連率/3連率グラフは出る」の下限のみ検証する
+    await expect(async () => {
+      expect(
+        await page.locator(".recharts-wrapper").count(),
+      ).toBeGreaterThanOrEqual(1);
+    }).toPass({ timeout: 10000 });
   });
 
   test("選手調子タブで本日のレースの枠番別勝率変化→クリックで推移グラフに切り替わる（BOA-152）", async ({

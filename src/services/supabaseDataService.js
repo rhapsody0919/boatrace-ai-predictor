@@ -2322,6 +2322,134 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定会場・モーター番号を過去に使用した選手の履歴を、節ごとにグループ化して
+   * 取得する（BOA-283）。「誰がこのモーターに乗っていたか」を辿れるようにする。
+   * 節の境目は「同一選手が同一モーターに乗り続けた出走の間隔が2日以内か」で
+   * 判定する（BOA-265のgetRacerCurrentMotorStatusと同じ考え方を一般化したもの）
+   */
+  getMotorUsageHistory(venueCode, motorNumber) {
+    return withCache(
+      `motor-usage-history-${venueCode}-${motorNumber}`,
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return [];
+        }
+
+        const races = await getRacesForVenue(venueCode);
+        if (races.length === 0) return [];
+
+        const raceIds = races.map((r) => r.race_id);
+        const chunks = chunkArray(raceIds, 500);
+        const entryResults = await Promise.all(
+          chunks.map((chunk) =>
+            supabase
+              .from("race_entries")
+              .select(
+                "race_id, boat_number, racer_id, player_name, global_2rate",
+              )
+              .in("race_id", chunk)
+              .eq("motor_number", motorNumber),
+          ),
+        );
+        let entries = [];
+        entryResults.forEach(({ data, error }) => {
+          if (error) {
+            console.error("race_entries取得エラー:", error.message);
+            return;
+          }
+          entries = entries.concat(data ?? []);
+        });
+        if (entries.length === 0) return [];
+
+        const resultChunks = chunkArray(
+          entries.map((e) => e.race_id),
+          500,
+        );
+        const resultResults = await Promise.all(
+          resultChunks.map((chunk) =>
+            supabase
+              .from("race_results")
+              .select("race_id, rank1, rank2, rank3, rank4, rank5, rank6")
+              .in("race_id", chunk),
+          ),
+        );
+        const resultByRaceId = new Map();
+        resultResults.forEach(({ data, error }) => {
+          if (error) {
+            console.error("race_results取得エラー:", error.message);
+            return;
+          }
+          (data ?? []).forEach((r) => resultByRaceId.set(r.race_id, r));
+        });
+
+        const rankOf = (result, boatNumber) => {
+          if (!result) return null;
+          for (let rank = 1; rank <= 6; rank++) {
+            if (result[`rank${rank}`] === boatNumber) return rank;
+          }
+          return null;
+        };
+
+        // race_id昇順に並べ、同一選手が2日以内の間隔で乗り続けている限り同じ節とみなす
+        const sorted = [...entries].sort((a, b) =>
+          a.race_id.localeCompare(b.race_id),
+        );
+        const meets = [];
+        let current = null;
+        sorted.forEach((e) => {
+          const date = e.race_id.slice(0, 10);
+          if (current && current.racerId === e.racer_id) {
+            const gapDays =
+              (new Date(date) - new Date(current.lastDate)) / 86400000;
+            if (gapDays <= 2) {
+              current.entries.push(e);
+              current.lastDate = date;
+              return;
+            }
+          }
+          if (current) meets.push(current);
+          current = {
+            racerId: e.racer_id,
+            playerName: e.player_name,
+            entries: [e],
+            firstDate: date,
+            lastDate: date,
+          };
+        });
+        if (current) meets.push(current);
+
+        return meets
+          .map((meet) => {
+            let hits = 0;
+            let n = 0;
+            const races = meet.entries.map((e) => {
+              const result = resultByRaceId.get(e.race_id);
+              const rank = rankOf(result, e.boat_number);
+              if (result && e.global_2rate !== null) {
+                n += 1;
+                if (rank === 1 || rank === 2) hits += 1;
+              }
+              return { date: e.race_id.slice(0, 10), rank };
+            });
+            const baseline = meet.entries[0]?.global_2rate ?? null;
+            return {
+              racerId: meet.racerId,
+              playerName: meet.playerName,
+              firstDate: meet.firstDate,
+              lastDate: meet.lastDate,
+              races,
+              sampleCount: n,
+              powerIndex:
+                n > 0 && baseline !== null ? (hits / n) * 100 - baseline : null,
+            };
+          })
+          .reverse();
+      },
+    );
+  },
+
+  /**
    * 指定レースの枠番別・選手の勝率上昇/下降を取得する（BOA-152）
    * 現在の全国勝率と約90日前時点の全国勝率を比較し、調子の変化を示す
    */

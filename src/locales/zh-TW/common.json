@@ -656,6 +656,12 @@
       "exhibitionYAxis": "展示時間 (秒)",
       "exhibitionTrendEmpty": "找不到此馬達的展示時間資料",
       "exhibitionTrendNote": "💡 即使是同一台馬達，也可能因保養調整或選手操控方式不同而使展示時間出現變化。數值越小代表時間越快。",
+      "usageHistoryHeading": "📜 使用履歷",
+      "usageHistoryYAxis": "機力指數",
+      "usageHistoryLegend": "機力指數",
+      "usageHistoryRank": "第{{n}}名",
+      "usageHistoryEmpty": "找不到此馬達的使用履歷資料",
+      "usageHistoryNote": "💡 依賽節（連續開催日）由新到舊顯示過去使用過這台馬達的選手。機力指數為該賽節「實際跑進前2名的比率」減去「該選手本身的全國2連率」。",
       "note": "💡 點擊表格列可查看該馬達各賽節的走勢。強調顯示的列為本場比賽中2連率最高的艇。"
     },
     "racerForm": {

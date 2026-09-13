@@ -39,6 +39,7 @@ function MotorConditionChart({
   const [trendData, setTrendData] = useState(null);
 
   const [powerIndex, setPowerIndex] = useState(null);
+  const [usageHistory, setUsageHistory] = useState([]);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
 
   // レース選択時: 枠番別モーター調子を取得（機力指数はvenue確定後に別途取得）
@@ -96,15 +97,20 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
-        const [trend, power] = await Promise.all([
+        const [trend, power, history] = await Promise.all([
           supabaseDataService.getMotorConditionTrend(
             selectedVenue,
             drillDownMotor,
           ),
           supabaseDataService.getMotorPowerIndex(selectedVenue, drillDownMotor),
+          supabaseDataService.getMotorUsageHistory(
+            selectedVenue,
+            drillDownMotor,
+          ),
         ]);
         setTrendData(trend);
         setPowerIndex(power);
+        setUsageHistory(history);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
@@ -127,6 +133,13 @@ function MotorConditionChart({
     .map((row) => ({
       date: row.date.slice(5),
       exhibition_time: row.exhibition_time,
+    }));
+
+  const usageHistoryChartData = usageHistory
+    .filter((meet) => meet.powerIndex !== null)
+    .map((meet) => ({
+      date: meet.playerName?.replace(/\s+/g, "") ?? "",
+      power_index: meet.powerIndex,
     }));
 
   const bestMotor2Rate =
@@ -331,6 +344,72 @@ function MotorConditionChart({
           <p className="table-note">
             {t("analysis.motor.exhibitionTrendNote")}
           </p>
+
+          <h3 className="selected-motor-heading">
+            {t("analysis.motor.usageHistoryHeading")}
+          </h3>
+          {usageHistoryChartData.length > 1 && (
+            <TrendLineChart
+              data={usageHistoryChartData}
+              yAxisLabel={t("analysis.motor.usageHistoryYAxis")}
+              tooltipFormatter={(value) =>
+                `${value > 0 ? "+" : ""}${value.toFixed(1)}`
+              }
+              series={[
+                {
+                  dataKey: "power_index",
+                  name: t("analysis.motor.usageHistoryLegend"),
+                  stroke: "var(--brand-accent-primary)",
+                  type: "monotone",
+                },
+              ]}
+            />
+          )}
+          {usageHistory.length > 0 ? (
+            <ul className="usage-history-list">
+              {usageHistory.map((meet, i) => (
+                <li key={`${meet.racerId}-${meet.firstDate}-${i}`}>
+                  <span className="usage-history-period">
+                    {meet.firstDate}
+                    {meet.firstDate !== meet.lastDate && `〜${meet.lastDate}`}
+                  </span>
+                  <span translate="no" className="usage-history-player">
+                    {meet.playerName?.replace(/\s+/g, "")}
+                  </span>
+                  {meet.powerIndex !== null && (
+                    <span
+                      className={`usage-history-index ${
+                        meet.powerIndex > 0
+                          ? "power-index-good"
+                          : meet.powerIndex < 0
+                            ? "power-index-bad"
+                            : ""
+                      }`}
+                    >
+                      {meet.powerIndex > 0 ? "+" : ""}
+                      {meet.powerIndex.toFixed(1)}
+                    </span>
+                  )}
+                  <span className="usage-history-ranks">
+                    {meet.races
+                      .map((r) =>
+                        r.rank !== null
+                          ? t("analysis.motor.usageHistoryRank", {
+                              n: r.rank,
+                            })
+                          : "-",
+                      )
+                      .join(" ")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="empty-state">
+              {t("analysis.motor.usageHistoryEmpty")}
+            </div>
+          )}
+          <p className="table-note">{t("analysis.motor.usageHistoryNote")}</p>
         </>
       )}
 

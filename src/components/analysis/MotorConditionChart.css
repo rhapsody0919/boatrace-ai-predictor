@@ -149,6 +149,54 @@
   color: var(--color-error-text);
 }
 
+.usage-history-list {
+  list-style: none;
+  margin: 0 0 var(--spacing-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.usage-history-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2);
+  background: var(--surface-page);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.usage-history-period {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.usage-history-player {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.usage-history-index {
+  font-weight: var(--font-weight-semibold);
+}
+
+.usage-history-index.power-index-good {
+  color: var(--color-success-text);
+}
+
+.usage-history-index.power-index-bad {
+  color: var(--color-error-text);
+}
+
+.usage-history-ranks {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
 .delta-up {
   color: var(--color-error-text);
   font-weight: var(--font-weight-semibold);

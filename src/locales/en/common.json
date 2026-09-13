@@ -661,6 +661,12 @@
       "exhibitionYAxis": "Trial run time (sec)",
       "exhibitionTrendEmpty": "No trial run time data found for this motor",
       "exhibitionTrendNote": "💡 Even the same motor's trial run time can change with maintenance and how well the rider handles it. A smaller number means a faster time.",
+      "usageHistoryHeading": "📜 Usage history",
+      "usageHistoryYAxis": "Power index",
+      "usageHistoryLegend": "Power index",
+      "usageHistoryRank": "{{n}}th",
+      "usageHistoryEmpty": "No usage history found for this motor",
+      "usageHistoryNote": "💡 Riders who used this motor in the past, newest first, grouped by meet (consecutive racing days). The power index is that meet's \"actual top-2 finish rate\" minus \"that rider's own national top-2 rate.\"",
       "note": "💡 Click a table row to see that motor's trend across meets. The highlighted row is the boat with the highest motor top-2 rate in this race."
     },
     "racerForm": {
