@@ -105,6 +105,7 @@ export function buildIndicatorRows({
     racerForm,
     stPredictability,
     exhibitionTime,
+    motorMaintenance,
     techniqueProfile,
     returnRate,
     racerStats,
@@ -114,6 +115,7 @@ export function buildIndicatorRows({
   const formByBoat = byBoat(racerForm);
   const stByBoat = byBoat(stPredictability);
   const exByBoat = byBoat(exhibitionTime);
+  const maintenanceByBoat = byBoat(motorMaintenance);
   const techByBoat = byBoat(techniqueProfile);
   const rateByBoat = byBoat(returnRate);
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
@@ -411,6 +413,47 @@ export function buildIndicatorRows({
           );
         }
         return "—";
+      },
+    },
+    {
+      // チルト・調整重量は選手が選んだ「設定値」であり、値の高低が好走/凡走を
+      // 示唆する指標ではないため、他行と違いbest/signalは持たせない（BOA-221）
+      key: "tilt",
+      label: t("dataTable.rowTilt"),
+      shortLabel: t("review.cols.tilt"),
+      tab: null,
+      best: null,
+      signal: () => null,
+      itemText: () => null,
+      render: (p) => {
+        const row = maintenanceByBoat.get(p.number);
+        if (!row) return ph("motorMaintenance");
+        const tilt = toNumber(row.tilt);
+        if (tilt === null) return "—";
+        return (
+          <span className="drt-value">
+            {tilt > 0 ? `+${tilt.toFixed(1)}` : tilt.toFixed(1)}
+          </span>
+        );
+      },
+    },
+    {
+      key: "adjustmentWeight",
+      label: t("dataTable.rowAdjustmentWeight"),
+      shortLabel: t("review.cols.adjustmentWeight"),
+      tab: null,
+      best: null,
+      signal: () => null,
+      itemText: () => null,
+      render: (p) => {
+        const row = maintenanceByBoat.get(p.number);
+        if (!row) return ph("motorMaintenance");
+        const weight = toNumber(row.adjustment_weight);
+        return weight !== null ? (
+          <span className="drt-value">{weight.toFixed(1)}kg</span>
+        ) : (
+          "—"
+        );
       },
     },
     {

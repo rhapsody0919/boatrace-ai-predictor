@@ -110,7 +110,7 @@ async function getCurrentMeetRaceEntries(racerId, motorNumber) {
  * race_idは「YYYY-MM-DD-会場コード-レース番号」形式のため、会場コードは
  * 追加クエリ無しでrace_idから直接取り出せる
  * @param {number|string} racerId
- * @returns {Promise<{ raceId: string, venueCode: number, motorNumber: number, powerIndex: object, meetTrend: { date: string, exhibition_time: number }[] } | null>}
+ * @returns {Promise<{ raceId: string, venueCode: number, motorNumber: number, powerIndex: object, meetTrend: { date: string, exhibition_time: number }[], latestPartsEvent: { date: string, propellerChanged: boolean, parts: string[]|null } | null } | null>}
  */
 export async function getRacerCurrentMotorStatus(racerId) {
   if (!supabase) return null;
@@ -145,16 +145,15 @@ export async function getRacerCurrentMotorStatus(racerId) {
   if (meetRaceIds.length > 0) {
     const { data: exhibitionRows, error: exError } = await supabase
       .from("exhibition_data")
-      .select("race_id, boat_number, exhibition_time")
+      .select(
+        "race_id, boat_number, exhibition_time, propeller_change, parts_changed",
+      )
       .in("race_id", meetRaceIds);
     if (exError) {
       console.error("展示タイム取得エラー:", exError.message);
     } else {
       exhibitionByKey = new Map(
-        (exhibitionRows ?? []).map((e) => [
-          `${e.race_id}-${e.boat_number}`,
-          e.exhibition_time,
-        ]),
+        (exhibitionRows ?? []).map((e) => [`${e.race_id}-${e.boat_number}`, e]),
       );
     }
   }
@@ -163,9 +162,25 @@ export async function getRacerCurrentMotorStatus(racerId) {
     .map((e) => ({
       date: e.race_id.slice(0, 10),
       exhibition_time:
-        exhibitionByKey.get(`${e.race_id}-${e.boat_number}`) ?? null,
+        exhibitionByKey.get(`${e.race_id}-${e.boat_number}`)?.exhibition_time ??
+        null,
     }))
     .filter((row) => row.exhibition_time !== null);
+
+  // 今節（このモーター使用開始後）の部品交換・プロペラ交換のうち直近1件（BOA-221）
+  const latestPartsEvent =
+    [...meetEntries]
+      .sort((a, b) => b.race_id.localeCompare(a.race_id))
+      .map((e) => {
+        const row = exhibitionByKey.get(`${e.race_id}-${e.boat_number}`);
+        return {
+          date: e.race_id.slice(0, 10),
+          propellerChanged: !!row?.propeller_change,
+          parts: row?.parts_changed ?? null,
+        };
+      })
+      .find((ev) => ev.propellerChanged || (ev.parts && ev.parts.length > 0)) ??
+    null;
 
   return {
     raceId: data.race_id,
@@ -173,6 +188,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
     motorNumber: data.motor_number,
     powerIndex,
     meetTrend,
+    latestPartsEvent,
   };
 }
 

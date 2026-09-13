@@ -274,6 +274,109 @@ function getRacesForVenue(venueCode, days = 90) {
   });
 }
 
+const NEUTRAL_EXHIBITION_DIFF_SEC = 0.02; // これ未満は展示タイムの日次ブレの範囲内とみなす
+const INTERPRETATION_WINDOW_DAYS = 3; // 前後何日分の平均で比較するか
+
+/**
+ * 指定会場・モーター番号の日次系列（race_entries+exhibition_data結合、日付単位
+ * dedupe済み）を取得する内部共通ヘルパー。getMotorConditionTrend/
+ * getMotorPartsHistoryの両方が同じrace_entries+exhibition_data結合パターンを
+ * 必要とするため共通化（BOA-221）。withCacheで結果を共有することで、両関数が
+ * 同じ(venueCode, motorNumber, days)を同時に要求した場合の二重フェッチも防ぐ
+ */
+function fetchMotorDailySeries(venueCode, motorNumber, days) {
+  return withCache(
+    `motor-daily-series-${venueCode}-${motorNumber}-${days}`,
+    async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const races = await getRacesForVenue(venueCode, days);
+      if (races.length === 0) return [];
+
+      const raceDateById = new Map(races.map((r) => [r.race_id, r.race_date]));
+      const raceIds = races.map((r) => r.race_id);
+      const chunks = chunkArray(raceIds, 500);
+
+      const results = await Promise.all(
+        chunks.map((chunk) =>
+          supabase
+            .from("race_entries")
+            .select("race_id, boat_number, motor_2rate, motor_3rate")
+            .in("race_id", chunk)
+            .eq("motor_number", motorNumber)
+            .order("race_id"),
+        ),
+      );
+      let entries = [];
+      results.forEach(({ data, error }) => {
+        if (error) {
+          console.error("race_entries取得エラー:", error.message);
+          return;
+        }
+        entries = entries.concat(data);
+      });
+      if (entries.length === 0) return [];
+
+      const exhibitionRows = await fetchAllByIn(
+        "exhibition_data",
+        "race_id, boat_number, exhibition_time, propeller_change, parts_changed",
+        "race_id",
+        entries.map((e) => e.race_id),
+      );
+      const exhibitionByKey = new Map(
+        exhibitionRows.map((e) => [`${e.race_id}-${e.boat_number}`, e]),
+      );
+
+      // 日付単位でdedupe。motor_2rate/motor_3rate/exhibitionTimeは節単位でほぼ
+      // 一定のためrace_idで安定ソート済みの先頭を採用するが、部品交換・プロペラ
+      // 交換は「同日の特定の1レースだけに記録されるイベント」のため先頭決め打ちでは
+      // 取りこぼす（例: 同日中の途中交換で、交換後のレースにしか記録されない）。
+      // 同日の全レース分をOR/合算してdedupeする
+      const byDate = new Map();
+      entries
+        .map((e) => ({
+          ...e,
+          race_date: raceDateById.get(e.race_id),
+          exhibition: exhibitionByKey.get(`${e.race_id}-${e.boat_number}`),
+        }))
+        .filter((e) => e.race_date)
+        .sort(
+          (a, b) =>
+            a.race_date.localeCompare(b.race_date) ||
+            a.race_id.localeCompare(b.race_id),
+        )
+        .forEach((e) => {
+          const propellerChanged = !!e.exhibition?.propeller_change;
+          const parts = e.exhibition?.parts_changed ?? null;
+          const existing = byDate.get(e.race_date);
+          if (!existing) {
+            byDate.set(e.race_date, {
+              date: e.race_date,
+              motor_2rate: e.motor_2rate,
+              motor_3rate: e.motor_3rate,
+              exhibitionTime: e.exhibition?.exhibition_time ?? null,
+              propellerChanged,
+              parts,
+            });
+            return;
+          }
+          existing.propellerChanged =
+            existing.propellerChanged || propellerChanged;
+          if (parts && parts.length > 0) {
+            existing.parts = [
+              ...new Set([...(existing.parts ?? []), ...parts]),
+            ];
+          }
+        });
+
+      return [...byDate.values()];
+    },
+  );
+}
+
 /**
  * 会場コード→会場名のマッピング
  */
@@ -2998,93 +3101,84 @@ export const supabaseDataService = {
       // daysも末尾以外に含める（BOA-283の期間切り替え）
       `motor-condition-v2-${venueCode}-${motorNumber}-${days}`,
       async () => {
-        if (!supabase) {
-          console.error("Supabase client not initialized");
-          return {
-            venue_code: venueCode,
-            motor_number: motorNumber,
-            trend: [],
-          };
-        }
-
-        const races = await getRacesForVenue(venueCode, days);
-        if (races.length === 0) {
-          return {
-            venue_code: venueCode,
-            motor_number: motorNumber,
-            trend: [],
-          };
-        }
-
-        const raceDateById = new Map(
-          races.map((r) => [r.race_id, r.race_date]),
+        const series = await fetchMotorDailySeries(
+          venueCode,
+          motorNumber,
+          days,
         );
-        const raceIds = races.map((r) => r.race_id);
-        const chunks = chunkArray(raceIds, 500);
+        return {
+          venue_code: venueCode,
+          motor_number: motorNumber,
+          trend: series.map((d) => ({
+            date: d.date,
+            motor_2rate: d.motor_2rate,
+            motor_3rate: d.motor_3rate,
+            exhibition_time: d.exhibitionTime,
+          })),
+        };
+      },
+    );
+  },
 
-        const results = await Promise.all(
-          chunks.map((chunk) =>
-            supabase
-              .from("race_entries")
-              .select("race_id, boat_number, motor_2rate, motor_3rate")
-              .in("race_id", chunk)
-              .eq("motor_number", motorNumber),
-          ),
+  /**
+   * 指定モーターのプロペラ交換・部品交換の履歴を取得する（BOA-221）
+   * 単独では「機力低下のサイン」にも「整備直後の好転サイン」にもなり得るため
+   * （チケット参照）、イベント前後の展示タイム平均を比較し、方向感の目安
+   * （improved/declined/neutral）を自動判定して添える。展示タイムは日次の
+   * 実測値で、motor_2rate（公式サイトの「モーター交換時からの累積」値）と違い
+   * イベント前後で単純比較できるため、この目的にはこちらを使う
+   */
+  getMotorPartsHistory(venueCode, motorNumber, days = 90) {
+    return withCache(
+      `motor-parts-history-${venueCode}-${motorNumber}-${days}`,
+      async () => {
+        const dateSeries = await fetchMotorDailySeries(
+          venueCode,
+          motorNumber,
+          days,
         );
 
-        let entries = [];
-        results.forEach(({ data, error }) => {
-          if (error) {
-            console.error("race_entries取得エラー:", error.message);
-            return;
-          }
-          entries = entries.concat(data);
-        });
+        const avgOf = (list) => {
+          const values = list
+            .map((d) => d.exhibitionTime)
+            .filter((v) => v !== null);
+          return values.length > 0
+            ? values.reduce((sum, v) => sum + v, 0) / values.length
+            : null;
+        };
 
-        // 節内適応トレンド（軸B）: このモーターが出走したレースの展示タイムを
-        // race_id-boat_numberで突き合わせ、同じ日付単位の推移に載せる
-        const exhibitionRows =
-          entries.length > 0
-            ? await fetchAllByIn(
-                "exhibition_data",
-                "race_id, boat_number, exhibition_time",
-                "race_id",
-                entries.map((e) => e.race_id),
-              )
-            : [];
-        const exhibitionTimeByKey = new Map();
-        exhibitionRows.forEach((e) => {
-          exhibitionTimeByKey.set(
-            `${e.race_id}-${e.boat_number}`,
-            e.exhibition_time,
+        const events = [];
+        dateSeries.forEach((d, i) => {
+          if (!d.propellerChanged && !(d.parts && d.parts.length > 0)) return;
+
+          const before = avgOf(
+            dateSeries.slice(Math.max(0, i - INTERPRETATION_WINDOW_DAYS), i),
           );
-        });
-
-        // 日付単位でdedupe（同日の複数レースは同じ値のため最初の1件を採用）
-        const byDate = new Map();
-        entries
-          .map((e) => ({ ...e, race_date: raceDateById.get(e.race_id) }))
-          .filter((e) => e.race_date)
-          .sort((a, b) => a.race_date.localeCompare(b.race_date))
-          .forEach((e) => {
-            if (!byDate.has(e.race_date)) {
-              const exhibitionTime = exhibitionTimeByKey.get(
-                `${e.race_id}-${e.boat_number}`,
-              );
-              byDate.set(e.race_date, {
-                date: e.race_date,
-                motor_2rate: e.motor_2rate,
-                motor_3rate: e.motor_3rate,
-                exhibition_time:
-                  exhibitionTime !== undefined ? exhibitionTime : null,
-              });
+          const after = avgOf(
+            dateSeries.slice(i + 1, i + 1 + INTERPRETATION_WINDOW_DAYS),
+          );
+          let interpretation = null;
+          if (before !== null && after !== null) {
+            // 展示タイムは速いほど良い（小さいほど良い）ため、after<beforeは好転
+            const diff = before - after;
+            if (Math.abs(diff) >= NEUTRAL_EXHIBITION_DIFF_SEC) {
+              interpretation = diff > 0 ? "improved" : "declined";
+            } else {
+              interpretation = "neutral";
             }
+          }
+          events.push({
+            date: d.date,
+            propellerChanged: d.propellerChanged,
+            parts: d.parts,
+            interpretation,
           });
+        });
 
         return {
           venue_code: venueCode,
           motor_number: motorNumber,
-          trend: [...byDate.values()],
+          events,
         };
       },
     );
@@ -3445,6 +3539,36 @@ export const supabaseDataService = {
           sample_count: times.length,
         };
       });
+    });
+  },
+
+  /**
+   * 指定レースのチルト・調整重量を取得する（BOA-221）
+   * 展示タイムと同じ行(exhibition_data)の別列で、履歴平均を出す必要が無い
+   * 「今回のレースでの設定値」のため、getRaceExhibitionTimeBreakdownのような
+   * 過去90日平均フォールバックは不要。単純に該当race_idの1回読み取りで足りる
+   */
+  getRaceMotorMaintenanceBreakdown(raceId) {
+    return withCache(`race-motor-maintenance-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from("exhibition_data")
+        .select("boat_number, tilt, adjustment_weight")
+        .eq("race_id", raceId);
+
+      if (error) {
+        console.error(
+          "exhibition_data(チルト/調整重量)取得エラー:",
+          error.message,
+        );
+        return [];
+      }
+
+      return data ?? [];
     });
   },
 

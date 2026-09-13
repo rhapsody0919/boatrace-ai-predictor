@@ -48,6 +48,7 @@ function buildRows(t, players, analysis) {
   const formByBoat = byBoat(analysis.racerForm);
   const stByBoat = byBoat(analysis.stPredictability);
   const exByBoat = byBoat(analysis.exhibitionTime);
+  const maintenanceByBoat = byBoat(analysis.motorMaintenance);
   const techByBoat = byBoat(analysis.techniqueProfile);
   const rateByBoat = byBoat(analysis.returnRate);
   const statsByBoat = new Map(
@@ -120,6 +121,23 @@ function buildRows(t, players, analysis) {
         )
           return `(${row.avg_exhibition_time.toFixed(2)})`;
         return DASH;
+      }),
+    },
+    {
+      label: t("dataTable.rowTilt"),
+      values: players.map((p) => {
+        const tilt = toNumber(maintenanceByBoat.get(p.number)?.tilt);
+        if (tilt === null) return DASH;
+        return tilt > 0 ? `+${tilt.toFixed(1)}` : tilt.toFixed(1);
+      }),
+    },
+    {
+      label: t("dataTable.rowAdjustmentWeight"),
+      values: players.map((p) => {
+        const weight = toNumber(
+          maintenanceByBoat.get(p.number)?.adjustment_weight,
+        );
+        return weight !== null ? `${weight.toFixed(1)}kg` : DASH;
       }),
     },
     {

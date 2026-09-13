@@ -53,6 +53,13 @@
   color: var(--text-secondary);
 }
 
+.racer-motor-status-parts {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--spacing-3);
+}
+
 .racer-motor-status-link {
   display: inline-block;
   margin-top: var(--spacing-3);

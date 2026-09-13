@@ -439,6 +439,8 @@
     "rowForm": "Form (Δ win rate)",
     "rowSt": "ST stability",
     "rowExhibition": "Exhibition time",
+    "rowTilt": "Tilt",
+    "rowAdjustmentWeight": "Adjustment weight",
     "rowTechnique": "Winning style",
     "rowReturnRate": "Win return rate",
     "noWins": "No wins",
@@ -535,6 +537,8 @@
       "st": "ST stab.",
       "exSt": "Ex.ST",
       "exhibition": "Ex.time",
+      "tilt": "Tilt",
+      "adjustmentWeight": "Adj.wt",
       "courseRate": "Course",
       "returnRate": "Return",
       "technique": "Style"
@@ -667,6 +671,15 @@
       "usageHistoryRank": "{{n}}th",
       "usageHistoryEmpty": "No usage history found for this motor",
       "usageHistoryNote": "💡 Riders who used this motor in the past, newest first, grouped by meet (consecutive racing days). Top-2/top-3 rate is the motor's own record for that meet. The badge shows the rider's class.",
+      "partsHistoryHeading": "🔧 Parts / propeller change history",
+      "propellerChanged": "Propeller changed",
+      "partsInterpretation": {
+        "improved": "Exhibition time improved after change",
+        "declined": "Exhibition time worsened after change",
+        "neutral": "No major change before/after"
+      },
+      "partsHistoryEmpty": "No parts or propeller change records found for this motor",
+      "partsHistoryNote": "💡 A parts or propeller change alone can be either a sign of declining motor performance or a sign of improvement right after maintenance. The badge compares average exhibition time before and after the change as a rough guide only, and does not guarantee results.",
       "note": "💡 Click a table row to see that motor's trend across meets. The highlighted row is the boat with the highest motor top-2 rate in this race."
     },
     "racerForm": {

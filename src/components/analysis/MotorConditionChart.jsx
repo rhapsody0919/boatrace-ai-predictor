@@ -41,6 +41,7 @@ function MotorConditionChart({
 
   const [powerIndex, setPowerIndex] = useState(null);
   const [usageHistory, setUsageHistory] = useState([]);
+  const [partsHistory, setPartsHistory] = useState([]);
   const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
   // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
@@ -106,7 +107,7 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
-        const [trend, power, history] = await Promise.all([
+        const [trend, power, history, parts] = await Promise.all([
           supabaseDataService.getMotorConditionTrend(
             selectedVenue,
             drillDownMotor,
@@ -121,10 +122,16 @@ function MotorConditionChart({
             selectedVenue,
             drillDownMotor,
           ),
+          supabaseDataService.getMotorPartsHistory(
+            selectedVenue,
+            drillDownMotor,
+            periodDays,
+          ),
         ]);
         setTrendData(trend);
         setPowerIndex(power);
         setUsageHistory(history);
+        setPartsHistory(parts.events ?? []);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
@@ -403,10 +410,10 @@ function MotorConditionChart({
             />
           )}
           {usageHistory.length > 0 ? (
-            <ul className="usage-history-list">
+            <ul className="history-list">
               {usageHistory.map((meet, i) => (
                 <li key={`${meet.racerId}-${meet.firstDate}-${i}`}>
-                  <span className="usage-history-period">
+                  <span className="history-date">
                     {meet.firstDate}
                     {meet.firstDate !== meet.lastDate && `〜${meet.lastDate}`}
                   </span>
@@ -439,6 +446,45 @@ function MotorConditionChart({
             </div>
           )}
           <p className="table-note">{t("analysis.motor.usageHistoryNote")}</p>
+
+          <h3 className="selected-motor-heading">
+            {t("analysis.motor.partsHistoryHeading")}
+          </h3>
+          {partsHistory.length > 0 ? (
+            <ul className="history-list">
+              {partsHistory.map((event, i) => (
+                <li key={`${event.date}-${i}`}>
+                  <span className="history-date">{event.date}</span>
+                  <span className="parts-history-items">
+                    {event.parts && event.parts.length > 0 && (
+                      <span className="parts-history-tag">
+                        {event.parts.join("・")}
+                      </span>
+                    )}
+                    {event.propellerChanged && (
+                      <span className="parts-history-tag">
+                        {t("analysis.motor.propellerChanged")}
+                      </span>
+                    )}
+                  </span>
+                  {event.interpretation && (
+                    <span
+                      className={`parts-history-badge parts-history-badge-${event.interpretation}`}
+                    >
+                      {t(
+                        `analysis.motor.partsInterpretation.${event.interpretation}`,
+                      )}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="empty-state">
+              {t("analysis.motor.partsHistoryEmpty")}
+            </div>
+          )}
+          <p className="table-note">{t("analysis.motor.partsHistoryNote")}</p>
         </>
       )}
 
