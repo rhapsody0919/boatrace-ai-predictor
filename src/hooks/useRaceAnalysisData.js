@@ -11,7 +11,8 @@ import { useState, useEffect } from "react";
 import { supabaseDataService } from "../services/supabaseDataService";
 
 const SOURCES = {
-  motor: (raceId) => supabaseDataService.getRaceMotorBreakdown(raceId),
+  motor: (raceId, venueCode) =>
+    supabaseDataService.getRaceMotorBreakdown(raceId, venueCode ?? null),
   racerForm: (raceId) => supabaseDataService.getRaceRacerFormBreakdown(raceId),
   stPredictability: (raceId) =>
     supabaseDataService.getRaceStPredictabilityBreakdown(raceId),
@@ -35,24 +36,30 @@ const ALL_PENDING = Object.fromEntries(
 /**
  * レース選択直後に呼ぶと分析データの取得を先行開始できる（fire-and-forget）。
  * withCacheのin-flightデデュープにより、後続のフック側の取得と重複しない
+ * （venueCodeは後続のuseRaceAnalysisData呼び出しと同じキャッシュキーになるよう
+ * 必ず揃える。省略するとmotorソースのキャッシュキーが分岐し、このprefetch自体が
+ * 無駄撃ちになる上、本来のデデュープ効果も得られない）
  */
-export function prefetchRaceAnalysisData(raceId) {
+export function prefetchRaceAnalysisData(raceId, venueCode = null) {
   if (!raceId) return;
   Object.values(SOURCES).forEach((fn) => {
-    fn(raceId).catch(() => {});
+    fn(raceId, venueCode).catch(() => {});
   });
 }
 
-export function useRaceAnalysisData(raceId, { includeResult = false } = {}) {
+export function useRaceAnalysisData(
+  raceId,
+  { includeResult = false, venueCode = null } = {},
+) {
   // key（raceId+オプション）でstateの鮮度を管理し、各クエリの解決ごとに
   // functional setStateでマージする。keyが変わった後に届いた古い結果は捨てる
   const [loaded, setLoaded] = useState({ key: null, data: EMPTY, done: {} });
 
-  const key = raceId ? `${raceId}:${includeResult}` : null;
+  const key = raceId ? `${raceId}:${includeResult}:${venueCode}` : null;
 
   useEffect(() => {
     if (!raceId) return undefined;
-    const currentKey = `${raceId}:${includeResult}`;
+    const currentKey = `${raceId}:${includeResult}:${venueCode}`;
     let cancelled = false;
 
     const applyResult = (name, value) => {
@@ -71,7 +78,7 @@ export function useRaceAnalysisData(raceId, { includeResult = false } = {}) {
     };
 
     Object.entries(SOURCES).forEach(([name, fn]) => {
-      fn(raceId)
+      fn(raceId, venueCode)
         .then((value) => applyResult(name, value))
         .catch(() => applyResult(name, null));
     });
@@ -86,7 +93,7 @@ export function useRaceAnalysisData(raceId, { includeResult = false } = {}) {
     return () => {
       cancelled = true;
     };
-  }, [raceId, includeResult]);
+  }, [raceId, includeResult, venueCode]);
 
   const isCurrent = key !== null && loaded.key === key;
   const data = isCurrent ? loaded.data : EMPTY;

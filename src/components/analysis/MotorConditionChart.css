@@ -125,6 +125,30 @@
   font-weight: var(--font-weight-medium);
 }
 
+.motor-ranking-table td.power-index-good {
+  color: var(--color-success-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.motor-ranking-table td.power-index-bad {
+  color: var(--color-error-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.power-index-summary {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-4);
+}
+
+.power-index-summary.power-index-good {
+  color: var(--color-success-text);
+}
+
+.power-index-summary.power-index-bad {
+  color: var(--color-error-text);
+}
+
 .delta-up {
   color: var(--color-error-text);
   font-weight: var(--font-weight-semibold);

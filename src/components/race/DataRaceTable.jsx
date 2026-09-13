@@ -18,24 +18,32 @@ import "./DataRaceTable.css";
 
 function DataRaceTable({ raceId, prediction, venueCode }) {
   const { t, i18n } = useTranslation();
-  const analysis = useRaceAnalysisData(raceId);
+  const analysis = useRaceAnalysisData(raceId, { venueCode });
 
   const players = [...(prediction?.allPlayers ?? [])].sort(
     (a, b) => a.number - b.number,
   );
   if (players.length === 0) return null;
 
+  const deepLink = (tab) =>
+    venueCode && raceId
+      ? `/winning-technique?venue_code=${venueCode}&race_id=${raceId}&tab=${tab}`
+      : `/winning-technique?tab=${tab}`;
+
+  // 機力指数バッジ（BOA-265）: 個々の艇のモーターがどちら向きかを予告し、
+  // クリックで該当モーターのドリルダウン画面に直接遷移させる
+  const motorDeepLink = (motorNumber) =>
+    venueCode && raceId
+      ? `/winning-technique?venue_code=${venueCode}&race_id=${raceId}&tab=motor&motor=${motorNumber}`
+      : `/winning-technique?tab=motor`;
+
   const rows = buildIndicatorRows({
     t,
     players,
     analysis,
     pending: analysis.pending,
+    motorDeepLink,
   });
-
-  const deepLink = (tab) =>
-    venueCode && raceId
-      ? `/winning-technique?venue_code=${venueCode}&race_id=${raceId}&tab=${tab}`
-      : `/winning-technique?tab=${tab}`;
 
   const cellClass = (boat, best) =>
     `drt-cell ${best !== null && boat === best ? "drt-best" : ""}`;

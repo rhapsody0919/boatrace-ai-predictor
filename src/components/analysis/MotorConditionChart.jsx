@@ -7,156 +7,104 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
+import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
+import TrendLineChart from "./TrendLineChart";
+import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
-
-const VENUE_NAMES = {
-  1: "桐生",
-  2: "戸田",
-  3: "江戸川",
-  4: "平和島",
-  5: "多摩川",
-  6: "浜名湖",
-  7: "蒲郡",
-  8: "常滑",
-  9: "津",
-  10: "三国",
-  11: "びわこ",
-  12: "住之江",
-  13: "尼崎",
-  14: "鳴門",
-  15: "丸亀",
-  16: "児島",
-  17: "宮島",
-  18: "徳山",
-  19: "下関",
-  20: "若松",
-  21: "芦屋",
-  22: "福岡",
-  23: "唐津",
-  24: "大村",
-};
 
 function MotorConditionChart({
   initialVenueCode = null,
   initialRaceId = null,
+  initialMotorNumber = null,
   embedded = false,
 }) {
   const { t } = useTranslation();
-  const [venues, setVenues] = useState([]);
-  const [selectedVenue, setSelectedVenue] = useState(initialVenueCode);
-  const [races, setRaces] = useState([]);
-  const [selectedRace, setSelectedRace] = useState(initialRaceId);
+  const {
+    venues,
+    selectedVenue,
+    setSelectedVenue,
+    races,
+    selectedRace,
+    setSelectedRace,
+    loading,
+    setLoading,
+    error,
+    setError,
+  } = useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
+
   const [breakdown, setBreakdown] = useState([]);
   const [drillDownMotor, setDrillDownMotor] = useState(null);
   const [trendData, setTrendData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // RaceDetail等からのディープリンク用: 初回のみ指定のレースを優先する
-  const pendingInitialRaceId = useRef(initialRaceId);
+  const [powerIndex, setPowerIndex] = useState(null);
+  const pendingInitialMotorNumber = useRef(initialMotorNumber);
 
-  // 本日開催中の会場一覧を取得
-  // embedded時（レース詳細への埋め込み）は過去日・確定済みレースも対象になり得るため、
-  // 「本日開催」一覧に無い場合のフォールバック選択を行わず、渡されたinitialVenueCode/
-  // initialRaceIdをそのまま使う（selectedVenue/selectedRaceは既にその初期値のまま）
-  useEffect(() => {
-    if (embedded) return;
-    const loadVenues = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const list = await supabaseDataService.getVenuesWithTodaysRaces();
-        setVenues(list);
-        const preferred =
-          initialVenueCode !== null && list.includes(initialVenueCode)
-            ? initialVenueCode
-            : (list[0] ?? null);
-        setSelectedVenue(preferred);
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load venues with today's races:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadVenues();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // 会場変更時: 本日のレース一覧を取得（embedded時はスキップ、理由は上記コメント参照）
-  useEffect(() => {
-    if (embedded) return;
-    if (selectedVenue === null) {
-      setRaces([]);
-      return;
-    }
-    const loadRaces = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const list =
-          await supabaseDataService.getTodaysRacesForVenue(selectedVenue);
-        setRaces(list);
-
-        const pending = pendingInitialRaceId.current;
-        const pendingExists =
-          pending !== null && list.some((r) => r.race_id === pending);
-        setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
-        pendingInitialRaceId.current = null;
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load today's races:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadRaces();
-  }, [selectedVenue, embedded]);
-
-  // レース選択時: 枠番別モーター調子を取得
+  // レース選択時: 枠番別モーター調子を取得（機力指数はvenue確定後に別途取得）
   useEffect(() => {
     if (selectedRace === null) return;
+    // StrictMode（開発時）の2回実行対策: 使い捨ての1回目でpendingを消費しきって
+    // しまわないよう、cleanup側で未適用（cancelled）なら元に戻す
+    const pendingSnapshot = pendingInitialMotorNumber.current;
+    let cancelled = false;
+    let applied = false;
     const loadBreakdown = async () => {
       try {
         setLoading(true);
         setError(null);
         setDrillDownMotor(null);
-        const data =
-          await supabaseDataService.getRaceMotorBreakdown(selectedRace);
+        const data = await supabaseDataService.getRaceMotorBreakdown(
+          selectedRace,
+          selectedVenue,
+        );
+        if (cancelled) return;
         setBreakdown(data);
+        // 機力バッジ等からのディープリンク（?motor=）で指定されたモーターが
+        // 今回のレースに実在すれば、そのままドリルダウン画面を開く。
+        // マッチしなかった場合もpendingは消費する（消費せず残すと、後で
+        // ユーザーが手動で選んだ別レースがたまたま同じモーター番号を含んでいた際に
+        // 意図せず自動ドリルダウンしてしまうため）
+        const pendingExists =
+          pendingSnapshot !== null &&
+          data.some((r) => r.motor_number === pendingSnapshot);
+        if (pendingExists) {
+          setDrillDownMotor(pendingSnapshot);
+        }
+        pendingInitialMotorNumber.current = null;
+        applied = true;
       } catch (err) {
+        if (cancelled) return;
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load race motor breakdown:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     loadBreakdown();
-  }, [selectedRace]);
+    return () => {
+      cancelled = true;
+      if (!applied) pendingInitialMotorNumber.current = pendingSnapshot;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRace, selectedVenue]);
 
-  // モーター選択時: 節ごとの推移を取得
+  // モーター選択時: 節ごとの推移と機力指数を取得
   useEffect(() => {
     if (drillDownMotor === null || selectedVenue === null) return;
     const loadTrend = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await supabaseDataService.getMotorConditionTrend(
-          selectedVenue,
-          drillDownMotor,
-        );
-        setTrendData(data);
+        const [trend, power] = await Promise.all([
+          supabaseDataService.getMotorConditionTrend(
+            selectedVenue,
+            drillDownMotor,
+          ),
+          supabaseDataService.getMotorPowerIndex(selectedVenue, drillDownMotor),
+        ]);
+        setTrendData(trend);
+        setPowerIndex(power);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
@@ -165,6 +113,7 @@ function MotorConditionChart({
       }
     };
     loadTrend();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVenue, drillDownMotor]);
 
   const chartData = (trendData?.trend ?? []).map((row) => ({
@@ -172,6 +121,13 @@ function MotorConditionChart({
     motor_2rate: row.motor_2rate,
     motor_3rate: row.motor_3rate,
   }));
+
+  const exhibitionChartData = (trendData?.trend ?? [])
+    .filter((row) => row.exhibition_time !== null)
+    .map((row) => ({
+      date: row.date.slice(5),
+      exhibition_time: row.exhibition_time,
+    }));
 
   const bestMotor2Rate =
     breakdown.length > 0
@@ -255,6 +211,7 @@ function MotorConditionChart({
                   <th>{t("analysis.motor.motorNumberHeader")}</th>
                   <th>{t("analysis.motor.rate2Header")}</th>
                   <th>{t("analysis.motor.rate3Header")}</th>
+                  <th>{t("analysis.motor.powerIndexHeader")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -273,6 +230,19 @@ function MotorConditionChart({
                     </td>
                     <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
                     <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
+                    <td
+                      className={`rate power-index ${
+                        row.power_index > 0
+                          ? "power-index-good"
+                          : row.power_index < 0
+                            ? "power-index-bad"
+                            : ""
+                      }`}
+                    >
+                      {row.power_index !== null && row.power_index !== undefined
+                        ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
+                        : "-"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -282,58 +252,90 @@ function MotorConditionChart({
 
       {!loading && !error && drillDownMotor !== null && (
         <>
-          <button
-            className="back-to-ranking-btn"
-            onClick={() => setDrillDownMotor(null)}
-          >
-            {t("analysis.backToList")}
-          </button>
-          <h3 className="selected-motor-heading">
-            {t("analysis.motor.trendHeading", { n: drillDownMotor })}
-          </h3>
+          <DrillDownHeader
+            onBack={() => setDrillDownMotor(null)}
+            backLabel={t("analysis.backToList")}
+            heading={t("analysis.motor.trendHeading", { n: drillDownMotor })}
+          />
+
+          {powerIndex?.power_index !== null &&
+            powerIndex?.power_index !== undefined && (
+              <p
+                className={`power-index-summary ${
+                  powerIndex.power_index > 0
+                    ? "power-index-good"
+                    : powerIndex.power_index < 0
+                      ? "power-index-bad"
+                      : ""
+                }`}
+              >
+                {t("analysis.motor.powerIndexSummary", {
+                  index: `${powerIndex.power_index > 0 ? "+" : ""}${powerIndex.power_index.toFixed(1)}`,
+                  count: powerIndex.sample_count,
+                })}
+                {" — "}
+                {powerIndex.power_index > 0
+                  ? t("analysis.motor.powerIndexGood")
+                  : powerIndex.power_index < 0
+                    ? t("analysis.motor.powerIndexBad")
+                    : ""}
+              </p>
+            )}
 
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart
-                data={chartData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis
-                  label={{
-                    value: t("analysis.motor.yAxis"),
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                />
-                <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
-                <Legend />
-                <Line
-                  type="stepAfter"
-                  dataKey="motor_2rate"
-                  name={t("analysis.motor.legend2")}
-                  stroke="var(--brand-accent-primary)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
-                <Line
-                  type="stepAfter"
-                  dataKey="motor_3rate"
-                  name={t("analysis.motor.legend3")}
-                  stroke="var(--brand-accent-secondary)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <TrendLineChart
+              data={chartData}
+              yAxisLabel={t("analysis.motor.yAxis")}
+              tooltipFormatter={(value) => `${value.toFixed(1)}%`}
+              series={[
+                {
+                  dataKey: "motor_2rate",
+                  name: t("analysis.motor.legend2"),
+                  stroke: "var(--brand-accent-primary)",
+                  type: "stepAfter",
+                },
+                {
+                  dataKey: "motor_3rate",
+                  name: t("analysis.motor.legend3"),
+                  stroke: "var(--brand-accent-secondary)",
+                  type: "stepAfter",
+                },
+              ]}
+            />
           ) : (
             <div className="empty-state">{t("analysis.motor.trendEmpty")}</div>
           )}
+
+          <h3 className="selected-motor-heading">
+            {t("analysis.motor.exhibitionTrendHeading")}
+          </h3>
+          {exhibitionChartData.length > 0 ? (
+            <TrendLineChart
+              data={exhibitionChartData}
+              yAxisLabel={t("analysis.motor.exhibitionYAxis")}
+              tooltipFormatter={(value) => value.toFixed(2)}
+              series={[
+                {
+                  dataKey: "exhibition_time",
+                  name: t("analysis.motor.exhibitionLegend"),
+                  stroke: "var(--brand-accent-primary)",
+                  type: "monotone",
+                },
+              ]}
+            />
+          ) : (
+            <div className="empty-state">
+              {t("analysis.motor.exhibitionTrendEmpty")}
+            </div>
+          )}
+          <p className="table-note">
+            {t("analysis.motor.exhibitionTrendNote")}
+          </p>
         </>
       )}
 
       <p className="table-note">{t("analysis.motor.note")}</p>
+      <p className="table-note">{t("analysis.motor.powerIndexNote")}</p>
     </div>
   );
 }

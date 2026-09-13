@@ -256,7 +256,10 @@ function toMarkdownTable(t, players, rows) {
 
 export function useAiCopyText({ raceId, prediction, race, venueCode }) {
   const { t } = useTranslation();
-  const analysis = useRaceAnalysisData(raceId);
+  // venueCodeを渡さないとDataRaceTable側のuseRaceAnalysisData呼び出しと
+  // キャッシュキー・in-flightデデュープが分岐し、同じレースのモーター内訳を
+  // 二重に取得してしまう（BOA-265でDataRaceTable側にvenueCodeを追加した際に発覚）
+  const analysis = useRaceAnalysisData(raceId, { venueCode });
 
   const players = [...(prediction?.allPlayers ?? [])].sort(
     (a, b) => a.number - b.number,

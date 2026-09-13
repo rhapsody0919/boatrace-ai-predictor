@@ -4,48 +4,14 @@
  * 現在の全国勝率と約90日前時点の全国勝率を比較し、調子の変化を示す。
  * 気になる選手は節ごとの推移グラフにドリルダウンできる。
  */
-import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
+import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
+import TrendLineChart from "./TrendLineChart";
+import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
-
-const VENUE_NAMES = {
-  1: "桐生",
-  2: "戸田",
-  3: "江戸川",
-  4: "平和島",
-  5: "多摩川",
-  6: "浜名湖",
-  7: "蒲郡",
-  8: "常滑",
-  9: "津",
-  10: "三国",
-  11: "びわこ",
-  12: "住之江",
-  13: "尼崎",
-  14: "鳴門",
-  15: "丸亀",
-  16: "児島",
-  17: "宮島",
-  18: "徳山",
-  19: "下関",
-  20: "若松",
-  21: "芦屋",
-  22: "福岡",
-  23: "唐津",
-  24: "大村",
-};
 
 function RacerFormChart({
   initialVenueCode = null,
@@ -53,72 +19,22 @@ function RacerFormChart({
   embedded = false,
 }) {
   const { t } = useTranslation();
-  const [venues, setVenues] = useState([]);
-  const [selectedVenue, setSelectedVenue] = useState(initialVenueCode);
-  const [races, setRaces] = useState([]);
-  const [selectedRace, setSelectedRace] = useState(initialRaceId);
+  const {
+    venues,
+    selectedVenue,
+    setSelectedVenue,
+    races,
+    selectedRace,
+    setSelectedRace,
+    loading,
+    setLoading,
+    error,
+    setError,
+  } = useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
+
   const [breakdown, setBreakdown] = useState([]);
   const [drillDownRacer, setDrillDownRacer] = useState(null);
   const [trendData, setTrendData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const pendingInitialRaceId = useRef(initialRaceId);
-
-  // embedded時は過去日・確定済みレースも対象になり得るため、「本日開催」一覧に無い
-  // 場合のフォールバック選択を行わず、渡されたinitialVenueCode/initialRaceIdを使う
-  useEffect(() => {
-    if (embedded) return;
-    const loadVenues = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const list = await supabaseDataService.getVenuesWithTodaysRaces();
-        setVenues(list);
-        const preferred =
-          initialVenueCode !== null && list.includes(initialVenueCode)
-            ? initialVenueCode
-            : (list[0] ?? null);
-        setSelectedVenue(preferred);
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load venues with today's races:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadVenues();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (embedded) return;
-    if (selectedVenue === null) {
-      setRaces([]);
-      return;
-    }
-    const loadRaces = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const list =
-          await supabaseDataService.getTodaysRacesForVenue(selectedVenue);
-        setRaces(list);
-
-        const pending = pendingInitialRaceId.current;
-        const pendingExists =
-          pending !== null && list.some((r) => r.race_id === pending);
-        setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
-        pendingInitialRaceId.current = null;
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load today's races:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadRaces();
-  }, [selectedVenue, embedded]);
 
   useEffect(() => {
     if (selectedRace === null) return;
@@ -138,6 +54,7 @@ function RacerFormChart({
       }
     };
     loadBreakdown();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRace]);
 
   // 選手選択時: 節ごとの全国勝率推移を取得
@@ -158,6 +75,7 @@ function RacerFormChart({
       }
     };
     loadTrend();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drillDownRacer]);
 
   const bestDelta =
@@ -302,56 +220,36 @@ function RacerFormChart({
 
       {!loading && !error && drillDownRacer !== null && (
         <>
-          <button
-            className="back-to-ranking-btn"
-            onClick={() => setDrillDownRacer(null)}
-          >
-            {t("analysis.backToList")}
-          </button>
-          <h3 className="selected-motor-heading" translate="no">
-            {t("analysis.racerTrendHeading", {
+          <DrillDownHeader
+            onBack={() => setDrillDownRacer(null)}
+            backLabel={t("analysis.backToList")}
+            heading={t("analysis.racerTrendHeading", {
               name: drillDownRacerName?.replace(/\s+/g, ""),
             })}
-          </h3>
-          <Link to={`/racer/${drillDownRacer}`} className="racer-page-link">
-            → 選手ページを見る
-          </Link>
+            racerId={drillDownRacer}
+            racerLinkLabel="→ 選手ページを見る"
+          />
 
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart
-                data={chartData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis
-                  label={{
-                    value: t("analysis.racerForm.yAxis"),
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                />
-                <Tooltip formatter={(value) => value.toFixed(2)} />
-                <Legend />
-                <Line
-                  type="stepAfter"
-                  dataKey="national_win_rate"
-                  name={t("analysis.racerForm.legendNational")}
-                  stroke="var(--brand-accent-primary)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
-                <Line
-                  type="stepAfter"
-                  dataKey="local_win_rate"
-                  name={t("analysis.racerForm.legendLocal")}
-                  stroke="var(--brand-accent-secondary)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <TrendLineChart
+              data={chartData}
+              yAxisLabel={t("analysis.racerForm.yAxis")}
+              tooltipFormatter={(value) => value.toFixed(2)}
+              series={[
+                {
+                  dataKey: "national_win_rate",
+                  name: t("analysis.racerForm.legendNational"),
+                  stroke: "var(--brand-accent-primary)",
+                  type: "stepAfter",
+                },
+                {
+                  dataKey: "local_win_rate",
+                  name: t("analysis.racerForm.legendLocal"),
+                  stroke: "var(--brand-accent-secondary)",
+                  type: "stepAfter",
+                },
+              ]}
+            />
           ) : (
             <div className="empty-state">{t("analysis.racerTrendEmpty")}</div>
           )}

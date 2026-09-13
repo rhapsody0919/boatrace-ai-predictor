@@ -73,6 +73,8 @@ function WinningTechniqueAnalysis() {
   const initialVenueCode = venueCodeParam ? parseInt(venueCodeParam, 10) : null;
   const initialRaceId = params.get("race_id");
   const initialTab = params.get("tab");
+  const motorParam = params.get("motor");
+  const initialMotorNumber = motorParam ? parseInt(motorParam, 10) : null;
 
   const [activeTab, setActiveTab] = useState(
     TAB_KEYS.includes(initialTab) ? initialTab : "technique",
@@ -164,8 +166,14 @@ function WinningTechniqueAnalysis() {
           )}
           {activeTab === "motor" && (
             <MotorConditionChart
+              // ディープリンク先（venue/race/motor）が変わるたびに内部stateを
+              // 作り直す。useVenueRaceSelector等のuseRefベースの初期値適用は
+              // マウント時に1回しか効かないため、同一タブ内で別レースの
+              // バッジから再度この画面に遷移した場合に古い選択が残ってしまう
+              key={`${initialVenueCode}-${initialRaceId}-${initialMotorNumber}`}
               initialVenueCode={initialVenueCode}
               initialRaceId={initialRaceId}
+              initialMotorNumber={initialMotorNumber}
             />
           )}
           {activeTab === "racer" && (

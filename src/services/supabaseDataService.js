@@ -2174,28 +2174,151 @@ export const supabaseDataService = {
   /**
    * 指定レースの枠番別モーター調子（2連率/3連率）を取得する（BOA-151）
    * 「このレースのどの艇のモーターが調子いいか」を直接示す
+   * venueCodeを渡すと各艇のモーターの機力指数（BOA-265）も合わせて取得する
    */
-  getRaceMotorBreakdown(raceId) {
-    return withCache(`race-motor-breakdown-${raceId}`, async () => {
-      if (!supabase) {
-        console.error("Supabase client not initialized");
-        return [];
-      }
+  getRaceMotorBreakdown(raceId, venueCode = null) {
+    return withCache(
+      // raceIdを末尾に置く: inferTtlFromKey()は末尾の「YYYY-MM-DD-会場-レース番号」
+      // パターンで過去レースを検知し7日キャッシュを付与する。venueCodeを末尾に
+      // 付けるとこのパターンにマッチしなくなり、過去レースでも30分キャッシュに
+      // 格下げされてしまうため、raceIdより前に置く
+      `race-motor-breakdown-${venueCode}-${raceId}`,
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return [];
+        }
 
-      const { data, error } = await supabase
-        .from("race_entries")
-        .select(
-          "boat_number, player_name, motor_number, motor_2rate, motor_3rate",
-        )
-        .eq("race_id", raceId)
-        .order("boat_number");
+        const { data, error } = await supabase
+          .from("race_entries")
+          .select(
+            "boat_number, player_name, motor_number, motor_2rate, motor_3rate",
+          )
+          .eq("race_id", raceId)
+          .order("boat_number");
 
-      if (error) {
-        console.error("race_entries取得エラー:", error.message);
-        return [];
-      }
-      return data ?? [];
-    });
+        if (error) {
+          console.error("race_entries取得エラー:", error.message);
+          return [];
+        }
+        const rows = data ?? [];
+        if (venueCode === null) return rows;
+
+        const powerIndexes = await Promise.all(
+          rows.map((row) =>
+            this.getMotorPowerIndex(venueCode, row.motor_number),
+          ),
+        );
+        return rows.map((row, i) => ({
+          ...row,
+          power_index: powerIndexes[i]?.power_index ?? null,
+        }));
+      },
+    );
+  },
+
+  /**
+   * 指定会場・モーター番号の「機力指数」を算出する（BOA-265）
+   * このモーターが過去90日に出走した全レースについて、
+   * 「そのレースで実際に2着以内だったか（0/1）」−
+   * 「その時このモーターに乗っていた選手自身の全国2連率」を計算し、
+   * 全レース分を平均する。強い選手ばかりが使ってきたことによる
+   * 見かけ上の高評価（交絡バイアス）を避けるための設計。
+   * 単純に motor_2rate − 現在の選手のglobal_2rate を引き算するだけでは
+   * 過去の使用選手の実力とモーター自体の性能を区別できないため、
+   * この残差平均方式を採用している（ユーザー指摘を受けて修正、2026-09-12）。
+   */
+  getMotorPowerIndex(venueCode, motorNumber) {
+    return withCache(
+      `motor-power-index-${venueCode}-${motorNumber}`,
+      async () => {
+        const empty = {
+          venue_code: venueCode,
+          motor_number: motorNumber,
+          sample_count: 0,
+          actual_rate2: null,
+          avg_baseline_rate2: null,
+          power_index: null,
+        };
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return empty;
+        }
+
+        const races = await getRacesForVenue(venueCode);
+        if (races.length === 0) return empty;
+
+        const raceIds = races.map((r) => r.race_id);
+        const entryChunks = chunkArray(raceIds, 500);
+
+        const entryResults = await Promise.all(
+          entryChunks.map((chunk) =>
+            supabase
+              .from("race_entries")
+              .select("race_id, boat_number, global_2rate")
+              .in("race_id", chunk)
+              .eq("motor_number", motorNumber),
+          ),
+        );
+        let entries = [];
+        entryResults.forEach(({ data, error }) => {
+          if (error) {
+            console.error("race_entries取得エラー:", error.message);
+            return;
+          }
+          entries = entries.concat(data ?? []);
+        });
+        if (entries.length === 0) return empty;
+
+        const resultChunks = chunkArray(
+          entries.map((e) => e.race_id),
+          500,
+        );
+        const resultResults = await Promise.all(
+          resultChunks.map((chunk) =>
+            supabase
+              .from("race_results")
+              .select("race_id, rank1, rank2")
+              .in("race_id", chunk),
+          ),
+        );
+        const resultByRaceId = new Map();
+        resultResults.forEach(({ data, error }) => {
+          if (error) {
+            console.error("race_results取得エラー:", error.message);
+            return;
+          }
+          (data ?? []).forEach((r) => resultByRaceId.set(r.race_id, r));
+        });
+
+        const residuals = [];
+        let actualHits = 0;
+        let baselineSum = 0;
+        entries.forEach((e) => {
+          const result = resultByRaceId.get(e.race_id);
+          if (!result || e.global_2rate === null) return;
+          const isTop2 =
+            result.rank1 === e.boat_number || result.rank2 === e.boat_number;
+          if (isTop2) actualHits += 1;
+          residuals.push((isTop2 ? 100 : 0) - e.global_2rate);
+          baselineSum += e.global_2rate;
+        });
+        if (residuals.length === 0) return empty;
+
+        const powerIndex =
+          residuals.reduce((sum, v) => sum + v, 0) / residuals.length;
+        const avgBaseline = baselineSum / residuals.length;
+
+        return {
+          venue_code: venueCode,
+          motor_number: motorNumber,
+          sample_count: residuals.length,
+          actual_rate2: (actualHits / residuals.length) * 100,
+          avg_baseline_rate2: avgBaseline,
+          power_index: powerIndex,
+        };
+      },
+    );
   },
 
   /**
@@ -2721,7 +2844,9 @@ export const supabaseDataService = {
    */
   getMotorConditionTrend(venueCode, motorNumber) {
     return withCache(
-      `motor-condition-${venueCode}-${motorNumber}`,
+      // v2: 展示タイム(exhibition_time)を追加(BOA-265軸B)。旧キャッシュ形状には
+      // 無いフィールドのため、旧キーのままだと古いキャッシュがしばらく残ってしまう
+      `motor-condition-v2-${venueCode}-${motorNumber}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2751,7 +2876,7 @@ export const supabaseDataService = {
           chunks.map((chunk) =>
             supabase
               .from("race_entries")
-              .select("race_id, motor_2rate, motor_3rate")
+              .select("race_id, boat_number, motor_2rate, motor_3rate")
               .in("race_id", chunk)
               .eq("motor_number", motorNumber),
           ),
@@ -2766,6 +2891,25 @@ export const supabaseDataService = {
           entries = entries.concat(data);
         });
 
+        // 節内適応トレンド（軸B）: このモーターが出走したレースの展示タイムを
+        // race_id-boat_numberで突き合わせ、同じ日付単位の推移に載せる
+        const exhibitionRows =
+          entries.length > 0
+            ? await fetchAllByIn(
+                "exhibition_data",
+                "race_id, boat_number, exhibition_time",
+                "race_id",
+                entries.map((e) => e.race_id),
+              )
+            : [];
+        const exhibitionTimeByKey = new Map();
+        exhibitionRows.forEach((e) => {
+          exhibitionTimeByKey.set(
+            `${e.race_id}-${e.boat_number}`,
+            e.exhibition_time,
+          );
+        });
+
         // 日付単位でdedupe（同日の複数レースは同じ値のため最初の1件を採用）
         const byDate = new Map();
         entries
@@ -2774,10 +2918,15 @@ export const supabaseDataService = {
           .sort((a, b) => a.race_date.localeCompare(b.race_date))
           .forEach((e) => {
             if (!byDate.has(e.race_date)) {
+              const exhibitionTime = exhibitionTimeByKey.get(
+                `${e.race_id}-${e.boat_number}`,
+              );
               byDate.set(e.race_date, {
                 date: e.race_date,
                 motor_2rate: e.motor_2rate,
                 motor_3rate: e.motor_3rate,
+                exhibition_time:
+                  exhibitionTime !== undefined ? exhibitionTime : null,
               });
             }
           });

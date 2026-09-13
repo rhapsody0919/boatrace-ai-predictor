@@ -303,7 +303,8 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     await expect(breakdown).toHaveCount(6); // 6艇分
     await breakdown.first().click();
     await expect(page.locator(".back-to-ranking-btn")).toBeVisible();
-    await expect(page.locator(".recharts-wrapper")).toBeVisible({
+    // BOA-265で展示タイム推移グラフが追加され2連率/3連率グラフと合わせて2つになった
+    await expect(page.locator(".recharts-wrapper")).toHaveCount(2, {
       timeout: 10000,
     });
   });

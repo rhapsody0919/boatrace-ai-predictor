@@ -447,7 +447,9 @@
     "rowExSt": "展示ST",
     "rowCourseRate": "進入航道勝率",
     "loading": "數據載入中…",
-    "motorResetNote": "剛更換"
+    "motorResetNote": "剛更換",
+    "motorBadgeUp": "機力↑",
+    "motorBadgeDown": "機力↓"
   },
   "venueTendency": {
     "title": "本場館各航道傾向",
@@ -639,11 +641,21 @@
       "motorUnit": "{{n}}號機",
       "rate2Header": "2連率 (%)",
       "rate3Header": "3連率 (%)",
+      "powerIndexHeader": "機力指數",
+      "powerIndexGood": "表現優於選手本身實力",
+      "powerIndexBad": "表現低於選手本身實力",
+      "powerIndexSummary": "機力指數 {{index}}（近90天、{{count}}場的平均值）",
+      "powerIndexNote": "💡 機力指數是將這台馬達過去每一場比賽的「該場是否實際跑進前2名（0/1）」減去「當時該選手本身的全國2連率」，再取全部場次平均而得。數值越大，代表這台馬達的表現越超出所搭載選手的實力。",
       "legend2": "2連率",
       "legend3": "3連率",
       "trendHeading": "{{n}}號機的走勢",
       "trendEmpty": "找不到此馬達的走勢資料",
       "yAxis": "比率 (%)",
+      "exhibitionTrendHeading": "展示時間走勢",
+      "exhibitionLegend": "展示時間",
+      "exhibitionYAxis": "展示時間 (秒)",
+      "exhibitionTrendEmpty": "找不到此馬達的展示時間資料",
+      "exhibitionTrendNote": "💡 即使是同一台馬達，也可能因保養調整或選手操控方式不同而使展示時間出現變化。數值越小代表時間越快。",
       "note": "💡 點擊表格列可查看該馬達各賽節的走勢。強調顯示的列為本場比賽中2連率最高的艇。"
     },
     "racerForm": {

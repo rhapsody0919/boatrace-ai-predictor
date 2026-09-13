@@ -245,6 +245,28 @@ thead tr:last-child .drt-label-th {
   font-size: var(--font-size-xs);
 }
 
+/* 機力指数バッジ（BOA-265）: モーターのドリルダウンへの発見可能な入口 */
+.drt-motor-badge {
+  display: inline-block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-sm);
+}
+
+.drt-motor-badge:hover {
+  text-decoration: underline;
+}
+
+.drt-motor-badge-up {
+  color: var(--color-success-text);
+}
+
+.drt-motor-badge-down {
+  color: var(--color-error-text);
+}
+
 .drt-note {
   margin: var(--spacing-3) 0 0;
   font-size: var(--font-size-xs);

@@ -5,10 +5,15 @@ import RacerStructuredData from "../components/RacerStructuredData";
 import {
   RacerProfileHeader,
   RacerProfileCard,
+  RacerMotorStatusCard,
   RacerPerformanceStats,
   RacerNewsList,
 } from "../components/racer";
-import { getRacerPageData, getRacerStats } from "../services/racerService";
+import {
+  getRacerPageData,
+  getRacerStats,
+  getRacerCurrentMotorStatus,
+} from "../services/racerService";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import "./RacerProfile.css";
 
@@ -23,6 +28,7 @@ export default function RacerProfile() {
   // タイトル・メタ情報の表示（SEO・E2E双方に影響）をブロックしないようにする
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [motorStatus, setMotorStatus] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +60,22 @@ export default function RacerProfile() {
         if (cancelled) return;
         console.error("選手成績データ取得エラー:", err.message);
         setStatsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [racerId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getRacerCurrentMotorStatus(racerId)
+      .then((result) => {
+        if (cancelled) return;
+        setMotorStatus(result);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("今節のモーター状況取得エラー:", err.message);
       });
     return () => {
       cancelled = true;
@@ -97,6 +119,7 @@ export default function RacerProfile() {
           <>
             <RacerProfileHeader profile={data.profile} grade={data.grade} />
             <RacerProfileCard profile={data.profile} />
+            <RacerMotorStatusCard status={motorStatus} />
             <RacerPerformanceStats stats={stats} loading={statsLoading} />
             <RacerNewsList news={data.news} />
           </>
