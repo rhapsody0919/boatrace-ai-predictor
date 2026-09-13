@@ -34,7 +34,8 @@ async function getExistingExhibitionRaceIds(date) {
   const { data, error } = await supabase
     .from("exhibition_data")
     .select("race_id")
-    .gte("race_id", date).lt("race_id", `${date}~`);
+    .gte("race_id", date)
+    .lt("race_id", `${date}~`);
 
   if (error) {
     console.error("⚠️ 取得済みデータの確認に失敗:", error.message);
@@ -49,14 +50,16 @@ async function getExistingExhibitionRaceIds(date) {
  * @returns {{ data: Array|null, reason: string|null }}
  *   reason: 'tables_lt_2' | 'no_boats' | 'no_values' | null(成功)
  */
-function scrapeExhibitionData($) {
+export function scrapeExhibitionData($) {
   const exhibitionData = [];
   const tables = $(".table1");
   if (tables.length < 2) {
     return { data: null, reason: `tables_lt_2 (found ${tables.length})` };
   }
 
-  // 展示タイム（table[1]の各tbody）
+  // 展示タイム・チルト・プロペラ交換・部品交換・調整重量（table[1]の各tbody、BOA-221で拡張）
+  // 全24会場中6会場（宮島・戸田・住之江・蒲郡・下関・芦屋）で実データ確認済み、
+  // セル位置は共通: eq(4)展示タイム/eq(5)チルト/eq(6)プロペラ/eq(7)部品交換/eq(9)調整重量
   const exTable = tables.eq(1);
   const tbodies = exTable.find("tbody");
 
@@ -68,6 +71,15 @@ function scrapeExhibitionData($) {
     const mainCells = rows.eq(0).find("td");
     const boatNumber = parseInt(mainCells.eq(0).text().trim());
     const exhibitionTime = parseFloat(mainCells.eq(4).text().trim());
+    const tilt = parseFloat(mainCells.eq(5).text().trim());
+    const propellerText = mainCells.eq(6).text().trim();
+    const partsChanged = mainCells
+      .eq(7)
+      .find("li")
+      .map((_, li) => $(li).text().trim())
+      .get()
+      .filter(Boolean);
+    const adjustmentWeight = parseFloat(mainCells.eq(9).text().trim());
 
     if (boatNumber >= 1 && boatNumber <= 6) {
       exhibitionData.push({
@@ -75,6 +87,10 @@ function scrapeExhibitionData($) {
         exhibitionTime:
           !isNaN(exhibitionTime) && exhibitionTime > 0 ? exhibitionTime : null,
         startTiming: null,
+        tilt: !isNaN(tilt) ? tilt : null,
+        propellerChange: propellerText || null,
+        partsChanged: partsChanged.length > 0 ? partsChanged : null,
+        adjustmentWeight: !isNaN(adjustmentWeight) ? adjustmentWeight : null,
       });
     }
   });
@@ -168,7 +184,9 @@ export async function run(schedule, date) {
     console.log("📭 展示: 発走10〜33分前ウィンドウの対象レースなし");
     return { updated: false, count: 0 };
   }
-  console.log(`🎯 展示データ取得: ${windowRaces.length}レース（発走30/15/10分前ウィンドウ）`);
+  console.log(
+    `🎯 展示データ取得: ${windowRaces.length}レース（発走30/15/10分前ウィンドウ）`,
+  );
 
   // 展示データ取得済みの race_id（スキップ判定用）
   const existingExhibitionIds = await getExistingExhibitionRaceIds(date);
@@ -197,11 +215,13 @@ export async function run(schedule, date) {
     // 会場内の全対象レースを並列取得
     const results = await Promise.all(
       races.map((r) =>
-        fetchExhibitionForRace(date, venueCode, r.race_no).then(({ data, reason }) => ({
-          raceId: r.race_id,
-          data,
-          reason,
-        })),
+        fetchExhibitionForRace(date, venueCode, r.race_no).then(
+          ({ data, reason }) => ({
+            raceId: r.race_id,
+            data,
+            reason,
+          }),
+        ),
       ),
     );
 
@@ -216,12 +236,18 @@ export async function run(schedule, date) {
               boat_number: ex.boatNumber,
               exhibition_time: ex.exhibitionTime,
               start_timing: ex.startTiming,
+              tilt: ex.tilt,
+              propeller_change: ex.propellerChange,
+              parts_changed: ex.partsChanged,
+              adjustment_weight: ex.adjustmentWeight,
             });
           }
         }
         venueFetched++;
       } else {
-        console.log(`  ⚠️ ${venueName} ${parseInt(raceNo)}R: データなし (${reason})`);
+        console.log(
+          `  ⚠️ ${venueName} ${parseInt(raceNo)}R: データなし (${reason})`,
+        );
       }
     }
 
