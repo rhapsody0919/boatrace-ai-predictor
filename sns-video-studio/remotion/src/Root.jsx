@@ -58,6 +58,7 @@ import {
   TECHNIQUE_CONSISTENCY_DURATION,
 } from "./TechniqueConsistencyCM.jsx";
 import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
+import { RaceInsightYoutubeShortsTemplate } from "./RaceInsightYoutubeShortsCM.jsx";
 import { OnboardingFlowCM } from "./OnboardingFlowCM.jsx";
 import { AboutHeroDesktop, AboutHeroMobile } from "./AboutHeroCM.jsx";
 
@@ -545,6 +546,30 @@ export function RemotionRoot() {
             { winnerCourse: 5, technique: "makurizashi", probability: 0.08 },
           ],
           featureDigest: ["AI予想", "イン崩れ指数", "無料"],
+        }}
+      />
+      <Composition
+        id="RaceInsightYoutubeShortsCM"
+        component={RaceInsightYoutubeShortsTemplate}
+        durationInFrames={570}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          venue: "福岡",
+          raceNumber: 4,
+          raceDate: "9/14",
+          raceGrade: "一般",
+          nigePercent: 43,
+          patterns: [
+            { winnerCourse: 1, technique: "nige", probability: 0.43 },
+            { winnerCourse: 3, technique: "makurizashi", probability: 0.09 },
+            { winnerCourse: 4, technique: "sashi", probability: 0.09 },
+          ],
+          boatGrade: "B1",
+          boatWinRate: "3.11",
+          percentile: 100,
+          reasons: ["1号艇の今節STが遅い（平均0.181秒）→ イン崩れリスク"],
         }}
       />
       <Composition
