@@ -183,7 +183,7 @@
     "exhibitionTime": "展示時間",
     "exhibitionST": "展示ST",
     "totalPower": "綜合力",
-    "courseWinRate": "航道勝率",
+    "courseWinRate": "艇號勝率",
     "firstPlace": "第1名",
     "guideTitle": "數據解讀方式",
     "guideNationalWinRate": "選手在全國的勝率。6.0 以上為 A 級水準。",
@@ -448,7 +448,7 @@
     "rowTwoRate": "全國2連率",
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
-    "rowCourseRate": "進入航道勝率",
+    "rowCourseRate": "艇號勝率",
     "loading": "數據載入中…",
     "motorResetNote": "剛更換",
     "motorBadgeUp": "機力↑",
@@ -539,7 +539,7 @@
       "exhibition": "展示T",
       "tilt": "傾角",
       "adjustmentWeight": "調重",
-      "courseRate": "航道",
+      "courseRate": "艇號",
       "returnRate": "回收率",
       "technique": "方式"
     },
@@ -749,8 +749,8 @@
     },
     "raceCard": {
       "title": "📋 出賽表資料",
-      "description": "選擇本日舉辦中的比賽，即可按艇號順序一覽出賽6名選手的勝率、馬達、平均ST、展示、航道勝率等出賽表資料。數值的顏色表示比賽內的前3名。",
-      "note": "💡 航道勝率為進入航道的第1名數/出賽數（racerStats統計）。展示時間、展示ST會在當日展示航行結束後顯示。"
+      "description": "選擇本日舉辦中的比賽，即可按艇號順序一覽出賽6名選手的勝率、馬達、平均ST、展示、艇號勝率等出賽表資料。數值的顏色表示比賽內的前3名。",
+      "note": "💡 艇號勝率為該艇號的第1名數/出賽數（racerStats統計）。展示時間、展示ST會在當日展示航行結束後顯示。"
     },
     "venueRanking": {
       "title": "🏟️ 本日賽場排行榜",
@@ -857,7 +857,7 @@
       },
       "racecard": {
         "name": "出賽表資料",
-        "description": "依艇號順序比較出賽6名選手的勝率、馬達、平均ST、展示、航道勝率"
+        "description": "依艇號順序比較出賽6名選手的勝率、馬達、平均ST、展示、艇號勝率"
       },
       "venueranking": {
         "name": "本日賽場排行榜",
@@ -1121,7 +1121,7 @@
       },
       "racecard": {
         "title": "關於出賽表資料",
-        "dataView": "依艇號順序列出出賽6名選手的級別、勝率、馬達、平均ST、展示、進入航道勝率。數值的顏色表示比賽內的前3名。不包含AI預測的分數或排序，是純粹的出賽表資料。",
+        "dataView": "依艇號順序列出出賽6名選手的級別、勝率、馬達、平均ST、展示、艇號勝率。數值的顏色表示比賽內的前3名。不包含AI預測的分數或排序，是純粹的出賽表資料。",
         "tips": [
           {
             "strong": "有色數值集中的選手",

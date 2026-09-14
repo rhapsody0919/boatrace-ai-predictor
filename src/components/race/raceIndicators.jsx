@@ -28,7 +28,10 @@ export const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
-// 艇のコース別勝率（進入コースでの1着数/出走数）。racerStatsから算出する
+// 艇の枠番別勝率（枠番での1着数/出走数）。racerStatsから算出する
+// 注: race_results.course_1〜6は艇番と常に一致しており、実際の進入変化
+// （前づけ）を区別できていない既知の制約がある（BOA-257）。表示ラベルは
+// 「枠番」に統一しているが、内部の変数名・関数名はcourse系のまま残している
 export function courseRateOf(statsByBoat, boat) {
   const stats = statsByBoat.get(boat);
   if (!stats) return null;

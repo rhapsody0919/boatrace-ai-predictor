@@ -120,7 +120,11 @@ export default function RacerProfile() {
             <RacerProfileHeader profile={data.profile} grade={data.grade} />
             <RacerProfileCard profile={data.profile} />
             <RacerMotorStatusCard status={motorStatus} />
-            <RacerPerformanceStats stats={stats} loading={statsLoading} />
+            <RacerPerformanceStats
+              racerId={racerId}
+              stats={stats}
+              loading={statsLoading}
+            />
             <RacerNewsList news={data.news} />
           </>
         )}

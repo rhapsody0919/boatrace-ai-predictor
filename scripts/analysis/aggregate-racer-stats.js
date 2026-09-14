@@ -15,7 +15,7 @@
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
 import { extractVenueCodeFromRaceId } from "../lib/dateUtils.js";
-import { isPlaceHit } from "../lib/hitCalculator.js";
+import { isPlaceHit, isShowHit } from "../lib/hitCalculator.js";
 import {
   COURSE_DEFAULT_DISTRIBUTION,
   toTechniqueKey,
@@ -415,7 +415,7 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
     const { data: results, error: resultsError } = await supabase
       .from("race_results")
       .select(
-        "race_id, rank1, rank2, rank3, course_1, course_2, course_3, course_4, course_5, course_6",
+        "race_id, rank1, rank2, rank3, is_cancelled, is_no_race, course_1, course_2, course_3, course_4, course_5, course_6",
       )
       .in("race_id", raceIds);
 
@@ -443,7 +443,14 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
 
   for (const entry of filteredEntries) {
     const result = resultsMap.get(entry.race_id);
-    if (!result) continue;
+    if (
+      !result ||
+      result.is_cancelled ||
+      result.is_no_race ||
+      result.rank1 === null
+    ) {
+      continue;
+    }
 
     const boatNumber = entry.boat_number;
 
@@ -469,10 +476,7 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
     if (isPlaceHit(boatNumber, result.rank1, result.rank2)) {
       courseCounts[courseKey].top2++;
     }
-    if (
-      isPlaceHit(boatNumber, result.rank1, result.rank2) ||
-      result.rank3 === boatNumber
-    ) {
+    if (isShowHit(boatNumber, result.rank1, result.rank2, result.rank3)) {
       courseCounts[courseKey].top3++;
     }
   }

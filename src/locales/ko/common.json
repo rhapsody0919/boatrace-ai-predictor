@@ -183,7 +183,7 @@
     "exhibitionTime": "전시 타임",
     "exhibitionST": "전시 ST",
     "totalPower": "종합력",
-    "courseWinRate": "코스 승률",
+    "courseWinRate": "번호 승률",
     "firstPlace": "1착",
     "guideTitle": "데이터 보는 법",
     "guideNationalWinRate": "선수의 전국 승률. 6.0 이상이면 A급 수준입니다.",
@@ -448,7 +448,7 @@
     "rowTwoRate": "전국 연대율",
     "rowAvgSt": "평균 ST",
     "rowExSt": "전시 ST",
-    "rowCourseRate": "진입 코스 승률",
+    "rowCourseRate": "번호 승률",
     "loading": "분석 데이터 로딩 중…",
     "motorResetNote": "교체 직후",
     "motorBadgeUp": "기력↑",
@@ -539,7 +539,7 @@
       "exhibition": "전시T",
       "tilt": "틸트",
       "adjustmentWeight": "조정중량",
-      "courseRate": "코스",
+      "courseRate": "번호",
       "returnRate": "회수율",
       "technique": "결정수"
     },
@@ -749,8 +749,8 @@
     },
     "raceCard": {
       "title": "📋 출전표 데이터",
-      "description": "오늘 개최 중인 레이스를 선택하면 출전하는 6명의 선수의 승률·모터·평균 ST·전시·코스 승률 등 출전표 데이터를 번호 순으로 한눈에 볼 수 있습니다. 숫자의 색상은 레이스 내 상위 3위를 나타냅니다.",
-      "note": "💡 코스 승률은 진입 코스에서의 1착 수/출주 수(racerStats 집계)입니다. 전시 타임·전시 ST는 당일 전시 주행이 끝난 후 표시됩니다."
+      "description": "오늘 개최 중인 레이스를 선택하면 출전하는 6명의 선수의 승률·모터·평균 ST·전시·번호 승률 등 출전표 데이터를 번호 순으로 한눈에 볼 수 있습니다. 숫자의 색상은 레이스 내 상위 3위를 나타냅니다.",
+      "note": "💡 번호 승률은 그 번호(정박 번호)에서의 1착 수/출주 수(racerStats 집계)입니다. 전시 타임·전시 ST는 당일 전시 주행이 끝난 후 표시됩니다."
     },
     "venueRanking": {
       "title": "🏟️ 오늘의 경기장 랭킹",
@@ -857,7 +857,7 @@
       },
       "racecard": {
         "name": "출전표 데이터",
-        "description": "출전 6명 선수의 승률·모터·평균 ST·전시·코스 승률을 번호 순으로 비교"
+        "description": "출전 6명 선수의 승률·모터·평균 ST·전시·번호 승률을 번호 순으로 비교"
       },
       "venueranking": {
         "name": "오늘의 경기장 랭킹",
@@ -1121,7 +1121,7 @@
       },
       "racecard": {
         "title": "출전표 데이터 소개",
-        "dataView": "출전 6명 선수의 급별·승률·모터·평균 ST·전시·진입 코스 승률을 번호 순으로 나열합니다. 숫자의 색상은 레이스 내 상위 3위를 나타냅니다. AI 예측 점수나 정렬이 포함되지 않은 순수한 출전표 데이터입니다.",
+        "dataView": "출전 6명 선수의 급별·승률·모터·평균 ST·전시·번호 승률을 번호 순으로 나열합니다. 숫자의 색상은 레이스 내 상위 3위를 나타냅니다. AI 예측 점수나 정렬이 포함되지 않은 순수한 출전표 데이터입니다.",
         "tips": [
           {
             "strong": "색이 있는 숫자가 집중된 선수",
