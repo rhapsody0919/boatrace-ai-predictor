@@ -12,6 +12,7 @@ import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import RacerGradeBadge from "../racer/RacerGradeBadge";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
+import MotorRecordStatCards from "../MotorRecordStatCards";
 import TrendLineChart from "./TrendLineChart";
 import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
@@ -294,10 +295,10 @@ function MotorConditionChart({
                   <th>{t("analysis.motor.motorNumberHeader")}</th>
                   <th>{t("analysis.motor.rate2Header")}</th>
                   <th>{t("analysis.motor.rate3Header")}</th>
+                  <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
                   <th>{t("analysis.motor.powerIndexHeader")}</th>
                   <th>{t("analysis.motor.finalCountHeader")}</th>
                   <th>{t("analysis.motor.championshipCountHeader")}</th>
-                  <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -316,6 +317,13 @@ function MotorConditionChart({
                     </td>
                     <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
                     <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
+                    <td
+                      className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
+                    >
+                      {firstPlaceRates[i] !== null
+                        ? `${firstPlaceRates[i].toFixed(1)}%`
+                        : "-"}
+                    </td>
                     <td
                       className={`rate power-index ${
                         row.power_index > 0
@@ -338,13 +346,6 @@ function MotorConditionChart({
                       className={`rate ${championshipCountRankClass(row.championship_count)}`}
                     >
                       {row.championship_count ?? "-"}
-                    </td>
-                    <td
-                      className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
-                    >
-                      {firstPlaceRates[i] !== null
-                        ? `${firstPlaceRates[i].toFixed(1)}%`
-                        : "-"}
                     </td>
                   </tr>
                 ))}
@@ -403,6 +404,34 @@ function MotorConditionChart({
                   text: t("analysis.motor.freshnessMeetBadge", {
                     meetCount: venueMotorStats.meetCount,
                   }),
+                },
+            ].filter(Boolean)}
+          />
+
+          <MotorRecordStatCards
+            cards={[
+              venueMotorStats?.finalCount !== null &&
+                venueMotorStats?.finalCount !== undefined && {
+                  key: "finalCount",
+                  value: venueMotorStats.finalCount,
+                  label: t("analysis.motor.finalCountHeader"),
+                },
+              venueMotorStats?.championshipCount !== null &&
+                venueMotorStats?.championshipCount !== undefined && {
+                  key: "championshipCount",
+                  value: venueMotorStats.championshipCount,
+                  label: t("analysis.motor.championshipCountHeader"),
+                },
+              venueMotorStats?.firstPlaceCount !== null &&
+                venueMotorStats?.firstPlaceCount !== undefined &&
+                venueMotorStats?.raceCount && {
+                  key: "firstPlaceRate",
+                  value: `${(
+                    (venueMotorStats.firstPlaceCount /
+                      venueMotorStats.raceCount) *
+                    100
+                  ).toFixed(1)}%`,
+                  label: t("analysis.motor.firstPlaceRateHeader"),
                 },
             ].filter(Boolean)}
           />
