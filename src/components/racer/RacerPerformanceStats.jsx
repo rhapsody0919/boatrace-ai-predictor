@@ -327,6 +327,58 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
         </div>
       )}
 
+      {hasCourseStats && (
+        <div className="racer-technique-profile">
+          <h3>枠番別成績（全会場計）</h3>
+          <p className="racer-vc-note">
+            ※実際の進入コース変化（前づけ）は現時点では区別できないため、発走前に決まる枠番（艇番）基準で表示しています
+          </p>
+          <div className="table-wrapper">
+            <table className="racer-return-rate-table">
+              <thead>
+                <tr>
+                  <th>枠番</th>
+                  <th>出走数</th>
+                  <th>勝数</th>
+                  <th>勝率</th>
+                  <th>2連率</th>
+                  <th>3連率</th>
+                </tr>
+              </thead>
+              <tbody>
+                {courseStats.map((row) => (
+                  <tr
+                    key={row.course}
+                    className={
+                      vcBoat !== "all" && row.course === Number(vcBoat)
+                        ? "racer-vc-row-highlight"
+                        : ""
+                    }
+                  >
+                    <td>{row.course}</td>
+                    <td>{row.total}</td>
+                    <td>{row.wins}</td>
+                    <td>
+                      {row.winRate !== null ? formatPercent(row.winRate) : "-"}
+                    </td>
+                    <td>
+                      {row.top2Rate !== null
+                        ? formatPercent(row.top2Rate)
+                        : "-"}
+                    </td>
+                    <td>
+                      {row.top3Rate !== null
+                        ? formatPercent(row.top3Rate)
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {hasVenueStats && (
         <div className="racer-vc-filter controls-section">
           <div className="racer-vc-filter-field">
@@ -482,58 +534,6 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
               決まり手データなし（勝利{vcData.win}回中、記録なし）
             </p>
           ) : null}
-        </div>
-      )}
-
-      {hasCourseStats && (
-        <div className="racer-technique-profile">
-          <h3>枠番別成績（全会場計）</h3>
-          <p className="racer-vc-note">
-            ※実際の進入コース変化（前づけ）は現時点では区別できないため（BOA-257）、発走前に決まる枠番（艇番）基準で表示しています
-          </p>
-          <div className="table-wrapper">
-            <table className="racer-return-rate-table">
-              <thead>
-                <tr>
-                  <th>枠番</th>
-                  <th>出走数</th>
-                  <th>勝数</th>
-                  <th>勝率</th>
-                  <th>2連率</th>
-                  <th>3連率</th>
-                </tr>
-              </thead>
-              <tbody>
-                {courseStats.map((row) => (
-                  <tr
-                    key={row.course}
-                    className={
-                      vcBoat !== "all" && row.course === Number(vcBoat)
-                        ? "racer-vc-row-highlight"
-                        : ""
-                    }
-                  >
-                    <td>{row.course}</td>
-                    <td>{row.total}</td>
-                    <td>{row.wins}</td>
-                    <td>
-                      {row.winRate !== null ? formatPercent(row.winRate) : "-"}
-                    </td>
-                    <td>
-                      {row.top2Rate !== null
-                        ? formatPercent(row.top2Rate)
-                        : "-"}
-                    </td>
-                    <td>
-                      {row.top3Rate !== null
-                        ? formatPercent(row.top3Rate)
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 
