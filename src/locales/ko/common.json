@@ -378,17 +378,17 @@
     "makurizashiDefense": "휘감아찌르기 당함",
     "makurizashiAttack": "휘감아찌르기",
     "other": "기타",
-    "exampleDefenseTitle": "1코스의 「{{label}} {{count}}/{{total}}」",
-    "exampleDefenseDesc": "→ 1코스에서 출주한 {{total}}회 중 다른 선수의 「{{attackLabel}}」에 {{count}}회 패배",
-    "exampleAttackTitle": "{{course}}코스의 「{{label}} {{count}}/{{total}}」",
-    "exampleAttackDesc": "→ {{course}}코스에서 출주한 {{total}}회 중 「{{label}}」(으)로 {{count}}회 승리",
-    "legendWinsDesc": ": 해당 코스 출주 시 승수/출주 수",
+    "exampleDefenseTitle": "1번의 「{{label}} {{count}}/{{total}}」",
+    "exampleDefenseDesc": "→ 1번으로 출주한 {{total}}회 중 다른 선수의 「{{attackLabel}}」에 {{count}}회 패배",
+    "exampleAttackTitle": "{{course}}번의 「{{label}} {{count}}/{{total}}」",
+    "exampleAttackDesc": "→ {{course}}번으로 출주한 {{total}}회 중 「{{label}}」(으)로 {{count}}회 승리",
+    "legendWinsDesc": ": 해당 번호 출주 시 승수/출주 수",
     "legendRed": "빨강",
-    "legendRedDesc": ": 1코스가 당한 공격 (찌르기 등)",
+    "legendRedDesc": ": 1번이 당한 공격 (찌르기 등)",
     "legendBlue": "파랑",
-    "legendBlueDesc": ": 2-6코스가 성공시킨 공격 (찌르기 등)",
+    "legendBlueDesc": ": 2-6번이 성공시킨 공격 (찌르기 등)",
     "legendGreen": "초록",
-    "legendGreenDesc": ": 1코스의 인빠지기 성공 횟수",
+    "legendGreenDesc": ": 1번의 인빠지기 성공 횟수",
     "supplementDefault": "… 전국 평균 (개인 데이터가 부족할 때 표시)",
     "supplementReference": "… 참고 데이터 (표본이 적어 정확도가 낮을 수 있음)"
   },
@@ -425,9 +425,6 @@
   },
   "section": {
     "resultTitle": "데이터 분석 결과"
-  },
-  "animation": {
-    "courseLabel": "{{course}}코스"
   },
   "dataTable": {
     "title": "데이터 출주표",
@@ -744,7 +741,7 @@
     },
     "ad": {
       "title": "⚔️ 심화 경주 데이터",
-      "description": "오늘 개최 중인 레이스를 선택하면 출전하는 6명의 선수 각각의 진입 코스에서의 「공격 수단」(찌르기·휘감기 등으로 어떻게 공격하는가)과 1코스의 「수비 패턴」(어떻게 공격당해 지는가)의 실적 분포를 알 수 있습니다.",
+      "description": "오늘 개최 중인 레이스를 선택하면 출전하는 6명의 선수 각각의 번호별 「공격 수단」(찌르기·휘감기 등으로 어떻게 공격하는가)과 1번의 「수비 패턴」(어떻게 공격당해 지는가)의 실적 분포를 알 수 있습니다.",
       "empty": "이 레이스의 심화 경주 데이터가 아직 생성되지 않았습니다"
     },
     "raceCard": {
@@ -853,7 +850,7 @@
       },
       "attackdefense": {
         "name": "심화 경주 데이터",
-        "description": "출전 선수별 진입 코스에서의 공격 패턴과 1코스의 수비 패턴을 분석"
+        "description": "출전 선수별 번호에 따른 공격 패턴과 1번의 수비 패턴을 분석"
       },
       "racecard": {
         "name": "출전표 데이터",
@@ -1105,7 +1102,7 @@
       },
       "attackdefense": {
         "title": "심화 경주 데이터 소개",
-        "dataView": "출전 선수별로 진입 코스에서 「어떻게 공격해서 이겼는가」(공격 수단: 찌르기·휘감기·휘감아찌르기 등)와, 1코스 선수가 「어떻게 공격당해 졌는가」(수비 패턴)의 실적 분포를 표시합니다. 전국 평균과의 비교로 그 선수의 공격 스타일을 읽을 수 있습니다.",
+        "dataView": "출전 선수별로 번호에 따라 「어떻게 공격해서 이겼는가」(공격 수단: 찌르기·휘감기·휘감아찌르기 등)와, 1번 선수가 「어떻게 공격당해 졌는가」(수비 패턴)의 실적 분포를 표시합니다. 전국 평균과의 비교로 그 선수의 공격 스타일을 읽을 수 있습니다.",
         "tips": [
           {
             "strong": "휘감기 공격이 많은 바깥 번호 선수",
