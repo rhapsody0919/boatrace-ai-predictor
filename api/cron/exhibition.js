@@ -14,6 +14,7 @@
  * 超過が確認された場合は spec.md の「タイムアウト設計」案A/Bを検討する）。
  */
 
+import { timingSafeEqual } from "node:crypto";
 import { getTodayDateJST } from "../../scripts/lib/dateUtils.js";
 import { getRaceSchedule } from "../../scripts/lib/raceSchedule.js";
 import { run as runExhibition } from "../../scripts/daily/scrape-exhibition-data.js";
@@ -22,11 +23,17 @@ export const config = {
   maxDuration: 60,
 };
 
-export default async function handler(req, res) {
-  const expected = process.env.CRON_SECRET;
-  const authHeader = req.headers.authorization;
+// 単純な !== 比較はタイミングサイドチャネルになりうるため定数時間で比較する
+function isAuthorized(authHeader, expected) {
+  if (!expected || !authHeader) return false;
+  const expectedBuf = Buffer.from(`Bearer ${expected}`);
+  const actualBuf = Buffer.from(authHeader);
+  if (expectedBuf.length !== actualBuf.length) return false;
+  return timingSafeEqual(expectedBuf, actualBuf);
+}
 
-  if (!expected || authHeader !== `Bearer ${expected}`) {
+export default async function handler(req, res) {
+  if (!isAuthorized(req.headers.authorization, process.env.CRON_SECRET)) {
     return res.status(401).json({ success: false, error: "unauthorized" });
   }
 
