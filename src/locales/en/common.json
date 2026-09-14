@@ -184,7 +184,7 @@
     "exhibitionTime": "Exh. time",
     "exhibitionST": "Exh. ST",
     "totalPower": "Overall",
-    "courseWinRate": "Course wins",
+    "courseWinRate": "Lane win rate",
     "firstPlace": "1st",
     "guideTitle": "How to read the data",
     "guideNationalWinRate": "The racer's nationwide win rate. 6.0+ is A-class level.",
@@ -450,7 +450,7 @@
     "rowTwoRate": "National top-2 rate",
     "rowAvgSt": "Avg ST",
     "rowExSt": "Exhibition ST",
-    "rowCourseRate": "Entry course win rate",
+    "rowCourseRate": "Lane win rate",
     "loading": "Loading analytics…",
     "motorResetNote": "New motors",
     "motorBadgeUp": "Motor ↑",
@@ -541,7 +541,7 @@
       "exhibition": "Ex.time",
       "tilt": "Tilt",
       "adjustmentWeight": "Adj.wt",
-      "courseRate": "Course",
+      "courseRate": "Lane",
       "returnRate": "Return",
       "technique": "Style"
     },
@@ -754,8 +754,8 @@
     },
     "raceCard": {
       "title": "📋 Race Card Data",
-      "description": "Select a race being held today to view the six racers' win rates, motor stats, average ST, exhibition data, and course win rates in lane order. Colored values indicate the top 3 in the race.",
-      "note": "💡 Course win rate is wins/starts from the entry course (racerStats aggregate). Exhibition time and exhibition ST appear after the day's exhibition run."
+      "description": "Select a race being held today to view the six racers' win rates, motor stats, average ST, exhibition data, and lane win rates in lane order. Colored values indicate the top 3 in the race.",
+      "note": "💡 Lane win rate is wins/starts from that lane (boat number) (racerStats aggregate). Exhibition time and exhibition ST appear after the day's exhibition run."
     },
     "venueRanking": {
       "title": "🏟️ Today's Venue Ranking",
@@ -862,7 +862,7 @@
       },
       "racecard": {
         "name": "Race Card Data",
-        "description": "Compares the six racers' win rates, motor, average ST, exhibition, and course win rate in lane order"
+        "description": "Compares the six racers' win rates, motor, average ST, exhibition, and lane win rate in lane order"
       },
       "venueranking": {
         "name": "Today's Venue Ranking",
@@ -1126,7 +1126,7 @@
       },
       "racecard": {
         "title": "About Race Card Data",
-        "dataView": "This lists the six racers' class, win rate, motor, average ST, exhibition, and entry-course win rate in lane order. Colored values indicate the top 3 in the race. This is pure race card data, with no AI prediction score or sorting applied.",
+        "dataView": "This lists the six racers' class, win rate, motor, average ST, exhibition, and lane win rate in lane order. Colored values indicate the top 3 in the race. This is pure race card data, with no AI prediction score or sorting applied.",
         "tips": [
           {
             "strong": "Racers with many colored (highlighted) values",

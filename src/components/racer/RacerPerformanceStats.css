@@ -21,6 +21,77 @@
   margin: 0 0 var(--spacing-2) 0;
 }
 
+.racer-vc-filter.controls-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin: var(--spacing-4) 0;
+  flex-wrap: wrap;
+}
+
+.racer-vc-filter-field {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.racer-vc-filter label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.racer-vc-filter .venue-select {
+  padding: 0.6rem 0.9rem;
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-sm);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background-color: var(--surface-page);
+  color: var(--text-primary);
+  cursor: pointer;
+  min-width: 120px;
+  outline: none;
+}
+
+.racer-vc-filter .venue-select:hover,
+.racer-vc-filter .venue-select:focus {
+  border-color: var(--brand-accent-primary);
+}
+
+.racer-vc-filter-badge {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.75rem;
+}
+
+.racer-vc-scope {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+  margin-left: var(--spacing-2);
+}
+
+/* 選択中の行を示す強調。drt-best（ブランドアクセント=金、最良値専用）とは
+   意味が異なる（「絞り込み中」であって「最良」ではない）ため中立色を使う */
+tr.racer-vc-row-highlight {
+  background: var(--surface-page);
+  box-shadow: inset 2px 0 0 var(--text-secondary);
+}
+
+tr.racer-vc-row-highlight td:first-child {
+  font-weight: var(--font-weight-bold);
+}
+
+.racer-vc-note {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
 .racer-stat-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
