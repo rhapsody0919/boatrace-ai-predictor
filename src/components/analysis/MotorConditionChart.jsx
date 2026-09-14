@@ -173,6 +173,33 @@ function MotorConditionChart({
       ? Math.max(...breakdown.map((r) => r.motor_2rate ?? 0))
       : null;
 
+  // kyoteibiyori等の会場出走表に倣い、優出数・優勝数・1着率は艇ごとの
+  // 単一バッジではなく、同じレースの全艇を横並びで比較できる列として表示する
+  // （1位・2位を色分けするのも合わせて模倣。BOA-264追加調査）
+  const firstPlaceRates = breakdown.map((r) =>
+    r.race_count && r.first_place_count !== null
+      ? (r.first_place_count / r.race_count) * 100
+      : null,
+  );
+  const rankClassFor = (values) => {
+    const distinct = [...new Set(values.filter((v) => v !== null))].sort(
+      (a, b) => b - a,
+    );
+    return (value) => {
+      if (value === null || value === undefined) return "";
+      if (distinct[0] !== undefined && value === distinct[0])
+        return "motor-stat-rank1";
+      if (distinct[1] !== undefined && value === distinct[1])
+        return "motor-stat-rank2";
+      return "";
+    };
+  };
+  const finalCountRankClass = rankClassFor(breakdown.map((r) => r.final_count));
+  const championshipCountRankClass = rankClassFor(
+    breakdown.map((r) => r.championship_count),
+  );
+  const firstPlaceRateRankClass = rankClassFor(firstPlaceRates);
+
   return (
     <div className="motor-condition-container">
       {!embedded && (
@@ -268,10 +295,13 @@ function MotorConditionChart({
                   <th>{t("analysis.motor.rate2Header")}</th>
                   <th>{t("analysis.motor.rate3Header")}</th>
                   <th>{t("analysis.motor.powerIndexHeader")}</th>
+                  <th>{t("analysis.motor.finalCountHeader")}</th>
+                  <th>{t("analysis.motor.championshipCountHeader")}</th>
+                  <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
                 </tr>
               </thead>
               <tbody>
-                {breakdown.map((row) => (
+                {breakdown.map((row, i) => (
                   <tr
                     key={row.boat_number}
                     className={`motor-ranking-row ${row.motor_2rate === bestMotor2Rate ? "best-motor" : ""}`}
@@ -297,6 +327,23 @@ function MotorConditionChart({
                     >
                       {row.power_index !== null && row.power_index !== undefined
                         ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
+                        : "-"}
+                    </td>
+                    <td
+                      className={`rate ${finalCountRankClass(row.final_count)}`}
+                    >
+                      {row.final_count ?? "-"}
+                    </td>
+                    <td
+                      className={`rate ${championshipCountRankClass(row.championship_count)}`}
+                    >
+                      {row.championship_count ?? "-"}
+                    </td>
+                    <td
+                      className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
+                    >
+                      {firstPlaceRates[i] !== null
+                        ? `${firstPlaceRates[i].toFixed(1)}%`
                         : "-"}
                     </td>
                   </tr>
@@ -355,39 +402,6 @@ function MotorConditionChart({
                   key: "meetCount",
                   text: t("analysis.motor.freshnessMeetBadge", {
                     meetCount: venueMotorStats.meetCount,
-                  }),
-                },
-            ].filter(Boolean)}
-          />
-
-          <MotorStatBadgeRow
-            icon="🏆"
-            label={t("analysis.motor.recordLabel")}
-            badges={[
-              venueMotorStats?.finalCount !== null &&
-                venueMotorStats?.finalCount !== undefined && {
-                  key: "finalCount",
-                  text: t("analysis.motor.recordFinalBadge", {
-                    count: venueMotorStats.finalCount,
-                  }),
-                },
-              venueMotorStats?.championshipCount !== null &&
-                venueMotorStats?.championshipCount !== undefined && {
-                  key: "championshipCount",
-                  text: t("analysis.motor.recordChampionshipBadge", {
-                    count: venueMotorStats.championshipCount,
-                  }),
-                },
-              venueMotorStats?.firstPlaceCount !== null &&
-                venueMotorStats?.firstPlaceCount !== undefined &&
-                venueMotorStats?.raceCount && {
-                  key: "firstPlaceRate",
-                  text: t("analysis.motor.recordFirstPlaceRateBadge", {
-                    rate: (
-                      (venueMotorStats.firstPlaceCount /
-                        venueMotorStats.raceCount) *
-                      100
-                    ).toFixed(1),
                   }),
                 },
             ].filter(Boolean)}

@@ -286,6 +286,16 @@
   background-color: color-mix(in srgb, var(--brand-accent-primary) 24%, transparent);
 }
 
+/* 優出数・優勝数・1着率の1位・2位セル強調（kyoteibiyori等の出走表に倣う、BOA-264追加調査） */
+.motor-stat-rank1 {
+  background-color: color-mix(in srgb, var(--brand-accent-primary) 28%, transparent);
+  font-weight: var(--font-weight-semibold);
+}
+
+.motor-stat-rank2 {
+  background-color: color-mix(in srgb, var(--brand-accent-primary) 12%, transparent);
+}
+
 .back-to-ranking-btn {
   padding: 0.5rem 1rem;
   margin-bottom: 1rem;

@@ -2286,8 +2286,9 @@ export const supabaseDataService = {
       // 末尾に付けるとこのパターンにマッチしなくなり、過去レースでも30分キャッシュに
       // 格下げされてしまうため、raceIdより前に置く。
       // v2: motor_2rate/3rateを選択期間に応じた値に差し替えるよう変更(BOA-283)。
-      // 旧キーのままだと古いキャッシュが期間切り替えに反映されない
-      `race-motor-breakdown-v2-${venueCode}-${days}-${raceId}`,
+      // v3: 優出回数・優勝回数・1着率を追加(BOA-264追加調査、日和比較)。
+      // 旧キーのままだと古いキャッシュが新フィールド無しの形状のまま返る
+      `race-motor-breakdown-v3-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2309,11 +2310,18 @@ export const supabaseDataService = {
         const rows = data ?? [];
         if (venueCode === null) return rows;
 
-        const powerIndexes = await Promise.all(
-          rows.map((row) =>
-            this.getMotorPowerIndex(venueCode, row.motor_number, days),
+        const [powerIndexes, venueMotorStatsList] = await Promise.all([
+          Promise.all(
+            rows.map((row) =>
+              this.getMotorPowerIndex(venueCode, row.motor_number, days),
+            ),
           ),
-        );
+          Promise.all(
+            rows.map((row) =>
+              this.getVenueMotorStats(venueCode, row.motor_number),
+            ),
+          ),
+        ]);
         // 2連率/3連率も選択中の期間（過去90日/直近1ヶ月）に応じた値に差し替える。
         // race_entries.motor_2rate/3rateは公式サイトの「モーター抽選日からの通算」
         // 値でperiod非依存のため、そのまま使うと機力指数だけ期間が変わり
@@ -2323,6 +2331,10 @@ export const supabaseDataService = {
           motor_2rate: powerIndexes[i]?.actual_rate2 ?? row.motor_2rate,
           motor_3rate: powerIndexes[i]?.actual_rate3 ?? row.motor_3rate,
           power_index: powerIndexes[i]?.power_index ?? null,
+          final_count: venueMotorStatsList[i]?.finalCount ?? null,
+          championship_count: venueMotorStatsList[i]?.championshipCount ?? null,
+          first_place_count: venueMotorStatsList[i]?.firstPlaceCount ?? null,
+          race_count: venueMotorStatsList[i]?.raceCount ?? null,
         }));
       },
     );
