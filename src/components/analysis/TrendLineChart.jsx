@@ -33,6 +33,10 @@ function TrendLineChart({
         <YAxis
           label={{ value: yAxisLabel, angle: -90, position: "insideLeft" }}
           domain={yAxisDomain}
+          // dataMin/dataMaxを使う可変domain（例: "dataMin - 0.1"）はJSの
+          // 浮動小数点演算により目盛りが6.989999999999999のような値になることが
+          // あるため、表示だけ丸める（domain自体の計算には影響しない）
+          tickFormatter={(value) => Number(value.toFixed(2)).toString()}
         />
         <Tooltip formatter={tooltipFormatter} />
         <Legend />

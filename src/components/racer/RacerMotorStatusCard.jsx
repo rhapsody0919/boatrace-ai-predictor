@@ -95,6 +95,7 @@ export default function RacerMotorStatusCard({ status }) {
           <TrendLineChart
             data={chartData}
             yAxisLabel="展示タイム (秒)"
+            yAxisDomain={["dataMin - 0.1", "dataMax + 0.1"]}
             tooltipFormatter={(value) => value.toFixed(2)}
             series={[
               {
