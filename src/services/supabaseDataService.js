@@ -2671,7 +2671,10 @@ export const supabaseDataService = {
           const { data: stageRows, error: stageError } = await supabase
             .from("race_conditions")
             .select("race_id, races!inner(venue_code)")
-            .ilike("race_stage", "%優勝戦%")
+            // 完全一致で絞る。ilikeの部分一致だと「準優勝戦」も「優勝戦」を
+            // 部分文字列として含むため誤ってヒットしてしまう（実データで
+            // race_stageが"優勝戦"/"準優勝戦"の2値のみ存在することを確認済み）
+            .eq("race_stage", "優勝戦")
             .eq("races.venue_code", venueCode);
           if (stageError) {
             console.error("race_conditions取得エラー:", stageError.message);

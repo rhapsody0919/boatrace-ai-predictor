@@ -179,7 +179,12 @@
   color: var(--color-error-text);
 }
 
-/* モーター鮮度・通算成績のバッジ行はMotorStatBadgeRow.cssで共通化（BOA-264） */
+/* モーター鮮度・通算成績のバッジ行はMotorStatBadgeRow.cssで共通化（BOA-264）。
+   このページでは元々margin-bottomがspacing-4だったため、共通化で
+   spacing-2（選手ページ側の値）に縮まってしまわないようここで上書きする */
+.motor-condition-container .motor-stat-badge-row {
+  margin-bottom: var(--spacing-4);
+}
 
 /* usage-history（BOA-283）とparts-history（BOA-221）で共通の履歴リスト表示 */
 .history-list {

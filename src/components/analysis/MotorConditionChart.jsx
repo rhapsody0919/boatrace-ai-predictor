@@ -196,6 +196,9 @@ function MotorConditionChart({
     const distinct = [...new Set(values.filter((v) => v !== null))].sort(
       (a, b) => b - a,
     );
+    // 全艇が同値（例: まだ実績が無く全て0）の場合は「1位」を強調する意味が
+    // 無いため、RaceCardDataTable.jsxのrankClass()と同じくハイライトなしにする
+    if (distinct.length <= 1) return () => "";
     return (value) => {
       if (value === null || value === undefined) return "";
       if (distinct[0] !== undefined && value === distinct[0])
