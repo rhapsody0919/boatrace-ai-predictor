@@ -44,37 +44,39 @@ export default async function handler(req, res) {
   }
 
   const date = getTodayDateJST();
-  let schedule;
   try {
-    schedule = await getRaceSchedule(date);
+    const schedule = await getRaceSchedule(date);
+
+    if (schedule.length === 0) {
+      return res.status(200).json({
+        success: true,
+        accepted: false,
+        message: "no schedule for today",
+        date,
+      });
+    }
+
+    // cron-job.orgへは即座に応答を返し、実際のスクレイピング・書き込みは
+    // バックグラウンドで継続する（対象レース数に関わらず同じコードパス、
+    // 人為的な件数上限は設けない）。結果はSupabaseへの書き込みそのものと
+    // 関数ログで確認する（日次の欠落率チェックが正式な監視手段）。
+    waitUntil(
+      runExhibition(schedule, date).catch((error) => {
+        console.error(
+          "❌ 展示データ取得エラー（バックグラウンド処理）:",
+          error,
+        );
+      }),
+    );
+
+    return res.status(202).json({
+      success: true,
+      accepted: true,
+      date,
+      message: "processing in background",
+    });
   } catch (error) {
     console.error("❌ スケジュール取得エラー（Vercel Function）:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
-
-  if (schedule.length === 0) {
-    return res.status(200).json({
-      success: true,
-      accepted: false,
-      message: "no schedule for today",
-      date,
-    });
-  }
-
-  // cron-job.orgへは即座に応答を返し、実際のスクレイピング・書き込みは
-  // バックグラウンドで継続する（対象レース数に関わらず同じコードパス、
-  // 人為的な件数上限は設けない）。結果はSupabaseへの書き込みそのものと
-  // 関数ログで確認する（日次の欠落率チェックが正式な監視手段）。
-  waitUntil(
-    runExhibition(schedule, date).catch((error) => {
-      console.error("❌ 展示データ取得エラー（バックグラウンド処理）:", error);
-    }),
-  );
-
-  return res.status(202).json({
-    success: true,
-    accepted: true,
-    date,
-    message: "processing in background",
-  });
 }
