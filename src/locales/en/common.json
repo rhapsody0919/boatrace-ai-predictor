@@ -768,6 +768,21 @@
       "notEnoughData": "No data available",
       "empty": "No races have finished today yet",
       "note": "💡 Based on trifecta payout (per ¥100 stake). Venues with fewer than 3 finished races are excluded due to insufficient sample size. Treat rankings as a rough guide early in the day."
+    },
+    "venueGrade": {
+      "title": "📊 Venue × Grade Analysis",
+      "description": "Pick a venue to compare per-lane performance across race grades (ippan/G3/G2/G1/SG). Reveals venue-specific tendencies that the national average alone can't show.",
+      "metricSelectLabel": "Metric",
+      "metric": {
+        "winRate": "Win rate",
+        "top2Rate": "Top-2 rate",
+        "top3Rate": "Top-3 rate",
+        "manshuRate": "Big-payout rate",
+        "avgPayout": "Avg. payout"
+      },
+      "raceWideHeader": "Whole race",
+      "empty": "No venue × grade stats are available for this venue yet",
+      "note": "※ Cells with fewer than {{minRaceCount}} races show \"-\". SG/G2 are held at only a few venues, so many cells will show \"-\" for those grades."
     }
   },
   "analysisPage": {
@@ -798,6 +813,7 @@
       "attackdefense": "⚔️ Advanced Race Data",
       "racecard": "📋 Race Card Data",
       "venueranking": "🏟️ Venue Ranking",
+      "venuegrade": "📊 Venue × Grade",
       "volatility": "🌪️ Upset Index Track Record"
     },
     "features": {
@@ -864,6 +880,10 @@
       "venueranking": {
         "name": "Today's Venue Ranking",
         "description": "Ranks venues by stability, upset rate, Nige rate, and big-payout rate based on today's finished races"
+      },
+      "venuegrade": {
+        "name": "Venue × Grade Analysis",
+        "description": "Compares per-lane win rate, top-2 rate, and more across race grades (ippan/G3/G2/G1/SG), by venue"
       },
       "volatility": {
         "name": "Upset Index Track Record",
@@ -1154,6 +1174,22 @@
           },
           {
             "text": "Rankings are less reliable early in the day, when few races have finished"
+          }
+        ]
+      },
+      "venuegrade": {
+        "title": "About Venue × Grade Analysis",
+        "dataView": "For the selected venue, compares per-lane win rate, top-2 rate, and top-3 rate — or whole-race big-payout rate and average payout — across race grades (ippan/G3/G2/G1/SG). Cells backed by fewer than 50 races show \"-\".",
+        "tips": [
+          {
+            "strong": "A venue where lane 1 gets weaker as the grade rises",
+            "text": " = the patterns that work for ippan races may not carry over to SG/G1"
+          },
+          {
+            "text": "SG/G2 are only held at a handful of venues, so seeing many \"-\" cells for those grades is normal, not a bug"
+          },
+          {
+            "text": "The bigger the gap between a venue-grade combination and the national average, the more it should weigh into your bet selection"
           }
         ]
       },

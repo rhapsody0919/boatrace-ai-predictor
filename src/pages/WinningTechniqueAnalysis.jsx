@@ -21,6 +21,7 @@ import {
   AttackDefenseAnalysis,
   RaceCardDataTable,
   VenueRankingChart,
+  VenueGradeMatrix,
   VolatilityAccuracyChart,
 } from "../components/analysis";
 import "./OutcomeDistribution.css";
@@ -43,6 +44,7 @@ const TAB_KEYS = [
   "attackdefense",
   "racecard",
   "venueranking",
+  "venuegrade",
   "volatility",
 ];
 
@@ -238,6 +240,7 @@ function WinningTechniqueAnalysis() {
             />
           )}
           {activeTab === "venueranking" && <VenueRankingChart />}
+          {activeTab === "venuegrade" && <VenueGradeMatrix />}
           {activeTab === "volatility" && <VolatilityAccuracyChart />}
 
           <section className="info-section">
