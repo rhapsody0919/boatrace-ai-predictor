@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="cache-control" content="no-cache">
+    <meta http-equiv="expires" content="0">
+<title>ボートレースびわこ Official Site - モーターデータ詳細</title>
+    <meta name="viewport" content="width=1200" />
+    <meta name="description" content="BOAT RACE びわこ公式サイト。" />
+    <meta name="keywords" content="びわこ競艇,競艇,kyotei,kyoutei,競艇場,boatrace,boat,ボートレースびわこ,ボートレース,びわこ,ボートレース場,琵琶湖" />
+    <meta name="author" content="BOAT RACE BIWAKO" lang="ja" />
+    <meta name="copyright" content="BOAT RACE BIWAKO" />
+    <meta name="robots" content="INDEX,FOLLOW" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <!-- Open Graph Protocol -->
+    <meta property="og:title" content="ボートレースびわこ Official Site" />
+    <meta property="og:description" content="BOAT RACE びわこ公式サイト。" />
+    <!--meta property="og:image" content="https://www.boatrace-biwako.jp/themes/biwako/images/fb_icon.jpg" /-->
+    <meta property="og:url" content="https://www.boatrace-biwako.jp" />
+    <!-- /Open Graph Protocol -->
+    <link rel="stylesheet" href="https://www.boatrace-biwako.jp/themes/biwako/css/reset.css?ver=1.1.3">
+    <link rel="stylesheet" href="https://www.boatrace-biwako.jp/themes/biwako/css/common.css?ver=1.1.3">
+    <link rel="stylesheet" href="https://www.boatrace-biwako.jp/themes/biwako/css/common11.css?ver=1.1.3">
+    <script src="https://www.boatrace-biwako.jp/themes/biwako/js/jquery-1.12.4.min.js"></script>
+    <script src="https://www.boatrace-biwako.jp/themes/biwako/js/common.js?ver=1.0.0"></script>
+    <script type="text/javascript" src="/themes/biwako/js/jquery.easing.min.js"></script>
+    <script>
+    $(function(){
+        var $setElm = $('.ticker ul li a');
+        var cutFigure = '70'; // カットする文字数
+        var afterTxt = ' …'; // 文字カット後に表示するテキスト
+
+        $setElm.each(function(){
+            var textLength = $(this).text().length;
+            var textTrim = $(this).text().substr(0,(cutFigure))
+
+            if(cutFigure < textLength) {
+                $(this).html(textTrim + afterTxt).css({visibility:'visible'});
+            } else if(cutFigure >= textLength) {
+                $(this).css({visibility:'visible'});
+            }
+        });
+
+        $(window).load(function(){
+            var $setElm = $('.ticker');
+            var effectSpeed = 1000;
+            var switchDelay = 6000;
+            var easing = 'easeOutBack';
+
+            $setElm.each(function(){
+                var effectFilter = $(this).attr('rel'); // 'fade' or 'roll' or 'slide'
+
+                var $targetObj = $(this);
+                var $targetUl = $targetObj.children('ul');
+                var $targetLi = $targetObj.find('li');
+                var $setList = $targetObj.find('li:first');
+
+                var ulWidth = $targetUl.width();
+                var listHeight = $targetLi.height();
+                $targetObj.css({height:(listHeight)});
+                $targetLi.css({top:'0',left:'0',position:'absolute'});
+
+                if(effectFilter == 'fade') {
+                    $setList.css({display:'block',opacity:'0',zIndex:'98'}).stop().animate({opacity:'1'},effectSpeed,easing).addClass('showlist');
+                    setInterval(function(){
+                        var $activeShow = $targetObj.find('.showlist');
+                        $activeShow.animate({opacity:'0'},effectSpeed,easing,function(){
+                            $(this).next().css({display:'block',opacity:'0',zIndex:'99'}).animate({opacity:'1'},effectSpeed,easing).addClass('showlist').end().appendTo($targetUl).css({display:'none',zIndex:'98'}).removeClass('showlist');
+                        });
+                    },switchDelay);
+                } else if(effectFilter == 'roll') {
+                    $setList.css({top:'3em',display:'block',opacity:'0',zIndex:'98'}).stop().animate({top:'0',opacity:'1'},effectSpeed,easing).addClass('showlist');
+                    setInterval(function(){
+                        var $activeShow = $targetObj.find('.showlist');
+                        $activeShow.animate({top:'-3em',opacity:'0'},effectSpeed,easing).next().css({top:'3em',display:'block',opacity:'0',zIndex:'99'}).animate({top:'0',opacity:'1'},effectSpeed,easing).addClass('showlist').end().appendTo($targetUl).css({zIndex:'98'}).removeClass('showlist');
+                    },switchDelay);
+                } else if(effectFilter == 'slide') {
+                    $setList.css({left:(ulWidth),display:'block',opacity:'0',zIndex:'98'}).stop().animate({left:'0',opacity:'1'},effectSpeed,easing).addClass('showlist');
+                    if($(".ticker li").length>1){
+                        setInterval(function(){
+                            var $activeShow = $targetObj.find('.showlist');
+                            $activeShow.animate({left:(-(ulWidth)),opacity:'0'},effectSpeed,easing).next().css({left:(ulWidth),display:'block',opacity:'0',zIndex:'99'}).animate({left:'0',opacity:'1'},effectSpeed,easing).addClass('showlist').end().appendTo($targetUl).css({zIndex:'98'}).removeClass('showlist');
+                        },switchDelay);
+                    }
+                }
+            });
+        });
+    });
+    </script>
+      <link rel="stylesheet" href="/modules/datafile/css/motor_style.css">
+
+    <!-- 20220125 -->
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-M5H4WHZ');</script>
+    <!-- End Google Tag Manager -->
+    <!-- 20220125 -->
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-84781097-11"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-84781097-11');
+    </script>
+  </head>
+
+<body id="top" class="is-lower kaisai kaisai_today ">
+<!-- 20220125 -->
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M5H4WHZ"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<!-- 20220125 -->
+    
+<div id="header">
+    <div id="headline">
+        <div id="header_info_contents">
+            <a id="biwakohomelink" href="/">BOAT RACE びわこ</a>
+            <div id="today_info">
+                <div class="box_announce"><span class="item-text">開催中</span>                </div>
+                <div class="today_date">
+                    <div class="box_day">09/13</div>
+                    <div class="box_week">日曜日　</div>
+                    <div class="item-time">
+                        9:50開門                    </div>
+                </div>
+                
+            </div>
+            
+			    <div id="hatsubaiarea">
+					<div class="hatsubai_block jogai">
+						<div class="hatsubai_header">
+							<span class="title">場外発売</span>
+							<div class="item_kaimon">開門時間<span class="time">9:50</span></div>
+						</div>
+						<ul class="hatsubai_data_list">
+								<li><span class='item_jo'>徳山</span><span class="icon_grade_hatsubai G1">ＧⅠ</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-day.png"></span><span>&nbsp;&nbsp;</span></span></li><li><span class='item_jo'>常滑</span><span class="icon_grade_hatsubai IP">一般</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-day.png"></span><span class='mark heart_mark'><img src="/themes/biwako/images/common/ico-heart.png"></span></li>
+						</ul>
+					</div>
+    
+					<div class="hatsubai_block sotomuke">
+						<div class="hatsubai_header">
+							<span class="title">外向発売</span><div class="item_kaimon">開門時間<span class="time">8:00</span></div>
+						</div>
+						<ul class="hatsubai_data_list">
+								<li><span class='item_jo'>徳山</span><span class="icon_grade_hatsubai G1">ＧⅠ</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-day.png"></span><span>&nbsp;&nbsp;</span></li><li><span class='item_jo'>三国</span><span class="icon_grade_hatsubai IP">一般</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-morning.png"></span><span>&nbsp;&nbsp;</span></li><li><span class='item_jo'>芦屋</span><span class="icon_grade_hatsubai IP">一般</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-morning.png"></span><span>&nbsp;&nbsp;</span></li><li><span class='item_jo'>戸田</span><span class="icon_grade_hatsubai IP">一般</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-day.png"></span><span>&nbsp;&nbsp;</span></li><li><span class='item_jo'>多摩川</span><span class="icon_grade_hatsubai IP">一般</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-day.png"></span><span>&nbsp;&nbsp;</span></li><li><span class='item_jo'>常滑</span><span class="icon_grade_hatsubai IP">一般</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-day.png"></span><span class='mark heart_mark'><img src="/themes/biwako/images/common/ico-heart.png"></span></li><li><span class='item_jo'>蒲郡</span><span class="icon_grade_hatsubai IP">一般</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-night.png"></span><span>&nbsp;&nbsp;</span></li><li><span class='item_jo'>住之江</span><span class="icon_grade_hatsubai IP">一般</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-night.png"></span><span>&nbsp;&nbsp;</span></li><li><span class='item_jo'>下関</span><span class="icon_grade_hatsubai IP">一般</span><span class='mark'><img src="/themes/biwako/images/common/ico-time-night.png"></span><span>&nbsp;&nbsp;</span></li>
+						</ul>
+					</div>
+                </div>
+	        </div>
+    	<div id="header_contents">
+            <div id="headermenu">
+                <div id="mainmenuarea">
+                                        <div id="votearea" class="u-mb_5">
+                        <a href="https://ib.mbrace.or.jp/" target="_blank">インターネット投票</a>
+                    </div>
+                                        <ul id="mainmenu">
+                        <li class="cat racedata">
+                            <h4>レースデータ</h4>
+                            <ul class="sub">
+                            <li><a href="/modules/datafile/">シリーズインデックス</a></li><!--
+                                --><li><a href="/modules/datafile/?page=index_deme">出目データ</a></li><!--
+                                --><li><a href="/modules/raceinfo/?page=index_tokutenrank">得点率ランキング</a></li><!--
+                                --><li><a href="/modules/raceinfo/?page=index_tenbo">レース展望</a></li><!--
+                                --><li><a href="/modules/datafile/?page=index_suimen">水面特性</a></li><!--
+                                --><li><a href="/modules/raceinfo/?page=index_timerank">モーター抽選結果・前検タイムランキング</a></li><!--
+                                --><li><a href="/modules/datafile/?page=index_motorrank">モーターランキング</a></li><!--
+                                --><li><a href="/modules/datafile/?page=index_datacourse">進入コース別データ</a></li><!--
+                                --><li><a href="/modules/raceinfo/?page=index_racecourse">進入コース別選手成績</a></li><!--
+                                --><li><a href="/modules/datafile/?page=index_boat">ボートデータ</a></li><!--
+                                --><li><a href="/modules/datafile/?page=index_resultlist">今節の結果</a></li><!--
+                                --><!--li><a href="/modules/datafile/?page=index_biwakodata">ゴゴイチびわこデータ</a></li>--><!--
+                                --><li><a href="/modules/raceinfo/?page=index_konsetsu">今節の進入コース別成績・決まり手</a></li><!--
+                                --><li><a href="/modules/raceinfo/?page=index_pdf">出走表・前日予想PDF</a></li><!--
+                                --><li></li>
+                                <!-- <li><a href="/modules/datafile/?page=index_master">びわこ舟券マスターへの道</a></li>-->
+                                
+                            </ul>
+                        </li>
+                        <li class="cat cal">
+                            <h4>開催日程</h4>
+                            <ul class="sub">
+                            <li><a href="/modules/kaisai/">開催日程</a></li><!--
+                                --><li><a href="/uploads/pdf/cal/calendar_year.pdf?p=223047" target="_blank">開催日程（年間）</a></li>                            
+                            </ul>
+                        </li>
+                        <li class="cat access">
+                            <h4>施設・周辺情報</h4>
+                            <ul class="sub">
+                                <li><a href="/modules/access/">交通ガイド</a></li><!--
+                                --><li><a href="/modules/access/?page=index_facility">施設ガイド</a></li><!--
+                                --><li><a href="/modules/access/?page=index_lakelbiwako">レイクルびわこ</a></li><!--
+                                --><li><a href="/modules/biwako/?page=index_boatrace">ボートレースびわこを知る</a></li><!--
+                                --><li><a href="/modules/biwako/?page=index_intr">オーミー！フォーユー！</a></li><!--
+                                --><li><a href="/uploads/pdf/access/web_poster.pdf" target="_blank">滋賀遊びますガイド</a></li>
+                            </ul>
+                        </li>
+
+                        <li class="cat miryoku">
+                            <a href="https://www.pref.shiga.lg.jp/miryoku/biwako/" target="_blank">
+                            <h4>湖国の魅力</h4>
+                            </a>
+                        </li>
+
+                        <li class="cat event">
+                            <a href="/modules/news/?kind=2">
+                            <h4>イベント・ファンサービス</h4>
+                            </a>
+                        </li>
+                        <li class="cat service">
+                            <h4>各種サービス</h4>
+                            <ul class="sub">
+                                <li><a href="/modules/service/?page=index_tokusetsu">特設バックナンバー</a></li><!--
+                                --><li class="end"><a href="/modules/service/?page=index_movie">動画集</a></li><!--
+                                --><li class="end"><a href="https://ohmi.boatrace-biwako.jp/cgcm/pc/index.php" target="_blank">淡海ポイント倶楽部</a></li><!--
+                                --><li class="end"><a href="/modules/entry/magazine/?page=index_magazine">メールマガジン案内</a></li><!--
+                                --><li class="end"><a href="/modules/service/?page=index_sp">スマートフォンサイト紹介</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                                                            <div class="square_wrap u-mt_5">
+                        <div class="square_button">
+                            <a class="com-button03" href="/modules/raceinfo/?page=index_pdf"><span class="com-button03__title">出走表・前日予想PDF</span></a>
+                        </div><!--
+                        --><div class="square_button">
+                            <a class="com-button03" href="/modules/raceinfo/?page=index_tokutenrank"><span class="com-button03__title">得点率ランキング</span></a>
+                        </div><!--
+                        --><div class="square_button">
+                            <a class="com-button03" href="/modules/raceinfo/?page=index_tenbo"><span class="com-button03__title">レース展望</span></a>
+                        </div><!--
+                        --><div class="square_button">
+                            <a class="com-button03" href="/modules/raceinfo/?page=index_timerank"><span class="com-button03__title">モーター抽選結果</span></a>
+                        </div><!--
+                        --><div class="square_button">
+                            <a class="com-button03" href="/modules/raceinfo/?page=index_racecourse"><span class="com-button03__title">進入コース別選手成績</span></a>
+                        </div><!--
+                        --><div class="square_button">
+                            <a class="com-button03" href="/modules/raceinfo/?page=index_konsetsu"><span class="com-button03__title">今節の進入コース別成績・決まり手</span></a>
+                        </div>
+                    </div>
+                                                        </div>
+            </div>
+        </div>
+    </div>
+    <div class="com-box" style="position: relative;">
+        <div id="header_info">
+            <h3>INFO &gt;&gt; </h3>
+            <!--ul><li>これはテストです。</li></ul-->
+            <div class="ticker" rel="slide">
+                <ul>
+                <li><a href="/modules/news/?kind=1&storyid=2302"><font color="#00FFFF">ボートレースびわこ　キャッシュレスカード愛称の決定について</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2296"><font color="#00FFFF">【令和8年10月1日以降】横断幕掲出終了のお知らせ</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2287"><font color="#00FFFF">  びわこ本場出走表が新しくなります！</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2235"><font color="#00FFFF">新ボート・モーターの導入および凍結防止温水パイプの継続使用について</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2230"><font color="#00FFFF">開門時刻の運用変更について</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2226"><font color="#00FFFF">ポイント制度の運用変更について</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2135"><font color="#04FFFF">「第2回浪乃音酒造杯」より温水パイプを使用します</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2119"><font color="#04FFFF"> 専用カウリングの廃止について</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2052"><font color="#04FFFF">【注意喚起】ボートレースびわこのなりすましサイトについて</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2042"><font color="#04FFFF">バーチャルスリットの導入について</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2021"><font color="#04FFFF">企画レース「ゴゴイチびわこ」の休止について</font></a></li>
+<li><a href="/modules/news/?kind=1&storyid=2013"><font color="#04FFFF">新ガソリン（E30ガソリン）のテスト導入について</font></a></li>
+                </ul>
+            </div>
+        </div>
+        <div id="sns_icon">
+            <ul>
+                <li><a href="https://lin.ee/XtQXIOA" target="_blank"><img src="/themes/biwako/images/common/ico-header-li.png"></a></li>
+                <li class="icon_twitter"><a href="https://twitter.com/br_biwako" target="_blank"><img src="/themes/biwako/images/common/ico-header-tw.png"></a></li>
+                <li><a href="https://www.instagram.com/boatrace_biwako/" target="_blank"><img src="/themes/biwako/images/common/ico-header-ig.png"></a></li>
+                <li><a href="https://www.youtube.com/channel/UCLbcsJqsT5Qa1axpYcOBpmg" target="_blank"><img src="/themes/biwako/images/common/ico-header-yt.png"></a></li>
+            </ul>
+        </div>
+        <div id="lang_menu" class="close">
+            <div id="lang_menu_box">
+                <ul>
+                    <li><a href="/modules/lang/?page=index_english" lang="en"><span>EN</span>English</a></li>
+                    <li><a href="/modules/lang/?page=index_cchinese" lang="zh-cn"><span>简</span>简体字</a></li>
+                    <li><a href="/modules/lang/?page=index_tchinese" lang="zh-tw"><span>繁</span>繁體字</a></li>
+                    <li><a href="/modules/lang/?page=index_korean" lang="ko"><span>한</span>한국어</a></li>
+                </ul>
+            </div>
+            <div id="lang_menu_tab"></div>
+        </div>
+    </div>
+</div>
+<div class="com-box">
+    <div id="pagetitle"><h2>モーターデータ詳細</h2></div>
+    <div id="pankuzulist"><ul><li class="pankuzu_li"><a href="/" alt="TOPを開く">TOP</a></li><li class="pankuzu_li"><a href="/modules/datafile/" alt="レースデータを開く">レースデータ</a></li><li class="pankuzu_li"><a href="/modules/datafile/?page=index_motorrank" alt="モーターランキングを開く">モーターランキング</a></li><li>モーターデータ詳細</li></ul></div>
+</div>
+
+<main>
+
+              
+<div class="com-box">
+	<div class="com-content">
+		<div class='mtrdtl'>
+							<div class='category-guide u-mb_40'>
+			<ul>
+				<li>
+					<span class='com-sort'><img src='images/ico-change.png' alt=''> </span>
+					をクリックすると、モーター番号順（昇順）、2連対率順（降順）、優勝回数順（降順）に並び替えできます。
+				</li>
+				<li>選手責任外の事故回数は出走回数に含みません。</li>
+				<li>モーター番号をクリックすると、使用選手の履歴がご覧いただけます。</li>
+				<li class='u-notice'>※現モーターの使用開始：2026年4月8日</li>
+			</ul>
+		</div>
+		<h3 class="com-racetitle">
+			<span class="com-racetitle__grade IP">一般</span>
+			<span class="com-racetitle__title">8月 ボートレースチケットショップボートピア京都やわた開設19周年記念</span>
+		</h3>
+		<span class='item-detail-endpoint'>2026年8月31日　終了時点</span>
+				<table class='com-table01 normal'>
+			<thead>
+				<tr>
+					<th class='col1'><a class='item-sort com-sort' href='./?page=index_mrankdtl&dtl=&start=&kind=1'><span>モーター番号</span><br><img src='/modules/datafile/images/ico-change.png'></a></th>
+					<th class='col2'>算出期間</th>
+					<th class='col3'>節数</th>
+					<th class='col4'><a class='item-sort com-sort' href='./?page=index_mrankdtl&dtl=&start=&kind=2'><span>2連対率</span><br><img src='/modules/datafile/images/ico-change.png'></a></th>
+					<th class='col5'>勝率</th>
+					<th class='col6'>事故率</th>
+					<th class='col7'>1着</th>
+					<th class='col8'>2着</th>
+					<th class='col9'>3着</th>
+					<th class='col10'>出走<br>回数</th>
+					<th class='col11'>優出<br>回数</th>
+					<th class='col12'><a class='item-sort com-sort' href='./?page=index_mrankdtl&dtl=&start=&kind=3'><span>優勝<br/>回数</span><br><img src='/modules/datafile/images/ico-change.png'></a></th>
+					<th class='col13'>最高タイム<br/>(1800m)</th>
+				<tr>
+			</thead>
+			<tbody class="highlight">
+				<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=12&start=&dtl='>12</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>12</td>
+<td>49.0</td>
+<td>5.99</td>
+<td>0.24</td>
+<td>23</td>
+<td>27</td>
+<td>15</td>
+<td>102</td>
+<td>4</td>
+<td>1</td>
+<td>1'48"9</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=18&start=&dtl='>18</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>10</td>
+<td>46.8</td>
+<td>6.16</td>
+<td>0.04</td>
+<td>26</td>
+<td>18</td>
+<td>12</td>
+<td>94</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"3</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=57&start=&dtl='>57</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>11</td>
+<td>46.4</td>
+<td>5.83</td>
+<td>0.00</td>
+<td>14</td>
+<td>32</td>
+<td>10</td>
+<td>99</td>
+<td>3</td>
+<td>2</td>
+<td>1'48"4</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=11&start=&dtl='>11</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>11</td>
+<td>45.4</td>
+<td>6.46</td>
+<td>0.00</td>
+<td>26</td>
+<td>19</td>
+<td>26</td>
+<td>99</td>
+<td>4</td>
+<td>1</td>
+<td>1'48"8</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=72&start=&dtl='>72</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>11</td>
+<td>45.4</td>
+<td>5.87</td>
+<td>0.02</td>
+<td>22</td>
+<td>23</td>
+<td>13</td>
+<td>99</td>
+<td>4</td>
+<td>1</td>
+<td>1'49"3</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=13&start=&dtl='>13</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>10</td>
+<td>44.7</td>
+<td>6.45</td>
+<td>0.02</td>
+<td>29</td>
+<td>14</td>
+<td>19</td>
+<td>96</td>
+<td>3</td>
+<td>1</td>
+<td>1'48"8</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=29&start=&dtl='>29</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>10</td>
+<td>43.4</td>
+<td>5.89</td>
+<td>0.02</td>
+<td>16</td>
+<td>24</td>
+<td>16</td>
+<td>92</td>
+<td>3</td>
+<td>0</td>
+<td>1'48"1</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=40&start=&dtl='>40</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>11</td>
+<td>42.4</td>
+<td>5.62</td>
+<td>0.12</td>
+<td>25</td>
+<td>17</td>
+<td>13</td>
+<td>99</td>
+<td>2</td>
+<td>0</td>
+<td>1'49"3</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=45&start=&dtl='>45</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>42.1</td>
+<td>5.92</td>
+<td>0.00</td>
+<td>20</td>
+<td>20</td>
+<td>18</td>
+<td>95</td>
+<td>3</td>
+<td>1</td>
+<td>1'48"7</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=33&start=&dtl='>33</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>41.3</td>
+<td>5.78</td>
+<td>0.00</td>
+<td>23</td>
+<td>15</td>
+<td>13</td>
+<td>92</td>
+<td>1</td>
+<td>0</td>
+<td>1'49"6</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=31&start=&dtl='>31</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>12</td>
+<td>40.8</td>
+<td>5.41</td>
+<td>0.04</td>
+<td>19</td>
+<td>19</td>
+<td>10</td>
+<td>93</td>
+<td>2</td>
+<td>0</td>
+<td>1'48"7</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=61&start=&dtl='>61</a></td>
+<td>2026/04/20～2026/08/20</td>
+<td>10</td>
+<td>40.6</td>
+<td>5.57</td>
+<td>0.02</td>
+<td>18</td>
+<td>19</td>
+<td>15</td>
+<td>91</td>
+<td>2</td>
+<td>0</td>
+<td>1'48"9</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=21&start=&dtl='>21</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>39.1</td>
+<td>5.52</td>
+<td>0.00</td>
+<td>18</td>
+<td>18</td>
+<td>16</td>
+<td>92</td>
+<td>1</td>
+<td>0</td>
+<td>1'49"1</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=49&start=&dtl='>49</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>9</td>
+<td>38.1</td>
+<td>5.40</td>
+<td>0.12</td>
+<td>16</td>
+<td>16</td>
+<td>12</td>
+<td>84</td>
+<td>1</td>
+<td>1</td>
+<td>1'48"8</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=26&start=&dtl='>26</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>11</td>
+<td>37.7</td>
+<td>5.36</td>
+<td>0.04</td>
+<td>16</td>
+<td>24</td>
+<td>18</td>
+<td>106</td>
+<td>3</td>
+<td>0</td>
+<td>1'49"1</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=14&start=&dtl='>14</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>37.5</td>
+<td>5.92</td>
+<td>0.36</td>
+<td>19</td>
+<td>14</td>
+<td>22</td>
+<td>88</td>
+<td>6</td>
+<td>0</td>
+<td>1'48"8</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=19&start=&dtl='>19</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>11</td>
+<td>37.3</td>
+<td>5.89</td>
+<td>0.18</td>
+<td>20</td>
+<td>14</td>
+<td>22</td>
+<td>91</td>
+<td>3</td>
+<td>1</td>
+<td>1'49"2</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=32&start=&dtl='>32</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>11</td>
+<td>37.0</td>
+<td>5.10</td>
+<td>0.25</td>
+<td>20</td>
+<td>13</td>
+<td>8</td>
+<td>89</td>
+<td>1</td>
+<td>0</td>
+<td>1'49"2</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=52&start=&dtl='>52</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>36.1</td>
+<td>5.26</td>
+<td>0.02</td>
+<td>14</td>
+<td>20</td>
+<td>14</td>
+<td>94</td>
+<td>2</td>
+<td>0</td>
+<td>1'48"7</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=67&start=&dtl='>67</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>10</td>
+<td>36.1</td>
+<td>5.60</td>
+<td>0.02</td>
+<td>14</td>
+<td>20</td>
+<td>23</td>
+<td>94</td>
+<td>2</td>
+<td>0</td>
+<td>1'49"5</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=41&start=&dtl='>41</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>10</td>
+<td>35.5</td>
+<td>5.40</td>
+<td>0.13</td>
+<td>18</td>
+<td>14</td>
+<td>17</td>
+<td>90</td>
+<td>3</td>
+<td>0</td>
+<td>1'48"7</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=44&start=&dtl='>44</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>10</td>
+<td>34.0</td>
+<td>5.16</td>
+<td>0.02</td>
+<td>19</td>
+<td>11</td>
+<td>11</td>
+<td>88</td>
+<td>1</td>
+<td>0</td>
+<td>1'49"4</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=20&start=&dtl='>20</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>10</td>
+<td>34.0</td>
+<td>5.38</td>
+<td>0.02</td>
+<td>16</td>
+<td>15</td>
+<td>17</td>
+<td>91</td>
+<td>1</td>
+<td>0</td>
+<td>1'49"3</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=47&start=&dtl='>47</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>11</td>
+<td>34.0</td>
+<td>5.36</td>
+<td>0.00</td>
+<td>19</td>
+<td>15</td>
+<td>20</td>
+<td>100</td>
+<td>2</td>
+<td>0</td>
+<td>1'49"8</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=46&start=&dtl='>46</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>9</td>
+<td>33.7</td>
+<td>5.26</td>
+<td>0.07</td>
+<td>14</td>
+<td>15</td>
+<td>19</td>
+<td>86</td>
+<td>0</td>
+<td>0</td>
+<td>1'50"1</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=37&start=&dtl='>37</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>33.7</td>
+<td>4.99</td>
+<td>0.36</td>
+<td>13</td>
+<td>17</td>
+<td>13</td>
+<td>89</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"5</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=71&start=&dtl='>71</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>10</td>
+<td>32.9</td>
+<td>5.39</td>
+<td>0.00</td>
+<td>16</td>
+<td>16</td>
+<td>21</td>
+<td>97</td>
+<td>1</td>
+<td>0</td>
+<td>1'49"0</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=50&start=&dtl='>50</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>32.9</td>
+<td>4.99</td>
+<td>0.36</td>
+<td>15</td>
+<td>16</td>
+<td>11</td>
+<td>94</td>
+<td>1</td>
+<td>1</td>
+<td>1'49"0</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=70&start=&dtl='>70</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>11</td>
+<td>32.2</td>
+<td>4.92</td>
+<td>0.31</td>
+<td>14</td>
+<td>17</td>
+<td>15</td>
+<td>96</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"3</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=48&start=&dtl='>48</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>32.2</td>
+<td>5.24</td>
+<td>0.00</td>
+<td>13</td>
+<td>17</td>
+<td>22</td>
+<td>93</td>
+<td>2</td>
+<td>0</td>
+<td>1'49"0</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=34&start=&dtl='>34</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>10</td>
+<td>32.2</td>
+<td>5.19</td>
+<td>0.02</td>
+<td>17</td>
+<td>12</td>
+<td>17</td>
+<td>90</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"7</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=63&start=&dtl='>63</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>11</td>
+<td>31.5</td>
+<td>4.88</td>
+<td>0.28</td>
+<td>15</td>
+<td>14</td>
+<td>14</td>
+<td>92</td>
+<td>1</td>
+<td>0</td>
+<td>1'49"5</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=65&start=&dtl='>65</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>11</td>
+<td>31.2</td>
+<td>4.54</td>
+<td>0.13</td>
+<td>17</td>
+<td>13</td>
+<td>8</td>
+<td>96</td>
+<td>2</td>
+<td>0</td>
+<td>1'49"6</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=38&start=&dtl='>38</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>12</td>
+<td>31.1</td>
+<td>4.91</td>
+<td>0.02</td>
+<td>18</td>
+<td>11</td>
+<td>14</td>
+<td>93</td>
+<td>1</td>
+<td>1</td>
+<td>1'48"8</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=51&start=&dtl='>51</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>31.1</td>
+<td>4.97</td>
+<td>0.00</td>
+<td>11</td>
+<td>17</td>
+<td>17</td>
+<td>90</td>
+<td>2</td>
+<td>0</td>
+<td>1'49"0</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=54&start=&dtl='>54</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>10</td>
+<td>31.1</td>
+<td>5.08</td>
+<td>0.13</td>
+<td>13</td>
+<td>15</td>
+<td>14</td>
+<td>90</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"5</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=55&start=&dtl='>55</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>30.9</td>
+<td>5.00</td>
+<td>0.20</td>
+<td>12</td>
+<td>18</td>
+<td>20</td>
+<td>97</td>
+<td>0</td>
+<td>0</td>
+<td>1'50"0</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=16&start=&dtl='>16</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>11</td>
+<td>30.8</td>
+<td>5.26</td>
+<td>0.13</td>
+<td>14</td>
+<td>15</td>
+<td>15</td>
+<td>94</td>
+<td>1</td>
+<td>0</td>
+<td>1'49"0</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=23&start=&dtl='>23</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>30.7</td>
+<td>5.03</td>
+<td>0.02</td>
+<td>16</td>
+<td>12</td>
+<td>15</td>
+<td>91</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"0</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=39&start=&dtl='>39</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>11</td>
+<td>30.6</td>
+<td>4.98</td>
+<td>0.31</td>
+<td>14</td>
+<td>16</td>
+<td>19</td>
+<td>98</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"4</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=59&start=&dtl='>59</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>11</td>
+<td>30.5</td>
+<td>5.23</td>
+<td>0.13</td>
+<td>11</td>
+<td>18</td>
+<td>20</td>
+<td>95</td>
+<td>0</td>
+<td>0</td>
+<td>1'48"9</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=68&start=&dtl='>68</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>10</td>
+<td>30.0</td>
+<td>5.22</td>
+<td>0.31</td>
+<td>17</td>
+<td>10</td>
+<td>17</td>
+<td>90</td>
+<td>1</td>
+<td>0</td>
+<td>1'49"7</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=56&start=&dtl='>56</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>12</td>
+<td>29.9</td>
+<td>4.78</td>
+<td>0.27</td>
+<td>13</td>
+<td>16</td>
+<td>13</td>
+<td>97</td>
+<td>1</td>
+<td>1</td>
+<td>1'49"3</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=64&start=&dtl='>64</a></td>
+<td>2026/04/20～2026/08/20</td>
+<td>10</td>
+<td>29.5</td>
+<td>4.90</td>
+<td>0.18</td>
+<td>13</td>
+<td>13</td>
+<td>16</td>
+<td>88</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"6</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=36&start=&dtl='>36</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>11</td>
+<td>29.4</td>
+<td>5.17</td>
+<td>0.00</td>
+<td>12</td>
+<td>16</td>
+<td>25</td>
+<td>95</td>
+<td>1</td>
+<td>1</td>
+<td>1'50"1</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=73&start=&dtl='>73</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>9</td>
+<td>29.1</td>
+<td>4.70</td>
+<td>0.05</td>
+<td>11</td>
+<td>12</td>
+<td>11</td>
+<td>79</td>
+<td>0</td>
+<td>0</td>
+<td>1'48"6</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=43&start=&dtl='>43</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>28.8</td>
+<td>4.68</td>
+<td>0.00</td>
+<td>14</td>
+<td>14</td>
+<td>14</td>
+<td>97</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"5</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=69&start=&dtl='>69</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>12</td>
+<td>28.7</td>
+<td>4.53</td>
+<td>0.22</td>
+<td>17</td>
+<td>14</td>
+<td>10</td>
+<td>108</td>
+<td>0</td>
+<td>0</td>
+<td>1'50"0</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=25&start=&dtl='>25</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>12</td>
+<td>28.5</td>
+<td>4.84</td>
+<td>0.14</td>
+<td>12</td>
+<td>16</td>
+<td>16</td>
+<td>98</td>
+<td>1</td>
+<td>0</td>
+<td>1'50"1</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=17&start=&dtl='>17</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>10</td>
+<td>28.4</td>
+<td>4.76</td>
+<td>0.39</td>
+<td>14</td>
+<td>11</td>
+<td>11</td>
+<td>88</td>
+<td>1</td>
+<td>0</td>
+<td>1'48"7</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=30&start=&dtl='>30</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>28.4</td>
+<td>4.78</td>
+<td>0.25</td>
+<td>10</td>
+<td>15</td>
+<td>14</td>
+<td>88</td>
+<td>2</td>
+<td>0</td>
+<td>1'49"5</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=27&start=&dtl='>27</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>9</td>
+<td>27.6</td>
+<td>4.83</td>
+<td>0.26</td>
+<td>9</td>
+<td>12</td>
+<td>12</td>
+<td>76</td>
+<td>2</td>
+<td>0</td>
+<td>1'49"7</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=53&start=&dtl='>53</a></td>
+<td>2026/04/08～2026/08/20</td>
+<td>10</td>
+<td>27.4</td>
+<td>4.76</td>
+<td>0.02</td>
+<td>10</td>
+<td>15</td>
+<td>15</td>
+<td>91</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"8</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=58&start=&dtl='>58</a></td>
+<td>2026/04/20～2026/08/20</td>
+<td>10</td>
+<td>27.2</td>
+<td>5.05</td>
+<td>0.02</td>
+<td>13</td>
+<td>11</td>
+<td>17</td>
+<td>88</td>
+<td>1</td>
+<td>1</td>
+<td>1'48"1</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=22&start=&dtl='>22</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>10</td>
+<td>27.0</td>
+<td>4.74</td>
+<td>0.28</td>
+<td>9</td>
+<td>14</td>
+<td>16</td>
+<td>85</td>
+<td>2</td>
+<td>0</td>
+<td>1'49"8</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=15&start=&dtl='>15</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>11</td>
+<td>25.5</td>
+<td>4.13</td>
+<td>0.42</td>
+<td>14</td>
+<td>9</td>
+<td>10</td>
+<td>90</td>
+<td>0</td>
+<td>0</td>
+<td>1'47"8</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=35&start=&dtl='>35</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>12</td>
+<td>25.2</td>
+<td>4.41</td>
+<td>0.34</td>
+<td>10</td>
+<td>14</td>
+<td>16</td>
+<td>95</td>
+<td>1</td>
+<td>0</td>
+<td>1'50"6</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=66&start=&dtl='>66</a></td>
+<td>2026/04/20～2026/08/20</td>
+<td>11</td>
+<td>23.4</td>
+<td>4.30</td>
+<td>0.47</td>
+<td>11</td>
+<td>11</td>
+<td>14</td>
+<td>94</td>
+<td>2</td>
+<td>0</td>
+<td>1'49"9</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=28&start=&dtl='>28</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>12</td>
+<td>22.9</td>
+<td>4.55</td>
+<td>0.25</td>
+<td>11</td>
+<td>11</td>
+<td>17</td>
+<td>96</td>
+<td>1</td>
+<td>0</td>
+<td>1'49"8</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=62&start=&dtl='>62</a></td>
+<td>2026/04/20～2026/08/20</td>
+<td>10</td>
+<td>22.8</td>
+<td>4.46</td>
+<td>0.02</td>
+<td>13</td>
+<td>8</td>
+<td>13</td>
+<td>92</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"9</td>
+</tr>
+<tr class='odd'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=24&start=&dtl='>24</a></td>
+<td>2026/04/08～2026/08/31</td>
+<td>9</td>
+<td>22.5</td>
+<td>4.19</td>
+<td>0.29</td>
+<td>5</td>
+<td>9</td>
+<td>9</td>
+<td>62</td>
+<td>0</td>
+<td>0</td>
+<td>1'49"7</td>
+</tr>
+<tr class='even'>
+<td><a class='link-color' href='./?page=index_motor_hist&motor_no=60&start=&dtl='>60</a></td>
+<td>2026/04/20～2026/08/31</td>
+<td>11</td>
+<td>13.9</td>
+<td>3.95</td>
+<td>0.53</td>
+<td>6</td>
+<td>6</td>
+<td>17</td>
+<td>86</td>
+<td>0</td>
+<td>0</td>
+<td>1'50"1</td>
+</tr>
+
+			</tbody>
+		</table>
+		<div class='item-detail u-mt_20'>
+			<a class='com-button01' href='./?page=index_motorrank&start='>戻る</a>
+		</div>		</div>
+	</div>
+</div>
+
+<script src='./js/highlight.js'></script>
+
+        </main>
+
+
+<div id="footer">
+	<div id="footer_waveline">
+    	<div class="linkbox">
+               <a id="footer_qr" href="/modules/service/?page=index_sp">スマホQRコード</a><!--
+            --><a id="footer_mm" href="/modules/entry/magazine/?page=index_magazine">メールマガジン</a><!--
+            --><span id="footer_icon1"></span><!--
+            --><span id="footer_icon2"></span>
+        <!--<a id="footer_fb" href="https://www.facebook.com/boatrace.biwako.jp" target="_blank">facebook</a>-->
+        </div>
+    </div>
+	<div id="footer_linkline">
+    	<ul>
+        	<li><a href="/modules/other/">よくある質問</a></li>
+        	<li><a href="/modules/other/?page=index_ad">ウェブ広告の募集</a></li>
+        	<li><a href="/modules/entry/contact/">お問い合わせ</a></li>
+        	<li><a href="/modules/other/?page=index_link">リンク</a></li>
+        	<li><a href="/modules/other/?page=index_pinfo">プライバシーポリシー</a></li>
+        	<!-- <li><a href="/modules/other/?page=index_fb">Facebookページ利用要領</a></li> -->
+        	<li><a href="/modules/other/?page=index_guideline">ソーシャルメディア利用ガイドライン</a></li>
+        </ul>
+    	<address>&copy;Shiga Prefectural Government. All Rights Reserved.</address>
+    </div>
+</div>
+
+<div id="mtpt_frame">
+	<div id="mtpt_box">
+       <a id="mtpt" onclick="$('body, html').animate({scrollTop:0},250);">ページトップへ</a>
+    </div>
+</div>
+
+
+
+
+  </body>
+</html>

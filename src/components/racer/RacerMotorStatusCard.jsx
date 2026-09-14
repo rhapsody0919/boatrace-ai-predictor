@@ -24,6 +24,7 @@ export default function RacerMotorStatusCard({ status }) {
     powerIndex,
     meetTrend,
     latestPartsEvent,
+    venueMotorStats,
   } = status;
   const venueName = VENUE_NAMES[venueCode] ?? `${venueCode}`;
   const chartData = (meetTrend ?? []).map((row) => ({
@@ -47,6 +48,31 @@ export default function RacerMotorStatusCard({ status }) {
       <p className="racer-motor-status-subtitle">
         {venueName}・{motorNumber}号機
       </p>
+
+      {(venueMotorStats?.raceCount !== null &&
+        venueMotorStats?.raceCount !== undefined) ||
+      (venueMotorStats?.meetCount !== null &&
+        venueMotorStats?.meetCount !== undefined) ? (
+        <div className="racer-motor-status-freshness">
+          <span className="racer-motor-status-freshness-label">
+            🔧 モーター鮮度
+          </span>
+          <div className="racer-motor-status-freshness-badges">
+            {venueMotorStats.raceCount !== null &&
+              venueMotorStats.raceCount !== undefined && (
+                <span className="racer-motor-status-freshness-badge">
+                  {venueMotorStats.raceCount}走目
+                </span>
+              )}
+            {venueMotorStats.meetCount !== null &&
+              venueMotorStats.meetCount !== undefined && (
+                <span className="racer-motor-status-freshness-badge">
+                  {venueMotorStats.meetCount}節目
+                </span>
+              )}
+          </div>
+        </div>
+      ) : null}
 
       {hasPowerIndex && (
         <>

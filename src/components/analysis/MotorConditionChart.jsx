@@ -42,6 +42,7 @@ function MotorConditionChart({
   const [powerIndex, setPowerIndex] = useState(null);
   const [usageHistory, setUsageHistory] = useState([]);
   const [partsHistory, setPartsHistory] = useState([]);
+  const [venueMotorStats, setVenueMotorStats] = useState(null);
   const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
   // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
@@ -107,7 +108,7 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
-        const [trend, power, history, parts] = await Promise.all([
+        const [trend, power, history, parts, venueStats] = await Promise.all([
           supabaseDataService.getMotorConditionTrend(
             selectedVenue,
             drillDownMotor,
@@ -127,11 +128,13 @@ function MotorConditionChart({
             drillDownMotor,
             periodDays,
           ),
+          supabaseDataService.getVenueMotorStats(selectedVenue, drillDownMotor),
         ]);
         setTrendData(trend);
         setPowerIndex(power);
         setUsageHistory(history);
         setPartsHistory(parts.events ?? []);
+        setVenueMotorStats(venueStats);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
@@ -334,6 +337,35 @@ function MotorConditionChart({
                     : ""}
               </p>
             )}
+
+          {(venueMotorStats?.raceCount !== null &&
+            venueMotorStats?.raceCount !== undefined) ||
+          (venueMotorStats?.meetCount !== null &&
+            venueMotorStats?.meetCount !== undefined) ? (
+            <div className="venue-motor-freshness">
+              <span className="venue-motor-freshness-label">
+                🔧 {t("analysis.motor.freshnessLabel")}
+              </span>
+              <div className="venue-motor-freshness-badges">
+                {venueMotorStats.raceCount !== null &&
+                  venueMotorStats.raceCount !== undefined && (
+                    <span className="venue-motor-freshness-badge">
+                      {t("analysis.motor.freshnessRaceBadge", {
+                        raceCount: venueMotorStats.raceCount,
+                      })}
+                    </span>
+                  )}
+                {venueMotorStats.meetCount !== null &&
+                  venueMotorStats.meetCount !== undefined && (
+                    <span className="venue-motor-freshness-badge">
+                      {t("analysis.motor.freshnessMeetBadge", {
+                        meetCount: venueMotorStats.meetCount,
+                      })}
+                    </span>
+                  )}
+              </div>
+            </div>
+          ) : null}
 
           {chartData.length > 0 ? (
             <TrendLineChart

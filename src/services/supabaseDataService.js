@@ -2574,6 +2574,71 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定会場・モーター番号の公式サイト発表モーター成績（節数・出走回数・
+   * 優出回数・優勝回数等）の最新スナップショットを取得する（BOA-264）。
+   * `venue_motor_stats`は日次で会場公式サイトをスクレイピングして書き込まれる
+   * （scripts/daily/scrape-venue-motor-stats.js）。会場ごとに公式サイトの
+   * 公開項目が異なるため、値が無い項目はnullのまま返す（戸田・平和島は
+   * データ自体が無いため常にnull）。「機力指数+16.6だが抽選後8走しかしていない
+   * ので信頼度低め」のように、他のモーター指標の信頼度を判断する材料として使う
+   */
+  getVenueMotorStats(venueCode, motorNumber) {
+    return withCache(
+      `venue-motor-stats-${venueCode}-${motorNumber}`,
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return null;
+        }
+
+        // このメソッドはRaceDetailの機力指数・モーター調子ドリルダウンの
+        // Promise.allに同居させて呼ぶ想定のため、ネットワークレベルの例外
+        // （supabase-jsが{data,error}を返さずreject自体する稀なケース）が
+        // Promise.all全体を巻き込んで他の取得済みデータまで消さないよう、
+        // 内部でtry/catchして安全側（null）にフォールバックする
+        try {
+          const { data, error } = await supabase
+            .from("venue_motor_stats")
+            .select("*")
+            .eq("venue_code", venueCode)
+            .eq("motor_number", motorNumber)
+            .order("scraped_date", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (error) {
+            console.error("venue_motor_stats取得エラー:", error.message);
+            return null;
+          }
+          if (!data) return null;
+
+          return {
+            scrapedDate: data.scraped_date,
+            meetCount: data.meet_count,
+            raceCount: data.race_count,
+            finalCount: data.final_count,
+            championshipCount: data.championship_count,
+            firstPlaceCount: data.first_place_count,
+            secondPlaceCount: data.second_place_count,
+            thirdPlaceCount: data.third_place_count,
+            winRate: data.win_rate,
+            top2Rate: data.top2_rate,
+            top3Rate: data.top3_rate,
+            accidentRate: data.accident_rate,
+            bestTime: data.best_time,
+            avgExhibitionTime: data.avg_exhibition_time,
+            statsPeriodStart: data.stats_period_start,
+            statsPeriodEnd: data.stats_period_end,
+          };
+        } catch (err) {
+          console.error("venue_motor_stats取得エラー(例外):", err.message);
+          return null;
+        }
+      },
+    );
+  },
+
+  /**
    * 指定レースの枠番別・選手の勝率上昇/下降を取得する（BOA-152）
    * 現在の全国勝率と約90日前時点の全国勝率を比較し、調子の変化を示す
    */
