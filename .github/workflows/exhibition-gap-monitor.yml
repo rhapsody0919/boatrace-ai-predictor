@@ -1,0 +1,65 @@
+name: Exhibition Gap Monitor
+
+on:
+  schedule:
+    # JST 深夜0:30 = UTC 15:30（前日分のレース結果が確定した後にチェックする）
+    - cron: '30 15 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: exhibition-gap-monitor
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: 展示データ欠落率チェック
+        id: check
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set +e
+          OUTPUT=$(node scripts/maintenance/check-exhibition-gap-rate.js)
+          EXIT_CODE=$?
+          echo "$OUTPUT"
+          {
+            echo "summary<<EOF"
+            echo "$OUTPUT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack (閾値超過時のみ)
+        if: steps.check.outputs.exit_code == '1'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SUMMARY: ${{ steps.check.outputs.summary }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"#c9a227\",
+                \"blocks\": [
+                  {
+                    \"type\": \"section\",
+                    \"text\": {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \":warning: *展示データ欠落率が閾値を超過*\n\`\`\`${SUMMARY}\`\`\`\nスクレイピング基盤のサーバーレス移行（docs/design/scraping-serverless-migration/spec.md）Step 2の並走期間中の監視項目です\"
+                    }
+                  }
+                ]
+              }]
+            }"

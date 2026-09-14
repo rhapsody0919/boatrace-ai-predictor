@@ -87,13 +87,12 @@ cron-job.org側のタイムアウトは30秒（[investigation.md](../../proposal
 3. この時点では**cron-job.org側のジョブはまだ作成しない**（手動確認のみ）
 
 ### Step 2: 並走期間（既存のGitHub Actionsは止めない）
-1. cron-job.orgにジョブを追加し、Vercel Function側を1〜2分間隔で稼働開始する
+1. **完了（2026-09-14）**: cron-job.orgに`Vercel Exhibition Cron`ジョブを追加し、`/api/cron/exhibition`を2分間隔（7:00-23:00 JST）で稼働開始した。実行履歴・Vercel関数ログの両方で正常動作（202 Accepted、対応するSupabase書き込み）を確認済み。セットアップ手順は[external-cron-setup.md](../../operation/external-cron-setup.md)を参照
 2. 既存のGitHub Actions側（`scrape-scheduled.js`内の展示データ処理）は**そのまま動かし続ける**（両方が同じテーブルに書き込むが、upsertなので競合しても後勝ちで問題ない）
 3. 最低3〜7日間、両方を並走させる
-4. 並走期間中、以下を毎日確認する:
-   - 展示データ欠落率（本調査で使ったスクリプトと同じロジックで、結果確定済みレースのうち展示データが無いものの割合を計測）が並走前より悪化していないか
-   - Vercel側のActive CPU実測値が想定通りか（investigation.mdの試算との比較）
-   - cron-job.org側の実行履歴・失敗通知に異常が無いか
+4. **完了（2026-09-14）**: 並走期間中の日次監視は`.github/workflows/exhibition-gap-monitor.yml`で自動化した（`scripts/maintenance/check-exhibition-gap-rate.js`、毎日JST 0:30に実行）。結果確定済みレースのうち展示データが無いものの割合（欠落率）を計測し、閾値（2%）超過時のみSlack通知する。移行前3日間の実測値（0.6%/6.7%/8.1%）を踏まえ、移行後は継続的に2%を下回ることを確認する
+   - Vercel側のActive CPU実測値が想定通りかは、並走期間終了時にまとめて確認する（investigation.mdの試算との比較）
+   - cron-job.org側の実行履歴・失敗通知に異常が無いかは、随時ダッシュボードで確認する
 
 ### Step 3: 切り替え
 1. 並走期間の結果に問題が無ければ、GitHub Actions側の展示データ処理（`scrape-scheduled.js`内の該当呼び出し）を無効化する
