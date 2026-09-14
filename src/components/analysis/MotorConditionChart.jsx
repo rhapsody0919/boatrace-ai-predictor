@@ -11,6 +11,7 @@ import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import RacerGradeBadge from "../racer/RacerGradeBadge";
+import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import TrendLineChart from "./TrendLineChart";
 import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
@@ -338,34 +339,59 @@ function MotorConditionChart({
               </p>
             )}
 
-          {(venueMotorStats?.raceCount !== null &&
-            venueMotorStats?.raceCount !== undefined) ||
-          (venueMotorStats?.meetCount !== null &&
-            venueMotorStats?.meetCount !== undefined) ? (
-            <div className="venue-motor-freshness">
-              <span className="venue-motor-freshness-label">
-                🔧 {t("analysis.motor.freshnessLabel")}
-              </span>
-              <div className="venue-motor-freshness-badges">
-                {venueMotorStats.raceCount !== null &&
-                  venueMotorStats.raceCount !== undefined && (
-                    <span className="venue-motor-freshness-badge">
-                      {t("analysis.motor.freshnessRaceBadge", {
-                        raceCount: venueMotorStats.raceCount,
-                      })}
-                    </span>
-                  )}
-                {venueMotorStats.meetCount !== null &&
-                  venueMotorStats.meetCount !== undefined && (
-                    <span className="venue-motor-freshness-badge">
-                      {t("analysis.motor.freshnessMeetBadge", {
-                        meetCount: venueMotorStats.meetCount,
-                      })}
-                    </span>
-                  )}
-              </div>
-            </div>
-          ) : null}
+          <MotorStatBadgeRow
+            icon="🔧"
+            label={t("analysis.motor.freshnessLabel")}
+            badges={[
+              venueMotorStats?.raceCount !== null &&
+                venueMotorStats?.raceCount !== undefined && {
+                  key: "raceCount",
+                  text: t("analysis.motor.freshnessRaceBadge", {
+                    raceCount: venueMotorStats.raceCount,
+                  }),
+                },
+              venueMotorStats?.meetCount !== null &&
+                venueMotorStats?.meetCount !== undefined && {
+                  key: "meetCount",
+                  text: t("analysis.motor.freshnessMeetBadge", {
+                    meetCount: venueMotorStats.meetCount,
+                  }),
+                },
+            ].filter(Boolean)}
+          />
+
+          <MotorStatBadgeRow
+            icon="🏆"
+            label={t("analysis.motor.recordLabel")}
+            badges={[
+              venueMotorStats?.finalCount !== null &&
+                venueMotorStats?.finalCount !== undefined && {
+                  key: "finalCount",
+                  text: t("analysis.motor.recordFinalBadge", {
+                    count: venueMotorStats.finalCount,
+                  }),
+                },
+              venueMotorStats?.championshipCount !== null &&
+                venueMotorStats?.championshipCount !== undefined && {
+                  key: "championshipCount",
+                  text: t("analysis.motor.recordChampionshipBadge", {
+                    count: venueMotorStats.championshipCount,
+                  }),
+                },
+              venueMotorStats?.firstPlaceCount !== null &&
+                venueMotorStats?.firstPlaceCount !== undefined &&
+                venueMotorStats?.raceCount && {
+                  key: "firstPlaceRate",
+                  text: t("analysis.motor.recordFirstPlaceRateBadge", {
+                    rate: (
+                      (venueMotorStats.firstPlaceCount /
+                        venueMotorStats.raceCount) *
+                      100
+                    ).toFixed(1),
+                  }),
+                },
+            ].filter(Boolean)}
+          />
 
           {chartData.length > 0 ? (
             <TrendLineChart

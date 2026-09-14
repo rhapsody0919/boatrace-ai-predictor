@@ -179,33 +179,7 @@
   color: var(--color-error-text);
 }
 
-.venue-motor-freshness {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--spacing-2);
-  margin-bottom: var(--spacing-4);
-}
-
-.venue-motor-freshness-label {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-}
-
-.venue-motor-freshness-badges {
-  display: flex;
-  gap: var(--spacing-1-5);
-}
-
-.venue-motor-freshness-badge {
-  padding: var(--spacing-1) var(--spacing-2-5);
-  border: var(--border-width-1) solid var(--border-hairline);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
-  color: var(--text-primary);
-  background: var(--surface-page);
-}
+/* モーター鮮度・通算成績のバッジ行はMotorStatBadgeRow.cssで共通化（BOA-264） */
 
 /* usage-history（BOA-283）とparts-history（BOA-221）で共通の履歴リスト表示 */
 .history-list {
