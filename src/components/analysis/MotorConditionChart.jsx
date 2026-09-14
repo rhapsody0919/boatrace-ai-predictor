@@ -503,6 +503,7 @@ function MotorConditionChart({
             <TrendLineChart
               data={exhibitionChartData}
               yAxisLabel={t("analysis.motor.exhibitionYAxis")}
+              yAxisDomain={["dataMin - 0.1", "dataMax + 0.1"]}
               tooltipFormatter={(value) => value.toFixed(2)}
               series={[
                 {
