@@ -118,6 +118,14 @@
   margin-bottom: 1rem;
 }
 
+/* リンクの明示的なスタイル定義が無いためブラウザ既定の#0000eeになり、
+   ダークテーマの背景(--surface-page)で4.5:1未達(axe-core検出)。
+   --surface-page × --brand-accent-secondary はcheck-token-contrast.jsで
+   検証済みの組み合わせを使う */
+.about-section a {
+  color: var(--brand-accent-secondary);
+}
+
 /* Data Grid */
 .data-grid {
   display: grid;
