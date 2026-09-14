@@ -26,6 +26,31 @@ const FETCH_HEADERS = {
 };
 
 /**
+ * 前走成績の着順セルは全角数字（例: "２"）で表示されるため、通常のparseIntでは
+ * NaNになる。全角数字1文字を数値に変換する（今節初戦で着順セルが空の場合はnull）
+ */
+function fullWidthDigitToNumber(text) {
+  if (!text) return null;
+  const halfWidth = text.replace(/[０-９]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xfee0),
+  );
+  const num = parseInt(halfWidth, 10);
+  return isNaN(num) ? null : num;
+}
+
+/**
+ * ST表記（".07"/"F.10"/"L.05"等）を数値に変換する。フライング・出遅れ接頭辞は
+ * 値の抽出には無関係だが、フライング有無の判定に使う
+ */
+function parseStartTimingText(text) {
+  if (!text) return { value: null, isFlying: false };
+  const isFlying = text.includes("F");
+  const numMatch = text.match(/[FL]?\.(\d+)/);
+  const value = numMatch ? parseFloat("0." + numMatch[1]) : null;
+  return { value, isFlying };
+}
+
+/**
  * Supabase から取得済みの展示データがある race_id セットを取得
  */
 async function getExistingExhibitionRaceIds(date) {
@@ -58,9 +83,15 @@ export function scrapeExhibitionData($) {
   }
 
   // 展示タイム・チルト・プロペラ交換・部品交換・調整重量（table[1]の各tbody、BOA-221で拡張）
+  // 当日体重・前走成績（BOA-289で追加）
   // 1艇あたりtbody内は4行（tr）構成: 1行目=枠/写真/選手名/体重/展示タイム/チルト/プロペラ/
-  // 部品交換/前走成績R/前走成績レース番号、2行目=進入コース、3行目=調整重量(1列目)/ST/STタイム、
-  // 4行目=着順。調整重量は1行目ではなく3行目の1列目にある（2026-09-14実データで確認、戸田・常滑）
+  // 部品交換/前走成績R(ラベル)/前走成績レース番号、2行目=進入コース(前走時)、
+  // 3行目=調整重量(1列目)/ST(2列目はラベル)/STタイム(前走時)、
+  // 4行目=着順(前走時、raceresultへのリンク付き)。
+  // 調整重量は1行目ではなく3行目の1列目にある（2026-09-14実データで確認、戸田・常滑）。
+  // 当日体重は1行目td[3]、前走成績は1行目td[9](レース番号)+2行目td[1](進入コース)+
+  // 3行目td[2](ST)+4行目td[1](着順)の4箇所に分散している（2026-09-14実データで確認、下関）。
+  // 今節初戦の艇は前走が存在せずセルが空になる
   const exTable = tables.eq(1);
   const tbodies = exTable.find("tbody");
 
@@ -71,6 +102,7 @@ export function scrapeExhibitionData($) {
 
     const mainCells = rows.eq(0).find("td");
     const boatNumber = parseInt(mainCells.eq(0).text().trim());
+    const todayWeight = parseFloat(mainCells.eq(3).text().trim());
     const exhibitionTime = parseFloat(mainCells.eq(4).text().trim());
     const tilt = parseFloat(mainCells.eq(5).text().trim());
     const propellerText = mainCells.eq(6).text().trim();
@@ -80,9 +112,21 @@ export function scrapeExhibitionData($) {
       .map((_, li) => $(li).text().trim())
       .get()
       .filter(Boolean);
+    const prevRaceNo = parseInt(mainCells.eq(9).text().trim());
     const adjustmentWeight = parseFloat(
       rows.eq(2).find("td").eq(0).text().trim(),
     );
+    const prevEntryCourse =
+      rows.length > 1
+        ? parseInt(rows.eq(1).find("td").eq(1).text().trim())
+        : NaN;
+    const prevStartTimingText =
+      rows.length > 2 ? rows.eq(2).find("td").eq(2).text().trim() : "";
+    const { value: prevStartTiming } =
+      parseStartTimingText(prevStartTimingText);
+    const prevFinishRankText =
+      rows.length > 3 ? rows.eq(3).find("td").eq(1).text().trim() : "";
+    const prevFinishRank = fullWidthDigitToNumber(prevFinishRankText);
 
     if (boatNumber >= 1 && boatNumber <= 6) {
       exhibitionData.push({
@@ -94,6 +138,12 @@ export function scrapeExhibitionData($) {
         propellerChange: propellerText || null,
         partsChanged: partsChanged.length > 0 ? partsChanged : null,
         adjustmentWeight: !isNaN(adjustmentWeight) ? adjustmentWeight : null,
+        todayWeight:
+          !isNaN(todayWeight) && todayWeight > 0 ? todayWeight : null,
+        prevRaceNo: !isNaN(prevRaceNo) ? prevRaceNo : null,
+        prevEntryCourse: !isNaN(prevEntryCourse) ? prevEntryCourse : null,
+        prevStartTiming,
+        prevFinishRank,
       });
     }
   });
@@ -112,9 +162,7 @@ export function scrapeExhibitionData($) {
       const boatNum = parseInt(boatText);
 
       const stText = $(el).find(".table1_boatImage1Time").text().trim();
-      const isFlying = stText.includes("F");
-      const numMatch = stText.match(/[FL]?\.(\d+)/);
-      const stValue = numMatch ? parseFloat("0." + numMatch[1]) : null;
+      const { value: stValue, isFlying } = parseStartTimingText(stText);
 
       if (boatNum >= 1 && boatNum <= 6 && stValue !== null) {
         const entry = exhibitionData.find((e) => e.boatNumber === boatNum);
@@ -255,6 +303,11 @@ export async function run(schedule, date) {
               propeller_change: ex.propellerChange,
               parts_changed: ex.partsChanged,
               adjustment_weight: ex.adjustmentWeight,
+              today_weight: ex.todayWeight,
+              prev_race_no: ex.prevRaceNo,
+              prev_entry_course: ex.prevEntryCourse,
+              prev_start_timing: ex.prevStartTiming,
+              prev_finish_rank: ex.prevFinishRank,
             });
           }
         }
@@ -281,17 +334,23 @@ export async function run(schedule, date) {
   if (allRows.length > 0) {
     console.log(`\n💾 exhibition_data: ${allRows.length}件書き込み中...`);
 
-    // BOA-221の新列（tilt/propeller_change/parts_changed/adjustment_weight）は
-    // マイグレーション（docs/db-migration/056_exhibition_data_tilt_parts.sql）適用が
-    // 前提。未適用環境でこの新列を含むupsertがそのまま失敗すると、既存の
-    // exhibition_time/start_timing（展示タイム）まで書き込めなくなり、既存機能を
-    // 巻き添えで壊してしまう。列不在エラーを検知したら新列を除いたペイロードで
-    // リトライし、既存機能だけは動かし続ける
+    // BOA-221の新列（tilt/propeller_change/parts_changed/adjustment_weight、
+    // マイグレーション056）・BOA-289の新列（today_weight/prev_race_no/
+    // prev_entry_course/prev_finish_rank、マイグレーション059）は、それぞれの
+    // マイグレーション適用が前提。未適用環境でこれらの新列を含むupsertがそのまま
+    // 失敗すると、既存のexhibition_time/start_timing（展示タイム）まで書き込めなく
+    // なり、既存機能を巻き添えで壊してしまう。列不在エラーを検知したら新列を除いた
+    // ペイロードでリトライし、既存機能だけは動かし続ける
     const NEW_COLUMNS = [
       "tilt",
       "propeller_change",
       "parts_changed",
       "adjustment_weight",
+      "today_weight",
+      "prev_race_no",
+      "prev_entry_course",
+      "prev_start_timing",
+      "prev_finish_rank",
     ];
     const stripNewColumns = (batch) =>
       batch.map((row) => {

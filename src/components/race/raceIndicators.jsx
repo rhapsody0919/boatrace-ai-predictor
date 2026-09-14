@@ -445,6 +445,27 @@ export function buildIndicatorRows({
       },
     },
     {
+      // 当日体重は計量時点の実測値であり、値の高低が好走/凡走を示唆する指標では
+      // ないため、他行と違いbest/signalは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
+      key: "todayWeight",
+      label: t("dataTable.rowTodayWeight"),
+      shortLabel: t("review.cols.todayWeight"),
+      tab: null,
+      best: null,
+      signal: () => null,
+      itemText: () => null,
+      render: (p) => {
+        const row = maintenanceByBoat.get(p.number);
+        if (!row) return ph("motorMaintenance");
+        const weight = toNumber(row.today_weight);
+        return weight !== null ? (
+          <span className="drt-value">{weight.toFixed(1)}kg</span>
+        ) : (
+          "—"
+        );
+      },
+    },
+    {
       // チルト・調整重量は選手が選んだ「設定値」であり、値の高低が好走/凡走を
       // 示唆する指標ではないため、他行と違いbest/signalは持たせない（BOA-221）
       key: "tilt",
@@ -482,6 +503,39 @@ export function buildIndicatorRows({
           <span className="drt-value">{weight.toFixed(1)}kg</span>
         ) : (
           "—"
+        );
+      },
+    },
+    {
+      // 前走成績（今節内の直近レースの着順・進入コース）は事実の記録であり、
+      // best/signalは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
+      key: "prevResult",
+      label: t("dataTable.rowPrevResult"),
+      shortLabel: t("review.cols.prevResult"),
+      tab: null,
+      best: null,
+      signal: () => null,
+      itemText: () => null,
+      render: (p) => {
+        const row = maintenanceByBoat.get(p.number);
+        if (!row) return ph("motorMaintenance");
+        const rank = toNumber(row.prev_finish_rank);
+        if (rank === null) {
+          return (
+            <span className="drt-sub">{t("dataTable.prevResultNoRace")}</span>
+          );
+        }
+        const course = toNumber(row.prev_entry_course);
+        return (
+          <span className="drt-value">
+            {t("review.finishPosition", { position: rank })}
+            {course !== null && (
+              <span className="drt-sub">
+                {" "}
+                {t("dataTable.prevResultCourse", { course })}
+              </span>
+            )}
+          </span>
         );
       },
     },
