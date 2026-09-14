@@ -45,6 +45,7 @@ function MotorConditionChart({
   const [usageHistory, setUsageHistory] = useState([]);
   const [partsHistory, setPartsHistory] = useState([]);
   const [venueMotorStats, setVenueMotorStats] = useState(null);
+  const [championshipHistory, setChampionshipHistory] = useState([]);
   const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
   // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
@@ -110,33 +111,42 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
-        const [trend, power, history, parts, venueStats] = await Promise.all([
-          supabaseDataService.getMotorConditionTrend(
-            selectedVenue,
-            drillDownMotor,
-            periodDays,
-          ),
-          supabaseDataService.getMotorPowerIndex(
-            selectedVenue,
-            drillDownMotor,
-            periodDays,
-          ),
-          supabaseDataService.getMotorUsageHistory(
-            selectedVenue,
-            drillDownMotor,
-          ),
-          supabaseDataService.getMotorPartsHistory(
-            selectedVenue,
-            drillDownMotor,
-            periodDays,
-          ),
-          supabaseDataService.getVenueMotorStats(selectedVenue, drillDownMotor),
-        ]);
+        const [trend, power, history, parts, venueStats, championships] =
+          await Promise.all([
+            supabaseDataService.getMotorConditionTrend(
+              selectedVenue,
+              drillDownMotor,
+              periodDays,
+            ),
+            supabaseDataService.getMotorPowerIndex(
+              selectedVenue,
+              drillDownMotor,
+              periodDays,
+            ),
+            supabaseDataService.getMotorUsageHistory(
+              selectedVenue,
+              drillDownMotor,
+            ),
+            supabaseDataService.getMotorPartsHistory(
+              selectedVenue,
+              drillDownMotor,
+              periodDays,
+            ),
+            supabaseDataService.getVenueMotorStats(
+              selectedVenue,
+              drillDownMotor,
+            ),
+            supabaseDataService.getVenueMotorChampionshipHistory(
+              selectedVenue,
+              drillDownMotor,
+            ),
+          ]);
         setTrendData(trend);
         setPowerIndex(power);
         setUsageHistory(history);
         setPartsHistory(parts.events ?? []);
         setVenueMotorStats(venueStats);
+        setChampionshipHistory(championships);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
@@ -435,6 +445,29 @@ function MotorConditionChart({
                 },
             ].filter(Boolean)}
           />
+
+          <h3 className="selected-motor-heading">
+            {t("analysis.motor.championshipHistoryHeading")}
+          </h3>
+          {championshipHistory.length > 0 ? (
+            <ul className="history-list">
+              {championshipHistory.map((win) => (
+                <li key={win.raceId}>
+                  <span className="history-date">{win.date}</span>
+                  <span translate="no" className="usage-history-player">
+                    {win.playerName?.replace(/\s+/g, "")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="empty-state">
+              {t("analysis.motor.championshipHistoryEmpty")}
+            </div>
+          )}
+          <p className="table-note">
+            {t("analysis.motor.championshipHistoryNote")}
+          </p>
 
           {chartData.length > 0 ? (
             <TrendLineChart

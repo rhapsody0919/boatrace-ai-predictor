@@ -111,8 +111,14 @@ function scrapeRacers($) {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const toFloat = (s) => { const v = parseFloat(s); return isNaN(v) ? null : v; };
-    const toInt = (s) => { const v = parseInt(s, 10); return isNaN(v) ? null : v; };
+    const toFloat = (s) => {
+      const v = parseFloat(s);
+      return isNaN(v) ? null : v;
+    };
+    const toInt = (s) => {
+      const v = parseInt(s, 10);
+      return isNaN(v) ? null : v;
+    };
 
     racers.push({
       boatNumber: index + 1,
@@ -152,7 +158,23 @@ function scrapeRaceMeta($) {
     return "ippan";
   })();
   const raceTitle = $(".heading2_titleName").text().trim() || null;
-  return { raceGrade, raceTitle };
+  const raceStage = scrapeRaceStage($);
+  return { raceGrade, raceTitle, raceStage };
+}
+
+/**
+ * racelist ページの `.title16_titleDetail__add2020` から開催ステージ名
+ * （予選/準優勝戦/優勝戦/カタメン１予選等）を取得する（BOA-226）。
+ * 実データでは「優勝戦」の後に全角空白と距離表記（1800m）が同じ要素内に
+ * 混在しているため、空白（半角・全角とも）で分割し距離表記を除いた
+ * 最初のトークンをステージ名として扱う
+ */
+function scrapeRaceStage($) {
+  const raw = $(".title16_titleDetail__add2020").text();
+  const token = raw
+    .split(/[\s\u3000]+/)
+    .find((t) => t.length > 0 && !/^\d+m$/.test(t));
+  return token || null;
 }
 
 /**
@@ -220,7 +242,7 @@ async function fetchRaceInfo(date, venueCode, raceNo) {
 
     const $racelist = cheerio.load(await racelistRes.text());
     const racers = scrapeRacers($racelist);
-    const { raceGrade, raceTitle } = scrapeRaceMeta($racelist);
+    const { raceGrade, raceTitle, raceStage } = scrapeRaceMeta($racelist);
 
     // 選手が1人も取得できない場合は中止・未公開の可能性
     if (racers.length === 0) {
@@ -245,7 +267,7 @@ async function fetchRaceInfo(date, venueCode, raceNo) {
       conditions = scrapeConditions(cheerio.load(await beforeinfoRes.text()));
     }
 
-    return { racers, raceGrade, raceTitle, conditions };
+    return { racers, raceGrade, raceTitle, raceStage, conditions };
   } catch (err) {
     console.error(
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R 取得エラー: ${err.message}`,
@@ -264,7 +286,9 @@ export async function run(schedule, date) {
   // 発走1時間前ウィンドウのレースのみ対象
   const targetRaces = getRacesInWindow(schedule, WINDOW_MINUTES);
   if (targetRaces.length === 0) {
-    console.log(`📭 レース情報: 発走${WINDOW_MINUTES}分前ウィンドウの対象レースなし`);
+    console.log(
+      `📭 レース情報: 発走${WINDOW_MINUTES}分前ウィンドウの対象レースなし`,
+    );
     return { updated: false, count: 0 };
   }
   console.log(
@@ -343,7 +367,7 @@ export async function run(schedule, date) {
       }
 
       if (!data) continue;
-      const { racers, raceGrade, raceTitle, conditions } = data;
+      const { racers, raceGrade, raceTitle, raceStage, conditions } = data;
 
       // race_entries 行を構築（ai_score系は更新しない）
       for (const racer of racers) {
@@ -370,7 +394,7 @@ export async function run(schedule, date) {
       }
 
       // race_conditions 行を構築（race_grade は除外、races テーブルで管理）
-      if (conditions || raceTitle) {
+      if (conditions || raceTitle || raceStage) {
         conditionsRows.push({
           race_id: r.race_id,
           weather: conditions?.weather ?? null,
@@ -385,6 +409,7 @@ export async function run(schedule, date) {
           temperature: conditions?.airTemp ?? null,
           water_temperature: conditions?.waterTemp ?? null,
           race_title: raceTitle,
+          race_stage: raceStage,
         });
       }
 
@@ -504,6 +529,8 @@ async function main() {
   await run(schedule, date);
   console.log("🏁 完了");
 }
+
+export const _internal = { scrapeRaceMeta, scrapeRaceStage };
 
 // スタンドアローン実行時のみ main() を呼ぶ（import 時に実行させない）
 if (process.argv[1] === new URL(import.meta.url).pathname) {

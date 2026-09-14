@@ -2651,6 +2651,79 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定会場・モーター番号が「優勝戦」で実際に1着になった日付・選手を
+   * 取得する（BOA-264追加調査、BOA-226のrace_stage列が前提）。
+   * venue_motor_statsの優勝数は公式サイト側の集計期間内の合計回数のみで
+   * 日付・選手の内訳が無いため、自社データ（race_conditions.race_stage=
+   * 優勝戦を含む×race_entries×race_results）から逆算する。
+   * race_stageはBOA-226実装後に取得したレースにしか入っていない
+   * （過去レースへの遡及取得はしない方針）ため、実装直後は空になりうる
+   */
+  getVenueMotorChampionshipHistory(venueCode, motorNumber) {
+    return withCache(
+      `venue-motor-championship-history-${venueCode}-${motorNumber}`,
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return [];
+        }
+        try {
+          const { data: stageRows, error: stageError } = await supabase
+            .from("race_conditions")
+            .select("race_id, races!inner(venue_code)")
+            .ilike("race_stage", "%優勝戦%")
+            .eq("races.venue_code", venueCode);
+          if (stageError) {
+            console.error("race_conditions取得エラー:", stageError.message);
+            return [];
+          }
+          if (!stageRows || stageRows.length === 0) return [];
+
+          const raceIds = stageRows.map((r) => r.race_id);
+          const { data: entries, error: entriesError } = await supabase
+            .from("race_entries")
+            .select("race_id, boat_number, racer_id, player_name")
+            .in("race_id", raceIds)
+            .eq("motor_number", motorNumber);
+          if (entriesError) {
+            console.error("race_entries取得エラー:", entriesError.message);
+            return [];
+          }
+          if (!entries || entries.length === 0) return [];
+
+          const { data: results, error: resultsError } = await supabase
+            .from("race_results")
+            .select("race_id, rank1")
+            .in(
+              "race_id",
+              entries.map((e) => e.race_id),
+            );
+          if (resultsError) {
+            console.error("race_results取得エラー:", resultsError.message);
+            return [];
+          }
+          const rank1ByRaceId = new Map(
+            (results ?? []).map((r) => [r.race_id, r.rank1]),
+          );
+
+          return entries
+            .filter((e) => rank1ByRaceId.get(e.race_id) === e.boat_number)
+            .map((e) => ({
+              raceId: e.race_id,
+              date: e.race_id.slice(0, 10),
+              racerId: e.racer_id,
+              playerName: e.player_name,
+            }))
+            .sort((a, b) => b.date.localeCompare(a.date));
+        } catch (err) {
+          console.error("優勝履歴取得エラー(例外):", err.message);
+          return [];
+        }
+      },
+    );
+  },
+
+  /**
    * 指定レースの枠番別・選手の勝率上昇/下降を取得する（BOA-152）
    * 現在の全国勝率と約90日前時点の全国勝率を比較し、調子の変化を示す
    */
