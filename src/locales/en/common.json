@@ -447,6 +447,7 @@
     "winCount": "{{n}}W",
     "note": "Analytics cover the last 90 days (return rate: 180 days). Highlights mark the best value in this race. For reference only — results are not guaranteed",
     "rowLocalWinRate": "Local win rate",
+    "rowTwoRate": "National top-2 rate",
     "rowAvgSt": "Avg ST",
     "rowExSt": "Exhibition ST",
     "rowCourseRate": "Entry course win rate",
@@ -531,6 +532,7 @@
     "cols": {
       "winRate": "Win",
       "localWinRate": "Local",
+      "twoRate": "Top-2",
       "motor": "Motor",
       "form": "Form",
       "avgSt": "AvgST",

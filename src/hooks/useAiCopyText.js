@@ -75,6 +75,13 @@ function buildRows(t, players, analysis) {
         return v !== null ? v.toFixed(2) : DASH;
       }),
     },
+    {
+      label: t("dataTable.rowTwoRate"),
+      values: players.map((p) => {
+        const v = toNumber(p.global2Rate);
+        return v !== null ? `${v.toFixed(1)}%` : DASH;
+      }),
+    },
     buildMotorRow(t, players, motorByBoat),
     {
       label: t("dataTable.rowForm"),

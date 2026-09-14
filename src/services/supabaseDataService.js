@@ -7,6 +7,7 @@
 
 import { supabase } from "./supabaseClient";
 import { getVolatilityLevel } from "../utils/volatilityLevel";
+import { isPlaceHit } from "../../scripts/lib/hitCalculator.js";
 
 // Edge API のベースURL（本番環境では同一オリジン）
 const EDGE_API_BASE = "";
@@ -3129,28 +3130,40 @@ export const supabaseDataService = {
       const raceIds = [...new Set(entries.map((e) => e.race_id))];
       const [raceRows, resultRows] = await Promise.all([
         fetchAllByIn("races", "race_id, venue_code", "race_id", raceIds),
-        fetchAllByIn("race_results", "race_id, rank1", "race_id", raceIds),
+        fetchAllByIn(
+          "race_results",
+          "race_id, rank1, rank2, rank3",
+          "race_id",
+          raceIds,
+        ),
       ]);
 
       const venueByRaceId = new Map(
         raceRows.map((r) => [r.race_id, r.venue_code]),
       );
-      const resultByRaceId = new Map(
-        resultRows.map((r) => [r.race_id, r.rank1]),
-      );
+      const resultByRaceId = new Map(resultRows.map((r) => [r.race_id, r]));
 
       const byVenue = new Map();
       entries.forEach((entry) => {
         const venueCode = venueByRaceId.get(entry.race_id);
-        const rank1 = resultByRaceId.get(entry.race_id);
-        if (!venueCode || rank1 === undefined) return;
+        const result = resultByRaceId.get(entry.race_id);
+        if (!venueCode || !result || result.rank1 === undefined) return;
 
         if (!byVenue.has(venueCode)) {
-          byVenue.set(venueCode, { total: 0, wins: 0 });
+          byVenue.set(venueCode, { total: 0, wins: 0, top2: 0, top3: 0 });
         }
         const stat = byVenue.get(venueCode);
         stat.total += 1;
-        if (rank1 === entry.boat_number) stat.wins += 1;
+        if (result.rank1 === entry.boat_number) stat.wins += 1;
+        if (isPlaceHit(entry.boat_number, result.rank1, result.rank2)) {
+          stat.top2 += 1;
+        }
+        if (
+          isPlaceHit(entry.boat_number, result.rank1, result.rank2) ||
+          result.rank3 === entry.boat_number
+        ) {
+          stat.top3 += 1;
+        }
       });
 
       return [...byVenue.entries()]
@@ -3158,6 +3171,8 @@ export const supabaseDataService = {
           venue_code: venueCode,
           total_races: stat.total,
           win_rate: stat.total > 0 ? stat.wins / stat.total : null,
+          top2_rate: stat.total > 0 ? stat.top2 / stat.total : null,
+          top3_rate: stat.total > 0 ? stat.top3 / stat.total : null,
         }))
         .filter((row) => row.total_races >= 5)
         .sort((a, b) => b.total_races - a.total_races);

@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { formatPercent } from "../../utils/formatters";
 import "./RacerPerformanceStats.css";
 
 const TECHNIQUE_COLORS = {
@@ -59,13 +60,25 @@ export default function RacerPerformanceStats({ stats, loading }) {
   const hasTechniques = (techniqueProfile?.techniques?.length ?? 0) > 0;
   const hasReturnRate = (boatReturnRate?.length ?? 0) > 0;
 
-  // course_race_counts: { "1": { total, wins }, ... } → コース番号昇順の配列に変換
+  // course_race_counts: { "1": { total, wins, top2, top3 }, ... } → コース番号昇順の配列に変換
   const courseStats = Object.entries(aggregatedStats?.course_race_counts ?? {})
     .map(([course, counts]) => ({
       course: Number(course),
       total: counts.total ?? 0,
       wins: counts.wins ?? 0,
       winRate: counts.total > 0 ? counts.wins / counts.total : null,
+      // top2/top3は本チケット（BOA-268）で追加したフィールドのため、
+      // バッチ集計（aggregate-racer-stats.js）が再実行されるまでは
+      // 未集計の選手が存在する。undefinedを0扱いすると「2連率0%」と
+      // 誤表示するため、区別してnull（"-"表示）にする
+      top2Rate:
+        counts.total > 0 && counts.top2 !== undefined
+          ? counts.top2 / counts.total
+          : null,
+      top3Rate:
+        counts.total > 0 && counts.top3 !== undefined
+          ? counts.top3 / counts.total
+          : null,
     }))
     .filter((row) => row.total >= 5)
     .sort((a, b) => a.course - b.course);
@@ -234,6 +247,8 @@ export default function RacerPerformanceStats({ stats, loading }) {
                   <th>出走数</th>
                   <th>勝数</th>
                   <th>勝率</th>
+                  <th>2連率</th>
+                  <th>3連率</th>
                 </tr>
               </thead>
               <tbody>
@@ -243,8 +258,16 @@ export default function RacerPerformanceStats({ stats, loading }) {
                     <td>{row.total}</td>
                     <td>{row.wins}</td>
                     <td>
-                      {row.winRate !== null
-                        ? `${(row.winRate * 100).toFixed(1)}%`
+                      {row.winRate !== null ? formatPercent(row.winRate) : "-"}
+                    </td>
+                    <td>
+                      {row.top2Rate !== null
+                        ? formatPercent(row.top2Rate)
+                        : "-"}
+                    </td>
+                    <td>
+                      {row.top3Rate !== null
+                        ? formatPercent(row.top3Rate)
                         : "-"}
                     </td>
                   </tr>
@@ -326,6 +349,8 @@ export default function RacerPerformanceStats({ stats, loading }) {
                   <th>会場</th>
                   <th>出走数</th>
                   <th>勝率</th>
+                  <th>2連率</th>
+                  <th>3連率</th>
                 </tr>
               </thead>
               <tbody>
@@ -335,7 +360,17 @@ export default function RacerPerformanceStats({ stats, loading }) {
                     <td>{row.total_races}</td>
                     <td>
                       {row.win_rate !== null
-                        ? `${(row.win_rate * 100).toFixed(1)}%`
+                        ? formatPercent(row.win_rate)
+                        : "-"}
+                    </td>
+                    <td>
+                      {row.top2_rate !== null
+                        ? formatPercent(row.top2_rate)
+                        : "-"}
+                    </td>
+                    <td>
+                      {row.top3_rate !== null
+                        ? formatPercent(row.top3_rate)
                         : "-"}
                     </td>
                   </tr>

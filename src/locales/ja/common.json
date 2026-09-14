@@ -446,6 +446,7 @@
     "note": "分析データは過去90日間（回収率は180日間）の実績集計です。ハイライトはレース内で最も良い値。参考値であり結果を保証するものではありません",
     "guideLink": "データ出走表の使い方を詳しく見る",
     "rowLocalWinRate": "当地勝率",
+    "rowTwoRate": "全国2連率",
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
     "rowCourseRate": "進入コース勝率",
@@ -531,6 +532,7 @@
     "cols": {
       "winRate": "勝率",
       "localWinRate": "当地",
+      "twoRate": "2連率",
       "motor": "モーター",
       "form": "調子",
       "avgSt": "平均ST",

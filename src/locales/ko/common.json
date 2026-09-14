@@ -445,6 +445,7 @@
     "winCount": "{{n}}승",
     "note": "분석 데이터는 최근 90일（회수율은 180일）의 실적 집계입니다. 하이라이트는 이 레이스에서 가장 좋은 값. 참고용이며 결과를 보장하지 않습니다",
     "rowLocalWinRate": "당지 승률",
+    "rowTwoRate": "전국 연대율",
     "rowAvgSt": "평균 ST",
     "rowExSt": "전시 ST",
     "rowCourseRate": "진입 코스 승률",
@@ -529,6 +530,7 @@
     "cols": {
       "winRate": "승률",
       "localWinRate": "당지",
+      "twoRate": "연대율",
       "motor": "모터",
       "form": "컨디션",
       "avgSt": "평균ST",
