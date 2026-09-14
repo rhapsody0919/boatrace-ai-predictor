@@ -58,8 +58,9 @@ export function scrapeExhibitionData($) {
   }
 
   // 展示タイム・チルト・プロペラ交換・部品交換・調整重量（table[1]の各tbody、BOA-221で拡張）
-  // 全24会場中6会場（宮島・戸田・住之江・蒲郡・下関・芦屋）で実データ確認済み、
-  // セル位置は共通: eq(4)展示タイム/eq(5)チルト/eq(6)プロペラ/eq(7)部品交換/eq(9)調整重量
+  // 1艇あたりtbody内は4行（tr）構成: 1行目=枠/写真/選手名/体重/展示タイム/チルト/プロペラ/
+  // 部品交換/前走成績R/前走成績レース番号、2行目=進入コース、3行目=調整重量(1列目)/ST/STタイム、
+  // 4行目=着順。調整重量は1行目ではなく3行目の1列目にある（2026-09-14実データで確認、戸田・常滑）
   const exTable = tables.eq(1);
   const tbodies = exTable.find("tbody");
 
@@ -79,7 +80,9 @@ export function scrapeExhibitionData($) {
       .map((_, li) => $(li).text().trim())
       .get()
       .filter(Boolean);
-    const adjustmentWeight = parseFloat(mainCells.eq(9).text().trim());
+    const adjustmentWeight = parseFloat(
+      rows.eq(2).find("td").eq(0).text().trim(),
+    );
 
     if (boatNumber >= 1 && boatNumber <= 6) {
       exhibitionData.push({
