@@ -39,14 +39,15 @@ function techniqueColor(technique) {
  * データが一切無い選手（デビュー直後等）ではセクション自体を非表示にする。
  * profile/grade/newsとは別経路で取得するため、読み込み中は簡易表示にする
  *
- * 会場×枠番フィルタ（vcVenue/vcCourse）: 選択時にgetRacerRaceHistoryで選手の
+ * 会場×枠番フィルタ（vcVenue/vcBoat）: 選択時にgetRacerRaceHistoryで選手の
  * 過去2年分の出走履歴を1回だけ取得し（racerId単位でキャッシュ）、以後の
  * 絞り込みはaggregateRacerVenueBoatStats（純粋関数、I/O無し）でメモリ上に
  * 即座に再集計する。フィルタを切り替えるたびにネットワークI/Oが発生しない
  * ようにするための設計。未選択時（全会場×全枠番）は既存のprops
  * （techniqueProfile等）をそのまま表示する。「枠番」表示は、実際の進入
  * コースがBOA-257の制約により取得できない（course_1〜6が常に艇番と一致）
- * ため、発走前に確定する枠番（艇番）基準にしている
+ * ため、発走前に確定する枠番（艇番）基準にしている。同じ制約を持つ
+ * 「超展開データ」タブの文言修正はBOA-299として別スコープにしている
  */
 export default function RacerPerformanceStats({ racerId, stats, loading }) {
   const { t } = useTranslation();
@@ -54,7 +55,11 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
   // 表示は「枠番」。実際の進入コースはBOA-257の制約により取得できないため、
   // 発走前に決まる枠番（艇番）基準で集計・表示する
   const [vcVenue, setVcVenue] = useState("all");
-  const [vcCourse, setVcCourse] = useState("all");
+  const [vcBoat, setVcBoat] = useState("all");
+  // 出走履歴取得が失敗した際、手動で再試行するためのトークン。フィルタ
+  // （vcVenue/vcBoat）はネットワークI/Oを発生させない設計にしているため、
+  // 選び直しでは再試行にならない。専用のトリガーとして分離している
+  const [vcRetryToken, setVcRetryToken] = useState(0);
   // racerIdをデータと一緒に保持し、propsのracerIdと食い違えば「別選手の
   // 履歴」として無視する（同一マウントのまま別選手ページへ遷移した場合に、
   // 前選手の履歴が新しい選手のフィルタ結果として残り続けるのを防ぐ）。
@@ -64,8 +69,9 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
     racerId: null,
     fetching: false,
     data: null,
+    error: false,
   });
-  const vcActive = vcVenue !== "all" || vcCourse !== "all";
+  const vcActive = vcVenue !== "all" || vcBoat !== "all";
   const vcHistory =
     vcHistoryState.racerId === racerId ? vcHistoryState.data : null;
   const vcHistoryLoading =
@@ -74,6 +80,8 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
     vcHistory === null &&
     vcHistoryState.racerId === racerId &&
     vcHistoryState.fetching;
+  const vcHistoryError =
+    vcActive && vcHistoryState.racerId === racerId && vcHistoryState.error;
 
   useEffect(() => {
     // 未選択（全会場×全枠番）時は既存のprops（techniqueProfile等）を使うため
@@ -82,34 +90,51 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
     if (!vcActive || !racerId || vcHistory !== null) return;
     let cancelled = false;
     const loadHistory = async () => {
-      setVcHistoryState({ racerId, fetching: true, data: null });
-      const result = await supabaseDataService.getRacerRaceHistory(racerId);
-      if (!cancelled) {
-        setVcHistoryState({ racerId, fetching: false, data: result });
+      setVcHistoryState({ racerId, fetching: true, data: null, error: false });
+      try {
+        const result = await supabaseDataService.getRacerRaceHistory(racerId);
+        if (!cancelled) {
+          setVcHistoryState({
+            racerId,
+            fetching: false,
+            data: result,
+            error: false,
+          });
+        }
+      } catch (err) {
+        console.error("選手出走履歴取得エラー:", err.message);
+        if (!cancelled) {
+          setVcHistoryState({
+            racerId,
+            fetching: false,
+            data: null,
+            error: true,
+          });
+        }
       }
     };
     loadHistory();
     return () => {
       cancelled = true;
     };
-  }, [racerId, vcActive, vcHistory]);
+  }, [racerId, vcActive, vcHistory, vcRetryToken]);
 
   const vcData = useMemo(() => {
     if (!vcActive || !vcHistory) return null;
     return aggregateRacerVenueBoatStats(
       vcHistory,
       vcVenue === "all" ? null : Number(vcVenue),
-      vcCourse === "all" ? null : Number(vcCourse),
+      vcBoat === "all" ? null : Number(vcBoat),
     );
-  }, [vcActive, vcHistory, vcVenue, vcCourse]);
+  }, [vcActive, vcHistory, vcVenue, vcBoat]);
 
   const vcTechTotal = vcData
     ? Object.values(vcData.tech).reduce((a, b) => a + b, 0)
     : 0;
   const vcVenueLabel =
     vcVenue === "all" ? "全会場" : t(`venues.${vcVenue}`, vcVenue);
-  const vcCourseLabel = vcCourse === "all" ? "全枠番" : `${vcCourse}号艇`;
-  const vcLabel = `${vcVenueLabel}×${vcCourseLabel}`;
+  const vcBoatLabel = vcBoat === "all" ? "全枠番" : `${vcBoat}号艇`;
+  const vcLabel = `${vcVenueLabel}×${vcBoatLabel}`;
   const {
     formSummary,
     formTrend,
@@ -148,6 +173,13 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
   }));
 
   const hasTechniques = (techniqueProfile?.techniques?.length ?? 0) > 0;
+  // 決まり手傾向セクションの表示要否: フィルタ選択中は読み込み中または
+  // 該当レースがある場合のみ、未選択時は既存のhasTechniques（unfiltered
+  // props）で判定する。vcData.n===0の場合を含めてしまうと、上で既に出す
+  // 「該当する出走がありません」と重複した空のセクションが表示される
+  const showTechniqueSection = vcActive
+    ? vcHistoryLoading || (vcData && vcData.n > 0)
+    : hasTechniques;
   const hasReturnRate = (boatReturnRate?.length ?? 0) > 0;
 
   // course_race_counts: { "1": { total, wins, top2, top3 }, ... } → コース番号昇順の配列に変換
@@ -314,12 +346,12 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
             </select>
           </div>
           <div className="racer-vc-filter-field">
-            <label htmlFor="vc-course">枠番</label>
+            <label htmlFor="vc-boat">枠番</label>
             <select
-              id="vc-course"
+              id="vc-boat"
               className="venue-select"
-              value={vcCourse}
-              onChange={(e) => setVcCourse(e.target.value)}
+              value={vcBoat}
+              onChange={(e) => setVcBoat(e.target.value)}
             >
               <option value="all">全枠番</option>
               {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -331,11 +363,13 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
           </div>
           {vcActive && (
             <span className="racer-vc-filter-badge">
-              {vcHistoryLoading
-                ? `${vcLabel}（集計中…）`
-                : vcData
-                  ? `${vcLabel}（${vcData.n}走）`
-                  : vcLabel}
+              {vcHistoryError
+                ? `${vcLabel}（読み込みに失敗しました）`
+                : vcHistoryLoading
+                  ? `${vcLabel}（集計中…）`
+                  : vcData
+                    ? `${vcLabel}（${vcData.n}走）`
+                    : vcLabel}
             </span>
           )}
         </div>
@@ -343,6 +377,19 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
 
       {vcActive && vcHistoryLoading && (
         <p className="racer-stat-note">集計中…</p>
+      )}
+
+      {vcActive && vcHistoryError && (
+        <p className="racer-stat-note">
+          出走履歴の取得に失敗しました。
+          <button
+            type="button"
+            className="racer-vc-retry-button"
+            onClick={() => setVcRetryToken((n) => n + 1)}
+          >
+            再試行
+          </button>
+        </p>
       )}
 
       {vcActive && vcData && vcData.n > 0 && (
@@ -392,7 +439,7 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
         </p>
       )}
 
-      {(hasTechniques || (vcActive && vcData && vcData.n > 0)) && (
+      {showTechniqueSection && (
         <div className="racer-technique-profile">
           <h3>
             決まり手傾向（過去90日・勝利時）
@@ -400,8 +447,7 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
           </h3>
           {vcActive && (vcHistoryLoading || !vcData) ? (
             <p className="racer-stat-note">集計中…</p>
-          ) : vcActive && vcData.n === 0 ? null : displayTechniques.length >
-            0 ? (
+          ) : displayTechniques.length > 0 ? (
             <>
               <div className="racer-technique-bar" translate="no">
                 {displayTechniques.map((tech) => (
@@ -462,7 +508,7 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
                   <tr
                     key={row.course}
                     className={
-                      vcCourse !== "all" && row.course === Number(vcCourse)
+                      vcBoat !== "all" && row.course === Number(vcBoat)
                         ? "racer-vc-row-highlight"
                         : ""
                     }

@@ -7,7 +7,18 @@
 
 import { supabase } from "./supabaseClient";
 import { getVolatilityLevel } from "../utils/volatilityLevel";
-import { isPlaceHit } from "../../scripts/lib/hitCalculator.js";
+import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
+
+// race_resultsの1行が集計対象として使えるか（中止・不成立・未確定を除外）。
+// getRacerVenueStats/getRacerRaceHistoryの両方で同じ判定を使うための共通化
+function isUsableRaceResult(result) {
+  return (
+    !!result &&
+    !result.is_cancelled &&
+    !result.is_no_race &&
+    result.rank1 !== null
+  );
+}
 
 // Edge API のベースURL（本番環境では同一オリジン）
 const EDGE_API_BASE = "";
@@ -3147,15 +3158,7 @@ export const supabaseDataService = {
       entries.forEach((entry) => {
         const venueCode = venueByRaceId.get(entry.race_id);
         const result = resultByRaceId.get(entry.race_id);
-        if (
-          !venueCode ||
-          !result ||
-          result.is_cancelled ||
-          result.is_no_race ||
-          result.rank1 === null
-        ) {
-          return;
-        }
+        if (!venueCode || !isUsableRaceResult(result)) return;
 
         if (!byVenue.has(venueCode)) {
           byVenue.set(venueCode, { total: 0, wins: 0, top2: 0, top3: 0 });
@@ -3167,8 +3170,7 @@ export const supabaseDataService = {
           stat.top2 += 1;
         }
         if (
-          isPlaceHit(entry.boat_number, result.rank1, result.rank2) ||
-          result.rank3 === entry.boat_number
+          isShowHit(entry.boat_number, result.rank1, result.rank2, result.rank3)
         ) {
           stat.top3 += 1;
         }
@@ -3253,16 +3255,7 @@ export const supabaseDataService = {
           const exhibition = exhibitionByKey.get(
             `${entry.race_id}-${entry.boat_number}`,
           );
-          // Supabaseは選択済み列がSQL NULLの場合nullを返す（undefinedではない）
-          if (
-            !venueCode ||
-            !result ||
-            result.is_cancelled ||
-            result.is_no_race ||
-            result.rank1 === null
-          ) {
-            return null;
-          }
+          if (!venueCode || !isUsableRaceResult(result)) return null;
           return {
             raceId: entry.race_id,
             venueCode,
@@ -4980,10 +4973,7 @@ export function aggregateRacerVenueBoatStats(history, venueCode, boatNumber) {
     if (isPlaceHit(row.boatNumber, row.rank1, row.rank2)) {
       top2 += 1;
     }
-    if (
-      isPlaceHit(row.boatNumber, row.rank1, row.rank2) ||
-      row.rank3 === row.boatNumber
-    ) {
+    if (isShowHit(row.boatNumber, row.rank1, row.rank2, row.rank3)) {
       top3 += 1;
     }
 
@@ -4994,10 +4984,12 @@ export function aggregateRacerVenueBoatStats(history, venueCode, boatNumber) {
       stN += 1;
     }
     if (hasEx || hasSt) {
-      // historyは既にrace_id昇順（=時系列順）でソート済みのため、
-      // 表示用に月日だけを切り出しても順序は保たれる
+      // historyは既にrace_id（YYYY-MM-DD-会場-レース番号）昇順でソート済みの
+      // ため点の並び順は正しいが、対象期間が最大2年に及ぶため月日だけを表示
+      // すると異なる年の同じ月日が同一ラベルに見えてしまう。年下2桁を含めて
+      // 曖昧さを避ける（例: "25-05-12"）
       series.push({
-        date: row.raceId.slice(5, 10),
+        date: row.raceId.slice(2, 10),
         avg_exhibition_time: hasEx ? Number(row.exhibitionTime) : null,
         start_timing: hasSt ? Number(row.startTiming) : null,
       });

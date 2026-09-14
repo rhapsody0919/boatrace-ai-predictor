@@ -91,6 +91,19 @@ export function isPlaceHit(topPick, rank1, rank2) {
 }
 
 /**
+ * 3着以内判定（複勝の的中判定ではなく、2連率・3連率集計での「3着以内か」の
+ * 判定に使う。isWinHit/isPlaceHitと同じ艇番比較パターンの3着版）
+ * @param {number} boatNumber - 対象の艇番
+ * @param {number} rank1 - 実際の1着
+ * @param {number} rank2 - 実際の2着
+ * @param {number} rank3 - 実際の3着
+ * @returns {boolean}
+ */
+export function isShowHit(boatNumber, rank1, rank2, rank3) {
+  return isPlaceHit(boatNumber, rank1, rank2) || boatNumber === rank3;
+}
+
+/**
  * 実態: 3連複的中判定（順不同で3艇一致）
  * ⚠️ 関数名は trifecta だが、実態は3連複（DB列名に合わせた歴史的命名）
  * @param {number[]} predTop3 - 予想上位3艇 [1着予想, 2着予想, 3着予想]
