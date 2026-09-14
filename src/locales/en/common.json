@@ -756,7 +756,10 @@
     },
     "venueRanking": {
       "title": "🏟️ Today's Venue Ranking",
-      "description": "Ranks venues by four indicators, based only on races that have finished today. Unlike other tabs, you can discover notable venues across today's entire card without picking a venue or race.",
+      "description": "Ranks venues by five indicators. Unlike other tabs, you can discover notable venues across today's entire card without picking a venue or race.",
+      "firstWinRateTitle": "🚤 Boat 1 Win Rate Ranking (All 24 Venues)",
+      "firstWinRateHeader": "Boat 1 win rate",
+      "firstWinRateNote": "💡 This indicator alone is based on the past 90 days (the other four indicators use only today's finished races).",
       "stableTitle": "🛡️ Most Stable Venues TOP5",
       "roughTitle": "🌊 Most Upset-Prone Venues TOP5",
       "nigeRateTitle": "🚤 Highest Nige Rate TOP5",

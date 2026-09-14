@@ -53,22 +53,42 @@ function VenueRankingChart() {
     nigeRate: [],
     manshu: [],
   });
+  const [firstWinRate, setFirstWinRate] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadRanking = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await supabaseDataService.getTodaysVenueRanking(5);
-        setRanking(data);
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load today's venue ranking:", err);
-      } finally {
-        setLoading(false);
+      setLoading(true);
+      setError(null);
+      // allSettled: 1号艇勝率（新規・全会場90日スキャンで相対的に重い）の失敗が
+      // 従来から安定していた本日限定の4指標まで道連れでエラー状態にしないよう、
+      // 互いに独立して失敗を扱う
+      const [todaysResult, firstWinRateResult] = await Promise.allSettled([
+        supabaseDataService.getTodaysVenueRanking(5),
+        supabaseDataService.getVenueFirstWinRateRanking(),
+      ]);
+
+      if (todaysResult.status === "fulfilled") {
+        setRanking(todaysResult.value);
+      } else {
+        setError(todaysResult.reason?.message || t("analysis.dataLoadError"));
+        console.error(
+          "Failed to load today's venue ranking:",
+          todaysResult.reason,
+        );
       }
+
+      if (firstWinRateResult.status === "fulfilled") {
+        setFirstWinRate(firstWinRateResult.value);
+      } else {
+        console.error(
+          "Failed to load venue first-win-rate ranking:",
+          firstWinRateResult.reason,
+        );
+      }
+
+      setLoading(false);
     };
     loadRanking();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -78,7 +98,8 @@ function VenueRankingChart() {
     ranking.stable.length === 0 &&
     ranking.rough.length === 0 &&
     ranking.nigeRate.length === 0 &&
-    ranking.manshu.length === 0;
+    ranking.manshu.length === 0 &&
+    firstWinRate.length === 0;
 
   return (
     <div className="motor-condition-container">
@@ -100,6 +121,16 @@ function VenueRankingChart() {
 
       {!loading && !error && !isEmpty && (
         <>
+          <RankingTable
+            title={t("analysis.venueRanking.firstWinRateTitle")}
+            rows={firstWinRate}
+            emptyMessage={t("analysis.venueRanking.notEnoughData")}
+            valueHeader={t("analysis.venueRanking.firstWinRateHeader")}
+            formatValue={(row) => `${row.first_win_rate.toFixed(1)}%`}
+          />
+          <p className="table-note">
+            {t("analysis.venueRanking.firstWinRateNote")}
+          </p>
           <RankingTable
             title={t("analysis.venueRanking.stableTitle")}
             rows={ranking.stable}

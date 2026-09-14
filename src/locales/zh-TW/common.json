@@ -751,7 +751,10 @@
     },
     "venueRanking": {
       "title": "🏟️ 本日賽場排行榜",
-      "description": "僅針對本日已確定結果的比賽，以4項指標為各賽場排行。與其他分頁不同，無需選擇賽場、比賽，即可從本日全部賽事中發現值得注目的賽場。",
+      "description": "以5項指標為各賽場排行。與其他分頁不同，無需選擇賽場、比賽，即可從本日全部賽事中發現值得注目的賽場。",
+      "firstWinRateTitle": "🚤 1號艇勝率排行（全24賽場）",
+      "firstWinRateHeader": "1號艇勝率",
+      "firstWinRateNote": "💡 僅此項指標統計最近90天的實績（其他4項指標僅以本日已確定結果的比賽為對象）。",
       "stableTitle": "🛡️ 堅實賽場 TOP5",
       "roughTitle": "🌊 爆冷賽場 TOP5",
       "nigeRateTitle": "🚤 內線逃走率 TOP5",
