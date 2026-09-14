@@ -327,6 +327,55 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
         </div>
       )}
 
+      {hasVenueStats && (
+        <div className="racer-technique-profile">
+          <h3>会場別成績（当地成績、過去2年・出走5走以上）</h3>
+          <div className="table-wrapper">
+            <table className="racer-return-rate-table" translate="no">
+              <thead>
+                <tr>
+                  <th>会場</th>
+                  <th>出走数</th>
+                  <th>勝率</th>
+                  <th>2連率</th>
+                  <th>3連率</th>
+                </tr>
+              </thead>
+              <tbody>
+                {venueStats.map((row) => (
+                  <tr
+                    key={row.venue_code}
+                    className={
+                      vcVenue !== "all" && String(row.venue_code) === vcVenue
+                        ? "racer-vc-row-highlight"
+                        : ""
+                    }
+                  >
+                    <td>{t(`venues.${row.venue_code}`)}</td>
+                    <td>{row.total_races}</td>
+                    <td>
+                      {row.win_rate !== null
+                        ? formatPercent(row.win_rate)
+                        : "-"}
+                    </td>
+                    <td>
+                      {row.top2_rate !== null
+                        ? formatPercent(row.top2_rate)
+                        : "-"}
+                    </td>
+                    <td>
+                      {row.top3_rate !== null
+                        ? formatPercent(row.top3_rate)
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {hasCourseStats && (
         <div className="racer-technique-profile">
           <h3>枠番別成績（全会場計）</h3>
@@ -369,6 +418,42 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
                     <td>
                       {row.top3Rate !== null
                         ? formatPercent(row.top3Rate)
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {hasReturnRate && (
+        <div className="racer-technique-profile">
+          <h3>枠番別回収率（過去180日）</h3>
+          <div className="table-wrapper">
+            <table className="racer-return-rate-table">
+              <thead>
+                <tr>
+                  <th>枠番</th>
+                  <th>出走数</th>
+                  <th>単勝回収率</th>
+                  <th>複勝回収率</th>
+                </tr>
+              </thead>
+              <tbody>
+                {boatReturnRate.map((row) => (
+                  <tr key={row.boat_number}>
+                    <td>{row.boat_number}</td>
+                    <td>{row.sample_count}</td>
+                    <td>
+                      {row.win_return_rate !== null
+                        ? `${row.win_return_rate.toFixed(0)}%`
+                        : "-"}
+                    </td>
+                    <td>
+                      {row.place_return_rate !== null
+                        ? `${row.place_return_rate.toFixed(0)}%`
                         : "-"}
                     </td>
                   </tr>
@@ -592,91 +677,6 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
               />
             </LineChart>
           </ResponsiveContainer>
-        </div>
-      )}
-
-      {hasReturnRate && (
-        <div className="racer-technique-profile">
-          <h3>枠番別回収率（過去180日）</h3>
-          <div className="table-wrapper">
-            <table className="racer-return-rate-table">
-              <thead>
-                <tr>
-                  <th>枠番</th>
-                  <th>出走数</th>
-                  <th>単勝回収率</th>
-                  <th>複勝回収率</th>
-                </tr>
-              </thead>
-              <tbody>
-                {boatReturnRate.map((row) => (
-                  <tr key={row.boat_number}>
-                    <td>{row.boat_number}</td>
-                    <td>{row.sample_count}</td>
-                    <td>
-                      {row.win_return_rate !== null
-                        ? `${row.win_return_rate.toFixed(0)}%`
-                        : "-"}
-                    </td>
-                    <td>
-                      {row.place_return_rate !== null
-                        ? `${row.place_return_rate.toFixed(0)}%`
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {hasVenueStats && (
-        <div className="racer-technique-profile">
-          <h3>会場別成績（当地成績、過去2年・出走5走以上）</h3>
-          <div className="table-wrapper">
-            <table className="racer-return-rate-table" translate="no">
-              <thead>
-                <tr>
-                  <th>会場</th>
-                  <th>出走数</th>
-                  <th>勝率</th>
-                  <th>2連率</th>
-                  <th>3連率</th>
-                </tr>
-              </thead>
-              <tbody>
-                {venueStats.map((row) => (
-                  <tr
-                    key={row.venue_code}
-                    className={
-                      vcVenue !== "all" && String(row.venue_code) === vcVenue
-                        ? "racer-vc-row-highlight"
-                        : ""
-                    }
-                  >
-                    <td>{t(`venues.${row.venue_code}`)}</td>
-                    <td>{row.total_races}</td>
-                    <td>
-                      {row.win_rate !== null
-                        ? formatPercent(row.win_rate)
-                        : "-"}
-                    </td>
-                    <td>
-                      {row.top2_rate !== null
-                        ? formatPercent(row.top2_rate)
-                        : "-"}
-                    </td>
-                    <td>
-                      {row.top3_rate !== null
-                        ? formatPercent(row.top3_rate)
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 
