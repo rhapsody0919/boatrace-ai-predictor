@@ -428,9 +428,6 @@
   "section": {
     "resultTitle": "Data Analysis Results"
   },
-  "animation": {
-    "courseLabel": "Lane {{course}}"
-  },
   "dataTable": {
     "title": "Data Race Card",
     "subtitle": "Compare analytics for all six racers at a glance. Tap a row label for the full analysis",
@@ -749,7 +746,7 @@
     },
     "ad": {
       "title": "⚔️ Advanced Race Data",
-      "description": "Select a race being held today to see each of the six racers' actual \"attack\" patterns from their entry course (how they attack with Sashi, Makuri, etc.) and course 1's \"defense\" patterns (how it gets beaten).",
+      "description": "Select a race being held today to see each of the six racers' \"attack\" patterns by lane (how they attack with Sashi, Makuri, etc.) and lane 1's \"defense\" patterns (how it gets beaten).",
       "empty": "Advanced race data for this race has not been generated yet"
     },
     "raceCard": {
@@ -858,7 +855,7 @@
       },
       "attackdefense": {
         "name": "Advanced Race Data",
-        "description": "Analyzes each racer's attack patterns by entry course and course 1's defense patterns"
+        "description": "Analyzes each racer's attack patterns by lane and lane 1's defense patterns"
       },
       "racecard": {
         "name": "Race Card Data",
@@ -1110,7 +1107,7 @@
       },
       "attackdefense": {
         "title": "About Advanced Race Data",
-        "dataView": "For each racer, this shows the actual distribution of \"how they have attacked and won\" from their entry course (attack: Sashi, Makuri, Makuri-zashi, etc.) and, for course 1 racers, \"how they have been attacked and beaten\" (defense). Comparing with the national average reveals a racer's attacking style.",
+        "dataView": "For each racer, this shows the distribution of \"how they have attacked and won\" by lane (attack: Sashi, Makuri, Makuri-zashi, etc.) and, for lane 1 racers, \"how they have been attacked and beaten\" (defense). Comparing with the national average reveals a racer's attacking style.",
         "tips": [
           {
             "strong": "Outer-lane racers with frequent Makuri attacks",

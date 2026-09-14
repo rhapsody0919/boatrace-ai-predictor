@@ -378,17 +378,17 @@
     "makurizashiDefense": "捲差され",
     "makurizashiAttack": "まくり差し",
     "other": "その他",
-    "exampleDefenseTitle": "1コースの「{{label}} {{count}}/{{total}}」",
-    "exampleDefenseDesc": "→ 1コースで{{total}}回出走し、うち{{count}}回は他の選手に「{{attackLabel}}」で1着を取られた",
-    "exampleAttackTitle": "{{course}}コースの「{{label}} {{count}}/{{total}}」",
-    "exampleAttackDesc": "→ {{course}}コースで{{total}}回出走し、うち{{count}}回は「{{label}}」で1着を取った",
-    "legendWinsDesc": ": そのコースでの1着回数 / 出走回数",
+    "exampleDefenseTitle": "1号艇の「{{label}} {{count}}/{{total}}」",
+    "exampleDefenseDesc": "→ 1号艇として{{total}}回出走し、うち{{count}}回は他の選手に「{{attackLabel}}」で1着を取られた",
+    "exampleAttackTitle": "{{course}}号艇の「{{label}} {{count}}/{{total}}」",
+    "exampleAttackDesc": "→ {{course}}号艇として{{total}}回出走し、うち{{count}}回は「{{label}}」で1着を取った",
+    "legendWinsDesc": ": その枠番での1着回数 / 出走回数",
     "legendRed": "赤字",
-    "legendRedDesc": ": 1コースが受けた攻撃（差され等）の回数",
+    "legendRedDesc": ": 1号艇が受けた攻撃（差され等）の回数",
     "legendBlue": "青字",
-    "legendBlueDesc": ": 2-6コースが仕掛けた攻撃（差し等）の回数",
+    "legendBlueDesc": ": 2-6号艇が仕掛けた攻撃（差し等）の回数",
     "legendGreen": "緑字",
-    "legendGreenDesc": ": 1コースの逃げ成功回数",
+    "legendGreenDesc": ": 1号艇の逃げ成功回数",
     "supplementDefault": "… 全国平均値（個人データ不足のため参考値を表示）",
     "supplementReference": "… 参考データ（データ数が少ないため精度が低い可能性があります）"
   },
@@ -425,9 +425,6 @@
   },
   "section": {
     "resultTitle": "データ分析結果"
-  },
-  "animation": {
-    "courseLabel": "{{course}}コース"
   },
   "dataTable": {
     "title": "データ出走表",
@@ -746,7 +743,7 @@
     },
     "ad": {
       "title": "⚔️ 超展開データ",
-      "description": "本日開催中のレースを選ぶと、出走する6選手それぞれの進入コースでの「攻め手」（差し・まくり等でどう攻めるか）と、1コースの「守り手」（どう攻められて敗れるか）の実績分布がわかります。",
+      "description": "本日開催中のレースを選ぶと、出走する6選手それぞれの枠番（艇番）別の「攻め手」（差し・まくり等でどう攻めるか）と、1号艇の「守り手」（どう攻められて敗れるか）の実績分布がわかります。",
       "empty": "このレースの超展開データがまだ生成されていません"
     },
     "raceCard": {
@@ -855,7 +852,7 @@
       },
       "attackdefense": {
         "name": "超展開データ",
-        "description": "出走選手ごとの進入コースでの攻め手（差し・まくり等）と守り手の実績分布を分析"
+        "description": "出走選手ごとの枠番（艇番）別の攻め手（差し・まくり等）と守り手の実績分布を分析"
       },
       "racecard": {
         "name": "出走表データ",
@@ -1107,7 +1104,7 @@
       },
       "attackdefense": {
         "title": "超展開データについて",
-        "dataView": "出走選手ごとに、進入コースから「どう攻めて勝ってきたか」（攻め手: 差し・まくり・まくり差し等）と、1コースの選手が「どう攻められて敗れてきたか」（守り手）の実績分布を表示しています。全国平均との比較で、その選手の攻めの型が読み取れます。",
+        "dataView": "出走選手ごとに、その枠番（艇番）から「どう攻めて勝ってきたか」（攻め手: 差し・まくり・まくり差し等）と、1号艇の選手が「どう攻められて敗れてきたか」（守り手）の実績分布を表示しています。全国平均との比較で、その選手の攻めの型が読み取れます。",
         "tips": [
           {
             "strong": "まくり攻めが多い外枠選手",

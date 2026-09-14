@@ -5,24 +5,77 @@ import "./AttackDefenseTable.css";
 // 全国平均 攻撃分布（14,155レース集計）
 const DEFAULT_ATTACK = {
   1: { nige: 0.954, nuki: 0.044, megumare: 0.002 },
-  2: { sashi: 0.531, makuri: 0.352, nuki: 0.063, nige: 0.039, makurizashi: 0.015 },
-  3: { makuri: 0.45, makurizashi: 0.341, sashi: 0.124, nuki: 0.054, nige: 0.031 },
-  4: { makuri: 0.486, makurizashi: 0.248, sashi: 0.193, nuki: 0.046, nige: 0.027 },
-  5: { makurizashi: 0.548, makuri: 0.177, nuki: 0.113, sashi: 0.097, nige: 0.065 },
-  6: { makuri: 0.4, makurizashi: 0.267, nuki: 0.167, sashi: 0.133, nige: 0.033 },
+  2: {
+    sashi: 0.531,
+    makuri: 0.352,
+    nuki: 0.063,
+    nige: 0.039,
+    makurizashi: 0.015,
+  },
+  3: {
+    makuri: 0.45,
+    makurizashi: 0.341,
+    sashi: 0.124,
+    nuki: 0.054,
+    nige: 0.031,
+  },
+  4: {
+    makuri: 0.486,
+    makurizashi: 0.248,
+    sashi: 0.193,
+    nuki: 0.046,
+    nige: 0.027,
+  },
+  5: {
+    makurizashi: 0.548,
+    makuri: 0.177,
+    nuki: 0.113,
+    sashi: 0.097,
+    nige: 0.065,
+  },
+  6: {
+    makuri: 0.4,
+    makurizashi: 0.267,
+    nuki: 0.167,
+    sashi: 0.133,
+    nige: 0.033,
+  },
 };
 
 // 全国平均 防御分布
 const DEFAULT_DEFENSE = {
-  1: { sashi: 0.28, makuri: 0.25, makurizashi: 0.22, nuki: 0.15, megumare: 0.10 },
+  1: {
+    sashi: 0.28,
+    makuri: 0.25,
+    makurizashi: 0.22,
+    nuki: 0.15,
+    megumare: 0.1,
+  },
 };
 
 // 表示する行の定義（文言は i18n キーで管理）
 const TECHNIQUE_ROWS = [
-  { key: "nige", label1Key: "attackDefense.nige", labelOtherKey: null, course1Only: true },
-  { key: "sashi", label1Key: "attackDefense.sashiDefense", labelOtherKey: "attackDefense.sashiAttack" },
-  { key: "makuri", label1Key: "attackDefense.makuriDefense", labelOtherKey: "attackDefense.makuriAttack" },
-  { key: "makurizashi", label1Key: "attackDefense.makurizashiDefense", labelOtherKey: "attackDefense.makurizashiAttack" },
+  {
+    key: "nige",
+    label1Key: "attackDefense.nige",
+    labelOtherKey: null,
+    course1Only: true,
+  },
+  {
+    key: "sashi",
+    label1Key: "attackDefense.sashiDefense",
+    labelOtherKey: "attackDefense.sashiAttack",
+  },
+  {
+    key: "makuri",
+    label1Key: "attackDefense.makuriDefense",
+    labelOtherKey: "attackDefense.makuriAttack",
+  },
+  {
+    key: "makurizashi",
+    label1Key: "attackDefense.makurizashiDefense",
+    labelOtherKey: "attackDefense.makurizashiAttack",
+  },
   {
     key: "other",
     label1Key: "attackDefense.other",
@@ -147,9 +200,18 @@ function renderCellValue(val) {
 }
 
 const TECH_LABEL_KEYS = {
-  sashi: { defense: "attackDefense.sashiDefense", attack: "attackDefense.sashiAttack" },
-  makuri: { defense: "attackDefense.makuriDefense", attack: "attackDefense.makuriAttack" },
-  makurizashi: { defense: "attackDefense.makurizashiDefense", attack: "attackDefense.makurizashiAttack" },
+  sashi: {
+    defense: "attackDefense.sashiDefense",
+    attack: "attackDefense.sashiAttack",
+  },
+  makuri: {
+    defense: "attackDefense.makuriDefense",
+    attack: "attackDefense.makuriAttack",
+  },
+  makurizashi: {
+    defense: "attackDefense.makurizashiDefense",
+    attack: "attackDefense.makurizashiAttack",
+  },
 };
 
 // 実データから凡例の例文を生成
@@ -172,8 +234,16 @@ function buildExamples(sorted, t) {
           if (count > 0) {
             const label = t(TECH_LABEL_KEYS[tech].defense);
             examples.push({
-              title: t("attackDefense.exampleDefenseTitle", { label, count, total }),
-              desc: t("attackDefense.exampleDefenseDesc", { count, total, attackLabel: t(TECH_LABEL_KEYS[tech].attack) }),
+              title: t("attackDefense.exampleDefenseTitle", {
+                label,
+                count,
+                total,
+              }),
+              desc: t("attackDefense.exampleDefenseDesc", {
+                count,
+                total,
+                attackLabel: t(TECH_LABEL_KEYS[tech].attack),
+              }),
             });
             break;
           }
@@ -200,8 +270,18 @@ function buildExamples(sorted, t) {
         if (count > 0) {
           const label = t(TECH_LABEL_KEYS[tech].attack);
           examples.push({
-            title: t("attackDefense.exampleAttackTitle", { course, label, count, total }),
-            desc: t("attackDefense.exampleAttackDesc", { course, label, count, total }),
+            title: t("attackDefense.exampleAttackTitle", {
+              course,
+              label,
+              count,
+              total,
+            }),
+            desc: t("attackDefense.exampleAttackDesc", {
+              course,
+              label,
+              count,
+              total,
+            }),
           });
           break;
         }
@@ -228,6 +308,9 @@ function RowLabel({ row }) {
   );
 }
 
+// 注: 見出しは「号艇」表示（枠番＝艇番基準）。実際の進入コース変化（前づけ）は
+// BOA-257の制約により区別できないため、race_results.course_1〜6は常に艇番と
+// 一致する値として扱う（raceIndicators.jsxのcourseRateOf関数と同じ制約）
 export default function AttackDefenseTable({ racerStats, players }) {
   const { t } = useTranslation();
 
@@ -266,9 +349,11 @@ export default function AttackDefenseTable({ racerStats, players }) {
                       color: course === 1 ? "#1e293b" : color.text,
                     }}
                   >
-                    <div>{t("animation.courseLabel", { course })}</div>
+                    <div>{t("analysis.boatN", { n: course })}</div>
                     <div className="ad-role-sub">
-                      {course === 1 ? t("attackDefense.defense") : t("attackDefense.attack")}
+                      {course === 1
+                        ? t("attackDefense.defense")
+                        : t("attackDefense.attack")}
                     </div>
                   </th>
                 );
@@ -284,7 +369,9 @@ export default function AttackDefenseTable({ racerStats, players }) {
             </tr>
 
             <tr>
-              <td className="ad-label-cell">{t("attackDefense.winsPerStarts")}</td>
+              <td className="ad-label-cell">
+                {t("attackDefense.winsPerStarts")}
+              </td>
               {sorted.map((s) => {
                 const course = String(s.course || s.boatNumber);
                 const counts = s.courseRaceCounts?.[course];
@@ -310,7 +397,9 @@ export default function AttackDefenseTable({ racerStats, players }) {
 
                   return (
                     <td key={s.boatNumber}>
-                      {renderCellValue(getCellValue(row, course, s, courseStr, wins, total))}
+                      {renderCellValue(
+                        getCellValue(row, course, s, courseStr, wins, total),
+                      )}
                     </td>
                   );
                 })}
@@ -338,7 +427,7 @@ export default function AttackDefenseTable({ racerStats, players }) {
                       color: course === 1 ? "#1e293b" : color.text,
                     }}
                   >
-                    {t("animation.courseLabel", { course })}
+                    {t("analysis.boatN", { n: course })}
                   </th>
                 );
               })}
@@ -346,13 +435,17 @@ export default function AttackDefenseTable({ racerStats, players }) {
           </thead>
           <tbody>
             <tr>
-              <td className="ad-label-cell ad-sticky-col">{t("attackDefense.racer")}</td>
+              <td className="ad-label-cell ad-sticky-col">
+                {t("attackDefense.racer")}
+              </td>
               {sorted.map((s) => (
                 <td key={s.boatNumber}>{getPlayerName(s.boatNumber)}</td>
               ))}
             </tr>
             <tr>
-              <td className="ad-label-cell ad-sticky-col">{t("attackDefense.winsPerStarts")}</td>
+              <td className="ad-label-cell ad-sticky-col">
+                {t("attackDefense.winsPerStarts")}
+              </td>
               {sorted.map((s) => {
                 const course = String(s.course || s.boatNumber);
                 const counts = s.courseRaceCounts?.[course];
@@ -377,7 +470,9 @@ export default function AttackDefenseTable({ racerStats, players }) {
 
                   return (
                     <td key={s.boatNumber}>
-                      {renderCellValue(getCellValue(row, course, s, courseStr, wins, total))}
+                      {renderCellValue(
+                        getCellValue(row, course, s, courseStr, wins, total),
+                      )}
                     </td>
                   );
                 })}
@@ -398,10 +493,22 @@ function Legend({ sorted }) {
 
   return (
     <div className="ad-legend">
-      <p><strong>{t("attackDefense.winsPerStarts")}</strong>{t("attackDefense.legendWinsDesc")}</p>
-      <p><span className="ad-tech-defense">{t("attackDefense.legendRed")}</span>{t("attackDefense.legendRedDesc")}</p>
-      <p><span className="ad-tech-attack">{t("attackDefense.legendBlue")}</span>{t("attackDefense.legendBlueDesc")}</p>
-      <p><span className="ad-tech-nige">{t("attackDefense.legendGreen")}</span>{t("attackDefense.legendGreenDesc")}</p>
+      <p>
+        <strong>{t("attackDefense.winsPerStarts")}</strong>
+        {t("attackDefense.legendWinsDesc")}
+      </p>
+      <p>
+        <span className="ad-tech-defense">{t("attackDefense.legendRed")}</span>
+        {t("attackDefense.legendRedDesc")}
+      </p>
+      <p>
+        <span className="ad-tech-attack">{t("attackDefense.legendBlue")}</span>
+        {t("attackDefense.legendBlueDesc")}
+      </p>
+      <p>
+        <span className="ad-tech-nige">{t("attackDefense.legendGreen")}</span>
+        {t("attackDefense.legendGreenDesc")}
+      </p>
       {examples.length > 0 && (
         <div className="ad-legend-example">
           {examples.map((ex, i) => (
@@ -413,9 +520,11 @@ function Legend({ sorted }) {
         </div>
       )}
       <div className="ad-legend-supplement">
-        <span className="ad-default-value">28%</span> {t("attackDefense.supplementDefault")}
+        <span className="ad-default-value">28%</span>{" "}
+        {t("attackDefense.supplementDefault")}
         <br />
-        3/5<sup className="ad-reference-sup">※</sup> {t("attackDefense.supplementReference")}
+        3/5<sup className="ad-reference-sup">※</sup>{" "}
+        {t("attackDefense.supplementReference")}
       </div>
     </div>
   );
