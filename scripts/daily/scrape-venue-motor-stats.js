@@ -11,6 +11,7 @@
  * ないため、他会場のレート制限に配慮する理由がない）。
  */
 import * as cheerio from "cheerio";
+import fs from "node:fs";
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
 import { getTodayDateJST } from "../lib/dateUtils.js";
 import {
@@ -20,6 +21,20 @@ import {
 import { parseGenericMotorTable } from "../lib/venueMotorStats/parsers/genericTable.js";
 import { parseGamagoriMotorTable } from "../lib/venueMotorStats/parsers/gamagori.js";
 import { parseMiyajimaMotorPdf } from "../lib/venueMotorStats/parsers/miyajimaPdf.js";
+import { updateVenueHealth } from "../lib/venueMotorStats/driftHealth.js";
+
+const HEALTH_FILE_PATH = new URL(
+  "../../data/analysis/venue-motor-stats-health.json",
+  import.meta.url,
+);
+
+function loadHealth() {
+  try {
+    return JSON.parse(fs.readFileSync(HEALTH_FILE_PATH, "utf8"));
+  } catch {
+    return {};
+  }
+}
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -91,11 +106,17 @@ export async function run() {
 
   const allRows = [];
   let successCount = 0;
+  const health = loadHealth();
 
   for (let i = 0; i < VENUE_MOTOR_STATS_CONFIG.length; i++) {
     const venue = VENUE_MOTOR_STATS_CONFIG[i];
     try {
       const { data, reason } = await fetchAndParse(venue);
+      health[venue.venueCode] = updateVenueHealth(health[venue.venueCode], {
+        success: !!data,
+        reason: data ? null : reason,
+        date: scrapedDate,
+      });
       if (!data) {
         console.log(`  ⚠️ ${venue.name}: データなし (${reason})`);
       } else {
@@ -127,10 +148,11 @@ export async function run() {
       }
     } catch (error) {
       console.error(`  ❌ ${venue.name}: ${error.message}`);
-    }
-
-    if (i < VENUE_MOTOR_STATS_CONFIG.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      health[venue.venueCode] = updateVenueHealth(health[venue.venueCode], {
+        success: false,
+        reason: error.message,
+        date: scrapedDate,
+      });
     }
   }
 
@@ -146,6 +168,9 @@ export async function run() {
       }
     }
   }
+
+  fs.mkdirSync(new URL(".", HEALTH_FILE_PATH), { recursive: true });
+  fs.writeFileSync(HEALTH_FILE_PATH, JSON.stringify(health, null, 2) + "\n");
 
   console.log(
     `📊 完了: ${successCount}/${VENUE_MOTOR_STATS_CONFIG.length}会場成功、${allRows.length}件保存`,

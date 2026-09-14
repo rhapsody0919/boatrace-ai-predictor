@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import TrendLineChart from "../analysis/TrendLineChart";
+import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import "./RacerMotorStatusCard.css";
 
 /**
@@ -49,30 +50,22 @@ export default function RacerMotorStatusCard({ status }) {
         {venueName}・{motorNumber}号機
       </p>
 
-      {(venueMotorStats?.raceCount !== null &&
-        venueMotorStats?.raceCount !== undefined) ||
-      (venueMotorStats?.meetCount !== null &&
-        venueMotorStats?.meetCount !== undefined) ? (
-        <div className="racer-motor-status-freshness">
-          <span className="racer-motor-status-freshness-label">
-            🔧 モーター鮮度
-          </span>
-          <div className="racer-motor-status-freshness-badges">
-            {venueMotorStats.raceCount !== null &&
-              venueMotorStats.raceCount !== undefined && (
-                <span className="racer-motor-status-freshness-badge">
-                  {venueMotorStats.raceCount}走目
-                </span>
-              )}
-            {venueMotorStats.meetCount !== null &&
-              venueMotorStats.meetCount !== undefined && (
-                <span className="racer-motor-status-freshness-badge">
-                  {venueMotorStats.meetCount}節目
-                </span>
-              )}
-          </div>
-        </div>
-      ) : null}
+      <MotorStatBadgeRow
+        icon="🔧"
+        label="モーター鮮度"
+        badges={[
+          venueMotorStats?.raceCount !== null &&
+            venueMotorStats?.raceCount !== undefined && {
+              key: "raceCount",
+              text: `${venueMotorStats.raceCount}走目`,
+            },
+          venueMotorStats?.meetCount !== null &&
+            venueMotorStats?.meetCount !== undefined && {
+              key: "meetCount",
+              text: `${venueMotorStats.meetCount}節目`,
+            },
+        ].filter(Boolean)}
+      />
 
       {hasPowerIndex && (
         <>

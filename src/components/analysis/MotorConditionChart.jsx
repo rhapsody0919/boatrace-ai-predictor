@@ -11,6 +11,8 @@ import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import RacerGradeBadge from "../racer/RacerGradeBadge";
+import MotorStatBadgeRow from "../MotorStatBadgeRow";
+import MotorRecordStatCards from "../MotorRecordStatCards";
 import TrendLineChart from "./TrendLineChart";
 import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
@@ -43,6 +45,7 @@ function MotorConditionChart({
   const [usageHistory, setUsageHistory] = useState([]);
   const [partsHistory, setPartsHistory] = useState([]);
   const [venueMotorStats, setVenueMotorStats] = useState(null);
+  const [championshipHistory, setChampionshipHistory] = useState([]);
   const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
   // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
@@ -108,33 +111,42 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
-        const [trend, power, history, parts, venueStats] = await Promise.all([
-          supabaseDataService.getMotorConditionTrend(
-            selectedVenue,
-            drillDownMotor,
-            periodDays,
-          ),
-          supabaseDataService.getMotorPowerIndex(
-            selectedVenue,
-            drillDownMotor,
-            periodDays,
-          ),
-          supabaseDataService.getMotorUsageHistory(
-            selectedVenue,
-            drillDownMotor,
-          ),
-          supabaseDataService.getMotorPartsHistory(
-            selectedVenue,
-            drillDownMotor,
-            periodDays,
-          ),
-          supabaseDataService.getVenueMotorStats(selectedVenue, drillDownMotor),
-        ]);
+        const [trend, power, history, parts, venueStats, championships] =
+          await Promise.all([
+            supabaseDataService.getMotorConditionTrend(
+              selectedVenue,
+              drillDownMotor,
+              periodDays,
+            ),
+            supabaseDataService.getMotorPowerIndex(
+              selectedVenue,
+              drillDownMotor,
+              periodDays,
+            ),
+            supabaseDataService.getMotorUsageHistory(
+              selectedVenue,
+              drillDownMotor,
+            ),
+            supabaseDataService.getMotorPartsHistory(
+              selectedVenue,
+              drillDownMotor,
+              periodDays,
+            ),
+            supabaseDataService.getVenueMotorStats(
+              selectedVenue,
+              drillDownMotor,
+            ),
+            supabaseDataService.getVenueMotorChampionshipHistory(
+              selectedVenue,
+              drillDownMotor,
+            ),
+          ]);
         setTrendData(trend);
         setPowerIndex(power);
         setUsageHistory(history);
         setPartsHistory(parts.events ?? []);
         setVenueMotorStats(venueStats);
+        setChampionshipHistory(championships);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
@@ -171,6 +183,36 @@ function MotorConditionChart({
     breakdown.length > 0
       ? Math.max(...breakdown.map((r) => r.motor_2rate ?? 0))
       : null;
+
+  // kyoteibiyori等の会場出走表に倣い、優出数・優勝数・1着率は艇ごとの
+  // 単一バッジではなく、同じレースの全艇を横並びで比較できる列として表示する
+  // （1位・2位を色分けするのも合わせて模倣。BOA-264追加調査）
+  const firstPlaceRates = breakdown.map((r) =>
+    r.race_count && r.first_place_count !== null
+      ? (r.first_place_count / r.race_count) * 100
+      : null,
+  );
+  const rankClassFor = (values) => {
+    const distinct = [...new Set(values.filter((v) => v !== null))].sort(
+      (a, b) => b - a,
+    );
+    // 全艇が同値（例: まだ実績が無く全て0）の場合は「1位」を強調する意味が
+    // 無いため、RaceCardDataTable.jsxのrankClass()と同じくハイライトなしにする
+    if (distinct.length <= 1) return () => "";
+    return (value) => {
+      if (value === null || value === undefined) return "";
+      if (distinct[0] !== undefined && value === distinct[0])
+        return "motor-stat-rank1";
+      if (distinct[1] !== undefined && value === distinct[1])
+        return "motor-stat-rank2";
+      return "";
+    };
+  };
+  const finalCountRankClass = rankClassFor(breakdown.map((r) => r.final_count));
+  const championshipCountRankClass = rankClassFor(
+    breakdown.map((r) => r.championship_count),
+  );
+  const firstPlaceRateRankClass = rankClassFor(firstPlaceRates);
 
   return (
     <div className="motor-condition-container">
@@ -266,11 +308,14 @@ function MotorConditionChart({
                   <th>{t("analysis.motor.motorNumberHeader")}</th>
                   <th>{t("analysis.motor.rate2Header")}</th>
                   <th>{t("analysis.motor.rate3Header")}</th>
+                  <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
                   <th>{t("analysis.motor.powerIndexHeader")}</th>
+                  <th>{t("analysis.motor.finalCountHeader")}</th>
+                  <th>{t("analysis.motor.championshipCountHeader")}</th>
                 </tr>
               </thead>
               <tbody>
-                {breakdown.map((row) => (
+                {breakdown.map((row, i) => (
                   <tr
                     key={row.boat_number}
                     className={`motor-ranking-row ${row.motor_2rate === bestMotor2Rate ? "best-motor" : ""}`}
@@ -286,6 +331,13 @@ function MotorConditionChart({
                     <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
                     <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
                     <td
+                      className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
+                    >
+                      {firstPlaceRates[i] !== null
+                        ? `${firstPlaceRates[i].toFixed(1)}%`
+                        : "-"}
+                    </td>
+                    <td
                       className={`rate power-index ${
                         row.power_index > 0
                           ? "power-index-good"
@@ -297,6 +349,16 @@ function MotorConditionChart({
                       {row.power_index !== null && row.power_index !== undefined
                         ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
                         : "-"}
+                    </td>
+                    <td
+                      className={`rate ${finalCountRankClass(row.final_count)}`}
+                    >
+                      {row.final_count ?? "-"}
+                    </td>
+                    <td
+                      className={`rate ${championshipCountRankClass(row.championship_count)}`}
+                    >
+                      {row.championship_count ?? "-"}
                     </td>
                   </tr>
                 ))}
@@ -338,34 +400,77 @@ function MotorConditionChart({
               </p>
             )}
 
-          {(venueMotorStats?.raceCount !== null &&
-            venueMotorStats?.raceCount !== undefined) ||
-          (venueMotorStats?.meetCount !== null &&
-            venueMotorStats?.meetCount !== undefined) ? (
-            <div className="venue-motor-freshness">
-              <span className="venue-motor-freshness-label">
-                🔧 {t("analysis.motor.freshnessLabel")}
-              </span>
-              <div className="venue-motor-freshness-badges">
-                {venueMotorStats.raceCount !== null &&
-                  venueMotorStats.raceCount !== undefined && (
-                    <span className="venue-motor-freshness-badge">
-                      {t("analysis.motor.freshnessRaceBadge", {
-                        raceCount: venueMotorStats.raceCount,
-                      })}
-                    </span>
-                  )}
-                {venueMotorStats.meetCount !== null &&
-                  venueMotorStats.meetCount !== undefined && (
-                    <span className="venue-motor-freshness-badge">
-                      {t("analysis.motor.freshnessMeetBadge", {
-                        meetCount: venueMotorStats.meetCount,
-                      })}
-                    </span>
-                  )}
-              </div>
+          <MotorStatBadgeRow
+            icon="🔧"
+            label={t("analysis.motor.freshnessLabel")}
+            badges={[
+              venueMotorStats?.raceCount !== null &&
+                venueMotorStats?.raceCount !== undefined && {
+                  key: "raceCount",
+                  text: t("analysis.motor.freshnessRaceBadge", {
+                    raceCount: venueMotorStats.raceCount,
+                  }),
+                },
+              venueMotorStats?.meetCount !== null &&
+                venueMotorStats?.meetCount !== undefined && {
+                  key: "meetCount",
+                  text: t("analysis.motor.freshnessMeetBadge", {
+                    meetCount: venueMotorStats.meetCount,
+                  }),
+                },
+            ].filter(Boolean)}
+          />
+
+          <MotorRecordStatCards
+            cards={[
+              venueMotorStats?.finalCount !== null &&
+                venueMotorStats?.finalCount !== undefined && {
+                  key: "finalCount",
+                  value: venueMotorStats.finalCount,
+                  label: t("analysis.motor.finalCountHeader"),
+                },
+              venueMotorStats?.championshipCount !== null &&
+                venueMotorStats?.championshipCount !== undefined && {
+                  key: "championshipCount",
+                  value: venueMotorStats.championshipCount,
+                  label: t("analysis.motor.championshipCountHeader"),
+                },
+              venueMotorStats?.firstPlaceCount !== null &&
+                venueMotorStats?.firstPlaceCount !== undefined &&
+                venueMotorStats?.raceCount && {
+                  key: "firstPlaceRate",
+                  value: `${(
+                    (venueMotorStats.firstPlaceCount /
+                      venueMotorStats.raceCount) *
+                    100
+                  ).toFixed(1)}%`,
+                  label: t("analysis.motor.firstPlaceRateHeader"),
+                },
+            ].filter(Boolean)}
+          />
+
+          <h3 className="selected-motor-heading">
+            {t("analysis.motor.championshipHistoryHeading")}
+          </h3>
+          {championshipHistory.length > 0 ? (
+            <ul className="history-list">
+              {championshipHistory.map((win) => (
+                <li key={win.raceId}>
+                  <span className="history-date">{win.date}</span>
+                  <span translate="no" className="usage-history-player">
+                    {win.playerName?.replace(/\s+/g, "")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="empty-state">
+              {t("analysis.motor.championshipHistoryEmpty")}
             </div>
-          ) : null}
+          )}
+          <p className="table-note">
+            {t("analysis.motor.championshipHistoryNote")}
+          </p>
 
           {chartData.length > 0 ? (
             <TrendLineChart

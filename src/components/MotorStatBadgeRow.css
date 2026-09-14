@@ -1,0 +1,28 @@
+.motor-stat-badge-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.motor-stat-badge-row-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.motor-stat-badge-row-badges {
+  display: flex;
+  gap: var(--spacing-1-5);
+  flex-wrap: wrap;
+}
+
+.motor-stat-badge-row-badge {
+  padding: var(--spacing-1) var(--spacing-2-5);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--surface-page);
+}

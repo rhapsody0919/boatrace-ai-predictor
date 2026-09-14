@@ -18,6 +18,8 @@
     "verify:topic-target-claim": "node scripts/maintenance/verify-topic-target-claim.js",
     "verify:format-column-migration": "node scripts/maintenance/verify-format-column-migration.js",
     "verify:venue-motor-stats": "node scripts/maintenance/verify-venue-motor-stats-parsers.js",
+    "verify:venue-motor-stats-drift": "node scripts/maintenance/verify-venue-motor-stats-drift-detection.js",
+    "verify:race-stage": "node scripts/maintenance/verify-race-stage-parsing.js",
     "test:e2e": "playwright test",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
