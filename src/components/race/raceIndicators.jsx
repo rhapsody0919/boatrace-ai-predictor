@@ -140,6 +140,10 @@ export function buildIndicatorRows({
       boat: p.number,
       value: toNumber(p.localWinRate),
     })),
+    twoRate: players.map((p) => ({
+      boat: p.number,
+      value: toNumber(p.global2Rate),
+    })),
     // 詳細分析データ(analysis.motor)が無い場合はentries(players)のmotor2Rateに
     // フォールバックする（一覧カードでの常時表示など、analysisを取得しない文脈でも
     // 最良艇ハイライトが機能するようにするため）
@@ -218,6 +222,28 @@ export function buildIndicatorRows({
         const rate = toNumber(p.localWinRate);
         return rate !== null ? (
           <span className="drt-value">{rate.toFixed(2)}</span>
+        ) : (
+          "—"
+        );
+      },
+    },
+    {
+      key: "twoRate",
+      label: t("dataTable.rowTwoRate"),
+      shortLabel: t("review.cols.twoRate"),
+      tab: "racecard",
+      best: bestOf(cand.twoRate),
+      signal: (boat) => rankSignal(cand.twoRate, boat),
+      itemText: (boat) => {
+        const rank = rankOf(cand.twoRate, boat);
+        return rank === null
+          ? null
+          : t("review.itemRank", { label: t("dataTable.rowTwoRate"), rank });
+      },
+      render: (p) => {
+        const rate = toNumber(p.global2Rate);
+        return rate !== null ? (
+          <span className="drt-value">{rate.toFixed(1)}%</span>
         ) : (
           "—"
         );

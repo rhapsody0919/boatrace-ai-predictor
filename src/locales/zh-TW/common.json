@@ -445,6 +445,7 @@
     "winCount": "{{n}}勝",
     "note": "分析數據為過去90天（回收率為180天）的實績統計。醒目標示為本場最佳值。僅供參考，不保證結果",
     "rowLocalWinRate": "當地勝率",
+    "rowTwoRate": "全國2連率",
     "rowAvgSt": "平均ST",
     "rowExSt": "展示ST",
     "rowCourseRate": "進入航道勝率",
@@ -529,6 +530,7 @@
     "cols": {
       "winRate": "勝率",
       "localWinRate": "當地",
+      "twoRate": "2連率",
       "motor": "馬達",
       "form": "狀態",
       "avgSt": "平均ST",
