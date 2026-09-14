@@ -9,18 +9,24 @@
  * 詳細: docs/design/scraping-serverless-migration/spec.md
  *
  * 認証: Authorization: Bearer {CRON_SECRET} ヘッダーが一致しない限り拒否する。
- * cron-job.org のタイムアウトは30秒のため、応答をそれ以内に返す設計にすること
- * （実測ベースでは展示データ取得は数レース〜十数レースなら数十秒以内に収まる見込み。
- * 超過が確認された場合は spec.md の「タイムアウト設計」案A/Bを検討する）。
+ *
+ * タイムアウト設計（案B採用、2026-09-14決定）: cron-job.orgのタイムアウト（30秒）と
+ * 実際のスクレイピング所要時間（対象レース数次第で30秒を超えうる、実測で確認済み）は
+ * 別々の関心事のため、レスポンスを即座に返し、実処理は waitUntil() でバックグラウンド
+ * 継続する。「トリガーが届いたか」（cron-job.orgの関心）と「スクレイピング・書き込みが
+ * 成功したか」（こちらの関心）を混同しない設計。後者の監視は日次の欠落率チェック
+ * （spec.md Step 2）で行う。1回あたりの処理レース数に人為的な上限は設けない
+ * （設ける＝GitHub Actionsで起きたキュー詰まりを小さいスケールで再現するだけのため）。
  */
 
 import { timingSafeEqual } from "node:crypto";
+import { waitUntil } from "@vercel/functions";
 import { getTodayDateJST } from "../../scripts/lib/dateUtils.js";
 import { getRaceSchedule } from "../../scripts/lib/raceSchedule.js";
 import { run as runExhibition } from "../../scripts/daily/scrape-exhibition-data.js";
 
 export const config = {
-  maxDuration: 60,
+  maxDuration: 300,
 };
 
 // 単純な !== 比較はタイミングサイドチャネルになりうるため定数時間で比較する
@@ -37,28 +43,40 @@ export default async function handler(req, res) {
     return res.status(401).json({ success: false, error: "unauthorized" });
   }
 
+  const date = getTodayDateJST();
   try {
-    const date = getTodayDateJST();
     const schedule = await getRaceSchedule(date);
 
     if (schedule.length === 0) {
       return res.status(200).json({
         success: true,
-        updated: false,
+        accepted: false,
         message: "no schedule for today",
         date,
       });
     }
 
-    const result = await runExhibition(schedule, date);
+    // cron-job.orgへは即座に応答を返し、実際のスクレイピング・書き込みは
+    // バックグラウンドで継続する（対象レース数に関わらず同じコードパス、
+    // 人為的な件数上限は設けない）。結果はSupabaseへの書き込みそのものと
+    // 関数ログで確認する（日次の欠落率チェックが正式な監視手段）。
+    waitUntil(
+      runExhibition(schedule, date).catch((error) => {
+        console.error(
+          "❌ 展示データ取得エラー（バックグラウンド処理）:",
+          error,
+        );
+      }),
+    );
 
-    return res.status(200).json({
+    return res.status(202).json({
       success: true,
+      accepted: true,
       date,
-      ...result,
+      message: "processing in background",
     });
   } catch (error) {
-    console.error("❌ 展示データ取得エラー（Vercel Function）:", error);
+    console.error("❌ スケジュール取得エラー（Vercel Function）:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 }

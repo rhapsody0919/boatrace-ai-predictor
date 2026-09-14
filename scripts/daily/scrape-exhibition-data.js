@@ -135,6 +135,11 @@ export function scrapeExhibitionData($) {
   return { data: exhibitionData, reason: null };
 }
 
+// scripts/lib/supabaseClient.js の FETCH_TIMEOUT_MSと同じ値。
+// 2026-08-13判明のNode.js標準fetch（undici）無期限ハング不具合と同種のリスクが
+// boatrace.jpへのこのfetchにもあるため、PR #639セルフレビューで追加。
+const FETCH_TIMEOUT_MS = 15000;
+
 /**
  * 1レースの展示データを取得
  * @returns {{ data: Array|null, reason: string|null }}
@@ -144,8 +149,13 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
   const jcd = String(venueCode).padStart(2, "0");
   const url = `https://www.boatrace.jp/owpc/pc/race/beforeinfo?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { headers: FETCH_HEADERS });
+    const response = await fetch(url, {
+      headers: FETCH_HEADERS,
+      signal: controller.signal,
+    });
     if (!response.ok) {
       return { data: null, reason: `http_${response.status}` };
     }
@@ -158,6 +168,8 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R: ${error.message}`,
     );
     return { data: null, reason: `error: ${error.message}` };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
