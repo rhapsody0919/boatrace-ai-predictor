@@ -15,6 +15,8 @@ import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import MotorRecordStatCards from "../MotorRecordStatCards";
 import TrendLineChart from "./TrendLineChart";
 import DrillDownHeader from "./DrillDownHeader";
+import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
+import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
 import "./MotorConditionChart.css";
 
 function MotorConditionChart({
@@ -46,6 +48,11 @@ function MotorConditionChart({
   const [partsHistory, setPartsHistory] = useState([]);
   const [venueMotorStats, setVenueMotorStats] = useState(null);
   const [championshipHistory, setChampionshipHistory] = useState([]);
+  // BOA-301: 会場内順位(FR-1)・枠番別成績(FR-2/3)・選手×枠成績(FR-4)
+  const [venueMotorRanking, setVenueMotorRanking] = useState(null);
+  const [motorWakuStats, setMotorWakuStats] = useState([]);
+  const [motorRacerWakuStats, setMotorRacerWakuStats] = useState([]);
+  const [selectedWakuCourse, setSelectedWakuCourse] = useState(null);
   const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
   // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
@@ -111,42 +118,63 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
-        const [trend, power, history, parts, venueStats, championships] =
-          await Promise.all([
-            supabaseDataService.getMotorConditionTrend(
-              selectedVenue,
-              drillDownMotor,
-              periodDays,
-            ),
-            supabaseDataService.getMotorPowerIndex(
-              selectedVenue,
-              drillDownMotor,
-              periodDays,
-            ),
-            supabaseDataService.getMotorUsageHistory(
-              selectedVenue,
-              drillDownMotor,
-            ),
-            supabaseDataService.getMotorPartsHistory(
-              selectedVenue,
-              drillDownMotor,
-              periodDays,
-            ),
-            supabaseDataService.getVenueMotorStats(
-              selectedVenue,
-              drillDownMotor,
-            ),
-            supabaseDataService.getVenueMotorChampionshipHistory(
-              selectedVenue,
-              drillDownMotor,
-            ),
-          ]);
+        const [
+          trend,
+          power,
+          history,
+          parts,
+          venueStats,
+          championships,
+          ranking,
+          wakuStats,
+          racerWakuStats,
+        ] = await Promise.all([
+          supabaseDataService.getMotorConditionTrend(
+            selectedVenue,
+            drillDownMotor,
+            periodDays,
+          ),
+          supabaseDataService.getMotorPowerIndex(
+            selectedVenue,
+            drillDownMotor,
+            periodDays,
+          ),
+          supabaseDataService.getMotorUsageHistory(
+            selectedVenue,
+            drillDownMotor,
+          ),
+          supabaseDataService.getMotorPartsHistory(
+            selectedVenue,
+            drillDownMotor,
+            periodDays,
+          ),
+          supabaseDataService.getVenueMotorStats(selectedVenue, drillDownMotor),
+          supabaseDataService.getVenueMotorChampionshipHistory(
+            selectedVenue,
+            drillDownMotor,
+          ),
+          // BOA-301 FR-1〜4: 会場内順位・枠番別成績・選手×枠成績は
+          // periodDays（既存の2連率/3連率推移トグル）とは独立した集計窓
+          // （固定180日、plan.md参照）のためperiodDaysを渡さない
+          supabaseDataService.getVenueMotorRanking(
+            selectedVenue,
+            drillDownMotor,
+          ),
+          supabaseDataService.getMotorWakuStats(selectedVenue, drillDownMotor),
+          supabaseDataService.getMotorRacerWakuStats(
+            selectedVenue,
+            drillDownMotor,
+          ),
+        ]);
         setTrendData(trend);
         setPowerIndex(power);
         setUsageHistory(history);
         setPartsHistory(parts.events ?? []);
         setVenueMotorStats(venueStats);
         setChampionshipHistory(championships);
+        setVenueMotorRanking(ranking);
+        setMotorWakuStats(wakuStats);
+        setMotorRacerWakuStats(racerWakuStats);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
         console.error("Failed to load motor condition trend:", err);
@@ -157,6 +185,13 @@ function MotorConditionChart({
     loadTrend();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVenue, drillDownMotor, periodDays]);
+
+  // モーター・会場が変わったらFR-4ドリルダウン（枠タップで開く選手一覧）を閉じる
+  // （periodDaysトグルだけの変更では閉じない。90/30日切り替えはFR-2〜4の
+  // 集計窓とは無関係なため）
+  useEffect(() => {
+    setSelectedWakuCourse(null);
+  }, [selectedVenue, drillDownMotor]);
 
   const chartData = (trendData?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
@@ -182,6 +217,15 @@ function MotorConditionChart({
   const bestMotor2Rate =
     breakdown.length > 0
       ? Math.max(...breakdown.map((r) => r.motor_2rate ?? 0))
+      : null;
+
+  // BOA-301: embedded時のFR-2/3枠番グリッドで強調表示する「今日の艇番」。
+  // 今日のレースはまだ実施前のため実進入コース(actual_course)は存在せず、
+  // このレースへの割り当て艇番をそのまま暫定的な枠として使う
+  const todayHighlightCourse =
+    drillDownMotor !== null
+      ? (breakdown.find((r) => r.motor_number === drillDownMotor)
+          ?.boat_number ?? null)
       : null;
 
   // kyoteibiyori等の会場出走表に倣い、優出数・優勝数・1着率は艇ごとの
@@ -421,6 +465,22 @@ function MotorConditionChart({
             ].filter(Boolean)}
           />
 
+          {/* BOA-301 FR-1: 会場内ランキング（venue_motor_stats最新スナップショット、
+              自社race_resultsからの再計算はしない） */}
+          <MotorStatBadgeRow
+            icon="🏆"
+            label={t("analysis.motor.venueRankLabel")}
+            badges={[
+              venueMotorRanking && {
+                key: "venueRank",
+                text: t("analysis.motor.venueRankBadge", {
+                  rank: venueMotorRanking.rank,
+                  total: venueMotorRanking.total,
+                }),
+              },
+            ].filter(Boolean)}
+          />
+
           <MotorRecordStatCards
             cards={[
               venueMotorStats?.finalCount !== null &&
@@ -448,6 +508,24 @@ function MotorConditionChart({
                 },
             ].filter(Boolean)}
           />
+
+          {/* BOA-301 FR-2/3/4: 枠番別成績・展示タイム推移・選手×枠成績 */}
+          {selectedWakuCourse !== null ? (
+            <MotorRacerWakuDrillDown
+              course={selectedWakuCourse}
+              rows={motorRacerWakuStats.filter(
+                (r) => r.course === selectedWakuCourse,
+              )}
+              onBack={() => setSelectedWakuCourse(null)}
+            />
+          ) : (
+            <MotorWakuStatsGrid
+              rows={motorWakuStats}
+              embedded={embedded}
+              highlightCourse={todayHighlightCourse}
+              onSelectCourse={setSelectedWakuCourse}
+            />
+          )}
 
           <h3 className="selected-motor-heading">
             {t("analysis.motor.championshipHistoryHeading")}

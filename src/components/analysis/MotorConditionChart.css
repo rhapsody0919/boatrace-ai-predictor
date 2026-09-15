@@ -414,3 +414,112 @@
   color: var(--text-secondary);
   text-align: center;
 }
+
+/* BOA-301: 枠番別成績グリッド（FR-2/3）。艇番色(BOAT_COLORS)は使わず、
+   艇番と進入コースが一致しないケースの混同を避けるため中立色にする */
+.motor-waku-stats-grid {
+  margin-top: 1.5rem;
+}
+
+.motor-waku-course-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-full);
+  background: var(--surface-page);
+  border: var(--border-width-2) solid var(--border-hairline);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.motor-waku-row {
+  cursor: pointer;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+  transition: background-color 0.15s ease;
+}
+
+.motor-waku-row:hover {
+  background-color: var(--surface-page);
+}
+
+.motor-waku-row-highlight {
+  background-color: color-mix(in srgb, var(--text-secondary) 12%, transparent);
+  font-weight: var(--font-weight-semibold);
+}
+
+.motor-waku-row-highlight:hover {
+  background-color: color-mix(in srgb, var(--text-secondary) 18%, transparent);
+}
+
+.motor-waku-n {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.motor-waku-n.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+td.rate.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+.motor-waku-exhibition-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--text-primary);
+}
+
+.motor-waku-sparkline {
+  color: var(--text-secondary);
+}
+
+.motor-waku-sparkline polyline {
+  stroke: currentColor;
+}
+
+.motor-waku-expand-btn {
+  display: block;
+  margin: 0.75rem auto 0;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-sm);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.motor-waku-expand-btn:hover {
+  border-color: var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
+}
+
+/* BOA-301 FR-4: 選手×モーター×枠のドリルダウン一覧 */
+.motor-racer-waku-drilldown {
+  margin-top: 1.5rem;
+}
+
+.motor-racer-waku-list li {
+  justify-content: space-between;
+}
+
+@media (max-width: 768px) {
+  .motor-waku-table {
+    font-size: 0.75rem;
+  }
+
+  .motor-waku-sparkline {
+    width: 48px;
+    height: 18px;
+  }
+}

@@ -665,7 +665,20 @@
       },
       "partsHistoryEmpty": "이 모터의 부품 교환・프로펠러 교환 기록이 없습니다",
       "partsHistoryNote": "💡 부품 교환・프로펠러 교환은 그 자체만으로는 기력 저하의 신호일 수도, 정비 직후의 호전 신호일 수도 있습니다. 배지는 교환 전후 평균 전시 타임을 비교한 참고값이며 결과를 보장하지 않습니다.",
-      "note": "💡 표의 행을 클릭하면 해당 모터의 회차별 추이를 볼 수 있습니다. 강조 표시된 행은 이 레이스에서 2연대율이 가장 높은 보트입니다."
+      "note": "💡 표의 행을 클릭하면 해당 모터의 회차별 추이를 볼 수 있습니다. 강조 표시된 행은 이 레이스에서 2연대율이 가장 높은 보트입니다.",
+      "venueRankLabel": "장내 순위",
+      "venueRankBadge": "{{total}}대 중 {{rank}}위",
+      "sampleCount": "(n={{n}})",
+      "wakuStatsHeading": "코스별 성적",
+      "wakuStatsWindowNote": "💡 집계 기간: 최근 180일",
+      "courseHeader": "코스",
+      "exhibitionTrendHeader": "전시 타임 추이",
+      "wakuStatsExpand": "전체 6코스 표시",
+      "wakuStatsNote": "💡 '코스'는 이 모터가 실제로 진입한 코스 번호입니다（진입 코스 데이터가 없는 과거 레이스는 보트 번호를 그대로 사용）. 행을 탭하면 해당 코스에서 이 모터를 사용한 선수별 성적을 볼 수 있습니다.",
+      "racerWakuBackLabel": "← 코스별 성적으로 돌아가기",
+      "racerWakuHeading": "{{course}}코스 선수별 성적",
+      "racerWakuEmpty": "이 모터・코스 조합으로 출전한 선수를 찾을 수 없습니다",
+      "racerWakuNote": "💡 최근 180일・이 모터가 이 코스에서 사용된 레이스로 한정한 선수별 성적입니다. n이 작은 선수는 참고 정도로만 봐주세요."
     },
     "racerForm": {
       "title": "📈 선수 컨디션",
