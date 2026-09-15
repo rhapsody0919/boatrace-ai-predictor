@@ -27,6 +27,11 @@
       "id": "old-brand-name",
       "patterns": ["BoatAI"],
       "note": "旧ブランド名。2026-08-22に「龍神レーダー」へ改名済み。公開済みnote記事のブランド名残留が今回のセッションでも見つかった"
+    },
+    {
+      "id": "data-review-feature",
+      "patterns": ["データで振り返る"],
+      "note": "「データで振り返る」機能（RaceReview）はBOA-312で撤去済み（2026-09-15、レース詳細ページの日和スタイルタブ再設計）。的中/不的中の検証は「結果」タブ（RaceResult）に統合された。public/blog配下の紹介記事（race-review-guide.md等）・note-articles配下の下書きは事業判断（記事削除 or 改稿）が別途必要なため、このPRでは意図的に未修正のまま残置している"
     }
   ]
 }

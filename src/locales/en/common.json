@@ -509,27 +509,11 @@
     "confidence": "Confidence {{value}}%"
   },
   "review": {
-    "title": "Race Review with Data",
-    "resultLine": "Winner: Boat {{number}} {{name}}",
-    "techniqueLabel": "Winning technique: {{technique}}",
-    "loading": "Matching analytics...",
-    "matchHeading": "What the data got right",
-    "mismatchHeading": "Where the data differed",
-    "itemTechniqueTop": "Winning technique \"{{technique}}\" matches this racer’s No.1 winning pattern ({{pct}}%) of the last 90 days",
-    "itemTechniqueNone": "\"{{technique}}\" was not among this racer’s winning patterns in the last 90 days",
-    "itemTechniqueNoWins": "The winner had no wins in the last 90 days",
     "itemFormUp": "National win rate trending up (+{{delta}})",
     "itemFormDown": "National win rate trending down (-{{delta}})",
-    "note": "Matching is purely mechanical (in-race ranks and pattern matches). Past trends do not guarantee future results",
-    "allBoatsHeading": "All-boat data check",
-    "colFinish": "Finish",
-    "colBoat": "Boat / Racer",
     "finishPosition": "P{{position}}",
-    "finishOut": "Out",
-    "allBoatsLegend": "○ = data signal matched the finish / × = differed / − = neutral or no data. Boats finishing 1st–3rd count as strong runs; the rest as out (individual 4th–6th positions are not stored)",
     "itemRank": "{{label}} ranked No.{{rank}} in this race",
     "itemReturn": "Win return rate {{rate}}% (last 180 days, same lane)",
-    "noItems": "No judgeable data (all boats equal or not measured)",
     "cols": {
       "winRate": "Win",
       "localWinRate": "Local",
@@ -547,11 +531,7 @@
       "courseRate": "Lane",
       "returnRate": "Return",
       "technique": "Style"
-    },
-    "itemTechniqueRank": "Winning technique \"{{technique}}\" is No.{{rank}} ({{pct}}%) in this racer's 90-day winning patterns",
-    "colGrade": "Class",
-    "showOutBoats": "▼ Show details for {{n}} out boats",
-    "hideOutBoats": "▲ Collapse out boats"
+    }
   },
   "raceList": {
     "show": "▼ Choose another race",

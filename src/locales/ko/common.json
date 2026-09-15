@@ -507,27 +507,11 @@
     "confidence": "신뢰도 {{value}}%"
   },
   "review": {
-    "title": "데이터로 돌아보기",
-    "resultLine": "1착: {{number}}호정 {{name}}",
-    "techniqueLabel": "결정수: {{technique}}",
-    "loading": "분석 데이터 대조 중...",
-    "matchHeading": "데이터와 일치한 점",
-    "mismatchHeading": "데이터와 달랐던 점",
-    "itemTechniqueTop": "결정수「{{technique}}」는 최근 90일 승리 패턴 1위（{{pct}}%）와 일치",
-    "itemTechniqueNone": "「{{technique}}」는 최근 90일 승리 패턴에 없는 결정수",
-    "itemTechniqueNoWins": "최근 90일간 승리가 없던 선수의 1착",
     "itemFormUp": "전국 승률이 상승 기조（+{{delta}}）",
     "itemFormDown": "전국 승률은 하락 기조（-{{delta}}）",
-    "note": "대조는 기계적인 순위・일치 판정에 의한 것입니다. 데이터는 과거 경향이며 향후 결과를 보장하지 않습니다",
-    "allBoatsHeading": "전체 보트 데이터 대조 요약",
-    "colFinish": "착순",
-    "colBoat": "보트・선수",
     "finishPosition": "{{position}}착",
-    "finishOut": "착외",
-    "allBoatsLegend": "○=데이터 시사와 착순이 일치 / ×=상이 / −=중립 또는 데이터 없음. 1〜3착을 「호주」, 그 외를 「착외」로 판정합니다（4착 이하의 개별 착순은 미보존이므로 착외로 묶습니다）",
     "itemRank": "{{label}}이(가) 레이스 내 {{rank}}위",
     "itemReturn": "단승 회수율 {{rate}}%（최근 180일・같은 정번）",
-    "noItems": "판정 가능한 데이터가 없습니다（전 보트 동일값 또는 미계측）",
     "cols": {
       "winRate": "승률",
       "localWinRate": "당지",
@@ -545,11 +529,7 @@
       "courseRate": "번호",
       "returnRate": "회수율",
       "technique": "결정수"
-    },
-    "itemTechniqueRank": "결정수「{{technique}}」는 최근 90일 승리 패턴 {{rank}}위（{{pct}}%）",
-    "colGrade": "급별",
-    "showOutBoats": "▼ 착외 {{n}}정의 상세도 보기",
-    "hideOutBoats": "▲ 착외 보트 접기"
+    }
   },
   "raceList": {
     "show": "▼ 다른 레이스 선택",
