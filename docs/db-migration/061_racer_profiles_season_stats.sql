@@ -24,4 +24,4 @@ COMMENT ON COLUMN racer_profiles.flying_count_period IS
 COMMENT ON COLUMN racer_profiles.false_start_count_period IS
     '直近集計期間の出遅れ回数（選手責任と公式が認定したもののみ）';
 COMMENT ON COLUMN racer_profiles.period_label IS
-    '集計対象期の識別子（例: 2026-first/2026-second）。前期=5/1-10/31集計・1/1-6/30適用、後期=11/1-4/30集計・7/1-12/31適用';
+    '集計対象期の識別子（例: 2026-first/2026-second）。前期=5/1-10/31集計、翌年1/1-6/30適用（新級別の発表・期別成績ページ更新は集計終了直後の11月頃と推定）。後期=11/1-4/30集計、7/1-12/31適用（発表・ページ更新は5月頃と推定）。発表の正確な日付は未検証（2026-09-15、Web検索で確認した公式ニュース例:2026年後期の発表が2026年5月に行われた事例1件のみ、実装時に複数年分確認して裏取りすること）';
