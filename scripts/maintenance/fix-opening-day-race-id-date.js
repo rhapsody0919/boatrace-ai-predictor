@@ -33,6 +33,17 @@
  * 本当に0件になったことを明示的に確認してから削除する（更新件数の
  * self-reportを信用しない）。
  *
+ * 【重要・実行時に判明】racesには UNIQUE(race_date, venue_code, race_number)
+ * も存在する（001_schema.sql）。旧行をDELETEする前に新IDの行をINSERTする
+ * と、旧行が(race_date, venue_code, race_number)の組を既に占有しているため
+ * 一意制約違反でINSERTが失敗する（実際に本番実行で120件全て失敗、
+ * データ破損は無し=安全に何もしていない状態で停止）。
+ * そのためINSERT前に旧行のrace_numberを一時的にずらし、その組を
+ * 空けてからINSERTする。venue_code/race_numberはrace_id文字列
+ * （"YYYY-MM-DD-VV-RR"のVV/RR部分）から都度パースする。race_id文字列は
+ * このスクリプトが変更するまで不変なため、DBのrace_number列を
+ * どれだけずらしても正しい値を再計算でき、中断後の再実行でも安全。
+ *
  * 使用方法:
  *   node --env-file=.env.local scripts/maintenance/fix-opening-day-race-id-date.js --dry-run
  *   node --env-file=.env.local scripts/maintenance/fix-opening-day-race-id-date.js
@@ -70,7 +81,11 @@ const CHILD_TABLES = [
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  return { dryRun: args.includes("--dry-run") };
+  const raceIdArg = args.find((a) => a.startsWith("--race-id="));
+  return {
+    dryRun: args.includes("--dry-run"),
+    onlyRaceId: raceIdArg ? raceIdArg.split("=")[1] : null,
+  };
 }
 
 // race_idの日付部分(先頭10文字)がrace_dateと食い違っている行を全件検出する
@@ -102,6 +117,23 @@ function computeCorrectRaceId(race) {
   return `${race.race_date}${suffix}`;
 }
 
+// race_id文字列(YYYY-MM-DD-VV-RR)からvenue_code/race_numberを取得する。
+// races.venue_code/race_number列は一時退避で書き換えることがあるため、
+// 常に不変なrace_id文字列側から読む（scripts/lib/raceSchedule.jsと同じ
+// パース位置）。
+function parseVenueAndRaceNumberFromId(raceId) {
+  return {
+    venueCode: parseInt(raceId.substring(11, 13), 10),
+    raceNumber: parseInt(raceId.substring(14, 16), 10),
+  };
+}
+
+// 一意制約 UNIQUE(race_date, venue_code, race_number) の組を一時的に
+// 空けるためのrace_number退避値。実在するrace_number(1-12)と衝突しない
+// 固定オフセットで、race_id文字列から再計算するため何度実行しても同じ値
+// になり冪等（DBの現在値に依存しない）。
+const RACE_NUMBER_QUARANTINE_OFFSET = 10000;
+
 // race_id列が存在しないテーブル（PostgRESTのエラーメッセージで判別）かどうか
 function isMissingColumnError(error) {
   return Boolean(
@@ -131,13 +163,16 @@ async function countRemainingReferences(raceId) {
 }
 
 async function main() {
-  const { dryRun } = parseArgs();
+  const { dryRun, onlyRaceId } = parseArgs();
 
   console.log("=== races.race_id 日付ズレ修正（BOA-325） ===");
   console.log(dryRun ? "モード: dry-run" : "モード: 実行");
+  if (onlyRaceId) console.log(`対象を1件に限定: ${onlyRaceId}`);
   console.log("");
 
-  const mismatched = await findMismatchedRaces();
+  let mismatched = await findMismatchedRaces();
+  if (onlyRaceId)
+    mismatched = mismatched.filter((r) => r.race_id === onlyRaceId);
   console.log(
     `race_idとrace_dateが食い違っているレース: ${mismatched.length}件`,
   );
@@ -194,9 +229,38 @@ async function main() {
       .maybeSingle();
 
     if (!existingNew) {
-      const { race_id: _drop, updated_at: _dropUpdatedAt, ...rest } = oldRace;
+      const { venueCode, raceNumber } = parseVenueAndRaceNumberFromId(oldId);
+
+      // 1a. UNIQUE(race_date, venue_code, race_number)の組を一時的に空ける
+      // （race_numberはrace_id文字列から再計算するため冪等・何度実行しても同じ値）
+      const { error: quarantineError } = await supabase
+        .from("races")
+        .update({ race_number: raceNumber + RACE_NUMBER_QUARANTINE_OFFSET })
+        .eq("race_id", oldId);
+      if (quarantineError) {
+        console.error(
+          `${progress} 旧race_number退避失敗: ${quarantineError.message}`,
+        );
+        summary.errors.push({
+          oldId,
+          newId,
+          step: "quarantine_old_race_number",
+          error: quarantineError.message,
+        });
+        continue;
+      }
+
+      const {
+        race_id: _drop,
+        updated_at: _dropUpdatedAt,
+        venue_code: _dropVenueCode,
+        race_number: _dropRaceNumber,
+        ...rest
+      } = oldRace;
       const { error: insertError } = await supabase.from("races").insert({
         race_id: newId,
+        venue_code: venueCode,
+        race_number: raceNumber,
         ...rest,
         updated_at: new Date().toISOString(),
       });
