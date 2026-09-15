@@ -441,6 +441,40 @@ async function fetchVenueWinRateMap() {
  * この関数の出力オブジェクトでは同じ混乱を持ち込まないよう、実際の意味で
  * sanrenpuku（3連複）/sanrentan（3連単）という曖昧さの無いキー名で正規化する
  */
+// race_conditions（天候）をUI用に整形する（BOA-304、直前情報タブの気象カード）。
+// weather/wind_direction はスクレイピング側（update-race-info.js）で既に
+// 日本語ラベル文字列として保存されているため、変換不要でそのまま返す
+function buildWeather(conditions) {
+  if (!conditions) return null;
+  const {
+    weather = null,
+    wind_direction: windDirection = null,
+    wind_speed: windSpeed = null,
+    wave_height: waveHeight = null,
+    temperature = null,
+    water_temperature: waterTemperature = null,
+  } = conditions;
+  if (
+    weather === null &&
+    windDirection === null &&
+    windSpeed === null &&
+    waveHeight === null &&
+    temperature === null &&
+    waterTemperature === null
+  ) {
+    return null;
+  }
+  return {
+    weather,
+    windDirection,
+    windSpeed: windSpeed !== null ? Number(windSpeed) : null,
+    waveHeight: waveHeight !== null ? Number(waveHeight) : null,
+    temperature: temperature !== null ? Number(temperature) : null,
+    waterTemperature:
+      waterTemperature !== null ? Number(waterTemperature) : null,
+  };
+}
+
 function buildRaceResult(r) {
   if (!r || !r.rank1) return null;
 
@@ -1097,7 +1131,13 @@ export const supabaseDataService = {
           series_day,
           is_final_day,
           race_title,
-          race_stage
+          race_stage,
+          weather,
+          wind_direction,
+          wind_speed,
+          wave_height,
+          temperature,
+          water_temperature
         ),
         race_entries (
           boat_number,
@@ -1297,6 +1337,10 @@ export const supabaseDataService = {
           turnPrediction: turnPrediction,
           racerStats: standardPred?.feature_contributions?.racerStats || null,
           exhibitionData: race.exhibition_data || null,
+          // 直前情報タブの気象カード用（BOA-304）。beforeinfoページのスクレイピング
+          // タイミング（発走30/15/10分前）でrace_conditionsに書き込まれるため、
+          // 展示タイム等と同じ「レース前は未確定」データ。全項目nullならnullにする
+          weather: buildWeather(race.race_conditions),
           predictionOdds,
           // モデル非依存の選手一覧（race_entriesから直接構築、DataRaceTable等がunifiedモデルの
           // predictions行が無い過去日付でも表示できるようにするため）
@@ -3947,16 +3991,19 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定レースのチルト・調整重量・当日体重・前走成績を取得する（BOA-221/BOA-289）
-   * 展示タイムと同じ行(exhibition_data)の別列で、履歴平均を出す必要が無い
-   * 「今回のレースでの設定値・直近の実績値」のため、getRaceExhibitionTimeBreakdownの
-   * ような過去90日平均フォールバックは不要。単純に該当race_idの1回読み取りで足りる
+   * 指定レースのチルト・調整重量・当日体重・前走成績・部品交換/プロペラ交換を
+   * 取得する（BOA-221/BOA-289/BOA-304）。展示タイムと同じ行(exhibition_data)の
+   * 別列で、履歴平均を出す必要が無い「今回のレースでの設定値・直近の実績値」の
+   * ため、getRaceExhibitionTimeBreakdownのような過去90日平均フォールバックは
+   * 不要。単純に該当race_idの1回読み取りで足りる
    *
+   * propeller_change/parts_changedはtilt/adjustment_weightと同じマイグレーション
+   * 056（BOA-221、既に全環境適用済み）の列のため、フォールバック対象には含めない。
    * BOA-289の新列（today_weight/prev_race_no/prev_entry_course/prev_start_timing/
    * prev_finish_rank、マイグレーション059）は未適用環境がありうる。1回のselectに
    * 未適用の列を含めると「column does not exist」でクエリ全体が失敗し、既に動作している
-   * tilt/adjustment_weight（BOA-221、マイグレーション056）まで巻き添えで表示できなくなる。
-   * これを避けるため、失敗時は新列を除いた旧列のみで再取得する
+   * tilt/adjustment_weight/propeller_change/parts_changed（マイグレーション056）まで
+   * 巻き添えで表示できなくなる。これを避けるため、失敗時は新列を除いた旧列のみで再取得する
    */
   getRaceMotorMaintenanceBreakdown(raceId) {
     return withCache(`race-motor-maintenance-${raceId}`, async () => {
@@ -3968,7 +4015,7 @@ export const supabaseDataService = {
       const { data, error } = await supabase
         .from("exhibition_data")
         .select(
-          "boat_number, tilt, adjustment_weight, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank",
+          "boat_number, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank",
         )
         .eq("race_id", raceId);
 
@@ -3980,11 +4027,13 @@ export const supabaseDataService = {
           );
           const { data: legacyData, error: legacyError } = await supabase
             .from("exhibition_data")
-            .select("boat_number, tilt, adjustment_weight")
+            .select(
+              "boat_number, tilt, adjustment_weight, propeller_change, parts_changed",
+            )
             .eq("race_id", raceId);
           if (legacyError) {
             console.error(
-              "exhibition_data(チルト/調整重量)取得エラー:",
+              "exhibition_data(チルト/調整重量/部品交換)取得エラー:",
               legacyError.message,
             );
             return [];
@@ -3992,7 +4041,7 @@ export const supabaseDataService = {
           return legacyData ?? [];
         }
         console.error(
-          "exhibition_data(チルト/調整重量/当日体重/前走成績)取得エラー:",
+          "exhibition_data(チルト/調整重量/当日体重/前走成績/部品交換)取得エラー:",
           error.message,
         );
         return [];
