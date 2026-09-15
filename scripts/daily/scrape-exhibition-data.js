@@ -16,6 +16,7 @@ import {
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
+import { toIntOrNull } from "../lib/venueMotorStats/parserUtils.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -24,19 +25,6 @@ const FETCH_HEADERS = {
   Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
   "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
 };
-
-/**
- * 前走成績の着順セルは全角数字（例: "２"）で表示されるため、通常のparseIntでは
- * NaNになる。全角数字1文字を数値に変換する（今節初戦で着順セルが空の場合はnull）
- */
-function fullWidthDigitToNumber(text) {
-  if (!text) return null;
-  const halfWidth = text.replace(/[０-９]/g, (ch) =>
-    String.fromCharCode(ch.charCodeAt(0) - 0xfee0),
-  );
-  const num = parseInt(halfWidth, 10);
-  return isNaN(num) ? null : num;
-}
 
 /**
  * ST表記（".07"/"F.10"/"L.05"等）を数値に変換する。フライング・出遅れ接頭辞は
@@ -116,17 +104,14 @@ export function scrapeExhibitionData($) {
     const adjustmentWeight = parseFloat(
       rows.eq(2).find("td").eq(0).text().trim(),
     );
-    const prevEntryCourse =
-      rows.length > 1
-        ? parseInt(rows.eq(1).find("td").eq(1).text().trim())
-        : NaN;
-    const prevStartTimingText =
-      rows.length > 2 ? rows.eq(2).find("td").eq(2).text().trim() : "";
+    // rows.eq(N)は範囲外でも空コレクションを返す（cheerioの挙動、adjustmentWeightと
+    // 同じ前提）ため、rows.lengthによるガードは不要（PR #645セルフレビューで削除）
+    const prevEntryCourse = parseInt(rows.eq(1).find("td").eq(1).text().trim());
+    const prevStartTimingText = rows.eq(2).find("td").eq(2).text().trim();
     const { value: prevStartTiming } =
       parseStartTimingText(prevStartTimingText);
-    const prevFinishRankText =
-      rows.length > 3 ? rows.eq(3).find("td").eq(1).text().trim() : "";
-    const prevFinishRank = fullWidthDigitToNumber(prevFinishRankText);
+    const prevFinishRankText = rows.eq(3).find("td").eq(1).text().trim();
+    const prevFinishRank = toIntOrNull(prevFinishRankText);
 
     if (boatNumber >= 1 && boatNumber <= 6) {
       exhibitionData.push({
@@ -334,60 +319,66 @@ export async function run(schedule, date) {
   if (allRows.length > 0) {
     console.log(`\n💾 exhibition_data: ${allRows.length}件書き込み中...`);
 
-    // BOA-221の新列（tilt/propeller_change/parts_changed/adjustment_weight、
-    // マイグレーション056）・BOA-289の新列（today_weight/prev_race_no/
-    // prev_entry_course/prev_finish_rank、マイグレーション059）は、それぞれの
-    // マイグレーション適用が前提。未適用環境でこれらの新列を含むupsertがそのまま
-    // 失敗すると、既存のexhibition_time/start_timing（展示タイム）まで書き込めなく
-    // なり、既存機能を巻き添えで壊してしまう。列不在エラーを検知したら新列を除いた
-    // ペイロードでリトライし、既存機能だけは動かし続ける
-    const NEW_COLUMNS = [
+    // BOA-221の新列（マイグレーション056）とBOA-289の新列（マイグレーション059）は
+    // 別々のマイグレーションのため、片方だけ未適用というケースがありうる（本プロジェクトは
+    // Supabase Access Tokenの失効等でマイグレーションを手動・個別に適用してきた実績があり、
+    // 054適用済み・056未適用のような部分適用状態は現実的に起こりうる）。1つの列不在エラーで
+    // 両方の新列を一律に剥がすと、056が既に適用済みで正常に書き込めていたtilt等まで
+    // 巻き添えで書き込み停止してしまう（PR #645セルフレビューで発見）。
+    // full→boa221（BOA-289分のみ剥がす）→legacy（両方剥がす）の2段階でフォールバックし、
+    // 適用済みのマイグレーション分は引き続き書き込み続ける
+    const BOA221_COLUMNS = [
       "tilt",
       "propeller_change",
       "parts_changed",
       "adjustment_weight",
+    ];
+    const BOA289_COLUMNS = [
       "today_weight",
       "prev_race_no",
       "prev_entry_course",
       "prev_start_timing",
       "prev_finish_rank",
     ];
-    const stripNewColumns = (batch) =>
+    const stripColumns = (batch, columns) =>
       batch.map((row) => {
-        const legacyRow = { ...row };
-        NEW_COLUMNS.forEach((col) => delete legacyRow[col]);
-        return legacyRow;
+        const stripped = { ...row };
+        columns.forEach((col) => delete stripped[col]);
+        return stripped;
       });
+    const payloadForTier = (batch, tier) => {
+      if (tier === "full") return batch;
+      if (tier === "boa221") return stripColumns(batch, BOA289_COLUMNS);
+      return stripColumns(batch, [...BOA221_COLUMNS, ...BOA289_COLUMNS]);
+    };
+    const isColumnMissingError = (error) =>
+      !!error && /column .* does not exist/i.test(error.message);
 
-    let legacyOnly = false;
+    // 一度ダウングレードしたtierは以降のバッチにも引き継ぐ（同じエラーへの
+    // リトライを毎バッチ繰り返さない）
+    let tier = "full";
     for (let i = 0; i < allRows.length; i += 1000) {
       const batch = allRows.slice(i, i + 1000);
-      const payload = legacyOnly ? stripNewColumns(batch) : batch;
-      const { error } = await supabase
+      let { error } = await supabase
         .from("exhibition_data")
-        .upsert(payload, { onConflict: "race_id,boat_number" });
+        .upsert(payloadForTier(batch, tier), {
+          onConflict: "race_id,boat_number",
+        });
 
-      if (
-        error &&
-        !legacyOnly &&
-        /column .* does not exist/i.test(error.message)
-      ) {
+      while (isColumnMissingError(error) && tier !== "legacy") {
+        const nextTier = tier === "full" ? "boa221" : "legacy";
         console.warn(
-          `⚠️ exhibition_data: 新列が未適用のため旧列のみでリトライします（マイグレーション056未適用の可能性）: ${error.message}`,
+          `⚠️ exhibition_data: 新列が未適用のため${nextTier === "boa221" ? "BOA-289分（マイグレーション059）" : "BOA-221・BOA-289分（マイグレーション056・059）"}の新列を除いてリトライします: ${error.message}`,
         );
-        legacyOnly = true;
-        const { error: retryError } = await supabase
+        tier = nextTier;
+        ({ error } = await supabase
           .from("exhibition_data")
-          .upsert(stripNewColumns(batch), {
+          .upsert(payloadForTier(batch, tier), {
             onConflict: "race_id,boat_number",
-          });
-        if (retryError) {
-          console.error(
-            `❌ exhibition_data 書き込みエラー:`,
-            retryError.message,
-          );
-        }
-      } else if (error) {
+          }));
+      }
+
+      if (error) {
         console.error(`❌ exhibition_data 書き込みエラー:`, error.message);
       }
     }

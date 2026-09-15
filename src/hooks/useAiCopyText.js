@@ -131,6 +131,13 @@ function buildRows(t, players, analysis) {
       }),
     },
     {
+      label: t("dataTable.rowTodayWeight"),
+      values: players.map((p) => {
+        const weight = toNumber(maintenanceByBoat.get(p.number)?.today_weight);
+        return weight !== null ? `${weight.toFixed(1)}kg` : DASH;
+      }),
+    },
+    {
       label: t("dataTable.rowTilt"),
       values: players.map((p) => {
         const tilt = toNumber(maintenanceByBoat.get(p.number)?.tilt);
@@ -145,6 +152,19 @@ function buildRows(t, players, analysis) {
           maintenanceByBoat.get(p.number)?.adjustment_weight,
         );
         return weight !== null ? `${weight.toFixed(1)}kg` : DASH;
+      }),
+    },
+    {
+      label: t("dataTable.rowPrevResult"),
+      values: players.map((p) => {
+        const row = maintenanceByBoat.get(p.number);
+        const rank = toNumber(row?.prev_finish_rank);
+        if (rank === null) return t("dataTable.prevResultNoRace");
+        const course = toNumber(row?.prev_entry_course);
+        const position = t("review.finishPosition", { position: rank });
+        return course !== null
+          ? `${position} ${t("dataTable.prevResultCourse", { course })}`
+          : position;
       }),
     },
     {
