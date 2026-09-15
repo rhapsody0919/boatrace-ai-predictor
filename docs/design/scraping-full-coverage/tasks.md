@@ -18,12 +18,12 @@
 
 ## FR-2/FR-5: 選手期別成績・racer_profiles自動更新
 
-- [ ] 期別成績ページ（`boatrace.jp/owpc/pc/data/racersearch/season?toban=`）を複数選手（級別の異なる選手を含む）で実機確認し、HTML構造・セレクタを特定する
-- [ ] `docs/db-migration/061_racer_profiles_season_stats.sql`をベースに、現行mainブランチの最新マイグレーション番号を確認した上で正式なマイグレーションファイルを作成・適用する（`ability_index`/`flying_count_period`/`false_start_count_period`/`period_label`/`official_win_rate_period`等）
-- [ ] `scripts/maintenance/scrape-racer-profiles.js`を拡張し、既存の選手プロフィール取得と同じ巡回で期別成績も取得する
-- [ ] 新規GitHub Actionsワークフローを作成する（月次実行＋5/1・11/1直後2週間は週次にブースト、`docs/db-migration/061`のコメントに記載した発表タイミングの推定を実装時に複数年分の公式ニュースで裏取りする）
-- [ ] 自社`racer_aggregated_stats`との検算スクリプトを作成し、初回実行結果を記録する（`.claude/rules/analysis.md`のデータ精度検証パターンに準拠）
-- [ ] [BOA-323](https://linear.app/boat-ai/issue/BOA-323)の修正状況を確認した上で、`race_start_timings.is_flying`を使ったF休み期間の自社計算ロジックを検証する（可能なら日和の「F休み期間」相当のスクレイピング自体が不要になる）
+- [x] 期別成績ページ（`boatrace.jp/owpc/pc/data/racersearch/season?toban=`）を複数選手（級別の異なる選手を含む）で実機確認し、HTML構造・セレクタを特定する（2026-09-15、A1/A2/B1/B2級および新人選手の計7選手で確認。構造は級別に依存せず共通。`div.table1 table tbody tr`のth/td交互配置、`div.text p.h-alignR`の「集計期間：YYYY/MM/DD-YYYY/MM/DD」表記を特定。詳細は`scripts/lib/racerSeasonStats.js`冒頭コメント参照）
+- [x] `docs/db-migration/061_racer_profiles_season_stats.sql`をベースに、現行mainブランチの最新マイグレーション番号を確認した上で正式なマイグレーションファイルを作成・適用する（`ability_index`/`flying_count_period`/`false_start_count_period`/`period_label`/`official_win_rate_period`等）（2026-09-15、origin/masterの最新は059のため061は空き番号と確認、そのまま採用。DDLはSupabase MCPが`--read-only`設定のため直接適用できず、本PRのマイグレーションSQLをSupabase Dashboard SQL Editorで手動実行する必要がある。適用完了までは`scrape-racer-profiles.js`のseason保存ステップは`ability_index`列不在エラーで失敗し続ける想定通りの挙動）
+- [x] `scripts/maintenance/scrape-racer-profiles.js`を拡張し、既存の選手プロフィール取得と同じ巡回で期別成績も取得する
+- [x] 新規GitHub Actionsワークフローを作成する（月次実行＋5/1・11/1直後2週間は週次にブースト、`docs/db-migration/061`のコメントに記載した発表タイミングの推定を実装時に複数年分の公式ニュースで裏取りする）（`.github/workflows/scrape-racer-season-stats.yml`。発表タイミングはboatrace.jp公式ニュース「2025年7月から適用の選手級別（2025年後期）を発表」2025-05公開、および複数の第三者まとめ記事で「審査終了から約2ヶ月後」の一致を確認済み）
+- [x] 自社`racer_aggregated_stats`との検算スクリプトを作成し、初回実行結果を記録する（`.claude/rules/analysis.md`のデータ精度検証パターンに準拠）（**設計変更**: racer_aggregated_statsには勝率・2連対率等の列が無くcareer-to-date集計のため直接比較不可と判明。`scripts/analysis/verify-racer-season-stats-accuracy.js`としてrace_entries/race_results/race_start_timingsから期別成績と同一期間で直接再計算する方式に変更し実装。25選手で初回実行済み、結果は`data/analysis/racer-season-stats/accuracy-verification.json`。**重要な発見**: 自社`races`テーブルの最古レコードが2025-12-03のため、現在の公式集計期間（2025-11-01始まり）を完全にはカバーできず、出走回数等の厳密一致検証は現時点では構造的に不可能（`truncatedWindow`として参考値扱い）。さらに2025-12-03〜2026-04-30に絞っても自社出走回数が公式の40〜55%程度しかなく、単純な期間欠落だけでは説明できない未解明のギャップを検出した。原因調査はBOA-321のスコープ外のため別タスクとして起票済み）
+- [ ] [BOA-323](https://linear.app/boat-ai/issue/BOA-323)の修正状況を確認した上で、`race_start_timings.is_flying`を使ったF休み期間の自社計算ロジックを検証する（可能なら日和の「F休み期間」相当のスクレイピング自体が不要になる）— **今回スキップ**。BOA-323（決まり手・ST欠損バグ）が未修正のままのため、`race_start_timings`ベースの検証は同じ穴を引き継ぎ意味を成さない。BOA-323解消後に別タスクとして着手すること
 
 ## FR-1: レース特記事項ページ
 
