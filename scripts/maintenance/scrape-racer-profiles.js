@@ -1,6 +1,12 @@
-// 選手プロフィール取得スクリプト（生年月日・支部・出身地等）
-// race_entries.racer_id のうち racer_profiles 未登録分を対象に、
-// boatrace.jp 選手検索ページ（racersearch/profile?toban=）をスクレイピングして保存する
+// 選手プロフィール取得スクリプト（生年月日・支部・出身地等 + 期別成績）
+//
+// BOA-321（期別成績・能力指数）/ BOA-322（racer_profiles自動更新化）対応
+// （docs/design/scraping-full-coverage/ FR-2/FR-5）。
+// race_entries に登場する全racer_idを1回巡回し、選手ごとに以下を行う:
+//   1. racer_profiles未登録の選手のみ: 基本プロフィール（生年月日・支部等）を取得・登録（FR-5）
+//   2. 全選手: 期別成績ページ（能力指数・フライング回数・出遅れ回数・公式勝率等）を取得・更新（FR-2）
+// 「選手一覧を二重に巡回しない」設計のため、上記1・2は同じループ内で行う
+// （docs/design/scraping-full-coverage/plan.md FR-2/FR-5参照）。
 //
 // 使用方法:
 //   node scripts/maintenance/scrape-racer-profiles.js
@@ -11,6 +17,7 @@ import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
 import { supabase } from "../lib/supabaseClient.js";
+import { scrapeSeasonStats } from "../lib/racerSeasonStats.js";
 
 const REQUEST_DELAY_MS = 500;
 const REPORT_DIR = "data/analysis/racer-fortune-telling";
@@ -81,137 +88,249 @@ async function scrapeProfile(racerId) {
   };
 }
 
-async function getTargetRacerIds(limit) {
+async function getRegisteredRacerIds() {
   const registered = new Set();
-  {
-    let offset = 0;
-    const pageSize = 1000;
-    while (true) {
-      const { data, error } = await supabase
-        .from("racer_profiles")
-        .select("racer_id")
-        .range(offset, offset + pageSize - 1);
-      if (error) throw new Error(`racer_profiles取得エラー: ${error.message}`);
-      if (!data || data.length === 0) break;
-      for (const row of data) registered.add(row.racer_id);
-      if (data.length < pageSize) break;
-      offset += pageSize;
-    }
+  let offset = 0;
+  const pageSize = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from("racer_profiles")
+      .select("racer_id")
+      .range(offset, offset + pageSize - 1);
+    if (error) throw new Error(`racer_profiles取得エラー: ${error.message}`);
+    if (!data || data.length === 0) break;
+    for (const row of data) registered.add(row.racer_id);
+    if (data.length < pageSize) break;
+    offset += pageSize;
   }
+  return registered;
+}
 
+// race_entriesに一度でも登場した全racer_id（引退選手含む）。
+// FR-2の期別成績は現役選手だけでなく直近まで走っていた選手も対象になりうるため、
+// racer_profiles登録済みかどうかに関わらず全件を母集団とする。
+async function getFullRacerIdPopulation() {
   const allRacerIds = new Set();
-  {
-    let offset = 0;
-    const pageSize = 1000;
-    while (true) {
-      const { data, error } = await supabase
-        .from("race_entries")
-        .select("racer_id")
-        .not("racer_id", "is", null)
-        .order("racer_id")
-        .range(offset, offset + pageSize - 1);
-      if (error) throw new Error(`race_entries取得エラー: ${error.message}`);
-      if (!data || data.length === 0) break;
-      for (const row of data) allRacerIds.add(row.racer_id);
-      if (data.length < pageSize) break;
-      offset += pageSize;
-    }
+  let offset = 0;
+  const pageSize = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from("race_entries")
+      .select("racer_id")
+      .not("racer_id", "is", null)
+      .order("racer_id")
+      .range(offset, offset + pageSize - 1);
+    if (error) throw new Error(`race_entries取得エラー: ${error.message}`);
+    if (!data || data.length === 0) break;
+    for (const row of data) allRacerIds.add(row.racer_id);
+    if (data.length < pageSize) break;
+    offset += pageSize;
   }
 
-  let target = [...allRacerIds]
-    .filter((id) => !registered.has(id))
+  return [...allRacerIds].sort((a, b) => a - b);
+}
+
+// --limit指定時は新規未登録選手（FR-5の対象）を優先的にサンプルへ含める。
+// 単純に昇順でスライスすると最若番（≒既に登録済み）ばかりになり、
+// `--limit=10`でのFR-5動作確認（新規プロフィール登録パス）が実質的に
+// 実行されなくなってしまうため。
+function applyLimit(population, registered, limit) {
+  if (!limit) return population;
+  const unregistered = population.filter((id) => !registered.has(id));
+  const alreadyRegistered = population.filter((id) => registered.has(id));
+  return [...unregistered, ...alreadyRegistered]
+    .slice(0, limit)
     .sort((a, b) => a - b);
-  if (limit) target = target.slice(0, limit);
-  return target;
+}
+
+// 期別成績ページのパース結果をracer_profilesの追加カラムにマッピングする。
+// 集計期間内にデータがない項目（新人選手等）はnullのまま保存する。
+function toSeasonStatsRow(racerId, seasonStats) {
+  return {
+    racer_id: racerId,
+    ability_index: seasonStats.abilityIndex,
+    flying_count_period: seasonStats.flyingCount,
+    false_start_count_period: seasonStats.falseStartCount,
+    period_label: seasonStats.periodLabel,
+    official_win_rate_period: seasonStats.winRate,
+    official_updated_at: new Date().toISOString(),
+  };
 }
 
 async function main() {
   const options = parseArgs();
 
-  console.log("=== 選手プロフィール取得スクリプト ===");
+  console.log("=== 選手プロフィール・期別成績 取得スクリプト ===");
   console.log(
     `モード: ${options.dryRun ? "ドライラン（テスト）" : "本番実行"}`,
   );
   console.log("");
 
-  const targetRacerIds = await getTargetRacerIds(options.limit);
+  const [fullPopulation, registered] = await Promise.all([
+    getFullRacerIdPopulation(),
+    getRegisteredRacerIds(),
+  ]);
 
-  if (targetRacerIds.length === 0) {
-    console.log("対象のracer_idはありません（全件取得済み）。");
+  if (fullPopulation.length === 0) {
+    console.log("対象のracer_idはありません（race_entriesが空）。");
     process.exit(0);
   }
 
+  const population = applyLimit(fullPopulation, registered, options.limit);
+  const newProfileCount = population.filter((id) => !registered.has(id)).length;
   console.log(
-    `対象racer_id数: ${targetRacerIds.length}件${options.limit ? ` (limit: ${options.limit})` : ""}`,
+    `対象racer_id数: ${population.length}件${options.limit ? ` (limit: ${options.limit})` : ""}`,
   );
+  console.log(`うち新規プロフィール登録対象（FR-5）: ${newProfileCount}件`);
   console.log("");
 
-  let successCount = 0;
-  let failCount = 0;
-  const failedRacerIds = [];
+  let profileSuccessCount = 0;
+  let profileFailCount = 0;
+  const profileFailedRacerIds = [];
 
-  for (let i = 0; i < targetRacerIds.length; i++) {
-    const racerId = targetRacerIds[i];
-    const progress = `[${i + 1}/${targetRacerIds.length}]`;
+  let seasonSuccessCount = 0;
+  let seasonNoDataCount = 0; // ページはあるが集計期間内データが無い（新人選手等）
+  let seasonFailCount = 0;
+  const seasonFailedRacerIds = [];
 
-    const profile = await scrapeProfile(racerId).catch((err) => {
-      if (options.verbose)
-        console.log(`${progress} racer_id=${racerId} - エラー: ${err.message}`);
-      return null;
-    });
+  for (let i = 0; i < population.length; i++) {
+    const racerId = population[i];
+    const progress = `[${i + 1}/${population.length}]`;
+    const isNewProfile = !registered.has(racerId);
+    let hasProfile = !isNewProfile;
 
-    if (!profile) {
-      failCount++;
-      failedRacerIds.push(racerId);
-      if (options.verbose)
-        console.log(`${progress} racer_id=${racerId} - 取得失敗（スキップ）`);
-    } else if (options.dryRun) {
-      successCount++;
-      if (options.verbose)
-        console.log(
-          `${progress} racer_id=${racerId} → ${profile.name} 生年月日=${profile.birthDate} (dry-run)`,
-        );
-    } else {
-      const { error } = await supabase.from("racer_profiles").upsert({
-        racer_id: profile.racerId,
-        name: profile.name,
-        name_kana: profile.nameKana,
-        birth_date: profile.birthDate,
-        height_cm: profile.heightCm,
-        weight_kg: profile.weightKg,
-        blood_type: profile.bloodType,
-        branch: profile.branch,
-        hometown: profile.hometown,
-        registration_period: profile.registrationPeriod,
-        grade_at_scrape: profile.gradeAtScrape,
-      });
-
-      if (error) {
-        failCount++;
-        failedRacerIds.push(racerId);
-        console.error(
-          `${progress} racer_id=${racerId} - 保存エラー: ${error.message}`,
-        );
-      } else {
-        successCount++;
+    // 1. 新規選手のみ: 基本プロフィール取得（FR-5、既存ロジック）
+    if (isNewProfile) {
+      const profile = await scrapeProfile(racerId).catch((err) => {
         if (options.verbose)
           console.log(
-            `${progress} racer_id=${racerId} → ${profile.name} 生年月日=${profile.birthDate}`,
+            `${progress} racer_id=${racerId} [profile] エラー: ${err.message}`,
           );
+        return null;
+      });
+
+      if (!profile) {
+        profileFailCount++;
+        profileFailedRacerIds.push(racerId);
+        if (options.verbose)
+          console.log(
+            `${progress} racer_id=${racerId} [profile] 取得失敗（スキップ）`,
+          );
+      } else if (options.dryRun) {
+        profileSuccessCount++;
+        hasProfile = true;
+        if (options.verbose)
+          console.log(
+            `${progress} racer_id=${racerId} [profile] → ${profile.name} 生年月日=${profile.birthDate} (dry-run)`,
+          );
+      } else {
+        const { error } = await supabase.from("racer_profiles").upsert({
+          racer_id: profile.racerId,
+          name: profile.name,
+          name_kana: profile.nameKana,
+          birth_date: profile.birthDate,
+          height_cm: profile.heightCm,
+          weight_kg: profile.weightKg,
+          blood_type: profile.bloodType,
+          branch: profile.branch,
+          hometown: profile.hometown,
+          registration_period: profile.registrationPeriod,
+          grade_at_scrape: profile.gradeAtScrape,
+        });
+
+        if (error) {
+          profileFailCount++;
+          profileFailedRacerIds.push(racerId);
+          console.error(
+            `${progress} racer_id=${racerId} [profile] 保存エラー: ${error.message}`,
+          );
+        } else {
+          profileSuccessCount++;
+          hasProfile = true;
+          if (options.verbose)
+            console.log(
+              `${progress} racer_id=${racerId} [profile] → ${profile.name} 生年月日=${profile.birthDate}`,
+            );
+        }
       }
+
+      await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
     }
 
-    if ((i + 1) % 50 === 0 || i === targetRacerIds.length - 1) {
-      console.log(`${progress} 成功: ${successCount}件, 失敗: ${failCount}件`);
+    // 2. 全選手（プロフィールが存在する場合のみ）: 期別成績取得（FR-2）
+    //    無効なracer_id（不正なtoban）への無駄なリクエストを避けるため、
+    //    プロフィール未確認（新規スクレイプも失敗）の選手はスキップする。
+    if (hasProfile) {
+      const seasonStats = await scrapeSeasonStats(racerId).catch((err) => {
+        if (options.verbose)
+          console.log(
+            `${progress} racer_id=${racerId} [season] エラー: ${err.message}`,
+          );
+        return null;
+      });
+
+      if (!seasonStats) {
+        seasonFailCount++;
+        seasonFailedRacerIds.push(racerId);
+        if (options.verbose)
+          console.log(
+            `${progress} racer_id=${racerId} [season] 取得失敗（スキップ）`,
+          );
+      } else if (
+        seasonStats.abilityIndex === null &&
+        seasonStats.starts === null
+      ) {
+        // ページはあるが集計期間内のデータが無い（新人選手等）。エラー扱いしない。
+        seasonNoDataCount++;
+        if (options.verbose)
+          console.log(
+            `${progress} racer_id=${racerId} [season] 集計期間内データ無し（新人選手等）`,
+          );
+      } else if (options.dryRun) {
+        seasonSuccessCount++;
+        if (options.verbose)
+          console.log(
+            `${progress} racer_id=${racerId} [season] 能力指数=${seasonStats.abilityIndex} F=${seasonStats.flyingCount} (dry-run)`,
+          );
+      } else {
+        const { error } = await supabase
+          .from("racer_profiles")
+          .upsert(toSeasonStatsRow(racerId, seasonStats));
+
+        if (error) {
+          seasonFailCount++;
+          seasonFailedRacerIds.push(racerId);
+          console.error(
+            `${progress} racer_id=${racerId} [season] 保存エラー: ${error.message}`,
+          );
+        } else {
+          seasonSuccessCount++;
+          if (options.verbose)
+            console.log(
+              `${progress} racer_id=${racerId} [season] 能力指数=${seasonStats.abilityIndex} F=${seasonStats.flyingCount}`,
+            );
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
     }
 
-    await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
+    if ((i + 1) % 50 === 0 || i === population.length - 1) {
+      console.log(
+        `${progress} profile成功: ${profileSuccessCount}件/失敗: ${profileFailCount}件, ` +
+          `season成功: ${seasonSuccessCount}件/データ無し: ${seasonNoDataCount}件/失敗: ${seasonFailCount}件`,
+      );
+    }
   }
 
   console.log("");
   console.log("=== 完了 ===");
-  console.log(`成功: ${successCount}件`);
-  console.log(`失敗（除外）: ${failCount}件`);
+  console.log(
+    `[profile] 成功: ${profileSuccessCount}件, 失敗（除外）: ${profileFailCount}件`,
+  );
+  console.log(
+    `[season] 成功: ${seasonSuccessCount}件, データ無し: ${seasonNoDataCount}件, 失敗（除外）: ${seasonFailCount}件`,
+  );
 
   if (!options.dryRun) {
     fs.mkdirSync(REPORT_DIR, { recursive: true });
@@ -220,10 +339,18 @@ async function main() {
       JSON.stringify(
         {
           executedAt: new Date().toISOString(),
-          targetCount: targetRacerIds.length,
-          successCount,
-          failCount,
-          failedRacerIds,
+          targetCount: population.length,
+          profile: {
+            successCount: profileSuccessCount,
+            failCount: profileFailCount,
+            failedRacerIds: profileFailedRacerIds,
+          },
+          season: {
+            successCount: seasonSuccessCount,
+            noDataCount: seasonNoDataCount,
+            failCount: seasonFailCount,
+            failedRacerIds: seasonFailedRacerIds,
+          },
         },
         null,
         2,

@@ -1,0 +1,1019 @@
+{
+  "executedAt": "2026-09-15T08:53:04.364Z",
+  "summary": {
+    "totalSampled": 25,
+    "fetchFailedCount": 0,
+    "noDataCount": 0,
+    "comparedCount": 25,
+    "truncatedWindowCount": 25,
+    "truncatedWindowNote": "公式集計期間の開始日が自社races最古日（2025-12-03）より前のため、該当分は判定不能（参考値）として扱った",
+    "strictlyComparableCount": 0,
+    "startsMatchCount": 0,
+    "rentai2WithinToleranceCount": 0,
+    "rentai3WithinToleranceCount": 0,
+    "flyingCountMatchCount": 0,
+    "falseStartCountMatchCount": 0
+  },
+  "results": [
+    {
+      "racerId": 2538,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 93,
+        "own": 62,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 7.5,
+        "own": 6.45,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 23.65,
+        "own": 24.19,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 3.51,
+        "ownApprox": 1.61,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 3401,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 104,
+        "own": 64,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 25,
+        "own": 20.31,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 39.42,
+        "own": 37.5,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 4.47,
+        "ownApprox": 2.75,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 3557,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 159,
+        "own": 91,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 47.1,
+        "own": 51.65,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 64.77,
+        "own": 67.03,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.64,
+        "ownApprox": 5.56,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 3681,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 79,
+        "own": 43,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 24,
+        "own": 20.93,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 41.77,
+        "own": 34.88,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 4.87,
+        "ownApprox": 2.7,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 3809,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 65,
+        "own": 26,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 12.3,
+        "own": 3.85,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 35.38,
+        "own": 34.62,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 1,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 1,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 3.86,
+        "ownApprox": 2.15,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 3912,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 114,
+        "own": 62,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 34.2,
+        "own": 38.71,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 46.49,
+        "own": 54.84,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 1,
+        "own": 1,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 5.35,
+        "ownApprox": 4.58,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4003,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 94,
+        "own": 46,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 39.3,
+        "own": 30.43,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 55.31,
+        "own": 54.35,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 1,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 5.45,
+        "ownApprox": 4.04,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4082,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 99,
+        "own": 64,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 34.3,
+        "own": 37.5,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 49.49,
+        "own": 54.69,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 5.33,
+        "ownApprox": 4.44,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4166,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 131,
+        "own": 67,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 44.2,
+        "own": 41.79,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 63.35,
+        "own": 67.16,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.86,
+        "ownApprox": 5.31,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4246,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 107,
+        "own": 52,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 17.7,
+        "own": 23.08,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 36.44,
+        "own": 38.46,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 4.13,
+        "ownApprox": 2.88,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4335,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 128,
+        "own": 66,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 53.9,
+        "own": 51.52,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 78.9,
+        "own": 78.79,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 7.24,
+        "ownApprox": 6.27,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4409,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 122,
+        "own": 52,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 54.9,
+        "own": 59.62,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 73.77,
+        "own": 75,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.89,
+        "ownApprox": 6.35,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4482,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 125,
+        "own": 61,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 45.6,
+        "own": 47.54,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 64,
+        "own": 65.57,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 1,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.52,
+        "ownApprox": 5.38,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4556,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 90,
+        "own": 66,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 51.1,
+        "own": 50,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 70,
+        "own": 68.18,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 1,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.72,
+        "ownApprox": 5.73,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4644,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 121,
+        "own": 73,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 48.7,
+        "own": 41.1,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 64.46,
+        "own": 58.9,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.33,
+        "ownApprox": 4.74,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4732,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 125,
+        "own": 73,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 40,
+        "own": 38.36,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 60,
+        "own": 56.16,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.22,
+        "ownApprox": 4.63,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4823,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 100,
+        "own": 57,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 41,
+        "own": 49.12,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 60,
+        "own": 70.18,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.07,
+        "ownApprox": 5.89,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4905,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 80,
+        "own": 37,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 22.5,
+        "own": 21.62,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 33.75,
+        "own": 32.43,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 1,
+        "own": 1,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 4.3,
+        "ownApprox": 2.65,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 4989,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 120,
+        "own": 64,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 43.3,
+        "own": 45.31,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 62.5,
+        "own": 64.06,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.01,
+        "ownApprox": 5.25,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 5065,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 109,
+        "own": 55,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 46.7,
+        "own": 34.55,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 56.88,
+        "own": 47.27,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 1,
+        "own": 1,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 5.82,
+        "ownApprox": 3.82,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 5136,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 131,
+        "own": 82,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 45.8,
+        "own": 42.68,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 65.64,
+        "own": 67.07,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.46,
+        "ownApprox": 5.46,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 5206,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 75,
+        "own": 57,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 24,
+        "own": 22.81,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 36,
+        "own": 35.09,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 4.05,
+        "ownApprox": 2.67,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 5275,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 131,
+        "own": 75,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 51.9,
+        "own": 49.33,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 68.7,
+        "own": 66.67,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 6.61,
+        "ownApprox": 5.52,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 5340,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 98,
+        "own": 52,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 13.2,
+        "own": 15.38,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 32.65,
+        "own": 44.23,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 0,
+        "own": 0,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 3.87,
+        "ownApprox": 3.04,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    },
+    {
+      "racerId": 5405,
+      "status": "compared",
+      "periodLabel": "2026-second",
+      "periodStart": "2025-11-01",
+      "periodEnd": "2026-04-30",
+      "truncatedWindow": true,
+      "effectivePeriodStart": "2025-12-03",
+      "starts": {
+        "official": 79,
+        "own": 39,
+        "match": null
+      },
+      "rentai2Rate": {
+        "official": 2.5,
+        "own": 2.56,
+        "withinTolerance": null
+      },
+      "rentai3Rate": {
+        "official": 8.86,
+        "own": 15.38,
+        "withinTolerance": null
+      },
+      "flyingCount": {
+        "official": 1,
+        "own": 1,
+        "match": null
+      },
+      "falseStartCount": {
+        "official": 0,
+        "own": 0,
+        "match": null,
+        "note": "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）"
+      },
+      "winRateApprox": {
+        "official": 2.15,
+        "ownApprox": 1.03,
+        "note": "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）"
+      }
+    }
+  ]
+}

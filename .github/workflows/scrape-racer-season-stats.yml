@@ -1,0 +1,58 @@
+name: Scrape Racer Season Stats
+
+# BOA-321（期別成績・能力指数）/ BOA-322（racer_profiles自動更新化）対応
+# （docs/design/scraping-full-coverage/ FR-2/FR-5）。
+#
+# 頻度設計（ADR-0058の原則、plan.md FR-8参照）:
+#   能力指数・フライング回数等の公式集計値は前期/後期（各半年）に1回しか変化しないため、
+#   月次実行を基本とする。ただし新級別の発表・期別成績ページ更新は5/1・11/1の審査切り替え
+#   直後に集中する（複数年分の公式ニュースで裏取り済み、docs/db-migration/061参照）ため、
+#   その直後2週間はブースト（週次相当）で確認する。
+#   - 毎月1日 09:00 JST: 通常の月次実行（cronのUTC日跨ぎを避けるため0:00 UTC=9:00 JSTを使用）
+#   - 5月・11月の8日/15日 09:00 JST: ブースト分（1日の月次実行と合わせて概ね週次になる）
+# racer_profiles未登録の新規選手プロフィール取得（FR-5）も同じジョブ・同じ選手一覧の
+# 巡回で行うため、本ワークフロー1本で両方をカバーする。
+
+on:
+  schedule:
+    - cron: '0 0 1 * *' # JST 09:00、毎月1日（月次ベース、能力指数等の公式集計値取得）
+    - cron: '0 0 8,15 5,11 *' # JST 09:00、5月・11月の8日/15日（審査切り替え直後2週間のブースト）
+  workflow_dispatch:
+
+concurrency:
+  group: scrape-racer-season-stats
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Scrape racer profiles and season stats
+        run: node scripts/maintenance/scrape-racer-profiles.js --verbose
+        continue-on-error: true # 他のジョブに影響させない（低頻度・非クリティカルデータのため）
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: Commit scrape report if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/analysis/racer-fortune-telling/profile-scrape-report.json
+          git diff --staged --quiet || git commit -m "chore: 選手プロフィール・期別成績スクレイピング結果を更新 [automated]"
+          git pull --rebase
+          git push
