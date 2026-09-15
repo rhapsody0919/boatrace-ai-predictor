@@ -4,8 +4,12 @@
 
 import { useTranslation } from "react-i18next";
 import { GRADE_CONFIG } from "../../constants/gradeConfig";
+import { getRaceStageBadge } from "../../constants/raceStageConfig";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
-import { getDeadlineStatus, DEADLINE_STATUS } from "../../utils/raceDeadlineStatus";
+import {
+  getDeadlineStatus,
+  DEADLINE_STATUS,
+} from "../../utils/raceDeadlineStatus";
 import RaceCardDataTable from "./RaceCardDataTable";
 import RaceDeadlineCountdown from "./RaceDeadlineCountdown";
 
@@ -43,6 +47,7 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
     : `🎯 ${t("volatility.levelLow")}`;
 
   const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];
+  const stageConfig = getRaceStageBadge(racePrediction?.raceStage);
 
   // 的中判定（unifiedモデル: 展開予測的中のみ。複勝予想は表示しない方針
   // に統一、ADR 0013・BOA-174/175/178参照）
@@ -70,7 +75,14 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
     >
       <div className="race-card-header">
         <h3>{race.venue}</h3>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+          }}
+        >
           {showBadge && (
             <span
               style={{
@@ -173,6 +185,22 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
               {t("raceCard.accepting")}
             </span>
           )}
+          {stageConfig && (
+            <span
+              style={{
+                padding: "0.2rem 0.5rem",
+                borderRadius: "6px",
+                fontSize: "0.7rem",
+                fontWeight: "700",
+                background: stageConfig.color,
+                color: "#fff",
+                letterSpacing: "0.05em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {stageConfig.emoji} {t(stageConfig.i18nKey)}
+            </span>
+          )}
           {gradeConfig && (
             <span
               style={{
@@ -203,7 +231,10 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
           </div>
           {deadlineStatus && deadlineStatus !== DEADLINE_STATUS.CLOSED && (
             <div className="info-item">
-              <RaceDeadlineCountdown raceId={race.id} startTime={race.startTime} />
+              <RaceDeadlineCountdown
+                raceId={race.id}
+                startTime={race.startTime}
+              />
             </div>
           )}
         </div>

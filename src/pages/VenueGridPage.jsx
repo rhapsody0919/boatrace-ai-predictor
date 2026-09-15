@@ -53,6 +53,7 @@ function groupRacesByVenue(races) {
       startTime: race.startTime,
       raceGrade: race.raceGrade,
       raceTitle: race.raceTitle ?? null,
+      raceStage: race.raceStage ?? null,
     });
   }
   const venues = [...venueMap.values()];

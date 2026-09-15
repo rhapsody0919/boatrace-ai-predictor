@@ -400,6 +400,10 @@
     "noPrevRace": "前のレースなし",
     "noNextRace": "次のレースなし"
   },
+  "raceStage": {
+    "final": "優勝戦",
+    "semifinal": "準優勝戦"
+  },
   "raceCard": {
     "awaitingResult": "結果反映待ち",
     "cancelled": "中止",
