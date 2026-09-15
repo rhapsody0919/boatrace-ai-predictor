@@ -33,7 +33,11 @@
  */
 
 import * as cheerio from "cheerio";
-import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import {
+  supabase,
+  isSupabaseEnabled,
+  fetchAll,
+} from "../lib/supabaseClient.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -256,16 +260,10 @@ async function buildRacerNameMap() {
   const map = new Map();
   if (!isSupabaseEnabled()) return map;
 
-  const { data, error } = await supabase
-    .from("racer_profiles")
-    .select("racer_id,name");
-  if (error) {
-    console.error(
-      "⚠️ racer_profiles取得エラー（racer_id解決なしで続行）:",
-      error.message,
-    );
-    return map;
-  }
+  // racer_profilesは約1,627行あり、PostgRESTのデフォルト上限（1000行）を
+  // 超えるため fetchAll() でページネーションする（.range()無しの単発selectだと
+  // 後半の選手が対応表から漏れ、racer_idが解決できなくなる）
+  const data = await fetchAll("racer_profiles", "racer_id,name");
 
   for (const row of data ?? []) {
     const key = normalizeRacerName(row.name);
@@ -336,7 +334,11 @@ export async function run(schedule, date) {
         html,
         dateYmd,
       );
-      outcome = { success: notes !== null, reason: parseReason };
+      // parseReasonが立っている場合（見出し自体が見つからない、または3区分
+      // 揃わない）は構造変化の疑いとして必ず失敗扱いにする。notesが空配列でも
+      // nullでなければ「取得自体は成功」と誤判定してしまうバグを防ぐ
+      // （notes !== null だけを見るとunexpected_section_countを握りつぶす）
+      outcome = { success: parseReason === null, reason: parseReason };
       for (const note of notes ?? []) {
         const racerId =
           racerNameMap.get(normalizeRacerName(note.racerName)) ?? null;
