@@ -2,7 +2,7 @@
 //
 // race_results.course_1〜6は艇番と完全一致する不良データのため使えない。
 // 公式の成績ファイル（Kファイル）アーカイブから実際の進入コースを取得し、
-// race_results.actual_course_1〜6（docs/db-migration/062_race_results_actual_course_kfile.sql）
+// race_results.actual_course_1〜6（docs/db-migration/063_race_results_actual_course_kfile.sql）
 // に反映する。Kファイルは1日1ファイルに全会場分が含まれるため、日単位で処理する
 // （scripts/daily/scrape-results.jsの日次同期＝直近4日分の自己修復とは別に、
 // 過去の全期間を一括処理するためのスクリプト）。
