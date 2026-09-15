@@ -7,7 +7,6 @@
  * - /winning-technique: 実データ依存の分析タブを除外し、静的な機能説明部分のみを
  *   i18n JSONから直接HTMLテンプレートとして生成する（ライブAPI非依存、ビルドの決定性を保つ）
  */
-import { chromium } from "playwright";
 import { createServer } from "node:http";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
@@ -110,6 +109,38 @@ function startStaticServer() {
       resolve({ server, baseUrl: `http://127.0.0.1:${address.port}` });
     });
   });
+}
+
+// Vercelのビルドサンドボックスはplaywrightが正式サポートしないLinux環境で、
+// `playwright`パッケージがダウンロードするChromiumバイナリはシステム共有
+// ライブラリ（libnspr4等）が無く起動時に落ちる（2026-09-15判明、PR#652参照）。
+// `@sparticuz/chromium`はサーバーレス環境向けに必要なライブラリを同梱した
+// 静的ビルドを提供するため、Vercel上ではそちらを`playwright-core`経由で
+// 起動する。ローカル開発機（macOS等）では従来通り`playwright`本体の
+// Chromiumを使う（`@sparticuz/chromium`はLinux専用バイナリのため）。
+async function launchChromium() {
+  if (process.env.VERCEL) {
+    const { chromium: chromiumCore } = await import("playwright-core");
+    const sparticuzChromium = (await import("@sparticuz/chromium")).default;
+    if (typeof sparticuzChromium.setGraphicsMode === "function") {
+      sparticuzChromium.setGraphicsMode(false);
+    }
+    const executablePath = await sparticuzChromium.executablePath();
+    process.env.LD_LIBRARY_PATH = [
+      path.dirname(executablePath),
+      process.env.LD_LIBRARY_PATH || "",
+    ]
+      .filter(Boolean)
+      .join(":");
+    return chromiumCore.launch({
+      args: sparticuzChromium.args,
+      executablePath,
+      headless: true,
+    });
+  }
+
+  const { chromium: chromiumLocal } = await import("playwright");
+  return chromiumLocal.launch();
 }
 
 async function generateBlogSnapshots(browser, baseUrl) {
@@ -234,7 +265,7 @@ async function main() {
     const baseUrl = started.baseUrl;
     let browser;
     try {
-      browser = await chromium.launch();
+      browser = await launchChromium();
       const failed = await generateBlogSnapshots(browser, baseUrl);
       if (failed.length > 0) {
         console.error(
