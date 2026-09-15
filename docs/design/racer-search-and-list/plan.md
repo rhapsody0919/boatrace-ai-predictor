@@ -12,6 +12,17 @@
 
 `racer_profiles`・`race_entries`とも既存カラムのみで完結し、スキーマ変更（列追加）は不要（`branch`/`height_cm`/`weight_kg`/`registration_period`/`hometown`/`birth_date`は全て既存列、`race_entries.grade`/`win_rate`も既存列）。
 
+`node scripts/maintenance/generate-er-diagram.js racer-search-and-list`で生成（2026-09-15、事後追加）:
+
+```mermaid
+erDiagram
+    racer_grade_cache {
+        TEXT key PK
+        JSONB data
+        TIMESTAMPTZ updated_at
+    }
+```
+
 ### 新規バッチスクリプト
 `scripts/daily/update-racer-grade-cache.js`（新規、`update-race-history-cache.js`と同じ構成）:
 1. `supabase.rpc("get_latest_racer_grades")`を1回呼び出す（約1,627行が返る）

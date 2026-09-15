@@ -76,6 +76,42 @@ src/services/supabaseDataService.js（既存拡張）
 
 今回の方針転換で新規テーブルは不要（複勝・展開予測・イン崩れは全て既存データ・既存ロジックの組み合わせで実現できる）。`030_ai_model_redesign_schema.sql`で作成済みの`race_outcome_frequencies`/`model_bet_candidates`は前述の通り未使用のまま残す。
 
+`node scripts/maintenance/generate-er-diagram.js ai-model-redesign`で生成（2026-09-15、未使用のまま残すテーブルの構造記録として事後追加）:
+
+```mermaid
+erDiagram
+    model_bet_candidates }o--|| races : "race_id"
+    model_bet_candidates }o--|| models : "model_id"
+    race_outcome_frequencies {
+        SMALLINT venue_code PK
+        SMALLINT rank1_boat PK
+        SMALLINT rank2_boat PK
+        SMALLINT rank3_boat PK
+        SMALLINT window_days PK
+        INTEGER total_occurrences
+        INTEGER sample_races
+        DECIMAL(6,4) appearance_rate
+        INTEGER avg_payout
+        DECIMAL(10,4) recovery_rate
+        TIMESTAMPTZ updated_at
+    }
+    model_bet_candidates {
+        VARCHAR(20) race_id PK
+        VARCHAR(50) model_id PK
+        SMALLINT pattern_index PK
+        VARCHAR(20) pattern_technique
+        DECIMAL(6,5) pattern_probability
+        SMALLINT bet_rank PK
+        VARCHAR(10) bet_combo
+        DECIMAL(7,6) predicted_probability
+        DECIMAL(8,1) odds
+        DECIMAL(6,3) expected_value
+        TEXT reasoning_story
+        JSONB similar_condition_stats
+        TIMESTAMPTZ created_at
+    }
+```
+
 ### 使わない既存テーブル
 
 `prediction_odds`は`trifecta_pred_standard`のようにモデル名がカラム名に埋め込まれた3モデル固定構造のため、新モデルでは使用しない。

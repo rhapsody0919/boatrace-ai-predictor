@@ -41,7 +41,15 @@ function splitTopLevel(str) {
  * SQLテキストからCREATE TABLE文とALTER TABLE ... ADD COLUMN文を抽出し、
  * テーブル・カラム・外部キー関係の一覧を返す。
  */
-export function parseTablesFromSql(sqlText) {
+export function parseTablesFromSql(rawSqlText) {
+  // 行末の`-- コメント`を先に除去する。除去せずにトップレベルのカンマで
+  // 分割すると、コメント直後（次のカンマの前）に別カラムの定義が続く場合
+  // コメント文字列が次カラムのセグメント先頭に紛れ込み、そのカラムが
+  // 「\w+で始まらない行」として丸ごと読み飛ばされてしまう
+  // （このプロジェクトのDDLはほぼ全カラムに行末コメントが付くため、
+  // 気づかずに半分以上のカラムを取りこぼしていた実例あり。2026-09-15判明）。
+  const sqlText = rawSqlText.replace(/--[^\n]*/g, "");
+
   const tables = new Map(); // name -> { columns: [{name, type, isPk}], newTable: boolean }
   const relationships = []; // { fromTable, fromColumn, toTable, toColumn }
 

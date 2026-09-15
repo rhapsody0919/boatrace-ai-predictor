@@ -56,6 +56,35 @@
 - `sns_drafts.referenced_insight_ids UUID[]`: 生成時に参照したinsightのID配列。`background_text`（人間可読の生成メモ）とは別に、履歴ビューの「反映本数」をSQLで確実に集計するための機械可読カラム（`SELECT count(*) FROM sns_drafts WHERE :insight_id = ANY(referenced_insight_ids)`）
 - `sns_template_variants.created_by VARCHAR(10) DEFAULT 'human'`: `'human'`\|`'routine'`。新規コンポジション試作の作成者を記録（ADR 0029）
 
+`node scripts/maintenance/generate-er-diagram.js sns-hub-phase2-pdca-loop`で生成（2026-09-15、事後追加）:
+
+```mermaid
+erDiagram
+    sns_strategy_insights }o--|| sns_strategy_insights : "superseded_by -> id"
+    sns_strategy_insights {
+        UUID id PK
+        VARCHAR(20) platform
+        VARCHAR(10) language
+        VARCHAR(50) format
+        TEXT insight_text
+        TEXT evidence
+        VARCHAR(20) source
+        VARCHAR(50) research_method
+        VARCHAR(20) status
+        TEXT decision_note
+        UUID superseded_by
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ activated_at
+        TIMESTAMPTZ retired_at
+    }
+    sns_drafts {
+        UUID[] referenced_insight_ids
+    }
+    sns_template_variants {
+        VARCHAR(10) created_by
+    }
+```
+
 ## API設計（`/api/admin/sns-hub/insights/*`）
 
 既存の`api/admin/sns-hub/drafts/*`と同じくVercel Edge Function・service role key使用（ADR 0021の役割分担を踏襲、フロントエンドはSupabaseに直接アクセスしない）。
