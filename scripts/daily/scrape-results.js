@@ -443,13 +443,18 @@ async function scrapeAndSaveResults(races, targetDate) {
   // 既に結果があるレースを取得
   const { data: existingResults } = await supabase
     .from("race_results")
-    .select("race_id, payout_win")
+    .select("race_id, payout_win, winning_technique")
     .gte("race_id", targetDate)
     .lt("race_id", `${targetDate}~`);
 
+  // 配当データに加え決まり手（winning_technique）も揃っているレースのみ「完了」扱いにする。
+  // 決まり手・進入コース・スタートタイミング（race_start_timings）は公式サイト側で
+  // 着順・払戻金より掲載が遅く（発走20〜30分後以降）、payout_winだけで判定すると
+  // 3連単払戻からの着順復元フォールバック（PR#612）で早期に確定してしまい、以降
+  // 再取得されないまま決まり手・STが永久にnullで残ってしまう（BOA-323）
   const finishedRaceIds = new Set(
     (existingResults || [])
-      .filter((r) => r.payout_win !== null) // 配当データがあるもののみ
+      .filter((r) => r.payout_win !== null && r.winning_technique !== null)
       .map((r) => r.race_id),
   );
 
