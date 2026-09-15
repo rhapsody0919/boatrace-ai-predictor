@@ -780,6 +780,13 @@
         "manshuRate": "Big-payout rate",
         "avgPayout": "Avg. payout"
       },
+      "metricDescription": {
+        "winRate": "Share of races this boat number finished 1st.",
+        "top2Rate": "Share of races this boat number finished in the top 2.",
+        "top3Rate": "Share of races this boat number finished in the top 3.",
+        "manshuRate": "Share of races where the trifecta payout was ¥10,000 or more (a \"big payout\"). Higher means more upset-prone.",
+        "avgPayout": "Average trifecta payout per ¥100 stake. Higher means more upset-prone."
+      },
       "raceWideHeader": "Whole race",
       "empty": "No venue × grade stats are available for this venue yet",
       "note": "※ Cells with fewer than {{minRaceCount}} races show \"-\". SG/G2 are held at only a few venues, so many cells will show \"-\" for those grades."

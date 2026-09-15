@@ -176,6 +176,10 @@ function VenueGradeMatrix() {
         </select>
       </div>
 
+      <p className="section-description">
+        {t(`analysis.venueGrade.metricDescription.${selectedMetric}`)}
+      </p>
+
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
         <div className="error-state">
