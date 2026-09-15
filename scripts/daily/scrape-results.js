@@ -19,6 +19,7 @@ import {
   getRacesAfterStart,
   getRacesPastResultWindow,
 } from "../lib/raceSchedule.js";
+import { fetchKFileText, parseKFileText } from "../lib/kfileParser.js";
 
 // Generate race result page URL
 function getRaceResultUrl(venueCode, raceNo, dateStr) {
@@ -378,7 +379,105 @@ export async function run(schedule, date) {
   // レースは別途存在しうるため、上のearly returnとは独立して必ず実行する
   await confirmOverdueCancellations(schedule);
 
+  // 進入コース（Kファイル方式、BOA-257）を過去数日分について同期。
+  // Kファイルは開催日当日の夜〜翌日に公開されるため「当日」は対象にせず、
+  // 直近数日分を毎回チェックすることで取得漏れ・公開遅延を自己修復する
+  await syncRecentActualCourse();
+
   return resultSummary;
+}
+
+/**
+ * 進入コース（Kファイル方式、BOA-257）の同期対象日数（当日を除く直近N日）。
+ * 大きくし過ぎるとKファイル未取得日も毎回ダウンロードを試みてしまうため、
+ * 通常運用での取得漏れを拾える程度の小さい値にとどめる。
+ */
+const ACTUAL_COURSE_SYNC_LOOKBACK_DAYS = 4;
+
+/**
+ * 直近数日分について、進入コース(actual_course_1〜6)が未取得のレースが
+ * あるかを確認し、あれば該当日のKファイルを取得・パースして同期する。
+ */
+async function syncRecentActualCourse() {
+  for (let i = 1; i <= ACTUAL_COURSE_SYNC_LOOKBACK_DAYS; i++) {
+    await syncActualCourseFromKFile(getDateDaysAgo(i));
+  }
+}
+
+/**
+ * 指定日について、公式成績ファイル（Kファイル）から実進入コースを取得し
+ * race_results.actual_course_1〜6にマージする（BOA-257）。
+ *
+ * @param {string} dateStr - YYYY-MM-DD
+ * @returns {Promise<{updated: number}>}
+ */
+export async function syncActualCourseFromKFile(dateStr) {
+  // 結果確定済み（rank1あり）だがactual_course_1が未取得のレースが無ければ
+  // Kファイルのダウンロード自体をスキップする（無駄な外部アクセスを避ける）
+  const { data: pending, error: pendingError } = await supabase
+    .from("race_results")
+    .select("race_id")
+    .gte("race_id", dateStr)
+    .lt("race_id", `${dateStr}~`)
+    .not("rank1", "is", null)
+    .is("actual_course_1", null)
+    .limit(1);
+
+  if (pendingError) {
+    // actual_course_1列がまだ存在しない場合（マイグレーション未適用）もここに来る。
+    // 日次パイプライン全体を止めないよう、ログのみでスキップする
+    console.error(
+      `  ⚠️ actual_course対象確認エラー(${dateStr}): ${pendingError.message}`,
+    );
+    return { updated: 0 };
+  }
+  if (!pending || pending.length === 0) {
+    return { updated: 0 }; // 同期済み、または対象レース無し
+  }
+
+  let text;
+  try {
+    text = await fetchKFileText(dateStr);
+  } catch (e) {
+    console.error(`  ⚠️ Kファイル取得エラー(${dateStr}): ${e.message}`);
+    return { updated: 0 };
+  }
+  if (!text) {
+    console.log(`  進入コース: Kファイル未公開/開催なし (${dateStr})`);
+    return { updated: 0 };
+  }
+
+  const rows = parseKFileText(text, dateStr);
+  if (rows.length === 0) {
+    console.log(`  進入コース: Kファイルからレースを抽出できず (${dateStr})`);
+    return { updated: 0 };
+  }
+
+  let updated = 0;
+  for (const row of rows) {
+    const { error: updateError } = await supabase
+      .from("race_results")
+      .update({
+        actual_course_1: row.actual_course_1,
+        actual_course_2: row.actual_course_2,
+        actual_course_3: row.actual_course_3,
+        actual_course_4: row.actual_course_4,
+        actual_course_5: row.actual_course_5,
+        actual_course_6: row.actual_course_6,
+      })
+      .eq("race_id", row.race_id);
+    if (updateError) {
+      console.error(
+        `  ⚠️ actual_course更新エラー(${row.race_id}): ${updateError.message}`,
+      );
+    } else {
+      updated++;
+    }
+  }
+  console.log(
+    `  ✅ 進入コース(Kファイル方式): ${updated}/${rows.length}件更新 (${dateStr})`,
+  );
+  return { updated };
 }
 
 /**
