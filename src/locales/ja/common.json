@@ -245,7 +245,46 @@
   "raceTabs": {
     "basic": "基本情報",
     "motor": "モータ情報",
+    "beforeInfo": "直前情報",
     "result": "結果"
+  },
+  "beforeInfo": {
+    "subtitle": "発走が近づくと更新される当日限りの情報です。発走30/15/10分前まで確定しない項目があります",
+    "weatherTitle": "本日の水面コンディション",
+    "weatherLabel": "天気",
+    "temperatureLabel": "気温",
+    "windLabel": "風速/風向",
+    "waterTemperatureLabel": "水温",
+    "waveHeightLabel": "波高",
+    "weather": {
+      "sunny": "晴",
+      "cloudy": "曇り",
+      "rainy": "雨",
+      "snowy": "雪"
+    },
+    "windDirection": {
+      "n": "北",
+      "nne": "北北東",
+      "ne": "北東",
+      "ene": "東北東",
+      "e": "東",
+      "ese": "東南東",
+      "se": "南東",
+      "sse": "南南東",
+      "s": "南",
+      "ssw": "南南西",
+      "sw": "南西",
+      "wsw": "西南西",
+      "w": "西",
+      "wnw": "西北西",
+      "nw": "北西",
+      "nnw": "北北西"
+    },
+    "exhibitionChartTitle": "展示タイム",
+    "exhibitionChartEmpty": "展示タイムはまだ取得できていません",
+    "secondsUnit": "秒",
+    "detailTableTitle": "展示情報",
+    "motorHistoryLink": "モーター調子で部品交換・プロペラ交換の履歴を見る"
   },
   "basicInfo": {
     "note": "選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細（直近5走・得意会場）が開きます",
@@ -489,6 +528,7 @@
     "rowTodayWeight": "当日体重",
     "rowTilt": "チルト",
     "rowAdjustmentWeight": "調整重量",
+    "rowPartsChanged": "部品交換",
     "rowPrevResult": "前走成績",
     "prevResultCourse": "{{course}}コース",
     "prevResultNoRace": "今節初戦",
@@ -574,6 +614,7 @@
       "todayWeight": "体重",
       "tilt": "チルト",
       "adjustmentWeight": "調整重量",
+      "partsChanged": "部品交換",
       "prevResult": "前走",
       "courseRate": "枠番",
       "returnRate": "回収率",

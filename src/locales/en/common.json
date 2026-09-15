@@ -432,6 +432,47 @@
   "section": {
     "resultTitle": "Data Analysis Results"
   },
+  "raceTabs": {
+    "beforeInfo": "Just Before"
+  },
+  "beforeInfo": {
+    "subtitle": "Same-day information updated as the race approaches. Some items aren't finalized until 30/15/10 minutes before the start",
+    "weatherTitle": "Today's water conditions",
+    "weatherLabel": "Weather",
+    "temperatureLabel": "Temperature",
+    "windLabel": "Wind speed/direction",
+    "waterTemperatureLabel": "Water temp.",
+    "waveHeightLabel": "Wave height",
+    "weather": {
+      "sunny": "Sunny",
+      "cloudy": "Cloudy",
+      "rainy": "Rainy",
+      "snowy": "Snowy"
+    },
+    "windDirection": {
+      "n": "N",
+      "nne": "NNE",
+      "ne": "NE",
+      "ene": "ENE",
+      "e": "E",
+      "ese": "ESE",
+      "se": "SE",
+      "sse": "SSE",
+      "s": "S",
+      "ssw": "SSW",
+      "sw": "SW",
+      "wsw": "WSW",
+      "w": "W",
+      "wnw": "WNW",
+      "nw": "NW",
+      "nnw": "NNW"
+    },
+    "exhibitionChartTitle": "Exhibition time",
+    "exhibitionChartEmpty": "Exhibition times aren't available yet",
+    "secondsUnit": "s",
+    "detailTableTitle": "Exhibition details",
+    "motorHistoryLink": "See parts/propeller replacement history in Motor Condition"
+  },
   "dataTable": {
     "title": "Data Race Card",
     "subtitle": "Compare analytics for all six racers at a glance. Tap a row label for the full analysis",
@@ -443,6 +484,7 @@
     "rowTodayWeight": "Today's weight",
     "rowTilt": "Tilt",
     "rowAdjustmentWeight": "Adjustment weight",
+    "rowPartsChanged": "Parts changed",
     "rowPrevResult": "Previous race",
     "prevResultCourse": "Course {{course}}",
     "prevResultNoRace": "First race of the event",
@@ -527,6 +569,7 @@
       "todayWeight": "Weight",
       "tilt": "Tilt",
       "adjustmentWeight": "Adj.wt",
+      "partsChanged": "Parts",
       "prevResult": "Prev.",
       "courseRate": "Lane",
       "returnRate": "Return",

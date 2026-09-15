@@ -430,6 +430,47 @@
   "section": {
     "resultTitle": "데이터 분석 결과"
   },
+  "raceTabs": {
+    "beforeInfo": "직전 정보"
+  },
+  "beforeInfo": {
+    "subtitle": "발주 시간이 가까워지면 갱신되는 당일 한정 정보입니다. 발주 30/15/10분 전까지 확정되지 않는 항목이 있습니다",
+    "weatherTitle": "오늘의 수면 컨디션",
+    "weatherLabel": "날씨",
+    "temperatureLabel": "기온",
+    "windLabel": "풍속/풍향",
+    "waterTemperatureLabel": "수온",
+    "waveHeightLabel": "파고",
+    "weather": {
+      "sunny": "맑음",
+      "cloudy": "흐림",
+      "rainy": "비",
+      "snowy": "눈"
+    },
+    "windDirection": {
+      "n": "북",
+      "nne": "북북동",
+      "ne": "북동",
+      "ene": "동북동",
+      "e": "동",
+      "ese": "동남동",
+      "se": "남동",
+      "sse": "남남동",
+      "s": "남",
+      "ssw": "남남서",
+      "sw": "남서",
+      "wsw": "서남서",
+      "w": "서",
+      "wnw": "서북서",
+      "nw": "북서",
+      "nnw": "북북서"
+    },
+    "exhibitionChartTitle": "전시 타임",
+    "exhibitionChartEmpty": "전시 타임이 아직 집계되지 않았습니다",
+    "secondsUnit": "초",
+    "detailTableTitle": "전시 정보",
+    "motorHistoryLink": "모터 컨디션에서 부품 교환・프로펠러 교환 이력 보기"
+  },
   "dataTable": {
     "title": "데이터 출주표",
     "subtitle": "출주 6명의 분석 데이터를 한눈에 비교. 행 라벨을 탭하면 상세 분석 페이지로 이동합니다",
@@ -441,6 +482,7 @@
     "rowTodayWeight": "당일 체중",
     "rowTilt": "틸트",
     "rowAdjustmentWeight": "조정 중량",
+    "rowPartsChanged": "부품 교환",
     "rowPrevResult": "직전 경주 성적",
     "prevResultCourse": "{{course}}코스",
     "prevResultNoRace": "이번 시리즈 첫 경주",
@@ -525,6 +567,7 @@
       "todayWeight": "체중",
       "tilt": "틸트",
       "adjustmentWeight": "조정중량",
+      "partsChanged": "부품교환",
       "prevResult": "직전",
       "courseRate": "번호",
       "returnRate": "회수율",

@@ -58,6 +58,8 @@ function buildPrediction(racePrediction, notFoundMessage) {
     volatilityReasons: unified?.volatilityReasons ?? [],
     racerStats: racePrediction.racerStats || null,
     exhibitionData: racePrediction.exhibitionData || null,
+    // 直前情報タブの気象カード用（BOA-304）
+    weather: racePrediction.weather || null,
   };
 }
 

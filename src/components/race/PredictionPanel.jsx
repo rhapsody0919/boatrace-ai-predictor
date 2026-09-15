@@ -31,8 +31,14 @@
  * - 結果タブ（BOA-312）は従来PredictionSection側で常時表示していたRaceResultを
  *   タブへ移設した。「データで振り返る」（RaceReview）はユーザー判断により
  *   BOA-312で撤去済み（docs/reference/deprecated-terms.json参照）
- * 残り5タブ（枠別情報/今節成績/直前情報/オッズ検索/オッズ一覧）はデータ未整備の
+ * 残り4タブ（枠別情報/今節成績/オッズ検索/オッズ一覧）はデータ未整備の
  * ため未実装（`docs/design/scraping-full-coverage/`待ち）
+ *
+ * 2026-09-16追記(直前情報タブ分離、BOA-304): DataRaceTable（基本情報、過去実績系）に
+ * 混在していた「当日更新・レース前は未確定」の4指標（展示ST/展示タイム/チルト/
+ * 調整重量）を「直前情報」タブへ分離した（RaceBeforeInfoTab、モータ情報と結果の間）。
+ * レース前の長い時間帯にDataRaceTable全体が「未完成」に見える問題への対応。
+ * あわせて表示欠落だった気象情報（race_conditions）も同タブに追加した
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -63,6 +69,7 @@ import AiCopyButton from "./AiCopyButton";
 import Toast, { useToast } from "../Toast";
 import RaceTabs from "./RaceTabs";
 import RaceBasicInfoTab from "./RaceBasicInfoTab";
+import RaceBeforeInfoTab from "./RaceBeforeInfoTab";
 import RaceResult from "./RaceResult";
 import { getRaceId } from "../../utils/raceId";
 import { AI_COPY_PROMPT_TYPES } from "../../utils/aiCopyPrompts";
@@ -285,6 +292,18 @@ function PredictionPanel({
                   embedded
                   initialVenueCode={venueCode}
                   initialRaceId={analysisRaceId}
+                />
+              ),
+            },
+            {
+              id: "beforeInfo",
+              label: t("raceTabs.beforeInfo"),
+              content: (
+                <RaceBeforeInfoTab
+                  raceId={analysisRaceId}
+                  venueCode={venueCode}
+                  players={prediction.allPlayers}
+                  weather={prediction.weather}
                 />
               ),
             },
