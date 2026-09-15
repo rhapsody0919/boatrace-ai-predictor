@@ -187,6 +187,15 @@ node --env-file=.env.local scripts/linear-cli.js create "タイトル" "説明"
 /step1-spec {slug} [チケット番号] → /step1-screens {slug}（UI機能のみ） → /step2 {slug} → /step3 {slug} → /step4 {slug}
 ```
 
+### DB設計はER図をDDLから機械生成する（2026-09-15〜、グローバル設定の図解ルールのDB特化版）
+グローバル設定の「新しい設計・仕様を検討する際は...図を使って理解を揃える」というルールは、DBスキーマのカーディナリティ（1:N、N:N等）を表現するER図の使用までは明記していない。このプロジェクトはSupabaseスキーマ変更が頻繁なため、DB特化のルールとして以下を追加する。
+
+**天才エンジニア視点レビュー（2026-09-15）で確認した経緯**: 当初「実装前にER図を手で描く」ルールを検討したが、このプロジェクトが既に何度も学んでいる「散文ルールはコンテキスト圧迫下で読み飛ばされる」パターンを再生産するリスクが高いと判明。正の情報源である実際のDDL（`docs/db-migration/`）から逆算する機械生成方式に変更した。
+
+- `/step2`で`docs/design/{slug}/plan.md`のデータ設計に新規テーブル、または既存テーブルとの新規リレーション（外部キー）を1つでも書いたら、対応する`docs/db-migration/`のマイグレーション案作成後に`node scripts/maintenance/generate-er-diagram.js {slug}`を実行し、出力されたmermaid `erDiagram`ブロックをplan.mdに貼り付ける（マイグレーションファイルのヘッダーコメントに`docs/design/{slug}/plan.md`等の参照を書く既存慣習に依存して該当DDLを自動検出する）
+- `npm run verify:er-diagram`（`scripts/maintenance/verify-plan-erd.js`）が、新規テーブル・新規リレーションを導入するDDLを持つのにER図が無いplan.mdを横断検知する。**新規マイグレーション（`docs/db-migration/`への新規.sqlファイル追加）を含む変更では実装完了後の自動レビューでこれも実行する**（下記「実装完了後の自動レビュー」参照）
+- 既存のplan.md 7件（2026-09-15時点でこの検証を追加した時点の未対応分）は遡及修正の対象外。新規に書くplan.mdから適用する
+
 ### SDD実装が長時間・複数セッションに及ぶ場合の再開規律（2026-09-15〜）
 `/step4`はタスク完了ごとに`docs/design/{slug}/tasks.md`のチェックボックスを更新する設計だが、長時間の実装セッションでは会話の圧縮・脱線により「本当は未完了のタスクを完了したつもりで進めてしまう」「圧縮後に前の続きのつもりで一部タスクを読み飛ばす」という抜け漏れが起きうる（2026-09-15、SDDで丁寧に設計しても実装が長引くと当初計画の完成度に届かないという課題を受けて追加）。これを会話の記憶ではなく`tasks.md`という実体に依存する形に寄せる。
 
@@ -199,7 +208,7 @@ node --env-file=.env.local scripts/linear-cli.js create "タイトル" "説明"
 1. `/code-review` でセルフレビューを実行
 2. **新規のデータ集計・分析機能（新しい統計・ランキング・傾向表示等）を含む場合は、データの正確性を複数の視点で検証する**（詳細は `.claude/rules/analysis.md` の「データ精度の検証」を参照）。コードレビューとは別に「集計結果が実データと一致しているか」だけを見る検証を必ず行う。実データの見た目・コードスタイルが正しくても、集計ロジックの誤り（スケール不一致、JOIN漏れ、期間ズレ等）は見た目だけのレビューでは発見できないため、独立した検証ステップとして扱う
 3. 指摘事項を修正してコミット・push（判断が分かれる指摘は修正せず報告に含める）
-4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（`e2e/smoke.spec.js`、Playwright）も実行し、デグレが無いことを確認する。`AppRouter.jsx`に新しい静的ルートを追加した変更では`npm run verify:sitemap`も実行する。**新機能（ユーザー向けの新しいページ・分析タブ・主要機能）を実装した変更では`npm run verify:content-index`も実行し、対応する`docs/design/{slug}/content-index.json`を作成済み（または`not_applicable: true`で対象外を明記済み）であることを確認する**（フローA-2参照）。**`docs/adr/`に新規ADRを追加した変更では`npm run verify:adr-numbers`も実行する**（複数セッション並行作業でADR番号が繰り返し重複した実績があるため、`scripts/maintenance/verify-adr-numbers.js`で番号衝突を機械的に検知する）。CI連携はせず、毎回Claude自身が手元で実行する。新しい主要導線を追加した場合はスモークテストにも追記する
+4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（`e2e/smoke.spec.js`、Playwright）も実行し、デグレが無いことを確認する。`AppRouter.jsx`に新しい静的ルートを追加した変更では`npm run verify:sitemap`も実行する。**新機能（ユーザー向けの新しいページ・分析タブ・主要機能）を実装した変更では`npm run verify:content-index`も実行し、対応する`docs/design/{slug}/content-index.json`を作成済み（または`not_applicable: true`で対象外を明記済み）であることを確認する**（フローA-2参照）。**`docs/adr/`に新規ADRを追加した変更では`npm run verify:adr-numbers`も実行する**（複数セッション並行作業でADR番号が繰り返し重複した実績があるため、`scripts/maintenance/verify-adr-numbers.js`で番号衝突を機械的に検知する）。**`docs/db-migration/`に新規マイグレーションを追加した変更では`npm run verify:er-diagram`も実行する**（新規テーブル・新規リレーションを導入するのに対応するplan.mdにmermaid ER図が無い場合を検知する）。CI連携はせず、毎回Claude自身が手元で実行する。新しい主要導線を追加した場合はスモークテストにも追記する
 5. `/codex-review`（Codexセカンドオピニオンレビュー）は**2026-07時点で見送り中**。ChatGPT契約のコストに見合わないと判断（詳細は `docs/operation/sdd-and-codex-review.md`）。仕組み自体は用意済みなので、将来必要になったら有効化する
 6. **レビュー結果を PR にコメントで記載する**。内容: 指摘一覧（ファイル・行・内容）、各指摘の対応（修正コミット / スキップ理由）、修正後の検証結果（データ精度検証の結果を含む）
 7. **ユーザーへの完了報告（チャット本文）には以下を必ず全て含める**。PR コメントへのリンクや「詳細は PR 参照」で省略しない：
