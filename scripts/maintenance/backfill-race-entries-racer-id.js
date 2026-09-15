@@ -30,13 +30,18 @@ function parseArgs() {
   return { dryRun: args.includes("--dry-run") };
 }
 
-async function fetchAllPaged(table, selectCols, applyFilter) {
+// orderColでソート列を明示する。OFFSET/LIMITページネーションは明示的な
+// ORDER BYが無いと行の並び順が保証されず、race_entriesのように継続的に
+// INSERTされるテーブル（scrape-scheduled.ymlが5-10分毎に実行）を対象にすると
+// ページ間で行が欠落・重複しうるため必須（BOA-324セルフレビュー指摘）。
+async function fetchAllPaged(table, selectCols, orderCol, applyFilter) {
   const rows = [];
   let offset = 0;
   while (true) {
     let query = supabase
       .from(table)
       .select(selectCols)
+      .order(orderCol, { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1);
     if (applyFilter) query = applyFilter(query);
     const { data, error } = await query;
@@ -52,7 +57,11 @@ async function fetchAllPaged(table, selectCols, applyFilter) {
 // racer_profiles.name -> racer_id のマップを作る。重複nameは復元先が一意に
 // 決まらないため対象から除外する（安全側）。
 async function buildNameToRacerIdMap() {
-  const profiles = await fetchAllPaged("racer_profiles", "racer_id, name");
+  const profiles = await fetchAllPaged(
+    "racer_profiles",
+    "racer_id, name",
+    "racer_id",
+  );
   const nameToIds = new Map();
   for (const p of profiles) {
     if (!nameToIds.has(p.name)) nameToIds.set(p.name, []);
@@ -92,6 +101,7 @@ async function main() {
   const nullEntries = await fetchAllPaged(
     "race_entries",
     "race_id, boat_number, player_name",
+    "race_id",
     (q) => q.is("racer_id", null),
   );
   console.log(`racer_id NULLの行: ${nullEntries.length}件`);
