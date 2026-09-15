@@ -1,6 +1,7 @@
 # スクレイピング基盤のサーバーレス移行 spec
 
 種別: インフラ改善
+対応Linearチケット: [BOA-313](https://linear.app/boat-ai/issue/BOA-313)（2026-09-15、実装・並走検証が進んだ後に遡って起票）
 対応調査: [docs/proposal/scraping-serverless-migration/investigation.md](../../proposal/scraping-serverless-migration/investigation.md)（背景・根本原因・Vercel/cron-job.org制約調査・Active CPU実測結果はこちらを参照）
 
 ## 背景・目的

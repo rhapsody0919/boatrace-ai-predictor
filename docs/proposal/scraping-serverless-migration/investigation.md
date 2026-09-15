@@ -1,6 +1,7 @@
 # スクレイピング基盤のサーバーレス移行 調査記録
 
-種別: 検討中（未採用）
+種別: 調査記録（採用・実装済み。設計は[docs/design/scraping-serverless-migration/spec.md](../../design/scraping-serverless-migration/spec.md)参照）
+対応Linearチケット: [BOA-313](https://linear.app/boat-ai/issue/BOA-313)（2026-09-15、実装・並走検証が進んだ後に遡って起票）
 関連: [DATA_ACQUISITION_STRATEGY.md](../DATA_ACQUISITION_STRATEGY.md)、[docs/issues/DATA_SCRAPING_GAPS.md](../../issues/DATA_SCRAPING_GAPS.md)、`docs/operation/external-cron-setup.md`
 
 ## 背景・問題
