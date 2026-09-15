@@ -5,7 +5,11 @@
 import { useTranslation } from "react-i18next";
 import { GRADE_CONFIG } from "../../constants/gradeConfig";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
-import { getDeadlineStatus, DEADLINE_STATUS } from "../../utils/raceDeadlineStatus";
+import {
+  getDeadlineStatus,
+  DEADLINE_STATUS,
+} from "../../utils/raceDeadlineStatus";
+import RaceCardBadge from "./RaceCardBadge";
 import RaceCardDataTable from "./RaceCardDataTable";
 import RaceDeadlineCountdown from "./RaceDeadlineCountdown";
 
@@ -72,122 +76,51 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
         <h3>{race.venue}</h3>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           {showBadge && (
-            <span
-              style={{
-                padding: "0.2rem 0.55rem",
-                borderRadius: "8px",
-                fontSize: "0.7rem",
-                fontWeight: "700",
-                background: badgeColor,
-                color: "#fff",
-                letterSpacing: "0.02em",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {badgeLabel}
-            </span>
+            <RaceCardBadge color={badgeColor}>{badgeLabel}</RaceCardBadge>
           )}
           {isFinished && unified && (
-            <span
-              style={{
-                padding: "0.2rem 0.55rem",
-                borderRadius: "8px",
-                fontSize: "0.7rem",
-                fontWeight: "700",
-                background:
-                  hitBadges.length > 0
-                    ? "var(--color-success)"
-                    : "var(--color-error)",
-                color: "#fff",
-                letterSpacing: "0.02em",
-                whiteSpace: "nowrap",
-              }}
+            <RaceCardBadge
+              color={
+                hitBadges.length > 0
+                  ? "var(--color-success)"
+                  : "var(--color-error)"
+              }
             >
               {hitBadges.length > 0
                 ? hitBadges[0].label
                 : t("raceCard.missBadge")}
-            </span>
+            </RaceCardBadge>
           )}
           {isCancelled ? (
-            <span
-              style={{
-                padding: "0.2rem 0.55rem",
-                borderRadius: "8px",
-                fontSize: "0.7rem",
-                fontWeight: "700",
-                background: "var(--color-gray-600)",
-                color: "#fff",
-                letterSpacing: "0.02em",
-                whiteSpace: "nowrap",
-              }}
-            >
+            <RaceCardBadge color="var(--color-gray-600)">
               {t("raceCard.cancelled")}
-            </span>
+            </RaceCardBadge>
           ) : (
             isAwaitingResult && (
-              <span
-                style={{
-                  padding: "0.2rem 0.55rem",
-                  borderRadius: "8px",
-                  fontSize: "0.7rem",
-                  fontWeight: "700",
-                  background: "var(--color-gray-600)",
-                  color: "#fff",
-                  letterSpacing: "0.02em",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <RaceCardBadge color="var(--color-gray-600)">
                 {t("raceCard.awaitingResult")}
-              </span>
+              </RaceCardBadge>
             )
           )}
           {deadlineStatus === DEADLINE_STATUS.CLOSING_SOON && (
-            <span
-              style={{
-                padding: "0.2rem 0.55rem",
-                borderRadius: "8px",
-                fontSize: "0.7rem",
-                fontWeight: "700",
-                background: "var(--color-warning)",
-                color: "#fff",
-                letterSpacing: "0.02em",
-                whiteSpace: "nowrap",
-              }}
-            >
+            <RaceCardBadge color="var(--color-warning)">
               {t("raceCard.closingSoon")}
-            </span>
+            </RaceCardBadge>
           )}
           {deadlineStatus === DEADLINE_STATUS.ACCEPTING && (
-            <span
-              style={{
-                padding: "0.2rem 0.55rem",
-                borderRadius: "8px",
-                fontSize: "0.7rem",
-                fontWeight: "700",
-                background: "var(--color-gray-600)",
-                color: "#fff",
-                letterSpacing: "0.02em",
-                whiteSpace: "nowrap",
-              }}
-            >
+            <RaceCardBadge color="var(--color-gray-600)">
               {t("raceCard.accepting")}
-            </span>
+            </RaceCardBadge>
           )}
           {gradeConfig && (
-            <span
-              style={{
-                padding: "0.2rem 0.5rem",
-                borderRadius: "6px",
-                fontSize: "0.7rem",
-                fontWeight: "700",
-                background: gradeConfig.color,
-                color: "#fff",
-                letterSpacing: "0.05em",
-                whiteSpace: "nowrap",
-              }}
+            <RaceCardBadge
+              color={gradeConfig.color}
+              padding="0.2rem 0.5rem"
+              borderRadius="6px"
+              letterSpacing="0.05em"
             >
               {gradeConfig.label}
-            </span>
+            </RaceCardBadge>
           )}
           <span className="race-number">{race.raceNumber}R</span>
         </div>
@@ -203,7 +136,10 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
           </div>
           {deadlineStatus && deadlineStatus !== DEADLINE_STATUS.CLOSED && (
             <div className="info-item">
-              <RaceDeadlineCountdown raceId={race.id} startTime={race.startTime} />
+              <RaceDeadlineCountdown
+                raceId={race.id}
+                startTime={race.startTime}
+              />
             </div>
           )}
         </div>
