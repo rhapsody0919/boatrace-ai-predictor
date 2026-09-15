@@ -1,11 +1,6 @@
 /**
  * raceIndicators - レース分析指標の共通定義（BOA-168）
- * データ出走表（DataRaceTable）と振り返り（RaceReview）で同じ指標セットを
- * 使うため、行定義（ラベル・値レンダリング・最良艇・強弱シグナル・言語化）を共通化する。
- *
- * signal: その艇のデータが「好走を示唆(strong)/凡走を示唆(weak)/中立(null)」かを
- * レース内順位ベースで機械的に返す。全艇同値の指標は判定不能としてnull
- * （例: モーター交換直後で全艇2連率0%の戸田のようなケース）
+ * データ出走表（DataRaceTable）の行定義（ラベル・値レンダリング・最良艇）を集約する
  *
  * ロード中の未取得セルはソース別pendingに基づきスケルトン表示する
  * （プログレッシブ表示: 取得できた行から順次値が入る）
@@ -50,30 +45,6 @@ const byBoat = (rows) => {
   (rows ?? []).forEach((row) => map.set(row.boat_number, row));
   return map;
 };
-
-// レース内順位（competition ranking）。全艇同値ならnull
-function rankOf(candidates, boat, dir = "max") {
-  const values = candidates.filter(
-    (c) => c.value !== null && c.value !== undefined,
-  );
-  if (values.length === 0) return null;
-  const vs = values.map((c) => c.value);
-  if (Math.min(...vs) === Math.max(...vs)) return null;
-  const target = values.find((c) => c.boat === boat);
-  if (!target) return null;
-  const better = values.filter((c) =>
-    dir === "min" ? c.value < target.value : c.value > target.value,
-  ).length;
-  return better + 1;
-}
-
-function rankSignal(candidates, boat, dir = "max") {
-  const rank = rankOf(candidates, boat, dir);
-  if (rank === null) return null;
-  if (rank <= 2) return "strong";
-  if (rank >= 5) return "weak";
-  return null;
-}
 
 function bestOf(candidates, dir = "max") {
   const values = candidates.filter(
@@ -133,7 +104,7 @@ export function buildIndicatorRows({
 
   const localizedTechnique = (name) => translateTechnique(t, name);
 
-  // 指標ごとの候補値リスト（signal/best共用）
+  // 指標ごとの候補値リスト（best共用）
   const cand = {
     winRate: players.map((p) => ({
       boat: p.number,
@@ -191,13 +162,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.winRate"),
       tab: null,
       best: bestOf(cand.winRate),
-      signal: (boat) => rankSignal(cand.winRate, boat),
-      itemText: (boat) => {
-        const rank = rankOf(cand.winRate, boat);
-        return rank === null
-          ? null
-          : t("review.itemRank", { label: t("dataTable.rowWinRate"), rank });
-      },
       render: (p) => (
         <span className="drt-value">
           <span className="drt-grade">{p.grade}</span>
@@ -211,16 +175,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.localWinRate"),
       tab: "racecard",
       best: bestOf(cand.localWinRate),
-      signal: (boat) => rankSignal(cand.localWinRate, boat),
-      itemText: (boat) => {
-        const rank = rankOf(cand.localWinRate, boat);
-        return rank === null
-          ? null
-          : t("review.itemRank", {
-              label: t("dataTable.rowLocalWinRate"),
-              rank,
-            });
-      },
       render: (p) => {
         const rate = toNumber(p.localWinRate);
         return rate !== null ? (
@@ -236,13 +190,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.twoRate"),
       tab: "racecard",
       best: bestOf(cand.twoRate),
-      signal: (boat) => rankSignal(cand.twoRate, boat),
-      itemText: (boat) => {
-        const rank = rankOf(cand.twoRate, boat);
-        return rank === null
-          ? null
-          : t("review.itemRank", { label: t("dataTable.rowTwoRate"), rank });
-      },
       render: (p) => {
         const rate = toNumber(p.global2Rate);
         return rate !== null ? (
@@ -265,13 +212,6 @@ export function buildIndicatorRows({
       })(),
       tab: "motor",
       best: bestOf(cand.motor),
-      signal: (boat) => rankSignal(cand.motor, boat),
-      itemText: (boat) => {
-        const rank = rankOf(cand.motor, boat);
-        return rank === null
-          ? null
-          : t("review.itemRank", { label: t("dataTable.rowMotor"), rank });
-      },
       render: (p) => {
         const row = motorByBoat.get(p.number);
         const rate = toNumber(row?.motor_2rate ?? p.motor2Rate);
@@ -308,24 +248,6 @@ export function buildIndicatorRows({
       best: bestOf(
         (racerForm ?? []).map((r) => ({ boat: r.boat_number, value: r.delta })),
       ),
-      signal: (boat) => {
-        const row = formByBoat.get(boat);
-        if (!row || row.delta === null || row.delta === undefined) return null;
-        if (row.delta > 0) return "strong";
-        if (row.delta < 0) return "weak";
-        return null;
-      },
-      itemText: (boat) => {
-        const row = formByBoat.get(boat);
-        if (!row || row.delta === null || row.delta === undefined) return null;
-        if (row.delta > 0)
-          return t("review.itemFormUp", { delta: row.delta.toFixed(2) });
-        if (row.delta < 0)
-          return t("review.itemFormDown", {
-            delta: Math.abs(row.delta).toFixed(2),
-          });
-        return null;
-      },
       render: (p) => {
         const row = formByBoat.get(p.number);
         if (!row || row.delta === null || row.delta === undefined)
@@ -348,13 +270,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.avgSt"),
       tab: "racecard",
       best: bestOf(cand.avgSt, "min"),
-      signal: (boat) => rankSignal(cand.avgSt, boat, "min"),
-      itemText: (boat) => {
-        const rank = rankOf(cand.avgSt, boat, "min");
-        return rank === null
-          ? null
-          : t("review.itemRank", { label: t("dataTable.rowAvgSt"), rank });
-      },
       render: (p) => {
         const rate = toNumber(statsByBoat.get(p.number)?.avgST);
         return rate !== null ? (
@@ -370,13 +285,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.st"),
       tab: "st",
       best: bestOf(cand.st, "min"),
-      signal: (boat) => rankSignal(cand.st, boat, "min"),
-      itemText: (boat) => {
-        const rank = rankOf(cand.st, boat, "min");
-        return rank === null
-          ? null
-          : t("review.itemRank", { label: t("dataTable.rowSt"), rank });
-      },
       render: (p) => {
         const row = stByBoat.get(p.number);
         if (!row || !row.sample_count) return ph("stPredictability");
@@ -391,13 +299,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.exSt"),
       tab: "st",
       best: bestOf(cand.exSt, "min"),
-      signal: (boat) => rankSignal(cand.exSt, boat, "min"),
-      itemText: (boat) => {
-        const rank = rankOf(cand.exSt, boat, "min");
-        return rank === null
-          ? null
-          : t("review.itemRank", { label: t("dataTable.rowExSt"), rank });
-      },
       render: (p) => {
         const rate = toNumber(stByBoat.get(p.number)?.exhibition_st);
         return rate !== null ? (
@@ -413,16 +314,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.exhibition"),
       tab: "extrend",
       best: bestOf(cand.exhibition, "min"),
-      signal: (boat) => rankSignal(cand.exhibition, boat, "min"),
-      itemText: (boat) => {
-        const rank = rankOf(cand.exhibition, boat, "min");
-        return rank === null
-          ? null
-          : t("review.itemRank", {
-              label: t("dataTable.rowExhibition"),
-              rank,
-            });
-      },
       render: (p) => {
         const row = exByBoat.get(p.number);
         if (!row) return ph("exhibitionTime");
@@ -446,14 +337,12 @@ export function buildIndicatorRows({
     },
     {
       // 当日体重は計量時点の実測値であり、値の高低が好走/凡走を示唆する指標では
-      // ないため、他行と違いbest/signalは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
+      // ないため、他行と違いbestは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
       key: "todayWeight",
       label: t("dataTable.rowTodayWeight"),
       shortLabel: t("review.cols.todayWeight"),
       tab: null,
       best: null,
-      signal: () => null,
-      itemText: () => null,
       render: (p) => {
         const row = maintenanceByBoat.get(p.number);
         if (!row) return ph("motorMaintenance");
@@ -467,14 +356,12 @@ export function buildIndicatorRows({
     },
     {
       // チルト・調整重量は選手が選んだ「設定値」であり、値の高低が好走/凡走を
-      // 示唆する指標ではないため、他行と違いbest/signalは持たせない（BOA-221）
+      // 示唆する指標ではないため、他行と違いbestは持たせない（BOA-221）
       key: "tilt",
       label: t("dataTable.rowTilt"),
       shortLabel: t("review.cols.tilt"),
       tab: null,
       best: null,
-      signal: () => null,
-      itemText: () => null,
       render: (p) => {
         const row = maintenanceByBoat.get(p.number);
         if (!row) return ph("motorMaintenance");
@@ -493,8 +380,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.adjustmentWeight"),
       tab: null,
       best: null,
-      signal: () => null,
-      itemText: () => null,
       render: (p) => {
         const row = maintenanceByBoat.get(p.number);
         if (!row) return ph("motorMaintenance");
@@ -508,14 +393,12 @@ export function buildIndicatorRows({
     },
     {
       // 前走成績（今節内の直近レースの着順・進入コース）は事実の記録であり、
-      // best/signalは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
+      // bestは持たせない（BOA-289、tilt/adjustmentWeightと同じ扱い）
       key: "prevResult",
       label: t("dataTable.rowPrevResult"),
       shortLabel: t("review.cols.prevResult"),
       tab: null,
       best: null,
-      signal: () => null,
-      itemText: () => null,
       render: (p) => {
         const row = maintenanceByBoat.get(p.number);
         if (!row) return ph("motorMaintenance");
@@ -545,16 +428,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.courseRate"),
       tab: "attackdefense",
       best: bestOf(cand.courseRate),
-      signal: (boat) => rankSignal(cand.courseRate, boat),
-      itemText: (boat) => {
-        const rank = rankOf(cand.courseRate, boat);
-        return rank === null
-          ? null
-          : t("review.itemRank", {
-              label: t("dataTable.rowCourseRate"),
-              rank,
-            });
-      },
       render: (p) => {
         const cr = courseRateOf(statsByBoat, p.number);
         if (!cr) return ph("racerStats");
@@ -574,8 +447,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.technique"),
       tab: "techprofile",
       best: null,
-      signal: () => null, // 決まり手型はRaceReview側で勝者の決まり手一致を特別判定する
-      itemText: () => null,
       render: (p) => {
         const row = techByBoat.get(p.number);
         if (!row) return ph("techniqueProfile");
@@ -598,18 +469,6 @@ export function buildIndicatorRows({
       shortLabel: t("review.cols.returnRate"),
       tab: "returnrate",
       best: bestOf(cand.returnRate),
-      signal: (boat) => {
-        const row = rateByBoat.get(boat);
-        if (!row || !row.sample_count) return null;
-        return row.win_return_rate >= 100 ? "strong" : "weak";
-      },
-      itemText: (boat) => {
-        const row = rateByBoat.get(boat);
-        if (!row || !row.sample_count) return null;
-        return t("review.itemReturn", {
-          rate: row.win_return_rate.toFixed(0),
-        });
-      },
       render: (p) => {
         const row = rateByBoat.get(p.number);
         if (!row || !row.sample_count) return ph("returnRate");

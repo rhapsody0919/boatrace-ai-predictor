@@ -1,7 +1,8 @@
 /**
  * useRaceAnalysisData - レース単位の分析データを並列取得するフック（BOA-168）
- * DataRaceTable / RaceReview で共有する。サービス層のwithCache（30分TTL +
- * in-flightデデュープ）により、同一レースの重複取得は発生しない。
+ * DataRaceTable / RaceBasicInfoTab（BOA-306、racerStatsのみ使用）で共有する。
+ * サービス層のwithCache（30分TTL + in-flightデデュープ）により、
+ * 同一レースの重複取得は発生しない。
  *
  * 各クエリは独立して解決され、取得できたものから順次stateに反映される
  * （プログレッシブ表示）。最も重い回収率クエリに他の行が引きずられない。

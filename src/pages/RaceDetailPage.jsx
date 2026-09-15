@@ -1,7 +1,8 @@
 /**
  * RaceDetailPage - レース詳細ページ（ディープリンク対応）
  * `/race/:raceId`（raceId = YYYY-MM-DD-VV-RR、本日・過去日付共通）。
- * 中身は既存のPredictionSection（PredictionPanel/RaceResult/RaceReview）を流用する。
+ * 中身は既存のPredictionSection（PredictionPanel。基本情報/モータ情報/結果タブを
+ * 内包するRaceTabsを含む、BOA-305〜312）を流用する。
  */
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";

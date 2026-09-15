@@ -766,13 +766,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
     }
   });
 
-  test("過去日・結果確定済みレースの埋め込みセクションが、無関係な「本日開催」レースにフォールバックせず当該レースのデータを表示する（race-detail-analysis-integration 回帰確認）", async ({
+  test("過去日・結果確定済みレースのモータ情報タブが、無関係な「本日開催」レースにフォールバックせず当該レースのデータを表示する（race-detail-analysis-integration 回帰確認）", async ({
     page,
   }) => {
     // 過去日は「本日開催中の会場」一覧に含まれないため、embedded対応前は
     // getVenuesWithTodaysRaces()のフォールバック（list[0]）により無関係なレースの
-    // データが無警告表示されていた。DataRaceTableの選手名と、埋め込みセクション
-    // （モーター調子）が表示する選手名が一致することを確認する
+    // データが無警告表示されていた。DataRaceTableの選手名と、モータ情報タブ
+    // （BOA-308、既存のMotorConditionChartをタブ化したもの）が表示する
+    // 選手名が一致することを確認する
     await page.goto("/races/2026-08-11");
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
@@ -786,10 +787,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).map((n) => n.trim());
     expect(expectedNames.length).toBe(6);
 
-    const motorSection = page
-      .locator(".embedded-analysis-section")
-      .filter({ hasText: "モーター調子" });
-    await motorSection.locator(".eas-header").click();
+    // モータ情報タブはアコーディオンではなく独立タブのため、クリックで
+    // 直接切り替わる（BOA-308でEmbeddedAnalysisSectionのアコーディオン版は撤去済み）
+    await page.locator(".race-tabs-btn", { hasText: "モータ情報" }).click();
+    const motorSection = page.locator(".race-tabs-panel");
     await expect(motorSection.locator(".motor-ranking-row")).toHaveCount(6, {
       timeout: 15000,
     });
@@ -860,7 +861,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     expect(maxDenom - minDenom).toBeLessThan(maxDenom * 0.05);
   });
 
-  test("過去日付ページで結果確定レースを選ぶと「データで振り返る」が表示される", async ({
+  test("過去日付ページで結果確定レースを選ぶと結果タブに着順・配当・展開予測検証が表示される（BOA-312）", async ({
     page,
   }) => {
     // unifiedモデル運用開始日（2026-08-11〜）以降の日付を使う。
@@ -874,8 +875,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 15000,
     });
 
+    // 結果確定済みレースはタブ構成（BOA-305〜312）で「結果」タブがデフォルト表示される。
     // 的中判定（複勝的中/展開予測的中）はレース結果パネルに一本化されている
     // （2026-08-14: 従来はAI検証ブロックと重複表示していたのを整理・統合）
+    await expect(
+      page.locator(".race-tabs-btn.is-active", { hasText: "結果" }),
+    ).toBeVisible({ timeout: 20000 });
     await expect(page.locator(".race-result")).toBeVisible({
       timeout: 20000,
     });
@@ -883,22 +888,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 20000,
     });
 
-    // 結果確定済みレースなので振り返りセクションが表示される
-    await expect(page.locator(".race-review")).toBeVisible({
-      timeout: 20000,
-    });
-    // 照合完了後、全艇サマリーが表示される
-    await expect(page.locator(".race-review-all-table")).toBeVisible({
-      timeout: 20000,
-    });
-    // 全艇サマリーは6艇分の行を持つ
-    await expect(page.locator(".race-review-all-table tbody tr")).toHaveCount(
-      6,
-    );
-    // 全艇の言語化ブロックも6艇分表示される
-    await expect(page.locator(".race-review-boat-block")).toHaveCount(6);
-    // AI検証ブロックはレース結果パネルと重複するため廃止済み
-    await expect(page.locator(".race-review-ai")).toHaveCount(0);
+    // 「データで振り返る」（RaceReview）はBOA-312で撤去済み。的中/不的中の検証は
+    // 上記の結果タブ（RaceResult）に統合されている
+    await expect(page.locator(".race-review")).toHaveCount(0);
     // 結果確定済みレースでは未来志向のAIデータ分析（展開予測/イン崩れ）を表示しない
     await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });

@@ -2287,6 +2287,40 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定レースの枠番別・公式集計済み成績（全国/当地の勝率・2連率・3連率）を
+   * 取得する（BOA-306、レース詳細ページ「基本情報」タブ）。
+   * これらはboatrace.jp側で既に算出済みの「今期」公式値であり、自社で
+   * 期間集計をやり直す必要が無い最も正確な値のため、期間フィルタが
+   * 「今期」かつグレード条件無し（=全レース）の場合はこの値をそのまま使う。
+   * グレード・期間で絞り込む場合は別途getRacerScopedRaceStatsで自社集計する
+   */
+  getRaceEntryOfficialRatesBreakdown(raceId) {
+    return withCache(`race-entry-official-rates-${raceId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from("race_entries")
+        .select(
+          "boat_number, win_rate, local_win_rate, global_2rate, local_2rate, global_3rate, local_3rate",
+        )
+        .eq("race_id", raceId)
+        .order("boat_number");
+
+      if (error) {
+        console.error(
+          "race_entries(公式勝率/連対率)取得エラー:",
+          error.message,
+        );
+        return [];
+      }
+      return data ?? [];
+    });
+  },
+
+  /**
    * 指定レースの枠番別モーター調子（2連率/3連率）を取得する（BOA-151）
    * 「このレースのどの艇のモーターが調子いいか」を直接示す
    * venueCodeを渡すと各艇のモーターの機力指数（BOA-265）も合わせて取得する
@@ -3186,6 +3220,84 @@ export const supabaseDataService = {
         }))
         .filter((row) => row.total_races >= 5)
         .sort((a, b) => b.total_races - a.total_races);
+    });
+  },
+
+  /**
+   * 指定選手の過去2年分の出走履歴を、レース詳細ページ「基本情報」タブ
+   * （BOA-306）の会場/グレード/期間フィルタ用にフラットな形で1回だけ取得する。
+   * getRacerVenueStats/getRacerRaceHistoryと同じ「対象は1選手のみなのでその場で
+   * ライブ集計する」方式（BOA-303が問題視する全選手×全会場の横断集計とは
+   * スコープが異なる）。フィルタの絞り込み・集計自体はクライアント側の
+   * aggregateBasicInfoStats（basicInfoStats.js）が担い、この関数はracerId単位で
+   * キャッシュ可能な生データの取得のみ担当する
+   */
+  getRacerScopedRaceStats(racerId) {
+    return withCache(`racer-scoped-race-stats-${racerId}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 730);
+      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+
+      const { data: entries, error: entriesError } = await supabase
+        .from("race_entries")
+        .select("race_id, boat_number")
+        .eq("racer_id", racerId)
+        .gte("race_id", cutoffStr);
+
+      if (entriesError || !entries || entries.length === 0) {
+        if (entriesError)
+          console.error("race_entries取得エラー:", entriesError.message);
+        return [];
+      }
+
+      const raceIds = [...new Set(entries.map((e) => e.race_id))];
+      // race_gradeはraces側のカラム（race_conditions側は017マイグレーションで
+      // 削除済み。race_conditions.series_day/is_final_dayはgenerate-predictions.js
+      // で常にnull書き込みが確定しており（実データでも33,411件全行がnull、
+      // 2026-09-15確認）、この関数では取得しない
+      const [raceRows, resultRows] = await Promise.all([
+        fetchAllByIn(
+          "races",
+          "race_id, race_date, venue_code, race_grade",
+          "race_id",
+          raceIds,
+        ),
+        fetchAllByIn(
+          "race_results",
+          "race_id, rank1, rank2, rank3, is_cancelled, is_no_race",
+          "race_id",
+          raceIds,
+        ),
+      ]);
+
+      const raceById = new Map(raceRows.map((r) => [r.race_id, r]));
+      const resultById = new Map(resultRows.map((r) => [r.race_id, r]));
+
+      return entries
+        .map((entry) => {
+          const race = raceById.get(entry.race_id);
+          const result = resultById.get(entry.race_id);
+          if (!race || !isUsableRaceResult(result)) return null;
+          return {
+            raceId: entry.race_id,
+            date: race.race_date,
+            venueCode: race.venue_code,
+            boatNumber: entry.boat_number,
+            // racesの約76%のみrace_grade取得済み（2026-09-15確認）。
+            // 未取得レースはグレードフィルタ「全レース」時のみ集計対象に含める
+            raceGrade: race.race_grade ?? null,
+            rank1: result.rank1,
+            rank2: result.rank2,
+            rank3: result.rank3,
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     });
   },
 
