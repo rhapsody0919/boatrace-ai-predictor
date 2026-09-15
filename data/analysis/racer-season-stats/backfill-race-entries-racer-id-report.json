@@ -1,0 +1,25 @@
+{
+  "executedAt": "2026-09-15T10:40:29.535Z",
+  "dryRun": true,
+  "nullEntriesTotal": 49984,
+  "distinctNamesTotal": 1585,
+  "matchedNamesCount": 1574,
+  "unmatchedNamesCount": 11,
+  "unmatchedNames": [
+    "星野　　政彦",
+    "岡本　　慎治",
+    "宮本　　裕之",
+    "中山　　鷹輔",
+    "太田　　　潮",
+    "本多　　宏和",
+    "和合　　俊介",
+    "小川　　広大",
+    "長谷川　　巌",
+    "樫葉　　次郎",
+    "森田　　昭彦"
+  ],
+  "duplicateProfileNames": [],
+  "updatedRows": 49745,
+  "updateErrorsCount": 0,
+  "updateErrors": []
+}
