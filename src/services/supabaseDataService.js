@@ -571,6 +571,7 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
       raceTitle: race.raceTitle ?? null,
       seriesDay: race.seriesDay ?? null,
       isFinalDay: race.isFinalDay ?? null,
+      raceStage: race.raceStage ?? null,
       volatility: race.volatility
         ? {
             ...race.volatility,
@@ -920,7 +921,8 @@ export const supabaseDataService = {
         race_conditions (
           series_day,
           is_final_day,
-          race_title
+          race_title,
+          race_stage
         ),
         race_entries (
           boat_number,
@@ -1007,6 +1009,7 @@ export const supabaseDataService = {
           raceTitle: race.race_conditions?.race_title ?? null,
           seriesDay: race.race_conditions?.series_day ?? null,
           isFinalDay: race.race_conditions?.is_final_day ?? null,
+          raceStage: race.race_conditions?.race_stage ?? null,
           volatility: volatilityByRaceId.has(race.race_id)
             ? {
                 ...volatilityByRaceId.get(race.race_id),
@@ -1093,7 +1096,8 @@ export const supabaseDataService = {
         race_conditions (
           series_day,
           is_final_day,
-          race_title
+          race_title,
+          race_stage
         ),
         race_entries (
           boat_number,
@@ -1285,6 +1289,7 @@ export const supabaseDataService = {
           raceTitle: race.race_conditions?.race_title ?? null,
           seriesDay: race.race_conditions?.series_day ?? null,
           isFinalDay: race.race_conditions?.is_final_day ?? null,
+          raceStage: race.race_conditions?.race_stage ?? null,
           // イン崩れ指数（旧「荒れ度」）はunifiedモデルのvolatilityPercentile
           // （raceData.unified.volatilityPercentile）に一本化済み。旧
           // races.volatility_score/level（generate-predictions.jsが今も書き込み

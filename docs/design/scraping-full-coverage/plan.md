@@ -153,6 +153,8 @@ erDiagram
 
 新規ビュー/集計関数（テーブルではなくクエリ）: `getSeriesResultsByRacer(racerId, venueCode, meetStartDate)`（`supabaseDataService.js`に追加）。既存の`races`（`series_day`列、[BOA-226](https://linear.app/boat-ai/issue/BOA-226)実装後）・`race_results`・`race_entries`をJOINして、当該選手の当該節・当該日までの進入・着順・STを引く。
 
+**注意（2026-09-15、BOA-226完了確認時に発覚）**: BOA-226は2026-09-12にスコープが転換し、`series_day`（節内の日数）自体は実装対象から外れた。代わりに`race_conditions.race_stage`（予選/準優勝戦/優勝戦等のラウンド種別、058マイグレーションで本番適用済み）が実装されている。race_stageは「優勝戦かどうか」の判定はできるが「節内の何日目か」という日数情報は持たないため、上記の`series_day`列を前提としたJOIN設計はそのままでは成立しない。FR-3着手前に、tasks.mdに記載した3つの選択肢（series_dayを別途実装する／race_dateの連続性から節を導出する／日数を使わない設計に変更する）のいずれを採るか決定すること。
+
 「得点率」（節内の順位に応じた公式ポイント制）は自社計算が必要。公式ルール（1着=得点最大、着順が下がるごとに減点、優勝戦は加重等）を`docs/reference/`に一次情報源つきでまとめてから実装する（[BOA-220](https://linear.app/boat-ai/issue/BOA-220)と統合）。
 
 **注意（[BOA-323](https://linear.app/boat-ai/issue/BOA-323)、2026-09-15発見、本spec対象外だが直接影響あり）**: ADR-0053で「自社`race_results`から導出する」と決めたが、PR #612由来のリグレッションで2026-09-10以降`winning_technique`・`race_start_timings`がほぼ全レースで欠損している（悪化継続中）。**BOA-323が解消するまでは、FR-3で導出する直近期間の今節成績（進入・着順は影響薄いが、STは大半欠損）が同じ穴を引き継ぐ**。FR-3の実装着手前にBOA-323の修正・バックフィル状況を確認すること。BOA-323自体は軸③（正確性・可用性のバグ）に分類され、[BOA-257](https://linear.app/boat-ai/issue/BOA-257)と同様に本specのスコープ外・独立した緊急対応が望ましい。

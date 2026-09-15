@@ -40,7 +40,7 @@
 
 - [ ] [BOA-220](https://linear.app/boat-ai/issue/BOA-220)（今節得点率）とのスコープ重複を整理し、統合方針を確定する
 - [ ] 得点率の公式計算ルール（着順→得点の対応表、優勝戦の加重等）を一次情報源で確認し、`docs/reference/`にまとめる
-- [ ] [BOA-226](https://linear.app/boat-ai/issue/BOA-226)（`races.series_day`）の実装状況を確認する（未完了なら本タスクの前提として先に完了させる）
+- [ ] [BOA-226](https://linear.app/boat-ai/issue/BOA-226)（`races.series_day`）の実装状況を確認する（未完了なら本タスクの前提として先に完了させる）— **2026-09-15時点の状況（要決定）**: BOA-226は2026-09-12にスコープが転換しており、`series_day`（節内の何日目かという日数）そのものは実装されていない。代わりに`race_conditions.race_stage`（予選/準優勝戦/優勝戦等のラウンド種別文字列、`.title16_titleDetail__add2020`から抽出）が実装・本番適用済み（058マイグレーション、`scrapeRaceStage()`）。race_stageは「このレースが優勝戦か」の判定（BOA-326等）には使えるが、「節内の何日目まで進んだか」という日数の情報は持たないため、本FRが前提とする`series_day`列によるJOIN設計はこのままでは成立しない。着手前に次のいずれかを決定すること: (a) series_day（日数）を別途スクレイピング実装する、(b) `races.race_date`の会場内連続日数から節の日数を導出するロジックに設計変更する、(c) 今節成績の範囲特定に日数そのものは不要と判断し別の絞り込み条件に変更する
 - [ ] `getSeriesResultsByRacer(racerId, venueCode, meetStartDate)`を`supabaseDataService.js`に実装する（`races`/`race_results`/`race_entries`のJOIN、過去日分）
 - [ ] [BOA-323](https://linear.app/boat-ai/issue/BOA-323)の修正・バックフィル状況を確認した上で、当日分（結果確定に連動する部分）の動作を実データで検証する
 
