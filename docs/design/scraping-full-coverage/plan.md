@@ -81,6 +81,8 @@
 
 `flying_count_period`と、既存の`race_results`/`race_start_timings`から取得できる各F発生日を組み合わせ、公式ルール（1回=30日、2回=90日、3回=180日、半年区切り）で休み期間を計算できるか検証する。可能であれば日和の「F休み期間」相当のスクレイピングは不要になる。検証タスクはtasks.mdで扱う。
 
+**注意（[BOA-323](https://linear.app/boat-ai/issue/BOA-323)、2026-09-15発見、本spec対象外）**: `race_start_timings`はPR #612由来のリグレッションで2026-09-10以降ほぼ全レースで欠損している（決まり手も同様）。F発生日の検出もこのテーブルに依存するため、BOA-323が解消するまでは直近期間のF検出も同じ穴を引き継ぐ。本FRの検証タスク着手前にBOA-323の修正状況を確認すること。
+
 ## FR-3: 今節成績（節内の日別進捗）
 
 ### 技術判断（ADR-0053参照）
@@ -92,6 +94,8 @@
 新規ビュー/集計関数（テーブルではなくクエリ）: `getSeriesResultsByRacer(racerId, venueCode, meetStartDate)`（`supabaseDataService.js`に追加）。既存の`races`（`series_day`列、[BOA-226](https://linear.app/boat-ai/issue/BOA-226)実装後）・`race_results`・`race_entries`をJOINして、当該選手の当該節・当該日までの進入・着順・STを引く。
 
 「得点率」（節内の順位に応じた公式ポイント制）は自社計算が必要。公式ルール（1着=得点最大、着順が下がるごとに減点、優勝戦は加重等）を`docs/reference/`に一次情報源つきでまとめてから実装する（[BOA-220](https://linear.app/boat-ai/issue/BOA-220)と統合）。
+
+**注意（[BOA-323](https://linear.app/boat-ai/issue/BOA-323)、2026-09-15発見、本spec対象外だが直接影響あり）**: ADR-0053で「自社`race_results`から導出する」と決めたが、PR #612由来のリグレッションで2026-09-10以降`winning_technique`・`race_start_timings`がほぼ全レースで欠損している（悪化継続中）。**BOA-323が解消するまでは、FR-3で導出する直近期間の今節成績（進入・着順は影響薄いが、STは大半欠損）が同じ穴を引き継ぐ**。FR-3の実装着手前にBOA-323の修正・バックフィル状況を確認すること。BOA-323自体は軸③（正確性・可用性のバグ）に分類され、[BOA-257](https://linear.app/boat-ai/issue/BOA-257)と同様に本specのスコープ外・独立した緊急対応が望ましい。
 
 ### 実行タイミング
 
