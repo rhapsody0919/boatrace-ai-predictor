@@ -632,8 +632,9 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
       .locator(".rcdt-label-cell")
       .allTextContents();
     // BOA-221でチルト・調整重量の2行を追加したため11→13行、
-    // BOA-268で全国2連率の行を追加したため13→14行になる
-    expect(expandedLabels.length).toBe(14);
+    // BOA-268で全国2連率の行を追加したため13→14行、
+    // BOA-289で当日体重・前走成績の2行を追加したため14→16行になる
+    expect(expandedLabels.length).toBe(16);
   });
 
   test("非開催の会場カードは「本日開催なし」でリンクを持たない", async ({

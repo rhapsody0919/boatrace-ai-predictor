@@ -3806,10 +3806,16 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定レースのチルト・調整重量を取得する（BOA-221）
+   * 指定レースのチルト・調整重量・当日体重・前走成績を取得する（BOA-221/BOA-289）
    * 展示タイムと同じ行(exhibition_data)の別列で、履歴平均を出す必要が無い
-   * 「今回のレースでの設定値」のため、getRaceExhibitionTimeBreakdownのような
-   * 過去90日平均フォールバックは不要。単純に該当race_idの1回読み取りで足りる
+   * 「今回のレースでの設定値・直近の実績値」のため、getRaceExhibitionTimeBreakdownの
+   * ような過去90日平均フォールバックは不要。単純に該当race_idの1回読み取りで足りる
+   *
+   * BOA-289の新列（today_weight/prev_race_no/prev_entry_course/prev_start_timing/
+   * prev_finish_rank、マイグレーション059）は未適用環境がありうる。1回のselectに
+   * 未適用の列を含めると「column does not exist」でクエリ全体が失敗し、既に動作している
+   * tilt/adjustment_weight（BOA-221、マイグレーション056）まで巻き添えで表示できなくなる。
+   * これを避けるため、失敗時は新列を除いた旧列のみで再取得する
    */
   getRaceMotorMaintenanceBreakdown(raceId) {
     return withCache(`race-motor-maintenance-${raceId}`, async () => {
@@ -3820,12 +3826,32 @@ export const supabaseDataService = {
 
       const { data, error } = await supabase
         .from("exhibition_data")
-        .select("boat_number, tilt, adjustment_weight")
+        .select(
+          "boat_number, tilt, adjustment_weight, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank",
+        )
         .eq("race_id", raceId);
 
       if (error) {
+        if (/column .* does not exist/i.test(error.message)) {
+          console.warn(
+            "exhibition_data: BOA-289の新列が未適用のため旧列のみで再取得します（マイグレーション059未適用の可能性）:",
+            error.message,
+          );
+          const { data: legacyData, error: legacyError } = await supabase
+            .from("exhibition_data")
+            .select("boat_number, tilt, adjustment_weight")
+            .eq("race_id", raceId);
+          if (legacyError) {
+            console.error(
+              "exhibition_data(チルト/調整重量)取得エラー:",
+              legacyError.message,
+            );
+            return [];
+          }
+          return legacyData ?? [];
+        }
         console.error(
-          "exhibition_data(チルト/調整重量)取得エラー:",
+          "exhibition_data(チルト/調整重量/当日体重/前走成績)取得エラー:",
           error.message,
         );
         return [];
