@@ -27,7 +27,7 @@
 | データ | 状態 | 保存先 | 現在の実行基盤 | 関連チケット |
 |---|---|---|---|---|
 | 選手名・級別・年齢・全国/当地成績・モーター/ボート番号と成績 | ✅ | `race_entries` | `morning-init.js`→`scrape-to-json.js`（races テーブルが空の時のみ1回、`scrape-scheduled.yml`と同一concurrencyグループ内） | - |
-| 体重 | ❌（ページ上に存在するがパース時に破棄） | - | 同上 | [BOA-288](https://linear.app/boat-ai/issue/BOA-288) |
+| 体重（racelistの静的値、開催前確定） | ❌（ページ上に存在するがパース時に破棄。beforeinfoの当日実測体重＝BOA-289とは別物、そちらは完了済み） | - | 同上 | [BOA-288](https://linear.app/boat-ai/issue/BOA-288)（**未完了、依然Backlog**） |
 | 今節成績（節内の日別進入・着順・ST履歴） | ❌ | - | 未実装 | [BOA-291](https://linear.app/boat-ai/issue/BOA-291)（**T2要素を含む、下記参照**） |
 | 今節得点率 | ❌ | - | 未実装 | [BOA-220](https://linear.app/boat-ai/issue/BOA-220)（BOA-291とスコープ重複要整理） |
 | ラウンド種別（予選/準優勝戦/優勝戦） | ❌（`.title16_titleDetail__add2020`に平文で存在） | - | 未実装 | [BOA-226](https://linear.app/boat-ai/issue/BOA-226) |
@@ -41,10 +41,23 @@
 | 展示タイム・展示ST | ✅（欠落率の問題あり） | `exhibition_data` | Vercel Function（`api/cron/exhibition.js`、cron-job.org 2分間隔、[BOA-313](https://linear.app/boat-ai/issue/BOA-313) Phase 1で移行済み） | BOA-313 |
 | 天気・気温・風向・風速・水温・波高 | ✅ | `race_conditions` | `update-race-info.js`（発走60分前ウィンドウ、`scrape-scheduled.js`内） | - |
 | 展示スタート表の「コース」列（進入予想） | ❌ | - | 未実装 | [BOA-290](https://linear.app/boat-ai/issue/BOA-290) |
-| 当日体重・調整重量 | ❌ | - | 未実装 | [BOA-289](https://linear.app/boat-ai/issue/BOA-289)（体重は対応中/一部Done） |
-| チルト角度・プロペラ交換・部品交換 | ✅（Done） | - | [BOA-221](https://linear.app/boat-ai/issue/BOA-221) | 完了 |
+| チルト角度・プロペラ交換・部品交換・調整重量 | ✅**訂正・全て完了**（2026-09-15確認） | `exhibition_data`（マイグレーション056） | [BOA-221](https://linear.app/boat-ai/issue/BOA-221)（Done） | 完了 |
+| 当日体重（実測値、racelistの静的体重＝BOA-288とは別物） | ✅**新規完了**（2026-09-15、[PR #645](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/645)マージ・マイグレーション059本番適用済み） | `exhibition_data.today_weight` | [BOA-289](https://linear.app/boat-ai/issue/BOA-289)（Done） | 完了 |
+| 前走成績（今節の直近1走の進入コース・ST・着順） | ✅**新規完了**（同上PR #645） | `exhibition_data.prev_race_no/prev_entry_course/prev_start_timing/prev_finish_rank` | 同上 | 完了。**ただし直近1走のみ**、日和「今節成績」タブの全日程グリッド（BOA-291対象）とは別スコープ。BOA-291着手時に重複範囲を整理すること |
 | 選手コメント | ❌ | - | 未実装 | [BOA-273](https://linear.app/boat-ai/issue/BOA-273)（AI言語化検討） |
 | 前検タイム・周回タイム・周り足・直線タイム | ❌ | - | 未実装 | [BOA-266](https://linear.app/boat-ai/issue/BOA-266) |
+
+### A-2.5. レース特記事項ページ（`race/information`）— **新発見（2026-09-15）**、T2（当日随時更新）
+
+ユーザーからの「帰郷情報」（選手が節の途中でレース場を離れて地元へ戻ること。ペナルティ性の即日/即刻帰郷と、任意の途中帰郷がある）という指摘を機に発見。`https://www.boatrace.jp/owpc/pc/race/information?jcd={会場コード}&hd={YYYYMMDD}` という**会場・日付単位**（レース番号非依存）のページが存在し、現行のスクレイピングパイプラインは一切対象にしていない。3カテゴリで構成される（2026-09-15、jcd=04/12の複数日で実機確認、いずれも「現在、お知らせはありません」表示のため実データでの項目粒度は未確認・要フォロー）:
+
+| データ | 状態 | 関連チケット |
+|---|---|---|
+| 事故・内規違反・減点 | ❌未取得。**BOA-279（事故情報）は現状raceresultの「着」列テキストを読む方針だったが、こちらの方がより構造化された一次情報源の可能性が高い** | [BOA-279](https://linear.app/boat-ai/issue/BOA-279)（データソースの見直しコメント追加済み） |
+| モーター・ボート変更 | ❌未取得。完全に新規のデータ軸（節の途中でのモーター/ボート交換） | [BOA-319](https://linear.app/boat-ai/issue/BOA-319) |
+| 欠場・帰郷（途中帰郷/即日帰郷/即刻帰郷） | ❌未取得。現行は`update-race-info.js`が「racerIdがnull」というレース単位の間接的な欠場検出のみで、**理由（帰郷か何か）・帰郷の種別・代替選手の情報は一切持たない**。日和は`昨日帰郷選手`（選手名・場）・`本日途中追加選手`（代替選手）を日次まとめページで提供している | [BOA-318](https://linear.app/boat-ai/issue/BOA-318) |
+
+**タイミング要件**: レース番号非依存で会場・日付単位のため、既存の1時間毎（またはそれ以下）の巡回で十分カバーできる可能性が高く、T1（発走直前ウィンドウ）ほど厳しくない。ただし当日の追加・変更を追うにはT2（当日随時更新、最低でも日次複数回）が必要。
 
 ### A-3. 結果（raceresult）— T3（レース後1回）
 
