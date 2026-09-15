@@ -1,0 +1,10 @@
+{
+  "executedAt": "2026-09-15T12:11:08.906Z",
+  "dryRun": true,
+  "nullEntriesTotal": 239,
+  "distinctNamesTotal": 11,
+  "updatedRows": 239,
+  "unresolvedNames": [],
+  "updateErrorsCount": 0,
+  "updateErrors": []
+}
