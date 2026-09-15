@@ -87,15 +87,22 @@ async function getDataMinDate() {
 
 // racer_profilesから級別の偏りが出ないよう等間隔にサンプリングする
 async function getSampleRacerIds(limit) {
-  const { data, error } = await supabase
-    .from("racer_profiles")
-    .select("racer_id")
-    .order("racer_id", { ascending: true })
-    .limit(2000);
-  if (error) throw new Error(`racer_profiles取得エラー: ${error.message}`);
-  if (!data || data.length === 0) return [];
-
-  const ids = data.map((row) => row.racer_id);
+  const ids = [];
+  let offset = 0;
+  const pageSize = 1000;
+  while (true) {
+    const { data, error } = await supabase
+      .from("racer_profiles")
+      .select("racer_id")
+      .order("racer_id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+    if (error) throw new Error(`racer_profiles取得エラー: ${error.message}`);
+    if (!data || data.length === 0) break;
+    for (const row of data) ids.push(row.racer_id);
+    if (data.length < pageSize) break;
+    offset += pageSize;
+  }
+  if (ids.length === 0) return [];
   if (ids.length <= limit) return ids;
 
   const step = ids.length / limit;
@@ -165,31 +172,34 @@ async function computeOwnStats(racerId, periodStart, periodEnd) {
     raceIds,
     "race_id, boat_number, is_flying, is_late_start",
   );
+  // race_id+boat_numberの複合キーでO(1)引きできるようMap化する
+  // （aggregate-racer-stats.jsのcalculateRacerSTStatsと同じパターン）
+  const timingByKey = new Map(
+    timings.map((t) => [`${t.race_id}_${t.boat_number}`, t]),
+  );
 
   let starts = 0;
   const placeCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  let flyingCount = 0;
+  let falseStartCount = 0;
 
   for (const entry of periodEntries) {
     const result = resultsByRaceId.get(entry.race_id);
-    if (!result || result.is_cancelled || result.is_no_race) continue;
-    starts++;
-    for (let place = 1; place <= 6; place++) {
-      if (result[`rank${place}`] === entry.boat_number) {
-        placeCounts[place]++;
-        break;
+    if (result && !result.is_cancelled && !result.is_no_race) {
+      starts++;
+      for (let place = 1; place <= 6; place++) {
+        if (result[`rank${place}`] === entry.boat_number) {
+          placeCounts[place]++;
+          break;
+        }
       }
     }
-  }
 
-  let flyingCount = 0;
-  let falseStartCount = 0;
-  for (const entry of periodEntries) {
-    const timing = timings.find(
-      (t) => t.race_id === entry.race_id && t.boat_number === entry.boat_number,
-    );
-    if (!timing) continue;
-    if (timing.is_flying) flyingCount++;
-    if (timing.is_late_start) falseStartCount++;
+    const timing = timingByKey.get(`${entry.race_id}_${entry.boat_number}`);
+    if (timing) {
+      if (timing.is_flying) flyingCount++;
+      if (timing.is_late_start) falseStartCount++;
+    }
   }
 
   return { starts, placeCounts, flyingCount, falseStartCount };
@@ -254,7 +264,7 @@ async function verifyRacer(racerId, options) {
 
   // truncatedWindow時はofficialとownで対象期間の長さが異なるため、
   // 一致判定（match/withinTolerance）はnull（判定不能）にして参考値として報告する。
-  const judgementSuffix = truncatedWindow ? null : undefined;
+  const skipJudgement = truncatedWindow;
 
   return {
     racerId,
@@ -267,39 +277,33 @@ async function verifyRacer(racerId, options) {
     starts: {
       official: official.starts,
       own: own.starts,
-      match: judgementSuffix === null ? null : official.starts === own.starts,
+      match: skipJudgement ? null : official.starts === own.starts,
     },
     rentai2Rate: {
       official: official.rentai2Rate,
       own: ownRentai2 !== null ? Number(ownRentai2.toFixed(2)) : null,
-      withinTolerance:
-        judgementSuffix === null
-          ? null
-          : withinTolerance(official.rentai2Rate, ownRentai2, RATE_TOLERANCE),
+      withinTolerance: skipJudgement
+        ? null
+        : withinTolerance(official.rentai2Rate, ownRentai2, RATE_TOLERANCE),
     },
     rentai3Rate: {
       official: official.rentai3Rate,
       own: ownRentai3 !== null ? Number(ownRentai3.toFixed(2)) : null,
-      withinTolerance:
-        judgementSuffix === null
-          ? null
-          : withinTolerance(official.rentai3Rate, ownRentai3, RATE_TOLERANCE),
+      withinTolerance: skipJudgement
+        ? null
+        : withinTolerance(official.rentai3Rate, ownRentai3, RATE_TOLERANCE),
     },
     flyingCount: {
       official: official.flyingCount,
       own: own.flyingCount,
-      match:
-        judgementSuffix === null
-          ? null
-          : official.flyingCount === own.flyingCount,
+      match: skipJudgement ? null : official.flyingCount === own.flyingCount,
     },
     falseStartCount: {
       official: official.falseStartCount,
       own: own.falseStartCount,
-      match:
-        judgementSuffix === null
-          ? null
-          : official.falseStartCount === own.falseStartCount,
+      match: skipJudgement
+        ? null
+        : official.falseStartCount === own.falseStartCount,
       note: "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）",
     },
     winRateApprox: {

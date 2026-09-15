@@ -109,7 +109,7 @@ async function getRegisteredRacerIds() {
 // race_entriesに一度でも登場した全racer_id（引退選手含む）。
 // FR-2の期別成績は現役選手だけでなく直近まで走っていた選手も対象になりうるため、
 // racer_profiles登録済みかどうかに関わらず全件を母集団とする。
-async function getFullRacerIdPopulation(limit) {
+async function getFullRacerIdPopulation() {
   const allRacerIds = new Set();
   let offset = 0;
   const pageSize = 1000;
@@ -127,9 +127,20 @@ async function getFullRacerIdPopulation(limit) {
     offset += pageSize;
   }
 
-  let population = [...allRacerIds].sort((a, b) => a - b);
-  if (limit) population = population.slice(0, limit);
-  return population;
+  return [...allRacerIds].sort((a, b) => a - b);
+}
+
+// --limit指定時は新規未登録選手（FR-5の対象）を優先的にサンプルへ含める。
+// 単純に昇順でスライスすると最若番（≒既に登録済み）ばかりになり、
+// `--limit=10`でのFR-5動作確認（新規プロフィール登録パス）が実質的に
+// 実行されなくなってしまうため。
+function applyLimit(population, registered, limit) {
+  if (!limit) return population;
+  const unregistered = population.filter((id) => !registered.has(id));
+  const alreadyRegistered = population.filter((id) => registered.has(id));
+  return [...unregistered, ...alreadyRegistered]
+    .slice(0, limit)
+    .sort((a, b) => a - b);
 }
 
 // 期別成績ページのパース結果をracer_profilesの追加カラムにマッピングする。
@@ -155,16 +166,17 @@ async function main() {
   );
   console.log("");
 
-  const [population, registered] = await Promise.all([
-    getFullRacerIdPopulation(options.limit),
+  const [fullPopulation, registered] = await Promise.all([
+    getFullRacerIdPopulation(),
     getRegisteredRacerIds(),
   ]);
 
-  if (population.length === 0) {
+  if (fullPopulation.length === 0) {
     console.log("対象のracer_idはありません（race_entriesが空）。");
     process.exit(0);
   }
 
+  const population = applyLimit(fullPopulation, registered, options.limit);
   const newProfileCount = population.filter((id) => !registered.has(id)).length;
   console.log(
     `対象racer_id数: ${population.length}件${options.limit ? ` (limit: ${options.limit})` : ""}`,

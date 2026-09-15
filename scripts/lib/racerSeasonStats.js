@@ -60,20 +60,6 @@ export function derivePeriodLabel(periodEndIso) {
   return null; // 想定外の終了日（構造変化の可能性、呼び出し元でログすること）
 }
 
-// derivePeriodLabelの逆関数。検算スクリプトが「その期に該当するレース日範囲」を
-// 特定するために使う。DBにはperiod_labelのみ保存し、開始/終了日自体は保存しない設計
-// （plan.md FR-2のカラム設計に準拠）ため、必要な時にラベルから再導出する。
-export function deriveDateRangeFromPeriodLabel(periodLabel) {
-  if (!periodLabel) return null;
-  const match = periodLabel.match(/^(\d{4})-(first|second)$/);
-  if (!match) return null;
-  const year = Number(match[1]);
-  if (match[2] === "second") {
-    return { start: `${year - 1}-11-01`, end: `${year}-04-30` };
-  }
-  return { start: `${year - 1}-05-01`, end: `${year - 1}-10-31` };
-}
-
 // div.table1 のtbody行群をパースする。th/tdは document order で交互に並ぶため
 // 2個ずつ組にして (ラベル, 値) を取り出す。
 function parseStatsTable($) {
