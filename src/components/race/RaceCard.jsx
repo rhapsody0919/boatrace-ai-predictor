@@ -4,6 +4,7 @@
 
 import { useTranslation } from "react-i18next";
 import { GRADE_CONFIG } from "../../constants/gradeConfig";
+import { getRaceStageBadge } from "../../constants/raceStageConfig";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
 import {
   getDeadlineStatus,
@@ -47,6 +48,7 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
     : `🎯 ${t("volatility.levelLow")}`;
 
   const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];
+  const stageConfig = getRaceStageBadge(racePrediction?.raceStage);
 
   // 的中判定（unifiedモデル: 展開予測的中のみ。複勝予想は表示しない方針
   // に統一、ADR 0013・BOA-174/175/178参照）
@@ -74,7 +76,14 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
     >
       <div className="race-card-header">
         <h3>{race.venue}</h3>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+          }}
+        >
           {showBadge && (
             <RaceCardBadge color={badgeColor}>{badgeLabel}</RaceCardBadge>
           )}
@@ -110,6 +119,16 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
           {deadlineStatus === DEADLINE_STATUS.ACCEPTING && (
             <RaceCardBadge color="var(--color-gray-600)">
               {t("raceCard.accepting")}
+            </RaceCardBadge>
+          )}
+          {stageConfig && (
+            <RaceCardBadge
+              color={stageConfig.color}
+              padding="0.2rem 0.5rem"
+              borderRadius="6px"
+              letterSpacing="0.05em"
+            >
+              {stageConfig.emoji} {t(stageConfig.i18nKey)}
             </RaceCardBadge>
           )}
           {gradeConfig && (

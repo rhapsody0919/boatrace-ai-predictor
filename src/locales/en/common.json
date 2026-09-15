@@ -402,6 +402,10 @@
     "noPrevRace": "No previous race",
     "noNextRace": "No next race"
   },
+  "raceStage": {
+    "final": "Final",
+    "semifinal": "Semifinal"
+  },
   "raceCard": {
     "awaitingResult": "Awaiting result",
     "cancelled": "Cancelled",

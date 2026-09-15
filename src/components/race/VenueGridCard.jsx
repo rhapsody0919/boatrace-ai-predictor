@@ -6,6 +6,10 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GRADE_CONFIG } from "../../constants/gradeConfig";
+import {
+  getRaceStageKey,
+  getRaceStageBadge,
+} from "../../constants/raceStageConfig";
 import { getVenueTimeOfDay, TIME_OF_DAY } from "../../utils/raceTimeOfDay";
 import "./VenueGridCard.css";
 
@@ -21,6 +25,16 @@ const TIME_OF_DAY_ICON = {
 // 安全側に倒して常に候補に含める（除外すると本当は残っているのに「終了」と誤表示されるため）
 function findNextRace(races, nowHHMM) {
   return races.find((r) => !r.startTime || r.startTime > nowHHMM) || null;
+}
+
+// 本日この会場で優勝戦・準優勝戦が組まれていれば、会場一覧でも一目で
+// わかるようにする（BOA-226）。同日に両方組まれるケースでは優勝戦を優先する
+function findHighlightedStageRace(races) {
+  return (
+    races.find((r) => getRaceStageKey(r.raceStage) === "final") ||
+    races.find((r) => getRaceStageKey(r.raceStage) === "semifinal") ||
+    null
+  );
 }
 
 function VenueGridCard({ venueCode, venueData, linkTo, nowHHMM }) {
@@ -52,6 +66,9 @@ function VenueGridCard({ venueCode, venueData, linkTo, nowHHMM }) {
   // （SG/G1等の節では全レース同一グレード）
   const gradeConfig = GRADE_CONFIG[races[0]?.raceGrade];
   const raceTitle = races[0]?.raceTitle || null;
+  const highlightedStageRace = findHighlightedStageRace(races);
+  const stageConfig =
+    highlightedStageRace && getRaceStageBadge(highlightedStageRace.raceStage);
 
   const nextRace = nowHHMM ? findNextRace(races, nowHHMM) : null;
 
@@ -71,6 +88,15 @@ function VenueGridCard({ venueCode, venueData, linkTo, nowHHMM }) {
       </div>
 
       <div className="venue-grid-card__badges">
+        {stageConfig && (
+          <span
+            className="venue-grid-card__stage"
+            style={{ background: stageConfig.color }}
+          >
+            {stageConfig.emoji} {t(stageConfig.i18nKey)}{" "}
+            {highlightedStageRace.raceNo}R
+          </span>
+        )}
         {gradeConfig && (
           <span
             className="venue-grid-card__grade"
