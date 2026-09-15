@@ -39,7 +39,7 @@ function VenueTendencyPanel({ venueCode, raceId }) {
       : `/winning-technique?venue_code=${venueCode}&tab=${tab}`;
 
   const onLinkClick = (tab) => () =>
-    trackEvent("deep_link_click", { tab, source: "venue_tendency_panel" });
+    trackEvent("deep_link_click", { tab, link_source: "venue_tendency_panel" });
 
   const techniqueByBoat = stats.technique?.data ?? {};
   const losingByBoat = stats.losing?.data ?? {};
