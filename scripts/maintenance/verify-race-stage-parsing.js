@@ -4,7 +4,10 @@
  * 実際に公式サイト（boatrace.jp）から取得したracelistページのHTMLを
  * フィクスチャとして使い、想定通りの文字列が抽出できるか検証する
  * （大村G1最終日12R=優勝戦、初日1R=予選、福岡の通常レース=カタメン１予選、
- * いずれも2026-09-14に実データで確認済み）。
+ * いずれも2026-09-14に実データで確認済み。徳山G1b「ダイヤモンドカップ」
+ * 5日目12R=準優勝戦は2026-09-15に実データで確認済み。BOA-226の実装時点では
+ * 準優勝戦は合成データのみでの検証だったため、実HTMLでの確認により
+ * このギャップを解消した）。
  */
 import fs from "node:fs";
 import * as cheerio from "cheerio";
@@ -42,6 +45,11 @@ check(
   "福岡の通常レース（カタメン１予選）",
   _internal.scrapeRaceStage(loadFixture("racelist-ippan")),
   "カタメン１予選",
+);
+check(
+  "徳山G1bダイヤモンドカップ5日目12R（準優勝戦）",
+  _internal.scrapeRaceStage(loadFixture("racelist-semifinal")),
+  "準優勝戦",
 );
 
 // 実フィクスチャは全て単語1つのステージ名のみのため、複数語のステージ名
