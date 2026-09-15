@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/generate-ai-snapshots.js",
+    "build": "vite build && npx playwright install chromium && node scripts/generate-ai-snapshots.js",
     "lint": "eslint .",
     "check:contrast": "node scripts/maintenance/check-token-contrast.js",
     "check:css-collisions": "node scripts/maintenance/check-css-class-collisions.js",
