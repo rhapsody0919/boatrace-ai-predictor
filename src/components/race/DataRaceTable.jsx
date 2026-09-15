@@ -5,12 +5,18 @@
  * 指標の定義（値レンダリング・最良艇判定）はraceIndicators.jsxに集約している。
  * 色分けはレース内相対順位ベース（行ごとに最良セルをハイライト）で、
  * 恣意的な絶対閾値は使わない。全艇同値の指標はハイライトしない。
+ *
+ * 2026-09-16追記(BOA-304): 直前情報系4指標（展示ST・展示タイム・チルト・
+ * 調整重量、+部品交換）は「直前情報」タブ（RaceBeforeInfoTab）へ分離した。
+ * buildBasicIndicatorRows（過去実績系のみ）を使う。全指標が必要な箇所
+ * （RaceCardDataTable、開催場一覧ページのカード内出走表）は引き続き
+ * buildIndicatorRowsを使う
  */
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
-import { buildIndicatorRows } from "./raceIndicators";
+import { buildBasicIndicatorRows } from "./raceIndicators";
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
 import "./DataRaceTable.css";
@@ -36,7 +42,7 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
       ? `/winning-technique?venue_code=${venueCode}&race_id=${raceId}&tab=motor&motor=${motorNumber}`
       : `/winning-technique?tab=motor`;
 
-  const rows = buildIndicatorRows({
+  const rows = buildBasicIndicatorRows({
     t,
     players,
     analysis,
