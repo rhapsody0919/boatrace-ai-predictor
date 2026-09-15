@@ -40,6 +40,19 @@ const BLOG_LANG_CONFIG = {
 // Blog post metadata
 export const blogPosts = [
   {
+    id: "campaign-ai-900yen-inkuzure-week",
+    title:
+      "龍神レーダーのAIに900円託した1週間、イン崩れレースだけを買い続けた記録",
+    description:
+      "龍神レーダーの「イン崩れ注意度」機能を使い、99%以上のレースだけを対象に3連単900円を1週間購入するシミュレーション企画の記録です。回収率が良くても悪くても、実際の買い目と結果をそのまま毎日追記していきます。的中率を誇張せず、透明性を重視した検証企画です。",
+    date: "2026-09-09",
+    category: "企画・検証",
+    tags: ["イン崩れ指数", "企画", "回収率検証", "AI予想"],
+    readTime: "4分",
+    featured: false,
+    image: "/images/blog/campaign-ai-900yen-inkuzure-week.jpg",
+  },
+  {
     id: "volatility-index-biwako-0909",
     title: "イン崩れ指数99%のレースの見方 - 9/9びわこ2Rを実例に判定根拠を解説",
     description:
