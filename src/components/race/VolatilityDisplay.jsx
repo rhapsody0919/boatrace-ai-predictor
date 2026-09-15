@@ -156,7 +156,7 @@ function LevelAccuracyStat({ level, venueCode, raceId }) {
             onClick={() =>
               trackEvent("deep_link_click", {
                 tab: "volatility",
-                source: "volatility_display",
+                link_source: "volatility_display",
               })
             }
           >

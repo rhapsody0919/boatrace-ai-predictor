@@ -102,7 +102,7 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
                       onClick={() =>
                         trackEvent("deep_link_click", {
                           tab: row.tab,
-                          source: "data_race_table",
+                          link_source: "data_race_table",
                         })
                       }
                     >

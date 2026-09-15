@@ -153,7 +153,7 @@ function OutcomePatternPreview({
                 onClick={() =>
                   trackEvent("deep_link_click", {
                     tab: "outcome",
-                    source: "outcome_pattern_preview",
+                    link_source: "outcome_pattern_preview",
                   })
                 }
               >
