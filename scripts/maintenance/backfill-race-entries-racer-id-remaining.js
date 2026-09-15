@@ -43,15 +43,16 @@ function parseArgs() {
   return { dryRun: args.includes("--dry-run") };
 }
 
-async function fetchAllPaged(table, selectCols, orderCol, applyFilter) {
+// orderColsは同点（例: race_idは1レース最大6行で一意でない）を無くし
+// OFFSET/LIMITページネーションの行の欠落・重複を防ぐため、一意になるまで
+// 複数列を渡す（race_entriesなら["race_id", "boat_number"]で一意）。
+async function fetchAllPaged(table, selectCols, orderCols, applyFilter) {
   const rows = [];
   let offset = 0;
   while (true) {
-    let query = supabase
-      .from(table)
-      .select(selectCols)
-      .order(orderCol, { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
+    let query = supabase.from(table).select(selectCols);
+    for (const col of orderCols) query = query.order(col, { ascending: true });
+    query = query.range(offset, offset + PAGE_SIZE - 1);
     if (applyFilter) query = applyFilter(query);
     const { data, error } = await query;
     if (error) throw new Error(`${table}取得エラー: ${error.message}`);
@@ -68,7 +69,7 @@ async function buildNameToRacerIdMapFromRaceEntries() {
   const rows = await fetchAllPaged(
     "race_entries",
     "player_name, racer_id",
-    "race_id",
+    ["race_id", "boat_number"],
     (q) => q.not("racer_id", "is", null),
   );
   const nameToIds = new Map();
@@ -107,7 +108,7 @@ async function main() {
   const nullEntries = await fetchAllPaged(
     "race_entries",
     "player_name",
-    "race_id",
+    ["race_id", "boat_number"],
     (q) => q.is("racer_id", null),
   );
   console.log(`racer_id NULLの行: ${nullEntries.length}件`);
@@ -170,6 +171,11 @@ async function main() {
     console.log(
       `${progress} ${name} -> racer_id=${racerId}（${source}）: ${actualCount}件更新`,
     );
+    if (actualCount !== expectedCount) {
+      console.warn(
+        `${progress} ${name}: 期待${expectedCount}件 実際${actualCount}件（他プロセスが並行更新した可能性）`,
+      );
+    }
   }
 
   console.log("");
