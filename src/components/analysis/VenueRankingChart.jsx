@@ -1,8 +1,10 @@
 /**
- * VenueRankingChart - 本日の会場ランキング（BOA-171）
- * 本日の結果確定済みレースを会場別に横断集計し、固い場・荒れている場・
- * イン逃げ率・万舟率の4指標でランキング表示する。他のタブと異なり、
- * 会場・レースを選ばず本日のカード全体から注目会場を発見できる。
+ * VenueRankingChart - 会場ランキング（BOA-171、BOA-267で90日指標を追加）
+ * 「本日限定」（固い場・荒れている場・イン逃げ率・万舟率、本日の結果確定済み
+ * レースのみが対象）と「直近90日実績」（1号艇勝率、全24会場）の2グループを
+ * 表示する。タブ名・見出しから「本日の」を外しているのは、90日指標を追加した
+ * ことで「このタブ全体が本日限定」という前提が成り立たなくなったため
+ * （2026-09-15、ユーザー指摘を受けて修正。両グループを見出しで明確に分離する）
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -121,16 +123,9 @@ function VenueRankingChart() {
 
       {!loading && !error && !isEmpty && (
         <>
-          <RankingTable
-            title={t("analysis.venueRanking.firstWinRateTitle")}
-            rows={firstWinRate}
-            emptyMessage={t("analysis.venueRanking.notEnoughData")}
-            valueHeader={t("analysis.venueRanking.firstWinRateHeader")}
-            formatValue={(row) => `${row.first_win_rate.toFixed(1)}%`}
-          />
-          <p className="table-note">
-            {t("analysis.venueRanking.firstWinRateNote")}
-          </p>
+          <h3 className="venue-ranking-scope-heading">
+            {t("analysis.venueRanking.todayGroupHeading")}
+          </h3>
           <RankingTable
             title={t("analysis.venueRanking.stableTitle")}
             rows={ranking.stable}
@@ -163,6 +158,21 @@ function VenueRankingChart() {
             valueHeader={t("analysis.venueRanking.manshuRateHeader")}
             formatValue={(row) => `${row.manshu_rate.toFixed(1)}%`}
           />
+          <p className="table-note">{t("analysis.venueRanking.note")}</p>
+
+          <h3 className="venue-ranking-scope-heading">
+            {t("analysis.venueRanking.ninetyDayGroupHeading")}
+          </h3>
+          <RankingTable
+            title={t("analysis.venueRanking.firstWinRateTitle")}
+            rows={firstWinRate}
+            emptyMessage={t("analysis.venueRanking.notEnoughData")}
+            valueHeader={t("analysis.venueRanking.firstWinRateHeader")}
+            formatValue={(row) => `${row.first_win_rate.toFixed(1)}%`}
+          />
+          <p className="table-note">
+            {t("analysis.venueRanking.firstWinRateNote")}
+          </p>
         </>
       )}
 

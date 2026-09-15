@@ -469,7 +469,9 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     });
   });
 
-  test("本日の会場ランキングタブが表示される（BOA-171）", async ({ page }) => {
+  test("会場ランキングタブが表示される（BOA-171/BOA-267）", async ({
+    page,
+  }) => {
     await page.goto("/winning-technique");
     await page.click('.analysis-tab-btn:text-is("🏟️ 会場ランキング")');
     await expect(page.locator(".motor-condition-container")).toBeVisible({
