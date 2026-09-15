@@ -6,28 +6,32 @@
  * （[[feedback_ui_visualization_over_statistical_rigor]]の方針）。
  *
  * データソースは2系統:
- * 1. 期間=今期 かつ グレード=全レースの場合: race_entriesの公式集計済み値
- *    （win_rate/local_win_rate/global_2rate/local_2rate/global_3rate/local_3rate）
- *    をそのまま使う。boatrace.jp側で算出済みの正確な値のため、自社で
- *    集計し直す必要が無い
- * 2. グレード・期間で絞り込む場合: getRacerScopedRaceStats(racerId)で選手の
- *    過去2年分の出走履歴を取得し、クライアント側でフィルタ・集計する
- *    （basicInfoStats.js）。対象は表示中の6選手のみ（1選手×該当レースのみの
- *    ライブ集計であり、BOA-303が問題視する全選手×全会場の横断集計とは
- *    スコープが異なる）
+ * 1. 期間=今期 かつ グレード=全レースの場合（勝率/2連対率/3連対率のみ）:
+ *    race_entriesの公式集計済み値（win_rate/local_win_rate/global_2rate/
+ *    local_2rate/global_3rate/local_3rate）をそのまま使う。boatrace.jp側で
+ *    算出済みの正確な値のため、自社で集計し直す必要が無い
+ * 2. それ以外（グレード・期間で絞り込む場合、および平均STは常に）:
+ *    getRacerScopedRaceStats(racerId)で選手の過去2年分の出走履歴を取得し、
+ *    クライアント側でフィルタ・集計する（basicInfoStats.js）。平均STには
+ *    公式集計値の相当品が無いため常にこちら（2026-09-16、レビュー指摘#1で
+ *    平均STも会場/グレードでフィルタできるよう対応）。対象は表示中の6選手のみ
+ *    （1選手×該当レースのみのライブ集計であり、BOA-303が問題視する
+ *    全選手×全会場の横断集計とはスコープが異なる）
  *
- * 「得意会場」ドリルダウンは選手個人ページと同じgetRacerVenueStats(racerId)
- * （1選手×24会場のみのライブ集計）をそのまま再利用する
+ * 「得意会場」ドリルダウンは、上記2と同じgetRacerScopedRaceStatsの生データを
+ * 会場別に集計し、現在選択中の指標でランキングする（2026-09-16、レビュー
+ * 指摘#3で固定指標(勝率)から選択中指標に連動するよう変更。以前使っていた
+ * getRacerVenueStatsは廃止）
  */
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
-import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import {
   filterRecords,
   computeRates,
   getRecentRaces,
+  computeVenueRanking,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
 import "./RaceBasicInfoTab.css";
@@ -58,6 +62,13 @@ function formatWinRate(value, isPercentage) {
   return isPercentage ? `${value.toFixed(1)}%` : value.toFixed(2);
 }
 
+// 指標に応じた値のフォーマット（得意会場ランキング等、勝率の公式/自社切替が
+// 関係しない箇所で使う汎用フォーマッタ）
+function formatMetricValue(metric, value) {
+  if (value === null || value === undefined) return "—";
+  return metric === "avgSt" ? value.toFixed(2) : `${value.toFixed(1)}%`;
+}
+
 function RaceBasicInfoTab({ raceId, venueCode, players }) {
   const { t } = useTranslation();
   const [metric, setMetric] = useState("winRate");
@@ -68,10 +79,6 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
   const [expandedView, setExpandedView] = useState("trend");
   const [officialRates, setOfficialRates] = useState(null);
   const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
-  const [venueStatsByRacer, setVenueStatsByRacer] = useState({});
-
-  // avgST専用（既存のレース分析データ取得基盤を共有、選手個人×当該レースのみ）
-  const analysis = useRaceAnalysisData(raceId, { venueCode });
 
   const sortedPlayers = [...(players ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -102,21 +109,12 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
     });
   }, []);
 
-  const ensureVenueStats = useCallback((racerId) => {
-    if (!racerId) return;
-    setVenueStatsByRacer((prev) => {
-      if (prev[racerId]) return prev;
-      supabaseDataService.getRacerVenueStats(racerId).then((data) => {
-        setVenueStatsByRacer((cur) => ({ ...cur, [racerId]: data }));
-      });
-      return { ...prev, [racerId]: undefined };
-    });
-  }, []);
-
+  // 平均STには公式集計値の相当品が無いため、常に自社集計（getRacerScopedRaceStats）
+  // を使う。勝率/2連対率/3連対率はグレード・期間を絞り込んだ場合のみ自社集計に切り替わる
   const needsOwnAggregation =
-    metric !== "avgSt" && (grade !== "all" || period !== "current");
+    metric === "avgSt" || grade !== "all" || period !== "current";
 
-  // グレード・期間で絞り込んだ瞬間、6選手分の履歴データをまとめて取得する
+  // 自社集計が必要になった瞬間、6選手分の履歴データをまとめて取得する
   useEffect(() => {
     if (!needsOwnAggregation) return;
     sortedPlayers.forEach((p) => ensureScopedStats(p.racerId));
@@ -126,26 +124,8 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
   const officialRowFor = (boatNumber) =>
     (officialRates ?? []).find((r) => r.boat_number === boatNumber) ?? null;
 
-  const racerStatsFor = (boatNumber) =>
-    (analysis.racerStats ?? []).find((s) => s.boatNumber === boatNumber) ??
-    null;
-
   // 表示用の1艇分の値を計算する（value/n/isSmallSample/loading）
   const valueFor = (p) => {
-    if (metric === "avgSt") {
-      const stats = racerStatsFor(p.number);
-      const value =
-        stats?.avgST !== null && stats?.avgST !== undefined
-          ? Number(stats.avgST)
-          : null;
-      return {
-        value,
-        n: null,
-        isSmallSample: false,
-        loading: analysis.pending.racerStats,
-      };
-    }
-
     if (!needsOwnAggregation) {
       const row = officialRowFor(p.number);
       if (!row)
@@ -185,6 +165,15 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
       period,
     });
     const rates = computeRates(filtered);
+    if (metric === "avgSt") {
+      return {
+        value: rates.avgSt,
+        n: rates.avgStN,
+        isSmallSample:
+          rates.avgStN > 0 && rates.avgStN < SMALL_SAMPLE_THRESHOLD,
+        loading: false,
+      };
+    }
     return {
       value: rates[metric],
       n: rates.n,
@@ -231,7 +220,6 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
     setExpandedBoat(boatNumber);
     setExpandedView("trend");
     ensureScopedStats(racerId);
-    ensureVenueStats(racerId);
   };
 
   return (
@@ -261,81 +249,75 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
         </p>
       )}
 
-      {metric !== "avgSt" && (
-        <>
-          <div
-            className="rbit-chip-row"
-            role="group"
-            aria-label={t("basicInfo.scopeLabel")}
+      <div
+        className="rbit-chip-row"
+        role="group"
+        aria-label={t("basicInfo.scopeLabel")}
+      >
+        {["national", "local"].map((s) => (
+          <button
+            key={s}
+            type="button"
+            className={`rbit-chip${scope === s ? " is-active" : ""}`}
+            onClick={() => setScope(s)}
           >
-            {["national", "local"].map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={`rbit-chip${scope === s ? " is-active" : ""}`}
-                onClick={() => setScope(s)}
-              >
-                {t(`basicInfo.scopes.${s}`)}
-              </button>
-            ))}
-          </div>
+            {t(`basicInfo.scopes.${s}`)}
+          </button>
+        ))}
+      </div>
 
-          <div
-            className="rbit-chip-row"
-            role="group"
-            aria-label={t("basicInfo.gradeLabel")}
+      <div
+        className="rbit-chip-row"
+        role="group"
+        aria-label={t("basicInfo.gradeLabel")}
+      >
+        {GRADES.map((g) => (
+          <button
+            key={g}
+            type="button"
+            className={`rbit-chip${grade === g ? " is-active" : ""}`}
+            onClick={() => setGrade(g)}
           >
-            {GRADES.map((g) => (
-              <button
-                key={g}
-                type="button"
-                className={`rbit-chip${grade === g ? " is-active" : ""}`}
-                onClick={() => setGrade(g)}
-              >
-                {t(`basicInfo.grades.${g}`)}
-              </button>
-            ))}
-          </div>
+            {t(`basicInfo.grades.${g}`)}
+          </button>
+        ))}
+      </div>
 
-          <div className="rbit-preset-row">
-            {PRESETS.map((preset, idx) => (
-              <button
-                key={idx}
-                type="button"
-                className={`rbit-preset${isPresetActive(preset) ? " is-active" : ""}`}
-                onClick={() => {
-                  setScope(preset.scope);
-                  setGrade(preset.grade);
-                }}
-              >
-                {t(`basicInfo.scopes.${preset.scope}`)}
-                {t(`basicInfo.grades.${preset.grade}`)}
-              </button>
-            ))}
-          </div>
+      <div className="rbit-preset-row">
+        {PRESETS.map((preset, idx) => (
+          <button
+            key={idx}
+            type="button"
+            className={`rbit-preset${isPresetActive(preset) ? " is-active" : ""}`}
+            onClick={() => {
+              setScope(preset.scope);
+              setGrade(preset.grade);
+            }}
+          >
+            {t(`basicInfo.scopes.${preset.scope}`)}
+            {t(`basicInfo.grades.${preset.grade}`)}
+          </button>
+        ))}
+      </div>
 
-          <details className="rbit-period-details">
-            <summary>{t("basicInfo.periodSummary")}</summary>
-            <div className="rbit-chip-row">
-              {PERIODS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  className={`rbit-chip${period === p ? " is-active" : ""}`}
-                  onClick={() => setPeriod(p)}
-                >
-                  {t(`basicInfo.periods.${p}`)}
-                </button>
-              ))}
-            </div>
-            {grade !== "all" && period === "current" && (
-              <p className="rbit-period-caveat">
-                {t("basicInfo.periodCaveat")}
-              </p>
-            )}
-          </details>
-        </>
-      )}
+      <details className="rbit-period-details">
+        <summary>{t("basicInfo.periodSummary")}</summary>
+        <div className="rbit-chip-row">
+          {PERIODS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={`rbit-chip${period === p ? " is-active" : ""}`}
+              onClick={() => setPeriod(p)}
+            >
+              {t(`basicInfo.periods.${p}`)}
+            </button>
+          ))}
+        </div>
+        {grade !== "all" && period === "current" && (
+          <p className="rbit-period-caveat">{t("basicInfo.periodCaveat")}</p>
+        )}
+      </details>
 
       <div className="rbit-bars">
         {values.map(({ boat, value, n, isSmallSample, loading }) => {
@@ -448,13 +430,13 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                 className="rbit-trend-item"
                               >
                                 <span
-                                  className={`rbit-trend-finish rbit-trend-finish-${race.finish}`}
+                                  className={`rbit-trend-finish rbit-trend-finish-${race.finish ?? "unknown"}`}
                                 >
-                                  {race.finish === "out"
-                                    ? t("basicInfo.finishOut")
-                                    : t("review.finishPosition", {
+                                  {race.finish !== null
+                                    ? t("review.finishPosition", {
                                         position: race.finish,
-                                      })}
+                                      })
+                                    : t("basicInfo.finishUnknown")}
                                 </span>
                                 <span className="rbit-trend-date">
                                   {race.date}
@@ -471,67 +453,70 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
 
                   {expandedView === "venue" &&
                     (() => {
-                      const rows = venueStatsByRacer[player?.racerId];
-                      if (rows === undefined || rows === null) {
+                      const records = scopedStatsByRacer[player?.racerId];
+                      if (records === undefined || records === null) {
                         return (
                           <p className="rbit-expanded-loading">
                             {t("basicInfo.loading")}
                           </p>
                         );
                       }
-                      if (rows.length === 0) {
+                      const ranking = computeVenueRanking(records, metric);
+                      if (ranking.length === 0) {
                         return (
                           <p className="rbit-expanded-empty">
                             {t("basicInfo.noVenueData")}
                           </p>
                         );
                       }
-                      const ranked = [...rows].sort(
-                        (a, b) => (b.win_rate ?? 0) - (a.win_rate ?? 0),
-                      );
                       const currentRank =
-                        ranked.findIndex((r) => r.venue_code === venueCode) + 1;
+                        ranking.findIndex((r) => r.venueCode === venueCode) + 1;
                       return (
                         <div className="rbit-venue-ranking">
+                          <p className="rbit-venue-metric-label">
+                            {t("basicInfo.venueRankingFor", {
+                              metric: t(`basicInfo.metrics.${metric}`),
+                            })}
+                          </p>
                           {currentRank > 0 && (
                             <p className="rbit-venue-current-rank">
                               {t("basicInfo.currentVenueRank", {
                                 venue: t(`venues.${venueCode}`),
                                 rank: currentRank,
-                                total: ranked.length,
+                                total: ranking.length,
                               })}
                             </p>
                           )}
                           <ol className="rbit-venue-list">
-                            {ranked.slice(0, 5).map((row, idx) => (
-                              <li
-                                key={row.venue_code}
-                                className={
-                                  row.venue_code === venueCode
-                                    ? "rbit-venue-item is-current"
-                                    : "rbit-venue-item"
-                                }
-                              >
-                                <span className="rbit-venue-rank">
-                                  {idx + 1}
-                                </span>
-                                <span className="rbit-venue-name">
-                                  {t(`venues.${row.venue_code}`)}
-                                </span>
-                                <span className="rbit-venue-rate">
-                                  {formatRate(
-                                    row.win_rate !== null
-                                      ? row.win_rate * 100
-                                      : null,
-                                  )}
-                                </span>
-                                <span className="rbit-venue-n">
-                                  {t("basicInfo.sampleCount", {
-                                    n: row.total_races,
-                                  })}
-                                </span>
-                              </li>
-                            ))}
+                            {ranking.slice(0, 5).map((row, idx) => {
+                              const rowN =
+                                metric === "avgSt" ? row.avgStN : row.n;
+                              const rowValue =
+                                metric === "avgSt" ? row.avgSt : row[metric];
+                              return (
+                                <li
+                                  key={row.venueCode}
+                                  className={
+                                    row.venueCode === venueCode
+                                      ? "rbit-venue-item is-current"
+                                      : "rbit-venue-item"
+                                  }
+                                >
+                                  <span className="rbit-venue-rank">
+                                    {idx + 1}
+                                  </span>
+                                  <span className="rbit-venue-name">
+                                    {t(`venues.${row.venueCode}`)}
+                                  </span>
+                                  <span className="rbit-venue-rate">
+                                    {formatMetricValue(metric, rowValue)}
+                                  </span>
+                                  <span className="rbit-venue-n">
+                                    {t("basicInfo.sampleCount", { n: rowN })}
+                                  </span>
+                                </li>
+                              );
+                            })}
                           </ol>
                         </div>
                       );

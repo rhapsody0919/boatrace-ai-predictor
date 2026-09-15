@@ -78,31 +78,62 @@ export function filterRecords(records, { venueCode, scope, grade, period }) {
 }
 
 /**
- * 絞り込み済みrecordsから勝率・2連対率・3連対率とサンプル数を計算する。
+ * 絞り込み済みrecordsから勝率・2連対率・3連対率・平均STとサンプル数を計算する。
  * 各レースでの艇番（枠番）はレースごとに変わりうるため、外部から固定の艇番を
  * 渡すのではなく、各レコード自身のboatNumber（そのレースでの実際の枠番）を
- * 使って判定する（getRacerVenueStatsと同じ考え方）
+ * 使って判定する（getRacerVenueStatsと同じ考え方）。
+ * 平均STはstartTimingが取得できているレコードのみを対象に計算する
+ * （フライング・未計測は既にgetRacerScopedRaceStats側でnull化済み）ため、
+ * サンプル数nと平均ST算出対象のn（avgStN）は一致しない場合がある
  * @param {Array} records - filterRecordsの戻り値（当該選手のレコードのみ）
  */
 export function computeRates(records) {
   const n = records.length;
   if (n === 0) {
-    return { n: 0, winRate: null, top2Rate: null, top3Rate: null };
+    return {
+      n: 0,
+      winRate: null,
+      top2Rate: null,
+      top3Rate: null,
+      avgSt: null,
+      avgStN: 0,
+    };
   }
   let wins = 0;
   let top2 = 0;
   let top3 = 0;
+  let stSum = 0;
+  let stCount = 0;
   records.forEach((r) => {
     if (r.rank1 === r.boatNumber) wins += 1;
     if (isPlaceHit(r.boatNumber, r.rank1, r.rank2)) top2 += 1;
     if (isShowHit(r.boatNumber, r.rank1, r.rank2, r.rank3)) top3 += 1;
+    if (r.startTiming !== null && r.startTiming !== undefined) {
+      stSum += r.startTiming;
+      stCount += 1;
+    }
   });
   return {
     n,
     winRate: (wins / n) * 100,
     top2Rate: (top2 / n) * 100,
     top3Rate: (top3 / n) * 100,
+    avgSt: stCount > 0 ? stSum / stCount : null,
+    avgStN: stCount,
   };
+}
+
+// レース内順位（1〜6）を返す。rank1〜3は必ず取得済み、rank4〜6はBOA-238以降のみ
+// バックフィル済みのため、一致しなければ「着外だが正確な順位は不明」として
+// nullを返す（"out"というラベル文字列ではなく、呼び出し側で明示的に判定させる）
+function finishPositionOf(r) {
+  if (r.rank1 === r.boatNumber) return 1;
+  if (r.rank2 === r.boatNumber) return 2;
+  if (r.rank3 === r.boatNumber) return 3;
+  if (r.rank4 === r.boatNumber) return 4;
+  if (r.rank5 === r.boatNumber) return 5;
+  if (r.rank6 === r.boatNumber) return 6;
+  return null;
 }
 
 /**
@@ -113,17 +144,48 @@ export function computeRates(records) {
  * recordsは日付昇順であることを前提とする（getRacerScopedRaceStatsの戻り値順）
  */
 export function getRecentRaces(records, count = 5) {
-  return (records ?? []).slice(-count).map((r) => {
-    let finish; // 1 | 2 | 3 | "out"
-    if (r.rank1 === r.boatNumber) finish = 1;
-    else if (r.rank2 === r.boatNumber) finish = 2;
-    else if (r.rank3 === r.boatNumber) finish = 3;
-    else finish = "out";
-    return {
-      raceId: r.raceId,
-      date: r.date,
-      venueCode: r.venueCode,
-      finish,
-    };
+  return (records ?? []).slice(-count).map((r) => ({
+    raceId: r.raceId,
+    date: r.date,
+    venueCode: r.venueCode,
+    // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
+    // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
+    finish: finishPositionOf(r),
+  }));
+}
+
+/**
+ * 会場別に、指定した指標（勝率/2連対率/3連対率/平均ST）でランキングする
+ * （BOA-306フィードバック#3: 「得意会場」は選択中の指標に連動させる）。
+ * n>=5の会場のみ対象（getRacerVenueStatsと同じ閾値）。グレード・期間による
+ * 絞り込みは行わず、全期間（過去2年）×全グレードでの会場別集計に固定する
+ * （会場ランキングまでフィルタを連動させると母数が細分化されすぎて
+ * ほとんどの会場がn<5で対象外になるため）。avgSt採用時は値が小さいほど
+ * 良好なため昇順、それ以外は降順でソートする
+ * @param {Array} records - getRacerScopedRaceStatsの戻り値（フィルタ前の生データ）
+ * @param {'winRate'|'top2Rate'|'top3Rate'|'avgSt'} metric
+ */
+export function computeVenueRanking(records, metric) {
+  const byVenue = new Map();
+  (records ?? []).forEach((r) => {
+    if (!byVenue.has(r.venueCode)) byVenue.set(r.venueCode, []);
+    byVenue.get(r.venueCode).push(r);
   });
+
+  const rows = [...byVenue.entries()]
+    .map(([venueCode, venueRecords]) => ({
+      venueCode,
+      ...computeRates(venueRecords),
+    }))
+    .filter((row) => (metric === "avgSt" ? row.avgStN >= 5 : row.n >= 5));
+
+  const valueOf = (row) => (metric === "avgSt" ? row.avgSt : row[metric]);
+  rows.sort((a, b) => {
+    const av = valueOf(a);
+    const bv = valueOf(b);
+    if (av === null) return 1;
+    if (bv === null) return -1;
+    return metric === "avgSt" ? av - bv : bv - av;
+  });
+  return rows;
 }

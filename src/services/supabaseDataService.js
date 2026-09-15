@@ -3259,8 +3259,11 @@ export const supabaseDataService = {
       // race_gradeはraces側のカラム（race_conditions側は017マイグレーションで
       // 削除済み。race_conditions.series_day/is_final_dayはgenerate-predictions.js
       // で常にnull書き込みが確定しており（実データでも33,411件全行がnull、
-      // 2026-09-15確認）、この関数では取得しない
-      const [raceRows, resultRows] = await Promise.all([
+      // 2026-09-15確認）、この関数では取得しない。
+      // rank4〜6はBOA-238で追加（過去データは未バックフィルのためnullのままの
+      // 行がある）。start_timingは平均ST（BOA-306フィードバック#1で会場/グレード
+      // フィルタ対応が必要になったため追加、race_start_timingsから取得）
+      const [raceRows, resultRows, startTimingRows] = await Promise.all([
         fetchAllByIn(
           "races",
           "race_id, race_date, venue_code, race_grade",
@@ -3269,7 +3272,13 @@ export const supabaseDataService = {
         ),
         fetchAllByIn(
           "race_results",
-          "race_id, rank1, rank2, rank3, is_cancelled, is_no_race",
+          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race",
+          "race_id",
+          raceIds,
+        ),
+        fetchAllByIn(
+          "race_start_timings",
+          "race_id, boat_number, start_timing, is_flying",
           "race_id",
           raceIds,
         ),
@@ -3277,12 +3286,18 @@ export const supabaseDataService = {
 
       const raceById = new Map(raceRows.map((r) => [r.race_id, r]));
       const resultById = new Map(resultRows.map((r) => [r.race_id, r]));
+      const startTimingByKey = new Map(
+        startTimingRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
+      );
 
       return entries
         .map((entry) => {
           const race = raceById.get(entry.race_id);
           const result = resultById.get(entry.race_id);
           if (!race || !isUsableRaceResult(result)) return null;
+          const st = startTimingByKey.get(
+            `${entry.race_id}-${entry.boat_number}`,
+          );
           return {
             raceId: entry.race_id,
             date: race.race_date,
@@ -3294,6 +3309,15 @@ export const supabaseDataService = {
             rank1: result.rank1,
             rank2: result.rank2,
             rank3: result.rank3,
+            rank4: result.rank4 ?? null,
+            rank5: result.rank5 ?? null,
+            rank6: result.rank6 ?? null,
+            // フライングは異常値のため平均ST計算から除外する（RaceResult.jsx等と
+            // 同じ扱い）。未計測・未取得レースはnullのまま
+            startTiming:
+              st && !st.is_flying && st.start_timing != null
+                ? st.start_timing
+                : null,
           };
         })
         .filter(Boolean)

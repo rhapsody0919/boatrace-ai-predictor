@@ -413,6 +413,11 @@ function RaceResult({ prediction, raceId }) {
         })}
       </div>
       <p className="rr-note">{t("result.courseNote")}</p>
+      {rows.length < 6 && (
+        <p className="rr-note rr-note-missing-ranks">
+          {t("result.missingRanksNote")}
+        </p>
+      )}
 
       {payouts.win && (
         <>
