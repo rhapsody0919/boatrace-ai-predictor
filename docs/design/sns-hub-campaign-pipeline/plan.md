@@ -12,6 +12,48 @@
 
 `content_type_id`は既存の3種（`daily-auto`/`race-time-critical`/`venue-feature`）のいずれかを流用する（`sns_topics.content_type_id`はNOT NULL制約のため新規作成不可、`spec.md`のスコープ外）。**`venue-feature`（`trigger_mode='poll'`・`requires_topic_approval=true`）を流用する**方針とする。理由: 企画のネタは人間承認を必須にすべき内容（要件・制約参照）であり、`trigger_mode='poll'`という性質（Routineが自発的に対象を探しにいく）も対象レース検知の実態と合う。`cadence='weekly'`というラベルは実際の検知頻度を拘束するものではなく、企画自体の頻度は`sns_campaigns.selection_criteria`と後述のRoutine実行頻度で決まる。
 
+`node scripts/maintenance/generate-er-diagram.js sns-hub-campaign-pipeline`で生成（2026-09-15、事後追加）:
+
+```mermaid
+erDiagram
+    sns_campaign_entries }o--|| sns_campaigns : "campaign_id -> id"
+    sns_campaign_entries }o--|| races : "race_id"
+    sns_topics }o--|| sns_campaigns : "campaign_id -> id"
+    sns_campaigns {
+        UUID id PK
+        VARCHAR(200) name
+        TEXT purpose
+        TEXT persona
+        JSONB tone_spec
+        DATE start_date
+        INTEGER duration_days
+        VARCHAR(20)[] target_channels
+        TEXT tiktok_decision_note
+        JSONB selection_criteria
+        INTEGER purchase_amount_yen
+        VARCHAR(20) status
+        TIMESTAMPTZ created_at
+    }
+    sns_campaign_entries {
+        UUID id PK
+        UUID campaign_id
+        VARCHAR(50) race_id
+        NUMERIC selection_metric_value
+        TEXT ai_prompt_text
+        VARCHAR(50) ai_model_name
+        JSONB ai_picks
+        INTEGER purchase_amount_yen
+        VARCHAR(20) actual_result
+        BOOLEAN hit
+        INTEGER payout_yen
+        INTEGER cumulative_net_yen
+        TIMESTAMPTZ created_at
+    }
+    sns_topics {
+        UUID campaign_id
+    }
+```
+
 ## 2. 処理フロー（2フェーズ構成）
 
 対象レースの「AI予想」はレース開始前に確定させる必要があり、「結果」はレース終了後にしか分からない。この時間差を、既存の`prediction-hook`（予想）／`prediction-accuracy`（答え合わせ）が別フェーズになっているのと同じ考え方で2段階に分ける。

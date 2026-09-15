@@ -33,6 +33,67 @@
 | `sns_template_variants` | 型ごとのデザインバリアント・レジストリ |
 | `sns_approvers` | 承認者マスタ（タップ選択式、自由入力不可） |
 
+`node scripts/maintenance/generate-er-diagram.js sns-marketing-hub`で生成（2026-09-15、事後追加）:
+
+```mermaid
+erDiagram
+    sns_drafts }o--|| sns_drafts : "parent_draft_id -> id"
+    sns_drafts }o--|| sns_template_variants : "template_variant_id -> id"
+    sns_drafts }o--|| sns_approvers : "approver_id -> id"
+    sns_draft_metrics }o--|| sns_drafts : "draft_id -> id"
+    sns_template_variants {
+        UUID id PK
+        VARCHAR(50) format
+        VARCHAR(50) variant_name
+        VARCHAR(100) composition_name
+        BOOLEAN active
+        TEXT notes
+        TIMESTAMPTZ created_at
+    }
+    sns_approvers {
+        UUID id PK
+        VARCHAR(50) display_name
+        BOOLEAN active
+        TIMESTAMPTZ created_at
+    }
+    sns_drafts {
+        UUID id PK
+        UUID content_group_id
+        UUID parent_draft_id
+        VARCHAR(50) format
+        UUID template_variant_id
+        VARCHAR(10) language
+        VARCHAR(20) platform
+        VARCHAR(20) status
+        TEXT video_storage_path
+        VARCHAR(20) video_tier
+        TEXT cover_image_path
+        TEXT caption_text
+        TEXT[] hashtags
+        TEXT background_text
+        JSONB source_data
+        JSONB risk_flags
+        TEXT[] revision_reason_codes
+        TEXT revision_reason_freetext
+        UUID approver_id
+        TIMESTAMPTZ approved_at
+        TIMESTAMPTZ scheduled_at
+        TIMESTAMPTZ posted_at
+        TIMESTAMPTZ archived_at
+        TEXT routine_run_id
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ updated_at
+    }
+    sns_draft_metrics {
+        UUID id PK
+        UUID draft_id
+        VARCHAR(30) metric_name
+        NUMERIC metric_value
+        VARCHAR(10) source
+        TIMESTAMPTZ recorded_at
+    }
+```
+
 ### `sns_drafts`のステータス遷移
 
 ```

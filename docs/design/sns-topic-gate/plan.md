@@ -55,6 +55,93 @@ blog / note / x / tiktok / youtube それぞれ独立Routine
 
 詳細な列定義・初期データ投入は上記マイグレーションファイル参照。
 
+`node scripts/maintenance/generate-er-diagram.js sns-topic-gate`で生成（2026-09-15、事後追加。`043_sns_topic_gate_schema.sql`と、後から`sns_topics.campaign_id`等を追加した`054_sns_campaigns_schema.sql`の両方を合わせたこの機能全体のスキーマ）:
+
+```mermaid
+erDiagram
+    sns_topics }o--|| sns_content_types : "content_type_id -> id"
+    sns_topics }o--|| sns_approvers : "approver_id -> id"
+    sns_topic_targets }o--|| sns_topics : "topic_id -> id"
+    sns_topic_targets }o--|| sns_target_accounts : "target_account_id -> id"
+    sns_topic_targets }o--|| sns_drafts : "draft_id -> id"
+    sns_campaign_entries }o--|| sns_campaigns : "campaign_id -> id"
+    sns_campaign_entries }o--|| races : "race_id"
+    sns_topics }o--|| sns_campaigns : "campaign_id -> id"
+    sns_content_types {
+        UUID id PK
+        VARCHAR(50) type_key
+        VARCHAR(50) label
+        VARCHAR(20) cadence
+        BOOLEAN requires_topic_approval
+        VARCHAR(20) trigger_mode
+        BOOLEAN active
+        TEXT notes
+        TIMESTAMPTZ created_at
+    }
+    sns_target_accounts {
+        UUID id PK
+        VARCHAR(20) platform
+        VARCHAR(50) account_label
+        TEXT brand_kit_ref
+        TEXT credential_ref
+        BOOLEAN active
+        TIMESTAMPTZ created_at
+    }
+    sns_topics {
+        UUID id PK
+        TEXT topic_text
+        UUID content_type_id
+        VARCHAR(20) status
+        UUID[] source_insight_ids
+        TIMESTAMPTZ proposed_at
+        TIMESTAMPTZ approved_at
+        UUID approver_id
+        TIMESTAMPTZ created_at
+        UUID campaign_id
+    }
+    sns_topic_targets {
+        UUID id PK
+        UUID topic_id
+        UUID target_account_id
+        VARCHAR(20) status
+        TEXT claimed_by
+        TIMESTAMPTZ claimed_at
+        TEXT skip_reason
+        UUID draft_id
+        TIMESTAMPTZ created_at
+    }
+    sns_campaigns {
+        UUID id PK
+        VARCHAR(200) name
+        TEXT purpose
+        TEXT persona
+        JSONB tone_spec
+        DATE start_date
+        INTEGER duration_days
+        VARCHAR(20)[] target_channels
+        TEXT tiktok_decision_note
+        JSONB selection_criteria
+        INTEGER purchase_amount_yen
+        VARCHAR(20) status
+        TIMESTAMPTZ created_at
+    }
+    sns_campaign_entries {
+        UUID id PK
+        UUID campaign_id
+        VARCHAR(50) race_id
+        NUMERIC selection_metric_value
+        TEXT ai_prompt_text
+        VARCHAR(50) ai_model_name
+        JSONB ai_picks
+        INTEGER purchase_amount_yen
+        VARCHAR(20) actual_result
+        BOOLEAN hit
+        INTEGER payout_yen
+        INTEGER cumulative_net_yen
+        TIMESTAMPTZ created_at
+    }
+```
+
 ### 既存テーブルとの連携（新規列追加なし）
 
 - `sns_drafts.content_group_id` を `sns_topics.id` としてそのまま使う（`content-multi-channel-pipeline`が既に確立している規約を踏襲、新規列は不要）

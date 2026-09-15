@@ -81,6 +81,38 @@
 | official_win_rate_period | numeric, nullable | 公式集計の勝率（自社`racer_aggregated_stats`との検算用） |
 | official_updated_at | timestamptz, nullable | 本データの取得日時 |
 
+`node scripts/maintenance/generate-er-diagram.js scraping-full-coverage`で生成（2026-09-15、事後追加。FR-1の`race_special_notes`/`race_notices_health`とFR-2の`racer_profiles`拡張を合わせたこの機能全体のスキーマ）:
+
+```mermaid
+erDiagram
+    race_special_notes {
+        BIGSERIAL id PK
+        SMALLINT venue_code
+        DATE race_date
+        VARCHAR(20) category
+        INTEGER racer_id
+        SMALLINT boat_number
+        TEXT detail_text
+        JSONB structured_data
+        TIMESTAMPTZ scraped_at
+    }
+    race_notices_health {
+        SMALLINT venue_code PK
+        DATE check_date PK
+        BOOLEAN had_success
+        TEXT last_reason
+        TIMESTAMPTZ last_checked_at
+    }
+    racer_profiles {
+        INTEGER ability_index
+        INTEGER flying_count_period
+        INTEGER false_start_count_period
+        VARCHAR(20) period_label
+        NUMERIC(5,_2) official_win_rate_period
+        TIMESTAMPTZ official_updated_at
+    }
+```
+
 ### スクリプト構成
 
 `scripts/maintenance/scrape-racer-profiles.js`を拡張し、既存の選手プロフィール取得と同じ巡回で`data/racersearch/season?toban=`も取得する（FR-5の自動化と同一ジョブに統合、選手一覧を二重に巡回しない）。
