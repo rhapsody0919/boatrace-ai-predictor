@@ -400,6 +400,10 @@
     "noPrevRace": "沒有上一場比賽",
     "noNextRace": "沒有下一場比賽"
   },
+  "raceStage": {
+    "final": "優勝戰",
+    "semifinal": "準優勝戰"
+  },
   "raceCard": {
     "awaitingResult": "結果待反映",
     "cancelled": "中止",

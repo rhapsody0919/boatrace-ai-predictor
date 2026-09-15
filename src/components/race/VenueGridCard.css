@@ -74,7 +74,8 @@
   flex-wrap: wrap;
 }
 
-.venue-grid-card__grade {
+.venue-grid-card__grade,
+.venue-grid-card__stage {
   padding: 0.05rem 0.3rem;
   border-radius: 4px;
   font-size: 0.6rem;
