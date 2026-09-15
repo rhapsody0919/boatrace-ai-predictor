@@ -237,7 +237,53 @@
     "volatilityOutcomeDetailFavorite": "（1号艇が1着）",
     "volatilityCaveat": "※1回のレース結果だけでは予測の正誤は判断できません。",
     "volatilityCaveatLink": "実測精度を見る ›",
-    "payout": "配当: {{amount}}円"
+    "payout": "配当: {{amount}}円",
+    "notFinishedTitle": "結果はまだ確定していません",
+    "notFinishedBody": "レース終了後、このタブに着順・配当・決まり手が表示されます。"
+  },
+  "raceTabs": {
+    "basic": "基本情報",
+    "motor": "モータ情報",
+    "result": "結果"
+  },
+  "basicInfo": {
+    "note": "選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細（直近5走・得意会場）が開きます",
+    "metricLabel": "指標",
+    "scopeLabel": "会場",
+    "gradeLabel": "グレード",
+    "metrics": {
+      "winRate": "勝率",
+      "top2Rate": "2連対率",
+      "top3Rate": "3連対率",
+      "avgSt": "平均ST"
+    },
+    "scopes": {
+      "local": "当地",
+      "national": "全国"
+    },
+    "grades": {
+      "all": "全レース",
+      "ippan": "一般戦",
+      "sgg1": "SG・G1"
+    },
+    "periods": {
+      "current": "今期",
+      "last3m": "直近3ヶ月",
+      "last1m": "直近1ヶ月"
+    },
+    "periodSummary": "▸ 期間で絞り込む",
+    "periodCaveat": "※グレード条件と組み合わせた「今期」は、公式の期区分ではなく、当社データで確認できる全期間（過去2年分）を対象とします",
+    "winRateSwitchCaveat": "※グレード・期間を絞り込んだ「勝率」は、公式の勝率点数ではなく、その条件での実際の1着になった割合（%）を表示します",
+    "sampleCount": "(n={{n}})",
+    "noData": "(データなし)",
+    "viewTrend": "直近5走",
+    "viewVenue": "得意会場",
+    "loading": "読み込み中...",
+    "noHistory": "出走履歴データがありません",
+    "noVenueData": "会場別の成績データがありません（規定レース数未満）",
+    "trendNote": "直近5走の着順（グレード・期間の条件によらず、常に最新5走を表示）",
+    "finishOut": "着外",
+    "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位"
   },
   "panel": {
     "noData": "予想データが利用できません",
@@ -508,28 +554,11 @@
     "confidence": "信頼度{{value}}%"
   },
   "review": {
-    "title": "データで振り返る",
-    "resultLine": "1着: {{number}}号艇 {{name}}",
-    "techniqueLabel": "決まり手: {{technique}}",
-    "loading": "分析データを照合中...",
-    "matchHeading": "データと整合した点",
-    "mismatchHeading": "データと違った点",
-    "itemTechniqueTop": "決まり手「{{technique}}」は過去90日の勝ちパターン1位（{{pct}}%）と一致",
-    "itemTechniqueNone": "「{{technique}}」は過去90日の勝ちパターンに無い決まり手",
-    "itemTechniqueNoWins": "過去90日間で勝利の無かった選手の1着",
     "itemFormUp": "全国勝率が上昇基調（+{{delta}}）",
     "itemFormDown": "全国勝率は下降基調（-{{delta}}）",
-    "note": "照合は機械的な順位・一致判定によるものです。データは過去の傾向であり、今後の結果を保証するものではありません",
-    "guideLink": "データで振り返るの使い方を詳しく見る",
-    "allBoatsHeading": "全艇の照合サマリー",
-    "colFinish": "着順",
-    "colBoat": "艇・選手",
     "finishPosition": "{{position}}着",
-    "finishOut": "着外",
-    "allBoatsLegend": "○=データの示唆と着順が整合 / ×=相違 / −=中立またはデータなし。1〜3着を「好走」、それ以外を「着外」として判定しています（4着以下の個別着順は未保存のため着外でまとめています）",
     "itemRank": "{{label}}がレース内{{rank}}位",
     "itemReturn": "単勝回収率{{rate}}%（過去180日・同艇番）",
-    "noItems": "判定可能なデータがありません（全艇同値または未計測）",
     "cols": {
       "winRate": "勝率",
       "localWinRate": "当地",
@@ -547,11 +576,7 @@
       "courseRate": "枠番",
       "returnRate": "回収率",
       "technique": "決まり手"
-    },
-    "itemTechniqueRank": "決まり手「{{technique}}」は過去90日の勝ちパターン{{rank}}位（{{pct}}%）",
-    "colGrade": "級別",
-    "showOutBoats": "▼ 着外の{{n}}艇の詳細も見る",
-    "hideOutBoats": "▲ 着外の艇をたたむ"
+    }
   },
   "raceList": {
     "show": "▼ 他のレースを選ぶ",

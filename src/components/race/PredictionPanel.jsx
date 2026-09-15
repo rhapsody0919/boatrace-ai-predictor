@@ -11,8 +11,7 @@
  *
  * 2026-08-14追記: AiAnalysisSection（展開予測パネル/イン崩れバッジ）は
  * 「これから何が起きそうか」を示す未来志向のUIのため、結果確定済みレースには表示しない
- * （結果と矛盾する見え方になるため）。過去レースの予想根拠検証は「データで振り返る」
- * （RaceReview、モデル非依存で常時正しく振る舞う）と、レース結果パネル（RaceResult、
+ * （結果と矛盾する見え方になるため）。過去レースの検証はレース結果パネル（RaceResult、
  * 複勝的中/展開予測的中の検証）が担う。unifiedモデルのデータが無い日付でAIデータ分析欄が
  * 空白のまま表示される問題も、未確定レースに限定することで実質的に解消される
  *
@@ -22,6 +21,18 @@
  * 自体は正しい実測値だったが、ユーザー判断により複勝予想UI（本コンポーネント内のパネル・
  * ホームページのレースカード一覧プレビュー）を一式撤去した。データ取得基盤（複勝オッズ
  * スクレイピング等）は将来の再設計に備えて残置している
+ *
+ * 2026-09-15追記(日和スタイルのタブ構成、BOA-305〜312): レース詳細ページに
+ * 「基本情報/モータ情報/結果」の3タブ（RaceTabs）を追加した。
+ * - 基本情報タブ（RaceBasicInfoTab、BOA-306）はDataRaceTableとは別の切り口
+ *   （会場/グレード/期間フィルタ×棒グラフ）のため重複ではなく併存する
+ * - モータ情報タブ（BOA-308）は既存のEmbeddedAnalysisSection「モーター調子」を
+ *   タブへ昇格したため、重複表示を避けるためアコーディオン版は撤去した
+ * - 結果タブ（BOA-312）は従来PredictionSection側で常時表示していたRaceResultを
+ *   タブへ移設した。「データで振り返る」（RaceReview）はユーザー判断により
+ *   BOA-312で撤去済み（docs/reference/deprecated-terms.json参照）
+ * 残り5タブ（枠別情報/今節成績/直前情報/オッズ検索/オッズ一覧）はデータ未整備の
+ * ため未実装（`docs/design/scraping-full-coverage/`待ち）
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -39,17 +50,20 @@ import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
 import VenueTendencyPanel from "./VenueTendencyPanel";
 import EmbeddedAnalysisSection from "./EmbeddedAnalysisSection";
-import MotorConditionChart from "../analysis/MotorConditionChart";
 import RacerFormChart from "../analysis/RacerFormChart";
 import StPredictabilityChart from "../analysis/StPredictabilityChart";
 import ExhibitionTimeTrendChart from "../analysis/ExhibitionTimeTrendChart";
 import RacerTechniqueProfileChart from "../analysis/RacerTechniqueProfileChart";
 import RacerBoatReturnRateChart from "../analysis/RacerBoatReturnRateChart";
 import AttackDefenseAnalysis from "../analysis/AttackDefenseAnalysis";
+import MotorConditionChart from "../analysis/MotorConditionChart";
 import AiAnalysisSection from "./AiAnalysisSection";
 import AiCopyBanner from "./AiCopyBanner";
 import AiCopyButton from "./AiCopyButton";
 import Toast, { useToast } from "../Toast";
+import RaceTabs from "./RaceTabs";
+import RaceBasicInfoTab from "./RaceBasicInfoTab";
+import RaceResult from "./RaceResult";
 import { getRaceId } from "../../utils/raceId";
 import { AI_COPY_PROMPT_TYPES } from "../../utils/aiCopyPrompts";
 import { RACE_STATUS } from "../../utils/raceStatus";
@@ -94,7 +108,7 @@ function PredictionPanel({
       : null;
 
   // 結果確定済みレースでは未来志向のAIデータ分析（展開予測/イン崩れ）を表示しない。
-  // 過去レースの検証は「データで振り返る」（RaceReview）が担う
+  // 過去レースの検証は「結果」タブ（RaceResult）が担う
   const isFinished = Boolean(prediction?.result?.finished);
   // 締切は過ぎたが結果はまだ反映されていない状態（1時間おきのスクレイピングバッチのラグ）。
   // AI分析パネル自体は表示を維持しつつ、案内バナーのみ追加する
@@ -236,6 +250,54 @@ function PredictionPanel({
         />
       )}
 
+      {/* レース詳細ページのタブ構成（BOA-305〜312）: 日和スタイルの8タブのうち
+          データが揃っている3タブのみ実装。DataRaceTable（主役の生データ一覧）とは
+          別の切り口（条件フィルタ×棒グラフ）のため両方残す */}
+      {venueCode && analysisRaceId && (
+        <RaceTabs
+          key={analysisRaceId}
+          defaultTabId={isFinished ? "result" : "basic"}
+          tabs={[
+            {
+              id: "basic",
+              label: t("raceTabs.basic"),
+              content: (
+                <RaceBasicInfoTab
+                  raceId={analysisRaceId}
+                  venueCode={venueCode}
+                  players={prediction.allPlayers}
+                />
+              ),
+            },
+            {
+              id: "motor",
+              label: t("raceTabs.motor"),
+              content: (
+                <MotorConditionChart
+                  embedded
+                  initialVenueCode={venueCode}
+                  initialRaceId={analysisRaceId}
+                />
+              ),
+            },
+            {
+              id: "result",
+              label: t("raceTabs.result"),
+              content: isFinished ? (
+                <RaceResult prediction={prediction} raceId={analysisRaceId} />
+              ) : (
+                <div className="race-tabs-empty">
+                  <p>{t("result.notFinishedTitle")}</p>
+                  <p className="race-tabs-empty-body">
+                    {t("result.notFinishedBody")}
+                  </p>
+                </div>
+              ),
+            },
+          ]}
+        />
+      )}
+
       {/* データ出走表（主役）: 出走6選手×客観的な生データの一覧マトリクス */}
       <DataRaceTable
         raceId={analysisRaceId}
@@ -248,19 +310,8 @@ function PredictionPanel({
       <VenueTendencyPanel venueCode={venueCode} raceId={analysisRaceId} />
 
       {/* 分析ツールコンポーネントの埋め込み（FR-3〜9）: デフォルト閉、開いた時だけ
-          データ取得する。まずモーター調子でembedded modeのパターンを確立する */}
-      {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection
-          title={t("analysisPage.tabs.motor")}
-          hintKey="motorCondition"
-        >
-          <MotorConditionChart
-            embedded
-            initialVenueCode={venueCode}
-            initialRaceId={analysisRaceId}
-          />
-        </EmbeddedAnalysisSection>
-      )}
+          データ取得する。モーター調子（BOA-308）はモータ情報タブへ昇格したため、
+          重複表示を避けるためここでは表示しない */}
       {venueCode && analysisRaceId && (
         <EmbeddedAnalysisSection
           title={t("analysisPage.tabs.racer")}

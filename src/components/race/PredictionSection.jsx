@@ -1,23 +1,27 @@
 /**
  * PredictionSection - レース予想セクション全体を管理
- * PredictionPanel（AI予想） + OutcomePatternPreview（出現パターン） + RaceResult（レース結果）
- * をまとめて、コンポーネント間の責務を明確化
+ * PredictionPanel（データ出走表・AI予想・基本情報/モータ情報/結果タブ）を
+ * ラップし、見出しとレース分析データの先行取得を担う。
+ *
+ * 2026-09-15（BOA-305〜312、日和スタイルのタブ構成）: 従来はレース状態
+ * （未確定/確定）に応じてPredictionPanel/RaceResult/RaceReviewの表示順を
+ * 入れ替えていたが、RaceResultは「結果」タブへ、RaceReview（データで振り返る）は
+ * 撤去のうえPredictionPanel内のRaceTabsへ統合したため、この入れ替えロジック自体が
+ * 不要になった。結果確定後にどちらを優先表示するかは、RaceTabsのdefaultTabId
+ * （PredictionPanel内、finished ? "result" : "basic"）が代わりに担う
  */
 import { forwardRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import PredictionPanel from "./PredictionPanel";
-import RaceResult from "./RaceResult";
-import RaceReview from "./RaceReview";
 import { prefetchRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { getRaceId } from "../../utils/raceId";
-import { RACE_STATUS } from "../../utils/raceStatus";
 
 const PredictionSection = forwardRef(
   ({ prediction, selectedRace, isAnalyzing, date, status }, ref) => {
     const { t } = useTranslation();
 
     // レース選択直後（AI分析演出の間）に分析データの取得を先行開始する。
-    // withCacheのin-flightデデュープにより後続のDataRaceTable/RaceReviewの
+    // withCacheのin-flightデデュープにより後続のDataRaceTable/RaceBasicInfoTabの
     // 取得と重複せず、データ出走表の体感ロード時間を短縮する
     const prefetchRaceId = getRaceId(selectedRace);
     const prefetchVenueCode = selectedRace?.venueCode ?? null;
@@ -26,29 +30,6 @@ const PredictionSection = forwardRef(
     }, [prefetchRaceId, prefetchVenueCode]);
 
     if (!selectedRace) return null;
-
-    // レース前は「予想の作業台」（データ出走表が主役）、
-    // 結果確定後は「検証の場」（結果・振り返りが主役）として順序を入れ替える。
-    // statusが渡されない呼び出し元向けのフォールバックとして旧ロジックも残す
-    const finished = status
-      ? status === RACE_STATUS.FINISHED
-      : Boolean(prediction?.result?.finished);
-
-    const panel = (
-      <PredictionPanel
-        prediction={prediction}
-        selectedRace={selectedRace}
-        isAnalyzing={isAnalyzing}
-        date={date}
-        status={status}
-      />
-    );
-    const result = (
-      <RaceResult prediction={prediction} raceId={prefetchRaceId} />
-    );
-    const review = (
-      <RaceReview prediction={prediction} selectedRace={selectedRace} />
-    );
 
     return (
       <section ref={ref} className="prediction-section">
@@ -60,19 +41,13 @@ const PredictionSection = forwardRef(
           {selectedRace.raceNumber}R
         </h2>
 
-        {finished ? (
-          <>
-            {result}
-            {review}
-            {panel}
-          </>
-        ) : (
-          <>
-            {panel}
-            {result}
-            {review}
-          </>
-        )}
+        <PredictionPanel
+          prediction={prediction}
+          selectedRace={selectedRace}
+          isAnalyzing={isAnalyzing}
+          date={date}
+          status={status}
+        />
       </section>
     );
   },

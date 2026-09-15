@@ -19,5 +19,6 @@ export { default as DataRaceTable } from "./DataRaceTable";
 export { default as VenueTendencyPanel } from "./VenueTendencyPanel";
 export { default as EmbeddedAnalysisSection } from "./EmbeddedAnalysisSection";
 export { default as AiAnalysisSection } from "./AiAnalysisSection";
-export { default as RaceReview } from "./RaceReview";
 export { default as TodaysVolatilityHighlights } from "./TodaysVolatilityHighlights";
+export { default as RaceTabs } from "./RaceTabs";
+export { default as RaceBasicInfoTab } from "./RaceBasicInfoTab";
