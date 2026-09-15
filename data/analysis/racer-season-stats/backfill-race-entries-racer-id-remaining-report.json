@@ -1,6 +1,6 @@
 {
-  "executedAt": "2026-09-15T12:11:08.906Z",
-  "dryRun": true,
+  "executedAt": "2026-09-15T12:43:54.784Z",
+  "dryRun": false,
   "nullEntriesTotal": 239,
   "distinctNamesTotal": 11,
   "updatedRows": 239,
