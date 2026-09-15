@@ -84,6 +84,13 @@ function PredictionPanel({
   const [aiCopyPromptType, setAiCopyPromptType] = useState(
     AI_COPY_PROMPT_TYPES.WIN,
   );
+  // 結果タブ表示中はDataRaceTable/VenueTendencyPanel/分析ツールアコーディオン群
+  // （いずれもレース前の予想材料）を隠す（BOA-305〜312フィードバック#7）。
+  // 初期値はRaceTabsのdefaultTabIdと同じ判定にしておき、初回描画時に一瞬
+  // 表示されてすぐ消える「ちらつき」を防ぐ
+  const [activeMainTab, setActiveMainTab] = useState(() =>
+    prediction?.result?.finished ? "result" : "basic",
+  );
   const { toast: aiCopyToast, showToast: showAiCopyToast } = useToast();
 
   if (!prediction && !isAnalyzing) return null;
@@ -257,6 +264,7 @@ function PredictionPanel({
         <RaceTabs
           key={analysisRaceId}
           defaultTabId={isFinished ? "result" : "basic"}
+          onActiveTabChange={setActiveMainTab}
           tabs={[
             {
               id: "basic",
@@ -298,91 +306,99 @@ function PredictionPanel({
         />
       )}
 
-      {/* データ出走表（主役）: 出走6選手×客観的な生データの一覧マトリクス */}
-      <DataRaceTable
-        raceId={analysisRaceId}
-        prediction={prediction}
-        venueCode={venueCode}
-      />
+      {/* データ出走表・枠別傾向・分析ツール群はレース前の予想材料のため、
+          結果タブ表示中は隠す（BOA-305〜312フィードバック#7）。基本情報/
+          モータ情報タブ表示中、およびactiveMainTab未確定時（初回レンダー等）は
+          従来通り表示する */}
+      {activeMainTab !== "result" && (
+        <>
+          {/* データ出走表（主役）: 出走6選手×客観的な生データの一覧マトリクス */}
+          <DataRaceTable
+            raceId={analysisRaceId}
+            prediction={prediction}
+            venueCode={venueCode}
+          />
 
-      {/* この会場の枠番別傾向（FR-2）: 会場×枠番の過去傾向。選手個人のデータ出走表とは
-          主語が異なるため別コンポーネントとして分離する */}
-      <VenueTendencyPanel venueCode={venueCode} raceId={analysisRaceId} />
+          {/* この会場の枠番別傾向（FR-2）: 会場×枠番の過去傾向。選手個人のデータ出走表とは
+              主語が異なるため別コンポーネントとして分離する */}
+          <VenueTendencyPanel venueCode={venueCode} raceId={analysisRaceId} />
 
-      {/* 分析ツールコンポーネントの埋め込み（FR-3〜9）: デフォルト閉、開いた時だけ
-          データ取得する。モーター調子（BOA-308）はモータ情報タブへ昇格したため、
-          重複表示を避けるためここでは表示しない */}
-      {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection
-          title={t("analysisPage.tabs.racer")}
-          hintKey="racerForm"
-        >
-          <RacerFormChart
-            embedded
-            initialVenueCode={venueCode}
-            initialRaceId={analysisRaceId}
-          />
-        </EmbeddedAnalysisSection>
-      )}
-      {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection
-          title={t("analysisPage.tabs.st")}
-          hintKey="stDeviation"
-        >
-          <StPredictabilityChart
-            embedded
-            initialVenueCode={venueCode}
-            initialRaceId={analysisRaceId}
-          />
-        </EmbeddedAnalysisSection>
-      )}
-      {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection
-          title={t("analysisPage.tabs.extrend")}
-          hintKey="exhibitionTimeTrend"
-        >
-          <ExhibitionTimeTrendChart
-            embedded
-            initialVenueCode={venueCode}
-            initialRaceId={analysisRaceId}
-          />
-        </EmbeddedAnalysisSection>
-      )}
-      {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection
-          title={t("analysisPage.tabs.techprofile")}
-          hintKey="racerTechniqueProfile"
-        >
-          <RacerTechniqueProfileChart
-            embedded
-            initialVenueCode={venueCode}
-            initialRaceId={analysisRaceId}
-          />
-        </EmbeddedAnalysisSection>
-      )}
-      {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection
-          title={t("analysisPage.tabs.returnrate")}
-          hintKey="returnRateAnalysis"
-        >
-          <RacerBoatReturnRateChart
-            embedded
-            initialVenueCode={venueCode}
-            initialRaceId={analysisRaceId}
-          />
-        </EmbeddedAnalysisSection>
-      )}
-      {venueCode && analysisRaceId && (
-        <EmbeddedAnalysisSection
-          title={t("analysisPage.tabs.attackdefense")}
-          hintKey="attackDefense"
-        >
-          <AttackDefenseAnalysis
-            embedded
-            initialVenueCode={venueCode}
-            initialRaceId={analysisRaceId}
-          />
-        </EmbeddedAnalysisSection>
+          {/* 分析ツールコンポーネントの埋め込み（FR-3〜9）: デフォルト閉、開いた時だけ
+              データ取得する。モーター調子（BOA-308）はモータ情報タブへ昇格したため、
+              重複表示を避けるためここでは表示しない */}
+          {venueCode && analysisRaceId && (
+            <EmbeddedAnalysisSection
+              title={t("analysisPage.tabs.racer")}
+              hintKey="racerForm"
+            >
+              <RacerFormChart
+                embedded
+                initialVenueCode={venueCode}
+                initialRaceId={analysisRaceId}
+              />
+            </EmbeddedAnalysisSection>
+          )}
+          {venueCode && analysisRaceId && (
+            <EmbeddedAnalysisSection
+              title={t("analysisPage.tabs.st")}
+              hintKey="stDeviation"
+            >
+              <StPredictabilityChart
+                embedded
+                initialVenueCode={venueCode}
+                initialRaceId={analysisRaceId}
+              />
+            </EmbeddedAnalysisSection>
+          )}
+          {venueCode && analysisRaceId && (
+            <EmbeddedAnalysisSection
+              title={t("analysisPage.tabs.extrend")}
+              hintKey="exhibitionTimeTrend"
+            >
+              <ExhibitionTimeTrendChart
+                embedded
+                initialVenueCode={venueCode}
+                initialRaceId={analysisRaceId}
+              />
+            </EmbeddedAnalysisSection>
+          )}
+          {venueCode && analysisRaceId && (
+            <EmbeddedAnalysisSection
+              title={t("analysisPage.tabs.techprofile")}
+              hintKey="racerTechniqueProfile"
+            >
+              <RacerTechniqueProfileChart
+                embedded
+                initialVenueCode={venueCode}
+                initialRaceId={analysisRaceId}
+              />
+            </EmbeddedAnalysisSection>
+          )}
+          {venueCode && analysisRaceId && (
+            <EmbeddedAnalysisSection
+              title={t("analysisPage.tabs.returnrate")}
+              hintKey="returnRateAnalysis"
+            >
+              <RacerBoatReturnRateChart
+                embedded
+                initialVenueCode={venueCode}
+                initialRaceId={analysisRaceId}
+              />
+            </EmbeddedAnalysisSection>
+          )}
+          {venueCode && analysisRaceId && (
+            <EmbeddedAnalysisSection
+              title={t("analysisPage.tabs.attackdefense")}
+              hintKey="attackDefense"
+            >
+              <AttackDefenseAnalysis
+                embedded
+                initialVenueCode={venueCode}
+                initialRaceId={analysisRaceId}
+              />
+            </EmbeddedAnalysisSection>
+          )}
+        </>
       )}
 
       {!isFinished && (

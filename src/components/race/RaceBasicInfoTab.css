@@ -286,6 +286,13 @@
   color: var(--text-secondary);
 }
 
+.rbit-venue-metric-label {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
 .rbit-venue-current-rank {
   margin: 0 0 var(--spacing-2);
   font-size: var(--font-size-sm);

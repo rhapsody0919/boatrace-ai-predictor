@@ -546,6 +546,9 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
     await expect(page).toHaveURL(/\/race\//);
+    // 結果確定済みレースは「結果」タブがデフォルト表示され、データ出走表は
+    // 結果タブ表示中は隠れる（フィードバック#7）ため、基本情報タブへ切り替える
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
     await expect(page.locator(".data-race-table")).toBeVisible({
       timeout: 15000,
     });
@@ -592,6 +595,9 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
 
     await page.locator(".race-card .predict-btn").first().click();
     await expect(page).toHaveURL(/\/race\/2026-08-11-\d{2}-\d{2}$/);
+    // 結果確定済みレースは「結果」タブがデフォルト表示され、データ出走表は
+    // 結果タブ表示中は隠れる（フィードバック#7）ため、基本情報タブへ切り替える
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
     await expect(page.locator(".data-race-table")).toBeVisible({
       timeout: 15000,
     });
@@ -599,6 +605,7 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
     // 同じURLを直接開いても表示される（ディープリンク）
     const url = page.url();
     await page.goto(url);
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
     await expect(page.locator(".data-race-table")).toBeVisible({
       timeout: 15000,
     });
@@ -779,6 +786,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.locator(".race-card .predict-btn").first().click();
     await expect(page).toHaveURL(/\/race\/2026-08-11-\d{2}-\d{2}$/);
 
+    // 結果確定済みレースはタブ構成（BOA-305〜312）で「結果」タブがデフォルト
+    // 表示される。DataRaceTable等の分析ツール群は結果タブ表示中は隠れる
+    // （フィードバック#7）ため、基本情報タブへ切り替えてから確認する
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
     await expect(page.locator(".data-race-table")).toBeVisible({
       timeout: 15000,
     });
@@ -870,11 +881,6 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
 
-    // データ出走表は過去日付でも表示される
-    await expect(page.locator(".data-race-table")).toBeVisible({
-      timeout: 15000,
-    });
-
     // 結果確定済みレースはタブ構成（BOA-305〜312）で「結果」タブがデフォルト表示される。
     // 的中判定（複勝的中/展開予測的中）はレース結果パネルに一本化されている
     // （2026-08-14: 従来はAI検証ブロックと重複表示していたのを整理・統合）
@@ -884,6 +890,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".race-result")).toBeVisible({
       timeout: 20000,
     });
+
+    // データ出走表等の分析ツール群は結果タブ表示中は隠れる（フィードバック#7）が、
+    // 基本情報タブに切り替えれば過去日付でも表示されることを確認する
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.locator(".race-tabs-btn", { hasText: "結果" }).click();
     await expect(page.locator(".turn-pattern-list")).toBeVisible({
       timeout: 20000,
     });

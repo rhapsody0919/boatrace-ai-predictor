@@ -219,6 +219,7 @@
     "popularity": "{{rank}}人気",
     "fastestStartTag": "最速",
     "courseNote": "※進入コースは現在表示していません（データの精度確認中です）",
+    "missingRanksNote": "※このレースは4着以下の着順データが未取得のため、一部の着順を表示していません",
     "cancelledTitle": "このレースは中止となりました",
     "cancelledBody": "天候・水面状況等によりレースが中止されたため、結果データはありません。",
     "noRaceTitle": "このレースは不成立でした",
@@ -282,7 +283,8 @@
     "noHistory": "出走履歴データがありません",
     "noVenueData": "会場別の成績データがありません（規定レース数未満）",
     "trendNote": "直近5走の着順（グレード・期間の条件によらず、常に最新5走を表示）",
-    "finishOut": "着外",
+    "finishUnknown": "着外(順位不明)",
+    "venueRankingFor": "{{metric}}のランキング",
     "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位"
   },
   "panel": {

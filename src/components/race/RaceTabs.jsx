@@ -9,11 +9,15 @@
  * 非アクティブなタブのcontentはアンマウントする（EmbeddedAnalysisSectionと同じ
  * 遅延マウント方針）。裏側のデータ取得はwithCache（30分TTL）済みのため、
  * タブを行き来しても再取得コストは小さい
+ *
+ * onActiveTabChangeを渡すと、アクティブタブが変わるたび（初回マウント含む）に
+ * 呼ばれる。PredictionPanel.jsxが「結果タブの時はDataRaceTable等の分析ツール群を
+ * 隠す」ためにアクティブタブを外部で把握する目的で使う（BOA-305〜312フィードバック#7）
  */
 import { useState, useEffect, useRef } from "react";
 import "./RaceTabs.css";
 
-function RaceTabs({ tabs, defaultTabId }) {
+function RaceTabs({ tabs, defaultTabId, onActiveTabChange }) {
   const [activeId, setActiveId] = useState(defaultTabId ?? tabs[0]?.id);
   // レース遷移・結果確定でdefaultTabIdが変わった時だけ選択をリセットする
   // （タブを自分でクリックした後、無関係な再レンダーで勝手に戻らないようにする）
@@ -27,6 +31,11 @@ function RaceTabs({ tabs, defaultTabId }) {
   }, [defaultTabId]);
 
   const activeTab = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
+
+  useEffect(() => {
+    onActiveTabChange?.(activeTab?.id ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab?.id]);
 
   return (
     <div className="race-tabs">
