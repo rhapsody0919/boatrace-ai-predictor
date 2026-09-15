@@ -4,7 +4,7 @@
 
 [BOA-305](https://linear.app/boat-ai/issue/BOA-305)（レース詳細ページのUI/UX改善）を進める前提として、ユーザーから「まずデータ整備が必要」「現状のスクレイピング設計全体の最適化問題も絡む」という指摘があった。既存の関連ドキュメント（`docs/issues/DATA_SCRAPING_GAPS.md`、`docs/proposal/DATA_ACQUISITION_STRATEGY.md`、`docs/proposal/scraping-serverless-migration/investigation.md`、`docs/design/scraping-serverless-migration/spec.md`）とレース詳細ページ側の調査（[race-detail-page-tab-comparison-2026-09-15.md](./race-detail-page-tab-comparison-2026-09-15.md)）を横断して、問題を整理する。
 
-**重要な前提**: `docs/proposal/scraping-serverless-migration/`・`docs/design/scraping-serverless-migration/`は2026-09-14付けで作成されているが**未コミット**（他セッションの作業ディレクトリ上のWIP）。本ドキュメントは内容を参照するのみで、当該ファイル自体には触れていない（並行セッションの未コミット変更を誤って書き換えるリスクを避けるため）。
+**状況更新（2026-09-15夕方）**: 軸②（サーバーレス移行）は他セッションが設計・実装・Linearチケット起票（[BOA-313](https://linear.app/boat-ai/issue/BOA-313)）まで一貫して担当している。本ドキュメントは進捗を参照するのみで、当該作業には関与しない。
 
 ## 問題は3つの異なる軸に分かれる
 
@@ -34,12 +34,19 @@
 
 ### 軸②: 信頼性（取得タイミングの構造的問題）
 
-`docs/proposal/scraping-serverless-migration/investigation.md`（2026-09-14、他セッション作成・未コミット）で判明した内容:
+追跡チケット: [BOA-313](https://linear.app/boat-ai/issue/BOA-313)（他セッション起票・実装中、状態: In Progress）。
 
 - **根本原因**: `scrape-scheduled.js`オーケストレーターが1回の実行でレース情報・オッズ・展示・結果・予測買い目を直列処理し、実行に4〜10分かかることがある。GitHub Actionsの`concurrency: { cancel-in-progress: false }`により、処理が詰まると**後続のトリガーがまるごとキャンセル**され、展示データ取得の窓（発走30/15/10分前）が失われる
 - **実測影響**: 展示データ欠落率が2026-09-12=0.6%→09-13=6.7%→09-14=8.1%と悪化（09-13は福岡で7レース連続欠落）
-- **対策案**（`docs/design/scraping-serverless-migration/spec.md`、種別「インフラ改善」、未実装）: 時間に厳しい処理（展示→結果→オッズの順）をGitHub ActionsからVercel Serverless Functionsへ段階移行する。cron-job.orgは**既にトリガーとして稼働中**（この移行は「cron-job.orgへの新規移行」ではなく、「cron-job.orgからの呼び出し先をGitHub ActionsからVercel Functionsに変える」という意味）
-- **現状のステータス（2026-09-15確認）**: `spec.md`は作成済みだが、`api/cron/`配下に実装は無く、Linearチケットも見当たらない（`list "" 250`で「サーバーレス」「cron-job」「Vercel Function」「展示データ欠落」等のキーワード検索でヒットなし）。SDD文書（`docs/design/`）としては存在するが、`plan.md`/`tasks.md`への展開もまだ
+- **対策**: 時間に厳しい処理（展示→結果→オッズの順）をGitHub ActionsからVercel Serverless Functionsへ段階移行する。cron-job.orgは**既にトリガーとして稼働中**（この移行は「cron-job.orgへの新規移行」ではなく、「cron-job.orgからの呼び出し先をGitHub ActionsからVercel Functionsに変える」という意味）
+- **実装進捗（2026-09-15時点、BOA-313より）**: **Phase 1（展示データ）は実装完了・並走検証中**。
+  - Step 1（`api/cron/exhibition.js`実装、`CRON_SECRET`設定、単体デプロイ確認）完了 — [PR #637](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/637)（マージ済み）、[PR #639](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/639)（タイムアウト設計を案B＝`waitUntil`で即応答に確定、マージ済み）
+  - cron-job.orgに`Vercel Exhibition Cron`ジョブを追加、2分間隔（7:00-23:00 JST）で稼働中（2026-09-14夕方〜）
+  - 日次欠落率の自動監視（`exhibition-gap-monitor.yml`）実装済み — [PR #641](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/641)（マージ済み）
+  - 外部cronセットアップガイド更新済み — [PR #640](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/640)（マージ済み）
+  - **Step 2（並走期間、最低3〜7日間）は進行中**: 2026-09-14分は部分日稼働で欠落率4.2%（閾値2%超過、稼働時間帯が限定的だったことが要因）。2026-09-15が終日稼働の初日で、2026-09-16朝の計測が最初の公平な比較になる見込み
+  - Step 3（並走結果に問題なければGitHub Actions側の展示データ処理を無効化）・Step 4（切替後1週間監視）は未着手
+  - Phase 2（結果取得）・Phase 3（オッズ）はPhase 1完了後に着手予定、現時点で未着手
 
 ### 軸③: 正確性（判明済みバグ）
 
@@ -62,7 +69,7 @@
 
 ## 推奨する着手順序（提案、要ユーザー判断）
 
-1. **軸②（信頼性）を土台として優先**: 新しいデータ（軸①拡張）を追加しても、同じオーケストレーター構造の影響を受ける限り「取れたり取れなかったり」が再発する。土台を直してから拡張する方が手戻りが少ない。**軸②の設計・Linearチケット起票は、既に着手している他セッションに委ねる方針で確定（2026-09-15ユーザー判断）。本セッションはノータッチとし、`docs/design/scraping-serverless-migration/`は参照のみに留める**
+1. **軸②（信頼性）は既に他セッション（[BOA-313](https://linear.app/boat-ai/issue/BOA-313)）がPhase 1（展示データ）を並走検証中**。新しいデータ（軸①拡張）を追加しても同じオーケストレーター構造の影響を受ける限り再発するため、土台を直す優先度は妥当。**本セッションはノータッチ、進捗のみ参照する（2026-09-15ユーザー判断で確定）**。BOA-304（直前情報タブ）はBOA-313 Phase 1の切替完了後に着手するのが望ましい
 2. **軸③のうちレース詳細ページに直結するもの（BOA-257）を並行して優先**: 枠別情報タブ（BOA-307）の実装が、直しても直さなくても着手できる他タブ（モータ情報等）より後回しにすべき理由になる
 3. **軸①の拡張（BOA-291今節成績、オッズ範囲確認等）は、独立した調査部分（現状のデータ範囲を確認するだけの部分）は並行着手して問題ない**。ただし新規スクレイピングの実装自体は、軸②の土台が固まってからの方が「新しく追加したデータも同じ理由で欠落する」という二度手間を避けられる
 4. UI実装（BOA-306〜312の各タブ）は、対応するデータが軸①〜③の観点で安定してから着手する（タブごとに個別着手できる設計は維持）
