@@ -69,6 +69,19 @@ Vercel MCP（`list_teams`）で確認: **本プロジェクトはHobby（無料�
 
 Proプランなら: Cron Jobsが1分間隔・分単位精度で使える（cron-job.org依存を解消できる可能性）、Active CPUは従量課金（ハード上限による停止が無い）、関数実行時間の上限も800秒に拡大。月20ドル程度の投資で、上記のHobby特有の不確実性・リスクをまるごと除去できる。**これは技術判断というより費用対効果の事業判断であり、ユーザー側で決めてほしい部分**。
 
+### 追記（2026-09-15）: Proプラン移行確定、cron-job.org依存解消の再調査
+
+ユーザー確認により**本プロジェクトは既にProプランへ移行済み**（Vercel MCP `list_teams`で`"plan": "pro"`を独立に再確認）。上記のHobby前提の懸念（Active CPU 4時間/月の枯渇リスク等）はそもそも解消している。この前提変更を受け、「cron-job.org依存を純正Cronで解消できるか」を公式ドキュメントで再調査した。
+
+**結論: 技術的には解消可能**（Proでは1分間隔・分単位精度、[Cron Jobs Usage & Pricing](https://vercel.com/docs/cron-jobs/usage-and-pricing)）。ただし新たに以下の論点が判明しており、単純な優劣比較ではない。
+
+* **タイムゾーンは常にUTC固定**（[Cron Jobs](https://vercel.com/docs/cron-jobs)）。現行の「7:00-23:00 JST」はUTCでは日をまたぐ範囲（前日22:00〜当日14:00 UTC）になり、cron式は`0-14,22-23`のような時間帯分割表記が必要になる
+* **cron-job.orgの30秒タイムアウト制約が無くなる**。純正Cronが直接呼ぶ場合、cronのタイムアウトはFunction自体のmaxDurationと同一（[Troubleshooting Vercel Cron Jobs](https://vercel.com/kb/guide/troubleshooting-vercel-cron-jobs)）。`api/cron/exhibition.js`の即応答+`waitUntil()`設計（案B）はこの30秒制約への対応が動機の一つだったため、純正Cronに切り替えるなら同期処理へ単純化する余地がある（必須ではない）
+* **純正Cronにも保証は無い**（[Managing Cron Jobs](https://vercel.com/docs/cron-jobs/manage-cron-jobs)で明記）: 失敗時の自動リトライは無し、配信はbest-effort（まれに未配信・まれに重複配信がありうると明記）、重複実行防止の仕組みも無し（自前ロックが前提。ただし現行実装は`upsert(onConflict: race_id,boat_number)`で既に冪等なので追加対応は不要）。cron-job.orgより明確に劣るわけではないが、**「純正に変えれば信頼性が上がる」とは言えない**
+* cron-job.org側の実行履歴という「並走検証期間中の二重監視経路」（上記「追加の利点」参照）を失う
+
+**判断（2026-09-15、ユーザー確認）**: 現在Step 2（並走検証）が進行中のため、ここでトリガー機構自体を変えると「欠落率の変化がStep 2の効果か純正Cron切替の効果か」の切り分けが難しくなる。**BOA-313 Step 3（GitHub Actions側の展示データ処理無効化）完了まで、cron-job.orgのまま現状維持**とし、その後の設計変更として改めて評価する。
+
 ---
 
 ## cron-job.org側の制約調査
@@ -176,5 +189,5 @@ Supabase・Vercelのようなマネージドサービスは、想像以上に高
 
 1. ~~cron-job.org公式サイトで現在の無料プランの制限を直接確認する~~ → **完了（2026-09-14）**。無料・無制限（ジョブ数）・1分間隔・30秒タイムアウトと確認済み。`docs/operation/external-cron-setup.md`の「最大4ジョブ」記載も要修正
 2. ~~Vercel FunctionのActive CPU消費量を実測する~~ → **完了（2026-09-14、ローカル近似計測）**。Hobbyの4 CPU時間/月に対し実測ベースで0.34 CPU時間/月程度と推定、大きな障害にはならなそう
-3. Hobbyプランのまま進めるか、Proプランへアップグレードするかは、Active CPUの懸念が薄れたことで**急ぐ必要は無くなった**。Cron Jobs純正機能・関数実行時間の余裕等、他の理由でのアップグレード検討は引き続き任意
+3. ~~Hobbyプランのまま進めるか、Proプランへアップグレードするか~~ → **完了（2026-09-15）**。既にProプランへ移行済みと確認。cron-job.org依存を純正Cronで解消できるか再調査した結果は上記「追記」参照。**BOA-313 Step 3完了まで現状維持**と決定
 4. 上記が固まった段階で`docs/design/scraping-serverless-migration/`へ昇格し、具体的な実装計画（対象関数の切り出し方、テストケース、並走期間の長さ等）を`spec.md`として作成する
