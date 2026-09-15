@@ -88,6 +88,17 @@
       "postedAt": null,
       "metrics": null,
       "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、土曜）。今回はTikTok向け新規動画を生成しなかった（Routine自身の判断、ユーザーへの事前確認は無し）。理由: (1)絶対厳守13により当日ネタ系の主力フォーマット（会場攻略・答え合わせ・予想数値フック・本日のデータ一覧等）が軒並み新規制作停止中で、残る安全な型はToolShowcaseCM（ハードコード・非パラメータ化、2026-09-04に同一内容で使用済みのため実質的な重複になる）とLanguageSwitcherCM（直近2投稿で連続使用済み、3連続は不可）のみだった。(2)pending_review状態のTikTok下書きが既に11件溜留しており、うち9件（live-prediction-hook/daily-data-list/answer-check/venue-ranking/trivia）は絶対厳守13により今後投稿できない可能性が高い型で、2026-08-31〜09-01作成のまま2週間近く滞留している。(3)最新のservice-scale下書き（2026-09-10作成、絶対厳守13準拠）も未投稿のまま2日間残っており、ここに類似コンテンツをさらに積み増す前に人間によるレビュー・整理（非準拠9件のアーカイブ判断、@ryujinradarのシャドウバン状況確認）が先に必要と判断した。次回セッションでは、上記アーカイブが進んだ場合、または新しい非ギャンブル系コンポジション（例: 買い方ガイド・会場の観光/設備紹介等、統計を伴わない切り口）を新規に試作した場合に生成を再開する。"
+    },
+    {
+      "date": "2026-09-15",
+      "format": null,
+      "axis": null,
+      "content": null,
+      "videoFile": null,
+      "status": "not_generated_by_routine_judgment",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、火曜）。今回もTikTok向け新規動画を生成しなかった（Routine自身の判断、ユーザーへの事前確認は無し）。2026-09-12の前回判断からの状況変化を確認したが、標準（archiveが進んだ、または新しい非ギャンブル系コンポジションを試作した）のいずれも未達成だったため据え置いた: sns_drafts platform=tiktokのpending_review件数は2026-09-15時点で9件（trivia×4〈うち2件は2026-09-14の週次バッチで新規生成、未レビューのまま積み増し〉、service-scale×1、絶対厳守13により投稿不可の可能性が高い旧型〈venue-ranking×2・answer-check×1・live-prediction-hook×1、いずれも2026-09-01作成〉が9週間近く未整理のまま残存）。前回セッションが指摘した非準拠9件のアーカイブ判断は行われておらず、逆に週次バッチでtrivia×2が積み増され未レビュー分が増えている状態。本セッションでは新規の非ギャンブル系コンポジション試作も行わなかった（X向け予想数値フック型〈びわこ1R〉の実データ取得・レンダリング・Supabase登録を優先したため、詳細はx-posts/history.json参照）。次回セッションでは、上記backlogの人間レビュー状況を再確認し、進展があれば生成を再開する。"
     }
   ]
 }
