@@ -63,6 +63,11 @@ function buildKFileUrl(dateStr) {
   return `${BASE_URL}/${toYYYYMM(dateStr)}/k${ymd}.lzh`;
 }
 
+// scripts/lib/supabaseClient.jsのFETCH_TIMEOUT_MSと同じ値。2026-08-13判明の
+// Node.js標準fetch（undici）無期限ハング不具合と同種のリスクがmbrace.or.jpへの
+// このfetchにもあるため、scrape-exhibition-data.js等と同じくタイムアウトを設ける。
+const FETCH_TIMEOUT_MS = 15000;
+
 /**
  * 指定日のKファイルをダウンロード・解凍し、デコード済みテキストを返す。
  * 開催が無い日（404）はnullを返す（呼び出し元でスキップ扱いにする）。
@@ -71,7 +76,18 @@ function buildKFileUrl(dateStr) {
  */
 export async function fetchKFileText(dateStr) {
   const url = buildKFileUrl(dateStr);
-  const response = await fetch(url, { headers: { "User-Agent": UA } });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: { "User-Agent": UA },
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (response.status === 404) {
     return null; // 開催なし日
