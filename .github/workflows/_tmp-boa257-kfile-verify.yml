@@ -2,6 +2,9 @@ name: "[TEMP] BOA-257 Kファイル実機検証"
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/boa-257-actual-course-kfile
 
 jobs:
   verify:
