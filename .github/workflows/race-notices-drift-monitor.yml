@@ -1,0 +1,70 @@
+name: Race Notices Drift Monitor
+
+# レース特記事項（FR-1、BOA-318/319/320）の構造変化検知。
+# api/cron/race-notices.js（Vercel Function、10分間隔）がrace_notices_healthに
+# 書き込む日次集計を読み、driftHealth.js（BOA-285）のコアロジックで
+# 連続構造起因失敗日数を判定する。新規のHTTPリクエストは行わない。
+
+on:
+  schedule:
+    # JST 深夜0:30 = UTC 15:30（前日分の当日集計が出揃った後にチェックする）
+    - cron: '30 15 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: race-notices-drift-monitor
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: レース特記事項の構造変化チェック
+        id: check
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set +e
+          OUTPUT=$(node scripts/maintenance/check-race-notices-drift.js)
+          EXIT_CODE=$?
+          echo "$OUTPUT"
+          {
+            echo "summary<<EOF"
+            echo "$OUTPUT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack (構造変化の疑いを検知した場合のみ)
+        if: steps.check.outputs.exit_code == '1'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SUMMARY: ${{ steps.check.outputs.summary }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"#c9a227\",
+                \"blocks\": [
+                  {
+                    \"type\": \"section\",
+                    \"text\": {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \":warning: *レース特記事項ページのHTML構造変化の疑いを検知（FR-1、BOA-318/319/320）*\n\`\`\`${SUMMARY}\`\`\`\n公式サイトのrace/informationページの構造が変わり、scripts/daily/scrape-race-information.jsが正しく取得できなくなっている可能性があります\"
+                    }
+                  }
+                ]
+              }]
+            }"
