@@ -640,8 +640,11 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
       .allTextContents();
     // BOA-221でチルト・調整重量の2行を追加したため11→13行、
     // BOA-268で全国2連率の行を追加したため13→14行、
-    // BOA-289で当日体重・前走成績の2行を追加したため14→16行になる
-    expect(expandedLabels.length).toBe(16);
+    // BOA-289で当日体重・前走成績の2行を追加したため14→16行、
+    // BOA-304で部品交換の行を追加したため16→17行になる
+    // （直前情報タブへの分離はDataRaceTable専用のbuildBasicIndicatorRows経由のみで、
+    // このカードは従来通りbuildIndicatorRows＝全指標を使うため件数は変わらず増える）
+    expect(expandedLabels.length).toBe(17);
   });
 
   test("非開催の会場カードは「本日開催なし」でリンクを持たない", async ({
