@@ -22,6 +22,7 @@
     "verify:race-stage": "node scripts/maintenance/verify-race-stage-parsing.js",
     "verify:race-notices": "node scripts/maintenance/verify-race-notices-parser.js",
     "verify:er-diagram": "node scripts/maintenance/verify-plan-erd.js",
+    "verify:actual-course-kfile": "node scripts/maintenance/verify-actual-course-kfile-parser.js",
     "test:e2e": "playwright test",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
@@ -33,6 +34,7 @@
     "linear:get": "node scripts/linear-cli.js get"
   },
   "dependencies": {
+    "@kirinsaninc/lhats": "^0.1.0",
     "@sendgrid/mail": "^8.1.6",
     "@sparticuz/chromium": "^153.0.0",
     "@supabase/supabase-js": "^2.89.0",
