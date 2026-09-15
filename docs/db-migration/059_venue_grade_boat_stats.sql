@@ -44,3 +44,15 @@ CREATE TABLE IF NOT EXISTS venue_grade_boat_stats (
 
 CREATE INDEX IF NOT EXISTS idx_venue_grade_boat_stats_venue
   ON venue_grade_boat_stats(venue_code);
+
+-- RLS: フロントエンド（anon key）からの読み取り専用アクセスを許可する。
+-- racer_grade_cache（BOA-264、同種の読み取り専用集計キャッシュテーブル）と
+-- 同じパターン（"allow_anon_read"）。これが無いと新規テーブルはデフォルトで
+-- RLSが有効なままポリシー無しの状態になり、anon keyでのSELECTはエラーには
+-- ならず常に0件を返す（2026-09-15、初回マイグレーション適用時に実際に発生し
+-- 発覚。本チケットの初版マイグレーションではこの節を書き忘れていた）
+ALTER TABLE venue_grade_boat_stats ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "allow_anon_read" ON venue_grade_boat_stats
+  FOR SELECT
+  USING (true);
