@@ -400,6 +400,10 @@
     "noPrevRace": "이전 경주가 없습니다",
     "noNextRace": "다음 경주가 없습니다"
   },
+  "raceStage": {
+    "final": "우승전",
+    "semifinal": "준우승전"
+  },
   "raceCard": {
     "awaitingResult": "결과 반영 대기중",
     "cancelled": "중지",
