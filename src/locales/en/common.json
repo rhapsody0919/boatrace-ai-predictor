@@ -755,8 +755,13 @@
       "note": "💡 Lane win rate is wins/starts from that lane (boat number) (racerStats aggregate). Exhibition time and exhibition ST appear after the day's exhibition run."
     },
     "venueRanking": {
-      "title": "🏟️ Today's Venue Ranking",
-      "description": "Ranks venues by four indicators, based only on races that have finished today. Unlike other tabs, you can discover notable venues across today's entire card without picking a venue or race.",
+      "title": "🏟️ Venue Ranking",
+      "description": "Ranks venues by five indicators. Unlike other tabs, you can discover notable venues across today's entire card without picking a venue or race.",
+      "todayGroupHeading": "📅 Today Only",
+      "ninetyDayGroupHeading": "📊 Past 90 Days",
+      "firstWinRateTitle": "🚤 Boat 1 Win Rate Ranking (All 24 Venues)",
+      "firstWinRateHeader": "Boat 1 win rate",
+      "firstWinRateNote": "💡 This indicator alone is based on the past 90 days (the other four indicators use only today's finished races).",
       "stableTitle": "🛡️ Most Stable Venues TOP5",
       "roughTitle": "🌊 Most Upset-Prone Venues TOP5",
       "nigeRateTitle": "🚤 Highest Nige Rate TOP5",
@@ -885,8 +890,8 @@
         "description": "Compares the six racers' win rates, motor, average ST, exhibition, and lane win rate in lane order"
       },
       "venueranking": {
-        "name": "Today's Venue Ranking",
-        "description": "Ranks venues by stability, upset rate, Nige rate, and big-payout rate based on today's finished races"
+        "name": "Venue Ranking",
+        "description": "Ranks venues by stability, upset rate, Nige rate, and big-payout rate from today's finished races, plus boat 1 win rate over the past 90 days"
       },
       "venuegrade": {
         "name": "Venue × Grade Analysis",
@@ -1165,8 +1170,8 @@
         ]
       },
       "venueranking": {
-        "title": "About Today's Venue Ranking",
-        "dataView": "Aggregates today's finished races by venue and ranks them by four indicators: average trifecta payout (stable/rough), boat 1's Nige success rate, and the big-payout (¥10,000+) occurrence rate.",
+        "title": "About Venue Ranking",
+        "dataView": "Aggregates today's finished races by venue and ranks them by four indicators: average trifecta payout (stable/rough), boat 1's Nige success rate, and the big-payout (¥10,000+) occurrence rate. Also shows boat 1's win rate over the past 90 days across all 24 venues (this one indicator alone is a 90-day aggregate, not today-only).",
         "tips": [
           {
             "strong": "Stable venues",
@@ -1177,10 +1182,10 @@
             "text": " = upsets tend to happen here. Good picks for longshot-hunters"
           },
           {
-            "text": "Unlike other tabs (historical trends), this tab is a real-time tally limited to today"
+            "text": "Stable/rough/Nige rate/big-payout rate are real-time, today-only tallies; boat 1 win rate alone is a 90-day aggregate — keep them distinct when reading"
           },
           {
-            "text": "Rankings are less reliable early in the day, when few races have finished"
+            "text": "The four today-only indicators are less reliable early in the day, when few races have finished"
           }
         ]
       },

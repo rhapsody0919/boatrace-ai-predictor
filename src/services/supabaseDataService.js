@@ -4486,6 +4486,87 @@ export const supabaseDataService = {
   },
 
   /**
+   * 全24会場の1号艇勝率ランキングを取得する（BOA-267、venuerankingタブの追加指標）
+   * venues.avg_first_win_rate（update-venue-stats.jsが日次バッチで更新するキャッシュ列）
+   * には依存せず、直近days日のrace_results/racesから都度ライブ集計する。バッチの実行
+   * タイミングに依存せず常に最新の値になり、消化レース数（race_count）も同時に得られる
+   * （avg_first_win_rate列は値のみでレース数を保持していないため）。
+   * 注: 90日全会場スキャンは軽くないため6時間キャッシュにしている（BOA-303で
+   * update-venue-stats.js側にrace_count列を追加しavg_first_win_rateを読むだけの
+   * 実装に置き換えることを検討、そちらはDBマイグレーションの手動適用が必要なため
+   * 本チケットでは見送った）
+   */
+  getVenueFirstWinRateRanking(days = 90, minRaceCount = 3) {
+    const CACHE_TTL = 6 * 60 * 60 * 1000; // 6時間（90日集計は変化が緩やか）
+    return withCache(
+      `venue-first-win-rate-ranking-${days}-${minRaceCount}`,
+      async () => {
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return [];
+        }
+
+        const jstOffset = 9 * 60;
+        const jstNow = new Date(Date.now() + jstOffset * 60 * 1000);
+        const since = new Date(jstNow);
+        since.setDate(since.getDate() - days);
+        const sinceStr = since.toISOString().split("T")[0];
+
+        const races = [];
+        const PAGE = 1000;
+        let from = 0;
+        while (true) {
+          const { data, error } = await supabase
+            .from("races")
+            .select("venue_code, race_results(rank1, is_cancelled, is_no_race)")
+            .gte("race_date", sinceStr)
+            .order("race_id")
+            .range(from, from + PAGE - 1);
+          if (error) {
+            // getAllRacersLiteと同じ教訓（2026-09-08）: ここで[]を返すとエラー時の
+            // 結果が正常値としてキャッシュされ、取得済み分のデータも道連れで
+            // 破棄されてしまう。エラーは必ずthrowしてwithCacheにキャッシュさせない
+            throw new Error(`races取得エラー: ${error.message}`);
+          }
+          if (!data || data.length === 0) break;
+          races.push(...data);
+          if (data.length < PAGE) break;
+          from += PAGE;
+        }
+
+        const byVenue = new Map();
+        races.forEach((r) => {
+          const result = Array.isArray(r.race_results)
+            ? r.race_results[0]
+            : r.race_results;
+          if (!isUsableRaceResult(result)) return;
+          const venueCode = r.venue_code;
+          if (!byVenue.has(venueCode)) {
+            byVenue.set(venueCode, {
+              venue_code: venueCode,
+              race_count: 0,
+              firstWins: 0,
+            });
+          }
+          const v = byVenue.get(venueCode);
+          v.race_count += 1;
+          if (result.rank1 === 1) v.firstWins += 1;
+        });
+
+        return [...byVenue.values()]
+          .filter((v) => v.race_count >= minRaceCount)
+          .map((v) => ({
+            venue_code: v.venue_code,
+            race_count: v.race_count,
+            first_win_rate: (v.firstWins / v.race_count) * 100,
+          }))
+          .sort((a, b) => b.first_win_rate - a.first_win_rate);
+      },
+      CACHE_TTL,
+    );
+  },
+
+  /**
    * 本日開催中のレースの出走選手について、過去90日間で勝った時の決まり手構成比を取得する（BOA-165）
    * 会場・枠番単位の決まり手データ分析（BOA-150）とは異なり、選手個人単位の勝ちパターンを見る機能
    */
