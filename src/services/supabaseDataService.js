@@ -5014,6 +5014,56 @@ export const supabaseDataService = {
       isLateStart: row.is_late_start,
     }));
   },
+
+  /**
+   * 指定会場の「グレード×艇番」横断統計を取得する（BOA-263）
+   * scripts/daily/calculate-venue-grade-stats.jsが日次バッチで事前集計した
+   * venue_grade_boat_statsテーブルを読むだけ（全会場横断のためライブ集計はしない。
+   * BOA-267のコードレビューで指摘された「全会場集計は必ずバッチ事前集計する」
+   * という既存規約に最初から従っている）。boat_number=0はレース全体（艇番非依存）
+   * の集計行を表すセンチネル値
+   */
+  getVenueGradeBoatStats(venueCode) {
+    return withCache(`venue-grade-boat-stats-${venueCode}`, async () => {
+      if (!supabase) {
+        console.error("Supabase client not initialized");
+        return [];
+      }
+      const { data, error } = await supabase
+        .from("venue_grade_boat_stats")
+        .select(
+          "race_grade, boat_number, race_count, wins, top2, top3, technique_breakdown, manshu_count, payout_count, payout_trio_sum",
+        )
+        .eq("venue_code", venueCode);
+      if (error) {
+        // withCacheは成功時（.then）のみキャッシュするため、ここで[]を返すと
+        // 一時的なエラーが正常な「データなし」として30分キャッシュされてしまう
+        // （getAllRacersLiteと同じ理由、2026-09-08のコードレビューで発見済みの
+        // バグクラス）。必ずthrowしてキャッシュさせない
+        throw new Error(`venue_grade_boat_stats取得エラー: ${error.message}`);
+      }
+      return data ?? [];
+    });
+  },
+
+  /**
+   * 会場×グレード統計データを保持する全会場のコード一覧を取得する（BOA-263）
+   * venue_grade_boat_statsに1件でも行がある会場のみを選択肢として提示するため
+   */
+  getVenuesWithGradeStats() {
+    return withCache("venues-with-grade-stats", async () => {
+      if (!supabase) return [];
+      const { data, error } = await supabase
+        .from("venue_grade_boat_stats")
+        .select("venue_code");
+      if (error) {
+        throw new Error(`venue_grade_boat_stats取得エラー: ${error.message}`);
+      }
+      return [...new Set((data ?? []).map((r) => r.venue_code))].sort(
+        (a, b) => a - b,
+      );
+    });
+  },
 };
 
 /**

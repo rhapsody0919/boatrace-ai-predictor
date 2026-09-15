@@ -485,6 +485,29 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     });
   });
 
+  test("会場×グレード分析タブが表示される（BOA-263）", async ({ page }) => {
+    await page.goto("/winning-technique");
+    await page.click('.analysis-tab-btn:text-is("📊 会場×グレード分析")');
+    await expect(page.locator(".motor-condition-container")).toBeVisible({
+      timeout: 10000,
+    });
+    // 会場・指標のセレクタが表示される
+    await expect(page.locator("#venue-grade-venue-select")).toBeVisible();
+    await expect(page.locator("#venue-grade-metric-select")).toBeVisible();
+    // venue_grade_boat_stats未集計（マイグレーション未適用）の環境では
+    // エラー状態になる（getVenueGradeBoatStatsはエラーを握りつぶさずthrowする
+    // 設計のため）。マイグレーション適用後は空状態またはデータ表示になるため、
+    // いずれの環境でも通るよう3状態を許容する
+    await expect(
+      page.locator(".empty-state, .motor-ranking-table, .error-state").first(),
+    ).toBeVisible({ timeout: 15000 });
+    // 指標を切り替えてもクラッシュしない
+    await page.selectOption("#venue-grade-metric-select", "manshuRate");
+    await expect(
+      page.locator(".empty-state, .motor-ranking-table, .error-state").first(),
+    ).toBeVisible({ timeout: 15000 });
+  });
+
   test("会場・レース・タブ指定のディープリンクで直接開ける（BOA-152）", async ({
     page,
   }) => {
