@@ -507,11 +507,7 @@
     "confidence": "신뢰도 {{value}}%"
   },
   "review": {
-    "itemFormUp": "전국 승률이 상승 기조（+{{delta}}）",
-    "itemFormDown": "전국 승률은 하락 기조（-{{delta}}）",
     "finishPosition": "{{position}}착",
-    "itemRank": "{{label}}이(가) 레이스 내 {{rank}}위",
-    "itemReturn": "단승 회수율 {{rate}}%（최근 180일・같은 정번）",
     "cols": {
       "winRate": "승률",
       "localWinRate": "당지",

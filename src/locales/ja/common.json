@@ -554,11 +554,7 @@
     "confidence": "信頼度{{value}}%"
   },
   "review": {
-    "itemFormUp": "全国勝率が上昇基調（+{{delta}}）",
-    "itemFormDown": "全国勝率は下降基調（-{{delta}}）",
     "finishPosition": "{{position}}着",
-    "itemRank": "{{label}}がレース内{{rank}}位",
-    "itemReturn": "単勝回収率{{rate}}%（過去180日・同艇番）",
     "cols": {
       "winRate": "勝率",
       "localWinRate": "当地",

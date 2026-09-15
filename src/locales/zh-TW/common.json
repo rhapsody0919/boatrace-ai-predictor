@@ -507,11 +507,7 @@
     "confidence": "信賴度{{value}}%"
   },
   "review": {
-    "itemFormUp": "全國勝率呈上升趨勢（+{{delta}}）",
-    "itemFormDown": "全國勝率呈下降趨勢（-{{delta}}）",
     "finishPosition": "第{{position}}名",
-    "itemRank": "{{label}}為本場第{{rank}}名",
-    "itemReturn": "獨贏回收率{{rate}}%（過去180天・同艇號）",
     "cols": {
       "winRate": "勝率",
       "localWinRate": "當地",

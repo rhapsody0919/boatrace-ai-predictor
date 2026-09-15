@@ -509,11 +509,7 @@
     "confidence": "Confidence {{value}}%"
   },
   "review": {
-    "itemFormUp": "National win rate trending up (+{{delta}})",
-    "itemFormDown": "National win rate trending down (-{{delta}})",
     "finishPosition": "P{{position}}",
-    "itemRank": "{{label}} ranked No.{{rank}} in this race",
-    "itemReturn": "Win return rate {{rate}}% (last 180 days, same lane)",
     "cols": {
       "winRate": "Win",
       "localWinRate": "Local",
