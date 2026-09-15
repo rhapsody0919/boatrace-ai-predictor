@@ -26,26 +26,39 @@ async function updateVenueStats() {
   console.log(`🔬 会場別統計を更新中（直近${DAYS}日: ${sinceStr} 〜）`);
 
   // 1号艇勝率の集計（90日）
+  // 注: BOA-267のgetVenueFirstWinRateRanking（supabaseDataService.js）と同じ
+  // 90日・同じ除外基準で集計する。基準が食い違うと、分析ツールの
+  // 「1号艇勝率ランキング」とこのバッチが更新するvenues.avg_first_win_rate
+  // （他機能でvenueWinRateとして参照）が同じ会場・同じ期間で異なる数値を
+  // 示してしまうため
   const races = await fetchAll((from, to) =>
     supabase
       .from("races")
-      .select("venue_code, race_results(rank1)")
+      .select("venue_code, race_results(rank1, is_cancelled, is_no_race)")
       .gte("race_date", sinceStr)
+      .order("race_id")
       .range(from, to),
   );
 
   const venueStats = {};
   races.forEach((r) => {
     const venueCode = r.venue_code;
-    const result = r.race_results;
-    const rank1 = Array.isArray(result) ? result[0]?.rank1 : result?.rank1;
-    if (rank1 === undefined) return;
+    const result = Array.isArray(r.race_results)
+      ? r.race_results[0]
+      : r.race_results;
+    if (
+      !result ||
+      result.is_cancelled ||
+      result.is_no_race ||
+      result.rank1 === null
+    )
+      return;
 
     if (!venueStats[venueCode]) {
       venueStats[venueCode] = { total: 0, firstWins: 0 };
     }
     venueStats[venueCode].total++;
-    if (rank1 === 1) venueStats[venueCode].firstWins++;
+    if (result.rank1 === 1) venueStats[venueCode].firstWins++;
   });
 
   // venues テーブルを更新

@@ -325,6 +325,25 @@
   margin-bottom: 1rem;
 }
 
+/* 会場ランキング（BOA-267）: 「本日限定」「直近90日実績」のように集計期間が
+   異なる指標グループを見出しで明確に分離する。個々のRankingTableのタイトル
+   （.selected-motor-heading）より一段階弱いトーンにし、グループの区切りだと
+   一目でわかるようにする */
+.venue-ranking-scope-heading {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--border-hairline);
+  padding-bottom: 0.5rem;
+  margin: 2rem 0 1rem;
+}
+
+.venue-ranking-scope-heading:first-of-type {
+  margin-top: 1rem;
+}
+
 .racer-page-link {
   display: inline-block;
   font-size: var(--font-size-sm);
