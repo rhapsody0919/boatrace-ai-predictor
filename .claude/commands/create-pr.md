@@ -37,6 +37,14 @@ CLAUDE.mdのコミットメッセージ規約に従い、コミットを作成:
 - 形式: `<type>: <日本語の説明>`
 - type: feat / fix / content / refactor / docs / chore
 
+### 3.5 ビルド確認（push・PR作成前に必須）
+
+```bash
+npm run build
+```
+
+**エラーがあれば、push・PR作成に進む前にここで直す**（2026-09-16、天才Grok活用法との照合で発見した穴を修正: このステップは元々「実装完了後の自動レビュー」という別セクションのチェックリストとしてのみ存在し、`/create-pr`を単独で呼んだ場合に強制されていなかった）。既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更なら`npm run test:e2e`も合わせて実行する。プロジェクトCLAUDE.md「実装完了後の自動レビュー」に該当する追加検証（`verify:sitemap`・`verify:content-index`・`verify:adr-numbers`・`verify:er-diagram`等）が必要な変更なら、ここで併せて実行する。
+
 ### 4. リモートにpush
 
 ```bash
