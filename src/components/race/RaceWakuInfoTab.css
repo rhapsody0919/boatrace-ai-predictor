@@ -1,0 +1,274 @@
+/* RaceWakuInfoTab - レース詳細ページ「枠別情報」タブ（BOA-307） */
+
+.race-waku-info-tab {
+  padding: var(--spacing-2) 0;
+}
+
+.rwit-note {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.rwit-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.rwit-chip {
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-full);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.rwit-chip.is-active {
+  background: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  color: var(--color-white);
+  font-weight: var(--font-weight-bold);
+}
+
+.rwit-boat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-full);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.rwit-boat-chip.is-active {
+  border-color: transparent;
+  font-weight: var(--font-weight-bold);
+  /* 1号艇（白）が背景と同化しないよう境界を明瞭にする */
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+
+.rwit-boat-chip-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: var(--radius-full);
+  background: var(--surface-page);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.rwit-boat-chip-name {
+  max-width: 6em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rwit-card {
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
+}
+
+.rwit-card-title {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.rwit-card-sub {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rwit-loading,
+.rwit-empty {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.rwit-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.rwit-bar-block {
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.rwit-bar-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--text-primary);
+}
+
+.rwit-course-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: var(--radius-full);
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.rwit-bar-track {
+  position: relative;
+  height: 0.9rem;
+  background: var(--surface-page);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.rwit-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+
+.rwit-bar-fill-neutral {
+  background: var(--brand-accent-primary);
+}
+
+.rwit-bar-fill.is-small-sample {
+  opacity: 0.5;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.15) 0,
+    rgba(0, 0, 0, 0.15) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.rwit-value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.rwit-n {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.rwit-n.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+.rwit-own-badge {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+  white-space: nowrap;
+}
+
+.rwit-expand-arrow {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.rwit-expanded {
+  padding: var(--spacing-3);
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-page);
+}
+
+.rwit-expanded-loading,
+.rwit-expanded-empty {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.rwit-expanded-note {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rwit-streak {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.rwit-streak-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: var(--radius-full);
+  color: var(--color-white);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xs);
+}
+
+.rwit-dot-good {
+  background: var(--color-success);
+}
+
+.rwit-dot-mid {
+  background: var(--color-warning);
+}
+
+.rwit-dot-bad {
+  background: var(--color-error);
+}
+
+.rwit-caveat {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.rwit-tech-row {
+  display: grid;
+  grid-template-columns: 5em 1fr auto;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) 0;
+}
+
+.rwit-tech-label {
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

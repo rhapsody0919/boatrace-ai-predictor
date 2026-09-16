@@ -4903,6 +4903,61 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定選手が指定の枠番（艇番）で出走した直近10走の着順を取得する
+   * （BOA-307、枠別情報タブのコース別成績ドリルダウン）。
+   * 上のracerStats.courseRaceCounts（racer_aggregated_stats由来、艇番＝コース
+   * 前提で集計済み）と母集団の定義を揃えるため、ここでも実進入コース
+   * （actual_course_N、courseOfBoat）ではなくrace_entries.boat_numberで
+   * 「そのコース」を判定する。揃えないとコース別成績の分母（n）と
+   * ドリルダウンの母集団が食い違い、矛盾した表示になってしまうため
+   * （実際の進入コース変化は区別できない制約は他の枠番系機能と同じ、BOA-257）
+   */
+  getRacerCourseRecentFinishes(racerId, course) {
+    return withCache(
+      `racer-course-recent-finishes-${racerId}-${course}`,
+      async () => {
+        if (!supabase || !racerId || !course) return [];
+
+        // 中止・不成立レースを除いても10件確保できるよう多めに取得する
+        const { data: entries, error } = await supabase
+          .from("race_entries")
+          .select("race_id")
+          .eq("racer_id", racerId)
+          .eq("boat_number", course)
+          .order("race_id", { ascending: false })
+          .limit(40);
+
+        if (error) {
+          console.error("race_entries（枠別直近走）取得エラー:", error.message);
+          return [];
+        }
+        if (!entries || entries.length === 0) return [];
+
+        const raceIds = entries.map((e) => e.race_id);
+        const results = await fetchAllByIn(
+          "race_results",
+          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race",
+          "race_id",
+          raceIds,
+        );
+        const resultById = new Map(results.map((r) => [r.race_id, r]));
+
+        const finishes = [];
+        for (const raceId of raceIds) {
+          const result = resultById.get(raceId);
+          if (!isUsableRaceResult(result)) continue;
+          const rank = findBoatColumnIndex(result, "rank", course);
+          if (rank === null) continue;
+          finishes.push({ race_id: raceId, rank });
+          if (finishes.length >= 10) break;
+        }
+        // raceIdsは新しい順のため、finishesも新しい順のまま返す
+        return finishes;
+      },
+    );
+  },
+
+  /**
    * 指定レースの複勝オッズ（最新スクレイプ分）を取得する（AI予想モデル大規模改修、複勝予想バッジ用）
    * 複勝オッズは下限-上限のレンジで提供される（race_odds.odds_place_{n}_low/high、マイグレーション032）。
    * 未適用環境・スクレイピング未実施のレースではlow/highともnullを返す

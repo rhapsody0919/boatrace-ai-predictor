@@ -244,6 +244,7 @@
   },
   "raceTabs": {
     "basic": "基本情報",
+    "waku": "枠別情報",
     "motor": "モータ情報",
     "beforeInfo": "直前情報",
     "result": "結果"
@@ -347,6 +348,26 @@
     "finishUnknown": "着外(順位不明)",
     "venueRankingFor": "{{metric}}のランキング",
     "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位"
+  },
+  "wakuInfo": {
+    "note": "選手を選ぶと、その選手のコース別（1〜6）成績を比較できます。バーをタップすると直近10走の着順が開きます",
+    "boatLabel": "選手（艇番）",
+    "metricLabel": "指標",
+    "metrics": {
+      "winRate": "1着率",
+      "top2Rate": "2連対率",
+      "top3Rate": "3連対率"
+    },
+    "courseTitle": "コース別成績",
+    "courseSubtitle": "全国・全期間の実績（艇番＝コース基準）",
+    "courseCaveat": "※実際の進入コース変化（前づけ）は区別できないため、出走時の艇番を「コース」として集計しています",
+    "todayBadge": "本レースの艇番",
+    "noData": "データがありません",
+    "noRacerId": "選手情報が取得できませんでした",
+    "noRecentFinishes": "このコースでの出走履歴がありません",
+    "recentFinishesNote": "{{course}}コース（艇番）出走時の直近10走の着順（左が最も古い、右が最新）",
+    "kimariteTitle": "決まり手傾向（全艇・直近90日）",
+    "kimariteCaveat": "※この会場での全レース・全艇を合算した決まり手の発生割合です（選手個人の実績ではありません）"
   },
   "raceHistoryTable": {
     "date": "日付",

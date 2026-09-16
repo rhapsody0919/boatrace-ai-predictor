@@ -39,6 +39,14 @@
  * 調整重量）を「直前情報」タブへ分離した（RaceBeforeInfoTab、モータ情報と結果の間）。
  * レース前の長い時間帯にDataRaceTable全体が「未完成」に見える問題への対応。
  * あわせて表示欠落だった気象情報（race_conditions）も同タブに追加した
+ *
+ * 2026-09-16再追記(枠別情報タブ追加、BOA-307): 基本情報とモータ情報の間に
+ * 「枠別情報」タブ（RaceWakuInfoTab）を追加した。選手を選んでコース別
+ * （1〜6）成績を見る棒グラフ＋直近10走ドリルダウン、決まり手傾向（全艇合算）
+ * の2カード構成。既存のVenueTendencyPanel・AttackDefenseAnalysisとは
+ * 見せ方の主語が異なるため併存させ、このタブがアクティブな間は他のタブと
+ * 同様にshowPreRaceAnalysisTools側で非表示にする（詳細はRaceWakuInfoTab.jsx
+ * 冒頭のコメント参照）
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -69,6 +77,7 @@ import AiCopyButton from "./AiCopyButton";
 import Toast, { useToast } from "../Toast";
 import RaceTabs from "./RaceTabs";
 import RaceBasicInfoTab from "./RaceBasicInfoTab";
+import RaceWakuInfoTab from "./RaceWakuInfoTab";
 import RaceBeforeInfoTab from "./RaceBeforeInfoTab";
 import RaceResult from "./RaceResult";
 import { getRaceId } from "../../utils/raceId";
@@ -140,7 +149,8 @@ function PredictionPanel({
   const showPreRaceAnalysisTools =
     activeMainTab !== "result" &&
     activeMainTab !== "beforeInfo" &&
-    activeMainTab !== "motor";
+    activeMainTab !== "motor" &&
+    activeMainTab !== "waku";
 
   // ローディング中
   if (isAnalyzing) {
@@ -275,8 +285,8 @@ function PredictionPanel({
         />
       )}
 
-      {/* レース詳細ページのタブ構成（BOA-305〜312）: 日和スタイルの8タブのうち
-          データが揃っている3タブのみ実装。DataRaceTable（主役の生データ一覧）とは
+      {/* レース詳細ページのタブ構成（BOA-305〜307/312）: 日和スタイルの8タブのうち
+          データが揃っている5タブを実装。DataRaceTable（主役の生データ一覧）とは
           別の切り口（条件フィルタ×棒グラフ）のため両方残す */}
       {venueCode && analysisRaceId && (
         <RaceTabs
@@ -289,6 +299,17 @@ function PredictionPanel({
               label: t("raceTabs.basic"),
               content: (
                 <RaceBasicInfoTab
+                  raceId={analysisRaceId}
+                  venueCode={venueCode}
+                  players={prediction.allPlayers}
+                />
+              ),
+            },
+            {
+              id: "waku",
+              label: t("raceTabs.waku"),
+              content: (
+                <RaceWakuInfoTab
                   raceId={analysisRaceId}
                   venueCode={venueCode}
                   players={prediction.allPlayers}
