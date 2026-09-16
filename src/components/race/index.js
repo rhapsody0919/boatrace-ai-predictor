@@ -23,3 +23,4 @@ export { default as AiAnalysisSection } from "./AiAnalysisSection";
 export { default as TodaysVolatilityHighlights } from "./TodaysVolatilityHighlights";
 export { default as RaceTabs } from "./RaceTabs";
 export { default as RaceBasicInfoTab } from "./RaceBasicInfoTab";
+export { default as RaceBeforeInfoTab } from "./RaceBeforeInfoTab";

@@ -61,13 +61,16 @@ function bestOf(candidates, dir = "max") {
 }
 
 /**
- * 指標行の定義を構築する
+ * 指標行の定義を構築する（内部関数、buildIndicatorRows/buildBeforeInfoRowsの共通実装）
+ * 各行にcategoryを付与し、DataRaceTable（category: "basic"、デフォルト）と
+ * RaceBeforeInfoTab（category: "beforeInfo"）で同じ定義・同じレンダリング
+ * ロジックを共有しつつ表示先を分ける（BOA-304）
  * @param {Function} t - i18n
  * @param {Array} players - prediction.allPlayers（枠番順ソート済み）
  * @param {Object} analysis - useRaceAnalysisDataの戻り値
  * @param {Object} pending - ソース別ロード中フラグ（useRaceAnalysisDataのpending）
  */
-export function buildIndicatorRows({
+function buildRowDefs({
   t,
   players,
   analysis,
@@ -297,6 +300,8 @@ export function buildIndicatorRows({
       key: "exSt",
       label: t("dataTable.rowExSt"),
       shortLabel: t("review.cols.exSt"),
+      // 直前情報タブへ分離（BOA-304）: 発走30/15/10分前まで未確定のため
+      category: "beforeInfo",
       tab: "st",
       best: bestOf(cand.exSt, "min"),
       render: (p) => {
@@ -312,6 +317,8 @@ export function buildIndicatorRows({
       key: "exhibition",
       label: t("dataTable.rowExhibition"),
       shortLabel: t("review.cols.exhibition"),
+      // 直前情報タブへ分離（BOA-304）: 発走30/15/10分前まで未確定のため
+      category: "beforeInfo",
       tab: "extrend",
       best: bestOf(cand.exhibition, "min"),
       render: (p) => {
@@ -360,6 +367,8 @@ export function buildIndicatorRows({
       key: "tilt",
       label: t("dataTable.rowTilt"),
       shortLabel: t("review.cols.tilt"),
+      // 直前情報タブへ分離（BOA-304）: 発走30/15/10分前まで未確定のため
+      category: "beforeInfo",
       tab: null,
       best: null,
       render: (p) => {
@@ -378,6 +387,8 @@ export function buildIndicatorRows({
       key: "adjustmentWeight",
       label: t("dataTable.rowAdjustmentWeight"),
       shortLabel: t("review.cols.adjustmentWeight"),
+      // 直前情報タブへ分離（BOA-304）: 発走30/15/10分前まで未確定のため
+      category: "beforeInfo",
       tab: null,
       best: null,
       render: (p) => {
@@ -388,6 +399,37 @@ export function buildIndicatorRows({
           <span className="drt-value">{weight.toFixed(1)}kg</span>
         ) : (
           "—"
+        );
+      },
+    },
+    {
+      // 部品交換・プロペラ交換（当該レースの展示時点、BOA-221の列を流用）。
+      // モーター調子ドリルダウン（BOA-221）の「交換履歴」とは異なり、
+      // 今回のレース1回分の交換有無のみを示す。値の高低が好走/凡走を
+      // 示唆する指標ではないため、他行と違いbestは持たせない
+      key: "partsChanged",
+      label: t("dataTable.rowPartsChanged"),
+      shortLabel: t("review.cols.partsChanged"),
+      category: "beforeInfo",
+      tab: null,
+      best: null,
+      render: (p) => {
+        const row = maintenanceByBoat.get(p.number);
+        if (!row) return ph("motorMaintenance");
+        const parts = row.parts_changed ?? null;
+        const propellerChanged = !!row.propeller_change;
+        if ((!parts || parts.length === 0) && !propellerChanged) return "—";
+        return (
+          <span className="drt-value drt-parts-changed">
+            {parts && parts.length > 0 && (
+              <span className="drt-badge">{parts.join("・")}</span>
+            )}
+            {propellerChanged && (
+              <span className="drt-badge">
+                {t("analysis.motor.propellerChanged")}
+              </span>
+            )}
+          </span>
         );
       },
     },
@@ -482,4 +524,22 @@ export function buildIndicatorRows({
       },
     },
   ];
+}
+
+// 全指標（従来通りの挙動、後方互換のため名前は維持）。RaceCardDataTable
+// （開催場一覧ページのカード内出走表）が引き続き全指標をまとめて表示するために使う
+export function buildIndicatorRows(args) {
+  return buildRowDefs(args);
+}
+
+// データ出走表（基本情報、DataRaceTable）向け: 直前情報系
+// （category: "beforeInfo"）を除いた行（BOA-304）
+export function buildBasicIndicatorRows(args) {
+  return buildRowDefs(args).filter((row) => row.category !== "beforeInfo");
+}
+
+// 直前情報タブ（RaceBeforeInfoTab）向け: 展示ST・展示タイム・チルト・
+// 調整重量・部品交換の5行のみ（BOA-304）
+export function buildBeforeInfoRows(args) {
+  return buildRowDefs(args).filter((row) => row.category === "beforeInfo");
 }
