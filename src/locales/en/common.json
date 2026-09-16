@@ -454,7 +454,12 @@
     "resultTitleDeadline": "(Deadline {{time}})"
   },
   "raceTabs": {
+    "aiPrediction": "AI Prediction",
     "beforeInfo": "Just Before"
+  },
+  "aiPredictionTab": {
+    "unavailableTitle": "No AI prediction data",
+    "unavailableBody": "This race doesn't have the data needed for an AI prediction."
   },
   "beforeInfo": {
     "subtitle": "Same-day information updated as the race approaches. Some items aren't finalized until 30/15/10 minutes before the start",
@@ -590,12 +595,6 @@
     "turnPredictionStrengthLabel": "Overall strength ranking (from the first-mark forecast)",
     "promptVolatilityTrifecta": "The above is entry data for a race flagged as high \"upset risk\" (Boat 1 may be less likely than usual to hold the lead), plus a first-mark move forecast (win probability by winning move, with likely 2nd/3rd place boats). Using this forecast data, judge which boat is actually most likely to finish 1st and by which move, and suggest 3 combinations to target for a Trifecta bet, with your reasoning. If Boat 1's lead-off probability is still high, include it as a candidate rather than ruling it out.",
     "previewToggleLabel": "Show the question that will be copied"
-  },
-  "aiSection": {
-    "title": "AI Data Analysis",
-    "topPickSummary": "AI top pick (place): Boat {{number}} {{name}}",
-    "expandHint": "Tap to expand AI prediction details (picks, first-turn simulation, odds value, outcome patterns)",
-    "confidence": "Confidence {{value}}%"
   },
   "review": {
     "finishPosition": "P{{position}}",
