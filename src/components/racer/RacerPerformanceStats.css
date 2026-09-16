@@ -73,27 +73,27 @@
   border-color: var(--brand-accent-primary);
 }
 
-.racer-vc-filter-badge {
+/* 本日出走する会場へのワンクリック絞り込みバッジ（フィルタが全24会場から
+   選べるようになった際、当日出走会場を見つけやすくするための補助導線）。
+   共通の見た目は.racer-vc-filter-badgeと共有し、色・カーソルのみ上書きする */
+.racer-vc-filter-badge,
+.racer-vc-today-badge {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
   background: var(--surface-page);
   border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-sm);
   padding: 0.4rem 0.75rem;
 }
 
-/* 本日出走する会場へのワンクリック絞り込みバッジ（フィルタが全24会場から
-   選べるようになった際、当日出走会場を見つけやすくするための補助導線） */
+.racer-vc-filter-badge {
+  color: var(--text-primary);
+}
+
 .racer-vc-today-badge {
   font-family: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
   color: var(--brand-accent-primary);
-  background: var(--surface-page);
-  border: var(--border-width-1) solid var(--brand-accent-primary);
-  border-radius: var(--radius-sm);
-  padding: 0.4rem 0.75rem;
+  border-color: var(--brand-accent-primary);
   cursor: pointer;
   white-space: nowrap;
 }

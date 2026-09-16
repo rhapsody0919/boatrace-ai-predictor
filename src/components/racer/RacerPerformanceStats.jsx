@@ -17,6 +17,7 @@ import {
   aggregateRacerVenueBoatStats,
   aggregateRacerCrossStats,
 } from "../../services/supabaseDataService";
+import { ALL_VENUE_CODES } from "../../constants";
 import "./RacerPerformanceStats.css";
 
 const TECHNIQUE_COLORS = {
@@ -110,11 +111,6 @@ const GRADE_LABELS = {
 };
 
 const VC_RACE_PAGE_SIZE = 10;
-
-// 会場フィルタは全24会場を選択可能にする（VenueGrid.jsxと同じ「会場コード
-// 昇順で全件列挙」パターン。過去の出走実績がある会場のみに絞ると、実績の
-// 薄い会場を選べなくなるバグがあったため、BOA-159レビュー後のフィードバックで修正）
-const ALL_VENUE_CODES = Array.from({ length: 24 }, (_, i) => i + 1);
 
 /**
  * 選手個別ページの成績・調子セクション

@@ -31,6 +31,11 @@ export const STADIUM_NAMES = {
   24: "大村",
 };
 
+// 全24会場コード（会場コード順）。STADIUM_NAMESのキーから導出することで
+// 二重管理を避ける（VenueGrid.jsx・選手ページ会場フィルタ等、全会場を
+// 列挙する箇所で共通利用する）
+export const ALL_VENUE_CODES = Object.keys(STADIUM_NAMES).map(Number);
+
 // モデル名マッピング
 export const MODEL_NAMES = {
   unified: "AI予想",
