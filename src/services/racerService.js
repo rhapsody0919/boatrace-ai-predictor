@@ -126,7 +126,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
 
   const parsed = parseRaceId(data.race_id);
   if (!parsed) return null;
-  const { venueCode } = parsed;
+  const { venueCode, date } = parsed;
 
   const [powerIndex, meetEntries, venueMotorStats] = await Promise.all([
     supabaseDataService.getMotorPowerIndex(venueCode, data.motor_number),
@@ -178,6 +178,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
 
   return {
     raceId: data.race_id,
+    date,
     venueCode,
     motorNumber: data.motor_number,
     powerIndex,

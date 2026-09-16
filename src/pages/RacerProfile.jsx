@@ -15,6 +15,7 @@ import {
   getRacerCurrentMotorStatus,
 } from "../services/racerService";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
+import { isToday } from "../utils/dateUtils";
 import "./RacerProfile.css";
 
 const SITE_URL = "https://www.boat-ai.jp";
@@ -67,6 +68,12 @@ export default function RacerProfile() {
   }, [racerId]);
 
   useEffect(() => {
+    // racerId変更時に前選手のmotorStatusを残さずリセットする。
+    // RacerProfileはルートパラメータ変更時に再マウントされないため、リセットを
+    // 怠ると新しい選手のページに前選手の会場（todayVenueCode由来のバッジ・
+    // マーク表示）が一瞬でも出てしまう（現状は選手→選手の直接遷移導線は無いが、
+    // 防御的に対応。RacerPerformanceStats.jsxのフィルタリセットと同じ考え方）
+    setMotorStatus(null);
     let cancelled = false;
     getRacerCurrentMotorStatus(racerId)
       .then((result) => {
@@ -87,6 +94,14 @@ export default function RacerProfile() {
   // 表示名が「選手」フォールバックになりタイトルの一意性が保てないため
   // （プロフィール未取得選手ページのnoindexテストで担保）
   useRobotsMeta(!loading && !hasNews);
+
+  // 今節のモーター状況（直近出走）の日付が本日なら、その会場を選手ページの
+  // 会場フィルタで「本日出走」として案内する（会場フィルタが全24会場から
+  // 選べるようになったことに伴うフィードバック対応）。dateは
+  // getRacerCurrentMotorStatus側でparseRaceId済みの値をそのまま使う
+  // （race_idの再パース・文字列sliceを重複させない）
+  const todayVenueCode =
+    motorStatus && isToday(motorStatus.date) ? motorStatus.venueCode : null;
 
   const displayName = data?.profile?.name?.replace(/\s+/g, "") ?? "選手";
   const title = `${displayName} 選手プロフィール | 龍神レーダー`;
@@ -124,6 +139,7 @@ export default function RacerProfile() {
               racerId={racerId}
               stats={stats}
               loading={statsLoading}
+              todayVenueCode={todayVenueCode}
             />
             <RacerNewsList news={data.news} />
           </>
