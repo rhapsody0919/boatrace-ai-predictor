@@ -6,6 +6,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { getTodayDateJST } from "./lib/dateUtils.js";
+import { scrapeRaceStage } from "./lib/raceStageParser.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -260,14 +261,6 @@ function scrapeRaceGrade($) {
 // レースタイトルを取得する関数
 function scrapeRaceTitle($) {
   return $(".heading2_titleName").text().trim() || null;
-}
-
-// 開催ステージ名（予選/準優勝戦/優勝戦等）を取得する関数
-// scripts/daily/update-race-info.js の scrapeRaceStage() と同じロジック（BOA-347）
-function scrapeRaceStage($) {
-  const raw = $(".title16_titleDetail__add2020").text();
-  const stage = raw.replace(/[\s\u3000]*\d+m[\s\u3000]*$/, "").trim();
-  return stage || null;
 }
 
 // 出走表から選手情報を取得する関数
