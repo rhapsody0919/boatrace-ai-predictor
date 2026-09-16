@@ -145,26 +145,35 @@ export function finishPositionOf(r) {
  * 個別レースの着順をそのまま並べる方式にした（上記モジュールコメント参照）。
  * recordsは日付昇順であることを前提とする（getRacerScopedRaceStatsの戻り値順）
  *
- * raceNumber/courseはBOA-333（レースへのリンク・レース番号・枠番表示）で追加。
- * raceNumberはraceId（YYYY-MM-DD-VV-RR）から導出する（racesテーブルへの
- * 追加問い合わせ不要）。courseは実進入コース（BOA-257のactual_course_N、
- * 2025-12-04以降のみ）を優先し、無ければ当該レースでの艇番にフォールバックする。
- * ただしフォールバックはgetRacerScopedRaceStatsのcourseWithFallback
- * （courseOfBoat()と同じロジック）に委ねる。バックフィル済みレースで自艇だけ
- * null=欠場のケースまで艇番にフォールバックすると、実際には走っていない艇を
- * 実在のコースとして誤表示するため（BOA-301と同じ問題、r.actualCourse単体では
- * 判別できない）
+ * 2026-09-16（BOA-333/159共通化）: 戻り値の形をRaceHistoryTable.jsx
+ * （共有テーブルコンポーネント、getRacerRaceHistory()由来のmatchedRacesと
+ * 同じフィールド名）に合わせた。raceNoはraceId（YYYY-MM-DD-VV-RR）から導出する
+ * （racesテーブルへの追加問い合わせ不要）。boatNumberは実進入コース
+ * （BOA-257のactual_course_N、2025-12-04以降のみ）を優先し、無ければ当該
+ * レースでの艇番にフォールバックする（courseWithFallback、courseOfBoat()と
+ * 同じロジック。バックフィル済みレースで自艇だけnull=欠場のケースまで
+ * 艇番にフォールバックすると、実際には走っていない艇を実在のコースとして
+ * 誤表示するため、BOA-301と同じ問題）。raceTitle/raceStage/winningTechnique/
+ * payoutWinはgetRacerScopedRaceStatsが取得していないためnull固定
+ * （直近5走のためだけに追加クエリを増やすのは範囲外と判断、RaceHistoryTable側で
+ * 「-」表示にフォールバックする）
  */
 export function getRecentRaces(records, count = 5) {
   return (records ?? []).slice(-count).map((r) => ({
     raceId: r.raceId,
     date: r.date,
     venueCode: r.venueCode,
-    raceNumber: parseRaceId(r.raceId)?.raceNo ?? null,
-    course: r.courseWithFallback ?? null,
+    raceNo: parseRaceId(r.raceId)?.raceNo ?? null,
+    raceTitle: null,
+    raceGrade: r.raceGrade ?? null,
+    raceStage: null,
+    boatNumber: r.courseWithFallback ?? null,
+    startTiming: r.startTiming ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
-    finish: finishPositionOf(r),
+    finishRank: finishPositionOf(r),
+    winningTechnique: null,
+    payoutWin: null,
   }));
 }
 

@@ -1,0 +1,38 @@
+/* RaceHistoryTable - レース一覧テーブル（BOA-159/333共通化） */
+
+/* レース名の文字数が多く、折り返すと見出しが縦積みになってしまうため、
+   改行させず横スクロールに委ねる（RacerPerformanceStats.css移設元と同じ方針） */
+.race-history-table-wrapper {
+  overflow-x: auto;
+}
+
+.race-history-table {
+  width: auto;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.race-history-table th,
+.race-history-table td {
+  padding: var(--spacing-2);
+  text-align: center;
+  border-bottom: 1px solid var(--border-hairline);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.race-history-table th {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.race-history-table-link {
+  color: var(--brand-accent-secondary);
+  text-decoration: none;
+  font-weight: var(--font-weight-semibold);
+}
+
+.race-history-table-link:hover {
+  text-decoration: underline;
+}

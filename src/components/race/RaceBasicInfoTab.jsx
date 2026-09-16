@@ -24,11 +24,11 @@
  * getRacerVenueStatsは廃止）
  */
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import RaceHistoryTable from "./RaceHistoryTable";
 import {
   filterRecords,
   computeRates,
@@ -426,40 +426,12 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                           <p className="rbit-trend-note">
                             {t("basicInfo.trendNote")}
                           </p>
-                          <div className="rbit-trend-bars">
-                            {recent.map((race) => (
-                              <Link
-                                key={race.raceId}
-                                to={localize(`/race/${race.raceId}`)}
-                                className="rbit-trend-item"
-                              >
-                                <span
-                                  className={`rbit-trend-finish rbit-trend-finish-${race.finish ?? "unknown"}`}
-                                >
-                                  {race.finish !== null
-                                    ? t("review.finishPosition", {
-                                        position: race.finish,
-                                      })
-                                    : t("basicInfo.finishUnknown")}
-                                </span>
-                                {race.raceNumber !== null &&
-                                  race.course !== null && (
-                                    <span className="rbit-trend-race-course">
-                                      {t("basicInfo.trendRaceCourse", {
-                                        race: race.raceNumber,
-                                        course: race.course,
-                                      })}
-                                    </span>
-                                  )}
-                                <span className="rbit-trend-date">
-                                  {race.date}
-                                </span>
-                                <span className="rbit-trend-venue">
-                                  {t(`venues.${race.venueCode}`)}
-                                </span>
-                              </Link>
-                            ))}
-                          </div>
+                          <RaceHistoryTable
+                            rows={recent}
+                            buildRaceHref={(raceId) =>
+                              localize(`/race/${raceId}`)
+                            }
+                          />
                         </div>
                       );
                     })()}

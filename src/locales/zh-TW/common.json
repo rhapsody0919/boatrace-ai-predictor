@@ -239,9 +239,6 @@
     "volatilityCaveatLink": "查看實測準確率 ›",
     "payout": "派彩：¥{{amount}}"
   },
-  "basicInfo": {
-    "trendRaceCourse": "{{race}}R・{{course}}道"
-  },
   "panel": {
     "noData": "尚無預測資料",
     "officialLink": "在官方網站查看比賽資訊",
