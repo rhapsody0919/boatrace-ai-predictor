@@ -15,6 +15,7 @@ import {
   getRacerCurrentMotorStatus,
 } from "../services/racerService";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
+import { isToday } from "../utils/dateUtils";
 import "./RacerProfile.css";
 
 const SITE_URL = "https://www.boat-ai.jp";
@@ -88,6 +89,14 @@ export default function RacerProfile() {
   // （プロフィール未取得選手ページのnoindexテストで担保）
   useRobotsMeta(!loading && !hasNews);
 
+  // 今節のモーター状況（直近出走）の日付が本日なら、その会場を選手ページの
+  // 会場フィルタで「本日出走」として案内する（会場フィルタが全24会場から
+  // 選べるようになったことに伴うフィードバック対応）
+  const todayVenueCode =
+    motorStatus && isToday(motorStatus.raceId?.slice(0, 10))
+      ? motorStatus.venueCode
+      : null;
+
   const displayName = data?.profile?.name?.replace(/\s+/g, "") ?? "選手";
   const title = `${displayName} 選手プロフィール | 龍神レーダー`;
   const description = data?.profile
@@ -124,6 +133,7 @@ export default function RacerProfile() {
               racerId={racerId}
               stats={stats}
               loading={statsLoading}
+              todayVenueCode={todayVenueCode}
             />
             <RacerNewsList news={data.news} />
           </>

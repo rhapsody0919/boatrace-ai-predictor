@@ -111,6 +111,11 @@ const GRADE_LABELS = {
 
 const VC_RACE_PAGE_SIZE = 10;
 
+// 会場フィルタは全24会場を選択可能にする（VenueGrid.jsxと同じ「会場コード
+// 昇順で全件列挙」パターン。過去の出走実績がある会場のみに絞ると、実績の
+// 薄い会場を選べなくなるバグがあったため、BOA-159レビュー後のフィードバックで修正）
+const ALL_VENUE_CODES = Array.from({ length: 24 }, (_, i) => i + 1);
+
 /**
  * 選手個別ページの成績・調子セクション
  * 選手調子（全国勝率推移）・平均ST・決まり手傾向・展示タイム推移・
@@ -138,8 +143,18 @@ const VC_RACE_PAGE_SIZE = 10;
  * グレード・レース種別・レース一覧はBOA-159（docs/design/racer-stats-drilldown/）
  * で追加。決まり手・推移・レース一覧はタブ切り替えなしの常時表示（ADR-0063、
  * ADR-0062のタブ化はSuperseded）
+ *
+ * 会場フィルタの選択肢は全24会場（出走実績の有無に関わらず）。`todayVenueCode`
+ * が渡された場合、その会場を選択肢内でマーク表示し、素早く絞り込めるバッジを
+ * 表示する（BOA-159フィードバック対応、venueStats由来の実績会場のみに絞ると
+ * 実績の薄い会場を選べなくなるバグがあったため）
  */
-export default function RacerPerformanceStats({ racerId, stats, loading }) {
+export default function RacerPerformanceStats({
+  racerId,
+  stats,
+  loading,
+  todayVenueCode,
+}) {
   const { t } = useTranslation();
   // 会場×枠番フィルタ。「全会場」「全枠番」がそれぞれ絞り込みなしを表す。
   // 表示は「枠番」。実際の進入コースはBOA-257の制約により取得できないため、
@@ -419,83 +434,93 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
     <div className="racer-performance-stats">
       <h2>成績・調子</h2>
 
-      {/* フィルタ: 見出し直下・最上部に常時表示（ADR-0063） */}
-      {hasVenueStats && (
-        <div className="racer-vc-filter controls-section">
-          <div className="racer-vc-filter-field">
-            <label htmlFor="vc-venue">会場</label>
-            <select
-              id="vc-venue"
-              className="venue-select"
-              value={vcVenue}
-              onChange={(e) => setVcVenue(e.target.value)}
-            >
-              <option value="all">全会場</option>
-              {venueStats.map((row) => (
-                <option key={row.venue_code} value={row.venue_code}>
-                  {t(`venues.${row.venue_code}`, row.venue_code)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="racer-vc-filter-field">
-            <label htmlFor="vc-boat">枠番</label>
-            <select
-              id="vc-boat"
-              className="venue-select"
-              value={vcBoat}
-              onChange={(e) => setVcBoat(e.target.value)}
-            >
-              <option value="all">全枠番</option>
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <option key={n} value={n}>
-                  {n}号艇
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="racer-vc-filter-field">
-            <label htmlFor="vc-grade">グレード</label>
-            <select
-              id="vc-grade"
-              className="venue-select"
-              value={vcGrade}
-              onChange={(e) => setVcGrade(e.target.value)}
-            >
-              <option value="all">全グレード</option>
-              {Object.entries(GRADE_LABELS).map(([code, label]) => (
-                <option key={code} value={code}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="racer-vc-filter-field">
-            <label htmlFor="vc-stage">レース種別</label>
-            <select
-              id="vc-stage"
-              className="venue-select"
-              value={vcStage}
-              onChange={(e) => setVcStage(e.target.value)}
-            >
-              <option value="all">全レース</option>
-              <option value="優勝戦">優勝戦</option>
-              <option value="準優勝戦">準優勝戦</option>
-            </select>
-          </div>
-          {vcActive && (
-            <span className="racer-vc-filter-badge">
-              {vcHistoryError
-                ? `${vcLabel}（読み込みに失敗しました）`
-                : vcHistoryLoading
-                  ? `${vcLabel}（集計中…）`
-                  : vcData
-                    ? `${vcLabel}（${vcData.n}走）`
-                    : vcLabel}
-            </span>
-          )}
+      {/* フィルタ: 見出し直下・最上部に常時表示（ADR-0063）。venueStatsが
+          空（出走実績が薄い選手）でも全会場を選べるようにするため、この
+          ブロック自体はhasAnyData（上でチェック済み）にのみ依存する */}
+      <div className="racer-vc-filter controls-section">
+        <div className="racer-vc-filter-field">
+          <label htmlFor="vc-venue">会場</label>
+          <select
+            id="vc-venue"
+            className="venue-select"
+            value={vcVenue}
+            onChange={(e) => setVcVenue(e.target.value)}
+          >
+            <option value="all">全会場</option>
+            {ALL_VENUE_CODES.map((code) => (
+              <option key={code} value={code}>
+                {code === todayVenueCode ? "🏁 " : ""}
+                {t(`venues.${code}`, code)}
+              </option>
+            ))}
+          </select>
         </div>
-      )}
+        <div className="racer-vc-filter-field">
+          <label htmlFor="vc-boat">枠番</label>
+          <select
+            id="vc-boat"
+            className="venue-select"
+            value={vcBoat}
+            onChange={(e) => setVcBoat(e.target.value)}
+          >
+            <option value="all">全枠番</option>
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <option key={n} value={n}>
+                {n}号艇
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="racer-vc-filter-field">
+          <label htmlFor="vc-grade">グレード</label>
+          <select
+            id="vc-grade"
+            className="venue-select"
+            value={vcGrade}
+            onChange={(e) => setVcGrade(e.target.value)}
+          >
+            <option value="all">全グレード</option>
+            {Object.entries(GRADE_LABELS).map(([code, label]) => (
+              <option key={code} value={code}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="racer-vc-filter-field">
+          <label htmlFor="vc-stage">レース種別</label>
+          <select
+            id="vc-stage"
+            className="venue-select"
+            value={vcStage}
+            onChange={(e) => setVcStage(e.target.value)}
+          >
+            <option value="all">全レース</option>
+            <option value="優勝戦">優勝戦</option>
+            <option value="準優勝戦">準優勝戦</option>
+          </select>
+        </div>
+        {todayVenueCode && vcVenue !== String(todayVenueCode) && (
+          <button
+            type="button"
+            className="racer-vc-today-badge"
+            onClick={() => setVcVenue(String(todayVenueCode))}
+          >
+            🏁 本日は{t(`venues.${todayVenueCode}`, todayVenueCode)}で出走 →
+          </button>
+        )}
+        {vcActive && (
+          <span className="racer-vc-filter-badge">
+            {vcHistoryError
+              ? `${vcLabel}（読み込みに失敗しました）`
+              : vcHistoryLoading
+                ? `${vcLabel}（集計中…）`
+                : vcData
+                  ? `${vcLabel}（${vcData.n}走）`
+                  : vcLabel}
+          </span>
+        )}
+      </div>
 
       {vcHistoryLoading && <p className="racer-stat-note">集計中…</p>}
 
