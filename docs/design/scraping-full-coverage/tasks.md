@@ -38,11 +38,11 @@
 
 ## FR-3: 今節成績（節内の日別進捗）
 
-- [ ] [BOA-220](https://linear.app/boat-ai/issue/BOA-220)（今節得点率）とのスコープ重複を整理し、統合方針を確定する
-- [ ] 得点率の公式計算ルール（着順→得点の対応表、優勝戦の加重等）を一次情報源で確認し、`docs/reference/`にまとめる
-- [ ] [BOA-226](https://linear.app/boat-ai/issue/BOA-226)（`races.series_day`）の実装状況を確認する（未完了なら本タスクの前提として先に完了させる）— **2026-09-15時点の状況（要決定）**: BOA-226は2026-09-12にスコープが転換しており、`series_day`（節内の何日目かという日数）そのものは実装されていない。代わりに`race_conditions.race_stage`（予選/準優勝戦/優勝戦等のラウンド種別文字列、`.title16_titleDetail__add2020`から抽出）が実装・本番適用済み（058マイグレーション、`scrapeRaceStage()`）。race_stageは「このレースが優勝戦か」の判定（BOA-326等）には使えるが、「節内の何日目まで進んだか」という日数の情報は持たないため、本FRが前提とする`series_day`列によるJOIN設計はこのままでは成立しない。着手前に次のいずれかを決定すること: (a) series_day（日数）を別途スクレイピング実装する、(b) `races.race_date`の会場内連続日数から節の日数を導出するロジックに設計変更する、(c) 今節成績の範囲特定に日数そのものは不要と判断し別の絞り込み条件に変更する
-- [ ] `getSeriesResultsByRacer(racerId, venueCode, meetStartDate)`を`supabaseDataService.js`に実装する（`races`/`race_results`/`race_entries`のJOIN、過去日分）
-- [ ] [BOA-323](https://linear.app/boat-ai/issue/BOA-323)の修正・バックフィル状況を確認した上で、当日分（結果確定に連動する部分）の動作を実データで検証する
+- [x] [BOA-220](https://linear.app/boat-ai/issue/BOA-220)（今節得点率）とのスコープ重複を整理し、統合方針を確定する（2026-09-16、[BOA-291](https://linear.app/boat-ai/issue/BOA-291)への統合を確認。得点率は自社計算せずpointrank直接スクレイピングに統合、ADR-0053追記）
+- [x] 得点率の公式計算ルール（着順→得点の対応表、優勝戦の加重等）を一次情報源で確認し、`docs/reference/`にまとめる（2026-09-16、[docs/reference/racer-score-rate-rules.md](../../reference/racer-score-rate-rules.md)作成。G3の加点有無・減点の詳細ルールは一次情報で確認できず「未確認」と明記。ただしpointrank直接スクレイピング方式のため自社実装上は不要）
+- [x] [BOA-226](https://linear.app/boat-ai/issue/BOA-226)（`races.series_day`）の実装状況を確認する（未完了なら本タスクの前提として先に完了させる）— 2026-09-15時点でBOA-226は`race_stage`のみの実装に留まり`series_day`/`is_final_day`が未実装と判明していた。**2026-09-16、選択肢(a) series_dayを別途スクレイピング実装する方式を採用（ユーザー判断）**。`scripts/daily/update-race-info.js`に`scrapeSeriesDay()`を追加し、racelistページの日程タブ（`.tab2_inner`、当日は`is-active2`）から取得。実データ検証済み（初日/中日/最終日）
+- [x] `getSeriesResultsByRacer(racerId, venueCode, meetStartDate)`を`supabaseDataService.js`に実装する（`race_entries`/`race_results`/`race_conditions`/`race_start_timings`のJOIN、過去日分＋得点率データの合流）
+- [x] [BOA-323](https://linear.app/boat-ai/issue/BOA-323)の修正・バックフィル状況を確認した上で、当日分（結果確定に連動する部分）の動作を実データで検証する（2026-09-16、DB実データで2026-09-10以降ほぼ100%決まり手・ST取得できていることを確認、解消済み）
 
 ## FR-4: オッズ全券種
 

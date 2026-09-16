@@ -1,0 +1,32 @@
+name: Scrape Point Rank
+
+on:
+  schedule:
+    - cron: '0 13 * * *' # JST 22:00（当日全レース結果確定後）
+  workflow_dispatch:
+
+concurrency:
+  group: scrape-point-rank
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Scrape point rank (今節得点率)
+        run: node scripts/daily/scrape-point-rank.js
+        continue-on-error: true # 他の日次ジョブに影響させない
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

@@ -12,7 +12,7 @@ const JST_OFFSET = 9 * 60; // UTC+9 in minutes
 export function getTodayDateJST() {
   const now = new Date();
   const jstDate = new Date(now.getTime() + JST_OFFSET * 60 * 1000);
-  return jstDate.toISOString().split('T')[0];
+  return jstDate.toISOString().split("T")[0];
 }
 
 /**
@@ -23,7 +23,7 @@ export function getYesterdayDateJST() {
   const now = new Date();
   const jstNow = new Date(now.getTime() + JST_OFFSET * 60 * 1000);
   const yesterday = new Date(jstNow.getTime() - 24 * 60 * 60 * 1000);
-  return yesterday.toISOString().split('T')[0];
+  return yesterday.toISOString().split("T")[0];
 }
 
 /**
@@ -35,7 +35,7 @@ export function getDateDaysAgo(days) {
   const now = new Date();
   const jstNow = new Date(now.getTime() + JST_OFFSET * 60 * 1000);
   const target = new Date(jstNow.getTime() - days * 24 * 60 * 60 * 1000);
-  return target.toISOString().split('T')[0];
+  return target.toISOString().split("T")[0];
 }
 
 /**
@@ -44,7 +44,7 @@ export function getDateDaysAgo(days) {
  * @returns {string} YYYYMMDD形式
  */
 export function formatDateForUrl(dateStr) {
-  return dateStr.replace(/-/g, '');
+  return dateStr.replace(/-/g, "");
 }
 
 /**
@@ -53,8 +53,8 @@ export function formatDateForUrl(dateStr) {
  * @returns {string|null} YYYY-MM-DD形式またはnull
  */
 export function parseDateArg(args = process.argv.slice(2)) {
-  const dateArg = args.find(arg => arg.startsWith('--date='));
-  return dateArg ? dateArg.split('=')[1] : null;
+  const dateArg = args.find((arg) => arg.startsWith("--date="));
+  return dateArg ? dateArg.split("=")[1] : null;
 }
 
 /**
@@ -74,8 +74,8 @@ export function getThisMonthRange() {
   const jstNow = getJSTNow();
   const year = jstNow.getUTCFullYear();
   const month = jstNow.getUTCMonth() + 1;
-  const start = `${year}-${String(month).padStart(2, '0')}-01`;
-  const end = `${year}-${String(month).padStart(2, '0')}-31`;
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = `${year}-${String(month).padStart(2, "0")}-31`;
   return { start, end, year, month };
 }
 
@@ -93,8 +93,8 @@ export function getLastMonthRange() {
     year -= 1;
   }
 
-  const start = `${year}-${String(month).padStart(2, '0')}-01`;
-  const end = `${year}-${String(month).padStart(2, '0')}-31`;
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = `${year}-${String(month).padStart(2, "0")}-31`;
   return { start, end, year, month };
 }
 
@@ -104,7 +104,7 @@ export function getLastMonthRange() {
  * @returns {Object} { year, month, day }
  */
 export function parseDateInfo(dateStr) {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  const [year, month, day] = dateStr.split("-").map(Number);
   return { year, month, day };
 }
 
@@ -124,4 +124,17 @@ export function extractDateFromRaceId(raceId) {
  */
 export function extractVenueCodeFromRaceId(raceId) {
   return parseInt(raceId.substring(11, 13), 10);
+}
+
+/**
+ * 日付文字列に日数を加算する（実行環境のローカルタイムゾーンに依存しない、UTC基準の計算）
+ * @param {string} dateStr - YYYY-MM-DD形式
+ * @param {number} days - 加算する日数（負の値で減算）
+ * @returns {string} YYYY-MM-DD形式
+ */
+export function addDaysToDateString(dateStr, days) {
+  const { year, month, day } = parseDateInfo(dateStr);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 }
