@@ -18,6 +18,7 @@ import {
 } from "../lib/supabaseClient.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
 import { computeCancellationTransition } from "../lib/cancellationStatus.js";
+import { normalizeText } from "../lib/venueMotorStats/parserUtils.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -159,7 +160,49 @@ function scrapeRaceMeta($) {
   })();
   const raceTitle = $(".heading2_titleName").text().trim() || null;
   const raceStage = scrapeRaceStage($);
-  return { raceGrade, raceTitle, raceStage };
+  const { seriesDay, isFinalDay } = scrapeSeriesDay($);
+  return { raceGrade, raceTitle, raceStage, seriesDay, isFinalDay };
+}
+
+/**
+ * racelist ページの日程タブ（`.tab2_inner`）から開催の何日目かを取得する
+ * （BOA-226、series_day/is_final_day）。
+ *
+ * 日程タブは開催日数分の`<li>`が並び、当日に対応する要素だけ`<li class="is-active2">`
+ * で囲まれる（過去日はリンク付き`<a>`、未来日はリンク無し`<span>`だが、当日判定に
+ * リンクの有無は使えない——直近の未来日にも先行してリンクが張られる実データを確認済み）。
+ * ラベルは「初日」「Ｎ日目」「最終日」の3パターン（全角数字）。
+ */
+function scrapeSeriesDay($) {
+  const tabs = $(".tab2_inner");
+  const totalDays = tabs.length;
+  if (totalDays === 0) return { seriesDay: null, isFinalDay: null };
+
+  let label = null;
+  tabs.each((i, el) => {
+    const $el = $(el);
+    if ($el.closest("li").hasClass("is-active2")) {
+      label = $el.find("span").first().text().trim();
+      return false;
+    }
+  });
+  if (!label) return { seriesDay: null, isFinalDay: null };
+
+  const isFinalDay = label === "最終日";
+  let seriesDay = null;
+  if (label === "初日") {
+    seriesDay = 1;
+  } else if (isFinalDay) {
+    seriesDay = totalDays;
+  } else {
+    const match = label.match(/([０-９]+)日目/);
+    if (match) {
+      const n = parseInt(normalizeText(match[1]), 10);
+      seriesDay = isNaN(n) ? null : n;
+    }
+  }
+
+  return { seriesDay, isFinalDay };
 }
 
 /**
@@ -243,7 +286,8 @@ async function fetchRaceInfo(date, venueCode, raceNo) {
 
     const $racelist = cheerio.load(await racelistRes.text());
     const racers = scrapeRacers($racelist);
-    const { raceGrade, raceTitle, raceStage } = scrapeRaceMeta($racelist);
+    const { raceGrade, raceTitle, raceStage, seriesDay, isFinalDay } =
+      scrapeRaceMeta($racelist);
 
     // 選手が1人も取得できない場合は中止・未公開の可能性
     if (racers.length === 0) {
@@ -268,7 +312,15 @@ async function fetchRaceInfo(date, venueCode, raceNo) {
       conditions = scrapeConditions(cheerio.load(await beforeinfoRes.text()));
     }
 
-    return { racers, raceGrade, raceTitle, raceStage, conditions };
+    return {
+      racers,
+      raceGrade,
+      raceTitle,
+      raceStage,
+      seriesDay,
+      isFinalDay,
+      conditions,
+    };
   } catch (err) {
     console.error(
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R 取得エラー: ${err.message}`,
@@ -368,7 +420,15 @@ export async function run(schedule, date) {
       }
 
       if (!data) continue;
-      const { racers, raceGrade, raceTitle, raceStage, conditions } = data;
+      const {
+        racers,
+        raceGrade,
+        raceTitle,
+        raceStage,
+        seriesDay,
+        isFinalDay,
+        conditions,
+      } = data;
 
       // race_entries 行を構築（ai_score系は更新しない）
       for (const racer of racers) {
@@ -395,6 +455,11 @@ export async function run(schedule, date) {
       }
 
       // race_conditions 行を構築（race_grade は除外、races テーブルで管理）
+      // upsertは全カラムを書き込むため、判定条件にseriesDayの有無を含めると
+      // 「conditions取得のみ失敗、seriesDayだけ成功」という再ポーリング時に
+      // 既存の天候データをnullで上書きしてしまう。元の条件のまま変えない
+      // （conditions取得はほぼ常に成功するため、seriesDay単独成功のレアケースを
+      // 拾えなくても実害は小さい）
       if (conditions || raceTitle || raceStage) {
         conditionsRows.push({
           race_id: r.race_id,
@@ -403,6 +468,8 @@ export async function run(schedule, date) {
             conditions?.windDirection ?? null,
           ),
           wind_speed: conditions?.windVelocity ?? null,
+          series_day: seriesDay,
+          is_final_day: isFinalDay,
           wave_height:
             conditions?.waveHeight != null
               ? Math.round(conditions.waveHeight)
@@ -531,7 +598,7 @@ async function main() {
   console.log("🏁 完了");
 }
 
-export const _internal = { scrapeRaceMeta, scrapeRaceStage };
+export const _internal = { scrapeRaceMeta, scrapeRaceStage, scrapeSeriesDay };
 
 // スタンドアローン実行時のみ main() を呼ぶ（import 時に実行させない）
 if (process.argv[1] === new URL(import.meta.url).pathname) {

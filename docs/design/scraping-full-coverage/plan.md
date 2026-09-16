@@ -81,7 +81,7 @@
 | official_win_rate_period | numeric, nullable | 公式集計の勝率（自社`racer_aggregated_stats`との検算用） |
 | official_updated_at | timestamptz, nullable | 本データの取得日時 |
 
-`node scripts/maintenance/generate-er-diagram.js scraping-full-coverage`で生成（2026-09-15、事後追加。FR-1の`race_special_notes`/`race_notices_health`とFR-2の`racer_profiles`拡張を合わせたこの機能全体のスキーマ）:
+`node scripts/maintenance/generate-er-diagram.js scraping-full-coverage`で生成（2026-09-16更新。FR-1の`race_special_notes`/`race_notices_health`、FR-2の`racer_profiles`拡張、FR-3の`racer_series_points`を合わせたこの機能全体のスキーマ）:
 
 ```mermaid
 erDiagram
@@ -110,6 +110,22 @@ erDiagram
         VARCHAR(20) period_label
         NUMERIC(5,_2) official_win_rate_period
         TIMESTAMPTZ official_updated_at
+    }
+    racer_series_points {
+        BIGINT_GENERATED_ALWAYS_AS_IDENTITY id PK
+        SMALLINT venue_code
+        DATE meet_start_date
+        INTEGER racer_id
+        VARCHAR(10) race_grade
+        VARCHAR(50) player_name
+        VARCHAR(5) grade
+        SMALLINT rank
+        NUMERIC(4,_2) score_rate
+        TEXT placements
+        SMALLINT total_points
+        SMALLINT penalty_points
+        VARCHAR(30) remarks
+        TIMESTAMPTZ scraped_at
     }
 ```
 
@@ -147,21 +163,30 @@ erDiagram
 
 ### 技術判断（ADR-0053参照）
 
-「racelistページを直接スクレイピングする」か「自社`race_results`等から導出計算する」かの選択がある。**ADR-0053で自社導出を採用**（理由はADR参照）。
+「racelistページを直接スクレイピングする」か「自社`race_results`等から導出計算する」かの選択がある。**進入コース・着順・STはADR-0053で自社導出を採用**（理由はADR参照）。
+
+### series_day/is_final_dayの解決（2026-09-16実装、上記2026-09-15の注意点への対応）
+
+上記の懸念通りBOA-226は`race_stage`のみの実装で完了しており、`series_day`/`is_final_day`は0件のままだった。3つの選択肢のうち**(a) series_dayを別途スクレイピング実装する**を採用（ユーザー判断、2026-09-16）。理由: (b)のrace_date連続性からの動的算出は、荒天中止等で1日だけレースが無いと開催区切りを誤検出するリスクがあり（実際、住之江の実データ検証で自社DBの開催初日欠落による1日ズレを確認した）、(a)の方が確実。
+
+racelistページの日程タブ（`.tab2_inner`、当日は`<li class="is-active2">`配下、ラベルは「初日/Ｎ日目/最終日」）から取得するロジックを`scripts/daily/update-race-info.js`の`scrapeSeriesDay()`として実装し、既存の発走60分前ウィンドウの巡回に統合した（追加スクレイピング不要）。`race_conditions.series_day`/`is_final_day`（既存列）に書き込む。実データ検証済み（初日/中日/最終日の3パターン）。
+
+### 得点率の方式転換（2026-09-16実装、ADR-0053追記）
+
+当初「得点率は自社計算が必要」としていたが、実装着手時の一次情報・実データ調査で、boatrace.jp「得点率一覧」ページ（`pointrank?jcd=XX&hd=YYYYMMDD`）がSG/G1（通常の記念競走）において着順・得点・減点・得点率を既に1テーブルで公式提供していること、かつ減点の発生条件が一次情報から完全解明できず自社再現がリスキーであることが判明したため、**pointrankページの直接スクレイピングに方針転換した**（ADR-0053追記、詳細は[docs/reference/racer-score-rate-rules.md](../../reference/racer-score-rate-rules.md)参照）。一般戦・特別選抜競走（オールレディース等）ではこのページ自体が存在せず、得点率という概念自体が無い。[BOA-220](https://linear.app/boat-ai/issue/BOA-220)/[BOA-291](https://linear.app/boat-ai/issue/BOA-291)はこの方式に統合。
 
 ### データ設計
 
-新規ビュー/集計関数（テーブルではなくクエリ）: `getSeriesResultsByRacer(racerId, venueCode, meetStartDate)`（`supabaseDataService.js`に追加）。既存の`races`（`series_day`列、[BOA-226](https://linear.app/boat-ai/issue/BOA-226)実装後）・`race_results`・`race_entries`をJOINして、当該選手の当該節・当該日までの進入・着順・STを引く。
+- `getSeriesResultsByRacer(racerId, venueCode, meetStartDate)`（`supabaseDataService.js`に実装済み）: `race_entries`・`race_results`・`race_conditions`（`series_day`/`is_final_day`）・`race_start_timings`をJOINし、当該選手の当該節・当該日までの進入・着順・ST・決まり手を日別配列で返す。得点率データがあれば（`racer_series_points`）合わせて返す
+- 新規テーブル`racer_series_points`（マイグレーション064）: `pointrank`ページの順位・得点率・得点・減点・着順履歴（生文字列）・備考を、会場×開催初日×選手単位で保存する。ユニークキー`(venue_code, meet_start_date, racer_id)`
 
-**注意（2026-09-15、BOA-226完了確認時に発覚）**: BOA-226は2026-09-12にスコープが転換し、`series_day`（節内の日数）自体は実装対象から外れた。代わりに`race_conditions.race_stage`（予選/準優勝戦/優勝戦等のラウンド種別、058マイグレーションで本番適用済み）が実装されている。race_stageは「優勝戦かどうか」の判定はできるが「節内の何日目か」という日数情報は持たないため、上記の`series_day`列を前提としたJOIN設計はそのままでは成立しない。FR-3着手前に、tasks.mdに記載した3つの選択肢（series_dayを別途実装する／race_dateの連続性から節を導出する／日数を使わない設計に変更する）のいずれを採るか決定すること。
-
-「得点率」（節内の順位に応じた公式ポイント制）は自社計算が必要。公式ルール（1着=得点最大、着順が下がるごとに減点、優勝戦は加重等）を`docs/reference/`に一次情報源つきでまとめてから実装する（[BOA-220](https://linear.app/boat-ai/issue/BOA-220)と統合）。
-
-**注意（[BOA-323](https://linear.app/boat-ai/issue/BOA-323)、2026-09-15発見、本spec対象外だが直接影響あり）**: ADR-0053で「自社`race_results`から導出する」と決めたが、PR #612由来のリグレッションで2026-09-10以降`winning_technique`・`race_start_timings`がほぼ全レースで欠損している（悪化継続中）。**BOA-323が解消するまでは、FR-3で導出する直近期間の今節成績（進入・着順は影響薄いが、STは大半欠損）が同じ穴を引き継ぐ**。FR-3の実装着手前にBOA-323の修正・バックフィル状況を確認すること。BOA-323自体は軸③（正確性・可用性のバグ）に分類され、[BOA-257](https://linear.app/boat-ai/issue/BOA-257)と同様に本specのスコープ外・独立した緊急対応が望ましい。
+**注意（[BOA-323](https://linear.app/boat-ai/issue/BOA-323)）**: 2026-09-16実装時点でDB実データを確認したところ、**既に解消済み**（2026-09-10以降ほぼ100%決まり手・STが取得できている）。当初懸念していた欠損の影響は無い。
 
 ### 実行タイミング
 
-過去日分: 導出クエリのため追加スクレイピング不要（T4相当、`races`/`race_results`が揃っていれば計算可能）。当日分: 当日のレース結果が確定するたびに反映されるため、`scrape-results.js`（結果取得、BOA-313 Phase 2でVercel Functions移行予定）の完了に連動する。**BOA-313 Phase 2の完了を待つのが望ましい**（結果取得自体の信頼性が今節成績の当日分の信頼性の上限になるため）。
+- 進入・着順・ST（過去日分）: 導出クエリのため追加スクレイピング不要（T4相当）。当日分は`scrape-results.js`の結果取得完了に連動
+- `series_day`/`is_final_day`: `update-race-info.js`の既存フロー（発走60分前ウィンドウ）に統合済み、追加スクレイピング不要
+- 得点率（`racer_series_points`）: 新規GitHub Actionsワークフロー（`scrape-point-rank.yml`）で**日次1回**（JST 22:00、当日全レース結果確定後）取得。開催中の全会場に対して試行し、`pointrank`ページが存在しない会場（一般戦・特別選抜競走）は自然にスキップされる設計のため、対象グレードを事前判定するロジックは持たない
 
 ## FR-4: オッズ全券種
 
@@ -263,8 +288,9 @@ FR-2のスクリプト・実行基盤設計に統合済み（同一ジョブで�
 | FR-1 特記事項 | T2 | **10分間隔**（7:00-23:00 JST） | 新規Vercel Function | ADR-0056、ファン視点の検証により15分→10分に短縮（帰郷等の速報性を重視） |
 | FR-2 期別成績（公式集計値・能力指数）・FR-5 profiles自動化 | T5 | **月次＋5/1・11/1直後2週間は週次** | 新規GitHub Actions | 半年に1回しか変化しないため週次固定は過剰と判断 |
 | FR-2 フライング個々の発生検知 | T3 | 結果取得と同じ頻度（新規スケジュール不要） | 既存の結果取得（`race_start_timings.is_flying`） | 訂正: 公式集計ページの頻度と混同していた |
-| FR-3 今節成績・過去日分 | T4 | スクレイピング不要（クエリ都度計算） | 自社導出（ADR-0053） | - |
-| FR-3 今節成績・当日分 | T2 | 結果確定タイミングに連動 | BOA-313 Phase 2完了後に対応 | 依存あり、[BOA-323](https://linear.app/boat-ai/issue/BOA-323)の結果取得欠損の影響も受ける |
+| FR-3 今節成績・進入/着順/ST | T4 | スクレイピング不要（クエリ都度計算） | 自社導出（ADR-0053）、`getSeriesResultsByRacer`実装済み | BOA-323は解消済みと確認（2026-09-16） |
+| FR-3 series_day/is_final_day | T2相当 | 既存の発走60分前ウィンドウに統合 | `update-race-info.js`拡張（BOA-226再オープン、実装済み） | 追加スクレイピング不要 |
+| FR-3 得点率(SG/G1限定) | T4 | **日次1回**（JST 22:00、結果確定後） | 新規GitHub Actions（`scrape-point-rank.yml`、実装済み） | ADR-0053追記でpointrank直接スクレイピングに転換 |
 | FR-4 オッズ全券種 | T1 | **60/30/15/10/5/0分前**（0分追加）、**全窓で全通り捕捉**＋**オンデマンド更新**を追加 | 既存`scrape-odds.js`拡張→BOA-313 Phase 3で正式移行 | ADR-0057改訂版。Vercel Pro移行済みのためCPU予算の制約は無し |
 | FR-6 進入コース別選手成績(BOA-293) | T4 | **日次** | 会場別GitHub Actions | 対象10会場（常滑・三国・びわこ・尼崎・徳山・下関・若松・芦屋・唐津・多摩川）。戸田・浜名湖はToS制限、児島は非開催期間で未確認のため対象外（2026-09-16 Phase 6a確定） |
 | FR-6 前検ランキング(BOA-294残存分) | T5 | **節に1回**（節初日前夜） | 会場別GitHub Actions | 2026-09-16 Phase 6a確定。BOA-266（常滑）と重複のため実装要否は別途判断 |
