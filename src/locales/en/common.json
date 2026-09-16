@@ -519,6 +519,7 @@
   },
   "oddsList": {
     "subtitle": "Switch bet types to see odds for every combination. Tap a cell to view its trend",
+    "loading": "Loading odds...",
     "disclaimer": "The odds shown here are scraped reference values. Please treat them as reference only and always check the official BOATRACE site for the actual odds before betting",
     "legend": "Darker cells are more popular (lower odds)",
     "orderedCornerLabel": "1st \\ 2nd",

@@ -196,6 +196,7 @@ function RaceOddsListTab({ raceId, raceStartTime }) {
     return (
       <div className="race-odds-list-tab">
         <p className="rol-subtitle">{t("oddsList.subtitle")}</p>
+        <p className="rol-no-data">{t("oddsList.loading")}</p>
       </div>
     );
   }
