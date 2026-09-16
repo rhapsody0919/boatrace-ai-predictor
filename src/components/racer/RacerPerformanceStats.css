@@ -191,6 +191,18 @@ tr.racer-vc-row-highlight td:first-child {
   color: var(--text-secondary);
 }
 
+/* レース一覧（BOA-159）は列数・レース名の文字数が多く、折り返すと見出しが
+   縦積みになってしまうため、このテーブルに限り改行させず横スクロールに委ねる */
+.racer-vc-race-list .racer-return-rate-table {
+  width: auto;
+  min-width: 100%;
+}
+
+.racer-vc-race-list .racer-return-rate-table th,
+.racer-vc-race-list .racer-return-rate-table td {
+  white-space: nowrap;
+}
+
 .racer-return-rate-table th {
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
