@@ -571,6 +571,20 @@ export async function syncRank456FromKFile(dateStr) {
       k.rank3 !== race.rank3
     ) {
       skipped++;
+      // BOA-338のbackfill-rank456-from-kfile.jsのmismatchDetailsと同様、
+      // race_id・理由・両側の値を残す。集計件数だけでは恒常的な不一致
+      // レースがあっても気づけないため（毎日スキップされ続けるだけになる）
+      const reason = !k
+        ? "not_in_kfile"
+        : !k.valid
+          ? "duplicate_boat_in_kfile"
+          : "rank1_3_mismatch";
+      console.log(
+        `  ⚠️ rank456スキップ(${race.race_id}): ${reason}` +
+          (k
+            ? ` db=[${race.rank1},${race.rank2},${race.rank3}] kfile=[${k.rank1},${k.rank2},${k.rank3}]`
+            : ""),
+      );
       continue;
     }
 
