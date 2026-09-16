@@ -78,10 +78,20 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather }) {
     let cancelled = false;
     sortedPlayers.forEach((p) => {
       if (!p.racerId) return;
-      supabaseDataService.getRacerScopedRaceStats(p.racerId).then((data) => {
-        if (!cancelled)
-          setScopedStatsByRacer((prev) => ({ ...prev, [p.racerId]: data }));
-      });
+      supabaseDataService
+        .getRacerScopedRaceStats(p.racerId)
+        .then((data) => {
+          if (!cancelled)
+            setScopedStatsByRacer((prev) => ({ ...prev, [p.racerId]: data }));
+        })
+        .catch((err) => {
+          // 取得失敗時にscopedStatsByRacer[p.racerId]が永久にundefinedのまま
+          // 残ると「平均進入順」「展示タイム1位勝率」が読み込み中のまま固まる
+          // （RaceBasicInfoTab.jsxの同種の指摘と同じ問題、2026-09-16修正）
+          console.error("選手出走履歴取得エラー:", err?.message ?? String(err));
+          if (!cancelled)
+            setScopedStatsByRacer((prev) => ({ ...prev, [p.racerId]: [] }));
+        });
     });
     return () => {
       cancelled = true;

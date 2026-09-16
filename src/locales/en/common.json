@@ -240,6 +240,26 @@
     "volatilityCaveatLink": "See measured accuracy ›",
     "payout": "Payout: ¥{{amount}}"
   },
+  "raceHistoryTable": {
+    "date": "Date",
+    "venue": "Venue",
+    "raceNo": "R",
+    "raceTitle": "Race Name",
+    "grade": "Grade",
+    "stage": "Race Type",
+    "boatNumber": "Lane",
+    "startTiming": "ST",
+    "finish": "Finish",
+    "technique": "Winning technique",
+    "payout": "Win Payout",
+    "grades": {
+      "ippan": "Regular",
+      "G1": "G1",
+      "G2": "G2",
+      "G3": "G3",
+      "SG": "SG"
+    }
+  },
   "panel": {
     "noData": "Prediction data is not available",
     "officialLink": "View race info on the official site",
@@ -430,7 +450,8 @@
     "hitRateOnly": "Track record: {{hitRate}}% 1st-place hit rate (last {{totalRaces}} races)"
   },
   "section": {
-    "resultTitle": "Data Analysis Results"
+    "resultTitle": "Data Analysis Results",
+    "resultTitleDeadline": "(Deadline {{time}})"
   },
   "raceTabs": {
     "beforeInfo": "Just Before"

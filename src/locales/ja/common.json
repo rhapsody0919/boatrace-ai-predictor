@@ -343,10 +343,30 @@
     "loading": "読み込み中...",
     "noHistory": "出走履歴データがありません",
     "noVenueData": "会場別の成績データがありません（規定レース数未満）",
-    "trendNote": "直近5走の着順（グレード・期間の条件によらず、常に最新5走を表示）",
+    "trendNote": "直近5走（グレード・期間の条件によらず、常に最新5走を表示。日付をタップでレース詳細へ）",
     "finishUnknown": "着外(順位不明)",
     "venueRankingFor": "{{metric}}のランキング",
     "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位"
+  },
+  "raceHistoryTable": {
+    "date": "日付",
+    "venue": "会場",
+    "raceNo": "R",
+    "raceTitle": "レース名",
+    "grade": "グレード",
+    "stage": "レース種別",
+    "boatNumber": "枠番",
+    "startTiming": "ST",
+    "finish": "着順",
+    "technique": "決まり手",
+    "payout": "単勝配当",
+    "grades": {
+      "ippan": "一般戦",
+      "G1": "G1",
+      "G2": "G2",
+      "G3": "G3",
+      "SG": "SG"
+    }
   },
   "panel": {
     "noData": "予想データが利用できません",
@@ -537,7 +557,8 @@
     "hitRateOnly": "実測: 1着的中率{{hitRate}}%（過去{{totalRaces}}レース）"
   },
   "section": {
-    "resultTitle": "データ分析結果"
+    "resultTitle": "データ分析結果",
+    "resultTitleDeadline": "（締切 {{time}}）"
   },
   "dataTable": {
     "title": "データ出走表",
