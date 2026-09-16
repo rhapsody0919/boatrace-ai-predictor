@@ -1,0 +1,89 @@
+name: Scrape Venue Entry Course Stats
+
+on:
+  schedule:
+    # JST 20:00（本日のレースが概ね終了し、race_entries（当日の出走表）が
+    # 差し替えなく確定している時間帯。本データは選手の全国直近12ヶ月実績で
+    # 当日の結果には依存しないため、発走前に急いで取得する必要はない）
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: scrape-venue-entry-course-stats
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Scrape venue entry course stats
+        run: node scripts/daily/scrape-venue-entry-course-stats.js
+        continue-on-error: true # 他の日次ジョブに影響させない
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      # scrape-venue-entry-course-stats.jsが更新した会場別の成功/失敗履歴
+      # （data/analysis/venue-entry-course-stats-health.json）をコミットする。
+      # 構造変化検知（次のステップ）が翌日以降も履歴を参照できるよう永続化する
+      - name: Commit health tracking updates if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/analysis/venue-entry-course-stats-health.json
+          git diff --staged --quiet || git commit -m "chore: 進入コース別選手成績スクレイピングの成否履歴を更新 [automated]"
+          git pull --rebase
+          git push
+
+      # 会場公式サイトのHTML構造変化を検知する（BOA-293）。新規HTTPリクエストは
+      # 行わず、上記スクレイピングが書き込んだ履歴ファイルを読むだけ
+      - name: Check for site structure drift
+        id: drift
+        run: |
+          set +e
+          OUTPUT=$(node scripts/maintenance/check-venue-entry-course-stats-drift.js)
+          EXIT_CODE=$?
+          echo "$OUTPUT"
+          {
+            echo "summary<<EOF"
+            echo "$OUTPUT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack (構造変化の疑いを検知した場合のみ)
+        if: steps.drift.outputs.exit_code == '1'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SUMMARY: ${{ steps.drift.outputs.summary }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"#c9a227\",
+                \"blocks\": [
+                  {
+                    \"type\": \"section\",
+                    \"text\": {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \":warning: *会場公式サイトのHTML構造変化の疑いを検知（BOA-293）*\n\`\`\`${SUMMARY}\`\`\`\n進入コース別選手成績ページの構造が変わり、パーサーが正しく取得できなくなっている可能性があります。scripts/lib/venueEntryCourseStats/parser.js を確認してください\"
+                    }
+                  }
+                ]
+              }]
+            }"
