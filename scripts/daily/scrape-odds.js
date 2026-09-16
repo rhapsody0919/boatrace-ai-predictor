@@ -16,6 +16,7 @@ import {
   supabase,
   isSupabaseEnabled,
   VENUE_NAMES,
+  fetchAll,
 } from "../lib/supabaseClient.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
 import {
@@ -138,21 +139,23 @@ function scrapeTrifectaOdds($) {
 }
 
 /**
- * 全通り捕捉対象（3連複・2連単・2連複・拡連複）のページを取得し、
- * それぞれのMapをプレーンオブジェクトに変換して返す（ADR-0057、FR-4）
+ * 全通り捕捉対象（3連複・2連単・2連複・拡連複）のfetch済みレスポンスを
+ * パースし、それぞれのMapをプレーンオブジェクトに変換して返す（ADR-0057、FR-4）
  *
- * @param {string} date - YYYY-MM-DD
+ * @param {Response|null} trioRes
+ * @param {Response|null} tfRes
+ * @param {Response|null} wideRes
  * @param {number} venueCode
  * @param {number} raceNo
  * @returns {Promise<{trioAll: Object|null, exactaAll: Object|null, quinellaAll: Object|null, wideAll: Object|null}>}
  */
-async function fetchFullOddsCombinations(date, venueCode, raceNo) {
-  const ymd = date.replace(/-/g, "");
-  const jcd = String(venueCode).padStart(2, "0");
-  const trioUrl = `https://www.boatrace.jp/owpc/pc/race/odds3f?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
-  const tfUrl = `https://www.boatrace.jp/owpc/pc/race/odds2tf?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
-  const wideUrl = `https://www.boatrace.jp/owpc/pc/race/oddsk?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
-
+async function parseFullOddsCombinations(
+  trioRes,
+  tfRes,
+  wideRes,
+  venueCode,
+  raceNo,
+) {
   const result = {
     trioAll: null,
     exactaAll: null,
@@ -160,22 +163,16 @@ async function fetchFullOddsCombinations(date, venueCode, raceNo) {
     wideAll: null,
   };
 
-  // この関数はfetchOddsForRace内で単勝・3連単の取得成功後に呼ばれる。
+  // 呼び出し元（fetchOddsForRace）では単勝・3連単の取得に既に成功している。
   // ここで例外を外側へ伝播させると、既に取得済みの基本オッズまで含めて
   // レース全体がnull扱いになってしまうため、失敗はこの関数内で握りつぶし
   // resultを空のまま返す（基本オッズの取得成功には影響させない）
   try {
-    const [trioRes, tfRes, wideRes] = await Promise.all([
-      fetch(trioUrl, { headers: FETCH_HEADERS }),
-      fetch(tfUrl, { headers: FETCH_HEADERS }),
-      fetch(wideUrl, { headers: FETCH_HEADERS }),
-    ]);
-
-    if (trioRes.ok) {
+    if (trioRes?.ok) {
       const map = parseTrioAll(cheerio.load(await trioRes.text()));
       if (map.size > 0) result.trioAll = Object.fromEntries(map);
     }
-    if (tfRes.ok) {
+    if (tfRes?.ok) {
       const $tf = cheerio.load(await tfRes.text());
       const exactaMap = parseExactaAll($tf);
       const quinellaMap = parseQuinellaAll($tf);
@@ -183,7 +180,7 @@ async function fetchFullOddsCombinations(date, venueCode, raceNo) {
       if (quinellaMap.size > 0)
         result.quinellaAll = Object.fromEntries(quinellaMap);
     }
-    if (wideRes.ok) {
+    if (wideRes?.ok) {
       const map = parseWideAll(cheerio.load(await wideRes.text()));
       if (map.size > 0) result.wideAll = Object.fromEntries(map);
     }
@@ -197,7 +194,19 @@ async function fetchFullOddsCombinations(date, venueCode, raceNo) {
 }
 
 /**
- * 1レースの単勝・3連単オッズを取得
+ * 1レースの単勝・3連単・（wantFull時）全通り系オッズを取得
+ *
+ * 基本(単勝/3連単)・全通り系(3連複/2連単/2連複/拡連複)の最大5URLを
+ * 1回のPromise.allSettledで同時fetchする（旧実装は2波に分かれ逐次実行だった。
+ * ADR-0057で全窓全通り化した後、本番cronの処理時間が増加し5分間隔のキューが
+ * 詰まる実害が発生したため、レース単体のfetch待ち時間を削るために統合した
+ * （BOA-341）。ただし会場間の逐次処理・1秒待機（下記run()参照）はこの変更の
+ * スコープ外で温存しており、キュー詰まりを完全に解消する保証はない。
+ * cron間隔・全通り捕捉窓自体の見直しはBOA-342で別途検討する。
+ * allSettledを使うのは、全通り系URLのfetch自体が失敗（DNSエラー等で
+ * Promiseがreject）した場合でも、既に取得できた基本オッズ（単勝・3連単）
+ * まで巻き込んでレース全体を失敗扱いにしないため（Promise.allだと1つの
+ * rejectで全体がrejectする）
  *
  * @param {string} date - YYYY-MM-DD
  * @param {number} venueCode - 会場コード (1-24)
@@ -208,18 +217,52 @@ async function fetchFullOddsCombinations(date, venueCode, raceNo) {
 async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
   const ymd = date.replace(/-/g, "");
   const jcd = String(venueCode).padStart(2, "0");
-  const winUrl = `https://www.boatrace.jp/owpc/pc/race/oddstf?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
-  const trifUrl = `https://www.boatrace.jp/owpc/pc/race/odds3t?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
+  // urls/keysは同じ順序で対応させる。settled配列へのアクセスは必ずkeys経由の
+  // 名前引きにし、settled[固定index]という書き方はしない（配列順の変更に
+  // 追従できず取り違えるバグを防ぐため、レビューで指摘・修正）
+  const urlByKey = {
+    win: `https://www.boatrace.jp/owpc/pc/race/oddstf?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`,
+    trif: `https://www.boatrace.jp/owpc/pc/race/odds3t?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`,
+    ...(wantFull
+      ? {
+          trio: `https://www.boatrace.jp/owpc/pc/race/odds3f?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`,
+          tf: `https://www.boatrace.jp/owpc/pc/race/odds2tf?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`,
+          wide: `https://www.boatrace.jp/owpc/pc/race/oddsk?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`,
+        }
+      : {}),
+  };
+  const keys = Object.keys(urlByKey);
 
   try {
-    const [winRes, trifRes] = await Promise.all([
-      fetch(winUrl, { headers: FETCH_HEADERS }),
-      fetch(trifUrl, { headers: FETCH_HEADERS }),
-    ]);
+    const settled = await Promise.allSettled(
+      keys.map((k) => fetch(urlByKey[k], { headers: FETCH_HEADERS })),
+    );
+    const bySettled = Object.fromEntries(keys.map((k, i) => [k, settled[i]]));
+    const okResponse = (s) =>
+      s && s.status === "fulfilled" && s.value.ok ? s.value : null;
+    const settledDetail = (s) =>
+      s.status === "fulfilled"
+        ? `HTTP ${s.value.status}`
+        : (s.reason?.message ?? String(s.reason));
 
-    if (!winRes.ok) {
+    // win(単勝)は下で個別にエラーログを出す。trif/全通り系のfetch自体の失敗
+    // （DNSエラー等でPromiseがreject）は、旧実装ではPromise.allのrejectで
+    // 必ずこの関数のcatchに落ちてログされていたが、allSettledに変更した
+    // ことで無言で握りつぶされる回帰が起きるため、ここでまとめてログする
+    // （HTTP非okは券種未公開等の正常なケースを含みうるため従来通りログしない）
+    for (const key of keys) {
+      if (key === "win") continue;
+      if (bySettled[key].status === "rejected") {
+        console.error(
+          `  ⚠️ ${VENUE_NAMES[venueCode]} ${raceNo}R ${key}オッズ取得失敗（通信エラー）: ${settledDetail(bySettled[key])}`,
+        );
+      }
+    }
+
+    const winRes = okResponse(bySettled.win);
+    if (!winRes) {
       console.error(
-        `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R 単勝オッズ取得失敗 HTTP ${winRes.status}`,
+        `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R 単勝オッズ取得失敗 ${settledDetail(bySettled.win)}`,
       );
       return null;
     }
@@ -228,9 +271,10 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
     const winOdds = scrapeWinOdds($win);
     const placeOdds = scrapePlaceOdds($win);
 
+    const trifRes = okResponse(bySettled.trif);
     let trifecta = [];
     let trifectaAll = null;
-    if (trifRes.ok) {
+    if (trifRes) {
       const $trif = cheerio.load(await trifRes.text());
       trifecta = scrapeTrifectaOdds($trif);
       // 全通り捕捉ウィンドウ: 120通りをパース（EV分析用・BOA-104）
@@ -249,7 +293,13 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
     let wideAll = null;
     if (wantFull) {
       ({ trioAll, exactaAll, quinellaAll, wideAll } =
-        await fetchFullOddsCombinations(date, venueCode, raceNo));
+        await parseFullOddsCombinations(
+          okResponse(bySettled.trio),
+          okResponse(bySettled.tf),
+          okResponse(bySettled.wide),
+          venueCode,
+          raceNo,
+        ));
     }
 
     return {
@@ -277,45 +327,73 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
 const MAX_FALLBACK_AGE_MINUTES = 75;
 
 /**
- * 0分窓（締切時点）で全通り系の一部が欠けた場合、直近の成功スナップショットから
- * 該当列を補完する（ADR-0057のフォールバック設計）。取得できなかった券種を
- * エラーとして握りつぶさず、直前の値を実質的な最終値として扱う。ただし
- * MAX_FALLBACK_AGE_MINUTESより古いスナップショットは採用しない
+ * 0分窓（締切時点）で全通り系の一部が欠けたレースをまとめて、直近の成功
+ * スナップショットから該当列を補完する（ADR-0057のフォールバック設計）。
+ * 取得できなかった券種をエラーとして握りつぶさず、直前の値を実質的な
+ * 最終値として扱う。ただしMAX_FALLBACK_AGE_MINUTESより古いスナップショット
+ * は採用しない。
  *
- * @param {string} raceId
- * @param {Object} row - 今回のスナップショット行（欠けている全通り系キーは未設定）
- * @returns {Promise<Object>} 補完できた列のみを持つオブジェクト
+ * レースごとに逐次awaitでSupabaseへ問い合わせるN+1呼び出しを避けるため、
+ * 対象レースIDをまとめて1回の.in()クエリで取得する（BOA-341）。
+ * Supabaseの.select()はデフォルトで最大1000行しか返さず超過分は無言で
+ * 切り捨てられるため（本プロジェクトで既知の落とし穴、generate-predictions.js
+ * のCHUNK_SIZE運用と同じ理由）、素の.select()ではなくfetchAll()（1000件単位で
+ * .range()ページネーション）を使い、.in()側もCHUNK_SIZE単位に分割する
+ *
+ * @param {Map<string, Object>} patchesByRaceId - race_id -> 今回のスナップショット行（欠けている全通り系キーは未設定）
+ * @returns {Promise<Map<string, Object>>} race_id -> 補完できた列のみを持つオブジェクト
  */
-async function fillMissingFullOddsFromLatestSnapshot(raceId, row) {
-  const missingKeys = FULL_ODDS_KEYS.filter((k) => !(k in row));
-  if (missingKeys.length === 0) return {};
+async function fillMissingFullOddsFromLatestSnapshots(patchesByRaceId) {
+  const targets = [...patchesByRaceId.entries()]
+    .map(([raceId, row]) => ({
+      raceId,
+      missingKeys: FULL_ODDS_KEYS.filter((k) => !(k in row)),
+    }))
+    .filter((t) => t.missingKeys.length > 0);
 
-  const { data, error } = await supabase
-    .from("race_odds")
-    .select(`captured_at, ${missingKeys.join(", ")}`)
-    .eq("race_id", raceId)
-    .order("captured_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  if (targets.length === 0) return new Map();
 
-  if (error) {
-    console.error(
-      `⚠️ race_odds全通り系フォールバック取得エラー [${raceId}]:`,
-      error.message,
+  const cutoffIso = new Date(
+    Date.now() - MAX_FALLBACK_AGE_MINUTES * 60000,
+  ).toISOString();
+
+  // fetchAll()自体がエラーを内部でログして空配列を返す設計のため、
+  // ここでは追加のtry/catchは不要（コールサイトを揃える）
+  const CHUNK_SIZE = 900; // Supabase .in() の1000件制限内（generate-predictions.js踏襲）
+  const raceIds = targets.map((t) => t.raceId);
+  const data = [];
+  for (let i = 0; i < raceIds.length; i += CHUNK_SIZE) {
+    const chunk = raceIds.slice(i, i + CHUNK_SIZE);
+    const rows = await fetchAll(
+      "race_odds",
+      `race_id, captured_at, ${FULL_ODDS_KEYS.join(", ")}`,
+      (q) =>
+        q
+          .in("race_id", chunk)
+          .gte("captured_at", cutoffIso)
+          .order("captured_at", { ascending: false }),
     );
-    return {};
+    data.push(...rows);
   }
-  if (!data) return {};
 
-  const ageMinutes =
-    (Date.now() - new Date(data.captured_at).getTime()) / 60000;
-  if (ageMinutes > MAX_FALLBACK_AGE_MINUTES) return {};
-
-  const fallback = {};
-  for (const key of missingKeys) {
-    if (data[key]) fallback[key] = data[key];
+  // captured_at降順のため、race_idごとに最初に現れる行が最新スナップショット
+  const latestByRaceId = new Map();
+  for (const row of data) {
+    if (!latestByRaceId.has(row.race_id)) latestByRaceId.set(row.race_id, row);
   }
-  return fallback;
+
+  const result = new Map();
+  for (const { raceId, missingKeys } of targets) {
+    const latest = latestByRaceId.get(raceId);
+    if (!latest) continue;
+    const fallback = {};
+    for (const key of missingKeys) {
+      if (latest[key]) fallback[key] = latest[key];
+    }
+    if (Object.keys(fallback).length > 0) result.set(raceId, fallback);
+  }
+
+  return result;
 }
 
 /**
@@ -364,7 +442,10 @@ export async function run(schedule, date) {
   // 会場ごとにグループ化して並列取得
   const capturedAt = new Date().toISOString();
   const baseRows = [];
-  const fullOddsRows = [];
+  // race_idごとのfullOddsPatch（0分窓フォールバック適用前）。フォールバックは
+  // 全レース分をまとめて後段で一括取得するため、ここではまだupsert対象の
+  // fullOddsRowsに確定しない（BOA-341、逐次awaitのN+1を避けるため全venue処理後に一括処理）
+  const pendingFullOdds = [];
 
   const byVenue = new Map();
   for (const r of targetRaces.values()) {
@@ -437,31 +518,14 @@ export async function run(schedule, date) {
         trifecta_odds_3: trifecta[2]?.odds ?? null,
       });
 
-      let fullOddsPatch = {
+      const fullOddsPatch = {
         ...(trifectaAll ? { trifecta_all: trifectaAll } : {}),
         ...(trioAll ? { trio_all: trioAll } : {}),
         ...(exactaAll ? { exacta_all: exactaAll } : {}),
         ...(quinellaAll ? { quinella_all: quinellaAll } : {}),
         ...(wideAll ? { wide_all: wideAll } : {}),
       };
-
-      // 0分（締切時点）窓で全通り系の一部が欠けた場合は、直近の成功
-      // スナップショットを実質最終値として補完する（ADR-0057）
-      if (cutoffWindowIds.has(r.race_id)) {
-        const fallback = await fillMissingFullOddsFromLatestSnapshot(
-          r.race_id,
-          fullOddsPatch,
-        );
-        fullOddsPatch = { ...fullOddsPatch, ...fallback };
-      }
-
-      if (Object.keys(fullOddsPatch).length > 0) {
-        fullOddsRows.push({
-          race_id: r.race_id,
-          captured_at: capturedAt,
-          ...fullOddsPatch,
-        });
-      }
+      pendingFullOdds.push({ raceId: r.race_id, patch: fullOddsPatch });
 
       const winStr = winOdds
         .map((o, i) => (o !== null ? `${i + 1}号艇:${o}` : null))
@@ -479,6 +543,29 @@ export async function run(schedule, date) {
   if (baseRows.length === 0) {
     console.log("\n📭 オッズ: 書き込みデータなし");
     return { updated: false, count: 0 };
+  }
+
+  // 0分（締切時点）窓で全通り系の一部が欠けたレースをまとめてフォールバック
+  // 取得する（ADR-0057）。レースごとの逐次awaitを避けるため1回の.in()クエリに
+  // まとめる（BOA-341）
+  const fallbackTargets = new Map();
+  for (const { raceId, patch } of pendingFullOdds) {
+    if (cutoffWindowIds.has(raceId)) fallbackTargets.set(raceId, patch);
+  }
+  const fallbackByRaceId =
+    await fillMissingFullOddsFromLatestSnapshots(fallbackTargets);
+
+  const fullOddsRows = [];
+  for (const { raceId, patch } of pendingFullOdds) {
+    const fallback = fallbackByRaceId.get(raceId);
+    const finalPatch = fallback ? { ...patch, ...fallback } : patch;
+    if (Object.keys(finalPatch).length > 0) {
+      fullOddsRows.push({
+        race_id: raceId,
+        captured_at: capturedAt,
+        ...finalPatch,
+      });
+    }
   }
 
   console.log(`\n💾 race_odds(基本オッズ): ${baseRows.length}件書き込み中...`);
@@ -515,6 +602,7 @@ export async function run(schedule, date) {
         }
       }
     }
+    console.log(`✅ race_odds(全通り系): ${fullOddsRows.length}件完了`);
   }
 
   return { updated: true, count: baseRows.length };
