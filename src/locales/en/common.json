@@ -674,7 +674,20 @@
       },
       "partsHistoryEmpty": "No parts or propeller change records found for this motor",
       "partsHistoryNote": "💡 A parts or propeller change alone can be either a sign of declining motor performance or a sign of improvement right after maintenance. The badge compares average exhibition time before and after the change as a rough guide only, and does not guarantee results.",
-      "note": "💡 Click a table row to see that motor's trend across meets. The highlighted row is the boat with the highest motor top-2 rate in this race."
+      "note": "💡 Click a table row to see that motor's trend across meets. The highlighted row is the boat with the highest motor top-2 rate in this race.",
+      "venueRankLabel": "Rank in venue",
+      "venueRankBadge": "#{{rank}} of {{total}} motors",
+      "sampleCount": "(n={{n}})",
+      "wakuStatsHeading": "Results by lane",
+      "wakuStatsWindowNote": "💡 Window: last 180 days",
+      "courseHeader": "Lane",
+      "exhibitionTrendHeader": "Trial run time trend",
+      "wakuStatsExpand": "Show all 6 lanes",
+      "wakuStatsNote": "💡 \"Lane\" is the course this motor actually entered from (for older races without entry-course data, the boat number is used as-is). Tap a row to see the results for each racer who used this motor in that lane.",
+      "racerWakuBackLabel": "← Back to lane results",
+      "racerWakuHeading": "Racers in lane {{course}}",
+      "racerWakuEmpty": "No racers found for this motor/lane combination",
+      "racerWakuNote": "💡 Per-racer results limited to races in the last 180 days where this motor was used in this lane. Treat racers with a small n as reference only."
     },
     "racerForm": {
       "title": "📈 Racer Form",

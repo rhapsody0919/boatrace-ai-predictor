@@ -669,7 +669,20 @@
       },
       "partsHistoryEmpty": "找不到此馬達的零件交換・螺旋槳交換紀錄",
       "partsHistoryNote": "💡 零件交換・螺旋槳交換單獨來看，可能是機力下滑的徵兆，也可能是剛保養完的好轉徵兆。徽章比較交換前後的平均展示時間僅供參考，不保證結果。",
-      "note": "💡 點擊表格列可查看該馬達各賽節的走勢。強調顯示的列為本場比賽中2連率最高的艇。"
+      "note": "💡 點擊表格列可查看該馬達各賽節的走勢。強調顯示的列為本場比賽中2連率最高的艇。",
+      "venueRankLabel": "場內排名",
+      "venueRankBadge": "第{{rank}}名／共{{total}}台",
+      "sampleCount": "(n={{n}})",
+      "wakuStatsHeading": "各水道成績",
+      "wakuStatsWindowNote": "💡 統計期間：近180天",
+      "courseHeader": "水道",
+      "exhibitionTrendHeader": "展示時間走勢",
+      "wakuStatsExpand": "顯示全部6水道",
+      "wakuStatsNote": "💡 「水道」為此馬達實際進入的水道編號（沒有進入水道資料的過去比賽則直接使用艇號）。點擊列可查看在該水道使用過此馬達的各選手成績。",
+      "racerWakuBackLabel": "← 返回各水道成績",
+      "racerWakuHeading": "{{course}}水道的選手別成績",
+      "racerWakuEmpty": "找不到此馬達・水道組合的出賽選手",
+      "racerWakuNote": "💡 僅統計近180天內此馬達在該水道被使用的比賽。n值較小的選手僅供參考。"
     },
     "racerForm": {
       "title": "📈 選手狀態",
