@@ -97,7 +97,7 @@ cron-job.org側のタイムアウトは30秒（[investigation.md](../../proposal
    - **Step 3実施後も本監視は継続する**（Step 4の1週間監視・切り戻し判断の材料として引き続き必要）
 
 ### Step 3: 切り替え
-1. **実装完了・マージ後に有効化（2026-09-16、BOA-313）**: GitHub Actions側の展示データ処理（`scrape-scheduled.js`115行目、`hasExhibitionRaces`の呼び出し条件）を無効化した。**リポジトリ変数`SKIP_EXHIBITION_ON_GHA`は`true`に設定済みだが、`scrape-scheduled.yml`がこの変数を参照するのはこのPRのマージ後からのため、実際にGitHub Actions側の展示データ取得が止まるのはmasterへのマージ完了時点から**
+1. **実装完了・マージ後に有効化（2026-09-16、BOA-313、[PR #681](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/681)）**: GitHub Actions側の展示データ処理（`scrape-scheduled.js`115行目、`hasExhibitionRaces`の呼び出し条件）を無効化した。**リポジトリ変数`SKIP_EXHIBITION_ON_GHA`は`true`に設定済みだが、`scrape-scheduled.yml`がこの変数を参照するのはこのPRのマージ後からのため、実際にGitHub Actions側の展示データ取得が止まるのはmasterへのマージ完了時点から**
 2. **実装方式**: リポジトリ変数`SKIP_EXHIBITION_ON_GHA`（GitHub Settings > Variables）のトグルのみで即座に切り戻せる方式を採用（`scrape-scheduled.yml`の`env`経由で注入）。**コードは削除していない**（`scrape-exhibition-data.js`本体・`scrape-scheduled.js`の呼び出しコード自体は無変更、条件式に1項追加しただけ）
 3. 切り替え後も1週間は欠落率を監視する（Step 4参照、`exhibition-gap-monitor.yml`は継続稼働のため追加作業不要）
 
