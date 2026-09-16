@@ -9,6 +9,11 @@
  * 撤去のうえPredictionPanel内のRaceTabsへ統合したため、この入れ替えロジック自体が
  * 不要になった。結果確定後にどちらを優先表示するかは、RaceTabsのdefaultTabId
  * （PredictionPanel内、finished ? "result" : "basic"）が代わりに担う
+ *
+ * 2026-09-16（BOA-334）: 見出しに締切時刻を追加。selectedRace.startTime
+ * （races.start_time相当、"HH:MM"形式）をそのまま表示する。新規データ取得は
+ * 不要（RaceDetailPage.jsxのselectedRace構築時に既にracePrediction.startTimeが
+ * 渡ってきている）
  */
 import { forwardRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -39,6 +44,13 @@ const PredictionSection = forwardRef(
             ? t(`venues.${selectedRace.venueCode}`, selectedRace.venue)
             : selectedRace.venue}{" "}
           {selectedRace.raceNumber}R
+          {selectedRace.startTime && (
+            <span className="prediction-section-deadline">
+              {t("section.resultTitleDeadline", {
+                time: selectedRace.startTime,
+              })}
+            </span>
+          )}
         </h2>
 
         <PredictionPanel

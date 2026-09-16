@@ -18,6 +18,14 @@
   color: var(--text-primary);
 }
 
+/* BOA-334: 見出しの締切時刻表示。h2本体より一段小さく・控えめな色にする */
+.prediction-section-deadline {
+  margin-left: 0.5em;
+  font-size: 0.6em;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
 .race-detail-page-v2__empty {
   padding: 2rem;
   text-align: center;

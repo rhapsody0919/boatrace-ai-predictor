@@ -431,7 +431,8 @@
     "hitRateOnly": "實測：第1名命中率{{hitRate}}%（過去{{totalRaces}}場）"
   },
   "section": {
-    "resultTitle": "數據分析結果"
+    "resultTitle": "數據分析結果",
+    "resultTitleDeadline": "（截止 {{time}}）"
   },
   "raceTabs": {
     "beforeInfo": "臨場資訊"

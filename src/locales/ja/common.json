@@ -538,7 +538,8 @@
     "hitRateOnly": "実測: 1着的中率{{hitRate}}%（過去{{totalRaces}}レース）"
   },
   "section": {
-    "resultTitle": "データ分析結果"
+    "resultTitle": "データ分析結果",
+    "resultTitleDeadline": "（締切 {{time}}）"
   },
   "dataTable": {
     "title": "データ出走表",

@@ -433,7 +433,8 @@
     "hitRateOnly": "Track record: {{hitRate}}% 1st-place hit rate (last {{totalRaces}} races)"
   },
   "section": {
-    "resultTitle": "Data Analysis Results"
+    "resultTitle": "Data Analysis Results",
+    "resultTitleDeadline": "(Deadline {{time}})"
   },
   "raceTabs": {
     "beforeInfo": "Just Before"
