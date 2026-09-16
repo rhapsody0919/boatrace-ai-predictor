@@ -19,7 +19,11 @@ import {
   getRacesAfterStart,
   getRacesPastResultWindow,
 } from "../lib/raceSchedule.js";
-import { fetchKFileText, parseKFileText } from "../lib/kfileParser.js";
+import {
+  fetchKFileText,
+  parseKFileText,
+  parseKFileRankings,
+} from "../lib/kfileParser.js";
 
 // Generate race result page URL
 function getRaceResultUrl(venueCode, raceNo, dateStr) {
@@ -384,6 +388,13 @@ export async function run(schedule, date) {
   // 直近数日分を毎回チェックすることで取得漏れ・公開遅延を自己修復する
   await syncRecentActualCourse();
 
+  // rank4/5/6（BOA-338、Kファイル方式）を過去数日分について同期。
+  // scrapeAndSaveResults()のfinishedRaceIds判定はpayout_win等のみを見て
+  // 「完了」を判定するためrank4の有無をチェックせず、一度完了判定された
+  // レースは再スクレイピングされない（BOA-340）。上記と同じKファイル方式で
+  // 独立して自己修復する
+  await syncRecentRank456();
+
   return resultSummary;
 }
 
@@ -476,6 +487,121 @@ export async function syncActualCourseFromKFile(dateStr) {
   }
   console.log(
     `  ✅ 進入コース(Kファイル方式): ${updated}/${rows.length}件更新 (${dateStr})`,
+  );
+  return { updated };
+}
+
+/**
+ * rank4/5/6（BOA-338、Kファイル方式）の同期対象日数（当日を除く直近N日）。
+ * ACTUAL_COURSE_SYNC_LOOKBACK_DAYSと同じ理由で、通常運用での取得漏れを
+ * 拾える程度の小さい値にとどめる。
+ */
+const RANK456_SYNC_LOOKBACK_DAYS = 4;
+
+/**
+ * 直近数日分について、rank1はあるがrank4が未取得のレースがあるかを確認し、
+ * あれば該当日のKファイルを取得・パースして同期する（BOA-340）。
+ */
+async function syncRecentRank456() {
+  for (let i = 1; i <= RANK456_SYNC_LOOKBACK_DAYS; i++) {
+    await syncRank456FromKFile(getDateDaysAgo(i));
+  }
+}
+
+/**
+ * 指定日について、公式成績ファイル（Kファイル）からrank4/5/6を取得し
+ * race_results.rank4〜6にマージする（BOA-340）。
+ *
+ * 安全策（BOA-338のバックフィルスクリプトと同じ）: Kファイルからパースした
+ * 1〜3着が既存のrank1〜3と完全一致する場合のみ更新する。不一致・重複艇番
+ * （パース異常の疑い）・Kファイル側に該当レースが無い場合は更新せずスキップする。
+ *
+ * @param {string} dateStr - YYYY-MM-DD
+ * @returns {Promise<{updated: number}>}
+ */
+export async function syncRank456FromKFile(dateStr) {
+  // rank1はある（結果確定済み）がrank4が未取得のレースが無ければ
+  // Kファイルのダウンロード自体をスキップする（無駄な外部アクセスを避ける）
+  const { data: pending, error: pendingError } = await supabase
+    .from("race_results")
+    .select("race_id, rank1, rank2, rank3")
+    .gte("race_id", dateStr)
+    .lt("race_id", `${dateStr}~`)
+    .not("rank1", "is", null)
+    .is("rank4", null);
+
+  if (pendingError) {
+    console.error(
+      `  ⚠️ rank456対象確認エラー(${dateStr}): ${pendingError.message}`,
+    );
+    return { updated: 0 };
+  }
+  if (!pending || pending.length === 0) {
+    return { updated: 0 }; // 同期済み、または対象レース無し
+  }
+
+  let text;
+  try {
+    text = await fetchKFileText(dateStr);
+  } catch (e) {
+    console.error(`  ⚠️ Kファイル取得エラー(${dateStr}): ${e.message}`);
+    return { updated: 0 };
+  }
+  if (!text) {
+    console.log(`  rank456: Kファイル未公開/開催なし (${dateStr})`);
+    return { updated: 0 };
+  }
+
+  const rows = parseKFileRankings(text, dateStr);
+  if (rows.length === 0) {
+    console.log(`  rank456: Kファイルからレースを抽出できず (${dateStr})`);
+    return { updated: 0 };
+  }
+  const kfileByRaceId = new Map(rows.map((r) => [r.race_id, r]));
+
+  let updated = 0;
+  let skipped = 0;
+  for (const race of pending) {
+    const k = kfileByRaceId.get(race.race_id);
+    if (
+      !k ||
+      !k.valid ||
+      k.rank1 !== race.rank1 ||
+      k.rank2 !== race.rank2 ||
+      k.rank3 !== race.rank3
+    ) {
+      skipped++;
+      // BOA-338のbackfill-rank456-from-kfile.jsのmismatchDetailsと同様、
+      // race_id・理由・両側の値を残す。集計件数だけでは恒常的な不一致
+      // レースがあっても気づけないため（毎日スキップされ続けるだけになる）
+      const reason = !k
+        ? "not_in_kfile"
+        : !k.valid
+          ? "duplicate_boat_in_kfile"
+          : "rank1_3_mismatch";
+      console.log(
+        `  ⚠️ rank456スキップ(${race.race_id}): ${reason}` +
+          (k
+            ? ` db=[${race.rank1},${race.rank2},${race.rank3}] kfile=[${k.rank1},${k.rank2},${k.rank3}]`
+            : ""),
+      );
+      continue;
+    }
+
+    const { error: updateError } = await supabase
+      .from("race_results")
+      .update({ rank4: k.rank4, rank5: k.rank5, rank6: k.rank6 })
+      .eq("race_id", race.race_id);
+    if (updateError) {
+      console.error(
+        `  ⚠️ rank456更新エラー(${race.race_id}): ${updateError.message}`,
+      );
+    } else {
+      updated++;
+    }
+  }
+  console.log(
+    `  ✅ rank456(Kファイル方式): ${updated}/${pending.length}件更新 (${dateStr}, スキップ${skipped}件)`,
   );
   return { updated };
 }
