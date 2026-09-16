@@ -6101,6 +6101,23 @@ export const supabaseDataService = {
 };
 
 /**
+ * 1走分の勝敗を{win, top2, top3}アキュムレータに加算する共通ロジック。
+ * aggregateRacerVenueBoatStats（単一集計）とaggregateRacerCrossStats
+ * （グループ別集計）の両方が同じ勝率/2連率/3連率の判定を必要とするため
+ * 共通化（ADR-0063、BOA-159レビューで発見）。
+ * @returns {boolean} 勝利（1着）だったか
+ */
+function tallyWinPlaceShow(totals, row) {
+  const isWin = row.rank1 === row.boatNumber;
+  if (isWin) totals.win += 1;
+  if (isPlaceHit(row.boatNumber, row.rank1, row.rank2)) totals.top2 += 1;
+  if (isShowHit(row.boatNumber, row.rank1, row.rank2, row.rank3)) {
+    totals.top3 += 1;
+  }
+  return isWin;
+}
+
+/**
  * getRacerRaceHistory()が返すフラット履歴を「会場×枠番×グレード×レース種別」
  * で絞り込み集計する純粋関数（I/O無し）。各引数はnullで絞り込みなしを表す。
  * raceGrade/raceStageはBOA-159で追加（完全一致判定のみ、サンプル数閾値は
@@ -6123,15 +6140,13 @@ export function aggregateRacerVenueBoatStats(
   raceStage,
 ) {
   let n = 0,
-    win = 0,
-    top2 = 0,
-    top3 = 0,
     returnSum = 0,
     placeReturnSum = 0,
     stSum = 0,
     stN = 0,
     exSum = 0,
     exN = 0;
+  const totals = { win: 0, top2: 0, top3: 0 };
   const tech = {};
   const series = [];
   const matchedRaces = [];
@@ -6143,9 +6158,8 @@ export function aggregateRacerVenueBoatStats(
     if (raceStage && row.raceStage !== raceStage) continue;
 
     n += 1;
-    const isWin = row.rank1 === row.boatNumber;
+    const isWin = tallyWinPlaceShow(totals, row);
     if (isWin) {
-      win += 1;
       if (row.winningTechnique) {
         tech[row.winningTechnique] = (tech[row.winningTechnique] ?? 0) + 1;
       }
@@ -6153,12 +6167,6 @@ export function aggregateRacerVenueBoatStats(
       placeReturnSum += row.payoutPlace1 ?? 0;
     } else if (row.rank2 === row.boatNumber) {
       placeReturnSum += row.payoutPlace2 ?? 0;
-    }
-    if (isPlaceHit(row.boatNumber, row.rank1, row.rank2)) {
-      top2 += 1;
-    }
-    if (isShowHit(row.boatNumber, row.rank1, row.rank2, row.rank3)) {
-      top3 += 1;
     }
 
     const hasEx = row.exhibitionTime !== null;
@@ -6205,12 +6213,12 @@ export function aggregateRacerVenueBoatStats(
 
   return {
     n,
-    win,
-    top2,
-    top3,
-    winRate: n > 0 ? win / n : null,
-    top2Rate: n > 0 ? top2 / n : null,
-    top3Rate: n > 0 ? top3 / n : null,
+    win: totals.win,
+    top2: totals.top2,
+    top3: totals.top3,
+    winRate: n > 0 ? totals.win / n : null,
+    top2Rate: n > 0 ? totals.top2 / n : null,
+    top3Rate: n > 0 ? totals.top3 / n : null,
     tech,
     avgSt: stN > 0 ? stSum / stN : null,
     stN,
@@ -6221,4 +6229,54 @@ export function aggregateRacerVenueBoatStats(
     series,
     matchedRaces,
   };
+}
+
+/**
+ * 会場・枠番のどちらか一方だけを固定し、固定していない方でグループ化した
+ * 成績一覧を返す（BOA-159 Phase2、ADR-0063）。「会場だけ選んだら、その会場
+ * 限定の枠番別成績を一覧で比較したい」というニーズに応える。
+ * 会場・枠番どちらも未固定/どちらも固定のケースはaggregateRacerVenueBoatStats
+ * を使う（本関数は「どちらか一方だけ固定」のケース専用）。
+ * @param {Array} history - getRacerRaceHistory()の戻り値
+ * @param {{venueCode?: number, boatNumber?: number}} fixed - 固定する軸（片方のみ指定）
+ * @param {"venue"|"boat"} groupBy - グループ化する軸（固定していない方）
+ * @param {string|null} raceGrade
+ * @param {string|null} raceStage
+ */
+export function aggregateRacerCrossStats(
+  history,
+  fixed,
+  groupBy,
+  raceGrade,
+  raceStage,
+) {
+  const groups = new Map();
+
+  for (const row of history ?? []) {
+    if (fixed.venueCode && row.venueCode !== fixed.venueCode) continue;
+    if (fixed.boatNumber && row.boatNumber !== fixed.boatNumber) continue;
+    if (raceGrade && row.raceGrade !== raceGrade) continue;
+    if (raceStage && row.raceStage !== raceStage) continue;
+
+    const key = groupBy === "venue" ? row.venueCode : row.boatNumber;
+    if (!groups.has(key)) {
+      groups.set(key, { n: 0, win: 0, top2: 0, top3: 0 });
+    }
+    const g = groups.get(key);
+    g.n += 1;
+    tallyWinPlaceShow(g, row);
+  }
+
+  return [...groups.entries()]
+    .map(([key, g]) => ({
+      key,
+      n: g.n,
+      win: g.win,
+      top2: g.top2,
+      top3: g.top3,
+      winRate: g.n > 0 ? g.win / g.n : null,
+      top2Rate: g.n > 0 ? g.top2 / g.n : null,
+      top3Rate: g.n > 0 ? g.top3 / g.n : null,
+    }))
+    .sort((a, b) => a.key - b.key);
 }

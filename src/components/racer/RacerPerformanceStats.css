@@ -265,40 +265,27 @@ tr.racer-vc-row-highlight td:first-child {
   }
 }
 
-/* 絞り込み結果のタブ（BOA-159、ADR-0062）。フィルタ選択時の詳細表示
-   （概要/決まり手/推移/レース一覧）をタブに分割し、情報量過多を避ける */
-.racer-vc-tabs-wrap {
-  margin-bottom: var(--spacing-4);
-}
-
-.racer-vc-tabs {
-  display: flex;
-  gap: var(--spacing-1);
-  border-bottom: 1px solid var(--border-hairline);
-  margin-bottom: var(--spacing-4);
-  overflow-x: auto;
-}
-
-.racer-vc-tab-button {
-  font-family: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-secondary);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2);
+/* 一覧テーブルの行クリック（会場・枠番のクロス集計への絞り込み、ADR-0063） */
+.racer-vc-row-clickable {
   cursor: pointer;
-  white-space: nowrap;
 }
 
-.racer-vc-tab-button.active {
-  color: var(--text-primary);
-  border-bottom-color: var(--brand-accent-primary);
+.racer-vc-row-clickable:hover td {
+  background: var(--surface-page);
 }
 
-.racer-vc-tab-button:hover {
-  color: var(--text-primary);
+.racer-vc-row-clickable td:first-child {
+  color: var(--brand-accent-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* h3見出しに添えるヒントテキスト（「〜をクリックで絞り込み」等）。既存の
+   .racer-vc-scope（— {vcLabel}）と同じインライン表示パターンに合わせる */
+.h3-hint {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+  margin-left: var(--spacing-2);
 }
 
 .racer-vc-race-list {
