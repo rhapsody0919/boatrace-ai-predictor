@@ -239,6 +239,26 @@
     "volatilityCaveatLink": "실측 정확도 보기 ›",
     "payout": "배당금: ¥{{amount}}"
   },
+  "raceHistoryTable": {
+    "date": "날짜",
+    "venue": "경기장",
+    "raceNo": "R",
+    "raceTitle": "경주명",
+    "grade": "그레이드",
+    "stage": "경주 종류",
+    "boatNumber": "코스",
+    "startTiming": "ST",
+    "finish": "착순",
+    "technique": "결정수",
+    "payout": "단승 배당금",
+    "grades": {
+      "ippan": "일반전",
+      "G1": "G1",
+      "G2": "G2",
+      "G3": "G3",
+      "SG": "SG"
+    }
+  },
   "panel": {
     "noData": "예측 데이터가 없습니다",
     "officialLink": "공식 사이트에서 경주 정보 보기",

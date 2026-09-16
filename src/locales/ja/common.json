@@ -348,6 +348,26 @@
     "venueRankingFor": "{{metric}}のランキング",
     "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位"
   },
+  "raceHistoryTable": {
+    "date": "日付",
+    "venue": "会場",
+    "raceNo": "R",
+    "raceTitle": "レース名",
+    "grade": "グレード",
+    "stage": "レース種別",
+    "boatNumber": "枠番",
+    "startTiming": "ST",
+    "finish": "着順",
+    "technique": "決まり手",
+    "payout": "単勝配当",
+    "grades": {
+      "ippan": "一般戦",
+      "G1": "G1",
+      "G2": "G2",
+      "G3": "G3",
+      "SG": "SG"
+    }
+  },
   "panel": {
     "noData": "予想データが利用できません",
     "officialLink": "公式サイトでレース情報を見る",

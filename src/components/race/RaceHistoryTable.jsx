@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
+import { formatPayout } from "../../utils/formatters";
 import "./RaceHistoryTable.css";
 
 /**
@@ -27,6 +28,13 @@ import "./RaceHistoryTable.css";
  *   （RacerPerformanceStats.jsxが動くページ`/racer/:id`はja専用パスのため
  *   これで挙動が変わらない）。RaceBasicInfoTab.jsxは`/race`が翻訳対象パスの
  *   ため、`useLocalizedPath`で言語プレフィックスを保つ関数を渡す
+ *
+ * 2026-09-16レビュー指摘: `/race`はsrc/config/languages.jsのTRANSLATED_PATHSに
+ * 登録済みの翻訳対象パスのため、列見出し・グレードラベルをt()経由に修正
+ * （4言語分のi18nキーをraceHistoryTable名前空間に追加）。GRADE_LABELS
+ * （raceGradeLabels.js）はRacerPerformanceStats.jsxのフィルタUI等、ja専用の
+ * `/racer`ページでの直接参照向けに残しつつ、このテーブルではt()の
+ * デフォルト値として使う（未知のグレードコードのフォールバック表示用）
  */
 function RaceHistoryTable({
   rows,
@@ -39,17 +47,17 @@ function RaceHistoryTable({
       <table className="race-history-table">
         <thead>
           <tr>
-            <th>日付</th>
-            <th>会場</th>
-            <th>R</th>
-            <th>レース名</th>
-            <th>グレード</th>
-            <th>レース種別</th>
-            <th>枠番</th>
-            <th>ST</th>
-            <th>着順</th>
-            <th>決まり手</th>
-            <th>単勝配当</th>
+            <th>{t("raceHistoryTable.date")}</th>
+            <th>{t("raceHistoryTable.venue")}</th>
+            <th>{t("raceHistoryTable.raceNo")}</th>
+            <th>{t("raceHistoryTable.raceTitle")}</th>
+            <th>{t("raceHistoryTable.grade")}</th>
+            <th>{t("raceHistoryTable.stage")}</th>
+            <th>{t("raceHistoryTable.boatNumber")}</th>
+            <th>{t("raceHistoryTable.startTiming")}</th>
+            <th>{t("raceHistoryTable.finish")}</th>
+            <th>{t("raceHistoryTable.technique")}</th>
+            <th>{t("raceHistoryTable.payout")}</th>
           </tr>
         </thead>
         <tbody>
@@ -64,11 +72,14 @@ function RaceHistoryTable({
                 </Link>
               </td>
               <td>{t(`venues.${race.venueCode}`, race.venueCode)}</td>
-              <td>{race.raceNo}R</td>
+              <td>{race.raceNo !== null ? `${race.raceNo}R` : "-"}</td>
               <td>{race.raceTitle ?? "-"}</td>
               <td>
                 {race.raceGrade
-                  ? (GRADE_LABELS[race.raceGrade] ?? race.raceGrade)
+                  ? t(
+                      `raceHistoryTable.grades.${race.raceGrade}`,
+                      GRADE_LABELS[race.raceGrade] ?? race.raceGrade,
+                    )
                   : "-"}
               </td>
               <td>{race.raceStage ?? "-"}</td>
@@ -84,7 +95,7 @@ function RaceHistoryTable({
               </td>
               <td>
                 {race.finishRank === 1 && race.payoutWin
-                  ? `${race.payoutWin}円`
+                  ? formatPayout(race.payoutWin)
                   : "-"}
               </td>
             </tr>

@@ -17,7 +17,12 @@
  * （2026-09-15判明: race_conditions.series_day/is_final_dayは
  * scripts/daily/generate-predictions.jsで常にnullを書き込む未実装カラムで、
  * 実データも33,411行全件がnull。「取れないものは正直にモックから削って良い」
- * というBOA-306本文の指示に従い削除した）
+ * というBOA-306本文の指示に従い削除した。2026-09-16追記: BOA-226
+ * （scripts/daily/update-race-info.jsのscrapeSeriesDay()）でracelistページの
+ * 日程タブから実際に値を取得・書き込むようになったため、今後発生するレースは
+ * 順次値が入る見込み。ただし本モジュールが対象とする過去2年分のうち大部分は
+ * BOA-226以前のバックフィル済みnullデータのままのため、この期間フィルタ自体を
+ * 復活させる判断は改めて行う）
  *
  * 期間「今期」は自社データに公式の期区分（前期/後期）の境界を持たないため
  * （racer_profiles.period_labelは2026-09-15時点で未取得、BOA-321参照）、
@@ -148,13 +153,12 @@ export function finishPositionOf(r) {
  * 2026-09-16（BOA-333/159共通化）: 戻り値の形をRaceHistoryTable.jsx
  * （共有テーブルコンポーネント、getRacerRaceHistory()由来のmatchedRacesと
  * 同じフィールド名）に合わせた。raceNoはraceId（YYYY-MM-DD-VV-RR）から導出する
- * （racesテーブルへの追加問い合わせ不要）。boatNumberは実進入コース
- * （BOA-257のactual_course_N、2025-12-04以降のみ）を優先し、無ければ当該
- * レースでの艇番にフォールバックする（courseWithFallback、courseOfBoat()と
- * 同じロジック。バックフィル済みレースで自艇だけnull=欠場のケースまで
- * 艇番にフォールバックすると、実際には走っていない艇を実在のコースとして
- * 誤表示するため、BOA-301と同じ問題）。raceTitle/raceStage/winningTechnique/
- * payoutWinはgetRacerScopedRaceStatsが取得していないためnull固定
+ * （racesテーブルへの追加問い合わせ不要）。boatNumberは、レビュー指摘により
+ * RaceHistoryTable側の列見出し「枠番」・もう一方の利用元（RacerPerformanceStats.jsx、
+ * BOA-159）と一貫させるため、当該レースでの生の艇番（r.boatNumber）をそのまま渡す
+ * （実進入コースのcourseWithFallbackは使わない。使うと同じ行内で「表示コース」と
+ * 「着順判定に使う艇番」が食い違う内部矛盾が生じるため）。raceTitle/raceStage/
+ * winningTechnique/payoutWinはgetRacerScopedRaceStatsが取得していないためnull固定
  * （直近5走のためだけに追加クエリを増やすのは範囲外と判断、RaceHistoryTable側で
  * 「-」表示にフォールバックする）
  */
@@ -167,7 +171,7 @@ export function getRecentRaces(records, count = 5) {
     raceTitle: null,
     raceGrade: r.raceGrade ?? null,
     raceStage: null,
-    boatNumber: r.courseWithFallback ?? null,
+    boatNumber: r.boatNumber,
     startTiming: r.startTiming ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
