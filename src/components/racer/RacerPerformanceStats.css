@@ -252,3 +252,85 @@ tr.racer-vc-row-highlight td:first-child {
     grid-template-columns: 1fr;
   }
 }
+
+/* 絞り込み結果のタブ（BOA-159、ADR-0062）。フィルタ選択時の詳細表示
+   （概要/決まり手/推移/レース一覧）をタブに分割し、情報量過多を避ける */
+.racer-vc-tabs-wrap {
+  margin-bottom: var(--spacing-4);
+}
+
+.racer-vc-tabs {
+  display: flex;
+  gap: var(--spacing-1);
+  border-bottom: 1px solid var(--border-hairline);
+  margin-bottom: var(--spacing-4);
+  overflow-x: auto;
+}
+
+.racer-vc-tab-button {
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.racer-vc-tab-button.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--brand-accent-primary);
+}
+
+.racer-vc-tab-button:hover {
+  color: var(--text-primary);
+}
+
+.racer-vc-race-list {
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+}
+
+.racer-vc-race-link {
+  color: var(--brand-accent-secondary);
+  text-decoration: none;
+  font-weight: var(--font-weight-semibold);
+}
+
+.racer-vc-race-link:hover {
+  text-decoration: underline;
+}
+
+.racer-vc-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.racer-vc-pager button {
+  font-family: inherit;
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+}
+
+.racer-vc-pager button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.racer-vc-pager button:not(:disabled):hover {
+  border-color: var(--brand-accent-primary);
+}
