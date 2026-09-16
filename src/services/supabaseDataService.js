@@ -677,6 +677,10 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
       seriesDay: race.seriesDay ?? null,
       isFinalDay: race.isFinalDay ?? null,
       raceStage: race.raceStage ?? null,
+      // 直前情報タブの気象カード用（BOA-304）。get_predictions_by_date/_light RPC
+      // （066マイグレーション）がbuildWeather()と同じ形で既に組み立てて返すため、
+      // そのまま渡すだけでよい
+      weather: race.weather ?? null,
       volatility: race.volatility
         ? {
             ...race.volatility,
