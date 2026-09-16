@@ -18,7 +18,14 @@ import {
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
-import { parseTrifectaAll } from "../lib/oddsParser.js";
+import {
+  parseTrifectaAll,
+  parseTrioAll,
+  parseExactaAll,
+  parseQuinellaAll,
+  parseWideAll,
+  parseRangeOddsValue,
+} from "../lib/oddsParser.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -28,9 +35,22 @@ const FETCH_HEADERS = {
   "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
 };
 
+// 全通り系（jsonb）列。ADR-0054/0057
+const FULL_ODDS_KEYS = [
+  "trifecta_all",
+  "trio_all",
+  "exacta_all",
+  "quinella_all",
+  "wide_all",
+];
+
 // 発走前の取得ウィンドウ（分）: 各ウィンドウで ±3分
-// オーケストレーターでも参照するため export
-export const ODDS_WINDOWS = [60, 30, 15, 10, 5];
+// 0分（締切時点）はADR-0057で追加。オーケストレーターでも参照するため export
+export const ODDS_WINDOWS = [60, 30, 15, 10, 5, 0];
+
+// 全通り（3連単/3連複/2連単/2連複/拡連複）を捕捉するウィンドウ。
+// ADR-0057により全窓を対象に拡大（旧: 発走直前の1窓のみ）
+export const FULL_ODDS_WINDOWS = ODDS_WINDOWS;
 
 /**
  * 結果取得済みレースの race_id セットを取得（スキップ判定用）
@@ -80,21 +100,10 @@ function scrapePlaceOdds($) {
   const placeOdds = [];
   $(".oddsPoint").each((i, el) => {
     if (i < 6 || i >= 12) return;
-    const text = $(el).text().trim();
-    // 2026-08-14修正（BOA-186）: scrapeTrifectaOddsと同様に全角ハイフンを正規化する。
-    // 未対応だと split("-") が1要素になり、high=lowにフォールバックして
-    // 「幅ゼロの点オッズ」が有効値として黙って保存されてしまう（nullと区別できない）
-    const normalized = text.replace(/[－ー−]/g, "-");
-    const parts = normalized.split("-");
-    const low = parseFloat(parts[0]);
-    const high = parts.length === 2 ? parseFloat(parts[1]) : NaN;
-    const valid =
-      parts.length === 2 &&
-      !isNaN(low) &&
-      !isNaN(high) &&
-      low > 0 &&
-      high >= low;
-    placeOdds.push(valid ? { low, high } : null);
+    // 2026-08-14修正（BOA-186）: 全角ハイフンを正規化する。未対応だとsplit("-")が
+    // 1要素になり、high=lowにフォールバックして「幅ゼロの点オッズ」が有効値として
+    // 黙って保存されてしまう（nullと区別できない）。parseRangeOddsValueに集約済み
+    placeOdds.push(parseRangeOddsValue($(el).text().trim()));
   });
   return placeOdds;
 }
@@ -129,13 +138,72 @@ function scrapeTrifectaOdds($) {
 }
 
 /**
+ * 全通り捕捉対象（3連複・2連単・2連複・拡連複）のページを取得し、
+ * それぞれのMapをプレーンオブジェクトに変換して返す（ADR-0057、FR-4）
+ *
+ * @param {string} date - YYYY-MM-DD
+ * @param {number} venueCode
+ * @param {number} raceNo
+ * @returns {Promise<{trioAll: Object|null, exactaAll: Object|null, quinellaAll: Object|null, wideAll: Object|null}>}
+ */
+async function fetchFullOddsCombinations(date, venueCode, raceNo) {
+  const ymd = date.replace(/-/g, "");
+  const jcd = String(venueCode).padStart(2, "0");
+  const trioUrl = `https://www.boatrace.jp/owpc/pc/race/odds3f?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
+  const tfUrl = `https://www.boatrace.jp/owpc/pc/race/odds2tf?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
+  const wideUrl = `https://www.boatrace.jp/owpc/pc/race/oddsk?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
+
+  const result = {
+    trioAll: null,
+    exactaAll: null,
+    quinellaAll: null,
+    wideAll: null,
+  };
+
+  // この関数はfetchOddsForRace内で単勝・3連単の取得成功後に呼ばれる。
+  // ここで例外を外側へ伝播させると、既に取得済みの基本オッズまで含めて
+  // レース全体がnull扱いになってしまうため、失敗はこの関数内で握りつぶし
+  // resultを空のまま返す（基本オッズの取得成功には影響させない）
+  try {
+    const [trioRes, tfRes, wideRes] = await Promise.all([
+      fetch(trioUrl, { headers: FETCH_HEADERS }),
+      fetch(tfUrl, { headers: FETCH_HEADERS }),
+      fetch(wideUrl, { headers: FETCH_HEADERS }),
+    ]);
+
+    if (trioRes.ok) {
+      const map = parseTrioAll(cheerio.load(await trioRes.text()));
+      if (map.size > 0) result.trioAll = Object.fromEntries(map);
+    }
+    if (tfRes.ok) {
+      const $tf = cheerio.load(await tfRes.text());
+      const exactaMap = parseExactaAll($tf);
+      const quinellaMap = parseQuinellaAll($tf);
+      if (exactaMap.size > 0) result.exactaAll = Object.fromEntries(exactaMap);
+      if (quinellaMap.size > 0)
+        result.quinellaAll = Object.fromEntries(quinellaMap);
+    }
+    if (wideRes.ok) {
+      const map = parseWideAll(cheerio.load(await wideRes.text()));
+      if (map.size > 0) result.wideAll = Object.fromEntries(map);
+    }
+  } catch (err) {
+    console.error(
+      `  ⚠️ ${VENUE_NAMES[venueCode]} ${raceNo}R 全通り系オッズ取得エラー（基本オッズには影響なし）: ${err.message}`,
+    );
+  }
+
+  return result;
+}
+
+/**
  * 1レースの単勝・3連単オッズを取得
  *
  * @param {string} date - YYYY-MM-DD
  * @param {number} venueCode - 会場コード (1-24)
  * @param {number} raceNo - レース番号 (1-12)
- * @param {boolean} wantFull - true なら3連単全120通りもパースして返す
- * @returns {Promise<{winOdds: Array, trifecta: Array, trifectaAll: Object|null}|null>}
+ * @param {boolean} wantFull - true なら3連単・3連複・2連単・2連複・拡連複の全通りもパースして返す（ADR-0057）
+ * @returns {Promise<{winOdds: Array, trifecta: Array, trifectaAll: Object|null, trioAll: Object|null, exactaAll: Object|null, quinellaAll: Object|null, wideAll: Object|null}|null>}
  */
 async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
   const ymd = date.replace(/-/g, "");
@@ -165,7 +233,7 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
     if (trifRes.ok) {
       const $trif = cheerio.load(await trifRes.text());
       trifecta = scrapeTrifectaOdds($trif);
-      // 発走直前スナップショット: 全120通りをパース（EV分析用・BOA-104）
+      // 全通り捕捉ウィンドウ: 120通りをパース（EV分析用・BOA-104）
       if (wantFull) {
         const fullMap = parseTrifectaAll($trif);
         if (fullMap.size > 0) trifectaAll = Object.fromEntries(fullMap);
@@ -175,13 +243,79 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
     // 有効な単勝オッズが1件もなければ null
     if (!winOdds.some((o) => o !== null)) return null;
 
-    return { winOdds, placeOdds, trifecta, trifectaAll };
+    let trioAll = null;
+    let exactaAll = null;
+    let quinellaAll = null;
+    let wideAll = null;
+    if (wantFull) {
+      ({ trioAll, exactaAll, quinellaAll, wideAll } =
+        await fetchFullOddsCombinations(date, venueCode, raceNo));
+    }
+
+    return {
+      winOdds,
+      placeOdds,
+      trifecta,
+      trifectaAll,
+      trioAll,
+      exactaAll,
+      quinellaAll,
+      wideAll,
+    };
   } catch (err) {
     console.error(
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R オッズ取得エラー: ${err.message}`,
     );
     return null;
   }
+}
+
+// フォールバックとして許容する最古のスナップショット年齢（分）。ODDS_WINDOWSの
+// 最大値（60分前）に運用上のマージンを加えた値。レース延期等で発走が大幅に
+// ずれた場合、何時間も前のスナップショットを「実質最終値」として扱うのは
+// 締切間際の市場変動を無視することになり危険なため、上限を設ける
+const MAX_FALLBACK_AGE_MINUTES = 75;
+
+/**
+ * 0分窓（締切時点）で全通り系の一部が欠けた場合、直近の成功スナップショットから
+ * 該当列を補完する（ADR-0057のフォールバック設計）。取得できなかった券種を
+ * エラーとして握りつぶさず、直前の値を実質的な最終値として扱う。ただし
+ * MAX_FALLBACK_AGE_MINUTESより古いスナップショットは採用しない
+ *
+ * @param {string} raceId
+ * @param {Object} row - 今回のスナップショット行（欠けている全通り系キーは未設定）
+ * @returns {Promise<Object>} 補完できた列のみを持つオブジェクト
+ */
+async function fillMissingFullOddsFromLatestSnapshot(raceId, row) {
+  const missingKeys = FULL_ODDS_KEYS.filter((k) => !(k in row));
+  if (missingKeys.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from("race_odds")
+    .select(`captured_at, ${missingKeys.join(", ")}`)
+    .eq("race_id", raceId)
+    .order("captured_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      `⚠️ race_odds全通り系フォールバック取得エラー [${raceId}]:`,
+      error.message,
+    );
+    return {};
+  }
+  if (!data) return {};
+
+  const ageMinutes =
+    (Date.now() - new Date(data.captured_at).getTime()) / 60000;
+  if (ageMinutes > MAX_FALLBACK_AGE_MINUTES) return {};
+
+  const fallback = {};
+  for (const key of missingKeys) {
+    if (data[key]) fallback[key] = data[key];
+  }
+  return fallback;
 }
 
 /**
@@ -205,17 +339,23 @@ export async function run(schedule, date) {
     }
   }
 
-  // 最終ウィンドウ（発走直前）のレースは全120通りの3連単を保存する
-  // （締切直前オッズ＝EV分析・市場確率合成の基礎データ。BOA-104）
-  const FULL_ODDS_WINDOW = Math.min(...ODDS_WINDOWS);
-  const fullOddsIds = new Set(
-    getRacesInWindow(schedule, FULL_ODDS_WINDOW).map((r) => r.race_id),
-  );
+  // 全窓（60/30/15/10/5/0分前）で全券種の全通りを保存する（ADR-0057）
+  const fullOddsIds = new Set();
+  for (const minutes of FULL_ODDS_WINDOWS) {
+    getRacesInWindow(schedule, minutes).forEach((r) =>
+      fullOddsIds.add(r.race_id),
+    );
+  }
 
   if (targetRaces.size === 0) {
     console.log("📭 オッズ: 取得対象レースなし（全ウィンドウ外）");
     return { updated: false, count: 0 };
   }
+
+  // 0分（締切時点）ウィンドウのレースID（フォールバック対象の判定用、ADR-0057）
+  const cutoffWindowIds = new Set(
+    getRacesInWindow(schedule, 0).map((r) => r.race_id),
+  );
 
   console.log(
     `🎯 オッズ取得: ${targetRaces.size}レース (${ODDS_WINDOWS.map((m) => `${m}分前`).join("/")} ウィンドウ)`,
@@ -223,7 +363,8 @@ export async function run(schedule, date) {
 
   // 会場ごとにグループ化して並列取得
   const capturedAt = new Date().toISOString();
-  const allRows = [];
+  const baseRows = [];
+  const fullOddsRows = [];
 
   const byVenue = new Map();
   for (const r of targetRaces.values()) {
@@ -250,14 +391,26 @@ export async function run(schedule, date) {
 
     for (const { r, data } of results) {
       if (!data) continue;
-      const { winOdds, placeOdds, trifecta, trifectaAll } = data;
+      const {
+        winOdds,
+        placeOdds,
+        trifecta,
+        trifectaAll,
+        trioAll,
+        exactaAll,
+        quinellaAll,
+        wideAll,
+      } = data;
 
-      allRows.push({
+      // 基本オッズ（単勝・複勝・3連単人気3位）は既存列のみで完結するため
+      // 全通り系（新規4列＋trifecta_all）とは別のupsertで書き込む。
+      // こうすることで、全通り系側でエラー（マイグレーション未適用等）が
+      // 起きても基本オッズの保存には影響しない（2026-09-16実装時に、
+      // 全窓全通り化で全レースが同一グループに入り、新規列欠如のエラー1件で
+      // 基本オッズまで含めて全件保存されない回帰を実データで確認して分離した）
+      baseRows.push({
         race_id: r.race_id,
         captured_at: capturedAt,
-        // マイグレーション022未適用でも通常ウィンドウの書き込みが失敗しないよう
-        // 全120通りがあるときだけ列を含める
-        ...(trifectaAll ? { trifecta_all: trifectaAll } : {}),
         odds_win_1: winOdds[0] ?? null,
         odds_win_2: winOdds[1] ?? null,
         odds_win_3: winOdds[2] ?? null,
@@ -284,6 +437,32 @@ export async function run(schedule, date) {
         trifecta_odds_3: trifecta[2]?.odds ?? null,
       });
 
+      let fullOddsPatch = {
+        ...(trifectaAll ? { trifecta_all: trifectaAll } : {}),
+        ...(trioAll ? { trio_all: trioAll } : {}),
+        ...(exactaAll ? { exacta_all: exactaAll } : {}),
+        ...(quinellaAll ? { quinella_all: quinellaAll } : {}),
+        ...(wideAll ? { wide_all: wideAll } : {}),
+      };
+
+      // 0分（締切時点）窓で全通り系の一部が欠けた場合は、直近の成功
+      // スナップショットを実質最終値として補完する（ADR-0057）
+      if (cutoffWindowIds.has(r.race_id)) {
+        const fallback = await fillMissingFullOddsFromLatestSnapshot(
+          r.race_id,
+          fullOddsPatch,
+        );
+        fullOddsPatch = { ...fullOddsPatch, ...fallback };
+      }
+
+      if (Object.keys(fullOddsPatch).length > 0) {
+        fullOddsRows.push({
+          race_id: r.race_id,
+          captured_at: capturedAt,
+          ...fullOddsPatch,
+        });
+      }
+
       const winStr = winOdds
         .map((o, i) => (o !== null ? `${i + 1}号艇:${o}` : null))
         .filter(Boolean)
@@ -297,32 +476,48 @@ export async function run(schedule, date) {
     }
   }
 
-  if (allRows.length === 0) {
+  if (baseRows.length === 0) {
     console.log("\n📭 オッズ: 書き込みデータなし");
     return { updated: false, count: 0 };
   }
 
-  console.log(`\n💾 race_odds: ${allRows.length}件書き込み中...`);
-  // PostgREST の一括upsertは全行同一キーが必要なため、
-  // trifecta_all の有無でグループを分けて書き込む
-  const rowGroups = [
-    allRows.filter((r) => !("trifecta_all" in r)),
-    allRows.filter((r) => "trifecta_all" in r),
-  ].filter((g) => g.length > 0);
-  for (const group of rowGroups) {
-    for (let i = 0; i < group.length; i += 1000) {
-      const batch = group.slice(i, i + 1000);
-      const { error } = await supabase
-        .from("race_odds")
-        .upsert(batch, { onConflict: "race_id,captured_at" });
-      if (error) {
-        console.error("❌ race_odds 書き込みエラー:", error.message);
+  console.log(`\n💾 race_odds(基本オッズ): ${baseRows.length}件書き込み中...`);
+  for (let i = 0; i < baseRows.length; i += 1000) {
+    const batch = baseRows.slice(i, i + 1000);
+    const { error } = await supabase
+      .from("race_odds")
+      .upsert(batch, { onConflict: "race_id,captured_at" });
+    if (error) {
+      console.error("❌ race_odds(基本オッズ)書き込みエラー:", error.message);
+    }
+  }
+  console.log(`✅ race_odds(基本オッズ): ${baseRows.length}件完了`);
+
+  if (fullOddsRows.length > 0) {
+    console.log(`💾 race_odds(全通り系): ${fullOddsRows.length}件追記中...`);
+    // PostgRESTの一括upsertは全行同一キーが必要。全通り系5列は個別URL取得のため
+    // 行ごとに含まれる列の組み合わせが異なりうる（一部だけ欠ける場合を含む）ため、
+    // 実際に含まれる全通り系キーの組み合わせ（シグネチャ）ごとにグループ化する
+    const groupBySignature = new Map();
+    for (const row of fullOddsRows) {
+      const signature = FULL_ODDS_KEYS.filter((k) => k in row).join(",");
+      if (!groupBySignature.has(signature)) groupBySignature.set(signature, []);
+      groupBySignature.get(signature).push(row);
+    }
+    for (const group of groupBySignature.values()) {
+      for (let i = 0; i < group.length; i += 1000) {
+        const batch = group.slice(i, i + 1000);
+        const { error } = await supabase
+          .from("race_odds")
+          .upsert(batch, { onConflict: "race_id,captured_at" });
+        if (error) {
+          console.error("❌ race_odds(全通り系)書き込みエラー:", error.message);
+        }
       }
     }
   }
 
-  console.log(`✅ race_odds: ${allRows.length}件完了`);
-  return { updated: true, count: allRows.length };
+  return { updated: true, count: baseRows.length };
 }
 
 /**
