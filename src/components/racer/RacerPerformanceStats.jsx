@@ -658,26 +658,13 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
         </div>
       )}
 
-      {vcVenueFixed && !vcBoatFixed && (
+      {vcVenueFixed && !vcBoatFixed && !vcHistoryLoading && !vcHistoryError && (
         <div className="racer-technique-profile">
           <h3>
             枠番別成績 — {vcLabel}
             <span className="h3-hint">枠番をクリックでさらに絞り込み →</span>
           </h3>
-          {vcHistoryError ? (
-            <p className="racer-stat-note">
-              出走履歴の取得に失敗しました。
-              <button
-                type="button"
-                className="racer-vc-retry-button"
-                onClick={() => setVcRetryToken((n) => n + 1)}
-              >
-                再試行
-              </button>
-            </p>
-          ) : vcHistoryLoading ? (
-            <p className="racer-stat-note">集計中…</p>
-          ) : vcCrossData && vcCrossData.length > 0 ? (
+          {vcCrossData && vcCrossData.length > 0 ? (
             <StatBreakdownTable
               headers={["枠番", "出走数", "勝率", "2連率", "3連率"]}
               rows={vcCrossData.map((row) => ({
@@ -700,26 +687,13 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
         </div>
       )}
 
-      {!vcVenueFixed && vcBoatFixed && (
+      {!vcVenueFixed && vcBoatFixed && !vcHistoryLoading && !vcHistoryError && (
         <div className="racer-technique-profile">
           <h3>
             会場別成績 — {vcLabel}
             <span className="h3-hint">会場をクリックでさらに絞り込み →</span>
           </h3>
-          {vcHistoryError ? (
-            <p className="racer-stat-note">
-              出走履歴の取得に失敗しました。
-              <button
-                type="button"
-                className="racer-vc-retry-button"
-                onClick={() => setVcRetryToken((n) => n + 1)}
-              >
-                再試行
-              </button>
-            </p>
-          ) : vcHistoryLoading ? (
-            <p className="racer-stat-note">集計中…</p>
-          ) : vcCrossData && vcCrossData.length > 0 ? (
+          {vcCrossData && vcCrossData.length > 0 ? (
             <StatBreakdownTable
               translateNo
               headers={["会場", "出走数", "勝率", "2連率", "3連率"]}
@@ -779,13 +753,10 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
         </div>
       )}
 
-      {vcVenueFixed && vcBoatFixed && vcHistoryLoading && (
-        <p className="racer-stat-note">集計中…</p>
-      )}
-
       {vcVenueFixed &&
         vcBoatFixed &&
         !vcHistoryLoading &&
+        !vcHistoryError &&
         vcData &&
         vcData.n === 0 && (
           <p className="racer-stat-note">
