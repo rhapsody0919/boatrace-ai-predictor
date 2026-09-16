@@ -239,6 +239,32 @@ FR-2のスクリプト・実行基盤設計に統合済み（同一ジョブで�
 | `venue_layout_changes` | BOA-296、レイアウト変更履歴（変更日・内容） |
 | `venue_misc_data` | BOA-294の残存項目（前検ランキング・水面特性・コンピ指数）、項目ごとに形式が異なるためjsonb中心 |
 
+`venue_entry_course_stats`はPhase 6cで実装済み（`docs/db-migration/064_venue_entry_course_stats.sql`）。会場サイトが選手登録番号を掲載しないため、選手の特定は氏名一致ではなく`races`/`race_entries`（当日の出走表）から`race_id`+`waku`でracer_idを引く設計にした（`node scripts/maintenance/generate-er-diagram.js scraping-full-coverage`で機械生成、2026-09-16）:
+
+```mermaid
+erDiagram
+    venue_entry_course_stats }o--|| races : "race_id"
+    venue_entry_course_stats {
+        VARCHAR(20) race_id PK
+        SMALLINT venue_code
+        SMALLINT waku PK
+        SMALLINT entry_course PK
+        INTEGER racer_id
+        TEXT racer_name_raw
+        DECIMAL(5,2) entry_rate
+        DECIMAL(4,2) avg_st
+        DECIMAL(5,2) place_rate_1
+        DECIMAL(5,2) place_rate_2
+        DECIMAL(5,2) place_rate_3
+        DECIMAL(5,2) place_rate_4
+        DECIMAL(5,2) place_rate_5
+        DECIMAL(5,2) place_rate_6
+        DATE stats_period_start
+        DATE stats_period_end
+        TIMESTAMPTZ scraped_at
+    }
+```
+
 ### 実行タイミング（ADR-0058の原則を適用、項目ごとに大きく異なるため一括りにしない）
 
 | データ | 変化頻度 | 許容鮮度 | 可用性ウィンドウ | 結論 |
