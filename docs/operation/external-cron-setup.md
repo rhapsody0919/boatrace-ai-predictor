@@ -81,11 +81,11 @@ cron-job.org（1〜2分間隔等の高頻度スケジュール）
 
 GitHub Actionsを経由しないため、`concurrency`直列化やチェックアウト等の固定コストが無い。設計判断の詳細は[スクレイピング基盤のサーバーレス移行 spec](../design/scraping-serverless-migration/spec.md)を参照。
 
-### 対象エンドポイント（現行、2026-09-14時点）
+### 対象エンドポイント（現行、2026-09-16時点）
 
 | エンドポイント | cron-job.org ジョブ名 | 間隔 | 時間帯 (JST) | 対応Phase |
 |---|---|---|---|---|
-| `/api/cron/exhibition` | `Vercel Exhibition Cron` | 2分間隔 | 7:00-23:00 | Phase 1（展示データ、GitHub Actions版と並走中） |
+| `/api/cron/exhibition` | `Vercel Exhibition Cron` | 2分間隔 | 7:00-23:00 | Phase 1（展示データ）。**2026-09-16、BOA-313 Step 3によりGitHub Actions側を無効化（マージ後に有効化）**（`scrape-scheduled.yml`のリポジトリ変数`SKIP_EXHIBITION_ON_GHA`、詳細は[spec.md](../design/scraping-serverless-migration/spec.md)参照）。マージ後はこちらのVercel版が展示データ取得の唯一の経路になる |
 
 ### セットアップ手順
 
