@@ -38,22 +38,22 @@
 
 ## FR-3: 今節成績（節内の日別進捗）
 
-- [ ] [BOA-220](https://linear.app/boat-ai/issue/BOA-220)（今節得点率）とのスコープ重複を整理し、統合方針を確定する
-- [ ] 得点率の公式計算ルール（着順→得点の対応表、優勝戦の加重等）を一次情報源で確認し、`docs/reference/`にまとめる
-- [ ] [BOA-226](https://linear.app/boat-ai/issue/BOA-226)（`races.series_day`）の実装状況を確認する（未完了なら本タスクの前提として先に完了させる）— **2026-09-15時点の状況（要決定）**: BOA-226は2026-09-12にスコープが転換しており、`series_day`（節内の何日目かという日数）そのものは実装されていない。代わりに`race_conditions.race_stage`（予選/準優勝戦/優勝戦等のラウンド種別文字列、`.title16_titleDetail__add2020`から抽出）が実装・本番適用済み（058マイグレーション、`scrapeRaceStage()`）。race_stageは「このレースが優勝戦か」の判定（BOA-326等）には使えるが、「節内の何日目まで進んだか」という日数の情報は持たないため、本FRが前提とする`series_day`列によるJOIN設計はこのままでは成立しない。着手前に次のいずれかを決定すること: (a) series_day（日数）を別途スクレイピング実装する、(b) `races.race_date`の会場内連続日数から節の日数を導出するロジックに設計変更する、(c) 今節成績の範囲特定に日数そのものは不要と判断し別の絞り込み条件に変更する
-- [ ] `getSeriesResultsByRacer(racerId, venueCode, meetStartDate)`を`supabaseDataService.js`に実装する（`races`/`race_results`/`race_entries`のJOIN、過去日分）
-- [ ] [BOA-323](https://linear.app/boat-ai/issue/BOA-323)の修正・バックフィル状況を確認した上で、当日分（結果確定に連動する部分）の動作を実データで検証する
+- [x] [BOA-220](https://linear.app/boat-ai/issue/BOA-220)（今節得点率）とのスコープ重複を整理し、統合方針を確定する（2026-09-16、[BOA-291](https://linear.app/boat-ai/issue/BOA-291)への統合を確認。得点率は自社計算せずpointrank直接スクレイピングに統合、ADR-0053追記）
+- [x] 得点率の公式計算ルール（着順→得点の対応表、優勝戦の加重等）を一次情報源で確認し、`docs/reference/`にまとめる（2026-09-16、[docs/reference/racer-score-rate-rules.md](../../reference/racer-score-rate-rules.md)作成。G3の加点有無・減点の詳細ルールは一次情報で確認できず「未確認」と明記。ただしpointrank直接スクレイピング方式のため自社実装上は不要）
+- [x] [BOA-226](https://linear.app/boat-ai/issue/BOA-226)（`races.series_day`）の実装状況を確認する（未完了なら本タスクの前提として先に完了させる）— 2026-09-15時点でBOA-226は`race_stage`のみの実装に留まり`series_day`/`is_final_day`が未実装と判明していた。**2026-09-16、選択肢(a) series_dayを別途スクレイピング実装する方式を採用（ユーザー判断）**。`scripts/daily/update-race-info.js`に`scrapeSeriesDay()`を追加し、racelistページの日程タブ（`.tab2_inner`、当日は`is-active2`）から取得。実データ検証済み（初日/中日/最終日）
+- [x] `getSeriesResultsByRacer(racerId, venueCode, meetStartDate)`を`supabaseDataService.js`に実装する（`race_entries`/`race_results`/`race_conditions`/`race_start_timings`のJOIN、過去日分＋得点率データの合流）
+- [x] [BOA-323](https://linear.app/boat-ai/issue/BOA-323)の修正・バックフィル状況を確認した上で、当日分（結果確定に連動する部分）の動作を実データで検証する（2026-09-16、DB実データで2026-09-10以降ほぼ100%決まり手・ST取得できていることを確認、解消済み）
 
 ## FR-4: オッズ全券種
 
-- [ ] 2連単・2連複・拡連複の正確なURLパス（`odds2tf`/`oddsk`等は仮称）とHTML構造を実データで確認する
-- [ ] `scripts/lib/oddsParser.js`に`parseExactaAll`/`parseQuinellaAll`/`parseWideAll`を追加する（`parseTrifectaAll`/`parseTrioAll`と同じ形式）
-- [ ] `docs/db-migration/062_race_odds_all_combinations.sql`をベースに正式なマイグレーションを作成・適用する（`trio_all`/`exacta_all`/`quinella_all`/`wide_all`）
-- [ ] [BOA-313](https://linear.app/boat-ai/issue/BOA-313) Phase 3の進捗を確認し、Vercel Functions移行と同時に実装するか、レガシー`scrape-odds.js`に先行実装するかを判断する
-- [ ] `ODDS_WINDOWS`に0分（締切時点）を追加し、`FULL_ODDS_WINDOWS`を全窓共通に拡張する（既存3連単も含む）
-- [ ] 0分窓の技術的実現可能性を実データで検証し、失敗時のフォールバック（直前の成功スナップショットを実質最終値として扱う）を実装する
-- [ ] オンデマンド更新エンドポイント（`api/odds/refresh.js`）を実装する（IP単位のレート制限、対象レースの妥当性検証、締切残り時間に応じた可変クールダウン）
-- [ ] 新規4券種の取得を並走検証（数日）してから本番運用に移行する。取得成功率の監視（BOA-313の`exhibition-gap-monitor.yml`と同様の仕組み）を追加する
+- [x] 2連単・2連複・拡連複の正確なURLパス（`odds2tf`/`oddsk`等は仮称）とHTML構造を実データで確認する（2026-09-16、実URLは`odds2tf`（2連単・2連複が同一ページ、oddsPointを含む2テーブル）・`oddsk`（拡連複、1テーブル）と確認。odds2tf内の2連単テーブルはrowspanなし・is-disabledなしの全30通り、2連複テーブルは同構造でis-disabledによる重複除外。拡連複はオッズが複勝と同じ下限-上限のレンジ表示）
+- [x] `scripts/lib/oddsParser.js`に`parseExactaAll`/`parseQuinellaAll`/`parseWideAll`を追加する（`parseTrifectaAll`/`parseTrioAll`と同じ形式。実データはrowspanありの3連単/3連複と構造が異なるため、新規共通関数`parseTwoBoatOddsTable`として実装）
+- [x] `docs/db-migration/065_race_odds_all_combinations.sql`を作成する（`trio_all`/`exacta_all`/`quinella_all`/`wide_all`、番号は062から065に変更。**未適用、Supabase Dashboardでの実行が必要**）
+- [x] [BOA-313](https://linear.app/boat-ai/issue/BOA-313) Phase 3の進捗を確認し、Vercel Functions移行と同時に実装するか、レガシー`scrape-odds.js`に先行実装するかを判断する（2026-09-16、ユーザー判断によりレガシー`scrape-odds.js`への先行実装を採用。理由: BOA-313 Phase 3着手はPhase 2完了後になる見込みで、待つ理由が無いため）
+- [x] `ODDS_WINDOWS`に0分（締切時点）を追加し、`FULL_ODDS_WINDOWS`を全窓共通に拡張する（既存3連単も含む）
+- [x] 0分窓の技術的実現可能性を実データで検証し、失敗時のフォールバック（直前の成功スナップショットを実質最終値として扱う）を実装する（2026-09-16、発走前後をポーリングし締切後1分以上経過してもオッズページが「投票締切」表示に切り替わらないことを確認。フォールバックは`fillMissingFullOddsFromLatestSnapshot()`として実装）
+- [ ] オンデマンド更新エンドポイント（`api/odds/refresh.js`）を実装する（IP単位のレート制限、対象レースの妥当性検証、締切残り時間に応じた可変クールダウン）— **今回スコープ外**（ユーザー判断、2026-09-16。Vercel移行と合わせて実装する）
+- [ ] 新規4券種の取得を並走検証（数日）してから本番運用に移行する。取得成功率の監視（BOA-313の`exhibition-gap-monitor.yml`と同様の仕組み）を追加する — **マイグレーション適用後、運用開始してから着手**
 
 ## FR-6: 会場個別公式サイト（24会場）
 
@@ -73,11 +73,13 @@
 
 ### Phase 6b: テンプレート実装
 
-- [ ] CMSベンダー分類ごとに1つの共有パーサーを実装する（Phase 6aの分類結果に基づく。BOA-293の10会場共有テンプレートが最優先候補）
+- [x] CMSベンダー分類ごとに1つの共有パーサーを実装する（Phase 6aの分類結果に基づく。BOA-293の10会場共有テンプレートが最優先候補）（2026-09-16、`scripts/lib/venueEntryCourseStats/parser.js`。Phase 6aで確認済みの10会場URL・列構成（枠/選手名/進入/進入率/平均ST/1〜6着率）一致を実装時に対象10会場全件へのHTTPリクエストで再検証済み（7会場は実データ、常滑・尼崎・びわこ・下関・唐津・多摩川・徳山は開催中で実データ行を確認、三国・若松・芦屋は非開催期間で「次節開催までしばらくお待ちください」表示を確認）、会場別の個別パーサーは不要と裏付けられた。テーブルのclass名自体は会場により異なる（`par-table01`/`com-table01`/`c_table`等）ため、クラス名ではなく見出しテキストで対象テーブルを解決する設計にした）
 
 ### Phase 6c: データ別実装（優先順）
 
-- [ ] [BOA-293](https://linear.app/boat-ai/issue/BOA-293)（進入コース別選手成績、**常滑・三国・びわこ・尼崎・徳山・下関・若松・芦屋・唐津・多摩川の10会場が最優先**、戸田・浜名湖・児島は上記理由により対象外）: `venue_entry_course_stats`テーブル作成・スクレイパー実装・日次実行
+- [x] [BOA-293](https://linear.app/boat-ai/issue/BOA-293)（進入コース別選手成績、**常滑・三国・びわこ・尼崎・徳山・下関・若松・芦屋・唐津・多摩川の10会場が最優先**、戸田・浜名湖・児島は上記理由により対象外）: `venue_entry_course_stats`テーブル作成・スクレイパー実装・日次実行の**コード実装は完了**（2026-09-16。`docs/db-migration/064_venue_entry_course_stats.sql`・`scripts/daily/scrape-venue-entry-course-stats.js`・`.github/workflows/scrape-venue-entry-course-stats.yml`（JST 20:00日次）・構造変化監視（`scripts/maintenance/check-venue-entry-course-stats-drift.js`、`driftHealth.js`のコア再利用）。会場サイトは選手登録番号を掲載しないため、racer_idは氏名一致ではなく自社`race_entries`（当日の出走表）から`race_id`+`waku`で解決する設計にした。実データ3会場（常滑・徳山・唐津）+非開催期間1会場（三国）のHTMLフィクスチャで回帰テスト（`npm run verify:venue-entry-course-stats`）。セルフレビューで発見した2件を修正済み: (1)見出し一致テーブル探索がDOM順で最初に見つかった部分一致テーブルを即採用してしまい、本来のテーブルがそれより後にある場合に取りこぼすバグ、(2)「次節開催」の誤検知防止スコープ（`.section_inner`/`main`）が両方とも無い場合にページ全体へフォールバックし、防止したかったヘッダーニュース欄の誤検知を再現してしまう経路。racer_id解決はrace_entries未整備の日には全行NULLになる設計だが、これはサイト構造監視（drift検知）とは別レイヤーの問題のため、drift検知には混ぜずログ警告のみで可視化した（判断が分かれる点として明記）
+  - [x] **マイグレーション適用済み**（2026-09-16、ユーザーの対話ターミナルで適用。`venue_entry_course_stats`テーブル・PK`(race_id, waku, entry_course)`・`races`へのFKを本番DBの`information_schema`/`pg_constraint`で確認済み）
+  - [x] GitHub Actions初回実行結果の確認（2026-09-16、マージ直後に`workflow_dispatch`で手動実行し確認。対象10会場中、本日開催中の7会場（多摩川・常滑・びわこ・尼崎・徳山・下関・唐津）が全て成功し3,024件保存（各432件＝12レース×6枠×6進入コース）、三国・若松・芦屋は本日開催なしで正しくスキップ。`racer_id`もrace_entriesとの突き合わせで7会場×432件全件解決（NULL 0件）、構造変化監視も異常なしと判定。実行ログ: https://github.com/rhapsody0919/boatrace-ai-predictor/actions/runs/35048192343）
 - [ ] 前検ランキング（BOA-294残存分）: [BOA-266](https://linear.app/boat-ai/issue/BOA-266)（常滑を情報源とする実装）と重複するため、BOA-266側の完了状況を見てFR-6独自の実装要否を再判断する
 - [ ] 水面特性（BOA-294残存分）: 年1回取得
 - [ ] ~~コンピ指数（BOA-294残存分）~~: **2026-09-16、FR-6のスコープから除外（会場公式サイト由来ではなく第三者の商用予想コンテンツ、AI学習目的のデータ収集を明示的に禁止するToSのため実装しない）**

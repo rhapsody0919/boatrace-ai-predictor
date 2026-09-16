@@ -8,7 +8,19 @@
 import { supabase } from "./supabaseClient";
 import { getVolatilityLevel } from "../utils/volatilityLevel";
 import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
+import {
+  extractVenueCodeFromRaceId,
+  addDaysToDateString,
+} from "../../scripts/lib/dateUtils.js";
 import { groupIntoCurrentMeet } from "../utils/meetGrouping";
+import { finishPositionOf } from "../components/race/basicInfoStats.js";
+
+// 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
+// getRacerBoatReturnRate/getRaceRacerBoatReturnRate/aggregateRacerVenueBoatStats
+// の3箇所で同じ式が使われているための共通化（BOA-159レビューで発見）
+function toReturnRate(payoutSum, sampleCount) {
+  return sampleCount > 0 ? (payoutSum / (sampleCount * 100)) * 100 : null;
+}
 
 // race_resultsの1行が集計対象として使えるか（中止・不成立・未確定を除外）。
 // getRacerVenueStats/getRacerRaceHistoryの両方で同じ判定を使うための共通化
@@ -19,6 +31,17 @@ function isUsableRaceResult(result) {
     !result.is_no_race &&
     result.rank1 !== null
   );
+}
+
+// resultのrank1〜rank6（着順でインデックス、値が艇番）を走査し、boatNumberと
+// 一致する着順（1〜6）を返す。actual_course_N（艇番でインデックス、値が
+// コース）とは列の向きが逆のため流用不可——進入コースはcourseOfBoat()を使う
+function findBoatColumnIndex(result, columnPrefix, boatNumber) {
+  if (!result) return null;
+  for (let i = 1; i <= 6; i++) {
+    if (result[`${columnPrefix}${i}`] === boatNumber) return i;
+  }
+  return null;
 }
 
 // BOA-301（モーター枠番別成績）の集計ウィンドウ。モーター交換日を記録する
@@ -2659,13 +2682,8 @@ export const supabaseDataService = {
           (data ?? []).forEach((r) => resultByRaceId.set(r.race_id, r));
         });
 
-        const rankOf = (result, boatNumber) => {
-          if (!result) return null;
-          for (let rank = 1; rank <= 6; rank++) {
-            if (result[`rank${rank}`] === boatNumber) return rank;
-          }
-          return null;
-        };
+        const rankOf = (result, boatNumber) =>
+          findBoatColumnIndex(result, "rank", boatNumber);
 
         // race_id昇順に並べ、同一選手が2日以内の間隔で乗り続けている限り同じ節とみなす
         const sorted = [...entries].sort((a, b) =>
@@ -3933,47 +3951,69 @@ export const supabaseDataService = {
       }
 
       const raceIds = [...new Set(entries.map((e) => e.race_id))];
-      const [raceRows, resultRows, exhibitionRows] = await Promise.all([
-        fetchAllByIn("races", "race_id, venue_code", "race_id", raceIds),
-        fetchAllByIn(
-          "race_results",
-          "race_id, rank1, rank2, rank3, winning_technique, payout_win, is_cancelled, is_no_race",
-          "race_id",
-          raceIds,
-        ),
-        fetchAllByIn(
-          "exhibition_data",
-          "race_id, boat_number, exhibition_time, start_timing",
-          "race_id",
-          raceIds,
-        ),
-      ]);
+      const [raceRows, resultRows, exhibitionRows, conditionRows] =
+        await Promise.all([
+          fetchAllByIn(
+            "races",
+            "race_id, venue_code, race_grade",
+            "race_id",
+            raceIds,
+          ),
+          fetchAllByIn(
+            "race_results",
+            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, is_cancelled, is_no_race",
+            "race_id",
+            raceIds,
+          ),
+          fetchAllByIn(
+            "exhibition_data",
+            "race_id, boat_number, exhibition_time, start_timing",
+            "race_id",
+            raceIds,
+          ),
+          fetchAllByIn(
+            "race_conditions",
+            "race_id, race_stage, race_title",
+            "race_id",
+            raceIds,
+          ),
+        ]);
 
-      const venueByRaceId = new Map(
-        raceRows.map((r) => [r.race_id, r.venue_code]),
-      );
+      const raceInfoByRaceId = new Map(raceRows.map((r) => [r.race_id, r]));
       const resultByRaceId = new Map(resultRows.map((r) => [r.race_id, r]));
       const exhibitionByKey = new Map(
         exhibitionRows.map((e) => [`${e.race_id}-${e.boat_number}`, e]),
       );
+      const conditionByRaceId = new Map(
+        conditionRows.map((c) => [c.race_id, c]),
+      );
 
       return entries
         .map((entry) => {
-          const venueCode = venueByRaceId.get(entry.race_id) ?? null;
+          const raceInfo = raceInfoByRaceId.get(entry.race_id);
           const result = resultByRaceId.get(entry.race_id);
           const exhibition = exhibitionByKey.get(
             `${entry.race_id}-${entry.boat_number}`,
           );
-          if (!venueCode || !isUsableRaceResult(result)) return null;
+          const condition = conditionByRaceId.get(entry.race_id);
+          if (!raceInfo?.venue_code || !isUsableRaceResult(result)) return null;
           return {
             raceId: entry.race_id,
-            venueCode,
+            venueCode: raceInfo.venue_code,
+            raceGrade: raceInfo.race_grade ?? null,
+            raceStage: condition?.race_stage ?? null,
+            raceTitle: condition?.race_title ?? null,
             boatNumber: entry.boat_number,
             rank1: result.rank1,
             rank2: result.rank2,
             rank3: result.rank3,
+            rank4: result.rank4,
+            rank5: result.rank5,
+            rank6: result.rank6,
             winningTechnique: result.winning_technique ?? null,
             payoutWin: result.payout_win ?? null,
+            payoutPlace1: result.payout_place_1 ?? null,
+            payoutPlace2: result.payout_place_2 ?? null,
             exhibitionTime: exhibition?.exhibition_time ?? null,
             startTiming: exhibition?.start_timing ?? null,
           };
@@ -4048,14 +4088,11 @@ export const supabaseDataService = {
         .map(([boatNumber, stats]) => ({
           boat_number: boatNumber,
           sample_count: stats.sampleCount,
-          win_return_rate:
-            stats.sampleCount > 0
-              ? (stats.winPayoutSum / (stats.sampleCount * 100)) * 100
-              : null,
-          place_return_rate:
-            stats.sampleCount > 0
-              ? (stats.placePayoutSum / (stats.sampleCount * 100)) * 100
-              : null,
+          win_return_rate: toReturnRate(stats.winPayoutSum, stats.sampleCount),
+          place_return_rate: toReturnRate(
+            stats.placePayoutSum,
+            stats.sampleCount,
+          ),
         }))
         .sort((a, b) => a.boat_number - b.boat_number);
     });
@@ -4643,6 +4680,160 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定選手の今節成績（節内の日別進入・着順・ST推移）を取得する
+   * （BOA-291/BOA-220、FR-3、docs/adr/0053参照）
+   *
+   * 進入コース・着順・STは自社race_results/race_entries/race_start_timingsから
+   * 導出する（ADR-0053: 自社データとの二重管理を避けるため、racelistページの
+   * 「今節成績」表示を直接スクレイピングしない）。
+   * 得点率（SG/G1等の記念競走のみ存在）はracer_series_points（pointrankページの
+   * 直接スクレイピング、ADR-0053追記2026-09-16）から取得する。
+   *
+   * @param {number} racerId
+   * @param {number} venueCode
+   * @param {string} meetStartDate - 開催初日 YYYY-MM-DD（race_conditions.series_dayから逆算した値）
+   * @returns {Promise<{racer_id: number, venue_code: number, meet_start_date: string, days: Array, series_points: object|null}>}
+   *   series_pointsはracer_series_pointsの1行（rank/score_rate/placements/total_points/penalty_points/remarks）
+   *   をそのまま返す。得点率という単一の値ではなく行全体を保持するため`score_rate`ではなくこの名前にしている
+   */
+  async getSeriesResultsByRacer(racerId, venueCode, meetStartDate) {
+    return withCache(
+      `series-results-${racerId}-${venueCode}-${meetStartDate}`,
+      async () => {
+        const empty = {
+          racer_id: racerId,
+          venue_code: venueCode,
+          meet_start_date: meetStartDate,
+          days: [],
+          series_points: null,
+        };
+        if (!supabase) {
+          console.error("Supabase client not initialized");
+          return empty;
+        }
+
+        // race_idは"YYYY-MM-DD-VV-RR"形式のため、venue_codeのLIKE部分一致
+        // （"%-VV-%"）は日付側の月日部分と衝突しうる（例: 4月のレースが
+        // venue_code=4に誤マッチする）。venue_codeの絞り込みはJS側で正確に行う。
+        // 上限日付はSG/G1でも最長6日程度の開催に対する安全マージンで、同一
+        // 会場での次開催のデータが誤って混入しないようにする
+        const upperBoundDate = addDaysToDateString(meetStartDate, 10);
+        const { data: rawEntries, error: entriesError } = await supabase
+          .from("race_entries")
+          .select("race_id, boat_number")
+          .eq("racer_id", racerId)
+          .gte("race_id", meetStartDate)
+          .lte("race_id", upperBoundDate)
+          .order("race_id");
+
+        if (entriesError) {
+          console.error(
+            "race_entries(今節成績)取得エラー:",
+            entriesError.message,
+          );
+          return empty;
+        }
+        const entries = (rawEntries || []).filter(
+          (e) => extractVenueCodeFromRaceId(e.race_id) === venueCode,
+        );
+        if (entries.length === 0) return empty;
+
+        const raceIds = entries.map((e) => e.race_id);
+        const boatByRaceId = new Map(
+          entries.map((e) => [e.race_id, e.boat_number]),
+        );
+
+        const [resultsRows, conditionsRows, startTimingRows, seriesPointsRes] =
+          await Promise.all([
+            fetchAllByIn(
+              "race_results",
+              "race_id, rank1, rank2, rank3, rank4, rank5, rank6, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique",
+              "race_id",
+              raceIds,
+            ),
+            fetchAllByIn(
+              "race_conditions",
+              "race_id, series_day, is_final_day",
+              "race_id",
+              raceIds,
+            ),
+            fetchAllByIn(
+              "race_start_timings",
+              "race_id, boat_number, start_timing, is_flying, is_late_start",
+              "race_id",
+              raceIds,
+            ),
+            supabase
+              .from("racer_series_points")
+              .select(
+                "rank, score_rate, placements, total_points, penalty_points, remarks",
+              )
+              .eq("racer_id", racerId)
+              .eq("venue_code", venueCode)
+              .eq("meet_start_date", meetStartDate)
+              .maybeSingle(),
+          ]);
+
+        if (seriesPointsRes.error) {
+          console.error(
+            "racer_series_points取得エラー:",
+            seriesPointsRes.error.message,
+          );
+        }
+        const seriesPoints = seriesPointsRes.data ?? null;
+
+        const resultsByRaceId = new Map(resultsRows.map((r) => [r.race_id, r]));
+        const conditionsByRaceId = new Map(
+          conditionsRows.map((r) => [r.race_id, r]),
+        );
+        const startTimingByKey = new Map(
+          startTimingRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
+        );
+
+        const days = raceIds.map((raceId) => {
+          const boatNumber = boatByRaceId.get(raceId);
+          const result = resultsByRaceId.get(raceId);
+          const conditions = conditionsByRaceId.get(raceId);
+          const startTiming = startTimingByKey.get(`${raceId}-${boatNumber}`);
+
+          const finishRank = findBoatColumnIndex(result, "rank", boatNumber);
+          // actual_course_Nは艇番でインデックスされた列（N号艇の進入コース）
+          // であり、rank1..6とは列の向きが逆のためfindBoatColumnIndexは使えない
+          const entryCourse = courseOfBoat(result, boatNumber);
+
+          return {
+            race_id: raceId,
+            race_date: raceId.slice(0, 10),
+            boat_number: boatNumber,
+            series_day: conditions?.series_day ?? null,
+            is_final_day: conditions?.is_final_day ?? null,
+            entry_course: entryCourse,
+            finish_rank: finishRank,
+            start_timing: startTiming?.start_timing ?? null,
+            is_flying: startTiming?.is_flying ?? null,
+            is_late_start: startTiming?.is_late_start ?? null,
+            winning_technique: result?.winning_technique ?? null,
+          };
+        });
+
+        // is_final_dayの日以降は次開催のデータの可能性があるため切り捨てる
+        // （upperBoundDateは安全マージンに過ぎず、確実な境界はis_final_dayのみ）
+        const finalDayIndex = days.findIndex((d) => d.is_final_day);
+        const trimmedDays =
+          finalDayIndex === -1 ? days : days.slice(0, finalDayIndex + 1);
+
+        return {
+          racer_id: racerId,
+          venue_code: venueCode,
+          meet_start_date: meetStartDate,
+          days: trimmedDays,
+          series_points: seriesPoints,
+        };
+      },
+    );
+  },
+
+  /**
    * 指定レースの選手コース別統計（racerStats）を取得する（BOA-168）
    * predictions.feature_contributions.racerStats に日次バッチで保存済みの
    * 進入コース・平均ST・コース別勝敗・攻め手/守り手分布を返す。
@@ -4980,10 +5171,11 @@ export const supabaseDataService = {
         return {
           ...row,
           sample_count: stats.sampleCount,
-          win_return_rate:
-            (stats.winPayoutSum / (stats.sampleCount * 100)) * 100,
-          place_return_rate:
-            (stats.placePayoutSum / (stats.sampleCount * 100)) * 100,
+          win_return_rate: toReturnRate(stats.winPayoutSum, stats.sampleCount),
+          place_return_rate: toReturnRate(
+            stats.placePayoutSum,
+            stats.sampleCount,
+          ),
         };
       });
     });
@@ -5915,45 +6107,72 @@ export const supabaseDataService = {
 };
 
 /**
- * getRacerRaceHistory()が返すフラット履歴を「会場×枠番」で絞り込み集計する
- * 純粋関数（I/O無し）。venueCode/boatNumberはnullで絞り込みなしを表す。
- * 選手個人ページの会場×枠番フィルタが変更されるたびにこれを呼ぶことで、
+ * 1走分の勝敗を{win, top2, top3}アキュムレータに加算する共通ロジック。
+ * aggregateRacerVenueBoatStats（単一集計）とaggregateRacerCrossStats
+ * （グループ別集計）の両方が同じ勝率/2連率/3連率の判定を必要とするため
+ * 共通化（ADR-0063、BOA-159レビューで発見）。
+ * @returns {boolean} 勝利（1着）だったか
+ */
+function tallyWinPlaceShow(totals, row) {
+  const isWin = row.rank1 === row.boatNumber;
+  if (isWin) totals.win += 1;
+  if (isPlaceHit(row.boatNumber, row.rank1, row.rank2)) totals.top2 += 1;
+  if (isShowHit(row.boatNumber, row.rank1, row.rank2, row.rank3)) {
+    totals.top3 += 1;
+  }
+  return isWin;
+}
+
+/**
+ * getRacerRaceHistory()が返すフラット履歴を「会場×枠番×グレード×レース種別」
+ * で絞り込み集計する純粋関数（I/O無し）。各引数はnullで絞り込みなしを表す。
+ * raceGrade/raceStageはBOA-159で追加（完全一致判定のみ、サンプル数閾値は
+ * 適用しない方針、docs/design/racer-stats-drilldown/spec.md参照）。
+ * 選手個人ページのフィルタが変更されるたびにこれを呼ぶことで、
  * ネットワークI/O無しで即座に再集計できる。
  * 注: 実際の進入コースはBOA-257の制約により取得できないため、発走前に
  * 決まる枠番（艇番）基準で集計する
  * @param {Array} history - getRacerRaceHistory()の戻り値
  * @param {number|null} venueCode
  * @param {number|null} boatNumber
+ * @param {string|null} raceGrade - races.race_gradeと完全一致（ippan/G1/G2/G3/SG）
+ * @param {string|null} raceStage - race_conditions.race_stageと完全一致（優勝戦/準優勝戦）
  */
-export function aggregateRacerVenueBoatStats(history, venueCode, boatNumber) {
+export function aggregateRacerVenueBoatStats(
+  history,
+  venueCode,
+  boatNumber,
+  raceGrade,
+  raceStage,
+) {
   let n = 0,
-    win = 0,
-    top2 = 0,
-    top3 = 0,
     returnSum = 0,
+    placeReturnSum = 0,
     stSum = 0,
-    stN = 0;
+    stN = 0,
+    exSum = 0,
+    exN = 0;
+  const totals = { win: 0, top2: 0, top3: 0 };
   const tech = {};
   const series = [];
+  const matchedRaces = [];
 
   for (const row of history ?? []) {
     if (venueCode && row.venueCode !== venueCode) continue;
     if (boatNumber && row.boatNumber !== boatNumber) continue;
+    if (raceGrade && row.raceGrade !== raceGrade) continue;
+    if (raceStage && row.raceStage !== raceStage) continue;
 
     n += 1;
-    const isWin = row.rank1 === row.boatNumber;
+    const isWin = tallyWinPlaceShow(totals, row);
     if (isWin) {
-      win += 1;
       if (row.winningTechnique) {
         tech[row.winningTechnique] = (tech[row.winningTechnique] ?? 0) + 1;
       }
       returnSum += row.payoutWin ?? 0;
-    }
-    if (isPlaceHit(row.boatNumber, row.rank1, row.rank2)) {
-      top2 += 1;
-    }
-    if (isShowHit(row.boatNumber, row.rank1, row.rank2, row.rank3)) {
-      top3 += 1;
+      placeReturnSum += row.payoutPlace1 ?? 0;
+    } else if (row.rank2 === row.boatNumber) {
+      placeReturnSum += row.payoutPlace2 ?? 0;
     }
 
     const hasEx = row.exhibitionTime !== null;
@@ -5961,6 +6180,10 @@ export function aggregateRacerVenueBoatStats(history, venueCode, boatNumber) {
     if (hasSt) {
       stSum += Number(row.startTiming);
       stN += 1;
+    }
+    if (hasEx) {
+      exSum += Number(row.exhibitionTime);
+      exN += 1;
     }
     if (hasEx || hasSt) {
       // historyは既にrace_id（YYYY-MM-DD-会場-レース番号）昇順でソート済みの
@@ -5973,20 +6196,93 @@ export function aggregateRacerVenueBoatStats(history, venueCode, boatNumber) {
         start_timing: hasSt ? Number(row.startTiming) : null,
       });
     }
+
+    matchedRaces.push({
+      raceId: row.raceId,
+      date: row.raceId.slice(0, 10),
+      venueCode: row.venueCode,
+      raceNo: Number(row.raceId.slice(-2)),
+      raceTitle: row.raceTitle,
+      raceGrade: row.raceGrade,
+      raceStage: row.raceStage,
+      boatNumber: row.boatNumber,
+      startTiming: row.startTiming,
+      finishRank: finishPositionOf(row),
+      winningTechnique: row.winningTechnique,
+      payoutWin: row.payoutWin,
+    });
   }
+
+  // レース一覧（BOA-159）は日付降順（新しい順）で見せる。集計用のhistory自体は
+  // 昇順ソート済みのため、この配列だけ表示直前に反転する
+  matchedRaces.reverse();
 
   return {
     n,
-    win,
-    top2,
-    top3,
-    winRate: n > 0 ? win / n : null,
-    top2Rate: n > 0 ? top2 / n : null,
-    top3Rate: n > 0 ? top3 / n : null,
+    win: totals.win,
+    top2: totals.top2,
+    top3: totals.top3,
+    winRate: n > 0 ? totals.win / n : null,
+    top2Rate: n > 0 ? totals.top2 / n : null,
+    top3Rate: n > 0 ? totals.top3 / n : null,
     tech,
     avgSt: stN > 0 ? stSum / stN : null,
     stN,
-    returnRate: n > 0 ? (returnSum / (n * 100)) * 100 : null,
+    avgExhibitionTime: exN > 0 ? exSum / exN : null,
+    exN,
+    returnRate: toReturnRate(returnSum, n),
+    placeReturnRate: toReturnRate(placeReturnSum, n),
     series,
+    matchedRaces,
   };
+}
+
+/**
+ * 会場・枠番のどちらか一方だけを固定し、固定していない方でグループ化した
+ * 成績一覧を返す（BOA-159 Phase2、ADR-0063）。「会場だけ選んだら、その会場
+ * 限定の枠番別成績を一覧で比較したい」というニーズに応える。
+ * 会場・枠番どちらも未固定/どちらも固定のケースはaggregateRacerVenueBoatStats
+ * を使う（本関数は「どちらか一方だけ固定」のケース専用）。
+ * @param {Array} history - getRacerRaceHistory()の戻り値
+ * @param {{venueCode?: number, boatNumber?: number}} fixed - 固定する軸（片方のみ指定）
+ * @param {"venue"|"boat"} groupBy - グループ化する軸（固定していない方）
+ * @param {string|null} raceGrade
+ * @param {string|null} raceStage
+ */
+export function aggregateRacerCrossStats(
+  history,
+  fixed,
+  groupBy,
+  raceGrade,
+  raceStage,
+) {
+  const groups = new Map();
+
+  for (const row of history ?? []) {
+    if (fixed.venueCode && row.venueCode !== fixed.venueCode) continue;
+    if (fixed.boatNumber && row.boatNumber !== fixed.boatNumber) continue;
+    if (raceGrade && row.raceGrade !== raceGrade) continue;
+    if (raceStage && row.raceStage !== raceStage) continue;
+
+    const key = groupBy === "venue" ? row.venueCode : row.boatNumber;
+    if (!groups.has(key)) {
+      groups.set(key, { n: 0, win: 0, top2: 0, top3: 0 });
+    }
+    const g = groups.get(key);
+    g.n += 1;
+    tallyWinPlaceShow(g, row);
+  }
+
+  return [...groups.entries()]
+    .map(([key, g]) => ({
+      key,
+      n: g.n,
+      win: g.win,
+      top2: g.top2,
+      top3: g.top3,
+      winRate: g.n > 0 ? g.win / g.n : null,
+      top2Rate: g.n > 0 ? g.top2 / g.n : null,
+      top3Rate: g.n > 0 ? g.top3 / g.n : null,
+    }))
+    .sort((a, b) => a.key - b.key);
 }

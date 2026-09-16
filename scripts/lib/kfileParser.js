@@ -172,6 +172,84 @@ export function parseKFileText(text, raceDate) {
   return rows;
 }
 
+/**
+ * Kファイルのデコード済みテキストをパースし、レースごとの着順（1〜6着の艇番）を抽出する（BOA-338）。
+ *
+ * K_RESULT_REの1番目のキャプチャグループ（着、"01"〜"06"）は、進入コース抽出用の
+ * parseKFileText()では未使用だったが、着順そのものを表す値のため、着順バックフィル
+ * ではここから直接1〜6着の艇番を得られる。F(フライング)/L(出遅れ)/失格/転覆等の
+ * 非数値コードはparseInt()がNaNを返すため自然に除外される（着順に含めない）。
+ *
+ * 同着（複数艇が同じ着順ラベルを持つケース）に対応するため、ラベルの数値そのものを
+ * 着順として使わず、有効な着順行が出現した順番（1着目に出現した行→1着、2着目→2着…）で
+ * 位置を割り当てる。同着時はKファイル側もラベルを繰り返し（例:「01」が2回）その次の
+ * ラベルを1つ飛ばす（例:「03」）形式のため、出現順に振り直すことで既存rank1〜3
+ * （公式サイトのraceresultページ由来）の並びと一致する（2025-12-11-17-01の同着で確認済み）。
+ *
+ * @param {string} text - fetchKFileText()が返すデコード済みテキスト
+ * @param {string} raceDate - YYYY-MM-DD（race_id組み立てに使用）
+ * @returns {Array<{race_id: string, venue_code: number, race_number: number, valid: boolean,
+ *   rank1: number|null, ..., rank6: number|null}>} validがfalseの行は着順に艇番の重複が
+ *   あった（パース異常の疑い）ことを示し、呼び出し元は更新に使うべきでない。
+ */
+export function parseKFileRankings(text, raceDate) {
+  const lines = text.split(/\r?\n/);
+  /** @type {Map<string, {venue: number, raceNo: number, boatsInOrder: number[]}>} */
+  const races = new Map();
+
+  let venue = null;
+  let currentRaceNo = null;
+
+  for (const line of lines) {
+    const venueMatch = line.match(VENUE_HDR_RE);
+    if (venueMatch) {
+      venue = parseInt(venueMatch[1], 10);
+      currentRaceNo = null;
+      continue;
+    }
+    if (venue === null) continue;
+
+    const headerMatch = line.match(K_RACE_HDR_RE);
+    if (headerMatch) {
+      currentRaceNo = parseInt(headerMatch[1], 10);
+      continue;
+    }
+    if (currentRaceNo === null) continue;
+
+    const resultMatch = line.match(K_RESULT_RE);
+    if (!resultMatch) continue;
+
+    const rank = parseInt(resultMatch[1], 10);
+    if (!(rank >= 1 && rank <= 6)) continue; // F/L/失格/転覆等は着順として扱わない
+
+    const boat = parseInt(resultMatch[2], 10);
+    const key = `${venue}-${currentRaceNo}`;
+    if (!races.has(key)) {
+      races.set(key, { venue, raceNo: currentRaceNo, boatsInOrder: [] });
+    }
+    races.get(key).boatsInOrder.push(boat);
+  }
+
+  const rows = [];
+  for (const { venue: v, raceNo, boatsInOrder } of races.values()) {
+    const raceId = `${raceDate}-${String(v).padStart(2, "0")}-${String(raceNo).padStart(2, "0")}`;
+    const valid = new Set(boatsInOrder).size === boatsInOrder.length; // 艇番重複はパース異常の疑い
+    rows.push({
+      race_id: raceId,
+      venue_code: v,
+      race_number: raceNo,
+      valid,
+      rank1: boatsInOrder[0] ?? null,
+      rank2: boatsInOrder[1] ?? null,
+      rank3: boatsInOrder[2] ?? null,
+      rank4: boatsInOrder[3] ?? null,
+      rank5: boatsInOrder[4] ?? null,
+      rank6: boatsInOrder[5] ?? null,
+    });
+  }
+  return rows;
+}
+
 // テスト・デバッグ用に内部関数・正規表現も公開する
 export const _internal = {
   K_RACE_HDR_RE,

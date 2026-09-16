@@ -81,10 +81,12 @@ async function main() {
 
   // レース情報更新（発走60分前ウィンドウ）
   if (hasUpdateRaces) {
-    const { updated, count } = await runUpdateInfo(schedule, date).catch((e) => {
-      console.error("⚠️ レース情報更新失敗:", e.message);
-      return { updated: false, count: 0 };
-    });
+    const { updated, count } = await runUpdateInfo(schedule, date).catch(
+      (e) => {
+        console.error("⚠️ レース情報更新失敗:", e.message);
+        return { updated: false, count: 0 };
+      },
+    );
     if (updated) {
       anyUpdated = true;
       getRacesInWindow(schedule, 60).forEach((r) =>
@@ -112,11 +114,16 @@ async function main() {
   }
 
   // 展示データ取得（発走30/15/10分前ウィンドウ）
-  if (hasExhibitionRaces) {
-    const { updated, count } = await runExhibition(schedule, date).catch((e) => {
-      console.error("⚠️ 展示データ取得失敗:", e.message);
-      return { updated: false, count: 0 };
-    });
+  // BOA-313 Step 3: Vercel Function(api/cron/exhibition.js)へ移行済みのため、
+  // SKIP_EXHIBITION_ON_GHAが"true"の間はGitHub Actions側での取得をスキップする。
+  // コードは削除せず、切り戻しはリポジトリ変数のトグルのみで完結させる。
+  if (hasExhibitionRaces && process.env.SKIP_EXHIBITION_ON_GHA !== "true") {
+    const { updated, count } = await runExhibition(schedule, date).catch(
+      (e) => {
+        console.error("⚠️ 展示データ取得失敗:", e.message);
+        return { updated: false, count: 0 };
+      },
+    );
     if (updated) {
       anyUpdated = true;
       [30, 15, 10].forEach((w) =>

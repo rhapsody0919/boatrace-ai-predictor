@@ -191,6 +191,18 @@ tr.racer-vc-row-highlight td:first-child {
   color: var(--text-secondary);
 }
 
+/* レース一覧（BOA-159）は列数・レース名の文字数が多く、折り返すと見出しが
+   縦積みになってしまうため、このテーブルに限り改行させず横スクロールに委ねる */
+.racer-vc-race-list .racer-return-rate-table {
+  width: auto;
+  min-width: 100%;
+}
+
+.racer-vc-race-list .racer-return-rate-table th,
+.racer-vc-race-list .racer-return-rate-table td {
+  white-space: nowrap;
+}
+
 .racer-return-rate-table th {
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
@@ -251,4 +263,73 @@ tr.racer-vc-row-highlight td:first-child {
   .racer-stat-cards-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* 一覧テーブルの行クリック（会場・枠番のクロス集計への絞り込み、ADR-0063） */
+.racer-vc-row-clickable {
+  cursor: pointer;
+}
+
+.racer-vc-row-clickable:hover td {
+  background: var(--surface-page);
+}
+
+.racer-vc-row-clickable td:first-child {
+  color: var(--brand-accent-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* h3見出しに添えるヒントテキスト（「〜をクリックで絞り込み」等）。既存の
+   .racer-vc-scope（— {vcLabel}）と同じインライン表示パターンに合わせる */
+.h3-hint {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+  margin-left: var(--spacing-2);
+}
+
+.racer-vc-race-list {
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+}
+
+.racer-vc-race-link {
+  color: var(--brand-accent-secondary);
+  text-decoration: none;
+  font-weight: var(--font-weight-semibold);
+}
+
+.racer-vc-race-link:hover {
+  text-decoration: underline;
+}
+
+.racer-vc-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.racer-vc-pager button {
+  font-family: inherit;
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+}
+
+.racer-vc-pager button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.racer-vc-pager button:not(:disabled):hover {
+  border-color: var(--brand-accent-primary);
 }

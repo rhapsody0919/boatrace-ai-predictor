@@ -1,0 +1,37 @@
+{
+  "5": {
+    "consecutiveFailDays": 0,
+    "lastReason": null,
+    "lastCheckedDate": "2026-09-16"
+  },
+  "8": {
+    "consecutiveFailDays": 0,
+    "lastReason": null,
+    "lastCheckedDate": "2026-09-16"
+  },
+  "11": {
+    "consecutiveFailDays": 0,
+    "lastReason": null,
+    "lastCheckedDate": "2026-09-16"
+  },
+  "13": {
+    "consecutiveFailDays": 0,
+    "lastReason": null,
+    "lastCheckedDate": "2026-09-16"
+  },
+  "18": {
+    "consecutiveFailDays": 0,
+    "lastReason": null,
+    "lastCheckedDate": "2026-09-16"
+  },
+  "19": {
+    "consecutiveFailDays": 0,
+    "lastReason": null,
+    "lastCheckedDate": "2026-09-16"
+  },
+  "23": {
+    "consecutiveFailDays": 0,
+    "lastReason": null,
+    "lastCheckedDate": "2026-09-16"
+  }
+}

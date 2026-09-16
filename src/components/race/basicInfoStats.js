@@ -126,8 +126,9 @@ export function computeRates(records) {
 
 // レース内順位（1〜6）を返す。rank1〜3は必ず取得済み、rank4〜6はBOA-238以降のみ
 // バックフィル済みのため、一致しなければ「着外だが正確な順位は不明」として
-// nullを返す（"out"というラベル文字列ではなく、呼び出し側で明示的に判定させる）
-function finishPositionOf(r) {
+// nullを返す（"out"というラベル文字列ではなく、呼び出し側で明示的に判定させる）。
+// BOA-159（選手ページのレース一覧）でも同じ判定が必要になったためexportした
+export function finishPositionOf(r) {
   if (r.rank1 === r.boatNumber) return 1;
   if (r.rank2 === r.boatNumber) return 2;
   if (r.rank3 === r.boatNumber) return 3;
