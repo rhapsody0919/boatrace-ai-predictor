@@ -152,11 +152,13 @@ function RaceOddsListTab({ raceId, raceStartTime }) {
   const [selectedPair, setSelectedPair] = useState(null); // {row, col}
   const [selectedTriple, setSelectedTriple] = useState(null); // {key, third}
 
+  // PredictionPanel側でRaceTabsに`key={analysisRaceId}`を付けているため、
+  // レースが変わるとこのコンポーネント自体が再マウントされ、stateは自然に
+  // 初期化される。そのためこの効果内でraceId変更時の明示的なリセットは不要
+  // （react-hooks/set-state-in-effect: 効果本体での同期的なsetState呼び出しを
+  // 避け、非同期コールバック内でのみ呼ぶ）
   useEffect(() => {
     let cancelled = false;
-    setSnapshots(null);
-    setSelectedPair(null);
-    setSelectedTriple(null);
     if (!raceId) return undefined;
     supabaseDataService
       .getRaceOddsSnapshots(raceId)
