@@ -78,8 +78,8 @@
 ### Phase 6c: データ別実装（優先順）
 
 - [x] [BOA-293](https://linear.app/boat-ai/issue/BOA-293)（進入コース別選手成績、**常滑・三国・びわこ・尼崎・徳山・下関・若松・芦屋・唐津・多摩川の10会場が最優先**、戸田・浜名湖・児島は上記理由により対象外）: `venue_entry_course_stats`テーブル作成・スクレイパー実装・日次実行の**コード実装は完了**（2026-09-16。`docs/db-migration/064_venue_entry_course_stats.sql`・`scripts/daily/scrape-venue-entry-course-stats.js`・`.github/workflows/scrape-venue-entry-course-stats.yml`（JST 20:00日次）・構造変化監視（`scripts/maintenance/check-venue-entry-course-stats-drift.js`、`driftHealth.js`のコア再利用）。会場サイトは選手登録番号を掲載しないため、racer_idは氏名一致ではなく自社`race_entries`（当日の出走表）から`race_id`+`waku`で解決する設計にした。実データ3会場（常滑・徳山・唐津）+非開催期間1会場（三国）のHTMLフィクスチャで回帰テスト（`npm run verify:venue-entry-course-stats`）。セルフレビューで発見した2件を修正済み: (1)見出し一致テーブル探索がDOM順で最初に見つかった部分一致テーブルを即採用してしまい、本来のテーブルがそれより後にある場合に取りこぼすバグ、(2)「次節開催」の誤検知防止スコープ（`.section_inner`/`main`）が両方とも無い場合にページ全体へフォールバックし、防止したかったヘッダーニュース欄の誤検知を再現してしまう経路。racer_id解決はrace_entries未整備の日には全行NULLになる設計だが、これはサイト構造監視（drift検知）とは別レイヤーの問題のため、drift検知には混ぜずログ警告のみで可視化した（判断が分かれる点として明記）
-  - [ ] **マイグレーション未適用**（本番DBへのスキーマ変更は自動モードでは実行できないため、ユーザーの対話ターミナルでの実行が必要）
-  - [ ] 適用後の初回実行結果・GitHub Actions動作確認（未実施のGitHub Actions初回実行を含む）
+  - [x] **マイグレーション適用済み**（2026-09-16、ユーザーの対話ターミナルで適用。`venue_entry_course_stats`テーブル・PK`(race_id, waku, entry_course)`・`races`へのFKを本番DBの`information_schema`/`pg_constraint`で確認済み）
+  - [ ] GitHub Actions初回実行結果の確認（`.github/workflows/scrape-venue-entry-course-stats.yml`、JST 20:00日次。マージ・初回実行後にフォロー）
 - [ ] 前検ランキング（BOA-294残存分）: [BOA-266](https://linear.app/boat-ai/issue/BOA-266)（常滑を情報源とする実装）と重複するため、BOA-266側の完了状況を見てFR-6独自の実装要否を再判断する
 - [ ] 水面特性（BOA-294残存分）: 年1回取得
 - [ ] ~~コンピ指数（BOA-294残存分）~~: **2026-09-16、FR-6のスコープから除外（会場公式サイト由来ではなく第三者の商用予想コンテンツ、AI学習目的のデータ収集を明示的に禁止するToSのため実装しない）**
