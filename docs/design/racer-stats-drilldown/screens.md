@@ -1,61 +1,78 @@
 # 画面・コンポーネント洗い出し
 
-対応spec: [spec.md](./spec.md) / UI/UX方針: [ADR-0062](../../adr/0062-racer-page-filtered-view-tabs.md)
+対応spec: [spec.md](./spec.md) / UI/UX方針: [ADR-0061](../../adr/0061-racer-page-grade-stage-filter-approach.md)・[ADR-0063](../../adr/0063-racer-page-cross-tab-and-always-on-detail.md)（[ADR-0062](../../adr/0062-racer-page-filtered-view-tabs.md)はSuperseded）
 
 ## 影響する画面・コンポーネント
 
 ### 1. `src/components/racer/RacerPerformanceStats.jsx`（既存コンポーネントの拡張）
 
-選手ページ（`/racer/:racerId`）の「成績・調子」セクション本体。
+選手ページ（`/racer/:racerId`）の「成績・調子」セクション本体。全体の並び順を以下に変更する。
 
-#### フィルタ部分（既存拡張）
+```
+見出し「成績・調子」
+フィルタ（会場・枠番・グレード・レース種別、常時表示・最上部）        ← 移動
+概要カード（選手調子=全国勝率、平均ST。フィルタの影響を受けない）
+────────────────────────────────
+成績ブロック（会場・枠番の固定状況で動的切り替え）                    ← 新規ロジック
+  ├─ 全×全: 会場別一覧 + 枠番別一覧（既存2テーブル、行クリック可）
+  ├─ 会場固定×全: 会場限定の枠番別一覧（新規集計、行クリック可）
+  ├─ 全×枠番固定: 枠番限定の会場別一覧（新規集計、行クリック可）
+  └─ 会場固定×枠番固定: 単一カード7指標（既存の概要タブ相当）
+────────────────────────────────
+枠番別回収率（過去180日、既存のまま・変更なし）
+決まり手傾向（常時、現在の全フィルタ条件で絞り込み）                  ← タブ廃止・常時表示化
+推移（平均ST・平均展示タイムの折れ線、常時、同上）                    ← タブ廃止・常時表示化
+レース一覧（常時、同上、ページングあり）                              ← タブ廃止・常時表示化
+────────────────────────────────
+分析ツールへのリンク
+```
 
-会場×枠番フィルタ（`vcVenue`/`vcBoat` state）に、グレード（`vcGrade`）・レース種別（`vcStage`）のselectを追加。4軸を同時にAND条件で絞り込む。
+#### フィルタ部分（配置転換）
 
-#### 絞り込み結果（`vcActive`時）: タブに再構成
+既存の会場×枠番×グレード×レース種別の4軸フィルタ（selectとロジックはBOA-159で実装済み）を、コンポーネントの先頭（見出し直下）に移動する。ロジック自体（`vcVenue`/`vcBoat`/`vcGrade`/`vcStage` state）は変更しない。
 
-現状は「カード → 決まり手傾向 → 展示タイム推移 → STの推移」の順で縦積み表示している（532-681行目）。これを新規タブ（`vcTab` state、初期値 `"overview"`）で切り替える構成に変更する。
+#### 成績ブロック（新規ロジック）
 
-| タブ | 内容 | 実装方針 |
-|---|---|---|
-| 概要 | 勝率・2連率・3連率・単勝回収率・複勝回収率・平均ST・平均展示タイムのカード（既存532-571行目を拡張） | `aggregateRacerVenueBoatStats` の返り値に3指標を追加するだけ。JSX構造は既存パターンのまま |
-| 決まり手 | 既存の`showTechniqueSection`ブロック（579-623行目）をそのまま移動 | ロジック変更なし、位置のみ変更 |
-| 推移 | 既存の「展示タイムの推移」（627-653行目）・「STの推移」（655-681行目）をそのまま移動 | ロジック変更なし、位置のみ変更 |
-| レース一覧 | 新規。絞り込み条件に合致するレースの表＋ページング＋レース詳細へのリンク | 新規実装（下記） |
+`vcVenue`・`vcBoat`の固定状況（`"all"`かどうか）で4パターンに分岐する。
 
-未選択時（`vcActive === false`）のフラット表示（会場別/枠番別テーブル、unfiltered版の決まり手傾向・推移グラフ）は変更しない。
+| 会場 | 枠番 | 内容 | データ源 |
+|---|---|---|---|
+| all | all | 既存の会場別一覧・枠番別一覧（stats propsの`venueStats`/`aggregatedStats.course_race_counts`） | 既存（変更なし） |
+| 固定 | all | その会場限定の枠番別一覧 | 新規：`aggregateRacerCrossStats(history, {venueCode}, "boat", grade, stage)` |
+| all | 固定 | その枠番限定の会場別一覧 | 新規：`aggregateRacerCrossStats(history, {boatNumber}, "venue", grade, stage)` |
+| 固定 | 固定 | 単一カード7指標 | 既存：`aggregateRacerVenueBoatStats`（ADR-0061で拡張済み） |
 
-#### レース一覧タブ（新規）
+一覧テーブル（既存2種＋新規クロス集計2種）の各行は`onClick`でフィルタ更新関数（`setVcVenue`/`setVcBoat`）を呼び、クリックした値に絞り込む。
 
-- 列: 日付・会場・R・レース名（`race_conditions.race_title`）・グレード・レース種別・枠番・ST・着順・決まり手・単勝配当
-- 各行: `<Link to={`/race/${race.raceId}`}>` で `RaceDetailPage`（`src/AppRouter.jsx`の既存ルート`race/:raceId`）へ遷移
-- ページング: 1ページ10件、前へ/次へボタン（新規の軽量なページャー、既存に similar なパターンは無いため最小限のstateで実装）
+#### 常時表示セクション（タブ廃止）
+
+決まり手・推移・レース一覧は、`vcTab`によるタブ切り替えを廃止し、常に表示する。表示内容は「現在の全フィルタ条件（4軸すべて）」で絞り込んだ単一の内訳（`aggregateRacerVenueBoatStats`の結果、会場・枠番が`"all"`の場合は`venueCode=null`/`boatNumber=null`を渡して全体集計）。
+
+- **決まり手**: 既存の`TechniqueBarLegend`サブコンポーネント（レビュー修正で切り出し済み）をそのまま使う
+- **推移**: 既存の展示タイム推移・STの推移グラフをそのまま使う
+- **レース一覧**: 既存のテーブル・ページングをそのまま使う
+
+未選択時専用だった`showTechniqueSection`（`!vcActive`分岐）・`!vcActive && exhibitionChartData`分岐は不要になる（常時表示セクションに統合されるため）。
 
 ### 2. `src/services/supabaseDataService.js`（サービス層の拡張）
 
-- **`getRacerRaceHistory(racerId)`**: `races.race_grade`、`race_conditions.race_stage`・`race_title`、`race_results.payout_place_1`・`payout_place_2` を追加取得
-- **`aggregateRacerVenueBoatStats(...)`**: `raceGrade`・`raceStage` によるフィルタ、複勝回収率・平均ST・平均展示タイムの算出、絞り込み後のレコード配列（レース一覧用）を返り値に追加
+- **新規関数 `aggregateRacerCrossStats(history, fixed, groupBy, raceGrade, raceStage)`**: `fixed`は`{venueCode}`または`{boatNumber}`のどちらか一方、`groupBy`は`"venue"`または`"boat"`（固定していない方の軸）。`history`を`fixed`とグレード・レース種別で絞り込んだ後、`groupBy`でグループ化し、グループごとに`n`/`win`/`top2`/`top3`（既存の`isPlaceHit`/`isShowHit`を再利用）を計算した配列を返す
+- **既存の`aggregateRacerVenueBoatStats`**: 変更不要（両方固定の単一集計用として維持）
 
-### 3. `src/utils/raceId.js`（変更不要、既存関数を利用）
+### 3. `src/components/racer/RacerPerformanceStats.css`
 
-`getRacerRaceHistory` が既に保持する `raceId`（`race_entries.race_id`由来）をそのまま`/race/${raceId}`に使う。`parseRaceId`/`getRaceId`の変換は不要（既に完成した形式で保持されている）。
-
-### 4. `src/components/racer/RacerPerformanceStats.css`（新規CSSが必要）
-
-- タブUI: 新規クラス（`.racer-vc-tabs`, `.racer-vc-tab-button` 等）。既存デザイントークン（`--brand-accent-primary`、`--text-secondary`、`--border-hairline`）を使用し、下線タブ形式（モックと同じ見た目）にする
-- レース一覧テーブル: 既存の`.racer-return-rate-table`クラスを再利用可能（会場別/枠番別テーブルと同じ見た目にする）
-- ページャー: 新規クラス（`.racer-vc-pager`）
-- レース名列が長い場合の折り返し/省略: `.table-wrapper`の`overflow-x: auto`は既存流用、セル自体は`white-space: nowrap`にはしない（レース名が長いため、モックとは異なりここは折り返し可能にする）
+- タブUI（`.racer-vc-tabs`等）は不要になるため削除
+- 一覧テーブルの行クリックスタイル: 既存の`.racer-vc-row-highlight`（選択中ハイライト）に加え、クリック可能であることを示すホバースタイルを追加（既存の`.racer-vc-race-list tr`パターンを参考に、cursor: pointer等）
+- フィルタの新配置に伴うマージン調整（見出い直下に来るため、既存の`.racer-vc-filter.controls-section`の`margin`値を確認・調整）
 
 ## デザイントークンで表現できる部分 / 新規CSSが必要な部分
 
 | 部分 | 対応 |
 |---|---|
-| フィルタのレイアウト（flex-wrap、gap） | 既存 `.racer-vc-filter.controls-section` で対応済み（変更不要） |
-| select自体の見た目 | 既存 `.venue-select` クラスをそのまま適用（変更不要） |
-| カードグリッド | 既存 `.racer-stat-cards-grid`/`.racer-stat-card` を7枚に拡張してそのまま使う（変更不要、枚数のみ増加） |
-| タブUI | 新規CSS（下線タブ、アクセントカラーは`--brand-accent-primary`） |
-| レース一覧テーブル | 既存 `.racer-return-rate-table` を流用 |
-| ページャー | 新規CSS（最小限、既存ボタンスタイルに準拠） |
+| フィルタのレイアウト | 既存 `.racer-vc-filter.controls-section` をそのまま使う（配置のみ移動） |
+| 一覧テーブル（既存2種+新規2種） | 既存 `.racer-return-rate-table` を流用 |
+| 一覧テーブルの行クリック | 新規CSS（cursor: pointer、hover背景。既存`.racer-vc-race-list`のリンク色パターンを参考） |
+| カードグリッド | 既存 `.racer-stat-cards-grid`/`.racer-stat-card`（変更不要） |
+| 決まり手・推移・レース一覧のセクション見出し | 既存 `.racer-technique-profile`/`.racer-stat-chart` をそのまま使う |
 
-新規コンポーネントファイルは作らない（`RacerPerformanceStats.jsx`内の拡張で完結）。
+新規コンポーネントファイルは作らない（`RacerPerformanceStats.jsx`内の拡張で完結）。タブUI関連のCSS・stateは削除する。
