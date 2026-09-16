@@ -228,6 +228,13 @@ thead tr:last-child .drt-label-th {
   color: var(--text-secondary);
 }
 
+/* 小標本（n<6）の視覚的区別（BOA-304、RaceBasicInfoTabのis-small-sampleと
+   同じ配色規約: RaceBasicInfoTab.css参照） */
+.drt-n-small-sample {
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-medium);
+}
+
 .drt-up {
   color: var(--color-error-text);
 }

@@ -9,6 +9,7 @@
 import { supabase } from "./supabaseClient";
 import { supabaseDataService } from "./supabaseDataService";
 import { parseRaceId } from "../utils/raceId";
+import { groupIntoCurrentMeet } from "../utils/meetGrouping";
 
 async function getRacerProfile(racerId) {
   if (!supabase) return null;
@@ -89,15 +90,7 @@ async function getCurrentMeetRaceEntries(racerId, motorNumber) {
   const sorted = [...entries].sort((a, b) =>
     a.race_id.localeCompare(b.race_id),
   );
-  const meet = [sorted[sorted.length - 1]];
-  for (let i = sorted.length - 2; i >= 0; i--) {
-    const currentDate = new Date(meet[0].race_id.slice(0, 10));
-    const prevDate = new Date(sorted[i].race_id.slice(0, 10));
-    const diffDays = (currentDate - prevDate) / (1000 * 60 * 60 * 24);
-    if (diffDays > 2) break;
-    meet.unshift(sorted[i]);
-  }
-  return meet;
+  return groupIntoCurrentMeet(sorted);
 }
 
 /**
