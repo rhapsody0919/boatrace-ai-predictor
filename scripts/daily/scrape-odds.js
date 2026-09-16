@@ -27,6 +27,7 @@ import {
   parseWideAll,
   parseRangeOddsValue,
 } from "../lib/oddsParser.js";
+import { latestByRaceId } from "../lib/latestByRaceId.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -376,15 +377,11 @@ async function fillMissingFullOddsFromLatestSnapshots(patchesByRaceId) {
     data.push(...rows);
   }
 
-  // captured_at降順のため、race_idごとに最初に現れる行が最新スナップショット
-  const latestByRaceId = new Map();
-  for (const row of data) {
-    if (!latestByRaceId.has(row.race_id)) latestByRaceId.set(row.race_id, row);
-  }
+  const latestSnapshotByRaceId = latestByRaceId(data);
 
   const result = new Map();
   for (const { raceId, missingKeys } of targets) {
-    const latest = latestByRaceId.get(raceId);
+    const latest = latestSnapshotByRaceId.get(raceId);
     if (!latest) continue;
     const fallback = {};
     for (const key of missingKeys) {

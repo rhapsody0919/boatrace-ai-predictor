@@ -21,6 +21,7 @@ import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
 import { OddsAwareCalibrator } from "../lib/parametric-calibration.js";
 import { halfKelly, quarterKelly } from "../lib/kelly-criterion.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
+import { latestByRaceId } from "../lib/latestByRaceId.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,7 +84,8 @@ async function fetchTodayPredictions(date) {
     .eq("is_shadow", false)
     // 前方一致 LIKE は btree インデックスに乗らず、テーブル成長で statement timeout
     // になる（本番で発生）。race_id は日付プレフィックスの辞書順なので範囲条件で絞る
-    .gte("race_id", date).lt("race_id", `${date}~`);
+    .gte("race_id", date)
+    .lt("race_id", `${date}~`);
 
   if (error) throw new Error(`predictions fetch error: ${error.message}`);
   return data || [];
@@ -102,13 +104,7 @@ async function fetchLatestOdds(raceIds) {
   if (error) throw new Error(`race_odds fetch error: ${error.message}`);
 
   // Keep only the latest snapshot per race
-  const latestByRace = {};
-  for (const row of data || []) {
-    if (!latestByRace[row.race_id]) {
-      latestByRace[row.race_id] = row;
-    }
-  }
-  return latestByRace;
+  return latestByRaceId(data || []);
 }
 
 async function fetchPredictionOdds(raceIds) {
@@ -227,7 +223,7 @@ async function main() {
 
   for (const raceId of raceIds) {
     const racePreds = byRace[raceId];
-    const oddsRow = oddsMap[raceId];
+    const oddsRow = oddsMap.get(raceId);
     const predOddsRow = predOddsMap[raceId];
 
     // Collect best EV candidate across all base models and bet types
@@ -239,7 +235,11 @@ async function main() {
       const boatNumber = p.top_pick;
       const col = MODEL_TO_COLUMN[modelId];
       // 代表スコア = top_pick 艇のAIスコア（train-moriarty-calibration.js と同一定義）
-      const topScore = getBoatScore(entryScoresMap[raceId], modelId, boatNumber);
+      const topScore = getBoatScore(
+        entryScoresMap[raceId],
+        modelId,
+        boatNumber,
+      );
       const candidates = [];
 
       // win: boat-level score vs win odds
@@ -330,12 +330,16 @@ async function main() {
   );
 
   if (isDryRun) {
-    for (const r of recommendations.filter((x) => x.recommendation !== "skip")) {
+    for (const r of recommendations.filter(
+      (x) => x.recommendation !== "skip",
+    )) {
       console.log(
         `  [dry-run] ${r.race_id}: ${r.recommendation} EV=${r.expected_value} fraction=${r.bet_fraction} ${JSON.stringify(r.reasons)}`,
       );
     }
-    console.log(`[dry-run] upsert をスキップしました (${recommendations.length} rows)`);
+    console.log(
+      `[dry-run] upsert をスキップしました (${recommendations.length} rows)`,
+    );
     return;
   }
 
