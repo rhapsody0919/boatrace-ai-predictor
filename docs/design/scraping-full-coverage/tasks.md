@@ -46,14 +46,14 @@
 
 ## FR-4: オッズ全券種
 
-- [ ] 2連単・2連複・拡連複の正確なURLパス（`odds2tf`/`oddsk`等は仮称）とHTML構造を実データで確認する
-- [ ] `scripts/lib/oddsParser.js`に`parseExactaAll`/`parseQuinellaAll`/`parseWideAll`を追加する（`parseTrifectaAll`/`parseTrioAll`と同じ形式）
-- [ ] `docs/db-migration/062_race_odds_all_combinations.sql`をベースに正式なマイグレーションを作成・適用する（`trio_all`/`exacta_all`/`quinella_all`/`wide_all`）
-- [ ] [BOA-313](https://linear.app/boat-ai/issue/BOA-313) Phase 3の進捗を確認し、Vercel Functions移行と同時に実装するか、レガシー`scrape-odds.js`に先行実装するかを判断する
-- [ ] `ODDS_WINDOWS`に0分（締切時点）を追加し、`FULL_ODDS_WINDOWS`を全窓共通に拡張する（既存3連単も含む）
-- [ ] 0分窓の技術的実現可能性を実データで検証し、失敗時のフォールバック（直前の成功スナップショットを実質最終値として扱う）を実装する
-- [ ] オンデマンド更新エンドポイント（`api/odds/refresh.js`）を実装する（IP単位のレート制限、対象レースの妥当性検証、締切残り時間に応じた可変クールダウン）
-- [ ] 新規4券種の取得を並走検証（数日）してから本番運用に移行する。取得成功率の監視（BOA-313の`exhibition-gap-monitor.yml`と同様の仕組み）を追加する
+- [x] 2連単・2連複・拡連複の正確なURLパス（`odds2tf`/`oddsk`等は仮称）とHTML構造を実データで確認する（2026-09-16、実URLは`odds2tf`（2連単・2連複が同一ページ、oddsPointを含む2テーブル）・`oddsk`（拡連複、1テーブル）と確認。odds2tf内の2連単テーブルはrowspanなし・is-disabledなしの全30通り、2連複テーブルは同構造でis-disabledによる重複除外。拡連複はオッズが複勝と同じ下限-上限のレンジ表示）
+- [x] `scripts/lib/oddsParser.js`に`parseExactaAll`/`parseQuinellaAll`/`parseWideAll`を追加する（`parseTrifectaAll`/`parseTrioAll`と同じ形式。実データはrowspanありの3連単/3連複と構造が異なるため、新規共通関数`parseTwoBoatOddsTable`として実装）
+- [x] `docs/db-migration/065_race_odds_all_combinations.sql`を作成する（`trio_all`/`exacta_all`/`quinella_all`/`wide_all`、番号は062から065に変更。**未適用、Supabase Dashboardでの実行が必要**）
+- [x] [BOA-313](https://linear.app/boat-ai/issue/BOA-313) Phase 3の進捗を確認し、Vercel Functions移行と同時に実装するか、レガシー`scrape-odds.js`に先行実装するかを判断する（2026-09-16、ユーザー判断によりレガシー`scrape-odds.js`への先行実装を採用。理由: BOA-313 Phase 3着手はPhase 2完了後になる見込みで、待つ理由が無いため）
+- [x] `ODDS_WINDOWS`に0分（締切時点）を追加し、`FULL_ODDS_WINDOWS`を全窓共通に拡張する（既存3連単も含む）
+- [x] 0分窓の技術的実現可能性を実データで検証し、失敗時のフォールバック（直前の成功スナップショットを実質最終値として扱う）を実装する（2026-09-16、発走前後をポーリングし締切後1分以上経過してもオッズページが「投票締切」表示に切り替わらないことを確認。フォールバックは`fillMissingFullOddsFromLatestSnapshot()`として実装）
+- [ ] オンデマンド更新エンドポイント（`api/odds/refresh.js`）を実装する（IP単位のレート制限、対象レースの妥当性検証、締切残り時間に応じた可変クールダウン）— **今回スコープ外**（ユーザー判断、2026-09-16。Vercel移行と合わせて実装する）
+- [ ] 新規4券種の取得を並走検証（数日）してから本番運用に移行する。取得成功率の監視（BOA-313の`exhibition-gap-monitor.yml`と同様の仕組み）を追加する — **マイグレーション適用後、運用開始してから着手**
 
 ## FR-6: 会場個別公式サイト（24会場）
 
