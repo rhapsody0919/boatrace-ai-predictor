@@ -55,10 +55,11 @@ UI機能（データ・分析機能を含む複合機能。BOA-284は純粋な�
 **優先度の根拠**: 8人パネル全会一致で「買い目判断に直結する」として最優先とされた
 
 **受入基準**:
-- [ ] 既存のデータ出走表コンポーネント（`PredictionTable`等、`.claude/rules/component-reuse.md`準拠）に統合されている
+- [ ] 既存のデータ出走表コンポーネント（`src/components/race/raceIndicators.jsx`の指標行として追加、`DataRaceTable.jsx`本体は変更不要。`.claude/rules/component-reuse.md`準拠、詳細は[screens.md](./screens.md)参照）に統合されている
 - [ ] 対象10会場（BOA-293データあり）は会場サイトデータを優先表示し、自前計算値は参考値として保持する（2026-09-16ユーザー合意: 「会場データがある10会場はそちらを優先表示」）
 - [ ] 対象外14会場は自前計算値（FR-2）を表示する
 - [ ] サンプル不足でデータが無い場合の表示（非表示 or 「データ不足」表記）を実装する
+- [ ] `/race`は4言語翻訳対象（`TRANSLATED_PATHS`）のため、新規指標のラベル・ツールチップを4言語同一PRで追加する（`/step1-screens`で判明した追加制約）
 
 ### FR-4（P1）: 選手ページへの表示（概要バッジ＋フィルタ連動の詳細セクション）
 
@@ -123,14 +124,15 @@ UI機能（データ・分析機能を含む複合機能。BOA-284は純粋な�
 - データ源: `race_entries`・`race_results.actual_course_1〜6`（自社DB）、`venue_entry_course_stats`（BOA-293、10会場）
 - 用語: 「進入コース」「前づけ」等の表記は既存の`docs/reference/`用語集・`.claude/rules/code-style.md`に準拠する
 - AI予測の性質上、新規指標もあくまで参考値であり結果を保証しない旨の既存ディスクレーマーの対象に含める
-- `/winning-technique`は4言語翻訳対象（`TRANSLATED_PATHS`）、`/racer/:racerId`はja専用（`TRANSLATED_PATHS`未登録）
+- `/winning-technique`・`/race`は4言語翻訳対象（`TRANSLATED_PATHS`、`/step1-screens`で判明: FR-3のデータ出走表も`/race`配下のため4言語i18n対応が必要）、`/racer/:racerId`はja専用（`TRANSLATED_PATHS`未登録）
 
 ## 未確定事項
 
 | 項目 | 内容 | いつ・誰が決めるか |
 |---|---|---|
 | FR-1の予測力・回収率の具体的な悪化許容範囲 | 「悪化していないこと」の数値基準（例: 回収率-2pt以内等） | /step2、実データでの再検証結果を見てユーザーと相談 |
-| FR-3のカラム表示形式 | 既存11指標のどこに追加するか、独立カラムか既存カラムの補助表示か | /step1-screens |
+| FR-3のカラム表示形式 | データ出走表の新規行（`raceIndicators.jsx`）の`render`表示形式の詳細（[screens.md](./screens.md)で配置先は確定済み、値のフォーマットのみ残） | /step2 |
 | FR-4のバッジ判定閾値 | 「前づけ傾向あり」と判定する遷移確率のしきい値 | /step2、実データ分布を見てから |
+| FR-4の「レース一覧」セクション不在の経緯 | PR #686のSummary・設計ドキュメントには「レース一覧」セクション（日付/会場/R/着順等の表）の記載があるが、実際にマージされた`RacerPerformanceStats.jsx`には該当セクションが見当たらない（[screens.md](./screens.md)参照）。実装漏れか意図的な変更か未確認 | /step2着手前に別途確認（本specのスコープ外の可能性あり） |
 | FR-5のRPC設計 | `get_race_maezuke_breakdown`相当の新規RPCの入出力形式 | /step2 |
 | BOA-284の再学習・本番反映の実施者・タイミング | 検証結果が良好だった場合、誰が最終的にINDICATOR_WEIGHTSの本番反映を実行するか | /step4実装時、検証結果を見てユーザーに確認 |
