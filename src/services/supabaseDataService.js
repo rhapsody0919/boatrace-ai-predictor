@@ -3790,13 +3790,22 @@ export const supabaseDataService = {
           "race_id",
           raceIds,
         ),
-        // レース名・レース種別（「直近5走」表示用、BOA-333レビュー指摘）
+        // レース名・レース種別（「直近5走」表示用、BOA-333レビュー指摘）。
+        // 勝率/2連対率/3連対率/平均ST/得意会場等の既存機能はこのクエリに依存
+        // していないため、ここだけ失敗してもPromise.all全体を巻き込んで
+        // 既存機能まで空にしないよう、個別にcatchしてフォールバックする
         fetchAllByIn(
           "race_conditions",
           "race_id, race_stage, race_title",
           "race_id",
           raceIds,
-        ),
+        ).catch((err) => {
+          console.error(
+            "race_conditions取得エラー（レース名・種別は「-」表示にフォールバック）:",
+            err?.message ?? String(err),
+          );
+          return [];
+        }),
       ]);
 
       const raceById = new Map(raceRows.map((r) => [r.race_id, r]));

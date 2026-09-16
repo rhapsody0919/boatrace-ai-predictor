@@ -1,6 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
+import { translateTechnique } from "./raceIndicators";
 import { formatPayout } from "../../utils/formatters";
 import "./RaceHistoryTable.css";
 
@@ -30,23 +31,30 @@ import "./RaceHistoryTable.css";
  *   ため、`useLocalizedPath`で言語プレフィックスを保つ関数を渡す
  *
  * 2026-09-16レビュー指摘: `/race`はsrc/config/languages.jsのTRANSLATED_PATHSに
- * 登録済みの翻訳対象パスのため、列見出し・グレードラベルをt()経由に修正
- * （4言語分のi18nキーをraceHistoryTable名前空間に追加）。GRADE_LABELS
+ * 登録済みの翻訳対象パスのため、列見出し・グレードラベル・決まり手をt()経由に
+ * 修正（4言語分のi18nキーをraceHistoryTable名前空間に追加）。GRADE_LABELS
  * （raceGradeLabels.js）はRacerPerformanceStats.jsxのフィルタUI等、ja専用の
  * `/racer`ページでの直接参照向けに残しつつ、このテーブルではt()の
- * デフォルト値として使う（未知のグレードコードのフォールバック表示用）
+ * デフォルト値として使う（未知のグレードコードのフォールバック表示用）。
+ * raceStageはrace_conditions.race_stageの自由記述（「エイトピート」等の
+ * イベント固有の節名も含む）で固定語彙のenumではないため翻訳キー化せず、
+ * RacerPerformanceStats.jsx（BOA-159）と同じくそのまま表示する
  *
- * 2026-09-16追記（ユーザーフィードバック#4）: 行全体をクリック可能にした。
- * 日付セルの`<Link>`はキーボード操作・スクリーンリーダー向けに残しつつ、
- * `<tr>`にもonClickでnavigateを追加。Link自体のクリックはstopPropagationで
- * `<tr>`側のonClickへの伝播を止め、同じ遷移が二重に走らないようにしている
+ * 2026-09-16追記（ユーザーフィードバック#4、レビュー指摘で方式変更）: 行全体を
+ * クリック可能にした。当初は`<tr onClick={navigate}>` + 内側`<Link>`の
+ * stopPropagationで実装したが、(a) `RacerTable.jsx`と同じ実装の重複を生む、
+ * (b) モバイルでは本テーブルが横スクロールするため、スワイプ操作がタップと
+ * 誤認され意図せず遷移してしまうリスクがある、という指摘を受けて
+ * 「stretched link」パターン（`<Link>`に`::after`の疑似要素でrow全体を覆う）
+ * に変更した。JSのonClick/useNavigateが不要になり、ネイティブの`<a>`のままの
+ * ため中クリック・新規タブで開く・スクリーンリーダー対応も自然に保たれる。
+ * ネイティブaタグのクリック判定はブラウザが行うため、スワイプ誤爆の懸念もない
  */
 function RaceHistoryTable({
   rows,
   buildRaceHref = (raceId) => `/race/${raceId}`,
 }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   return (
     <div className="race-history-table-wrapper">
@@ -68,16 +76,11 @@ function RaceHistoryTable({
         </thead>
         <tbody>
           {rows.map((race) => (
-            <tr
-              key={race.raceId}
-              className="race-history-table-row"
-              onClick={() => navigate(buildRaceHref(race.raceId))}
-            >
+            <tr key={race.raceId} className="race-history-table-row">
               <td>
                 <Link
                   className="race-history-table-link"
                   to={buildRaceHref(race.raceId)}
-                  onClick={(e) => e.stopPropagation()}
                 >
                   {race.date}
                 </Link>
@@ -102,10 +105,12 @@ function RaceHistoryTable({
               </td>
               <td>{race.finishRank ?? t("basicInfo.finishUnknown")}</td>
               <td>
-                {race.finishRank === 1 ? (race.winningTechnique ?? "-") : "-"}
+                {race.finishRank === 1 && race.winningTechnique != null
+                  ? translateTechnique(t, race.winningTechnique)
+                  : "-"}
               </td>
               <td>
-                {race.finishRank === 1 && race.payoutWin
+                {race.finishRank === 1 && race.payoutWin != null
                   ? formatPayout(race.payoutWin)
                   : "-"}
               </td>

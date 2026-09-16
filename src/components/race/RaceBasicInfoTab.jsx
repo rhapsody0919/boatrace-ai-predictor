@@ -116,7 +116,7 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
           // しまう（レビュー指摘#2の調査で発見した潜在バグ）。取得失敗時は
           // 空配列にフォールバックし、「出走履歴データがありません」表示に
           // 倒す（例外を握りつぶさずログには残す）
-          console.error("選手出走履歴取得エラー:", err.message);
+          console.error("選手出走履歴取得エラー:", err?.message ?? String(err));
           setScopedStatsByRacer((cur) => ({ ...cur, [racerId]: [] }));
         });
       // 取得中はundefinedのまま保持し、二重取得を防ぐ

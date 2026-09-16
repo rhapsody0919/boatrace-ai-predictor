@@ -27,8 +27,16 @@
   color: var(--text-primary);
 }
 
-/* 行全体をクリック可能にする（ユーザーフィードバック#4） */
+/* 行全体をクリック可能にする（ユーザーフィードバック#4）。「stretched link」
+   パターン: 日付セルの<Link>に::afterの疑似要素を重ね、position:relativeを
+   付けた<tr>いっぱいに広げることでネイティブの<a>のまま行全体をクリック領域に
+   する。JSのonClick/useNavigateを使わずCSSのみで実現するため、中クリック・
+   新規タブで開く操作やスクリーンリーダーの読み上げが素の<a>のまま保たれ、
+   モバイルの横スクロール（このテーブル自体がoverflow-x: autoで横スクロール
+   する）でのスワイプ操作がタップと誤認されて誤遷移する心配もない
+   （ブラウザ自身がクリックとスワイプを区別するため） */
 .race-history-table-row {
+  position: relative;
   cursor: pointer;
 }
 
@@ -37,9 +45,20 @@
 }
 
 .race-history-table-link {
+  /* position:staticのまま（relativeにすると::afterの基準がこの<a>自身に
+     なってしまい、<tr>まで広がらなくなる） */
   color: var(--brand-accent-secondary);
   text-decoration: none;
   font-weight: var(--font-weight-semibold);
+}
+
+.race-history-table-link::after {
+  content: "";
+  position: absolute;
+  /* 親<td>・<a>自身がposition:staticのまま素通りし、position:relativeを
+     付けた<tr>（行全体）を基準にinset:0で広げる。これにより行全体が
+     クリック領域になる */
+  inset: 0;
 }
 
 .race-history-table-link:hover {

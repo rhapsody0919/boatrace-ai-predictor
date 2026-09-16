@@ -163,7 +163,9 @@ export function finishPositionOf(r) {
  * payoutWinが常に「-」表示になっていた問題を修正。getRacerScopedRaceStats側で
  * race_conditions（race_title/race_stage）とrace_results（winning_technique/
  * payout_win）も取得するよう拡張し（BOA-159のgetRacerRaceHistory()と同じ
- * テーブル）、ここではそれをそのまま透過するだけにした
+ * テーブル）、ここではそれをそのまま透過するだけにした。getRacerScopedRaceStats
+ * 側で既に`?? null`によりnull正規化済み（undefinedにはならない）のため、
+ * ここでの`?? null`は付けていない
  */
 export function getRecentRaces(records, count = 5) {
   return (records ?? []).slice(-count).map((r) => ({
@@ -171,16 +173,16 @@ export function getRecentRaces(records, count = 5) {
     date: r.date,
     venueCode: r.venueCode,
     raceNo: parseRaceId(r.raceId)?.raceNo ?? null,
-    raceTitle: r.raceTitle ?? null,
+    raceTitle: r.raceTitle,
     raceGrade: r.raceGrade ?? null,
-    raceStage: r.raceStage ?? null,
+    raceStage: r.raceStage,
     boatNumber: r.boatNumber,
     startTiming: r.startTiming ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
     finishRank: finishPositionOf(r),
-    winningTechnique: r.winningTechnique ?? null,
-    payoutWin: r.payoutWin ?? null,
+    winningTechnique: r.winningTechnique,
+    payoutWin: r.payoutWin,
   }));
 }
 
