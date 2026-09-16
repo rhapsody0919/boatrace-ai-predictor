@@ -228,6 +228,13 @@ thead tr:last-child .drt-label-th {
   color: var(--text-secondary);
 }
 
+/* 小標本（n<6）の視覚的区別（BOA-304、RaceBasicInfoTabのis-small-sampleと
+   同じ配色規約: RaceBasicInfoTab.css参照） */
+.drt-n-small-sample {
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-medium);
+}
+
 .drt-up {
   color: var(--color-error-text);
 }
@@ -243,6 +250,23 @@ thead tr:last-child .drt-label-th {
 
 .drt-technique {
   font-size: var(--font-size-xs);
+}
+
+/* 部品交換・プロペラ交換バッジ（BOA-304、直前情報タブ用） */
+.drt-parts-changed {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.drt-badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-warning-dark-text);
+  background: color-mix(in srgb, var(--color-warning-text) 16%, transparent);
+  padding: 1px var(--spacing-1);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
 }
 
 /* 機力指数バッジ（BOA-265）: モーターのドリルダウンへの発見可能な入口 */

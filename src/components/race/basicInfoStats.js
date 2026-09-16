@@ -189,3 +189,35 @@ export function computeVenueRanking(records, metric) {
   });
   return rows;
 }
+
+/**
+ * 平均進入コースを計算する（BOA-304、直前情報タブ「平均進入順」）。
+ * getRacerScopedRaceStatsのactualCourse（BOA-257の実進入コース、race_results.
+ * actual_course_N）を使う。2025-12-04より前のレース・欠場艇はactualCourseが
+ * nullのため対象外になる（そのレースを1着扱い等にすり替えない）
+ * @param {Array} records - getRacerScopedRaceStatsの戻り値
+ */
+export function computeAvgEntryCourse(records) {
+  const courses = (records ?? [])
+    .map((r) => r.actualCourse)
+    .filter((c) => c !== null && c !== undefined);
+  if (courses.length === 0) return { n: 0, avgCourse: null };
+  const sum = courses.reduce((a, b) => a + b, 0);
+  return { n: courses.length, avgCourse: sum / courses.length };
+}
+
+/**
+ * 展示タイムが単独最速だった時に限定した1着率/2連対率/3連対率を計算する
+ * （BOA-304、直前情報タブ「展示タイム1位勝率」）。
+ * isFastestExhibition===trueのレコードのみに絞り込んだ上で、既存の
+ * computeRates（勝率/2連対率/3連対率の定義そのもの）をそのまま再利用する
+ * （日和の「展示タイム1位勝率」と同じ定義=「展示1位だった時の」1着率等の
+ * 母集団だけを変え、率の計算式自体は基本情報タブと重複させない）
+ * @param {Array} records - getRacerScopedRaceStatsの戻り値
+ */
+export function computeExhibitionTopRates(records) {
+  const fastestRecords = (records ?? []).filter(
+    (r) => r.isFastestExhibition === true,
+  );
+  return computeRates(fastestRecords);
+}
