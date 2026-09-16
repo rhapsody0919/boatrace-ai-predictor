@@ -328,8 +328,10 @@ function PredictionPanel({
       {/* データ出走表・枠別傾向・分析ツール群はレース前の予想材料のため、
           結果タブ表示中は隠す（BOA-305〜312フィードバック#7）。基本情報/
           モータ情報タブ表示中、およびactiveMainTab未確定時（初回レンダー等）は
-          従来通り表示する */}
-      {activeMainTab !== "result" && (
+          従来通り表示する。直前情報タブ（BOA-304）はRaceBeforeInfoTab側で
+          同種の内容（展示ST/展示タイム/チルト/調整重量等）を独立して表示する
+          ため、二重表示にならないよう同様に隠す */}
+      {activeMainTab !== "result" && activeMainTab !== "beforeInfo" && (
         <>
           {/* データ出走表（主役）: 出走6選手×客観的な生データの一覧マトリクス */}
           <DataRaceTable
