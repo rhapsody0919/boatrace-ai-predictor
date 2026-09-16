@@ -157,10 +157,13 @@ export function finishPositionOf(r) {
  * RaceHistoryTable側の列見出し「枠番」・もう一方の利用元（RacerPerformanceStats.jsx、
  * BOA-159）と一貫させるため、当該レースでの生の艇番（r.boatNumber）をそのまま渡す
  * （実進入コースのcourseWithFallbackは使わない。使うと同じ行内で「表示コース」と
- * 「着順判定に使う艇番」が食い違う内部矛盾が生じるため）。raceTitle/raceStage/
- * winningTechnique/payoutWinはgetRacerScopedRaceStatsが取得していないためnull固定
- * （直近5走のためだけに追加クエリを増やすのは範囲外と判断、RaceHistoryTable側で
- * 「-」表示にフォールバックする）
+ * 「着順判定に使う艇番」が食い違う内部矛盾が生じるため）。
+ *
+ * 2026-09-16追記（レビュー指摘#3）: raceTitle/raceStage/winningTechnique/
+ * payoutWinが常に「-」表示になっていた問題を修正。getRacerScopedRaceStats側で
+ * race_conditions（race_title/race_stage）とrace_results（winning_technique/
+ * payout_win）も取得するよう拡張し（BOA-159のgetRacerRaceHistory()と同じ
+ * テーブル）、ここではそれをそのまま透過するだけにした
  */
 export function getRecentRaces(records, count = 5) {
   return (records ?? []).slice(-count).map((r) => ({
@@ -168,16 +171,16 @@ export function getRecentRaces(records, count = 5) {
     date: r.date,
     venueCode: r.venueCode,
     raceNo: parseRaceId(r.raceId)?.raceNo ?? null,
-    raceTitle: null,
+    raceTitle: r.raceTitle ?? null,
     raceGrade: r.raceGrade ?? null,
-    raceStage: null,
+    raceStage: r.raceStage ?? null,
     boatNumber: r.boatNumber,
     startTiming: r.startTiming ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
     finishRank: finishPositionOf(r),
-    winningTechnique: null,
-    payoutWin: null,
+    winningTechnique: r.winningTechnique ?? null,
+    payoutWin: r.payoutWin ?? null,
   }));
 }
 

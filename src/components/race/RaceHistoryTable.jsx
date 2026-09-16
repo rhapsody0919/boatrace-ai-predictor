@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
 import { formatPayout } from "../../utils/formatters";
@@ -17,9 +17,9 @@ import "./RaceHistoryTable.css";
  *
  * 各行はgetRacerRaceHistory()由来のmatchedRaces（aggregateRacerVenueBoatStats）
  * と同じフィールド名に統一している。raceTitle/raceStage/winningTechnique/
- * payoutWinはgetRacerScopedRaceStats（RaceBasicInfoTab.jsx側のデータソース）
- * では取得していないため、その場合はnullのまま渡され「-」表示になる
- * （直近5走のためだけに追加クエリを増やすことは避けた、意図的な範囲限定）
+ * payoutWinがnullの場合（データ未取得の古いレース等）は「-」表示にフォールバック
+ * する。RaceBasicInfoTab.jsx側のデータソース（getRacerScopedRaceStats）も
+ * 2026-09-16のレビュー指摘によりこれらの列を取得するよう拡張済み
  *
  * @param {Array} rows - {raceId, date, venueCode, raceNo, raceTitle, raceGrade,
  *   raceStage, boatNumber, startTiming, finishRank, winningTechnique, payoutWin}[]
@@ -35,12 +35,18 @@ import "./RaceHistoryTable.css";
  * （raceGradeLabels.js）はRacerPerformanceStats.jsxのフィルタUI等、ja専用の
  * `/racer`ページでの直接参照向けに残しつつ、このテーブルではt()の
  * デフォルト値として使う（未知のグレードコードのフォールバック表示用）
+ *
+ * 2026-09-16追記（ユーザーフィードバック#4）: 行全体をクリック可能にした。
+ * 日付セルの`<Link>`はキーボード操作・スクリーンリーダー向けに残しつつ、
+ * `<tr>`にもonClickでnavigateを追加。Link自体のクリックはstopPropagationで
+ * `<tr>`側のonClickへの伝播を止め、同じ遷移が二重に走らないようにしている
  */
 function RaceHistoryTable({
   rows,
   buildRaceHref = (raceId) => `/race/${raceId}`,
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <div className="race-history-table-wrapper">
@@ -62,11 +68,16 @@ function RaceHistoryTable({
         </thead>
         <tbody>
           {rows.map((race) => (
-            <tr key={race.raceId}>
+            <tr
+              key={race.raceId}
+              className="race-history-table-row"
+              onClick={() => navigate(buildRaceHref(race.raceId))}
+            >
               <td>
                 <Link
                   className="race-history-table-link"
                   to={buildRaceHref(race.raceId)}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {race.date}
                 </Link>

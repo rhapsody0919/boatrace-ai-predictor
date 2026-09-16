@@ -27,6 +27,15 @@
   color: var(--text-primary);
 }
 
+/* 行全体をクリック可能にする（ユーザーフィードバック#4） */
+.race-history-table-row {
+  cursor: pointer;
+}
+
+.race-history-table-row:hover {
+  background: var(--surface-page);
+}
+
 .race-history-table-link {
   color: var(--brand-accent-secondary);
   text-decoration: none;
