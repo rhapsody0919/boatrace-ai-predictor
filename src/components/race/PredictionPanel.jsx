@@ -131,6 +131,17 @@ function PredictionPanel({
   // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
   const isCancelled = prediction?.cancellationStatus === "confirmed";
 
+  // データ出走表・枠別傾向・分析ツール群（レース前の予想材料）を表示するか。
+  // 結果/直前情報/モータ情報の各タブは、それぞれのタブ内で同種の情報を
+  // 独立して表示しているため二重表示を避けて隠す（BOA-305〜312フィードバック#7、
+  // 2026-09-16のユーザーフィードバックでモータ情報タブも対象に追加）。
+  // activeMainTab未確定時（初回レンダー等）は従来通り表示する。名前付き変数に
+  // 切り出すことで、今後タブが増えても1行の追加で済むようにしている
+  const showPreRaceAnalysisTools =
+    activeMainTab !== "result" &&
+    activeMainTab !== "beforeInfo" &&
+    activeMainTab !== "motor";
+
   // ローディング中
   if (isAnalyzing) {
     return <PredictionLoadingOverlay />;
@@ -325,13 +336,7 @@ function PredictionPanel({
         />
       )}
 
-      {/* データ出走表・枠別傾向・分析ツール群はレース前の予想材料のため、
-          結果タブ表示中は隠す（BOA-305〜312フィードバック#7）。基本情報/
-          モータ情報タブ表示中、およびactiveMainTab未確定時（初回レンダー等）は
-          従来通り表示する。直前情報タブ（BOA-304）はRaceBeforeInfoTab側で
-          同種の内容（展示ST/展示タイム/チルト/調整重量等）を独立して表示する
-          ため、二重表示にならないよう同様に隠す */}
-      {activeMainTab !== "result" && activeMainTab !== "beforeInfo" && (
+      {showPreRaceAnalysisTools && (
         <>
           {/* データ出走表（主役）: 出走6選手×客観的な生データの一覧マトリクス */}
           <DataRaceTable

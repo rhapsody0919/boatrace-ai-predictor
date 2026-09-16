@@ -17,7 +17,12 @@
  * （2026-09-15判明: race_conditions.series_day/is_final_dayは
  * scripts/daily/generate-predictions.jsで常にnullを書き込む未実装カラムで、
  * 実データも33,411行全件がnull。「取れないものは正直にモックから削って良い」
- * というBOA-306本文の指示に従い削除した）
+ * というBOA-306本文の指示に従い削除した。2026-09-16追記: BOA-226
+ * （scripts/daily/update-race-info.jsのscrapeSeriesDay()）でracelistページの
+ * 日程タブから実際に値を取得・書き込むようになったため、今後発生するレースは
+ * 順次値が入る見込み。ただし本モジュールが対象とする過去2年分のうち大部分は
+ * BOA-226以前のバックフィル済みnullデータのままのため、この期間フィルタ自体を
+ * 復活させる判断は改めて行う）
  *
  * 期間「今期」は自社データに公式の期区分（前期/後期）の境界を持たないため
  * （racer_profiles.period_labelは2026-09-15時点で未取得、BOA-321参照）、
@@ -27,6 +32,7 @@
  * 便宜上「取得できる全期間（過去2年）」を対象とする
  */
 import { isPlaceHit, isShowHit } from "../../../scripts/lib/hitCalculator.js";
+import { parseRaceId } from "../../utils/raceId.js";
 
 export const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
 export const SCOPES = ["local", "national"];
@@ -143,15 +149,40 @@ export function finishPositionOf(r) {
  * データ（series_day/is_final_day）が実データで常にnullのため断念し、
  * 個別レースの着順をそのまま並べる方式にした（上記モジュールコメント参照）。
  * recordsは日付昇順であることを前提とする（getRacerScopedRaceStatsの戻り値順）
+ *
+ * 2026-09-16（BOA-333/159共通化）: 戻り値の形をRaceHistoryTable.jsx
+ * （共有テーブルコンポーネント、getRacerRaceHistory()由来のmatchedRacesと
+ * 同じフィールド名）に合わせた。raceNoはraceId（YYYY-MM-DD-VV-RR）から導出する
+ * （racesテーブルへの追加問い合わせ不要）。boatNumberは、レビュー指摘により
+ * RaceHistoryTable側の列見出し「枠番」・もう一方の利用元（RacerPerformanceStats.jsx、
+ * BOA-159）と一貫させるため、当該レースでの生の艇番（r.boatNumber）をそのまま渡す
+ * （実進入コースのcourseWithFallbackは使わない。使うと同じ行内で「表示コース」と
+ * 「着順判定に使う艇番」が食い違う内部矛盾が生じるため）。
+ *
+ * 2026-09-16追記（レビュー指摘#3）: raceTitle/raceStage/winningTechnique/
+ * payoutWinが常に「-」表示になっていた問題を修正。getRacerScopedRaceStats側で
+ * race_conditions（race_title/race_stage）とrace_results（winning_technique/
+ * payout_win）も取得するよう拡張し（BOA-159のgetRacerRaceHistory()と同じ
+ * テーブル）、ここではそれをそのまま透過するだけにした。getRacerScopedRaceStats
+ * 側で既に`?? null`によりnull正規化済み（undefinedにはならない）のため、
+ * ここでの`?? null`は付けていない
  */
 export function getRecentRaces(records, count = 5) {
   return (records ?? []).slice(-count).map((r) => ({
     raceId: r.raceId,
     date: r.date,
     venueCode: r.venueCode,
+    raceNo: parseRaceId(r.raceId)?.raceNo ?? null,
+    raceTitle: r.raceTitle,
+    raceGrade: r.raceGrade ?? null,
+    raceStage: r.raceStage,
+    boatNumber: r.boatNumber,
+    startTiming: r.startTiming ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
-    finish: finishPositionOf(r),
+    finishRank: finishPositionOf(r),
+    winningTechnique: r.winningTechnique,
+    payoutWin: r.payoutWin,
   }));
 }
 

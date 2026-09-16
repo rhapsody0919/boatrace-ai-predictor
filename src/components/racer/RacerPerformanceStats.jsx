@@ -17,6 +17,8 @@ import {
   aggregateRacerVenueBoatStats,
   aggregateRacerCrossStats,
 } from "../../services/supabaseDataService";
+import RaceHistoryTable from "../race/RaceHistoryTable";
+import { GRADE_LABELS } from "../race/raceGradeLabels";
 import "./RacerPerformanceStats.css";
 
 const TECHNIQUE_COLORS = {
@@ -100,14 +102,9 @@ function TechniqueBarLegend({ techniques }) {
   );
 }
 
-// races.race_gradeのコード値→表示名（BOA-159）
-const GRADE_LABELS = {
-  ippan: "一般戦",
-  G1: "G1",
-  G2: "G2",
-  G3: "G3",
-  SG: "SG",
-};
+// races.race_gradeのコード値→表示名。RaceHistoryTable.jsxへ移設
+// （BOA-159/333共通化、component-reuse.md準拠。フィルタUI・vcLabelParts等
+// テーブル外でも使うためimportして流用する）
 
 const VC_RACE_PAGE_SIZE = 10;
 
@@ -920,65 +917,7 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
             レース一覧
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
-          <div className="table-wrapper">
-            <table className="racer-return-rate-table">
-              <thead>
-                <tr>
-                  <th>日付</th>
-                  <th>会場</th>
-                  <th>R</th>
-                  <th>レース名</th>
-                  <th>グレード</th>
-                  <th>レース種別</th>
-                  <th>枠番</th>
-                  <th>ST</th>
-                  <th>着順</th>
-                  <th>決まり手</th>
-                  <th>単勝配当</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vcRacePageRows.map((race) => (
-                  <tr key={race.raceId}>
-                    <td>
-                      <Link
-                        className="racer-vc-race-link"
-                        to={`/race/${race.raceId}`}
-                      >
-                        {race.date}
-                      </Link>
-                    </td>
-                    <td>{t(`venues.${race.venueCode}`, race.venueCode)}</td>
-                    <td>{race.raceNo}R</td>
-                    <td>{race.raceTitle ?? "-"}</td>
-                    <td>
-                      {race.raceGrade
-                        ? (GRADE_LABELS[race.raceGrade] ?? race.raceGrade)
-                        : "-"}
-                    </td>
-                    <td>{race.raceStage ?? "-"}</td>
-                    <td>{race.boatNumber}</td>
-                    <td>
-                      {race.startTiming !== null
-                        ? Number(race.startTiming).toFixed(2)
-                        : "-"}
-                    </td>
-                    <td>{race.finishRank ?? t("basicInfo.finishUnknown")}</td>
-                    <td>
-                      {race.finishRank === 1
-                        ? (race.winningTechnique ?? "-")
-                        : "-"}
-                    </td>
-                    <td>
-                      {race.finishRank === 1 && race.payoutWin
-                        ? `${race.payoutWin}円`
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <RaceHistoryTable rows={vcRacePageRows} />
           {vcRaceTotalPages > 1 && (
             <div className="racer-vc-pager">
               <button

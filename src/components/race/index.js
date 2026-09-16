@@ -24,3 +24,5 @@ export { default as TodaysVolatilityHighlights } from "./TodaysVolatilityHighlig
 export { default as RaceTabs } from "./RaceTabs";
 export { default as RaceBasicInfoTab } from "./RaceBasicInfoTab";
 export { default as RaceBeforeInfoTab } from "./RaceBeforeInfoTab";
+export { default as RaceHistoryTable } from "./RaceHistoryTable";
+export { GRADE_LABELS } from "./raceGradeLabels";

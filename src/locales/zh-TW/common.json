@@ -239,6 +239,26 @@
     "volatilityCaveatLink": "查看實測準確率 ›",
     "payout": "派彩：¥{{amount}}"
   },
+  "raceHistoryTable": {
+    "date": "日期",
+    "venue": "賽場",
+    "raceNo": "R",
+    "raceTitle": "比賽名稱",
+    "grade": "等級",
+    "stage": "賽事種類",
+    "boatNumber": "水道",
+    "startTiming": "ST",
+    "finish": "名次",
+    "technique": "獲勝方式",
+    "payout": "單勝派彩",
+    "grades": {
+      "ippan": "一般賽",
+      "G1": "G1",
+      "G2": "G2",
+      "G3": "G3",
+      "SG": "SG"
+    }
+  },
   "panel": {
     "noData": "尚無預測資料",
     "officialLink": "在官方網站查看比賽資訊",
@@ -428,7 +448,8 @@
     "hitRateOnly": "實測：第1名命中率{{hitRate}}%（過去{{totalRaces}}場）"
   },
   "section": {
-    "resultTitle": "數據分析結果"
+    "resultTitle": "數據分析結果",
+    "resultTitleDeadline": "（截止 {{time}}）"
   },
   "raceTabs": {
     "beforeInfo": "臨場資訊"
