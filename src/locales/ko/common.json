@@ -239,6 +239,9 @@
     "volatilityCaveatLink": "실측 정확도 보기 ›",
     "payout": "배당금: ¥{{amount}}"
   },
+  "basicInfo": {
+    "trendRaceCourse": "{{race}}R · {{course}}코스"
+  },
   "panel": {
     "noData": "예측 데이터가 없습니다",
     "officialLink": "공식 사이트에서 경주 정보 보기",
@@ -428,7 +431,8 @@
     "hitRateOnly": "실측: 1착 적중률{{hitRate}}%（지난{{totalRaces}}경주）"
   },
   "section": {
-    "resultTitle": "데이터 분석 결과"
+    "resultTitle": "데이터 분석 결과",
+    "resultTitleDeadline": "（마감 {{time}}）"
   },
   "raceTabs": {
     "beforeInfo": "직전 정보"

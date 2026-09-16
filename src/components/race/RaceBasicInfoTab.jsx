@@ -24,8 +24,10 @@
  * getRacerVenueStatsは廃止）
  */
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
+import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import {
   filterRecords,
@@ -71,6 +73,7 @@ function formatMetricValue(metric, value) {
 
 function RaceBasicInfoTab({ raceId, venueCode, players }) {
   const { t } = useTranslation();
+  const localize = useLocalizedPath();
   const [metric, setMetric] = useState("winRate");
   const [scope, setScope] = useState("national");
   const [grade, setGrade] = useState("all");
@@ -425,8 +428,9 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                           </p>
                           <div className="rbit-trend-bars">
                             {recent.map((race) => (
-                              <div
+                              <Link
                                 key={race.raceId}
+                                to={localize(`/race/${race.raceId}`)}
                                 className="rbit-trend-item"
                               >
                                 <span
@@ -438,13 +442,22 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                       })
                                     : t("basicInfo.finishUnknown")}
                                 </span>
+                                {race.raceNumber !== null &&
+                                  race.course !== null && (
+                                    <span className="rbit-trend-race-course">
+                                      {t("basicInfo.trendRaceCourse", {
+                                        race: race.raceNumber,
+                                        course: race.course,
+                                      })}
+                                    </span>
+                                  )}
                                 <span className="rbit-trend-date">
                                   {race.date}
                                 </span>
                                 <span className="rbit-trend-venue">
                                   {t(`venues.${race.venueCode}`)}
                                 </span>
-                              </div>
+                              </Link>
                             ))}
                           </div>
                         </div>

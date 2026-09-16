@@ -27,6 +27,7 @@
  * 便宜上「取得できる全期間（過去2年）」を対象とする
  */
 import { isPlaceHit, isShowHit } from "../../../scripts/lib/hitCalculator.js";
+import { parseRaceId } from "../../utils/raceId.js";
 
 export const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
 export const SCOPES = ["local", "national"];
@@ -142,12 +143,24 @@ function finishPositionOf(r) {
  * データ（series_day/is_final_day）が実データで常にnullのため断念し、
  * 個別レースの着順をそのまま並べる方式にした（上記モジュールコメント参照）。
  * recordsは日付昇順であることを前提とする（getRacerScopedRaceStatsの戻り値順）
+ *
+ * raceNumber/courseはBOA-333（レースへのリンク・レース番号・枠番表示）で追加。
+ * raceNumberはraceId（YYYY-MM-DD-VV-RR）から導出する（racesテーブルへの
+ * 追加問い合わせ不要）。courseは実進入コース（BOA-257のactual_course_N、
+ * 2025-12-04以降のみ）を優先し、無ければ当該レースでの艇番にフォールバックする。
+ * ただしフォールバックはgetRacerScopedRaceStatsのcourseWithFallback
+ * （courseOfBoat()と同じロジック）に委ねる。バックフィル済みレースで自艇だけ
+ * null=欠場のケースまで艇番にフォールバックすると、実際には走っていない艇を
+ * 実在のコースとして誤表示するため（BOA-301と同じ問題、r.actualCourse単体では
+ * 判別できない）
  */
 export function getRecentRaces(records, count = 5) {
   return (records ?? []).slice(-count).map((r) => ({
     raceId: r.raceId,
     date: r.date,
     venueCode: r.venueCode,
+    raceNumber: parseRaceId(r.raceId)?.raceNo ?? null,
+    course: r.courseWithFallback ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）
     finish: finishPositionOf(r),

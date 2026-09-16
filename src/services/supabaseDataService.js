@@ -3828,6 +3828,12 @@ export const supabaseDataService = {
                 : null,
             // 実進入コース（BOA-257）。2025-12-04より前のレースや欠場艇はnull
             actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
+            // フォールバック込みの進入コース（BOA-333「直近5走」表示用）。
+            // 艇番フォールバックは未バックフィル(全艇null)のレースに限る。
+            // バックフィル済みなのに自艇だけnull=欠場のケースで艇番へ
+            // フォールバックすると、実際には走っていない艇を実在のコースとして
+            // 誤表示してしまう（courseOfBoat()と同じ理由、BOA-301参照）
+            courseWithFallback: courseOfBoat(result, entry.boat_number),
             // 当該レースで自艇の展示タイムが単独最速だったか。同着・データ欠落は
             // nullにし、集計時に分母から除外する（isFastestExhibition===trueの
             // 件数のみで「展示1位だった時の1着率」等を計算する）
