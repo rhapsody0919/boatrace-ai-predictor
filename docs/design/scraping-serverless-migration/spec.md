@@ -94,15 +94,18 @@ cron-job.org側のタイムアウトは30秒（[investigation.md](../../proposal
 4. **完了（2026-09-14）**: 並走期間中の日次監視は`.github/workflows/exhibition-gap-monitor.yml`で自動化した（`scripts/maintenance/check-exhibition-gap-rate.js`、毎日JST 0:30に実行）。結果確定済みレースのうち展示データが無いものの割合（欠落率）を計測し、閾値（2%）超過時のみSlack通知する。移行前3日間の実測値（0.6%/6.7%/8.1%）を踏まえ、移行後は継続的に2%を下回ることを確認する
    - Vercel側のActive CPU実測値が想定通りかは、並走期間終了時にまとめて確認する（investigation.mdの試算との比較）
    - cron-job.org側の実行履歴・失敗通知に異常が無いかは、随時ダッシュボードで確認する
-   - **Step 3実施後も本監視は継続する**（Step 4の1週間監視・切り戻し判断の材料として引き続き必要）
+   - **Step 3実施後も本監視は継続する**（Step 4・切り戻し判断の材料として引き続き必要）
 
 ### Step 3: 切り替え
 1. **実装完了・マージ後に有効化（2026-09-16、BOA-313、[PR #681](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/681)）**: GitHub Actions側の展示データ処理（`scrape-scheduled.js`115行目、`hasExhibitionRaces`の呼び出し条件）を無効化した。**リポジトリ変数`SKIP_EXHIBITION_ON_GHA`は`true`に設定済みだが、`scrape-scheduled.yml`がこの変数を参照するのはこのPRのマージ後からのため、実際にGitHub Actions側の展示データ取得が止まるのはmasterへのマージ完了時点から**
 2. **実装方式**: リポジトリ変数`SKIP_EXHIBITION_ON_GHA`（GitHub Settings > Variables）のトグルのみで即座に切り戻せる方式を採用（`scrape-scheduled.yml`の`env`経由で注入）。**コードは削除していない**（`scrape-exhibition-data.js`本体・`scrape-scheduled.js`の呼び出しコード自体は無変更、条件式に1項追加しただけ）
-3. 切り替え後も1週間は欠落率を監視する（Step 4参照、`exhibition-gap-monitor.yml`は継続稼働のため追加作業不要）
+3. 切り替え後の欠落率監視を継続する（Step 4参照、`exhibition-gap-monitor.yml`は継続稼働のため追加作業不要）
 
-### Step 4: 切り戻し条件
-以下のいずれかが発生した場合、即座にcron-job.org側のジョブを無効化し、GitHub Actions側を再有効化する:
+### Step 4: 切り戻し条件・Phase 2着手のゲート
+
+**Phase 2着手のゲート（決定・2026-09-16）**: 当初「切り替え後1週間監視してからPhase 2着手」としていたが、1週間という数字はStep 2の並走目安（3〜7日）にならった決め打ちで、技術的根拠は無かった。また`exhibition-gap-monitor.yml`は本項目の完了有無に関わらず既に自動で毎日実行・閾値超過時Slack通知される設計のため、監視の実効性自体はチェックボックスの完了とは無関係に確保されている。よって本項目は「監視するかどうか」ではなく「いつPhase 2（結果取得）に着手してよいと判断するか」というゲートとしてのみ意味を持つと整理し、**最低2〜3日分（土日を跨ぐ変動を1回は見る）の日次gap-monitor結果を確認できた時点でPhase 2着手可**とする。監視自体はPhase 2着手後も無期限で継続する。
+
+**切り戻し条件**: 以下のいずれかが発生した場合、即座にcron-job.org側のジョブを無効化し、GitHub Actions側を再有効化する:
 - 展示データ欠落率が並走前より悪化した
 - Vercel側でエラー率が有意に上昇した
 - Active CPU等のクォータ超過でVercel側の実行がブロックされた
