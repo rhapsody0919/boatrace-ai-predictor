@@ -850,6 +850,7 @@ function generateRacePrediction(race, date, racerStatsMap) {
       waveHeight: race.waveHeight ?? null,
       raceGrade: race.raceGrade || null,
       raceTitle: race.raceTitle || null,
+      raceStage: race.raceStage || null,
     },
 
     // 荒れ度情報
@@ -1166,9 +1167,20 @@ async function writeToSupabase(allPredictions, date) {
     // series_day/is_final_dayはここでは取得しないためフィールド自体を含めない。
     // 以前は明示的にnullをセットしており、update-race-info.jsが同一サイクル内で
     // 書き込んだ値を直後に上書き消去するバグの原因だった（2026-09-16修正）
+    //
+    // race_title/race_stage はT4データ（前日〜当日朝1回取得すれば開催中は不変）のため、
+    // 天候（T1、発走60分前ウィンドウでの取得が本来のタイミング）の有無に関わらず
+    // このタイミングで書き込む。以前はweather/airTempが無いとrace_title含め行自体が
+    // 作られず、その日の唯一の取得機会であるupdate-race-info.jsの60分ウィンドウが
+    // 何らかの理由（一時的な取得失敗・concurrency詰まり等）で失敗すると恒久的に
+    // データが欠損していた（BOA-347）
     const conditionsData = allPredictions
       .filter(
-        (race) => race.conditions?.weather || race.conditions?.airTemp != null,
+        (race) =>
+          race.conditions?.weather ||
+          race.conditions?.airTemp != null ||
+          race.conditions?.raceTitle ||
+          race.conditions?.raceStage,
       )
       .map((race) => ({
         race_id: race.raceId,
@@ -1182,6 +1194,7 @@ async function writeToSupabase(allPredictions, date) {
         temperature: race.conditions.airTemp,
         water_temperature: race.conditions.waterTemp,
         race_title: race.conditions.raceTitle,
+        race_stage: race.conditions.raceStage,
       }));
 
     if (conditionsData.length > 0) {
