@@ -63,16 +63,34 @@ function fmt(acc) {
 async function fetchTargetRaces(from, to) {
   // ⚠️ Supabaseのデフォルトlimitは1000行。race_odds は同一race_idに複数captured_atの
   // スナップショットがあり行数が対象レース数を上回るため、fetchAllで.range()ページネーションする
-  const data = await fetchAll("race_odds", "race_id, trifecta_all", (q) => {
-    let query = q.not("trifecta_all", "is", null);
-    if (from) query = query.gte("race_id", from);
-    if (to) query = query.lte("race_id", to);
-    return query;
-  });
-  // race_idごとに最新のtrifecta_allのみ使う（同一race_idで複数captured_atが存在するため）
-  const byRace = new Map();
+  //
+  // 2026-09-16注意（FR-4、ADR-0057）: trifecta_allは以前は発走直前の1窓のみで
+  // 捕捉していたため同一race_idの行が実質1件だったが、全窓（60/30/15/10/5/0分前）
+  // 捕捉に拡大されたことで複数行が存在するようになった。captured_atで比較せず
+  // 単純に上書きすると、PostgRESTの返す順序が不定なため意図しない古いスナップショットを
+  // 使う恐れがある（scripts/daily/generate-unified-trifecta-reference.jsの
+  // 既存パターンに合わせてcaptured_at比較を追加）
+  const data = await fetchAll(
+    "race_odds",
+    "race_id, captured_at, trifecta_all",
+    (q) => {
+      let query = q.not("trifecta_all", "is", null);
+      if (from) query = query.gte("race_id", from);
+      if (to) query = query.lte("race_id", to);
+      return query;
+    },
+  );
+  // race_idごとに最新（captured_atが最も新しい）のtrifecta_allのみ使う
+  const latestByRace = new Map();
   for (const row of data) {
-    byRace.set(row.race_id, row.trifecta_all);
+    const existing = latestByRace.get(row.race_id);
+    if (!existing || row.captured_at > existing.captured_at) {
+      latestByRace.set(row.race_id, row);
+    }
+  }
+  const byRace = new Map();
+  for (const [raceId, row] of latestByRace) {
+    byRace.set(raceId, row.trifecta_all);
   }
   return byRace;
 }
