@@ -12,6 +12,7 @@
 
 import { supabase, isSupabaseEnabled } from "./supabaseClient.js";
 import { createTopicWithTargets, getTargetAccounts } from "./snsTopics.js";
+import { latestByRaceId } from "./latestByRaceId.js";
 
 const CAMPAIGNS_TABLE = "sns_campaigns";
 const ENTRIES_TABLE = "sns_campaign_entries";
@@ -150,19 +151,10 @@ export async function findQualifyingRaces(date, criteria) {
     if (data.length < PAGE_SIZE) break;
   }
 
-  const latestByRaceId = new Map();
-  for (const row of rows) {
-    const existing = latestByRaceId.get(row.race_id);
-    if (
-      !existing ||
-      new Date(row.predicted_at) > new Date(existing.predicted_at)
-    ) {
-      latestByRaceId.set(row.race_id, row);
-    }
-  }
+  const latestRows = latestByRaceId(rows, { tsField: "predicted_at" });
 
   const qualifying = [];
-  for (const row of latestByRaceId.values()) {
+  for (const row of latestRows.values()) {
     // 複合条件はAND結合: 1つでもメトリクスが無い・条件を満たさなければ対象外
     const matchedMetrics = {};
     let allMatch = true;
