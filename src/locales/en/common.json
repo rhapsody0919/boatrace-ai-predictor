@@ -240,6 +240,9 @@
     "volatilityCaveatLink": "See measured accuracy ›",
     "payout": "Payout: ¥{{amount}}"
   },
+  "basicInfo": {
+    "trendRaceCourse": "{{race}}R · Course {{course}}"
+  },
   "panel": {
     "noData": "Prediction data is not available",
     "officialLink": "View race info on the official site",

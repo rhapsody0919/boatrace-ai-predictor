@@ -239,6 +239,9 @@
     "volatilityCaveatLink": "실측 정확도 보기 ›",
     "payout": "배당금: ¥{{amount}}"
   },
+  "basicInfo": {
+    "trendRaceCourse": "{{race}}R · {{course}}코스"
+  },
   "panel": {
     "noData": "예측 데이터가 없습니다",
     "officialLink": "공식 사이트에서 경주 정보 보기",
