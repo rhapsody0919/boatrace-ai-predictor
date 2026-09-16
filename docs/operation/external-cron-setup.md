@@ -86,6 +86,7 @@ GitHub Actionsを経由しないため、`concurrency`直列化やチェック�
 | エンドポイント | cron-job.org ジョブ名 | 間隔 | 時間帯 (JST) | 対応Phase |
 |---|---|---|---|---|
 | `/api/cron/exhibition` | `Vercel Exhibition Cron` | 2分間隔 | 7:00-23:00 | Phase 1（展示データ、GitHub Actions版と並走中） |
+| `/api/cron/race-notices` | `Vercel Race Notices Cron` | 10分間隔 | 7:00-23:00 | FR-1（レース特記事項、BOA-318/319/320、PR #654） |
 
 ### セットアップ手順
 
