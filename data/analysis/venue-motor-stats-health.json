@@ -2,111 +2,111 @@
   "1": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "3": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "5": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "6": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "7": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "8": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "9": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "10": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "11": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "12": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "13": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "14": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "15": {
-    "consecutiveFailDays": 4,
+    "consecutiveFailDays": 5,
     "lastReason": "motor_stats_table_not_found",
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "16": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "17": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "18": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "19": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "20": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "21": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "22": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "23": {
-    "consecutiveFailDays": 4,
+    "consecutiveFailDays": 5,
     "lastReason": "motor_stats_table_not_found",
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   },
   "24": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-17"
+    "lastCheckedDate": "2026-09-18"
   }
 }
