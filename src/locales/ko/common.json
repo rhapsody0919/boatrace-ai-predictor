@@ -453,6 +453,7 @@
   },
   "raceTabs": {
     "waku": "번호별 정보",
+    "aiPrediction": "AI 예상",
     "beforeInfo": "직전 정보"
   },
   "wakuInfo": {
@@ -478,6 +479,10 @@
     "recentFinishesNote": "{{course}}번 출주 시 최근 10경기 착순(왼쪽이 가장 오래됨, 오른쪽이 최신)",
     "kimariteTitle": "결정수 경향(전 선수・최근 90일)",
     "kimariteCaveat": "※이 경기장의 모든 경주・모든 선수를 합산한 결정수 비율입니다(선수 개인의 실적이 아닙니다)"
+  },
+  "aiPredictionTab": {
+    "unavailableTitle": "AI 예상 데이터가 없습니다",
+    "unavailableBody": "이 경주는 AI 예상에 필요한 데이터가 아직 준비되지 않았습니다."
   },
   "beforeInfo": {
     "subtitle": "발주 시간이 가까워지면 갱신되는 당일 한정 정보입니다. 발주 30/15/10분 전까지 확정되지 않는 항목이 있습니다",
@@ -613,12 +618,6 @@
     "turnPredictionStrengthLabel": "1마크 전개 예측 기반 종합력 순위",
     "promptVolatilityTrifecta": "위는 「인코스 붕괴 주의도」가 높다고(1호정이 평소보다 선행하지 못할 가능성이 있다고) 판정된 레이스의 출주표 데이터와, 1마크 전개 예측(결정技별 승리 확률・2착3착 유력 艇)입니다. 이 전개 예측 데이터를 바탕으로 실제로 1착이 될 가능성이 높은 艇과 그 결정技를 근거와 함께 판단하여, 삼쌍승으로 노려볼 만한 조합을 3가지 제안해주세요. 1호정의 선행 확률이 여전히 높다면 배제하지 말고 후보에 포함해주세요.",
     "previewToggleLabel": "복사될 질문 내용 보기"
-  },
-  "aiSection": {
-    "title": "AI 데이터 분석",
-    "topPickSummary": "AI 본명（복승）: {{number}}호정 {{name}}",
-    "expandHint": "탭하여 펼치기: AI 예상 상세（추천 조합・1마크 전개 시뮬레이션・배당 가치・출현 패턴）",
-    "confidence": "신뢰도 {{value}}%"
   },
   "review": {
     "finishPosition": "{{position}}착",

@@ -40,8 +40,15 @@
  * レース前の長い時間帯にDataRaceTable全体が「未完成」に見える問題への対応。
  * あわせて表示欠落だった気象情報（race_conditions）も同タブに追加した
  *
+ * 2026-09-16追記(「AI予想」独立タブ新設、BOA-346): 日和には無い龍神レーダー独自の
+ * AI予想機能（展開予測カード/イン崩れ指数バッジ/出現パターン）を、常時表示エリアの
+ * 折りたたみ（旧AiAnalysisSection）から「AI予想」タブ（基本情報の次）へ格上げした。
+ * 確定済みレースの答え合わせロジック（旧RaceResult.jsxの
+ * showVolatilityOutcome/isUpset）も同タブに統合したため、結果タブは着順・配当・
+ * 決まり手のみのシンプルな内容になった。詳細はRaceAiPredictionTab.jsx参照
+ *
  * 2026-09-16再追記(枠別情報タブ追加、BOA-307): 基本情報とモータ情報の間に
- * 「枠別情報」タブ（RaceWakuInfoTab）を追加した。選手を選んでコース別
+ * 「枠別情報」タブ（RaceWakuInfoTab）を追加した。選手を選んで枠番別
  * （1〜6）成績を見る棒グラフ＋直近10走ドリルダウン、決まり手傾向（全艇合算）
  * の2カード構成。既存のVenueTendencyPanel・AttackDefenseAnalysisとは
  * 見せ方の主語が異なるため併存させ、このタブがアクティブな間は他のタブと
@@ -51,15 +58,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
 import { useRaceData } from "../../hooks/useRaceData";
 import { SocialShareButtons } from "../SocialShareButtons";
 import { generatePredictionShareText } from "../../utils/share";
 import { getVenueGuidePath } from "../../utils/venueUtils";
-import VolatilityDisplay from "./VolatilityDisplay";
-import TurnPatternList from "./TurnPatternList";
-import PredictionCard from "./PredictionCard";
-import OutcomePatternPreview from "./OutcomePatternPreview";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
 import VenueTendencyPanel from "./VenueTendencyPanel";
@@ -71,7 +73,6 @@ import RacerTechniqueProfileChart from "../analysis/RacerTechniqueProfileChart";
 import RacerBoatReturnRateChart from "../analysis/RacerBoatReturnRateChart";
 import AttackDefenseAnalysis from "../analysis/AttackDefenseAnalysis";
 import MotorConditionChart from "../analysis/MotorConditionChart";
-import AiAnalysisSection from "./AiAnalysisSection";
 import AiCopyBanner from "./AiCopyBanner";
 import AiCopyButton from "./AiCopyButton";
 import Toast, { useToast } from "../Toast";
@@ -79,6 +80,7 @@ import RaceTabs from "./RaceTabs";
 import RaceBasicInfoTab from "./RaceBasicInfoTab";
 import RaceWakuInfoTab from "./RaceWakuInfoTab";
 import RaceBeforeInfoTab from "./RaceBeforeInfoTab";
+import RaceAiPredictionTab from "./RaceAiPredictionTab";
 import RaceResult from "./RaceResult";
 import { getRaceId } from "../../utils/raceId";
 import { AI_COPY_PROMPT_TYPES } from "../../utils/aiCopyPrompts";
@@ -140,17 +142,19 @@ function PredictionPanel({
   // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
   const isCancelled = prediction?.cancellationStatus === "confirmed";
 
-  // データ出走表・枠別傾向・分析ツール群（レース前の予想材料）を表示するか。
-  // 結果/直前情報/モータ情報の各タブは、それぞれのタブ内で同種の情報を
+  // データ出走表・枠番傾向・分析ツール群（レース前の予想材料）を表示するか。
+  // 結果/直前情報/モータ情報/AI予想の各タブは、それぞれのタブ内で同種の情報を
   // 独立して表示しているため二重表示を避けて隠す（BOA-305〜312フィードバック#7、
-  // 2026-09-16のユーザーフィードバックでモータ情報タブも対象に追加）。
+  // 2026-09-16のユーザーフィードバックでモータ情報タブも対象に追加。同日、
+  // BOA-346でAI予想タブも同じ扱いに追加）。
   // activeMainTab未確定時（初回レンダー等）は従来通り表示する。名前付き変数に
   // 切り出すことで、今後タブが増えても1行の追加で済むようにしている
   const showPreRaceAnalysisTools =
     activeMainTab !== "result" &&
     activeMainTab !== "beforeInfo" &&
     activeMainTab !== "motor" &&
-    activeMainTab !== "waku";
+    activeMainTab !== "waku" &&
+    activeMainTab !== "aiPrediction";
 
   // ローディング中
   if (isAnalyzing) {
@@ -302,6 +306,18 @@ function PredictionPanel({
                   raceId={analysisRaceId}
                   venueCode={venueCode}
                   players={prediction.allPlayers}
+                />
+              ),
+            },
+            {
+              id: "aiPrediction",
+              label: t("raceTabs.aiPrediction"),
+              content: (
+                <RaceAiPredictionTab
+                  prediction={prediction}
+                  venueCode={venueCode}
+                  venueName={venueName}
+                  raceId={analysisRaceId}
                 />
               ),
             },
@@ -465,77 +481,6 @@ function PredictionPanel({
           type={aiCopyToast.type}
           visible={aiCopyToast.visible}
         />
-      )}
-
-      {/* AIデータ分析（折りたたみ）: 展開予測パネル/イン崩れ指数バッジの2ブロック。
-          未来志向のUIのため結果確定済みレースでは表示しない（データで振り返るが代わりに担う） */}
-      {!isFinished && (
-        <AiAnalysisSection topPick={prediction.topPick} confidence={null}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              className="prediction-result"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* ブロック1: 展開予測カード（FR2）。実測精度（動的）+ 今回の上位候補ランキング。
-                  以前はここにアニメーション（FirstMarkAnimation）も併記していたが、
-                  同じpatternsデータから異なる問い（複数シナリオの勝者候補 vs 単一
-                  シナリオの全着順）に答える2つの表示が数値レベルで食い違い、
-                  ユーザーから「よくわからないUX」との指摘を受けたため撤去した
-                  （2026-08-14。将来的に別の演出を検討する） */}
-              {prediction.turnPrediction && prediction.allPlayers && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                >
-                  <PredictionCard
-                    title={`🌊 ${t("turnPatternList.title")}`}
-                    statKey="turn"
-                    hintKey="turnPrediction"
-                  >
-                    <TurnPatternList
-                      patterns={prediction.turnPrediction.patterns}
-                    />
-                  </PredictionCard>
-                </motion.div>
-              )}
-
-              {/* ブロック2: イン崩れ指数バッジ（FR3） */}
-              {prediction.volatilityPercentile != null && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
-                >
-                  <VolatilityDisplay
-                    percentile={prediction.volatilityPercentile}
-                    reasons={prediction.volatilityReasons}
-                    isFallback={prediction.volatilityPercentileIsFallback}
-                    venueCode={venueCode}
-                    raceId={analysisRaceId}
-                  />
-                </motion.div>
-              )}
-
-              {/* 出現パターン */}
-              {venueCode && venueName && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
-                >
-                  <OutcomePatternPreview
-                    venueCode={venueCode}
-                    venueName={venueName}
-                    prediction={prediction}
-                  />
-                </motion.div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </AiAnalysisSection>
       )}
 
       {/* SNSシェアボタン */}

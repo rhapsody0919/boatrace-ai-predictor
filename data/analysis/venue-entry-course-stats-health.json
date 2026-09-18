@@ -2,7 +2,7 @@
   "5": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-16"
+    "lastCheckedDate": "2026-09-18"
   },
   "8": {
     "consecutiveFailDays": 0,
@@ -10,14 +10,14 @@
     "lastCheckedDate": "2026-09-16"
   },
   "11": {
-    "consecutiveFailDays": 0,
-    "lastReason": null,
-    "lastCheckedDate": "2026-09-16"
+    "consecutiveFailDays": 1,
+    "lastReason": "no_active_meet",
+    "lastCheckedDate": "2026-09-18"
   },
   "13": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-16"
+    "lastCheckedDate": "2026-09-18"
   },
   "18": {
     "consecutiveFailDays": 0,
@@ -32,6 +32,6 @@
   "23": {
     "consecutiveFailDays": 0,
     "lastReason": null,
-    "lastCheckedDate": "2026-09-16"
+    "lastCheckedDate": "2026-09-18"
   }
 }
