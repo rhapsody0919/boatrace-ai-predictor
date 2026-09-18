@@ -452,7 +452,29 @@
     "resultTitleDeadline": "（截止 {{time}}）"
   },
   "raceTabs": {
+    "waku": "艇號別資訊",
     "beforeInfo": "臨場資訊"
+  },
+  "wakuInfo": {
+    "note": "選擇選手後，可比較該選手各艇號（1〜6）的成績。點選長條即可展開最近10場的名次",
+    "boatLabel": "選手（艇號）",
+    "metricLabel": "指標",
+    "metrics": {
+      "winRate": "第1名率",
+      "top2Rate": "連對率",
+      "top3Rate": "前三名率"
+    },
+    "courseTitle": "各艇號成績",
+    "courseSubtitle": "全國・全期間實績（以出賽時的艇號為準）",
+    "courseCaveat": "※無法區分實際進場航道的變化（前置），因此以出賽時的艇號統計。成績為產生預測當下的統計值，最近10場則為最新資料，場次可能略有出入",
+    "todayBadge": "本場艇號",
+    "noData": "沒有資料",
+    "noRacerId": "無法取得選手資訊",
+    "noRecentFinishes": "沒有此艇號的出賽紀錄",
+    "fetchError": "無法取得最近10場資料，請稍後再試",
+    "recentFinishesNote": "{{course}}號艇（艇號）最近10場的名次（左為最舊、右為最新）",
+    "kimariteTitle": "獲勝方式傾向（全艇・最近90天）",
+    "kimariteCaveat": "※本場館所有比賽・所有艇合計的獲勝方式比例（非選手個人實績）"
   },
   "beforeInfo": {
     "subtitle": "隨著發走時間接近才會更新的當日限定資訊。部分項目要到發走前30/15/10分鐘才會確定",

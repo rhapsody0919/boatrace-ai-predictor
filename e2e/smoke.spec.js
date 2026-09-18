@@ -912,6 +912,44 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });
 
+  test("枠別情報タブで選手×枠番別成績の棒グラフと決まり手傾向が表示され、枠番タップで直近10走が開く（BOA-307）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+
+    // 他のタブ同様、枠別情報タブ表示中はデータ出走表等の分析ツール群を隠す
+    await expect(page.locator(".data-race-table")).toHaveCount(0);
+
+    // 選手チップ6人・枠番1〜6の棒グラフが表示される
+    await expect(page.locator(".rwit-boat-chip")).toHaveCount(6);
+    await expect(page.locator(".rwit-bar-row")).toHaveCount(6, {
+      timeout: 20000,
+    });
+
+    // 指標を切り替えても6本の棒が維持される
+    await page.locator(".rwit-chip", { hasText: "3連対率" }).click();
+    await expect(page.locator(".rwit-bar-row")).toHaveCount(6);
+
+    // 決まり手傾向カード（会場全体の全艇合算）が表示される
+    await expect(page.locator(".rwit-tech-row").first()).toBeVisible({
+      timeout: 20000,
+    });
+
+    // 枠番の棒をタップすると直近10走の着順ドリルダウンが開く
+    await page.locator(".rwit-bar-row").first().click();
+    await expect(page.locator(".rwit-expanded")).toBeVisible();
+    await expect(page.locator(".rwit-streak-dot").first()).toBeVisible({
+      timeout: 20000,
+    });
+    expect(await page.locator(".rwit-streak-dot").count()).toBeLessThanOrEqual(
+      10,
+    );
+  });
+
   test("分析ツールの超展開データタブが表示される（レースAI予想からの外出し）", async ({
     page,
   }) => {

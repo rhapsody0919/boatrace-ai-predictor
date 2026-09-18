@@ -113,7 +113,9 @@
 
 .rwit-bar-row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  /* 値列は固定幅にして、「本レースの艇番」バッジの有無でバーの長さが
+     行ごとに変わらないようにする（バーの長さ比較の正確さを保つ） */
+  grid-template-columns: auto 1fr 6rem auto;
   align-items: center;
   gap: var(--spacing-2);
   width: 100%;
@@ -195,7 +197,8 @@
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-bold);
   color: var(--brand-accent-primary);
-  white-space: nowrap;
+  white-space: normal;
+  text-align: right;
 }
 
 .rwit-expand-arrow {

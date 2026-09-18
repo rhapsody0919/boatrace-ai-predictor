@@ -4927,9 +4927,13 @@ export const supabaseDataService = {
           .order("race_id", { ascending: false })
           .limit(40);
 
+        // 取得失敗を[]で返すとwithCacheが「履歴なし」として30分キャッシュしてしまう
+        // （DB高負荷時のstatement timeoutで実際に発生）。例外を投げてキャッシュを避け、
+        // 呼び出し側で「取得失敗」と「履歴なし」を区別できるようにする
         if (error) {
-          console.error("race_entries（枠別直近走）取得エラー:", error.message);
-          return [];
+          throw new Error(
+            `race_entries（枠別直近走）取得エラー: ${error.message}`,
+          );
         }
         if (!entries || entries.length === 0) return [];
 
@@ -4940,6 +4944,11 @@ export const supabaseDataService = {
           "race_id",
           raceIds,
         );
+        // fetchAllByInはエラー時に内部で握りつぶして空配列を返すため、出走履歴があるのに
+        // 結果が1件も取れなかった場合は取得失敗として扱う
+        if (results.length === 0) {
+          throw new Error("race_results（枠別直近走）を取得できませんでした");
+        }
         const resultById = new Map(results.map((r) => [r.race_id, r]));
 
         const finishes = [];

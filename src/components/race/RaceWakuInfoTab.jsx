@@ -152,7 +152,7 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
             "枠別情報（直近10走）取得エラー:",
             err?.message ?? String(err),
           );
-          setFinishesByKey((prev) => ({ ...prev, [key]: [] }));
+          setFinishesByKey((prev) => ({ ...prev, [key]: "error" }));
         });
     }
   };
@@ -253,6 +253,11 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
                       )}
                     </span>
                     <span className="rwit-value">
+                      {isOwnCourse && (
+                        <span className="rwit-own-badge">
+                          {t("wakuInfo.todayBadge")}
+                        </span>
+                      )}
                       {value !== null ? `${value.toFixed(1)}%` : "—"}
                       {n > 0 && (
                         <span
@@ -262,11 +267,6 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
                         </span>
                       )}
                     </span>
-                    {isOwnCourse && (
-                      <span className="rwit-own-badge">
-                        {t("wakuInfo.todayBadge")}
-                      </span>
-                    )}
                     <span className="rwit-expand-arrow">
                       {open ? "▼" : "▶"}
                     </span>
@@ -281,6 +281,10 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
                       ) : finishes === undefined || finishes === null ? (
                         <p className="rwit-expanded-loading">
                           {t("basicInfo.loading")}
+                        </p>
+                      ) : finishes === "error" ? (
+                        <p className="rwit-expanded-empty">
+                          {t("wakuInfo.fetchError")}
                         </p>
                       ) : finishes.length === 0 ? (
                         <p className="rwit-expanded-empty">
