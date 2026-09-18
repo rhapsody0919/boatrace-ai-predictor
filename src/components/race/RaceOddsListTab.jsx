@@ -232,7 +232,10 @@ function RaceOddsListTab({ raceId, raceStartTime }) {
     trendKey = betType.ordered
       ? `${selectedPair.row}-${selectedPair.col}`
       : sortedKey([selectedPair.row, selectedPair.col]);
-    trendCombo = `${selectedPair.row}-${selectedPair.col}`;
+    // 艇番昇順ソート済みの券種（quinella/wide）は、クリックしたセルの行列順ではなく
+    // 実データと同じ表記（昇順）で表示する。並び順のある券種(exacta)はtrendKeyが
+    // クリック順とそのまま一致するため区別不要
+    trendCombo = trendKey;
   } else if (betType.boats === 3 && selectedTriple) {
     trendKey = selectedTriple.key;
     trendCombo = betType.ordered
@@ -243,8 +246,10 @@ function RaceOddsListTab({ raceId, raceStartTime }) {
     ? buildTrend(snapshots, betType, trendKey, deadline)
     : [];
 
+  // 3着を選んだ後も候補一覧を表示したままにする（別候補への切替を1タップで
+  // 可能にするため、選択済みでも隠さない）
   const pairCandidates =
-    betType.boats === 3 && selectedPair && !selectedTriple
+    betType.boats === 3 && selectedPair
       ? getTripleCandidates(
           latestMap,
           betType,
@@ -338,7 +343,7 @@ function RaceOddsListTab({ raceId, raceStartTime }) {
                 <button
                   type="button"
                   key={c.third}
-                  className="rol-candidate-chip"
+                  className={`rol-candidate-chip${selectedTriple?.third === c.third ? " is-selected" : ""}`}
                   onClick={() => setSelectedTriple(c)}
                 >
                   <BoatBadge n={c.third} className="rol-boat-badge-sm" />

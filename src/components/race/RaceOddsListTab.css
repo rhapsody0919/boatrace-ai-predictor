@@ -178,6 +178,12 @@
   cursor: pointer;
 }
 
+.rol-candidate-chip.is-selected {
+  border-color: var(--brand-accent-primary);
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: -2px;
+}
+
 .rol-sparkline {
   display: block;
   width: 100%;
