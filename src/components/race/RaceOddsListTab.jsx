@@ -106,9 +106,9 @@ function buildTrend(snapshots, betType, key, deadline) {
 }
 
 // 小さな折れ線スパークライン（MotorWakuStatsGridと同じ発想のインラインSVG）
-function Sparkline({ points }) {
+function Sparkline({ points, isRange }) {
   if (points.length < 2) return null;
-  const nums = points.map((p) => valueToNumber(p.value, false));
+  const nums = points.map((p) => valueToNumber(p.value, isRange));
   const min = Math.min(...nums);
   const max = Math.max(...nums);
   const range = max - min || 1;
@@ -210,8 +210,13 @@ function RaceOddsListTab({ raceId, raceStartTime }) {
     );
   }
 
-  const latest = snapshots[snapshots.length - 1];
-  const latestMap = latest[betType.dataKey];
+  // 券種ごとに最新の「その券種の値を持つ」スナップショットを使う。全通り系5列は
+  // 個別取得で、最新行に選択中の券種だけnullのことがある（一部券種の取得失敗や
+  // FR-4以前のレース）ため、単純に末尾行を使うとグリッド全体が空になる
+  const latestMap =
+    [...snapshots].reverse().find((s) => s[betType.dataKey])?.[
+      betType.dataKey
+    ] ?? null;
   const deadline = getDeadlineDate(raceId, raceStartTime);
 
   // グリッドセルの表示値・タップ時の遷移先を券種の艇数に応じて計算
@@ -278,57 +283,63 @@ function RaceOddsListTab({ raceId, raceStartTime }) {
         ))}
       </div>
 
-      <div className="rol-grid" role="table">
-        <div className="rol-grid-corner">
-          {t(
-            betType.ordered
-              ? "oddsList.orderedCornerLabel"
-              : "oddsList.unorderedCornerLabel",
-          )}
-        </div>
-        {BOAT_NUMBERS.map((n) => (
-          <div className="rol-grid-head" key={`h-${n}`}>
-            <BoatBadge n={n} />
+      {!latestMap && (
+        <p className="rol-no-data">{t("oddsList.noBetTypeData")}</p>
+      )}
+      {latestMap && (
+        <div className="rol-grid">
+          <div className="rol-grid-corner">
+            {t(
+              betType.ordered
+                ? "oddsList.orderedCornerLabel"
+                : "oddsList.unorderedCornerLabel",
+            )}
           </div>
-        ))}
-        {BOAT_NUMBERS.map((row) => (
-          <Fragment key={`row-${row}`}>
-            <div className="rol-grid-head">
-              <BoatBadge n={row} />
+          {BOAT_NUMBERS.map((n) => (
+            <div className="rol-grid-head" key={`h-${n}`}>
+              <BoatBadge n={n} />
             </div>
-            {BOAT_NUMBERS.map((col) => {
-              if (row === col) {
+          ))}
+          {BOAT_NUMBERS.map((row) => (
+            <Fragment key={`row-${row}`}>
+              <div className="rol-grid-head">
+                <BoatBadge n={row} />
+              </div>
+              {BOAT_NUMBERS.map((col) => {
+                if (row === col) {
+                  return (
+                    <div className="rol-cell rol-cell-na" key={`${row}-${col}`}>
+                      —
+                    </div>
+                  );
+                }
+                const info = cellInfo(row, col);
+                const numeric = valueToNumber(info.value, betType.isRange);
+                const bucket = heatBucket(numeric);
+                const isSelected =
+                  selectedPair &&
+                  selectedPair.row === row &&
+                  selectedPair.col === col;
                 return (
-                  <div className="rol-cell rol-cell-na" key={`${row}-${col}`}>
-                    —
-                  </div>
+                  <button
+                    type="button"
+                    key={`${row}-${col}`}
+                    className={`rol-cell${bucket !== null ? ` rol-heat-${bucket}` : " rol-cell-empty"}${isSelected ? " is-selected" : ""}`}
+                    onClick={() => selectPair(row, col)}
+                    disabled={info.value == null}
+                    aria-label={`${row}-${col} ${info.value != null ? formatValue(info.value, betType.isRange) : "-"}`}
+                  >
+                    {info.value != null
+                      ? formatValue(info.value, betType.isRange)
+                      : "-"}
+                  </button>
                 );
-              }
-              const info = cellInfo(row, col);
-              const numeric = valueToNumber(info.value, betType.isRange);
-              const bucket = heatBucket(numeric);
-              const isSelected =
-                selectedPair &&
-                selectedPair.row === row &&
-                selectedPair.col === col;
-              return (
-                <button
-                  type="button"
-                  key={`${row}-${col}`}
-                  className={`rol-cell${bucket !== null ? ` rol-heat-${bucket}` : " rol-cell-empty"}${isSelected ? " is-selected" : ""}`}
-                  onClick={() => selectPair(row, col)}
-                  disabled={info.value == null}
-                >
-                  {info.value != null
-                    ? formatValue(info.value, betType.isRange)
-                    : "-"}
-                </button>
-              );
-            })}
-          </Fragment>
-        ))}
-      </div>
-      <p className="rol-legend">💡 {t("oddsList.legend")}</p>
+              })}
+            </Fragment>
+          ))}
+        </div>
+      )}
+      {latestMap && <p className="rol-legend">💡 {t("oddsList.legend")}</p>}
 
       {pairCandidates && (
         <div className="rol-candidates">
@@ -364,7 +375,7 @@ function RaceOddsListTab({ raceId, raceStartTime }) {
             <p className="rol-no-data">{t("oddsList.noData")}</p>
           ) : (
             <>
-              <Sparkline points={trend} />
+              <Sparkline points={trend} isRange={betType.isRange} />
               <div className="rol-trend-values">
                 {trend.map((p, i) => (
                   <div className="rol-trend-item" key={i}>

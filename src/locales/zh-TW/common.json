@@ -527,6 +527,7 @@
     "deadlineLabel": "截止時點",
     "minutesBeforeLabel": "{{n}}分鐘前",
     "noData": "此組合尚無賠率資料",
+    "noBetTypeData": "此投注方式尚無賠率資料",
     "emptyTitle": "尚無賠率資料",
     "emptyBody": "接近發航時間後，賠率資料將顯示於此分頁。"
   },

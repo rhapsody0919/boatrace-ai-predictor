@@ -321,6 +321,7 @@
     "deadlineLabel": "締切時点",
     "minutesBeforeLabel": "{{n}}分前",
     "noData": "この組み合わせのオッズデータはまだありません",
+    "noBetTypeData": "この券種のオッズデータはまだありません",
     "emptyTitle": "オッズデータがまだありません",
     "emptyBody": "発走が近づくとオッズが取得され、このタブに表示されます。"
   },

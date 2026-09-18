@@ -527,6 +527,7 @@
     "deadlineLabel": "마감 시점",
     "minutesBeforeLabel": "{{n}}분 전",
     "noData": "이 조합의 오즈 데이터가 아직 없습니다",
+    "noBetTypeData": "이 권종의 오즈 데이터가 아직 없습니다",
     "emptyTitle": "오즈 데이터가 아직 없습니다",
     "emptyBody": "발주 시간이 가까워지면 오즈가 수집되어 이 탭에 표시됩니다."
   },

@@ -529,6 +529,7 @@
     "deadlineLabel": "At deadline",
     "minutesBeforeLabel": "{{n}} min before",
     "noData": "No odds data for this combination yet",
+    "noBetTypeData": "No odds data for this bet type yet",
     "emptyTitle": "No odds data yet",
     "emptyBody": "Odds will appear here as the start time approaches."
   },
