@@ -677,6 +677,10 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
       seriesDay: race.seriesDay ?? null,
       isFinalDay: race.isFinalDay ?? null,
       raceStage: race.raceStage ?? null,
+      // 直前情報タブの気象カード用（BOA-304）。get_predictions_by_date/_light RPC
+      // （066マイグレーション）がbuildWeather()と同じ形で既に組み立てて返すため、
+      // そのまま渡すだけでよい
+      weather: race.weather ?? null,
       volatility: race.volatility
         ? {
             ...race.volatility,
@@ -3716,6 +3720,13 @@ export const supabaseDataService = {
    * クライアント側で集計する（beforeInfoStats.js）。同着最速は
    * scripts/daily/update-exhibition-time-top-stats.jsの既存集計と同じ規約で
    * スキップする（isFastestExhibitionをnullにし分母から除外）
+   *
+   * 2026-09-16追記(BOA-333「直近5走」レビュー指摘): raceTitle/raceStage
+   * （race_conditions）とwinningTechnique/payoutWin（race_results）を追加した。
+   * 「直近5走」がgetRacerRaceHistory()由来のRaceHistoryTable（BOA-159）と
+   * 同じ列を表示するようになったため、この関数もそれと同じ列を取得する必要が
+   * 生じたため（元々はBOA-306の勝率/2連対率/3連対率/平均ST集計にしか
+   * 使っておらず不要だった）
    */
   getRacerScopedRaceStats(racerId) {
     return withCache(`racer-scoped-race-stats-${racerId}`, async () => {
@@ -3742,48 +3753,71 @@ export const supabaseDataService = {
 
       const raceIds = [...new Set(entries.map((e) => e.race_id))];
       // race_gradeはraces側のカラム（race_conditions側は017マイグレーションで
-      // 削除済み。race_conditions.series_day/is_final_dayはgenerate-predictions.js
-      // で常にnull書き込みが確定しており（実データでも33,411件全行がnull、
-      // 2026-09-15確認）、この関数では取得しない。
+      // 削除済み）。race_conditions.series_day/is_final_dayはgenerate-predictions.js
+      // で常にnull書き込みが確定しているため（実データも大部分がnull、
+      // 2026-09-15確認）、この関数では取得しない（race_title/race_stageは
+      // 別カラムでBOA-226以前から実データが入っているため下記で取得する）。
       // rank4〜6はBOA-238で追加（過去データは未バックフィルのためnullのままの
       // 行がある）。start_timingは平均ST（BOA-306フィードバック#1で会場/グレード
       // フィルタ対応が必要になったため追加、race_start_timingsから取得）。
       // actual_course_1〜6はBOA-257（Kファイル方式の実進入コース、2025-12-04以降
       // のみバックフィル済み）
-      const [raceRows, resultRows, startTimingRows, exhibitionRows] =
-        await Promise.all([
-          fetchAllByIn(
-            "races",
-            "race_id, race_date, venue_code, race_grade",
-            "race_id",
-            raceIds,
-          ),
-          fetchAllByIn(
-            "race_results",
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
-            "race_id",
-            raceIds,
-          ),
-          fetchAllByIn(
-            "race_start_timings",
-            "race_id, boat_number, start_timing, is_flying",
-            "race_id",
-            raceIds,
-          ),
-          // 展示タイム1位判定には自艇だけでなく同レースの全艇分が必要
-          fetchAllByIn(
-            "exhibition_data",
-            "race_id, boat_number, exhibition_time",
-            "race_id",
-            raceIds,
-          ),
-        ]);
+      const [
+        raceRows,
+        resultRows,
+        startTimingRows,
+        exhibitionRows,
+        conditionRows,
+      ] = await Promise.all([
+        fetchAllByIn(
+          "races",
+          "race_id, race_date, venue_code, race_grade",
+          "race_id",
+          raceIds,
+        ),
+        fetchAllByIn(
+          "race_results",
+          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique, payout_win",
+          "race_id",
+          raceIds,
+        ),
+        fetchAllByIn(
+          "race_start_timings",
+          "race_id, boat_number, start_timing, is_flying",
+          "race_id",
+          raceIds,
+        ),
+        // 展示タイム1位判定には自艇だけでなく同レースの全艇分が必要
+        fetchAllByIn(
+          "exhibition_data",
+          "race_id, boat_number, exhibition_time",
+          "race_id",
+          raceIds,
+        ),
+        // レース名・レース種別（「直近5走」表示用、BOA-333レビュー指摘）。
+        // 勝率/2連対率/3連対率/平均ST/得意会場等の既存機能はこのクエリに依存
+        // していないため、ここだけ失敗してもPromise.all全体を巻き込んで
+        // 既存機能まで空にしないよう、個別にcatchしてフォールバックする
+        fetchAllByIn(
+          "race_conditions",
+          "race_id, race_stage, race_title",
+          "race_id",
+          raceIds,
+        ).catch((err) => {
+          console.error(
+            "race_conditions取得エラー（レース名・種別は「-」表示にフォールバック）:",
+            err?.message ?? String(err),
+          );
+          return [];
+        }),
+      ]);
 
       const raceById = new Map(raceRows.map((r) => [r.race_id, r]));
       const resultById = new Map(resultRows.map((r) => [r.race_id, r]));
       const startTimingByKey = new Map(
         startTimingRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
       );
+      const conditionById = new Map(conditionRows.map((r) => [r.race_id, r]));
       const exhibitionRowsByRace = new Map();
       exhibitionRows.forEach((r) => {
         if (r.exhibition_time === null || r.exhibition_time === undefined)
@@ -3814,6 +3848,7 @@ export const supabaseDataService = {
           );
           const hasExhibitionData = exhibitionRowsByRace.has(entry.race_id);
           const soleFastestBoat = soleFastestBoatByRace.get(entry.race_id);
+          const condition = conditionById.get(entry.race_id);
           return {
             raceId: entry.race_id,
             date: race.race_date,
@@ -3822,12 +3857,19 @@ export const supabaseDataService = {
             // racesの約76%のみrace_grade取得済み（2026-09-15確認）。
             // 未取得レースはグレードフィルタ「全レース」時のみ集計対象に含める
             raceGrade: race.race_grade ?? null,
+            raceTitle: condition?.race_title ?? null,
+            raceStage: condition?.race_stage ?? null,
             rank1: result.rank1,
             rank2: result.rank2,
             rank3: result.rank3,
             rank4: result.rank4 ?? null,
             rank5: result.rank5 ?? null,
             rank6: result.rank6 ?? null,
+            // 決まり手・単勝配当（「直近5走」表示用、BOA-333レビュー指摘）。
+            // 1着以外では意味を持たないが、判定はRaceHistoryTable側（finishRank
+            // ===1の行のみ表示）に委ね、ここでは生値をそのまま渡す
+            winningTechnique: result.winning_technique ?? null,
+            payoutWin: result.payout_win ?? null,
             // フライングは異常値のため平均ST計算から除外する（RaceResult.jsx等と
             // 同じ扱い）。未計測・未取得レースはnullのまま
             startTiming:

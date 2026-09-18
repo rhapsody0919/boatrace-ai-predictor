@@ -239,6 +239,26 @@
     "volatilityCaveatLink": "查看實測準確率 ›",
     "payout": "派彩：¥{{amount}}"
   },
+  "raceHistoryTable": {
+    "date": "日期",
+    "venue": "賽場",
+    "raceNo": "R",
+    "raceTitle": "比賽名稱",
+    "grade": "等級",
+    "stage": "賽事種類",
+    "boatNumber": "水道",
+    "startTiming": "ST",
+    "finish": "名次",
+    "technique": "獲勝方式",
+    "payout": "單勝派彩",
+    "grades": {
+      "ippan": "一般賽",
+      "G1": "G1",
+      "G2": "G2",
+      "G3": "G3",
+      "SG": "SG"
+    }
+  },
   "panel": {
     "noData": "尚無預測資料",
     "officialLink": "在官方網站查看比賽資訊",
@@ -428,10 +448,16 @@
     "hitRateOnly": "實測：第1名命中率{{hitRate}}%（過去{{totalRaces}}場）"
   },
   "section": {
-    "resultTitle": "數據分析結果"
+    "resultTitle": "數據分析結果",
+    "resultTitleDeadline": "（截止 {{time}}）"
   },
   "raceTabs": {
+    "aiPrediction": "AI預測",
     "beforeInfo": "臨場資訊"
+  },
+  "aiPredictionTab": {
+    "unavailableTitle": "尚無AI預測資料",
+    "unavailableBody": "這場比賽尚未備齊AI預測所需的資料。"
   },
   "beforeInfo": {
     "subtitle": "隨著發走時間接近才會更新的當日限定資訊。部分項目要到發走前30/15/10分鐘才會確定",
@@ -567,12 +593,6 @@
     "turnPredictionStrengthLabel": "依第一標展開預測計算的綜合實力排名",
     "promptVolatilityTrifecta": "以上是被判定為「內圈崩盤注意度」偏高（1號艇可能無法像平常一樣順利搶得領先）的比賽出賽表數據，以及第一標展開預測（依決勝招式分類的獲勝機率、第2・3名熱門艇）。請根據這份展開預測數據，判斷實際最有可能獲得第一名的艇號與決勝招式，並提出3組值得鎖定的3連單組合，附上理由。若1號艇的搶先機率依然偏高，請不要排除，將其納入候選。",
     "previewToggleLabel": "查看將複製的提問內容"
-  },
-  "aiSection": {
-    "title": "AI數據分析",
-    "topPickSummary": "AI本命（複勝）: {{number}}號艇 {{name}}",
-    "expandHint": "點擊展開：AI預測詳情（推薦組合・第一彎道模擬・賠率價值・出現模式）",
-    "confidence": "信賴度{{value}}%"
   },
   "review": {
     "finishPosition": "第{{position}}名",

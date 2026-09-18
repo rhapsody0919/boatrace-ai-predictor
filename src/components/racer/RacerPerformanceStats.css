@@ -73,14 +73,33 @@
   border-color: var(--brand-accent-primary);
 }
 
-.racer-vc-filter-badge {
+/* 本日出走する会場へのワンクリック絞り込みバッジ（フィルタが全24会場から
+   選べるようになった際、当日出走会場を見つけやすくするための補助導線）。
+   共通の見た目は.racer-vc-filter-badgeと共有し、色・カーソルのみ上書きする */
+.racer-vc-filter-badge,
+.racer-vc-today-badge {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
   background: var(--surface-page);
   border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-sm);
   padding: 0.4rem 0.75rem;
+}
+
+.racer-vc-filter-badge {
+  color: var(--text-primary);
+}
+
+.racer-vc-today-badge {
+  font-family: inherit;
+  color: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.racer-vc-today-badge:hover {
+  background: var(--surface-card);
 }
 
 .racer-vc-scope {
@@ -191,18 +210,6 @@ tr.racer-vc-row-highlight td:first-child {
   color: var(--text-secondary);
 }
 
-/* レース一覧（BOA-159）は列数・レース名の文字数が多く、折り返すと見出しが
-   縦積みになってしまうため、このテーブルに限り改行させず横スクロールに委ねる */
-.racer-vc-race-list .racer-return-rate-table {
-  width: auto;
-  min-width: 100%;
-}
-
-.racer-vc-race-list .racer-return-rate-table th,
-.racer-vc-race-list .racer-return-rate-table td {
-  white-space: nowrap;
-}
-
 .racer-return-rate-table th {
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
@@ -293,16 +300,6 @@ tr.racer-vc-row-highlight td:first-child {
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-md);
   padding: var(--spacing-4);
-}
-
-.racer-vc-race-link {
-  color: var(--brand-accent-secondary);
-  text-decoration: none;
-  font-weight: var(--font-weight-semibold);
-}
-
-.racer-vc-race-link:hover {
-  text-decoration: underline;
 }
 
 .racer-vc-pager {

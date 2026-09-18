@@ -17,6 +17,9 @@ import {
   aggregateRacerVenueBoatStats,
   aggregateRacerCrossStats,
 } from "../../services/supabaseDataService";
+import { ALL_VENUE_CODES } from "../../constants";
+import RaceHistoryTable from "../race/RaceHistoryTable";
+import { GRADE_LABELS } from "../race/raceGradeLabels";
 import "./RacerPerformanceStats.css";
 
 const TECHNIQUE_COLORS = {
@@ -100,14 +103,9 @@ function TechniqueBarLegend({ techniques }) {
   );
 }
 
-// races.race_gradeのコード値→表示名（BOA-159）
-const GRADE_LABELS = {
-  ippan: "一般戦",
-  G1: "G1",
-  G2: "G2",
-  G3: "G3",
-  SG: "SG",
-};
+// races.race_gradeのコード値→表示名。RaceHistoryTable.jsxへ移設
+// （BOA-159/333共通化、component-reuse.md準拠。フィルタUI・vcLabelParts等
+// テーブル外でも使うためimportして流用する）
 
 const VC_RACE_PAGE_SIZE = 10;
 
@@ -138,8 +136,18 @@ const VC_RACE_PAGE_SIZE = 10;
  * グレード・レース種別・レース一覧はBOA-159（docs/design/racer-stats-drilldown/）
  * で追加。決まり手・推移・レース一覧はタブ切り替えなしの常時表示（ADR-0063、
  * ADR-0062のタブ化はSuperseded）
+ *
+ * 会場フィルタの選択肢は全24会場（出走実績の有無に関わらず）。`todayVenueCode`
+ * が渡された場合、その会場を選択肢内でマーク表示し、素早く絞り込めるバッジを
+ * 表示する（BOA-159フィードバック対応、venueStats由来の実績会場のみに絞ると
+ * 実績の薄い会場を選べなくなるバグがあったため）
  */
-export default function RacerPerformanceStats({ racerId, stats, loading }) {
+export default function RacerPerformanceStats({
+  racerId,
+  stats,
+  loading,
+  todayVenueCode,
+}) {
   const { t } = useTranslation();
   // 会場×枠番フィルタ。「全会場」「全枠番」がそれぞれ絞り込みなしを表す。
   // 表示は「枠番」。実際の進入コースはBOA-257の制約により取得できないため、
@@ -419,83 +427,93 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
     <div className="racer-performance-stats">
       <h2>成績・調子</h2>
 
-      {/* フィルタ: 見出し直下・最上部に常時表示（ADR-0063） */}
-      {hasVenueStats && (
-        <div className="racer-vc-filter controls-section">
-          <div className="racer-vc-filter-field">
-            <label htmlFor="vc-venue">会場</label>
-            <select
-              id="vc-venue"
-              className="venue-select"
-              value={vcVenue}
-              onChange={(e) => setVcVenue(e.target.value)}
-            >
-              <option value="all">全会場</option>
-              {venueStats.map((row) => (
-                <option key={row.venue_code} value={row.venue_code}>
-                  {t(`venues.${row.venue_code}`, row.venue_code)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="racer-vc-filter-field">
-            <label htmlFor="vc-boat">枠番</label>
-            <select
-              id="vc-boat"
-              className="venue-select"
-              value={vcBoat}
-              onChange={(e) => setVcBoat(e.target.value)}
-            >
-              <option value="all">全枠番</option>
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <option key={n} value={n}>
-                  {n}号艇
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="racer-vc-filter-field">
-            <label htmlFor="vc-grade">グレード</label>
-            <select
-              id="vc-grade"
-              className="venue-select"
-              value={vcGrade}
-              onChange={(e) => setVcGrade(e.target.value)}
-            >
-              <option value="all">全グレード</option>
-              {Object.entries(GRADE_LABELS).map(([code, label]) => (
-                <option key={code} value={code}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="racer-vc-filter-field">
-            <label htmlFor="vc-stage">レース種別</label>
-            <select
-              id="vc-stage"
-              className="venue-select"
-              value={vcStage}
-              onChange={(e) => setVcStage(e.target.value)}
-            >
-              <option value="all">全レース</option>
-              <option value="優勝戦">優勝戦</option>
-              <option value="準優勝戦">準優勝戦</option>
-            </select>
-          </div>
-          {vcActive && (
-            <span className="racer-vc-filter-badge">
-              {vcHistoryError
-                ? `${vcLabel}（読み込みに失敗しました）`
-                : vcHistoryLoading
-                  ? `${vcLabel}（集計中…）`
-                  : vcData
-                    ? `${vcLabel}（${vcData.n}走）`
-                    : vcLabel}
-            </span>
-          )}
+      {/* フィルタ: 見出し直下・最上部に常時表示（ADR-0063）。venueStatsが
+          空（出走実績が薄い選手）でも全会場を選べるようにするため、この
+          ブロック自体はhasAnyData（上でチェック済み）にのみ依存する */}
+      <div className="racer-vc-filter controls-section">
+        <div className="racer-vc-filter-field">
+          <label htmlFor="vc-venue">会場</label>
+          <select
+            id="vc-venue"
+            className="venue-select"
+            value={vcVenue}
+            onChange={(e) => setVcVenue(e.target.value)}
+          >
+            <option value="all">全会場</option>
+            {ALL_VENUE_CODES.map((code) => (
+              <option key={code} value={code}>
+                {code === todayVenueCode ? "🏁 " : ""}
+                {t(`venues.${code}`, code)}
+              </option>
+            ))}
+          </select>
         </div>
-      )}
+        <div className="racer-vc-filter-field">
+          <label htmlFor="vc-boat">枠番</label>
+          <select
+            id="vc-boat"
+            className="venue-select"
+            value={vcBoat}
+            onChange={(e) => setVcBoat(e.target.value)}
+          >
+            <option value="all">全枠番</option>
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <option key={n} value={n}>
+                {n}号艇
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="racer-vc-filter-field">
+          <label htmlFor="vc-grade">グレード</label>
+          <select
+            id="vc-grade"
+            className="venue-select"
+            value={vcGrade}
+            onChange={(e) => setVcGrade(e.target.value)}
+          >
+            <option value="all">全グレード</option>
+            {Object.entries(GRADE_LABELS).map(([code, label]) => (
+              <option key={code} value={code}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="racer-vc-filter-field">
+          <label htmlFor="vc-stage">レース種別</label>
+          <select
+            id="vc-stage"
+            className="venue-select"
+            value={vcStage}
+            onChange={(e) => setVcStage(e.target.value)}
+          >
+            <option value="all">全レース</option>
+            <option value="優勝戦">優勝戦</option>
+            <option value="準優勝戦">準優勝戦</option>
+          </select>
+        </div>
+        {todayVenueCode && vcVenue !== String(todayVenueCode) && (
+          <button
+            type="button"
+            className="racer-vc-today-badge"
+            onClick={() => setVcVenue(String(todayVenueCode))}
+          >
+            🏁 本日は{t(`venues.${todayVenueCode}`, todayVenueCode)}で出走 →
+          </button>
+        )}
+        {vcActive && (
+          <span className="racer-vc-filter-badge">
+            {vcHistoryError
+              ? `${vcLabel}（読み込みに失敗しました）`
+              : vcHistoryLoading
+                ? `${vcLabel}（集計中…）`
+                : vcData
+                  ? `${vcLabel}（${vcData.n}走）`
+                  : vcLabel}
+          </span>
+        )}
+      </div>
 
       {vcHistoryLoading && <p className="racer-stat-note">集計中…</p>}
 
@@ -658,26 +676,13 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
         </div>
       )}
 
-      {vcVenueFixed && !vcBoatFixed && (
+      {vcVenueFixed && !vcBoatFixed && !vcHistoryLoading && !vcHistoryError && (
         <div className="racer-technique-profile">
           <h3>
             枠番別成績 — {vcLabel}
             <span className="h3-hint">枠番をクリックでさらに絞り込み →</span>
           </h3>
-          {vcHistoryError ? (
-            <p className="racer-stat-note">
-              出走履歴の取得に失敗しました。
-              <button
-                type="button"
-                className="racer-vc-retry-button"
-                onClick={() => setVcRetryToken((n) => n + 1)}
-              >
-                再試行
-              </button>
-            </p>
-          ) : vcHistoryLoading ? (
-            <p className="racer-stat-note">集計中…</p>
-          ) : vcCrossData && vcCrossData.length > 0 ? (
+          {vcCrossData && vcCrossData.length > 0 ? (
             <StatBreakdownTable
               headers={["枠番", "出走数", "勝率", "2連率", "3連率"]}
               rows={vcCrossData.map((row) => ({
@@ -700,26 +705,13 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
         </div>
       )}
 
-      {!vcVenueFixed && vcBoatFixed && (
+      {!vcVenueFixed && vcBoatFixed && !vcHistoryLoading && !vcHistoryError && (
         <div className="racer-technique-profile">
           <h3>
             会場別成績 — {vcLabel}
             <span className="h3-hint">会場をクリックでさらに絞り込み →</span>
           </h3>
-          {vcHistoryError ? (
-            <p className="racer-stat-note">
-              出走履歴の取得に失敗しました。
-              <button
-                type="button"
-                className="racer-vc-retry-button"
-                onClick={() => setVcRetryToken((n) => n + 1)}
-              >
-                再試行
-              </button>
-            </p>
-          ) : vcHistoryLoading ? (
-            <p className="racer-stat-note">集計中…</p>
-          ) : vcCrossData && vcCrossData.length > 0 ? (
+          {vcCrossData && vcCrossData.length > 0 ? (
             <StatBreakdownTable
               translateNo
               headers={["会場", "出走数", "勝率", "2連率", "3連率"]}
@@ -779,13 +771,10 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
         </div>
       )}
 
-      {vcVenueFixed && vcBoatFixed && vcHistoryLoading && (
-        <p className="racer-stat-note">集計中…</p>
-      )}
-
       {vcVenueFixed &&
         vcBoatFixed &&
         !vcHistoryLoading &&
+        !vcHistoryError &&
         vcData &&
         vcData.n === 0 && (
           <p className="racer-stat-note">
@@ -949,65 +938,7 @@ export default function RacerPerformanceStats({ racerId, stats, loading }) {
             レース一覧
             {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
           </h3>
-          <div className="table-wrapper">
-            <table className="racer-return-rate-table">
-              <thead>
-                <tr>
-                  <th>日付</th>
-                  <th>会場</th>
-                  <th>R</th>
-                  <th>レース名</th>
-                  <th>グレード</th>
-                  <th>レース種別</th>
-                  <th>枠番</th>
-                  <th>ST</th>
-                  <th>着順</th>
-                  <th>決まり手</th>
-                  <th>単勝配当</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vcRacePageRows.map((race) => (
-                  <tr key={race.raceId}>
-                    <td>
-                      <Link
-                        className="racer-vc-race-link"
-                        to={`/race/${race.raceId}`}
-                      >
-                        {race.date}
-                      </Link>
-                    </td>
-                    <td>{t(`venues.${race.venueCode}`, race.venueCode)}</td>
-                    <td>{race.raceNo}R</td>
-                    <td>{race.raceTitle ?? "-"}</td>
-                    <td>
-                      {race.raceGrade
-                        ? (GRADE_LABELS[race.raceGrade] ?? race.raceGrade)
-                        : "-"}
-                    </td>
-                    <td>{race.raceStage ?? "-"}</td>
-                    <td>{race.boatNumber}</td>
-                    <td>
-                      {race.startTiming !== null
-                        ? Number(race.startTiming).toFixed(2)
-                        : "-"}
-                    </td>
-                    <td>{race.finishRank ?? t("basicInfo.finishUnknown")}</td>
-                    <td>
-                      {race.finishRank === 1
-                        ? (race.winningTechnique ?? "-")
-                        : "-"}
-                    </td>
-                    <td>
-                      {race.finishRank === 1 && race.payoutWin
-                        ? `${race.payoutWin}円`
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <RaceHistoryTable rows={vcRacePageRows} />
           {vcRaceTotalPages > 1 && (
             <div className="racer-vc-pager">
               <button

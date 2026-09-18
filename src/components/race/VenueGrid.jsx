@@ -3,9 +3,8 @@
  * venuesDataに含まれない会場は非開催（「本日開催なし」）として表示する
  */
 import VenueGridCard from "./VenueGridCard";
+import { ALL_VENUE_CODES } from "../../constants";
 import "./VenueGrid.css";
-
-const ALL_VENUE_CODES = Array.from({ length: 24 }, (_, i) => i + 1);
 
 function VenueGrid({ venuesData, getVenueLink, nowHHMM }) {
   const byCode = new Map((venuesData || []).map((v) => [v.placeCd, v]));

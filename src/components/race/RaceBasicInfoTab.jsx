@@ -26,7 +26,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
+import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import RaceHistoryTable from "./RaceHistoryTable";
 import {
   filterRecords,
   computeRates,
@@ -71,6 +73,7 @@ function formatMetricValue(metric, value) {
 
 function RaceBasicInfoTab({ raceId, venueCode, players }) {
   const { t } = useTranslation();
+  const localize = useLocalizedPath();
   const [metric, setMetric] = useState("winRate");
   const [scope, setScope] = useState("national");
   const [grade, setGrade] = useState("all");
@@ -101,9 +104,21 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
     if (!racerId) return;
     setScopedStatsByRacer((prev) => {
       if (prev[racerId]) return prev;
-      supabaseDataService.getRacerScopedRaceStats(racerId).then((data) => {
-        setScopedStatsByRacer((cur) => ({ ...cur, [racerId]: data }));
-      });
+      supabaseDataService
+        .getRacerScopedRaceStats(racerId)
+        .then((data) => {
+          setScopedStatsByRacer((cur) => ({ ...cur, [racerId]: data }));
+        })
+        .catch((err) => {
+          // withCache()はfetcher()の例外をそのまま伝播するため、ここで
+          // catchしないとscopedStatsByRacer[racerId]がundefinedのまま
+          // 永久に残り、「直近5走」が「読み込み中...」表示のまま固まって
+          // しまう（レビュー指摘#2の調査で発見した潜在バグ）。取得失敗時は
+          // 空配列にフォールバックし、「出走履歴データがありません」表示に
+          // 倒す（例外を握りつぶさずログには残す）
+          console.error("選手出走履歴取得エラー:", err?.message ?? String(err));
+          setScopedStatsByRacer((cur) => ({ ...cur, [racerId]: [] }));
+        });
       // 取得中はundefinedのまま保持し、二重取得を防ぐ
       return { ...prev, [racerId]: undefined };
     });
@@ -423,30 +438,12 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                           <p className="rbit-trend-note">
                             {t("basicInfo.trendNote")}
                           </p>
-                          <div className="rbit-trend-bars">
-                            {recent.map((race) => (
-                              <div
-                                key={race.raceId}
-                                className="rbit-trend-item"
-                              >
-                                <span
-                                  className={`rbit-trend-finish rbit-trend-finish-${race.finish ?? "unknown"}`}
-                                >
-                                  {race.finish !== null
-                                    ? t("review.finishPosition", {
-                                        position: race.finish,
-                                      })
-                                    : t("basicInfo.finishUnknown")}
-                                </span>
-                                <span className="rbit-trend-date">
-                                  {race.date}
-                                </span>
-                                <span className="rbit-trend-venue">
-                                  {t(`venues.${race.venueCode}`)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
+                          <RaceHistoryTable
+                            rows={recent}
+                            buildRaceHref={(raceId) =>
+                              localize(`/race/${raceId}`)
+                            }
+                          />
                         </div>
                       );
                     })()}

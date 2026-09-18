@@ -28,6 +28,7 @@ import {
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import { calculateUnifiedScores } from "../lib/unifiedModel.js";
 import { fetchRaceIndicatorData } from "../lib/raceIndicatorData.js";
+import { latestByRaceId } from "../lib/latestByRaceId.js";
 
 const MODEL_ID = "unified";
 const EV_THRESHOLD_BET = 1.2;
@@ -56,14 +57,7 @@ async function fetchLatestTrifectaAll(raceIds) {
     "race_id, captured_at, trifecta_all",
     (q) => q.in("race_id", raceIds).not("trifecta_all", "is", null),
   );
-  const latestByRace = new Map();
-  for (const row of rows) {
-    const existing = latestByRace.get(row.race_id);
-    if (!existing || row.captured_at > existing.captured_at) {
-      latestByRace.set(row.race_id, row);
-    }
-  }
-  return latestByRace;
+  return latestByRaceId(rows);
 }
 
 function classify(ev) {
