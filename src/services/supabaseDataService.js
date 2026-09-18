@@ -4938,25 +4938,30 @@ export const supabaseDataService = {
         if (!entries || entries.length === 0) return [];
 
         const raceIds = entries.map((e) => e.race_id);
-        const results = await fetchAllByIn(
-          "race_results",
-          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race",
-          "race_id",
-          raceIds,
-        );
-        // fetchAllByInはエラー時に内部で握りつぶして空配列を返すため、出走履歴があるのに
-        // 結果が1件も取れなかった場合は取得失敗として扱う
-        if (results.length === 0) {
-          throw new Error("race_results（枠別直近走）を取得できませんでした");
+        // 最大40件のIN句1回で足りるため、エラーを握りつぶすfetchAllByInは使わず
+        // 直接クエリする（取得失敗と「結果未確定のみ」を区別するため）。
+        // 結果が未確定の出走（今日以降のレース等）はresultsが0件でも正常
+        const { data: results, error: resultsError } = await supabase
+          .from("race_results")
+          .select(
+            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race",
+          )
+          .in("race_id", raceIds);
+        if (resultsError) {
+          throw new Error(
+            `race_results（枠別直近走）取得エラー: ${resultsError.message}`,
+          );
         }
-        const resultById = new Map(results.map((r) => [r.race_id, r]));
+        const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
 
         const finishes = [];
         for (const raceId of raceIds) {
           const result = resultById.get(raceId);
           if (!isUsableRaceResult(result)) continue;
+          // rank1〜6のどこにも艇番が無い場合（欠場・失格・転覆等、またはrank4〜6が
+          // 未バックフィルの過去データでの4着以下）は着外としてrank=nullで返す。
+          // courseRaceCountsの母数（結果確定済みの全出走）と揃えるため除外しない
           const rank = findBoatColumnIndex(result, "rank", course);
-          if (rank === null) continue;
           finishes.push({ race_id: raceId, rank });
           if (finishes.length >= 10) break;
         }

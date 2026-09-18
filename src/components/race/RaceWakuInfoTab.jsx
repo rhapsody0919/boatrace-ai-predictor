@@ -20,7 +20,7 @@
  *   異なる粒度・目的の情報
  *
  * データソース:
- * - コース別成績: useRaceAnalysisDataが返すracerStats
+ * - コース別成績: getRaceRacerStatsが返すracerStats
  *   （predictions.feature_contributions.racerStats、DataRaceTableの
  *   「枠番勝率」行・AttackDefenseTableと同じ出所）のcourseRaceCounts
  *   （racer_aggregated_stats由来、全国合算・全期間、艇番＝コース前提。
@@ -28,7 +28,7 @@
  * - コースドリルダウン直近10走: supabaseDataService.getRacerCourseRecentFinishes
  *   （本チケットで新規追加）。courseRaceCountsと母集団の定義を揃えるため、
  *   実進入コース（actual_course_N）ではなくrace_entries.boat_numberで判定する
- * - 決まり手傾向（全艇）: useVenueTendencyStatsのtechniqueデータ
+ * - 決まり手傾向（全艇）: getWinningTechniqueStatsのデータ
  *   （winning_technique_stats、直近90日）を6艇合算して技法別シェアに変換する。
  *   VenueTendencyPanelは艇別の最頻値1件のみ表示するが、本カードは
  *   技法5種類の全体シェアを見せる別の切り口
@@ -42,12 +42,10 @@
  * 合わないため直接流用はしない。UIパターンとしては基本情報タブ
  * （RaceBasicInfoTab）のバー＋タップ展開パターンを踏襲する
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
-import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
-import { useVenueTendencyStats } from "../../hooks/useVenueTendencyStats";
 import { translateTechnique } from "./raceIndicators";
 import { SMALL_SAMPLE_THRESHOLD } from "./basicInfoStats";
 import "./RaceWakuInfoTab.css";
@@ -74,6 +72,8 @@ function courseValue(courseRaceCounts, course, metric) {
 }
 
 function rankDotClass(rank) {
+  // 着外（欠場・失格・転覆等でrank1〜6のどこにも入らない）は最下位扱い
+  if (rank === null) return "rwit-dot-bad";
   if (rank <= 2) return "rwit-dot-good";
   if (rank <= 4) return "rwit-dot-mid";
   return "rwit-dot-bad";
@@ -103,8 +103,44 @@ function aggregateTechniqueDistribution(techniqueByBoat) {
 
 function RaceWakuInfoTab({ raceId, venueCode, players }) {
   const { t } = useTranslation();
-  const analysis = useRaceAnalysisData(raceId, { venueCode });
-  const venueStats = useVenueTendencyStats(venueCode);
+  // このタブで使うのはracerStatsと決まり手統計の2種類だけのため、8+4クエリを
+  // まとめて発火するuseRaceAnalysisData/useVenueTendencyStatsは使わず個別に取得する
+  // （withCacheで他タブ・他コンポーネントの取得と重複しない）。
+  // undefined=取得中、null=取得失敗/データなし
+  const [racerStats, setRacerStats] = useState(undefined);
+  const [techniqueStats, setTechniqueStats] = useState(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabaseDataService
+      .getRaceRacerStats(raceId)
+      .then((data) => {
+        if (!cancelled) setRacerStats(data ?? null);
+      })
+      .catch((err) => {
+        console.error("枠別情報（racerStats）取得エラー:", err?.message);
+        if (!cancelled) setRacerStats(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [raceId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabaseDataService
+      .getWinningTechniqueStats(venueCode)
+      .then((data) => {
+        if (!cancelled) setTechniqueStats(data ?? null);
+      })
+      .catch((err) => {
+        console.error("枠別情報（決まり手）取得エラー:", err?.message);
+        if (!cancelled) setTechniqueStats(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [venueCode]);
 
   const sortedPlayers = [...(players ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -121,9 +157,7 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
 
   const selectedPlayer =
     sortedPlayers.find((p) => p.number === selectedBoat) ?? sortedPlayers[0];
-  const statsByBoat = new Map(
-    (analysis.racerStats ?? []).map((s) => [s.boatNumber, s]),
-  );
+  const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
   const selectedStats = statsByBoat.get(selectedPlayer.number);
   const selectedColor = BOAT_COLORS[selectedPlayer.number] || {};
 
@@ -140,7 +174,10 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
     setOpenCourse(course);
     const racerId = selectedPlayer.racerId;
     const key = `${racerId}-${course}`;
-    if (racerId && finishesByKey[key] === undefined) {
+    if (
+      racerId &&
+      (finishesByKey[key] === undefined || finishesByKey[key] === "error")
+    ) {
       setFinishesByKey((prev) => ({ ...prev, [key]: null }));
       supabaseDataService
         .getRacerCourseRecentFinishes(racerId, course)
@@ -158,7 +195,7 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
   };
 
   const techniqueDistribution = aggregateTechniqueDistribution(
-    venueStats.technique?.data,
+    techniqueStats?.data,
   );
 
   return (
@@ -214,8 +251,8 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
         <h3 className="rwit-card-title">{t("wakuInfo.courseTitle")}</h3>
         <p className="rwit-card-sub">{t("wakuInfo.courseSubtitle")}</p>
 
-        {analysis.pending.racerStats && !selectedStats ? (
-          <p className="rwit-loading">{t("basicInfo.loading")}</p>
+        {racerStats === undefined ? (
+          <p className="rwit-loading">{t("wakuInfo.loading")}</p>
         ) : !selectedStats?.courseRaceCounts ? (
           <p className="rwit-empty">{t("wakuInfo.noData")}</p>
         ) : (
@@ -247,7 +284,7 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
                           className={`rwit-bar-fill${isSmallSample ? " is-small-sample" : ""}`}
                           style={{
                             width: `${Math.max(2, Math.min(100, value))}%`,
-                            background: selectedColor.bg,
+                            backgroundColor: selectedColor.bg,
                           }}
                         />
                       )}
@@ -263,7 +300,7 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
                         <span
                           className={`rwit-n${isSmallSample ? " is-small-sample" : ""}`}
                         >
-                          {t("basicInfo.sampleCount", { n })}
+                          {t("wakuInfo.sampleCount", { n })}
                         </span>
                       )}
                     </span>
@@ -280,7 +317,7 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
                         </p>
                       ) : finishes === undefined || finishes === null ? (
                         <p className="rwit-expanded-loading">
-                          {t("basicInfo.loading")}
+                          {t("wakuInfo.loading")}
                         </p>
                       ) : finishes === "error" ? (
                         <p className="rwit-expanded-empty">
@@ -302,7 +339,7 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
                                 className={`rwit-streak-dot ${rankDotClass(f.rank)}`}
                                 title={f.race_id}
                               >
-                                {f.rank}
+                                {f.rank ?? t("wakuInfo.outOfPlace")}
                               </span>
                             ))}
                           </div>
@@ -322,7 +359,9 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
         <h3 className="rwit-card-title">{t("wakuInfo.kimariteTitle")}</h3>
         {techniqueDistribution.length === 0 ? (
           <p className="rwit-empty">
-            {venueStats.loading ? t("basicInfo.loading") : t("wakuInfo.noData")}
+            {techniqueStats === undefined
+              ? t("wakuInfo.loading")
+              : t("wakuInfo.noData")}
           </p>
         ) : (
           <div className="rwit-bars">
