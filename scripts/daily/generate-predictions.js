@@ -850,6 +850,7 @@ function generateRacePrediction(race, date, racerStatsMap) {
       waveHeight: race.waveHeight ?? null,
       raceGrade: race.raceGrade || null,
       raceTitle: race.raceTitle || null,
+      raceStage: race.raceStage || null,
     },
 
     // 荒れ度情報
@@ -1166,35 +1167,93 @@ async function writeToSupabase(allPredictions, date) {
     // series_day/is_final_dayはここでは取得しないためフィールド自体を含めない。
     // 以前は明示的にnullをセットしており、update-race-info.jsが同一サイクル内で
     // 書き込んだ値を直後に上書き消去するバグの原因だった（2026-09-16修正）
+    //
+    // race_title/race_stage はT4データ（前日〜当日朝1回取得すれば開催中は不変）のため、
+    // 天候（T1、発走60分前ウィンドウでの取得が本来のタイミング）の有無に関わらず
+    // このタイミングで書き込む（BOA-347）。以前はweather/airTempが無いとrace_title含め
+    // 行自体が作られず、その日の唯一の取得機会であるupdate-race-info.jsの60分ウィンドウが
+    // 何らかの理由（一時的な取得失敗・concurrency詰まり等）で失敗すると恒久的に欠損していた。
+    //
+    // 天候系フィールドと race_title/race_stage は、値が無い側をそれぞれ独立して
+    // オブジェクトから省く（上のseries_day/is_final_dayと同じ理由）。ただしPostgRESTの
+    // 一括upsertは「バッチ内のいずれかの行が持つキー」を列集合として扱い、そのキーを
+    // 持たない行には明示的にNULLを書き込む（scrape-odds.jsの全通り系オッズと同じ制約、
+    // 583行目付近のコメント参照）。そのため単純に行ごとにキーを省略しただけでは、
+    // 同じバッチ内に天候ありの行が1件でもあれば天候無しの行がNULL上書きされてしまう。
+    // 実際に含まれるキーの組み合わせ（シグネチャ）ごとにグループ化し、グループ単位で
+    // 別々にupsertすることでこれを避ける
+    const CONDITION_OPTIONAL_KEYS = [
+      "weather",
+      "wind_direction",
+      "wind_speed",
+      "wave_height",
+      "temperature",
+      "water_temperature",
+      "race_title",
+      "race_stage",
+    ];
     const conditionsData = allPredictions
       .filter(
-        (race) => race.conditions?.weather || race.conditions?.airTemp != null,
+        (race) =>
+          race.conditions?.weather ||
+          race.conditions?.airTemp != null ||
+          race.conditions?.raceTitle ||
+          race.conditions?.raceStage,
       )
-      .map((race) => ({
-        race_id: race.raceId,
-        weather: race.conditions.weather,
-        wind_direction: convertWindDirection(race.conditions.windDirection),
-        wind_speed: race.conditions.windVelocity,
-        wave_height:
-          race.conditions.waveHeight != null
-            ? Math.round(race.conditions.waveHeight)
-            : null,
-        temperature: race.conditions.airTemp,
-        water_temperature: race.conditions.waterTemp,
-        race_title: race.conditions.raceTitle,
-      }));
+      .map((race) => {
+        const row = { race_id: race.raceId };
+        if (race.conditions?.weather || race.conditions?.airTemp != null) {
+          row.weather = race.conditions.weather;
+          row.wind_direction = convertWindDirection(
+            race.conditions.windDirection,
+          );
+          row.wind_speed = race.conditions.windVelocity;
+          row.wave_height =
+            race.conditions.waveHeight != null
+              ? Math.round(race.conditions.waveHeight)
+              : null;
+          row.temperature = race.conditions.airTemp;
+          row.water_temperature = race.conditions.waterTemp;
+        }
+        if (race.conditions?.raceTitle) {
+          row.race_title = race.conditions.raceTitle;
+        }
+        if (race.conditions?.raceStage) {
+          row.race_stage = race.conditions.raceStage;
+        }
+        return row;
+      });
 
     if (conditionsData.length > 0) {
-      const { error: conditionsError } = await supabase
-        .from("race_conditions")
-        .upsert(conditionsData, { onConflict: "race_id" });
-      if (conditionsError) {
-        console.error(
-          "❌ race_conditions書き込みエラー:",
-          conditionsError.message,
+      const conditionsGroupBySignature = new Map();
+      for (const row of conditionsData) {
+        const signature = CONDITION_OPTIONAL_KEYS.filter((k) => k in row).join(
+          ",",
         );
-      } else {
-        console.log(`  ✅ race_conditions: ${conditionsData.length}件`);
+        if (!conditionsGroupBySignature.has(signature)) {
+          conditionsGroupBySignature.set(signature, []);
+        }
+        conditionsGroupBySignature.get(signature).push(row);
+      }
+
+      let conditionsWriteCount = 0;
+      let conditionsHasError = false;
+      for (const group of conditionsGroupBySignature.values()) {
+        const { error: conditionsError } = await supabase
+          .from("race_conditions")
+          .upsert(group, { onConflict: "race_id" });
+        if (conditionsError) {
+          conditionsHasError = true;
+          console.error(
+            "❌ race_conditions書き込みエラー:",
+            conditionsError.message,
+          );
+        } else {
+          conditionsWriteCount += group.length;
+        }
+      }
+      if (!conditionsHasError) {
+        console.log(`  ✅ race_conditions: ${conditionsWriteCount}件`);
       }
     }
 

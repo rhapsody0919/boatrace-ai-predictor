@@ -244,10 +244,15 @@
   },
   "raceTabs": {
     "basic": "基本情報",
+    "aiPrediction": "AI予想",
     "motor": "モータ情報",
     "beforeInfo": "直前情報",
     "oddsList": "オッズ一覧",
     "result": "結果"
+  },
+  "aiPredictionTab": {
+    "unavailableTitle": "AI予想データがありません",
+    "unavailableBody": "このレースはAI予想の対象データが揃っていません。"
   },
   "beforeInfo": {
     "subtitle": "発走が近づくと更新される当日限りの情報です。発走30/15/10分前まで確定しない項目があります",
@@ -652,12 +657,6 @@
     "turnPredictionStrengthLabel": "1マーク展開予測ベースの総合力順位",
     "promptVolatilityTrifecta": "上記は「イン崩れ注意度」が高い（1号艇が通常より逃げ切れない可能性がある）と判定されたレースの出走表データと、1マーク展開予測（決まり手別の勝利確率・2着3着の有力艇）です。この展開予測データを踏まえて、実際に1着になる可能性が高い艇とその決まり手を根拠とともに判断し、3連単で狙うべき組み合わせを3つ提案してください。1号艇の逃げ確率が依然として高い場合は、それを除外せず候補に含めてください。",
     "previewToggleLabel": "コピーされる質問文を見る"
-  },
-  "aiSection": {
-    "title": "AIデータ分析",
-    "topPickSummary": "AIの本命（複勝）: {{number}}号艇 {{name}}",
-    "expandHint": "タップで展開: AI予想の詳細（買い目・1マーク展開予測・配当妙味・出現パターン）",
-    "confidence": "信頼度{{value}}%"
   },
   "review": {
     "finishPosition": "{{position}}着",
