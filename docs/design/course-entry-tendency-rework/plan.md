@@ -1,159 +1,184 @@
 # 進入コース遷移傾向の再構築 plan
 
-対応: [spec.md](./spec.md) / [screens.md](./screens.md)
+対応: [spec.md](./spec.md) / [screens.md](./screens.md) / [ADR-0064](../../adr/0064-course-entry-tendency-reuse-existing-infra.md) / [ADR-0065](../../adr/0065-venue-course-entry-baseline-precomputed-table.md)
 
 ## 全体アーキテクチャ
 
-実コードを調査した結果、本機能に必要な計算ロジックの大部分は**既に実装済み**だと判明した（BOA-257のKファイル対応で`actual_course_1〜6`が追加されたのみで、それを消費する側がまだ追随していない状態）。新規テーブル・新規RPCは作らず、既存2箇所のデータソースを`actual_course_N`に切り替える／拡張するだけで済む。
+「選手×枠番→実進入コース分布」の算出ロジックは`aggregate-racer-stats.js`に既にあり、参照列が壊れた`course_1〜6`のままだった（BOA-284）。これを`actual_course_1〜6`に切り替えて拡張する。会場別対応で必要になる「会場平均（選手非依存）」だけは新規の事前集計になる。
 
 ```mermaid
 flowchart TB
-    subgraph batch["バッチ（夜間、既存）"]
-        A["scripts/analysis/aggregate-racer-stats.js\ncalculateCourseEntryTendency()"]
+    subgraph batch["夜間バッチ（aggregate-stats.yml、JST 23:00、既存ワークフローに追加）"]
+        A["aggregate-racer-stats.js\n4関数をactual_course_Nに切替\n(FR-1)\ncourse_entry_tendencyに会場別内訳を追加(FR-2)"]
+        B["update-venue-course-entry-baseline.js（新規）\nRPC: compute_venue_course_entry_baseline\n(FR-6)"]
     end
-    subgraph db["Supabase（既存テーブル、変更なし）"]
-        B[("race_results\nactual_course_1〜6\nBOA-257で追加済み")]
-        C[("racer_aggregated_stats\ncourse_entry_tendency (jsonb)\nPK: racer_id, venue_code")]
-        D[("venue_entry_course_stats\nBOA-293、10会場")]
+    subgraph db["Supabase"]
+        R[("race_results\nactual_course_1〜6")]
+        E[("race_entries")]
+        S[("racer_aggregated_stats\nvenue_code=0の行のみ\ncourse_race_counts / course_entry_tendency")]
+        V[("venues\n+ course_entry_baseline (jsonb)\n新規列")]
     end
-    subgraph client["フロントエンド（新規・拡張）"]
-        E["supabaseDataService.js\ngetRacerRaceHistory()（拡張）"]
-        F["supabaseDataService.js\naggregateRacerCourseEntryStats()（新規）"]
-        G["raceIndicators.jsx\n前づけ傾向行（新規）"]
-        H["RacerPerformanceStats.jsx\n概要バッジ＋詳細セクション（新規）"]
-        I["RacerMaezukeChart.jsx（新規）"]
+    subgraph client["フロントエンド"]
+        F["raceIndicators.jsx 枠なり率行 (FR-3)"]
+        G["RacerPerformanceStats.jsx\n概要バッジ＋詳細セクション (FR-4)"]
+        H["RacerMaezukeChart.jsx 分析タブ (FR-5)"]
+        U["courseEntryCell.js（新規・純関数）\n解決順・タグ判定を1箇所に集約"]
+        HIS["getRacerRaceHistory（拡張）\n+ aggregateRacerCourseEntryStats（新規）"]
     end
-
-    A -- "actual_course_Nを集計・書き込み" --> C
-    B --> A
-    C -- "venue_code指定で会場別 or 0で全国" --> G
-    C --> I
-    D -- "対象10会場は優先" --> G
-    B -- "actualCourse付きで取得" --> E
-    E -- "全履歴（2年分、既存キャッシュ）" --> F
-    F -- "4軸フィルタで絞り込み（クライアント側、追加通信なし）" --> H
+    R --> A
+    E --> A
+    A --> S
+    R --> B
+    E --> B
+    B --> V
+    S --> U
+    V --> U
+    U --> F
+    U --> H
+    S --> G
+    V --> G
+    R --> HIS
+    HIS --> G
 ```
 
-## 技術判断: 新規インフラを作らず既存パターンを拡張する（[ADR-0064](../../adr/0064-course-entry-tendency-reuse-existing-infra.md)参照）
+## 技術判断
 
-調査前は「選手×枠番→実進入コース遷移確率」を算出する新規関数・新規テーブルが必要だと想定していたが、実際には以下がBOA-257（PR #671）の時点で既に存在していた:
-
-- `scripts/analysis/aggregate-racer-stats.js`の`calculateCourseEntryTendency(racerId, venueCode)`が、`race_entries`+`race_results`から「選手の枠番→実進入コース分布」を算出し、`racer_aggregated_stats.course_entry_tendency`（jsonb、`racer_id`+`venue_code`複合PK、`venue_code=0`は全国集計）に書き込む処理として**既に実装済み**。ただし参照している列が壊れた`course_1〜6`のまま（BOA-284の指摘そのもの）
-- `racer_aggregated_stats`は`venue_code`ごとに行を持つ設計のため、**会場別の事前集計は既にテーブル構造として対応済み**（新規テーブル不要）
-- `src/services/supabaseDataService.js`の`getRacerRaceHistory()`が選手の過去2年分の全レース履歴を1回のfetchでキャッシュし、`aggregateRacerVenueBoatStats()`/`aggregateRacerCrossStats()`という2つの純関数が会場×枠番×グレード×レース種別でクライアント側再集計する設計が、PR #686（BOA-159、ADR-0063）で既に確立している
-
-この2つの既存基盤にそれぞれ1行〜数十行の変更を加えるだけで、FR-1〜FR-5の要件を満たせる。詳細はADR-0064参照。
+- [ADR-0064](../../adr/0064-course-entry-tendency-reuse-existing-infra.md): 選手側は新規テーブル・RPCを作らず、既存の`racer_aggregated_stats`（バッチ）と`getRacerRaceHistory`（クライアント集計）を拡張する。2026-09-19に、4関数が対象であること・本番には会場別の行が無いことを追記した
+- [ADR-0065](../../adr/0065-venue-course-entry-baseline-precomputed-table.md): 会場平均（選手非依存）は`venues`テーブルのjsonb列に事前集計して持つ。24行しかなく、既存の`update-venue-stats.js`（`venues`に列を書く）と同じ型のため、新規テーブルは作らない
 
 ## データ設計
 
-**新規テーブル・新規マイグレーションは無し。** 既存の`racer_aggregated_stats`（`race_results.actual_course_1〜6`はBOA-257で追加済み、`docs/db-migration/065_race_results_actual_course_kfile.sql`）をそのまま使う。
+### 新規DB変更（マイグレーション`docs/db-migration/067_venues_course_entry_baseline.sql`）
+
+1. `venues.course_entry_baseline JSONB`と`venues.course_entry_baseline_updated_at TIMESTAMPTZ`を追加する
+2. SQL関数`compute_venue_course_entry_baseline(p_venue_code SMALLINT, p_since DATE) RETURNS JSONB`を追加する。1会場分の「枠番→進入コース別の回数」を、`races`・`race_entries`・`race_results.actual_course_1〜6`から集計して返す。全会場を1回で集計するとPostgRESTのタイムアウトを踏みうるため、会場ごとに呼ぶ（24回）
+
+`course_entry_baseline`の形:
+
+```json
+{
+  "since": "2025-09-19",
+  "waku": {
+    "1": { "n": 1786, "courses": { "1": 1766, "2": 20 } },
+    "6": { "n": 1953, "courses": { "6": 1633, "5": 210, "4": 110 } }
+  }
+}
+```
 
 ```mermaid
 erDiagram
+    venues {
+        SMALLINT code PK
+        TEXT name
+        NUMERIC avg_first_win_rate
+        JSONB course_entry_baseline "新規"
+        TIMESTAMPTZ course_entry_baseline_updated_at "新規"
+    }
     racer_aggregated_stats {
         INTEGER racer_id PK
-        SMALLINT venue_code PK
-        JSONB course_entry_tendency
+        SMALLINT venue_code PK "本番はvenue_code=0の行のみ"
         JSONB course_race_counts
-        JSONB attack_distribution
-        JSONB defense_distribution
-        TIMESTAMPTZ calculated_at
+        JSONB course_entry_tendency "形を変更"
     }
     race_results {
-        VARCHAR(20) race_id PK
+        VARCHAR race_id PK
         SMALLINT actual_course_1
-        SMALLINT actual_course_2
-        SMALLINT actual_course_3
-        SMALLINT actual_course_4
-        SMALLINT actual_course_5
         SMALLINT actual_course_6
     }
     race_entries {
-        VARCHAR(20) race_id PK
+        VARCHAR race_id PK
         SMALLINT boat_number PK
         INTEGER racer_id
     }
-    racer_aggregated_stats }o--|| race_results : "集計元(バッチ)"
-    race_entries }o--|| race_results : "race_id"
+    race_entries }o--|| race_results : race_id
+    racer_aggregated_stats }o--|| race_entries : "racer_idで集計(バッチ)"
+    venues ||--o{ race_results : "会場平均(バッチ)"
 ```
 
-### FR-1: `calculateCourseEntryTendency()`の修正
+### `racer_aggregated_stats.course_entry_tendency`の形の変更（DDL変更なし、jsonbの中身のみ）
 
-`scripts/analysis/aggregate-racer-stats.js`内:
+現状は割合のみ（`{ 枠番: { コース: 割合 } }`）。走数併記のため、回数を持つ形に変える。参照元は`aggregate-racer-stats.js`のみで、互換性の問題は無い（2026-09-19確認）。
 
-1. `race_results`の`select`列を`course_1, course_2, ..., course_6`から`actual_course_1, ..., actual_course_6`に変更
-2. `result[\`course_${c}\`]`の参照を`result[\`actual_course_${c}\`]`に変更
-3. **新規追加**: 直近12ヶ月ウィンドウの適用（現状は無期限。データ蓄積が2025-12-04〜のため当面は無期限と実質同じだが、将来データが12ヶ月を超えても肥大化しないよう`race_id`の日付部分で絞り込みを追加する）
-4. **新規追加**: 最小サンプル数（`MIN_COURSE_SAMPLES = 5`、既存`generate-unified-predictions.js`の定数と同じ値）未満の枠番は結果から除外する
+```json
+{
+  "since": "2025-09-19",
+  "all":    { "4": { "n": 27, "courses": { "4": 20, "3": 5, "2": 2 } } },
+  "venues": { "8": { "4": { "n": 6, "courses": { "4": 3, "3": 3 } } } }
+}
+```
 
-同じ関数`aggregateRacer()`が呼び出している他の集計（`calculateRacerSTStats`等）には影響しない。
+本番の`racer_aggregated_stats`は`venue_code=0`の行しか無い（1,639選手、2026-09-19確認。会場別の行は`--venue=N`を付けたときのみ作られ、夜間バッチは`--all`のみ）。会場別を別の行にすると選手数×会場数の追加クエリになるため、**`venue_code=0`の行の中に`venues`として会場別の内訳を入れる**。出走表（FR-3）は6選手分の`venue_code=0`の行を既に取得しているので、追加の通信は要らない。
 
-### FR-1受入基準の検証手順
+## FR-1: `aggregate-racer-stats.js`の4関数の切り替え
 
-1. `scripts/analysis/analyze-indicator-predictive-power.js`を、切り替え前（`course_1〜6`）と切り替え後（`actual_course_1〜6`）の両方で実行し、`courseRate`の予測力（上位2位計%）を比較する
-2. `scripts/analysis/backtest-course-rate-only.js`を同様に前後比較する
-3. `.claude/rules/analysis.md`のデータ精度検証パターンに従い、実データ2〜3選手分を手動でスポットチェックする（`race_entries`+`race_results.actual_course_N`から手計算した値と`course_entry_tendency`の出力が一致するか）
-4. 結果が悪化していなければ、`scripts/lib/unifiedModel.js`の`INDICATOR_WEIGHTS.courseRate`（現在21.8）は変更不要（重み自体は予測力の相対順位で決まっており、絶対値の算出元が正しくなるだけで再計算の必要はない）。悪化していた場合はユーザーに報告し、reweighting要否を相談する
+`race_results`のselect列と参照を`course_1〜6`→`actual_course_1〜6`に変える対象（行番号は2026-09-19時点）:
 
-### FR-2: 選手ページ用のクライアント側集計（4軸フィルタ対応）
+| 関数 | 行 | 出力 | 備考 |
+|---|---|---|---|
+| `calculateCourseRaceCounts` | 418付近 | `course_race_counts` | **courseRateの直接の入力**。キーが「実際のコース」になる。参照側（`generate-unified-predictions.js`の`calculatePlaceRecommendation`、`raceIndicators.jsx`の`courseRateOf`）は枠番で引く。内側の艇はほぼ枠なりなので近似として変更しない |
+| `calculateAttackDistribution` | 200付近 | `attack_distribution` | コース別の決まり手。切り替えで「コース別」の意味が正しくなる |
+| `calculateDefenseDistribution` | 308付近 | `defense_distribution` | 同上 |
+| `calculateCourseEntryTendency` | 526付近 | `course_entry_tendency` | 形を上記に変更。直近12ヶ月ウィンドウ（`race_id`の日付部分）を追加。会場別の内訳を同じ関数内で1パスで作る（追加クエリなし） |
 
-`src/services/supabaseDataService.js`の拡張:
+走数の下限（5走）はバッチ側では適用しない。走数をそのまま保存し、表示側（`courseEntryCell.js`）で「参考」を判定する（ADR-0064の追記参照）。
 
-1. `getRacerRaceHistory()`の`race_results`のselect列に`actual_course_1〜6`を追加
-2. 返却する行オブジェクトに`actualCourse`フィールドを追加する（`calculateCourseEntryTendency()`と同じ导出ロジック: `actual_course_1〜6`のうち値が`entry.boat_number`と一致する列番号を採用。一致無し＝欠場等は`null`）
-3. 新規純関数`aggregateRacerCourseEntryStats(history, venueCode, boatNumber, raceGrade, raceStage)`を追加する。シグネチャ・フィルタロジックは`aggregateRacerVenueBoatStats`と完全に同じパターン（会場×枠番×グレード×レース種別、`null`で絞り込み無し）。出力は「枠番ごとの実進入コース分布」（`{ waku: { course: { count, rate } } }`、直近12ヶ月ウィンドウ・`MIN_COURSE_SAMPLES=5`未満は`null`）
-4. 新規通信（追加のSupabaseクエリ）は発生しない。既存の`getRacerRaceHistory()`が1回のページロードで取得する2年分の履歴データをそのまま使う（ADR-0063の設計方針を踏襲）
+### FR-1の検証手順
 
-### FR-3: レース出走表の「前づけ傾向」行
+1. 切り替え前後で`analyze-indicator-predictive-power.js`（courseRateの予測力）と`backtest-course-rate-only.js`（的中率・回収率）を比較する
+2. `.claude/rules/analysis.md`のデータ精度検証: 実選手2〜3名について、`race_entries`+`race_results.actual_course_N`から手計算した値と保存値を突き合わせる
+3. `unifiedModel.js`の`INDICATOR_WEIGHTS.courseRate`（21.8）は、重みが予測力の相対順位で決まっているため原則変更しない。ただし2で予測力が大きく変わった場合は再計算要否をユーザーに相談する。本番反映（バッチ再実行）はユーザーの承認後
 
-`src/components/race/raceIndicators.jsx`に新規行を追加する。値の解決ロジック（優先順位）:
+## FR-2: 選手ページ用のクライアント集計
 
-1. 対象10会場（BOA-293、`venue_entry_course_stats`）かつ今日のレースのデータがあれば、それを使う（`race_id`+`waku`で検索）
-2. 無ければ`racerStatsMap`（既存、`racer_aggregated_stats`から`courseRateOf`と同じ経路で取得済み）の`course_entry_tendency[boat_number]`を使う。会場別の行（`venue_code`=今日の会場コード）があればそれを優先、無ければ`venue_code=0`（全国集計）にフォールバックする
-3. どちらも無ければ「データ不足」表示
+`src/services/supabaseDataService.js`:
 
-表示値のフォーマット（各艇の遷移確率分布のうち、どの数値を主表示にするか）は[screens.md](./screens.md)の未確定事項どおり実装時に確定する（候補: 最頻コースの確率、または枠なり進入率）。
+1. `getRacerRaceHistory()`の`race_results`のselect列に`actual_course_1〜6`を追加し、行に`actualCourse`（値が`boat_number`と一致する列番号、無ければ`null`）を追加する
+2. 純関数`aggregateRacerCourseEntryStats(history, venueCode, boatNumber, raceGrade, raceStage)`を新規追加する。フィルタは`aggregateRacerVenueBoatStats`と同じ。出力は`{ 枠番: { n, courses: {コース: 回数} } }`。直近12ヶ月はhistory（過去2年分）の日付で絞る。追加の通信は発生しない（ADR-0063の方針）
 
-### FR-4: 選手ページ（概要バッジ＋詳細セクション）
+## FR-3: 出走表の「枠なり率」行
 
-- **概要バッジ**: `racerStatsMap`相当のデータを選手ページ用に1回取得（`venue_code=0`の行）し、`course_entry_tendency`から「前づけ傾向の強さ」を判定してバッジ表示（閾値は実データ分布を見て確定、未確定事項参照）
-- **詳細セクション**: `aggregateRacerCourseEntryStats()`（FR-2）の出力をそのまま表示。既存の「決まり手傾向」等と同じ`vcData`ベースの条件付きレンダリングパターンを踏襲
+`src/components/race/raceIndicators.jsx`に行を追加し、値の解決は新規の純関数`src/components/race/courseEntryCell.js`の`resolveCourseEntryCell({ venueEntry, nationalEntry, baselineEntry, waku })`に集約する（FR-5と共有。定数`MIN_SAMPLES=5`・`MOVE_GAP_PT=20`もここに置く）。
 
-### FR-5: 分析タブ
+- `venueEntry` = `racerStats.course_entry_tendency.venues[今日の会場][waku]`
+- `nationalEntry` = `racerStats.course_entry_tendency.all[waku]`
+- `baselineEntry` = `venues.course_entry_baseline.waku[waku]`（全会場の会場平均を1回で取得してキャッシュ）
 
-`RacerMaezukeChart.jsx`（新規）は、選択された会場・レースの出走6選手について、それぞれの`racerStatsMap`（`venue_code`=選択会場の行、無ければ`venue_code=0`）の`course_entry_tendency[boat_number]`を取得して一覧表示する。`RacerTechniqueProfileChart.jsx`と同じ「会場選択→レース選択→出走選手一覧」のデータ取得パターンを踏襲し、新規RPCは作らない。
+解決順: ①`venueEntry.n>=5` → ②`nationalEntry.n>=5`（「全国値」タグ）→ ③走数が多い方を薄字（「参考」タグ）→ ④0走は「データなし」。枠なり率＝`courses[waku]/n`。会場平均より20pt以上低ければ「動く傾向」タグ。
 
-## コンポーネント構成・データフロー
+BOA-293の`venue_entry_course_stats`は使わない（spec背景6）。全国値の検証には、10会場について`nationalEntry`の割合と会場サイトの進入率を比較する検証スクリプト（`scripts/analysis/`、一回限り）で十分とする。
 
-[screens.md](./screens.md)の洗い出しと一致。追加のデータ取得関数は以下の1つのみ（他は既存関数の拡張）:
+## FR-4: 選手ページ
 
-| 新規/拡張 | 場所 | 用途 |
+- 概要バッジ: `course_entry_tendency.all`から枠なり率を算出し、閾値未満なら「前づけ傾向あり」を表示（閾値は実データ分布を見て`/step4`で確定）。`RacerCourseEntryBadge.jsx`（stateless）
+- 詳細セクション: `aggregateRacerCourseEntryStats()`の出力を、枠番ごとに「コースの積み上げバー・枠なり率（走数）・会場平均」で表示。会場平均は`venues.course_entry_baseline`（会場フィルタが「全会場」の場合は24会場の合算）
+
+## FR-5: 分析タブ
+
+`RacerMaezukeChart.jsx`は`RacerTechniqueProfileChart.jsx`と同じ「会場選択→レース選択→出走6選手」のパターン。6選手分の`racer_aggregated_stats`（`venue_code=0`）と`venues.course_entry_baseline`から、FR-3と同じ`resolveCourseEntryCell`で表示する。会場平均の表（全24会場の2〜6枠の枠外進入率）も同タブ内に置く。新規RPCは作らない。
+
+## FR-6: 会場平均の算出
+
+- `scripts/maintenance/update-venue-course-entry-baseline.js`（新規、`update-venue-stats.js`と同じ`maintenance/`配置）: 24会場について`compute_venue_course_entry_baseline`を呼び、`venues.course_entry_baseline`を更新する
+- `aggregate-stats.yml`（夜間、JST 23:00）の3つ目のステップとして追加する。新規ワークフローは作らない
+- 江戸川の値が実態かを、Kファイルの実データ数レース分と突き合わせて確認する（未確認の間は江戸川の会場平均を非表示にする）
+
+## 変更ファイル一覧
+
+| 新規/拡張 | 場所 | FR |
 |---|---|---|
-| 拡張 | `scripts/analysis/aggregate-racer-stats.js::calculateCourseEntryTendency` | FR-1、全FRの土台 |
-| 拡張 | `src/services/supabaseDataService.js::getRacerRaceHistory` | FR-2、FR-4詳細セクションの入力 |
-| 新規 | `src/services/supabaseDataService.js::aggregateRacerCourseEntryStats` | FR-2、FR-4詳細セクションの集計 |
-| 新規 | `src/components/racer/RacerCourseEntryBadge.jsx` | FR-4概要バッジ |
-| 拡張 | `src/components/racer/RacerPerformanceStats.jsx` | FR-4 |
-| 新規 | `src/components/analysis/RacerMaezukeChart.jsx` | FR-5 |
-| 拡張 | `src/pages/WinningTechniqueAnalysis.jsx` | FR-5タブ追加 |
-| 拡張 | `src/components/race/raceIndicators.jsx` | FR-3行追加 |
-| 拡張 | `src/locales/{ja,en,zh-TW,ko}/common.json` | FR-3・FR-5のi18nキー |
+| 拡張 | `scripts/analysis/aggregate-racer-stats.js`（4関数） | FR-1, FR-2 |
+| 新規 | `docs/db-migration/067_venues_course_entry_baseline.sql` | FR-6 |
+| 新規 | `scripts/maintenance/update-venue-course-entry-baseline.js` | FR-6 |
+| 拡張 | `.github/workflows/aggregate-stats.yml`（ステップ追加） | FR-6 |
+| 拡張 | `src/services/supabaseDataService.js`（`getRacerRaceHistory`拡張、`aggregateRacerCourseEntryStats`新規、会場平均取得関数） | FR-2, FR-6 |
+| 新規 | `src/components/race/courseEntryCell.js` | FR-3, FR-5 |
+| 拡張 | `src/components/race/raceIndicators.jsx`、`termHints.js` | FR-3 |
+| 新規 | `src/components/racer/RacerCourseEntryBadge.jsx`・`.css` | FR-4 |
+| 拡張 | `src/components/racer/RacerPerformanceStats.jsx`・`.css` | FR-4 |
+| 新規 | `src/components/analysis/RacerMaezukeChart.jsx`（+ index.js） | FR-5 |
+| 拡張 | `src/pages/WinningTechniqueAnalysis.jsx` | FR-5 |
+| 拡張 | `src/locales/{ja,en,zh-TW,ko}/common.json` | FR-3, FR-5 |
 
-## 実行タイミング
+## 未確定事項
 
-FR-1（`calculateCourseEntryTendency`修正）は既存の`aggregate-racer-stats.js`のバッチ実行に乗るため、新規のGitHub Actionsワークフローは不要（既存スケジュールをそのまま使う）。FR-2〜FR-5はすべてクライアント側実行のため実行タイミングの概念自体が無い。
-
-## 既存サービス層・共通ライブラリとの連携
-
-- `scripts/analysis/aggregate-racer-stats.js`: 既存ファイルへの修正のみ（新規ファイル無し）
-- `src/services/supabaseDataService.js`: 既存の`fetchAllByIn`（N+1回避のバッチフェッチヘルパー）をそのまま使う
-- `src/components/analysis/index.js`・`src/components/racer/index.js`: barrel exportへの追加のみ
-
-## 未確定事項（spec.mdから持ち越し、着手前に確定させる）
-
-| 項目 | 内容 | いつ・誰が決めるか |
-|---|---|---|
-| FR-1の予測力・回収率の悪化許容範囲 | 具体的な数値基準 | `/step4`着手時、実データ再検証の結果を見てユーザーと相談 |
-| FR-3の表示値フォーマット | 最頻コース確率か枠なり進入率か | `/step4`着手時 |
-| FR-4のバッジ判定閾値 | 「前づけ傾向あり」の遷移確率しきい値 | `/step4`着手時、実データ分布を見てから |
-| BOA-284の再学習・本番反映 | 実施者・タイミング | `/step4`実装時、検証結果を見てユーザーに確認 |
+[spec.md](./spec.md)の未確定事項を参照（走数の境界5、「動く傾向」20pt、バッジ閾値、江戸川、BOA-293の扱い、掲載場所はBOA-348）。

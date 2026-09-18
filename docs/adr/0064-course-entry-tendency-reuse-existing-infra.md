@@ -37,3 +37,12 @@ spec.md作成時点では、この統計量を算出する新規関数・新規�
 - 新規マイグレーションファイルは不要（`racer_aggregated_stats`・`race_results.actual_course_1〜6`とも既存）
 - `calculateCourseEntryTendency()`の修正は、既存の`aggregate-racer-stats.js`バッチ実行スケジュールにそのまま乗る（新規GitHub Actionsワークフロー不要）
 - BOA-293（`venue_entry_course_stats`、10会場）とのハイブリッド表示は、FR-3の表示ロジック内で「対象10会場は`venue_entry_course_stats`優先、それ以外は`racer_aggregated_stats.course_entry_tendency`」という分岐のみで実現する（データ取得経路自体は変更しない）
+
+## 追記（2026-09-19、会場別対応時の訂正）
+
+会場別対応の調査で、上記の記述に誤りがあると分かった。決定（新規の選手側テーブル・RPCを作らず既存基盤を拡張する）自体は変わらない。
+
+- 「`racer_aggregated_stats`は`venue_code`ごとに行を持つため、会場別の事前集計は既に対応済み」は誤り。スキーマ上は可能だが、本番には`venue_code=0`の行しか無い（1,639選手、夜間バッチ`aggregate-stats.yml`が`--all`のみで実行するため）。会場別を別の行にすると選手数×会場数の追加クエリになるので、`venue_code=0`の行の`course_entry_tendency`の中に会場別の内訳（`venues`キー）を持たせる方針に変更した（`plan.md`参照）
+- 「`calculateCourseEntryTendency()`の1箇所の修正がBOA-284に波及する」は誤り。courseRateの直接の入力は`course_race_counts`（`calculateCourseRaceCounts`）で、`course_1〜6`を読む4関数すべて（他に`calculateAttackDistribution`・`calculateDefenseDistribution`）を切り替える必要がある
+- 選手×会場×枠番は走数が薄い（中央値2走、n≥5は組合せの6.6%）ため、専用テーブルを避けた判断はそのままに、走数の下限で`null`にせず走数付きで保存・表示する方針に変えた（`spec.md`背景5）
+- 選手非依存の会場平均は別の粒度（24会場×6枠）で件数が十分あるため、別のADR（[ADR-0065](./0065-venue-course-entry-baseline-precomputed-table.md)）で`venues`のjsonb列に持つと決めた
