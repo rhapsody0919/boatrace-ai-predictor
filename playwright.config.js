@@ -18,7 +18,10 @@ const port = explicitPort || String(derivePortFromCwd());
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 30000,
+  // 本番Supabaseに直接接続するため、DB応答の揺らぎで読み込み待ちが伸びる。
+  // 既定の5秒expect・30秒テストではDBが少し遅いだけで大量に失敗するため余裕を持たせる
+  timeout: 60000,
+  expect: { timeout: 15000 },
   retries: 0,
   reporter: [["list"]],
   use: {
