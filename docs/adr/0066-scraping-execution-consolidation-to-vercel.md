@@ -31,7 +31,7 @@
 - **既存**: 段階的にVercelへ移行し、移行完了後にcron-job.orgのジョブと取得系GitHub Actionsワークフローを廃止する。移行の順序・粒度は別途specで確定する（`scrape-scheduled`は結果・オッズ・レース情報が同居しているため、分割が前提）。旧基盤の廃止条件は「`morning-init`を含む全取得処理の移行完了」とする
 - **対象外（GitHub Actionsのまま）**: 取得済みデータのDB内集計・統計更新（`aggregate-stats`・`update-*-stats`等）、モデル学習・予測生成（`train-*`・`generate-*`）、SNS・コンテンツ・sitemap系。外部サイトを取得せず、長時間のCPU処理を含むため。ただし「展示取得→予測リフレッシュ」のような取得との連動は、移行specで扱いを決める
 - **移行対象に含める（対象外としない）**: 取得系である`morning-init.js`（レース・出走表の初期化。`scrape-to-json.js`→`races.json`、`execSync`・`git log`に依存）。全Vercel関数が`getRaceSchedule`経由で`races`に依存するため、`races`の初期化がGitHub Actionsに残ると、取得系GitHub Actionsを廃止できない
-- **関数のリージョン**: Supabaseのリージョンを確認して合わせる（既定のiad1から、hnd1等を検討）
+- **関数のリージョン**: DBはap-southeast-2（シドニー）。関数のリージョンはsyd1・hnd1を、DBへの往復とboatrace.jpの取得の遅延を実測して決める
 - **バックフィル・過去分の一括取得**: Cronではなく手動実行のCLI（`scripts/maintenance/`）で行う。ただし取得ロジックは定期実行と同じ共有関数を使い、二重実装しない
 - **Vercel Cronの性質への対応を設計に組み込む**（[Managing Cron Jobs](https://vercel.com/docs/cron-jobs/manage-cron-jobs)）:
   - タイムゾーンはUTC固定 → cron式はUTCで書き、JSTの運用時間帯をコメントで併記する
@@ -56,4 +56,5 @@
 - [docs/operation/external-cron-setup.md](../operation/external-cron-setup.md)は、cron-job.org廃止時に更新または廃止する
 - 移行完了までは3基盤が併存するが、その間も新規の取得ジョブを旧基盤に追加しない
 - 展示取得のGitHub Actionsスキップ（2026-09-16〜）以降、展示更新が予測リフレッシュの起動条件（`scrape-scheduled.js`の`anyUpdated`）に入らなくなっている。実害は未検証（`predictions.predicted_at`は買い目オッズ更新でも更新されるため判別不能）。移行specで、展示→予測リフレッシュの連動を扱う
+- Supabaseでdisk IO budget枯渇の警告が出ている（2026-09-19）。移行後の書き込み量を増やさない設計にする（条件付きupsert、変更の無い行を書かない、Cron頻度の見直し）。移行はDisk IO対策（orchestration.mdのWS8）と並行して進める
 - 移行specは、既存の`docs/design/scraping-full-coverage/`と`docs/design/scraping-serverless-migration/`を統合改訂する（新規に三重管理しない）。体制の正本は`docs/design/scraping-vercel-consolidation/orchestration.md`
