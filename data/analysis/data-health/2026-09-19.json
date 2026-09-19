@@ -1,0 +1,1659 @@
+{
+  "generatedAt": "2026-09-19T01:56:34.593Z",
+  "params": {
+    "reportDate": "2026-09-19",
+    "thresholds": {
+      "coverage": 0.99,
+      "window": 0.98
+    },
+    "coverage": {
+      "start": "2026-09-05",
+      "end": "2026-09-18",
+      "days": 14
+    },
+    "windows": {
+      "start": "2026-09-12",
+      "end": "2026-09-18",
+      "days": 7,
+      "weekendDays": 2,
+      "minutesBefore": [
+        60,
+        30,
+        15,
+        10,
+        5,
+        0
+      ]
+    },
+    "denominatorRule": "races.cancellation_status='confirmed' を除外"
+  },
+  "coverage": {
+    "perDay": [
+      {
+        "d": "2026-09-05",
+        "total": 132,
+        "excluded": 0,
+        "denom": 132,
+        "result": 132,
+        "rank4_6": 127,
+        "actual_course": 132,
+        "winning_technique": 132,
+        "race_stage": 131,
+        "st": 132,
+        "exhibition": 132,
+        "odds": 132,
+        "odds_all": 0,
+        "trifecta_all": 130,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-06",
+        "total": 132,
+        "excluded": 0,
+        "denom": 132,
+        "result": 132,
+        "rank4_6": 122,
+        "actual_course": 132,
+        "winning_technique": 132,
+        "race_stage": 132,
+        "st": 132,
+        "exhibition": 131,
+        "odds": 132,
+        "odds_all": 0,
+        "trifecta_all": 132,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-07",
+        "total": 108,
+        "excluded": 0,
+        "denom": 108,
+        "result": 108,
+        "rank4_6": 107,
+        "actual_course": 108,
+        "winning_technique": 108,
+        "race_stage": 108,
+        "st": 108,
+        "exhibition": 108,
+        "odds": 108,
+        "odds_all": 0,
+        "trifecta_all": 108,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-08",
+        "total": 132,
+        "excluded": 0,
+        "denom": 132,
+        "result": 132,
+        "rank4_6": 132,
+        "actual_course": 132,
+        "winning_technique": 132,
+        "race_stage": 132,
+        "st": 132,
+        "exhibition": 131,
+        "odds": 132,
+        "odds_all": 0,
+        "trifecta_all": 132,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-09",
+        "total": 96,
+        "excluded": 12,
+        "denom": 84,
+        "result": 84,
+        "rank4_6": 82,
+        "actual_course": 84,
+        "winning_technique": 84,
+        "race_stage": 84,
+        "st": 84,
+        "exhibition": 76,
+        "odds": 84,
+        "odds_all": 0,
+        "trifecta_all": 84,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-10",
+        "total": 132,
+        "excluded": 0,
+        "denom": 132,
+        "result": 132,
+        "rank4_6": 129,
+        "actual_course": 132,
+        "winning_technique": 132,
+        "race_stage": 132,
+        "st": 132,
+        "exhibition": 132,
+        "odds": 132,
+        "odds_all": 0,
+        "trifecta_all": 132,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-11",
+        "total": 108,
+        "excluded": 0,
+        "denom": 108,
+        "result": 108,
+        "rank4_6": 100,
+        "actual_course": 108,
+        "winning_technique": 108,
+        "race_stage": 108,
+        "st": 108,
+        "exhibition": 108,
+        "odds": 108,
+        "odds_all": 0,
+        "trifecta_all": 108,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-12",
+        "total": 156,
+        "excluded": 34,
+        "denom": 122,
+        "result": 122,
+        "rank4_6": 114,
+        "actual_course": 122,
+        "winning_technique": 122,
+        "race_stage": 122,
+        "st": 122,
+        "exhibition": 122,
+        "odds": 122,
+        "odds_all": 0,
+        "trifecta_all": 122,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-13",
+        "total": 180,
+        "excluded": 0,
+        "denom": 180,
+        "result": 180,
+        "rank4_6": 167,
+        "actual_course": 179,
+        "winning_technique": 180,
+        "race_stage": 172,
+        "st": 180,
+        "exhibition": 180,
+        "odds": 180,
+        "odds_all": 0,
+        "trifecta_all": 168,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-14",
+        "total": 168,
+        "excluded": 0,
+        "denom": 168,
+        "result": 168,
+        "rank4_6": 162,
+        "actual_course": 168,
+        "winning_technique": 167,
+        "race_stage": 168,
+        "st": 168,
+        "exhibition": 168,
+        "odds": 168,
+        "odds_all": 0,
+        "trifecta_all": 168,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-15",
+        "total": 156,
+        "excluded": 0,
+        "denom": 156,
+        "result": 156,
+        "rank4_6": 141,
+        "actual_course": 155,
+        "winning_technique": 156,
+        "race_stage": 156,
+        "st": 156,
+        "exhibition": 156,
+        "odds": 156,
+        "odds_all": 0,
+        "trifecta_all": 155,
+        "trio_all": 0,
+        "exacta_all": 0,
+        "quinella_all": 0,
+        "wide_all": 0
+      },
+      {
+        "d": "2026-09-16",
+        "total": 156,
+        "excluded": 0,
+        "denom": 156,
+        "result": 156,
+        "rank4_6": 156,
+        "actual_course": 155,
+        "winning_technique": 155,
+        "race_stage": 156,
+        "st": 155,
+        "exhibition": 156,
+        "odds": 151,
+        "odds_all": 68,
+        "trifecta_all": 140,
+        "trio_all": 68,
+        "exacta_all": 68,
+        "quinella_all": 68,
+        "wide_all": 68
+      },
+      {
+        "d": "2026-09-17",
+        "total": 180,
+        "excluded": 0,
+        "denom": 180,
+        "result": 180,
+        "rank4_6": 180,
+        "actual_course": 180,
+        "winning_technique": 180,
+        "race_stage": 180,
+        "st": 180,
+        "exhibition": 180,
+        "odds": 180,
+        "odds_all": 180,
+        "trifecta_all": 180,
+        "trio_all": 180,
+        "exacta_all": 180,
+        "quinella_all": 180,
+        "wide_all": 180
+      },
+      {
+        "d": "2026-09-18",
+        "total": 180,
+        "excluded": 0,
+        "denom": 180,
+        "result": 180,
+        "rank4_6": 180,
+        "actual_course": 180,
+        "winning_technique": 180,
+        "race_stage": 180,
+        "st": 180,
+        "exhibition": 180,
+        "odds": 180,
+        "odds_all": 180,
+        "trifecta_all": 180,
+        "trio_all": 180,
+        "exacta_all": 180,
+        "quinella_all": 180,
+        "wide_all": 180
+      }
+    ],
+    "aggregate": [
+      {
+        "metric": "result",
+        "label": "結果(rank1)",
+        "numerator": 1970,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 1,
+        "belowThreshold": false,
+        "daysBelowThreshold": 0,
+        "worstDay": {
+          "date": "2026-09-05",
+          "rate": 1
+        }
+      },
+      {
+        "metric": "rank4_6",
+        "label": "rank4〜6",
+        "numerator": 1899,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.9639593908629441,
+        "belowThreshold": true,
+        "daysBelowThreshold": 9,
+        "worstDay": {
+          "date": "2026-09-15",
+          "rate": 0.9038461538461539
+        }
+      },
+      {
+        "metric": "actual_course",
+        "label": "実進入(actual_course_1)",
+        "numerator": 1967,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.9984771573604061,
+        "belowThreshold": false,
+        "daysBelowThreshold": 0,
+        "worstDay": {
+          "date": "2026-09-15",
+          "rate": 0.9935897435897436
+        }
+      },
+      {
+        "metric": "winning_technique",
+        "label": "決まり手",
+        "numerator": 1968,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.9989847715736041,
+        "belowThreshold": false,
+        "daysBelowThreshold": 0,
+        "worstDay": {
+          "date": "2026-09-16",
+          "rate": 0.9935897435897436
+        }
+      },
+      {
+        "metric": "race_stage",
+        "label": "レース種別",
+        "numerator": 1961,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.9954314720812183,
+        "belowThreshold": false,
+        "daysBelowThreshold": 1,
+        "worstDay": {
+          "date": "2026-09-13",
+          "rate": 0.9555555555555556
+        }
+      },
+      {
+        "metric": "st",
+        "label": "ST",
+        "numerator": 1969,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.999492385786802,
+        "belowThreshold": false,
+        "daysBelowThreshold": 0,
+        "worstDay": {
+          "date": "2026-09-16",
+          "rate": 0.9935897435897436
+        }
+      },
+      {
+        "metric": "exhibition",
+        "label": "展示",
+        "numerator": 1960,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.9949238578680203,
+        "belowThreshold": false,
+        "daysBelowThreshold": 1,
+        "worstDay": {
+          "date": "2026-09-09",
+          "rate": 0.9047619047619048
+        }
+      },
+      {
+        "metric": "odds",
+        "label": "オッズ(1件以上)",
+        "numerator": 1965,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.9974619289340102,
+        "belowThreshold": false,
+        "daysBelowThreshold": 1,
+        "worstDay": {
+          "date": "2026-09-16",
+          "rate": 0.967948717948718
+        }
+      },
+      {
+        "metric": "odds_all",
+        "label": "全券種オッズ(5種すべて)",
+        "numerator": 428,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.21725888324873097,
+        "belowThreshold": true,
+        "daysBelowThreshold": 12,
+        "worstDay": {
+          "date": "2026-09-05",
+          "rate": 0
+        }
+      },
+      {
+        "metric": "trifecta_all",
+        "label": "└ trifecta_all",
+        "numerator": 1939,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.984263959390863,
+        "belowThreshold": true,
+        "daysBelowThreshold": 3,
+        "worstDay": {
+          "date": "2026-09-16",
+          "rate": 0.8974358974358975
+        }
+      },
+      {
+        "metric": "trio_all",
+        "label": "└ trio_all",
+        "numerator": 428,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.21725888324873097,
+        "belowThreshold": true,
+        "daysBelowThreshold": 12,
+        "worstDay": {
+          "date": "2026-09-05",
+          "rate": 0
+        }
+      },
+      {
+        "metric": "exacta_all",
+        "label": "└ exacta_all",
+        "numerator": 428,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.21725888324873097,
+        "belowThreshold": true,
+        "daysBelowThreshold": 12,
+        "worstDay": {
+          "date": "2026-09-05",
+          "rate": 0
+        }
+      },
+      {
+        "metric": "quinella_all",
+        "label": "└ quinella_all",
+        "numerator": 428,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.21725888324873097,
+        "belowThreshold": true,
+        "daysBelowThreshold": 12,
+        "worstDay": {
+          "date": "2026-09-05",
+          "rate": 0
+        }
+      },
+      {
+        "metric": "wide_all",
+        "label": "└ wide_all",
+        "numerator": 428,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.21725888324873097,
+        "belowThreshold": true,
+        "daysBelowThreshold": 12,
+        "worstDay": {
+          "date": "2026-09-05",
+          "rate": 0
+        }
+      }
+    ]
+  },
+  "windows": {
+    "perDay": [
+      {
+        "d": "2026-09-12",
+        "m": 60,
+        "races": 122,
+        "in_window": 120
+      },
+      {
+        "d": "2026-09-12",
+        "m": 30,
+        "races": 122,
+        "in_window": 122
+      },
+      {
+        "d": "2026-09-12",
+        "m": 15,
+        "races": 122,
+        "in_window": 122
+      },
+      {
+        "d": "2026-09-12",
+        "m": 10,
+        "races": 122,
+        "in_window": 122
+      },
+      {
+        "d": "2026-09-12",
+        "m": 5,
+        "races": 122,
+        "in_window": 122
+      },
+      {
+        "d": "2026-09-12",
+        "m": 0,
+        "races": 122,
+        "in_window": 23
+      },
+      {
+        "d": "2026-09-13",
+        "m": 60,
+        "races": 180,
+        "in_window": 162
+      },
+      {
+        "d": "2026-09-13",
+        "m": 30,
+        "races": 180,
+        "in_window": 169
+      },
+      {
+        "d": "2026-09-13",
+        "m": 15,
+        "races": 180,
+        "in_window": 168
+      },
+      {
+        "d": "2026-09-13",
+        "m": 10,
+        "races": 180,
+        "in_window": 169
+      },
+      {
+        "d": "2026-09-13",
+        "m": 5,
+        "races": 180,
+        "in_window": 168
+      },
+      {
+        "d": "2026-09-13",
+        "m": 0,
+        "races": 180,
+        "in_window": 33
+      },
+      {
+        "d": "2026-09-14",
+        "m": 60,
+        "races": 168,
+        "in_window": 161
+      },
+      {
+        "d": "2026-09-14",
+        "m": 30,
+        "races": 168,
+        "in_window": 166
+      },
+      {
+        "d": "2026-09-14",
+        "m": 15,
+        "races": 168,
+        "in_window": 166
+      },
+      {
+        "d": "2026-09-14",
+        "m": 10,
+        "races": 168,
+        "in_window": 168
+      },
+      {
+        "d": "2026-09-14",
+        "m": 5,
+        "races": 168,
+        "in_window": 168
+      },
+      {
+        "d": "2026-09-14",
+        "m": 0,
+        "races": 168,
+        "in_window": 32
+      },
+      {
+        "d": "2026-09-15",
+        "m": 60,
+        "races": 156,
+        "in_window": 152
+      },
+      {
+        "d": "2026-09-15",
+        "m": 30,
+        "races": 156,
+        "in_window": 155
+      },
+      {
+        "d": "2026-09-15",
+        "m": 15,
+        "races": 156,
+        "in_window": 156
+      },
+      {
+        "d": "2026-09-15",
+        "m": 10,
+        "races": 156,
+        "in_window": 156
+      },
+      {
+        "d": "2026-09-15",
+        "m": 5,
+        "races": 156,
+        "in_window": 155
+      },
+      {
+        "d": "2026-09-15",
+        "m": 0,
+        "races": 156,
+        "in_window": 32
+      },
+      {
+        "d": "2026-09-16",
+        "m": 60,
+        "races": 156,
+        "in_window": 123
+      },
+      {
+        "d": "2026-09-16",
+        "m": 30,
+        "races": 156,
+        "in_window": 130
+      },
+      {
+        "d": "2026-09-16",
+        "m": 15,
+        "races": 156,
+        "in_window": 127
+      },
+      {
+        "d": "2026-09-16",
+        "m": 10,
+        "races": 156,
+        "in_window": 127
+      },
+      {
+        "d": "2026-09-16",
+        "m": 5,
+        "races": 156,
+        "in_window": 127
+      },
+      {
+        "d": "2026-09-16",
+        "m": 0,
+        "races": 156,
+        "in_window": 62
+      },
+      {
+        "d": "2026-09-17",
+        "m": 60,
+        "races": 180,
+        "in_window": 147
+      },
+      {
+        "d": "2026-09-17",
+        "m": 30,
+        "races": 180,
+        "in_window": 150
+      },
+      {
+        "d": "2026-09-17",
+        "m": 15,
+        "races": 180,
+        "in_window": 154
+      },
+      {
+        "d": "2026-09-17",
+        "m": 10,
+        "races": 180,
+        "in_window": 152
+      },
+      {
+        "d": "2026-09-17",
+        "m": 5,
+        "races": 180,
+        "in_window": 153
+      },
+      {
+        "d": "2026-09-17",
+        "m": 0,
+        "races": 180,
+        "in_window": 153
+      },
+      {
+        "d": "2026-09-18",
+        "m": 60,
+        "races": 180,
+        "in_window": 158
+      },
+      {
+        "d": "2026-09-18",
+        "m": 30,
+        "races": 180,
+        "in_window": 162
+      },
+      {
+        "d": "2026-09-18",
+        "m": 15,
+        "races": 180,
+        "in_window": 163
+      },
+      {
+        "d": "2026-09-18",
+        "m": 10,
+        "races": 180,
+        "in_window": 164
+      },
+      {
+        "d": "2026-09-18",
+        "m": 5,
+        "races": 180,
+        "in_window": 169
+      },
+      {
+        "d": "2026-09-18",
+        "m": 0,
+        "races": 180,
+        "in_window": 161
+      }
+    ],
+    "aggregate": [
+      {
+        "minutesBefore": 60,
+        "races": 1142,
+        "inWindow": 1023,
+        "rate": 0.8957968476357268,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 30,
+        "races": 1142,
+        "inWindow": 1054,
+        "rate": 0.9229422066549913,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 15,
+        "races": 1142,
+        "inWindow": 1056,
+        "rate": 0.9246935201401051,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 10,
+        "races": 1142,
+        "inWindow": 1058,
+        "rate": 0.9264448336252189,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 5,
+        "races": 1142,
+        "inWindow": 1062,
+        "rate": 0.9299474605954466,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 0,
+        "races": 1142,
+        "inWindow": 496,
+        "rate": 0.4343257443082312,
+        "belowThreshold": true
+      }
+    ],
+    "weekday": [
+      {
+        "minutesBefore": 60,
+        "races": 840,
+        "inWindow": 741,
+        "rate": 0.8821428571428571,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 30,
+        "races": 840,
+        "inWindow": 763,
+        "rate": 0.9083333333333333,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 15,
+        "races": 840,
+        "inWindow": 766,
+        "rate": 0.9119047619047619,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 10,
+        "races": 840,
+        "inWindow": 767,
+        "rate": 0.9130952380952381,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 5,
+        "races": 840,
+        "inWindow": 772,
+        "rate": 0.919047619047619,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 0,
+        "races": 840,
+        "inWindow": 440,
+        "rate": 0.5238095238095238,
+        "belowThreshold": true
+      }
+    ],
+    "weekend": [
+      {
+        "minutesBefore": 60,
+        "races": 302,
+        "inWindow": 282,
+        "rate": 0.9337748344370861,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 30,
+        "races": 302,
+        "inWindow": 291,
+        "rate": 0.9635761589403974,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 15,
+        "races": 302,
+        "inWindow": 290,
+        "rate": 0.9602649006622517,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 10,
+        "races": 302,
+        "inWindow": 291,
+        "rate": 0.9635761589403974,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 5,
+        "races": 302,
+        "inWindow": 290,
+        "rate": 0.9602649006622517,
+        "belowThreshold": true
+      },
+      {
+        "minutesBefore": 0,
+        "races": 302,
+        "inWindow": 56,
+        "rate": 0.18543046357615894,
+        "belowThreshold": true
+      }
+    ],
+    "compare": {
+      "dates": [
+        "2026-09-17",
+        "2026-09-18"
+      ],
+      "aggregate": [
+        {
+          "minutesBefore": 60,
+          "races": 360,
+          "inWindow": 305,
+          "rate": 0.8472222222222222,
+          "belowThreshold": true
+        },
+        {
+          "minutesBefore": 30,
+          "races": 360,
+          "inWindow": 312,
+          "rate": 0.8666666666666667,
+          "belowThreshold": true
+        },
+        {
+          "minutesBefore": 15,
+          "races": 360,
+          "inWindow": 317,
+          "rate": 0.8805555555555555,
+          "belowThreshold": true
+        },
+        {
+          "minutesBefore": 10,
+          "races": 360,
+          "inWindow": 316,
+          "rate": 0.8777777777777778,
+          "belowThreshold": true
+        },
+        {
+          "minutesBefore": 5,
+          "races": 360,
+          "inWindow": 322,
+          "rate": 0.8944444444444445,
+          "belowThreshold": true
+        },
+        {
+          "minutesBefore": 0,
+          "races": 360,
+          "inWindow": 314,
+          "rate": 0.8722222222222222,
+          "belowThreshold": true
+        }
+      ]
+    }
+  },
+  "timingColumns": [
+    {
+      "table": "races",
+      "exists": true,
+      "columns": [
+        "created_at",
+        "updated_at"
+      ],
+      "strongColumns": [],
+      "quality": "weak",
+      "unmeasurable": true
+    },
+    {
+      "table": "race_entries",
+      "exists": true,
+      "columns": [],
+      "strongColumns": [],
+      "quality": "none",
+      "unmeasurable": true
+    },
+    {
+      "table": "race_conditions",
+      "exists": true,
+      "columns": [
+        "created_at"
+      ],
+      "strongColumns": [],
+      "quality": "weak",
+      "unmeasurable": true
+    },
+    {
+      "table": "race_results",
+      "exists": true,
+      "columns": [
+        "result_at",
+        "created_at"
+      ],
+      "strongColumns": [
+        "result_at"
+      ],
+      "quality": "measurable",
+      "unmeasurable": false
+    },
+    {
+      "table": "race_start_timings",
+      "exists": true,
+      "columns": [],
+      "strongColumns": [],
+      "quality": "none",
+      "unmeasurable": true
+    },
+    {
+      "table": "exhibition_data",
+      "exists": true,
+      "columns": [],
+      "strongColumns": [],
+      "quality": "none",
+      "unmeasurable": true
+    },
+    {
+      "table": "race_odds",
+      "exists": true,
+      "columns": [
+        "captured_at"
+      ],
+      "strongColumns": [
+        "captured_at"
+      ],
+      "quality": "measurable",
+      "unmeasurable": false
+    },
+    {
+      "table": "predictions",
+      "exists": true,
+      "columns": [
+        "predicted_at"
+      ],
+      "strongColumns": [
+        "predicted_at"
+      ],
+      "quality": "measurable",
+      "unmeasurable": false
+    },
+    {
+      "table": "prediction_odds",
+      "exists": true,
+      "columns": [
+        "updated_at"
+      ],
+      "strongColumns": [],
+      "quality": "weak",
+      "unmeasurable": true
+    },
+    {
+      "table": "race_special_notes",
+      "exists": true,
+      "columns": [
+        "scraped_at"
+      ],
+      "strongColumns": [
+        "scraped_at"
+      ],
+      "quality": "measurable",
+      "unmeasurable": false
+    },
+    {
+      "table": "racer_series_points",
+      "exists": true,
+      "columns": [
+        "scraped_at"
+      ],
+      "strongColumns": [
+        "scraped_at"
+      ],
+      "quality": "measurable",
+      "unmeasurable": false
+    },
+    {
+      "table": "racer_profiles",
+      "exists": true,
+      "columns": [
+        "scraped_at",
+        "official_updated_at"
+      ],
+      "strongColumns": [
+        "scraped_at"
+      ],
+      "quality": "measurable",
+      "unmeasurable": false
+    },
+    {
+      "table": "venue_entry_course_stats",
+      "exists": true,
+      "columns": [
+        "scraped_at"
+      ],
+      "strongColumns": [
+        "scraped_at"
+      ],
+      "quality": "measurable",
+      "unmeasurable": false
+    },
+    {
+      "table": "venue_motor_stats",
+      "exists": true,
+      "columns": [
+        "scraped_date"
+      ],
+      "strongColumns": [
+        "scraped_date"
+      ],
+      "quality": "measurable",
+      "unmeasurable": false
+    },
+    {
+      "table": "race_notices_health",
+      "exists": true,
+      "columns": [
+        "last_checked_at"
+      ],
+      "strongColumns": [
+        "last_checked_at"
+      ],
+      "quality": "measurable",
+      "unmeasurable": false
+    }
+  ],
+  "monthlyResults": [
+    {
+      "month": "2025-12",
+      "days": 29,
+      "total": 4536,
+      "excluded": 0,
+      "denominator": 4536,
+      "withResult": 4219,
+      "rateAll": 0.9301146384479718,
+      "rateExcludingCancelled": 0.9301146384479718,
+      "noResultRow": 317,
+      "rowWithoutRank1": 0,
+      "zeroResultDays": 2,
+      "partialDays": 4,
+      "belowThreshold": true
+    },
+    {
+      "month": "2026-01",
+      "days": 31,
+      "total": 5460,
+      "excluded": 0,
+      "denominator": 5460,
+      "withResult": 5160,
+      "rateAll": 0.945054945054945,
+      "rateExcludingCancelled": 0.945054945054945,
+      "noResultRow": 300,
+      "rowWithoutRank1": 0,
+      "zeroResultDays": 0,
+      "partialDays": 14,
+      "belowThreshold": true
+    },
+    {
+      "month": "2026-02",
+      "days": 28,
+      "total": 4212,
+      "excluded": 0,
+      "denominator": 4212,
+      "withResult": 4165,
+      "rateAll": 0.9888414055080722,
+      "rateExcludingCancelled": 0.9888414055080722,
+      "noResultRow": 47,
+      "rowWithoutRank1": 0,
+      "zeroResultDays": 0,
+      "partialDays": 9,
+      "belowThreshold": true
+    },
+    {
+      "month": "2026-03",
+      "days": 31,
+      "total": 4956,
+      "excluded": 0,
+      "denominator": 4956,
+      "withResult": 4508,
+      "rateAll": 0.9096045197740112,
+      "rateExcludingCancelled": 0.9096045197740112,
+      "noResultRow": 448,
+      "rowWithoutRank1": 0,
+      "zeroResultDays": 1,
+      "partialDays": 17,
+      "belowThreshold": true
+    },
+    {
+      "month": "2026-04",
+      "days": 30,
+      "total": 4368,
+      "excluded": 0,
+      "denominator": 4368,
+      "withResult": 4278,
+      "rateAll": 0.9793956043956044,
+      "rateExcludingCancelled": 0.9793956043956044,
+      "noResultRow": 90,
+      "rowWithoutRank1": 0,
+      "zeroResultDays": 0,
+      "partialDays": 8,
+      "belowThreshold": true
+    },
+    {
+      "month": "2026-05",
+      "days": 31,
+      "total": 4620,
+      "excluded": 0,
+      "denominator": 4620,
+      "withResult": 4528,
+      "rateAll": 0.9800865800865801,
+      "rateExcludingCancelled": 0.9800865800865801,
+      "noResultRow": 92,
+      "rowWithoutRank1": 0,
+      "zeroResultDays": 0,
+      "partialDays": 9,
+      "belowThreshold": true
+    },
+    {
+      "month": "2026-06",
+      "days": 30,
+      "total": 4284,
+      "excluded": 0,
+      "denominator": 4284,
+      "withResult": 4235,
+      "rateAll": 0.988562091503268,
+      "rateExcludingCancelled": 0.988562091503268,
+      "noResultRow": 49,
+      "rowWithoutRank1": 0,
+      "zeroResultDays": 0,
+      "partialDays": 4,
+      "belowThreshold": true
+    },
+    {
+      "month": "2026-07",
+      "days": 31,
+      "total": 4596,
+      "excluded": 0,
+      "denominator": 4596,
+      "withResult": 4580,
+      "rateAll": 0.9965187119234117,
+      "rateExcludingCancelled": 0.9965187119234117,
+      "noResultRow": 16,
+      "rowWithoutRank1": 0,
+      "zeroResultDays": 0,
+      "partialDays": 3,
+      "belowThreshold": false
+    },
+    {
+      "month": "2026-08",
+      "days": 31,
+      "total": 4800,
+      "excluded": 0,
+      "denominator": 4800,
+      "withResult": 4787,
+      "rateAll": 0.9972916666666667,
+      "rateExcludingCancelled": 0.9972916666666667,
+      "noResultRow": 13,
+      "rowWithoutRank1": 0,
+      "zeroResultDays": 0,
+      "partialDays": 2,
+      "belowThreshold": false
+    },
+    {
+      "month": "2026-09",
+      "days": 18,
+      "total": 2520,
+      "excluded": 46,
+      "denominator": 2474,
+      "withResult": 2474,
+      "rateAll": 0.9817460317460317,
+      "rateExcludingCancelled": 1,
+      "noResultRow": 0,
+      "rowWithoutRank1": 0,
+      "zeroResultDays": 0,
+      "partialDays": 0,
+      "belowThreshold": false
+    }
+  ],
+  "freshness": [
+    {
+      "table": "race_special_notes",
+      "count": 0,
+      "latestTime": null,
+      "latestDate": null,
+      "empty": true
+    },
+    {
+      "table": "racer_series_points",
+      "count": 0,
+      "latestTime": null,
+      "latestDate": null,
+      "empty": true
+    },
+    {
+      "table": "venue_entry_course_stats",
+      "count": 4320,
+      "latestTime": "2026-09-18 14:42:10.962575+00",
+      "latestDate": "2026-08-01",
+      "empty": false
+    },
+    {
+      "table": "venue_motor_stats",
+      "count": 8848,
+      "latestTime": "2026-09-19",
+      "latestDate": "2026-09-13",
+      "empty": false
+    },
+    {
+      "table": "racer_profiles",
+      "count": 1627,
+      "latestTime": "2026-08-25 04:04:04.151499+00",
+      "latestDate": null,
+      "empty": false
+    },
+    {
+      "table": "racer_profiles.ability_index(非NULL)",
+      "count": 0,
+      "latestTime": null,
+      "latestDate": null,
+      "empty": true
+    },
+    {
+      "table": "race_notices_health",
+      "count": 69,
+      "latestTime": "2026-09-19 01:32:41.836+00",
+      "latestDate": "2026-09-19",
+      "empty": false
+    },
+    {
+      "table": "race_notices_health(had_success)",
+      "count": 69,
+      "latestTime": null,
+      "latestDate": null,
+      "empty": false
+    }
+  ],
+  "latest": [
+    {
+      "key": "races.race_date",
+      "value": "2026-09-19"
+    },
+    {
+      "key": "race_results.race_id",
+      "value": "2026-09-19-23-05"
+    },
+    {
+      "key": "race_conditions.race_id",
+      "value": "2026-09-19-23-04"
+    },
+    {
+      "key": "exhibition_data.race_id",
+      "value": "2026-09-19-23-06"
+    },
+    {
+      "key": "race_start_timings.race_id",
+      "value": "2026-09-19-23-04"
+    },
+    {
+      "key": "race_odds.race_id",
+      "value": "2026-09-19-23-06"
+    },
+    {
+      "key": "race_odds.captured_at(2026-09-18以降)",
+      "value": "2026-09-19 01:52:54.448+00"
+    }
+  ],
+  "workflows": {
+    "skipped": false,
+    "items": [
+      {
+        "workflow": "scrape-point-rank.yml",
+        "noRunHistory": false,
+        "lastRunAt": "2026-09-18T16:51:37Z",
+        "lastRunConclusion": "success",
+        "lastSuccessAt": "2026-09-18T16:51:37Z",
+        "hoursSinceLastSuccess": 9.1
+      },
+      {
+        "workflow": "scrape-racer-season-stats.yml",
+        "noRunHistory": true,
+        "lastRunAt": null,
+        "lastRunConclusion": null,
+        "lastSuccessAt": null,
+        "hoursSinceLastSuccess": null
+      },
+      {
+        "workflow": "scrape-scheduled.yml",
+        "noRunHistory": false,
+        "lastRunAt": "2026-09-19T01:55:16Z",
+        "lastRunConclusion": "pending",
+        "lastSuccessAt": "2026-09-19T01:45:22Z",
+        "hoursSinceLastSuccess": 0.2
+      },
+      {
+        "workflow": "scrape-venue-entry-course-stats.yml",
+        "noRunHistory": false,
+        "lastRunAt": "2026-09-18T14:41:16Z",
+        "lastRunConclusion": "success",
+        "lastSuccessAt": "2026-09-18T14:41:16Z",
+        "hoursSinceLastSuccess": 11.3
+      },
+      {
+        "workflow": "scrape-venue-motor-stats.yml",
+        "noRunHistory": false,
+        "lastRunAt": "2026-09-18T23:04:10Z",
+        "lastRunConclusion": "failure",
+        "lastSuccessAt": "2026-09-17T23:25:06Z",
+        "hoursSinceLastSuccess": 26.5
+      }
+    ]
+  },
+  "dbSize": {
+    "databaseBytes": 660573331,
+    "topTables": [
+      {
+        "table": "predictions",
+        "bytes": 357244928
+      },
+      {
+        "table": "race_entries",
+        "bytes": 90267648
+      },
+      {
+        "table": "race_odds",
+        "bytes": 41721856
+      },
+      {
+        "table": "race_start_timings",
+        "bytes": 33660928
+      },
+      {
+        "table": "races",
+        "bytes": 21372928
+      },
+      {
+        "table": "exhibition_data",
+        "bytes": 20168704
+      },
+      {
+        "table": "external_predictions",
+        "bytes": 16531456
+      },
+      {
+        "table": "race_results",
+        "bytes": 12976128
+      },
+      {
+        "table": "race_conditions",
+        "bytes": 8642560
+      },
+      {
+        "table": "poirot_predictions",
+        "bytes": 7577600
+      }
+    ]
+  },
+  "alerts": [
+    {
+      "kind": "coverage",
+      "item": "存在充足率 rank4〜6",
+      "value": 0.9639593908629441,
+      "threshold": 0.99,
+      "detail": "1899/1970、閾値未満の日 9日"
+    },
+    {
+      "kind": "coverage",
+      "item": "存在充足率 全券種オッズ(5種すべて)",
+      "value": 0.21725888324873097,
+      "threshold": 0.99,
+      "detail": "428/1970、閾値未満の日 12日"
+    },
+    {
+      "kind": "coverage",
+      "item": "存在充足率 └ trifecta_all",
+      "value": 0.984263959390863,
+      "threshold": 0.99,
+      "detail": "1939/1970、閾値未満の日 3日"
+    },
+    {
+      "kind": "coverage",
+      "item": "存在充足率 └ trio_all",
+      "value": 0.21725888324873097,
+      "threshold": 0.99,
+      "detail": "428/1970、閾値未満の日 12日"
+    },
+    {
+      "kind": "coverage",
+      "item": "存在充足率 └ exacta_all",
+      "value": 0.21725888324873097,
+      "threshold": 0.99,
+      "detail": "428/1970、閾値未満の日 12日"
+    },
+    {
+      "kind": "coverage",
+      "item": "存在充足率 └ quinella_all",
+      "value": 0.21725888324873097,
+      "threshold": 0.99,
+      "detail": "428/1970、閾値未満の日 12日"
+    },
+    {
+      "kind": "coverage",
+      "item": "存在充足率 └ wide_all",
+      "value": 0.21725888324873097,
+      "threshold": 0.99,
+      "detail": "428/1970、閾値未満の日 12日"
+    },
+    {
+      "kind": "window",
+      "item": "窓内取得率 60分前",
+      "value": 0.8957968476357268,
+      "threshold": 0.98,
+      "detail": "1023/1142"
+    },
+    {
+      "kind": "window",
+      "item": "窓内取得率 30分前",
+      "value": 0.9229422066549913,
+      "threshold": 0.98,
+      "detail": "1054/1142"
+    },
+    {
+      "kind": "window",
+      "item": "窓内取得率 15分前",
+      "value": 0.9246935201401051,
+      "threshold": 0.98,
+      "detail": "1056/1142"
+    },
+    {
+      "kind": "window",
+      "item": "窓内取得率 10分前",
+      "value": 0.9264448336252189,
+      "threshold": 0.98,
+      "detail": "1058/1142"
+    },
+    {
+      "kind": "window",
+      "item": "窓内取得率 5分前",
+      "value": 0.9299474605954466,
+      "threshold": 0.98,
+      "detail": "1062/1142"
+    },
+    {
+      "kind": "window",
+      "item": "窓内取得率 0分前",
+      "value": 0.4343257443082312,
+      "threshold": 0.98,
+      "detail": "496/1142"
+    },
+    {
+      "kind": "monthly_result",
+      "item": "月別結果充足率 2025-12",
+      "value": 0.9301146384479718,
+      "threshold": 0.99,
+      "detail": "4219/4536（中止除外0件）"
+    },
+    {
+      "kind": "monthly_result",
+      "item": "月別結果充足率 2026-01",
+      "value": 0.945054945054945,
+      "threshold": 0.99,
+      "detail": "5160/5460（中止除外0件）"
+    },
+    {
+      "kind": "monthly_result",
+      "item": "月別結果充足率 2026-02",
+      "value": 0.9888414055080722,
+      "threshold": 0.99,
+      "detail": "4165/4212（中止除外0件）"
+    },
+    {
+      "kind": "monthly_result",
+      "item": "月別結果充足率 2026-03",
+      "value": 0.9096045197740112,
+      "threshold": 0.99,
+      "detail": "4508/4956（中止除外0件）"
+    },
+    {
+      "kind": "monthly_result",
+      "item": "月別結果充足率 2026-04",
+      "value": 0.9793956043956044,
+      "threshold": 0.99,
+      "detail": "4278/4368（中止除外0件）"
+    },
+    {
+      "kind": "monthly_result",
+      "item": "月別結果充足率 2026-05",
+      "value": 0.9800865800865801,
+      "threshold": 0.99,
+      "detail": "4528/4620（中止除外0件）"
+    },
+    {
+      "kind": "monthly_result",
+      "item": "月別結果充足率 2026-06",
+      "value": 0.988562091503268,
+      "threshold": 0.99,
+      "detail": "4235/4284（中止除外0件）"
+    },
+    {
+      "kind": "empty_table",
+      "item": "空: race_special_notes",
+      "value": 0,
+      "threshold": null,
+      "detail": "0件"
+    },
+    {
+      "kind": "empty_table",
+      "item": "空: racer_series_points",
+      "value": 0,
+      "threshold": null,
+      "detail": "0件"
+    },
+    {
+      "kind": "empty_table",
+      "item": "空: racer_profiles.ability_index(非NULL)",
+      "value": 0,
+      "threshold": null,
+      "detail": "0件"
+    },
+    {
+      "kind": "workflow_never_ran",
+      "item": "実行履歴0件: scrape-racer-season-stats.yml",
+      "value": null,
+      "threshold": null,
+      "detail": ""
+    },
+    {
+      "kind": "timing_unmeasurable",
+      "item": "タイミング計測不能: races",
+      "value": null,
+      "threshold": null,
+      "detail": "取得時刻列なし（created_at/updated_atのみ）"
+    },
+    {
+      "kind": "timing_unmeasurable",
+      "item": "タイミング計測不能: race_entries",
+      "value": null,
+      "threshold": null,
+      "detail": "時刻列なし"
+    },
+    {
+      "kind": "timing_unmeasurable",
+      "item": "タイミング計測不能: race_conditions",
+      "value": null,
+      "threshold": null,
+      "detail": "取得時刻列なし（created_atのみ）"
+    },
+    {
+      "kind": "timing_unmeasurable",
+      "item": "タイミング計測不能: race_start_timings",
+      "value": null,
+      "threshold": null,
+      "detail": "時刻列なし"
+    },
+    {
+      "kind": "timing_unmeasurable",
+      "item": "タイミング計測不能: exhibition_data",
+      "value": null,
+      "threshold": null,
+      "detail": "時刻列なし"
+    },
+    {
+      "kind": "timing_unmeasurable",
+      "item": "タイミング計測不能: prediction_odds",
+      "value": null,
+      "threshold": null,
+      "detail": "取得時刻列なし（updated_atのみ）"
+    }
+  ]
+}
