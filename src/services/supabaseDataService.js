@@ -545,6 +545,9 @@ function buildWeather(conditions) {
     wave_height: waveHeight = null,
     temperature = null,
     water_temperature: waterTemperature = null,
+    // 気象の観測時刻（BOA-358、マイグレーション069）。行に含まれる場合のみ。この直接クエリの
+    // フォールバックは、列が未適用のDBで失敗しないよう、select には含めていない
+    weather_observed_at: observedAt = null,
   } = conditions;
   if (
     weather === null &&
@@ -564,6 +567,7 @@ function buildWeather(conditions) {
     temperature: temperature !== null ? Number(temperature) : null,
     waterTemperature:
       waterTemperature !== null ? Number(waterTemperature) : null,
+    observedAt,
   };
 }
 

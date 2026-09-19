@@ -64,6 +64,29 @@ export const NUMERIC_SCALES = {
 };
 
 /**
+ * timestamptz 列（比較時に時刻として正規化する列）。DBは「2026-09-19T01:34:00+00:00」形式で返し、
+ * 書き込み側は「2026-09-19T01:34:00.000Z」等の形式で持つため、文字列のまま比較すると
+ * 同じ時刻でも永久に「変更あり」になる。ここに無い timestamptz 列は厳密比較（＝変更ありに倒れる）。
+ */
+export const TIMESTAMP_COLUMNS = {
+  race_conditions: ["weather_observed_at"],
+};
+
+/**
+ * timestamptz の比較用正規化。同じ瞬間なら表記（タイムゾーン・桁数）に依らず同じ値になる。
+ * 時刻として解釈できない値は、文字列のまま返して厳密比較に任せる（＝変更ありに倒れる）。
+ *
+ * @param {unknown} value
+ */
+export function normalizeTimestamp(value) {
+  if (value === undefined || value === null) return null;
+  const ms = Date.parse(
+    value instanceof Date ? value.toISOString() : String(value),
+  );
+  return Number.isFinite(ms) ? ms : value;
+}
+
+/**
  * PostgreSQL の numeric 丸め（0から遠い側への四捨五入）を再現する。
  * PostgREST へ送られる JSON 数値は String(x) と同じ10進表現のため、その文字列に
  * 指数を足して桁シフトすることで、2進浮動小数の誤差（1.005 → 1.00 になる等）を避ける。
@@ -134,7 +157,7 @@ function buildKey(row, keyColumns) {
  *
  * @param {Array<Object>} existingRows
  * @param {Array<Object>} incomingRows
- * @param {{keyColumns: string[], ignoreColumns?: string[], scales?: Record<string, number>, writeMissing?: boolean}} options
+ * @param {{keyColumns: string[], ignoreColumns?: string[], scales?: Record<string, number>, timestampColumns?: string[], writeMissing?: boolean}} options
  * @returns {{toWrite: Object[], stats: {total: number, unchanged: number, changed: number, missing: number, toWrite: number}}}
  */
 export function diffRows(existingRows, incomingRows, options) {
@@ -142,8 +165,14 @@ export function diffRows(existingRows, incomingRows, options) {
     keyColumns,
     ignoreColumns = [],
     scales = {},
+    timestampColumns = [],
     writeMissing = true,
   } = options;
+  const timestampSet = new Set(timestampColumns);
+  const normalizeColumn = (column, value) =>
+    timestampSet.has(column)
+      ? normalizeTimestamp(value)
+      : normalizeValue(value, scales[column]);
   const skipColumns = new Set([...keyColumns, ...ignoreColumns]);
   const existingByKey = new Map(
     existingRows.map((row) => [buildKey(row, keyColumns), row]),
@@ -168,8 +197,8 @@ export function diffRows(existingRows, incomingRows, options) {
       }
       if (!(column in existing)) return true; // 既存側に無い＝比較不能＝変更ありに倒す
       return (
-        normalizeValue(incoming[column], scales[column]) !==
-        normalizeValue(existing[column], scales[column])
+        normalizeColumn(column, incoming[column]) !==
+        normalizeColumn(column, existing[column])
       );
     });
     if (differingColumns.length > 0) {
@@ -302,6 +331,7 @@ export async function filterUnchangedRows(
     keyColumns,
     ignoreColumns,
     scales: NUMERIC_SCALES[table] ?? {},
+    timestampColumns: TIMESTAMP_COLUMNS[table] ?? [],
     writeMissing,
   });
   return { toWrite, fallback: false, stats };

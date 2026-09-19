@@ -52,6 +52,7 @@ import {
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
 import {
+  formatObservedTime,
   translateWeather,
   translateWindDirection,
   weatherIcon,
@@ -316,6 +317,9 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather }) {
       ].filter(Boolean)
     : [];
 
+  // 気象の観測時刻（あれば「10:34現在」を見出しに添える。無ければ従来どおり何も出さない）
+  const weatherObservedTime = formatObservedTime(weather?.observedAt);
+
   const hasTechniqueBreakdown =
     venueDaySummary && Object.keys(venueDaySummary.techniqueCounts).length > 0;
   const hasCourseWinBreakdown =
@@ -328,7 +332,16 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather }) {
 
       {weatherItems.length > 0 && (
         <section className="rbi-card">
-          <h3 className="rbi-heading">{t("beforeInfo.weatherTitle")}</h3>
+          <h3 className="rbi-heading">
+            {t("beforeInfo.weatherTitle")}
+            {weatherObservedTime && (
+              <span className="rbi-observed-at" data-testid="rbi-observed-at">
+                {t("beforeInfo.weatherObservedAt", {
+                  time: weatherObservedTime,
+                })}
+              </span>
+            )}
+          </h3>
           <div className="rbi-weather-grid">
             {weatherItems.map((item) => (
               <div className="rbi-weather-item" key={item.key}>

@@ -258,6 +258,7 @@
   "beforeInfo": {
     "subtitle": "発走が近づくと更新される当日限りの情報です。発走30/15/10分前まで確定しない項目があります",
     "weatherTitle": "本日の水面コンディション",
+    "weatherObservedAt": "{{time}}現在",
     "weatherLabel": "天気",
     "temperatureLabel": "気温",
     "windLabel": "風速/風向",

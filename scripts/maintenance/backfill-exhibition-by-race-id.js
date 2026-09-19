@@ -110,7 +110,10 @@ async function main() {
     race_no: t.race_number,
     start_time: startTime,
   }));
-  await runExhibition(schedule, date);
+  // 気象は更新しない: 対象は過去のレースで、beforeinfoは発走後も「その日の最新の観測」を
+  // 表示するため、そのレースの時点とは別の気象になる。start_timeも上で差し替えており、
+  // 発走後の観測を弾く判定に使えない（BOA-358）
+  await runExhibition(schedule, date, { updateWeather: false });
 
   const after = await fetchTargets(raceIds);
   const stillMissing = after.filter((t) => !t.hasExhibition);

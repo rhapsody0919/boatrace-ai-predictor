@@ -26,6 +26,14 @@ import {
   planWriteAll,
   upsertChangedRows,
 } from "../lib/unchangedRows.js";
+import {
+  buildStartTimeLookup,
+  convertWindDirection,
+  resolveObservedAt,
+  scrapeConditions,
+  toWeatherColumns,
+} from "../lib/beforeinfoWeather.js";
+import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -37,31 +45,6 @@ const FETCH_HEADERS = {
 
 // 発走1時間前ウィンドウ（±3分）
 const WINDOW_MINUTES = 60;
-
-const WIND_DIRECTIONS = [
-  null,
-  "北",
-  "北北東",
-  "北東",
-  "東北東",
-  "東",
-  "東南東",
-  "南東",
-  "南南東",
-  "南",
-  "南南西",
-  "南西",
-  "西南西",
-  "西",
-  "西北西",
-  "北西",
-  "北北西",
-];
-
-function convertWindDirection(dir) {
-  if (dir == null || dir < 1 || dir > 16) return null;
-  return WIND_DIRECTIONS[dir];
-}
 
 /**
  * racelist ページから出場選手情報を取得
@@ -213,47 +196,6 @@ function scrapeSeriesDay($) {
 }
 
 /**
- * beforeinfo ページから天候情報を取得
- */
-function scrapeConditions($) {
-  const weatherData = [];
-  $(".weather1_bodyUnitLabelData").each((i, el) => {
-    weatherData.push($(el).text().trim());
-  });
-
-  let weather = null;
-  $(".weather1_bodyUnitLabelTitle").each((i, el) => {
-    if (i === 1) weather = $(el).text().trim();
-  });
-
-  let windDirection = null;
-  const windElem = $('p[class*="is-wind"]');
-  if (windElem.length > 0) {
-    const windClass = (windElem.attr("class") || "")
-      .split(" ")
-      .find((c) => c.startsWith("is-wind"));
-    if (windClass) windDirection = parseInt(windClass.replace("is-wind", ""));
-  }
-
-  return {
-    weather: weather || null,
-    airTemp: weatherData[0]
-      ? parseFloat(weatherData[0].replace("℃", ""))
-      : null,
-    windDirection,
-    windVelocity: weatherData[1]
-      ? parseFloat(weatherData[1].replace("m", ""))
-      : null,
-    waterTemp: weatherData[2]
-      ? parseFloat(weatherData[2].replace("℃", ""))
-      : null,
-    waveHeight: weatherData[3]
-      ? parseFloat(weatherData[3].replace("cm", ""))
-      : null,
-  };
-}
-
-/**
  * 1レースの racelist + beforeinfo を並列取得
  */
 async function fetchRaceInfo(date, venueCode, raceNo) {
@@ -341,6 +283,8 @@ export async function run(schedule, date, { dryRun = false } = {}) {
   console.log(
     `🎯 レース情報更新: ${targetRaces.length}レース（発走${WINDOW_MINUTES}分前ウィンドウ）`,
   );
+  // 気象の観測時刻の解決用（「N R時点」の気象は、Nレース目の発走予定時刻を観測時刻とする）
+  const startTimeLookup = buildStartTimeLookup(schedule);
 
   // 中止・順延の暫定検知（BOA-254 FR1）用に、対象レースの現在の状態を取得
   const { data: cancellationRows, error: cancellationFetchError } =
@@ -459,21 +403,17 @@ export async function run(schedule, date, { dryRun = false } = {}) {
       // （conditions取得はほぼ常に成功するため、seriesDay単独成功のレアケースを
       // 拾えなくても実害は小さい）
       if (conditions || raceTitle || raceStage) {
+        // 観測時刻（BOA-358）: 公式の「HH:MM現在」、または「N R時点」のレースの発走予定時刻。
+        // 取得できない・発走後の観測等はNULL
+        const { observedAt } = resolveObservedAt(conditions, date, {
+          startTime: r.start_time,
+          startTimeOfRace: (raceNo) => startTimeLookup(r.venue_code, raceNo),
+        });
         conditionsRows.push({
           race_id: r.race_id,
-          weather: conditions?.weather ?? null,
-          wind_direction: convertWindDirection(
-            conditions?.windDirection ?? null,
-          ),
-          wind_speed: conditions?.windVelocity ?? null,
+          ...toWeatherColumns(conditions, observedAt),
           series_day: seriesDay,
           is_final_day: isFinalDay,
-          wave_height:
-            conditions?.waveHeight != null
-              ? Math.round(conditions.waveHeight)
-              : null,
-          temperature: conditions?.airTemp ?? null,
-          water_temperature: conditions?.waterTemp ?? null,
           race_title: raceTitle,
           race_stage: raceStage,
         });
@@ -549,9 +489,8 @@ export async function run(schedule, date, { dryRun = false } = {}) {
 
   // race_conditions upsert
   if (conditionsRows.length > 0) {
-    await upsertChangedRows(supabase, "race_conditions", conditionsRows, {
-      onConflict: "race_id",
-      keyColumns: ["race_id"],
+    // weather_observed_at 列（マイグレーション069）が未適用でも書き込めるよう、共通の書き込み関数を使う
+    await upsertRaceConditions(supabase, conditionsRows, {
       label: "race_conditions",
       dryRun,
     });

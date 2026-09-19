@@ -30,6 +30,12 @@
   flex-wrap: wrap;
 }
 
+.rbi-observed-at {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
 .rbi-weather-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
