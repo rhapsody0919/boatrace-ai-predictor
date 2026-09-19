@@ -951,7 +951,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
-  test("オッズ一覧タブで券種切替・グリッド・推移ドリルダウン・免責文言が表示される（BOA-311）", async ({
+  test("オッズ一覧タブで券種切替・全通り常時表示・推移ドリルダウン・免責文言が表示される（BOA-311）", async ({
     page,
   }) => {
     // 全窓（60/30/15/10/5/0分前）で全券種の全通りオッズが保存された過去レース
@@ -961,7 +961,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 20000,
     });
 
-    await expect(page.locator(".rol-grid")).toBeVisible({ timeout: 20000 });
+    // 3連単（初期表示）: 1着ごとの6ブロックに全120通りがタップ不要で並ぶ（日和と同じ構造）
+    await expect(page.locator(".rol-block")).toHaveCount(6, {
+      timeout: 20000,
+    });
+    await expect(page.locator(".rol-block .rol-odds")).toHaveCount(120);
     await expect(page.locator(".rol-disclaimer")).toContainText("主催者");
 
     // オッズ一覧タブ専用の内容のため、基本情報系のデータ出走表・枠別傾向・
@@ -970,22 +974,27 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".venue-tendency-panel")).toHaveCount(0);
     await expect(page.locator(".embedded-analysis-section")).toHaveCount(0);
 
-    // 2連単（ペアが最終買い目）: セルをタップすると直接推移が表示される
-    await page.locator(".rol-chip", { hasText: "2連単" }).click();
-    await page.locator(".rol-cell[class*='rol-heat-']").first().click();
+    // 3連単: オッズをタップするとそのブロック内に推移が表示され、再タップで閉じる
+    await page.locator(".rol-odds[class*='rol-heat-']").first().click();
     await expect(page.locator(".rol-trend")).toBeVisible();
     await expect(page.locator(".rol-trend-item").first()).toBeVisible();
+    await page.locator(".rol-odds.is-selected").click();
+    await expect(page.locator(".rol-trend")).toHaveCount(0);
 
-    // 3連単（3艇）: セルをタップすると3着候補が出て、選ぶと推移が表示される
-    await page.locator(".rol-chip", { hasText: "3連単" }).click();
-    await page.locator(".rol-cell[class*='rol-heat-']").first().click();
-    await expect(page.locator(".rol-candidates")).toBeVisible();
-    await page.locator(".rol-candidate-chip").first().click();
+    // 3連複: 艇番3つの全20通りが一覧で表示される
+    await page.locator(".rol-chip", { hasText: "3連複" }).click();
+    await expect(page.locator(".rol-trio-list .rol-odds")).toHaveCount(20);
+
+    // 2連単: 1着ごとの6ブロック（全30通り）。タップで推移が表示される
+    await page.locator(".rol-chip", { hasText: "2連単" }).click();
+    await expect(page.locator(".rol-block")).toHaveCount(6);
+    await expect(page.locator(".rol-block .rol-odds")).toHaveCount(30);
+    await page.locator(".rol-odds[class*='rol-heat-']").first().click();
     await expect(page.locator(".rol-trend")).toBeVisible();
 
     // 拡連複（レンジ値）: 推移スパークラインがNaNにならず描画される
     await page.locator(".rol-chip", { hasText: "拡連複" }).click();
-    await page.locator(".rol-cell[class*='rol-heat-']").first().click();
+    await page.locator(".rol-odds[class*='rol-heat-']").first().click();
     const points = await page
       .locator(".rol-sparkline polyline")
       .getAttribute("points");

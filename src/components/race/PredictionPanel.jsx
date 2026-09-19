@@ -373,6 +373,7 @@ function PredictionPanel({
                 <RaceOddsListTab
                   raceId={analysisRaceId}
                   raceStartTime={selectedRace?.startTime}
+                  players={prediction.allPlayers}
                 />
               ),
             },

@@ -548,13 +548,19 @@
     "courseN": "Course {{n}}"
   },
   "oddsList": {
-    "subtitle": "Switch bet types to see odds for every combination. Tap a cell to view its trend",
+    "subtitle": "Switch bet types to see odds for every combination. Tap an odds value to view its trend",
     "loading": "Loading odds...",
     "disclaimer": "The odds shown here are scraped reference values. Please treat them as reference only and always check the official BOATRACE site for the actual odds before betting",
     "legend": "Darker cells are more popular (lower odds)",
-    "orderedCornerLabel": "1st \\ 2nd",
-    "unorderedCornerLabel": "Combination",
-    "pickThirdLabel": "3rd place candidates (tap to see trend)",
+    "compositeLabel": "Comb.",
+    "exactaShortLabel": "Ex.",
+    "guide": {
+      "trifecta": "Each block is the 1st-place boat, each column header is 2nd, and the boat number on each row is 3rd. Below each column: the combined odds for that 2nd-place boat and the 1st-2nd exacta odds",
+      "trio": "All 20 combinations of three boats (order does not matter)",
+      "exacta": "Each block is the 1st-place boat and the boat number on each row is 2nd (30 combinations)",
+      "quinella": "Each block is the lower boat number and each row is the partner boat (15 combinations, order does not matter)",
+      "wide": "Each block is the lower boat number and each row is the partner boat. Odds are shown as a low-high range (15 combinations, order does not matter)"
+    },
     "trendTitle": "Odds trend for {{combo}}",
     "deadlineLabel": "At deadline",
     "minutesBeforeLabel": "{{n}} min before",
