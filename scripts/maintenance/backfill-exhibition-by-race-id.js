@@ -9,7 +9,9 @@
  *
  * run()は「今から発走30/15/10分前のレース」しか対象にしないため、対象レースの
  * start_timeを「今+15分」に差し替えたscheduleを渡してウィンドウに入れている
- * （start_timeは対象選定にしか使われず、DBには書き込まれない）。
+ * （start_timeは対象選定にしか使われず、DBには書き込まれない）。run()の窓
+ * （scrape-exhibition-data.js、現状30/15/10分前±3分）に15分前が含まれることに依存する。
+ * 何度再実行しても安全。
  *
  * 使い方:
  *   node scripts/maintenance/backfill-exhibition-by-race-id.js --race-ids=2026-09-16-07-09,2026-09-16-07-10          # dry-run
@@ -17,6 +19,7 @@
  */
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import { extractDateFromRaceId } from "../lib/dateUtils.js";
 import { run as runExhibition } from "../daily/scrape-exhibition-data.js";
 
 const RACE_ID_PATTERN = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/;
@@ -72,7 +75,7 @@ async function main() {
   if (invalid.length > 0) {
     throw new Error(`race_idの形式が不正: ${invalid.join(", ")}`);
   }
-  const dates = new Set(raceIds.map((id) => id.slice(0, 10)));
+  const dates = new Set(raceIds.map(extractDateFromRaceId));
   if (dates.size > 1) {
     throw new Error("race_idは同一日付のものだけ指定してください");
   }
@@ -93,6 +96,10 @@ async function main() {
     console.log(
       `\ndry-run: 取得対象${needs.length}件。書き込むには --apply を付けて再実行`,
     );
+    return;
+  }
+  if (needs.length === 0) {
+    console.log("\n全レースで展示データが取得済みのため何もしません");
     return;
   }
 
