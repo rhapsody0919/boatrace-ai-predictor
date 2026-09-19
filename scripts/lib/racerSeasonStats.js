@@ -31,6 +31,14 @@ const FIELD_KEY_MAP = {
   能力指数: "abilityIndex",
 };
 
+// 公式サイトへのリクエストヘッダ（取得先への配慮としてUser-Agentを明示）。
+// scripts/lib/racerProfileSync.js（タイムアウト・リトライ付きの定期取得）とも共有する
+export const SEASON_STATS_REQUEST_HEADERS = {
+  "User-Agent": SEASON_STATS_USER_AGENT,
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
+};
+
 export function getSeasonStatsUrl(racerId) {
   return `https://www.boatrace.jp/owpc/pc/data/racersearch/season?toban=${racerId}`;
 }
@@ -143,11 +151,7 @@ export function parseSeasonStatsHtml(html) {
 // ページ自体が存在しない（無効なtoban）、あるいはHTTPエラーの場合は null を返す。
 export async function scrapeSeasonStats(racerId) {
   const response = await fetch(getSeasonStatsUrl(racerId), {
-    headers: {
-      "User-Agent": SEASON_STATS_USER_AGENT,
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
-    },
+    headers: SEASON_STATS_REQUEST_HEADERS,
   });
 
   if (!response.ok) return null;

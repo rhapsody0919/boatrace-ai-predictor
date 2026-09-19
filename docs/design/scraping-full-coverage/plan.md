@@ -79,7 +79,7 @@
 | false_start_count_period | int, nullable | 直近期の出遅れ回数（選手責任） |
 | period_label | text, nullable | `2026-first`\|`2026-second`等、集計対象期の識別子 |
 | official_win_rate_period | numeric, nullable | 公式集計の勝率（自社`racer_aggregated_stats`との検算用） |
-| official_updated_at | timestamptz, nullable | 本データの取得日時 |
+| official_updated_at | timestamptz, nullable | 期別成績の値が最後に更新（書き込み）された日時。値が変わっていない選手は再書き込みしないため、ジョブが実行・確認したかどうかの指標にはならない（実行の成否はジョブの終了コード・Slack通知・`profile-scrape-report.json`で見る） |
 
 `node scripts/maintenance/generate-er-diagram.js scraping-full-coverage`で生成（2026-09-16更新。FR-1の`race_special_notes`/`race_notices_health`、FR-2の`racer_profiles`拡張、FR-3の`racer_series_points`を合わせたこの機能全体のスキーマ）:
 
@@ -132,6 +132,13 @@ erDiagram
 ### スクリプト構成
 
 `scripts/maintenance/scrape-racer-profiles.js`を拡張し、既存の選手プロフィール取得と同じ巡回で`data/racersearch/season?toban=`も取得する（FR-5の自動化と同一ジョブに統合、選手一覧を二重に巡回しない）。
+
+処理本体は`scripts/lib/racerProfileSync.js`（CLIは`scrape-racer-profiles.js`、オフライン検証は`verify-racer-profile-sync.js`）。設計上の要点:
+
+- **対象選手**は`racer_profiles`登録済み（約1,600行）＋直近35日に出走した未登録選手（`race_entries`を`race_id`の日付範囲で走査）。`race_entries`全件（約26万行）のOFFSET巡回はDisk IOが重いため行わない
+- **期別成績は`update().eq("racer_id")`で書く**。`upsert`はINSERT側のNOT NULL検査（`name`・`birth_date`）がON CONFLICTより先に走り、既存行でも失敗するため。更新行数も確認する（対象行が無いと0件更新でもエラーにならないため）。新規選手のプロフィール登録だけは全列を送る`upsert`
+- **値が変わっていない行は書かない**（`.claude/rules/data-acquisition.md` §1）。`official_updated_at`は「値が変わった時刻」になる
+- **失敗を緑にしない**: 期別成績の失敗率5%超・失敗が20件連続・書き込みも変更なし確認も0件・新規選手のプロフィール保存エラーや取得の全滅・時間予算での中断は終了コード1（ワークフローが失敗し、Slackへ通知）
 
 ### 実行タイミング（ADR-0058の原則を適用）
 

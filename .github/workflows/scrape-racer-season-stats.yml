@@ -8,16 +8,42 @@ name: Scrape Racer Season Stats
 #   月次実行を基本とする。ただし新級別の発表・期別成績ページ更新は5/1・11/1の審査切り替え
 #   直後に集中する（複数年分の公式ニュースで裏取り済み、docs/db-migration/061参照）ため、
 #   その直後2週間はブースト（週次相当）で確認する。
-#   - 毎月1日 09:00 JST: 通常の月次実行（cronのUTC日跨ぎを避けるため0:00 UTC=9:00 JSTを使用）
-#   - 5月・11月の8日/15日 09:00 JST: ブースト分（1日の月次実行と合わせて概ね週次になる）
+#   - 毎月1日（UTC）の夜: 通常の月次実行（下記「実行時刻の設計」参照。cron式の日付はUTC基準）
+#   - 5月・11月の8日/15日（UTC）の夜: ブースト分（1日の月次実行と合わせて概ね週次になる）
 # racer_profiles未登録の新規選手プロフィール取得（FR-5）も同じジョブ・同じ選手一覧の
 # 巡回で行うため、本ワークフロー1本で両方をカバーする。
+#
+# 実行時刻の設計（2026-09-19見直し）: 開始時に選手一覧・直近の出走を読む（DBへの読み取りは
+# ここに集中する）ため、開催時間帯（9:00〜21:00 JST）を避けて夜間に起動する。
+# GitHub Actionsのスケジュール起動は最大で約2〜4時間遅れる（実測）ため、03:00 JST指定でも
+# 最大07:00 JST起動＝開催時間帯に食い込まない。
+# 所要時間: 約1,600選手×（公式サイトの応答時間＋0.5秒）。応答が遅い場合（事前検証では
+# 1リクエスト8〜10秒）は最大4.5時間程度になりうるため、timeout-minutesを長めにとり、
+# スクリプト側の時間予算（--max-minutes）で先に安全に中断して再開用のoffsetを出力する。
 
 on:
   schedule:
-    - cron: '0 0 1 * *' # JST 09:00、毎月1日（月次ベース、能力指数等の公式集計値取得）
-    - cron: '0 0 8,15 5,11 *' # JST 09:00、5月・11月の8日/15日（審査切り替え直後2週間のブースト）
+    - cron: '0 18 1 * *' # UTC 18:00 = JST 03:00（毎月1日UTCの夜＝JST 2日未明、月次ベース、能力指数等の公式集計値取得）
+    - cron: '0 18 8,15 5,11 *' # UTC 18:00 = JST 03:00（5月・11月の8日/15日UTCの夜、審査切り替え直後2週間のブースト）
   workflow_dispatch:
+    inputs:
+      racer_ids:
+        description: '対象の登録番号（カンマ区切り、例: 3159,4444）。空欄=全選手。初回実行は少数で確認する'
+        required: false
+        default: ''
+      limit:
+        description: '処理件数の上限（登録番号昇順の並びに対して適用）。空欄=上限なし'
+        required: false
+        default: ''
+      offset:
+        description: '開始位置（登録番号昇順の並びに対して適用、途中中断からの再開用）。空欄=0'
+        required: false
+        default: ''
+      dry_run:
+        description: 'true=DBへ書き込まない（公式サイトの取得・解析までは行う）'
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: scrape-racer-season-stats
@@ -32,6 +58,7 @@ env:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    timeout-minutes: 330 # 全件（最悪4.5時間）＋セットアップ＋レポートのコミットに足りる長さ。GitHub Actionsの上限は360分
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,15 +67,56 @@ jobs:
           cache: 'npm'
       - run: npm ci
 
+      # 失敗（期別成績の失敗率5%超・書き込みも変更なし確認も0件・時間予算での中断）は
+      # スクリプトが終了コード1で返し、ジョブが失敗になる。continue-on-errorは付けない
+      # （.claude/rules/data-acquisition.md「取得ステップにcontinue-on-error: trueを付けて、
+      # ジョブ全体を成功に見せない」）。他ジョブへの影響は無い（独立したワークフロー）
       - name: Scrape racer profiles and season stats
-        run: node scripts/maintenance/scrape-racer-profiles.js --verbose
-        continue-on-error: true # 他のジョブに影響させない（低頻度・非クリティカルデータのため）
+        id: scrape
+        run: |
+          args=(--verbose --max-minutes=300)
+          if [ -n "$INPUT_RACER_IDS" ]; then args+=("--racer-ids=$INPUT_RACER_IDS"); fi
+          if [ -n "$INPUT_LIMIT" ]; then args+=("--limit=$INPUT_LIMIT"); fi
+          if [ -n "$INPUT_OFFSET" ]; then args+=("--offset=$INPUT_OFFSET"); fi
+          if [ "$INPUT_DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          node scripts/maintenance/scrape-racer-profiles.js "${args[@]}"
         env:
           TZ: 'Asia/Tokyo'
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # workflow_dispatchの入力は、シェルへ直接埋め込まずenv経由で渡す（コマンド注入の防止）
+          INPUT_RACER_IDS: ${{ inputs.racer_ids }}
+          INPUT_LIMIT: ${{ inputs.limit }}
+          INPUT_OFFSET: ${{ inputs.offset }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+
+      # スクレイピングステップが失敗・タイムアウト・キャンセルされた場合のみ通知する
+      # （後続のレポートコミットの失敗等では、この文面は誤りになるため）
+      - name: Notify Slack on failure
+        if: ${{ always() && (steps.scrape.outcome == 'failure' || steps.scrape.outcome == 'cancelled') }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"#c0392b\",
+                \"blocks\": [
+                  {
+                    \"type\": \"section\",
+                    \"text\": {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \":x: *選手期別成績（能力指数等）の取得ジョブが失敗しました*\n失敗率が高い・書き込み0件・連続失敗・時間超過（または手動キャンセル）のいずれかです。ログの失敗理由と、data/analysis/racer-fortune-telling/profile-scrape-report.json（failureReasons・nextOffset）を確認してください\n<$RUN_URL|実行ログを開く>\"
+                    }
+                  }
+                ]
+              }]
+            }"
 
       - name: Commit scrape report if changed
+        if: ${{ !cancelled() }} # スクレイピングが失敗した場合も、失敗理由を含むレポートを残す
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
