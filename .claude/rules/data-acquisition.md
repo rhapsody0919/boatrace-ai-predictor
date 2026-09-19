@@ -18,6 +18,7 @@ paths:
 - Cronは共通ラッパ（認証・排他（リース）・冪等・0件エラー・リージョン）経由で実装する
 - 並走期間（新旧基盤の併存中）の二重書き込みは、取得元（source）列で区別する
 - マイグレーション番号は、着手時とPR作成前に`origin/master`の最大番号を確認する（重複はCIで機械検査する予定）
+- 着手時とPR作成前に`npm run verify:migration-numbers`を実行する（`origin/master`の最大番号と重複を手元で機械検査する。適用状況の台帳は`docs/db-migration/APPLIED.md`）
 - Vercel Cronは「UTC固定・リトライ無し・best-effort・まれに重複配信」。次を満たす設計にする
   - cron式はUTCで書き、JSTの運用時間帯をコメントで併記する
   - upsertで冪等にする（重複配信で壊れない）
