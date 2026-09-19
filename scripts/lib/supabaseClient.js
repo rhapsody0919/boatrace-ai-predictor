@@ -53,9 +53,17 @@ export const isSupabaseEnabled = () => !!supabase;
  * @param {string} table - テーブル名
  * @param {string} select - selectカラム
  * @param {Function} [buildQuery] - クエリビルダー関数
+ * @param {{ throwOnError?: boolean }} [options] - throwOnError: 取得エラー時に部分結果を
+ *   返さず例外を投げる（既定はログ出力のみで取得済み分を返す）。監視のように「取得失敗を
+ *   空データ＝正常と誤判定してはいけない」用途で指定する
  * @returns {Promise<Array>}
  */
-export async function fetchAll(table, select, buildQuery) {
+export async function fetchAll(
+  table,
+  select,
+  buildQuery,
+  { throwOnError = false } = {},
+) {
   const allData = [];
   let from = 0;
   const pageSize = 1000;
@@ -67,6 +75,7 @@ export async function fetchAll(table, select, buildQuery) {
     if (buildQuery) q = buildQuery(q);
     const { data, error } = await q;
     if (error) {
+      if (throwOnError) throw new Error(`${table}取得エラー: ${error.message}`);
       console.error(`${table} 取得エラー:`, error.message);
       break;
     }
