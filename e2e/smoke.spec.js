@@ -477,11 +477,13 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     await expect(page.locator(".motor-condition-container")).toBeVisible({
       timeout: 10000,
     });
-    // 本日開催中のレースが無い、または結果確定レースが無い環境でも空状態を許容する
+    // 本日開催中のレースが無い、または結果確定レースが無い環境でも空状態を許容する。
+    // 集計に複数クエリを要し、日本国内からの実測は約4秒だがCI(海外ランナー→本番DB)では
+    // 15秒を超えて失敗したため、この待ちだけ長めにする
     await expect(
       page.locator(".empty-state, .motor-ranking-row").first(),
     ).toBeVisible({
-      timeout: 15000,
+      timeout: 30000,
     });
   });
 
