@@ -664,7 +664,7 @@ async function confirmOverdueCancellations(schedule) {
  * @param {string} targetDate - YYYY-MM-DD
  * @returns {Promise<{updated: boolean, count: number}>}
  */
-async function scrapeAndSaveResults(races, targetDate) {
+export async function scrapeAndSaveResults(races, targetDate) {
   // 既に結果があるレースを取得
   const { data: existingResults } = await supabase
     .from("race_results")
