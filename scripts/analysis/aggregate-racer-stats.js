@@ -14,7 +14,14 @@
  */
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
-import { extractVenueCodeFromRaceId } from "../lib/dateUtils.js";
+import {
+  extractVenueCodeFromRaceId,
+  getDateDaysAgo,
+} from "../lib/dateUtils.js";
+import {
+  ACTUAL_COURSE_SELECT,
+  buildCourseEntryTendency,
+} from "../lib/courseEntryTendency.js";
 import { isPlaceHit, isShowHit } from "../lib/hitCalculator.js";
 import {
   COURSE_DEFAULT_DISTRIBUTION,
@@ -486,24 +493,40 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
 
 // ===== 進入コース傾向算出 =====
 
+// 進入コース傾向の集計期間（直近12ヶ月）
+const COURSE_ENTRY_WINDOW_DAYS = 365;
+
 /**
- * 選手の進入コース傾向を算出（枠番→実際のコース分布）
+ * 選手の進入コース傾向（枠番→実際に進入したコースの回数）を算出する
+ * （BOA-284、docs/design/course-entry-tendency-rework/）。
+ * 実進入コースはrace_results.actual_course_1〜6（BOA-257、Kファイル由来）。
+ * 走数の下限は適用せず、回数と走数をそのまま保存する（5走未満を「参考」として
+ * 扱うのは表示側の責務）。
+ *
+ * 他の3関数（calculateCourseRaceCounts等）は旧列course_1〜6のままにしている。
+ * course_1〜6は艇番と常に一致するため実態は枠番別の集計だが、実進入コースに
+ * 切り替えても予測力は上がらず複勝予想の的中率がわずかに下がったため
+ * （scripts/analysis/compare-course-rate-sources.js、BOA-284 Task 2）現行を維持する。
  * @param {number} racerId - 選手登録番号
  * @param {number|null} venueCode - 会場コード（nullの場合は全会場）
- * @returns {Object} { "1": { "1": 0.90, "2": 0.05, ... }, "2": { ... }, ... }
+ * @returns {Object|null} { since, all: { 枠番: { n, courses: { コース: 回数 } } },
+ *   venues: { 会場コード: { 枠番: { n, courses } } } }
+ *   allは対象の出走全体（会場指定時はその会場のみ）、venuesは対象の出走の会場別内訳
  */
 async function calculateCourseEntryTendency(racerId, venueCode = null) {
-  // 1. race_entries から対象レースの枠番を取得
+  const since = getDateDaysAgo(COURSE_ENTRY_WINDOW_DAYS);
+
+  // 1. race_entries から対象レースの枠番を取得（集計期間内のみ）
   const { data: entries, error: entriesError } = await supabase
     .from("race_entries")
     .select("race_id, boat_number")
-    .eq("racer_id", racerId);
+    .eq("racer_id", racerId)
+    .gte("race_id", since);
 
   if (entriesError || !entries || entries.length === 0) {
     return null;
   }
 
-  // 会場フィルタ
   const filteredEntries = venueCode
     ? entries.filter((e) => extractVenueCodeFromRaceId(e.race_id) === venueCode)
     : entries;
@@ -512,9 +535,9 @@ async function calculateCourseEntryTendency(racerId, venueCode = null) {
     return null;
   }
 
-  // 2. race_results を取得（course_1..course_6）
+  // 2. race_results から実進入コースを取得
   const CHUNK_SIZE = 200;
-  const allResults = [];
+  const resultsByRaceId = new Map();
 
   for (let i = 0; i < filteredEntries.length; i += CHUNK_SIZE) {
     const chunk = filteredEntries.slice(i, i + CHUNK_SIZE);
@@ -522,9 +545,7 @@ async function calculateCourseEntryTendency(racerId, venueCode = null) {
 
     const { data: results, error: resultsError } = await supabase
       .from("race_results")
-      .select(
-        "race_id, course_1, course_2, course_3, course_4, course_5, course_6",
-      )
+      .select(`race_id, ${ACTUAL_COURSE_SELECT}`)
       .in("race_id", raceIds);
 
     if (resultsError) {
@@ -532,56 +553,13 @@ async function calculateCourseEntryTendency(racerId, venueCode = null) {
       continue;
     }
 
-    if (results) {
-      allResults.push(...results);
+    for (const r of results ?? []) {
+      resultsByRaceId.set(r.race_id, r);
     }
   }
 
-  // resultsマップ: race_id -> result
-  const resultsMap = new Map();
-  for (const r of allResults) {
-    resultsMap.set(r.race_id, r);
-  }
-
-  // 3. 枠番ごとに実際のコース分布を集計
-  const boatCourseCount = {}; // { boat_number: { course: count } }
-
-  for (const entry of filteredEntries) {
-    const result = resultsMap.get(entry.race_id);
-    if (!result) continue;
-
-    const boatNumber = entry.boat_number;
-
-    // course_1..course_6 から、この枠番が何コースに入ったか特定
-    let actualCourse = null;
-    for (let c = 1; c <= 6; c++) {
-      if (result[`course_${c}`] === boatNumber) {
-        actualCourse = c;
-        break;
-      }
-    }
-
-    if (!actualCourse) continue;
-
-    const boatKey = String(boatNumber);
-    if (!boatCourseCount[boatKey]) {
-      boatCourseCount[boatKey] = {};
-    }
-    boatCourseCount[boatKey][actualCourse] =
-      (boatCourseCount[boatKey][actualCourse] || 0) + 1;
-  }
-
-  // 4. 割合に変換
-  const tendency = {};
-  for (const [boat, courses] of Object.entries(boatCourseCount)) {
-    const total = Object.values(courses).reduce((a, b) => a + b, 0);
-    tendency[boat] = {};
-    for (const [course, count] of Object.entries(courses)) {
-      tendency[boat][course] = Number((count / total).toFixed(3));
-    }
-  }
-
-  return tendency;
+  // 3. 枠番ごと・会場ごとに実際のコースの回数を集計
+  return buildCourseEntryTendency(filteredEntries, resultsByRaceId, since);
 }
 
 // ===== 選手1人分の集計 =====
@@ -701,16 +679,21 @@ function printRacerStats(record) {
   }
 
   if (record.course_entry_tendency) {
-    console.log(`  進入コース傾向:`);
-    for (const [boat, courses] of Object.entries(
-      record.course_entry_tendency,
-    )) {
+    const tendency = record.course_entry_tendency;
+    const line = (boat, { n, courses }) => {
       const courseStr = Object.entries(courses)
         .sort((a, b) => b[1] - a[1])
-        .map(([c, v]) => `${c}コース:${(v * 100).toFixed(1)}%`)
+        .map(([c, count]) => `${c}コース:${count}走`)
         .join(", ");
-      console.log(`    ${boat}号艇: ${courseStr}`);
+      return `${boat}号艇 (${n}走): ${courseStr}`;
+    };
+    console.log(`  進入コース傾向（${tendency.since}以降）:`);
+    for (const [boat, entry] of Object.entries(tendency.all)) {
+      console.log(`    ${line(boat, entry)}`);
     }
+    console.log(
+      `    会場別: ${Object.keys(tendency.venues).length}会場分を保存`,
+    );
   }
 }
 
