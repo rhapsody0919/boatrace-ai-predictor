@@ -40,6 +40,11 @@ async function main() {
       `視覚素材が${VISUAL_ASSET_STALE_DAYS}日以上未更新: ${staleAssets.length}件（最古: ${staleAssets[0].path}, ${staleAssets[0].ageDays}日）`,
     );
   }
+  // 取得失敗を「閾値超過なし」に化けさせない（2026-09-02〜のLINEAR_API_KEY失効で、品質バックログが
+  // 一度も計測できていないのに「OK」と出続けていた。BOA-369）
+  if (qualityBacklog.error) {
+    alerts.push(`品質バックログを計測できない: ${qualityBacklog.error}`);
+  }
   if (qualityBacklog.openCount >= QUALITY_BACKLOG_ALERT_COUNT) {
     alerts.push(`品質バックログが滞留: ${qualityBacklog.openCount}件`);
   }
