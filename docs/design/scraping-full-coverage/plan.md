@@ -133,6 +133,13 @@ erDiagram
 
 `scripts/maintenance/scrape-racer-profiles.js`を拡張し、既存の選手プロフィール取得と同じ巡回で`data/racersearch/season?toban=`も取得する（FR-5の自動化と同一ジョブに統合、選手一覧を二重に巡回しない）。
 
+処理本体は`scripts/lib/racerProfileSync.js`（CLIは`scrape-racer-profiles.js`、オフライン検証は`verify-racer-profile-sync.js`）。設計上の要点:
+
+- **対象選手**は`racer_profiles`登録済み（約1,600行）＋直近35日に出走した未登録選手（`race_entries`を`race_id`の日付範囲で走査）。`race_entries`全件（約26万行）のOFFSET巡回はDisk IOが重いため行わない
+- **期別成績は`update().eq("racer_id")`で書く**。`upsert`はINSERT側のNOT NULL検査（`name`・`birth_date`）がON CONFLICTより先に走り、既存行でも失敗するため。更新行数も確認する（対象行が無いと0件更新でもエラーにならないため）。新規選手のプロフィール登録だけは全列を送る`upsert`
+- **値が変わっていない行は書かない**（`.claude/rules/data-acquisition.md` §1）。`official_updated_at`は「値が変わった時刻」になる
+- **失敗を緑にしない**: 期別成績の失敗率5%超・書き込みも変更なし確認も0件・時間予算での中断は終了コード1（ワークフローが失敗し、Slackへ通知）
+
 ### 実行タイミング（ADR-0058の原則を適用）
 
 **訂正（2026-09-15ユーザー指摘）**: 「フライング回数・出遅れ回数は半年に1回しか変化しない」という当初の結論は、**公式の集計ページ（`season?toban=`）の更新頻度**と**フライング発生そのものの検知頻度**を混同していた。実際には`race_start_timings.is_flying`列（`scrape-results.js:80,94`で"F"表記を検出）により、**個々のフライング発生はレース結果取得のたびに即座に検知できる**（[BOA-323](https://linear.app/boat-ai/issue/BOA-323)が解消していれば）。以下のように2つの用途で頻度を分ける:
