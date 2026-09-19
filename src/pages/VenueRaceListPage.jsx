@@ -10,7 +10,11 @@ import Breadcrumb from "../components/Breadcrumb";
 import LoadingScreen from "../components/LoadingScreen";
 import { RaceCard } from "../components/race";
 import VenueCharacteristicsCard from "../components/venue/VenueCharacteristicsCard";
-import { useDatePredictions } from "../hooks/useDatePredictions";
+import DataFetchError from "../components/DataFetchError";
+import {
+  useDatePredictions,
+  FETCH_FAILED_ERROR,
+} from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
 import { getTodayJST } from "../utils/dateUtils";
@@ -111,6 +115,9 @@ function VenueRaceListPage() {
               title={t("home.loadingTitle")}
               description={t("home.loadingDesc")}
             />
+          ) : error === FETCH_FAILED_ERROR ? (
+            // 取得失敗（DBタイムアウト等）を「開催なし」と誤表示しない
+            <DataFetchError />
           ) : error || venueRaces.length === 0 ? (
             <div className="venue-race-list-page__empty">
               <p>{noRacesMessage}</p>

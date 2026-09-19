@@ -19,7 +19,12 @@ import {
   TodaysVolatilityHighlights,
 } from "../components/race";
 import { dataService } from "../services/dataService";
-import { useDatePredictions } from "../hooks/useDatePredictions";
+import DataFetchError from "../components/DataFetchError";
+import {
+  useDatePredictions,
+  FETCH_FAILED_ERROR,
+  NO_DATA_ERROR,
+} from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
 import { getLanguage, localizePath } from "../config/languages";
@@ -171,21 +176,7 @@ function TodayVenueGridPage() {
               <VenueGridSkeleton />
             ) : (
               <>
-                {error && (
-                  <div className="venue-grid-page__error">
-                    <p className="venue-grid-page__error-title">
-                      ⚠️ {t("home.fetchErrorTitle")}
-                    </p>
-                    <p>{error}</p>
-                    <p>{t("home.fetchErrorDesc")}</p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="venue-grid-page__error-reload"
-                    >
-                      {t("home.reload")}
-                    </button>
-                  </div>
-                )}
+                {error && <DataFetchError detail={error} />}
                 <TodaysVolatilityHighlights venuesData={venuesData} />
                 <VenueGrid
                   venuesData={venuesData}
@@ -328,10 +319,14 @@ function PastVenueGridPage({ date }) {
               <div className="spinner"></div>
               <p>データを読み込み中...</p>
             </div>
+          ) : error === FETCH_FAILED_ERROR ? (
+            <DataFetchError />
           ) : error ? (
             <div className="error-container">
               <h3>エラー</h3>
-              <p>{error === "no-data" ? "データが見つかりません" : error}</p>
+              <p>
+                {error === NO_DATA_ERROR ? "データが見つかりません" : error}
+              </p>
               <Link to="/races" className="btn-primary">
                 日付一覧に戻る
               </Link>

@@ -15,7 +15,12 @@ import {
   RaceBottomNav,
   RaceNavCard,
 } from "../components/race";
-import { useDatePredictions } from "../hooks/useDatePredictions";
+import DataFetchError from "../components/DataFetchError";
+import {
+  useDatePredictions,
+  FETCH_FAILED_ERROR,
+  NO_DATA_ERROR,
+} from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
 import { parseRaceId } from "../utils/raceId";
@@ -234,7 +239,9 @@ function RaceDetailPage() {
               title={t("home.loadingTitle")}
               description={t("home.loadingDesc")}
             />
-          ) : error === "no-data" ? (
+          ) : error === FETCH_FAILED_ERROR ? (
+            <DataFetchError />
+          ) : error === NO_DATA_ERROR ? (
             <div className="race-detail-page-v2__empty">
               <p>{t("raceDetailPage.noDataForDate")}</p>
               <Link to={raceListLink} className="back-link">
