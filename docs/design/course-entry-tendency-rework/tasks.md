@@ -16,11 +16,17 @@ FR-1/FR-2/FR-6（データ基盤）→ FR-3（出走表統合、最優先のUI�
   - 受入基準: [spec.md](./spec.md) FR-1・FR-2
   - 完了（2026-09-19）: 4関数を切り替え、共通ロジックを`scripts/lib/courseEntryTendency.js`（`actualCourseOf`・`buildCourseEntryTendency`）に切り出した。回帰テストは`npm run verify:course-entry-tendency`。本番データ（読み取りのみ、`--dry-run`）で選手3名（3072・3473・4444）の枠番別コース回数をSQLの手計算と突き合わせ、完全一致を確認した。**実装前に、設計ドキュメントの`actual_course_N`の添字の説明が誤っていた（正しくは添字=艇番、値=進入コース）ことに気づき、spec・plan・ADR・マイグレーション067・分析数値を訂正した**（旧列`course_1〜6`は添字=コース・値=艇番で向きが逆）
 
-- [ ] **Task 2: FR-1の精度検証**（検証のみ、DB書き込みは伴わない）
+- [x] **Task 2: FR-1の精度検証**（検証のみ、DB書き込みは伴わない）
   - `analyze-indicator-predictive-power.js`でcourseRateの予測力、`backtest-course-rate-only.js`で的中率・回収率を、切り替え前後で比較
   - `.claude/rules/analysis.md`のデータ精度検証パターンに従い、実選手2〜3名を`race_entries`+`race_results.actual_course_N`から手計算して保存値と突き合わせる
   - **`courseRate`の参照側の見直し要否も検証する**（Task 1のセルフレビューで判明）: `course_race_counts`のキーが「実際に進入したコース」になった一方、参照側（`generate-unified-predictions.js`の`calculatePlaceRecommendation`、`raceIndicators.jsx`の`courseRateOf`）は枠番で引いている。よく動く選手（例: 選手3072は3〜6枠から2コースに入る）では、枠番のキーが5走未満・欠落となり`courseRate`がnullになる。「枠番で引く」ままで予測力が落ちないか、「その選手が今日の枠番で最も入りやすいコース（`course_entry_tendency`の最頻コース）で引く」に変えるべきかを比較する
   - 結果をユーザーに報告し、Task 3の要否を確認する（**着手前に必ずユーザー確認**）
+  - 結果（2026-09-19、`scripts/analysis/compare-course-rate-sources.js`、結果は`data/analysis/course-entry-tendency/course-rate-comparison-2026-09-19.json`）: 既存の`analyze-indicator-predictive-power.js`等は現在の集計で過去を評価するためリークがある。そこで日ごとに「その日より前のデータだけ」で集計を更新するウォークフォワードで、2026-03-01以降の29,421レースを比較した。
+    - 予測力（2着艇が上位2位に入る割合）: 切り替え前61.3%、切り替え後61.1〜61.3%、「実際に入ったコースが分かる」と仮定した上限でも61.6%。**ほぼ変わらない**
+    - 複勝予想（上位2艇）: 的中率は切り替え前91.4%→切り替え後91.0%（-0.42±0.10pt、有意）、回収率は97.7%→95.6%（-2.1±1.3pt、有意でない）。2026-07-01以降のみでも同じ向き（的中-0.39±0.15pt、回収-0.8±0.6pt）
+    - 参照側を「最も入りやすいコースで引く」に変えても改善しない（的中-0.36pt）。カバー率は枠番で引く場合に99.8%→98.8%に下がる
+    - 結論: courseRateの実態は「枠番の強さ」で、正しい進入コースに直しても予測力は上がらず、わずかに下がる。BOA-284の「汚染を直せば精度が上がる」という前提は検証できなかった
+    - 影響範囲の追加調査: `course_race_counts`は選手ページの「枠番別成績（全会場計）」表（`RacerPerformanceStats.jsx`）にも使われており、切り替えると「枠番」と表示した表が実進入コース別の値に変わってしまう。`attack_distribution`・`defense_distribution`は展開予測（`generate-unified-predictions.js`・`generate-predictions.js`）の入力で、切り替えの影響は未検証（`verify-turn-prediction-accuracy-v6.js`での検証が別途必要）
 
 - [ ] **Task 3: （条件付き）本番反映**
   - Task 2の結果が良好な場合のみ。悪化していたらスキップし、reweighting要否を相談する
