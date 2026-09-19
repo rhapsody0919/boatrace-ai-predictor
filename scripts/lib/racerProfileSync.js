@@ -19,7 +19,7 @@ import * as cheerio from "cheerio";
 import {
   getSeasonStatsUrl,
   parseSeasonStatsHtml,
-  SEASON_STATS_USER_AGENT,
+  SEASON_STATS_REQUEST_HEADERS,
 } from "./racerSeasonStats.js";
 import { getDateDaysAgo } from "./dateUtils.js";
 
@@ -32,9 +32,12 @@ export const FETCH_BACKOFF_MS = 2_000;
 export const DEFAULT_RECENT_DAYS = 35;
 // 期別成績の取得・保存に失敗した選手の割合がこれを超えたら実行全体を失敗とする
 export const MAX_SEASON_FAIL_RATE = 0.05;
-// 成功（書き込み・変更なし確認）が1件も無いまま失敗がこの件数に達したら、全件を巡回せず中断する
-// （書き込み側の系統的な失敗で、公式サイトへの無駄なリクエストを続けないため）
-export const ABORT_AFTER_FAILURES_WITHOUT_SUCCESS = 20;
+// 期別成績の失敗がこの件数だけ連続したら、全件を巡回せず中断する（書き込み側の系統的な失敗や
+// 公式サイトの停止で、無駄なリクエストを最大5時間続けないため。途中まで成功していても効く）
+export const ABORT_AFTER_CONSECUTIVE_FAILURES = 20;
+// 新規選手のプロフィール取得が全滅した（成功0件）と判断する最小の失敗件数
+// （引退済み等でページが無い選手が1〜2人混ざるだけでは失敗にしない）
+const PROFILE_ALL_FAILED_MIN_COUNT = 3;
 
 const PAGE_SIZE = 1000;
 
@@ -45,12 +48,6 @@ export const SEASON_COLUMNS = [
   "period_label",
   "official_win_rate_period",
 ];
-
-const REQUEST_HEADERS = {
-  "User-Agent": SEASON_STATS_USER_AGENT,
-  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-  "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
-};
 
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -131,7 +128,7 @@ export async function fetchHtmlWithRetry(
     if (attempt > 0) await sleep(backoffMs * 2 ** (attempt - 1));
     try {
       const response = await fetchImpl(url, {
-        headers: REQUEST_HEADERS,
+        headers: SEASON_STATS_REQUEST_HEADERS,
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (response.ok) return await response.text();
@@ -350,7 +347,7 @@ export function evaluateRun(summary) {
   if (summary.targetCount === 0) reasons.push("対象選手が0件");
   if (summary.aborted) {
     reasons.push(
-      `成功が1件も無いまま失敗が${season.failCount}件に達したため中断`,
+      `期別成績の失敗が${ABORT_AFTER_CONSECUTIVE_FAILURES}件連続したため中断`,
     );
   }
   if (summary.stoppedEarly) {
@@ -363,6 +360,20 @@ export function evaluateRun(summary) {
     season.successCount + season.unchangedCount === 0
   ) {
     reasons.push("期別成績の書き込みも変更なしの確認も0件");
+  }
+  const { profile } = summary;
+  if (profile.saveErrorCount > 0) {
+    reasons.push(
+      `新規選手のプロフィール保存でDBエラー${profile.saveErrorCount}件`,
+    );
+  }
+  if (
+    profile.successCount === 0 &&
+    profile.failCount >= PROFILE_ALL_FAILED_MIN_COUNT
+  ) {
+    reasons.push(
+      `新規選手のプロフィール取得が${profile.failCount}件すべて失敗`,
+    );
   }
   const failRate =
     summary.targetCount > 0 ? season.failCount / summary.targetCount : 0;
@@ -419,7 +430,12 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
   log(`うち新規プロフィール登録対象（FR-5）: ${newProfileCount}件`);
   log("");
 
-  const profile = { successCount: 0, failCount: 0, failedRacerIds: [] };
+  const profile = {
+    successCount: 0,
+    failCount: 0,
+    saveErrorCount: 0, // 取得・解析はできたがDBへの保存に失敗した件数（常に異常として扱う）
+    failedRacerIds: [],
+  };
   const season = {
     successCount: 0, // 書き込んだ件数（dry-runでは書く予定の件数）
     unchangedCount: 0, // 既存値と同じため書かなかった件数
@@ -427,6 +443,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     failCount: 0,
     failedRacerIds: [],
   };
+  let consecutiveSeasonFailures = 0;
   let stoppedEarly = false;
   let aborted = false;
   let nextOffset = null;
@@ -478,6 +495,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
         const { error } = await saveNewProfile(client, scraped);
         if (error) {
           profile.failCount++;
+          profile.saveErrorCount++;
           profile.failedRacerIds.push(racerId);
           logError(
             `${progress} racer_id=${racerId} [profile] 保存エラー: ${error.message}`,
@@ -496,6 +514,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     // 2. 全選手（プロフィールが存在する場合のみ）: 期別成績取得（FR-2）
     //    無効なracer_idへの無駄なリクエストを避けるため、プロフィール未確認の選手はスキップする
     if (hasProfile) {
+      const failuresBefore = season.failCount;
       let seasonStats = null;
       let failureMessage = "期別成績ページを取得・解析できない";
       try {
@@ -551,10 +570,10 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
 
       await sleep(options.delayMs);
 
-      if (
-        season.failCount >= ABORT_AFTER_FAILURES_WITHOUT_SUCCESS &&
-        season.successCount + season.unchangedCount === 0
-      ) {
+      // 成功・変更なし・データ無しのいずれかで連続失敗はリセットする
+      consecutiveSeasonFailures =
+        season.failCount > failuresBefore ? consecutiveSeasonFailures + 1 : 0;
+      if (consecutiveSeasonFailures >= ABORT_AFTER_CONSECUTIVE_FAILURES) {
         aborted = true;
         nextOffset = options.offset + i + 1;
         break;

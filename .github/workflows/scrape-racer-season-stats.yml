@@ -72,6 +72,7 @@ jobs:
       # （.claude/rules/data-acquisition.md「取得ステップにcontinue-on-error: trueを付けて、
       # ジョブ全体を成功に見せない」）。他ジョブへの影響は無い（独立したワークフロー）
       - name: Scrape racer profiles and season stats
+        id: scrape
         run: |
           args=(--verbose --max-minutes=300)
           if [ -n "$INPUT_RACER_IDS" ]; then args+=("--racer-ids=$INPUT_RACER_IDS"); fi
@@ -89,8 +90,10 @@ jobs:
           INPUT_OFFSET: ${{ inputs.offset }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}
 
+      # スクレイピングステップが失敗・タイムアウト・キャンセルされた場合のみ通知する
+      # （後続のレポートコミットの失敗等では、この文面は誤りになるため）
       - name: Notify Slack on failure
-        if: ${{ failure() || cancelled() }}
+        if: ${{ always() && (steps.scrape.outcome == 'failure' || steps.scrape.outcome == 'cancelled') }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -105,7 +108,7 @@ jobs:
                     \"type\": \"section\",
                     \"text\": {
                       \"type\": \"mrkdwn\",
-                      \"text\": \":x: *選手期別成績（能力指数等）の取得ジョブが失敗しました*\n失敗率が高い・書き込み0件・時間超過のいずれかです。ログの失敗理由と、data/analysis/racer-fortune-telling/profile-scrape-report.json（failureReasons・nextOffset）を確認してください\n<$RUN_URL|実行ログを開く>\"
+                      \"text\": \":x: *選手期別成績（能力指数等）の取得ジョブが失敗しました*\n失敗率が高い・書き込み0件・連続失敗・時間超過（または手動キャンセル）のいずれかです。ログの失敗理由と、data/analysis/racer-fortune-telling/profile-scrape-report.json（failureReasons・nextOffset）を確認してください\n<$RUN_URL|実行ログを開く>\"
                     }
                   }
                 ]

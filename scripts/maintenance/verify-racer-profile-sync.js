@@ -23,7 +23,7 @@ import {
   evaluateRun,
   runRacerProfileSync,
   SEASON_COLUMNS,
-  ABORT_AFTER_FAILURES_WITHOUT_SUCCESS,
+  ABORT_AFTER_CONSECUTIVE_FAILURES,
 } from "../lib/racerProfileSync.js";
 
 let failures = 0;
@@ -395,6 +395,7 @@ const noSleep = async () => {};
     stoppedEarly: false,
     aborted: false,
     nextOffset: null,
+    profile: { successCount: 0, failCount: 0, saveErrorCount: 0 },
     season: {
       successCount: 5,
       unchangedCount: 90,
@@ -403,6 +404,30 @@ const noSleep = async () => {};
     },
   };
   check("evaluateRun: 失敗2%は成功", evaluateRun(ok).ok, true);
+  check(
+    "evaluateRun: 新規選手のプロフィール取得が1〜2件失敗（引退済み等）だけなら成功",
+    evaluateRun({
+      ...ok,
+      profile: { successCount: 0, failCount: 2, saveErrorCount: 0 },
+    }).ok,
+    true,
+  );
+  check(
+    "evaluateRun: 新規選手のプロフィール取得が3件すべて失敗は失敗",
+    evaluateRun({
+      ...ok,
+      profile: { successCount: 0, failCount: 3, saveErrorCount: 0 },
+    }).ok,
+    false,
+  );
+  check(
+    "evaluateRun: 新規選手のプロフィール保存でDBエラーが1件でもあれば失敗",
+    evaluateRun({
+      ...ok,
+      profile: { successCount: 4, failCount: 1, saveErrorCount: 1 },
+    }).ok,
+    false,
+  );
   check(
     "evaluateRun: 全件が変更なし（書き込み0）でも成功",
     evaluateRun({
@@ -661,14 +686,63 @@ const runWith = (mock, site, argv, deps = {}) =>
   const site = createMockSite(pages);
   const { summary, verdict } = await runWith(mock, site, []);
   check(
-    `統合: 書き込みが全件失敗なら${ABORT_AFTER_FAILURES_WITHOUT_SUCCESS}件で中断し、公式サイトへのリクエストも止める`,
+    `統合: 書き込みが全件失敗なら${ABORT_AFTER_CONSECUTIVE_FAILURES}件で中断し、公式サイトへのリクエストも止める`,
     [summary.aborted, summary.season.failCount, site.calls.length, verdict.ok],
     [
       true,
-      ABORT_AFTER_FAILURES_WITHOUT_SUCCESS,
-      ABORT_AFTER_FAILURES_WITHOUT_SUCCESS,
+      ABORT_AFTER_CONSECUTIVE_FAILURES,
+      ABORT_AFTER_CONSECUTIVE_FAILURES,
       false,
     ],
+  );
+}
+
+{
+  // 途中まで成功していても、失敗が連続したら中断する（公式サイトが途中で落ちた場合）
+  const profiles = Array.from({ length: 80 }, (_, i) => existingRow(1000 + i));
+  const mock = createMockSupabase({ profiles });
+  const pages = Object.fromEntries(
+    profiles.map((p, i) => [
+      p.racer_id,
+      { season: i < 5 ? seasonHtml() : 503 }, // 最初の5人は成功、以降は503
+    ]),
+  );
+  const site = createMockSite(pages);
+  const { summary, verdict } = await runWith(mock, site, []);
+  check(
+    "統合: 5人成功のあと503が続けば、連続20件の失敗で中断する（80人全員には当たらない）",
+    [
+      summary.aborted,
+      summary.season.successCount,
+      summary.season.failCount,
+      summary.nextOffset,
+      verdict.ok,
+    ],
+    [true, 5, ABORT_AFTER_CONSECUTIVE_FAILURES, 25, false],
+  );
+}
+
+{
+  // 失敗の合間に成功が挟まれば連続とはみなさない（5%以内の散発的な失敗では中断しない）
+  const profiles = Array.from({ length: 100 }, (_, i) => existingRow(1000 + i));
+  const mock = createMockSupabase({ profiles });
+  const pages = Object.fromEntries(
+    profiles.map((p, i) => [
+      p.racer_id,
+      { season: i % 25 === 24 ? 503 : seasonHtml() }, // 25人に1人が失敗（4件=4%）
+    ]),
+  );
+  const site = createMockSite(pages);
+  const { summary, verdict } = await runWith(mock, site, []);
+  check(
+    "統合: 散発的な失敗（4%）は中断せず全件処理し、成功扱い",
+    [
+      summary.aborted,
+      summary.season.failCount,
+      summary.season.successCount,
+      verdict.ok,
+    ],
+    [false, 4, 96, true],
   );
 }
 
