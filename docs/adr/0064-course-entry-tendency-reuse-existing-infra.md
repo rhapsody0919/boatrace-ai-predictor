@@ -46,3 +46,9 @@ spec.md作成時点では、この統計量を算出する新規関数・新規�
 - 「`calculateCourseEntryTendency()`の1箇所の修正がBOA-284に波及する」は誤り。courseRateの直接の入力は`course_race_counts`（`calculateCourseRaceCounts`）で、`course_1〜6`を読む4関数すべて（他に`calculateAttackDistribution`・`calculateDefenseDistribution`）を切り替える必要がある
 - 選手×会場×枠番は走数が薄い（中央値2走、n≥5は組合せの6.7%）ため、専用テーブルを避けた判断はそのままに、走数の下限で`null`にせず走数付きで保存・表示する方針に変えた（`spec.md`背景5）
 - 選手非依存の会場平均は別の粒度（24会場×6枠）で件数が十分あるため、別のADR（[ADR-0065](./0065-venue-course-entry-baseline-precomputed-table.md)）で`venues`のjsonb列に持つと決めた
+
+## 追記（2026-09-19、Task 2の検証結果による範囲の縮小）
+
+決定の1つ目（データソースの切り替え）の対象を、`calculateCourseEntryTendency`のみに縮小した。上記「`unifiedModel.js`のcourseRate特徴量（BOA-284の本題）に波及する」は成り立たない。courseRateの入力は`course_race_counts`（`calculateCourseRaceCounts`）で、`course_entry_tendency`ではない。
+
+`course_race_counts`を実進入コースに切り替えた場合の予測力・複勝予想を、リークの無いウォークフォワード（2026-03-01以降29,421レース、`scripts/analysis/compare-course-rate-sources.js`）で比較したところ、予測力は変わらず、複勝予想の的中率は91.4%→91.0%（-0.42±0.10pt、有意）、回収率は97.7%→95.6%（-2.1±1.3pt）と下がった。「実際に入ったコースが分かる」と仮定した上限でも+0.1ptしか良くならず、courseRateの実態は枠番（レーン）の強さである。さらに`course_race_counts`は選手ページの「枠番別成績」表にも使われ、`attack_distribution`・`defense_distribution`は展開予測の入力で影響が未検証のため、この3関数は現行（旧列`course_1〜6`、艇番と常に一致）を維持する。`course_entry_tendency`は既存の読み手が無く、切り替えの影響が無い。

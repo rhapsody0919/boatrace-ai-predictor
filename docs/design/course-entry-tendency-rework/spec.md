@@ -14,7 +14,7 @@ UI機能（データ・分析機能を含む複合機能。BOA-284は純粋な�
 
 1. **BOA-257**（Done、2026-09-15 PR #671でマージ）が、公式Kファイル（`https://www1.mbrace.or.jp/od2/K/{YYYYMM}/k{YYMMDD}.lzh`）経由で実進入コースを取得する仕組みを実装した。`race_results.actual_course_1〜6`として全24会場・2025-12-04〜のほぼ全期間（42,382/42,483件、2026-09-16確認）が既にバックフィル・日次同期済み。艇番との不一致率は1号艇1.1%→6号艇13.5%と物理的に妥当
 2. 一方、既存の`race_results.course_1〜6`（旧列、触らない）は艇番と完全一致する不良データで、これを参照する箇所が2つ残っている:
-   - **BOA-284**: `scripts/lib/unifiedModel.js`の`courseRate`特徴量（重み21.8、全10指標中最大）は`racer_aggregated_stats.course_race_counts`から算出される。`scripts/analysis/aggregate-racer-stats.js`のうち`course_1〜6`を読む4関数（`calculateCourseRaceCounts`・`calculateAttackDistribution`・`calculateDefenseDistribution`・`calculateCourseEntryTendency`）が全て汚染されている（2026-09-19確認。当初は`course_entry_tendency`のみと記載していたが、courseRateの直接の入力は`course_race_counts`）
+   - **BOA-284**: `scripts/lib/unifiedModel.js`の`courseRate`特徴量（重み21.8、全10指標中最大）は`racer_aggregated_stats.course_race_counts`から算出される。`scripts/analysis/aggregate-racer-stats.js`のうち`course_1〜6`を読む4関数（`calculateCourseRaceCounts`・`calculateAttackDistribution`・`calculateDefenseDistribution`・`calculateCourseEntryTendency`）が汚染されている。**2026-09-19の検証で、`course_race_counts`を実進入コースに直しても予測力は上がらず、複勝予想の的中率がわずかに下がる（-0.42±0.10pt）と判明したため、`course_entry_tendency`以外の3関数は現行を維持する**（FR-1、tasks.md Task 2）
    - **BOA-170**: 「選手個別の前づけ傾向」を可視化する機能。2026-09-12、当時のBOA-257の中間結論（個別レース単位の進入コースは取得不可能）を受けて「会場単位の集計表示」＋「VenueCharacteristicsCardへの統合」に2段階縮小されていた
 3. **BOA-293**（Done、PR #683）が対象10会場（常滑・三国・びわこ・尼崎・徳山・下関・若松・芦屋・唐津・多摩川）の会場公式サイトから、選手個別の「枠→実進入コース遷移確率」（直近12ヶ月集計）を日次取得する基盤を構築した
 4. `actual_course_N`が全24会場・全期間分そろったことで、**BOA-170を当初スコープ（選手個別の前づけ傾向分析）に復元できる**。自社`race_entries`+`race_results.actual_course_N`から同じ統計を全24会場分、自前で計算できるため
@@ -34,17 +34,17 @@ UI機能（データ・分析機能を含む複合機能。BOA-284は純粋な�
 
 ## 機能要件
 
-### FR-1（P0）: `aggregate-racer-stats.js`の`course_1〜6`参照4関数を`actual_course_1〜6`に切り替える（BOA-284）
+### FR-1（P0）: `course_entry_tendency`を実進入コースで集計する（BOA-284、範囲を縮小）
 
-`scripts/analysis/aggregate-racer-stats.js`のうち`race_results.course_1〜6`を読む4関数（`calculateCourseRaceCounts`＝courseRateの直接の入力、`calculateAttackDistribution`、`calculateDefenseDistribution`、`calculateCourseEntryTendency`）を、`race_results.actual_course_1〜6`に切り替える。
+`scripts/analysis/aggregate-racer-stats.js`の`calculateCourseEntryTendency`を、`race_results.actual_course_1〜6`（添字=艇番、値=進入コース）で集計する。
+
+**範囲を縮小した理由（2026-09-19、Task 2の検証結果）**: 当初は`course_1〜6`を読む4関数すべてを切り替える予定だった。しかし`course_race_counts`（courseRateの入力）を実進入コースに直しても、予測力（61.3%→61.1〜61.3%）は変わらず、複勝予想の的中率は91.4%→91.0%（-0.42±0.10pt）と有意に下がり、回収率も97.7%→95.6%（-2.1±1.3pt）と下がる傾向だった（2026-03-01以降29,421レースのウォークフォワード比較。「実際に入ったコースが分かる」と仮定した上限でも+0.1ptしか良くならない）。加えて`course_race_counts`は選手ページの「枠番別成績」表にも使われ、切り替えると「枠番」表示の表が実進入コース別に変わってしまう。`attack_distribution`・`defense_distribution`は展開予測の入力で、切り替えの影響が未検証。これらは現行（枠番キー、旧列）を維持し、`course_entry_tendency`のみ切り替える。`course_entry_tendency`には既存の読み手がなく、影響が無い。
 
 **受入基準**:
-- [ ] 上記4関数が`actual_course_N`ベースで再計算される（`course_race_counts`のキーは「実際に進入したコース」になる。`courseRate`の参照側は現状どおり枠番で引く＝内側の艇はほぼ枠なりのため近似として許容し、変更しない）
-- [ ] `course_entry_tendency`は走数（`n`・コース別`count`）も保持する形に変更する（現状は割合のみ。走数併記のため。参照元は`aggregate-racer-stats.js`のみで互換性の問題は無いことを確認済み）
-- [ ] `scripts/analysis/analyze-indicator-predictive-power.js`で`courseRate`の予測力を再計測し、切り替え前後の差分を記録する
-- [ ] `scripts/analysis/backtest-course-rate-only.js`で切り替え前後の的中率・回収率を比較する
-- [ ] 予測力・回収率が悪化していないことを確認してから、`unifiedModel.js`の`INDICATOR_WEIGHTS`更新・本番反映を判断する（悪化していた場合はユーザーに報告し、reweighting要否を相談する。無条件の自動反映はしない）
-- [ ] `.claude/rules/analysis.md`のデータ精度検証パターン（実データスポットチェック、妥当性の機械的チェック、独立した別経路での再計算）を実施する
+- [x] `course_entry_tendency`が`actual_course_N`ベースで再計算される
+- [x] `course_entry_tendency`は走数（`n`・コース別の回数）を保持し、直近12ヶ月・会場別の内訳を持つ形に変更する（参照元は`aggregate-racer-stats.js`のみで互換性の問題は無いことを確認済み）
+- [x] 精度検証（`.claude/rules/analysis.md`）: 実選手3名（3072・3473・4444）の枠番別コース回数を、SQLでの別経路の手計算と突き合わせて完全一致を確認した
+- [x] `courseRate`の入力を切り替えた場合の予測力・回収率を前後比較した（`scripts/analysis/compare-course-rate-sources.js`、結果は`data/analysis/course-entry-tendency/`）。効果が確認できなかったため、`course_race_counts`・`attack_distribution`・`defense_distribution`は切り替えない。`unifiedModel.js`の重みも変更しない
 
 ### FR-2（P0）: 選手×枠番→実進入コース遷移確率の自前計算（全24会場、フィルタ対応）
 
@@ -128,7 +128,7 @@ UI機能（データ・分析機能を含む複合機能。BOA-284は純粋な�
 ## スコープ
 
 **やること**:
-- `aggregate-racer-stats.js`の4関数（`course_race_counts`等）の`actual_course_N`への切り替え、予測力・回収率の再検証（FR-1）
+- `course_entry_tendency`の`actual_course_N`への切り替え（FR-1、courseRateの入力等の他3関数は検証の結果、現行維持）
 - 選手×枠番→実進入コース遷移確率の自前計算（全24会場、会場別・走数付き、FR-2）
 - レース出走表への統合（FR-3、最優先）
 - 選手ページバッジ・詳細セクション（FR-4）
@@ -143,10 +143,11 @@ UI機能（データ・分析機能を含む複合機能。BOA-284は純粋な�
 - 掲載場所・導線の最終決定（[BOA-348](https://linear.app/boat-ai/issue/BOA-348)で別途見直す。本specは暫定の3箇所掲載）
 - モデルの再学習アルゴリズム自体の変更（重み再計算のみ。Zスコア方式等のアーキテクチャ変更は対象外）
 - 過去の`predictions`データの遡及的な再計算・修正
+- `course_race_counts`・`attack_distribution`・`defense_distribution`の実進入コースへの切り替え（別チケット。展開予測への影響検証が必要）
 
 ## 非機能要件
 
-- courseRate切り替え後の予測力・回収率が切り替え前を悪化させないこと（FR-1受入基準参照、数値目標は/step4着手時に確定）
+- 既存のモデル入力（`course_race_counts`・`attack_distribution`・`defense_distribution`）を変更しないこと（本機能でモデルの予測は変わらない）
 - 選手ページ・出走表・分析タブでの追加の通信を増やさないこと（選手ページはPR #686と同じく取得済みの履歴を再利用する）
 - `/winning-technique`の新規タブは既存17タブと同じUI/UX規約に準拠すること
 
@@ -162,11 +163,9 @@ UI機能（データ・分析機能を含む複合機能。BOA-284は純粋な�
 
 | 項目 | 内容 | いつ・誰が決めるか |
 |---|---|---|
-| FR-1の予測力・回収率の具体的な悪化許容範囲 | 「悪化していないこと」の数値基準（例: 回収率-2pt以内等） | /step2、実データでの再検証結果を見てユーザーと相談 |
 | 走数の判定境界（5走） | 「信頼できる値」と「参考」の境界。現状は既存`MIN_COURSE_SAMPLES=5`の流用で、根拠の検証はしていない | /step4着手時、実データ分布を見てユーザーと相談 |
 | 「動く傾向」タグの基準（会場平均より20pt以上低い） | 仮の値。実データで妥当性を確認する | /step4着手時 |
 | FR-4のバッジ判定閾値 | 「前づけ傾向あり」と判定する遷移確率のしきい値 | /step4着手時、実データ分布を見てから |
 | 江戸川の会場平均 | 枠外進入率が他会場の1/5以下（6枠で1.2%）。実態か取得由来かが未確認（FR-6受入基準） | /step4のFR-6着手時 |
 | BOA-293の扱い（要確認） | 2026-09-16合意の「10会場は会場データ優先表示」から「表示に使わず検証のみ」に変更した。理由は背景6 | 本PRのレビュー時にユーザーが確認 |
 | 掲載場所・ドリルダウン | 出走表の行かタブ化か、枠別・会場別ドリルダウンの粒度 | [BOA-348](https://linear.app/boat-ai/issue/BOA-348) |
-| BOA-284の再学習・本番反映の実施者・タイミング | 検証結果が良好だった場合、誰が最終的にINDICATOR_WEIGHTSの本番反映を実行するか | /step4実装時、検証結果を見てユーザーに確認 |

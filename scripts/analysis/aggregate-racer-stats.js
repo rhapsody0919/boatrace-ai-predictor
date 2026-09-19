@@ -20,7 +20,6 @@ import {
 } from "../lib/dateUtils.js";
 import {
   ACTUAL_COURSE_SELECT,
-  actualCourseOf,
   buildCourseEntryTendency,
 } from "../lib/courseEntryTendency.js";
 import { isPlaceHit, isShowHit } from "../lib/hitCalculator.js";
@@ -205,7 +204,7 @@ async function calculateAttackDistribution(racerId, venueCode = null) {
     const { data: results, error: resultsError } = await supabase
       .from("race_results")
       .select(
-        `race_id, rank1, winning_technique, ${ACTUAL_COURSE_SELECT}`,
+        "race_id, rank1, winning_technique, course_1, course_2, course_3, course_4, course_5, course_6",
       )
       .in("race_id", raceIds);
 
@@ -236,8 +235,15 @@ async function calculateAttackDistribution(racerId, venueCode = null) {
     // この選手が1着かどうか
     if (result.rank1 !== boatNumber) continue;
 
-    // 実進入コース（actual_course_N、BOA-257のKファイル由来）。記録が無ければスキップ
-    const winCourse = actualCourseOf(result, boatNumber);
+    // course_1..course_6 から選手の枠番が何コースだったか特定
+    let winCourse = null;
+    for (let c = 1; c <= 6; c++) {
+      if (result[`course_${c}`] === boatNumber) {
+        winCourse = c;
+        break;
+      }
+    }
+
     if (!winCourse) continue;
 
     // 決まり手を英語キーに変換
@@ -306,7 +312,7 @@ async function calculateDefenseDistribution(racerId, venueCode = null) {
     const { data: results, error: resultsError } = await supabase
       .from("race_results")
       .select(
-        `race_id, rank1, winning_technique, ${ACTUAL_COURSE_SELECT}`,
+        "race_id, rank1, winning_technique, course_1, course_2, course_3, course_4, course_5, course_6",
       )
       .in("race_id", raceIds);
 
@@ -339,8 +345,15 @@ async function calculateDefenseDistribution(racerId, venueCode = null) {
     const techKey = toTechniqueKey(result.winning_technique);
     if (!techKey) continue;
 
-    // この選手が実際に何コースにいたか
-    const myCourse = actualCourseOf(result, boatNumber);
+    // この選手が何コースにいたか特定
+    let myCourse = null;
+    for (let c = 1; c <= 6; c++) {
+      if (result[`course_${c}`] === boatNumber) {
+        myCourse = c;
+        break;
+      }
+    }
+
     if (!myCourse) continue;
 
     if (!courseLosses[myCourse]) {
@@ -409,7 +422,7 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
     const { data: results, error: resultsError } = await supabase
       .from("race_results")
       .select(
-        `race_id, rank1, rank2, rank3, is_cancelled, is_no_race, ${ACTUAL_COURSE_SELECT}`,
+        "race_id, rank1, rank2, rank3, is_cancelled, is_no_race, course_1, course_2, course_3, course_4, course_5, course_6",
       )
       .in("race_id", raceIds);
 
@@ -448,7 +461,14 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
 
     const boatNumber = entry.boat_number;
 
-    const actualCourse = actualCourseOf(result, boatNumber);
+    let actualCourse = null;
+    for (let c = 1; c <= 6; c++) {
+      if (result[`course_${c}`] === boatNumber) {
+        actualCourse = c;
+        break;
+      }
+    }
+
     if (!actualCourse) continue;
 
     const courseKey = String(actualCourse);
@@ -482,6 +502,11 @@ const COURSE_ENTRY_WINDOW_DAYS = 365;
  * 実進入コースはrace_results.actual_course_1〜6（BOA-257、Kファイル由来）。
  * 走数の下限は適用せず、回数と走数をそのまま保存する（5走未満を「参考」として
  * 扱うのは表示側の責務）。
+ *
+ * 他の3関数（calculateCourseRaceCounts等）は旧列course_1〜6のままにしている。
+ * course_1〜6は艇番と常に一致するため実態は枠番別の集計だが、実進入コースに
+ * 切り替えても予測力は上がらず複勝予想の的中率がわずかに下がったため
+ * （scripts/analysis/compare-course-rate-sources.js、BOA-284 Task 2）現行を維持する。
  * @param {number} racerId - 選手登録番号
  * @param {number|null} venueCode - 会場コード（nullの場合は全会場）
  * @returns {Object|null} { since, all: { 枠番: { n, courses: { コース: 回数 } } },

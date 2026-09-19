@@ -9,7 +9,7 @@
 ```mermaid
 flowchart TB
     subgraph batch["夜間バッチ（aggregate-stats.yml、JST 23:00、既存ワークフローに追加）"]
-        A["aggregate-racer-stats.js\n4関数をactual_course_Nに切替\n(FR-1)\ncourse_entry_tendencyに会場別内訳を追加(FR-2)"]
+        A["aggregate-racer-stats.js\ncourse_entry_tendencyのみactual_course_Nに切替\n会場別内訳を追加(FR-1/FR-2)"]
         B["update-venue-course-entry-baseline.js（新規）\nRPC: compute_venue_course_entry_baseline\n(FR-6)"]
     end
     subgraph db["Supabase"]
@@ -43,7 +43,7 @@ flowchart TB
 
 ## 技術判断
 
-- [ADR-0064](../../adr/0064-course-entry-tendency-reuse-existing-infra.md): 選手側は新規テーブル・RPCを作らず、既存の`racer_aggregated_stats`（バッチ）と`getRacerRaceHistory`（クライアント集計）を拡張する。2026-09-19に、4関数が対象であること・本番には会場別の行が無いことを追記した
+- [ADR-0064](../../adr/0064-course-entry-tendency-reuse-existing-infra.md): 選手側は新規テーブル・RPCを作らず、既存の`racer_aggregated_stats`（バッチ）と`getRacerRaceHistory`（クライアント集計）を拡張する。2026-09-19に、本番には会場別の行が無いこと、およびTask 2の検証で`course_entry_tendency`以外の切り替えは行わないことを追記した
 - [ADR-0065](../../adr/0065-venue-course-entry-baseline-precomputed-table.md): 会場平均（選手非依存）は`venues`テーブルのjsonb列に事前集計して持つ。24行しかなく、既存の`update-venue-stats.js`（`venues`に列を書く）と同じ型のため、新規テーブルは作らない
 
 ## データ設計
@@ -109,24 +109,25 @@ erDiagram
 
 本番の`racer_aggregated_stats`は`venue_code=0`の行しか無い（1,639選手、2026-09-19確認。会場別の行は`--venue=N`を付けたときのみ作られ、夜間バッチは`--all`のみ）。会場別を別の行にすると選手数×会場数の追加クエリになるため、**`venue_code=0`の行の中に`venues`として会場別の内訳を入れる**。出走表（FR-3）は6選手分の`venue_code=0`の行を既に取得しているので、追加の通信は要らない。
 
-## FR-1: `aggregate-racer-stats.js`の4関数の切り替え
+## FR-1: `calculateCourseEntryTendency`の切り替え（範囲を縮小）
 
-`race_results`のselect列と参照を`course_1〜6`→`actual_course_1〜6`に変える対象（行番号は2026-09-19時点）:
+`aggregate-racer-stats.js`の`calculateCourseEntryTendency`のみ、`race_results`のselect列と参照を`course_1〜6`→`actual_course_1〜6`に変える。出力を新しい形（`since`・`all`・`venues`、回数と走数`n`）にし、直近12ヶ月ウィンドウを追加。会場別の内訳は同じ関数内で1パスで作る（追加クエリなし）。走数の下限はバッチ側では適用せず、表示側（`courseEntryCell.js`）で「参考」を判定する。共通ロジックは`scripts/lib/courseEntryTendency.js`。
 
-| 関数 | 行 | 出力 | 備考 |
-|---|---|---|---|
-| `calculateCourseRaceCounts` | 418付近 | `course_race_counts` | **courseRateの直接の入力**。キーが「実際のコース」になる。参照側（`generate-unified-predictions.js`の`calculatePlaceRecommendation`、`raceIndicators.jsx`の`courseRateOf`）は枠番で引く。内側の艇はほぼ枠なりなので近似として変更しない |
-| `calculateAttackDistribution` | 200付近 | `attack_distribution` | コース別の決まり手。切り替えで「コース別」の意味が正しくなる |
-| `calculateDefenseDistribution` | 308付近 | `defense_distribution` | 同上 |
-| `calculateCourseEntryTendency` | 526付近 | `course_entry_tendency` | 形を上記に変更。直近12ヶ月ウィンドウ（`race_id`の日付部分）を追加。会場別の内訳を同じ関数内で1パスで作る（追加クエリなし） |
+以下の3関数は**切り替えない**（現行の旧列`course_1〜6`のまま）:
 
-走数の下限（5走）はバッチ側では適用しない。走数をそのまま保存し、表示側（`courseEntryCell.js`）で「参考」を判定する（ADR-0064の追記参照）。
+| 関数 | 出力 | 切り替えない理由 |
+|---|---|---|
+| `calculateCourseRaceCounts` | `course_race_counts`（courseRateの入力） | 実進入コースに直すと予測力は上がらず、複勝予想の的中率が-0.42±0.10pt（有意）、回収率が-2.1±1.3ptとなった。選手ページの「枠番別成績」表にも使われ、切り替えると「枠番」表示の表が変わる |
+| `calculateAttackDistribution` | `attack_distribution` | 展開予測の入力で、影響が未検証（`verify-turn-prediction-accuracy-v6.js`での検証が別途必要。別チケット） |
+| `calculateDefenseDistribution` | `defense_distribution` | 同上 |
 
-### FR-1の検証手順
+なお旧列`course_1〜6`は艇番と常に一致するため、`course_race_counts`の実態は「枠番別の集計」であり、`courseRate`の実態は枠番（レーン）の強さである。
 
-1. 切り替え前後で`analyze-indicator-predictive-power.js`（courseRateの予測力）と`backtest-course-rate-only.js`（的中率・回収率）を比較する
-2. `.claude/rules/analysis.md`のデータ精度検証: 実選手2〜3名について、`race_entries`+`race_results.actual_course_N`から手計算した値と保存値を突き合わせる
-3. `unifiedModel.js`の`INDICATOR_WEIGHTS.courseRate`（21.8）は、重みが予測力の相対順位で決まっているため原則変更しない。ただし2で予測力が大きく変わった場合は再計算要否をユーザーに相談する。本番反映（バッチ再実行）はユーザーの承認後
+### FR-1の検証（実施済み、2026-09-19）
+
+1. データ精度検証: 実選手3名の枠番別コース回数を、SQLでの別経路の手計算と突き合わせ、完全一致
+2. `scripts/analysis/compare-course-rate-sources.js`（新規）: 既存の分析スクリプトは現在の集計で過去を評価するためリークがある。日ごとに「その日より前のデータだけ」で集計を更新するウォークフォワードで、切り替え前・切り替え後・参照側を最頻コースにした案・実コース既知の上限を比較した（DB書き込みなし）。結果は`data/analysis/course-entry-tendency/course-rate-comparison-2026-09-19.json`
+3. 結果は上記のとおり切り替えの効果なし。`unifiedModel.js`の重みは変更しない
 
 ## FR-2: 選手ページ用のクライアント集計
 
@@ -166,7 +167,7 @@ BOA-293の`venue_entry_course_stats`は使わない（spec背景6）。全国値
 
 | 新規/拡張 | 場所 | FR |
 |---|---|---|
-| 拡張 | `scripts/analysis/aggregate-racer-stats.js`（4関数） | FR-1, FR-2 |
+| 拡張 | `scripts/analysis/aggregate-racer-stats.js`（`calculateCourseEntryTendency`のみ）、新規`scripts/lib/courseEntryTendency.js` | FR-1, FR-2 |
 | 新規 | `docs/db-migration/067_venues_course_entry_baseline.sql` | FR-6 |
 | 新規 | `scripts/maintenance/update-venue-course-entry-baseline.js` | FR-6 |
 | 拡張 | `.github/workflows/aggregate-stats.yml`（ステップ追加） | FR-6 |
