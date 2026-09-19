@@ -482,11 +482,13 @@ export async function run(schedule, date, { dryRun = false } = {}) {
   // 予測リフレッシュの起動条件のため、戻り値・後続処理は従来のまま変えない
 
   // race_entries upsert（ai_score系は書き込み対象の列に含まれないため比較にも現れない）
+  // 書く行には updated_at を設定する（WS2。created_at はINSERT時のDBの DEFAULT に任せる）
   await upsertChangedRows(supabase, "race_entries", entriesRows, {
     onConflict: "race_id,boat_number",
     keyColumns: ["race_id", "boat_number"],
     label: "race_entries",
     dryRun,
+    stampUpdatedAt: true,
   });
 
   // race_conditions upsert

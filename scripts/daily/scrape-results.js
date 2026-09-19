@@ -903,10 +903,12 @@ export async function scrapeAndSaveResults(races, targetDate) {
     }
 
     if (allStartTimings.length > 0) {
+      // 書く行には updated_at を設定する（WS2。created_at はINSERT時のDBの DEFAULT に任せる）
       await upsertChangedRows(supabase, "race_start_timings", allStartTimings, {
         onConflict: "race_id,boat_number",
         keyColumns: ["race_id", "boat_number"],
         label: "race_start_timings",
+        stampUpdatedAt: true,
       });
     }
 

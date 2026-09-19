@@ -20,6 +20,19 @@
  *     永久に「変更あり」になり、スキップが効かない）
  */
 
+import {
+  createOptionalColumnState,
+  upsertWithOptionalColumns,
+} from "./optionalColumns.js";
+
+/**
+ * 「変更のある行を書くときに updated_at を設定する」テーブル（WS2、マイグレーション071）の
+ * updated_at 列と、その列が未適用のDBでの書き直しに使うグループ名。
+ * created_at は設定しない（INSERT時にDBの DEFAULT now() が入り、UPSERTの更新側では触られない）
+ */
+export const UPDATED_AT_COLUMN = "updated_at";
+export const UPDATED_AT_GROUP = "マイグレーション071（updated_at）";
+
 /**
  * numeric(p,s) 列の scale（2026-09-19時点の本番スキーマ information_schema.columns の実測値）。
  * 列が numeric 型でも、ここに無い列は文字列・数値を区別する厳密比較になる（＝変更ありに倒れる）。
@@ -355,6 +368,11 @@ export function formatSkipSummary(label, stats, { fallback = false } = {}) {
 /**
  * 変更のある行だけを upsert する（バッチ分割つき）。
  *
+ * stampUpdatedAt=true の場合、書き込む（＝変更のあった、または新規の）行に updated_at=現在時刻を
+ * 設定する。updated_at は比較から自動的に外す（毎回変わる値を比較に含めると、常に「変更あり」になり
+ * 変更の無い行を書かない効果が無くなる）。updated_at 列が未適用のDBでは、その列を除いて書き直す。
+ * optionalColumnGroups は、同様に「未適用なら除いて書き直す」列（{グループ名: 列名の配列}）。
+ *
  * @returns {Promise<{written: number, skipped: number, error: Error|null, stats: Object, toWrite: Object[]}>}
  *   toWrite は書き込み対象（dry-runでも「書くはずの行」を返す）。呼び出し側が後続処理を絞る用途に使う
  */
@@ -369,22 +387,42 @@ export async function upsertChangedRows(
     label = table,
     batchSize = 1000,
     dryRun = false,
+    stampUpdatedAt = false,
+    optionalColumnGroups = {},
+    now = new Date(),
   },
 ) {
-  const { toWrite, stats, fallback } = await filterUnchangedRows(
-    client,
-    table,
-    incomingRows,
-    { keyColumns, ignoreColumns },
-  );
+  const {
+    toWrite: changedRows,
+    stats,
+    fallback,
+  } = await filterUnchangedRows(client, table, incomingRows, {
+    keyColumns,
+    ignoreColumns: stampUpdatedAt
+      ? [...new Set([...ignoreColumns, UPDATED_AT_COLUMN])]
+      : ignoreColumns,
+  });
+  const updatedAt = now.toISOString();
+  const toWrite = stampUpdatedAt
+    ? changedRows.map((row) => ({ ...row, [UPDATED_AT_COLUMN]: updatedAt }))
+    : changedRows;
+  const groups = stampUpdatedAt
+    ? { ...optionalColumnGroups, [UPDATED_AT_GROUP]: [UPDATED_AT_COLUMN] }
+    : optionalColumnGroups;
+  // 一度「列が無い」と分かったグループは、以降のバッチでも最初から除く
+  const columnState = createOptionalColumnState();
   let error = null;
   let written = 0;
   if (!dryRun) {
     for (let i = 0; i < toWrite.length; i += batchSize) {
       const batch = toWrite.slice(i, i + batchSize);
-      const { error: batchError } = await client
-        .from(table)
-        .upsert(batch, { onConflict });
+      const { error: batchError } = await upsertWithOptionalColumns(
+        client,
+        table,
+        batch,
+        { onConflict, optionalColumnGroups: groups },
+        columnState,
+      );
       if (batchError) {
         error = new Error(`${table}書き込みエラー: ${batchError.message}`);
         console.error(`❌ ${error.message}`);

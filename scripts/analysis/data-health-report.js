@@ -106,6 +106,22 @@ const TIMING_TABLES = [
   "venue_motor_stats",
   "race_notices_health",
 ];
+// 行が「最初に」保存された時刻を created_at が表すテーブル（マイグレーション071、WS2）。
+// created_at は INSERT 時の DEFAULT now() で、UPSERTの更新では触られないため、初回の取得時刻になる。
+// 他のテーブルの created_at は、この保証が無い（または別の意味の列）ため、従来どおり「弱い」列として扱う
+const FIRST_SAVED_TIMING_TABLES = new Set([
+  "exhibition_data",
+  "race_entries",
+  "race_start_timings",
+]);
+// 取得時刻の分布を出す対象。minutes は「発走m分前までに保存されたレースの割合」を出す基準時刻。
+// exhibition_data は展示取得の窓（30/15/10分前）、race_entries は出走表更新の窓（60分前）。
+// race_start_timings は発走後に保存されるため、基準時刻は無い（発走後に保存された割合のみ）
+const SCRAPED_TIMESTAMP_TABLES = [
+  { table: "exhibition_data", minutes: [30, 15, 10], hasValueFilled: true },
+  { table: "race_entries", minutes: [60], hasValueFilled: false },
+  { table: "race_start_timings", minutes: [], hasValueFilled: false },
+];
 // 実際の取得（スクレイピング・予測生成・確定）時刻を表す列
 const STRONG_TIMING_COLUMN =
   /^(scraped_at|scraped_date|captured_at|predicted_at|result_at|last_checked_at|fetched_at)$/;
@@ -380,6 +396,74 @@ order by 2 desc limit 10`,
   };
 }
 
+/**
+ * 取得時刻（created_at）の分布のクエリ（テーブルごとに1本、サーバー側集計）。
+ * 「発走時刻 − 行が最初に保存された時刻」（分。発走前に保存されていれば正、発走後なら負）を、
+ * レースごとに1値（そのレースの行のうち最も早い created_at）で出し、created_at が非NULLのレースだけを
+ * 分母にする（マイグレーション071より前に保存された行はNULLで、含めない）。
+ * 期間は窓内取得率と同じ直近7日。主キー（race_id）の範囲検索のみ（Disk IO予算への配慮）。
+ *
+ * @param {{table: string, minutes: number[], hasValueFilled: boolean}} spec
+ */
+export function buildScrapedTimestampQuery(
+  { table, minutes, hasValueFilled },
+  { windowStart, endDate },
+) {
+  const endExclusive = addDaysToDateString(endDate, 1);
+  const hits = minutes
+    .map((m) => `count(*) filter (where lead_min >= ${m}) as hit_${m}`)
+    .join(",\n    ");
+  const percentiles = (col) =>
+    [10, 50, 90]
+      .map(
+        (q) =>
+          `percentile_cont(${q / 100}) within group (order by ${col}) as ${col}_p${q}`,
+      )
+      .join(",\n    ");
+  return `
+with base as (
+  select r.race_id,
+      (r.race_date::timestamp + r.start_time) at time zone 'Asia/Tokyo' as dl
+  from races r
+  where r.race_date between '${windowStart}' and '${endDate}'
+    and r.start_time is not null
+    and r.cancellation_status is distinct from 'confirmed'
+), t as (
+  select x.race_id, count(*) as rows_total, min(x.created_at) as first_created_at${
+    hasValueFilled
+      ? `,
+      -- 展示タイムが入っている行の updated_at の最大値＝展示タイムが揃った時刻の近似（値が変わった最後の時刻）
+      max(x.updated_at) filter (where x.exhibition_time is not null) as value_filled_at`
+      : ""
+  }
+  from ${table} x
+  where x.race_id >= '${windowStart}' and x.race_id < '${endExclusive}'
+  group by x.race_id
+), l as (
+  select t.rows_total,
+      (extract(epoch from (b.dl - t.first_created_at)) / 60.0)::float8 as lead_min${
+        hasValueFilled
+          ? `,
+      (extract(epoch from (b.dl - t.value_filled_at)) / 60.0)::float8 as filled_lead_min`
+          : ""
+      }
+  from base b left join t on t.race_id = b.race_id
+)
+select
+    count(*) as races_in_period,
+    count(rows_total) as races_with_rows,
+    count(lead_min) as races_with_created_at,
+    count(*) filter (where lead_min < 0) as saved_after_start,
+    ${percentiles("lead_min")}${hits ? `,\n    ${hits}` : ""}${
+      hasValueFilled
+        ? `,
+    count(filled_lead_min) as races_with_value_filled,
+    ${percentiles("filled_lead_min")}`
+        : ""
+    }
+from l`;
+}
+
 /** クエリを逐次実行する（並列化しない）。cacheFileがあれば再利用・保存する */
 const hashSql = (sql) => createHash("sha256").update(sql).digest("hex");
 
@@ -515,7 +599,11 @@ function classifyTimingColumns(columnRows, existingTables) {
     const columns = columnRows
       .filter((r) => r.table_name === table)
       .map((r) => r.column_name);
-    const strong = columns.filter((c) => STRONG_TIMING_COLUMN.test(c));
+    const strong = columns.filter(
+      (c) =>
+        STRONG_TIMING_COLUMN.test(c) ||
+        (c === "created_at" && FIRST_SAVED_TIMING_TABLES.has(table)),
+    );
     const weak = columns.filter((c) => WEAK_TIMING_COLUMN.test(c));
     const quality =
       strong.length > 0 ? "measurable" : weak.length > 0 ? "weak" : "none";
@@ -564,6 +652,111 @@ function summarizeFreshness(rows) {
     latestDate: r.latest_date,
     empty: Number(r.n) === 0,
   }));
+}
+
+const toNumberOrNull = (value) =>
+  value === null || value === undefined ? null : Number(value);
+const round1 = (value) => (value === null ? null : Math.round(value * 10) / 10);
+
+/**
+ * 取得時刻の分布のクエリ結果を、レポート用の値にする（純粋関数）。
+ * 分母は created_at が非NULLのレース（マイグレーション071より前の行はNULLで含まれない）
+ */
+export function summarizeScrapedTimestamp(spec, row) {
+  const denominator = Number(row.races_with_created_at);
+  const distribution = (key) => ({
+    p10: round1(toNumberOrNull(row[`${key}_p10`])),
+    p50: round1(toNumberOrNull(row[`${key}_p50`])),
+    p90: round1(toNumberOrNull(row[`${key}_p90`])),
+  });
+  return {
+    table: spec.table,
+    applied: true,
+    racesInPeriod: Number(row.races_in_period),
+    racesWithRows: Number(row.races_with_rows),
+    racesWithCreatedAt: denominator,
+    savedAfterStart: Number(row.saved_after_start),
+    // 発走の何分前に保存されたか（分。正=発走前、負=発走後）
+    leadMinutes: distribution("lead_min"),
+    // 発走m分前までに（窓の中心より前に）保存されていたレースの割合（累積）
+    savedBy: spec.minutes.map((m) => ({
+      minutesBefore: m,
+      hit: Number(row[`hit_${m}`]),
+      denominator,
+      rate: rate(Number(row[`hit_${m}`]), denominator),
+    })),
+    valueFilled: spec.hasValueFilled
+      ? {
+          races: Number(row.races_with_value_filled),
+          leadMinutes: distribution("filled_lead_min"),
+        }
+      : null,
+  };
+}
+
+/**
+ * 取得時刻（created_at・updated_at）の分布を集める。列が無い（マイグレーション071が未適用の）
+ * テーブルは、クエリを発行せず「未適用のため計測不能」とする。
+ * 計測に失敗しても、レポート全体は失敗させない（エラーを結果に残す）。
+ *
+ * @param {{timingColumns: Array<{table_name: string, column_name: string}>,
+ *   windowStart: string, endDate: string,
+ *   fetch: (queries: Record<string, string>) => Promise<Record<string, Object[]>>}} args
+ */
+export async function collectScrapedTimestamps({
+  timingColumns,
+  windowStart,
+  endDate,
+  fetch,
+}) {
+  const hasColumns = (table) =>
+    ["created_at", "updated_at"].every((column) =>
+      timingColumns.some(
+        (r) => r.table_name === table && r.column_name === column,
+      ),
+    );
+  const specs = SCRAPED_TIMESTAMP_TABLES.map((spec) => ({
+    spec,
+    applied: hasColumns(spec.table),
+  }));
+  const appliedSpecs = specs.filter((s) => s.applied).map((s) => s.spec);
+  const unmeasured = (spec) => ({
+    table: spec.table,
+    applied: false,
+    reason:
+      "created_at・updated_at 列が無いため計測不能（マイグレーション071が未適用）",
+  });
+  if (appliedSpecs.length === 0) {
+    return {
+      period: { start: windowStart, end: endDate },
+      error: null,
+      tables: specs.map((s) => unmeasured(s.spec)),
+    };
+  }
+  try {
+    const queries = Object.fromEntries(
+      appliedSpecs.map((spec) => [
+        `scraped_${spec.table}`,
+        buildScrapedTimestampQuery(spec, { windowStart, endDate }),
+      ]),
+    );
+    const raw = await fetch(queries);
+    return {
+      period: { start: windowStart, end: endDate },
+      error: null,
+      tables: specs.map(({ spec, applied }) =>
+        applied
+          ? summarizeScrapedTimestamp(spec, raw[`scraped_${spec.table}`][0])
+          : unmeasured(spec),
+      ),
+    };
+  } catch (error) {
+    return {
+      period: { start: windowStart, end: endDate },
+      error: `取得時刻の計測に失敗（他の指標は影響なし）: ${error.message}`,
+      tables: specs.map((s) => unmeasured(s.spec)),
+    };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1034,13 +1227,88 @@ function renderMarkdown(report) {
   for (const t of report.timingColumns) {
     const label =
       t.quality === "measurable"
-        ? `可（${t.strongColumns.map((c) => (OVERWRITTEN_ON_UPSERT.has(c) ? `${c}=最終書き込み時刻` : c)).join("/")}）`
+        ? `可（${t.strongColumns
+            .map((c) =>
+              OVERWRITTEN_ON_UPSERT.has(c)
+                ? `${c}=最終書き込み時刻`
+                : c === "created_at"
+                  ? "created_at=初回保存時刻。追加前の行はNULL"
+                  : c,
+            )
+            .join("/")}）`
         : t.quality === "weak"
           ? "不能（作成/更新時刻のみ。取得時刻ではない）"
           : t.quality === "none"
             ? "不能（時刻列なし）"
             : "テーブル不在";
     lines.push(tableRow([t.table, t.columns.join(", ") || "-", label]));
+  }
+  lines.push("");
+
+  lines.push(
+    `### 3-2. 取得時刻（created_at）の分布（${report.scrapedTimestamps.period.start}〜${report.scrapedTimestamps.period.end}、created_at が非NULLのレースのみ）`,
+  );
+  lines.push("");
+  if (report.scrapedTimestamps.error) {
+    lines.push(`**${report.scrapedTimestamps.error}**`);
+    lines.push("");
+  }
+  const scrapedTables = report.scrapedTimestamps.tables;
+  if (scrapedTables.every((t) => !t.applied)) {
+    lines.push(
+      "未適用のため計測不能: created_at・updated_at 列が無い（マイグレーション071が未適用）。適用後、新規に保存された行から計測できる（既存の行はNULLで、分母に含めない）。",
+    );
+  } else {
+    lines.push(
+      "「発走の何分前に保存されたか」は、レースごとに最も早い created_at で測る（正=発走前、負=発走後）。" +
+        "分母は created_at が非NULLのレース数（マイグレーション071より前の行はNULLで含めない）。累積割合は「発走m分前までに保存されていたレース」の割合。",
+    );
+    lines.push("");
+    lines.push(
+      tableHeader([
+        "テーブル",
+        "期間内のレース",
+        "行あり",
+        "created_at非NULL(分母)",
+        "発走の何分前に保存 p10/p50/p90",
+        "発走後に保存",
+        "発走m分前までに保存(累積)",
+      ]),
+    );
+    const fmtDist = (d) =>
+      d.p50 === null ? "-" : `${d.p10} / ${d.p50} / ${d.p90}`;
+    for (const t of scrapedTables) {
+      if (!t.applied) {
+        lines.push(
+          tableRow([t.table, "-", "-", "-", "未適用のため計測不能", "-", "-"]),
+        );
+        continue;
+      }
+      lines.push(
+        tableRow([
+          t.table,
+          t.racesInPeriod,
+          t.racesWithRows,
+          t.racesWithCreatedAt,
+          fmtDist(t.leadMinutes),
+          t.savedAfterStart,
+          t.savedBy.length === 0
+            ? "-"
+            : t.savedBy
+                .map(
+                  (w) =>
+                    `${w.minutesBefore}分前: ${formatPct(w.rate)} (${w.hit}/${w.denominator})`,
+                )
+                .join(" / "),
+        ]),
+      );
+    }
+    for (const t of scrapedTables.filter((x) => x.applied && x.valueFilled)) {
+      lines.push("");
+      lines.push(
+        `${t.table} の値が揃った時刻（展示タイムが入っている行の updated_at の最大値。値が変わった最後の時刻）: 対象${t.valueFilled.races}レース、発走の何分前 p10/p50/p90 = ${fmtDist(t.valueFilled.leadMinutes)}`,
+      );
+    }
   }
   lines.push("");
 
@@ -1162,6 +1430,7 @@ function renderMarkdown(report) {
     "取りこぼしの一因はGitHub Actionsのキャンセル起因（BOA-342/344の実測では、取りこぼしの81〜94%が、キャンセルされた実行が前後5分以内にあった）。この指標自体は原因を区別しない。",
     "展示・STは「行の有無」と「値の有無」を分けて出す。展示タイムより先にSTだけの行が書かれる会場があり、行の有無だけでは欠落を過小評価する（BOA-356）。展示の判定基準は check-exhibition-gap-rate.js に合わせ、1艇でも展示タイムが入っていれば取得済みとする。",
     "窓内取得率の分母は結果確定済み（rank1あり）・中止除外のレース。土日を含まない期間は完了の定義Bの根拠にならない。",
+    "取得時刻の分布（3-2）は exhibition_data・race_entries・race_start_timings の created_at（行が最初に保存された時刻、マイグレーション071）を使う。追加前の行はNULLで分母に含まれないため、適用直後は対象レースが少ない（適用から数日で、土日を含む7日分が溜まるまで完了の定義Bの根拠にならない）。過去日のバックフィル（手動スクリプト）で作られた行は、バックフィル時刻が created_at になり「発走後に保存」に数えられる。",
   ]) {
     lines.push(`- ${note}`);
   }
@@ -1173,8 +1442,8 @@ function renderMarkdown(report) {
 // main
 // ---------------------------------------------------------------------------
 
-async function main() {
-  const opts = parseArgs(process.argv.slice(2));
+export async function main(argv = process.argv.slice(2)) {
+  const opts = parseArgs(argv);
   const coverageStart = addDaysToDateString(opts.endDate, -(COVERAGE_DAYS - 1));
   const windowStart = addDaysToDateString(opts.endDate, -(WINDOW_DAYS - 1));
   const windowDates = datesFrom(windowStart, WINDOW_DAYS);
@@ -1194,6 +1463,14 @@ async function main() {
     endDate: opts.endDate,
   });
   const raw = await fetchRaw(queries, opts.cacheFile);
+
+  // 取得時刻（created_at）の分布。列が無い（マイグレーション071が未適用の）テーブルはクエリを発行しない
+  const scrapedTimestamps = await collectScrapedTimestamps({
+    timingColumns: raw.timingColumns,
+    windowStart,
+    endDate: opts.endDate,
+    fetch: (queries) => fetchRaw(queries, opts.cacheFile),
+  });
 
   const coverageDates = datesFrom(coverageStart, COVERAGE_DAYS);
   const compareRows = raw.windows.filter((r) =>
@@ -1246,6 +1523,7 @@ async function main() {
           : null,
     },
     timingColumns: classifyTimingColumns(raw.timingColumns, raw.tableExistence),
+    scrapedTimestamps,
     monthlyResults: summarizeMonthly(raw.monthly),
     freshness: summarizeFreshness(raw.freshness),
     latest: raw.latest.map((r) => ({ key: r.k, value: r.v })),
