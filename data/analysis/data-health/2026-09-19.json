@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T04:03:31.084Z",
+  "generatedAt": "2026-09-19T04:10:06.336Z",
   "params": {
     "reportDate": "2026-09-19",
     "thresholds": {
@@ -1608,7 +1608,7 @@
         "lastRunAt": "2026-09-18T16:51:37Z",
         "lastRunConclusion": "success",
         "lastSuccessAt": "2026-09-18T16:51:37Z",
-        "hoursSinceLastSuccess": 11.2,
+        "hoursSinceLastSuccess": 11.3,
         "expectedMaxSuccessHours": 48
       },
       {
@@ -1623,11 +1623,11 @@
       {
         "workflow": "scrape-scheduled.yml",
         "noRunHistory": false,
-        "lastRunAt": "2026-09-19T04:00:40Z",
+        "lastRunAt": "2026-09-19T04:05:16Z",
         "lastRunConclusion": "in_progress",
-        "lastSuccessAt": "2026-09-19T03:55:15Z",
-        "hoursSinceLastSuccess": 0.1,
-        "expectedMaxSuccessHours": 48
+        "lastSuccessAt": "2026-09-19T04:00:40Z",
+        "hoursSinceLastSuccess": 0.2,
+        "expectedMaxSuccessHours": 12
       },
       {
         "workflow": "scrape-venue-entry-course-stats.yml",
@@ -1635,7 +1635,7 @@
         "lastRunAt": "2026-09-18T14:41:16Z",
         "lastRunConclusion": "success",
         "lastSuccessAt": "2026-09-18T14:41:16Z",
-        "hoursSinceLastSuccess": 13.4,
+        "hoursSinceLastSuccess": 13.5,
         "expectedMaxSuccessHours": 48
       },
       {
@@ -1644,7 +1644,7 @@
         "lastRunAt": "2026-09-18T23:04:10Z",
         "lastRunConclusion": "failure",
         "lastSuccessAt": "2026-09-17T23:25:06Z",
-        "hoursSinceLastSuccess": 28.6,
+        "hoursSinceLastSuccess": 28.8,
         "expectedMaxSuccessHours": 48
       }
     ]

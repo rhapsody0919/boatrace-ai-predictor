@@ -109,6 +109,8 @@ const TIMING_TABLES = [
 // 実際の取得（スクレイピング・予測生成・確定）時刻を表す列
 const STRONG_TIMING_COLUMN =
   /^(scraped_at|scraped_date|captured_at|predicted_at|result_at|last_checked_at|fetched_at)$/;
+// 取得のたびに上書きされる列（初回の取得時刻ではなく、最終書き込み時刻を表す）
+const OVERWRITTEN_ON_UPSERT = new Set(["result_at", "predicted_at"]);
 // 行の作成・更新時刻。upsertで上書きされうる/初回挿入時刻のみのため、取得時刻としては弱い
 const WEAK_TIMING_COLUMN = /^(created_at|updated_at)$/;
 
@@ -119,6 +121,7 @@ const WEAK_TIMING_COLUMN = /^(created_at|updated_at)$/;
 function parseArgs(argv) {
   const opts = {
     endDate: getYesterdayDateJST(),
+    defaultEndDate: getYesterdayDateJST(),
     skipGh: false,
     cacheFile: null,
     compareDates: [],
@@ -181,13 +184,18 @@ async function runSql(query) {
 const RETRY_LIMIT = 2;
 const RETRY_WAIT_MS = 20000;
 
-/** 接続タイムアウト等の一時的な失敗(5xx)のみ、待ってから再試行する。それ以外は即失敗 */
+/** 接続タイムアウト等、クエリ実行前の一時的な失敗のみ待ってから再試行する。それ以外は即失敗 */
 async function runSqlWithRetry(query) {
   for (let attempt = 0; ; attempt++) {
     try {
       return await runSql(query);
     } catch (error) {
-      const transient = /HTTP 5\d\d/.test(error.message);
+      // 接続確立前の失敗のみ再試行する。statement timeout等はクエリ自体が重い/DBが逼迫している
+      // 状態のため、同じクエリを再発行して負荷を上乗せしない
+      const transient =
+        /HTTP 5\d\d/.test(error.message) &&
+        /connection timeout|ECONNRESET|fetch failed/i.test(error.message) &&
+        !/statement timeout/i.test(error.message);
       if (!transient || attempt >= RETRY_LIMIT) throw error;
       console.error(
         `  一時的な失敗のため${RETRY_WAIT_MS / 1000}秒後に再試行: ${error.message.slice(0, 120)}`,
@@ -389,14 +397,18 @@ async function fetchRaw(queries, cacheFile) {
   for (const [name, sql] of Object.entries(queries)) {
     const hash = hashSql(sql);
     if (cache[name]?.hash === hash) {
-      console.error(`  query ${name}: キャッシュ使用（DB非接続）`);
+      const { savedAt } = cache[name];
+      const age = savedAt
+        ? `${Math.round((Date.now() - new Date(savedAt).getTime()) / 60000)}分経過`
+        : "経過時間不明";
+      console.error(`  query ${name}: キャッシュ使用（DB非接続、${age}）`);
       raw[name] = cache[name].rows;
       continue;
     }
     const startedAt = Date.now();
     const rows = await runSqlWithRetry(sql);
     raw[name] = rows;
-    cache[name] = { hash, rows };
+    cache[name] = { hash, rows, savedAt: new Date().toISOString() };
     console.error(`  query ${name}: ${Date.now() - startedAt}ms`);
     // 途中で失敗しても取得済みの結果を再利用できるよう、1クエリごとに保存する
     if (cacheFile) {
@@ -560,17 +572,17 @@ function summarizeFreshness(rows) {
 
 function ghJson(args) {
   const out = execFileSync("gh", args, {
+    cwd: REPO_ROOT,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
   return JSON.parse(out);
 }
 
-/**
- * ワークフローのcron式から、最終successの許容経過時間を推定する。
- * 日(day-of-month)が`*`のcronがあれば日次相当(48時間)、日指定のみなら月次相当(35日)、
- * cronが無い（手動実行のみ）場合はnull（経過時間では判定しない）
- */
+// ワークフローのcron式から、最終successの許容経過時間を推定する。
+// 日(day-of-month)指定=月次相当(35日)、曜日指定=週次相当(8日)、分が「スラッシュN」形式で
+// 1日に複数回実行=12時間、それ以外=日次相当(48時間)。複数のcronがある場合は最も厳しい値を採る。
+// cronが無い（手動実行のみ）場合はnull（経過時間では判定しない）
 function expectedMaxSuccessHours(workflowFile) {
   const yaml = fs.readFileSync(
     path.join(REPO_ROOT, ".github/workflows", workflowFile),
@@ -580,7 +592,12 @@ function expectedMaxSuccessHours(workflowFile) {
     (m) => m[1].trim().split(/\s+/),
   );
   if (crons.length === 0) return null;
-  return crons.some((fields) => fields[2] === "*") ? 48 : 24 * 35;
+  const limitOf = ([minute, , dayOfMonth, , dayOfWeek]) => {
+    if (dayOfMonth !== "*") return 24 * 35;
+    if (dayOfWeek !== "*") return 24 * 8;
+    return minute.startsWith("*/") ? 12 : 48;
+  };
+  return Math.min(...crons.map(limitOf));
 }
 
 const RECENT_RUNS_LIMIT = 30;
@@ -1017,7 +1034,7 @@ function renderMarkdown(report) {
   for (const t of report.timingColumns) {
     const label =
       t.quality === "measurable"
-        ? `可（${t.strongColumns.join("/")}）`
+        ? `可（${t.strongColumns.map((c) => (OVERWRITTEN_ON_UPSERT.has(c) ? `${c}=最終書き込み時刻` : c)).join("/")}）`
         : t.quality === "weak"
           ? "不能（作成/更新時刻のみ。取得時刻ではない）"
           : t.quality === "none"
@@ -1246,9 +1263,12 @@ async function main() {
   report.alerts = collectAlerts(report);
 
   fs.mkdirSync(opts.outDir, { recursive: true });
-  // 既定の集計期間（昨日まで）以外で実行した場合は、当日のベースラインJSONを上書きしない
-  const fileSuffix =
-    opts.endDate === getYesterdayDateJST() ? "" : `_end-${opts.endDate}`;
+  // 既定の集計期間（昨日まで）以外、またはGitHub Actions確認を省略した実行は、
+  // 当日のベースラインJSONを上書きしない（内容が欠けた/別期間のJSONで置き換わるのを防ぐ）
+  const fileSuffix = [
+    opts.endDate === opts.defaultEndDate ? "" : `_end-${opts.endDate}`,
+    opts.skipGh ? "_skip-gh" : "",
+  ].join("");
   const jsonPath = path.join(opts.outDir, `${runDate}${fileSuffix}.json`);
   fs.writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`);
 
@@ -1257,7 +1277,7 @@ async function main() {
 }
 
 // importされた場合（クエリ検証等）は実行しない。DBへの意図しない実行を防ぐ
-if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === __filename) {
   main().catch((error) => {
     console.error("data-health-report 実行中にエラー:", error.message);
     process.exit(1);
