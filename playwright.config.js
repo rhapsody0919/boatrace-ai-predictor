@@ -22,7 +22,11 @@ export default defineConfig({
   // 既定の5秒expect・30秒テストではDBが少し遅いだけで大量に失敗するため余裕を持たせる
   timeout: 60000,
   expect: { timeout: 15000 },
-  retries: 0,
+  // smoke.spec.jsには個別のtimeout指定が多数あり上記の延長が効かないため、CIでは
+  // 1回だけリトライする。実行のたびに別のテストが単発で落ちる原因は、CDN・RPCの
+  // コールドスタートで1回目だけ遅れることで、2回目はキャッシュが温まり通る。
+  // 2回続けて落ちるものは本物の不具合として失敗のまま残る
+  retries: process.env.CI ? 1 : 0,
   reporter: [["list"]],
   use: {
     baseURL: `http://localhost:${port}`,
