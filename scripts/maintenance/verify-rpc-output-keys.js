@@ -12,12 +12,16 @@
  *   npm run verify:rpc-output-keys                      # 直近の中止レースがある日で検証
  *   npm run verify:rpc-output-keys -- --date 2026-09-12 # 日付を指定
  *
- * 読み取り専用（RPC 3回と、日付決定用の races 1回の SELECT のみ）。接続は
+ * 読み取り専用（RPC 3回と、日付決定用の races 1〜2回の SELECT のみ）。接続は
  * scripts/lib/supabaseClient.js（SUPABASE_URL / SUPABASE_SERVICE_KEY）を使う。
  * 期待するキーは、フロント（src/services/supabaseDataService.js の transformEdgeResponse /
- * getRaces）の参照と、各マイグレーション（048・062・066）が足したフィールドに合わせている。
- * キーの値が null でも「キーが存在する」ことだけを検査する（json_build_object は
- * null値のキーも出力する）。
+ * getRaces）の参照と、各マイグレーション（037・048・051・062・066等）が足したフィールドに
+ * 合わせている。キーの値が null でも「キーが存在する」ことだけを検査する
+ * （json_build_object は null値のキーも出力する）。
+ *
+ * 終了コード: 0=検証できた全てが合格 / 1=キーの欠落、日付指定RPCの対象レースが0件、
+ * RPCエラー等。get_today_races は「今日(JST)」の開催が無いと検証できないため、
+ * その場合は警告を出して未検証のまま終了する（失敗にはしない）。
  */
 import { supabase } from "../lib/supabaseClient.js";
 
@@ -36,6 +40,91 @@ const PREDICTION_RACE_KEYS = [
   "cancellationStatus", // 048（BOA-363で回帰）
 ];
 
+// get_predictions_by_date / _light の入れ子要素が持つべきキー。同じ回帰が入れ子のフィールド
+// （037のracerId、051のresultの着順・払戻等）にも起こりうるため、レース直下と同様に検査する。
+// 値が null の入れ子（結果未確定のresult、中止レースのentries等）は検査対象から外れる
+const PREDICTION_NESTED_CHECKS = [
+  {
+    path: "entries",
+    keys: [
+      "number",
+      "name",
+      "racerId", // 037
+      "grade",
+      "age",
+      "winRate",
+      "localWinRate",
+      "global2Rate",
+      "motorNumber",
+      "motor2Rate",
+      "boatNumber",
+      "boat2Rate",
+      "aiScoreStandard",
+      "aiScoreSafeBet",
+      "aiScoreUpsetFocus",
+    ],
+  },
+  {
+    path: "exhibitionData", // 008
+    keys: ["boatNumber", "exhibitionTime", "startTiming"],
+  },
+  {
+    path: "predictionOdds", // 011・019
+    keys: [
+      "trifectaPredStandard",
+      "trifectaOddsStandard",
+      "trioPredStandard",
+      "trioOddsStandard",
+      "trifectaPredSafeBet",
+      "trifectaOddsSafeBet",
+      "trioPredSafeBet",
+      "trioOddsSafeBet",
+      "trifectaPredUpsetFocus",
+      "trifectaOddsUpsetFocus",
+      "trioPredUpsetFocus",
+      "trioOddsUpsetFocus",
+    ],
+  },
+  {
+    path: "result", // 051（全着順・払戻・人気）
+    keys: [
+      "finished",
+      "isCancelled",
+      "isNoRace",
+      "rank1",
+      "rank2",
+      "rank3",
+      "rank4",
+      "rank5",
+      "rank6",
+      "raceTime1",
+      "raceTime2",
+      "raceTime3",
+      "raceTime4",
+      "raceTime5",
+      "raceTime6",
+      "winningTechnique",
+      "payoutWin",
+      "payoutPlace1",
+      "payoutPlace2",
+      "payoutTrifecta",
+      "payoutTrio",
+      "payoutExacta",
+      "payoutQuinella",
+      "payoutWide1",
+      "payoutWide2",
+      "payoutWide3",
+      "popularityTrifecta",
+      "popularityTrio",
+      "popularityExacta",
+      "popularityQuinella",
+      "popularityWide1",
+      "popularityWide2",
+      "popularityWide3",
+    ],
+  },
+];
+
 // get_today_races の data[].races[] 要素が持つべきキー（weather は元々含めない仕様）
 const TODAY_RACE_KEYS = [
   "raceNo",
@@ -49,20 +138,29 @@ const TODAY_RACE_KEYS = [
 ];
 
 /**
- * レース配列のうち、期待キーを持たない要素の件数をキーごとに数える。
- * @param {Array<Record<string, unknown>>} races
+ * 要素配列のうち、期待キーを持たない要素の件数をキーごとに数える。
+ * @param {unknown[]} items
  * @param {string[]} expectedKeys
  * @returns {Array<{ key: string, missingCount: number }>} 欠落のあったキーのみ
  */
-function findMissingKeys(races, expectedKeys) {
+function findMissingKeys(items, expectedKeys) {
   return expectedKeys
     .map((key) => ({
       key,
-      missingCount: races.filter(
-        (race) => race == null || typeof race !== "object" || !(key in race),
+      missingCount: items.filter(
+        (item) => item == null || typeof item !== "object" || !(key in item),
       ).length,
     }))
     .filter(({ missingCount }) => missingCount > 0);
+}
+
+/** 各レースの入れ子（配列は展開、オブジェクトは1件、nullは無視）を1つの配列にまとめる。 */
+function collectNested(races, path) {
+  return races.flatMap((race) => {
+    const value = race?.[path];
+    if (Array.isArray(value)) return value;
+    return value != null && typeof value === "object" ? [value] : [];
+  });
 }
 
 function parseDateArg(argv) {
@@ -102,23 +200,20 @@ async function callRpc(name, args) {
   return data;
 }
 
-function report(label, races, expectedKeys) {
-  if (races.length === 0) {
-    console.log(`  [SKIP] ${label}: レースが0件のため検証できません`);
-    return { failed: false, skipped: true };
-  }
-  const missing = findMissingKeys(races, expectedKeys);
+/** 1グループ（レース直下 or 入れ子）の検査結果を出力し、失敗したかを返す。 */
+function reportGroup(label, items, expectedKeys) {
+  const missing = findMissingKeys(items, expectedKeys);
   if (missing.length === 0) {
     console.log(
-      `  [OK]   ${label}: ${races.length}レース全てが期待キー${expectedKeys.length}個を含む`,
+      `  [OK]   ${label}: ${items.length}件が期待キー${expectedKeys.length}個を含む`,
     );
-    return { failed: false, skipped: false };
+    return false;
   }
-  console.log(`  [FAIL] ${label}: ${races.length}レース中、キーが欠落`);
+  console.log(`  [FAIL] ${label}: ${items.length}件中、キーが欠落`);
   for (const { key, missingCount } of missing) {
-    console.log(`           - ${key}: ${missingCount}レースで欠落`);
+    console.log(`           - ${key}: ${missingCount}件で欠落`);
   }
-  return { failed: true, skipped: false };
+  return true;
 }
 
 async function main() {
@@ -135,32 +230,52 @@ async function main() {
     `検証日: ${date}${hasCancellation === false ? "（中止レースが無いため直近の開催日）" : ""}`,
   );
 
-  const results = [];
+  let failed = false;
   for (const rpc of [
     "get_predictions_by_date",
     "get_predictions_by_date_light",
   ]) {
     const data = await callRpc(rpc, { target_date: date });
-    results.push(report(rpc, data?.races ?? [], PREDICTION_RACE_KEYS));
+    if (!Array.isArray(data?.races)) {
+      throw new Error(`RPC ${rpc} の出力に races 配列がありません`);
+    }
+    console.log(`${rpc}（${data.races.length}レース）`);
+    if (data.races.length === 0) {
+      // 検証日にレースが無い（未来日・誤った日付等）と、何も検証できていない
+      console.log(`  [FAIL] 検証日のレースが0件のため検証できません`);
+      failed = true;
+      continue;
+    }
+    failed = reportGroup("レース", data.races, PREDICTION_RACE_KEYS) || failed;
+    for (const { path, keys } of PREDICTION_NESTED_CHECKS) {
+      const items = collectNested(data.races, path);
+      if (items.length === 0) {
+        console.log(`  [SKIP] ${path}: 全レースで空（検査対象なし）`);
+        continue;
+      }
+      failed = reportGroup(path, items, keys) || failed;
+    }
   }
 
   // get_today_races は引数なしで「今日(JST)」のレースだけを返す。開催が無い日は検証できない
   const today = await callRpc("get_today_races", {});
   const todayRaces = (today?.data ?? []).flatMap((venue) => venue.races ?? []);
-  results.push(
-    report("get_today_races（本日分）", todayRaces, TODAY_RACE_KEYS),
-  );
+  console.log(`get_today_races（本日分、${todayRaces.length}レース）`);
+  const todayUnverified = todayRaces.length === 0;
+  if (todayUnverified) {
+    console.log("  [WARN] 本日のレースが0件のため未検証");
+  } else {
+    failed = reportGroup("レース", todayRaces, TODAY_RACE_KEYS) || failed;
+  }
 
-  const failed = results.some((r) => r.failed);
-  const skipped = results.filter((r) => r.skipped).length;
   if (failed) {
     console.error(
-      "\nNG: RPCの出力にフロントが参照するキーの欠落があります。直近のRPCマイグレーションが、古い定義を土台に関数全体を再定義していないか確認してください（本番の pg_get_functiondef を土台にする）。",
+      "\nNG: RPCの出力にフロントが参照するキーの欠落、または検証不能があります。直近のRPCマイグレーションが、古い定義を土台に関数全体を再定義していないか確認してください（本番の pg_get_functiondef を土台にする）。",
     );
     process.exit(1);
   }
   console.log(
-    `\nOK: 検証できた全てのRPCが期待キーを含みます${skipped > 0 ? `（${skipped}件は対象レースが0件で検証不能）` : ""}`,
+    `\nOK: 検証できたRPCは全て期待キーを含みます${todayUnverified ? "（get_today_racesは本日の開催が無く未検証。開催日に再実行してください）" : ""}`,
   );
 }
 
