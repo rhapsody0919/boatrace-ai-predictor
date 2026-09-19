@@ -19,9 +19,10 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { getDeadlineDate } from "../../utils/raceDeadlineStatus";
+import BoatBadge from "./BoatBadge";
+import Sparkline from "./Sparkline";
 import "./RaceOddsListTab.css";
 
 const BOAT_NUMBERS = [1, 2, 3, 4, 5, 6];
@@ -122,51 +123,11 @@ function withPanelAfterRow(items, selectedIdx, panel) {
   return [...items.slice(0, rowEnd + 1), panel, ...items.slice(rowEnd + 1)];
 }
 
-// 小さな折れ線スパークライン（MotorWakuStatsGridと同じ発想のインラインSVG）
-function Sparkline({ points, isRange }) {
-  if (points.length < 2) return null;
-  const nums = points.map((p) => valueToNumber(p.value, isRange));
-  const min = Math.min(...nums);
-  const max = Math.max(...nums);
-  const range = max - min || 1;
-  const width = 200;
-  const height = 40;
-  const coords = nums
-    .map((v, i) => {
-      const x = (i / (nums.length - 1)) * width;
-      const y = height - ((v - min) / range) * height;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  return (
-    <svg
-      className="rol-sparkline"
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      <polyline points={coords} fill="none" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function BoatBadge({ n, size }) {
-  const color = BOAT_COLORS[n] || {};
-  return (
-    <span
-      className={`rol-boat-badge${size ? ` rol-boat-badge-${size}` : ""}`}
-      style={{ background: color.bg, color: color.text }}
-    >
-      {n}
-    </span>
-  );
-}
-
 // ブロック見出し（艇番バッジ＋選手名）
 function BlockHead({ n, name }) {
   return (
     <div className="rol-block-head">
-      <BoatBadge n={n} />
+      <BoatBadge number={n} />
       {name && (
         <span className="rol-block-name" translate="no">
           {name}
@@ -206,7 +167,11 @@ function TrendPanel({ combo, trend, isRange, spanAll }) {
         <p className="rol-no-data">{t("oddsList.noData")}</p>
       ) : (
         <>
-          <Sparkline points={trend} isRange={isRange} />
+          <Sparkline
+            className="rol-sparkline"
+            values={trend.map((p) => valueToNumber(p.value, isRange))}
+            preserveAspectRatio="none"
+          />
           <div className="rol-trend-values">
             {trend.map((p, i) => (
               <div className="rol-trend-item" key={i}>
@@ -347,12 +312,12 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
               return (
                 <div className="rol-col" key={second}>
                   <div className="rol-col-head">
-                    <BoatBadge n={second} size="sm" />
+                    <BoatBadge number={second} size="sm" />
                   </div>
                   {thirds.map((third) =>
                     oddsButton(
                       `${first}-${second}-${third}`,
-                      <BoatBadge n={third} size="xs" />,
+                      <BoatBadge number={third} size="xs" />,
                     ),
                   )}
                   <div className="rol-col-foot">
@@ -381,7 +346,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
         key,
         key
           .split("-")
-          .map((n) => <BoatBadge key={n} n={Number(n)} size="xs" />),
+          .map((n) => <BoatBadge key={n} number={Number(n)} size="xs" />),
       ),
     );
     return (
@@ -413,7 +378,7 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
             {partners.map((partner) =>
               oddsButton(
                 `${head}-${partner}`,
-                <BoatBadge n={partner} size="sm" />,
+                <BoatBadge number={partner} size="sm" />,
               ),
             )}
           </div>

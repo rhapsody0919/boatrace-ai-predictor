@@ -592,20 +592,6 @@ input:focus-visible,
   color: var(--podium-bronze-text);
 }
 
-/* BOA-238: 艇番カラーチップ（公式配色、BOAT_COLORS）。結果テーブルと払戻金の組番表示で共用 */
-.rr-boat-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.45rem;
-  height: 1.45rem;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-extrabold);
-  line-height: 1;
-  border: var(--border-width-1) solid var(--border-hairline);
-}
-
 .rr-name {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
@@ -935,38 +921,6 @@ input:focus-visible,
   justify-content: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-}
-
-.boat-badge {
-  display: inline-block;
-  width: 45px;
-  height: 45px;
-  line-height: 45px;
-  text-align: center;
-  font-size: 1.2rem;
-  font-weight: bold;
-  border-radius: 8px;
-  background: var(--surface-page);
-  color: var(--text-primary);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.boat-badge.gold {
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-  color: #854d0e;
-  border: 2px solid #daa520;
-}
-
-.boat-badge.silver {
-  background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
-  color: #475569;
-  border: 2px solid #a9a9a9;
-}
-
-.boat-badge.bronze {
-  background: linear-gradient(135deg, #cd7f32 0%, #e4a672 100%);
-  color: #78350f;
-  border: 2px solid #b8732c;
 }
 
 /* モバイル対応 */
@@ -1383,13 +1337,6 @@ input:focus-visible,
   .top3-hit {
     font-size: 0.75rem;
     padding: 0.35rem 0.6rem;
-  }
-
-  .boat-badge {
-    width: 36px;
-    height: 36px;
-    line-height: 36px;
-    font-size: 1rem;
   }
 
   /* グリッドを1カラムに */

@@ -1,9 +1,11 @@
-// ボートレースの艇番カラー（1白・2黒・3赤・4青・5黄・6緑）
+// ホームズ予想の確率バー用の艇番別バー色（1白・2黒・3赤・4青・5黄・6緑）。
+// 艇番チップ自体は共通の BoatBadge（公式配色）を使うため、ここにはバー塗り専用の
+// border 色だけを持つ。1号艇は白背景でバーが見えなくなるためスレート系の濃色にしている
 export const BOAT_COLORS = {
-  1: { bg: "#f8fafc", border: "#94a3b8", text: "#334155" },
-  2: { bg: "#1f2937", border: "#1f2937", text: "#ffffff" },
-  3: { bg: "#dc2626", border: "#dc2626", text: "#ffffff" },
-  4: { bg: "#2563eb", border: "#2563eb", text: "#ffffff" },
-  5: { bg: "#eab308", border: "#ca8a04", text: "#1f2937" },
-  6: { bg: "#16a34a", border: "#16a34a", text: "#ffffff" },
+  1: { border: "#94a3b8" },
+  2: { border: "#1f2937" },
+  3: { border: "#dc2626" },
+  4: { border: "#2563eb" },
+  5: { border: "#ca8a04" },
+  6: { border: "#16a34a" },
 };

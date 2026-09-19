@@ -29,6 +29,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import RaceHistoryTable from "./RaceHistoryTable";
+import BoatBadge from "./BoatBadge";
 import {
   filterRecords,
   computeRates,
@@ -346,12 +347,7 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                 onClick={() => toggleExpanded(boat, player?.racerId)}
                 aria-expanded={expandedBoat === boat}
               >
-                <span
-                  className="rbit-boat-chip"
-                  style={{ background: color.bg, color: color.text }}
-                >
-                  {boat}
-                </span>
+                <BoatBadge number={boat} />
                 <span className="rbit-name" translate="no">
                   {player?.name}
                 </span>

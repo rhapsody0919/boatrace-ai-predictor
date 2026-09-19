@@ -35,19 +35,6 @@
   text-align: center;
 }
 
-.turn-pattern-boat {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.8rem;
-  height: 1.8rem;
-  border-radius: var(--radius-circle);
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-sm);
-  border: var(--border-width-1) solid var(--border-hairline);
-}
-
 .turn-pattern-technique {
   flex: 1;
   font-size: var(--font-size-sm);
