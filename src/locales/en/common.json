@@ -454,9 +454,34 @@
     "resultTitleDeadline": "(Deadline {{time}})"
   },
   "raceTabs": {
+    "waku": "Lane Stats",
     "aiPrediction": "AI Prediction",
     "beforeInfo": "Just Before",
     "oddsList": "Odds List"
+  },
+  "wakuInfo": {
+    "note": "Pick a racer to compare their record by starting lane (1-6). Tap a bar to see their last 10 finishes from that lane",
+    "boatLabel": "Racer (boat #)",
+    "metricLabel": "Metric",
+    "metrics": {
+      "winRate": "1st-place rate",
+      "top2Rate": "Top-2 rate",
+      "top3Rate": "Top-3 rate"
+    },
+    "courseTitle": "Record by lane",
+    "courseSubtitle": "All venues, all periods (by boat number at race time)",
+    "courseCaveat": "* Actual entry-course changes can't be distinguished, so results are grouped by the boat number the racer had in each race. Rates are a snapshot from when the prediction was generated while the last 10 finishes use the latest data, so counts may differ slightly",
+    "loading": "Loading...",
+    "sampleCount": "(n={{n}})",
+    "outOfPlace": "DNF",
+    "todayBadge": "This race's lane",
+    "noData": "No data available",
+    "noRacerId": "Racer information could not be loaded",
+    "noRecentFinishes": "No race history from this lane",
+    "fetchError": "Couldn't load the last 10 finishes. Please try again later",
+    "recentFinishesNote": "Finishes from the last 10 races in lane {{course}} (oldest on the left, newest on the right)",
+    "kimariteTitle": "Winning techniques (all boats, last 90 days)",
+    "kimariteCaveat": "* Share of each winning technique across all races and boats at this venue (not an individual racer's record)"
   },
   "aiPredictionTab": {
     "unavailableTitle": "No AI prediction data",

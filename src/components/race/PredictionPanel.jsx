@@ -47,6 +47,14 @@
  * showVolatilityOutcome/isUpset）も同タブに統合したため、結果タブは着順・配当・
  * 決まり手のみのシンプルな内容になった。詳細はRaceAiPredictionTab.jsx参照
  *
+ * 2026-09-16再追記(枠別情報タブ追加、BOA-307): 基本情報とモータ情報の間に
+ * 「枠別情報」タブ（RaceWakuInfoTab）を追加した。選手を選んで枠番別
+ * （1〜6）成績を見る棒グラフ＋直近10走ドリルダウン、決まり手傾向（全艇合算）
+ * の2カード構成。既存のVenueTendencyPanel・AttackDefenseAnalysisとは
+ * 見せ方の主語が異なるため併存させ、このタブがアクティブな間は他のタブと
+ * 同様にshowPreRaceAnalysisTools側で非表示にする（詳細はRaceWakuInfoTab.jsx
+ * 冒頭のコメント参照）
+ *
  * 2026-09-16追記(オッズ一覧タブ追加、BOA-311): FR-4（オッズ全券種対応、
  * race_odds.trifecta_all/trio_all/exacta_all/quinella_all/wide_all）が
  * 本番稼働済みになったため、「直前情報」と「結果」の間に「オッズ一覧」タブ
@@ -79,6 +87,7 @@ import AiCopyButton from "./AiCopyButton";
 import Toast, { useToast } from "../Toast";
 import RaceTabs from "./RaceTabs";
 import RaceBasicInfoTab from "./RaceBasicInfoTab";
+import RaceWakuInfoTab from "./RaceWakuInfoTab";
 import RaceBeforeInfoTab from "./RaceBeforeInfoTab";
 import RaceAiPredictionTab from "./RaceAiPredictionTab";
 import RaceOddsListTab from "./RaceOddsListTab";
@@ -154,6 +163,7 @@ function PredictionPanel({
     activeMainTab !== "result" &&
     activeMainTab !== "beforeInfo" &&
     activeMainTab !== "motor" &&
+    activeMainTab !== "waku" &&
     activeMainTab !== "aiPrediction" &&
     activeMainTab !== "oddsList";
 
@@ -290,8 +300,8 @@ function PredictionPanel({
         />
       )}
 
-      {/* レース詳細ページのタブ構成（BOA-305〜312）: 日和スタイルの8タブのうち
-          データが揃っている3タブのみ実装。DataRaceTable（主役の生データ一覧）とは
+      {/* レース詳細ページのタブ構成（BOA-305〜307/312）: 日和スタイルの8タブのうち
+          データが揃っている5タブを実装。DataRaceTable（主役の生データ一覧）とは
           別の切り口（条件フィルタ×棒グラフ）のため両方残す */}
       {venueCode && analysisRaceId && (
         <RaceTabs
@@ -319,6 +329,17 @@ function PredictionPanel({
                   venueCode={venueCode}
                   venueName={venueName}
                   raceId={analysisRaceId}
+                />
+              ),
+            },
+            {
+              id: "waku",
+              label: t("raceTabs.waku"),
+              content: (
+                <RaceWakuInfoTab
+                  raceId={analysisRaceId}
+                  venueCode={venueCode}
+                  players={prediction.allPlayers}
                 />
               ),
             },

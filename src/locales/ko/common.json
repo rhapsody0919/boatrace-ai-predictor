@@ -452,9 +452,34 @@
     "resultTitleDeadline": "（마감 {{time}}）"
   },
   "raceTabs": {
+    "waku": "번호별 정보",
     "aiPrediction": "AI 예상",
     "beforeInfo": "직전 정보",
     "oddsList": "오즈 일람"
+  },
+  "wakuInfo": {
+    "note": "선수를 선택하면 해당 선수의 번호(1〜6)별 성적을 비교할 수 있습니다. 막대를 누르면 최근 10경기 착순이 열립니다",
+    "boatLabel": "선수(번호)",
+    "metricLabel": "지표",
+    "metrics": {
+      "winRate": "1착률",
+      "top2Rate": "2연대율",
+      "top3Rate": "3연대율"
+    },
+    "courseTitle": "번호별 성적",
+    "courseSubtitle": "전국・전 기간 실적(출주 시 번호 기준)",
+    "courseCaveat": "※실제 진입 코스 변화(전진 배치)는 구분할 수 없어 출주 시의 번호로 집계했습니다. 성적은 예상 생성 시점의 집계값, 최근 10경기는 최신 데이터라 건수가 다소 다를 수 있습니다",
+    "loading": "불러오는 중...",
+    "sampleCount": "(n={{n}})",
+    "outOfPlace": "착외",
+    "todayBadge": "이번 경주 번호",
+    "noData": "데이터가 없습니다",
+    "noRacerId": "선수 정보를 가져오지 못했습니다",
+    "noRecentFinishes": "이 번호로 출주한 이력이 없습니다",
+    "fetchError": "최근 10경기를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요",
+    "recentFinishesNote": "{{course}}번 출주 시 최근 10경기 착순(왼쪽이 가장 오래됨, 오른쪽이 최신)",
+    "kimariteTitle": "결정수 경향(전 선수・최근 90일)",
+    "kimariteCaveat": "※이 경기장의 모든 경주・모든 선수를 합산한 결정수 비율입니다(선수 개인의 실적이 아닙니다)"
   },
   "aiPredictionTab": {
     "unavailableTitle": "AI 예상 데이터가 없습니다",
