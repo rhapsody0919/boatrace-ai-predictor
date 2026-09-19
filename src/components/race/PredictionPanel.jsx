@@ -58,11 +58,9 @@
  * 2026-09-16追記(オッズ一覧タブ追加、BOA-311): FR-4（オッズ全券種対応、
  * race_odds.trifecta_all/trio_all/exacta_all/quinella_all/wide_all）が
  * 本番稼働済みになったため、「直前情報」と「結果」の間に「オッズ一覧」タブ
- * （RaceOddsListTab）を追加した。券種タブ×6x6ヒートマップグリッド×セルタップ
- * でのオッズ推移ドリルダウン。3連単/3連複は3艇の組み合わせのため、グリッドは
- * 1着×2着（trioは艇番の小さい2艇）のペア軸にし、タップ後に3着候補一覧を
- * 挟んでから推移を表示する2段階ドリルダウンにしている（詳細はコンポーネント
- * 冒頭コメント参照）
+ * （RaceOddsListTab）を追加した。券種タブ×全組み合わせの常時表示×オッズ
+ * タップでの推移表示（日和のオッズ一覧に寄せた構成。詳細はコンポーネント
+ * 冒頭コメント参照）。選手名表示のためplayersを渡す
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -373,6 +371,7 @@ function PredictionPanel({
                 <RaceOddsListTab
                   raceId={analysisRaceId}
                   raceStartTime={selectedRace?.startTime}
+                  players={prediction.allPlayers}
                 />
               ),
             },

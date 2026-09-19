@@ -4,6 +4,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
+  /* 広い画面で数字同士が離れて読みづらくならないよう、スマホ縦持ち相当の幅に留める */
+  max-width: 44rem;
 }
 
 .rol-subtitle {
@@ -47,26 +49,14 @@
   font-weight: var(--font-weight-bold);
 }
 
-.rol-grid {
-  display: grid;
-  grid-template-columns: 2.4rem repeat(6, 1fr);
-  gap: 3px;
-}
-
-.rol-grid-corner,
-.rol-grid-head {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.rol-guide {
+  margin: 0;
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
   color: var(--text-secondary);
-  text-align: center;
-  padding: 2px;
 }
 
-.rol-boat-badge,
-.rol-boat-badge-sm {
+/* 艇番バッジ（サイズ違い: 既定/sm/xs） */
+.rol-boat-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -84,37 +74,145 @@
   height: 1.25rem;
 }
 
-.rol-cell {
+.rol-boat-badge-xs {
+  width: 1rem;
+  height: 1rem;
+  font-size: var(--font-size-2xs);
+}
+
+/* ブロック（3連単・2連単・2連複・拡連複の1着/艇番ごとのまとまり） */
+.rol-block {
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.rol-block-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--surface-page);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.rol-block-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 3連単: 2着ごとの列（列数は出走艇数-1。欠場艇がいれば減る） */
+.rol-cols {
+  display: grid;
+  grid-template-columns: repeat(var(--rol-col-count, 5), minmax(0, 1fr));
+}
+
+.rol-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px;
+  border-left: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rol-col:first-child {
+  border-left: none;
+}
+
+.rol-col-head {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 2px;
+}
+
+.rol-col-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 0 2px;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* オッズ1件（バッジ群＋オッズ値。人気度で色分け） */
+.rol-odds {
   appearance: none;
   border: none;
   border-radius: var(--radius-sm);
-  padding: var(--spacing-2) 2px;
-  font-size: var(--font-size-xs);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* 狭い画面で桁数の多いオッズ（4〜5桁）がバッジの横に収まらないとき、
+     数字を切らずに次の行へ折り返す（通常のセルは1行のまま） */
+  flex-wrap: wrap;
+  gap: 2px;
+  width: 100%;
+  padding: 2px 3px;
+  min-height: 1.5rem;
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
-  text-align: center;
-  cursor: pointer;
   color: var(--text-primary);
   background: var(--surface-page);
+  cursor: pointer;
+  min-width: 0;
 }
 
-.rol-cell:disabled {
+.rol-odds:disabled {
   cursor: default;
   color: var(--text-secondary);
 }
 
-.rol-cell-na {
-  background: transparent;
-  color: var(--text-secondary);
-  font-weight: var(--font-weight-normal);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.rol-cell.is-selected {
+.rol-odds.is-selected {
   outline: 2px solid var(--brand-accent-primary);
   outline-offset: -2px;
+}
+
+.rol-odds-badges {
+  display: inline-flex;
+  gap: 1px;
+  flex: none;
+}
+
+.rol-odds-value {
+  margin-left: auto;
+}
+
+/* 3連複の一覧・2連単/2連複/拡連複のブロックは2列に並べる。推移パネルは
+   選択した要素と同じ行の直後に全幅で挿入する（rol-span-all） */
+.rol-two-col-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-2);
+  align-items: start;
+}
+
+.rol-two-col-grid > .rol-odds {
+  font-size: var(--font-size-xs);
+  padding: 4px var(--spacing-2);
+}
+
+.rol-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px;
+}
+
+.rol-rows .rol-odds {
+  font-size: var(--font-size-xs);
+  padding: 3px var(--spacing-2);
+}
+
+.rol-span-all {
+  grid-column: 1 / -1;
 }
 
 /* ヒートマップ濃淡: プライマリーカラーの透過度で表現する（ライト/ダーク双方の
@@ -141,7 +239,6 @@
   color: var(--text-secondary);
 }
 
-.rol-candidates,
 .rol-trend {
   background: var(--surface-card);
   border: var(--border-width-1) solid var(--border-hairline);
@@ -149,39 +246,11 @@
   padding: var(--spacing-3);
 }
 
-.rol-candidates-title,
 .rol-trend-title {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
   margin-bottom: var(--spacing-2);
-}
-
-.rol-candidates-row {
-  display: flex;
-  gap: var(--spacing-2);
-  flex-wrap: wrap;
-}
-
-.rol-candidate-chip {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  padding: var(--spacing-1) var(--spacing-2);
-  border-radius: var(--radius-full);
-  border: var(--border-width-1) solid var(--border-hairline);
-  background: var(--surface-page);
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-
-.rol-candidate-chip.is-selected {
-  border-color: var(--brand-accent-primary);
-  outline: 2px solid var(--brand-accent-primary);
-  outline-offset: -2px;
 }
 
 .rol-sparkline {
@@ -194,15 +263,16 @@
   stroke: var(--brand-accent-primary);
 }
 
+/* スナップショットが多い（最大9件程度）レースでも見切れないよう、
+   一定幅で自動折り返しする */
 .rol-trend-values {
-  display: flex;
-  justify-content: space-between;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(3.4rem, 1fr));
+  gap: var(--spacing-2) 4px;
   margin-top: var(--spacing-2);
 }
 
 .rol-trend-item {
-  flex: 1;
   text-align: center;
 }
 
@@ -214,7 +284,7 @@
 }
 
 .rol-trend-label {
-  font-size: 0.65rem;
+  font-size: var(--font-size-2xs);
   color: var(--text-secondary);
 }
 
@@ -224,19 +294,23 @@
 }
 
 @media (max-width: 480px) {
-  .rol-grid {
-    grid-template-columns: 1.8rem repeat(6, 1fr);
-  }
-
-  .rol-cell {
-    padding: var(--spacing-1) 1px;
-    font-size: 0.62rem;
-  }
-
-  .rol-boat-badge,
-  .rol-boat-badge-sm {
+  .rol-boat-badge {
     width: 1.2rem;
     height: 1.2rem;
-    font-size: 0.6rem;
+    font-size: var(--font-size-2xs);
+  }
+
+  .rol-boat-badge-sm {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .rol-boat-badge-xs {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
+  .rol-odds {
+    padding: 2px;
   }
 }

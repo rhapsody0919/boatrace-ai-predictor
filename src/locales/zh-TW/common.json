@@ -546,13 +546,19 @@
     "courseN": "{{n}}航道"
   },
   "oddsList": {
-    "subtitle": "切換投注方式即可查看所有組合的賠率，點擊儲存格可查看變化趨勢",
+    "subtitle": "切換投注方式即可查看所有組合的賠率，點擊賠率可查看變化趨勢",
     "loading": "賠率載入中...",
     "disclaimer": "此處顯示的賠率為爬蟲擷取的參考值，請務必與主辦單位（BOATRACE官方網站等）公布的資料核對後再行投注",
     "legend": "顏色越深代表越熱門（賠率越低）",
-    "orderedCornerLabel": "第1名＼第2名",
-    "unorderedCornerLabel": "組合",
-    "pickThirdLabel": "第3名候選（點擊查看趨勢）",
+    "compositeLabel": "合成",
+    "exactaShortLabel": "2單",
+    "guide": {
+      "trifecta": "每個區塊為第1名，欄位標題為第2名，每列的艇號為第3名。欄位下方顯示該第2名的合成賠率與第1-2名的2連單賠率",
+      "trio": "3艇組合（不分順序）共20種",
+      "exacta": "每個區塊為第1名，每列的艇號為第2名（共30種）",
+      "quinella": "每個區塊為較小的艇號，每列的艇號為搭配艇（共15種，不分順序）",
+      "wide": "每個區塊為較小的艇號，每列的艇號為搭配艇。賠率以下限-上限範圍顯示（共15種，不分順序）"
+    },
     "trendTitle": "{{combo}} 賠率趨勢",
     "deadlineLabel": "截止時點",
     "minutesBeforeLabel": "{{n}}分鐘前",
