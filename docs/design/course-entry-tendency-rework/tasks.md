@@ -19,6 +19,7 @@ FR-1/FR-2/FR-6（データ基盤）→ FR-3（出走表統合、最優先のUI�
 - [ ] **Task 2: FR-1の精度検証**（検証のみ、DB書き込みは伴わない）
   - `analyze-indicator-predictive-power.js`でcourseRateの予測力、`backtest-course-rate-only.js`で的中率・回収率を、切り替え前後で比較
   - `.claude/rules/analysis.md`のデータ精度検証パターンに従い、実選手2〜3名を`race_entries`+`race_results.actual_course_N`から手計算して保存値と突き合わせる
+  - **`courseRate`の参照側の見直し要否も検証する**（Task 1のセルフレビューで判明）: `course_race_counts`のキーが「実際に進入したコース」になった一方、参照側（`generate-unified-predictions.js`の`calculatePlaceRecommendation`、`raceIndicators.jsx`の`courseRateOf`）は枠番で引いている。よく動く選手（例: 選手3072は3〜6枠から2コースに入る）では、枠番のキーが5走未満・欠落となり`courseRate`がnullになる。「枠番で引く」ままで予測力が落ちないか、「その選手が今日の枠番で最も入りやすいコース（`course_entry_tendency`の最頻コース）で引く」に変えるべきかを比較する
   - 結果をユーザーに報告し、Task 3の要否を確認する（**着手前に必ずユーザー確認**）
 
 - [ ] **Task 3: （条件付き）本番反映**

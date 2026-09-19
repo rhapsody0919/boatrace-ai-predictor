@@ -7,7 +7,10 @@
  * 旧列course_1〜6（添字=コース、値=艇番）とは逆向きなので、
  * 「値が艇番と一致する列を探す」旧来のループをそのまま流用してはならない。
  */
-import { extractVenueCodeFromRaceId } from "./dateUtils.js";
+import {
+  extractDateFromRaceId,
+  extractVenueCodeFromRaceId,
+} from "./dateUtils.js";
 
 export const ACTUAL_COURSE_SELECT =
   "actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6";
@@ -47,7 +50,7 @@ export function buildCourseEntryTendency(entries, resultsByRaceId, since) {
   let counted = 0;
 
   for (const entry of entries) {
-    if (entry.race_id.slice(0, 10) < since) continue;
+    if (extractDateFromRaceId(entry.race_id) < since) continue;
     const course = actualCourseOf(
       resultsByRaceId.get(entry.race_id),
       entry.boat_number,
