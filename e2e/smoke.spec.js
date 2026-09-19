@@ -1396,6 +1396,14 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
         );
         await page.reload();
         await expect(page.locator(".app-header")).toBeVisible();
+        // ヘッダー表示直後はSupabase由来のバッジ・カード等がまだ描画されておらず、
+        // データ読み込みの速さで検査対象が変わり結果が不安定になる。
+        // ポーリング等で通信が終わらないページもあるため、タイムアウトに限り検査を続行する
+        await page
+          .waitForLoadState("networkidle", { timeout: 15000 })
+          .catch((error) => {
+            if (error.name !== "TimeoutError") throw error;
+          });
 
         const results = await new AxeBuilder({ page })
           .withRules(["color-contrast"])

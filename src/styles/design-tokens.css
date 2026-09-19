@@ -64,7 +64,7 @@
   --color-grade-sg: #7c3aed;      /* スーパーG */
   --color-grade-g1: #dc2626;      /* G1 */
   --color-grade-g2: #2563eb;      /* G2 */
-  --color-grade-g3: #059669;      /* G3 */
+  --color-grade-g3: #047857;      /* G3（白文字バッジでWCAG AA 4.5:1以上） */
 
   /* グレースケール - 背景、テキスト、ボーダーなど */
   --color-gray-50: #f8fafc;      /* 最も明るい背景 */
