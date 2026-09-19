@@ -230,15 +230,20 @@ export function toWeatherColumns(conditions, observedAt) {
 }
 
 /**
- * 取得したページの解析結果から、race_conditions へ書く気象の行を作る（純粋関数）。
- * 気象が1項目も解析できないページ・観測時刻が不明または不正なページは、行を作らない
- * （観測時刻の無い値を書くと、以前の観測時刻が残って鮮度を誤って示すため）。
- * 行を作れなかった理由は stats に数える（呼び出し側が「0件を成功扱いにしない」ためのログに使う）。
+ * 取得したページの解析結果から、race_conditions へ書く気象の行を作る（純粋関数。展示取得と
+ * update-race-info の両方が使う）。
+ *   - 気象が1項目も解析できないページ（ブロックが無い・取得失敗）: 行を作らない。書くと、
+ *     既にある良い値を null で上書きしてしまう
+ *   - 発走予定時刻以降の観測（after_start）: 行を作らない。そのレースの時点の気象ではない
+ *   - 観測時刻が分からない・不正（no_time・future）: 気象の値は最新の公式値なので行を作るが、
+ *     weather_observed_at は明示的に null にする（古い観測時刻を残して鮮度を誤って示さない）
+ * 理由は stats に数える（呼び出し側が「0件を成功扱いにしない」ためのログに使う）。
  *
  * @param {Array<{raceId: string, venueCode: number, startTime: Date|null, conditions: ReturnType<typeof scrapeConditions>|null}>} fetched
  * @param {string} date YYYY-MM-DD（レース日、JST）
  * @param {{now?: Date, startTimeLookup?: ReturnType<typeof buildStartTimeLookup>|null}} [options]
  * @returns {{rows: Object[], stats: {fetched: number, parsed: number, noWeather: number, no_time: number, after_start: number, future: number}}}
+ *   parsed: 行を作った件数（no_time・future を含む）
  */
 export function buildWeatherRows(
   fetched,
@@ -266,10 +271,8 @@ export function buildWeatherRows(
         ? (raceNo) => startTimeLookup(venueCode, raceNo)
         : null,
     });
-    if (problem) {
-      stats[problem]++;
-      continue;
-    }
+    if (problem) stats[problem]++;
+    if (problem === "after_start") continue;
     stats.parsed++;
     rows.push({ race_id: raceId, ...toWeatherColumns(conditions, observedAt) });
   }
@@ -311,11 +314,13 @@ export function buildResultWeatherRows(fetched) {
 export function formatWeatherStats(stats) {
   const skipped = [
     stats.noWeather > 0 && `気象なし${stats.noWeather}`,
-    stats.no_time > 0 && `観測時刻不明${stats.no_time}`,
     stats.after_start > 0 && `発走後の観測${stats.after_start}`,
-    stats.future > 0 && `未来の観測${stats.future}`,
   ].filter(Boolean);
-  const detail =
-    skipped.length > 0 ? `（反映せず: ${skipped.join("・")}）` : "";
-  return `取得${stats.fetched}レース / 解析${stats.parsed}レース${detail}`;
+  const unknownTime = stats.no_time + stats.future;
+  const notes = [
+    skipped.length > 0 && `反映せず: ${skipped.join("・")}`,
+    unknownTime > 0 && `観測時刻不明で反映: ${unknownTime}`,
+  ].filter(Boolean);
+  const detail = notes.length > 0 ? `（${notes.join("、")}）` : "";
+  return `取得${stats.fetched}レース / 反映${stats.parsed}レース${detail}`;
 }

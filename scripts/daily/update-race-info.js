@@ -28,10 +28,10 @@ import {
 } from "../lib/unchangedRows.js";
 import {
   buildStartTimeLookup,
+  buildWeatherRows,
   convertWindDirection,
-  resolveObservedAt,
+  formatWeatherStats,
   scrapeConditions,
-  toWeatherColumns,
 } from "../lib/beforeinfoWeather.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 
@@ -312,6 +312,7 @@ export async function run(schedule, date, { dryRun = false } = {}) {
   // 会場ごとにグループ化して並列取得
   const entriesRows = [];
   const conditionsRows = [];
+  const weatherFetched = [];
   const racesGradeUpdates = [];
   const cancellationUpdates = [];
 
@@ -403,19 +404,20 @@ export async function run(schedule, date, { dryRun = false } = {}) {
       // （conditions取得はほぼ常に成功するため、seriesDay単独成功のレアケースを
       // 拾えなくても実害は小さい）
       if (conditions || raceTitle || raceStage) {
-        // 観測時刻（BOA-358）: 公式の「HH:MM現在」、または「N R時点」のレースの発走予定時刻。
-        // 取得できない・発走後の観測等はNULL
-        const { observedAt } = resolveObservedAt(conditions, date, {
-          startTime: r.start_time,
-          startTimeOfRace: (raceNo) => startTimeLookup(r.venue_code, raceNo),
-        });
+        // 気象の列（と観測時刻）は、書き込みの直前にまとめて作る（下の buildWeatherRows。展示取得と
+        // 同じ規則）。気象を取得できなかったレースは、気象の列を含めず、既存の良い値を消さない
         conditionsRows.push({
           race_id: r.race_id,
-          ...toWeatherColumns(conditions, observedAt),
           series_day: seriesDay,
           is_final_day: isFinalDay,
           race_title: raceTitle,
           race_stage: raceStage,
+        });
+        weatherFetched.push({
+          raceId: r.race_id,
+          venueCode: r.venue_code,
+          startTime: r.start_time,
+          conditions,
         });
       }
 
@@ -489,11 +491,34 @@ export async function run(schedule, date, { dryRun = false } = {}) {
 
   // race_conditions upsert
   if (conditionsRows.length > 0) {
+    // 気象の列（観測時刻を含む）は、展示取得と同じ規則で作る（BOA-358）。気象を書ける行と、
+    // 書けない行（取得失敗・気象ブロックなし・発走後の観測）は、キーの組み合わせが違うため
+    // 別々にupsertする（PostgRESTの一括upsertは、キーの無い行に明示的にNULLを書くため）
+    const { rows: weatherRows, stats: weatherStats } = buildWeatherRows(
+      weatherFetched,
+      date,
+      { startTimeLookup },
+    );
+    console.log(`  🌤️ 気象: ${formatWeatherStats(weatherStats)}`);
+    const weatherByRaceId = new Map(
+      weatherRows.map((row) => [row.race_id, row]),
+    );
+    const withWeather = [];
+    const withoutWeather = [];
+    for (const row of conditionsRows) {
+      const weatherRow = weatherByRaceId.get(row.race_id);
+      if (weatherRow) withWeather.push({ ...row, ...weatherRow });
+      else withoutWeather.push(row);
+    }
     // weather_observed_at 列（マイグレーション069）が未適用でも書き込めるよう、共通の書き込み関数を使う
-    await upsertRaceConditions(supabase, conditionsRows, {
-      label: "race_conditions",
-      dryRun,
-    });
+    for (const [group, label] of [
+      [withWeather, "race_conditions"],
+      [withoutWeather, "race_conditions（気象なし）"],
+    ]) {
+      if (group.length > 0) {
+        await upsertRaceConditions(supabase, group, { label, dryRun });
+      }
+    }
   }
 
   // races.race_grade を更新（Source of Truth = races テーブル）

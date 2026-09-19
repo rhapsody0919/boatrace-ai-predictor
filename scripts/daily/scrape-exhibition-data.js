@@ -490,7 +490,14 @@ export async function updateRaceConditionsWeather(
     console.log(`🌤️ 気象: ${formatWeatherStats(stats)}`);
     if (stats.fetched > 0 && rows.length === 0) {
       console.warn(
-        "⚠️ 気象: ページを取得したが、反映できる気象が1件も無かった（公式ページの構造変更・観測時刻の書式変更の可能性）",
+        "⚠️ 気象: ページを取得したが、反映できる気象が1件も無かった（公式ページの構造変更の可能性。発走後の観測しか無い場合も含む）",
+      );
+    } else if (
+      rows.length > 0 &&
+      stats.no_time + stats.future === rows.length
+    ) {
+      console.warn(
+        "⚠️ 気象: 観測時刻を1件も取得できなかった（気象は反映したが、観測時刻はNULL。タイトルの書式変更の可能性）",
       );
     }
     if (rows.length === 0) {

@@ -24,6 +24,7 @@ import {
   buildResultWeatherRows,
   buildStartTimeLookup,
   buildWeatherRows,
+  formatWeatherStats,
   resolveObservedAt,
   scrapeConditions,
   toWeatherColumns,
@@ -424,21 +425,42 @@ check(
     DATE,
     { now: NOW, startTimeLookup: lookupFor },
   );
+  const byRace = Object.fromEntries(rows.map((r) => [r.race_id, r]));
   check(
-    "buildWeatherRows: 反映は1行（17場2R。観測時刻は1Rの発走予定時刻）",
-    rows.length === 1 &&
-      rows[0].race_id === "2026-09-19-17-02" &&
-      rows[0].weather_observed_at === "2026-09-19T01:40:00.000Z",
+    "buildWeatherRows: 17場2Rは観測時刻つきで反映（観測時刻は1Rの発走予定時刻）",
+    byRace["2026-09-19-17-02"]?.weather_observed_at ===
+      "2026-09-19T01:40:00.000Z",
     JSON.stringify(rows),
   );
   check(
-    "buildWeatherRows: 反映しなかった内訳（気象なし1・発走後の観測1・観測時刻不明1）を数える",
+    "buildWeatherRows: 観測時刻が分からないレース（5R時点で、5Rの発走予定時刻が不明）は、気象の値は反映し、観測時刻は明示的にNULL（古い観測時刻を残さない）",
+    byRace["2026-09-19-05-06"] !== undefined &&
+      byRace["2026-09-19-05-06"].weather === "雨" &&
+      byRace["2026-09-19-05-06"].weather_observed_at === null,
+    JSON.stringify(byRace["2026-09-19-05-06"]),
+  );
+  check(
+    "buildWeatherRows: 気象なし・発走後の観測のレースは、行を作らない（既存の良い値を消さない・別の時点の気象を入れない）",
+    rows.length === 2 &&
+      byRace["2026-09-19-17-03"] === undefined &&
+      byRace["2026-09-19-05-01"] === undefined,
+    JSON.stringify(rows.map((r) => r.race_id)),
+  );
+  check(
+    "buildWeatherRows: 内訳（取得4・反映2・気象なし1・発走後の観測1・観測時刻不明1）を数える",
     stats.fetched === 4 &&
-      stats.parsed === 1 &&
+      stats.parsed === 2 &&
       stats.noWeather === 1 &&
       stats.after_start === 1 &&
       stats.no_time === 1,
     JSON.stringify(stats),
+  );
+  check(
+    "formatWeatherStats: 反映せず・観測時刻不明の内訳がログに出る",
+    formatWeatherStats(stats).includes("気象なし1") &&
+      formatWeatherStats(stats).includes("発走後の観測1") &&
+      formatWeatherStats(stats).includes("観測時刻不明で反映: 1"),
+    formatWeatherStats(stats),
   );
 }
 
