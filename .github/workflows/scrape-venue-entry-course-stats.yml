@@ -46,8 +46,8 @@ jobs:
           git config --local user.name "GitHub Action"
           git add data/analysis/venue-entry-course-stats-health.json
           git diff --staged --quiet || git commit -m "chore: 進入コース別選手成績スクレイピングの成否履歴を更新 [automated]"
-          git pull --rebase
-          git push
+          # masterの更新と競合しても失敗しないよう rebase+リトライで push する（BOA-360）
+          bash scripts/maintenance/push-with-retry.sh
 
       # 会場公式サイトのHTML構造変化を検知する（BOA-293）。新規HTTPリクエストは
       # 行わず、上記スクレイピングが書き込んだ履歴ファイルを読むだけ

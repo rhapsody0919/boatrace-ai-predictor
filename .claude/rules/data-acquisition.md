@@ -15,6 +15,7 @@ paths:
 ## 1. 実行基盤（[ADR-0066](../../docs/adr/0066-scraping-execution-consolidation-to-vercel.md)）
 
 - 新規のデータ取得は**Vercel Functions + Vercel Cron**で実装する。新規にGitHub Actions・cron-job.orgへ取得ジョブを追加しない（既存の旧基盤ジョブは、移行が完了するまでの暫定）
+- 移行完了までの暫定として残る旧基盤のジョブが、結果をmasterへコミットして`git push`する場合は、素の`git push`ではなく`scripts/maintenance/push-with-retry.sh`経由にする（masterの更新と競合してもrebase＋リトライで成功させ、コンフリクト時は失敗させる。BOA-360）
 - Cronは共通ラッパ（認証・排他（リース）・冪等・0件エラー・リージョン）経由で実装する
 - 並走期間（新旧基盤の併存中）の二重書き込みは、取得元（source）列で区別する
 - マイグレーション番号は、着手時とPR作成前に`origin/master`の最大番号を確認する（重複はCIで機械検査する予定）

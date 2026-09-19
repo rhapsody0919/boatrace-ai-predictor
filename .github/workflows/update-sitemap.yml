@@ -52,8 +52,8 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git commit -m "chore: update sitemap [automated]"
-          git pull --rebase
-          git push
+          # masterの更新と競合しても失敗しないよう rebase+リトライで push する（BOA-360）
+          bash scripts/maintenance/push-with-retry.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
