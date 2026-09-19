@@ -39,7 +39,14 @@ AS $$
                     WHEN 3 THEN r.actual_course_3
                     WHEN 4 THEN r.actual_course_4
                     WHEN 5 THEN r.actual_course_5
-                    WHEN 6 THEN r.actual_course_6 END AS course
+                    WHEN 6 THEN r.actual_course_6 END AS course,
+               -- 内側の艇が欠場（進入コースの記録が無い）だと、外側の艇のコースが繰り上がる。
+               -- 選手の意思による前づけ・枠なりではないため集計から除外する。
+               ((e.boat_number > 1 AND r.actual_course_1 IS NULL)
+                OR (e.boat_number > 2 AND r.actual_course_2 IS NULL)
+                OR (e.boat_number > 3 AND r.actual_course_3 IS NULL)
+                OR (e.boat_number > 4 AND r.actual_course_4 IS NULL)
+                OR (e.boat_number > 5 AND r.actual_course_5 IS NULL)) AS shifted
         FROM races ra
         JOIN race_entries e ON e.race_id = ra.race_id
         JOIN race_results r ON r.race_id = ra.race_id
@@ -48,7 +55,7 @@ AS $$
           AND r.actual_course_1 IS NOT NULL
     ), c AS (
         SELECT waku, course, count(*) AS cnt
-        FROM x WHERE course IS NOT NULL
+        FROM x WHERE course IS NOT NULL AND NOT shifted
         GROUP BY waku, course
     ), w AS (
         SELECT waku, sum(cnt)::int AS n, jsonb_object_agg(course::text, cnt) AS courses
