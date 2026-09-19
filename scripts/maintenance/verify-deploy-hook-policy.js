@@ -5,7 +5,7 @@
  * 確認する観点:
  *   1. 未設定・更新0件・窓の外では叩かない（境界: 分が0/4/5/9/10）
  *   2. 窓の中で更新があれば叩く
- *   3. 実行環境のタイムゾーンに依存しない（JSTの分とUTCの分が一致する）
+ *   3. 実行環境のタイムゾーンに依存しない（TZを切り替えて確認。UTC+5:30を含む）
  *   4. 実行間隔ごとの起動回数の見積り（従来: 実行のたびに叩く）
  */
 import {
@@ -79,12 +79,20 @@ check(
     decide({ now: jst(22, 3), changedRaceCount: 1 }).trigger,
 );
 
-// 3. タイムゾーン非依存: 分の値がJSTと一致する（UTCで判定しているため）
-check(
-  "JST 12:04 は窓の中、JST 12:05 は窓の外（TZ環境変数によらず）",
-  decide({ now: new Date("2026-09-19T12:04:59+09:00") }).trigger &&
-    !decide({ now: new Date("2026-09-19T12:05:00+09:00") }).trigger,
-);
+// 3. タイムゾーン非依存: 分の値がJSTと一致する（UTCで判定しているため）。
+//    分がずれるタイムゾーン（Asia/Kolkata = UTC+5:30）を含め、TZを実際に切り替えて確認する。
+//    getMinutes() などローカル時刻の分で判定する実装に変わると、Kolkataで失敗する
+const originalTz = process.env.TZ;
+for (const tz of ["Asia/Tokyo", "America/New_York", "Asia/Kolkata"]) {
+  process.env.TZ = tz;
+  check(
+    `TZ=${tz}: JST 12:04 は窓の中、JST 12:05 は窓の外`,
+    decide({ now: new Date("2026-09-19T12:04:59+09:00") }).trigger &&
+      !decide({ now: new Date("2026-09-19T12:05:00+09:00") }).trigger,
+  );
+}
+if (originalTz === undefined) delete process.env.TZ;
+else process.env.TZ = originalTz;
 
 // 理由が空でないこと（ログに出すため）
 check(
@@ -98,7 +106,9 @@ check(
 
 // 4. 起動回数の見積り。実行間隔（分）ごとに、1日（JST 07:00〜22:59）の
 //    全実行が「更新あり」だったと仮定して数える。従来は実行のたびに叩いていた。
-console.log("\n--- 起動回数の見積り（全実行が更新ありの最悪ケース）---");
+//    実行が等間隔に完了する理想化した見積りで、実運用の遅延・詰まり・キャンセルによる
+//    ばらつき（窓に完了が入らない時間帯や、詰まって連続する場合）は含まない。
+console.log("\n--- 起動回数の見積り（全実行が更新ありの理想化したケース）---");
 for (const [interval, offset] of [
   [5, 0],
   [5, 3],

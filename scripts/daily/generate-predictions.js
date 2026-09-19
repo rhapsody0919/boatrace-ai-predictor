@@ -1594,8 +1594,13 @@ export async function mainRefresh({
   });
   if (hookDecision.trigger) {
     try {
-      await fetch(deployHook, { method: "POST" });
-      console.log("🚀 Vercel Deploy Hook トリガー済み");
+      // fetchは4xx/5xxでも例外を投げないため、応答を見て成否を区別する
+      const res = await fetch(deployHook, { method: "POST" });
+      if (res.ok) {
+        console.log("🚀 Vercel Deploy Hook トリガー済み");
+      } else {
+        console.warn(`⚠️ Vercel Deploy Hook 失敗: HTTP ${res.status}`);
+      }
     } catch (e) {
       console.warn("⚠️ Vercel Deploy Hook 失敗:", e.message);
     }
