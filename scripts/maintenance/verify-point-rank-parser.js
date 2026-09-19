@@ -92,7 +92,8 @@ check(
 );
 
 // --- 対象日の解決（GitHub Actionsのschedule遅延の再現） ---
-const { resolveTargetDate, isTableExpected, judgeVenue } = _internal;
+const { resolveTargetDate, isTableExpected, judgeVenue, buildVenueGrades } =
+  _internal;
 check(
   "対象日: 22:00 JST定刻起動は当日",
   resolveTargetDate(new Date("2026-09-18T13:00:00Z")),
@@ -173,6 +174,40 @@ check(
   judgeVenue({ raceGrade: "G1", seriesDay: null, fetched: table }).failure !==
     null,
   true,
+);
+
+check(
+  "判定: SG/G1でseries_day不明かつ表なし→失敗（正常か判定できない）",
+  judgeVenue({ raceGrade: "SG", seriesDay: null, fetched: { kind: "none" } })
+    .failure !== null,
+  true,
+);
+check(
+  "判定: 一般戦でseries_day不明かつ表なし→成功",
+  judgeVenue({
+    raceGrade: "ippan",
+    seriesDay: null,
+    fetched: { kind: "none" },
+  }).failure,
+  null,
+);
+
+// --- 会場グレード: NULL行で非NULLを上書きしない ---
+check(
+  "会場グレード: 最後の行がNULLでも非NULLを保持",
+  [
+    ...buildVenueGrades([
+      { race_id: "2026-09-19-05-01", race_grade: "G1" },
+      { race_id: "2026-09-19-05-02", race_grade: "G1" },
+      { race_id: "2026-09-19-05-03", race_grade: null },
+      { race_id: "2026-09-19-04-01", race_grade: null },
+      { race_id: "2026-09-19-04-02", race_grade: "ippan" },
+    ]),
+  ],
+  [
+    [5, "G1"],
+    [4, "ippan"],
+  ],
 );
 
 if (failures > 0) {

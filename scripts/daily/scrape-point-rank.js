@@ -59,6 +59,8 @@ const FETCH_HEADERS = {
 const TABLE_EXPECTED_GRADES = ["SG", "G1"];
 const TABLE_EXPECTED_FROM_SERIES_DAY = 4;
 
+const FETCH_TIMEOUT_MS = 15000;
+
 /** GitHub Actionsのschedule遅延の許容時間（実測約4時間+余裕） */
 const SCHEDULE_DELAY_TOLERANCE_HOURS = 6;
 
@@ -107,6 +109,13 @@ function judgeVenue({ raceGrade, seriesDay, fetched }) {
         note: null,
       };
     }
+    if (TABLE_EXPECTED_GRADES.includes(raceGrade) && seriesDay == null) {
+      return {
+        write: false,
+        failure: `${raceGrade}だがseries_day未取得のため、表が無いのが正常か判定できない`,
+        note: null,
+      };
+    }
     return { write: false, failure: null, note: "表なし（対象外の開催/序盤）" };
   }
   if (fetched.rows.length === 0) {
@@ -128,6 +137,24 @@ function judgeVenue({ raceGrade, seriesDay, fetched }) {
 }
 
 /**
+ * racesの行から会場ごとのグレードを求める（純粋関数）
+ * race_gradeはレース単位で、初期INSERT時にNULLの行がありうる。
+ * 会場のグレードは最初に見つかった非NULLを採用する（NULLの行で上書きしない）
+ * @param {Array<{race_id: string, race_grade: string|null}>} races
+ * @returns {Map<number, string|null>} venueCode -> race_grade
+ */
+function buildVenueGrades(races) {
+  const venueGrades = new Map();
+  for (const r of races) {
+    const venueCode = extractVenueCodeFromRaceId(r.race_id);
+    if (!venueGrades.get(venueCode)) {
+      venueGrades.set(venueCode, r.race_grade ?? null);
+    }
+  }
+  return venueGrades;
+}
+
+/**
  * 対象日に開催中の会場コードとレースグレードのMapを取得
  * @returns {Promise<Map<number, string|null>>} venueCode -> race_grade
  */
@@ -139,11 +166,7 @@ async function getActiveVenueGrades(date) {
   if (error) {
     throw new Error(`開催会場一覧の取得エラー: ${error.message}`);
   }
-  const venueGrades = new Map();
-  for (const r of data || []) {
-    venueGrades.set(extractVenueCodeFromRaceId(r.race_id), r.race_grade);
-  }
-  return venueGrades;
+  return buildVenueGrades(data || []);
 }
 
 /**
@@ -177,17 +200,27 @@ async function fetchPointRank(date, venueCode) {
   const jcd = String(venueCode).padStart(2, "0");
   const url = `https://www.boatrace.jp/owpc/pc/race/pointrank?jcd=${jcd}&hd=${ymd}`;
 
-  try {
-    const res = await fetch(url, { headers: FETCH_HEADERS });
-    if (!res.ok) {
-      return { kind: "error", message: `HTTP ${res.status}` };
+  // 一時的な失敗（5xx・タイムアウト）に備えて1回だけ再試行する
+  let lastError = "unknown";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: FETCH_HEADERS,
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (!res.ok) {
+        lastError = `HTTP ${res.status}`;
+      } else {
+        const $ = cheerio.load(await res.text());
+        const rows = parsePointRankTable($);
+        return rows === null ? { kind: "none" } : { kind: "table", rows };
+      }
+    } catch (err) {
+      lastError = err.message;
     }
-    const $ = cheerio.load(await res.text());
-    const rows = parsePointRankTable($);
-    return rows === null ? { kind: "none" } : { kind: "table", rows };
-  } catch (err) {
-    return { kind: "error", message: err.message };
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 3000));
   }
+  return { kind: "error", message: lastError };
 }
 
 /**
@@ -222,7 +255,19 @@ export async function run(date) {
     const name = VENUE_NAMES[venueCode];
     const raceGrade = venueGrades.get(venueCode) ?? null;
     const fetched = await fetchPointRank(targetDate, venueCode);
-    const seriesDay = await getSeriesDay(targetDate, venueCode);
+    // series_dayは、meet_start_dateの算出（表あり）か表の要否判定（SG/G1）にだけ要る。
+    // 一般戦で表なしの会場のためにDBを引かない
+    let seriesDay = null;
+    if (fetched.kind === "table" || TABLE_EXPECTED_GRADES.includes(raceGrade)) {
+      try {
+        seriesDay = await getSeriesDay(targetDate, venueCode);
+      } catch (err) {
+        // 他会場の取得済みデータを捨てないよう、失敗として記録して続行する
+        failures.push(`${name}: ${err.message}`);
+        console.error(`  ❌ ${name}: ${err.message}`);
+        continue;
+      }
+    }
     if (isTableExpected(raceGrade, seriesDay)) expectedVenues++;
 
     const verdict = judgeVenue({ raceGrade, seriesDay, fetched });
@@ -324,8 +369,10 @@ export const _internal = {
   resolveTargetDate,
   isTableExpected,
   judgeVenue,
+  buildVenueGrades,
   getActiveVenueGrades,
   getSeriesDay,
+  fetchPointRank,
 };
 
 if (process.argv[1] === new URL(import.meta.url).pathname) {
