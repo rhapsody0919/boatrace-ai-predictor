@@ -12,10 +12,14 @@
  *   npm run verify:rpc-output-keys                      # 直近の中止レースがある日で検証
  *   npm run verify:rpc-output-keys -- --date 2026-09-12 # 日付を指定
  *
+ * weather の入れ子（observedAt 等）は、検証日に weather が非nullのレースが1件も無いと
+ * [SKIP] になる（検査対象なし）。070（observedAt）の検証には、気象を取得済みのレースがある日
+ * （観測時刻の保存が始まった069適用後の日付）を --date で指定する。
+ *
  * 読み取り専用（RPC 3回と、日付決定用の races 1〜2回の SELECT のみ）。接続は
  * scripts/lib/supabaseClient.js（SUPABASE_URL / SUPABASE_SERVICE_KEY）を使う。
  * 期待するキーは、フロント（src/services/supabaseDataService.js の transformEdgeResponse /
- * getRaces）の参照と、各マイグレーション（037・048・051・062・066等）が足したフィールドに
+ * getRaces）の参照と、各マイグレーション（037・048・051・062・066・070等）が足したフィールドに
  * 合わせている。キーの値が null でも「キーが存在する」ことだけを検査する
  * （json_build_object は null値のキーも出力する）。
  *
@@ -62,6 +66,20 @@ const PREDICTION_NESTED_CHECKS = [
       "aiScoreStandard",
       "aiScoreSafeBet",
       "aiScoreUpsetFocus",
+    ],
+  },
+  {
+    // 066（気象6項目）と070（観測時刻 observedAt）。weather が null のレース（気象未取得）は対象外。
+    // 値が null でもキーは出力される（観測時刻不明の行は observedAt: null）
+    path: "weather",
+    keys: [
+      "weather",
+      "windDirection",
+      "windSpeed",
+      "waveHeight",
+      "temperature",
+      "waterTemperature",
+      "observedAt", // 070（BOA-358。069の列 race_conditions.weather_observed_at）
     ],
   },
   {
