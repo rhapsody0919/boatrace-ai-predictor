@@ -23,6 +23,19 @@ export function actualCourseOf(result, boatNumber) {
   return Number.isInteger(course) && course >= 1 && course <= 6 ? course : null;
 }
 
+/**
+ * boatNumber艇より内側の艇が欠場（進入コースの記録が無い）で、コースが繰り上がったか。
+ * 例: 1号艇が欠場すると2号艇は1コースに入る。これは選手の意思による前づけ・枠なりではないため、
+ * 進入傾向の集計から除外する（除外しないと江戸川のような枠なり固定の会場でも
+ * 「枠外進入」が数件出て、進入傾向が汚れる）。
+ */
+export function isShiftedByAbsence(result, boatNumber) {
+  for (let inner = 1; inner < boatNumber; inner += 1) {
+    if (actualCourseOf(result, inner) === null) return true;
+  }
+  return false;
+}
+
 function tally(target, boatNumber, course) {
   const waku = String(boatNumber);
   if (!target[waku]) target[waku] = { n: 0, courses: {} };
@@ -34,7 +47,7 @@ function tally(target, boatNumber, course) {
 /**
  * 選手の「枠番→実進入コース」の回数を、全体と会場別で集計する。
  * 走数の下限は適用しない（表示側が5走未満を「参考」として扱う）。
- * 実進入コースの記録が無い出走は数えない。
+ * 実進入コースの記録が無い出走、および内側の艇の欠場でコースが繰り上がった出走は数えない。
  *
  * @param {Array<{race_id: string, boat_number: number}>} entries - 選手の出走
  * @param {Map<string, object>} resultsByRaceId - race_id -> actual_course_1〜6を含む結果
@@ -51,11 +64,10 @@ export function buildCourseEntryTendency(entries, resultsByRaceId, since) {
 
   for (const entry of entries) {
     if (extractDateFromRaceId(entry.race_id) < since) continue;
-    const course = actualCourseOf(
-      resultsByRaceId.get(entry.race_id),
-      entry.boat_number,
-    );
+    const result = resultsByRaceId.get(entry.race_id);
+    const course = actualCourseOf(result, entry.boat_number);
     if (course === null) continue;
+    if (isShiftedByAbsence(result, entry.boat_number)) continue;
 
     tally(all, entry.boat_number, course);
     const venueKey = String(extractVenueCodeFromRaceId(entry.race_id));

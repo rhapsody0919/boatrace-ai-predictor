@@ -98,7 +98,7 @@ STの推移（常時表示、920行目）
 `RacerTechniqueProfileChart.jsx`（`src/components/analysis/RacerTechniqueProfileChart.jsx`、337行）と同じ設計パターンで新規作成する:
 - 会場セレクタ（`selectedVenue`）→ レースセレクタ（`selectedRace`）→ 出走選手の傾向一覧（`breakdown`）という3段階の状態遷移
 - 出走6選手の`racer_aggregated_stats`（`venue_code=0`）と会場平均（`venues.course_entry_baseline`）から、FR-3と同じ`resolveCourseEntryCell`で表示する（新規RPCは作らない）
-- 会場平均の表（全24会場の2〜6枠の枠外進入率、江戸川は確認が済むまで非表示）を同タブ内に追加する
+- 会場平均の表（全24会場の2〜6枠の枠外進入率、江戸川も表示する。枠外進入率0.0%は実態）を同タブ内に追加する
 - URLクエリパラメータ（`initialVenueCode`/`initialRaceId`）を受け取る既存パターンを踏襲する（`RaceCard.jsx`等からのディープリンクに対応するため）
 
 #### 10. `src/components/analysis/RacerMaezukeChart.css`（新規CSS、または既存`MotorConditionChart.css`等の流用）

@@ -10,6 +10,7 @@
 import {
   actualCourseOf,
   buildCourseEntryTendency,
+  isShiftedByAbsence,
 } from "../lib/courseEntryTendency.js";
 
 let failures = 0;
@@ -56,6 +57,23 @@ check(
 check("結果行が無い場合はnull", actualCourseOf(undefined, 1), null);
 check("範囲外の値はnull", actualCourseOf(result([9, 2, 3, 4, 5, 6]), 1), null);
 
+// 欠場による繰り上がり（1号艇欠場で2号艇が1コースに入る等）
+const shifted = result([null, 1, 2, 3, 4, 5]);
+check("繰り上がり: 2号艇は内側(1号艇)欠場で該当", isShiftedByAbsence(shifted, 2), true);
+check("繰り上がり: 6号艇も該当", isShiftedByAbsence(shifted, 6), true);
+check("繰り上がり: 1号艇自身は該当しない", isShiftedByAbsence(shifted, 1), false);
+const outerAbsent = result([1, 2, 3, 4, 5, null]);
+check(
+  "外側(6号艇)の欠場は内側の艇に影響しない",
+  isShiftedByAbsence(outerAbsent, 5),
+  false,
+);
+check(
+  "前づけ(欠場なし)は繰り上がりでない",
+  isShiftedByAbsence(result([1, 2, 3, 6, 4, 5]), 4),
+  false,
+);
+
 // 集計
 const results = new Map([
   ["2026-09-10-08-01", result([1, 2, 3, 4, 5, 6])],
@@ -63,6 +81,7 @@ const results = new Map([
   ["2026-09-12-10-03", result([1, 2, 3, 4, 5, 6])],
   ["2025-01-01-08-04", result([1, 2, 3, 4, 5, 6])], // 集計期間外
   ["2026-09-13-08-05", result([1, 2, 3, null, 5, 6])], // 4号艇は欠場
+  ["2026-09-15-08-07", result([1, 2, null, 3, 5, 6])], // 3号艇欠場→4号艇は3コースへ繰り上がり
 ]);
 const entries = [
   { race_id: "2026-09-10-08-01", boat_number: 4 },
@@ -71,9 +90,10 @@ const entries = [
   { race_id: "2025-01-01-08-04", boat_number: 4 },
   { race_id: "2026-09-13-08-05", boat_number: 4 },
   { race_id: "2026-09-14-08-06", boat_number: 4 }, // 結果行が無い
+  { race_id: "2026-09-15-08-07", boat_number: 4 }, // 内側欠場による繰り上がり
 ];
 check(
-  "集計: 全体・会場別、期間外/欠場/結果なしは除外",
+  "集計: 全体・会場別、期間外/欠場/結果なし/繰り上がりは除外",
   buildCourseEntryTendency(entries, results, "2025-09-19"),
   {
     since: "2025-09-19",

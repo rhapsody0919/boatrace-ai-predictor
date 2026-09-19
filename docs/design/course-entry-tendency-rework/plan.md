@@ -161,7 +161,7 @@ BOA-293の`venue_entry_course_stats`は使わない（spec背景6）。全国値
 
 - `scripts/maintenance/update-venue-course-entry-baseline.js`（新規、`update-venue-stats.js`と同じ`maintenance/`配置）: 24会場について`compute_venue_course_entry_baseline`を呼び、`venues.course_entry_baseline`を更新する
 - `aggregate-stats.yml`（夜間、JST 23:00）の3つ目のステップとして追加する。新規ワークフローは作らない
-- 江戸川の値が実態かを、Kファイルの実データ数レース分と突き合わせて確認する（未確認の間は江戸川の会場平均を非表示にする）
+- 江戸川の値は実態（枠なり固定、Task 4で確認済み）。会場平均・選手の進入傾向とも、内側の艇が欠場して繰り上がった出走は除外する（`compute_venue_course_entry_baseline`の`shifted`、`isShiftedByAbsence`）
 
 ## 変更ファイル一覧
 
