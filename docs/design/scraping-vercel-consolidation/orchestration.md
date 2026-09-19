@@ -36,7 +36,7 @@
 | WS0 | ADR-0066・完了の定義・本ファイルのマージ | 親 | なし | PRマージ | 進行中 |
 | WS1 | データ健全性の実測レポート（`scripts/analysis/`にDBから機械生成。存在充足率（期間×会場）、窓内取得率、月別結果充足率、空テーブル、`scrape-*`の最終成功からの経過時間。取得時刻が無いものは「計測不能」と明示） | Agent | なし | 全データセットのベースラインが再現可能に出力される | 未着手 |
 | WS2 | 取得時刻列（`scraped_at`）の追加（`exhibition_data`・`race_entries`・`race_start_timings`ほか）。並走開始の前に実施する | Agent | WS1 | マイグレーション適用、以降の行で取得時刻が入る | 未着手 |
-| WS3 | 既存spec（`scraping-full-coverage`・`scraping-serverless-migration`）の統合改訂とADR-0066の補正。`morning-init`・`races`初期化、展示→予測リフレッシュの連動、`scrape-scheduled`の分割、`scrape-results`の所要時間実測、リージョン（hnd1）、並走方式を決める | 親＋ユーザー（設計判断） | WS1 | 統合specの承認（G1） | 未着手 |
+| WS3 | 既存spec（`scraping-full-coverage`・`scraping-serverless-migration`）の統合改訂とADR-0066の補正。`morning-init`・`races`初期化、展示→予測リフレッシュの連動、`scrape-scheduled`の分割、`scrape-results`の所要時間実測、リージョン（syd1とhnd1の遅延実測による比較）、並走方式を決める | 親＋ユーザー（設計判断） | WS1 | 統合specの承認（G1） | 未着手 |
 | WS4a | 共通Cronラッパ（認証、排他（リース）、冪等、0件エラー、catch-up、リージョン、監視フック）。各データセットの移行より先に、1つの子で作る | Agent | WS3 | ラッパが1データセットで動く | 未着手 |
 | WS4b | データセット別の移行（展示・特記事項→純正Cron、`morning-init`、結果、オッズ、レース情報、低頻度ジョブ）。1データセット=1子 | Agent（2〜3並列） | WS4a | 各データセットが完了の定義A/B/Cを満たす（G2） | 未着手 |
 | WS5 | 空データ・欠損の解消とバックフィル: `ability_index`初回実行、`racer_series_points`の0件原因、`race_special_notes`の判別、結果欠損（2025-12・2026-03）の原因と補填、`today_weight`のNULL、`series_day`の過去分、期別成績40〜55%の原因調査 | Agent | WS1 | 完了の定義Aを満たす | 未着手 |
