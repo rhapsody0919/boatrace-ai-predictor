@@ -29,6 +29,11 @@ import {
   formatSkipSummary,
   upsertChangedRows,
 } from "../lib/unchangedRows.js";
+import {
+  buildResultWeatherRows,
+  scrapeConditions,
+} from "../lib/beforeinfoWeather.js";
+import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 
 // Generate race result page URL
 function getRaceResultUrl(venueCode, raceNo, dateStr) {
@@ -351,6 +356,8 @@ async function scrapeRaceResult(venueCode, raceNo, dateStr) {
       winningTechnique: winningTechnique,
       courseInfo: courseInfo,
       startTimings: startTimings,
+      // レース時点の気象（水面気象情報）。beforeinfoの最終観測と一致する確定値（BOA-358）
+      weather: scrapeConditions($),
     };
   } catch (error) {
     console.error(`  Scraping error: ${error.message}`);
@@ -378,6 +385,7 @@ export async function run(schedule, date) {
       race_id: r.race_id,
       venue_code: r.venue_code,
       race_number: r.race_no,
+      start_time: r.start_time,
     }));
 
     resultSummary = await scrapeAndSaveResults(races, date);
@@ -715,7 +723,8 @@ async function confirmOverdueCancellations(schedule) {
 
 /**
  * 結果スクレイピング・DB書き込みの共通処理
- * @param {Array} races - { race_id, venue_code, race_number }[] の配列
+ * @param {Array} races - { race_id, venue_code, race_number, start_time? }[] の配列
+ *   start_time（発走予定時刻）は、結果ページの気象の観測時刻に使う。無ければ観測時刻はNULL
  * @param {string} targetDate - YYYY-MM-DD
  * @returns {Promise<{updated: boolean, count: number}>}
  */
@@ -747,6 +756,9 @@ export async function scrapeAndSaveResults(races, targetDate) {
   let notYetCount = 0;
   const newResults = [];
   const scrapeCache = new Map(); // race_id → scraped result (for start timings)
+  const startTimeByRaceId = new Map(
+    races.filter((r) => r.start_time).map((r) => [r.race_id, r.start_time]),
+  );
 
   // Fetch results for each race
   for (const race of races) {
@@ -896,6 +908,36 @@ export async function scrapeAndSaveResults(races, targetDate) {
         keyColumns: ["race_id", "boat_number"],
         label: "race_start_timings",
       });
+    }
+
+    // レース時点の気象（結果ページの水面気象情報）を race_conditions へ反映する（BOA-358）。
+    // 発走前に取得した値（beforeinfo）より新しい確定値のため上書きする。変更のある行だけ書く。
+    // 失敗しても、以降の的中判定を止めない
+    try {
+      const { rows: weatherRows, stats: weatherStats } = buildResultWeatherRows(
+        [...scrapeCache].map(([raceId, scraped]) => ({
+          raceId,
+          startTime: startTimeByRaceId.get(raceId) ?? null,
+          conditions: scraped.weather,
+        })),
+      );
+      console.log(
+        `🌤️ 結果ページの気象: 取得${weatherStats.fetched}レース / 解析${weatherStats.parsed}レース`,
+      );
+      if (weatherStats.fetched > 0 && weatherRows.length === 0) {
+        console.warn(
+          "⚠️ 結果ページの気象: 結果を取得したが、気象が1件も解析できなかった（公式ページの構造変更の可能性）",
+        );
+      }
+      if (weatherRows.length > 0) {
+        await upsertRaceConditions(supabase, weatherRows, {
+          label: "race_conditions(結果ページの気象)",
+        });
+      }
+    } catch (weatherError) {
+      console.error(
+        `❌ 結果ページの気象の更新エラー（結果は保存済み）: ${weatherError.message}`,
+      );
     }
 
     // predictions の的中判定を更新（N+1 → 1クエリでバッチ取得）

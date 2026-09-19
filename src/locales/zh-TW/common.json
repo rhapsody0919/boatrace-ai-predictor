@@ -488,6 +488,7 @@
   "beforeInfo": {
     "subtitle": "隨著發走時間接近才會更新的當日限定資訊。部分項目要到發走前30/15/10分鐘才會確定",
     "weatherTitle": "本日水面狀況",
+    "weatherObservedAt": "截至 {{time}} JST",
     "weatherLabel": "天氣",
     "temperatureLabel": "氣溫",
     "windLabel": "風速/風向",

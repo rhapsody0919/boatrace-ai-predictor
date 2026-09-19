@@ -20,6 +20,7 @@ import {
   planWriteAll,
   upsertChangedRows,
 } from "../lib/unchangedRows.js";
+import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 import { predictFirstMark } from "../lib/turnPrediction.js";
 import {
   COURSE_DEFAULT_DISTRIBUTION,
@@ -1183,6 +1184,7 @@ async function writeToSupabase(allPredictions, date) {
       "wave_height",
       "temperature",
       "water_temperature",
+      "weather_observed_at",
       "race_title",
       "race_stage",
     ];
@@ -1208,6 +1210,10 @@ async function writeToSupabase(allPredictions, date) {
               : null;
           row.temperature = race.conditions.airTemp;
           row.water_temperature = race.conditions.waterTemp;
+          // この経路の気象（scrape-to-json 由来）は観測時刻が分からない。展示取得・結果取得が
+          // 書いた新しい観測時刻を残したまま、値だけ古くなって「10:34現在」と表示されるのを
+          // 防ぐため、観測時刻は明示的にNULLにする（BOA-358）
+          row.weather_observed_at = null;
         }
         if (race.conditions?.raceTitle) {
           row.race_title = race.conditions.raceTitle;
@@ -1233,9 +1239,8 @@ async function writeToSupabase(allPredictions, date) {
       // グループ（キーの組み合わせ）ごとに、変更のある行だけをupsertする。比較は行が持つ列のみ
       // で行うため、キーを省いた列（別経路が書いた天候等）を「変更あり」と誤判定しない
       for (const group of conditionsGroupBySignature.values()) {
-        await upsertChangedRows(supabase, "race_conditions", group, {
-          onConflict: "race_id",
-          keyColumns: ["race_id"],
+        // weather_observed_at 列（マイグレーション069）が未適用でも書き込める共通の書き込み関数
+        await upsertRaceConditions(supabase, group, {
           label: "race_conditions",
         });
       }
