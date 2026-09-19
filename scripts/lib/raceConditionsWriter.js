@@ -5,29 +5,17 @@
  * ようにする。未適用のDBへ weather_observed_at を含む行を書くと、その行の他の列（series_day・
  * race_title・気象そのもの）まで書き込みが失敗するため、列が無いことを示すエラーを受けたら
  * weather_observed_at を除いて1回だけ書き直す。
- * 列が無い場合の判定はエラーメッセージで行う。PostgRESTは、UPSERTの本文に未知の列があると
- * 「Could not find the 'x' column of 'y' in the schema cache」（PGRST204）を、SELECTに未知の列が
- * あると「column y.x does not exist」（42703）を返す。両方に対応する。
+ * 列が無い場合の判定は optionalColumns.js に共通化している（PGRST204・42703の両方に対応）。
  */
 
+import { isColumnMissingError, stripColumns } from "./optionalColumns.js";
 import { upsertChangedRows } from "./unchangedRows.js";
 
 export const OBSERVED_AT_COLUMN = "weather_observed_at";
 
 /** DBのエラーメッセージが「列が存在しない」を示すか（weather_observed_at に関するものに限る） */
 export function isObservedAtColumnMissing(message) {
-  if (!message || !message.includes(OBSERVED_AT_COLUMN)) return false;
-  return /does not exist|Could not find the .* column|schema cache/i.test(
-    message,
-  );
-}
-
-function stripObservedAt(rows) {
-  return rows.map((row) => {
-    const copy = { ...row };
-    delete copy[OBSERVED_AT_COLUMN];
-    return copy;
-  });
+  return isColumnMissingError(message, [OBSERVED_AT_COLUMN]);
 }
 
 /**
@@ -58,7 +46,7 @@ export async function upsertRaceConditions(
       `⚠️ race_conditions.${OBSERVED_AT_COLUMN} が未適用のため、この列を除いて書き直します（マイグレーション069）`,
     );
     const retry = await write(
-      stripObservedAt(rows),
+      stripColumns(rows, [OBSERVED_AT_COLUMN]),
       `${label}（観測時刻なし）`,
     );
     return { ...retry, observedAtSupported: false };

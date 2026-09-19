@@ -25,6 +25,7 @@ import {
   scrapeConditions,
 } from "../lib/beforeinfoWeather.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
+import { upsertChangedRows } from "../lib/unchangedRows.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -33,6 +34,21 @@ const FETCH_HEADERS = {
   Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
   "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
 };
+
+// マイグレーション056（BOA-221）・059（BOA-289）で追加した列。未適用のDBでは除いて書き込む
+const BOA221_COLUMNS = [
+  "tilt",
+  "propeller_change",
+  "parts_changed",
+  "adjustment_weight",
+];
+const BOA289_COLUMNS = [
+  "today_weight",
+  "prev_race_no",
+  "prev_entry_course",
+  "prev_start_timing",
+  "prev_finish_rank",
+];
 
 /**
  * ST表記（".07"/"F.10"/"L.05"等）を数値に変換する。フライング・出遅れ接頭辞は
@@ -386,71 +402,28 @@ export async function scrapeAndUpsertRaces(
   if (allRows.length > 0) {
     console.log(`\n💾 exhibition_data: ${allRows.length}件書き込み中...`);
 
-    // BOA-221の新列（マイグレーション056）とBOA-289の新列（マイグレーション059）は
-    // 別々のマイグレーションのため、片方だけ未適用というケースがありうる（本プロジェクトは
-    // Supabase Access Tokenの失効等でマイグレーションを手動・個別に適用してきた実績があり、
-    // 054適用済み・056未適用のような部分適用状態は現実的に起こりうる）。1つの列不在エラーで
-    // 両方の新列を一律に剥がすと、056が既に適用済みで正常に書き込めていたtilt等まで
-    // 巻き添えで書き込み停止してしまう（PR #645セルフレビューで発見）。
-    // full→boa221（BOA-289分のみ剥がす）→legacy（両方剥がす）の2段階でフォールバックし、
-    // 適用済みのマイグレーション分は引き続き書き込み続ける
-    const BOA221_COLUMNS = [
-      "tilt",
-      "propeller_change",
-      "parts_changed",
-      "adjustment_weight",
-    ];
-    const BOA289_COLUMNS = [
-      "today_weight",
-      "prev_race_no",
-      "prev_entry_course",
-      "prev_start_timing",
-      "prev_finish_rank",
-    ];
-    const stripColumns = (batch, columns) =>
-      batch.map((row) => {
-        const stripped = { ...row };
-        columns.forEach((col) => delete stripped[col]);
-        return stripped;
-      });
-    const payloadForTier = (batch, tier) => {
-      if (tier === "full") return batch;
-      if (tier === "boa221") return stripColumns(batch, BOA289_COLUMNS);
-      return stripColumns(batch, [...BOA221_COLUMNS, ...BOA289_COLUMNS]);
-    };
-    const isColumnMissingError = (error) =>
-      !!error && /column .* does not exist/i.test(error.message);
-
-    // 一度ダウングレードしたtierは以降のバッチにも引き継ぐ（同じエラーへの
-    // リトライを毎バッチ繰り返さない）
-    let tier = "full";
-    for (let i = 0; i < allRows.length; i += 1000) {
-      const batch = allRows.slice(i, i + 1000);
-      let { error } = await supabase
-        .from("exhibition_data")
-        .upsert(payloadForTier(batch, tier), {
-          onConflict: "race_id,boat_number",
-        });
-
-      while (isColumnMissingError(error) && tier !== "legacy") {
-        const nextTier = tier === "full" ? "boa221" : "legacy";
-        console.warn(
-          `⚠️ exhibition_data: 新列が未適用のため${nextTier === "boa221" ? "BOA-289分（マイグレーション059）" : "BOA-221・BOA-289分（マイグレーション056・059）"}の新列を除いてリトライします: ${error.message}`,
-        );
-        tier = nextTier;
-        ({ error } = await supabase
-          .from("exhibition_data")
-          .upsert(payloadForTier(batch, tier), {
-            onConflict: "race_id,boat_number",
-          }));
-      }
-
-      if (error) {
-        console.error(`❌ exhibition_data 書き込みエラー:`, error.message);
-      }
-    }
-
-    console.log(`✅ exhibition_data: ${allRows.length}件完了`);
+    // 変更の無い行は書かず、書く行には updated_at を設定する（WS2）。展示タイム未公開でSTだけの行は、
+    // 展示タイムが入るまで毎回再取得されるため、値が同じ間は書かない（updated_atが「値が変わった時刻」
+    // を表すようにする）。created_at は初回のINSERT時にDBの DEFAULT が入る
+    //
+    // BOA-221の新列（マイグレーション056）とBOA-289の新列（マイグレーション059）は別々の
+    // マイグレーションのため、片方だけ未適用というケースがありうる（本プロジェクトはSupabase Access
+    // Tokenの失効等でマイグレーションを手動・個別に適用してきた実績があり、054適用済み・056未適用の
+    // ような部分適用状態は現実的に起こりうる）。1つの列不在エラーで両方の新列を一律に剥がすと、056が
+    // 既に適用済みで正常に書き込めていたtilt等まで巻き添えで書き込み停止してしまう（PR #645セルフ
+    // レビューで発見）。そのため、エラーに名前の出た列が属するグループだけを除いて書き直し、
+    // 適用済みのマイグレーション分は引き続き書き込み続ける（scripts/lib/optionalColumns.js）
+    // 書き込みエラーは upsertChangedRows がログに出す（呼び出し元の戻り値・後続処理は従来どおり）
+    await upsertChangedRows(supabase, "exhibition_data", allRows, {
+      onConflict: "race_id,boat_number",
+      keyColumns: ["race_id", "boat_number"],
+      label: "exhibition_data",
+      stampUpdatedAt: true,
+      optionalColumnGroups: {
+        "マイグレーション056（BOA-221）": BOA221_COLUMNS,
+        "マイグレーション059（BOA-289）": BOA289_COLUMNS,
+      },
+    });
   } else {
     console.log("\n📭 展示: 新規データなし");
   }

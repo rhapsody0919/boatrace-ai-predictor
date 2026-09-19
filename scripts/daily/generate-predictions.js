@@ -1040,11 +1040,13 @@ async function writeToSupabase(allPredictions, date) {
       }
     }
 
-    // 変更の無い行は書かない（バッチ分割・エラー出力は upsertChangedRows が担う）
+    // 変更の無い行は書かない（バッチ分割・エラー出力は upsertChangedRows が担う）。
+    // 書く行には updated_at を設定する（WS2。created_at はINSERT時のDBの DEFAULT に任せる）
     await upsertChangedRows(supabase, "race_entries", entriesData, {
       onConflict: "race_id,boat_number",
       keyColumns: ["race_id", "boat_number"],
       label: "race_entries",
+      stampUpdatedAt: true,
     });
 
     // 2.5. exhibition_dataテーブルにupsert
@@ -1073,6 +1075,7 @@ async function writeToSupabase(allPredictions, date) {
         onConflict: "race_id,boat_number",
         keyColumns: ["race_id", "boat_number"],
         label: "exhibition_data",
+        stampUpdatedAt: true,
       });
     }
 
