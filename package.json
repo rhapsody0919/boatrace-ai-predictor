@@ -21,6 +21,7 @@
     "verify:venue-motor-stats-drift": "node scripts/maintenance/verify-venue-motor-stats-drift-detection.js",
     "verify:race-stage": "node scripts/maintenance/verify-race-stage-parsing.js",
     "verify:race-notices": "node scripts/maintenance/verify-race-notices-parser.js",
+    "verify:point-rank": "node scripts/maintenance/verify-point-rank-parser.js",
     "verify:venue-entry-course-stats": "node scripts/maintenance/verify-venue-entry-course-stats-parser.js",
     "verify:er-diagram": "node scripts/maintenance/verify-plan-erd.js",
     "verify:actual-course-kfile": "node scripts/maintenance/verify-actual-course-kfile-parser.js",

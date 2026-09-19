@@ -186,7 +186,7 @@ racelistページの日程タブ（`.tab2_inner`、当日は`<li class="is-activ
 
 - 進入・着順・ST（過去日分）: 導出クエリのため追加スクレイピング不要（T4相当）。当日分は`scrape-results.js`の結果取得完了に連動
 - `series_day`/`is_final_day`: `update-race-info.js`の既存フロー（発走60分前ウィンドウ）に統合済み、追加スクレイピング不要
-- 得点率（`racer_series_points`）: 新規GitHub Actionsワークフロー（`scrape-point-rank.yml`）で**日次1回**（JST 22:00、当日全レース結果確定後）取得。開催中の全会場に対して試行し、`pointrank`ページが存在しない会場（一般戦・特別選抜競走）は自然にスキップされる設計のため、対象グレードを事前判定するロジックは持たない
+- 得点率（`racer_series_points`）: 新規GitHub Actionsワークフロー（`scrape-point-rank.yml`）で**日次1回**（JST 22:00、当日全レース結果確定後）取得。開催中の全会場に対して試行し、`pointrank`ページが存在しない会場（一般戦・特別選抜競走）は自然にスキップされる設計のため、対象グレードを事前判定するロジックは持たない。ただし「表が無いのが異常か」だけは判定する（SG/G1の4日目以降に表が無い、取得失敗、開催会場0件、DBエラー等は非0終了。2026-09-19、GitHub Actionsのschedule遅延（約4時間）で対象日が翌日にずれ「開催会場なし」で0件終了したまま`success`になっていた不具合の是正。対象日は「now-6時間」のJST日付、`verify:point-rank`で回帰検証）
 
 ## FR-4: オッズ全券種
 
