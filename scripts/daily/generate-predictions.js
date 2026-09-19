@@ -13,6 +13,12 @@ import {
 } from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
+import {
+  filterUnchangedRows,
+  formatSkipSummary,
+  planWriteAll,
+  upsertChangedRows,
+} from "../lib/unchangedRows.js";
 import { predictFirstMark } from "../lib/turnPrediction.js";
 import {
   COURSE_DEFAULT_DISTRIBUTION,
@@ -978,15 +984,14 @@ async function writeToSupabase(allPredictions, date) {
       };
     });
 
-    const { error: racesError } = await supabase
-      .from("races")
-      .upsert(racesData, { onConflict: "race_id" });
-
-    if (racesError) {
-      console.error("❌ races書き込みエラー:", racesError.message);
-    } else {
-      console.log(`  ✅ races: ${racesData.length}件`);
-    }
+    // WS8(b): 変更の無い行は書かない。updated_at は書き込みのたびに現在時刻へ変わるが
+    // 情報を持たないため比較から外す（変更のある行は従来どおりupdated_atも更新する）
+    await upsertChangedRows(supabase, "races", racesData, {
+      onConflict: "race_id",
+      keyColumns: ["race_id"],
+      ignoreColumns: ["updated_at"],
+      label: "races",
+    });
 
     // 2. race_entriesテーブルにupsert
     const entriesData = [];
@@ -1033,18 +1038,12 @@ async function writeToSupabase(allPredictions, date) {
       }
     }
 
-    // バッチでupsert（1000件ずつ）
-    for (let i = 0; i < entriesData.length; i += 1000) {
-      const batch = entriesData.slice(i, i + 1000);
-      const { error: entriesError } = await supabase
-        .from("race_entries")
-        .upsert(batch, { onConflict: "race_id,boat_number" });
-
-      if (entriesError) {
-        console.error("❌ race_entries書き込みエラー:", entriesError.message);
-      }
-    }
-    console.log(`  ✅ race_entries: ${entriesData.length}件`);
+    // 変更の無い行は書かない（バッチ分割・エラー出力は upsertChangedRows が担う）
+    await upsertChangedRows(supabase, "race_entries", entriesData, {
+      onConflict: "race_id,boat_number",
+      keyColumns: ["race_id", "boat_number"],
+      label: "race_entries",
+    });
 
     // 2.5. exhibition_dataテーブルにupsert
     const exhibitionRows = [];
@@ -1068,17 +1067,11 @@ async function writeToSupabase(allPredictions, date) {
     }
 
     if (exhibitionRows.length > 0) {
-      for (let i = 0; i < exhibitionRows.length; i += 1000) {
-        const batch = exhibitionRows.slice(i, i + 1000);
-        const { error: exError } = await supabase
-          .from("exhibition_data")
-          .upsert(batch, { onConflict: "race_id,boat_number" });
-
-        if (exError) {
-          console.error("❌ exhibition_data書き込みエラー:", exError.message);
-        }
-      }
-      console.log(`  ✅ exhibition_data: ${exhibitionRows.length}件`);
+      await upsertChangedRows(supabase, "exhibition_data", exhibitionRows, {
+        onConflict: "race_id,boat_number",
+        keyColumns: ["race_id", "boat_number"],
+        label: "exhibition_data",
+      });
     }
 
     // 3. predictionsテーブルにupsert
@@ -1236,24 +1229,14 @@ async function writeToSupabase(allPredictions, date) {
         conditionsGroupBySignature.get(signature).push(row);
       }
 
-      let conditionsWriteCount = 0;
-      let conditionsHasError = false;
+      // グループ（キーの組み合わせ）ごとに、変更のある行だけをupsertする。比較は行が持つ列のみ
+      // で行うため、キーを省いた列（別経路が書いた天候等）を「変更あり」と誤判定しない
       for (const group of conditionsGroupBySignature.values()) {
-        const { error: conditionsError } = await supabase
-          .from("race_conditions")
-          .upsert(group, { onConflict: "race_id" });
-        if (conditionsError) {
-          conditionsHasError = true;
-          console.error(
-            "❌ race_conditions書き込みエラー:",
-            conditionsError.message,
-          );
-        } else {
-          conditionsWriteCount += group.length;
-        }
-      }
-      if (!conditionsHasError) {
-        console.log(`  ✅ race_conditions: ${conditionsWriteCount}件`);
+        await upsertChangedRows(supabase, "race_conditions", group, {
+          onConflict: "race_id",
+          keyColumns: ["race_id"],
+          label: "race_conditions",
+        });
       }
     }
 
@@ -1367,10 +1350,48 @@ async function fetchRaceDataFromSupabase(raceIds) {
 }
 
 /**
+ * リフレッシュ時の races.volatility 系列の更新対象を決める（WS8(b)）。
+ * 値が前回と同じレースは書かない（updated_at は毎回変わるが情報を持たないため、
+ * 比較に含まれない: 書き込む列に含めておらず、書くときにだけ現在時刻を付ける）。
+ * forceTouchRaces=true のときは従来どおり全レースを更新対象にする。
+ *
+ * @returns {Promise<{toWrite: Object[], stats: Object, fallback: boolean}>}
+ */
+async function planRacesVolatilityUpdates(allPredictions, forceTouchRaces) {
+  const volatilityRows = allPredictions.map((race) => ({
+    race_id: race.raceId,
+    volatility_score: race.volatility.score,
+    volatility_level: race.volatility.level,
+    recommended_model: race.volatility.recommendedModel,
+    volatility_reasons: race.volatility.reasons,
+    first_boat_avg_st: race.volatility.boat1AvgST ?? null,
+  }));
+  if (forceTouchRaces) return planWriteAll(volatilityRows);
+  return filterUnchangedRows(supabase, "races", volatilityRows, {
+    keyColumns: ["race_id"],
+    writeMissing: false, // 行が無ければUPDATEしても0件
+  });
+}
+
+/**
  * リフレッシュモードのメイン処理
  * オーケストレーターから直接インポートして呼び出し可能
+ *
+ * @param {Object} params
+ * @param {boolean} params.isDryRun
+ * @param {string[]|null} [params.specificRaceIds]
+ * @param {boolean} [params.forceTouchRaces] trueなら races の volatility 更新を、値の変化に
+ *   関わらず全対象レースに行い updated_at を進める（既定はfalse＝変更のあるレースのみ）。
+ *   morning-init.js の「予測スクリプトがDB更新後に変更された場合の再生成」判定は
+ *   races.updated_at の最大値とスクリプトのコミット時刻を比べているため、再生成後に
+ *   updated_at が進まないと（値が変わらず全行スキップされると）毎回再生成が走り続ける。
+ *   その再生成経路だけ true を渡す
  */
-export async function mainRefresh({ isDryRun, specificRaceIds }) {
+export async function mainRefresh({
+  isDryRun,
+  specificRaceIds,
+  forceTouchRaces = false,
+}) {
   console.log(`🔄 予測リフレッシュモード${isDryRun ? " [DRY-RUN]" : ""}`);
   console.log(`⏰ ${new Date().toISOString()}`);
 
@@ -1452,7 +1473,15 @@ export async function mainRefresh({ isDryRun, specificRaceIds }) {
     console.log(
       `\n[DRY-RUN] ${allPredictions.length}レースの予測を生成（Supabase書き込みはスキップ）`,
     );
-    return;
+    // 書くはずの races.volatility 更新件数だけ数える（DBへは書き込まない）
+    const { stats, fallback } = await planRacesVolatilityUpdates(
+      allPredictions,
+      forceTouchRaces,
+    );
+    console.log(
+      `  [DRY-RUN] ${formatSkipSummary("races volatility", stats, { fallback })}`,
+    );
+    return { volatilityStats: stats };
   }
 
   // predictions テーブルを更新（対象 race_id のみ delete → insert）
@@ -1530,29 +1559,29 @@ export async function mainRefresh({ isDryRun, specificRaceIds }) {
   // races テーブルの volatility 項目を更新（イン崩れ指数リフレッシュ）
   // upsert ではなく update を使用し、既存行のみを更新する（NOT NULL 制約エラーを回避）
   const now = new Date().toISOString();
+  const {
+    toWrite: volatilityToWrite,
+    stats: volatilityStats,
+    fallback,
+  } = await planRacesVolatilityUpdates(allPredictions, forceTouchRaces);
   let volatilityUpdated = 0;
-  for (const race of allPredictions) {
+  for (const { race_id: raceId, ...columns } of volatilityToWrite) {
     const { error } = await supabase
       .from("races")
-      .update({
-        volatility_score: race.volatility.score,
-        volatility_level: race.volatility.level,
-        recommended_model: race.volatility.recommendedModel,
-        volatility_reasons: race.volatility.reasons,
-        first_boat_avg_st: race.volatility.boat1AvgST ?? null,
-        updated_at: now,
-      })
-      .eq("race_id", race.raceId);
+      .update({ ...columns, updated_at: now })
+      .eq("race_id", raceId);
     if (error) {
       console.error(
-        `❌ races volatility更新エラー (${race.raceId}):`,
+        `❌ races volatility更新エラー (${raceId}):`,
         error.message,
       );
     } else {
       volatilityUpdated++;
     }
   }
-  console.log(`  ✅ races volatility: ${volatilityUpdated}件`);
+  console.log(
+    `  ✅ ${formatSkipSummary("races volatility", volatilityStats, { fallback })} / 更新${volatilityUpdated}件`,
+  );
 
   // Vercel Deploy Hook をトリガー
   const deployHook = process.env.VERCEL_DEPLOY_HOOK;

@@ -20,6 +20,12 @@ import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
 import { computeCancellationTransition } from "../lib/cancellationStatus.js";
 import { normalizeText } from "../lib/venueMotorStats/parserUtils.js";
 import { scrapeRaceStage } from "../lib/raceStageParser.js";
+import {
+  diffRows,
+  formatSkipSummary,
+  planWriteAll,
+  upsertChangedRows,
+} from "../lib/unchangedRows.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -318,9 +324,12 @@ async function fetchRaceInfo(date, venueCode, raceNo) {
  * オーケストレーターから呼び出し可能なレース情報更新処理
  * @param {Array} schedule - getRaceSchedule() の返り値（外部から渡す）
  * @param {string} date - YYYY-MM-DD
+ * @param {{dryRun?: boolean}} [options] dryRun=trueならDBへ書き込まず、書くはずの件数だけログに出す
  * @returns {Promise<{updated: boolean, count: number}>}
+ *   updated/count は「取得できた件数」で、DBへ実際に書いた件数ではない（変更の無い行は
+ *   書かないが、後続の予測リフレッシュの起動条件は従来どおり取得ベースのまま変えない）
  */
-export async function run(schedule, date) {
+export async function run(schedule, date, { dryRun = false } = {}) {
   // 発走1時間前ウィンドウのレースのみ対象
   const targetRaces = getRacesInWindow(schedule, WINDOW_MINUTES);
   if (targetRaces.length === 0) {
@@ -337,7 +346,11 @@ export async function run(schedule, date) {
   const { data: cancellationRows, error: cancellationFetchError } =
     await supabase
       .from("races")
-      .select("race_id, cancellation_status, cancellation_check_streak")
+      // race_grade は、後段の races.race_grade 更新で「変更なし」を判定する既存値として使う
+      // （追加の読み取りをしないため、同じクエリで取得する）
+      .select(
+        "race_id, cancellation_status, cancellation_check_streak, race_grade",
+      )
       .in(
         "race_id",
         targetRaces.map((r) => r.race_id),
@@ -492,11 +505,12 @@ export async function run(schedule, date) {
   // races.cancellation_status / cancellation_check_streak を更新（BOA-254 FR1）
   // entriesRowsが空（対象レース全てが中止疑い等）でも早期returnより前に書き込む
   let cancellationUpdateCount = 0;
+  // dry-run では書き込まない（状態が変化するレースのみが対象で、既に変更時のみの更新）
   for (const {
     race_id,
     cancellation_status,
     cancellation_check_streak,
-  } of cancellationUpdates) {
+  } of dryRun ? [] : cancellationUpdates) {
     const { error } = await supabase
       .from("races")
       .update({ cancellation_status, cancellation_check_streak })
@@ -521,38 +535,51 @@ export async function run(schedule, date) {
 
   console.log(`\n💾 レース情報書き込み中...`);
 
-  // race_entries upsert
-  for (let i = 0; i < entriesRows.length; i += 1000) {
-    const batch = entriesRows.slice(i, i + 1000);
-    const { error } = await supabase
-      .from("race_entries")
-      .upsert(batch, { onConflict: "race_id,boat_number" });
-    if (error) console.error("❌ race_entries 書き込みエラー:", error.message);
-  }
-  console.log(`  ✅ race_entries: ${entriesRows.length}件`);
+  // 以下の3テーブルは、発走60分前ウィンドウ（±3分）に取得のたびに全行をupsertしていたが、
+  // 前回と同じ値の行は書かない（WS8(b)）。取得できた件数(entriesRows.length等)は
+  // 予測リフレッシュの起動条件のため、戻り値・後続処理は従来のまま変えない
+
+  // race_entries upsert（ai_score系は書き込み対象の列に含まれないため比較にも現れない）
+  await upsertChangedRows(supabase, "race_entries", entriesRows, {
+    onConflict: "race_id,boat_number",
+    keyColumns: ["race_id", "boat_number"],
+    label: "race_entries",
+    dryRun,
+  });
 
   // race_conditions upsert
   if (conditionsRows.length > 0) {
-    const { error } = await supabase
-      .from("race_conditions")
-      .upsert(conditionsRows, { onConflict: "race_id" });
-    if (error)
-      console.error("❌ race_conditions 書き込みエラー:", error.message);
-    else console.log(`  ✅ race_conditions: ${conditionsRows.length}件`);
+    await upsertChangedRows(supabase, "race_conditions", conditionsRows, {
+      onConflict: "race_id",
+      keyColumns: ["race_id"],
+      label: "race_conditions",
+      dryRun,
+    });
   }
 
   // races.race_grade を更新（Source of Truth = races テーブル）
+  // 既存値の取得に失敗している場合（cancellationFetchError）は全件を従来どおり更新する
+  const { toWrite: racesGradeToWrite, stats: racesGradeStats } =
+    cancellationFetchError
+      ? planWriteAll(racesGradeUpdates)
+      : diffRows(cancellationRows || [], racesGradeUpdates, {
+          keyColumns: ["race_id"],
+          writeMissing: false, // racesに行が無ければUPDATEしても0件
+        });
   let racesGradeUpdateCount = 0;
-  for (const { race_id, race_grade } of racesGradeUpdates) {
-    const { error } = await supabase
-      .from("races")
-      .update({ race_grade })
-      .eq("race_id", race_id);
-    if (!error) racesGradeUpdateCount++;
+  if (!dryRun) {
+    for (const { race_id, race_grade } of racesGradeToWrite) {
+      const { error } = await supabase
+        .from("races")
+        .update({ race_grade })
+        .eq("race_id", race_id);
+      if (!error) racesGradeUpdateCount++;
+    }
   }
-  if (racesGradeUpdateCount > 0) {
-    console.log(`  ✅ races (race_grade): ${racesGradeUpdateCount}件`);
-  }
+  console.log(
+    `  ${dryRun ? "[DRY-RUN] " : ""}${formatSkipSummary("races.race_grade", racesGradeStats)}` +
+      (dryRun ? "" : ` / 更新${racesGradeUpdateCount}件`),
+  );
 
   return { updated: true, count: entriesRows.length };
 }
