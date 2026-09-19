@@ -24,6 +24,7 @@
     "verify:venue-entry-course-stats": "node scripts/maintenance/verify-venue-entry-course-stats-parser.js",
     "verify:er-diagram": "node scripts/maintenance/verify-plan-erd.js",
     "verify:actual-course-kfile": "node scripts/maintenance/verify-actual-course-kfile-parser.js",
+    "verify:course-entry-tendency": "node scripts/maintenance/verify-course-entry-tendency.js",
     "test:e2e": "playwright test",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
