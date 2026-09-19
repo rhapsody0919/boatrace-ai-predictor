@@ -1,6 +1,6 @@
 # マイグレーション適用状況の台帳
 
-`docs/db-migration/` のマイグレーションSQLは Supabase に手動で適用している（Dashboard の SQL Editor や Management API）。Supabase 側の `list_migrations` は空で、適用履歴が残らないため、この台帳で「どのマイグレーションが本番DBに反映されているか」を記録する。番号の重複検査は `npm run verify:migration-numbers`（`scripts/maintenance/verify-migration-numbers.js`）が担い、このファイルに未記載のマイグレーションがあれば警告する。
+`docs/db-migration/` のマイグレーションSQLは Supabase に手動で適用している（Dashboard の SQL Editor や Management API）。Supabase 側の `list_migrations` は空で、適用履歴が残らないため、この台帳で「どのマイグレーションが本番DBに反映されているか」を記録する。番号の重複検査は `npm run verify:migration-numbers`（`scripts/maintenance/verify-migration-numbers.js`）が担い、このファイルの表に行が無い新規マイグレーション（`origin/master` に無いファイル）があれば失敗にし、既存ファイルの記載漏れは警告する。
 
 ## 運用ルール
 

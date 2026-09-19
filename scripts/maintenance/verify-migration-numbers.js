@@ -10,12 +10,17 @@
  *      許可リストに無い新たな重複、または許可済み番号への同番号ファイルの追加は失敗にする
  *   2. 欠番（警告のみ）
  *   3. --base=<ref>（既定はnpm scriptで origin/master）: baseの最大番号を git ls-tree で取得し、
- *      現在のブランチで新規追加されたファイルが最大番号+1以降であることを確認する。
- *      git fetch はしない。baseを取得できなければスキップして注意を出す
- *   4. APPLIED.md（適用状況の台帳）に未記載のマイグレーション（警告のみ）
+ *      現在のブランチで新規追加されたファイルがbaseの最大番号より後（最大番号+1以降）であることを確認する。
+ *      git fetch はしない。baseを取得できなければスキップして注意を出す。
+ *      baseのコミット日時を表示し、24時間より古ければ fetch を促す警告を出す
+ *   4. APPLIED.md（適用状況の台帳）に、新規追加ファイルの行があること（無ければ失敗）。
+ *      既存ファイルの記載漏れは警告のみ
+ *   5. NNN_*.sql の命名規則に合わない .sql（UNNUMBERED_ALLOWED を除く）は失敗
+ *      （番号が付かないと上記の検査をすり抜けるため）
  *
- * 番号の単位: ファイル名先頭の「3桁の数字 + 任意の英小文字1字」（例: 013 と 013b は別番号として扱う。
- * 013b は 013 のRLSポリシー等の付随ファイルとして意図的に付けられたサブ番号）。
+ * 番号（id）の単位: ファイル名先頭の「3桁の数字 + 任意の英小文字1字」。013 と 013b は別のidとして扱う
+ * （013b は 013 のRLSポリシー等の付随ファイルとして意図的に付けられたサブ番号）。
+ * baseとの順序比較は id の文字列比較（"067" < "067b" < "068"）で行う。
  * 検査対象は NNN_*.sql のみ（002〜006 の NNN_*.md は設計資料でマイグレーションではない）。
  */
 
@@ -32,6 +37,12 @@ const LEDGER_FILE = "APPLIED.md";
 
 const SQL_FILE_RE = /^(\d{3}[a-z]?)_.+\.sql$/;
 const NUMBERED_DOC_RE = /^(\d{3})_.+\.md$/;
+
+/** 番号を付けない既存の .sql（初期の単発スクリプト。台帳には別枠で記載） */
+const UNNUMBERED_ALLOWED = ["add-defense-distribution.sql"];
+
+/** base の取得から何時間で「古い」とみなすか */
+const STALE_BASE_HOURS = 24;
 
 const FROZEN_REASON =
   "本番適用済み。リネームすると docs/design・ADR・コード内コメント・PR履歴からの参照が壊れるため凍結（適用状況は APPLIED.md）";
@@ -147,6 +158,21 @@ function listBaseFiles(ref) {
   }
 }
 
+/** ref の最新コミット日時。取得できなければ null */
+function getRefCommitTime(ref) {
+  try {
+    const out = execFileSync("git", ["log", "-1", "--format=%cI", ref, "--"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+    const date = new Date(out);
+    return Number.isNaN(date.getTime()) ? null : date;
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
   const errors = [];
   const warnings = [];
@@ -193,16 +219,19 @@ async function main() {
       .filter(Boolean)
       .map(numericPart),
   ]);
-  const maxLocal = Math.max(...usedNumbers);
-  const gaps = [];
-  for (let n = 1; n <= maxLocal; n += 1) {
-    if (!usedNumbers.has(n)) gaps.push(n);
-  }
-  if (gaps.length > 0) {
-    warnings.push(`欠番: ${formatRanges(gaps).join(", ")}（失敗にはしない）`);
+  if (usedNumbers.size > 0) {
+    const maxLocal = Math.max(...usedNumbers);
+    const gaps = [];
+    for (let n = 1; n <= maxLocal; n += 1) {
+      if (!usedNumbers.has(n)) gaps.push(n);
+    }
+    if (gaps.length > 0) {
+      warnings.push(`欠番: ${formatRanges(gaps).join(", ")}（失敗にはしない）`);
+    }
   }
 
-  // 3. base の最大番号との比較
+  // 3. base の最大番号との比較。新規ファイル = ローカルにあり base に無いファイル
+  let newFiles = null;
   const baseRef = parseBaseRef(process.argv.slice(2));
   if (baseRef === null) {
     notices.push(
@@ -210,38 +239,62 @@ async function main() {
     );
   } else {
     const { files: baseFiles, reason } = listBaseFiles(baseRef);
+    const baseIds =
+      baseFiles === null ? [] : [...groupSqlById(baseFiles).keys()];
     if (baseFiles === null) {
       notices.push(`baseの最大番号との比較をスキップしました: ${reason}`);
+    } else if (baseIds.length === 0) {
+      notices.push(
+        `baseの最大番号との比較をスキップしました: ${baseRef} の ${MIGRATION_DIR_REL}/ に NNN_*.sql が1件もありません`,
+      );
     } else {
       const baseSet = new Set(baseFiles);
-      const baseMax = Math.max(
-        ...[...groupSqlById(baseFiles).keys()].map(numericPart),
-      );
-      const newFiles = sqlFiles.filter((f) => !baseSet.has(f));
+      const baseMaxId = [...baseIds].sort().at(-1);
+      newFiles = sqlFiles.filter((f) => !baseSet.has(f));
       for (const f of newFiles) {
-        const n = numericPart(SQL_FILE_RE.exec(f)[1]);
-        if (n <= baseMax) {
+        const id = SQL_FILE_RE.exec(f)[1];
+        if (id <= baseMaxId) {
           errors.push(
-            `新規ファイル ${f} の番号 ${pad3(n)} が ${baseRef} の最大番号 ${pad3(baseMax)} 以下です。${pad3(baseMax + 1)} 以降にリネームしてください`,
+            `新規ファイル ${f} の番号 ${id} が ${baseRef} の最大番号 ${baseMaxId} 以下です。${pad3(numericPart(baseMaxId) + 1)} 以降にリネームしてください`,
           );
         }
       }
       notices.push(
-        `${baseRef} の最大番号は ${pad3(baseMax)}、このブランチの新規ファイル ${newFiles.length}件。次の新規マイグレーションは ${pad3(baseMax + 1)} 以降を使う（着手時とPR作成前に fetch して再確認）。`,
+        `${baseRef} の最大番号は ${baseMaxId}、このブランチの新規ファイル ${newFiles.length}件。次の新規マイグレーションは ${pad3(numericPart(baseMaxId) + 1)} 以降を使う（着手時とPR作成前に fetch して再確認）。`,
       );
+      const commitTime = getRefCommitTime(baseRef);
+      if (commitTime !== null) {
+        const ageHours = (Date.now() - commitTime.getTime()) / 3_600_000;
+        notices.push(
+          `${baseRef} の最新コミット日時: ${commitTime.toISOString()}（${Math.floor(ageHours)}時間前）`,
+        );
+        if (ageHours > STALE_BASE_HOURS) {
+          warnings.push(
+            `${baseRef} が${STALE_BASE_HOURS}時間以上前の状態です。他セッションが新しい番号をmasterに入れている可能性があるため、git fetch origin master してから再実行してください`,
+          );
+        }
+      }
     }
   }
 
-  // 4. 台帳（APPLIED.md）への記載漏れ
+  // 4. 台帳（APPLIED.md）に、ファイル名の行（表の行）があること
   try {
     const ledger = await fs.readFile(
       path.join(MIGRATION_DIR, LEDGER_FILE),
       "utf8",
     );
-    const unlisted = sqlFiles.filter((f) => !ledger.includes(f));
-    if (unlisted.length > 0) {
+    const unlisted = sqlFiles.filter((f) => !ledger.includes(`| ${f} |`));
+    const newSet = new Set(newFiles ?? []);
+    const unlistedNew = unlisted.filter((f) => newSet.has(f));
+    const unlistedOld = unlisted.filter((f) => !newSet.has(f));
+    if (unlistedNew.length > 0) {
+      errors.push(
+        `新規マイグレーションの行が ${LEDGER_FILE} の表にありません（適用状況を追記すること）: ${unlistedNew.join(", ")}`,
+      );
+    }
+    if (unlistedOld.length > 0) {
       warnings.push(
-        `${LEDGER_FILE} に未記載のマイグレーション（適用状況の行を追加すること）: ${unlisted.join(", ")}`,
+        `${LEDGER_FILE} の表に未記載のマイグレーション${newFiles === null ? "（--base 未指定のため新規/既存を区別できません）" : ""}: ${unlistedOld.join(", ")}`,
       );
     }
   } catch (err) {
@@ -250,12 +303,17 @@ async function main() {
     );
   }
 
-  // 番号なしSQLの情報
-  const unnumbered = localFiles.filter(
-    (f) => f.endsWith(".sql") && !SQL_FILE_RE.test(f),
+  // 5. NNN_*.sql の命名規則に合わない .sql
+  const misnamed = localFiles.filter(
+    (f) =>
+      f.endsWith(".sql") &&
+      !SQL_FILE_RE.test(f) &&
+      !UNNUMBERED_ALLOWED.includes(f),
   );
-  if (unnumbered.length > 0) {
-    notices.push(`番号なしのSQL（検査対象外）: ${unnumbered.join(", ")}`);
+  if (misnamed.length > 0) {
+    errors.push(
+      `番号付きの命名規則（NNN_名前.sql、NNNは3桁ゼロ埋め、サブ番号は英小文字1字）に合わない .sql（番号検査をすり抜けるため）: ${misnamed.join(", ")}`,
+    );
   }
 
   for (const w of warnings) console.warn(`WARN: ${w}`);
