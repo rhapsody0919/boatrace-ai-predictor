@@ -34,4 +34,5 @@ jobs:
           git config --local user.name "GitHub Action"
           git add data/sherlock/model.json data/adler/model.json
           git diff --staged --quiet || git commit -m "chore: update sherlock/adler models [automated]"
-          git push
+          # 従来は pull せずに push していたため、実行中にmasterが進むと失敗した。rebase+リトライで push する（BOA-360）
+          bash scripts/maintenance/push-with-retry.sh

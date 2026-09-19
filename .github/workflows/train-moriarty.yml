@@ -28,4 +28,5 @@ jobs:
           git config --local user.name "GitHub Action"
           git add data/moriarty/calibrators.json
           git diff --staged --quiet || git commit -m "chore: update moriarty calibrators [automated]"
-          git push
+          # 従来は pull せずに push していたため、実行中にmasterが進むと失敗した。rebase+リトライで push する（BOA-360）
+          bash scripts/maintenance/push-with-retry.sh
