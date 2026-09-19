@@ -10,7 +10,7 @@ import {
   getWatsonModelInfo,
 } from "../../services/watsonService";
 import { WatsonExplanation } from "./explanations";
-import BoatChip from "./BoatChip";
+import BoatBadge from "../race/BoatBadge";
 import "./HolmesWatson.css";
 
 // #0284c7は白文字で4.10:1しかなくAA未達のため濃色に変更（axe-core検出、Holmes.jsxのTABS配列と統一）
@@ -33,7 +33,7 @@ function RankRow({ rank, boat, name, prob, maxProb }) {
   return (
     <div className={`watson-rank-row ${rank === 1 ? "top" : ""}`}>
       <span className="watson-rank-num">{rank}位</span>
-      <BoatChip boatNumber={boat} />
+      <BoatBadge number={boat} />
       <span className="watson-player-name">{name || ""}</span>
       <div className="watson-bar-track">
         <div

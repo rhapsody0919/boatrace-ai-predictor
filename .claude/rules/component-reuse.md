@@ -29,6 +29,8 @@ paths:
 | VenueSelector | 会場選択 |
 | RaceCard | レースカード |
 | VolatilityDisplay | 荒れ度表示 |
+| **BoatBadge** | **艇番の丸バッジ（公式配色、size: xs/sm/md/lg、サイズは`--boat-badge-size`で上書き可）。艇番色で塗る丸チップは個別実装せずこれを使う。表の列見出しセル全体の艇番色塗り（DataRaceTable等）や、艇番色を意図的に使わない画面（MotorWakuStatsGridの進入コース）は対象外** |
+| **Sparkline** | **値の列を折れ線で描く小さなインラインSVG（`values`/`width`/`height`）。線色は`currentColor`** |
 
 ## App.jsx について
 - App.jsx は巨大になりやすいため、UIブロックはできる限りコンポーネントに切り出す

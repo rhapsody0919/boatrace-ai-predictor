@@ -4,7 +4,7 @@ import {
   getSherlockModelInfo,
 } from "../../services/sherlockService";
 import { SherlockExplanation } from "./explanations";
-import BoatChip from "./BoatChip";
+import BoatBadge from "../race/BoatBadge";
 import { BOAT_COLORS } from "./boat-colors";
 import "./HolmesSherlock.css";
 
@@ -16,7 +16,7 @@ function ProbBar({ boat, isTop }) {
   const c = BOAT_COLORS[boat.boatNumber] || BOAT_COLORS[1];
   return (
     <div className={`sherlock-prob-row ${isTop ? "top" : ""}`}>
-      <BoatChip boatNumber={boat.boatNumber} />
+      <BoatBadge number={boat.boatNumber} />
       <span className="sherlock-player">
         {boat.playerName || "—"}
         <span className="sherlock-grade">{boat.grade}</span>
@@ -61,7 +61,7 @@ function RaceCard({ race }) {
           {race.startTime ? race.startTime.slice(0, 5) : ""}
         </span>
         <span className="sherlock-race-pick">
-          本命 <BoatChip boatNumber={race.topPick} />
+          本命 <BoatBadge number={race.topPick} />
         </span>
         {evLabel}
       </summary>
@@ -206,7 +206,7 @@ function HolmesSherlock() {
                       <span>
                         {r.venueName} {r.raceNumber}R
                       </span>
-                      <BoatChip boatNumber={r.bestEvBoat} />
+                      <BoatBadge number={r.bestEvBoat} />
                       <span className="sherlock-ev-badge positive">
                         EV {r.bestEv.toFixed(2)}
                       </span>

@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
-import { BOAT_COLORS } from "../../utils/colors";
+import BoatBadge from "../race/BoatBadge";
 import "./VenueCharacteristicsCard.css";
 
 // このサンプル数を下回る会場は表示しない（ノイズが大きいため）
@@ -108,15 +108,9 @@ export default function VenueCharacteristicsCard({ venueCode }) {
       </div>
       <div className="venue-hud-rows">
         {boatRows.map((row, index) => {
-          const boatColor = BOAT_COLORS[row.boat] ?? {};
           return (
             <div className="venue-hud-row" key={row.boat}>
-              <span
-                className="venue-hud-lane"
-                style={{ background: boatColor.bg, color: boatColor.text }}
-              >
-                {row.boat}
-              </span>
+              <BoatBadge number={row.boat} className="venue-hud-lane" />
               <span className="venue-hud-track">
                 <span className="venue-hud-grid-line" style={{ left: "25%" }} />
                 <span className="venue-hud-grid-line" style={{ left: "50%" }} />

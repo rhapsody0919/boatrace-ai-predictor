@@ -112,19 +112,6 @@
   color: var(--text-primary);
 }
 
-.rbit-boat-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.6em;
-  height: 1.6em;
-  border-radius: var(--radius-full);
-  border: var(--border-width-1) solid var(--border-hairline);
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-sm);
-  flex-shrink: 0;
-}
-
 .rbit-name {
   font-size: var(--font-size-sm);
   overflow: hidden;

@@ -1,0 +1,29 @@
+/* BoatBadge - 艇番の丸バッジ。サイズは --boat-badge-size で管理する */
+.boat-badge {
+  --boat-badge-size: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--boat-badge-size);
+  height: var(--boat-badge-size);
+  border-radius: var(--radius-circle);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  /* 1号艇（白）が背景と同化しないよう、全艇番に一律で境界線を付ける */
+  border: var(--border-width-1) solid var(--border-hairline);
+  flex: none;
+}
+
+.boat-badge-xs {
+  --boat-badge-size: 1rem;
+  font-size: var(--font-size-2xs);
+}
+
+.boat-badge-sm {
+  --boat-badge-size: 1.25rem;
+}
+
+.boat-badge-lg {
+  --boat-badge-size: 1.8rem;
+  font-size: var(--font-size-sm);
+}

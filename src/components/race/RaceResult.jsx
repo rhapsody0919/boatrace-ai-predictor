@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { translateTechnique } from "./raceIndicators";
 import { BOAT_COLORS } from "../../utils/colors";
+import BoatBadge from "./BoatBadge";
 import { supabaseDataService } from "../../services/supabaseDataService";
 
 // スタートのダイナミック演出（全艇が号砲と同時に走り出し、実ST比例の位置×時間で到達）の調整定数。
@@ -37,18 +38,6 @@ function getFinalPositionPercent(startTiming) {
     START_ANIM.LINE_PERCENT -
     (clamped / START_ANIM.POSITION_MAX_SECONDS) *
       START_ANIM.POSITION_RANGE_PERCENT
-  );
-}
-
-function BoatChip({ number }) {
-  const color = BOAT_COLORS[number] || BOAT_COLORS[1];
-  return (
-    <span
-      className="rr-boat-chip"
-      style={{ background: color.bg, color: color.text }}
-    >
-      {number}
-    </span>
   );
 }
 
@@ -222,7 +211,7 @@ function PayoutRow({
         {boats.map((boat, index) => (
           <span className="rr-combo-item" key={`${boat}-${index}`}>
             {index > 0 && <span className="sep">{separator}</span>}
-            <BoatChip number={boat} />
+            <BoatBadge number={boat} />
           </span>
         ))}
       </span>
@@ -362,7 +351,7 @@ function RaceResult({ prediction, raceId }) {
           return (
             <div className={rowClassName(position)} key={position}>
               <span className="rr-pos">{t(`result.rank${position}`)}</span>
-              <BoatChip number={boat} />
+              <BoatBadge number={boat} />
               <span className="rr-name">
                 {player?.name}
                 {player?.grade && <small>{player.grade}</small>}

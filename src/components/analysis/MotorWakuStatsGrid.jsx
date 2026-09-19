@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
+import Sparkline from "../race/Sparkline";
 import "./MotorConditionChart.css";
 
 /**
@@ -15,36 +16,6 @@ import "./MotorConditionChart.css";
  * 「モータ情報」タブ向けの凝縮ビュー）。embedded=falseの時は常に全6コース
  * を表示する（分析ツール「モーター調子」タブのフル版向け）
  */
-function ExhibitionSparkline({ trend }) {
-  if (!trend || trend.length < 2) return null;
-  const times = trend.map((t) => t.time);
-  const min = Math.min(...times);
-  const max = Math.max(...times);
-  const range = max - min || 1;
-  const width = 80;
-  const height = 24;
-  const points = times
-    .map((t, i) => {
-      const x = (i / (times.length - 1)) * width;
-      // 展示タイムは速い(小さい)ほど良いため、上に行くほど速いタイムになるよう反転する
-      const y = height - ((t - min) / range) * height;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return (
-    <svg
-      className="motor-waku-sparkline"
-      viewBox={`0 0 ${width} ${height}`}
-      width={width}
-      height={height}
-      aria-hidden="true"
-    >
-      <polyline points={points} fill="none" strokeWidth="1.5" />
-    </svg>
-  );
-}
-
 function MotorWakuRow({ row, onSelectCourse, isHighlighted }) {
   const { t } = useTranslation();
   const isSmallSample =
@@ -80,7 +51,13 @@ function MotorWakuRow({ row, onSelectCourse, isHighlighted }) {
         {row.avgExhibitionTime !== null ? (
           <>
             <span>{row.avgExhibitionTime.toFixed(2)}</span>
-            <ExhibitionSparkline trend={row.exhibitionTrend} />
+            <Sparkline
+              className="motor-waku-sparkline"
+              values={row.exhibitionTrend?.map((point) => point.time)}
+              width={80}
+              height={24}
+              strokeWidth={1.5}
+            />
           </>
         ) : (
           "-"

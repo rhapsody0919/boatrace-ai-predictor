@@ -122,21 +122,13 @@
   gap: var(--spacing-3);
 }
 
-.venue-hud-lane {
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* 共通の艇番バッジ(BoatBadge)をHUD向けに大きくし、等幅数字にする。
+   .boat-badgeの既定値を確実に上書きするためクラスを2つ重ねる */
+.venue-hud-lane.boat-badge {
+  --boat-badge-size: 2.2rem;
   font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
     monospace;
-  font-weight: var(--font-weight-bold);
   font-size: var(--font-size-base);
-  flex-shrink: 0;
-  /* 1号艇(白背景)がライトモードのカード背景(ほぼ白のivory)に対して
-     輪郭が消える問題への対応。他の艇番色でも一律に付けて統一感を保つ */
-  box-shadow: inset 0 0 0 1px var(--border-hairline);
 }
 
 .venue-hud-track {

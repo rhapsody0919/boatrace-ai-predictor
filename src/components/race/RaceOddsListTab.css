@@ -55,31 +55,6 @@
   color: var(--text-secondary);
 }
 
-/* 艇番バッジ（サイズ違い: 既定/sm/xs） */
-.rol-boat-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  border: var(--border-width-1) solid var(--border-hairline);
-  flex: none;
-}
-
-.rol-boat-badge-sm {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.rol-boat-badge-xs {
-  width: 1rem;
-  height: 1rem;
-  font-size: var(--font-size-2xs);
-}
-
 /* ブロック（3連単・2連単・2連複・拡連複の1着/艇番ごとのまとまり） */
 .rol-block {
   background: var(--surface-card);
@@ -257,11 +232,9 @@
   display: block;
   width: 100%;
   height: 40px;
+  color: var(--brand-accent-primary);
 }
 
-.rol-sparkline polyline {
-  stroke: var(--brand-accent-primary);
-}
 
 /* スナップショットが多い（最大9件程度）レースでも見切れないよう、
    一定幅で自動折り返しする */
@@ -294,20 +267,18 @@
 }
 
 @media (max-width: 480px) {
-  .rol-boat-badge {
-    width: 1.2rem;
-    height: 1.2rem;
+  /* 全通りを常時表示する密なタブのため、スマホでは共通の艇番バッジを一回り小さくする */
+  .race-odds-list-tab .boat-badge {
+    --boat-badge-size: 1.2rem;
     font-size: var(--font-size-2xs);
   }
 
-  .rol-boat-badge-sm {
-    width: 1.1rem;
-    height: 1.1rem;
+  .race-odds-list-tab .boat-badge-sm {
+    --boat-badge-size: 1.1rem;
   }
 
-  .rol-boat-badge-xs {
-    width: 0.9rem;
-    height: 0.9rem;
+  .race-odds-list-tab .boat-badge-xs {
+    --boat-badge-size: 0.9rem;
   }
 
   .rol-odds {

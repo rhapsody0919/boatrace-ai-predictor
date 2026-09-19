@@ -11,7 +11,7 @@ import {
   venueName,
 } from "../../services/mycroftService";
 import { MycroftExplanation } from "./explanations";
-import BoatChip from "./BoatChip";
+import BoatBadge from "../race/BoatBadge";
 import "./HolmesMycroft.css";
 
 // #ca8a04は白文字で2.94:1しかなくAA未達のため濃色に変更（axe-core検出、Holmes.jsxのTABS配列と統一）
@@ -34,7 +34,7 @@ function RankRow({ rank, boat, name, prob, maxProb }) {
   return (
     <div className={`mycroft-rank-row ${rank === 1 ? "top" : ""}`}>
       <span className="mycroft-rank-num">{rank}位</span>
-      <BoatChip boatNumber={boat} />
+      <BoatBadge number={boat} />
       <span className="mycroft-player-name">{name || ""}</span>
       <div className="mycroft-bar-track">
         <div

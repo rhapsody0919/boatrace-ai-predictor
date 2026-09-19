@@ -9,7 +9,7 @@ import {
   getAdlerModelInfo,
 } from "../../services/adlerService";
 import { AdlerExplanation } from "./explanations";
-import BoatChip from "./BoatChip";
+import BoatBadge from "../race/BoatBadge";
 import "./HolmesAdler.css";
 
 const THEME = "#9333ea";
@@ -22,7 +22,7 @@ function ComboChips({ boats, ordered }) {
           {i > 0 && (
             <span className="adler-combo-sep">{ordered ? "→" : "・"}</span>
           )}
-          <BoatChip boatNumber={b} />
+          <BoatBadge number={b} />
         </span>
       ))}
     </span>

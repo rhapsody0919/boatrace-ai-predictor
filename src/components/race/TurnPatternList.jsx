@@ -22,7 +22,7 @@
  * 元のpatterns全体に対して行う（表示の重複除去とは独立）
  */
 import { useTranslation } from "react-i18next";
-import { BOAT_COLORS } from "../../utils/colors";
+import BoatBadge from "./BoatBadge";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 import "./TurnPatternList.css";
 
@@ -56,7 +56,6 @@ function TurnPatternList({ patterns, actualWinner = null }) {
       )}
       {displayPatterns.map((pattern, index) => {
         const isMatch = isResultMode && pattern.winnerCourse === actualWinner;
-        const colors = BOAT_COLORS[pattern.winnerCourse] || BOAT_COLORS[1];
         return (
           <div
             key={`${pattern.winnerCourse}-${pattern.technique}-${index}`}
@@ -65,12 +64,7 @@ function TurnPatternList({ patterns, actualWinner = null }) {
             <span className="turn-pattern-rank">
               {RANK_ICONS[index] || `${index + 1}`}
             </span>
-            <span
-              className="turn-pattern-boat"
-              style={{ background: colors.bg, color: colors.text }}
-            >
-              {pattern.winnerCourse}
-            </span>
+            <BoatBadge number={pattern.winnerCourse} size="lg" />
             <span className="turn-pattern-technique">
               {translateTechnique(pattern.technique)}
             </span>

@@ -25,4 +25,6 @@ export { default as RaceBasicInfoTab } from "./RaceBasicInfoTab";
 export { default as RaceBeforeInfoTab } from "./RaceBeforeInfoTab";
 export { default as RaceAiPredictionTab } from "./RaceAiPredictionTab";
 export { default as RaceHistoryTable } from "./RaceHistoryTable";
+export { default as BoatBadge } from "./BoatBadge";
+export { default as Sparkline } from "./Sparkline";
 export { GRADE_LABELS } from "./raceGradeLabels";
