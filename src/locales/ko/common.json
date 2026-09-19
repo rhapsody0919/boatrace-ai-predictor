@@ -454,7 +454,8 @@
   "raceTabs": {
     "waku": "번호별 정보",
     "aiPrediction": "AI 예상",
-    "beforeInfo": "직전 정보"
+    "beforeInfo": "직전 정보",
+    "oddsList": "오즈 일람"
   },
   "wakuInfo": {
     "note": "선수를 선택하면 해당 선수의 번호(1〜6)별 성적을 비교할 수 있습니다. 막대를 누르면 최근 10경기 착순이 열립니다",
@@ -543,6 +544,22 @@
     "techniqueBreakdownLabel": "결정수별 횟수",
     "entryCourseWinLabel": "진입 코스별 1착 횟수",
     "courseN": "{{n}}코스"
+  },
+  "oddsList": {
+    "subtitle": "권종을 전환하여 모든 조합의 오즈를 확인할 수 있습니다. 셀을 탭하면 추이가 표시됩니다",
+    "loading": "오즈를 불러오는 중...",
+    "disclaimer": "표시된 오즈는 스크레이핑으로 수집한 참고값입니다. 실제 투표 내용은 반드시 주최자(BOATRACE 공식 사이트 등)가 발행한 자료와 대조해 주세요",
+    "legend": "색이 진할수록 인기(오즈가 낮음)입니다",
+    "orderedCornerLabel": "1착＼2착",
+    "unorderedCornerLabel": "조합",
+    "pickThirdLabel": "3착 후보(탭하면 추이 표시)",
+    "trendTitle": "{{combo}} 오즈 추이",
+    "deadlineLabel": "마감 시점",
+    "minutesBeforeLabel": "{{n}}분 전",
+    "noData": "이 조합의 오즈 데이터가 아직 없습니다",
+    "noBetTypeData": "이 권종의 오즈 데이터가 아직 없습니다",
+    "emptyTitle": "오즈 데이터가 아직 없습니다",
+    "emptyBody": "발주 시간이 가까워지면 오즈가 수집되어 이 탭에 표시됩니다."
   },
   "dataTable": {
     "title": "데이터 출주표",

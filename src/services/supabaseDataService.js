@@ -5007,6 +5007,71 @@ export const supabaseDataService = {
   },
 
   /**
+   * 指定レースのオッズ全通り系スナップショット履歴を取得する（オッズ一覧タブ、BOA-311）
+   * race_odds.trifecta_all/trio_all/exacta_all/quinella_all/wide_all（jsonb、ADR-0054/0057）を
+   * captured_at昇順で全件返す。全窓（60/30/15/10/5/0分前）分が入る想定だが、
+   * オンデマンド更新（別チケットBOA-310で予定）が加わると窓に一致しない行が
+   * 混ざりうるため、呼び出し側は行数を6固定と決め打ちしないこと。
+   * 全通り系5列が全てnullの行（全通り捕捉ウィンドウ外のスナップショット）は
+   * オッズ一覧タブでは無意味なため除外する
+   */
+  getRaceOddsSnapshots(raceId) {
+    // オッズは発走前に数分おきに更新されるため、本日以降のレースは短いTTLにする
+    // （既定の30分だと、オッズ取得前に開いて得た空配列や、窓が増える前の
+    // スナップショットが30分間固定される）。過去レースは追加取得が無いため
+    // 既定（withCacheがキーの日付から推定する長いTTL）に任せる
+    const dateMatch = String(raceId).match(/^(\d{4}-\d{2}-\d{2})-/);
+    const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    const ttl =
+      dateMatch && dateMatch[1] < todayJst ? undefined : 3 * 60 * 1000;
+
+    return withCache(
+      `race-odds-snapshots-${raceId}`,
+      async () => {
+        if (!supabase) {
+          throw new Error("Supabase client not initialized");
+        }
+
+        const { data, error } = await supabase
+          .from("race_odds")
+          .select(
+            "captured_at, trifecta_all, trio_all, exacta_all, quinella_all, wide_all",
+          )
+          .eq("race_id", raceId)
+          .order("captured_at", { ascending: true });
+
+        // エラーは[]にせず投げる（withCacheは失敗をキャッシュしないため、
+        // 一時的なDBエラーの空結果が長時間固定されるのを防げる。
+        // 呼び出し側で「データなし」表示にフォールバックする）
+        if (error) {
+          throw new Error(`race_odds（全通り系）取得エラー: ${error.message}`);
+        }
+
+        return (data || [])
+          .filter(
+            (row) =>
+              row.trifecta_all ||
+              row.trio_all ||
+              row.exacta_all ||
+              row.quinella_all ||
+              row.wide_all,
+          )
+          .map((row) => ({
+            capturedAt: row.captured_at,
+            trifectaAll: row.trifecta_all ?? null,
+            trioAll: row.trio_all ?? null,
+            exactaAll: row.exacta_all ?? null,
+            quinellaAll: row.quinella_all ?? null,
+            wideAll: row.wide_all ?? null,
+          }));
+      },
+      ttl,
+    );
+  },
+
+  /**
    * unifiedモデルの実測精度（複勝的中率・回収率、展開的中率）を取得する（BOA-179関連）
    * scripts/daily/calculate-unified-model-accuracy.js が日次で accuracy_cache に
    * 保存した集計値を読むだけなので軽量。AIデータ分析の複勝予想/展開予測カードで

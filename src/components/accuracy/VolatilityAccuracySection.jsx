@@ -21,7 +21,7 @@ const GRADE_COLORS = {
   SG: "#7c3aed",
   G1: "#dc2626",
   G2: "#2563eb",
-  G3: "#059669",
+  G3: "#047857",
   ippan: "#64748b",
 };
 

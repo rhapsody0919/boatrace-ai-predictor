@@ -248,6 +248,7 @@
     "aiPrediction": "AI予想",
     "motor": "モータ情報",
     "beforeInfo": "直前情報",
+    "oddsList": "オッズ一覧",
     "result": "結果"
   },
   "aiPredictionTab": {
@@ -313,6 +314,22 @@
     "techniqueBreakdownLabel": "決まり手別回数",
     "entryCourseWinLabel": "進入コース別1着回数",
     "courseN": "{{n}}コース"
+  },
+  "oddsList": {
+    "subtitle": "券種を切り替えて全組み合わせのオッズを確認できます。セルをタップすると推移を表示します",
+    "loading": "オッズを読み込み中...",
+    "disclaimer": "掲載しているオッズはスクレイピングによる取得値（参考値）です。実際の投票内容は必ず主催者（BOATRACE公式サイト等）が発行するものと照合してください",
+    "legend": "色が濃いほど人気（オッズが低い）です",
+    "orderedCornerLabel": "1着＼2着",
+    "unorderedCornerLabel": "組み合わせ",
+    "pickThirdLabel": "3着候補（タップで推移を表示）",
+    "trendTitle": "{{combo}} のオッズ推移",
+    "deadlineLabel": "締切時点",
+    "minutesBeforeLabel": "{{n}}分前",
+    "noData": "この組み合わせのオッズデータはまだありません",
+    "noBetTypeData": "この券種のオッズデータはまだありません",
+    "emptyTitle": "オッズデータがまだありません",
+    "emptyBody": "発走が近づくとオッズが取得され、このタブに表示されます。"
   },
   "basicInfo": {
     "note": "選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細（直近5走・得意会場）が開きます",
