@@ -13,6 +13,7 @@ import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import {
   supabase,
   isSupabaseEnabled,
+  fetchAll,
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
@@ -39,23 +40,30 @@ function parseStartTimingText(text) {
 }
 
 /**
- * Supabase から取得済みの展示データがある race_id セットを取得
+ * Supabase から「展示タイムが取得済み」の race_id セットを取得
+ *
+ * 行が存在するかではなく exhibition_time が非nullの行があるかで判定する。
+ * 鳴門・丸亀・児島・江戸川等では公式ページが展示ST（スタート展示）を展示タイムより
+ * 先に公開するため、その間に取得すると exhibition_time=null・start_timing のみの行が
+ * 書かれる。行の有無で判定すると、この行が「取得済み」とみなされ展示タイムが
+ * 永久に補完されない（2026-09-19判明、9/18は29レース＝16%が該当）。
+ *
+ * exhibition_data は1レース6行のため、1日180レースで1000行のデフォルト上限を超える。
+ * fetchAll でページネーションして取りこぼしを防ぐ。
  */
-async function getExistingExhibitionRaceIds(date) {
+export async function getRaceIdsWithExhibitionTime(date) {
   if (!isSupabaseEnabled()) return new Set();
 
-  const { data, error } = await supabase
-    .from("exhibition_data")
-    .select("race_id")
-    .gte("race_id", date)
-    .lt("race_id", `${date}~`);
+  const rows = await fetchAll("exhibition_data", "race_id", (q) =>
+    q
+      .gte("race_id", date)
+      .lt("race_id", `${date}~`)
+      .not("exhibition_time", "is", null)
+      .order("race_id")
+      .order("boat_number"),
+  );
 
-  if (error) {
-    console.error("⚠️ 取得済みデータの確認に失敗:", error.message);
-    return new Set();
-  }
-
-  return new Set(data.map((r) => r.race_id));
+  return new Set(rows.map((r) => r.race_id));
 }
 
 /**
@@ -214,7 +222,7 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
  */
 /**
  * 展示データ取得のウィンドウ（BOA-55: 発走30分前・15分前・10分前）
- * existingExhibitionIds でスキップ制御するため広めに取っても二重取得なし。
+ * 展示タイム取得済みのレースはスキップするため広めに取っても二重取得なし。
  */
 const EXHIBITION_WINDOWS = [30, 15, 10];
 
@@ -236,20 +244,32 @@ export async function run(schedule, date) {
     `🎯 展示データ取得: ${windowRaces.length}レース（発走30/15/10分前ウィンドウ）`,
   );
 
-  // 展示データ取得済みの race_id（スキップ判定用）
-  const existingExhibitionIds = await getExistingExhibitionRaceIds(date);
+  // 展示タイム取得済みの race_id（スキップ判定用）。展示タイム未公開のnull行は
+  // 取得済み扱いにせず、次回のcron実行で再取得・上書きする
+  const fetchedRaceIds = await getRaceIdsWithExhibitionTime(date);
+  const targets = windowRaces.filter((r) => !fetchedRaceIds.has(r.race_id));
 
-  // 会場ごとにグループ化
-  const byVenue = new Map();
-  for (const r of windowRaces) {
-    if (existingExhibitionIds.has(r.race_id)) continue; // 取得済みはスキップ
-    if (!byVenue.has(r.venue_code)) byVenue.set(r.venue_code, []);
-    byVenue.get(r.venue_code).push(r);
-  }
-
-  if (byVenue.size === 0) {
+  if (targets.length === 0) {
     console.log("📭 展示: 全レース取得済み（スキップ）");
     return { updated: false, count: 0 };
+  }
+
+  return scrapeAndUpsertRaces(targets, date);
+}
+
+/**
+ * 指定レースの展示データを取得して exhibition_data に upsert する
+ * （取得済み判定・ウィンドウ判定は呼び出し側の責務。過去分の補完スクリプトからも使う）
+ * @param {Array<{race_id: string, venue_code: number, race_no: number}>} targets
+ * @param {string} date - YYYY-MM-DD
+ * @returns {Promise<{updated: boolean, count: number}>}
+ */
+export async function scrapeAndUpsertRaces(targets, date) {
+  // 会場ごとにグループ化
+  const byVenue = new Map();
+  for (const r of targets) {
+    if (!byVenue.has(r.venue_code)) byVenue.set(r.venue_code, []);
+    byVenue.get(r.venue_code).push(r);
   }
 
   let totalFetched = 0;
