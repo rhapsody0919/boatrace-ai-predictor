@@ -46,6 +46,15 @@
  * 確定済みレースの答え合わせロジック（旧RaceResult.jsxの
  * showVolatilityOutcome/isUpset）も同タブに統合したため、結果タブは着順・配当・
  * 決まり手のみのシンプルな内容になった。詳細はRaceAiPredictionTab.jsx参照
+ *
+ * 2026-09-16追記(オッズ一覧タブ追加、BOA-311): FR-4（オッズ全券種対応、
+ * race_odds.trifecta_all/trio_all/exacta_all/quinella_all/wide_all）が
+ * 本番稼働済みになったため、「直前情報」と「結果」の間に「オッズ一覧」タブ
+ * （RaceOddsListTab）を追加した。券種タブ×6x6ヒートマップグリッド×セルタップ
+ * でのオッズ推移ドリルダウン。3連単/3連複は3艇の組み合わせのため、グリッドは
+ * 1着×2着（trioは艇番の小さい2艇）のペア軸にし、タップ後に3着候補一覧を
+ * 挟んでから推移を表示する2段階ドリルダウンにしている（詳細はコンポーネント
+ * 冒頭コメント参照）
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -72,6 +81,7 @@ import RaceTabs from "./RaceTabs";
 import RaceBasicInfoTab from "./RaceBasicInfoTab";
 import RaceBeforeInfoTab from "./RaceBeforeInfoTab";
 import RaceAiPredictionTab from "./RaceAiPredictionTab";
+import RaceOddsListTab from "./RaceOddsListTab";
 import RaceResult from "./RaceResult";
 import { getRaceId } from "../../utils/raceId";
 import { AI_COPY_PROMPT_TYPES } from "../../utils/aiCopyPrompts";
@@ -144,7 +154,8 @@ function PredictionPanel({
     activeMainTab !== "result" &&
     activeMainTab !== "beforeInfo" &&
     activeMainTab !== "motor" &&
-    activeMainTab !== "aiPrediction";
+    activeMainTab !== "aiPrediction" &&
+    activeMainTab !== "oddsList";
 
   // ローディング中
   if (isAnalyzing) {
@@ -331,6 +342,16 @@ function PredictionPanel({
                   venueCode={venueCode}
                   players={prediction.allPlayers}
                   weather={prediction.weather}
+                />
+              ),
+            },
+            {
+              id: "oddsList",
+              label: t("raceTabs.oddsList"),
+              content: (
+                <RaceOddsListTab
+                  raceId={analysisRaceId}
+                  raceStartTime={selectedRace?.startTime}
                 />
               ),
             },

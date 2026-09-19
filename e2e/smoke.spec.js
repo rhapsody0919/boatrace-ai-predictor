@@ -911,6 +911,53 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });
 
+  test("オッズ一覧タブで券種切替・グリッド・推移ドリルダウン・免責文言が表示される（BOA-311）", async ({
+    page,
+  }) => {
+    // 全窓（60/30/15/10/5/0分前）で全券種の全通りオッズが保存された過去レース
+    // （FR-4、ADR-0057稼働後の2026-09-18戸田8R）を固定で使う
+    await page.goto("/race/2026-09-18-02-08");
+    await page.locator(".race-tabs-btn", { hasText: "オッズ一覧" }).click({
+      timeout: 20000,
+    });
+
+    await expect(page.locator(".rol-grid")).toBeVisible({ timeout: 20000 });
+    await expect(page.locator(".rol-disclaimer")).toContainText("主催者");
+
+    // オッズ一覧タブ専用の内容のため、基本情報系のデータ出走表・枠別傾向・
+    // 分析ツールアコーディオンは隠れる（モータ情報タブと同じ方針の再発防止）
+    await expect(page.locator(".data-race-table")).toHaveCount(0);
+    await expect(page.locator(".venue-tendency-panel")).toHaveCount(0);
+    await expect(page.locator(".embedded-analysis-section")).toHaveCount(0);
+
+    // 2連単（ペアが最終買い目）: セルをタップすると直接推移が表示される
+    await page.locator(".rol-chip", { hasText: "2連単" }).click();
+    await page.locator(".rol-cell[class*='rol-heat-']").first().click();
+    await expect(page.locator(".rol-trend")).toBeVisible();
+    await expect(page.locator(".rol-trend-item").first()).toBeVisible();
+
+    // 3連単（3艇）: セルをタップすると3着候補が出て、選ぶと推移が表示される
+    await page.locator(".rol-chip", { hasText: "3連単" }).click();
+    await page.locator(".rol-cell[class*='rol-heat-']").first().click();
+    await expect(page.locator(".rol-candidates")).toBeVisible();
+    await page.locator(".rol-candidate-chip").first().click();
+    await expect(page.locator(".rol-trend")).toBeVisible();
+
+    // 拡連複（レンジ値）: 推移スパークラインがNaNにならず描画される
+    await page.locator(".rol-chip", { hasText: "拡連複" }).click();
+    await page.locator(".rol-cell[class*='rol-heat-']").first().click();
+    const points = await page
+      .locator(".rol-sparkline polyline")
+      .getAttribute("points");
+    expect(points).not.toContain("NaN");
+
+    // 基本情報タブへ戻ればデータ出走表が再表示される（上の非表示検証が空振りでないことの裏付け）
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 15000,
+    });
+  });
+
   test("分析ツールの超展開データタブが表示される（レースAI予想からの外出し）", async ({
     page,
   }) => {

@@ -455,7 +455,8 @@
   },
   "raceTabs": {
     "aiPrediction": "AI Prediction",
-    "beforeInfo": "Just Before"
+    "beforeInfo": "Just Before",
+    "oddsList": "Odds List"
   },
   "aiPredictionTab": {
     "unavailableTitle": "No AI prediction data",
@@ -520,6 +521,22 @@
     "techniqueBreakdownLabel": "Winning style breakdown",
     "entryCourseWinLabel": "1st place by entry course",
     "courseN": "Course {{n}}"
+  },
+  "oddsList": {
+    "subtitle": "Switch bet types to see odds for every combination. Tap a cell to view its trend",
+    "loading": "Loading odds...",
+    "disclaimer": "The odds shown here are scraped reference values. Please treat them as reference only and always check the official BOATRACE site for the actual odds before betting",
+    "legend": "Darker cells are more popular (lower odds)",
+    "orderedCornerLabel": "1st \\ 2nd",
+    "unorderedCornerLabel": "Combination",
+    "pickThirdLabel": "3rd place candidates (tap to see trend)",
+    "trendTitle": "Odds trend for {{combo}}",
+    "deadlineLabel": "At deadline",
+    "minutesBeforeLabel": "{{n}} min before",
+    "noData": "No odds data for this combination yet",
+    "noBetTypeData": "No odds data for this bet type yet",
+    "emptyTitle": "No odds data yet",
+    "emptyBody": "Odds will appear here as the start time approaches."
   },
   "dataTable": {
     "title": "Data Race Card",
