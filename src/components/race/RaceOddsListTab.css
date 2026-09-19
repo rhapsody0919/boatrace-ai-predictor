@@ -77,7 +77,7 @@
 .rol-boat-badge-xs {
   width: 1rem;
   height: 1rem;
-  font-size: 0.6rem;
+  font-size: var(--font-size-2xs);
 }
 
 /* ブロック（3連単・2連単・2連複・拡連複の1着/艇番ごとのまとまり） */
@@ -107,10 +107,10 @@
   white-space: nowrap;
 }
 
-/* 3連単: 2着ごとの5列 */
+/* 3連単: 2着ごとの列（列数は出走艇数-1。欠場艇がいれば減る） */
 .rol-cols {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--rol-col-count, 5), minmax(0, 1fr));
 }
 
 .rol-col {
@@ -136,7 +136,7 @@
   justify-content: space-between;
   gap: 2px;
   padding: 0 2px;
-  font-size: 0.6rem;
+  font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -149,10 +149,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* 狭い画面で桁数の多いオッズ（4〜5桁）がバッジの横に収まらないとき、
+     数字を切らずに次の行へ折り返す（通常のセルは1行のまま） */
+  flex-wrap: wrap;
   gap: 2px;
   width: 100%;
   padding: 2px 3px;
-  font-size: 0.68rem;
+  min-height: 1.5rem;
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-bold);
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
@@ -181,12 +185,18 @@
   margin-left: auto;
 }
 
-/* 2連単・2連複・拡連複: ブロックを2列（広い画面では自動で増える）に並べる */
-.rol-pair-grid {
+/* 3連複の一覧・2連単/2連複/拡連複のブロックは2列に並べる。推移パネルは
+   選択した要素と同じ行の直後に全幅で挿入する（rol-span-all） */
+.rol-two-col-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--spacing-2);
   align-items: start;
+}
+
+.rol-two-col-grid > .rol-odds {
+  font-size: var(--font-size-xs);
+  padding: 4px var(--spacing-2);
 }
 
 .rol-rows {
@@ -199,18 +209,6 @@
 .rol-rows .rol-odds {
   font-size: var(--font-size-xs);
   padding: 3px var(--spacing-2);
-}
-
-/* 3連複: 2列の一覧 */
-.rol-trio-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 3px;
-}
-
-.rol-trio-list .rol-odds {
-  font-size: var(--font-size-xs);
-  padding: 4px var(--spacing-2);
 }
 
 .rol-span-all {
@@ -275,7 +273,6 @@
 }
 
 .rol-trend-item {
-  flex: 1;
   text-align: center;
 }
 
@@ -287,7 +284,7 @@
 }
 
 .rol-trend-label {
-  font-size: 0.65rem;
+  font-size: var(--font-size-2xs);
   color: var(--text-secondary);
 }
 
@@ -300,7 +297,7 @@
   .rol-boat-badge {
     width: 1.2rem;
     height: 1.2rem;
-    font-size: 0.6rem;
+    font-size: var(--font-size-2xs);
   }
 
   .rol-boat-badge-sm {
@@ -311,16 +308,9 @@
   .rol-boat-badge-xs {
     width: 0.9rem;
     height: 0.9rem;
-    font-size: 0.55rem;
   }
 
   .rol-odds {
-    font-size: 0.64rem;
     padding: 2px;
-  }
-
-  .rol-rows .rol-odds,
-  .rol-trio-list .rol-odds {
-    font-size: 0.7rem;
   }
 }

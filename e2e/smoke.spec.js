@@ -983,7 +983,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     // 3連複: 艇番3つの全20通りが一覧で表示される
     await page.locator(".rol-chip", { hasText: "3連複" }).click();
-    await expect(page.locator(".rol-trio-list .rol-odds")).toHaveCount(20);
+    await expect(page.locator(".rol-two-col-grid > .rol-odds")).toHaveCount(20);
+    // 推移パネルは選択した行（先頭の2件=1行目）の直後に全幅で挿入される
+    await page.locator(".rol-two-col-grid > .rol-odds").first().click();
+    await expect(
+      page.locator(".rol-two-col-grid > .rol-odds + .rol-odds + .rol-trend"),
+    ).toBeVisible();
 
     // 2連単: 1着ごとの6ブロック（全30通り）。タップで推移が表示される
     await page.locator(".rol-chip", { hasText: "2連単" }).click();
@@ -991,6 +996,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rol-block .rol-odds")).toHaveCount(30);
     await page.locator(".rol-odds[class*='rol-heat-']").first().click();
     await expect(page.locator(".rol-trend")).toBeVisible();
+
+    // 2連複: 小さい艇番ごとの5ブロック（全15通り、最大艇番のブロックは作らない）
+    await page.locator(".rol-chip", { hasText: "2連複" }).click();
+    await expect(page.locator(".rol-block")).toHaveCount(5);
+    await expect(page.locator(".rol-block .rol-odds")).toHaveCount(15);
 
     // 拡連複（レンジ値）: 推移スパークラインがNaNにならず描画される
     await page.locator(".rol-chip", { hasText: "拡連複" }).click();

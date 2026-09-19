@@ -6,17 +6,18 @@
  * 使い、券種タブ切替×全組み合わせの常時表示×オッズ推移のドリルダウンを提供する。
  *
  * 表示は日和に合わせ、タップ不要で全通りの数字が見える構造にしている:
- * - 3連単: 1着ごとのブロック → 2着ごとの列 → 3着ごとの行（全120通り）。
+ * - 3連単: 1着ごとのブロック → 2着ごとの列 → 3着ごとの行（6艇なら全120通り）。
  *   列の下に、その2着の合成オッズと1着-2着の2連単オッズを表示する
- * - 3連複: 艇番3つの組み合わせを一覧（全20通り）
- * - 2連単: 1着ごとのブロック → 2着ごとの行（全30通り）
+ * - 3連複: 艇番3つの組み合わせを一覧（6艇なら全20通り）
+ * - 2連単: 1着ごとのブロック → 2着ごとの行（6艇なら全30通り）
  * - 2連複/拡連複: 小さい方の艇番ごとのブロック → 相手艇ごとの行（全15通り）
+ * 欠場艇はオッズが付かないため、表からも除く（「-」だけのブロック・列・行を出さない）。
  * オッズをタップするとその組み合わせのオッズ推移（スナップショット履歴）を表示する。
  *
  * 免責文言（BOA-311指示#1）: スクレイピング取得値のため、実際の投票内容は
  * 主催者発行のものと照合するよう明記する。
  */
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
@@ -35,15 +36,6 @@ const BET_TYPES = [
   { id: "wide", dataKey: "wideAll", ordered: false, isRange: true },
 ];
 
-// 3連複の全20通り（艇番昇順）
-const TRIO_COMBOS = BOAT_NUMBERS.flatMap((a) =>
-  BOAT_NUMBERS.filter((b) => b > a).flatMap((b) =>
-    BOAT_NUMBERS.filter((c) => c > b).map((c) => [a, b, c]),
-  ),
-);
-
-const othersOf = (n) => BOAT_NUMBERS.filter((x) => x !== n);
-
 // レンジ値（拡連複）は下限を代表値として使う（人気度＝色分けの基準として
 // 下限の方が「最低でもこれだけ付く」という保守的な値のため）
 function valueToNumber(value, isRange) {
@@ -59,8 +51,8 @@ function formatValue(value, isRange) {
 }
 
 // 合成オッズ: 各組み合わせのオッズの逆数の和の逆数（「そのうちどれか」を
-// 全部買ったときの実質オッズ）。欠場艇等で組み合わせが欠けている場合は
-// 存在する組み合わせだけで計算する
+// 全部買ったときの実質オッズ）。欠場艇や票の入っていない組み合わせはオッズが
+// 付かない（=逆数が0）ため、存在する組み合わせだけで計算するのが正しい
 function compositeOdds(values) {
   const nums = values.filter((v) => v != null && v > 0);
   if (nums.length === 0) return null;
@@ -95,8 +87,39 @@ function buildTrend(snapshots, betType, key, deadline) {
 // 券種ごとに最新の「その券種の値を持つ」スナップショットを使う。全通り系5列は
 // 個別取得で、最新行に選択中の券種だけnullのことがある（一部券種の取得失敗や
 // FR-4以前のレース）ため、単純に末尾行を使うと表全体が空になる
-function latestMapOf(snapshots, dataKey) {
-  return [...snapshots].reverse().find((s) => s[dataKey])?.[dataKey] ?? null;
+function latestSnapshotWith(snapshots, dataKey) {
+  return [...snapshots].reverse().find((s) => s[dataKey]) ?? null;
+}
+
+// 出走艇（どこかの券種でオッズが付いている艇番）。欠場艇を表から除くために
+// 全券種の最新値のキーから導出する
+function activeBoatsOf(snapshots) {
+  const active = new Set();
+  for (const bt of BET_TYPES) {
+    const map = latestSnapshotWith(snapshots, bt.dataKey)?.[bt.dataKey];
+    for (const [key, value] of Object.entries(map ?? {})) {
+      if (valueToNumber(value, bt.isRange) > 0) {
+        key.split("-").forEach((n) => active.add(Number(n)));
+      }
+    }
+  }
+  return BOAT_NUMBERS.filter((n) => active.has(n));
+}
+
+// 3艇の組み合わせ（艇番昇順）
+function triosOf(boats) {
+  return boats.flatMap((a) =>
+    boats
+      .filter((b) => b > a)
+      .flatMap((b) => boats.filter((c) => c > b).map((c) => [a, b, c])),
+  );
+}
+
+// 2列グリッドで、選択中の要素と同じ行の直後に推移パネルを挿入する
+function withPanelAfterRow(items, selectedIdx, panel) {
+  if (selectedIdx < 0 || !panel) return items;
+  const rowEnd = Math.min(selectedIdx | 1, items.length - 1);
+  return [...items.slice(0, rowEnd + 1), panel, ...items.slice(rowEnd + 1)];
 }
 
 // 小さな折れ線スパークライン（MotorWakuStatsGridと同じ発想のインラインSVG）
@@ -154,26 +177,26 @@ function BlockHead({ n, name }) {
 }
 
 // オッズ1件のタップ領域（左に艇番バッジ群、右にオッズ。人気度で色分け）
-function OddsButton({ value, isRange, selected, onClick, ariaLabel, badges }) {
+function OddsButton({ comboKey, value, isRange, selected, onSelect, badges }) {
   const bucket = heatBucket(valueToNumber(value, isRange));
+  const text = formatValue(value, isRange) ?? "-";
   return (
     <button
       type="button"
-      className={`rol-odds${bucket !== null ? ` rol-heat-${bucket}` : " rol-cell-empty"}${selected ? " is-selected" : ""}`}
-      onClick={onClick}
+      className={`rol-odds${bucket !== null ? ` rol-heat-${bucket}` : ""}${selected ? " is-selected" : ""}`}
+      onClick={() => onSelect(comboKey)}
       disabled={value == null}
-      aria-label={ariaLabel}
+      aria-label={`${comboKey} ${text}`}
       aria-pressed={selected}
     >
       <span className="rol-odds-badges">{badges}</span>
-      <span className="rol-odds-value">
-        {value != null ? formatValue(value, isRange) : "-"}
-      </span>
+      <span className="rol-odds-value">{text}</span>
     </button>
   );
 }
 
-function TrendPanel({ combo, trend, isRange, t, spanAll }) {
+function TrendPanel({ combo, trend, isRange, spanAll }) {
+  const { t } = useTranslation();
   return (
     <div className={`rol-trend${spanAll ? " rol-span-all" : ""}`}>
       <div className="rol-trend-title">
@@ -212,7 +235,8 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
   const { t } = useTranslation();
   const [snapshots, setSnapshots] = useState(null); // null=読み込み中
   const [betTypeId, setBetTypeId] = useState(BET_TYPES[0].id);
-  const [selected, setSelected] = useState(null); // {blockId, key}
+  // 推移を表示中の組み合わせキー（券種内で一意。例: "1-2-3"）
+  const [selectedKey, setSelectedKey] = useState(null);
 
   // PredictionPanel側でRaceTabsに`key={analysisRaceId}`を付けているため、
   // レースが変わるとこのコンポーネント自体が再マウントされ、stateは自然に
@@ -240,17 +264,12 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
 
   const selectBetType = (id) => {
     setBetTypeId(id);
-    setSelected(null);
+    setSelectedKey(null);
   };
 
   // 同じ組み合わせを再タップすると推移を閉じる
-  const toggleSelected = (blockId, key) => {
-    setSelected((prev) =>
-      prev && prev.blockId === blockId && prev.key === key
-        ? null
-        : { blockId, key },
-    );
-  };
+  const toggleSelected = (key) =>
+    setSelectedKey((prev) => (prev === key ? null : key));
 
   if (snapshots === null) {
     return (
@@ -270,9 +289,11 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
     );
   }
 
-  const latestMap = latestMapOf(snapshots, betType.dataKey);
+  const latestSnapshot = latestSnapshotWith(snapshots, betType.dataKey);
+  const latestMap = latestSnapshot?.[betType.dataKey] ?? null;
   const deadline = getDeadlineDate(raceId, raceStartTime);
   const isRange = !!betType.isRange;
+  const boats = activeBoatsOf(snapshots);
 
   const nameByBoat = new Map(
     (players ?? []).map((p) => [p.number, p.name?.replace(/\s+/g, "")]),
@@ -280,141 +301,136 @@ function RaceOddsListTab({ raceId, raceStartTime, players }) {
 
   const valueOf = (key) => latestMap?.[key] ?? null;
 
-  const trendPanelFor = (blockId, spanAll) => {
-    if (!selected || selected.blockId !== blockId) return null;
-    return (
+  const oddsButton = (comboKey, badges, value = valueOf(comboKey)) => (
+    <OddsButton
+      key={comboKey}
+      comboKey={comboKey}
+      value={value}
+      isRange={isRange}
+      selected={comboKey === selectedKey}
+      onSelect={toggleSelected}
+      badges={badges}
+    />
+  );
+
+  const trendPanel = (spanAll) =>
+    selectedKey ? (
       <TrendPanel
-        combo={selected.key}
-        trend={buildTrend(snapshots, betType, selected.key, deadline)}
+        key="trend"
+        combo={selectedKey}
+        trend={buildTrend(snapshots, betType, selectedKey, deadline)}
         isRange={isRange}
-        t={t}
         spanAll={spanAll}
       />
-    );
-  };
-
-  const isSelected = (blockId, key) =>
-    !!selected && selected.blockId === blockId && selected.key === key;
+    ) : null;
 
   // 3連単: 1着ブロック → 2着列 → 3着行（＋合成オッズ・2連単オッズ）
   const renderTrifecta = () => {
-    const exactaMap = latestMapOf(snapshots, "exactaAll");
-    return BOAT_NUMBERS.map((first) => (
-      <section className="rol-block" key={first}>
-        <BlockHead n={first} name={nameByBoat.get(first)} />
-        <div className="rol-cols">
-          {othersOf(first).map((second) => {
-            const thirds = BOAT_NUMBERS.filter(
-              (n) => n !== first && n !== second,
-            );
-            const values = thirds.map((third) =>
-              valueOf(`${first}-${second}-${third}`),
-            );
-            const composite = compositeOdds(values);
-            const exacta = exactaMap?.[`${first}-${second}`] ?? null;
-            return (
-              <div className="rol-col" key={second}>
-                <div className="rol-col-head">
-                  <BoatBadge n={second} size="sm" />
+    // 2連単オッズは3連単と同じスナップショットのものを使う（別時刻の値が
+    // 同じ列に並ばないように）
+    const exactaMap = latestSnapshot?.exactaAll ?? null;
+    return boats.map((first) => {
+      const seconds = boats.filter((n) => n !== first);
+      return (
+        <section className="rol-block" key={first}>
+          <BlockHead n={first} name={nameByBoat.get(first)} />
+          <div
+            className="rol-cols"
+            style={{ "--rol-col-count": seconds.length }}
+          >
+            {seconds.map((second) => {
+              const thirds = boats.filter((n) => n !== first && n !== second);
+              const composite = compositeOdds(
+                thirds.map((third) => valueOf(`${first}-${second}-${third}`)),
+              );
+              const exacta = exactaMap?.[`${first}-${second}`] ?? null;
+              return (
+                <div className="rol-col" key={second}>
+                  <div className="rol-col-head">
+                    <BoatBadge n={second} size="sm" />
+                  </div>
+                  {thirds.map((third) =>
+                    oddsButton(
+                      `${first}-${second}-${third}`,
+                      <BoatBadge n={third} size="xs" />,
+                    ),
+                  )}
+                  <div className="rol-col-foot">
+                    <span>{t("oddsList.compositeLabel")}</span>
+                    <span>{formatValue(composite) ?? "-"}</span>
+                  </div>
+                  <div className="rol-col-foot">
+                    <span>{t("oddsList.exactaShortLabel")}</span>
+                    <span>{formatValue(exacta) ?? "-"}</span>
+                  </div>
                 </div>
-                {thirds.map((third, i) => {
-                  const key = `${first}-${second}-${third}`;
-                  return (
-                    <OddsButton
-                      key={third}
-                      value={values[i]}
-                      selected={isSelected(first, key)}
-                      onClick={() => toggleSelected(first, key)}
-                      ariaLabel={`${key} ${values[i] != null ? formatValue(values[i]) : "-"}`}
-                      badges={<BoatBadge n={third} size="xs" />}
-                    />
-                  );
-                })}
-                <div className="rol-col-foot">
-                  <span>{t("oddsList.compositeLabel")}</span>
-                  <span>{composite != null ? composite.toFixed(1) : "-"}</span>
-                </div>
-                <div className="rol-col-foot">
-                  <span>{t("oddsList.exactaShortLabel")}</span>
-                  <span>{exacta != null ? exacta.toFixed(1) : "-"}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {trendPanelFor(first)}
-      </section>
-    ));
+              );
+            })}
+          </div>
+          {selectedKey?.startsWith(`${first}-`) && trendPanel(false)}
+        </section>
+      );
+    });
   };
 
-  // 3連複: 艇番3つの組み合わせを2列で一覧。推移パネルは選択した行の直後に全幅で挿入
+  // 3連複: 艇番3つの組み合わせを2列で一覧
   const renderTrio = () => {
-    const selectedIdx = selected
-      ? TRIO_COMBOS.findIndex((c) => c.join("-") === selected.key)
-      : -1;
-    const rowEndIdx =
-      selectedIdx >= 0
-        ? Math.min(selectedIdx - (selectedIdx % 2) + 1, TRIO_COMBOS.length - 1)
-        : -1;
+    const combos = triosOf(boats).map((combo) => combo.join("-"));
+    const items = combos.map((key) =>
+      oddsButton(
+        key,
+        key
+          .split("-")
+          .map((n) => <BoatBadge key={n} n={Number(n)} size="xs" />),
+      ),
+    );
     return (
-      <div className="rol-trio-list">
-        {TRIO_COMBOS.map((combo, idx) => {
-          const key = combo.join("-");
-          const value = valueOf(key);
-          return (
-            <Fragment key={key}>
-              <OddsButton
-                value={value}
-                selected={isSelected("trio", key)}
-                onClick={() => toggleSelected("trio", key)}
-                ariaLabel={`${key} ${value != null ? formatValue(value) : "-"}`}
-                badges={combo.map((n) => (
-                  <BoatBadge key={n} n={n} size="xs" />
-                ))}
-              />
-              {idx === rowEndIdx && trendPanelFor("trio", true)}
-            </Fragment>
-          );
-        })}
+      <div className="rol-two-col-grid">
+        {withPanelAfterRow(
+          items,
+          combos.indexOf(selectedKey),
+          trendPanel(true),
+        )}
       </div>
     );
   };
 
   // 2連単/2連複/拡連複: 艇番ごとのブロック → 相手艇ごとの行。
   // 2連単は1着ブロック×2着行、順不同の券種は小さい艇番のブロック×大きい艇番の行
-  const renderPairs = () => (
-    <div className="rol-pair-grid">
-      {BOAT_NUMBERS.map((head) => {
-        const partners = betType.ordered
-          ? othersOf(head)
-          : BOAT_NUMBERS.filter((n) => n > head);
-        if (partners.length === 0) return null;
-        return (
-          <section className="rol-block" key={head}>
-            <BlockHead n={head} name={nameByBoat.get(head)} />
-            <div className="rol-rows">
-              {partners.map((partner) => {
-                const key = `${head}-${partner}`;
-                const value = valueOf(key);
-                return (
-                  <OddsButton
-                    key={partner}
-                    value={value}
-                    isRange={isRange}
-                    selected={isSelected(head, key)}
-                    onClick={() => toggleSelected(head, key)}
-                    ariaLabel={`${key} ${value != null ? formatValue(value, isRange) : "-"}`}
-                    badges={<BoatBadge n={partner} size="sm" />}
-                  />
-                );
-              })}
-            </div>
-            {trendPanelFor(head)}
-          </section>
-        );
-      })}
-    </div>
-  );
+  const renderPairs = () => {
+    const partnersOf = (head) =>
+      betType.ordered
+        ? boats.filter((n) => n !== head)
+        : boats.filter((n) => n > head);
+    // 順不同の券種では、最大の艇番は相手が残らないためブロックを作らない
+    const heads = boats.filter((head) => partnersOf(head).length > 0);
+    const items = heads.map((head) => {
+      const partners = partnersOf(head);
+      return (
+        <section className="rol-block" key={head}>
+          <BlockHead n={head} name={nameByBoat.get(head)} />
+          <div className="rol-rows">
+            {partners.map((partner) =>
+              oddsButton(
+                `${head}-${partner}`,
+                <BoatBadge n={partner} size="sm" />,
+              ),
+            )}
+          </div>
+        </section>
+      );
+    });
+    const selectedHead = selectedKey ? Number(selectedKey.split("-")[0]) : null;
+    return (
+      <div className="rol-two-col-grid">
+        {withPanelAfterRow(
+          items,
+          heads.indexOf(selectedHead),
+          trendPanel(true),
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="race-odds-list-tab">
