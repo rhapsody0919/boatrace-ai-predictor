@@ -132,7 +132,7 @@ erDiagram
 
 `src/services/supabaseDataService.js`:
 
-1. `getRacerRaceHistory()`の`race_results`のselect列に`actual_course_1〜6`を追加し、行に`actualCourse`（値が`boat_number`と一致する列番号、無ければ`null`）を追加する
+1. `getRacerRaceHistory()`の`race_results`のselect列に`actual_course_1〜6`を追加し、行に`actualCourse`（`actual_course_{boat_number}`の値。添字が艇番、値が進入コース。記録が無ければ`null`）を追加する
 2. 純関数`aggregateRacerCourseEntryStats(history, venueCode, boatNumber, raceGrade, raceStage)`を新規追加する。フィルタは`aggregateRacerVenueBoatStats`と同じ。出力は`{ 枠番: { n, courses: {コース: 回数} } }`。直近12ヶ月はhistory（過去2年分）の日付で絞る。追加の通信は発生しない（ADR-0063の方針）
 
 ## FR-3: 出走表の「枠なり率」行

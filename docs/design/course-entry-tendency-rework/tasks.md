@@ -10,10 +10,11 @@ FR-1/FR-2/FR-6（データ基盤）→ FR-3（出走表統合、最優先のUI�
 
 ## Phase 1: データ基盤（FR-1、BOA-284）
 
-- [ ] **Task 1: `aggregate-racer-stats.js`の4関数を`actual_course_1〜6`に切り替える**（`scripts/analysis/aggregate-racer-stats.js`）
+- [x] **Task 1: `aggregate-racer-stats.js`の4関数を`actual_course_1〜6`に切り替える**（`scripts/analysis/aggregate-racer-stats.js`）
   - `calculateCourseRaceCounts`（courseRateの直接の入力）・`calculateAttackDistribution`・`calculateDefenseDistribution`・`calculateCourseEntryTendency`の`race_results`のselect列と参照を`course_1〜6`→`actual_course_1〜6`に変更
   - `calculateCourseEntryTendency`の出力を新しい形（`since`・`all`・`venues`、回数と走数`n`を保持、[plan.md](./plan.md)参照）に変更し、直近12ヶ月ウィンドウを追加。会場別の内訳は同じ関数内で1パスで作る（追加クエリなし）。走数の下限は適用しない
   - 受入基準: [spec.md](./spec.md) FR-1・FR-2
+  - 完了（2026-09-19）: 4関数を切り替え、共通ロジックを`scripts/lib/courseEntryTendency.js`（`actualCourseOf`・`buildCourseEntryTendency`）に切り出した。回帰テストは`npm run verify:course-entry-tendency`。本番データ（読み取りのみ、`--dry-run`）で選手3名（3072・3473・4444）の枠番別コース回数をSQLの手計算と突き合わせ、完全一致を確認した。**実装前に、設計ドキュメントの`actual_course_N`の添字の説明が誤っていた（正しくは添字=艇番、値=進入コース）ことに気づき、spec・plan・ADR・マイグレーション067・分析数値を訂正した**（旧列`course_1〜6`は添字=コース・値=艇番で向きが逆）
 
 - [ ] **Task 2: FR-1の精度検証**（検証のみ、DB書き込みは伴わない）
   - `analyze-indicator-predictive-power.js`でcourseRateの予測力、`backtest-course-rate-only.js`で的中率・回収率を、切り替え前後で比較

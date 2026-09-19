@@ -5,7 +5,7 @@
 -- 判断: docs/adr/0065-venue-course-entry-baseline-precomputed-table.md
 --
 -- 選手×会場×枠番は走数が薄い（中央値2走）ため、選手の実績に添える基準線として、
--- 選手を問わない会場×枠番の集計（各枠1,484走以上）を夜間バッチで事前集計して保存する。
+-- 選手を問わない会場×枠番の集計（各枠1,500走以上）を夜間バッチで事前集計して保存する。
 -- 24行しか無く参照は「全会場を一括取得」のみのため、専用テーブルではなく
 -- 既存のvenuesテーブルのjsonb列とする。
 --
@@ -23,7 +23,7 @@ COMMENT ON COLUMN venues.course_entry_baseline IS
 
 -- 1会場分を集計して返す。全会場を1回で集計するとPostgRESTのタイムアウトを踏みうるため、
 -- 呼び出し側（update-venue-course-entry-baseline.js）が会場ごとに呼ぶ。
--- actual_course_1〜6は「そのコースに入った艇の艇番」。艇番と一致する列番号がその艇の実進入コース。
+-- actual_course_Nは「N号艇が実際に進入したコース」（添字=艇番、値=コース、kfileParser.js参照）。
 CREATE OR REPLACE FUNCTION compute_venue_course_entry_baseline(
     p_venue_code SMALLINT,
     p_since DATE
@@ -33,12 +33,13 @@ STABLE
 AS $$
     WITH x AS (
         SELECT e.boat_number AS waku,
-               CASE WHEN r.actual_course_1 = e.boat_number THEN 1
-                    WHEN r.actual_course_2 = e.boat_number THEN 2
-                    WHEN r.actual_course_3 = e.boat_number THEN 3
-                    WHEN r.actual_course_4 = e.boat_number THEN 4
-                    WHEN r.actual_course_5 = e.boat_number THEN 5
-                    WHEN r.actual_course_6 = e.boat_number THEN 6 END AS course
+               CASE e.boat_number
+                    WHEN 1 THEN r.actual_course_1
+                    WHEN 2 THEN r.actual_course_2
+                    WHEN 3 THEN r.actual_course_3
+                    WHEN 4 THEN r.actual_course_4
+                    WHEN 5 THEN r.actual_course_5
+                    WHEN 6 THEN r.actual_course_6 END AS course
         FROM races ra
         JOIN race_entries e ON e.race_id = ra.race_id
         JOIN race_results r ON r.race_id = ra.race_id
