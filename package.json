@@ -27,6 +27,7 @@
     "verify:er-diagram": "node scripts/maintenance/verify-plan-erd.js",
     "verify:actual-course-kfile": "node scripts/maintenance/verify-actual-course-kfile-parser.js",
     "verify:unchanged-rows": "node scripts/maintenance/verify-unchanged-rows.js",
+    "verify:deploy-hook-policy": "node scripts/maintenance/verify-deploy-hook-policy.js",
     "verify:course-entry-tendency": "node scripts/maintenance/verify-course-entry-tendency.js",
     "test:e2e": "playwright test",
     "preview": "vite preview",

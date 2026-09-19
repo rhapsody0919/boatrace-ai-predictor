@@ -13,6 +13,7 @@ import {
 } from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
+import { decideDeployHook } from "../lib/deployHookPolicy.js";
 import {
   filterUnchangedRows,
   formatSkipSummary,
@@ -1583,15 +1584,23 @@ export async function mainRefresh({
     `  ✅ ${formatSkipSummary("races volatility", volatilityStats, { fallback })} / 更新${volatilityUpdated}件`,
   );
 
-  // Vercel Deploy Hook をトリガー
+  // Vercel Deploy Hook をトリガー。毎回叩くと約6分ごとに本番が再デプロイされるため、
+  // 毎時の先頭数分間かつ更新があった場合に限る（判定の理由は lib/deployHookPolicy.js）
   const deployHook = process.env.VERCEL_DEPLOY_HOOK;
-  if (deployHook) {
+  const hookDecision = decideDeployHook({
+    hookUrl: deployHook,
+    now: new Date(),
+    changedRaceCount: volatilityUpdated,
+  });
+  if (hookDecision.trigger) {
     try {
       await fetch(deployHook, { method: "POST" });
       console.log("🚀 Vercel Deploy Hook トリガー済み");
     } catch (e) {
       console.warn("⚠️ Vercel Deploy Hook 失敗:", e.message);
     }
+  } else if (deployHook) {
+    console.log(`⏭️ Vercel Deploy Hook スキップ（${hookDecision.reason}）`);
   }
 
   console.log("🏁 リフレッシュ完了");
