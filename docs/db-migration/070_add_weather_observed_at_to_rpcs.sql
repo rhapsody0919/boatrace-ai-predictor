@@ -6,7 +6,9 @@
 -- 見出しに「10:34現在」を表示する。しかし本番の主経路（/api/predictions/{date} →
 -- get_predictions_by_date / _light）が返す weather オブジェクトには observedAt が無く
 -- （066が組み立てた weather は観測時刻を持たない）、本番の画面には観測時刻が出ない。
--- （Supabase直接クエリのフォールバック経路の buildWeather() は observedAt を返す。）
+-- （Supabase直接クエリのフォールバック経路の buildWeather() は、observedAt のキーは返すが、
+-- 直接クエリの select に weather_observed_at を含めていないため、値は常に null。この経路は
+-- 本マイグレーションの対象外で、観測時刻は出ない。）
 --
 -- 土台にした定義: 2026-09-19 に本番から pg_get_functiondef で取得した現行定義。取得した定義の
 -- md5 は、068（get_predictions_by_date / _light / get_today_races）のファイル本文から
@@ -24,8 +26,7 @@
 -- 値の形式: timestamptz を json_build_object に渡すと、JSON では ISO 8601 文字列になる
 -- （例: "2026-09-19T01:34:00+00:00"。オフセットはセッションのTimeZone次第）。フロントの
 -- formatObservedTime()（src/components/race/weatherInfo.js）は new Date(observedAt) で解釈し
--- JST の「HH:MM」に整形するため、どのオフセットでも同じ表示になる。フォールバック経路の
--- buildWeather() も同じ列の値（PostgRESTが返すISO 8601文字列）をそのまま observedAt に渡す。
+-- JST の「HH:MM」に整形するため、どのオフセットでも同じ表示になる。
 -- 値が NULL（観測時刻不明・069適用前に保存された行）の場合もキー自体は出力され、
 -- フロントは null を「表示しない」として扱う。
 --
@@ -454,8 +455,12 @@ $$;
 -- ----------------------------------------------------------------------------
 -- 適用結果の自己検査
 --   (1) 2関数の現行定義に observedAt が含まれること
---   (2) 既存フィールド（cancellationStatus・raceStage・weather）が消えていないこと
+--   (2) observedAt が weather の json_build_object の中（waterTemperature の直後）にあること
+--   (3) 既存フィールド（cancellationStatus・raceStage・weather）が消えていないこと
 --       （古い定義を土台にした回帰の検知。BOA-363）
+--   (4) 2関数が実際に実行でき、列 race_conditions.weather_observed_at が存在すること
+--       （plpgsql は実行時に列を解決するため、069未適用でも CREATE は通る。レースが0件の
+--       日付で呼び出しても、クエリの解析時に列の有無は検査される）
 -- 満たさなければ例外になり、トランザクション内で実行していればロールバックされる。
 -- ----------------------------------------------------------------------------
 DO $verify$
@@ -467,7 +472,7 @@ BEGIN
   WHERE p.pronamespace = 'public'::regnamespace
     AND p.proname IN ('get_predictions_by_date', 'get_predictions_by_date_light')
     AND (
-      p.prosrc NOT LIKE '%''observedAt''%'
+      p.prosrc !~ '''waterTemperature'', rc\.water_temperature,\s*''observedAt'', rc\.weather_observed_at'
       OR p.prosrc NOT LIKE '%''cancellationStatus''%'
       OR p.prosrc NOT LIKE '%''raceStage''%'
       OR p.prosrc NOT LIKE '%''weather''%'
@@ -475,5 +480,9 @@ BEGIN
   IF missing IS NOT NULL THEN
     RAISE EXCEPTION 'observedAt が含まれない、または既存フィールドが欠けた関数があります: %', missing;
   END IF;
+
+  -- (4) 069未適用（列が無い）なら、ここで「column rc.weather_observed_at does not exist」で失敗する
+  PERFORM public.get_predictions_by_date('2000-01-01'::date);
+  PERFORM public.get_predictions_by_date_light('2000-01-01'::date);
 END
 $verify$;

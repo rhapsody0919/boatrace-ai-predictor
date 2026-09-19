@@ -13,7 +13,7 @@
  *   npm run verify:rpc-output-keys -- --date 2026-09-12 # 日付を指定
  *
  * weather の入れ子（observedAt 等）は、検証日に weather が非nullのレースが1件も無いと
- * [SKIP] になる（検査対象なし）。070（observedAt）の検証には、気象を取得済みのレースがある日
+ * [WARN] 未検証になる（終了コードは0だが、最後の OK 行に未検証と明記する）。070（observedAt）の検証には、気象を取得済みのレースがある日
  * （観測時刻の保存が始まった069適用後の日付）を --date で指定する。
  *
  * 読み取り専用（RPC 3回と、日付決定用の races 1〜2回の SELECT のみ）。接続は
@@ -249,6 +249,9 @@ async function main() {
   );
 
   let failed = false;
+  // weather は「気象が非nullのレースが無い日」だと検査対象が空になる。他の入れ子（SKIP）と違い、
+  // 070（observedAt）の検証そのものなので、黙って OK にせず、最後の出力で未検証を明示する
+  let weatherUnverified = false;
   for (const rpc of [
     "get_predictions_by_date",
     "get_predictions_by_date_light",
@@ -268,7 +271,12 @@ async function main() {
     for (const { path, keys } of PREDICTION_NESTED_CHECKS) {
       const items = collectNested(data.races, path);
       if (items.length === 0) {
-        console.log(`  [SKIP] ${path}: 全レースで空（検査対象なし）`);
+        if (path === "weather") {
+          console.log(`  [WARN] ${path}: 全レースで空のため未検証`);
+          weatherUnverified = true;
+        } else {
+          console.log(`  [SKIP] ${path}: 全レースで空（検査対象なし）`);
+        }
         continue;
       }
       failed = reportGroup(path, items, keys) || failed;
@@ -292,8 +300,14 @@ async function main() {
     );
     process.exit(1);
   }
+  const unverifiedNotes = [
+    todayUnverified &&
+      "get_today_racesは本日の開催が無く未検証。開催日に再実行してください",
+    weatherUnverified &&
+      "weather（observedAt）は検証日に気象を取得済みのレースが無く未検証。--date で気象のある日を指定して再実行してください",
+  ].filter(Boolean);
   console.log(
-    `\nOK: 検証できたRPCは全て期待キーを含みます${todayUnverified ? "（get_today_racesは本日の開催が無く未検証。開催日に再実行してください）" : ""}`,
+    `\nOK: 検証できたRPCは全て期待キーを含みます${unverifiedNotes.length > 0 ? `（${unverifiedNotes.join("。")}）` : ""}`,
   );
 }
 
