@@ -12,10 +12,14 @@
  *   npm run verify:rpc-output-keys                      # 直近の中止レースがある日で検証
  *   npm run verify:rpc-output-keys -- --date 2026-09-12 # 日付を指定
  *
+ * weather の入れ子（observedAt 等）は、検証日に weather が非nullのレースが1件も無いと
+ * [WARN] 未検証になる（終了コードは0だが、最後の OK 行に未検証と明記する）。070（observedAt）の検証には、気象を取得済みのレースがある日
+ * （観測時刻の保存が始まった069適用後の日付）を --date で指定する。
+ *
  * 読み取り専用（RPC 3回と、日付決定用の races 1〜2回の SELECT のみ）。接続は
  * scripts/lib/supabaseClient.js（SUPABASE_URL / SUPABASE_SERVICE_KEY）を使う。
  * 期待するキーは、フロント（src/services/supabaseDataService.js の transformEdgeResponse /
- * getRaces）の参照と、各マイグレーション（037・048・051・062・066等）が足したフィールドに
+ * getRaces）の参照と、各マイグレーション（037・048・051・062・066・070等）が足したフィールドに
  * 合わせている。キーの値が null でも「キーが存在する」ことだけを検査する
  * （json_build_object は null値のキーも出力する）。
  *
@@ -62,6 +66,20 @@ const PREDICTION_NESTED_CHECKS = [
       "aiScoreStandard",
       "aiScoreSafeBet",
       "aiScoreUpsetFocus",
+    ],
+  },
+  {
+    // 066（気象6項目）と070（観測時刻 observedAt）。weather が null のレース（気象未取得）は対象外。
+    // 値が null でもキーは出力される（観測時刻不明の行は observedAt: null）
+    path: "weather",
+    keys: [
+      "weather",
+      "windDirection",
+      "windSpeed",
+      "waveHeight",
+      "temperature",
+      "waterTemperature",
+      "observedAt", // 070（BOA-358。069の列 race_conditions.weather_observed_at）
     ],
   },
   {
@@ -231,6 +249,9 @@ async function main() {
   );
 
   let failed = false;
+  // weather は「気象が非nullのレースが無い日」だと検査対象が空になる。他の入れ子（SKIP）と違い、
+  // 070（observedAt）の検証そのものなので、黙って OK にせず、最後の出力で未検証を明示する
+  let weatherUnverified = false;
   for (const rpc of [
     "get_predictions_by_date",
     "get_predictions_by_date_light",
@@ -250,7 +271,12 @@ async function main() {
     for (const { path, keys } of PREDICTION_NESTED_CHECKS) {
       const items = collectNested(data.races, path);
       if (items.length === 0) {
-        console.log(`  [SKIP] ${path}: 全レースで空（検査対象なし）`);
+        if (path === "weather") {
+          console.log(`  [WARN] ${path}: 全レースで空のため未検証`);
+          weatherUnverified = true;
+        } else {
+          console.log(`  [SKIP] ${path}: 全レースで空（検査対象なし）`);
+        }
         continue;
       }
       failed = reportGroup(path, items, keys) || failed;
@@ -274,8 +300,14 @@ async function main() {
     );
     process.exit(1);
   }
+  const unverifiedNotes = [
+    todayUnverified &&
+      "get_today_racesは本日の開催が無く未検証。開催日に再実行してください",
+    weatherUnverified &&
+      "weather（observedAt）は検証日に気象を取得済みのレースが無く未検証。--date で気象のある日を指定して再実行してください",
+  ].filter(Boolean);
   console.log(
-    `\nOK: 検証できたRPCは全て期待キーを含みます${todayUnverified ? "（get_today_racesは本日の開催が無く未検証。開催日に再実行してください）" : ""}`,
+    `\nOK: 検証できたRPCは全て期待キーを含みます${unverifiedNotes.length > 0 ? `（${unverifiedNotes.join("。")}）` : ""}`,
   );
 }
 
