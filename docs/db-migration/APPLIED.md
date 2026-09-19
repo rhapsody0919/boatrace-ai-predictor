@@ -131,5 +131,5 @@
 | 067 | 067_venues_course_entry_baseline.sql | 適用済み | 列 venues.course_entry_baseline・course_entry_baseline_updated_at、関数 compute_venue_course_entry_baseline が存在 |
 | 068 | 068_restore_cancellation_status_in_rpcs.sql | 適用済み | 2026-09-19にユーザーが適用。get_predictions_by_date / _light / get_today_races の3関数の`prosrc`に`cancellationStatus`を含み、`get_predictions_by_date_light('2026-09-12')`の156レース中、`cancellationStatus='confirmed'`が34件（DBの`races.cancellation_status='confirmed'`の34件と一致） |
 | 069 | 069_race_conditions_weather_observed_at.sql | 適用済み | 2026-09-19にユーザーが適用。列 race_conditions.weather_observed_at（`timestamp with time zone`）が存在（information_schema.columns で確認） |
-| 070 | 070_add_weather_observed_at_to_rpcs.sql | 未適用 | get_predictions_by_date / _light の現行定義に observedAt が含まれない（2026-09-19、pg_proc.prosrc で確認）。適用後に「適用済み」へ更新する |
+| 070 | 070_add_weather_observed_at_to_rpcs.sql | 適用済み | 2026-09-19にユーザーが適用。get_predictions_by_date / _light の現行定義（pg_proc.prosrc）に observedAt を含み、get_predictions_by_date_light('2026-09-19')の156レース中、weatherを持つ142レースの全てで weather.observedAt のキーが存在（適用前は142件中142件が欠落）。get_today_races は weather を返さないため対象外 |
 | （番号なし） | add-defense-distribution.sql | 適用済み | 列 racer_aggregated_stats.defense_distribution・course_race_counts が存在 |
