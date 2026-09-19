@@ -3,6 +3,8 @@
 ## ステータス
 採用
 
+2026-09-19: T2・T4/T5の配置は [ADR-0066](./0066-scraping-execution-consolidation-to-vercel.md) により置き換えられた（T1をレガシーオーケストレーターに追加しない原則は継続）。
+
 ## 背景
 
 [BOA-313](https://linear.app/boat-ai/issue/BOA-313)は、GitHub Actionsの`concurrency`直列化により処理が詰まると後続トリガーがキャンセルされ、時間に厳しいデータ（展示・結果・オッズ）の取得窓を逃す問題に対処するため、Vercel Serverless Functionsへの段階移行を進めている（Phase 1=展示、完了・並走検証中）。本specで新規に発見したデータ項目（[FR-1](./plan.md#fr-1-レース特記事項ページ)のレース特記事項等）を、どちらの実行基盤に置くべきかの一般原則を決める必要がある。個々のFRごとに都度議論すると判断がぶれるため、原則として1箇所に定める。
