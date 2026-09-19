@@ -20,6 +20,7 @@
 |---|---|
 | オッズの窓内取得率（±3分、9/17・9/18の360レース） | 60分前84.7% / 30分前86.7% / 15分前88.1% / 10分前87.8% / 5分前89.4% / 0分前87.2%（欠落率2%基準に未達。「存在判定」ではほぼ100%だった） |
 | WS1の実測レポート（PR #714、`scripts/analysis/data-health-report.js`、ベースライン`data/analysis/data-health/2026-09-19.json`。直近7日） | 窓内取得率: 60分前89.6% / 30分前92.3% / 15分前92.5% / 10分前92.6% / 5分前93.0% / 0分前43.4%（全て98%未達。0分前は9/16から保存が始まった。9/16 18:04〜21:58 JSTの障害を除いても90.4〜94.1%）。展示: 行の有無99.5%、展示タイム非NULL基準98.2%（未達）。全券種オッズ: 21.7%（9/16から保存、9/17・9/18は100%）。rank4〜6: 96.4%（欠場・失格を含み構造的に100%にならない可能性、原因未調査）。月別の結果充足率: 2025-12が93.0%、2026-01が94.5%、2026-03が91.0%（欠落は全て`race_results`に行が無いもの）。ジョブ: `scrape-racer-season-stats`は実行履歴0件、`scrape-venue-motor-stats`は最終実行が失敗（原因は`git push`のmasterとの競合、BOA-360。データは書き込み済み） |
+| GitHub Actionsのスケジュール起動の遅延（実行履歴の`createdAt`、2026-09-14〜18） | `scrape-point-rank`は22:00 JST指定に対し、実際の起動は翌01:51〜02:24 JST（約4時間遅れ）。`scrape-venue-motor-stats`は6:00 JST指定に対し、約08:04〜08:42 JST起動（約2〜2.7時間遅れ）。`schedule`起動は定刻を保証せず、日付やレースの生成タイミングに依存するジョブが、日付を取り違える原因になった（`racer_series_points`が0件だった直接原因。BOA-291、PR #715）。Vercel Cronへの一本化（ADR-0066）を裏づける実測 |
 | 取得時刻列 | `race_odds.captured_at`のみ。`exhibition_data`・`race_entries`・`race_start_timings`・`predictions`に無い（`race_conditions`・`race_results`は`created_at`のみ）。展示のタイミングは現状、計測不能 |
 | 空テーブル | `racer_series_points` 0件、`racer_profiles.ability_index` 0/1,627件、`race_special_notes` 0件（正常か不明） |
 | 履歴 | `races`は2025-12-03〜。結果の充足率は2025-12が93%、2026-03が91%（他月は98〜99.7%） |
