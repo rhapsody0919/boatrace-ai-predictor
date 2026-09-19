@@ -154,7 +154,8 @@ function PredictionPanel({
     activeMainTab !== "result" &&
     activeMainTab !== "beforeInfo" &&
     activeMainTab !== "motor" &&
-    activeMainTab !== "aiPrediction";
+    activeMainTab !== "aiPrediction" &&
+    activeMainTab !== "oddsList";
 
   // ローディング中
   if (isAnalyzing) {

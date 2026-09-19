@@ -924,6 +924,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rol-grid")).toBeVisible({ timeout: 20000 });
     await expect(page.locator(".rol-disclaimer")).toContainText("主催者");
 
+    // オッズ一覧タブ専用の内容のため、基本情報系のデータ出走表・枠別傾向・
+    // 分析ツールアコーディオンは隠れる（モータ情報タブと同じ方針の再発防止）
+    await expect(page.locator(".data-race-table")).toHaveCount(0);
+    await expect(page.locator(".venue-tendency-panel")).toHaveCount(0);
+    await expect(page.locator(".embedded-analysis-section")).toHaveCount(0);
+
     // 2連単（ペアが最終買い目）: セルをタップすると直接推移が表示される
     await page.locator(".rol-chip", { hasText: "2連単" }).click();
     await page.locator(".rol-cell[class*='rol-heat-']").first().click();
@@ -944,6 +950,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
       .locator(".rol-sparkline polyline")
       .getAttribute("points");
     expect(points).not.toContain("NaN");
+
+    // 基本情報タブへ戻ればデータ出走表が再表示される（上の非表示検証が空振りでないことの裏付け）
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test("分析ツールの超展開データタブが表示される（レースAI予想からの外出し）", async ({
