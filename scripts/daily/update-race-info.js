@@ -583,7 +583,13 @@ async function main() {
   console.log("🏁 完了");
 }
 
-export const _internal = { scrapeRaceMeta, scrapeRaceStage, scrapeSeriesDay };
+export const _internal = {
+  scrapeRaceMeta,
+  scrapeRaceStage,
+  scrapeSeriesDay,
+  scrapeConditions,
+  convertWindDirection,
+};
 
 // スタンドアローン実行時のみ main() を呼ぶ（import 時に実行させない）
 if (process.argv[1] === new URL(import.meta.url).pathname) {
