@@ -488,6 +488,7 @@
   "beforeInfo": {
     "subtitle": "발주 시간이 가까워지면 갱신되는 당일 한정 정보입니다. 발주 30/15/10분 전까지 확정되지 않는 항목이 있습니다",
     "weatherTitle": "오늘의 수면 컨디션",
+    "weatherObservedAt": "{{time}} JST 기준",
     "weatherLabel": "날씨",
     "temperatureLabel": "기온",
     "windLabel": "풍속/풍향",

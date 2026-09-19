@@ -18,6 +18,13 @@ import {
 } from "../lib/supabaseClient.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
 import { toIntOrNull } from "../lib/venueMotorStats/parserUtils.js";
+import {
+  buildStartTimeLookup,
+  buildWeatherRows,
+  formatWeatherStats,
+  scrapeConditions,
+} from "../lib/beforeinfoWeather.js";
+import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -182,8 +189,10 @@ export function scrapeExhibitionData($) {
 const FETCH_TIMEOUT_MS = 15000;
 
 /**
- * 1レースの展示データを取得
- * @returns {{ data: Array|null, reason: string|null }}
+ * 1レースの展示データと気象を取得する（同じ beforeinfo ページから両方を解析する。BOA-358）
+ * @returns {{ data: Array|null, reason: string|null, conditions: Object|null }}
+ *   conditions: 水面気象情報の解析結果（ページを取得できなかった場合は null）。
+ *   展示データが未公開（data が null）でも、気象は解析する
  */
 async function fetchExhibitionForRace(date, venueCode, raceNo) {
   const ymd = date.replace(/-/g, "");
@@ -198,17 +207,31 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
       signal: controller.signal,
     });
     if (!response.ok) {
-      return { data: null, reason: `http_${response.status}` };
+      return {
+        data: null,
+        reason: `http_${response.status}`,
+        conditions: null,
+      };
     }
 
     const html = await response.text();
     const $ = cheerio.load(html);
-    return scrapeExhibitionData($);
+    const exhibition = scrapeExhibitionData($);
+    // 気象の解析失敗は、展示データの取得・保存を妨げない（気象だけ null にする）
+    let conditions = null;
+    try {
+      conditions = scrapeConditions($);
+    } catch (weatherError) {
+      console.error(
+        `  ⚠️ ${VENUE_NAMES[venueCode]} ${raceNo}R: 気象の解析エラー: ${weatherError.message}`,
+      );
+    }
+    return { ...exhibition, conditions };
   } catch (error) {
     console.error(
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R: ${error.message}`,
     );
-    return { data: null, reason: `error: ${error.message}` };
+    return { data: null, reason: `error: ${error.message}`, conditions: null };
   } finally {
     clearTimeout(timeoutId);
   }
@@ -218,7 +241,11 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
  * オーケストレーターから呼び出し可能な展示データ取得処理
  * @param {Array} schedule - getRaceSchedule() の返り値（外部から渡す）
  * @param {string} date - YYYY-MM-DD
- * @returns {Promise<{updated: boolean, count: number}>}
+ * @param {{updateWeather?: boolean}} [options]
+ *   updateWeather: 取得した beforeinfo の気象も race_conditions へ反映するか（既定 true、BOA-358）。
+ *   過去レースの補完（scrape-exhibition-data の backfill 系）は、beforeinfo が「その日の最新の観測」
+ *   を表示するため false にする
+ * @returns {Promise<{updated: boolean, count: number, weather?: Object}>}
  */
 /**
  * 展示データ取得のウィンドウ（BOA-55: 発走30分前・15分前・10分前）
@@ -226,7 +253,7 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
  */
 const EXHIBITION_WINDOWS = [30, 15, 10];
 
-export async function run(schedule, date) {
+export async function run(schedule, date, { updateWeather = true } = {}) {
   // BOA-55: 30分前（初回取得）・15分前・10分前（未取得時リトライ）のウィンドウをカバー
   const exhibitionTargetMap = new Map();
   for (const w of EXHIBITION_WINDOWS) {
@@ -254,17 +281,30 @@ export async function run(schedule, date) {
     return { updated: false, count: 0 };
   }
 
-  return scrapeAndUpsertRaces(targets, date);
+  return scrapeAndUpsertRaces(targets, date, {
+    updateWeather,
+    // 「N R時点」の気象の観測時刻（Nレース目の発走予定時刻）の解決用
+    startTimeLookup: buildStartTimeLookup(schedule),
+  });
 }
 
 /**
  * 指定レースの展示データを取得して exhibition_data に upsert する
  * （取得済み判定・ウィンドウ判定は呼び出し側の責務。過去分の補完スクリプトからも使う）
- * @param {Array<{race_id: string, venue_code: number, race_no: number}>} targets
+ * @param {Array<{race_id: string, venue_code: number, race_no: number, start_time?: Date}>} targets
+ *   start_time: 発走予定時刻。気象の更新（updateWeather）では、発走後の観測を弾くために使う
  * @param {string} date - YYYY-MM-DD
- * @returns {Promise<{updated: boolean, count: number}>}
+ * @param {{updateWeather?: boolean, startTimeLookup?: Function|null}} [options]
+ *   updateWeather: 気象も race_conditions へ反映するか。既定 false（過去分の補完は、beforeinfo が
+ *   発走後もその日の最新の観測を表示するため、気象を書かない）。run() は既定 true で呼ぶ
+ *   startTimeLookup: buildStartTimeLookup() の戻り値（「N R時点」の観測時刻の解決用）
+ * @returns {Promise<{updated: boolean, count: number, weather: Object|null}>}
  */
-export async function scrapeAndUpsertRaces(targets, date) {
+export async function scrapeAndUpsertRaces(
+  targets,
+  date,
+  { updateWeather = false, startTimeLookup = null } = {},
+) {
   // 会場ごとにグループ化
   const byVenue = new Map();
   for (const r of targets) {
@@ -274,6 +314,8 @@ export async function scrapeAndUpsertRaces(targets, date) {
 
   let totalFetched = 0;
   const allRows = [];
+  // 気象の反映対象（レースごとの解析結果）。展示データが未公開でも、ページを取得できたレースは対象
+  const weatherFetched = [];
 
   const venueEntries = [...byVenue.entries()];
   for (let vi = 0; vi < venueEntries.length; vi++) {
@@ -284,18 +326,23 @@ export async function scrapeAndUpsertRaces(targets, date) {
     const results = await Promise.all(
       races.map((r) =>
         fetchExhibitionForRace(date, venueCode, r.race_no).then(
-          ({ data, reason }) => ({
+          ({ data, reason, conditions }) => ({
             raceId: r.race_id,
+            startTime: r.start_time ?? null,
             data,
             reason,
+            conditions,
           }),
         ),
       ),
     );
 
     let venueFetched = 0;
-    for (const { raceId, data, reason } of results) {
+    for (const { raceId, startTime, data, reason, conditions } of results) {
       const raceNo = raceId.split("-")[4];
+      if (conditions) {
+        weatherFetched.push({ raceId, venueCode, startTime, conditions });
+      }
       if (data) {
         for (const ex of data) {
           if (ex.exhibitionTime != null || ex.startTiming != null) {
@@ -409,7 +456,73 @@ export async function scrapeAndUpsertRaces(targets, date) {
   }
 
   console.log(`📊 展示: 取得${totalFetched}R / データ${allRows.length}件`);
-  return { updated: allRows.length > 0, count: allRows.length };
+
+  // 気象の反映（BOA-358）。展示データの保存が済んだ後に行い、失敗しても展示の成否・戻り値
+  // （予測リフレッシュの起動条件）には影響させない
+  const weather = updateWeather
+    ? await updateRaceConditionsWeather(weatherFetched, date, {
+        startTimeLookup,
+      })
+    : null;
+
+  return { updated: allRows.length > 0, count: allRows.length, weather };
+}
+
+/**
+ * beforeinfo から取得した気象を race_conditions へ反映する（変更のある行だけ書く）。
+ * 例外・書き込み失敗は投げず、結果に error として返す（展示データの取得・保存と分離するため）。
+ * 気象が1件も反映できなかった場合は、理由の内訳を警告として出す（0件を成功扱いにしない）。
+ *
+ * @param {Array<{raceId: string, venueCode: number, startTime: Date|null, conditions: Object|null}>} fetched
+ * @param {string} date YYYY-MM-DD
+ * @param {{startTimeLookup?: Function|null}} [options]
+ * @returns {Promise<{fetched: number, parsed: number, written: number, error: string|null}>}
+ */
+export async function updateRaceConditionsWeather(
+  fetched,
+  date,
+  { startTimeLookup = null } = {},
+) {
+  try {
+    const { rows, stats } = buildWeatherRows(fetched, date, {
+      startTimeLookup,
+    });
+    console.log(`🌤️ 気象: ${formatWeatherStats(stats)}`);
+    if (stats.fetched > 0 && rows.length === 0) {
+      console.warn(
+        "⚠️ 気象: ページを取得したが、反映できる気象が1件も無かった（公式ページの構造変更の可能性。発走後の観測しか無い場合も含む）",
+      );
+    } else if (
+      rows.length > 0 &&
+      stats.no_time + stats.future === rows.length
+    ) {
+      console.warn(
+        "⚠️ 気象: 観測時刻を1件も取得できなかった（気象は反映したが、観測時刻はNULL。タイトルの書式変更の可能性）",
+      );
+    }
+    if (rows.length === 0) {
+      return { fetched: stats.fetched, parsed: 0, written: 0, error: null };
+    }
+    const result = await upsertRaceConditions(supabase, rows, {
+      label: "race_conditions(気象)",
+    });
+    return {
+      fetched: stats.fetched,
+      parsed: stats.parsed,
+      written: result.written,
+      error: result.error ? result.error.message : null,
+    };
+  } catch (error) {
+    console.error(
+      `❌ 気象の更新エラー（展示データは保存済み）: ${error.message}`,
+    );
+    return {
+      fetched: fetched.length,
+      parsed: 0,
+      written: 0,
+      error: error.message,
+    };
+  }
 }
 
 /**

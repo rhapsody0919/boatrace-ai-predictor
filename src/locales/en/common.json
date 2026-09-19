@@ -490,6 +490,7 @@
   "beforeInfo": {
     "subtitle": "Same-day information updated as the race approaches. Some items aren't finalized until 30/15/10 minutes before the start",
     "weatherTitle": "Today's water conditions",
+    "weatherObservedAt": "As of {{time}} JST",
     "weatherLabel": "Weather",
     "temperatureLabel": "Temperature",
     "windLabel": "Wind speed/direction",
