@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T01:56:34.593Z",
+  "generatedAt": "2026-09-19T04:03:31.084Z",
   "params": {
     "reportDate": "2026-09-19",
     "thresholds": {
@@ -25,7 +25,14 @@
         0
       ]
     },
-    "denominatorRule": "races.cancellation_status='confirmed' を除外"
+    "denominatorRule": "races.cancellation_status='confirmed' を除外",
+    "knownIncidents": [
+      {
+        "label": "BOA-352 Supabase障害（statement timeout。オーケストレーターが早期終了）",
+        "start": "2026-09-16T18:04:00+09:00",
+        "end": "2026-09-16T21:58:00+09:00"
+      }
+    ]
   },
   "coverage": {
     "perDay": [
@@ -39,8 +46,10 @@
         "actual_course": 132,
         "winning_technique": 132,
         "race_stage": 131,
-        "st": 132,
-        "exhibition": 132,
+        "st_row": 132,
+        "st_value": 132,
+        "exhibition_row": 132,
+        "exhibition_time": 132,
         "odds": 132,
         "odds_all": 0,
         "trifecta_all": 130,
@@ -59,8 +68,10 @@
         "actual_course": 132,
         "winning_technique": 132,
         "race_stage": 132,
-        "st": 132,
-        "exhibition": 131,
+        "st_row": 132,
+        "st_value": 132,
+        "exhibition_row": 131,
+        "exhibition_time": 125,
         "odds": 132,
         "odds_all": 0,
         "trifecta_all": 132,
@@ -79,8 +90,10 @@
         "actual_course": 108,
         "winning_technique": 108,
         "race_stage": 108,
-        "st": 108,
-        "exhibition": 108,
+        "st_row": 108,
+        "st_value": 108,
+        "exhibition_row": 108,
+        "exhibition_time": 103,
         "odds": 108,
         "odds_all": 0,
         "trifecta_all": 108,
@@ -99,8 +112,10 @@
         "actual_course": 132,
         "winning_technique": 132,
         "race_stage": 132,
-        "st": 132,
-        "exhibition": 131,
+        "st_row": 132,
+        "st_value": 132,
+        "exhibition_row": 131,
+        "exhibition_time": 122,
         "odds": 132,
         "odds_all": 0,
         "trifecta_all": 132,
@@ -119,8 +134,10 @@
         "actual_course": 84,
         "winning_technique": 84,
         "race_stage": 84,
-        "st": 84,
-        "exhibition": 76,
+        "st_row": 84,
+        "st_value": 84,
+        "exhibition_row": 76,
+        "exhibition_time": 70,
         "odds": 84,
         "odds_all": 0,
         "trifecta_all": 84,
@@ -139,8 +156,10 @@
         "actual_course": 132,
         "winning_technique": 132,
         "race_stage": 132,
-        "st": 132,
-        "exhibition": 132,
+        "st_row": 132,
+        "st_value": 132,
+        "exhibition_row": 132,
+        "exhibition_time": 132,
         "odds": 132,
         "odds_all": 0,
         "trifecta_all": 132,
@@ -159,8 +178,10 @@
         "actual_course": 108,
         "winning_technique": 108,
         "race_stage": 108,
-        "st": 108,
-        "exhibition": 108,
+        "st_row": 108,
+        "st_value": 108,
+        "exhibition_row": 108,
+        "exhibition_time": 108,
         "odds": 108,
         "odds_all": 0,
         "trifecta_all": 108,
@@ -179,8 +200,10 @@
         "actual_course": 122,
         "winning_technique": 122,
         "race_stage": 122,
-        "st": 122,
-        "exhibition": 122,
+        "st_row": 122,
+        "st_value": 122,
+        "exhibition_row": 122,
+        "exhibition_time": 122,
         "odds": 122,
         "odds_all": 0,
         "trifecta_all": 122,
@@ -199,8 +222,10 @@
         "actual_course": 179,
         "winning_technique": 180,
         "race_stage": 172,
-        "st": 180,
-        "exhibition": 180,
+        "st_row": 180,
+        "st_value": 180,
+        "exhibition_row": 180,
+        "exhibition_time": 180,
         "odds": 180,
         "odds_all": 0,
         "trifecta_all": 168,
@@ -219,8 +244,10 @@
         "actual_course": 168,
         "winning_technique": 167,
         "race_stage": 168,
-        "st": 168,
-        "exhibition": 168,
+        "st_row": 168,
+        "st_value": 168,
+        "exhibition_row": 168,
+        "exhibition_time": 168,
         "odds": 168,
         "odds_all": 0,
         "trifecta_all": 168,
@@ -239,8 +266,10 @@
         "actual_course": 155,
         "winning_technique": 156,
         "race_stage": 156,
-        "st": 156,
-        "exhibition": 156,
+        "st_row": 156,
+        "st_value": 156,
+        "exhibition_row": 156,
+        "exhibition_time": 156,
         "odds": 156,
         "odds_all": 0,
         "trifecta_all": 155,
@@ -259,8 +288,10 @@
         "actual_course": 155,
         "winning_technique": 155,
         "race_stage": 156,
-        "st": 155,
-        "exhibition": 156,
+        "st_row": 155,
+        "st_value": 155,
+        "exhibition_row": 156,
+        "exhibition_time": 156,
         "odds": 151,
         "odds_all": 68,
         "trifecta_all": 140,
@@ -279,8 +310,10 @@
         "actual_course": 180,
         "winning_technique": 180,
         "race_stage": 180,
-        "st": 180,
-        "exhibition": 180,
+        "st_row": 180,
+        "st_value": 180,
+        "exhibition_row": 180,
+        "exhibition_time": 180,
         "odds": 180,
         "odds_all": 180,
         "trifecta_all": 180,
@@ -299,8 +332,10 @@
         "actual_course": 180,
         "winning_technique": 180,
         "race_stage": 180,
-        "st": 180,
-        "exhibition": 180,
+        "st_row": 180,
+        "st_value": 180,
+        "exhibition_row": 180,
+        "exhibition_time": 180,
         "odds": 180,
         "odds_all": 180,
         "trifecta_all": 180,
@@ -382,8 +417,8 @@
         }
       },
       {
-        "metric": "st",
-        "label": "ST",
+        "metric": "st_row",
+        "label": "ST(行の有無)",
         "numerator": 1969,
         "denominator": 1970,
         "excluded": 46,
@@ -396,8 +431,22 @@
         }
       },
       {
-        "metric": "exhibition",
-        "label": "展示",
+        "metric": "st_value",
+        "label": "ST(start_timing非NULL)",
+        "numerator": 1969,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.999492385786802,
+        "belowThreshold": false,
+        "daysBelowThreshold": 0,
+        "worstDay": {
+          "date": "2026-09-16",
+          "rate": 0.9935897435897436
+        }
+      },
+      {
+        "metric": "exhibition_row",
+        "label": "展示(行の有無)",
         "numerator": 1960,
         "denominator": 1970,
         "excluded": 46,
@@ -407,6 +456,20 @@
         "worstDay": {
           "date": "2026-09-09",
           "rate": 0.9047619047619048
+        }
+      },
+      {
+        "metric": "exhibition_time",
+        "label": "展示(exhibition_time非NULL)",
+        "numerator": 1934,
+        "denominator": 1970,
+        "excluded": 46,
+        "rate": 0.9817258883248731,
+        "belowThreshold": true,
+        "daysBelowThreshold": 4,
+        "worstDay": {
+          "date": "2026-09-09",
+          "rate": 0.8333333333333334
         }
       },
       {
@@ -507,7 +570,8 @@
           "rate": 0
         }
       }
-    ]
+    ],
+    "missingDates": []
   },
   "windows": {
     "perDay": [
@@ -515,297 +579,406 @@
         "d": "2026-09-12",
         "m": 60,
         "races": 122,
-        "in_window": 120
+        "in_window": 120,
+        "races_clean": 122,
+        "in_window_clean": 120
       },
       {
         "d": "2026-09-12",
         "m": 30,
         "races": 122,
-        "in_window": 122
+        "in_window": 122,
+        "races_clean": 122,
+        "in_window_clean": 122
       },
       {
         "d": "2026-09-12",
         "m": 15,
         "races": 122,
-        "in_window": 122
+        "in_window": 122,
+        "races_clean": 122,
+        "in_window_clean": 122
       },
       {
         "d": "2026-09-12",
         "m": 10,
         "races": 122,
-        "in_window": 122
+        "in_window": 122,
+        "races_clean": 122,
+        "in_window_clean": 122
       },
       {
         "d": "2026-09-12",
         "m": 5,
         "races": 122,
-        "in_window": 122
+        "in_window": 122,
+        "races_clean": 122,
+        "in_window_clean": 122
       },
       {
         "d": "2026-09-12",
         "m": 0,
         "races": 122,
-        "in_window": 23
+        "in_window": 23,
+        "races_clean": 122,
+        "in_window_clean": 23
       },
       {
         "d": "2026-09-13",
         "m": 60,
         "races": 180,
-        "in_window": 162
+        "in_window": 162,
+        "races_clean": 180,
+        "in_window_clean": 162
       },
       {
         "d": "2026-09-13",
         "m": 30,
         "races": 180,
-        "in_window": 169
+        "in_window": 169,
+        "races_clean": 180,
+        "in_window_clean": 169
       },
       {
         "d": "2026-09-13",
         "m": 15,
         "races": 180,
-        "in_window": 168
+        "in_window": 168,
+        "races_clean": 180,
+        "in_window_clean": 168
       },
       {
         "d": "2026-09-13",
         "m": 10,
         "races": 180,
-        "in_window": 169
+        "in_window": 169,
+        "races_clean": 180,
+        "in_window_clean": 169
       },
       {
         "d": "2026-09-13",
         "m": 5,
         "races": 180,
-        "in_window": 168
+        "in_window": 168,
+        "races_clean": 180,
+        "in_window_clean": 168
       },
       {
         "d": "2026-09-13",
         "m": 0,
         "races": 180,
-        "in_window": 33
+        "in_window": 33,
+        "races_clean": 180,
+        "in_window_clean": 33
       },
       {
         "d": "2026-09-14",
         "m": 60,
         "races": 168,
-        "in_window": 161
+        "in_window": 161,
+        "races_clean": 168,
+        "in_window_clean": 161
       },
       {
         "d": "2026-09-14",
         "m": 30,
         "races": 168,
-        "in_window": 166
+        "in_window": 166,
+        "races_clean": 168,
+        "in_window_clean": 166
       },
       {
         "d": "2026-09-14",
         "m": 15,
         "races": 168,
-        "in_window": 166
+        "in_window": 166,
+        "races_clean": 168,
+        "in_window_clean": 166
       },
       {
         "d": "2026-09-14",
         "m": 10,
         "races": 168,
-        "in_window": 168
+        "in_window": 168,
+        "races_clean": 168,
+        "in_window_clean": 168
       },
       {
         "d": "2026-09-14",
         "m": 5,
         "races": 168,
-        "in_window": 168
+        "in_window": 168,
+        "races_clean": 168,
+        "in_window_clean": 168
       },
       {
         "d": "2026-09-14",
         "m": 0,
         "races": 168,
-        "in_window": 32
+        "in_window": 32,
+        "races_clean": 168,
+        "in_window_clean": 32
       },
       {
         "d": "2026-09-15",
         "m": 60,
         "races": 156,
-        "in_window": 152
+        "in_window": 152,
+        "races_clean": 156,
+        "in_window_clean": 152
       },
       {
         "d": "2026-09-15",
         "m": 30,
         "races": 156,
-        "in_window": 155
+        "in_window": 155,
+        "races_clean": 156,
+        "in_window_clean": 155
       },
       {
         "d": "2026-09-15",
         "m": 15,
         "races": 156,
-        "in_window": 156
+        "in_window": 156,
+        "races_clean": 156,
+        "in_window_clean": 156
       },
       {
         "d": "2026-09-15",
         "m": 10,
         "races": 156,
-        "in_window": 156
+        "in_window": 156,
+        "races_clean": 156,
+        "in_window_clean": 156
       },
       {
         "d": "2026-09-15",
         "m": 5,
         "races": 156,
-        "in_window": 155
+        "in_window": 155,
+        "races_clean": 156,
+        "in_window_clean": 155
       },
       {
         "d": "2026-09-15",
         "m": 0,
         "races": 156,
-        "in_window": 32
+        "in_window": 32,
+        "races_clean": 156,
+        "in_window_clean": 32
       },
       {
         "d": "2026-09-16",
         "m": 60,
         "races": 156,
-        "in_window": 123
+        "in_window": 123,
+        "races_clean": 145,
+        "in_window_clean": 122
       },
       {
         "d": "2026-09-16",
         "m": 30,
         "races": 156,
-        "in_window": 130
+        "in_window": 130,
+        "races_clean": 142,
+        "in_window_clean": 128
       },
       {
         "d": "2026-09-16",
         "m": 15,
         "races": 156,
-        "in_window": 127
+        "in_window": 127,
+        "races_clean": 141,
+        "in_window_clean": 125
       },
       {
         "d": "2026-09-16",
         "m": 10,
         "races": 156,
-        "in_window": 127
+        "in_window": 127,
+        "races_clean": 140,
+        "in_window_clean": 126
       },
       {
         "d": "2026-09-16",
         "m": 5,
         "races": 156,
-        "in_window": 127
+        "in_window": 127,
+        "races_clean": 140,
+        "in_window_clean": 125
       },
       {
         "d": "2026-09-16",
         "m": 0,
         "races": 156,
-        "in_window": 62
+        "in_window": 62,
+        "races_clean": 139,
+        "in_window_clean": 60
       },
       {
         "d": "2026-09-17",
         "m": 60,
         "races": 180,
-        "in_window": 147
+        "in_window": 147,
+        "races_clean": 180,
+        "in_window_clean": 147
       },
       {
         "d": "2026-09-17",
         "m": 30,
         "races": 180,
-        "in_window": 150
+        "in_window": 150,
+        "races_clean": 180,
+        "in_window_clean": 150
       },
       {
         "d": "2026-09-17",
         "m": 15,
         "races": 180,
-        "in_window": 154
+        "in_window": 154,
+        "races_clean": 180,
+        "in_window_clean": 154
       },
       {
         "d": "2026-09-17",
         "m": 10,
         "races": 180,
-        "in_window": 152
+        "in_window": 152,
+        "races_clean": 180,
+        "in_window_clean": 152
       },
       {
         "d": "2026-09-17",
         "m": 5,
         "races": 180,
-        "in_window": 153
+        "in_window": 153,
+        "races_clean": 180,
+        "in_window_clean": 153
       },
       {
         "d": "2026-09-17",
         "m": 0,
         "races": 180,
-        "in_window": 153
+        "in_window": 153,
+        "races_clean": 180,
+        "in_window_clean": 153
       },
       {
         "d": "2026-09-18",
         "m": 60,
         "races": 180,
-        "in_window": 158
+        "in_window": 158,
+        "races_clean": 180,
+        "in_window_clean": 158
       },
       {
         "d": "2026-09-18",
         "m": 30,
         "races": 180,
-        "in_window": 162
+        "in_window": 162,
+        "races_clean": 180,
+        "in_window_clean": 162
       },
       {
         "d": "2026-09-18",
         "m": 15,
         "races": 180,
-        "in_window": 163
+        "in_window": 163,
+        "races_clean": 180,
+        "in_window_clean": 163
       },
       {
         "d": "2026-09-18",
         "m": 10,
         "races": 180,
-        "in_window": 164
+        "in_window": 164,
+        "races_clean": 180,
+        "in_window_clean": 164
       },
       {
         "d": "2026-09-18",
         "m": 5,
         "races": 180,
-        "in_window": 169
+        "in_window": 169,
+        "races_clean": 180,
+        "in_window_clean": 169
       },
       {
         "d": "2026-09-18",
         "m": 0,
         "races": 180,
-        "in_window": 161
+        "in_window": 161,
+        "races_clean": 180,
+        "in_window_clean": 161
       }
     ],
+    "missingDates": [],
     "aggregate": [
       {
         "minutesBefore": 60,
         "races": 1142,
         "inWindow": 1023,
         "rate": 0.8957968476357268,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 11,
+        "racesClean": 1131,
+        "inWindowClean": 1022,
+        "rateClean": 0.9036251105216623
       },
       {
         "minutesBefore": 30,
         "races": 1142,
         "inWindow": 1054,
         "rate": 0.9229422066549913,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 14,
+        "racesClean": 1128,
+        "inWindowClean": 1052,
+        "rateClean": 0.9326241134751773
       },
       {
         "minutesBefore": 15,
         "races": 1142,
         "inWindow": 1056,
         "rate": 0.9246935201401051,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 15,
+        "racesClean": 1127,
+        "inWindowClean": 1054,
+        "rateClean": 0.935226264418811
       },
       {
         "minutesBefore": 10,
         "races": 1142,
         "inWindow": 1058,
         "rate": 0.9264448336252189,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 16,
+        "racesClean": 1126,
+        "inWindowClean": 1057,
+        "rateClean": 0.9387211367673179
       },
       {
         "minutesBefore": 5,
         "races": 1142,
         "inWindow": 1062,
         "rate": 0.9299474605954466,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 16,
+        "racesClean": 1126,
+        "inWindowClean": 1060,
+        "rateClean": 0.9413854351687388
       },
       {
         "minutesBefore": 0,
         "races": 1142,
         "inWindow": 496,
         "rate": 0.4343257443082312,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 17,
+        "racesClean": 1125,
+        "inWindowClean": 494,
+        "rateClean": 0.4391111111111111
       }
     ],
     "weekday": [
@@ -814,42 +987,66 @@
         "races": 840,
         "inWindow": 741,
         "rate": 0.8821428571428571,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 11,
+        "racesClean": 829,
+        "inWindowClean": 740,
+        "rateClean": 0.8926417370325693
       },
       {
         "minutesBefore": 30,
         "races": 840,
         "inWindow": 763,
         "rate": 0.9083333333333333,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 14,
+        "racesClean": 826,
+        "inWindowClean": 761,
+        "rateClean": 0.9213075060532687
       },
       {
         "minutesBefore": 15,
         "races": 840,
         "inWindow": 766,
         "rate": 0.9119047619047619,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 15,
+        "racesClean": 825,
+        "inWindowClean": 764,
+        "rateClean": 0.926060606060606
       },
       {
         "minutesBefore": 10,
         "races": 840,
         "inWindow": 767,
         "rate": 0.9130952380952381,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 16,
+        "racesClean": 824,
+        "inWindowClean": 766,
+        "rateClean": 0.9296116504854369
       },
       {
         "minutesBefore": 5,
         "races": 840,
         "inWindow": 772,
         "rate": 0.919047619047619,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 16,
+        "racesClean": 824,
+        "inWindowClean": 770,
+        "rateClean": 0.9344660194174758
       },
       {
         "minutesBefore": 0,
         "races": 840,
         "inWindow": 440,
         "rate": 0.5238095238095238,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 17,
+        "racesClean": 823,
+        "inWindowClean": 438,
+        "rateClean": 0.5321992709599028
       }
     ],
     "weekend": [
@@ -858,42 +1055,66 @@
         "races": 302,
         "inWindow": 282,
         "rate": 0.9337748344370861,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 0,
+        "racesClean": 302,
+        "inWindowClean": 282,
+        "rateClean": 0.9337748344370861
       },
       {
         "minutesBefore": 30,
         "races": 302,
         "inWindow": 291,
         "rate": 0.9635761589403974,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 0,
+        "racesClean": 302,
+        "inWindowClean": 291,
+        "rateClean": 0.9635761589403974
       },
       {
         "minutesBefore": 15,
         "races": 302,
         "inWindow": 290,
         "rate": 0.9602649006622517,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 0,
+        "racesClean": 302,
+        "inWindowClean": 290,
+        "rateClean": 0.9602649006622517
       },
       {
         "minutesBefore": 10,
         "races": 302,
         "inWindow": 291,
         "rate": 0.9635761589403974,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 0,
+        "racesClean": 302,
+        "inWindowClean": 291,
+        "rateClean": 0.9635761589403974
       },
       {
         "minutesBefore": 5,
         "races": 302,
         "inWindow": 290,
         "rate": 0.9602649006622517,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 0,
+        "racesClean": 302,
+        "inWindowClean": 290,
+        "rateClean": 0.9602649006622517
       },
       {
         "minutesBefore": 0,
         "races": 302,
         "inWindow": 56,
         "rate": 0.18543046357615894,
-        "belowThreshold": true
+        "belowThreshold": true,
+        "excludedRaces": 0,
+        "racesClean": 302,
+        "inWindowClean": 56,
+        "rateClean": 0.18543046357615894
       }
     ],
     "compare": {
@@ -907,42 +1128,66 @@
           "races": 360,
           "inWindow": 305,
           "rate": 0.8472222222222222,
-          "belowThreshold": true
+          "belowThreshold": true,
+          "excludedRaces": 0,
+          "racesClean": 360,
+          "inWindowClean": 305,
+          "rateClean": 0.8472222222222222
         },
         {
           "minutesBefore": 30,
           "races": 360,
           "inWindow": 312,
           "rate": 0.8666666666666667,
-          "belowThreshold": true
+          "belowThreshold": true,
+          "excludedRaces": 0,
+          "racesClean": 360,
+          "inWindowClean": 312,
+          "rateClean": 0.8666666666666667
         },
         {
           "minutesBefore": 15,
           "races": 360,
           "inWindow": 317,
           "rate": 0.8805555555555555,
-          "belowThreshold": true
+          "belowThreshold": true,
+          "excludedRaces": 0,
+          "racesClean": 360,
+          "inWindowClean": 317,
+          "rateClean": 0.8805555555555555
         },
         {
           "minutesBefore": 10,
           "races": 360,
           "inWindow": 316,
           "rate": 0.8777777777777778,
-          "belowThreshold": true
+          "belowThreshold": true,
+          "excludedRaces": 0,
+          "racesClean": 360,
+          "inWindowClean": 316,
+          "rateClean": 0.8777777777777778
         },
         {
           "minutesBefore": 5,
           "races": 360,
           "inWindow": 322,
           "rate": 0.8944444444444445,
-          "belowThreshold": true
+          "belowThreshold": true,
+          "excludedRaces": 0,
+          "racesClean": 360,
+          "inWindowClean": 322,
+          "rateClean": 0.8944444444444445
         },
         {
           "minutesBefore": 0,
           "races": 360,
           "inWindow": 314,
           "rate": 0.8722222222222222,
-          "belowThreshold": true
+          "belowThreshold": true,
+          "excludedRaces": 0,
+          "racesClean": 360,
+          "inWindowClean": 314,
+          "rateClean": 0.8722222222222222
         }
       ]
     }
@@ -1363,7 +1608,8 @@
         "lastRunAt": "2026-09-18T16:51:37Z",
         "lastRunConclusion": "success",
         "lastSuccessAt": "2026-09-18T16:51:37Z",
-        "hoursSinceLastSuccess": 9.1
+        "hoursSinceLastSuccess": 11.2,
+        "expectedMaxSuccessHours": 48
       },
       {
         "workflow": "scrape-racer-season-stats.yml",
@@ -1371,15 +1617,17 @@
         "lastRunAt": null,
         "lastRunConclusion": null,
         "lastSuccessAt": null,
-        "hoursSinceLastSuccess": null
+        "hoursSinceLastSuccess": null,
+        "expectedMaxSuccessHours": 840
       },
       {
         "workflow": "scrape-scheduled.yml",
         "noRunHistory": false,
-        "lastRunAt": "2026-09-19T01:55:16Z",
-        "lastRunConclusion": "pending",
-        "lastSuccessAt": "2026-09-19T01:45:22Z",
-        "hoursSinceLastSuccess": 0.2
+        "lastRunAt": "2026-09-19T04:00:40Z",
+        "lastRunConclusion": "in_progress",
+        "lastSuccessAt": "2026-09-19T03:55:15Z",
+        "hoursSinceLastSuccess": 0.1,
+        "expectedMaxSuccessHours": 48
       },
       {
         "workflow": "scrape-venue-entry-course-stats.yml",
@@ -1387,7 +1635,8 @@
         "lastRunAt": "2026-09-18T14:41:16Z",
         "lastRunConclusion": "success",
         "lastSuccessAt": "2026-09-18T14:41:16Z",
-        "hoursSinceLastSuccess": 11.3
+        "hoursSinceLastSuccess": 13.4,
+        "expectedMaxSuccessHours": 48
       },
       {
         "workflow": "scrape-venue-motor-stats.yml",
@@ -1395,7 +1644,8 @@
         "lastRunAt": "2026-09-18T23:04:10Z",
         "lastRunConclusion": "failure",
         "lastSuccessAt": "2026-09-17T23:25:06Z",
-        "hoursSinceLastSuccess": 26.5
+        "hoursSinceLastSuccess": 28.6,
+        "expectedMaxSuccessHours": 48
       }
     ]
   },
@@ -1451,6 +1701,13 @@
       "value": 0.9639593908629441,
       "threshold": 0.99,
       "detail": "1899/1970、閾値未満の日 9日"
+    },
+    {
+      "kind": "coverage",
+      "item": "存在充足率 展示(exhibition_time非NULL)",
+      "value": 0.9817258883248731,
+      "threshold": 0.99,
+      "detail": "1934/1970、閾値未満の日 4日"
     },
     {
       "kind": "coverage",
@@ -1612,6 +1869,13 @@
       "value": null,
       "threshold": null,
       "detail": ""
+    },
+    {
+      "kind": "workflow_last_run_failed",
+      "item": "最終実行が失敗: scrape-venue-motor-stats.yml",
+      "value": null,
+      "threshold": null,
+      "detail": "failure（2026-09-18T23:04:10Z）"
     },
     {
       "kind": "timing_unmeasurable",

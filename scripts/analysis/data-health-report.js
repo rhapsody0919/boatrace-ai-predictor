@@ -14,7 +14,7 @@
  *        [--cache-file <path>] [--compare-dates YYYY-MM-DD,YYYY-MM-DD] [--out-dir <dir>]
  *
  *   --end-date       集計期間の最終日（既定: 昨日JST。当日は結果が未確定のため含めない）
- *   --cache-file     DBの生結果のキャッシュ。存在すればDBに接続せず再利用、無ければ実行後に保存する
+ *   --cache-file     DBの生結果のキャッシュ（クエリごとにSQLのハッシュで照合。SQLや期間が変わったクエリは再実行する）
  *   --compare-dates  窓内取得率を、指定日だけで再集計して併記する（過去の実測値との突合用）
  *   --skip-gh        GitHub Actions（gh CLI）の鮮度確認を省略する
  *
@@ -27,6 +27,7 @@
  * 期間は日別14日・窓内7日・月別のみ全期間（GROUP BY 1本）。race_odds等の全件走査はしない。
  */
 
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -67,11 +68,24 @@ const COVERAGE_METRICS = [
   { key: "actual_course", label: "実進入(actual_course_1)" },
   { key: "winning_technique", label: "決まり手" },
   { key: "race_stage", label: "レース種別" },
-  { key: "st", label: "ST" },
-  { key: "exhibition", label: "展示" },
+  { key: "st_row", label: "ST(行の有無)" },
+  { key: "st_value", label: "ST(start_timing非NULL)" },
+  { key: "exhibition_row", label: "展示(行の有無)" },
+  { key: "exhibition_time", label: "展示(exhibition_time非NULL)" },
   { key: "odds", label: "オッズ(1件以上)" },
   { key: "odds_all", label: "全券種オッズ(5種すべて)" },
   ...ALL_ODDS_COLUMNS.map((c) => ({ key: c, label: `└ ${c}` })),
+];
+
+// 窓内取得率の「除外した値」に使う既知の障害期間（除外しない値も常に併記する）。
+// 障害が発生したら追記する。集計期間外の障害は結果に影響しない。ISO 8601（オフセット付き）で書く
+const KNOWN_INCIDENTS = [
+  {
+    label:
+      "BOA-352 Supabase障害（statement timeout。オーケストレーターが早期終了）",
+    start: "2026-09-16T18:04:00+09:00",
+    end: "2026-09-16T21:58:00+09:00",
+  },
 ];
 
 // 取得時刻列の有無を確認する主要テーブル
@@ -110,14 +124,21 @@ function parseArgs(argv) {
     compareDates: [],
     outDir: path.join(REPO_ROOT, "data/analysis/data-health"),
   };
+  const takeValue = (i, name) => {
+    const value = argv[i + 1];
+    if (value === undefined || value.startsWith("--")) {
+      throw new Error(`${name} には値が必要です`);
+    }
+    return value;
+  };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--skip-gh") opts.skipGh = true;
-    else if (arg === "--end-date") opts.endDate = argv[++i];
-    else if (arg === "--cache-file") opts.cacheFile = argv[++i];
-    else if (arg === "--out-dir") opts.outDir = argv[++i];
+    else if (arg === "--end-date") opts.endDate = takeValue(i++, arg);
+    else if (arg === "--cache-file") opts.cacheFile = takeValue(i++, arg);
+    else if (arg === "--out-dir") opts.outDir = takeValue(i++, arg);
     else if (arg === "--compare-dates")
-      opts.compareDates = (argv[++i] ?? "").split(",").filter(Boolean);
+      opts.compareDates = takeValue(i++, arg).split(",").filter(Boolean);
     else throw new Error(`未知の引数: ${arg}`);
   }
   for (const d of [opts.endDate, ...opts.compareDates]) {
@@ -184,6 +205,10 @@ const nonEmptyJson = (col) =>
   `(x.${col} is not null and x.${col} not in ('null'::jsonb, '{}'::jsonb, '[]'::jsonb))`;
 
 export function buildQueries({ coverageStart, windowStart, endDate }) {
+  const incidentRanges =
+    KNOWN_INCIDENTS.length === 0
+      ? "select null::tstzrange as r where false"
+      : `values ${KNOWN_INCIDENTS.map((i) => `(tstzrange('${i.start}'::timestamptz, '${i.end}'::timestamptz))`).join(",")}`;
   // race_idは「YYYY-MM-DD-会場-R」形式。期間の上端は翌日の文字列との大小比較で表す
   const endExclusive = addDaysToDateString(endDate, 1);
   // race_oddsは全券種のjsonbが大きいため、レースごとに1回だけ読んで集約する（レースごとの
@@ -212,8 +237,11 @@ with o as (
       (r.cancellation_status is distinct from 'confirmed') as active,
       rr.rank1, rr.rank4, rr.rank5, rr.rank6, rr.actual_course_1, rr.winning_technique,
       rc.race_stage,
-      exists(select 1 from race_start_timings x where x.race_id = r.race_id) as has_st,
-      exists(select 1 from exhibition_data x where x.race_id = r.race_id) as has_exhibition,
+      exists(select 1 from race_start_timings x where x.race_id = r.race_id) as has_st_row,
+      exists(select 1 from race_start_timings x where x.race_id = r.race_id and x.start_timing is not null) as has_st_value,
+      exists(select 1 from exhibition_data x where x.race_id = r.race_id) as has_exhibition_row,
+      -- check-exhibition-gap-rate.js（BOA-356）と同じ基準: 1艇でも展示タイムが入っていれば取得済み
+      exists(select 1 from exhibition_data x where x.race_id = r.race_id and x.exhibition_time is not null) as has_exhibition_time,
       (o.race_id is not null) as has_odds,
       o.has_odds_all,
       ${ALL_ODDS_COLUMNS.map((c) => `o.has_${c}`).join(", ")}
@@ -232,8 +260,10 @@ select race_date::text as d,
     count(*) filter (where active and actual_course_1 is not null) as actual_course,
     count(*) filter (where active and winning_technique is not null) as winning_technique,
     count(*) filter (where active and race_stage is not null) as race_stage,
-    count(*) filter (where active and has_st) as st,
-    count(*) filter (where active and has_exhibition) as exhibition,
+    count(*) filter (where active and has_st_row) as st_row,
+    count(*) filter (where active and has_st_value) as st_value,
+    count(*) filter (where active and has_exhibition_row) as exhibition_row,
+    count(*) filter (where active and has_exhibition_time) as exhibition_time,
     count(*) filter (where active and has_odds) as odds,
     count(*) filter (where active and coalesce(has_odds_all, false)) as odds_all,
     ${perTypeCount}
@@ -249,15 +279,28 @@ with base as (
     and r.start_time is not null
     and r.cancellation_status is distinct from 'confirmed'
     and exists (select 1 from race_results rr where rr.race_id = r.race_id and rr.rank1 is not null)
-), w(m) as (values ${WINDOW_MINUTES.map((m) => `(${m})`).join(",")})
-select b.race_date::text as d, w.m, count(*) as races,
-    count(*) filter (where exists (
+), w(m) as (values ${WINDOW_MINUTES.map((m) => `(${m})`).join(",")}),
+inc(r) as (${incidentRanges})
+select b.race_date::text as d, w.m,
+    count(*) as races,
+    count(*) filter (where c.hit) as in_window,
+    count(*) filter (where c.clean) as races_clean,
+    count(*) filter (where c.clean and c.hit) as in_window_clean
+from base b cross join w
+cross join lateral (
+  select exists (
       select 1 from race_odds o
       where o.race_id = b.race_id
         and o.captured_at between b.dl - make_interval(mins => w.m + 3)
                               and b.dl - make_interval(mins => w.m - 3)
-    )) as in_window
-from base b cross join w
+    ) as hit,
+    -- 窓の時間帯が既知の障害期間と重なる(レース,窓)は除外した集計に含めない
+    not exists (
+      select 1 from inc
+      where inc.r && tstzrange(b.dl - make_interval(mins => w.m + 3),
+                               b.dl - make_interval(mins => w.m - 3))
+    ) as clean
+) c
 group by b.race_date, w.m order by b.race_date, w.m desc`,
 
     // 指標3: 取得時刻列の有無
@@ -330,24 +373,35 @@ order by 2 desc limit 10`,
 }
 
 /** クエリを逐次実行する（並列化しない）。cacheFileがあれば再利用・保存する */
+const hashSql = (sql) => createHash("sha256").update(sql).digest("hex");
+
+/**
+ * クエリを逐次実行する（並列化しない）。
+ * キャッシュはクエリごとに「SQL文字列のハッシュ」で照合する。期間やSQLが変わったクエリは
+ * 古い結果を再利用せず、再実行する（別期間のキャッシュで別期間のラベルを付ける事故を防ぐ）
+ */
 async function fetchRaw(queries, cacheFile) {
-  const cached =
+  const cache =
     cacheFile && fs.existsSync(cacheFile)
       ? JSON.parse(fs.readFileSync(cacheFile, "utf8"))
       : {};
-  const raw = { ...cached };
+  const raw = {};
   for (const [name, sql] of Object.entries(queries)) {
-    if (name in raw) {
+    const hash = hashSql(sql);
+    if (cache[name]?.hash === hash) {
       console.error(`  query ${name}: キャッシュ使用（DB非接続）`);
+      raw[name] = cache[name].rows;
       continue;
     }
     const startedAt = Date.now();
-    raw[name] = await runSqlWithRetry(sql);
+    const rows = await runSqlWithRetry(sql);
+    raw[name] = rows;
+    cache[name] = { hash, rows };
     console.error(`  query ${name}: ${Date.now() - startedAt}ms`);
     // 途中で失敗しても取得済みの結果を再利用できるよう、1クエリごとに保存する
     if (cacheFile) {
       fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
-      fs.writeFileSync(cacheFile, JSON.stringify(raw));
+      fs.writeFileSync(cacheFile, JSON.stringify(cache));
     }
   }
   return raw;
@@ -367,6 +421,9 @@ const weekdayOf = (dateStr) =>
   WEEKDAY_LABELS[new Date(`${dateStr}T00:00:00Z`).getUTCDay()];
 
 const isWeekend = (dateStr) => ["土", "日"].includes(weekdayOf(dateStr));
+
+const datesFrom = (start, days) =>
+  Array.from({ length: days }, (_, i) => addDaysToDateString(start, i));
 
 const sum = (rows, key) => rows.reduce((acc, r) => acc + Number(r[key]), 0);
 
@@ -390,7 +447,8 @@ function summarizeCoverage(perDay) {
       denominator,
       excluded,
       rate: value,
-      belowThreshold: value !== null && value < COVERAGE_THRESHOLD,
+      // 分母0（データが1件も無い）は最悪の状態なので、達成扱いにせず未達として扱う
+      belowThreshold: value === null || value < COVERAGE_THRESHOLD,
       daysBelowThreshold: dayRates.filter((d) => d.rate < COVERAGE_THRESHOLD)
         .length,
       worstDay: worst,
@@ -412,12 +470,19 @@ function summarizeWindows(
     const races = sum(ofWindow, "races");
     const inWindow = sum(ofWindow, "in_window");
     const value = rate(inWindow, races);
+    // 既知の障害期間と窓が重なる(レース,窓)を除いた値
+    const racesClean = sum(ofWindow, "races_clean");
+    const inWindowClean = sum(ofWindow, "in_window_clean");
     return {
       minutesBefore: m,
       races,
       inWindow,
       rate: value,
-      belowThreshold: value !== null && value < WINDOW_THRESHOLD,
+      belowThreshold: value === null || value < WINDOW_THRESHOLD,
+      excludedRaces: races - racesClean,
+      racesClean,
+      inWindowClean,
+      rateClean: rate(inWindowClean, racesClean),
     };
   });
 }
@@ -473,7 +538,7 @@ function summarizeMonthly(rows) {
       zeroResultDays: Number(r.zero_result_days),
       partialDays: Number(r.partial_days),
       belowThreshold:
-        rate(withResult, denom) !== null &&
+        rate(withResult, denom) === null ||
         rate(withResult, denom) < COVERAGE_THRESHOLD,
     };
   });
@@ -501,40 +566,73 @@ function ghJson(args) {
   return JSON.parse(out);
 }
 
+/**
+ * ワークフローのcron式から、最終successの許容経過時間を推定する。
+ * 日(day-of-month)が`*`のcronがあれば日次相当(48時間)、日指定のみなら月次相当(35日)、
+ * cronが無い（手動実行のみ）場合はnull（経過時間では判定しない）
+ */
+function expectedMaxSuccessHours(workflowFile) {
+  const yaml = fs.readFileSync(
+    path.join(REPO_ROOT, ".github/workflows", workflowFile),
+    "utf8",
+  );
+  const crons = [...yaml.matchAll(/^\s*-\s*cron:\s*['"]([^'"]+)['"]/gm)].map(
+    (m) => m[1].trim().split(/\s+/),
+  );
+  if (crons.length === 0) return null;
+  return crons.some((fields) => fields[2] === "*") ? 48 : 24 * 35;
+}
+
+const RECENT_RUNS_LIMIT = 30;
+
+function collectWorkflowStatus(file, now) {
+  try {
+    const listArgs = (limit, extra = []) => [
+      "run",
+      "list",
+      "--workflow",
+      file,
+      "--limit",
+      String(limit),
+      "--json",
+      "createdAt,conclusion,status,url",
+      ...extra,
+    ];
+    const recent = ghJson(listArgs(RECENT_RUNS_LIMIT));
+    const last = recent[0];
+    // `--status success` 単独では、実行頻度の高いワークフローで古い結果が返ることを実測で確認した
+    // （同一ワークフローで呼び出しごとに最終successが数日単位でずれた）。
+    // 直近N件の中のsuccessと突き合わせ、新しい方を採る
+    const [filteredSuccess] = ghJson(listArgs(1, ["--status", "success"]));
+    const recentSuccess = recent.find((r) => r.conclusion === "success");
+    const lastSuccess = [filteredSuccess, recentSuccess]
+      .filter(Boolean)
+      .sort((x, y) => y.createdAt.localeCompare(x.createdAt))[0];
+    const hoursSince = (iso) =>
+      iso
+        ? Math.round(((now - new Date(iso).getTime()) / 3600000) * 10) / 10
+        : null;
+    return {
+      workflow: file,
+      noRunHistory: last === undefined,
+      lastRunAt: last?.createdAt ?? null,
+      lastRunConclusion: last?.conclusion || last?.status || null,
+      lastSuccessAt: lastSuccess?.createdAt ?? null,
+      hoursSinceLastSuccess: hoursSince(lastSuccess?.createdAt),
+      expectedMaxSuccessHours: expectedMaxSuccessHours(file),
+    };
+  } catch (error) {
+    // 1ワークフローの取得失敗で、他のワークフローの結果まで捨てない
+    return {
+      workflow: file,
+      error: String(error.message).split("\n")[0],
+    };
+  }
+}
+
 function collectWorkflowFreshness(now) {
   try {
     execFileSync("gh", ["--version"], { stdio: "ignore" });
-    const workflows = fs
-      .readdirSync(path.join(REPO_ROOT, ".github/workflows"))
-      .filter((f) => /^scrape-.*\.ya?ml$/.test(f))
-      .sort();
-    const items = workflows.map((file) => {
-      const base = [
-        "run",
-        "list",
-        "--workflow",
-        file,
-        "--limit",
-        "1",
-        "--json",
-        "createdAt,conclusion,status,url",
-      ];
-      const [last] = ghJson(base);
-      const [lastSuccess] = ghJson([...base, "--status", "success"]);
-      const hoursSince = (iso) =>
-        iso
-          ? Math.round(((now - new Date(iso).getTime()) / 3600000) * 10) / 10
-          : null;
-      return {
-        workflow: file,
-        noRunHistory: last === undefined,
-        lastRunAt: last?.createdAt ?? null,
-        lastRunConclusion: last?.conclusion || last?.status || null,
-        lastSuccessAt: lastSuccess?.createdAt ?? null,
-        hoursSinceLastSuccess: hoursSince(lastSuccess?.createdAt),
-      };
-    });
-    return { skipped: false, items };
   } catch (error) {
     return {
       skipped: true,
@@ -542,6 +640,12 @@ function collectWorkflowFreshness(now) {
       items: [],
     };
   }
+  const items = fs
+    .readdirSync(path.join(REPO_ROOT, ".github/workflows"))
+    .filter((f) => /^scrape-.*\.ya?ml$/.test(f))
+    .sort()
+    .map((file) => collectWorkflowStatus(file, now));
+  return { skipped: false, items };
 }
 
 // ---------------------------------------------------------------------------
@@ -595,15 +699,54 @@ function collectAlerts(report) {
     }
   }
   for (const w of report.workflows.items) {
-    if (w.noRunHistory) {
-      alerts.push({
-        kind: "workflow_never_ran",
-        item: `実行履歴0件: ${w.workflow}`,
-        value: null,
-        threshold: null,
-        detail: "",
-      });
+    const alert = (kind, item, detail) =>
+      alerts.push({ kind, item, value: null, threshold: null, detail });
+    if (w.error) {
+      alert("workflow_check_failed", `取得失敗: ${w.workflow}`, w.error);
+    } else if (w.noRunHistory) {
+      alert("workflow_never_ran", `実行履歴0件: ${w.workflow}`, "");
+    } else {
+      if (
+        ["failure", "cancelled", "timed_out", "startup_failure"].includes(
+          w.lastRunConclusion,
+        )
+      ) {
+        alert(
+          "workflow_last_run_failed",
+          `最終実行が失敗: ${w.workflow}`,
+          `${w.lastRunConclusion}（${w.lastRunAt}）`,
+        );
+      }
+      if (w.lastSuccessAt === null) {
+        alert(
+          "workflow_never_succeeded",
+          `successの履歴なし: ${w.workflow}`,
+          "",
+        );
+      } else if (
+        w.expectedMaxSuccessHours !== null &&
+        w.hoursSinceLastSuccess > w.expectedMaxSuccessHours
+      ) {
+        alert(
+          "workflow_stale",
+          `最終successが古い: ${w.workflow}`,
+          `${w.hoursSinceLastSuccess}時間前（許容${w.expectedMaxSuccessHours}時間、cron式からの推定）`,
+        );
+      }
     }
+  }
+  const noDataDays = [
+    ...report.coverage.missingDates.map((d) => `存在充足率: ${d}`),
+    ...report.windows.missingDates.map((d) => `窓内取得率: ${d}`),
+  ];
+  if (noDataDays.length > 0) {
+    alerts.push({
+      kind: "no_data_days",
+      item: "対象レースが0件の日",
+      value: null,
+      threshold: null,
+      detail: noDataDays.join(", "),
+    });
   }
   for (const t of report.timingColumns) {
     if (t.unmeasurable) {
@@ -712,8 +855,10 @@ function renderMarkdown(report) {
     "actual_course",
     "winning_technique",
     "race_stage",
-    "st",
-    "exhibition",
+    "st_row",
+    "st_value",
+    "exhibition_row",
+    "exhibition_time",
     "odds",
     "odds_all",
   ];
@@ -745,7 +890,26 @@ function renderMarkdown(report) {
     `## 2. 窓内取得率（締切=発走時刻、窓の中心±3分、直近${WINDOW_DAYS}日）`,
   );
   lines.push("");
-  lines.push(tableHeader(["窓", "全体", "平日", "土日"]));
+  lines.push(
+    "障害期間の除外: " +
+      (KNOWN_INCIDENTS.length === 0
+        ? "なし"
+        : KNOWN_INCIDENTS.map(
+            (i) =>
+              `${i.label} ${i.start}〜${i.end}（窓が重なる(レース,窓)を除外）`,
+          ).join(" / ")),
+  );
+  lines.push("");
+  lines.push(
+    tableHeader([
+      "窓",
+      "全体(除外なし)",
+      "全体(障害期間を除外)",
+      "除外件数",
+      "平日(除外なし)",
+      "土日(除外なし)",
+    ]),
+  );
   for (const w of report.windows.aggregate) {
     const wd = report.windows.weekday.find(
       (x) => x.minutesBefore === w.minutesBefore,
@@ -758,6 +922,8 @@ function renderMarkdown(report) {
       tableRow([
         `${w.minutesBefore}分前`,
         `${cell(w)}${w.belowThreshold ? " (未達)" : ""}`,
+        `${formatPct(w.rateClean)} (${w.inWindowClean}/${w.racesClean})`,
+        w.excludedRaces,
         cell(wd),
         cell(we),
       ]),
@@ -784,6 +950,47 @@ function renderMarkdown(report) {
     lines.push(
       tableRow([`${date}(${weekdayOf(date)})`, ...cells, ofDay[0].races]),
     );
+  }
+  const excludedDays = [
+    ...new Set(
+      report.windows.perDay
+        .filter((r) => Number(r.races) !== Number(r.races_clean))
+        .map((r) => r.d),
+    ),
+  ];
+  if (excludedDays.length > 0) {
+    lines.push("");
+    lines.push(
+      "### 日別の窓内取得率（障害期間を除外した値。除外があった日のみ）",
+    );
+    lines.push("");
+    lines.push(
+      tableHeader([
+        "日付",
+        ...WINDOW_MINUTES.map((m) => `${m}分前`),
+        "除外件数(窓別)",
+      ]),
+    );
+    for (const date of excludedDays) {
+      const ofDay = report.windows.perDay.filter((r) => r.d === date);
+      const rowOf = (m) => ofDay.find((r) => Number(r.m) === m);
+      lines.push(
+        tableRow([
+          `${date}(${weekdayOf(date)})`,
+          ...WINDOW_MINUTES.map((m) =>
+            formatPct(
+              rate(
+                Number(rowOf(m).in_window_clean),
+                Number(rowOf(m).races_clean),
+              ),
+            ),
+          ),
+          WINDOW_MINUTES.map(
+            (m) => Number(rowOf(m).races) - Number(rowOf(m).races_clean),
+          ).join("/"),
+        ]),
+      );
+    }
   }
   if (report.windows.compare) {
     lines.push("");
@@ -888,9 +1095,23 @@ function renderMarkdown(report) {
         "最終実行の結果",
         "最終success",
         "successからの経過(時間)",
+        "許容(時間)",
       ]),
     );
     for (const w of report.workflows.items) {
+      if (w.error) {
+        lines.push(
+          tableRow([
+            `**【取得失敗】${w.workflow}**`,
+            w.error,
+            "-",
+            "-",
+            "-",
+            "-",
+          ]),
+        );
+        continue;
+      }
       lines.push(
         tableRow([
           w.noRunHistory ? `**【実行履歴0件】${w.workflow}**` : w.workflow,
@@ -898,6 +1119,7 @@ function renderMarkdown(report) {
           w.lastRunConclusion ?? "-",
           w.lastSuccessAt ?? "なし",
           w.hoursSinceLastSuccess ?? "-",
+          w.expectedMaxSuccessHours ?? "-",
         ]),
       );
     }
@@ -919,6 +1141,9 @@ function renderMarkdown(report) {
     "開催中止の除外は races.cancellation_status='confirmed' のみ。中止検知の導入前の期間は除外できず、月別の未充足に中止レースが含まれうる。",
     "全券種オッズ・窓内取得率は、取得方式の変更（ADR-0057の窓構成・全券種の保存）の前後で値が大きく変わりうる。日別表で変化点を確認する。",
     "race_results.result_at は scrape-results の実行（upsert）ごとに更新される最終書き込み時刻。predictions.predicted_at も買い目オッズ更新で更新される。",
+    "窓は隣り合うものが重なる（例: 10分前=7〜13分前、5分前=2〜8分前）ため、1回の取得が複数の窓を満たしうる。窓別の取得率は過大評価側に出る。",
+    "取りこぼしの一因はGitHub Actionsのキャンセル起因（BOA-342/344の実測では、取りこぼしの81〜94%が、キャンセルされた実行が前後5分以内にあった）。この指標自体は原因を区別しない。",
+    "展示・STは「行の有無」と「値の有無」を分けて出す。展示タイムより先にSTだけの行が書かれる会場があり、行の有無だけでは欠落を過小評価する（BOA-356）。展示の判定基準は check-exhibition-gap-rate.js に合わせ、1艇でも展示タイムが入っていれば取得済みとする。",
     "窓内取得率の分母は結果確定済み（rank1あり）・中止除外のレース。土日を含まない期間は完了の定義Bの根拠にならない。",
   ]) {
     lines.push(`- ${note}`);
@@ -935,6 +1160,16 @@ async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const coverageStart = addDaysToDateString(opts.endDate, -(COVERAGE_DAYS - 1));
   const windowStart = addDaysToDateString(opts.endDate, -(WINDOW_DAYS - 1));
+  const windowDates = datesFrom(windowStart, WINDOW_DAYS);
+  // 窓内取得率の対象期間外の日付を黙って無視しない（比較したつもりで比較されない事故を防ぐ）
+  const outOfWindow = opts.compareDates.filter((d) => !windowDates.includes(d));
+  if (outOfWindow.length > 0) {
+    throw new Error(
+      `--compare-dates は窓内取得率の期間(${windowStart}〜${opts.endDate})内で指定してください: ${outOfWindow.join(", ")}`,
+    );
+  }
+  // 日付の決定は1回だけ行う（JST日付をまたぐ実行でrunDateがずれるのを防ぐ）
+  const runDate = getTodayDateJST();
 
   const queries = buildQueries({
     coverageStart,
@@ -943,18 +1178,15 @@ async function main() {
   });
   const raw = await fetchRaw(queries, opts.cacheFile);
 
-  const windowDates = Array.from({ length: WINDOW_DAYS }, (_, i) =>
-    addDaysToDateString(windowStart, i),
+  const coverageDates = datesFrom(coverageStart, COVERAGE_DAYS);
+  const compareRows = raw.windows.filter((r) =>
+    opts.compareDates.includes(r.d),
   );
-  const compareRows =
-    opts.compareDates.length > 0
-      ? raw.windows.filter((r) => opts.compareDates.includes(r.d))
-      : [];
 
   const report = {
     generatedAt: new Date().toISOString(),
     params: {
-      reportDate: getTodayDateJST(),
+      reportDate: runDate,
       thresholds: { coverage: COVERAGE_THRESHOLD, window: WINDOW_THRESHOLD },
       coverage: {
         start: coverageStart,
@@ -969,13 +1201,20 @@ async function main() {
         minutesBefore: WINDOW_MINUTES,
       },
       denominatorRule: "races.cancellation_status='confirmed' を除外",
+      knownIncidents: KNOWN_INCIDENTS,
     },
     coverage: {
       perDay: raw.coverage,
       aggregate: summarizeCoverage(raw.coverage),
+      missingDates: coverageDates.filter(
+        (d) => !raw.coverage.some((r) => r.d === d),
+      ),
     },
     windows: {
       perDay: raw.windows,
+      missingDates: windowDates.filter(
+        (d) => !raw.windows.some((r) => r.d === d),
+      ),
       aggregate: summarizeWindows(raw.windows),
       weekday: summarizeWindows(raw.windows, { weekendFilter: false }),
       weekend: summarizeWindows(raw.windows, { weekendFilter: true }),
@@ -1007,7 +1246,10 @@ async function main() {
   report.alerts = collectAlerts(report);
 
   fs.mkdirSync(opts.outDir, { recursive: true });
-  const jsonPath = path.join(opts.outDir, `${getTodayDateJST()}.json`);
+  // 既定の集計期間（昨日まで）以外で実行した場合は、当日のベースラインJSONを上書きしない
+  const fileSuffix =
+    opts.endDate === getYesterdayDateJST() ? "" : `_end-${opts.endDate}`;
+  const jsonPath = path.join(opts.outDir, `${runDate}${fileSuffix}.json`);
   fs.writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`);
 
   console.log(renderMarkdown(report));
