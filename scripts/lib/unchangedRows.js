@@ -372,6 +372,9 @@ export function formatSkipSummary(label, stats, { fallback = false } = {}) {
  * 設定する。updated_at は比較から自動的に外す（毎回変わる値を比較に含めると、常に「変更あり」になり
  * 変更の無い行を書かない効果が無くなる）。updated_at 列が未適用のDBでは、その列を除いて書き直す。
  * optionalColumnGroups は、同様に「未適用なら除いて書き直す」列（{グループ名: 列名の配列}）。
+ * 既知の限界: 既存行の取得に失敗して全行を書く場合（fallback）は、変更の有無が分からないまま
+ * 全行に updated_at を設定する（「書き込んだ時刻」になる）。取得失敗は例外的な状態のため許容する
+ * （stats・ログに fallback が出る）。
  *
  * @returns {Promise<{written: number, skipped: number, error: Error|null, stats: Object, toWrite: Object[]}>}
  *   toWrite は書き込み対象（dry-runでも「書くはずの行」を返す）。呼び出し側が後続処理を絞る用途に使う
@@ -389,7 +392,7 @@ export async function upsertChangedRows(
     dryRun = false,
     stampUpdatedAt = false,
     optionalColumnGroups = {},
-    now = new Date(),
+    now = null,
   },
 ) {
   const {
@@ -402,7 +405,8 @@ export async function upsertChangedRows(
       ? [...new Set([...ignoreColumns, UPDATED_AT_COLUMN])]
       : ignoreColumns,
   });
-  const updatedAt = now.toISOString();
+  // 時刻は、既存行の取得が済んだ「書き込みの直前」に取る（created_at のDBの now() との差を小さくする）
+  const updatedAt = (now ?? new Date()).toISOString();
   const toWrite = stampUpdatedAt
     ? changedRows.map((row) => ({ ...row, [UPDATED_AT_COLUMN]: updatedAt }))
     : changedRows;

@@ -429,13 +429,18 @@ with base as (
     and r.start_time is not null
     and r.cancellation_status is distinct from 'confirmed'
 ), t as (
-  select x.race_id, count(*) as rows_total, min(x.created_at) as first_created_at${
-    hasValueFilled
-      ? `,
-      -- 展示タイムが入っている行の updated_at の最大値＝展示タイムが揃った時刻の近似（値が変わった最後の時刻）
-      max(x.updated_at) filter (where x.exhibition_time is not null) as value_filled_at`
-      : ""
-  }
+  select x.race_id, count(*) as rows_total,
+      -- マイグレーション071より前の行（created_atがNULL）が混ざるレースは、最も早い保存時刻を
+      -- 特定できないため除く（NULLを無視すると、後から保存された行の時刻を初回と誤る）
+      case when count(x.created_at) = count(*) then min(x.created_at) end as first_created_at${
+        hasValueFilled
+          ? `,
+      -- 展示タイムが入っている行の updated_at の最大値＝展示タイムが揃った時刻の上限の近似
+      -- （値が変わった最後の時刻。展示タイム以外の列が後から変わると、その分だけ遅く出る）
+      case when count(x.created_at) = count(*)
+          then max(x.updated_at) filter (where x.exhibition_time is not null) end as value_filled_at`
+          : ""
+      }
   from ${table} x
   where x.race_id >= '${windowStart}' and x.race_id < '${endExclusive}'
   group by x.race_id
@@ -465,6 +470,7 @@ from l`;
 }
 
 /** クエリを逐次実行する（並列化しない）。cacheFileがあれば再利用・保存する */
+const UNCACHED_QUERIES = new Set(["timingColumns", "tableExistence"]);
 const hashSql = (sql) => createHash("sha256").update(sql).digest("hex");
 
 /**
@@ -480,7 +486,9 @@ async function fetchRaw(queries, cacheFile) {
   const raw = {};
   for (const [name, sql] of Object.entries(queries)) {
     const hash = hashSql(sql);
-    if (cache[name]?.hash === hash) {
+    // スキーマ（列・テーブルの有無）は、マイグレーション適用後に変わるためキャッシュしない
+    // （古いキャッシュで「未適用」と判定し続けるのを防ぐ。カタログ参照のみで軽い）
+    if (!UNCACHED_QUERIES.has(name) && cache[name]?.hash === hash) {
       const { savedAt } = cache[name];
       const age = savedAt
         ? `${Math.round((Date.now() - new Date(savedAt).getTime()) / 60000)}分経過`
@@ -1430,7 +1438,7 @@ function renderMarkdown(report) {
     "取りこぼしの一因はGitHub Actionsのキャンセル起因（BOA-342/344の実測では、取りこぼしの81〜94%が、キャンセルされた実行が前後5分以内にあった）。この指標自体は原因を区別しない。",
     "展示・STは「行の有無」と「値の有無」を分けて出す。展示タイムより先にSTだけの行が書かれる会場があり、行の有無だけでは欠落を過小評価する（BOA-356）。展示の判定基準は check-exhibition-gap-rate.js に合わせ、1艇でも展示タイムが入っていれば取得済みとする。",
     "窓内取得率の分母は結果確定済み（rank1あり）・中止除外のレース。土日を含まない期間は完了の定義Bの根拠にならない。",
-    "取得時刻の分布（3-2）は exhibition_data・race_entries・race_start_timings の created_at（行が最初に保存された時刻、マイグレーション071）を使う。追加前の行はNULLで分母に含まれないため、適用直後は対象レースが少ない（適用から数日で、土日を含む7日分が溜まるまで完了の定義Bの根拠にならない）。過去日のバックフィル（手動スクリプト）で作られた行は、バックフィル時刻が created_at になり「発走後に保存」に数えられる。",
+    "取得時刻の分布（3-2）は exhibition_data・race_entries・race_start_timings の created_at（行が最初に保存された時刻、マイグレーション071）を使う。追加前の行はNULLで分母に含まれないため、適用直後は対象レースが少ない（適用から数日で、土日を含む7日分が溜まるまで完了の定義Bの根拠にならない）。過去日のバックフィル（手動スクリプト）で作られた行は、バックフィル時刻が created_at になり「発走後に保存」に数えられる。 3-2は「最初に保存された時刻」で測るため、公式の窓（中心±3分）に取得が入ったかどうか（2の窓内取得率の定義）とは別の指標で、変更の無い取得は行に痕跡を残さない（WS8(b)）。分母は created_at が非NULLのレースで、行が1件も無いレース（取得できなかったレース）は含まれない（「行あり」との差で確認する）。3-2の「値が揃った時刻」は、展示タイム以外の列の変更でも遅く出る上限の近似。",
   ]) {
     lines.push(`- ${note}`);
   }
