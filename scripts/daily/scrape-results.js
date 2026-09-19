@@ -24,6 +24,11 @@ import {
   parseKFileText,
   parseKFileRankings,
 } from "../lib/kfileParser.js";
+import {
+  filterUnchangedRows,
+  formatSkipSummary,
+  upsertChangedRows,
+} from "../lib/unchangedRows.js";
 
 // Generate race result page URL
 function getRaceResultUrl(venueCode, raceNo, dateStr) {
@@ -416,23 +421,52 @@ async function syncRecentActualCourse() {
 }
 
 /**
+ * 実進入コース同期で書き込む列（race_id は更新条件）。Kファイルのパース結果には
+ * venue_code・race_numberも含まれるが race_results の列ではないため、比較・更新には含めない
+ */
+const ACTUAL_COURSE_COLUMNS = [1, 2, 3, 4, 5, 6].map(
+  (n) => `actual_course_${n}`,
+);
+
+/**
  * 指定日について、公式成績ファイル（Kファイル）から実進入コースを取得し
  * race_results.actual_course_1〜6にマージする（BOA-257）。
  *
+ * BOA-349（原因）: 「未取得レースがあるか」の判定が actual_course_1 のnull判定だったため、
+ * 1号艇が欠場したレース（Kファイルの結果行が「K0」「K1」等の欠場行で、1号艇は進入コースを
+ * 持たない＝actual_course_1がnullなのが正しい状態。2026-09-15 平和島3R・2026-09-16 唐津12R等）が
+ * 永久に「未取得」と判定され続け、その日の全レースを毎回UPDATEしていた
+ * （累計167,072回・WAL 1.3GB）。しかも race_results のUPDATEは trg_update_predictions で
+ * predictions・bet_recommendations の再UPDATEも連鎖させる。パーサーの不具合ではない
+ * （生のKファイルで欠場行を確認済み、verify-unchanged-rows.js で固定）。
+ * 対策:
+ *   (a) 既存値と同じレースはUPDATEを発行しない（変更のある行だけ書く）
+ *   (b) 「未取得」の判定を「actual_course_1〜6が全てnull」に改める。欠場艇はその艇のcolumnだけが
+ *       nullで、他の艇のcolumnは埋まるため、欠場を含む同期済みレースを未取得と誤判定しない
+ *       （2026-09-01〜18の2,506レースで、actual_course_1がnullのレース3件は全て
+ *       他の艇のcolumnが埋まっており、全columnがnullのレースは0件）
+ *
  * @param {string} dateStr - YYYY-MM-DD
- * @returns {Promise<{updated: number}>}
+ * @param {{dryRun?: boolean}} [options] dryRun=trueならDBへ書き込まず、書くはずの件数だけ数える
+ * @returns {Promise<{updated: number, skipped: number}>} updated=書き込んだ件数（dry-runでは書くはずの件数）
  */
-export async function syncActualCourseFromKFile(dateStr) {
-  // 結果確定済み（rank1あり）だがactual_course_1が未取得のレースが無ければ
-  // Kファイルのダウンロード自体をスキップする（無駄な外部アクセスを避ける）
-  const { data: pending, error: pendingError } = await supabase
-    .from("race_results")
-    .select("race_id")
-    .gte("race_id", dateStr)
-    .lt("race_id", `${dateStr}~`)
-    .not("rank1", "is", null)
-    .is("actual_course_1", null)
-    .limit(1);
+export async function syncActualCourseFromKFile(
+  dateStr,
+  { dryRun = false } = {},
+) {
+  // 結果確定済み（rank1あり）だが進入コースが1艇分も未取得（actual_course_1〜6が全てnull）の
+  // レースが無ければ、Kファイルのダウンロード自体をスキップする（無駄な外部アクセスを避ける）。
+  // 1艇でも埋まっていれば同期済み（欠場艇のcolumnだけがnullのレースを含む。上のBOA-349参照）
+  const { data: pending, error: pendingError } =
+    await ACTUAL_COURSE_COLUMNS.reduce(
+      (query, column) => query.is(column, null),
+      supabase
+        .from("race_results")
+        .select("race_id")
+        .gte("race_id", dateStr)
+        .lt("race_id", `${dateStr}~`)
+        .not("rank1", "is", null),
+    ).limit(1);
 
   if (pendingError) {
     // actual_course_1列がまだ存在しない場合（マイグレーション未適用）もここに来る。
@@ -440,10 +474,10 @@ export async function syncActualCourseFromKFile(dateStr) {
     console.error(
       `  ⚠️ actual_course対象確認エラー(${dateStr}): ${pendingError.message}`,
     );
-    return { updated: 0 };
+    return { updated: 0, skipped: 0 };
   }
   if (!pending || pending.length === 0) {
-    return { updated: 0 }; // 同期済み、または対象レース無し
+    return { updated: 0, skipped: 0 }; // 同期済み、または対象レース無し
   }
 
   let text;
@@ -451,44 +485,56 @@ export async function syncActualCourseFromKFile(dateStr) {
     text = await fetchKFileText(dateStr);
   } catch (e) {
     console.error(`  ⚠️ Kファイル取得エラー(${dateStr}): ${e.message}`);
-    return { updated: 0 };
+    return { updated: 0, skipped: 0 };
   }
   if (!text) {
     console.log(`  進入コース: Kファイル未公開/開催なし (${dateStr})`);
-    return { updated: 0 };
+    return { updated: 0, skipped: 0 };
   }
 
-  const rows = parseKFileText(text, dateStr);
-  if (rows.length === 0) {
+  const parsed = parseKFileText(text, dateStr);
+  if (parsed.length === 0) {
     console.log(`  進入コース: Kファイルからレースを抽出できず (${dateStr})`);
-    return { updated: 0 };
+    return { updated: 0, skipped: 0 };
   }
+
+  const rows = parsed.map((row) => ({
+    race_id: row.race_id,
+    ...Object.fromEntries(ACTUAL_COURSE_COLUMNS.map((c) => [c, row[c]])),
+  }));
+  // race_resultsに行が無いレースはUPDATEしても0件のため書かない（writeMissing: false）。
+  // 既存値と同じ行（=何もUPDATEで変わらない行）もUPDATEしない
+  const { toWrite, stats, fallback } = await filterUnchangedRows(
+    supabase,
+    "race_results",
+    rows,
+    { keyColumns: ["race_id"], writeMissing: false },
+  );
 
   let updated = 0;
-  for (const row of rows) {
-    const { error: updateError } = await supabase
-      .from("race_results")
-      .update({
-        actual_course_1: row.actual_course_1,
-        actual_course_2: row.actual_course_2,
-        actual_course_3: row.actual_course_3,
-        actual_course_4: row.actual_course_4,
-        actual_course_5: row.actual_course_5,
-        actual_course_6: row.actual_course_6,
-      })
-      .eq("race_id", row.race_id);
-    if (updateError) {
-      console.error(
-        `  ⚠️ actual_course更新エラー(${row.race_id}): ${updateError.message}`,
-      );
-    } else {
-      updated++;
+  if (dryRun) {
+    updated = toWrite.length;
+  } else {
+    for (const row of toWrite) {
+      const { race_id: raceId, ...columns } = row;
+      const { error: updateError } = await supabase
+        .from("race_results")
+        .update(columns)
+        .eq("race_id", raceId);
+      if (updateError) {
+        console.error(
+          `  ⚠️ actual_course更新エラー(${raceId}): ${updateError.message}`,
+        );
+      } else {
+        updated++;
+      }
     }
   }
   console.log(
-    `  ✅ 進入コース(Kファイル方式): ${updated}/${rows.length}件更新 (${dateStr})`,
+    `  ✅ ${dryRun ? "[DRY-RUN] " : ""}${formatSkipSummary(`進入コース(Kファイル方式, ${dateStr})`, stats, { fallback })}` +
+      ` / 更新${updated}件（Kファイル${rows.length}件中、race_results未登録${stats.missing}件）`,
   );
-  return { updated };
+  return { updated, skipped: stats.unchanged };
 }
 
 /**
@@ -561,6 +607,7 @@ export async function syncRank456FromKFile(dateStr) {
 
   let updated = 0;
   let skipped = 0;
+  let unchanged = 0;
   for (const race of pending) {
     const k = kfileByRaceId.get(race.race_id);
     if (
@@ -588,6 +635,14 @@ export async function syncRank456FromKFile(dateStr) {
       continue;
     }
 
+    // Kファイルにも4〜6着が無いレース（3着以内しか完走していない等）は、pendingの条件
+    // （rank4がnull）を永久に満たし続けるため、null→nullの空UPDATEを毎回発行してしまう
+    // （BOA-349と同種）。既存値（null）と同じなら書かない
+    if (k.rank4 == null && k.rank5 == null && k.rank6 == null) {
+      unchanged++;
+      continue;
+    }
+
     const { error: updateError } = await supabase
       .from("race_results")
       .update({ rank4: k.rank4, rank5: k.rank5, rank6: k.rank6 })
@@ -601,7 +656,7 @@ export async function syncRank456FromKFile(dateStr) {
     }
   }
   console.log(
-    `  ✅ rank456(Kファイル方式): ${updated}/${pending.length}件更新 (${dateStr}, スキップ${skipped}件)`,
+    `  ✅ rank456(Kファイル方式): ${updated}/${pending.length}件更新 (${dateStr}, スキップ${skipped}件, 変更なし${unchanged}件スキップ)`,
   );
   return { updated };
 }
@@ -804,15 +859,23 @@ export async function scrapeAndSaveResults(races, targetDate) {
   if (newResults.length > 0) {
     console.log(`\n📤 Supabaseに結果を書き込み中...`);
 
-    const { error } = await supabase
-      .from("race_results")
-      .upsert(newResults, { onConflict: "race_id" });
-
-    if (error) {
-      console.error("❌ race_results書き込みエラー:", error.message);
-    } else {
-      console.log(`  ✅ race_results: ${newResults.length}件`);
-    }
+    // 決まり手・ST等が公式サイトに出るまで（発走20〜30分後以降）、着順・払戻金だけ揃った
+    // レースは「完了」扱いにならず毎回再取得される（BOA-323）。その間の再取得では、
+    // 前回と同じ値をupsertし直していた。race_results の書き込みは trg_update_predictions で
+    // predictions・bet_recommendations の再UPDATEも連鎖させるため、変更の無い行は書かない。
+    // result_at は取得時刻で毎回変わるが情報を持たないため比較から外す
+    // （変更なしのレースは最初に取得できた時刻が残る）
+    const { toWrite: changedResults } = await upsertChangedRows(
+      supabase,
+      "race_results",
+      newResults,
+      {
+        onConflict: "race_id",
+        keyColumns: ["race_id"],
+        ignoreColumns: ["result_at"],
+        label: "race_results",
+      },
+    );
 
     // race_start_timingsにST情報を書き込み
     const allStartTimings = [];
@@ -828,15 +891,11 @@ export async function scrapeAndSaveResults(races, targetDate) {
     }
 
     if (allStartTimings.length > 0) {
-      const { error: stError } = await supabase
-        .from("race_start_timings")
-        .upsert(allStartTimings, { onConflict: "race_id,boat_number" });
-
-      if (stError) {
-        console.error("❌ race_start_timings書き込みエラー:", stError.message);
-      } else {
-        console.log(`  ✅ race_start_timings: ${allStartTimings.length}件`);
-      }
+      await upsertChangedRows(supabase, "race_start_timings", allStartTimings, {
+        onConflict: "race_id,boat_number",
+        keyColumns: ["race_id", "boat_number"],
+        label: "race_start_timings",
+      });
     }
 
     // predictions の的中判定を更新（N+1 → 1クエリでバッチ取得）
@@ -846,13 +905,23 @@ export async function scrapeAndSaveResults(races, targetDate) {
     let trifectaHits = 0;
     let trioHits = 0;
 
-    const newResultIds = newResults.map((r) => r.race_id);
-    const { data: allPredictions, error: predError } = await supabase
-      .from("predictions")
-      .select(
-        "prediction_id, model_id, top_pick, top_2nd, top_3rd, race_id, feature_contributions",
-      )
-      .in("race_id", newResultIds);
+    // 的中判定は、race_resultsが新規・変更のレースだけ行う。変更の無いレース（上と同じ理由で
+    // 再取得されただけ）は前回の実行で判定済みで、trg_update_predictions も同じ判定を行うため、
+    // 毎回predictionsを再UPDATEしない。判定漏れは fixMissingHitFlags が自己修復する
+    const changedResultIds = new Set(changedResults.map((r) => r.race_id));
+    const resultsToJudge = newResults.filter((r) =>
+      changedResultIds.has(r.race_id),
+    );
+    const newResultIds = resultsToJudge.map((r) => r.race_id);
+    const { data: allPredictions } =
+      newResultIds.length === 0
+        ? { data: [] } // 全レースが変更なしなら、predictionsの読み取りも不要
+        : await supabase
+            .from("predictions")
+            .select(
+              "prediction_id, model_id, top_pick, top_2nd, top_3rd, race_id, feature_contributions",
+            )
+            .in("race_id", newResultIds);
 
     // race_id ごとにグループ化
     const predsByRace = new Map();
@@ -861,7 +930,7 @@ export async function scrapeAndSaveResults(races, targetDate) {
       predsByRace.get(pred.race_id).push(pred);
     }
 
-    for (const result of newResults) {
+    for (const result of resultsToJudge) {
       const predictions = predsByRace.get(result.race_id) || [];
       if (predictions.length === 0) continue;
 

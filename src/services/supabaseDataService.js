@@ -269,7 +269,12 @@ function withCache(key, fetcher, ttl) {
   console.log(`[Cache MISS] ${key}`);
   const promise = fetcher()
     .then((data) => {
-      cache.set(key, data);
+      // 取得失敗（fetchFailed: true）の結果は保存しない。保存すると、一時的な
+      // タイムアウトが「空データ」としてTTL（本日分は30分）の間、再読み込みしても
+      // 直らない状態で残ってしまう。次のアクセスで実際に取得をやり直せるようにする
+      if (!data?.fetchFailed) {
+        cache.set(key, data);
+      }
       return data;
     })
     .finally(() => {
@@ -277,6 +282,22 @@ function withCache(key, fetcher, ttl) {
     });
   inflightRequests.set(key, promise);
   return promise;
+}
+
+/**
+ * getPredictions()の取得失敗を表す空レスポンス。
+ * races: [] は既存の呼び出し側（HitRaces等、`data.races || []`で読むもの）を壊さない
+ * ための互換値で、「取得に成功したが開催なし（fetchFailedなし）」との区別は
+ * fetchFailed: true で行う。withCache()はこの値をキャッシュしない
+ */
+function buildFetchFailedPredictions(date) {
+  return {
+    date,
+    generatedAt: null,
+    updatedAt: null,
+    races: [],
+    fetchFailed: true,
+  };
 }
 
 // キャッシュクリア（手動更新時に使用）
@@ -1187,7 +1208,7 @@ export const supabaseDataService = {
       // フォールバック: 従来のSupabase直接クエリ
       if (!supabase) {
         console.error("Supabase client not initialized");
-        return { date, generatedAt: null, updatedAt: null, races: [] };
+        return buildFetchFailedPredictions(date);
       }
 
       // レースと予測と結果を取得
@@ -1303,7 +1324,7 @@ export const supabaseDataService = {
 
       if (racesError) {
         console.error("Supabase getPredictions error:", racesError.message);
-        return { date, generatedAt: null, updatedAt: null, races: [] };
+        return buildFetchFailedPredictions(date);
       }
 
       // JSON形式に変換

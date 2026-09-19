@@ -244,6 +244,11 @@ async function main() {
         await mainRefresh({
           isDryRun: false,
           specificRaceIds: allTodayRaceIds,
+          // 上のshouldRegen判定は races.updated_at の最大値を基準にしている。変更の無い
+          // レースをスキップする通常の更新（WS8(b)）だと、再生成しても値が変わらなければ
+          // updated_at が進まず、次回以降も再生成が走り続けてしまう。この経路だけは
+          // 全レースの updated_at を進める
+          forceTouchRaces: true,
         });
       } else {
         console.log("⚠️ race_entries にデータなし — スキップ");

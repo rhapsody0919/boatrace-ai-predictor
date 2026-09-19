@@ -25,7 +25,6 @@ jobs:
 
       - name: Scrape point rank (今節得点率)
         run: node scripts/daily/scrape-point-rank.js
-        continue-on-error: true # 他の日次ジョブに影響させない
         env:
           TZ: 'Asia/Tokyo'
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
