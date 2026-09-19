@@ -660,6 +660,155 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
   });
 });
 
+// 本番でRPC(get_predictions_by_date)がanonのstatement_timeout(3s)を超えて失敗した際、
+// 取得失敗が「本日、このレース場での開催はありません」に化け、しかも空結果が30分間
+// キャッシュされて再読み込みしても直らなかった不具合の回帰テスト。
+// DBの状態に依存しないよう、Edge API・Supabase RESTはpage.routeで差し替える
+test.describe("予測データ取得失敗の扱い（失敗を「開催なし」と誤表示せずキャッシュしない）", () => {
+  const NO_RACES_TEXT = "本日、このレース場での開催はありません";
+  const todayJST = () =>
+    new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+  const predictionCacheKeys = (page) =>
+    page.evaluate(() =>
+      Object.keys(localStorage).filter((k) =>
+        k.startsWith("boatai:predictions-"),
+      ),
+    );
+
+  const mockEdgeRaces = (date) => ({
+    generatedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    races: [1, 2].map((n) => ({
+      raceId: `${date}-05-${String(n).padStart(2, "0")}`,
+      venueCode: 5,
+      venue: "多摩川",
+      raceNumber: n,
+      startTime: `1${n}:00`,
+      entries: [1, 2, 3, 4, 5, 6].map((i) => ({
+        number: i,
+        name: `テスト選手${i}`,
+        grade: "B1",
+        age: 30,
+        winRate: 5.0,
+        localWinRate: 5.0,
+        motorNumber: i,
+        motor2Rate: 35,
+        boatNumber: i,
+        boat2Rate: 35,
+      })),
+      predictions: {},
+      exhibitionData: [],
+      result: null,
+    })),
+  });
+
+  const failAll = async (page) => {
+    await page.route("**/api/predictions/**", (route) =>
+      route.fulfill({ status: 500, body: "Internal Server Error" }),
+    );
+    await page.route("**/rest/v1/**", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message: "canceling statement due to statement timeout",
+        }),
+      }),
+    );
+  };
+
+  test("取得に失敗した場合、「開催なし」ではなくエラー表示を出し、空結果をキャッシュしない", async ({
+    page,
+  }) => {
+    const edgeRequests = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/api/predictions/")) edgeRequests.push(req.url());
+    });
+    await failAll(page);
+    await page.goto("/venue/5");
+
+    const errorBox = page.locator(".data-fetch-error");
+    await expect(errorBox).toBeVisible({ timeout: 20000 });
+    await expect(errorBox).toContainText("データ取得エラー");
+    await expect(errorBox.locator("button")).toContainText("再読み込み");
+    await expect(page.getByText(NO_RACES_TEXT)).toHaveCount(0);
+
+    // 失敗（=空の結果）がlocalStorageに保存されていない
+    expect(await predictionCacheKeys(page)).toEqual([]);
+
+    // 軽量版が失敗した場合はフル版を続けて取得しない（障害中のDBへの負荷を増やさない）
+    expect(edgeRequests).toHaveLength(1);
+    expect(edgeRequests[0]).toContain("light=true");
+  });
+
+  test("過去日付のレース一覧でも、取得失敗はエラー表示になり「データはありません」と誤表示しない", async ({
+    page,
+  }) => {
+    await failAll(page);
+    await page.goto("/races/2026-08-11/5");
+
+    await expect(page.locator(".data-fetch-error")).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(
+      page.getByText("このレース場のデータはありません"),
+    ).toHaveCount(0);
+    expect(await predictionCacheKeys(page)).toEqual([]);
+  });
+
+  test("失敗はキャッシュされず、再読み込みで取得がやり直されて一覧が表示される", async ({
+    page,
+  }) => {
+    let failing = true;
+    const date = todayJST();
+    await page.route("**/api/predictions/**", (route) =>
+      failing
+        ? route.fulfill({ status: 500, body: "Internal Server Error" })
+        : route.fulfill({ json: mockEdgeRaces(date) }),
+    );
+    // 直接クエリへのフォールバックは常に失敗させ、成功時のデータが
+    // Edge APIのモック経由であることを明確にする
+    await page.route("**/rest/v1/**", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "statement timeout" }),
+      }),
+    );
+
+    await page.goto("/venue/5");
+    await expect(page.locator(".data-fetch-error")).toBeVisible({
+      timeout: 20000,
+    });
+
+    // 障害が解消した想定で、再読み込みボタンを押す
+    failing = false;
+    await page.locator(".data-fetch-error button").click();
+
+    await expect(page.locator(".race-card")).toHaveCount(2, {
+      timeout: 20000,
+    });
+    await expect(page.locator(".data-fetch-error")).toHaveCount(0);
+    await expect(page.getByText(NO_RACES_TEXT)).toHaveCount(0);
+  });
+
+  test("取得に成功して0件のときだけ「開催はありません」を表示する", async ({
+    page,
+  }) => {
+    await page.route("**/api/predictions/**", (route) =>
+      route.fulfill({ json: { races: [] } }),
+    );
+    await page.route("**/rest/v1/**", (route) =>
+      route.fulfill({ status: 200, json: [] }),
+    );
+
+    await page.goto("/venue/5");
+    await expect(page.getByText(NO_RACES_TEXT)).toBeVisible({ timeout: 20000 });
+    await expect(page.locator(".data-fetch-error")).toHaveCount(0);
+  });
+});
+
 test.describe("レースページ再設計（BOA-168）", () => {
   test("トップページでレース選択→データ出走表と「AI予想」タブ（展開予測/イン崩れ）が表示される（BOA-346）", async ({
     page,
