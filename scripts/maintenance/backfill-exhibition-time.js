@@ -33,7 +33,7 @@ function parseArgs(args = process.argv.slice(2)) {
     from: valueOf("from"),
     to: valueOf("to"),
     dryRun: args.includes("--dry-run"),
-    limit: limit ? parseInt(limit, 10) : null,
+    limit: limit === undefined ? null : parseInt(limit, 10),
   };
 }
 
@@ -43,10 +43,15 @@ function listDates(from, to) {
   return dates;
 }
 
-/** 発走済みで展示タイムが未取得のレースを返す */
+/**
+ * 発走済みで展示タイムが未取得のレースを返す。
+ * getRaceSchedule は取得エラー（statement timeout等）でも空配列を返すため、空の場合は
+ * 「欠落0件」と区別できるよう null を返す（誤って「補完済み」と読まれるのを防ぐ）
+ */
 async function findMissingRaces(date) {
   const now = new Date();
   const schedule = await getRaceSchedule(date);
+  if (schedule.length === 0) return null;
   const withTime = await getRaceIdsWithExhibitionTime(date);
   return schedule.filter((r) => r.start_time < now && !withTime.has(r.race_id));
 }
@@ -57,6 +62,9 @@ async function main() {
     throw new Error("--from=YYYY-MM-DD と --to=YYYY-MM-DD を指定してください");
   }
   if (from > to) throw new Error("--from は --to 以前の日付を指定してください");
+  if (limit !== null && !(limit > 0)) {
+    throw new Error("--limit は1以上の整数を指定してください");
+  }
   if (!isSupabaseEnabled()) {
     throw new Error("Supabase環境変数が未設定です");
   }
@@ -64,6 +72,12 @@ async function main() {
   let remaining = limit;
   for (const date of listDates(from, to)) {
     let missing = await findMissingRaces(date);
+    if (missing === null) {
+      console.warn(
+        `⚠️ ${date}: レーススケジュールを取得できませんでした（未登録または一時エラー）。この日は未確認のため、必要なら再実行してください`,
+      );
+      continue;
+    }
     if (remaining !== null) missing = missing.slice(0, remaining);
 
     const byVenue = missing.reduce((acc, r) => {
@@ -80,7 +94,9 @@ async function main() {
     await scrapeAndUpsertRaces(missing, date);
     const stillMissing = await findMissingRaces(date);
     console.log(
-      `   → 補完後の未取得: ${stillMissing.length}レース（中止・順延等で公式ページに展示タイムが無いものを含む）`,
+      stillMissing === null
+        ? "   → 補完後の確認ができませんでした（スケジュール取得不可）。dry-runで再確認してください"
+        : `   → 補完後の未取得: ${stillMissing.length}レース（中止・順延等で公式ページに展示タイムが無いものを含む）`,
     );
 
     if (remaining !== null) {

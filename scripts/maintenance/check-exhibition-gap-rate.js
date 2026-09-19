@@ -16,7 +16,9 @@
  *
  * exhibition_data は1レース6行のため1日180レースで1000行を超える。
  * Supabaseのデフォルト上限（1000行）で切り捨てられて誤報しないよう、
- * すべて fetchAll でページネーションして取得する（BOA-350）。
+ * すべて fetchAll でページネーションして取得する（BOA-350）。取得エラー（statement
+ * timeout等）は throwOnError で例外にする。既定のまま部分結果・空配列を受け取ると
+ * 「結果確定0件→欠落率0%→OK」と誤判定し、監視が黙って正常扱いになるため。
  *
  * 閾値を超えている場合のみ、Slack通知用のテキストをstdoutに出力し、
  * exit code 1 を返す（ワークフロー側はexit codeで通知要否を判断する）。
@@ -33,12 +35,19 @@ async function main() {
   const inDay = (q) =>
     q.gte("race_id", date).lt("race_id", `${date}~`).order("race_id");
 
-  const races = await fetchAll("races", "race_id", inDay);
-  const results = await fetchAll("race_results", "race_id", (q) =>
-    inDay(q).not("payout_win", "is", null),
+  const strict = { throwOnError: true };
+  const races = await fetchAll("races", "race_id", inDay, strict);
+  const results = await fetchAll(
+    "race_results",
+    "race_id",
+    (q) => inDay(q).not("payout_win", "is", null),
+    strict,
   );
-  const exhibitions = await fetchAll("exhibition_data", "race_id", (q) =>
-    inDay(q).not("exhibition_time", "is", null).order("boat_number"),
+  const exhibitions = await fetchAll(
+    "exhibition_data",
+    "race_id",
+    (q) => inDay(q).not("exhibition_time", "is", null).order("boat_number"),
+    strict,
   );
 
   const finishedIds = new Set(results.map((r) => r.race_id));
