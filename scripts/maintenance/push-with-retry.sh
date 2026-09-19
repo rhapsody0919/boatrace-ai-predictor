@@ -15,12 +15,12 @@
 # 終了コード:
 #   0: push 完了、または push 対象なし
 #   1: リトライ上限まで push できなかった（ネットワーク・権限・競合し続ける更新頻度など）
-#   2: rebase がコンフリクトした（同じファイルを別の変更が更新している）。
+#   2: rebase がコンフリクトした（同じファイルを別の変更が更新している。未マージのパスがある場合のみ）。
 #      自動解決はせず、リトライもせずに失敗させる（どちらの内容が正しいか機械的に決められないため）
 #
 # 環境変数（テスト用途。通常は既定値のままでよい）:
 #   PUSH_MAX_ATTEMPTS      最大試行回数（既定 5）
-#   PUSH_RETRY_SLEEP_BASE  待機秒数の基準（既定 3。n回目の失敗後に n×基準 秒待つ）
+#   PUSH_RETRY_SLEEP_BASE  待機秒数の基準（既定 3。n回目の失敗後に n×基準 秒＋0〜基準秒の揺らぎ 待つ）
 #
 # 前提: git の user.name / user.email は呼び出し側で設定済みであること（rebase でコミットを作り直すため）。
 
@@ -47,9 +47,25 @@ sync_and_push() {
   fi
 
   if ! git rebase --autostash "origin/${branch}"; then
+    # 未マージのパスがあれば本物のコンフリクト。それ以外の失敗（untrackedファイルの上書き、
+    # stash 失敗等）はコンフリクトと誤診断せず、リトライ可能な失敗として扱う
+    local unmerged
+    unmerged="$(git diff --name-only --diff-filter=U)"
     git status --short || true
     git rebase --abort || true
-    return 2
+    if [ -n "$unmerged" ]; then
+      echo "コンフリクトしたファイル:"
+      echo "$unmerged"
+      return 2
+    fi
+    echo "::warning::rebase が失敗しました（コンフリクトではありません）"
+    return 1
+  fi
+
+  # autostash の再適用（未コミットの変更の復元）がコンフリクトしても rebase 自体は成功扱いになる。
+  # push するのはコミット済みの内容だけで影響しないため、警告のみ出して続行する
+  if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+    echo "::warning::autostash の再適用でコンフリクトが発生しました（未コミットの変更のみが対象で、push 内容には影響しません）"
   fi
 
   git push origin "HEAD:refs/heads/${branch}" || return 1
@@ -76,7 +92,8 @@ while true; do
     exit 1
   fi
 
-  wait_sec=$((attempt * SLEEP_BASE))
+  # 同時に競合した別ジョブと待機が揃い続けないよう、0〜SLEEP_BASE秒の揺らぎを加える
+  wait_sec=$((attempt * SLEEP_BASE + RANDOM % (SLEEP_BASE + 1)))
   echo "push失敗。${wait_sec}秒待って再試行します"
   sleep "$wait_sec"
   attempt=$((attempt + 1))
