@@ -15,6 +15,9 @@ paths: ["docs/design/**"]
 - `npm run verify:er-diagram`（`scripts/maintenance/verify-plan-erd.js`）が、新規テーブル・新規リレーションを導入するDDLを持つのにER図が無いplan.mdを横断検知する。**新規マイグレーション（`docs/db-migration/`への新規.sqlファイル追加）を含む変更では実装完了後の自動レビューでこれも実行する**（プロジェクトCLAUDE.md「実装完了後の自動レビュー」参照）
 - DB全体の俯瞰図は個別機能単位ではなく`docs/reference/database-design.md`の「テーブル関係図」を参照（`mcp__supabase__list_tables`で本番稼働中スキーマから機械生成、2026-09-15作成）。生きたスキーマから生成する方式を採用しているのは、DDL履歴の積み上げではDROP TABLE・RENAME等を正しく追えないため
 
+## データ取得を含む機能は「完了の定義」を必ず適用する（2026-09-19〜）
+外部サイトを取得してDBに書き込む機能のSDDでは、`/step3`で作るtasks.mdに`.claude/rules/data-acquisition.md`「完了の定義」（件数・タイミング・継続監視）の3行テンプレートを各データ項目に含める。plan.mdの実行基盤は同ファイル・[ADR-0066](../../docs/adr/0066-scraping-execution-consolidation-to-vercel.md)（Vercel Functions + Vercel Cron）に従う。コードのマージではなく本番DBの実測で完了を判定する。
+
 ## SDD実装が長時間・複数セッションに及ぶ場合の再開規律（2026-09-15〜）
 `/step4`はタスク完了ごとに`docs/design/{slug}/tasks.md`のチェックボックスを更新する設計だが、長時間の実装セッションでは会話の圧縮・脱線により「本当は未完了のタスクを完了したつもりで進めてしまう」「圧縮後に前の続きのつもりで一部タスクを読み飛ばす」という抜け漏れが起きうる（2026-09-15、SDDで丁寧に設計しても実装が長引くと当初計画の完成度に届かないという課題を受けて追加）。これを会話の記憶ではなく`tasks.md`という実体に依存する形に寄せる。
 
