@@ -171,6 +171,48 @@ rows = await q(`SELECT * FROM claim_scrape_slots('result',10,300,'w3',85,'live',
 st = await q(`SELECT status FROM scrape_slots WHERE race_id='2026-09-19-01-03'`);
 check("2日以上前の未完了は claim の走査対象外（pendingのまま）", st[0].status === "pending" && rows.length === 0, JSON.stringify(st));
 
+// 発走時刻の変更（順延・繰り下げ）への追従: 期限は保存せず races.start_time から都度計算するため、
+// まだ done でないスロットは、発走時刻の変更に追従する。既に done のスロットは再オープンしない（既知の限界）
+await db.exec("DELETE FROM scrape_slots");
+await db.exec(`
+  INSERT INTO races (race_id, race_date, venue_code, race_number, start_time) VALUES
+   ('2026-09-19-02-01','2026-09-19',2,1,'10:00:00'),
+   ('2026-09-19-02-02','2026-09-19',2,2,'10:30:00'),
+   ('2026-09-19-02-03','2026-09-19',2,3,'11:00:00');
+`);
+await q(`SELECT ensure_scrape_slots('2026-09-19'::date, $1::jsonb, false, $2::timestamptz)`, [
+  JSON.stringify([{ job: "odds", offset_min: -60, grace_min: 3 }]),
+  at("08:00"),
+]);
+// 02-01(10:00, 期限09:00)を11:00に繰り下げ → 09:00には取れず、10:00に取れる
+await db.exec("UPDATE races SET start_time='11:00:00' WHERE race_id='2026-09-19-02-01'");
+rows = (await claim("odds", "09:00")).filter((r) => r.race_id.startsWith("2026-09-19-02-"));
+check("発走の繰り下げ: 元の期限(09:00)には、繰り下げたレースを取らない（期限が10:00に追従）", !rows.some((r) => r.race_id === "2026-09-19-02-01"), JSON.stringify(rows.map((r) => r.race_id)));
+rows = (await claim("odds", "10:00")).filter((r) => r.race_id.startsWith("2026-09-19-02-"));
+check("発走の繰り下げ: 新しい期限(10:00)に取れる", rows.some((r) => r.race_id === "2026-09-19-02-01"), JSON.stringify(rows.map((r) => r.race_id)));
+// 02-02(10:30, 期限09:30・pending)を10:00に繰り上げ → 期限09:00に取れる（期限が前倒しされる。未来の期限は過去に）
+await db.exec("UPDATE scrape_slots SET status='pending', claimed_by=NULL, lease_until=NULL WHERE race_id='2026-09-19-02-02'");
+await db.exec("UPDATE races SET start_time='09:30:00' WHERE race_id='2026-09-19-02-02'"); // 期限08:30
+rows = (await claim("odds", "08:31", "w9", 10, 90, 3)).filter((r) => r.race_id === "2026-09-19-02-02");
+check("発走の繰り上げ: 新しい期限(08:30)に取れる（期限が前倒しに追従）", rows.length === 1, JSON.stringify(rows));
+// 既に done のスロットは、発走時刻が変わっても再オープンされない
+await db.exec("UPDATE scrape_slots SET status='done', done_at=now() WHERE race_id='2026-09-19-02-03'");
+await db.exec("UPDATE races SET start_time='13:00:00' WHERE race_id='2026-09-19-02-03'");
+rows = await q("SELECT * FROM claim_scrape_slots('odds',10,90,'w9',3,'live',$1::timestamptz)", [at("12:00")]);
+st = await q("SELECT status FROM scrape_slots WHERE race_id='2026-09-19-02-03'");
+check("既に done のスロットは、発走時刻が変わっても再オープンしない（既知の限界）", st[0].status === "done" && !rows.some((r) => r.race_id === "2026-09-19-02-03"));
+// 許容幅も新しい期限に追従する: 繰り下げた 02-01(期限10:00)は 10:03 まで有効
+await db.exec("UPDATE scrape_slots SET status='pending', claimed_by=NULL, lease_until=NULL, attempts=0 WHERE race_id='2026-09-19-02-01'");
+rows = (await claim("odds", "10:03", "w9", 10, 90, 3)).filter((r) => r.race_id === "2026-09-19-02-01");
+check("許容幅も新しい期限に追従する（期限10:00+3分=10:03は有効）", rows.length === 1, JSON.stringify(rows));
+await db.exec("UPDATE scrape_slots SET status='pending', claimed_by=NULL, lease_until=NULL WHERE race_id='2026-09-19-02-01'");
+rows = (await claim("odds", "10:04", "w9", 10, 90, 3)).filter((r) => r.race_id === "2026-09-19-02-01");
+st = await q("SELECT status FROM scrape_slots WHERE race_id='2026-09-19-02-01'");
+check("許容幅を超える(10:04)と expired", rows.length === 0 && st[0].status === "expired");
+
+// 以降の検証のため、追加したレースを削除する（scrape_slots は ON DELETE CASCADE で消える）
+await db.exec("DELETE FROM races WHERE race_id LIKE '2026-09-19-02-%'");
+
 // shadow の run_mode
 await db.exec("DELETE FROM scrape_slots");
 await q(`SELECT ensure_scrape_slots('2026-09-19'::date, $1::jsonb, false, $2::timestamptz)`, [defs, at("09:00")]);
