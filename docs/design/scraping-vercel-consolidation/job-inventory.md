@@ -453,7 +453,6 @@ Linearへの起票は行っていない。以下は、起票できる粒度で�
 | `update-google-sheets.yml` | `workflow_run`（"Scrape Race Data"の完了後）、手動 | 参照する"Scrape Race Data"は、2026-04-09に統合・削除済み（[外部Cronのセットアップ](../../operation/external-cron-setup.md)）。現行のワークフロー名に該当が無く、自動起動は発火しない（手動のみ有効） |
 | `exhibition-gap-monitor.yml` | schedule（00:30 JST指定） | 展示の欠落率の監視（DBを読む）。完了の定義C（[§6.2](#62-監視cの有無)） |
 | `race-notices-drift-monitor.yml` | schedule（00:30 JST指定） | 特記事項の構造変化の監視（DBを読む）。完了の定義C |
-| `linear-sync.yml` | push・PR | Linearとの同期 |
 | `slack-notify-pr.yml` | PR | Slackへの通知 |
 | `e2e-smoke-test.yml`、`verify-cache-config.yml` | PR | CI |
 | `deploy.yml.disabled` | 無効化済み | 旧GitHub Pagesデプロイ |
