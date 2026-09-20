@@ -40,9 +40,9 @@ const __dirname = path.dirname(__filename);
 // 起動時に venues テーブルから取得した90日実績値（キー: 整数の venue_code）
 let venueWinRateCache = {};
 
-async function fetchVenueWinRates() {
-  if (!isSupabaseEnabled()) return {};
-  const { data, error } = await supabase
+async function fetchVenueWinRates(client = supabase) {
+  if (!client) return {};
+  const { data, error } = await client
     .from("venues")
     .select("code, avg_first_win_rate")
     .not("avg_first_win_rate", "is", null);
@@ -584,15 +584,15 @@ function calculateConfidence(players) {
 }
 
 // racer_aggregated_stats から選手統計を一括取得
-async function fetchRacerStats(racerIds) {
-  if (!isSupabaseEnabled() || racerIds.length === 0) return new Map();
+async function fetchRacerStats(racerIds, client = supabase) {
+  if (!client || racerIds.length === 0) return new Map();
 
   const map = new Map();
   const CHUNK_SIZE = 900; // Supabase .in() の1000件制限内
 
   for (let i = 0; i < racerIds.length; i += CHUNK_SIZE) {
     const chunk = racerIds.slice(i, i + CHUNK_SIZE);
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("racer_aggregated_stats")
       .select(
         "racer_id, avg_st, st_stddev, attack_distribution, defense_distribution, course_race_counts",
@@ -1261,39 +1261,55 @@ async function writeToSupabase(allPredictions, date) {
 // ---------------------------------------------------------------------------
 
 /**
+ * race_id を指定して一括取得する際の、1回あたりの race_id の数。
+ * race_entries・exhibition_data は1レース6行のため、100レース=600行で、PostgRESTの
+ * 1リクエストあたりの上限（1000行）に収まる（超えると、約166レースを超えた分が黙って欠ける）。
+ */
+export const RACE_ID_CHUNK_SIZE = 100;
+
+/** race_id の一覧を RACE_ID_CHUNK_SIZE ずつに分けて取得し、全行を連結する。失敗は例外にする */
+async function selectByRaceIds(client, table, columns, raceIds) {
+  const chunks = [];
+  for (let i = 0; i < raceIds.length; i += RACE_ID_CHUNK_SIZE) {
+    chunks.push(raceIds.slice(i, i + RACE_ID_CHUNK_SIZE));
+  }
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      client.from(table).select(columns).in("race_id", chunk),
+    ),
+  );
+  const failed = results.find((result) => result.error);
+  // 展示・気象の取得に失敗したまま予測を作ると、入力の欠けた予測で、良い予測を上書きしてしまう
+  // （再計算のきっかけが展示の変更のみになる案1では、次の再計算が来ず、そのまま残る）ため、例外にする
+  if (failed) throw new Error(`${table}取得エラー: ${failed.error.message}`);
+  return results.flatMap((result) => result.data ?? []);
+}
+
+/**
  * Supabase から対象レースのデータを取得し、generateRacePrediction が期待する
  * race オブジェクト形式に変換する
  */
-async function fetchRaceDataFromSupabase(raceIds) {
-  const [entriesRes, conditionsRes, exhibitionRes, racesRes] =
-    await Promise.all([
-      supabase.from("race_entries").select("*").in("race_id", raceIds),
-      supabase.from("race_conditions").select("*").in("race_id", raceIds),
-      supabase.from("exhibition_data").select("*").in("race_id", raceIds),
-      supabase
-        .from("races")
-        .select("race_id, race_grade")
-        .in("race_id", raceIds),
-    ]);
-
-  if (entriesRes.error)
-    throw new Error(`race_entries取得エラー: ${entriesRes.error.message}`);
+async function fetchRaceDataFromSupabase(raceIds, client = supabase) {
+  const [entries, conditions, exhibition, raceRows] = await Promise.all([
+    selectByRaceIds(client, "race_entries", "*", raceIds),
+    selectByRaceIds(client, "race_conditions", "*", raceIds),
+    selectByRaceIds(client, "exhibition_data", "*", raceIds),
+    selectByRaceIds(client, "races", "race_id, race_grade", raceIds),
+  ]);
 
   // race_id ごとにグループ化
   const entriesByRace = new Map();
-  for (const e of entriesRes.data || []) {
+  for (const e of entries) {
     if (!entriesByRace.has(e.race_id)) entriesByRace.set(e.race_id, []);
     entriesByRace.get(e.race_id).push(e);
   }
-  const conditionsByRace = new Map(
-    (conditionsRes.data || []).map((c) => [c.race_id, c]),
-  );
+  const conditionsByRace = new Map(conditions.map((c) => [c.race_id, c]));
   const exhibitionByRace = new Map();
-  for (const ex of exhibitionRes.data || []) {
+  for (const ex of exhibition) {
     if (!exhibitionByRace.has(ex.race_id)) exhibitionByRace.set(ex.race_id, []);
     exhibitionByRace.get(ex.race_id).push(ex);
   }
-  const racesByRace = new Map((racesRes.data || []).map((r) => [r.race_id, r]));
+  const racesByRace = new Map(raceRows.map((r) => [r.race_id, r]));
 
   const races = [];
   for (const raceId of raceIds) {
@@ -1366,7 +1382,11 @@ async function fetchRaceDataFromSupabase(raceIds) {
  *
  * @returns {Promise<{toWrite: Object[], stats: Object, fallback: boolean}>}
  */
-async function planRacesVolatilityUpdates(allPredictions, forceTouchRaces) {
+async function planRacesVolatilityUpdates(
+  allPredictions,
+  forceTouchRaces,
+  client = supabase,
+) {
   const volatilityRows = allPredictions.map((race) => ({
     race_id: race.raceId,
     volatility_score: race.volatility.score,
@@ -1376,7 +1396,7 @@ async function planRacesVolatilityUpdates(allPredictions, forceTouchRaces) {
     first_boat_avg_st: race.volatility.boat1AvgST ?? null,
   }));
   if (forceTouchRaces) return planWriteAll(volatilityRows);
-  return filterUnchangedRows(supabase, "races", volatilityRows, {
+  return filterUnchangedRows(client, "races", volatilityRows, {
     keyColumns: ["race_id"],
     writeMissing: false, // 行が無ければUPDATEしても0件
   });
@@ -1395,28 +1415,49 @@ async function planRacesVolatilityUpdates(allPredictions, forceTouchRaces) {
  *   races.updated_at の最大値とスクリプトのコミット時刻を比べているため、再生成後に
  *   updated_at が進まないと（値が変わらず全行スキップされると）毎回再生成が走り続ける。
  *   その再生成経路だけ true を渡す
+ * @param {string} [params.date] 対象日（YYYY-MM-DD）。省略時は CLI の --date= 引数、無ければ今日（JST）。
+ *   Vercel Function から呼ぶ場合は process.argv に日付が無いため、引数で渡す（BOA-353 T4b-03）
+ * @param {"replace"|"upsert"} [params.writeMode] predictions の書き込み方式。
+ *   "replace"（既定・従来どおり）: 対象レースの行を削除してから挿入する。削除と挿入の間（および挿入が
+ *   失敗した場合）に、そのレースの予測が空になる。
+ *   "upsert": (race_id, model_id) の一意制約で1文の upsert にする。予測が空になる瞬間が無く、書き込みに
+ *   失敗しても以前の予測が残る（失敗は例外にする）。行の内容は "replace" と同じ（的中フラグ・払戻・
+ *   scores は null に戻し、predicted_at は現在時刻）。再計算の起点が展示の変更のみになる案1
+ *   （REFRESH_ON_VERCEL）では、失敗した再計算が次の再計算で自己修復されないため、この方式を使う
+ * @param {import("@supabase/supabase-js").SupabaseClient|null} [params.client] テスト用の差し替え（既定は supabaseClient.js）
+ * @param {() => Date} [params.now] テスト用の時刻の差し替え
+ * @returns {Promise<{predictedRaceIds: string[], volatilityUpdated: number, writeMode: string}|{volatilityStats: Object}|undefined>}
  */
 export async function mainRefresh({
   isDryRun,
   specificRaceIds,
   forceTouchRaces = false,
+  date: dateArg,
+  writeMode = "replace",
+  client = supabase,
+  now = () => new Date(),
 }) {
   console.log(`🔄 予測リフレッシュモード${isDryRun ? " [DRY-RUN]" : ""}`);
-  console.log(`⏰ ${new Date().toISOString()}`);
+  console.log(`⏰ ${now().toISOString()}`);
 
-  if (!isSupabaseEnabled()) {
-    console.error("❌ Supabase環境変数が未設定です。");
-    process.exit(1);
+  if (!["replace", "upsert"].includes(writeMode)) {
+    throw new Error(`writeMode が不正です: ${writeMode}`);
+  }
+  if (!client) {
+    // Vercel Function から呼ぶため、process.exit ではなく例外にする（CLI の呼び出し側は catch して終了コード1にする）
+    throw new Error(
+      "Supabase環境変数が未設定です（SUPABASE_URL / SUPABASE_SERVICE_KEY）",
+    );
   }
 
-  const date = parseDateArg() || getTodayDateJST();
+  const date = dateArg || parseDateArg() || getTodayDateJST();
   console.log(`📅 対象日: ${date}`);
 
   // 対象 race_ids を決定
   let targetRaceIds = specificRaceIds || [];
   if (targetRaceIds.length === 0) {
     // 自動検出: 発走60/30/15/10/5分前ウィンドウのレース
-    const schedule = await getRaceSchedule(date);
+    const schedule = await getRaceSchedule(date, { client });
     const WINDOWS = [60, 30, 15, 10, 5];
     const seen = new Set();
     for (const min of WINDOWS) {
@@ -1436,7 +1477,7 @@ export async function mainRefresh({
   console.log(`🎯 更新対象: ${targetRaceIds.length}レース`);
 
   // Supabase からレースデータを取得
-  const races = await fetchRaceDataFromSupabase(targetRaceIds);
+  const races = await fetchRaceDataFromSupabase(targetRaceIds, client);
   if (races.length === 0) {
     console.log("📭 対象レースのデータが未登録（race_entries なし）");
     return;
@@ -1449,9 +1490,9 @@ export async function mainRefresh({
       if (racer.racerId) allRacerIds.add(racer.racerId);
     }
   }
-  const racerStatsMap = await fetchRacerStats([...allRacerIds]);
+  const racerStatsMap = await fetchRacerStats([...allRacerIds], client);
 
-  venueWinRateCache = await fetchVenueWinRates();
+  venueWinRateCache = await fetchVenueWinRates(client);
   if (Object.keys(venueWinRateCache).length > 0) {
     console.log(
       `🏟️  ${Object.keys(venueWinRateCache).length}会場の1コース勝率（90日実績）を取得しました`,
@@ -1486,6 +1527,7 @@ export async function mainRefresh({
     const { stats, fallback } = await planRacesVolatilityUpdates(
       allPredictions,
       forceTouchRaces,
+      client,
     );
     console.log(
       `  [DRY-RUN] ${formatSkipSummary("races volatility", stats, { fallback })}`,
@@ -1493,19 +1535,9 @@ export async function mainRefresh({
     return { volatilityStats: stats };
   }
 
-  // predictions テーブルを更新（対象 race_id のみ delete → insert）
+  // predictions テーブルを更新
   console.log(`\n💾 predictions を更新中...`);
   const updatedRaceIds = allPredictions.map((r) => r.raceId);
-
-  const { error: deleteError } = await supabase
-    .from("predictions")
-    .delete()
-    .in("race_id", updatedRaceIds)
-    .eq("is_shadow", false);
-  if (deleteError) {
-    console.error("❌ predictions削除エラー:", deleteError.message);
-    return;
-  }
 
   const predictionsData = [];
   for (const race of allPredictions) {
@@ -1556,28 +1588,45 @@ export async function mainRefresh({
     );
   }
 
-  for (let i = 0; i < predictionsData.length; i += 1000) {
-    const batch = predictionsData.slice(i, i + 1000);
-    const { error } = await supabase.from("predictions").insert(batch);
-    if (error) console.error("❌ predictions書き込みエラー:", error.message);
+  if (writeMode === "upsert") {
+    // 削除→挿入の交差・挿入失敗による「予測が空」を作らない。書き込みに失敗したら例外にする
+    // （失敗しても、以前の予測は残っている）
+    await upsertPredictions(client, predictionsData, now());
+  } else {
+    // 対象 race_id のみ delete → insert（従来どおり）
+    const { error: deleteError } = await client
+      .from("predictions")
+      .delete()
+      .in("race_id", updatedRaceIds)
+      .eq("is_shadow", false);
+    if (deleteError) {
+      console.error("❌ predictions削除エラー:", deleteError.message);
+      return;
+    }
+
+    for (let i = 0; i < predictionsData.length; i += 1000) {
+      const batch = predictionsData.slice(i, i + 1000);
+      const { error } = await client.from("predictions").insert(batch);
+      if (error) console.error("❌ predictions書き込みエラー:", error.message);
+    }
   }
   console.log(
-    `  ✅ predictions: ${predictionsData.length}件（${allPredictions.length}レース）`,
+    `  ✅ predictions: ${predictionsData.length}件（${allPredictions.length}レース、${writeMode}）`,
   );
 
   // races テーブルの volatility 項目を更新（イン崩れ指数リフレッシュ）
   // upsert ではなく update を使用し、既存行のみを更新する（NOT NULL 制約エラーを回避）
-  const now = new Date().toISOString();
+  const volatilityAt = now().toISOString();
   const {
     toWrite: volatilityToWrite,
     stats: volatilityStats,
     fallback,
-  } = await planRacesVolatilityUpdates(allPredictions, forceTouchRaces);
+  } = await planRacesVolatilityUpdates(allPredictions, forceTouchRaces, client);
   let volatilityUpdated = 0;
   for (const { race_id: raceId, ...columns } of volatilityToWrite) {
-    const { error } = await supabase
+    const { error } = await client
       .from("races")
-      .update({ ...columns, updated_at: now })
+      .update({ ...columns, updated_at: volatilityAt })
       .eq("race_id", raceId);
     if (error) {
       console.error(
@@ -1597,7 +1646,7 @@ export async function mainRefresh({
   const deployHook = process.env.VERCEL_DEPLOY_HOOK;
   const hookDecision = decideDeployHook({
     hookUrl: deployHook,
-    now: new Date(),
+    now: now(),
     changedRaceCount: volatilityUpdated,
   });
   if (hookDecision.trigger) {
@@ -1617,6 +1666,37 @@ export async function mainRefresh({
   }
 
   console.log("🏁 リフレッシュ完了");
+  return { predictedRaceIds: updatedRaceIds, volatilityUpdated, writeMode };
+}
+
+/**
+ * predictions を (race_id, model_id) の一意制約で upsert する（writeMode="upsert"）。
+ * 削除を伴わないため、書き込みの途中で失敗しても、書けなかった行は以前の予測が残る。
+ * 行の内容は「削除→挿入」と同じにする（挿入では、下の列が DEFAULT/NULL になっていた）:
+ * 的中フラグ・払戻・scores は null に戻し、predicted_at は現在時刻にする。
+ */
+async function upsertPredictions(client, predictionsData, at) {
+  const rows = predictionsData.map((row) => ({
+    ...row,
+    scores: null,
+    is_hit_win: null,
+    is_hit_place: null,
+    is_hit_trifecta: null,
+    is_hit_trio: null,
+    is_hit_turn: null,
+    payout_win: null,
+    payout_place: null,
+    payout_trifecta: null,
+    payout_trio: null,
+    predicted_at: at.toISOString(),
+  }));
+  for (let i = 0; i < rows.length; i += 1000) {
+    const batch = rows.slice(i, i + 1000);
+    const { error } = await client
+      .from("predictions")
+      .upsert(batch, { onConflict: "race_id,model_id" });
+    if (error) throw new Error(`predictions書き込みエラー: ${error.message}`);
+  }
 }
 
 // メイン処理

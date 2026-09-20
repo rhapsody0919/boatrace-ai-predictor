@@ -261,7 +261,9 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
  *   updateWeather: 取得した beforeinfo の気象も race_conditions へ反映するか（既定 true、BOA-358）。
  *   過去レースの補完（scrape-exhibition-data の backfill 系）は、beforeinfo が「その日の最新の観測」
  *   を表示するため false にする
- * @returns {Promise<{updated: boolean, count: number, weather?: Object}>}
+ * @returns {Promise<{updated: boolean, count: number, weather?: Object, changedRaceIds: string[]}>}
+ *   changedRaceIds: 展示データ・気象を実際に書き込んだレース（変更の無い行は書かないため、
+ *   updated=true でも含まれないレースがある）。予測の再計算（Vercel、REFRESH_ON_VERCEL）の対象
  */
 /**
  * 展示データ取得のウィンドウ（BOA-55: 発走30分前・15分前・10分前）
@@ -281,7 +283,7 @@ export async function run(schedule, date, { updateWeather = true } = {}) {
 
   if (windowRaces.length === 0) {
     console.log("📭 展示: 発走10〜33分前ウィンドウの対象レースなし");
-    return { updated: false, count: 0 };
+    return { updated: false, count: 0, changedRaceIds: [] };
   }
   console.log(
     `🎯 展示データ取得: ${windowRaces.length}レース（発走30/15/10分前ウィンドウ）`,
@@ -294,7 +296,7 @@ export async function run(schedule, date, { updateWeather = true } = {}) {
 
   if (targets.length === 0) {
     console.log("📭 展示: 全レース取得済み（スキップ）");
-    return { updated: false, count: 0 };
+    return { updated: false, count: 0, changedRaceIds: [] };
   }
 
   return scrapeAndUpsertRaces(targets, date, {
@@ -314,12 +316,18 @@ export async function run(schedule, date, { updateWeather = true } = {}) {
  *   updateWeather: 気象も race_conditions へ反映するか。既定 false（過去分の補完は、beforeinfo が
  *   発走後もその日の最新の観測を表示するため、気象を書かない）。run() は既定 true で呼ぶ
  *   startTimeLookup: buildStartTimeLookup() の戻り値（「N R時点」の観測時刻の解決用）
- * @returns {Promise<{updated: boolean, count: number, weather: Object|null}>}
+ *   client: テスト用のSupabaseクライアントの差し替え
+ * @returns {Promise<{updated: boolean, count: number, weather: Object|null, changedRaceIds: string[]}>}
  */
 export async function scrapeAndUpsertRaces(
   targets,
   date,
-  { updateWeather = false, startTimeLookup = null } = {},
+  {
+    updateWeather = false,
+    startTimeLookup = null,
+    // テスト用の差し替え（既定は supabaseClient.js）
+    client = supabase,
+  } = {},
 ) {
   // 会場ごとにグループ化
   const byVenue = new Map();
@@ -398,6 +406,9 @@ export async function scrapeAndUpsertRaces(
     }
   }
 
+  // 実際に書き込んだ（＝変更のあった、または新規の）レース。予測の再計算の対象になる
+  const changedRaceIds = new Set();
+
   // Supabase に upsert
   if (allRows.length > 0) {
     console.log(`\n💾 exhibition_data: ${allRows.length}件書き込み中...`);
@@ -414,16 +425,25 @@ export async function scrapeAndUpsertRaces(
     // レビューで発見）。そのため、エラーに名前の出た列が属するグループだけを除いて書き直し、
     // 適用済みのマイグレーション分は引き続き書き込み続ける（scripts/lib/optionalColumns.js）
     // 書き込みエラーは upsertChangedRows がログに出す（呼び出し元の戻り値・後続処理は従来どおり）
-    await upsertChangedRows(supabase, "exhibition_data", allRows, {
-      onConflict: "race_id,boat_number",
-      keyColumns: ["race_id", "boat_number"],
-      label: "exhibition_data",
-      stampUpdatedAt: true,
-      optionalColumnGroups: {
-        "マイグレーション056（BOA-221）": BOA221_COLUMNS,
-        "マイグレーション059（BOA-289）": BOA289_COLUMNS,
+    const written = await upsertChangedRows(
+      client,
+      "exhibition_data",
+      allRows,
+      {
+        onConflict: "race_id,boat_number",
+        keyColumns: ["race_id", "boat_number"],
+        label: "exhibition_data",
+        stampUpdatedAt: true,
+        optionalColumnGroups: {
+          "マイグレーション056（BOA-221）": BOA221_COLUMNS,
+          "マイグレーション059（BOA-289）": BOA289_COLUMNS,
+        },
       },
-    });
+    );
+    // 書き込みが1行も成功していないバッチだけのとき（全滅）は、DBが変わっていないので含めない
+    if (written.written > 0) {
+      for (const row of written.toWrite) changedRaceIds.add(row.race_id);
+    }
   } else {
     console.log("\n📭 展示: 新規データなし");
   }
@@ -435,10 +455,20 @@ export async function scrapeAndUpsertRaces(
   const weather = updateWeather
     ? await updateRaceConditionsWeather(weatherFetched, date, {
         startTimeLookup,
+        client,
       })
     : null;
 
-  return { updated: allRows.length > 0, count: allRows.length, weather };
+  // 気象も予測の入力（イン崩れ指数の風速・波高）のため、書き込んだレースは再計算の対象に含める
+  for (const raceId of weather?.changedRaceIds ?? [])
+    changedRaceIds.add(raceId);
+
+  return {
+    updated: allRows.length > 0,
+    count: allRows.length,
+    weather,
+    changedRaceIds: [...changedRaceIds],
+  };
 }
 
 /**
@@ -449,12 +479,12 @@ export async function scrapeAndUpsertRaces(
  * @param {Array<{raceId: string, venueCode: number, startTime: Date|null, conditions: Object|null}>} fetched
  * @param {string} date YYYY-MM-DD
  * @param {{startTimeLookup?: Function|null}} [options]
- * @returns {Promise<{fetched: number, parsed: number, written: number, error: string|null}>}
+ * @returns {Promise<{fetched: number, parsed: number, written: number, error: string|null, changedRaceIds: string[]}>}
  */
 export async function updateRaceConditionsWeather(
   fetched,
   date,
-  { startTimeLookup = null } = {},
+  { startTimeLookup = null, client = supabase } = {},
 ) {
   try {
     const { rows, stats } = buildWeatherRows(fetched, date, {
@@ -474,9 +504,15 @@ export async function updateRaceConditionsWeather(
       );
     }
     if (rows.length === 0) {
-      return { fetched: stats.fetched, parsed: 0, written: 0, error: null };
+      return {
+        fetched: stats.fetched,
+        parsed: 0,
+        written: 0,
+        error: null,
+        changedRaceIds: [],
+      };
     }
-    const result = await upsertRaceConditions(supabase, rows, {
+    const result = await upsertRaceConditions(client, rows, {
       label: "race_conditions(気象)",
     });
     return {
@@ -484,6 +520,8 @@ export async function updateRaceConditionsWeather(
       parsed: stats.parsed,
       written: result.written,
       error: result.error ? result.error.message : null,
+      changedRaceIds:
+        result.written > 0 ? result.toWrite.map((r) => r.race_id) : [],
     };
   } catch (error) {
     console.error(
@@ -494,6 +532,7 @@ export async function updateRaceConditionsWeather(
       parsed: 0,
       written: 0,
       error: error.message,
+      changedRaceIds: [],
     };
   }
 }

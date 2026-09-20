@@ -17,6 +17,12 @@
  * 成功したか」（こちらの関心）を混同しない設計。後者の監視は日次の欠落率チェック
  * （spec.md Step 2）で行う。1回あたりの処理レース数に人為的な上限は設けない
  * （設ける＝GitHub Actionsで起きたキュー詰まりを小さいスケールで再現するだけのため）。
+ *
+ * 予測の再計算（案1、BOA-353 T4b-03、docs/design/scraping-vercel-consolidation/plan.md §5）:
+ * REFRESH_ON_VERCEL=true のとき、展示・気象を実際に書き込んだレースについてのみ、取得の後に
+ * 同じバックグラウンド処理の中で mainRefresh を呼ぶ（既定はoff＝従来どおり展示の取得のみ）。
+ * GitHub Actions 側のオッズ起点の再計算との併走の防止は、scripts/lib/predictionRefresh.js を参照。
+ * 再計算のモジュールは、有効なときだけ読み込む（無効なときは、従来と完全に同じ動作にする）。
  */
 
 import { timingSafeEqual } from "node:crypto";
@@ -24,6 +30,7 @@ import { waitUntil } from "@vercel/functions";
 import { getTodayDateJST } from "../../scripts/lib/dateUtils.js";
 import { getRaceSchedule } from "../../scripts/lib/raceSchedule.js";
 import { run as runExhibition } from "../../scripts/daily/scrape-exhibition-data.js";
+import { refreshAfterExhibition } from "../../scripts/lib/predictionRefresh.js";
 
 export const config = {
   maxDuration: 300,
@@ -61,12 +68,23 @@ export default async function handler(req, res) {
     // 人為的な件数上限は設けない）。結果はSupabaseへの書き込みそのものと
     // 関数ログで確認する（日次の欠落率チェックが正式な監視手段）。
     waitUntil(
-      runExhibition(schedule, date).catch((error) => {
-        console.error(
-          "❌ 展示データ取得エラー（バックグラウンド処理）:",
-          error,
-        );
-      }),
+      runExhibition(schedule, date)
+        .then((result) =>
+          refreshAfterExhibition({
+            result,
+            date,
+            refresh: async (args) =>
+              (
+                await import("../../scripts/daily/generate-predictions.js")
+              ).mainRefresh(args),
+          }),
+        )
+        .catch((error) => {
+          console.error(
+            "❌ 展示データ取得エラー（バックグラウンド処理）:",
+            error,
+          );
+        }),
     );
 
     return res.status(202).json({
