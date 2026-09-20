@@ -9,6 +9,13 @@
  *   daily      1日1回（＋補足の起動）。対象日を「指定時刻」から解決し、last_target_date で冪等にする
  *   continuous 窓なしの連続実行（A4・A5・チャンク処理）。ジョブ単位のリースで排他する
  *   monitor    監視・保守（モードのゲートなし。scrape_job_state に実行を記録する）
+ *
+ * 窓型の slotSecEstimate（1スロットの処理時間の見積り、秒）: boatrace.jp のページの応答が、リージョン・UA・
+ * 実行元によらず1件あたり約8〜10秒かかる（2026-09-20の実測: syd1・hnd1のVercel、ローカルとも8.1〜10.3秒、
+ * 全て成功。docs/design/scraping-vercel-consolidation/plan.md §8）。1スロットが1レース分のページを並列に取る
+ * 前提で、最悪12秒（実測の最大10.3秒+余裕）とする。claimLimit/concurrency の切り上げ × slotSecEstimate が、
+ * リースより十分短くなければ、後ろのスロットの処理中にリースが切れ、別の実行が同じスロットを取ってしまう
+ * （二重取得）。validateRegistry がこの関係を検査する。
  */
 
 /** ホスト単位のサーキットブレーカーの scrape_job_state.job の接頭辞（例: host:boatrace.jp） */
@@ -25,8 +32,9 @@ export const SCRAPE_JOBS = Object.freeze({
     graceMin: 3,
     retrySec: 60,
     leaseSec: 90,
-    claimLimit: 40,
+    claimLimit: 24,
     concurrency: 4,
+    slotSecEstimate: 12,
     maxDurationSec: 120,
     hosts: ["boatrace.jp"],
   },
@@ -37,20 +45,22 @@ export const SCRAPE_JOBS = Object.freeze({
     graceMin: 26,
     retrySec: 120,
     leaseSec: 90,
-    claimLimit: 40,
+    claimLimit: 24,
     concurrency: 4,
+    slotSecEstimate: 12,
     maxDurationSec: 120,
     hosts: ["boatrace.jp"],
   },
-  // A3 オッズ。6窓×5ページ。許容幅3分のため、リースは許容幅より短く（90秒）
+  // A3 オッズ。6窓×5ページ。許容幅3分のため、リースは許容幅より短く（120秒）
   odds: {
     kind: "window",
     offsets: [-60, -30, -15, -10, -5, 0],
     graceMin: 3,
     retrySec: 60,
-    leaseSec: 90,
-    claimLimit: 30,
+    leaseSec: 120,
+    claimLimit: 24,
     concurrency: 4,
+    slotSecEstimate: 12,
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
@@ -63,6 +73,7 @@ export const SCRAPE_JOBS = Object.freeze({
     leaseSec: 180,
     claimLimit: 40,
     concurrency: 4,
+    slotSecEstimate: 12,
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
@@ -75,6 +86,7 @@ export const SCRAPE_JOBS = Object.freeze({
     leaseSec: 300,
     claimLimit: 20,
     concurrency: 3,
+    slotSecEstimate: 12,
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
@@ -212,6 +224,12 @@ export function validateRegistry(registry = SCRAPE_JOBS) {
         new Set(def.offsets).size !== def.offsets.length
       ) {
         problems.push(`${name}: offsets が不正です: ${def.offsets}`);
+      }
+      const waves = Math.ceil(def.claimLimit / def.concurrency);
+      if (waves * def.slotSecEstimate > def.leaseSec - 10) {
+        problems.push(
+          `${name}: 最後のスロットの完了見込み(${waves}回 × ${def.slotSecEstimate}秒)が、リース(${def.leaseSec}秒)に余裕(10秒)を残して収まりません。claimLimit を減らすか、リースを延ばしてください`,
+        );
       }
       if (!(def.concurrency >= 1) || def.concurrency > def.claimLimit) {
         problems.push(

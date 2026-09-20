@@ -153,11 +153,12 @@ check(
     d: { ...SCRAPE_JOBS.odds, concurrency: 99 },
     e: { ...SCRAPE_JOBS.point_rank, targetTimeJst: "25:00" },
     f: { ...SCRAPE_JOBS.odds, maxDurationSec: 30 },
+    g: { ...SCRAPE_JOBS.odds, claimLimit: 60, concurrency: 4 }, // 15回×12秒 > リース
   };
   const problems = validateRegistry(bad);
   check(
-    "リース>=許容幅・再試行>=許容幅・窓の重複・並列度超過・不正な指定時刻・短すぎるmaxDurationを検出",
-    ["a", "b", "c", "d", "e", "f"].every((k) =>
+    "リース>=許容幅・再試行>=許容幅・窓の重複・並列度超過・不正な指定時刻・短すぎるmaxDuration・リースに収まらない処理量を検出",
+    ["a", "b", "c", "d", "e", "f", "g"].every((k) =>
       problems.some((p) => p.startsWith(`${k}:`)),
     ),
     show(problems),
