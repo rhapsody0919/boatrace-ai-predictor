@@ -70,10 +70,12 @@
 
 ### T4b-03 予測リフレッシュ（A7、`predictions`の再計算）
 
-- [ ] **T4b-03-1** `mainRefresh`をVercelで動かせる形にする（`scripts/daily/generate-predictions.js`）: `process.exit(1)`を例外に、`process.argv`（`parseDateArg`）の日付を引数に、Deploy Hookは`decideDeployHook`の抑制を維持する（Vercelの環境変数の有無に従う）。既存のGitHub Actions経路の挙動は変えない。`node scripts/maintenance/verify-deploy-hook-policy.js`ほか既存の検証が通ることを確認する
-- [ ] **T4b-03-2** `api/cron/exhibition.js`（現行の`waitUntil`版）の内側で、`runExhibition`が変更を書いたレース（30/15/10分前の窓のレース）に対し、`mainRefresh`を呼ぶ。`REFRESH_ON_VERCEL`フラグで有効化する。GitHub側は、`scrape-scheduled.js`の`updatedRaceIds`から、オッズ由来の追加を外す変数（`SKIP_ODDS_REFRESH_ON_GHA`等。名称は実装時に決める）で切り替える。**併走させない**（plan.md §5 併走の防止）。切り替えの順序と、切り戻しの手順をPR本文に書く
-- [ ] **T4b-03-3** 展示更新が再計算のきっかけから外れた影響（plan.md U8）を、GitHub Actionsの実行ログで確認する（2026-09-16以降の、展示由来の再計算の有無）。Vercelでの`mainRefresh`の所要時間（26レース時の約8秒が実測か、週末のピーク）と、`predictions`の`UNIQUE`制約の有無（plan.md U14）を確認する
-- [ ] **T4b-03-4** `REFRESH_ON_VERCEL`を有効化する（ユーザーの承認）。切り替え後、再計算の回数（`predictions`のINSERT・DELETE、`n_tup_ins`）が、約55%減の見込みどおりかを実測する
+- [x] **T4b-03-1** `mainRefresh`をVercelで動かせる形にする（`scripts/daily/generate-predictions.js`）: `process.exit(1)`を例外に、`process.argv`（`parseDateArg`）の日付を引数に、Deploy Hookは`decideDeployHook`の抑制を維持する（Vercelの環境変数の有無に従う）。既存のGitHub Actions経路の挙動は変えない。`node scripts/maintenance/verify-deploy-hook-policy.js`ほか既存の検証が通ることを確認する
+- [x] **T4b-03-2** `api/cron/exhibition.js`（現行の`waitUntil`版）の内側で、`runExhibition`が変更を書いたレース（30/15/10分前の窓のレース）に対し、`mainRefresh`を呼ぶ。`REFRESH_ON_VERCEL`フラグで有効化する。GitHub側は、`scrape-scheduled.js`の`updatedRaceIds`から、オッズ由来の追加を外す変数（`SKIP_ODDS_REFRESH_ON_GHA`等。名称は実装時に決める）で切り替える。**併走させない**（plan.md §5 併走の防止）。切り替えの順序と、切り戻しの手順をPR本文に書く
+- [x] **T4b-03-3** 展示更新が再計算のきっかけから外れた影響（plan.md U8）を、GitHub Actionsの実行ログで確認する（2026-09-16以降の、展示由来の再計算の有無）。Vercelでの`mainRefresh`の所要時間（26レース時の約8秒が実測か、週末のピーク）と、`predictions`の`UNIQUE`制約の有無（plan.md U14）を確認する
+  - 実装（PRの説明に、切り替え・切り戻しの順序）: `mainRefresh`は、`process.exit`を例外に、`date`・`writeMode`（`replace`＝従来／`upsert`）・`client`・`now`を引数に追加、`race_id`の一括取得を100件ずつに分割（1000行上限）。展示取得（`scrape-exhibition-data.js`）が、実際に書き込んだレースを`changedRaceIds`で返す。トグルは`REFRESH_ON_VERCEL`（Vercel）と`SKIP_ODDS_REFRESH_ON_GHA`（GitHubのリポジトリ変数）。組み合わせと順序は`scripts/lib/predictionRefresh.js`、手順は[verification-runbook.md](./verification-runbook.md) J
+  - 確認（T4b-03-3）: U8（展示由来の再計算は9/16以降0件。ただし、オッズの窓が同じ時刻に再計算を起動しており、9/20の46レースで、全レースの予測が展示の最終書き込みより後）、U14（`UNIQUE (race_id, model_id)`あり）。詳細は[plan.md](./plan.md) §5「案1の実装で確認した事項」。**unifiedの日全体の再生成が止まる影響（有効化前にユーザー判断）を含む**
+- [ ] **T4b-03-4** `REFRESH_ON_VERCEL`を有効化する（ユーザーの承認）。切り替え後、再計算の回数（`predictions`のINSERT・DELETE、`n_tup_ins`）が、約55%減の見込みどおりかを実測する。手順・確認クエリは[verification-runbook.md](./verification-runbook.md) J
 
 データ項目: `predictions`（再計算）。
 
@@ -87,10 +89,10 @@
 
 ### T4b-02 結果取得（A6）: `race_results`・`race_start_timings`
 
-- [ ] **T4b-02-1** `scrape-results.js`に、レース単位の入口を追加する（例: `runForRaces(races, { date })`）。既存の`run(schedule, date)`は残す（二重実装しない）。的中フラグの補完（`fixMissingHitFlags`）は、完了したレースのみを対象にする（直近10日のスキャンを毎回やめ、日次に1回へ）。結果の完了判定（`payout_win`・`winning_technique`）は現行と同じ
-- [ ] **T4b-02-2** `api/cron/result.js`: 共通ラッパ・レジストリの`result`定義（`+5`分から`+90`分、再試行300秒、リース180秒、40件×4並列）で、スロットを消化する。`+90`分での未完了は、既存の中止・順延の確定処理（`confirmOverdueCancellations`）へ
+- [x] **T4b-02-1**（コード実装済み。`runForRaces`、`fixMissingHitFlags`は日次の`result-catchup`へ） `scrape-results.js`に、レース単位の入口を追加する（例: `runForRaces(races, { date })`）。既存の`run(schedule, date)`は残す（二重実装しない）。的中フラグの補完（`fixMissingHitFlags`）は、完了したレースのみを対象にする（直近10日のスキャンを毎回やめ、日次に1回へ）。結果の完了判定（`payout_win`・`winning_technique`）は現行と同じ
+- [x] **T4b-02-2**（コード実装済み。cron窓は翌00:59まで延長、中止・順延の確定は毎分の`onTick`。マージ後も`mode`が`off`の間は何もしない） `api/cron/result.js`: 共通ラッパ・レジストリの`result`定義（`+5`分から`+90`分、再試行300秒、リース180秒、40件×4並列）で、スロットを消化する。`+90`分での未完了は、既存の中止・順延の確定処理（`confirmOverdueCancellations`）へ
 - [ ] **T4b-02-3** `scrape_job_state`に`result`を`shadow`で登録する（DBの更新。ユーザーの承認）。`shadow`で3日（土日のいずれか1日を含む）: 一致率（`result_digest`と、GitHub側が書いた`race_results`の値）、窓内取得率、1回の呼び出しの所要時間（plan.md U13）、取得先の拒否率（U3）、Vercelの使用量（U5）を計測する
-- [ ] **T4b-02-4** `live`にして3日並走する（二重書き込みは上書き型で無害）。GitHub側の結果取得を止めるリポジトリ変数`SKIP_RESULTS_ON_GHA`を、`scrape-scheduled.js`・`scrape-scheduled.yml`に追加する（コードは削除しない。展示の`SKIP_EXHIBITION_ON_GHA`と同じ方式）
+- [ ] **T4b-02-4**（`SKIP_RESULTS_ON_GHA`のコードは実装済み。既定はfalse。手順は[verification-runbook.md](./verification-runbook.md) §F） `live`にして3日並走する（二重書き込みは上書き型で無害）。GitHub側の結果取得を止めるリポジトリ変数`SKIP_RESULTS_ON_GHA`を、`scrape-scheduled.js`・`scrape-scheduled.yml`に追加する（コードは削除しない。展示の`SKIP_EXHIBITION_ON_GHA`と同じ方式）
 - [ ] **T4b-02-5** (ユーザー承認) `SKIP_RESULTS_ON_GHA=true`にして、切り替え後7日（土日を含む）の実測を行う。GitHub Actionsの1回の実行時間（379秒→約262秒の見込み）、キャンセル率を再測定する
 
 データ項目: `race_results`。
@@ -107,9 +109,9 @@
 
 ### T4b-05 Kファイル同期・結果のcatch-up（A6補助）: `race_results.actual_course_*`・`rank4〜6`
 
-- [ ] **T4b-05-1** Kファイル同期を、独立のジョブ（`api/cron/kfile-sync.js`、日次07:00・12:00 JST）へ切り出す。進入コース（`syncActualCourseFromKFile`）とrank4〜6（`syncRank456FromKFile`）が、同じ日のKファイルを別々にダウンロードしている重複（D4）を解消し、1回のダウンロードで両方を処理する。BOA-349の修正（変更のある行のみ書く）を維持する。`@kirinsaninc/lhats`（LZH展開）が関数内で動くか、Previewの手動リクエストで確認する（plan.md U15）
-- [ ] **T4b-05-2** `api/cron/result-catchup.js`（日次23:50 JST）: 当日`expired`になった`result`のスロットを再取得し、補填する。完了の定義Aを守るための後追い（Bの計測は、expiredの記録が残る）
-- [ ] **T4b-05-3** `shadow`→`live`→`SKIP_KFILE_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-results.js`から、Kファイル同期（`syncRecentActualCourse`・`syncRecentRank456`）の呼び出しを外す変数を追加する
+- [x] **T4b-05-1**（コード実装済み。LZH展開の動作確認（U15）は、`?probeDate=`の手動リクエスト。runbook §G） Kファイル同期を、独立のジョブ（`api/cron/kfile-sync.js`、日次07:00・12:00 JST）へ切り出す。進入コース（`syncActualCourseFromKFile`）とrank4〜6（`syncRank456FromKFile`）が、同じ日のKファイルを別々にダウンロードしている重複（D4）を解消し、1回のダウンロードで両方を処理する。BOA-349の修正（変更のある行のみ書く）を維持する。`@kirinsaninc/lhats`（LZH展開）が関数内で動くか、Previewの手動リクエストで確認する（plan.md U15）
+- [x] **T4b-05-2**（コード実装済み。cronは23:50と翌00:30の2回） `api/cron/result-catchup.js`（日次23:50 JST）: 当日`expired`になった`result`のスロットを再取得し、補填する。完了の定義Aを守るための後追い（Bの計測は、expiredの記録が残る）
+- [ ] **T4b-05-3**（`SKIP_KFILE_ON_GHA`のコードは実装済み。既定はfalse。手順はrunbook §G） `shadow`→`live`→`SKIP_KFILE_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-results.js`から、Kファイル同期（`syncRecentActualCourse`・`syncRecentRank456`）の呼び出しを外す変数を追加する
 
 データ項目: `race_results.actual_course_1〜6`・`rank4〜6`（Kファイル）。
 
@@ -191,7 +193,7 @@
 - [x] **T4b-11-1** `api/cron/race-notices.js`を共通ラッパへ（ジョブ単位のリース、同期の応答、DB障害を200にしない。G13）。`race_notices_health`の毎回のupsertは、変更のある行のみに（D9）
   - 実装: レジストリに`race_notices`（continuous、リース300秒）、`scripts/lib/raceNoticesJob.js`（ラッパへの接続。DB障害・全会場の取得失敗は500、shadowは取得・解析のみ）、`scrape-race-information.js`の`run`に`client`・`fetchPage`・`dryRun`・`strict`・`concurrency`・`shouldStop`を追加（オプション無しの従来の呼び出しは不変）、集計行は`diffRows`で変更のある行のみ（`last_checked_at`は比較から外す。**最終確認の時刻は`scrape_job_state.last_success_at`になる**）。会場は6並列。検証は`npm run verify:race-notices-job`
 - [x] **T4b-11-2** `vercel.json`のcronsに追加（10分間隔、`*/10 22-23,0-14 * * *`）。cron-job.orgの登録内容の確認（plan.md、job-inventory.md U1）と、(ユーザー)cron-job.orgのジョブの停止
-  - `vercel.json`のcronsに追加済み（`regions`・`functions`には触れていない）。`scrape_job_state`の`race_notices`が`off`（または行なし）の間は、Vercel Cronもcron-job.orgの呼び出しも、何もしない。**このため、マージ前に`live`の行を作らないと、現行の特記事項の取得が止まる**（[verification-runbook.md](./verification-runbook.md) G-1）。cron-job.orgの停止は、ユーザー作業（未実施）。cron-job.orgの登録内容の確認は、ユーザー作業（G-3）
+  - `vercel.json`のcronsに追加済み（`regions`・`functions`には触れていない）。`scrape_job_state`の`race_notices`が`off`（または行なし）の間は、Vercel Cronもcron-job.orgの呼び出しも、何もしない。**このため、マージ前に`live`の行を作らないと、現行の特記事項の取得が止まる**（[verification-runbook.md](./verification-runbook.md) K-1）。cron-job.orgの停止は、ユーザー作業（未実施）。cron-job.orgの登録内容の確認は、ユーザー作業（G-3）
 - [x] **T4b-11-3** `race_special_notes`が0件（G4）の判別: 通知のある日を、公式ページで確認し、パースの失敗か、通知が無いだけかを判定する（WS5。実装は、その結果に従う）
   - 結果（2026-09-20、公式ページへのリクエスト9回、逐次・3秒間隔、UA `BoatraceAIBot/1.0`、429/503なし）: **0件は「通知が無いだけ」で、パースの失敗ではない**。(1)通知のある既知の実例（2017-12-24 住之江 SG。フィクスチャの原本）: 生の表の行9件（事故・内規違反・減点5、モーター・ボート変更2、欠場・帰郷2）が、パーサーで9件とも解析された。(2)2026-09-20の6会場（桐生・多摩川（72周年記念）・尼崎・鳴門（6日目）・児島・唐津）: 3区分とも「現在、お知らせはありません」で、解析は0件（正しい）。(3)全レース内欠場（Kファイルの`K1`）があった日（2026-09-16 唐津、2026-09-15 平和島）も、通知なし（レース内の欠場は、この一覧に載らない）。本番の集計行83件（9/15〜9/20）は全て`had_success=true`・`last_reason`なしで、見出しの構造は毎回認識できている
   - **発見**: `race_special_notes`の一意索引`uq_race_special_notes_dedup (venue_code, race_date, category, detail_text)`のため、同じ日に同じ内容の別選手の通知（例: 待機行動違反・落水失格の各2名）が1件に潰れる（2017年の実例で、9件中2件が失われる。検証スクリプトで再現）。**別タスクとして起票推奨**（コードのみで直せる: `detail_text`に選手名・レース番号を含める。または一意索引に選手名を加えるDDL。表は0件のため、今なら安全）

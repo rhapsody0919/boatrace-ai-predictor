@@ -28,6 +28,10 @@ import { run as runExhibition } from "./scrape-exhibition-data.js";
 import { run as runResults } from "./scrape-results.js";
 import { mainRefresh } from "./generate-predictions.js";
 import { run as runPredictionOdds } from "./scrape-prediction-odds.js";
+import {
+  collectGhaRefreshRaceIds,
+  isOddsRefreshSkippedOnGha,
+} from "../lib/predictionRefresh.js";
 
 async function main() {
   console.log("🎯 スクレイピングオーケストレーター開始");
@@ -77,7 +81,10 @@ async function main() {
 
   // 3. 対象レースごとに必要な処理のみ実行
   let anyUpdated = false;
-  const updatedRaceIds = new Set();
+  // 予測リフレッシュの対象を、起点ごとに集める（SKIP_ODDS_REFRESH_ON_GHA でオッズ起点を外せるようにするため）
+  const infoRaceIds = new Set();
+  const oddsRaceIds = new Set();
+  const exhibitionRaceIds = new Set();
 
   // レース情報更新（発走60分前ウィンドウ）
   if (hasUpdateRaces) {
@@ -89,9 +96,7 @@ async function main() {
     );
     if (updated) {
       anyUpdated = true;
-      getRacesInWindow(schedule, 60).forEach((r) =>
-        updatedRaceIds.add(r.race_id),
-      );
+      getRacesInWindow(schedule, 60).forEach((r) => infoRaceIds.add(r.race_id));
       console.log(`  → レース情報更新: ${count}件`);
     }
   }
@@ -106,7 +111,7 @@ async function main() {
       anyUpdated = true;
       ODDS_WINDOWS.forEach((w) =>
         getRacesInWindow(schedule, w, 3).forEach((r) =>
-          updatedRaceIds.add(r.race_id),
+          oddsRaceIds.add(r.race_id),
         ),
       );
       console.log(`  → オッズ更新: ${count}件`);
@@ -128,7 +133,7 @@ async function main() {
       anyUpdated = true;
       [30, 15, 10].forEach((w) =>
         getRacesInWindow(schedule, w, 3).forEach((r) =>
-          updatedRaceIds.add(r.race_id),
+          exhibitionRaceIds.add(r.race_id),
         ),
       );
       console.log(`  → 展示データ更新: ${count}件`);
@@ -136,8 +141,19 @@ async function main() {
   }
 
   // 結果取得（発走後5分以上）
-  if (finishedRaces.length > 0) {
-    const { updated, count } = await runResults(schedule, date).catch((e) => {
+  // WS4b（T4b-02-4・T4b-05-3）: 結果取得はVercel Function(api/cron/result.js)、Kファイル同期は
+  // api/cron/kfile-sync.js へ移行する。切り替え後、GitHub Actions側の取得を、リポジトリ変数のトグルのみで止める
+  // （コードは削除せず、切り戻しも変数のトグルだけで完結。SKIP_EXHIBITION_ON_GHAと同じ方式）。
+  //   SKIP_RESULTS_ON_GHA=true  結果取得（と中止・順延の確定）を行わない。Kファイル同期は、下の変数で別に止める
+  //   SKIP_KFILE_ON_GHA=true    Kファイル同期（進入コース・rank4〜6）を行わない
+  // 既定（未設定・true以外）は、どちらも従来どおり実行する。
+  const skipResults = process.env.SKIP_RESULTS_ON_GHA === "true";
+  const skipKFile = process.env.SKIP_KFILE_ON_GHA === "true";
+  if (finishedRaces.length > 0 && !(skipResults && skipKFile)) {
+    const { updated, count } = await runResults(schedule, date, {
+      skipResults,
+      skipKFile,
+    }).catch((e) => {
       console.error("⚠️ 結果取得失敗:", e.message);
       return { updated: false, count: 0 };
     });
@@ -149,11 +165,32 @@ async function main() {
   }
 
   // 4. データが更新された場合のみ予測リフレッシュ
+  // 案1（BOA-353 T4b-03）: SKIP_ODDS_REFRESH_ON_GHA が "true" の間は、オッズ起点の再計算を外す
+  // （オッズは予測の入力に含まれない。展示・気象の変更を起点にした再計算は、Vercel の
+  // api/cron/exhibition.js が REFRESH_ON_VERCEL=true のときに行う。組み合わせの表は
+  // scripts/lib/predictionRefresh.js）。既定（未設定）は従来どおりオッズ起点を含める。
+  // 切り戻しはリポジトリ変数のトグルのみで完結させる（コード変更・redeployなし）
+  const skipOddsRefresh = isOddsRefreshSkippedOnGha();
+  const updatedRaceIds = collectGhaRefreshRaceIds({
+    infoRaceIds,
+    oddsRaceIds,
+    exhibitionRaceIds,
+    skipOddsRefresh,
+  });
+  if (skipOddsRefresh && oddsRaceIds.size > 0) {
+    console.log(
+      `\n⏭️ オッズ起点の予測リフレッシュを除外（SKIP_ODDS_REFRESH_ON_GHA=true。オッズ更新${oddsRaceIds.size}レース）`,
+    );
+  }
   if (anyUpdated && updatedRaceIds.size > 0) {
     console.log(`\n🤖 予測リフレッシュ対象: ${updatedRaceIds.size}レース`);
     await mainRefresh({
       isDryRun: false,
       specificRaceIds: [...updatedRaceIds],
+      // 案1の状態では、Vercel 側（upsert）と同じ書き込み方式にそろえる（削除→挿入と upsert が同じ
+      // レースで交差した場合に、削除→挿入側の挿入が一意制約で失敗し、予測が空になるのを避ける）。
+      // 既定（オッズ起点あり）は従来どおり削除→挿入
+      writeMode: skipOddsRefresh ? "upsert" : "replace",
     }).catch((e) => {
       console.error("⚠️ 予測リフレッシュ失敗:", e.message);
     });

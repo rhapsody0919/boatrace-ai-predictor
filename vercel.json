@@ -17,6 +17,26 @@
     {
       "path": "/api/cron/scrape-cleanup",
       "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/cron/result",
+      "schedule": "* 22-23,0-15 * * *"
+    },
+    {
+      "path": "/api/cron/kfile-sync",
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/cron/kfile-sync",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/result-catchup",
+      "schedule": "50 14 * * *"
+    },
+    {
+      "path": "/api/cron/result-catchup",
+      "schedule": "30 15 * * *"
     }
   ],
   "rewrites": [
