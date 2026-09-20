@@ -78,7 +78,12 @@ export function pickResultColumns(row) {
 
 /** race_start_timings の行の一覧から、対象の列だけを、艇番順に取り出す（艇番の重複があれば例外） */
 export function pickStartTimingColumns(rows) {
-  const sorted = [...(rows ?? [])].sort(
+  // STを読めなかった艇（欠場・出遅れ。マイグレーション077以降に書く行）は、旧実装では行が無かった。
+  // 077の適用前後・解析側とDB側で同じダイジェストになるよう、STのある行だけを比べる
+  const withTiming = (rows ?? []).filter(
+    (r) => r?.start_timing !== null && r?.start_timing !== undefined,
+  );
+  const sorted = [...withTiming].sort(
     (a, b) => Number(a.boat_number) - Number(b.boat_number),
   );
   const boats = sorted.map((r) => Number(r.boat_number));
