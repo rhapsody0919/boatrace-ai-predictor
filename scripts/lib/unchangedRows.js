@@ -74,6 +74,18 @@ export const NUMERIC_SCALES = {
   race_start_timings: {
     start_timing: 3,
   },
+  // K/Bファイル長期バックフィルのアーカイブ表（docs/db-migration/074_kb_archive_tables.sql）
+  kb_archive_boats: {
+    boat_2rate: 2,
+    exhibition_time: 2,
+    local_2rate: 2,
+    local_win_rate: 2,
+    motor_2rate: 2,
+    national_2rate: 2,
+    national_win_rate: 2,
+    race_seconds: 1,
+    start_timing: 2,
+  },
 };
 
 /**
@@ -387,6 +399,7 @@ export async function upsertChangedRows(
     onConflict,
     keyColumns,
     ignoreColumns = [],
+    chunkColumn = "race_id",
     label = table,
     batchSize = 1000,
     dryRun = false,
@@ -401,6 +414,7 @@ export async function upsertChangedRows(
     fallback,
   } = await filterUnchangedRows(client, table, incomingRows, {
     keyColumns,
+    chunkColumn,
     ignoreColumns: stampUpdatedAt
       ? [...new Set([...ignoreColumns, UPDATED_AT_COLUMN])]
       : ignoreColumns,
