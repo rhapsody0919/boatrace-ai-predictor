@@ -111,6 +111,20 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
 
+  // T4a-10 の疑似ジョブ: 取得先へアクセスせず、スロットを消化するだけ（重複配信・二重claim・リースの奪取・
+  // 期限計算の検証用。api/cron/scrape-pseudo.js）。Cronには登録しない（手動リクエストのみ）。検証後は削除してよい
+  pseudo: {
+    kind: "window",
+    offsets: [-60],
+    graceMin: 30,
+    retrySec: 10,
+    leaseSec: 20,
+    claimLimit: 40,
+    concurrency: 4,
+    maxDurationSec: 60,
+    hosts: [],
+  },
+
   // 監視・保守（plan.md §7・§3.9）。モードのゲートなし
   "scrape-monitor": {
     kind: "monitor",
