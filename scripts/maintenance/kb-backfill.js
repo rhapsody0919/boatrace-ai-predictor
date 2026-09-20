@@ -750,7 +750,7 @@ async function cmdLoad(opts) {
   }
   if (!opts.apply) {
     console.log(
-      "[DRY-RUN] DBには書き込みません。書き込むには --apply を付けます（DDL 072 の適用と、ユーザーの実行承認が前提）",
+      "[DRY-RUN] DBには書き込みません。書き込むには --apply を付けます（DDL 074 の適用と、ユーザーの実行承認が前提）",
     );
     return 0;
   }
@@ -763,7 +763,7 @@ async function cmdLoad(opts) {
     .limit(1);
   if (probe.error) {
     console.error(
-      `アーカイブ表を読めません（DDL 072 が未適用の可能性）: ${probe.error.message}`,
+      `アーカイブ表を読めません（DDL 074 が未適用の可能性）: ${probe.error.message}`,
     );
     return 1;
   }

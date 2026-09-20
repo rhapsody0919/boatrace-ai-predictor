@@ -74,7 +74,7 @@ export const NUMERIC_SCALES = {
   race_start_timings: {
     start_timing: 3,
   },
-  // K/Bファイル長期バックフィルのアーカイブ表（docs/db-migration/072_kb_archive_tables.sql）
+  // K/Bファイル長期バックフィルのアーカイブ表（docs/db-migration/074_kb_archive_tables.sql）
   kb_archive_boats: {
     boat_2rate: 2,
     exhibition_time: 2,
