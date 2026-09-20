@@ -332,7 +332,9 @@ const strictClient = () => ({
     ],
     ["venue_motor_stats", "2026-09-19T08:04:00", "2026-09-19", "遅延起動"],
     ["racer_news", "2026-09-20T01:10:00", "2026-09-19", "補足の起動は前日"],
-    ["racer_profiles", "2026-10-01T12:50:00", "2026-10-01", "月次の窓の終わり"],
+    ["racer_profiles", "2026-10-02T03:00:00", "2026-10-02", "月次の窓の始まり(UTC 18:00)"],
+    ["racer_profiles", "2026-10-02T05:50:00", "2026-10-02", "月次の窓の終わり(UTC 20:50)"],
+    ["racer_profiles", "2026-10-02T02:59:00", "2026-10-01", "指定時刻の前は前日"],
   ];
   for (const [job, at, expected, label] of cases) {
     const actual = resolveTargetDate(jst(at), SCRAPE_JOBS[job].targetTimeJst);
@@ -1560,7 +1562,7 @@ const summaryOf = ({
         attempts: 1627,
       }),
     );
-    const r1 = await runIt(store, sync, at("01T09:00:00"));
+    const r1 = await runIt(store, sync, at("02T03:00:00"));
     const row = store.state.get("racer_profiles");
     check(
       "選手プロフィール 1回目: 先頭(afterRacerId=null)から、同時4・上限300人・politeFetch(再試行は無効)で処理。cursor に最後の登録番号(4099)。対象日は処理済みにしない",
@@ -1571,13 +1573,13 @@ const summaryOf = ({
         sync.calls[0].deps.fetchRetries === 0 &&
         row.cursor.afterRacerId === 4099 &&
         row.cursor.done === false &&
-        row.cursor.targetDate === "2026-10-01" &&
+        row.cursor.targetDate === "2026-10-02" &&
         row.cursor.mode === "live" &&
         row.last_target_date === undefined &&
         r1.body.incomplete === true,
       show({ cursor: row.cursor, body: r1.body }),
     );
-    const r2 = await runIt(store, sync, at("01T09:10:00"));
+    const r2 = await runIt(store, sync, at("02T03:10:00"));
     check(
       "選手プロフィール 2回目(10分後): 前回の最後の登録番号(4099)より後から再開し、cursor が前進する(4321)。まだ処理済みにしない",
       r2.status === 200 &&
@@ -1587,33 +1589,33 @@ const summaryOf = ({
         row.last_target_date === undefined,
       show(row.cursor),
     );
-    const r3 = await runIt(store, sync, at("01T09:20:00"));
+    const r3 = await runIt(store, sync, at("02T03:20:00"));
     check(
       "選手プロフィール 最後のチャンク(残り0): 対象日を処理済みにする。cursor は done。失敗率が5%超なら last_report.alerts に通知(期限つき)",
       r3.status === 200 &&
         r3.body.done === true &&
-        row.last_target_date === "2026-10-01" &&
+        row.last_target_date === "2026-10-02" &&
         row.cursor.done === true &&
         row.last_report.alerts.length === 1 &&
         row.last_report.alerts[0].key === "season_fail_rate" &&
-        new Date(row.last_report.alerts[0].until) > at("01T09:20:00") &&
+        new Date(row.last_report.alerts[0].until) > at("02T03:20:00") &&
         new Date(row.last_report.alerts[0].until) < at("05T00:00:00"),
       show({ report: row.last_report, cursor: row.cursor }),
     );
-    const r4 = await runIt(store, sync, at("01T09:30:00"));
+    const r4 = await runIt(store, sync, at("02T03:30:00"));
     check(
-      "選手プロフィール: 処理済みの対象日の以降の起動(09:30〜12:50)は、何もしない(取得しない・sync を呼ばない)",
+      "選手プロフィール: 処理済みの対象日の以降の起動(03:30〜05:50)は、何もしない(取得しない・sync を呼ばない)",
       r4.body.skipped === "already_done" && sync.calls.length === 3,
       show(r4.body),
     );
     const sync2 = stubSync(
       summaryOf({ processed: 110, last: 1500, remaining: 900 }),
     );
-    await runIt(store, sync2, jst("2026-11-01T09:00:00"));
+    await runIt(store, sync2, jst("2026-11-02T03:00:00"));
     check(
       "選手プロフィール: 翌月(対象日が変わる)は、前月の cursor を引き継がず、先頭から",
       sync2.calls[0].options.afterRacerId === null &&
-        row.cursor.targetDate === "2026-11-01" &&
+        row.cursor.targetDate === "2026-11-02" &&
         row.cursor.afterRacerId === 1500,
       show(row.cursor),
     );
@@ -1623,7 +1625,7 @@ const summaryOf = ({
   {
     const store = newStore({
       cursor: {
-        targetDate: "2026-10-01",
+        targetDate: "2026-10-02",
         mode: "shadow",
         afterRacerId: 4500,
         done: false,
@@ -1631,7 +1633,7 @@ const summaryOf = ({
       },
     });
     const sync = stubSync(summaryOf());
-    await runIt(store, sync, at("01T09:00:00"));
+    await runIt(store, sync, at("02T03:00:00"));
     check(
       "選手プロフィール: shadow の cursor は、live に引き継がない(先頭から処理する)",
       sync.calls[0].options.afterRacerId === null &&
@@ -1645,10 +1647,10 @@ const summaryOf = ({
     const sync = stubSync(
       summaryOf({ processed: 300, last: 5000, remaining: 0 }),
     );
-    await runIt(store, sync, at("01T09:00:00"));
+    await runIt(store, sync, at("02T03:00:00"));
     const row = store.state.get("racer_profiles");
     const before = sync.calls.length;
-    await runIt(store, sync, at("01T09:10:00"));
+    await runIt(store, sync, at("02T03:10:00"));
     check(
       "選手プロフィール shadow: dryRun(書かない)で処理・cursor.mode=shadow・完了後の起動は sync を呼ばない・対象日を処理済みにしない",
       sync.calls[0].options.dryRun === true &&
@@ -1668,14 +1670,14 @@ const summaryOf = ({
     ["新規選手のプロフィール保存のDBエラー", summaryOf({ saveErrors: 2 })],
   ]) {
     const prior = {
-      targetDate: "2026-10-01",
+      targetDate: "2026-10-02",
       mode: "live",
       afterRacerId: 4099,
       done: false,
       stats: {},
     };
     const store = newStore({ cursor: prior });
-    const res = await runIt(store, stubSync(summary), at("01T09:10:00"));
+    const res = await runIt(store, stubSync(summary), at("02T03:10:00"));
     const row = store.state.get("racer_profiles");
     check(
       `選手プロフィール: ${label}は、エラー(500)。cursor は進めず、次の起動が同じチャンクをやり直す`,
@@ -1691,7 +1693,7 @@ const summaryOf = ({
     const res = await runIt(
       store,
       stubSync(summaryOf({ processed: 110, fail: 6, remaining: 1500 })),
-      at("01T09:00:00"),
+      at("02T03:00:00"),
     );
     check(
       "選手プロフィール: 散発的な失敗(6/110)は、進捗を止めない(200・cursor 前進)",
@@ -1713,7 +1715,7 @@ const summaryOf = ({
           remaining: 1000,
         }),
       ),
-      at("01T09:00:00"),
+      at("02T03:00:00"),
     );
     check(
       "選手プロフィール: 期別成績を300人取得して1件も解析できなかった(0件)は、エラー(500)",
@@ -1721,7 +1723,7 @@ const summaryOf = ({
       show(res.body),
     );
     const prior = {
-      targetDate: "2026-10-01",
+      targetDate: "2026-10-02",
       mode: "live",
       afterRacerId: 5200,
       done: false,
@@ -1739,7 +1741,7 @@ const summaryOf = ({
           remaining: 0,
         }),
       ),
-      at("01T09:30:00"),
+      at("02T03:30:00"),
     );
     check(
       "選手プロフィール: 最後の数人(3人)が失敗しても、母数が小さいため0件エラーにせず、サイクルを完了する",
@@ -1754,7 +1756,7 @@ const summaryOf = ({
     const res = await runIt(
       store,
       stubSync(summaryOf({ processed: 0, targetCount: 0, remaining: 0 })),
-      at("01T09:00:00"),
+      at("02T03:00:00"),
     );
     check(
       "選手プロフィール: 最初のチャンクで対象選手が0人は、エラー(0件を成功にしない)",
@@ -1763,7 +1765,7 @@ const summaryOf = ({
     );
     const store2 = newStore({
       cursor: {
-        targetDate: "2026-10-01",
+        targetDate: "2026-10-02",
         mode: "live",
         afterRacerId: 5210,
         done: false,
@@ -1773,12 +1775,12 @@ const summaryOf = ({
     const res2 = await runIt(
       store2,
       stubSync(summaryOf({ processed: 0, targetCount: 0, remaining: 0 })),
-      at("01T09:40:00"),
+      at("02T03:40:00"),
     );
     check(
       "選手プロフィール: 再開後に対象が0人(前回までに全員処理済み)は、完了として対象日を処理済みにする",
       res2.status === 200 &&
-        store2.state.get("racer_profiles").last_target_date === "2026-10-01",
+        store2.state.get("racer_profiles").last_target_date === "2026-10-02",
       show(res2.body),
     );
   }
@@ -1786,11 +1788,11 @@ const summaryOf = ({
   {
     const store = newStore();
     const sync = stubSync(summaryOf({ processed: 5, remaining: 1600 }));
-    await runIt(store, sync, at("01T09:00:00"), { query: { chunk: "5" } });
+    await runIt(store, sync, at("02T03:00:00"), { query: { chunk: "5" } });
     const bad = await runIt(
       newStore(),
       stubSync(summaryOf()),
-      at("01T09:00:00"),
+      at("02T03:00:00"),
       {
         query: { chunk: "abc" },
       },
@@ -2065,23 +2067,23 @@ const summaryOf = ({
       overdue("point_rank", "2026-09-19", "2026-09-20T01:10:00").length === 0,
   );
   check(
-    "監視: 月次ジョブ(選手プロフィール)は、起動する日(毎月1日、5月・11月は8日・15日も)の指定時刻の3時間後まで未処理なら通知する",
-    overdue("racer_profiles", "2026-09-01", "2026-10-01T10:00:00").length ===
+    "監視: 月次ジョブ(選手プロフィール)は、起動する日(JST 毎月2日、5月・11月は9日・16日も)の指定時刻(03:00)の3時間後(06:00)まで未処理なら通知する",
+    overdue("racer_profiles", "2026-09-02", "2026-10-02T04:00:00").length ===
       0 &&
-      overdue("racer_profiles", "2026-09-01", "2026-10-01T12:30:00").length ===
+      overdue("racer_profiles", "2026-09-02", "2026-10-02T06:10:00").length ===
         1 &&
-      overdue("racer_profiles", "2026-04-01", "2026-05-08T13:00:00").length ===
+      overdue("racer_profiles", "2026-04-02", "2026-05-09T07:00:00").length ===
         1 &&
-      overdue("racer_profiles", "2026-10-01", "2026-10-01T13:00:00").length ===
+      overdue("racer_profiles", "2026-10-02", "2026-10-02T07:00:00").length ===
         0,
   );
   check(
-    "監視: 月次ジョブを、起動しない日(毎月2日以降・6月の8日等)に、日次の未処理として誤報しない",
-    overdue("racer_profiles", "2026-09-01", "2026-09-20T15:00:00").length ===
+    "監視: 月次ジョブを、起動しない日(毎月3日以降・6月の9日等)に、日次の未処理として誤報しない",
+    overdue("racer_profiles", "2026-09-02", "2026-09-20T15:00:00").length ===
       0 &&
-      overdue("racer_profiles", "2026-05-01", "2026-06-08T13:00:00").length ===
+      overdue("racer_profiles", "2026-05-02", "2026-06-09T07:00:00").length ===
         0 &&
-      overdue("racer_profiles", null, "2026-09-05T13:00:00").length === 0,
+      overdue("racer_profiles", null, "2026-09-05T07:00:00").length === 0,
   );
   const reportAlerts = (row, when = "2026-09-19T23:00:00") =>
     evaluateJobStates([{ consecutive_failures: 0, ...row }], jst(when)).filter(
@@ -2159,11 +2161,12 @@ const summaryOf = ({
   check(
     "レジストリ: isScheduledDate（runDaysOfMonth）。毎日のジョブは常に true。レジストリ全体が検査を通る",
     isScheduledDate(SCRAPE_JOBS.point_rank, "2026-09-20") === true &&
-      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-09-01") === true &&
-      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-09-08") === false &&
-      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-05-08") === true &&
-      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-11-15") === true &&
-      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-06-15") === false &&
+      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-09-02") === true &&
+      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-09-01") === false &&
+      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-09-09") === false &&
+      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-05-09") === true &&
+      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-11-16") === true &&
+      isScheduledDate(SCRAPE_JOBS.racer_profiles, "2026-06-16") === false &&
       same(validateRegistry(), []),
     show(validateRegistry()),
   );
@@ -2232,7 +2235,7 @@ const summaryOf = ({
     [
       "racer_profiles",
       "racer-profiles",
-      ["*/10 0-3 1 * *", "*/10 0-3 8,15 5,11 *"],
+      ["*/10 18-20 1 * *", "*/10 18-20 8,15 5,11 *"],
       null,
       "SKIP_RACER_SEASON_ON_GHA",
       "scrape-racer-season-stats.yml",
@@ -2297,26 +2300,64 @@ const summaryOf = ({
         !new RegExp(`^\\s*${skipVar}:`, "m").test(yml),
     );
   }
-  check(
-    "配線 racer_profiles: cron の起動日(毎月1日・5月11月の8日15日)が、レジストリの runDaysOfMonth と一致する",
-    same(
-      cronsFor("/api/cron/racer-profiles").map((s) =>
-        s.split(" ").slice(2).join(" "),
+  // 選手プロフィール（月次）: 従来のGitHub Actions（scrape-racer-season-stats.yml）と同じ夜間・同じ日付の式。
+  // UTC 18:00〜20:50 は JST の翌日 03:00〜05:50（UTC基準の1日・8日・15日は、JST の2日・9日・16日）
+  {
+    const crons = cronsFor("/api/cron/racer-profiles");
+    const yml = read(".github/workflows/scrape-racer-season-stats.yml");
+    const ghDays = [...yml.matchAll(/cron: '0 18 (\S+) (\S+) \*'/g)].map(
+      (m) => `${m[1]} ${m[2]}`,
+    );
+    const vercelDays = crons.map((c) => c.split(" ").slice(2, 4).join(" "));
+    check(
+      "配線 racer_profiles: cron の日付(UTC基準の1日、5月・11月の8日・15日)が、GitHub側 scrape-racer-season-stats.yml の cron 式と同じ。時刻は UTC 18〜20時の10分刻み",
+      same(vercelDays, ghDays) &&
+        same(vercelDays, ["1 *", "8,15 5,11"]) &&
+        crons.every((c) => c.startsWith("*/10 18-20 ")),
+      show({ vercelDays, ghDays }),
+    );
+    const slots = [18, 19, 20].flatMap((h) =>
+      [0, 10, 20, 30, 40, 50].map((m) => new Date(Date.UTC(2026, 9, 1, h, m))),
+    );
+    const jstText = slots.map((d) => {
+      const j = new Date(d.getTime() + 9 * 3600 * 1000);
+      return `${j.toISOString().slice(5, 10)} ${j.toISOString().slice(11, 16)}`;
+    });
+    const targets = new Set(
+      slots.map((d) =>
+        resolveTargetDate(d, SCRAPE_JOBS.racer_profiles.targetTimeJst),
       ),
-      ["1 * *", "8,15 5,11 *"],
-    ) &&
-      same(SCRAPE_JOBS.racer_profiles.runDaysOfMonth, {
-        default: [1],
-        5: [1, 8, 15],
-        11: [1, 8, 15],
-      }),
-  );
-  check(
-    "配線 racer_profiles: 10分刻み・UTC 0〜3時＝JST 09:00〜12:50 の起動を、日をまたがず、指定時刻(09:00)以降に収める",
-    cronsFor("/api/cron/racer-profiles").every((s) =>
-      s.startsWith("*/10 0-3 "),
-    ) && SCRAPE_JOBS.racer_profiles.targetTimeJst === "09:00",
-  );
+    );
+    const lastEnd =
+      slots.at(-1).getTime() +
+      SCRAPE_JOBS.racer_profiles.maxDurationSec * 1000 +
+      9 * 3600 * 1000;
+    const lastEndJst = new Date(lastEnd).toISOString().slice(11, 16);
+    check(
+      "配線 racer_profiles: UTC 18:00〜20:50 ＝ JST 翌日 03:00〜05:50（夜間）。最初の起動が指定時刻(03:00)ちょうどで、全ての起動が同じ対象日(10-02)に解決され、最後のチャンクの終了(05:55)が 07:00 JST 前",
+      jstText[0] === "10-02 03:00" &&
+        jstText.at(-1) === "10-02 05:50" &&
+        SCRAPE_JOBS.racer_profiles.targetTimeJst === "03:00" &&
+        same([...targets], ["2026-10-02"]) &&
+        lastEndJst < "07:00",
+      show({ first: jstText[0], last: jstText.at(-1), targets: [...targets], lastEndJst }),
+    );
+    // 起動日: UTC 基準の日付に、JST では +1日（UTC 18時台は JST の翌日）。レジストリの runDaysOfMonth は JST の日で持つ
+    const [first, second] = vercelDays.map((d) => d.split(" "));
+    const utcDefault = first[0].split(",").map(Number);
+    const utcBoost = second[0].split(",").map(Number);
+    const boostMonths = second[1].split(",").map(Number);
+    const expected = { default: utcDefault.map((d) => d + 1) };
+    for (const m of boostMonths) {
+      expected[m] = [...utcDefault, ...utcBoost].map((d) => d + 1);
+    }
+    check(
+      "配線 racer_profiles: レジストリの runDaysOfMonth は JST の日（cron の UTC 日付+1。毎月2日、5月・11月は9日・16日も）",
+      same(SCRAPE_JOBS.racer_profiles.runDaysOfMonth, expected) &&
+        same(expected, { default: [2], 5: [2, 9, 16], 11: [2, 9, 16] }),
+      show({ registry: SCRAPE_JOBS.racer_profiles.runDaysOfMonth, expected }),
+    );
+  }
 
   // git push・fs・child_process に依存しない（Vercel Functionで動く）
   const strip = (text) =>

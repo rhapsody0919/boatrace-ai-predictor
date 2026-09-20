@@ -133,21 +133,25 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 120,
     hosts: ["boatrace.jp"],
   },
-  // B6 選手プロフィール・期別成績（月次・チャンク）。毎月1日09:00指定（5月・11月は8日・15日も。cron: */10 09:00〜12:59 JST）。
+  // B6 選手プロフィール・期別成績（月次・チャンク）。JST 03:00指定（従来のGitHub Actionsと同じ夜間）。cron は UTC 18:00〜20:50 の
+  // 10分間隔で、UTC 基準の毎月1日（5月・11月は8日・15日も。scrape-racer-season-stats.yml の cron 式と同じ）＝JST の翌日
+  // （毎月2日、5月・11月は9日・16日も）03:00〜05:50。開始時に選手一覧・直近の出走を読むDB負荷を、開催時間帯（9:00〜21:00 JST）から
+  // 避けるため。最後のチャンクの終了は 05:55 頃で、07:00 JST 前に完了する。
   // 約1,630人を、1回の呼び出しで、時間の許す限り（最大300人）処理し、登録番号の昇順の位置を scrape_job_state.cursor に保存して
   // 次の起動で再開する。1ページ約8〜10秒（2026-09-20の実測。racersearch/season も同じ）のため、同時4で1回あたり約110人
-  // （約15回、約2.5時間。窓は4時間）。maxDuration は300秒（設計は800秒だが、Fluid Compute の有効化が未確認（plan.md U1）で、
+  // （約15回、約2.5時間。窓は3時間・18回の起動）。maxDuration は300秒（設計は800秒だが、Fluid Compute の有効化が未確認（plan.md U1）で、
   // 無効なプロジェクトに800を指定するとビルドが失敗するため。確認できたら800に上げる）。リースは maxDuration と同じで、cron の
   // 間隔（600秒）より短い。
   // 実装: scripts/lib/racerProfilesJob.js（T4b-16）
   racer_profiles: {
     kind: "daily",
-    targetTimeJst: "09:00",
+    targetTimeJst: "03:00",
     leaseSec: 300,
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
-    // 起動する日（JST の日）。monitor が、起動しない日に「日次が未処理」と誤報しないために使う
-    runDaysOfMonth: { default: [1], 5: [1, 8, 15], 11: [1, 8, 15] },
+    // 起動する日（JST の日）。UTC 基準の1日（5月・11月は8日・15日も）の 18:00〜20:50 UTC は、JST の翌日 03:00〜05:50 のため、
+    // JST では2日（5月・11月は9日・16日も）。monitor が、起動しない日に「日次が未処理」と誤報しないために使う
+    runDaysOfMonth: { default: [2], 5: [2, 9, 16], 11: [2, 9, 16] },
   },
 
   // A5 レース特記事項（race_special_notes）。10分ごと（JST 07:00〜23:59）に、開催会場のページを巡回する。

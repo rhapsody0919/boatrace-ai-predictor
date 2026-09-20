@@ -76,11 +76,11 @@
     },
     {
       "path": "/api/cron/racer-profiles",
-      "schedule": "*/10 0-3 1 * *"
+      "schedule": "*/10 18-20 1 * *"
     },
     {
       "path": "/api/cron/racer-profiles",
-      "schedule": "*/10 0-3 8,15 5,11 *"
+      "schedule": "*/10 18-20 8,15 5,11 *"
     }
   ],
   "functions": {

@@ -475,7 +475,7 @@ UPDATE scrape_job_state SET mode = 'live' WHERE job = 'race_notices';      -- �
 ### L-0. 共通の前提・順序
 
 - **マージ直後は、全ジョブが`off`（行なし）で、何も取得せず何も書かない**（本番の挙動は変わらない）。最初のCron起動で、`scrape_job_state`に`off`の行が作られる。
-- **1ジョブずつ進める**（plan.md §4.6 (h)）。同時に2つ以上のジョブを並走させない。順序の推奨: 得点率 → モーター成績 → 進入コース別（L-6の要判断の後）→ 選手ニュース（080適用後）→ 選手プロフィール（月次のため、10/1の前に手動確認）。
+- **1ジョブずつ進める**（plan.md §4.6 (h)）。同時に2つ以上のジョブを並走させない。順序の推奨: 得点率 → モーター成績 → 進入コース別（L-6の要判断の後）→ 選手ニュース（080適用後）→ 選手プロフィール（月次のため、次の起動（JST 10/2 03:00）の前に手動確認）。
 - 日次ジョブの`shadow`は、対象日を処理済みにしないため、**指定時刻と補足の起動のたびに（1日2〜3回）取得する**。shadowの取得先への追加リクエスト（1日あたり）: 得点率 約45ページ（開催約15会場×3回、boatrace.jp）／進入コース 最大約360ページ（10会場×12レース×3回。各会場サイトは1日に最大36リクエスト、逐次・300ms間隔）／モーター成績 約44ページ（22会場×2回。各ドメイン2リクエスト）／選手ニュース 4ページ。shadowは**1日で十分**（次の日に`live`へ）。
 - 共通の確認（読み取り。値は出力しない）:
   ```sql
@@ -577,7 +577,7 @@ SELECT id, status, reason, detected_at FROM racer_news_pending ORDER BY detected
 
 ### L-5. 選手プロフィール・期別成績（`racer_profiles`、T4b-16）
 
-`api/cron/racer-profiles.js`（毎月1日、5月・11月は8日・15日も。09:00〜12:50 JST、10分間隔）。約1,630人を、1回（300秒）あたり約110人ずつ、登録番号の昇順に処理する（**同時4・1ページ約8〜10秒。約15回、約2.5時間**）。位置は`scrape_job_state.cursor`（`afterRacerId`＝最後に処理した登録番号）。**月次のため、次の月次（2026-10-01）の前に、手動リクエストで確認する**。
+`api/cron/racer-profiles.js`（**夜間**。従来のGitHub Actions（`scrape-racer-season-stats.yml`）と同じ日付の式。UTC基準の毎月1日、5月・11月は8日・15日も、UTC 18:00〜20:50の10分間隔＝**JSTでは毎月2日、5月・11月は9日・16日も、03:00〜05:50**。開催時間帯（9:00〜21:00 JST）を避け、開始時に選手一覧・直近の出走を読むDB負荷を夜間に寄せる。最後のチャンクの終了は05:55頃で、07:00 JST前に完了する）。約1,630人を、1回（300秒）あたり約110人ずつ、登録番号の昇順に処理する（**同時4・1ページ約8〜10秒。約15回、約2.5時間**）。位置は`scrape_job_state.cursor`（`afterRacerId`＝最後に処理した登録番号）。**月次のため、次の月次（UTC 2026-10-01 18:00＝JST 10/2 03:00）の前に、手動リクエストで確認する**。
 
 **手動の動作確認（少数）**: `mode`を`shadow`にして、1回の処理人数を絞る（書き込まない。取得先へ、人数×最大2リクエスト）:
 
@@ -587,7 +587,7 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" "https://www.boat-ai.jp/api/cron
 
 （`$CRON_SECRET`は値を出力・記録しない。）期待: `success: true`・`processed: 5`・`remaining`が約1,620・`afterRacerId`が5人目の登録番号。続けて同じリクエストを繰り返すと、`afterRacerId`が前進する。`last_report.chunk.durationSeconds`が、5人のぶんの実測（**U9: 1人あたりの所要時間の実測。同時4・politeFetch込み**）。確認後、`cursor`を消す（`UPDATE scrape_job_state SET cursor = NULL WHERE job = 'racer_profiles';`）か、翌月の対象日になれば、自動で先頭から始まる。
 
-**live（10/1）**: 09:00の起動から、10分ごとに続きを処理する。成功基準:
+**live（JST 10/2）**: 03:00の起動から、10分ごとに続きを処理する（`last_target_date`・`cursor.targetDate`は、JSTの日付＝`2026-10-02`）。成功基準:
 
 ```sql
 SELECT last_target_date, cursor->>'afterRacerId' AS after_racer_id, cursor->>'done' AS done,
@@ -598,12 +598,12 @@ SELECT count(*) FILTER (WHERE ability_index IS NOT NULL) AS with_ability, count(
        max(official_updated_at) AS last_official_updated FROM racer_profiles;
 ```
 
-- 12:50までに`cursor.done`が`true`になり、`last_target_date`が`2026-10-01`になる（間に合わなければ、`scrape-monitor`が12:00に`daily_overdue`を通知する。その場合は、`?chunk=`でなく、`mode`を維持したまま、手動で数回リクエストして続きを進める）
+- 05:50の最後の起動までに`cursor.done`が`true`になり、`last_target_date`が`2026-10-02`になる（間に合わなければ、`scrape-monitor`が06:00に`daily_overdue`を通知する。窓は3時間（18回の起動）で、必要な約15回に対し余裕は3回。その場合は、`?chunk=`でなく、`mode`を維持したまま、手動で数回リクエストして続きを進める）
 - `stats.seasonFailed / stats.seasonTargets`が5%以内（超えると、サイクルの完了時に`last_report.alerts`で通知される）
 - 連続20件の失敗（サイトの停止等）は、`error`（500）で、`cursor`を進めない。`consecutive_failures`が3以上で、`scrape-monitor`が通知する
 - 期別成績が変わっていない選手は書かない（`stats.seasonUnchanged`）。2回目以降の月は、大半が`unchanged`になる
 
-**GitHub側の停止**: `SKIP_RACER_SEASON_ON_GHA=true`（ワークフローは03:00 JST起動）。停止後の最初の月次（11/1と、期の切り替え直後の11/8・11/15）で、Vercelのみで、全選手が処理される（`ability_index`・`official_updated_at`）ことを確認する。
+**GitHub側の停止**: `SKIP_RACER_SEASON_ON_GHA=true`（ワークフローも同じ日の03:00 JST起動）。停止後の最初の月次（JST 11/2と、期の切り替え直後の11/9・11/16）で、Vercelのみで、全選手が処理される（`ability_index`・`official_updated_at`）ことを確認する。
 
 ロールバック: L-1と同じ順序。GitHub側の再開後は、Vercelを`off`（同じ選手を二重に取得しない）。
 
@@ -619,9 +619,9 @@ SELECT count(*) FILTER (WHERE ability_index IS NOT NULL) AS with_ability, count(
 
 **T4b-14-1（モーター成績の負荷）**: 現状（GitHub Actions）は、22会場＋宮島のPDFを、待機なしで逐次に取得する（実測: 2026-09-19、取得ステップ全体で29秒）。各会場は別ドメインのため、**同一ホストへのリクエストは1日1〜2件（宮島のみ、一覧＋PDFの2件）**で、待機を置く理由が無い。Vercelでは、同時4会場に上限を設け、politeFetch（15秒タイムアウト・429/503のバックオフ・会場サイトごとのブレーカー）を通す。合計は1日あたり約24〜48リクエスト（補足の起動で失敗した会場のみ再取得）。追加した待機は無い（会場間の待機は、別ドメインのため効果が無い）。
 
-**T4b-16（選手プロフィールの実行時間・maxDuration）**: boatrace.jpの応答は、racersearch/seasonも1件約8.6〜10.1秒（2026-09-20、2件の実測。他のページと同じ）。逐次だと1,627人で約4.3時間になるため、同時4にした。設計（plan.md §4.4）は`maxDuration`800秒・約300人/回だったが、**Fluid Computeの有効化が未確認（plan.md U1）のため、300秒にした**（無効なプロジェクトで800を指定すると、ビルドが失敗し、全てのデプロイが止まる）。Fluid Computeを確認できたら、`api/cron/racer-profiles.js`・レジストリの`racer_profiles`を800に上げれば、回数が約1/3になる。**B6の実行時間帯（09:00〜12:50 JST）は、GitHub側（03:00 JST、夜間）と違い、開催時間帯**（設計どおり。設計判断の範囲）。同時4（約0.4リクエスト/秒）とチャンクごとのDB読み取り（`racer_profiles`2ページ＋`race_entries`約34ページ）が、開催時間帯のオッズ・結果の取得と重なる。負荷が問題なら、cronを夜間（例: `*/10 18-21 1 * *`、JST 03:00〜06:50）に変え、`targetTimeJst`も合わせる。
+**T4b-16（選手プロフィールの実行時間・maxDuration）**: boatrace.jpの応答は、racersearch/seasonも1件約8.6〜10.1秒（2026-09-20、2件の実測。他のページと同じ）。逐次だと1,627人で約4.3時間になるため、同時4にした。設計（plan.md §4.4）は`maxDuration`800秒・約300人/回だったが、**Fluid Computeの有効化が未確認（plan.md U1）のため、300秒にした**（無効なプロジェクトで800を指定すると、ビルドが失敗し、全てのデプロイが止まる）。Fluid Computeを確認できたら、`api/cron/racer-profiles.js`・レジストリの`racer_profiles`を800に上げれば、回数が約1/3になる。**B6の実行時間帯は夜間（UTC 18:00〜20:50＝JST 03:00〜05:50）**（親の指示で、当初案の09:00〜12:50 JSTから変更）。チャンクごとのDB読み取り（`racer_profiles`2ページ＋`race_entries`約34ページ）と同時4の取得（約0.4リクエスト/秒）を、開催時間帯（9:00〜21:00 JST）のオッズ・結果の取得と重ねない。日付は、UTC基準の式（GitHub側と同じ）のため、JSTでは翌日（2日・9日・16日）になり、`targetTimeJst`は`03:00`、`runDaysOfMonth`はJSTの日で持つ。
 
 **その他の要判断**:
 1. 進入コース別成績を、取得し続けるか（上記）
 2. 080の適用（`racer_news_pending`。RLS有効・anonの権限なし。ユーザーの承認後）
-3. 選手プロフィールの`maxDuration`を800にするか（Fluid Computeの確認）と、実行時間帯
+3. 選手プロフィールの`maxDuration`を800にするか（Fluid Computeの確認。800にすれば、窓（3時間）に対する余裕が増える）

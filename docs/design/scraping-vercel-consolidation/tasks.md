@@ -299,7 +299,7 @@
 
 ### T4b-16 選手プロフィール・期別成績（B6）: `racer_profiles`
 
-- [x] **T4b-16-1**（コード実装済み。`scripts/lib/racerProfilesJob.js`・`api/cron/racer-profiles.js`・`racerProfileSync.js`にafterRacerId・同時取得・ソフトデッドラインを追加（CLIの既定挙動は不変）。**`maxDuration`は300秒**（設計の800秒はFluid Compute未確認のため見送り。runbook §L-5・§L-6）。切り替えはrunbook §L-5） `scrape-racer-profiles.js`（`scripts/maintenance/`）を、`api/cron/racer-profiles.js`へ。1,627人を300人程度のチャンクで処理し、位置を`cursor`に保存して再開可能にする（`*/10 0-3 1 * *`、`*/10 0-3 8,15 5,11 *`）。`profile-scrape-report.json`のgit pushを`last_report`へ。取得ロジックは`scripts/lib/racerProfileSync.js`を再利用する
+- [x] **T4b-16-1**（コード実装済み。`scripts/lib/racerProfilesJob.js`・`api/cron/racer-profiles.js`・`racerProfileSync.js`にafterRacerId・同時取得・ソフトデッドラインを追加（CLIの既定挙動は不変）。**`maxDuration`は300秒**（設計の800秒はFluid Compute未確認のため見送り。runbook §L-5・§L-6）。切り替えはrunbook §L-5） `scrape-racer-profiles.js`（`scripts/maintenance/`）を、`api/cron/racer-profiles.js`へ。1,627人を300人程度のチャンクで処理し、位置を`cursor`に保存して再開可能にする（`*/10 18-20 1 * *`、`*/10 18-20 8,15 5,11 *`。**夜間**: UTC 18:00〜20:50＝JST 03:00〜05:50。日付は従来のGitHub Actionsと同じUTC基準の式で、JSTでは2日・9日・16日）。`profile-scrape-report.json`のgit pushを`last_report`へ。取得ロジックは`scripts/lib/racerProfileSync.js`を再利用する
 - [ ] **T4b-16-2**（2026-09-20時点の実測: `ability_index`が非NULLの選手は1,592/1,628人。初回実行は済んでいる。実行時間の実測は、Vercelの`?chunk=N`の手動確認とlive初回で行う。runbook §L-5） 初回実行（`ability_index`が0/1,627件）は、WS5で手動実行する（少数のdry-runから段階的に。PR #721の修正後）。実行時間の実測（plan.md、job-inventory.md U9）を、チャンクの人数の調整に使う
 - [ ] **T4b-16-3**（`SKIP_RACER_SEASON_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-5） `live`→`SKIP_RACER_SEASON_ON_GHA=true`
 
