@@ -123,6 +123,27 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
 
+  // A6補助 Kファイル同期（進入コース・rank4〜6。plan.md §4.1・T4b-05-1）。07:00・12:00 JST の2回起動し、12:00は
+  // 07:00の実行が完了しなかった（Kファイル未公開・失敗）場合の補足（完了済みなら、last_target_date で何もしない）。
+  // 対象は当日を除く直近4日。Kファイルは別ドメイン（www1.mbrace.or.jp）
+  kfile_sync: {
+    kind: "daily",
+    targetTimeJst: "07:00",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    hosts: ["mbrace.or.jp"],
+  },
+  // A6補助 結果のcatch-up（T4b-05-2）。当日 expired になった結果のスロットの再取得・的中フラグの補完（日次）・
+  // 中止・順延の確定の取りこぼしの補填。23:50 JST に起動し、その時点で結果のスロットが未完了（最終レースは
+  // 発走+90分が翌00:15）なら、対象日を処理済みにせず、00:30 JST の補足の起動が、同じ対象日をもう一度処理する
+  result_catchup: {
+    kind: "daily",
+    targetTimeJst: "23:50",
+    leaseSec: 600,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
+
   // T4a-10 の疑似ジョブ: 取得先へアクセスせず、スロットを消化するだけ（重複配信・二重claim・リースの奪取・
   // 期限計算の検証用。api/cron/scrape-pseudo.js）。Cronには登録しない（手動リクエストのみ）。検証後は削除してよい
   pseudo: {

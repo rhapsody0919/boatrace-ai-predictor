@@ -87,10 +87,10 @@
 
 ### T4b-02 結果取得（A6）: `race_results`・`race_start_timings`
 
-- [ ] **T4b-02-1** `scrape-results.js`に、レース単位の入口を追加する（例: `runForRaces(races, { date })`）。既存の`run(schedule, date)`は残す（二重実装しない）。的中フラグの補完（`fixMissingHitFlags`）は、完了したレースのみを対象にする（直近10日のスキャンを毎回やめ、日次に1回へ）。結果の完了判定（`payout_win`・`winning_technique`）は現行と同じ
-- [ ] **T4b-02-2** `api/cron/result.js`: 共通ラッパ・レジストリの`result`定義（`+5`分から`+90`分、再試行300秒、リース180秒、40件×4並列）で、スロットを消化する。`+90`分での未完了は、既存の中止・順延の確定処理（`confirmOverdueCancellations`）へ
+- [x] **T4b-02-1**（コード実装済み。`runForRaces`、`fixMissingHitFlags`は日次の`result-catchup`へ） `scrape-results.js`に、レース単位の入口を追加する（例: `runForRaces(races, { date })`）。既存の`run(schedule, date)`は残す（二重実装しない）。的中フラグの補完（`fixMissingHitFlags`）は、完了したレースのみを対象にする（直近10日のスキャンを毎回やめ、日次に1回へ）。結果の完了判定（`payout_win`・`winning_technique`）は現行と同じ
+- [x] **T4b-02-2**（コード実装済み。cron窓は翌00:59まで延長、中止・順延の確定は毎分の`onTick`。マージ後も`mode`が`off`の間は何もしない） `api/cron/result.js`: 共通ラッパ・レジストリの`result`定義（`+5`分から`+90`分、再試行300秒、リース180秒、40件×4並列）で、スロットを消化する。`+90`分での未完了は、既存の中止・順延の確定処理（`confirmOverdueCancellations`）へ
 - [ ] **T4b-02-3** `scrape_job_state`に`result`を`shadow`で登録する（DBの更新。ユーザーの承認）。`shadow`で3日（土日のいずれか1日を含む）: 一致率（`result_digest`と、GitHub側が書いた`race_results`の値）、窓内取得率、1回の呼び出しの所要時間（plan.md U13）、取得先の拒否率（U3）、Vercelの使用量（U5）を計測する
-- [ ] **T4b-02-4** `live`にして3日並走する（二重書き込みは上書き型で無害）。GitHub側の結果取得を止めるリポジトリ変数`SKIP_RESULTS_ON_GHA`を、`scrape-scheduled.js`・`scrape-scheduled.yml`に追加する（コードは削除しない。展示の`SKIP_EXHIBITION_ON_GHA`と同じ方式）
+- [ ] **T4b-02-4**（`SKIP_RESULTS_ON_GHA`のコードは実装済み。既定はfalse。手順は[verification-runbook.md](./verification-runbook.md) §F） `live`にして3日並走する（二重書き込みは上書き型で無害）。GitHub側の結果取得を止めるリポジトリ変数`SKIP_RESULTS_ON_GHA`を、`scrape-scheduled.js`・`scrape-scheduled.yml`に追加する（コードは削除しない。展示の`SKIP_EXHIBITION_ON_GHA`と同じ方式）
 - [ ] **T4b-02-5** (ユーザー承認) `SKIP_RESULTS_ON_GHA=true`にして、切り替え後7日（土日を含む）の実測を行う。GitHub Actionsの1回の実行時間（379秒→約262秒の見込み）、キャンセル率を再測定する
 
 データ項目: `race_results`。
@@ -107,9 +107,9 @@
 
 ### T4b-05 Kファイル同期・結果のcatch-up（A6補助）: `race_results.actual_course_*`・`rank4〜6`
 
-- [ ] **T4b-05-1** Kファイル同期を、独立のジョブ（`api/cron/kfile-sync.js`、日次07:00・12:00 JST）へ切り出す。進入コース（`syncActualCourseFromKFile`）とrank4〜6（`syncRank456FromKFile`）が、同じ日のKファイルを別々にダウンロードしている重複（D4）を解消し、1回のダウンロードで両方を処理する。BOA-349の修正（変更のある行のみ書く）を維持する。`@kirinsaninc/lhats`（LZH展開）が関数内で動くか、Previewの手動リクエストで確認する（plan.md U15）
-- [ ] **T4b-05-2** `api/cron/result-catchup.js`（日次23:50 JST）: 当日`expired`になった`result`のスロットを再取得し、補填する。完了の定義Aを守るための後追い（Bの計測は、expiredの記録が残る）
-- [ ] **T4b-05-3** `shadow`→`live`→`SKIP_KFILE_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-results.js`から、Kファイル同期（`syncRecentActualCourse`・`syncRecentRank456`）の呼び出しを外す変数を追加する
+- [x] **T4b-05-1**（コード実装済み。LZH展開の動作確認（U15）は、`?probeDate=`の手動リクエスト。runbook §G） Kファイル同期を、独立のジョブ（`api/cron/kfile-sync.js`、日次07:00・12:00 JST）へ切り出す。進入コース（`syncActualCourseFromKFile`）とrank4〜6（`syncRank456FromKFile`）が、同じ日のKファイルを別々にダウンロードしている重複（D4）を解消し、1回のダウンロードで両方を処理する。BOA-349の修正（変更のある行のみ書く）を維持する。`@kirinsaninc/lhats`（LZH展開）が関数内で動くか、Previewの手動リクエストで確認する（plan.md U15）
+- [x] **T4b-05-2**（コード実装済み。cronは23:50と翌00:30の2回） `api/cron/result-catchup.js`（日次23:50 JST）: 当日`expired`になった`result`のスロットを再取得し、補填する。完了の定義Aを守るための後追い（Bの計測は、expiredの記録が残る）
+- [ ] **T4b-05-3**（`SKIP_KFILE_ON_GHA`のコードは実装済み。既定はfalse。手順はrunbook §G） `shadow`→`live`→`SKIP_KFILE_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-results.js`から、Kファイル同期（`syncRecentActualCourse`・`syncRecentRank456`）の呼び出しを外す変数を追加する
 
 データ項目: `race_results.actual_course_1〜6`・`rank4〜6`（Kファイル）。
 

@@ -9,6 +9,7 @@
 | `npm run verify:scrape-slots-sql` | マイグレーション075をPGlite（インメモリPostgreSQL）に適用し、RPCの意味論（期限・許容幅・リース・奪取・確定中止・日付またぎ・順延の追従）を検証（`npm i --no-save @electric-sql/pglite`が要る） |
 | `npm run verify:scrape-jobs` | 共通ラッパ・politeFetch・ブレーカー・レジストリ・`resolveTargetDate` |
 | `npm run verify:scrape-monitor` | 監視・cleanup・メタ監視・`api/cron/*`と`vercel.json`の整合 |
+| `npm run verify:scrape-result-job` | 結果取得・Kファイル同期・catch-up（WS4b。DB・取得先なし。実際の結果ページのフィクスチャで解析・digest・shadowが書かないこと・中止確定・cron窓を検証） |
 
 ## 前提
 
@@ -91,6 +92,243 @@ UPDATE scrape_slots
 ```
 
 （期限+許容幅を過ぎたスロットは、次の`claim`で`expired`になるため、戻しても再取得されない。`expired`は通知される。）
+
+## F. 結果取得（`result`・`result_catchup`）の切り替え（tasks.md T4b-02-3〜5、T4b-05-2）
+
+対象: `api/cron/result.js`（毎分、JST 07:00〜翌00:59）、`api/cron/result-catchup.js`（23:50・翌00:30 JST）。コードのマージ・本番デプロイ後に始める。マージ直後は、`scrape_job_state` に行が無い（または `off`）ため、両ジョブは何も取得せず何も書かない（行が無い場合は、`mode='off'` の行を1つ作るだけ。`mode` は変更しない）。
+
+操作の区分: **読み取りSQL・確認スクリプトはAgentが実行してよい。`scrape_job_state` の `mode` の更新（書き込み）と、リポジトリ変数の変更は、ユーザーの承認を得てから行う。**
+
+共通の状態確認（読み取り）:
+
+```sql
+SELECT job, mode, last_tick_at, last_success_at, consecutive_failures, last_error,
+       last_rows_written, last_target_date, breaker_open_until
+  FROM scrape_job_state
+ WHERE job IN ('result', 'result_catchup', 'kfile_sync') OR job LIKE 'host:%'
+ ORDER BY job;
+```
+
+### F1. shadow（3日。土日のいずれか1日を含む）
+
+開始（承認後）。`result` と `result_catchup` を同時に `shadow` にする（どちらも取得・解析のみで、データテーブルへ書かない）:
+
+```sql
+INSERT INTO scrape_job_state (job, mode) VALUES ('result', 'shadow'), ('result_catchup', 'shadow')
+ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+```
+
+shadow の間、GitHub Actions側の結果取得は、そのまま動く（Vercel側は取得先へ、レースごとに約1回ずつ余分に取得する。1日あたり、約180〜290ページ）。
+
+毎日の確認（読み取り）:
+
+```
+node --env-file=.env.local scripts/maintenance/check-result-shadow.js --days=3
+```
+
+`result_digest`（shadow が解析した値のハッシュ）を、既存基盤が `race_results`・`race_start_timings` に書いた値から計算したハッシュと比べ、一致率・不一致のレース・遅延（完了−発走5分後）のp50・p95・試行回数を出す。
+
+```sql
+-- shadow が、データテーブルへ書いていないこと（rows_written が全て0）
+SELECT count(*) AS shadow_rows_written_nonzero
+  FROM scrape_slots WHERE job = 'result' AND run_mode = 'shadow' AND rows_written > 0;          -- 期待: 0
+
+-- 状況（JSTの直近3日。確定中止のレースを除く）
+WITH s AS (
+  SELECT s.*, ((r.race_date + r.start_time) AT TIME ZONE 'Asia/Tokyo') + make_interval(mins => s.offset_min) AS deadline
+    FROM scrape_slots s JOIN races r ON r.race_id = s.race_id
+   WHERE s.job = 'result'
+     AND s.race_date >= (now() AT TIME ZONE 'Asia/Tokyo')::date - 3
+     AND r.cancellation_status IS DISTINCT FROM 'confirmed')
+SELECT coalesce(run_mode, '未着手') AS run_mode,
+       count(*) AS total,
+       count(*) FILTER (WHERE status = 'done' AND outcome = 'ok') AS ok,
+       count(*) FILTER (WHERE status = 'expired') AS expired,
+       count(*) FILTER (WHERE status = 'expired' AND attempts = 0) AS unexecuted,
+       round((percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM done_at - deadline) / 60)
+              FILTER (WHERE status = 'done' AND outcome = 'ok'))::numeric, 1) AS p50_min,
+       round((percentile_cont(0.95) WITHIN GROUP (ORDER BY extract(epoch FROM done_at - deadline) / 60)
+              FILTER (WHERE status = 'done' AND outcome = 'ok'))::numeric, 1) AS p95_min
+  FROM s GROUP BY 1 ORDER BY 1;
+
+-- 取得先の拒否（429・503）とブレーカー
+SELECT count(*) AS retried_with_429_503 FROM scrape_slots
+ WHERE job = 'result' AND race_date >= (now() AT TIME ZONE 'Asia/Tokyo')::date - 3
+   AND (last_error LIKE '%429%' OR last_error LIKE '%503%');
+SELECT job, breaker_open_until, last_error, updated_at FROM scrape_job_state WHERE job LIKE 'host:%';
+```
+
+Vercelのダッシュボード（Logs・Usage）で、`/api/cron/result` の関数の所要時間（p95）・500の応答数・Active CPUと呼び出し回数を確認する（plan.md U5・U13）。
+
+**成功基準（全て満たせば live へ）**:
+
+| 項目 | 基準 |
+|---|---|
+| ダイジェストの一致率 | 99%以上（不一致は原因を調べる。公式ページの後日訂正なら許容、解析の差なら修正）。比較できた行が、1日あたり全レースの9割以上 |
+| shadow の完了率（確定中止を除く） | `ok` が98%以上。`unexecuted`（`attempts=0` の expired）は0件 |
+| 1回の呼び出しの所要時間 | p95が240秒以下（`maxDuration` 300秒、ソフトデッドラインは270秒）。着手を見送った（`deferred`）スロットが、頻発していない |
+| 取得先の拒否 | 429・503が0件、ブレーカーが一度も開いていない |
+| 500の応答・連続失敗 | 0件。`consecutive_failures` が3以上になっていない |
+| shadow の書き込み | 上の `shadow_rows_written_nonzero` が0 |
+
+shadow の間に出うる誤報: 中止・順延のレースは、shadow では `onTick`（中止・順延の確定）が動かないため、GitHub側が確定するまで、スロットが `no_values` で再試行され、最後は `expired`（`run_mode='shadow'`）になる。shadow の `expired` は監視が通知しない（`evaluateExpired`）。集計の `expired` には、こうしたレースが含まれる。
+
+ロールバック（shadow を止める）: `UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job IN ('result', 'result_catchup');`
+
+### F2. live に切り替えて3日並走
+
+`shadow` で `done` になったスロットは、live にしても再取得されない（前の§E）。**切り替えは、その日の最後のレースの許容幅が過ぎた後（翌 00:20 JST 以降）か、早朝（07:00 JST より前）に行う**（許容幅の内側の `shadow` の `done` が無い時間帯）。日中に切り替える場合は、§Eの、`shadow` の `done` を戻すSQLを、ジョブを `result` にして、直後に実行する。
+
+切り替え（承認後）:
+
+```sql
+UPDATE scrape_job_state SET mode = 'live', updated_at = now() WHERE job IN ('result', 'result_catchup');
+```
+
+live の間、GitHub Actions側の結果取得も動き続ける（同じ行を上書きする。値が同じ行は、両方とも書かない＝変更のある行のみ書く）。
+
+確認（読み取り）:
+
+```sql
+-- 結果の充足率（前日以前。確定中止を除く。決まり手・払戻が揃うレースの割合も）
+SELECT r.race_date, count(*) AS races,
+       count(*) FILTER (WHERE rr.race_id IS NOT NULL) AS with_result,
+       count(*) FILTER (WHERE rr.payout_win IS NOT NULL AND rr.winning_technique IS NOT NULL) AS complete
+  FROM races r LEFT JOIN race_results rr ON rr.race_id = r.race_id
+ WHERE r.race_date BETWEEN (now() AT TIME ZONE 'Asia/Tokyo')::date - 4 AND (now() AT TIME ZONE 'Asia/Tokyo')::date - 1
+   AND r.cancellation_status IS DISTINCT FROM 'confirmed'
+ GROUP BY 1 ORDER BY 1;
+
+-- 書き込み量（並走前後の24時間の差を比べる。二重書き込みで増えていないこと。tasks.md T0-02と同じ）
+SELECT relname, n_tup_ins, n_tup_upd, n_tup_hot_upd
+  FROM pg_stat_user_tables WHERE relname IN ('race_results', 'race_start_timings', 'predictions');
+```
+
+Vercel側のスロットの状況は F1 の「状況」のSQL（`run_mode = 'live'`）。`check-result-shadow.js` は、live のスロットの遅延・expired の件数も出す。
+
+**成功基準（3日、土日を含む）**:
+
+| 項目 | 基準 |
+|---|---|
+| 結果の充足率 | 前日以前の `complete` が、確定中止を除くレースの99%以上（並走前より悪化していない） |
+| live のスロット | `expired` が0件（出た場合は理由を説明でき、後日の catch-up で補填されている）。遅延のp95が、shadow の値と同程度 |
+| 書き込み量 | `race_results`・`race_start_timings` の1日あたりの `n_tup_upd` が、並走前の24時間より増えていない |
+| 中止・順延の確定 | 1日あたりの確定件数が、並走前と同程度（`cancellation_status='confirmed'` の件数。大きく増えたら、誤って確定していないかを、結果ページで確認する） |
+| catch-up | 23:50 の実行が `incomplete: true` になった日は、翌 00:30 に完了し、`last_target_date` が対象日になる |
+
+ロールバック: `UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job IN ('result', 'result_catchup');`（GitHub側は動いたままなので、取得の空白は無い）。
+
+### F3. GitHub側の停止（`SKIP_RESULTS_ON_GHA`、`SKIP_KFILE_ON_GHA`）
+
+前提: F2が成功基準を満たし、live で、少なくとも1つ後の窓が live で完了している。Kファイル同期は別の変数（`SKIP_KFILE_ON_GHA`）で止める（`SKIP_RESULTS_ON_GHA=true` だけでは、GitHub側のKファイル同期は動き続ける）。Kファイル同期の停止は、§G2の基準を満たしてから。両方を止めた場合、GitHub Actionsは結果取得の呼び出し自体を行わない（`scrape-scheduled.js`）。
+
+手順（承認後。リポジトリ変数の変更）:
+
+```
+gh variable set SKIP_KFILE_ON_GHA --body true --repo rhapsody0919/boatrace-ai-predictor
+gh variable set SKIP_RESULTS_ON_GHA --body true --repo rhapsody0919/boatrace-ai-predictor
+```
+
+（次のGitHub Actionsの実行から反映される。コード変更・再デプロイは不要。`gh` は、このプロジェクトのアカウント（rhapsody0919）で実行する。）
+
+停止後の7日（土日を含む）の実測（tasks.md T4b-02-5）:
+
+```
+gh run list --workflow scrape-scheduled.yml --repo rhapsody0919/boatrace-ai-predictor --limit 300 --json conclusion,status,createdAt,updatedAt
+```
+
+- GitHub Actionsの1回の実行時間: 379秒 → 約262秒の見込み（結果関連の約117秒が減る）
+- キャンセル率: 11.8%（400件中47件、plan.md F11）から低下しているか
+- 完了の定義（A・B・C）: F2の充足率のSQL、`result` の窓内取得率（監視の日次サマリー）、`expired` の件数・監視の通知
+
+ロールバック（順序を守る。取得の空白を作らない）:
+
+1. `gh variable set SKIP_RESULTS_ON_GHA --body false --repo rhapsody0919/boatrace-ai-predictor`（と、`SKIP_KFILE_ON_GHA` も `false`）。次のGitHub Actionsの実行から、結果取得・Kファイル同期が再開する
+2. Vercel側を止める場合は、GitHub側の再開を確認してから `UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job IN ('result', 'result_catchup', 'kfile_sync');`
+
+`mode` が `off` の間に積み上がった `pending` のスロットは、監視が通知しない（`off` のジョブは対象外）。`scrape-cleanup` が古い行を整理する。
+
+## G. Kファイル同期（`kfile_sync`）の切り替え（T4b-05-1・T4b-05-3）
+
+対象: `api/cron/kfile-sync.js`（07:00・12:00 JST）。当日を除く直近4日について、進入コース・rank4〜6を、同じ日のKファイル1回のダウンロードで同期する。未同期のレースが無い日は、ダウンロードしない。マージ直後は `off`（何もしない）。
+
+### G1. LZH展開の動作確認（plan.md U15）と shadow
+
+`mode` を `shadow` にしてから、手動リクエストで、Vercel関数の中でLZHの展開が動くかを確認する（`probe`。書き込み・同期なし。取得先へ1リクエスト）:
+
+```sql
+INSERT INTO scrape_job_state (job, mode) VALUES ('kfile_sync', 'shadow')
+ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+```
+
+```
+curl -s -H "Authorization: Bearer $CRON_SECRET" "https://www.boat-ai.jp/api/cron/kfile-sync?probeDate=2026-09-19"
+```
+
+（`$CRON_SECRET` はシェルに渡すが、値は出力・記録しない。）期待: `probe: {downloaded: true, chars: <数十万>, races: 100以上}`。`downloaded: false` なら、その日のKファイルが未公開・開催なし。500なら、展開・取得の失敗（応答の `error`）。
+
+shadow を1日（07:00・12:00の実行）動かして確認する:
+
+```sql
+SELECT last_success_at, last_target_date, last_rows_written, last_error, last_report
+  FROM scrape_job_state WHERE job = 'kfile_sync';
+```
+
+`last_report.days[]` に、直近4日それぞれの、`actualCourse.status`・`rank456.status`（`nothing_pending`＝同期済み・ダウンロードなし、`synced`＝ダウンロードして解析、`kfile_unavailable`＝未同期があるのにKファイルが未公開、`kfile_error`）と、書くはずの件数（`updated`。shadow は dryRun のため書かない）が入る。
+
+**成功基準（shadow 1日）**: `problems` が空（`kfile_error`・`pending_check_failed`・`no_races_parsed` が無い）。`unpublished` が、12:00の実行の後に空。`synced` の日は、`updated` が、GitHub側の同期が後で書いた件数と一致する（`nothing_pending` だけの日は、shadow が確認するものが無い。probe で展開の動作は確認済み）。
+
+ロールバック: `UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'kfile_sync';`
+
+### G2. live（3日並走）
+
+```sql
+UPDATE scrape_job_state SET mode = 'live', updated_at = now() WHERE job = 'kfile_sync';
+```
+
+GitHub側の同期も動き続ける（同じ値の上書きは、どちらも書かない）。確認（読み取り。結果確定済みのレースについて、進入コース・rank4〜6の充足）:
+
+```sql
+SELECT r.race_date,
+       count(*) FILTER (WHERE rr.rank1 IS NOT NULL) AS finished,
+       count(*) FILTER (WHERE rr.rank1 IS NOT NULL AND rr.actual_course_1 IS NULL AND rr.actual_course_2 IS NULL AND rr.actual_course_3 IS NULL
+                          AND rr.actual_course_4 IS NULL AND rr.actual_course_5 IS NULL AND rr.actual_course_6 IS NULL) AS course_missing,
+       count(*) FILTER (WHERE rr.rank1 IS NOT NULL AND rr.rank4 IS NULL) AS rank4_missing
+  FROM race_results rr JOIN races r ON r.race_id = rr.race_id
+ WHERE r.race_date BETWEEN (now() AT TIME ZONE 'Asia/Tokyo')::date - 5 AND (now() AT TIME ZONE 'Asia/Tokyo')::date - 1
+ GROUP BY 1 ORDER BY 1;
+```
+
+**成功基準**: `course_missing` が、前日以前で0件。`rank4_missing` は、並走前（GitHub側のみ）の件数を上回らない（3着以内しか完走しない等で、構造的に残るレースがある。分母の定義は tasks.md T4b-05 の本番実測）。`last_report.problems` が空。`consecutive_failures` が0。
+
+ロールバック: `mode = 'off'`（GitHub側は動いたまま）。
+
+### G3. GitHub側の停止
+
+F3の手順（`SKIP_KFILE_ON_GHA=true`）。停止後、`course_missing` が0のまま、`kfile_sync` の `last_target_date` が毎日更新されることを、7日確認する（未更新なら監視が `daily_overdue` を通知する）。ロールバックはF3。
+
+## H. 結果のcatch-up（`result_catchup`）の確認
+
+`result` と同じ `shadow` → `live`（F1・F2）。確認するのは次の点。
+
+```sql
+SELECT last_success_at, last_target_date, last_rows_written, last_error, last_report
+  FROM scrape_job_state WHERE job = 'result_catchup';
+```
+
+- 23:50 JST の実行: 対象日の結果のスロットに、まだ `pending`・`running` があれば、`last_report.openSlots > 0`・応答が `incomplete: true`（対象日を処理済みにしない）
+- 翌 00:30 JST の実行: `last_target_date` が対象日になる（以降の起動は `already_done`）
+- `last_report.candidates`（再取得の対象＝expired のスロット）と `outcomes`。`unresolved` に残ったレースは、結果ページで、まだ結果が無いか（中止・順延）を確認する
+- live のとき、`confirmedCancellations`（発走+90分を超えて結果の無いレースの確定）と、`hitFlags`（直近10日の的中フラグの補完。`missing` が0でなければ、`fixed` が補完した件数）
+- 0件エラー（再取得の対象があるのに、1件も取得・解析できなかった）が出たら、`last_error` に「0件」と出て、監視が通知する
+
+## I. 切り戻しの早見表
+
+| 状況 | 操作 | 影響 |
+|---|---|---|
+| shadow・live の Vercel側に問題 | `UPDATE scrape_job_state SET mode = 'off' WHERE job IN ('result','result_catchup','kfile_sync')` | Vercel側が止まる。GitHub側が動いていれば、取得の空白なし |
+| GitHub停止後に問題 | ①`SKIP_*_ON_GHA` を `false` → ②Vercel側を `off`（順序を守る） | 次のGitHub Actionsの実行から再開 |
+| 中止・順延を誤って確定した疑い | 対象レースの結果ページを確認し、結果がある場合は `UPDATE races SET cancellation_status = NULL WHERE race_id = '<race_id>'`（承認後）。`result_catchup` の live は、確定済みのレースを再取得しない | 該当レースの結果は、手動のバックフィル（`scripts/maintenance/backfill-results-by-race-id.js`）で補う |
 
 ## 結果の記録
 

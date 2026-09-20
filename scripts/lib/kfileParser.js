@@ -72,16 +72,19 @@ const FETCH_TIMEOUT_MS = 15000;
  * 指定日のKファイルをダウンロード・解凍し、デコード済みテキストを返す。
  * 開催が無い日（404）はnullを返す（呼び出し元でスキップ扱いにする）。
  * @param {string} dateStr - YYYY-MM-DD
+ * @param {Object} [options]
+ * @param {typeof fetch} [options.fetchImpl] 差し替え用の fetch（Vercel Cron からは politeFetch を渡す。
+ *   既定はグローバルの fetch ＝従来の動作）
  * @returns {Promise<string|null>}
  */
-export async function fetchKFileText(dateStr) {
+export async function fetchKFileText(dateStr, { fetchImpl = fetch } = {}) {
   const url = buildKFileUrl(dateStr);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   let response;
   try {
-    response = await fetch(url, {
+    response = await fetchImpl(url, {
       headers: { "User-Agent": UA },
       signal: controller.signal,
     });

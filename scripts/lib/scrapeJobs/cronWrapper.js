@@ -17,8 +17,14 @@
  *
  * ハンドラー（各データセットが実装する）:
  *   window型   handleSlot(slot, ctx) → {outcome, rowsWritten?, rowsParsed?, rowsExpected?, resultDigest?, error?}
- *   それ以外   run(ctx)              → {rowsWritten?, rowsParsed?, rowsExpected?, report?, body?}
- *              （body は、HTTP応答の本文に、そのまま足される）
+ *   それ以外   run(ctx)              → {rowsWritten?, rowsParsed?, rowsExpected?, report?, body?, incomplete?, outcome?, error?}
+ *              （body は、HTTP応答の本文に、そのまま足される。outcome:"error" は失敗として記録する。
+ *              incomplete:true は「成功したが、今回の対象日の処理は完了していない」（未公開のデータを待つ等）で、
+ *              対象日を処理済みにしない＝補足の起動が同じ対象日をもう一度処理する）
+ *   onTick     onTick(ctx)          → 任意のオブジェクト（応答の tick に入る）。live のときだけ、毎回の起動で、
+ *              スロットの取得（claim）の前に1回呼ぶ。スロットの有無に関わらず毎分やりたいDB上の作業
+ *              （例: 結果のスロットが期限切れになる前の、中止・順延の確定）に使う。shadow・off では呼ばない
+ *              （データテーブルへ書くため）。例外は、スロットの処理は続けた上で、この実行を失敗として記録する
  *   ctx: {job, mode, worker, now(), targetDate?, politeFetch, shouldStop(),
  *         client（Supabase）, query（リクエストのクエリ）, state（起動時のジョブ状態の行）}
  *
@@ -105,6 +111,7 @@ export async function runScrapeJob({
   store,
   handleSlot,
   run,
+  onTick,
   now = () => new Date(),
   worker = defaultWorker(job),
   modeGated = true,
@@ -178,6 +185,18 @@ export async function runScrapeJob({
   };
 
   try {
+    // live のときだけ、スロットの取得の前に呼ぶ（tick のフック）。失敗しても、スロットの処理は続ける
+    let tickInfo = {};
+    let tickError = null;
+    if (onTick && mode === "live") {
+      try {
+        tickInfo = { tick: await onTick(ctx) };
+      } catch (error) {
+        console.error(`❌ ${job}: onTick のエラー:`, error);
+        tickError = error;
+        tickInfo = { tickError: truncateError(error) };
+      }
+    }
     const summary =
       definition.kind === "window"
         ? await runWindow({
@@ -201,9 +220,13 @@ export async function runScrapeJob({
           });
     if (summary.failed) {
       if (definition.kind === "window") await recordFailure(summary.firstError);
-      return failed({ job, mode, ...summary.body });
+      return failed({ job, mode, ...summary.body, ...tickInfo });
     }
-    return ok({ job, mode, ...summary.body });
+    if (tickError) {
+      await recordFailure(tickError);
+      return failed({ job, mode, ...summary.body, ...tickInfo });
+    }
+    return ok({ job, mode, ...summary.body, ...tickInfo });
   } catch (error) {
     console.error(`❌ ${job}: 実行エラー:`, error);
     await recordFailure(error);
@@ -443,8 +466,10 @@ async function runLeased({
     await store.recordSuccess(job, {
       now: now(),
       rowsWritten: result.rowsWritten,
-      // shadow は書き込まないため、対象日を済みにしない（live に切り替えたとき、その日の分を処理できるように）
-      targetDate: mode === "live" ? ctx.targetDate : undefined,
+      // shadow は書き込まないため、対象日を済みにしない（live に切り替えたとき、その日の分を処理できるように）。
+      // incomplete（未公開のデータを待っている等）も、対象日を済みにしない（補足の起動がもう一度処理する）
+      targetDate:
+        mode === "live" && !result.incomplete ? ctx.targetDate : undefined,
       report: result.report,
     });
     return {
@@ -452,6 +477,7 @@ async function runLeased({
       body: {
         targetDate: ctx.targetDate,
         rowsWritten: result.rowsWritten ?? 0,
+        ...(result.incomplete ? { incomplete: true } : {}),
         ...(result.body ?? {}),
       },
     };
@@ -471,6 +497,7 @@ async function runLeased({
  * @param {string} options.job レジストリのジョブ名
  * @param {Function} [options.handleSlot] 窓型のハンドラー
  * @param {Function} [options.run] 日次・連続・監視のハンドラー
+ * @param {Function} [options.onTick] live のときだけ、毎回の起動で、スロットの取得の前に呼ぶ（ファイル冒頭の説明を参照）
  * @param {boolean} [options.modeGated] false ならモードのゲートを掛けない（監視・保守）
  * @param {() => Promise<import("@supabase/supabase-js").SupabaseClient|null>} [options.getClient] テスト用の差し替え。既定は scripts/lib/supabaseClient.js
  */
@@ -478,6 +505,7 @@ export function createScrapeCronHandler({
   job,
   handleSlot,
   run,
+  onTick,
   modeGated,
   getClient = async () => (await import("../supabaseClient.js")).supabase,
 }) {
@@ -498,6 +526,7 @@ export function createScrapeCronHandler({
       store: createSupabaseStore(client),
       handleSlot,
       run,
+      onTick,
       modeGated: modeGated ?? definition?.kind !== "monitor",
       client,
       query: req.query ?? {},
