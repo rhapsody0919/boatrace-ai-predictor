@@ -53,3 +53,20 @@ export function applyZeroRowGuard(result) {
   }
   return result;
 }
+
+/** 再試行の間隔から差し引く秒数（Cronの起動時刻のぶれで、毎分の起動を1回飛ばさないため） */
+export const RETRY_JITTER_SEC = 10;
+
+/**
+ * 再試行を許す時刻。起点は、ハンドラーの完了時刻ではなく、スロットを claim した時刻（last_attempt_at）にする。
+ * 完了時刻を起点にすると、1件約10秒かかる取得の分だけ間隔が延び、毎分のCronの次の起動（+60秒）に間に合わず、
+ * 許容幅3分のジョブ（オッズ・レース情報）が窓内に2回しか試行できなくなる。現在時刻より前にはならない。
+ *
+ * @param {{now: Date, claimedAt?: string|Date|null, retrySec: number}} params
+ */
+export function computeRetryAt({ now, claimedAt, retrySec }) {
+  const claimedMs = claimedAt ? new Date(claimedAt).getTime() : NaN;
+  const baseMs = Number.isFinite(claimedMs) ? claimedMs : now.getTime();
+  const at = baseMs + Math.max(0, retrySec - RETRY_JITTER_SEC) * 1000;
+  return new Date(Math.max(now.getTime(), at));
+}

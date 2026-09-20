@@ -34,6 +34,7 @@ import {
 import { resolveTargetDate } from "../lib/scrapeJobs/dailyJob.js";
 import {
   applyZeroRowGuard,
+  computeRetryAt,
   isFinalOutcome,
   truncateError,
 } from "../lib/scrapeJobs/outcomes.js";
@@ -728,6 +729,38 @@ check(
     );
   }
 
+  // 呼び出し側の signal を尊重する
+  {
+    const controller = new AbortController();
+    controller.abort();
+    let sawAborted = 0;
+    const f = createPoliteFetch({
+      maxRetries: 0,
+      sleep: noSleep,
+      fetchImpl: (url, init) =>
+        new Promise((_, reject) => {
+          if (init.signal.aborted) sawAborted++;
+          init.signal.addEventListener("abort", () =>
+            reject(Object.assign(new Error("aborted"), { name: "AbortError" })),
+          );
+          if (init.signal.aborted) {
+            reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+          }
+        }),
+    });
+    let err;
+    try {
+      await f("https://www.boatrace.jp/a", { signal: controller.signal });
+    } catch (e) {
+      err = e;
+    }
+    check(
+      "呼び出し側の init.signal が中断済みなら、取得を中断する（signal を上書きして無視しない）",
+      err instanceof FetchError && sawAborted === 1,
+      String(err?.message),
+    );
+  }
+
   // ブレーカー連携: 連続3件の429で開き、以降は取得しない
   {
     const clock = { t: 5_000_000 };
@@ -839,6 +872,8 @@ check(
     race_id: raceId,
     offset_min: offset,
     attempts: 1,
+    // claim した時刻（RPCが返す last_attempt_at）。再試行の間隔の起点
+    last_attempt_at: T0.toISOString(),
   });
   const run = (store, opts = {}) => {
     const clock = opts.clock ?? mkClock();
@@ -994,9 +1029,9 @@ check(
       store.retried.map((x) => [x.slot.race_id.slice(-2), x]),
     );
     check(
-      `[${mode}] no_values は再試行（60秒後）。outcome を残す`,
+      `[${mode}] no_values は再試行（claim から50秒後。60秒−ジッター10秒）。outcome を残す`,
       retryById["03"]?.outcome === "no_values" &&
-        retryById["03"].retryAt.getTime() === clock.c.t + 60_000,
+        retryById["03"].retryAt.getTime() === clock.c.t + 50_000,
     );
     check(
       `[${mode}] ハンドラーの例外は error として再試行に回し、他のスロットを止めない`,
@@ -1134,12 +1169,13 @@ check(
       },
     });
     check(
-      "ソフトデッドライン（maxDuration−30秒）を超えたら、新しいスロットに着手せず pending に戻す",
+      "ソフトデッドライン（maxDuration−30秒）を超えたら、新しいスロットに着手せず pending に戻す（試行回数も戻す）",
       handled.length === 1 &&
         store.completed.length === 1 &&
         store.retried.length === 2 &&
         store.retried.every(
-          (x) => x.retryAt.getTime() === clock.c.t && !x.outcome,
+          (x) =>
+            x.retryAt.getTime() === clock.c.t && !x.outcome && x.releaseAttempt,
         ) &&
         r.body.outcomes.deferred === 2,
       show({ handled, retried: store.retried.length, body: r.body }),
@@ -1171,6 +1207,144 @@ check(
     check(
       `スロットの並列度はレジストリの値（${SCRAPE_JOBS.odds.concurrency}）を超えない（最大${peak}）`,
       peak === SCRAPE_JOBS.odds.concurrency,
+    );
+  }
+
+  // 再試行の起点: ハンドラーの完了時刻ではなく、claim の時刻
+  {
+    const clock = mkClock();
+    const store = createMemoryStore({
+      rows: { odds: { job: "odds", mode: "live" } },
+      slots: [slot("2026-09-19-01-01")],
+    });
+    await run(store, {
+      clock,
+      handleSlot: async () => {
+        clock.c.t += 12_000; // 1件約10秒の取得
+        return { outcome: "no_values" };
+      },
+    });
+    const at = store.retried[0].retryAt.getTime();
+    check(
+      "再試行の間隔は、ハンドラーの完了(claim+12秒)ではなく claim を起点にする（60秒−10秒=claim+50秒。完了から数えると+72秒になり、毎分のCronの次の起動(+60秒)を1回飛ばす）",
+      at === T0.getTime() + 50_000 && at < T0.getTime() + 60_000,
+      String(at - T0.getTime()),
+    );
+    const slow = createMemoryStore({
+      rows: { odds: { job: "odds", mode: "live" } },
+      slots: [slot("2026-09-19-01-02")],
+    });
+    const clock2 = mkClock();
+    await run(slow, {
+      clock: clock2,
+      handleSlot: async () => {
+        clock2.c.t += 70_000;
+        return { outcome: "no_values" };
+      },
+    });
+    check(
+      "処理が再試行の間隔より長くかかった場合は、現在時刻（即時に再試行できる）",
+      slow.retried[0].retryAt.getTime() === clock2.c.t,
+    );
+    check(
+      "computeRetryAt: claim時刻が無い・不正なら現在時刻を起点にする",
+      computeRetryAt({ now: T0, claimedAt: null, retrySec: 60 }).getTime() ===
+        T0.getTime() + 50_000 &&
+        computeRetryAt({ now: T0, claimedAt: "invalid", retrySec: 60 }).getTime() ===
+          T0.getTime() + 50_000 &&
+        computeRetryAt({ now: T0, claimedAt: T0, retrySec: 5 }).getTime() ===
+          T0.getTime(),
+    );
+  }
+
+  // リース切れ間近のスロットには着手しない（二重取得を避ける）
+  {
+    const clock = mkClock();
+    const soon = (sec) => ({
+      ...slot("2026-09-19-01-0" + sec),
+      lease_until: new Date(T0.getTime() + sec * 1000).toISOString(),
+    });
+    const store = createMemoryStore({
+      rows: { odds: { job: "odds", mode: "live" } },
+      // oddsの slotSecEstimate は12秒。リースの残りが 5秒・11秒 のスロットは、完了前に切れる見込み
+      slots: [soon(5), soon(11), soon(100)],
+    });
+    const handled = [];
+    const r = await run(store, {
+      clock,
+      handleSlot: async (s) => {
+        handled.push(s.race_id);
+        return { outcome: "ok" };
+      },
+    });
+    check(
+      "リースの残りが1スロットの見積り(12秒)より短いスロットには着手せず、試行回数を戻して pending に戻す",
+      same(handled, ["2026-09-19-01-0100"]) &&
+        store.retried.length === 2 &&
+        store.retried.every((x) => x.releaseAttempt === true) &&
+        r.body.outcomes.deferred === 2,
+      show({ handled, outcomes: r.body.outcomes }),
+    );
+  }
+
+  // ハンドラーが不正な値を返しても、他のスロットの記録を止めない
+  {
+    const store = createMemoryStore({
+      rows: { odds: { job: "odds", mode: "live" } },
+      slots: [
+        slot("2026-09-19-01-01"),
+        slot("2026-09-19-01-02"),
+        slot("2026-09-19-01-03"),
+        slot("2026-09-19-01-04"),
+      ],
+    });
+    const r = await run(store, {
+      handleSlot: async (s) => {
+        if (s.race_id.endsWith("01")) return undefined;
+        if (s.race_id.endsWith("02")) return "ok";
+        if (s.race_id.endsWith("04")) return {}; // outcome が無い
+        return { outcome: "ok" };
+      },
+    });
+    check(
+      "ハンドラーが undefined・文字列・outcome の無いオブジェクトを返しても、error として記録し、他のスロットの完了を記録する（全スロットが running のまま残らない）",
+      store.completed.length === 1 &&
+        store.retried.length === 3 &&
+        store.retried.every((x) => x.outcome === "error") &&
+        r.body.claimed === 4,
+      show(r.body),
+    );
+  }
+
+  // 日次: リース取得後の再確認
+  {
+    const store = createMemoryStore({
+      rows: { point_rank: { job: "point_rank", mode: "live" } },
+    });
+    let reads = 0;
+    const original = store.readState;
+    store.readState = async (job) => {
+      reads++;
+      const r = await original(job);
+      // 2回目の読み取り（リース取得後）では、別の実行が完了させた状態にする
+      if (reads >= 2) r.row = { ...r.row, last_target_date: "2026-09-19" };
+      return r;
+    };
+    let called = 0;
+    const r = await run(store, {
+      job: "point_rank",
+      clock: mkClock(new Date("2026-09-19T13:30:00Z")),
+      run: async () => {
+        called++;
+        return {};
+      },
+    });
+    check(
+      "日次: リース取得後の再確認で、別の実行が対象日を完了済みなら実行しない（リースは解放する）",
+      called === 0 &&
+        r.body.skipped === "already_done" &&
+        store.calls.some((c) => c.name === "releaseLease"),
+      show(r.body),
     );
   }
 
@@ -1463,6 +1637,19 @@ check(
       rt.lease_until === null &&
       rt.outcome === "no_values" &&
       rt.last_error.length === 500,
+  );
+
+  // 着手せずに返す: 試行回数を戻し、last_error は上書きしない
+  log.length = 0;
+  await store.retrySlot(
+    { job: "odds", race_id: "r", offset_min: -30, attempts: 2 },
+    { worker: "w1", now, retryAt: now, releaseAttempt: true },
+  );
+  const rel = log[0]._ops[0][1];
+  check(
+    "retrySlot(releaseAttempt): attempts を1戻し、last_error を上書きしない",
+    rel.attempts === 1 && !("last_error" in rel) && rel.status === "pending",
+    show(rel),
   );
 
   // tick: 5分以上古い場合のみ更新

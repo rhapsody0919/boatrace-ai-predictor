@@ -42,6 +42,7 @@ import { BreakerOpenError, createCircuitBreaker } from "./circuitBreaker.js";
 import { createPoliteFetch, hostKeyOf } from "./politeFetch.js";
 import {
   applyZeroRowGuard,
+  computeRetryAt,
   isFinalOutcome,
   truncateError,
 } from "./outcomes.js";
@@ -220,14 +221,14 @@ async function runWindow({
 
   let ensured = 0;
   if (shouldEnsureSlots(now(), state.row?.last_tick_at)) {
+    // 時刻は、DBの now() を正とする（期限・リースの比較を、DBの1つの時計で行う。Vercelの各実行の時計に依存しない）
     ensured = await store.ensureSlots({
       date: toJstDateString(now()),
       jobs: [job],
-      now: now(),
     });
   }
 
-  const slots = await store.claimSlots({ job, worker, mode, now: now() });
+  const slots = await store.claimSlots({ job, worker, mode });
   if (slots.length === 0) {
     return { failed: false, body: { claimed: 0, ensured } };
   }
@@ -250,7 +251,12 @@ async function runWindow({
         outcome: result.outcome,
         error: result.error,
         retryAt:
-          result.retryAt ?? new Date(at.getTime() + definition.retrySec * 1000),
+          result.retryAt ??
+          computeRetryAt({
+            now: at,
+            claimedAt: slot.last_attempt_at,
+            retrySec: definition.retrySec,
+          }),
       });
     }
     if (!applied) {
@@ -266,32 +272,65 @@ async function runWindow({
     slots,
     definition.concurrency,
     async (slot) => {
-      if (shouldStop()) {
-        // ソフトデッドライン: 着手しない。すぐ次の起動が取れるよう、pending に戻す
-        await store.retrySlot(slot, { worker, now: now(), retryAt: now() });
-        return { outcome: "deferred" };
-      }
-      let result;
-      try {
-        result = await handleSlot(slot, ctx);
-      } catch (error) {
-        if (error instanceof BreakerOpenError) {
-          result = {
-            outcome: "breaker_open",
-            retryAt: new Date(error.until),
-            error: error.message,
-          };
-        } else {
+      // 着手しない場合: ソフトデッドライン（maxDuration−30秒）を超えた、または、リースが処理の完了前に
+      // 切れる見込み（別の実行が同じスロットを取って二重に取得するのを避ける）。すぐ次の起動が取れるよう、
+      // pending に戻す（試行回数は戻す）
+      const leaseEndMs = slot.lease_until
+        ? new Date(slot.lease_until).getTime()
+        : Infinity;
+      if (
+        shouldStop() ||
+        now().getTime() + (definition.slotSecEstimate ?? 0) * 1000 > leaseEndMs
+      ) {
+        try {
+          await store.retrySlot(slot, {
+            worker,
+            now: now(),
+            retryAt: now(),
+            releaseAttempt: true,
+          });
+        } catch (error) {
           console.error(
-            `❌ ${job}: スロットの処理エラー（${slot.race_id}）:`,
+            `❌ ${job}: スロットを戻せませんでした（${slot.race_id}）:`,
             error,
           );
-          result = { outcome: "error", error: truncateError(error) };
         }
+        return { outcome: "deferred" };
       }
-      result = applyZeroRowGuard(result);
+      // このスロットの処理・記録の失敗は、他のスロットを止めない（1つの例外で、claim済みの全スロットが
+      // リース失効まで running のまま残るのを避ける）
       try {
+        let result;
+        try {
+          result = await handleSlot(slot, ctx);
+        } catch (error) {
+          if (error instanceof BreakerOpenError) {
+            result = {
+              outcome: "breaker_open",
+              retryAt: new Date(error.until),
+              error: error.message,
+            };
+          } else {
+            console.error(
+              `❌ ${job}: スロットの処理エラー（${slot.race_id}）:`,
+              error,
+            );
+            result = { outcome: "error", error: truncateError(error) };
+          }
+        }
+        if (
+          result === null ||
+          typeof result !== "object" ||
+          typeof result.outcome !== "string"
+        ) {
+          result = {
+            outcome: "error",
+            error: `ハンドラーが不正な結果を返しました: ${String(result)}`,
+          };
+        }
+        result = applyZeroRowGuard(result);
         await settle(slot, result);
+        return result;
       } catch (error) {
         console.error(
           `❌ ${job}: スロットの記録エラー（${slot.race_id}）:`,
@@ -299,7 +338,6 @@ async function runWindow({
         );
         return { outcome: "error", error: truncateError(error) };
       }
-      return result;
     },
   );
 
@@ -368,6 +406,17 @@ async function runLeased({
   if (!acquired) return { failed: false, body: { skipped: "lease_held" } };
 
   try {
+    if (definition.kind === "daily") {
+      // リースを取った後に、対象日が処理済みでないかを再確認する（読み取りとリース取得の間に、
+      // 別の実行が完了した場合の二重実行を避ける）
+      const fresh = await store.readState(job);
+      if (fresh.available && fresh.row?.last_target_date === ctx.targetDate) {
+        return {
+          failed: false,
+          body: { skipped: "already_done", targetDate: ctx.targetDate },
+        };
+      }
+    }
     const result = applyZeroRowGuard({ outcome: "ok", ...(await run(ctx)) });
     if (result.outcome === "error") {
       await recordFailure(result.error);

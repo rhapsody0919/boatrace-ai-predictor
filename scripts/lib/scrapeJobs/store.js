@@ -183,13 +183,22 @@ export function createSupabaseStore(client) {
       return (data?.length ?? 0) === 1;
     },
 
-    async retrySlot(slot, { worker, now, outcome, error: failure, retryAt }) {
+    async retrySlot(
+      slot,
+      { worker, now, outcome, error: failure, retryAt, releaseAttempt = false },
+    ) {
       const patch = {
         status: "pending",
         next_attempt_at: (retryAt ?? now).toISOString(),
         lease_until: null,
-        last_error: truncateError(failure),
       };
+      if (releaseAttempt) {
+        // 着手せずに返す（ソフトデッドライン・リース切れ間近）: 試行回数を戻し、直前のエラーは残す
+        // （リースを持っているため、slot.attempts からの更新で競合しない）
+        patch.attempts = Math.max(0, (slot.attempts ?? 1) - 1);
+      } else {
+        patch.last_error = truncateError(failure);
+      }
       if (outcome) patch.outcome = outcome;
       const { data, error } = await client
         .from(SLOTS)
