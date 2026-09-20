@@ -1,7 +1,7 @@
 /**
  * 「予定表のテーブル・関数がDBに無い」エラーの判定。
  *
- * マイグレーション072（scrape_slots・scrape_job_state・RPC）の適用前にコードをデプロイしても、
+ * マイグレーション075（scrape_slots・scrape_job_state・RPC）の適用前にコードをデプロイしても、
  * 共通ラッパ・監視が誤報や例外を出さず、何もしないで終わるようにするための共通処理
  * （scripts/lib/optionalColumns.js の「列が無い」判定と同じ考え方）。
  *
