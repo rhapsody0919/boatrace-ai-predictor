@@ -41,7 +41,7 @@
 | F10 | Vercel Cronは、`vercel.json`の`crons`（パスとUTCのcron式）で宣言し、production deploymentでのみ動く。`CRON_SECRET`を設定すると`Authorization: Bearer`ヘッダーが付く。関数のリージョンは、`vercel.json`の`regions`でプロジェクト単位、`functions`でパス単位に指定できる | Vercel公式ドキュメント（2026-09-19、ドキュメント検索で確認）。Cron登録数100/プロジェクト・Proは1分精度・関数最大800秒・前回実行中でも次が起動しうる・未配信・重複・リトライ無しは[ADR-0066](../../adr/0066-scraping-execution-consolidation-to-vercel.md)の確認済みの記述に従う |
 | F11 | 実行基盤の遅延: GitHubのscheduleは定刻より2〜5時間遅れ、フォールバックcronは約46時間で9件しか動かない。cron-job.orgの5分間隔は391件全て定刻。`scrape-scheduled`は400件中47件（11.8%）がキャンセルされる | [job-inventory.md](./job-inventory.md) §4 |
 | F12 | 1レースあたりの取得ページ数は約65〜75（推定）。180レースの日で約11,700〜13,500ページ | [job-inventory.md](./job-inventory.md) §5.4 |
-| F13 | プロジェクトのVercel関数のリージョン・Fluid Computeの有効化は、Vercel MCPの`get_project`では取得できなかった。既定のリージョンも、ドキュメント検索では確認できなかった | 2026-09-19の確認。[§13](#13-未確認事項と確認方法)のU1 |
+| F13 | プロジェクトのVercel関数のリージョン・Fluid Computeの有効化は、Vercel MCPの`get_project`では取得できなかった。既定のリージョンも、ドキュメント検索では確認できなかった。**→ 2026-09-20に、デプロイ情報（`regions: ["iad1"]`）とプローブで、iad1と確認（§8の実測結果）。Fluid Computeの有効化は未確認** | 2026-09-19の確認、2026-09-20のT4a-04。[§13](#13-未確認事項と確認方法)のU1 |
 
 ## 2. アーキテクチャ
 
@@ -113,7 +113,7 @@ WS4aで最初に作る。各データセットの移行より先に、1つの子
 
 ### 2.3 Cron一覧（案）
 
-cron式はUTC。JSTの運用時間帯を併記する。運用窓は、現行cron-job.orgの07:00〜23:55に合わせ、JST 07:00〜23:59（UTC 22:00〜翌14:59）とする。登録数は下表で25本（上限100/プロジェクト）。
+cron式はUTC。JSTの運用時間帯を併記する（`vercel.json`はJSONでコメントを書けないため、JSTは本表と、各`api/cron/*.js`の冒頭コメントで持つ）。運用窓は、現行cron-job.orgの07:00〜23:55に合わせ、JST 07:00〜23:59（UTC 22:00〜翌14:59）とする。登録数は下表で26本（上限100/プロジェクト）。
 
 | エンドポイント | cron式（UTC） | JST | 種別 | 備考 |
 |---|---|---|---|---|
@@ -132,8 +132,11 @@ cron式はUTC。JSTの運用時間帯を併記する。運用窓は、現行cron
 | `/api/cron/venue-motor-stats` | `0 21 * * *`、`0 23 * * *` | 06:00、08:00 | 日次＋補足 | B3 |
 | `/api/cron/racer-news` | `10 14 * * *`、`10 16 * * *` | 23:10、01:10 | 日次＋補足 | B5 |
 | `/api/cron/racer-profiles` | `*/10 0-3 1 * *`、`*/10 0-3 8,15 5,11 *` | 09:00〜12:59（毎月1日、5・11月は8・15日も） | 月次（チャンク） | B6。1,627人を300人程度ずつ |
-| `/api/cron/scrape-monitor` | `*/5 22-23,0-14 * * *`、`10 15 * * *` | 5分、00:10（日次サマリー） | 監視 | §7 |
+| `/api/cron/scrape-monitor` | `*/5 22-23,0-14 * * *` | 5分（07:00〜23:55） | 監視 | §7。72未適用・全ジョブoffの間は何も通知しない |
+| `/api/cron/scrape-summary` | `10 15 * * *` | 00:10（日次サマリー） | 監視 | §7。scrape-monitorと同じ監視＋日次サマリー。cronのクエリ文字列（`?mode=daily`）に依存しないよう、別のエンドポイントにした |
 | `/api/cron/scrape-cleanup` | `0 19 * * *` | 04:00 | 保守 | 予定表の古い行の削除（§3.9） |
+
+**運用窓と最終レースの関係（2026-09-20の実測に基づく注意。T4b-02で決める）**: 最終レースの発走は22:41〜22:45 JST（2026-09-17〜20のraces）。`result`スロットの許容幅（発走+5〜+90分）は翌00:15 JSTまで伸びるが、上表の窓型ジョブのcronは23:59 JSTまで。22:30以降に発走するレースの結果は、23:59以降は再試行されず、翌07:00の起動で`expired`になる。`result`（と、22:30以降の発走がありうるジョブ）のcron窓を翌00:59 JSTまで延ばす（例: `* 22-23,0-15 * * *`。UTC 15時台が翌00時台のJST）か、23:50の`result-catchup`で補うかを、T4b-02の実装時に決める。`scrape-monitor`の死活判定は、窓型ジョブの運用窓（07:10〜23:59）の内側のみで行うため、窓を延ばす場合は`livenessCheckable`（`scripts/lib/scrapeJobs/monitor.js`）の窓も合わせて広げる。
 
 （予測リフレッシュは、案1では、展示・レース情報の関数の内側から呼ぶため、独立したCronを持たない。案3へ進む場合のみ、`/api/cron/predict-refresh`を毎分で追加する。§5）
 
@@ -193,7 +196,7 @@ stateDiagram-v2
 | `run_mode` | text | `live`／`shadow`（並走中の区別。`shadow`の`done`は、窓内取得率の集計に含めない） |
 | `first_attempt_at` / `last_attempt_at` / `done_at` | timestamptz | 遅延（`done_at`−期限）の計測元。**取得時刻列が無いテーブルでも、窓内取得率を予定表から計測できる** |
 | `outcome` | text | `ok`／`partial`／`no_values`（未公開）／`skipped_have_data`／`error`／`breaker_open`／`cancelled_race` |
-| `rows_written` | smallint | 書き込んだ行数（0件エラーの判定） |
+| `rows_written` | integer | 書き込んだ行数（0件エラーの判定）。075で、smallintから変更（1スロットの多行書き込みで溢れないように） |
 | `result_digest` | text | 解析結果のハッシュ（shadow時に、既存基盤が書いた値との一致を比較する） |
 | `last_error` | text | 直近のエラー（500字程度で切る） |
 | `created_at` | timestamptz DEFAULT now() | |
@@ -224,25 +227,17 @@ stateDiagram-v2
 |---|---|---|
 | `window_min` | smallint NULL | 窓（`-60`〜`0`）。新基盤の行のみ設定。旧基盤の行はNULLのまま（窓は`captured_at`から後付けで計算する現行の方法を継続） |
 | `source` | text NOT NULL DEFAULT `'gha'` | 取得元（`gha`／`vercel`）。並走期間の二重書き込みを区別する（[ADR-0059](../../adr/0059-new-endpoint-timeout-security-monitoring-standards.md) 4）。`DEFAULT`付きの列追加は、メタデータの変更のみで済む |
-| 一意索引 | `(race_id, window_min)` `WHERE source='vercel' AND window_min IS NOT NULL` | 窓内の再試行が、同じ行を更新するようにする（行が増えない）。既存行への影響が無い部分索引 |
+| 一意索引 `uq_race_odds_race_window` | `(race_id, window_min)`（**部分索引にしない**） | 窓内の再試行が、同じ行を更新するようにする（行が増えない）。**当初案の部分索引（`WHERE source='vercel' AND window_min IS NOT NULL`）は、PostgRESTのupsert（`on_conflict=race_id,window_min`）が`ON CONFLICT`に`WHERE`句を付けられず、部分一意索引を推論できないため、使えない**（PGliteで再現: `there is no unique or exclusion constraint matching the ON CONFLICT specification`）。通常の一意索引でも、NULLは互いに重複とみなされない（既定の`NULLS DISTINCT`）ため、`window_min`がNULLの既存行・旧基盤の行とは衝突しない。NULLのエントリが載るコスト（約13.5万行分、数MB）は許容する |
 
 他のデータテーブルは、既に自然キー（`race_id`・`race_id+boat_number`等）を持つ上書き型なので、`source`列を追加しない（並走中の二重書き込みは、同じ行の上書きになり無害。展示のPhase 1で実績あり）。取得時刻列（`created_at`・`updated_at`）は、WS2（[orchestration.md](./orchestration.md)）が追加する。
 
 ### 3.4 ER図
 
-新規テーブルを導入する設計のため掲載する（[sdd-workflow.md](../../../.claude/rules/sdd-workflow.md)）。**手書きの設計案**であり、DDL作成後に機械生成へ置き換える。
+新規テーブルを導入する設計のため掲載する（[sdd-workflow.md](../../../.claude/rules/sdd-workflow.md)）。**マイグレーション[075](../../db-migration/075_scrape_slots_and_job_state.sql)から機械生成した図**（`node scripts/maintenance/generate-er-diagram.js scraping-vercel-consolidation`）。
 
 ```mermaid
 erDiagram
-    races ||--o{ scrape_slots : "予定 race_id"
-    races ||--o{ race_odds : "取得 race_id"
-    races {
-        VARCHAR(20) race_id PK
-        DATE race_date
-        SMALLINT venue_code
-        SMALLINT race_number
-        TIME start_time
-    }
+    scrape_slots }o--|| races : "race_id"
     scrape_slots {
         TEXT job PK
         VARCHAR(20) race_id PK
@@ -258,7 +253,7 @@ erDiagram
         TIMESTAMPTZ last_attempt_at
         TIMESTAMPTZ done_at
         TEXT outcome
-        SMALLINT rows_written
+        INTEGER rows_written
         TEXT result_digest
         TEXT last_error
         TIMESTAMPTZ created_at
@@ -280,14 +275,12 @@ erDiagram
         TIMESTAMPTZ updated_at
     }
     race_odds {
-        VARCHAR(20) race_id PK
-        TIMESTAMPTZ captured_at PK
         SMALLINT window_min
         TEXT source
     }
 ```
 
-`scrape_job_state`はFKを持たない独立表（`job`は`scrape_slots.job`と論理的に対応するが、疑似ジョブ名（`host:boatrace.jp`）を持つため、FKにしない）。`race_odds`は、追加する2列と主キーのみを示した（既存の列は省略）。
+`scrape_job_state`はFKを持たない独立表（`job`は`scrape_slots.job`と論理的に対応するが、疑似ジョブ名（`host:boatrace.jp`）を持つため、FKにしない）。`race_odds`は、追加する2列のみを示した（既存の列と、`races`との既存の外部キーは、075が触れないため図に出ない）。`scrape_slots`は`races`に従属する（`ON DELETE CASCADE`）。
 
 ### 3.5 操作（DBの関数）
 
@@ -295,9 +288,11 @@ erDiagram
 
 | 操作 | 種類 | 内容 |
 |---|---|---|
-| `ensure_scrape_slots(date, defs)` | RPC | その日の`races`×ジョブ定義（オフセット）から、スロットを一括生成する（`ON CONFLICT DO NOTHING`）。races-init完了時と、tickから10分に1回呼ぶ（後から`races`が増えた場合の追従） |
-| `claim_scrape_slots(job, limit, lease_sec, worker, defs)` | RPC | 1回のSQLで、(1)期限+許容幅を過ぎた`pending`／リース切れの`running`を`expired`にする、(2)期限到来かつ次回試行時刻に到達した`pending`（またはリース切れの`running`）を、`FOR UPDATE SKIP LOCKED`で最大`limit`件取り、`running`・リース・`attempts+1`・`claimed_by`を設定して返す。確定中止のレースは`cancelled_race`で終わらせる。1回の呼び出しで1クエリ（何も無ければ書き込みなし） |
-| 完了・再試行・失敗の記録 | アプリ側の更新 | `WHERE job=… AND race_id=… AND offset_min=… AND claimed_by=$自分`の条件付き更新。リースを奪われていれば0行更新になり、データ側は冪等な書き込み済みなので無害 |
+| `ensure_scrape_slots(date, defs, skip_lapsed, now)` | RPC | その日の`races`（`start_time`あり）×ジョブ定義（`defs`＝`[{job, offset_min, grace_min}]`）から、スロットを一括生成する（`ON CONFLICT DO NOTHING`）。races-init完了時と、tickから10分に1回呼ぶ（後から`races`が増えた場合の追従）。**`skip_lapsed`（既定TRUE）: 期限+許容幅が既に過ぎたスロットは作らない**（ジョブを日中に有効化した場合や、`races`の登録が遅れた場合に、過去分が一斉に`expired`（未実行）になってアラートが出るのを防ぐ。`races`の登録の遅れ自体は、当日の`races`の件数の監視（§7）で検知する）。`now`はテスト用 |
+| `claim_scrape_slots(job, limit, lease_sec, worker, grace_min, run_mode, now)` | RPC（`SETOF scrape_slots`を返す） | 1回の呼び出しで、(1)確定中止（`races.cancellation_status='confirmed'`）のレースの`pending`を`outcome='cancelled_race'`で終端する、(2)期限+許容幅を過ぎた`pending`と、リース切れの`running`を`expired`にする（**リースが有効な`running`は、処理中のため触らない**）、(3)期限到来かつ次回試行時刻に到達した`pending`（またはリース切れの`running`）を、期限の早い順に`FOR UPDATE SKIP LOCKED`で最大`limit`件取り、`running`・リース・`attempts+1`・`claimed_by`・`run_mode`を設定して返す。何も該当しなければ書き込みなし。走査は`race_date >= JSTの今日−1日`に限る（それより古い未完了は`scrape-cleanup`が`expired`にする）。許容幅（`grace_min`）はジョブのレジストリから渡す（スロットには保存しない） |
+| 完了・再試行・失敗の記録 | アプリ側の更新 | `WHERE job=… AND race_id=… AND offset_min=… AND claimed_by=$自分 AND status='running'`の条件付き更新。リースを奪われていれば0行更新になり、データ側は冪等な書き込み済みなので無害 |
+
+両テーブルとRPCは、**サービスロール専用**（`scrape_slots`・`scrape_job_state`はRLSを有効にしポリシーを作らず、anon・authenticatedの権限を剥奪。RPCは`REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated`＋`GRANT ... TO service_role`。既存の`race_odds`等がRLS無効でanonが書き込める状態（2026-09-20時点、16テーブル）であることは、本設計の範囲外だが別途要対応）。
 
 ### 3.6 ジョブ定義（レジストリ）
 
@@ -305,9 +300,9 @@ erDiagram
 
 | ジョブ | 窓（`offset_min`） | 許容幅（分） | 再試行の間隔 | リース | 1回のclaim上限・並列 | 完了条件 |
 |---|---|---|---|---|---|---|
-| `race_info`（A1） | `-60` | 3 | 60秒 | 90秒 | 40件・4 | `race_entries`・`race_conditions`が書けた（変更なしも完了） |
-| `exhibition`（A2） | `-33`（展示公開の最初の機会）、期限は`-7`まで | 26（`-33`から`-7`） | 120秒 | 90秒 | 40件・4 | `exhibition_time`が非NULLで存在する（既にあれば取得せず`skipped_have_data`）。未公開は`no_values`で再試行 |
-| `odds`（A3） | `-60`、`-30`、`-15`、`-10`、`-5`、`0` | 3 | 60秒 | 90秒 | 30件・4レース（各5ページ並列） | 5ページとも取得・解析でき、`race_odds`が書けた。一部のみは`partial`で再試行（同じ行を更新） |
+| `race_info`（A1） | `-60` | 3 | 60秒 | 90秒 | 24件・4 | `race_entries`・`race_conditions`が書けた（変更なしも完了） |
+| `exhibition`（A2） | `-33`（展示公開の最初の機会）、期限は`-7`まで | 26（`-33`から`-7`） | 120秒 | 90秒 | 24件・4 | `exhibition_time`が非NULLで存在する（既にあれば取得せず`skipped_have_data`）。未公開は`no_values`で再試行 |
+| `odds`（A3） | `-60`、`-30`、`-15`、`-10`、`-5`、`0` | 3 | 60秒 | 120秒 | 24件・4レース（各5ページ並列） | 5ページとも取得・解析でき、`race_odds`が書けた。一部のみは`partial`で再試行（同じ行を更新） |
 | `result`（A6） | `5` | 85（`+5`から`+90`） | 300秒 | 180秒 | 40件・4 | `payout_win`・`winning_technique`が揃う（現行の完了判定と同じ）。`+90`分で未完了なら`expired`→既存の中止・順延の確定処理へ |
 | `pcexpect`（B1） | `-720`（朝から取得可能） | 690（`-720`から`-30`） | 600秒 | 300秒 | 20件・3 | `external_predictions`が書けた |
 
@@ -362,7 +357,7 @@ sequenceDiagram
 ### 3.9 保持期間と書き込み量
 
 - **保持期間**: 予定表は60日（`scrape-cleanup`が、`race_date`が60日より古い行を日次で削除する）。7日の窓内取得率（完了の定義B）と、月次の傾向を見るのに足りる
-- **行数**: 1日あたり、`race_info`1本＋`exhibition`1本＋`odds`6本＋`result`1本＋`pcexpect`1本＝10本/レース。180レースで約1,800行、24会場（288レース）で約2,900行。60日保持で約11万〜17万行（1行約150バイトの見込みで約16〜26MB、索引込み。実サイズは未確認）
+- **行数**: 1日あたり、`race_info`1本＋`exhibition`1本＋`odds`6本＋`result`1本＋`pcexpect`1本＝10本/レース。180レースで約1,800行、24会場（288レース）で約2,900行。60日保持で約11万〜17万行。**1行のサイズは実測（2026-09-20、`pg_column_size`。`scrape_slots`は、全列に代表値を入れた行での試算）: `scrape_slots`は約208バイト（ヘッダー等を含め約232バイト）で、当初の見込み（約150バイト）の約1.5倍。** 60日・1,800行/日でテーブル約25MB＋索引（主キー・部分索引・日付）で合計約40MB、24会場の日が続く上限でも約65MB。許容範囲（DBは約629MB）だが、保持期間は`scrape-cleanup`の設定で短縮できる
 - **書き込み**: 1スロットあたり、claim（UPDATE）と完了（UPDATE）の最低2回。再試行が約3割としても、1日あたり約4,700回のUPDATE（約0.7MB/日のWAL見込み）。生成のINSERTは約1,800回（約0.2MB）。`predictions`（1回のINSERTで約190KB）と比べて小さい。詳細は[§9](#9-disk-io)
 
 ## 4. データセットごとの移行計画
@@ -425,10 +420,10 @@ F4・F5のとおり、`morning-init`は、(a)取得、(b)予測の生成（計�
 
 | ジョブ | 1回の処理量の上限 | 見積り | 根拠・状態 | `maxDuration` |
 |---|---|---|---|---|
-| `race_info` | 40件×4並列 | 約10秒 | 現行の10秒（BOA-342の実測、GitHub Actions） | 120 |
-| `exhibition` | 40件×4並列 | 約10秒 | 直近の最大が26レース（オーケストレーション調査）。既存関数は300秒枠で実績あり | 120 |
-| `odds` | 30件×4並列（各5ページ） | 数十秒（**未測定**） | 現行は会場直列で約122秒（BOA-342）。並列化で短縮する見込みだが未確認 | 300 |
-| `result` | 40件×4並列 | 約15秒（**未測定**） | 現行は逐次+500msで約39秒（BOA-342）。4並列で短縮する見込み | 300 |
+| `race_info` | 24件×4並列 | 約60〜70秒（6回×約10〜12秒） | 1ページ約8〜10秒の実測（§8）。現行の約10秒は、対象レースが少ない実行の値 | 120 |
+| `exhibition` | 24件×4並列 | 約60〜70秒（6回×約10〜12秒） | 1ページ約8〜10秒の実測（§8）。直近の最大が26レース（オーケストレーション調査）。既存関数は300秒枠で実績あり | 120 |
+| `odds` | 24件×4並列（各5ページを並列） | 約70秒（6回×約12秒。1ページ約8〜10秒の実測から） | boatrace.jpの応答が1件約8〜10秒（§8、2026-09-20の実測）。最後のスロットの完了見込み70〜84秒に対し、リースは120秒 | 300 |
+| `result` | 40件×4並列 | 約100〜120秒（10回×約10〜12秒） | 当初の見積り（約15秒）は、1件約8〜10秒の応答時間（§8の実測）を織り込んでいなかった。現行の逐次+500msで約39秒（BOA-342）は、その日の対象が数件だったため。リースは180秒 | 300 |
 | `pcexpect` | 20件×3並列 | 約75秒 | 1レース約10.6秒（実測、F5） | 300 |
 | `races-init`（チャンク） | 会場4件 | 約90秒＋書き込み | 1会場約21.7秒（実測、F5）＋`generate-predictions`約8秒＋unified約14秒 | 800 |
 | `predict-refresh`（案1では展示・レース情報の関数内） | 40レース | 約8秒（他セッションの引用） | orchestration.mdのスパイク結果（26レース時か未確認） | 展示・レース情報の枠内 |
@@ -501,6 +496,7 @@ stateDiagram-v2
 
 1. Vercelのジョブを`shadow`にする（`scrape_job_state.mode`をDBで更新。再デプロイ不要）。一致率・窓内取得率・エラーを確認する
 2. `live`にする（二重書き込みの並走）。データは上書き型なので、両方が動いても無害。オッズのみ`source`で区別
+   - **`shadow`で`done`になったスロットは、`live`に切り替えても再取得されない**（`shadow`は取得・解析のみでデータテーブルへ書かないが、スロットは`done`で終端するため、その窓は「済み」になる）。GitHub側の停止（手順3）を`live`への切り替えと同時に行うと、`shadow`で`done`になった直近の窓（許容幅の内側のもの）が欠落する。**手順3は、`live`に切り替えて、少なくとも1つ後の窓が`live`で完了するのを確認してから行う**。急ぐ場合は、切り替え直後に、許容幅の内側の`shadow`の`done`を戻す（`UPDATE scrape_slots SET status='pending', done_at=NULL, outcome=NULL, run_mode=NULL WHERE job='<ジョブ>' AND run_mode='shadow' AND status='done' AND race_date=<今日>`。期限+許容幅を過ぎたスロットは、次の`claim`で`expired`になるため、戻しても再取得されない）
 3. 並走の結果（窓内取得率が、旧基盤と同等以上）を確認し、GitHub側を止める。**リポジトリ変数`SKIP_<JOB>_ON_GHA=true`のトグル**（[BOA-313 Step 3](../scraping-serverless-migration/spec.md)で実績あり）。コードは削除しない
 4. 切り替え後の7日（土日を含む）で、完了の定義A・B・Cを実測する。満たさなければ、切り戻す
 
@@ -567,6 +563,8 @@ stateDiagram-v2
 | 未実行 | `attempts=0`のまま`expired`になったスロット（Cronの未配信・tickの死活・claimの不具合の兆候） | 1件でも即時通知 | 即時 |
 | 0件 | 期待件数が0でないのに`rows_written=0`の実行。日次ジョブの`last_rows_written=0`（期待あり） | 検知したら通知 | 即時 |
 | 死活 | `scrape_job_state.last_tick_at`の鮮度（運用窓内） | 10分以上更新なし | 即時 |
+| 期限超過だが`expired`になっていない | `pending`・リース切れの`running`で、期限+許容幅を超えたスロット（`expired`は`claim`が付けるため、ジョブのCronが止まった・ブレーカーで`claim`しない間は、`pending`のまま残る） | 1件でも（`expired`・未実行と同じキーで、重複して通知しない） | 即時 |
+| 当日のracesが0件 | 窓型ジョブが有効なのに、JST 08:00以降も当日の`races`が0件（朝の初期化の失敗。`ensure_scrape_slots`の`skip_lapsed`で作られなかったスロットも、`expired`にならないため、この検知で補う） | 検知したら通知 | 即時 |
 | 連続失敗・ブレーカー | `consecutive_failures`≧3、`breaker_open_until`が未来 | 検知したら通知 | 即時 |
 | 件数の充足率（完了の定義A） | 既存の`scripts/analysis/data-health-report.js`（WS1、PR #714）の指標を、日次で自動実行し、期間×会場の充足率が99%未満なら通知 | 99%未満 | 日次 |
 | 空テーブル | 0件のテーブル（`racer_series_points`等）を日次で検知 | 検知したら通知 | 日次 |
@@ -584,6 +582,18 @@ stateDiagram-v2
 | DBの往復が主（クエリ数が多い） | 予測リフレッシュ（数十クエリ）、races-init（書き込みが多い） | syd1（シドニー） | DBへの往復が短い |
 
 **決め方**: 推測で決めず、Phase 1で、プローブ関数（一時的。リージョンをsyd1・hnd1の2通りに指定）で、次を測る（tasks.mdのT4a）。(1)Supabaseの軽い読み取りのRTT（10回の中央値）、(2)boatrace.jpの代表ページ（`raceresult`・`odds3t`）の取得時間と成功率（10回）、(3)実行リージョンの確認（`VERCEL_REGION`）。結果から、**ジョブ単位に**リージョンを決める（`vercel.json`の`functions`でパス単位に指定できる。F10）。仮説どおりなら、取得が主のジョブはhnd1、`predict-refresh`・`races-init`はsyd1になる。ジョブ内でDBの往復と取得が混在する場合は、1レースあたりの（取得回数×取得のRTT＋DBのクエリ数×DBのRTT）の小さい方を選ぶ。
+
+**実測結果（2026-09-20、T4a-04。Previewデプロイのプローブ関数、`api/probe/*`。取得先へのリクエストは合計最大26回、逐次、2.2秒間隔、UA `BoatraceAIBot/1.0`、429/503は発生せず）**:
+
+| 項目 | 結果 |
+|---|---|
+| **現在の関数のリージョン（U1）** | **iad1（米国東部）。** Vercelのデプロイ情報（本番・Preview共に`regions: ["iad1"]`）と、リージョン未指定のプローブの`VERCEL_REGION`（iad1）で確認。つまり、既存の`api/cron/exhibition.js`・`race-notices.js`は、DB（シドニー）からも取得先（日本）からも遠いiad1で動いている。Node.jsは`v24.20.0`。Preview環境にも、`SUPABASE_URL`・`SUPABASE_SERVICE_KEY`・`CRON_SECRET`・`VITE_SUPABASE_*`が設定されている（名前の有無のみ確認） |
+| Supabaseの軽い読み取りのRTT（`venues`を1行、10回逐次、初回を除く中央値） | **syd1: 28・35・46ミリ秒**（3回計測）／ hnd1: 205・140ミリ秒（2回）／ **iad1: 247ミリ秒**（初回は接続確立を含み、いずれも約480〜500ミリ秒。iad1は途中に650〜690ミリ秒の外れ値あり）。DBの往復は、syd1が、hnd1の約4〜7倍、iad1の約5〜9倍速い |
+| boatrace.jp `raceresult`の取得時間（本文を含む、ミリ秒） | syd1: 9,644・9,191・9,165・8,192・9,149（中央値9,165、5件）／ hnd1: 8,079・9,249・10,109・9,099（中央値9,174、4件）／ ローカル（日本の回線）: 10,333（UA=BoatraceAIBot）・8,305（Safari UA） |
+| boatrace.jp `odds3t`の取得時間（ミリ秒） | syd1: 10,314・10,164・8,181・8,186（中央値9,175、4件）／ hnd1: 10,045・9,137・9,053・8,099・8,068（中央値9,053、5件） |
+| 成功率 | 22件全てが200で、想定のサイズ（`raceresult`約58.5KB、`odds3t`約46KB） |
+
+**結論**: (1)**boatrace.jpの応答時間は、リージョン・UA・実行元（Vercel・ローカル）によらず、1件あたり約8〜10秒**（最大10.3秒）。取得の往復の短縮によるhnd1の優位は、見られなかった（仮説は否定された）。GitHub Actionsの実測（`scrape-pcexpect`が1リクエスト約9秒、F5）とも一致する。取得先のサーバー側が遅いと考えられる（計測は日曜の10:10〜10:20 JST。時間帯による変化は未確認）。(2)したがって、リージョンは**DBの往復（syd1が最速）で決まり、取得が主のジョブも含めて、全てのスクレイピング関数を`syd1`にする**のが妥当（`vercel.json`の`regions: ["syd1"]`（プロジェクト単位）を、WS4b・最初の移行PRで設定する。ただし、既存のAPI（`api/predictions/*`等、ユーザー向け）のリージョンも変わる影響があるため、`functions`でスクレイピング系（`api/cron/*`）のみを指定する案が安全）。(3)1件約10秒の応答時間は、1スロットの処理時間・リース・並列度の設計に効く（§4.4、レジストリの`slotSecEstimate`）。(4)`politeFetch`のタイムアウト15秒は、実測の最大10.3秒に対して余裕が小さい（約1.5倍）。ピーク時に遅くなると、タイムアウトと再試行（最大2回）が連鎖する恐れがあるため、shadowの実測（U2・T4b-02）で、必要なら20〜25秒に見直す。
 
 **取得先への負荷**（[ADR-0067](../../adr/0067-official-site-content-redisplay-policy.md)の要件の一部）: 
 
@@ -737,10 +747,10 @@ Disk IO予算が逼迫している（Small、ベースライン174Mbps。orchest
 
 | # | 未確認事項 | 確認方法 | タスク |
 |---|---|---|---|
-| U1 | 現在のVercel関数のリージョン、Fluid Computeの有効化、既定のリージョン | Vercelのダッシュボード（プロジェクト設定）、関数のログ、`VERCEL_REGION`を返すプローブ | T4a-04 |
-| U2 | Vercelから、boatrace.jp・会場公式サイト・mbrace.or.jpへの取得の成功率・遅延（syd1とhnd1の比較） | プローブ関数（一時的）で、各10回。拒否・遅延を記録 | T4a-04 |
+| U1 | 現在のVercel関数のリージョン、Fluid Computeの有効化、既定のリージョン | Vercelのダッシュボード（プロジェクト設定）、関数のログ、`VERCEL_REGION`を返すプローブ。**2026-09-20に、リージョンはiad1と確認（デプロイ情報とプローブ）。Fluid Computeの有効化は未確認（ダッシュボードで確認）** | T4a-04（リージョンは確認済み） |
+| U2 | Vercelから、boatrace.jp・会場公式サイト・mbrace.or.jpへの取得の成功率・遅延（syd1とhnd1の比較） | プローブ関数（一時的）で確認。**2026-09-20: boatrace.jpは、syd1・hnd1・ローカルとも、1件約8〜10秒・成功率100%（22件）。リージョンの差は無い（§8）。会場公式サイト・mbrace.or.jpは未計測（取得先への負荷を抑えるため対象外にした）。時間帯を変えた再測定は、shadow運用中に予定表・関数ログから行う** | T4a-04（boatrace.jpは確認済み。他は、各移行PR） |
 | U3 | boatrace.jpのレート制限・IPブロックの閾値（Vercelの共有IPの扱いを含む） | 公表なし。`shadow`で、段階的に増やしながら、拒否率を監視 | T4b-02 |
-| U4 | `race_odds`・`scrape_slots`の1行のサイズ（全通りのjsonbを含む） | `pg_column_size`（読み取りのみ、軽い集計）、DDL適用後の実測 | T4a-02 |
+| U4 | `race_odds`・`scrape_slots`の1行のサイズ（全通りのjsonbを含む） | `pg_column_size`（読み取りのみ、軽い集計）、DDL適用後の実測。**2026-09-20に、075のPRで実測（`race_odds`: 平均2,030バイト・最大2,233バイト（9/17以降の2,000行）。1日約1,080行で約2.2MB/日。`scrape_slots`: 約232バイト/行（試算）。DDL適用後に、実行の`pg_total_relation_size`で再確認する）** | T4a-02（実測済み。DDL適用後の再確認はT4a-03） |
 | U5 | Vercelの使用量（Active CPU・呼び出し回数）の課金見込み。毎分tickが4本（約4,100回/日）の起動を含む | Phase 2の前後で、Vercelの使用量画面を確認 | T4b-02 |
 | U6 | 展示データの公開時刻の分布（発走の何分前に、展示タイムが公開されるか） | WS2の取得時刻列（`exhibition_data`の`created_at`／`updated_at`）と、`races.start_time`の差。会場別（展示STが先に出る会場を含む） | T4b-06 |
 | U7 | 公式コンピュータ予想（B1）が、朝の1回の取得で足りるか（発走前に更新されるか）。1リクエスト約9秒かかる原因（サーバーの応答か、制限か） | 公式ページの更新タイミングの確認。取得時刻を変えた比較 | T4b-08 |
