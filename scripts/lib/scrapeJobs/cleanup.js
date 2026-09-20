@@ -31,15 +31,17 @@ export async function runCleanup(ctx) {
 
   const swept = await client
     .from("scrape_slots")
-    .update({
-      status: "expired",
-      lease_until: null,
-      next_attempt_at: null,
-      last_error: "scrape-cleanup: 2日以上前の未完了を expired にしました",
-    })
+    .update(
+      {
+        status: "expired",
+        lease_until: null,
+        next_attempt_at: null,
+        last_error: "scrape-cleanup: 2日以上前の未完了を expired にしました",
+      },
+      { count: "exact" },
+    )
     .in("status", ["pending", "running"])
-    .lt("race_date", staleBefore)
-    .select("race_id");
+    .lt("race_date", staleBefore);
   if (swept.error) {
     throw new Error(
       `古い未完了の expired 化に失敗しました: ${swept.error.message}`,
@@ -57,9 +59,9 @@ export async function runCleanup(ctx) {
   }
 
   return {
-    rowsWritten: (swept.data?.length ?? 0) + (deleted.count ?? 0),
+    rowsWritten: (swept.count ?? 0) + (deleted.count ?? 0),
     body: {
-      staleExpired: swept.data?.length ?? 0,
+      staleExpired: swept.count ?? 0,
       deleted: deleted.count ?? 0,
       retentionBefore,
     },

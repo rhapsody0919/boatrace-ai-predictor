@@ -80,6 +80,18 @@ WHERE s.first_attempt_at IS NOT NULL
 GROUP BY 1;
 ```
 
+## E. shadowからliveへの切り替え時の注意（レビュー指摘）
+
+`shadow`で`done`になったスロットは、`live`に切り替えても再取得されない（データテーブルへ書いていないのに、その窓は「済み」になる）。GitHub側の停止（`SKIP_*_ON_GHA=true`）は、`live`に切り替え、少なくとも1つ後の窓が`live`で完了したのを確認してから行う。急ぐ場合は、切り替え直後に、許容幅の内側の`shadow`の`done`を戻す:
+
+```sql
+UPDATE scrape_slots
+   SET status='pending', done_at=NULL, outcome=NULL, run_mode=NULL, next_attempt_at=NULL
+ WHERE job='<ジョブ>' AND run_mode='shadow' AND status='done' AND race_date=<今日>;
+```
+
+（期限+許容幅を過ぎたスロットは、次の`claim`で`expired`になるため、戻しても再取得されない。`expired`は通知される。）
+
 ## 結果の記録
 
 検証したら、結果（実行したコマンド・SQLと出力）を、tasks.md T4a-10のチェックとともに、PRの説明または`orchestration.md`に記録する。U16・U17は、plan.md §13の表に結果を追記する。

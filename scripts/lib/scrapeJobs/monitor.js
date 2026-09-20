@@ -43,6 +43,9 @@ export const THRESHOLDS = Object.freeze({
   renotifyHours: 6,
 });
 
+/** 当日のracesが登録されているべき時刻（JST 08:00。最初のレースの窓（60分前）より前） */
+const RACES_EXPECTED_BY_MIN = 8 * 60;
+
 /** 運用窓（JST 07:00〜23:59。plan.md §2.3のcron式と同じ） */
 export const OPERATING_START_MIN = 7 * 60;
 export const OPERATING_END_MIN = 24 * 60;
@@ -185,31 +188,91 @@ export function aggregateByJob(stats) {
 
 /** @typedef {{key: string, kind: string, text: string}} Alert */
 
-/** expired・未実行（1スロットごと）。確定中止のレースは除く */
-export function evaluateExpired(expiredSlots, { activeJobs } = {}) {
+/**
+ * expired・未実行（1スロットごと）。確定中止のレースは除く。
+ *
+ * expired は claim_scrape_slots（またはscrape-cleanup）が付けるため、ジョブのCronが止まった・ブレーカーで
+ * claim しなかった間は、期限+許容幅を超えても pending のまま残る。監視が claim に依存して見逃さないよう、
+ * pending・リース切れの running で期限+許容幅を超えたものも、同じキーで、expired と同じく通知する
+ * （後で claim が expired にしても、同じキーのため再通知しない）。
+ *
+ * @param {Array<Object>} slots expired・pending・running のスロット（races を埋め込んだ行）
+ * @param {{activeJobs?: Set<string>, now?: Date, registry?: typeof SCRAPE_JOBS}} [options]
+ */
+export function evaluateExpired(
+  slots,
+  { activeJobs, now, registry = SCRAPE_JOBS } = {},
+) {
   /** @type {Alert[]} */
   const alerts = [];
-  for (const slot of expiredSlots) {
-    if (slot.status !== "expired" || isCancelledRace(slot)) continue;
+  for (const slot of slots) {
+    if (isCancelledRace(slot)) continue;
     if (slot.run_mode === "shadow") continue;
     if (activeJobs && !activeJobs.has(slot.job)) continue;
-    const id = `${slot.job}:${slot.race_id}:${slot.offset_min}`;
     const deadline = deadlineOf(slot);
+    let pastWindow = false;
+    if (slot.status === "expired") {
+      pastWindow = true;
+    } else if (
+      now &&
+      deadline &&
+      (slot.status === "pending" ||
+        (slot.status === "running" &&
+          slot.lease_until &&
+          new Date(slot.lease_until) < now))
+    ) {
+      const def = registry[slot.job];
+      pastWindow =
+        Boolean(def) &&
+        now.getTime() > slotWindowEnd(deadline, def.graceMin).getTime();
+    }
+    if (!pastWindow) continue;
+    const id = `${slot.job}:${slot.race_id}:${slot.offset_min}`;
     const when = deadline ? `期限 ${toJstTimeString(deadline)}` : "期限不明";
     const detail = slot.last_error ? ` / 最終エラー: ${slot.last_error}` : "";
+    const pendingNote =
+      slot.status === "expired" ? "" : "（まだexpired化されていない）";
     if ((slot.attempts ?? 0) === 0) {
       alerts.push({
         key: `unexecuted:${id}`,
         kind: "unexecuted",
-        text: `未実行（attempts=0のままexpired。Cronの未配信・tickの死活・claimの不具合の兆候） ${id}（${when}）`,
+        text: `未実行（attempts=0のまま期限+許容幅を超過${pendingNote}。Cronの未配信・tickの死活・claimの不具合・ブレーカーの兆候） ${id}（${when}）`,
       });
     } else {
       alerts.push({
         key: `expired:${id}`,
         kind: "expired",
-        text: `expired（許容幅を超えて未完了） ${id}（${when}、試行${slot.attempts}回、outcome=${slot.outcome ?? "なし"}）${detail}`,
+        text: `expired（許容幅を超えて未完了${pendingNote}） ${id}（${when}、試行${slot.attempts}回、outcome=${slot.outcome ?? "なし"}）${detail}`,
       });
     }
+  }
+  return alerts;
+}
+
+/**
+ * 当日の races が無い（朝の初期化の失敗・遅延）。予定表は races から作るため、races が無いと、
+ * 全ての窓型ジョブが「対象なし」で黙る（plan.md F1・R8）。skip_lapsed で作られなかったスロットも、
+ * expired にならず分母に入らないため、この検知で補う
+ */
+export function evaluateRacesPresent({ jobStates, todayRaceCount, now }) {
+  /** @type {Alert[]} */
+  const alerts = [];
+  const windowJobActive = jobStates.some(
+    (r) =>
+      !isHostRow(r) &&
+      SCRAPE_JOBS[r.job]?.kind === "window" &&
+      isActiveMode(r.mode),
+  );
+  if (
+    windowJobActive &&
+    todayRaceCount === 0 &&
+    jstMinutesOfDay(now) >= RACES_EXPECTED_BY_MIN
+  ) {
+    alerts.push({
+      key: `races_missing:${toJstDateString(now)}`,
+      kind: "races_missing",
+      text: `当日(${toJstDateString(now)})のracesが0件です（朝の初期化の失敗・遅延の可能性。全ての窓型ジョブが対象なしで黙ります）`,
+    });
   }
   return alerts;
 }
@@ -260,7 +323,7 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
     }
     if (
       row.last_error &&
-      /0件/.test(row.last_error) &&
+      /(?<![0-9])0件/.test(row.last_error) &&
       (row.consecutive_failures ?? 0) >= 1
     ) {
       alerts.push({
@@ -336,28 +399,50 @@ function toJstTimeString(date) {
   return `${j.toISOString().slice(5, 10)} ${j.toISOString().slice(11, 16)}`;
 }
 
-/** アラートのSlackメッセージ（Incoming Webhook。絵文字は使わない） */
-export function formatAlertMessage(alerts, now) {
-  const lines = alerts.map((a) => `・${a.text}`);
+/** Slackのブロックの本文の上限（3000字）に対する、本文の予算 */
+const SLACK_TEXT_BUDGET = 2800;
+
+/**
+ * アラートのSlackメッセージ（Incoming Webhook。絵文字は使わない）。
+ * 本文が予算を超える場合は、入り切る分だけ載せ、残りは「ほかN件（次回の実行で通知）」とする。
+ * 載せなかったアラートは、通知済みとして記録してはならない（呼び出し側が includedCount で判断する）
+ *
+ * @returns {{message: Object, includedCount: number}}
+ */
+export function formatAlertMessage(
+  alerts,
+  now,
+  { budget = SLACK_TEXT_BUDGET } = {},
+) {
+  const head = `*データ取得の監視: ${alerts.length}件の異常*（${toJstTimeString(now)} JST）`;
+  const lines = [];
+  let used = head.length;
+  for (const a of alerts) {
+    const line = `・${a.text.length > 400 ? `${a.text.slice(0, 399)}…` : a.text}`;
+    // 「ほかN件」の行の分（最大約40字）を残す
+    if (used + line.length + 1 + 40 > budget && lines.length < alerts.length) {
+      break;
+    }
+    lines.push(line);
+    used += line.length + 1;
+  }
+  const rest = alerts.length - lines.length;
+  const body = [
+    head,
+    ...lines,
+    ...(rest > 0 ? [`…ほか${rest}件（次回の実行で通知します）`] : []),
+  ].join("\n");
   return {
-    text: `[データ取得の監視] ${alerts.length}件の異常（${toJstTimeString(now)} JST）`,
-    attachments: [
-      {
-        color: "#c9a227",
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `*データ取得の監視: ${alerts.length}件の異常*（${toJstTimeString(now)} JST）\n${lines.join("\n")}`.slice(
-                0,
-                2900,
-              ),
-            },
-          },
-        ],
-      },
-    ],
+    includedCount: lines.length,
+    message: {
+      text: `[データ取得の監視] ${alerts.length}件の異常（${toJstTimeString(now)} JST）`,
+      attachments: [
+        {
+          color: "#c9a227",
+          blocks: [{ type: "section", text: { type: "mrkdwn", text: body } }],
+        },
+      ],
+    },
   };
 }
 
@@ -465,6 +550,22 @@ export async function collectMonitorInput(client, now, level) {
     slotQuery((q) => q.eq("race_date", today)),
     "当日のスロット",
   );
+  // 期限+許容幅を超えても、claim されず expired になっていないスロットの検知用
+  const openSlots = await fetchPaged(
+    slotQuery((q) =>
+      q.in("status", ["pending", "running"]).gte("race_date", yesterday),
+    ),
+    "未完了のスロット",
+  );
+  const racesRes = await client
+    .from("races")
+    .select("race_id", { count: "exact", head: true })
+    .eq("race_date", today);
+  if (racesRes.error) {
+    throw new Error(
+      `当日のracesの件数の取得に失敗しました: ${racesRes.error.message}`,
+    );
+  }
   let weekSlots = null;
   if (level !== "tick") {
     weekSlots = await fetchPaged(
@@ -478,6 +579,8 @@ export async function collectMonitorInput(client, now, level) {
     available: true,
     jobStates: stateRes.data,
     expiredSlots,
+    openSlots,
+    todayRaceCount: racesRes.count ?? 0,
     todaySlots,
     weekSlots,
   };
@@ -526,9 +629,19 @@ export async function runMonitor(
     liveJobs,
   });
   const alerts = [
-    ...evaluateExpired(input.expiredSlots, { activeJobs: activeJobNames }),
+    ...evaluateExpired([...input.expiredSlots, ...(input.openSlots ?? [])], {
+      activeJobs: activeJobNames,
+      now,
+    }),
     ...evaluateWindowRates(todayStats, toJstDateString(now)),
     ...evaluateJobStates(input.jobStates, now),
+    ...(input.todayRaceCount === undefined
+      ? []
+      : evaluateRacesPresent({
+          jobStates: input.jobStates,
+          todayRaceCount: input.todayRaceCount,
+          now,
+        })),
   ];
 
   const previous = ctx.state?.last_report?.notified ?? {};
@@ -536,7 +649,19 @@ export async function runMonitor(
 
   const webhook = env.SLACK_WEBHOOK_URL;
   const messages = [];
-  if (toSend.length > 0) messages.push(formatAlertMessage(toSend, now));
+  // 載せきれなかったアラートは、通知済みとして記録しない（次の実行で通知する）
+  let notifiedFinal = notified;
+  if (toSend.length > 0) {
+    const { message, includedCount } = formatAlertMessage(toSend, now);
+    messages.push(message);
+    if (includedCount < toSend.length) {
+      notifiedFinal = { ...notified };
+      for (const alert of toSend.slice(includedCount)) {
+        if (previous[alert.key] === undefined) delete notifiedFinal[alert.key];
+        else notifiedFinal[alert.key] = previous[alert.key];
+      }
+    }
+  }
   // 日次サマリー: 取得ジョブが1つも有効でない間（移行前）は、投稿しない
   if (isDaily && activeJobs.length > 0) {
     const summaryDate = toJstDateString(new Date(now.getTime() - 3600 * 1000));
@@ -575,7 +700,7 @@ export async function runMonitor(
     rowsWritten: 0,
     // 通知に成功した場合のみ、通知済みの記録を進める（失敗した通知は、次の実行で再送される）
     report: {
-      notified,
+      notified: notifiedFinal,
       lastLevel: level,
       lastRunAt: now.toISOString(),
     },

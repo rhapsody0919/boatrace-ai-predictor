@@ -67,7 +67,7 @@ export async function verifyScrapeSlotsOnDb(client, { date, log = () => {} }) {
       "racesの取得",
       await client
         .from("races")
-        .select("race_id, start_time")
+        .select("race_id, start_time, cancellation_status")
         .eq("race_date", date)
         .not("start_time", "is", null)
         .order("race_id"),
@@ -99,7 +99,9 @@ export async function verifyScrapeSlotsOnDb(client, { date, log = () => {} }) {
     );
 
     // 3. 期限計算（JST）: 最初のレースを、期限の1秒前と期限ちょうどで claim する
-    const first = races[0];
+    // 確定中止のレースは、claim が終端する（取れない）ため、期限計算の検証には使わない
+    const first = races.find((r) => r.cancellation_status !== "confirmed");
+    if (!first) throw new Error(`${date} に、確定中止でないレースがありません`);
     const firstDeadline = new Date(
       `${date}T${first.start_time.slice(0, 8)}+09:00`,
     );
@@ -134,8 +136,12 @@ export async function verifyScrapeSlotsOnDb(client, { date, log = () => {} }) {
     const dup = all.filter((id, i) => all.indexOf(id) !== i);
     check(
       `二重claimなし: ${WORKERS}本の同時claimで、同じスロットを2つの実行が取っていない`,
-      dup.length === 0 && all.length === WORKERS * LIMIT_PER_WORKER,
-      `取得${all.length}件、重複${dup.length}件`,
+      // 件数は、確定中止のレース・同時実行時の行の再評価で、想定（WORKERS×LIMIT）より少なくなりうるため、
+      // 一致は要求しない（重複が0件で、複数の実行が取れていること）
+      dup.length === 0 &&
+        all.length > 0 &&
+        rowsByWorker.filter((w) => w.rows.length > 0).length >= 2,
+      `取得${all.length}件（想定${WORKERS * LIMIT_PER_WORKER}件）、重複${dup.length}件、取れた実行${rowsByWorker.filter((w) => w.rows.length > 0).length}本`,
     );
     check(
       "claim した行は running・attempts=1・run_mode=shadow",

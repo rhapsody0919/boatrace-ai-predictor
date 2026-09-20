@@ -504,6 +504,7 @@ stateDiagram-v2
 
 1. Vercelのジョブを`shadow`にする（`scrape_job_state.mode`をDBで更新。再デプロイ不要）。一致率・窓内取得率・エラーを確認する
 2. `live`にする（二重書き込みの並走）。データは上書き型なので、両方が動いても無害。オッズのみ`source`で区別
+   - **`shadow`で`done`になったスロットは、`live`に切り替えても再取得されない**（`shadow`は取得・解析のみでデータテーブルへ書かないが、スロットは`done`で終端するため、その窓は「済み」になる）。GitHub側の停止（手順3）を`live`への切り替えと同時に行うと、`shadow`で`done`になった直近の窓（許容幅の内側のもの）が欠落する。**手順3は、`live`に切り替えて、少なくとも1つ後の窓が`live`で完了するのを確認してから行う**。急ぐ場合は、切り替え直後に、許容幅の内側の`shadow`の`done`を戻す（`UPDATE scrape_slots SET status='pending', done_at=NULL, outcome=NULL, run_mode=NULL WHERE job='<ジョブ>' AND run_mode='shadow' AND status='done' AND race_date=<今日>`。期限+許容幅を過ぎたスロットは、次の`claim`で`expired`になるため、戻しても再取得されない）
 3. 並走の結果（窓内取得率が、旧基盤と同等以上）を確認し、GitHub側を止める。**リポジトリ変数`SKIP_<JOB>_ON_GHA=true`のトグル**（[BOA-313 Step 3](../scraping-serverless-migration/spec.md)で実績あり）。コードは削除しない
 4. 切り替え後の7日（土日を含む）で、完了の定義A・B・Cを実測する。満たさなければ、切り戻す
 
@@ -570,6 +571,8 @@ stateDiagram-v2
 | 未実行 | `attempts=0`のまま`expired`になったスロット（Cronの未配信・tickの死活・claimの不具合の兆候） | 1件でも即時通知 | 即時 |
 | 0件 | 期待件数が0でないのに`rows_written=0`の実行。日次ジョブの`last_rows_written=0`（期待あり） | 検知したら通知 | 即時 |
 | 死活 | `scrape_job_state.last_tick_at`の鮮度（運用窓内） | 10分以上更新なし | 即時 |
+| 期限超過だが`expired`になっていない | `pending`・リース切れの`running`で、期限+許容幅を超えたスロット（`expired`は`claim`が付けるため、ジョブのCronが止まった・ブレーカーで`claim`しない間は、`pending`のまま残る） | 1件でも（`expired`・未実行と同じキーで、重複して通知しない） | 即時 |
+| 当日のracesが0件 | 窓型ジョブが有効なのに、JST 08:00以降も当日の`races`が0件（朝の初期化の失敗。`ensure_scrape_slots`の`skip_lapsed`で作られなかったスロットも、`expired`にならないため、この検知で補う） | 検知したら通知 | 即時 |
 | 連続失敗・ブレーカー | `consecutive_failures`≧3、`breaker_open_until`が未来 | 検知したら通知 | 即時 |
 | 件数の充足率（完了の定義A） | 既存の`scripts/analysis/data-health-report.js`（WS1、PR #714）の指標を、日次で自動実行し、期間×会場の充足率が99%未満なら通知 | 99%未満 | 日次 |
 | 空テーブル | 0件のテーブル（`racer_series_points`等）を日次で検知 | 検知したら通知 | 日次 |

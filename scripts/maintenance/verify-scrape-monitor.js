@@ -24,6 +24,7 @@ import {
   computeWindowStats,
   evaluateExpired,
   evaluateJobStates,
+  evaluateRacesPresent,
   evaluateWindowRates,
   formatAlertMessage,
   formatDailySummary,
@@ -228,6 +229,60 @@ const doneOdds = (delayMin, over = {}) =>
   );
 }
 
+// claim に依存しない検知: 期限+許容幅を超えても pending のまま残っているスロット
+{
+  const now = at("12:00");
+  const active = new Set(["odds", "result"]);
+  const startAt = (hhmm) => `${hhmm}:00`;
+  const slots = [
+    // odds -60、10:00発走、期限09:00+許容幅3分=09:03。12:00には超過。pending・attempts=0 → 未実行
+    slot("odds", -60, "pending", { attempts: 0, race_id: "2026-09-19-03-01" }),
+    // 同じく超過。試行1回のpending → expired と同じ扱い
+    slot("odds", -60, "pending", { attempts: 1, race_id: "2026-09-19-03-02" }),
+    // まだ許容幅内（発走 12:30 → 期限11:30+3分=11:33 → 12:00には超過...）ではなく、期限前
+    slot("odds", -60, "pending", { attempts: 0, race_id: "2026-09-19-03-03", start_time: startAt("14:00") }),
+    // running でリースが有効（処理中）→ 通知しない
+    { ...slot("odds", -60, "running", { attempts: 1, race_id: "2026-09-19-03-04" }), lease_until: iso(new Date(now.getTime() + 30000)) },
+    // running でリース切れ → 通知
+    { ...slot("odds", -60, "running", { attempts: 1, race_id: "2026-09-19-03-05" }), lease_until: iso(new Date(now.getTime() - 30000)) },
+    // 有効でないジョブ・確定中止 → 通知しない
+    slot("pcexpect", -720, "pending", { attempts: 0, race_id: "2026-09-19-03-06" }),
+    slot("odds", -60, "pending", { attempts: 0, cancel: "confirmed", race_id: "2026-09-19-03-07" }),
+  ];
+  const alerts = evaluateExpired(slots, { activeJobs: active, now });
+  const keys = alerts.map((x) => x.key).sort();
+  check(
+    "claim に依存しない検知: pending・リース切れの running が期限+許容幅を超えたら、expired と同じキーで通知する（処理中・期限前・有効でないジョブ・確定中止は通知しない）",
+    show(keys) ===
+      show([
+        "expired:odds:2026-09-19-03-02:-60",
+        "expired:odds:2026-09-19-03-05:-60",
+        "unexecuted:odds:2026-09-19-03-01:-60",
+      ]) && alerts.every((x) => /まだexpired化されていない/.test(x.text)),
+    show(keys),
+  );
+  check(
+    "now を渡さなければ（従来の呼び出し）、pending は判定しない",
+    evaluateExpired(slots, { activeJobs: active }).length === 0,
+  );
+}
+
+// 当日のracesが無い
+{
+  const jobs = [{ job: "odds", mode: "live" }];
+  const ev = (todayRaceCount, when, jobStates = jobs) =>
+    evaluateRacesPresent({ jobStates, todayRaceCount, now: when });
+  check(
+    "当日のracesが0件（08:00以降・窓型ジョブが有効）: 通知。08:00前・racesあり・有効なジョブなしでは通知しない",
+    ev(0, at("08:05")).length === 1 &&
+      ev(0, at("08:05"))[0].key === "races_missing:2026-09-19" &&
+      ev(0, at("07:30")).length === 0 &&
+      ev(156, at("08:05")).length === 0 &&
+      ev(0, at("08:05"), [{ job: "odds", mode: "off" }]).length === 0 &&
+      ev(0, at("08:05"), [{ job: "point_rank", mode: "live" }]).length === 0,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // (c) ジョブ状態
 // ---------------------------------------------------------------------------
@@ -290,6 +345,16 @@ const doneOdds = (delayMin, over = {}) =>
         job: "odds",
         consecutive_failures: 1,
         last_error: "期待件数が6件なのに、解析できた行が0件でした",
+      }),
+    ]).includes("zero_rows:odds"),
+  );
+  check(
+    "0件エラー: 『10件』『20件』のような他の数字の末尾の0は、0件エラーとみなさない",
+    !kinds([
+      base({
+        job: "odds",
+        consecutive_failures: 1,
+        last_error: "期待10件のうち20件を解析",
       }),
     ]).includes("zero_rows:odds"),
   );
@@ -383,12 +448,27 @@ const doneOdds = (delayMin, over = {}) =>
     "72時間より古い記録は削除される",
     !("old:key" in r4.notified) && "new:key" in r4.notified,
   );
-  const msg = formatAlertMessage([a("x")], now);
+  const { message: msg, includedCount } = formatAlertMessage([a("x")], now);
   check(
     "アラートのメッセージ: 件数と内容を含み、絵文字を使わない",
     /1件の異常/.test(msg.text) &&
+      includedCount === 1 &&
       /・x/.test(msg.attachments[0].blocks[0].text.text) &&
       !/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(show(msg)),
+  );
+  // 多数のアラート: 本文の予算内に収め、載せなかった分は「ほかN件」にする
+  const many = Array.from({ length: 200 }, (_, i) =>
+    a(`expired:odds:2026-09-19-01-${i}:-60`),
+  ).map((x) => ({ ...x, text: `${x.key} `.padEnd(120, "x") }));
+  const big = formatAlertMessage(many, now);
+  const bigText = big.message.attachments[0].blocks[0].text.text;
+  check(
+    "アラートが多数でも、本文は3000字以内に収め、載せなかった件数を明記する",
+    bigText.length <= 3000 &&
+      big.includedCount > 0 &&
+      big.includedCount < 200 &&
+      new RegExp(`ほか${200 - big.includedCount}件`).test(bigText),
+    `${bigText.length}字、載せた${big.includedCount}件`,
   );
 }
 
@@ -480,6 +560,48 @@ const doneOdds = (delayMin, over = {}) =>
     "異常があるのに SLACK_WEBHOOK_URL が無い: 例外（異常を通知できないことを成功に見せない）",
     threw && /SLACK_WEBHOOK_URL/.test(threw.message) && posted.length === 0,
   );
+
+  // 多数の異常: 載せきれなかった分は、通知済みとして記録せず、次の実行で通知する
+  {
+    const overdue = Array.from({ length: 100 }, (_, i) =>
+      slot("odds", -60, "expired", {
+        attempts: 2,
+        race_id: `2026-09-19-04-${String(i).padStart(2, "0")}`,
+        last_error: "取得先が429を返し続けた".padEnd(80, "。"),
+      }),
+    );
+    const posts = [];
+    const fetchMany = async (url, init) => {
+      posts.push(JSON.parse(init.body));
+      return new Response("ok", { status: 200 });
+    };
+    const big = await runMonitor(ctxOf(), {
+      collect: collectOf({ jobStates: [jobState()], expiredSlots: overdue }),
+      env,
+      fetchImpl: fetchMany,
+    });
+    const shown = Object.keys(big.report.notified).length;
+    const text = posts[0].attachments[0].blocks[0].text.text;
+    const next = await runMonitor(
+      ctxOf({ state: { last_report: big.report } }),
+      {
+        collect: collectOf({ jobStates: [jobState()], expiredSlots: overdue }),
+        env,
+        fetchImpl: fetchMany,
+      },
+    );
+    check(
+      "多数の異常: 載せた件数だけを通知済みとして記録し、残りは次の実行で通知する（切り詰めた分を通知済みにして、72時間黙らない）",
+      shown > 0 &&
+        shown < 100 &&
+        text.length <= 3000 &&
+        new RegExp(`ほか${100 - shown}件`).test(text) &&
+        next.body.sent === 1 &&
+        Object.keys(next.report.notified).length > shown,
+      `載せた${shown}件、次回の通知済み${Object.keys(next.report.notified).length}件`,
+    );
+    posts.length = 0;
+  }
 
   // 異常あり: 通知 → 通知済みの記録を返す。次の実行では再通知しない
   r = await runMonitor(ctxOf(), { collect: withExpired, env, fetchImpl });
@@ -599,10 +721,7 @@ const doneOdds = (delayMin, over = {}) =>
   const client = {
     from: () =>
       n++ === 0
-        ? builder("sweep", {
-            data: [{ race_id: "a" }, { race_id: "b" }],
-            error: null,
-          })
+        ? builder("sweep", { data: null, count: 2, error: null })
         : builder("delete", { data: null, count: 5, error: null }),
   };
   const r = await runCleanup({ client, now: () => at("04:00", "2026-09-20") });
@@ -781,12 +900,42 @@ const doneOdds = (delayMin, over = {}) =>
     show(crons),
   );
   const byPath = Object.fromEntries(crons.map((c) => [c.path, c.schedule]));
+  // cron式（UTC）を、JSTの起動時刻の集合に換算して確認する（式の文字列との比較にしない）
+  const expandField = (field, max) => {
+    const out = new Set();
+    for (const part of field.split(",")) {
+      const [range, step] = part.split("/");
+      const [lo, hi] =
+        range === "*"
+          ? [0, max]
+          : range.includes("-")
+            ? range.split("-").map(Number)
+            : [Number(range), step ? max : Number(range)];
+      for (let v = lo; v <= hi; v += step ? Number(step) : 1) out.add(v);
+    }
+    return out;
+  };
+  const jstTimes = (schedule) => {
+    const [min, hour] = schedule.split(" ");
+    const times = [];
+    for (const h of expandField(hour, 23))
+      for (const m of expandField(min, 59))
+        times.push(((h + 9) % 24) * 60 + m); // UTC→JST（分）
+    return times.sort((x, y) => x - y);
+  };
+  const mon = jstTimes(byPath["/api/cron/scrape-monitor"]);
   check(
-    "cron式（UTC）: monitor は JST 07:00〜23:59 の5分ごと、summary は JST 00:10、cleanup は JST 04:00",
-    byPath["/api/cron/scrape-monitor"] === "*/5 22-23,0-14 * * *" &&
-      byPath["/api/cron/scrape-summary"] === "10 15 * * *" &&
-      byPath["/api/cron/scrape-cleanup"] === "0 19 * * *",
-    show(byPath),
+    "cron式（UTC→JST換算）: scrape-monitor は JST 07:00〜23:55 の5分ごと（07:00・23:55を含み、06:55・00:00は含まない）",
+    mon[0] === 7 * 60 &&
+      mon.at(-1) === 23 * 60 + 55 &&
+      mon.length === (23 - 7 + 1) * 12 &&
+      mon.every((t, i) => i === 0 || t - mon[i - 1] === 5),
+    `${mon.length}回、${mon[0]}〜${mon.at(-1)}`,
+  );
+  check(
+    "cron式（UTC→JST換算）: scrape-summary は JST 00:10、scrape-cleanup は JST 04:00（各1回）",
+    show(jstTimes(byPath["/api/cron/scrape-summary"])) === show([10]) &&
+      show(jstTimes(byPath["/api/cron/scrape-cleanup"])) === show([4 * 60]),
   );
   check(
     "疑似ジョブ（scrape-pseudo）はcronに登録しない（手動リクエストのみ）",
