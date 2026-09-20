@@ -52,6 +52,7 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
   // A3 オッズ。6窓×5ページ。許容幅3分のため、リースは許容幅より短く（120秒）
+  // 実装: scripts/lib/scrapeJobs/oddsHandlers.js、api/cron/odds.js（T4b-04）。1スロット＝1レース×1窓（5ページを並列）
   odds: {
     kind: "window",
     offsets: [-60, -30, -15, -10, -5, 0],

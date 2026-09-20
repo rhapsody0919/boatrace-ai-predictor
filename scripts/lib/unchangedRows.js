@@ -73,6 +73,7 @@ export const NUMERIC_SCALES = {
   },
   race_start_timings: {
     start_timing: 3,
+    race_seconds: 1,
   },
   // K/Bファイル長期バックフィルのアーカイブ表（docs/db-migration/074_kb_archive_tables.sql）
   kb_archive_boats: {
@@ -311,7 +312,8 @@ export async function fetchExistingRows(
  * @param {import("@supabase/supabase-js").SupabaseClient} client
  * @param {string} table
  * @param {Object[]} incomingRows
- * @param {{keyColumns: string[], ignoreColumns?: string[], chunkColumn?: string, writeMissing?: boolean}} options
+ * @param {{keyColumns: string[], ignoreColumns?: string[], chunkColumn?: string, chunkSize?: number, writeMissing?: boolean}} options
+ *   chunkSize: 既存行を取得する1リクエストあたりのID数（既定100。1IDあたりの行数が多いテーブルは小さくする）
  */
 export async function filterUnchangedRows(
   client,
@@ -323,6 +325,7 @@ export async function filterUnchangedRows(
     keyColumns,
     ignoreColumns = [],
     chunkColumn = "race_id",
+    chunkSize = 100,
     writeMissing = true,
   } = options;
 
@@ -344,6 +347,7 @@ export async function filterUnchangedRows(
     columns,
     chunkColumn,
     ids,
+    chunkSize,
   });
   if (fetched.error) {
     // 既存行が分からない場合は従来どおり全行を書く（比較できないものを「変更なし」にしない）
@@ -400,6 +404,7 @@ export async function upsertChangedRows(
     keyColumns,
     ignoreColumns = [],
     chunkColumn = "race_id",
+    chunkSize = 100,
     label = table,
     batchSize = 1000,
     dryRun = false,
@@ -415,6 +420,7 @@ export async function upsertChangedRows(
   } = await filterUnchangedRows(client, table, incomingRows, {
     keyColumns,
     chunkColumn,
+    chunkSize,
     ignoreColumns: stampUpdatedAt
       ? [...new Set([...ignoreColumns, UPDATED_AT_COLUMN])]
       : ignoreColumns,

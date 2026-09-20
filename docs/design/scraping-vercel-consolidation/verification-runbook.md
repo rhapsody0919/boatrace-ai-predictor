@@ -625,3 +625,239 @@ SELECT count(*) FILTER (WHERE ability_index IS NOT NULL) AS with_ability, count(
 1. 進入コース別成績を、取得し続けるか（上記）
 2. 080の適用（`racer_news_pending`。RLS有効・anonの権限なし。ユーザーの承認後）
 3. 選手プロフィールの`maxDuration`を800にするか（Fluid Computeの確認。800にすれば、窓（3時間）に対する余裕が増える）
+
+## M. オッズ取得（`odds`）の切り替え（tasks.md T4b-04-3〜5）
+
+対象: `api/cron/odds.js`（毎分、JST 07:00〜23:59）。コードのマージ・本番デプロイ後に始める。マージ直後は、`scrape_job_state` に `odds` の行が無い（または `off`）ため、何も取得せず何も書かない（行が無い場合は、`mode='off'` の行を1つ作るだけ。`mode` は変更しない）。GitHub側の `SKIP_ODDS_ON_GHA` は未設定（既定）のため、従来どおり動く。`npm run verify:scrape-odds-job`（DB・取得先に接続しない）で、取得・解析・行の組み立て・冪等・再試行・shadow が書かない・off で何もしない・切り替えの仕組みを検証済み。
+
+操作の区分: **読み取りSQL・確認スクリプトはAgentが実行してよい。`scrape_job_state` の `mode` の更新（書き込み）と、リポジトリ変数・Vercelの環境変数の変更は、ユーザーの承認を得てから行う。**
+
+### M-0. 取得先への負荷の見積り（ADR-0067の要件）
+
+| 項目 | 見積り |
+|---|---|
+| 1スロット（1レース×1窓） | 5ページ（`oddstf`・`odds3t`・`odds3f`・`odds2tf`・`oddsk`）を並列に取得。1ページの応答は約8〜10秒（plan.md §8の実測） |
+| 1レースあたり | 6窓×5ページ＝30ページ/日。部分的な取得失敗の再試行（全ページ再取得）を約1割と見て**約33ページ/日** |
+| 1日あたり | 180レースで約5,400〜5,900ページ、24会場（288レース）で約8,600〜9,500ページ。**shadow・live の各期間で、この量が、GitHub Actions側の現行の取得（同じ量）に上乗せされる（並走中は取得先へ約2倍）** |
+| 同時接続 | 1実行あたり、スロット4件×5ページ＝最大20（`politeFetch` の並列上限も20）。現行の「会場内12レース×5ページ＝最大60同時」より緩やか。1回の起動で最大24スロット（6波、約60〜70秒）。会場間の待機は無い（レース単位の並列に置き換えた） |
+| 保護 | ホスト単位のサーキットブレーカー（直近2分間に429/503が5件以上で全ジョブの取得を止める。plan.md §8）、`politeFetch` の429/503の指数バックオフ（2回まで）。ブレーカーが開いている間、スロットは `breaker_open` で再試行が遅れ、許容幅（3分）を過ぎれば `expired` として通知される |
+| DBへの書き込み | `race_odds` に約6行/レース/日（1行の平均約2KB。2026-09-20の実測 2,047バイト）＝180レースで約2.2MB/日。`scrape_slots` に約6行/レース/日（生成）＋claim・完了の更新。GitHub側の行（約5.2行/レース/日）と別に増える（並走中） |
+
+**並走は1ジョブずつ**（plan.md §4.6）: 他のジョブ（結果取得 `result` 等）が並走中の間は、`odds` を `shadow` にしない。着手の順序は、ユーザーが決める。
+
+### M-1. 有効化の順序（案1が先）
+
+オッズ取得をGitHub側で止めると、オッズ起点の予測リフレッシュのきっかけも消える（`scrape-scheduled.js` の `oddsRaceIds` が空になる）。**案1（上の §J）が有効になってから止める。**
+
+| 順 | 操作 | 誰が | 確認 |
+|---|---|---|---|
+| 1 | 案1を有効化する（J-1: `REFRESH_ON_VERCEL=true`→再デプロイ→`SKIP_ODDS_REFRESH_ON_GHA=true`）。J-2で、再計算後の鮮度（`stale = 0`）・空のレース（0）を確認 | ユーザーの承認後 | J-2 |
+| 2 | `odds` を `shadow`（M-2） | ユーザーの承認後 | M-2 |
+| 3 | `odds` を `live`（M-3。GitHub側と並走） | ユーザーの承認後 | M-3 |
+| 4 | `SKIP_ODDS_ON_GHA=true`（M-4） | ユーザーの承認後 | M-4 |
+
+| `REFRESH_ON_VERCEL` | `SKIP_ODDS_REFRESH_ON_GHA` | `SKIP_ODDS_ON_GHA` | 状態 |
+|---|---|---|---|
+| off | off | off | 現行 |
+| on | on | off | 案1（オッズは従来どおりGitHub側。オッズ起点の再計算は外れている） |
+| on | on | on | **目標**（オッズはVercel、再計算は展示・レース情報の起点のみ） |
+| off または on | off | on | **避ける**: 展示・気象の変更を起点にする再計算が無い（off）、または、併走になる（on）。`scrape-scheduled.js` は、この状態で警告ログ（`SKIP_ODDS_ON_GHA=true ですが SKIP_ODDS_REFRESH_ON_GHA=true ではありません`）を出す |
+
+GitHub側は Vercel の環境変数（`REFRESH_ON_VERCEL`）を読めないため、警告は `SKIP_ODDS_REFRESH_ON_GHA` が `true` でないときだけ出る。`REFRESH_ON_VERCEL` が off のまま `SKIP_ODDS_REFRESH_ON_GHA=true` にする状態（J-1の順序違反）は、警告では検知できない。
+
+共通の状態確認（読み取り）:
+
+```sql
+SELECT job, mode, last_tick_at, last_success_at, consecutive_failures, last_error,
+       last_rows_written, breaker_open_until
+  FROM scrape_job_state
+ WHERE job = 'odds' OR job LIKE 'host:%'
+ ORDER BY job;
+```
+
+### M-2. shadow（3日。土日のいずれか1日を含む）
+
+開始（承認後）。**最終レースの0分窓の許容幅が過ぎた後（22:50 JST 以降）か、早朝（07:00 JST より前）に行う**（途中の窓が、shadow で `done` にならないように）:
+
+```sql
+INSERT INTO scrape_job_state (job, mode) VALUES ('odds', 'shadow')
+ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+```
+
+shadow は、取得・解析のみで `race_odds` へ書かない。予定表の `scrape_slots.result_digest` に、**構造のダイジェスト**（何が取れたか。単勝6・複勝6・全通り5券種の組み合わせのキー集合。値は含めない）を残す。オッズの値は数分で変わるため、値のダイジェストは、時刻がずれた既存基盤の行と一致しない（`scripts/lib/scrapeJobs/oddsDigest.js` の冒頭）。
+
+毎日の確認（読み取り）:
+
+```
+node --env-file=.env.local scripts/maintenance/check-odds-shadow.js --days=3
+```
+
+日付×run_mode×状態・outcome の件数、窓別（-60〜0）の完了率、shadow のダイジェストと、同じレースの既存基盤（`source='gha'`）の行（スロットの期限の前後5分以内で最も近いもの）のダイジェストの一致率（一致 / 不一致 / 比べる行なし）、遅延（完了−期限）のp50・p95、試行回数の分布、expired・未実行の件数を出す。
+
+```sql
+-- shadow が、race_odds へ書いていないこと（どちらも期待 0）
+SELECT count(*) AS vercel_rows FROM race_odds WHERE source = 'vercel';
+SELECT count(*) AS shadow_rows_written_nonzero
+  FROM scrape_slots WHERE job = 'odds' AND run_mode = 'shadow' AND rows_written > 0;
+
+-- スロットの状況（今日。窓別・outcome別）
+SELECT offset_min, run_mode, status, outcome, count(*) AS slots,
+       round(avg(attempts), 2) AS avg_attempts, max(attempts) AS max_attempts
+  FROM scrape_slots
+ WHERE job = 'odds' AND race_date = (now() AT TIME ZONE 'Asia/Tokyo')::date
+ GROUP BY 1, 2, 3, 4 ORDER BY 1, 2, 3, 4;
+
+-- partial・error・no_values の理由（今日の未完了・期限切れ）
+SELECT race_id, offset_min, status, outcome, attempts, last_error
+  FROM scrape_slots
+ WHERE job = 'odds' AND race_date = (now() AT TIME ZONE 'Asia/Tokyo')::date
+   AND (status = 'expired' OR outcome IN ('partial', 'error'))
+ ORDER BY race_id, offset_min LIMIT 50;
+```
+
+取得先の反応（Vercelのランタイムログ、`/api/cron/odds`。Vercel MCPの `get_runtime_logs`）: 429・503・`取得に失敗しました`・`単勝オッズ取得失敗` の件数と、関数の所要時間（`maxDuration` 300秒に対し、通常は約60〜70秒）。ブレーカー（`scrape_job_state` の `host:boatrace.jp` の `breaker_open_until`）が開いた回数。
+
+**成功基準（3日、土日を含む）**:
+
+| 項目 | 基準 |
+|---|---|
+| 窓別の完了率（shadow の `done` かつ `ok`、確定中止を除く） | 全窓で98%以上（完了の定義B。GitHub側の現行値は89〜94%、0分窓は43%。この差が、新方式の狙い） |
+| 構造の一致率 | 99%以上（不一致は、Vercelが取れて既存基盤が取れていない差か、逆かを、レースごとに確認する。全通り系の券種欠落は、`partial` として `last_error` に列名が残る） |
+| 遅延（完了−期限）のp95 | 3分以内（許容幅）。p50は、毎分の起動＋約10秒の取得で、1分前後の見込み |
+| `expired`・未実行 | 0件（出た場合は、理由を説明できる。未実行＝`attempts=0` はCronの未配信の兆候） |
+| `partial` の頻度 | 全スロットの5%未満。特定の券種が、特定のレース・会場で恒常的に取れない場合は、M-6の「未確認事項」の判断（最終試行を `ok` で受け入れるか）が要る |
+| 取得先の拒否 | 429・503が0件。ブレーカーが開かない |
+| 関数の所要時間 | p95が100秒以内（リース120秒、`maxDuration` 300秒） |
+
+ロールバック: `UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'odds';`（GitHub側は動いたままなので、取得の空白は無い）。
+
+### M-3. live に切り替えて3〜7日並走
+
+`shadow` で `done` になったスロットは、live にしても再取得されない（前の§E）。**切り替えは、その日の最終レースの0分窓の許容幅が過ぎた後（22:50 JST 以降）か、早朝（07:00 JST より前）に行う。** 日中に切り替える場合は、§Eの、`shadow` の `done` を戻すSQLを、`job='odds'` にして、直後に実行する。
+
+切り替え（承認後）:
+
+```sql
+UPDATE scrape_job_state SET mode = 'live', updated_at = now() WHERE job = 'odds';
+```
+
+live の間、GitHub側のオッズ取得も動き続ける。**書き込みは別の行**になる（GitHub側: `window_min` がNULLで `source='gha'`、毎回の取得で新しい `captured_at` の行。Vercel側: `(race_id, window_min)` の一意索引で、窓ごとに1行。再試行は同じ行を更新）。`race_odds` を読む機能（EV分析・`generate-unified-trifecta-reference.js` 等）は `captured_at` の最新の行を使うため、並走中は、どちらの行も最新になりうる（内容は同じ形式）。
+
+確認（読み取り）:
+
+```sql
+-- 窓別の窓内取得率を、source ごとに比較する（確定中止を除く。<from>・<to> は YYYY-MM-DD。土日を含む期間）
+--   gha    : 旧定義（発走の N分前 ± 3分に、取得（captured_at）があるレースの割合）
+--   vercel : 窓 -N の行の captured_at（最後の試行の時刻）が [期限, 期限+3分] に入るレースの割合
+--   vercel_complete : 上に加えて、全通り5列がそろっているもの
+WITH r AS (
+  SELECT race_id, ((race_date + start_time) AT TIME ZONE 'Asia/Tokyo') AS st
+    FROM races
+   WHERE race_date BETWEEN '<from>' AND '<to>' AND start_time IS NOT NULL
+     AND cancellation_status IS DISTINCT FROM 'confirmed'),
+w(win) AS (VALUES (60), (30), (15), (10), (5), (0)),
+d AS (SELECT r.race_id, r.st, w.win FROM r CROSS JOIN w)
+SELECT d.win AS window_before_min,
+       count(*) AS races,
+       round(100.0 * count(*) FILTER (WHERE EXISTS (
+         SELECT 1 FROM race_odds o
+          WHERE o.race_id = d.race_id AND o.source = 'gha'
+            AND o.captured_at BETWEEN d.st - (d.win + 3) * interval '1 minute' AND d.st - (d.win - 3) * interval '1 minute')) / count(*), 1) AS gha_pct,
+       round(100.0 * count(*) FILTER (WHERE EXISTS (
+         SELECT 1 FROM race_odds o
+          WHERE o.race_id = d.race_id AND o.source = 'vercel' AND o.window_min = -d.win
+            AND o.captured_at BETWEEN d.st - d.win * interval '1 minute' AND d.st - (d.win - 3) * interval '1 minute')) / count(*), 1) AS vercel_pct,
+       round(100.0 * count(*) FILTER (WHERE EXISTS (
+         SELECT 1 FROM race_odds o
+          WHERE o.race_id = d.race_id AND o.source = 'vercel' AND o.window_min = -d.win
+            AND o.captured_at BETWEEN d.st - d.win * interval '1 minute' AND d.st - (d.win - 3) * interval '1 minute'
+            AND o.trifecta_all IS NOT NULL AND o.trio_all IS NOT NULL AND o.exacta_all IS NOT NULL
+            AND o.quinella_all IS NOT NULL AND o.wide_all IS NOT NULL)) / count(*), 1) AS vercel_complete_pct
+  FROM d GROUP BY d.win ORDER BY d.win DESC;
+```
+
+（ベースライン: 2026-09-18・19の336レースで、gha_pct は 60分前89.0%・30分前92.0%・15分前92.6%・10分前92.6%・5分前94.3%・0分前92.0%。`vercel_*` は0。この期間の GitHub 側の実行の詰まり・キャンセルが、欠落の主因。会場別の内訳が要る場合は、`d` に会場（`substring(race_id, 12, 2)`）を足して GROUP BY する。）
+
+```sql
+-- 全通り5列の充足（source ごと。今日）
+SELECT source, count(*) AS rows,
+       count(*) FILTER (WHERE trifecta_all IS NOT NULL AND trio_all IS NOT NULL AND exacta_all IS NOT NULL
+                          AND quinella_all IS NOT NULL AND wide_all IS NOT NULL) AS complete
+  FROM race_odds WHERE race_id LIKE (to_char((now() AT TIME ZONE 'Asia/Tokyo')::date, 'YYYY-MM-DD') || '-%')
+ GROUP BY 1;
+
+-- 予定表から見た遅延と完了（live。plan.md §7）
+SELECT s.offset_min, count(*) AS slots,
+       count(*) FILTER (WHERE s.status = 'done' AND s.outcome = 'ok') AS done_ok,
+       count(*) FILTER (WHERE s.status = 'expired') AS expired,
+       round(percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM (s.done_at - ((r.race_date + r.start_time) AT TIME ZONE 'Asia/Tokyo' + s.offset_min * interval '1 minute')))/60)::numeric, 2) AS delay_p50_min,
+       round(percentile_cont(0.95) WITHIN GROUP (ORDER BY extract(epoch FROM (s.done_at - ((r.race_date + r.start_time) AT TIME ZONE 'Asia/Tokyo' + s.offset_min * interval '1 minute')))/60)::numeric, 2) AS delay_p95_min
+  FROM scrape_slots s JOIN races r USING (race_id)
+ WHERE s.job = 'odds' AND s.run_mode = 'live' AND s.race_date BETWEEN '<from>' AND '<to>'
+ GROUP BY 1 ORDER BY 1;
+
+-- 書き込み量（並走前後の24時間の差を比べる。tasks.md T0-02と同じ）
+SELECT relname, n_tup_ins, n_tup_upd, n_tup_hot_upd
+  FROM pg_stat_user_tables WHERE relname IN ('race_odds', 'scrape_slots', 'scrape_job_state', 'predictions');
+```
+
+`check-odds-shadow.js` は、live のスロットの遅延・expired の件数も出す。
+
+**成功基準（3〜7日、土日を含む）**:
+
+| 項目 | 基準 |
+|---|---|
+| 窓別の窓内取得率（`vercel_pct`） | 全窓で、`gha_pct` 以上、かつ98%以上（完了の定義B。0分窓を含む） |
+| 全通り5列の充足（`vercel_complete_pct`） | `vercel_pct` と同じ（`partial` が最終試行で残らない） |
+| live のスロット | `expired` が0件（出た場合は理由を説明でき、`last_error` で原因が分かる）。遅延のp95が3分以内 |
+| 取得先の拒否 | 429・503が0件。ブレーカーが開いていない（並走で取得が約2倍になっている期間） |
+| 書き込み量 | `race_odds` の増加が、見込み（約6行/レース/日＝約2.2MB/日）の範囲。`predictions` の書き込みが、並走前より増えていない（オッズ起点の再計算は案1で外れている） |
+| 予測 | J-2の「空のレース」が0、`stale = 0`（オッズの取得元が変わっても、再計算のきっかけは変わらない） |
+
+ロールバック: `UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'odds';`（GitHub側は動いたままなので、取得の空白は無い。Vercelが書いた `source='vercel'` の行は残る。読む側は `captured_at` の最新を使うため、害は無い）。
+
+### M-4. GitHub側の停止（`SKIP_ODDS_ON_GHA`）
+
+前提: M-1の順序（案1が有効）を満たし、M-3が成功基準を満たし、live で、少なくとも1つ後の窓が live で完了している。
+
+手順（承認後。リポジトリ変数の変更）:
+
+```
+gh variable set SKIP_ODDS_ON_GHA --body true --repo rhapsody0919/boatrace-ai-predictor
+```
+
+（次のGitHub Actionsの実行から反映される。コード変更・再デプロイは不要。`gh` は、このプロジェクトのアカウント（rhapsody0919）で実行する。）実行ログに `オッズ取得をスキップ（SKIP_ODDS_ON_GHA=true。Vercelが担当）` が出る。**買い目オッズ（A4、`prediction_odds`）は止まらない**（別の処理。T4b-10）。
+
+停止後の7日（土日を含む）の実測（tasks.md T4b-04-5）:
+
+```sql
+-- GitHub側の書き込みが止まったこと（今日の source='gha' の行が、停止時刻以降は増えない）
+SELECT source, count(*) AS rows, max(captured_at) AS last_captured
+  FROM race_odds WHERE race_id LIKE (to_char((now() AT TIME ZONE 'Asia/Tokyo')::date, 'YYYY-MM-DD') || '-%')
+ GROUP BY 1;
+```
+
+M-3の窓内取得率のSQLを、停止後の7日で実行する（`vercel_pct`・`vercel_complete_pct`。`gha_pct` は0になる）。件数（完了の定義A）は、期待件数＝レース数（確定中止を除く）×6窓、実測＝`source='vercel'` の行数（窓別・会場別）。**全通り系の保存は2026-09-16から**のため、期待件数の起点は、取得開始日（Vercelでの `live` 開始日）以降のみ（ユーザーの承認が要る。tasks.md T4b-04のデータ項目）。
+
+```
+gh run list --workflow scrape-scheduled.yml --repo rhapsody0919/boatrace-ai-predictor --limit 300 --json conclusion,status,createdAt,updatedAt
+```
+
+- GitHub Actionsの1回の実行時間: 379秒のうち、オッズ取得は約122秒（会場直列）。結果取得（約117秒）も止めていれば、約140秒に近づく見込み。止めていなければ約257秒
+- キャンセル率: 11.8%（400件中47件、plan.md F11）から低下しているか
+- 完了の定義（A・B・C）: 上のSQL、`odds` の窓内取得率（監視の日次サマリー）、`expired` の件数・監視の通知
+
+停止後、ADR-0057の窓の意味論（「±3分窓」→「期限＋許容幅」）を、この時点の実測を添えて更新する（tasks.md T4b-04-5）。
+
+### M-5. 切り戻し（順序を守る。取得の空白を作らない）
+
+1. `gh variable set SKIP_ODDS_ON_GHA --body false --repo rhapsody0919/boatrace-ai-predictor`（または変数を削除）。次のGitHub Actionsの実行から、オッズ取得が再開する（窓の意味論が「±3分の窓に実行が入れば取る」なので、再開後の直近の窓から取れる。止めていた間の窓は取り戻せない）
+2. Vercel側を止める場合は、GitHub側の再開を確認してから `UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'odds';`
+3. 案1（`REFRESH_ON_VERCEL`・`SKIP_ODDS_REFRESH_ON_GHA`）は、別の切り戻し（J-3）。`SKIP_ODDS_ON_GHA` を戻すだけでは、オッズ起点の再計算は復活しない（`SKIP_ODDS_REFRESH_ON_GHA=true` のまま）。展示の変更を起点にした再計算（Vercel）は動き続けるため、予測が古いまま残ることは無い
+
+`mode` が `off` の間に積み上がった `pending` のスロットは、監視が通知しない（`off` のジョブは対象外）。`scrape-cleanup` が古い行を整理する。
+
+### M-6. 継続監視（完了の定義C）と未確認事項
+
+- 窓内取得率・遅延・`expired`・未実行・0件・死活・連続失敗・ブレーカー: 既存の `scrape-monitor`（5分ごと）・`scrape-summary`（日次サマリー）が、`odds` を窓型として自動で対象にする（レジストリの `kind: "window"`）。`live` になってから通知される
+- **未確認事項**: (1) 特定の券種（拡連複など）が、特定のレースで恒常的に公開されない場合、その窓のスロットは `partial` の再試行の末に `expired` になり、通知される（取れた分は `race_odds` に書き込み済み）。shadow・liveで頻度を確認し、多い場合は「最終試行では、単勝が取れていれば `ok` として受け入れる」への変更を、ユーザーに提示する。(2) `trifecta_popular_*`・`trifecta_odds_*`（3連単人気上位）は、`scrape-odds.js` の `scrapeTrifectaOdds` のセレクタ（`.is-p3-0`）が `odds3t` のページに一致せず、**現行も本番の全行がNULL**（2026-09-10〜20の実測。既存の不具合で、この移行の対象外）。Vercel経路も同じ挙動（NULL）で、構造のダイジェストにも含めない。(3) 拡連複・複勝の一部が公開されないレースの有無は、実データで確認していない（複勝は、本番の約1割の行でNULL）

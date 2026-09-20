@@ -845,9 +845,15 @@ const writes = (client, table) =>
       times.every((t, i) => i === 0 || t - times[i - 1] === 10),
     `${times.length}回 ${times[0]}〜${times.at(-1)}`,
   );
+  // リージョンは、2026-09-20にユーザー承認のうえ、api/cron/*のみsyd1へ変更済み（PR #747）。
+  // 全関数に効くトップレベルの regions は使わない（画面用のAPIは対象外）
+  const cronFunctions = vercel.functions?.["api/cron/*.js"];
   check(
-    "vercel.json: regions・functions には触れていない（リージョンの変更はユーザー承認待ち）",
-    !("regions" in vercel) && !("functions" in vercel),
+    "vercel.json: api/cron/*.js のみ syd1（トップレベルの regions は使わない）",
+    !("regions" in vercel) &&
+      Array.isArray(cronFunctions?.regions) &&
+      cronFunctions.regions.length === 1 &&
+      cronFunctions.regions[0] === "syd1",
   );
 }
 

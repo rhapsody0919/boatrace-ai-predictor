@@ -31,6 +31,7 @@ import { run as runPredictionOdds } from "./scrape-prediction-odds.js";
 import {
   collectGhaRefreshRaceIds,
   isOddsRefreshSkippedOnGha,
+  isOddsSkippedOnGha,
 } from "../lib/predictionRefresh.js";
 
 async function main() {
@@ -55,9 +56,16 @@ async function main() {
 
   // 2. 各ウィンドウの対象レースを事前評価
   // ★ 各スクリプト内部の getRacesInWindow 呼び出しと同じ窓幅で判定する（不整合防止）
-  const hasOddsRaces = ODDS_WINDOWS.some(
-    (w) => getRacesInWindow(schedule, w, 3).length > 0,
-  );
+  // オッズ取得（WS4b・T4b-04）は Vercel Function(api/cron/odds.js)へ移行する。切り替え後、GitHub Actions 側の
+  // 取得を、リポジトリ変数のトグルのみで止める（コードは削除せず、切り戻しも変数のトグルだけで完結。
+  // SKIP_EXHIBITION_ON_GHAと同じ方式）。既定（未設定・true以外）は従来どおり実行する。
+  //   SKIP_ODDS_ON_GHA=true  オッズ取得を行わない（買い目オッズ A4 は別に動く。T4b-10 で扱う）
+  // オッズ起点の予測リフレッシュのきっかけも消えるため、案1（REFRESH_ON_VERCEL・SKIP_ODDS_REFRESH_ON_GHA）が先。
+  // 順序は scripts/lib/predictionRefresh.js の isOddsSkippedOnGha を参照
+  const skipOdds = isOddsSkippedOnGha();
+  const hasOddsRaces =
+    !skipOdds &&
+    ODDS_WINDOWS.some((w) => getRacesInWindow(schedule, w, 3).length > 0);
   // update-race-info 内部: getRacesInWindow(schedule, 60) → デフォルト ±3分 = 57-63分前
   const hasUpdateRaces = getRacesInWindow(schedule, 60).length > 0;
   // exhibition 内部: EXHIBITION_WINDOWS=[30,15,10] 各 ±3分
@@ -101,7 +109,12 @@ async function main() {
     }
   }
 
-  // オッズ取得（複数ウィンドウ）
+  // オッズ取得（複数ウィンドウ）。SKIP_ODDS_ON_GHA=true の間は hasOddsRaces が false になり、行わない
+  if (skipOdds) {
+    console.log(
+      "⏭️ オッズ取得をスキップ（SKIP_ODDS_ON_GHA=true。Vercelが担当）",
+    );
+  }
   if (hasOddsRaces) {
     const { updated, count } = await runOdds(schedule, date).catch((e) => {
       console.error("⚠️ オッズ取得失敗:", e.message);
@@ -171,6 +184,14 @@ async function main() {
   // scripts/lib/predictionRefresh.js）。既定（未設定）は従来どおりオッズ起点を含める。
   // 切り戻しはリポジトリ変数のトグルのみで完結させる（コード変更・redeployなし）
   const skipOddsRefresh = isOddsRefreshSkippedOnGha();
+  if (skipOdds && !skipOddsRefresh) {
+    // オッズ取得を止めたのに、オッズ起点の再計算を外していない: GitHub側の再計算のきっかけが、オッズ→レース情報のみに
+    // なる。展示・気象の変更を起点にした再計算（Vercel の REFRESH_ON_VERCEL=true）が有効か、GitHub 側からは
+    // Vercel の環境変数を読めず判定できないため、確実に分かる側（SKIP_ODDS_REFRESH_ON_GHA が true でない）だけ警告する
+    console.warn(
+      "⚠️ SKIP_ODDS_ON_GHA=true ですが SKIP_ODDS_REFRESH_ON_GHA=true ではありません。案1（Vercel の REFRESH_ON_VERCEL=true と SKIP_ODDS_REFRESH_ON_GHA=true）を先に有効化する順序です（verification-runbook.md M）",
+    );
+  }
   const updatedRaceIds = collectGhaRefreshRaceIds({
     infoRaceIds,
     oddsRaceIds,
