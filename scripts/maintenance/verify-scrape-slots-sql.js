@@ -1,5 +1,5 @@
 /**
- * verify-scrape-slots-sql.js - マイグレーション072（予定表 scrape_slots・ジョブ状態 scrape_job_state・
+ * verify-scrape-slots-sql.js - マイグレーション075（予定表 scrape_slots・ジョブ状態 scrape_job_state・
  * RPC ensure_scrape_slots / claim_scrape_slots・race_odds の window_min/source）の検証。
  *
  * 本番DBには触れず、インメモリのPostgreSQL（PGlite）に最小の races・race_odds を作ってマイグレーションを適用し、
@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATION = path.join(
   __dirname,
-  "../../docs/db-migration/072_scrape_slots_and_job_state.sql",
+  "../../docs/db-migration/075_scrape_slots_and_job_state.sql",
 );
 
 let PGlite;
@@ -242,7 +242,7 @@ check("既存行の source は gha", s.find((r) => r.source === "gha")?.c == 2, 
 
 
 // 部分一意索引では PostgREST の upsert（ON CONFLICT (cols)、WHERE句なし）が推論できないことの確認
-// （072が race_odds の一意索引を部分索引にしない理由）
+// （075が race_odds の一意索引を部分索引にしない理由）
 await db.exec(`
 CREATE TABLE t_partial (race_id text, captured_at timestamptz, window_min smallint, source text default 'gha', primary key (race_id, captured_at));
 CREATE UNIQUE INDEX uq_partial ON t_partial (race_id, window_min) WHERE source = 'vercel' AND window_min IS NOT NULL;

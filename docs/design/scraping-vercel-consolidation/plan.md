@@ -193,7 +193,7 @@ stateDiagram-v2
 | `run_mode` | text | `live`／`shadow`（並走中の区別。`shadow`の`done`は、窓内取得率の集計に含めない） |
 | `first_attempt_at` / `last_attempt_at` / `done_at` | timestamptz | 遅延（`done_at`−期限）の計測元。**取得時刻列が無いテーブルでも、窓内取得率を予定表から計測できる** |
 | `outcome` | text | `ok`／`partial`／`no_values`（未公開）／`skipped_have_data`／`error`／`breaker_open`／`cancelled_race` |
-| `rows_written` | integer | 書き込んだ行数（0件エラーの判定）。072で、smallintから変更（1スロットの多行書き込みで溢れないように） |
+| `rows_written` | integer | 書き込んだ行数（0件エラーの判定）。075で、smallintから変更（1スロットの多行書き込みで溢れないように） |
 | `result_digest` | text | 解析結果のハッシュ（shadow時に、既存基盤が書いた値との一致を比較する） |
 | `last_error` | text | 直近のエラー（500字程度で切る） |
 | `created_at` | timestamptz DEFAULT now() | |
@@ -230,7 +230,7 @@ stateDiagram-v2
 
 ### 3.4 ER図
 
-新規テーブルを導入する設計のため掲載する（[sdd-workflow.md](../../../.claude/rules/sdd-workflow.md)）。**マイグレーション[072](../../db-migration/072_scrape_slots_and_job_state.sql)から機械生成した図**（`node scripts/maintenance/generate-er-diagram.js scraping-vercel-consolidation`）。
+新規テーブルを導入する設計のため掲載する（[sdd-workflow.md](../../../.claude/rules/sdd-workflow.md)）。**マイグレーション[075](../../db-migration/075_scrape_slots_and_job_state.sql)から機械生成した図**（`node scripts/maintenance/generate-er-diagram.js scraping-vercel-consolidation`）。
 
 ```mermaid
 erDiagram
@@ -277,7 +277,7 @@ erDiagram
     }
 ```
 
-`scrape_job_state`はFKを持たない独立表（`job`は`scrape_slots.job`と論理的に対応するが、疑似ジョブ名（`host:boatrace.jp`）を持つため、FKにしない）。`race_odds`は、追加する2列のみを示した（既存の列と、`races`との既存の外部キーは、072が触れないため図に出ない）。`scrape_slots`は`races`に従属する（`ON DELETE CASCADE`）。
+`scrape_job_state`はFKを持たない独立表（`job`は`scrape_slots.job`と論理的に対応するが、疑似ジョブ名（`host:boatrace.jp`）を持つため、FKにしない）。`race_odds`は、追加する2列のみを示した（既存の列と、`races`との既存の外部キーは、075が触れないため図に出ない）。`scrape_slots`は`races`に従属する（`ON DELETE CASCADE`）。
 
 ### 3.5 操作（DBの関数）
 
@@ -732,7 +732,7 @@ Disk IO予算が逼迫している（Small、ベースライン174Mbps。orchest
 | U1 | 現在のVercel関数のリージョン、Fluid Computeの有効化、既定のリージョン | Vercelのダッシュボード（プロジェクト設定）、関数のログ、`VERCEL_REGION`を返すプローブ | T4a-04 |
 | U2 | Vercelから、boatrace.jp・会場公式サイト・mbrace.or.jpへの取得の成功率・遅延（syd1とhnd1の比較） | プローブ関数（一時的）で、各10回。拒否・遅延を記録 | T4a-04 |
 | U3 | boatrace.jpのレート制限・IPブロックの閾値（Vercelの共有IPの扱いを含む） | 公表なし。`shadow`で、段階的に増やしながら、拒否率を監視 | T4b-02 |
-| U4 | `race_odds`・`scrape_slots`の1行のサイズ（全通りのjsonbを含む） | `pg_column_size`（読み取りのみ、軽い集計）、DDL適用後の実測。**2026-09-20に、072のPRで実測（`race_odds`: 平均2,030バイト・最大2,233バイト（9/17以降の2,000行）。1日約1,080行で約2.2MB/日。`scrape_slots`: 約232バイト/行（試算）。DDL適用後に、実行の`pg_total_relation_size`で再確認する）** | T4a-02（実測済み。DDL適用後の再確認はT4a-03） |
+| U4 | `race_odds`・`scrape_slots`の1行のサイズ（全通りのjsonbを含む） | `pg_column_size`（読み取りのみ、軽い集計）、DDL適用後の実測。**2026-09-20に、075のPRで実測（`race_odds`: 平均2,030バイト・最大2,233バイト（9/17以降の2,000行）。1日約1,080行で約2.2MB/日。`scrape_slots`: 約232バイト/行（試算）。DDL適用後に、実行の`pg_total_relation_size`で再確認する）** | T4a-02（実測済み。DDL適用後の再確認はT4a-03） |
 | U5 | Vercelの使用量（Active CPU・呼び出し回数）の課金見込み。毎分tickが4本（約4,100回/日）の起動を含む | Phase 2の前後で、Vercelの使用量画面を確認 | T4b-02 |
 | U6 | 展示データの公開時刻の分布（発走の何分前に、展示タイムが公開されるか） | WS2の取得時刻列（`exhibition_data`の`created_at`／`updated_at`）と、`races.start_time`の差。会場別（展示STが先に出る会場を含む） | T4b-06 |
 | U7 | 公式コンピュータ予想（B1）が、朝の1回の取得で足りるか（発走前に更新されるか）。1リクエスト約9秒かかる原因（サーバーの応答か、制限か） | 公式ページの更新タイミングの確認。取得時刻を変えた比較 | T4b-08 |
