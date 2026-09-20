@@ -123,6 +123,18 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
 
+  // A5 レース特記事項（race_special_notes）。10分ごと（JST 07:00〜23:59）に、開催会場のページを巡回する。
+  // 窓なし・ジョブ単位のリースで排他（cron-job.org と Vercel Cron の両方から起動されても、同時に1つだけ走る）。
+  // 会場は6並列で、1ページ約8〜10秒（plan.md §8の実測）のため、24会場でも約40〜60秒。リースは maxDuration と同じ
+  // 300秒（cron の間隔600秒より短く、処理が異常に長引いた場合も、次の起動までに解放される）
+  // 実装: scripts/lib/raceNoticesJob.js、api/cron/race-notices.js（T4b-11）
+  race_notices: {
+    kind: "continuous",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
+  // ↓ WS4b 結果取得（PR #743）の定義
   // A6補助 Kファイル同期（進入コース・rank4〜6。plan.md §4.1・T4b-05-1）。07:00・12:00 JST の2回起動し、12:00は
   // 07:00の実行が完了しなかった（Kファイル未公開・失敗）場合の補足（完了済みなら、last_target_date で何もしない）。
   // 対象は当日を除く直近4日。Kファイルは別ドメイン（www1.mbrace.or.jp）
