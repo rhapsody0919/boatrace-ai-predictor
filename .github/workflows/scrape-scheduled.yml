@@ -72,4 +72,8 @@ jobs:
           # 手順どおり確認できてから行う（Kファイルは、SKIP_KFILE_ON_GHAを先に、または同時に）。
           SKIP_RESULTS_ON_GHA: ${{ vars.SKIP_RESULTS_ON_GHA }}
           SKIP_KFILE_ON_GHA: ${{ vars.SKIP_KFILE_ON_GHA }}
+          # BOA-353 T4b-03（予測リフレッシュ案1）: "true" の間は、オッズ起点の予測リフレッシュを外す
+          # （展示・気象の変更を起点にした再計算は、Vercel の REFRESH_ON_VERCEL=true が担う）。
+          # 有効化・切り戻しの順序は scripts/lib/predictionRefresh.js。未設定（既定）は従来どおり
+          SKIP_ODDS_REFRESH_ON_GHA: ${{ vars.SKIP_ODDS_REFRESH_ON_GHA }}
         continue-on-error: true

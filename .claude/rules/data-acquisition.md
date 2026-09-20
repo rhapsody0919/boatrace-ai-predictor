@@ -20,6 +20,7 @@ paths:
 - 並走期間（新旧基盤の併存中）の二重書き込みは、取得元（source）列で区別する
 - マイグレーション番号は、着手時とPR作成前に`origin/master`の最大番号を確認する（重複はCIで機械検査する予定）
 - 着手時とPR作成前に`npm run verify:migration-numbers`を実行する（`origin/master`の最大番号と重複を手元で機械検査する。CIでの検査は未実装で、現状は手元での実行のみ。実行前に`git fetch origin master`する。適用状況の台帳は`docs/db-migration/APPLIED.md`）
+- **DBマイグレーションのRLS規律（BOA-370、2026-09-20）**: 新規テーブルを作るマイグレーションは、同じファイル内で`ENABLE ROW LEVEL SECURITY`する。匿名（anon）・authenticatedに付けてよいのはSELECTのみ（`FOR SELECT`ポリシー＋`GRANT SELECT`）で、書き込みはservice_role（RLS迂回）でのみ行う。ビューは`WITH (security_invoker = true)`を付ける（付けないと所有者権限で基底テーブルのRLSを迂回する）。マイグレーション060〜071で作った16テーブルがRLS無効のまま本番に入り、匿名キーで書き込み・削除できる状態が残っていた。`npm run verify:migration-rls`が076番以降を機械検査する（意図的な例外は`-- rls-exempt: <table> <理由>`等のマーカーで書き、理由をレビューで確認する）。076で、postgresが作る新規テーブルの既定権限（anon/authenticatedの全権限）を剥奪したため、匿名に読ませたいテーブルは`GRANT SELECT ON <table> TO anon, authenticated;`を明示する（既存の020/021/023と同じ流儀）。本番適用後は、Supabaseのadvisor（`get_advisors` security）で`rls_disabled_in_public`・`security_definer_view`が0件であることも確認する
 - Vercel Cronは「UTC固定・リトライ無し・best-effort・まれに重複配信」。次を満たす設計にする
   - cron式はUTCで書き、JSTの運用時間帯をコメントで併記する
   - upsertで冪等にする（重複配信で壊れない）
