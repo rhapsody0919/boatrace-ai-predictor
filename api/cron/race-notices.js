@@ -1,75 +1,35 @@
 /**
- * レース特記事項取得（Vercel Function版、FR-1）
+ * レース特記事項取得（Vercel Function版、FR-1、BOA-353 T4b-11）
  *
- * scripts/daily/scrape-race-information.js の run(schedule, date) をそのまま
- * 呼び出す。ロジックは一切複製しない（api/cron/exhibition.jsと同じ設計方針）。
+ * scripts/daily/scrape-race-information.js の run(schedule, date) を、共通ラッパ
+ * （scripts/lib/scrapeJobs/cronWrapper.js）経由で呼ぶ。ロジックは一切複製しない。
+ * ラッパへの接続は scripts/lib/raceNoticesJob.js。
  *
- * cron-job.org から10分間隔（7:00-23:00 JST）で直接呼び出される想定。
- * 開催中の全会場（最大24会場）を1回の呼び出しで巡回するため、素朴に実装すると
- * cron-job.orgのタイムアウト（30秒）を超えるリスクがある（ADR-0059参照）。
- * exhibition.jsと同じ「即時応答＋waitUntilバックグラウンド継続」パターンを踏襲する。
+ * 起動元: Vercel Cron（vercel.json の crons、10分間隔。UTCの22〜23時・0〜14時台＝JST 07:00〜23:59）。
+ * 移行期間は、cron-job.org（10分間隔）も同じエンドポイントを叩く。ジョブ単位のリースで、同時に1つだけ
+ * 走り、書き込みは重複を無視する upsert と、変更のある行のみの集計行のため、二重に起動されても無害。
+ * cron-job.org の停止は、Vercel Cron での稼働を確認した後、ユーザーが行う（verification-runbook.md G）。
  *
- * 認証: Authorization: Bearer {CRON_SECRET} ヘッダーが一致しない限り拒否する。
+ * 認証: Authorization: Bearer {CRON_SECRET} ヘッダーが一致しない限り拒否する（ラッパ）。
+ * mode: scrape_job_state（job='race_notices'）の mode を毎回DBから読む。off（または行なし）は何もしない。
+ *   shadow は取得・解析のみ（DBへ書かない）。live で書き込む。切り替えはDBの更新のみ（再デプロイ不要）
+ *
+ * 応答: 従来（waitUntil で即時に 202）と違い、処理の完了後に 200/500 を返す。失敗（DB障害・全会場の取得失敗）は
+ * 500 になり、scrape_job_state の last_error・consecutive_failures に残る（連続失敗は scrape-monitor が通知）。
+ * 処理時間は、会場数×約8〜10秒÷6並列（13〜24会場で約20〜60秒）。cron-job.org のタイムアウト（30秒）を超える
+ * 日は、cron-job.org 側だけが失敗と表示する（関数は完走する）。
+ *
+ * maxDuration は registry.js の race_notices.maxDurationSec と同じ値をリテラルで書く
+ * （Vercel がビルド時に静的に読むため）。
  */
-
-import { timingSafeEqual } from "node:crypto";
-import { waitUntil } from "@vercel/functions";
-import { getTodayDateJST } from "../../scripts/lib/dateUtils.js";
-import { getRaceSchedule } from "../../scripts/lib/raceSchedule.js";
-import { run as runRaceInformation } from "../../scripts/daily/scrape-race-information.js";
+import { createScrapeCronHandler } from "../../scripts/lib/scrapeJobs/cronWrapper.js";
+import { runRaceNoticesJob } from "../../scripts/lib/raceNoticesJob.js";
 
 export const config = {
   maxDuration: 300,
 };
 
-// 単純な !== 比較はタイミングサイドチャネルになりうるため定数時間で比較する
-// （api/cron/exhibition.jsと同一実装）
-function isAuthorized(authHeader, expected) {
-  if (!expected || !authHeader) return false;
-  const expectedBuf = Buffer.from(`Bearer ${expected}`);
-  const actualBuf = Buffer.from(authHeader);
-  if (expectedBuf.length !== actualBuf.length) return false;
-  return timingSafeEqual(expectedBuf, actualBuf);
-}
-
-export default async function handler(req, res) {
-  if (!isAuthorized(req.headers.authorization, process.env.CRON_SECRET)) {
-    return res.status(401).json({ success: false, error: "unauthorized" });
-  }
-
-  const date = getTodayDateJST();
-  try {
-    const schedule = await getRaceSchedule(date);
-
-    if (schedule.length === 0) {
-      return res.status(200).json({
-        success: true,
-        accepted: false,
-        message: "no schedule for today",
-        date,
-      });
-    }
-
-    // cron-job.orgへは即座に応答を返し、実際のスクレイピング・書き込みは
-    // バックグラウンドで継続する。結果はSupabaseへの書き込みそのものと
-    // 関数ログ、および日次の構造変化監視（check-race-notices-drift.js）で確認する
-    waitUntil(
-      runRaceInformation(schedule, date).catch((error) => {
-        console.error(
-          "❌ レース特記事項取得エラー（バックグラウンド処理）:",
-          error,
-        );
-      }),
-    );
-
-    return res.status(202).json({
-      success: true,
-      accepted: true,
-      date,
-      message: "processing in background",
-    });
-  } catch (error) {
-    console.error("❌ スケジュール取得エラー（Vercel Function）:", error);
-    return res.status(500).json({ success: false, error: error.message });
-  }
-}
+export default createScrapeCronHandler({
+  job: "race_notices",
+  run: runRaceNoticesJob,
+});

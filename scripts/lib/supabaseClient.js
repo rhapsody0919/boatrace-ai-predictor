@@ -53,22 +53,22 @@ export const isSupabaseEnabled = () => !!supabase;
  * @param {string} table - テーブル名
  * @param {string} select - selectカラム
  * @param {Function} [buildQuery] - クエリビルダー関数
- * @param {{ throwOnError?: boolean }} [options] - throwOnError: 取得エラー時に部分結果を
+ * @param {{ throwOnError?: boolean, client?: import("@supabase/supabase-js").SupabaseClient }} [options] - throwOnError: 取得エラー時に部分結果を
  *   返さず例外を投げる（既定はログ出力のみで取得済み分を返す）。監視のように「取得失敗を
- *   空データ＝正常と誤判定してはいけない」用途で指定する
+ *   空データ＝正常と誤判定してはいけない」用途で指定する。client: テスト・共通ラッパ用のクライアントの差し替え（既定は本ファイルの supabase）
  * @returns {Promise<Array>}
  */
 export async function fetchAll(
   table,
   select,
   buildQuery,
-  { throwOnError = false } = {},
+  { throwOnError = false, client = supabase } = {},
 ) {
   const allData = [];
   let from = 0;
   const pageSize = 1000;
   while (true) {
-    let q = supabase
+    let q = client
       .from(table)
       .select(select)
       .range(from, from + pageSize - 1);

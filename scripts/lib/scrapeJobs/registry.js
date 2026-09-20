@@ -123,6 +123,18 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
 
+  // A5 レース特記事項（race_special_notes）。10分ごと（JST 07:00〜23:59）に、開催会場のページを巡回する。
+  // 窓なし・ジョブ単位のリースで排他（cron-job.org と Vercel Cron の両方から起動されても、同時に1つだけ走る）。
+  // 会場は6並列で、1ページ約8〜10秒（plan.md §8の実測）のため、24会場でも約40〜60秒。リースは maxDuration と同じ
+  // 300秒（cron の間隔600秒より短く、処理が異常に長引いた場合も、次の起動までに解放される）
+  // 実装: scripts/lib/raceNoticesJob.js、api/cron/race-notices.js（T4b-11）
+  race_notices: {
+    kind: "continuous",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
+
   // T4a-10 の疑似ジョブ: 取得先へアクセスせず、スロットを消化するだけ（重複配信・二重claim・リースの奪取・
   // 期限計算の検証用。api/cron/scrape-pseudo.js）。Cronには登録しない（手動リクエストのみ）。検証後は削除してよい
   pseudo: {

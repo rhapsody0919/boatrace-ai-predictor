@@ -188,9 +188,14 @@
 
 ### T4b-11 特記事項（A5）: `race_special_notes`
 
-- [ ] **T4b-11-1** `api/cron/race-notices.js`を共通ラッパへ（ジョブ単位のリース、同期の応答、DB障害を200にしない。G13）。`race_notices_health`の毎回のupsertは、変更のある行のみに（D9）
-- [ ] **T4b-11-2** `vercel.json`のcronsに追加（10分間隔、`*/10 22-23,0-14 * * *`）。cron-job.orgの登録内容の確認（plan.md、job-inventory.md U1）と、(ユーザー)cron-job.orgのジョブの停止
-- [ ] **T4b-11-3** `race_special_notes`が0件（G4）の判別: 通知のある日を、公式ページで確認し、パースの失敗か、通知が無いだけかを判定する（WS5。実装は、その結果に従う）
+- [x] **T4b-11-1** `api/cron/race-notices.js`を共通ラッパへ（ジョブ単位のリース、同期の応答、DB障害を200にしない。G13）。`race_notices_health`の毎回のupsertは、変更のある行のみに（D9）
+  - 実装: レジストリに`race_notices`（continuous、リース300秒）、`scripts/lib/raceNoticesJob.js`（ラッパへの接続。DB障害・全会場の取得失敗は500、shadowは取得・解析のみ）、`scrape-race-information.js`の`run`に`client`・`fetchPage`・`dryRun`・`strict`・`concurrency`・`shouldStop`を追加（オプション無しの従来の呼び出しは不変）、集計行は`diffRows`で変更のある行のみ（`last_checked_at`は比較から外す。**最終確認の時刻は`scrape_job_state.last_success_at`になる**）。会場は6並列。検証は`npm run verify:race-notices-job`
+- [x] **T4b-11-2** `vercel.json`のcronsに追加（10分間隔、`*/10 22-23,0-14 * * *`）。cron-job.orgの登録内容の確認（plan.md、job-inventory.md U1）と、(ユーザー)cron-job.orgのジョブの停止
+  - `vercel.json`のcronsに追加済み（`regions`・`functions`には触れていない）。`scrape_job_state`の`race_notices`が`off`（または行なし）の間は、Vercel Cronもcron-job.orgの呼び出しも、何もしない。**このため、マージ前に`live`の行を作らないと、現行の特記事項の取得が止まる**（[verification-runbook.md](./verification-runbook.md) G-1）。cron-job.orgの停止は、ユーザー作業（未実施）。cron-job.orgの登録内容の確認は、ユーザー作業（G-3）
+- [x] **T4b-11-3** `race_special_notes`が0件（G4）の判別: 通知のある日を、公式ページで確認し、パースの失敗か、通知が無いだけかを判定する（WS5。実装は、その結果に従う）
+  - 結果（2026-09-20、公式ページへのリクエスト9回、逐次・3秒間隔、UA `BoatraceAIBot/1.0`、429/503なし）: **0件は「通知が無いだけ」で、パースの失敗ではない**。(1)通知のある既知の実例（2017-12-24 住之江 SG。フィクスチャの原本）: 生の表の行9件（事故・内規違反・減点5、モーター・ボート変更2、欠場・帰郷2）が、パーサーで9件とも解析された。(2)2026-09-20の6会場（桐生・多摩川（72周年記念）・尼崎・鳴門（6日目）・児島・唐津）: 3区分とも「現在、お知らせはありません」で、解析は0件（正しい）。(3)全レース内欠場（Kファイルの`K1`）があった日（2026-09-16 唐津、2026-09-15 平和島）も、通知なし（レース内の欠場は、この一覧に載らない）。本番の集計行83件（9/15〜9/20）は全て`had_success=true`・`last_reason`なしで、見出しの構造は毎回認識できている
+  - **発見**: `race_special_notes`の一意索引`uq_race_special_notes_dedup (venue_code, race_date, category, detail_text)`のため、同じ日に同じ内容の別選手の通知（例: 待機行動違反・落水失格の各2名）が1件に潰れる（2017年の実例で、9件中2件が失われる。検証スクリプトで再現）。**別タスクとして起票推奨**（コードのみで直せる: `detail_text`に選手名・レース番号を含める。または一意索引に選手名を加えるDDL。表は0件のため、今なら安全）
+  - 未確認: 2026年に通知が実際に出たときの構造（実例が2017年のSGのみ）。通知のある会場の割合。行があるのに解析できなかった場合（セルの数が想定と違う）は、現状、解析0件と区別できない（`race_notices_health`は成功のまま）。**別タスクとして起票推奨**: 生の行があるのに解析0件なら、`rows_unparsed`の失敗として集計行に記録する
 
 データ項目: `race_special_notes`。
 
