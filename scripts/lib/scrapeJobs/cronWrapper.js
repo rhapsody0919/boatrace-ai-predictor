@@ -17,8 +17,10 @@
  *
  * ハンドラー（各データセットが実装する）:
  *   window型   handleSlot(slot, ctx) → {outcome, rowsWritten?, rowsParsed?, rowsExpected?, resultDigest?, error?}
- *   それ以外   run(ctx)              → {rowsWritten?, rowsParsed?, rowsExpected?, report?}
- *   ctx: {job, mode, worker, now(), targetDate?, politeFetch, shouldStop()}
+ *   それ以外   run(ctx)              → {rowsWritten?, rowsParsed?, rowsExpected?, report?, body?}
+ *              （body は、HTTP応答の本文に、そのまま足される）
+ *   ctx: {job, mode, worker, now(), targetDate?, politeFetch, shouldStop(),
+ *         client（Supabase）, query（リクエストのクエリ）, state（起動時のジョブ状態の行）}
  *
  * api/cron/{job}.js の書き方（窓型の例。maxDuration は、レジストリの maxDurationSec と同じ値をリテラルで書く。
  * Vercel がビルド時に静的に読むため、importした定数は使えない）:
@@ -106,6 +108,8 @@ export async function runScrapeJob({
   now = () => new Date(),
   worker = defaultWorker(job),
   modeGated = true,
+  client = null,
+  query = {},
   breaker = createCircuitBreaker({
     store: store.breakerStore,
     now: () => now().getTime(),
@@ -148,7 +152,18 @@ export async function runScrapeJob({
     console.warn(`⚠️ ${job}: 起動の記録に失敗: ${error.message}`);
   }
 
-  const ctx = { job, mode, worker, now, politeFetch, shouldStop };
+  // state: 起動時点のジョブ状態の行（前回の last_report 等を読むため）。client・query: 監視・保守のジョブが使う
+  const ctx = {
+    job,
+    mode,
+    worker,
+    now,
+    politeFetch,
+    shouldStop,
+    client,
+    query,
+    state: state.row,
+  };
   const previousFailures = state.row?.consecutive_failures ?? 0;
   const recordFailure = async (error) => {
     try {
@@ -437,6 +452,7 @@ async function runLeased({
       body: {
         targetDate: ctx.targetDate,
         rowsWritten: result.rowsWritten ?? 0,
+        ...(result.body ?? {}),
       },
     };
   } finally {
@@ -483,6 +499,8 @@ export function createScrapeCronHandler({
       handleSlot,
       run,
       modeGated: modeGated ?? definition?.kind !== "monitor",
+      client,
+      query: req.query ?? {},
     });
     return res.status(status).json(body);
   };
