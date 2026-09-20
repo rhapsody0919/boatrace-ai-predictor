@@ -76,6 +76,9 @@ export function parseArgs(argv) {
     recentDays: DEFAULT_RECENT_DAYS,
     maxMinutes: null,
     delayMs: REQUEST_DELAY_MS,
+    // CLI の引数にはしない（Vercel のチャンク処理が、コードから指定する）
+    afterRacerId: null, // この登録番号より大きい選手だけを対象にする（チャンクの再開位置）
+    concurrency: 1, // 選手ごとの取得の同時数
   };
   for (const arg of argv) {
     if (arg === "--dry-run") options.dryRun = true;
@@ -320,17 +323,20 @@ export async function loadRecentRacerIds(client, recentDays) {
 }
 
 // racerIds 指定時はそれだけ。未指定時は「登録済み ∪ 直近出走」の昇順。
-// offset/limit は昇順の並びに対して適用する（--offset で途中から再開できる）
+// afterRacerId 指定時は、その登録番号より大きい選手だけ（チャンク処理の再開位置。件数の増減があっても、
+// 位置（offset）がずれない）。offset/limit は、その昇順の並びに対して適用する（--offset で途中から再開できる）
 export function buildPopulation({
   registered,
   recentIds,
   racerIds,
   limit,
   offset,
+  afterRacerId = null,
 }) {
-  const ids = racerIds
+  const all = racerIds
     ? [...new Set(racerIds)]
     : [...new Set([...registered.keys(), ...recentIds])];
+  const ids = all.filter((id) => afterRacerId === null || id > afterRacerId);
   ids.sort((a, b) => a - b);
   return ids.slice(offset, limit ? offset + limit : undefined);
 }
@@ -344,7 +350,8 @@ export function buildPopulation({
 export function evaluateRun(summary) {
   const reasons = [];
   const { season } = summary;
-  if (summary.targetCount === 0) reasons.push("対象選手が0件");
+  if (summary.targetCount === 0 && !summary.resumed)
+    reasons.push("対象選手が0件");
   if (summary.aborted) {
     reasons.push(
       `期別成績の失敗が${ABORT_AFTER_CONSECUTIVE_FAILURES}件連続したため中断`,
@@ -401,8 +408,13 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     now = () => Date.now(),
     log = console.log,
     logError = console.error,
+    // true を返したら、以降の選手に着手しない（Vercel: ソフトデッドライン。時間予算 --max-minutes とは別で、
+    // 中断は失敗ではなく、チャンクの区切り）
+    shouldStop = () => false,
+    // fetchImpl が再試行を持つ（Vercel: politeFetch）とき、ここでの再試行を減らして二重にしない
+    fetchRetries = FETCH_RETRIES,
   } = deps;
-  const fetchOptions = { fetchImpl, sleep };
+  const fetchOptions = { fetchImpl, sleep, retries: fetchRetries };
   const startedAt = now();
 
   log("=== 選手プロフィール・期別成績 取得スクリプト ===");
@@ -419,7 +431,17 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     racerIds: options.racerIds,
     limit: options.limit,
     offset: options.offset,
+    afterRacerId: options.afterRacerId,
   });
+  // このチャンクの後に残る選手数（limit・offset を外した、対象全体）を、チャンク処理の完了判定に使う
+  const eligibleCount = buildPopulation({
+    registered,
+    recentIds,
+    racerIds: options.racerIds,
+    limit: null,
+    offset: options.offset,
+    afterRacerId: options.afterRacerId,
+  }).length;
   const newProfileCount = population.filter((id) => !registered.has(id)).length;
   log(
     `対象racer_id数: ${population.length}件` +
@@ -455,14 +477,8 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     logError(`${progress} racer_id=${racerId} [season] 失敗: ${message}`);
   };
 
-  for (let i = 0; i < population.length; i++) {
-    if (maxMs !== null && now() - startedAt > maxMs) {
-      stoppedEarly = true;
-      nextOffset = options.offset + i;
-      log(`時間予算（${options.maxMinutes}分）に達したため中断します。`);
-      break;
-    }
-
+  // 選手1人分の処理。同時数（options.concurrency）が1なら、従来の逐次の処理と同じ順序・同じ待機
+  const processOne = async (i) => {
     const racerId = population[i];
     const progress = `[${i + 1}/${population.length}]`;
     const isNewProfile = !registered.has(racerId);
@@ -576,7 +592,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
       if (consecutiveSeasonFailures >= ABORT_AFTER_CONSECUTIVE_FAILURES) {
         aborted = true;
         nextOffset = options.offset + i + 1;
-        break;
+        return;
       }
     }
 
@@ -586,7 +602,43 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
           `season書込: ${season.successCount}件/変更なし: ${season.unchangedCount}件/データ無し: ${season.noDataCount}件/失敗: ${season.failCount}件`,
       );
     }
-  }
+  };
+
+  // 対象を、登録番号の昇順に、同時 options.concurrency で処理する。次の1人に着手する前に、中断の条件
+  // （時間予算・ソフトデッドライン・連続失敗）を確認する。着手は昇順で、着手した選手は、中断の後も最後まで処理する
+  // （途中で捨てない）ため、処理した選手は、常に「先頭から nextIndex 人」の欠けのない範囲になる。
+  // これを、チャンクの再開位置（processedPrefix・lastProcessedRacerId）にする
+  let nextIndex = 0;
+  let stopped = false;
+  let deadlineStopped = false;
+  const worker = async () => {
+    for (;;) {
+      if (stopped || aborted) return;
+      const i = nextIndex;
+      if (i >= population.length) return;
+      if (maxMs !== null && now() - startedAt > maxMs) {
+        stoppedEarly = true;
+        nextOffset = options.offset + i;
+        stopped = true;
+        log(`時間予算（${options.maxMinutes}分）に達したため中断します。`);
+        return;
+      }
+      if (shouldStop()) {
+        deadlineStopped = true;
+        stopped = true;
+        return;
+      }
+      nextIndex++;
+      await processOne(i);
+    }
+  };
+  await Promise.all(
+    Array.from(
+      { length: Math.min(Math.max(1, options.concurrency), population.length) },
+      () => worker(),
+    ),
+  );
+  const processedPrefix = nextIndex;
 
   const summary = {
     executedAt: new Date(now()).toISOString(),
@@ -599,9 +651,17 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
       recentDays: options.recentDays,
     },
     targetCount: population.length,
+    resumed: options.afterRacerId !== null,
     stoppedEarly,
+    deadlineStopped,
     aborted,
     nextOffset,
+    // チャンク処理の再開位置: 先頭から連続して処理を終えた選手数と、その最後の登録番号。
+    // remaining は、このチャンクの後にまだ処理していない選手数（0なら最後まで処理済み）
+    processedPrefix,
+    lastProcessedRacerId:
+      processedPrefix > 0 ? population[processedPrefix - 1] : null,
+    remaining: Math.max(0, eligibleCount - processedPrefix),
     profile,
     season,
   };

@@ -51,6 +51,7 @@ export function createMemoryStore({
       if (typeof args.rowsWritten === "number")
         row.last_rows_written = args.rowsWritten;
       if (args.report !== undefined) row.last_report = args.report;
+      if (args.cursor !== undefined) row.cursor = args.cursor;
     },
     async recordFailure(job, args) {
       record("recordFailure", { job, ...args });

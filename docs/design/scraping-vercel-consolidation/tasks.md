@@ -254,9 +254,9 @@
 
 ### T4b-12 得点率（B2）: `racer_series_points`
 
-- [ ] **T4b-12-1** `scrape-point-rank.js`を、対象日を引数で受ける形にして、`api/cron/point-rank.js`へ（`0 13 * * *`、`30 14,16 * * *`）。対象日は`resolveTargetDate`（22:00指定）。0件エラー（記念競走のある日のみ期待あり。PR #715の修正を踏襲）
-- [ ] **T4b-12-2** 記念競走以外に表が無い仕様上の空が、0件にどの程度含まれるか（job-inventory.md U13）を、表のある日（SG/G1開催日）に、日付を取り違えない条件での再取得で確認する
-- [ ] **T4b-12-3** `live`→`SKIP_POINT_RANK_ON_GHA=true`。対象日がずれる問題（G1）が、Vercelで再発しないことを、実測する
+- [x] **T4b-12-1**（コード実装済み。`scripts/lib/pointRankJob.js`・`api/cron/point-rank.js`。モードは`off`のまま。検証: `npm run verify:scrape-daily-jobs`。切り替えはrunbook §L-1） `scrape-point-rank.js`を、対象日を引数で受ける形にして、`api/cron/point-rank.js`へ（`0 13 * * *`、`30 14,16 * * *`）。対象日は`resolveTargetDate`（22:00指定）。0件エラー（記念競走のある日のみ期待あり。PR #715の修正を踏襲）
+- [x] **T4b-12-2**（調査済み。結果はrunbook §L-6。要点: 開催会場日の約94%は表が無いのが仕様。表があるのは、SG/G1の中盤〜終盤（多摩川G1は3日目にもあり）。実測でG3・一般戦は表なし） 記念競走以外に表が無い仕様上の空が、0件にどの程度含まれるか（job-inventory.md U13）を、表のある日（SG/G1開催日）に、日付を取り違えない条件での再取得で確認する
+- [ ] **T4b-12-3**（`SKIP_POINT_RANK_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-1） `live`→`SKIP_POINT_RANK_ON_GHA=true`。対象日がずれる問題（G1）が、Vercelで再発しないことを、実測する
 
 データ項目: `racer_series_points`。
 
@@ -266,9 +266,9 @@
 
 ### T4b-13 進入コース別選手成績（B4）: `venue_entry_course_stats`
 
-- [ ] **T4b-13-1** `scrape-venue-entry-course-stats.js`を、対象日を引数で受ける形にして、`api/cron/entry-course-stats.js`へ（`0 11 * * *`、`30 13 * * *`、`30 15 * * *`）。`git push`・`fs`（health.json）を`last_report`へ（`driftHealth.js`のコア機構は再利用）。当日の出走表がある会場のみ処理し、対象日を`resolveTargetDate`で明示（G2の恒久対策）
-- [ ] **T4b-13-2** 表示側の読み手の有無を確認する（job-inventory.md U11。`src/`・`api/`に見つからなかった）。読み手が無い場合、取得を続ける価値をユーザーに提示する
-- [ ] **T4b-13-3** `live`→`SKIP_ENTRY_COURSE_ON_GHA=true`
+- [x] **T4b-13-1**（コード実装済み。`scripts/lib/venueEntryCourseStatsJob.js`・`scripts/lib/scrapeJobs/venueDailyJob.js`・`api/cron/entry-course-stats.js`。成否履歴は`scrape_job_state.last_report`へ。構造変化の通知は`last_report.alerts`→`scrape-monitor`。切り替えはrunbook §L-2） `scrape-venue-entry-course-stats.js`を、対象日を引数で受ける形にして、`api/cron/entry-course-stats.js`へ（`0 11 * * *`、`30 13 * * *`、`30 15 * * *`）。`git push`・`fs`（health.json）を`last_report`へ（`driftHealth.js`のコア機構は再利用）。当日の出走表がある会場のみ処理し、対象日を`resolveTargetDate`で明示（G2の恒久対策）
+- [x] **T4b-13-2**（確認済み。**読み手なし**。結果と要判断はrunbook §L-6。ユーザーの判断待ち） 表示側の読み手の有無を確認する（job-inventory.md U11。`src/`・`api/`に見つからなかった）。読み手が無い場合、取得を続ける価値をユーザーに提示する
+- [ ] **T4b-13-3**（`SKIP_ENTRY_COURSE_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-2。T4b-13-2の判断で、取得を続けない場合は不要） `live`→`SKIP_ENTRY_COURSE_ON_GHA=true`
 
 データ項目: `venue_entry_course_stats`。
 
@@ -278,8 +278,8 @@
 
 ### T4b-14 会場別モーター成績（B3）: `venue_motor_stats`
 
-- [ ] **T4b-14-1** `scrape-venue-motor-stats.js`を、`api/cron/venue-motor-stats.js`へ（`0 21 * * *`、`0 23 * * *`）。会場間の待機なしで、22会場を取得する現状の負荷を見積もり、並列度の上限・待機を追加する。成否履歴（`venue-motor-stats-health.json`のgit push）を`last_report`へ（BOA-360の`git push`競合の恒久解消）
-- [ ] **T4b-14-2** `live`→`SKIP_MOTOR_STATS_ON_GHA=true`
+- [x] **T4b-14-1**（コード実装済み。`scripts/lib/venueMotorStatsJob.js`・`api/cron/venue-motor-stats.js`。負荷の見積りと同時数の上限はrunbook §L-6。切り替えはrunbook §L-3） `scrape-venue-motor-stats.js`を、`api/cron/venue-motor-stats.js`へ（`0 21 * * *`、`0 23 * * *`）。会場間の待機なしで、22会場を取得する現状の負荷を見積もり、並列度の上限・待機を追加する。成否履歴（`venue-motor-stats-health.json`のgit push）を`last_report`へ（BOA-360の`git push`競合の恒久解消）
+- [ ] **T4b-14-2**（`SKIP_MOTOR_STATS_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-3） `live`→`SKIP_MOTOR_STATS_ON_GHA=true`
 
 データ項目: `venue_motor_stats`。
 
@@ -289,8 +289,8 @@
 
 ### T4b-15 選手ニュース（B5）: `racer_news`
 
-- [ ] **T4b-15-1** `pending.json`（人手確認リスト）のコミットを、DBの表へ移す（plan.md §11(i)の判断に従う）。`session-start-check.js`の読み先を、DBに変更する（`.claude/rules/content-ops.md`フローC-4の手順も更新）。`collect-racer-news.js`を`api/cron/racer-news.js`へ（`10 14 * * *`、`10 16 * * *`）
-- [ ] **T4b-15-2** `live`→`SKIP_RACER_NEWS_ON_GHA=true`
+- [x] **T4b-15-1**（コード実装済み。マイグレーション案`080_racer_news_pending.sql`（**未適用。ユーザー承認待ち**）・`scripts/lib/racerNewsJob.js`・`api/cron/racer-news.js`・`scripts/maintenance/resolve-racer-news-pending.js`。`session-start-check.js`とフローC-4はDB＋pending.jsonの統合を読む。切り替えはrunbook §L-4） `pending.json`（人手確認リスト）のコミットを、DBの表へ移す（plan.md §11(i)の判断に従う）。`session-start-check.js`の読み先を、DBに変更する（`.claude/rules/content-ops.md`フローC-4の手順も更新）。`collect-racer-news.js`を`api/cron/racer-news.js`へ（`10 14 * * *`、`10 16 * * *`）
+- [ ] **T4b-15-2**（`SKIP_RACER_NEWS_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-4） `live`→`SKIP_RACER_NEWS_ON_GHA=true`
 
 データ項目: `racer_news`。
 
@@ -300,9 +300,9 @@
 
 ### T4b-16 選手プロフィール・期別成績（B6）: `racer_profiles`
 
-- [ ] **T4b-16-1** `scrape-racer-profiles.js`（`scripts/maintenance/`）を、`api/cron/racer-profiles.js`へ。1,627人を300人程度のチャンクで処理し、位置を`cursor`に保存して再開可能にする（`*/10 0-3 1 * *`、`*/10 0-3 8,15 5,11 *`）。`profile-scrape-report.json`のgit pushを`last_report`へ。取得ロジックは`scripts/lib/racerProfileSync.js`を再利用する
-- [ ] **T4b-16-2** 初回実行（`ability_index`が0/1,627件）は、WS5で手動実行する（少数のdry-runから段階的に。PR #721の修正後）。実行時間の実測（plan.md、job-inventory.md U9）を、チャンクの人数の調整に使う
-- [ ] **T4b-16-3** `live`→`SKIP_RACER_SEASON_ON_GHA=true`
+- [x] **T4b-16-1**（コード実装済み。`scripts/lib/racerProfilesJob.js`・`api/cron/racer-profiles.js`・`racerProfileSync.js`にafterRacerId・同時取得・ソフトデッドラインを追加（CLIの既定挙動は不変）。**`maxDuration`は300秒**（設計の800秒はFluid Compute未確認のため見送り。runbook §L-5・§L-6）。切り替えはrunbook §L-5） `scrape-racer-profiles.js`（`scripts/maintenance/`）を、`api/cron/racer-profiles.js`へ。1,627人を300人程度のチャンクで処理し、位置を`cursor`に保存して再開可能にする（`*/10 18-20 1 * *`、`*/10 18-20 8,15 5,11 *`。**夜間**: UTC 18:00〜20:50＝JST 03:00〜05:50。日付は従来のGitHub Actionsと同じUTC基準の式で、JSTでは2日・9日・16日）。`profile-scrape-report.json`のgit pushを`last_report`へ。取得ロジックは`scripts/lib/racerProfileSync.js`を再利用する
+- [ ] **T4b-16-2**（2026-09-20時点の実測: `ability_index`が非NULLの選手は1,592/1,628人。初回実行は済んでいる。実行時間の実測は、Vercelの`?chunk=N`の手動確認とlive初回で行う。runbook §L-5） 初回実行（`ability_index`が0/1,627件）は、WS5で手動実行する（少数のdry-runから段階的に。PR #721の修正後）。実行時間の実測（plan.md、job-inventory.md U9）を、チャンクの人数の調整に使う
+- [ ] **T4b-16-3**（`SKIP_RACER_SEASON_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-5） `live`→`SKIP_RACER_SEASON_ON_GHA=true`
 
 データ項目: `racer_profiles`。
 

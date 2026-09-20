@@ -10,6 +10,7 @@
 | `npm run verify:scrape-jobs` | 共通ラッパ・politeFetch・ブレーカー・レジストリ・`resolveTargetDate` |
 | `npm run verify:scrape-monitor` | 監視・cleanup・メタ監視・`api/cron/*`と`vercel.json`の整合 |
 | `npm run verify:scrape-result-job` | 結果取得・Kファイル同期・catch-up（WS4b。DB・取得先なし。実際の結果ページのフィクスチャで解析・digest・shadowが書かないこと・中止確定・cron窓を検証） |
+| `npm run verify:scrape-daily-jobs` | 日次・低頻度ジョブ（得点率・進入コース別・モーター成績・選手ニュース・選手プロフィール。WS4b。DB・取得先なし。対象日の解決（G1・G2の再発防止）・off/行なし/075未適用で何もしない・shadowが書かない・冪等・0件・チャンクの再開・履歴・monitor・配線を検証。変異検証済み） |
 
 ## 前提
 
@@ -466,6 +467,164 @@ UPDATE scrape_job_state SET mode = 'live' WHERE job = 'race_notices';      -- �
 - 構造変化: 既存の`race-notices-drift-monitor.yml`（`race_notices_health`の`had_success`・`last_reason`を日次で畳み込む）。変更のある行のみの書き込みでも、判定に必要な情報は失われない
 - **未整備**: `race_notices`（continuous）の死活（`last_success_at`が古い）は、`scrape-monitor`の死活判定の対象外（対象は窓型）。Cronの未配信・関数の障害で、特記事項が止まっても、通知されない。WS4aの`scrape-monitor`の拡張として、別タスクで追加する（`last_success_at`が運用窓内で30分以上古い、など）
 - `race_notices_health.last_checked_at`は、変更のある行のみ書くため、最終確認の時刻ではない。`scripts/analysis/data-health-report.js`の鮮度（`max(last_checked_at)`）は、この表では、実際より古く出る。最終確認は`scrape_job_state.last_success_at`
+
+## L. 日次・低頻度ジョブ（B2〜B6）の切り替え（tasks.md T4b-12〜T4b-16）
+
+対象: `point_rank`（得点率）・`entry_course_stats`（進入コース別選手成績）・`venue_motor_stats`（会場別モーター成績）・`racer_news`（選手ニュース）・`racer_profiles`（選手プロフィール・期別成績）。DBに関わらない部分（対象日の解決・off/行なし/075未適用で何もしない・shadowが書かない・冪等・0件の扱い・チャンクの再開・履歴・配線）は`npm run verify:scrape-daily-jobs`で検証済み。
+
+### L-0. 共通の前提・順序
+
+- **マージ直後は、全ジョブが`off`（行なし）で、何も取得せず何も書かない**（本番の挙動は変わらない）。最初のCron起動で、`scrape_job_state`に`off`の行が作られる。
+- **1ジョブずつ進める**（plan.md §4.6 (h)）。同時に2つ以上のジョブを並走させない。順序の推奨: 得点率 → モーター成績 → 進入コース別（L-6の要判断の後）→ 選手ニュース（080適用後）→ 選手プロフィール（月次のため、次の起動（JST 10/2 03:00）の前に手動確認）。
+- 日次ジョブの`shadow`は、対象日を処理済みにしないため、**指定時刻と補足の起動のたびに（1日2〜3回）取得する**。shadowの取得先への追加リクエスト（1日あたり）: 得点率 約45ページ（開催約15会場×3回、boatrace.jp）／進入コース 最大約360ページ（10会場×12レース×3回。各会場サイトは1日に最大36リクエスト、逐次・300ms間隔）／モーター成績 約44ページ（22会場×2回。各ドメイン2リクエスト）／選手ニュース 4ページ。shadowは**1日で十分**（次の日に`live`へ）。
+- 共通の確認（読み取り。値は出力しない）:
+  ```sql
+  SELECT job, mode, last_tick_at, last_success_at, last_target_date, last_rows_written,
+         last_error, consecutive_failures, cursor, last_report
+    FROM scrape_job_state
+   WHERE job IN ('point_rank','entry_course_stats','venue_motor_stats','racer_news','racer_profiles');
+  ```
+- モードの切り替え（DBの更新のみ。再デプロイ不要。**本番DBへの書き込みのため、ユーザーの承認後**）:
+  ```sql
+  INSERT INTO scrape_job_state (job, mode) VALUES ('<job>', 'shadow')
+  ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();   -- live のときは 'live'。切り戻しは 'off'
+  ```
+- **`shadow`から`live`に切り替えた同じ日**: shadowで取得した会場・チャンクの進捗を、liveは引き継がない（モードが違う記録は使わない）。liveが、その日の分を全て取得して書く。
+- GitHub側を止める変数（リポジトリ変数。**ユーザーの承認後**）: `gh variable set <変数名> --body true`。切り戻しは`gh variable delete <変数名>`（未設定＝従来どおり実行）。停止しても、コード・ワークフローは残る。
+- 構造変化・失敗率の通知: 各ジョブは、通知したい事項を`last_report.alerts`に書き、`scrape-monitor`（5分ごと）がSlackへ通知する（Vercelの`SLACK_WEBHOOK_URL`が要る。plan.md U10）。従来の「GitHub Actionsのdriftチェック→Slack」は、GitHub側を止めると動かなくなるため、この経路に置き換わる。**構造変化の履歴（連続失敗日数）は、`last_report.health`に、Vercelのshadow/live開始時点から積み直す**（従来の`data/analysis/*-health.json`の値は引き継がない）。既に構造起因の失敗が続いている会場は、通知が最大14日遅れる。
+
+### L-1. 得点率（`point_rank`、T4b-12）
+
+`api/cron/point-rank.js`（22:00・23:30・翌01:30 JST）。対象日は、指定時刻22:00から解決する（G1: GitHub Actionsの遅延起動で対象日が翌日になった問題の恒久対策）。
+
+**shadow（1日）**: 成功基準は、対象日の`last_report.venues`（会場ごとの`rows`・`grade`・`seriesDay`・`meetStartDate`）が、GitHub側が書いた`racer_series_points`と一致すること。
+
+```sql
+SELECT last_report->>'date' AS target_date, last_report->'expectedVenues' AS expected_venues,
+       last_report->'rowsParsed' AS rows_parsed, last_report->'venues' AS venues, last_error
+  FROM scrape_job_state WHERE job = 'point_rank';
+SELECT venue_code, meet_start_date, count(*) AS rows, max(scraped_at) AS last_scraped
+  FROM racer_series_points WHERE meet_start_date >= (now() AT TIME ZONE 'Asia/Tokyo')::date - 10
+ GROUP BY 1, 2 ORDER BY 2, 1;
+```
+
+**表のある日（SG/G1の開催日）を含める**: 開催会場日の約94%は、表が無いのが仕様のため、`rowsParsed`が0でも正常（`expectedVenues`が0）。比較できるのは、表のある日だけ。SG/G1の開催が無い週は、shadowを延長し、開催日の22:00以降に確認する。
+
+**live（3日並走。表のある日を1日以上含める）**: 成功基準: `last_target_date`が毎日、その日の日付になる。対象日を取り違えた日（GitHub側の遅延起動の日）に、Vercelが正しい対象日で書いている。エラー（`consecutive_failures`）が0。`racer_series_points`の行数が、GitHub側だけの日と一致する（upsertのため、二重に書いても行は増えない）。
+
+**GitHub側の停止**: `SKIP_POINT_RANK_ON_GHA=true`。7日後の確認: 各対象日の`racer_series_points`（表のある日）が、対象日の22:00以降・日付が変わる前後に書かれている（`scraped_at`）。`last_target_date`の遅れが、指定時刻から3時間を超えない（超えると`scrape-monitor`が`daily_overdue`を通知する）。
+
+ロールバック: `mode = 'off'`（GitHub側が動いていれば空白なし）。GitHub側を止めた後は、①`gh variable delete SKIP_POINT_RANK_ON_GHA` ②Vercel側を`off`。
+
+### L-2. 進入コース別選手成績（`entry_course_stats`、T4b-13）
+
+`api/cron/entry-course-stats.js`（20:00・22:30・翌00:30 JST）。**読み手が無い（L-6）ため、取得を続けるかの判断が先**。続ける場合:
+
+**shadow（1日）**: 成功基準: `last_report.venues[]`の会場ごとの`rows`が、GitHub側が書いた当日の`venue_entry_course_stats`の会場別行数と一致する（1レース36行）。`last_report.health`に、開催のあった会場ごとの履歴が入る（`git push`・`data/analysis/*-health.json`は使わない）。
+
+```sql
+SELECT last_report->>'date' AS target_date, last_report->'venuesWithRaces' AS venues_with_races,
+       last_report->'settledVenues' AS settled, last_report->'venues' AS venues, last_report->'alerts' AS alerts, last_error
+  FROM scrape_job_state WHERE job = 'entry_course_stats';
+SELECT venue_code, count(*) AS rows, max(scraped_at) AS last_scraped
+  FROM venue_entry_course_stats WHERE race_id LIKE (to_char((now() AT TIME ZONE 'Asia/Tokyo')::date, 'YYYY-MM-DD') || '%')
+ GROUP BY 1 ORDER BY 1;
+```
+
+**live（3日並走）**: 成功基準: 対象日の`last_target_date`が更新される。**日付をまたぐ起動（G2）の日でも、対象日の行が入る**（`race_id`の日付が対象日、`scraped_at`が22:30・00:30でもよい）。一時的な失敗の会場があった日は、補足の起動（22:30・00:30）が、その会場だけを再取得して埋める（`settledVenues`が増える）。0件エラー（取得した全会場が0行）は、`last_error`に「0件」と出る。
+
+**GitHub側の停止**: `SKIP_ENTRY_COURSE_ON_GHA=true`。7日後の確認: 対象10会場の開催日ごとに、`venue_entry_course_stats`が入っている（充足の実測はtasks.md T4b-13の「本番実測」）。
+
+ロールバック: L-1と同じ順序。
+
+### L-3. 会場別モーター成績（`venue_motor_stats`、T4b-14）
+
+`api/cron/venue-motor-stats.js`（06:00・08:00 JST）。会場は別ドメイン、同時4会場。
+
+**shadow（1日）**: 成功基準: `last_report.venues[]`が、22会場のうち取得できた会場の行数（`rows`）を持ち、GitHub側が書いた当日の`venue_motor_stats`（`scraped_date`）と会場別に一致する。`reason`が付く会場（唐津: 新モーター切替期間の`no_data_rows`等）は、GitHub側の`health.json`の最終の理由と一致する。
+
+```sql
+SELECT last_report->>'date' AS target_date, last_report->'venues' AS venues, last_report->'alerts' AS alerts, last_error
+  FROM scrape_job_state WHERE job = 'venue_motor_stats';
+SELECT venue_code, count(*) AS rows FROM venue_motor_stats
+ WHERE scraped_date = (now() AT TIME ZONE 'Asia/Tokyo')::date GROUP BY 1 ORDER BY 1;
+```
+
+**live（3日並走）**: 成功基準: `last_target_date`が毎日更新（06:00の起動、遅れて08:00の補足）。`last_report.health`の`consecutiveFailDays`が、同じ会場の失敗が続く間、**1日1しか増えない**（補足の起動で二重に数えない）。書き込み: upsertのため二重でも行は増えない。**GitHubの`git push`競合（BOA-360）は、`SKIP_MOTOR_STATS_ON_GHA=true`の後、ワークフローの実行が無くなるため起きなくなる**。
+
+**GitHub側の停止**: `SKIP_MOTOR_STATS_ON_GHA=true`。7日後の確認: 各日の`scraped_date`の行が、対象22会場ぶん（モーター数×日）入っている。取得時刻の実測用に、`last_report`（成功時のみ更新）と`last_success_at`を使う（tasks.md T4b-14の「タイミング実測」）。
+
+ロールバック: L-1と同じ順序。
+
+### L-4. 選手ニュース（`racer_news`、T4b-15）
+
+`api/cron/racer-news.js`（23:10・翌01:10 JST）。**前提: マイグレーション080（`racer_news_pending`）を、ユーザーの承認後に適用する**（RLS有効・anonの権限なし。未適用のまま`shadow`・`live`にすると、照合が失敗して`error`になる）。
+
+**shadow（1日）**: 成功基準: `last_report`の`articles`（一覧の記事数）・`skipped`（処理済み・対象外）・`generated`・`pending`（書いたはずの件数）が、GitHub側の実行（同じ日の`racer_news`・要確認リスト）と矛盾しない。月1〜2件と少ないため、`generated`・`pending`は0が普通。
+
+**live（並走）**: 成功基準: **二重の投入が無い**。
+
+```sql
+SELECT source_url, count(*) FROM racer_news GROUP BY 1 HAVING count(*) > 1;   -- 0行
+SELECT id, status, reason, detected_at FROM racer_news_pending ORDER BY detected_at DESC LIMIT 20;
+```
+
+`session-start-check.js`の`racerNews`に、`dbError`が出ない（DBの要確認リストを読めている）こと。移行期間は、GitHub側の`pending.json`とDBを、idで統合して数える（DBが優先）。要確認の承認・却下は`node scripts/maintenance/resolve-racer-news-pending.js`（フローC-4）。
+
+**GitHub側の停止**: `SKIP_RACER_NEWS_ON_GHA=true`。停止後、`data/analysis/racer-news-pending-review/pending.json`は更新されなくなる（残置。未確認の項目が残っていれば、先に承認・却下する）。
+
+ロールバック: L-1と同じ順序。
+
+### L-5. 選手プロフィール・期別成績（`racer_profiles`、T4b-16）
+
+`api/cron/racer-profiles.js`（**夜間**。従来のGitHub Actions（`scrape-racer-season-stats.yml`）と同じ日付の式。UTC基準の毎月1日、5月・11月は8日・15日も、UTC 18:00〜20:50の10分間隔＝**JSTでは毎月2日、5月・11月は9日・16日も、03:00〜05:50**。開催時間帯（9:00〜21:00 JST）を避け、開始時に選手一覧・直近の出走を読むDB負荷を夜間に寄せる。最後のチャンクの終了は05:55頃で、07:00 JST前に完了する）。約1,630人を、1回（300秒）あたり約110人ずつ、登録番号の昇順に処理する（**同時4・1ページ約8〜10秒。約15回、約2.5時間**）。位置は`scrape_job_state.cursor`（`afterRacerId`＝最後に処理した登録番号）。**月次のため、次の月次（UTC 2026-10-01 18:00＝JST 10/2 03:00）の前に、手動リクエストで確認する**。
+
+**手動の動作確認（少数）**: `mode`を`shadow`にして、1回の処理人数を絞る（書き込まない。取得先へ、人数×最大2リクエスト）:
+
+```
+curl -s -H "Authorization: Bearer $CRON_SECRET" "https://www.boat-ai.jp/api/cron/racer-profiles?chunk=5"
+```
+
+（`$CRON_SECRET`は値を出力・記録しない。）期待: `success: true`・`processed: 5`・`remaining`が約1,620・`afterRacerId`が5人目の登録番号。続けて同じリクエストを繰り返すと、`afterRacerId`が前進する。`last_report.chunk.durationSeconds`が、5人のぶんの実測（**U9: 1人あたりの所要時間の実測。同時4・politeFetch込み**）。確認後、`cursor`を消す（`UPDATE scrape_job_state SET cursor = NULL WHERE job = 'racer_profiles';`）か、翌月の対象日になれば、自動で先頭から始まる。
+
+**live（JST 10/2）**: 03:00の起動から、10分ごとに続きを処理する（`last_target_date`・`cursor.targetDate`は、JSTの日付＝`2026-10-02`）。成功基準:
+
+```sql
+SELECT last_target_date, cursor->>'afterRacerId' AS after_racer_id, cursor->>'done' AS done,
+       cursor->'stats' AS stats, last_report->'chunk'->>'processed' AS last_chunk_processed,
+       last_report->'chunk'->>'durationSeconds' AS last_chunk_seconds, last_error, consecutive_failures
+  FROM scrape_job_state WHERE job = 'racer_profiles';
+SELECT count(*) FILTER (WHERE ability_index IS NOT NULL) AS with_ability, count(*) AS total,
+       max(official_updated_at) AS last_official_updated FROM racer_profiles;
+```
+
+- 05:50の最後の起動までに`cursor.done`が`true`になり、`last_target_date`が`2026-10-02`になる（間に合わなければ、`scrape-monitor`が06:00に`daily_overdue`を通知する。窓は3時間（18回の起動）で、必要な約15回に対し余裕は3回。その場合は、`?chunk=`でなく、`mode`を維持したまま、手動で数回リクエストして続きを進める）
+- `stats.seasonFailed / stats.seasonTargets`が5%以内（超えると、サイクルの完了時に`last_report.alerts`で通知される）
+- 連続20件の失敗（サイトの停止等）は、`error`（500）で、`cursor`を進めない。`consecutive_failures`が3以上で、`scrape-monitor`が通知する
+- 期別成績が変わっていない選手は書かない（`stats.seasonUnchanged`）。2回目以降の月は、大半が`unchanged`になる
+
+**GitHub側の停止**: `SKIP_RACER_SEASON_ON_GHA=true`（ワークフローも同じ日の03:00 JST起動）。停止後の最初の月次（JST 11/2と、期の切り替え直後の11/9・11/16）で、Vercelのみで、全選手が処理される（`ability_index`・`official_updated_at`）ことを確認する。
+
+ロールバック: L-1と同じ順序。GitHub側の再開後は、Vercelを`off`（同じ選手を二重に取得しない）。
+
+### L-6. 調査の結果と、ユーザーの判断が要る点
+
+**T4b-13-2（進入コース別成績の読み手、job-inventory U11）**: `src/`・`api/`・`scripts/`に、`venue_entry_course_stats`を読む箇所は**無い**（書き込み・構造変化の検知・`data-health-report.js`の件数計測・パーサーの検証だけ）。RLSも、076で「読ませない設計」（anonからHTTP 401）。`docs/design/course-entry-tendency-rework/spec.md`（背景6）は、このデータが**会場別ではなく選手の全国直近12か月の集計**で、走数を併記する方針とも合わないため、「表示には使わず、自前計算の全国値の検証にのみ使う」に変更している（同specでユーザーの確認待ちと記載）。→ **要判断**: (a)取得を続ける（検証用。負荷は最大約120リクエスト/日・10会場サイト）か、(b)取得を止める（ジョブを移行せず、GitHub側も停止する）。
+
+**T4b-12-2（得点率の仕様上の空、job-inventory U13）**: 
+- 2026-08-01〜09-20（51日）の開催会場日637のうち、SG/G1は35（5.5%）、G3は48、一般戦は554。SG/G1が1会場以上ある日は31日（61%）。
+- 表のある日目の実測（公式ページ、9会場日）: 多摩川G1の3日目・4日目に49名の表あり／G3の1・2日目、一般戦の1・4・5・6日目は表なし（「データはありません」）。徳山G1の1〜3日目は表なし（2026-09-19の既存の確認）。→ **表があるのは、SG/G1の中盤以降**（節によって3日目から）。コードの期待条件（SG/G1の4日目以降）は保守的で、表があれば日目を問わず書く。
+- したがって、`racer_series_points`の0件のうち、仕様上の空は大半（一般戦・G3のみの会場日）。期待件数が0でない日は、SG/G1の4日目以降の会場がある日（節の日数からの概算で約17/51日）に限られる。**日付の取り違え（G1）の影響は、この日にだけ出る**。2026-09-16〜18の0件のうち、欠落した可能性があるのは、徳山G1の5・6日目（9/16・9/17）と、多摩川G1の3日目（9/18。表あり）。多摩川G1の1・2日目は、表の有無が未確認。現状の`racer_series_points`は49行（多摩川G1、2026-09-19の1回のみ）。`race_conditions.series_day`は2026-09-16以降のみ取得されており、それ以前の日は、開催初日を逆算できない。
+- 過去分: `hd`に過去日を指定しても表が返る（9/18で確認。内容が当該日時点の得点率かは未確認）。遡及の取得はWS5で確認する。
+
+**T4b-14-1（モーター成績の負荷）**: 現状（GitHub Actions）は、22会場＋宮島のPDFを、待機なしで逐次に取得する（実測: 2026-09-19、取得ステップ全体で29秒）。各会場は別ドメインのため、**同一ホストへのリクエストは1日1〜2件（宮島のみ、一覧＋PDFの2件）**で、待機を置く理由が無い。Vercelでは、同時4会場に上限を設け、politeFetch（15秒タイムアウト・429/503のバックオフ・会場サイトごとのブレーカー）を通す。合計は1日あたり約24〜48リクエスト（補足の起動で失敗した会場のみ再取得）。追加した待機は無い（会場間の待機は、別ドメインのため効果が無い）。
+
+**T4b-16（選手プロフィールの実行時間・maxDuration）**: boatrace.jpの応答は、racersearch/seasonも1件約8.6〜10.1秒（2026-09-20、2件の実測。他のページと同じ）。逐次だと1,627人で約4.3時間になるため、同時4にした。設計（plan.md §4.4）は`maxDuration`800秒・約300人/回だったが、**Fluid Computeの有効化が未確認（plan.md U1）のため、300秒にした**（無効なプロジェクトで800を指定すると、ビルドが失敗し、全てのデプロイが止まる）。Fluid Computeを確認できたら、`api/cron/racer-profiles.js`・レジストリの`racer_profiles`を800に上げれば、回数が約1/3になる。**B6の実行時間帯は夜間（UTC 18:00〜20:50＝JST 03:00〜05:50）**（親の指示で、当初案の09:00〜12:50 JSTから変更）。チャンクごとのDB読み取り（`racer_profiles`2ページ＋`race_entries`約34ページ）と同時4の取得（約0.4リクエスト/秒）を、開催時間帯（9:00〜21:00 JST）のオッズ・結果の取得と重ねない。日付は、UTC基準の式（GitHub側と同じ）のため、JSTでは翌日（2日・9日・16日）になり、`targetTimeJst`は`03:00`、`runDaysOfMonth`はJSTの日で持つ。
+
+**その他の要判断**:
+1. 進入コース別成績を、取得し続けるか（上記）
+2. 080の適用（`racer_news_pending`。RLS有効・anonの権限なし。ユーザーの承認後）
+3. 選手プロフィールの`maxDuration`を800にするか（Fluid Computeの確認。800にすれば、窓（3時間）に対する余裕が増える）
 
 ## M. オッズ取得（`odds`）の切り替え（tasks.md T4b-04-3〜5）
 

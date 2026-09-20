@@ -13,7 +13,8 @@
  * 1) tweetDrafts   … note-articles/tweet-drafts.md の `- [ ] 投稿済み` 件数
  * 2) xVideo        … data/analysis/x-posts/history.json の本日投稿状況
  * 3) tiktok        … data/analysis/tiktok-posts/history.json の本日投稿状況
- * 4) racerNews     … data/analysis/racer-news-pending-review/pending.json の pending件数
+ * 4) racerNews     … 要確認リストの pending件数（DBの表 racer_news_pending＋移行期間の
+ *                    data/analysis/racer-news-pending-review/pending.json を id で統合。DBが優先）
  * 5) growthSkills  … data/analysis/{x,tiktok,note}-growth/ の最新レポート鮮度
  * 6) contentIndex  … docs/design/content-ops-flow/spec.md C5
  * 7) qualityBacklog… docs/design/content-ops-flow/spec.md C6
@@ -51,6 +52,11 @@ import { checkMissingContentIndex } from "./content-ops-checks/check-missing-con
 import { checkContentQualityAudit } from "./content-ops-checks/check-content-quality-audit.js";
 import { checkPendingInsights } from "./content-ops-checks/check-pending-insights.js";
 import { checkCampaignDraftLag } from "./content-ops-checks/check-campaign-draft-lag.js";
+import { supabase } from "../lib/supabaseClient.js";
+import {
+  createDbPendingStore,
+  mergePendingLists,
+} from "../lib/racerNews/pendingReview.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
@@ -121,13 +127,38 @@ async function checkDailyPostStatus(relPath) {
 }
 
 async function checkRacerNewsPending() {
-  const data = await readJsonSafe(
+  // 要確認リストは、DBの表 racer_news_pending（Vercelの日次ジョブ。080_racer_news_pending.sql）と、
+  // 移行期間の pending.json（GitHub Actions）の両方を読み、id で統合する（DBが優先）。
+  // DBの表が未適用・接続できない場合は、その旨を dbError に返し、pending.json の分だけを数える
+  const fileData = await readJsonSafe(
     "data/analysis/racer-news-pending-review/pending.json",
     { items: [] },
   );
-  const items = data.items ?? [];
-  const pending = items.filter((item) => item.status === "pending");
-  return { pendingCount: pending.length };
+  const fileItems = fileData.items ?? [];
+  let dbItems = [];
+  let dbError = null;
+  if (!supabase) {
+    dbError = "Supabaseの環境変数が未設定のため、DBの要確認リストを読めません";
+  } else {
+    try {
+      dbItems = await createDbPendingStore(supabase).listAll();
+    } catch (error) {
+      dbError = error.message;
+    }
+  }
+  const pending = mergePendingLists(dbItems, fileItems).filter(
+    (item) => item.status === "pending",
+  );
+  return {
+    pendingCount: pending.length,
+    items: pending.map((item) => ({
+      id: item.id,
+      reason: item.reason,
+      sourceUrl: item.sourceUrl,
+      detectedAt: item.detectedAt,
+    })),
+    ...(dbError ? { dbError } : {}),
+  };
 }
 
 async function latestReportAgeDays(dirRelPath) {

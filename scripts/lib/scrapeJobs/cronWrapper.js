@@ -17,8 +17,10 @@
  *
  * ハンドラー（各データセットが実装する）:
  *   window型   handleSlot(slot, ctx) → {outcome, rowsWritten?, rowsParsed?, rowsExpected?, resultDigest?, error?}
- *   それ以外   run(ctx)              → {rowsWritten?, rowsParsed?, rowsExpected?, report?, body?, incomplete?, outcome?, error?}
- *              （body は、HTTP応答の本文に、そのまま足される。outcome:"error" は失敗として記録する。
+ *   それ以外   run(ctx)              → {rowsWritten?, rowsParsed?, rowsExpected?, report?, cursor?, body?, incomplete?, outcome?, error?}
+ *              （cursor は、チャンク処理の進捗（scrape_job_state.cursor）。成功の記録と同時に保存し、次の起動で
+ *              ctx.state.cursor として読める。エラー（outcome:"error"）のときは保存しない＝同じチャンクをやり直す。
+ *              body は、HTTP応答の本文に、そのまま足される。outcome:"error" は失敗として記録する。
  *              incomplete:true は「成功したが、今回の対象日の処理は完了していない」（未公開のデータを待つ等）で、
  *              対象日を処理済みにしない＝補足の起動が同じ対象日をもう一度処理する）
  *   onTick     onTick(ctx)          → 任意のオブジェクト（応答の tick に入る）。live のときだけ、毎回の起動で、
@@ -471,6 +473,8 @@ async function runLeased({
       targetDate:
         mode === "live" && !result.incomplete ? ctx.targetDate : undefined,
       report: result.report,
+      // チャンク処理の進捗（racer_profiles 等）。undefined なら cursor は変更しない
+      cursor: result.cursor,
     });
     return {
       failed: false,

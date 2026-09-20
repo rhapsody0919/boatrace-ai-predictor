@@ -95,6 +95,8 @@ export const SCRAPE_JOBS = Object.freeze({
   // 日次ジョブ。targetTimeJst は「その日の対象日を決める指定時刻」（JST、HH:MM）。実行が遅れても、
   // 対象日は指定時刻から解決する（resolveTargetDate。GitHub Actionsの遅延による日付の取り違えの恒久対策）。
   // 期待件数の判定関数と実装は、各データセットの移行（WS4b）で run() が返す（rowsExpected）。
+  // B2 得点率。22:00指定（cron: 22:00・23:30・01:30 JST）。boatrace.jp の pointrank を、開催中の会場ごとに1ページ
+  // （約15ページ）。同時3・1ページ約8〜10秒のため、約50秒。実装: scripts/lib/pointRankJob.js（T4b-12）
   point_rank: {
     kind: "daily",
     targetTimeJst: "22:00",
@@ -102,6 +104,10 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
+  // B4 進入コース別選手成績。20:00指定（cron: 20:00・22:30・00:30 JST）。会場公式サイト（別ドメイン、10会場）を、
+  // 会場ごとに当日のレース数（最大12）のページ。会場内は逐次（300ms間隔）、会場間は同時3。1ページ約1秒（GitHub Actionsの
+  // 実測: 3会場・1,296行で26秒）。hosts は会場ごとに別のため、ジョブ単位のブレーカー確認は行わない
+  // （politeFetch がホスト単位で確認する）。実装: scripts/lib/venueEntryCourseStatsJob.js（T4b-13）
   entry_course_stats: {
     kind: "daily",
     targetTimeJst: "20:00",
@@ -109,6 +115,9 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     hosts: [],
   },
+  // B3 会場別モーター成績。06:00指定（cron: 06:00・08:00 JST）。会場公式サイト（別ドメイン、22会場＋宮島のPDF）を、
+  // 会場ごとに1ページ。同時4（各ドメインには1日1〜2リクエストのみ）。GitHub Actionsの逐次実行で約29秒。
+  // 実装: scripts/lib/venueMotorStatsJob.js（T4b-14）
   venue_motor_stats: {
     kind: "daily",
     targetTimeJst: "06:00",
@@ -116,12 +125,34 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     hosts: [],
   },
+  // B5 選手ニュース。23:10指定（cron: 23:10・01:10 JST）。当月・前月のレーサーデータ一覧（2ページ、約9秒×2）と、
+  // 未処理の記事だけDB照合。実装: scripts/lib/racerNewsJob.js（T4b-15）
   racer_news: {
     kind: "daily",
     targetTimeJst: "23:10",
     leaseSec: 300,
     maxDurationSec: 120,
     hosts: ["boatrace.jp"],
+  },
+  // B6 選手プロフィール・期別成績（月次・チャンク）。JST 03:00指定（従来のGitHub Actionsと同じ夜間）。cron は UTC 18:00〜20:50 の
+  // 10分間隔で、UTC 基準の毎月1日（5月・11月は8日・15日も。scrape-racer-season-stats.yml の cron 式と同じ）＝JST の翌日
+  // （毎月2日、5月・11月は9日・16日も）03:00〜05:50。開始時に選手一覧・直近の出走を読むDB負荷を、開催時間帯（9:00〜21:00 JST）から
+  // 避けるため。最後のチャンクの終了は 05:55 頃で、07:00 JST 前に完了する。
+  // 約1,630人を、1回の呼び出しで、時間の許す限り（最大300人）処理し、登録番号の昇順の位置を scrape_job_state.cursor に保存して
+  // 次の起動で再開する。1ページ約8〜10秒（2026-09-20の実測。racersearch/season も同じ）のため、同時4で1回あたり約110人
+  // （約15回、約2.5時間。窓は3時間・18回の起動）。maxDuration は300秒（設計は800秒だが、Fluid Compute の有効化が未確認（plan.md U1）で、
+  // 無効なプロジェクトに800を指定するとビルドが失敗するため。確認できたら800に上げる）。リースは maxDuration と同じで、cron の
+  // 間隔（600秒）より短い。
+  // 実装: scripts/lib/racerProfilesJob.js（T4b-16）
+  racer_profiles: {
+    kind: "daily",
+    targetTimeJst: "03:00",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+    // 起動する日（JST の日）。UTC 基準の1日（5月・11月は8日・15日も）の 18:00〜20:50 UTC は、JST の翌日 03:00〜05:50 のため、
+    // JST では2日（5月・11月は9日・16日も）。monitor が、起動しない日に「日次が未処理」と誤報しないために使う
+    runDaysOfMonth: { default: [2], 5: [2, 9, 16], 11: [2, 9, 16] },
   },
 
   // A5 レース特記事項（race_special_notes）。10分ごと（JST 07:00〜23:59）に、開催会場のページを巡回する。
@@ -186,6 +217,22 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
   },
 });
+
+/**
+ * 日次ジョブが、その日（JST の YYYY-MM-DD）に起動する予定か。runDaysOfMonth の無いジョブは毎日。
+ * runDaysOfMonth: { default: [日...], [月]: [日...] }（月ごとの指定が default に優先する）。
+ * 月次ジョブ（B6）の未処理を、起動しない日に誤報しないため。
+ *
+ * @param {{runDaysOfMonth?: Record<string, number[]>}} def
+ * @param {string} dateJst YYYY-MM-DD
+ */
+export function isScheduledDate(def, dateJst) {
+  const days = def.runDaysOfMonth;
+  if (!days) return true;
+  const month = Number(dateJst.slice(5, 7));
+  const day = Number(dateJst.slice(8, 10));
+  return (days[month] ?? days.default ?? []).includes(day);
+}
 
 /** kind が window のジョブ名の一覧 */
 export function windowJobNames(registry = SCRAPE_JOBS) {
@@ -279,6 +326,19 @@ export function validateRegistry(registry = SCRAPE_JOBS) {
       problems.push(
         `${name}: targetTimeJst が HH:MM ではありません: ${def.targetTimeJst}`,
       );
+    }
+    if (def.runDaysOfMonth !== undefined) {
+      const ok = Object.values(def.runDaysOfMonth).every(
+        (days) =>
+          Array.isArray(days) &&
+          days.length > 0 &&
+          days.every((d) => Number.isInteger(d) && d >= 1 && d <= 31),
+      );
+      if (!ok || !Array.isArray(def.runDaysOfMonth.default)) {
+        problems.push(
+          `${name}: runDaysOfMonth が不正です（{default: [日], [月]: [日]}、日は1〜31）: ${JSON.stringify(def.runDaysOfMonth)}`,
+        );
+      }
     }
   }
   return problems;
