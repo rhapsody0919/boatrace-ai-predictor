@@ -5,7 +5,7 @@
  * 死活・連続失敗・ブレーカー・日次ジョブの期限超過）を、SLACK_WEBHOOK_URL へ通知する。
  * 日次サマリー（JST 00:10）は、別のエンドポイント api/cron/scrape-summary.js。
  *
- * 予定表のテーブルが無い（マイグレーション072が未適用）間、および取得ジョブが1つも有効でない間は、
+ * 予定表のテーブルが無い（マイグレーション075が未適用）間、および取得ジョブが1つも有効でない間は、
  * 何も通知しない。実行の成否は scrape_job_state（job='scrape-monitor'）に記録される
  * （メタ監視 .github/workflows/scrape-monitor-liveness.yml がその鮮度を日次で確認する）。
  *

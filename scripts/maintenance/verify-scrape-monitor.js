@@ -7,11 +7,11 @@
  *   (b) expired・未実行の検知（1件でも）、窓内取得率の閾値（母数が小さいときは判定しない）
  *   (c) 死活（運用窓の開始直後は判定しない）・連続失敗・ブレーカー・0件エラー・日次ジョブの期限超過
  *   (d) 通知の重複抑制（expired・未実行は1スロットにつき1回、持続する状態は6時間おき）
- *   (e) runMonitor: 072未適用・有効なジョブなしでは何も通知しない（誤報なし）。異常があれば通知し、
+ *   (e) runMonitor: 075未適用・有効なジョブなしでは何も通知しない（誤報なし）。異常があれば通知し、
  *       通知先が無ければ失敗にする。通知に失敗したら通知済みの記録を進めない。日次サマリーの投稿条件
  *   (f) scrape-cleanup: 2日以上前の未完了のexpired化と、60日超の削除
  *   (g) メタ監視（監視自体の死活）: 運用窓の外・行なし・鮮度・連続失敗
- *   (h) 共通ラッパ経由のHTTPハンドラー: 未認証は401、072未適用は200でskipped
+ *   (h) 共通ラッパ経由のHTTPハンドラー: 未認証は401、075未適用は200でskipped
  *   (i) api/cron/scrape-*.js と vercel.json の整合（cronのパスの実在・cron式・maxDurationとレジストリの一致）
  */
 import fs from "node:fs";
@@ -513,7 +513,7 @@ const doneOdds = (delayMin, over = {}) =>
     fetchImpl,
   });
   check(
-    "072未適用: 何もせず skipped（通知なし・通知先の設定も要求しない）",
+    "075未適用: 何もせず skipped（通知なし・通知先の設定も要求しない）",
     r.body.skipped === "scrape_schema_not_applied" && posted.length === 0,
   );
 
@@ -858,7 +858,7 @@ const doneOdds = (delayMin, over = {}) =>
     res,
   );
   check(
-    "072未適用のDB: 認証済みでも、何もせず200（skipped）",
+    "075未適用のDB: 認証済みでも、何もせず200（skipped）",
     res.statusCode === 200 &&
       res.body.skipped === "scrape_schema_not_applied" &&
       ran === 0,

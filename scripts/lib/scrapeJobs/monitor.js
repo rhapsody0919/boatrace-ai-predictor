@@ -13,7 +13,7 @@
  *   連続失敗・ブレーカー  consecutive_failures >= 3、breaker_open_until が未来
  *   日次の期限超過  日次ジョブが、指定時刻から3時間経っても、その日の対象日を処理していない
  *
- * 「予定表・ジョブ状態のテーブルが無い」（072未適用）、および全ジョブが off の間は、何も通知しない（誤報なし）。
+ * 「予定表・ジョブ状態のテーブルが無い」（075未適用）、および全ジョブが off の間は、何も通知しない（誤報なし）。
  *
  * 純粋関数（evaluate*・compute*・format*・dedupe）と、IO（collectMonitorInput・postSlack・runMonitor）に分ける。
  */

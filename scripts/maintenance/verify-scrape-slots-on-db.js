@@ -1,6 +1,6 @@
 /**
  * verify-scrape-slots-on-db.js - 予定表のRPC（claim_scrape_slots・ensure_scrape_slots）を、実DBで検証する
- * （tasks.md T4a-10。マイグレーション072の本番適用後に実行する）。
+ * （tasks.md T4a-10。マイグレーション075の本番適用後に実行する）。
  *
  * 検証すること（ジョブ名 pseudo_verify のスロットだけを作り、終了時に削除する。他のジョブ・他のテーブルには書かない）:
  *   1. 二重claimが起きない: 複数の実行が同時に claim しても、同じスロットを2つの実行が取らない
@@ -226,7 +226,7 @@ async function main() {
     getTodayDateJST();
   if (!execute) {
     console.log(
-      `dry-run: 実DBの scrape_slots に、job=${JOB} のスロット（${date} のレース分）を作り、同時claim・リース奪取・expiredを検証して、終了時に削除します。\n実行するには --execute を付けてください（マイグレーション072の適用後）。`,
+      `dry-run: 実DBの scrape_slots に、job=${JOB} のスロット（${date} のレース分）を作り、同時claim・リース奪取・expiredを検証して、終了時に削除します。\n実行するには --execute を付けてください（マイグレーション075の適用後）。`,
     );
     return;
   }

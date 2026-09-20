@@ -4,7 +4,7 @@ name: Scrape Monitor Liveness
 # （メタ監視。docs/design/scraping-vercel-consolidation/plan.md §6 の2次）。
 # 取得ではなく監視のため、ADR-0066（取得系のVercel一本化）の対象外で、GitHub Actionsのまま。
 # GitHubのscheduleは数時間遅れるが、監視の死活は1日単位で足りる（要判断(j)）。
-# 予定表のテーブルが未適用（マイグレーション072）の間は、確認をスキップする。
+# 予定表のテーブルが未適用（マイグレーション075）の間は、確認をスキップする。
 
 on:
   schedule:
