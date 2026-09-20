@@ -133,6 +133,7 @@ export const SCRAPE_JOBS = Object.freeze({
     leaseSec: 20,
     claimLimit: 40,
     concurrency: 4,
+    slotSecEstimate: 1,
     maxDurationSec: 60,
     hosts: [],
   },
