@@ -1,6 +1,10 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/probe/syd1.js": { "regions": ["syd1"] },
+    "api/probe/hnd1.js": { "regions": ["hnd1"] }
+  },
   "rewrites": [
     {
       "source": "/((?!api/).*)",
