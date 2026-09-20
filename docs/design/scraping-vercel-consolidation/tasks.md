@@ -125,11 +125,11 @@
 
 ### T4b-04 オッズ（A3）: `race_odds`
 
-- [ ] **T4b-04-1** `scrape-odds.js`に、レース×窓の入口を追加する（`runForRaces`）。既存の`run`は残す。取得は、会場直列を、レース単位の並列（上限あり）に。5ページ（`oddstf`・`odds3t`・`odds3f`・`odds2tf`・`oddsk`）の取得が一部失敗した場合は`partial`として、同じ行を更新する再試行（`window_min`の一意索引によるupsert）。0分窓の欠けた全通り系は、過去のスナップショットで補完する現行の挙動（`fillMissingFullOddsFromLatestSnapshot`）を維持する。書き込む行に`window_min`・`source='vercel'`を設定する
-- [ ] **T4b-04-2** `api/cron/odds.js`: レジストリの`odds`定義（`-60`・`-30`・`-15`・`-10`・`-5`・`0`、許容幅3分、再試行60秒、リース90秒、30件×4レース）
-- [ ] **T4b-04-3** 案1の予測リフレッシュ（T4b-03）が有効であることを確認してから着手する（オッズをVercelへ移すと、GitHub側の再計算のきっかけが消える）。GitHub側の再計算の対象から、オッズ由来を外す変数が有効であること
-- [ ] **T4b-04-4** `shadow`で3日（`result_digest`と最新の`race_odds`の一致）、`live`で3〜7日並走する。`race_odds.source`（`gha`／`vercel`）ごとに、窓別の窓内取得率を比較する。取得先への追加ページ数（1レース約33ページ、180レースの日で約5,900ページ/日）を、ブレーカーと拒否率の監視のもとで確認する
-- [ ] **T4b-04-5** (ユーザー承認) `SKIP_ODDS_ON_GHA=true`にして、切り替え後7日（土日を含む）の窓内取得率を実測する。ADR-0057の窓の意味論の更新（承認後）を、この時点で反映する
+- [x] **T4b-04-1**（コード実装済み。`runForRaces`・`fetchOddsDetailed`。既存の`run`は残し、解析・行の組み立て・0分窓の補完を共有） `scrape-odds.js`に、レース×窓の入口を追加する（`runForRaces`）。既存の`run`は残す。取得は、会場直列を、レース単位の並列（上限あり）に。5ページ（`oddstf`・`odds3t`・`odds3f`・`odds2tf`・`oddsk`）の取得が一部失敗した場合は`partial`として、同じ行を更新する再試行（`window_min`の一意索引によるupsert。再試行は前回の値を引き継ぎ、nullで上書きしない）。0分窓の欠けた全通り系は、過去のスナップショットで補完する現行の挙動（`fillMissingFullOddsFromLatestSnapshot`）を維持する（自分の窓の行は補完元にしない）。書き込む行に`window_min`・`source='vercel'`を設定する。shadowは取得・解析のみで、構造のダイジェスト（`oddsDigest.js`）を`result_digest`に記録する
+- [x] **T4b-04-2**（コード実装済み。`api/cron/odds.js`。マージ後も`mode`が`off`（行なし）の間は何もしない） `api/cron/odds.js`: レジストリの`odds`定義（`-60`・`-30`・`-15`・`-10`・`-5`・`0`、許容幅3分、再試行60秒、リース120秒、24件×4並列。WS4aの調整後の値）、`vercel.json`のcrons（毎分、JST 07:00〜23:59）
+- [x] **T4b-04-3**（`SKIP_ODDS_ON_GHA`のコードは実装済み。既定はfalse。順序は[verification-runbook.md](./verification-runbook.md) M-1） 案1の予測リフレッシュ（T4b-03）が有効であることを確認してから着手する（オッズをVercelへ移すと、GitHub側の再計算のきっかけが消える）。GitHub側の再計算の対象から、オッズ由来を外す変数（`SKIP_ODDS_REFRESH_ON_GHA`）が有効であること。`scrape-scheduled.js`は、`SKIP_ODDS_ON_GHA=true`で`SKIP_ODDS_REFRESH_ON_GHA`がtrueでないとき警告する
+- [ ] **T4b-04-4**（手順・確認SQL・成功基準・ロールバックは[verification-runbook.md](./verification-runbook.md) M-2・M-3。確認スクリプトは`check-odds-shadow.js`） `shadow`で3日（`result_digest`（構造のダイジェスト）と、同じレースの既存基盤の行の一致）、`live`で3〜7日並走する。`race_odds.source`（`gha`／`vercel`）ごとに、窓別の窓内取得率を比較する。取得先への追加ページ数（1レース約33ページ、180レースの日で約5,900ページ/日）を、ブレーカーと拒否率の監視のもとで確認する
+- [ ] **T4b-04-5** (ユーザー承認。手順はM-4・M-5) `SKIP_ODDS_ON_GHA=true`にして、切り替え後7日（土日を含む）の窓内取得率を実測する。ADR-0057の窓の意味論の更新（承認後）を、この時点で反映する
 
 データ項目: `race_odds`。
 
@@ -161,7 +161,8 @@
 
 ### T4b-10 買い目オッズ（A4）: `prediction_odds`
 
-- [ ] **T4b-10-1** D1（A3と同じ`odds3t`・`odds3f`の重複取得）の判断: A4を、`race_odds`の最新スナップショットからの導出に置き換えられるかを確認する。更新頻度の要件（A4は5分ごと、`race_odds`は窓内のみ）と、表示側の要件を確認し、ユーザーに提示する（実装せず、判断のみ）
+- [x] **T4b-10-1**（調査済み。鮮度要件の確認・判断は、ユーザー待ち） D1（A3と同じ`odds3t`・`odds3f`の重複取得）の判断: A4を、`race_odds`の最新スナップショットからの導出に置き換えられるかを確認する。更新頻度の要件（A4は5分ごと、`race_odds`は窓内のみ）と、表示側の要件を確認し、ユーザーに提示する（実装せず、判断のみ）
+  - 調査結果（2026-09-20、読み取りのみ）: **`prediction_odds`を表示する画面は、現在無い**（2026-08-14のAI予想モデル刷新（`038461205`）で、`PredictionPanel`の買い目オッズ表示を削除済み。`src/services/supabaseDataService.js`が取得して`raceData.predictionOdds`に載せ、RPC`get_predictions_by_date`等も同じ値を返すが、読む部品が無い）。読み手は、(1)`generate-moriarty-recommendations.js`（GitHub Actions、1日1回。実績は約11:30 JST起動で、その時点で行があるのは発走60分以内に入ったレースのみ）、(2)`train-moriarty-calibration.js`（週次の学習。発走前の最終値を使う）、(3)`data-health-report.js`（存在の確認）。**5分ごとの鮮度を必要とする読み手は、確認できなかった**。導出の妥当性（2026-09-17〜19の516レース）: 予想の買い目のキーは、`race_odds.trifecta_all`・`trio_all`に514/514で存在（形式が一致）。A4の最終値との差は、最新のスナップショットが約3.3分古い（p50。p90は5.8分）ため、3連単で中央値8.8%・p90 32%、3連複で中央値12.1%・p90 42%。A4の最終更新は、発走の0〜2分後（中央値。2026-09-14〜19）。鮮度の比較・設計案は、親への完了報告に記載
 - [ ] **T4b-10-2** 導出に置き換えない場合: `api/cron/prediction-odds.js`（5分間隔）へ移す。ジョブ単位のリース、現行の`run(raceIds, date)`を再利用し、対象は発走60分以内のレース。`shadow`→`live`→`SKIP_PRED_ODDS_ON_GHA=true`
 - [ ] **T4b-10-3** 導出に置き換える場合: 導出の実装は別タスクとして分け、`prediction_odds`の更新をA3の完了に連動させる。この場合、A4のCronは作らない
 
