@@ -13,6 +13,8 @@ const UA =
 const SITE_BASE = "https://www.boatrace.jp/owpc/pc/race";
 const SITE_GAP_MS = 2200;
 const MAX_N = 8;
+// 関数の最大実行時間(60秒)の手前で打ち切り、その時点までの結果を返す・ログに残す
+const DEADLINE_MS = 48000;
 
 const median = (values) => {
   if (values.length === 0) return null;
@@ -64,7 +66,7 @@ async function probeSupabase(n) {
   };
 }
 
-async function probeSite(n, venue, date) {
+async function probeSite(n, venue, date, startedAt) {
   const pages = [];
   for (const page of ["raceresult", "odds3t"]) {
     for (let rno = 1; rno <= n; rno++) pages.push({ page, rno });
@@ -73,6 +75,10 @@ async function probeSite(n, venue, date) {
   let stopped = null;
   for (const [i, p] of pages.entries()) {
     if (i > 0) await sleep(SITE_GAP_MS);
+    if (Date.now() - startedAt > DEADLINE_MS) {
+      stopped = `時間切れ（${DEADLINE_MS}ms）のため、${i}件で打ち切り`;
+      break;
+    }
     const url = `${SITE_BASE}/${p.page}?rno=${p.rno}&jcd=${venue}&hd=${date}`;
     const r = await timed(async () => {
       const res = await fetch(url, { headers: { "User-Agent": UA } });
@@ -80,6 +86,10 @@ async function probeSite(n, venue, date) {
       return { status: res.status, bytes: buf.byteLength };
     });
     runs.push({ page: p.page, rno: p.rno, ...r });
+    // 関数が途中で終了しても結果が残るよう、1件ごとにログへ出す
+    console.log(
+      `PROBE_SITE ${JSON.stringify({ region: process.env.VERCEL_REGION, page: p.page, rno: p.rno, status: r.status ?? null, ms: r.ms, bytes: r.bytes ?? null, error: r.error ?? null })}`,
+    );
     if (r.status === 429 || r.status === 503) {
       stopped = `HTTP ${r.status} を受けたため中止（${i + 1}件目）`;
       break;
@@ -124,7 +134,8 @@ export async function runProbe(req, res) {
     },
   };
   out.supabase = await probeSupabase(10);
-  if (site) out.site = await probeSite(n, "12", "20260919");
+  if (site) out.site = await probeSite(n, "12", "20260919", started);
   out.totalMs = Date.now() - started;
+  console.log(`PROBE_RESULT ${JSON.stringify(out)}`);
   res.status(200).json(out);
 }
