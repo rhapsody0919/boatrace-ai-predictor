@@ -1,29 +1,32 @@
 {
-  "executedAt": "2026-09-19T23:21:17.226Z",
-  "durationSeconds": 317,
+  "executedAt": "2026-09-20T03:48:44.924Z",
+  "durationSeconds": 15938,
   "mode": "all",
   "options": {
     "racerIds": null,
-    "limit": 30,
-    "offset": 0,
+    "limit": null,
+    "offset": 30,
     "recentDays": 35
   },
-  "targetCount": 30,
+  "targetCount": 1598,
   "stoppedEarly": false,
   "aborted": false,
   "nextOffset": null,
   "profile": {
-    "successCount": 0,
+    "successCount": 1,
     "failCount": 0,
     "saveErrorCount": 0,
     "failedRacerIds": []
   },
   "season": {
-    "successCount": 30,
+    "successCount": 1562,
     "unchangedCount": 0,
-    "noDataCount": 0,
-    "failCount": 0,
-    "failedRacerIds": []
+    "noDataCount": 34,
+    "failCount": 2,
+    "failedRacerIds": [
+      3849,
+      4519
+    ]
   },
   "failureReasons": []
 }
