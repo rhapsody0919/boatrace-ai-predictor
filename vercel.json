@@ -35,6 +35,11 @@
       "schedule": "30 15 * * *"
     }
   ],
+  "functions": {
+    "api/cron/*.js": {
+      "regions": ["syd1"]
+    }
+  },
   "rewrites": [
     {
       "source": "/((?!api/).*)",
