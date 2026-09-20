@@ -33,22 +33,19 @@ export async function mapWithConcurrency(items, limit, fn) {
 export function createSemaphore(max) {
   let active = 0;
   const waiters = [];
-  const release = () => {
-    active--;
-    const w = waiters.shift();
-    if (w) w();
-  };
   return {
     /** @template R @param {() => Promise<R>} fn @returns {Promise<R>} */
     async run(fn) {
-      if (active >= max) {
-        await new Promise((resolve) => waiters.push(resolve));
-      }
-      active++;
+      // 空きがあれば、その場で枠を取る。無ければ、待機して、前の実行から枠を引き継ぐ
+      // （枠を一度返してから取り直すと、その間に新しい呼び出しが割り込み、上限を超える）
+      if (active < max) active++;
+      else await new Promise((resolve) => waiters.push(resolve));
       try {
         return await fn();
       } finally {
-        release();
+        const next = waiters.shift();
+        if (next) next();
+        else active--;
       }
     },
     get active() {

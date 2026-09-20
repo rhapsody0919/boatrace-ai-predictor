@@ -85,6 +85,14 @@ export function createPoliteFetch({
   const fetchOnce = async (url, init) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    // 呼び出し側の signal も尊重する（どちらかが中断すれば中断）
+    if (init.signal) {
+      if (init.signal.aborted) controller.abort();
+      else
+        init.signal.addEventListener("abort", () => controller.abort(), {
+          once: true,
+        });
+    }
     try {
       const headers = new Headers(init.headers ?? {});
       if (!headers.has("user-agent")) headers.set("user-agent", userAgent);
