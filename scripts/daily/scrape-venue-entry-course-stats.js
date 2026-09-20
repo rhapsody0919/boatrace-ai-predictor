@@ -56,39 +56,178 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchHtml(url) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT },
-      signal: controller.signal,
-    });
-    if (!res.ok) throw new Error(`http_${res.status}`);
-    return await res.text();
-  } catch (error) {
-    if (error.name === "AbortError") throw new Error("timeout");
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+/**
+ * HTML取得関数を作る。失敗は短い理由コードの Error（http_XXX・timeout）にする。
+ * @param {typeof fetch} [fetchImpl] 既定は global fetch（GitHub Actions）。Vercel は politeFetch
+ */
+export function createHtmlFetcher(fetchImpl = fetch) {
+  return async function fetchHtml(url) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetchImpl(url, {
+        headers: { "User-Agent": USER_AGENT },
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error(`http_${res.status}`);
+      return await res.text();
+    } catch (error) {
+      if (error.name === "AbortError") throw new Error("timeout");
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
 }
+
+const fetchHtml = createHtmlFetcher();
 
 // race_entries（当日の出走表）から (race_id, boat_number) -> racer_id の
 // マップを作る。会場サイトは選手登録番号を掲載しないため、氏名一致ではなく
 // 自社の出走表と突き合わせて解決する
-async function buildRacerIdMap(raceIds) {
+async function buildRacerIdMap(raceIds, client = supabase) {
   if (raceIds.length === 0) return new Map();
   const rows = await fetchAll(
     "race_entries",
     "race_id,boat_number,racer_id",
     (q) => q.in("race_id", raceIds),
+    { client },
   );
   const map = new Map();
   for (const row of rows) {
     map.set(`${row.race_id}:${row.boat_number}`, row.racer_id ?? null);
   }
   return map;
+}
+
+/**
+ * 1会場分（当日の全レース）を取得・解析して、書き込む行を返す。DBへは書かない（読み取りは race_entries のみ）。
+ *
+ * @param {{venueCode: number, name: string, baseUrl: string}} venue
+ * @param {Array<{race_id: string, race_no: number}>} venueRaces 当日のその会場のレース
+ * @param {Object} [options]
+ * @param {import("@supabase/supabase-js").SupabaseClient} [options.client]
+ * @param {(url: string) => Promise<string>} [options.fetchHtmlImpl] 既定は global fetch
+ * @param {number} [options.delayMs] 同一会場の連続リクエストの間隔（既定300ms）
+ * @param {(error: unknown) => string} [options.toReason] 取得の例外を理由コードにする（既定は error.message）
+ * @param {() => boolean} [options.shouldStop] true なら、以降のレースに着手しない（ソフトデッドライン）
+ * @returns {Promise<{rows: Array<Object>, reason: string|null, stoppedEarly: boolean}>}
+ *   reason: 1レースでも取得・解析に失敗した最初の理由（全レース成功なら null。従来の会場単位の成否）
+ */
+export async function scrapeVenue(
+  venue,
+  venueRaces,
+  {
+    client = supabase,
+    fetchHtmlImpl = fetchHtml,
+    delayMs = SAME_VENUE_REQUEST_DELAY_MS,
+    toReason = (error) => error.message,
+    shouldStop = () => false,
+  } = {},
+) {
+  const raceIds = venueRaces.map((r) => r.race_id);
+  let racerIdMap;
+  try {
+    racerIdMap = await buildRacerIdMap(raceIds, client);
+  } catch (error) {
+    console.error(
+      `  ⚠️ ${venue.name}: race_entries取得エラー（racer_idはNULLのまま続行）:`,
+      error.message,
+    );
+    racerIdMap = new Map();
+  }
+  // race_entries（当日の出走表）が本日分まだ用意できていない場合、racer_idは
+  // 全行NULLのまま静かに保存されうる（サイト側の構造は正常なため、この
+  // scriptのhealth判定＝サイト構造監視には含めない。race_entries自体の欠損は
+  // 別レイヤーの問題のため、ここではログでのみ可視化する）
+  if (raceIds.length > 0 && racerIdMap.size === 0) {
+    console.warn(
+      `  ⚠️ ${venue.name}: race_entriesが本日分未登録の可能性（racer_idは全行NULLになります）`,
+    );
+  }
+
+  const rows = [];
+  let venueReason = null;
+  let stoppedEarly = false;
+
+  for (let i = 0; i < venueRaces.length; i++) {
+    if (shouldStop()) {
+      stoppedEarly = true;
+      break;
+    }
+    const race = venueRaces[i];
+    const url = buildEntryCourseUrl(venue, race.race_no);
+    try {
+      const html = await fetchHtmlImpl(url);
+      const { data, statsPeriod, reason } = parseEntryCourseHtml(html);
+      if (!data) {
+        venueReason = venueReason ?? reason;
+        console.log(
+          `    ⚠️ ${venue.name} ${race.race_no}R: データなし (${reason})`,
+        );
+      } else {
+        for (const row of data) {
+          rows.push({
+            race_id: race.race_id,
+            venue_code: venue.venueCode,
+            waku: row.waku,
+            entry_course: row.entryCourse,
+            racer_id: racerIdMap.get(`${race.race_id}:${row.waku}`) ?? null,
+            racer_name_raw: row.racerNameRaw,
+            entry_rate: row.entryRate,
+            avg_st: row.avgSt,
+            place_rate_1: row.placeRates[0],
+            place_rate_2: row.placeRates[1],
+            place_rate_3: row.placeRates[2],
+            place_rate_4: row.placeRates[3],
+            place_rate_5: row.placeRates[4],
+            place_rate_6: row.placeRates[5],
+            stats_period_start: statsPeriod.start,
+            stats_period_end: statsPeriod.end,
+          });
+        }
+      }
+    } catch (error) {
+      venueReason = venueReason ?? toReason(error);
+      console.error(`    ❌ ${venue.name} ${race.race_no}R: ${error.message}`);
+    }
+    if (i < venueRaces.length - 1) await sleep(delayMs);
+  }
+  return { rows, reason: venueReason, stoppedEarly };
+}
+
+/**
+ * venue_entry_course_stats へ書く（1,000行ずつ upsert）。
+ * @param {import("@supabase/supabase-js").SupabaseClient} client
+ * @param {Array<Object>} rows
+ * @param {{throwOnError?: boolean}} [options] true なら、書き込みエラーを例外にする（Vercel）。
+ *   既定は従来どおり、ログに出して続行する
+ * @returns {Promise<number>} 書き込みに成功した行数
+ */
+export async function writeEntryCourseRows(
+  client,
+  rows,
+  { throwOnError = false } = {},
+) {
+  let written = 0;
+  for (let i = 0; i < rows.length; i += 1000) {
+    const batch = rows.slice(i, i + 1000);
+    const { error } = await client
+      .from("venue_entry_course_stats")
+      .upsert(batch, { onConflict: "race_id,waku,entry_course" });
+    if (error) {
+      if (throwOnError) {
+        throw new Error(`venue_entry_course_stats 書き込みエラー: ${error.message}`);
+      }
+      console.error(
+        `❌ venue_entry_course_stats 書き込みエラー:`,
+        error.message,
+      );
+    } else {
+      written += batch.length;
+    }
+  }
+  return written;
 }
 
 export async function run(schedule, date) {
@@ -113,72 +252,8 @@ export async function run(schedule, date) {
     }
     attemptedVenues++;
 
-    const raceIds = venueRaces.map((r) => r.race_id);
-    let racerIdMap;
-    try {
-      racerIdMap = await buildRacerIdMap(raceIds);
-    } catch (error) {
-      console.error(
-        `  ⚠️ ${venue.name}: race_entries取得エラー（racer_idはNULLのまま続行）:`,
-        error.message,
-      );
-      racerIdMap = new Map();
-    }
-    // race_entries（当日の出走表）が本日分まだ用意できていない場合、racer_idは
-    // 全行NULLのまま静かに保存されうる（サイト側の構造は正常なため、この
-    // scriptのhealth判定＝サイト構造監視には含めない。race_entries自体の欠損は
-    // 別レイヤーの問題のため、ここではログでのみ可視化する）
-    if (raceIds.length > 0 && racerIdMap.size === 0) {
-      console.warn(
-        `  ⚠️ ${venue.name}: race_entriesが本日分未登録の可能性（racer_idは全行NULLになります）`,
-      );
-    }
-
-    let venueReason = null;
-    let venueRowCount = 0;
-
-    for (let i = 0; i < venueRaces.length; i++) {
-      const race = venueRaces[i];
-      const url = buildEntryCourseUrl(venue, race.race_no);
-      try {
-        const html = await fetchHtml(url);
-        const { data, statsPeriod, reason } = parseEntryCourseHtml(html);
-        if (!data) {
-          venueReason = venueReason ?? reason;
-          console.log(
-            `    ⚠️ ${venue.name} ${race.race_no}R: データなし (${reason})`,
-          );
-        } else {
-          for (const row of data) {
-            allRows.push({
-              race_id: race.race_id,
-              venue_code: venue.venueCode,
-              waku: row.waku,
-              entry_course: row.entryCourse,
-              racer_id: racerIdMap.get(`${race.race_id}:${row.waku}`) ?? null,
-              racer_name_raw: row.racerNameRaw,
-              entry_rate: row.entryRate,
-              avg_st: row.avgSt,
-              place_rate_1: row.placeRates[0],
-              place_rate_2: row.placeRates[1],
-              place_rate_3: row.placeRates[2],
-              place_rate_4: row.placeRates[3],
-              place_rate_5: row.placeRates[4],
-              place_rate_6: row.placeRates[5],
-              stats_period_start: statsPeriod.start,
-              stats_period_end: statsPeriod.end,
-            });
-          }
-          venueRowCount += data.length;
-        }
-      } catch (error) {
-        venueReason = venueReason ?? error.message;
-        console.error(
-          `    ❌ ${venue.name} ${race.race_no}R: ${error.message}`,
-        );
-      }
-      if (i < venueRaces.length - 1) await sleep(SAME_VENUE_REQUEST_DELAY_MS);
-    }
+    const { rows, reason: venueReason } = await scrapeVenue(venue, venueRaces);
+    allRows.push(...rows);
 
     health[venue.venueCode] = updateVenueHealth(health[venue.venueCode], {
       success: venueReason === null,
@@ -187,7 +262,7 @@ export async function run(schedule, date) {
     });
 
     if (venueReason === null) {
-      console.log(`  ✅ ${venue.name}: ${venueRowCount}件`);
+      console.log(`  ✅ ${venue.name}: ${rows.length}件`);
       successVenues++;
     }
   }
@@ -196,18 +271,7 @@ export async function run(schedule, date) {
     console.log(
       `\n💾 venue_entry_course_stats: ${allRows.length}件書き込み中...`,
     );
-    for (let i = 0; i < allRows.length; i += 1000) {
-      const batch = allRows.slice(i, i + 1000);
-      const { error } = await supabase
-        .from("venue_entry_course_stats")
-        .upsert(batch, { onConflict: "race_id,waku,entry_course" });
-      if (error) {
-        console.error(
-          `❌ venue_entry_course_stats 書き込みエラー:`,
-          error.message,
-        );
-      }
-    }
+    await writeEntryCourseRows(supabase, allRows);
   }
 
   fs.mkdirSync(new URL(".", HEALTH_FILE_PATH), { recursive: true });

@@ -7,10 +7,10 @@
 // 完結する（記事本文の個別取得は不要）。
 
 import * as cheerio from "cheerio";
-import { supabase, isSupabaseEnabled } from "../supabaseClient.js";
+import { supabase } from "../supabaseClient.js";
 import { getTodayDateJST } from "../dateUtils.js";
 import { isAlreadyProcessed } from "./dedup.js";
-import { addPendingItem } from "./pendingReview.js";
+import { createFilePendingStore } from "./pendingReview.js";
 import { generateGradeAnnouncementNews } from "./templates.js";
 
 const BASE_URL = "https://www.boatrace.jp";
@@ -30,13 +30,13 @@ function buildCategoryUrl(year, month) {
   return `${BASE_URL}/owpc/pc/site/news/racer/${year}/${mm}/`;
 }
 
-async function fetchCategoryArticles(year, month) {
+async function fetchCategoryArticles(year, month, fetchImpl = fetch) {
   const url = buildCategoryUrl(year, month);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   let res;
   try {
-    res = await fetch(url, {
+    res = await fetchImpl(url, {
       headers: { "User-Agent": USER_AGENT },
       signal: controller.signal,
     });
@@ -87,14 +87,32 @@ function getPreviousMonth(year, month) {
 
 /**
  * boatrace.jpの「レーサーデータ」カテゴリから節目記録ニュースを取り込む
- * @param {{ targetDate?: string }} [options] targetDate省略時は当日(JST)。当月＋前月を対象にする
- * @returns {Promise<{ generated: number, pending: number, skipped: number, errors: number }>}
+ * @param {Object} [options] 省略時は従来どおり（GitHub Actions・CLI。global fetch・pending.json・モジュールの supabase）
+ * @param {string} [options.targetDate] 省略時は当日(JST)。当月＋前月を対象にする
+ * @param {import("@supabase/supabase-js").SupabaseClient|null} [options.client] Vercel: 共通ラッパの ctx.client
+ * @param {typeof fetch} [options.fetchImpl] Vercel: politeFetch
+ * @param {ReturnType<typeof createFilePendingStore>} [options.pendingStore] Vercel: DBの要確認リスト
+ * @param {boolean} [options.dryRun] true なら、取得・解析・照合までで、racer_news・要確認リストへ書かない
+ *   （Vercel の shadow。generated・pending は「書いたはずの件数」）
+ * @returns {Promise<{ generated: number, pending: number, skipped: number, errors: number, articles: number }>}
  */
-export async function collectGradeAnnouncementNews({ targetDate } = {}) {
+export async function collectGradeAnnouncementNews({
+  targetDate,
+  client = supabase,
+  fetchImpl = fetch,
+  pendingStore = createFilePendingStore(),
+  dryRun = false,
+} = {}) {
   const date = targetDate || getTodayDateJST();
-  const summary = { generated: 0, pending: 0, skipped: 0, errors: 0 };
+  const summary = {
+    generated: 0,
+    pending: 0,
+    skipped: 0,
+    errors: 0,
+    articles: 0,
+  };
 
-  if (!isSupabaseEnabled()) {
+  if (!client) {
     console.warn(
       "⚠️ Supabase未設定のためFR2（レーサーデータ節目記録）をスキップ",
     );
@@ -110,7 +128,7 @@ export async function collectGradeAnnouncementNews({ targetDate } = {}) {
     [prevYear, prevMonth],
   ]) {
     try {
-      articles.push(...(await fetchCategoryArticles(y, m)));
+      articles.push(...(await fetchCategoryArticles(y, m, fetchImpl)));
     } catch (err) {
       console.error(
         `⚠️ ${y}年${m}月のレーサーデータ一覧取得に失敗しました:`,
@@ -120,9 +138,11 @@ export async function collectGradeAnnouncementNews({ targetDate } = {}) {
     }
   }
 
+  summary.articles = articles.length;
+
   for (const article of articles) {
     try {
-      if (await isAlreadyProcessed(article.url)) {
+      if (await isAlreadyProcessed(article.url, { client, pendingStore })) {
         summary.skipped++;
         continue;
       }
@@ -134,21 +154,23 @@ export async function collectGradeAnnouncementNews({ targetDate } = {}) {
       }
 
       if (!parsed.branch || !parsed.achievement) {
-        addPendingItem({
-          id: `grade-announcement-${article.url}`,
-          source: "grade-announcement",
-          reason:
-            "見出しから支部/達成内容を抽出できませんでした（見出しフォーマットが変化した可能性）",
-          candidate: { racerId: parsed.racerId, title: article.title },
-          sourceUrl: article.url,
-          sourceName: SOURCE_NAME,
-          detectedAt: date,
-        });
+        if (!dryRun) {
+          await pendingStore.addPendingItem({
+            id: `grade-announcement-${article.url}`,
+            source: "grade-announcement",
+            reason:
+              "見出しから支部/達成内容を抽出できませんでした（見出しフォーマットが変化した可能性）",
+            candidate: { racerId: parsed.racerId, title: article.title },
+            sourceUrl: article.url,
+            sourceName: SOURCE_NAME,
+            detectedAt: date,
+          });
+        }
         summary.pending++;
         continue;
       }
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await client
         .from("racer_profiles")
         .select("racer_id, name, branch")
         .eq("racer_id", parsed.racerId)
@@ -160,22 +182,24 @@ export async function collectGradeAnnouncementNews({ targetDate } = {}) {
       }
 
       if (!profile || profile.branch !== parsed.branch) {
-        addPendingItem({
-          id: `grade-announcement-${article.url}`,
-          source: "grade-announcement",
-          reason: !profile
-            ? `racer_profilesにracer_id=${parsed.racerId}が見つかりません`
-            : `支部が一致しません（記事: ${parsed.branch} / DB: ${profile.branch}）`,
-          candidate: {
-            racerId: parsed.racerId,
-            branch: parsed.branch,
-            achievement: parsed.achievement,
-            title: article.title,
-          },
-          sourceUrl: article.url,
-          sourceName: SOURCE_NAME,
-          detectedAt: date,
-        });
+        if (!dryRun) {
+          await pendingStore.addPendingItem({
+            id: `grade-announcement-${article.url}`,
+            source: "grade-announcement",
+            reason: !profile
+              ? `racer_profilesにracer_id=${parsed.racerId}が見つかりません`
+              : `支部が一致しません（記事: ${parsed.branch} / DB: ${profile.branch}）`,
+            candidate: {
+              racerId: parsed.racerId,
+              branch: parsed.branch,
+              achievement: parsed.achievement,
+              title: article.title,
+            },
+            sourceUrl: article.url,
+            sourceName: SOURCE_NAME,
+            detectedAt: date,
+          });
+        }
         summary.pending++;
         continue;
       }
@@ -186,16 +210,20 @@ export async function collectGradeAnnouncementNews({ targetDate } = {}) {
         achievement: parsed.achievement,
       });
 
-      const { error: insertError } = await supabase.from("racer_news").insert({
-        racer_id: profile.racer_id,
-        title,
-        summary: newsSummary,
-        source_url: article.url,
-        source_name: SOURCE_NAME,
-        published_at: article.date,
-      });
-      if (insertError) {
-        throw new Error(`racer_news投入に失敗しました: ${insertError.message}`);
+      if (!dryRun) {
+        const { error: insertError } = await client.from("racer_news").insert({
+          racer_id: profile.racer_id,
+          title,
+          summary: newsSummary,
+          source_url: article.url,
+          source_name: SOURCE_NAME,
+          published_at: article.date,
+        });
+        if (insertError) {
+          throw new Error(
+            `racer_news投入に失敗しました: ${insertError.message}`,
+          );
+        }
       }
 
       summary.generated++;

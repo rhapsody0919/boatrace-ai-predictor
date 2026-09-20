@@ -6,7 +6,7 @@
  *   readState(job)                       → {available, row}  ※available=false: テーブルが未適用
  *   ensureRow(job)                       → void              ※行が無いジョブを mode='off' で作る
  *   touchTick(job, now)                  → void              ※5分に1回だけ last_tick_at を更新する
- *   recordSuccess(job, {now, rowsWritten, targetDate, report})
+ *   recordSuccess(job, {now, rowsWritten, targetDate, report, cursor})
  *   recordFailure(job, {now, error, previousFailures})
  *   acquireLease(job, worker, leaseSec, now) → boolean
  *   releaseLease(job, worker)
@@ -81,7 +81,7 @@ export function createSupabaseStore(client) {
       if (error) throw wrap(`起動の記録(${job})`, error);
     },
 
-    async recordSuccess(job, { now, rowsWritten, targetDate, report }) {
+    async recordSuccess(job, { now, rowsWritten, targetDate, report, cursor }) {
       const patch = {
         last_success_at: now.toISOString(),
         last_error: null,
@@ -92,6 +92,7 @@ export function createSupabaseStore(client) {
         patch.last_rows_written = rowsWritten;
       if (targetDate) patch.last_target_date = targetDate;
       if (report !== undefined) patch.last_report = report;
+      if (cursor !== undefined) patch.cursor = cursor;
       const { error } = await client.from(STATE).update(patch).eq("job", job);
       if (error) throw wrap(`成功の記録(${job})`, error);
     },

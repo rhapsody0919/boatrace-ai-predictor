@@ -84,11 +84,11 @@ TikTokは運用が軌道に乗り次第「毎日投稿」を目標とする運�
 - 投稿完了後、`data/analysis/tiktok-posts/history.json`に日付・型・題材・動画ファイルパス・投稿ステータスを追記する
 
 ### フローC-4: セッション開始時の選手ニュース要確認リスト提示（2026-08-27〜）
-選手ニュース自動収集（`racer-news-auto-collect`）はGitHub Actionsで毎日自動実行され、`boatrace.jp`公式ニュースアーカイブ（レーサーデータカテゴリ）から選手の節目記録（通算◯勝達成等）を検出し、登録番号によるDB照合を通過したものは人手承認なしで`racer_news`へ自動投入する（ADR-0024参照）。ただし選手の特定に失敗した候補（登録番号がDBに無い、支部が一致しない等）は自動投入されず、`data/analysis/racer-news-pending-review/pending.json`に記録される（未確認件数は`session-start-check.js`の`racerNews.pendingCount`で機械的に取得できる）。
+選手ニュース自動収集（`racer-news-auto-collect`）はVercel Cron（`api/cron/racer-news.js`。live化までの移行期間は、GitHub Actionsの`collect-racer-news.yml`も並走）で毎日自動実行され、`boatrace.jp`公式ニュースアーカイブ（レーサーデータカテゴリ）から選手の節目記録（通算◯勝達成等）を検出し、登録番号によるDB照合を通過したものは人手承認なしで`racer_news`へ自動投入する（ADR-0024参照）。ただし選手の特定に失敗した候補（登録番号がDBに無い、支部が一致しない等）は自動投入されず、DBの表`racer_news_pending`（`docs/db-migration/080_racer_news_pending.sql`。従来は`data/analysis/racer-news-pending-review/pending.json`で、移行期間はGitHub Actions側の分としてファイルも読む。DBの状態を優先）に記録される（未確認件数・項目は`session-start-check.js`の`racerNews.pendingCount`・`racerNews.items`で機械的に取得できる。`racerNews.dbError`が出た場合は、DBの表が未適用または接続できず、ファイル分だけを数えている）。
 
-- `pending.json`に`status: "pending"`の項目があれば、**このセッションの最初の応答で**自発的に提示し、`racer_news`への投入可否を確認する（ユーザーから話しかけられるのを待たない）
-- 承認されたら`scripts/maintenance/add-racer-news.js`でINSERTし該当項目の`status`を`approved`に、却下されたら`rejected`に更新する
-- 掲載頻度自体が月1〜2件と低いため、このリストは頻繁には溜まらない想定。溜まっている場合はGitHub Actionsの実行状況（`.github/workflows/collect-racer-news.yml`）も確認する
+- `racerNews.pendingCount`が1件以上（`racerNews.items`に`id`・`reason`・`sourceUrl`）あれば、**このセッションの最初の応答で**自発的に提示し、`racer_news`への投入可否を確認する（ユーザーから話しかけられるのを待たない）
+- 承認されたら`scripts/maintenance/add-racer-news.js`でINSERTし、`node scripts/maintenance/resolve-racer-news-pending.js --id=<id> --status=approved`で該当項目を承認済みに、却下されたら`--status=rejected`に更新する（`--list`で未確認の一覧を表示できる。移行期間にファイル側だけにある項目は、従来どおり`pending.json`の`status`を書き換える）
+- 掲載頻度自体が月1〜2件と低いため、このリストは頻繁には溜まらない想定。溜まっている場合は実行状況（Vercelの`racer_news`ジョブ＝`scrape_job_state`の`last_success_at`・`last_error`、移行期間はGitHub Actionsの`.github/workflows/collect-racer-news.yml`）も確認する
 
 ### フローC-5: セッション開始時の集客調査スキル実行確認（2026-08-29〜、2026-09-05にnote追加）
 SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）は、`/x-growth-report`・`/tiktok-growth-report`・`/note-growth-report`の定期実行結果をinsightとしてDBに登録し（ADR 0027）、週次で生成Routineへの反映を判定する（ADR 0030）設計。外部調査（競合・隣接ジャンル観測）はクラウドRoutineでは技術的に実行できないと確定しているため（`sns_marketing_hub_operational_state.md`メモリ参照）、対話セッション側でのスキル定期実行に運用が依存する。過去にX戦略の定期施策が「決めただけで仕組み化されず自然消滅した」実績（2025-12）があるため、以下をセッション開始時に必ず行う（鮮度は`session-start-check.js`の`growthSkills`で機械的に取得できる）。

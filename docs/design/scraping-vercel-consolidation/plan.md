@@ -233,7 +233,7 @@ stateDiagram-v2
 
 ### 3.4 ER図
 
-新規テーブルを導入する設計のため掲載する（[sdd-workflow.md](../../../.claude/rules/sdd-workflow.md)）。**マイグレーション[075](../../db-migration/075_scrape_slots_and_job_state.sql)から機械生成した図**（`node scripts/maintenance/generate-er-diagram.js scraping-vercel-consolidation`）。
+新規テーブルを導入する設計のため掲載する（[sdd-workflow.md](../../../.claude/rules/sdd-workflow.md)）。**マイグレーション[075](../../db-migration/075_scrape_slots_and_job_state.sql)・[080](../../db-migration/080_racer_news_pending.sql)から機械生成した図**（`node scripts/maintenance/generate-er-diagram.js scraping-vercel-consolidation`）。
 
 ```mermaid
 erDiagram
@@ -278,7 +278,21 @@ erDiagram
         SMALLINT window_min
         TEXT source
     }
+    racer_news_pending {
+        TEXT id PK
+        TEXT source
+        TEXT reason
+        JSONB candidate
+        TEXT source_url
+        TEXT source_name
+        DATE detected_at
+        TEXT status
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ resolved_at
+    }
 ```
+
+`racer_news_pending`は、B5（選手ニュース）の要確認リスト（`pending.json`の後継。T4b-15、[マイグレーション080](../../db-migration/080_racer_news_pending.sql)）。FKを持たない独立表で、RLS有効・匿名の権限なし（service_role専用）。
 
 `scrape_job_state`はFKを持たない独立表（`job`は`scrape_slots.job`と論理的に対応するが、疑似ジョブ名（`host:boatrace.jp`）を持つため、FKにしない）。`race_odds`は、追加する2列のみを示した（既存の列と、`races`との既存の外部キーは、075が触れないため図に出ない）。`scrape_slots`は`races`に従属する（`ON DELETE CASCADE`）。
 
@@ -428,7 +442,7 @@ F4・F5のとおり、`morning-init`は、(a)取得、(b)予測の生成（計�
 | `races-init`（チャンク） | 会場4件 | 約90秒＋書き込み | 1会場約21.7秒（実測、F5）＋`generate-predictions`約8秒＋unified約14秒 | 800 |
 | `predict-refresh`（案1では展示・レース情報の関数内） | 40レース | 約8秒（他セッションの引用） | orchestration.mdのスパイク結果（26レース時か未確認） | 展示・レース情報の枠内 |
 | `kfile-sync` | 4日分×1ダウンロード | 60秒未満（**未測定**） | 推定 | 300 |
-| `racer-profiles`（チャンク） | 300人×最大2ページ | 約5分（推定） | 1,627人・500ms間隔の推定14〜27分（job-inventory.md） | 800 |
+| `racer-profiles`（チャンク） | 時間の許す限り（最大300人）。同時4 | 1回（300秒）あたり約110人、全体で約15回（約2.5時間） | **実測（2026-09-20）**: racersearch/seasonは1件約8.6〜10.1秒（他のページと同じ）。逐次だと1,627人で約4.3時間のため、同時4にし、位置（`cursor.afterRacerId`）で再開する（T4b-16。runbook §L-5・§L-6）。当初の推定（500ms間隔で14〜27分）は、応答時間を織り込んでいなかった | **300**（800にはFluid Computeの有効化の確認（U1）が要る。無効なプロジェクトで800を指定すると、ビルドが失敗する。確認後に800へ上げると、回数が約1/3） |
 
 ### 4.5 移行の順序と依存
 

@@ -17,7 +17,7 @@
  *
  * 純粋関数（evaluate*・compute*・format*・dedupe）と、IO（collectMonitorInput・postSlack・runMonitor）に分ける。
  */
-import { SCRAPE_JOBS } from "./registry.js";
+import { SCRAPE_JOBS, isScheduledDate } from "./registry.js";
 import {
   jstMinutesOfDay,
   slotDeadline,
@@ -345,13 +345,30 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
       }
     }
 
-    // 日次ジョブ: 指定時刻から一定時間を過ぎても、その対象日を処理していない（liveのみ。shadowは記録しない）
+    // ジョブ自身が通知したい事項（last_report.alerts: [{key, text, until?}]。会場サイトの構造変化の疑い、期別成績の失敗率など）。
+    // 状態が続く間は、同じ key で renotifyHours ごとに再通知される
+    if (Array.isArray(row.last_report?.alerts)) {
+      for (const a of row.last_report.alerts) {
+        if (typeof a?.key !== "string" || typeof a?.text !== "string") continue;
+        // until（ISO）を過ぎた通知は出さない（月次の1回きりの事象が、last_report が残る間、再通知され続けないため）
+        if (a.until && new Date(a.until) < now) continue;
+        alerts.push({
+          key: `report:${row.job}:${a.key}`,
+          kind: "job_report",
+          text: `${row.job}: ${a.text}`,
+        });
+      }
+    }
+
+    // 日次ジョブ: 指定時刻から一定時間を過ぎても、その対象日を処理していない（liveのみ。shadowは記録しない）。
+    // 起動する日が決まっているジョブ（月次: runDaysOfMonth）は、起動しない日の対象日を判定しない
     if (def.kind === "daily" && row.mode === "live") {
       const targetDate = resolveTargetDate(now, def.targetTimeJst);
       const targetInstant = new Date(
         `${targetDate}T${def.targetTimeJst}:00+09:00`,
       );
       if (
+        isScheduledDate(def, targetDate) &&
         minutesBetween(now, targetInstant) >=
           THRESHOLDS.dailyOverdueHours * 60 &&
         row.last_target_date !== targetDate

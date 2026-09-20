@@ -17,6 +17,10 @@ env:
 
 jobs:
   scrape:
+    # リポジトリ変数 SKIP_MOTOR_STATS_ON_GHA=true の間は、この取得を行わない（Vercel Cron の venue_motor_stats（api/cron/venue-motor-stats.js） へ移した後の、
+    # GitHub側の停止。コードは削除しない。未設定・"true"以外なら従来どおり実行する。切り戻しは変数を消す（false）だけ。
+    # 手順: docs/design/scraping-vercel-consolidation/verification-runbook.md L）
+    if: ${{ vars.SKIP_MOTOR_STATS_ON_GHA != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
