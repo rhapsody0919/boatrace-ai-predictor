@@ -141,8 +141,19 @@ async function main() {
   }
 
   // 結果取得（発走後5分以上）
-  if (finishedRaces.length > 0) {
-    const { updated, count } = await runResults(schedule, date).catch((e) => {
+  // WS4b（T4b-02-4・T4b-05-3）: 結果取得はVercel Function(api/cron/result.js)、Kファイル同期は
+  // api/cron/kfile-sync.js へ移行する。切り替え後、GitHub Actions側の取得を、リポジトリ変数のトグルのみで止める
+  // （コードは削除せず、切り戻しも変数のトグルだけで完結。SKIP_EXHIBITION_ON_GHAと同じ方式）。
+  //   SKIP_RESULTS_ON_GHA=true  結果取得（と中止・順延の確定）を行わない。Kファイル同期は、下の変数で別に止める
+  //   SKIP_KFILE_ON_GHA=true    Kファイル同期（進入コース・rank4〜6）を行わない
+  // 既定（未設定・true以外）は、どちらも従来どおり実行する。
+  const skipResults = process.env.SKIP_RESULTS_ON_GHA === "true";
+  const skipKFile = process.env.SKIP_KFILE_ON_GHA === "true";
+  if (finishedRaces.length > 0 && !(skipResults && skipKFile)) {
+    const { updated, count } = await runResults(schedule, date, {
+      skipResults,
+      skipKFile,
+    }).catch((e) => {
       console.error("⚠️ 結果取得失敗:", e.message);
       return { updated: false, count: 0 };
     });
