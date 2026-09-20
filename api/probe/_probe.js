@@ -66,9 +66,11 @@ async function probeSupabase(n) {
   };
 }
 
-async function probeSite(n, venue, date, startedAt) {
+async function probeSite(n, venue, date, startedAt, only) {
   const pages = [];
-  for (const page of ["raceresult", "odds3t"]) {
+  for (const page of ["raceresult", "odds3t"].filter(
+    (p) => !only || only === "both" || p === only,
+  )) {
     for (let rno = 1; rno <= n; rno++) pages.push({ page, rno });
   }
   const runs = [];
@@ -134,7 +136,7 @@ export async function runProbe(req, res) {
     },
   };
   out.supabase = await probeSupabase(10);
-  if (site) out.site = await probeSite(n, "12", "20260919", started);
+  if (site) out.site = await probeSite(n, "12", "20260919", started, req.query?.page);
   out.totalMs = Date.now() - started;
   console.log(`PROBE_RESULT ${JSON.stringify(out)}`);
   res.status(200).json(out);
