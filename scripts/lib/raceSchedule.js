@@ -8,30 +8,49 @@
  * データソース: Supabase races テーブル（generate-predictions.js が毎朝書き込み）
  */
 
-import { supabase, isSupabaseEnabled } from "./supabaseClient.js";
+import { supabase } from "./supabaseClient.js";
 import { getTodayDateJST } from "./dateUtils.js";
 
 /**
  * 当日のレーススケジュールを Supabase から取得する
  *
  * @param {string} [date] - YYYY-MM-DD形式（省略時は今日のJST日付）
+ * @param {Object} [options]
+ * @param {boolean} [options.throwOnError=false] - true なら、Supabase未設定・DBエラーを空配列にせず例外にする
+ *   （既定は従来どおり空配列。DB障害が「対象なし」に化けて、ジョブが黙って何もせず成功扱いになるのを避けたい
+ *   呼び出し元＝Vercel Cronの共通ラッパが指定する。BOA-359と同型）。races が空（未登録）の場合は、どちらでも空配列
+ * @param {import("@supabase/supabase-js").SupabaseClient} [options.client] - テスト用の差し替え（既定は supabaseClient.js）
  * @returns {Promise<Array<{race_id: string, venue_code: number, race_no: number, start_time: Date}>>}
  */
-export async function getRaceSchedule(date) {
+export async function getRaceSchedule(
+  date,
+  { throwOnError = false, client } = {},
+) {
   const targetDate = date || getTodayDateJST();
+  const db = client ?? supabase;
 
-  if (!isSupabaseEnabled()) {
+  if (!db) {
+    if (throwOnError) {
+      throw new Error(
+        "Supabase が設定されていないため、レーススケジュールを取得できません",
+      );
+    }
     console.warn("⚠️ Supabase未設定のためスケジュール取得をスキップ");
     return [];
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("races")
     .select("race_id, start_time")
     .like("race_id", `${targetDate}%`)
     .not("start_time", "is", null);
 
   if (error) {
+    if (throwOnError) {
+      throw new Error(
+        `レーススケジュールの取得に失敗しました: ${error.message}`,
+      );
+    }
     console.error("⚠️ レーススケジュール取得エラー:", error.message);
     return [];
   }
@@ -97,7 +116,11 @@ export function getRacesInWindow(schedule, minutesBefore, windowMin = 3) {
  * @param {number} [maxMinutesAfter=90] - 発走後何分以内か（上限）。90分超は取得を諦める
  * @returns {Array}
  */
-export function getRacesAfterStart(schedule, minutesAfter = 5, maxMinutesAfter = 90) {
+export function getRacesAfterStart(
+  schedule,
+  minutesAfter = 5,
+  maxMinutesAfter = 90,
+) {
   const now = new Date();
   return schedule.filter((r) => {
     const minAfterStart = (now - r.start_time) / 1000 / 60;

@@ -1,0 +1,236 @@
+/**
+ * ジョブレジストリ: 窓・許容幅・再試行・リース・並列度・実行時間の定義（plan.md §3.6・§4.3・§4.4）。
+ *
+ * 値は初期案で、各データセットの移行（WS4b）の実測で調整する。ジョブ名は scrape_slots.job・
+ * scrape_job_state.job と同じ（DBにCHECK制約は付けず、ここで管理する）。
+ *
+ * kind:
+ *   window     予定表（scrape_slots）のスロットを、期限が来たものだけ消化する（展示・オッズ・結果・レース情報・公式予想）
+ *   daily      1日1回（＋補足の起動）。対象日を「指定時刻」から解決し、last_target_date で冪等にする
+ *   continuous 窓なしの連続実行（A4・A5・チャンク処理）。ジョブ単位のリースで排他する
+ *   monitor    監視・保守（モードのゲートなし。scrape_job_state に実行を記録する）
+ *
+ * 窓型の slotSecEstimate（1スロットの処理時間の見積り、秒）: boatrace.jp のページの応答が、リージョン・UA・
+ * 実行元によらず1件あたり約8〜10秒かかる（2026-09-20の実測: syd1・hnd1のVercel、ローカルとも8.1〜10.3秒、
+ * 全て成功。docs/design/scraping-vercel-consolidation/plan.md §8）。1スロットが1レース分のページを並列に取る
+ * 前提で、最悪12秒（実測の最大10.3秒+余裕）とする。claimLimit/concurrency の切り上げ × slotSecEstimate が、
+ * リースより十分短くなければ、後ろのスロットの処理中にリースが切れ、別の実行が同じスロットを取ってしまう
+ * （二重取得）。validateRegistry がこの関係を検査する。
+ */
+
+/** ホスト単位のサーキットブレーカーの scrape_job_state.job の接頭辞（例: host:boatrace.jp） */
+export const HOST_JOB_PREFIX = "host:";
+
+/** 関数の maxDuration からこの秒数を引いた時点で、新しいスロットに着手しない */
+export const SOFT_DEADLINE_MARGIN_SEC = 30;
+
+export const SCRAPE_JOBS = Object.freeze({
+  // A1 レース情報更新。発走60分前の1本
+  race_info: {
+    kind: "window",
+    offsets: [-60],
+    graceMin: 3,
+    retrySec: 60,
+    leaseSec: 90,
+    claimLimit: 24,
+    concurrency: 4,
+    slotSecEstimate: 12,
+    maxDurationSec: 120,
+    hosts: ["boatrace.jp"],
+  },
+  // A2 展示。現行の3窓（30/15/10分前）を1本（-33〜-7分）に畳む案（要判断eで承認済み。悪化したらoffsetsを戻す）
+  exhibition: {
+    kind: "window",
+    offsets: [-33],
+    graceMin: 26,
+    retrySec: 120,
+    leaseSec: 90,
+    claimLimit: 24,
+    concurrency: 4,
+    slotSecEstimate: 12,
+    maxDurationSec: 120,
+    hosts: ["boatrace.jp"],
+  },
+  // A3 オッズ。6窓×5ページ。許容幅3分のため、リースは許容幅より短く（120秒）
+  odds: {
+    kind: "window",
+    offsets: [-60, -30, -15, -10, -5, 0],
+    graceMin: 3,
+    retrySec: 60,
+    leaseSec: 120,
+    claimLimit: 24,
+    concurrency: 4,
+    slotSecEstimate: 12,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
+  // A6 結果取得。発走5分後から90分後まで、5分おきに再試行
+  result: {
+    kind: "window",
+    offsets: [5],
+    graceMin: 85,
+    retrySec: 300,
+    leaseSec: 180,
+    claimLimit: 40,
+    concurrency: 4,
+    slotSecEstimate: 12,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
+  // B1 公式コンピュータ予想。朝（-720分）から発走30分前まで
+  pcexpect: {
+    kind: "window",
+    offsets: [-720],
+    graceMin: 690,
+    retrySec: 600,
+    leaseSec: 300,
+    claimLimit: 20,
+    concurrency: 3,
+    slotSecEstimate: 12,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
+
+  // 日次ジョブ。targetTimeJst は「その日の対象日を決める指定時刻」（JST、HH:MM）。実行が遅れても、
+  // 対象日は指定時刻から解決する（resolveTargetDate。GitHub Actionsの遅延による日付の取り違えの恒久対策）。
+  // 期待件数の判定関数と実装は、各データセットの移行（WS4b）で run() が返す（rowsExpected）。
+  point_rank: {
+    kind: "daily",
+    targetTimeJst: "22:00",
+    leaseSec: 600,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
+  entry_course_stats: {
+    kind: "daily",
+    targetTimeJst: "20:00",
+    leaseSec: 600,
+    maxDurationSec: 300,
+    hosts: [],
+  },
+  venue_motor_stats: {
+    kind: "daily",
+    targetTimeJst: "06:00",
+    leaseSec: 600,
+    maxDurationSec: 300,
+    hosts: [],
+  },
+  racer_news: {
+    kind: "daily",
+    targetTimeJst: "23:10",
+    leaseSec: 300,
+    maxDurationSec: 120,
+    hosts: ["boatrace.jp"],
+  },
+
+  // 監視・保守（plan.md §7・§3.9）。モードのゲートなし
+  "scrape-monitor": {
+    kind: "monitor",
+    leaseSec: 120,
+    maxDurationSec: 120,
+    hosts: [],
+  },
+  "scrape-cleanup": {
+    kind: "monitor",
+    leaseSec: 120,
+    maxDurationSec: 60,
+    hosts: [],
+  },
+});
+
+/** kind が window のジョブ名の一覧 */
+export function windowJobNames(registry = SCRAPE_JOBS) {
+  return Object.entries(registry)
+    .filter(([, def]) => def.kind === "window")
+    .map(([name]) => name);
+}
+
+/**
+ * ensure_scrape_slots に渡すジョブ×窓の定義（[{job, offset_min, grace_min}]）
+ * @param {string[]} jobs
+ */
+export function slotDefsFor(jobs, registry = SCRAPE_JOBS) {
+  return jobs.flatMap((job) => {
+    const def = registry[job];
+    if (!def || def.kind !== "window") {
+      throw new Error(`窓型ではない、または未登録のジョブです: ${job}`);
+    }
+    return def.offsets.map((offset) => ({
+      job,
+      offset_min: offset,
+      grace_min: def.graceMin,
+    }));
+  });
+}
+
+/**
+ * レジストリの整合性の検査。違反の一覧（空なら正常）を返す。
+ *   - 窓型: リース < 許容幅（許容幅より長いリースは、リースの解除が許容幅を超えて窓を取りこぼす。
+ *     BOA-313のロック導入への警告）、再試行の間隔 < 許容幅（許容幅内に再試行できる）、
+ *     窓（offset_min）は SMALLINT の範囲の整数で重複なし、並列度 <= claim上限
+ *   - 全ジョブ: maxDurationSec がソフトデッドライン（−30秒）を引いても正
+ *   - 日次: targetTimeJst が HH:MM
+ */
+export function validateRegistry(registry = SCRAPE_JOBS) {
+  const problems = [];
+  for (const [name, def] of Object.entries(registry)) {
+    if (!["window", "daily", "continuous", "monitor"].includes(def.kind)) {
+      problems.push(`${name}: kind が不正です: ${def.kind}`);
+      continue;
+    }
+    if (!(def.maxDurationSec - SOFT_DEADLINE_MARGIN_SEC > 0)) {
+      problems.push(
+        `${name}: maxDurationSec(${def.maxDurationSec}) がソフトデッドラインの余白(${SOFT_DEADLINE_MARGIN_SEC}秒)以下です`,
+      );
+    }
+    if (!Number.isInteger(def.leaseSec) || def.leaseSec < 1) {
+      problems.push(`${name}: leaseSec が不正です: ${def.leaseSec}`);
+    }
+    if (def.kind === "window") {
+      const graceSec = def.graceMin * 60;
+      if (!Number.isInteger(def.graceMin) || def.graceMin < 0) {
+        problems.push(`${name}: graceMin が不正です: ${def.graceMin}`);
+      }
+      if (def.leaseSec >= graceSec) {
+        problems.push(
+          `${name}: リース(${def.leaseSec}秒)は許容幅(${graceSec}秒)より短くしてください`,
+        );
+      }
+      if (def.retrySec >= graceSec) {
+        problems.push(
+          `${name}: 再試行の間隔(${def.retrySec}秒)は許容幅(${graceSec}秒)より短くしてください`,
+        );
+      }
+      if (
+        !Array.isArray(def.offsets) ||
+        def.offsets.length === 0 ||
+        def.offsets.some(
+          (o) => !Number.isInteger(o) || o < -32768 || o > 32767,
+        ) ||
+        new Set(def.offsets).size !== def.offsets.length
+      ) {
+        problems.push(`${name}: offsets が不正です: ${def.offsets}`);
+      }
+      const waves = Math.ceil(def.claimLimit / def.concurrency);
+      if (waves * def.slotSecEstimate > def.leaseSec - 10) {
+        problems.push(
+          `${name}: 最後のスロットの完了見込み(${waves}回 × ${def.slotSecEstimate}秒)が、リース(${def.leaseSec}秒)に余裕(10秒)を残して収まりません。claimLimit を減らすか、リースを延ばしてください`,
+        );
+      }
+      if (!(def.concurrency >= 1) || def.concurrency > def.claimLimit) {
+        problems.push(
+          `${name}: concurrency(${def.concurrency}) は 1以上・claimLimit(${def.claimLimit})以下にしてください`,
+        );
+      }
+    }
+    if (
+      def.kind === "daily" &&
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(def.targetTimeJst ?? "")
+    ) {
+      problems.push(
+        `${name}: targetTimeJst が HH:MM ではありません: ${def.targetTimeJst}`,
+      );
+    }
+  }
+  return problems;
+}
