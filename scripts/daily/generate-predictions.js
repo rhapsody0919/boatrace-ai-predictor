@@ -1423,7 +1423,11 @@ async function planRacesVolatilityUpdates(
  *   "upsert": (race_id, model_id) の一意制約で1文の upsert にする。予測が空になる瞬間が無く、書き込みに
  *   失敗しても以前の予測が残る（失敗は例外にする）。行の内容は "replace" と同じ（的中フラグ・払戻・
  *   scores は null に戻し、predicted_at は現在時刻）。再計算の起点が展示の変更のみになる案1
- *   （REFRESH_ON_VERCEL）では、失敗した再計算が次の再計算で自己修復されないため、この方式を使う
+ *   （REFRESH_ON_VERCEL）では、失敗した再計算が次の再計算で自己修復されないため、この方式を使う。
+ *   どちらの方式も書くのは standard・safeBet・upsetFocus のみ。"replace" は is_shadow=false の全モデルを
+ *   削除するため model_id='unified'（朝の日次バッチ generate-unified-predictions.js が書く）も消え、次の
+ *   GitHub Actions の morning-init.js（ensureUnifiedPredictions）が日全体を再生成している。"upsert" は
+ *   unified を削除も更新もしないため、この再生成は起きない（unified は朝のバッチの値のまま）
  * @param {import("@supabase/supabase-js").SupabaseClient|null} [params.client] テスト用の差し替え（既定は supabaseClient.js）
  * @param {() => Date} [params.now] テスト用の時刻の差し替え
  * @returns {Promise<{predictedRaceIds: string[], volatilityUpdated: number, writeMode: string}|{volatilityStats: Object}|undefined>}

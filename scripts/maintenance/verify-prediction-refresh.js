@@ -741,6 +741,70 @@ async function quiet(fn) {
 }
 
 // ---------------------------------------------------------------------------
+// (e2) unified の行: replace は削除してしまう（副作用）。upsert は触らない
+//      unified は、朝の日次バッチ（generate-unified-predictions.js）が書く model_id='unified'（is_shadow=false）。
+//      replace は is_shadow=false の全モデルを削除するため、再計算のたびに unified が消え、次の GitHub Actions
+//      の実行（morning-init.js の ensureUnifiedPredictions）が「unified が欠けたレースがある」ことを検知して
+//      日全体を再生成している。この再生成の起点は、削除の副作用による（設計上は朝の日次バッチ）。
+// ---------------------------------------------------------------------------
+{
+  const ids = raceIdsOf(2);
+  const unified = ids.map((race_id) => ({
+    race_id,
+    model_id: "unified",
+    top_pick: 9,
+    is_shadow: false,
+    feature_contributions: { placeRecommendation: "morning" },
+  }));
+  const build = () =>
+    createFakeClient({
+      tables: {
+        ...raceTables(ids),
+        predictions: unified.map((r) => ({ ...r })),
+      },
+    });
+  const unifiedOf = (fake) =>
+    fake.state.predictions.filter((p) => p.model_id === "unified");
+
+  const replaceFake = build();
+  await quiet(() =>
+    mainRefresh({
+      isDryRun: false,
+      specificRaceIds: ids,
+      client: replaceFake,
+      now: () => NOW,
+    }),
+  );
+  check(
+    "replace（現行の副作用の記録）: is_shadow=false の全モデルを削除するため、unified の行も消える（次の GitHub Actions の ensureUnifiedPredictions が再生成する）",
+    unifiedOf(replaceFake).length === 0,
+    `${unifiedOf(replaceFake).length}行`,
+  );
+
+  const upsertFake = build();
+  await quiet(() =>
+    mainRefresh({
+      isDryRun: false,
+      specificRaceIds: ids,
+      client: upsertFake,
+      writeMode: "upsert",
+      now: () => NOW,
+    }),
+  );
+  check(
+    "upsert: unified の行は削除も更新もしない（朝の日次バッチの値のまま残る）。standard・safeBet・upsetFocus だけを書く",
+    unifiedOf(upsertFake).length === 2 &&
+      unifiedOf(upsertFake).every(
+        (p) =>
+          p.top_pick === 9 &&
+          p.feature_contributions?.placeRecommendation === "morning",
+      ) &&
+      upsertFake.state.predictions.length === 8,
+    `${upsertFake.state.predictions.length}行`,
+  );
+}
+
+// ---------------------------------------------------------------------------
 // (f) 展示取得（scrapeAndUpsertRaces）が、実際に書き込んだレースを changedRaceIds で返す
 //     公式ページの代わりに、合成した beforeinfo の HTML を fetch で返し、偽クライアントに書き込む
 // ---------------------------------------------------------------------------
@@ -950,6 +1014,51 @@ async function quiet(fn) {
       upsertBoth.races.size === 2 &&
       upsertBoth.fake.state.predictions.length === 6,
     `予測のあるレース: ${show([...upsertBoth.races])} / ${upsertBoth.fake.state.predictions.length}行`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (h) 配線の静的確認（scrape-scheduled.js・api/cron/exhibition.js は、import 時に実行される／HTTPハンドラーの
+//     ため、ここでは実行できない。トグルの配線が外れていないことを、ソースで確認する）
+// ---------------------------------------------------------------------------
+{
+  const fs = await import("node:fs");
+  const read = (path) =>
+    fs.readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
+  const scheduled = read("scripts/daily/scrape-scheduled.js");
+  check(
+    "scrape-scheduled.js: オッズ起点の除外は SKIP_ODDS_REFRESH_ON_GHA（isOddsRefreshSkippedOnGha）で決まり、collectGhaRefreshRaceIds で対象を集める",
+    /const skipOddsRefresh = isOddsRefreshSkippedOnGha\(\)/.test(scheduled) &&
+      /collectGhaRefreshRaceIds\(\{[\s\S]*?skipOddsRefresh,[\s\S]*?\}\)/.test(
+        scheduled,
+      ),
+  );
+  check(
+    "scrape-scheduled.js: 書き込み方式は、案1の状態（オッズ起点を外す）だけ upsert、既定は replace（従来どおり）",
+    /writeMode: skipOddsRefresh \? "upsert" : "replace"/.test(scheduled),
+  );
+  check(
+    "scrape-scheduled.js: オッズ・レース情報・展示の各起点を別々の集合に集めている（オッズ起点だけを外せる）",
+    /oddsRaceIds\.add/.test(scheduled) &&
+      /infoRaceIds\.add/.test(scheduled) &&
+      /exhibitionRaceIds\.add/.test(scheduled) &&
+      !/updatedRaceIds\.add/.test(scheduled),
+  );
+  const workflow = read(".github/workflows/scrape-scheduled.yml");
+  check(
+    "scrape-scheduled.yml: SKIP_ODDS_REFRESH_ON_GHA を、リポジトリ変数（vars）から環境に渡す（未設定なら空＝off）",
+    /SKIP_ODDS_REFRESH_ON_GHA: \$\{\{ vars\.SKIP_ODDS_REFRESH_ON_GHA \}\}/.test(
+      workflow,
+    ),
+  );
+  const exhibition = read("api/cron/exhibition.js");
+  check(
+    "api/cron/exhibition.js: 展示の取得の後に refreshAfterExhibition を呼び、mainRefresh は有効なときだけ動的 import する（無効なときは従来と同じ動作・同じモジュール読み込み）",
+    /\.then\(\(result\) =>\s*refreshAfterExhibition\(/.test(exhibition) &&
+      /await import\("\.\.\/\.\.\/scripts\/daily\/generate-predictions\.js"\)/.test(
+        exhibition,
+      ) &&
+      !/^import .*generate-predictions/m.test(exhibition),
   );
 }
 
