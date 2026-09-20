@@ -13,7 +13,7 @@
  *   応答方式    waitUntil を使わず、処理の完了後に 200/500 を返す（失敗をHTTPステータスに残す）。
  *               ソフトデッドライン（maxDuration−30秒）を超えたら、新しいスロットに着手しない
  *
- * マイグレーション072が未適用のDBでは、何もせず 200（skipped）で終わる。
+ * マイグレーション075が未適用のDBでは、何もせず 200（skipped）で終わる。
  *
  * ハンドラー（各データセットが実装する）:
  *   window型   handleSlot(slot, ctx) → {outcome, rowsWritten?, rowsParsed?, rowsExpected?, resultDigest?, error?}

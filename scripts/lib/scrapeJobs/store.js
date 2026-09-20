@@ -16,7 +16,7 @@
  *   retrySlot(slot, {worker, now, outcome, error, retryAt}) → boolean
  *   breakerStore                         → {read, open, close}（circuitBreaker.js の BreakerStore）
  *
- * 「テーブル・関数が無い」（マイグレーション072が未適用）エラーは、readState だけが available=false として
+ * 「テーブル・関数が無い」（マイグレーション075が未適用）エラーは、readState だけが available=false として
  * 返す。それ以外のDBエラーは、意味のあるメッセージを付けて投げる（「対象なし」に化けさせない）。
  */
 import { SCRAPE_JOBS, slotDefsFor } from "./registry.js";

@@ -7,10 +7,10 @@
  *   (b) レジストリの整合性: リース < 許容幅、再試行の間隔 < 許容幅 等。ensure用の定義の形
  *   (c) resolveTargetDate: 指定時刻から対象日を解決（遅れて起動しても対象日は前日のまま）
  *   (d) 0件エラー: 期待件数>0なのに解析0件は成功にしない。書き込み0件（変更なし）は正常
- *   (e) 予定表・ジョブ状態のテーブル/関数が無い（072未適用）エラーの判定。無関係な不在は握りつぶさない
+ *   (e) 予定表・ジョブ状態のテーブル/関数が無い（075未適用）エラーの判定。無関係な不在は握りつぶさない
  *   (f) サーキットブレーカー: 開く条件・半開・閉じる・期間の倍増・store障害時の縮退
  *   (g) politeFetch: タイムアウト・429/503のバックオフ（Retry-After・上限）・ブレーカー連携・UA・並列度の上限
- *   (h) 共通ラッパ: 072未適用・off・行なしは何もしない（誤報なし）/ shadow・live / 完了と再試行の記録 /
+ *   (h) 共通ラッパ: 075未適用・off・行なしは何もしない（誤報なし）/ shadow・live / 完了と再試行の記録 /
  *       0件エラー / 例外の扱い / ブレーカー / ソフトデッドライン / 並列度 / 日次の冪等・リース・shadow
  *   (i) Supabaseストアのクエリの形: 完了・再試行はclaimed_byとstatus=runningの条件付き更新
  *   (j) getRaceSchedule の例外モード: DBエラーを「対象なし」に化けさせない
@@ -910,12 +910,12 @@ check(
       !isAuthorized(undefined, "s3cret"),
   );
 
-  // 072未適用
+  // 075未適用
   {
     const store = createMemoryStore({ available: false });
     const r = await run(store, { handleSlot: async () => ({ outcome: "ok" }) });
     check(
-      "072未適用（テーブルが無い）: 何もせず200（skipped）。書き込み・claimなし",
+      "075未適用（テーブルが無い）: 何もせず200（skipped）。書き込み・claimなし",
       r.status === 200 &&
         r.body.skipped === "scrape_schema_not_applied" &&
         noWrites(store),

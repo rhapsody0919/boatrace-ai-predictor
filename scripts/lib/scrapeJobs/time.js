@@ -3,7 +3,7 @@
  *
  * 期限は保存せず、races.start_time（JST）と offset_min から都度計算する
  * （docs/design/scraping-vercel-consolidation/plan.md §3.1）。DB側の claim_scrape_slots
- * （マイグレーション072）の `(race_date + start_time) AT TIME ZONE 'Asia/Tokyo' + offset_min分` と同じ計算。
+ * （マイグレーション075）の `(race_date + start_time) AT TIME ZONE 'Asia/Tokyo' + offset_min分` と同じ計算。
  */
 
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
