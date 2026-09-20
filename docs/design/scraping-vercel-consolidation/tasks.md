@@ -70,10 +70,12 @@
 
 ### T4b-03 予測リフレッシュ（A7、`predictions`の再計算）
 
-- [ ] **T4b-03-1** `mainRefresh`をVercelで動かせる形にする（`scripts/daily/generate-predictions.js`）: `process.exit(1)`を例外に、`process.argv`（`parseDateArg`）の日付を引数に、Deploy Hookは`decideDeployHook`の抑制を維持する（Vercelの環境変数の有無に従う）。既存のGitHub Actions経路の挙動は変えない。`node scripts/maintenance/verify-deploy-hook-policy.js`ほか既存の検証が通ることを確認する
-- [ ] **T4b-03-2** `api/cron/exhibition.js`（現行の`waitUntil`版）の内側で、`runExhibition`が変更を書いたレース（30/15/10分前の窓のレース）に対し、`mainRefresh`を呼ぶ。`REFRESH_ON_VERCEL`フラグで有効化する。GitHub側は、`scrape-scheduled.js`の`updatedRaceIds`から、オッズ由来の追加を外す変数（`SKIP_ODDS_REFRESH_ON_GHA`等。名称は実装時に決める）で切り替える。**併走させない**（plan.md §5 併走の防止）。切り替えの順序と、切り戻しの手順をPR本文に書く
-- [ ] **T4b-03-3** 展示更新が再計算のきっかけから外れた影響（plan.md U8）を、GitHub Actionsの実行ログで確認する（2026-09-16以降の、展示由来の再計算の有無）。Vercelでの`mainRefresh`の所要時間（26レース時の約8秒が実測か、週末のピーク）と、`predictions`の`UNIQUE`制約の有無（plan.md U14）を確認する
-- [ ] **T4b-03-4** `REFRESH_ON_VERCEL`を有効化する（ユーザーの承認）。切り替え後、再計算の回数（`predictions`のINSERT・DELETE、`n_tup_ins`）が、約55%減の見込みどおりかを実測する
+- [x] **T4b-03-1** `mainRefresh`をVercelで動かせる形にする（`scripts/daily/generate-predictions.js`）: `process.exit(1)`を例外に、`process.argv`（`parseDateArg`）の日付を引数に、Deploy Hookは`decideDeployHook`の抑制を維持する（Vercelの環境変数の有無に従う）。既存のGitHub Actions経路の挙動は変えない。`node scripts/maintenance/verify-deploy-hook-policy.js`ほか既存の検証が通ることを確認する
+- [x] **T4b-03-2** `api/cron/exhibition.js`（現行の`waitUntil`版）の内側で、`runExhibition`が変更を書いたレース（30/15/10分前の窓のレース）に対し、`mainRefresh`を呼ぶ。`REFRESH_ON_VERCEL`フラグで有効化する。GitHub側は、`scrape-scheduled.js`の`updatedRaceIds`から、オッズ由来の追加を外す変数（`SKIP_ODDS_REFRESH_ON_GHA`等。名称は実装時に決める）で切り替える。**併走させない**（plan.md §5 併走の防止）。切り替えの順序と、切り戻しの手順をPR本文に書く
+- [x] **T4b-03-3** 展示更新が再計算のきっかけから外れた影響（plan.md U8）を、GitHub Actionsの実行ログで確認する（2026-09-16以降の、展示由来の再計算の有無）。Vercelでの`mainRefresh`の所要時間（26レース時の約8秒が実測か、週末のピーク）と、`predictions`の`UNIQUE`制約の有無（plan.md U14）を確認する
+  - 実装（PRの説明に、切り替え・切り戻しの順序）: `mainRefresh`は、`process.exit`を例外に、`date`・`writeMode`（`replace`＝従来／`upsert`）・`client`・`now`を引数に追加、`race_id`の一括取得を100件ずつに分割（1000行上限）。展示取得（`scrape-exhibition-data.js`）が、実際に書き込んだレースを`changedRaceIds`で返す。トグルは`REFRESH_ON_VERCEL`（Vercel）と`SKIP_ODDS_REFRESH_ON_GHA`（GitHubのリポジトリ変数）。組み合わせと順序は`scripts/lib/predictionRefresh.js`、手順は[verification-runbook.md](./verification-runbook.md) F
+  - 確認（T4b-03-3）: U8（展示由来の再計算は9/16以降0件。ただし、オッズの窓が同じ時刻に再計算を起動しており、9/20の46レースで、全レースの予測が展示の最終書き込みより後）、U14（`UNIQUE (race_id, model_id)`あり）。詳細は[plan.md](./plan.md) §5「案1の実装で確認した事項」。**unifiedの日全体の再生成が止まる影響（有効化前にユーザー判断）を含む**
+- [ ] **T4b-03-4** `REFRESH_ON_VERCEL`を有効化する（ユーザーの承認）。切り替え後、再計算の回数（`predictions`のINSERT・DELETE、`n_tup_ins`）が、約55%減の見込みどおりかを実測する。手順・確認クエリは[verification-runbook.md](./verification-runbook.md) F
 
 データ項目: `predictions`（再計算）。
 

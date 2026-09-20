@@ -66,4 +66,8 @@ jobs:
           # BOA-313 Step 3: 展示データはVercel Function(api/cron/exhibition.js)へ移行済み。
           # リポジトリ変数のトグルのみで即座に切り戻せるよう、コード変更・redeployを伴わない形にする。
           SKIP_EXHIBITION_ON_GHA: ${{ vars.SKIP_EXHIBITION_ON_GHA }}
+          # BOA-353 T4b-03（予測リフレッシュ案1）: "true" の間は、オッズ起点の予測リフレッシュを外す
+          # （展示・気象の変更を起点にした再計算は、Vercel の REFRESH_ON_VERCEL=true が担う）。
+          # 有効化・切り戻しの順序は scripts/lib/predictionRefresh.js。未設定（既定）は従来どおり
+          SKIP_ODDS_REFRESH_ON_GHA: ${{ vars.SKIP_ODDS_REFRESH_ON_GHA }}
         continue-on-error: true
