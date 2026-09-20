@@ -403,6 +403,12 @@ export async function cmdDownload(opts, deps = {}) {
   };
   let consecutiveBad = 0;
   let badKind = null;
+  // リクエスト間の最小間隔（ジッター付き）。全ての経路（成功・失敗・再試行）で必ず空ける
+  const pace = () =>
+    sleepFn(
+      opts.intervalMinMs +
+        Math.random() * (opts.intervalMaxMs - opts.intervalMinMs),
+    );
   let consecutiveNotLzh = 0;
   let consecutiveAbsent = 0; // 404が続くのは、URL構造の変更やアクセス制限の疑い（ボートレースは毎日どこかで開催）
   const skipB = new Set(); // Kが404の日（開催なし）はBを取得しない
@@ -432,7 +438,10 @@ export async function cmdDownload(opts, deps = {}) {
 
   for (let i = 0; i < todo.length; i++) {
     const { date, kind } = todo[i];
-    if (kind === "B" && (skipB.has(date) || manifest.get(`${date}|K`)?.status === "absent")) {
+    if (
+      kind === "B" &&
+      (skipB.has(date) || manifest.get(`${date}|K`)?.status === "absent")
+    ) {
       appendJsonl(manifestFile, {
         date,
         kind,
@@ -505,9 +514,14 @@ export async function cmdDownload(opts, deps = {}) {
           todo[i],
         );
       if (cls.backoff) {
-        const wait = Math.min(300000, backoffBaseMs * 2 ** (consecutiveBad - 1));
+        const wait = Math.min(
+          300000,
+          backoffBaseMs * 2 ** (consecutiveBad - 1),
+        );
         console.log(`  バックオフ ${Math.round(wait / 1000)} 秒`);
         await sleepFn(wait);
+      } else {
+        await pace(); // バックオフ無しの失敗（403等）でも、最小間隔を空けて再試行する
       }
       i--; // 同じ対象をやり直す（連続失敗の上限で必ず止まる）
       continue;
@@ -552,6 +566,7 @@ export async function cmdDownload(opts, deps = {}) {
             "LZHとして展開できない応答が3回連続しました（応答の形式変更またはブロックの疑い）",
             todo[i],
           );
+        await pace();
         continue;
       }
       consecutiveNotLzh = 0;
@@ -582,10 +597,7 @@ export async function cmdDownload(opts, deps = {}) {
         );
       }
     }
-    const wait =
-      opts.intervalMinMs +
-      Math.random() * (opts.intervalMaxMs - opts.intervalMinMs);
-    await sleepFn(wait);
+    await pace();
   }
   console.log(`\n完了: ${JSON.stringify(stats)}`);
   appendJsonl(path.join(opts.archiveDir, "runs.jsonl"), {
@@ -619,22 +631,24 @@ async function cmdParse(opts) {
       skipped++;
       continue;
     }
-    const read = async (kind, m) =>
-      m?.status === "ok"
-        ? {
-            text: await decodeLzhText(
-              new Uint8Array(
-                fs.readFileSync(rawPath(opts.archiveDir, kind, date)),
-              ),
-            ),
-            source: {
-              file: m.file,
-              sha256: m.sha256,
-              bytes: m.bytes,
-              fetchedAt: m.fetchedAt,
-            },
-          }
-        : null;
+    const read = async (kind, m) => {
+      if (m?.status !== "ok") return null;
+      const bytes = new Uint8Array(
+        fs.readFileSync(rawPath(opts.archiveDir, kind, date)),
+      );
+      // 生ファイルの破損・差し替えを、マニフェストのsha256で検知する
+      if (m.sha256 && sha256(bytes) !== m.sha256)
+        throw new Error(`${date} ${kind}: 生ファイルのsha256がマニフェストと一致しません`);
+      return {
+        text: await decodeLzhText(bytes),
+        source: {
+          file: m.file,
+          sha256: m.sha256,
+          bytes: m.bytes,
+          fetchedAt: m.fetchedAt,
+        },
+      };
+    };
     const [kr, br] = [await read("K", k), await read("B", b)];
     const day = buildKbDay({
       date,
@@ -709,7 +723,8 @@ async function cmdLoad(opts) {
   const loadedFile = path.join(opts.archiveDir, "loaded.jsonl");
   const loaded = new Set(readJsonl(loadedFile).map((e) => e.date));
   const totals = { days: 0, venueDays: 0, races: 0, boats: 0, warnings: 0 };
-  const perDay = [];
+  // 全期間の行をメモリに溜めない（約200万艇になる）。集計は行を捨てて数えるだけにし、書き込み時に日ごとに再構築する
+  const dates = [];
   for (const date of dateRange(opts.from, opts.to)) {
     const day = readParsedDay(opts.archiveDir, date);
     if (!day) continue;
@@ -722,7 +737,7 @@ async function cmdLoad(opts) {
     totals.boats += rows.boats.length;
     totals.warnings += rows.warnings.length;
     for (const w of rows.warnings) console.warn(`  ⚠ ${w}`);
-    perDay.push({ date, rows });
+    dates.push(date);
   }
   console.log(
     `投入対象: ${totals.days}日 / 開催 ${totals.venueDays} / レース ${totals.races} / 艇 ${totals.boats} / 警告 ${totals.warnings}`,
@@ -757,8 +772,11 @@ async function cmdLoad(opts) {
       arr.slice(i * n, i * n + n),
     );
   const summary = { written: 0, unchanged: 0, failedDays: 0 };
-  for (const { date, rows } of perDay) {
+  let processedDays = 0;
+  for (const date of dates) {
     if (loaded.has(date) && !opts.force) continue;
+    processedDays++;
+    const rows = buildArchiveRows(readParsedDay(opts.archiveDir, date));
     let dayFailed = false;
     const put = async (spec, list, perStmt) => {
       for (const part of chunk(list, perStmt)) {
@@ -791,8 +809,12 @@ async function cmdLoad(opts) {
       boats: rows.boats.length,
     });
   }
-  console.log(`\nload: ${JSON.stringify(summary)}`);
+  console.log(`\nload: ${JSON.stringify(summary)}（処理 ${processedDays}日 / 投入済みスキップ ${dates.length - processedDays}日）`);
   if (summary.failedDays > 0) return 1;
+  if (processedDays === 0) {
+    console.log("対象は全て投入済みです（再投入は --force）");
+    return 0;
+  }
   // 0件書き込みを成功扱いにしない（全て変更なしの再実行は unchanged>0 で成功）
   if (summary.written + summary.unchanged === 0 && totals.boats > 0) {
     console.error("書き込みも変更なしの判定も0件でした。異常として扱います");

@@ -35,7 +35,9 @@ import {
   buildArchiveRows,
   raceTimeToSeconds,
   classifyStage,
+  KB_ARCHIVE_TABLES,
 } from "../lib/kbArchiveRows.js";
+import { upsertChangedRows } from "../lib/unchangedRows.js";
 import { parseKFileText, parseKFileRankings } from "../lib/kfileParser.js";
 import {
   parseWindow,
@@ -553,9 +555,13 @@ for (const d of DAYS) {
   // 403の連続は2回で即停止
   let dir = path.join(tmp, "a");
   let calls = 0;
+  const sleeps = [];
   let code = await quiet(() =>
     cmdDownload(base(dir), {
       ...noSleep,
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      },
       fetchOnce: async () => (
         calls++,
         { status: 403, bytes: new Uint8Array(), ms: 1 }
@@ -566,6 +572,11 @@ for (const d of DAYS) {
     "サーキットブレーカー: 403が2回連続で停止（終了コード4・リクエスト2回）",
     code === 4 && calls === 2,
     `code=${code} calls=${calls}`,
+  );
+  check(
+    "403の再試行でも最小間隔（3秒以上）を空ける",
+    sleeps.length === 1 && sleeps[0] >= 3000 && sleeps[0] <= 5000,
+    JSON.stringify(sleeps),
   );
 
   // 503は3回連続で停止（バックオフを挟んで再試行）
@@ -591,9 +602,23 @@ for (const d of DAYS) {
   // Kが404の日はBを取得しない（skipped）。404が3回連続したら、URL構造の変更・アクセス制限の疑いで停止する
   dir = path.join(tmp, "c");
   calls = 0;
-  code = await quiet(() => cmdDownload(base(dir, { to: "2019-04-05" }), { ...noSleep, fetchOnce: async () => (calls++, { status: 404, bytes: new Uint8Array(200), ms: 1 }) }));
+  code = await quiet(() =>
+    cmdDownload(base(dir, { to: "2019-04-05" }), {
+      ...noSleep,
+      fetchOnce: async () => (
+        calls++,
+        { status: 404, bytes: new Uint8Array(200), ms: 1 }
+      ),
+    }),
+  );
   const m = manifestOf(dir);
-  check("K不在日: Bは取得せず skipped。404が3回連続で停止（終了コード4・リクエスト3回）", calls === 3 && m.filter((e) => e.status === "skipped").length === 2 && code === 4, `code=${code} calls=${calls}`);
+  check(
+    "K不在日: Bは取得せず skipped。404が3回連続で停止（終了コード4・リクエスト3回）",
+    calls === 3 &&
+      m.filter((e) => e.status === "skipped").length === 2 &&
+      code === 4,
+    `code=${code} calls=${calls}`,
+  );
 
   // Bは、有効なLZHなら保存される（sha256・ファイル）。Kのプレースホルダは保存しない
   dir = path.join(tmp, "d");
@@ -689,6 +714,77 @@ for (const d of DAYS) {
   );
 
   fs.rmSync(tmp, { recursive: true, force: true });
+}
+
+// --- 9. load の書き込み経路（メモリ上の偽クライアント。本番DBには接続しない） ---
+{
+  const store = new Map(); // table -> Map(key -> row)
+  const fake = {
+    from(table) {
+      if (!store.has(table)) store.set(table, new Map());
+      const rows = store.get(table);
+      return {
+        select: () => ({
+          in: async (col, ids) => ({
+            data: [...rows.values()].filter((r) => ids.includes(r[col])),
+            error: null,
+          }),
+        }),
+        upsert: async (batch, { onConflict }) => {
+          const keys = onConflict.split(",");
+          for (const r of batch)
+            rows.set(keys.map((k) => r[k]).join("|"), { ...r });
+          return { error: null };
+        },
+      };
+    },
+  };
+  const day = buildArchiveRows(days["2026-03-15"]);
+  const writeAll = async () => {
+    const out = { written: 0, skipped: 0 };
+    for (const [spec, list] of [
+      [KB_ARCHIVE_TABLES.venueDays, day.venueDays],
+      [KB_ARCHIVE_TABLES.races, day.races],
+      [KB_ARCHIVE_TABLES.boats, day.boats],
+    ]) {
+      for (let i = 0; i < list.length; i += 200) {
+        const r = await upsertChangedRows(
+          fake,
+          spec.table,
+          list.slice(i, i + 200),
+          {
+            onConflict: spec.onConflict,
+            keyColumns: spec.keyColumns,
+            chunkColumn: spec.chunkColumn,
+            batchSize: 200,
+          },
+        );
+        out.written += r.written;
+        out.skipped += r.skipped;
+      }
+    }
+    return out;
+  };
+  const quietLog = console.log;
+  console.log = () => {};
+  const first = await writeAll();
+  const second = await writeAll();
+  console.log = quietLog;
+  check(
+    "load: 初回は全行（開催2＋レース24＋艇144）を書き込む",
+    first.written === 170 && first.skipped === 0,
+    JSON.stringify(first),
+  );
+  check(
+    "load: 再実行は変更なしの行を書かない（書き込み0・スキップ170）",
+    second.written === 0 && second.skipped === 170,
+    JSON.stringify(second),
+  );
+  check(
+    "load: 主キー（race_id, boat_number）で重複せず144艇が保存される",
+    store.get("kb_archive_boats").size === 144 &&
+      store.get("kb_archive_venue_days").size === 2,
+  );
 }
 
 if (failures > 0) {
