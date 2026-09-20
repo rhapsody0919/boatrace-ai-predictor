@@ -43,6 +43,19 @@ export function isOddsRefreshSkippedOnGha(env = process.env) {
 }
 
 /**
+ * GitHub Actions 側で、オッズ取得そのものを止めるか（SKIP_ODDS_ON_GHA。T4b-04。Vercel の api/cron/odds.js が担う）。
+ *
+ * オッズ取得を止めると、オッズ起点の再計算のきっかけも消える（oddsRaceIds が空になる）。そのため、切り替えの順序は、
+ * REFRESH_ON_VERCEL=true と SKIP_ODDS_REFRESH_ON_GHA=true（案1）が先。案1が有効でないまま止めると、展示・気象の変更を
+ * 起点にする再計算がどこにも無い空白になる（scrape-scheduled.js は、その状態を警告ログに出す）。
+ * 順序: 案1の有効化 → Vercel の odds を shadow → live → SKIP_ODDS_ON_GHA=true。切り戻しは逆順
+ * （SKIP_ODDS_ON_GHA=false → Vercel の odds を off。オッズ起点の再計算を戻すなら SKIP_ODDS_REFRESH_ON_GHA=false）
+ */
+export function isOddsSkippedOnGha(env = process.env) {
+  return isTrue(env.SKIP_ODDS_ON_GHA);
+}
+
+/**
  * GitHub Actions（scrape-scheduled.js）の、再計算の対象レースを集める。
  * オッズ起点は、skipOddsRefresh が true のとき外す（レース情報更新・GitHub側で行った展示の更新は残す）。
  *
