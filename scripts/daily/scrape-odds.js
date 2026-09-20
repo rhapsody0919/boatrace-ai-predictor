@@ -28,6 +28,9 @@ import {
   parseRangeOddsValue,
 } from "../lib/oddsParser.js";
 import { latestByRaceId } from "../lib/latestByRaceId.js";
+import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
+import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
+import { computeOddsDigest } from "../lib/scrapeJobs/oddsDigest.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -37,8 +40,12 @@ const FETCH_HEADERS = {
   "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
 };
 
+// 既定の取得（グローバルの fetch）。Vercel Cron のスロット消化では、politeFetch（タイムアウト・429/503の
+// バックオフ・ブレーカー込み）を fetchFn として差し込む
+const defaultFetch = (url) => fetch(url, { headers: FETCH_HEADERS });
+
 // 全通り系（jsonb）列。ADR-0054/0057
-const FULL_ODDS_KEYS = [
+export const FULL_ODDS_KEYS = [
   "trifecta_all",
   "trio_all",
   "exacta_all",
@@ -195,7 +202,65 @@ async function parseFullOddsCombinations(
 }
 
 /**
- * 1レースの単勝・3連単・（wantFull時）全通り系オッズを取得
+ * 解析結果（fetchOddsDetailed の data）から、race_odds の全通り系（jsonb）列だけを取り出す。
+ * 取得できなかった券種（null）は含めない
+ *
+ * @param {{trifectaAll?: Object|null, trioAll?: Object|null, exactaAll?: Object|null, quinellaAll?: Object|null, wideAll?: Object|null}} data
+ * @returns {Object}
+ */
+export function fullOddsPatchOf(data) {
+  return {
+    ...(data.trifectaAll ? { trifecta_all: data.trifectaAll } : {}),
+    ...(data.trioAll ? { trio_all: data.trioAll } : {}),
+    ...(data.exactaAll ? { exacta_all: data.exactaAll } : {}),
+    ...(data.quinellaAll ? { quinella_all: data.quinellaAll } : {}),
+    ...(data.wideAll ? { wide_all: data.wideAll } : {}),
+  };
+}
+
+/**
+ * race_odds の基本オッズ（単勝・複勝・3連単人気3位）の行を組み立てる。
+ * 基本オッズは既存列のみで完結するため、全通り系（新規4列＋trifecta_all）とは別のupsertで書き込む
+ * （run() の従来の書き込み）。runForRaces（Vercel）は、基本オッズと全通り系を1行にまとめて書く
+ *
+ * @param {string} raceId
+ * @param {string} capturedAt ISO文字列
+ * @param {{winOdds: Array<number|null>, placeOdds: Array<{low: number, high: number}|null>, trifecta: Array<{combination: string|null, odds: number|null}>}} data
+ */
+export function buildBaseRow(raceId, capturedAt, data) {
+  const { winOdds, placeOdds, trifecta } = data;
+  return {
+    race_id: raceId,
+    captured_at: capturedAt,
+    odds_win_1: winOdds[0] ?? null,
+    odds_win_2: winOdds[1] ?? null,
+    odds_win_3: winOdds[2] ?? null,
+    odds_win_4: winOdds[3] ?? null,
+    odds_win_5: winOdds[4] ?? null,
+    odds_win_6: winOdds[5] ?? null,
+    odds_place_1_low: placeOdds[0]?.low ?? null,
+    odds_place_1_high: placeOdds[0]?.high ?? null,
+    odds_place_2_low: placeOdds[1]?.low ?? null,
+    odds_place_2_high: placeOdds[1]?.high ?? null,
+    odds_place_3_low: placeOdds[2]?.low ?? null,
+    odds_place_3_high: placeOdds[2]?.high ?? null,
+    odds_place_4_low: placeOdds[3]?.low ?? null,
+    odds_place_4_high: placeOdds[3]?.high ?? null,
+    odds_place_5_low: placeOdds[4]?.low ?? null,
+    odds_place_5_high: placeOdds[4]?.high ?? null,
+    odds_place_6_low: placeOdds[5]?.low ?? null,
+    odds_place_6_high: placeOdds[5]?.high ?? null,
+    trifecta_popular_1: trifecta[0]?.combination ?? null,
+    trifecta_odds_1: trifecta[0]?.odds ?? null,
+    trifecta_popular_2: trifecta[1]?.combination ?? null,
+    trifecta_odds_2: trifecta[1]?.odds ?? null,
+    trifecta_popular_3: trifecta[2]?.combination ?? null,
+    trifecta_odds_3: trifecta[2]?.odds ?? null,
+  };
+}
+
+/**
+ * 1レースの単勝・3連単・（wantFull時）全通り系オッズを取得し、結果の種別つきで返す
  *
  * 基本(単勝/3連単)・全通り系(3連複/2連単/2連複/拡連複)の最大5URLを
  * 1回のPromise.allSettledで同時fetchする（旧実装は2波に分かれ逐次実行だった。
@@ -209,13 +274,27 @@ async function parseFullOddsCombinations(
  * まで巻き込んでレース全体を失敗扱いにしないため（Promise.allだと1つの
  * rejectで全体がrejectする）
  *
+ * status（Vercel Cron のスロットの outcome と対応）:
+ *   ok            単勝が解析でき、wantFull なら全通り系5列も全て取得できた
+ *   partial       単勝は解析できたが、全通り系のいずれかが取得・解析できなかった（missing に列名）
+ *   no_values     単勝ページは取得できたが、有効な単勝オッズが1件も無い（未公開・中止・順延の可能性）
+ *   error         単勝ページの取得に失敗した（HTTP非200・通信エラー）、または解析中の想定外の例外
+ *   breaker_open  サーキットブレーカーが開いていて取得しなかった（retryAt まで待つ）
+ *
  * @param {string} date - YYYY-MM-DD
  * @param {number} venueCode - 会場コード (1-24)
  * @param {number} raceNo - レース番号 (1-12)
- * @param {boolean} wantFull - true なら3連単・3連複・2連単・2連複・拡連複の全通りもパースして返す（ADR-0057）
- * @returns {Promise<{winOdds: Array, trifecta: Array, trifectaAll: Object|null, trioAll: Object|null, exactaAll: Object|null, quinellaAll: Object|null, wideAll: Object|null}|null>}
+ * @param {Object} [options]
+ * @param {boolean} [options.wantFull] - true なら3連単・3連複・2連単・2連複・拡連複の全通りもパースして返す（ADR-0057）
+ * @param {(url: string) => Promise<Response>} [options.fetchFn] - 取得関数（既定はグローバルの fetch）
+ * @returns {Promise<{status: "ok"|"partial"|"no_values"|"error"|"breaker_open", data: {winOdds: Array, placeOdds: Array, trifecta: Array, trifectaAll: Object|null, trioAll: Object|null, exactaAll: Object|null, quinellaAll: Object|null, wideAll: Object|null}|null, missing: string[], error?: string, retryAt?: Date}>}
  */
-async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
+export async function fetchOddsDetailed(
+  date,
+  venueCode,
+  raceNo,
+  { wantFull = false, fetchFn = defaultFetch } = {},
+) {
   const ymd = date.replace(/-/g, "");
   const jcd = String(venueCode).padStart(2, "0");
   // urls/keysは同じ順序で対応させる。settled配列へのアクセスは必ずkeys経由の
@@ -235,8 +314,9 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
   const keys = Object.keys(urlByKey);
 
   try {
+    // fetchFn が同期的に例外を投げても、他のURLの取得を巻き込まないよう Promise にそろえる
     const settled = await Promise.allSettled(
-      keys.map((k) => fetch(urlByKey[k], { headers: FETCH_HEADERS })),
+      keys.map((k) => Promise.resolve().then(() => fetchFn(urlByKey[k]))),
     );
     const bySettled = Object.fromEntries(keys.map((k, i) => [k, settled[i]]));
     const okResponse = (s) =>
@@ -265,7 +345,22 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
       console.error(
         `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R 単勝オッズ取得失敗 ${settledDetail(bySettled.win)}`,
       );
-      return null;
+      const s = bySettled.win;
+      if (s.status === "rejected" && s.reason instanceof BreakerOpenError) {
+        return {
+          status: "breaker_open",
+          data: null,
+          missing: [],
+          error: s.reason.message,
+          retryAt: new Date(s.reason.until),
+        };
+      }
+      return {
+        status: "error",
+        data: null,
+        missing: [],
+        error: `単勝オッズ取得失敗 ${settledDetail(s)}`,
+      };
     }
 
     const $win = cheerio.load(await winRes.text());
@@ -285,8 +380,10 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
       }
     }
 
-    // 有効な単勝オッズが1件もなければ null
-    if (!winOdds.some((o) => o !== null)) return null;
+    // 有効な単勝オッズが1件もなければ、未公開（null）
+    if (!winOdds.some((o) => o !== null)) {
+      return { status: "no_values", data: null, missing: [] };
+    }
 
     let trioAll = null;
     let exactaAll = null;
@@ -303,7 +400,7 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
         ));
     }
 
-    return {
+    const data = {
       winOdds,
       placeOdds,
       trifecta,
@@ -313,12 +410,27 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
       quinellaAll,
       wideAll,
     };
+    const patch = fullOddsPatchOf(data);
+    const missing = wantFull ? FULL_ODDS_KEYS.filter((k) => !(k in patch)) : [];
+    return { status: missing.length > 0 ? "partial" : "ok", data, missing };
   } catch (err) {
     console.error(
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R オッズ取得エラー: ${err.message}`,
     );
-    return null;
+    return { status: "error", data: null, missing: [], error: err.message };
   }
+}
+
+/**
+ * 1レースの単勝・3連単・（wantFull時）全通り系オッズを取得（run() 用。取得できなければ null）
+ *
+ * @returns {Promise<{winOdds: Array, placeOdds: Array, trifecta: Array, trifectaAll: Object|null, trioAll: Object|null, exactaAll: Object|null, quinellaAll: Object|null, wideAll: Object|null}|null>}
+ */
+async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
+  const { data } = await fetchOddsDetailed(date, venueCode, raceNo, {
+    wantFull,
+  });
+  return data;
 }
 
 // フォールバックとして許容する最古のスナップショット年齢（分）。ODDS_WINDOWSの
@@ -328,11 +440,47 @@ async function fetchOddsForRace(date, venueCode, raceNo, wantFull = false) {
 const MAX_FALLBACK_AGE_MINUTES = 75;
 
 /**
+ * 0分窓（締切時点）で全通り系の一部が欠けたレースについて、直近の成功スナップショットの行から、
+ * 該当列を補完するパッチを選ぶ（純粋関数。ADR-0057のフォールバック設計）。
+ * 取得できなかった券種をエラーとして握りつぶさず、直前の値を実質的な最終値として扱う。
+ *
+ * @param {Map<string, Object>} patchesByRaceId - race_id -> 今回のスナップショット行（欠けている全通り系キーは未設定）
+ * @param {Array<Object>} snapshotRows - race_odds の行（captured_at の降順。race_id, captured_at と全通り系列を持つ）
+ * @returns {Map<string, Object>} race_id -> 補完できた列のみを持つオブジェクト
+ */
+export function pickFallbackPatches(patchesByRaceId, snapshotRows) {
+  const latestSnapshotByRaceId = latestByRaceId(snapshotRows);
+
+  const result = new Map();
+  for (const { raceId, missingKeys } of missingFullKeysByRace(
+    patchesByRaceId,
+  )) {
+    const latest = latestSnapshotByRaceId.get(raceId);
+    if (!latest) continue;
+    const fallback = {};
+    for (const key of missingKeys) {
+      if (latest[key]) fallback[key] = latest[key];
+    }
+    if (Object.keys(fallback).length > 0) result.set(raceId, fallback);
+  }
+
+  return result;
+}
+
+/** 全通り系が1つでも欠けているレースと、欠けている列名 */
+function missingFullKeysByRace(patchesByRaceId) {
+  return [...patchesByRaceId.entries()]
+    .map(([raceId, row]) => ({
+      raceId,
+      missingKeys: FULL_ODDS_KEYS.filter((k) => !(k in row)),
+    }))
+    .filter((t) => t.missingKeys.length > 0);
+}
+
+/**
  * 0分窓（締切時点）で全通り系の一部が欠けたレースをまとめて、直近の成功
  * スナップショットから該当列を補完する（ADR-0057のフォールバック設計）。
- * 取得できなかった券種をエラーとして握りつぶさず、直前の値を実質的な
- * 最終値として扱う。ただしMAX_FALLBACK_AGE_MINUTESより古いスナップショット
- * は採用しない。
+ * ただしMAX_FALLBACK_AGE_MINUTESより古いスナップショットは採用しない。
  *
  * レースごとに逐次awaitでSupabaseへ問い合わせるN+1呼び出しを避けるため、
  * 対象レースIDをまとめて1回の.in()クエリで取得する（BOA-341）。
@@ -345,12 +493,7 @@ const MAX_FALLBACK_AGE_MINUTES = 75;
  * @returns {Promise<Map<string, Object>>} race_id -> 補完できた列のみを持つオブジェクト
  */
 async function fillMissingFullOddsFromLatestSnapshots(patchesByRaceId) {
-  const targets = [...patchesByRaceId.entries()]
-    .map(([raceId, row]) => ({
-      raceId,
-      missingKeys: FULL_ODDS_KEYS.filter((k) => !(k in row)),
-    }))
-    .filter((t) => t.missingKeys.length > 0);
+  const targets = missingFullKeysByRace(patchesByRaceId);
 
   if (targets.length === 0) return new Map();
 
@@ -377,20 +520,7 @@ async function fillMissingFullOddsFromLatestSnapshots(patchesByRaceId) {
     data.push(...rows);
   }
 
-  const latestSnapshotByRaceId = latestByRaceId(data);
-
-  const result = new Map();
-  for (const { raceId, missingKeys } of targets) {
-    const latest = latestSnapshotByRaceId.get(raceId);
-    if (!latest) continue;
-    const fallback = {};
-    for (const key of missingKeys) {
-      if (latest[key]) fallback[key] = latest[key];
-    }
-    if (Object.keys(fallback).length > 0) result.set(raceId, fallback);
-  }
-
-  return result;
+  return pickFallbackPatches(patchesByRaceId, data);
 }
 
 /**
@@ -469,16 +599,7 @@ export async function run(schedule, date) {
 
     for (const { r, data } of results) {
       if (!data) continue;
-      const {
-        winOdds,
-        placeOdds,
-        trifecta,
-        trifectaAll,
-        trioAll,
-        exactaAll,
-        quinellaAll,
-        wideAll,
-      } = data;
+      const { winOdds } = data;
 
       // 基本オッズ（単勝・複勝・3連単人気3位）は既存列のみで完結するため
       // 全通り系（新規4列＋trifecta_all）とは別のupsertで書き込む。
@@ -486,43 +607,12 @@ export async function run(schedule, date) {
       // 起きても基本オッズの保存には影響しない（2026-09-16実装時に、
       // 全窓全通り化で全レースが同一グループに入り、新規列欠如のエラー1件で
       // 基本オッズまで含めて全件保存されない回帰を実データで確認して分離した）
-      baseRows.push({
-        race_id: r.race_id,
-        captured_at: capturedAt,
-        odds_win_1: winOdds[0] ?? null,
-        odds_win_2: winOdds[1] ?? null,
-        odds_win_3: winOdds[2] ?? null,
-        odds_win_4: winOdds[3] ?? null,
-        odds_win_5: winOdds[4] ?? null,
-        odds_win_6: winOdds[5] ?? null,
-        odds_place_1_low: placeOdds[0]?.low ?? null,
-        odds_place_1_high: placeOdds[0]?.high ?? null,
-        odds_place_2_low: placeOdds[1]?.low ?? null,
-        odds_place_2_high: placeOdds[1]?.high ?? null,
-        odds_place_3_low: placeOdds[2]?.low ?? null,
-        odds_place_3_high: placeOdds[2]?.high ?? null,
-        odds_place_4_low: placeOdds[3]?.low ?? null,
-        odds_place_4_high: placeOdds[3]?.high ?? null,
-        odds_place_5_low: placeOdds[4]?.low ?? null,
-        odds_place_5_high: placeOdds[4]?.high ?? null,
-        odds_place_6_low: placeOdds[5]?.low ?? null,
-        odds_place_6_high: placeOdds[5]?.high ?? null,
-        trifecta_popular_1: trifecta[0]?.combination ?? null,
-        trifecta_odds_1: trifecta[0]?.odds ?? null,
-        trifecta_popular_2: trifecta[1]?.combination ?? null,
-        trifecta_odds_2: trifecta[1]?.odds ?? null,
-        trifecta_popular_3: trifecta[2]?.combination ?? null,
-        trifecta_odds_3: trifecta[2]?.odds ?? null,
-      });
+      baseRows.push(buildBaseRow(r.race_id, capturedAt, data));
 
-      const fullOddsPatch = {
-        ...(trifectaAll ? { trifecta_all: trifectaAll } : {}),
-        ...(trioAll ? { trio_all: trioAll } : {}),
-        ...(exactaAll ? { exacta_all: exactaAll } : {}),
-        ...(quinellaAll ? { quinella_all: quinellaAll } : {}),
-        ...(wideAll ? { wide_all: wideAll } : {}),
-      };
-      pendingFullOdds.push({ raceId: r.race_id, patch: fullOddsPatch });
+      pendingFullOdds.push({
+        raceId: r.race_id,
+        patch: fullOddsPatchOf(data),
+      });
 
       const winStr = winOdds
         .map((o, i) => (o !== null ? `${i + 1}号艇:${o}` : null))
@@ -603,6 +693,253 @@ export async function run(schedule, date) {
   }
 
   return { updated: true, count: baseRows.length };
+}
+
+/** race_odds.source に書く、Vercel（api/cron/odds.js）の識別子。GitHub Actions 側の行は既定値 'gha' */
+export const ODDS_SOURCE_VERCEL = "vercel";
+
+/** window_min の一意索引（マイグレーション075）。窓内の再試行が、同じ行を更新する */
+const ODDS_WINDOW_CONFLICT = "race_id,window_min";
+
+/** race_odds の行が、この窓の取得として完了しているか（単勝が1つ以上あり、全通り系5列がそろう） */
+export function isOddsRowComplete(row) {
+  if (!row) return false;
+  const hasWin = [1, 2, 3, 4, 5, 6].some(
+    (b) => row[`odds_win_${b}`] !== null && row[`odds_win_${b}`] !== undefined,
+  );
+  return hasWin && FULL_ODDS_KEYS.every((k) => row[k]);
+}
+
+/**
+ * 既存の行の値を、新しい行の null を埋めるために引き継ぐ（COALESCE。新しい値が非nullなら新しい値）。
+ * 窓内の再試行で、一部のページの取得に失敗した場合に、前回の試行で取れていた値を null で
+ * 上書きして失うのを避ける（同じ行を更新するため）
+ */
+function coalesceRow(fresh, existing) {
+  if (!existing) return fresh;
+  const merged = { ...fresh };
+  for (const [key, value] of Object.entries(fresh)) {
+    if ((value === null || value === undefined) && existing[key] != null) {
+      merged[key] = existing[key];
+    }
+  }
+  return merged;
+}
+
+/**
+ * レース×窓の入口（Vercel Cron のスロット消化から呼ぶ。T4b-04-1）。
+ *
+ * run（GitHub Actions・CLIの入口）と、解析（fetchOddsDetailed）・行の組み立て（buildBaseRow・fullOddsPatchOf）・
+ * 0分窓のフォールバック（pickFallbackPatches）を共有する。違いは次のとおり:
+ *   - 取得は fetchFn（Vercel では politeFetch 経由）で行い、会場直列・会場間の待機は無い。レース単位に concurrency で
+ *     並列にする（各レースの5ページは並列）
+ *   - 対象は、races のうち window_min（0〜-60）が決まっているスロット。全窓で全券種の全通りを取る（ADR-0057 FR-4）
+ *   - 書き込みは、基本オッズと全通り系を1行にまとめ、race_id,window_min の一意索引で upsert する
+ *     （source='vercel'・window_min つき。窓内の再試行は同じ行を更新するため、行が増えない）
+ *   - 再試行（attempts>1）では、前回書いた同じ窓の行を読み、取れている列を null で上書きしない。既にその窓の
+ *     行が完了していれば、取得せずに skipped_have_data で終える
+ *   - mode="shadow" は、取得・解析のみで、race_odds へ一切書かない（result_digest に、構造のダイジェストを返す。
+ *     再試行の既存行も読まない）
+ *
+ * 各レースの outcome（scrape_slots.outcome と同じ語彙）:
+ *   ok                完了（単勝と全通り系5券種がそろった。0分窓は直近のスナップショットからの補完を含む）
+ *   partial           単勝は取れたが、全通り系の一部が未取得（live では、取れた分を書き込み済み）。再試行する
+ *   no_values         単勝が未公開・解析不能（中止・順延の可能性）。再試行する
+ *   skipped_have_data （live のみ）この窓の行が既に完了している
+ *   error             取得（HTTP・ネットワーク）・書き込みの失敗。再試行する
+ *   breaker_open      サーキットブレーカーが開いていた。retryAt まで再試行を遅らせる
+ *
+ * @param {Array<{race_id: string, venue_code: number, race_number: number, window_min: number, attempts?: number}>} races
+ * @param {Object} options
+ * @param {string} options.date YYYY-MM-DD（オッズページの日付）
+ * @param {"live"|"shadow"} [options.mode]
+ * @param {(url: string) => Promise<Response>} [options.fetchFn] 既定はグローバルの fetch
+ * @param {import("@supabase/supabase-js").SupabaseClient} [options.client]
+ * @param {number} [options.concurrency]
+ * @param {() => Date} [options.now]
+ * @returns {Promise<Array<{race_id: string, outcome: string, rowsWritten: number, rowsParsed: number, rowsExpected: number, resultDigest?: string, missing?: string[], error?: string, retryAt?: Date}>>}
+ */
+export async function runForRaces(
+  races,
+  {
+    date,
+    mode = "live",
+    fetchFn = defaultFetch,
+    client = supabase,
+    concurrency = 1,
+    now = () => new Date(),
+  } = {},
+) {
+  if (mode !== "live" && mode !== "shadow") {
+    throw new Error(`mode は live か shadow にしてください: ${mode}`);
+  }
+  if (!date) throw new Error("date（YYYY-MM-DD）が必要です");
+  for (const race of races) {
+    if (!Number.isInteger(race.window_min)) {
+      throw new Error(
+        `window_min（整数）が必要です: ${race.race_id} ${String(race.window_min)}`,
+      );
+    }
+  }
+  const live = mode === "live";
+  /** @type {Map<string, Object>} */
+  const outcomes = new Map();
+  const base = { rowsWritten: 0, rowsParsed: 0, rowsExpected: 1 };
+
+  // 1) live・再試行のレース: 前回書いた同じ窓の行を読む（値の引き継ぎ・完了済みの判定）
+  const existing = new Map(); // `${race_id}|${window_min}` -> 行
+  const keyOf = (race) => `${race.race_id}|${race.window_min}`;
+  const retryRaces = races.filter((r) => (r.attempts ?? 1) > 1);
+  if (live && retryRaces.length > 0) {
+    const { data, error } = await client
+      .from("race_odds")
+      .select("*")
+      .in("race_id", [...new Set(retryRaces.map((r) => r.race_id))])
+      .in("window_min", [...new Set(retryRaces.map((r) => r.window_min))]);
+    if (error) {
+      throw new Error(`オッズの既存行の取得に失敗しました: ${error.message}`);
+    }
+    for (const row of data ?? []) {
+      existing.set(`${row.race_id}|${row.window_min}`, row);
+    }
+  }
+  for (const race of retryRaces) {
+    if (live && isOddsRowComplete(existing.get(keyOf(race)))) {
+      outcomes.set(keyOf(race), { ...base, outcome: "skipped_have_data" });
+    }
+  }
+
+  // 2) 取得・解析（1つの失敗で他のレースを止めない）
+  /** @type {Array<{race: Object, detail: Awaited<ReturnType<typeof fetchOddsDetailed>>}>} */
+  const fetched = [];
+  await mapWithConcurrency(
+    races.filter((race) => !outcomes.has(keyOf(race))),
+    concurrency,
+    async (race) => {
+      const detail = await fetchOddsDetailed(
+        date,
+        race.venue_code,
+        race.race_number,
+        { wantFull: true, fetchFn },
+      );
+      if (detail.status === "breaker_open") {
+        outcomes.set(keyOf(race), {
+          ...base,
+          outcome: "breaker_open",
+          retryAt: detail.retryAt,
+          error: detail.error,
+        });
+      } else if (detail.status === "error") {
+        outcomes.set(keyOf(race), {
+          ...base,
+          outcome: "error",
+          error: detail.error,
+        });
+      } else if (detail.status === "no_values") {
+        outcomes.set(keyOf(race), {
+          ...base,
+          outcome: "no_values",
+          error:
+            "単勝オッズを解析できませんでした（未公開・中止・順延の可能性）",
+        });
+      } else {
+        fetched.push({ race, detail });
+      }
+    },
+  );
+
+  // 3) 行の組み立て（基本オッズ＋全通り系を1行に。再試行は既存の値を引き継ぐ）
+  const capturedAt = now().toISOString();
+  const rows = new Map(); // race_id -> 行
+  for (const { race, detail } of fetched) {
+    const fresh = {
+      ...buildBaseRow(race.race_id, capturedAt, detail.data),
+      // 取得できなかった全通り系は null（一様なキーで upsert する。既存の値は下で引き継ぐ）
+      ...Object.fromEntries(FULL_ODDS_KEYS.map((k) => [k, null])),
+      ...fullOddsPatchOf(detail.data),
+      window_min: race.window_min,
+      source: ODDS_SOURCE_VERCEL,
+    };
+    rows.set(keyOf(race), coalesceRow(fresh, existing.get(keyOf(race))));
+  }
+
+  // 4) 0分（締切時点）窓: 全通り系の欠けを、直近のスナップショット（同じ窓の行を除く）から補完する（ADR-0057）
+  const fallbackTargets = new Map();
+  for (const { race } of fetched) {
+    if (race.window_min !== 0) continue;
+    const row = rows.get(keyOf(race));
+    const patch = Object.fromEntries(
+      FULL_ODDS_KEYS.filter((k) => row[k]).map((k) => [k, row[k]]),
+    );
+    if (Object.keys(patch).length < FULL_ODDS_KEYS.length) {
+      fallbackTargets.set(race.race_id, patch);
+    }
+  }
+  if (fallbackTargets.size > 0) {
+    const cutoffIso = new Date(
+      now().getTime() - MAX_FALLBACK_AGE_MINUTES * 60000,
+    ).toISOString();
+    const { data, error } = await client
+      .from("race_odds")
+      .select(`race_id, captured_at, window_min, ${FULL_ODDS_KEYS.join(", ")}`)
+      .in("race_id", [...fallbackTargets.keys()])
+      .gte("captured_at", cutoffIso)
+      .order("captured_at", { ascending: false });
+    if (error) {
+      throw new Error(
+        `オッズの補完用スナップショットの取得に失敗しました: ${error.message}`,
+      );
+    }
+    // 自分の窓（0分）の行は、部分的な前回の試行の可能性があるため、補完元にしない
+    const snapshots = (data ?? []).filter((r) => r.window_min !== 0);
+    for (const [raceId, fallback] of pickFallbackPatches(
+      fallbackTargets,
+      snapshots,
+    )) {
+      Object.assign(rows.get(`${raceId}|0`), fallback);
+    }
+  }
+
+  // 5) live: 書き込む。shadow: 書かない
+  let writeError = null;
+  if (live && rows.size > 0) {
+    const { error } = await client
+      .from("race_odds")
+      .upsert([...rows.values()], { onConflict: ODDS_WINDOW_CONFLICT });
+    if (error) writeError = error.message;
+  }
+
+  for (const { race } of fetched) {
+    const row = rows.get(keyOf(race));
+    const missing = FULL_ODDS_KEYS.filter((k) => !row[k]);
+    const common = {
+      ...base,
+      rowsParsed: 1,
+      resultDigest: computeOddsDigest(row),
+      missing,
+    };
+    if (writeError) {
+      outcomes.set(keyOf(race), {
+        ...common,
+        outcome: "error",
+        error: `オッズの書き込みに失敗しました: ${writeError}`,
+      });
+      continue;
+    }
+    outcomes.set(keyOf(race), {
+      ...common,
+      rowsWritten: live ? 1 : 0,
+      outcome: missing.length === 0 ? "ok" : "partial",
+      ...(missing.length > 0
+        ? { error: `全通り系が未取得です: ${missing.join(",")}` }
+        : {}),
+    });
+  }
+
+  return races.map((race) => ({
+    race_id: race.race_id,
+    ...outcomes.get(keyOf(race)),
+  }));
 }
 
 /**
