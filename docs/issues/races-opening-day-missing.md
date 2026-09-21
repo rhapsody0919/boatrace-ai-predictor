@@ -1,6 +1,6 @@
 # racesテーブルで節の初日の会場日が欠ける問題（調査・修復案）
 
-調査日: 2026-09-21。本番DBへの書き込み・DDLは行っていない（読み取りSQLと公式サイトの閲覧のみ）。欠けた会場日の一覧は [`data/analysis/races-opening-day-missing/missing-venue-days.json`](../../data/analysis/races-opening-day-missing/missing-venue-days.json)。
+調査日: 2026-09-21。調査は読み取りSQLと公式サイトの閲覧のみ。修復（§9）は、ユーザー承認（方式A・予想は生成しない）のうえ、2026-09-21〜22に本番へ書き込んだ。DDLは無い。欠けた会場日の一覧は [`data/analysis/races-opening-day-missing/missing-venue-days.json`](../../data/analysis/races-opening-day-missing/missing-venue-days.json)。
 
 ## 1. 結論
 
@@ -144,3 +144,49 @@ flowchart TD
 - 節の初日: `scripts/lib/monthlyScheduleParser.js`（`parseMonthlySchedule`→`mergeMonthlySchedules`、ブランチ`worktree-agent-a238125c073c20945`にあり、masterには未反映）で12ページから843節を確定。未確定23節は範囲外の端のみ。
 - 突き合わせ: 節ごとの(venue_code, 開始日〜終了日)を展開し、`races`の`(race_date, venue_code)`の`distinct`と左結合。
 - 公式サイトへのアクセスは20回（月間スケジュール12・中止確認2・過去日ページ4・K/B 2）。UA`BoatraceAIBot/1.0`、逐次3.5秒間隔、403/429/503は0回。
+
+## 9. 修復の実施結果（2026-09-21 21:03〜09-22 08:37 JST）
+
+方式A（公式サイトの過去日ページ）で、予想は生成せずに補った。CLIは`scripts/maintenance/backfill-opening-day-races.js`（既定dry-run、`--apply`で書き込み。取得・書き込みは日次・Vercel Cronと共有する`runForRaces`3本）。検証は`npm run verify:opening-day-backfill`。
+
+### 9.1 実施内容
+
+| 項目 | 内容 |
+|---|---|
+| 対象 | 欠落リストの125会場日（2026-04-10〜09-11） |
+| 事前 | dry-runで125会場日の出走表（1R）を取得: 全件12レース分の出走表あり（中止・未公開0件）。日目を読めなかったのは6/3の2会場日のみ |
+| 先行 | 住之江2026-09-01の1会場日を先に書き込み、件数・画面（レース詳細、コンソールエラー0件）・Kファイルとの突き合わせを確認 |
+| 全件 | 125会場日すべて`done`（失敗0）。リクエスト4,464（1会場日36）、403/429/503は0回。所要は約11.5時間（取得器の間隔3.5秒に加え、書き込みと同時稼働のK/Bバックフィルの影響） |
+| 記録 | `data/analysis/races-opening-day-missing/backfill-report.json`（会場日ごとの状態・件数・段階別の集計） |
+
+### 9.2 本番の実測（完了の定義A）
+
+125会場日（1,500レース）について、`races`との突き合わせで確認した。
+
+| テーブル | 実測 | 期待 | 備考 |
+|---|---:|---:|---|
+| races | 1,500 | 1,500 | 125会場日すべてに存在。`start_time`のNULLは0 |
+| race_entries | 9,000 | 9,000 | 全レース6艇、`racer_id`のNULLは0 |
+| race_conditions | 1,500 | 1,500 | 気象のNULLは2 |
+| exhibition_data | 8,856 | 8,856 | 1,476レース×6艇。展示タイムNULLは9艇 |
+| race_results | 1,476 | 1,476 | 通常1,436・返還あり（`partial_refund`）40 |
+| race_payouts | 14,747 | — | |
+| race_start_timings | 8,856 | 8,856 | |
+| predictions | 0 | 0（生成しない） | |
+
+- 期待の分母からは、**開催されていない2会場日（下記9.3）の24レース**を除いた（結果・展示が無いのは、この24レースのみ）。充足率は100%。
+- **Kファイルとの突き合わせ**（独立の別経路）: 住之江2026-09-01の全12レースで、着順（1〜3着）・3連単・3連複の払戻が一致した。
+- 払戻の列名`payout_trifecta`（3連複）・`payout_trio`（3連単）は、既知の取り違え仕様（[`trifecta-trio-naming-swap.md`](./trifecta-trio-naming-swap.md)）どおり。
+
+### 9.3 欠落リストの2件は、実際には開催されていなかった
+
+2026-06-03の江戸川（3）と蒲郡（7）は、公式の月間スケジュールでは6/3が節の初日だが、公式の`raceindex`は「6月3日順延（江戸川）」「6月3日中止（蒲郡）」「6月4日初日」と表示する。**実際の初日は6/4**で、6/4の`races`は元々存在した。したがって欠落125件のうち、真の取りこぼしは**123件**。
+
+出走表のページには当日のレースが載っていたため、この2会場日は結果・展示が無いまま`races`・`race_entries`・`race_conditions`が作られた。既存の中止確定の処理（`confirmCancellationsForRaceIds`、BOA-254）で、24レースを`cancellation_status='confirmed'`にした（中止確定のレースは、完了の定義の分母から除外される）。これらの日目（`series_day`）はNULL。
+
+### 9.4 補っていないもの（要判断ではなく、方針どおり）
+
+- `predictions`・オッズ・`scrape_slots`は、生成・取得していない。`races`の`volatility_*`・`first_boat_*`はNULL（予想側の値）。
+- `race_results.result_at`と各行の`created_at`は、バックフィルの実行時刻（取得時刻の意味では、実際に取得した時刻）。日付（`race_date`）が古く、`predictions`が無い行として区別できる。
+- 結果ページの想定外の着欄表記（例: 住之江2026-09-01 10Rの5号艇「不」）は、既存のパーサーの扱い（着順を付けない）のまま。今回の対象外。
+
