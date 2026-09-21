@@ -118,32 +118,39 @@ function scrapePlaceOdds($) {
 }
 
 /**
- * 3連単人気上位3つをスクレイプ
- * セレクタ: .is-p3-0 tbody tr（上位3行）
+ * 3連単の全通り（"1-2-3" -> オッズ）から、人気上位（オッズの低い順）の n 件を選ぶ（純粋関数）。
+ * 人気順はオッズの昇順（低いほど人気）。同じオッズは組番の昇順で並べ、結果を決定的にする。
  *
- * @param {CheerioAPI} $ - cheerio インスタンス
- * @returns {Array<{combination: string|null, odds: number|null}>}
+ * @param {Map<string, number>} trifectaMap parseTrifectaAll の返り値
+ * @param {number} [n]
+ * @returns {Array<{combination: string, odds: number}>}
  */
-function scrapeTrifectaOdds($) {
-  const trifecta = [];
-  $(".is-p3-0 tbody tr")
-    .slice(0, 3)
-    .each((i, row) => {
-      const cells = $(row).find("td");
-      const raw = $(cells[0]).text().trim();
-      // "1-2-3" 形式に正規化（全角ハイフン・スペース等を半角に）
-      const combination =
-        raw.replace(/[－ー−]/g, "-").replace(/\s+/g, "") || null;
-      const oddsText = $(cells[cells.length - 1])
-        .text()
-        .trim();
-      const odds = parseFloat(oddsText);
-      trifecta.push({
-        combination,
-        odds: isNaN(odds) ? null : odds,
-      });
-    });
-  return trifecta;
+export function topTrifectaByOdds(trifectaMap, n = 3) {
+  const compareBoats = (a, b) => {
+    const pa = a.split("-").map(Number);
+    const pb = b.split("-").map(Number);
+    return pa[0] - pb[0] || pa[1] - pb[1] || pa[2] - pb[2];
+  };
+  return [...trifectaMap.entries()]
+    .sort(([ka, oa], [kb, ob]) => oa - ob || compareBoats(ka, kb))
+    .slice(0, n)
+    .map(([combination, odds]) => ({ combination, odds }));
+}
+
+/**
+ * 3連単人気上位3つを、odds3t の全通りの表から求める。
+ *
+ * 公式の odds3t ページに「人気順」の表は無い（2026-09-21に実ページとフィクスチャで確認。ページの表は、
+ * 1着艇ごとに6セクションを横に並べた120通りの組番順のグリッド1つだけ）。旧実装は `.is-p3-0 tbody tr` を
+ * 探していたが、`is-p3-0` はそのグリッドの <tbody> 自身のクラスで、内側に <tbody> は無いため、常に0件に
+ * なり、trifecta_popular_*・trifecta_odds_* が全行で NULL だった。全通りのグリッド
+ * （oddsParser.parseTrifectaAll）から、オッズの低い順に3件選ぶ。
+ *
+ * @param {CheerioAPI} $ - odds3t ページの cheerio インスタンス
+ * @returns {Array<{combination: string|null, odds: number|null}>} 最大3件（グリッドが取れなければ空）
+ */
+export function scrapeTrifectaOdds($) {
+  return topTrifectaByOdds(parseTrifectaAll($));
 }
 
 /**
@@ -372,11 +379,12 @@ export async function fetchOddsDetailed(
     let trifectaAll = null;
     if (trifRes) {
       const $trif = cheerio.load(await trifRes.text());
-      trifecta = scrapeTrifectaOdds($trif);
-      // 全通り捕捉ウィンドウ: 120通りをパース（EV分析用・BOA-104）
-      if (wantFull) {
-        const fullMap = parseTrifectaAll($trif);
-        if (fullMap.size > 0) trifectaAll = Object.fromEntries(fullMap);
+      // 120通りのグリッドを1回だけ解析し、人気上位3件（trifecta_popular_*）と全通り（trifecta_all）の両方に使う
+      const fullMap = parseTrifectaAll($trif);
+      trifecta = topTrifectaByOdds(fullMap);
+      // 全通り捕捉ウィンドウ: 120通りを保存（EV分析用・BOA-104）
+      if (wantFull && fullMap.size > 0) {
+        trifectaAll = Object.fromEntries(fullMap);
       }
     }
 
