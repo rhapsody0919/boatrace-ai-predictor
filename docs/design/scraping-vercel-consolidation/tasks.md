@@ -371,3 +371,35 @@
 - [ ] 継続監視: 閾値未達・0件のテーブルが日次で計測され、Slackへ通知されること（初回の実通知を確認）。監視自体の失敗（未実行・全関数の失敗・089の未適用）が、`scrape-monitor`（日次の期限超過・連続失敗）と、`scrape-monitor-liveness`（日次。`scrape-monitor`自体が止まっている場合）で検知されること
 
 **完了条件（G3）**: `morning-init`を含む全取得処理がVercelへ移行済みで、旧基盤を止めても本番データが欠けないことを実測で確認している。
+
+---
+
+## N23・N29: 前検タイムと日次の照合（トラックC。T4b-20・T4b-21。第1弾の追加項目）
+
+設計: [plan.md §15](./plan.md) / 手順: [verification-runbook.md](./verification-runbook.md) T / 既定は`off`（`scrape_job_state`に行を作らない）。本番のDDL・`mode`の変更・過去分の取得は、着手のたびにユーザーの承認が要る。
+
+### T4b-20 前検タイム・前検順位・節時点のモーター/ボート2連対率（N23）: `motor_pretest_stats`
+
+- [x] **T4b-20-1**（コード実装済み。`scripts/lib/motorPretestParser.js`・`motorPretestRows.js`・`motorPretestJob.js`・`api/cron/motor-pretest.js`・レジストリ`motor_pretest`・`vercel.json`のcron・`docs/db-migration/090_motor_pretest_stats.sql`（**未適用。ユーザー承認待ち**）・`scripts/maintenance/motor-pretest-backfill.js`。検証: `npm run verify:motor-pretest`。変異検証済み） 公式`race/rankingmotor`を、その日の開催会場ごとに1ページ取得し、前検タイム・前検順位（前検タイムから計算）・モーター/ボートの番号と2連対率を保存する日次ジョブと、過去分のCLI
+- [ ] **T4b-20-2** (ユーザー承認) マイグレーション090を本番へ適用する（APPLIED.mdの「未適用」を「適用済み」に更新）。適用前は、ジョブを`shadow`にしてよい（書かないため。`live`にすると、成功にせず失敗する）
+- [ ] **T4b-20-3** (ユーザー承認) `scrape_job_state`の`motor_pretest`を`shadow`にし、3日（土日を含む）、`last_report.summary`（期待した選手がページに載る割合・前検タイムの非NULL率）と`last_report.alerts`を確認する。**前提**: `races_init`が`live`（朝05:00に`races`が揃う）。runbook T-2
+- [ ] **T4b-20-4** (ユーザー承認) 090の適用後、`live`にする。翌朝の最初の書き込みを観測する（runbook T-3）
+- [ ] **T4b-20-5** (ユーザー承認) 過去分のバックフィル（2025-12-03〜。節の初日のみ703リクエスト、1夜、約2.7時間。CLIの`plan`→`download`（夜間）→`parse`→`load --apply`）。実行前に、CLIの`plan`の出力と範囲（`first-days`か`all-days`）を提示して承認を得る。取得先への負荷: 逐次・3秒以上・JST 00-06・日次上限1,500・サーキットブレーカー（ADR-0067）
+
+データ項目: `motor_pretest_stats`。取得できる情報は前検タイムのみが新規で、2連対率・番号は`race_entries`の低精度の重複（plan.md §15.1）。
+
+- [ ] 本番実測: 期待件数（算出根拠: `races`の会場×日ごとの、`race_entries`の（会場, 日付, 登録番号）のdistinct。確定中止のレースの選手は除き、除外した件数を報告。日次ジョブの稼働日は、全会場×日。過去分は、範囲に応じて、節の初日のみ（2025-12-03〜2026-09-20で703会場日）または全会場日（3,722）で、前者は「選手・会場ごとの直近の行が同じ節（8日以内）にある」割合で数える。SQLはrunbook T-4）に対し、過去分を含めて充足率99%以上であることを実測クエリで確認する。前検タイムの非NULL率も報告する。**過去の日次の2連対率は、遡って取得できるが、低精度の重複のため、初日のみ**とし、ユーザーの承認を得る
+- [ ] タイミング実測（**B基準は提案。ユーザーの承認前**）: 「D日の開催全会場×全出走選手の行が、D日07:00 JST（オッズの運用窓の開始）までに書かれている」割合を、土日を含む直近5日で実測する（`created_at`が07:00 JST以前の行の割合。欠落率2%以内）。前検の公開: 前日の夕方（2026-09-21 17:38 JSTの実測で、翌日初日の3会場の全選手の前検タイムが載っていた）。ページに載る時刻（前日の何時から）の実測は未了（runbook T-1）。SQLはrunbook T-4
+- [ ] 継続監視: 上記指標が日次で自動計測され（`scrape_job_state.last_report.summary`）、閾値超過（期待した選手がページに載っていない会場・前検タイムの非NULL率95%未満・構造変化2日連続・日次の未処理3時間）でSlack通知されることを確認する（runbook T-5）
+
+### T4b-21 日次の照合（N29）: 前日の結果・払戻・着順・進入を、DBとKファイルで突き合わせる
+
+- [x] **T4b-21-1**（コード実装済み。`scripts/lib/dailyReconcile.js`・`dailyReconcileJob.js`・`api/cron/daily-reconcile.js`・レジストリ`daily_reconcile`・`vercel.json`のcron・`raceResultAudit.js`の`kVenuesToRaceFacts`（進入・払戻明細を追加。既存の返り値は不変）。検証: `npm run verify:daily-reconcile`。変異検証済み。**新しい取得先・テーブルは無い**） 前日Dの1レースごとに、結果の有無・rank1〜6・払戻（旧15列と`race_payouts`）・進入を、Kファイル（別の公式ファイル）と突き合わせ、不一致（レースID・項目・DB値・K値）を`last_report`に上限30件で残し、閾値（1レース）以上で`alerts`に出す。Kが未取得・会場が未展開のものは「照合不能」、確定中止は「除外」、Kファイル同期の前の`rank4〜6`・進入は「同期待ち」として、不一致に混ぜない
+- [ ] **T4b-21-2** (ユーザー承認) `scrape_job_state`の`daily_reconcile`を`shadow`にし、3日（土日を含む）、`last_report`（`summary`・`mismatches`・`wouldAlert`）を確認する。**前提**: `kfile_sync`が`live`（rank4〜6・進入が07:00・12:00に同期される）。runbook T-6
+- [ ] **T4b-21-3** (ユーザー承認) `live`にする。不一致の通知の実受信を確認する（runbook T-7）。`shadow`の間に見つかった実際の不整合（2026-09-18の江戸川11R 2連複、2026-09-11の第1日3会場36レース。plan.md §15.2）の扱い（修正・別チケット）は、ユーザーが判断する
+
+データ項目: 日次の照合結果（`scrape_job_state.last_report`。新規テーブルは無い）。
+
+- [ ] 本番実測: 期待件数（算出根拠: 前日Dの`races`のレース数から、確定中止を除いたもの。**照合できた（`compared`）**レース数と、照合不能・同期待ちの件数を、`last_report.history`に日次で残す。除外した件数も報告）に対し、照合できた割合99%以上であることを、日次照合の稼働日について実測クエリで確認する（未達は、理由（Kの会場が未展開等）を件数付きで説明）。**日次の照合は、稼働開始日以降のみ**（過去日の突合は、既存のCLI`scripts/maintenance/audit-race-result-anomalies.js`（`--k-dir`）で行う。過去分を遡る照合は範囲外）とし、ユーザーの承認を得る
+- [ ] タイミング実測（**B基準は提案。ユーザーの承認前**）: 「D+1の12:30 JSTまでに、Dの照合が完了（`last_target_date`がD+1）している」割合を、土日を含む直近5日で実測する（欠落率2%以内）。08:00 JSTの起動で、Kファイル同期（07:00）の後に照合する。12:30（`kfile_sync`の12:00の後）・17:30（最後の照合。同期待ちを不一致に数え、照合不能を通知）が補足。SQLはrunbook T-7
+- [ ] 継続監視: 照合の結果が日次で自動計測され（`last_report.history`、直近14日）、不一致・照合不能（最後の照合）が`alerts`→Slackに出ること、照合自体の未実行が日次の未処理（3時間）として検知されることを確認する（runbook T-7）

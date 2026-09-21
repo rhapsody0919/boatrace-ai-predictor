@@ -1500,6 +1500,158 @@ shadowは、`ok`で完了する（データには書かない）ため、`done_a
 
 `scrape-monitor`（5分）・`scrape-summary`（日次）が、`pit_reports`の`expired`・未実行・死活・連続失敗を通知する（既存の仕組み。ジョブ固有の設定は不要）。`skipped_not_target`は窓内取得率の分母から除外される。
 
+
+---
+
+## T. 前検タイム（`motor_pretest`、N23）・日次の照合（`daily_reconcile`、N29）の切り替え（tasks.md T4b-20・T4b-21、[plan.md §15](./plan.md)）
+
+どちらも既定は`off`（`scrape_job_state`に行が無い。マージしても本番の挙動は変わらない）。**適用・切り替えの順序**: N23は 090の適用（承認）→ shadow → live → 過去分のバックフィル（承認）。N29は shadow → live（DDLなし）。いずれも本番の変更のため、ユーザーの承認が要る。
+
+| コマンド | 内容 |
+|---|---|
+| `npm run verify:motor-pretest` | N23。実ページのフィクスチャ7件・インメモリのDB・偽のfetch・時計で、パーサー（見出しのラベルで解釈・前検順位が前検タイム昇順のページの公式の順位と一致・想定外は`unrecognized`）・行の組み立てと書き込み（変更の無い行は書かない・088未適用は失敗）・日次ジョブ（off・行なし・shadow・live・冪等・0件・races_initの待ち・一時的な失敗の再取得・通知・別のページの拒否）・過去分CLI（対象の会場×日・窓・日次上限・ブレーカー・再開・parse・load）・配線を検証する。**変異検証済み**（下） |
+| `npm run verify:daily-reconcile` | N29。実際のKファイル（2026-09-11の12会場144レース、2019-04-15の蒲郡1R）で、突合（順位・払戻・払戻明細・進入・結果の有無・racesに無いレース・確定中止）・分類（照合不能・同期待ち・除外）・日次ジョブ（対象日は前日・off・shadowは通知なし・最後の照合・履歴・0件）・DB読み取り・配線を検証する。**変異検証済み** |
+
+変異検証（PRの説明にも記載）: 判定の要を1つずつ壊した47の変異（N23・26、N29・21）を、それぞれの検証に通し、全て失敗する（検出できる）ことを確認した。最初の実行で生き残った変異（ページの会場の照合・shadowでのK未公開の通知・cronの順序）は、検証に対応する確認を足して検出できるようにした。
+
+### T-1. 前検の公開時刻と実行時刻の根拠（実測）
+
+**前検タイム（`rankingmotor`）の公開**: 2026-09-21 17:38〜17:39 JST に、翌日（9/22）が初日の3会場（福岡・びわこ・常滑。B番組表で第1日と確認）のページを取得し、**全45人の前検タイムが載っていた**（同日に初日を迎えた徳山・津も全員）。前検は節の初日の前日の午後で、その日の夕方には公式ページが揃う。開催が無い日・会場（福岡の9/21、児島の9/23）は「データがありません」（13KB）。**ページに載り始める時刻（前日の何時）は未計測**（取得した時点で既に揃っていたため）。未了の実測: 翌日が初日の会場のページを、前日の13:00・15:00・17:00 JSTに取得する（3〜9リクエスト）。
+
+**実行時刻（JST 05:30・06:00・06:30）の根拠**: (1)前日の夕方に揃う。(2)JST 07:00〜23:59はオッズの取得の運用窓（取り直せないデータ。boatrace.jpの共有ブレーカーの損失が非対称）で、この窓の外に限る。(3)朝の値は、その日の出走表（`race_entries.motor_2rate`）と同じ「その日の朝時点」（夜だとその日の結果を含み、レース前の特徴量に使えない）。(4)対象の会場は`races`（`races_init`が05:00 JSTに作る）から決める。cronはUTC 20:30・21:00・21:30。指定時刻（`targetTimeJst`）は05:20で、cronより10分早い（起動が数秒早まっても、対象日が前日に化けない）。
+
+**日次の照合の実行時刻（JST 08:00・12:30・17:30）**: `kfile_sync`（07:00・12:00 JST）の後。指定時刻は07:50。cronはUTC 23:00・03:30・08:30。最後の回（17:30）は、`FINAL_ATTEMPT_MINUTES_OF_DAY`（17:00）以降として、同期待ちを不一致に数え、照合不能を通知する。
+
+### T-2. N23: マイグレーション090の適用（承認後）と shadow
+
+1. `docs/db-migration/090_motor_pretest_stats.sql`（ファイル冒頭の手順。1トランザクション）。適用後: テーブルが存在しRLS有効・anonのSELECT権限なし（ファイル冒頭の確認SQL）。`docs/db-migration/APPLIED.md`の088を「適用済み」に更新する。`npm run verify:migration-rls`
+2. **前提の確認**: `races_init`が`live`で、朝05:00 JSTに`races`が揃う。`SELECT mode, last_target_date FROM scrape_job_state WHERE job = 'races_init';`（`shadow`・`off`のときは、`races`が旧基盤の朝の初期化（07:00 JST以降）で作られるため、05:30〜06:30の起動が対象の会場を見つけられず、日次の未処理になる。`races_init`のlive化の後に開始する）
+3. shadow:
+
+```sql
+INSERT INTO scrape_job_state (job, mode) VALUES ('motor_pretest', 'shadow')
+ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+```
+
+4. 確認（読み取り。翌朝06:00以降）:
+
+```sql
+-- 書き込んでいないこと（shadow。期待: 0）
+SELECT count(*) FROM motor_pretest_stats WHERE created_at >= now() - interval '2 days';
+
+-- 実行結果: 会場ごとの行数・期待した選手の充足・前検タイムの非NULL
+SELECT last_target_date, last_error,
+       last_report->>'date' AS report_date,
+       last_report->'summary' AS summary,
+       last_report->'coverage' AS coverage,
+       last_report->'alerts' AS alerts,
+       last_report->'health' AS health
+  FROM scrape_job_state WHERE job = 'motor_pretest';
+```
+
+期待: `summary.expectedRacersOnPage = expectedRacers`（期待した選手が全員ページに載る）・`summary.pretestFilled = summary.pageRows`（全員に前検タイム）・`alerts`が空・`health`の全会場が`consecutiveFailDays = 0`。shadowは`last_target_date`を進めないため、05:30・06:00・06:30の3回とも取得する（1日約39リクエスト。shadowの間だけ）。
+
+### T-3. N23: live と過去分
+
+1. 090適用済みを確認して、`UPDATE scrape_job_state SET mode = 'live', updated_at = now() WHERE job = 'motor_pretest';`
+2. 翌朝05:30 JSTの最初の書き込みを観測する（T-4のB）。`last_target_date`がその日になり、06:00・06:30の起動は`already_done`で何もしない
+3. 過去分（承認後）: `node --env-file=.env.local scripts/maintenance/motor-pretest-backfill.js plan --from=2025-12-03 --to=<前日>`で範囲を確認 → `download`（夜間 JST 00-06に、この端末で。逐次・3秒以上）→ `parse` → `load`（検証のみ）→ `load --apply`（承認後）。`plan`の実測（2025-12-03〜2026-09-20）: 対象の会場×日は3,722件、うち節の初日は703件。既定の`--scope=first-days`は703リクエスト、`--scope=all-days`は3,722リクエスト（3夜、約14.5時間）。**2025-12-03は全会場を節の初日とみなす**（節の途中でも、ページに節の前検タイムが載る）
+4. 負荷（ADR-0067）: 日次ジョブは1日約13リクエスト、CLIは703（初日のみ）。ホスト単位のブレーカー（`host:boatrace.jp`）は日次ジョブが共有する。CLIは自前のブレーカー（403は2回、429・503・5xx・接続失敗は3回連続で停止）
+
+### T-4. N23: 完了の定義A・Bの実測SQL
+
+```sql
+-- A: 期待（会場, 日付, 選手）に対する充足。日次ジョブの稼働日（全会場×日）。確定中止のレースの選手は分母から除く
+WITH exp AS (
+  SELECT DISTINCT r.race_date, r.venue_code, e.racer_id
+    FROM races r JOIN race_entries e USING (race_id)
+   WHERE r.race_date BETWEEN '2026-09-22' AND current_date - 1
+     AND e.racer_id IS NOT NULL AND r.cancellation_status IS DISTINCT FROM 'confirmed'
+)
+SELECT to_char(x.race_date, 'YYYY-MM') AS ym, x.venue_code,
+       count(*) AS expected, count(m.racer_id) AS present, count(m.pretest_time) AS with_time,
+       round(100.0 * count(m.racer_id) / count(*), 1) AS fill_pct
+  FROM exp x LEFT JOIN motor_pretest_stats m USING (race_date, venue_code, racer_id)
+ GROUP BY 1, 2 ORDER BY 1, 2;
+
+-- A（過去分。節の初日のみを取得した範囲）: 期待（会場, 日付, 選手）に対し、その会場・選手の直近の行が、8日以内（同じ節）にある割合
+WITH exp AS (
+  SELECT DISTINCT r.race_date, r.venue_code, e.racer_id
+    FROM races r JOIN race_entries e USING (race_id)
+   WHERE r.race_date BETWEEN '2025-12-03' AND '2026-09-20'
+     AND e.racer_id IS NOT NULL AND r.cancellation_status IS DISTINCT FROM 'confirmed'
+)
+SELECT to_char(x.race_date, 'YYYY-MM') AS ym, count(*) AS expected, count(m.racer_id) AS covered,
+       count(m.pretest_time) AS with_time, round(100.0 * count(m.racer_id) / count(*), 1) AS fill_pct
+  FROM exp x LEFT JOIN LATERAL (
+    SELECT racer_id, pretest_time FROM motor_pretest_stats s
+     WHERE s.venue_code = x.venue_code AND s.racer_id = x.racer_id
+       AND s.race_date <= x.race_date AND s.race_date > x.race_date - 8
+     ORDER BY s.race_date DESC LIMIT 1) m ON true
+ GROUP BY 1 ORDER BY 1;
+
+-- B（提案）: D日の行が、D日07:00 JSTまでに書かれている割合（土日を含む直近5日）
+SELECT race_date, count(*) AS rows,
+       count(*) FILTER (WHERE created_at <= (race_date + time '07:00') AT TIME ZONE 'Asia/Tokyo') AS by_0700,
+       min(created_at AT TIME ZONE 'Asia/Tokyo') AS first_write, max(created_at AT TIME ZONE 'Asia/Tokyo') AS last_write
+  FROM motor_pretest_stats WHERE race_date >= current_date - 5 GROUP BY 1 ORDER BY 1;
+```
+
+### T-5. N23: 継続監視と切り戻し
+
+- 継続監視: `scrape-monitor`（5分）が、`last_report.alerts`（期待した選手がページに載っていない会場・前検タイムの非NULL率95%未満（20行以上）・構造変化の2日連続）と、日次の未処理（指定05:20から3時間＝08:20 JSTに未処理）、連続失敗、ブレーカーを通知する。0件は共通ラッパが失敗にする（`zero_rows`）。`last_report.summary`に日次の集計が残る
+- 切り戻し: `UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'motor_pretest';`（データは残る。他のジョブ・画面に影響しない）
+
+### T-6. N29: shadow
+
+1. 前提: `kfile_sync`が`live`（rank4〜6・進入が07:00・12:00 JSTに同期される。同期前は「同期待ち」として、最後の照合まで不一致に数えない）
+2. shadow:
+
+```sql
+INSERT INTO scrape_job_state (job, mode) VALUES ('daily_reconcile', 'shadow')
+ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+```
+
+3. 確認（翌朝08:00 JST以降）:
+
+```sql
+SELECT last_target_date, last_error,
+       last_report->>'date' AS reconciled_date, last_report->>'final' AS final, last_report->>'kStatus' AS k_status,
+       last_report->>'payoutTable' AS payout_table, last_report->'summary' AS summary,
+       last_report->'mismatches' AS mismatches, last_report->'wouldAlert' AS would_alert,
+       last_report->'history' AS history
+  FROM scrape_job_state WHERE job = 'daily_reconcile';
+```
+
+期待: `reconciled_date`が前日・`k_status = 'ok'`・`summary.compared` ≒ 前日のレース数（確定中止を除く）・`summary.mismatchRaces`が0（または、実際の不整合）・`summary.syncPending.races`が0（12:30以降）・`would_alert`が空。**shadowは`last_target_date`を進めず、通知を出さない**ため、08:00・12:30・17:30の3回とも照合する（Kファイルは1日3リクエスト。shadowの間だけ）。
+4. 実データでの試験（読み取りのみ、2026-09-21）の結果は plan.md §15.2。実際の不整合（2026-09-18 江戸川11Rの2連複の特払い、2026-09-11の第1日3会場36レースが`races`に無い）は、shadowでも`mismatches`に出る。
+
+### T-7. N29: live・実測・継続監視
+
+1. `UPDATE scrape_job_state SET mode = 'live', updated_at = now() WHERE job = 'daily_reconcile';`。不一致があれば、`last_report.alerts`→`scrape-monitor`（5分）→Slackに、1回だけ通知される（`until`=30分後）。**通知の実受信は、shadowのうちに`would_alert`が出た日、または人為的な不一致（下）で確認する**
+2. 人為的な確認（承認のもと、書き込みなしで）: 検証環境で`verify:daily-reconcile`が、不一致1レースの通知（キー`reconcile:日付`）・照合不能の通知（`reconcile_unverifiable:日付`）・shadowで通知を出さないことを確認している
+3. 完了の定義A・Bの実測（稼働日）:
+
+```sql
+-- A: 日次の照合結果（直近14日。照合できた割合 = compared / (racesInDb - excluded - unverifiable)）
+SELECT h->>'date' AS date, (h->>'racesInDb')::int AS races, (h->>'excluded')::int AS excluded,
+       (h->>'compared')::int AS compared, (h->>'matched')::int AS matched,
+       (h->>'mismatchRaces')::int AS mismatch_races, (h->>'unverifiable')::int AS unverifiable,
+       (h->>'syncPending')::int AS sync_pending
+  FROM scrape_job_state, jsonb_array_elements(last_report->'history') AS h
+ WHERE job = 'daily_reconcile' ORDER BY 1;
+
+-- B（提案）: D+1の12:30 JSTまでに、Dの照合が完了している日の割合。last_target_date と last_success_at から
+SELECT last_target_date, last_success_at AT TIME ZONE 'Asia/Tokyo' AS success_jst FROM scrape_job_state WHERE job = 'daily_reconcile';
+```
+
+4. 継続監視: `last_report.history`（直近14日）・`alerts`・日次の未処理（指定07:50から3時間＝10:50 JSTに未処理）。0件（照合するレースがあるのにKファイルから1レースも解析できない）は共通ラッパが失敗にする。
+
+### T-8. N29: 切り戻しと、過去日の突合
+
+- 切り戻し: `UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'daily_reconcile';`（書き込みは無い。他への影響なし）
+- 過去日の突合（日次の照合の範囲外）: 既存のCLI`node --env-file=.env.local scripts/maintenance/audit-race-result-anomalies.js --from=YYYY-MM-DD --to=YYYY-MM-DD --k-dir=<デコード済みKファイルのディレクトリ>`（読み取りのみ）。K/Bの生LZHの取得（別のバックフィル）と、DBへの取り込み後は、日次の突合ロジック（`scripts/lib/dailyReconcile.js`の`reconcileDay`）を、過去日に適用できる
+
 ## U. 汎用の日次監視（`data_health`、完了の定義C）の導入（tasks.md T7-06）
 
 件数の充足率と0件のテーブルを、DBの実測から日次で自動計測し、閾値未達を既存のSlack通知に流す（[完了の定義C](../../../.claude/rules/data-acquisition.md)）。既存の`exhibition-gap-monitor.yml`（展示のみ）を、データセットごとの登録表に汎用化したもの。**適用の順序: 089 → shadow → live**。いずれも本番の変更のため、ユーザーの承認が要る。マージしても挙動は変わらない（既定`off`）。

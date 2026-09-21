@@ -111,6 +111,30 @@
       "schedule": "*/5 20-23,0-14 * * *"
     },
     {
+      "path": "/api/cron/motor-pretest",
+      "schedule": "30 20 * * *"
+    },
+    {
+      "path": "/api/cron/motor-pretest",
+      "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/cron/motor-pretest",
+      "schedule": "30 21 * * *"
+    },
+    {
+      "path": "/api/cron/daily-reconcile",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/cron/daily-reconcile",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/daily-reconcile",
+      "schedule": "30 8 * * *"
+    },
+    {
       "path": "/api/cron/data-health",
       "schedule": "35 21-23 * * *"
     }
