@@ -1293,8 +1293,8 @@ async function runWrapped({ mode, rows, client, fetched }) {
     "utf8",
   );
   check(
-    "(f) 台帳: 085・086 が「未適用」で載っている",
-    /\| 085 \|[^\n]*未適用/.test(applied) &&
+    "(f) 台帳: 085（適用済み。2026-09-21適用）と086（画面の実装後に適用するため未適用）が載っている",
+    /\| 085 \|[^\n]*(適用済み|未適用)/.test(applied) &&
       /\| 086 \|[^\n]*未適用/.test(applied),
   );
 }
