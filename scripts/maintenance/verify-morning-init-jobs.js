@@ -917,6 +917,36 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
       same(cmp2.extraInDb, [raceIdOf(DATE, 1, 13)]),
     show(cmp2),
   );
+  // 中止・順延が確定したレースは、公式の発走予定時刻が仮の値になり、朝にDBへ書いた時刻と一致しない。比較から外す
+  const races3 = clone(d.races);
+  for (const n of [3, 5]) {
+    races3.find((r) => r.race_id === raceIdOf(DATE, 1, n)).start_time =
+      "10:06:00";
+  }
+  const cmp3 = compareRaceDigests(
+    shadowSummary.digests,
+    races3.concat([{ race_id: raceIdOf(DATE, 1, 13), start_time: "20:00:00" }]),
+    d.race_entries.concat([
+      { race_id: raceIdOf(DATE, 1, 13), boat_number: 1, racer_id: 1 },
+    ]),
+    {
+      excludeRaceIds: [
+        raceIdOf(DATE, 1, 3),
+        raceIdOf(DATE, 1, 5),
+        raceIdOf(DATE, 1, 13),
+      ],
+    },
+  );
+  check(
+    "(g) ダイジェストの比較: 中止・順延の確定で発走時刻が仮の値になったレース（excludeRaceIds）は、不一致・余りに数えず excluded に数える",
+    cmp3.matched === 10 &&
+      cmp3.mismatched.length === 0 &&
+      cmp3.extraInDb.length === 0 &&
+      cmp3.excluded === 2 &&
+      compareRaceDigests(shadowSummary.digests, races3, d.race_entries)
+        .mismatched.length === 2,
+    show(cmp3),
+  );
   check(
     "(g) 選手のいないレースは、ダイジェストに含めない（DBにも行が作られない）",
     digestScrapedRace(DATE, {
@@ -1430,7 +1460,10 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
   check(
     "(i) 公式予想のダイジェスト比較: 一致・不一致（payload の違い）・DBに行なし・digest未記録を区別する",
     cmp.matched === 1 &&
-      same(cmp.mismatched.map((m) => m.race_id), ["2026-09-21-12-11"]) &&
+      same(
+        cmp.mismatched.map((m) => m.race_id),
+        ["2026-09-21-12-11"],
+      ) &&
       same(cmp.missing, ["2026-09-21-12-10"]) &&
       same(cmp.noDigest, ["2026-09-21-12-09"]),
     show(cmp),
@@ -1512,9 +1545,10 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
     "(j) vercel.json: races-init は `*/2 20-23,0-14 * * *`（UTC）＝JST 05:00〜23:58の2分ごと（1件だけ登録。朝の初期化に加え、予測ロジックの変更検知を終日行う）",
     ri.length === 1 &&
       ri[0].schedule === "*/2 20-23,0-14 * * *" &&
-      same(jstHours(ri[0].schedule), [
-        5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-      ]),
+      same(
+        jstHours(ri[0].schedule),
+        [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+      ),
     show(ri),
   );
   check(

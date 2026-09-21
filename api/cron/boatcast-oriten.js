@@ -9,7 +9,7 @@
  * モード（scrape_job_state.mode。DBの更新のみで切り替える。再デプロイ不要）:
  *   off（または行なし）  何も取得せず、データにも予定表にも書かない（行が無ければ off の行を作るのみ）
  *   shadow              取得・解析のみ。データテーブルへは書かず、予定表に result_digest を記録する
- *   live                race_original_exhibition・race_original_exhibition_values へ書く（マイグレーション087の適用後）。
+ *   live                race_original_exhibition・race_original_exhibition_values へ書く（マイグレーション091の適用後）。
  *                       内容が変わったときだけ書く
  *
  * cron式（vercel.json）はUTC。JSTに換算した起動時間帯:

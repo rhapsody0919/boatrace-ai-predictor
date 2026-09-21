@@ -6,17 +6,17 @@ spec: `spec.md` / tasks: [scraping-vercel-consolidation/tasks.md T4b-19](../scra
 ## 0. 方針の要約
 
 - 取得は Vercel Cron の2ジョブ。**`boatcast_oriten`**（窓型。`api/cron/boatcast-oriten.js`。毎分起動、予定表 `scrape_slots` のスロットを消化）と、**`boatcast_motor_start`**（日次。`api/cron/boatcast-motor-start.js`。06:30・08:00 JST）。どちらも共通ラッパ・予定表・レジストリ・サーキットブレーカーを使う。`scrape_job_state.mode` が off（または行なし）の間は何もしない。shadow（取得・解析のみ）・live（書き込み）
-- N26を別ジョブにした理由: 窓型のジョブには日次の処理を差し込む口が無い（`onTick` は live のみで、shadow で検証できない）。日次ジョブにすると、`last_target_date` による冪等・補足の起動・`daily_overdue` の監視・shadow が、共通ラッパのまま使える。取得先・パーサー・DDLは共有（同じ `scripts/lib/boatcast/`・同じマイグレーション087）
+- N26を別ジョブにした理由: 窓型のジョブには日次の処理を差し込む口が無い（`onTick` は live のみで、shadow で検証できない）。日次ジョブにすると、`last_target_date` による冪等・補足の起動・`daily_overdue` の監視・shadow が、共通ラッパのまま使える。取得先・パーサー・DDLは共有（同じ `scripts/lib/boatcast/`・同じマイグレーション091）
 - 別ホスト（`race.boatcast.jp`）。ブレーカーのキーは `host:race.boatcast.jp` で、boatrace.jp と独立
 - **共有の `politeFetch`・ブレーカーは変更しない**。BOATCASTの「存在しない＝403」は、ジョブ内のカナリア・試行回数の上限・公開マップで扱う（[spec.md §4](./spec.md)）
-- 保存は3表（マイグレーション087。**匿名のSELECTなし**）。値は縦持ち（会場ごとに項目が異なるため）
+- 保存は3表（マイグレーション091。**匿名のSELECTなし**）。値は縦持ち（会場ごとに項目が異なるため）
 - 公開マップ（会場×項目）は、事前に凍結した静的な設定（`publicMap.js`）。予定表の対象・期待件数・項目名の照合は、全てこれから決める
 
 ## 1. データ設計
 
 ### 1.1 ER図
 
-マイグレーション[087](../../db-migration/087_boatcast_original_exhibition.sql)から機械生成（`node scripts/maintenance/generate-er-diagram.js boatcast-original-exhibition`）。
+マイグレーション[091](../../db-migration/091_boatcast_original_exhibition.sql)から機械生成（`node scripts/maintenance/generate-er-diagram.js boatcast-original-exhibition`）。
 
 ```mermaid
 erDiagram
@@ -64,7 +64,7 @@ erDiagram
 
 ### 1.3 適用時のリスク（本番DDL。ユーザー承認のうえで、ユーザーが適用する）
 
-| 項目 | 087 |
+| 項目 | 091 |
 |---|---|
 | 内容 | 新規テーブル3つ・RLS有効化・権限の剥奪のみ。既存テーブルは変更しない |
 | ロック | `races` への外部キー作成時の短い `SHARE ROW EXCLUSIVE`（`races` 約4.5万行）。`lock_timeout 10s` |
@@ -80,7 +80,7 @@ erDiagram
 | `oritenParser.js` | ファイル（TSV）の解析（純関数）。項目名の正規化・欠測・計測不可・構造の異常・未知のラベル。`bc_mst` の解析 |
 | `oritenRows.js` | DBに書く行の組み立て・内容のハッシュ・公開マップとの照合・**403の再試行の判断**（`decideNotPublished`）（純関数） |
 | `boatcastClient.js` | URL・リクエスト間隔（`createPacer`。2.2秒以上）・取得（`fetchBoatcast`）・**カナリア**（`checkCanary`） |
-| `oritenSchema.js` | マイグレーション087の適用判定（キャッシュ付き） |
+| `oritenSchema.js` | マイグレーション091の適用判定（キャッシュ付き） |
 | `oritenJob.js` | 窓型ジョブ: `processOritenRace`（取得・解析・書き込みの本体。**バックフィルCLIと共有**）・スロットのハンドラー・予定表のストア（対象会場のレースにだけスロットを作る）・通知（`mergeReport`） |
 | `motorStartJob.js` | 日次ジョブ: 全24会場の `bc_mst` |
 | `probe.js` | Vercelから到達できるかの確認（`?probe=1`） |

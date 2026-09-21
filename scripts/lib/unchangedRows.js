@@ -76,6 +76,12 @@ export const NUMERIC_SCALES = {
     start_timing: 3,
     race_seconds: 1,
   },
+  // 前検タイム（docs/db-migration/090_motor_pretest_stats.sql）
+  motor_pretest_stats: {
+    motor_2rate: 1,
+    boat_2rate: 1,
+    pretest_time: 2,
+  },
   // K/Bファイル長期バックフィルのアーカイブ表（docs/db-migration/074_kb_archive_tables.sql）
   kb_archive_boats: {
     boat_2rate: 2,
@@ -88,7 +94,7 @@ export const NUMERIC_SCALES = {
     race_seconds: 1,
     start_timing: 2,
   },
-  // BOATCASTのオリジナル展示（docs/db-migration/087_boatcast_original_exhibition.sql）
+  // BOATCASTのオリジナル展示（docs/db-migration/091_boatcast_original_exhibition.sql）
   race_original_exhibition_values: {
     value: 2,
   },

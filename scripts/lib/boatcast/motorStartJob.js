@@ -136,7 +136,7 @@ export function createMotorStartRun({
         return {
           outcome: "error",
           error:
-            "マイグレーション087（venue_motor_start_dates）が未適用のため、書き込みませんでした",
+            "マイグレーション091（venue_motor_start_dates）が未適用のため、書き込みませんでした",
           rowsParsed: rows.length,
           rowsExpected: expected,
         };

@@ -207,6 +207,18 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
+  // A9 中止・順延の早期確定。10分ごと（JST 06:00〜23:59）に、開催場一覧（race/index、1リクエスト）の状態欄を見て、
+  // 「N R以降が中止・順延」の会場の未確定レースを、結果ページの「レース中止」表示で確かめて確定にする。発走+90分の
+  // 推定（結果取得の onTick・GitHub Actions）を待たずに確定し、順延日の未実行・expired の誤報と誤表示を防ぐ。
+  // 日全体の順延（最大12レース×会場）でも、1レース約8〜10秒を並列4で、2会場約1分。多数の会場が同時に順延の日は、
+  // ソフトデッドラインで打ち切り、残りは次の起動が続きを処理する（毎回、ページの状態から候補を導く）。
+  // 実装: scripts/lib/raceStatusJob.js、api/cron/race-status.js。設計: docs/design/scraping-vercel-consolidation/postponed-day-early-detection.md
+  race_status: {
+    kind: "continuous",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
   // ↓ WS4b 結果取得（PR #743）の定義
   // A6補助 Kファイル同期（進入コース・rank4〜6。plan.md §4.1・T4b-05-1）。07:00・12:00 JST の2回起動し、12:00は
   // 07:00の実行が完了しなかった（Kファイル未公開・失敗）場合の補足（完了済みなら、last_target_date で何もしない）。
@@ -274,6 +286,21 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
   },
 
+  // 汎用の日次監視（完了の定義C。データ健全性の件数の充足率・0件のテーブル）。06:30指定（cron: 06:35・07:35・08:35 JST）。
+  // 前日分が確定した後（最終レースの結果は22時台、result_catchup は23:50・00:30）で、オッズの窓・毎分のジョブが動き出す
+  // 07:00 JST の前、races_init（05:00〜）・月次の racer_profiles（03:00〜05:50）・会場別モーター成績（06:00）の後。
+  // DB読み取りのみ（固定のSQLの関数を、データセットごとに1回、逐次）。書き込みは scrape_job_state の last_report だけ。
+  // 07:35・08:35 は補足（06:35 が失敗・未配信だった場合のみ処理する。処理済みなら last_target_date で何もしない）。
+  // 通知は last_report.alerts → scrape-monitor（07:00 JST〜5分ごと）が、既存のSlack通知に流す。
+  // 実装: scripts/lib/dataHealth/job.js、api/cron/data-health.js。設計: verification-runbook.md U
+  data_health: {
+    kind: "daily",
+    targetTimeJst: "06:30",
+    leaseSec: 120,
+    maxDurationSec: 120,
+    hosts: [],
+  },
+
   // 監視・保守（plan.md §7・§3.9）。モードのゲートなし
   "scrape-monitor": {
     kind: "monitor",
@@ -286,6 +313,29 @@ export const SCRAPE_JOBS = Object.freeze({
     leaseSec: 120,
     maxDurationSec: 60,
     hosts: [],
+  },
+
+  // ↓ N23・N29（tasks.md T4b-20・T4b-21）
+  // N23 前検タイム・前検順位・節時点のモーター/ボート2連対率（motor_pretest_stats）。05:20指定（cron: 05:30・06:00・06:30 JST。
+  // 指定を cron より10分早くするのは、起動が数秒早まっても、対象日が前日に化けないため）。開催中の会場（races）ごとに
+  // rankingmotor を1ページ（約13ページ）。同時3・1ページ約8〜10秒のため約40秒。オッズの運用窓（07:00〜23:59 JST）の外に限る。
+  // races_init が live のとき、その日の分の完了前は取得しない（incomplete）。実装: scripts/lib/motorPretestJob.js
+  motor_pretest: {
+    kind: "daily",
+    targetTimeJst: "05:20",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
+  // N29 日次の照合（前日の結果・払戻・着順・進入を、DBとKファイルで突き合わせる。書き込みなし）。07:50指定（cron: 08:00・12:30・
+  // 17:30 JST。kfile_sync の07:00・12:00の後）。対象日は「指定時刻の日付の前日」。Kファイル（別ドメイン）を1回ダウンロードし、
+  // races・race_results・race_payouts（前日分）を読む。実装: scripts/lib/dailyReconcileJob.js
+  daily_reconcile: {
+    kind: "daily",
+    targetTimeJst: "07:50",
+    leaseSec: 300,
+    maxDurationSec: 120,
+    hosts: ["mbrace.or.jp"],
   },
 });
 

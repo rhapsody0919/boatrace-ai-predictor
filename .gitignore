@@ -48,6 +48,7 @@ data/ml/
 data/kb-archive/
 data/fan-archive/
 data/monthly-schedule-archive/
+data/motor-pretest-archive/
 scripts/ml/.venv/
 # マイクロフト（PyTorch）用。torch は Python 3.14 未対応のため 3.12 の別 venv
 scripts/ml/.venv-torch/

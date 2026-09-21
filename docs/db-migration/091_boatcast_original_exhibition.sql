@@ -1,4 +1,4 @@
--- 087: BOATCASTのオリジナル展示（一周/半周ラップ・まわり足・直線。N25）と、モーター使用開始日（N26）の保存先を新設する
+-- 091: BOATCASTのオリジナル展示（一周/半周ラップ・まわり足・直線。N25）と、モーター使用開始日（N26）の保存先を新設する
 --       race_original_exhibition（レース単位）・race_original_exhibition_values（艇×項目の縦持ち）・venue_motor_start_dates
 --
 -- 対応設計: docs/design/boatcast-original-exhibition/spec.md・plan.md（データ洗い出し data-catalog.md の N25・N26、

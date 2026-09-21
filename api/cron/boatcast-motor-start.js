@@ -6,7 +6,7 @@
  * 取得・解析・書き込みは scripts/lib/boatcast/motorStartJob.js。
  *
  * モード（scrape_job_state.mode の job='boatcast_motor_start'）: off（または行なし）は何もしない。shadow は取得・解析のみ
- * （書かない）。live は書く（マイグレーション087の適用後）。
+ * （書かない）。live は書く（マイグレーション091の適用後）。
  *
  * cron式（vercel.json）はUTC。JSTに換算した起動時間帯:
  *   `30 21 * * *`  06:30 JST（指定時刻。bc_mst は毎日 00:10 JST頃に再生成される）

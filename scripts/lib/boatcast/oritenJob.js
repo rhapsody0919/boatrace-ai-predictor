@@ -17,7 +17,7 @@
  * 「未公開または公開されないレース」として、最大3回まで再試行し、打ち切る（skipped_not_target）。
  *
  * 書き込みの順序: 艇×項目の行 → レース単位の行（content_hash は「書き込み完了」の目印）。途中で失敗しても、
- * 次の取得が同じ内容を書き直す。マイグレーション087が未適用のDBでは、書かずに error を返す（成功にしない）。
+ * 次の取得が同じ内容を書き直す。マイグレーション091が未適用のDBでは、書かずに error を返す（成功にしない）。
  */
 import {
   compareLabelsToMap,
@@ -166,7 +166,7 @@ export async function processOritenRace({
   // --- live の書き込み ---
   if (!(await detectBoatcastSchema(client, ORITEN_TABLES))) {
     return failure(
-      "マイグレーション087（race_original_exhibition・race_original_exhibition_values）が未適用のため、書き込みませんでした",
+      "マイグレーション091（race_original_exhibition・race_original_exhibition_values）が未適用のため、書き込みませんでした",
       base,
     );
   }

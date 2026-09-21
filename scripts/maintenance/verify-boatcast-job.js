@@ -695,12 +695,12 @@ async function evaluateJob(processFn) {
     clearBoatcastSchemaCache(client);
     const r = await go({ client });
     expect(
-      "087が未適用のDB: 書かず error（成功にしない。理由を残す）",
-      r.outcome === "error" && /087/.test(r.error),
+      "091が未適用のDB: 書かず error（成功にしない。理由を残す）",
+      r.outcome === "error" && /091/.test(r.error),
     );
     const s = await go({ client, mode: "shadow" });
     expect(
-      "087が未適用でも shadow は動く（取得・解析のみ）",
+      "091が未適用でも shadow は動く（取得・解析のみ）",
       s.outcome === "ok",
     );
   }
@@ -1501,9 +1501,9 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
     fetchImpl: createFakeFetch(mstRouter()),
   });
   check(
-    "(f) 087が未適用のDB: 書かず error",
+    "(f) 091が未適用のDB: 書かず error",
     unapplied.result.status === 500 &&
-      /087/.test(unapplied.store.state.get(MOTOR_START_JOB).last_error),
+      /091/.test(unapplied.store.state.get(MOTOR_START_JOB).last_error),
   );
   const c7 = withMissingTables(mk(), ["venue_motor_start_dates"]);
   clearBoatcastSchemaCache(c7);
@@ -1668,7 +1668,7 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
 
   // DDL案とコードが書く行の一致・RLS
   const ddl = readRoot(
-    "docs/db-migration/087_boatcast_original_exhibition.sql",
+    "docs/db-migration/091_boatcast_original_exhibition.sql",
   );
   const body = ddl.replace(/^--.*$/gm, "");
   const columnsOf = (table) => {
@@ -1695,7 +1695,7 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
   const inDdl = (table, row) =>
     Object.keys(row).every((k) => columnsOf(table).includes(k));
   check(
-    "(h) DDL 087: コードが書く行の列が、3表の定義に全てある（レース単位・値・使用開始日。updated_at はコードが設定）",
+    "(h) DDL 091: コードが書く行の列が、3表の定義に全てある（レース単位・値・使用開始日。updated_at はコードが設定）",
     inDdl("race_original_exhibition", sampleRows.report) &&
       inDdl("race_original_exhibition_values", sampleRows.values[0]) &&
       inDdl("venue_motor_start_dates", {
@@ -1711,7 +1711,7 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
     }),
   );
   check(
-    "(h) DDL 087: 主キーが (race_id, boat_number, kind)・race_id・(venue_code, start_date)。onConflict と一致する",
+    "(h) DDL 091: 主キーが (race_id, boat_number, kind)・race_id・(venue_code, start_date)。onConflict と一致する",
     /PRIMARY KEY \(race_id, boat_number, kind\)/.test(body) &&
       /race_id\s+varchar\(20\) PRIMARY KEY REFERENCES races/.test(body) &&
       /PRIMARY KEY \(venue_code, start_date\)/.test(body) &&
@@ -1723,7 +1723,7 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
       ),
   );
   check(
-    "(h) DDL 087: 3表ともRLS有効・anon/authenticatedの権限を剥奪・ポリシーなし・匿名のSELECTを付けない（公式コンテンツの再表示を含むため。ADR-0067）",
+    "(h) DDL 091: 3表ともRLS有効・anon/authenticatedの権限を剥奪・ポリシーなし・匿名のSELECTを付けない（公式コンテンツの再表示を含むため。ADR-0067）",
     [
       "race_original_exhibition",
       "race_original_exhibition_values",
@@ -1735,7 +1735,7 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
     ) && !/CREATE POLICY|GRANT/i.test(body),
   );
   check(
-    "(h) DDL 087: 値の列は numeric(5,2)（秒）で、変更の無い行を比較する scale がコードに登録済み",
+    "(h) DDL 091: 値の列は numeric(5,2)（秒）で、変更の無い行を比較する scale がコードに登録済み",
     /value\s+numeric\(5,2\)/.test(body) &&
       /race_original_exhibition_values:\s*\{\s*value:\s*2/.test(
         readRoot("scripts/lib/unchangedRows.js"),
@@ -1743,8 +1743,8 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
   );
   const applied = readRoot("docs/db-migration/APPLIED.md");
   check(
-    "(h) 台帳: 087が載っている（未適用）",
-    /\| 087 \|[^\n]*087_boatcast_original_exhibition\.sql[^\n]*未適用/.test(
+    "(h) 台帳: 091が載っている（未適用）",
+    /\| 091 \|[^\n]*091_boatcast_original_exhibition\.sql[^\n]*未適用/.test(
       applied,
     ),
   );
@@ -1970,7 +1970,7 @@ const jobMutants = [
     ],
   ],
   [
-    "087の適用を確認せずに書く",
+    "091の適用を確認せずに書く",
     [
       [
         "if (!(await detectBoatcastSchema(client, ORITEN_TABLES))) {",

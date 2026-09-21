@@ -1,7 +1,8 @@
 name: Scrape Monitor Liveness
 
 # データ取得の監視（Vercel Cron の api/cron/scrape-monitor）自体が動いているかを、監視の外から確認する
-# （メタ監視。docs/design/scraping-vercel-consolidation/plan.md §6 の2次）。
+# （メタ監視。docs/design/scraping-vercel-consolidation/plan.md §6 の2次）。汎用の日次監視 data_health
+# （api/cron/data-health。完了の定義C）の未処理も、同じ日次の確認で見る。
 # 取得ではなく監視のため、ADR-0066（取得系のVercel一本化）の対象外で、GitHub Actionsのまま。
 # GitHubのscheduleは数時間遅れるが、監視の死活は1日単位で足りる（要判断(j)）。
 # 予定表のテーブルが未適用（マイグレーション075）の間は、確認をスキップする。
@@ -65,7 +66,7 @@ jobs:
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: ("*データ取得の監視が動いていない可能性があります*\n```" + $summary + "```\n通知は Vercel の api/cron/scrape-monitor（5分ごと）が出しています。これが止まると、expired・未実行・死活の通知が届きません（docs/design/scraping-vercel-consolidation/plan.md §6・§7）")
+                    text: ("*データ取得の監視が動いていない可能性があります*\n```" + $summary + "```\n通知は Vercel の api/cron/scrape-monitor（5分ごと）が出しています。これが止まると、expired・未実行・死活の通知が届きません（docs/design/scraping-vercel-consolidation/plan.md §6・§7）。data_health（汎用の日次監視。件数の充足率・0件のテーブル）が対象日を処理していない場合は、Vercel Cron（api/cron/data-health）・マイグレーション089の適用・デプロイを確認してください（verification-runbook.md U）")
                   }
                 }]
               }]
