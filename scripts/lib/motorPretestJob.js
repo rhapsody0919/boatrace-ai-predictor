@@ -21,7 +21,7 @@
  * モード（scrape_job_state.mode の job='motor_pretest'。DBの更新のみで切り替える）:
  *   off（または行なし）  何もしない
  *   shadow              取得・解析のみ（motor_pretest_stats へ書かない）。last_report に会場ごとの件数・期待に対する充足を記録する
- *   live                書き込む（変更のある行だけ。マイグレーション088が未適用なら、成功にせず失敗にする）
+ *   live                書き込む（変更のある行だけ。マイグレーション090が未適用なら、成功にせず失敗にする）
  */
 import { runVenueDailyJob } from "./scrapeJobs/venueDailyJob.js";
 import {

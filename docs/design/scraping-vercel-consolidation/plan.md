@@ -618,6 +618,8 @@ stateDiagram-v2
 
 計測は、予定表のSQL（5分ごとは当日の行のみ、重い7日集計は1時間に1回）で行い、Disk IOを抑える。
 
+**実装（2026-09-21、T7-06）**: 「件数の充足率（完了の定義A）」「空テーブル」の日次の自動計測は、汎用の日次監視`data_health`として実装した（`scripts/lib/dataHealth/`、`api/cron/data-health.js`、マイグレーション089。運用は[verification-runbook.md §U](./verification-runbook.md#u-汎用の日次監視data_healthの完了の定義cの導入tasksmd-t7-06)）。`data-health-report.js`のCLIをそのまま定期実行するのではなく、(1)分母の定義（`coverageSpec.js`）と集計SQLを共有し、(2)Vercel Functionから実行できるよう、固定のSQLを持つ名前つきの関数（089）に載せ、(3)閾値・除外・通知の一意性を登録表（`checks.js`）で宣言する形にした。期待件数のSQLを任意に渡す口は作らない。通知は`last_report.alerts`→`scrape-monitor`の既存のSlack経路。監視自体の失敗は、`scrape-monitor`の日次の期限超過と、メタ監視（`scrape-monitor-liveness`）で検知する。
+
 ## 8. リージョン・取得先への負荷・バックオフ
 
 **リージョン**: DBはap-southeast-2（シドニー）。取得先（boatrace.jp、会場公式サイト、mbrace.or.jp）は日本。プロジェクトの現在の関数のリージョンは**未確認**（F13。既定のリージョンは確認できていない）。ジョブごとに性質が異なる。
@@ -854,12 +856,12 @@ Disk IO予算が逼迫している（Small、ベースライン174Mbps。orchest
 
 - 対象: その日の`races`にある開催会場ごとに1ページ（約13ページ/日）。「節初日の検出」は`race_series`（`monthlyschedule`のバックフィル前で未充填）に依存するため避ける。前検タイムは節の間は変わらず、2連対率は日々変わるが、毎日13ページ・約600行で、負荷・書き込みは小さい
 - 期待件数: 観測から作らない。`races`の会場×日と、`race_entries`の（会場, 日付, 登録番号）から算出する（確定中止のレースの選手は除き、除外した件数を報告）。ページは節の全選手を載せるため、期待の選手はページの部分集合になる
-- 保存: 新規テーブル`motor_pretest_stats`（主キー（日付, 会場, 選手）。マイグレーション088）。変更のある行だけを書く（`upsertChangedRows`、`updated_at`）。RLS有効・匿名の権限なし（表示用ではない）
+- 保存: 新規テーブル`motor_pretest_stats`（主キー（日付, 会場, 選手）。マイグレーション090）。変更のある行だけを書く（`upsertChangedRows`、`updated_at`）。RLS有効・匿名の権限なし（表示用ではない）
 - **実行時刻: JST 05:30・06:00・06:30**（vercel.json。UTC 20:30・21:00・21:30）。根拠: (1)前検は節の初日の前日の午後で、公式ページは、その日の夕方（17:38 JSTの実測）には全選手の前検タイムが揃っている。(2)07:00〜23:59 JSTは、オッズの取得の運用窓（取り直せないデータ。boatrace.jpの共有ブレーカーの損失が非対称）。この窓の外の、朝の07:00前に限る。(3)朝の時点の値は、その日の出走表（`race_entries.motor_2rate`）と同じ「その日の朝時点」で揃う。夜に取ると、その日の結果を含む値になり、レース前の特徴量に使えない。(4)対象の会場は`races`から決める。朝の初期化`races_init`（05:00 JST）が完了する前は、取得せず`incomplete`（次の起動が続きを処理する）
 - 通知（`last_report.alerts`→`scrape-monitor`）: 構造変化（2日連続の失敗）・期待した選手がページに載っていない会場・前検タイムの非NULL率が95%未満（20行以上）・日次の未処理（3時間）
 - Disk IO: 1日約600行×約100バイト（約60KB）のINSERT。年約22万行・約40MB（索引込み）。`predictions`（1回のINSERTが約190KB）と比べて桁違いに小さい
 
-**過去分（バックフィル）**: 手動CLI`scripts/maintenance/motor-pretest-backfill.js`（plan/download/parse/load/status。`fan-backfill.js`・`monthly-schedule-backfill.js`と同じ構成）。対象の会場×日は、DBの`races`から作る。2025-12-03〜2026-09-20の開催は3,722会場日で、うち**節の初日は703**（前日に同じ会場の開催が無い会場×日。2025-12-03は全会場を初日とみなす）。`optimal-scraping-design.md`の「約830」は、節数の概算で、実測では703。既定は**節の初日のみ（`--scope=first-days`、703リクエスト。窓JST 00-06、日次上限1,500で1夜、約2.7時間）**。前検タイムは節の間は変わらないため、初日のページ1枚で足りる。`--scope=all-days`は3,722リクエスト（3夜、約14.5時間）で、2連対率の日次の履歴も揃う（低精度の重複のため、必要が生じるまで実施しない）。実行はユーザーの承認後（マイグレーション088の適用が前提）。
+**過去分（バックフィル）**: 手動CLI`scripts/maintenance/motor-pretest-backfill.js`（plan/download/parse/load/status。`fan-backfill.js`・`monthly-schedule-backfill.js`と同じ構成）。対象の会場×日は、DBの`races`から作る。2025-12-03〜2026-09-20の開催は3,722会場日で、うち**節の初日は703**（前日に同じ会場の開催が無い会場×日。2025-12-03は全会場を初日とみなす）。`optimal-scraping-design.md`の「約830」は、節数の概算で、実測では703。既定は**節の初日のみ（`--scope=first-days`、703リクエスト。窓JST 00-06、日次上限1,500で1夜、約2.7時間）**。前検タイムは節の間は変わらないため、初日のページ1枚で足りる。`--scope=all-days`は3,722リクエスト（3夜、約14.5時間）で、2連対率の日次の履歴も揃う（低精度の重複のため、必要が生じるまで実施しない）。実行はユーザーの承認後（マイグレーション090の適用が前提）。
 
 ```mermaid
 erDiagram

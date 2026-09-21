@@ -9,7 +9,7 @@
  * モード（scrape_job_state.mode の job='motor_pretest'。DBの更新のみで切り替える。再デプロイ不要。既定は行なし＝off）:
  *   off（または行なし）  何も取得せず、何も書かない
  *   shadow              取得・解析のみ（motor_pretest_stats へ書かない）。last_report に会場ごとの件数・期待に対する充足を記録する
- *   live                書き込む（マイグレーション088の適用が前提。未適用なら、成功にせず失敗にする）
+ *   live                書き込む（マイグレーション090の適用が前提。未適用なら、成功にせず失敗にする）
  * 旧基盤（GitHub Actions・cron-job.org）には、この取得は無い（新規のため、SKIP_*_ON_GHA は不要）。
  *
  * cron式（vercel.json）はUTC。JST換算（オッズの取得の運用窓 07:00〜23:59 JST の外に限る）:

@@ -30,7 +30,7 @@
  *   node --env-file=.env.local scripts/maintenance/motor-pretest-backfill.js download --from=2025-12-03 --to=2026-09-20   # 要承認（夜間に実行）
  *   node scripts/maintenance/motor-pretest-backfill.js parse --from=2025-12-03 --to=2026-09-20
  *   node --env-file=.env.local scripts/maintenance/motor-pretest-backfill.js load --from=2025-12-03 --to=2026-09-20          # 検証のみ
- *   node --env-file=.env.local scripts/maintenance/motor-pretest-backfill.js load --from=2025-12-03 --to=2026-09-20 --apply  # 書き込み（要承認。マイグレーション088が前提）
+ *   node --env-file=.env.local scripts/maintenance/motor-pretest-backfill.js load --from=2025-12-03 --to=2026-09-20 --apply  # 書き込み（要承認。マイグレーション090が前提）
  *
  * 終了コード: 0=完了 / 1=エラー・0件 / 2=安全に停止（窓外・日次上限・最大件数。再実行で続きから） / 4=サーキットブレーカー
  */
@@ -438,7 +438,7 @@ export async function cmdLoad(opts, deps = {}) {
   }
   if (!opts.apply) {
     log(
-      "[DRY-RUN] DBには書き込みません。書き込むには --apply を付けます（マイグレーション088の適用と、ユーザーの実行承認が前提）",
+      "[DRY-RUN] DBには書き込みません。書き込むには --apply を付けます（マイグレーション090の適用と、ユーザーの実行承認が前提）",
     );
     return 0;
   }
@@ -456,7 +456,7 @@ export async function cmdLoad(opts, deps = {}) {
     .limit(1);
   if (probe.error) {
     console.error(
-      `${MOTOR_PRETEST_TABLE.table} を読めません（マイグレーション088が未適用の可能性）: ${probe.error.message}`,
+      `${MOTOR_PRETEST_TABLE.table} を読めません（マイグレーション090が未適用の可能性）: ${probe.error.message}`,
     );
     return 1;
   }

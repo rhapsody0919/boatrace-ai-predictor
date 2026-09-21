@@ -1,4 +1,4 @@
--- 088: 前検タイム・節時点のモーター/ボート2連対率の日次スナップショット motor_pretest_stats を新設する
+-- 090: 前検タイム・節時点のモーター/ボート2連対率の日次スナップショット motor_pretest_stats を新設する
 --
 -- 対応設計: docs/design/scraping-vercel-consolidation/（plan.md §15、tasks.md T4b-20、data-catalog.md N23、
 --   optimal-scraping-design.md §2.7・§4.2 順序5）。取得元は公式の race/rankingmotor（会場×日で1ページ）

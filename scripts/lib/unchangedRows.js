@@ -76,7 +76,7 @@ export const NUMERIC_SCALES = {
     start_timing: 3,
     race_seconds: 1,
   },
-  // 前検タイム（docs/db-migration/088_motor_pretest_stats.sql）
+  // 前検タイム（docs/db-migration/090_motor_pretest_stats.sql）
   motor_pretest_stats: {
     motor_2rate: 1,
     boat_2rate: 1,

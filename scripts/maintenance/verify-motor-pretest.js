@@ -8,7 +8,7 @@
  *       昇順で並べたページの「順位」と一致する（ページの既定の「順位」＝モーター2連対率の順位を、前検順位と取り違えない）。
  *       データが無いページ・未知のラベル・必須ラベルの欠落・想定外のセル・選手の重複は、黙って通さず unrecognized
  *   (b) 行の組み立て・書き込み: 変更の無い行は書かない（numeric の文字列と数値の差で「変更あり」に倒れない）・取得時刻 updated_at・
- *       テーブル未適用（マイグレーション088）は成功にしない
+ *       テーブル未適用（マイグレーション090）は成功にしない
  *   (c) 日次ジョブ: off・行なしで何も取得しない・shadow は書かず対象日を処理済みにしない・live は書く・同じ日の2回目は何もしない・
  *       0件はエラー・races が無い／races_init が未完了なら取得しない・一時的な失敗の会場だけを補足の起動が再取得する・
  *       期待した選手が載っていない／前検タイムが欠けたら通知（1回きり）・構造の変化の通知・別のページを保存しない
@@ -407,8 +407,8 @@ const asPage = (html, venueCode, date) =>
     thrown = error;
   }
   check(
-    "書き込み: テーブルが無い（マイグレーション088が未適用）は、成功にせず、理由の分かる例外にする",
-    thrown !== null && /088が未適用/.test(thrown.message),
+    "書き込み: テーブルが無い（マイグレーション090が未適用）は、成功にせず、理由の分かる例外にする",
+    thrown !== null && /090が未適用/.test(thrown.message),
     thrown?.message,
   );
   check(
@@ -968,7 +968,7 @@ const hdOf = (url) => new URL(url).searchParams.get("hd");
   );
 }
 {
-  // マイグレーション088が未適用のDBで live: 成功にせず、失敗（500）。対象日を処理済みにしない
+  // マイグレーション090が未適用のDBで live: 成功にせず、失敗（500）。対象日を処理済みにしない
   const client = createFakeSupabaseClient({
     tables: jobTables(),
     failOn: {
@@ -987,9 +987,9 @@ const hdOf = (url) => new URL(url).searchParams.get("hd");
   });
   const row = store.state.get(JOB);
   check(
-    "日次ジョブ マイグレーション088が未適用: live は成功にせず失敗（500）にし、理由（088）を残す。対象日を処理済みにしない",
+    "日次ジョブ マイグレーション090が未適用: live は成功にせず失敗（500）にし、理由（090）を残す。対象日を処理済みにしない",
     res.status === 500 &&
-      /088/.test(row.last_error ?? "") &&
+      /090/.test(row.last_error ?? "") &&
       row.last_target_date === undefined,
     show({ status: res.status, err: row.last_error }),
   );
@@ -1001,7 +1001,7 @@ const hdOf = (url) => new URL(url).searchParams.get("hd");
     when: at("05:30:00"),
   });
   check(
-    "日次ジョブ マイグレーション088が未適用: shadow は書かないため影響しない（先に shadow で確認できる）",
+    "日次ジョブ マイグレーション090が未適用: shadow は書かないため影響しない（先に shadow で確認できる）",
     shadowRes.status === 200,
     show(shadowRes.body),
   );
@@ -1283,7 +1283,7 @@ const hdOf = (url) => new URL(url).searchParams.get("hd");
     sleep: async () => {},
   });
   check(
-    "CLI load --apply: テーブルが無い（マイグレーション088が未適用）なら、書かずに失敗（終了コード1）",
+    "CLI load --apply: テーブルが無い（マイグレーション090が未適用）なら、書かずに失敗（終了コード1）",
     noTable === 1,
   );
 

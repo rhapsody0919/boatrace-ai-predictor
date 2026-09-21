@@ -106,12 +106,22 @@ export function digestDbRace(raceRow, entryRows) {
  * @param {Record<string, string>} shadowDigests race_id → ダイジェスト（shadow が記録したもの）
  * @param {Array<Object>} raceRows races の行
  * @param {Array<Object>} entryRows race_entries の行
+ * @param {{excludeRaceIds?: Iterable<string>}} [options] excludeRaceIds: 比較しないレース。
+ *   中止・順延が確定したレースは、公式ページの発走予定時刻が仮の値（日全体の順延なら 10:00 から6分刻み）に
+ *   置き換わり、朝にDBへ書いた時刻と一致しない。時刻が意味を持たないため、比較の対象から外す
  * @returns {{matched: number, mismatched: Array<{race_id: string, shadow: string, db: string}>,
- *   missingInDb: string[], extraInDb: string[]}}
+ *   missingInDb: string[], extraInDb: string[], excluded: number}}
  *   missingInDb: shadow にあるが DB に無い（既存基盤が未初期化・書けなかった）／
- *   extraInDb: DB にあるが shadow に無い（shadow が取りこぼした会場・レース）
+ *   extraInDb: DB にあるが shadow に無い（shadow が取りこぼした会場・レース）／
+ *   excluded: 比較から外した件数（shadow のダイジェストがあるレースのうち）
  */
-export function compareRaceDigests(shadowDigests, raceRows, entryRows) {
+export function compareRaceDigests(
+  shadowDigests,
+  raceRows,
+  entryRows,
+  { excludeRaceIds = [] } = {},
+) {
+  const excludedIds = new Set(excludeRaceIds);
   const entriesBy = new Map();
   for (const e of entryRows) {
     if (!entriesBy.has(e.race_id)) entriesBy.set(e.race_id, []);
@@ -122,14 +132,25 @@ export function compareRaceDigests(shadowDigests, raceRows, entryRows) {
     const d = digestDbRace(r, entriesBy.get(r.race_id));
     if (d) dbDigests.set(r.race_id, d);
   }
-  const out = { matched: 0, mismatched: [], missingInDb: [], extraInDb: [] };
+  const out = {
+    matched: 0,
+    mismatched: [],
+    missingInDb: [],
+    extraInDb: [],
+    excluded: 0,
+  };
   for (const [raceId, digest] of Object.entries(shadowDigests)) {
+    if (excludedIds.has(raceId)) {
+      out.excluded++;
+      continue;
+    }
     const db = dbDigests.get(raceId);
     if (!db) out.missingInDb.push(raceId);
     else if (db === digest) out.matched++;
     else out.mismatched.push({ race_id: raceId, shadow: digest, db });
   }
   for (const raceId of dbDigests.keys()) {
+    if (excludedIds.has(raceId)) continue;
     if (!(raceId in shadowDigests)) out.extraInDb.push(raceId);
   }
   out.missingInDb.sort();

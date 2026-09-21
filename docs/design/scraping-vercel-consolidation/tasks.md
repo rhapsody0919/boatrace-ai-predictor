@@ -335,6 +335,20 @@
 - [ ] タイミング実測: 可変データ（公開時刻がある）は、土日を含む直近7日で、「発走までに公開を検知できた割合」（`scrape_slots`の`done_at <= 期限`）と、公開検知の遅延（`done_at`−発走）の分布を実測する。窓内取得率（中心±3分）は当てはまらないため、「公開後5分以内に検知」（再試行間隔）を基準にする
 - [ ] 継続監視: 上記指標が日次で自動計測され（`scrape-summary`に`pit_reports`が出る）、`expired`（対象レースで許容幅まで公開を検知できなかった）が即時通知されることを確認する。`parse_anomaly`（構造の変化）の`error`が通知されること
 
+### T4b-18 順延・中止の早期確定（`race_status`）: `races.cancellation_status`
+
+設計: [postponed-day-early-detection.md](./postponed-day-early-detection.md)。開催場一覧（`race/index`）の告知と、レース単位の結果ページ（「レース中止」）が一致したレースを、発走を待たずに`confirmed`にする。書き込みは`races.cancellation_status`のみ（未確定→確定の1回）。
+
+- [x] **T4b-18-1**（コード実装済み。`scripts/lib/raceStatusParsers.js`・`raceStatusJob.js`・`api/cron/race-status.js`、レジストリ`race_status`、`vercel.json`のcron、`compareRaceDigests`の`excludeRaceIds`。既定は`off`（行なし）で挙動不変。検証は`npm run verify:race-status-job`。実ページの固定資料は`scripts/lib/__fixtures__/raceStatus/`）
+- [ ] **T4b-18-2** (ユーザー承認) `scrape_job_state`の`race_status`を`shadow`にする。順延・中止が起きた日に、`last_report`の`announced`・`wouldConfirm`・`unrecognized`・`contradictions`を、公式の開催場一覧と既存基盤の確定結果に突き合わせる。**告知（開催場一覧）から結果ページの「レース中止」表示までの遅延**と、告知から`wouldConfirm`に載るまでの時間を実測する（設計書§6）
+- [ ] **T4b-18-3** (ユーザー承認) 一致が確認できたら`live`にする
+
+データ項目: `races.cancellation_status`（中止・順延の確定）。
+
+- [ ] 本番実測: 期待件数（算出根拠: 順延・中止が告知された会場×日の、N R以降のレースのうち結果の無いもの。開催場一覧の状態欄の告知数から算出。結果のあるレースは分母から除き、件数を報告）に対し、`cancellation_status='confirmed'`が99%以上であることを、告知日ごとに実測クエリで確認する。過去分は、全日順延が過去日の開催場一覧に残る（2026-09-09の江戸川で確認）ため、その範囲で遡及して確認する
+- [ ] タイミング実測: 告知から確定までの遅延（`shadow`の`last_report`、`live`では`races`の確定時刻は保存しないため`scrape_job_state.last_report`）を、順延・中止の発生日（土日を含む直近5日に発生が無い場合は、発生した日のみ）で実測する。目標は、発走前に確定していること
+- [ ] 継続監視: `scrape-monitor`の連続失敗・死活が`race_status`に効くこと（`live`・`shadow`で有効）を確認する。`unrecognized`（未知の状態欄）と`contradictions`（告知と結果の矛盾）が、`scrape-summary`または日次の点検で人に見えること（未実装。`last_report`の確認は手動）
+
 ---
 
 ## Phase 7: 最終検証と旧基盤の廃止（WS7、G3）
@@ -344,6 +358,17 @@
 - [ ] **T7-03** (ユーザー) cron-job.orgの全ジョブ（`scrape-scheduled`・`exhibition`・`race-notices`・`aggregate-stats`のdispatch等）を停止・削除する。`docs/operation/external-cron-setup.md`を、廃止または更新する。`aggregate-stats`のdispatchは、取得ではなくDB内集計のため、GitHub Actionsの`schedule`で足りるか、別の起動元が要るかを、ユーザーに確認する
 - [ ] **T7-04** 旧基盤のコード・ワークフローを削除する: 取得系のGitHub Actionsワークフロー、`scrape-scheduled.js`・`morning-init.js`、`SKIP_*_ON_GHA`変数、`api/scrape-races.js`（利用の有無を全期間で確認した後。plan.md U11）、展示の旧実装（D5: `scrape-to-json.js`・`api/scrape-races.js`のbeforeinfo別パーサー）。`continue-on-error`を残さない
 - [ ] **T7-05** 既存ドキュメントに、置き換えの注記を追記する（plan.md §12）。ADR-0057（窓の意味論）・ADR-0066（移行specの参照先）を更新する。orchestration.mdのWS4a・WS4b・WS7を完了に更新する
+
+- [x] **T7-06**（コード実装済み。`scripts/lib/dataHealth/`（登録表`checks.js`・関数のSQLの正本`functions.js`・判定`evaluate.js`・実行`job.js`）、`api/cron/data-health.js`、レジストリ`data_health`（daily・06:30 JST指定）、`vercel.json`のcron、`docs/db-migration/089_data_health_functions.sql`、メタ監視`check-scrape-monitor-liveness.js`の拡張、`npm run verify:data-health-job`・`npm run check:data-health`。既定は`off`（行なし）で挙動不変。runbook §U） **汎用の日次監視（完了の定義C）**。件数の充足率・0件のテーブルを、DBの実測から日次で自動計測し、閾値未達を既存のSlack通知（`scrape-monitor`経由）に流す。期待件数のSQLは、データセットごとの固定の関数（089。任意のSQLを渡す口は作らない）で宣言し、閾値・分類・除外は登録表で宣言する（新しいデータセットは、そのマイグレーションで関数を足し、登録表に1件足す）。分母の定義は`data-health-report.js`と共有（`coverageSpec.js`）
+- [ ] **T7-06-1** (ユーザー承認) マイグレーション089（関数7本。テーブル・データの変更なし）を本番へ適用する。`docs/db-migration/APPLIED.md`の089を「適用済み」に更新する。適用後の確認SQLは、ファイル冒頭
+- [ ] **T7-06-2** (ユーザー承認) `scrape_job_state`の`data_health`を`shadow`にし、翌朝06:35 JST以降の`last_report`（`wouldAlert`・`checks`）でノイズ（誤警告・閾値の見直し）を確認する。runbook §U-3
+- [ ] **T7-06-3** (ユーザー承認) `data_health`を`live`にする（`SLACK_WEBHOOK_URL`はVercelの環境変数に設定済みであること。`scrape-monitor`の通知と同じ）。初回は、実際に未達の項目が1回だけ通知される（runbook §U-4）。`scrape-monitor-liveness`（日次）が`data_health`の未処理を検知することを、次の朝に確認する
+
+データ項目: 汎用の日次監視`data_health`（`scrape_job_state`の`last_report`。データテーブルへは書かない）。
+
+- [ ] 本番実測: 期待件数（算出根拠: 登録表`checks.js`の各項目。分母は`data-health-report.js`と同じ定義（開催中止を除く。rank4〜6は完走艇数まで。全券種オッズは2026-09-17以降）で、直近7日）に対し、登録した全ての項目のSQLが本番で動き、期待どおりの値を返すことを実測クエリで確認する（`npm run check:data-health`。実測はPR本文・完了報告に添付）
+- [ ] タイミング実測: 日次の集計であり、可変データの窓型ではない。代わりに「06:35 JSTの実行が、指定時刻06:30から3時間以内（`scrape-monitor`の日次の期限超過の基準）に完了する」ことを、`scrape_job_state`の`last_target_date`・`last_success_at`で連続5日確認する
+- [ ] 継続監視: 閾値未達・0件のテーブルが日次で計測され、Slackへ通知されること（初回の実通知を確認）。監視自体の失敗（未実行・全関数の失敗・089の未適用）が、`scrape-monitor`（日次の期限超過・連続失敗）と、`scrape-monitor-liveness`（日次。`scrape-monitor`自体が止まっている場合）で検知されること
 
 **完了条件（G3）**: `morning-init`を含む全取得処理がVercelへ移行済みで、旧基盤を止めても本番データが欠けないことを実測で確認している。
 
@@ -355,10 +380,10 @@
 
 ### T4b-20 前検タイム・前検順位・節時点のモーター/ボート2連対率（N23）: `motor_pretest_stats`
 
-- [x] **T4b-20-1**（コード実装済み。`scripts/lib/motorPretestParser.js`・`motorPretestRows.js`・`motorPretestJob.js`・`api/cron/motor-pretest.js`・レジストリ`motor_pretest`・`vercel.json`のcron・`docs/db-migration/088_motor_pretest_stats.sql`（**未適用。ユーザー承認待ち**）・`scripts/maintenance/motor-pretest-backfill.js`。検証: `npm run verify:motor-pretest`。変異検証済み） 公式`race/rankingmotor`を、その日の開催会場ごとに1ページ取得し、前検タイム・前検順位（前検タイムから計算）・モーター/ボートの番号と2連対率を保存する日次ジョブと、過去分のCLI
-- [ ] **T4b-20-2** (ユーザー承認) マイグレーション088を本番へ適用する（APPLIED.mdの「未適用」を「適用済み」に更新）。適用前は、ジョブを`shadow`にしてよい（書かないため。`live`にすると、成功にせず失敗する）
+- [x] **T4b-20-1**（コード実装済み。`scripts/lib/motorPretestParser.js`・`motorPretestRows.js`・`motorPretestJob.js`・`api/cron/motor-pretest.js`・レジストリ`motor_pretest`・`vercel.json`のcron・`docs/db-migration/090_motor_pretest_stats.sql`（**未適用。ユーザー承認待ち**）・`scripts/maintenance/motor-pretest-backfill.js`。検証: `npm run verify:motor-pretest`。変異検証済み） 公式`race/rankingmotor`を、その日の開催会場ごとに1ページ取得し、前検タイム・前検順位（前検タイムから計算）・モーター/ボートの番号と2連対率を保存する日次ジョブと、過去分のCLI
+- [ ] **T4b-20-2** (ユーザー承認) マイグレーション090を本番へ適用する（APPLIED.mdの「未適用」を「適用済み」に更新）。適用前は、ジョブを`shadow`にしてよい（書かないため。`live`にすると、成功にせず失敗する）
 - [ ] **T4b-20-3** (ユーザー承認) `scrape_job_state`の`motor_pretest`を`shadow`にし、3日（土日を含む）、`last_report.summary`（期待した選手がページに載る割合・前検タイムの非NULL率）と`last_report.alerts`を確認する。**前提**: `races_init`が`live`（朝05:00に`races`が揃う）。runbook T-2
-- [ ] **T4b-20-4** (ユーザー承認) 088の適用後、`live`にする。翌朝の最初の書き込みを観測する（runbook T-3）
+- [ ] **T4b-20-4** (ユーザー承認) 090の適用後、`live`にする。翌朝の最初の書き込みを観測する（runbook T-3）
 - [ ] **T4b-20-5** (ユーザー承認) 過去分のバックフィル（2025-12-03〜。節の初日のみ703リクエスト、1夜、約2.7時間。CLIの`plan`→`download`（夜間）→`parse`→`load --apply`）。実行前に、CLIの`plan`の出力と範囲（`first-days`か`all-days`）を提示して承認を得る。取得先への負荷: 逐次・3秒以上・JST 00-06・日次上限1,500・サーキットブレーカー（ADR-0067）
 
 データ項目: `motor_pretest_stats`。取得できる情報は前検タイムのみが新規で、2連対率・番号は`race_entries`の低精度の重複（plan.md §15.1）。

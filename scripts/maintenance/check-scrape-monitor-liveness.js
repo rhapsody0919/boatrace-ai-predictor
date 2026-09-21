@@ -16,11 +16,17 @@
  *   - scrape-monitor の行が無い: 有効な取得ジョブがあれば異常、無ければ「まだ起動していない」で正常
  *   - last_tick_at が30分以上前（5分ごとの起動が6回途絶えた）: 異常
  *   - consecutive_failures が3以上（Slack通知の失敗等で、監視が失敗し続けている）: 異常
+ *
+ * 汎用の日次監視 data_health（scrape_job_state の job='data_health'。件数の充足率・0件のテーブル）も、同じ日次の確認で見る
+ * （evaluateDataHealthLiveness）。scrape-monitor が動いていれば、日次ジョブの期限超過（daily_overdue）で通知されるが、
+ * scrape-monitor 自体が止まっていても、また data_health のCron・デプロイ・マイグレーション089が欠けていても、
+ * 監視の外（ここ）で検知する。
  */
 import { pathToFileURL } from "node:url";
-import { livenessCheckable } from "../lib/scrapeJobs/monitor.js";
+import { THRESHOLDS, livenessCheckable } from "../lib/scrapeJobs/monitor.js";
 import { isScrapeSchemaMissingError } from "../lib/scrapeJobs/schemaErrors.js";
 import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
+import { resolveTargetDate } from "../lib/scrapeJobs/dailyJob.js";
 
 export const MONITOR_STALE_MIN = 30;
 export const MONITOR_MAX_FAILURES = 3;
@@ -77,13 +83,62 @@ export function evaluateMonitorLiveness({ now, jobStates }) {
   };
 }
 
+const DATA_HEALTH_JOB = "data_health";
+
+/**
+ * @param {{now: Date, jobStates: Array<Record<string, unknown>>}} input
+ * @returns {{status: "ok"|"skip"|"alert", message: string}}
+ */
+export function evaluateDataHealthLiveness({ now, jobStates }) {
+  const def = SCRAPE_JOBS[DATA_HEALTH_JOB];
+  const row = jobStates.find((r) => r.job === DATA_HEALTH_JOB);
+  // off・shadow・行なしは、まだ有効化されていない（判定しない）。shadow は対象日を処理済みにしないため、鮮度で見る
+  if (!row || row.mode === "off") {
+    return {
+      status: "ok",
+      message: "data_health は有効化されていません（off）",
+    };
+  }
+  if (!livenessCheckable(now)) {
+    return {
+      status: "skip",
+      message: "運用窓の外に実行されたため、data_health の鮮度は判定しません",
+    };
+  }
+  const targetDate = resolveTargetDate(now, def.targetTimeJst);
+  const targetInstant = new Date(`${targetDate}T${def.targetTimeJst}:00+09:00`);
+  const overdueHours = (now.getTime() - targetInstant.getTime()) / 3600000;
+  if (overdueHours < THRESHOLDS.dailyOverdueHours) {
+    return {
+      status: "ok",
+      message: `data_health の対象日 ${targetDate} は、指定時刻から${THRESHOLDS.dailyOverdueHours}時間以内のため、まだ判定しません`,
+    };
+  }
+  const processed =
+    row.mode === "live"
+      ? row.last_target_date === targetDate
+      : Boolean(row.last_success_at) &&
+        new Date(String(row.last_success_at)).getTime() >=
+          targetInstant.getTime();
+  if (!processed) {
+    return {
+      status: "alert",
+      message: `data_health（汎用の日次監視）が対象日 ${targetDate} を処理していません（mode=${row.mode}、最終成功 ${row.last_success_at ?? "なし"}、最終エラー: ${row.last_error ?? "なし"}）。Vercel Cronの未配信・デプロイの失敗・マイグレーション089の未適用の可能性があります`,
+    };
+  }
+  return {
+    status: "ok",
+    message: `data_health は対象日 ${targetDate} を処理済みです`,
+  };
+}
+
 async function main() {
   const { supabase } = await import("../lib/supabaseClient.js");
   if (!supabase) throw new Error("Supabase が設定されていません");
   const { data, error } = await supabase
     .from("scrape_job_state")
     .select(
-      "job,mode,last_tick_at,last_success_at,last_error,consecutive_failures",
+      "job,mode,last_tick_at,last_success_at,last_target_date,last_error,consecutive_failures",
     );
   if (error) {
     if (isScrapeSchemaMissingError(error)) {
@@ -94,12 +149,21 @@ async function main() {
     }
     throw new Error(`ジョブ状態の読み取りに失敗しました: ${error.message}`);
   }
-  const result = evaluateMonitorLiveness({ now: new Date(), jobStates: data });
-  if (result.status === "alert") {
-    console.log(result.message);
+  const now = new Date();
+  const results = [
+    evaluateMonitorLiveness({ now, jobStates: data }),
+    evaluateDataHealthLiveness({ now, jobStates: data }),
+  ];
+  const alerts = results.filter((r) => r.status === "alert");
+  if (alerts.length > 0) {
+    console.log(alerts.map((r) => r.message).join("\n"));
     process.exit(1);
   }
-  console.log(`${result.status === "skip" ? "SKIP" : "OK"}: ${result.message}`);
+  for (const result of results) {
+    console.log(
+      `${result.status === "skip" ? "SKIP" : "OK"}: ${result.message}`,
+    );
+  }
 }
 
 if (

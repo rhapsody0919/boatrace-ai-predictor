@@ -51,7 +51,7 @@ export function buildMotorPretestRows({ venueCode, date, parsed }) {
 
 /**
  * 変更のある行だけを書く（変更の無い行は書かない。取得時刻 updated_at は、変更のある行にだけ設定する）。
- * テーブルが無い（マイグレーション088が未適用）ときは、成功にせず、理由の分かるエラーにする。
+ * テーブルが無い（マイグレーション090が未適用）ときは、成功にせず、理由の分かるエラーにする。
  *
  * @param {import("@supabase/supabase-js").SupabaseClient} client
  * @param {Array<Object>} rows
@@ -85,7 +85,7 @@ export async function writeMotorPretestRows(
     // PostgREST: PGRST205「Could not find the table 'public.x' in the schema cache」、直接接続: 42P01「relation ... does not exist」
     if (/Could not find the table|does not exist/i.test(raw)) {
       throw new Error(
-        `${MOTOR_PRETEST_TABLE.table} がありません（マイグレーション088が未適用の可能性）: ${raw}`,
+        `${MOTOR_PRETEST_TABLE.table} がありません（マイグレーション090が未適用の可能性）: ${raw}`,
       );
     }
     throw result.error;
