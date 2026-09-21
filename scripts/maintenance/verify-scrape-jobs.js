@@ -168,6 +168,7 @@ check(
 check(
   "窓型のジョブ名",
   same(windowJobNames().sort(), [
+    "boatcast_oriten",
     "exhibition",
     "odds",
     "pcexpect",

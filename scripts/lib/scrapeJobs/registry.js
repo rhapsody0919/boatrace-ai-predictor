@@ -241,6 +241,36 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
 
+  // N25 BOATCASTのオリジナル展示（一周/半周ラップ・まわり足・直線。docs/design/boatcast-original-exhibition/）。
+  // 別ホスト race.boatcast.jp（boatrace.jp のブレーカーとは独立）。対象は、公開マップ（scripts/lib/boatcast/publicMap.js）で
+  // 公開を確認済みの23会場（江戸川は常時403で対象外）の全レース。公開時刻の実測（2026-09-21、n=21）: ファイルは発走の
+  // 9.9〜29.0分前に現れる（HTTPのLast-Modified）。期限は発走の8分前の1本で、未公開（403）は最大3回（発走の約3分前・約5分後）
+  // まで再試行し、打ち切る（oritenRows.js の decideNotPublished。許容幅30分は、3回目の取得を含む）。リクエストは逐次で
+  // 2.2秒以上の間隔（同時数1）。各tickの先頭にカナリア（既知の存在ファイル）を1回取るため、1スロットの見積りは4秒。
+  // 実装: scripts/lib/boatcast/oritenJob.js、api/cron/boatcast-oriten.js
+  boatcast_oriten: {
+    kind: "window",
+    offsets: [-8],
+    graceMin: 30,
+    retrySec: 300,
+    leaseSec: 60,
+    claimLimit: 6,
+    concurrency: 1,
+    slotSecEstimate: 4,
+    maxDurationSec: 90,
+    hosts: ["race.boatcast.jp"],
+  },
+  // N26 BOATCASTのモーター使用開始日（bc_mst。全24会場）。06:30指定（cron: 06:30・08:00 JST。08:00は、一部が失敗した
+  // 場合の補足）。24リクエストを逐次（2.2秒以上の間隔）で約60秒。venue_motor_start_dates へ、新しい（会場, 使用開始日）の
+  // 組だけを追記する。実装: scripts/lib/boatcast/motorStartJob.js、api/cron/boatcast-motor-start.js
+  boatcast_motor_start: {
+    kind: "daily",
+    targetTimeJst: "06:30",
+    leaseSec: 120,
+    maxDurationSec: 120,
+    hosts: ["race.boatcast.jp"],
+  },
+
   // T4a-10 の疑似ジョブ: 取得先へアクセスせず、スロットを消化するだけ（重複配信・二重claim・リースの奪取・
   // 期限計算の検証用。api/cron/scrape-pseudo.js）。Cronには登録しない（手動リクエストのみ）。検証後は削除してよい
   pseudo: {

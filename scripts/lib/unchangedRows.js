@@ -94,6 +94,10 @@ export const NUMERIC_SCALES = {
     race_seconds: 1,
     start_timing: 2,
   },
+  // BOATCASTのオリジナル展示（docs/db-migration/091_boatcast_original_exhibition.sql）
+  race_original_exhibition_values: {
+    value: 2,
+  },
 };
 
 /**

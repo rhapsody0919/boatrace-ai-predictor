@@ -1500,6 +1500,177 @@ shadowは、`ok`で完了する（データには書かない）ため、`done_a
 
 `scrape-monitor`（5分）・`scrape-summary`（日次）が、`pit_reports`の`expired`・未実行・死活・連続失敗を通知する（既存の仕組み。ジョブ固有の設定は不要）。`skipped_not_target`は窓内取得率の分母から除外される。
 
+## S. BOATCAST（`boatcast_oriten`・`boatcast_motor_start`。N25・N26）の切り替え（tasks.md T4b-19、[boatcast-original-exhibition/](../boatcast-original-exhibition/spec.md)）
+
+別ホスト`race.boatcast.jp`。**適用の順序: 091 → マージ・デプロイ → probe → shadow（省略可）→ live**。いずれも本番の変更のため、ユーザーの承認が要る（live化は、対象のジョブ名と操作を明示した指示が要る: [cutover-fast-track.md §10](./cutover-fast-track.md)）。新規テーブルにだけ書くジョブは、shadowを省いて直接liveにできる（[§12](./cutover-fast-track.md)）が、**probeは省かない**（VercelのIPがブロックされていないかの確認）。
+
+マージしても本番の挙動は変わらない（`scrape_job_state`に行が無い＝off）。091が未適用のDBでは、liveでも書かずに`error`にする。
+
+### S-0. 取得先への負荷（ADR-0067の要件。詳細は[spec.md §5](../boatcast-original-exhibition/spec.md)）
+
+| 項目 | 通常（推定） | 上限 |
+|---|---|---|
+| オリジナル展示（再試行を含む。403は最大3回）・カナリア・`bc_mst`24件 | 約330リクエスト/日 | 約800リクエスト/日 |
+
+逐次・2.2秒以上の間隔。429・503が出たら、ブレーカー（`host:race.boatcast.jp`。boatrace.jpと独立）が開く。
+
+### S-1. マイグレーション091の適用（承認後）
+
+`docs/db-migration/091_boatcast_original_exhibition.sql`（ファイル冒頭の手順。1トランザクション）。適用後: 3表が存在しRLS有効・anonのSELECT権限なし（ファイル冒頭の確認SQL）、`scripts/maintenance/check-anon-access.js --expect-applied`でも確認できる。`docs/db-migration/APPLIED.md`の087を「適用済み」に更新。**091が未適用の間は、`live`にしない**（未適用のDBでは、liveのスロットが`error`になる）。
+
+### S-2. probe（マージ・デプロイ後。shadowの前）
+
+調査時のアクセス（2026-09-20・21）は、Vercelからではなかった。**Vercel（syd1）からBOATCASTへ到達できるか**を、CRON_SECRETを持つユーザーが実行する（書き込みなし。1〜2リクエスト）:
+
+```sql
+-- probeは、modeがshadow・liveのときだけ実行できる（offは409）
+INSERT INTO scrape_job_state (job, mode) VALUES ('boatcast_oriten', 'shadow')
+ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+```
+
+```bash
+# 既知の存在ファイル（bc_mst_12）を1件取る。カナリアと同じ
+curl -s -H "Authorization: Bearer $CRON_SECRET" "https://www.boat-ai.jp/api/cron/boatcast-oriten?probe=1"
+# オリジナル展示のファイルも1件取る（当日の終了したレース、または前日のレース）
+curl -s -H "Authorization: Bearer $CRON_SECRET" "https://www.boat-ai.jp/api/cron/boatcast-oriten?probe=1&race=2026-09-24-12-01"
+```
+
+判定: `canary.status`が**200**で`canary.head`が`YYYYMMDD`（例: `20260323`）、`region`が`syd1`。**403・失敗（`canary.status`が403・null）の場合は、shadowに進まず**、VercelのIPのブロック（または本番ドメインの認証）を疑って報告する（`?probe=1&race=`の`sample.status`が403で`canary.status`が200なら、そのレースが未公開・非公開なだけで、異常ではない）。`sample.lastModified`は、ファイルが置かれた時刻（当日のレースなら公開時刻）。
+
+### S-3. shadow（省略可。推奨: 開催日の1日。土日を含むと、なお良い）
+
+```sql
+INSERT INTO scrape_job_state (job, mode) VALUES
+  ('boatcast_oriten', 'shadow'), ('boatcast_motor_start', 'shadow')
+ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+```
+
+確認（読み取り）:
+
+```sql
+-- shadow がデータテーブルへ書いていないこと（期待: 3表とも0）
+SELECT (SELECT count(*) FROM race_original_exhibition) AS reports,
+       (SELECT count(*) FROM race_original_exhibition_values) AS vals,
+       (SELECT count(*) FROM venue_motor_start_dates) AS mst;
+
+-- スロットと結果。ok=公開を検知、no_values=403で再試行中、skipped_not_target=403の打ち切り（データ無し）または対象外、error=要調査
+-- 江戸川は、races_init が全ジョブの予定表を作る場合に、対象外のスロットが skipped_not_target で作られる（リクエストは出さない）
+SELECT race_date, outcome, count(*), min(attempts), max(attempts)
+  FROM scrape_slots WHERE job = 'boatcast_oriten' AND run_mode = 'shadow' AND race_date >= current_date - 2
+ GROUP BY 1, 2 ORDER BY 1, 2;
+
+-- 会場ごとの打ち切り（データ無し）。三国・津の12Rのような散発は正常。会場の半分以上なら、公開マップの見直し
+SELECT substr(race_id, 12, 2) AS venue, count(*) FILTER (WHERE outcome = 'skipped_not_target') AS no_data,
+       count(*) FILTER (WHERE outcome = 'ok') AS ok
+  FROM scrape_slots WHERE job = 'boatcast_oriten' AND run_mode = 'shadow' AND race_date = current_date
+ GROUP BY 1 ORDER BY 1;
+
+-- 解析の異常・エラーの理由
+SELECT race_id, outcome, last_error FROM scrape_slots
+ WHERE job = 'boatcast_oriten' AND (outcome = 'error' OR last_error IS NOT NULL) AND race_date >= current_date - 2;
+
+-- 通知（last_report.alerts）と、bc_mst の日ごとの取得（history）
+SELECT job, last_error, consecutive_failures, last_report FROM scrape_job_state
+ WHERE job IN ('boatcast_oriten', 'boatcast_motor_start');
+```
+
+shadowは書き込まないため、公開時刻（`source_last_modified`）は残らない（`scrape_slots.done_at`が「検知した時刻」）。公開時刻の分布は、liveの`race_original_exhibition.source_last_modified`で実測する（S-5）。
+
+### S-4. live（新規テーブルのみに書くため、既存データに影響しない）
+
+```sql
+UPDATE scrape_job_state SET mode = 'live', updated_at = now()
+ WHERE job IN ('boatcast_oriten', 'boatcast_motor_start');
+```
+
+（shadowを省く場合は、S-3の`INSERT ... 'shadow'`の代わりに`'live'`で入れる）
+
+確認（liveの初日）:
+
+- 最初の実書き込み（発走8分前のスロット）の後、`race_original_exhibition`・`race_original_exhibition_values`に行が入り、`race_original_exhibition_values`が**会場ごとに18行/レース（3項目）・12行/レース（住之江・尼崎・徳山）**であること
+- 公式（BOATCASTの画面）とのサンプル突合（3レース: 3項目の会場・2項目の会場・桐生の半周ラップ）
+- 2回目以降の取得（再試行・重複配信）で`rows_written = 0`（変更なし）
+- `scrape_job_state`の`last_report.alerts`が空（`parse_anomaly`・`canary_failed`が出ていない）
+- `boatcast_motor_start`: 翌朝06:30 JSTの実行の後、`last_report.history`の最新の日に`fetched=24`・`complete=true`。`venue_motor_start_dates`に24行（初回）
+
+### S-5. 完了の定義の実測（土日を含む直近5日。取得開始日以降）
+
+**A（件数）**: 期待件数は、公開マップの対象会場（江戸川を除く23会場）のレース数×艇数×項目数。分母は`races`・`race_entries`と凍結したマップ（下のCTE）から作り、BOATCASTの観測からは作らない。
+
+```sql
+WITH m(jo, n_items) AS (VALUES
+  ('01',3),('02',3),('04',3),('05',3),('06',3),('07',3),('08',3),('09',3),('10',3),('11',3),
+  ('12',2),('13',2),('14',3),('15',3),('16',3),('17',3),('18',2),('19',3),('20',3),('21',3),
+  ('22',3),('23',3),('24',3)),
+target AS (
+  SELECT r.race_id, r.race_date, m.n_items,
+         (SELECT count(*) FROM race_entries en
+           WHERE en.race_id = r.race_id AND coalesce(en.is_absent, false) = false) AS boats
+    FROM races r JOIN m ON m.jo = substr(r.race_id, 12, 2)
+   WHERE r.race_date BETWEEN '2026-09-24' AND '2026-09-28'   -- 取得開始日以降・直近5日
+     AND coalesce(r.cancellation_status, '') <> 'confirmed'),
+got AS (SELECT race_id, count(*) AS n FROM race_original_exhibition_values GROUP BY race_id)
+SELECT t.race_date, count(*) AS races, sum(t.boats * t.n_items) AS expected,
+       coalesce(sum(g.n), 0) AS actual,
+       round(100.0 * coalesce(sum(g.n), 0) / nullif(sum(t.boats * t.n_items), 0), 1) AS fill_pct
+  FROM target t LEFT JOIN got g USING (race_id) GROUP BY 1 ORDER BY 1;
+```
+
+除外の件数（**件数付きで報告する**）:
+
+```sql
+-- 403の打ち切り（データ無し）・expired・ok（スロットの結果）
+SELECT race_date, count(*) FILTER (WHERE outcome = 'ok') AS ok,
+       count(*) FILTER (WHERE outcome = 'skipped_not_target') AS no_data_403,
+       count(*) FILTER (WHERE status = 'expired') AS expired
+  FROM scrape_slots WHERE job = 'boatcast_oriten' AND race_date BETWEEN '2026-09-24' AND '2026-09-28' GROUP BY 1 ORDER BY 1;
+-- 計測不可（ファイルの計測状態2。値の行なし）
+SELECT r.race_date, count(*) FROM race_original_exhibition e JOIN races r USING (race_id)
+ WHERE e.measure_status = 2 AND r.race_date BETWEEN '2026-09-24' AND '2026-09-28' GROUP BY 1 ORDER BY 1;
+-- 対象外会場（江戸川）のレース・欠場艇（分母から除いた艇）
+SELECT r.race_date, count(*) FROM races r
+ WHERE substr(r.race_id, 12, 2) = '03' AND r.race_date BETWEEN '2026-09-24' AND '2026-09-28'
+   AND coalesce(r.cancellation_status, '') <> 'confirmed' GROUP BY 1 ORDER BY 1;
+```
+
+充足率は原則99%以上（403の打ち切り・計測不可の除外を、件数付きで説明する）。値が欠測（`value IS NULL`。津・三国の一周等）は、行の存在としては充足に数え、`SELECT kind, count(*) FILTER (WHERE value IS NULL) ... GROUP BY 1`で別に報告する。
+
+**B（タイミング）**: 公開時刻の分布と、提案した基準（[tasks.md T4b-19](./tasks.md)。ユーザー承認まで確定しない）の実測。
+
+```sql
+-- 公開の何分前にファイルが現れたか（発走 − source_last_modified）の分布と、公開から検知までの遅延（created_at − source_last_modified）
+WITH x AS (
+  SELECT e.race_id,
+         extract(epoch FROM (((r.race_date + r.start_time) AT TIME ZONE 'Asia/Tokyo') - e.source_last_modified)) / 60 AS lead_min,
+         extract(epoch FROM (e.created_at - e.source_last_modified)) / 60 AS detect_delay_min,
+         (e.created_at <= ((r.race_date + r.start_time) AT TIME ZONE 'Asia/Tokyo') - interval '2 minutes') AS before_2min
+    FROM race_original_exhibition e JOIN races r USING (race_id)
+   WHERE r.race_date BETWEEN '2026-09-24' AND '2026-09-28' AND e.source_last_modified IS NOT NULL)
+SELECT count(*) AS n,
+       round(min(lead_min)::numeric, 1) AS lead_min, round((percentile_cont(0.5) WITHIN GROUP (ORDER BY lead_min))::numeric, 1) AS lead_p50,
+       round(max(lead_min)::numeric, 1) AS lead_max,
+       round((percentile_cont(0.5) WITHIN GROUP (ORDER BY detect_delay_min))::numeric, 1) AS delay_p50,
+       round((percentile_cont(0.95) WITHIN GROUP (ORDER BY detect_delay_min))::numeric, 1) AS delay_p95,
+       round(100.0 * count(*) FILTER (WHERE before_2min) / count(*), 1) AS before_2min_pct
+  FROM x;
+-- 公開時刻の記録率（提案の3.）
+SELECT round(100.0 * count(source_last_modified) / count(*), 1) AS lm_recorded_pct FROM race_original_exhibition e JOIN races r USING (race_id)
+ WHERE r.race_date BETWEEN '2026-09-24' AND '2026-09-28';
+```
+
+`lead_min`の最小が8分を下回る（公開が発走の8分前より遅いレースがある）場合は、`offsets`を後ろへ、または再試行の回数を見直す。
+
+**C（継続監視）**: `scrape-monitor`のSlack通知（`canary_failed`・`parse_anomaly`・`no_data:{会場}`・`motor_start_incomplete`・expired・連続失敗）が、実際に届くことを確認する（[cutover-fast-track.md G6](./cutover-fast-track.md)）。
+
+### S-6. 切り戻し
+
+`UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job IN ('boatcast_oriten', 'boatcast_motor_start');`（データは残る。他のジョブ・画面に影響しない。再デプロイ不要）。取得先から通知・要請を受けた場合、または429・503・403（カナリアの失敗）が続く場合は、直ちにoffにして報告する（ADR-0067）。データを消す場合は、091のロールバック（`DROP TABLE`）。
+
+### S-7. 継続監視（完了の定義C）と未確認事項
+
+- `scrape-monitor`（5分）・`scrape-summary`（日次）が、`boatcast_oriten`の`expired`・未実行・死活・連続失敗・ブレーカーと、`boatcast_motor_start`の日次の期限超過を通知する（既存の仕組み）。`skipped_not_target`は窓内取得率の分母から除外される。ジョブ固有の通知は`last_report.alerts`（[plan.md §5](../boatcast-original-exhibition/plan.md)）
+- 未確認: Vercelから到達できるか（S-2）、公開後の値の更新の有無（内容のハッシュの変化）、403の打ち切りの頻度（`no_data:{会場}`の閾値3件・50%は暫定）、江戸川の公開（会場の一部の日に公開される可能性）
+
 
 ---
 

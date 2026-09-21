@@ -335,6 +335,33 @@
 - [ ] タイミング実測: 可変データ（公開時刻がある）は、土日を含む直近7日で、「発走までに公開を検知できた割合」（`scrape_slots`の`done_at <= 期限`）と、公開検知の遅延（`done_at`−発走）の分布を実測する。窓内取得率（中心±3分）は当てはまらないため、「公開後5分以内に検知」（再試行間隔）を基準にする
 - [ ] 継続監視: 上記指標が日次で自動計測され（`scrape-summary`に`pit_reports`が出る）、`expired`（対象レースで許容幅まで公開を検知できなかった）が即時通知されることを確認する。`parse_anomaly`（構造の変化）の`error`が通知されること
 
+### T4b-19 BOATCAST（N25 オリジナル展示・N26 モーター使用開始日）: `boatcast_oriten`・`boatcast_motor_start`
+
+設計: [boatcast-original-exhibition/](../boatcast-original-exhibition/spec.md)（spec・plan）。別ホスト `race.boatcast.jp`。**日次（当日）の取得のみ**。過去分（約44,700リクエスト）のバックフィルは、第1弾の対象外（完了の定義Aの例外。取得開始日以降のみ）。取得・解析・書き込み（`processOritenRace`）は、将来の手動CLIと共有できる構造。
+
+- [x] **T4b-19-1**（コード実装済み。`scripts/lib/boatcast/`（公開マップ・パーサー・行の組み立て・カナリア・取得ジョブ・probe）・`api/cron/boatcast-oriten.js`・`api/cron/boatcast-motor-start.js`、レジストリ`boatcast_oriten`（窓型・発走8分前）・`boatcast_motor_start`（日次・06:30 JST）、`vercel.json`のcron。既定は`off`（行なし）で挙動不変。検証は`npm run verify:boatcast-job`。共有の`politeFetch`・ブレーカーは変更していない）
+- [ ] **T4b-19-2** (ユーザー承認) マイグレーション091（保存: `race_original_exhibition`・`race_original_exhibition_values`・`venue_motor_start_dates`。匿名のSELECTなし）を本番へ適用する。APPLIED.mdの「未適用」を「適用済み」に更新する。091が未適用の間は`live`にしない（liveのスロットが`error`になる）
+- [ ] **T4b-19-3** (親: マージ・デプロイ後。CRON_SECRETを持つユーザー経由) **probe**: Vercel（syd1）からBOATCASTへ到達できるかを、`GET /api/cron/boatcast-oriten?probe=1[&race=YYYY-MM-DD-VV-RR]`で確認する（`scrape_job_state`の`boatcast_oriten`を`shadow`にした後。既知の存在ファイル`bc_mst_12`が200か）。403・失敗ならshadowに進まない（[runbook S-2](./verification-runbook.md)）
+- [ ] **T4b-19-4** (ユーザー承認。新規テーブルのみに書くジョブは、shadowを省いて直接liveにできる: [cutover-fast-track.md §12](./cutover-fast-track.md)) `boatcast_oriten`・`boatcast_motor_start`を`shadow`（推奨: 1日。公開時刻（`source_last_modified`は書かないが、`scrape_slots.done_at`）・403の打ち切りの内訳を確認）→ `live`にする。liveの初回に、公開マップの項目名の一致（`parse_anomaly`の通知が0件）を確認する
+- [ ] **T4b-19-5** (実施しない・第1弾の対象外) 過去分のバックフィルCLI（2025-12以降、約44,700リクエスト。夜間・複数夜・実行前にユーザー承認）
+
+**Bの基準の提案（未承認。ユーザーが承認するまで、この項目のBは確定しない）**: 窓内取得率（窓の中心±3分以内）は当てはまらない（公開時刻が発走の9.9〜29.0分前と幅があり、取得は公開後の固定の期限=発走8分前・1回目）。代わりに、次を提案する。土日を含む直近5日で、
+1. **発走の2分前までに取得できた割合**（`race_original_exhibition.created_at <= 発走 − 2分`）が、公開が確認できたレース（`scrape_slots.outcome='ok'`）の98%以上（欠落率2%以内。BOA-313の基準）
+2. **公開の検知遅延**（`created_at − source_last_modified`）の分布（p50・p95）を報告する。設計上の見込みは、p50 約6分・p95 約21分（公開が発走の10〜29分前、取得が発走の約8分前のため）。実測がこれを超えたら、期限（`offsets`）を早める
+3. **`source_last_modified`が記録されているレースが99%以上**（公開時刻の分布を計測できること）
+
+#### データ項目: `race_original_exhibition`・`race_original_exhibition_values`（N25）
+
+- [ ] 本番実測: 期待件数（算出根拠: 公開マップ（`scripts/lib/boatcast/publicMap.js`）で対象の23会場（江戸川を除く）の、取得開始日以降の各レース（中止・順延（`cancellation_status='confirmed'`）を除く）× 艇数（`race_entries.is_absent`の欠場艇を除く）× 項目数（3項目の20会場は3、住之江・尼崎・徳山は2）。**分母は事前凍結のマップと`races`・`race_entries`から算出し、BOATCASTの観測から作らない**（分母が分子に従属してAが自明に満たされるのを避ける）。除外（計測不可=`measure_status=2`・403の打ち切り=`scrape_slots.outcome='skipped_not_target'`・欠場艇・対象外会場の江戸川のレース）は、**件数付きで報告する**）に対し、充足率99%以上であることを実測クエリで確認する（実測クエリ: [runbook S-5](./verification-runbook.md)）。過去分は取得できない扱い（第1弾の対象外）のため、「取得開始日以降のみ」とし、ユーザーの承認を得る
+- [ ] タイミング実測: 土日を含む直近5日で、公開時刻（`source_last_modified`）が窓のどこに入るか（発走の何分前にファイルが現れたか）の分布と、上記**Bの基準の提案**（発走の2分前までの取得率98%以上・検知遅延のp50/p95・公開時刻の記録率99%以上）を`race_original_exhibition`の取得時刻列から実測する（窓内取得率（中心±3分）は当てはまらない。提案の承認後に確定）
+- [ ] 継続監視: `scrape-monitor`（`expired`・未実行・死活・連続失敗・0件エラー・ブレーカー）に加えて、`last_report.alerts`の`canary_failed`（カナリア失敗）・`parse_anomaly`（構造の異常・未知の項目名・マップと違う項目名。件数と例）・`no_data:{会場}`（会場の打ち切りが多い）が、Slackに通知されることを確認する（0件は共通ラッパの0件エラー）。日次の充足率の自動計測は、完了の定義Cの汎用監視（別タスク）へ、上の期待件数のSQLを登録する
+
+#### データ項目: `venue_motor_start_dates`（N26）
+
+- [ ] 本番実測: 期待件数（算出根拠: 公開マップの全24会場（江戸川を含む。`bc_mst`は24会場とも2026-09-21に200を確認）の`bc_mst`。**日ごとの取得は24件が期待値**で、`scrape_job_state.last_report.history`の各日の`fetched=24`・`complete=true`で確認する。テーブルは新しい（会場, 使用開始日）の組が現れたときだけ増えるため、全24会場に最低1行あること（`count(distinct venue_code)=24`）を確認する）に対し、充足率99%以上であることを実測クエリで確認する。過去の使用開始日の履歴は取得元に無い（最新の1つのみ）ため、「取得開始日以降のみ」とし、ユーザーの承認を得る
+- [ ] タイミング実測: 日次（1日1回）のため窓型ではない。**Bの基準の提案（未承認）**: 土日を含む直近5日、毎日、06:30 JSTの指定から3時間以内（09:30 JSTまで）に24会場を取得できた（`last_report.history`の`doneAt`と`complete`）。新しい使用開始日が、変更の翌日までにテーブルに入る（`created_at`と、モーター交換の日）
+- [ ] 継続監視: 日次の期限超過（指定から3時間で未処理→`daily_overdue`）・0件エラー（最初の3会場が続けて失敗→`error`）・一部の欠落（`last_report.alerts`の`motor_start_incomplete`）が、Slackに通知されることを確認する
+
 ### T4b-18 順延・中止の早期確定（`race_status`）: `races.cancellation_status`
 
 設計: [postponed-day-early-detection.md](./postponed-day-early-detection.md)。開催場一覧（`race/index`）の告知と、レース単位の結果ページ（「レース中止」）が一致したレースを、発走を待たずに`confirmed`にする。書き込みは`races.cancellation_status`のみ（未確定→確定の1回）。

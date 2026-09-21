@@ -111,6 +111,18 @@
       "schedule": "*/5 20-23,0-14 * * *"
     },
     {
+      "path": "/api/cron/boatcast-oriten",
+      "schedule": "* 22-23,0-14 * * *"
+    },
+    {
+      "path": "/api/cron/boatcast-motor-start",
+      "schedule": "30 21 * * *"
+    },
+    {
+      "path": "/api/cron/boatcast-motor-start",
+      "schedule": "0 23 * * *"
+    },
+    {
       "path": "/api/cron/motor-pretest",
       "schedule": "30 20 * * *"
     },
