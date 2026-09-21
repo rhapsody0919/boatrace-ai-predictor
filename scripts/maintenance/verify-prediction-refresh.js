@@ -24,10 +24,16 @@ import {
   refreshAfterExhibition,
 } from "../lib/predictionRefresh.js";
 import {
-  mainRefresh,
+  mainRefresh as mainRefreshRaw,
   RACE_ID_CHUNK_SIZE,
 } from "../daily/generate-predictions.js";
 import { scrapeAndUpsertRaces } from "../daily/scrape-exhibition-data.js";
+
+// 対象日を指定しない呼び出しは、実行日（JSTの今日）が対象になり、フィクスチャ（2026-09-20）と、日付が変わると食い違って
+// 失敗していた（2026-09-21以降、master で11件失敗）。フィクスチャの日付を、既定の対象日として固定する
+const FIXTURE_DATE = "2026-09-20";
+const mainRefresh = (options = {}) =>
+  mainRefreshRaw({ date: FIXTURE_DATE, ...options });
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -439,7 +445,8 @@ async function quiet(fn) {
   const fromArgv = await quiet(() => {
     const savedArgv = process.argv;
     process.argv = [...savedArgv, "--date=1999-01-02"];
-    return mainRefresh({
+    // date を渡さない従来の呼び出しの検証なので、対象日を補うラッパではなく、元の関数を呼ぶ
+    return mainRefreshRaw({
       isDryRun: true,
       specificRaceIds: ids,
       client: createFakeClient({ tables: raceTables(ids) }),

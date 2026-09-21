@@ -17,13 +17,17 @@ import {
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
-import { toIntOrNull } from "../lib/venueMotorStats/parserUtils.js";
 import {
   buildStartTimeLookup,
   buildWeatherRows,
   formatWeatherStats,
-  scrapeConditions,
 } from "../lib/beforeinfoWeather.js";
+import { parseBeforeInfoDocument } from "../lib/beforeInfoParser.js";
+import { buildExhibitionRows } from "../lib/preRaceRows.js";
+import {
+  PRE_RACE_OPTIONAL_COLUMN_GROUPS,
+  detectPreRaceSchema,
+} from "../lib/preRaceSchema.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 import { upsertChangedRows } from "../lib/unchangedRows.js";
 
@@ -49,18 +53,6 @@ const BOA289_COLUMNS = [
   "prev_start_timing",
   "prev_finish_rank",
 ];
-
-/**
- * ST表記（".07"/"F.10"/"L.05"等）を数値に変換する。フライング・出遅れ接頭辞は
- * 値の抽出には無関係だが、フライング有無の判定に使う
- */
-function parseStartTimingText(text) {
-  if (!text) return { value: null, isFlying: false };
-  const isFlying = text.includes("F");
-  const numMatch = text.match(/[FL]?\.(\d+)/);
-  const value = numMatch ? parseFloat("0." + numMatch[1]) : null;
-  return { value, isFlying };
-}
 
 /**
  * Supabase から「展示タイムが取得済み」の race_id セットを取得
@@ -90,113 +82,65 @@ export async function getRaceIdsWithExhibitionTime(date) {
 }
 
 /**
- * beforeinfo ページから展示データをスクレイピング
+ * 直前情報の解析結果（scripts/lib/beforeInfoParser.js）を、旧実装（scrapeExhibitionData）と同じ形にする。
+ * 旧形式の項目（展示タイム・チルト・プロペラ・部品交換・調整重量・当日体重・前走成績・展示ST・フライング有無）は
+ * 旧実装と同じ値。新しい項目（展示進入・F/L・前走の着順の生表記・欠場）が加わる。
+ *
+ * @param {ReturnType<typeof parseBeforeInfoDocument>} page
+ * @param {number} tbodiesCount 直前情報の表の tbody の数（理由の表記用）
+ * @returns {{ data: Array|null, reason: string|null }}
+ *   reason: 'tables_lt_2' | 'no_boats' | 'no_values' | null(成功)
+ */
+export function toLegacyExhibition(page, tbodiesCount = 0) {
+  if (page.tables_count < 2) {
+    return { data: null, reason: `tables_lt_2 (found ${page.tables_count})` };
+  }
+  if (page.boats.length === 0) {
+    return { data: null, reason: `no_boats (tbodies=${tbodiesCount})` };
+  }
+  const data = page.boats.map((b) => {
+    const entry = {
+      boatNumber: b.boat_number,
+      exhibitionTime: b.exhibition_time,
+      startTiming: null,
+      tilt: b.tilt,
+      propellerChange: b.propeller_text,
+      partsChanged: b.parts_changed.length > 0 ? b.parts_changed : null,
+      adjustmentWeight: b.adjustment_weight,
+      todayWeight: b.weight_kg,
+      prevRaceNo: b.prev_race_no,
+      prevEntryCourse: b.prev_entry_course,
+      prevStartTiming: b.prev_start_timing,
+      prevFinishRank: b.prev_finish_rank,
+      exhibitionCourse: b.exhibition_course,
+      startFlag: b.start_flag,
+      prevFinishMark: b.prev_finish_mark,
+      isAbsent: b.is_absent,
+    };
+    // 旧実装と同じく、STの数値が読めた艇だけに、展示STとフライング有無を持たせる
+    if (b.start_timing !== null) {
+      entry.startTiming = b.start_timing;
+      entry.isFlying = b.start_flag === "F";
+    }
+    return entry;
+  });
+  if (!data.some((e) => e.exhibitionTime !== null || e.startTiming !== null)) {
+    return { data: null, reason: `no_values (boats=${data.length})` };
+  }
+  return { data, reason: null };
+}
+
+/**
+ * beforeinfo ページから展示データをスクレイピング（旧実装と同じ形。全項目の解析は
+ * scripts/lib/beforeInfoParser.js の parseBeforeInfoDocument）
  * @returns {{ data: Array|null, reason: string|null }}
  *   reason: 'tables_lt_2' | 'no_boats' | 'no_values' | null(成功)
  */
 export function scrapeExhibitionData($) {
-  const exhibitionData = [];
-  const tables = $(".table1");
-  if (tables.length < 2) {
-    return { data: null, reason: `tables_lt_2 (found ${tables.length})` };
-  }
-
-  // 展示タイム・チルト・プロペラ交換・部品交換・調整重量（table[1]の各tbody、BOA-221で拡張）
-  // 当日体重・前走成績（BOA-289で追加）
-  // 1艇あたりtbody内は4行（tr）構成: 1行目=枠/写真/選手名/体重/展示タイム/チルト/プロペラ/
-  // 部品交換/前走成績R(ラベル)/前走成績レース番号、2行目=進入コース(前走時)、
-  // 3行目=調整重量(1列目)/ST(2列目はラベル)/STタイム(前走時)、
-  // 4行目=着順(前走時、raceresultへのリンク付き)。
-  // 調整重量は1行目ではなく3行目の1列目にある（2026-09-14実データで確認、戸田・常滑）。
-  // 当日体重は1行目td[3]、前走成績は1行目td[9](レース番号)+2行目td[1](進入コース)+
-  // 3行目td[2](ST)+4行目td[1](着順)の4箇所に分散している（2026-09-14実データで確認、下関）。
-  // 今節初戦の艇は前走が存在せずセルが空になる
-  const exTable = tables.eq(1);
-  const tbodies = exTable.find("tbody");
-
-  tbodies.each((i, tbody) => {
-    if (i >= 6) return;
-    const rows = $(tbody).find("tr");
-    if (rows.length < 1) return;
-
-    const mainCells = rows.eq(0).find("td");
-    const boatNumber = parseInt(mainCells.eq(0).text().trim());
-    const todayWeight = parseFloat(mainCells.eq(3).text().trim());
-    const exhibitionTime = parseFloat(mainCells.eq(4).text().trim());
-    const tilt = parseFloat(mainCells.eq(5).text().trim());
-    const propellerText = mainCells.eq(6).text().trim();
-    const partsChanged = mainCells
-      .eq(7)
-      .find("li")
-      .map((_, li) => $(li).text().trim())
-      .get()
-      .filter(Boolean);
-    const prevRaceNo = parseInt(mainCells.eq(9).text().trim());
-    const adjustmentWeight = parseFloat(
-      rows.eq(2).find("td").eq(0).text().trim(),
-    );
-    // rows.eq(N)は範囲外でも空コレクションを返す（cheerioの挙動、adjustmentWeightと
-    // 同じ前提）ため、rows.lengthによるガードは不要（PR #645セルフレビューで削除）
-    const prevEntryCourse = parseInt(rows.eq(1).find("td").eq(1).text().trim());
-    const prevStartTimingText = rows.eq(2).find("td").eq(2).text().trim();
-    const { value: prevStartTiming } =
-      parseStartTimingText(prevStartTimingText);
-    const prevFinishRankText = rows.eq(3).find("td").eq(1).text().trim();
-    const prevFinishRank = toIntOrNull(prevFinishRankText);
-
-    if (boatNumber >= 1 && boatNumber <= 6) {
-      exhibitionData.push({
-        boatNumber,
-        exhibitionTime:
-          !isNaN(exhibitionTime) && exhibitionTime > 0 ? exhibitionTime : null,
-        startTiming: null,
-        tilt: !isNaN(tilt) ? tilt : null,
-        propellerChange: propellerText || null,
-        partsChanged: partsChanged.length > 0 ? partsChanged : null,
-        adjustmentWeight: !isNaN(adjustmentWeight) ? adjustmentWeight : null,
-        todayWeight:
-          !isNaN(todayWeight) && todayWeight > 0 ? todayWeight : null,
-        prevRaceNo: !isNaN(prevRaceNo) ? prevRaceNo : null,
-        prevEntryCourse: !isNaN(prevEntryCourse) ? prevEntryCourse : null,
-        prevStartTiming,
-        prevFinishRank,
-      });
-    }
-  });
-
-  if (exhibitionData.length === 0) {
-    return { data: null, reason: `no_boats (tbodies=${tbodies.length})` };
-  }
-
-  // 展示ST（table[2]）
-  if (tables.length >= 3) {
-    const startTable = tables.eq(2);
-    startTable.find(".table1_boatImage1").each((i, el) => {
-      const boatText =
-        $(el).find(".table1_boatImage1Number").text().trim() ||
-        $(el).text().trim().split("\n")[0].trim();
-      const boatNum = parseInt(boatText);
-
-      const stText = $(el).find(".table1_boatImage1Time").text().trim();
-      const { value: stValue, isFlying } = parseStartTimingText(stText);
-
-      if (boatNum >= 1 && boatNum <= 6 && stValue !== null) {
-        const entry = exhibitionData.find((e) => e.boatNumber === boatNum);
-        if (entry) {
-          entry.startTiming = stValue;
-          entry.isFlying = isFlying;
-        }
-      }
-    });
-  }
-
-  const hasData = exhibitionData.some(
-    (e) => e.exhibitionTime !== null || e.startTiming !== null,
+  return toLegacyExhibition(
+    parseBeforeInfoDocument($),
+    $(".table1").eq(1).find("tbody").length,
   );
-  if (!hasData) {
-    return { data: null, reason: `no_values (boats=${exhibitionData.length})` };
-  }
-  return { data: exhibitionData, reason: null };
 }
 
 // scripts/lib/supabaseClient.js の FETCH_TIMEOUT_MSと同じ値。
@@ -232,17 +176,18 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
 
     const html = await response.text();
     const $ = cheerio.load(html);
-    const exhibition = scrapeExhibitionData($);
-    // 気象の解析失敗は、展示データの取得・保存を妨げない（気象だけ null にする）
-    let conditions = null;
-    try {
-      conditions = scrapeConditions($);
-    } catch (weatherError) {
-      console.error(
-        `  ⚠️ ${VENUE_NAMES[venueCode]} ${raceNo}R: 気象の解析エラー: ${weatherError.message}`,
+    // 直前情報は、全項目を1回で解析する（気象を含む。気象の解析失敗は、展示データの取得・保存を妨げない）
+    const page = parseBeforeInfoDocument($);
+    for (const anomaly of page.anomalies) {
+      console.warn(
+        `  ⚠️ ${VENUE_NAMES[venueCode]} ${raceNo}R 直前情報: ${anomaly}`,
       );
     }
-    return { ...exhibition, conditions };
+    const exhibition = toLegacyExhibition(
+      page,
+      $(".table1").eq(1).find("tbody").length,
+    );
+    return { ...exhibition, conditions: page.conditions, page };
   } catch (error) {
     console.error(
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R: ${error.message}`,
@@ -329,6 +274,9 @@ export async function scrapeAndUpsertRaces(
     client = supabase,
   } = {},
 ) {
+  // 直前情報の新しい列（マイグレーション082）が適用済みかを先に判定する。未適用なら、旧実装と同じ列だけを書く
+  const extended = (await detectPreRaceSchema(client)).exhibition;
+
   // 会場ごとにグループ化
   const byVenue = new Map();
   for (const r of targets) {
@@ -350,43 +298,35 @@ export async function scrapeAndUpsertRaces(
     const results = await Promise.all(
       races.map((r) =>
         fetchExhibitionForRace(date, venueCode, r.race_no).then(
-          ({ data, reason, conditions }) => ({
+          ({ data, reason, conditions, page }) => ({
             raceId: r.race_id,
             startTime: r.start_time ?? null,
             data,
             reason,
             conditions,
+            page,
           }),
         ),
       ),
     );
 
     let venueFetched = 0;
-    for (const { raceId, startTime, data, reason, conditions } of results) {
+    for (const {
+      raceId,
+      startTime,
+      data,
+      reason,
+      conditions,
+      page,
+    } of results) {
       const raceNo = raceId.split("-")[4];
       if (conditions) {
         weatherFetched.push({ raceId, venueCode, startTime, conditions });
       }
       if (data) {
-        for (const ex of data) {
-          if (ex.exhibitionTime != null || ex.startTiming != null) {
-            allRows.push({
-              race_id: raceId,
-              boat_number: ex.boatNumber,
-              exhibition_time: ex.exhibitionTime,
-              start_timing: ex.startTiming,
-              tilt: ex.tilt,
-              propeller_change: ex.propellerChange,
-              parts_changed: ex.partsChanged,
-              adjustment_weight: ex.adjustmentWeight,
-              today_weight: ex.todayWeight,
-              prev_race_no: ex.prevRaceNo,
-              prev_entry_course: ex.prevEntryCourse,
-              prev_start_timing: ex.prevStartTiming,
-              prev_finish_rank: ex.prevFinishRank,
-            });
-          }
-        }
+        // 展示タイム・展示STのある艇の行を書く（旧実装と同じ）。082適用済みなら、展示進入・F/L・前走の着順の
+        // 生表記・欠場（欠場艇の行を含む）も書く（scripts/lib/preRaceRows.js）
+        allRows.push(...buildExhibitionRows(raceId, page.boats, { extended }));
         venueFetched++;
       } else {
         console.log(
@@ -437,6 +377,7 @@ export async function scrapeAndUpsertRaces(
         optionalColumnGroups: {
           "マイグレーション056（BOA-221）": BOA221_COLUMNS,
           "マイグレーション059（BOA-289）": BOA289_COLUMNS,
+          ...PRE_RACE_OPTIONAL_COLUMN_GROUPS.exhibition,
         },
       },
     );
