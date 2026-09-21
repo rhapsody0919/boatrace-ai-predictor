@@ -40,6 +40,8 @@ export const RACE_STATUS_CONCURRENCY = 4;
 export const CONFIRM_REASON = "公式の告知（開催場一覧＋結果ページ）";
 
 const REPORT_LIST_LIMIT = 24;
+/** 全24会場×12レース。shadow の突き合わせ（確定するはずのレースの一覧）は、打ち切らない */
+const MAX_RACES_PER_DAY = 288;
 
 /**
  * @param {Object} ctx 共通ラッパが渡す実行の文脈（cronWrapper.js の ctx）
@@ -71,7 +73,8 @@ export async function runRaceStatusJob(
     if (error instanceof BreakerOpenError) {
       return done({ date, mode: ctx.mode, skipped: "breaker_open" });
     }
-    throw error;
+    // fetchRaceResultHtml のエラー文言は「結果ページ」のため、開催場一覧の失敗だと分かるようにする
+    throw new Error(`開催場一覧の取得に失敗しました: ${error.message}`);
   }
   const venues = parseVenueStatuses(indexHtml);
   if (venues.length === 0) {
@@ -184,7 +187,7 @@ export async function runRaceStatusJob(
     candidates: candidates.length,
     probed: attempted.length,
     // shadow では書かない。確定するはずのレース（既存基盤の確定と後で突き合わせる）
-    ...(live ? {} : { wouldConfirm: cancelledIds.slice(0, REPORT_LIST_LIMIT) }),
+    ...(live ? {} : { wouldConfirm: cancelledIds.slice(0, MAX_RACES_PER_DAY) }),
     confirmed,
     // 告知はあるが、結果ページがまだ「レース中止」になっていない（反映待ち。次の起動が再確認する）
     notOnPage: idsOf("not_on_page").slice(0, REPORT_LIST_LIMIT),

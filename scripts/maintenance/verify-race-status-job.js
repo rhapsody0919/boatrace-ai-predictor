@@ -484,14 +484,14 @@ const runWrapped = ({ mode, client, fetchHtml, extra = {} }) => {
   const shadowRes = await shadow.promise;
   const report = shadow.store.state.get("race_status").last_report;
   check(
-    "shadow: 取得・解析はするが races へ書かない。確定するはずのレース（24件のうち先頭）を wouldConfirm に残す",
+    "shadow: 取得・解析はするが races へ書かない。確定するはずのレース（28件全て。打ち切らない）を wouldConfirm に残す",
     shadowRes.status === 200 &&
       !shadowClient.calls.some((c) => c.op === "update") &&
       shadowClient.state.races.filter(
         (r) => r.cancellation_status === "confirmed",
       ).length === 7 &&
       report.confirmed === 0 &&
-      report.wouldConfirm.length === 24 &&
+      report.wouldConfirm.length === 28 &&
       report.wouldConfirm.every((id) => id.startsWith(DATE)),
     show({ status: shadowRes.status, confirmed: report?.confirmed }),
   );
@@ -532,7 +532,7 @@ const runWrapped = ({ mode, client, fetchHtml, extra = {} }) => {
   );
   check(
     "開催場一覧の取得失敗は失敗（成功にしない）",
-    idxFail === "HTTP 503",
+    idxFail === "開催場一覧の取得に失敗しました: HTTP 503",
     String(idxFail),
   );
   const zero = await rejects(
