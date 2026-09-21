@@ -60,6 +60,17 @@ export function kbArchiveRelPath(kind, dateStr) {
  * @returns {Promise<string>}
  */
 export async function decodeLzhText(bytes) {
+  return new TextDecoder("shift_jis").decode(await decodeLzhBytes(bytes));
+}
+
+/**
+ * LZHのバイト列を展開し、最初のファイルの内容をバイト列のまま返す（デコードしない）。
+ * 固定長（バイト幅）のファイル（期別成績fan等）は、Shift_JISの全角が2バイトのため、
+ * 文字列に直してから桁で切ると位置がずれる。バイトのまま項目を切り出すために使う。
+ * @param {Uint8Array} bytes
+ * @returns {Promise<Uint8Array>}
+ */
+export async function decodeLzhBytes(bytes) {
   const reader = new LhaReader(new Uint8ArrayReader(bytes), {
     filenameDecoder: (b) => new TextDecoder("shift_jis").decode(b),
   });
@@ -67,8 +78,7 @@ export async function decodeLzhText(bytes) {
     const entries = await reader.getEntries();
     const entry = entries.find((e) => !e.directory);
     if (!entry) throw new Error("LZHにファイルが含まれていません");
-    const content = await entry.getData(new Uint8ArrayWriter());
-    return new TextDecoder("shift_jis").decode(content);
+    return await entry.getData(new Uint8ArrayWriter());
   } finally {
     await reader.close();
   }
