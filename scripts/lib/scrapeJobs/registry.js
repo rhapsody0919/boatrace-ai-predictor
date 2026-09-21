@@ -244,6 +244,21 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
   },
 
+  // 汎用の日次監視（完了の定義C。データ健全性の件数の充足率・0件のテーブル）。06:30指定（cron: 06:35・07:35・08:35 JST）。
+  // 前日分が確定した後（最終レースの結果は22時台、result_catchup は23:50・00:30）で、オッズの窓・毎分のジョブが動き出す
+  // 07:00 JST の前、races_init（05:00〜）・月次の racer_profiles（03:00〜05:50）・会場別モーター成績（06:00）の後。
+  // DB読み取りのみ（固定のSQLの関数を、データセットごとに1回、逐次）。書き込みは scrape_job_state の last_report だけ。
+  // 07:35・08:35 は補足（06:35 が失敗・未配信だった場合のみ処理する。処理済みなら last_target_date で何もしない）。
+  // 通知は last_report.alerts → scrape-monitor（07:00 JST〜5分ごと）が、既存のSlack通知に流す。
+  // 実装: scripts/lib/dataHealth/job.js、api/cron/data-health.js。設計: verification-runbook.md U
+  data_health: {
+    kind: "daily",
+    targetTimeJst: "06:30",
+    leaseSec: 120,
+    maxDurationSec: 120,
+    hosts: [],
+  },
+
   // 監視・保守（plan.md §7・§3.9）。モードのゲートなし
   "scrape-monitor": {
     kind: "monitor",
