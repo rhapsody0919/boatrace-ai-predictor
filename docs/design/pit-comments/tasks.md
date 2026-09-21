@@ -1,7 +1,7 @@
 # ピットレポート（選手コメント）tasks
 
 spec: `spec.md` / plan: `plan.md` / screens: `screens.md`
-取得ジョブの運用（切り替え・切り戻し・確認SQL）: [verification-runbook.md §P](../scraping-vercel-consolidation/verification-runbook.md)。データ取得基盤側のタスクは、[scraping-vercel-consolidation/tasks.md T4b-17](../scraping-vercel-consolidation/tasks.md)。
+取得ジョブの運用（切り替え・切り戻し・確認SQL）: [verification-runbook.md §R](../scraping-vercel-consolidation/verification-runbook.md)。データ取得基盤側のタスクは、[scraping-vercel-consolidation/tasks.md T4b-17](../scraping-vercel-consolidation/tasks.md)。
 
 ## Phase 1: 取得・保存（コード。本PRで実装済み）
 
@@ -21,8 +21,8 @@ spec: `spec.md` / plan: `plan.md` / screens: `screens.md`
 ## Phase 3: 本番への適用（すべてユーザーの承認が要る）
 
 - [ ] **T3-1** (ユーザー承認) マイグレーション085を適用する
-- [ ] **T3-2** (ユーザー承認) `scrape_job_state`の`pit_reports`を`shadow`にする（runbook §P-2）
-- [ ] **T3-3** (ユーザー承認) Storageの非公開バケット`raw-pages`を作成し、`live`にする（runbook §P-3）
+- [ ] **T3-2** (ユーザー承認) `scrape_job_state`の`pit_reports`を`shadow`にする（runbook §R-2）
+- [ ] **T3-3** (ユーザー承認) Storageの非公開バケット`raw-pages`を作成し、`live`にする（runbook §R-3）
 - [ ] **T3-4** 過去分のバックフィル（plan.md §5）: 手動CLI`scripts/maintenance/backfill-pit-reports.js`を実装（`processPitReportRace`を`skipCandidateCheck`つきで呼ぶ薄いCLI。既定はdry-run、`--apply`で書く）。gradesch（`gradesch?year={年}&hcd={01|02}`）で、2025-12〜2026-02-02の対象日を特定する。実行はユーザーの承認のもと、3夜に分ける
 
 ## Phase 4: 画面（**モック承認の後に**実装する）
@@ -39,5 +39,5 @@ spec: `spec.md` / plan: `plan.md` / screens: `screens.md`
 データ項目: `race_pit_reports`・`race_pit_comments`。
 
 - [ ] 本番実測: 期待件数（算出根拠: 2025-12-03以降の`races`のうち、SG（全レース）・G1・G2（7R以降）で、公式ページが対象外と答えなかったレース数。ページが空のレース・`not_target`は分母から除き、件数を報告）に対し、過去分を含めて充足率99%以上であることを実測クエリで確認する
-- [ ] タイミング実測: 土日を含む直近7日で、「発走までに公開を検知できた割合」と、公開検知の遅延の分布を実測する（runbook §P-2のクエリ）。欠落率2%以内
+- [ ] タイミング実測: 土日を含む直近7日で、「発走までに公開を検知できた割合」と、公開検知の遅延の分布を実測する（runbook §R-2のクエリ）。欠落率2%以内
 - [ ] 継続監視: 上記指標が日次で自動計測され、閾値超過でSlack通知されることを確認する（`scrape-summary`・`scrape-monitor`）

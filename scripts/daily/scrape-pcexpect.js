@@ -10,8 +10,13 @@
  *   node scripts/daily/scrape-pcexpect.js --venue 24         # 会場絞り込み
  *   node scripts/daily/scrape-pcexpect.js --race 1           # レース番号絞り込み（要 --venue）
  *   node scripts/daily/scrape-pcexpect.js --dry              # DB 書き込みせず標準出力のみ
+ *
+ * 取得・解析・保存の本体は runForRaces（レース単位の入口。WS4b T4b-08-1）。CLI の main() も、Vercel Function
+ * （api/cron/pcexpect.js。予定表のスロット）も、これを呼ぶ。import しても main() は走らない。
  */
 
+import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import * as cheerio from "cheerio";
 import {
   supabase,
@@ -20,6 +25,8 @@ import {
 } from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import { getRaceSchedule } from "../lib/raceSchedule.js";
+import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
+import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 
 const SOURCE = "pcexpect_official";
 const FETCH_INTERVAL_MS = 1000;
@@ -44,13 +51,14 @@ function parseArgs(argv = process.argv.slice(2)) {
   return args;
 }
 
-function buildUrl({ date, venueCode, raceNo }) {
+export function buildUrl({ date, venueCode, raceNo }) {
   const hd = date.replace(/-/g, "");
   const jcd = String(venueCode).padStart(2, "0");
   return `https://www.boatrace.jp/owpc/pc/race/pcexpect?hd=${hd}&jcd=${jcd}&rno=${raceNo}`;
 }
 
-async function fetchHtml(url) {
+/** 既定の取得（GitHub Actions・CLI）。HTTP エラーは例外にする */
+export async function fetchHtml(url) {
   const res = await fetch(url, { headers: FETCH_HEADERS });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return await res.text();
@@ -65,7 +73,7 @@ async function fetchHtml(url) {
  *
  * 「データなし」ページでは .numberSet2 が存在しないため null を返す。
  */
-function parsePcexpect(html) {
+export function parsePcexpect(html) {
   const $ = cheerio.load(html);
   const container = $(".numberSet2").first();
   if (container.length === 0) return null;
@@ -135,26 +143,143 @@ function parsePcexpect(html) {
   };
 }
 
-async function upsertPrediction({
-  date,
-  venueCode,
-  raceNo,
-  payload,
-  raceStartAt,
-}) {
+/**
+ * 解析した payload のダイジェスト（SHA-1の先頭16桁）。shadow が予定表の result_digest に記録し、
+ * 既存基盤が external_predictions に書いた payload から同じ関数で計算した値と比べる
+ * （scripts/maintenance/check-morning-init-shadow.js）。JSON のキーの並びは、解析側もDB（jsonb）側も
+ * 保存順に依らないよう、キーを昇順に揃えてから計算する。
+ */
+export function computePcexpectDigest(payload) {
+  const canonical = JSON.stringify(payload, (_key, value) =>
+    value && typeof value === "object" && !Array.isArray(value)
+      ? Object.fromEntries(
+          Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+        )
+      : value,
+  );
+  return createHash("sha1").update(canonical).digest("hex").slice(0, 16);
+}
+
+async function upsertPrediction(
+  { date, venueCode, raceNo, payload, raceStartAt, scrapedAt = new Date() },
+  client = supabase,
+) {
   const row = {
     source: SOURCE,
     race_date: date,
     venue_code: venueCode,
     race_no: raceNo,
     payload,
-    scraped_at: new Date().toISOString(),
+    scraped_at: scrapedAt.toISOString(),
     race_start_at: raceStartAt ? raceStartAt.toISOString() : null,
   };
-  const { error } = await supabase
+  const { error } = await client
     .from("external_predictions")
     .upsert(row, { onConflict: "source,race_date,venue_code,race_no" });
   if (error) throw new Error(`upsert: ${error.message}`);
+}
+
+/**
+ * レース単位の入口。指定レースの公式コンピュータ予想を取得・解析し、live なら external_predictions へ upsert する。
+ * 1つのレースの失敗で、他のレースを止めない。結果はレースごとの outcome（予定表のスロットの語彙）で返す。
+ *
+ *   ok            解析でき、（live なら）書き込んだ。resultDigest は payload のダイジェスト（shadow の比較用）
+ *   no_values     ページに予想が無い（未公開の可能性）。再試行する
+ *   breaker_open  サーキットブレーカーが開いていた（retryAt まで再試行を遅らせる）
+ *   error         取得・書き込みの失敗
+ *
+ * @param {Array<{race_id?: string, venue_code: number, race_number?: number, race_no?: number, start_time?: Date|null}>} races
+ *   start_time は external_predictions.race_start_at に保存する発走時刻（無ければ null）
+ * @param {Object} options
+ * @param {string} options.date 対象日（YYYY-MM-DD）
+ * @param {"live"|"shadow"} [options.mode] shadow は取得・解析のみ（DBへは書かない）
+ * @param {(url: string) => Promise<string>} [options.fetchHtml] 既定は fetch（Vercel は politeFetch を渡す）
+ * @param {import("@supabase/supabase-js").SupabaseClient|null} [options.client]
+ * @param {number} [options.concurrency]
+ * @param {number} [options.intervalMs] 1レースの処理後に待つ時間（CLI の逐次取得のレート制限用）
+ * @param {() => Date} [options.now]
+ */
+export async function runForRaces(
+  races,
+  {
+    date,
+    mode = "live",
+    fetchHtml: fetchPage = fetchHtml,
+    client = supabase,
+    concurrency = 1,
+    intervalMs = 0,
+    now = () => new Date(),
+  } = {},
+) {
+  if (mode !== "live" && mode !== "shadow") {
+    throw new Error(`mode は live か shadow にしてください: ${mode}`);
+  }
+  if (!date) throw new Error("date（YYYY-MM-DD）が必要です");
+  if (mode === "live" && !client) {
+    throw new Error("Supabase が設定されていないため、公式予想を書き込めません");
+  }
+  const base = { rowsWritten: 0, rowsParsed: 0, rowsExpected: 1 };
+
+  return mapWithConcurrency(races, concurrency, async (race) => {
+    const raceNo = race.race_number ?? race.race_no;
+    const raceId = race.race_id ?? `${date}-${race.venue_code}-${raceNo}`;
+    try {
+      const html = await fetchPage(
+        buildUrl({ date, venueCode: race.venue_code, raceNo }),
+      );
+      const payload = parsePcexpect(html);
+      if (!payload) {
+        return {
+          ...base,
+          race_id: raceId,
+          outcome: "no_values",
+          error: "公式コンピュータ予想が見つかりません（未公開・データなしの可能性）",
+        };
+      }
+      if (mode === "live") {
+        await upsertPrediction(
+          {
+            date,
+            venueCode: race.venue_code,
+            raceNo,
+            payload,
+            raceStartAt: race.start_time ?? null,
+            scrapedAt: now(),
+          },
+          client,
+        );
+      }
+      return {
+        ...base,
+        race_id: raceId,
+        outcome: "ok",
+        rowsParsed: 1,
+        rowsWritten: mode === "live" ? 1 : 0,
+        resultDigest: computePcexpectDigest(payload),
+        payload,
+      };
+    } catch (error) {
+      if (error instanceof BreakerOpenError) {
+        return {
+          ...base,
+          race_id: raceId,
+          outcome: "breaker_open",
+          retryAt: new Date(error.until),
+          error: error.message,
+        };
+      }
+      return {
+        ...base,
+        race_id: raceId,
+        outcome: "error",
+        error: error.message,
+      };
+    } finally {
+      if (intervalMs > 0) {
+        await new Promise((res) => setTimeout(res, intervalMs));
+      }
+    }
+  });
 }
 
 async function main() {
@@ -191,45 +316,41 @@ async function main() {
   let emptyCount = 0;
   let errCount = 0;
 
-  for (const r of schedule) {
-    const url = buildUrl({ date, venueCode: r.venue_code, raceNo: r.race_no });
+  // 従来どおり、1レースずつ逐次（1秒間隔）で処理する
+  const results = await runForRaces(schedule, {
+    date,
+    mode: args.dry ? "shadow" : "live",
+    intervalMs: FETCH_INTERVAL_MS,
+  });
+  results.forEach((result, i) => {
+    const r = schedule[i];
     const label = `${VENUE_NAMES[r.venue_code] || r.venue_code}${r.race_no}R`;
-    try {
-      const html = await fetchHtml(url);
-      const payload = parsePcexpect(html);
-      if (!payload) {
-        emptyCount++;
-        console.log(`  ⚪ ${label}: データなし`);
-      } else {
-        if (args.dry) {
-          console.log(`  ✅ ${label}: ${JSON.stringify(payload)}`);
-        } else {
-          await upsertPrediction({
-            date,
-            venueCode: r.venue_code,
-            raceNo: r.race_no,
-            payload,
-            raceStartAt: r.start_time,
-          });
-          console.log(
-            `  ✅ ${label}: 2t=${payload.focus_2t.length}点 3t=${payload.focus_3t.length}点 lv=${payload.confidence}`,
-          );
-        }
-        okCount++;
-      }
-    } catch (e) {
+    if (result.outcome === "ok") {
+      okCount++;
+      const { payload } = result;
+      console.log(
+        args.dry
+          ? `  ✅ ${label}: ${JSON.stringify(payload)}`
+          : `  ✅ ${label}: 2t=${payload.focus_2t.length}点 3t=${payload.focus_3t.length}点 lv=${payload.confidence}`,
+      );
+    } else if (result.outcome === "no_values") {
+      emptyCount++;
+      console.log(`  ⚪ ${label}: データなし`);
+    } else {
       errCount++;
-      console.error(`  ❌ ${label}: ${e.message}`);
+      console.error(`  ❌ ${label}: ${result.error}`);
     }
-    await new Promise((res) => setTimeout(res, FETCH_INTERVAL_MS));
-  }
+  });
 
   console.log(
     `\n📊 完了: 成功 ${okCount} / データなし ${emptyCount} / エラー ${errCount}`,
   );
 }
 
-main().catch((err) => {
-  console.error("❌ 致命的エラー:", err);
-  process.exit(1);
-});
+// スタンドアローン実行時のみ実行する（import 時に実行させない。Vercel Function から import される）
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error("❌ 致命的エラー:", err);
+    process.exit(1);
+  });
+}

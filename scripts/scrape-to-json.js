@@ -1,5 +1,14 @@
 // GitHub Actions用スクレイピングスクリプト
 // data/races.json にレース情報を保存
+//
+// 取得の本体（getTodayVenues / scrapeVenue / scrapeRacesData）は、ファイルへ書かず、メモリ上のデータを返す
+// 関数として export している（WS4b T4b-07-1）。CLI の main() は、それを呼んで data/races.json へ書く。
+// Vercel Function（api/cron/races-init.js。scripts/lib/racesInit/）は、fetchHtml（politeFetch）と strict を
+// 指定して同じ関数を呼ぶ（fs・execSync に依存しない）。
+//   fetchHtml  URL → HTML の関数。既定は fetch（GitHub Actions・CLI と同じ）。!ok は例外を投げる
+//   strict     false（既定・従来どおり）: 取得に失敗したページは、ログだけ出して null・{}・[] にする
+//              true: 失敗を例外として投げる（取得の失敗が「開催なし」「選手なし」に化けて、初期化の完了と
+//              誤認されるのを避ける。Vercel 側が指定する）
 
 import * as cheerio from "cheerio";
 import fs from "fs/promises";
@@ -7,6 +16,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { getTodayDateJST } from "./lib/dateUtils.js";
 import { scrapeRaceStage } from "./lib/raceStageParser.js";
+import { mapWithConcurrency } from "./lib/scrapeJobs/concurrency.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +48,24 @@ const VENUES = {
   23: "唐津",
   24: "大村",
 };
+
+const FETCH_HEADERS = {
+  "User-Agent":
+    "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
+};
+
+/** 既定の取得（GitHub Actions・CLI）。HTTP エラーは例外にする */
+export async function defaultFetchHtml(url) {
+  const response = await fetch(url, { headers: FETCH_HEADERS });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status} for URL: ${url}`);
+  }
+  return response.text();
+}
+
+const DEFAULT_IO = Object.freeze({ fetchHtml: defaultFetchHtml, strict: false });
 
 // URLを生成する関数
 function getUrl(date, placeCd, raceNo, content) {
@@ -115,26 +143,11 @@ function scrapeExhibitionData($) {
 }
 
 // 直前情報を取得する関数
-async function getBeforeinfo(date, placeCd, raceNo) {
+async function getBeforeinfo(date, placeCd, raceNo, io = DEFAULT_IO) {
   try {
     const url = getUrl(date, placeCd, raceNo, "beforeinfo");
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
-      return null;
-    }
-
-    const html = await response.text();
+    const html = await io.fetchHtml(url);
     const $ = cheerio.load(html);
 
     // 天候情報を取得
@@ -189,6 +202,12 @@ async function getBeforeinfo(date, placeCd, raceNo) {
 
     return result;
   } catch (error) {
+    if (io.strict) {
+      throw new Error(
+        `beforeinfo の取得に失敗（会場${placeCd} ${raceNo}R）: ${error.message}`,
+        { cause: error },
+      );
+    }
     console.error(
       `Error fetching beforeinfo for place ${placeCd}, race ${raceNo}:`,
       error.message,
@@ -198,28 +217,13 @@ async function getBeforeinfo(date, placeCd, raceNo) {
 }
 
 // レース場の全レース締切予定時刻を取得する関数
-async function getRaceStartTimes(date, placeCd) {
+async function getRaceStartTimes(date, placeCd, io = DEFAULT_IO) {
   try {
     const ymd = date.replace(/-/g, "");
     const jcd = placeCd < 10 ? `0${placeCd}` : `${placeCd}`;
     const url = `https://www.boatrace.jp/owpc/pc/race/raceindex?jcd=${jcd}&hd=${ymd}`;
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
-      return {};
-    }
-
-    const html = await response.text();
+    const html = await io.fetchHtml(url);
     const $ = cheerio.load(html);
 
     const startTimes = {};
@@ -240,6 +244,12 @@ async function getRaceStartTimes(date, placeCd) {
 
     return startTimes;
   } catch (error) {
+    if (io.strict) {
+      throw new Error(
+        `発走時刻の取得に失敗（会場${placeCd}）: ${error.message}`,
+        { cause: error },
+      );
+    }
     console.error(
       `Error fetching race start times for place ${placeCd}:`,
       error.message,
@@ -264,26 +274,11 @@ function scrapeRaceTitle($) {
 }
 
 // 出走表から選手情報を取得する関数
-async function getRacelist(date, placeCd, raceNo) {
+async function getRacelist(date, placeCd, raceNo, io = DEFAULT_IO) {
   try {
     const url = getUrl(date, placeCd, raceNo, "racelist");
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
-      return null;
-    }
-
-    const html = await response.text();
+    const html = await io.fetchHtml(url);
     const $ = cheerio.load(html);
 
     // レースグレード・タイトル・開催ステージを取得
@@ -394,6 +389,12 @@ async function getRacelist(date, placeCd, raceNo) {
       ? { racers, raceGrade, raceTitle, raceStage }
       : null;
   } catch (error) {
+    if (io.strict) {
+      throw new Error(
+        `racelist の取得に失敗（会場${placeCd} ${raceNo}R）: ${error.message}`,
+        { cause: error },
+      );
+    }
     console.error(
       `Error fetching racelist for place ${placeCd}, race ${raceNo}:`,
       error.message,
@@ -406,7 +407,8 @@ async function getRacelist(date, placeCd, raceNo) {
 // dateUtils.jsのgetTodayDateJST()を使用
 
 // 本日開催中のレース場リストを取得
-export async function getTodayVenues(date) {
+// io: {fetchHtml, strict}（ファイル冒頭の説明を参照）。既定は従来どおり（失敗は [] に化ける）
+export async function getTodayVenues(date, io = DEFAULT_IO) {
   try {
     // hd=（対象日）を明示指定する。指定なしだと、朝一番の実行時点で
     // boatrace.jp側のページがまだ当日分に完全ロールオーバーしておらず、
@@ -415,22 +417,7 @@ export async function getTodayVenues(date) {
     const ymd = date.replace(/-/g, "");
     const url = `https://www.boatrace.jp/owpc/pc/race/index?hd=${ymd}`;
 
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
-      return [];
-    }
-
-    const html = await response.text();
+    const html = await io.fetchHtml(url);
     const $ = cheerio.load(html);
 
     const venues = new Set();
@@ -450,9 +437,138 @@ export async function getTodayVenues(date) {
     console.log(`Found ${venuesList.length} venues open today:`, venuesList);
     return venuesList;
   } catch (error) {
+    if (io.strict) {
+      throw new Error(`開催会場一覧の取得に失敗（${date}）: ${error.message}`, {
+        cause: error,
+      });
+    }
     console.error("Error fetching today's venues:", error.message);
     return [];
   }
+}
+
+/**
+ * 1会場の全レース（1R〜12R）の、直前情報・出走表・発走時刻を取得する（メモリ上のデータを返す。fs は使わない）。
+ *
+ * beforeinfo と racelist を、レースごとに並列で取得する。raceConcurrency 個のレースを同時に処理する
+ * （既定 12＝従来どおり全レース同時。Vercel は取得先への負荷を抑えるため、少なくする）。
+ * strict のときは、1ページでも取得に失敗したら、会場全体の失敗として例外を投げる（一部のレースだけが
+ * 欠けた状態で書き込まれ、その会場が「済み」になるのを避ける）。発走時刻が1件も取れない場合も失敗とする。
+ *
+ * @param {string} date YYYY-MM-DD
+ * @param {number} placeCd 会場コード
+ * @param {Object} [options]
+ * @param {(url: string) => Promise<string>} [options.fetchHtml]
+ * @param {boolean} [options.strict]
+ * @param {number} [options.raceConcurrency]
+ * @returns {Promise<{placeCd: number, placeName: string, races: Object[]}|null>} 取得できたレースが無ければ null
+ */
+export async function scrapeVenue(
+  date,
+  placeCd,
+  { fetchHtml = defaultFetchHtml, strict = false, raceConcurrency = 12 } = {},
+) {
+  const io = { fetchHtml, strict };
+  const MAX_RACES = 12; // 通常は1Rから12Rまで
+
+  // まず、この会場の全レース発走時刻を取得
+  const startTimes = await getRaceStartTimes(date, placeCd, io);
+  if (strict && Object.keys(startTimes).length === 0) {
+    throw new Error(
+      `発走時刻を1件も取得できません（会場${placeCd}）。ページの構造変化・未公開の可能性`,
+    );
+  }
+
+  // 1RからMAX_RACESまで取得（beforeinfoとracelistの両方）
+  const raceNos = Array.from({ length: MAX_RACES }, (_, i) => i + 1);
+  const results = await mapWithConcurrency(
+    raceNos,
+    raceConcurrency,
+    async (raceNo) => {
+      // strict では、失敗を捕捉して集め、会場全体の失敗として最後にまとめて投げる
+      const settled = await Promise.allSettled([
+        getBeforeinfo(date, placeCd, raceNo, io),
+        getRacelist(date, placeCd, raceNo, io),
+      ]);
+      return { raceNo, settled };
+    },
+  );
+
+  const failures = results.flatMap(({ settled }) =>
+    settled.filter((r) => r.status === "rejected").map((r) => r.reason),
+  );
+  if (failures.length > 0) {
+    throw new Error(
+      `会場${placeCd}: ${failures.length}ページの取得に失敗（例: ${failures[0].message}）`,
+      { cause: failures[0] },
+    );
+  }
+
+  const venueRaces = [];
+  // nullでないデータのみを追加し、beforeinfoとracelistをマージ
+  for (const { raceNo, settled } of results) {
+    const beforeinfo = settled[0].value;
+    const racelistData = settled[1].value;
+    if (!beforeinfo) continue;
+    // beforeinfoとracelistを統合し、締切予定時刻も追加
+    venueRaces.push({
+      ...beforeinfo,
+      startTime: startTimes[raceNo] || null, // 締切予定時刻を追加
+      racers: racelistData?.racers || [], // 選手情報を追加（取得できない場合は空配列）
+      raceGrade: racelistData?.raceGrade || null, // レースグレード
+      raceTitle: racelistData?.raceTitle || null, // レースタイトル
+      raceStage: racelistData?.raceStage || null, // 開催ステージ（予選/準優勝戦/優勝戦等）
+    });
+  }
+
+  // このレース場でデータが取得できた場合のみ返す
+  if (venueRaces.length === 0) return null;
+  return {
+    placeCd: placeCd,
+    placeName: VENUES[placeCd] || `レース場${placeCd}`,
+    races: venueRaces,
+  };
+}
+
+/**
+ * 複数会場のレースデータを取得して、data/races.json と同じ形のオブジェクトを返す（ファイルには書かない）。
+ * 会場は順次処理し、会場の間に venueDelayMs（既定1秒。レート制限対策）待つ。
+ *
+ * @param {string} date YYYY-MM-DD
+ * @param {number[]} placeCds
+ * @param {Object} [options] scrapeVenue のオプション + venueDelayMs
+ */
+export async function scrapeRacesData(
+  date,
+  placeCds,
+  { venueDelayMs = 1000, ...venueOptions } = {},
+) {
+  const allRaces = [];
+
+  console.log(`Processing ${placeCds.length} venues...`);
+
+  // 全会場のレースを順次取得（会場ごとに並列）
+  for (const placeCd of placeCds) {
+    console.log(`Processing venue: ${VENUES[placeCd] || placeCd}`);
+    const venue = await scrapeVenue(date, placeCd, venueOptions);
+
+    // 会場間の遅延（既定1秒）- レート制限対策
+    await new Promise((resolve) => setTimeout(resolve, venueDelayMs));
+
+    if (venue) {
+      allRaces.push(venue);
+      console.log(`✓ ${venue.placeName}: ${venue.races.length} races`);
+    }
+  }
+
+  console.log(`Successfully scraped ${allRaces.length} venues with race data`);
+
+  return {
+    success: true,
+    date,
+    data: allRaces,
+    scrapedAt: new Date().toISOString(),
+  };
 }
 
 // メイン処理
@@ -497,77 +613,10 @@ async function main() {
       return;
     }
 
-    const allRaces = [];
-
-    // 開催中のレース場のみ取得（並列処理で高速化）
-    const MAX_RACES = 12; // 通常は1Rから12Rまで
-
-    console.log(`Processing ${todayVenues.length} venues...`);
-
-    // 全会場のレースを順次取得（会場ごとに並列）
-    for (const placeCd of todayVenues) {
-      console.log(`Processing venue: ${VENUES[placeCd] || placeCd}`);
-      const venueRaces = [];
-
-      // まず、この会場の全レース発走時刻を取得
-      const startTimes = await getRaceStartTimes(date, placeCd);
-
-      // 1RからMAX_RACESまで並列取得（beforeinfoとracelistの両方）
-      const racePromises = [];
-      for (let raceNo = 1; raceNo <= MAX_RACES; raceNo++) {
-        racePromises.push(
-          Promise.all([
-            getBeforeinfo(date, placeCd, raceNo),
-            getRacelist(date, placeCd, raceNo),
-          ]),
-        );
-      }
-
-      const results = await Promise.all(racePromises);
-
-      // nullでないデータのみを追加し、beforeinfoとracelistをマージ
-      results.forEach(([beforeinfo, racelistData], index) => {
-        if (beforeinfo) {
-          const raceNo = index + 1;
-          // beforeinfoとracelistを統合し、締切予定時刻も追加
-          const raceData = {
-            ...beforeinfo,
-            startTime: startTimes[raceNo] || null, // 締切予定時刻を追加
-            racers: racelistData?.racers || [], // 選手情報を追加（取得できない場合は空配列）
-            raceGrade: racelistData?.raceGrade || null, // レースグレード
-            raceTitle: racelistData?.raceTitle || null, // レースタイトル
-            raceStage: racelistData?.raceStage || null, // 開催ステージ（予選/準優勝戦/優勝戦等）
-          };
-          venueRaces.push(raceData);
-        }
-      });
-
-      // 会場間の遅延（1秒）- レート制限対策
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // このレース場でデータが取得できた場合のみ追加
-      if (venueRaces.length > 0) {
-        const venue = {
-          placeCd: placeCd,
-          placeName: VENUES[placeCd] || `レース場${placeCd}`,
-          races: venueRaces,
-        };
-        allRaces.push(venue);
-        console.log(`✓ ${venue.placeName}: ${venue.races.length} races`);
-      }
-    }
-
-    console.log(
-      `Successfully scraped ${allRaces.length} venues with race data`,
-    );
-
-    // JSONファイルに保存
-    const outputData = {
-      success: true,
-      date: getTodayDateJST(),
-      data: allRaces,
-      scrapedAt: new Date().toISOString(),
-    };
+    // 開催中のレース場のみ取得（メモリ上のデータとして取得し、ここでファイルへ書く）
+    const outputData = await scrapeRacesData(date, todayVenues);
+    // 従来どおり、日付は書き込み時点の JST の日付
+    outputData.date = getTodayDateJST();
 
     const outputPath = path.join(__dirname, "..", "data", "races.json");
     await fs.writeFile(

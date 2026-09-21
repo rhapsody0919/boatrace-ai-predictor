@@ -19,11 +19,39 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # SKIP_ENTRY_COURSE_ON_GHA=true の間は、Vercel が健全な場合に限り、この取得を行わない（フェイルセーフ付きSKIP）。
+  # 変数が未設定・true 以外なら、この gate ジョブは起動せず（DB も読まない）、従来どおり取得ジョブが実行される。
+  # true のときは、scrape_job_state の entry_course_stats（と取得先のブレーカー）を読み、Vercel が live で
+  # 対象日を処理済みのときだけスキップする。live でない・処理が済んでいない・状態を読めない（gate ジョブの失敗を含む）
+  # ときは、実行する（自動フェイルオーバー）。判定の定義: scripts/lib/ghaSkipGate.js、
+  # docs/design/scraping-vercel-consolidation/verification-runbook.md P。--wait は、指定時刻の直後に Vercel の完了を最大10分待つ
+  gate:
+    if: ${{ vars.SKIP_ENTRY_COURSE_ON_GHA == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      skip: ${{ steps.gate.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check whether Vercel handles this job
+        id: gate
+        continue-on-error: true
+        run: node scripts/maintenance/gha-skip-gate.js SKIP_ENTRY_COURSE_ON_GHA --wait
+        env:
+          SKIP_ENTRY_COURSE_ON_GHA: ${{ vars.SKIP_ENTRY_COURSE_ON_GHA }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
   scrape:
-    # リポジトリ変数 SKIP_ENTRY_COURSE_ON_GHA=true の間は、この取得を行わない（Vercel Cron の entry_course_stats（api/cron/entry-course-stats.js） へ移した後の、
-    # GitHub側の停止。コードは削除しない。未設定・"true"以外なら従来どおり実行する。切り戻しは変数を消す（false）だけ。
-    # 手順: docs/design/scraping-vercel-consolidation/verification-runbook.md L）
-    if: ${{ vars.SKIP_ENTRY_COURSE_ON_GHA != 'true' }}
+    # 未設定・true 以外: gate は skipped（outputs は空）→ 従来どおり実行。true: gate の判定がスキップなら実行しない。
+    # !cancelled() は、gate が skipped・失敗のときも、この取得ジョブを実行するため（フェイルセーフ）
+    needs: gate
+    if: ${{ !cancelled() && needs.gate.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
