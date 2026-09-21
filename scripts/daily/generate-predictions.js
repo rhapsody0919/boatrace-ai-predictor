@@ -7,7 +7,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import {
   supabase,
-  isSupabaseEnabled,
   VENUE_CODES,
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
@@ -942,12 +941,34 @@ function generateRacePrediction(race, date, racerStatsMap) {
   };
 }
 
-// Supabaseにデータを書き込む関数
-async function writeToSupabase(allPredictions, date) {
-  if (!isSupabaseEnabled()) {
+/**
+ * Supabaseにデータを書き込む関数
+ *
+ * @param {Object[]} allPredictions generateRacePrediction の結果
+ * @param {string} date 対象日（YYYY-MM-DD）
+ * @param {Object} [options]
+ * @param {import("@supabase/supabase-js").SupabaseClient|null} [options.client] 既定は supabaseClient.js のクライアント
+ * @param {boolean} [options.throwOnError] true なら、書き込みの失敗を握りつぶさず例外にする。既定（false）は
+ *   従来どおり、エラーをログに出して続行する（CLI・GitHub Actions）。Vercel Function（races-init）は、
+ *   書き込みに失敗した会場を「済み」にしないため true を指定する
+ */
+async function writeToSupabase(
+  allPredictions,
+  date,
+  { client = supabase, throwOnError = false } = {},
+) {
+  if (!client) {
+    if (throwOnError) {
+      throw new Error("Supabase が設定されていないため、DBへ書き込めません");
+    }
     console.log("⚠️  Supabase未設定のため、DB書き込みをスキップします");
     return;
   }
+  // upsertChangedRows は失敗を例外にせず {error} で返す。throwOnError のときだけ、ここで例外にする
+  const failIfError = (result) => {
+    if (throwOnError && result?.error) throw result.error;
+    return result;
+  };
 
   console.log("\n📤 Supabaseにデータを書き込み中...");
 
@@ -988,12 +1009,14 @@ async function writeToSupabase(allPredictions, date) {
 
     // WS8(b): 変更の無い行は書かない。updated_at は書き込みのたびに現在時刻へ変わるが
     // 情報を持たないため比較から外す（変更のある行は従来どおりupdated_atも更新する）
-    await upsertChangedRows(supabase, "races", racesData, {
-      onConflict: "race_id",
-      keyColumns: ["race_id"],
-      ignoreColumns: ["updated_at"],
-      label: "races",
-    });
+    failIfError(
+      await upsertChangedRows(client, "races", racesData, {
+        onConflict: "race_id",
+        keyColumns: ["race_id"],
+        ignoreColumns: ["updated_at"],
+        label: "races",
+      }),
+    );
 
     // 2. race_entriesテーブルにupsert
     const entriesData = [];
@@ -1042,12 +1065,14 @@ async function writeToSupabase(allPredictions, date) {
 
     // 変更の無い行は書かない（バッチ分割・エラー出力は upsertChangedRows が担う）。
     // 書く行には updated_at を設定する（WS2。created_at はINSERT時のDBの DEFAULT に任せる）
-    await upsertChangedRows(supabase, "race_entries", entriesData, {
-      onConflict: "race_id,boat_number",
-      keyColumns: ["race_id", "boat_number"],
-      label: "race_entries",
-      stampUpdatedAt: true,
-    });
+    failIfError(
+      await upsertChangedRows(client, "race_entries", entriesData, {
+        onConflict: "race_id,boat_number",
+        keyColumns: ["race_id", "boat_number"],
+        label: "race_entries",
+        stampUpdatedAt: true,
+      }),
+    );
 
     // 2.5. exhibition_dataテーブルにupsert
     const exhibitionRows = [];
@@ -1071,12 +1096,14 @@ async function writeToSupabase(allPredictions, date) {
     }
 
     if (exhibitionRows.length > 0) {
-      await upsertChangedRows(supabase, "exhibition_data", exhibitionRows, {
-        onConflict: "race_id,boat_number",
-        keyColumns: ["race_id", "boat_number"],
-        label: "exhibition_data",
-        stampUpdatedAt: true,
-      });
+      failIfError(
+        await upsertChangedRows(client, "exhibition_data", exhibitionRows, {
+          onConflict: "race_id,boat_number",
+          keyColumns: ["race_id", "boat_number"],
+          label: "exhibition_data",
+          stampUpdatedAt: true,
+        }),
+      );
     }
 
     // 3. predictionsテーブルにupsert
@@ -1142,21 +1169,27 @@ async function writeToSupabase(allPredictions, date) {
 
     // 既存の予測を削除してから挿入（upsertだと複合キーが必要なため）
     const raceIds = allPredictions.map((r) => r.raceId);
-    await supabase
+    const { error: deleteError } = await client
       .from("predictions")
       .delete()
       .in("race_id", raceIds)
       .eq("is_shadow", false);
+    if (deleteError) {
+      // 従来は握りつぶしていた（削除に失敗すると、続く挿入が一意制約に違反する）
+      console.error("❌ predictions削除エラー:", deleteError.message);
+      if (throwOnError) throw deleteError;
+    }
 
     // バッチで挿入
     for (let i = 0; i < predictionsData.length; i += 1000) {
       const batch = predictionsData.slice(i, i + 1000);
-      const { error: predsError } = await supabase
+      const { error: predsError } = await client
         .from("predictions")
         .insert(batch);
 
       if (predsError) {
         console.error("❌ predictions書き込みエラー:", predsError.message);
+        if (throwOnError) throw predsError;
       }
     }
     console.log(`  ✅ predictions: ${predictionsData.length}件`);
@@ -1243,15 +1276,18 @@ async function writeToSupabase(allPredictions, date) {
       // で行うため、キーを省いた列（別経路が書いた天候等）を「変更あり」と誤判定しない
       for (const group of conditionsGroupBySignature.values()) {
         // weather_observed_at 列（マイグレーション069）が未適用でも書き込める共通の書き込み関数
-        await upsertRaceConditions(supabase, group, {
-          label: "race_conditions",
-        });
+        failIfError(
+          await upsertRaceConditions(client, group, {
+            label: "race_conditions",
+          }),
+        );
       }
     }
 
     console.log("✅ Supabase書き込み完了");
   } catch (error) {
     console.error("❌ Supabase書き込みエラー:", error.message);
+    if (throwOnError) throw error;
   }
 }
 
@@ -1703,6 +1739,93 @@ async function upsertPredictions(client, predictionsData, at) {
   }
 }
 
+/**
+ * レースデータ（data/races.json と同じ形）から、全レースの予想を生成して Supabase へ書き込む（フルモード）。
+ * fs にも process.argv にも依存しない（Vercel Function の races-init が、会場ごとに呼ぶ。WS4b T4b-07-2）。
+ * CLI の main() は、races.json を読んで、この関数を呼ぶ。
+ *
+ * @param {Object} params
+ * @param {{success?: boolean, data: Object[]}} params.racesData scrape-to-json.js の出力と同じ形
+ * @param {string} params.date 予想生成日（YYYY-MM-DD。races の race_date になる）
+ * @param {import("@supabase/supabase-js").SupabaseClient|null} [params.client] 既定は supabaseClient.js のクライアント
+ * @param {boolean} [params.throwOnError] true なら、DBへの書き込みの失敗を例外にする（既定は従来どおりログのみ）
+ * @returns {Promise<{predictedRaceIds: string[]}>}
+ */
+export async function generateAndWriteFromRacesData({
+  racesData,
+  date,
+  client = supabase,
+  throwOnError = false,
+}) {
+  if (!racesData?.success || !racesData.data) {
+    throw new Error("races.json に有効なデータがありません");
+  }
+
+  console.log(`✅ ${racesData.data.length}会場のデータを取得しました`);
+  console.log(`📅 予想生成日: ${date}`);
+
+  // 全レースの予想を生成
+  const allPredictions = [];
+  let totalRaces = 0;
+
+  // 全選手IDを収集して racer_aggregated_stats を一括取得
+  const allRacerIds = new Set();
+  for (const venue of racesData.data) {
+    if (!venue.races) continue;
+    for (const race of venue.races) {
+      if (!race.racers) continue;
+      for (const racer of race.racers) {
+        if (racer.racerId) allRacerIds.add(racer.racerId);
+      }
+    }
+  }
+  const racerStatsMap = await fetchRacerStats([...allRacerIds], client);
+  if (racerStatsMap.size > 0) {
+    console.log(`📊 ${racerStatsMap.size}人の選手統計を取得しました`);
+  }
+
+  venueWinRateCache = await fetchVenueWinRates(client);
+  if (Object.keys(venueWinRateCache).length > 0) {
+    console.log(
+      `🏟️  ${Object.keys(venueWinRateCache).length}会場の1コース勝率（90日実績）を取得しました`,
+    );
+  }
+
+  for (const venue of racesData.data) {
+    console.log(`\n📍 ${venue.placeName} (${venue.placeCd})`);
+
+    if (!venue.races || venue.races.length === 0) {
+      console.log("  ⚠️  レースデータなし");
+      continue;
+    }
+
+    for (const race of venue.races) {
+      // レースデータに場所情報を追加
+      race.placeName = venue.placeName;
+      race.placeCd = venue.placeCd;
+
+      const prediction = generateRacePrediction(race, date, racerStatsMap);
+
+      if (prediction) {
+        allPredictions.push(prediction);
+        totalRaces++;
+        console.log(
+          `  ✅ ${race.raceNo}R - 本命: ${prediction.prediction.topPick}号艇 (信頼度: ${prediction.prediction.confidence}%)`,
+        );
+      } else {
+        console.log(`  ❌ ${race.raceNo}R - 予想生成失敗`);
+      }
+    }
+  }
+
+  console.log(`\n📊 合計 ${totalRaces}レースの予想を生成しました`);
+
+  // Supabaseに書き込み
+  await writeToSupabase(allPredictions, date, { client, throwOnError });
+
+  return { predictedRaceIds: allPredictions.map((p) => p.raceId) };
+}
+
 // メイン処理
 async function main() {
   try {
@@ -1718,8 +1841,6 @@ async function main() {
       throw new Error("races.json に有効なデータがありません");
     }
 
-    console.log(`✅ ${racesData.data.length}会場のデータを取得しました`);
-
     // 今日の日付を取得
     const today = getTodayDateJST();
 
@@ -1729,66 +1850,8 @@ async function main() {
         `races.json の日付 (${racesData.date}) が今日 (${today}) と一致しません。scrape-to-json.js を先に実行してください。`,
       );
     }
-    console.log(`📅 予想生成日: ${today}`);
 
-    // 全レースの予想を生成
-    const allPredictions = [];
-    let totalRaces = 0;
-
-    // 全選手IDを収集して racer_aggregated_stats を一括取得
-    const allRacerIds = new Set();
-    for (const venue of racesData.data) {
-      if (!venue.races) continue;
-      for (const race of venue.races) {
-        if (!race.racers) continue;
-        for (const racer of race.racers) {
-          if (racer.racerId) allRacerIds.add(racer.racerId);
-        }
-      }
-    }
-    const racerStatsMap = await fetchRacerStats([...allRacerIds]);
-    if (racerStatsMap.size > 0) {
-      console.log(`📊 ${racerStatsMap.size}人の選手統計を取得しました`);
-    }
-
-    venueWinRateCache = await fetchVenueWinRates();
-    if (Object.keys(venueWinRateCache).length > 0) {
-      console.log(
-        `🏟️  ${Object.keys(venueWinRateCache).length}会場の1コース勝率（90日実績）を取得しました`,
-      );
-    }
-
-    for (const venue of racesData.data) {
-      console.log(`\n📍 ${venue.placeName} (${venue.placeCd})`);
-
-      if (!venue.races || venue.races.length === 0) {
-        console.log("  ⚠️  レースデータなし");
-        continue;
-      }
-
-      for (const race of venue.races) {
-        // レースデータに場所情報を追加
-        race.placeName = venue.placeName;
-        race.placeCd = venue.placeCd;
-
-        const prediction = generateRacePrediction(race, today, racerStatsMap);
-
-        if (prediction) {
-          allPredictions.push(prediction);
-          totalRaces++;
-          console.log(
-            `  ✅ ${race.raceNo}R - 本命: ${prediction.prediction.topPick}号艇 (信頼度: ${prediction.prediction.confidence}%)`,
-          );
-        } else {
-          console.log(`  ❌ ${race.raceNo}R - 予想生成失敗`);
-        }
-      }
-    }
-
-    console.log(`\n📊 合計 ${totalRaces}レースの予想を生成しました`);
-
-    // Supabaseに書き込み
-    await writeToSupabase(allPredictions, today);
+    await generateAndWriteFromRacesData({ racesData, date: today });
 
     console.log("✨ 予想生成が完了しました！");
   } catch (error) {

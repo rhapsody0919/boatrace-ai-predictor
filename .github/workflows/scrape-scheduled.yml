@@ -51,6 +51,14 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+          # WS4b（T4b-07・T4b-08）: 朝の初期化はVercel Function(api/cron/races-init.js)、公式コンピュータ予想は
+          # api/cron/pcexpect.js へ移行する。切り替え後にGitHub側を止めるトグル（既定は未設定＝従来どおり実行）。
+          # 設定は、Vercel側がliveで、docs/design/scraping-vercel-consolidation/verification-runbook.md N の手順どおり
+          # 確認できてから行う。切り戻しは、この変数をfalseにして、Vercel側をoffにする。
+          # SKIP_MORNING_INIT_ON_GHA=true でも、JST 07:00 になっても当日の races が無ければ、従来どおり初期化する
+          # （フェイルセーフ。Vercelが失敗した日に、誰も初期化しない状態を避ける。scripts/lib/racesInit/ghaSkip.js）
+          SKIP_MORNING_INIT_ON_GHA: ${{ vars.SKIP_MORNING_INIT_ON_GHA }}
+          SKIP_PCEXPECT_ON_GHA: ${{ vars.SKIP_PCEXPECT_ON_GHA }}
         continue-on-error: true
 
       # スクレイピングオーケストレーター
