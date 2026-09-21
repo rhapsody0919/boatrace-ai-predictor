@@ -165,8 +165,8 @@ export const SCRAPE_JOBS = Object.freeze({
   racer_profiles: {
     kind: "daily",
     targetTimeJst: "03:00",
-    leaseSec: 300,
-    maxDurationSec: 300,
+    leaseSec: 800,
+    maxDurationSec: 800,
     hosts: ["boatrace.jp"],
     // 起動する日（JST の日）。UTC 基準の1日（5月・11月は8日・15日も）の 18:00〜20:50 UTC は、JST の翌日 03:00〜05:50 のため、
     // JST では2日（5月・11月は9日・16日も）。monitor が、起動しない日に「日次が未処理」と誤報しないために使う
