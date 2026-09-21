@@ -73,8 +73,10 @@ const FINAL_DAY = readFixture("not-target-race-g1-final-day-r7.html");
 const G3 = readFixture("not-target-g3-r12.html");
 const IPPAN = readFixture("not-target-ippan-r9.html");
 const NO_DATA = readFixture("no-data.html");
-// 未公開（対象レースだが、コメントの表が無い）: 実ページの表（艇ごとの行）を取り除いた形。実際の未公開ページの構造は
-// docs/design/pit-comments/spec.md の「公開時刻」を参照（実測で確認できたら、実ページのフィクスチャに置き換える）
+// 未公開（対象レース。2026-09-21 11:30 JST、多摩川G1最終日の12R・発走16:30の5時間前に取得した実ページ）: 艇ごとの表とレポーター名は
+// あるが、コメント欄が空（&nbsp;）・前走のリンクの中身も空。「対象外」のメッセージは出ない
+const PENDING_REAL = readFixture("pending-g1-r12-final-day.html");
+// 表そのものが無い場合（構造の別の形。フォールバックの検証用の加工版）: 実ページの表（艇ごとの行）を取り除いた形
 const PENDING = R12.replace(
   /<tbody>\s*<tr>\s*<td class="is-boatColor[\s\S]*?<\/tbody>/g,
   "",
@@ -193,6 +195,16 @@ function evaluateParser(m) {
     pending.status === "target_pending" &&
       pending.boats.length === 0 &&
       pending.grade === "G1",
+  );
+  const pendingReal = m.parsePitReportHtml(PENDING_REAL);
+  expect(
+    "未公開の実ページ（表はあるがコメント欄が空）: target_pending・艇6行・レポーター名は取れる・異常なし",
+    pendingReal.status === "target_pending" &&
+      pendingReal.boats.length === 6 &&
+      pendingReal.boats.every((b) => b.commentText === null) &&
+      pendingReal.reporterName === "八王子 スゴ六" &&
+      pendingReal.anomalies.length === 0 &&
+      pendingReal.raceNumber === 12,
   );
   const junk = m.parsePitReportHtml("<html><body><p>x</p></body></html>");
   expect(
@@ -758,6 +770,16 @@ async function evaluateJob(processFn) {
       pending.outcome === "no_values" &&
         writes(client).length === 0 &&
         client.uploads.length === 0,
+    );
+    const pendingReal = await go({
+      client,
+      fetchHtml: async () => PENDING_REAL,
+    });
+    expect(
+      "未公開の実ページ（表はあるがコメント欄が空）: no_values・何も書かない（rowsParsed なし）",
+      pendingReal.outcome === "no_values" &&
+        writes(client).length === 0 &&
+        pendingReal.rowsParsed === undefined,
     );
     const nodata = await go({ client, fetchHtml: async () => NO_DATA });
     expect(
