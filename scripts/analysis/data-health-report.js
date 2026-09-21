@@ -54,6 +54,14 @@ import {
   buildMonthlySql,
   literalCoverageSlots,
 } from "../lib/dataHealth/coverageSpec.js";
+// 想定内の未公開（朝の最初のレースの、発走60分前のオッズ）の定義は、監視（scripts/lib/scrapeJobs/monitor.js）と共有する（BOA-386）
+import {
+  EXPECTED_UNPUBLISHED,
+  firstRaceSql,
+  laterOffsetsOf,
+  laterWindowHitSql,
+} from "../lib/scrapeJobs/expectedUnpublished.js";
+import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,6 +74,11 @@ const WINDOW_THRESHOLD = 0.98;
 const COVERAGE_DAYS = 14;
 const WINDOW_DAYS = 7;
 const WINDOW_MINUTES = [60, 30, 15, 10, 5, 0];
+// 窓の中心±この分数に取得が入れば、窓内（窓内取得率の定義）
+const WINDOW_TOLERANCE_MIN = 3;
+// 想定内の未公開の対象の窓（発走の何分前か）と、その後続の窓（発走に近い窓）
+const EXPECTED_UNPUBLISHED_MINUTES = -EXPECTED_UNPUBLISHED.offsetMin;
+const LATER_WINDOW_MINUTES = laterOffsetsOf(SCRAPE_JOBS.odds).map((o) => -o);
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -231,7 +244,8 @@ export function buildQueries({ coverageStart, windowStart, endDate }) {
     windows: `
 with base as (
   select r.race_id, r.race_date,
-      (r.race_date::timestamp + r.start_time) at time zone 'Asia/Tokyo' as dl
+      (r.race_date::timestamp + r.start_time) at time zone 'Asia/Tokyo' as dl,
+      ${firstRaceSql("r")} as is_first
   from races r
   where r.race_date between '${windowStart}' and '${endDate}'
     and r.start_time is not null
@@ -243,15 +257,28 @@ select b.race_date::text as d, w.m,
     count(*) as races,
     count(*) filter (where c.hit) as in_window,
     count(*) filter (where c.clean) as races_clean,
-    count(*) filter (where c.clean and c.hit) as in_window_clean
+    count(*) filter (where c.clean and c.hit) as in_window_clean,
+    -- 第1レースの対象の窓（${EXPECTED_UNPUBLISHED_MINUTES}分前）の件数と、窓内の件数（第1レースだけの率を別に出す）
+    count(*) filter (where w.m = ${EXPECTED_UNPUBLISHED_MINUTES} and b.is_first) as first_race,
+    count(*) filter (where w.m = ${EXPECTED_UNPUBLISHED_MINUTES} and b.is_first and c.hit) as first_race_in_window,
+    -- 想定内の未公開: 第1レースの対象の窓が窓内に取れておらず、後続の窓のどれかには取れている（後で公開された）
+    count(*) filter (where w.m = ${EXPECTED_UNPUBLISHED_MINUTES} and b.is_first and not c.hit and c.later_hit) as structural
 from base b cross join w
 cross join lateral (
   select exists (
       select 1 from race_odds o
       where o.race_id = b.race_id
-        and o.captured_at between b.dl - make_interval(mins => w.m + 3)
-                              and b.dl - make_interval(mins => w.m - 3)
+        and o.captured_at between b.dl - make_interval(mins => w.m + ${WINDOW_TOLERANCE_MIN})
+                              and b.dl - make_interval(mins => w.m - ${WINDOW_TOLERANCE_MIN})
     ) as hit,
+    (w.m = ${EXPECTED_UNPUBLISHED_MINUTES} and b.is_first and ${laterWindowHitSql(
+      {
+        raceIdExpr: "b.race_id",
+        deadlineExpr: "b.dl",
+        laterMinutesBefore: LATER_WINDOW_MINUTES,
+        toleranceMin: WINDOW_TOLERANCE_MIN,
+      },
+    )}) as later_hit,
     -- 窓の時間帯が既知の障害期間と重なる(レース,窓)は除外した集計に含めない
     not exists (
       select 1 from inc
@@ -444,6 +471,9 @@ const datesFrom = (start, days) =>
   Array.from({ length: days }, (_, i) => addDaysToDateString(start, i));
 
 const sum = (rows, key) => rows.reduce((acc, r) => acc + Number(r[key]), 0);
+// 列が無い行（--cache-file の、この列を追加する前のキャッシュ）は0として数える
+const sumOrZero = (rows, key) =>
+  rows.reduce((acc, r) => acc + Number(r[key] ?? 0), 0);
 
 /** その日が、指標の期待件数の対象か（sinceより前は、取得開始前で対象外） */
 const isApplicableDay = (metric, dateStr) =>
@@ -538,7 +568,7 @@ export function summarizeRankDetail(perDay) {
   };
 }
 
-function summarizeWindows(
+export function summarizeWindows(
   rows,
   { onlyDates = null, weekendFilter = null } = {},
 ) {
@@ -555,12 +585,22 @@ function summarizeWindows(
     // 既知の障害期間と窓が重なる(レース,窓)を除いた値
     const racesClean = sum(ofWindow, "races_clean");
     const inWindowClean = sum(ofWindow, "in_window_clean");
+    // 想定内の未公開（第1レースの-60分窓で、後続の窓で公開が確認できたもの。定義は expectedUnpublished.js）を分母から外した値。
+    // 外した件数は structural に別に残す（黙って除外しない）。閾値の判定は、この値で行う
+    const structural = sumOrZero(ofWindow, "structural");
+    const racesAdjusted = races - structural;
+    const rateAdjusted = rate(inWindow, racesAdjusted);
     return {
       minutesBefore: m,
       races,
       inWindow,
       rate: value,
-      belowThreshold: value === null || value < WINDOW_THRESHOLD,
+      structural,
+      racesAdjusted,
+      rateAdjusted,
+      firstRace: sumOrZero(ofWindow, "first_race"),
+      firstRaceInWindow: sumOrZero(ofWindow, "first_race_in_window"),
+      belowThreshold: rateAdjusted === null || rateAdjusted < WINDOW_THRESHOLD,
       excludedRaces: races - racesClean,
       racesClean,
       inWindowClean,
@@ -897,9 +937,9 @@ function collectAlerts(report) {
       alerts.push({
         kind: "window",
         item: `窓内取得率 ${w.minutesBefore}分前`,
-        value: w.rate,
+        value: w.rateAdjusted,
         threshold: WINDOW_THRESHOLD,
-        detail: `${w.inWindow}/${w.races}`,
+        detail: `${w.inWindow}/${w.racesAdjusted}${w.structural > 0 ? `（想定内の未公開 ${w.structural}件を分母から除外。除外なしは${w.inWindow}/${w.races}）` : ""}`,
       });
     }
   }
@@ -1191,11 +1231,18 @@ function renderMarkdown(report) {
   );
   lines.push("");
   lines.push(
+    "想定内の未公開の除外（BOA-386）: 各会場・日の第1レースの" +
+      `${EXPECTED_UNPUBLISHED_MINUTES}分前の窓が窓内に取れておらず、後続の窓（${LATER_WINDOW_MINUTES.join("・")}分前）のどれかに取れているもの（後で公開された）を、分母から外した値を「全体(想定内の未公開を除外)」に出す。閾値の判定はこの値で行う。外した件数は「想定内の未公開」に別に出す。後続の窓にも取れていない第1レースは、除外しない（本当に取れていない）`,
+  );
+  lines.push("");
+  lines.push(
     tableHeader([
       "窓",
       "全体(除外なし)",
+      "全体(想定内の未公開を除外)",
+      "想定内の未公開",
       "全体(障害期間を除外)",
-      "除外件数",
+      "障害期間の除外件数",
       "平日(除外なし)",
       "土日(除外なし)",
     ]),
@@ -1211,11 +1258,62 @@ function renderMarkdown(report) {
     lines.push(
       tableRow([
         `${w.minutesBefore}分前`,
-        `${cell(w)}${w.belowThreshold ? " (未達)" : ""}`,
+        cell(w),
+        `${formatPct(w.rateAdjusted)} (${w.inWindow}/${w.racesAdjusted})${w.belowThreshold ? " (未達)" : ""}`,
+        w.structural,
         `${formatPct(w.rateClean)} (${w.inWindowClean}/${w.racesClean})`,
         w.excludedRaces,
         cell(wd),
         cell(we),
+      ]),
+    );
+  }
+  lines.push("");
+  const m60 = report.windows.aggregate.find(
+    (w) => w.minutesBefore === EXPECTED_UNPUBLISHED_MINUTES,
+  );
+  lines.push(
+    `### 第1レースの${EXPECTED_UNPUBLISHED_MINUTES}分前の窓（想定内の未公開）`,
+  );
+  lines.push("");
+  lines.push(
+    tableHeader([
+      "日付",
+      "第1レース(件)",
+      "窓内",
+      "窓内取得率",
+      "想定内の未公開",
+      "取れていない(後続の窓にも無い)",
+    ]),
+  );
+  for (const date of [...new Set(report.windows.perDay.map((r) => r.d))]) {
+    const row = report.windows.perDay.find(
+      (r) => r.d === date && Number(r.m) === EXPECTED_UNPUBLISHED_MINUTES,
+    );
+    if (!row) continue;
+    const first = Number(row.first_race ?? 0);
+    const inWin = Number(row.first_race_in_window ?? 0);
+    const structural = Number(row.structural ?? 0);
+    lines.push(
+      tableRow([
+        `${date}(${weekdayOf(date)})`,
+        first,
+        inWin,
+        formatPct(rate(inWin, first)),
+        structural,
+        first - inWin - structural,
+      ]),
+    );
+  }
+  if (m60) {
+    lines.push(
+      tableRow([
+        "合計",
+        m60.firstRace,
+        m60.firstRaceInWindow,
+        formatPct(rate(m60.firstRaceInWindow, m60.firstRace)),
+        m60.structural,
+        m60.firstRace - m60.firstRaceInWindow - m60.structural,
       ]),
     );
   }
@@ -1510,7 +1608,7 @@ function renderMarkdown(report) {
     "窓は隣り合うものが重なる（例: 10分前=7〜13分前、5分前=2〜8分前）ため、1回の取得が複数の窓を満たしうる。窓別の取得率は過大評価側に出る。",
     "取りこぼしの一因はGitHub Actionsのキャンセル起因（BOA-342/344の実測では、取りこぼしの81〜94%が、キャンセルされた実行が前後5分以内にあった）。この指標自体は原因を区別しない。",
     "展示・STは「行の有無」と「値の有無」を分けて出す。展示タイムより先にSTだけの行が書かれる会場があり、行の有無だけでは欠落を過小評価する（BOA-356）。展示の判定基準は check-exhibition-gap-rate.js に合わせ、1艇でも展示タイムが入っていれば取得済みとする。",
-    "窓内取得率の分母は結果確定済み（rank1あり）・中止除外のレース。土日を含まない期間は完了の定義Bの根拠にならない。",
+    "窓内取得率の分母は結果確定済み（rank1あり）・中止除外のレース。土日を含まない期間は完了の定義Bの根拠にならない。第1レースの60分前の窓は、公式の発売・公開が窓の後に始まることがあるため、後の窓で公開が確認できたもの（想定内の未公開）だけを閾値判定の分母から外す（件数は別に出す。BOA-386）。",
     "取得時刻の分布（3-2）は exhibition_data・race_entries・race_start_timings の created_at（行が最初に保存された時刻、マイグレーション071）を使う。追加前の行はNULLで分母に含まれないため、適用直後は対象レースが少ない（適用から数日で、土日を含む7日分が溜まるまで完了の定義Bの根拠にならない）。過去日のバックフィル（手動スクリプト）で作られた行は、バックフィル時刻が created_at になり「発走後に保存」に数えられる。 3-2は「最初に保存された時刻」で測るため、公式の窓（中心±3分）に取得が入ったかどうか（2の窓内取得率の定義）とは別の指標で、変更の無い取得は行に痕跡を残さない（WS8(b)）。分母は created_at が非NULLのレースで、行が1件も無いレース（取得できなかったレース）は含まれない（「行あり」との差で確認する）。3-2の「値が揃った時刻」は、展示タイム以外の列の変更でも遅く出る上限の近似。",
   ]) {
     lines.push(`- ${note}`);
@@ -1580,6 +1678,7 @@ export async function main(argv = process.argv.slice(2)) {
       metricDenominators: {
         rank4_6:
           "艇別の着欄(race_start_timings.finish_mark)が6艇分そろい、完走艇数が4以上のレース＋着欄を確定できないがrank4〜6がそろっているレース。着欄を確定できずrank4〜6に欠けがあるレースは判定不能（分母外）、完走3艇以下・結果なしも分母外",
+        windowExpectedUnpublished: `窓内取得率（発走${EXPECTED_UNPUBLISHED_MINUTES}分前）は、各会場・日の第1レース（races の最小のレース番号）が窓内に取れておらず、後続の窓（${LATER_WINDOW_MINUTES.join("・")}分前）のどれかに取れているもの（後で公開された。想定内の未公開）を、閾値判定の分母から外す。外した件数と、除外なしの値も併記する`,
         oddsFullGrid: `trio_all・exacta_all・quinella_all・wide_all と、5種すべて(odds_all)は、${ODDS_FULL_GRID_SINCE}以降のレースのみを分母にする（全通り取得の開始日。それ以前は対象外）。trifecta_all は取得開始前の対象外を設けない（2026-07-12以降に保存がある）`,
       },
       oddsFullGridSince: ODDS_FULL_GRID_SINCE,
