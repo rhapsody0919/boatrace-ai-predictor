@@ -24,13 +24,13 @@ export function isObservedAtColumnMissing(message) {
  *
  * @param {import("@supabase/supabase-js").SupabaseClient} client
  * @param {Object[]} rows
- * @param {{label?: string, dryRun?: boolean}} [options]
+ * @param {{label?: string, dryRun?: boolean, optionalColumnGroups?: Record<string, string[]>}} [options]
  * @returns {Promise<Awaited<ReturnType<typeof upsertChangedRows>> & {observedAtSupported: boolean}>}
  */
 export async function upsertRaceConditions(
   client,
   rows,
-  { label = "race_conditions", dryRun = false } = {},
+  { label = "race_conditions", dryRun = false, optionalColumnGroups = {} } = {},
 ) {
   const write = (targetRows, targetLabel) =>
     upsertChangedRows(client, "race_conditions", targetRows, {
@@ -38,6 +38,8 @@ export async function upsertRaceConditions(
       keyColumns: ["race_id"],
       label: targetLabel,
       dryRun,
+      // 未適用のマイグレーションの列は、除いて書き直す（例: 081 の距離・ラベル。scripts/lib/preRaceSchema.js）
+      optionalColumnGroups,
     });
 
   const first = await write(rows, label);

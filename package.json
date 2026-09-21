@@ -29,6 +29,7 @@
     "verify:kb-backfill": "node scripts/maintenance/verify-kb-file-parser.js",
     "verify:unchanged-rows": "node scripts/maintenance/verify-unchanged-rows.js",
     "verify:race-result-parser": "node scripts/maintenance/verify-race-result-parser.js",
+    "verify:pre-race-parsers": "node scripts/maintenance/verify-pre-race-parsers.js",
     "verify:scraped-timestamps": "node scripts/maintenance/verify-scraped-timestamps.js",
     "verify:scrape-jobs": "node scripts/maintenance/verify-scrape-jobs.js",
     "verify:scrape-monitor": "node scripts/maintenance/verify-scrape-monitor.js",

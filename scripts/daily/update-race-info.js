@@ -18,8 +18,21 @@ import {
 } from "../lib/supabaseClient.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
 import { computeCancellationTransition } from "../lib/cancellationStatus.js";
-import { normalizeText } from "../lib/venueMotorStats/parserUtils.js";
 import { scrapeRaceStage } from "../lib/raceStageParser.js";
+import {
+  parseRaceListPage,
+  scrapeRaceMeta,
+  scrapeSeriesDay,
+} from "../lib/raceListParser.js";
+import {
+  buildRaceConditionRow,
+  buildRaceEntryRows,
+  planDeadlineUpdates,
+} from "../lib/preRaceRows.js";
+import {
+  PRE_RACE_OPTIONAL_COLUMN_GROUPS,
+  detectPreRaceSchema,
+} from "../lib/preRaceSchema.js";
 import {
   diffRows,
   formatSkipSummary,
@@ -47,155 +60,6 @@ const FETCH_HEADERS = {
 const WINDOW_MINUTES = 60;
 
 /**
- * racelist ページから出場選手情報を取得
- *
- * @param {CheerioAPI} $ - cheerio インスタンス
- * @returns {Array<Object>} 選手情報（1〜6号艇）
- */
-function scrapeRacers($) {
-  const racers = [];
-  $(".table1 tbody.is-fs12").each((index, tbody) => {
-    if (index >= 6) return false;
-    const $tbody = $(tbody);
-
-    const name = $tbody.find(".is-fs18.is-fBold a").text().trim();
-    const $fs11Divs = $tbody.find(".is-fs11");
-
-    const gradeText = $fs11Divs.eq(0).text().trim();
-    const racerIdMatch = gradeText.match(/^(\d+)/);
-    const racerId = racerIdMatch ? parseInt(racerIdMatch[1]) : null;
-    const gradeMatch = gradeText.match(/\s*\/\s*([AB][12])/);
-    const grade = gradeMatch ? gradeMatch[1] : null;
-
-    const ageText = $fs11Divs.eq(1).text().trim();
-    const ageMatch = ageText.match(/(\d+)歳/);
-    const age = ageMatch ? parseInt(ageMatch[1]) : null;
-
-    const $stats = $tbody.find("td.is-lineH2");
-
-    const globalStats = $stats
-      .eq(1)
-      .text()
-      .trim()
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const localStats = $stats
-      .eq(2)
-      .text()
-      .trim()
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const motorStats = $stats
-      .eq(3)
-      .text()
-      .trim()
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const boatStats = $stats
-      .eq(4)
-      .text()
-      .trim()
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    const toFloat = (s) => {
-      const v = parseFloat(s);
-      return isNaN(v) ? null : v;
-    };
-    const toInt = (s) => {
-      const v = parseInt(s, 10);
-      return isNaN(v) ? null : v;
-    };
-
-    racers.push({
-      boatNumber: index + 1,
-      racerId,
-      playerName: name || null,
-      grade,
-      age,
-      winRate: toFloat(globalStats[0]),
-      localWinRate: toFloat(localStats[0]),
-      global2Rate: toFloat(globalStats[1]),
-      local2Rate: toFloat(localStats[1]),
-      global3Rate: toFloat(globalStats[2]),
-      local3Rate: toFloat(localStats[2]),
-      motorNumber: toInt(motorStats[0]),
-      motor2Rate: toFloat(motorStats[1]),
-      motor3Rate: toFloat(motorStats[2]),
-      boatNumberId: toInt(boatStats[0]),
-      boat2Rate: toFloat(boatStats[1]),
-      boat3Rate: toFloat(boatStats[2]),
-    });
-  });
-  return racers;
-}
-
-/**
- * racelist ページからレースグレード・タイトルを取得
- */
-function scrapeRaceMeta($) {
-  const raceGrade = (() => {
-    const el = $(".heading2_title");
-    if (!el.length) return null;
-    const cls = (el.attr("class") || "").toLowerCase();
-    if (cls.includes("is-sg")) return "SG";
-    if (cls.includes("is-g1")) return "G1";
-    if (cls.includes("is-g2")) return "G2";
-    if (cls.includes("is-g3")) return "G3";
-    return "ippan";
-  })();
-  const raceTitle = $(".heading2_titleName").text().trim() || null;
-  const raceStage = scrapeRaceStage($);
-  const { seriesDay, isFinalDay } = scrapeSeriesDay($);
-  return { raceGrade, raceTitle, raceStage, seriesDay, isFinalDay };
-}
-
-/**
- * racelist ページの日程タブ（`.tab2_inner`）から開催の何日目かを取得する
- * （BOA-226、series_day/is_final_day）。
- *
- * 日程タブは開催日数分の`<li>`が並び、当日に対応する要素だけ`<li class="is-active2">`
- * で囲まれる（過去日はリンク付き`<a>`、未来日はリンク無し`<span>`だが、当日判定に
- * リンクの有無は使えない——直近の未来日にも先行してリンクが張られる実データを確認済み）。
- * ラベルは「初日」「Ｎ日目」「最終日」の3パターン（全角数字）。
- */
-function scrapeSeriesDay($) {
-  const tabs = $(".tab2_inner");
-  const totalDays = tabs.length;
-  if (totalDays === 0) return { seriesDay: null, isFinalDay: null };
-
-  let label = null;
-  tabs.each((i, el) => {
-    const $el = $(el);
-    if ($el.closest("li").hasClass("is-active2")) {
-      label = $el.find("span").first().text().trim();
-      return false;
-    }
-  });
-  if (!label) return { seriesDay: null, isFinalDay: null };
-
-  const isFinalDay = label === "最終日";
-  let seriesDay = null;
-  if (label === "初日") {
-    seriesDay = 1;
-  } else if (isFinalDay) {
-    seriesDay = totalDays;
-  } else {
-    const match = label.match(/([０-９]+)日目/);
-    if (match) {
-      const n = parseInt(normalizeText(match[1]), 10);
-      seriesDay = isNaN(n) ? null : n;
-    }
-  }
-
-  return { seriesDay, isFinalDay };
-}
-
-/**
  * 1レースの racelist + beforeinfo を並列取得
  */
 async function fetchRaceInfo(date, venueCode, raceNo) {
@@ -217,10 +81,9 @@ async function fetchRaceInfo(date, venueCode, raceNo) {
       return null;
     }
 
-    const $racelist = cheerio.load(await racelistRes.text());
-    const racers = scrapeRacers($racelist);
-    const { raceGrade, raceTitle, raceStage, seriesDay, isFinalDay } =
-      scrapeRaceMeta($racelist);
+    // 出走表は、全項目を1回で解析する（scripts/lib/raceListParser.js）
+    const page = parseRaceListPage(await racelistRes.text());
+    const racers = page.entries;
 
     // 選手が1人も取得できない場合は中止・未公開の可能性
     if (racers.length === 0) {
@@ -230,13 +93,18 @@ async function fetchRaceInfo(date, venueCode, raceNo) {
       return null;
     }
 
-    // 欠場検出: racerId が null の艇がいる場合
+    // 欠場検出: 出走表で欠場の表示（tbody の is-miss）の艇、または登録番号を読めない艇
     const absentBoats = racers
-      .filter((r) => r.racerId === null)
-      .map((r) => r.boatNumber);
+      .filter((r) => r.is_absent || r.racer_id === null)
+      .map((r) => r.boat_number);
     if (absentBoats.length > 0) {
       console.warn(
         `  ⚠️ ${VENUE_NAMES[venueCode]} ${raceNo}R 欠場/代替の可能性: ${absentBoats.map((b) => `${b}号艇`).join(", ")}`,
+      );
+    }
+    for (const anomaly of page.anomalies) {
+      console.warn(
+        `  ⚠️ ${VENUE_NAMES[venueCode]} ${raceNo}R 出走表: ${anomaly}`,
       );
     }
 
@@ -245,15 +113,7 @@ async function fetchRaceInfo(date, venueCode, raceNo) {
       conditions = scrapeConditions(cheerio.load(await beforeinfoRes.text()));
     }
 
-    return {
-      racers,
-      raceGrade,
-      raceTitle,
-      raceStage,
-      seriesDay,
-      isFinalDay,
-      conditions,
-    };
+    return { page, conditions };
   } catch (err) {
     console.error(
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R 取得エラー: ${err.message}`,
@@ -266,12 +126,19 @@ async function fetchRaceInfo(date, venueCode, raceNo) {
  * オーケストレーターから呼び出し可能なレース情報更新処理
  * @param {Array} schedule - getRaceSchedule() の返り値（外部から渡す）
  * @param {string} date - YYYY-MM-DD
- * @param {{dryRun?: boolean}} [options] dryRun=trueならDBへ書き込まず、書くはずの件数だけログに出す
- * @returns {Promise<{updated: boolean, count: number}>}
+ * @param {{dryRun?: boolean, syncDeadlines?: boolean, client?: import("@supabase/supabase-js").SupabaseClient}} [options]
+ *   dryRun=trueならDBへ書き込まず、書くはずの件数だけログに出す。
+ *   syncDeadlines: 出走表の「締切予定時刻」の行が races.start_time と違うレースの start_time を更新するか
+ *   （既定 true。日中の時刻変更への追従。N15）。client: テスト用のSupabaseクライアントの差し替え
+ * @returns {Promise<{updated: boolean, count: number, deadlineUpdates?: number}>}
  *   updated/count は「取得できた件数」で、DBへ実際に書いた件数ではない（変更の無い行は
  *   書かないが、後続の予測リフレッシュの起動条件は従来どおり取得ベースのまま変えない）
  */
-export async function run(schedule, date, { dryRun = false } = {}) {
+export async function run(
+  schedule,
+  date,
+  { dryRun = false, syncDeadlines = true, client = supabase } = {},
+) {
   // 発走1時間前ウィンドウのレースのみ対象
   const targetRaces = getRacesInWindow(schedule, WINDOW_MINUTES);
   if (targetRaces.length === 0) {
@@ -286,19 +153,23 @@ export async function run(schedule, date, { dryRun = false } = {}) {
   // 気象の観測時刻の解決用（「N R時点」の気象は、Nレース目の発走予定時刻を観測時刻とする）
   const startTimeLookup = buildStartTimeLookup(schedule);
 
+  // 出走表の新しい列（マイグレーション081）が適用済みかを先に判定する。未適用なら、旧実装と同じ列だけを書く
+  const schema = await detectPreRaceSchema(client);
+  const entriesExtended = schema.raceEntries;
+  const conditionsExtended = schema.raceConditions;
+
   // 中止・順延の暫定検知（BOA-254 FR1）用に、対象レースの現在の状態を取得
-  const { data: cancellationRows, error: cancellationFetchError } =
-    await supabase
-      .from("races")
-      // race_grade は、後段の races.race_grade 更新で「変更なし」を判定する既存値として使う
-      // （追加の読み取りをしないため、同じクエリで取得する）
-      .select(
-        "race_id, cancellation_status, cancellation_check_streak, race_grade",
-      )
-      .in(
-        "race_id",
-        targetRaces.map((r) => r.race_id),
-      );
+  const { data: cancellationRows, error: cancellationFetchError } = await client
+    .from("races")
+    // race_grade は、後段の races.race_grade 更新で「変更なし」を判定する既存値として使う
+    // （追加の読み取りをしないため、同じクエリで取得する）
+    .select(
+      "race_id, cancellation_status, cancellation_check_streak, race_grade",
+    )
+    .in(
+      "race_id",
+      targetRaces.map((r) => r.race_id),
+    );
   if (cancellationFetchError) {
     console.error(
       "⚠️ cancellation_status取得エラー（今回は暫定検知をスキップ）:",
@@ -315,6 +186,8 @@ export async function run(schedule, date, { dryRun = false } = {}) {
   const weatherFetched = [];
   const racesGradeUpdates = [];
   const cancellationUpdates = [];
+  // 出走表の締切予定時刻による races.start_time の更新（race_id で重複を除く）
+  const deadlineUpdates = new Map();
 
   const byVenue = new Map();
   for (const r of targetRaces) {
@@ -363,38 +236,22 @@ export async function run(schedule, date, { dryRun = false } = {}) {
       }
 
       if (!data) continue;
-      const {
-        racers,
-        raceGrade,
-        raceTitle,
-        raceStage,
-        seriesDay,
-        isFinalDay,
-        conditions,
-      } = data;
+      const { page, conditions } = data;
+      const { raceGrade, raceTitle, raceStage } = page.meta;
 
       // race_entries 行を構築（ai_score系は更新しない）
-      for (const racer of racers) {
-        entriesRows.push({
-          race_id: r.race_id,
-          boat_number: racer.boatNumber,
-          racer_id: racer.racerId,
-          player_name: racer.playerName,
-          grade: racer.grade,
-          age: racer.age,
-          win_rate: racer.winRate,
-          local_win_rate: racer.localWinRate,
-          global_2rate: racer.global2Rate,
-          local_2rate: racer.local2Rate,
-          global_3rate: racer.global3Rate,
-          local_3rate: racer.local3Rate,
-          motor_number: racer.motorNumber,
-          motor_2rate: racer.motor2Rate,
-          motor_3rate: racer.motor3Rate,
-          boat_number_id: racer.boatNumberId,
-          boat_2rate: racer.boat2Rate,
-          boat_3rate: racer.boat3Rate,
-        });
+      entriesRows.push(
+        ...buildRaceEntryRows(r.race_id, page.entries, {
+          extended: entriesExtended,
+        }),
+      );
+
+      // 締切予定時刻（同日12レース分）が races.start_time と違うレースは、start_time を更新する（N15）
+      if (syncDeadlines) {
+        const plan = planDeadlineUpdates(schedule, venueCode, page.deadlines);
+        for (const update of plan.updates) {
+          deadlineUpdates.set(update.race_id, update);
+        }
       }
 
       // race_conditions 行を構築（race_grade は除外、races テーブルで管理）
@@ -406,13 +263,11 @@ export async function run(schedule, date, { dryRun = false } = {}) {
       if (conditions || raceTitle || raceStage) {
         // 気象の列（と観測時刻）は、書き込みの直前にまとめて作る（下の buildWeatherRows。展示取得と
         // 同じ規則）。気象を取得できなかったレースは、気象の列を含めず、既存の良い値を消さない
-        conditionsRows.push({
-          race_id: r.race_id,
-          series_day: seriesDay,
-          is_final_day: isFinalDay,
-          race_title: raceTitle,
-          race_stage: raceStage,
-        });
+        conditionsRows.push(
+          buildRaceConditionRow(r.race_id, page.meta, {
+            extended: conditionsExtended,
+          }),
+        );
         weatherFetched.push({
           raceId: r.race_id,
           venueCode: r.venue_code,
@@ -429,10 +284,10 @@ export async function run(schedule, date, { dryRun = false } = {}) {
         });
       }
 
-      const racerSummary = racers
+      const racerSummary = page.entries
         .map(
-          (r) =>
-            `${r.boatNumber}号艇:${r.playerName ?? "不明"}(${r.grade ?? "??"})`,
+          (e) =>
+            `${e.boat_number}号艇:${e.player_name ?? "不明"}(${e.grade ?? "??"})`,
         )
         .join(", ");
       console.log(`  ✅ ${venueName} ${r.race_no}R — ${racerSummary}`);
@@ -453,7 +308,7 @@ export async function run(schedule, date, { dryRun = false } = {}) {
     cancellation_status,
     cancellation_check_streak,
   } of dryRun ? [] : cancellationUpdates) {
-    const { error } = await supabase
+    const { error } = await client
       .from("races")
       .update({ cancellation_status, cancellation_check_streak })
       .eq("race_id", race_id);
@@ -470,9 +325,30 @@ export async function run(schedule, date, { dryRun = false } = {}) {
     );
   }
 
+  // races.start_time を、出走表の締切予定時刻に追従させる（N15）。書き込みデータが無くても、時刻の変更は反映する
+  let deadlineUpdateCount = 0;
+  for (const update of dryRun ? [] : deadlineUpdates.values()) {
+    const { error } = await client
+      .from("races")
+      .update({ start_time: update.start_time })
+      .eq("race_id", update.race_id);
+    if (!error) deadlineUpdateCount++;
+    else
+      console.error(
+        `❌ races (start_time) 更新エラー [${update.race_id}]:`,
+        error.message,
+      );
+  }
+  if (deadlineUpdates.size > 0) {
+    console.log(
+      `  ${dryRun ? "[DRY-RUN] " : ""}🕒 races.start_time: ${[...deadlineUpdates.values()].map((u) => `${u.race_id} ${u.previous}→${u.start_time.slice(0, 5)}`).join(", ")}` +
+        (dryRun ? "" : `（更新${deadlineUpdateCount}件）`),
+    );
+  }
+
   if (entriesRows.length === 0) {
     console.log("\n📭 レース情報: 書き込みデータなし");
-    return { updated: false, count: 0 };
+    return { updated: false, count: 0, deadlineUpdates: deadlineUpdateCount };
   }
 
   console.log(`\n💾 レース情報書き込み中...`);
@@ -483,12 +359,14 @@ export async function run(schedule, date, { dryRun = false } = {}) {
 
   // race_entries upsert（ai_score系は書き込み対象の列に含まれないため比較にも現れない）
   // 書く行には updated_at を設定する（WS2。created_at はINSERT時のDBの DEFAULT に任せる）
-  await upsertChangedRows(supabase, "race_entries", entriesRows, {
+  await upsertChangedRows(client, "race_entries", entriesRows, {
     onConflict: "race_id,boat_number",
     keyColumns: ["race_id", "boat_number"],
     label: "race_entries",
     dryRun,
     stampUpdatedAt: true,
+    // 未適用の列は、行に含めない（上の detectPreRaceSchema）。判定後に列が無くなった場合の書き直し用
+    optionalColumnGroups: PRE_RACE_OPTIONAL_COLUMN_GROUPS.raceEntries,
   });
 
   // race_conditions upsert
@@ -518,7 +396,11 @@ export async function run(schedule, date, { dryRun = false } = {}) {
       [withoutWeather, "race_conditions（気象なし）"],
     ]) {
       if (group.length > 0) {
-        await upsertRaceConditions(supabase, group, { label, dryRun });
+        await upsertRaceConditions(client, group, {
+          label,
+          dryRun,
+          optionalColumnGroups: PRE_RACE_OPTIONAL_COLUMN_GROUPS.raceConditions,
+        });
       }
     }
   }
@@ -535,7 +417,7 @@ export async function run(schedule, date, { dryRun = false } = {}) {
   let racesGradeUpdateCount = 0;
   if (!dryRun) {
     for (const { race_id, race_grade } of racesGradeToWrite) {
-      const { error } = await supabase
+      const { error } = await client
         .from("races")
         .update({ race_grade })
         .eq("race_id", race_id);
@@ -547,7 +429,11 @@ export async function run(schedule, date, { dryRun = false } = {}) {
       (dryRun ? "" : ` / 更新${racesGradeUpdateCount}件`),
   );
 
-  return { updated: true, count: entriesRows.length };
+  return {
+    updated: true,
+    count: entriesRows.length,
+    deadlineUpdates: deadlineUpdateCount,
+  };
 }
 
 /**
