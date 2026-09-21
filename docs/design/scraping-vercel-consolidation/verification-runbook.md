@@ -1370,7 +1370,7 @@ UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'exhibi
 
 ### Q-5. レース情報（`race_info`）の切り替え
 
-**着手前**: Q-2の順序（案1が有効）。展示のliveから1日以上安定していること。
+**着手前**: Q-2の順序（案1が有効）。**live化は**、展示のliveの後の別の日（同じデータを扱うため。G8）。**shadowの開始は、展示のliveより前でよい**（書き込みがなく、独立に測れる。2026-09-21に、展示のshadowと並べて開始した。取得先へは、racelistが1日約2倍になるだけ）。
 
 **手順: shadow 1日 → live → GitHub側の停止**
 
