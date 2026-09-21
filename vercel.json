@@ -105,6 +105,18 @@
     {
       "path": "/api/cron/pcexpect",
       "schedule": "*/5 20-23,0-14 * * *"
+    },
+    {
+      "path": "/api/cron/boatcast-oriten",
+      "schedule": "* 22-23,0-14 * * *"
+    },
+    {
+      "path": "/api/cron/boatcast-motor-start",
+      "schedule": "30 21 * * *"
+    },
+    {
+      "path": "/api/cron/boatcast-motor-start",
+      "schedule": "0 23 * * *"
     }
   ],
   "functions": {

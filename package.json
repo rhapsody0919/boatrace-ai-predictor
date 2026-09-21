@@ -42,6 +42,7 @@
     "verify:scrape-odds-job": "node scripts/maintenance/verify-scrape-odds-job.js",
     "verify:scrape-pre-race-job": "node scripts/maintenance/verify-scrape-pre-race-job.js",
     "verify:pit-report-job": "node scripts/maintenance/verify-pit-report-job.js",
+    "verify:boatcast-job": "node scripts/maintenance/verify-boatcast-job.js",
     "verify:morning-init-refactor": "node scripts/maintenance/verify-morning-init-refactor.js",
     "verify:morning-init-jobs": "node scripts/maintenance/verify-morning-init-jobs.js",
     "verify:scrape-slots-sql": "node scripts/maintenance/verify-scrape-slots-sql.js",
