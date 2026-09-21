@@ -5,6 +5,8 @@
  * 確認すること:
  *   (a) 解析・構造のダイジェスト: 実際のオッズページ（フィクスチャ。桐生1R）から、単勝6・複勝6・全通り5券種
  *       （120/20/30/15/15通り）が取れる。ダイジェストは値の変化に依存せず、キー集合・欠落で変わる。未公開は no_values、
+ *       3連単の人気上位3件（trifecta_popular_*・trifecta_odds_*）は、odds3t の120通りのグリッドからオッズの低い順に求める
+ *       （公式ページに「人気順」の表は無い。旧実装のセレクタ .is-p3-0 tbody tr は常に0件で、本番の全行が NULL だった）。
  *       券種ページの欠落は partial（列名つき）、単勝ページの失敗は error、ブレーカーは breaker_open
  *   (b) runForRaces（レース×窓の入口）: live は基本オッズと全通り系を1行にまとめ、race_id,window_min で upsert する
  *       （source='vercel'・window_min つき・行のキーは一様）、二重に呼んでも行が増えない（冪等）、窓ごとに別の行、
@@ -33,7 +35,10 @@ import {
   isOddsRowComplete,
   pickFallbackPatches,
   runForRaces,
+  scrapeTrifectaOdds,
+  topTrifectaByOdds,
 } from "../daily/scrape-odds.js";
+import * as cheerio from "cheerio";
 import { computeOddsDigest } from "../lib/scrapeJobs/oddsDigest.js";
 import { compareOddsShadowDigests } from "./check-odds-shadow.js";
 import {
@@ -257,6 +262,81 @@ const fullRow = (patch = {}) => ({
     ]) && same(Object.keys(fullOddsPatchOf(d)), FULL_ODDS_KEYS),
   );
 
+  // 3連単の人気上位3件: 桐生1Rのフィクスチャで、120通りのグリッドを独立に並べ替えた結果と一致する。
+  // 期待値は、フィクスチャのHTMLに書かれている値（1-2-6=7.6・1-2-3=10.0・1-6-2=14.8。第1セクション=1着1号艇の表で確認）
+  check(
+    "3連単人気: 桐生1Rの人気1〜3位が、オッズの低い順（1-2-6:7.6・1-2-3:10.0・1-6-2:14.8）で取れる",
+    same(d.trifecta, [
+      { combination: "1-2-6", odds: 7.6 },
+      { combination: "1-2-3", odds: 10 },
+      { combination: "1-6-2", odds: 14.8 },
+    ]),
+    show(d.trifecta),
+  );
+  check(
+    "3連単人気: 上位3件は trifecta_all（120通り）のオッズ昇順の先頭3件と同じで、順序は非減少",
+    (() => {
+      const sorted = Object.entries(d.trifectaAll).sort((a, b) => a[1] - b[1]);
+      return (
+        d.trifecta.length === 3 &&
+        d.trifecta.every(
+          (t, i) =>
+            t.odds === sorted[i][1] && d.trifectaAll[t.combination] === t.odds,
+        ) &&
+        d.trifecta[0].odds <= d.trifecta[1].odds &&
+        d.trifecta[1].odds <= d.trifecta[2].odds
+      );
+    })(),
+    show(d.trifecta),
+  );
+  {
+    // 旧セレクタが0件だったことの再現（.is-p3-0 は <tbody> 自身のクラスで、内側に <tbody> は無い）
+    const $t = cheerio.load(PAGES.odds3t);
+    check(
+      "3連単人気: 旧セレクタ（.is-p3-0 tbody tr）は実ページで0件（不具合の再現）。新しい解析は3件返す",
+      $t(".is-p3-0 tbody tr").length === 0 &&
+        $t("tbody.is-p3-0 tr").length > 0 &&
+        scrapeTrifectaOdds($t).length === 3,
+    );
+  }
+  check(
+    "3連単人気: 同じオッズは組番の昇順で決定的に並べる。グリッドが空・不完全でも例外にしない（n件未満で返す）",
+    same(
+      topTrifectaByOdds(
+        new Map([
+          ["2-1-3", 5],
+          ["1-3-2", 5],
+          ["1-2-3", 5],
+          ["4-5-6", 3],
+          ["6-5-4", 9],
+        ]),
+      ),
+      [
+        { combination: "4-5-6", odds: 3 },
+        { combination: "1-2-3", odds: 5 },
+        { combination: "1-3-2", odds: 5 },
+      ],
+    ) &&
+      same(topTrifectaByOdds(new Map()), []) &&
+      same(topTrifectaByOdds(new Map([["1-2-3", 2]])), [
+        { combination: "1-2-3", odds: 2 },
+      ]),
+  );
+  {
+    // wantFull=false（全通り系を取らない呼び出し）でも、人気上位は取れる。trifectaAll は取らない
+    const r0 = await fetchOddsDetailed(DATE, 5, 1, {
+      wantFull: false,
+      fetchFn: createFetcher(),
+    });
+    check(
+      "3連単人気: wantFull=false でも人気上位3件は取れ、trifectaAll は null のまま（取得ページ数・保存列は変わらない）",
+      r0.status === "ok" &&
+        same(r0.data.trifecta, d.trifecta) &&
+        r0.data.trifectaAll === null,
+      show(r0.data?.trifecta),
+    );
+  }
+
   const row = {
     ...buildBaseRow(RACE_A, NOW.toISOString(), d),
     ...fullOddsPatchOf(d),
@@ -266,6 +346,19 @@ const fullRow = (patch = {}) => ({
     "ダイジェスト: 16桁の16進数で、同じ行なら同じ値",
     /^[0-9a-f]{16}$/.test(digest) && digest === computeOddsDigest(clone(row)),
     digest,
+  );
+  check(
+    "ダイジェスト: trifecta_popular_*・trifecta_odds_* の有無・値に依存しない（修正前のNULLの行と、修正後の行で同じ値。並走中の shadow との比較を壊さない）",
+    computeOddsDigest({
+      ...row,
+      trifecta_popular_1: null,
+      trifecta_odds_1: null,
+      trifecta_popular_2: null,
+      trifecta_odds_2: null,
+      trifecta_popular_3: null,
+      trifecta_odds_3: null,
+    }) === digest &&
+      computeOddsDigest({ ...row, trifecta_popular_1: "9-9-9" }) === digest,
   );
   check(
     "ダイジェスト: オッズの値・captured_at が変わっても変わらない（時刻がずれた既存基盤の行と比べられる）",
@@ -520,22 +613,38 @@ const opts = (db, fetchFn, extra = {}) => ({
 }
 {
   // 基本オッズの列も、新しい値が null なら前回の値を引き継ぐ（新しい値が非nullなら新しい値）
-  const db = createFakeDb([
-    fullRow({
-      window_min: -30,
-      wide_all: null,
-      odds_win_1: 99,
-      trifecta_popular_1: "9-9-9", // 現行の解析では常に null の列。引き継ぎの検証用
-    }),
-  ]);
-  await runForRaces([raceOf(RACE_A, -30, 2)], opts(db, createFetcher()));
-  const row = findRow(db, RACE_A, -30)[0];
+  const prior = () =>
+    createFakeDb([
+      fullRow({
+        window_min: -30,
+        wide_all: null,
+        odds_win_1: 99,
+        trifecta_popular_1: "9-9-9",
+        trifecta_odds_1: 99,
+      }),
+    ]);
+  // 3連単の人気順は odds3t の全通りから求めるため、odds3t が取れなければ null になる
+  const dbNull = prior();
+  await runForRaces(
+    [raceOf(RACE_A, -30, 2)],
+    opts(dbNull, createFetcher({ odds3t: 500 })),
+  );
+  const rowNull = findRow(dbNull, RACE_A, -30)[0];
   check(
-    "再試行: 新しい値が null の基本列は前回の値を引き継ぎ（trifecta_popular_1）、非null の列は新しい値になる（odds_win_1 は 99 ではなく最新の単勝）",
-    row.trifecta_popular_1 === "9-9-9" &&
-      row.odds_win_1 !== 99 &&
-      row.odds_win_1 > 0,
-    show([row.trifecta_popular_1, row.odds_win_1]),
+    "再試行: 新しい値が null の基本列は前回の値を引き継ぎ（odds3t が取れず trifecta_popular_1 が null の場合、前回の 9-9-9）、非null の列は新しい値になる（odds_win_1 は 99 ではなく最新の単勝）",
+    rowNull.trifecta_popular_1 === "9-9-9" &&
+      rowNull.trifecta_odds_1 === 99 &&
+      rowNull.odds_win_1 !== 99 &&
+      rowNull.odds_win_1 > 0,
+    show([rowNull.trifecta_popular_1, rowNull.odds_win_1]),
+  );
+  const dbNew = prior();
+  await runForRaces([raceOf(RACE_A, -30, 2)], opts(dbNew, createFetcher()));
+  const rowNew = findRow(dbNew, RACE_A, -30)[0];
+  check(
+    "再試行: odds3t が取れた場合、trifecta_popular_1・trifecta_odds_1 は前回の値ではなく最新の人気1位（1-2-6・7.6）になる",
+    rowNew.trifecta_popular_1 === "1-2-6" && rowNew.trifecta_odds_1 === 7.6,
+    show([rowNew.trifecta_popular_1, rowNew.trifecta_odds_1]),
   );
 }
 {
