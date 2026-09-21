@@ -1698,10 +1698,12 @@ const catchupCtx = (
   );
   check(
     'scrape-scheduled.js: SKIP_RESULTS_ON_GHA・SKIP_KFILE_ON_GHA は、文字列 "true" のときだけ有効（未設定・空・falseは従来どおり全て実行）',
-    /const skipResults = process\.env\.SKIP_RESULTS_ON_GHA === "true";/.test(
+    // 変数が true のときだけ、対象のレースがあるときに、Vercel が健全かを確認する（フェイルセーフ付きSKIP）。
+    // 未設定・空・falseなら false（DBを読まない）
+    /const skipResults =\s*process\.env\.SKIP_RESULTS_ON_GHA === "true" &&\s*\(!resultsDue \|\| \(await gateSkips\("SKIP_RESULTS_ON_GHA"\)\)\);/.test(
       scheduled,
     ) &&
-      /const skipKFile = process\.env\.SKIP_KFILE_ON_GHA === "true";/.test(
+      /const skipKFile =\s*process\.env\.SKIP_KFILE_ON_GHA === "true" &&\s*\(!resultsDue \|\| \(await gateSkips\("SKIP_KFILE_ON_GHA"\)\)\);/.test(
         scheduled,
       ),
   );

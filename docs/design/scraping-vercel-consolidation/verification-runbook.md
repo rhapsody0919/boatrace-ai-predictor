@@ -11,6 +11,7 @@
 | `npm run verify:scrape-monitor` | 監視・cleanup・メタ監視・`api/cron/*`と`vercel.json`の整合 |
 | `npm run verify:scrape-result-job` | 結果取得・Kファイル同期・catch-up（WS4b。DB・取得先なし。実際の結果ページのフィクスチャで解析・digest・shadowが書かないこと・中止確定・cron窓を検証） |
 | `npm run verify:scrape-daily-jobs` | 日次・低頻度ジョブ（得点率・進入コース別・モーター成績・選手ニュース・選手プロフィール。WS4b。DB・取得先なし。対象日の解決（G1・G2の再発防止）・off/行なし/075未適用で何もしない・shadowが書かない・冪等・0件・チャンクの再開・履歴・monitor・配線を検証。変異検証済み） |
+| `npm run verify:gha-skip-gate` | フェイルセーフ付きSKIP（P。DB・ネットワークなし。偽のclientで、変数false=DBを読まず常に実行・Vercel健全=スキップ・shadow/off/起動が古い/連続失敗/ブレーカー/未処理/読み取り失敗・タイムアウト・不正な値=実行を検証。変異検証済み） |
 
 ## 前提
 
@@ -861,3 +862,101 @@ gh run list --workflow scrape-scheduled.yml --repo rhapsody0919/boatrace-ai-pred
 
 - 窓内取得率・遅延・`expired`・未実行・0件・死活・連続失敗・ブレーカー: 既存の `scrape-monitor`（5分ごと）・`scrape-summary`（日次サマリー）が、`odds` を窓型として自動で対象にする（レジストリの `kind: "window"`）。`live` になってから通知される
 - **未確認事項**: (1) 特定の券種（拡連複など）が、特定のレースで恒常的に公開されない場合、その窓のスロットは `partial` の再試行の末に `expired` になり、通知される（取れた分は `race_odds` に書き込み済み）。shadow・liveで頻度を確認し、多い場合は「最終試行では、単勝が取れていれば `ok` として受け入れる」への変更を、ユーザーに提示する。(2) `trifecta_popular_*`・`trifecta_odds_*`（3連単人気上位）は、`scrape-odds.js` の `scrapeTrifectaOdds` のセレクタ（`.is-p3-0`）が `odds3t` のページに一致せず、**現行も本番の全行がNULL**（2026-09-10〜20の実測。既存の不具合で、この移行の対象外）。Vercel経路も同じ挙動（NULL）で、構造のダイジェストにも含めない。(3) 拡連複・複勝の一部が公開されないレースの有無は、実データで確認していない（複勝は、本番の約1割の行でNULL）
+
+
+## P. フェイルセーフ付きSKIP（自動フェイルオーバー）
+
+対応: [cutover-fast-track.md](./cutover-fast-track.md) §6 / 実装: `scripts/lib/ghaSkipGate.js`・`scripts/maintenance/gha-skip-gate.js`・`scripts/daily/scrape-scheduled.js`・日次5ワークフローの`gate`ジョブ / 検証: `npm run verify:gha-skip-gate`（DB・ネットワークなし。偽のclientと、判定の要を1つずつ壊した15の変異）
+
+### P-0. 何が変わるか
+
+従来の`SKIP_<JOB>_ON_GHA=true`は静的な停止で、Vercelが止まっても、人間が変数を戻すまで取得が止まった（無人の夜間は危険）。**変数を`true`にしても、GitHub側は、実行の都度`scrape_job_state`を読み、Vercelが健全なときだけスキップする**。不健全・不明（`mode`がlive以外、Vercelの起動が止まっている、対象日が未処理、DBの読み取りの失敗・タイムアウト・不正な値）のときは、従来どおり実行する（迷ったら実行。上書き型のため、二重に取得してもデータは壊れない）。
+
+- 通常時: 二重取得なし（GitHub側はスキップ）。Vercelが止まった・live以外に戻したときは、GitHub側が自動で肩代わりする。人間の操作は要らない
+- **変数が未設定・`false`のときは、DBを読まず、現行と完全に同じ動作**（既定は変わらない。`verify:gha-skip-gate`(a)で、全対象変数×未設定・空・false・0・no・1・yes等について、clientが1回も呼ばれないことを確認）
+- 判定と理由は、GitHub Actionsのログに出る。例: `[gha-skip] SKIP_ODDS_ON_GHA: スキップ: Vercelが健全（odds: live・最終起動2分前・最終成功1分前）` / `[gha-skip] SKIP_ODDS_ON_GHA: 実行: odds: mode=shadow（liveではない）`
+
+### P-1. ジョブ別の判定条件
+
+全ジョブ共通: `mode = 'live'`（shadowは`last_success_at`を更新するため、modeの確認が必須）、連続失敗が3回未満（monitorの通知閾値と同じ）。
+
+| 変数 | Vercel側のジョブ（全て健全のときだけスキップ） | 種別 | 健全の条件（共通に加えて） | 許容 |
+|---|---|---|---|---|
+| `SKIP_ODDS_ON_GHA` | `odds` | 窓型 | 起動が新しい（`last_tick_at`）・取得先`host:boatrace.jp`のブレーカーが閉じている | 起動12分以内（Cronは毎分、tickは5分に1回書く。正常でも最大約6分古い） |
+| `SKIP_RESULTS_ON_GHA` | `result` + `result_catchup` | 窓型 + 日次 | `result`は上と同じ。`result_catchup`は、指定時刻23:50から解決した対象日（日中は前夜分）を処理済み（`last_target_date`） | 同上 / 前夜の23:50・00:30の処理が済んでいること |
+| `SKIP_KFILE_ON_GHA` | `kfile_sync` | 日次 | 指定時刻07:00の対象日（07:00以降は当日）を処理済み | 07:00・12:00の処理 |
+| `SKIP_POINT_RANK_ON_GHA` | `point_rank` | 日次 | 指定時刻22:00の対象日を処理済み | — |
+| `SKIP_ENTRY_COURSE_ON_GHA` | `entry_course_stats` | 日次 | 指定時刻20:00の対象日を処理済み | — |
+| `SKIP_MOTOR_STATS_ON_GHA` | `venue_motor_stats` | 日次 | 指定時刻06:00の対象日を処理済み | — |
+| `SKIP_RACER_NEWS_ON_GHA` | `racer_news` | 日次 | 指定時刻23:10の対象日を処理済み | — |
+| `SKIP_RACER_SEASON_ON_GHA` | `racer_profiles` | 日次（チャンク） | 対象日（03:00指定）を処理済み、**または処理中**（03:00以降に成功があり、直近の成功が40分以内・ブレーカーが閉じている） | 成功40分（cronは10分間隔・1チャンク最大約13分のため、成功は最大約20分おき） |
+| `SKIP_ODDS_REFRESH_ON_GHA` | — | **対象外** | 予測リフレッシュ。Vercel側の`REFRESH_ON_VERCEL`（環境変数）と連動しており、DBのジョブ状態では判定できない。現行の静的な変数のまま | — |
+| `SKIP_EXHIBITION_ON_GHA` | — | **対象外** | 展示。`api/cron/exhibition.js`（BOA-313）は`scrape_job_state`を使わない（本番に`exhibition`の行は無い）ため判定できない。展示のスロット化（A2）で共通ラッパに移った後、`GHA_SKIP_TARGETS`に追加する。現行の静的な変数のまま | — |
+
+**窓型が`last_success_at`ではなく`last_tick_at`で判定する理由**: 窓型の成功は、処理するスロットがあった実行でしか更新されない。レースの無い時間帯（夜間・朝の最初の窓の前）は、Vercelが正常でも成功が半日以上古く見え、GitHubが誤って二重に動く。「起動し続けている（tick）・失敗が続いていない・取得先のブレーカーが閉じている」なら、成功が無いのは処理対象が無いだけ、と扱う。実測の確認: 2026-09-21 02:15〜02:22 UTC（JST 11:15〜11:22）に、`result`（shadow）の`last_tick_at`は、1〜6分前（5分に1回の書き込みのため）。
+
+**日次が「前日分が済んでいれば健全」ではなく「当日の対象日を処理済み」を要求する理由**: 前日分だけを見ると、当日のVercelの失敗（例: 22:00の得点率が失敗）を救えず、その日のデータが欠ける。VercelとGitHubは同じ時刻に起動するため、判定ステップは、指定時刻から10分以内なら、Vercelの完了を30秒おきに最大10分まで待つ（`--wait`。二重取得を避ける）。待っても完了しなければ実行する。指定時刻から10分を過ぎて起動したGitHub（通常はこちら。スケジュール起動は数分〜数時間遅れる）は、待たずに、その時点の状態で判定する。
+
+### P-2. 未整備・限界（切り替え前に承知しておくこと）
+
+- **フェイルオーバーの遅れ（窓型）**: Vercelが止まってから、GitHubが肩代わりするまで、最大で約17分（tickの許容12分 + GitHubの実行間隔5分）。その間に期限が来たオッズの窓は、取りこぼす可能性がある（オッズは永久損失）。第一の検知は、`scrape-monitor`の`expired`通知（即時）。この遅れを縮めるなら、`GHA_SKIP_POLICY.tickMaxAgeMin`を下げる（下限は、tickの書き込み間隔5分+cronの間隔1分の約6分）
+- **部分的な失敗は検知しない**: 一部のスロットだけ失敗し、他が成功している場合、連続失敗の回数は増えず（成功でリセット）、GitHubは肩代わりしない。これは`scrape-monitor`の窓内取得率・`expired`通知の領域
+- **日次・月次の判定は、GitHub側の起動時点のスナップショット**: 起動後にVercelが止まっても、その回は救えない（特に`racer_profiles`は、03:00に「処理中」と判定してスキップした後、Vercelが途中で止まると、その月の残りが未処理になる。次の月次のGitHub起動まで気づけない）。監視（`scrape-monitor`の日次の期限超過）で検知し、`workflow_dispatch`で手動実行する。**GitHub側の日次の起動を、数時間後にもう1回足すこと**（gateが、済みならスキップするため安全）は、有効な補強だが、ワークフローのスケジュール変更のため、別途の判断（ユーザー）
+- Vercel Cronの運用窓の外（JST 00:00〜06:59。oddsは07:00〜23:59、resultは07:00〜00:59）では、tickが古い。この時間帯にGitHub側に処理があれば、GitHubが実行する（従来と同じ。窓型の処理は、レースのある時間帯にしか無い）
+- `result_catchup`の指定時刻23:50〜翌00:30は、当日分が未処理のため、GitHubの結果取得が（あれば）実行される。夜間で、対象がほとんど無いため、影響は小さい
+- **共通原因**: Vercelの停止は救えるが、GitHub Actionsも同時に止まっている場合は当然救えない。また、DBが止まっている場合、判定も取得の書き込みも失敗する（判定は「実行」になる）
+- 判定の読み取りは、5分ごとのオーケストレーターで1回（対象ジョブ+取得先の行のみ、数百バイト）。変数が`true`のときの、レースのある回だけ
+
+### P-3. 切り替え手順への反映
+
+各ジョブの手順（F3・G3・L・M-4）の「GitHub側の停止（変数を`true`）」は、そのまま。変わるのは、**停止後の見え方**:
+
+1. 変数を`true`にした後も、GitHub側のワークフロー・スクリプトは動く。Vercelが健全なら、判定ステップのログに`スキップ`と出て、取得はしない（従来の「ジョブが起動しない」との違い: 日次ワークフローでは`gate`ジョブが1つ動く（約20秒〜最大10分）。`scrape`ジョブは`skipped`になる）
+2. **Vercelが不健全になった（またはlive以外に戻した）ときは、GitHubが自動で実行する**。切り戻しの操作（変数を戻す）は、恒久的に戻すとき以外は要らない
+3. 停止後7日の実測（完了の定義B）に、次を加える: GitHubのログで`[gha-skip] ...: 実行:`が出た回数と理由。**0回が理想**。出ていれば、Vercelが不健全だった期間があった（理由でどの条件かが分かる）。その間は、GitHub側が取得しているため、取得の欠落は起きにくいが、完了の定義Bの「Vercelでの窓内取得率」の対象期間から、その期間を分けて集計する
+4. 日次ジョブの停止は、`SKIP_*`を`true`にする前に、**Vercelの`live`で、少なくとも1回、対象日が処理済み（`last_target_date`）になっていること**を確認する（P-4のSQL）。処理済みが無いと、gateは毎回「実行」になり、停止していないのと同じになる（安全側）
+
+### P-4. 確認
+
+**Vercelが健全か（読み取りのみ）**:
+
+```sql
+SELECT job, mode,
+       round(extract(epoch FROM (now() - last_tick_at)) / 60)    AS tick_age_min,     -- 窓型: 12未満なら起動している
+       round(extract(epoch FROM (now() - last_success_at)) / 60) AS success_age_min,  -- 参考（窓型は、処理対象が無ければ古くてよい）
+       consecutive_failures,                                                          -- 3未満
+       last_target_date,                                                              -- 日次: 対象日と一致
+       breaker_open_until                                                             -- host:boatrace.jp等。NULLか過去
+  FROM scrape_job_state
+ WHERE job IN ('odds','result','result_catchup','kfile_sync','point_rank','entry_course_stats',
+               'venue_motor_stats','racer_news','racer_profiles','host:boatrace.jp','host:mbrace.or.jp')
+ ORDER BY job;
+```
+
+**GitHub側の判定を、今この状態で読む（DBへの書き込みなし）**: 変数をコマンドラインで付けて、判定のみを実行する（リポジトリ変数は変わらない。`GITHUB_OUTPUT`が無ければ、標準出力のみ）:
+
+```bash
+SKIP_ODDS_ON_GHA=true node --env-file=.env.local scripts/maintenance/gha-skip-gate.js SKIP_ODDS_ON_GHA
+# → [gha-skip] SKIP_ODDS_ON_GHA: スキップ: Vercelが健全（...） または 実行: <理由>、続けて skip=true|false
+```
+
+**実行履歴（GitHub側）**: オーケストレーターのログは`gh run view <id> --log`で、`[gha-skip]`を検索する。日次は、`gate`ジョブのログ。
+
+### P-5. 動作確認の手順（フェイルオーバーが実際に働くこと）
+
+切り替え（`SKIP_*=true`）の直後、**復旧可能なジョブ（結果取得）で1度、確認する**（取り直せるため。オッズは、取りこぼしが永久損失のため、この確認の対象にしない。確認するなら、次の窓が遠い時間帯に、親が観測しながら）。
+
+1. `SKIP_RESULTS_ON_GHA=true`・Vercelの`result`・`result_catchup`が`live`の状態で、GitHubのオーケストレーターのログに`[gha-skip] SKIP_RESULTS_ON_GHA: スキップ: Vercelが健全（result: ...）`が出ることを確認する（結果取得が動く時間帯）
+2. **Vercelの`result`を、一時的に`shadow`に戻す**（DBの更新。**本番DBへの書き込みのため、ユーザーの承認後**）:
+   ```sql
+   UPDATE scrape_job_state SET mode = 'shadow', updated_at = now() WHERE job = 'result';
+   ```
+3. 次のオーケストレーターの実行（5分以内）のログで、`[gha-skip] SKIP_RESULTS_ON_GHA: 実行: result: mode=shadow（liveではない）`と、`結果取得: N件`（GitHub側の取得が再開）が出ることを確認する
+4. **`live`に戻す**（`UPDATE scrape_job_state SET mode = 'live', updated_at = now() WHERE job = 'result';`）。次の実行で、`スキップ`に戻ることを確認する
+5. 手順2〜4の間にVercelが消化したスロットは、`run_mode='shadow'`の`done`になり、`live`に戻した後も再取得されない。その間の結果は、GitHub側（手順3で再開）が、結果の無いレースを取得して埋める。データは欠けないが、この間は、Vercelの窓内取得率（`live`のみ集計）に入らない。完了の定義Bの7日実測から、この時間帯を除く（記録しておく）
+6. 日次ジョブ（例: `point_rank`）の確認: 指定時刻の後に、`workflow_dispatch`で手動実行し、`gate`ジョブが`スキップ`（処理済み）、`scrape`ジョブが`skipped`になることを確認する。フェイルオーバーの確認は、`mode`を`shadow`に戻して、もう一度手動実行し、`gate`が`実行`、`scrape`ジョブが実行されることを確認する（その後`live`に戻す）
+
+### P-6. 切り戻し
+
+- フェイルセーフ付きSKIP自体を無効にする（従来の静的なSKIPに戻す）ことは、できない（コードの変更が要る）。ただし、**変数を`false`にすれば（または削除すれば）、DBを読まない従来の実行**になり、この機構の影響は無い
+- 恒久的にVercelを止めるとき: 従来どおり、変数を`false`にして、Vercel側を`off`にする（cutover-fast-track.md §7）。変数が`true`のままでも、Vercelが`off`なら、GitHubが実行する（自動）
