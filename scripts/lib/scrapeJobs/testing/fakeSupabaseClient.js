@@ -5,6 +5,7 @@
  * 対応: select / insert / upsert（onConflict・ignoreDuplicates）/ update / delete、
  *   eq・neq・in・like・gte・lt・is・not(is null)、JSON の項目の条件（`last_report->>hash`）、order・range・limit・maybeSingle、
  *   update・delete・upsert の select()（返り値の取得）。
+ * rpc(name, args): rpcs に渡した関数を呼ぶ（呼び出しは rpcCalls に記録）。
  * 失敗の注入: failOn に {"テーブル:操作": "エラーメッセージ"} を渡すと、その操作がエラーを返す（操作は select・insert・upsert・
  *   update・delete）。値が関数なら、呼び出しごとに評価し、文字列を返したときだけ失敗にする（一時的な失敗の再現用）。
  */
@@ -24,7 +25,12 @@ const valueOf = (row, column) => {
   return v === undefined ? null : v;
 };
 
-export function createFakeSupabaseClient({ tables = {}, failOn = {} } = {}) {
+export function createFakeSupabaseClient({
+  tables = {},
+  failOn = {},
+  rpcs = {},
+} = {}) {
+  const rpcCalls = [];
   const data = Object.fromEntries(
     Object.entries(tables).map(([k, rows]) => [k, rows.map(clone)]),
   );
@@ -84,6 +90,26 @@ export function createFakeSupabaseClient({ tables = {}, failOn = {} } = {}) {
         if (op === "is" && v === null)
           q.filters.push((r) => valueOf(r, c) != null);
         else throw new Error(`fake: not(${c}, ${op}) は未対応`);
+        return b;
+      },
+      // PostgREST の .or("col.is.null,col.lt.X")。条件は is.null・lt・gt・eq・neq のみ（値は文字列の比較）
+      or(expr) {
+        const conds = String(expr)
+          .split(",")
+          .map((part) => {
+            const [c, op, ...rest] = part.split(".");
+            const v = rest.join(".");
+            return (r) => {
+              const x = valueOf(r, c);
+              if (op === "is" && v === "null") return x === null || x === undefined;
+              if (op === "lt") return x !== null && x !== undefined && x < v;
+              if (op === "gt") return x !== null && x !== undefined && x > v;
+              if (op === "eq") return String(x) === v;
+              if (op === "neq") return String(x) !== v;
+              throw new Error(`fake: or(${part}) は未対応`);
+            };
+          });
+        q.filters.push((r) => conds.some((f) => f(r)));
         return b;
       },
       order(c, { ascending = true } = {}) {
@@ -186,8 +212,18 @@ export function createFakeSupabaseClient({ tables = {}, failOn = {} } = {}) {
     return b;
   }
 
+  /** rpcs に渡した関数（名前 → (args) => 返り値）を呼ぶ。無い関数はエラーを返す */
+  async function rpc(name, args) {
+    rpcCalls.push({ name, args });
+    const fn = rpcs[name];
+    if (!fn) return { data: null, error: { message: `fake: rpc ${name} は未定義` } };
+    return { data: await fn(args), error: null };
+  }
+
   return {
     from,
+    rpc,
+    rpcCalls,
     data,
     writes,
     calls,
