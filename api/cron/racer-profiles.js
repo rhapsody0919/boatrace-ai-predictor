@@ -8,11 +8,11 @@
  * 月次のチャンク処理: 1回の呼び出しは、時間の許す限り（最大300人）、登録番号の昇順に処理し、最後に処理した登録番号を
  * scrape_job_state.cursor に保存する。次の起動（10分後。実行中の起動は、リースで何もしない）が続きを処理し、全員を処理し終えたら、
  * 対象日を処理済みにする（それ以降の起動は、共通ラッパが何もしない）。1ページ約8〜10秒（2026-09-20の実測）のため、同時4で
- * 1回あたり約110人、全体で約15回（約2.5時間。窓は3時間・18回の起動）。実装: scripts/lib/racerProfilesJob.js
+ * 1回あたり約300人（maxDuration 800秒）、全体で約6回（約1時間。窓は3時間・18回の起動）。実装: scripts/lib/racerProfilesJob.js
  *
- * maxDuration は300秒（設計の800秒ではない）: 800秒（Fluid Compute）が有効か未確認（plan.md U1）のため。無効なプロジェクトで
- * 800を指定すると、ビルドが失敗し、全てのデプロイを止める。300秒は、Proの既定の上限で、確実に通る。Fluid Compute を確認できたら、
- * 800に上げれば、回数が約1/3になる（レジストリの maxDurationSec・leaseSec も同じ値に）。
+ * maxDuration は800秒（Pro＋Fluid Compute の上限。2026-09-20、ユーザーがダッシュボードで Fluid Compute の有効を確認）。
+ * 同時4・1ページ約8〜10秒で、1回あたり約300人（RACER_PROFILES_CHUNK の上限）を処理でき、全体で約6回（約1時間）で終わる。
+ * レジストリの maxDurationSec・leaseSec も同じ値にする。
  *
  * モード（scrape_job_state.mode の job='racer_profiles'。DBの更新のみで切り替える。再デプロイ不要）:
  *   off（または行なし）  何も取得せず、何も書かない
@@ -36,7 +36,7 @@ import { createScrapeCronHandler } from "../../scripts/lib/scrapeJobs/cronWrappe
 import { runRacerProfilesJob } from "../../scripts/lib/racerProfilesJob.js";
 
 export const config = {
-  maxDuration: 300,
+  maxDuration: 800,
 };
 
 export default createScrapeCronHandler({
