@@ -22,10 +22,15 @@
  * 判定は純関数（evaluateJobHealth・decideFromRows）と、IO（createRestJobStateClient・shouldSkipOnGha）に分ける。
  * DB は supabase-js を使わず、REST（fetch）で該当ジョブの行だけを読む（GitHub Actions の判定ステップが npm ci なしで動く）。
  *
+ * 従来の経路を持つジョブ（LEGACY_PATH_JOBS。展示 exhibition）:
+ *   Vercel の api/cron/exhibition.js は、2026-09-16（BOA-313）から、scrape_job_state を使わない従来の経路（cron-job.org 起点、
+ *   waitUntil）で動いており、本番の SKIP_EXHIBITION_ON_GHA=true は、この経路が担う前提の静的な停止。スロット化（T4b-06）後も、
+ *   mode が live になるまで、この経路が動く（mode が off・行なし・shadow の間）。その間は DB の状態で健全性を判定できないため、
+ *   従来どおり静的にスキップする（GitHub Actions が、従来の経路と二重に動き出さないように）。mode が live になったら、
+ *   他のジョブと同じ判定（起動・連続失敗・ブレーカー）に切り替わり、不健全なら GitHub Actions が肩代わりする。
+ *
  * 対象外（現行のまま静的な変数）:
  *   SKIP_ODDS_REFRESH_ON_GHA  予測リフレッシュ。Vercel 側の REFRESH_ON_VERCEL（環境変数）と連動しており、DB の状態では判定できない
- *   SKIP_EXHIBITION_ON_GHA    展示。Vercel の api/cron/exhibition.js（BOA-313）は scrape_job_state を使わないため判定できない
- *                             （展示のスロット化 A2 で共通ラッパに移った後、GHA_SKIP_TARGETS に追加する）
  */
 import { SCRAPE_JOBS, HOST_JOB_PREFIX } from "./scrapeJobs/registry.js";
 import { resolveTargetDate } from "./scrapeJobs/dailyJob.js";
@@ -42,7 +47,15 @@ export const GHA_SKIP_TARGETS = Object.freeze({
   SKIP_MOTOR_STATS_ON_GHA: Object.freeze(["venue_motor_stats"]),
   SKIP_RACER_NEWS_ON_GHA: Object.freeze(["racer_news"]),
   SKIP_RACER_SEASON_ON_GHA: Object.freeze(["racer_profiles"]),
+  SKIP_RACE_INFO_ON_GHA: Object.freeze(["race_info"]),
+  SKIP_EXHIBITION_ON_GHA: Object.freeze(["exhibition"]),
 });
+
+/**
+ * scrape_job_state を使わない従来の経路が、mode が live になるまで動いているジョブ（上の説明を参照）。
+ * mode が live でない（行なし・off・shadow を含む）間は、健全とみなす（＝従来どおり静的にスキップ）。
+ */
+export const LEGACY_PATH_JOBS = Object.freeze(["exhibition"]);
 
 /** チャンク処理（1回の呼び出しで終わらず、複数回の起動で対象日を完了する）の日次ジョブ */
 const CHUNKED_JOBS = Object.freeze(["racer_profiles"]);
@@ -128,6 +141,12 @@ export function evaluateJobHealth({
   const def = registry[job];
   if (!def) return bad("unknown_job", `${job}: レジストリに無いジョブ`);
   const row = rowsByJob.get(job);
+  if (LEGACY_PATH_JOBS.includes(job) && (!row || row.mode !== "live")) {
+    return good(
+      "legacy_path",
+      `${job}: mode=${row ? String(row.mode) : "行なし"}（従来の経路が動く。DBの状態では判定できないため、従来どおり静的にスキップ）`,
+    );
+  }
   if (!row) return bad("no_row", `${job}: ジョブ状態の行なし`);
   if (row.mode !== "live") {
     return bad(

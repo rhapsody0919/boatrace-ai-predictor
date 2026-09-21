@@ -25,7 +25,9 @@ export const HOST_JOB_PREFIX = "host:";
 export const SOFT_DEADLINE_MARGIN_SEC = 30;
 
 export const SCRAPE_JOBS = Object.freeze({
-  // A1 レース情報更新。発走60分前の1本
+  // A1 レース情報更新。発走60分前の1本。出走表（racelist）だけを取る（beforeinfo は展示 A2 が全項目を取る。D2の解消）
+  // 実装: scripts/lib/scrapeJobs/preRaceHandlers.js、api/cron/race-info.js（T4b-09）。maxDurationSec は、全スロットの
+  // 完了後に予測の再計算（案1。約8〜10秒）を1回呼ぶ余裕を含めて180秒（スロットの処理は、ソフトデッドライン150秒まで）
   race_info: {
     kind: "window",
     offsets: [-60],
@@ -35,10 +37,15 @@ export const SCRAPE_JOBS = Object.freeze({
     claimLimit: 24,
     concurrency: 4,
     slotSecEstimate: 12,
-    maxDurationSec: 120,
+    maxDurationSec: 180,
     hosts: ["boatrace.jp"],
   },
-  // A2 展示。現行の3窓（30/15/10分前）を1本（-33〜-7分）に畳む案（要判断eで承認済み。悪化したらoffsetsを戻す）
+  // A2 展示。現行の3窓（30/15/10分前）を1本（-33〜-7分）に畳む案（要判断eで承認済み。悪化したらoffsetsを戻す）。
+  // 公開時刻の実測（2026-09-20・21の202レース、WS2の created_at と発走時刻の差）: 最初に取得できた時点は、発走の
+  // 30.6〜8.6分前（中央値16.2分前、95%が17.6分前以内）。従来の窓（27〜33・12〜18・7〜13分前）の外側は見ていないが、
+  // 全レースが7分前までに取得できた。-33〜-7分はこの範囲を覆う（verification-runbook.md Q-0）
+  // 実装: scripts/lib/scrapeJobs/preRaceHandlers.js、api/cron/exhibition.js（T4b-06）。maxDurationSec は、従来の経路
+  // （mode が off のとき。waitUntil の実処理）が従来から300秒で動いているため300秒のまま
   exhibition: {
     kind: "window",
     offsets: [-33],
@@ -48,7 +55,7 @@ export const SCRAPE_JOBS = Object.freeze({
     claimLimit: 24,
     concurrency: 4,
     slotSecEstimate: 12,
-    maxDurationSec: 120,
+    maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
   // A3 オッズ。6窓×5ページ。許容幅3分のため、リースは許容幅より短く（120秒）

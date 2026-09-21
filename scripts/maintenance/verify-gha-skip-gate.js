@@ -1181,9 +1181,11 @@ await suite(realGate, record);
       .every((j) => ["window", "daily"].includes(SCRAPE_JOBS[j]?.kind)),
   );
   record(
-    "配線: 予測リフレッシュ（SKIP_ODDS_REFRESH_ON_GHA）と展示（SKIP_EXHIBITION_ON_GHA）は対象外（DBのジョブ状態で判定できない）",
+    "配線: 予測リフレッシュ（SKIP_ODDS_REFRESH_ON_GHA）は対象外（DBのジョブ状態で判定できない）。レース情報（SKIP_RACE_INFO_ON_GHA）・展示（SKIP_EXHIBITION_ON_GHA。従来の経路を持つジョブ）は対象",
     !("SKIP_ODDS_REFRESH_ON_GHA" in targets) &&
-      !("SKIP_EXHIBITION_ON_GHA" in targets),
+      show(targets.SKIP_RACE_INFO_ON_GHA) === show(["race_info"]) &&
+      show(targets.SKIP_EXHIBITION_ON_GHA) === show(["exhibition"]) &&
+      show(realGate.LEGACY_PATH_JOBS) === show(["exhibition"]),
   );
   // 日次ワークフロー: gate ジョブ・変数・ジョブ名の対応
   const wf = {
@@ -1230,7 +1232,7 @@ await suite(realGate, record);
   );
   const sched = read("scripts/daily/scrape-scheduled.js");
   record(
-    "配線: scrape-scheduled.js は、SKIP変数がtrueかを先に確認してから（&&の左）Vercelの健全性を確認する。展示（SKIP_EXHIBITION_ON_GHA）は従来の静的な判定のまま",
+    "配線: scrape-scheduled.js は、SKIP変数がtrueかを先に確認してから（&&の左）Vercelの健全性を確認する（オッズ・結果・Kファイル・レース情報・展示）",
     /import \{ shouldSkipOnGha \} from "\.\.\/lib\/ghaSkipGate\.js";/.test(
       sched,
     ) &&
@@ -1243,7 +1245,10 @@ await suite(realGate, record);
       /process\.env\.SKIP_KFILE_ON_GHA === "true" &&\s*\(!resultsDue/.test(
         sched,
       ) &&
-      /hasExhibitionRaces && process\.env\.SKIP_EXHIBITION_ON_GHA !== "true"/.test(
+      /process\.env\.SKIP_RACE_INFO_ON_GHA === "true" &&\s*\(!raceInfoDue/.test(
+        sched,
+      ) &&
+      /process\.env\.SKIP_EXHIBITION_ON_GHA === "true" &&\s*\(!exhibitionDue/.test(
         sched,
       ) &&
       !/SKIP_ODDS_REFRESH_ON_GHA"\)/.test(sched),

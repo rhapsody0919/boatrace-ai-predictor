@@ -1058,15 +1058,28 @@ async function quiet(fn) {
       workflow,
     ),
   );
-  const exhibition = read("api/cron/exhibition.js");
+  // 展示・レース情報の Vercel 関数の本体は scripts/lib/scrapeJobs/preRaceHandlers.js（api/cron/exhibition.js・race-info.js は薄い入口）
+  const handlers = read("scripts/lib/scrapeJobs/preRaceHandlers.js");
   check(
-    "api/cron/exhibition.js: 展示の取得の後に refreshAfterExhibition を呼び、mainRefresh は有効なときだけ動的 import する（無効なときは従来と同じ動作・同じモジュール読み込み）",
-    /\.then\(\(result\) =>\s*refreshAfterExhibition\(/.test(exhibition) &&
-      /await import\("\.\.\/\.\.\/scripts\/daily\/generate-predictions\.js"\)/.test(
-        exhibition,
+    "preRaceHandlers.js: 展示の従来の経路は、取得の後に refreshAfterChange（＝refreshAfterExhibition）を呼び、mainRefresh は有効なときだけ動的 import する（無効なときは従来と同じ動作・同じモジュール読み込み）",
+    /\.then\(\(result\) =>\s*refreshAfterChange\(/.test(handlers) &&
+      /await import\("\.\.\/\.\.\/daily\/generate-predictions\.js"\)/.test(
+        handlers,
       ) &&
-      !/^import .*generate-predictions/m.test(exhibition),
+      !/^import .*generate-predictions/m.test(handlers),
   );
+  check(
+    "preRaceHandlers.js: レース情報・展示のスロットの経路は、全スロットの完了後に、変更を書いたレースについて refreshAfterChange を呼ぶ（スロットのリースの外）",
+    /refreshAfterChange\(\{\s*result: \{ changedRaceIds/.test(handlers),
+  );
+  for (const file of ["exhibition", "race-info"]) {
+    const entry = read(`api/cron/${file}.js`);
+    check(
+      `api/cron/${file}.js: 本体は preRaceHandlers.js（mainRefresh を静的 import しない）`,
+      /scripts\/lib\/scrapeJobs\/preRaceHandlers\.js/.test(entry) &&
+        !/generate-predictions/.test(entry.replace(/\/\*[\s\S]*?\*\//g, "")),
+    );
+  }
 }
 
 if (failures > 0) {

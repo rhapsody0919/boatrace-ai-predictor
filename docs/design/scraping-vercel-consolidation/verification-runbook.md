@@ -1118,7 +1118,8 @@ Vercelが `live` で書いた行は、切り戻し後もそのまま残る（上
 | `SKIP_RACER_NEWS_ON_GHA` | `racer_news` | 日次 | 指定時刻23:10の対象日を処理済み | — |
 | `SKIP_RACER_SEASON_ON_GHA` | `racer_profiles` | 日次（チャンク） | 対象日（03:00指定）を処理済み、**または処理中**（03:00以降に成功があり、直近の成功が40分以内・ブレーカーが閉じている） | 成功40分（cronは10分間隔・1チャンク最大約13分のため、成功は最大約20分おき） |
 | `SKIP_ODDS_REFRESH_ON_GHA` | — | **対象外** | 予測リフレッシュ。Vercel側の`REFRESH_ON_VERCEL`（環境変数）と連動しており、DBのジョブ状態では判定できない。現行の静的な変数のまま | — |
-| `SKIP_EXHIBITION_ON_GHA` | — | **対象外** | 展示。`api/cron/exhibition.js`（BOA-313）は`scrape_job_state`を使わない（本番に`exhibition`の行は無い）ため判定できない。展示のスロット化（A2）で共通ラッパに移った後、`GHA_SKIP_TARGETS`に追加する。現行の静的な変数のまま | — |
+| `SKIP_RACE_INFO_ON_GHA` | `race_info` | 窓型 | 起動が新しい（`last_tick_at`）・取得先`host:boatrace.jp`のブレーカーが閉じている（tasks.md T4b-09。Q） | 起動12分以内 |
+| `SKIP_EXHIBITION_ON_GHA` | `exhibition` | 窓型（**従来の経路を持つ**） | `mode`が**live**のときだけ、上の窓型と同じ判定。`mode`が行なし・off・shadowの間は、従来の経路（`api/cron/exhibition.js`のcron-job.org起点・`scrape_job_state`を使わない。BOA-313）が動いており、DBの状態では判定できないため、**従来どおり静的にスキップ**（`LEGACY_PATH_JOBS`。GitHubが二重に動き出さない。本番の`SKIP_EXHIBITION_ON_GHA=true`の意味を変えない）（T4b-06。Q） | 起動12分以内（live のとき） |
 
 **窓型が`last_success_at`ではなく`last_tick_at`で判定する理由**: 窓型の成功は、処理するスロットがあった実行でしか更新されない。レースの無い時間帯（夜間・朝の最初の窓の前）は、Vercelが正常でも成功が半日以上古く見え、GitHubが誤って二重に動く。「起動し続けている（tick）・失敗が続いていない・取得先のブレーカーが閉じている」なら、成功が無いのは処理対象が無いだけ、と扱う。実測の確認: 2026-09-21 02:15〜02:22 UTC（JST 11:15〜11:22）に、`result`（shadow）の`last_tick_at`は、1〜6分前（5分に1回の書き込みのため）。
 
@@ -1187,6 +1188,262 @@ SKIP_ODDS_ON_GHA=true node --env-file=.env.local scripts/maintenance/gha-skip-ga
 
 - フェイルセーフ付きSKIP自体を無効にする（従来の静的なSKIPに戻す）ことは、できない（コードの変更が要る）。ただし、**変数を`false`にすれば（または削除すれば）、DBを読まない従来の実行**になり、この機構の影響は無い
 - 恒久的にVercelを止めるとき: 従来どおり、変数を`false`にして、Vercel側を`off`にする（cutover-fast-track.md §7）。変数が`true`のままでも、Vercelが`off`なら、GitHubが実行する（自動）
+
+## Q. レース情報（`race_info`、A1）・展示（`exhibition`、A2）の切り替え（tasks.md T4b-09・T4b-06）
+
+対象: `api/cron/race-info.js`（新設）・`api/cron/exhibition.js`（スロット化。従来の経路を残す）。どちらも毎分（JST 07:00〜23:59）、`vercel.json`のCronで起動する。取得・解析・書き込みは、`scripts/daily/update-race-info.js`・`scrape-exhibition-data.js`の`runForRaces`（既存の`run`と解析・行の組み立て・書き込みを共有。出走表・直前情報の全項目化のPR #756の解析）を、共通ラッパ経由で消化する（`scripts/lib/scrapeJobs/preRaceHandlers.js`）。検証は`npm run verify:scrape-pre-race-job`（DB・取得先に接続しない。実ページのフィクスチャ。変異検証つき）。`verify:gha-skip-gate`・`verify:prediction-refresh`・`verify:pre-race-parsers`も通る。
+
+操作の区分: **読み取りSQL・確認スクリプトはAgentが実行してよい。`scrape_job_state`の`mode`の更新（書き込み）は、復旧可能なジョブとして、親が対話中に実行してよい（cutover-fast-track.md §10）。リポジトリ変数・Vercelの環境変数の変更は、ユーザーの承認。cron-job.orgの停止はユーザー作業。**
+
+### Q-0. 展示公開時刻の分布の実測（plan.md U6、T4b-06-1。2026-09-21実施）
+
+WS2の取得時刻列（`exhibition_data.created_at`）と`races.start_time`の差。**列が入っているのは、2026-09-20以降の行のみ**（それ以前の行は`created_at`がNULL）。標本は9/20（168レース）・9/21の午前（34レース）の計202レース。従来の取得は、発走の27〜33・12〜18・7〜13分前の窓（2分間隔）だけを見ており、**`created_at`は「最初に取得できた時点」＝公開時刻の上限**（窓の間の18〜27分前・7分前より後は見ていない）。
+
+| 最初に展示データが書かれた時点（発走の何分前） | レース数 |
+|---|---:|
+| 28〜31分前（30分前の窓） | 5 |
+| 16〜19分前（15分前の窓の先頭） | 109 |
+| 13〜16分前 | 61 |
+| 10〜13分前 | 21 |
+| 7〜10分前 | 6 |
+| 7分前より後 | 0 |
+
+- 全体: 最も早い30.6分前、中央値16.2分前、95%が17.6分前以内、最も遅い8.6分前。**202レース全てで、展示タイムが7分前までに取得できた**（202件とも、最初の書き込みの時点で展示タイムが入っていた。展示STだけが先に書かれた行は、この標本に無い）
+- 会場別: 遅い側は住之江（12。最遅8.6分前・中央値14.1）・尼崎（13。9.0・13.7、13分前より後が16件中7件）・大村（24。10.8・13.6）・徳山（18。9.8・12.3）・三国（10。9.5・15.6）。鳴門（14）・丸亀（15）・宮島（17）・尼崎（13）は、最大28〜31分前に取得された（30分前の窓）
+- **決定: レジストリの展示定義（1本のスロット、`-33`〜`-7`、再試行120秒。承認済みの判断(e)）を、そのまま採る**（3窓へ戻さない）。理由: 標本の最早30.6分前・最遅8.6分前が、`-33`〜`-7`に収まる。**リスク**: 従来の窓は7分前で終わるため、7分前より後の公開（尾部）は観測できない。最遅8.6分前に対し、余白は約1.6分。尾部が出る場合は、`graceMin`を26→29（`-4`分まで）にするだけ（レジストリの変更のみ。`verify-scrape-monitor.js`の展示の許容幅26の期待値も更新する）。shadow・liveの`check-pre-race-shadow.js --job=exhibition`が、完了の発走前の分数（最小・p05・p50・p95）を出すため、尾部は観測できる
+
+```sql
+-- 再測定（読み取り。発走の何分前に最初の展示データが書かれたか。会場別。created_at が入る 2026-09-20 以降）
+WITH e AS (
+  SELECT race_id, min(created_at) AS first_created
+    FROM exhibition_data WHERE race_id >= '<from>' AND created_at IS NOT NULL GROUP BY 1),
+r AS (
+  SELECT race_id, substring(race_id, 12, 2) AS venue, ((race_date + start_time) AT TIME ZONE 'Asia/Tokyo') AS st
+    FROM races WHERE race_date >= '<from>' AND start_time IS NOT NULL AND cancellation_status IS DISTINCT FROM 'confirmed')
+SELECT venue, count(*) AS races,
+       round(min(extract(epoch FROM (st - first_created)) / 60)::numeric, 1) AS min_before,
+       round(percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM (st - first_created)) / 60)::numeric, 1) AS p50,
+       round(max(extract(epoch FROM (st - first_created)) / 60)::numeric, 1) AS max_before
+  FROM r JOIN e USING (race_id) GROUP BY 1 ORDER BY 1;
+```
+
+### Q-1. マージで何が変わるか（本番の挙動は変わらない）
+
+| | マージ直後（`scrape_job_state`に該当の行が無い・`off`） | 備考 |
+|---|---|---|
+| `race_info` | 何も取得せず、何も書かない（`off`の行を作るだけ） | GitHub側の`update-race-info`は従来どおり動く。`SKIP_RACE_INFO_ON_GHA`は未設定 |
+| `exhibition` | **従来の経路がそのまま動く**（cron-job.org起点・2分間隔・`waitUntil`・202）。予定表・ジョブ状態は使わない。本番に`exhibition`の行は無く、行が無い・テーブル未適用・読み取り失敗のときも、従来の経路 | Vercel Cron（毎分）の起動は、`off`のとき**何もしない**（従来の経路を二重に動かさず、取得先への負荷を増やさない）。判定は`User-Agent`が`vercel-cron/1.0`か |
+| `SKIP_EXHIBITION_ON_GHA`（本番でtrue） | 意味を変えない。`mode`がlive以外の間は、従来どおり**静的にスキップ**（`LEGACY_PATH_JOBS`。P-1） | liveになった後は、他のジョブと同じフェイルセーフ付き（Vercelが不健全ならGitHubが肩代わり） |
+
+**展示は、「行を先に`live`で作る」方式ではなく、従来の経路を`mode`の`off`側に残す方式にした**（安全な方）。理由: 本番の展示は従来の経路に依存しており、「行が無い＝何もしない」にすると、マージだけで展示が止まる。`off`＝従来の経路のため、切り戻しは`mode`を`off`にするだけで、展示が従来の経路で再開する（cron-job.orgが動いている間）。**cron-job.orgを止めた後は、`off`にしても展示は動かない**（従来の経路は、cron-job.org起点のため）。cron-job.orgの停止は、liveの安定後のユーザー作業。
+
+| `mode` | 従来の経路（cron-job.org起点のみ） | スロットの経路（Vercel Cron・cron-job.orgの両方の起動） |
+|---|---|---|
+| 行なし・`off` | 動く | 動かない |
+| `shadow` | 動く（データを書く） | 取得・解析のみ（データへ書かない。予定表に`result_digest`） |
+| `live` | 動かない | 動く（展示データ・気象を書く。案1の再計算も） |
+
+`shadow`・`live`で、cron-job.orgの起動がスロットの経路に入るときは、cron-job.orgのタイムアウト（30秒）に、スロットの処理（約60〜70秒）が掛からないよう、バックグラウンド（`waitUntil`）で処理して202を即座に返す（従来の経路と同じ応答）。結果は予定表・Vercelログで確認する。Vercel Cronの起動は、処理の完了後に200/500を返す。
+
+### Q-2. 事前条件と順序（案1が先）
+
+- 予測リフレッシュ案1（`REFRESH_ON_VERCEL=true`）が有効であること（2026-09-21 23:10 JST以降の有効化を承認済み。J-1・J-2）。**`race_info`をliveにしてGitHub側を止めると、レース情報起点の再計算のきっかけがGitHub側から消える**ため、Vercel側の再計算（`REFRESH_ON_VERCEL`）が前提。`REFRESH_ON_VERCEL`がoffのまま`SKIP_RACE_INFO_ON_GHA=true`にする状態は、GitHub側の警告では検知できない（GitHubはVercelの環境変数を読めない）ため、順序を守る
+- 案1の有効化と、同じ観測窓（約1日）にしない（cutover-fast-track.md G8）。**着手は、案1の確認（J-1手順3・4、J-2）の後**
+- `race_info`と`exhibition`は、独立に切り替えられる。**同じ観測窓にしない**（G8）。着手順の推奨: 展示（従来の経路が動いており、切り戻しが最も軽い）→ レース情報
+- 1回のCron起動で、`race_info`・`exhibition`とも最大24スロット（6波、約60〜70秒）。変更を書いたレースの予測の再計算は、全スロットの完了後に、日付ごとに1回だけ`mainRefresh`（upsert方式）を呼ぶ（`maxDuration`は、`race_info`180秒・`exhibition`300秒）
+
+### Q-3. 取得先への負荷の見積り（ADR-0067の要件。推定）
+
+| 項目 | 現行 | 新方式 |
+|---|---|---|
+| `race_info`（A1）の1レース | racelist＋beforeinfoの2ページ（60分前の窓で1〜2回） | **racelistの1ページ**（許容幅3分で60秒おきに再試行。通常は1回）。**beforeinfoは取らない（D2の解消）** |
+| `exhibition`（A2）の1レース | beforeinfo。30/15/10分前の窓（2分間隔）。公開まで、窓の中で繰り返す（約5回） | beforeinfo。`-33`分から公開まで120秒おき（公開の約-17分まで、約8回）。**1レースあたり約+3回の増**（公開の直後に取れる分の代価）。公開後は`skipped_have_data`で取得しない |
+| 1日（180レース） | racelist約180〜270＋beforeinfo約1,100〜1,200（A1約200＋展示約900） | racelist約180＋beforeinfo約1,400（展示のみ）。**beforeinfoの合計は約+200〜300、racelistは約-0〜90** |
+| 同時接続 | — | 1実行あたり最大4スロット（並列度4。`politeFetch`の上限は20） |
+| shadow中 | — | 従来の経路・GitHub側が動き続けるため、スロットのshadowが**上乗せ**（展示は、取得済みでも取得するため、beforeinfoが約2倍。レース情報はracelistが約2倍）。**1日**に限る |
+
+保護: ホスト単位のサーキットブレーカー（全ジョブ共有）、`politeFetch`の429/503のバックオフ。**「1ページ1回で全項目」の原則（optimal-scraping-design.md §2.1）どおり、beforeinfoは展示の1本、racelistはレース情報の1本**（朝の`races-init`の取得は、別の移行）。
+
+### Q-4. 展示（`exhibition`）の切り替え
+
+**着手前の確認（読み取り）**:
+
+```sql
+SELECT job, mode, last_tick_at, last_success_at, consecutive_failures, last_error, breaker_open_until
+  FROM scrape_job_state WHERE job IN ('exhibition', 'host:boatrace.jp') ORDER BY job;
+-- 期待: exhibition の行は無い（従来の経路）。host:boatrace.jp のブレーカーが開いていない
+```
+
+**手順A（推奨、切り替えの短縮方針）: shadow 1日 → live**
+
+1. shadowを開始（承認後。**最終レースの許容幅が過ぎた後（22:40以降）か早朝に行う**。日中なら、途中のスロットがshadowで`done`になるが、手順3で戻す）:
+   ```sql
+   INSERT INTO scrape_job_state (job, mode) VALUES ('exhibition', 'shadow')
+   ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+   ```
+   - 従来の経路は動き続け、データを書く。スロットは、取得・解析のみ（`exhibition_data`・気象へ書かない）
+   - **shadowでは、挙動差（3窓→1本）を測れない**。従来の経路が書いた行と、構造・値が一致するか、スロットが範囲内に取得できるかを見る
+2. 翌日（または当日の夕方）に確認（読み取り）:
+   ```
+   node --env-file=.env.local scripts/maintenance/check-pre-race-shadow.js --job=exhibition --days=2
+   ```
+   日付×run_mode×状態・outcome、shadowのダイジェストと従来の経路が書いた`exhibition_data`のダイジェストの一致率、遅延・**完了の発走前の分数（最小・p05・p50・p95。公開時刻の分布）**、試行回数、`expired`・未実行を出す。
+   ```sql
+   -- shadow が書いていないこと（期待: 0）
+   SELECT count(*) AS shadow_rows_written_nonzero FROM scrape_slots
+    WHERE job = 'exhibition' AND run_mode = 'shadow' AND rows_written > 0;
+   -- 展示が未公開・展示STのみ・エラーの内訳（今日）
+   SELECT outcome, count(*) AS slots, round(avg(attempts), 2) AS avg_attempts, max(attempts) AS max_attempts
+     FROM scrape_slots WHERE job = 'exhibition' AND race_date = (now() AT TIME ZONE 'Asia/Tokyo')::date GROUP BY 1;
+   ```
+3. liveへ切り替え（親が対話中に。日中でよい）。**その前に、shadowで`done`になった当日のスロットのうち、期限+許容幅がまだ過ぎていないものを`pending`に戻す**（cutover-fast-track.md §4.2の期限つきSQL。許容幅は展示の26）。これを行わないと、shadowが`done`にしたスロットは、liveでは再取得されず、従来の経路も止まるため、そのレースの展示データが欠落しうる:
+   ```sql
+   UPDATE scrape_slots s
+      SET status = 'pending', done_at = NULL, outcome = NULL, run_mode = NULL, next_attempt_at = NULL,
+          result_digest = NULL, rows_written = NULL
+     FROM races r
+    WHERE r.race_id = s.race_id AND s.job = 'exhibition' AND s.run_mode = 'shadow' AND s.status = 'done'
+      AND s.race_date = (now() AT TIME ZONE 'Asia/Tokyo')::date
+      AND ((r.race_date + r.start_time) AT TIME ZONE 'Asia/Tokyo')
+          + make_interval(mins => s.offset_min + 26) >= now();
+   UPDATE scrape_job_state SET mode = 'live', updated_at = now() WHERE job = 'exhibition';
+   ```
+   - liveになると、従来の経路（cron-job.org起点）は動かなくなり、Vercel Cronとcron-job.orgの起動は、どちらもスロットの経路に入る（リースと取得済みのスキップで無害）
+   - **`SKIP_EXHIBITION_ON_GHA`（本番でtrue）はそのまま**。liveになると、GitHub側は、Vercelが不健全なときだけ展示を肩代わりする（P-1）
+4. 最初の実書き込み（次の窓）がliveで完了することを確認し、当日中に細かく確認する（下のQ-4-1）。**cron-job.orgの`Vercel Exhibition Cron`の停止は、liveで1日以上安定して動いてから、ユーザーが行う**（G7）。停止後も、Vercel Cronがスロットの経路を動かす
+
+**手順B（直接live）**: shadowを省いて、手順3のSQLだけで`live`にする（`pending`に戻す対象が無いため、最初のUPDATEは0行）。従来の経路が止まるため、**書き込みの経路・気象の書き込み・案1の再計算を、liveの最初の日に手順4で確認する**。復旧可能なジョブのため許容できる（切り戻し: `mode='off'`）。
+
+**Q-4-1. live後の確認と成功基準（G1〜G8）**
+
+```sql
+-- (1) 展示の取得の、新方式の範囲内の取得率と、公開時刻の分布（live に切り替えた日以降。<from>・<to> は YYYY-MM-DD）
+--     t_obtained: 展示タイムが入った時点の代理（展示タイムを持つ行の、最初の created_at/updated_at）
+WITH e AS (
+  SELECT race_id, min(coalesce(updated_at, created_at)) AS t_obtained
+    FROM exhibition_data
+   WHERE race_id >= '<from>' AND race_id < '<to>~' AND exhibition_time IS NOT NULL AND created_at IS NOT NULL GROUP BY 1),
+r AS (
+  SELECT race_id, ((race_date + start_time) AT TIME ZONE 'Asia/Tokyo') AS st
+    FROM races WHERE race_date BETWEEN '<from>' AND '<to>' AND start_time IS NOT NULL
+     AND cancellation_status IS DISTINCT FROM 'confirmed')
+SELECT count(*) AS races,
+       round(100.0 * count(e.race_id) FILTER (WHERE e.t_obtained <= r.st - interval '7 minutes') / count(*), 2) AS obtained_by_minus7_pct,
+       round(100.0 * count(e.race_id) FILTER (WHERE e.t_obtained <= r.st) / count(*), 2) AS obtained_by_start_pct,
+       round(percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM (r.st - e.t_obtained)) / 60)::numeric, 1) AS p50_min_before,
+       round(percentile_cont(0.05) WITHIN GROUP (ORDER BY extract(epoch FROM (r.st - e.t_obtained)) / 60)::numeric, 1) AS p05_min_before
+  FROM r LEFT JOIN e USING (race_id);
+
+-- (2) 予定表から見た完了・期限切れ・未実行・試行回数（live）
+SELECT s.run_mode, s.status, s.outcome, count(*) AS slots,
+       count(*) FILTER (WHERE s.status = 'expired' AND s.attempts = 0) AS unexecuted,
+       round(avg(s.attempts), 2) AS avg_attempts
+  FROM scrape_slots s WHERE s.job = 'exhibition' AND s.race_date BETWEEN '<from>' AND '<to>' GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+```
+
+- 旧方式（従来の経路。9/20・21の標本）との比較（T4b-06-4）: **窓ごとの率の直接比較はできない**（新方式のスロットの範囲33〜7分前と、旧方式の3つの窓が一致しないため。plan.md §3.1）。代わりに、(1)の`obtained_by_minus7_pct`（旧: 202/202＝100%）・`obtained_by_start_pct`と、`p50_min_before`（旧: 16.2分前。窓の量子化を含む）で比べる。**新方式は、公開の直後（120秒以内）に取れるため、`p50_min_before`は旧より大きい（早い）見込み**。展示タイム非NULL基準（`exhibition_time IS NOT NULL`）
+- 成功基準（G1〜G8。cutover-fast-track.md §4.1）:
+
+| 基準 | 内容 |
+|---|---|
+| G1 一致率 | shadowのダイジェストの一致率99%以上（標本は、その日の全スロットの70%以上）。不一致は、レースごとに原因を確認する |
+| G2 未実行 | `expired`が0件（うち`attempts=0`が0件）。展示は、中止・順延のレースで期限切れになりうる。その場合は、`expired`の`last_error`と`races.cancellation_status`で、中止・順延であることを説明できる |
+| G3 所要時間 | 1回の呼び出しの所要時間のp95が、`maxDuration`（300秒）の80%以内。Vercelのランタイムログ（Vercel MCPの`get_runtime_logs`、`/api/cron/exhibition`）。1回の起動は通常約60〜70秒 |
+| G4 取得先 | ブレーカーが一度も開かない。429・503がVercelログに無い |
+| G5 遅延 | (1)の`obtained_by_minus7_pct`が98%以上、`obtained_by_start_pct`が旧方式以上。各スロットの完了−期限が許容幅（26分）以内 |
+| G6 監視 | `scrape-summary`（日次サマリー）・`scrape-monitor`のSlack通知が届く。liveのジョブは、窓内取得率（新しい範囲。plan.md §7）・`expired`・未実行・死活を、監視が集計する |
+| G7 時間帯 | 日中、親が対話中に切り替える |
+| G8 観測窓 | 他のジョブの切り替え・有効化と、同じ観測窓にしない（レース情報の切り替えは、展示のliveが1日安定してから） |
+
+- 気象: 展示のスロットも、従来と同じく、取得のたびに気象（`race_conditions`の気象列・`weather_observed_at`）を書く（変更のある行のみ）。`weather_observed_at`が更新され続けることを確認する（BOA-358）
+- 案1の再計算: `REFRESH_ON_VERCEL=true`のとき、展示または気象を書いたレースについて、全スロットの完了後に`mainRefresh`を呼ぶ。応答の`refresh`（`refreshed`・`raceIds`）とVercelログ（`予測の再計算（Vercel）`）で確認する。J-2の鮮度（`stale=0`）・空のレース（0）を確認する
+
+**Q-4-2. 切り戻し（1コマンド。取得の空白を作らない）**
+
+```sql
+UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'exhibition';
+```
+
+- 従来の経路が、cron-job.org起点で再開する（次の起動から。cron-job.orgを止めていなければ）。スロットの経路は止まる（`pending`のスロットは、`off`の間は通知されない。`scrape-cleanup`が整理する）
+- **cron-job.orgを止めた後で`off`にすると、展示の取得は再開しない**。その場合は、(a)cron-job.orgの`Vercel Exhibition Cron`を再開する（ユーザー）、または(b)GitHub側の展示を復帰する（`gh variable set SKIP_EXHIBITION_ON_GHA --body false --repo rhapsody0919/boatrace-ai-predictor`。コードは残っている）
+- 共通原因障害（Vercel本番の不具合）は、独立に戻せない。`live`のときのフェイルセーフ（Vercelが不健全ならGitHubが肩代わり。P）で対処する
+
+### Q-5. レース情報（`race_info`）の切り替え
+
+**着手前**: Q-2の順序（案1が有効）。展示のliveから1日以上安定していること。
+
+**手順: shadow 1日 → live → GitHub側の停止**
+
+1. shadowを開始（承認後。レースの無い時間帯に）:
+   ```sql
+   INSERT INTO scrape_job_state (job, mode) VALUES ('race_info', 'shadow')
+   ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+   ```
+   shadowは、出走表（racelistのみ）を取得・解析し、race_entries・race_conditions・racesへは**一切書かない**（中止・順延の暫定検知・`start_time`の追従も書かない）。予定表に`result_digest`を記録する。GitHub側のレース情報更新は動き続ける
+2. 確認（読み取り）:
+   ```
+   node --env-file=.env.local scripts/maintenance/check-pre-race-shadow.js --job=race_info --days=2
+   ```
+   ```sql
+   SELECT s.run_mode, s.status, s.outcome, count(*) AS slots, round(avg(s.attempts), 2) AS avg_attempts,
+          count(*) FILTER (WHERE s.status = 'expired') AS expired
+     FROM scrape_slots s WHERE s.job = 'race_info' AND s.race_date = (now() AT TIME ZONE 'Asia/Tokyo')::date GROUP BY 1, 2, 3;
+   ```
+3. liveへ切り替え（親が対話中に。日中でよい）。shadowで`done`のスロットの`pending`への復帰（許容幅3分）を、期限つきで先に行う:
+   ```sql
+   UPDATE scrape_slots s
+      SET status = 'pending', done_at = NULL, outcome = NULL, run_mode = NULL, next_attempt_at = NULL,
+          result_digest = NULL, rows_written = NULL
+     FROM races r
+    WHERE r.race_id = s.race_id AND s.job = 'race_info' AND s.run_mode = 'shadow' AND s.status = 'done'
+      AND s.race_date = (now() AT TIME ZONE 'Asia/Tokyo')::date
+      AND ((r.race_date + r.start_time) AT TIME ZONE 'Asia/Tokyo')
+          + make_interval(mins => s.offset_min + 3) >= now();
+   UPDATE scrape_job_state SET mode = 'live', updated_at = now() WHERE job = 'race_info';
+   ```
+   liveの間、GitHub側のレース情報更新も動き続ける（上書き型。変更のある行のみ書くため、二重に書いても、後の側は変更なしで0件）
+4. 確認（live）: 上の確認に加えて、G1〜G8（Q-4-1）を`race_info`に読み替える。窓内取得率は、`race_info`のスロットの`done_at`が`[期限, 期限+3分]`（旧定義と一致）。
+   ```sql
+   -- 今日の、出走表の追加列（081。体重・F数）の充足（liveが書いた行を含む）
+   SELECT count(*) AS entries,
+          count(*) FILTER (WHERE weight_kg IS NOT NULL) AS with_weight,
+          count(*) FILTER (WHERE f_count IS NOT NULL) AS with_f_count
+     FROM race_entries WHERE race_id LIKE (to_char((now() AT TIME ZONE 'Asia/Tokyo')::date, 'YYYY-MM-DD') || '-%');
+   -- 中止・順延の暫定検知（tentative）の件数。方式が変わる（下の注意）
+   SELECT cancellation_status, count(*) FROM races
+    WHERE race_date = (now() AT TIME ZONE 'Asia/Tokyo')::date GROUP BY 1;
+   ```
+5. GitHub側を止める（リポジトリ変数。**承認後**。前提: liveで少なくとも1つ後の窓がliveで完了、`REFRESH_ON_VERCEL=true`）:
+   ```
+   gh variable set SKIP_RACE_INFO_ON_GHA --body true --repo rhapsody0919/boatrace-ai-predictor
+   ```
+   フェイルセーフ付き（P）: Vercelが健全なときだけスキップ。不健全・不明ならGitHubが実行する。ログに`[gha-skip] SKIP_RACE_INFO_ON_GHA: スキップ: Vercelが健全（race_info: live・最終起動...）`。**GitHub側のレース情報起点の再計算は、GitHubの`update-race-info`を止めると自然に無くなる**（この時点でGitHub側の再計算は不要。tasks.md T4b-09-3）
+6. 切り戻し: `gh variable set SKIP_RACE_INFO_ON_GHA --body false --repo rhapsody0919/boatrace-ai-predictor`（次のGitHubの実行から再開）→ `UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'race_info';`。Vercelが`live`で書いた行は、そのまま残る（上書き型でGitHub側と同形）
+
+**変わる挙動（注意）**:
+
+- **気象**: 発走60分前の気象（旧: `update-race-info`がbeforeinfoから取得）は、取らなくなる。気象は、展示のスロットが、公開前の試行も含めて、取得のたびに書く（-33分から。約-17分の公開まで）。`race_info`のスロットが書く`race_conditions`の行は、気象の列を含まない（既存の値を上書きしない）。**発走60分前〜33分前の間の予測は、朝の気象を使う**。確認（読み取り。今日）:
+  ```sql
+  SELECT count(*) AS races,
+         round(percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM ((r.race_date + r.start_time) AT TIME ZONE 'Asia/Tokyo' - c.weather_observed_at)) / 60)::numeric, 1) AS p50_observed_min_before_start
+    FROM races r JOIN race_conditions c USING (race_id)
+   WHERE r.race_date = (now() AT TIME ZONE 'Asia/Tokyo')::date AND c.weather_observed_at IS NOT NULL;
+  ```
+- **中止・順延の暫定検知**: 従来は、発走60分前の窓（±3分。実行の間隔5分）で、選手0人の取得が1〜2回しか数えられず、連続3回の`tentative`に届きにくかった。新方式は、許容幅3分の間、60秒おきに再試行するため、**選手が0人のページが続けば3回に届き、`tentative`になりやすくなる**（BOA-254の意図に近づく変更）。**通信・HTTPエラー（取得先の失敗）は、従来は「選手情報なし」に数えていたが、新方式は数えない**（中止と取り違えない）。live後の`tentative`の件数を確認し、誤検知（発走までに選手が現れる）が多ければ、報告する
+- **再計算**: 従来は、60分前の窓で取得できたレースを全て再計算していた（変更の有無に依らない）。新方式は、**変更を書いたレースだけ**（案1）
+
+### Q-6. 予測リフレッシュとの組み合わせ
+
+| `REFRESH_ON_VERCEL` | `SKIP_ODDS_REFRESH_ON_GHA` | `SKIP_RACE_INFO_ON_GHA` | 状態 |
+|---|---|---|---|
+| on | on | off | 案1（レース情報はGitHubが再計算の起点。Vercelのrace_infoがliveなら、併走。upsert同士は衝突しない） |
+| on | on | on | **目標**（レース情報・展示ともVercelが変更を起点に再計算） |
+| off | 任意 | on | **避ける**: レース情報起点の再計算がどこにも無い |
+
+### Q-7. 継続監視（完了の定義C）と未確認事項
+
+- `scrape-monitor`（5分ごと）・`scrape-summary`（日次サマリー）は、`race_info`・`exhibition`を窓型として自動で対象にする（`live`になってから通知される。`off`・`shadow`のジョブの未claimの`expired`は分母に入れない）
+- **未確認事項**: (1)展示の公開時刻の尾部（7分前より後）は、従来の窓では観測できなかった。live後の`check-pre-race-shadow.js`（完了の発走前の分数）で確認する（Q-0）。(2)展示のスロットの再試行（120秒おき）が、従来より取得先へのリクエストを約+3回/レース増やす（Q-3）。負荷が問題なら、`retrySec`を180秒にする（レジストリの変更のみ）。(3)081の追加列が朝の初期化で書かれない間、最初の`race_info`が全行を書く（初日のDisk IOで確認する）。(4)日中の`races.start_time`の追従（N15）は、shadowでは書かれず、liveから効く。(5)`exhibition`の`SKIP_EXHIBITION_ON_GHA`のフェイルセーフは、liveになってから初めて効く（それまでは静的）
 
 ## R. ピットレポート（`pit_reports`、選手コメント）の切り替え（tasks.md T4b-17、[pit-comments/plan.md](../pit-comments/plan.md)）
 
