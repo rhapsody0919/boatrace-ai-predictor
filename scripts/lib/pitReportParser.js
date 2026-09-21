@@ -11,7 +11,7 @@
  *   - 艇ごとの行（`tbody` 6つ。各 `tr` にセル5つ）: 枠 / 写真 / 登録番号・級別・氏名・支部/出身地・年齢/体重 /
  *     コメント本文（`td.is-alignL`。末尾に「（コメント自信度・・★★☆）」。括弧は全角・半角の両方がある）/
  *     前走（`raceresult?rno=N` へのリンク。「7R」）
- *   - レポーター名（`.text p.h-floatR`。「レポーター：八王子　スゴ六」）。ページ単位
+ *   - レポーター名（`.text p.h-floatR`。「レポーター：八王子 スゴ六」）。ページ単位
  *
  * コメントが無いページの種類（`.title12_title` のメッセージで区別できる。2026-09-21の実測）:
  *   - 「※ ピットレポートの表示対象レースではありません。」= そのレース（グレード）は対象外（G3・一般戦）
@@ -46,7 +46,7 @@ export const PIT_REPORT_STATUSES = Object.freeze({
 });
 
 const nfkc = (s) => (s ?? "").normalize("NFKC");
-const squash = (s) => (s ?? "").replace(/[\s　]+/g, " ").trim();
+const squash = (s) => (s ?? "").replace(/[\s\u3000]+/g, " ").trim();
 
 /**
  * セルのテキストを、ブラウザの表示と同じ空白の扱いで取り出す。`<br>` は改行（本文の改行を保持する）、ソースの整形用の
@@ -54,11 +54,11 @@ const squash = (s) => (s ?? "").replace(/[\s　]+/g, " ").trim();
  */
 function textWithBreaks($, el) {
   const clone = $(el).clone();
-  clone.find("br").replaceWith("\u0001");
+  clone.find("br").replaceWith("\uE000");
   return clone
     .text()
     .replace(/[ \t\r\n]+/g, " ")
-    .replace(/ ?\u0001 ?/g, "\n");
+    .replace(/ ?\uE000 ?/g, "\n");
 }
 
 /**

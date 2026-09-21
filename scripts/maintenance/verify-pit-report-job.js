@@ -362,6 +362,17 @@ function evaluateRows(rows, parser) {
     "突合: 登録番号が違う艇だけ不一致（出走表が無い・NULLの艇は突合しない）",
     mm.length === 1 && mm[0].startsWith("2号艇"),
   );
+  const pr = rows.pendingRetrySec;
+  expect(
+    "未公開の再試行の間隔: 発走30分より前は10分・30分前〜発走後10分は5分・それ以降は20分",
+    pr(150) === 600 &&
+      pr(31) === 600 &&
+      pr(30) === 300 &&
+      pr(0) === 300 &&
+      pr(-10) === 300 &&
+      pr(-11) === 1200 &&
+      pr(Number.NaN) === 300,
+  );
   return failed;
 }
 
@@ -550,15 +561,6 @@ const freshClient = (opts = {}) => {
   clearPitReportSchemaCache(c);
   return c;
 };
-const run = (over) =>
-  processPitReportRace({
-    raceId: RACE_ID,
-    race: G1_RACE,
-    mode: "live",
-    fetchHtml: async () => R12,
-    client: freshClient(),
-    ...over,
-  });
 
 // ---------------------------------------------------------------------------
 // (c) 取得ジョブ
@@ -933,6 +935,35 @@ async function runWrapped({ mode, rows, client, fetched }) {
       live.store.completed.length === 1 &&
       live.store.completed[0].rowsWritten === 7,
   );
+  {
+    // 未公開のレース: 発走まで150分。再試行は10分間隔（claim した時刻から590秒後）で、共通ラッパの既定（300秒）を上書きする
+    const claimedAt = "2026-09-18T13:59:30+09:00";
+    const store = createMemoryStore({
+      rows: { [PIT_REPORT_JOB]: { job: PIT_REPORT_JOB, mode: "live", consecutive_failures: 0 } },
+      slots: [{ ...SLOT, last_attempt_at: claimedAt }],
+    });
+    await runScrapeJob({
+      job: PIT_REPORT_JOB,
+      store,
+      now: NOW,
+      client: freshClient(),
+      politeFetch: async () => {
+        throw new Error("使わない");
+      },
+      handleSlot: createPitReportSlotHandler({
+        load: async () => ({ ...G1_RACE, race_date: "2026-09-18", start_time: "16:30:00" }),
+        process: (p) => processPitReportRace({ ...p, fetchHtml: async () => PENDING }),
+      }),
+    });
+    const retried = store.retried[0];
+    check(
+      "(d) 未公開: 発走までの時間に応じた間隔（150分前→10分）で再試行する",
+      store.retried.length === 1 &&
+        retried.outcome === "no_values" &&
+        new Date(retried.retryAt).getTime() === new Date(claimedAt).getTime() + 590 * 1000,
+      show(retried?.retryAt),
+    );
+  }
 }
 {
   // 対象外で終端（最終日のG1 7R）は完了。未公開は再試行
@@ -1147,8 +1178,8 @@ async function runWrapped({ mode, rows, client, fetched }) {
   );
   const cron = vercel.crons.filter((c) => c.path === "/api/cron/pit-reports");
   check(
-    "(f) vercel.json: cron は5分間隔・UTC 22〜15時（JST 07:00〜翌00:55）",
-    cron.length === 1 && cron[0].schedule === "*/5 22-23,0-15 * * *",
+    "(f) vercel.json: cron は毎分・UTC 22〜15時（JST 07:00〜翌00:55。他の窓型ジョブと同じ。死活の閾値との整合）",
+    cron.length === 1 && cron[0].schedule === "* 22-23,0-15 * * *",
   );
   check(
     "(f) レジストリの整合（リース<許容幅、waves×見積り<リース 等）",
@@ -1330,7 +1361,7 @@ const parserMutants = [
   ],
   [
     "<br>を改行にしない",
-    [['.replace(/ ?\\u0001 ?/g, "\\n")', '.replace(/ ?\\u0001 ?/g, "")']],
+    [['.replace(/ ?\\uE000 ?/g, "\\n")', '.replace(/ ?\\uE000 ?/g, "")']],
   ],
 ];
 for (const [label, replacements] of parserMutants) {
@@ -1375,6 +1406,15 @@ const rowsMutants = [
   [
     "★を保存しない",
     [["confidence_stars: b.confidenceStars,", "confidence_stars: null,"]],
+  ],
+  [
+    "未公開の再試行の間隔を、発走までの時間によらず一定にする",
+    [
+      [
+        "if (minutesToStart > config.nearFromMin) return config.farSec;",
+        "if (false) return config.farSec;",
+      ],
+    ],
   ],
 ];
 for (const [label, replacements] of rowsMutants) {

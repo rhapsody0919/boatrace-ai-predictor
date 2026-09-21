@@ -23,13 +23,19 @@ import {
   findRacerMismatches,
   isPitReportCandidate,
   outcomeForStatus,
+  pendingRetrySec,
 } from "./pitReportRows.js";
 import { detectPitReportSchema } from "./pitReportSchema.js";
 import { archiveRawHtml } from "./rawHtmlArchive.js";
 import { upsertChangedRows } from "./unchangedRows.js";
 import { createSupabaseStore } from "./scrapeJobs/store.js";
 import { SCRAPE_JOBS } from "./scrapeJobs/registry.js";
-import { slotDeadline, slotWindowEnd } from "./scrapeJobs/time.js";
+import { computeRetryAt } from "./scrapeJobs/outcomes.js";
+import {
+  raceStartInstant,
+  slotDeadline,
+  slotWindowEnd,
+} from "./scrapeJobs/time.js";
 
 export const PIT_REPORT_JOB = "pit_reports";
 export const PIT_REPORT_PAGE_TYPE = "pitreport";
@@ -80,6 +86,7 @@ const failure = (message, extra = {}) => ({
  * @param {(url: string) => Promise<string>} params.fetchHtml
  * @param {import("@supabase/supabase-js").SupabaseClient} params.client
  * @param {typeof archiveRawHtml} [params.archive]
+ * @param {number} [params.minutesToStart] 発走までの分（未公開のときの再試行の間隔 retrySec の計算に使う）
  * @param {boolean} [params.skipCandidateCheck] true なら、グレード・レース番号の規則で取得を省かない
  *   （過去分でグレードが空の日を、ページのメッセージで判定するバックフィル用）
  * @returns {Promise<{outcome: string, rowsWritten?: number, rowsParsed?: number, rowsExpected?: number, resultDigest?: string, error?: string, status?: string, parsed?: Object}>}
@@ -92,6 +99,7 @@ export async function processPitReportRace({
   client,
   archive = archiveRawHtml,
   skipCandidateCheck = false,
+  minutesToStart,
 }) {
   if (!race) return failure(`races に ${raceId} の行がありません`);
   if (
@@ -133,7 +141,15 @@ export async function processPitReportRace({
     (outcome !== PIT_REPORT_OUTCOMES.ok &&
       outcome !== PIT_REPORT_OUTCOMES.notTarget)
   ) {
-    return { ...base, outcome, rowsWritten: 0 };
+    return {
+      ...base,
+      outcome,
+      rowsWritten: 0,
+      // 未公開は、発走までの時間に応じた間隔で再試行する（共通ラッパの retrySec を上書きする）
+      ...(outcome === PIT_REPORT_OUTCOMES.pending
+        ? { retrySec: pendingRetrySec(minutesToStart) }
+        : {}),
+    };
   }
 
   // --- live の書き込み ---
@@ -248,7 +264,7 @@ export async function processPitReportRace({
 async function loadRace(client, raceId) {
   const { data, error } = await client
     .from("races")
-    .select("race_id, race_grade, race_number")
+    .select("race_id, race_date, start_time, race_grade, race_number")
     .eq("race_id", raceId)
     .maybeSingle();
   if (error)
@@ -266,9 +282,22 @@ export function createPitReportSlotHandler({
 } = {}) {
   return async function handleSlot(slot, ctx) {
     const race = await load(ctx.client, slot.race_id);
+    const now = ctx.now();
+    let minutesToStart;
+    try {
+      if (race?.race_date && race?.start_time) {
+        minutesToStart =
+          (raceStartInstant(race.race_date, race.start_time).getTime() -
+            now.getTime()) /
+          60000;
+      }
+    } catch {
+      // 発走時刻を解釈できない（races の不備）。再試行の間隔は既定（近い側）になる。取得は続ける
+    }
     const {
       parsed: _parsed,
       status: _status,
+      retrySec,
       ...result
     } = await process({
       raceId: slot.race_id,
@@ -276,7 +305,16 @@ export function createPitReportSlotHandler({
       mode: ctx.mode,
       client: ctx.client,
       fetchHtml: (url) => fetchPitReportHtml(url, ctx.politeFetch),
+      minutesToStart,
     });
+    if (typeof retrySec === "number") {
+      // 起点は claim した時刻（共通ラッパの既定と同じ。computeRetryAt）
+      result.retryAt = computeRetryAt({
+        now,
+        claimedAt: slot.last_attempt_at,
+        retrySec,
+      });
+    }
     return result;
   };
 }

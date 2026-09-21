@@ -30,6 +30,29 @@ export function isPitReportCandidate({ raceGrade, raceNumber }) {
   return raceNumber >= PIT_REPORT_MIN_RACE_NUMBER_NON_SG;
 }
 
+/**
+ * 未公開（no_values）のときの、次の取得までの秒数。公開が見込めない時間帯の無駄なアクセスを減らす。
+ * 値は暫定（公開時刻の実測後に確定する。docs/design/pit-comments/plan.md §4.2）:
+ *   発走の30分より前      10分（farSec）
+ *   発走の30分前〜発走後10分  5分（nearSec。公開の検知の遅れを最大5分に）
+ *   それ以降              20分（lateSec。発走後に公開される場合の拾い漏れを防ぐ）
+ */
+export const PIT_REPORT_RETRY = Object.freeze({
+  farSec: 600,
+  nearSec: 300,
+  lateSec: 1200,
+  nearFromMin: 30,
+  lateAfterMin: 10,
+});
+
+/** @param {number} minutesToStart 発走までの分（発走後は負） */
+export function pendingRetrySec(minutesToStart, config = PIT_REPORT_RETRY) {
+  if (!Number.isFinite(minutesToStart)) return config.nearSec;
+  if (minutesToStart > config.nearFromMin) return config.farSec;
+  if (minutesToStart >= -config.lateAfterMin) return config.nearSec;
+  return config.lateSec;
+}
+
 /** スロットの outcome（scrape_slots.outcome）。共通ラッパの語彙（outcomes.js）に、`skipped_not_target` を足したもの */
 export const PIT_REPORT_OUTCOMES = Object.freeze({
   ok: "ok",

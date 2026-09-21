@@ -861,3 +861,58 @@ gh run list --workflow scrape-scheduled.yml --repo rhapsody0919/boatrace-ai-pred
 
 - 窓内取得率・遅延・`expired`・未実行・0件・死活・連続失敗・ブレーカー: 既存の `scrape-monitor`（5分ごと）・`scrape-summary`（日次サマリー）が、`odds` を窓型として自動で対象にする（レジストリの `kind: "window"`）。`live` になってから通知される
 - **未確認事項**: (1) 特定の券種（拡連複など）が、特定のレースで恒常的に公開されない場合、その窓のスロットは `partial` の再試行の末に `expired` になり、通知される（取れた分は `race_odds` に書き込み済み）。shadow・liveで頻度を確認し、多い場合は「最終試行では、単勝が取れていれば `ok` として受け入れる」への変更を、ユーザーに提示する。(2) `trifecta_popular_*`・`trifecta_odds_*`（3連単人気上位）は、`scrape-odds.js` の `scrapeTrifectaOdds` のセレクタ（`.is-p3-0`）が `odds3t` のページに一致せず、**現行も本番の全行がNULL**（2026-09-10〜20の実測。既存の不具合で、この移行の対象外）。Vercel経路も同じ挙動（NULL）で、構造のダイジェストにも含めない。(3) 拡連複・複勝の一部が公開されないレースの有無は、実データで確認していない（複勝は、本番の約1割の行でNULL）
+
+## P. ピットレポート（`pit_reports`、選手コメント）の切り替え（tasks.md T4b-17、[pit-comments/plan.md](../pit-comments/plan.md)）
+
+対象はSG・G1・G2の対象レースのみ（1日6〜18ページ）。**適用の順序: 085 → shadow → Storageバケット → live → （画面の実装後）086**。いずれも本番の変更のため、ユーザーの承認が要る。
+
+### P-1. マイグレーション085の適用（承認後）
+
+`docs/db-migration/085_race_pit_reports.sql`（ファイル冒頭の手順。1トランザクション）。適用後: 2表が存在しRLS有効・anonのSELECT権限なし（ファイル冒頭の確認SQL）、`docs/db-migration/APPLIED.md`の085を「適用済み」に更新。**085が未適用の間は、`live`にしない**（未適用のDBでは、liveのスロットが`error`になる）。
+
+### P-2. shadow（SG・G1・G2の開催日が、通常日・最終日・SG初日を含むように、1〜2週間）
+
+```sql
+INSERT INTO scrape_job_state (job, mode) VALUES ('pit_reports', 'shadow')
+ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
+```
+
+確認（読み取り）:
+
+```sql
+-- shadow がデータテーブルへ書いていないこと（期待: 0）
+SELECT count(*) FROM race_pit_reports;
+
+-- 対象レースのスロットと結果。ok=コメントあり、skipped_not_target=ページが対象外（最終日の7R〜11R等）、no_values=未公開、error=要調査
+SELECT race_date, outcome, count(*), min(attempts), max(attempts)
+  FROM scrape_slots WHERE job = 'pit_reports' AND run_mode = 'shadow' AND race_date >= current_date - 7
+ GROUP BY 1, 2 ORDER BY 1, 2;
+
+-- 公開の検知時刻の分布（分。発走からの相対。負が発走前）。窓（offsets・graceMin・pendingRetrySec）を確定する材料
+SELECT s.race_id,
+       round(extract(epoch FROM (s.done_at - ((r.race_date + r.start_time) AT TIME ZONE 'Asia/Tokyo'))) / 60) AS detected_min_from_start,
+       s.attempts
+  FROM scrape_slots s JOIN races r USING (race_id)
+ WHERE s.job = 'pit_reports' AND s.outcome = 'ok' AND s.race_date >= current_date - 14
+ ORDER BY 2;
+
+-- 解析の不一致・構造の変化（error の理由）
+SELECT race_id, last_error FROM scrape_slots
+ WHERE job = 'pit_reports' AND outcome = 'error' AND race_date >= current_date - 7;
+```
+
+shadowは、`ok`で完了する（データには書かない）ため、`done_at`が「公開を最初に検知した時刻」になる（再試行の間隔5〜10分の精度）。公開後の更新の有無は、shadowでは、完了後に再取得しないため測れない。liveの初回の1〜2週間、同じレースを完了後に手動で再取得して、`result_digest`を比べる（または、`race_pit_reports.updated_at`が`created_at`と違うレースを数える）。
+
+### P-3. Storageバケット（承認後）とlive
+
+1. Supabase Dashboardで、非公開バケット`raw-pages`を作成する（外部サービスの設定変更。公開設定・ポリシーは付けない）。バケットが無くても、コメントは保存される（`raw_storage_path`がNULLになるのみ）
+2. `UPDATE scrape_job_state SET mode = 'live', updated_at = now() WHERE job = 'pit_reports';`
+3. 確認: `race_pit_reports`の`created_at`・`comment_count`、`race_pit_comments`の行数（6/レース）、`raw_storage_path`が`raw/pitreport/...`、公式ページとのサンプル突合（3レース）、2回目以降の取得で`rows_written = 0`（変更なし）
+
+### P-4. 切り戻し
+
+`UPDATE scrape_job_state SET mode = 'off' WHERE job = 'pit_reports';`（データは残る。他のジョブ・画面に影響しない）。匿名の読み取りを止める場合は、086のロールバック（ポリシーとGRANTの削除）。
+
+### P-5. 継続監視（完了の定義C）
+
+`scrape-monitor`（5分）・`scrape-summary`（日次）が、`pit_reports`の`expired`・未実行・死活・連続失敗を通知する（既存の仕組み。ジョブ固有の設定は不要）。`skipped_not_target`は窓内取得率の分母から除外される。

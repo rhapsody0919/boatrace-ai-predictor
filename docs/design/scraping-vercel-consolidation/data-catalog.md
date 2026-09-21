@@ -71,7 +71,7 @@ fixtureとして、他セッションが過去に取得した実ページ（race
 | pcexpect（コンピューター予想） | `race/pcexpect?rno&jcd&hd` | レース | 予想フォーカス・自信度・進入予想画像＋出走表全項目 | 前日以降[推] | 可（公開当時の値かは未確認） | B1 |
 | information（特記事項） | `race/information?rno&jcd&hd` | 会場×日 | 事故・内規違反・減点／モーター・ボート変更／欠場・帰郷 | 当日随時 | 空を返す可能性が高い（3ページで空） | A5 |
 | pointrank（得点率） | `race/pointrank?jcd&hd` | 会場×日 | 節の得点率表（SG/G1等のみ） | 各日の終了時点 | 可 | B2 |
-| pitreport | `race/pitreport?rno&jcd&hd` | レース | 選手のコメント（SG/G1等）・自信度 | 各レース前 | 未確認 | なし |
+| pitreport | `race/pitreport?rno&jcd&hd` | レース | 選手のコメント（SG全レース・G1/G2は7R以降、最終日は12Rのみ）・自信度。G3・一般戦は対象外 | 公開時刻は実測の途中（2026-09-21）。過去日は275日前まで取得可 | 実測（BOA-379、[pit-comments/spec.md](../pit-comments/spec.md)） | `race_pit_reports`・`race_pit_comments`（085案。取得ジョブは実装済み・既定off） |
 | rankingmotor | `race/rankingmotor?jcd&hd` | 会場×日 | 節の全選手のモーター/ボート番号・2連対率・前検タイム | 節初日の前日夜[推]・節内で2連対率更新 | 可（2025-12-04で確認） | なし |
 | stadium（場データ） | `data/stadium?jcd` | 会場 | コース別入着率・決まり手・枠番別コース取得率（直近3か月・季節別）、所在地・水質・干満差・モーター種別・レコード | 四半期ごと | 当時の値は不可 | なし |
 | racersearch profile | `data/racersearch/profile?toban` | 選手 | プロフィール | 随時 | — | 新人のみ（racerProfileSync） |
@@ -190,7 +190,7 @@ oddstf・odds2tfは[実]、oddsk・odds3t・odds3fは[C]（[job-inventory.md](./
 | information | ポスター画像・トピックス | [F] | 取得なし | — | 不要 |
 | pointrank | 順位・登番・選手・級別・得点率・着順・得点・減点・備考、時点の注記（「4日目12R終了時点」） | [F] | B2 → `racer_series_points` | 49行のみ（1会場、2026-09-16） | 取得済み（SG/G1等のみ。時点の注記は未保存）。**得点率は自社結果から導出できる**[推:減点の扱いは要検証] |
 | pointrank | 早見（1走目・2走目） | [F] | 取得なし | — | 不要 |
-| pitreport | 選手ごとのコメント（自信度の星付き）・前走・結果・レポーター名 | [実]（G1の1レース） | 取得なし | — | 不要（非構造テキスト、SG/G1限定。[BOA-273](https://linear.app/boat-ai/issue/BOA-273)は別途判断） |
+| pitreport | 選手ごとのコメント（自信度の星付き）・前走・レポーター名 | [実]（約20ページ・120コメント。SG・G1・G2、過去275日分） | 取得ジョブ実装済み・既定off（085案・未適用） | — | **必須**（表示機能の前提。ユーザー決定2026-09-21: AIで言語化せず、レース詳細にそのまま表示。BOA-273はCanceled）。[pit-comments/](../pit-comments/spec.md) |
 
 ### 2.7 rankingmotor・stadium・その他ページ
 
@@ -300,7 +300,7 @@ season・course・back3は[実]（fixture・本調査）。profileは[C]。
 | N21 | 期別成績・能力指数・コース別成績の全選手・全期 | 15.8%（`ability_index`）。B6は未実行 | **必須** | 実測[D]。fanで全項目を一括取得できる[実]。2001後期〜の履歴あり | fan |
 | N22 | プロフィール全項目（性別・養成期を含む） | 一部 | 必須（fanで一括） | [実] | fan、新人はprofile |
 | N23 | 前検タイム・節時点のモーター/ボート2連対率 | 取得なし | 望ましい | rankingmotor[実]。[BOA-266](https://linear.app/boat-ai/issue/BOA-266)。機力の直前シグナルとしての効果は未計測 | rankingmotor |
-| N24 | 選手コメント（ピットレポート） | 取得なし | 不要 | SG/G1限定・非構造[実] | — |
+| N24 | 選手コメント（ピットレポート） | 取得ジョブ実装済み・既定off（085案は未適用） | **必須**（2026-09-21に「不要」から格上げ。表示機能の前提） | SG（全レース）・G1・G2（7R以降。最終日は12R）[実]。G3・一般戦は対象外[実]。自由記述・自信度（★）つき | pitreport（[pit-comments/](../pit-comments/spec.md)） |
 | N25 | オリジナル展示（周回・まわり足・直線） | 取得なし | 望ましい（高） | BOATCASTで全会場（江戸川を除く）[実:boatcast調査]。決定済み（2026-09-20） | BOATCAST |
 | N26 | モーター使用開始日 | 取得なし | 望ましい | `bc_mst`[実]。24ファイル・極小 | BOATCAST |
 | N27 | 場データの静的属性（水質・干満差・モーター種別・レコード） | `venues.water_type`のみ | 不要〜望ましい（低） | [実]。集計値は導出可 | stadium（年1回） |
