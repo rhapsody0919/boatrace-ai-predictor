@@ -179,8 +179,7 @@ boatrace-ai-predictor/
 ├── .github/
 │   └── workflows/
 │       ├── scrape.yml              # データ取得・予想生成（毎時実行）
-│       ├── update-google-sheets.yml # Google Sheets更新
-│       └── linear-sync.yml         # Linear連携
+│       └── update-google-sheets.yml # Google Sheets更新
 │
 └── docs/                     # ドキュメント
     ├── db-migration/         # DBスキーマ・マイグレーション
