@@ -105,6 +105,8 @@ export function computeWindowStats(
   for (const slot of slots) {
     if (slot.status !== "done" && slot.status !== "expired") continue;
     if (isCancelledRace(slot)) continue;
+    // 取得の対象外で終端したスロット（ピットレポートの最終日のG1 R7〜R11 等）は、窓内取得率の分母に入れない
+    if (slot.outcome === "skipped_not_target") continue;
     if (slot.run_mode === "shadow") continue;
     // 一度も claim されず expired になったスロット（run_mode が無い）は、そのジョブが live のときだけ数える
     // （off・shadow のジョブの予定表の残りを、live の欠落として数えない）
@@ -486,8 +488,9 @@ export function formatDailySummary({
     const d = day.get(w.job);
     return `${w.job}: 前日 ${pct(d?.rate ?? null)}（${d?.hit ?? 0}/${d?.total ?? 0}） / 直近7日 ${pct(w.rate)}（${w.hit}/${w.total}） / expired ${w.expired}件 / 未実行 ${w.unexecuted}件 / 遅延p95 ${min(p95.get(w.job) ?? null)}分`;
   });
+  // レジストリにある取得ジョブだけ（疑似の行 predict-code-hash 等は、モードの一覧に出さない）
   const modes = jobStates
-    .filter((r) => !isHostRow(r))
+    .filter((r) => !isHostRow(r) && SCRAPE_JOBS[r.job])
     .map((r) => `${r.job}=${r.mode}`)
     .join(" / ");
   return {

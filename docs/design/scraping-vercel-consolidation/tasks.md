@@ -214,13 +214,13 @@
 
 ### T4b-07 朝の初期化（A8）: `races`・`race_entries`・`race_conditions`
 
-- [ ] **T4b-07-1**（基盤を待たず着手可） `scripts/scrape-to-json.js`の取得部分を、ファイルへ書かず、**メモリ上のデータを返す関数**にする（CLIの`main()`は、その関数を呼んでfsへ書く形で残す）。`getTodayVenues`は既にexportされている
-- [ ] **T4b-07-2**（T4b-03と`generate-predictions.js`が重なる。T4b-03の後に着手） `generate-predictions.js`の`main()`から、`races.json`のfs読み込み以降の書き込み処理を、**データを引数で受け取る関数**として切り出す（CLIの`main()`は、fsで読んで、その関数を呼ぶ形で残す）。`writeToSupabase`の既存のロジック（変更のある行のみ書く）は変更しない
-- [ ] **T4b-07-3** `generate-unified-predictions.js`の`main()`を、CLIガード付きの関数に分ける（import時に`main()`が走る現状の解消）。`scrape-pcexpect.js`も同様（T4b-08-1）
-- [ ] **T4b-07-4** `api/cron/races-init.js`（`*/2 20-23,0 * * *`、`maxDuration: 800`）: 会場一覧（`race/index?hd=`）を取得し、会場を4件ずつのチャンクで処理する。進捗を`scrape_job_state.cursor`に保存する。`ensureAllVenuesScraped`相当の取りこぼし会場の確認を、同じチャンク処理に組み込む。各チャンク完了時に`ensure_scrape_slots`でスロットを生成する。最後のチャンクで、unified予測の生成・Deploy Hookを呼ぶ
-- [ ] **T4b-07-5** 予測ロジックの変更検知による再生成（`git log`依存）を、内容ハッシュ（ビルド時に計算し、`scrape_job_state`の`predict-code-hash`と比較）へ置き換える（plan.md §11(g)の判断に従う。廃止する場合は、手動のCLI再生成の手順をドキュメントに残す）
-- [ ] **T4b-07-6** 24会場の日の所要時間を、プローブで実測する（plan.md U12。会場数を変えて）。結果から、チャンクの会場数・`maxDuration`を調整する
-- [ ] **T4b-07-7** `shadow`（05:00 JSTに取得・解析のみ。会場・レース数・出走表のダイジェストを記録）で3日、GitHub Actionsが07:00に書いた値と比較する。一致を確認して`live`にし、3日並走する。GitHub側の`morning-init`は、初期化済みとして、既存の確認処理のみを行う（plan.md §4.6）。切り戻しは、Vercelを`off`にするのみ
+- [x] **T4b-07-1**（基盤を待たず着手可） `scripts/scrape-to-json.js`の取得部分を、ファイルへ書かず、**メモリ上のデータを返す関数**にする（CLIの`main()`は、その関数を呼んでfsへ書く形で残す）。`getTodayVenues`は既にexportされている。→ `getTodayVenues`・`scrapeVenue`・`scrapeRacesData`（`fetchHtml`差し替え・`strict`つき）。旧実装の出力と完全一致（`npm run verify:morning-init-refactor`）
+- [x] **T4b-07-2**（T4b-03と`generate-predictions.js`が重なる。T4b-03の後に着手） `generate-predictions.js`の`main()`から、`races.json`のfs読み込み以降の書き込み処理を、**データを引数で受け取る関数**として切り出す（CLIの`main()`は、fsで読んで、その関数を呼ぶ形で残す）。`writeToSupabase`の既存のロジック（変更のある行のみ書く）は変更しない。→ `generateAndWriteFromRacesData`。`writeToSupabase`に`client`・`throwOnError`を追加（既定は従来どおり握りつぶす。書き込みのロジックは変更なし）
+- [x] **T4b-07-3** `generate-unified-predictions.js`の`main()`を、CLIガード付きの関数に分ける（import時に`main()`が走る現状の解消）。`scrape-pcexpect.js`も同様（T4b-08-1）。→ `generateUnifiedPredictions`・`findRacesMissingUnified`
+- [x] **T4b-07-4** `api/cron/races-init.js`（`*/2 20-23,0 * * *`、`maxDuration: 800`）: 会場一覧（`race/index?hd=`）を取得し、会場を4件ずつのチャンクで処理する。進捗を`scrape_job_state.cursor`に保存する。`ensureAllVenuesScraped`相当の取りこぼし会場の確認を、同じチャンク処理に組み込む。各チャンク完了時に`ensure_scrape_slots`でスロットを生成する。最後のチャンクで、unified予測の生成・Deploy Hookを呼ぶ。→ 実装: `scripts/lib/racesInit/job.js`（1回の呼び出しは最大8会場、進捗は`cursor`。会場一覧の再確認は9時前の1回。予定表の生成は全会場が済んだ後の後始末で、有効な窓型ジョブのみ）。`races`に行のある会場は書かない（初期化済みの予測・的中フラグを上書きしない）
+- [x] **T4b-07-5** 予測ロジックの変更検知による再生成（`git log`依存）を、内容ハッシュ（ビルド時に計算し、`scrape_job_state`の`predict-code-hash`と比較）へ置き換える（plan.md §11(g)の判断に従う。廃止する場合は、手動のCLI再生成の手順をドキュメントに残す）。→ **ビルド時の計算ではなく、デプロイされた予測ロジックのソース（`generate-predictions.js`・`turnPrediction.js`・`venueParameters.js`・`winningTechniques.js`）を、実行時に読んでハッシュを計算する**（import されたファイルは関数のバンドルに含まれる。ビルド時の生成物は、bundling の順序に依存するため避けた）。`races_init`の`onTick`（liveのみ、起動のたび）で比較し、変わっていたら当日の発走前のレースだけ`mainRefresh`（upsert）で再生成する。**範囲の限界: cronの時間帯（05:00〜09:58 JST）のみ。終日にするならcronを広げる（ユーザー判断。runbook N-3）**
+- [x] **T4b-07-6** 24会場の日の所要時間を、プローブで実測する（plan.md U12。会場数を変えて）。結果から、チャンクの会場数・`maxDuration`を調整する。→ 1会場（12レース、25リクエスト、同時12）を実サイトで実測: **29.0秒**（全て200）。24会場で約12〜14分の見積り。公式サイトへのアクセスは合計33回（上限40回）。24会場の日・Vercel上の書き込みを含む所要時間は、shadow・live初日に実測（runbook N-0・N-7）。1回の会場数8・`maxDuration` 800秒は据え置き
+- [ ] **T4b-07-7** `shadow`（05:00 JSTに取得・解析のみ。会場・レース数・出走表のダイジェストを記録）で3日、GitHub Actionsが07:00に書いた値と比較する。一致を確認して`live`にし、3日並走する。GitHub側の`morning-init`は、初期化済みとして、既存の確認処理のみを行う（plan.md §4.6）。切り戻しは、Vercelを`off`にするのみ。→ 手順・成功基準（数値）・短縮手順（shadow 1日→live化とGitHub側停止を同時）: verification-runbook.md N。確認は`scripts/maintenance/check-morning-init-shadow.js`。GitHub側の停止は`SKIP_MORNING_INIT_ON_GHA`（JST 07:00になっても当日のracesが無ければ従来どおり初期化するフェイルセーフつき）
 - [ ] **T4b-07-8** (ユーザー承認) 7日（土日を含む）の実測後、`morning-init`を`scrape-scheduled.yml`から外す（G3の条件の一部。WS7）
 
 データ項目: `races`。
@@ -237,10 +237,10 @@
 
 ### T4b-08 公式コンピュータ予想（B1）: `external_predictions`
 
-- [ ] **T4b-08-1**（基盤を待たず着手可） `scrape-pcexpect.js`の`main()`を、CLIガード付きの関数に分け、レース単位の入口（`runForRaces`）を追加する
-- [ ] **T4b-08-2** `api/cron/pcexpect.js`（5分間隔）: レジストリの`pcexpect`定義（`-720`、許容幅690分、再試行600秒、リース300秒、20件×3並列）。1レース約10.6秒（実測）のため、1回で約75秒。180レースで約10回の呼び出し。1リクエストが約9秒かかる原因（plan.md U7）の切り分け（取得先の応答か、制限か）を、プローブで確認する
-- [ ] **T4b-08-3** 公式コンピュータ予想が、朝の1回の取得で足りるか（発走前に更新されるか）を確認する（U7）。足りない場合は、窓型（発走前の複数窓）への変更を、ユーザーに提示する
-- [ ] **T4b-08-4** `shadow`→`live`→（`races-init`の切り替え（T4b-07-8）と同時に）GitHub側の`morning-init`から外す
+- [x] **T4b-08-1**（基盤を待たず着手可） `scrape-pcexpect.js`の`main()`を、CLIガード付きの関数に分け、レース単位の入口（`runForRaces`）を追加する。→ CLIの`main()`も`runForRaces`を使う。payloadのダイジェスト（`computePcexpectDigest`）を追加
+- [x] **T4b-08-2** `api/cron/pcexpect.js`（5分間隔。cronは`*/5 20-23,0-14 * * *`＝JST 05:00〜23:59。朝の初期化の直後から消化するため、設計の`22-23`から広げた）: レジストリの`pcexpect`定義（`-720`、許容幅690分、再試行600秒、リース300秒、20件×3並列）。1レース約10.6秒（実測）のため、1回で約75秒。180レースで約10回の呼び出し。1リクエストが約9秒かかる原因（plan.md U7）の切り分け（取得先の応答か、制限か）を、プローブで確認する。→ 1ページ約9.2秒は、取得先の応答時間（リージョン・実行元によらない。plan.md §8）
+- [x] **T4b-08-3** 公式コンピュータ予想が、朝の1回の取得で足りるか（発走前に更新されるか）を確認する（U7）。足りない場合は、窓型（発走前の複数窓）への変更を、ユーザーに提示する。→ 朝の1回で足りる見込み: 02:25に保存したpayloadと、8.5時間後の再取得が、未発走の3レースで完全一致（3/3）。2026-09-10〜21の全レースで保存は朝の1回のみ。発走30分前以内の更新の有無は、shadowの一致率で間接的に確認（runbook N-0）
+- [ ] **T4b-08-4** `shadow`→`live`→（`races-init`の切り替え（T4b-07-8）と同時に）GitHub側の`morning-init`から外す。→ runbook N-4。GitHub側は`SKIP_PCEXPECT_ON_GHA`（初期化の中のpcexpectの段だけ）
 
 データ項目: `external_predictions`。
 
@@ -311,6 +311,22 @@
 - [ ] 本番実測: 期待件数（算出根拠: `race_entries`に登場した全`racer_id`（約1,627人）。`ability_index`・期別成績の列が非NULL。現状は`ability_index`が0/1,627件）に対し、充足率99%以上であることを実測クエリで確認する（過去の期別の値は、遡って取得できない。「取得開始日以降のみ」とし、ユーザーの承認を得る）
 - [ ] タイミング実測: 可変データは、土日を含む直近7日で窓内取得率（窓の中心±3分以内）を実測する（欠落率2%以内）。半年に1回しか変化しないため、窓型ではない。「月次の指定日（1日09:00 JST）から3日以内に全選手を取得できた」割合と、期の切り替わり（5/1・11/1）直後の追従を、`scraped_at`・`official_updated_at`から実測する
 - [ ] 継続監視: 上記指標が日次で自動計測され、閾値超過でSlack通知されることを確認する（月次ジョブの未実行の検知（実行履歴0件のまま見逃した実績あり）、`cursor`の未完了）
+
+### T4b-17 ピットレポート（選手コメント。N24、BOA-379）: `pit_reports`
+
+設計: [pit-comments/](../pit-comments/spec.md)（spec・plan・screens・tasks）。SG・G1・G2の対象レースのみ（1日6〜18ページ）。
+
+- [x] **T4b-17-1**（コード実装済み。`scripts/lib/pitReportParser.js`・`pitReportRows.js`・`pitReportSchema.js`・`pitReportJob.js`・`rawHtmlArchive.js`・`api/cron/pit-reports.js`、レジストリ`pit_reports`、`vercel.json`のcron。既定は`off`（行なし）で挙動不変。検証は`npm run verify:pit-report-job`）
+- [ ] **T4b-17-2** (ユーザー承認) マイグレーション085（保存）を本番へ適用する。APPLIED.mdの「未適用」を「適用済み」に更新する
+- [ ] **T4b-17-3** (ユーザー承認) `scrape_job_state`の`pit_reports`を`shadow`にする。SG・G1・G2の開催日に、`scrape_slots`の`done`（`outcome`）・`result_digest`・`done_at`の分布から、公開時刻と公開後の更新の有無を実測し、窓（`offsets`・`graceMin`・`pendingRetrySec`）を確定する
+- [ ] **T4b-17-4** (ユーザー承認) Storageの非公開バケット`raw-pages`を作成し、`live`にする
+- [ ] **T4b-17-5** 過去分のバックフィル（2025-12以降。約1,700ページ、3夜。[plan.md §5](../pit-comments/plan.md)）。手動CLI（`scripts/maintenance/backfill-pit-reports.js`、未実装）と、実行前のユーザー承認
+
+データ項目: `race_pit_reports`・`race_pit_comments`。
+
+- [ ] 本番実測: 期待件数（算出根拠: 2025-12-03以降の`races`のうち、SG（全レース）・G1・G2（7R以降）で、公式ページが対象外と答えなかったレース。`race_pit_reports.status='published'`のレース数。ページが空のレース・`not_target`は分母から除き、件数を報告）に対し、過去分を含めて充足率99%以上であることを実測クエリで確認する。艇ごとの行数（`race_pit_comments`）は、公式ページのコメント数と一致すること（サンプルで突合）
+- [ ] タイミング実測: 可変データ（公開時刻がある）は、土日を含む直近7日で、「発走までに公開を検知できた割合」（`scrape_slots`の`done_at <= 期限`）と、公開検知の遅延（`done_at`−発走）の分布を実測する。窓内取得率（中心±3分）は当てはまらないため、「公開後5分以内に検知」（再試行間隔）を基準にする
+- [ ] 継続監視: 上記指標が日次で自動計測され（`scrape-summary`に`pit_reports`が出る）、`expired`（対象レースで許容幅まで公開を検知できなかった）が即時通知されることを確認する。`parse_anomaly`（構造の変化）の`error`が通知されること
 
 ---
 
