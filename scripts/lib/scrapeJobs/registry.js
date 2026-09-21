@@ -78,7 +78,9 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
-  // B1 公式コンピュータ予想。朝（-720分）から発走30分前まで
+  // B1 公式コンピュータ予想。朝（-720分）から発走30分前まで。1レース約10.6秒（GitHub Actionsの実測）のため、
+  // 20件×3並列で約75秒。公式予想は静的（2026-09-21の実測: 8.5時間後の再取得が朝の値と一致）で、朝1回の取得で足りる。
+  // 実装: scripts/lib/scrapeJobs/pcexpectHandlers.js、api/cron/pcexpect.js（T4b-08）
   pcexpect: {
     kind: "window",
     offsets: [-720],
@@ -89,6 +91,20 @@ export const SCRAPE_JOBS = Object.freeze({
     concurrency: 3,
     slotSecEstimate: 12,
     maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
+
+  // A8 朝の初期化（races・race_entries・predictions の初期化。チャンク処理）。05:00指定（cron: 05:00〜09:58 JST の2分ごと。
+  // 設計判断(f): 従来の07:00開始より2時間早める）。会場を、1回の呼び出しで最大8件（時間の許す限り）処理し、進捗を
+  // scrape_job_state.cursor に保存して次の起動が続きを処理する（全会場が済むまで incomplete）。1会場約30秒
+  // （scrape-to-json の実測: 13会場で282秒＝1会場約22秒、並列を下げて約30秒の見積り）、24会場で約12分。
+  // リースは maxDuration と同じ800秒（cron の間隔120秒より長いが、実行中の起動は、リースで何もしない）。
+  // 実装: scripts/lib/racesInit/job.js、api/cron/races-init.js（T4b-07）
+  races_init: {
+    kind: "daily",
+    targetTimeJst: "05:00",
+    leaseSec: 800,
+    maxDurationSec: 800,
     hosts: ["boatrace.jp"],
   },
 

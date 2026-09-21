@@ -37,6 +37,7 @@
     "verify:scrape-daily-jobs": "node scripts/maintenance/verify-scrape-daily-jobs.js",
     "verify:scrape-odds-job": "node scripts/maintenance/verify-scrape-odds-job.js",
     "verify:morning-init-refactor": "node scripts/maintenance/verify-morning-init-refactor.js",
+    "verify:morning-init-jobs": "node scripts/maintenance/verify-morning-init-jobs.js",
     "verify:scrape-slots-sql": "node scripts/maintenance/verify-scrape-slots-sql.js",
     "verify:deploy-hook-policy": "node scripts/maintenance/verify-deploy-hook-policy.js",
     "verify:prediction-refresh": "node scripts/maintenance/verify-prediction-refresh.js",
