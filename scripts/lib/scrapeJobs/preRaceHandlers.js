@@ -322,9 +322,10 @@ export async function readExhibitionMode(store) {
  *   live      動かない                          動く（展示データ・気象を書く。案1の再計算も）
  *   （行なし・テーブル未適用・読み取り失敗は off）
  *
- * Vercel Cron（vercel.json）からの起動は、live・shadow ではスロットの経路を動かす（cron-job.org の起動も同じ経路に入る。
- * リースと取得済みのスキップで無害）。off のときは、従来の経路が cron-job.org から動いているため、Vercel Cron の起動は
- * 何もしない（従来の経路を二重に動かして、取得先への負荷を増やさない）。
+ * Vercel Cron（vercel.json）からの起動は、live・shadow ではスロットの経路を動かす（処理の完了後に 200/500）。cron-job.org の
+ * 起動も同じ経路に入る（リースと取得済みのスキップで無害）が、cron-job.org のタイムアウト（30秒）に、スロットの処理
+ * （約60〜70秒）が掛からないよう、こちらはバックグラウンド（waitUntil）で処理して 202 を即座に返す。off のときは、従来の経路が
+ * cron-job.org から動いているため、Vercel Cron の起動は何もしない（従来の経路を二重に動かして、取得先への負荷を増やさない）。
  * 切り替え・切り戻しは scrape_job_state.mode の更新のみ（再デプロイ不要）。verification-runbook.md Q。
  */
 export function createExhibitionCronHandler({
@@ -332,6 +333,7 @@ export function createExhibitionCronHandler({
   refresh = defaultRefresh,
   legacy = runLegacyExhibition,
   runSlots = runSlotsWithRefresh,
+  defer = waitUntil,
   now = () => new Date(),
   env = process.env,
 } = {}) {
@@ -372,22 +374,39 @@ export function createExhibitionCronHandler({
       const date = toJstDateString(now());
       legacyResult = await legacy({ date, refresh, env });
     }
-    const { status, body } = await runSlots({
-      job: "exhibition",
-      createHandleSlot: (collector) =>
-        createExhibitionSlotHandler({ onChanged: collector.onChanged }),
-      refresh,
-      client,
-      query: req.query ?? {},
-      env,
-    });
-    return res.status(status).json(
-      legacyResult
-        ? {
-            ...body,
-            legacy: { status: legacyResult.status, ...legacyResult.body },
-          }
-        : body,
-    );
+    const runSlotsNow = () =>
+      runSlots({
+        job: "exhibition",
+        createHandleSlot: (collector) =>
+          createExhibitionSlotHandler({ onChanged: collector.onChanged }),
+        refresh,
+        client,
+        query: req.query ?? {},
+        env,
+      });
+    const legacyBody = legacyResult
+      ? { legacy: { status: legacyResult.status, ...legacyResult.body } }
+      : {};
+    if (!fromVercelCron) {
+      // 外部cron（cron-job.org）の起動は、スロットの処理を待たない（タイムアウト30秒。結果は予定表・関数ログで確認する）
+      defer(
+        runSlotsNow().catch((error) => {
+          console.error(
+            "❌ 展示スロット処理エラー（バックグラウンド処理）:",
+            error,
+          );
+        }),
+      );
+      return res.status(202).json({
+        success: true,
+        job: "exhibition",
+        mode,
+        accepted: true,
+        message: "processing in background",
+        ...legacyBody,
+      });
+    }
+    const { status, body } = await runSlotsNow();
+    return res.status(status).json({ ...body, ...legacyBody });
   };
 }

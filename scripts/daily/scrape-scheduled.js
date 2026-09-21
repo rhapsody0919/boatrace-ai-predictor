@@ -84,13 +84,23 @@ async function main() {
   //   SKIP_RACE_INFO_ON_GHA=true  レース情報更新を行わない（GitHub側のレース情報起点の予測リフレッシュも、自然に無くなる）
   // 既定（未設定・true以外）は従来どおり実行する。予測リフレッシュのきっかけは、Vercel の REFRESH_ON_VERCEL=true
   // （race-info の変更を起点に再計算する。案1）が前提のため、案1が先。順序は verification-runbook.md Q
-  const skipRaceInfo = process.env.SKIP_RACE_INFO_ON_GHA === "true";
-  const hasUpdateRaces =
-    !skipRaceInfo && getRacesInWindow(schedule, 60).length > 0;
+  // 変数が true のときだけ、対象のレースがあるときに、Vercel が健全かを確認する（健全でなければ、実行する）
+  const raceInfoDue = getRacesInWindow(schedule, 60).length > 0;
+  const skipRaceInfo =
+    process.env.SKIP_RACE_INFO_ON_GHA === "true" &&
+    (!raceInfoDue || (await gateSkips("SKIP_RACE_INFO_ON_GHA")));
+  const hasUpdateRaces = !skipRaceInfo && raceInfoDue;
   // exhibition 内部: EXHIBITION_WINDOWS=[30,15,10] 各 ±3分
-  const hasExhibitionRaces = [30, 15, 10].some(
+  // 展示（BOA-313 Step 3。WS4b・T4b-06）: SKIP_EXHIBITION_ON_GHA=true の間は、GitHub Actions 側での取得をスキップする。
+  // Vercel の展示の mode（scrape_job_state）が live になるまでは、従来の経路（cron-job.org 起点）が動くため、静的にスキップ
+  // する。live になった後は、他のジョブと同じく、Vercel が健全なときだけスキップする（scripts/lib/ghaSkipGate.js の LEGACY_PATH_JOBS）
+  const exhibitionDue = [30, 15, 10].some(
     (w) => getRacesInWindow(schedule, w, 3).length > 0,
   );
+  const skipExhibition =
+    process.env.SKIP_EXHIBITION_ON_GHA === "true" &&
+    (!exhibitionDue || (await gateSkips("SKIP_EXHIBITION_ON_GHA")));
+  const hasExhibitionRaces = !skipExhibition && exhibitionDue;
   const finishedRaces = getRacesAfterStart(schedule, 5);
   // 予測買い目オッズ: 発走60分以内のレース（オッズは発走直前に最も変動する）
   const upcomingRaces = getRacesBeforeStart(schedule, 60);
@@ -157,9 +167,9 @@ async function main() {
 
   // 展示データ取得（発走30/15/10分前ウィンドウ）
   // BOA-313 Step 3: Vercel Function(api/cron/exhibition.js)へ移行済みのため、
-  // SKIP_EXHIBITION_ON_GHAが"true"の間はGitHub Actions側での取得をスキップする。
+  // SKIP_EXHIBITION_ON_GHAが"true"の間は（上の判定のとおり）GitHub Actions側での取得をスキップする。
   // コードは削除せず、切り戻しはリポジトリ変数のトグルのみで完結させる。
-  if (hasExhibitionRaces && process.env.SKIP_EXHIBITION_ON_GHA !== "true") {
+  if (hasExhibitionRaces) {
     const { updated, count } = await runExhibition(schedule, date).catch(
       (e) => {
         console.error("⚠️ 展示データ取得失敗:", e.message);

@@ -144,9 +144,12 @@
 ### T4b-09 レース情報更新（A1）: `race_entries`・`race_conditions`
 
 - [x] **T4b-09-0**（コード実装済み。DDL案081は未適用。ユーザー承認待ち） 出走表の全項目化（[pre-race-full-fields/plan.md](../pre-race-full-fields/plan.md)）: 解析は`scripts/lib/raceListParser.js`（純関数）、行の組み立て・締切予定時刻による`races.start_time`の追従は`scripts/lib/preRaceRows.js`、未適用のDBでの安全な書き込みは`scripts/lib/preRaceSchema.js`。`update-race-info.js`の`run`は、この解析・行の組み立てを使い、`client`・`syncDeadlines`を引数に取る（`runForRaces`は、この上に作る）。検証: `npm run verify:pre-race-parsers`
-- [ ] **T4b-09-1** `update-race-info.js`に、レース単位の入口を追加する（`runForRaces`）。全行upsertは、変更のある行のみ書く現行（WS8(b)、`unchangedRows.js`）を維持する。`beforeinfo`・`racelist`の重複（D2・D3）は、この移行では変更せず、移行後に見直す
-- [ ] **T4b-09-2** `api/cron/race-info.js`: レジストリの`race_info`定義（`-60`、許容幅3分、再試行60秒、リース90秒）。成功して変更を書いたときに、案1の予測リフレッシュ（T4b-03）を呼ぶ
+- [x] **T4b-09-1** `update-race-info.js`に、レース単位の入口を追加する（`runForRaces`）。全行upsertは、変更のある行のみ書く現行（WS8(b)、`unchangedRows.js`）を維持する。`beforeinfo`・`racelist`の重複（D2・D3）は、この移行では変更せず、移行後に見直す
+  - 実装（2026-09-21）: `runForRaces`（`scripts/daily/update-race-info.js`）。**出走表（racelist）だけを取り、beforeinfoは取らない（D2を、この移行で解消。本タスクの「変更しない」から、指示により変更）**。`run`は同じ書き込み部品（`flushRaceInfo`）を共有し、動作を変えない（`verify:pre-race-parsers`）。shadowは読み取りのみ・`resultDigest`（`scripts/lib/scrapeJobs/preRaceDigest.js`）。中止・順延の暫定検知は、ページ取得後に選手0人のときだけ連続回数を進める（通信・HTTPエラーは数えない）
+- [x] **T4b-09-2** `api/cron/race-info.js`: レジストリの`race_info`定義（`-60`、許容幅3分、再試行60秒、リース90秒）。成功して変更を書いたときに、案1の予測リフレッシュ（T4b-03）を呼ぶ
+  - 実装: `api/cron/race-info.js`・`scripts/lib/scrapeJobs/preRaceHandlers.js`。変更を書いたレースは、全スロットの完了後に日付ごとに1回だけ`mainRefresh`（upsert）を呼ぶ（`REFRESH_ON_VERCEL`）。`maxDuration`は再計算の余裕を含めて180秒。`vercel.json`に毎分のcronを追加。検証: `npm run verify:scrape-pre-race-job`
 - [ ] **T4b-09-3** `shadow`→`live`→`SKIP_RACE_INFO_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-scheduled.js`の`updatedRaceIds`から、レース情報由来を外す（この時点でGitHub側の再計算は不要になる）
+  - **コード側は完了**（`SKIP_RACE_INFO_ON_GHA`を`scrape-scheduled.js`・`scrape-scheduled.yml`に追加。既定は未設定＝従来どおり。#760のフェイルセーフ付きSKIP（`GHA_SKIP_TARGETS.SKIP_RACE_INFO_ON_GHA`）に対応）。切り替え（shadow→live→変数）の実施は未。手順・確認SQL・成功基準・切り戻しは[verification-runbook.md](./verification-runbook.md) Q-5
 
 データ項目: `race_entries`（レース情報更新分）。
 
@@ -180,10 +183,14 @@
 ### T4b-06 展示（A2）: `exhibition_data`
 
 - [x] **T4b-06-0**（コード実装済み。DDL案082は未適用。ユーザー承認待ち） 直前情報の全項目化（[pre-race-full-fields/plan.md](../pre-race-full-fields/plan.md)）: 解析は`scripts/lib/beforeInfoParser.js`（純関数。展示進入・展示STのF/L・前走の着順の生表記・欠場・気象を1回で解析）、行の組み立ては`scripts/lib/preRaceRows.js`。`scrape-exhibition-data.js`の`scrapeAndUpsertRaces`は、この解析・行の組み立てを使う（気象の書き込みは従来どおり）。検証: `npm run verify:pre-race-parsers`
-- [ ] **T4b-06-1** 展示公開時刻の分布を実測する（plan.md U6）: WS2の取得時刻列と`races.start_time`の差（会場別。展示STが先に出る会場を含む）。結果から、レジストリの展示定義（1本のスロット`-33`〜`-7`、再試行120秒）が妥当か、現行の3窓（30/15/10分前）へ戻すかを、ユーザーに提示する
-- [ ] **T4b-06-2** `api/cron/exhibition.js`を共通ラッパ・スロット化する（`waitUntil`を廃止し、同期の応答にする）。現行の`getRaceIdsWithExhibitionTime`による取得済みのスキップは`skipped_have_data`として記録する。案1の予測リフレッシュ（T4b-03）を、スロットの完了後に呼ぶ
-- [ ] **T4b-06-3** `vercel.json`のcronsに追加して、純正Cronで起動する（cron-job.orgの`Vercel Exhibition Cron`と並走。同じエンドポイントで、リースと冪等により無害）。並走の後に、(ユーザー)cron-job.orgのジョブを停止する
+- [x] **T4b-06-1** 展示公開時刻の分布を実測する（plan.md U6）: WS2の取得時刻列と`races.start_time`の差（会場別。展示STが先に出る会場を含む）。結果から、レジストリの展示定義（1本のスロット`-33`〜`-7`、再試行120秒）が妥当か、現行の3窓（30/15/10分前）へ戻すかを、ユーザーに提示する
+  - 実測（2026-09-21、202レース）: 最初に取得できた時点は発走の30.6〜8.6分前（中央値16.2分前）、全レース7分前までに取得。`-33`〜`-7`を採る（3窓へは戻さない）。尾部（7分前より後）は従来の窓で観測できないため、live後に確認。詳細は[verification-runbook.md](./verification-runbook.md) Q-0
+- [x] **T4b-06-2** `api/cron/exhibition.js`を共通ラッパ・スロット化する（`waitUntil`を廃止し、同期の応答にする）。現行の`getRaceIdsWithExhibitionTime`による取得済みのスキップは`skipped_have_data`として記録する。案1の予測リフレッシュ（T4b-03）を、スロットの完了後に呼ぶ
+  - 実装: `api/cron/exhibition.js`・`preRaceHandlers.js`・`runForRaces`（`scrape-exhibition-data.js`）。**`scrape_job_state`の`exhibition`が行なし・`off`の間は、従来の経路（cron-job.org起点・`waitUntil`）がそのまま動く**（マージで展示が止まらない。mode=shadowは従来の経路＋スロットのshadow、liveはスロットのみ）。取得済みは`skipped_have_data`、展示STのみは`partial`。案1の再計算は、全スロットの完了後に1回
+- [x] **T4b-06-3** `vercel.json`のcronsに追加して、純正Cronで起動する（cron-job.orgの`Vercel Exhibition Cron`と並走。同じエンドポイントで、リースと冪等により無害）。並走の後に、(ユーザー)cron-job.orgのジョブを停止する
+  - 実装: `vercel.json`に`/api/cron/exhibition`（毎分）を追加。`off`のとき、Vercel Cron（`User-Agent: vercel-cron/1.0`）の起動は何もしない（従来の経路をcron-job.orgと二重に動かさない）。cron-job.orgの停止は、liveの安定後のユーザー作業（[verification-runbook.md](./verification-runbook.md) Q-4）。切り替え（shadow→live）の実施は未
 - [ ] **T4b-06-4** 切り替え後7日の窓内取得率を、予定表と、WS2の取得時刻で実測する（展示タイム非NULL基準）
+  - 旧方式と新方式の比較の手順・SQLは[verification-runbook.md](./verification-runbook.md) Q-4-1（窓ごとの直接比較はできないため、7分前までの取得率・発走前の分数で比べる）。実測は、live後
 
 データ項目: `exhibition_data`。
 

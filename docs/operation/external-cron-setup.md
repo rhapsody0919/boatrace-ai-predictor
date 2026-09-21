@@ -85,7 +85,7 @@ GitHub Actionsを経由しないため、`concurrency`直列化やチェック�
 
 | エンドポイント | cron-job.org ジョブ名 | 間隔 | 時間帯 (JST) | 対応Phase |
 |---|---|---|---|---|
-| `/api/cron/exhibition` | `Vercel Exhibition Cron` | 2分間隔 | 7:00-23:00 | Phase 1（展示データ）。**2026-09-16、BOA-313 Step 3によりGitHub Actions側を無効化（マージ後に有効化）**（`scrape-scheduled.yml`のリポジトリ変数`SKIP_EXHIBITION_ON_GHA`、詳細は[spec.md](../design/scraping-serverless-migration/spec.md)参照）。マージ後はこちらのVercel版が展示データ取得の唯一の経路になる |
+| `/api/cron/exhibition` | `Vercel Exhibition Cron` | 2分間隔 | 7:00-23:00 | Phase 1（展示データ）。**2026-09-16、BOA-313 Step 3によりGitHub Actions側を無効化（マージ後に有効化）**（`scrape-scheduled.yml`のリポジトリ変数`SKIP_EXHIBITION_ON_GHA`、詳細は[spec.md](../design/scraping-serverless-migration/spec.md)参照）。マージ後はこちらのVercel版が展示データ取得の唯一の経路になる。**2026-09-21: スロット化（WS4b T4b-06）**。`scrape_job_state`の`exhibition`が行なし・`off`の間は、この登録が従来の経路を動かす（変更なし）。`live`にした後は、Vercel Cron（毎分。`vercel.json`）が主となり、この登録は冗長になる。**停止は、`live`で1日以上安定した後にだけ行う**（`off`のままで止めると展示が取得されない。[verification-runbook.md](../design/scraping-vercel-consolidation/verification-runbook.md) Q-1・Q-4） |
 
 ### セットアップ手順
 

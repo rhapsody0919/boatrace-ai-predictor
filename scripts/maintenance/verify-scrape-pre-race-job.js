@@ -51,6 +51,7 @@ import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { createMemoryStore } from "../lib/scrapeJobs/testing/memoryStore.js";
 import { CONFIRM_STREAK_THRESHOLD } from "../lib/cancellationStatus.js";
+import { decideFromRows, evaluateJobHealth } from "../lib/ghaSkipGate.js";
 import {
   compareExhibitionShadowDigests,
   compareRaceInfoShadowDigests,
@@ -1306,11 +1307,12 @@ async function routeExhibition({
     tables: { scrape_job_state: stateRows },
     failSelect: stateFail ? { scrape_job_state: stateFail } : {},
   });
-  const calls = { legacy: 0, slots: 0, slotArgs: [] };
+  const calls = { legacy: 0, slots: 0, slotArgs: [], deferred: [] };
   const handler = handlerFactory({
     getClient: async () => db,
     env: { CRON_SECRET: "secret" },
     now: () => NOW,
+    defer: (promise) => calls.deferred.push(promise),
     legacy: async () => {
       calls.legacy++;
       return { status: 202, body: { accepted: true } };
@@ -1399,6 +1401,37 @@ async function routingIsCorrect(handlerFactory) {
     "展示: スロットの経路には job='exhibition' と、展示のスロットのハンドラーを渡す",
     live.calls.slotArgs[0]?.job === "exhibition" &&
       typeof live.calls.slotArgs[0]?.createHandleSlot === "function",
+  );
+  const externalLive = await routeExhibition({
+    stateRows: modeRow("live"),
+    ua: "cron-job.org",
+  });
+  const vercelLive = await routeExhibition({
+    stateRows: modeRow("live"),
+    ua: VERCEL_UA,
+  });
+  await Promise.all(externalLive.calls.deferred);
+  check(
+    "展示: cron-job.org の起動は、スロットの処理をバックグラウンド（waitUntil）で行い、202 を即座に返す（cron-job.org のタイムアウト30秒に、約60〜70秒の処理を掛けない）。Vercel Cron の起動は、処理の完了後に 200",
+    externalLive.res.statusCode === 202 &&
+      externalLive.res.body.accepted === true &&
+      externalLive.calls.deferred.length === 1 &&
+      vercelLive.res.statusCode === 200 &&
+      vercelLive.calls.deferred.length === 0 &&
+      vercelLive.res.body.job === "exhibition",
+    show({ external: externalLive.res, vercel: vercelLive.res }),
+  );
+  const externalShadow = await routeExhibition({
+    stateRows: modeRow("shadow"),
+    ua: "cron-job.org",
+  });
+  check(
+    "展示（shadow）: cron-job.org の起動は、従来の経路の結果（legacy）を応答に含め、スロットは同時に動く（202）",
+    externalShadow.res.statusCode === 202 &&
+      externalShadow.res.body.legacy?.status === 202 &&
+      externalShadow.calls.legacy === 1 &&
+      externalShadow.calls.slots === 1,
+    show(externalShadow.res),
   );
   check(
     "readExhibitionMode: shadow・live は認識し、それ以外の値・行なしは off",
@@ -1623,13 +1656,10 @@ async function routingIsCorrect(handlerFactory) {
     "utf8",
   );
   check(
-    '切り替え: scrape-scheduled.js は SKIP_RACE_INFO_ON_GHA が文字列 "true" のときだけレース情報更新を止める（未設定・空・false は従来どおり）',
-    /const skipRaceInfo = process\.env\.SKIP_RACE_INFO_ON_GHA === "true";/.test(
+    '切り替え: scrape-scheduled.js は SKIP_RACE_INFO_ON_GHA が文字列 "true" のときだけ、対象のレースがあるときに Vercel の健全性を確認して、レース情報更新を止める（未設定・空・false は従来どおり）',
+    /process\.env\.SKIP_RACE_INFO_ON_GHA === "true" &&\s*\(!raceInfoDue \|\| \(await gateSkips\("SKIP_RACE_INFO_ON_GHA"\)\)\)/.test(
       scheduled,
-    ) &&
-      /const hasUpdateRaces =\s*!skipRaceInfo && getRacesInWindow\(schedule, 60\)\.length > 0;/.test(
-        scheduled,
-      ),
+    ) && /const hasUpdateRaces = !skipRaceInfo && raceInfoDue;/.test(scheduled),
   );
   check(
     "切り替え: ワークフローは、リポジトリ変数 SKIP_RACE_INFO_ON_GHA を環境変数として渡す（設定は、この検証の範囲外）",
@@ -1638,8 +1668,79 @@ async function routingIsCorrect(handlerFactory) {
     ),
   );
   check(
-    "切り替え: SKIP_EXHIBITION_ON_GHA（既存）の扱いは変えていない",
-    /process\.env\.SKIP_EXHIBITION_ON_GHA !== "true"/.test(scheduled),
+    "切り替え: SKIP_EXHIBITION_ON_GHA（既存）は、true のときだけ、対象のレースがあるときに Vercel の健全性を確認する（mode が live になるまでは、従来どおり静的にスキップ。下の gate の検証）",
+    /process\.env\.SKIP_EXHIBITION_ON_GHA === "true" &&\s*\(!exhibitionDue \|\| \(await gateSkips\("SKIP_EXHIBITION_ON_GHA"\)\)\)/.test(
+      scheduled,
+    ) &&
+      /const hasExhibitionRaces = !skipExhibition && exhibitionDue;/.test(
+        scheduled,
+      ),
+  );
+}
+
+// フェイルセーフ付きSKIP（ghaSkipGate.js）への組み込み
+{
+  const now = new Date("2026-09-24T12:00:00+09:00");
+  const tick = (agoMin) =>
+    new Date(now.getTime() - agoMin * 60000).toISOString();
+  const row = (job, extra = {}) => ({
+    job,
+    mode: "live",
+    last_tick_at: tick(1),
+    consecutive_failures: 0,
+    ...extra,
+  });
+  const decide = (varName, rows) => decideFromRows({ varName, rows, now });
+
+  check(
+    "gate race_info: live で起動が新しければ、スキップ（Vercelが健全）。行なし・shadow・off・起動が古い・連続失敗が閾値以上なら、実行（GitHubが肩代わり）",
+    decide("SKIP_RACE_INFO_ON_GHA", [row("race_info")]).skip === true &&
+      decide("SKIP_RACE_INFO_ON_GHA", []).skip === false &&
+      decide("SKIP_RACE_INFO_ON_GHA", [row("race_info", { mode: "shadow" })])
+        .skip === false &&
+      decide("SKIP_RACE_INFO_ON_GHA", [row("race_info", { mode: "off" })])
+        .skip === false &&
+      decide("SKIP_RACE_INFO_ON_GHA", [
+        row("race_info", { last_tick_at: tick(30) }),
+      ]).skip === false &&
+      decide("SKIP_RACE_INFO_ON_GHA", [
+        row("race_info", { consecutive_failures: 50 }),
+      ]).skip === false,
+  );
+  check(
+    "gate exhibition（従来の経路を持つジョブ）: mode が行なし・off・shadow の間は、従来どおり静的にスキップ（従来の経路が動いており、DBの状態では判定できない。GitHubが二重に動き出さない）",
+    decide("SKIP_EXHIBITION_ON_GHA", []).skip === true &&
+      decide("SKIP_EXHIBITION_ON_GHA", [
+        row("exhibition", { mode: "off", last_tick_at: null }),
+      ]).skip === true &&
+      decide("SKIP_EXHIBITION_ON_GHA", [
+        row("exhibition", { mode: "shadow", last_tick_at: null }),
+      ]).skip === true &&
+      decide("SKIP_EXHIBITION_ON_GHA", []).results[0].reason === "legacy_path",
+    show(decide("SKIP_EXHIBITION_ON_GHA", [])),
+  );
+  check(
+    "gate exhibition: mode が live になったら、他のジョブと同じ判定。起動が新しければスキップ、起動が古い・連続失敗が閾値以上なら実行（GitHubが肩代わり）",
+    decide("SKIP_EXHIBITION_ON_GHA", [row("exhibition")]).skip === true &&
+      decide("SKIP_EXHIBITION_ON_GHA", [
+        row("exhibition", { last_tick_at: tick(30) }),
+      ]).skip === false &&
+      decide("SKIP_EXHIBITION_ON_GHA", [
+        row("exhibition", { consecutive_failures: 50 }),
+      ]).skip === false &&
+      decide("SKIP_EXHIBITION_ON_GHA", [
+        row("exhibition", { last_tick_at: null }),
+      ]).skip === false,
+  );
+  check(
+    "gate: 従来の経路の扱い（LEGACY_PATH_JOBS）は exhibition だけ。他のジョブは、行なし・live でなければ、従来どおり不健全",
+    evaluateJobHealth({ job: "odds", rowsByJob: new Map(), now }).healthy ===
+      false &&
+      evaluateJobHealth({
+        job: "odds",
+        rowsByJob: new Map([["odds", row("odds", { mode: "shadow" })]]),
+        now,
+      }).healthy === false,
   );
 }
 
