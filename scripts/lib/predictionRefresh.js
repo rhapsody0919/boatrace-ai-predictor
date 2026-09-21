@@ -133,3 +133,11 @@ export async function refreshAfterExhibition({
     };
   }
 }
+
+/**
+ * 展示（A2）・レース情報（A1）の、どちらの Vercel 関数からも使う名前。取得の戻り値（changedRaceIds）を受けて、
+ * 変更を書いたレースの予測を再計算する（refreshAfterExhibition と同じ関数。方針・トグルも共通）。
+ * レース情報のスロット（api/cron/race-info.js）は、1回の起動で処理した全スロットの changedRaceIds を集めて、
+ * 全スロットの完了後に1回だけ呼ぶ（mainRefresh の固定費を、レースごとに払わない。スロットのリースの外で行う）
+ */
+export const refreshAfterChange = refreshAfterExhibition;

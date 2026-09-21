@@ -1,100 +1,43 @@
 /**
- * 展示データ取得（Vercel Function版、BOA案件: スクレイピング基盤のサーバーレス移行 Phase 1）
+ * 展示データ取得（A2）の Vercel Cron（BOA案件: スクレイピング基盤のサーバーレス移行 Phase 1、
+ * WS4b T4b-06-2、plan.md §3.6・§4.1）。
  *
- * 既存の scripts/daily/scrape-exhibition-data.js の run(schedule, date) をそのまま呼び出す。
- * ロジックは一切複製しない（GitHub Actions版と完全に同一の挙動）。
+ * 2つの経路を、scrape_job_state の mode（job='exhibition'）で切り替える（scripts/lib/scrapeJobs/preRaceHandlers.js）:
  *
- * cron-job.org から直接呼び出される想定。GitHub Actions の concurrency 直列化・
- * チェックアウト等の固定コストが無いため、5分間隔でも詰まらない設計にできる。
- * 詳細: docs/design/scraping-serverless-migration/spec.md
+ *   従来の経路（mode が off・行なし・読み取り失敗）: 既存の scripts/daily/scrape-exhibition-data.js の run(schedule, date) を
+ *     そのまま呼ぶ（ロジックは複製しない。GitHub Actions版と同一の挙動）。cron-job.org から2分間隔で呼ばれる。
+ *     cron-job.orgのタイムアウト（30秒）と実処理時間（30秒を超えうる）は別々の関心事のため、レスポンスを即座に
+ *     返し（202）、実処理は waitUntil() でバックグラウンド継続する（2026-09-14決定）。本番の展示は、2026-09-16から
+ *     この経路で動いており、scrape_job_state に exhibition の行は無い。**この経路の動作は、従来から変えていない。**
+ *   スロットの経路（mode が shadow・live）: 予定表（scrape_slots）の `exhibition` スロット（発走33分前を期限に、7分前まで。
+ *     公開されるまで120秒おきに再試行）を、共通ラッパ経由で消化する。現行の3窓（30/15/10分前）を1本に畳んだもの。
+ *     処理の完了後に 200/500 を返す（waitUntil は使わない）。
+ *       shadow  取得・解析のみ（データへは書かない。予定表に result_digest）。従来の経路も動き続けて、データを書く
+ *       live    展示データ・気象を書き込む。従来の経路は動かさない。予定表の展示タイム取得済みのスキップ（skipped_have_data）
  *
- * 認証: Authorization: Bearer {CRON_SECRET} ヘッダーが一致しない限り拒否する。
+ * 切り替え・切り戻しは、DBの更新のみ（再デプロイ不要）: mode を shadow → live にし、戻すときは off。
+ * cron-job.org の停止は、live で1日以上安定して動くことを確認した後の、ユーザー作業（verification-runbook.md Q）。
+ * vercel.json の Vercel Cron（毎分）は、live・shadow のときだけスロットの経路を動かす。off のときは、cron-job.org が
+ * 従来の経路を動かしているため、何もしない（従来の経路を二重に動かさない）。
  *
- * タイムアウト設計（案B採用、2026-09-14決定）: cron-job.orgのタイムアウト（30秒）と
- * 実際のスクレイピング所要時間（対象レース数次第で30秒を超えうる、実測で確認済み）は
- * 別々の関心事のため、レスポンスを即座に返し、実処理は waitUntil() でバックグラウンド
- * 継続する。「トリガーが届いたか」（cron-job.orgの関心）と「スクレイピング・書き込みが
- * 成功したか」（こちらの関心）を混同しない設計。後者の監視は日次の欠落率チェック
- * （spec.md Step 2）で行う。1回あたりの処理レース数に人為的な上限は設けない
- * （設ける＝GitHub Actionsで起きたキュー詰まりを小さいスケールで再現するだけのため）。
+ * 予測の再計算（案1、BOA-353 T4b-03、plan.md §5）: REFRESH_ON_VERCEL=true のとき、展示・気象を実際に書き込んだレースに
+ * ついてのみ、mainRefresh を呼ぶ（既定は off＝従来どおり展示の取得のみ）。従来の経路は、取得の後に同じバックグラウンド
+ * 処理の中で、スロットの経路は、全スロットの完了後に1回。GitHub Actions 側のオッズ起点の再計算との併走の防止は、
+ * scripts/lib/predictionRefresh.js を参照。再計算のモジュールは、有効なときだけ読み込む。
  *
- * 予測の再計算（案1、BOA-353 T4b-03、docs/design/scraping-vercel-consolidation/plan.md §5）:
- * REFRESH_ON_VERCEL=true のとき、展示・気象を実際に書き込んだレースについてのみ、取得の後に
- * 同じバックグラウンド処理の中で mainRefresh を呼ぶ（既定はoff＝従来どおり展示の取得のみ）。
- * GitHub Actions 側のオッズ起点の再計算との併走の防止は、scripts/lib/predictionRefresh.js を参照。
- * 再計算のモジュールは、有効なときだけ読み込む（無効なときは、従来と完全に同じ動作にする）。
+ * cron式（vercel.json）はUTC。JSTに換算した起動時間帯:
+ *   `* 22-23,0-14 * * *`  毎分、JST 07:00〜23:59
+ *
+ * 認証: Authorization: Bearer {CRON_SECRET}ヘッダーが一致しない限り拒否する。
+ *
+ * maxDuration はレジストリ（scripts/lib/scrapeJobs/registry.js の exhibition.maxDurationSec）と同じ値をリテラルで書く
+ * （Vercel がビルド時に静的に読むため）。verify:scrape-pre-race-job が一致を検査する。従来の経路の実処理（waitUntil）も
+ * この枠の中で動く（従来から300秒）。
  */
-
-import { timingSafeEqual } from "node:crypto";
-import { waitUntil } from "@vercel/functions";
-import { getTodayDateJST } from "../../scripts/lib/dateUtils.js";
-import { getRaceSchedule } from "../../scripts/lib/raceSchedule.js";
-import { run as runExhibition } from "../../scripts/daily/scrape-exhibition-data.js";
-import { refreshAfterExhibition } from "../../scripts/lib/predictionRefresh.js";
+import { createExhibitionCronHandler } from "../../scripts/lib/scrapeJobs/preRaceHandlers.js";
 
 export const config = {
   maxDuration: 300,
 };
 
-// 単純な !== 比較はタイミングサイドチャネルになりうるため定数時間で比較する
-function isAuthorized(authHeader, expected) {
-  if (!expected || !authHeader) return false;
-  const expectedBuf = Buffer.from(`Bearer ${expected}`);
-  const actualBuf = Buffer.from(authHeader);
-  if (expectedBuf.length !== actualBuf.length) return false;
-  return timingSafeEqual(expectedBuf, actualBuf);
-}
-
-export default async function handler(req, res) {
-  if (!isAuthorized(req.headers.authorization, process.env.CRON_SECRET)) {
-    return res.status(401).json({ success: false, error: "unauthorized" });
-  }
-
-  const date = getTodayDateJST();
-  try {
-    const schedule = await getRaceSchedule(date);
-
-    if (schedule.length === 0) {
-      return res.status(200).json({
-        success: true,
-        accepted: false,
-        message: "no schedule for today",
-        date,
-      });
-    }
-
-    // cron-job.orgへは即座に応答を返し、実際のスクレイピング・書き込みは
-    // バックグラウンドで継続する（対象レース数に関わらず同じコードパス、
-    // 人為的な件数上限は設けない）。結果はSupabaseへの書き込みそのものと
-    // 関数ログで確認する（日次の欠落率チェックが正式な監視手段）。
-    waitUntil(
-      runExhibition(schedule, date)
-        .then((result) =>
-          refreshAfterExhibition({
-            result,
-            date,
-            refresh: async (args) =>
-              (
-                await import("../../scripts/daily/generate-predictions.js")
-              ).mainRefresh(args),
-          }),
-        )
-        .catch((error) => {
-          console.error(
-            "❌ 展示データ取得エラー（バックグラウンド処理）:",
-            error,
-          );
-        }),
-    );
-
-    return res.status(202).json({
-      success: true,
-      accepted: true,
-      date,
-      message: "processing in background",
-    });
-  } catch (error) {
-    console.error("❌ スケジュール取得エラー（Vercel Function）:", error);
-    return res.status(500).json({ success: false, error: error.message });
-  }
-}
+export default createExhibitionCronHandler();

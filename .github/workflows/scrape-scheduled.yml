@@ -81,4 +81,9 @@ jobs:
           # 有効化済みで、Vercel側がliveで並走し、docs/design/scraping-vercel-consolidation/verification-runbook.md M の
           # 手順どおり確認できてから行う。切り戻しは、この変数をfalseにして、Vercel側をoffにする
           SKIP_ODDS_ON_GHA: ${{ vars.SKIP_ODDS_ON_GHA }}
+          # WS4b（T4b-09）: レース情報更新はVercel Function(api/cron/race-info.js)へ移行する。切り替え後にGitHub側を
+          # 止めるトグル（既定は未設定＝従来どおり実行）。設定は、案1（Vercel の REFRESH_ON_VERCEL=true）が有効で、
+          # Vercel側がliveで並走し、docs/design/scraping-vercel-consolidation/verification-runbook.md Q の
+          # 手順どおり確認できてから行う。切り戻しは、この変数をfalseにして、Vercel側をoffにする
+          SKIP_RACE_INFO_ON_GHA: ${{ vars.SKIP_RACE_INFO_ON_GHA }}
         continue-on-error: true

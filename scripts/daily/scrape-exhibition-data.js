@@ -30,6 +30,9 @@ import {
 } from "../lib/preRaceSchema.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 import { upsertChangedRows } from "../lib/unchangedRows.js";
+import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
+import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
+import { computeExhibitionDigest } from "../lib/scrapeJobs/preRaceDigest.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -148,29 +151,43 @@ export function scrapeExhibitionData($) {
 // boatrace.jpへのこのfetchにもあるため、PR #639セルフレビューで追加。
 const FETCH_TIMEOUT_MS = 15000;
 
+// 既定の取得（GitHub Actions・従来の Vercel 関数・CLI）。ヘッダーと本文の両方に15秒のタイムアウトを効かせる。
+// Vercel の予定表スロットは、politeFetch（タイムアウト・429/503のバックオフ・ブレーカー込み）を fetchFn で渡す
+const defaultFetch = (url) =>
+  fetch(url, {
+    headers: FETCH_HEADERS,
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+
 /**
- * 1レースの展示データと気象を取得する（同じ beforeinfo ページから両方を解析する。BOA-358）
- * @returns {{ data: Array|null, reason: string|null, conditions: Object|null }}
- *   conditions: 水面気象情報の解析結果（ページを取得できなかった場合は null）。
- *   展示データが未公開（data が null）でも、気象は解析する
+ * 1レースの直前情報（beforeinfo）を取得・解析する（展示データと気象を、同じページから1回で。BOA-358）
+ * @param {string} date YYYY-MM-DD
+ * @param {number} venueCode
+ * @param {number} raceNo
+ * @param {{fetchFn?: (url: string) => Promise<Response>}} [options]
+ * @returns {Promise<
+ *   | {status: "ok", data: Array|null, reason: string|null, conditions: Object|null, page: Object}
+ *   | {status: "http_error"|"error", error: string, reason: string}
+ *   | {status: "breaker_open", error: string, reason: string, retryAt: Date}
+ * >}
+ *   ok: ページを取得・解析できた。data が null なら未公開（reason に理由）。展示が未公開でも、気象は解析する
  */
-async function fetchExhibitionForRace(date, venueCode, raceNo) {
+export async function fetchExhibitionDetailed(
+  date,
+  venueCode,
+  raceNo,
+  { fetchFn = defaultFetch } = {},
+) {
   const ymd = date.replace(/-/g, "");
   const jcd = String(venueCode).padStart(2, "0");
   const url = `https://www.boatrace.jp/owpc/pc/race/beforeinfo?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const response = await fetch(url, {
-      headers: FETCH_HEADERS,
-      signal: controller.signal,
-    });
+    const response = await fetchFn(url);
     if (!response.ok) {
       return {
-        data: null,
+        status: "http_error",
+        error: `HTTP ${response.status}`,
         reason: `http_${response.status}`,
-        conditions: null,
       };
     }
 
@@ -187,15 +204,67 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
       page,
       $(".table1").eq(1).find("tbody").length,
     );
-    return { ...exhibition, conditions: page.conditions, page };
+    return { status: "ok", ...exhibition, conditions: page.conditions, page };
   } catch (error) {
-    console.error(
-      `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R: ${error.message}`,
-    );
-    return { data: null, reason: `error: ${error.message}`, conditions: null };
-  } finally {
-    clearTimeout(timeoutId);
+    if (error instanceof BreakerOpenError) {
+      return {
+        status: "breaker_open",
+        error: error.message,
+        reason: `error: ${error.message}`,
+        retryAt: new Date(error.until),
+      };
+    }
+    return {
+      status: "error",
+      error: error.message,
+      reason: `error: ${error.message}`,
+    };
   }
+}
+
+/**
+ * 1レースの展示データと気象を取得する（従来の入口。失敗は data: null に丸めてログに出す）
+ * @returns {{ data: Array|null, reason: string|null, conditions: Object|null }}
+ *   conditions: 水面気象情報の解析結果（ページを取得できなかった場合は null）。
+ *   展示データが未公開（data が null）でも、気象は解析する
+ */
+async function fetchExhibitionForRace(date, venueCode, raceNo) {
+  const detail = await fetchExhibitionDetailed(date, venueCode, raceNo);
+  if (detail.status === "ok") return detail;
+  if (detail.status !== "http_error") {
+    console.error(`  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R: ${detail.error}`);
+  }
+  return { data: null, reason: detail.reason, conditions: null };
+}
+
+/**
+ * exhibition_data へ、変更のある行だけを upsert する（run・runForRaces の共通の書き込み）。
+ * 変更の無い行は書かず、書く行には updated_at を設定する（WS2）。展示タイム未公開でSTだけの行は、
+ * 展示タイムが入るまで毎回再取得されるため、値が同じ間は書かない（updated_atが「値が変わった時刻」
+ * を表すようにする）。created_at は初回のINSERT時にDBの DEFAULT が入る
+ *
+ * BOA-221の新列（マイグレーション056）とBOA-289の新列（マイグレーション059）は別々の
+ * マイグレーションのため、片方だけ未適用というケースがありうる（本プロジェクトはSupabase Access
+ * Tokenの失効等でマイグレーションを手動・個別に適用してきた実績があり、054適用済み・056未適用の
+ * ような部分適用状態は現実的に起こりうる）。1つの列不在エラーで両方の新列を一律に剥がすと、056が
+ * 既に適用済みで正常に書き込めていたtilt等まで巻き添えで書き込み停止してしまう（PR #645セルフ
+ * レビューで発見）。そのため、エラーに名前の出た列が属するグループだけを除いて書き直し、
+ * 適用済みのマイグレーション分は引き続き書き込み続ける（scripts/lib/optionalColumns.js）
+ * 書き込みエラーは upsertChangedRows がログに出す（呼び出し元の戻り値・後続処理は従来どおり）
+ */
+function upsertExhibitionRows(client, rows, { dryRun = false } = {}) {
+  return upsertChangedRows(client, "exhibition_data", rows, {
+    onConflict: "race_id,boat_number",
+    keyColumns: ["race_id", "boat_number"],
+    label: "exhibition_data",
+    dryRun,
+    stampUpdatedAt: true,
+    optionalColumnGroups: {
+      "マイグレーション056（BOA-221）": BOA221_COLUMNS,
+      "マイグレーション059（BOA-289）": BOA289_COLUMNS,
+      ...PRE_RACE_OPTIONAL_COLUMN_GROUPS.exhibition,
+    },
+  });
 }
 
 /**
@@ -353,34 +422,7 @@ export async function scrapeAndUpsertRaces(
   if (allRows.length > 0) {
     console.log(`\n💾 exhibition_data: ${allRows.length}件書き込み中...`);
 
-    // 変更の無い行は書かず、書く行には updated_at を設定する（WS2）。展示タイム未公開でSTだけの行は、
-    // 展示タイムが入るまで毎回再取得されるため、値が同じ間は書かない（updated_atが「値が変わった時刻」
-    // を表すようにする）。created_at は初回のINSERT時にDBの DEFAULT が入る
-    //
-    // BOA-221の新列（マイグレーション056）とBOA-289の新列（マイグレーション059）は別々の
-    // マイグレーションのため、片方だけ未適用というケースがありうる（本プロジェクトはSupabase Access
-    // Tokenの失効等でマイグレーションを手動・個別に適用してきた実績があり、054適用済み・056未適用の
-    // ような部分適用状態は現実的に起こりうる）。1つの列不在エラーで両方の新列を一律に剥がすと、056が
-    // 既に適用済みで正常に書き込めていたtilt等まで巻き添えで書き込み停止してしまう（PR #645セルフ
-    // レビューで発見）。そのため、エラーに名前の出た列が属するグループだけを除いて書き直し、
-    // 適用済みのマイグレーション分は引き続き書き込み続ける（scripts/lib/optionalColumns.js）
-    // 書き込みエラーは upsertChangedRows がログに出す（呼び出し元の戻り値・後続処理は従来どおり）
-    const written = await upsertChangedRows(
-      client,
-      "exhibition_data",
-      allRows,
-      {
-        onConflict: "race_id,boat_number",
-        keyColumns: ["race_id", "boat_number"],
-        label: "exhibition_data",
-        stampUpdatedAt: true,
-        optionalColumnGroups: {
-          "マイグレーション056（BOA-221）": BOA221_COLUMNS,
-          "マイグレーション059（BOA-289）": BOA289_COLUMNS,
-          ...PRE_RACE_OPTIONAL_COLUMN_GROUPS.exhibition,
-        },
-      },
-    );
+    const written = await upsertExhibitionRows(client, allRows);
     // 書き込みが1行も成功していないバッチだけのとき（全滅）は、DBが変わっていないので含めない
     if (written.written > 0) {
       for (const row of written.toWrite) changedRaceIds.add(row.race_id);
@@ -412,6 +454,208 @@ export async function scrapeAndUpsertRaces(
   };
 }
 
+/**
+ * レース単位の展示データ取得（Vercel Cron の予定表スロット `exhibition` から呼ぶ。tasks.md T4b-06-2）。
+ * beforeinfo を1回取得し、展示データ（exhibition_data）と気象（race_conditions）を、run と同じ解析・行の組み立て・
+ * 書き込みで保存する（変更の無い行は書かない）。
+ *
+ * mode=live のとき、展示タイムが取得済みのレースは取得しない（skipped_have_data）。mode=shadow は、取得済みでも
+ * 取得・解析する（既存の経路が書いた行と比べるため）。shadow は、DBへ書かない（読み取りのみ）。
+ *
+ * outcome:
+ *   ok                展示タイムが非NULLの行を書けた（変更なしも含む）＝完了
+ *   skipped_have_data 展示タイムが取得済み（live のみ）＝完了
+ *   partial           展示STだけが公開され、展示タイムが未公開（一部の会場で、STが先に出る）。再試行
+ *   no_values         展示が未公開（表が空）。再試行
+ *   error             通信・解析・書き込みの失敗。再試行
+ *   breaker_open      サーキットブレーカーが開いていた（retryAt つき）
+ *
+ * @param {Array<{race_id: string, venue_code: number, race_number: number}>} races
+ * @param {Object} options
+ * @param {string} options.date YYYY-MM-DD
+ * @param {"live"|"shadow"} [options.mode]
+ * @param {(url: string) => Promise<Response>} [options.fetchFn] 既定はグローバルの fetch（15秒のタイムアウト）
+ * @param {import("@supabase/supabase-js").SupabaseClient} [options.client]
+ * @param {number} [options.concurrency]
+ * @param {Array<{race_id: string, venue_code: number, race_no: number, start_time: Date}>|null} [options.schedule]
+ *   getRaceSchedule() の返り値（気象の観測時刻の解決用）。updateWeather のとき、無ければ読み込む
+ * @param {boolean} [options.updateWeather] 気象も race_conditions へ反映するか（既定 true。shadow では書かない）
+ * @returns {Promise<Array<{race_id: string, outcome: string, rowsWritten: number, rowsParsed: number, rowsExpected: number, changed: boolean, resultDigest?: string, error?: string, retryAt?: Date}>>}
+ *   changed: 今回、展示データまたは気象を実際に書き換えた（予測の再計算の対象になる）
+ */
+export async function runForRaces(
+  races,
+  {
+    date,
+    mode = "live",
+    fetchFn = defaultFetch,
+    client = supabase,
+    concurrency = 1,
+    schedule = null,
+    updateWeather = true,
+  } = {},
+) {
+  if (mode !== "live" && mode !== "shadow") {
+    throw new Error(`mode は live か shadow にしてください: ${mode}`);
+  }
+  if (!date) throw new Error("date（YYYY-MM-DD）が必要です");
+  if (races.length === 0) return [];
+  const live = mode === "live";
+  /** @type {Map<string, Object>} */
+  const outcomes = new Map();
+  const base = {
+    rowsWritten: 0,
+    rowsParsed: 0,
+    rowsExpected: 1,
+    changed: false,
+  };
+
+  // 1) live: 展示タイムが取得済みのレースは、取得しない
+  if (live) {
+    const { data, error } = await client
+      .from("exhibition_data")
+      .select("race_id")
+      .in(
+        "race_id",
+        races.map((r) => r.race_id),
+      )
+      .not("exhibition_time", "is", null);
+    if (error) {
+      throw new Error(
+        `展示データの取得済みの確認に失敗しました: ${error.message}`,
+      );
+    }
+    for (const row of data ?? []) {
+      outcomes.set(row.race_id, { ...base, outcome: "skipped_have_data" });
+    }
+  }
+
+  // 2) 取得・解析（1つの失敗で他のレースを止めない）
+  const targets = races.filter((race) => !outcomes.has(race.race_id));
+  const fetched = await mapWithConcurrency(
+    targets,
+    concurrency,
+    async (race) => ({
+      race,
+      detail: await fetchExhibitionDetailed(
+        date,
+        race.venue_code,
+        race.race_number,
+        { fetchFn },
+      ),
+    }),
+  );
+
+  // 3) 行の組み立て
+  const weatherOn = live && updateWeather;
+  const fullSchedule =
+    schedule ??
+    (weatherOn
+      ? await getRaceSchedule(date, { client, throwOnError: true })
+      : []);
+  const startOf = new Map(fullSchedule.map((r) => [r.race_id, r.start_time]));
+  // 直前情報の新しい列（マイグレーション082）が適用済みかを先に判定する。未適用なら、旧実装と同じ列だけを書く
+  const extended =
+    fetched.length > 0 ? (await detectPreRaceSchema(client)).exhibition : false;
+  const rowsByRace = new Map();
+  const weatherFetched = [];
+  for (const { race, detail } of fetched) {
+    if (detail.status === "breaker_open") {
+      outcomes.set(race.race_id, {
+        ...base,
+        outcome: "breaker_open",
+        retryAt: detail.retryAt,
+        error: detail.error,
+      });
+      continue;
+    }
+    if (detail.status !== "ok") {
+      outcomes.set(race.race_id, {
+        ...base,
+        outcome: "error",
+        error: `直前情報を取得できませんでした: ${detail.error}`,
+      });
+      continue;
+    }
+    // 気象は、展示が未公開でも、ページを取得できたレースは対象（従来の run と同じ）
+    if (detail.conditions) {
+      weatherFetched.push({
+        raceId: race.race_id,
+        venueCode: race.venue_code,
+        startTime: startOf.get(race.race_id) ?? null,
+        conditions: detail.conditions,
+      });
+    }
+    if (!detail.data) {
+      outcomes.set(race.race_id, {
+        ...base,
+        outcome: "no_values",
+        error: `展示データが未公開です（${detail.reason}）`,
+      });
+      continue;
+    }
+    rowsByRace.set(
+      race.race_id,
+      buildExhibitionRows(race.race_id, detail.page.boats, { extended }),
+    );
+  }
+
+  // 4) 書き込み（shadow は書かない）
+  const allRows = [...rowsByRace.values()].flat();
+  const write =
+    allRows.length > 0
+      ? await upsertExhibitionRows(client, allRows, { dryRun: !live })
+      : null;
+  const writtenByRace = new Map();
+  if (live && write && write.written > 0) {
+    for (const row of write.toWrite) {
+      writtenByRace.set(row.race_id, (writtenByRace.get(row.race_id) ?? 0) + 1);
+    }
+  }
+  for (const [raceId, rows] of rowsByRace) {
+    const common = {
+      ...base,
+      rowsParsed: rows.length,
+      rowsWritten: writtenByRace.get(raceId) ?? 0,
+      changed: (writtenByRace.get(raceId) ?? 0) > 0,
+      resultDigest: computeExhibitionDigest(rows),
+    };
+    if (write?.error) {
+      outcomes.set(raceId, {
+        ...common,
+        outcome: "error",
+        error: `展示データの書き込みに失敗しました: ${write.error.message}`,
+      });
+    } else if (rows.some((row) => row.exhibition_time != null)) {
+      outcomes.set(raceId, { ...common, outcome: "ok" });
+    } else {
+      // 展示STだけが公開されている（展示タイム未公開）。書いた行は残し、展示タイムが入るまで再試行する
+      outcomes.set(raceId, {
+        ...common,
+        outcome: "partial",
+        error: "展示タイムが未公開です（展示STのみ）",
+      });
+    }
+  }
+
+  // 5) 気象（live のみ。展示の保存が済んだ後に行い、失敗しても展示の成否には影響させない）
+  if (weatherOn && weatherFetched.length > 0) {
+    const weather = await updateRaceConditionsWeather(weatherFetched, date, {
+      startTimeLookup: buildStartTimeLookup(fullSchedule),
+      client,
+    });
+    // 気象も予測の入力（イン崩れ指数の風速・波高）のため、書き込んだレースは再計算の対象に含める
+    for (const raceId of weather.changedRaceIds) {
+      const outcome = outcomes.get(raceId);
+      if (outcome) outcomes.set(raceId, { ...outcome, changed: true });
+    }
+  }
+
+  return races.map((race) => ({
+    race_id: race.race_id,
+    ...outcomes.get(race.race_id),
+  }));
+}
 /**
  * beforeinfo から取得した気象を race_conditions へ反映する（変更のある行だけ書く）。
  * 例外・書き込み失敗は投げず、結果に error として返す（展示データの取得・保存と分離するため）。

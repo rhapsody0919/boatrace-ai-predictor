@@ -67,7 +67,14 @@ async function main() {
     !skipOdds &&
     ODDS_WINDOWS.some((w) => getRacesInWindow(schedule, w, 3).length > 0);
   // update-race-info 内部: getRacesInWindow(schedule, 60) → デフォルト ±3分 = 57-63分前
-  const hasUpdateRaces = getRacesInWindow(schedule, 60).length > 0;
+  // レース情報更新（WS4b・T4b-09）は Vercel Function(api/cron/race-info.js)へ移行する。切り替え後、GitHub Actions 側の
+  // 取得を、リポジトリ変数のトグルのみで止める（コードは削除せず、切り戻しも変数のトグルだけで完結。SKIP_EXHIBITION_ON_GHAと同じ方式）。
+  //   SKIP_RACE_INFO_ON_GHA=true  レース情報更新を行わない（GitHub側のレース情報起点の予測リフレッシュも、自然に無くなる）
+  // 既定（未設定・true以外）は従来どおり実行する。予測リフレッシュのきっかけは、Vercel の REFRESH_ON_VERCEL=true
+  // （race-info の変更を起点に再計算する。案1）が前提のため、案1が先。順序は verification-runbook.md Q
+  const skipRaceInfo = process.env.SKIP_RACE_INFO_ON_GHA === "true";
+  const hasUpdateRaces =
+    !skipRaceInfo && getRacesInWindow(schedule, 60).length > 0;
   // exhibition 内部: EXHIBITION_WINDOWS=[30,15,10] 各 ±3分
   const hasExhibitionRaces = [30, 15, 10].some(
     (w) => getRacesInWindow(schedule, w, 3).length > 0,
@@ -94,7 +101,12 @@ async function main() {
   const oddsRaceIds = new Set();
   const exhibitionRaceIds = new Set();
 
-  // レース情報更新（発走60分前ウィンドウ）
+  // レース情報更新（発走60分前ウィンドウ）。SKIP_RACE_INFO_ON_GHA=true の間は hasUpdateRaces が false になり、行わない
+  if (skipRaceInfo) {
+    console.log(
+      "⏭️ レース情報更新をスキップ（SKIP_RACE_INFO_ON_GHA=true。Vercelが担当）",
+    );
+  }
   if (hasUpdateRaces) {
     const { updated, count } = await runUpdateInfo(schedule, date).catch(
       (e) => {

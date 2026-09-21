@@ -85,6 +85,14 @@
     {
       "path": "/api/cron/odds",
       "schedule": "* 22-23,0-14 * * *"
+    },
+    {
+      "path": "/api/cron/race-info",
+      "schedule": "* 22-23,0-14 * * *"
+    },
+    {
+      "path": "/api/cron/exhibition",
+      "schedule": "* 22-23,0-14 * * *"
     }
   ],
   "functions": {
