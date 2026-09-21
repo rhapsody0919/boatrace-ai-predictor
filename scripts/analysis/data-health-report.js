@@ -9,6 +9,13 @@
  *   - 標準出力: 日本語Markdownの要約（閾値を下回る項目を先頭に列挙）
  *   - data/analysis/data-health/YYYY-MM-DD.json: 機械可読な結果（同日再実行は上書き）
  *
+ * 存在充足率の分母の定義（BOA-381）:
+ *   - rank4〜6: 失格・欠場・転覆等で6艇が完走しないレースは、公式が最後の順位を付けない（欠損ではない）。
+ *     艇別の着欄（race_start_timings.finish_mark）で完走艇数を確定できるレースは、完走艇数まで順位が
+ *     付いているかで判定する。確定できずrank4〜6に欠けがあるレースは「判定不能」として分母外に件数を出す
+ *   - 全券種オッズ（trio・exacta・quinella・wide、5種すべて）: 全通り取得の開始日（2026-09-17）以降のみが
+ *     期待件数の対象。それ以前の日は「対象外(取得開始前)」として分母から外す。trifecta_all は対象外を設けない
+ *
  * 使い方:
  *   node scripts/analysis/data-health-report.js [--end-date YYYY-MM-DD] [--skip-gh]
  *        [--cache-file <path>] [--compare-dates YYYY-MM-DD,YYYY-MM-DD] [--out-dir <dir>]
@@ -62,9 +69,23 @@ const ALL_ODDS_COLUMNS = [
   "wide_all",
 ];
 
+// 全券種オッズのうち、trio・exacta・quinella・wideの4種は、全通り取得の開始（2026-09-17、
+// ADR-0057・BOA-344）より前は時系列で取り直せない。期待件数の対象は取得開始日以降のみ
+// （2026-09-21にユーザーが承認、orchestration.md）。それ以前の日は分母から外し「対象外」と明示する。
+// trifecta_all は、2026-07-12以降のレースに保存があり（2026-09-01〜09-16の各日でも76〜100%）、
+// 直近14日の全日が期間内のため、取得開始日による対象外は設けない
+const ODDS_FULL_GRID_SINCE = "2026-09-17";
+// 1レースの艇数。艇別の着欄（race_start_timings）が6艇分そろったレースだけ、完走艇数を確定できる
+const BOATS_PER_RACE = 6;
+
+// since: 期待件数の対象を、この日（含む）以降に限る。denomKey: 指標ごとの分母の列（既定はdenom）
 const COVERAGE_METRICS = [
   { key: "result", label: "結果(rank1)" },
-  { key: "rank4_6", label: "rank4〜6" },
+  {
+    key: "rank4_6",
+    label: "着順4位以降(完走艇数まで)",
+    denomKey: "rank_denom",
+  },
   { key: "actual_course", label: "実進入(actual_course_1)" },
   { key: "winning_technique", label: "決まり手" },
   { key: "race_stage", label: "レース種別" },
@@ -73,8 +94,16 @@ const COVERAGE_METRICS = [
   { key: "exhibition_row", label: "展示(行の有無)" },
   { key: "exhibition_time", label: "展示(exhibition_time非NULL)" },
   { key: "odds", label: "オッズ(1件以上)" },
-  { key: "odds_all", label: "全券種オッズ(5種すべて)" },
-  ...ALL_ODDS_COLUMNS.map((c) => ({ key: c, label: `└ ${c}` })),
+  {
+    key: "odds_all",
+    label: "全券種オッズ(5種すべて)",
+    since: ODDS_FULL_GRID_SINCE,
+  },
+  ...ALL_ODDS_COLUMNS.map((c) => ({
+    key: c,
+    label: `└ ${c}`,
+    ...(c === "trifecta_all" ? {} : { since: ODDS_FULL_GRID_SINCE }),
+  })),
 ];
 
 // 窓内取得率の「除外した値」に使う既知の障害期間（除外しない値も常に併記する）。
@@ -248,6 +277,16 @@ export function buildQueries({ coverageStart, windowStart, endDate }) {
 
   return {
     // 指標1: 存在充足率（日別）。分母は開催中止(confirmed)を除いたレース
+    //
+    // rank4〜6の判定（BOA-381）: 失格・欠場・転覆などで6艇が完走しないレースは、公式が最後の順位を
+    // 付けない（rank6・rank5・rank4がNULLになるのが正しい）。そのため「全レースにrank4〜6がある」を
+    // 分母にせず、完走艇数から「順位が付くべき最大順位」を決める。
+    //   完走艇数を確定できる = 艇別の着欄（race_start_timings.finish_mark、マイグレーション077）が
+    //     ${BOATS_PER_RACE}艇分そろっている（確定できるのは、077以降に取得・修正したレースのみ）。
+    //     確定したレースは、完走艇数（finish_rank非NULLの艇数）まで順位が付いているかで判定する
+    //   確定できない・rank4〜6がそろっている = 充足（そろっていれば欠損ではない）
+    //   確定できない・rank4〜6に欠けがある = 判定不能（欠損か非完走かを区別できない。分母に入れず件数を別に出す）
+    // 分母外: 完走3艇以下（rank4以降は付かない）・結果なし（rank1が無い。「結果(rank1)」の指標で計上）
     coverage: `
 with o as (
   select x.race_id,
@@ -256,42 +295,81 @@ with o as (
   from race_odds x
   where x.race_id >= '${coverageStart}' and x.race_id < '${endExclusive}'
   group by x.race_id
+), fin as (
+  select x.race_id, count(*) as n_rows, count(x.finish_mark) as n_mark,
+      count(x.finish_rank) as n_fin, count(x.start_timing) as n_st_value
+  from race_start_timings x
+  where x.race_id >= '${coverageStart}' and x.race_id < '${endExclusive}'
+  group by x.race_id
 ), b as (
   select r.race_id, r.race_date,
       (r.cancellation_status is distinct from 'confirmed') as active,
       rr.rank1, rr.rank4, rr.rank5, rr.rank6, rr.actual_course_1, rr.winning_technique,
+      (rr.rank1 is not null)::int + (rr.rank2 is not null)::int + (rr.rank3 is not null)::int
+        + (rr.rank4 is not null)::int + (rr.rank5 is not null)::int + (rr.rank6 is not null)::int as n_ranked,
       rc.race_stage,
-      exists(select 1 from race_start_timings x where x.race_id = r.race_id) as has_st_row,
-      exists(select 1 from race_start_timings x where x.race_id = r.race_id and x.start_timing is not null) as has_st_value,
+      coalesce(f.n_rows, 0) as n_st_rows,
+      coalesce(f.n_st_value, 0) as n_st_value,
+      coalesce(f.n_rows = ${BOATS_PER_RACE} and f.n_mark = ${BOATS_PER_RACE}, false) as fin_known,
+      f.n_fin,
       exists(select 1 from exhibition_data x where x.race_id = r.race_id) as has_exhibition_row,
       -- check-exhibition-gap-rate.js（BOA-356）と同じ基準: 1艇でも展示タイムが入っていれば取得済み
-      exists(select 1 from exhibition_data x where x.race_id = r.race_id and x.exhibition_time is not null) as has_exhibition_time,
+      (select count(*) from exhibition_data x where x.race_id = r.race_id and x.exhibition_time is not null) as n_exh_time,
       (o.race_id is not null) as has_odds,
       o.has_odds_all,
       ${ALL_ODDS_COLUMNS.map((c) => `o.has_${c}`).join(", ")}
   from races r
   left join race_results rr on rr.race_id = r.race_id
   left join race_conditions rc on rc.race_id = r.race_id
+  left join fin f on f.race_id = r.race_id
   left join o on o.race_id = r.race_id
   where r.race_date between '${coverageStart}' and '${endDate}'
+), c as (
+  select b.*,
+      case
+        when not active then null
+        when fin_known and n_fin >= 4 then 'determined'
+        when fin_known then 'le3'
+        when rank1 is null then 'no_result'
+        when rank4 is not null and rank5 is not null and rank6 is not null then 'full'
+        else 'undetermined'
+      end as rank_class
+  from b
 )
 select race_date::text as d,
     count(*) as total,
     count(*) filter (where not active) as excluded,
     count(*) filter (where active) as denom,
     count(*) filter (where active and rank1 is not null) as result,
-    count(*) filter (where active and rank4 is not null and rank5 is not null and rank6 is not null) as rank4_6,
+    -- rank4_6: 分子=順位が付くべき最大順位まで付いている（確定=完走艇数まで、未確定=rank4〜6がそろっている）
+    count(*) filter (where rank_class in ('determined', 'full')) as rank_denom,
+    count(*) filter (where rank_class = 'full'
+        or (rank_class = 'determined' and rank4 is not null
+            and (n_fin < 5 or rank5 is not null) and (n_fin < 6 or rank6 is not null))) as rank4_6,
+    count(*) filter (where rank_class = 'determined') as rank_determined,
+    count(*) filter (where rank_class = 'full') as rank_full,
+    count(*) filter (where rank_class = 'le3') as rank_le3,
+    count(*) filter (where rank_class = 'no_result') as rank_no_result,
+    count(*) filter (where rank_class = 'undetermined') as rank_undetermined,
+    -- 判定不能のうち、STと展示が5艇分以下（欠場艇がいる可能性が高い。非完走の目安であり確定ではない）
+    count(*) filter (where rank_class = 'undetermined'
+        and n_st_rows between 1 and ${BOATS_PER_RACE - 1} and n_exh_time between 1 and ${BOATS_PER_RACE - 1}) as rank_undetermined_absent_hint,
+    -- 参考（BOA-362）: 順位に非完走艇が入っている。確定=艇別の着欄で、完走艇数より多くの順位が付いている。
+    -- 疑い=着欄を確定できないレースで6着まで付いているのに展示タイムが5艇分以下（欠場艇が着順に入っている可能性。展示の欠損も含む上限値）
+    count(*) filter (where rank_class in ('determined', 'le3') and n_ranked > n_fin) as rank_polluted_confirmed,
+    count(*) filter (where rank_class = 'full' and n_exh_time < ${BOATS_PER_RACE}) as rank_absent_suspect,
+    count(*) filter (where active and rank4 is not null and rank5 is not null and rank6 is not null) as rank4_6_all_present,
     count(*) filter (where active and actual_course_1 is not null) as actual_course,
     count(*) filter (where active and winning_technique is not null) as winning_technique,
     count(*) filter (where active and race_stage is not null) as race_stage,
-    count(*) filter (where active and has_st_row) as st_row,
-    count(*) filter (where active and has_st_value) as st_value,
+    count(*) filter (where active and n_st_rows > 0) as st_row,
+    count(*) filter (where active and n_st_value > 0) as st_value,
     count(*) filter (where active and has_exhibition_row) as exhibition_row,
-    count(*) filter (where active and has_exhibition_time) as exhibition_time,
+    count(*) filter (where active and n_exh_time > 0) as exhibition_time,
     count(*) filter (where active and has_odds) as odds,
     count(*) filter (where active and coalesce(has_odds_all, false)) as odds_all,
     ${perTypeCount}
-from b group by race_date order by race_date`,
+from c group by race_date order by race_date`,
 
     // 指標2: 窓内取得率（日別×窓）。締切=発走時刻(JST)。窓=中心±3分
     windows: `
@@ -531,18 +609,41 @@ const datesFrom = (start, days) =>
 
 const sum = (rows, key) => rows.reduce((acc, r) => acc + Number(r[key]), 0);
 
-function summarizeCoverage(perDay) {
+/** その日が、指標の期待件数の対象か（sinceより前は、取得開始前で対象外） */
+const isApplicableDay = (metric, dateStr) =>
+  metric.since === undefined || dateStr >= metric.since;
+
+/** 指標ごとの、その日の分母。対象外の日は0 */
+const metricDenominator = (metric, dayRow) =>
+  isApplicableDay(metric, dayRow.d)
+    ? Number(dayRow[metric.denomKey ?? "denom"])
+    : 0;
+
+export function summarizeCoverage(perDay) {
   const excluded = sum(perDay, "excluded");
-  const denominator = sum(perDay, "denom");
-  return COVERAGE_METRICS.map(({ key, label }) => {
-    const numerator = sum(perDay, key);
-    const dayRates = perDay
-      .filter((d) => Number(d.denom) > 0)
-      .map((d) => ({ date: d.d, rate: Number(d[key]) / Number(d.denom) }));
+  return COVERAGE_METRICS.map((metric) => {
+    const { key, label } = metric;
+    const applicable = perDay.filter((d) => isApplicableDay(metric, d.d));
+    const numerator = sum(applicable, key);
+    const denominator = applicable.reduce(
+      (acc, d) => acc + metricDenominator(metric, d),
+      0,
+    );
+    const dayRates = applicable
+      .filter((d) => metricDenominator(metric, d) > 0)
+      .map((d) => ({
+        date: d.d,
+        rate: Number(d[key]) / metricDenominator(metric, d),
+      }));
     const worst = dayRates.reduce(
       (min, cur) => (min === null || cur.rate < min.rate ? cur : min),
       null,
     );
+    // 取得開始前で対象外の日（分母から外した日）。中止除外後のレース数で数える
+    const notApplicableDays = perDay.filter(
+      (d) => !isApplicableDay(metric, d.d),
+    );
+    const notApplicableRaces = sum(notApplicableDays, "denom");
     const value = rate(numerator, denominator);
     return {
       metric: key,
@@ -551,13 +652,54 @@ function summarizeCoverage(perDay) {
       denominator,
       excluded,
       rate: value,
-      // 分母0（データが1件も無い）は最悪の状態なので、達成扱いにせず未達として扱う
-      belowThreshold: value === null || value < COVERAGE_THRESHOLD,
+      since: metric.since ?? null,
+      notApplicableDays: notApplicableDays.length,
+      notApplicableRaces,
+      // 分母0（データが1件も無い）は最悪の状態なので、達成扱いにせず未達として扱う。
+      // ただし期間の全日が取得開始前で対象外の場合は、対象が無いだけで欠損ではない
+      belowThreshold:
+        value === null
+          ? !(notApplicableRaces > 0 && applicable.length === 0)
+          : value < COVERAGE_THRESHOLD,
       daysBelowThreshold: dayRates.filter((d) => d.rate < COVERAGE_THRESHOLD)
         .length,
       worstDay: worst,
     };
   });
+}
+
+/**
+ * rank4〜6の判定の内訳（BOA-381）。分母に入れなかったレースの件数を、欠損に混ぜず別に出す。
+ * lowerBoundRate は、判定不能を全て欠損とみなした場合の充足率（下限）
+ */
+export function summarizeRankDetail(perDay) {
+  const determined = sum(perDay, "rank_determined");
+  const full = sum(perDay, "rank_full");
+  const numerator = sum(perDay, "rank4_6");
+  const undetermined = sum(perDay, "rank_undetermined");
+  const denominator = sum(perDay, "rank_denom");
+  return {
+    denominator,
+    numerator,
+    // 完走艇数を確定できたレース（艇別の着欄から）／確定できないがrank4〜6がそろっているレース
+    determinedRaces: determined,
+    fullRaces: full,
+    // 分母外
+    undeterminedRaces: undetermined,
+    undeterminedAbsentHintRaces: sum(perDay, "rank_undetermined_absent_hint"),
+    finishersAtMost3Races: sum(perDay, "rank_le3"),
+    noResultRaces: sum(perDay, "rank_no_result"),
+    lowerBoundRate: rate(numerator, denominator + undetermined),
+    // 参考（BOA-362）: 順位に非完走艇が入っているレース
+    pollutedConfirmedRaces: sum(perDay, "rank_polluted_confirmed"),
+    absentSuspectRaces: sum(perDay, "rank_absent_suspect"),
+    // 変更前の定義（中止除外後の全レースを分母に、rank4・5・6がすべてある）。比較用
+    legacyDefinition: {
+      numerator: sum(perDay, "rank4_6_all_present"),
+      denominator: sum(perDay, "denom"),
+      rate: rate(sum(perDay, "rank4_6_all_present"), sum(perDay, "denom")),
+    },
+  };
 }
 
 function summarizeWindows(
@@ -870,8 +1012,25 @@ function collectWorkflowFreshness(now) {
 // 閾値アラート・Markdown
 // ---------------------------------------------------------------------------
 
+/** 分母に入れなかったレースの内訳（分母外を、欠損に混ぜずに明示する）。無ければ空文字 */
+function describeOutOfDenominator(m, rankDetail) {
+  const parts = [];
+  if (m.since !== null && m.notApplicableRaces > 0) {
+    parts.push(
+      `対象外(取得開始前。${m.since}より前の${m.notApplicableDays}日) ${m.notApplicableRaces}レース`,
+    );
+  }
+  if (m.metric === "rank4_6") {
+    parts.push(
+      `判定不能 ${rankDetail.undeterminedRaces}レース・完走3艇以下 ${rankDetail.finishersAtMost3Races}レース・結果なし ${rankDetail.noResultRaces}レース`,
+    );
+  }
+  return parts.length === 0 ? "" : `、分母外: ${parts.join("・")}`;
+}
+
 function collectAlerts(report) {
   const alerts = [];
+  const rankDetail = report.coverage.rankDetail;
   for (const m of report.coverage.aggregate) {
     if (m.belowThreshold) {
       alerts.push({
@@ -879,9 +1038,23 @@ function collectAlerts(report) {
         item: `存在充足率 ${m.label}`,
         value: m.rate,
         threshold: COVERAGE_THRESHOLD,
-        detail: `${m.numerator}/${m.denominator}、閾値未満の日 ${m.daysBelowThreshold}日`,
+        detail: `${m.numerator}/${m.denominator}、閾値未満の日 ${m.daysBelowThreshold}日${describeOutOfDenominator(m, rankDetail)}`,
       });
     }
+  }
+  // 判定不能（完走艇数を確定できず、欠損か非完走かを区別できない）を全て欠損とみなしても閾値を割らないかを見る
+  if (
+    rankDetail.undeterminedRaces > 0 &&
+    (rankDetail.lowerBoundRate === null ||
+      rankDetail.lowerBoundRate < COVERAGE_THRESHOLD)
+  ) {
+    alerts.push({
+      kind: "rank_undetermined",
+      item: "着順4位以降: 判定不能を全て欠損とした場合(下限)",
+      value: rankDetail.lowerBoundRate,
+      threshold: COVERAGE_THRESHOLD,
+      detail: `判定不能 ${rankDetail.undeterminedRaces}レース（分母外。艇別の着欄が未保存で、欠損か非完走か区別できない。うちST・展示が5艇分以下=欠場の可能性が高い ${rankDetail.undeterminedAbsentHintRaces}レース）`,
+    });
   }
   for (const w of report.windows.aggregate) {
     if (w.belowThreshold) {
@@ -1038,8 +1211,10 @@ function renderMarkdown(report) {
   lines.push(`## 1. 存在充足率（直近${COVERAGE_DAYS}日の合計）`);
   lines.push("");
   const agg = report.coverage.aggregate;
+  const rankDetail = report.coverage.rankDetail;
   lines.push(
-    `分母（中止除外後）${agg[0].denominator}レース、除外（開催中止）${agg[0].excluded}レース`,
+    `分母（中止除外後）${agg[0].denominator}レース、除外（開催中止）${agg[0].excluded}レース。` +
+      "指標ごとに分母が異なるものは、「分母」列にその指標の分母を出し、「分母外」列に外したレースの内訳を出す",
   );
   lines.push("");
   lines.push(
@@ -1050,20 +1225,79 @@ function renderMarkdown(report) {
       "充足率",
       "閾値未満の日数",
       "最低の日",
+      "分母外",
     ]),
   );
+  const outOfDenominator = (m) =>
+    describeOutOfDenominator(m, rankDetail).replace(/^、分母外: /, "") || "-";
   for (const m of agg) {
     lines.push(
       tableRow([
         m.label,
         m.numerator,
         m.denominator,
-        `${formatPct(m.rate)}${m.belowThreshold ? " (未達)" : ""}`,
+        m.rate === null && !m.belowThreshold
+          ? "対象外"
+          : `${formatPct(m.rate)}${m.belowThreshold ? " (未達)" : ""}`,
         m.daysBelowThreshold,
         m.worstDay ? `${m.worstDay.date} ${formatPct(m.worstDay.rate)}` : "-",
+        outOfDenominator(m),
       ]),
     );
   }
+  lines.push("");
+  lines.push("### 1-2. 着順4位以降の判定の内訳（BOA-381）");
+  lines.push("");
+  lines.push(
+    "失格・欠場・転覆などで6艇が完走しないレースは、公式が最後の順位を付けない（rank6・rank5・rank4がNULLで正しい）ため、" +
+      "完走艇数から「順位が付くべき最大順位」を決めて判定する。完走艇数は艇別の着欄（race_start_timings.finish_mark、マイグレーション077）が6艇分そろったレースだけ確定できる。",
+  );
+  lines.push("");
+  lines.push(tableHeader(["区分", "レース数", "扱い"]));
+  for (const row of [
+    [
+      "完走艇数を確定（着欄あり、完走4艇以上）",
+      rankDetail.determinedRaces,
+      "分母。完走艇数まで順位が付いていれば充足",
+    ],
+    [
+      "着欄は未確定・rank4〜6がそろっている",
+      rankDetail.fullRaces,
+      "分母・充足（そろっていれば欠損ではない）",
+    ],
+    [
+      "判定不能（着欄は未確定・rank4〜6に欠けあり）",
+      rankDetail.undeterminedRaces,
+      "分母外。欠損か非完走かを区別できない。着欄の取得（結果ページの再取得・K/Bの取り込み）で確定する",
+    ],
+    [
+      "　└ うちST・展示が5艇分以下",
+      rankDetail.undeterminedAbsentHintRaces,
+      "欠場艇がいる可能性が高い（目安。確定ではない）",
+    ],
+    [
+      "完走3艇以下（着欄あり）",
+      rankDetail.finishersAtMost3Races,
+      "分母外（rank4以降は付かない）",
+    ],
+    [
+      "結果なし（rank1が無い）",
+      rankDetail.noResultRaces,
+      "分母外（「結果(rank1)」の指標で計上）",
+    ],
+  ]) {
+    lines.push(tableRow(row));
+  }
+  lines.push("");
+  lines.push(
+    `- 充足率: ${rankDetail.numerator}/${rankDetail.denominator} = ${formatPct(rate(rankDetail.numerator, rankDetail.denominator))}。判定不能を全て欠損とみなした場合の下限: ${formatPct(rankDetail.lowerBoundRate)}（分母に判定不能${rankDetail.undeterminedRaces}レースを加えて算出）`,
+  );
+  lines.push(
+    `- 変更前の定義（中止除外後の全レースを分母に、rank4・5・6がすべてある）: ${rankDetail.legacyDefinition.numerator}/${rankDetail.legacyDefinition.denominator} = ${formatPct(rankDetail.legacyDefinition.rate)}`,
+  );
+  lines.push(
+    `- 参考（BOA-362。順位に非完走艇が入っているレース）: 確定（着欄で、完走艇数より多くの順位が付いている）${rankDetail.pollutedConfirmedRaces}レース、疑い（着欄が未確定で6着まで付いているが展示タイムが5艇分以下。展示の欠損も含む上限値）${rankDetail.absentSuspectRaces}レース`,
+  );
   lines.push("");
   lines.push("### 日別の存在充足率");
   lines.push("");
@@ -1096,9 +1330,11 @@ function renderMarkdown(report) {
         d.total,
         d.excluded,
         d.denom,
-        ...dayMetrics.map((k) =>
-          formatPct(rate(Number(d[k]), Number(d.denom))),
-        ),
+        ...dayMetrics.map((k) => {
+          const metric = COVERAGE_METRICS.find((m) => m.key === k);
+          if (!isApplicableDay(metric, d.d)) return "対象外(取得開始前)";
+          return formatPct(rate(Number(d[k]), metricDenominator(metric, d)));
+        }),
       ]),
     );
   }
@@ -1430,7 +1666,8 @@ function renderMarkdown(report) {
   lines.push("## 注記（解釈上の注意）");
   lines.push("");
   for (const note of [
-    "rank4〜6は欠場・失格・落水等で6着まで揃わない正常なレースも含むため、100%にならない場合がある（分母は中止除外後の全レース）。",
+    "着順4位以降（rank4〜6）は、欠場・失格・転覆等で6艇が完走しないレースでは、公式が最後の順位を付けないため、欠損ではない。完走艇数を艇別の着欄（finish_mark）で確定できるレースは、完走艇数まで順位が付いているかで判定する。確定できずrank4〜6に欠けがあるレースは「判定不能」として分母外に件数を別に出す（欠損に混ぜない）。判定不能は、着欄の取得（結果ページの再取得・K/Bの取り込み）が進むほど減る。「判定不能を全て欠損とした場合」の下限も併記する（1-2節）。",
+    `全券種オッズ（trio・exacta・quinella・wideと、5種すべて）は、全通り取得の開始日（${ODDS_FULL_GRID_SINCE}）以降のレースのみを期待件数の対象とする（ユーザー承認済み、2026-09-21。それ以前は時系列で取り直せない）。それ以前の日は「対象外(取得開始前)」として分母から外す。trifecta_all は、2026-07-12以降に保存があり、対象外を設けない。`,
     "開催中止の除外は races.cancellation_status='confirmed' のみ。中止検知の導入前の期間は除外できず、月別の未充足に中止レースが含まれうる。",
     "全券種オッズ・窓内取得率は、取得方式の変更（ADR-0057の窓構成・全券種の保存）の前後で値が大きく変わりうる。日別表で変化点を確認する。",
     "race_results.result_at は scrape-results の実行（upsert）ごとに更新される最終書き込み時刻。predictions.predicted_at も買い目オッズ更新で更新される。",
@@ -1503,11 +1740,19 @@ export async function main(argv = process.argv.slice(2)) {
         minutesBefore: WINDOW_MINUTES,
       },
       denominatorRule: "races.cancellation_status='confirmed' を除外",
+      // 指標ごとの分母の定義（BOA-381）
+      metricDenominators: {
+        rank4_6:
+          "艇別の着欄(race_start_timings.finish_mark)が6艇分そろい、完走艇数が4以上のレース＋着欄を確定できないがrank4〜6がそろっているレース。着欄を確定できずrank4〜6に欠けがあるレースは判定不能（分母外）、完走3艇以下・結果なしも分母外",
+        oddsFullGrid: `trio_all・exacta_all・quinella_all・wide_all と、5種すべて(odds_all)は、${ODDS_FULL_GRID_SINCE}以降のレースのみを分母にする（全通り取得の開始日。それ以前は対象外）。trifecta_all は取得開始前の対象外を設けない（2026-07-12以降に保存がある）`,
+      },
+      oddsFullGridSince: ODDS_FULL_GRID_SINCE,
       knownIncidents: KNOWN_INCIDENTS,
     },
     coverage: {
       perDay: raw.coverage,
       aggregate: summarizeCoverage(raw.coverage),
+      rankDetail: summarizeRankDetail(raw.coverage),
       missingDates: coverageDates.filter(
         (d) => !raw.coverage.some((r) => r.d === d),
       ),
