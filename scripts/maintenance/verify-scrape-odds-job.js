@@ -1120,8 +1120,12 @@ async function runOdds({ rows, slots, available, db, fetcher, run }) {
   );
   check(
     "scrape-scheduled.js: SKIP_ODDS_ON_GHA が true の間は、オッズの事前評価（hasOddsRaces）が false になり、runOdds を呼ばない。既存の入口 run は残す",
-    /const skipOdds = isOddsSkippedOnGha\(\);/.test(scheduled) &&
-      /const hasOddsRaces =\s*!skipOdds &&/.test(scheduled) &&
+    // 変数が true のときだけ、対象のレースがあるときに、Vercel が健全かを確認する（フェイルセーフ付きSKIP）。
+    // 未設定・falseなら skipOdds は false（DBを読まない）
+    /const skipOdds =\s*isOddsSkippedOnGha\(\) && \(!oddsDue \|\| \(await gateSkips\("SKIP_ODDS_ON_GHA"\)\)\);/.test(
+      scheduled,
+    ) &&
+      /const hasOddsRaces = !skipOdds && oddsDue;/.test(scheduled) &&
       /if \(hasOddsRaces\) \{\s*const \{ updated, count \} = await runOdds\(schedule, date\)/.test(
         scheduled,
       ),
