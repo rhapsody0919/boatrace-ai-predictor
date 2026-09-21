@@ -151,9 +151,29 @@ async function triggerDeployHook() {
   }
 }
 
+// WS4b（T4b-07・T4b-08）: 朝の初期化は Vercel Function（api/cron/races-init.js。会場ごとのチャンク処理）、
+// 公式コンピュータ予想は api/cron/pcexpect.js（予定表のスロット）へ移行する。切り替え後に GitHub Actions 側を
+// 止めるトグル（リポジトリ変数。コードは削除せず、切り戻しも変数のトグルだけで完結。SKIP_EXHIBITION_ON_GHA と同じ方式）。
+// 既定（未設定・true以外）は、どちらも従来どおり実行する。
+//   SKIP_MORNING_INIT_ON_GHA=true  朝の初期化（races の初期化・取りこぼし会場の確認・予測の再生成・unified・
+//                                  pcexpect・Deploy Hook）を、全て行わない
+//   SKIP_PCEXPECT_ON_GHA=true      初期化の中の pcexpect（公式コンピュータ予想）の段だけを行わない
+//                                  （races-init より先に pcexpect だけを Vercel へ切り替える場合）
+const isTrueVar = (name) =>
+  String(process.env[name] ?? "")
+    .trim()
+    .toLowerCase() === "true";
+
 async function main() {
   console.log("🌅 朝の初期化チェック");
   console.log(`⏰ ${new Date().toISOString()}`);
+
+  if (isTrueVar("SKIP_MORNING_INIT_ON_GHA")) {
+    console.log(
+      "⏭️ 朝の初期化をスキップ（SKIP_MORNING_INIT_ON_GHA=true。Vercel の races-init が担当）",
+    );
+    return;
+  }
 
   if (!isSupabaseEnabled()) {
     console.error("❌ Supabase環境変数が未設定です。");
@@ -285,20 +305,26 @@ async function main() {
 
   // Step 3: pcexpect 公式コンピュータ予想を全レース分取得
   // 失敗しても以降の処理（Deploy Hook）には影響させない
-  console.log("\n🔮 Step 3: scrape-pcexpect.js 実行中...");
-  try {
-    execSync(
-      `node ${path.join(ROOT, "scripts", "daily", "scrape-pcexpect.js")} --date ${date}`,
-      {
-        stdio: "inherit",
-        env: { ...process.env },
-      },
+  if (isTrueVar("SKIP_PCEXPECT_ON_GHA")) {
+    console.log(
+      "\n⏭️ Step 3: pcexpect をスキップ（SKIP_PCEXPECT_ON_GHA=true。Vercel の pcexpect が担当）",
     );
-  } catch (e) {
-    console.warn(
-      "⚠️ pcexpect スクレイプで一部エラー（処理は継続）:",
-      e.message,
-    );
+  } else {
+    console.log("\n🔮 Step 3: scrape-pcexpect.js 実行中...");
+    try {
+      execSync(
+        `node ${path.join(ROOT, "scripts", "daily", "scrape-pcexpect.js")} --date ${date}`,
+        {
+          stdio: "inherit",
+          env: { ...process.env },
+        },
+      );
+    } catch (e) {
+      console.warn(
+        "⚠️ pcexpect スクレイプで一部エラー（処理は継続）:",
+        e.message,
+      );
+    }
   }
 
   console.log("\n✅ 朝の初期化完了");

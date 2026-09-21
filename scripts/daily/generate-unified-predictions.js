@@ -15,11 +15,8 @@
  *   node scripts/daily/generate-unified-predictions.js --dry-run
  */
 
-import {
-  supabase,
-  isSupabaseEnabled,
-  fetchAll,
-} from "../lib/supabaseClient.js";
+import { fileURLToPath } from "node:url";
+import { supabase, fetchAll } from "../lib/supabaseClient.js";
 import { getRaceSchedule } from "../lib/raceSchedule.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import { predictFirstMark } from "../lib/turnPrediction.js";
@@ -39,13 +36,23 @@ function parseArgs(argv = process.argv.slice(2)) {
   };
 }
 
-async function fetchRaceDataFromSupabase(raceIds) {
+async function fetchRaceDataFromSupabase(
+  raceIds,
+  client = supabase,
+  throwOnError = false,
+) {
   // ⚠️ Supabaseのデフォルトlimitは1000行。180レース×6艇=1080行等、対象日によっては
   // 単純な.select("*").in()だと後方の会場が無条件に切り捨てられる（2026-08-13判明、
   // 大村12レース全滅で発覚）。fetchAll（.range()ページネーション）必須
   const [entriesData, conditionsData] = await Promise.all([
-    fetchAll("race_entries", "*", (q) => q.in("race_id", raceIds)),
-    fetchAll("race_conditions", "*", (q) => q.in("race_id", raceIds)),
+    fetchAll("race_entries", "*", (q) => q.in("race_id", raceIds), {
+      client,
+      throwOnError,
+    }),
+    fetchAll("race_conditions", "*", (q) => q.in("race_id", raceIds), {
+      client,
+      throwOnError,
+    }),
   ]);
 
   const entriesByRace = new Map();
@@ -77,13 +84,13 @@ async function fetchRaceDataFromSupabase(raceIds) {
   return races;
 }
 
-async function fetchRacerStats(racerIds) {
-  if (!isSupabaseEnabled() || racerIds.length === 0) return new Map();
+async function fetchRacerStats(racerIds, client = supabase) {
+  if (!client || racerIds.length === 0) return new Map();
   const map = new Map();
   const CHUNK_SIZE = 900;
   for (let i = 0; i < racerIds.length; i += CHUNK_SIZE) {
     const chunk = racerIds.slice(i, i + CHUNK_SIZE);
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("racer_aggregated_stats")
       .select(
         "racer_id, avg_st, st_stddev, attack_distribution, defense_distribution, course_race_counts",
@@ -143,7 +150,11 @@ function venueCodeOfRaceId(raceId) {
 // 2026-08-14修正（BOA-182）: 旧実装はrace_id.includes(`-${venueCode}-`)で
 // 会場を絞り込んでおり、race_idの年月日セグメントと誤マッチしていた
 // （例: 会場8のprefix "-08-" が8月の全会場レースにマッチする）
-async function fetchVolatilityDistributionByVenue(beforeDate) {
+async function fetchVolatilityDistributionByVenue(
+  beforeDate,
+  client = supabase,
+  throwOnError = false,
+) {
   const cutoff = new Date(beforeDate);
   cutoff.setDate(cutoff.getDate() - VOLATILITY_LOOKBACK_DAYS);
   const cutoffStr = cutoff.toISOString().split("T")[0];
@@ -157,6 +168,7 @@ async function fetchVolatilityDistributionByVenue(beforeDate) {
         .eq("model_id", MODEL_ID)
         .gte("race_id", cutoffStr)
         .lt("race_id", beforeDate),
+    { client, throwOnError },
   );
 
   const byVenue = new Map();
@@ -171,28 +183,81 @@ async function fetchVolatilityDistributionByVenue(beforeDate) {
   return byVenue;
 }
 
-async function main() {
-  const { dryRun } = parseArgs();
-  if (!isSupabaseEnabled()) {
-    console.error("❌ Supabase環境変数が未設定です。");
-    process.exit(1);
+/**
+ * 対象日の、race_entries があるのに unified の予測が無いレースの race_id 一覧を返す。
+ * 「その日に unified が1件でもあればスキップ」という日単位の判定だと、朝一番の取得時点で race_entries が
+ * 間に合っていなかったレースが、その後に取得されても永久に生成対象外になる（2026-08-14、三国4〜7R。
+ * morning-init.js の ensureUnifiedPredictions と同じ判定）。
+ *
+ * @param {string} date YYYY-MM-DD
+ * @param {import("@supabase/supabase-js").SupabaseClient} [client]
+ * @returns {Promise<string[]>}
+ */
+export async function findRacesMissingUnified(date, client = supabase) {
+  const [entryRows, predRows] = await Promise.all([
+    fetchAll(
+      "race_entries",
+      "race_id",
+      (q) => q.gte("race_id", date).lt("race_id", `${date}~`),
+      { client, throwOnError: true },
+    ),
+    fetchAll(
+      "predictions",
+      "race_id",
+      (q) =>
+        q
+          .eq("model_id", MODEL_ID)
+          .gte("race_id", date)
+          .lt("race_id", `${date}~`),
+      { client, throwOnError: true },
+    ),
+  ]);
+  const predRaceIds = new Set((predRows || []).map((r) => r.race_id));
+  return [...new Set((entryRows || []).map((r) => r.race_id))]
+    .filter((id) => !predRaceIds.has(id))
+    .sort();
+}
+
+/**
+ * unified の日次予測を生成して predictions（model_id='unified'）へ upsert する。
+ * process.argv・process.exit に依存しない（Vercel Function の races-init が呼ぶ。WS4b T4b-07-3）。
+ * 書き込みに失敗したら例外を投げる（成功したバッチは反映済みのまま残る）。
+ *
+ * @param {Object} params
+ * @param {string} params.date 対象日（YYYY-MM-DD）
+ * @param {import("@supabase/supabase-js").SupabaseClient|null} [params.client]
+ * @param {boolean} [params.dryRun]
+ * @param {boolean} [params.strict] true なら、DBの読み取りの失敗を「対象なし」「データ無し」にせず例外にする
+ *   （既定は従来どおり、ログのみ。Vercel Function は true）
+ * @returns {Promise<{targetRaces: number, generated: number, written: number}>}
+ */
+export async function generateUnifiedPredictions({
+  date,
+  client = supabase,
+  dryRun = false,
+  strict = false,
+}) {
+  if (!client) {
+    throw new Error("Supabase環境変数が未設定です。");
   }
 
-  const date = parseDateArg() || getTodayDateJST();
   console.log(`📅 対象日: ${date}${dryRun ? " [DRY-RUN]" : ""}`);
 
-  const schedule = await getRaceSchedule(date);
+  const schedule = await getRaceSchedule(date, {
+    client,
+    throwOnError: strict,
+  });
   const raceIds = schedule.map((r) => r.race_id);
   if (raceIds.length === 0) {
     console.log("📭 対象レースなし");
-    return;
+    return { targetRaces: 0, generated: 0, written: 0 };
   }
   console.log(`🎯 対象: ${raceIds.length}レース`);
 
-  const races = await fetchRaceDataFromSupabase(raceIds);
+  const races = await fetchRaceDataFromSupabase(raceIds, client, strict);
   if (races.length === 0) {
     console.log("📭 race_entriesが未登録のため対象レースなし");
-    return;
+    return { targetRaces: raceIds.length, generated: 0, written: 0 };
   }
 
   const allRacerIds = new Set();
@@ -201,11 +266,15 @@ async function main() {
       if (e.racer_id) allRacerIds.add(e.racer_id);
     }
   }
-  const racerStatsMap = await fetchRacerStats([...allRacerIds]);
+  const racerStatsMap = await fetchRacerStats([...allRacerIds], client);
   console.log(`📊 ${racerStatsMap.size}人の選手統計を取得しました`);
 
   // 会場別のイン崩れ分布を事前取得（レースごとに毎回問い合わせない、全会場を1回のクエリで取得）
-  const volatilityDistByVenue = await fetchVolatilityDistributionByVenue(date);
+  const volatilityDistByVenue = await fetchVolatilityDistributionByVenue(
+    date,
+    client,
+    strict,
+  );
 
   const predictionsData = [];
   for (const race of races) {
@@ -280,7 +349,11 @@ async function main() {
   if (dryRun) {
     console.log("[DRY-RUN] Supabase書き込みはスキップ");
     console.log(JSON.stringify(predictionsData[0], null, 2));
-    return;
+    return {
+      targetRaces: raceIds.length,
+      generated: predictionsData.length,
+      written: 0,
+    };
   }
 
   // 2026-08-14修正（BOA-185）: 旧実装は先にdeleteしてからinsertしており、insert失敗時
@@ -290,28 +363,46 @@ async function main() {
   // delete/insertを分離せず単一操作でアトミックに更新できる（onConflictは実データで
   // 動作確認済み）。バッチが失敗しても既に成功した分は反映済みのまま残り、
   // 失敗分だけが旧データのまま留まる（全滅する旧実装より安全）
-  let writeFailed = false;
+  let written = 0;
+  const failedBatches = [];
   for (let i = 0; i < predictionsData.length; i += 1000) {
     const batch = predictionsData.slice(i, i + 1000);
-    const { error } = await supabase
+    const { error } = await client
       .from("predictions")
       .upsert(batch, { onConflict: "race_id,model_id" });
     if (error) {
       console.error("❌ predictions書き込みエラー:", error.message);
-      writeFailed = true;
+      failedBatches.push(error.message);
+    } else {
+      written += batch.length;
     }
   }
-  if (writeFailed) {
+  if (failedBatches.length > 0) {
     console.error(
       `⚠️ 一部書き込みに失敗しました。実際にDBへ反映された件数を必ず確認してください`,
     );
-    process.exitCode = 1;
-    return;
+    throw new Error(
+      `unified の predictions 書き込みに失敗しました（${failedBatches.length}バッチ、反映済み${written}/${predictionsData.length}件）: ${failedBatches[0]}`,
+    );
   }
   console.log(`✅ predictions: ${predictionsData.length}件書き込み完了`);
+  return {
+    targetRaces: raceIds.length,
+    generated: predictionsData.length,
+    written,
+  };
 }
 
-main().catch((error) => {
-  console.error("❌ エラー:", error);
-  process.exit(1);
-});
+async function main() {
+  const { dryRun } = parseArgs();
+  const date = parseDateArg() || getTodayDateJST();
+  await generateUnifiedPredictions({ date, dryRun });
+}
+
+// スタンドアローン実行時のみ実行する（import 時に実行させない。Vercel Function から import される）
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error("❌ エラー:", error);
+    process.exit(1);
+  });
+}
