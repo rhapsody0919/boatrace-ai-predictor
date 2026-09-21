@@ -37,6 +37,7 @@
     "verify:scrape-jobs": "node scripts/maintenance/verify-scrape-jobs.js",
     "verify:scrape-monitor": "node scripts/maintenance/verify-scrape-monitor.js",
     "verify:race-notices-job": "node scripts/maintenance/verify-race-notices-job.js",
+    "verify:race-status-job": "node scripts/maintenance/verify-race-status-job.js",
     "verify:scrape-result-job": "node scripts/maintenance/verify-scrape-result-job.js",
     "verify:scrape-daily-jobs": "node scripts/maintenance/verify-scrape-daily-jobs.js",
     "verify:scrape-odds-job": "node scripts/maintenance/verify-scrape-odds-job.js",

@@ -335,6 +335,20 @@
 - [ ] タイミング実測: 可変データ（公開時刻がある）は、土日を含む直近7日で、「発走までに公開を検知できた割合」（`scrape_slots`の`done_at <= 期限`）と、公開検知の遅延（`done_at`−発走）の分布を実測する。窓内取得率（中心±3分）は当てはまらないため、「公開後5分以内に検知」（再試行間隔）を基準にする
 - [ ] 継続監視: 上記指標が日次で自動計測され（`scrape-summary`に`pit_reports`が出る）、`expired`（対象レースで許容幅まで公開を検知できなかった）が即時通知されることを確認する。`parse_anomaly`（構造の変化）の`error`が通知されること
 
+### T4b-18 順延・中止の早期確定（`race_status`）: `races.cancellation_status`
+
+設計: [postponed-day-early-detection.md](./postponed-day-early-detection.md)。開催場一覧（`race/index`）の告知と、レース単位の結果ページ（「レース中止」）が一致したレースを、発走を待たずに`confirmed`にする。書き込みは`races.cancellation_status`のみ（未確定→確定の1回）。
+
+- [x] **T4b-18-1**（コード実装済み。`scripts/lib/raceStatusParsers.js`・`raceStatusJob.js`・`api/cron/race-status.js`、レジストリ`race_status`、`vercel.json`のcron、`compareRaceDigests`の`excludeRaceIds`。既定は`off`（行なし）で挙動不変。検証は`npm run verify:race-status-job`。実ページの固定資料は`scripts/lib/__fixtures__/raceStatus/`）
+- [ ] **T4b-18-2** (ユーザー承認) `scrape_job_state`の`race_status`を`shadow`にする。順延・中止が起きた日に、`last_report`の`announced`・`wouldConfirm`・`unrecognized`・`contradictions`を、公式の開催場一覧と既存基盤の確定結果に突き合わせる。**告知（開催場一覧）から結果ページの「レース中止」表示までの遅延**と、告知から`wouldConfirm`に載るまでの時間を実測する（設計書§6）
+- [ ] **T4b-18-3** (ユーザー承認) 一致が確認できたら`live`にする
+
+データ項目: `races.cancellation_status`（中止・順延の確定）。
+
+- [ ] 本番実測: 期待件数（算出根拠: 順延・中止が告知された会場×日の、N R以降のレースのうち結果の無いもの。開催場一覧の状態欄の告知数から算出。結果のあるレースは分母から除き、件数を報告）に対し、`cancellation_status='confirmed'`が99%以上であることを、告知日ごとに実測クエリで確認する。過去分は、全日順延が過去日の開催場一覧に残る（2026-09-09の江戸川で確認）ため、その範囲で遡及して確認する
+- [ ] タイミング実測: 告知から確定までの遅延（`shadow`の`last_report`、`live`では`races`の確定時刻は保存しないため`scrape_job_state.last_report`）を、順延・中止の発生日（土日を含む直近5日に発生が無い場合は、発生した日のみ）で実測する。目標は、発走前に確定していること
+- [ ] 継続監視: `scrape-monitor`の連続失敗・死活が`race_status`に効くこと（`live`・`shadow`で有効）を確認する。`unrecognized`（未知の状態欄）と`contradictions`（告知と結果の矛盾）が、`scrape-summary`または日次の点検で人に見えること（未実装。`last_report`の確認は手動）
+
 ---
 
 ## Phase 7: 最終検証と旧基盤の廃止（WS7、G3）
