@@ -59,6 +59,7 @@
 | 取得系GitHub Actionsの`git push`がmasterの更新と競合して失敗する（`scrape-venue-motor-stats`） | `pull --rebase`の直後にmasterが進む | BOA-360: PR #718（8ワークフローをrebaseとリトライ付きに。マージ待ち） |
 | 予測の再計算のたびに本番を再デプロイしている（約6分間隔） | `mainRefresh`が`VERCEL_DEPLOY_HOOK`を毎回叩く | BOA-361: 未着手（`generate-predictions.js`を変更するPR #716のマージ後） |
 | `scrape-venue-entry-course-stats`が、日付をまたいで起動すると0件 | GitHub Actionsのスケジュール遅延（`racer_series_points`と同型） | BOA-364: 未着手 |
+| 順延日（2026-09-21 戸田・江戸川・津）に、7〜12Rの中止確定が発走+90分まで遅れ、その間`scrape-monitor`が「未実行」と誤報し、`races_init`のshadow比較が不一致になる | 中止の確定が「発走+90分・結果なし」の推定のみ。公式の告知（開催場一覧「中止順延」・結果ページ「レース中止」）を使っていない。既存の`tentative`（選手0人）は順延日に選手が載るため効かない | PRで対応（[postponed-day-early-detection.md](./postponed-day-early-detection.md)、tasks.md T4b-18）。`shadow`検証・`live`化は承認待ち |
 
 これらは、完了の定義B（可変データを適切なタイミングで取得）と、失敗の可視化（C）の実例。
 

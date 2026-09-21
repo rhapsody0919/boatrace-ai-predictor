@@ -207,6 +207,18 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
+  // A9 中止・順延の早期確定。10分ごと（JST 06:00〜23:59）に、開催場一覧（race/index、1リクエスト）の状態欄を見て、
+  // 「N R以降が中止・順延」の会場の未確定レースを、結果ページの「レース中止」表示で確かめて確定にする。発走+90分の
+  // 推定（結果取得の onTick・GitHub Actions）を待たずに確定し、順延日の未実行・expired の誤報と誤表示を防ぐ。
+  // 日全体の順延（最大12レース×会場）でも、1レース約8〜10秒を並列4で、2会場約1分。多数の会場が同時に順延の日は、
+  // ソフトデッドラインで打ち切り、残りは次の起動が続きを処理する（毎回、ページの状態から候補を導く）。
+  // 実装: scripts/lib/raceStatusJob.js、api/cron/race-status.js。設計: docs/design/scraping-vercel-consolidation/postponed-day-early-detection.md
+  race_status: {
+    kind: "continuous",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
   // ↓ WS4b 結果取得（PR #743）の定義
   // A6補助 Kファイル同期（進入コース・rank4〜6。plan.md §4.1・T4b-05-1）。07:00・12:00 JST の2回起動し、12:00は
   // 07:00の実行が完了しなかった（Kファイル未公開・失敗）場合の補足（完了済みなら、last_target_date で何もしない）。

@@ -141,7 +141,7 @@ async function main() {
     const raceRows = await fetchAll(() =>
       client
         .from("races")
-        .select("race_id,start_time")
+        .select("race_id,start_time,cancellation_status")
         .gte("race_id", date)
         .lt("race_id", `${date}~`)
         .order("race_id"),
@@ -157,7 +157,12 @@ async function main() {
         .order("race_id")
         .order("boat_number"),
     );
-    const cmp = compareRaceDigests(cursor.digests ?? {}, raceRows, entryRows);
+    // 中止・順延が確定したレースは、公式の発走予定時刻が仮の値に置き換わるため、比較しない
+    const cmp = compareRaceDigests(cursor.digests ?? {}, raceRows, entryRows, {
+      excludeRaceIds: raceRows
+        .filter((r) => r.cancellation_status === "confirmed")
+        .map((r) => r.race_id),
+    });
     const denominator = cmp.matched + cmp.mismatched.length;
     const rate = rateOf(cmp.matched, denominator);
     console.log(
@@ -167,6 +172,11 @@ async function main() {
       `  ダイジェスト: 一致 ${cmp.matched} / 不一致 ${cmp.mismatched.length} / DBに行なし ${cmp.missingInDb.length} / shadowに無い ${cmp.extraInDb.length}`,
     );
     console.log(`  一致率: ${pct(rate)}（${cmp.matched}/${denominator}）`);
+    if (cmp.excluded > 0) {
+      console.log(
+        `  中止・順延が確定したため比較対象外: ${cmp.excluded}件（発走時刻が仮の値のため）`,
+      );
+    }
     for (const m of cmp.mismatched.slice(0, 20)) {
       console.log(`    不一致 ${m.race_id}: shadow=${m.shadow} db=${m.db}`);
     }

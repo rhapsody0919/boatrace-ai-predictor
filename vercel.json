@@ -7,6 +7,10 @@
       "schedule": "*/10 22-23,0-14 * * *"
     },
     {
+      "path": "/api/cron/race-status",
+      "schedule": "*/10 21-23,0-14 * * *"
+    },
+    {
       "path": "/api/cron/scrape-monitor",
       "schedule": "*/5 22-23,0-14 * * *"
     },

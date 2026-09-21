@@ -660,9 +660,15 @@ async function confirmOverdueCancellations(schedule) {
  *
  * @param {import("@supabase/supabase-js").SupabaseClient} client
  * @param {string[]} overdueIds
+ * @param {{reason?: string}} [options] reason: ログに出す確定の根拠（既定は発走90分超・結果未取得。
+ *   公式の告知による確定＝ race_status ジョブは、その旨を渡す）
  * @returns {Promise<{checked: number, confirmed: string[]}>}
  */
-export async function confirmCancellationsForRaceIds(client, overdueIds) {
+export async function confirmCancellationsForRaceIds(
+  client,
+  overdueIds,
+  { reason = "発走90分超・結果未取得" } = {},
+) {
   if (overdueIds.length === 0) return { checked: 0, confirmed: [] };
 
   const [results, races] = await Promise.all([
@@ -706,9 +712,7 @@ export async function confirmCancellationsForRaceIds(client, overdueIds) {
       `races (cancellation_status確定) 一括更新エラー: ${error.message}`,
     );
   }
-  console.log(
-    `  ⚠️ 中止・順延を確定: ${toConfirm.length}件（発走90分超・結果未取得）`,
-  );
+  console.log(`  ⚠️ 中止・順延を確定: ${toConfirm.length}件（${reason}）`);
   return { checked: overdueIds.length, confirmed: toConfirm };
 }
 /**
