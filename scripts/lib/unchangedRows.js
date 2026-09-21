@@ -47,6 +47,7 @@ export const NUMERIC_SCALES = {
     win_rate_stddev: 3,
   },
   race_entries: {
+    weight_kg: 1,
     boat_2rate: 2,
     boat_3rate: 2,
     global_2rate: 2,
