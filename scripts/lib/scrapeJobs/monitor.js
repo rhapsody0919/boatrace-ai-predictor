@@ -488,8 +488,9 @@ export function formatDailySummary({
     const d = day.get(w.job);
     return `${w.job}: 前日 ${pct(d?.rate ?? null)}（${d?.hit ?? 0}/${d?.total ?? 0}） / 直近7日 ${pct(w.rate)}（${w.hit}/${w.total}） / expired ${w.expired}件 / 未実行 ${w.unexecuted}件 / 遅延p95 ${min(p95.get(w.job) ?? null)}分`;
   });
+  // レジストリにある取得ジョブだけ（疑似の行 predict-code-hash 等は、モードの一覧に出さない）
   const modes = jobStates
-    .filter((r) => !isHostRow(r))
+    .filter((r) => !isHostRow(r) && SCRAPE_JOBS[r.job])
     .map((r) => `${r.job}=${r.mode}`)
     .join(" / ");
   return {
