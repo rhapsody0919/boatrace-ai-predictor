@@ -257,6 +257,29 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 60,
     hosts: [],
   },
+
+  // ↓ N23・N29（tasks.md T4b-20・T4b-21）
+  // N23 前検タイム・前検順位・節時点のモーター/ボート2連対率（motor_pretest_stats）。05:20指定（cron: 05:30・06:00・06:30 JST。
+  // 指定を cron より10分早くするのは、起動が数秒早まっても、対象日が前日に化けないため）。開催中の会場（races）ごとに
+  // rankingmotor を1ページ（約13ページ）。同時3・1ページ約8〜10秒のため約40秒。オッズの運用窓（07:00〜23:59 JST）の外に限る。
+  // races_init が live のとき、その日の分の完了前は取得しない（incomplete）。実装: scripts/lib/motorPretestJob.js
+  motor_pretest: {
+    kind: "daily",
+    targetTimeJst: "05:20",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    hosts: ["boatrace.jp"],
+  },
+  // N29 日次の照合（前日の結果・払戻・着順・進入を、DBとKファイルで突き合わせる。書き込みなし）。07:50指定（cron: 08:00・12:30・
+  // 17:30 JST。kfile_sync の07:00・12:00の後）。対象日は「指定時刻の日付の前日」。Kファイル（別ドメイン）を1回ダウンロードし、
+  // races・race_results・race_payouts（前日分）を読む。実装: scripts/lib/dailyReconcileJob.js
+  daily_reconcile: {
+    kind: "daily",
+    targetTimeJst: "07:50",
+    leaseSec: 300,
+    maxDurationSec: 120,
+    hosts: ["mbrace.or.jp"],
+  },
 });
 
 /**

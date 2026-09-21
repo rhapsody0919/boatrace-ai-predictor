@@ -152,7 +152,7 @@ export function summarizeDbFindings(analyses, totalRaces) {
 // ---------------------------------------------------------------------------
 
 /** kbFileParser の勝式名 → race_payouts の bet_type */
-const K_KIND_TO_BET_TYPE = Object.freeze({
+export const K_KIND_TO_BET_TYPE = Object.freeze({
   win: "win",
   place: "place",
   exacta: "2tan",
@@ -172,11 +172,22 @@ export function isRefundedKFinish(finishRaw) {
  *
  * @param {string} text
  * @param {string} date YYYY-MM-DD
- * @returns {Map<string, {race_id: string, finisherBoats: number[], refundBoats: number[], noRaceKinds: string[], marks: Record<number, string>}>}
+ * @returns {Map<string, {race_id: string, finisherBoats: number[], refundBoats: number[], noRaceKinds: string[], marks: Record<number, string>, courses: Record<number, number|null>, payouts: Array<{bet_type: string, combination: string|null, amount: number|null, special: string|null}>, hasRows: boolean}>}
  */
 export function kDayToRaceFacts(text, date) {
+  return kVenuesToRaceFacts(parseKText(text).venues, date);
+}
+
+/**
+ * 解析済みの会場（parseKText の venues）から、レースごとの確定情報を取り出す。確定（complete）の会場のみ。
+ * 同じKファイルの解析結果を、複数の用途（rank・払戻・進入の突合と、会場ごとの状態の確認）で共有するため、
+ * kDayToRaceFacts から分けている（日次の照合 scripts/lib/dailyReconcile.js が使う）。
+ *
+ * courses: 艇番 → Kファイルの進入コース（欠場艇・進入の欄が空の艇は null）。
+ * payouts: Kファイルの払戻明細（bet_type は race_payouts と同じ命名。不成立・空欄は special に理由が入る）。
+ */
+export function kVenuesToRaceFacts(venues, date) {
   const facts = new Map();
-  const { venues } = parseKText(text);
   for (const venue of venues) {
     if (venue.status !== "complete") continue;
     for (const race of venue.races) {
@@ -201,12 +212,24 @@ export function kDayToRaceFacts(text, date) {
       const marks = Object.fromEntries(
         race.rows.map((r) => [r.boat_number, r.finish_raw]),
       );
+      const courses = Object.fromEntries(
+        race.rows.map((r) => [r.boat_number, r.course ?? null]),
+      );
+      const payouts = race.payouts.map((p) => ({
+        bet_type: K_KIND_TO_BET_TYPE[p.kind],
+        combination: p.combo ?? null,
+        amount: p.amount ?? null,
+        special: p.special ?? null,
+      }));
       facts.set(raceId, {
         race_id: raceId,
         finisherBoats,
         refundBoats,
         noRaceKinds,
         marks,
+        courses,
+        payouts,
+        hasRows: race.rows.length > 0,
       });
     }
   }
