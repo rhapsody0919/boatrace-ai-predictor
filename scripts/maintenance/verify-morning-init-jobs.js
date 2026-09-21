@@ -1509,10 +1509,12 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
   const ri = cronOf("/api/cron/races-init");
   const pe = cronOf("/api/cron/pcexpect");
   check(
-    "(j) vercel.json: races-init は `*/2 20-23,0 * * *`（UTC）＝JST 05:00〜09:58の2分ごと（1件だけ登録）",
+    "(j) vercel.json: races-init は `*/2 20-23,0-14 * * *`（UTC）＝JST 05:00〜23:58の2分ごと（1件だけ登録。朝の初期化に加え、予測ロジックの変更検知を終日行う）",
     ri.length === 1 &&
-      ri[0].schedule === "*/2 20-23,0 * * *" &&
-      same(jstHours(ri[0].schedule), [5, 6, 7, 8, 9]),
+      ri[0].schedule === "*/2 20-23,0-14 * * *" &&
+      same(jstHours(ri[0].schedule), [
+        5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+      ]),
     show(ri),
   );
   check(

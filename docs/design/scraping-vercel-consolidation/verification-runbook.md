@@ -865,7 +865,7 @@ gh run list --workflow scrape-scheduled.yml --repo rhapsody0919/boatrace-ai-pred
 
 ## N. 朝の初期化（`races_init`）と公式コンピュータ予想（`pcexpect`）の切り替え（tasks.md T4b-07-7・T4b-07-8・T4b-08-3・T4b-08-4）
 
-対象: `api/cron/races-init.js`（2分ごと、JST 05:00〜09:58）、`api/cron/pcexpect.js`（5分ごと、JST 05:00〜23:59）。コードのマージ・本番デプロイ後に始める。マージ直後は、`scrape_job_state` に `races_init`・`pcexpect` の行が無い（または `off`）ため、何も取得せず何も書かない（行が無い場合は、`mode='off'` の行を1つ作るだけ。`mode` は変更しない）。GitHub側の `SKIP_MORNING_INIT_ON_GHA`・`SKIP_PCEXPECT_ON_GHA` は未設定（既定）のため、従来どおり動く。
+対象: `api/cron/races-init.js`（2分ごと、JST 05:00〜23:58。朝の初期化に加え、予測ロジックの変更検知を終日行う）、`api/cron/pcexpect.js`（5分ごと、JST 05:00〜23:59）。コードのマージ・本番デプロイ後に始める。マージ直後は、`scrape_job_state` に `races_init`・`pcexpect` の行が無い（または `off`）ため、何も取得せず何も書かない（行が無い場合は、`mode='off'` の行を1つ作るだけ。`mode` は変更しない）。GitHub側の `SKIP_MORNING_INIT_ON_GHA`・`SKIP_PCEXPECT_ON_GHA` は未設定（既定）のため、従来どおり動く。
 
 検証済み（DB・取得先に接続しない）: `npm run verify:morning-init-refactor`（分けた後の取得・生成・書き込みが、分ける前の出力と完全に一致する。実ページのfixtureと、旧実装で作ったgolden）、`npm run verify:morning-init-jobs`（off・行なしで何もしない、shadowが書かない、チャンクの再開、冪等、失敗・バックオフ・ブレーカー、初期化済みの会場を書かない、後始末、予測ロジックの変更検知、公式予想のスロット、配線・監視）。どちらも変異検証済み（PRの説明に、変異の一覧と結果）。
 
@@ -932,7 +932,7 @@ INSERT INTO scrape_job_state (job, mode) VALUES ('races_init', 'shadow'), ('pcex
 ON CONFLICT (job) DO UPDATE SET mode = 'shadow', updated_at = now();
 ```
 
-- `races_init` は、cronが JST 05:00〜09:58 だけ起動するため、**日中に shadow にすると、最初の shadow の実行は翌朝の05:00**。`?venues=24` の手動リクエスト（`Authorization: Bearer {CRON_SECRET}`。ユーザーの端末）で、日中にも実行できる（shadow なので、書き込まない）
+- `races_init` は、cronが JST 05:00〜23:58 に起動する（2026-09-21に終日へ拡大）。**日中に shadow にすると、次の起動（2分以内）で、当日の shadow が始まる**（対象日は指定時刻05:00から解決するため、取得・解析のみで書き込まない。取得先へは、24会場分の取得が1回、日中に加わる）。`?venues=24` の手動リクエスト（`Authorization: Bearer {CRON_SECRET}`）でも実行できる
 - `pcexpect` は、有効化の直後（次の5分ごとの起動）から、その日の未発走のレースについて動く。**日中に shadow にすると、既に発走30分前を過ぎたレースのスロットは作られない**（`skip_lapsed`）。1日分の標本にするには、前日の夜（最後のレースの後）に shadow にして、翌朝05:00〜の全レースを標本にする
 
 shadow の間、GitHub側の初期化・pcexpect は、そのまま動く。shadow は、取得・解析のみで、`races`・`race_entries`・`predictions`・`external_predictions` などへは書かない（`races_init` は、DBの `races` も読まない）。
@@ -993,14 +993,14 @@ shadow の間に出うる注意: shadow の `pcexpect` は、GitHub側（02:00�
 
 ### N-3. 予測ロジックの変更検知による再生成（従来の `git log` 依存の置き換え。T4b-07-5、設計判断(g)）
 
-`races_init` が `live` の間、起動のたび（2分ごと、05:00〜09:58 JST）に、予測ロジックのソース（`generate-predictions.js`・`turnPrediction.js`・`venueParameters.js`・`winningTechniques.js`）の内容ハッシュを、`scrape_job_state` の `job='predict-code-hash'` の行（`last_report.hash`）と比べる。同じなら、DBへの問い合わせは1回（この行の読み取り）のみ。**変わっていたら、当日の、発走前のレースだけ**を `mainRefresh`（`forceTouchRaces`・upsert）で再生成する（発走済みのレースは、的中フラグを保つため対象外。従来のGitHub版は全レースを再生成してフラグをリセットしていた）。
+`races_init` が `live` の間、起動のたび（2分ごと、05:00〜23:58 JST）に、予測ロジックのソース（`generate-predictions.js`・`turnPrediction.js`・`venueParameters.js`・`winningTechniques.js`）の内容ハッシュを、`scrape_job_state` の `job='predict-code-hash'` の行（`last_report.hash`）と比べる。同じなら、DBへの問い合わせは1回（この行の読み取り）のみ。**変わっていたら、当日の、発走前のレースだけ**を `mainRefresh`（`forceTouchRaces`・upsert）で再生成する（発走済みのレースは、的中フラグを保つため対象外。従来のGitHub版は全レースを再生成してフラグをリセットしていた）。
 
 ```sql
 SELECT job, mode, last_report, updated_at FROM scrape_job_state WHERE job = 'predict-code-hash';
 ```
 
 - 初回（行が無い）は、基準を保存するのみ（再生成しない）。以降、予測ロジックを変更してデプロイした後の最初の起動で、再生成が走る
-- **範囲の限界（従来との差。ユーザーの判断が要る点）**: 従来のGitHub版は、5分ごと・終日、コミットを検知して再生成した。Vercel版は、`races_init` のcronの時間帯（05:00〜09:58 JST）だけ。それ以外の時間帯にデプロイされた予測ロジックの変更は、（a）各レースの次の再計算（展示・レース情報の変更を起点にした `mainRefresh`。1レース約3回/日）で新しいロジックになる、（b）翌朝の初期化で、全レースが新しいロジックになる。終日の検知が必要なら、`vercel.json` の `races-init` のcronを `*/2 20-23,0-14 * * *`（JST 05:00〜23:58）に広げる（処理済みの日の起動は、ジョブの状態の読み取りとハッシュの行の読み取りのみ。約570回/日）
+- **範囲（2026-09-21にユーザーが、終日を承認）**: 従来のGitHub版は、5分ごと・終日、コミットを検知して再生成した。Vercel版も、`races_init` のcronを `*/2 20-23,0-14 * * *`（JST 05:00〜23:58）にして、終日検知する（処理済みの日の起動は、ジョブの状態の読み取りとハッシュの行の読み取りのみ。約570回/日）
 - 再生成に失敗した場合は、保存済みのハッシュを元に戻し、次の起動が再試行する（`consecutive_failures` が増え、3回連続で通知）。手動で基準を取り直す場合は、この行を削除する（次の起動で、現在のハッシュを基準として保存し、再生成しない。本番DBへの書き込みのため、承認後）
 
 ### N-4. live化とGitHub側停止（同時。短縮手順）
@@ -1033,7 +1033,7 @@ SELECT job, mode, last_report, updated_at FROM scrape_job_state WHERE job = 'pre
 2. 同じ操作で `gh variable set SKIP_MORNING_INIT_ON_GHA --body true --repo rhapsody0919/boatrace-ai-predictor`（GitHub側の `morning-init` は、JST 07:00 までは何もせず、07:00 を過ぎて `races` があれば何もしない。フェイルセーフはN-1）
 3. 翌朝の 05:00 JST から、Vercel が初期化する（**この初日の朝は、05:00〜06:00 に観測する**。N-5）
 
-**日中に `races_init` を live にする場合**: cronが 05:00〜09:58 のため、10:00以降の live 化では、当日は何も起きない（GitHub側が初期化済みなら、live の最初の起動は「初期化済みの会場は書かず、後始末のみ」。`?venues=24` の手動リクエストでも、既に `races` がある会場は処理しない＝初期化済みの予測・的中フラグを上書きしない設計）。**書き込みの初回の実測は、live 化の翌朝の05:00**（GitHub側のフェイルセーフが07:00に肩代わりする）。
+**日中に `races_init` を live にする場合**: cronが終日（05:00〜23:58）動くため、live 化の次の起動（2分以内）で、当日の処理が走る（GitHub側が初期化済みなら、live の最初の起動は「初期化済みの会場は書かず、後始末のみ」。`?venues=24` の手動リクエストでも、既に `races` がある会場は処理しない＝初期化済みの予測・的中フラグを上書きしない設計）。**書き込みの初回の実測は、live 化の翌朝の05:00**（GitHub側のフェイルセーフが07:00に肩代わりする）。
 
 ### N-5. live の初日の観測（05:00〜06:00 JST）と、完了の定義の実測
 

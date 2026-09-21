@@ -92,7 +92,7 @@
     },
     {
       "path": "/api/cron/races-init",
-      "schedule": "*/2 20-23,0 * * *"
+      "schedule": "*/2 20-23,0-14 * * *"
     },
     {
       "path": "/api/cron/pcexpect",
