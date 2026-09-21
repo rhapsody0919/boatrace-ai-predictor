@@ -163,3 +163,20 @@ spec: `spec.md`（FR-2・§4の出典表記）/ plan: `plan.md`（§3のデー�
 3. レポーター名の表示の有無（spec.md §4.3の2）
 4. ★の見た目（ラベル付きの3つ組。色・大きさ）
 5. 公開待ちのカードを出すか、対象レースでも行が無ければ出さないか
+
+## 9. データの契約（画面が読む形。詳細・却下した案は [plan.md §3](./plan.md)）
+
+画面は、**RPCを増やさず、`race_id`単位の単独のSELECT**（`race_pit_reports`と`race_pit_comments`の2回）で読む。`supabaseDataService.getRacePitReport(raceId)`が、次の形にして返す（`withCache` 30分。失敗は例外で、「対象外」「未公開」に化けさせない）。
+
+```
+GET /rest/v1/race_pit_reports?race_id=eq.{raceId}&select=status,target_from,target_to,reporter_name,comment_count,created_at,updated_at
+GET /rest/v1/race_pit_comments?race_id=eq.{raceId}&select=boat_number,racer_id,comment_text,confidence_stars,previous_race_number&order=boat_number.asc
+
+→ { state: "published" | "not_target" | "pending",   // 行なし=pending
+    reporterName, capturedAt, updatedAt, targetRange: {from,to}|null,
+    comments: [{ boatNumber, racerId, text, stars: 0..3|null, previousRaceNumber: number|null }] }
+```
+
+- 呼ぶ条件（リクエストを減らす）: `raceGrade`が SG・G1・G2 または不明（NULL）のレースのみ。SGは全レース、G1・G2は7R以降（`isPitReportCandidate`と同じ規則を画面側にも置く）。G3・一般戦・G1/G2の1R〜6Rでは呼ばない
+- 匿名で読めるのは、マイグレーション086の適用後（085だけでは、SELECTが権限エラーになる）。画面のコードは、権限エラーを「セクションを出さない」として扱う
+- 出典のURL: `raceId`（`YYYY-MM-DD-VV-RR`）から、`https://www.boatrace.jp/owpc/pc/race/pitreport?rno={RR}&jcd={VV}&hd={YYYYMMDD}`
