@@ -312,6 +312,22 @@
 - [ ] タイミング実測: 可変データは、土日を含む直近7日で窓内取得率（窓の中心±3分以内）を実測する（欠落率2%以内）。半年に1回しか変化しないため、窓型ではない。「月次の指定日（1日09:00 JST）から3日以内に全選手を取得できた」割合と、期の切り替わり（5/1・11/1）直後の追従を、`scraped_at`・`official_updated_at`から実測する
 - [ ] 継続監視: 上記指標が日次で自動計測され、閾値超過でSlack通知されることを確認する（月次ジョブの未実行の検知（実行履歴0件のまま見逃した実績あり）、`cursor`の未完了）
 
+### T4b-17 ピットレポート（選手コメント。N24、BOA-379）: `pit_reports`
+
+設計: [pit-comments/](../pit-comments/spec.md)（spec・plan・screens・tasks）。SG・G1・G2の対象レースのみ（1日6〜18ページ）。
+
+- [x] **T4b-17-1**（コード実装済み。`scripts/lib/pitReportParser.js`・`pitReportRows.js`・`pitReportSchema.js`・`pitReportJob.js`・`rawHtmlArchive.js`・`api/cron/pit-reports.js`、レジストリ`pit_reports`、`vercel.json`のcron。既定は`off`（行なし）で挙動不変。検証は`npm run verify:pit-report-job`）
+- [ ] **T4b-17-2** (ユーザー承認) マイグレーション085（保存）を本番へ適用する。APPLIED.mdの「未適用」を「適用済み」に更新する
+- [ ] **T4b-17-3** (ユーザー承認) `scrape_job_state`の`pit_reports`を`shadow`にする。SG・G1・G2の開催日に、`scrape_slots`の`done`（`outcome`）・`result_digest`・`done_at`の分布から、公開時刻と公開後の更新の有無を実測し、窓（`offsets`・`graceMin`・`pendingRetrySec`）を確定する
+- [ ] **T4b-17-4** (ユーザー承認) Storageの非公開バケット`raw-pages`を作成し、`live`にする
+- [ ] **T4b-17-5** 過去分のバックフィル（2025-12以降。約1,700ページ、3夜。[plan.md §5](../pit-comments/plan.md)）。手動CLI（`scripts/maintenance/backfill-pit-reports.js`、未実装）と、実行前のユーザー承認
+
+データ項目: `race_pit_reports`・`race_pit_comments`。
+
+- [ ] 本番実測: 期待件数（算出根拠: 2025-12-03以降の`races`のうち、SG（全レース）・G1・G2（7R以降）で、公式ページが対象外と答えなかったレース。`race_pit_reports.status='published'`のレース数。ページが空のレース・`not_target`は分母から除き、件数を報告）に対し、過去分を含めて充足率99%以上であることを実測クエリで確認する。艇ごとの行数（`race_pit_comments`）は、公式ページのコメント数と一致すること（サンプルで突合）
+- [ ] タイミング実測: 可変データ（公開時刻がある）は、土日を含む直近7日で、「発走までに公開を検知できた割合」（`scrape_slots`の`done_at <= 期限`）と、公開検知の遅延（`done_at`−発走）の分布を実測する。窓内取得率（中心±3分）は当てはまらないため、「公開後5分以内に検知」（再試行間隔）を基準にする
+- [ ] 継続監視: 上記指標が日次で自動計測され（`scrape-summary`に`pit_reports`が出る）、`expired`（対象レースで許容幅まで公開を検知できなかった）が即時通知されることを確認する。`parse_anomaly`（構造の変化）の`error`が通知されること
+
 ---
 
 ## Phase 7: 最終検証と旧基盤の廃止（WS7、G3）

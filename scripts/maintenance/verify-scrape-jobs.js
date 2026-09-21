@@ -171,6 +171,7 @@ check(
     "exhibition",
     "odds",
     "pcexpect",
+    "pit_reports",
     "pseudo",
     "race_info",
     "result",

@@ -4,6 +4,7 @@
  * outcome（scrape_slots.outcome。CHECK制約は付けず、ここで管理する）:
  *   ok                完了（書き込めた。変更なしも含む）
  *   skipped_have_data 既にデータがあり取得不要（完了）
+ *   skipped_not_target 取得の対象外（完了。公式ページが「表示対象ではありません」と表示する等。ピットレポート）
  *   partial           一部のみ取得できた（再試行）
  *   no_values         未公開（再試行）
  *   error             失敗（再試行）
@@ -12,7 +13,11 @@
  */
 
 /** 完了として扱う outcome（それ以外は pending に戻して再試行） */
-export const FINAL_OUTCOMES = Object.freeze(["ok", "skipped_have_data"]);
+export const FINAL_OUTCOMES = Object.freeze([
+  "ok",
+  "skipped_have_data",
+  "skipped_not_target",
+]);
 
 export const MAX_ERROR_LENGTH = 500;
 

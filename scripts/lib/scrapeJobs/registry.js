@@ -94,6 +94,24 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
 
+  // N24 ピットレポート（選手コメント。BOA-379）。対象はSG（全レース）・G1・G2（7R以降）のみ（予定表のスロットも
+  // 対象レースにだけ作る: scripts/lib/pitReportJob.js の createPitReportStore）。発走60分前から発走+180分まで、
+  // 公開まで5分おきに再試行する（公開時刻の実測は docs/design/pit-comments/spec.md §2。過去日のページも長期間取れるため、
+  // 窓を過ぎた取りこぼしは、バックフィルの手動CLIで補える）。1日の取得は、対象レース約7件＋未公開の間の再試行のみ
+  // （G3・一般戦のページは取得しない）。実装: scripts/lib/pitReportJob.js、api/cron/pit-reports.js
+  pit_reports: {
+    kind: "window",
+    offsets: [-60],
+    graceMin: 240,
+    retrySec: 300,
+    leaseSec: 60,
+    claimLimit: 8,
+    concurrency: 4,
+    slotSecEstimate: 12,
+    maxDurationSec: 120,
+    hosts: ["boatrace.jp"],
+  },
+
   // A8 朝の初期化（races・race_entries・predictions の初期化。チャンク処理）。05:00指定（cron: 05:00〜09:58 JST の2分ごと。
   // 設計判断(f): 従来の07:00開始より2時間早める）。会場を、1回の呼び出しで最大8件（時間の許す限り）処理し、進捗を
   // scrape_job_state.cursor に保存して次の起動が続きを処理する（全会場が済むまで incomplete）。1会場約30秒

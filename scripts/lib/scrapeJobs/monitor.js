@@ -105,6 +105,8 @@ export function computeWindowStats(
   for (const slot of slots) {
     if (slot.status !== "done" && slot.status !== "expired") continue;
     if (isCancelledRace(slot)) continue;
+    // 取得の対象外で終端したスロット（ピットレポートの最終日のG1 R7〜R11 等）は、窓内取得率の分母に入れない
+    if (slot.outcome === "skipped_not_target") continue;
     if (slot.run_mode === "shadow") continue;
     // 一度も claim されず expired になったスロット（run_mode が無い）は、そのジョブが live のときだけ数える
     // （off・shadow のジョブの予定表の残りを、live の欠落として数えない）
