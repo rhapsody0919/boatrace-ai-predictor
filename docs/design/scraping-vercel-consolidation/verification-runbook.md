@@ -1227,6 +1227,8 @@ SELECT venue, count(*) AS races,
   FROM r JOIN e USING (race_id) GROUP BY 1 ORDER BY 1;
 ```
 
+**2026-09-22 追記: 尾部が実際に出た（BOA-382）**。9/21の住之江5R（発走17:02）は、`-33`〜`-7`の13回の取得（`scrape_slots`: attempts=13、全て`no_values`、`boats=6`＝出走表はあるが展示の欄が空）が全て「展示未公開」で、旧経路（cron-job.org起点、窓は7分前まで）も取れず、`exhibition_data`が0行のままだった。公式ページには、後から展示タイムが載った（共有パーサーで、1号艇の展示タイム6.89・展示ST 0.10を解析できた。フィクスチャ`scripts/lib/__fixtures__/beforeinfo/beforeinfo-2026-09-21-12-05-after-start.html`）。公開の時刻は、ページに時刻がないため不明（7分前より後、発走後の可能性を含む）。直近（9/10〜9/21、確定中止を除く約1,800レース）で、展示タイムが無いレースは5件: 9/19の3件（04-01・05-02・16-01。発走10:49〜10:57の午前のレースで、原因は別の可能性。未調査）、9/21の2件（09-04・12-05）。**完了の定義Aの展示の充足率は、9/19が98.08%・9/21が98.35%（いずれも99%未満）**。対応は、Q-8（窓の外の補完）。
+
 ### Q-1. マージで何が変わるか（本番の挙動は変わらない）
 
 | | マージ直後（`scrape_job_state`に該当の行が無い・`off`） | 備考 |
@@ -1259,6 +1261,7 @@ SELECT venue, count(*) AS races,
 | `race_info`（A1）の1レース | racelist＋beforeinfoの2ページ（60分前の窓で1〜2回） | **racelistの1ページ**（許容幅3分で60秒おきに再試行。通常は1回）。**beforeinfoは取らない（D2の解消）** |
 | `exhibition`（A2）の1レース | beforeinfo。30/15/10分前の窓（2分間隔）。公開まで、窓の中で繰り返す（約5回） | beforeinfo。`-33`分から公開まで120秒おき（公開の約-17分まで、約8回）。**1レースあたり約+3回の増**（公開の直後に取れる分の代価）。公開後は`skipped_have_data`で取得しない |
 | 1日（180レース） | racelist約180〜270＋beforeinfo約1,100〜1,200（A1約200＋展示約900） | racelist約180＋beforeinfo約1,400（展示のみ）。**beforeinfoの合計は約+200〜300、racelistは約-0〜90** |
+| 窓の外の補完（Q-8。発走の10分後〜36分後） | — | 展示タイムが取得済みのレースは、DBの読み取り（`exhibition_data`）だけで、公式ページへのリクエスト0。データの無いレースだけ、600秒おき（最大3回）。**1日あたり追加の`beforeinfo`は、通常日で約1〜10回、中止・順延が未確定の悪天候日で最大約60回**（Q-8の見積り） |
 | 同時接続 | — | 1実行あたり最大4スロット（並列度4。`politeFetch`の上限は20） |
 | shadow中 | — | 従来の経路・GitHub側が動き続けるため、スロットのshadowが**上乗せ**（展示は、取得済みでも取得するため、beforeinfoが約2倍。レース情報はracelistが約2倍）。**1日**に限る |
 
@@ -1443,7 +1446,102 @@ UPDATE scrape_job_state SET mode = 'off', updated_at = now() WHERE job = 'exhibi
 ### Q-7. 継続監視（完了の定義C）と未確認事項
 
 - `scrape-monitor`（5分ごと）・`scrape-summary`（日次サマリー）は、`race_info`・`exhibition`を窓型として自動で対象にする（`live`になってから通知される。`off`・`shadow`のジョブの未claimの`expired`は分母に入れない）
-- **未確認事項**: (1)展示の公開時刻の尾部（7分前より後）は、従来の窓では観測できなかった。live後の`check-pre-race-shadow.js`（完了の発走前の分数）で確認する（Q-0）。(2)展示のスロットの再試行（120秒おき）が、従来より取得先へのリクエストを約+3回/レース増やす（Q-3）。負荷が問題なら、`retrySec`を180秒にする（レジストリの変更のみ）。(3)081の追加列が朝の初期化で書かれない間、最初の`race_info`が全行を書く（初日のDisk IOで確認する）。(4)日中の`races.start_time`の追従（N15）は、shadowでは書かれず、liveから効く。(5)`exhibition`の`SKIP_EXHIBITION_ON_GHA`のフェイルセーフは、liveになってから初めて効く（それまでは静的）
+- **未確認事項**: (1)展示の公開時刻の尾部（7分前より後）は、従来の窓では観測できなかった。live後の`check-pre-race-shadow.js`（完了の発走前の分数）で確認する（Q-0）。(2)展示のスロットの再試行（120秒おき）が、従来より取得先へのリクエストを約+3回/レース増やす（Q-3）。負荷が問題なら、`retrySec`を180秒にする（レジストリの変更のみ）。(3)081の追加列が朝の初期化で書かれない間、最初の`race_info`が全行を書く（初日のDisk IOで確認する）。(4)日中の`races.start_time`の追従（N15）は、shadowでは書かれず、liveから効く。(5)`exhibition`の`SKIP_EXHIBITION_ON_GHA`のフェイルセーフは、liveになってから初めて効く（それまでは静的）。(6)展示の公開の尾部（7分前より後）が実際に出た（Q-0の追記）。窓の外の補完は、Q-8
+
+### Q-8. 窓の外の補完（`exhibition`の発走の10分後のスロット。BOA-382）
+
+**何のためか**: Q-0のとおり、展示の公開が窓の終わり（発走の7分前）より後になるレースが、実際に出た（約0.3〜1.9%）。公式ページは発走後も展示を表示するため、後から取り直せる（復旧可能）。取り直さないと、完了の定義Aの展示の充足率（99%）を割る。
+
+**方式（3案の比較。採用は(a)）**:
+
+| 案 | 内容 | 長所 | 短所 |
+|---|---|---|---|
+| **(a) 採用**: 発走後の第2のスロット | レジストリの`exhibition`に、`offsets: [-33, 10]`を足す（`catchupOffsets: [10]`、`catchupRetrySec: 600`）。`-33`のスロット（〜-7分）は、変えない。`10`のスロットは、発走の10分後〜36分後（許容幅は`-33`と同じ26分） | 新しいCron・ジョブ・DBの変更が無い（既存の毎分Cronが処理する。`vercel.json`・マイグレーション不要）。取得済みは`skipped_have_data`（DBの読み取りだけ）。中止の確定（`claim_scrape_slots`が`cancelled_race`で終端）・リース・試行回数・shadow/liveのモード・監視の枠組みが、そのまま効く。切り戻しが1行 | `exhibition`の予定表のスロットが2倍（約150〜180行/日の増。`scrape-cleanup`が60日で削除）。窓の許容幅は、ジョブ内で共通のため、補完の窓は26分（+10〜+36）で固定 |
+| (b) 日次の補完ジョブ | `result_catchup`と同型で、23:50に、展示タイムの無いレースを再取得する | 窓に依らず、全ての欠落（Cronの障害・デプロイ等の理由を含む）を、1日1回拾う | 補完が翌日近くまで遅れる（レース詳細に展示が出ない時間が長い）。新しいジョブ・状態行・Cron・`vercel.json`が要る。別のmodeの切り替え（3段階）が要り、`exhibition`のmodeと連動しない（shadowで書かない、の保証が別実装になる） |
+| (c) `graceMin`の延長 | `-33`のスロットの許容幅を26→60（発走の27分後まで）にする | 変更が最小（1値） | 窓内取得率（`-33`〜`-7`の取得の適時性）の意味が崩れる（発走後の取得も「窓内」になる）。`retrySec`が120秒のままで、中止・順延の未確定分の空振りが増える（13回→約30回/レース）。予定表・監視が、補完と通常を区別できない |
+
+**採用の理由**: (a)は、既存の仕組みだけで、書き込みの保護（shadowで書かない）・取得済みのスキップ・中止の除外・監視を、新しい実装なしに得られる。(b)は、Cronの障害等も拾える点で優れるが、遅れが大きく、別の実装が要る。**Cronの停止・障害による広い欠落（窓の外の補完では拾えない）は、`data_health`（完了の定義C）が検知し、過去分の補填は`backfill-exhibition-by-race-id.js`で行う**（下の「今ある5件」）。
+
+**挙動**（`scripts/lib/scrapeJobs/preRaceHandlers.js`・`runForRaces`の`catchup`）:
+
+| | `-33`のスロット（従来） | `10`のスロット（補完） |
+|---|---|---|
+| 取得済みの展示タイム | live: 取得しない。shadow: 取得・解析する（既存の経路と比べるため） | **live・shadowとも取得しない**（`skipped_have_data`。公式ページへのリクエスト0） |
+| 未取得 | 120秒おき（〜-7分） | 600秒おき（発走の10・20・30分後の最大3回） |
+| 書き込み | live: 展示データ・気象 | live: **展示データのみ（気象は書かない）**。shadow: 書かない |
+| 予測の再計算（案1） | 変更を書いたレースを対象にする | **対象にしない**（発走後に予測を作り直すと、発走前の予測と結果の突き合わせを汚す。発走前に取れた分は、`-33`が再計算する。なお、発走の7分前〜発走の間の公開は、どちらのスロットも見ない） |
+| 中止・順延 | 確定（`cancellation_status='confirmed'`）は、`claim_scrape_slots`が`cancelled_race`で終端し、取得しない | 同じ |
+
+**気象を書かない理由**: 発走後のbeforeinfoは、そのレースの発走前ではなく、その日の最新の観測（実測: 5Rのページの気象は`observedRace: 4`）を表示する。`race_conditions`の気象の列を、発走後の値で上書きしない。
+
+**監視**（`scripts/lib/scrapeJobs/monitor.js`）:
+
+- **窓内取得率（ジョブ別）に、補完の窓を束ねない**（取得済みが即完了して、ほぼ100%のヒットになり、`-33`の欠落を薄めて閾値98%の検知を鈍らせるため）。窓別の集計・遅延には残る
+- 補完が最後まで取れなかったレース（expired）は、通知する（`expired`・`unexecuted`。`-33`の期限切れは、従来どおり通知する）。**中止・順延の疑い（`cancellation_status`が`tentative`・`confirmed`）のレースの補完は、通知しない**（展示は公開されないため）。`-33`の期限切れの通知は、従来どおり（`confirmed`だけを除く）
+- 日次サマリーの`expired`・未実行は、補完を含まない（通知は別に出る）
+
+**モードの扱い**: 補完は、`exhibition`のmodeに従う（別のmodeは無い）。`off`（従来の経路）の間は、スロットの経路自体が動かないため、補完も無い（従来の経路は変えていない）。`shadow`は、補完のスロットも取得・解析のみ（書かない）。**書くのは、`live`のときだけ**。したがって、補完が効くのは、展示を`live`へ切り替えた後（Q-4）。shadow→liveの`pending`への復帰のSQL（Q-4手順3）は、`s.offset_min`を使うため、補完のスロットにも、そのまま効く。
+
+**取得先への負荷の見積り（ADR-0067の要件）**:
+
+| 項目 | 見積り |
+|---|---|
+| 公式ページ（`beforeinfo`）への追加リクエスト | データの無いレースだけ。1レースあたり、公開済みなら1回（+10分）、最後まで無ければ3回（+10・+20・+30分） |
+| 実測の母数 | 展示タイムが無いレースは、9/10〜9/21の約1,800レース（確定中止を除く）で5件（0.3%。1日あたり最大3件・平均0.4件）。→ **通常日の追加は、1〜10回/日**（beforeinfoの1日約1,400回に対して1%未満） |
+| 中止・順延が未確定の日 | 9/21は、16レースが中止・順延になり、確定は発走後だった（結果取得）。補完のスロットが動く時点（+10分〜）で未確定なら、1レースあたり最大3回（`-33`のスロットは、同じレースに13回取得している）。最大 16×3=**48回**（+5件の欠落分で約9回）＝約60回/日。中止の早期確定（`race_status`、T4b-18）が`live`なら、確定が先行して、0に近づく |
+| DBの読み取り | 補完のスロット1件あたり、`exhibition_data`の主キー範囲の読み取り1回（約150〜180件/日）。追加のCron・関数の起動は無い（既存の毎分Cron） |
+| 同時接続・所要時間 | 変わらない（並列度4・1スロット約10秒）。取得済みの完了は、DBの読み取りのみで、1スロット数十ミリ秒 |
+| 予定表の行数 | `exhibition`のみ、約150〜180行/日の増（レース数と同じ。既存の`-33`と合わせて2倍）。60日で削除 |
+
+**確認（読み取り。`<from>`・`<to>`はYYYY-MM-DD）**:
+
+```sql
+-- (1) 補完のスロットの内訳（run_mode×状態×outcome）。期待: 大半が skipped_have_data（取得済み）。ok が「補完で埋めた」件数（shadow の ok は「liveなら埋められた」件数）。expired は取れなかった件数
+SELECT s.run_mode, s.status, s.outcome, count(*) AS slots, round(avg(s.attempts), 2) AS avg_attempts
+  FROM scrape_slots s WHERE s.job = 'exhibition' AND s.offset_min = 10 AND s.race_date BETWEEN '<from>' AND '<to>' GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+
+-- (2) 補完で埋まったレースと、発走後の取得の遅延（発走の何分後に取れたか。live の rows_written は6前後）
+SELECT s.race_id, s.run_mode, s.attempts, s.rows_written,
+       round((extract(epoch FROM (s.done_at - ((r.race_date + r.start_time) AT TIME ZONE 'Asia/Tokyo'))) / 60)::numeric, 1) AS done_min_after_start,
+       (SELECT count(e.exhibition_time) FROM exhibition_data e WHERE e.race_id = s.race_id) AS with_time
+  FROM scrape_slots s JOIN races r USING (race_id)
+ WHERE s.job = 'exhibition' AND s.offset_min = 10 AND s.outcome = 'ok' AND s.race_date BETWEEN '<from>' AND '<to>' ORDER BY s.race_id;
+
+-- (3) 補完しても取れなかったレース（中止・順延の疑いを除く。要確認。期待: 0件。あれば last_error と公式ページを確認）
+SELECT s.race_id, s.attempts, s.last_error, r.cancellation_status
+  FROM scrape_slots s JOIN races r USING (race_id)
+ WHERE s.job = 'exhibition' AND s.offset_min = 10 AND s.status = 'expired' AND r.cancellation_status IS NULL AND s.race_date BETWEEN '<from>' AND '<to>' ORDER BY s.race_id;
+
+-- (4) 完了の定義A: 展示タイムの充足率（確定中止を除く。発走から1時間以上経ったレース。期待: 99%以上）
+WITH r AS (
+  SELECT race_id, race_date FROM races
+   WHERE race_date BETWEEN '<from>' AND '<to>' AND start_time IS NOT NULL AND cancellation_status IS DISTINCT FROM 'confirmed'
+     AND ((race_date + start_time) AT TIME ZONE 'Asia/Tokyo') < now() - interval '1 hour'),
+e AS (SELECT race_id, count(exhibition_time) AS t FROM exhibition_data WHERE race_id >= '<from>' GROUP BY 1)
+SELECT r.race_date, count(*) AS races, count(*) FILTER (WHERE coalesce(e.t, 0) = 0) AS without_exhibition_time,
+       round(100.0 * count(*) FILTER (WHERE coalesce(e.t, 0) > 0) / count(*), 2) AS filled_pct
+  FROM r LEFT JOIN e USING (race_id) GROUP BY 1 ORDER BY 1;
+```
+
+`node --env-file=.env.local scripts/maintenance/check-pre-race-shadow.js --job=exhibition --days=2`も、補完のスロットを、通常のスロットの集計（一致率・発走前の分数）から分けて、別の節（補完できた件数・発走からの分数・expired）に出す。
+
+**今ある5件（補完のコードのマージより前の欠落。過去分）**: 9/19の`2026-09-19-04-01`・`05-02`・`16-01`と、9/21の`2026-09-21-09-04`・`12-05`は、補完のスロットでは拾えない（過去の予定表）。既存の`backfill-exhibition-by-race-id.js`（取得済みはスキップ・気象は書かない・何度でも安全）で補填する（**本番DBへの書き込みのため、ユーザーの承認後**。まずdry-run）:
+
+```
+node --env-file=.env.local scripts/maintenance/backfill-exhibition-by-race-id.js --race-ids=2026-09-19-04-01,2026-09-19-05-02,2026-09-19-16-01,2026-09-21-09-04,2026-09-21-12-05
+node --env-file=.env.local scripts/maintenance/backfill-exhibition-by-race-id.js --race-ids=... --apply
+```
+
+**切り戻し**: `offsets`を`[-33]`に戻す（レジストリの変更のみ。新しい補完のスロットが作られなくなる）。`catchupOffsets`・`catchupRetrySec`は残す（DBに残った`offset_min=10`のスロットは、claimされても、補完として扱われる＝気象・再計算をしない）。残ったスロットを、すぐに止めるなら:
+
+```sql
+UPDATE scrape_slots SET status = 'expired', lease_until = NULL, next_attempt_at = NULL
+ WHERE job = 'exhibition' AND offset_min = 10 AND status IN ('pending', 'running');
+```
+
+**検証**: `npm run verify:scrape-pre-race-job`（実ページのフィクスチャ。変異検証つき）・`verify:scrape-monitor`・`verify:scrape-jobs`。RPCの意味論（窓・再試行の待ち・確定中止・期限切れ）は`npm i --no-save @electric-sql/pglite && npm run verify:scrape-slots-sql`（本番へ触れない）。
+
+**未確認事項**: (1)公開の時刻の分布の尾部（-7分〜発走後）は、ページに時刻が無いため、補完のスロットの`done_at`（`ok`のレース）から、live後に測る（上の(2)）。(2)補完の窓（発走の10〜36分後）に収まらない遅い公開は、補完でも取れない（(3)で検知される）。(3)発走の7分前〜発走の間の公開は、予測の再計算ができない（`-33`は-7で終わり、補完は発走後）。必要なら、`graceMin`を26→29（-4分まで。Q-0）にする（`verify-scrape-monitor.js`の展示の許容幅の期待値も更新）。
 
 ## R. ピットレポート（`pit_reports`、選手コメント）の切り替え（tasks.md T4b-17、[pit-comments/plan.md](../pit-comments/plan.md)）
 

@@ -241,6 +241,97 @@ const s = await q("SELECT source, count(*) c FROM race_odds GROUP BY 1 ORDER BY 
 check("既存行の source は gha", s.find((r) => r.source === "gha")?.c == 2, JSON.stringify(s));
 
 
+// --- 展示の窓の外の補完のスロット（BOA-382）: レジストリの実際の定義（slotDefsFor）で、-33 と +10 の2本を作り、
+//     窓（+10〜+36）・再試行の待ち・確定中止・期限切れを、RPCで確認する（RPC自体は変えていない）
+{
+  const { slotDefsFor, SCRAPE_JOBS } =
+    await import("../lib/scrapeJobs/registry.js");
+  const ex = SCRAPE_JOBS.exhibition;
+  const exDefs = JSON.stringify(slotDefsFor(["exhibition"]));
+  const t = (hhmm) => `2026-09-22T${hhmm}:00+09:00`;
+  const claimEx = (hhmm, worker = "wx") =>
+    q(
+      `SELECT race_id, offset_min, attempts, status FROM claim_scrape_slots('exhibition',$1,$2,$3,$4,'live',$5::timestamptz) ORDER BY race_id, offset_min`,
+      [ex.claimLimit, ex.leaseSec, worker, ex.graceMin, t(hhmm)],
+    );
+  const slotOf = async (raceId, offset) =>
+    (
+      await q(
+        `SELECT status, outcome, attempts FROM scrape_slots WHERE job='exhibition' AND race_id=$1 AND offset_min=$2`,
+        [raceId, offset],
+      )
+    )[0];
+  await db.exec("DELETE FROM scrape_slots");
+  // 5R 17:02（通常）、6R 17:30（確定中止）、7R 18:00（中止の疑い。tentative）
+  await db.exec(`
+  INSERT INTO races (race_id, race_date, venue_code, race_number, start_time, cancellation_status) VALUES
+   ('2026-09-22-12-05','2026-09-22',12,5,'17:02:00',NULL),
+   ('2026-09-22-12-06','2026-09-22',12,6,'17:30:00','confirmed'),
+   ('2026-09-22-12-07','2026-09-22',12,7,'18:00:00','tentative');
+  `);
+  const made = (
+    await q(
+      `SELECT ensure_scrape_slots('2026-09-22'::date, $1::jsonb, false, $2::timestamptz) AS n`,
+      [exDefs, t("09:00")],
+    )
+  )[0].n;
+  check(
+    "展示: ensure は、3レース×2本（-33 と 10）＝6スロットを作る",
+    made === 6,
+    `n=${made}`,
+  );
+
+  let got = await claimEx("17:11");
+  check(
+    "展示: 発走の9分後（17:11）は、5R の -33（許容幅の26分を超え expired）も、補完（+10）も取らない。確定中止の6Rは cancelled_race で終端し、取らない",
+    got.length === 0 &&
+      (await slotOf("2026-09-22-12-05", -33)).status === "expired" &&
+      (await slotOf("2026-09-22-12-06", -33)).outcome === "cancelled_race" &&
+      (await slotOf("2026-09-22-12-06", 10)).outcome === "cancelled_race",
+    JSON.stringify(got),
+  );
+  got = await claimEx("17:12");
+  check(
+    "展示: 発走の10分後（17:12）に、5R の補完（+10）を取る（attempts=1）。中止の疑い（tentative）の7Rは、まだ期限前で取らない",
+    got.length === 1 &&
+      got[0].race_id === "2026-09-22-12-05" &&
+      got[0].offset_min === 10 &&
+      got[0].attempts === 1,
+    JSON.stringify(got),
+  );
+  // 補完の再試行（ハンドラーが返す retryAt＝claim の約590秒後）まで、取らない
+  await q(
+    `UPDATE scrape_slots SET status='pending', lease_until=NULL, next_attempt_at=$1::timestamptz WHERE job='exhibition' AND race_id='2026-09-22-12-05' AND offset_min=10`,
+    ["2026-09-22T17:21:50+09:00"],
+  );
+  got = await claimEx("17:21");
+  check(
+    "展示: 再試行の時刻（17:21:50）の前は、補完を取らない",
+    got.length === 0,
+    JSON.stringify(got),
+  );
+  got = await claimEx("17:22");
+  check(
+    "展示: 再試行の時刻を過ぎたら、補完を取る（attempts=2）",
+    got.length === 1 &&
+      got[0].race_id === "2026-09-22-12-05" &&
+      got[0].offset_min === 10 &&
+      got[0].attempts === 2,
+    JSON.stringify(got),
+  );
+  // 窓の終わり（+10+26＝発走の36分後＝17:38）: 期限+許容幅を過ぎた補完は expired
+  await q(
+    `UPDATE scrape_slots SET status='pending', lease_until=NULL, next_attempt_at=NULL WHERE job='exhibition' AND race_id='2026-09-22-12-05' AND offset_min=10`,
+  );
+  got = await claimEx("17:39");
+  check(
+    "展示: 発走の37分後（17:39）は、期限+許容幅（+10+26）を過ぎた5Rの補完を取らず、expired にする（7Rの -33 は窓の中のため取る）",
+    got.every((r) => r.race_id !== "2026-09-22-12-05") &&
+      (await slotOf("2026-09-22-12-05", 10)).status === "expired",
+    JSON.stringify(got),
+  );
+}
+
 // 部分一意索引では PostgREST の upsert（ON CONFLICT (cols)、WHERE句なし）が推論できないことの確認
 // （075が race_odds の一意索引を部分索引にしない理由）
 await db.exec(`

@@ -46,9 +46,21 @@ export const SCRAPE_JOBS = Object.freeze({
   // 全レースが7分前までに取得できた。-33〜-7分はこの範囲を覆う（verification-runbook.md Q-0）
   // 実装: scripts/lib/scrapeJobs/preRaceHandlers.js、api/cron/exhibition.js（T4b-06）。maxDurationSec は、従来の経路
   // （mode が off のとき。waitUntil の実処理）が従来から300秒で動いているため300秒のまま
+  //
+  // 窓の外の補完（BOA-382）: 2026-09-21の住之江5R（発走17:02）は、-33〜-7分の13回の取得が全て「展示未公開」で、公開が窓の
+  // 終わりより後だった（公式ページには、後から展示タイムが載った）。offsets の 10（発走の10分後）が、この補完のスロット
+  // （catchupOffsets）。-33 のスロットと同じ許容幅（26分）で、発走の10〜36分後の窓。既にデータがあるレースは、DBの読み取りだけで
+  // 終わる（skipped_have_data。公式ページへのリクエストは0）。データの無いレース（公開の遅れ・確定前の中止・順延）だけ、
+  // catchupRetrySec（600秒）おきに再試行する（-33 の 120秒より長い。補完は緊急ではなく、中止・順延の未確定分の空振りを抑える）。
+  // 補完のスロットは、気象を書かず、予測の再計算の対象にしない（発走後の直前情報は、その日の最新の観測を表示するため。
+  // preRaceHandlers.js）。監視は、補完のスロットを窓内取得率の分母に入れず、中止・順延の疑い（cancellation_status）の
+  // レースの期限切れを通知しない（monitor.js）。切り戻し: offsets を [-33] にする（新しい補完のスロットを作らない）。
+  // catchupOffsets は残す（DBに残った offset 10 のスロットは、claim されても、補完として扱われる＝気象・再計算をしない）
   exhibition: {
     kind: "window",
-    offsets: [-33],
+    offsets: [-33, 10],
+    catchupOffsets: [10],
+    catchupRetrySec: 600,
     graceMin: 26,
     retrySec: 120,
     leaseSec: 90,
@@ -360,6 +372,19 @@ export function isScheduledDate(def, dateJst) {
   return (days[month] ?? days.default ?? []).includes(day);
 }
 
+/**
+ * 窓の外の補完のスロット（発走の後の、取得済みなら何もしない再取得。展示 BOA-382）の offset か。
+ * ハンドラー（気象・再計算をしない）と監視（窓内取得率の分母に入れない、中止・順延の疑いの期限切れを通知しない）が使う。
+ *
+ * @param {{catchupOffsets?: number[]}|undefined} def
+ * @param {number} offsetMin
+ */
+export function isCatchupOffset(def, offsetMin) {
+  return Array.isArray(def?.catchupOffsets)
+    ? def.catchupOffsets.includes(offsetMin)
+    : false;
+}
+
 /** kind が window のジョブ名の一覧 */
 export function windowJobNames(registry = SCRAPE_JOBS) {
   return Object.entries(registry)
@@ -443,6 +468,27 @@ export function validateRegistry(registry = SCRAPE_JOBS) {
         problems.push(
           `${name}: concurrency(${def.concurrency}) は 1以上・claimLimit(${def.claimLimit})以下にしてください`,
         );
+      }
+      // 窓の外の補完のスロット（catchupOffsets）: 発走の後（正の整数）。補完の再試行の間隔は、許容幅より短い
+      if (def.catchupOffsets !== undefined) {
+        if (
+          !Array.isArray(def.catchupOffsets) ||
+          def.catchupOffsets.length === 0 ||
+          def.catchupOffsets.some((o) => !Number.isInteger(o) || o <= 0)
+        ) {
+          problems.push(
+            `${name}: catchupOffsets が不正です（発走の後の分を表す正の整数の配列）: ${JSON.stringify(def.catchupOffsets)}`,
+          );
+        }
+        if (
+          !Number.isInteger(def.catchupRetrySec) ||
+          def.catchupRetrySec < 1 ||
+          def.catchupRetrySec >= graceSec
+        ) {
+          problems.push(
+            `${name}: catchupRetrySec(${def.catchupRetrySec}) は、許容幅(${graceSec}秒)より短い正の整数にしてください`,
+          );
+        }
       }
     }
     if (

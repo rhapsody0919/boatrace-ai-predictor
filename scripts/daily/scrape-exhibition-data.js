@@ -462,6 +462,10 @@ export async function scrapeAndUpsertRaces(
  * mode=live のとき、展示タイムが取得済みのレースは取得しない（skipped_have_data）。mode=shadow は、取得済みでも
  * 取得・解析する（既存の経路が書いた行と比べるため）。shadow は、DBへ書かない（読み取りのみ）。
  *
+ * catchup=true（窓の外の補完。発走の後のスロット。BOA-382）: mode によらず、展示タイムが取得済みのレースは取得しない
+ * （shadow でも。取得済みのレースは、公式ページへのリクエスト0＝DBの読み取りだけで終わる）。気象は書かない（発走後の
+ * beforeinfo は、そのレースの発走前ではなく、その日の最新の観測を表示するため）。書き込みは live のみ（shadow は書かない）。
+ *
  * outcome:
  *   ok                展示タイムが非NULLの行を書けた（変更なしも含む）＝完了
  *   skipped_have_data 展示タイムが取得済み（live のみ）＝完了
@@ -480,6 +484,7 @@ export async function scrapeAndUpsertRaces(
  * @param {Array<{race_id: string, venue_code: number, race_no: number, start_time: Date}>|null} [options.schedule]
  *   getRaceSchedule() の返り値（気象の観測時刻の解決用）。updateWeather のとき、無ければ読み込む
  * @param {boolean} [options.updateWeather] 気象も race_conditions へ反映するか（既定 true。shadow では書かない）
+ * @param {boolean} [options.catchup] 窓の外の補完（発走の後のスロット）か。取得済みのスキップを shadow にも効かせ、気象を書かない
  * @returns {Promise<Array<{race_id: string, outcome: string, rowsWritten: number, rowsParsed: number, rowsExpected: number, changed: boolean, resultDigest?: string, error?: string, retryAt?: Date}>>}
  *   changed: 今回、展示データまたは気象を実際に書き換えた（予測の再計算の対象になる）
  */
@@ -493,6 +498,7 @@ export async function runForRaces(
     concurrency = 1,
     schedule = null,
     updateWeather = true,
+    catchup = false,
   } = {},
 ) {
   if (mode !== "live" && mode !== "shadow") {
@@ -510,8 +516,9 @@ export async function runForRaces(
     changed: false,
   };
 
-  // 1) live: 展示タイムが取得済みのレースは、取得しない
-  if (live) {
+  // 1) live（と、窓の外の補完）: 展示タイムが取得済みのレースは、取得しない
+  //    （shadow の通常のスロットは、既存の経路が書いた行と比べるため、取得済みでも取得・解析する）
+  if (live || catchup) {
     const { data, error } = await client
       .from("exhibition_data")
       .select("race_id")
@@ -547,7 +554,8 @@ export async function runForRaces(
   );
 
   // 3) 行の組み立て
-  const weatherOn = live && updateWeather;
+  // 窓の外の補完は、気象を書かない（発走後のページは、そのレースの発走前の値ではなく、その日の最新の観測を表示する）
+  const weatherOn = live && updateWeather && !catchup;
   const fullSchedule =
     schedule ??
     (weatherOn
