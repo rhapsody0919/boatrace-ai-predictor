@@ -92,6 +92,24 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
 
+  // N24 ピットレポート（選手コメント。BOA-379）。対象はSG（全レース）・G1・G2（7R以降）のみ（予定表のスロットも
+  // 対象レースにだけ作る: scripts/lib/pitReportJob.js の createPitReportStore）。発走60分前から発走+180分まで、
+  // 公開まで5分おきに再試行する（公開時刻の実測は docs/design/pit-comments/spec.md §2。過去日のページも長期間取れるため、
+  // 窓を過ぎた取りこぼしは、バックフィルの手動CLIで補える）。1日の取得は、対象レース約7件＋未公開の間の再試行のみ
+  // （G3・一般戦のページは取得しない）。実装: scripts/lib/pitReportJob.js、api/cron/pit-reports.js
+  pit_reports: {
+    kind: "window",
+    offsets: [-60],
+    graceMin: 240,
+    retrySec: 300,
+    leaseSec: 60,
+    claimLimit: 8,
+    concurrency: 4,
+    slotSecEstimate: 12,
+    maxDurationSec: 120,
+    hosts: ["boatrace.jp"],
+  },
+
   // 日次ジョブ。targetTimeJst は「その日の対象日を決める指定時刻」（JST、HH:MM）。実行が遅れても、
   // 対象日は指定時刻から解決する（resolveTargetDate。GitHub Actionsの遅延による日付の取り違えの恒久対策）。
   // 期待件数の判定関数と実装は、各データセットの移行（WS4b）で run() が返す（rowsExpected）。

@@ -85,6 +85,10 @@
     {
       "path": "/api/cron/odds",
       "schedule": "* 22-23,0-14 * * *"
+    },
+    {
+      "path": "/api/cron/pit-reports",
+      "schedule": "*/5 22-23,0-15 * * *"
     }
   ],
   "functions": {

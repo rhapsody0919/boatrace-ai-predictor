@@ -503,6 +503,8 @@ async function runLeased({
  * @param {Function} [options.run] 日次・連続・監視のハンドラー
  * @param {Function} [options.onTick] live のときだけ、毎回の起動で、スロットの取得の前に呼ぶ（ファイル冒頭の説明を参照）
  * @param {boolean} [options.modeGated] false ならモードのゲートを掛けない（監視・保守）
+ * @param {(client: import("@supabase/supabase-js").SupabaseClient) => Object} [options.createStore] ストアの差し替え（既定は createSupabaseStore）。
+ *   対象レースにだけスロットを作る等、ensureSlots をジョブ固有にしたいときに使う（例: ピットレポート scripts/lib/pitReportJob.js）
  * @param {() => Promise<import("@supabase/supabase-js").SupabaseClient|null>} [options.getClient] テスト用の差し替え。既定は scripts/lib/supabaseClient.js
  */
 export function createScrapeCronHandler({
@@ -511,6 +513,7 @@ export function createScrapeCronHandler({
   run,
   onTick,
   modeGated,
+  createStore = createSupabaseStore,
   getClient = async () => (await import("../supabaseClient.js")).supabase,
 }) {
   return async function handler(req, res) {
@@ -527,7 +530,7 @@ export function createScrapeCronHandler({
     const { status, body } = await runScrapeJob({
       job,
       definition,
-      store: createSupabaseStore(client),
+      store: createStore(client),
       handleSlot,
       run,
       onTick,
