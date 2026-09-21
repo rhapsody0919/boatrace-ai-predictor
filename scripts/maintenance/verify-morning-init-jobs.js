@@ -1257,7 +1257,12 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
 
   async function runSlot(
     mode,
-    { client, loadStartTime, fetchImpl = politeFetch } = {},
+    {
+      client,
+      loadStartTime,
+      fetchImpl = politeFetch,
+      useDefaultLoader = false,
+    } = {},
   ) {
     const store = createMemoryStore({
       rows: { pcexpect: { job: "pcexpect", mode, consecutive_failures: 0 } },
@@ -1268,10 +1273,15 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
       job: "pcexpect",
       store,
       client: c,
-      handleSlot: createPcexpectSlotHandler({
-        loadStartTime:
-          loadStartTime ?? (async () => new Date("2026-09-21T20:30:00+09:00")),
-      }),
+      handleSlot: createPcexpectSlotHandler(
+        useDefaultLoader
+          ? {}
+          : {
+              loadStartTime:
+                loadStartTime ??
+                (async () => new Date("2026-09-21T20:30:00+09:00")),
+            },
+      ),
       politeFetch: fetchImpl,
       now: () => T0,
       worker: "verify",
@@ -1341,6 +1351,30 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
       http500.store.retried[0]?.outcome === "error" &&
       /HTTP 500/.test(http500.store.retried[0]?.error ?? ""),
     show(http500.store.retried),
+  );
+  // 既定の発走時刻の読み取り（races.start_time → race_start_at）
+  const withRaces = await runSlot("live", {
+    useDefaultLoader: true,
+    client: createFakeSupabaseClient({
+      tables: { races: [{ race_id: RACE_ID, start_time: "20:30:00" }] },
+    }),
+  });
+  const noRaceRow = await runSlot("live", { useDefaultLoader: true });
+  const racesReadFails = await runSlot("live", {
+    useDefaultLoader: true,
+    client: createFakeSupabaseClient({
+      failOn: { "races:select": "races-down" },
+    }),
+  });
+  check(
+    "(i) 既定の発走時刻の読み取り: races.start_time（20:30:00）が race_start_at（JST→UTC）になる。races に行が無ければ null。読み取りの失敗は再試行",
+    withRaces.client.data.external_predictions?.[0]?.race_start_at ===
+      "2026-09-21T11:30:00.000Z" &&
+      noRaceRow.client.data.external_predictions?.[0]?.race_start_at === null &&
+      racesReadFails.store.completed.length === 0 &&
+      racesReadFails.store.retried[0]?.outcome === "error" &&
+      /races-down/.test(racesReadFails.store.retried[0]?.error ?? ""),
+    show(withRaces.client.data.external_predictions?.[0]),
   );
   const startFail = await runSlot("live", {
     loadStartTime: async () => {
