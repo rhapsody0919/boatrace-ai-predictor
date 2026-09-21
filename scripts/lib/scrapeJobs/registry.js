@@ -102,14 +102,19 @@ export const SCRAPE_JOBS = Object.freeze({
   },
 
   // N24 ピットレポート（選手コメント。BOA-379）。対象はSG（全レース）・G1・G2（7R以降）のみ（予定表のスロットも
-  // 対象レースにだけ作る: scripts/lib/pitReportJob.js の createPitReportStore）。発走60分前から発走+180分まで、
-  // 公開まで5分おきに再試行する（公開時刻の実測は docs/design/pit-comments/spec.md §2。過去日のページも長期間取れるため、
-  // 窓を過ぎた取りこぼしは、バックフィルの手動CLIで補える）。1日の取得は、対象レース約7件＋未公開の間の再試行のみ
-  // （G3・一般戦のページは取得しない）。実装: scripts/lib/pitReportJob.js、api/cron/pit-reports.js
+  // 対象レースにだけ作る: scripts/lib/pitReportJob.js の createPitReportStore）。発走240分前から発走+180分まで、
+  // 公開まで、発走までの時間に応じた間隔（pendingRetrySec: 30分より前は10分、直前は5分、発走後は20分）で再試行する。
+  // 窓の根拠（2026-09-21の実測。docs/design/pit-comments/spec.md §1.4・§1.5）: 多摩川G1最終日の12R（発走16:30）は、
+  // 13:30（180分前）は未公開、14:30（120分前）は公開済みで、公開後は3時間（発走後60分まで）内容が変わらなかった。
+  // 公開は発走の120〜180分前で、当初の窓の開始（60分前）より1時間以上早い（本番のliveで、12Rの検知が15:30＝60分前に
+  // なった）。窓の開始は、実測した公開時刻（180分前）より早い240分前にした。窓の終わり（発走+180分）は変えない
+  // （graceMin = 240 + 180 = 420）。公開時刻は1つの開催日・1つのレース番号の実測のため、他のレース番号・日で
+  // 240分前より早く公開される場合は、窓の開始が遅れる（要追加の実測）。過去日のページも長期間取れるため、
+  // 窓を過ぎた取りこぼしは、バックフィルの手動CLIで補える。実装: scripts/lib/pitReportJob.js、api/cron/pit-reports.js
   pit_reports: {
     kind: "window",
-    offsets: [-60],
-    graceMin: 240,
+    offsets: [-240],
+    graceMin: 420,
     retrySec: 300,
     leaseSec: 60,
     claimLimit: 8,

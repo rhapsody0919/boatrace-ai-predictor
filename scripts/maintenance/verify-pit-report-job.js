@@ -83,6 +83,34 @@ const PENDING = R12.replace(
 );
 
 // ---------------------------------------------------------------------------
+// 窓（レジストリ pit_reports）の評価。実測（2026-09-21、docs/design/pit-comments/spec.md §1.4・§1.5）:
+//   多摩川G1最終日の12R（発走16:30）は、13:30（発走180分前）は未公開、14:30（120分前）は公開済みで、
+//   公開後は発走後60分まで内容が変わらなかった。公開は発走の120〜180分前。変異検証でも、壊した版に同じ評価をかける
+// ---------------------------------------------------------------------------
+const OBSERVED_PUBLISH_LATEST_MIN_BEFORE = 180; // 未公開だった最も近い取得（発走180分前）
+const OBSERVED_LAST_UNCHANGED_AFTER_MIN = 60; // 公開後、内容が変わらないことを確認した最後の取得（発走+60分）
+/** @returns {string[]} 失敗した項目のラベル */
+function evaluateWindow(registry) {
+  const failed = [];
+  const expect = (label, pass) => {
+    if (!pass) failed.push(label);
+  };
+  const def = registry.pit_reports;
+  const start = def.offsets[0];
+  const end = start + def.graceMin;
+  expect(
+    "窓の開始は、実測した公開時刻（発走の120〜180分前）より前（発走180分前以前）",
+    start <= -OBSERVED_PUBLISH_LATEST_MIN_BEFORE,
+  );
+  expect(
+    "窓の終わりは、公開後に内容が変わらないことを確認した時刻（発走+60分）以降",
+    end >= OBSERVED_LAST_UNCHANGED_AFTER_MIN,
+  );
+  expect("窓は1本（offsets が1要素）", def.offsets.length === 1);
+  return failed;
+}
+
+// ---------------------------------------------------------------------------
 // (a) 解析と (b) 行の組み立て を、差し替え可能なモジュールに対して評価する（変異検証で、壊した版にも同じ評価をかける）
 // ---------------------------------------------------------------------------
 /** @returns {string[]} 失敗した項目のラベル */
@@ -886,7 +914,7 @@ check(
 const SLOT = {
   job: PIT_REPORT_JOB,
   race_id: RACE_ID,
-  offset_min: -60,
+  offset_min: SCRAPE_JOBS.pit_reports.offsets[0],
   lease_until: new Date(Date.now() + 60000).toISOString(),
   attempts: 1,
 };
@@ -1208,6 +1236,12 @@ async function runWrapped({ mode, rows, client, fetched }) {
     same(validateRegistry(), []),
     show(validateRegistry()),
   );
+  const windowFailed = evaluateWindow(SCRAPE_JOBS);
+  check(
+    "(f) pit_reports の窓: 開始が実測した公開時刻（発走の120〜180分前）より前・終わりが発走+60分以降",
+    windowFailed.length === 0,
+    windowFailed.join(" / "),
+  );
   check(
     "(f) pit_reports: 窓型・対象ホスト boatrace.jp",
     SCRAPE_JOBS.pit_reports.kind === "window" &&
@@ -1439,6 +1473,25 @@ const rowsMutants = [
     ],
   ],
 ];
+// 窓（レジストリ）の変異: 当初の窓（発走60分前から）に戻すと、実測した公開時刻（120〜180分前）を取り逃がす
+for (const [label, replacements] of [
+  [
+    "窓の開始を発走60分前に戻す（実測した公開時刻より遅い）",
+    [["offsets: [-240],\n    graceMin: 420,", "offsets: [-60],\n    graceMin: 420,"]],
+  ],
+  [
+    "窓の終わりを発走前に縮める",
+    [["offsets: [-240],\n    graceMin: 420,", "offsets: [-240],\n    graceMin: 200,"]],
+  ],
+]) {
+  const failed = await withMutant("scrapeJobs/registry.js", replacements, async (m) =>
+    safeEval(() => evaluateWindow(m.SCRAPE_JOBS)),
+  );
+  check(
+    `(g) 変異検証（窓）: ${label} → 検証が失敗する（${failed.length}項目）`,
+    failed.length > 0,
+  );
+}
 for (const [label, replacements] of rowsMutants) {
   const failed = await withMutant("pitReportRows.js", replacements, async (m) =>
     safeEval(() => evaluateRows(m, realParser)),
