@@ -47,6 +47,7 @@ import {
   buildRaceRows,
   createThrottledFetch,
   hasFailure,
+  hasGap,
   parseOnly,
   selectTargets,
   tallyOutcomes,
@@ -197,8 +198,11 @@ async function processVenueDay({ date, venueCode }, { throttled, apply }) {
     .map((r) => `${r.race_id}: ${r.error}`)
     .slice(0, 10);
   const failed = Object.values(tallies).some(hasFailure);
+  // 値の無いレース（順延・中止・未公開）がある会場日は、done にせず、人が確認する
+  // （2026-06-03の江戸川・蒲郡は順延・中止で、結果・展示が全て無かった）
+  const gaps = Object.values(tallies).some(hasGap);
   return {
-    status: failed ? "partial" : "done",
+    status: failed ? "partial" : gaps ? "done_with_gaps" : "done",
     plan,
     tallies,
     errors,
@@ -238,7 +242,7 @@ async function main() {
     : null;
   const done = new Set(
     (previous?.entries ?? [])
-      .filter((e) => e.status === "done" || e.status === "no_data")
+      .filter((e) => e.status === "done")
       .map((e) => venueDayKey(e.date, e.venue_code)),
   );
   const targets = selectTargets(list.rows, {

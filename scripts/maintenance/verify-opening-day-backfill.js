@@ -17,6 +17,7 @@ import {
   buildRaceRows,
   createThrottledFetch,
   hasFailure,
+  hasGap,
   parseOnly,
   selectTargets,
   tallyOutcomes,
@@ -257,6 +258,12 @@ check(
         { outcome: "no_values" },
       ]),
     ),
+);
+
+check(
+  "hasGap: no_values が1件でもあれば true（順延・中止の会場日を done にしない）",
+  hasGap(tallyOutcomes([{ outcome: "ok" }, { outcome: "no_values" }])) &&
+    !hasGap(tallyOutcomes([{ outcome: "ok" }, { outcome: "partial" }])),
 );
 
 // (d) 実リストの整合

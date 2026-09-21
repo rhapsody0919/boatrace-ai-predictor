@@ -9,7 +9,6 @@
  * 公式サイトへの負荷を抑える取得器（逐次・間隔・サーキットブレーカー・回数の上限）だけ。
  */
 
-const RACE_ID_RE = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const BACKFILL_USER_AGENT =
@@ -114,11 +113,6 @@ export function buildRaceRows({ date, venueCode, page }) {
   }
   const raceNumbers = rows.map((r) => r.race_number);
   if (rows.length !== 12) anomalies.push(`races_count:${rows.length}`);
-  for (const r of rows) {
-    if (!RACE_ID_RE.test(r.race_id)) {
-      throw new Error(`race_id の形式が不正です: ${r.race_id}`);
-    }
-  }
   return { rows, raceNumbers, anomalies };
 }
 
@@ -225,3 +219,8 @@ export function tallyOutcomes(results) {
 export const FAILED_OUTCOMES = Object.freeze(["error", "breaker_open"]);
 export const hasFailure = (tally) =>
   FAILED_OUTCOMES.some((outcome) => (tally[outcome] ?? 0) > 0);
+/**
+ * 取得はできたが値が無いレース（no_values: 中止・順延・未公開）が1件でもあるか。
+ * 全レースが no_values の会場日は、開催されていない（順延・中止）可能性が高い。
+ */
+export const hasGap = (tally) => (tally.no_values ?? 0) > 0;
