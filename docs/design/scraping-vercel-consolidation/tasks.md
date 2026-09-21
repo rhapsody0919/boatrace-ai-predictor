@@ -143,6 +143,7 @@
 
 ### T4b-09 レース情報更新（A1）: `race_entries`・`race_conditions`
 
+- [x] **T4b-09-0**（コード実装済み。DDL案081は未適用。ユーザー承認待ち） 出走表の全項目化（[pre-race-full-fields/plan.md](../pre-race-full-fields/plan.md)）: 解析は`scripts/lib/raceListParser.js`（純関数）、行の組み立て・締切予定時刻による`races.start_time`の追従は`scripts/lib/preRaceRows.js`、未適用のDBでの安全な書き込みは`scripts/lib/preRaceSchema.js`。`update-race-info.js`の`run`は、この解析・行の組み立てを使い、`client`・`syncDeadlines`を引数に取る（`runForRaces`は、この上に作る）。検証: `npm run verify:pre-race-parsers`
 - [ ] **T4b-09-1** `update-race-info.js`に、レース単位の入口を追加する（`runForRaces`）。全行upsertは、変更のある行のみ書く現行（WS8(b)、`unchangedRows.js`）を維持する。`beforeinfo`・`racelist`の重複（D2・D3）は、この移行では変更せず、移行後に見直す
 - [ ] **T4b-09-2** `api/cron/race-info.js`: レジストリの`race_info`定義（`-60`、許容幅3分、再試行60秒、リース90秒）。成功して変更を書いたときに、案1の予測リフレッシュ（T4b-03）を呼ぶ
 - [ ] **T4b-09-3** `shadow`→`live`→`SKIP_RACE_INFO_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-scheduled.js`の`updatedRaceIds`から、レース情報由来を外す（この時点でGitHub側の再計算は不要になる）
@@ -178,6 +179,7 @@
 
 ### T4b-06 展示（A2）: `exhibition_data`
 
+- [x] **T4b-06-0**（コード実装済み。DDL案082は未適用。ユーザー承認待ち） 直前情報の全項目化（[pre-race-full-fields/plan.md](../pre-race-full-fields/plan.md)）: 解析は`scripts/lib/beforeInfoParser.js`（純関数。展示進入・展示STのF/L・前走の着順の生表記・欠場・気象を1回で解析）、行の組み立ては`scripts/lib/preRaceRows.js`。`scrape-exhibition-data.js`の`scrapeAndUpsertRaces`は、この解析・行の組み立てを使う（気象の書き込みは従来どおり）。検証: `npm run verify:pre-race-parsers`
 - [ ] **T4b-06-1** 展示公開時刻の分布を実測する（plan.md U6）: WS2の取得時刻列と`races.start_time`の差（会場別。展示STが先に出る会場を含む）。結果から、レジストリの展示定義（1本のスロット`-33`〜`-7`、再試行120秒）が妥当か、現行の3窓（30/15/10分前）へ戻すかを、ユーザーに提示する
 - [ ] **T4b-06-2** `api/cron/exhibition.js`を共通ラッパ・スロット化する（`waitUntil`を廃止し、同期の応答にする）。現行の`getRaceIdsWithExhibitionTime`による取得済みのスキップは`skipped_have_data`として記録する。案1の予測リフレッシュ（T4b-03）を、スロットの完了後に呼ぶ
 - [ ] **T4b-06-3** `vercel.json`のcronsに追加して、純正Cronで起動する（cron-job.orgの`Vercel Exhibition Cron`と並走。同じエンドポイントで、リースと冪等により無害）。並走の後に、(ユーザー)cron-job.orgのジョブを停止する
