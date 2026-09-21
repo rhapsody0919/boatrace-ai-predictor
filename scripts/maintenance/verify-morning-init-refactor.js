@@ -13,12 +13,14 @@
  *       失敗は例外。findRacesMissingUnified が、欠けたレースだけを返す。strict のとき、DBの読み取り失敗を「対象なし」にしない
  *   (d) scrape-pcexpect.js: import しても main() が走らない。実ページの解析結果が、本番DBの payload と同じダイジェストになる。
  *       runForRaces: shadow は書かない・live は race_start_at つきで upsert・未公開は no_values・失敗・ブレーカーの扱い
- *   (e) morning-init.js: SKIP_MORNING_INIT_ON_GHA=true で何もせず終了する（既定は従来どおり。Supabase 未設定なら異常終了）
+ *   (e) morning-init.js: SKIP_MORNING_INIT_ON_GHA=true で何もせず終了する（既定は従来どおり）。ただし、フェイルセーフとして、
+ *       JST 07:00 を過ぎても当日の races が無い（または確認できない）なら、従来どおり初期化する
  *
  * 実行: node scripts/maintenance/verify-morning-init-refactor.js
  */
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import {
   getTodayVenues,
   scrapeRacesData,
@@ -36,6 +38,10 @@ import {
   runForRaces as runPcexpect,
 } from "../daily/scrape-pcexpect.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
+import {
+  FALLBACK_FROM_JST_HOUR,
+  decideMorningInitOnGha,
+} from "../lib/racesInit/ghaSkip.js";
 import { createFakeSupabaseClient } from "../lib/scrapeJobs/testing/fakeSupabaseClient.js";
 
 // 検証の対象コードが出すログは捨て、結果の行だけを出す
@@ -677,42 +683,104 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// (e) morning-init.js の GitHub 側を止める変数
+// (e) morning-init.js の GitHub 側を止める変数（と、フェイルセーフ）
 // ---------------------------------------------------------------------------
 {
-  // 本番の資格情報が環境にあっても、DBに書かないよう、Supabase の変数は空にして起動する
-  const spawn = (extra) =>
-    spawnSync(process.execPath, ["scripts/daily/morning-init.js"], {
-      cwd: new URL("../../", import.meta.url),
-      env: {
-        ...process.env,
-        SUPABASE_URL: "",
-        SUPABASE_SERVICE_KEY: "",
-        VITE_SUPABASE_URL: "",
-        VITE_SUPABASE_ANON_KEY: "",
-        SKIP_MORNING_INIT_ON_GHA: "",
-        SKIP_PCEXPECT_ON_GHA: "",
-        ...extra,
-      },
-      encoding: "utf8",
-      timeout: 30000,
-    });
-  const skipped = spawn({ SKIP_MORNING_INIT_ON_GHA: "true" });
+  const decide = (skipVar, jstHour, racesCount) =>
+    decideMorningInitOnGha({ skipVar, jstHour, racesCount });
   check(
-    "(e) SKIP_MORNING_INIT_ON_GHA=true: 何もせず正常終了（Supabase が無くても）",
+    "(e) 変数が true でない: 常に実行する（従来どおり。時刻・races の件数に依らない）",
+    [0, 5, 7, 12].every(
+      (h) => decide(false, h, 0).run && decide(false, h, 100).run,
+    ),
+  );
+  check(
+    "(e) true・JST 07:00 より前: 実行しない（Vercel の races-init の時間帯。DBの件数は見ない）",
+    [0, 4, 5, 6].every((h) => !decide(true, h, null).run && !decide(true, h, 0).run),
+  );
+  check(
+    "(e) true・07:00 以降で races が1件以上: 実行しない（Vercel が初期化済み）",
+    !decide(true, 7, 12).run && !decide(true, 12, 1).run && !decide(true, 23, 288).run,
+  );
+  check(
+    "(e) true・07:00 以降で races が0件: 実行する（フェイルセーフ。Vercel が失敗した日に、誰も初期化しない状態を避ける）",
+    decide(true, 7, 0).run && decide(true, 9, 0).run,
+  );
+  check(
+    "(e) true・07:00 以降で件数を確認できない（DB未設定・読み取り失敗）: 実行する（止めない側に倒す）",
+    decide(true, 8, null).run && decide(true, 8, undefined).run,
+  );
+  check(
+    "(e) フェイルセーフが働き始める時刻は JST 07:00（従来の初回の初期化と同じ）",
+    FALLBACK_FROM_JST_HOUR === 7 && !decide(true, 6, 0).run && decide(true, 7, 0).run,
+  );
+
+  // 本番の資格情報が環境にあっても、DBに書かないよう、Supabase の変数は空にして起動する
+  const FAKE_NOW = fileURLToPath(
+    new URL("../lib/scrapeJobs/testing/fakeNow.mjs", import.meta.url),
+  );
+  const spawn = (extra, nowIso) =>
+    spawnSync(
+      process.execPath,
+      ["--import", FAKE_NOW, "scripts/daily/morning-init.js"],
+      {
+        cwd: new URL("../../", import.meta.url),
+        env: {
+          ...process.env,
+          SUPABASE_URL: "",
+          SUPABASE_SERVICE_KEY: "",
+          VITE_SUPABASE_URL: "",
+          VITE_SUPABASE_ANON_KEY: "",
+          SKIP_MORNING_INIT_ON_GHA: "",
+          SKIP_PCEXPECT_ON_GHA: "",
+          FAKE_NOW_ISO: nowIso,
+          ...extra,
+        },
+        encoding: "utf8",
+        timeout: 30000,
+      },
+    );
+  const skipped = spawn(
+    { SKIP_MORNING_INIT_ON_GHA: "true" },
+    "2026-09-21T05:30:00+09:00",
+  );
+  check(
+    "(e) SKIP_MORNING_INIT_ON_GHA=true・05:30 JST: 何もせず正常終了（Supabase が無くても）",
     skipped.status === 0 && /スキップ/.test(skipped.stdout),
     `${skipped.status} ${skipped.stdout} ${skipped.stderr}`.slice(0, 200),
   );
-  const normal = spawn({});
+  const failsafe = spawn(
+    { SKIP_MORNING_INIT_ON_GHA: "true" },
+    "2026-09-21T07:30:00+09:00",
+  );
   check(
-    "(e) 既定（変数なし）: 従来どおり動く（Supabase 未設定なら、そのエラーで異常終了）",
+    "(e) SKIP_MORNING_INIT_ON_GHA=true・07:30 JST で、races の件数を確認できない: スキップせず、従来の初期化に進む（フェイルセーフ。ここでは Supabase 未設定で異常終了）",
+    failsafe.status === 1 &&
+      /フェイルセーフで初期化/.test(failsafe.stderr) &&
+      /Supabase環境変数が未設定/.test(failsafe.stderr),
+    `${failsafe.status} ${failsafe.stdout} ${failsafe.stderr}`.slice(0, 300),
+  );
+  const normal = spawn({}, "2026-09-21T05:30:00+09:00");
+  check(
+    "(e) 既定（変数なし）: 従来どおり動く（時刻に依らず。Supabase 未設定なら、そのエラーで異常終了）",
     normal.status === 1 && /Supabase環境変数が未設定/.test(normal.stderr),
     `${normal.status} ${normal.stderr}`.slice(0, 200),
   );
-  const falseVar = spawn({ SKIP_MORNING_INIT_ON_GHA: "false" });
+  const falseVar = spawn(
+    { SKIP_MORNING_INIT_ON_GHA: "false" },
+    "2026-09-21T05:30:00+09:00",
+  );
   check(
     "(e) SKIP_MORNING_INIT_ON_GHA=false: 従来どおり（止めない）",
     falseVar.status === 1 && /Supabase環境変数が未設定/.test(falseVar.stderr),
+  );
+  const skipPc = spawn(
+    { SKIP_PCEXPECT_ON_GHA: "true" },
+    "2026-09-21T05:30:00+09:00",
+  );
+  check(
+    "(e) SKIP_PCEXPECT_ON_GHA だけでは、朝の初期化そのものは止まらない（Supabase 未設定のエラーまで進む）",
+    skipPc.status === 1 && /Supabase環境変数が未設定/.test(skipPc.stderr),
   );
 }
 

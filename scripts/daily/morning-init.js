@@ -21,6 +21,10 @@ import {
   getJSTNow,
 } from "../lib/dateUtils.js";
 import { getTodayVenues } from "../scrape-to-json.js";
+import {
+  FALLBACK_FROM_JST_HOUR,
+  decideMorningInitOnGha,
+} from "../lib/racesInit/ghaSkip.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -156,9 +160,12 @@ async function triggerDeployHook() {
 // 止めるトグル（リポジトリ変数。コードは削除せず、切り戻しも変数のトグルだけで完結。SKIP_EXHIBITION_ON_GHA と同じ方式）。
 // 既定（未設定・true以外）は、どちらも従来どおり実行する。
 //   SKIP_MORNING_INIT_ON_GHA=true  朝の初期化（races の初期化・取りこぼし会場の確認・予測の再生成・unified・
-//                                  pcexpect・Deploy Hook）を、全て行わない
+//                                  pcexpect・Deploy Hook）を行わない。ただし、フェイルセーフとして、JST 07:00 になっても
+//                                  当日の races が1件も無ければ、従来どおり初期化する（Vercel が失敗した日に、
+//                                  誰も初期化しない状態を避ける。判定は scripts/lib/racesInit/ghaSkip.js）
 //   SKIP_PCEXPECT_ON_GHA=true      初期化の中の pcexpect（公式コンピュータ予想）の段だけを行わない
-//                                  （races-init より先に pcexpect だけを Vercel へ切り替える場合）
+//                                  （races-init より先に pcexpect だけを Vercel へ切り替える場合、または、上のフェイルセーフで
+//                                  GitHub が初期化する場合に、Vercel の pcexpect と重複させない）
 const isTrueVar = (name) =>
   String(process.env[name] ?? "")
     .trim()
@@ -169,10 +176,32 @@ async function main() {
   console.log(`⏰ ${new Date().toISOString()}`);
 
   if (isTrueVar("SKIP_MORNING_INIT_ON_GHA")) {
-    console.log(
-      "⏭️ 朝の初期化をスキップ（SKIP_MORNING_INIT_ON_GHA=true。Vercel の races-init が担当）",
+    const jstHour = getJSTNow().getUTCHours();
+    let racesCount = null;
+    if (jstHour >= FALLBACK_FROM_JST_HOUR && isSupabaseEnabled()) {
+      const today = parseDateArg() || getTodayDateJST();
+      const { count, error } = await supabase
+        .from("races")
+        .select("*", { count: "exact", head: true })
+        .gte("race_id", today)
+        .lt("race_id", `${today}~`);
+      // 読み取りに失敗したら、件数は不明（止めない側に倒す）
+      racesCount = error ? null : (count ?? 0);
+    }
+    const decision = decideMorningInitOnGha({
+      skipVar: true,
+      jstHour,
+      racesCount,
+    });
+    if (!decision.run) {
+      console.log(
+        `⏭️ 朝の初期化をスキップ（SKIP_MORNING_INIT_ON_GHA=true。Vercel の races-init が担当。${decision.reason}）`,
+      );
+      return;
+    }
+    console.warn(
+      `⚠️ SKIP_MORNING_INIT_ON_GHA=true ですが、フェイルセーフで初期化します（${decision.reason}。JST ${FALLBACK_FROM_JST_HOUR}時を過ぎても、当日の races が無い・確認できません）`,
     );
-    return;
   }
 
   if (!isSupabaseEnabled()) {
