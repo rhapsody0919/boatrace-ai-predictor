@@ -33,6 +33,15 @@ import {
   isOddsRefreshSkippedOnGha,
   isOddsSkippedOnGha,
 } from "../lib/predictionRefresh.js";
+import { shouldSkipOnGha } from "../lib/ghaSkipGate.js";
+
+/**
+ * SKIP_<JOB>_ON_GHA=true のとき、Vercel が健全な場合に限りスキップする（フェイルセーフ付きSKIP）。
+ * 変数が true でない場合は、この関数は呼ばれない（呼び出し側が先に確認する。DB を読まず、現行と同じ動作）。
+ * Vercel が live でない・止まっている・状態を読めない場合は false（実行）を返す。判定と理由はログに出る。
+ * 判定の定義: scripts/lib/ghaSkipGate.js、docs/design/scraping-vercel-consolidation/verification-runbook.md P
+ */
+const gateSkips = async (varName) => (await shouldSkipOnGha({ varName })).skip;
 
 async function main() {
   console.log("🎯 スクレイピングオーケストレーター開始");
@@ -62,10 +71,13 @@ async function main() {
   //   SKIP_ODDS_ON_GHA=true  オッズ取得を行わない（買い目オッズ A4 は別に動く。T4b-10 で扱う）
   // オッズ起点の予測リフレッシュのきっかけも消えるため、案1（REFRESH_ON_VERCEL・SKIP_ODDS_REFRESH_ON_GHA）が先。
   // 順序は scripts/lib/predictionRefresh.js の isOddsSkippedOnGha を参照
-  const skipOdds = isOddsSkippedOnGha();
-  const hasOddsRaces =
-    !skipOdds &&
-    ODDS_WINDOWS.some((w) => getRacesInWindow(schedule, w, 3).length > 0);
+  // 変数が true のときだけ、対象のレースがあるときに、Vercel が健全かを確認する（健全でなければ、実行する）
+  const oddsDue = ODDS_WINDOWS.some(
+    (w) => getRacesInWindow(schedule, w, 3).length > 0,
+  );
+  const skipOdds =
+    isOddsSkippedOnGha() && (!oddsDue || (await gateSkips("SKIP_ODDS_ON_GHA")));
+  const hasOddsRaces = !skipOdds && oddsDue;
   // update-race-info 内部: getRacesInWindow(schedule, 60) → デフォルト ±3分 = 57-63分前
   const hasUpdateRaces = getRacesInWindow(schedule, 60).length > 0;
   // exhibition 内部: EXHIBITION_WINDOWS=[30,15,10] 各 ±3分
@@ -160,8 +172,14 @@ async function main() {
   //   SKIP_RESULTS_ON_GHA=true  結果取得（と中止・順延の確定）を行わない。Kファイル同期は、下の変数で別に止める
   //   SKIP_KFILE_ON_GHA=true    Kファイル同期（進入コース・rank4〜6）を行わない
   // 既定（未設定・true以外）は、どちらも従来どおり実行する。
-  const skipResults = process.env.SKIP_RESULTS_ON_GHA === "true";
-  const skipKFile = process.env.SKIP_KFILE_ON_GHA === "true";
+  // 変数が true のときだけ、対象のレースがあるときに、Vercel が健全かを確認する（健全でなければ、実行する）
+  const resultsDue = finishedRaces.length > 0;
+  const skipResults =
+    process.env.SKIP_RESULTS_ON_GHA === "true" &&
+    (!resultsDue || (await gateSkips("SKIP_RESULTS_ON_GHA")));
+  const skipKFile =
+    process.env.SKIP_KFILE_ON_GHA === "true" &&
+    (!resultsDue || (await gateSkips("SKIP_KFILE_ON_GHA")));
   if (finishedRaces.length > 0 && !(skipResults && skipKFile)) {
     const { updated, count } = await runResults(schedule, date, {
       skipResults,

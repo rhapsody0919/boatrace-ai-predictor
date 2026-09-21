@@ -2293,11 +2293,20 @@ const summaryOf = ({
       );
     }
     const yml = read(`.github/workflows/${workflow}`);
+    // フェイルセーフ付きSKIP: 変数が true のときだけ gate ジョブが起動し（未設定・falseは skipped → 従来どおり実行）、
+    // 取得ジョブは gate の判定がスキップのときだけ止まる。変数は gate のステップにだけ渡し、取得のコマンドには渡さない
     check(
-      `GitHub側 ${workflow}: リポジトリ変数 ${skipVar}=true のときだけジョブを止める（未設定・falseは従来どおり実行）。実行コマンドは変えない`,
-      yml.includes(`if: \${{ vars.${skipVar} != 'true' }}`) &&
+      `GitHub側 ${workflow}: リポジトリ変数 ${skipVar}=true のときだけ gate ジョブが判定し、Vercelが健全なときだけ取得ジョブを止める（未設定・falseは gate が skipped で従来どおり実行、gate の失敗も実行）。実行コマンドは変えない`,
+      yml.includes(`if: \${{ vars.${skipVar} == 'true' }}`) &&
+        yml.includes(`node scripts/maintenance/gha-skip-gate.js ${skipVar} --wait`) &&
+        yml.includes("needs: gate") &&
+        yml.includes(
+          "if: ${{ !cancelled() && needs.gate.outputs.skip != 'true' }}",
+        ) &&
+        yml.includes("continue-on-error: true") &&
         yml.includes(command) &&
-        !new RegExp(`^\\s*${skipVar}:`, "m").test(yml),
+        !yml.includes(`vars.${skipVar} != 'true'`) &&
+        [...yml.matchAll(new RegExp(`^\\s*${skipVar}:`, "gm"))].length === 1,
     );
   }
   // 選手プロフィール（月次）: 従来のGitHub Actions（scrape-racer-season-stats.yml）と同じ夜間・同じ日付の式。
