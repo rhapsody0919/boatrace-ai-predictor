@@ -1,0 +1,509 @@
+{
+ "schema": "races-opening-day-missing/v1",
+ "investigated_on": "2026-09-21",
+ "definition": "公式の月間スケジュール(boatrace.jp race/monthlyschedule)から導いた節の初日(会場,日付)のうち、本番DBのracesに1行も無いもの。範囲は2025-12-04〜2026-09-21で、該当は2026-04-10〜2026-09-11のみ",
+ "count": 125,
+ "distinct_dates": 55,
+ "rows": [
+  {
+   "race_date": "2026-04-10",
+   "venue_code": 17
+  },
+  {
+   "race_date": "2026-04-11",
+   "venue_code": 4
+  },
+  {
+   "race_date": "2026-04-11",
+   "venue_code": 14
+  },
+  {
+   "race_date": "2026-04-11",
+   "venue_code": 22
+  },
+  {
+   "race_date": "2026-04-15",
+   "venue_code": 9
+  },
+  {
+   "race_date": "2026-05-05",
+   "venue_code": 18
+  },
+  {
+   "race_date": "2026-05-07",
+   "venue_code": 24
+  },
+  {
+   "race_date": "2026-05-08",
+   "venue_code": 14
+  },
+  {
+   "race_date": "2026-05-08",
+   "venue_code": 22
+  },
+  {
+   "race_date": "2026-05-13",
+   "venue_code": 19
+  },
+  {
+   "race_date": "2026-05-14",
+   "venue_code": 2
+  },
+  {
+   "race_date": "2026-05-14",
+   "venue_code": 10
+  },
+  {
+   "race_date": "2026-05-16",
+   "venue_code": 6
+  },
+  {
+   "race_date": "2026-05-16",
+   "venue_code": 14
+  },
+  {
+   "race_date": "2026-05-16",
+   "venue_code": 17
+  },
+  {
+   "race_date": "2026-05-22",
+   "venue_code": 13
+  },
+  {
+   "race_date": "2026-05-22",
+   "venue_code": 23
+  },
+  {
+   "race_date": "2026-05-23",
+   "venue_code": 10
+  },
+  {
+   "race_date": "2026-05-23",
+   "venue_code": 12
+  },
+  {
+   "race_date": "2026-05-26",
+   "venue_code": 15
+  },
+  {
+   "race_date": "2026-05-28",
+   "venue_code": 1
+  },
+  {
+   "race_date": "2026-05-28",
+   "venue_code": 2
+  },
+  {
+   "race_date": "2026-05-29",
+   "venue_code": 9
+  },
+  {
+   "race_date": "2026-05-29",
+   "venue_code": 11
+  },
+  {
+   "race_date": "2026-05-29",
+   "venue_code": 14
+  },
+  {
+   "race_date": "2026-05-29",
+   "venue_code": 23
+  },
+  {
+   "race_date": "2026-05-30",
+   "venue_code": 5
+  },
+  {
+   "race_date": "2026-05-30",
+   "venue_code": 12
+  },
+  {
+   "race_date": "2026-06-01",
+   "venue_code": 19
+  },
+  {
+   "race_date": "2026-06-01",
+   "venue_code": 24
+  },
+  {
+   "race_date": "2026-06-02",
+   "venue_code": 10
+  },
+  {
+   "race_date": "2026-06-03",
+   "venue_code": 3
+  },
+  {
+   "race_date": "2026-06-03",
+   "venue_code": 7
+  },
+  {
+   "race_date": "2026-06-03",
+   "venue_code": 21
+  },
+  {
+   "race_date": "2026-06-04",
+   "venue_code": 8
+  },
+  {
+   "race_date": "2026-06-04",
+   "venue_code": 17
+  },
+  {
+   "race_date": "2026-06-05",
+   "venue_code": 1
+  },
+  {
+   "race_date": "2026-06-05",
+   "venue_code": 18
+  },
+  {
+   "race_date": "2026-06-12",
+   "venue_code": 19
+  },
+  {
+   "race_date": "2026-06-12",
+   "venue_code": 22
+  },
+  {
+   "race_date": "2026-06-14",
+   "venue_code": 1
+  },
+  {
+   "race_date": "2026-06-14",
+   "venue_code": 12
+  },
+  {
+   "race_date": "2026-06-15",
+   "venue_code": 21
+  },
+  {
+   "race_date": "2026-06-16",
+   "venue_code": 9
+  },
+  {
+   "race_date": "2026-06-16",
+   "venue_code": 18
+  },
+  {
+   "race_date": "2026-06-17",
+   "venue_code": 5
+  },
+  {
+   "race_date": "2026-06-17",
+   "venue_code": 7
+  },
+  {
+   "race_date": "2026-06-17",
+   "venue_code": 13
+  },
+  {
+   "race_date": "2026-06-17",
+   "venue_code": 17
+  },
+  {
+   "race_date": "2026-06-17",
+   "venue_code": 24
+  },
+  {
+   "race_date": "2026-06-18",
+   "venue_code": 2
+  },
+  {
+   "race_date": "2026-06-18",
+   "venue_code": 4
+  },
+  {
+   "race_date": "2026-06-18",
+   "venue_code": 20
+  },
+  {
+   "race_date": "2026-06-20",
+   "venue_code": 6
+  },
+  {
+   "race_date": "2026-06-20",
+   "venue_code": 15
+  },
+  {
+   "race_date": "2026-06-23",
+   "venue_code": 7
+  },
+  {
+   "race_date": "2026-06-25",
+   "venue_code": 1
+  },
+  {
+   "race_date": "2026-06-25",
+   "venue_code": 13
+  },
+  {
+   "race_date": "2026-06-25",
+   "venue_code": 18
+  },
+  {
+   "race_date": "2026-06-25",
+   "venue_code": 21
+  },
+  {
+   "race_date": "2026-06-26",
+   "venue_code": 17
+  },
+  {
+   "race_date": "2026-06-26",
+   "venue_code": 24
+  },
+  {
+   "race_date": "2026-07-01",
+   "venue_code": 7
+  },
+  {
+   "race_date": "2026-07-01",
+   "venue_code": 22
+  },
+  {
+   "race_date": "2026-07-02",
+   "venue_code": 4
+  },
+  {
+   "race_date": "2026-07-02",
+   "venue_code": 21
+  },
+  {
+   "race_date": "2026-07-03",
+   "venue_code": 9
+  },
+  {
+   "race_date": "2026-07-03",
+   "venue_code": 12
+  },
+  {
+   "race_date": "2026-07-03",
+   "venue_code": 13
+  },
+  {
+   "race_date": "2026-07-07",
+   "venue_code": 8
+  },
+  {
+   "race_date": "2026-07-07",
+   "venue_code": 10
+  },
+  {
+   "race_date": "2026-07-07",
+   "venue_code": 11
+  },
+  {
+   "race_date": "2026-07-07",
+   "venue_code": 20
+  },
+  {
+   "race_date": "2026-07-11",
+   "venue_code": 3
+  },
+  {
+   "race_date": "2026-07-11",
+   "venue_code": 4
+  },
+  {
+   "race_date": "2026-07-14",
+   "venue_code": 1
+  },
+  {
+   "race_date": "2026-07-14",
+   "venue_code": 21
+  },
+  {
+   "race_date": "2026-07-14",
+   "venue_code": 24
+  },
+  {
+   "race_date": "2026-07-21",
+   "venue_code": 23
+  },
+  {
+   "race_date": "2026-07-24",
+   "venue_code": 2
+  },
+  {
+   "race_date": "2026-07-24",
+   "venue_code": 6
+  },
+  {
+   "race_date": "2026-07-24",
+   "venue_code": 12
+  },
+  {
+   "race_date": "2026-07-24",
+   "venue_code": 17
+  },
+  {
+   "race_date": "2026-07-28",
+   "venue_code": 15
+  },
+  {
+   "race_date": "2026-07-28",
+   "venue_code": 16
+  },
+  {
+   "race_date": "2026-07-28",
+   "venue_code": 24
+  },
+  {
+   "race_date": "2026-07-29",
+   "venue_code": 18
+  },
+  {
+   "race_date": "2026-07-29",
+   "venue_code": 22
+  },
+  {
+   "race_date": "2026-07-29",
+   "venue_code": 23
+  },
+  {
+   "race_date": "2026-07-30",
+   "venue_code": 8
+  },
+  {
+   "race_date": "2026-08-04",
+   "venue_code": 10
+  },
+  {
+   "race_date": "2026-08-04",
+   "venue_code": 12
+  },
+  {
+   "race_date": "2026-08-05",
+   "venue_code": 9
+  },
+  {
+   "race_date": "2026-08-05",
+   "venue_code": 14
+  },
+  {
+   "race_date": "2026-08-06",
+   "venue_code": 2
+  },
+  {
+   "race_date": "2026-08-06",
+   "venue_code": 24
+  },
+  {
+   "race_date": "2026-08-07",
+   "venue_code": 15
+  },
+  {
+   "race_date": "2026-08-07",
+   "venue_code": 20
+  },
+  {
+   "race_date": "2026-08-30",
+   "venue_code": 6
+  },
+  {
+   "race_date": "2026-08-30",
+   "venue_code": 8
+  },
+  {
+   "race_date": "2026-08-30",
+   "venue_code": 21
+  },
+  {
+   "race_date": "2026-09-01",
+   "venue_code": 12
+  },
+  {
+   "race_date": "2026-09-01",
+   "venue_code": 13
+  },
+  {
+   "race_date": "2026-09-01",
+   "venue_code": 24
+  },
+  {
+   "race_date": "2026-09-02",
+   "venue_code": 17
+  },
+  {
+   "race_date": "2026-09-02",
+   "venue_code": 22
+  },
+  {
+   "race_date": "2026-09-03",
+   "venue_code": 2
+  },
+  {
+   "race_date": "2026-09-03",
+   "venue_code": 9
+  },
+  {
+   "race_date": "2026-09-03",
+   "venue_code": 10
+  },
+  {
+   "race_date": "2026-09-04",
+   "venue_code": 7
+  },
+  {
+   "race_date": "2026-09-04",
+   "venue_code": 11
+  },
+  {
+   "race_date": "2026-09-05",
+   "venue_code": 1
+  },
+  {
+   "race_date": "2026-09-05",
+   "venue_code": 3
+  },
+  {
+   "race_date": "2026-09-05",
+   "venue_code": 4
+  },
+  {
+   "race_date": "2026-09-06",
+   "venue_code": 14
+  },
+  {
+   "race_date": "2026-09-07",
+   "venue_code": 13
+  },
+  {
+   "race_date": "2026-09-07",
+   "venue_code": 16
+  },
+  {
+   "race_date": "2026-09-07",
+   "venue_code": 24
+  },
+  {
+   "race_date": "2026-09-09",
+   "venue_code": 5
+  },
+  {
+   "race_date": "2026-09-09",
+   "venue_code": 17
+  },
+  {
+   "race_date": "2026-09-09",
+   "venue_code": 20
+  },
+  {
+   "race_date": "2026-09-09",
+   "venue_code": 21
+  },
+  {
+   "race_date": "2026-09-11",
+   "venue_code": 2
+  },
+  {
+   "race_date": "2026-09-11",
+   "venue_code": 6
+  },
+  {
+   "race_date": "2026-09-11",
+   "venue_code": 12
+  }
+ ]
+}
