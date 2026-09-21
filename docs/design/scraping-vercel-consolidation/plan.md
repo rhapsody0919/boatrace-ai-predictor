@@ -618,6 +618,8 @@ stateDiagram-v2
 
 計測は、予定表のSQL（5分ごとは当日の行のみ、重い7日集計は1時間に1回）で行い、Disk IOを抑える。
 
+**実装（2026-09-21、T7-06）**: 「件数の充足率（完了の定義A）」「空テーブル」の日次の自動計測は、汎用の日次監視`data_health`として実装した（`scripts/lib/dataHealth/`、`api/cron/data-health.js`、マイグレーション089。運用は[verification-runbook.md §U](./verification-runbook.md#u-汎用の日次監視data_healthの完了の定義cの導入tasksmd-t7-06)）。`data-health-report.js`のCLIをそのまま定期実行するのではなく、(1)分母の定義（`coverageSpec.js`）と集計SQLを共有し、(2)Vercel Functionから実行できるよう、固定のSQLを持つ名前つきの関数（089）に載せ、(3)閾値・除外・通知の一意性を登録表（`checks.js`）で宣言する形にした。期待件数のSQLを任意に渡す口は作らない。通知は`last_report.alerts`→`scrape-monitor`の既存のSlack経路。監視自体の失敗は、`scrape-monitor`の日次の期限超過と、メタ監視（`scrape-monitor-liveness`）で検知する。
+
 ## 8. リージョン・取得先への負荷・バックオフ
 
 **リージョン**: DBはap-southeast-2（シドニー）。取得先（boatrace.jp、会場公式サイト、mbrace.or.jp）は日本。プロジェクトの現在の関数のリージョンは**未確認**（F13。既定のリージョンは確認できていない）。ジョブごとに性質が異なる。

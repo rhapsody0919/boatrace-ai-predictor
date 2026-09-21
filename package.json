@@ -34,6 +34,8 @@
     "verify:pre-race-parsers": "node scripts/maintenance/verify-pre-race-parsers.js",
     "verify:scraped-timestamps": "node scripts/maintenance/verify-scraped-timestamps.js",
     "verify:data-health-report": "node scripts/maintenance/verify-data-health-report.js",
+    "verify:data-health-job": "node scripts/maintenance/verify-data-health-job.js",
+    "check:data-health": "node scripts/maintenance/check-data-health.js",
     "verify:scrape-jobs": "node scripts/maintenance/verify-scrape-jobs.js",
     "verify:scrape-monitor": "node scripts/maintenance/verify-scrape-monitor.js",
     "verify:race-notices-job": "node scripts/maintenance/verify-race-notices-job.js",

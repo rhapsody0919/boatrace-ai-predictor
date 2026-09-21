@@ -359,4 +359,15 @@
 - [ ] **T7-04** 旧基盤のコード・ワークフローを削除する: 取得系のGitHub Actionsワークフロー、`scrape-scheduled.js`・`morning-init.js`、`SKIP_*_ON_GHA`変数、`api/scrape-races.js`（利用の有無を全期間で確認した後。plan.md U11）、展示の旧実装（D5: `scrape-to-json.js`・`api/scrape-races.js`のbeforeinfo別パーサー）。`continue-on-error`を残さない
 - [ ] **T7-05** 既存ドキュメントに、置き換えの注記を追記する（plan.md §12）。ADR-0057（窓の意味論）・ADR-0066（移行specの参照先）を更新する。orchestration.mdのWS4a・WS4b・WS7を完了に更新する
 
+- [x] **T7-06**（コード実装済み。`scripts/lib/dataHealth/`（登録表`checks.js`・関数のSQLの正本`functions.js`・判定`evaluate.js`・実行`job.js`）、`api/cron/data-health.js`、レジストリ`data_health`（daily・06:30 JST指定）、`vercel.json`のcron、`docs/db-migration/089_data_health_functions.sql`、メタ監視`check-scrape-monitor-liveness.js`の拡張、`npm run verify:data-health-job`・`npm run check:data-health`。既定は`off`（行なし）で挙動不変。runbook §U） **汎用の日次監視（完了の定義C）**。件数の充足率・0件のテーブルを、DBの実測から日次で自動計測し、閾値未達を既存のSlack通知（`scrape-monitor`経由）に流す。期待件数のSQLは、データセットごとの固定の関数（089。任意のSQLを渡す口は作らない）で宣言し、閾値・分類・除外は登録表で宣言する（新しいデータセットは、そのマイグレーションで関数を足し、登録表に1件足す）。分母の定義は`data-health-report.js`と共有（`coverageSpec.js`）
+- [ ] **T7-06-1** (ユーザー承認) マイグレーション089（関数7本。テーブル・データの変更なし）を本番へ適用する。`docs/db-migration/APPLIED.md`の089を「適用済み」に更新する。適用後の確認SQLは、ファイル冒頭
+- [ ] **T7-06-2** (ユーザー承認) `scrape_job_state`の`data_health`を`shadow`にし、翌朝06:35 JST以降の`last_report`（`wouldAlert`・`checks`）でノイズ（誤警告・閾値の見直し）を確認する。runbook §U-3
+- [ ] **T7-06-3** (ユーザー承認) `data_health`を`live`にする（`SLACK_WEBHOOK_URL`はVercelの環境変数に設定済みであること。`scrape-monitor`の通知と同じ）。初回は、実際に未達の項目が1回だけ通知される（runbook §U-4）。`scrape-monitor-liveness`（日次）が`data_health`の未処理を検知することを、次の朝に確認する
+
+データ項目: 汎用の日次監視`data_health`（`scrape_job_state`の`last_report`。データテーブルへは書かない）。
+
+- [ ] 本番実測: 期待件数（算出根拠: 登録表`checks.js`の各項目。分母は`data-health-report.js`と同じ定義（開催中止を除く。rank4〜6は完走艇数まで。全券種オッズは2026-09-17以降）で、直近7日）に対し、登録した全ての項目のSQLが本番で動き、期待どおりの値を返すことを実測クエリで確認する（`npm run check:data-health`。実測はPR本文・完了報告に添付）
+- [ ] タイミング実測: 日次の集計であり、可変データの窓型ではない。代わりに「06:35 JSTの実行が、指定時刻06:30から3時間以内（`scrape-monitor`の日次の期限超過の基準）に完了する」ことを、`scrape_job_state`の`last_target_date`・`last_success_at`で連続5日確認する
+- [ ] 継続監視: 閾値未達・0件のテーブルが日次で計測され、Slackへ通知されること（初回の実通知を確認）。監視自体の失敗（未実行・全関数の失敗・089の未適用）が、`scrape-monitor`（日次の期限超過・連続失敗）と、`scrape-monitor-liveness`（日次。`scrape-monitor`自体が止まっている場合）で検知されること
+
 **完了条件（G3）**: `morning-init`を含む全取得処理がVercelへ移行済みで、旧基盤を止めても本番データが欠けないことを実測で確認している。
