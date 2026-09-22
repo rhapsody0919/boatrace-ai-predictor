@@ -13,11 +13,16 @@
  *   連続失敗・ブレーカー  consecutive_failures >= 3、breaker_open_until が未来
  *   日次の期限超過  日次ジョブが、指定時刻から3時間経っても、その日の対象日を処理していない
  *
+ * 窓の外の補完のスロット（レジストリの catchupOffsets。展示の発走の10分後。BOA-382）は、取得済みのレースが
+ * skipped_have_data で即完了するため、ほぼ全てヒットになり、窓内取得率（ジョブ別）を実際より高く見せてしまう。
+ * ジョブ別の集計（aggregateByJob）には入れず、窓別の集計（computeWindowStats）にだけ残す。期限切れの通知は、
+ * 補完の失敗（展示が最後まで取れなかった）を伝えるが、中止・順延の疑い（cancellation_status が入っている）のレースは通知しない
+ *
  * 「予定表・ジョブ状態のテーブルが無い」（075未適用）、および全ジョブが off の間は、何も通知しない（誤報なし）。
  *
  * 純粋関数（evaluate*・compute*・format*・dedupe）と、IO（collectMonitorInput・postSlack・runMonitor）に分ける。
  */
-import { SCRAPE_JOBS, isScheduledDate } from "./registry.js";
+import { SCRAPE_JOBS, isCatchupOffset, isScheduledDate } from "./registry.js";
 import {
   jstMinutesOfDay,
   slotDeadline,
@@ -165,10 +170,13 @@ export function computeWindowStats(
     .sort((a, b) => a.job.localeCompare(b.job) || a.offset_min - b.offset_min);
 }
 
-/** ジョブごとに窓を束ねた窓内取得率 */
-export function aggregateByJob(stats) {
+/**
+ * ジョブごとに窓を束ねた窓内取得率。窓の外の補完のスロット（catchupOffsets）は束ねない（ファイル冒頭の説明）
+ */
+export function aggregateByJob(stats, registry = SCRAPE_JOBS) {
   const byJob = new Map();
   for (const s of stats) {
+    if (isCatchupOffset(registry[s.job], s.offset_min)) continue;
     const j = byJob.get(s.job) ?? {
       job: s.job,
       total: 0,
@@ -211,6 +219,14 @@ export function evaluateExpired(
     if (isCancelledRace(slot)) continue;
     if (slot.run_mode === "shadow") continue;
     if (activeJobs && !activeJobs.has(slot.job)) continue;
+    // 窓の外の補完（発走の後）は、中止・順延の疑い（tentative。確定はここまでで除いた）のレースを通知しない。
+    // 中止・順延のレースは、展示が公開されないため、補完が最後まで取れないのが正常
+    if (
+      isCatchupOffset(registry[slot.job], slot.offset_min) &&
+      slot.races?.cancellation_status
+    ) {
+      continue;
+    }
     const deadline = deadlineOf(slot);
     let pastWindow = false;
     if (slot.status === "expired") {

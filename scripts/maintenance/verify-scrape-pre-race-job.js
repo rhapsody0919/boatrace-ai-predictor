@@ -24,6 +24,10 @@
  *       切り替えの仕組み（SKIP_RACE_INFO_ON_GHA は "true" のときだけ有効、既定は従来どおり）
  *   (i) 変異検証: shadow が書く・気象のために beforeinfo を取る・変更なしでも再計算する・モードを無視して従来の経路を動かす・
  *       ダイジェストが選手を無視する、を仕込んだ版で、上の検証が失敗する
+ *   (j) 窓の外の補完（BOA-382。展示の発走の後のスロット）: 実ページ（住之江5R。発走後に展示タイムが載ったページ）から展示タイム・展示STを
+ *       解析して書く、取得済みのレースは shadow でも取得しない（公式ページへのリクエスト0）、shadow は書かない、気象を書かない、
+ *       予測の再計算の対象にしない、未完了の再試行は -33 のスロットより長い、-33 のスロットの挙動は変えない。
+ *       変異検証: 取得済みを再取得する・shadow で書く・気象を書く・再計算の対象にする・再試行の間隔が同じ、で失敗する
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -47,7 +51,12 @@ import {
   runSlotsWithRefresh,
 } from "../lib/scrapeJobs/preRaceHandlers.js";
 import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
-import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
+import {
+  SCRAPE_JOBS,
+  isCatchupOffset,
+  slotDefsFor,
+  validateRegistry,
+} from "../lib/scrapeJobs/registry.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { createMemoryStore } from "../lib/scrapeJobs/testing/memoryStore.js";
 import { CONFIRM_STREAK_THRESHOLD } from "../lib/cancellationStatus.js";
@@ -55,6 +64,7 @@ import { decideFromRows, evaluateJobHealth } from "../lib/ghaSkipGate.js";
 import {
   compareExhibitionShadowDigests,
   compareRaceInfoShadowDigests,
+  splitCatchupSlots,
 } from "./check-pre-race-shadow.js";
 
 // 検証対象のコードが出す警告・エラー・進捗のログで出力が埋まらないよう、検証中は無効にし、結果の表示だけ元の関数で行う
@@ -91,6 +101,12 @@ const BEFORE_UNPUBLISHED_HTML = fixture(
   "beforeinfo",
   "beforeinfo-2026-09-21-10-08-before-exhibition.html",
 );
+// 発走の後（2026-09-22の取得）の住之江5R（発走17:02）の直前情報。この5Rは、発走の33〜7分前の13回の取得が全て「展示未公開」で、
+// 公開が窓の終わりより後だった。展示タイム（1号艇 6.89）・展示ST（1号艇 0.10）が載っている
+const BEFORE_AFTER_START_HTML = fixture(
+  "beforeinfo",
+  "beforeinfo-2026-09-21-12-05-after-start.html",
+);
 // 展示タイムの欄を空にして、展示STだけが公開されている状態を作る（一部の会場で、STが先に出る）
 const BEFORE_ST_ONLY_HTML = (() => {
   const $ = cheerio.load(
@@ -103,6 +119,8 @@ const BEFORE_ST_ONLY_HTML = (() => {
 })();
 
 const DATE = "2026-09-16";
+const SUMI_DATE = "2026-09-21";
+const SUMI_RACE = "2026-09-21-12-05";
 const RACE = "2026-09-16-23-12";
 const RACE_11 = "2026-09-16-23-11";
 const NOW = new Date("2026-09-16T13:30:00+09:00");
@@ -1599,9 +1617,8 @@ async function routingIsCorrect(handlerFactory) {
     show(ri),
   );
   check(
-    "レジストリ exhibition: 窓 -33（〜-7分。許容幅26分）・再試行120秒・リース90秒（1本のスロット。承認済みの判断(e)）",
+    "レジストリ exhibition: 窓 -33（〜-7分。許容幅26分）・再試行120秒・リース90秒（-33 のスロットは、承認済みの判断(e)のまま）",
     ex.kind === "window" &&
-      ex.offsets.length === 1 &&
       ex.offsets[0] === -33 &&
       ex.graceMin === 26 &&
       ex.offsets[0] + ex.graceMin === -7 &&
@@ -1609,6 +1626,46 @@ async function routingIsCorrect(handlerFactory) {
       ex.leaseSec === 90,
     show(ex),
   );
+  check(
+    "レジストリ exhibition: 窓の外の補完（BOA-382）は、offsets の 10（発走の10分後〜36分後。許容幅は -33 と同じ26分）。補完の再試行は600秒（-33 の120秒より長く、許容幅より短い）。catchupOffsets は offsets に含まれる",
+    ex.offsets.length === 2 &&
+      ex.offsets[1] === 10 &&
+      ex.catchupOffsets.length === 1 &&
+      ex.catchupOffsets[0] === 10 &&
+      ex.offsets.includes(ex.catchupOffsets[0]) &&
+      ex.offsets[1] + ex.graceMin === 36 &&
+      ex.catchupRetrySec === 600 &&
+      ex.catchupRetrySec > ex.retrySec &&
+      ex.catchupRetrySec < ex.graceMin * 60,
+    show(ex),
+  );
+  check(
+    "レジストリ: 予定表の定義（slotDefsFor）は、exhibition に -33 と 10 の2本（許容幅は同じ26分）。補完の判定（isCatchupOffset）は 10 だけ。他のジョブは補完を持たない",
+    show(slotDefsFor(["exhibition"])) ===
+      show([
+        { job: "exhibition", offset_min: -33, grace_min: 26 },
+        { job: "exhibition", offset_min: 10, grace_min: 26 },
+      ]) &&
+      isCatchupOffset(ex, 10) &&
+      !isCatchupOffset(ex, -33) &&
+      !isCatchupOffset(SCRAPE_JOBS.race_info, -60) &&
+      !isCatchupOffset(SCRAPE_JOBS.result, 5),
+  );
+  {
+    const bad = (patch) =>
+      validateRegistry({ exhibition: { ...ex, ...patch } }).length > 0;
+    check(
+      "レジストリの検査: 補完の再試行が許容幅以上・0・小数、補完の offset が発走前・0・空・整数でない、は不正（validateRegistry）",
+      bad({ catchupRetrySec: 26 * 60 }) &&
+        bad({ catchupRetrySec: 0 }) &&
+        bad({ catchupRetrySec: 1.5 }) &&
+        bad({ catchupOffsets: [-5] }) &&
+        bad({ catchupOffsets: [0] }) &&
+        bad({ catchupOffsets: [] }) &&
+        bad({ catchupOffsets: [10.5] }) &&
+        !bad({}),
+    );
+  }
   const vercel = JSON.parse(
     fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
   );
@@ -1744,6 +1801,361 @@ async function routingIsCorrect(handlerFactory) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// (j) 窓の外の補完（BOA-382。展示の発走の後のスロット。レジストリの exhibition の offsets の 10）
+// ---------------------------------------------------------------------------
+const CATCHUP_OFFSET = SCRAPE_JOBS.exhibition.catchupOffsets[0];
+const PRIMARY_OFFSET = SCRAPE_JOBS.exhibition.offsets[0];
+const SUMI_URL = "/beforeinfo?rno=5&jcd=12&hd=20260921";
+const sumiFetcher = (html = BEFORE_AFTER_START_HTML) =>
+  createFetcher(pagesHandler({ before: html }));
+const sumiDbWithData = () => {
+  const db = freshDb();
+  db.state.tables.exhibition_data = [
+    { race_id: SUMI_RACE, boat_number: 1, exhibition_time: 6.89 },
+  ];
+  return db;
+};
+const upsertedTables = (db) => db.state.upserts.map((u) => u.table);
+
+/**
+ * 展示のスロットを共通ラッパ経由で1件処理する（補完のスロットは offset=10）。
+ * 差し替え: run（runForRaces）、catchup（補完の判定・再試行の間隔）。changed は、onChanged に通知されたレース
+ */
+async function exhibitionSlot({
+  mode = "live",
+  offset = CATCHUP_OFFSET,
+  raceId = SUMI_RACE,
+  db = freshDb(),
+  fetcher = sumiFetcher(),
+  run = realExhibitionRun,
+  catchup,
+} = {}) {
+  const changed = [];
+  const r = await runViaWrapper({
+    job: "exhibition",
+    createHandleSlot: () =>
+      createExhibitionSlotHandler({
+        run,
+        loadSchedule: async () => [],
+        onChanged: (date, id) => changed.push(id),
+        ...(catchup ? { catchup } : {}),
+      }),
+    rows: { exhibition: { job: "exhibition", mode, consecutive_failures: 0 } },
+    slots: [slotOf("exhibition", raceId, offset)],
+    db,
+    fetcher,
+  });
+  return { ...r, changed };
+}
+
+// 観測（正しい実装で、以下の各検証が満たすことと、変異版が満たさないことを、同じ関数で確かめる）
+/** 補完は、取得済みのレースを、shadow でも live でも取得しない（公式ページへのリクエスト0）。書き込みも0 */
+async function catchupSkipsHaveData(run = realExhibitionRun) {
+  for (const mode of ["shadow", "live"]) {
+    const r = await exhibitionSlot({ mode, db: sumiDbWithData(), run });
+    if (
+      r.fetcher.calls.length !== 0 ||
+      writeCount(r.db) !== 0 ||
+      r.store.completed[0]?.outcome !== "skipped_have_data"
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+/** 補完は、shadow では書かない（取得・解析のみ。ダイジェストを予定表に記録して完了する） */
+async function catchupShadowWritesNothing(run = realExhibitionRun) {
+  const r = await exhibitionSlot({ mode: "shadow", run });
+  return (
+    r.fetcher.calls.length === 1 &&
+    writeCount(r.db) === 0 &&
+    r.store.completed[0]?.outcome === "ok" &&
+    typeof r.store.completed[0]?.resultDigest === "string" &&
+    r.store.completed[0]?.rowsWritten === 0
+  );
+}
+/** 補完は、live で展示データを書くが、気象（race_conditions）は書かない */
+async function catchupWritesNoWeather(run = realExhibitionRun) {
+  const r = await exhibitionSlot({ mode: "live", run });
+  return (
+    upsertedTables(r.db).includes("exhibition_data") &&
+    !upsertedTables(r.db).includes("race_conditions") &&
+    r.store.completed[0]?.outcome === "ok"
+  );
+}
+/** 補完は、変更を書いても、予測の再計算の対象にしない（onChanged を呼ばない） */
+async function catchupIsNotRefreshed(catchup) {
+  const r = await exhibitionSlot({ mode: "live", catchup });
+  return r.changed.length === 0 && r.store.completed[0]?.rowsWritten === 6;
+}
+/** 補完の未完了の再試行は、-33 のスロットの再試行（120秒）より長い（600秒）。ブレーカーの retryAt は、そのまま使う */
+async function catchupRetriesSlowly(catchup) {
+  const r = await exhibitionSlot({
+    mode: "live",
+    fetcher: sumiFetcher(BEFORE_UNPUBLISHED_HTML),
+    catchup,
+  });
+  const primary = await exhibitionSlot({
+    mode: "live",
+    offset: PRIMARY_OFFSET,
+    fetcher: sumiFetcher(BEFORE_UNPUBLISHED_HTML),
+    catchup,
+  });
+  const retryAfterSec = (x) =>
+    (new Date(x.store.retried[0]?.retryAt).getTime() - NOW.getTime()) / 1000;
+  return (
+    r.store.retried[0]?.outcome === "no_values" &&
+    retryAfterSec(r) === 590 &&
+    retryAfterSec(primary) === 110
+  );
+}
+
+{
+  // 実ページ: 発走の後の住之江5Rから、展示タイム・展示STを解析して書く
+  const live = await exhibitionSlot({ mode: "live" });
+  const rows = upsertsOf(live.db, "exhibition_data").flatMap((u) => u.rows);
+  const boat1 = rows.find((row) => row.boat_number === 1);
+  check(
+    "補完 live（実ページ。発走後の住之江5R）: beforeinfo を1回だけ取得し、展示データ6行を書き、outcome=ok で完了する。1号艇の展示タイム 6.89・展示ST 0.10",
+    live.store.completed[0]?.outcome === "ok" &&
+      live.store.completed[0].rowsWritten === 6 &&
+      live.fetcher.calls.length === 1 &&
+      live.fetcher.calls[0].includes(SUMI_URL) &&
+      rows.length === 6 &&
+      boat1?.exhibition_time === 6.89 &&
+      boat1?.start_timing === 0.1 &&
+      rows.every((row) => row.race_id === SUMI_RACE),
+    show({
+      completed: live.store.completed[0],
+      calls: live.fetcher.calls,
+      boat1,
+    }),
+  );
+  check(
+    "補完 live: 展示タイムが取得済みなら、shadow でも live でも、取得しない（公式ページへのリクエスト0・書き込み0。skipped_have_data で完了）",
+    await catchupSkipsHaveData(),
+  );
+  check(
+    "補完 shadow: 取得・解析のみで、DBへ一切書かない。ダイジェストを予定表に記録して、完了する（rowsWritten=0）",
+    await catchupShadowWritesNothing(),
+  );
+  check(
+    "補完 live: 気象（race_conditions）を書かない（発走後のページは、そのレースの発走前ではなく、その日の最新の観測を表示するため）",
+    await catchupWritesNoWeather(),
+  );
+  check(
+    "補完: 予測の再計算の対象にしない（変更を書いても、onChanged を呼ばない。発走後に予測を作り直して、的中率の突き合わせを汚さない）",
+    await catchupIsNotRefreshed(),
+  );
+  check(
+    "補完: 未完了（展示が未公開）の再試行は600秒おき（-33 のスロットは120秒おき）。予定表の完了・再試行の記録の意味は変えない",
+    await catchupRetriesSlowly(),
+  );
+
+  // -33 のスロット（従来の挙動）は、変えない
+  const primaryLive = await exhibitionSlot({
+    mode: "live",
+    offset: PRIMARY_OFFSET,
+  });
+  check(
+    "従来の -33 のスロット live: 展示データと気象（race_conditions）を書き、変更を書いたレースを再計算の対象にする（補完で変えていない）",
+    upsertedTables(primaryLive.db).includes("exhibition_data") &&
+      upsertedTables(primaryLive.db).includes("race_conditions") &&
+      primaryLive.changed.length === 1 &&
+      primaryLive.changed[0] === SUMI_RACE,
+    show({
+      tables: upsertedTables(primaryLive.db),
+      changed: primaryLive.changed,
+    }),
+  );
+  const primaryShadow = await exhibitionSlot({
+    mode: "shadow",
+    offset: PRIMARY_OFFSET,
+    db: sumiDbWithData(),
+  });
+  check(
+    "従来の -33 のスロット shadow: 取得済みでも、取得・解析する（既存の経路が書いた行と比べるため。補完だけが、取得済みをスキップする）",
+    primaryShadow.fetcher.calls.length === 1 &&
+      primaryShadow.store.completed[0]?.outcome === "ok",
+    show(primaryShadow.store.completed),
+  );
+
+  // 通信エラー・ブレーカー: 補完の再試行の間隔・ブレーカーの retryAt
+  const until = NOW.getTime() + 120000;
+  const brk = await exhibitionSlot({
+    mode: "live",
+    fetcher: createFetcher(
+      () => new BreakerOpenError("host:boatrace.jp", until),
+    ),
+  });
+  const http = await exhibitionSlot({
+    mode: "live",
+    fetcher: createFetcher(() => 503),
+  });
+  check(
+    "補完: ブレーカーが開いていれば、ブレーカーの retryAt で再試行する（補完の間隔で上書きしない）。通信エラーは、補完の間隔（590秒後）で再試行する",
+    brk.store.retried[0]?.outcome === "breaker_open" &&
+      new Date(brk.store.retried[0].retryAt).getTime() === until &&
+      http.store.retried[0]?.outcome === "error" &&
+      new Date(http.store.retried[0].retryAt).getTime() ===
+        NOW.getTime() + 590000,
+    show({ brk: brk.store.retried[0], http: http.store.retried[0] }),
+  );
+
+  // 補完は、スケジュール（races）を読まない（気象を書かないため）。読み取りは、取得済みの確認（exhibition_data）だけ
+  const noSchedule = await exhibitionSlot({ mode: "live" });
+  check(
+    "補完: races（スケジュール）を読まない。DBの読み取りは、展示タイムの取得済みの確認（exhibition_data）と、書き込み前のスキーマの確認だけ",
+    !noSchedule.db.state.selects.some((sel) => sel.table === "races"),
+    show(noSchedule.db.state.selects.map((sel) => sel.table)),
+  );
+
+  // 予測の再計算（案1）: -33 のスロットの変更だけが対象。補完の変更は対象にしない
+  const refreshCalls = [];
+  const optionsSeen = [];
+  const spyRun = async (races, options) => {
+    optionsSeen.push({ race_id: races[0].race_id, options });
+    return races.map((race) => ({
+      race_id: race.race_id,
+      outcome: "ok",
+      rowsWritten: 6,
+      rowsParsed: 6,
+      rowsExpected: 6,
+      changed: true,
+    }));
+  };
+  const refreshRun = async (catchup) => {
+    refreshCalls.length = 0;
+    optionsSeen.length = 0;
+    const store = createMemoryStore({
+      rows: {
+        exhibition: {
+          job: "exhibition",
+          mode: "live",
+          consecutive_failures: 0,
+        },
+      },
+      slots: [
+        slotOf("exhibition", RACE, PRIMARY_OFFSET),
+        slotOf("exhibition", SUMI_RACE, CATCHUP_OFFSET),
+      ],
+    });
+    const { body } = await runSlotsWithRefresh({
+      job: "exhibition",
+      createHandleSlot: (collector) =>
+        createExhibitionSlotHandler({
+          run: spyRun,
+          loadSchedule: async () => [],
+          onChanged: collector.onChanged,
+          ...(catchup ? { catchup } : {}),
+        }),
+      refresh: async (args) => {
+        refreshCalls.push(args);
+      },
+      client: freshDb(),
+      store,
+      env: ENV_ON,
+      runJob: (options) =>
+        runScrapeJob({
+          ...options,
+          now: () => NOW,
+          worker: "test:exhibition",
+          politeFetch: createFetcher(pagesHandler()),
+        }),
+    });
+    return { body, calls: [...refreshCalls], seen: [...optionsSeen] };
+  };
+  const refreshed = await refreshRun();
+  const seenOf = (id) => refreshed.seen.find((x) => x.race_id === id)?.options;
+  check(
+    "案1: REFRESH_ON_VERCEL=true のとき、-33 のスロットの変更を書いたレースだけを再計算する（補完で書いたレースは、発走後のため再計算しない）。補完の呼び出しは catchup=true・気象なし・スケジュールなし、-33 は従来どおり（スケジュールあり）",
+    refreshed.calls.length === 1 &&
+      show(refreshed.calls.flatMap((c) => c.specificRaceIds)) ===
+        show([RACE]) &&
+      refreshed.calls[0].date === DATE &&
+      seenOf(SUMI_RACE)?.catchup === true &&
+      seenOf(SUMI_RACE)?.updateWeather === false &&
+      !("schedule" in seenOf(SUMI_RACE)) &&
+      !("catchup" in seenOf(RACE)) &&
+      Array.isArray(seenOf(RACE)?.schedule),
+    show({ calls: refreshed.calls, body: refreshed.body }),
+  );
+
+  // 補完のスロットの集計（check-pre-race-shadow.js）
+  const split = splitCatchupSlots(
+    [
+      { offset_min: -33, race_id: "a" },
+      { offset_min: 10, race_id: "b" },
+    ],
+    SCRAPE_JOBS.exhibition,
+  );
+  const splitOther = splitCatchupSlots(
+    [{ offset_min: 5, race_id: "c" }],
+    SCRAPE_JOBS.result,
+  );
+  check(
+    "check-pre-race-shadow: スロットを、通常の窓と、窓の外の補完（catchupOffsets）に分ける。補完を持たないジョブは、全て通常の窓",
+    split.primary.length === 1 &&
+      split.primary[0].race_id === "a" &&
+      split.catchup.length === 1 &&
+      split.catchup[0].race_id === "b" &&
+      splitOther.primary.length === 1 &&
+      splitOther.catchup.length === 0,
+  );
+
+  // 変異検証: 仕込んだ版で、上の検証が失敗する
+  const dropCatchup = (run) => (races, options) =>
+    run(races, { ...options, catchup: false });
+  const asLiveRun = (run) => (races, options) =>
+    run(races, { ...options, mode: "live" });
+  const withWeatherRun = (run) => (races, options) =>
+    run(races, {
+      ...options,
+      catchup: false,
+      updateWeather: true,
+      schedule: [],
+    });
+  check(
+    "変異検証の前提: 正しい実装は、補完の各検証（取得済みのスキップ・shadow で書かない・気象を書かない・再計算しない・再試行の間隔）に合格する",
+    (await catchupSkipsHaveData()) &&
+      (await catchupShadowWritesNothing()) &&
+      (await catchupWritesNoWeather()) &&
+      (await catchupIsNotRefreshed()) &&
+      (await catchupRetriesSlowly()),
+  );
+  check(
+    "変異検証: 「補完が、取得済みを再取得する（shadow で取得済みをスキップしない）」版では、『取得済みを取得しない』検証が失敗する",
+    !(await catchupSkipsHaveData(dropCatchup(realExhibitionRun))),
+  );
+  check(
+    "変異検証: 「補完が、shadow でも書く」版では、『shadow は書かない』検証が失敗する",
+    !(await catchupShadowWritesNothing(asLiveRun(realExhibitionRun))),
+  );
+  check(
+    "変異検証: 「補完が、気象を書く」版では、『気象を書かない』検証が失敗する",
+    !(await catchupWritesNoWeather(withWeatherRun(realExhibitionRun))),
+  );
+  const notCatchup = { isCatchup: () => false, retrySec: 600 };
+  check(
+    "変異検証: 「補完を、通常のスロットとして扱う（再計算の対象にする）」版では、『再計算の対象にしない』検証が失敗する",
+    !(await catchupIsNotRefreshed(notCatchup)),
+  );
+  check(
+    "変異検証: 「補完の再試行が、-33 と同じ120秒」版では、『再試行は600秒おき』検証が失敗する",
+    !(await catchupRetriesSlowly({
+      isCatchup: (offset) => offset === CATCHUP_OFFSET,
+      retrySec: SCRAPE_JOBS.exhibition.retrySec,
+    })),
+  );
+  const mutantRefresh = await refreshRun(notCatchup);
+  check(
+    "変異検証: 「補完で書いたレースも再計算する」版では、mainRefresh の対象に補完のレースが入り、『補完は再計算しない』検証が失敗する",
+    show(mutantRefresh.calls.flatMap((c) => c.specificRaceIds).sort()) ===
+      show([RACE, SUMI_RACE].sort()),
+    show(mutantRefresh.calls),
+  );
+}
 // ---------------------------------------------------------------------------
 // (i) 変異検証（shadow が書く・気象のために beforeinfo を取る・ダイジェストが選手を無視する）
 // ---------------------------------------------------------------------------
