@@ -24,6 +24,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
+  classifyKFileVenues,
   buildKbDay,
   decodeLzhText,
   summarizeKbDay,
@@ -784,6 +785,43 @@ for (const d of DAYS) {
     "load: 主キー（race_id, boat_number）で重複せず144艇が保存される",
     store.get("kb_archive_boats").size === 144 &&
       store.get("kb_archive_venue_days").size === 2,
+  );
+}
+
+// 9. Kファイルの確定状況は、会場ブロック単位で判定する（中止・順延の会場があるだけの日を、捨てない）
+{
+  const P = "データは、この場の全レース終了後に登録されます。";
+  const block = (code, body) => `${code}KBGN\n${body}\n${code}KEND`;
+  const done = (code) => block(code, "津［成績］ 7/30 x\n  1R 予選 H1800m 晴 風 北 2m 波 1cm");
+  const pend = (code) => block(code, `ボートレース\n${P}`);
+  const mixed = [done("10"), pend("09"), done("08")].join("\n\n");
+  const c1 = classifyKFileVenues(mixed);
+  check(
+    "K確定状況: 一部の会場だけ未確定（中止・順延）の日は、日全体を未確定にしない",
+    c1.total === 3 &&
+      eq(c1.pendingVenues, [9]) &&
+      eq(c1.completeVenues, [10, 8]) &&
+      c1.allPending === false,
+    JSON.stringify(c1),
+  );
+  const c2 = classifyKFileVenues([pend("01"), pend("02")].join("\n"));
+  check(
+    "K確定状況: 全会場が未確定の日（全レース終了前）は、日全体を未確定にする",
+    c2.total === 2 && c2.allPending === true && c2.completeVenues.length === 0,
+    JSON.stringify(c2),
+  );
+  const c3 = classifyKFileVenues(P);
+  check(
+    "K確定状況: 会場ブロックが読めない形式は、確定とみなさない（allPendingにしない。呼び出し側がファイル全体のマーカーで判定）",
+    c3.total === 0 && c3.allPending === false,
+    JSON.stringify(c3),
+  );
+  const real = await decodeLzhText(fs.readFileSync(new URL("k260920-pending.lzh", FIX)));
+  const c4 = classifyKFileVenues(real);
+  check(
+    "K確定状況: 実物のプレースホルダ（k260920-pending.lzh、321バイト）は、日全体が未確定として扱われる",
+    c4.allPending === true || (c4.total === 0 && real.includes(P)),
+    JSON.stringify(c4),
   );
 }
 
