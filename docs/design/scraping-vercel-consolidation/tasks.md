@@ -150,6 +150,21 @@
 - [ ] タイミング実測: 完了の定義B（窓内取得率98%以上）は、除外後の値（`rateAdjusted`）で判定し、除外なしの値・除外件数を併記する。土日を含む直近7日で確認する。**第1レース以外の`-60`（R2以降）と、第1レースの`-30`にも、同種の未公開が残る**（runbook M-7の未確認事項）ため、この補正だけでは`-60`は98%に届かない（除外後90.4%）
 - [ ] 継続監視: 第1レースの`-60`の未公開が、警告（`expired`）にも窓内取得率の警告にも出ず、日次サマリーに「未公開(想定内・分母から除外)」として毎日出る（0件でも出す）こと。後続の窓も取れなかった第1レースは、`expired`として通知される（後続の窓が全て過ぎる、最大で発走の3分後に）ことを、実際の事象で確認する
 
+### T4b-24 完了の定義Bの`-60`の窓の基準の見直し: 未公開の間、`-30`の窓が始まるまで1分間隔で再試行する（BOA-386続き、`.claude/rules/data-acquisition.md`のB）
+
+設計・実測: [verification-runbook.md](./verification-runbook.md) M-8 / 定義の正本: `scripts/lib/scrapeJobs/expectedUnpublished.js`（T4b-23と共有）/ 新しいマイグレーション: `docs/db-migration/092_claim_scrape_slots_by_offset.sql`（既存の`claim_scrape_slots`・`scrape_slots`・`ensure_scrape_slots`は変更しない。新関数の追加のみ）。T4b-23（後続の窓で確認できたものを分母から除外）だけでは、除外後も第1レース以外の`-60`・第1レースの`-30`に未公開が残り98%に届かない上、除外した分の「取得の遅れの大きさ」自体が計測されていなかった。これを埋める。
+
+- [x] **T4b-24-1**（コード実装済み。`registry.js`の`odds`に`graceMinByOffset: {-60: 30}`（`-60`だけ許容幅を30分＝`-30`の窓の開始まで延長。他の窓・他のジョブは変えない）、`store.js`の`claimSlots`が上書きのあるジョブだけ新関数`claim_scrape_slots_by_offset`（092）を呼び、関数が無い（`PGRST202`）ときだけ既存の`claim_scrape_slots`へ自動フォールバックする（`cronWrapper.js`が`scrape_job_state.last_report.alerts`に残し、監視が通知する。延長が効かない状態を黙って放置しない）、`oddsHandlers.js`・`scrape-odds.js`の`winFirst`（未公開の間の再試行は単勝1ページの確認に絞り、取得先への追加リクエストを抑える）、`expectedUnpublished.js`に`isExtensionSuccess`（延長で取得できた判定）・`detectionLagOf`/`summarizeDetectionLags`（発売開始の検知の遅れの計測。定義はファイル冒頭コメント）を追加、`monitor.js`に`evaluateDetectionLag`・日次サマリーの検知の遅れの行、`data-health-report.js`に`detectionLag`クエリ・集計・Markdown・警告（近似値。予定表の実際の試行時刻は読まない設計のため、監視側が正確に計測する役割分担）。検証: `npm run verify:scrape-jobs`・`verify:scrape-monitor`・`verify:scrape-odds-job`・`verify:data-health-report`・`verify:scrape-slots-sql`（PGliteで092を適用し、`p_grace_by_offset='{}'`のとき既存の`claim_scrape_slots`と同じ結果になる差分テスト、`-60`の延長・他の窓が変わらないこと、権限がservice_roleのみであることを確認）。変異は加えていないが、既存の変異検証（monitor・data-health-report）に新規ケースを追加して確認）
+- [ ] **T4b-24-2**（親・ユーザー承認。DDL適用） `docs/db-migration/092_claim_scrape_slots_by_offset.sql`を、Supabase Dashboard/Management APIで適用する（関数追加のみ・テーブル変更なし・ロック影響なし、開催時間帯でも適用可）。適用後、`APPLIED.md`の092行を「適用済み」に更新する。コードは適用前でもマージ・デプロイして安全（新関数が無い間は既存の`claim_scrape_slots`へフォールバックし、延長は効かないだけ）
+- [ ] **T4b-24-3** (親・ユーザー) マージ・DDL適用後、翌営業日以降の日次サマリーで、`odds`の「発売開始の検知の遅れ」が、5分以内の割合98%以上に近づくこと（延長前の実測はp50 27.6分・p95 47.4分・5分以内0%。runbook M-8）、`scrape_job_state`の`odds`の`last_report.alerts`にフォールバックの通知が出ていないこと（=092が適用され新関数が使われていること）を確認する
+
+データ項目: `race_odds`（新しい項目は無い。完了の定義Bの`-60`の判定・再試行方式の変更）。
+
+- [ ] 本番実測（2026-09-22、読み取りのみ）: 直近7日（9/16〜9/21）の`-60`の未公開（窓内に取れず）は、第1レース16/81（19.8%）・第1レース以外104/880（11.8%）、合計120件。このうち後続の窓で確認できたのは115件（5件は後続の窓にも取れず、本当の欠落）。発売開始の検知の遅れ（後続の窓での取得時刻－窓が閉じた時刻の近似値、延長導入前）はp50 27.6分・p95 47.4分・最大52.6分、5分以内の割合0%（0/115）。延長導入により、未公開の間1分間隔で再試行するため、この遅れがおおむね1分程度に縮む見込み（`verify-scrape-slots-sql.js`のPGliteシナリオで、延長中は毎分再試行できることを確認済み）
+- [ ] タイミング実測: 延長後、直近7日（土日を含む）で、発売開始の検知の遅れが5分以内の割合98%以上であることを確認する（`data-health-report.js`の「発売開始の検知の遅れ」の表）。延長しても後続の窓でしか取れない（検知の遅れが5分を超える）件数が多い場合、延長の許容幅・再試行間隔の見直しが要る
+- [ ] 追加リクエストの見積り: `-60`が未公開のレースだけ、発売開始まで（最大27分、1分間隔）×1ページ（単勝のみ、`winFirst`）の追加リクエストが発生する。直近7日の実測（1日あたり未公開のレース数、上記の120件/6日≒20件/日）から、1日あたり最大約540リクエスト（20件×最大27回）の増加見込み。取得先が共有ブレーカーで保護されているため、失敗率の悪化が無いかも合わせて確認する
+- [ ] 継続監視: 上記が閾値を割った場合の`data-health-report.js`の警告（`kind: "detection_lag"`）と、`scrape-monitor`の日次サマリー・`evaluateDetectionLag`（5分超が1件でも通知）が機能することを、実際の事象で確認する
+
 ---
 
 ## Phase 4: レース情報・買い目オッズ（トラックA）

@@ -9,8 +9,10 @@
  *               「期限〜期限+許容幅」で数える（展示は、旧定義（30・15・10分前の各±3分）との比較のため、
  *               旧定義の集計は別途、WS2の取得時刻列で行う。plan.md §3.1）
  *   遅延        done_at − 期限 の p50・p95（日次サマリー）
- *   想定内の未公開  朝の最初のレースの、発走60分前のオッズの未公開は、後の窓で公開が確認できたときだけ、警告・窓内取得率の
- *               対象外にする（件数は日次サマリーに別枠で出す。定義は expectedUnpublished.js。BOA-386）
+ *   発売開始の遅れ  オッズの発売開始が発走60分前の窓（±3分）より遅いレースは、取得の失敗ではないため、窓内取得率の分母から
+ *               除外し（件数は日次サマリー・警告に別枠で出す）、別指標「発売開始の検知の遅れ」（最初の成功取得と、直前の
+ *               未公開の試行の時刻の差。5分以内の割合98%以上）で評価する。定義は expectedUnpublished.js（BOA-386・
+ *               完了の定義Bの見直し）。-60の窓は、未公開の間、-30の窓が始まるまで1分間隔で再試行する（registry.js の odds）
  *   死活        ジョブごとの last_tick_at の鮮度（運用窓の中で10分以上更新なし）
  *   連続失敗・ブレーカー  consecutive_failures >= 3、breaker_open_until が未来
  *   日次の期限超過  日次ジョブが、指定時刻から3時間経っても、その日の対象日を処理していない
@@ -25,15 +27,21 @@
  * 純粋関数（evaluate*・compute*・format*・dedupe）と、IO（collectMonitorInput・postSlack・runMonitor）に分ける。
  */
 import { SCRAPE_JOBS, isCatchupOffset, isScheduledDate } from "./registry.js";
-import {
-  jstMinutesOfDay,
-  slotDeadline,
-  slotWindowEnd,
-  toJstDateString,
-} from "./time.js";
+import { jstMinutesOfDay, slotWindowEnd, toJstDateString } from "./time.js";
 import { resolveTargetDate } from "./dailyJob.js";
 import { isScrapeSchemaMissingError } from "./schemaErrors.js";
-import { EXPECTED_UNPUBLISHED, firstRaceIdSet } from "./expectedUnpublished.js";
+import {
+  DETECTION_LAG,
+  EXPECTED_UNPUBLISHED,
+  classifyExpectedUnpublished,
+  isPastWindow,
+  slotDeadlineOf,
+  slotKeyOf,
+  summarizeDetectionLags,
+} from "./expectedUnpublished.js";
+
+// 発売開始の遅れの判定（想定内の未公開）は、レポートと共有する（expectedUnpublished.js）。テストは monitor から読む
+export { classifyExpectedUnpublished };
 
 export const THRESHOLDS = Object.freeze({
   /** 窓内取得率の閾値（欠落率2%以内。完了の定義B） */
@@ -87,102 +95,13 @@ export function percentile(sortedAscending, p) {
 }
 
 /** スロットの期限（races の埋め込み行から）。races が無い（削除済み等）なら null */
-export function deadlineOf(slot) {
-  const race = slot.races;
-  if (!race?.start_time || !slot.race_date) return null;
-  return slotDeadline(slot.race_date, race.start_time, slot.offset_min);
-}
+export const deadlineOf = slotDeadlineOf;
 
 const isCancelledRace = (slot) =>
   slot.outcome === "cancelled_race" ||
   slot.races?.cancellation_status === "confirmed";
 
-const slotKey = (slot) => `${slot.job}:${slot.race_id}:${slot.offset_min}`;
-
-/**
- * 期限+許容幅を超えたか（expired、または、claim されないまま pending・リース切れの running で超過）。
- * now が無ければ、expired のみを超過とする
- */
-function isPastWindow(slot, now, registry = SCRAPE_JOBS) {
-  if (slot.status === "expired") return true;
-  if (!now) return false;
-  const deadline = deadlineOf(slot);
-  if (!deadline) return false;
-  if (
-    slot.status === "pending" ||
-    (slot.status === "running" &&
-      slot.lease_until &&
-      new Date(slot.lease_until) < now)
-  ) {
-    const def = registry[slot.job];
-    return (
-      Boolean(def) &&
-      now.getTime() > slotWindowEnd(deadline, def.graceMin).getTime()
-    );
-  }
-  return false;
-}
-
-/**
- * 想定内の未公開（朝の最初のレースの、発走60分前のオッズの未公開。定義は expectedUnpublished.js）の判定。
- * 候補は、対象のスロット（ジョブ・窓・第1レース・結果 no_values・試行1回以上・期限+許容幅を超過・未完了）だけ。
- *
- *   confirmed  後続の窓（-30・-15…）のどれかが取れている（ok・skipped_have_data）＝後で公開された。警告・欠落に数えない
- *   deferred   まだ結論が出ていない（取れた後続の窓が無く、期限+許容幅に達していない後続の窓がある）。警告も欠落も保留する
- *   （どちらでもない候補、すなわち、後続の窓が全て過ぎても取れていない・後続の窓が無いものは、戻り値に含めず、従来どおり警告する）
- *
- * @param {Array<Object>} slots 候補を含みうるスロット（重複してよい）
- * @param {{firstRaceIds?: Set<string>, siblingSlots?: Array<Object>, now?: Date, registry?: typeof SCRAPE_JOBS}} [options]
- *   siblingSlots: 後続の窓のスロットを含むオッズのスロット（races を埋め込んだ行）
- * @returns {Map<string, "confirmed"|"deferred">} key は `${job}:${race_id}:${offset_min}`
- */
-export function classifyExpectedUnpublished(
-  slots,
-  { firstRaceIds, siblingSlots = [], now, registry = SCRAPE_JOBS } = {},
-) {
-  /** @type {Map<string, "confirmed"|"deferred">} */
-  const result = new Map();
-  if (!firstRaceIds || firstRaceIds.size === 0) return result;
-  const rule = EXPECTED_UNPUBLISHED;
-  /** @type {Map<string, Array<Object>>} */
-  const laterByRace = new Map();
-  for (const s of siblingSlots) {
-    if (s.job !== rule.job || s.offset_min <= rule.offsetMin) continue;
-    if (s.run_mode === "shadow") continue;
-    if (!laterByRace.has(s.race_id)) laterByRace.set(s.race_id, []);
-    laterByRace.get(s.race_id).push(s);
-  }
-  for (const slot of slots) {
-    if (
-      slot.job !== rule.job ||
-      slot.offset_min !== rule.offsetMin ||
-      slot.outcome !== rule.outcome ||
-      (slot.attempts ?? 0) === 0 ||
-      slot.status === "done" ||
-      slot.run_mode === "shadow" ||
-      isCancelledRace(slot) ||
-      !firstRaceIds.has(slot.race_id) ||
-      !isPastWindow(slot, now, registry)
-    ) {
-      continue;
-    }
-    const later = laterByRace.get(slot.race_id) ?? [];
-    if (later.length === 0) continue;
-    if (
-      later.some(
-        (s) =>
-          s.status === "done" && rule.confirmingOutcomes.includes(s.outcome),
-      )
-    ) {
-      result.set(slotKey(slot), "confirmed");
-    } else if (
-      later.some((s) => s.status !== "done" && !isPastWindow(s, now, registry))
-    ) {
-      result.set(slotKey(slot), "deferred");
-    }
-  }
-  return result;
-}
+const slotKey = slotKeyOf;
 
 /**
  * ジョブ×窓ごとの窓内取得率・遅延の集計。
@@ -318,7 +237,7 @@ export function aggregateByJob(stats, registry = SCRAPE_JOBS) {
  * pending・リース切れの running で期限+許容幅を超えたものも、同じキーで、expired と同じく通知する
  * （後で claim が expired にしても、同じキーのため再通知しない）。
  *
- * 想定内の未公開（朝の最初のレースの、発走60分前のオッズ。classifyExpectedUnpublished の結果 expectedUnpublished）は通知しない
+ * 想定内の未公開（発売開始の遅れ。発走60分前のオッズ。classifyExpectedUnpublished の結果 expectedUnpublished）は通知しない
  * （後続の窓も取れなかったものは、その結果に含まれないため、従来どおり通知する）。
  *
  * @param {Array<Object>} slots expired・pending・running のスロット（races を埋め込んだ行）
@@ -400,7 +319,7 @@ export function evaluateRacesPresent({ jobStates, todayRaceCount, now }) {
 function unpublishedNote(j) {
   return [
     j.expectedUnpublished > 0
-      ? `、分母から除外: 未公開(想定内) ${j.expectedUnpublished}件`
+      ? `、分母から除外: 発売開始の遅れ(想定内の未公開) ${j.expectedUnpublished}件`
       : "",
     j.deferred > 0 ? `、判定保留 ${j.deferred}件` : "",
   ].join("");
@@ -419,6 +338,32 @@ export function evaluateWindowRates(stats, date) {
       text: `窓内取得率が閾値未満 ${j.job}: ${(j.rate * 100).toFixed(1)}%（${j.hit}/${j.total}、閾値${THRESHOLDS.windowRate * 100}%、expired ${j.expired}件${unpublishedNote(j)}）`,
     });
   }
+  return alerts;
+}
+
+/**
+ * 発売開始の検知の遅れ（除外した-60のスロットの、最初の成功取得と直前の未公開の試行の差）が、5分を超えたもの
+ * （当日の集計。1件でもあれば通知する。定義・近似は expectedUnpublished.js）。
+ * 延長が効いていない（マイグレーション092が未適用で、既存の関数へフォールバックしている等）と、後続の窓での取得になり、
+ * 検知の遅れが大きくなるため、この通知が、延長の不具合の検知にもなる
+ *
+ * @param {ReturnType<typeof summarizeDetectionLags>} lag 当日の集計
+ * @param {string} date
+ */
+export function evaluateDetectionLag(lag, date) {
+  /** @type {Alert[]} */
+  const alerts = [];
+  if (lag.over === 0) return alerts;
+  const worst = [...lag.overSlots]
+    .sort((a, b) => b.lagMin - a.lagMin)
+    .slice(0, 3)
+    .map((l) => `${l.race_id} ${l.lagMin.toFixed(1)}分`)
+    .join("、");
+  alerts.push({
+    key: `detection_lag:${date}`,
+    kind: "detection_lag",
+    text: `発売開始の検知の遅れが${DETECTION_LAG.thresholdMin}分超 ${lag.over}件/${lag.measured}件（最大${lag.maxMin.toFixed(1)}分。${worst}。基準は${DETECTION_LAG.thresholdMin}分以内の割合${DETECTION_LAG.rate * 100}%以上。延長（-60の窓の1分間隔の再試行）が効いているか確認）`,
+  });
   return alerts;
 }
 
@@ -599,6 +544,8 @@ export function formatDailySummary({
   statsDay,
   jobStates,
   now,
+  detectionLagDay,
+  detectionLag7d,
 }) {
   const pct = (r) => (r === null ? "-" : `${(r * 100).toFixed(1)}%`);
   const min = (v) => (v === null ? "-" : v.toFixed(1));
@@ -618,7 +565,7 @@ export function formatDailySummary({
       w.job === EXPECTED_UNPUBLISHED.job ||
       w.expectedUnpublished > 0 ||
       (d?.expectedUnpublished ?? 0) > 0
-        ? ` / 未公開(想定内・分母から除外) 前日 ${d?.expectedUnpublished ?? 0}件・直近7日 ${w.expectedUnpublished}件`
+        ? ` / 発売開始の遅れ(想定内・分母から除外) 前日 ${d?.expectedUnpublished ?? 0}件・直近7日 ${w.expectedUnpublished}件`
         : "";
     const deferred =
       w.deferred > 0 || (d?.deferred ?? 0) > 0
@@ -626,6 +573,16 @@ export function formatDailySummary({
         : "";
     return `${w.job}: 前日 ${pct(d?.rate ?? null)}（${d?.hit ?? 0}/${d?.total ?? 0}） / 直近7日 ${pct(w.rate)}（${w.hit}/${w.total}） / expired ${w.expired}件 / 未実行 ${w.unexecuted}件${unpublished}${deferred} / 遅延p95 ${min(p95.get(w.job) ?? null)}分`;
   });
+  // 発売開始の検知の遅れ（分母から除外した-60のスロット）。オッズが有効なときは、0件でも出す（0件と明示）
+  if (detectionLagDay || detectionLag7d) {
+    const lagText = (l) =>
+      l
+        ? `${DETECTION_LAG.thresholdMin}分以内 ${l.within}/${l.measured}（${pct(l.rate)}） / p50 ${min(l.p50Min)}分・p95 ${min(l.p95Min)}分・最大 ${min(l.maxMin)}分 / 計測不能 ${l.unmeasured}件（延長で取得 ${l.byBasis.extension}件・後続の窓で取得 ${l.byBasis.later_window}件）`
+        : "-";
+    rows.push(
+      `odds 発売開始の検知の遅れ（基準: ${DETECTION_LAG.thresholdMin}分以内の割合${DETECTION_LAG.rate * 100}%以上）: 前日 ${lagText(detectionLagDay)} / 直近7日 ${lagText(detectionLag7d)}`,
+    );
+  }
   // レジストリにある取得ジョブだけ（疑似の行 predict-code-hash 等は、モードの一覧に出さない）
   const modes = jobStates
     .filter((r) => !isHostRow(r) && SCRAPE_JOBS[r.job])
@@ -658,7 +615,7 @@ export function formatDailySummary({
 // ---------------------------------------------------------------------------
 
 const SLOT_COLUMNS =
-  "job,race_id,offset_min,race_date,status,attempts,outcome,run_mode,done_at,last_error,races(start_time,cancellation_status)";
+  "job,race_id,offset_min,race_date,status,attempts,outcome,run_mode,first_attempt_at,last_attempt_at,done_at,last_error,races(start_time,cancellation_status)";
 const PAGE = 1000;
 
 /** ページ単位で全件を読む（Supabaseの既定の上限1000行）。エラーは例外にする（空＝正常と誤判定しない） */
@@ -733,8 +690,9 @@ export async function collectMonitorInput(client, now, level) {
       "直近7日のスロット",
     );
   }
-  // 想定内の未公開（expectedUnpublished.js）の判定に要る、第1レースの一覧と、オッズの後続の窓のスロット。
-  // 候補（オッズの -60 窓が no_values で未完了）が1件も無いときは、読まない（5分ごとの実行の読み取りを増やさない）
+  // 発売開始の遅れ（expectedUnpublished.js）の判定に要る、オッズの後続の窓（-30〜0）のスロット。
+  // 候補（-60 の窓が、no_values で未完了、または、試行2回以上で完了＝延長で取得）が1件も無いときは、読まない
+  // （5分ごとの実行の読み取りを増やさない）。判定は全レース（第1レースに限らない）で、racesの一覧は要らない
   const rule = EXPECTED_UNPUBLISHED;
   const hasCandidate = [
     ...expiredSlots,
@@ -745,27 +703,20 @@ export async function collectMonitorInput(client, now, level) {
     (s) =>
       s.job === rule.job &&
       s.offset_min === rule.offsetMin &&
-      s.outcome === rule.outcome &&
-      s.status !== "done",
+      ((s.status !== "done" && s.outcome === rule.outcome) ||
+        (s.status === "done" && (s.attempts ?? 0) >= 2)),
   );
-  let firstRaceIds = new Set();
   let oddsSlots = [];
   if (hasCandidate) {
     const from = level === "tick" ? yesterday : daysAgo(now, 6);
-    firstRaceIds = firstRaceIdSet(
-      await fetchPaged(
-        () =>
-          client
-            .from("races")
-            .select("race_id,race_date,venue_code,race_number")
-            .gte("race_date", from)
-            .order("race_id"),
-        "第1レースの判定に使うraces",
-      ),
-    );
     oddsSlots = await fetchPaged(
-      slotQuery((q) => q.eq("job", rule.job).gte("race_date", from)),
-      "オッズのスロット（後続の窓の確認用）",
+      slotQuery((q) =>
+        q
+          .eq("job", rule.job)
+          .gt("offset_min", rule.offsetMin)
+          .gte("race_date", from),
+      ),
+      "オッズの後続の窓のスロット（発売開始の遅れの確認用）",
     );
   }
   return {
@@ -776,7 +727,6 @@ export async function collectMonitorInput(client, now, level) {
     todayRaceCount: racesRes.count ?? 0,
     todaySlots,
     weekSlots,
-    firstRaceIds,
     oddsSlots,
   };
 }
@@ -820,31 +770,36 @@ export async function runMonitor(
   const liveJobs = new Set(
     input.jobStates.filter((r) => r.mode === "live").map((r) => r.job),
   );
-  // 想定内の未公開（朝の最初のレースの、発走60分前のオッズ）。警告・窓内取得率・日次サマリーで同じ判定を共有する
-  const expectedUnpublished = classifyExpectedUnpublished(
-    [
-      ...input.expiredSlots,
-      ...(input.openSlots ?? []),
-      ...input.todaySlots,
-      ...(input.weekSlots ?? []),
-    ],
-    {
-      firstRaceIds: input.firstRaceIds,
-      siblingSlots: input.oddsSlots ?? [],
-      now,
-    },
-  );
+  // 発売開始の遅れ（想定内の未公開）。警告・窓内取得率・日次サマリーで同じ判定を共有する
+  const targetPool = [
+    ...input.expiredSlots,
+    ...(input.openSlots ?? []),
+    ...input.todaySlots,
+    ...(input.weekSlots ?? []),
+  ];
+  const oddsSiblings = input.oddsSlots ?? [];
+  const expectedUnpublished = classifyExpectedUnpublished(targetPool, {
+    siblingSlots: oddsSiblings,
+    now,
+  });
   const todayStats = computeWindowStats(input.todaySlots, SCRAPE_JOBS, {
     liveJobs,
     expectedUnpublished,
   });
+  const today = toJstDateString(now);
+  const detectionLagToday = summarizeDetectionLags(
+    input.todaySlots,
+    expectedUnpublished,
+    oddsSiblings,
+  );
   const alerts = [
     ...evaluateExpired([...input.expiredSlots, ...(input.openSlots ?? [])], {
       activeJobs: activeJobNames,
       now,
       expectedUnpublished,
     }),
-    ...evaluateWindowRates(todayStats, toJstDateString(now)),
+    ...evaluateWindowRates(todayStats, today),
+    ...evaluateDetectionLag(detectionLagToday, today),
     ...evaluateJobStates(input.jobStates, now),
     ...(input.todayRaceCount === undefined
       ? []
@@ -876,9 +831,21 @@ export async function runMonitor(
   // 日次サマリー: 取得ジョブが1つも有効でない間（移行前）は、投稿しない
   if (isDaily && activeJobs.length > 0) {
     const summaryDate = toJstDateString(new Date(now.getTime() - 3600 * 1000));
+    const weekSlots = input.weekSlots ?? [];
+    const oddsActive = activeJobNames.has(EXPECTED_UNPUBLISHED.job);
     messages.push(
       formatDailySummary({
         date: summaryDate,
+        detectionLagDay: oddsActive
+          ? summarizeDetectionLags(
+              weekSlots.filter((s) => s.race_date === summaryDate),
+              expectedUnpublished,
+              oddsSiblings,
+            )
+          : undefined,
+        detectionLag7d: oddsActive
+          ? summarizeDetectionLags(weekSlots, expectedUnpublished, oddsSiblings)
+          : undefined,
         stats7d: computeWindowStats(input.weekSlots ?? [], SCRAPE_JOBS, {
           liveJobs,
           expectedUnpublished,

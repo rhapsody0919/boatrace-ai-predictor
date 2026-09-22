@@ -27,6 +27,7 @@ import {
   summarizeRankDetail,
   summarizeWindows,
 } from "../analysis/data-health-report.js";
+import { DETECTION_LAG } from "../lib/scrapeJobs/expectedUnpublished.js";
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -279,7 +280,7 @@ const full5 = {
 // ---------------------------------------------------------------------------
 // (c) 閾値未達の一覧・Markdown（レポート全体をmainで実行）
 // ---------------------------------------------------------------------------
-async function runReport(coverageRows, windowRows = []) {
+async function runReport(coverageRows, windowRows = [], detectionLagRows = []) {
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "health-report-"));
   const originalFetch = globalThis.fetch;
   const originalLog = console.log;
@@ -297,6 +298,7 @@ async function runReport(coverageRows, windowRows = []) {
     if (query.includes("information_schema")) rows = [];
     else if (query.includes("pg_database_size")) rows = [{ bytes: "1000" }];
     else if (query.includes("with o as")) rows = coverageRows;
+    else if (query.includes("window_closed_at")) rows = detectionLagRows;
     else if (query.includes("first_race_in_window")) rows = windowRows;
     return { ok: true, status: 200, text: async () => JSON.stringify(rows) };
   };
@@ -507,6 +509,114 @@ async function runReport(coverageRows, windowRows = []) {
     ) &&
       json.windows.aggregate.find((x) => x.minutesBefore === 60).structural ===
         4,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (e) 発売開始の検知の遅れ（想定内の未公開のレースだけ。近似値。BOA-386続き・完了の定義Bの見直し）
+// ---------------------------------------------------------------------------
+{
+  const sql = buildQueries({
+    coverageStart: "2026-09-07",
+    windowStart: "2026-09-14",
+    endDate: "2026-09-20",
+  }).detectionLag;
+  check(
+    "detectionLagのSQL: 対象は、-60の窓（60分前±3分）に取れておらず（想定内の未公開）、後続の窓（30・15・10・5・0分前）のどれかに取れているレース",
+    /confirmed_at/.test(sql) &&
+      /window_closed_at/.test(sql) &&
+      [30, 15, 10, 5, 0].every((m) =>
+        sql.includes(
+          `o2.captured_at between b.dl - make_interval(mins => ${m + 3})`,
+        ),
+      ),
+  );
+  check(
+    "detectionLagのSQL: 5分以内の割合・p50・p95・最大・計測不能を集計する（基準は expectedUnpublished.js の DETECTION_LAG と同じ）",
+    sql.includes(`<= ${DETECTION_LAG.thresholdMin}`) &&
+      /percentile_cont\(0\.5\)/.test(sql) &&
+      /percentile_cont\(0\.95\)/.test(sql) &&
+      /count\(\*\) filter \(where confirmed_at is null\) as unmeasured/.test(
+        sql,
+      ),
+  );
+
+  const lagRow = (over = {}) => ({
+    total: "10",
+    measured: "8",
+    unmeasured: "2",
+    within_threshold: "3",
+    p50_min: "6.2",
+    p95_min: "20.5",
+    max_min: "25.0",
+    ...over,
+  });
+  const { markdown, json } = await runReport(
+    [day("2026-09-19", { ...full5 })],
+    [],
+    [lagRow()],
+  );
+  check(
+    "JSON: 発売開始の検知の遅れ（対象・計測可能・5分以内の件数・割合・p50/p95/最大・計測不能）を残す",
+    json.detectionLag.total === 10 &&
+      json.detectionLag.measured === 8 &&
+      json.detectionLag.unmeasured === 2 &&
+      json.detectionLag.within === 3 &&
+      json.detectionLag.over === 5 &&
+      near(json.detectionLag.rate, 3 / 8) &&
+      json.detectionLag.p50Min === 6.2 &&
+      json.detectionLag.p95Min === 20.5 &&
+      json.detectionLag.maxMin === 25.0,
+    JSON.stringify(json.detectionLag),
+  );
+  check(
+    "検知の遅れが基準未満（3/8=37.5% < 98%）なら未達として警告に出す",
+    json.detectionLag.belowThreshold === true &&
+      json.alerts.some(
+        (a) =>
+          a.kind === "detection_lag" &&
+          a.item === "発売開始の検知の遅れ" &&
+          /5分以内 3\/8/.test(a.detail),
+      ),
+    JSON.stringify(json.alerts.filter((a) => a.kind === "detection_lag")),
+  );
+  check(
+    "Markdown: 発売開始の検知の遅れの見出し・件数・割合が出る",
+    (markdown.includes("発売開始の検知の遅れ") &&
+      /3.*8.*37\.5%/.test(markdown.replace(/\s+/g, " "))) ||
+      markdown.includes("37.5%"),
+    markdown
+      .split("\n")
+      .filter((l) => l.includes("検知の遅れ") || l.includes("37.5"))
+      .join(" | "),
+  );
+
+  const { json: zeroJson } = await runReport(
+    [day("2026-09-19", { ...full5 })],
+    [],
+    [],
+  );
+  check(
+    "検知の遅れの対象が0件（DBが空行を返す）なら、報告は失敗せず null になる（未達として誤警告しない）",
+    zeroJson.detectionLag === null &&
+      !zeroJson.alerts.some((a) => a.kind === "detection_lag"),
+    JSON.stringify(zeroJson.detectionLag),
+  );
+  const { json: highJson } = await runReport(
+    [day("2026-09-19", { ...full5 })],
+    [],
+    [
+      lagRow({
+        total: "10",
+        measured: "10",
+        unmeasured: "0",
+        within_threshold: "10",
+      }),
+    ],
+  );
+  check(
+    "検知の遅れが基準以上（10/10=100%）なら警告に出さない",
+    !highJson.alerts.some((a) => a.kind === "detection_lag"),
   );
 }
 
