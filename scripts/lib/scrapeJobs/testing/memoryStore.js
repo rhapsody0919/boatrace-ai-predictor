@@ -15,11 +15,21 @@ export function createMemoryStore({
   const calls = [];
   const record = (name, args) => calls.push({ name, ...args });
   let pendingSlots = [...slots];
+  let claimFallback = null;
   const store = {
     calls,
     state,
     completed: [],
     retried: [],
+    /** takeClaimFallback が次に返す値（{reason}|null）を差し替える（claim が既存の関数へフォールバックした場合のテスト） */
+    setClaimFallback(next) {
+      claimFallback = next;
+    },
+    takeClaimFallback() {
+      const taken = claimFallback;
+      claimFallback = null;
+      return taken;
+    },
     /** claimSlots が返すスロットを差し替える */
     setSlots(next) {
       pendingSlots = [...next];

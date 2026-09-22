@@ -293,6 +293,10 @@ export function buildBaseRow(raceId, capturedAt, data) {
  * @param {number} raceNo - レース番号 (1-12)
  * @param {Object} [options]
  * @param {boolean} [options.wantFull] - true なら3連単・3連複・2連単・2連複・拡連複の全通りもパースして返す（ADR-0057）
+ * @param {boolean} [options.winFirst] - true なら、単勝ページだけを先に取得し、未公開（有効な単勝オッズが無い）なら、
+ *   他のページを取得せずに no_values を返す。公開されていれば、続けて他のページを（並列に）取得する。
+ *   未公開の間の再試行で、取得先へのリクエストを1ページに絞るため（オッズの発走60分前の窓の延長。registry.js の odds）。
+ *   既定は false（従来どおり、全ページを並列に取得する。公開済みの通常の取得の所要時間を変えない）
  * @param {(url: string) => Promise<Response>} [options.fetchFn] - 取得関数（既定はグローバルの fetch）
  * @returns {Promise<{status: "ok"|"partial"|"no_values"|"error"|"breaker_open", data: {winOdds: Array, placeOdds: Array, trifecta: Array, trifectaAll: Object|null, trioAll: Object|null, exactaAll: Object|null, quinellaAll: Object|null, wideAll: Object|null}|null, missing: string[], error?: string, retryAt?: Date}>}
  */
@@ -300,7 +304,7 @@ export async function fetchOddsDetailed(
   date,
   venueCode,
   raceNo,
-  { wantFull = false, fetchFn = defaultFetch } = {},
+  { wantFull = false, winFirst = false, fetchFn = defaultFetch } = {},
 ) {
   const ymd = date.replace(/-/g, "");
   const jcd = String(venueCode).padStart(2, "0");
@@ -322,10 +326,47 @@ export async function fetchOddsDetailed(
 
   try {
     // fetchFn が同期的に例外を投げても、他のURLの取得を巻き込まないよう Promise にそろえる
-    const settled = await Promise.allSettled(
-      keys.map((k) => Promise.resolve().then(() => fetchFn(urlByKey[k]))),
-    );
-    const bySettled = Object.fromEntries(keys.map((k, i) => [k, settled[i]]));
+    const settleKeys = (ks) =>
+      Promise.allSettled(
+        ks.map((k) => Promise.resolve().then(() => fetchFn(urlByKey[k]))),
+      );
+    let bySettled;
+    if (winFirst) {
+      // 単勝ページだけを先に取得する。未公開なら、ここで終える（他のページは取得しない）。公開されていれば、
+      // 読み取った本文を Response に包み直して、以降の処理（単勝の解析）に渡し、残りのページを並列に取得する
+      const [winSettled] = await settleKeys(["win"]);
+      let winProbe = winSettled;
+      if (winSettled.status === "fulfilled" && winSettled.value.ok) {
+        const winText = await winSettled.value.text();
+        if (!scrapeWinOdds(cheerio.load(winText)).some((o) => o !== null)) {
+          return { status: "no_values", data: null, missing: [] };
+        }
+        winProbe = {
+          status: "fulfilled",
+          value: new Response(winText, { status: 200 }),
+        };
+      }
+      const restKeys = keys.filter((k) => k !== "win");
+      // 単勝ページが取得できなかった（通信エラー・HTTP非200・ブレーカー）ときは、他のページを取得しない
+      // （下の単勝の失敗の処理で終わる。取得しなかったページは、通信エラーのログを出さない印 skipped を付ける）
+      const winFailed = winProbe.status !== "fulfilled" || !winProbe.value.ok;
+      const restSettled = winFailed
+        ? restKeys.map(() => ({
+            status: "rejected",
+            reason: new Error(
+              "単勝ページの取得に失敗したため、取得しませんでした",
+            ),
+            skipped: true,
+          }))
+        : await settleKeys(restKeys);
+      bySettled = {
+        win: winProbe,
+        ...Object.fromEntries(restKeys.map((k, i) => [k, restSettled[i]])),
+      };
+    } else {
+      const settled = await settleKeys(keys);
+      bySettled = Object.fromEntries(keys.map((k, i) => [k, settled[i]]));
+    }
     const okResponse = (s) =>
       s && s.status === "fulfilled" && s.value.ok ? s.value : null;
     const settledDetail = (s) =>
@@ -340,7 +381,7 @@ export async function fetchOddsDetailed(
     // （HTTP非okは券種未公開等の正常なケースを含みうるため従来通りログしない）
     for (const key of keys) {
       if (key === "win") continue;
-      if (bySettled[key].status === "rejected") {
+      if (bySettled[key].status === "rejected" && !bySettled[key].skipped) {
         console.error(
           `  ⚠️ ${VENUE_NAMES[venueCode]} ${raceNo}R ${key}オッズ取得失敗（通信エラー）: ${settledDetail(bySettled[key])}`,
         );
@@ -757,7 +798,8 @@ function coalesceRow(fresh, existing) {
  *   error             取得（HTTP・ネットワーク）・書き込みの失敗。再試行する
  *   breaker_open      サーキットブレーカーが開いていた。retryAt まで再試行を遅らせる
  *
- * @param {Array<{race_id: string, venue_code: number, race_number: number, window_min: number, attempts?: number}>} races
+ * @param {Array<{race_id: string, venue_code: number, race_number: number, window_min: number, attempts?: number, winFirst?: boolean}>} races
+ *   winFirst: true なら、単勝ページだけを先に取得し、未公開なら他のページを取得しない（fetchOddsDetailed）
  * @param {Object} options
  * @param {string} options.date YYYY-MM-DD（オッズページの日付）
  * @param {"live"|"shadow"} [options.mode]
@@ -828,7 +870,7 @@ export async function runForRaces(
         date,
         race.venue_code,
         race.race_number,
-        { wantFull: true, fetchFn },
+        { wantFull: true, winFirst: race.winFirst === true, fetchFn },
       );
       if (detail.status === "breaker_open") {
         outcomes.set(keyOf(race), {

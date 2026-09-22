@@ -72,13 +72,25 @@ export const SCRAPE_JOBS = Object.freeze({
   },
   // A3 オッズ。6窓×5ページ。許容幅3分のため、リースは許容幅より短く（120秒）
   // 実装: scripts/lib/scrapeJobs/oddsHandlers.js、api/cron/odds.js（T4b-04）。1スロット＝1レース×1窓（5ページを並列）
+  //
+  // 発走60分前の窓（-60）の延長（完了の定義Bの見直し、tasks.md T4b-24）: オッズの発売開始が-60の窓（±3分）より遅い
+  // レースがある（各会場の第1レースの約18%。朝の開催会場の第2レースにも及ぶ。旧基盤も同じ）。これは取得の失敗ではなく、
+  // 発売開始の遅れである。-60 の窓だけ、許容幅を30分（＝-30の窓が始まるまで）に延ばし、未公開（no_values）の間は
+  // 1分間隔（retrySec）で再試行を続けて、発売開始を早く検知する（graceMinByOffset）。未公開の再試行は、単勝1ページの
+  // 確認に絞る（oddsHandlers.js。追加リクエストを抑える）。公開されて取得できたら、通常どおり完了する。
+  // 他の窓（-30〜0）・他のジョブは変えない。claim は、offset ごとの許容幅の上書きを受ける新関数
+  // claim_scrape_slots_by_offset（マイグレーション092）を使う（無ければ既存の claim_scrape_slots へフォールバックし、
+  // 延長は効かない。ログと last_report のアラートに残す。store.js）。切り戻し: graceMinByOffset を消す
   odds: {
     kind: "window",
     offsets: [-60, -30, -15, -10, -5, 0],
     graceMin: 3,
+    graceMinByOffset: { [-60]: 30 },
     retrySec: 60,
     leaseSec: 120,
-    claimLimit: 24,
+    // 延長した -60 の未公開のスロット（数十件が同時に再試行を待つ）は、期限が最も早いため、claim の先頭に並ぶ。
+    // 他の窓（許容幅3分）が、上限で1分以上後回しになるのを避けるため、24から32にする（8回 × 12秒 = 96秒 ≦ リース120秒−10秒）
+    claimLimit: 32,
     concurrency: 4,
     slotSecEstimate: 12,
     maxDurationSec: 300,
@@ -385,6 +397,32 @@ export function isCatchupOffset(def, offsetMin) {
     : false;
 }
 
+/**
+ * 窓（offset_min）ごとの許容幅（分）。graceMinByOffset に指定があればその値、なければジョブの graceMin
+ * （odds の -60 だけ、未公開の間の延長で30分。ファイル内の odds の説明）
+ *
+ * @param {{graceMin: number, graceMinByOffset?: Record<number, number>}|undefined} def
+ * @param {number} offsetMin
+ */
+export function graceMinFor(def, offsetMin) {
+  const override = def?.graceMinByOffset?.[offsetMin];
+  return Number.isInteger(override) ? override : def?.graceMin;
+}
+
+/**
+ * claim_scrape_slots_by_offset（マイグレーション092）に渡す、offset ごとの許容幅の上書き（{"-60": 30}）。
+ * 上書きが無いジョブは null（既存の claim_scrape_slots を使う）
+ *
+ * @param {{graceMinByOffset?: Record<number, number>}|undefined} def
+ * @returns {Record<string, number>|null}
+ */
+export function graceOverridesOf(def) {
+  const entries = Object.entries(def?.graceMinByOffset ?? {});
+  return entries.length === 0
+    ? null
+    : Object.fromEntries(entries.map(([k, v]) => [String(k), v]));
+}
+
 /** kind が window のジョブ名の一覧 */
 export function windowJobNames(registry = SCRAPE_JOBS) {
   return Object.entries(registry)
@@ -405,7 +443,7 @@ export function slotDefsFor(jobs, registry = SCRAPE_JOBS) {
     return def.offsets.map((offset) => ({
       job,
       offset_min: offset,
-      grace_min: def.graceMin,
+      grace_min: graceMinFor(def, offset),
     }));
   });
 }
@@ -468,6 +506,38 @@ export function validateRegistry(registry = SCRAPE_JOBS) {
         problems.push(
           `${name}: concurrency(${def.concurrency}) は 1以上・claimLimit(${def.claimLimit})以下にしてください`,
         );
+      }
+      // 窓ごとの許容幅の上書き（graceMinByOffset）: 窓（offsets）に含まれ、ジョブの許容幅以上の整数。
+      // 延長した窓は、リース・再試行の間隔より長く、次の窓の開始（発走に近い側の隣の窓の期限）を超えない
+      // （超えると、次の窓と同じ時間帯に2つの窓が重なる）
+      if (def.graceMinByOffset !== undefined) {
+        const sortedOffsets = [...(def.offsets ?? [])].sort((a, b) => a - b);
+        for (const [key, grace] of Object.entries(def.graceMinByOffset)) {
+          const offset = Number(key);
+          if (!Array.isArray(def.offsets) || !def.offsets.includes(offset)) {
+            problems.push(
+              `${name}: graceMinByOffset のキー(${key})が offsets に含まれていません`,
+            );
+            continue;
+          }
+          if (!Number.isInteger(grace) || grace < def.graceMin) {
+            problems.push(
+              `${name}: graceMinByOffset[${key}] は、graceMin(${def.graceMin})以上の整数にしてください: ${grace}`,
+            );
+            continue;
+          }
+          if (def.leaseSec >= grace * 60 || def.retrySec >= grace * 60) {
+            problems.push(
+              `${name}: graceMinByOffset[${key}](${grace}分)は、リース(${def.leaseSec}秒)・再試行の間隔(${def.retrySec}秒)より長くしてください`,
+            );
+          }
+          const next = sortedOffsets.find((o) => o > offset);
+          if (next !== undefined && offset + grace > next) {
+            problems.push(
+              `${name}: graceMinByOffset[${key}](${grace}分)は、次の窓(${next})の開始を超えています（窓が重なります）`,
+            );
+          }
+        }
       }
       // 窓の外の補完のスロット（catchupOffsets）: 発走の後（正の整数）。補完の再試行の間隔は、許容幅より短い
       if (def.catchupOffsets !== undefined) {

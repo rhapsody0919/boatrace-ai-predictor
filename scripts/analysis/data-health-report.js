@@ -56,6 +56,7 @@ import {
 } from "../lib/dataHealth/coverageSpec.js";
 // 想定内の未公開（朝の最初のレースの、発走60分前のオッズ）の定義は、監視（scripts/lib/scrapeJobs/monitor.js）と共有する（BOA-386）
 import {
+  DETECTION_LAG,
   EXPECTED_UNPUBLISHED,
   firstRaceSql,
   laterOffsetsOf,
@@ -287,6 +288,57 @@ cross join lateral (
     ) as clean
 ) c
 group by b.race_date, w.m order by b.race_date, w.m desc`,
+
+    // 指標2補足: 発売開始の検知の遅れ（想定内の未公開＝structuralなレースだけ対象）。
+    // レース単位で、最初に公開が確認できた時刻（後続の窓のうち最も早い captured_at）と、-60の窓が閉じた時刻
+    // （発走60分前+許容幅3分）の差（分）を求める。予定表（scrape_slots）の実際の試行時刻は、レポート（SQLのみ・
+    // Management API経由）からは読まない設計のため、「窓が閉じた時点で最後の未公開の試行があった」とみなす近似値
+    // （実際の-60の延長は1分間隔で再試行するため、この近似値は実際の検知の遅れの上限に相当する。監視（monitor.js）側は
+    // scrape_slots の実際の試行時刻で正確に計測する。二重実装ではなく、レポート側は近似・監視側は正確という役割分担）
+    detectionLag: `
+with base as (
+  select r.race_id, r.race_date,
+      (r.race_date::timestamp + r.start_time) at time zone 'Asia/Tokyo' as dl
+  from races r
+  where r.race_date between '${windowStart}' and '${endDate}'
+    and r.start_time is not null
+    and r.cancellation_status is distinct from 'confirmed'
+    and exists (select 1 from race_results rr where rr.race_id = r.race_id and rr.rank1 is not null)
+), structural as (
+  select b.race_id, b.dl,
+      b.dl - make_interval(mins => ${EXPECTED_UNPUBLISHED_MINUTES} - ${WINDOW_TOLERANCE_MIN}) as window_closed_at,
+      (
+        select min(o2.captured_at) from race_odds o2
+        where o2.race_id = b.race_id
+          and (${LATER_WINDOW_MINUTES.map(
+            (m) =>
+              `o2.captured_at between b.dl - make_interval(mins => ${m + WINDOW_TOLERANCE_MIN}) and b.dl - make_interval(mins => ${m - WINDOW_TOLERANCE_MIN})`,
+          ).join(" or ")})
+      ) as confirmed_at
+  from base b
+  where not exists (
+      select 1 from race_odds o
+      where o.race_id = b.race_id
+        and o.captured_at between b.dl - make_interval(mins => ${EXPECTED_UNPUBLISHED_MINUTES + WINDOW_TOLERANCE_MIN})
+                              and b.dl - make_interval(mins => ${EXPECTED_UNPUBLISHED_MINUTES - WINDOW_TOLERANCE_MIN})
+    )
+)
+select
+    count(*) as total,
+    count(confirmed_at) as measured,
+    count(*) filter (where confirmed_at is null) as unmeasured,
+    count(*) filter (
+      where confirmed_at is not null
+        and extract(epoch from (confirmed_at - window_closed_at)) / 60 <= ${DETECTION_LAG.thresholdMin}
+    ) as within_threshold,
+    percentile_cont(0.5) within group (
+      order by extract(epoch from (confirmed_at - window_closed_at)) / 60
+    ) filter (where confirmed_at is not null) as p50_min,
+    percentile_cont(0.95) within group (
+      order by extract(epoch from (confirmed_at - window_closed_at)) / 60
+    ) filter (where confirmed_at is not null) as p95_min,
+    max(extract(epoch from (confirmed_at - window_closed_at)) / 60) as max_min
+from structural`,
 
     // 指標3: 取得時刻列の有無
     timingColumns: `
@@ -607,6 +659,31 @@ export function summarizeWindows(
       rateClean: rate(inWindowClean, racesClean),
     };
   });
+}
+
+/**
+ * 発売開始の検知の遅れ（想定内の未公開のレースだけを対象）の集計行を、レポート用の値にする。
+ * SQLの近似（窓が閉じた時刻を起点とする。ファイル内 detectionLag クエリのコメント参照）。row が無い・
+ * 対象が0件なら null を返す（無理に0で埋めない）
+ */
+function summarizeDetectionLagRow(row) {
+  if (!row) return null;
+  const total = Number(row.total);
+  const measured = Number(row.measured);
+  return {
+    total,
+    measured,
+    unmeasured: Number(row.unmeasured),
+    within: Number(row.within_threshold),
+    over: measured - Number(row.within_threshold),
+    rate: measured > 0 ? Number(row.within_threshold) / measured : null,
+    p50Min: round1(toNumberOrNull(row.p50_min)),
+    p95Min: round1(toNumberOrNull(row.p95_min)),
+    maxMin: round1(toNumberOrNull(row.max_min)),
+    belowThreshold:
+      measured > 0 &&
+      Number(row.within_threshold) / measured < DETECTION_LAG.rate,
+  };
 }
 
 /** 取得時刻列の有無を、テーブル別に「計測可 / 弱(created_at等のみ) / 計測不能」に分類する */
@@ -942,6 +1019,16 @@ function collectAlerts(report) {
         detail: `${w.inWindow}/${w.racesAdjusted}${w.structural > 0 ? `（想定内の未公開 ${w.structural}件を分母から除外。除外なしは${w.inWindow}/${w.races}）` : ""}`,
       });
     }
+  }
+  if (report.detectionLag?.belowThreshold) {
+    const lag = report.detectionLag;
+    alerts.push({
+      kind: "detection_lag",
+      item: "発売開始の検知の遅れ",
+      value: lag.rate,
+      threshold: DETECTION_LAG.rate,
+      detail: `${DETECTION_LAG.thresholdMin}分以内 ${lag.within}/${lag.measured}（p95 ${lag.p95Min ?? "-"}分・最大 ${lag.maxMin ?? "-"}分、計測不能 ${lag.unmeasured}件）`,
+    });
   }
   for (const m of report.monthlyResults) {
     if (m.belowThreshold) {
@@ -1316,6 +1403,48 @@ function renderMarkdown(report) {
         m60.firstRace - m60.firstRaceInWindow - m60.structural,
       ]),
     );
+  }
+  lines.push("");
+  const lag = report.detectionLag;
+  lines.push(
+    `### 発売開始の検知の遅れ（想定内の未公開のレース。基準: ${DETECTION_LAG.thresholdMin}分以内の割合${DETECTION_LAG.rate * 100}%以上）`,
+  );
+  lines.push("");
+  lines.push(
+    "SQLからの近似値（窓が閉じた時刻を起点とする。実際の試行時刻は予定表(scrape_slots)にのみ残り、監視(monitor.js)が正確に計測する。二重実装ではなく役割分担）",
+  );
+  lines.push("");
+  if (lag && lag.total > 0) {
+    lines.push(
+      tableHeader([
+        `${DETECTION_LAG.thresholdMin}分以内`,
+        "対象",
+        "割合",
+        "p50",
+        "p95",
+        "最大",
+        "計測不能",
+      ]),
+    );
+    lines.push(
+      tableRow([
+        lag.within,
+        lag.measured,
+        formatPct(lag.rate),
+        lag.p50Min !== null ? `${lag.p50Min}分` : "-",
+        lag.p95Min !== null ? `${lag.p95Min}分` : "-",
+        lag.maxMin !== null ? `${lag.maxMin}分` : "-",
+        lag.unmeasured,
+      ]),
+    );
+    if (lag.belowThreshold) {
+      lines.push("");
+      lines.push(
+        `(未達: ${formatPct(lag.rate)} < ${DETECTION_LAG.rate * 100}%)`,
+      );
+    }
+  } else {
+    lines.push("（対象レース0件）");
   }
   lines.push("");
   lines.push("### 日別の窓内取得率");
@@ -1710,6 +1839,8 @@ export async function main(argv = process.argv.slice(2)) {
             }
           : null,
     },
+    // 発売開始の検知の遅れ（想定内の未公開のレースだけ。近似値。expectedUnpublished.js・detectionLagクエリのコメント参照）
+    detectionLag: summarizeDetectionLagRow(raw.detectionLag?.[0]),
     timingColumns: classifyTimingColumns(raw.timingColumns, raw.tableExistence),
     scrapedTimestamps,
     monthlyResults: summarizeMonthly(raw.monthly),
