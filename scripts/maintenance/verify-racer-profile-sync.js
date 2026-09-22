@@ -83,6 +83,12 @@ function seasonHtml({
   return `<div class="text"><p class="h-alignR">集計期間：2025/11/01-2026/04/30</p></div><div class="table1"><table>${tbody}</table></div>`;
 }
 
+// 公式サイトが「この登録番号は存在しない」ときに返す実ページの本文（BOA-376、実ページで確認済み。
+// racer_id 3849・4519）。.table1 table を含まず、HTTP 200で返る
+function notFoundHtml() {
+  return `<div class="contentsFrame1_inner"><div class="title12"><h3 class="title12_title is-type1">※ データが存在しないのでページを表示できません。<br /><br /></h3></div></div>`;
+}
+
 function profileHtml(name) {
   return `<div class="racer1_bodyName">${name}</div><div class="racer1_bodyKana">カナ</div>
 <dl class="list3"><dt>生年月日</dt><dd>1990/01/02</dd><dt>身長</dt><dd>170cm</dd><dt>体重</dt><dd>52kg</dd>
@@ -502,6 +508,7 @@ const runWith = (mock, site, argv, deps = {}) =>
 {
   // 1001: 初回（期別成績が未取得）→更新 / 1002: 取得済みで同値→スキップ / 1003: 新規選手（未登録）
   // 1004: 期別成績ページが常に500 / 1005: 新人（集計期間内データ無し）
+  // 1006: 公式サイトが「この登録番号は存在しない」を返す（引退・登録抹消等と推定。BOA-376）
   const mock = createMockSupabase({
     profiles: [
       existingRow(1001),
@@ -514,6 +521,7 @@ const runWith = (mock, site, argv, deps = {}) =>
       }),
       existingRow(1004),
       existingRow(1005),
+      existingRow(1006),
     ],
     recentRacerIds: [1001, 1003],
   });
@@ -523,6 +531,7 @@ const runWith = (mock, site, argv, deps = {}) =>
     1003: { profile: profileHtml("新規 太郎"), season: seasonHtml() },
     1004: { season: 500 },
     1005: { season: seasonHtml({ withData: false }) },
+    1006: { season: notFoundHtml() },
   });
   const { summary, verdict } = await runWith(mock, site, []);
 
@@ -593,11 +602,22 @@ const runWith = (mock, site, argv, deps = {}) =>
       summary.season.successCount,
       summary.season.unchangedCount,
       summary.season.noDataCount,
+      summary.season.notFoundCount,
       summary.season.failCount,
       summary.season.failedRacerIds,
       summary.profile.successCount,
     ],
-    [2, 1, 1, 1, [1004], 1],
+    [2, 1, 1, 1, 1, [1004], 1],
+  );
+  check(
+    "統合: 公式サイトが「ページが存在しない」を返した1006は、失敗（failCount）にせず notFoundCount に計上する（BOA-376）",
+    [
+      mock.requests.some(
+        (r) => r.method !== "GET" && r.search?.includes("1006"),
+      ),
+      summary.season.failedRacerIds.includes(1006),
+    ],
+    [false, false],
   );
   check(
     "統合: 500を返す選手は3回試行してから失敗として記録される",
@@ -605,7 +625,7 @@ const runWith = (mock, site, argv, deps = {}) =>
     3,
   );
   check(
-    "統合: 失敗1/5=20%なので実行全体は失敗（終了コード1）",
+    "統合: 失敗1/6（1006のnotFoundCountは分母から除かない対象数だが失敗率の分子には含めない）が上限5%を超えるため実行全体は失敗（終了コード1）",
     verdict.ok,
     false,
   );
