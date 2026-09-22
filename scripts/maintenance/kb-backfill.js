@@ -35,6 +35,7 @@ import {
   KB_USER_AGENT,
   KB_SCHEMA,
   PENDING_MARKER,
+  classifyKFileVenues,
   buildKbUrl,
   kbArchiveRelPath,
   decodeLzhText,
@@ -570,7 +571,14 @@ export async function cmdDownload(opts, deps = {}) {
         continue;
       }
       consecutiveNotLzh = 0;
-      if (kind === "K" && text.includes(PENDING_MARKER)) {
+      // 日全体が未確定なのは、確定した会場が1つも無い場合だけ（会場ごとに判定。中止・順延の会場があるだけの日を、
+      // 捨てない。ブロックが読み取れない想定外の形式は、従来どおり、ファイル全体のマーカーで判定する）
+      const kVenues = kind === "K" ? classifyKFileVenues(text) : null;
+      if (
+        kind === "K" &&
+        (kVenues.allPending ||
+          (kVenues.total === 0 && text.includes(PENDING_MARKER)))
+      ) {
         appendJsonl(manifestFile, {
           ...entry,
           status: "pending",
@@ -587,6 +595,9 @@ export async function cmdDownload(opts, deps = {}) {
         appendJsonl(manifestFile, {
           ...entry,
           status: "ok",
+          ...(kVenues && kVenues.pendingVenues.length > 0
+            ? { pendingVenues: kVenues.pendingVenues }
+            : {}),
           bytes: res.bytes.length,
           sha256: sha256(res.bytes),
           file: kbArchiveRelPath(kind, date),
@@ -638,7 +649,9 @@ async function cmdParse(opts) {
       );
       // 生ファイルの破損・差し替えを、マニフェストのsha256で検知する
       if (m.sha256 && sha256(bytes) !== m.sha256)
-        throw new Error(`${date} ${kind}: 生ファイルのsha256がマニフェストと一致しません`);
+        throw new Error(
+          `${date} ${kind}: 生ファイルのsha256がマニフェストと一致しません`,
+        );
       return {
         text: await decodeLzhText(bytes),
         source: {
@@ -809,7 +822,9 @@ async function cmdLoad(opts) {
       boats: rows.boats.length,
     });
   }
-  console.log(`\nload: ${JSON.stringify(summary)}（処理 ${processedDays}日 / 投入済みスキップ ${dates.length - processedDays}日）`);
+  console.log(
+    `\nload: ${JSON.stringify(summary)}（処理 ${processedDays}日 / 投入済みスキップ ${dates.length - processedDays}日）`,
+  );
   if (summary.failedDays > 0) return 1;
   if (processedDays === 0) {
     console.log("対象は全て投入済みです（再投入は --force）");
