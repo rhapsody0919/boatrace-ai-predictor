@@ -10,6 +10,8 @@
  *       rank4〜6に欠けがあるレースは「判定不能」として分母外に件数を別に出す（欠損に混ぜない）。
  *       判定不能を全て欠損とした場合の下限も出す
  *   (c) 閾値未達の一覧に、定義変更後の値・分母外の内訳が出る
+ *   (d) 窓内取得率: 第1レースの発走60分前の「想定内の未公開」（後続の窓で公開が確認できたもの）を、閾値判定の分母から外し、
+ *       件数と除外なしの値を別に出す。定義は監視（scripts/lib/scrapeJobs/monitor.js）と共有（BOA-386）
  *
  * SQL側の分類（艇別の着欄から完走艇数を確定し、確定・充足・判定不能に分ける）は、DBが無いと実行できない。
  * 生成したSQLが分類の主要な条件を含むことだけを確認し、値の突合は本番DBの読み取り専用クエリで行う
@@ -23,6 +25,7 @@ import {
   main as runHealthReport,
   summarizeCoverage,
   summarizeRankDetail,
+  summarizeWindows,
 } from "../analysis/data-health-report.js";
 
 let failures = 0;
@@ -276,7 +279,7 @@ const full5 = {
 // ---------------------------------------------------------------------------
 // (c) 閾値未達の一覧・Markdown（レポート全体をmainで実行）
 // ---------------------------------------------------------------------------
-async function runReport(coverageRows) {
+async function runReport(coverageRows, windowRows = []) {
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "health-report-"));
   const originalFetch = globalThis.fetch;
   const originalLog = console.log;
@@ -294,6 +297,7 @@ async function runReport(coverageRows) {
     if (query.includes("information_schema")) rows = [];
     else if (query.includes("pg_database_size")) rows = [{ bytes: "1000" }];
     else if (query.includes("with o as")) rows = coverageRows;
+    else if (query.includes("first_race_in_window")) rows = windowRows;
     return { ok: true, status: 200, text: async () => JSON.stringify(rows) };
   };
   console.log = (...args) => output.push(args.join(" "));
@@ -374,6 +378,135 @@ async function runReport(coverageRows) {
     "coverageが0行でも、レポートは失敗せず、rank4〜6は未達（分母0）として出る",
     json.coverage.aggregate.some((m) => m.metric === "rank4_6") &&
       json.alerts.some((a) => a.item.includes("着順4位以降")),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (d) 窓内取得率: 想定内の未公開（第1レースの発走60分前のオッズ。BOA-386）
+// ---------------------------------------------------------------------------
+{
+  const sql = buildQueries({
+    coverageStart: "2026-09-07",
+    windowStart: "2026-09-14",
+    endDate: "2026-09-20",
+  }).windows;
+  check(
+    "windowsのSQL: 第1レースは、その会場・日の races の最小のレース番号（race_id の末尾に依存しない）",
+    /not exists \(select 1 from races fr where fr\.race_date = r\.race_date and fr\.venue_code = r\.venue_code and fr\.race_number < r\.race_number\)/.test(
+      sql,
+    ) && !/right\(r\.race_id/.test(sql),
+  );
+  check(
+    "windowsのSQL: 想定内の未公開 = 第1レースの60分前の窓が窓内に取れておらず、後続の窓（30・15・10・5・0分前）のどれかに取れている",
+    /w\.m = 60 and b\.is_first and not c\.hit and c\.later_hit/.test(sql) &&
+      [30, 15, 10, 5, 0].every((m) =>
+        sql.includes(
+          `o2.captured_at between b.dl - make_interval(mins => ${m + 3})`,
+        ),
+      ),
+  );
+
+  const row = (m, over = {}) => ({
+    d: "2026-09-19",
+    m,
+    races: "100",
+    in_window: "100",
+    races_clean: "100",
+    in_window_clean: "100",
+    first_race: "0",
+    first_race_in_window: "0",
+    structural: "0",
+    ...over,
+  });
+  // 60分前: 100レース中97が窓内。第1レース10件のうち7が窓内、3が未公開で、うち2が後続の窓で公開が確認できた（1は取れていない）
+  const w60 = summarizeWindows([
+    row(60, {
+      in_window: "97",
+      first_race: "10",
+      first_race_in_window: "7",
+      structural: "2",
+    }),
+    row(30),
+  ]).find((x) => x.minutesBefore === 60);
+  check(
+    "summarizeWindows: 想定内の未公開を分母から外した値（97/98）と、除外した件数・除外なしの値（97/100）を別に持つ",
+    w60.structural === 2 &&
+      w60.racesAdjusted === 98 &&
+      near(w60.rateAdjusted, 97 / 98) &&
+      near(w60.rate, 0.97) &&
+      w60.firstRace === 10 &&
+      w60.firstRaceInWindow === 7,
+    JSON.stringify(w60),
+  );
+  check(
+    "閾値判定（belowThreshold）は、想定内の未公開を外した値で行う（除外なし97%は未達だが、97/98=98.98%は達成）",
+    w60.belowThreshold === false,
+  );
+  const w60none = summarizeWindows([
+    row(60, { in_window: "97", first_race: "10", first_race_in_window: "7" }),
+  ]).find((x) => x.minutesBefore === 60);
+  check(
+    "想定内の未公開が0件なら、除外なしの値で判定する（97/100は未達）。後続の窓にも取れていない第1レース（structuralに入らない）は、分母から外さない",
+    w60none.belowThreshold === true &&
+      w60none.structural === 0 &&
+      w60none.racesAdjusted === 100,
+  );
+  const legacy = summarizeWindows([
+    {
+      d: "2026-09-19",
+      m: 60,
+      races: "100",
+      in_window: "99",
+      races_clean: "100",
+      in_window_clean: "99",
+    },
+  ]).find((x) => x.minutesBefore === 60);
+  check(
+    "この列が無い行（古い --cache-file）でも、structural は0で、率は NaN にならない",
+    legacy.structural === 0 && near(legacy.rateAdjusted, 0.99),
+    JSON.stringify(legacy),
+  );
+
+  // レポート全体: 未達の一覧は除外後の値で出し、件数と除外なしの値を併記する。Markdown・JSONに定義と件数が出る
+  const { markdown, json } = await runReport(
+    [day("2026-09-19", { ...full5 })],
+    [
+      row(60, {
+        in_window: "90",
+        first_race: "10",
+        first_race_in_window: "6",
+        structural: "4",
+      }),
+      ...[30, 15, 10, 5, 0].map((m) => row(m)),
+    ],
+  );
+  const winAlert = json.alerts.find((a) => a.item === "窓内取得率 60分前");
+  check(
+    "レポート: 60分前の未達は、除外後の値（90/96）で判定・表示し、除外した件数と除外なしの値（90/100）を併記する",
+    winAlert !== undefined &&
+      near(winAlert.value, 90 / 96) &&
+      /90\/96/.test(winAlert.detail) &&
+      /想定内の未公開 4件/.test(winAlert.detail) &&
+      /90\/100/.test(winAlert.detail),
+    JSON.stringify(winAlert),
+  );
+  check(
+    "Markdown: 想定内の未公開の件数（別列）と、第1レースの60分前の窓の日別の内訳が出る",
+    markdown.includes("全体(想定内の未公開を除外)") &&
+      markdown.includes("第1レースの60分前の窓") &&
+      /\| 2026-09-19\(土\) \| 10 \| 6 \| 60\.0% \| 4 \| 0 \|/.test(markdown),
+    markdown
+      .split("\n")
+      .filter((l) => l.includes("第1レース") || l.includes("2026-09-19"))
+      .join(" | "),
+  );
+  check(
+    "JSON: 想定内の未公開の分母の定義と、集計の件数を残す",
+    /第1レース/.test(
+      json.params.metricDenominators.windowExpectedUnpublished,
+    ) &&
+      json.windows.aggregate.find((x) => x.minutesBefore === 60).structural ===
+        4,
   );
 }
 

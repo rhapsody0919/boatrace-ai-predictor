@@ -5,6 +5,7 @@
  * 確認すること:
  *   (a) 窓内取得率・遅延の集計（確定中止・shadow・未claimの他モードのジョブを分母に入れない。展示は許容幅ベース）
  *   (b) expired・未実行の検知（1件でも）、窓内取得率の閾値（母数が小さいときは判定しない）
+ *   (b2) 想定内の未公開（第1レースの発走60分前のオッズ。後続の窓で公開が確認できたものだけ警告・分母から外す。BOA-386）
  *   (c) 死活（運用窓の開始直後は判定しない）・連続失敗・ブレーカー・0件エラー・日次ジョブの期限超過
  *   (d) 通知の重複抑制（expired・未実行は1スロットにつき1回、持続する状態は6時間おき）
  *   (e) runMonitor: 075未適用・有効なジョブなしでは何も通知しない（誤報なし）。異常があれば通知し、
@@ -21,6 +22,8 @@ import {
   THRESHOLDS,
   aggregateByJob,
   applyDedupe,
+  classifyExpectedUnpublished,
+  collectMonitorInput,
   computeWindowStats,
   evaluateExpired,
   evaluateJobStates,
@@ -32,6 +35,7 @@ import {
   percentile,
   runMonitor,
 } from "../lib/scrapeJobs/monitor.js";
+import { firstRaceIdSet } from "../lib/scrapeJobs/expectedUnpublished.js";
 import { cleanupCutoffs, runCleanup } from "../lib/scrapeJobs/cleanup.js";
 import { createScrapeCronHandler } from "../lib/scrapeJobs/cronWrapper.js";
 import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
@@ -348,14 +352,37 @@ const doneOdds = (delayMin, over = {}) =>
     // 同じく超過。試行1回のpending → expired と同じ扱い
     slot("odds", -60, "pending", { attempts: 1, race_id: "2026-09-19-03-02" }),
     // まだ許容幅内（発走 12:30 → 期限11:30+3分=11:33 → 12:00には超過...）ではなく、期限前
-    slot("odds", -60, "pending", { attempts: 0, race_id: "2026-09-19-03-03", start_time: startAt("14:00") }),
+    slot("odds", -60, "pending", {
+      attempts: 0,
+      race_id: "2026-09-19-03-03",
+      start_time: startAt("14:00"),
+    }),
     // running でリースが有効（処理中）→ 通知しない
-    { ...slot("odds", -60, "running", { attempts: 1, race_id: "2026-09-19-03-04" }), lease_until: iso(new Date(now.getTime() + 30000)) },
+    {
+      ...slot("odds", -60, "running", {
+        attempts: 1,
+        race_id: "2026-09-19-03-04",
+      }),
+      lease_until: iso(new Date(now.getTime() + 30000)),
+    },
     // running でリース切れ → 通知
-    { ...slot("odds", -60, "running", { attempts: 1, race_id: "2026-09-19-03-05" }), lease_until: iso(new Date(now.getTime() - 30000)) },
+    {
+      ...slot("odds", -60, "running", {
+        attempts: 1,
+        race_id: "2026-09-19-03-05",
+      }),
+      lease_until: iso(new Date(now.getTime() - 30000)),
+    },
     // 有効でないジョブ・確定中止 → 通知しない
-    slot("pcexpect", -720, "pending", { attempts: 0, race_id: "2026-09-19-03-06" }),
-    slot("odds", -60, "pending", { attempts: 0, cancel: "confirmed", race_id: "2026-09-19-03-07" }),
+    slot("pcexpect", -720, "pending", {
+      attempts: 0,
+      race_id: "2026-09-19-03-06",
+    }),
+    slot("odds", -60, "pending", {
+      attempts: 0,
+      cancel: "confirmed",
+      race_id: "2026-09-19-03-07",
+    }),
   ];
   const alerts = evaluateExpired(slots, { activeJobs: active, now });
   const keys = alerts.map((x) => x.key).sort();
@@ -372,6 +399,515 @@ const doneOdds = (delayMin, over = {}) =>
   check(
     "now を渡さなければ（従来の呼び出し）、pending は判定しない",
     evaluateExpired(slots, { activeJobs: active }).length === 0,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (b2) 想定内の未公開（BOA-386）: 朝の最初のレースの、発走60分前のオッズの未公開
+//      （後続の窓で公開が確認できたものだけを、警告・窓内取得率の対象外にする）
+// ---------------------------------------------------------------------------
+{
+  const active = new Set(["odds", "result"]);
+  const D = DATE;
+  // 10:00発走。-60=09:00〜09:03、-30=09:30〜09:33、-15=09:45〜09:48、-10=09:50〜09:53、-5=09:55〜09:58、0=10:00〜10:03
+  const LATER = [-30, -15, -10, -5, 0];
+  const nv = (race, over = {}) =>
+    slot("odds", -60, "expired", {
+      race_id: race,
+      attempts: 3,
+      outcome: "no_values",
+      last_error:
+        "単勝オッズを解析できませんでした（未公開・中止・順延の可能性）",
+      ...over,
+    });
+  const later = (race, offsets, status, over = {}) =>
+    offsets.map((o) =>
+      slot("odds", o, status, {
+        race_id: race,
+        ...(status === "done" ? { done_at: iso(at("09:31")) } : {}),
+        ...over,
+      }),
+    );
+  // 会場1の第1レースは、race_id の末尾が 03（末尾が 01 かどうかに依存しない）
+  const R = `${D}-01-03`;
+  const first = new Set([R, `${D}-02-01`]);
+  const run = (target, siblings, now, firstRaceIds = first) => {
+    const map = classifyExpectedUnpublished(target, {
+      firstRaceIds,
+      siblingSlots: siblings,
+      now,
+    });
+    return {
+      map,
+      alerts: evaluateExpired(target, {
+        activeJobs: active,
+        now,
+        expectedUnpublished: map,
+      }),
+    };
+  };
+
+  // 後続の窓（-30）が取れている: 想定内（confirmed）。警告なし
+  const t = nv(R);
+  let sib = [
+    t,
+    ...later(R, [-30], "done", { outcome: "ok" }),
+    ...later(R, [-15, -10, -5, 0], "pending", { attempts: 0 }),
+  ];
+  let r = run([t], sib, at("09:40"));
+  check(
+    "想定内の未公開: 第1レースの-60が no_values で期限切れ、後続の窓（-30）が取れている → 警告しない（confirmed）",
+    r.alerts.length === 0 && r.map.get(`odds:${R}:-60`) === "confirmed",
+    show([...r.map]),
+  );
+  // -30 が失敗でも、-15 が取れていれば確認になる（-60 の未公開の後に公開された）。skipped_have_data も確認になる
+  sib = [
+    t,
+    ...later(R, [-30], "expired", { outcome: "no_values", attempts: 3 }),
+    ...later(R, [-15], "done", { outcome: "skipped_have_data" }),
+  ];
+  r = run([t], sib, at("09:50"));
+  check(
+    "後続の窓のどれか1つが取れていれば確認になる（-30 は失敗・-15 が skipped_have_data でも confirmed）",
+    r.alerts.length === 0 && r.map.get(`odds:${R}:-60`) === "confirmed",
+  );
+
+  // 保留: 後続の窓がまだ期限+許容幅に達していない → 警告も欠落も保留
+  sib = [t, ...later(R, LATER, "pending", { attempts: 0 })];
+  r = run([t], sib, at("09:20"));
+  check(
+    "保留: 後続の窓がまだ来ていない間は、警告しない（deferred）",
+    r.alerts.length === 0 && r.map.get(`odds:${R}:-60`) === "deferred",
+  );
+  sib = [
+    t,
+    ...later(R, [-30], "expired", { outcome: "no_values", attempts: 3 }),
+    ...later(R, [-15, -10, -5, 0], "pending", { attempts: 0 }),
+  ];
+  r = run([t], sib, at("09:40"));
+  check(
+    "保留: -30 が失敗でも、-15 以降が未到来なら、なお保留（早すぎる警告をしない）",
+    r.alerts.length === 0 && r.map.get(`odds:${R}:-60`) === "deferred",
+  );
+
+  // 後続の窓が全て過ぎても取れていない: 通常どおり警告する（本当に取れていない）
+  sib = [
+    t,
+    ...later(R, LATER, "expired", { outcome: "no_values", attempts: 3 }),
+  ];
+  r = run([t], sib, at("10:30"));
+  check(
+    "後続の窓（-30〜0）も全て取れなかった → 通常どおり警告（expired:…:-60）",
+    r.map.size === 0 && r.alerts.some((a) => a.key === `expired:odds:${R}:-60`),
+    show(r.alerts.map((a) => a.key)),
+  );
+  sib = [t, ...later(R, LATER, "pending", { attempts: 0 })];
+  r = run([t], sib, at("10:30"));
+  check(
+    "後続の窓が pending のまま期限+許容幅を過ぎている → 通常どおり警告",
+    r.alerts.some((a) => a.key === `expired:odds:${R}:-60`),
+  );
+  r = run([t], [t], at("09:40"));
+  check(
+    "後続の窓のスロットが1件も無い（確認できない）→ 警告する",
+    r.alerts.some((a) => a.key === `expired:odds:${R}:-60`),
+  );
+
+  // 第1レース以外は対象外（従来どおり警告）。race_id の末尾が -01 でも、最小のレース番号でなければ対象外
+  const notFirst = nv(`${D}-01-04`);
+  r = run(
+    [notFirst],
+    [notFirst, ...later(`${D}-01-04`, [-30], "done", { outcome: "ok" })],
+    at("09:40"),
+  );
+  check(
+    "第1レース以外（そのレースの後続の窓が取れていても）は、従来どおり警告する",
+    r.map.size === 0 && r.alerts.length === 1,
+  );
+  const suffix01 = nv(`${D}-05-01`);
+  r = run(
+    [suffix01],
+    [suffix01, ...later(`${D}-05-01`, [-30], "done", { outcome: "ok" })],
+    at("09:40"),
+  );
+  check(
+    "race_id の末尾が -01 でも、races の最小のレース番号でなければ第1レースとして扱わない（末尾に依存しない）",
+    r.map.size === 0 && r.alerts.length === 1,
+  );
+
+  // 結果・試行・窓・ジョブが違うものは対象外
+  const okSib = (id) => later(id, [-30], "done", { outcome: "ok" });
+  const cases = [
+    ["未実行（attempts=0）", nv(R, { attempts: 0, outcome: null })],
+    [
+      "未実行（attempts=0。outcome が残っていても、未実行は想定内にしない）",
+      nv(R, { attempts: 0 }),
+    ],
+    ["outcome=error", nv(R, { outcome: "error", last_error: "取得先が429" })],
+    ["outcome=partial", nv(R, { outcome: "partial" })],
+    [
+      "別の窓（-30）",
+      slot("odds", -30, "expired", {
+        race_id: R,
+        attempts: 3,
+        outcome: "no_values",
+      }),
+    ],
+    [
+      "別のジョブ（result）",
+      slot("result", -60, "expired", {
+        race_id: R,
+        attempts: 3,
+        outcome: "no_values",
+      }),
+    ],
+  ];
+  for (const [label, target] of cases) {
+    r = run([target], [target, ...okSib(R)], at("09:40"));
+    check(
+      `対象外（従来どおり警告）: ${label}`,
+      r.map.size === 0 && r.alerts.length === 1,
+      show(r.alerts.map((a) => a.key)),
+    );
+  }
+
+  // 確定中止・shadow は、従来どおり警告しない（想定内の判定とは無関係に）
+  const cancelled = nv(R, { cancel: "confirmed" });
+  r = run([cancelled], [cancelled, ...okSib(R)], at("09:40"));
+  check(
+    "確定中止は、従来どおり警告しない",
+    r.alerts.length === 0 && r.map.size === 0,
+  );
+  sib = [t, ...later(R, [-30], "done", { outcome: "ok", run_mode: "shadow" })];
+  r = run([t], sib, at("10:30"));
+  check(
+    "shadow の後続の窓は、確認に使わない（警告する）",
+    r.alerts.some((a) => a.key === `expired:odds:${R}:-60`),
+  );
+  sib = [t, ...later(R, [-30], "done", { outcome: "cancelled_race" })];
+  r = run([t], sib, at("10:30"));
+  check(
+    "後続の窓が cancelled_race で完了したものは、公開の確認に使わない（警告する）",
+    r.alerts.some((a) => a.key === `expired:odds:${R}:-60`),
+  );
+
+  check(
+    "expectedUnpublished を渡さなければ、従来どおり警告する",
+    evaluateExpired([t], { activeJobs: active, now: at("09:40") }).length === 1,
+  );
+  // -60 が pending のまま期限+許容幅を過ぎている（expired化されていない）場合も、同じ判定
+  const pendingNv = nv(R, { status: "pending", attempts: 2 });
+  sib = [pendingNv, ...later(R, [-30], "done", { outcome: "ok" })];
+  r = run([pendingNv], sib, at("09:40"));
+  check(
+    "-60 が pending のまま期限+許容幅を超えた場合も、後続の窓が取れていれば警告しない",
+    r.alerts.length === 0 && r.map.get(`odds:${R}:-60`) === "confirmed",
+  );
+
+  // 窓内取得率・日次サマリー: confirmed は分母から外して別枠、deferred も分母に入れず別枠、後続の窓も取れなかったものは欠落
+  const hits = Array.from({ length: 20 }, () => doneOdds(1));
+  const misses = Array.from({ length: 3 }, () => doneOdds(10));
+  const conf = [nv(`${D}-01-03`), nv(`${D}-02-01`)];
+  const defer = nv(`${D}-03-01`);
+  const bad = nv(`${D}-04-01`);
+  const firstAll = new Set([
+    `${D}-01-03`,
+    `${D}-02-01`,
+    `${D}-03-01`,
+    `${D}-04-01`,
+  ]);
+  const siblingsAll = [
+    ...later(`${D}-01-03`, [-30], "done", { outcome: "ok" }),
+    ...later(`${D}-02-01`, [-15], "done", { outcome: "ok" }),
+    ...later(`${D}-03-01`, LATER, "pending", { attempts: 0 }),
+    ...later(`${D}-04-01`, LATER, "expired", {
+      outcome: "no_values",
+      attempts: 3,
+    }),
+  ];
+  const allSlots = [...hits, ...misses, ...conf, defer, bad];
+  const now2 = at("09:40");
+  const map = classifyExpectedUnpublished(allSlots, {
+    firstRaceIds: firstAll,
+    siblingSlots: [...allSlots, ...siblingsAll],
+    now: now2,
+  });
+  const stats = computeWindowStats(allSlots, SCRAPE_JOBS, {
+    expectedUnpublished: map,
+  });
+  const g = stats.find((s) => s.job === "odds" && s.offset_min === -60);
+  check(
+    "窓内取得率: confirmed は分母から外し expectedUnpublished、deferred は分母に入れず deferred、後続の窓も取れなかったものは欠落（expired）として数える",
+    g.total === 24 &&
+      g.hit === 20 &&
+      g.expired === 1 &&
+      g.expectedUnpublished === 2 &&
+      g.deferred === 1,
+    show(g),
+  );
+  const alertsRate = evaluateWindowRates(stats, D);
+  check(
+    "窓内取得率の警告（20/24）: 分母から外した想定内の未公開・保留の件数を、警告に含める（黙って除外しない）",
+    alertsRate.length === 1 &&
+      /未公開\(想定内\) 2件/.test(alertsRate[0].text) &&
+      /判定保留 1件/.test(alertsRate[0].text),
+    show(alertsRate.map((a) => a.text)),
+  );
+  const okOnly = [...hits, conf[0]];
+  check(
+    "想定内の未公開を分母から外すと、それだけでは窓内取得率は下がらない（20/20）",
+    evaluateWindowRates(
+      computeWindowStats(okOnly, SCRAPE_JOBS, {
+        expectedUnpublished: classifyExpectedUnpublished(okOnly, {
+          firstRaceIds: firstAll,
+          siblingSlots: siblingsAll,
+          now: now2,
+        }),
+      }),
+      D,
+    ).length === 0,
+  );
+  const smText = formatDailySummary({
+    date: D,
+    stats7d: stats,
+    statsDay: stats,
+    jobStates: [{ job: "odds", mode: "live" }],
+    now: now2,
+  }).attachments[0].blocks[0].text.text;
+  check(
+    "日次サマリー: 想定内の未公開（分母から除外）の件数を、前日・直近7日で別枠に出す。保留があれば保留も出す",
+    /未公開\(想定内・分母から除外\) 前日 2件・直近7日 2件/.test(smText) &&
+      /判定保留 前日 1件・直近7日 1件/.test(smText),
+    smText,
+  );
+  const smZero = formatDailySummary({
+    date: D,
+    stats7d: computeWindowStats(hits),
+    statsDay: computeWindowStats(hits),
+    jobStates: [{ job: "odds", mode: "live" }],
+    now: now2,
+  }).attachments[0].blocks[0].text.text;
+  check(
+    "日次サマリー: 想定内の未公開が0件でも、oddsの行には別枠を出す（0件と明示）。保留が無ければ保留は出さない",
+    /未公開\(想定内・分母から除外\) 前日 0件・直近7日 0件/.test(smZero) &&
+      !/判定保留/.test(smZero),
+    smZero,
+  );
+
+  // 第1レースの決定（races の最小のレース番号）
+  const fr = firstRaceIdSet([
+    { race_id: `${D}-01-03`, race_date: D, venue_code: 1, race_number: 3 },
+    { race_id: `${D}-01-04`, race_date: D, venue_code: 1, race_number: 4 },
+    { race_id: `${D}-01-05`, race_date: D, venue_code: 1, race_number: null },
+    { race_id: `${D}-02-01`, race_date: D, venue_code: 2, race_number: 1 },
+    { race_id: `${D}-02-02`, race_date: D, venue_code: 2, race_number: 2 },
+    {
+      race_id: "2026-09-20-01-01",
+      race_date: "2026-09-20",
+      venue_code: 1,
+      race_number: 1,
+    },
+  ]);
+  check(
+    "firstRaceIdSet: 会場×日ごとの最小のレース番号（race_id の末尾ではなく race_number で決める。日が違えば別。race_number が無い行は無視）",
+    show([...fr].sort()) ===
+      show([`${D}-01-03`, `${D}-02-01`, "2026-09-20-01-01"].sort()),
+    show([...fr]),
+  );
+  check(
+    "第1レースの一覧が無い・空なら、何も想定内にしない",
+    classifyExpectedUnpublished([t], {
+      siblingSlots: [t],
+      now: at("09:40"),
+    }).size === 0 &&
+      classifyExpectedUnpublished([t], {
+        firstRaceIds: new Set(),
+        siblingSlots: [t],
+        now: at("09:40"),
+      }).size === 0,
+  );
+
+  // runMonitor: 想定内の未公開だけなら通知しない。後続の窓も取れなければ通知する
+  const now3 = at("09:40");
+  const posted3 = [];
+  const fetch3 = async (url, init) => {
+    posted3.push(JSON.parse(init.body));
+    return new Response("ok", { status: 200 });
+  };
+  const jobState3 = {
+    job: "odds",
+    mode: "live",
+    consecutive_failures: 0,
+    last_error: null,
+    last_tick_at: iso(new Date(now3.getTime() - 60000)),
+  };
+  const collect3 = (siblings) => async () => ({
+    available: true,
+    weekSlots: null,
+    todaySlots: [],
+    jobStates: [jobState3],
+    expiredSlots: [t],
+    firstRaceIds: first,
+    oddsSlots: siblings,
+  });
+  const ctx3 = () => ({ now: () => now3, query: {}, state: null, client: {} });
+  const env3 = { SLACK_WEBHOOK_URL: "https://hooks.example.test/x" };
+  let res = await runMonitor(ctx3(), {
+    collect: collect3([t, ...later(R, [-30], "done", { outcome: "ok" })]),
+    env: env3,
+    fetchImpl: fetch3,
+  });
+  check(
+    "runMonitor: 想定内の未公開（後続の窓が取れている）だけなら、通知しない",
+    res.body.alerts === 0 && posted3.length === 0,
+    show(res.body),
+  );
+  res = await runMonitor(ctx3(), {
+    collect: collect3([
+      t,
+      ...later(R, LATER, "expired", { outcome: "no_values", attempts: 3 }),
+    ]),
+    env: env3,
+    fetchImpl: fetch3,
+  });
+  check(
+    "runMonitor: 後続の窓も取れなければ通知する",
+    res.body.alerts === 1 && posted3.length === 1,
+    show(res.body),
+  );
+  res = await runMonitor(ctx3(), {
+    collect: async () => ({
+      available: true,
+      weekSlots: null,
+      todaySlots: [],
+      jobStates: [jobState3],
+      expiredSlots: [t],
+    }),
+    env: env3,
+    fetchImpl: fetch3,
+  });
+  check(
+    "runMonitor: 第1レースの一覧・オッズのスロットを渡さない入力（従来の形）でも、従来どおり通知する（例外にしない）",
+    res.body.alerts === 1,
+    show(res.body),
+  );
+}
+
+// collectMonitorInput: 想定内の未公開の判定に要る読み取りは、候補があるときだけ行う（5分ごとの読み取りを増やさない）
+{
+  const now = at("09:40");
+  const reads = [];
+  const fakeClient = (tables) => ({
+    from(table) {
+      const q = {
+        table,
+        filters: [],
+        from: 0,
+        to: Infinity,
+        head: false,
+        desc: "",
+      };
+      const api = {
+        select(_cols, opts) {
+          q.head = Boolean(opts?.head);
+          return api;
+        },
+        eq(col, v) {
+          q.filters.push((r) => r[col] === v);
+          q.desc += `${col}=${v};`;
+          return api;
+        },
+        gte(col, v) {
+          q.filters.push((r) => r[col] >= v);
+          return api;
+        },
+        in(col, vs) {
+          q.filters.push((r) => vs.includes(r[col]));
+          return api;
+        },
+        order() {
+          return api;
+        },
+        range(from, to) {
+          q.from = from;
+          q.to = to;
+          return api;
+        },
+        then(resolve) {
+          reads.push(`${table}:${q.desc}`);
+          const rows = (tables[table] ?? []).filter((r) =>
+            q.filters.every((f) => f(r)),
+          );
+          resolve(
+            q.head
+              ? { count: rows.length, data: null, error: null }
+              : { data: rows.slice(q.from, q.to + 1), error: null },
+          );
+        },
+      };
+      return api;
+    },
+  });
+  const R = `${DATE}-01-03`;
+  const raceRows = [
+    { race_id: R, race_date: DATE, venue_code: 1, race_number: 3 },
+    {
+      race_id: `${DATE}-01-04`,
+      race_date: DATE,
+      venue_code: 1,
+      race_number: 4,
+    },
+  ];
+  const cand = slot("odds", -60, "expired", {
+    race_id: R,
+    attempts: 3,
+    outcome: "no_values",
+  });
+  const sibDone = slot("odds", -30, "done", {
+    race_id: R,
+    outcome: "ok",
+    done_at: iso(at("09:31")),
+  });
+  const jobs = [{ job: "odds", mode: "live" }];
+
+  reads.length = 0;
+  let inp = await collectMonitorInput(
+    fakeClient({
+      scrape_job_state: jobs,
+      scrape_slots: [
+        slot("odds", -60, "done", { race_id: R, done_at: iso(at("09:01")) }),
+      ],
+      races: raceRows,
+    }),
+    now,
+    "tick",
+  );
+  check(
+    "collectMonitorInput: 候補（オッズ-60のno_values・未完了）が無ければ、第1レース判定用のracesもオッズのスロットも追加で読まない",
+    inp.firstRaceIds.size === 0 &&
+      inp.oddsSlots.length === 0 &&
+      !reads.some((x) => x.includes("job=odds")) &&
+      reads.filter((x) => x.startsWith("races:")).length === 1,
+    show(reads),
+  );
+
+  reads.length = 0;
+  inp = await collectMonitorInput(
+    fakeClient({
+      scrape_job_state: jobs,
+      scrape_slots: [cand, sibDone],
+      races: raceRows,
+    }),
+    now,
+    "tick",
+  );
+  check(
+    "collectMonitorInput: 候補があれば、第1レースの一覧（racesの最小のレース番号）と、オッズのスロット（後続の窓の確認用）を読む",
+    inp.firstRaceIds.has(R) &&
+      !inp.firstRaceIds.has(`${DATE}-01-04`) &&
+      inp.oddsSlots.some((s) => s.offset_min === -30 && s.status === "done") &&
+      reads.some((x) => x.includes("job=odds")),
+    show({ first: [...inp.firstRaceIds], reads }),
   );
 }
 
@@ -1027,8 +1563,7 @@ const doneOdds = (delayMin, over = {}) =>
     const [min, hour] = schedule.split(" ");
     const times = [];
     for (const h of expandField(hour, 23))
-      for (const m of expandField(min, 59))
-        times.push(((h + 9) % 24) * 60 + m); // UTC→JST（分）
+      for (const m of expandField(min, 59)) times.push(((h + 9) % 24) * 60 + m); // UTC→JST（分）
     return times.sort((x, y) => x - y);
   };
   const mon = jstTimes(byPath["/api/cron/scrape-monitor"]);

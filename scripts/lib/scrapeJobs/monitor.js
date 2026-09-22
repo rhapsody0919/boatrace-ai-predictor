@@ -9,6 +9,8 @@
  *               「期限〜期限+許容幅」で数える（展示は、旧定義（30・15・10分前の各±3分）との比較のため、
  *               旧定義の集計は別途、WS2の取得時刻列で行う。plan.md §3.1）
  *   遅延        done_at − 期限 の p50・p95（日次サマリー）
+ *   想定内の未公開  朝の最初のレースの、発走60分前のオッズの未公開は、後の窓で公開が確認できたときだけ、警告・窓内取得率の
+ *               対象外にする（件数は日次サマリーに別枠で出す。定義は expectedUnpublished.js。BOA-386）
  *   死活        ジョブごとの last_tick_at の鮮度（運用窓の中で10分以上更新なし）
  *   連続失敗・ブレーカー  consecutive_failures >= 3、breaker_open_until が未来
  *   日次の期限超過  日次ジョブが、指定時刻から3時間経っても、その日の対象日を処理していない
@@ -31,6 +33,7 @@ import {
 } from "./time.js";
 import { resolveTargetDate } from "./dailyJob.js";
 import { isScrapeSchemaMissingError } from "./schemaErrors.js";
+import { EXPECTED_UNPUBLISHED, firstRaceIdSet } from "./expectedUnpublished.js";
 
 export const THRESHOLDS = Object.freeze({
   /** 窓内取得率の閾値（欠落率2%以内。完了の定義B） */
@@ -94,17 +97,111 @@ const isCancelledRace = (slot) =>
   slot.outcome === "cancelled_race" ||
   slot.races?.cancellation_status === "confirmed";
 
+const slotKey = (slot) => `${slot.job}:${slot.race_id}:${slot.offset_min}`;
+
+/**
+ * 期限+許容幅を超えたか（expired、または、claim されないまま pending・リース切れの running で超過）。
+ * now が無ければ、expired のみを超過とする
+ */
+function isPastWindow(slot, now, registry = SCRAPE_JOBS) {
+  if (slot.status === "expired") return true;
+  if (!now) return false;
+  const deadline = deadlineOf(slot);
+  if (!deadline) return false;
+  if (
+    slot.status === "pending" ||
+    (slot.status === "running" &&
+      slot.lease_until &&
+      new Date(slot.lease_until) < now)
+  ) {
+    const def = registry[slot.job];
+    return (
+      Boolean(def) &&
+      now.getTime() > slotWindowEnd(deadline, def.graceMin).getTime()
+    );
+  }
+  return false;
+}
+
+/**
+ * 想定内の未公開（朝の最初のレースの、発走60分前のオッズの未公開。定義は expectedUnpublished.js）の判定。
+ * 候補は、対象のスロット（ジョブ・窓・第1レース・結果 no_values・試行1回以上・期限+許容幅を超過・未完了）だけ。
+ *
+ *   confirmed  後続の窓（-30・-15…）のどれかが取れている（ok・skipped_have_data）＝後で公開された。警告・欠落に数えない
+ *   deferred   まだ結論が出ていない（取れた後続の窓が無く、期限+許容幅に達していない後続の窓がある）。警告も欠落も保留する
+ *   （どちらでもない候補、すなわち、後続の窓が全て過ぎても取れていない・後続の窓が無いものは、戻り値に含めず、従来どおり警告する）
+ *
+ * @param {Array<Object>} slots 候補を含みうるスロット（重複してよい）
+ * @param {{firstRaceIds?: Set<string>, siblingSlots?: Array<Object>, now?: Date, registry?: typeof SCRAPE_JOBS}} [options]
+ *   siblingSlots: 後続の窓のスロットを含むオッズのスロット（races を埋め込んだ行）
+ * @returns {Map<string, "confirmed"|"deferred">} key は `${job}:${race_id}:${offset_min}`
+ */
+export function classifyExpectedUnpublished(
+  slots,
+  { firstRaceIds, siblingSlots = [], now, registry = SCRAPE_JOBS } = {},
+) {
+  /** @type {Map<string, "confirmed"|"deferred">} */
+  const result = new Map();
+  if (!firstRaceIds || firstRaceIds.size === 0) return result;
+  const rule = EXPECTED_UNPUBLISHED;
+  /** @type {Map<string, Array<Object>>} */
+  const laterByRace = new Map();
+  for (const s of siblingSlots) {
+    if (s.job !== rule.job || s.offset_min <= rule.offsetMin) continue;
+    if (s.run_mode === "shadow") continue;
+    if (!laterByRace.has(s.race_id)) laterByRace.set(s.race_id, []);
+    laterByRace.get(s.race_id).push(s);
+  }
+  for (const slot of slots) {
+    if (
+      slot.job !== rule.job ||
+      slot.offset_min !== rule.offsetMin ||
+      slot.outcome !== rule.outcome ||
+      (slot.attempts ?? 0) === 0 ||
+      slot.status === "done" ||
+      slot.run_mode === "shadow" ||
+      isCancelledRace(slot) ||
+      !firstRaceIds.has(slot.race_id) ||
+      !isPastWindow(slot, now, registry)
+    ) {
+      continue;
+    }
+    const later = laterByRace.get(slot.race_id) ?? [];
+    if (later.length === 0) continue;
+    if (
+      later.some(
+        (s) =>
+          s.status === "done" && rule.confirmingOutcomes.includes(s.outcome),
+      )
+    ) {
+      result.set(slotKey(slot), "confirmed");
+    } else if (
+      later.some((s) => s.status !== "done" && !isPastWindow(s, now, registry))
+    ) {
+      result.set(slotKey(slot), "deferred");
+    }
+  }
+  return result;
+}
+
 /**
  * ジョブ×窓ごとの窓内取得率・遅延の集計。
  * 対象: live で完了（done）またはexpiredしたスロット。shadow・pending・running・確定中止は数えない。
  *
+ * 想定内の未公開（classifyExpectedUnpublished の結果 expectedUnpublished）は、後で公開されたことが確認できたもの（confirmed）だけを
+ * 分母から外して expectedUnpublished 件として別に数え、結論待ち（deferred）は分母に入れず deferred 件として別に数える
+ * （保留の間に欠落として数えると、後続の窓で取れる前に、窓内取得率の警告が出るため。日次サマリーの時点では保留は残らない）。
+ * どちらの件数も、日次サマリー・警告に出す（黙って除外しない）。
+ *
  * @param {Array<Object>} slots races（start_time・cancellation_status）を埋め込んだ scrape_slots の行
- * @returns {Array<{job, offset_min, total, hit, hitTolerance, hitGrace, expired, unexecuted, delayP50Min, delayP95Min}>}
+ * @param {typeof SCRAPE_JOBS} [registry]
+ * @param {{liveJobs?: Set<string>, expectedUnpublished?: Map<string, "confirmed"|"deferred">}} [options]
+ * @returns {Array<{job, offset_min, total, hit, hitTolerance, hitGrace, expired, unexecuted, expectedUnpublished, deferred, delayP50Min, delayP95Min}>}
  */
 export function computeWindowStats(
   slots,
   registry = SCRAPE_JOBS,
-  { liveJobs } = {},
+  { liveJobs, expectedUnpublished } = {},
 ) {
   const groups = new Map();
   for (const slot of slots) {
@@ -137,11 +234,22 @@ export function computeWindowStats(
         hitGrace: 0,
         expired: 0,
         unexecuted: 0,
+        expectedUnpublished: 0,
+        deferred: 0,
         delays: [],
         graceMin: def.graceMin,
       });
     }
     const g = groups.get(key);
+    const unpublished = expectedUnpublished?.get(slotKey(slot));
+    if (unpublished === "confirmed") {
+      g.expectedUnpublished++;
+      continue;
+    }
+    if (unpublished === "deferred") {
+      g.deferred++;
+      continue;
+    }
     g.total++;
     if (slot.status === "expired") {
       g.expired++;
@@ -183,11 +291,15 @@ export function aggregateByJob(stats, registry = SCRAPE_JOBS) {
       hit: 0,
       expired: 0,
       unexecuted: 0,
+      expectedUnpublished: 0,
+      deferred: 0,
     };
     j.total += s.total;
     j.hit += s.hit;
     j.expired += s.expired;
     j.unexecuted += s.unexecuted;
+    j.expectedUnpublished += s.expectedUnpublished ?? 0;
+    j.deferred += s.deferred ?? 0;
     byJob.set(s.job, j);
   }
   return [...byJob.values()].map((j) => ({
@@ -206,12 +318,15 @@ export function aggregateByJob(stats, registry = SCRAPE_JOBS) {
  * pending・リース切れの running で期限+許容幅を超えたものも、同じキーで、expired と同じく通知する
  * （後で claim が expired にしても、同じキーのため再通知しない）。
  *
+ * 想定内の未公開（朝の最初のレースの、発走60分前のオッズ。classifyExpectedUnpublished の結果 expectedUnpublished）は通知しない
+ * （後続の窓も取れなかったものは、その結果に含まれないため、従来どおり通知する）。
+ *
  * @param {Array<Object>} slots expired・pending・running のスロット（races を埋め込んだ行）
- * @param {{activeJobs?: Set<string>, now?: Date, registry?: typeof SCRAPE_JOBS}} [options]
+ * @param {{activeJobs?: Set<string>, now?: Date, registry?: typeof SCRAPE_JOBS, expectedUnpublished?: Map<string, "confirmed"|"deferred">}} [options]
  */
 export function evaluateExpired(
   slots,
-  { activeJobs, now, registry = SCRAPE_JOBS } = {},
+  { activeJobs, now, registry = SCRAPE_JOBS, expectedUnpublished } = {},
 ) {
   /** @type {Alert[]} */
   const alerts = [];
@@ -228,24 +343,10 @@ export function evaluateExpired(
       continue;
     }
     const deadline = deadlineOf(slot);
-    let pastWindow = false;
-    if (slot.status === "expired") {
-      pastWindow = true;
-    } else if (
-      now &&
-      deadline &&
-      (slot.status === "pending" ||
-        (slot.status === "running" &&
-          slot.lease_until &&
-          new Date(slot.lease_until) < now))
-    ) {
-      const def = registry[slot.job];
-      pastWindow =
-        Boolean(def) &&
-        now.getTime() > slotWindowEnd(deadline, def.graceMin).getTime();
-    }
-    if (!pastWindow) continue;
-    const id = `${slot.job}:${slot.race_id}:${slot.offset_min}`;
+    if (!isPastWindow(slot, now, registry)) continue;
+    // 想定内の未公開（後続の窓で公開が確認できた・確認待ち）は通知しない。後続の窓も取れなかったものは、ここに来る
+    if (expectedUnpublished?.has(slotKey(slot))) continue;
+    const id = slotKey(slot);
     const when = deadline ? `期限 ${toJstTimeString(deadline)}` : "期限不明";
     const detail = slot.last_error ? ` / 最終エラー: ${slot.last_error}` : "";
     const pendingNote =
@@ -295,6 +396,16 @@ export function evaluateRacesPresent({ jobStates, todayRaceCount, now }) {
   return alerts;
 }
 
+/** 分母から外した想定内の未公開・保留の件数の注記（無ければ空。「取れなかったのに黙って除外」を避けるため、必ず出す） */
+function unpublishedNote(j) {
+  return [
+    j.expectedUnpublished > 0
+      ? `、分母から除外: 未公開(想定内) ${j.expectedUnpublished}件`
+      : "",
+    j.deferred > 0 ? `、判定保留 ${j.deferred}件` : "",
+  ].join("");
+}
+
 /** 窓内取得率が閾値を割ったジョブ（当日の集計。母数が小さいときは判定しない） */
 export function evaluateWindowRates(stats, date) {
   /** @type {Alert[]} */
@@ -305,7 +416,7 @@ export function evaluateWindowRates(stats, date) {
     alerts.push({
       key: `window_rate:${j.job}:${date}`,
       kind: "window_rate",
-      text: `窓内取得率が閾値未満 ${j.job}: ${(j.rate * 100).toFixed(1)}%（${j.hit}/${j.total}、閾値${THRESHOLDS.windowRate * 100}%、expired ${j.expired}件）`,
+      text: `窓内取得率が閾値未満 ${j.job}: ${(j.rate * 100).toFixed(1)}%（${j.hit}/${j.total}、閾値${THRESHOLDS.windowRate * 100}%、expired ${j.expired}件${unpublishedNote(j)}）`,
     });
   }
   return alerts;
@@ -502,7 +613,18 @@ export function formatDailySummary({
   }
   const rows = week.map((w) => {
     const d = day.get(w.job);
-    return `${w.job}: 前日 ${pct(d?.rate ?? null)}（${d?.hit ?? 0}/${d?.total ?? 0}） / 直近7日 ${pct(w.rate)}（${w.hit}/${w.total}） / expired ${w.expired}件 / 未実行 ${w.unexecuted}件 / 遅延p95 ${min(p95.get(w.job) ?? null)}分`;
+    // 想定内の未公開（分母から除外した件数）: 対象のジョブ（odds）は0件でも出す。他のジョブは、あるときだけ出す
+    const unpublished =
+      w.job === EXPECTED_UNPUBLISHED.job ||
+      w.expectedUnpublished > 0 ||
+      (d?.expectedUnpublished ?? 0) > 0
+        ? ` / 未公開(想定内・分母から除外) 前日 ${d?.expectedUnpublished ?? 0}件・直近7日 ${w.expectedUnpublished}件`
+        : "";
+    const deferred =
+      w.deferred > 0 || (d?.deferred ?? 0) > 0
+        ? ` / 判定保留 前日 ${d?.deferred ?? 0}件・直近7日 ${w.deferred}件`
+        : "";
+    return `${w.job}: 前日 ${pct(d?.rate ?? null)}（${d?.hit ?? 0}/${d?.total ?? 0}） / 直近7日 ${pct(w.rate)}（${w.hit}/${w.total}） / expired ${w.expired}件 / 未実行 ${w.unexecuted}件${unpublished}${deferred} / 遅延p95 ${min(p95.get(w.job) ?? null)}分`;
   });
   // レジストリにある取得ジョブだけ（疑似の行 predict-code-hash 等は、モードの一覧に出さない）
   const modes = jobStates
@@ -611,6 +733,41 @@ export async function collectMonitorInput(client, now, level) {
       "直近7日のスロット",
     );
   }
+  // 想定内の未公開（expectedUnpublished.js）の判定に要る、第1レースの一覧と、オッズの後続の窓のスロット。
+  // 候補（オッズの -60 窓が no_values で未完了）が1件も無いときは、読まない（5分ごとの実行の読み取りを増やさない）
+  const rule = EXPECTED_UNPUBLISHED;
+  const hasCandidate = [
+    ...expiredSlots,
+    ...openSlots,
+    ...todaySlots,
+    ...(weekSlots ?? []),
+  ].some(
+    (s) =>
+      s.job === rule.job &&
+      s.offset_min === rule.offsetMin &&
+      s.outcome === rule.outcome &&
+      s.status !== "done",
+  );
+  let firstRaceIds = new Set();
+  let oddsSlots = [];
+  if (hasCandidate) {
+    const from = level === "tick" ? yesterday : daysAgo(now, 6);
+    firstRaceIds = firstRaceIdSet(
+      await fetchPaged(
+        () =>
+          client
+            .from("races")
+            .select("race_id,race_date,venue_code,race_number")
+            .gte("race_date", from)
+            .order("race_id"),
+        "第1レースの判定に使うraces",
+      ),
+    );
+    oddsSlots = await fetchPaged(
+      slotQuery((q) => q.eq("job", rule.job).gte("race_date", from)),
+      "オッズのスロット（後続の窓の確認用）",
+    );
+  }
   return {
     available: true,
     jobStates: stateRes.data,
@@ -619,6 +776,8 @@ export async function collectMonitorInput(client, now, level) {
     todayRaceCount: racesRes.count ?? 0,
     todaySlots,
     weekSlots,
+    firstRaceIds,
+    oddsSlots,
   };
 }
 
@@ -661,13 +820,29 @@ export async function runMonitor(
   const liveJobs = new Set(
     input.jobStates.filter((r) => r.mode === "live").map((r) => r.job),
   );
+  // 想定内の未公開（朝の最初のレースの、発走60分前のオッズ）。警告・窓内取得率・日次サマリーで同じ判定を共有する
+  const expectedUnpublished = classifyExpectedUnpublished(
+    [
+      ...input.expiredSlots,
+      ...(input.openSlots ?? []),
+      ...input.todaySlots,
+      ...(input.weekSlots ?? []),
+    ],
+    {
+      firstRaceIds: input.firstRaceIds,
+      siblingSlots: input.oddsSlots ?? [],
+      now,
+    },
+  );
   const todayStats = computeWindowStats(input.todaySlots, SCRAPE_JOBS, {
     liveJobs,
+    expectedUnpublished,
   });
   const alerts = [
     ...evaluateExpired([...input.expiredSlots, ...(input.openSlots ?? [])], {
       activeJobs: activeJobNames,
       now,
+      expectedUnpublished,
     }),
     ...evaluateWindowRates(todayStats, toJstDateString(now)),
     ...evaluateJobStates(input.jobStates, now),
@@ -706,11 +881,12 @@ export async function runMonitor(
         date: summaryDate,
         stats7d: computeWindowStats(input.weekSlots ?? [], SCRAPE_JOBS, {
           liveJobs,
+          expectedUnpublished,
         }),
         statsDay: computeWindowStats(
           (input.weekSlots ?? []).filter((s) => s.race_date === summaryDate),
           SCRAPE_JOBS,
-          { liveJobs },
+          { liveJobs, expectedUnpublished },
         ),
         jobStates: input.jobStates,
         now,
