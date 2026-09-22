@@ -20,14 +20,14 @@ spec: `spec.md` / plan: `plan.md` / screens: `screens.md`
 
 ## Phase 3: 本番への適用（すべてユーザーの承認が要る）
 
-- [ ] **T3-1** (ユーザー承認) マイグレーション085を適用する
-- [ ] **T3-2** (ユーザー承認) `scrape_job_state`の`pit_reports`を`shadow`にする（runbook §R-2）
-- [ ] **T3-3** (ユーザー承認) Storageの非公開バケット`raw-pages`を作成し、`live`にする（runbook §R-3）
+- [x] **T3-1** (ユーザー承認) マイグレーション085を適用する — 2026-09-21適用済み（`docs/db-migration/APPLIED.md`）
+- [x] **T3-2** (ユーザー承認) `scrape_job_state`の`pit_reports`を`shadow`にする（runbook §R-2）
+- [x] **T3-3** (ユーザー承認) Storageの非公開バケット`raw-pages`を作成し、`live`にする（runbook §R-3） — バケット作成は085適用時。2026-09-23に本番DBで`scrape_job_state.pit_reports.mode = live`を確認
 - [ ] **T3-4** 過去分のバックフィル（plan.md §5）: 手動CLI`scripts/maintenance/backfill-pit-reports.js`を実装（`processPitReportRace`を`skipCandidateCheck`つきで呼ぶ薄いCLI。既定はdry-run、`--apply`で書く）。gradesch（`gradesch?year={年}&hcd={01|02}`）で、2025-12〜2026-02-02の対象日を特定する。実行はユーザーの承認のもと、3夜に分ける
 
 ## Phase 4: 画面（**モック承認の後に**実装する）
 
-- [ ] **T4-1** モックの作成（`screens.md`の§3〜§4。追加位置・出典表記・★の見た目・状態）。ユーザーの承認
+- [x] **T4-1** モックの作成（`screens.md`の§3〜§4。追加位置・出典表記・★の見た目・状態）。ユーザーの承認 — 2026-09-23に承認。モック: https://claude.ai/artifact/KUQPk2fpCwfjiumwtnDTKc 。決定5件は`screens.md` §8
 - [ ] **T4-2** `getRacePitReport`（`supabaseDataService.js`）・`pitReportUrl.js`・`RacePitReportSection`・`RaceBeforeInfoTab`への追加・i18n（4言語）・`termHints.js`（`screens.md` §6）
 - [ ] **T4-3** Playwrightでの自己検証（SG・G1のレース詳細で、直前情報タブにセクション・出典・リンクが出る。G3では出ない。ライト・ダーク・モバイル幅）。スモークテストへの追記。`npm run build`・`npm run test:e2e`
 - [ ] **T4-4** (ユーザー承認) マイグレーション086を適用する（匿名への公開）。本番で、SG・G1・G2のレース詳細に表示されることを確認する
