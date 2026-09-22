@@ -74,6 +74,39 @@ tasks.mdのT0-01〜T0-04を、本番の読み取りのみで実測した。
 
 **結論: T0-01〜T0-04は全て満たしている。Phase 2（結果取得のVercel移行）着手のゲート（BOA-313 Step 4）は、データ面では通過可能と判断できる。** 着手自体（WS4bの子タスク割当）は、ユーザー承認を得てから進める。
 
+## 棚卸し（2026-09-23、tasks.mdのチェックボックスと本番実態の突合）
+
+`scrape_job_state`を全ジョブ確認したところ、**tasks.mdのチェックボックスが実態より大幅に遅れていた**ことが判明した。おそらく、この会話が一度圧縮される前後に一気に切り替えが進み、実装・切替は先行、チェック更新だけが追いついていなかった。以下で突合し、tasks.mdの該当行を更新した（各行に「2026-09-23確認」の実測根拠を追記）。
+
+### 本番の`scrape_job_state`（2026-09-23時点）
+
+| mode | ジョブ |
+|---|---|
+| **live** | `exhibition`・`odds`・`race_notices`・`result`・`result_catchup`・`kfile_sync`・`pcexpect`・`point_rank`・`entry_course_stats`・`venue_motor_stats`・`racer_news`・`races_init`・`pit_reports`・`boatcast_oriten`・`boatcast_motor_start`・`motor_pretest` |
+| **shadow** | `race_info`・`race_status`・`data_health` |
+| **off** | `daily_reconcile`・`predict-code-hash`・`scrape-cleanup`・`scrape-monitor`（後者2つは常時ticking中で実害なし。`mode`列の意味がこの2ジョブでは他と異なる可能性があり、要確認） |
+
+### GitHub Actions側の停止状況（`gh variable list`）
+
+`SKIP_EXHIBITION_ON_GHA`・`SKIP_ODDS_ON_GHA`（2026-09-22 21:02 UTC=06:02 JST設定）の**2つのみtrue**。上表で`live`の他13ジョブは、**Vercel側は稼働しているが、GitHub Actions側もまだ並走中**（完了の定義の最終ステップ「`SKIP_<JOB>_ON_GHA=true`」が未実施）。つまり「live」は3段階切替の2段目までで、3段目（旧基盤停止）はodds・exhibition以外まだ手つかず。
+
+### data-health-report.js 再実行（2026-09-23、`data/analysis/data-health/2026-09-23_skip-gh.json`）
+
+主な未達項目（直近14日・窓内7日）:
+- 実進入(`actual_course_1`) 95.9%、オッズ(1件以上) 95.9%、`trifecta_all` 94.7%（いずれも99%未達）
+- オッズ窓内取得率: 60分前90.3%〜0分前86.6%（全窓98%未達。ただし日別では9/20〜22に60分前91〜97%まで改善傾向）
+- 発売開始の検知の遅れ: 5分以内0%（T4b-24の延長策は2026-09-22 19〜21時台JSTに有効化されたばかりで、直近7日の実測期間にはほぼ未反映。9/24以降に再測定要）
+- 月別結果充足率: 2025-12 93.0%・2026-01 94.5%・2026-03 91.0%（過去分バックフィル、WS5の範囲。未着手）
+- `race_special_notes`は依然0件（N28、原因未確定のまま）
+
+### N1・N2（着欄の生表記・返還/不成立の区別）は解決済みと判明
+
+data-catalog.mdでは「必須・未対応」のままだったが、PR #751（マイグレーション077〜079、2026-09-20適用）により、**2026-09-21から本番で100%切り替わっている**ことを実測で確認した（9/19・20は少数の先行テスト分のみ、9/21 121/121・9/22 156/156レースで`race_start_timings.finish_mark`・`race_results.race_status`が入る）。直近2日で`race_status`は`normal` 271件・`partial_refund` 6件と正しく分類。`race_payouts`も18,502行・1,859レース分（2025-12-10〜）まで一部バックフィル済み。data-catalog.mdのN1・N2行、E1・E2行を「解決済み」に更新した。
+
+### 今回のtasks.md更新の方針
+
+`live`/`shadow`と判明した項目は、対応する切替チェックボックスに実測根拠を添えて`[x]`にした。ただし「`live`→`SKIP_<JOB>_ON_GHA=true`」のように1つのチェックボックスに2ステップが束ねられている項目は、SKIPフラグが未設定な限り**チェックは付けず**、live切替が済んでいる旨だけ注記した（実態を過大に「完了」と書かないため）。「本番実測・タイミング実測・継続監視」の3行テンプレートは、実際に閾値を満たしたものだけチェックし、未達のものは今回の実測値を注記した上で**未チェックのまま残した**（完了はコードのマージや`mode=live`ではなく本番実測で判定する、という本ファイルの大原則に従う）。
+
 ## ワークストリーム
 
 | ID | 内容 | 担当 | 依存 | 完了条件 | 状態 |

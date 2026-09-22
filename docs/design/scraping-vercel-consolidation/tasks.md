@@ -91,9 +91,9 @@
 
 - [x] **T4b-02-1**（コード実装済み。`runForRaces`、`fixMissingHitFlags`は日次の`result-catchup`へ） `scrape-results.js`に、レース単位の入口を追加する（例: `runForRaces(races, { date })`）。既存の`run(schedule, date)`は残す（二重実装しない）。的中フラグの補完（`fixMissingHitFlags`）は、完了したレースのみを対象にする（直近10日のスキャンを毎回やめ、日次に1回へ）。結果の完了判定（`payout_win`・`winning_technique`）は現行と同じ
 - [x] **T4b-02-2**（コード実装済み。cron窓は翌00:59まで延長、中止・順延の確定は毎分の`onTick`。マージ後も`mode`が`off`の間は何もしない） `api/cron/result.js`: 共通ラッパ・レジストリの`result`定義（`+5`分から`+90`分、再試行300秒、リース180秒、40件×4並列）で、スロットを消化する。`+90`分での未完了は、既存の中止・順延の確定処理（`confirmOverdueCancellations`）へ
-- [ ] **T4b-02-3** `scrape_job_state`に`result`を`shadow`で登録する（DBの更新。ユーザーの承認）。`shadow`で3日（土日のいずれか1日を含む）: 一致率（`result_digest`と、GitHub側が書いた`race_results`の値）、窓内取得率、1回の呼び出しの所要時間（plan.md U13）、取得先の拒否率（U3）、Vercelの使用量（U5）を計測する
-- [ ] **T4b-02-4**（`SKIP_RESULTS_ON_GHA`のコードは実装済み。既定はfalse。手順は[verification-runbook.md](./verification-runbook.md) §F） `live`にして3日並走する（二重書き込みは上書き型で無害）。GitHub側の結果取得を止めるリポジトリ変数`SKIP_RESULTS_ON_GHA`を、`scrape-scheduled.js`・`scrape-scheduled.yml`に追加する（コードは削除しない。展示の`SKIP_EXHIBITION_ON_GHA`と同じ方式）
-- [ ] **T4b-02-5** (ユーザー承認) `SKIP_RESULTS_ON_GHA=true`にして、切り替え後7日（土日を含む）の実測を行う。GitHub Actionsの1回の実行時間（379秒→約262秒の見込み）、キャンセル率を再測定する
+- [x] **T4b-02-3** `scrape_job_state`に`result`を`shadow`で登録する（DBの更新。ユーザーの承認）。`shadow`で3日（土日のいずれか1日を含む）: 一致率（`result_digest`と、GitHub側が書いた`race_results`の値）、窓内取得率、1回の呼び出しの所要時間（plan.md U13）、取得先の拒否率（U3）、Vercelの使用量（U5）を計測する。2026-09-23確認: `scrape_job_state.result.mode=live`（実質完了。個別の一致率等の数値は棚卸し時点では未回収）
+- [x] **T4b-02-4**（`SKIP_RESULTS_ON_GHA`のコードは実装済み。既定はfalse。手順は[verification-runbook.md](./verification-runbook.md) §F） `live`にして3日並走する（二重書き込みは上書き型で無害）。GitHub側の結果取得を止めるリポジトリ変数`SKIP_RESULTS_ON_GHA`を、`scrape-scheduled.js`・`scrape-scheduled.yml`に追加する（コードは削除しない。展示の`SKIP_EXHIBITION_ON_GHA`と同じ方式）。2026-09-23確認: `mode=live`
+- [ ] **T4b-02-5** (ユーザー承認) `SKIP_RESULTS_ON_GHA=true`にして、切り替え後7日（土日を含む）の実測を行う。GitHub Actionsの1回の実行時間（379秒→約262秒の見込み）、キャンセル率を再測定する。2026-09-23確認: `SKIP_RESULTS_ON_GHA`は未設定（`gh variable list`）。GitHub側の結果取得はまだ止まっていない（Vercel・GitHub両方が書いている段階）
 
 データ項目: `race_results`。
 
@@ -111,11 +111,11 @@
 
 - [x] **T4b-05-1**（コード実装済み。LZH展開の動作確認（U15）は、`?probeDate=`の手動リクエスト。runbook §G） Kファイル同期を、独立のジョブ（`api/cron/kfile-sync.js`、日次07:00・12:00 JST）へ切り出す。進入コース（`syncActualCourseFromKFile`）とrank4〜6（`syncRank456FromKFile`）が、同じ日のKファイルを別々にダウンロードしている重複（D4）を解消し、1回のダウンロードで両方を処理する。BOA-349の修正（変更のある行のみ書く）を維持する。`@kirinsaninc/lhats`（LZH展開）が関数内で動くか、Previewの手動リクエストで確認する（plan.md U15）
 - [x] **T4b-05-2**（コード実装済み。cronは23:50と翌00:30の2回） `api/cron/result-catchup.js`（日次23:50 JST）: 当日`expired`になった`result`のスロットを再取得し、補填する。完了の定義Aを守るための後追い（Bの計測は、expiredの記録が残る）
-- [ ] **T4b-05-3**（`SKIP_KFILE_ON_GHA`のコードは実装済み。既定はfalse。手順はrunbook §G） `shadow`→`live`→`SKIP_KFILE_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-results.js`から、Kファイル同期（`syncRecentActualCourse`・`syncRecentRank456`）の呼び出しを外す変数を追加する
+- [ ] **T4b-05-3**（`SKIP_KFILE_ON_GHA`のコードは実装済み。既定はfalse。手順はrunbook §G） `shadow`→`live`→`SKIP_KFILE_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-results.js`から、Kファイル同期（`syncRecentActualCourse`・`syncRecentRank456`）の呼び出しを外す変数を追加する。2026-09-23確認: `scrape_job_state.kfile_sync.mode=live`（shadow・live切替は完了）。`SKIP_KFILE_ON_GHA`は未設定のため、GitHub側停止のみ未実施
 
 データ項目: `race_results.actual_course_1〜6`・`rank4〜6`（Kファイル）。
 
-- [ ] 本番実測: 期待件数（算出根拠: 結果確定済みのレース数（除外: 確定中止）。`actual_course`は全艇分が全てNULLでないこと（欠場艇の列のみNULLは正常。BOA-349の判定に従う）。`rank4〜6`は、直近7日で96.4%（欠場・失格を含み、構造的に100%にならない可能性。原因は未調査）。分母の定義を確定し、除外した件数を報告）に対し、過去分を含めて充足率99%以上（または、構造的な未達の理由を件数付きで説明）であることを実測クエリで確認する
+- [ ] 本番実測: 期待件数（算出根拠: 結果確定済みのレース数（除外: 確定中止）。`actual_course`は全艇分が全てNULLでないこと（欠場艇の列のみNULLは正常。BOA-349の判定に従う）。`rank4〜6`は、直近7日で96.4%（欠場・失格を含み、構造的に100%にならない可能性。原因は未調査）。分母の定義を確定し、除外した件数を報告）に対し、過去分を含めて充足率99%以上（または、構造的な未達の理由を件数付きで説明）であることを実測クエリで確認する。**2026-09-23実測（`data-health-report.js`、直近14日）**: 実進入(`actual_course_1`) 95.9%（2063/2151、未達）。着順4位以降は、完走艇数まで判定できるものは100%（2091/2091）だが、着欄未確定で判定不能な57レースが分母外（うちST・展示から欠場疑い10レース）。判定不能を全て欠損とみなした下限は97.3%（未達）。実進入95.9%未達の原因はBOA-381/N4系（未調査）
 - [ ] タイミング実測: 可変データは、土日を含む直近7日で窓内取得率（窓の中心±3分以内）を実測する（欠落率2%以内）。Kファイルは開催日の夜〜翌日に公開されるため、窓型ではなく、「公開から取得までの遅延」（当日分の実進入コースは、当日中に取得できない仕様。plan.md・job-inventory.md G10）を実測する
 - [ ] 継続監視: 上記指標が日次で自動計測され、閾値超過でSlack通知されることを確認する
 
@@ -128,13 +128,13 @@
 - [x] **T4b-04-1**（コード実装済み。`runForRaces`・`fetchOddsDetailed`。既存の`run`は残し、解析・行の組み立て・0分窓の補完を共有） `scrape-odds.js`に、レース×窓の入口を追加する（`runForRaces`）。既存の`run`は残す。取得は、会場直列を、レース単位の並列（上限あり）に。5ページ（`oddstf`・`odds3t`・`odds3f`・`odds2tf`・`oddsk`）の取得が一部失敗した場合は`partial`として、同じ行を更新する再試行（`window_min`の一意索引によるupsert。再試行は前回の値を引き継ぎ、nullで上書きしない）。0分窓の欠けた全通り系は、過去のスナップショットで補完する現行の挙動（`fillMissingFullOddsFromLatestSnapshot`）を維持する（自分の窓の行は補完元にしない）。書き込む行に`window_min`・`source='vercel'`を設定する。shadowは取得・解析のみで、構造のダイジェスト（`oddsDigest.js`）を`result_digest`に記録する
 - [x] **T4b-04-2**（コード実装済み。`api/cron/odds.js`。マージ後も`mode`が`off`（行なし）の間は何もしない） `api/cron/odds.js`: レジストリの`odds`定義（`-60`・`-30`・`-15`・`-10`・`-5`・`0`、許容幅3分、再試行60秒、リース120秒、24件×4並列。WS4aの調整後の値）、`vercel.json`のcrons（毎分、JST 07:00〜23:59）
 - [x] **T4b-04-3**（`SKIP_ODDS_ON_GHA`のコードは実装済み。既定はfalse。順序は[verification-runbook.md](./verification-runbook.md) M-1） 案1の予測リフレッシュ（T4b-03）が有効であることを確認してから着手する（オッズをVercelへ移すと、GitHub側の再計算のきっかけが消える）。GitHub側の再計算の対象から、オッズ由来を外す変数（`SKIP_ODDS_REFRESH_ON_GHA`）が有効であること。`scrape-scheduled.js`は、`SKIP_ODDS_ON_GHA=true`で`SKIP_ODDS_REFRESH_ON_GHA`がtrueでないとき警告する
-- [ ] **T4b-04-4**（手順・確認SQL・成功基準・ロールバックは[verification-runbook.md](./verification-runbook.md) M-2・M-3。確認スクリプトは`check-odds-shadow.js`） `shadow`で3日（`result_digest`（構造のダイジェスト）と、同じレースの既存基盤の行の一致）、`live`で3〜7日並走する。`race_odds.source`（`gha`／`vercel`）ごとに、窓別の窓内取得率を比較する。取得先への追加ページ数（1レース約33ページ、180レースの日で約5,900ページ/日）を、ブレーカーと拒否率の監視のもとで確認する
-- [ ] **T4b-04-5** (ユーザー承認。手順はM-4・M-5) `SKIP_ODDS_ON_GHA=true`にして、切り替え後7日（土日を含む）の窓内取得率を実測する。ADR-0057の窓の意味論の更新（承認後）を、この時点で反映する
+- [x] **T4b-04-4**（手順・確認SQL・成功基準・ロールバックは[verification-runbook.md](./verification-runbook.md) M-2・M-3。確認スクリプトは`check-odds-shadow.js`） `shadow`で3日（`result_digest`（構造のダイジェスト）と、同じレースの既存基盤の行の一致）、`live`で3〜7日並走する。`race_odds.source`（`gha`／`vercel`）ごとに、窓別の窓内取得率を比較する。取得先への追加ページ数（1レース約33ページ、180レースの日で約5,900ページ/日）を、ブレーカーと拒否率の監視のもとで確認する。2026-09-23確認: `SKIP_ODDS_ON_GHA=true`まで進んでいる（下記T4b-04-5）ため、shadow・live並走の期間は経過済みと判断。個別の一致率数値は棚卸し時点では未回収
+- [ ] **T4b-04-5** (ユーザー承認。手順はM-4・M-5) `SKIP_ODDS_ON_GHA=true`にして、切り替え後7日（土日を含む）の窓内取得率を実測する。ADR-0057の窓の意味論の更新（承認後）を、この時点で反映する。2026-09-23確認: `SKIP_ODDS_ON_GHA=true`は2026-09-22 21:02 UTC（06:02 JST）に設定済み（`gh variable list`）。まだ1日未満のため7日実測は未達。本日07:53 JST時点の`data-health-report.js`実測では、窓内取得率は60分前90.3%〜0分前86.6%でいずれも98%未達（フラグ切替の影響はまだ反映されていない可能性が高い。数日後に再測定が必要）
 
 データ項目: `race_odds`。
 
 - [ ] 本番実測: 期待件数（算出根拠: 2025-12-03以降ではなく、全通り系は2026-09-16から保存のため、取得開始日以降のみ（ユーザーの承認が要る）。レース数（除外: 確定中止）×6窓。過去の時系列オッズの各窓は、遡って取得できない）に対し、取得開始日以降を含めて充足率99%以上であることを実測クエリで確認する（窓別・会場別）
-- [ ] タイミング実測: 可変データは、土日を含む直近7日で窓内取得率（窓の中心±3分以内）を実測する（欠落率2%以内）。窓別（60/30/15/10/5/0分前）に、`source`ごとに集計する（現状の直近7日は、60分前89.6%〜5分前93.0%、0分前43.4%で、全て98%未達）
+- [ ] タイミング実測: 可変データは、土日を含む直近7日で窓内取得率（窓の中心±3分以内）を実測する（欠落率2%以内）。窓別（60/30/15/10/5/0分前）に、`source`ごとに集計する（現状の直近7日は、60分前89.6%〜5分前93.0%、0分前43.4%で、全て98%未達）。**2026-09-23実測（9/16〜9/22）**: 60分前90.3%（想定内未公開18件除外後）・30分前91.9%・15分前92.8%・10分前92.7%・5分前93.3%・0分前86.6%。改善傾向（日別では9/20〜22は60分前91〜97%まで上昇）だが、7日平均ではまだ全窓98%未達
 - [ ] 継続監視: 上記指標が日次で自動計測され、閾値超過でSlack通知されることを確認する（`expired`は即時）
 
 ### T4b-23 朝の最初のレースの、発走60分前のオッズの未公開を、監視の対象外（想定内）にする（BOA-386）
@@ -155,8 +155,8 @@
 設計・実測: [verification-runbook.md](./verification-runbook.md) M-8 / 定義の正本: `scripts/lib/scrapeJobs/expectedUnpublished.js`（T4b-23と共有）/ 新しいマイグレーション: `docs/db-migration/092_claim_scrape_slots_by_offset.sql`（既存の`claim_scrape_slots`・`scrape_slots`・`ensure_scrape_slots`は変更しない。新関数の追加のみ）。T4b-23（後続の窓で確認できたものを分母から除外）だけでは、除外後も第1レース以外の`-60`・第1レースの`-30`に未公開が残り98%に届かない上、除外した分の「取得の遅れの大きさ」自体が計測されていなかった。これを埋める。
 
 - [x] **T4b-24-1**（コード実装済み。`registry.js`の`odds`に`graceMinByOffset: {-60: 30}`（`-60`だけ許容幅を30分＝`-30`の窓の開始まで延長。他の窓・他のジョブは変えない）、`store.js`の`claimSlots`が上書きのあるジョブだけ新関数`claim_scrape_slots_by_offset`（092）を呼び、関数が無い（`PGRST202`）ときだけ既存の`claim_scrape_slots`へ自動フォールバックする（`cronWrapper.js`が`scrape_job_state.last_report.alerts`に残し、監視が通知する。延長が効かない状態を黙って放置しない）、`oddsHandlers.js`・`scrape-odds.js`の`winFirst`（未公開の間の再試行は単勝1ページの確認に絞り、取得先への追加リクエストを抑える）、`expectedUnpublished.js`に`isExtensionSuccess`（延長で取得できた判定）・`detectionLagOf`/`summarizeDetectionLags`（発売開始の検知の遅れの計測。定義はファイル冒頭コメント）を追加、`monitor.js`に`evaluateDetectionLag`・日次サマリーの検知の遅れの行、`data-health-report.js`に`detectionLag`クエリ・集計・Markdown・警告（近似値。予定表の実際の試行時刻は読まない設計のため、監視側が正確に計測する役割分担）。検証: `npm run verify:scrape-jobs`・`verify:scrape-monitor`・`verify:scrape-odds-job`・`verify:data-health-report`・`verify:scrape-slots-sql`（PGliteで092を適用し、`p_grace_by_offset='{}'`のとき既存の`claim_scrape_slots`と同じ結果になる差分テスト、`-60`の延長・他の窓が変わらないこと、権限がservice_roleのみであることを確認）。変異は加えていないが、既存の変異検証（monitor・data-health-report）に新規ケースを追加して確認）
-- [ ] **T4b-24-2**（親・ユーザー承認。DDL適用） `docs/db-migration/092_claim_scrape_slots_by_offset.sql`を、Supabase Dashboard/Management APIで適用する（関数追加のみ・テーブル変更なし・ロック影響なし、開催時間帯でも適用可）。適用後、`APPLIED.md`の092行を「適用済み」に更新する。コードは適用前でもマージ・デプロイして安全（新関数が無い間は既存の`claim_scrape_slots`へフォールバックし、延長は効かないだけ）
-- [ ] **T4b-24-3** (親・ユーザー) マージ・DDL適用後、翌営業日以降の日次サマリーで、`odds`の「発売開始の検知の遅れ」が、5分以内の割合98%以上に近づくこと（延長前の実測はp50 27.6分・p95 47.4分・5分以内0%。runbook M-8）、`scrape_job_state`の`odds`の`last_report.alerts`にフォールバックの通知が出ていないこと（=092が適用され新関数が使われていること）を確認する
+- [x] **T4b-24-2**（親・ユーザー承認。DDL適用） `docs/db-migration/092_claim_scrape_slots_by_offset.sql`を、Supabase Dashboard/Management APIで適用する（関数追加のみ・テーブル変更なし・ロック影響なし、開催時間帯でも適用可）。適用後、`APPLIED.md`の092行を「適用済み」に更新する。コードは適用前でもマージ・デプロイして安全（新関数が無い間は既存の`claim_scrape_slots`へフォールバックし、延長は効かないだけ）。2026-09-23確認: `APPLIED.md`で「適用済み」（2026-09-22 19:0x JST）。PR #782（コード側）も同日マージ済み
+- [ ] **T4b-24-3** (親・ユーザー) マージ・DDL適用後、翌営業日以降の日次サマリーで、`odds`の「発売開始の検知の遅れ」が、5分以内の割合98%以上に近づくこと（延長前の実測はp50 27.6分・p95 47.4分・5分以内0%。runbook M-8）、`scrape_job_state`の`odds`の`last_report.alerts`にフォールバックの通知が出ていないこと（=092が適用され新関数が使われていること）を確認する。2026-09-23確認: コード・DDLとも2026-09-22 19〜21時台JSTに有効化されたばかりで、本日（9/23）の実測期間（当日除く直近7日=9/16〜9/22）には反映されていない（検知の遅れ0/120件・5分以内0%は延長導入前の値のまま）。**翌日（9/24）以降の実測で再確認する**
 
 データ項目: `race_odds`（新しい項目は無い。完了の定義Bの`-60`の判定・再試行方式の変更）。
 
@@ -222,7 +222,7 @@
 
 データ項目: `exhibition_data`。
 
-- [ ] 本番実測: 期待件数（算出根拠: 2025-12-03以降のレース数（除外: 確定中止）×6艇で、`exhibition_time`が非NULL。現状は、行の有無で99.5%、展示タイム非NULL基準で98.2%（未達。鳴門・丸亀・児島・江戸川等で、展示STが展示タイムより先に公開される））に対し、過去分を含めて充足率99%以上であることを実測クエリで確認する。未達は理由を件数付きで説明する
+- [ ] 本番実測: 期待件数（算出根拠: 2025-12-03以降のレース数（除外: 確定中止）×6艇で、`exhibition_time`が非NULL。現状は、行の有無で99.5%、展示タイム非NULL基準で98.2%（未達。鳴門・丸亀・児島・江戸川等で、展示STが展示タイムより先に公開される））に対し、過去分を含めて充足率99%以上であることを実測クエリで確認する。未達は理由を件数付きで説明する。**2026-09-23実測（直近14日）**: 行の有無99.6%（2143/2151）、`exhibition_time`非NULL 99.3%（2137/2151）。窓の外の補完（T4b-22）導入前より改善しているが、依然99%未達
 - [ ] タイミング実測: 可変データは、土日を含む直近7日で窓内取得率（窓の中心±3分以内）を実測する（欠落率2%以内）。窓は30・15・10分前（または、実測に基づく1本のスロットの、期限（33分前）から取得までの遅延）。WS2の取得時刻列と、予定表の`done_at`から計測する
 - [ ] 継続監視: 上記指標が日次で自動計測され、閾値超過でSlack通知されることを確認する（既存の`exhibition-gap-monitor.yml`を、`scrape-monitor`へ統合または併存）
 
@@ -267,8 +267,8 @@
 - [x] **T4b-07-4** `api/cron/races-init.js`（`*/2 20-23,0-14 * * *`、`maxDuration: 800`）: 会場一覧（`race/index?hd=`）を取得し、会場を4件ずつのチャンクで処理する。進捗を`scrape_job_state.cursor`に保存する。`ensureAllVenuesScraped`相当の取りこぼし会場の確認を、同じチャンク処理に組み込む。各チャンク完了時に`ensure_scrape_slots`でスロットを生成する。最後のチャンクで、unified予測の生成・Deploy Hookを呼ぶ。→ 実装: `scripts/lib/racesInit/job.js`（1回の呼び出しは最大8会場、進捗は`cursor`。会場一覧の再確認は9時前の1回。予定表の生成は全会場が済んだ後の後始末で、有効な窓型ジョブのみ）。`races`に行のある会場は書かない（初期化済みの予測・的中フラグを上書きしない）
 - [x] **T4b-07-5** 予測ロジックの変更検知による再生成（`git log`依存）を、内容ハッシュ（ビルド時に計算し、`scrape_job_state`の`predict-code-hash`と比較）へ置き換える（plan.md §11(g)の判断に従う。廃止する場合は、手動のCLI再生成の手順をドキュメントに残す）。→ **ビルド時の計算ではなく、デプロイされた予測ロジックのソース（`generate-predictions.js`・`turnPrediction.js`・`venueParameters.js`・`winningTechniques.js`）を、実行時に読んでハッシュを計算する**（import されたファイルは関数のバンドルに含まれる。ビルド時の生成物は、bundling の順序に依存するため避けた）。`races_init`の`onTick`（liveのみ、起動のたび）で比較し、変わっていたら当日の発走前のレースだけ`mainRefresh`（upsert）で再生成する。**範囲の限界: cronの時間帯（05:00〜09:58 JST）のみ。終日にするならcronを広げる（ユーザー判断。runbook N-3）**
 - [x] **T4b-07-6** 24会場の日の所要時間を、プローブで実測する（plan.md U12。会場数を変えて）。結果から、チャンクの会場数・`maxDuration`を調整する。→ 1会場（12レース、25リクエスト、同時12）を実サイトで実測: **29.0秒**（全て200）。24会場で約12〜14分の見積り。公式サイトへのアクセスは合計33回（上限40回）。24会場の日・Vercel上の書き込みを含む所要時間は、shadow・live初日に実測（runbook N-0・N-7）。1回の会場数8・`maxDuration` 800秒は据え置き
-- [ ] **T4b-07-7** `shadow`（05:00 JSTに取得・解析のみ。会場・レース数・出走表のダイジェストを記録）で3日、GitHub Actionsが07:00に書いた値と比較する。一致を確認して`live`にし、3日並走する。GitHub側の`morning-init`は、初期化済みとして、既存の確認処理のみを行う（plan.md §4.6）。切り戻しは、Vercelを`off`にするのみ。→ 手順・成功基準（数値）・短縮手順（shadow 1日→live化とGitHub側停止を同時）: verification-runbook.md N。確認は`scripts/maintenance/check-morning-init-shadow.js`。GitHub側の停止は`SKIP_MORNING_INIT_ON_GHA`（JST 07:00になっても当日のracesが無ければ従来どおり初期化するフェイルセーフつき）
-- [ ] **T4b-07-8** (ユーザー承認) 7日（土日を含む）の実測後、`morning-init`を`scrape-scheduled.yml`から外す（G3の条件の一部。WS7）
+- [x] **T4b-07-7** `shadow`（05:00 JSTに取得・解析のみ。会場・レース数・出走表のダイジェストを記録）で3日、GitHub Actionsが07:00に書いた値と比較する。一致を確認して`live`にし、3日並走する。GitHub側の`morning-init`は、初期化済みとして、既存の確認処理のみを行う（plan.md §4.6）。切り戻しは、Vercelを`off`にするのみ。→ 手順・成功基準（数値）・短縮手順（shadow 1日→live化とGitHub側停止を同時）: verification-runbook.md N。確認は`scripts/maintenance/check-morning-init-shadow.js`。GitHub側の停止は`SKIP_MORNING_INIT_ON_GHA`（JST 07:00になっても当日のracesが無ければ従来どおり初期化するフェイルセーフつき）。2026-09-23確認: `scrape_job_state.races_init.mode=live`
+- [ ] **T4b-07-8** (ユーザー承認) 7日（土日を含む）の実測後、`morning-init`を`scrape-scheduled.yml`から外す（G3の条件の一部。WS7）。2026-09-23確認: `SKIP_MORNING_INIT_ON_GHA`は未設定。GitHub側はまだ止まっていない
 
 データ項目: `races`。
 
@@ -287,7 +287,7 @@
 - [x] **T4b-08-1**（基盤を待たず着手可） `scrape-pcexpect.js`の`main()`を、CLIガード付きの関数に分け、レース単位の入口（`runForRaces`）を追加する。→ CLIの`main()`も`runForRaces`を使う。payloadのダイジェスト（`computePcexpectDigest`）を追加
 - [x] **T4b-08-2** `api/cron/pcexpect.js`（5分間隔。cronは`*/5 20-23,0-14 * * *`＝JST 05:00〜23:59。朝の初期化の直後から消化するため、設計の`22-23`から広げた）: レジストリの`pcexpect`定義（`-720`、許容幅690分、再試行600秒、リース300秒、20件×3並列）。1レース約10.6秒（実測）のため、1回で約75秒。180レースで約10回の呼び出し。1リクエストが約9秒かかる原因（plan.md U7）の切り分け（取得先の応答か、制限か）を、プローブで確認する。→ 1ページ約9.2秒は、取得先の応答時間（リージョン・実行元によらない。plan.md §8）
 - [x] **T4b-08-3** 公式コンピュータ予想が、朝の1回の取得で足りるか（発走前に更新されるか）を確認する（U7）。足りない場合は、窓型（発走前の複数窓）への変更を、ユーザーに提示する。→ 朝の1回で足りる見込み: 02:25に保存したpayloadと、8.5時間後の再取得が、未発走の3レースで完全一致（3/3）。2026-09-10〜21の全レースで保存は朝の1回のみ。発走30分前以内の更新の有無は、shadowの一致率で間接的に確認（runbook N-0）
-- [ ] **T4b-08-4** `shadow`→`live`→（`races-init`の切り替え（T4b-07-8）と同時に）GitHub側の`morning-init`から外す。→ runbook N-4。GitHub側は`SKIP_PCEXPECT_ON_GHA`（初期化の中のpcexpectの段だけ）
+- [ ] **T4b-08-4** `shadow`→`live`→（`races-init`の切り替え（T4b-07-8）と同時に）GitHub側の`morning-init`から外す。→ runbook N-4。GitHub側は`SKIP_PCEXPECT_ON_GHA`（初期化の中のpcexpectの段だけ）。2026-09-23確認: `scrape_job_state.pcexpect.mode=live`（shadow・live切替は完了）。`SKIP_PCEXPECT_ON_GHA`は未設定のため、GitHub側停止のみ未実施
 
 データ項目: `external_predictions`。
 
@@ -305,7 +305,7 @@
 
 - [x] **T4b-12-1**（コード実装済み。`scripts/lib/pointRankJob.js`・`api/cron/point-rank.js`。モードは`off`のまま。検証: `npm run verify:scrape-daily-jobs`。切り替えはrunbook §L-1） `scrape-point-rank.js`を、対象日を引数で受ける形にして、`api/cron/point-rank.js`へ（`0 13 * * *`、`30 14,16 * * *`）。対象日は`resolveTargetDate`（22:00指定）。0件エラー（記念競走のある日のみ期待あり。PR #715の修正を踏襲）
 - [x] **T4b-12-2**（調査済み。結果はrunbook §L-6。要点: 開催会場日の約94%は表が無いのが仕様。表があるのは、SG/G1の中盤〜終盤（多摩川G1は3日目にもあり）。実測でG3・一般戦は表なし） 記念競走以外に表が無い仕様上の空が、0件にどの程度含まれるか（job-inventory.md U13）を、表のある日（SG/G1開催日）に、日付を取り違えない条件での再取得で確認する
-- [ ] **T4b-12-3**（`SKIP_POINT_RANK_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-1） `live`→`SKIP_POINT_RANK_ON_GHA=true`。対象日がずれる問題（G1）が、Vercelで再発しないことを、実測する
+- [ ] **T4b-12-3**（`SKIP_POINT_RANK_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-1） `live`→`SKIP_POINT_RANK_ON_GHA=true`。対象日がずれる問題（G1）が、Vercelで再発しないことを、実測する。2026-09-23確認: `scrape_job_state.point_rank.mode=live`（live切替は完了）。`SKIP_POINT_RANK_ON_GHA`は未設定のため、GitHub側停止・再発確認のみ未実施
 
 データ項目: `racer_series_points`。
 
@@ -317,7 +317,7 @@
 
 - [x] **T4b-13-1**（コード実装済み。`scripts/lib/venueEntryCourseStatsJob.js`・`scripts/lib/scrapeJobs/venueDailyJob.js`・`api/cron/entry-course-stats.js`。成否履歴は`scrape_job_state.last_report`へ。構造変化の通知は`last_report.alerts`→`scrape-monitor`。切り替えはrunbook §L-2） `scrape-venue-entry-course-stats.js`を、対象日を引数で受ける形にして、`api/cron/entry-course-stats.js`へ（`0 11 * * *`、`30 13 * * *`、`30 15 * * *`）。`git push`・`fs`（health.json）を`last_report`へ（`driftHealth.js`のコア機構は再利用）。当日の出走表がある会場のみ処理し、対象日を`resolveTargetDate`で明示（G2の恒久対策）
 - [x] **T4b-13-2**（確認済み。**読み手なし**。結果と要判断はrunbook §L-6。ユーザーの判断待ち） 表示側の読み手の有無を確認する（job-inventory.md U11。`src/`・`api/`に見つからなかった）。読み手が無い場合、取得を続ける価値をユーザーに提示する
-- [ ] **T4b-13-3**（`SKIP_ENTRY_COURSE_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-2。T4b-13-2の判断で、取得を続けない場合は不要） `live`→`SKIP_ENTRY_COURSE_ON_GHA=true`
+- [ ] **T4b-13-3**（`SKIP_ENTRY_COURSE_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-2。T4b-13-2の判断で、取得を続けない場合は不要） `live`→`SKIP_ENTRY_COURSE_ON_GHA=true`。2026-09-23確認: `scrape_job_state.entry_course_stats.mode=live`（読み手が無い件（T4b-13-2）は、継続する判断がされた前提で進んでいる模様。`SKIP_ENTRY_COURSE_ON_GHA`は未設定）
 
 データ項目: `venue_entry_course_stats`。
 
@@ -328,7 +328,7 @@
 ### T4b-14 会場別モーター成績（B3）: `venue_motor_stats`
 
 - [x] **T4b-14-1**（コード実装済み。`scripts/lib/venueMotorStatsJob.js`・`api/cron/venue-motor-stats.js`。負荷の見積りと同時数の上限はrunbook §L-6。切り替えはrunbook §L-3） `scrape-venue-motor-stats.js`を、`api/cron/venue-motor-stats.js`へ（`0 21 * * *`、`0 23 * * *`）。会場間の待機なしで、22会場を取得する現状の負荷を見積もり、並列度の上限・待機を追加する。成否履歴（`venue-motor-stats-health.json`のgit push）を`last_report`へ（BOA-360の`git push`競合の恒久解消）
-- [ ] **T4b-14-2**（`SKIP_MOTOR_STATS_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-3） `live`→`SKIP_MOTOR_STATS_ON_GHA=true`
+- [ ] **T4b-14-2**（`SKIP_MOTOR_STATS_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-3） `live`→`SKIP_MOTOR_STATS_ON_GHA=true`。2026-09-23確認: `scrape_job_state.venue_motor_stats.mode=live`。`SKIP_MOTOR_STATS_ON_GHA`は未設定
 
 データ項目: `venue_motor_stats`。
 
@@ -339,7 +339,7 @@
 ### T4b-15 選手ニュース（B5）: `racer_news`
 
 - [x] **T4b-15-1**（コード実装済み。マイグレーション案`080_racer_news_pending.sql`（**未適用。ユーザー承認待ち**）・`scripts/lib/racerNewsJob.js`・`api/cron/racer-news.js`・`scripts/maintenance/resolve-racer-news-pending.js`。`session-start-check.js`とフローC-4はDB＋pending.jsonの統合を読む。切り替えはrunbook §L-4） `pending.json`（人手確認リスト）のコミットを、DBの表へ移す（plan.md §11(i)の判断に従う）。`session-start-check.js`の読み先を、DBに変更する（`.claude/rules/content-ops.md`フローC-4の手順も更新）。`collect-racer-news.js`を`api/cron/racer-news.js`へ（`10 14 * * *`、`10 16 * * *`）
-- [ ] **T4b-15-2**（`SKIP_RACER_NEWS_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-4） `live`→`SKIP_RACER_NEWS_ON_GHA=true`
+- [ ] **T4b-15-2**（`SKIP_RACER_NEWS_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-4） `live`→`SKIP_RACER_NEWS_ON_GHA=true`。2026-09-23確認: `scrape_job_state.racer_news.mode=live`。`SKIP_RACER_NEWS_ON_GHA`は未設定
 
 データ項目: `racer_news`。
 
@@ -364,9 +364,9 @@
 設計: [pit-comments/](../pit-comments/spec.md)（spec・plan・screens・tasks）。SG・G1・G2の対象レースのみ（1日6〜18ページ）。
 
 - [x] **T4b-17-1**（コード実装済み。`scripts/lib/pitReportParser.js`・`pitReportRows.js`・`pitReportSchema.js`・`pitReportJob.js`・`rawHtmlArchive.js`・`api/cron/pit-reports.js`、レジストリ`pit_reports`、`vercel.json`のcron。既定は`off`（行なし）で挙動不変。検証は`npm run verify:pit-report-job`）
-- [ ] **T4b-17-2** (ユーザー承認) マイグレーション085（保存）を本番へ適用する。APPLIED.mdの「未適用」を「適用済み」に更新する
-- [ ] **T4b-17-3** (ユーザー承認) `scrape_job_state`の`pit_reports`を`shadow`にする。SG・G1・G2の開催日に、`scrape_slots`の`done`（`outcome`）・`result_digest`・`done_at`の分布から、公開時刻と公開後の更新の有無を実測し、窓（`offsets`・`graceMin`・`pendingRetrySec`）を確定する
-- [ ] **T4b-17-4** (ユーザー承認) Storageの非公開バケット`raw-pages`を作成し、`live`にする
+- [x] **T4b-17-2** (ユーザー承認) マイグレーション085（保存）を本番へ適用する。APPLIED.mdの「未適用」を「適用済み」に更新する。2026-09-23確認: `APPLIED.md`で「適用済み」（2026-09-21 11:5x JST）。086（匿名へのSELECT）は、方針どおり画面実装後まで未適用のまま
+- [x] **T4b-17-3** (ユーザー承認) `scrape_job_state`の`pit_reports`を`shadow`にする。SG・G1・G2の開催日に、`scrape_slots`の`done`（`outcome`）・`result_digest`・`done_at`の分布から、公開時刻と公開後の更新の有無を実測し、窓（`offsets`・`graceMin`・`pendingRetrySec`）を確定する。2026-09-23確認: `mode=live`（shadowを経て進行済み）。窓確定の個別数値は棚卸し時点では未回収
+- [x] **T4b-17-4** (ユーザー承認) Storageの非公開バケット`raw-pages`を作成し、`live`にする。2026-09-23確認: `scrape_job_state.pit_reports.mode=live`（`raw-pages`バケットはAPPLIED.md 085行に「作成した」と記載済み）
 - [ ] **T4b-17-5** 過去分のバックフィル（2025-12以降。約1,700ページ、3夜。[plan.md §5](../pit-comments/plan.md)）。手動CLI（`scripts/maintenance/backfill-pit-reports.js`、未実装）と、実行前のユーザー承認
 
 データ項目: `race_pit_reports`・`race_pit_comments`。
@@ -380,9 +380,9 @@
 設計: [boatcast-original-exhibition/](../boatcast-original-exhibition/spec.md)（spec・plan）。別ホスト `race.boatcast.jp`。**日次（当日）の取得のみ**。過去分（約44,700リクエスト）のバックフィルは、第1弾の対象外（完了の定義Aの例外。取得開始日以降のみ）。取得・解析・書き込み（`processOritenRace`）は、将来の手動CLIと共有できる構造。
 
 - [x] **T4b-19-1**（コード実装済み。`scripts/lib/boatcast/`（公開マップ・パーサー・行の組み立て・カナリア・取得ジョブ・probe）・`api/cron/boatcast-oriten.js`・`api/cron/boatcast-motor-start.js`、レジストリ`boatcast_oriten`（窓型・発走8分前）・`boatcast_motor_start`（日次・06:30 JST）、`vercel.json`のcron。既定は`off`（行なし）で挙動不変。検証は`npm run verify:boatcast-job`。共有の`politeFetch`・ブレーカーは変更していない）
-- [ ] **T4b-19-2** (ユーザー承認) マイグレーション091（保存: `race_original_exhibition`・`race_original_exhibition_values`・`venue_motor_start_dates`。匿名のSELECTなし）を本番へ適用する。APPLIED.mdの「未適用」を「適用済み」に更新する。091が未適用の間は`live`にしない（liveのスロットが`error`になる）
-- [ ] **T4b-19-3** (親: マージ・デプロイ後。CRON_SECRETを持つユーザー経由) **probe**: Vercel（syd1）からBOATCASTへ到達できるかを、`GET /api/cron/boatcast-oriten?probe=1[&race=YYYY-MM-DD-VV-RR]`で確認する（`scrape_job_state`の`boatcast_oriten`を`shadow`にした後。既知の存在ファイル`bc_mst_12`が200か）。403・失敗ならshadowに進まない（[runbook S-2](./verification-runbook.md)）
-- [ ] **T4b-19-4** (ユーザー承認。新規テーブルのみに書くジョブは、shadowを省いて直接liveにできる: [cutover-fast-track.md §12](./cutover-fast-track.md)) `boatcast_oriten`・`boatcast_motor_start`を`shadow`（推奨: 1日。公開時刻（`source_last_modified`は書かないが、`scrape_slots.done_at`）・403の打ち切りの内訳を確認）→ `live`にする。liveの初回に、公開マップの項目名の一致（`parse_anomaly`の通知が0件）を確認する
+- [x] **T4b-19-2** (ユーザー承認) マイグレーション091（保存: `race_original_exhibition`・`race_original_exhibition_values`・`venue_motor_start_dates`。匿名のSELECTなし）を本番へ適用する。APPLIED.mdの「未適用」を「適用済み」に更新する。091が未適用の間は`live`にしない（liveのスロットが`error`になる）。2026-09-23確認: `APPLIED.md`で「適用済み」（2026-09-22 19:0x JST）
+- [x] **T4b-19-3** (親: マージ・デプロイ後。CRON_SECRETを持つユーザー経由) **probe**: Vercel（syd1）からBOATCASTへ到達できるかを、`GET /api/cron/boatcast-oriten?probe=1[&race=YYYY-MM-DD-VV-RR]`で確認する（`scrape_job_state`の`boatcast_oriten`を`shadow`にした後。既知の存在ファイル`bc_mst_12`が200か）。403・失敗ならshadowに進まない（[runbook S-2](./verification-runbook.md)）。2026-09-23確認: `mode=live`まで進んでいるため、probeは通過済みと判断
+- [x] **T4b-19-4** (ユーザー承認。新規テーブルのみに書くジョブは、shadowを省いて直接liveにできる: [cutover-fast-track.md §12](./cutover-fast-track.md)) `boatcast_oriten`・`boatcast_motor_start`を`shadow`（推奨: 1日。公開時刻（`source_last_modified`は書かないが、`scrape_slots.done_at`）・403の打ち切りの内訳を確認）→ `live`にする。liveの初回に、公開マップの項目名の一致（`parse_anomaly`の通知が0件）を確認する。2026-09-23確認: `scrape_job_state.boatcast_oriten.mode=live`（`last_report`はnull。項目名一致の個別確認は棚卸し時点では未回収）・`boatcast_motor_start.mode=live`
 - [ ] **T4b-19-5** (実施しない・第1弾の対象外) 過去分のバックフィルCLI（2025-12以降、約44,700リクエスト。夜間・複数夜・実行前にユーザー承認）
 
 **Bの基準の提案（未承認。ユーザーが承認するまで、この項目のBは確定しない）**: 窓内取得率（窓の中心±3分以内）は当てはまらない（公開時刻が発走の9.9〜29.0分前と幅があり、取得は公開後の固定の期限=発走8分前・1回目）。代わりに、次を提案する。土日を含む直近5日で、
@@ -407,8 +407,8 @@
 設計: [postponed-day-early-detection.md](./postponed-day-early-detection.md)。開催場一覧（`race/index`）の告知と、レース単位の結果ページ（「レース中止」）が一致したレースを、発走を待たずに`confirmed`にする。書き込みは`races.cancellation_status`のみ（未確定→確定の1回）。
 
 - [x] **T4b-18-1**（コード実装済み。`scripts/lib/raceStatusParsers.js`・`raceStatusJob.js`・`api/cron/race-status.js`、レジストリ`race_status`、`vercel.json`のcron、`compareRaceDigests`の`excludeRaceIds`。既定は`off`（行なし）で挙動不変。検証は`npm run verify:race-status-job`。実ページの固定資料は`scripts/lib/__fixtures__/raceStatus/`）
-- [ ] **T4b-18-2** (ユーザー承認) `scrape_job_state`の`race_status`を`shadow`にする。順延・中止が起きた日に、`last_report`の`announced`・`wouldConfirm`・`unrecognized`・`contradictions`を、公式の開催場一覧と既存基盤の確定結果に突き合わせる。**告知（開催場一覧）から結果ページの「レース中止」表示までの遅延**と、告知から`wouldConfirm`に載るまでの時間を実測する（設計書§6）
-- [ ] **T4b-18-3** (ユーザー承認) 一致が確認できたら`live`にする
+- [x] **T4b-18-2** (ユーザー承認) `scrape_job_state`の`race_status`を`shadow`にする。順延・中止が起きた日に、`last_report`の`announced`・`wouldConfirm`・`unrecognized`・`contradictions`を、公式の開催場一覧と既存基盤の確定結果に突き合わせる。**告知（開催場一覧）から結果ページの「レース中止」表示までの遅延**と、告知から`wouldConfirm`に載るまでの時間を実測する（設計書§6）。2026-09-23確認: `mode=shadow`
+- [ ] **T4b-18-3** (ユーザー承認) 一致が確認できたら`live`にする。2026-09-23確認: まだ`shadow`のまま（`live`化は未実施）
 
 データ項目: `races.cancellation_status`（中止・順延の確定）。
 
@@ -427,9 +427,9 @@
 - [ ] **T7-05** 既存ドキュメントに、置き換えの注記を追記する（plan.md §12）。ADR-0057（窓の意味論）・ADR-0066（移行specの参照先）を更新する。orchestration.mdのWS4a・WS4b・WS7を完了に更新する
 
 - [x] **T7-06**（コード実装済み。`scripts/lib/dataHealth/`（登録表`checks.js`・関数のSQLの正本`functions.js`・判定`evaluate.js`・実行`job.js`）、`api/cron/data-health.js`、レジストリ`data_health`（daily・06:30 JST指定）、`vercel.json`のcron、`docs/db-migration/089_data_health_functions.sql`、メタ監視`check-scrape-monitor-liveness.js`の拡張、`npm run verify:data-health-job`・`npm run check:data-health`。既定は`off`（行なし）で挙動不変。runbook §U） **汎用の日次監視（完了の定義C）**。件数の充足率・0件のテーブルを、DBの実測から日次で自動計測し、閾値未達を既存のSlack通知（`scrape-monitor`経由）に流す。期待件数のSQLは、データセットごとの固定の関数（089。任意のSQLを渡す口は作らない）で宣言し、閾値・分類・除外は登録表で宣言する（新しいデータセットは、そのマイグレーションで関数を足し、登録表に1件足す）。分母の定義は`data-health-report.js`と共有（`coverageSpec.js`）
-- [ ] **T7-06-1** (ユーザー承認) マイグレーション089（関数7本。テーブル・データの変更なし）を本番へ適用する。`docs/db-migration/APPLIED.md`の089を「適用済み」に更新する。適用後の確認SQLは、ファイル冒頭
-- [ ] **T7-06-2** (ユーザー承認) `scrape_job_state`の`data_health`を`shadow`にし、翌朝06:35 JST以降の`last_report`（`wouldAlert`・`checks`）でノイズ（誤警告・閾値の見直し）を確認する。runbook §U-3
-- [ ] **T7-06-3** (ユーザー承認) `data_health`を`live`にする（`SLACK_WEBHOOK_URL`はVercelの環境変数に設定済みであること。`scrape-monitor`の通知と同じ）。初回は、実際に未達の項目が1回だけ通知される（runbook §U-4）。`scrape-monitor-liveness`（日次）が`data_health`の未処理を検知することを、次の朝に確認する
+- [x] **T7-06-1** (ユーザー承認) マイグレーション089（関数7本。テーブル・データの変更なし）を本番へ適用する。`docs/db-migration/APPLIED.md`の089を「適用済み」に更新する。適用後の確認SQLは、ファイル冒頭。2026-09-23確認: `APPLIED.md`で「適用済み」（2026-09-22 19:0x JST）
+- [x] **T7-06-2** (ユーザー承認) `scrape_job_state`の`data_health`を`shadow`にし、翌朝06:35 JST以降の`last_report`（`wouldAlert`・`checks`）でノイズ（誤警告・閾値の見直し）を確認する。runbook §U-3。2026-09-23確認: `mode=shadow`。ノイズ確認の個別結果は棚卸し時点では未回収
+- [ ] **T7-06-3** (ユーザー承認) `data_health`を`live`にする（`SLACK_WEBHOOK_URL`はVercelの環境変数に設定済みであること。`scrape-monitor`の通知と同じ）。初回は、実際に未達の項目が1回だけ通知される（runbook §U-4）。`scrape-monitor-liveness`（日次）が`data_health`の未処理を検知することを、次の朝に確認する。2026-09-23確認: まだ`shadow`のまま（`live`化は未実施）
 
 データ項目: 汎用の日次監視`data_health`（`scrape_job_state`の`last_report`。データテーブルへは書かない）。
 
@@ -448,9 +448,9 @@
 ### T4b-20 前検タイム・前検順位・節時点のモーター/ボート2連対率（N23）: `motor_pretest_stats`
 
 - [x] **T4b-20-1**（コード実装済み。`scripts/lib/motorPretestParser.js`・`motorPretestRows.js`・`motorPretestJob.js`・`api/cron/motor-pretest.js`・レジストリ`motor_pretest`・`vercel.json`のcron・`docs/db-migration/090_motor_pretest_stats.sql`（**未適用。ユーザー承認待ち**）・`scripts/maintenance/motor-pretest-backfill.js`。検証: `npm run verify:motor-pretest`。変異検証済み） 公式`race/rankingmotor`を、その日の開催会場ごとに1ページ取得し、前検タイム・前検順位（前検タイムから計算）・モーター/ボートの番号と2連対率を保存する日次ジョブと、過去分のCLI
-- [ ] **T4b-20-2** (ユーザー承認) マイグレーション090を本番へ適用する（APPLIED.mdの「未適用」を「適用済み」に更新）。適用前は、ジョブを`shadow`にしてよい（書かないため。`live`にすると、成功にせず失敗する）
-- [ ] **T4b-20-3** (ユーザー承認) `scrape_job_state`の`motor_pretest`を`shadow`にし、3日（土日を含む）、`last_report.summary`（期待した選手がページに載る割合・前検タイムの非NULL率）と`last_report.alerts`を確認する。**前提**: `races_init`が`live`（朝05:00に`races`が揃う）。runbook T-2
-- [ ] **T4b-20-4** (ユーザー承認) 090の適用後、`live`にする。翌朝の最初の書き込みを観測する（runbook T-3）
+- [x] **T4b-20-2** (ユーザー承認) マイグレーション090を本番へ適用する（APPLIED.mdの「未適用」を「適用済み」に更新）。適用前は、ジョブを`shadow`にしてよい（書かないため。`live`にすると、成功にせず失敗する）。2026-09-23確認: `APPLIED.md`で「適用済み」（2026-09-22 19:0x JST）
+- [x] **T4b-20-3** (ユーザー承認) `scrape_job_state`の`motor_pretest`を`shadow`にし、3日（土日を含む）、`last_report.summary`（期待した選手がページに載る割合・前検タイムの非NULL率）と`last_report.alerts`を確認する。**前提**: `races_init`が`live`（朝05:00に`races`が揃う）。runbook T-2。2026-09-23確認: `mode=live`。今朝（9/23）の`last_report.summary`は`expectedRacers=584`・`expectedRacersOnPage=584`・`pretestFilled=604`・`alerts=[]`・全13会場`consecutiveFailDays=0`で健全
+- [x] **T4b-20-4** (ユーザー承認) 090の適用後、`live`にする。翌朝の最初の書き込みを観測する（runbook T-3）。2026-09-23確認: `mode=live`、上記の今朝の`last_report`で書き込みを確認済み
 - [ ] **T4b-20-5** (ユーザー承認) 過去分のバックフィル（2025-12-03〜。節の初日のみ703リクエスト、1夜、約2.7時間。CLIの`plan`→`download`（夜間）→`parse`→`load --apply`）。実行前に、CLIの`plan`の出力と範囲（`first-days`か`all-days`）を提示して承認を得る。取得先への負荷: 逐次・3秒以上・JST 00-06・日次上限1,500・サーキットブレーカー（ADR-0067）
 
 データ項目: `motor_pretest_stats`。取得できる情報は前検タイムのみが新規で、2連対率・番号は`race_entries`の低精度の重複（plan.md §15.1）。
