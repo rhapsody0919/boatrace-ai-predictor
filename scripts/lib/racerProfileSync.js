@@ -18,6 +18,7 @@
 import * as cheerio from "cheerio";
 import {
   getSeasonStatsUrl,
+  isRacerPageNotFound,
   parseSeasonStatsHtml,
   SEASON_STATS_REQUEST_HEADERS,
 } from "./racerSeasonStats.js";
@@ -192,12 +193,19 @@ async function scrapeProfile(racerId, fetchOptions) {
   return html === null ? null : parseProfileHtml(racerId, html);
 }
 
+// 期別成績ページを取得・解析した結果、公式サイトが「この登録番号は存在しない」ページを
+// 返したことを示す一意な値（BOA-376）。構造変化・通信エラー等の parseSeasonStatsHtml が
+// 返す null（本当の解析失敗）とは区別する
+export const RACER_PAGE_NOT_FOUND = Symbol("racer-page-not-found");
+
 async function scrapeSeasonStatsWithRetry(racerId, fetchOptions) {
   const html = await fetchHtmlWithRetry(
     getSeasonStatsUrl(racerId),
     fetchOptions,
   );
-  return html === null ? null : parseSeasonStatsHtml(html);
+  if (html === null) return null;
+  if (isRacerPageNotFound(html)) return RACER_PAGE_NOT_FOUND;
+  return parseSeasonStatsHtml(html);
 }
 
 // ---------------------------------------------------------------------------
@@ -462,6 +470,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     successCount: 0, // 書き込んだ件数（dry-runでは書く予定の件数）
     unchangedCount: 0, // 既存値と同じため書かなかった件数
     noDataCount: 0, // ページはあるが集計期間内データが無い（新人選手等）
+    notFoundCount: 0, // 公式サイトがこの登録番号のページ自体が存在しないと返した（引退・登録抹消等と推定。BOA-376）
     failCount: 0,
     failedRacerIds: [],
   };
@@ -541,6 +550,14 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
 
       if (!seasonStats) {
         recordSeasonFailure(racerId, progress, failureMessage);
+      } else if (seasonStats === RACER_PAGE_NOT_FOUND) {
+        // 公式サイトが「この登録番号は存在しない」ページを返した（引退・登録抹消等と推定。
+        // BOA-376）。取得・解析の失敗ではないため recordSeasonFailure は呼ばない
+        season.notFoundCount++;
+        if (options.verbose)
+          log(
+            `${progress} racer_id=${racerId} [season] 公式サイトにページが存在しない（引退・登録抹消等と推定）`,
+          );
       } else if (
         seasonStats.abilityIndex === null &&
         seasonStats.starts === null
@@ -599,7 +616,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     if ((i + 1) % 50 === 0 || i === population.length - 1) {
       log(
         `${progress} profile成功: ${profile.successCount}件/失敗: ${profile.failCount}件, ` +
-          `season書込: ${season.successCount}件/変更なし: ${season.unchangedCount}件/データ無し: ${season.noDataCount}件/失敗: ${season.failCount}件`,
+          `season書込: ${season.successCount}件/変更なし: ${season.unchangedCount}件/データ無し: ${season.noDataCount}件/ページ不在: ${season.notFoundCount}件/失敗: ${season.failCount}件`,
       );
     }
   };
@@ -673,7 +690,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     `[profile] 成功: ${profile.successCount}件, 失敗（除外）: ${profile.failCount}件`,
   );
   log(
-    `[season] 書き込み: ${season.successCount}件, 変更なし: ${season.unchangedCount}件, データ無し: ${season.noDataCount}件, 失敗: ${season.failCount}件`,
+    `[season] 書き込み: ${season.successCount}件, 変更なし: ${season.unchangedCount}件, データ無し: ${season.noDataCount}件, ページ不在: ${season.notFoundCount}件, 失敗: ${season.failCount}件`,
   );
   if (season.failedRacerIds.length > 0)
     log(`[season] 失敗した登録番号: ${season.failedRacerIds.join(",")}`);

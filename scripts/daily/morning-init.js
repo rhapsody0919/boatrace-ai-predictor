@@ -15,11 +15,7 @@ import {
   isSupabaseEnabled,
   fetchAll,
 } from "../lib/supabaseClient.js";
-import {
-  getTodayDateJST,
-  parseDateArg,
-  getJSTNow,
-} from "../lib/dateUtils.js";
+import { getTodayDateJST, parseDateArg, getJSTNow } from "../lib/dateUtils.js";
 import { getTodayVenues } from "../scrape-to-json.js";
 import {
   FALLBACK_FROM_JST_HOUR,
@@ -113,9 +109,7 @@ async function ensureAllVenuesScraped(date) {
   const existingVenueCodes = new Set(
     (existingRows.data || []).map((r) => r.venue_code),
   );
-  const missingVenues = currentVenues.filter(
-    (v) => !existingVenueCodes.has(v),
-  );
+  const missingVenues = currentVenues.filter((v) => !existingVenueCodes.has(v));
 
   if (missingVenues.length === 0) {
     return false;
@@ -280,11 +274,12 @@ async function main() {
       const { mainRefresh } = await import(genPath);
 
       // 当日の全 race_entries から race_id を収集
-      const { data: entries } = await supabase
-        .from("race_entries")
-        .select("race_id")
-        .gte("race_id", date)
-        .lt("race_id", `${date}~`);
+      // BOA-372: 1レース6行のため、Supabaseの既定1000行上限で約166レースを超えると
+      // 欠ける（以前は素の .select() のみで、fetchAll の range ページネーションを
+      // 使っていなかった）。ensureUnifiedPredictions と同じ fetchAll に統一する
+      const entries = await fetchAll("race_entries", "race_id", (q) =>
+        q.gte("race_id", date).lt("race_id", `${date}~`),
+      );
       const allTodayRaceIds = [
         ...new Set((entries || []).map((e) => e.race_id)),
       ];

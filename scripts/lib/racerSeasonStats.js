@@ -43,6 +43,17 @@ export function getSeasonStatsUrl(racerId) {
   return `https://www.boatrace.jp/owpc/pc/data/racersearch/season?toban=${racerId}`;
 }
 
+// 公式サイトが「この登録番号のページ自体が存在しない」ときに表示する文言（実ページで確認済み。
+// BOA-376: racer_id 3849・4519 で確認。HTTP 200・.table1 table 無しで返る。引退・登録抹消等で
+// 選手検索から除外されたと推定される。取得・解析の失敗（構造変化・通信エラー等）とは区別する）
+const RACER_PAGE_NOT_FOUND_TEXT =
+  "データが存在しないのでページを表示できません";
+
+/** HTMLが、公式サイトの「この登録番号は存在しない」ページか（HTTP 200で返るため、本文で判定する） */
+export function isRacerPageNotFound(html) {
+  return typeof html === "string" && html.includes(RACER_PAGE_NOT_FOUND_TEXT);
+}
+
 // "116回"→116, "54.30%"→54.3, "6.87"→6.87, "-"→null, ""→null
 function parseNumberOrNull(text) {
   if (text == null) return null;

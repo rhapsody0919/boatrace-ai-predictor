@@ -268,14 +268,14 @@ const writes = (client, table) =>
   });
   const noteWrite = writes(liveClient, "race_special_notes")[0];
   check(
-    "live: 解析した通知9件を、重複を無視する upsert（onConflict=venue_code,race_date,category,detail_text）に渡し、集計行を1件書く。既存の一意キーのため、同日・同内容の別選手の2件（待機行動違反・落水失格の各1組）は潰れて7件が保存される（現行の弱点の記録。T4b-11-3の発見）",
+    "live: 解析した通知9件を、重複を無視する upsert（onConflict=venue_code,race_date,category,detail_text,racer_name）に渡し、集計行を1件書く。同日・同内容の別選手の2件（待機行動違反・落水失格の各1組）も、選手名で区別され9件とも保存される（BOA-371・マイグレーション093で解消）",
     live.status === 200 &&
       noteWrite?.rows.length === 9 &&
       noteWrite.opts.ignoreDuplicates === true &&
       noteWrite.opts.onConflict ===
-        "venue_code,race_date,category,detail_text" &&
+        "venue_code,race_date,category,detail_text,racer_name" &&
       live.body.notesParsed === 9 &&
-      live.body.notesInserted === 7 &&
+      live.body.notesInserted === 9 &&
       liveClient.state.race_notices_health.length === 1,
     show(live.body),
   );
@@ -629,10 +629,10 @@ const writes = (client, table) =>
   const n1 = await runJob({ store: liveStore(), ...opts });
   const n2 = await runJob({ store: liveStore(), ...opts });
   check(
-    "通知: 同じページを2回処理しても、race_special_notes は7件のまま（2回目の新規保存は0件）",
-    n1.body.notesInserted === 7 &&
+    "通知: 同じページを2回処理しても、race_special_notes は9件のまま（2回目の新規保存は0件）",
+    n1.body.notesInserted === 9 &&
       n2.body.notesInserted === 0 &&
-      c3.state.race_special_notes.length === 7,
+      c3.state.race_special_notes.length === 9,
     show({
       n1: n1.body.notesInserted,
       n2: n2.body.notesInserted,
