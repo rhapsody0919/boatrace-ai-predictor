@@ -128,38 +128,38 @@ function RacePitReportSection({ raceId, raceGrade, players }) {
     Boolean(parsed) &&
     isPitReportCandidate({ raceGrade, raceNumber: parsed.raceNo });
 
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
+  // レース間ナビゲーション（BOA-118のボトムバー等）ではこのコンポーネントが
+  // アンマウントされずraceIdだけが変わるため、取得結果はraceIdとセットで持つ。
+  // そうしないと、effectが走るまでの1描画で「前のレースのコメント＋今のレースの
+  // 公式リンク」という食い違った表示が出る
+  const [fetched, setFetched] = useState(null);
+  const [failedRaceId, setFailedRaceId] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    if (!isCandidate) {
-      setReport(null);
-      setLoading(false);
-      setFailed(false);
-      return undefined;
-    }
+    if (!isCandidate) return undefined;
     let cancelled = false;
-    setLoading(true);
-    setFailed(false);
     supabaseDataService
       .getRacePitReport(raceId)
       .then((data) => {
         if (cancelled) return;
-        setReport(data);
-        setLoading(false);
+        // 直前に失敗したレースへ戻ってきて今度は成功した場合に、エラー表示が残らないようにする
+        setFailedRaceId((prev) => (prev === raceId ? null : prev));
+        setFetched({ raceId, data });
       })
       .catch((error) => {
         if (cancelled) return;
         console.error("ピットレポート取得エラー:", error);
-        setFailed(true);
-        setLoading(false);
+        setFailedRaceId(raceId);
       });
     return () => {
       cancelled = true;
     };
   }, [raceId, isCandidate, reloadKey]);
+
+  const report = fetched?.raceId === raceId ? fetched.data : null;
+  const failed = failedRaceId === raceId;
+  const loading = !report && !failed;
 
   const officialUrl = buildPitReportUrl(raceId);
   const handleSourceClick = useCallback(() => {
@@ -204,7 +204,10 @@ function RacePitReportSection({ raceId, raceGrade, players }) {
         <button
           type="button"
           className="rpr-retry"
-          onClick={() => setReloadKey((n) => n + 1)}
+          onClick={() => {
+            setFailedRaceId(null);
+            setReloadKey((n) => n + 1);
+          }}
         >
           {t("pitReport.retry")}
         </button>

@@ -6345,7 +6345,7 @@ export const supabaseDataService = {
       if (permissionError) {
         // 086（匿名へのSELECT公開）が未適用の間は、ここを通る。本番の公開順序の保険で、
         // エラー表示ではなく「セクションを出さない」に倒す
-        return { ...EMPTY_PIT_REPORT, state: "forbidden" };
+        return { ...NON_TERMINAL_PIT_REPORT, state: "forbidden" };
       }
       if (reportRes.error) {
         throw new Error(
@@ -6359,8 +6359,7 @@ export const supabaseDataService = {
       }
 
       const report = reportRes.data;
-      if (!report) return { ...EMPTY_PIT_REPORT, state: "pending" };
-
+      if (!report) return { ...NON_TERMINAL_PIT_REPORT, state: "pending" };
       const comments = (commentsRes.data ?? []).map((row) => ({
         boatNumber: row.boat_number,
         racerId: row.racer_id ?? null,
@@ -6385,13 +6384,24 @@ export const supabaseDataService = {
   },
 };
 
-const EMPTY_PIT_REPORT = Object.freeze({
+/**
+ * 終端でない状態（pending・forbidden）の戻り値のひな形。
+ *
+ * `fetchFailed: true` は withCache に「この結果を保存するな」と伝えるためのもので、
+ * 取得自体は成功している（画面は state だけを見る）。保存してしまうと、
+ * (1) 公開待ちのレースでコメントが公開されても、再読み込みでキャッシュ（本日分30分・
+ *     過去分7日）が返り続けて表示が更新されない、
+ * (2) マイグレーション086の適用後も、適用前に見たレースが最大7日間「権限なし＝非表示」
+ *     のままになる、という不具合になる。
+ */
+const NON_TERMINAL_PIT_REPORT = Object.freeze({
   state: "pending",
   reporterName: null,
   capturedAt: null,
   updatedAt: null,
   targetRange: null,
   comments: [],
+  fetchFailed: true,
 });
 
 /**
