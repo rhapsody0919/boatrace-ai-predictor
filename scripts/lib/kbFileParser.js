@@ -125,6 +125,35 @@ function splitVenueBlocks(text, kind) {
   return blocks;
 }
 
+/**
+ * Kファイルの、確定状況を会場ごとに数える（純粋関数）。
+ *
+ * 公式のKファイルは、全レース終了前の会場、または中止・順延の会場のブロックが「データは、この場の全レース終了後に
+ * 登録されます。」だけになる。ファイル全体に1か所でもこの文があると日全体を未確定として捨てると、他の会場の確定した
+ * 成績まで失う（2026-09-22、9/22朝の取得で73日分が該当。例: 2026-07-30は津が中止で、他の11会場は確定していた）。
+ * 会場ブロック単位で数え、日全体が未確定なのは、確定した会場が1つも無い場合だけとする。
+ *
+ * @param {string} text デコード済みのKファイル
+ * @returns {{total: number, pendingVenues: number[], completeVenues: number[], allPending: boolean}}
+ */
+export function classifyKFileVenues(text) {
+  const blocks = splitVenueBlocks(text, "K");
+  const pendingVenues = [];
+  const completeVenues = [];
+  for (const b of blocks) {
+    if (b.lines.join("\n").includes(PENDING_MARKER))
+      pendingVenues.push(b.venue_code);
+    else completeVenues.push(b.venue_code);
+  }
+  return {
+    total: blocks.length,
+    pendingVenues,
+    completeVenues,
+    // ブロックが1つも無い（形式が想定外）ときは、確定とみなさない（従来どおり、ファイル全体のマーカーで判定する側に任せる）
+    allPending: blocks.length > 0 && completeVenues.length === 0,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Kファイル（競走成績）
 // ---------------------------------------------------------------------------
