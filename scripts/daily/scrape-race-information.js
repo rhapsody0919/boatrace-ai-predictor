@@ -21,8 +21,10 @@
  *   月を突き合わせて実際の年を復元する（resolveRaceDate）。
  *
  * 通知の発生頻度が低く行の内容もほぼ不変なため、venue_code/race_date/category/
- * detail_text の組み合わせにUNIQUE制約を張り、10分間隔の再取得で同じ行を
- * 何度取得してもエラーにならない（ignoreDuplicates upsert）設計にする。
+ * detail_text/racer_name の組み合わせにUNIQUE制約を張り、10分間隔の再取得で同じ行を
+ * 何度取得してもエラーにならない（ignoreDuplicates upsert）設計にする。racer_name を
+ * 含めるのは、同じ会場・日付・区分でdetail_textがたまたま一致する別選手の通知を
+ * 1行に潰さないため（BOA-371、マイグレーション093）。
  *
  * 構造変化監視: scripts/lib/venueMotorStats/driftHealth.js のコアロジック
  * （updateVenueHealth）を再利用する。Vercel Function（api/cron/race-notices.js）
@@ -478,6 +480,9 @@ export async function run(schedule, date, options = {}) {
         race_date: note.raceDate,
         category: note.category,
         racer_id: racerId,
+        // racer_id は同姓同名で一意に特定できない選手がnullになり、一意制約の差別化に使えない
+        // （BOA-371）ため、必ず取得できる生の選手名表記（racer_name）を差別化キーに使う
+        racer_name: note.racerName,
         boat_number: null, // 情報ページ自体には艇番の記載がないため未実装（将来race_entries突き合わせで補完可）
         detail_text: note.detailText,
         structured_data: {
@@ -521,7 +526,7 @@ export async function run(schedule, date, options = {}) {
     const { data, error } = await client
       .from("race_special_notes")
       .upsert(allNoteRows, {
-        onConflict: "venue_code,race_date,category,detail_text",
+        onConflict: "venue_code,race_date,category,detail_text,racer_name",
         ignoreDuplicates: true,
       })
       .select("id");
