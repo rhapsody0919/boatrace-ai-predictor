@@ -236,6 +236,38 @@ export async function runScrapeJob({
   }
 }
 
+/** フォールバックのアラートの key（scrape_job_state.last_report.alerts。監視が report:{job}:{key} として通知する） */
+export const CLAIM_FALLBACK_ALERT_KEY = "claim_fallback";
+
+/**
+ * claim が上書きなしの既存の関数へフォールバックしたかを、ジョブ状態（last_report）に反映する。
+ *   フォールバックした: last_report.alerts にアラートを入れる（成功の記録を伴う。既にあれば、書き直さない）
+ *   正常に取れた・前回のアラートが残っている: アラートを消す
+ * 記録の失敗は、本処理を止めない（ログのみ）。応答の body に足す値を返す
+ */
+async function recordClaimFallback({ job, definition, store, state, now }) {
+  const fallback = store.takeClaimFallback?.() ?? null;
+  const previousAlerts = state.row?.last_report?.alerts;
+  const hadAlert =
+    Array.isArray(previousAlerts) &&
+    previousAlerts.some((a) => a?.key === CLAIM_FALLBACK_ALERT_KEY);
+  try {
+    if (fallback && !hadAlert) {
+      await store.recordSuccess(job, {
+        now: now(),
+        report: {
+          alerts: [{ key: CLAIM_FALLBACK_ALERT_KEY, text: fallback.reason }],
+        },
+      });
+    } else if (!fallback && hadAlert && definition.graceMinByOffset) {
+      await store.recordSuccess(job, { now: now(), report: { alerts: [] } });
+    }
+  } catch (error) {
+    console.error(`❌ ${job}: フォールバックの記録に失敗: ${error.message}`);
+  }
+  return fallback ? { claimFallback: fallback.reason } : {};
+}
+
 /** 窓型: 期限が来たスロットを取り、ハンドラーで処理して、完了・再試行を記録する */
 async function runWindow({
   job,
@@ -269,8 +301,21 @@ async function runWindow({
   }
 
   const slots = await store.claimSlots({ job, worker, mode });
+  // offset ごとの許容幅の上書きが効かなかった（マイグレーション092が未適用で、既存の関数へフォールバックした）場合は、
+  // 黙って延長が効かない状態を放置しないよう、応答・ジョブ状態の last_report（監視が通知する）に残す。
+  // 上書きのあるジョブが、正常に取れた実行では、前回のフォールバックのアラートを消す
+  const fallbackInfo = await recordClaimFallback({
+    job,
+    definition,
+    store,
+    state,
+    now,
+  });
   if (slots.length === 0) {
-    return { failed: false, body: { claimed: 0, ensured } };
+    return {
+      failed: false,
+      body: { claimed: 0, ensured, ...fallbackInfo },
+    };
   }
 
   const settle = async (slot, result) => {
@@ -391,7 +436,13 @@ async function runWindow({
   // 処理したスロットが全て error なら、この実行は失敗（HTTP 500・連続失敗数を増やす）
   const allFailed =
     processed.length > 0 && processed.every((r) => r.outcome === "error");
-  const body = { claimed: slots.length, ensured, outcomes: tally, rowsWritten };
+  const body = {
+    claimed: slots.length,
+    ensured,
+    outcomes: tally,
+    rowsWritten,
+    ...fallbackInfo,
+  };
   if (allFailed) {
     return { failed: true, firstError: processed[0].error, body };
   }

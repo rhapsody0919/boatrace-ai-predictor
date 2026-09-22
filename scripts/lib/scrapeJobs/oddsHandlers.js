@@ -11,6 +11,7 @@
  * 依存（runForRaces）は引数で差し替えられる（scripts/maintenance/verify-scrape-odds-job.js が、DB・取得先なしで検証する）。
  */
 import { runForRaces } from "../../daily/scrape-odds.js";
+import { SCRAPE_JOBS, graceMinFor } from "./registry.js";
 
 const RACE_ID_RE = /^(\d{4}-\d{2}-\d{2})-(\d{2})-(\d{2})$/;
 
@@ -33,6 +34,22 @@ export function parseOddsRaceId(raceId) {
  * ok・skipped_have_data は完了、それ以外は、次の再試行（retrySec）まで pending に戻る。
  * slot.offset_min（-60〜0）が、race_odds.window_min になる。
  */
+/**
+ * 未公開の間の再試行を、単勝1ページの確認に絞るか。窓の許容幅を延長した窓（registry.js の odds の graceMinByOffset。
+ * -60）の再試行で、直前の試行が未公開（no_values）だったとき。直前の試行の結果は、再試行のスロットの outcome に残る
+ * （retrySlot が書き、claim が返す）。初回の試行（outcome が無い）・公開済みの通常の取得は、従来どおり全ページを並列に取る
+ * （所要時間を変えない）。未公開の間は毎分再試行するため、1ページに絞らないと、最大約27分×5ページ×未公開のレース数の
+ * リクエストが、取得先（boatrace.jp）に増える
+ *
+ * @param {{offset_min: number, outcome?: string|null}} slot
+ */
+export function shouldProbeWinFirst(slot, def = SCRAPE_JOBS.odds) {
+  return (
+    slot.outcome === "no_values" &&
+    graceMinFor(def, slot.offset_min) !== def.graceMin
+  );
+}
+
 export function createOddsSlotHandler({ run = runForRaces } = {}) {
   return async function handleSlot(slot, ctx) {
     const race = parseOddsRaceId(slot.race_id);
@@ -44,6 +61,7 @@ export function createOddsSlotHandler({ run = runForRaces } = {}) {
           race_number: race.race_number,
           window_min: slot.offset_min,
           attempts: slot.attempts,
+          winFirst: shouldProbeWinFirst(slot),
         },
       ],
       {

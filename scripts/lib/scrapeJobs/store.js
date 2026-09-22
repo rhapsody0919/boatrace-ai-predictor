@@ -12,6 +12,11 @@
  *   releaseLease(job, worker)
  *   ensureSlots({date, jobs, now})       → 新規に作ったスロット数
  *   claimSlots({job, worker, mode, now}) → スロットの配列
+ *                                       ※offset ごとの許容幅の上書き（レジストリの graceMinByOffset）があるジョブは、
+ *                                         claim_scrape_slots_by_offset（マイグレーション092）で取る。その関数が無い
+ *                                         （092が未適用）ときだけ、既存の claim_scrape_slots へフォールバックする
+ *   takeClaimFallback()                  → {reason}|null     ※直前の claimSlots が上書きなしで取ったとき（フォールバック）の理由。
+ *                                                              読むと消える。共通ラッパが、ログと last_report に残す
  *   completeSlot(slot, {worker, now, outcome, rowsWritten, resultDigest}) → boolean（リースを持っていたか）
  *   retrySlot(slot, {worker, now, outcome, error, retryAt}) → boolean
  *   breakerStore                         → {read, open, close}（circuitBreaker.js の BreakerStore）
@@ -19,8 +24,11 @@
  * 「テーブル・関数が無い」（マイグレーション075が未適用）エラーは、readState だけが available=false として
  * 返す。それ以外のDBエラーは、意味のあるメッセージを付けて投げる（「対象なし」に化けさせない）。
  */
-import { SCRAPE_JOBS, slotDefsFor } from "./registry.js";
-import { isScrapeSchemaMissingError } from "./schemaErrors.js";
+import { SCRAPE_JOBS, graceOverridesOf, slotDefsFor } from "./registry.js";
+import {
+  isClaimByOffsetMissingError,
+  isScrapeSchemaMissingError,
+} from "./schemaErrors.js";
 import { addSeconds } from "./time.js";
 import { truncateError } from "./outcomes.js";
 
@@ -40,6 +48,9 @@ const wrap = (what, error) => {
 export function createSupabaseStore(client) {
   const STATE = "scrape_job_state";
   const SLOTS = "scrape_slots";
+
+  /** 直前の claimSlots が、上書きなしの既存の関数で取った（フォールバックした）理由。takeClaimFallback で読むと消える */
+  let claimFallback = null;
 
   const slotKey = (slot) => ({
     job: slot.job,
@@ -155,10 +166,40 @@ export function createSupabaseStore(client) {
         p_run_mode: mode,
       };
       if (now) args.p_now = now.toISOString();
+      claimFallback = null;
+      const overrides = graceOverridesOf(def);
+      if (overrides) {
+        // offset ごとの許容幅の上書きがあるジョブ: 新関数で取る。関数が無い（092が未適用）ときだけ、既存の関数へ
+        // フォールバックする（オッズの取得を止めない。延長は効かない）。それ以外のエラーはフォールバックしない
+        const { data, error } = await client.rpc(
+          "claim_scrape_slots_by_offset",
+          {
+            ...args,
+            p_grace_by_offset: overrides,
+          },
+        );
+        if (!error) return data ?? [];
+        if (!isClaimByOffsetMissingError(error)) {
+          throw wrap(
+            `スロットの取得(claim_scrape_slots_by_offset, ${job})`,
+            error,
+          );
+        }
+        claimFallback = {
+          reason: `claim_scrape_slots_by_offset が無いため（マイグレーション092が未適用）、既存の claim_scrape_slots で取りました。許容幅の延長（${JSON.stringify(overrides)}）は効いていません`,
+        };
+        console.warn(`⚠️ ${job}: ${claimFallback.reason}`);
+      }
       const { data, error } = await client.rpc("claim_scrape_slots", args);
       if (error)
         throw wrap(`スロットの取得(claim_scrape_slots, ${job})`, error);
       return data ?? [];
+    },
+
+    takeClaimFallback() {
+      const taken = claimFallback;
+      claimFallback = null;
+      return taken;
     },
 
     async completeSlot(

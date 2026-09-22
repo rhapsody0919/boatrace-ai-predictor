@@ -43,3 +43,18 @@ export function isScrapeSchemaMissingError(
     new RegExp(`(?<![A-Za-z0-9_])${name}(?![A-Za-z0-9_])`).test(message),
   );
 }
+
+/**
+ * 「claim_scrape_slots_by_offset（マイグレーション092）がDBに無い」エラーの判定（PGRST202・42883 のうち、この関数名を
+ * 含むものだけ）。他のエラー（DB障害・引数エラー等）を、関数の不在と取り違えて握りつぶさないため、名前の一致を必須にする。
+ * この関数が無いときだけ、store.js は既存の claim_scrape_slots へフォールバックする
+ *
+ * @param {{message?: string, code?: string}|null|undefined} error
+ */
+export function isClaimByOffsetMissingError(error) {
+  if (!error) return false;
+  if (error.code !== "PGRST202" && error.code !== "42883") return false;
+  return /(?<![A-Za-z0-9_])claim_scrape_slots_by_offset(?![A-Za-z0-9_])/.test(
+    error.message ?? "",
+  );
+}

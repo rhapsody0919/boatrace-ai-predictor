@@ -14,6 +14,8 @@
  *       skipped_have_data、attempts=1 では既存行を読まない、未公開は no_values・書き込み失敗は error・ブレーカーは
  *       breaker_open、1件の失敗で他のレースを止めない、並列度の上限、0分窓は直近のスナップショット（自分の窓を除く・
  *       75分以内）から全通り系を補完（他の窓は補完しない）
+ *   (a2) 未公開の間の再試行の確認（winFirst）: 単勝ページだけを先に取り、未公開なら他のページを取らない（追加リクエストを1ページに絞る）。
+ *       公開されていれば、単勝は1回だけ取り、残りを取って、通常の取得と同じ結果になる。単勝の失敗・ブレーカーでも他のページを取らない
  *   (c) 共通ラッパ経由の odds: off・行なし・075未適用は何も取得せず何も書かない、shadow は race_odds へ書かず予定表に
  *       digest を記録する、live は書き込む、partial は再試行に戻す、全スロット error は500、スロットの窓・試行回数が
  *       runForRaces に渡る、不正な race_id は error
@@ -44,6 +46,7 @@ import { compareOddsShadowDigests } from "./check-odds-shadow.js";
 import {
   createOddsSlotHandler,
   parseOddsRaceId,
+  shouldProbeWinFirst,
 } from "../lib/scrapeJobs/oddsHandlers.js";
 import { isOddsSkippedOnGha } from "../lib/predictionRefresh.js";
 import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
@@ -448,6 +451,104 @@ const fullRow = (patch = {}) => ({
       w.missing.length === 0 &&
       w.data.trioAll === null &&
       w.data.trifectaAll === null,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (a2) 未公開の間の再試行の確認（winFirst）
+// ---------------------------------------------------------------------------
+{
+  const pages = (f) => f.calls.map((u) => pageOfUrl(u));
+  // 未公開: 単勝ページだけを取って no_values（他のページは取らない）
+  let f = createFetcher({ oddstf: HTML_UNPUBLISHED });
+  let r = await fetchOddsDetailed(DATE, 5, 1, {
+    wantFull: true,
+    winFirst: true,
+    fetchFn: f,
+  });
+  check(
+    "winFirst: 未公開なら、単勝ページ（oddstf）の1リクエストだけで no_values にする（他の4ページは取らない）",
+    r.status === "no_values" && r.data === null && same(pages(f), ["oddstf"]),
+    show(pages(f)),
+  );
+  // 従来（winFirst=false）は、未公開でも全ページを取る（変えていない）
+  f = createFetcher({ oddstf: HTML_UNPUBLISHED });
+  r = await fetchOddsDetailed(DATE, 5, 1, { wantFull: true, fetchFn: f });
+  check(
+    "winFirst=false（既定）: 従来どおり、未公開でも5ページを並列に取る（通常の取得を変えていない）",
+    r.status === "no_values" && f.calls.length === 5,
+    show(pages(f)),
+  );
+  // 公開済み: 単勝を1回だけ取り、残りの4ページを取って、通常の取得と同じ結果になる
+  f = createFetcher();
+  const first = await fetchOddsDetailed(DATE, 5, 1, {
+    wantFull: true,
+    winFirst: true,
+    fetchFn: f,
+  });
+  const normal = await fetchOddsDetailed(DATE, 5, 1, {
+    wantFull: true,
+    fetchFn: createFetcher(),
+  });
+  check(
+    "winFirst: 公開済みなら、単勝は1回だけ取り（重複して取らない）、計5ページを取って ok。結果（単勝・複勝・全通り系）は通常の取得と同じ",
+    first.status === "ok" &&
+      f.calls.length === 5 &&
+      pages(f).filter((p) => p === "oddstf").length === 1 &&
+      same(first.data, normal.data) &&
+      same(first.missing, normal.missing),
+    show(pages(f)),
+  );
+  // 一部の券種ページが落ちていれば partial（通常と同じ）
+  f = createFetcher({ odds3f: 404 });
+  r = await fetchOddsDetailed(DATE, 5, 1, {
+    wantFull: true,
+    winFirst: true,
+    fetchFn: f,
+  });
+  check(
+    "winFirst: 公開済みで3連複が404なら partial（通常と同じ。列名つき）",
+    r.status === "partial" && same(r.missing, ["trio_all"]),
+    show(r.missing),
+  );
+  // 単勝の失敗・ブレーカー: 他のページを取らない
+  f = createFetcher({ oddstf: 500 });
+  r = await fetchOddsDetailed(DATE, 5, 1, {
+    wantFull: true,
+    winFirst: true,
+    fetchFn: f,
+  });
+  check(
+    "winFirst: 単勝ページが500なら、他のページを取らずに error（HTTPステータスをメッセージに含む）",
+    r.status === "error" && /HTTP 500/.test(r.error) && f.calls.length === 1,
+    show([r, pages(f)]),
+  );
+  f = createFetcher({
+    oddstf: new BreakerOpenError("host:boatrace.jp", Date.now() + 60000),
+  });
+  r = await fetchOddsDetailed(DATE, 5, 1, {
+    wantFull: true,
+    winFirst: true,
+    fetchFn: f,
+  });
+  check(
+    "winFirst: ブレーカーが開いていれば、他のページを取らずに breaker_open（retryAt は Date）",
+    r.status === "breaker_open" &&
+      r.retryAt instanceof Date &&
+      f.calls.length === 1,
+    show([r, pages(f)]),
+  );
+  // 通信エラー（reject）: 他のページを取らずに error
+  f = createFetcher({ oddstf: new Error("ECONNRESET") });
+  r = await fetchOddsDetailed(DATE, 5, 1, {
+    wantFull: true,
+    winFirst: true,
+    fetchFn: f,
+  });
+  check(
+    "winFirst: 単勝が通信エラーなら、他のページを取らずに error",
+    r.status === "error" && f.calls.length === 1,
+    show([r, pages(f)]),
   );
 }
 
@@ -1003,6 +1104,87 @@ async function runOdds({ rows, slots, available, db, fetcher, run }) {
   );
 }
 {
+  // 延長した窓（-60）の、未公開の間の再試行は、単勝1ページの確認に絞る（追加リクエストを未公開のレースだけ・1ページにする）
+  check(
+    "shouldProbeWinFirst: 延長した窓（-60）で、直前の試行が未公開（outcome=no_values）のときだけ true（初回・他の窓・他の結果は false）",
+    shouldProbeWinFirst({ offset_min: -60, outcome: "no_values" }) === true &&
+      shouldProbeWinFirst({ offset_min: -60, outcome: null }) === false &&
+      shouldProbeWinFirst({ offset_min: -60 }) === false &&
+      shouldProbeWinFirst({ offset_min: -60, outcome: "error" }) === false &&
+      shouldProbeWinFirst({ offset_min: -60, outcome: "partial" }) === false &&
+      [-30, -15, -10, -5, 0].every(
+        (o) =>
+          shouldProbeWinFirst({ offset_min: o, outcome: "no_values" }) ===
+          false,
+      ),
+  );
+  const liveRows = {
+    odds: { job: "odds", mode: "live", consecutive_failures: 0 },
+  };
+  const probeUnpub = await runOdds({
+    rows: liveRows,
+    slots: [slotOf(RACE_A, -60, { attempts: 4, outcome: "no_values" })],
+    fetcher: createFetcher({ oddstf: HTML_UNPUBLISHED }),
+  });
+  check(
+    "延長中の -60 の再試行（前回も未公開）で、まだ未公開: 取得先へのリクエストは単勝の1ページだけ。pending に戻り（no_values・約50秒後に再試行）、race_odds へ書かない",
+    probeUnpub.fetcher.calls.length === 1 &&
+      pageOfUrl(probeUnpub.fetcher.calls[0]) === "oddstf" &&
+      probeUnpub.store.retried.length === 1 &&
+      probeUnpub.store.retried[0].outcome === "no_values" &&
+      Math.round(
+        (probeUnpub.store.retried[0].retryAt.getTime() - NOW.getTime()) / 1000,
+      ) ===
+        SCRAPE_JOBS.odds.retrySec - 10 &&
+      probeUnpub.db.writes.length === 0,
+    show(probeUnpub.fetcher.calls.map(pageOfUrl)),
+  );
+  const probePub = await runOdds({
+    rows: liveRows,
+    slots: [slotOf(RACE_A, -60, { attempts: 4, outcome: "no_values" })],
+  });
+  check(
+    "延長中の -60 の再試行で、公開されていた: 全通りを取得して書き込み（window_min=-60・source=vercel）、done（ok）にする。単勝は重複して取らない（計5リクエスト）",
+    probePub.fetcher.calls.length === 5 &&
+      probePub.store.completed.length === 1 &&
+      probePub.store.completed[0].outcome === "ok" &&
+      probePub.db.rows.length === 1 &&
+      probePub.db.rows[0].window_min === -60 &&
+      probePub.db.rows[0].source === "vercel",
+    show(probePub.fetcher.calls.map(pageOfUrl)),
+  );
+  const firstTry = await runOdds({
+    rows: liveRows,
+    slots: [slotOf(RACE_A, -60, { attempts: 1, outcome: null })],
+    fetcher: createFetcher({ oddstf: HTML_UNPUBLISHED }),
+  });
+  check(
+    "-60 の初回の試行（outcome なし）は、従来どおり全5ページを並列に取る（通常の取得の所要時間・リクエストを変えない）",
+    firstTry.fetcher.calls.length === 5,
+    show(firstTry.fetcher.calls.map(pageOfUrl)),
+  );
+  const otherWindow = await runOdds({
+    rows: liveRows,
+    slots: [slotOf(RACE_A, -30, { attempts: 2, outcome: "no_values" })],
+    fetcher: createFetcher({ oddstf: HTML_UNPUBLISHED }),
+  });
+  check(
+    "他の窓（-30）は、前回が未公開でも、従来どおり全5ページを取る（延長・1ページの確認は -60 だけ）",
+    otherWindow.fetcher.calls.length === 5,
+    show(otherWindow.fetcher.calls.map(pageOfUrl)),
+  );
+  // 追加リクエストの見積り: 未公開のレース N 件 × 最大27回（-60〜-33 の毎分。-30 の窓が始まるまで）× 1ページ
+  const graceMin = SCRAPE_JOBS.odds.graceMinByOffset[-60];
+  const maxProbes = Math.floor(
+    (graceMin * 60 - SCRAPE_JOBS.odds.graceMin * 60) /
+      (SCRAPE_JOBS.odds.retrySec - 10 + 10),
+  );
+  check(
+    "追加リクエストの上限の見積り: 1レースあたり、延長した27分の間、毎分1ページ（最大約27件。従来の窓内は3分・5ページ）",
+    maxProbes === 27 && graceMin === 30,
+    show([graceMin, maxProbes]),
+  );
+
   // ハンドラーが runForRaces に渡す引数
   const seen = [];
   const rec = await runOdds({
@@ -1277,14 +1459,15 @@ async function runOdds({ rows, slots, available, db, fetcher, run }) {
 {
   const def = SCRAPE_JOBS.odds;
   check(
-    "レジストリ: odds は窓型で、窓 -60・-30・-15・-10・-5・0、許容幅3分、再試行60秒、リース120秒（許容幅3分より短い）、24件×4並列",
+    "レジストリ: odds は窓型で、窓 -60・-30・-15・-10・-5・0、許容幅3分（-60だけ、未公開の間の延長で30分）、再試行60秒、リース120秒（許容幅3分より短い）、32件×4並列",
     def.kind === "window" &&
       same(def.offsets, [-60, -30, -15, -10, -5, 0]) &&
       def.graceMin === 3 &&
+      same(def.graceMinByOffset, { "-60": 30 }) &&
       def.retrySec === 60 &&
       def.leaseSec === 120 &&
       def.leaseSec < def.graceMin * 60 &&
-      def.claimLimit === 24 &&
+      def.claimLimit === 32 &&
       def.concurrency === 4 &&
       def.hosts.includes("boatrace.jp"),
     show(def),

@@ -27,6 +27,8 @@ import {
 import {
   SCRAPE_JOBS,
   SOFT_DEADLINE_MARGIN_SEC,
+  graceMinFor,
+  graceOverridesOf,
   slotDefsFor,
   validateRegistry,
   windowJobNames,
@@ -38,7 +40,10 @@ import {
   isFinalOutcome,
   truncateError,
 } from "../lib/scrapeJobs/outcomes.js";
-import { isScrapeSchemaMissingError } from "../lib/scrapeJobs/schemaErrors.js";
+import {
+  isClaimByOffsetMissingError,
+  isScrapeSchemaMissingError,
+} from "../lib/scrapeJobs/schemaErrors.js";
 import {
   BreakerOpenError,
   createCircuitBreaker,
@@ -55,6 +60,7 @@ import {
   createSemaphore,
 } from "../lib/scrapeJobs/concurrency.js";
 import {
+  CLAIM_FALLBACK_ALERT_KEY,
   isAuthorized,
   runScrapeJob,
   shouldEnsureSlots,
@@ -155,6 +161,11 @@ check(
     e: { ...SCRAPE_JOBS.point_rank, targetTimeJst: "25:00" },
     f: { ...SCRAPE_JOBS.odds, maxDurationSec: 30 },
     g: { ...SCRAPE_JOBS.odds, claimLimit: 60, concurrency: 4 }, // 15回×12秒 > リース
+    h: { ...SCRAPE_JOBS.odds, graceMinByOffset: { [-45]: 30 } }, // 窓（offsets）に無い
+    i: { ...SCRAPE_JOBS.odds, graceMinByOffset: { [-60]: 2 } }, // graceMin(3)未満
+    j: { ...SCRAPE_JOBS.odds, graceMinByOffset: { [-60]: 31 } }, // 次の窓(-30)の開始を超える
+    k: { ...SCRAPE_JOBS.odds, graceMinByOffset: { [-60]: 1.5 } }, // 整数でない
+    l: { ...SCRAPE_JOBS.odds, retrySec: 2000, graceMinByOffset: { [-60]: 30 } }, // 再試行が延長後の許容幅より長い
   };
   const problems = validateRegistry(bad);
   check(
@@ -163,6 +174,38 @@ check(
       problems.some((p) => p.startsWith(`${k}:`)),
     ),
     show(problems),
+  );
+  const graceProblems = validateRegistry(bad).filter((p) =>
+    /graceMinByOffset/.test(p),
+  );
+  check(
+    "窓ごとの許容幅の上書き（graceMinByOffset）: 窓に無いキー・graceMin未満・次の窓の開始を超える値・整数でない値・延長後の許容幅より長い再試行を検出",
+    ["h", "i", "j", "k", "l"].every((k) =>
+      graceProblems.some((p) => p.startsWith(`${k}:`)),
+    ) && graceProblems.length >= 5,
+    show(graceProblems),
+  );
+}
+{
+  const odds = SCRAPE_JOBS.odds;
+  check(
+    "本番のオッズの窓: -60 だけ許容幅30分（-30の窓の開始まで）、他の窓は3分のまま。上書きは {-60: 30}",
+    graceMinFor(odds, -60) === 30 &&
+      [-30, -15, -10, -5, 0].every((o) => graceMinFor(odds, o) === 3) &&
+      same(graceOverridesOf(odds), { "-60": 30 }) &&
+      odds.offsets.includes(-60) &&
+      -60 + graceMinFor(odds, -60) <= -30,
+    show([odds.graceMin, odds.graceMinByOffset]),
+  );
+  check(
+    "本番のオッズ以外のジョブは、上書きを持たない（許容幅を変えていない）。graceOverridesOf は null",
+    Object.entries(SCRAPE_JOBS)
+      .filter(([name, def]) => def.kind === "window" && name !== "odds")
+      .every(
+        ([, def]) =>
+          graceOverridesOf(def) === null &&
+          def.offsets.every((o) => graceMinFor(def, o) === def.graceMin),
+      ),
   );
 }
 check(
@@ -181,9 +224,11 @@ check(
 {
   const defs = slotDefsFor(["odds", "result"]);
   check(
-    "ensure用の定義: oddsは6窓（許容幅3）、resultは1窓（許容幅85）",
+    "ensure用の定義: oddsは6窓（-60だけ許容幅30、他は3）、resultは1窓（許容幅85）",
     defs.length === 7 &&
-      defs.filter((d) => d.job === "odds").every((d) => d.grace_min === 3) &&
+      defs
+        .filter((d) => d.job === "odds")
+        .every((d) => d.grace_min === (d.offset_min === -60 ? 30 : 3)) &&
       defs.find((d) => d.job === "result").offset_min === 5 &&
       defs.find((d) => d.job === "result").grace_min === 85,
     show(defs),
@@ -1100,6 +1145,82 @@ check(
     );
   }
 
+  // offset ごとの許容幅の上書きが効かなかった（マイグレーション092が未適用で、既存の関数へフォールバックした）: 黙って
+  // 延長が効かない状態を放置しない（応答・ジョブ状態の last_report のアラート。監視が通知する）
+  {
+    const reason =
+      "claim_scrape_slots_by_offset が無いため（マイグレーション092が未適用）、既存の claim_scrape_slots で取りました";
+    const alertsOf = (store) => store.state.get("odds").last_report?.alerts;
+    // フォールバックした・スロットなし: アラートを last_report に残し、応答にも出す
+    let store = createMemoryStore({
+      rows: { odds: { job: "odds", mode: "live" } },
+    });
+    store.setClaimFallback({ reason });
+    let r = await run(store, { handleSlot: async () => ({ outcome: "ok" }) });
+    check(
+      "claim がフォールバックした（スロットなし）: last_report.alerts にアラート（key=claim_fallback・理由）を残し、応答に claimFallback を出す",
+      r.status === 200 &&
+        r.body.claimFallback === reason &&
+        alertsOf(store)?.length === 1 &&
+        alertsOf(store)[0].key === CLAIM_FALLBACK_ALERT_KEY &&
+        alertsOf(store)[0].text === reason,
+      show([r, alertsOf(store)]),
+    );
+    // フォールバックが続く・既にアラートがある: 毎分、書き直さない（recordSuccess を増やさない）
+    const before = store.calls.filter((c) => c.name === "recordSuccess").length;
+    store.setClaimFallback({ reason });
+    r = await run(store, { handleSlot: async () => ({ outcome: "ok" }) });
+    check(
+      "フォールバックが続いても、既にアラートがあれば、ジョブ状態を書き直さない（毎分の更新にしない）。応答には出す",
+      store.calls.filter((c) => c.name === "recordSuccess").length === before &&
+        r.body.claimFallback === reason,
+    );
+    // 回復（092が適用され、新関数で取れた）: アラートを消す
+    r = await run(store, { handleSlot: async () => ({ outcome: "ok" }) });
+    check(
+      "新関数で取れるようになったら（フォールバックなし）、前回のアラートを消す（last_report.alerts=[]）。応答に claimFallback は無い",
+      alertsOf(store)?.length === 0 && r.body.claimFallback === undefined,
+      show([r.body, alertsOf(store)]),
+    );
+    // 上書きのないジョブ（result）は、last_report のアラートを消さない（他のジョブの通知を巻き込まない）
+    store = createMemoryStore({
+      rows: {
+        result: {
+          job: "result",
+          mode: "live",
+          last_report: {
+            alerts: [{ key: CLAIM_FALLBACK_ALERT_KEY, text: "他の通知" }],
+          },
+        },
+      },
+    });
+    r = await run(store, {
+      job: "result",
+      handleSlot: async () => ({ outcome: "ok" }),
+    });
+    check(
+      "上書きのないジョブ（result）は、フォールバックがなくても last_report を書き換えない",
+      !store.calls.some((c) => c.name === "recordSuccess") &&
+        store.state.get("result").last_report.alerts.length === 1,
+    );
+    // スロットを処理した実行でも、応答に出す。処理の成功の記録（recordSuccess）は last_report を上書きしない
+    store = createMemoryStore({
+      rows: { odds: { job: "odds", mode: "live" } },
+      slots: [slot("2026-09-19-01-01")],
+    });
+    store.setClaimFallback({ reason });
+    r = await run(store, { handleSlot: async () => ({ outcome: "ok" }) });
+    check(
+      "フォールバックした実行でスロットを処理しても、取得は続く（completeSlot）。アラートは残り、応答に出る",
+      r.status === 200 &&
+        r.body.claimed === 1 &&
+        store.completed.length === 1 &&
+        r.body.claimFallback === reason &&
+        alertsOf(store)?.[0]?.key === CLAIM_FALLBACK_ALERT_KEY,
+      show([r, alertsOf(store)]),
+    );
+  }
+
   // ブレーカー
   {
     // 事前にブレーカーが開いている → スロットを取らない
@@ -1253,7 +1374,11 @@ check(
       "computeRetryAt: claim時刻が無い・不正なら現在時刻を起点にする",
       computeRetryAt({ now: T0, claimedAt: null, retrySec: 60 }).getTime() ===
         T0.getTime() + 50_000 &&
-        computeRetryAt({ now: T0, claimedAt: "invalid", retrySec: 60 }).getTime() ===
+        computeRetryAt({
+          now: T0,
+          claimedAt: "invalid",
+          retrySec: 60,
+        }).getTime() ===
           T0.getTime() + 50_000 &&
         computeRetryAt({ now: T0, claimedAt: T0, retrySec: 5 }).getTime() ===
           T0.getTime(),
@@ -1702,17 +1827,128 @@ check(
   });
   const [rpcName, rpcArgs] = rpcLog[0];
   check(
-    "claimSlots: レジストリの値（limit・リース・許容幅）と run_mode で claim_scrape_slots を呼ぶ",
-    rpcName === "claim_scrape_slots" &&
+    "claimSlots（上書きのあるジョブ odds）: レジストリの値（limit・リース・許容幅）と run_mode、offset ごとの許容幅の上書き {-60:30} で claim_scrape_slots_by_offset を呼ぶ",
+    rpcName === "claim_scrape_slots_by_offset" &&
       rpcArgs.p_limit === SCRAPE_JOBS.odds.claimLimit &&
       rpcArgs.p_lease_sec === SCRAPE_JOBS.odds.leaseSec &&
       rpcArgs.p_grace_min === SCRAPE_JOBS.odds.graceMin &&
+      same(rpcArgs.p_grace_by_offset, { "-60": 30 }) &&
       rpcArgs.p_run_mode === "shadow" &&
       rpcArgs.p_worker === "w1" &&
       !("p_now" in rpcArgs) &&
-      claimed.length === 1,
+      claimed.length === 1 &&
+      store.takeClaimFallback() === null,
     show(rpcArgs),
   );
+  // 上書きのないジョブは、既存の claim_scrape_slots（p_grace_by_offset なし）を呼ぶ
+  rpcLog.length = 0;
+  await store.claimSlots({ job: "result", worker: "w1", mode: "live" });
+  check(
+    "claimSlots（上書きのないジョブ result）: 既存の claim_scrape_slots を、従来の引数（p_grace_by_offset なし）で呼ぶ",
+    rpcLog.length === 1 &&
+      rpcLog[0][0] === "claim_scrape_slots" &&
+      !("p_grace_by_offset" in rpcLog[0][1]) &&
+      rpcLog[0][1].p_grace_min === SCRAPE_JOBS.result.graceMin,
+    show(rpcLog),
+  );
+  // 新関数が無い（092が未適用）: 既存の関数へフォールバックし、理由を残す（1回読むと消える）
+  rpcLog.length = 0;
+  nextResult = () =>
+    rpcLog.length === 1
+      ? {
+          data: null,
+          error: {
+            code: "PGRST202",
+            message:
+              "Could not find the function public.claim_scrape_slots_by_offset(p_grace_by_offset, p_grace_min) in the schema cache",
+          },
+        }
+      : {
+          data: [{ race_id: "fb", job: "odds", offset_min: -30 }],
+          error: null,
+        };
+  const fb = await store.claimSlots({
+    job: "odds",
+    worker: "w1",
+    mode: "live",
+  });
+  const fbInfo = store.takeClaimFallback();
+  check(
+    "claimSlots: 新関数が無い（PGRST202・その関数名）ときだけ、既存の claim_scrape_slots へフォールバックし、理由（092が未適用・延長が効かない）を残す。理由は1回読むと消える",
+    rpcLog.length === 2 &&
+      rpcLog[0][0] === "claim_scrape_slots_by_offset" &&
+      rpcLog[1][0] === "claim_scrape_slots" &&
+      !("p_grace_by_offset" in rpcLog[1][1]) &&
+      fb.length === 1 &&
+      /092/.test(fbInfo?.reason ?? "") &&
+      /効いていません/.test(fbInfo?.reason ?? "") &&
+      store.takeClaimFallback() === null,
+    show([rpcLog.map((c) => c[0]), fbInfo]),
+  );
+  // それ以外のエラーは、フォールバックしない（DB障害・別の関数の不在・引数エラーを握りつぶさない）
+  for (const [label, error] of [
+    [
+      "DB障害",
+      {
+        code: "57014",
+        message: "canceling statement due to statement timeout",
+      },
+    ],
+    [
+      "別の関数の不在（PGRST202・別の名前）",
+      {
+        code: "PGRST202",
+        message:
+          "Could not find the function public.other_fn() in the schema cache",
+      },
+    ],
+    [
+      "引数エラー（P0001）",
+      {
+        code: "P0001",
+        message: "claim_scrape_slots_by_offset: 引数が不正です",
+      },
+    ],
+  ]) {
+    rpcLog.length = 0;
+    nextResult = () => ({ data: null, error });
+    let threw = "";
+    try {
+      await store.claimSlots({ job: "odds", worker: "w1", mode: "live" });
+    } catch (e) {
+      threw = e.message;
+    }
+    check(
+      `claimSlots: ${label}はフォールバックせず、意味のあるメッセージで例外にする（既存の関数を呼ばない）`,
+      rpcLog.length === 1 &&
+        /スロットの取得\(claim_scrape_slots_by_offset, odds\)に失敗しました/.test(
+          threw,
+        ) &&
+        store.takeClaimFallback() === null,
+      show([rpcLog.map((c) => c[0]), threw]),
+    );
+  }
+  check(
+    "isClaimByOffsetMissingError: PGRST202・42883 でその関数名を含むものだけ（部分一致・別の名前・null は false）",
+    isClaimByOffsetMissingError({
+      code: "42883",
+      message: "function claim_scrape_slots_by_offset(text) does not exist",
+    }) &&
+      !isClaimByOffsetMissingError({
+        code: "PGRST202",
+        message: "Could not find the function public.claim_scrape_slots(p_job)",
+      }) &&
+      !isClaimByOffsetMissingError({
+        code: "PGRST202",
+        message: "public.claim_scrape_slots_by_offset_v2",
+      }) &&
+      !isClaimByOffsetMissingError(null),
+  );
+  nextResult = () => ({
+    data: [{ race_id: "x", job: "odds", offset_min: -60 }],
+    error: null,
+  });
+  rpcLog.length = 0;
   nextResult = () => ({ data: 12, error: null });
   const created = await store.ensureSlots({
     date: "2026-09-19",
@@ -1721,10 +1957,10 @@ check(
   check(
     "ensureSlots: ensure_scrape_slots に、ジョブ×窓の定義を渡し、期限を過ぎたスロットは作らない",
     created === 12 &&
-      rpcLog[1][0] === "ensure_scrape_slots" &&
-      rpcLog[1][1].p_skip_lapsed === true &&
-      rpcLog[1][1].p_defs.length === 6,
-    show(rpcLog[1]),
+      rpcLog[0][0] === "ensure_scrape_slots" &&
+      rpcLog[0][1].p_skip_lapsed === true &&
+      rpcLog[0][1].p_defs.length === 6,
+    show(rpcLog[0]),
   );
 
   // スキーマ未適用は readState だけが available=false にする。それ以外のエラーは投げる
