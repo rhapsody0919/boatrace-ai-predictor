@@ -361,6 +361,11 @@ function PredictionPanel({
                   venueCode={venueCode}
                   players={prediction.allPlayers}
                   weather={prediction.weather}
+                  raceGrade={
+                    selectedRace?.rawData?.raceGrade ??
+                    selectedRace?.raceGrade ??
+                    null
+                  }
                 />
               ),
             },

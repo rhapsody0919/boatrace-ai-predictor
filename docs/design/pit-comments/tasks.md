@@ -28,10 +28,10 @@ spec: `spec.md` / plan: `plan.md` / screens: `screens.md`
 ## Phase 4: 画面（**モック承認の後に**実装する）
 
 - [x] **T4-1** モックの作成（`screens.md`の§3〜§4。追加位置・出典表記・★の見た目・状態）。ユーザーの承認 — 2026-09-23に承認。モック: https://claude.ai/artifact/KUQPk2fpCwfjiumwtnDTKc 。決定5件は`screens.md` §8
-- [ ] **T4-2** `getRacePitReport`（`supabaseDataService.js`）・`pitReportUrl.js`・`RacePitReportSection`・`RaceBeforeInfoTab`への追加・i18n（4言語）・`termHints.js`（`screens.md` §6）
-- [ ] **T4-3** Playwrightでの自己検証（SG・G1のレース詳細で、直前情報タブにセクション・出典・リンクが出る。G3では出ない。ライト・ダーク・モバイル幅）。スモークテストへの追記。`npm run build`・`npm run test:e2e`
+- [x] **T4-2** `getRacePitReport`（`supabaseDataService.js`）・`pitReportUrl.js`・`RacePitReportSection`・`RaceBeforeInfoTab`への追加・i18n（4言語）・`termHints.js`（`screens.md` §6）
+- [x] **T4-3** Playwrightでの自己検証（SG・G1のレース詳細で、直前情報タブにセクション・出典・リンクが出る。G3では出ない。ライト・ダーク・モバイル幅）。スモークテストへの追記。`npm run build`・`npm run test:e2e`
 - [ ] **T4-4** (ユーザー承認) マイグレーション086を適用する（匿名への公開）。本番で、SG・G1・G2のレース詳細に表示されることを確認する
-- [ ] **T4-5** `content-index.json`（`docs/design/pit-comments/content-index.json`）を作成する（新機能のトレーサビリティ。ブログ・SNSへの展開の要否は、フローA参照）
+- [x] **T4-5** `content-index.json`（`docs/design/pit-comments/content-index.json`）を作成する（新機能のトレーサビリティ。ブログ・SNSへの展開の要否は、フローA参照） — 086が未適用で一般ユーザーが見られる状態にないため、`not_applicable: true`＋理由つきで作成。086適用後に展開の要否を再判断する
 - [ ] **T4-6** ADR-0067の追記案（承認の記録）を確定する（ユーザーの確認後にマージ）
 
 ## 完了の定義（データ項目ごと。`.claude/rules/data-acquisition.md`）

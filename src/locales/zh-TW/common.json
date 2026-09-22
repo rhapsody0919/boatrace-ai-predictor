@@ -546,6 +546,20 @@
     "entryCourseWinLabel": "各進入航道第1名次數",
     "courseN": "{{n}}航道"
   },
+  "pitReport": {
+    "title": "維修區報告（選手留言）",
+    "source": "出處: BOAT RACE 官方網站 維修區報告",
+    "capturedAt": "擷取時間: {{time}}",
+    "officialLink": "前往官方網站查看",
+    "previousRace": "前一場 第{{n}}場",
+    "confidence": "留言信心度",
+    "confidenceAria": "{{max}}階段中的{{n}}",
+    "pending": "尚未公開。官方公開後會顯示於此。",
+    "error": "無法載入維修區報告。",
+    "retry": "重新載入",
+    "note": "留言原樣轉載自官方網站（未經摘要或修改）。最新內容請至官方網站確認。",
+    "originalLanguageNote": "留言以日文原文顯示。"
+  },
   "oddsList": {
     "subtitle": "切換投注方式即可查看所有組合的賠率，點擊賠率可查看變化趨勢",
     "loading": "賠率載入中...",

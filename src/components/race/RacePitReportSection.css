@@ -1,0 +1,176 @@
+/* RacePitReportSection - ピットレポート（選手コメント）セクション（BOA-379）
+ *
+ * カードの外枠・見出し・注記は直前情報タブの既存クラス（rbi-card / rbi-heading /
+ * rbi-note）を再利用する。ここで定義するのは、出典ブロック・コメントカード・★の
+ * 表示に固有のものだけ（docs/design/pit-comments/screens.md §7）。 */
+
+.rpr-source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+}
+
+.rpr-source-text {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.rpr-source-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* タップ領域44px以上（モバイルで全幅ボタン） */
+  min-height: 44px;
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+
+.rpr-source-link:hover {
+  text-decoration: underline;
+}
+
+.rpr-comment-list {
+  list-style: none;
+  margin: var(--spacing-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.rpr-comment {
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+}
+
+.rpr-comment-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.rpr-boat-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  /* 1号艇（白）がカード背景に埋もれないよう、常に輪郭を付ける */
+  border: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rpr-racer-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rpr-racer-rank {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--spacing-1);
+}
+
+.rpr-prev-race {
+  margin-left: auto;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rpr-comment-text {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.65;
+  color: var(--text-primary);
+  /* 公式の改行を保持し、要約・切り詰めをしない（spec.md FR-2） */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rpr-confidence {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rpr-confidence-label {
+  color: var(--text-secondary);
+}
+
+.rpr-stars {
+  letter-spacing: 1px;
+}
+
+/* 色だけに依存させない（★＝塗り／☆＝空で形が違う） */
+.rpr-stars-filled {
+  color: var(--brand-accent-primary);
+}
+
+.rpr-stars-empty {
+  color: var(--text-secondary);
+}
+
+.rpr-pending,
+.rpr-error {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.rpr-pending {
+  color: var(--text-secondary);
+}
+
+.rpr-error {
+  color: var(--color-error-text);
+}
+
+.rpr-retry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .rpr-comment {
+    padding: var(--spacing-2);
+  }
+
+  .rpr-source {
+    padding: var(--spacing-2);
+  }
+}

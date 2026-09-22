@@ -316,6 +316,20 @@
     "entryCourseWinLabel": "進入コース別1着回数",
     "courseN": "{{n}}コース"
   },
+  "pitReport": {
+    "title": "ピットレポート（選手コメント）",
+    "source": "出典: BOAT RACE オフィシャルウェブサイト ピットレポート",
+    "capturedAt": "取得: {{time}}",
+    "officialLink": "公式サイトで見る",
+    "previousRace": "前走 {{n}}R",
+    "confidence": "コメント自信度",
+    "confidenceAria": "{{max}}段階中{{n}}",
+    "pending": "まだ公開されていません。公開されると表示されます。",
+    "error": "ピットレポートを読み込めませんでした。",
+    "retry": "再読み込み",
+    "note": "※ 公式サイトの内容をそのまま表示しています（要約・改変はしていません）。最新の内容は公式サイトでご確認ください。",
+    "originalLanguageNote": ""
+  },
   "oddsList": {
     "subtitle": "券種を切り替えて全組み合わせのオッズを確認できます。オッズをタップすると推移を表示します",
     "loading": "オッズを読み込み中...",
