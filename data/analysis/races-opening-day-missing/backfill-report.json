@@ -1,0 +1,4138 @@
+{
+ "schema": "races-opening-day-backfill-report/v1",
+ "started_at": "2026-09-21T12:03:09.411Z",
+ "apply": true,
+ "entries": [
+  {
+   "date": "2026-09-01",
+   "venue_code": 12,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "日刊スポーツ杯争奪第３０回ブルースターカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:01:46.023Z"
+  },
+  {
+   "date": "2026-04-10",
+   "venue_code": 17,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "にっぽん未来プロジェクト競走ｉｎ宮島",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:08:39.046Z"
+  },
+  {
+   "date": "2026-04-11",
+   "venue_code": 4,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＢＴＳ河辺開設３１周年記念第２回ニッカン・コム杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:14:24.834Z"
+  },
+  {
+   "date": "2026-04-11",
+   "venue_code": 14,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第３６回鳴門市長杯競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:19:59.287Z"
+  },
+  {
+   "date": "2026-04-11",
+   "venue_code": 22,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G1",
+    "title": "福岡チャンピオンカップ開設７３周年記念競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:25:33.588Z"
+  },
+  {
+   "date": "2026-04-15",
+   "venue_code": 9,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ヴィーナスシリーズ第２戦　ＢＯＡＴＢｏｙカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:31:01.312Z"
+  },
+  {
+   "date": "2026-05-05",
+   "venue_code": 18,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ニッカン・コム杯争奪戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:36:38.091Z"
+  },
+  {
+   "date": "2026-05-07",
+   "venue_code": 24,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "長崎新聞社杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:42:14.211Z"
+  },
+  {
+   "date": "2026-05-08",
+   "venue_code": 14,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "日本モーターボート選手会会長杯競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:47:50.151Z"
+  },
+  {
+   "date": "2026-05-08",
+   "venue_code": 22,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ボートレース福岡レストラン和風ダイニングかっぱ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:53:25.735Z"
+  },
+  {
+   "date": "2026-05-13",
+   "venue_code": 19,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ルーキーシリーズ第１０戦スカパー！ＪＬＣ杯争奪",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T12:58:56.081Z"
+  },
+  {
+   "date": "2026-05-14",
+   "venue_code": 2,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第４２回日本モーターボート選手会カップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T13:04:42.183Z"
+  },
+  {
+   "date": "2026-05-14",
+   "venue_code": 10,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "道の駅みくに・ふれあいパーク三里浜杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T13:10:18.709Z"
+  },
+  {
+   "date": "2026-05-16",
+   "venue_code": 6,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "日伯友好記念　ブラジル杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T13:15:55.978Z"
+  },
+  {
+   "date": "2026-05-16",
+   "venue_code": 14,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "スマホのアプリ「Ｎｏｖｉｌ★ラボ！」杯競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T13:21:30.353Z"
+  },
+  {
+   "date": "2026-05-16",
+   "venue_code": 17,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "サントリー杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T13:27:05.302Z"
+  },
+  {
+   "date": "2026-05-22",
+   "venue_code": 13,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ルーキーシリーズ第１１戦　スカパー！・ＪＬＣ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T13:32:46.888Z"
+  },
+  {
+   "date": "2026-05-22",
+   "venue_code": 23,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "マンスリーＢＯＡＴＲＡＣＥ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T13:38:23.160Z"
+  },
+  {
+   "date": "2026-05-23",
+   "venue_code": 10,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "三国巧者決定戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T13:44:01.910Z"
+  },
+  {
+   "date": "2026-05-23",
+   "venue_code": 12,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "アクアコンシェルジュカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T13:49:41.222Z"
+  },
+  {
+   "date": "2026-05-26",
+   "venue_code": 15,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G3",
+    "title": "第１６回琴参バスカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T13:55:26.414Z"
+  },
+  {
+   "date": "2026-05-28",
+   "venue_code": 1,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第３３回桐生タイムス杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:01:11.476Z"
+  },
+  {
+   "date": "2026-05-28",
+   "venue_code": 2,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "本命バトル祭",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:06:41.553Z"
+  },
+  {
+   "date": "2026-05-29",
+   "venue_code": 9,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G3",
+    "title": "津マスターズリーグ第１戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:12:11.562Z"
+  },
+  {
+   "date": "2026-05-29",
+   "venue_code": 11,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "デイリースポーツ杯争奪第４１回オールニッポン選抜戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:17:37.807Z"
+  },
+  {
+   "date": "2026-05-29",
+   "venue_code": 14,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第１７回鳴門商工会議所会頭杯競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:23:11.554Z"
+  },
+  {
+   "date": "2026-05-29",
+   "venue_code": 23,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第１３回見帰りの滝あじさいカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:28:51.322Z"
+  },
+  {
+   "date": "2026-05-30",
+   "venue_code": 5,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G3",
+    "title": "オールレディースリップルカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:34:23.448Z"
+  },
+  {
+   "date": "2026-05-30",
+   "venue_code": 12,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "守口市制８０周年記念競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:39:59.725Z"
+  },
+  {
+   "date": "2026-06-01",
+   "venue_code": 19,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "海響ドリームナイター９周年記念ＣＯＭＥ　ＯＮ！ＦＭ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:45:33.843Z"
+  },
+  {
+   "date": "2026-06-01",
+   "venue_code": 24,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ミッドナイトボートレースｉｎ大村　２",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:51:18.939Z"
+  },
+  {
+   "date": "2026-06-02",
+   "venue_code": 10,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "スカパー！・ＪＬＣ杯ルーキーシリーズ第１２戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T14:56:44.689Z"
+  },
+  {
+   "date": "2026-06-03",
+   "venue_code": 3,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": null,
+    "grade": "ippan",
+    "title": "にっぽん未来プロジェクト競走ｉｎ江戸川",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "no_values": 12
+    },
+    "results": {
+     "no_values": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 0,
+    "results": 0
+   },
+   "at": "2026-09-21T15:02:16.028Z"
+  },
+  {
+   "date": "2026-06-03",
+   "venue_code": 7,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": null,
+    "grade": "ippan",
+    "title": "やしの実ＦＭ　「蒲郡ＵＰ！」杯争奪戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "no_values": 12
+    },
+    "results": {
+     "no_values": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 0,
+    "results": 0
+   },
+   "at": "2026-09-21T15:07:44.566Z"
+  },
+  {
+   "date": "2026-06-03",
+   "venue_code": 21,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＢＯＡＴＢｏｙカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T15:13:24.245Z"
+  },
+  {
+   "date": "2026-06-04",
+   "venue_code": 8,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＢＴＳ名古屋開設記念・第３４回４ＫソリューションＣ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T15:18:59.886Z"
+  },
+  {
+   "date": "2026-06-04",
+   "venue_code": 17,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G1",
+    "title": "宮島チャンピオンカップ開設７２周年記念",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T15:24:30.368Z"
+  },
+  {
+   "date": "2026-06-05",
+   "venue_code": 1,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＭＢＰ津幡開設１３周年記念",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T15:30:06.903Z"
+  },
+  {
+   "date": "2026-06-05",
+   "venue_code": 18,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "西部発刊１万号記念スポーツ報知杯争奪戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T15:35:37.507Z"
+  },
+  {
+   "date": "2026-06-12",
+   "venue_code": 19,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＭＮＢＲ下関２ｎｄ　日本モーターボート選手会会長杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T15:41:10.140Z"
+  },
+  {
+   "date": "2026-06-12",
+   "venue_code": 22,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G3",
+    "title": "オールレディース・ＬＯＶＥ　ＦＭ福岡なでしこカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T15:46:43.191Z"
+  },
+  {
+   "date": "2026-06-14",
+   "venue_code": 1,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第２３回新東通信杯　ＢＴＳ福島開場１５周年記念",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T15:52:28.514Z"
+  },
+  {
+   "date": "2026-06-14",
+   "venue_code": 12,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＭＢ選手会会長杯２０２６ダイスポジャンピーカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T15:58:02.740Z"
+  },
+  {
+   "date": "2026-06-15",
+   "venue_code": 21,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＰａｙＰａｙ銀行賞",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:03:44.444Z"
+  },
+  {
+   "date": "2026-06-16",
+   "venue_code": 9,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "マンスリーＢＯＡＴＲＡＣＥ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:09:28.756Z"
+  },
+  {
+   "date": "2026-06-16",
+   "venue_code": 18,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G3",
+    "title": "サッポロビールカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:15:05.323Z"
+  },
+  {
+   "date": "2026-06-17",
+   "venue_code": 5,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第１０回ａｕじぶん銀行賞",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:20:41.866Z"
+  },
+  {
+   "date": "2026-06-17",
+   "venue_code": 7,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "トランスワードトロフィー２０２６",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:26:23.956Z"
+  },
+  {
+   "date": "2026-06-17",
+   "venue_code": 13,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第３７回サンスポグリーンカップ争奪戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:31:57.490Z"
+  },
+  {
+   "date": "2026-06-17",
+   "venue_code": 17,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G3",
+    "title": "マスターズリーグ第２戦デイリースポーツ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:37:24.896Z"
+  },
+  {
+   "date": "2026-06-17",
+   "venue_code": 24,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G2",
+    "title": "ボートレース発祥地記念第３０回モーターボート誕生祭",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:42:55.001Z"
+  },
+  {
+   "date": "2026-06-18",
+   "venue_code": 2,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ヴィーナスシリーズ第６戦戸田中央メディックス埼玉杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:48:30.880Z"
+  },
+  {
+   "date": "2026-06-18",
+   "venue_code": 4,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第４０回東京スポーツ賞",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:54:05.227Z"
+  },
+  {
+   "date": "2026-06-18",
+   "venue_code": 20,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＭＮＢＲ若松２ｎｄＢＯＡＴＢｏｙカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T16:59:45.312Z"
+  },
+  {
+   "date": "2026-06-20",
+   "venue_code": 6,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "にっぽん未来プロジェクト競走ｉｎ浜名湖",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T17:05:14.517Z"
+  },
+  {
+   "date": "2026-06-20",
+   "venue_code": 15,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "スカパー！ＪＬＣ杯争奪　ルーキーシリーズ第１４戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T17:10:48.451Z"
+  },
+  {
+   "date": "2026-06-23",
+   "venue_code": 7,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "スポーツニッポン杯争奪　蒲郡ボート大賞",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T17:16:22.459Z"
+  },
+  {
+   "date": "2026-06-25",
+   "venue_code": 1,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G3",
+    "title": "サッポロビールカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T17:22:03.411Z"
+  },
+  {
+   "date": "2026-06-25",
+   "venue_code": 13,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "サンケイスポーツ旗争奪　第５８回尼崎選手権競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T17:27:34.952Z"
+  },
+  {
+   "date": "2026-06-25",
+   "venue_code": 18,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＢＯＡＴＢｏｙカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T17:33:12.392Z"
+  },
+  {
+   "date": "2026-06-25",
+   "venue_code": 21,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "モーヴィ芦屋オープン５周年記念",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T17:38:45.941Z"
+  },
+  {
+   "date": "2026-06-26",
+   "venue_code": 17,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第１４回サッポロビール杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T17:44:17.916Z"
+  },
+  {
+   "date": "2026-06-26",
+   "venue_code": 24,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "スポーツ報知杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T17:49:48.760Z"
+  },
+  {
+   "date": "2026-07-01",
+   "venue_code": 7,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ボートレースレディースＶＳルーキーズバトル",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T17:55:20.747Z"
+  },
+  {
+   "date": "2026-07-01",
+   "venue_code": 22,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ａｕじぶん銀行賞",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:00:55.940Z"
+  },
+  {
+   "date": "2026-07-02",
+   "venue_code": 4,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第２回アサヒビールカップ〜平和島マスターズ〜",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:06:34.912Z"
+  },
+  {
+   "date": "2026-07-02",
+   "venue_code": 21,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＤＭＭボートちゃんねる杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:12:01.293Z"
+  },
+  {
+   "date": "2026-07-03",
+   "venue_code": 9,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "サンケイスポーツ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:17:38.705Z"
+  },
+  {
+   "date": "2026-07-03",
+   "venue_code": 12,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "日刊盾争奪ニッカン・コム杯第６０回しぶき杯競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:23:16.446Z"
+  },
+  {
+   "date": "2026-07-03",
+   "venue_code": 13,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "スポーツニッポン杯争奪伊丹市施行７３周年記念競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:28:44.916Z"
+  },
+  {
+   "date": "2026-07-07",
+   "venue_code": 8,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "名古屋グランパスカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:34:17.343Z"
+  },
+  {
+   "date": "2026-07-07",
+   "venue_code": 10,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G3",
+    "title": "マスターズリーグ第３戦三国レジェンドカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:39:52.708Z"
+  },
+  {
+   "date": "2026-07-07",
+   "venue_code": 11,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "びわこヴィーナス！第７回酒処京都新京極スタンド",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:45:28.893Z"
+  },
+  {
+   "date": "2026-07-07",
+   "venue_code": 20,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G3",
+    "title": "シャボン玉石けん杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:51:05.958Z"
+  },
+  {
+   "date": "2026-07-11",
+   "venue_code": 3,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第２６回関東日刊紙ボートレース記者クラブ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T18:56:40.338Z"
+  },
+  {
+   "date": "2026-07-11",
+   "venue_code": 4,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＢＩＧＦＵＮ平和島杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:02:23.396Z"
+  },
+  {
+   "date": "2026-07-14",
+   "venue_code": 1,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第４８回デイリースポーツ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:08:00.101Z"
+  },
+  {
+   "date": "2026-07-14",
+   "venue_code": 21,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "モーニングレース誕生祭",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:13:34.222Z"
+  },
+  {
+   "date": "2026-07-14",
+   "venue_code": 24,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ミッドナイトボートレースｉｎ大村　５",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:19:13.584Z"
+  },
+  {
+   "date": "2026-07-21",
+   "venue_code": 23,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第１４回サッポロビールカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:24:53.510Z"
+  },
+  {
+   "date": "2026-07-24",
+   "venue_code": 2,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第１０回週刊大衆杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:30:26.433Z"
+  },
+  {
+   "date": "2026-07-24",
+   "venue_code": 6,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "日本モーターボート選手会代表杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:36:04.255Z"
+  },
+  {
+   "date": "2026-07-24",
+   "venue_code": 12,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "豊中市制９０周年記念競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:41:44.885Z"
+  },
+  {
+   "date": "2026-07-24",
+   "venue_code": 17,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第１６回みやじマリンカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:47:18.305Z"
+  },
+  {
+   "date": "2026-07-28",
+   "venue_code": 15,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "男女Ｗ優勝戦　大阪スポーツカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:52:46.282Z"
+  },
+  {
+   "date": "2026-07-28",
+   "venue_code": 16,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "山陽新聞社杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T19:58:26.773Z"
+  },
+  {
+   "date": "2026-07-28",
+   "venue_code": 24,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "にっぽん未来プロジェクト競走ｉｎ大村　１",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:03:54.960Z"
+  },
+  {
+   "date": "2026-07-29",
+   "venue_code": 18,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "徳山商工会議所青年部（青友会）５０周年記念競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:09:40.109Z"
+  },
+  {
+   "date": "2026-07-29",
+   "venue_code": 22,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "西部ボートレース記者クラブ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:15:17.626Z"
+  },
+  {
+   "date": "2026-07-29",
+   "venue_code": 23,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "中日スポーツ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:20:56.471Z"
+  },
+  {
+   "date": "2026-07-30",
+   "venue_code": 8,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "オール進入固定ＲＳ第１５戦スカパー第２８回ＪＬＣ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:26:35.590Z"
+  },
+  {
+   "date": "2026-08-04",
+   "venue_code": 10,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＢＯＡＴＢｏｙカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:32:06.877Z"
+  },
+  {
+   "date": "2026-08-04",
+   "venue_code": 12,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "にっぽん未来プロジェクト競走ｉｎ住之江",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:37:42.694Z"
+  },
+  {
+   "date": "2026-08-05",
+   "venue_code": 9,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "開設１１周年記念ＢＴＳ名張モンスターカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:43:24.683Z"
+  },
+  {
+   "date": "2026-08-05",
+   "venue_code": 14,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第５７回渦王杯競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:48:56.045Z"
+  },
+  {
+   "date": "2026-08-06",
+   "venue_code": 2,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "アサヒスーパードライカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:54:22.389Z"
+  },
+  {
+   "date": "2026-08-06",
+   "venue_code": 24,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＢＯＡＴＲＡＣＥ振興会会長賞",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T20:59:56.475Z"
+  },
+  {
+   "date": "2026-08-07",
+   "venue_code": 15,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "サッポロビールカップ２０２６",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T21:05:33.787Z"
+  },
+  {
+   "date": "2026-08-07",
+   "venue_code": 20,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "日刊スポーツ杯お盆特選競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T21:11:09.411Z"
+  },
+  {
+   "date": "2026-08-30",
+   "venue_code": 6,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G3",
+    "title": "オールレディース静岡クラウンメロン杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T21:16:44.370Z"
+  },
+  {
+   "date": "2026-08-30",
+   "venue_code": 8,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "誠進社杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T21:22:27.069Z"
+  },
+  {
+   "date": "2026-08-30",
+   "venue_code": 21,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ギラヴァンツ北九州カップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T21:28:04.757Z"
+  },
+  {
+   "date": "2026-09-01",
+   "venue_code": 13,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "尼崎あきんど倶楽部３０周年記念杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T21:33:34.169Z"
+  },
+  {
+   "date": "2026-09-01",
+   "venue_code": 24,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ミッドナイトボートレースｉｎ大村　８",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T21:39:12.575Z"
+  },
+  {
+   "date": "2026-09-02",
+   "venue_code": 17,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第１７回ＰａｙＰａｙ銀行賞",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T21:44:47.109Z"
+  },
+  {
+   "date": "2026-09-02",
+   "venue_code": 22,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "三都市対抗戦　福岡観光コンベンションビューロー杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T21:50:20.670Z"
+  },
+  {
+   "date": "2026-09-03",
+   "venue_code": 2,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "サッポロビールカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T21:56:01.092Z"
+  },
+  {
+   "date": "2026-09-03",
+   "venue_code": 9,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G1",
+    "title": "開設７４周年記念　ツッキー王座決定戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:01:31.155Z"
+  },
+  {
+   "date": "2026-09-03",
+   "venue_code": 10,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "三国港解禁ふくい甘えび杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:07:03.284Z"
+  },
+  {
+   "date": "2026-09-04",
+   "venue_code": 7,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "一般社団法人蒲郡市観光協会長杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:12:41.105Z"
+  },
+  {
+   "date": "2026-09-04",
+   "venue_code": 11,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ルーキーシリーズ第１６戦　スカパー！・ＪＬＣ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:18:22.766Z"
+  },
+  {
+   "date": "2026-09-05",
+   "venue_code": 1,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "バスケで群馬を熱くする群馬クレインサンダーズカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:23:56.056Z"
+  },
+  {
+   "date": "2026-09-05",
+   "venue_code": 3,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "月兎ソースカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:29:33.531Z"
+  },
+  {
+   "date": "2026-09-05",
+   "venue_code": 4,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第２３回サントリーカップ　ほぼ女子戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:35:14.464Z"
+  },
+  {
+   "date": "2026-09-06",
+   "venue_code": 14,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ヴィーナスシリーズ第１２戦　マクール杯競走",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:40:52.699Z"
+  },
+  {
+   "date": "2026-09-07",
+   "venue_code": 13,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第２５回報知ローズカップ争奪戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:46:31.430Z"
+  },
+  {
+   "date": "2026-09-07",
+   "venue_code": 16,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "大阪スポーツ杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:52:11.744Z"
+  },
+  {
+   "date": "2026-09-07",
+   "venue_code": 24,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "G1",
+    "title": "開設７４周年記念　海の王者決定戦",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T22:57:53.019Z"
+  },
+  {
+   "date": "2026-09-09",
+   "venue_code": 5,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "にっぽん未来プロジェクト競走ｉｎ多摩川",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T23:03:23.767Z"
+  },
+  {
+   "date": "2026-09-09",
+   "venue_code": 17,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＢＯＡＴＲＡＣＥ振興会会長賞",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T23:09:07.377Z"
+  },
+  {
+   "date": "2026-09-09",
+   "venue_code": 20,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "唐十杯",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T23:14:46.480Z"
+  },
+  {
+   "date": "2026-09-09",
+   "venue_code": 21,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "ＢＯＡＴＲＡＣＥ振興会会長賞",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T23:20:14.580Z"
+  },
+  {
+   "date": "2026-09-11",
+   "venue_code": 2,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "第５回漫画アクションカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T23:25:54.363Z"
+  },
+  {
+   "date": "2026-09-11",
+   "venue_code": 6,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "静岡朝日テレビサンライズカップ",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T23:31:24.366Z"
+  },
+  {
+   "date": "2026-09-11",
+   "venue_code": 12,
+   "status": "done",
+   "plan": {
+    "races": 12,
+    "entriesOn1R": 6,
+    "seriesDay": 1,
+    "grade": "ippan",
+    "title": "報知新聞社賞第６２回ダイナミック敢闘旗",
+    "anomalies": []
+   },
+   "tallies": {
+    "raceInfo": {
+     "ok": 12
+    },
+    "exhibition": {
+     "ok": 12
+    },
+    "results": {
+     "ok": 12
+    }
+   },
+   "errors": [],
+   "db": {
+    "races": 12,
+    "entries": 72,
+    "conditions": 12,
+    "exhibition": 72,
+    "results": 12
+   },
+   "at": "2026-09-21T23:37:08.045Z"
+  }
+ ],
+ "requests": 4464,
+ "finished_at": "2026-09-21T23:37:08.046Z",
+ "aborted": null,
+ "summary": {
+  "done": 125
+ }
+}
