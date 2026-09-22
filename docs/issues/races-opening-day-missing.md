@@ -186,6 +186,8 @@ flowchart TD
 
 出走表のページには当日のレースが載っていたため、この2会場日は結果・展示が無いまま`races`・`race_entries`・`race_conditions`が作られた。既存の中止確定の処理（`confirmCancellationsForRaceIds`、BOA-254）で、24レースを`cancellation_status='confirmed'`にした（中止確定のレースは、完了の定義の分母から除外される）。これらの日目（`series_day`）はNULL。
 
+**2026-09-22追記**: 既存の慣習（順延日は`races`の行を作らない）に合わせ、この24レース分（`races`・`race_entries`144行・`race_conditions`24行、`ON DELETE CASCADE`で連鎖削除。`race_results`・`race_payouts`は元々0件）をユーザー承認のうえ本番DBから削除した。削除前後の件数は上表9.2の実測どおり（削除前: races 24・race_entries 144・race_conditions 24、削除後: 全テーブル0）。6/4の`races`は元々存在し影響なし。
+
 ### 9.4 補っていないもの（要判断ではなく、方針どおり）
 
 - `predictions`・オッズ・`scrape_slots`は、生成・取得していない。`races`の`volatility_*`・`first_boat_*`はNULL（予想側の値）。
