@@ -19,6 +19,9 @@
  *   - shadow・live の完了時刻の、期限（発走のN分前）からの遅延（p50・p95。分）と、完了時刻の発走前の分数（展示の公開時刻の分布。
  *     展示は最初に取得できた時点＝公開の上限）、試行回数の分布
  *   - expired・未実行（attempts=0のままexpired）の件数
+ *   - 展示は、窓の外の補完のスロット（発走の後。レジストリの catchupOffsets。BOA-382）を、上の集計から分けて、別の節に出す
+ *     （補完は、取得済みなら即完了するため、混ぜると、一致率・発走前の分数の分布が崩れる）: 状態・outcome の件数、補完で実際に
+ *     取れた（outcome=ok）レースの、発走からの分数、expired（補完しても取れなかった）
  */
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -30,6 +33,7 @@ import {
 } from "../lib/scrapeJobs/preRaceDigest.js";
 import { raceStartInstant, slotDeadline } from "../lib/scrapeJobs/time.js";
 import { percentile } from "../lib/scrapeJobs/monitor.js";
+import { SCRAPE_JOBS, isCatchupOffset } from "../lib/scrapeJobs/registry.js";
 
 const PAGE = 1000;
 const CHUNK = 100;
@@ -111,6 +115,21 @@ export function compareExhibitionShadowDigests(slots, exhibitionRows) {
   return out;
 }
 
+/**
+ * 予定表のスロットを、通常の窓（primary）と、窓の外の補完（catchup。レジストリの catchupOffsets）に分ける（純粋関数）。
+ *
+ * @param {Array<{offset_min: number}>} slots
+ * @param {{catchupOffsets?: number[]}} [def] レジストリのジョブ定義
+ */
+export function splitCatchupSlots(slots, def) {
+  const primary = [];
+  const catchup = [];
+  for (const slot of slots) {
+    (isCatchupOffset(def, slot.offset_min) ? catchup : primary).push(slot);
+  }
+  return { primary, catchup };
+}
+
 async function fetchAll(buildQuery) {
   const rows = [];
   for (let from = 0; ; from += PAGE) {
@@ -144,6 +163,59 @@ const addDays = (date, n) => {
 };
 const fmt = (v) => (v === null ? "-" : v.toFixed(1));
 
+/**
+ * 窓の外の補完（発走の後のスロット）の集計。取得済みのレースは skipped_have_data で即完了する（公式ページへのリクエスト0）。
+ * 実際に取れた（outcome=ok）レースが、補完の効果。expired は、補完しても取れなかったレース（中止・順延の未確定を含む）
+ */
+function printCatchupSection(catchupSlots) {
+  console.log("\n--- 窓の外の補完（発走の後のスロット）---");
+  const tally = new Map();
+  for (const s of catchupSlots) {
+    const k = `${s.race_date}  ${(s.run_mode ?? "未着手").padEnd(6)} ${s.status.padEnd(8)} ${s.outcome ?? "-"}`;
+    tally.set(k, (tally.get(k) ?? 0) + 1);
+  }
+  for (const [k, v] of [...tally].sort()) console.log(`  ${k}: ${v}`);
+  for (const mode of ["shadow", "live"]) {
+    const filled = catchupSlots.filter(
+      (s) =>
+        s.run_mode === mode &&
+        s.status === "done" &&
+        s.outcome === "ok" &&
+        s.done_at &&
+        s.races?.start_time,
+    );
+    if (filled.length === 0) continue;
+    const afterStart = filled
+      .map(
+        (s) =>
+          (new Date(s.done_at) -
+            raceStartInstant(s.race_date, s.races.start_time)) /
+          60000,
+      )
+      .sort((a, b) => a - b);
+    console.log(
+      `  ${mode} で補完できた（outcome=ok）: ${filled.length}件。完了の発走からの分数 最小 ${fmt(afterStart[0])} / p50 ${fmt(percentile(afterStart, 50))} / 最大 ${fmt(afterStart[afterStart.length - 1])}分`,
+    );
+    for (const s of filled.slice(0, 20)) {
+      console.log(
+        `    ${s.race_id}（試行${s.attempts}回、書き込み${s.rows_written ?? "-"}行）`,
+      );
+    }
+  }
+  const expired = catchupSlots.filter((s) => s.status === "expired");
+  const suspected = expired.filter((s) => s.races?.cancellation_status);
+  console.log(
+    `  補完しても取れなかった（expired）: ${expired.length}件（うち中止・順延の疑い・確定 ${suspected.length}件。残り ${expired.length - suspected.length}件は要確認）`,
+  );
+  for (const s of expired
+    .filter((x) => !x.races?.cancellation_status)
+    .slice(0, 20)) {
+    console.log(
+      `    ${s.race_id}（試行${s.attempts}回。${s.last_error ?? ""}）`,
+    );
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const arg = (name) =>
@@ -169,11 +241,11 @@ async function main() {
   }
   const client = createClient(url, key);
 
-  const slots = await fetchAll(() =>
+  const allSlots = await fetchAll(() =>
     client
       .from("scrape_slots")
       .select(
-        "race_id,race_date,offset_min,status,attempts,outcome,run_mode,first_attempt_at,done_at,result_digest,last_error,races(start_time,cancellation_status)",
+        "race_id,race_date,offset_min,status,attempts,outcome,run_mode,rows_written,first_attempt_at,done_at,result_digest,last_error,races(start_time,cancellation_status)",
       )
       .eq("job", job)
       .gte("race_date", from)
@@ -181,7 +253,13 @@ async function main() {
       .order("race_date")
       .order("race_id"),
   );
-  console.log(`${job} のスロット ${from}〜${to}: ${slots.length}件\n`);
+  const { primary: slots, catchup: catchupSlots } = splitCatchupSlots(
+    allSlots,
+    SCRAPE_JOBS[job],
+  );
+  console.log(
+    `${job} のスロット ${from}〜${to}: ${slots.length}件${catchupSlots.length > 0 ? `（別に、窓の外の補完 ${catchupSlots.length}件）` : ""}\n`,
+  );
 
   // 日付×run_mode×状態・outcome
   const tally = new Map();
@@ -291,6 +369,8 @@ async function main() {
       }`,
     );
   }
+
+  if (catchupSlots.length > 0) printCatchupSection(catchupSlots);
 
   if (strict && (cmp.mismatched.length > 0 || (rate !== null && rate < 0.99))) {
     console.error("\n❌ --strict: 一致率が99%未満、または不一致があります");

@@ -211,6 +211,18 @@
 - [ ] タイミング実測: 可変データは、土日を含む直近7日で窓内取得率（窓の中心±3分以内）を実測する（欠落率2%以内）。窓は30・15・10分前（または、実測に基づく1本のスロットの、期限（33分前）から取得までの遅延）。WS2の取得時刻列と、予定表の`done_at`から計測する
 - [ ] 継続監視: 上記指標が日次で自動計測され、閾値超過でSlack通知されることを確認する（既存の`exhibition-gap-monitor.yml`を、`scrape-monitor`へ統合または併存）
 
+### T4b-22 展示の窓の外の補完（BOA-382）: `exhibition`の発走の10分後のスロット
+
+- [x] **T4b-22-1**（コード実装済み。レジストリ`exhibition`に`offsets: [-33, 10]`・`catchupOffsets: [10]`・`catchupRetrySec: 600`、`preRaceHandlers.js`（補完のスロットは、気象を書かず・予測の再計算の対象にせず・再試行600秒）、`scrape-exhibition-data.js`の`runForRaces`に`catchup`（取得済みのスキップをshadowにも効かせ、気象を書かない）、`monitor.js`（補完を窓内取得率のジョブ別集計に束ねない・中止・順延の疑いの期限切れを通知しない）、`check-pre-race-shadow.js`（補完を別の節に集計）。DB・`vercel.json`・APIの変更なし。既存の`-33`のスロット・従来の経路・shadow・liveの挙動は不変。検証: `verify:scrape-pre-race-job`（実ページのフィクスチャ・変異検証つき）・`verify:scrape-monitor`・`verify-scrape-slots-sql.js`。設計・比較・負荷の見積りは[verification-runbook.md](./verification-runbook.md) Q-8）2026-09-21の住之江5R（発走17:02）で、展示の公開が窓の終わり（7分前）より後だった（展示タイムが0行のまま。公式ページには後から載った）ことへの対応。発走後にも、展示タイムの無いレースを再取得して埋める
+- [ ] **T4b-22-2** (親・ユーザー承認) マージ後、`exhibition`を`live`へ切り替える（Q-4）のと同時に、補完が効き始める（追加の操作は無い）。**補完のコードのマージより前の欠落5件**（9/19の3件・9/21の2件）は、既存の`backfill-exhibition-by-race-id.js`のdry-run→`--apply`で補填する（本番DBへの書き込みのため、ユーザーの承認。runbook Q-8）
+- [ ] **T4b-22-3** live後、補完のスロットの内訳（skipped_have_data・ok・expired）と、補完で埋まったレースの発走後の取得の遅延を、runbook Q-8の確認SQLで測る。公開の尾部の分布（-7分〜発走後）を実測して、補完の窓・間隔・`graceMin`の延長（Q-0の26→29）を、必要なら見直す
+
+データ項目: `exhibition_data`（T4b-06と同じ）。
+
+- [ ] 本番実測（A）: 期待件数（算出根拠: 2025-12-03以降のレース数から確定中止を除いたもの×展示タイムが非NULL。runbook Q-8の(4)。直近の実測: 9/19が98.08%・9/21が98.35%＝99%未満）に対し、補完のlive後の直近5日（土日を含む）で、展示タイムの充足率が99%以上であることを実測クエリで確認する。未達は、レースごとに理由（中止・順延の未確定、補完の窓を超える公開の遅れ、Cronの障害）を説明する
+- [ ] タイミング実測（B）: 補完は、可変データの窓の外の回復（`-33`のスロットの窓内取得率の代わりではない）。`-33`の窓内取得率（98%）は、補完を束ねずに計測される（`monitor.js`）。補完のスロットの`done_at`の、発走からの分数（runbook Q-8の(2)）を、土日を含む直近5日で実測して、尾部の分布（発走の何分後までに、何%が取れたか）を残す
+- [ ] 継続監視（C）: 補完のexpired（最後まで取れなかったレース。中止・順延の疑いを除く）が、`scrape-monitor`のSlack通知（`expired`・`unexecuted`）に出ることを確認する（liveのみ。`monitor.js`・`verify-scrape-monitor.js`で検証済み）。展示タイムの充足率は、`data_health`（T7-06）の日次の充足率で、継続的に計測される
+
 ### T4b-11 特記事項（A5）: `race_special_notes`
 
 - [x] **T4b-11-1** `api/cron/race-notices.js`を共通ラッパへ（ジョブ単位のリース、同期の応答、DB障害を200にしない。G13）。`race_notices_health`の毎回のupsertは、変更のある行のみに（D9）

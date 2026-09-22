@@ -177,6 +177,114 @@ const doneOdds = (delayMin, over = {}) =>
 }
 
 // ---------------------------------------------------------------------------
+// (a2) 窓の外の補完のスロット（展示の発走の10分後。レジストリの catchupOffsets。BOA-382）
+// ---------------------------------------------------------------------------
+{
+  const noCatchup = {
+    ...SCRAPE_JOBS,
+    exhibition: { ...SCRAPE_JOBS.exhibition, catchupOffsets: undefined },
+  };
+  // 10:00発走。-33 の期限は 09:27、補完（+10）の期限は 10:10
+  const primaryDone = (delayMin) =>
+    slot("exhibition", -33, "done", {
+      done_at: iso(new Date(at("09:27").getTime() + delayMin * 60000)),
+    });
+  const catchupDone = () =>
+    slot("exhibition", 10, "done", {
+      outcome: "skipped_have_data",
+      done_at: iso(new Date(at("10:10").getTime() + 30000)),
+    });
+  // -33: 60件のうち58件がヒット・2件が expired（96.7%）。補完: 取得済みの60件が即完了（ほぼ全てヒット）
+  const slots = [
+    ...Array.from({ length: 58 }, () => primaryDone(5)),
+    slot("exhibition", -33, "expired", { attempts: 13 }),
+    slot("exhibition", -33, "expired", { attempts: 13 }),
+    ...Array.from({ length: 60 }, () => catchupDone()),
+  ];
+  const stats = computeWindowStats(slots);
+  const catchupRow = stats.find((x) => x.offset_min === 10);
+  check(
+    "窓別の集計（computeWindowStats）には、補完の窓（+10）も残る（補完の完了数・遅延を見られる）",
+    catchupRow?.total === 60 && catchupRow?.hit === 60,
+    show(catchupRow),
+  );
+  const job = aggregateByJob(stats).find((j) => j.job === "exhibition");
+  check(
+    "ジョブ別の窓内取得率（aggregateByJob）は、補完の窓を束ねない（-33 の58/60=96.7%のまま。補完の即完了が、率を高く見せない）",
+    job?.total === 60 &&
+      job?.hit === 58 &&
+      Math.abs(job.rate - 58 / 60) < 1e-9 &&
+      evaluateWindowRates(stats, DATE).length === 1,
+    show(job),
+  );
+  const mutantJob = aggregateByJob(stats, noCatchup).find(
+    (j) => j.job === "exhibition",
+  );
+  check(
+    "変異検証: 「補完の窓も束ねる」版では、率が 118/120=98.3% に水増しされ（閾値98%を超え）、上の検証が失敗する",
+    mutantJob?.total === 120 &&
+      mutantJob?.rate >= THRESHOLDS.windowRate &&
+      !(mutantJob?.total === 60),
+    show(mutantJob),
+  );
+
+  // 期限切れの通知: 補完が最後まで取れなかったレース。中止・順延の疑い（tentative・confirmed）は通知しない
+  const active = new Set(["exhibition"]);
+  const expiredCatchup = [
+    slot("exhibition", 10, "expired", {
+      attempts: 3,
+      outcome: "no_values",
+      last_error: "展示データが未公開です",
+      race_id: "2026-09-19-02-01",
+    }),
+    slot("exhibition", 10, "expired", {
+      attempts: 3,
+      cancel: "tentative",
+      race_id: "2026-09-19-02-02",
+    }),
+    slot("exhibition", 10, "expired", {
+      attempts: 3,
+      cancel: "confirmed",
+      race_id: "2026-09-19-02-03",
+    }),
+    // -33 のスロットの期限切れは、従来どおり（中止・順延の疑いのレースも通知する。確定だけを除く）
+    slot("exhibition", -33, "expired", {
+      attempts: 13,
+      cancel: "tentative",
+      race_id: "2026-09-19-02-04",
+    }),
+    slot("exhibition", 10, "expired", {
+      attempts: 0,
+      race_id: "2026-09-19-02-05",
+    }),
+  ];
+  const alerts = evaluateExpired(expiredCatchup, { activeJobs: active });
+  check(
+    "期限切れの通知: 補完が最後まで取れなかったレース（中止・順延の疑いなし）と未実行は通知する。補完の tentative・confirmed は通知しない。-33 の tentative は従来どおり通知する",
+    show(alerts.map((a) => a.key).sort()) ===
+      show(
+        [
+          "expired:exhibition:2026-09-19-02-01:10",
+          "expired:exhibition:2026-09-19-02-04:-33",
+          "unexecuted:exhibition:2026-09-19-02-05:10",
+        ].sort(),
+      ),
+    show(alerts.map((a) => a.key)),
+  );
+  const mutantAlerts = evaluateExpired(expiredCatchup, {
+    activeJobs: active,
+    registry: noCatchup,
+  });
+  check(
+    "変異検証: 「補完も、中止・順延の疑いのレースを通知する」版では、tentative の補完が通知され、上の検証が失敗する",
+    mutantAlerts.some(
+      (a) => a.key === "expired:exhibition:2026-09-19-02-02:10",
+    ),
+    show(mutantAlerts.map((a) => a.key)),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // (b) expired・未実行・窓内取得率の通知
 // ---------------------------------------------------------------------------
 {
