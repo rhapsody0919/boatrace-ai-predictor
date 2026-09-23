@@ -60,6 +60,7 @@ import {
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
 import RacePitReportSection from "./RacePitReportSection";
+import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
 
 const COURSES = [1, 2, 3, 4, 5, 6];
@@ -346,6 +347,9 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   return (
     <div className="race-before-info-tab" id="race-before-info-tab">
       <p className="rbi-subtitle">{t("beforeInfo.subtitle")}</p>
+
+      {/* 取得失敗を「—」の羅列（データなし）に化けさせない（BOA-359） */}
+      {analysis.hasFailure && <InlineFetchError onRetry={analysis.reload} />}
 
       {weatherItems.length > 0 && (
         <section className="rbi-card">
