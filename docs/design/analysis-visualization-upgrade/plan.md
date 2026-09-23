@@ -295,7 +295,7 @@ spec.mdの未確定事項のうち、`/step2` で決めず `/step3` 以降に回
 
 | # | 項目 | いつ決めるか |
 |---|---|---|
-| 1 | `racer_aggregated_stats.courseRaceCounts` の他の利用箇所への影響 — 枠別情報タブが使わなくなるため、他で参照している箇所を洗い出す | `/step3` のタスク分解時にgrepで確定させる |
+| 1 | ~~`racer_aggregated_stats.courseRaceCounts` の他の利用箇所への影響~~ → **`/step3` で確定**（2026-09-23）。他に4箇所（`raceIndicators.jsx` の「枠番勝率」行・`RaceCardDataTable`・`AttackDefenseTable`・選手ページの `RacerPerformanceStats`）が独立に読んでおり、枠別情報タブが使わなくなっても壊れない。ただし**同じサイト内で艇番基準と実進入コース基準が混在する**。横断課題として既に [BOA-302](https://linear.app/boat-ai/issue/BOA-302) が起票済みなので重複起票せず、T3-1でグリッドに「実進入コース基準」と注記する（tasks.md「スコープ外として残すもの」） | 決定済み |
 | 2 | ST履歴（全走のST一覧）の表示件数 — 直近10走の「もっと見る」でどこまで伸ばすか。730日分すべてだと数百件になる | 実装時（`/step4`）にモバイルでの表示を見て決める |
 | 3 | `st_course_baseline.st_histogram` のビン幅 — 0.05刻みで始めるが、分布の形が見えるかは実データで確認する | バッチの初回実行後 |
 | 4 | 会場ページでBOA-222のランキングバッジと1カードに統合するか | [BOA-222](https://linear.app/boat-ai/issue/BOA-222)側の画面設計 |
