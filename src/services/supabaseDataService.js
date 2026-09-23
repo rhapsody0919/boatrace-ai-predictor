@@ -13,6 +13,7 @@ import {
   addDaysToDateString,
 } from "../../scripts/lib/dateUtils.js";
 import { groupIntoCurrentMeet } from "../utils/meetGrouping";
+import { deriveRaceStContext } from "../utils/stConsideration";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
 
 // 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
@@ -3783,9 +3784,11 @@ export const supabaseDataService = {
       cutoffDate.setDate(cutoffDate.getDate() - 730);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
+      // gradeはST考察のベースライン（st_course_baselineの(course, grade)セル）を
+      // 引くのに使う（phase a FR-1）。race_entries.gradeは実測でnull 0件・4値（A1/A2/B1/B2）
       const { data: entries, error: entriesError } = await supabase
         .from("race_entries")
-        .select("race_id, boat_number")
+        .select("race_id, boat_number, grade")
         .eq("racer_id", racerId)
         .gte("race_id", cutoffStr);
 
@@ -3861,6 +3864,22 @@ export const supabaseDataService = {
       const startTimingByKey = new Map(
         startTimingRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
       );
+      // ST考察（FR-1）用: レース単位で全艇分のSTをまとめ、Fを除いた
+      // 「ST順1位」「ST順位」「内側艇の最速ST」を求める。生の6艇分の配列は
+      // 返り値に出さず、派生値だけを各行に載せる（返り値のサイズを増やさないため。
+      // Fの除外規則は src/utils/stConsideration.js に閉じ込める）
+      const stRowsByRace = new Map();
+      startTimingRows.forEach((r) => {
+        if (!stRowsByRace.has(r.race_id)) stRowsByRace.set(r.race_id, []);
+        stRowsByRace.get(r.race_id).push(r);
+      });
+      const stContextByRace = new Map();
+      stRowsByRace.forEach((rows, raceId) => {
+        stContextByRace.set(
+          raceId,
+          deriveRaceStContext(rows, resultById.get(raceId)),
+        );
+      });
       const conditionById = new Map(conditionRows.map((r) => [r.race_id, r]));
       const exhibitionRowsByRace = new Map();
       exhibitionRows.forEach((r) => {
@@ -3893,6 +3912,8 @@ export const supabaseDataService = {
           const hasExhibitionData = exhibitionRowsByRace.has(entry.race_id);
           const soleFastestBoat = soleFastestBoatByRace.get(entry.race_id);
           const condition = conditionById.get(entry.race_id);
+          const stContext = stContextByRace.get(entry.race_id);
+          const stDerived = stContext?.byBoat.get(entry.boat_number);
           return {
             raceId: entry.race_id,
             date: race.race_date,
@@ -3922,6 +3943,15 @@ export const supabaseDataService = {
                 : null,
             // 実進入コース（BOA-257）。2025-12-04より前のレースや欠場艇はnull
             actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
+            // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
+            grade: entry.grade ?? null,
+            // ST考察（FR-1）の派生値。Fは stForRank を null にし、raceBestSt /
+            // innerMinSt / stRank の算出からも外す（符号反転はしない。ADR-0068 却下5）
+            isFlying: st?.is_flying === true,
+            stForRank: stDerived?.stForRank ?? null,
+            raceBestSt: stContext?.raceBestSt ?? null,
+            innerMinSt: stDerived?.innerMinSt ?? null,
+            stRank: stDerived?.stRank ?? null,
             // 当該レースで自艇の展示タイムが単独最速だったか。同着・データ欠落は
             // nullにし、集計時に分母から除外する（isFastestExhibition===trueの
             // 件数のみで「展示1位だった時の1着率」等を計算する）

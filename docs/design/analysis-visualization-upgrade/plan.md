@@ -226,7 +226,6 @@ computeStConsideration(rows, { course })
 
 | ファイル | 役割 | データ源 |
 |---|---|---|
-| `src/components/analysis/CrossTabGrid.jsx` + `.css` | **FR-0の共通クロス集計**。行軸・列軸・セル指標・n併記・小標本フラグをpropsで受ける。行ラベル列を `position: sticky; left: 0`、グリッド内だけ横スクロール | 呼び出し側が整形済みの2次元データを渡す（データ取得はしない） |
 | `src/components/race/RaceStConsiderationCard.jsx` + `.css` | ST考察（3指標 × 6艇、値＋**同コース・同級別の平均**との差。抜出は実回数が主表示）。ST分布・ST履歴を折りたたみで内包 | `getRacerScopedRaceStats` ＋ `computeStConsideration` ＋ `getStCourseBaseline` |
 | `src/components/race/RecentRunsBar.jsx` + `.css` | 直近10走の帯（進入コース／着順／ST＋`(1位)`） | `getRacerScopedRaceStats`（`stRank` を使う） |
 | `src/components/race/NigeSimulationCard.jsx` + `.css` | 逃げシミュレーション（横棒＋2連単確率）。`.lede-simple` / `.lede-detail` | `getNigeSimulation(venueCode)` |

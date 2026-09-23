@@ -52,19 +52,17 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
   - `scripts/lib/supabaseClient.js` の `fetchAll` は `throwOnError = false` が既定のまま（呼び出し121箇所）。`getRaceSchedule` ほか8関数が同じ escape hatch を持つ
   - 121箇所への影響確認が要るため本PRには含めない。BOA-359 のバッチ側として起票し、`verify-query-errors.js` の `BATCH_TODO` に記録済み
 
-## Phase 1: 共通化とサービス層（DBへの変更なし・Phase 0の後）
+## Phase 1: サービス層と純関数（DBへの変更なし・Phase 0の後）
 
-- [ ] **T1-1** `CrossTabGrid`（FR-0）を新規作成する
-  - `src/components/analysis/CrossTabGrid.jsx` + `.css`。行軸・列軸・セル指標・n併記・小標本フラグをpropsで受ける。データ取得はしない（整形済みの2次元データを受ける）
-  - 行ラベル列を `position: sticky; left: 0`、**グリッド内だけ横スクロール**（ページ全体は横スクロールさせない）
-  - `src/components/analysis/index.js` の barrel export に追加
-  - **`VenueGradeMatrix`・`RacerPerformanceStats` の載せ替えはスコープ外**（2026-09-23に訂正。前者はセルにnを持たず、後者の `StatBreakdownTable` はクロス集計ではなく汎用1次元テーブル。spec.md FR-0）
-  - **受入基準**: FR-1（T3-1）とFR-2（T5-1）の2箇所がこのコンポーネントを使う。軸の数とセル指標をpropsで差し替えられる。`n < SMALL_SAMPLE_THRESHOLD`（=6）のセルに `is-small-sample` の視覚的区別が出る。モバイル320pxでページ全体の横スクロールが出ない
-- [ ] **T1-2** `getRacerScopedRaceStats` に派生フィールドを足す（追加クエリ0本。plan.md §3.1）
+- [x] ~~**T1-1** `CrossTabGrid`（FR-0）を新規作成する~~ → **取り下げ（2026-09-23、ユーザー判断）**
+  - 着手前に、**このコンポーネントを使う箇所が1つしか無い**ことが判明した。FR-2（基本情報タブ）は screens.md §3.2 と T5-2 で「グリッド化はしない」と決定済みで、「条件別」タブは行＝条件・列＝値とnの1次元テーブル（クロス集計ではない）。spec.md FR-0 の受入基準「FR-1・FR-2の2箇所が使う」が成立しない
+  - 1箇所しか使わない汎用コンポーネントを props で抽象化しても読みにくくなるだけなので、**共通化せず T3-1 で `RaceWakuInfoTab` に直接実装する**（KISS/YAGNI）。2例目が現れた時点で切り出す
+  - FR-0 はこれで**2回**前提が崩れた（1回目は「既存2例で rule of three」が誤り、2回目が本件）
+- [x] **T1-2** `getRacerScopedRaceStats` に派生フィールドを足す（追加クエリ0本。plan.md §3.1）
   - `isFlying` / `stForRank`（**Fの行はnull。符号反転はしない**）・`raceBestSt`（Fを除いた最小）・`innerMinSt`（Fを除いた内側最小。1コースはnull）・`stRank`（Fを除く）・`grade` を各行に追加
   - **生の6艇分の配列は返さない**。`soleFastestBoatByRace` と同じ要領でレース単位の前処理として計算する
   - **受入基準**: `is_flying=true` の行で `stForRank` が **null**（負値ではない）。Fの艇が同じレースの他艇の `raceBestSt` に影響しない（Fのあるレースで、他艇の `raceBestSt` がFを除いた最小値と一致する）。`innerMinSt` が1コースでnull。既存の戻り値のキー（`startTiming`・`actualCourse` 等）と既存の利用箇所（基本情報タブ・直前情報タブ）の表示が変わらない
-- [ ] **T1-3** `src/utils/stConsideration.js`（純関数）と `src/utils/courseBaseline.js`（純関数）
+- [x] **T1-3** `src/utils/stConsideration.js`（純関数）と `src/utils/courseBaseline.js`（純関数）
   - `computeStConsideration(rows, { course })` → `{ n, stableRate, lateRate, breakoutCount, breakoutRate, avgSt, flyingCount }`。閾値は 0.05 / 0.07 / 0.10。`course === 1` の `breakoutCount` / `breakoutRate` は **null**（0や0%にしない）
   - **母数 `n` にFの走を入れない**。Fは `flyingCount` として別に返す
   - 小標本の判定はこの関数で行わない（呼び出し側が `SMALL_SAMPLE_THRESHOLD` で判断する。ST考察だけ別閾値を持たせない）
@@ -102,7 +100,8 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
   - 再設計後の表示（級別を明示したベースライン・抜出の実回数表示・集計期間の明示・Fバッジ）に差し替えて提示する（screens.md §3.1.2）
   - **受入基準**: ユーザーの承認を得てからT3-2に進む（`.claude/CLAUDE.md`「大規模な新機能はモック承認後に実装」）
 - [ ] **T3-1** コース別成績グリッド（実進入コース基準）に差し替え、既存の「コース別成績（バー＋ドリルダウン）」カードを廃止する
-  - `CrossTabGrid` を使う。行＝今期/3ヶ月/1ヶ月/当地/一般戦/SG・G1、列＝コース1〜6、セル＝率＋n
+  - **`RaceWakuInfoTab` に直接実装する**（T1-1は取り下げ。共通コンポーネントは作らない）。行＝今期/3ヶ月/1ヶ月/当地/一般戦/SG・G1、列＝コース1〜6、セル＝率＋n
+  - 行ラベル列を `position: sticky; left: 0`、**グリッド内だけ横スクロール**（ページ全体は横スクロールさせない）。モバイル320pxでページ全体の横スクロールが出ないこと
   - コースは `actual_course_N`（実進入）。**既存の `courseRaceCounts`（艇番＝コース前提）はこのタブでは使わなくなる**。グリッドに「実進入コース基準」と注記する（[BOA-302](https://linear.app/boat-ai/issue/BOA-302) が横断課題として起票済み）
   - ドリルダウン（直近10走）をグリッドのセルタップに移す
   - **受入基準**: 期間の切り替えでセルの値とnが変わる。**`n < 6` で⚠と網掛け**（`SMALL_SAMPLE_THRESHOLD`。旧版の n<30 は使わない）、n=0で「—」。セルタップでそのコースの直近10走が開く。`actual_course` が取れないレースが母数から落ちている（実データで件数を確認する）
