@@ -142,7 +142,7 @@
 設計・実測: [verification-runbook.md](./verification-runbook.md) M-7 / 定義の正本: `scripts/lib/scrapeJobs/expectedUnpublished.js` / 新しいテーブル・マイグレーション・`scrape_job_state`の`mode`の変更は無い（監視の判定の補正のみ。本番のDDL・設定変更は要らない）。
 
 - [x] **T4b-23-1**（コード実装済み。`scripts/lib/scrapeJobs/expectedUnpublished.js`（定義の正本・SQLの式）・`monitor.js`（`classifyExpectedUnpublished`・`evaluateExpired`・`computeWindowStats`・日次サマリー・`collectMonitorInput`）・`scripts/analysis/data-health-report.js`（同じ定義の窓内取得率）。検証: `npm run verify:scrape-monitor`・`verify:data-health-report`。変異検証済み（監視15件・レポート8件、全て検出）） 各会場・日の第1レース（`races`の最小のレース番号）の`odds`の`-60`窓が、`no_values`（未公開）で期限切れになっても、後続の窓（`-30`〜`0`）のどれかが取れていれば、`expired`の警告を出さず、窓内取得率の分母から外して「未公開(想定内)」として別に数える。後続の窓も取れなければ、従来どおり警告する。後続の窓が未到来の間は、警告を保留する
-- [ ] **T4b-23-2** (親・ユーザー) マージ・デプロイ後、翌営業日の朝（第1レースが08時台の会場がある日）に、`scrape-monitor`のSlack通知に第1レースの`-60`の`expired`が出ないこと、日次サマリー（翌日01:00頃）の`odds`の行に「未公開(想定内・分母から除外) 前日 N件」が出ることを確認する。9/23 06:30のオッズのGitHub側停止の朝は、この確認を先に済ませておく
+- [ ] **T4b-23-2** (親・ユーザー) マージ・デプロイ後、翌営業日の朝（第1レースが08時台の会場がある日）に、`scrape-monitor`のSlack通知に第1レースの`-60`の`expired`が出ないこと、日次サマリー（翌日01:00頃）の`odds`の行に「未公開(想定内・分母から除外) 前日 N件」が出ることを確認する。9/23 06:30のオッズのGitHub側停止の朝は、この確認を先に済ませておく。**2026-09-23 09:05実測**（`scrape_slots`直接確認、Slack通知自体は未確認）: 本日の第1レース2件（三国10R1=08:32発走、徳山18R1=08:44発走）とも`-60`は`status=expired`・`outcome=no_values`（attempts30、単勝オッズ未解析）。後続の窓は、徳山は`-30`で`ok`（想定どおりT4b-23の「後続の窓で確認できれば想定内」に該当）。三国は`-30`も`expired`で`-15`から`ok`（`-30`まで未公開が続くケース。これはT4b-23の対象外＝`-60`の判定上は「後続（-30〜0）のどれかが取れていれば想定内」を満たすため`-60`は想定内扱いになるが、`-30`自体のexpiredは別問題として残る。tasks.mdの既知の未解決事項「第1レース以外の`-60`と第1レースの`-30`にも同種の未公開が残る」と一致）。Slack通知の内容・翌日01:00の日次サマリーでの反映は未確認のため、**この項目は未完了のまま残す**（次回セッションで日次サマリーを確認）
 
 データ項目: `race_odds`（新しい項目は無い。完了の定義B・Cの判定の補正）。
 
