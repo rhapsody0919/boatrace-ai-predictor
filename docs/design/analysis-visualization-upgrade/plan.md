@@ -12,7 +12,7 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)（コース別
 
 ```
                         ┌──────────────── 日次バッチ（GitHub Actions、JST 00:50）
-                        │  scripts/daily/update-course-baselines.js
+                        │  scripts/daily/update-course-baseline-stats.js
                         │    race_start_timings（365日・約242,000行）
                         │    race_results       （365日・約45,000行）
                         │      ↓ 1つの基礎CTEを共有
@@ -207,7 +207,7 @@ computeStConsideration(rows, { course })
 
 ---
 
-## 5. バッチ（`scripts/daily/update-course-baselines.js`）
+## 5. バッチ（`scripts/daily/update-course-baseline-stats.js`）
 
 ### 5.1 構成
 
@@ -224,7 +224,7 @@ computeStConsideration(rows, { course })
                               会場×2着コースで 2着率／2連単確率／母数
 ```
 
-- 実行基盤: **GitHub Actions**（新規 `.github/workflows/aggregate-course-baselines.yml`、JST 00:50）。Vercelを選ばなかった理由はADR-0068の却下4
+- 実行基盤: **GitHub Actions**（新規 `.github/workflows/aggregate-course-baseline-stats.yml`、JST 00:50）。Vercelを選ばなかった理由はADR-0068の却下4
 - 既存の `scripts/daily/update-nige-outcome-distribution.js`（JST 00:42）の直後に置く。前日の結果が確定した後に走らせる
 - `upsertChangedRows`（`scripts/lib/unchangedRows.js`）で**変更のある行だけ書く**（`.claude/rules/data-acquisition.md`）
 - **0件書き込みをエラーとして扱う**。`st_course_baseline` は常に6行、`nige_second_by_course` は開催実績のある会場分が必ず出るため、0件は異常

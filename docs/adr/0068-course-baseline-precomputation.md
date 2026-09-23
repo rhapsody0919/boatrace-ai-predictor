@@ -27,8 +27,8 @@ UI/UX刷新 phase a（[docs/design/analysis-visualization-upgrade/](../design/an
 - 新規テーブル2つ（マイグレーション案 [094](../db-migration/094_course_baselines.sql)）
   - `st_course_baseline`: **6行**（コース1〜6）。平均ST・安定率・抜出率・出遅率・STの分布（0.05刻みのビンをjsonb）
   - `nige_second_by_course`: **最大120行**（24会場 × 2〜6コース）。逃し時2着率・2連単確率・母数
-- 集計スクリプト: `scripts/daily/update-course-baselines.js`（1スクリプトで2表を更新。両者は同じ基礎CTE（Fを負値に正規化したST × 実進入コース）を共有するため、分けるとDBスキャンが2倍になる）
-- 実行基盤: **GitHub Actions の日次ワークフロー**（新規 `.github/workflows/aggregate-course-baselines.yml`、JST 00:50）
+- 集計スクリプト: `scripts/daily/update-course-baseline-stats.js`（1スクリプトで2表を更新。両者は同じ基礎CTE（Fを負値に正規化したST × 実進入コース）を共有するため、分けるとDBスキャンが2倍になる）
+- 実行基盤: **GitHub Actions の日次ワークフロー**（新規 `.github/workflows/aggregate-course-baseline-stats.yml`、JST 00:50）
 - 画面からのクエリ増加: **ST考察 +0本**（取得済みデータから算出）／**ベースライン +1本**（6行のSELECT、`withCache`）／**逃げシミュレーション +1本**（5行のSELECT、`withCache`）＝**計+2本**で要件内
 
 既存の `nige_outcome_distribution`（[027](../db-migration/027_nige_outcome_distribution.sql)、536行）は**変更しない**。艇番基準・90日・3連単粒度で、[BOA-158](https://linear.app/boat-ai/issue/BOA-158)の「逃げ成功時分布」タブが使用中。新テーブルはコース基準・直近1年・2着粒度で、粒度も期間も違う。
@@ -55,9 +55,13 @@ UI/UX刷新 phase a（[docs/design/analysis-visualization-upgrade/](../design/an
 
 ### 却下4: Vercel Functions + Vercel Cron で実行する（ADR-0066）
 
-[ADR-0066](./0066-scraping-execution-consolidation-to-vercel.md) は「新規のデータ取得はVercel Functions + Vercel Cronで実装する。新規にGitHub Actions・cron-job.orgへ**取得ジョブ**を追加しない」と定めている。
+**そもそも適用範囲外**。[ADR-0066](./0066-scraping-execution-consolidation-to-vercel.md)（データ取得の実行基盤をVercelに一本化する）は、GitHub Actionsに残すものを決定の中で**明示的に列挙している**。
 
-**不適合点ではなく、適用範囲外と判断した**。ADR-0066が対象にしているのは**外部サイトを取得してDBに書き込むジョブ**で、その理由（GitHub Actionsのスケジュール遅延が取得の窓を外す、日付をまたぐと0件になる等）は取得のタイミング精度に関するものである。本ジョブは外部への通信を一切せず、自社DBの集計結果を同じDBに書くだけで、実行が数十分ずれても値は変わらない。同種の既存ジョブ（`scripts/daily/update-nige-outcome-distribution.js`、`scripts/maintenance/update-venue-stats.js`）もGitHub Actionsで動いており、そちらに揃える方が運用が単純になる。Vercel Functionsには最大実行時間の制約があり、約242,000行のスキャンを分割する必要が出る点も、あえて選ぶ理由がない。
+> **対象外（GitHub Actionsのまま）**: 取得済みデータのDB内集計・統計更新（`aggregate-stats`・`update-*-stats`等）、モデル学習・予測生成（`train-*`・`generate-*`）、SNS・コンテンツ・sitemap系。外部サイトを取得せず、長時間のCPU処理を含むため。
+
+本ジョブ（`update-course-baseline-stats.js`）は、外部サイトへの通信を一切せず、自社DBの集計結果を同じDBに書くだけで、この「取得済みデータのDB内集計・統計更新（`update-*-stats`等）」に**そのまま該当する**。ADR-0066が禁じているのは「新規の**取得ジョブ**をGitHub Actions・cron-job.orgへ追加すること」で、DB内集計は対象に含まれない。[orchestration.md](../design/scraping-vercel-consolidation/orchestration.md) のWS7も、廃止対象を「cron-job.org・**取得系**GitHub Actions」と限定しており、同ドキュメントの承認記録(j)では「死活監視の2次はGitHub Actionsの日次で足りる」として非取得の用途でGitHub Actionsを使い続けることが承認されている。
+
+仮に適用範囲だったとしても選ばない理由が2つある。Vercel Functionsには最大実行時間（800秒）の制約があり、約287,000行のスキャンを分割する設計が要る。また同種の既存ジョブ（`scripts/daily/update-nige-outcome-distribution.js`、`scripts/maintenance/update-venue-stats.js`）はGitHub Actionsで動いており、1つだけ別基盤に置くと「何がどこで動いているか」の把握を分断する（ADR-0066が解消しようとしている問題そのもの）。
 
 ## 影響
 
@@ -65,5 +69,6 @@ UI/UX刷新 phase a（[docs/design/analysis-visualization-upgrade/](../design/an
 - **画面のクエリは+2本**（どちらも数行のSELECT、`withCache`経由）。非機能要件の+3本以内に収まり、FR-4の新規データ表示（最大+4本）はタブごとの遅延取得で同時に増えないようにする
 - **匿名（画面）からSELECTできるテーブルが2つ増える**。どちらも自社の集計値で、公式サイトのコンテンツの再表示には当たらない（ADR-0067の対象外）
 - **日次ワークフローが1つ増える**。失敗を握りつぶさないため `continue-on-error` は付けず、0件書き込みをエラーとして扱う（`.claude/rules/data-acquisition.md`）
+- **GitHub Actionsのスケジュール遅延の影響を受けない設計にする**。orchestration.mdの実測では `scrape-point-rank` が約4時間、`scrape-venue-motor-stats` が約2〜2.7時間遅れて起動し、**「対象日が翌日にずれて0件」という障害が実際に起きている**（`racer_series_points` が0件だった直接原因）。本ジョブは「実行時点から遡って365日」の移動窓で集計するため、起動が数時間ずれても対象範囲がほぼ変わらず、同じ失敗モードには当たらない。ただし鮮度だけは落ちるため、`last_updated` が2日以上古い場合を `scrape-monitor` の日次チェックで検知する（plan.md §5.2）
 - ベースラインは**全国・直近1年の固定値**から始める。会場別・グレード別に分ける案は、ベースライン自体のnが減るため初期スコープに入れない（spec.md 未確定事項1b）
 - 見直しの契機: 会場別・グレード別のベースラインが必要になった場合、`st_course_baseline` に `venue_code` を足すと行数が144行に増える。その時点で主キーの変更が必要になるため、本ADRを更新する

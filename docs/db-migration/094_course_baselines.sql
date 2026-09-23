@@ -23,7 +23,7 @@
 --
 -- 設計上の要点:
 --   * どちらも「レース詳細を開くたびに集計すると重い」指標の事前集計。日次バッチ
---     （scripts/daily/update-course-baselines.js）が upsert する。画面は単純な SELECT で読む
+--     （scripts/daily/update-course-baseline-stats.js）が upsert する。画面は単純な SELECT で読む
 --   * 匿名（画面）が読むテーブルなので SELECT ポリシーと GRANT SELECT を付ける。書き込みは
 --     service_role のみ（BOA-370 のRLS規律。076以降は新規テーブルの既定権限を剥奪しているため GRANT を明示する）
 --   * 既存の nige_outcome_distribution（027、艇番基準・90日・3連単粒度）は BOA-158 の
