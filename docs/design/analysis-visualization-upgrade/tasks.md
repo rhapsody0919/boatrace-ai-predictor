@@ -71,10 +71,10 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
 
 ## Phase 2: 事前集計テーブルとバッチ（T3の前提）
 
-- [ ] **T2-1** (ユーザー承認) マイグレーション094を適用する（新規2表）。適用後に `APPLIED.md` を更新する
+- [x] **T2-1** (ユーザー承認) マイグレーション094を適用する（新規2表）。適用後に `APPLIED.md` を更新する
   - 適用前に長時間クエリが0件であることを確認する。適用後に `has_table_privilege('anon', ..., 'SELECT')=true` / `'INSERT'=false`、RLS有効、ポリシー各1件を確認する
   - `st_course_baseline` の主キーが `(course, grade)`、`window_start` / `window_end` / `window_days` の列があることを確認する
-- [ ] **T2-2** `scripts/daily/update-course-baseline-stats.js` と `.github/workflows/aggregate-course-baseline-stats.yml`（JST 00:50）
+- [x] **T2-2** `scripts/daily/update-course-baseline-stats.js` と `.github/workflows/aggregate-course-baseline-stats.yml`（JST 00:50）
   - 1スクリプトで2表を更新する（基礎CTEを共有。分けるとDBスキャンが2倍になる）
   - **集計本体はRPC（SQL関数）側に寄せる**。基礎CTEは約56万行を読むため、Node側に持たず結果の24行＋最大120行だけ返す。RPCにしない場合は `.range(from, from + 999)` のページネーション必須（Supabaseのデフォルト上限は1000行）
   - **`window_start` / `window_end` / `window_days` は実測値を書く**（365や730の固定値を書かない）。窓は「利用可能な全期間」
@@ -85,13 +85,14 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
   - **エラーにするのは「集計結果が0行だった場合」**であり、「変更が無くて書き込みが0行だった場合」ではない。この2つを取り違えると値が安定した日に毎回失敗する
   - `continue-on-error` は付けない
   - **受入基準**: ローカルで dry-run（書き込みなし）を実行し、出力がT1-3の実測値と一致する。本番実行後に `st_course_baseline` が **24行**・`nige_second_by_course` が開催実績のある会場分。2日目の実行で「変更なしでスキップ」が大半になる（毎日全行書き換えになっていない）
-- [ ] **T2-3** データ精度検証（`.claude/rules/analysis.md`「データ精度の検証」。コードレビューとは別の独立ステップ）
+- [x] **T2-3** データ精度検証（`.claude/rules/analysis.md`「データ精度の検証」。コードレビューとは別の独立ステップ）
   - `nige_second_by_course.second_rate` を会場ごとに合計して **100%±0.5** に収まる（2着は必ず1艇）
   - **`exacta_rate` を会場ごとに合計した値が `nige_races / total_races * 100` と ±0.5pt 以内で一致する**（分母の取り違えを機械的に検知する。当初の設計で3.6%ずれていた）
   - `st_course_baseline` の24行が、同じ定義のSQLを直接実行した結果と一致する
   - `st_histogram` のビンの合計が `runs` と一致する
   - **F艇を含むレースを1件抜き出し、そのレースの他艇の安定率がF艇に引きずられていないことを手計算で確認する**（F1の再発防止）
   - **受入基準**: 上記5点を実測クエリの結果つきで報告する
+  - **実測（2026-09-24）**: 5点すべて通過。件数 24行/120行・24会場、2着率の合計 99.99〜100.01%、2連単確率の合計と1コース逃げ率の差は最大0.010pt、st_histogramのビン合計不一致 0件、DBの安定率がF除外版と完全一致・F込み版とは不一致（(1,A1) 74.43 vs 74.32 等）
 
 ## Phase 3: 枠別情報タブ（FR-1・FR-6。T1・T2の後）
 

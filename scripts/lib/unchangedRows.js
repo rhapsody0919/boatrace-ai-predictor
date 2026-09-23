@@ -98,6 +98,20 @@ export const NUMERIC_SCALES = {
   race_original_exhibition_values: {
     value: 2,
   },
+  // コース×級別のベースライン（docs/db-migration/094_course_baselines.sql、phase a FR-1）。
+  // ここに登録しないと NUMERIC_SCALES[table] ?? {} で空になり、NUMERIC列が
+  // 文字列と数値で比較されて毎日全行が「変更あり」と判定される（plan.md §5.1）
+  st_course_baseline: {
+    avg_st: 3,
+    stable_rate: 2,
+    late_rate: 2,
+    breakout_rate: 2,
+  },
+  // 逃げシミュレーション（同上、phase a FR-6）
+  nige_second_by_course: {
+    second_rate: 2,
+    exacta_rate: 2,
+  },
 };
 
 /**

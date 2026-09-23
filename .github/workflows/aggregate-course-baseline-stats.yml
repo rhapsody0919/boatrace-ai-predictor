@@ -1,0 +1,44 @@
+name: Aggregate Course Baseline Stats
+
+# ST考察の「同コース・同級別の平均」と逃げシミュレーションを日次で事前集計する
+# （phase a FR-1・FR-6、ADR-0068）。
+#
+# 実行基盤がVercelではなくGitHub Actionsなのは、ADR-0066が
+# 「取得済みデータのDB内集計・統計更新（aggregate-stats・update-*-stats等）」を
+# 明示的に対象外（GitHub Actionsのまま）としているため。本ジョブは外部サイトへの
+# 通信を一切せず、自社DBの集計結果を同じDBに書くだけ（ADR-0068 却下4）。
+#
+# update-nige-outcome-distribution（JST 00:42）の直後に置く。前日の結果が
+# 確定した後に走らせるため。集計は「利用可能な全期間」の移動窓なので、
+# 起動が数時間ずれても対象範囲はほぼ変わらない（ADR-0068の影響）。
+#
+# continue-on-error は付けない（ジョブ全体を成功に見せない）。
+# スクリプト側は「集計結果が0行」と「変更が無くて書き込みが0行」を区別し、
+# 前者だけをエラーにする。
+on:
+  schedule:
+    - cron: '50 15 * * *' # JST 00:50 (UTC 15:50)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run aggregation script
+        run: node scripts/daily/update-course-baseline-stats.js
+        env:
+          TZ: 'Asia/Tokyo'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
