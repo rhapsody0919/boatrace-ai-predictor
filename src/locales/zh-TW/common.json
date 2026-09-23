@@ -102,7 +102,8 @@
       "in_strong": "內道優勢",
       "out_strong": "外道優勢",
       "balanced": "平衡型"
-    }
+    },
+    "fetchError": "無法載入本場地的水面特性。"
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} 第{{race}}場 AI數據分析 - 龍神雷達",

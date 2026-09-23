@@ -60,6 +60,7 @@ import {
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
 import RacePitReportSection from "./RacePitReportSection";
+import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
 
 const COURSES = [1, 2, 3, 4, 5, 6];
@@ -112,6 +113,13 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
         .then((data) => {
           if (!cancelled)
             setMeetTrendByRacer((prev) => ({ ...prev, [p.racerId]: data }));
+        })
+        .catch((err) => {
+          // catchしないとmeetTrendByRacer[p.racerId]がundefinedのまま残り、
+          // 今節展示情報のセルがスケルトンのまま固まる（上のscopedStatsと同じ扱い）
+          console.error("今節展示情報取得エラー:", err?.message ?? String(err));
+          if (!cancelled)
+            setMeetTrendByRacer((prev) => ({ ...prev, [p.racerId]: [] }));
         });
     });
     return () => {
@@ -126,9 +134,18 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   useEffect(() => {
     let cancelled = false;
     if (!venueCode || !raceDate) return undefined;
-    supabaseDataService.getVenueDaySummary(venueCode, raceDate).then((data) => {
-      if (!cancelled) setVenueDaySummary(data);
-    });
+    supabaseDataService
+      .getVenueDaySummary(venueCode, raceDate)
+      .then((data) => {
+        if (!cancelled) setVenueDaySummary(data);
+      })
+      .catch((err) => {
+        // 取得失敗時はカードを出さない（nullのまま）。未処理のPromise拒否にしない
+        console.error(
+          "本日成績サマリー取得エラー:",
+          err?.message ?? String(err),
+        );
+      });
     return () => {
       cancelled = true;
     };
@@ -330,6 +347,9 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   return (
     <div className="race-before-info-tab" id="race-before-info-tab">
       <p className="rbi-subtitle">{t("beforeInfo.subtitle")}</p>
+
+      {/* 取得失敗を「—」の羅列（データなし）に化けさせない（BOA-359） */}
+      {analysis.hasFailure && <InlineFetchError onRetry={analysis.reload} />}
 
       {weatherItems.length > 0 && (
         <section className="rbi-card">

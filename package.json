@@ -61,6 +61,7 @@
     "verify:rpc-output-keys": "node scripts/maintenance/verify-rpc-output-keys.js",
     "verify:rls-migration": "node scripts/maintenance/verify-rls-migration.js",
     "verify:migration-rls": "node scripts/maintenance/verify-migration-rls.js",
+    "verify:query-errors": "node scripts/maintenance/verify-query-errors.js",
     "test:e2e": "playwright test",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",

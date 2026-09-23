@@ -94,6 +94,13 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
       .getRaceEntryOfficialRatesBreakdown(raceId)
       .then((data) => {
         if (!cancelled) setOfficialRates(data);
+      })
+      .catch((err) => {
+        // catchしないとofficialRatesがnullのまま残り、loading判定
+        // （officialRates === null）が永久にtrueになって勝率・連対率のセルが
+        // スケルトンのまま固まる。下のensureScopedStatsと同じ扱いに揃える
+        console.error("公式勝率取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setOfficialRates([]);
       });
     return () => {
       cancelled = true;

@@ -130,24 +130,33 @@ erDiagram
 ---
 ## 3. サービス層（`src/services/supabaseDataService.js`）
 
-### 3.0 先に直す: `fetchAllByIn` がページ取得の失敗を握りつぶす（前提条件）
+### 3.0 先に直す: 取得エラーが「データなし」に化ける（前提条件・実装済み）
 
-`src/services/supabaseDataService.js:320` の `fetchAllByIn` は、ページ取得でエラーが出ると `console.error` して `break` し、**そこまでの部分的な配列を正常な戻り値として返す**。
+> **2026-09-23にスコープを差し替えた。** 当初この節は「`fetchAllByIn`（320行）の `break` を `throw` に変える」という1関数の修正だったが、着手前の調査で前提が2つ誤っており、かつ同じ欠陥が76箇所あることが分かった。詳細と決定は [ADR-0069](../../adr/0069-query-error-propagation.md)。
+>
+> 訂正した前提:
+> - 「呼び出し元6箇所」→ 実際は **18メソッド・32箇所**が `fetchAllByIn` を使う
+> - 「誤った値が最大7日間キャッシュに残る」→ ST考察の `getRacerScopedRaceStats` のキーは `racer-scoped-race-stats-{racerId}` で `inferTtlFromKey` の日付パターンに一致しないため **30分**。7日になるのは `race-*-{raceId}` キーの6メソッド
+
+実測すると、`supabaseDataService.js` の91クエリのうち **70件が握りつぶし・6件が error を参照すらしない**状態で、失敗の表現が11方言に分裂していた（77件中73件は呼び出し側から失敗を検知できない）。消費側も81件のうち27件が `.catch(() => [])` で無害化しており、サービス層だけ直しても画面に届かなかった。
+
+**採用した方式**: `supabase-js` 標準の `.throwOnError()` を、クライアント生成時（`src/services/supabaseClient.js`）に既定で適用する。
 
 ```js
-if (error) {
-  console.error(`${table}取得エラー:`, error.message);
-  break;           // ← 部分結果が「全件」として返る
+function applyThrowOnError(queryBuilder) {
+  for (const method of BUILDER_ENTRY_METHODS) {
+    const original = queryBuilder[method].bind(queryBuilder);
+    queryBuilder[method] = (...args) => original(...args).throwOnError();
+  }
+  return queryBuilder;
 }
 ```
 
-現状でも潜在的な問題だが、本specでこれが**実害に変わる**。ST考察は「そのレースの全6艇のSTが揃っていること」を前提に ST順1位を決めるため、2ページ目以降が落ちると:
+**成功時の戻り値の形は変わらない**ため、呼び出し側87箇所は変更不要。`withCache` は例外時に保存しないので、キャッシュ汚染も同時に解ける。
 
-1. 一部のレースの他艇のSTが欠け、`raceBestSt` が実際より遅い値になる
-2. 安定率が実際より高く、出遅率が実際より低く算出される
-3. その誤った値が `withCache` に入り、**過去レースのキーなら最大7日間（`PAST_RACE_CACHE_TTL`）残る**
+ST考察（FR-1）にとっての意味は当初のとおり。「そのレースの全6艇のSTが揃っている」前提でST順1位を決めるため、取得が部分的に落ちると安定率が実際より高く・出遅率が低く算出される。その誤った値がキャッシュされなくなる。
 
-→ **`fetchAllByIn` をエラー時に例外を投げる（または `{ rows, fetchFailed: true }` を返す）形に直してから、ST考察の実装に入る**。呼び出し元（`getRacerScopedRaceStats` を含む既存6箇所）は `fetchFailed` を上流に伝播させ、`withCache` がキャッシュしないようにする。ピットレポート（BOA-379）で確立した扱いと同じ。
+意図的に失敗を飲むのは3箇所だけにし、理由をコードコメントに残した（`getRacePitReport` の権限エラー、`getRaceMotorMaintenanceBreakdown` の未適用列、`fetchVenueWinRateMap` の補助値）。運用ルールは `.claude/rules/frontend-data-fetch.md`、機械検査は `npm run verify:query-errors`。
 
 ### 3.1 `getRacerScopedRaceStats(racerId)` に派生フィールドを足す（追加クエリ0本）
 

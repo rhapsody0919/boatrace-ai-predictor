@@ -255,9 +255,18 @@ function RaceResult({ prediction, raceId }) {
       return undefined;
     }
     let cancelled = false;
-    supabaseDataService.getRaceStartTimings(raceId).then((data) => {
-      if (!cancelled) setStartTimings(data);
-    });
+    supabaseDataService
+      .getRaceStartTimings(raceId)
+      .then((data) => {
+        if (!cancelled) setStartTimings(data);
+      })
+      .catch((err) => {
+        // 取得失敗時はST列を空欄にする（レイアウトは維持）。未処理のPromise拒否にしない
+        console.error(
+          "スタートタイミング取得エラー:",
+          err?.message ?? String(err),
+        );
+      });
     return () => {
       cancelled = true;
     };

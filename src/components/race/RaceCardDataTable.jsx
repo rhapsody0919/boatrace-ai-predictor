@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { buildIndicatorRows } from "./raceIndicators";
+import InlineFetchError from "../InlineFetchError";
 import "./RaceCardDataTable.css";
 
 const ALWAYS_VISIBLE_KEYS = ["winRate", "localWinRate", "motor"];
@@ -55,6 +56,8 @@ function RaceCardDataTable({ raceId, players }) {
 
   return (
     <div className="rcdt" onClick={(e) => e.stopPropagation()}>
+      {/* 取得失敗を「—」の羅列（データなし）に化けさせない（BOA-359） */}
+      {analysis.hasFailure && <InlineFetchError onRetry={analysis.reload} />}
       <div className="rcdt-table-wrapper">
         <table className="rcdt-table">
           <thead>

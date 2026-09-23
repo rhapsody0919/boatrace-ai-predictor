@@ -102,7 +102,8 @@
       "in_strong": "イン強い",
       "out_strong": "アウト強い",
       "balanced": "バランス型"
-    }
+    },
+    "fetchError": "会場の水面特性を読み込めませんでした。"
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} {{race}}R AIデータ分析 - 龍神レーダー",

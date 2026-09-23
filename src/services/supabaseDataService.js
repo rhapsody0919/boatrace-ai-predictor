@@ -511,14 +511,33 @@ const VENUE_NAMES = {
   24: "大村",
 };
 
+/**
+ * 会場別1コース勝率（イン崩れ指数バッジの補助値）を取得する。
+ *
+ * ここは**意図的に失敗を飲む数少ない例外**（.claude/rules/frontend-data-fetch.md §2）。
+ * レース一覧そのものはEdge API/predictionsから取得済みで、この値は
+ * バッジに添える参考値でしかない。例外を上流に流すと、補助値の失敗で
+ * レース一覧全体が表示できなくなる（2026-09-23、BOA-359の対応中に
+ * E2E「失敗はキャッシュされず、再読み込みで取得がやり直されて一覧が表示される」
+ * が実際にこれを検知した）。
+ * 失敗時は空マップを返し、バッジ側が値なしとして扱う。
+ */
 async function fetchVenueWinRateMap() {
   if (!supabase) return {};
-  const { data } = await supabase
-    .from("venues")
-    .select("code, avg_first_win_rate");
-  return Object.fromEntries(
-    (data || []).map((v) => [v.code, v.avg_first_win_rate]),
-  );
+  try {
+    const { data } = await supabase
+      .from("venues")
+      .select("code, avg_first_win_rate");
+    return Object.fromEntries(
+      (data || []).map((v) => [v.code, v.avg_first_win_rate]),
+    );
+  } catch (error) {
+    console.error(
+      "会場別1コース勝率(補助値)取得エラー:",
+      error?.message ?? String(error),
+    );
+    return {};
+  }
 }
 
 /**
@@ -4634,39 +4653,31 @@ export const supabaseDataService = {
         return [];
       }
 
-      const { data, error } = await supabase
-        .from("exhibition_data")
-        .select(
-          "boat_number, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank",
-        )
-        .eq("race_id", raceId);
-
-      if (error) {
-        if (/column .* does not exist/i.test(error.message)) {
-          console.warn(
-            "exhibition_data: BOA-289の新列が未適用のため旧列のみで再取得します（マイグレーション059未適用の可能性）:",
-            error.message,
-          );
-          const { data: legacyData, error: legacyError } = await supabase
-            .from("exhibition_data")
-            .select(
-              "boat_number, tilt, adjustment_weight, propeller_change, parts_changed",
-            )
-            .eq("race_id", raceId);
-          if (legacyError) {
-            console.error(
-              "exhibition_data(チルト/調整重量/部品交換)取得エラー:",
-              legacyError.message,
-            );
-            return [];
-          }
-          return legacyData ?? [];
-        }
-        console.error(
-          "exhibition_data(チルト/調整重量/当日体重/前走成績/部品交換)取得エラー:",
+      // supabaseClient.js が .throwOnError() を既定で適用するため、取得エラーは例外になる。
+      // 「新列が未適用」だけは旧列での再取得に倒したいので、ここで捕まえて分岐する
+      // （それ以外のエラーはそのまま投げて、空配列＝「データなし」に化けさせない）
+      let data;
+      try {
+        ({ data } = await supabase
+          .from("exhibition_data")
+          .select(
+            "boat_number, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank",
+          )
+          .eq("race_id", raceId));
+      } catch (error) {
+        if (!/column .* does not exist/i.test(error?.message ?? ""))
+          throw error;
+        console.warn(
+          "exhibition_data: BOA-289の新列が未適用のため旧列のみで再取得します（マイグレーション059未適用の可能性）:",
           error.message,
         );
-        return [];
+        const { data: legacyData } = await supabase
+          .from("exhibition_data")
+          .select(
+            "boat_number, tilt, adjustment_weight, propeller_change, parts_changed",
+          )
+          .eq("race_id", raceId);
+        return legacyData ?? [];
       }
 
       return data ?? [];
@@ -6322,40 +6333,35 @@ export const supabaseDataService = {
         throw new Error("Supabase client not initialized");
       }
 
-      const [reportRes, commentsRes] = await Promise.all([
-        supabase
-          .from("race_pit_reports")
-          .select(
-            "status, target_from, target_to, reporter_name, comment_count, created_at, updated_at",
-          )
-          .eq("race_id", raceId)
-          .maybeSingle(),
-        supabase
-          .from("race_pit_comments")
-          .select(
-            "boat_number, racer_id, comment_text, confidence_stars, previous_race_number",
-          )
-          .eq("race_id", raceId)
-          .order("boat_number", { ascending: true }),
-      ]);
-
-      const permissionError = [reportRes.error, commentsRes.error].find(
-        isPermissionDeniedError,
-      );
-      if (permissionError) {
-        // 086（匿名へのSELECT公開）が未適用の間は、ここを通る。本番の公開順序の保険で、
-        // エラー表示ではなく「セクションを出さない」に倒す
-        return { ...NON_TERMINAL_PIT_REPORT, state: "forbidden" };
-      }
-      if (reportRes.error) {
-        throw new Error(
-          `race_pit_reports取得エラー: ${reportRes.error.message}`,
-        );
-      }
-      if (commentsRes.error) {
-        throw new Error(
-          `race_pit_comments取得エラー: ${commentsRes.error.message}`,
-        );
+      // supabaseClient.js が .throwOnError() を既定で適用するため、取得エラーは
+      // ここに到達する前に例外になる。権限エラー（086未適用）だけは例外にせず
+      // 「セクションを出さない」に倒したいので、ここで捕まえて分岐する
+      let reportRes;
+      let commentsRes;
+      try {
+        [reportRes, commentsRes] = await Promise.all([
+          supabase
+            .from("race_pit_reports")
+            .select(
+              "status, target_from, target_to, reporter_name, comment_count, created_at, updated_at",
+            )
+            .eq("race_id", raceId)
+            .maybeSingle(),
+          supabase
+            .from("race_pit_comments")
+            .select(
+              "boat_number, racer_id, comment_text, confidence_stars, previous_race_number",
+            )
+            .eq("race_id", raceId)
+            .order("boat_number", { ascending: true }),
+        ]);
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          // 086（匿名へのSELECT公開）が未適用の間は、ここを通る。本番の公開順序の保険で、
+          // エラー表示ではなく「セクションを出さない」に倒す
+          return { ...NON_TERMINAL_PIT_REPORT, state: "forbidden" };
+        }
+        throw error;
       }
 
       const report = reportRes.data;
