@@ -20,18 +20,18 @@ spec: `spec.md` / plan: `plan.md` / screens: `screens.md`
 
 ## Phase 3: 本番への適用（すべてユーザーの承認が要る）
 
-- [ ] **T3-1** (ユーザー承認) マイグレーション085を適用する
-- [ ] **T3-2** (ユーザー承認) `scrape_job_state`の`pit_reports`を`shadow`にする（runbook §R-2）
-- [ ] **T3-3** (ユーザー承認) Storageの非公開バケット`raw-pages`を作成し、`live`にする（runbook §R-3）
+- [x] **T3-1** (ユーザー承認) マイグレーション085を適用する — 2026-09-21適用済み（`docs/db-migration/APPLIED.md`）
+- [x] **T3-2** (ユーザー承認) `scrape_job_state`の`pit_reports`を`shadow`にする（runbook §R-2）
+- [x] **T3-3** (ユーザー承認) Storageの非公開バケット`raw-pages`を作成し、`live`にする（runbook §R-3） — バケット作成は085適用時。2026-09-23に本番DBで`scrape_job_state.pit_reports.mode = live`を確認
 - [ ] **T3-4** 過去分のバックフィル（plan.md §5）: 手動CLI`scripts/maintenance/backfill-pit-reports.js`を実装（`processPitReportRace`を`skipCandidateCheck`つきで呼ぶ薄いCLI。既定はdry-run、`--apply`で書く）。gradesch（`gradesch?year={年}&hcd={01|02}`）で、2025-12〜2026-02-02の対象日を特定する。実行はユーザーの承認のもと、3夜に分ける
 
 ## Phase 4: 画面（**モック承認の後に**実装する）
 
-- [ ] **T4-1** モックの作成（`screens.md`の§3〜§4。追加位置・出典表記・★の見た目・状態）。ユーザーの承認
-- [ ] **T4-2** `getRacePitReport`（`supabaseDataService.js`）・`pitReportUrl.js`・`RacePitReportSection`・`RaceBeforeInfoTab`への追加・i18n（4言語）・`termHints.js`（`screens.md` §6）
-- [ ] **T4-3** Playwrightでの自己検証（SG・G1のレース詳細で、直前情報タブにセクション・出典・リンクが出る。G3では出ない。ライト・ダーク・モバイル幅）。スモークテストへの追記。`npm run build`・`npm run test:e2e`
-- [ ] **T4-4** (ユーザー承認) マイグレーション086を適用する（匿名への公開）。本番で、SG・G1・G2のレース詳細に表示されることを確認する
-- [ ] **T4-5** `content-index.json`（`docs/design/pit-comments/content-index.json`）を作成する（新機能のトレーサビリティ。ブログ・SNSへの展開の要否は、フローA参照）
+- [x] **T4-1** モックの作成（`screens.md`の§3〜§4。追加位置・出典表記・★の見た目・状態）。ユーザーの承認 — 2026-09-23に承認。モック: https://claude.ai/artifact/KUQPk2fpCwfjiumwtnDTKc 。決定5件は`screens.md` §8
+- [x] **T4-2** `getRacePitReport`（`supabaseDataService.js`）・`pitReportUrl.js`・`RacePitReportSection`・`RaceBeforeInfoTab`への追加・i18n（4言語）・`termHints.js`（`screens.md` §6）
+- [x] **T4-3** Playwrightでの自己検証（SG・G1のレース詳細で、直前情報タブにセクション・出典・リンクが出る。G3では出ない。ライト・ダーク・モバイル幅）。スモークテストへの追記。`npm run build`・`npm run test:e2e`
+- [x] **T4-4** (ユーザー承認) マイグレーション086を適用する（匿名への公開）。本番で、SG・G1・G2のレース詳細に表示されることを確認する — 2026-09-23にユーザーの承認のもと適用（`docs/db-migration/APPLIED.md`）。ローカル（devサーバー）で、多摩川G1 2026-09-21 12R（`published`、6件）にセクション・出典・公式リンク・★が出ること、同11R（`not_target`）ではセクションごと出ないことを確認済み。**本番の画面での確認は、PR #789 のマージ・デプロイ後に行う**
+- [x] **T4-5** `content-index.json`（`docs/design/pit-comments/content-index.json`）を作成する（新機能のトレーサビリティ。ブログ・SNSへの展開の要否は、フローA参照） — 086が未適用で一般ユーザーが見られる状態にないため、`not_applicable: true`＋理由つきで作成。086適用後に展開の要否を再判断する
 - [ ] **T4-6** ADR-0067の追記案（承認の記録）を確定する（ユーザーの確認後にマージ）
 
 ## 完了の定義（データ項目ごと。`.claude/rules/data-acquisition.md`）

@@ -59,11 +59,12 @@ import {
 } from "./weatherInfo";
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
+import RacePitReportSection from "./RacePitReportSection";
 import "./RaceBeforeInfoTab.css";
 
 const COURSES = [1, 2, 3, 4, 5, 6];
 
-function RaceBeforeInfoTab({ raceId, venueCode, players, weather }) {
+function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   const { t } = useTranslation();
   const analysis = useRaceAnalysisData(raceId, { venueCode });
 
@@ -464,6 +465,12 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather }) {
         </div>
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
       </section>
+
+      <RacePitReportSection
+        raceId={raceId}
+        raceGrade={raceGrade}
+        players={sortedPlayers}
+      />
 
       {venueDaySummary && venueDaySummary.raceCount > 0 && (
         <section className="rbi-card">

@@ -6299,7 +6299,121 @@ export const supabaseDataService = {
       );
     });
   },
+
+  /**
+   * レースのピットレポート（選手コメント）を取得する（BOA-379）
+   * 設計: docs/design/pit-comments/screens.md §9（データの契約）
+   *
+   * RPCを増やさず、race_id単位の単独SELECTを2本（レース単位・艇単位）で読む。
+   * 呼ぶ前に、画面側で isPitReportCandidate（src/utils/pitReportUrl.js）を必ず通すこと
+   * （G3・一般戦・G1/G2の1R〜6Rでは呼ばない）。
+   *
+   * 戻り値の state:
+   *   "published"  コメントあり
+   *   "not_target" 公式ページが「対象外」と答えたレース（行はあるがコメント0件）
+   *   "pending"    行が無い＝まだ公開されていない（または対象外の判定もまだ）
+   *   "forbidden"  匿名にSELECT権限が無い（マイグレーション086が未適用）。
+   *                画面はセクションごと出さない。「対象外」「未公開」に化けさせない
+   * 取得失敗（ネットワーク等）は例外を投げる（BOA-359。空・対象外に化けさせない）
+   */
+  getRacePitReport(raceId) {
+    return withCache(`pit-report-${raceId}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+
+      const [reportRes, commentsRes] = await Promise.all([
+        supabase
+          .from("race_pit_reports")
+          .select(
+            "status, target_from, target_to, reporter_name, comment_count, created_at, updated_at",
+          )
+          .eq("race_id", raceId)
+          .maybeSingle(),
+        supabase
+          .from("race_pit_comments")
+          .select(
+            "boat_number, racer_id, comment_text, confidence_stars, previous_race_number",
+          )
+          .eq("race_id", raceId)
+          .order("boat_number", { ascending: true }),
+      ]);
+
+      const permissionError = [reportRes.error, commentsRes.error].find(
+        isPermissionDeniedError,
+      );
+      if (permissionError) {
+        // 086（匿名へのSELECT公開）が未適用の間は、ここを通る。本番の公開順序の保険で、
+        // エラー表示ではなく「セクションを出さない」に倒す
+        return { ...NON_TERMINAL_PIT_REPORT, state: "forbidden" };
+      }
+      if (reportRes.error) {
+        throw new Error(
+          `race_pit_reports取得エラー: ${reportRes.error.message}`,
+        );
+      }
+      if (commentsRes.error) {
+        throw new Error(
+          `race_pit_comments取得エラー: ${commentsRes.error.message}`,
+        );
+      }
+
+      const report = reportRes.data;
+      if (!report) return { ...NON_TERMINAL_PIT_REPORT, state: "pending" };
+      const comments = (commentsRes.data ?? []).map((row) => ({
+        boatNumber: row.boat_number,
+        racerId: row.racer_id ?? null,
+        text: row.comment_text,
+        stars: row.confidence_stars ?? null,
+        previousRaceNumber: row.previous_race_number ?? null,
+      }));
+
+      return {
+        // 行はあるがコメントが0件なら、公式が「対象外」と答えたレース
+        state: comments.length > 0 ? "published" : "not_target",
+        reporterName: report.reporter_name ?? null,
+        capturedAt: report.created_at ?? null,
+        updatedAt: report.updated_at ?? null,
+        targetRange:
+          report.target_from != null && report.target_to != null
+            ? { from: report.target_from, to: report.target_to }
+            : null,
+        comments,
+      };
+    });
+  },
 };
+
+/**
+ * 終端でない状態（pending・forbidden）の戻り値のひな形。
+ *
+ * `fetchFailed: true` は withCache に「この結果を保存するな」と伝えるためのもので、
+ * 取得自体は成功している（画面は state だけを見る）。保存してしまうと、
+ * (1) 公開待ちのレースでコメントが公開されても、再読み込みでキャッシュ（本日分30分・
+ *     過去分7日）が返り続けて表示が更新されない、
+ * (2) マイグレーション086の適用後も、適用前に見たレースが最大7日間「権限なし＝非表示」
+ *     のままになる、という不具合になる。
+ */
+const NON_TERMINAL_PIT_REPORT = Object.freeze({
+  state: "pending",
+  reporterName: null,
+  capturedAt: null,
+  updatedAt: null,
+  targetRange: null,
+  comments: [],
+  fetchFailed: true,
+});
+
+/**
+ * PostgRESTが返す「権限が無い」エラーか。
+ * PostgreSQLの insufficient_privilege（42501）のほか、GRANTが無いテーブルへの
+ * アクセスは PostgREST が 401/42501 や "permission denied for table ..." で返す
+ */
+function isPermissionDeniedError(error) {
+  if (!error) return false;
+  if (error.code === "42501") return true;
+  return /permission denied/i.test(error.message ?? "");
+}
 
 /**
  * 1走分の勝敗を{win, top2, top3}アキュムレータに加算する共通ロジック。

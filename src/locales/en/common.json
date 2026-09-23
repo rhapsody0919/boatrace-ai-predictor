@@ -548,6 +548,20 @@
     "entryCourseWinLabel": "1st place by entry course",
     "courseN": "Course {{n}}"
   },
+  "pitReport": {
+    "title": "Pit Report (racer comments)",
+    "source": "Source: BOAT RACE Official Website, Pit Report",
+    "capturedAt": "Retrieved: {{time}}",
+    "officialLink": "View on the official site",
+    "previousRace": "Previous race: R{{n}}",
+    "confidence": "Comment confidence",
+    "confidenceAria": "{{n}} out of {{max}}",
+    "pending": "Not published yet. Comments will appear here once the official site publishes them.",
+    "error": "Could not load the pit report.",
+    "retry": "Reload",
+    "note": "Comments are shown exactly as published on the official site (no summarising or editing). Check the official site for the latest version.",
+    "originalLanguageNote": "Comments are shown in the original Japanese."
+  },
   "oddsList": {
     "subtitle": "Switch bet types to see odds for every combination. Tap an odds value to view its trend",
     "loading": "Loading odds...",
