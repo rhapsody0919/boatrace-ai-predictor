@@ -128,3 +128,186 @@ CREATE POLICY nige_second_by_course_public_read ON public.nige_second_by_course
   FOR SELECT TO anon, authenticated USING (true);
 
 GRANT SELECT ON public.nige_second_by_course TO anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 3. 集計RPC（日次バッチが呼ぶ。結果の24行＋最大120行だけを返す）
+-- ---------------------------------------------------------------------------
+-- 基礎CTEは race_start_timings 約242,000行＋race_results 約43,500行＋
+-- race_entries 約280,000行を読む。これをNode側に持つと転送量もメモリも無駄なので、
+-- 集計をDB側で完結させ、結果だけを返す（plan.md §5.1）。
+--
+-- 2つの関数は同じ基礎CTE（Fを除外したST × 実進入コース）を共有したいが、
+-- 戻り値の形が違うため関数を分ける。日次1回の実行なのでスキャン2回は許容する
+-- （画面から毎回呼ぶわけではない。ADR-0068 却下1）。
+--
+-- ⚠️ 権限: どちらも service_role だけが実行する（バッチ専用）。匿名には
+-- GRANT EXECUTE しない。画面は集計済みのテーブルを単純SELECTで読む。
+-- SECURITY INVOKER（既定）のままにし、呼び出し元の権限で動かす。
+
+-- 3-1. ST考察のベースライン（コース×級別の24セル）
+CREATE OR REPLACE FUNCTION compute_st_course_baseline()
+RETURNS TABLE (
+  course        SMALLINT,
+  grade         TEXT,
+  window_start  DATE,
+  window_end    DATE,
+  window_days   SMALLINT,
+  runs          INTEGER,
+  avg_st        NUMERIC,
+  stable_rate   NUMERIC,
+  late_rate     NUMERIC,
+  breakout_count INTEGER,
+  breakout_rate NUMERIC,
+  st_histogram  JSONB
+)
+LANGUAGE sql
+STABLE
+AS $$
+WITH st AS (
+  SELECT t.race_id, t.boat_number, t.is_flying, t.start_timing::numeric AS st
+  FROM race_start_timings t
+  WHERE t.start_timing IS NOT NULL
+),
+crs AS (
+  SELECT r.race_id, b.n AS boat_number,
+    CASE b.n
+      WHEN 1 THEN r.actual_course_1 WHEN 2 THEN r.actual_course_2
+      WHEN 3 THEN r.actual_course_3 WHEN 4 THEN r.actual_course_4
+      WHEN 5 THEN r.actual_course_5 WHEN 6 THEN r.actual_course_6
+    END AS course
+  FROM race_results r
+  CROSS JOIN (SELECT generate_series(1, 6) AS n) b
+),
+j AS (
+  -- Fの行は「ST順1位」の基準からも母数からも外す（符号反転はしない。ADR-0068 却下5）。
+  -- best は filter (where not is_flying) で、Fを除いた最小STになる
+  SELECT
+    st.race_id, st.boat_number, st.is_flying, st.st, crs.course, e.grade,
+    ra.race_date,
+    MIN(st.st) FILTER (WHERE NOT st.is_flying) OVER (PARTITION BY st.race_id) AS best,
+    MIN(st.st) FILTER (WHERE NOT st.is_flying) OVER (
+      PARTITION BY st.race_id ORDER BY crs.course
+      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+    ) AS inner_min
+  FROM st
+  JOIN crs ON crs.race_id = st.race_id AND crs.boat_number = st.boat_number
+  JOIN race_entries e ON e.race_id = st.race_id AND e.boat_number = st.boat_number
+  JOIN races ra ON ra.race_id = st.race_id
+  WHERE crs.course BETWEEN 1 AND 6 AND e.grade IS NOT NULL
+),
+win AS (
+  SELECT MIN(race_date) AS ws, MAX(race_date) AS we FROM j
+)
+SELECT
+  j.course::SMALLINT,
+  j.grade::TEXT,
+  w.ws,
+  w.we,
+  (w.we - w.ws + 1)::SMALLINT,
+  COUNT(*)::INTEGER,
+  ROUND(AVG(j.st), 3),
+  ROUND(AVG(CASE WHEN j.st - j.best <= 0.05 THEN 1 ELSE 0 END) * 100, 2),
+  ROUND(AVG(CASE WHEN j.st - j.best >= 0.10 THEN 1 ELSE 0 END) * 100, 2),
+  -- 1コースは内側艇が存在しないため抜出を算出しない（0ではなくNULL）
+  CASE WHEN j.course = 1 THEN NULL
+       ELSE COUNT(*) FILTER (WHERE j.inner_min IS NOT NULL AND j.st <= j.inner_min - 0.07)::INTEGER
+  END,
+  CASE WHEN j.course = 1 THEN NULL
+       WHEN COUNT(*) FILTER (WHERE j.inner_min IS NOT NULL) = 0 THEN NULL
+       ELSE ROUND(
+         COUNT(*) FILTER (WHERE j.inner_min IS NOT NULL AND j.st <= j.inner_min - 0.07)::numeric
+         / COUNT(*) FILTER (WHERE j.inner_min IS NOT NULL) * 100, 2)
+  END,
+  -- STの分布（0.05刻み。ビンの合計 = runs になる）
+  jsonb_build_object(
+    '0.00', COUNT(*) FILTER (WHERE j.st < 0.05),
+    '0.05', COUNT(*) FILTER (WHERE j.st >= 0.05 AND j.st < 0.10),
+    '0.10', COUNT(*) FILTER (WHERE j.st >= 0.10 AND j.st < 0.15),
+    '0.15', COUNT(*) FILTER (WHERE j.st >= 0.15 AND j.st < 0.20),
+    '0.20', COUNT(*) FILTER (WHERE j.st >= 0.20 AND j.st < 0.25),
+    '0.25', COUNT(*) FILTER (WHERE j.st >= 0.25 AND j.st < 0.30),
+    '0.30+', COUNT(*) FILTER (WHERE j.st >= 0.30)
+  )
+FROM j CROSS JOIN win w
+WHERE NOT j.is_flying
+GROUP BY j.course, j.grade, w.ws, w.we
+ORDER BY j.course, j.grade;
+$$;
+
+REVOKE ALL ON FUNCTION compute_st_course_baseline() FROM PUBLIC;
+REVOKE ALL ON FUNCTION compute_st_course_baseline() FROM anon, authenticated;
+
+-- 3-2. 逃げシミュレーション（会場 × 2着コース）
+--
+-- ⚠️ CTEには MATERIALIZED を付ける（2026-09-24）。付けないと base が
+-- totals / nige / seconds / win から複数回参照されてその都度スキャンされ、
+-- statement timeout になることを実測で確認した。base を1回だけ実体化し、
+-- 「1コース逃げか」「2着艇の実進入コース」をその場で列にして後段を軽くする。
+CREATE OR REPLACE FUNCTION compute_nige_second_by_course()
+RETURNS TABLE (
+  venue_code    SMALLINT,
+  second_course SMALLINT,
+  window_start  DATE,
+  window_end    DATE,
+  window_days   SMALLINT,
+  total_races   INTEGER,
+  nige_races    INTEGER,
+  second_count  INTEGER,
+  second_rate   NUMERIC,
+  exacta_rate   NUMERIC
+)
+LANGUAGE sql
+STABLE
+AS $$
+WITH base AS MATERIALIZED (
+  -- 分母は「結果確定 かつ actual_course_1 が取れたレース」に統一する。
+  -- 揃えないと sum(exacta_rate) が P(1コース逃げ) と3.6%ずれる（当初の設計の誤り）
+  SELECT ra.venue_code, ra.race_date, r.rank1, r.rank2, r.winning_technique,
+    r.actual_course_1, r.actual_course_2, r.actual_course_3,
+    r.actual_course_4, r.actual_course_5, r.actual_course_6
+  FROM race_results r
+  JOIN races ra ON ra.race_id = r.race_id
+  WHERE r.rank1 IS NOT NULL AND r.rank2 IS NOT NULL AND r.actual_course_1 IS NOT NULL
+),
+flagged AS MATERIALIZED (
+  SELECT b.venue_code, b.race_date,
+    -- 「1コースが逃げた」= winning_technique='逃げ' かつ 1着艇の実進入コースが1
+    (b.winning_technique = '逃げ' AND CASE b.rank1
+       WHEN 1 THEN b.actual_course_1 WHEN 2 THEN b.actual_course_2
+       WHEN 3 THEN b.actual_course_3 WHEN 4 THEN b.actual_course_4
+       WHEN 5 THEN b.actual_course_5 WHEN 6 THEN b.actual_course_6 END = 1) AS is_nige,
+    -- 2着艇の実進入コース
+    CASE b.rank2
+      WHEN 1 THEN b.actual_course_1 WHEN 2 THEN b.actual_course_2
+      WHEN 3 THEN b.actual_course_3 WHEN 4 THEN b.actual_course_4
+      WHEN 5 THEN b.actual_course_5 WHEN 6 THEN b.actual_course_6 END AS second_course
+  FROM base b
+),
+win AS (SELECT MIN(race_date) AS ws, MAX(race_date) AS we FROM flagged),
+venue_tot AS (
+  SELECT venue_code,
+    COUNT(*)::INTEGER AS total_races,
+    COUNT(*) FILTER (WHERE is_nige)::INTEGER AS nige_races
+  FROM flagged GROUP BY venue_code
+)
+SELECT
+  f.venue_code::SMALLINT,
+  f.second_course::SMALLINT,
+  w.ws,
+  w.we,
+  (w.we - w.ws + 1)::SMALLINT,
+  v.total_races,
+  v.nige_races,
+  COUNT(*)::INTEGER,
+  ROUND(COUNT(*)::numeric / v.nige_races * 100, 2),
+  ROUND(COUNT(*)::numeric / v.total_races * 100, 2)
+FROM flagged f
+JOIN venue_tot v ON v.venue_code = f.venue_code
+CROSS JOIN win w
+WHERE f.is_nige AND f.second_course BETWEEN 2 AND 6
+GROUP BY f.venue_code, f.second_course, w.ws, w.we, v.total_races, v.nige_races
+ORDER BY f.venue_code, f.second_course;
+$$;
+
+REVOKE ALL ON FUNCTION compute_nige_second_by_course() FROM PUBLIC;
+REVOKE ALL ON FUNCTION compute_nige_second_by_course() FROM anon, authenticated;
