@@ -206,3 +206,20 @@ data-catalog.mdでは「必須・未対応」のままだったが、PR #751（�
 ## N19バックフィルのサーキットブレーカー誤作動と修正（2026-09-23夜）
 
 22:00開始のN19（racelist過去分バックフィル）が、`motor_boat_marker:is-fColor1`（モーター・ボート変更の赤表示、N18。本バックフィルの対象列とは無関係）を「想定外の応答」として3回連続検出し、サーキットブレーカーで停止した（exit code 4、リクエスト3件のみで実害なし）。[PR #799](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/799)でmotor_boat_marker系の異常だけ非致命的として除外し、実際に失敗していた3レースを含む再実行で解消を確認。ローカルの修正済みコードで同夜のうちにdownloadを再開した（PRのマージは別途）。副産物として、`is-fColor1`というクラス名が、N18（未確認だったモーター・ボート変更の赤表示）の実データで初めて確認できた。
+
+## GitHub Actions側の旧基盤停止チケット（2026-09-24起票）
+
+`scrape_job_state`でVercel側は`live`だが、GitHub Actions側の`SKIP_*_ON_GHA`が未設定で並走が続いているジョブについて、優先度順にLinearチケットを起票した（tasks.mdの該当タスクIDに対応。実際の停止操作＝GitHub側のリポジトリ変数設定は、外部サービスの設定変更のためユーザー自身が行う）。
+
+| 優先度 | チケット | ジョブ | tasks.md |
+|---|---|---|---|
+| 最高 | [BOA-394](https://linear.app/boat-ai/issue/BOA-394) | result | T4b-02-5 |
+| 高 | [BOA-395](https://linear.app/boat-ai/issue/BOA-395) | kfile_sync | T4b-05-3 |
+| 高 | [BOA-396](https://linear.app/boat-ai/issue/BOA-396) | races_init・pcexpect | T4b-07-8・T4b-08-4 |
+| 中 | [BOA-397](https://linear.app/boat-ai/issue/BOA-397) | point_rank | T4b-12-3 |
+| 中 | [BOA-401](https://linear.app/boat-ai/issue/BOA-401) | race_info（shadow→live→停止） | T4b-09-3 |
+| 中 | [BOA-399](https://linear.app/boat-ai/issue/BOA-399) | venue_motor_stats | T4b-14-2 |
+| 低（判断が先） | [BOA-398](https://linear.app/boat-ai/issue/BOA-398) | entry_course_stats（読み手なし、継続可否の判断が先） | T4b-13-2/3 |
+| 低 | [BOA-400](https://linear.app/boat-ai/issue/BOA-400) | racer_news | T4b-15-2 |
+
+`pit_reports`・`boatcast_oriten`・`boatcast_motor_start`・`motor_pretest`は、旧GitHub Actions基盤に対応するジョブが元々無い新規データ項目のため、この一覧には含めない。
