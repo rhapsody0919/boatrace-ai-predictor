@@ -316,7 +316,7 @@
 ### T4b-13 進入コース別選手成績（B4）: `venue_entry_course_stats`
 
 - [x] **T4b-13-1**（コード実装済み。`scripts/lib/venueEntryCourseStatsJob.js`・`scripts/lib/scrapeJobs/venueDailyJob.js`・`api/cron/entry-course-stats.js`。成否履歴は`scrape_job_state.last_report`へ。構造変化の通知は`last_report.alerts`→`scrape-monitor`。切り替えはrunbook §L-2） `scrape-venue-entry-course-stats.js`を、対象日を引数で受ける形にして、`api/cron/entry-course-stats.js`へ（`0 11 * * *`、`30 13 * * *`、`30 15 * * *`）。`git push`・`fs`（health.json）を`last_report`へ（`driftHealth.js`のコア機構は再利用）。当日の出走表がある会場のみ処理し、対象日を`resolveTargetDate`で明示（G2の恒久対策）
-- [x] **T4b-13-2**（確認済み。**読み手なし**。結果と要判断はrunbook §L-6。ユーザーの判断待ち） 表示側の読み手の有無を確認する（job-inventory.md U11。`src/`・`api/`に見つからなかった）。読み手が無い場合、取得を続ける価値をユーザーに提示する
+- [x] **T4b-13-2**（確認済み。**読み手なし**。結果と要判断はrunbook §L-6。ユーザーの判断待ち） 表示側の読み手の有無を確認する（job-inventory.md U11。`src/`・`api/`に見つからなかった）。読み手が無い場合、取得を続ける価値をユーザーに提示する。**2026-09-24決定（BOA-398）**: FR-3（`docs/design/course-entry-tendency-rework/`、ADR-0064のハイブリッド表示）を近いうちに実施予定のため、取得を継続する
 - [ ] **T4b-13-3**（`SKIP_ENTRY_COURSE_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-2。T4b-13-2の判断で、取得を続けない場合は不要） `live`→`SKIP_ENTRY_COURSE_ON_GHA=true`。2026-09-23確認: `scrape_job_state.entry_course_stats.mode=live`（読み手が無い件（T4b-13-2）は、継続する判断がされた前提で進んでいる模様。`SKIP_ENTRY_COURSE_ON_GHA`は未設定）
 
 データ項目: `venue_entry_course_stats`。
