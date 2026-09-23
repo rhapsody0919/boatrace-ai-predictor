@@ -19,15 +19,40 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
 
 ---
 
-## Phase 0: 前提となるバグ修正（最優先。他の全タスクの前）
+## Phase 0: 取得エラーの伝播を構造的に直す（最優先。他の全タスクの前）
 
-- [ ] **T0-1** `fetchAllByIn` のページ取得エラーの握りつぶしを直す（plan.md §3.0）
-  - `src/services/supabaseDataService.js:320`。現状は `console.error` して `break` し、**部分的な配列を正常な戻り値として返す**
-  - エラー時は例外を投げる（または `fetchFailed: true` を伝播させる）。呼び出し元6箇所（`getRacerScopedRaceStats` を含む）が `withCache` にキャッシュさせないようにする
-  - **なぜ先にやるか**: ST考察は「そのレースの全6艇のSTが揃っている」前提でST順1位を決めるため、2ページ目以降が落ちると安定率が実際より高く・出遅率が低く算出され、**その誤った値が最大7日間（`PAST_RACE_CACHE_TTL`）キャッシュに残る**
-  - **受入基準**: ページ取得を人為的に失敗させたとき（`.in()` に不正な列を渡す等）、戻り値が「空配列＝データなし」に化けない。既存の6箇所の正常系の表示が変わらないことをPlaywrightで確認する
+> **2026-09-23にスコープを差し替えた**。当初は「`fetchAllByIn` の `break` を `throw` に変える」1関数の修正だったが、着手前の調査で**同じ欠陥が76箇所あり、同型の障害が4層・7チケットで再発している**ことが判明した（[ADR-0069](../../adr/0069-query-error-propagation.md)）。1関数の修正は「1つずつ直す」の8回目になり、同じ結果になるため、`supabase-js` 標準の `.throwOnError()` をクライアント生成時に既定で適用する方式に変更した（ユーザー判断、2026-09-23）。
+>
+> あわせて、当初のタスク文にあった「呼び出し元6箇所」「最大7日間キャッシュ」は実測と合っていなかったため訂正した（実際は**18メソッド32箇所**が `fetchAllByIn` を使い、ST考察の `getRacerScopedRaceStats` のキャッシュは**30分**。7日になるのは `race-*-{raceId}` キーの6メソッド）。
 
-## Phase 1: 共通化とサービス層（DBへの変更なし・T0-1の後）
+- [x] **T0-1** Supabaseクライアントで `.throwOnError()` を既定にする（[ADR-0069](../../adr/0069-query-error-propagation.md)）
+  - `src/services/supabaseClient.js` で `.from()` / `.rpc()` をラップし、返る builder の `select`/`insert`/`update`/`upsert`/`delete` に `.throwOnError()` を自動適用する
+  - **成功時の戻り値の形は変わらない**ため、呼び出し側87箇所は変更不要
+  - **受入基準**: 本番の匿名キーで7項目を実測して確認済み（正常系で `{data,error}` が保たれる／異常系で例外／`order`・`range` のチェーンが壊れない／権限エラー42501も例外）
+- [x] **T0-2** 意図的にエラーを飲む箇所を try/catch に移す
+  - `getRacePitReport`: 権限エラー（42501）だけ `state: "forbidden"` に倒す。**phase a の FR-4（095/096適用前にセクションを隠す）がこれに依存する**
+  - `getRaceMotorMaintenanceBreakdown`: 「column does not exist」のときだけ旧列で再取得
+  - `fetchVenueWinRateMap`: バッジの補助値なので失敗時は空マップ（**E2Eが実際に検知した退行**。補助値の失敗でレース一覧全体が消えていた）
+  - **受入基準**: E2E「匿名に権限が無い場合（086未適用）はセクションごと出さない」「取得エラーは『未公開』『対象外』に化けさせず再読み込みを出す」が通る
+- [x] **T0-3** throw 化で「永久スケルトン」になる箇所に catch を足す
+  - `RaceBasicInfoTab`（公式勝率）・`RaceBeforeInfoTab`（今節展示情報）。どちらも同じファイル内の隣の effect では既に catch 済みという不統一だった
+  - 未処理のPromise拒否になっていた `RaceBeforeInfoTab`（本日成績サマリー）・`RaceResult`（ST）・`useUnifiedModelAccuracy`・`useUnifiedVolatilityAccuracy` にも catch を足す
+  - **受入基準**: 失敗を注入してもスケルトンが残らず、未捕捉のレンダー例外が出ない（Playwrightで確認済み）
+- [x] **T0-4** 消費側の無害化を解く（消費側81件のうち27件が `.catch(() => [])` だった）
+  - `useRaceAnalysisData`（9件）・`useVenueTendencyStats`（4件）に `failed` / `hasFailure` / `reload()` を持たせる
+  - `VenueCharacteristicsCard`（4件）は失敗時にカードを無言で消さない
+  - 新規の共通部品 `src/components/InlineFetchError.jsx`（セクション単位・`onRetry` で該当箇所だけ再取得）を `DataRaceTable`・`VenueTendencyPanel`・`VenueCharacteristicsCard` で使う
+  - **受入基準**: 失敗を注入すると `.inline-fetch-error` が出る。正常系では出ない（Playwrightで確認済み）
+- [x] **T0-5** 恒常対策（機械検査・ルール）
+  - `npm run verify:query-errors`（`scripts/maintenance/verify-query-errors.js`）: `src/` 配下で `createClient()` の直接呼び出し・`@supabase/supabase-js` の直接importを禁止し、`supabaseClient.js` が `.throwOnError()` を適用していることを検査する
+  - `.github/workflows/verify-query-errors.yml`: PR時に自動実行（既存の `verify-cache-config.yml` と同じ形）
+  - `.claude/rules/frontend-data-fetch.md`: 読み取り側のルールを明文化（書き込み側の `data-acquisition.md` に対応するものが無かった）
+  - **受入基準**: 違反ファイルを一時的に置くと exit 1 になり、消すと exit 0 に戻ることを確認済み
+- [ ] **T0-6** バッチ側（`scripts/`）は別チケットにする
+  - `scripts/lib/supabaseClient.js` の `fetchAll` は `throwOnError = false` が既定のまま（呼び出し121箇所）。`getRaceSchedule` ほか8関数が同じ escape hatch を持つ
+  - 121箇所への影響確認が要るため本PRには含めない。BOA-359 のバッチ側として起票し、`verify-query-errors.js` の `BATCH_TODO` に記録済み
+
+## Phase 1: 共通化とサービス層（DBへの変更なし・Phase 0の後）
 
 - [ ] **T1-1** `CrossTabGrid`（FR-0）を新規作成する
   - `src/components/analysis/CrossTabGrid.jsx` + `.css`。行軸・列軸・セル指標・n併記・小標本フラグをpropsで受ける。データ取得はしない（整形済みの2次元データを受ける）

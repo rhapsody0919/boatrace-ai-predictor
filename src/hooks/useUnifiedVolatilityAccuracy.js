@@ -18,6 +18,10 @@ export function useUnifiedVolatilityAccuracy() {
       .then((data) => {
         if (!cancelled) setStats(data);
       })
+      .catch((err) => {
+        // 取得失敗はstats=nullのまま消費側の表示に倒す。未処理のPromise拒否にしない
+        console.error("イン崩れ精度取得エラー:", err?.message ?? String(err));
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });

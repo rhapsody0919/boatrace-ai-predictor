@@ -112,6 +112,13 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
         .then((data) => {
           if (!cancelled)
             setMeetTrendByRacer((prev) => ({ ...prev, [p.racerId]: data }));
+        })
+        .catch((err) => {
+          // catchしないとmeetTrendByRacer[p.racerId]がundefinedのまま残り、
+          // 今節展示情報のセルがスケルトンのまま固まる（上のscopedStatsと同じ扱い）
+          console.error("今節展示情報取得エラー:", err?.message ?? String(err));
+          if (!cancelled)
+            setMeetTrendByRacer((prev) => ({ ...prev, [p.racerId]: [] }));
         });
     });
     return () => {
@@ -126,9 +133,18 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   useEffect(() => {
     let cancelled = false;
     if (!venueCode || !raceDate) return undefined;
-    supabaseDataService.getVenueDaySummary(venueCode, raceDate).then((data) => {
-      if (!cancelled) setVenueDaySummary(data);
-    });
+    supabaseDataService
+      .getVenueDaySummary(venueCode, raceDate)
+      .then((data) => {
+        if (!cancelled) setVenueDaySummary(data);
+      })
+      .catch((err) => {
+        // 取得失敗時はカードを出さない（nullのまま）。未処理のPromise拒否にしない
+        console.error(
+          "本日成績サマリー取得エラー:",
+          err?.message ?? String(err),
+        );
+      });
     return () => {
       cancelled = true;
     };

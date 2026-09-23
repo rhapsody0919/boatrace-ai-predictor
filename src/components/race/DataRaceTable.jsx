@@ -19,6 +19,7 @@ import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { buildBasicIndicatorRows } from "./raceIndicators";
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
+import InlineFetchError from "../InlineFetchError";
 import "./DataRaceTable.css";
 
 function DataRaceTable({ raceId, prediction, venueCode }) {
@@ -62,6 +63,9 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
         )}
       </h3>
       <p className="drt-subtitle">{t("dataTable.subtitle")}</p>
+
+      {/* 取得失敗を「—」の羅列（データなし）に化けさせない（BOA-359） */}
+      {analysis.hasFailure && <InlineFetchError onRetry={analysis.reload} />}
 
       <div className="drt-table-wrapper">
         <table className="drt-table">

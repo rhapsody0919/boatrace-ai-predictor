@@ -16,6 +16,7 @@ import { useVenueTendencyStats } from "../../hooks/useVenueTendencyStats";
 import { translateTechnique } from "./raceIndicators";
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
+import InlineFetchError from "../InlineFetchError";
 import "./VenueTendencyPanel.css";
 
 const MIN_CATEGORY_SAMPLE = 20;
@@ -129,6 +130,9 @@ function VenueTendencyPanel({ venueCode, raceId }) {
       {expanded && (
         <div className="vtp-content">
           <p className="vtp-note">{t("venueTendency.note")}</p>
+
+          {/* 取得失敗を「—」「データ不足」に化けさせない（BOA-359） */}
+          {stats.hasFailure && <InlineFetchError onRetry={stats.reload} />}
 
           <div className="vtp-table-wrapper">
             <table className="vtp-table">

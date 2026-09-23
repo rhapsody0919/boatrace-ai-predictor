@@ -6,9 +6,14 @@
  *
  * 各クエリは独立して解決され、取得できたものから順次stateに反映される
  * （プログレッシブ表示）。最も重い回収率クエリに他の行が引きずられない。
- * 個別の取得失敗は該当キーがnullのままになる。
+ *
+ * 個別の取得失敗は該当キーがnullになるが、**`failed[name]` で「取得に失敗した」と
+ * 「取得できて中身が無い」を区別できる**（BOA-359、2026-09-23）。
+ * 以前は `.catch(() => applyResult(name, null))` で失敗を握りつぶしており、
+ * サービス層が例外を投げるようになっても消費側で無害化されて画面に何も出なかった。
+ * 失敗があった場合は消費側で InlineFetchError を出し、`reload()` で取り直す。
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabaseDataService } from "../services/supabaseDataService";
 
 const SOURCES = {
@@ -56,7 +61,15 @@ export function useRaceAnalysisData(
 ) {
   // key（raceId+オプション）でstateの鮮度を管理し、各クエリの解決ごとに
   // functional setStateでマージする。keyが変わった後に届いた古い結果は捨てる
-  const [loaded, setLoaded] = useState({ key: null, data: EMPTY, done: {} });
+  const [loaded, setLoaded] = useState({
+    key: null,
+    data: EMPTY,
+    done: {},
+    failed: {},
+  });
+  // reload()でこの値を進め、effectを再実行して取り直す
+  // （window.location.reload()でページごと捨てない。RacePitReportSectionと同じ方式）
+  const [reloadKey, setReloadKey] = useState(0);
 
   const key = raceId ? `${raceId}:${includeResult}:${venueCode}` : null;
 
@@ -65,42 +78,57 @@ export function useRaceAnalysisData(
     const currentKey = `${raceId}:${includeResult}:${venueCode}`;
     let cancelled = false;
 
-    const applyResult = (name, value) => {
+    const applyResult = (name, value, didFail = false) => {
       if (cancelled) return;
       setLoaded((prev) => {
         const base =
           prev.key === currentKey
             ? prev
-            : { key: currentKey, data: EMPTY, done: {} };
+            : { key: currentKey, data: EMPTY, done: {}, failed: {} };
         return {
           key: currentKey,
           data: { ...base.data, [name]: value },
           done: { ...base.done, [name]: true },
+          failed: { ...base.failed, [name]: didFail },
         };
       });
+    };
+
+    const applyError = (name) => (error) => {
+      console.error(
+        `分析データ取得エラー(${name}):`,
+        error?.message ?? String(error),
+      );
+      applyResult(name, null, true);
     };
 
     Object.entries(SOURCES).forEach(([name, fn]) => {
       fn(raceId, venueCode)
         .then((value) => applyResult(name, value))
-        .catch(() => applyResult(name, null));
+        .catch(applyError(name));
     });
 
     if (includeResult) {
       supabaseDataService
         .getRaceResultSummary(raceId)
         .then((value) => applyResult("resultSummary", value))
-        .catch(() => applyResult("resultSummary", null));
+        .catch(applyError("resultSummary"));
     }
 
     return () => {
       cancelled = true;
     };
-  }, [raceId, includeResult, venueCode]);
+  }, [raceId, includeResult, venueCode, reloadKey]);
+
+  const reload = useCallback(() => {
+    setLoaded({ key: null, data: EMPTY, done: {}, failed: {} });
+    setReloadKey((n) => n + 1);
+  }, []);
 
   const isCurrent = key !== null && loaded.key === key;
   const data = isCurrent ? loaded.data : EMPTY;
   const done = isCurrent ? loaded.done : {};
+  const failed = isCurrent ? loaded.failed : {};
   const pending = Object.fromEntries(
     Object.keys(ALL_PENDING).map((name) => [
       name,
@@ -112,6 +140,7 @@ export function useRaceAnalysisData(
   );
   const loading =
     key !== null && Object.keys(SOURCES).some((name) => !done[name]);
+  const hasFailure = Object.values(failed).some(Boolean);
 
-  return { ...data, pending, loading };
+  return { ...data, pending, failed, hasFailure, reload, loading };
 }

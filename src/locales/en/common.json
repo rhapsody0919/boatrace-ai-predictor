@@ -103,7 +103,8 @@
       "in_strong": "Inside-lane favoring",
       "out_strong": "Outside-lane favoring",
       "balanced": "Balanced"
-    }
+    },
+    "fetchError": "Could not load this venue's water characteristics."
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} Race {{race}} AI data analysis - Ryujin Radar",

@@ -102,7 +102,8 @@
       "in_strong": "인코스 강세",
       "out_strong": "아웃코스 강세",
       "balanced": "균형형"
-    }
+    },
+    "fetchError": "경기장 수면 특성을 불러오지 못했습니다."
   },
   "raceDetailPage": {
     "metaTitle": "{{venue}} {{race}}R AI 데이터 분석 - 용신 레이더",

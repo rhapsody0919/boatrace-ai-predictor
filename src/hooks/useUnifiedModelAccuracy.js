@@ -18,6 +18,11 @@ export function useUnifiedModelAccuracy() {
       .then((data) => {
         if (!cancelled) setAccuracy(data);
       })
+      .catch((err) => {
+        // 取得失敗はaccuracy=nullのまま消費側の「データなし」表示に倒す。
+        // 未処理のPromise拒否にしない
+        console.error("実測精度取得エラー:", err?.message ?? String(err));
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
