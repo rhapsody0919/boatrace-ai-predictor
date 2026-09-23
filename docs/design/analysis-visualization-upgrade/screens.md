@@ -93,7 +93,7 @@ n併記・小標本フラグ（`rbit-n.is-small-sample`、`--color-warning-text`
 
 #### 3.1.1 コース別成績（期間別グリッド）
 
-FR-0の共通クロス集計コンポーネントの1例目。行＝期間・条件、列＝コース1〜6。
+行＝期間・条件、列＝コース1〜6。**共通コンポーネントには切り出さず `RaceWakuInfoTab` に直接実装する**（2026-09-23ユーザー判断。使用箇所が1つのためKISS/YAGNI。spec.md FR-0）。
 
 ```
         │ 1コース │ 2コース │ 3コース │ 4コース │ 5コース │ 6コース │
@@ -106,7 +106,7 @@ FR-0の共通クロス集計コンポーネントの1例目。行＝期間・条
 ```
 
 - 選手チップで選んだ1選手のデータ。指標チップ（勝率／2連対率／3連対率）でセルの指標が切り替わる
-- **セルには率とnを必ず併記**。n<30 は⚠と網掛け（`is-small-sample` の既存表現を流用）、n=0 は「—」
+- **セルには率とnを必ず併記**。`n < SMALL_SAMPLE_THRESHOLD`（=6）は⚠と網掛け（`is-small-sample` の既存表現を流用）、n=0 は「—」
 - コースは**実進入コース**（`actual_course_N`）基準。枠番ではない
 - 横スクロールは**このグリッドの中だけ**に閉じる（ページ全体は横スクロールさせない）。モバイルでは列を固定幅にして、行ラベル列を `position: sticky; left: 0`
 
@@ -366,7 +366,6 @@ F持ちの選手は、次にFを切ると長期の出場停止になるため、
 
 | コンポーネント | 役割 | 備考 |
 |---|---|---|
-| `src/components/analysis/CrossTabGrid.jsx` + `.css` | **FR-0の共通クロス集計**。行軸・列軸・セル指標・n併記・小標本フラグをpropsで受ける | 使うのは**FR-1とFR-2の2箇所**。`VenueGradeMatrix` の載せ替えは**スコープ外**（セルにnを持たない）、`StatBreakdownTable` はクロス集計ではないため対象外（spec.md FR-0で訂正済み） |
 | `src/components/race/RaceStConsiderationCard.jsx` + `.css` | ST考察（安定率・出遅率＋同コース・同級別の平均との差、抜出は実回数） | 枠別情報タブに置く。差の符号で色を分ける。見出しに集計期間を出す |
 | `src/components/race/RecentRunsBar.jsx` + `.css` | 直近10走の帯（進入コース・着順・ST） | 着順の色は `RaceResult` の既存表現を流用 |
 | `src/components/race/NigeSimulationCard.jsx` + `.css` | 逃げシミュレーション（2着率・2連単確率の横棒） | `.lede-simple` / `.lede-detail` パターン |
@@ -385,7 +384,6 @@ F持ちの選手は、次にFを切ると長期の出場停止になるため、
 | `src/components/race/RaceResult.jsx` | 末尾に `VenueDaySummaryCard` を追加 |
 | `src/pages/VenueRaceListPage.jsx`（会場ページ） | `VenueDaySummaryCard` を追加 |
 | `src/services/supabaseDataService.js` | `getRacerScopedRaceStats` の返り値に**そのレースの全艇のST配列**を足す（ST考察の算出用。追加クエリは不要）。`getNigeSimulation(venueCode)`・FR-4の4テーブル用の関数を追加 |
-| `src/components/analysis/VenueGradeMatrix.jsx` / `src/components/racer/RacerPerformanceStats.jsx` | `CrossTabGrid` に載せ替え |
 | `src/components/race/index.js` / `src/components/analysis/index.js` | barrel exportに追加 |
 | `src/components/race/termHints.js` | `stStable` / `stBreakout` / `stLate` / `nigeSimulation` を追加 |
 | `src/locales/{ja,en,zh-TW,ko}/common.json` | 新しい見出し・ラベル |
@@ -394,7 +392,7 @@ F持ちの選手は、次にFを切ると長期の出場停止になるため、
 ### 4.3 共通化の方針（`App.jsx` と `RaceDetail.jsx` の両方に出るもの）
 
 - **本日の成績サマリー**は結果タブ（レース詳細）と会場ページの2箇所に出る。インライン実装のままコピーすると `RaceBeforeInfoTab` からの移設で3箇所目になるため、`VenueDaySummaryCard` として切り出してから移設する
-- **クロス集計**は枠別情報タブ・基本情報タブ・選手ページ・分析ツール（会場×グレード）の4箇所になる。`CrossTabGrid` に統合する
+- **クロス集計**は結局、枠別情報タブ（コース×期間）の1箇所だけになった（基本情報タブはグリッド化しないと決定、選手ページは1次元テーブル、分析ツールの会場×グレードはセルにnを持たない）。共通化せず `RaceWakuInfoTab` に直接書き、2例目が出た時点で切り出す（2026-09-23ユーザー判断）
 - ST考察は枠別情報タブのみ。現時点で共通化しない（YAGNI）
 
 ---
