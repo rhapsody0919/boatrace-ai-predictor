@@ -239,8 +239,17 @@ export async function cmdDownload(opts, deps = {}) {
           "出走表に選手情報がありません（過去の確定レースのはずが未取得扱い。想定外）",
         );
       }
-      if (page.anomalies.length > 0) {
-        throw new Error(`要確認: ${page.anomalies.join(", ")}`);
+      // motor_boat_marker（モーター・ボート変更の赤表示。N18、本バックフィルの対象列
+      // RACELIST_BACKFILL_COLUMNSには含まれない別項目）は、raceListParser.js自身のコメント
+      // どおり「発見のための記録」であり、致命的な構造変化ではない。2026-09-23の本番実行で
+      // 実際に3件連続して現れ（is-fColor1、初めて実データで確認できたクラス名）、サーキット
+      // ブレーカーが誤って作動した。entries_count・deadlines_count等の他の異常は、対象列の
+      // 正確性に関わるため引き続き致命的として扱う
+      const criticalAnomalies = page.anomalies.filter(
+        (a) => !a.startsWith("motor_boat_marker:"),
+      );
+      if (criticalAnomalies.length > 0) {
+        throw new Error(`要確認: ${criticalAnomalies.join(", ")}`);
       }
       return { status: "ok" };
     },
