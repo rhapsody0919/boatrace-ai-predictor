@@ -1062,7 +1062,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });
 
-  test("枠別情報タブで選手×枠番別成績の棒グラフと決まり手傾向が表示され、枠番タップで直近10走が開く（BOA-307）", async ({
+  test("枠別情報タブで実進入コース別成績グリッドと決まり手傾向が表示され、セルタップで直近10走が開く（BOA-307 / phase a T3-1）", async ({
     page,
   }) => {
     await page.goto("/races/2026-08-11");
@@ -1074,23 +1074,34 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 他のタブ同様、枠別情報タブ表示中はデータ出走表等の分析ツール群を隠す
     await expect(page.locator(".data-race-table")).toHaveCount(0);
 
-    // 選手チップ6人・枠番1〜6の棒グラフが表示される
+    // 選手チップ6人・行6（今期/3ヶ月/1ヶ月/当地/一般戦/SG・G1）× 列6（コース1〜6）
     await expect(page.locator(".rwit-boat-chip")).toHaveCount(6);
-    await expect(page.locator(".rwit-bar-row")).toHaveCount(6, {
+    await expect(page.locator(".rwit-grid tbody tr")).toHaveCount(6, {
       timeout: 20000,
     });
+    await expect(
+      page.locator(".rwit-grid thead th.rwit-grid-course-th"),
+    ).toHaveCount(6);
 
-    // 指標を切り替えても6本の棒が維持される
+    // 指標を切り替えてもグリッドの形は維持される
     await page.locator(".rwit-chip", { hasText: "3連対率" }).click();
-    await expect(page.locator(".rwit-bar-row")).toHaveCount(6);
+    await expect(page.locator(".rwit-grid tbody tr")).toHaveCount(6);
 
     // 決まり手傾向カード（会場全体の全艇合算）が表示される
     await expect(page.locator(".rwit-tech-row").first()).toBeVisible({
       timeout: 20000,
     });
 
-    // 枠番の棒をタップすると直近10走の着順ドリルダウンが開く
-    await page.locator(".rwit-bar-row").first().click();
+    // ページ全体は横スクロールしない（横スクロールはグリッド内だけに閉じる）
+    const docOverflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(docOverflow).toBeLessThanOrEqual(1);
+
+    // セルをタップすると直近10走の着順ドリルダウンが開く
+    await page.locator(".rwit-grid-cell-button").first().click();
     await expect(page.locator(".rwit-expanded")).toBeVisible();
     await expect(page.locator(".rwit-streak-dot").first()).toBeVisible({
       timeout: 20000,
@@ -1098,6 +1109,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
     expect(await page.locator(".rwit-streak-dot").count()).toBeLessThanOrEqual(
       10,
     );
+
+    // もう一度タップすると閉じる
+    await page.locator(".rwit-grid-cell-button").first().click();
+    await expect(page.locator(".rwit-expanded")).toHaveCount(0);
   });
 
   test("オッズ一覧タブで券種切替・全通り常時表示・推移ドリルダウン・免責文言が表示される（BOA-311）", async ({

@@ -461,7 +461,7 @@
     "oddsList": "Odds List"
   },
   "wakuInfo": {
-    "note": "Pick a racer to compare their record by starting lane (1-6). Tap a bar to see their last 10 finishes from that lane",
+    "note": "Pick a racer to compare their record by the course they actually took (1-6), across periods and conditions. Tap a cell to see their last 10 finishes from that course",
     "boatLabel": "Racer (boat #)",
     "metricLabel": "Metric",
     "metrics": {
@@ -482,7 +482,20 @@
     "fetchError": "Couldn't load the last 10 finishes. Please try again later",
     "recentFinishesNote": "Finishes from the last 10 races in lane {{course}} (oldest on the left, newest on the right)",
     "kimariteTitle": "Winning techniques (all boats, last 90 days)",
-    "kimariteCaveat": "* Share of each winning technique across all races and boats at this venue (not an individual racer's record)"
+    "kimariteCaveat": "* Share of each winning technique across all races and boats at this venue (not an individual racer's record)",
+    "gridTitle": "Record by course",
+    "gridSubtitle": "Based on the course actually taken. Tap a cell to see the last 10 starts from that course",
+    "gridCaveat": "Course means the lane actually taken at the start, not the boat number. Races without this data are excluded",
+    "gridCourseHeader": "Course {{n}}",
+    "gridRows": {
+      "current": "This term",
+      "last3m": "Last 3 months",
+      "last1m": "Last month",
+      "local": "This venue",
+      "ippan": "General",
+      "sgg1": "SG/G1"
+    },
+    "smallSampleTitle": "Small sample; treat as a rough guide"
   },
   "aiPredictionTab": {
     "unavailableTitle": "No AI prediction data",

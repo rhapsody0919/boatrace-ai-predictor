@@ -275,3 +275,115 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* --- コース別成績グリッド（phase a FR-1 / T3-1、screens.md §3.1.1） ---
+   行＝期間・条件、列＝実進入コース1〜6。共通コンポーネントには切り出していない
+   （使う箇所が1つのため。spec.md FR-0）。
+   横スクロールはこのラッパの中だけに閉じ、ページ全体は横スクロールさせない。 */
+.rwit-grid-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 calc(var(--spacing-1) * -1);
+  padding: 0 var(--spacing-1);
+}
+
+.rwit-grid {
+  width: 100%;
+  min-width: 320px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* 行ラベル列は横スクロールしても残す */
+.rwit-grid-label-th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface-card);
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-1) 0;
+  white-space: nowrap;
+}
+
+.rwit-grid-course-th {
+  padding: var(--spacing-1) 0;
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  min-width: 42px;
+}
+
+.rwit-grid-cell {
+  padding: 1px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.rwit-grid-cell-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--spacing-1) 2px;
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.rwit-grid-cell.is-open .rwit-grid-cell-button {
+  border-color: var(--brand-accent-primary);
+}
+
+/* 今日その選手が入る枠のコース。金の細い縁で示す（強調は1段階だけ） */
+.rwit-grid-cell.is-own-course .rwit-grid-cell-button {
+  box-shadow: inset 0 0 0 1px var(--brand-accent-primary);
+}
+
+.rwit-grid-value {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.rwit-grid-value.is-small-sample,
+.rwit-grid-n.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+.rwit-grid-warn {
+  margin-right: 1px;
+  font-size: var(--font-size-xs);
+}
+
+.rwit-grid-n {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.1;
+}
+
+.rwit-grid-empty {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .rwit-grid-course-th {
+    min-width: 38px;
+  }
+
+  .rwit-grid-cell-button {
+    padding: var(--spacing-1) 1px;
+  }
+}

@@ -48,28 +48,16 @@ import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "./raceIndicators";
 import { SMALL_SAMPLE_THRESHOLD } from "./basicInfoStats";
+import {
+  GRID_COURSES,
+  GRID_ROWS,
+  buildCourseGrid,
+  getCourseRecentRuns,
+} from "./courseGridStats";
+import { finishPositionOf } from "./basicInfoStats";
 import "./RaceWakuInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate"];
-const COURSES = [1, 2, 3, 4, 5, 6];
-
-function courseValue(courseRaceCounts, course, metric) {
-  const counts = courseRaceCounts?.[String(course)];
-  if (!counts || !counts.total) return { value: null, n: 0 };
-  const numerator =
-    metric === "winRate"
-      ? counts.wins
-      : metric === "top2Rate"
-        ? counts.top2
-        : counts.top3;
-  return {
-    value:
-      numerator === null || numerator === undefined
-        ? null
-        : (numerator / counts.total) * 100,
-    n: counts.total,
-  };
-}
 
 function rankDotClass(rank) {
   // 着外（欠場・失格・転覆等でrank1〜6のどこにも入らない）は最下位扱い
@@ -101,30 +89,17 @@ function aggregateTechniqueDistribution(techniqueByBoat) {
     .sort((a, b) => b.count - a.count);
 }
 
-function RaceWakuInfoTab({ raceId, venueCode, players }) {
+// raceId は受け取らない: コース別成績を racer_aggregated_stats（レース単位の
+// getRaceRacerStats）から getRacerScopedRaceStats（選手単位）に切り替えたため不要になった
+function RaceWakuInfoTab({ venueCode, players }) {
   const { t } = useTranslation();
   // このタブで使うのはracerStatsと決まり手統計の2種類だけのため、8+4クエリを
   // まとめて発火するuseRaceAnalysisData/useVenueTendencyStatsは使わず個別に取得する
   // （withCacheで他タブ・他コンポーネントの取得と重複しない）。
   // undefined=取得中、null=取得失敗/データなし
-  const [racerStats, setRacerStats] = useState(undefined);
+  // 選択中の選手の出走履歴（実進入コース付き）。undefined=取得中、null=取得失敗
+  const [scopedByRacer, setScopedByRacer] = useState({});
   const [techniqueStats, setTechniqueStats] = useState(undefined);
-
-  useEffect(() => {
-    let cancelled = false;
-    supabaseDataService
-      .getRaceRacerStats(raceId)
-      .then((data) => {
-        if (!cancelled) setRacerStats(data ?? null);
-      })
-      .catch((err) => {
-        console.error("枠別情報（racerStats）取得エラー:", err?.message);
-        if (!cancelled) setRacerStats(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [raceId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,48 +125,68 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
     () => sortedPlayers[0]?.number ?? null,
   );
   const [metric, setMetric] = useState("winRate");
-  const [openCourse, setOpenCourse] = useState(null);
-  const [finishesByKey, setFinishesByKey] = useState({});
-
-  if (sortedPlayers.length === 0) return null;
+  // グリッドのどのセルを開いているか（行キー × コース）
+  const [openCell, setOpenCell] = useState(null);
 
   const selectedPlayer =
     sortedPlayers.find((p) => p.number === selectedBoat) ?? sortedPlayers[0];
-  const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
-  const selectedStats = statsByBoat.get(selectedPlayer.number);
-  const selectedColor = BOAT_COLORS[selectedPlayer.number] || {};
+  const selectedRacerId = selectedPlayer?.racerId ?? null;
+
+  // 選手を選ぶたびに、その選手の出走履歴を取得する（withCacheで基本情報タブ・
+  // 直前情報タブと共有されるため、同じ選手なら再フェッチは起きない）
+  useEffect(() => {
+    if (!selectedRacerId) return undefined;
+    let cancelled = false;
+    // 未取得の間はキー自体が無い（= undefined）ので、ここで明示的に
+    // undefined を入れる必要はない（effect内の同期setStateを避ける）
+    supabaseDataService
+      .getRacerScopedRaceStats(selectedRacerId)
+      .then((data) => {
+        if (!cancelled)
+          setScopedByRacer((prev) => ({ ...prev, [selectedRacerId]: data }));
+      })
+      .catch((err) => {
+        // 取得失敗を「データなし」に化けさせない（BOA-359）
+        console.error(
+          "枠別情報（選手の出走履歴）取得エラー:",
+          err?.message ?? String(err),
+        );
+        if (!cancelled)
+          setScopedByRacer((prev) => ({ ...prev, [selectedRacerId]: null }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedRacerId]);
+
+  if (sortedPlayers.length === 0) return null;
+
+  const scopedRecords = selectedRacerId
+    ? scopedByRacer[selectedRacerId]
+    : null;
+  const grid = Array.isArray(scopedRecords)
+    ? buildCourseGrid(scopedRecords, { venueCode, metric })
+    : [];
+  const recentRuns =
+    openCell && Array.isArray(scopedRecords)
+      ? getCourseRecentRuns(scopedRecords, {
+          venueCode,
+          rowKey: openCell.rowKey,
+          course: openCell.course,
+        })
+      : [];
 
   const selectBoat = (boatNumber) => {
     setSelectedBoat(boatNumber);
-    setOpenCourse(null);
+    setOpenCell(null);
   };
 
-  const toggleCourse = (course) => {
-    if (openCourse === course) {
-      setOpenCourse(null);
-      return;
-    }
-    setOpenCourse(course);
-    const racerId = selectedPlayer.racerId;
-    const key = `${racerId}-${course}`;
-    if (
-      racerId &&
-      (finishesByKey[key] === undefined || finishesByKey[key] === "error")
-    ) {
-      setFinishesByKey((prev) => ({ ...prev, [key]: null }));
-      supabaseDataService
-        .getRacerCourseRecentFinishes(racerId, course)
-        .then((data) => {
-          setFinishesByKey((prev) => ({ ...prev, [key]: data }));
-        })
-        .catch((err) => {
-          console.error(
-            "枠別情報（直近10走）取得エラー:",
-            err?.message ?? String(err),
-          );
-          setFinishesByKey((prev) => ({ ...prev, [key]: "error" }));
-        });
-    }
+  const toggleCell = (rowKey, course) => {
+    setOpenCell((prev) =>
+      prev && prev.rowKey === rowKey && prev.course === course
+        ? null
+        : { rowKey, course },
+    );
   };
 
   const techniqueDistribution = aggregateTechniqueDistribution(
@@ -247,113 +242,129 @@ function RaceWakuInfoTab({ raceId, venueCode, players }) {
         ))}
       </div>
 
-      <div className="rwit-card">
-        <h3 className="rwit-card-title">{t("wakuInfo.courseTitle")}</h3>
-        <p className="rwit-card-sub">{t("wakuInfo.courseSubtitle")}</p>
+<div className="rwit-card">
+  <h3 className="rwit-card-title">{t("wakuInfo.gridTitle")}</h3>
+  <p className="rwit-card-sub">{t("wakuInfo.gridSubtitle")}</p>
 
-        {racerStats === undefined ? (
-          <p className="rwit-loading">{t("wakuInfo.loading")}</p>
-        ) : !selectedStats?.courseRaceCounts ? (
-          <p className="rwit-empty">{t("wakuInfo.noData")}</p>
-        ) : (
-          <div className="rwit-bars">
-            {COURSES.map((course) => {
-              const { value, n } = courseValue(
-                selectedStats.courseRaceCounts,
-                course,
-                metric,
-              );
-              const isSmallSample = n > 0 && n < SMALL_SAMPLE_THRESHOLD;
-              const isOwnCourse = course === selectedPlayer.number;
-              const open = openCourse === course;
-              const key = `${selectedPlayer.racerId}-${course}`;
-              const finishes = finishesByKey[key];
-
-              return (
-                <div key={course} className="rwit-bar-block">
-                  <button
-                    type="button"
-                    className="rwit-bar-row"
-                    onClick={() => toggleCourse(course)}
-                    aria-expanded={open}
+  {scopedRecords === undefined ? (
+    <p className="rwit-loading">{t("wakuInfo.loading")}</p>
+  ) : scopedRecords === null ? (
+    <p className="rwit-empty">{t("wakuInfo.fetchError")}</p>
+  ) : scopedRecords.length === 0 ? (
+    <p className="rwit-empty">{t("wakuInfo.noData")}</p>
+  ) : (
+    <>
+      {/* 横スクロールはこのラッパの中だけに閉じる（ページ全体は横スクロールさせない） */}
+      <div className="rwit-grid-wrapper">
+        <table className="rwit-grid">
+          <thead>
+            <tr>
+              <th className="rwit-grid-label-th" scope="col"></th>
+              {GRID_COURSES.map((course) => {
+                const color = BOAT_COLORS[course] || {};
+                return (
+                  <th
+                    key={course}
+                    className="rwit-grid-course-th"
+                    scope="col"
+                    style={{ background: color.bg, color: color.text }}
                   >
-                    <span className="rwit-course-badge">{course}</span>
-                    <span className="rwit-bar-track">
-                      {value !== null && (
+                    {course}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {grid.map((row) => (
+              <tr key={row.key}>
+                <th className="rwit-grid-label-th" scope="row">
+                  {t(`wakuInfo.gridRows.${row.key}`)}
+                </th>
+                {row.cells.map((cell) => {
+                  const isSmallSample =
+                    cell.n > 0 && cell.n < SMALL_SAMPLE_THRESHOLD;
+                  const open =
+                    openCell?.rowKey === row.key &&
+                    openCell?.course === cell.course;
+                  const isOwnCourse = cell.course === selectedPlayer.number;
+                  if (cell.n === 0) {
+                    return (
+                      <td key={cell.course} className="rwit-grid-cell">
+                        <span className="rwit-grid-empty">—</span>
+                      </td>
+                    );
+                  }
+                  return (
+                    <td
+                      key={cell.course}
+                      className={`rwit-grid-cell${open ? " is-open" : ""}${isOwnCourse ? " is-own-course" : ""}`}
+                    >
+                      <button
+                        type="button"
+                        className="rwit-grid-cell-button"
+                        onClick={() => toggleCell(row.key, cell.course)}
+                        aria-expanded={open}
+                      >
                         <span
-                          className={`rwit-bar-fill${isSmallSample ? " is-small-sample" : ""}`}
-                          style={{
-                            width: `${Math.max(2, Math.min(100, value))}%`,
-                            backgroundColor: selectedColor.bg,
-                          }}
-                        />
-                      )}
-                    </span>
-                    <span className="rwit-value">
-                      {isOwnCourse && (
-                        <span className="rwit-own-badge">
-                          {t("wakuInfo.todayBadge")}
-                        </span>
-                      )}
-                      {value !== null ? `${value.toFixed(1)}%` : "—"}
-                      {n > 0 && (
-                        <span
-                          className={`rwit-n${isSmallSample ? " is-small-sample" : ""}`}
+                          className={`rwit-grid-value${isSmallSample ? " is-small-sample" : ""}`}
                         >
-                          {t("wakuInfo.sampleCount", { n })}
+                          {isSmallSample && (
+                            <span
+                              className="rwit-grid-warn"
+                              title={t("wakuInfo.smallSampleTitle")}
+                            >
+                              ⚠
+                            </span>
+                          )}
+                          {cell.value.toFixed(1)}
                         </span>
-                      )}
-                    </span>
-                    <span className="rwit-expand-arrow">
-                      {open ? "▼" : "▶"}
-                    </span>
-                  </button>
-
-                  {open && (
-                    <div className="rwit-expanded">
-                      {!selectedPlayer.racerId ? (
-                        <p className="rwit-expanded-empty">
-                          {t("wakuInfo.noRacerId")}
-                        </p>
-                      ) : finishes === undefined || finishes === null ? (
-                        <p className="rwit-expanded-loading">
-                          {t("wakuInfo.loading")}
-                        </p>
-                      ) : finishes === "error" ? (
-                        <p className="rwit-expanded-empty">
-                          {t("wakuInfo.fetchError")}
-                        </p>
-                      ) : finishes.length === 0 ? (
-                        <p className="rwit-expanded-empty">
-                          {t("wakuInfo.noRecentFinishes")}
-                        </p>
-                      ) : (
-                        <>
-                          <p className="rwit-expanded-note">
-                            {t("wakuInfo.recentFinishesNote", { course })}
-                          </p>
-                          <div className="rwit-streak">
-                            {[...finishes].reverse().map((f) => (
-                              <span
-                                key={f.race_id}
-                                className={`rwit-streak-dot ${rankDotClass(f.rank)}`}
-                                title={f.race_id}
-                              >
-                                {f.rank ?? t("wakuInfo.outOfPlace")}
-                              </span>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <p className="rwit-caveat">{t("wakuInfo.courseCaveat")}</p>
+                        <span
+                          className={`rwit-grid-n${isSmallSample ? " is-small-sample" : ""}`}
+                        >
+                          {t("wakuInfo.sampleCount", { n: cell.n })}
+                        </span>
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+
+      {openCell && (
+        <div className="rwit-expanded">
+          <p className="rwit-expanded-note">
+            {t("wakuInfo.recentFinishesNote", { course: openCell.course })}
+          </p>
+          {recentRuns.length === 0 ? (
+            <p className="rwit-expanded-empty">
+              {t("wakuInfo.noRecentFinishes")}
+            </p>
+          ) : (
+            <div className="rwit-streak">
+              {recentRuns.map((r) => {
+                const rank = finishPositionOf(r);
+                return (
+                  <span
+                    key={r.raceId}
+                    className={`rwit-streak-dot ${rankDotClass(rank)}`}
+                    title={r.raceId}
+                  >
+                    {rank ?? t("wakuInfo.outOfPlace")}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  )}
+  <p className="rwit-caveat">{t("wakuInfo.gridCaveat")}</p>
+</div>;
 
       <div className="rwit-card">
         <h3 className="rwit-card-title">{t("wakuInfo.kimariteTitle")}</h3>

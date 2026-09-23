@@ -459,7 +459,7 @@
     "oddsList": "賠率一覽"
   },
   "wakuInfo": {
-    "note": "選擇選手後，可比較該選手各艇號（1〜6）的成績。點選長條即可展開最近10場的名次",
+    "note": "選擇選手後，可依期間與條件比較該選手實際進入各航道（1〜6）的成績。點選儲存格即可展開該航道最近10場的名次",
     "boatLabel": "選手（艇號）",
     "metricLabel": "指標",
     "metrics": {
@@ -480,7 +480,20 @@
     "fetchError": "無法取得最近10場資料，請稍後再試",
     "recentFinishesNote": "{{course}}號艇（艇號）最近10場的名次（左為最舊、右為最新）",
     "kimariteTitle": "獲勝方式傾向（全艇・最近90天）",
-    "kimariteCaveat": "※本場館所有比賽・所有艇合計的獲勝方式比例（非選手個人實績）"
+    "kimariteCaveat": "※本場館所有比賽・所有艇合計的獲勝方式比例（非選手個人實績）",
+    "gridTitle": "各航道成績",
+    "gridSubtitle": "以實際進入的航道為準。點擊儲存格可查看該航道最近10次出賽",
+    "gridCaveat": "航道指起跑時實際進入的航道，而非艇號。未取得資料的賽事已排除",
+    "gridCourseHeader": "第{{n}}航道",
+    "gridRows": {
+      "current": "本期",
+      "last3m": "近3個月",
+      "last1m": "近1個月",
+      "local": "本場地",
+      "ippan": "一般賽",
+      "sgg1": "SG・G1"
+    },
+    "smallSampleTitle": "樣本數少，僅供參考"
   },
   "aiPredictionTab": {
     "unavailableTitle": "尚無AI預測資料",
