@@ -15,68 +15,96 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
 - 各タスクの「1コミット〜1PR」の粒度は目安。**T3・T5のように同じタブを触るタスクは1PRにまとめてよい**（タブ単位でPlaywrightの自己検証が1回で済む）
 - `/step4` を都度呼ぶ運用にする。会話が圧縮された直後・別セッションで再開する際は、記憶ではなく**このファイルを読み直してから続ける**（`.claude/rules/sdd-workflow.md`）
 - 実装着手前に、`getRacerScopedRaceStats` の既存の返り値（`src/services/supabaseDataService.js:3756`）と `RaceWakuInfoTab.jsx` の冒頭コメントを読む。後者には**現在は成り立たない前提が2つ書かれている**（screens.md §1）
+- **本tasks.mdは2026-09-23に一度全面改訂している**。`/step4` 着手前の独立エージェントレビュー（`.claude/rules/sdd-workflow.md`）で33件の指摘を受け、うち数値・前提が誤っていたものを測り直して設計をやり直した（[spec.md 設計の訂正履歴](./spec.md)）。**旧版の受入基準の数値（安定率 67.9%/45.8% 等）は使わない**
 
 ---
 
-## Phase 1: 共通化とサービス層（DBへの変更なし・並行着手可）
+## Phase 0: 前提となるバグ修正（最優先。他の全タスクの前）
 
-- [ ] **T1-1** `CrossTabGrid`（FR-0）を新規作成し、`VenueGradeMatrix`（BOA-263）・`RacerPerformanceStats`（BOA-268）を載せ替える
+- [ ] **T0-1** `fetchAllByIn` のページ取得エラーの握りつぶしを直す（plan.md §3.0）
+  - `src/services/supabaseDataService.js:320`。現状は `console.error` して `break` し、**部分的な配列を正常な戻り値として返す**
+  - エラー時は例外を投げる（または `fetchFailed: true` を伝播させる）。呼び出し元6箇所（`getRacerScopedRaceStats` を含む）が `withCache` にキャッシュさせないようにする
+  - **なぜ先にやるか**: ST考察は「そのレースの全6艇のSTが揃っている」前提でST順1位を決めるため、2ページ目以降が落ちると安定率が実際より高く・出遅率が低く算出され、**その誤った値が最大7日間（`PAST_RACE_CACHE_TTL`）キャッシュに残る**
+  - **受入基準**: ページ取得を人為的に失敗させたとき（`.in()` に不正な列を渡す等）、戻り値が「空配列＝データなし」に化けない。既存の6箇所の正常系の表示が変わらないことをPlaywrightで確認する
+
+## Phase 1: 共通化とサービス層（DBへの変更なし・T0-1の後）
+
+- [ ] **T1-1** `CrossTabGrid`（FR-0）を新規作成する
   - `src/components/analysis/CrossTabGrid.jsx` + `.css`。行軸・列軸・セル指標・n併記・小標本フラグをpropsで受ける。データ取得はしない（整形済みの2次元データを受ける）
   - 行ラベル列を `position: sticky; left: 0`、**グリッド内だけ横スクロール**（ページ全体は横スクロールさせない）
   - `src/components/analysis/index.js` の barrel export に追加
-  - **受入基準**: 載せ替えた2箇所の表示内容が**前後で変わらない**ことをPlaywrightで突き合わせる（値・n・小標本フラグ）。軸の数とセル指標をpropsで差し替えられる。モバイル320pxでページ全体の横スクロールが出ない
+  - **`VenueGradeMatrix`・`RacerPerformanceStats` の載せ替えはスコープ外**（2026-09-23に訂正。前者はセルにnを持たず、後者の `StatBreakdownTable` はクロス集計ではなく汎用1次元テーブル。spec.md FR-0）
+  - **受入基準**: FR-1（T3-1）とFR-2（T5-1）の2箇所がこのコンポーネントを使う。軸の数とセル指標をpropsで差し替えられる。`n < SMALL_SAMPLE_THRESHOLD`（=6）のセルに `is-small-sample` の視覚的区別が出る。モバイル320pxでページ全体の横スクロールが出ない
 - [ ] **T1-2** `getRacerScopedRaceStats` に派生フィールドを足す（追加クエリ0本。plan.md §3.1）
-  - `stNormalized`（`is_flying` なら符号反転）・`raceBestSt`・`innerMinSt`（1コースはnull）・`stRank` を各行に追加
+  - `isFlying` / `stForRank`（**Fの行はnull。符号反転はしない**）・`raceBestSt`（Fを除いた最小）・`innerMinSt`（Fを除いた内側最小。1コースはnull）・`stRank`（Fを除く）・`grade` を各行に追加
   - **生の6艇分の配列は返さない**。`soleFastestBoatByRace` と同じ要領でレース単位の前処理として計算する
-  - **受入基準**: `is_flying=true` の行で `stNormalized` が負値になる。`innerMinSt` が1コースでnull。既存の戻り値のキー（`startTiming`・`actualCourse` 等）と既存の利用箇所（基本情報タブ・直前情報タブ）の表示が変わらない
+  - **受入基準**: `is_flying=true` の行で `stForRank` が **null**（負値ではない）。Fの艇が同じレースの他艇の `raceBestSt` に影響しない（Fのあるレースで、他艇の `raceBestSt` がFを除いた最小値と一致する）。`innerMinSt` が1コースでnull。既存の戻り値のキー（`startTiming`・`actualCourse` 等）と既存の利用箇所（基本情報タブ・直前情報タブ）の表示が変わらない
 - [ ] **T1-3** `src/utils/stConsideration.js`（純関数）と `src/utils/courseBaseline.js`（純関数）
-  - `computeStConsideration(rows, { course })` → `{ n, stableRate, breakoutRate, lateRate, avgSt }`。閾値は 0.05 / 0.07 / 0.10。`course === 1` の抜出率は **null**（0%にしない）
-  - `courseBaseline.js` は差分計算と「高いほど良い／低いほど良い」の向きを持つ（安定率・抜出率は高いほど良い、出遅率は低いほど良い）
-  - **受入基準**: 本specの検証で使った実測値と一致する。全国・直近1年で安定率 1コース67.9% / 6コース45.8%、出遅率 1コース14.7% / 6コース30.8%、抜出率（すべての内側艇基準）3コース3.1% / 6コース0.8%。**同じSQLをnode -eで実行して突き合わせる**
+  - `computeStConsideration(rows, { course })` → `{ n, stableRate, lateRate, breakoutCount, breakoutRate, avgSt, flyingCount }`。閾値は 0.05 / 0.07 / 0.10。`course === 1` の `breakoutCount` / `breakoutRate` は **null**（0や0%にしない）
+  - **母数 `n` にFの走を入れない**。Fは `flyingCount` として別に返す
+  - 小標本の判定はこの関数で行わない（呼び出し側が `SMALL_SAMPLE_THRESHOLD` で判断する。ST考察だけ別閾値を持たせない）
+  - `courseBaseline.js` は **`(course, grade)` でセルを引き**、差分計算と「高いほど良い／低いほど良い」の向きを持つ（安定率・抜出回数は高いほど良い、出遅率は低いほど良い）
+  - **受入基準**: spec.mdの再測値と一致する。**Fを除外し級別で分けた状態で、安定率 (1,A1) 74.4% / (6,B1) 42.4%、出遅率 (1,A1) 9.9% / (6,B1) 33.1%、抜出率 (3,A1) 3.50% / (6,A1) 0.73%**。**同じSQLをnode -eで実行して突き合わせる**
 
 ## Phase 2: 事前集計テーブルとバッチ（T3の前提）
 
 - [ ] **T2-1** (ユーザー承認) マイグレーション094を適用する（新規2表）。適用後に `APPLIED.md` を更新する
   - 適用前に長時間クエリが0件であることを確認する。適用後に `has_table_privilege('anon', ..., 'SELECT')=true` / `'INSERT'=false`、RLS有効、ポリシー各1件を確認する
+  - `st_course_baseline` の主キーが `(course, grade)`、`window_start` / `window_end` / `window_days` の列があることを確認する
 - [ ] **T2-2** `scripts/daily/update-course-baseline-stats.js` と `.github/workflows/aggregate-course-baseline-stats.yml`（JST 00:50）
   - 1スクリプトで2表を更新する（基礎CTEを共有。分けるとDBスキャンが2倍になる）
-  - `upsertChangedRows`（`scripts/lib/unchangedRows.js`）で**変更のある行だけ書く**
-  - **0件書き込みをエラーにする**（`st_course_baseline` は常に6行）。`continue-on-error` は付けない
-  - 集計窓は「**実行時点から遡って365日**」の移動窓（GitHub Actionsの起動遅延で対象日がずれる失敗モードを避ける。ADR-0068の影響）
-  - **受入基準**: ローカルで dry-run（書き込みなし）を実行し、出力がT1-3の実測値と一致する。本番実行後に `st_course_baseline` が6行・`nige_second_by_course` が開催実績のある会場分
+  - **集計本体はRPC（SQL関数）側に寄せる**。基礎CTEは約56万行を読むため、Node側に持たず結果の24行＋最大120行だけ返す。RPCにしない場合は `.range(from, from + 999)` のページネーション必須（Supabaseのデフォルト上限は1000行）
+  - **`window_start` / `window_end` / `window_days` は実測値を書く**（365や730の固定値を書かない）。窓は「利用可能な全期間」
+  - **Fの行は基準（`min(st) filter (where not is_flying)`）からも母数（`where not is_flying`）からも除外する**。符号反転はしない
+  - `upsertChangedRows`（`scripts/lib/unchangedRows.js`）で**変更のある行だけ書く**。そのために:
+    - **`NUMERIC_SCALES`（`unchangedRows.js:40`）に `st_course_baseline` と `nige_second_by_course` のエントリを追加する**。未登録だと `NUMERIC_SCALES[table] ?? {}` で空になり、NUMERIC列が毎日「変更あり」と判定される
+    - **`last_updated` に当日の日付を毎日入れない**。比較対象から外し、変更が検出された行にだけ書く
+  - **エラーにするのは「集計結果が0行だった場合」**であり、「変更が無くて書き込みが0行だった場合」ではない。この2つを取り違えると値が安定した日に毎回失敗する
+  - `continue-on-error` は付けない
+  - **受入基準**: ローカルで dry-run（書き込みなし）を実行し、出力がT1-3の実測値と一致する。本番実行後に `st_course_baseline` が **24行**・`nige_second_by_course` が開催実績のある会場分。2日目の実行で「変更なしでスキップ」が大半になる（毎日全行書き換えになっていない）
 - [ ] **T2-3** データ精度検証（`.claude/rules/analysis.md`「データ精度の検証」。コードレビューとは別の独立ステップ）
   - `nige_second_by_course.second_rate` を会場ごとに合計して **100%±0.5** に収まる（2着は必ず1艇）
-  - `st_course_baseline` の6行が、同じ定義のSQLを直接実行した結果と一致する
+  - **`exacta_rate` を会場ごとに合計した値が `nige_races / total_races * 100` と ±0.5pt 以内で一致する**（分母の取り違えを機械的に検知する。当初の設計で3.6%ずれていた）
+  - `st_course_baseline` の24行が、同じ定義のSQLを直接実行した結果と一致する
   - `st_histogram` のビンの合計が `runs` と一致する
-  - **受入基準**: 上記3点を実測クエリの結果つきで報告する
+  - **F艇を含むレースを1件抜き出し、そのレースの他艇の安定率がF艇に引きずられていないことを手計算で確認する**（F1の再発防止）
+  - **受入基準**: 上記5点を実測クエリの結果つきで報告する
 
 ## Phase 3: 枠別情報タブ（FR-1・FR-6。T1・T2の後）
 
+- [ ] **T3-0** 実装前にST考察カードのモックを再提示してユーザー承認を得る
+  - 既存モック（https://claude.ai/artifact/N3e6TSHmoPXzLNX1SSSLZK ）のST考察カードは**旧前提（F符号反転・コースのみベースライン・抜出率を%表示）**で作られている
+  - 再設計後の表示（級別を明示したベースライン・抜出の実回数表示・集計期間の明示・Fバッジ）に差し替えて提示する（screens.md §3.1.2）
+  - **受入基準**: ユーザーの承認を得てからT3-2に進む（`.claude/CLAUDE.md`「大規模な新機能はモック承認後に実装」）
 - [ ] **T3-1** コース別成績グリッド（実進入コース基準）に差し替え、既存の「コース別成績（バー＋ドリルダウン）」カードを廃止する
   - `CrossTabGrid` を使う。行＝今期/3ヶ月/1ヶ月/当地/一般戦/SG・G1、列＝コース1〜6、セル＝率＋n
-  - コースは `actual_course_N`（実進入）。**既存の `courseRaceCounts`（艇番＝コース前提）はこのタブでは使わなくなる**
+  - コースは `actual_course_N`（実進入）。**既存の `courseRaceCounts`（艇番＝コース前提）はこのタブでは使わなくなる**。グリッドに「実進入コース基準」と注記する（[BOA-302](https://linear.app/boat-ai/issue/BOA-302) が横断課題として起票済み）
   - ドリルダウン（直近10走）をグリッドのセルタップに移す
-  - **受入基準**: 期間の切り替えでセルの値とnが変わる。n<30で⚠と網掛け、n=0で「—」。セルタップでそのコースの直近10走が開く。`actual_course` が取れないレースが母数から落ちている（実データで件数を確認する）
-- [ ] **T3-2** `RaceStConsiderationCard`（ST考察）: 3指標 × 6艇、値＋同コース平均との差
+  - **受入基準**: 期間の切り替えでセルの値とnが変わる。**`n < 6` で⚠と網掛け**（`SMALL_SAMPLE_THRESHOLD`。旧版の n<30 は使わない）、n=0で「—」。セルタップでそのコースの直近10走が開く。`actual_course` が取れないレースが母数から落ちている（実データで件数を確認する）
+- [ ] **T3-2** `RaceStConsiderationCard`（ST考察）: 値＋**同コース・同級別の平均**との差
   - 差の色は `--color-success-text` / `--color-error-text`（指標ごとに符号の向きを反転）
-  - **1コースの抜出率は空欄**（0%と出さない）＋理由を添える
+  - **ベースラインのラベルに級別を出す**（「A1・1コース平均 74.4%」）。どのセルと比べているかが読めるようにする
+  - **抜出は実回数が主表示**（`0回/25走`）、期待回数を括弧で添え、率は小さく右端。**1コースの抜出は空欄**（0回とも0%とも出さない）＋理由を添える
+  - **カード見出しに集計期間を出す**（`st_course_baseline.window_start` / `window_end` をそのまま表示）
+  - **Fの走は母数に入れず、艇のヘッダに `F1` バッジを出す**
   - 強調は金14%（1位）/ 金7%（2位）の2段階
-  - **受入基準**: 差の符号と大きさが `st_course_baseline` の値と一致する。5号艇・6号艇の出遅率で、生の値と差で順位が逆転して見える（screens.md §3.1.2の実例）
+  - **受入基準**: 差の符号と大きさが `st_course_baseline` の `(course, grade)` セルと一致する。5号艇・6号艇の出遅率で、生の値と差で順位が逆転して見える（screens.md §3.1.2の実例）。B2級の選手が全コースで一律「平均より悪い」と出ない（級別ベースラインが効いていることの確認）
 - [ ] **T3-3** ST分布・ST履歴をST考察カード内の折りたたみに入れる（`.lede-detail` パターン）
-  - ST分布: 選手のSTヒストグラム（0.05刻み）に同コース平均の分布（`st_histogram`）を薄く重ねる
+  - ST分布: 選手のSTヒストグラム（0.05刻み）に同コース・同級別の分布（`st_histogram`）を薄く重ねる
   - ST履歴: 直近10走の「もっと見る」で期間を伸ばす（表示件数はT3-3の実装時に決める。plan.md §8の#2）
   - **受入基準**: 折りたたみを開く前はカードの高さが変わらない。ヒストグラムのビンの合計が母数と一致する
 - [ ] **T3-4** `RecentRunsBar`（直近10走）: 進入コース（枠色）／着順／ST＋**ST順位「(1位)」**
   - 1位を金、最下位を赤。着順の色は既存の `rr-pos`（`src/App.css`）を流用する
   - モバイル390pxでは5本×2段に折り返す
-  - **受入基準**: 帯の進入コース・着順・STが `race_results` の実値と一致する。`stRank` がそのレースのST順と一致する。モーター2連対率は出さない
+  - **受入基準**: 帯の進入コース・着順・STが `race_results` の実値と一致する。`stRank` がそのレースのST順（Fを除く）と一致する。Fの走は `F` と表示しST順位を付けない。モーター2連対率は出さない
 - [ ] **T3-5** `NigeSimulationCard`（逃げシミュレーション、FR-6）
   - 横棒（個別の棒。積み上げ1本にしない）＋2連単確率。母数を明記する。**会場別のみ・全国へのフォールバックはしない**
   - 1行要約＋「くわしく見る」で算出方法と母数を開く
-  - **受入基準**: 2着率の合計が100%（丸め誤差を除く）。表示値が `nige_second_by_course` と一致する。追加クエリは1本
+  - **受入基準**: 2着率の合計が100%（丸め誤差を除く）**かつ2連単確率の合計が「1コース逃げ率」と一致する**。表示値が `nige_second_by_course` と一致する。追加クエリは1本
 - [ ] **T3-6** i18n（ja/en/zh-TW/ko）と `termHints`
   - 既存の名前空間に追加（`wakuInfo.*`）。Rechartsを使う箇所は data key を翻訳しない（`name` prop）
   - `termHints` に `stStable` / `stBreakout` / `stLate` / `nigeSimulation`（ja専用）。**自前定義なので定義を説明する**＋「当サービスの独自集計です」を付ける（ピットレポートの★と扱いが逆）
+  - **`stBreakout` のヒントに「なぜ回数で出しているか」を1行入れる**（外側コースは率にすると0%が並ぶため）
   - **受入基準**: 4言語のJSONが構文エラーなし。非ja言語で見出し・ラベルが翻訳される
 - [ ] **T3-7** Playwrightでの自己検証とE2Eの追記
   - ライト・ダーク・モバイル320px/390pxで、枠別情報タブの全カードを確認する。**強調の2段階（金14%/7%）がダークで判別できるかを目視で確認し、できなければ1位のみに落とす**（screens.md §5.3）
@@ -156,9 +184,10 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
 
 本機能のバッチ（T2-2）は**外部サイトを取得しない**（自社DBの集計のみ）ため、同ルールの「完了の定義」A（期待件数）・B（タイミング実測）はそのままは当てはまらない。plan.md §5.2で読み替えた3点で判定する。
 
-- [ ] **件数**: `st_course_baseline` が6行、`nige_second_by_course` が「直近1年に1コース逃げが1件以上あった会場 × 2〜6コース」の行数（24会場開催なら120行）であることを実測クエリで確認する
-- [ ] **整合**: `nige_second_by_course.second_rate` を会場ごとに合計して100%±0.5に収まることを実測クエリで確認する（2着は必ず1艇）
-- [ ] **継続監視**: `last_updated` が2日以上古い場合を日次で検知してSlack通知することを確認する（`scrape-monitor` の `daily_overdue` と同じ枠組み）
+- [ ] **件数**: `st_course_baseline` が**24行**（コース6 × 級別4）、`nige_second_by_course` が「1コース逃げが1件以上あった会場 × 2〜6コース」の行数（24会場開催なら120行）であることを実測クエリで確認する
+- [ ] **整合1**: `nige_second_by_course.second_rate` を会場ごとに合計して100%±0.5に収まることを実測クエリで確認する（2着は必ず1艇）
+- [ ] **整合2**: `exacta_rate` の会場ごとの合計が `nige_races / total_races * 100` と±0.5pt以内で一致することを実測クエリで確認する（分母の取り違えの検知）
+- [ ] **継続監視**: **`last_updated` ではなく `window_end`** が2日以上古い場合を日次で検知してSlack通知することを確認する。**既存の `scrape-monitor` の `daily_overdue` は使えない**（行数が固定のテーブルでは空振りする）。バッチ自身が整合チェックに失敗したら非0終了して既存のSlack経路に流す形にする（plan.md §5.2）
 
 ---
 
@@ -167,6 +196,6 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
 - **`courseRaceCounts`（艇番＝コース前提）を使う他の4箇所** — T3-1で枠別情報タブは実進入コース基準になるが、`DataRaceTable` の「枠番勝率」行（`raceIndicators.jsx`）・`RaceCardDataTable`・`AttackDefenseTable`（超展開データ）・選手ページの `RacerPerformanceStats` は艇番＝コース前提のまま。**同じサイト内で2つの基準が混在する**
   - これは phase a のスコープを超える横断課題で、既に [BOA-302](https://linear.app/boat-ai/issue/BOA-302)（「BOA-257『コース→枠番』コピー修正が3チケット目、データソースの根本リネームを検討」）として起票されている。**重複起票しない**
   - T3-1では、グリッドの注記に「実進入コース基準」と明記して、`DataRaceTable` の「枠番勝率」（艇番基準）との違いが読み取れるようにする
-- **data-catalog の N13・N14 の記述の訂正** — 「取得なし」は現状と合っていない（`race_entries.f_count` / `l_count` / `weight_kg` / `branch` は列も値も実在。充足率は直近1年で約4.5%）。取得基盤側（BOA-353配下）の担当なので、本specでは直さず申し送りにする
+- **data-catalog の N13・N14 の記述の訂正** — 「取得なし」は現状と合っていない（`race_entries.f_count` / `l_count` / `weight_kg` / `branch` は列も値も実在。充足率は全期間で約4.5%）。取得基盤側（BOA-353配下）の担当なので、本specでは直さず申し送りにする
 - **分析ツール（`/winning-technique`、17タブ）の可視化強化** — phase aの次段階として別specに分ける
 - **オッズ検索タブ（[BOA-310](https://linear.app/boat-ai/issue/BOA-310)）・事故率の表示・逃げシミュレーションの3着以降** — spec.mdの「やらないこと」
