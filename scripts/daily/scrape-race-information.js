@@ -48,6 +48,7 @@ import * as cheerio from "cheerio";
 import { supabase, fetchAll } from "../lib/supabaseClient.js";
 import { diffRows } from "../lib/unchangedRows.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
+import { archiveRawHtml } from "../lib/rawHtmlArchive.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -402,6 +403,7 @@ export async function run(schedule, date, options = {}) {
     healthSkipped: 0,
     digest: digestNotes([]),
     writeErrors: [],
+    capturedPages: [],
   };
 
   if (!client) {
@@ -458,10 +460,31 @@ export async function run(schedule, date, options = {}) {
       // 揃わない）は構造変化の疑いとして必ず失敗扱いにする。notesが空配列でも
       // nullでなければ「取得自体は成功」と誤判定してしまうバグを防ぐ
       // （notes !== null だけを見るとunexpected_section_countを握りつぶす）
+      let capturedPath = null;
+      // 通知を1件でも検出した瞬間の生HTMLを保管する（N28調査用の暫定計測、2026-09-23）。
+      // race_special_notesが稼働開始から0件のまま続いており、パーサーの不具合か、
+      // 単に通知が無いだけかを実例が出るまで判別できなかった。次に検出した瞬間を
+      // 確実に押さえるための一時的なフック（恒久化するかはBOA-XXXで判断）。
+      // dryRun（shadow）では、他のテーブルと同じく副作用を起こさない
+      if (notes && notes.length > 0 && !dryRun) {
+        const contentHash = createHash("sha1")
+          .update(html)
+          .digest("hex")
+          .slice(0, 16);
+        // race_id形式（YYYY-MM-DD-VV-RR）を流用した会場×日のキー（RRは固定で"00"）
+        const pseudoRaceId = `${date}-${String(venueCode).padStart(2, "0")}-00`;
+        capturedPath = await archiveRawHtml(client, {
+          pageType: "race_notices",
+          raceId: pseudoRaceId,
+          contentHash,
+          html,
+        });
+      }
       return {
         venueCode,
         outcome: { success: parseReason === null, reason: parseReason },
         notes: notes ?? [],
+        capturedPath,
       };
     },
   );
@@ -470,8 +493,15 @@ export async function run(schedule, date, options = {}) {
   const healthUpdates = [];
   const venuesFailed = [];
   const venuesNotAttempted = [];
+  const capturedPages = [];
 
-  for (const { venueCode, outcome, notes } of perVenue) {
+  for (const { venueCode, outcome, notes, capturedPath } of perVenue) {
+    if (capturedPath) {
+      capturedPages.push({ venueCode, path: capturedPath });
+      console.log(
+        `  📸 会場${venueCode}: 通知検出、生HTMLを保管（${capturedPath}）`,
+      );
+    }
     for (const note of notes) {
       const racerId =
         racerNameMap.get(normalizeRacerName(note.racerName)) ?? null;
@@ -582,6 +612,7 @@ export async function run(schedule, date, options = {}) {
     healthSkipped: healthUpdates.length - healthToWrite.length,
     digest: digestNotes(allNoteRows),
     writeErrors,
+    capturedPages,
   };
 }
 
