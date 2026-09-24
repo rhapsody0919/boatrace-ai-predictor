@@ -12,10 +12,7 @@
  *   node scripts/analysis/calibration-report.js --from=2026-03-01 --to=2026-04-01
  */
 
-import {
-  isSupabaseEnabled,
-  fetchAll,
-} from "../lib/supabaseClient.js";
+import { isSupabaseEnabled, fetchAll } from "../lib/supabaseClient.js";
 
 // 決まり手マッピング（予測側の英語 → 実績側の日本語）
 const TECHNIQUE_MAP = {
@@ -32,9 +29,14 @@ const TECHNIQUE_MAP_REV = Object.fromEntries(
 const TECHNIQUES = Object.keys(TECHNIQUE_MAP);
 
 // CLI引数パース
+//
+// 既定モデルは standard（BOA-408以降、feature_contributionsを実際に持つのは
+// standard・unifiedのみ。safeBet・upsetFocusはstandardと内容が完全重複していた
+// ためNULLに変更済み。値そのものは従来もモデル間で完全一致していたため、
+// 既定をstandardに変えても分析結果は変わらない）
 function parseArgs() {
   const args = process.argv.slice(2);
-  const opts = { weeks: null, from: null, to: null, model: "safeBet" };
+  const opts = { weeks: null, from: null, to: null, model: "standard" };
   for (const arg of args) {
     if (arg.startsWith("--weeks=")) opts.weeks = parseInt(arg.split("=")[1]);
     if (arg.startsWith("--from=")) opts.from = arg.split("=")[1];
