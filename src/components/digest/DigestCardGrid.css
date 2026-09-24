@@ -1,0 +1,47 @@
+/* DigestCardGrid - カードの並びと「もっと見る」（BOA-402）
+ *
+ * 折りたたみで1枚が低くなったため、480px以上で2列に増やす
+ * （旧: 768px以上で2列。1列のままだと低いカードが縦に長く伸びるだけになる）。
+ */
+
+.digest-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+@media (min-width: 480px) {
+  .digest-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .digest-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.digest-grid__more {
+  display: block;
+  width: 100%;
+  margin-top: 0.6rem;
+  padding: 0.7rem;
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.digest-grid__more:hover {
+  background: var(--surface-page);
+  color: var(--text-primary);
+}
+
+.digest-grid__more:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}

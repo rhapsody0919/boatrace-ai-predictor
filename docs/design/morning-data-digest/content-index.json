@@ -1,0 +1,12 @@
+{
+  "feature": "BOA-402 「本日のデータ一覧」ページ（/today）",
+  "released": "2026-09-24",
+  "content": {
+    "static_pages": ["/today"],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

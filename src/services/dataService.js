@@ -62,6 +62,14 @@ export const dataService = {
   },
 
   /**
+   * 「本日のデータ一覧」（BOA-402）の1日ぶんを取得
+   * @param {string} date - YYYY-MM-DD（JST）
+   */
+  async getMorningDigest(date) {
+    return supabaseDataService.getMorningDigest(date);
+  },
+
+  /**
    * キャッシュをクリア（手動更新時に使用）
    * @param {string|null} key - 特定のキーをクリア（nullで全クリア）
    */

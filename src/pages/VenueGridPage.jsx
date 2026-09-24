@@ -178,6 +178,15 @@ function TodayVenueGridPage() {
               <>
                 {error && <DataFetchError detail={error} />}
                 <TodaysVolatilityHighlights venuesData={venuesData} />
+                {/* 本日のデータ一覧（BOA-402）への導線。高さを固定してCLSを出さない */}
+                <Link to={localize("/today")} className="home-digest-link">
+                  <span className="home-digest-link__label">
+                    📋 本日のデータ一覧
+                  </span>
+                  <span className="home-digest-link__desc">
+                    逃げが堅い選手・まくりが利く選手・昨日のフライング
+                  </span>
+                </Link>
                 <VenueGrid
                   venuesData={venuesData}
                   getVenueLink={(code) => localize(`/venue/${code}`)}

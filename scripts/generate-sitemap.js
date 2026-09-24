@@ -121,6 +121,14 @@ const staticPages = [
     priority: "0.8",
   },
   {
+    // 「本日のデータ一覧」（BOA-402）。単一URLで毎日中身を差し替える。
+    // 日付別URL（/today/YYYY-MM-DD）は発行しない（ADR-0070の背景・spec §3）
+    loc: "/today",
+    lastmod: new Date().toISOString().split("T")[0],
+    changefreq: "daily",
+    priority: "0.8",
+  },
+  {
     loc: "/racers",
     lastmod: new Date().toISOString().split("T")[0],
     changefreq: "weekly",

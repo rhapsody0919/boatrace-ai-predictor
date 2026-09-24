@@ -30,6 +30,7 @@ function Header() {
     if (pathname === "/hit-races") return "hit-races";
     if (pathname === "/accuracy") return "accuracy";
     if (pathname === "/winning-technique") return "winning-technique";
+    if (pathname === "/today") return "today";
     if (pathname === "/picks") return "picks";
     if (pathname.startsWith("/races")) return "past-races";
     if (pathname === "/racers") return "racers";
@@ -172,6 +173,16 @@ function Header() {
             >
               {t("nav.winningTechnique")}
             </Link>
+            {/* 本日のデータ一覧（/today）は ja専用のため、選手一覧と同じく ja でのみ出す */}
+            {currentLng === "ja" && (
+              <Link
+                to="/today"
+                className={`submenu-item ${activeTab === "today" ? "active" : ""}`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                本日のデータ一覧
+              </Link>
+            )}
             <button
               className={`submenu-item submenu-item-button ${activeTab === "hit-races" ? "active" : ""}`}
               onClick={() => {

@@ -11,3 +11,44 @@
   color: var(--brand-accent-primary);
   font-weight: var(--font-weight-medium);
 }
+
+/* 本日のデータ一覧（BOA-402）への導線。
+   min-height を固定して、読み込み前後で高さが変わらないようにする（CLS対策）。
+   カード自体が背景色を持つため、内部のテキストは生パレット値でも安全。 */
+.home-digest-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-height: 58px;
+  box-sizing: border-box;
+  justify-content: center;
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-left: 4px solid var(--brand-accent-primary);
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.home-digest-link:hover {
+  border-color: var(--brand-accent-primary);
+}
+
+.home-digest-link__label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.home-digest-link__desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .home-digest-link {
+    margin-bottom: 0.75rem;
+    padding: 0.65rem 0.75rem;
+  }
+}

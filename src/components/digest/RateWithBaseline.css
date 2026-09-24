@@ -1,0 +1,116 @@
+/* RateWithBaseline - 会場平均とこの選手の見込みの比較バー（BOA-402）
+ *
+ * 色は design-tokens.css の**意味トークン**を使う。バーの塗りだけは
+ * 自前の背景（トラック）と組み合わせて常に読める配色にしているため、
+ * ブランドのアクセント色をそのまま使ってよい（rules/component-reuse.md）。
+ */
+
+.rate-baseline__label {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 全国での実績。見込みの根拠なので、バーより一段弱い扱いにする */
+.rate-baseline__source {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.4rem;
+  margin: 0.4rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rate-baseline__source strong {
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
+}
+
+.rate-baseline__small-sample {
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: var(--surface-page);
+  color: var(--text-primary);
+}
+
+/* 比較バー（案2）
+ *
+ * ラベル＋値を1行目、バーを2行目に置く。横並びにするとラベル
+ * （「この選手（全国38走）」）に幅を取られてバーが短くなり、
+ * 長さの比較という本来の役目を果たせなくなる。 */
+.rate-baseline__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+
+.rate-baseline__bar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.rate-baseline__bar-label {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.rate-baseline__bar-track {
+  position: relative;
+  display: block;
+  height: 0.5rem;
+  margin-top: 0.15rem;
+  border-radius: 999px;
+  background: var(--surface-page);
+  /* トラックの外延をライト・ダーク両方で見せる。border だと行高が変わるので inset 影 */
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+  overflow: hidden;
+}
+
+.rate-baseline__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  /* 会場平均側は意味トークン。生パレット（--ryujin-silver-300）だと
+     ライトモードで淡すぎて見えなかった（rules/component-reuse.md） */
+  background: var(--text-secondary);
+}
+
+.rate-baseline__bar-fill--emphasis {
+  background: var(--brand-accent-primary);
+}
+
+.rate-baseline__bar-value {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rate-baseline__bar-value--emphasis {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--brand-accent-primary);
+}
+
+.rate-baseline__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.5rem;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rate-baseline__meta strong {
+  color: var(--text-primary);
+}
+
+.rate-baseline__hint {
+  border-bottom: 1px dotted var(--border-hairline);
+  cursor: help;
+}
