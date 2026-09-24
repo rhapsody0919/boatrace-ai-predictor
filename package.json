@@ -29,6 +29,7 @@
     "verify:kb-backfill": "node scripts/maintenance/verify-kb-file-parser.js",
     "verify:fan-period": "node scripts/maintenance/verify-fan-period.js",
     "verify:racelist-backfill": "node scripts/maintenance/verify-racelist-backfill.js",
+    "verify:kb-results-backfill": "node scripts/maintenance/verify-kb-results-backfill.js",
     "verify:monthly-schedule": "node scripts/maintenance/verify-monthly-schedule.js",
     "verify:opening-day-backfill": "node scripts/maintenance/verify-opening-day-backfill.js",
     "verify:unchanged-rows": "node scripts/maintenance/verify-unchanged-rows.js",
