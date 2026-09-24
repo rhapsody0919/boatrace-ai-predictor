@@ -339,7 +339,7 @@
 ### T4b-15 選手ニュース（B5）: `racer_news`
 
 - [x] **T4b-15-1**（コード実装済み。マイグレーション案`080_racer_news_pending.sql`（**未適用。ユーザー承認待ち**）・`scripts/lib/racerNewsJob.js`・`api/cron/racer-news.js`・`scripts/maintenance/resolve-racer-news-pending.js`。`session-start-check.js`とフローC-4はDB＋pending.jsonの統合を読む。切り替えはrunbook §L-4） `pending.json`（人手確認リスト）のコミットを、DBの表へ移す（plan.md §11(i)の判断に従う）。`session-start-check.js`の読み先を、DBに変更する（`.claude/rules/content-ops.md`フローC-4の手順も更新）。`collect-racer-news.js`を`api/cron/racer-news.js`へ（`10 14 * * *`、`10 16 * * *`）
-- [ ] **T4b-15-2**（`SKIP_RACER_NEWS_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-4） `live`→`SKIP_RACER_NEWS_ON_GHA=true`。2026-09-23確認: `scrape_job_state.racer_news.mode=live`。`SKIP_RACER_NEWS_ON_GHA`は未設定
+- [x] **T4b-15-2**（`SKIP_RACER_NEWS_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-4） `live`→`SKIP_RACER_NEWS_ON_GHA=true`。**2026-09-24実測（BOA-400）**: 公式サイト2026年9月のレーサーデータ一覧ページを直接取得したところ1件のみ（9/17、登録第3983号 須藤博倫選手2,000勝達成）。自社`racer_news`も同一件で`racer_id`・日付・内容とも完全一致。`racer_news_pending`は0件、`last_report`もerrors:0。**GHA停止の準備は整った**
 
 データ項目: `racer_news`。
 
