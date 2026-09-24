@@ -115,22 +115,50 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
   - `morning_digest_rows`: `metric_value` `metric_expected` `metric_skill_delta` `metric_venue_baseline` `metric_predicted` `metric_wilson_lower` `rate_90d` `motor_2rate` `volatility_percentile` 各2
   - **受入基準**: 未登録のままだと毎日全行が「変更あり」になることを、登録前後の書き込み行数の差で確認する（T2-4の2回目実行で検証）
 
-- [ ] **T2-4** `scripts/daily/update-racer-course-technique-stats.js` と `.github/workflows/aggregate-racer-course-technique-stats.yml`（JST 01:10）を作成する
+- [x] **T2-4** `scripts/daily/update-racer-course-technique-stats.js` と `.github/workflows/aggregate-racer-course-technique-stats.yml`（JST 01:10）を作成する
   - `venue_course_technique_baseline` → `racer_course_technique_stats` の順に更新（後者が前者を参照する）
   - `upsertChangedRows` で変更のある行だけ書く
   - 「集計結果が0行」はエラー、「変更が無くて書き込み0行」は正常、として区別する
   - `continue-on-error` は付けない
-  - **受入基準**: 本番で1回目に全行が投入され、**2回目の実行で全行が「変更なしスキップ」になる**（`aggregate-course-baseline-stats.yml` と同じ確認）。実行時間を記録し、RPC化の要否（plan.md 未確定事項#5）を判断する
+  - **完了（2026-09-24）**: 本番実行の実測
+    - 1回目: `venue_course_technique_baseline` **612行**（グレード別468＋ALL 144）、`racer_course_technique_stats` **9,471行（1,639選手）** を投入。集計期間 2025-12-03〜2026-09-23（**295日**）、母数100未満のグレード別セル180件はALL行へフォールバック
+    - 2回目: **全10,083行が「変更なしスキップ」・書き込み0件**。`NUMERIC_SCALES`（T2-3）の登録が効いていることを確認
+    - 直近90日に1走も無い (racer, course) の組は238件（率はNULLで保存、CHECK制約どおり）
+  - ⚠️ **dry-runで実装バグを2件発見して修正した**
+    1. **RPCの戻り値にも1000行の上限がかかる**。`.range()` を付けないとエラーにならず黙って切り捨てられ、最初の実行は「1000行・172選手」しか返らなかった。`.claude/rules/frontend-data-fetch.md` §5 が読み取り側について警告している罠が集計RPCにもある（plan.md §3.1 は「RPCにしない場合はページネーション必須」と書いていたが、**RPCでも必須**だった）
+    2. dry-runではベースライン未書き込みのため期待値が全NULLになり、整合チェックが原因の分かりにくいエラーを出していた。表が空なら選手側をスキップして理由を明示するようにした
+  - **データ精度検証**: 投入された9,471行を独立に書いたSQLと突き合わせ、`runs` / `nige_rate` / `makuri_rate` / `nigashi_rate` すべて **mismatch 0件**
 
-- [ ] **T2-5** `nigashi` の閾値（**+20pt**）と `makuri` の閾値を実データで最終確認する
-  - `nigashi` は 2026-09-24 の実測で確定済み（+10pt→115件 / +15pt→43件 / **+20pt→12件（9会場、戸田1件）** / +25pt→3件）。`racer_course_technique_stats` 投入後に**直近14日ぶん**で再確認する
-  - `makuri` は **25%のままだと0〜4件/日**でセクションとして薄い（全DBの候補セルは27/9,471。20%で81、15%で235）。閾値を20%に下げるか「まくり差し」を含めるかを実データで判断する（plan.md 未確定事項#4）
-  - **受入基準**: `nigashi` の日次該当件数が5〜15件に収まり、**特定の1会場に集中しない**。`makuri` が日次で1件以上出る閾値を選ぶ。両方の測定結果を plan.md §7 に記録する
+- [x] **T2-5** `nigashi` の閾値と `makuri` の閾値を実データで最終確認する
+  - **完了（2026-09-24）**: 投入済みテーブルで**直近14日の日次該当件数**を実測した
 
-- [ ] **T2-6** バッチの書き込み量とDisk IO予算への影響を見積もり、plan.md に記録する（`.claude/rules/data-acquisition.md`）
-  - B1: `venue_course_technique_baseline` 約612行 ＋ `racer_course_technique_stats` 9,471行。`upsertChangedRows` により2日目以降は変更行のみ
-  - B2: `morning_digest_rows` 約50行/日の delete→insert ＋ `morning_digest_days` 1行/日
-  - **受入基準**: 見積りと、本番実行前後のDisk IO消費の実測を完了報告に含める
+    | 指標 | 閾値 | 平均/日 | 範囲 |
+    |---|---|---|---|
+    | 逃げ | 70% | 32.3 | 23〜43 |
+    | まくり | 25% | **2.5** | 0〜4 |
+    | まくり | 20% | 7.6 | 〜12 |
+    | 逃がし | +15pt | 51.4 | 〜63 |
+    | 逃がし | +20pt | 17.8 | 12〜24 |
+    | 逃がし | **+22pt** | **9.8** | **5〜17** |
+    | 逃がし | +23pt | 8.1 | 〜15 |
+    | 逃がし | +25pt | 4.6 | 0〜10 |
+
+  - **`nigashi` は +22pt に確定**（+20ptでは17.8件で目標5〜15を超え、+25ptでは空の日が出る。+22ptは最小5件で0件の日が無い）。`EXTRACTION_THRESHOLDS.nigashi` を 20→22 に変更済み
+  - **`makuri` は 25% のまま維持する**。2.5件/日（0〜4）と薄いが、20%に下げると ADR-0071 が絶対閾値を残した理由（競合と同じ土俵で数値を比較されたときに「同じ選手が出てこない」不信を招かない）が崩れる。**このセクションは本来まれな事象を拾うもの**として設計し、0件の日は spec §6 の状態設計どおり「本日は該当なし」を出す
+  - 逃げは32.3件/日で表示上限25件が常に効く。「上位25件を表示」とUIに明示する（screens.md §7 の既定どおり）
+
+- [x] **T2-6** バッチの書き込み量とDisk IO予算への影響を見積もり、記録する（`.claude/rules/data-acquisition.md`）
+  - **完了（2026-09-24）**: 投入後の実測サイズ
+
+    | テーブル | 行数 | heap | total（索引込み） | bytes/行 |
+    |---|---|---|---|---|
+    | `racer_course_technique_stats` | 9,471 | 1,240 kB | 1,496 kB | 134 |
+    | `venue_course_technique_baseline` | 612 | 64 kB | 136 kB | 107 |
+    | `morning_digest_rows` | 0（未生成） | — | 24 kB | — |
+    | `morning_digest_days` | 0（未生成） | — | 16 kB | — |
+
+  - **4表合計で約1.7 MB**。日次の書き込みは、B1が「変更のある行だけ」（2回目の実行で全行スキップを確認済み）、B2が約50行/日の delete→insert で**1日あたり数十KB**。1年でも `morning_digest_rows` は約1.8万行・約2.5 MB の見込み
+  - 既存の `predictions`・`race_odds` 等と比べて無視できる規模で、Disk IO予算（BOA-357）への影響は軽微
 
 ---
 
