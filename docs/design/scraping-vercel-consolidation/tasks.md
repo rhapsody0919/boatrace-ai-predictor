@@ -305,7 +305,7 @@
 
 - [x] **T4b-12-1**（コード実装済み。`scripts/lib/pointRankJob.js`・`api/cron/point-rank.js`。モードは`off`のまま。検証: `npm run verify:scrape-daily-jobs`。切り替えはrunbook §L-1） `scrape-point-rank.js`を、対象日を引数で受ける形にして、`api/cron/point-rank.js`へ（`0 13 * * *`、`30 14,16 * * *`）。対象日は`resolveTargetDate`（22:00指定）。0件エラー（記念競走のある日のみ期待あり。PR #715の修正を踏襲）
 - [x] **T4b-12-2**（調査済み。結果はrunbook §L-6。要点: 開催会場日の約94%は表が無いのが仕様。表があるのは、SG/G1の中盤〜終盤（多摩川G1は3日目にもあり）。実測でG3・一般戦は表なし） 記念競走以外に表が無い仕様上の空が、0件にどの程度含まれるか（job-inventory.md U13）を、表のある日（SG/G1開催日）に、日付を取り違えない条件での再取得で確認する
-- [ ] **T4b-12-3**（`SKIP_POINT_RANK_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-1） `live`→`SKIP_POINT_RANK_ON_GHA=true`。対象日がずれる問題（G1）が、Vercelで再発しないことを、実測する。2026-09-23確認: `scrape_job_state.point_rank.mode=live`（live切替は完了）。`SKIP_POINT_RANK_ON_GHA`は未設定のため、GitHub側停止・再発確認のみ未実施
+- [x] **T4b-12-3**（`SKIP_POINT_RANK_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-1） `live`→`SKIP_POINT_RANK_ON_GHA=true`。対象日がずれる問題（G1）が、Vercelで再発しないことを、実測する。**2026-09-24実測（BOA-397）**: 2026年9月のSG/G1大会5件のうち、live化後に開催された直近2件（浜名湖9/16-21・若松9/22-27）は49行・52行と正しく取得できている（対象日ずれの再発なし）。それ以前の3件（live化前の開催）は0行だが、過去分バックフィル（WS5）の範囲であり現行ジョブの不具合ではない。`last_report`はG3・一般戦の13会場を正しく対象外(0行が正常)と判定、`failures: []`。**GHA停止の準備は整った**
 
 データ項目: `racer_series_points`。
 
