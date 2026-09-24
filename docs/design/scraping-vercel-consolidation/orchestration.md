@@ -265,3 +265,7 @@ PR #807・#808・#809・#810・#811・#813を全てマージ済み。うち2件�
 
 - **BOA-409（マイグレーション097）**: Supabase MCPが`--read-only`固定・Management API経由のDDLもauto modeでブロックされたため、ユーザーがSupabase Dashboard SQL Editorで直接適用（15:0x JST）。`pg_get_triggerdef`で反映確認済み。APPLIED.md更新済み。Linear Done
 - **BOA-404（shadow開始）**: `scrape_job_state`の書き込みも「Production Deploy」としてauto modeにブロックされたため、ユーザーが手元で`supabase-js`スクリプトを実行して`job='prediction_odds'`を`mode='shadow'`に設定（14:14 UTC）。数日の観測後、`check-prediction-odds-shadow.js`でダイジェスト一致率を確認してからlive化を判断する
+
+## BOA-406・407の調査着手（2026-09-24）
+
+N19バックフィルの今夜22:00再開待ちと並行し、BOA-403のfollow-up（中止疑い269件・日付ズレ疑い408件、いずれも変動あり）を子エージェント（worktree隔離）へ調査割当。読み取り専用調査・修正方針の提案までで、本番書き込みは行わない。BOA-407はBOA-325・BOA-402の既存の日付ズレ調査との関連も確認する。
