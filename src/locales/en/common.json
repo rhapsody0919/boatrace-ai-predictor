@@ -1414,7 +1414,19 @@
     "expectedTimes": "avg {{n}}",
     "noInnerBoat": "no inner boat",
     "flyingTitle": "{{n}} false start(s) this term. Resets when the term changes",
-    "caveat": "Green is better than the average for the same course and class, red is worse. Breaks are shown as a count, not a rate: they are rare from outer courses, so a rate would just show 0.0%. Course 1 has no inner boat, so it is not shown. False-start races are excluded from the denominator and shown as a badge instead. This is our own calculation."
+    "caveat": "Green is better than the average for the same course and class, red is worse. Breaks are shown as a count, not a rate: they are rare from outer courses, so a rate would just show 0.0%. Course 1 has no inner boat, so it is not shown. False-start races are excluded from the denominator and shown as a badge instead. This is our own calculation.",
+    "histogramTitle": "ST distribution",
+    "historyTitle": "ST history",
+    "histogramNote": "{{n}} starts from course {{course}} as {{grade}} / pale bars = average for the same course and class ({{baselineN}} starts)",
+    "histogramLegend": "The x-axis is start timing in 0.05 steps. Solid bars are this racer, pale bars the average for the same course and class. Both are normalised to percentages (the sample sizes differ by orders of magnitude, so raw counts are not comparable)",
+    "histogramOwnTitle": "This racer {{pct}}% ({{n}} starts)",
+    "histogramBaseTitle": "Same course and class average {{pct}}%",
+    "historyNote": "All {{n}} starts from course {{course}} (newest first)",
+    "histDate": "Date",
+    "histVenue": "Venue",
+    "histSt": "ST",
+    "histStRank": "ST rank",
+    "histRank": "Finish"
   },
   "nigeSimulation": {
     "title": "When course 1 leads from the start",

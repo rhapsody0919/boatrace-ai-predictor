@@ -1152,6 +1152,57 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(breakoutRow.locator("td").first()).toContainText("内側なし");
   });
 
+  test("枠別情報タブのST分布・ST履歴が折りたたみで開き、平均と重ねて表示される（phase a T3-3）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+
+    await page.locator(".rsc-card").waitFor({ state: "visible", timeout: 25000 });
+
+    // 折りたたみは2つ。初期は閉じている
+    await expect(page.locator(".rsc-fold-toggle")).toHaveCount(2);
+    await expect(page.locator(".rsc-fold-body")).toHaveCount(0);
+
+    // ST分布: ベースラインと同じ7ビン、選手の棒と平均の棒が各7本
+    await page.locator(".rsc-fold-toggle").first().click();
+    await expect(page.locator(".rsc-histogram")).toBeVisible();
+    await expect(page.locator(".rsc-hist-col")).toHaveCount(7);
+    await expect(page.locator(".rsc-hist-own")).toHaveCount(7);
+    await expect(page.locator(".rsc-hist-base")).toHaveCount(7);
+
+    // 母数が桁違いなので割合に正規化する（最大が100%になる）
+    const maxHeight = await page.evaluate(() =>
+      Math.max(
+        ...[...document.querySelectorAll(".rsc-hist-own, .rsc-hist-base")].map(
+          (el) => parseFloat(el.style.height),
+        ),
+      ),
+    );
+    expect(Math.abs(maxHeight - 100)).toBeLessThan(0.01);
+
+    // 艇を選ぶチップが6つあり、切り替えると内容が変わる
+    await expect(page.locator(".rsc-detail-chip")).toHaveCount(6);
+    const noteBefore = await page.locator(".rsc-fold-note").innerText();
+    await page.locator(".rsc-detail-chip").nth(5).click();
+    await expect(page.locator(".rsc-fold-note")).not.toHaveText(noteBefore);
+
+    // ST履歴を開くとST分布は閉じる（同時には開かない）
+    await page.locator(".rsc-fold-toggle").nth(1).click();
+    await expect(page.locator(".rsc-history")).toBeVisible();
+    await expect(page.locator(".rsc-histogram")).toHaveCount(0);
+
+    // 列が 日付/会場/ST/ST順/着順 で、新しい順に並ぶ
+    await expect(page.locator(".rsc-history thead th")).toHaveCount(5);
+    const dates = await page
+      .locator(".rsc-history tbody tr td:first-child")
+      .allInnerTexts();
+    expect(dates.length).toBeGreaterThan(0);
+    expect(dates).toEqual([...dates].sort().reverse());
+  });
+
   test("枠別情報タブの逃げシミュレーションで2着率の合計が100%になり、予想ではない旨が出る（phase a T3-5）", async ({
     page,
   }) => {

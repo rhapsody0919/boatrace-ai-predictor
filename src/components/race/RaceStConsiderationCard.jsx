@@ -23,10 +23,16 @@
  * 金・赤のバッジを重ねるとコントラストが確保できないため。
  * F1は金、F2は赤で色を分ける（F2は合計90日のあっせん停止で意味が違う）。
  */
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
-import { SMALL_SAMPLE_THRESHOLD } from "./basicInfoStats";
-import { computeStConsideration } from "../../utils/stConsideration";
+import { SMALL_SAMPLE_THRESHOLD, finishPositionOf } from "./basicInfoStats";
+import {
+  computeStConsideration,
+  computeStHistogram,
+  getStHistory,
+  ST_HISTOGRAM_BINS,
+} from "../../utils/stConsideration";
 import {
   METRIC_DIRECTION,
   indexBaseline,
@@ -56,6 +62,11 @@ function RaceStConsiderationCard({
   entryCourseOf,
 }) {
   const { t } = useTranslation();
+  // 折りたたみ（ST分布・ST履歴）。どちらも1艇ずつしか描けないため、
+  // カード上部のグリッド（6艇横並び）とは別に「どの艇を見るか」を持つ
+  const [openSection, setOpenSection] = useState(null);
+  const [detailBoat, setDetailBoat] = useState(null);
+
   const sorted = [...(players ?? [])].sort((a, b) => a.number - b.number);
   if (sorted.length === 0) return null;
 
@@ -85,6 +96,44 @@ function RaceStConsiderationCard({
   });
 
   const loading = columns.every((c) => c.stats === null);
+
+  // --- 折りたたみ（ST分布 / ST履歴）用の派生値 ---
+  const detailColumn =
+    columns.find((c) => c.player.number === detailBoat) ?? columns[0];
+  const detailRecords = detailColumn.player.racerId
+    ? scopedByRacer[detailColumn.player.racerId]
+    : null;
+  const histogram = Array.isArray(detailRecords)
+    ? computeStHistogram(detailRecords, { course: detailColumn.course })
+    : null;
+  const history = Array.isArray(detailRecords)
+    ? getStHistory(detailRecords, { course: detailColumn.course })
+    : [];
+
+  // ベースラインの分布を割合(%)に直す。母数が桁違い（例: 44走 vs 16,640走）なので
+  // 件数では比べられず、割合に正規化してから重ねる
+  const baselineBins = detailColumn.cell?.st_histogram ?? null;
+  const baselineTotal = baselineBins
+    ? Object.values(baselineBins).reduce((a, b) => a + Number(b), 0)
+    : 0;
+  const baselinePctByBin = Object.fromEntries(
+    ST_HISTOGRAM_BINS.map((bin) => [
+      bin,
+      baselineTotal > 0
+        ? (Number(baselineBins[bin] ?? 0) / baselineTotal) * 100
+        : 0,
+    ]),
+  );
+  const ownPctOf = (bin) =>
+    histogram && histogram.total > 0
+      ? ((histogram.bins[bin] ?? 0) / histogram.total) * 100
+      : 0;
+  const maxBinPct = Math.max(
+    ...ST_HISTOGRAM_BINS.map((bin) =>
+      Math.max(ownPctOf(bin), baselinePctByBin[bin] ?? 0),
+    ),
+    1,
+  );
 
   return (
     <div className="rsc-card">
@@ -265,6 +314,177 @@ function RaceStConsiderationCard({
               </tr>
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* 折りたたみ: ST分布 / ST履歴（T3-3、2026-09-24ユーザー判断で案1を採用）。
+          どちらも1艇ずつしか描けないため、上のグリッド（6艇横並び）とは別に
+          「どの艇を見るか」のチップを持つ。既定は1号艇 */}
+      {!loading && (
+        <div className="rsc-folds">
+          <div className="rsc-fold-buttons">
+            <button
+              type="button"
+              className={`rsc-fold-toggle${openSection === "histogram" ? " is-open" : ""}`}
+              onClick={() =>
+                setOpenSection((v) => (v === "histogram" ? null : "histogram"))
+              }
+              aria-expanded={openSection === "histogram"}
+            >
+              {openSection === "histogram" ? "\u25be " : "\u25b8 "}
+              {t("stConsideration.histogramTitle")}
+            </button>
+            <button
+              type="button"
+              className={`rsc-fold-toggle${openSection === "history" ? " is-open" : ""}`}
+              onClick={() =>
+                setOpenSection((v) => (v === "history" ? null : "history"))
+              }
+              aria-expanded={openSection === "history"}
+            >
+              {openSection === "history" ? "\u25be " : "\u25b8 "}
+              {t("stConsideration.historyTitle")}
+            </button>
+          </div>
+
+          {openSection && (
+            <div className="rsc-fold-body">
+              <div className="rsc-detail-chips" role="group">
+                {columns.map(({ player }) => {
+                  const active = detailColumn.player.number === player.number;
+                  const color = BOAT_COLORS[player.number] || {};
+                  return (
+                    <button
+                      key={player.number}
+                      type="button"
+                      className={`rsc-detail-chip${active ? " is-active" : ""}`}
+                      style={
+                        active
+                          ? { background: color.bg, color: color.text }
+                          : undefined
+                      }
+                      onClick={() => setDetailBoat(player.number)}
+                      aria-pressed={active}
+                    >
+                      {player.number}
+                    </button>
+                  );
+                })}
+                <span className="rsc-detail-name" translate="no">
+                  {detailColumn.player.name?.replace(/\s+/g, "")}
+                </span>
+              </div>
+
+              {openSection === "histogram" &&
+                (histogram === null || histogram.total === 0 ? (
+                  <p className="rsc-fold-empty">{t("wakuInfo.noData")}</p>
+                ) : (
+                  <>
+                    <p className="rsc-fold-note">
+                      {t("stConsideration.histogramNote", {
+                        course: detailColumn.course,
+                        grade: detailColumn.grade ?? "\u2014",
+                        n: histogram.total,
+                        baselineN: Number(
+                          detailColumn.cell?.runs ?? 0,
+                        ).toLocaleString(),
+                      })}
+                    </p>
+                    <div className="rsc-histogram">
+                      {ST_HISTOGRAM_BINS.map((bin) => (
+                        <div key={bin} className="rsc-hist-col">
+                          <span className="rsc-hist-bars">
+                            <span
+                              className="rsc-hist-own"
+                              style={{
+                                height: `${(ownPctOf(bin) / maxBinPct) * 100}%`,
+                              }}
+                              title={t("stConsideration.histogramOwnTitle", {
+                                pct: ownPctOf(bin).toFixed(1),
+                                n: histogram.bins[bin] ?? 0,
+                              })}
+                            />
+                            <span
+                              className="rsc-hist-base"
+                              style={{
+                                height: `${((baselinePctByBin[bin] ?? 0) / maxBinPct) * 100}%`,
+                              }}
+                              title={t("stConsideration.histogramBaseTitle", {
+                                pct: (baselinePctByBin[bin] ?? 0).toFixed(1),
+                              })}
+                            />
+                          </span>
+                          <span className="rsc-hist-label">{bin}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="rsc-fold-legend">
+                      {t("stConsideration.histogramLegend")}
+                    </p>
+                  </>
+                ))}
+
+              {openSection === "history" &&
+                (history.length === 0 ? (
+                  <p className="rsc-fold-empty">{t("wakuInfo.noData")}</p>
+                ) : (
+                  <>
+                    <p className="rsc-fold-note">
+                      {t("stConsideration.historyNote", {
+                        course: detailColumn.course,
+                        n: history.length,
+                      })}
+                    </p>
+                    <div className="rsc-history-wrapper">
+                      <table className="rsc-history">
+                        <thead>
+                          <tr>
+                            <th scope="col">{t("stConsideration.histDate")}</th>
+                            <th scope="col">
+                              {t("stConsideration.histVenue")}
+                            </th>
+                            <th scope="col">{t("stConsideration.histSt")}</th>
+                            <th scope="col">
+                              {t("stConsideration.histStRank")}
+                            </th>
+                            <th scope="col">{t("stConsideration.histRank")}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.map((r) => (
+                            <tr key={r.raceId}>
+                              <td>{r.date}</td>
+                              <td>{t(`venues.${r.venueCode}`)}</td>
+                              <td>
+                                {r.isFlying
+                                  ? t("recentRuns.flying")
+                                  : r.stForRank === null ||
+                                      r.stForRank === undefined
+                                    ? "\u2014"
+                                    : Number(r.stForRank)
+                                        .toFixed(2)
+                                        .replace(/^0/, "")}
+                              </td>
+                              <td>
+                                {r.isFlying ||
+                                r.stRank === null ||
+                                r.stRank === undefined
+                                  ? "\u2014"
+                                  : t("recentRuns.stRank", { n: r.stRank })}
+                              </td>
+                              <td>
+                                {finishPositionOf(r) ??
+                                  t("wakuInfo.outOfPlace")}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ))}
+            </div>
+          )}
         </div>
       )}
 

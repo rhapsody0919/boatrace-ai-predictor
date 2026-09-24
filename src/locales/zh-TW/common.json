@@ -1409,7 +1409,19 @@
     "expectedTimes": "平均{{n}}",
     "noInnerBoat": "無內側艇",
     "flyingTitle": "本期起步犯規{{n}}次。換期後歸零",
-    "caveat": "綠色表示優於相同航道、相同級別的平均，紅色表示較差。搶出在外側航道發生次數極少，以比例顯示會全是0.0%，因此改以次數呈現。第1航道無內側艇故不顯示。起步犯規的出賽已從分母排除，另以徽章標示。此為本服務的獨自統計。"
+    "caveat": "綠色表示優於相同航道、相同級別的平均，紅色表示較差。搶出在外側航道發生次數極少，以比例顯示會全是0.0%，因此改以次數呈現。第1航道無內側艇故不顯示。起步犯規的出賽已從分母排除，另以徽章標示。此為本服務的獨自統計。",
+    "histogramTitle": "ST分布",
+    "historyTitle": "ST歷史",
+    "histogramNote": "以{{grade}}在第{{course}}航道的{{n}}場／淺色長條＝相同航道、相同級別的平均（{{baselineN}}場）",
+    "histogramLegend": "橫軸為起跑時間（0.05為一級）。深色為本選手，淺色為相同航道、相同級別的平均。兩者皆換算為比例後疊合（樣本數差距過大，無法以場次直接比較）",
+    "histogramOwnTitle": "本選手 {{pct}}%（{{n}}場）",
+    "histogramBaseTitle": "相同航道、相同級別的平均 {{pct}}%",
+    "historyNote": "從第{{course}}航道出賽的全部{{n}}場（由新至舊）",
+    "histDate": "日期",
+    "histVenue": "場地",
+    "histSt": "ST",
+    "histStRank": "ST順位",
+    "histRank": "名次"
   },
   "nigeSimulation": {
     "title": "第1航道逃脫時",
