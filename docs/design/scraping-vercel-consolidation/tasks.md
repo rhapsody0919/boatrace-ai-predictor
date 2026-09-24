@@ -350,12 +350,14 @@
 ### T4b-16 選手プロフィール・期別成績（B6）: `racer_profiles`
 
 - [x] **T4b-16-1**（コード実装済み。`scripts/lib/racerProfilesJob.js`・`api/cron/racer-profiles.js`・`racerProfileSync.js`にafterRacerId・同時取得・ソフトデッドラインを追加（CLIの既定挙動は不変）。**`maxDuration`は800秒**（2026-09-20にFluid Computeの有効をユーザーが確認して、当初の300秒から引き上げ。runbook §L-5・§L-6）。切り替えはrunbook §L-5） `scrape-racer-profiles.js`（`scripts/maintenance/`）を、`api/cron/racer-profiles.js`へ。1,627人を300人程度のチャンクで処理し、位置を`cursor`に保存して再開可能にする（`*/10 18-20 1 * *`、`*/10 18-20 8,15 5,11 *`。**夜間**: UTC 18:00〜20:50＝JST 03:00〜05:50。日付は従来のGitHub Actionsと同じUTC基準の式で、JSTでは2日・9日・16日）。`profile-scrape-report.json`のgit pushを`last_report`へ。取得ロジックは`scripts/lib/racerProfileSync.js`を再利用する
-- [ ] **T4b-16-2**（2026-09-20時点の実測: `ability_index`が非NULLの選手は1,592/1,628人。初回実行は済んでいる。実行時間の実測は、Vercelの`?chunk=N`の手動確認とlive初回で行う。runbook §L-5） 初回実行（`ability_index`が0/1,627件）は、WS5で手動実行する（少数のdry-runから段階的に。PR #721の修正後）。実行時間の実測（plan.md、job-inventory.md U9）を、チャンクの人数の調整に使う
+- [x] **T4b-16-2**（2026-09-20時点の実測: `ability_index`が非NULLの選手は1,592/1,628人。初回実行は済んでいる。実行時間の実測は、Vercelの`?chunk=N`の手動確認とlive初回で行う。runbook §L-5） 初回実行（`ability_index`が0/1,627件）は、WS5で手動実行する（少数のdry-runから段階的に。PR #721の修正後）。実行時間の実測（plan.md、job-inventory.md U9）を、チャンクの人数の調整に使う
+  - **2026-09-24再確認**: 依然1,592/1,628人（97.8%）で変化なし、安定。残り36人は未調査（新規登録・引退等の可能性）
 - [ ] **T4b-16-3**（`SKIP_RACER_SEASON_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-5） `live`→`SKIP_RACER_SEASON_ON_GHA=true`
+  - **2026-09-24確認**: `scrape_job_state`に`racer_profiles`の行が0件（Vercel側は一度も実行されていない）。cronは月次（UTC毎月1日03:00〜05:50 JST、5・11月は8日・15日も追加）のため、次の実行機会は**2026-10-01**。それまでGHA停止の判断はできない（GHA-stop候補として時期尚早）
 
 データ項目: `racer_profiles`。
 
-- [ ] 本番実測: 期待件数（算出根拠: `race_entries`に登場した全`racer_id`（約1,627人）。`ability_index`・期別成績の列が非NULL。現状は`ability_index`が0/1,627件）に対し、充足率99%以上であることを実測クエリで確認する（過去の期別の値は、遡って取得できない。「取得開始日以降のみ」とし、ユーザーの承認を得る）
+- [ ] 本番実測: 期待件数（算出根拠: `race_entries`に登場した全`racer_id`（約1,627人）。`ability_index`・期別成績の列が非NULL）に対し、充足率99%以上であることを実測クエリで確認する（過去の期別の値は、遡って取得できない。「取得開始日以降のみ」とし、ユーザーの承認を得る）。**2026-09-24実測**: `ability_index`は1,592/1,628人（97.8%、未達。残り36人は未調査）
 - [ ] タイミング実測: 可変データは、土日を含む直近7日で窓内取得率（窓の中心±3分以内）を実測する（欠落率2%以内）。半年に1回しか変化しないため、窓型ではない。「月次の指定日（1日09:00 JST）から3日以内に全選手を取得できた」割合と、期の切り替わり（5/1・11/1）直後の追従を、`scraped_at`・`official_updated_at`から実測する
 - [ ] 継続監視: 上記指標が日次で自動計測され、閾値超過でSlack通知されることを確認する（月次ジョブの未実行の検知（実行履歴0件のまま見逃した実績あり）、`cursor`の未完了）
 
