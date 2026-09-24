@@ -112,6 +112,15 @@ export const NUMERIC_SCALES = {
     second_rate: 2,
     exacta_rate: 2,
   },
+  // 買い目オッズ（BOA-404、docs/db-migration/011_prediction_odds.sql）。DECIMAL(8,1)
+  prediction_odds: {
+    trifecta_odds_standard: 1,
+    trio_odds_standard: 1,
+    trifecta_odds_safe_bet: 1,
+    trio_odds_safe_bet: 1,
+    trifecta_odds_upset_focus: 1,
+    trio_odds_upset_focus: 1,
+  },
 };
 
 /**

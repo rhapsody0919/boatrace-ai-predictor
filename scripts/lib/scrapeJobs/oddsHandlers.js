@@ -12,6 +12,7 @@
  */
 import { runForRaces } from "../../daily/scrape-odds.js";
 import { SCRAPE_JOBS, graceMinFor } from "./registry.js";
+import { isFinalOutcome } from "./outcomes.js";
 
 const RACE_ID_RE = /^(\d{4}-\d{2}-\d{2})-(\d{2})-(\d{2})$/;
 
@@ -50,7 +51,17 @@ export function shouldProbeWinFirst(slot, def = SCRAPE_JOBS.odds) {
   );
 }
 
-export function createOddsSlotHandler({ run = runForRaces } = {}) {
+/**
+ * onChanged（BOA-404、T4b-10-3）: live で完了（ok・skipped_have_data）したスロットのレースIDを通知する。
+ * race_odds にその窓のオッズが存在する（今回書いた、または既に完了していた）ことの合図で、
+ * scripts/lib/scrapeJobs/predictionOddsHandlers.js が、全スロット処理後にまとめて prediction_odds を導出する
+ * （A3自体の取得・書き込みは変えない。成功フックの追加のみ）。
+ *
+ * @param {Object} [options]
+ * @param {typeof runForRaces} [options.run]
+ * @param {(raceId: string) => void} [options.onChanged]
+ */
+export function createOddsSlotHandler({ run = runForRaces, onChanged } = {}) {
   return async function handleSlot(slot, ctx) {
     const race = parseOddsRaceId(slot.race_id);
     const [result] = await run(
@@ -77,6 +88,14 @@ export function createOddsSlotHandler({ run = runForRaces } = {}) {
       return { outcome: "error", error: "オッズの処理結果が空でした" };
     }
     const { race_id: _raceId, ...slotResult } = result;
+    // live で完了（race_odds にその窓のオッズがある）した場合のみ通知する。shadow は race_odds へ書いていない
+    if (
+      onChanged &&
+      ctx.mode === "live" &&
+      isFinalOutcome(slotResult.outcome)
+    ) {
+      onChanged(slot.race_id);
+    }
     return slotResult;
   };
 }
