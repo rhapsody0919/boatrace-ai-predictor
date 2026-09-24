@@ -219,8 +219,10 @@ data-catalog.mdでは「必須・未対応」のままだったが、PR #751（�
 | 中 | [BOA-397](https://linear.app/boat-ai/issue/BOA-397) | point_rank | T4b-12-3 | ✅ `SKIP_POINT_RANK_ON_GHA`設定済み |
 | 中 | [BOA-399](https://linear.app/boat-ai/issue/BOA-399) | venue_motor_stats | T4b-14-2 | ✅ `SKIP_MOTOR_STATS_ON_GHA`設定済み |
 | 中 | [BOA-400](https://linear.app/boat-ai/issue/BOA-400) | racer_news | T4b-15-2 | ✅ `SKIP_RACER_NEWS_ON_GHA`設定済み |
-| 中 | [BOA-398](https://linear.app/boat-ai/issue/BOA-398) | entry_course_stats（FR-3実施予定によりデータ取得は継続決定） | T4b-13-3 | 検証完了、`SKIP_ENTRY_COURSE_ON_GHA`設定待ち |
+| 中 | [BOA-398](https://linear.app/boat-ai/issue/BOA-398) | entry_course_stats（FR-3実施予定によりデータ取得は継続決定） | T4b-13-3 | ✅ `SKIP_ENTRY_COURSE_ON_GHA`設定済み |
 | 中 | [BOA-401](https://linear.app/boat-ai/issue/BOA-401) | race_info（shadow検証(一致率99.70%)を経てliveへ切替済み） | T4b-09-3 | live直後のため様子見中、GHA停止は保留 |
+
+8件中7件が完了（2026-09-24）。残るBOA-401（race_info）はlive切替直後のため観測期間を置き、GHA側の`SKIP_RACE_INFO_ON_GHA`相当の設定は別途判断する。
 
 `pit_reports`・`boatcast_oriten`・`boatcast_motor_start`・`motor_pretest`は、旧GitHub Actions基盤に対応するジョブが元々無い新規データ項目のため、この一覧には含めない。
 
