@@ -31,8 +31,9 @@
  *   技法5種類の全体シェアを見せる別の切り口
  *
  * 廃止した出所: racerStats.courseRaceCounts（racer_aggregated_stats由来、
- * 艇番＝コース前提）と getRacerCourseRecentFinishes（同じく艇番基準）は、
- * グリッドを実進入コース基準にした時点で母集団が合わなくなり使わなくなった。
+ * 艇番＝コース前提）と、race_entries.boat_number基準で直近走を引いていた
+ * supabaseDataServiceのメソッドは、グリッドを実進入コース基準にした時点で
+ * 母集団が合わなくなり使わなくなった（後者は呼び出し元消滅のため削除済み）。
  * 同じサイト内で艇番基準と実進入コース基準が混在する点はBOA-302が横断課題
  * として起票済み（courseGridStats.js のモジュールコメント参照）。
  *
