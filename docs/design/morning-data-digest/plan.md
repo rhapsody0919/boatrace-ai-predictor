@@ -6,7 +6,7 @@ Linear: [BOA-402](https://linear.app/boat-ai/issue/BOA-402)　モック（承認
 
 ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md)（日次の抽出結果を行として持つ）／[ADR-0071](../../adr/0071-venue-adjusted-skill-delta.md)（会場構成を調整した地力指標）
 
-マイグレーション案（**未適用**）: [097](../../db-migration/097_morning_data_digest.sql)
+マイグレーション案（**未適用**）: [098](../../db-migration/098_morning_data_digest.sql)
 
 ---
 
@@ -32,7 +32,7 @@ flowchart TB
         GD[generate-morning-digest.js]
     end
 
-    subgraph tbl["事前集計テーブル（マイグレーション097）"]
+    subgraph tbl["事前集計テーブル（マイグレーション098）"]
         VB[(venue_course_technique_baseline<br/>約612行)]
         RCT[(racer_course_technique_stats<br/>9,471行)]
         MDD[(morning_digest_days<br/>1行/日)]
@@ -257,10 +257,10 @@ ADR-0066 が「取得済みデータのDB内集計・統計更新（`aggregate-s
 - ワークフロー: `.github/workflows/aggregate-racer-course-technique-stats.yml`
 - 実行: **JST 01:10**（`cron: '10 16 * * *'`）。`update-nige-outcome-distribution`（00:42）・`aggregate-course-baseline-stats`（00:50）の後ろに置き、重い全期間スキャンが同時に走らないようずらす
 - 更新対象: `venue_course_technique_baseline`（約612行＝実在セル468＋フォールバック用 ALL 144）→ `racer_course_technique_stats`（実測9,471行）の順。後者は前者を参照する
-- **集計本体はRPC（SQL関数）側に寄せる**。基礎CTEは全期間で約56万行を読むため、Node側に生データを持たない。`compute_venue_course_technique_baseline()` と `compute_racer_course_technique_stats()` を097で定義し、Nodeは結果の約612行＋9,471行だけを受け取る（094 の `compute_st_course_baseline()` と同じ形）
+- **集計本体はRPC（SQL関数）側に寄せる**。基礎CTEは全期間で約56万行を読むため、Node側に生データを持たない。`compute_venue_course_technique_baseline()` と `compute_racer_course_technique_stats()` を098で定義し、Nodeは結果の約612行＋9,471行だけを受け取る（094 の `compute_st_course_baseline()` と同じ形）
 - RPCにしない場合は `.range(from, from + 999)` のページネーション必須（Supabaseのデフォルト上限は1000行）。9,000行は確実に超える
 - `window_start` / `window_end` / `window_days` は**実測値**を書く（365等の固定値を書かない）
-- `upsertChangedRows`（`scripts/lib/unchangedRows.js`）で変更のある行だけ書く。**そのために `NUMERIC_SCALES` に 097 の4表分のエントリを追加する**（未登録だと `NUMERIC_SCALES[table] ?? {}` が空になり、NUMERIC列が毎日「変更あり」と判定される）
+- `upsertChangedRows`（`scripts/lib/unchangedRows.js`）で変更のある行だけ書く。**そのために `NUMERIC_SCALES` に 098 の4表分のエントリを追加する**（未登録だと `NUMERIC_SCALES[table] ?? {}` が空になり、NUMERIC列が毎日「変更あり」と判定される）
 - 「集計結果が0行」はエラー、「変更が無くて書き込み0行」は正常、として区別する（`aggregate-course-baseline-stats.yml` と同じ扱い）
 
 ### 3.2 B2 早朝バッチ: `scripts/daily/generate-morning-digest.js`
@@ -456,7 +456,7 @@ getMorningDigest(date)   // → { day: {...}, sections: { featured, nige, makuri
 | フライング情報が不完全な過去日 | `flying_data_complete = false` を立て、ページに「この日のフライング情報は不完全です」と表示（spec FR-5） |
 | 予測値のクランプ | 発生行数を `notes` に記録し、常態化したらロジット尺度へ変更を検討 |
 | 画面側のクエリ失敗 | `.throwOnError()` により例外。セクション単位は `InlineFetchError` + `onRetry`。**空配列に化けさせない** |
-| 変更が無い日も全行を書く | `NUMERIC_SCALES` に097の4表を追加（未登録だと毎日全行更新になる） |
+| 変更が無い日も全行を書く | `NUMERIC_SCALES` に098の4表を追加（未登録だと毎日全行更新になる） |
 | バッチ未実行の日にページを開く | `morning_digest_days` に行が無い＝「生成されていない」として表示し、「該当0件」と区別する |
 
 `morning_digest_days` の `digest_date` が前日以前で止まっていないかを `scripts/maintenance/session-start-check.js` に足すかは `/step3` で判断する（既存の鮮度チェック群と同じ枠組み）。

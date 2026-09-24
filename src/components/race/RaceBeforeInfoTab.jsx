@@ -21,8 +21,12 @@
  *   computeAvgEntryCourse/computeExhibitionTopRatesで集計する
  * - 今節展示情報（展示タイムのみ）: racerService.getCurrentMeetRaceEntriesと
  *   同じ節判定（groupIntoCurrentMeet）を使うgetRacerMeetExhibitionTrendBefore
- * - 本日成績サマリー: getTodaysVenueRanking（BOA-171）と全く同じ集計定義
- *   （平均配当/万舟率/イン逃げ率）を単一会場に絞ったgetVenueDaySummaryで取得
+ *
+ * 2026-09-24（phase a FR-5 / BOA-222）に「本日の成績サマリー」をこのタブから
+ * 外した。粒度（レース単位ではなく会場×当日単位）と更新タイミング（発走前に
+ * 確定していくのではなく、レースが終わるたびに増える事後集計）が、このタブの
+ * 他の項目とずれていたため。移設先は結果タブ（払戻の下）と会場ページで、
+ * 実装は VenueDaySummaryCard。getVenueDaySummary の呼び出しもそちらへ移した
  */
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -40,12 +44,7 @@ import {
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { supabaseDataService } from "../../services/supabaseDataService";
-import { parseRaceId } from "../../utils/raceId";
-import {
-  buildBeforeInfoRows,
-  toNumber,
-  translateTechnique,
-} from "./raceIndicators";
+import { buildBeforeInfoRows, toNumber } from "./raceIndicators";
 import {
   computeAvgEntryCourse,
   computeExhibitionTopRates,
@@ -62,8 +61,6 @@ import TermHintButton from "./TermHintButton";
 import RacePitReportSection from "./RacePitReportSection";
 import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
-
-const COURSES = [1, 2, 3, 4, 5, 6];
 
 function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   const { t } = useTranslation();
@@ -127,29 +124,6 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raceId]);
-
-  // 本日成績サマリー用: 会場×当該レースの日付で1回だけ取得する
-  const [venueDaySummary, setVenueDaySummary] = useState(null);
-  const raceDate = parseRaceId(raceId)?.date ?? null;
-  useEffect(() => {
-    let cancelled = false;
-    if (!venueCode || !raceDate) return undefined;
-    supabaseDataService
-      .getVenueDaySummary(venueCode, raceDate)
-      .then((data) => {
-        if (!cancelled) setVenueDaySummary(data);
-      })
-      .catch((err) => {
-        // 取得失敗時はカードを出さない（nullのまま）。未処理のPromise拒否にしない
-        console.error(
-          "本日成績サマリー取得エラー:",
-          err?.message ?? String(err),
-        );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [venueCode, raceDate]);
 
   if (sortedPlayers.length === 0) return null;
 
@@ -338,12 +312,6 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   // 気象の観測時刻（あれば「10:34現在」を見出しに添える。無ければ従来どおり何も出さない）
   const weatherObservedTime = formatObservedTime(weather?.observedAt);
 
-  const hasTechniqueBreakdown =
-    venueDaySummary && Object.keys(venueDaySummary.techniqueCounts).length > 0;
-  const hasCourseWinBreakdown =
-    venueDaySummary &&
-    COURSES.some((c) => (venueDaySummary.entryCourseWinCounts[c] ?? 0) > 0);
-
   return (
     <div className="race-before-info-tab" id="race-before-info-tab">
       <p className="rbi-subtitle">{t("beforeInfo.subtitle")}</p>
@@ -491,80 +459,6 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
         raceGrade={raceGrade}
         players={sortedPlayers}
       />
-
-      {venueDaySummary && venueDaySummary.raceCount > 0 && (
-        <section className="rbi-card">
-          <h3 className="rbi-heading">{t("beforeInfo.todaySummaryTitle")}</h3>
-          <p className="rbi-subtitle">
-            {t("beforeInfo.todaySummaryNote", {
-              n: venueDaySummary.raceCount,
-            })}
-          </p>
-          <div className="rbi-stat-grid">
-            <div className="rbi-stat-item">
-              <span className="rbi-stat-value">
-                {venueDaySummary.avgPayout !== null
-                  ? `¥${Math.round(venueDaySummary.avgPayout).toLocaleString()}`
-                  : "—"}
-              </span>
-              <span className="rbi-stat-label">
-                {t("beforeInfo.avgPayoutLabel")}
-              </span>
-            </div>
-            <div className="rbi-stat-item">
-              <span className="rbi-stat-value">
-                {venueDaySummary.manshuRate !== null
-                  ? `${venueDaySummary.manshuRate.toFixed(0)}%`
-                  : "—"}
-              </span>
-              <span className="rbi-stat-label">
-                {t("beforeInfo.manshuRateLabel")}
-              </span>
-            </div>
-            <div className="rbi-stat-item">
-              <span className="rbi-stat-value">
-                {venueDaySummary.nigeRate !== null
-                  ? `${venueDaySummary.nigeRate.toFixed(0)}%`
-                  : "—"}
-              </span>
-              <span className="rbi-stat-label">
-                {t("beforeInfo.nigeRateLabel")}
-              </span>
-            </div>
-          </div>
-          {hasTechniqueBreakdown && (
-            <div className="rbi-breakdown">
-              <div className="rbi-subheading">
-                {t("beforeInfo.techniqueBreakdownLabel")}
-              </div>
-              <div className="rbi-badge-row">
-                {Object.entries(venueDaySummary.techniqueCounts)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([technique, count]) => (
-                    <span className="rbi-badge" key={technique}>
-                      {translateTechnique(t, technique)} {count}
-                    </span>
-                  ))}
-              </div>
-            </div>
-          )}
-          {hasCourseWinBreakdown && (
-            <div className="rbi-breakdown">
-              <div className="rbi-subheading">
-                {t("beforeInfo.entryCourseWinLabel")}
-              </div>
-              <div className="rbi-badge-row">
-                {COURSES.map((course) => (
-                  <span className="rbi-badge" key={course}>
-                    {t("beforeInfo.courseN", { n: course })}{" "}
-                    {venueDaySummary.entryCourseWinCounts[course] ?? 0}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
 
       <Link
         to={deepLink("motor")}

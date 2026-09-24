@@ -21,15 +21,16 @@
  *
  * maxDuration はレジストリ（scripts/lib/scrapeJobs/registry.js の odds.maxDurationSec）と同じ値をリテラルで書く
  * （Vercel がビルド時に静的に読むため）。verify:scrape-odds-job が一致を検査する。
+ *
+ * 買い目オッズ（BOA-404、T4b-10-3）: live で完了したスロットのレースについて、全スロット処理後に1回、
+ * prediction_odds をこの race_odds のスナップショットから導出する（専用の5分間隔Cronは作らない。
+ * scripts/lib/scrapeJobs/predictionOddsHandlers.js）。A3自体の応答・成否は変えない（body に predictionOdds を足すのみ）。
+ * 導出のモード（off/shadow/live）は scrape_job_state の job='prediction_odds' で、A3（job='odds'）とは独立に切り替える。
  */
-import { createScrapeCronHandler } from "../../scripts/lib/scrapeJobs/cronWrapper.js";
-import { createOddsSlotHandler } from "../../scripts/lib/scrapeJobs/oddsHandlers.js";
+import { createOddsCronHandlerWithPredictionOdds } from "../../scripts/lib/scrapeJobs/predictionOddsHandlers.js";
 
 export const config = {
   maxDuration: 300,
 };
 
-export default createScrapeCronHandler({
-  job: "odds",
-  handleSlot: createOddsSlotHandler(),
-});
+export default createOddsCronHandlerWithPredictionOdds();

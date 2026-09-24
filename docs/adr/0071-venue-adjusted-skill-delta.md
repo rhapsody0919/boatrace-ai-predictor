@@ -1,7 +1,7 @@
 # ADR 0071: 選手の決まり手率は「会場構成から期待される率」との差で評価する
 
 ## ステータス
-採用（2026-09-24）。同日の独立レビュー（[tasks.md](../design/morning-data-digest/tasks.md) G-0）を受けて**グレード軸を追加**して改訂（§改訂）。[BOA-402](https://linear.app/boat-ai/issue/BOA-402)、[spec.md](../design/morning-data-digest/spec.md) FR-3・FR-4。マイグレーション案: [097](../db-migration/097_morning_data_digest.sql)。
+採用（2026-09-24）。同日の独立レビュー（[tasks.md](../design/morning-data-digest/tasks.md) G-0）を受けて**グレード軸を追加**して改訂（§改訂）。[BOA-402](https://linear.app/boat-ai/issue/BOA-402)、[spec.md](../design/morning-data-digest/spec.md) FR-3・FR-4。マイグレーション案: [098](../db-migration/098_morning_data_digest.sql)。
 
 ## 背景
 

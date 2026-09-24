@@ -1,0 +1,89 @@
+/* RecentRunsBar - 直近10走の帯（phase a T3-4、screens.md §3.1.3） */
+
+.rrb {
+  margin-top: var(--spacing-2);
+}
+
+.rrb-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+/* モバイルでは10本が横に並ばないため折り返す（5本×2段になる） */
+.rrb-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.rrb-item {
+  flex: 1 1 calc(20% - 3px);
+  min-width: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 2px 0;
+  background: var(--surface-page);
+  border-radius: var(--radius-sm);
+}
+
+.rrb-course {
+  width: 100%;
+  text-align: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--surface-card);
+  color: var(--text-secondary);
+}
+
+.rrb-rank {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+}
+
+.rrb-rank-first {
+  color: var(--brand-accent-primary);
+}
+
+.rrb-rank-good {
+  color: var(--text-primary);
+}
+
+.rrb-rank-mid {
+  color: var(--text-secondary);
+}
+
+.rrb-rank-bad {
+  color: var(--color-error-text);
+}
+
+.rrb-st {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.1;
+}
+
+.rrb-st-rank {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  line-height: 1.1;
+  min-height: 0.8rem;
+}
+
+.rrb-legend {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+@media (min-width: 640px) {
+  .rrb-item {
+    flex: 1 1 calc(10% - 3px);
+  }
+}

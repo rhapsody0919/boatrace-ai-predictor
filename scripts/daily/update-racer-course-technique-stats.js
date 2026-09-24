@@ -8,7 +8,7 @@
  *
  * 設計: docs/design/morning-data-digest/plan.md §3.1
  *       docs/adr/0071-venue-adjusted-skill-delta.md
- *       docs/db-migration/097_morning_data_digest.sql
+ *       docs/db-migration/098_morning_data_digest.sql
  *
  * ## なぜ事前集計するか
  *
@@ -20,7 +20,7 @@
  * ## 集計本体はDB側（RPC）にある
  *
  * compute_venue_course_technique_baseline() / compute_racer_course_technique_stats()
- * （097で作成）が集計し、結果の約612行＋約9,471行だけを返す。Node側に26万行を持たない。
+ * （098で作成）が集計し、結果の約612行＋約9,471行だけを返す。Node側に26万行を持たない。
  *
  * ## 実行順序が重要
  *

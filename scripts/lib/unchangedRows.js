@@ -112,7 +112,7 @@ export const NUMERIC_SCALES = {
     second_rate: 2,
     exacta_rate: 2,
   },
-  // 「本日のデータ一覧」の事前集計（docs/db-migration/097_morning_data_digest.sql、BOA-402）
+  // 「本日のデータ一覧」の事前集計（docs/db-migration/098_morning_data_digest.sql、BOA-402）
   venue_course_technique_baseline: {
     nige_rate: 2,
     makuri_rate: 2,
@@ -141,6 +141,15 @@ export const NUMERIC_SCALES = {
     rate_90d: 2,
     motor_2rate: 2,
     volatility_percentile: 2,
+  },
+  // 買い目オッズ（BOA-404、docs/db-migration/011_prediction_odds.sql）。DECIMAL(8,1)
+  prediction_odds: {
+    trifecta_odds_standard: 1,
+    trio_odds_standard: 1,
+    trifecta_odds_safe_bet: 1,
+    trio_odds_safe_bet: 1,
+    trifecta_odds_upset_focus: 1,
+    trio_odds_upset_focus: 1,
   },
 };
 

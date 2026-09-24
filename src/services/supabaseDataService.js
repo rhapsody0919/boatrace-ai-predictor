@@ -4969,75 +4969,6 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定選手が指定の枠番（艇番）で出走した直近10走の着順を取得する
-   * （BOA-307、枠別情報タブのコース別成績ドリルダウン）。
-   * 上のracerStats.courseRaceCounts（racer_aggregated_stats由来、艇番＝コース
-   * 前提で集計済み）と母集団の定義を揃えるため、ここでも実進入コース
-   * （actual_course_N、courseOfBoat）ではなくrace_entries.boat_numberで
-   * 「そのコース」を判定する。揃えないとコース別成績の分母（n）と
-   * ドリルダウンの母集団が食い違い、矛盾した表示になってしまうため
-   * （実際の進入コース変化は区別できない制約は他の枠番系機能と同じ、BOA-257）
-   */
-  getRacerCourseRecentFinishes(racerId, course) {
-    return withCache(
-      `racer-course-recent-finishes-${racerId}-${course}`,
-      async () => {
-        if (!supabase || !racerId || !course) return [];
-
-        // 中止・不成立レースを除いても10件確保できるよう多めに取得する
-        const { data: entries, error } = await supabase
-          .from("race_entries")
-          .select("race_id")
-          .eq("racer_id", racerId)
-          .eq("boat_number", course)
-          .order("race_id", { ascending: false })
-          .limit(40);
-
-        // 取得失敗を[]で返すとwithCacheが「履歴なし」として30分キャッシュしてしまう
-        // （DB高負荷時のstatement timeoutで実際に発生）。例外を投げてキャッシュを避け、
-        // 呼び出し側で「取得失敗」と「履歴なし」を区別できるようにする
-        if (error) {
-          throw new Error(
-            `race_entries（枠別直近走）取得エラー: ${error.message}`,
-          );
-        }
-        if (!entries || entries.length === 0) return [];
-
-        const raceIds = entries.map((e) => e.race_id);
-        // 最大40件のIN句1回で足りるため、エラーを握りつぶすfetchAllByInは使わず
-        // 直接クエリする（取得失敗と「結果未確定のみ」を区別するため）。
-        // 結果が未確定の出走（今日以降のレース等）はresultsが0件でも正常
-        const { data: results, error: resultsError } = await supabase
-          .from("race_results")
-          .select(
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race",
-          )
-          .in("race_id", raceIds);
-        if (resultsError) {
-          throw new Error(
-            `race_results（枠別直近走）取得エラー: ${resultsError.message}`,
-          );
-        }
-        const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
-
-        const finishes = [];
-        for (const raceId of raceIds) {
-          const result = resultById.get(raceId);
-          if (!isUsableRaceResult(result)) continue;
-          // rank1〜6のどこにも艇番が無い場合（欠場・失格・転覆等、またはrank4〜6が
-          // 未バックフィルの過去データでの4着以下）は着外としてrank=nullで返す。
-          // courseRaceCountsの母数（結果確定済みの全出走）と揃えるため除外しない
-          const rank = findBoatColumnIndex(result, "rank", course);
-          finishes.push({ race_id: raceId, rank });
-          if (finishes.length >= 10) break;
-        }
-        // raceIdsは新しい順のため、finishesも新しい順のまま返す
-        return finishes;
-      },
-    );
-  },
-
-  /**
    * 指定レースの複勝オッズ（最新スクレイプ分）を取得する（AI予想モデル大規模改修、複勝予想バッジ用）
    * 複勝オッズは下限-上限のレンジで提供される（race_odds.odds_place_{n}_low/high、マイグレーション032）。
    * 未適用環境・スクレイピング未実施のレースではlow/highともnullを返す
@@ -5654,9 +5585,24 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定会場・指定日の結果確定済みレースを集計し、平均配当・万舟率・イン逃げ率・
-   * 決まり手別回数・進入コース別1着回数を返す（BOA-304、直前情報タブ
-   * 「本日成績サマリー」）。
+   * 指定会場・指定日の結果確定済みレースを集計し、平均配当・万舟率・1号艇の逃げ率・
+   * 決まり手別回数・進入コース別1着回数を返す（BOA-304。2026-09-24のFR-5で
+   * 直前情報タブから結果タブ・会場ページへ移設、`VenueDaySummaryCard`が使う）。
+   *
+   * nigeRateは `rank1 === 1 && winning_technique === "逃げ"` の**艇番基準**で、
+   * 「1コース逃げ」ではない。決まり手が逃げの有効23,892レースのうち
+   * rank1 !== 1（前づけで他艇が1コースを取って逃げた）が238件＝1.0%あり、
+   * これを分子から落としている（2026-09-24実測。逆にrank1===1かつ逃げで
+   * 実進入コースが1でない例は0件）。実進入コース基準に寄せると、当日の
+   * レースはactual_course_*が100%NULLのため算出できなくなるため据え置き、
+   * 画面のラベルを「1号艇の逃げ率」にして実装に合わせている
+   *
+   * byRaceは「この日の傾向 vs このレース」の比較文（FR-5 / T4-4）のために
+   * レース単位の決まり手・1着艇の実進入コースを返す。actual_course_1〜6は
+   * 既にselectしているので**追加クエリは0本**。当日のレースはバックフィルが
+   * 未了でwinnerCourseがnullになる（会場×日単位でオール・オア・ナッシングに
+   * 入るため、当日は必ずnull）。courseOfBoat()は使わない——未バックフィルの
+   * 艇番を暫定コースとみなすと、当日レースで「3コースまくり」と断定してしまう
    *
    * 平均配当/万舟率/イン逃げ率の定義・除外条件（is_cancelled/is_no_race/
    * rank1===null除外、3連単配当はpayout_trio列を使う歴史的経緯）は
@@ -5674,6 +5620,7 @@ export const supabaseDataService = {
         nigeRate: null,
         techniqueCounts: {},
         entryCourseWinCounts: {},
+        byRace: {},
       });
     }
 
@@ -5688,10 +5635,13 @@ export const supabaseDataService = {
           nigeRate: null,
           techniqueCounts: {},
           entryCourseWinCounts: {},
+          byRace: {},
         };
         if (!supabase) {
           console.error("Supabase client not initialized");
-          return empty;
+          // 環境変数の未設定は「その日は0レース」ではないため、キャッシュに
+          // 焼き付けない（.claude/rules/frontend-data-fetch.md §4）
+          return { ...empty, fetchFailed: true };
         }
 
         const { data: races, error: racesError } = await supabase
@@ -5720,10 +5670,17 @@ export const supabaseDataService = {
         let nigeCount = 0;
         const techniqueCounts = {};
         const entryCourseWinCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        const byRace = {};
 
         results.forEach((r) => {
           if (r.is_cancelled || r.is_no_race || r.rank1 === null) return;
           raceCount += 1;
+          byRace[r.race_id] = {
+            rank1: r.rank1,
+            winningTechnique: r.winning_technique ?? null,
+            // 1着艇が実際に進入したコース。当日・未バックフィル日はnull
+            winnerCourse: r[`actual_course_${r.rank1}`] ?? null,
+          };
           if (r.payout_trio !== null) {
             payoutCount += 1;
             payoutSum += r.payout_trio;
@@ -5755,6 +5712,7 @@ export const supabaseDataService = {
           nigeRate: raceCount > 0 ? (nigeCount / raceCount) * 100 : null,
           techniqueCounts,
           entryCourseWinCounts,
+          byRace,
         };
       },
       5 * 60 * 1000, // 当日分は結果反映のたびに変わりうるため短めのTTL
@@ -6094,6 +6052,76 @@ export const supabaseDataService = {
         last_updated: lastUpdated,
         data: techniqueData,
       };
+    });
+  },
+
+  /**
+   * ST考察の「同コース・同級別の平均」ベースラインを取得する（phase a FR-1、ADR-0068）。
+   *
+   * `st_course_baseline` はコース(1〜6) × 級別(A1/A2/B1/B2) の24行だけの
+   * 事前集計テーブル（日次バッチ update-course-baseline-stats.js が更新する）。
+   * レース詳細を開くたびに約56万行を集計するのは非機能要件（Disk IO予算・
+   * +3クエリ以内）に反するため、画面は単純なSELECTで読む。
+   *
+   * 取得エラーは例外になる（supabaseClient.js が .throwOnError() を既定適用）。
+   * 094未適用の環境では権限エラーになるので、呼び出し側は
+   * 「セクションを出さない」に倒す（ピットレポートと同じ扱い）。
+   *
+   * キーにスキーマ版（-v1）を含める: 094をロールバックした場合、成功レスポンスが
+   * クライアントのlocalStorageに残りうるため、キーを変えて無効化できるようにする
+   */
+  getStCourseBaseline() {
+    return withCache("st-course-baseline-v1", async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      try {
+        const { data } = await supabase
+          .from("st_course_baseline")
+          .select(
+            "course, grade, window_start, window_end, window_days, runs, avg_st, stable_rate, late_rate, breakout_count, breakout_rate, st_histogram",
+          )
+          .order("course")
+          .order("grade");
+        return data ?? [];
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          // 094（匿名へのSELECT公開）が未適用の間はここを通る。
+          // withCacheに保存させないためfetchFailedを付ける
+          return { state: "forbidden", rows: [], fetchFailed: true };
+        }
+        throw error;
+      }
+    });
+  },
+
+  /**
+   * 逃げシミュレーション（この会場で1コースが逃げたときの2着コース分布）を
+   * 取得する（phase a FR-6、ADR-0068）。会場別・5行だけ。
+   *
+   * 既存の getNigeOutcomeDistribution（027、艇番基準・90日・3連単粒度）とは
+   * 粒度も期間も違う別物（あちらはBOA-158の「逃げ成功時分布」タブが使用中）。
+   */
+  getNigeSimulation(venueCode) {
+    return withCache(`nige-simulation-v1-${venueCode}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      try {
+        const { data } = await supabase
+          .from("nige_second_by_course")
+          .select(
+            "venue_code, second_course, window_start, window_end, window_days, total_races, nige_races, second_count, second_rate, exacta_rate",
+          )
+          .eq("venue_code", venueCode)
+          .order("second_course");
+        return data ?? [];
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          return { state: "forbidden", rows: [], fetchFailed: true };
+        }
+        throw error;
+      }
     });
   },
 

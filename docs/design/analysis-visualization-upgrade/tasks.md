@@ -96,17 +96,19 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
 
 ## Phase 3: 枠別情報タブ（FR-1・FR-6。T1・T2の後）
 
-- [ ] **T3-0** 実装前にST考察カードのモックを再提示してユーザー承認を得る
+- [x] **T3-0** 実装前にST考察カードのモックを再提示してユーザー承認を得る
   - 既存モック（https://claude.ai/artifact/N3e6TSHmoPXzLNX1SSSLZK ）のST考察カードは**旧前提（F符号反転・コースのみベースライン・抜出率を%表示）**で作られている
   - 再設計後の表示（級別を明示したベースライン・抜出の実回数表示・集計期間の明示・Fバッジ）に差し替えて提示する（screens.md §3.1.2）
   - **受入基準**: ユーザーの承認を得てからT3-2に進む（`.claude/CLAUDE.md`「大規模な新機能はモック承認後に実装」）
-- [ ] **T3-1** コース別成績グリッド（実進入コース基準）に差し替え、既存の「コース別成績（バー＋ドリルダウン）」カードを廃止する
-  - **`RaceWakuInfoTab` に直接実装する**（T1-1は取り下げ。共通コンポーネントは作らない）。行＝今期/3ヶ月/1ヶ月/当地/一般戦/SG・G1、列＝コース1〜6、セル＝率＋n
-  - 行ラベル列を `position: sticky; left: 0`、**グリッド内だけ横スクロール**（ページ全体は横スクロールさせない）。モバイル320pxでページ全体の横スクロールが出ないこと
+- [x] **T3-1** コース別成績を実進入コース基準に差し替え、既存の「コース別成績（バー＋ドリルダウン）」カードを廃止する
+  - **`RaceWakuInfoTab` に直接実装する**（T1-1は取り下げ。共通コンポーネントは作らない）
+  - **2026-09-24改訂（ローカル確認のフィードバック反映）**: 既定ビューは**今日の想定進入コース1本 × 1着率/2連対率/3連対率 + 走数**の縦長テーブル。6コース×1指標のグリッドと指標チップは折りたたみ（`▸ 全コース（1〜6）の成績を見る`）へ移した。列を1本に絞ると横幅が余るので3指標を同時に出せるため、最も見られる部分の情報は減らずに増える。詳細は screens.md §3.1.1
+  - 想定進入コースは**枠なり進入の仮定**（艇番＝コース、ST考察の `entryCourseOf` と同じ前提）。`※枠なり進入時` と明記し、**その選手の枠なり進入率を併記**する（実測で枠なり率100%の選手は1人もおらず、80%未満が107人いる）
+  - 折りたたみ内のグリッドは行ラベル列を `position: sticky; left: 0`、**グリッド内だけ横スクロール**（ページ全体は横スクロールさせない）。モバイル320pxでページ全体の横スクロールが出ないこと。既定ビューは横スクロール自体が不要
   - コースは `actual_course_N`（実進入）。**既存の `courseRaceCounts`（艇番＝コース前提）はこのタブでは使わなくなる**。グリッドに「実進入コース基準」と注記する（[BOA-302](https://linear.app/boat-ai/issue/BOA-302) が横断課題として起票済み）
-  - ドリルダウン（直近10走）をグリッドのセルタップに移す
-  - **受入基準**: 期間の切り替えでセルの値とnが変わる。**`n < 6` で⚠と網掛け**（`SMALL_SAMPLE_THRESHOLD`。旧版の n<30 は使わない）、n=0で「—」。セルタップでそのコースの直近10走が開く。`actual_course` が取れないレースが母数から落ちている（実データで件数を確認する）
-- [ ] **T3-2** `RaceStConsiderationCard`（ST考察）: 値＋**同コース・同級別の平均**との差
+  - ドリルダウン（直近10走）は既定ビューでは行ラベルのタップ、折りたたみ内ではセルのタップで開く。**どちらから開いたかを状態に持つ**（同じ `(期間, コース)` を指しうるため）
+  - **受入基準**: 期間の切り替えで値とnが変わる。**`n < 6` で⚠と警告色**（`SMALL_SAMPLE_THRESHOLD`。旧版の n<30 は使わない）、n=0で「—」。既定ビューの⚠は走数のセルに1つだけ（3指標は同じ母数を共有するため）。タップでそのコースの直近10走が開く。`actual_course` が取れないレースが母数から落ちている（実データで件数を確認する）
+- [x] **T3-2** `RaceStConsiderationCard`（ST考察）: 値＋**同コース・同級別の平均**との差
   - 差の色は `--color-success-text` / `--color-error-text`（指標ごとに符号の向きを反転）
   - **ベースラインのラベルに級別を出す**（「A1・1コース平均 74.4%」）。どのセルと比べているかが読めるようにする
   - **抜出は実回数だけを出す（率は画面に出さない）**。セルは `3回` ＋ `平均2.1`（同コース・同級別の期待回数）。走数は専用行。**1コースの抜出は空欄**（0回とも0%とも出さない）＋理由を添える。**期待回数が1回未満のセルで `0回` のときは差の色を付けない**（赤くすると誤読される）
@@ -115,25 +117,25 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
   - **安定率・抜出・出遅率のラベルの隣に `?`（`TermHintButton`）を置く**。行ラベル列は58px。抜出の `?` だけ金の塗りにする。**Fバッジ自体も `<button>` にして `?` を兼ねる**
   - 強調は金14%（1位）/ 金7%（2位）の2段階
   - **受入基準**: 差の符号と大きさが `st_course_baseline` の `(course, grade)` セルと一致する。生の値がほぼ同じ2艇で、差の符号が正反対に出る（screens.md §3.1.2の実例。守屋美穂 A1・5コース 25.9%＝+12.1pt と 吉原快誓 B2・6コース 26.0%＝−10.6pt を実データで再現して突き合わせる）。B2級の選手が全コースで一律「平均より悪い」と出ない（級別ベースラインが効いていることの確認）
-- [ ] **T3-3** ST分布・ST履歴をST考察カード内の折りたたみに入れる（`.lede-detail` パターン）
+- [x] **T3-3** ST分布・ST履歴をST考察カード内の折りたたみに入れる（実装は `rsc-fold-toggle` ＋ `openSection`）
   - ST分布: 選手のSTヒストグラム（0.05刻み）に同コース・同級別の分布（`st_histogram`）を薄く重ねる
   - ST履歴: 直近10走の「もっと見る」で期間を伸ばす（表示件数はT3-3の実装時に決める。plan.md §8の#2）
   - **受入基準**: 折りたたみを開く前はカードの高さが変わらない。ヒストグラムのビンの合計が母数と一致する
-- [ ] **T3-4** `RecentRunsBar`（直近10走）: 進入コース（枠色）／着順／ST＋**ST順位「(1位)」**
+- [x] **T3-4** `RecentRunsBar`（直近10走）: 進入コース（枠色）／着順／ST＋**ST順位「(1位)」**
   - 1位を金、最下位を赤。着順の色は既存の `rr-pos`（`src/App.css`）を流用する
   - モバイル390pxでは5本×2段に折り返す
   - **受入基準**: 帯の進入コース・着順・STが `race_results` の実値と一致する。`stRank` がそのレースのST順（Fを除く）と一致する。Fの走は `F` と表示しST順位を付けない。モーター2連対率は出さない
-- [ ] **T3-5** `NigeSimulationCard`（逃げシミュレーション、FR-6）
+- [x] **T3-5** `NigeSimulationCard`（逃げシミュレーション、FR-6）
   - 横棒（個別の棒。積み上げ1本にしない）＋2連単確率。母数を明記する。**会場別のみ・全国へのフォールバックはしない**
   - 1行要約＋「くわしく見る」で算出方法と母数を開く
   - **受入基準**: 2着率の合計が100%（丸め誤差を除く）**かつ2連単確率の合計が「1コース逃げ率」と一致する**。表示値が `nige_second_by_course` と一致する。追加クエリは1本
-- [ ] **T3-6** i18n（ja/en/zh-TW/ko）と `termHints`
+- [x] **T3-6** i18n（ja/en/zh-TW/ko）と `termHints`
   - 既存の名前空間に追加（`wakuInfo.*`）。Rechartsを使う箇所は data key を翻訳しない（`name` prop）
   - `termHints` に `stStable` / `stBreakout` / `stLate` / **`flyingCount`** / `nigeSimulation`（ja専用）。**自前定義なので定義を説明する**＋「当サービスの独自集計で、他サイトの同名の指標とは一致しません」を付ける（ピットレポートの★と扱いが逆）。文面はscreens.md §7の表をそのまま使う
   - **`stBreakout` のヒントに「なぜ回数で出しているか」を入れる**（外側コースは率にすると0%が並ぶため）
   - **`flyingCount` のヒントに「期は5月1日と11月1日に切り替わり、期が変わると0に戻る」を必ず入れる**。これが無いとF0を「一度もフライングしていない」と誤読される（screens.md §7「Fバッジの仕様」で一次情報を確認済み。推測で書き換えない）
   - **受入基準**: 4言語のJSONが構文エラーなし。非ja言語で見出し・ラベルが翻訳される
-- [ ] **T3-7** Playwrightでの自己検証とE2Eの追記
+- [x] **T3-7** Playwrightでの自己検証とE2Eの追記
   - ライト・ダーク・モバイル320px/390pxで、枠別情報タブの全カードを確認する。**強調の2段階（金14%/7%）がダークで判別できるかを目視で確認し、できなければ1位のみに落とす**（screens.md §5.3）
   - `e2e/smoke.spec.js` に追記: グリッドの値とnの整合、ST考察の差の表示、逃げシムの合計100%、**`st_course_baseline`/`nige_second_by_course` の権限がない場合にカードが出ない**
   - `npm run build` / `npm run test:e2e` / `npm run verify:er-diagram` / `npm run verify:migration-numbers` / `npm run verify:migration-rls`
@@ -142,18 +144,44 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
 
 [BOA-222](https://linear.app/boat-ai/issue/BOA-222) に統合済みのスコープ。
 
-- [ ] **T4-1** `VenueDaySummaryCard` を切り出す（直前情報タブ内のインライン実装から）
-  - **受入基準**: 切り出し前後で直前情報タブの表示が変わらない
-- [ ] **T4-2** 結果タブ（払戻の下）と会場ページに追加し、**文言を開催日基準に変える**（4言語）
-  - `todaySummaryTitle` / `todaySummaryNote` を「この日の水面傾向」「{{date}}にこの会場で確定した{{n}}レースの集計です」相当に変更する
-  - `/venue/:venueCode` と `/races/:date/:venueCode` は**同じ `VenueRaceListPage.jsx`**（過去日でも出る）
-  - **受入基準**: 過去日のレース・過去日の会場ページで「本日」と表示されない
-- [ ] **T4-3** 直前情報タブからカードを削除し、`getVenueDaySummary` の呼び出しも外す
+> **2026-09-24、実装着手前の独立レビュー（`.claude/rules/sdd-workflow.md`）で前提を測り直して書き換えた**。初版のタスク文には、実データと合わない前提が3つあった。
+>
+> 1. **当日のレースは `actual_course_*` が100%NULL**（当日の有効34レースで1着艇の実進入コース充足0.0%、前日・前々日は100.0%）。バックフィルは会場×日単位でオール・オア・ナッシングに入る。結果タブを最も見るのは当日なので、T4-4の「3コースまくり」のコース部分は**当日は必ず出せない**（劣化パスが例外ではなく既定）
+> 2. 傾向の判定を「その日の最頻の決まり手と一致するか」の二値で置くと、**全レースの43.5%に「傾向から外れた」が付く**（直近90日1,200 venue-day・14,309レースで実測、一致56.5%）。最頻以外も複数本あるのが普通なので「1本」が虚偽になる。さらに**首位が同数タイの日が8.3%**あり、`fetchAllByIn` が `.order()` を付けないため判定が実行ごとに反転しうる
+> 3. `.lede-simple` / `.lede-detail` は**実装されたことがない**（`grep -rn "lede" src/` が0件）。実在する先例は `NigeSimulationCard` の `nsc-detail-toggle` / `nsc-detail`
+>
+> レビューで挙がったが**採らなかった**案: 会場ページで「過去90日のベースラインとの差分」にする案（新しい取得元が要りFR-5の範囲を超える。直上の `VenueCharacteristicsCard` が90日を出しているため、カードの注記に「この日1日分」と明記して混同だけ防ぐ）。最小n（`SMALL_SAMPLE_THRESHOLD`=6）でコメント自体を抑止する案（回数を並べる形なら n=2 でも「確定2Rで まくり1・まくり差し1」と事実しか言わないため、抑止ではなく**確定レース数を常に前置きする**形で担保する）。
+
+- [x] **T4-1** `VenueDaySummaryCard` を切り出す（直前情報タブ内のインライン実装から）
+  - props: `venueCode` / `date` / `raceId`（省略可。渡されたときだけ「このレース」の比較文を出す）
+  - `getVenueDaySummary(venueCode, date)` はカード自身が呼ぶ。取得失敗は握りつぶさず `failed` state に持ち `InlineFetchError`（ルートクラスは `inline-fetch-error`、props は `{message, onRetry}`）を出す（`.claude/rules/frontend-data-fetch.md`）
+  - **CSSは `vds-*` で自己完結させる**。理由は「会場ページが `RaceBeforeInfoTab.css` を読み込まないから」**ではない**（実ビルドはCSS単一バンドル `dist/assets/main-*.css` で、`AppRouter.jsx` に `React.lazy` は0件・`vite.config.js` に `cssCodeSplit` の指定も無いため `rbi-*` は会場ページでも効く）。**別コンポーネントのCSSファイルへの暗黙依存を作らないため**であり、将来のlazy化にも耐える
+  - `rbi-stat-grid` / `rbi-stat-item` / `rbi-stat-value` / `rbi-stat-label` / `rbi-breakdown` / `rbi-subheading` / `rbi-badge-row` / `rbi-badge` はこのカード専用（`src/` 全体で他に使用箇所なし）なので `RaceBeforeInfoTab.css` から削除する。`rbi-card` / `rbi-heading` / `rbi-subtitle` / `rbi-note` は `RacePitReportSection` と共用なので**残す**
+  - **受入基準**: 切り出し前後で表示が変わらない（移設前のスクリーンショットと突き合わせる）
+- [x] **T4-2** 結果タブ（払戻の下）と会場ページに追加し、**文言を開催日基準に変える**（4言語）
+  - 結果タブ: `RaceResult.jsx` の払戻セクション（`{payouts.win && (<>…</>)}`）の直後、ルート `.race-result` の閉じタグ直前。`venueCode` と `date` は `parseRaceId(raceId)`（戻り値 `{date, venueCode, raceNo}`）から導出し、**propsは増やさない**
+  - 会場ページ: `VenueRaceListPage.jsx` の `<VenueCharacteristicsCard venueCode={venueCode} />` の直後。`date` は同ファイルの `dateParam || getTodayJST()`
+  - i18nキー8件（`todaySummaryTitle` / `todaySummaryNote` / `avgPayoutLabel` / `manshuRateLabel` / `nigeRateLabel` / `techniqueBreakdownLabel` / `entryCourseWinLabel` / `courseN`）を `beforeInfo` から**新しい `venueDaySummary` 名前空間へ移す**（4言語。使用箇所は移設元の1ファイルのみなので衝突しない）
+  - 見出しは承認済みモックどおり「この日の水面傾向」、注記は「{{date}}に{{venue}}で確定した{{n}}レースの集計です」
+  - **日付は常に出す**（`isToday` で分岐しない）。同じカードが「会場ページ・当日」「会場ページ・過去日」「結果タブ」の3文脈で使われ、会場ページは当日だと日付をどこにも出さないため（`VenueRaceListPage.jsx` は `!isToday` のときだけ日付を表示する）
+  - **`formatDateLocalized` に `timeZone: "Asia/Tokyo"` を足す**。現状 `Intl.DateTimeFormat` に `timeZone` を渡していないため閲覧者のローカルTZで整形され、負のオフセットの地域（America/Los_Angeles等）では `2026-09-24` が **September 23** と1日ずれて出る。`/venue/:code` は `TRANSLATED_PATHS` に入っており4言語で実際に配信される。既存の正しい先例は `RacePitReportSection.jsx:37`。呼び出し元は `RaceDetailPage.jsx` の2箇所だけで、どちらもJSTの開催日を表示しているため修正して問題ない
+  - **受入基準**: 過去日のレース・過去日の会場ページで「本日」と表示されない。TZを America/Los_Angeles に設定したブラウザで日付が1日ずれない
+- [x] **T4-3** 直前情報タブからカードを削除し、`getVenueDaySummary` の呼び出しも外す
+  - `RaceBeforeInfoTab.jsx` の参照は state（132行）・取得（138行）・導出フラグ `hasTechniqueBreakdown` / `hasCourseWinBreakdown`（342・344-345行）・カード本体（495-560行）のみ。他のカードはこの state に依存していない
+  - 副産物: `RaceTabs` は非アクティブタブをアンマウントする（`RaceTabs.jsx:58`）ため、既定表示（直前情報が既定ではないがタブ切替時）のクエリが2本減り、代わりに会場ページの全訪問で2本増える（`races` ≤12行 + `race_results` ≤12行）。plan.md §6のクエリ予算に追記する
   - **受入基準**: 直前情報タブに本日の成績サマリーが出ない。他のカード（気象・展示・詳細テーブル・ピットレポート）が崩れない
-- [ ] **T4-4** 傾向コメントの生成（「今日の多摩川はイン逃げ67%（8/12）。このレースは3コースまくりで、傾向から外れた1本」）
-  - `race_results.winning_technique` と `actual_course_N` から生成する（追加取得なし）
-  - **受入基準**: コメントの数値が実データの集計と一致する。当該レースの決まり手・進入が正しく反映される
-- [ ] **T4-5** Playwrightでの自己検証とE2Eの追記（3箇所の表示、過去日の文言）
+- [x] **T4-4** 傾向コメントの生成（**回数を並べる形**。二値判定はしない）
+  - 第1文（常に）: 「{{date}}の{{venue}}は確定{{n}}Rで 逃げ6・まくり4・差し2（1号艇の逃げ率50%）」
+  - 第2文（`raceId` があり、そのレースの決まり手が取れるときだけ）: 「このレースはまくり（この日4本目）」。**1着艇の実進入コースが取れるときだけ**「3コースまくり」とコースを付ける
+  - **`courseOfBoat()`（`supabaseDataService.js:65-79`、未バックフィルなら艇番を暫定コースとみなす）は使わない**。当日レースで「3コースまくり」と断定してしまう
+  - このレースの1着艇の実進入コースは `prediction.result` に無い（`buildRaceResult` が `actual_course_*` を返さない）。`getVenueDaySummary` の戻り値に `byRace: { [raceId]: { rank1, winningTechnique, winnerCourse } }` を足す。同関数は既に `race_id` と `actual_course_1〜6` を select しているので**追加クエリは0本**
+  - **`withCache` のキーは上げない**（v2にしない）。第3引数で5分TTLを明示しているので古い形の値は最大5分で消え、その間は `byRace?.[raceId]` が undefined になって第2文が出ないだけ。キーを変えると誰も読まない `boatai:venue-day-summary-*` が localStorage に残り続ける（`cache.get` は読んだときにしか期限切れを掃除しない）
+  - `nigeRate` のラベルは「1号艇の逃げ率」にする（実装は `rank1 === 1 && winning_technique === "逃げ"` の艇番基準。決まり手が逃げの有効23,892レースのうち `rank1 !== 1` が238件＝1.0%あり分子から落ちている。FR-6の「1コース逃げ」は実進入コース基準なので同じ画面に定義の違う2つが並ぶ）
+  - `getVenueDaySummary` の `if (!supabase) return empty` に `fetchFailed: true` を足す（今は失敗がキャッシュされる）
+  - **受入基準**: コメントの数値が実データの集計と一致する（決まり手の回数・1号艇の逃げ率・「この日{{k}}本目」の順番）。当日のレース（`actual_course_*` がNULL）でコース部分が出ず、決まり手だけで文が成立する。確定1レースの時点でも虚偽にならない
+- [x] **T4-5** Playwrightでの自己検証とE2Eの追記
+  - 3箇所（結果タブ／会場ページ・当日／会場ページ・過去日）の表示、過去日の文言、**ダークモード**（`component-reuse.md`。コピー元の `rbi-*` は意味トークンのみを使っているので素直にリネームすれば安全だが目視で確認する）、モバイル320px/390px
+  - 既存E2Eは壊れない見込み（会場ページのテストが見ているのは `.data-fetch-error`＝`DataFetchError` で、新カードが出すのは `.inline-fetch-error`。`predictionCacheKeys` は `boatai:predictions-` 前置のみを列挙するので `venue-day-summary` の書き込みは `toEqual([])` を壊さない）。実走で確認する
 
 ## Phase 5: 基本情報タブ（FR-2・FR-4c・FR-4d）
 

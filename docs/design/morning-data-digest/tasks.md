@@ -6,7 +6,7 @@ Linear: [BOA-402](https://linear.app/boat-ai/issue/BOA-402)　モック（承認
 
 ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](../../adr/0071-venue-adjusted-skill-delta.md)
 
-マイグレーション案（**未適用**）: [097](../../db-migration/097_morning_data_digest.sql)
+マイグレーション案（**未適用**）: [098](../../db-migration/098_morning_data_digest.sql)
 
 ---
 
@@ -23,13 +23,13 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
 
 `.claude/rules/sdd-workflow.md`「実装着手前に天才エンジニアの独立レビューを必ず挟む」（2026-09-23〜）。phase a で同じ位置に33件の指摘が出て、うち数値・前提の誤りで設計を巻き戻した実績がある。
 
-- [x] **G-0** Agent tool で独立エージェントに spec.md / screens.md / plan.md / tasks.md / ADR-0070 / ADR-0071 / 097 を渡し、批判的レビューを依頼する
+- [x] **G-0** Agent tool で独立エージェントに spec.md / screens.md / plan.md / tasks.md / ADR-0070 / ADR-0071 / マイグレーション案（当時097、現098）を渡し、批判的レビューを依頼する
 
   **完了（2026-09-24）。Critical 3件・High 7件・Medium 14件・Low 7件の指摘。うち重要なものは全て自分で実測して再現し、設計に反映した。** 反映内容:
   - **C-1**: `featured` のスコア式 `skill_delta × consistency` が破綻（実測で若松12Rが1位、モックの戸田4Rは3位）。逸脱をzスコアに標準化する式に変更（plan §3.3。修正後は戸田4Rが1位）
   - **C-2**: FR-7 の受入基準「ホームと表示値が一致」は原理的に不可能（`predictions` は日中に再生成。実測で9/20は08:36〜22:51の15時間帯に分散）。「`generated_at` 時点の値と一致」に変更
   - **C-3**: `getVenuesWithTodaysRaces()` は会場コードの配列しか返さない。screens.md §4 を訂正
-  - **H-1**: `volatilityPercentile` は 0〜1。×100 して保存する旨を plan §2.2・097 に明記
+  - **H-1**: `volatilityPercentile` は 0〜1。×100 して保存する旨を plan §2.2・098 に明記
   - **H-2**: グレード交絡（G1 62.2% 〜 G3 51.1%、11.1pt）を補正。ベースラインの主キーを `(venue_code, race_grade, course)` に変更（ADR-0071 §改訂1）
   - **H-3**: 小標本フラグの基準が まくり で逆に働く。「Wilson下限 < 抽出閾値」に変更
   - **H-4**: `nigashi` の閾値を +15pt → **+20pt**（実測: +15ptで43件は目標5〜15件の3倍。+20ptで12件・9会場）
@@ -72,12 +72,12 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
 
 ## Phase 2: マイグレーションと夜間バッチ（B1）
 
-- [ ] **T2-1** (ユーザー承認) マイグレーション097を適用し、`APPLIED.md` を「適用済み」に更新する
+- [ ] **T2-1** (ユーザー承認) マイグレーション098を適用し、`APPLIED.md` を「適用済み」に更新する
   - 適用前に長時間クエリが0件であることを確認する
   - 適用後の確認（読み取りのみ）: 4表が存在・RLS有効・`has_table_privilege('anon', …, 'SELECT')=true` かつ `'INSERT'=false`・公開読み取りポリシー各1件・`morning_digest_rows` のFKが `morning_digest_days` を指す
   - **受入基準**: 上記がすべて満たされ、`scripts/maintenance/check-anon-access.js --expect-applied` が通る
 
-- [x] **T2-2** 集計RPC 2本を097に追加する（`compute_venue_course_technique_baseline` / `compute_racer_course_technique_stats`）
+- [x] **T2-2** 集計RPC 2本を098に追加する（`compute_venue_course_technique_baseline` / `compute_racer_course_technique_stats`）
   - 094 の `compute_st_course_baseline()` と同じ形（`LANGUAGE sql`・`STABLE`・PUBLIC/anon/authenticated から REVOKE、GRANT EXECUTE しない）
   - **CTEに `MATERIALIZED` を付けた**（094が「付けないと base が複数回スキャンされ statement timeout」と実測済み）
   - `window_start` / `window_end` / `window_days` は実測値。`race_results.course_1〜6` は使わない
@@ -109,7 +109,7 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
 
   - **3位と4位が score 3.65 で同点**。plan §3.3 の「同点は `race_id` 昇順」が実際に必要になるケースなので、T3-4 の実装で必ず検証する
 
-- [x] **T2-3** `scripts/lib/unchangedRows.js` の `NUMERIC_SCALES` に097の表を追加する（**完了 2026-09-24**。`morning_digest_days` はNUMERIC列を持たないため3表）
+- [x] **T2-3** `scripts/lib/unchangedRows.js` の `NUMERIC_SCALES` に098の表を追加する（**完了 2026-09-24**。`morning_digest_days` はNUMERIC列を持たないため3表）
   - `venue_course_technique_baseline`: `nige_rate` 2 / `makuri_rate` 2 / `nigashi_rate` 2
   - `racer_course_technique_stats`: `nige_rate` `nige_expected` `makuri_rate` `makuri_expected` `nigashi_rate` `nigashi_expected` `nige_rate_90d` `makuri_rate_90d` `nigashi_rate_90d` 各2
   - `morning_digest_rows`: `metric_value` `metric_expected` `metric_skill_delta` `metric_venue_baseline` `metric_predicted` `metric_wilson_lower` `rate_90d` `motor_2rate` `volatility_percentile` 各2

@@ -45,6 +45,7 @@
     "verify:scrape-result-job": "node scripts/maintenance/verify-scrape-result-job.js",
     "verify:scrape-daily-jobs": "node scripts/maintenance/verify-scrape-daily-jobs.js",
     "verify:scrape-odds-job": "node scripts/maintenance/verify-scrape-odds-job.js",
+    "verify:prediction-odds-derive": "node scripts/maintenance/verify-prediction-odds-derive.js",
     "verify:scrape-pre-race-job": "node scripts/maintenance/verify-scrape-pre-race-job.js",
     "verify:pit-report-job": "node scripts/maintenance/verify-pit-report-job.js",
     "verify:boatcast-job": "node scripts/maintenance/verify-boatcast-job.js",

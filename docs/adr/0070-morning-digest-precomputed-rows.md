@@ -1,7 +1,7 @@
 # ADR 0070: 「本日のデータ一覧」の抽出結果を日付つきの行として事前計算する
 
 ## ステータス
-採用（2026-09-24）。[BOA-402](https://linear.app/boat-ai/issue/BOA-402)、[spec.md](../design/morning-data-digest/spec.md)・[plan.md](../design/morning-data-digest/plan.md)。マイグレーション案: [097](../db-migration/097_morning_data_digest.sql)。
+採用（2026-09-24）。[BOA-402](https://linear.app/boat-ai/issue/BOA-402)、[spec.md](../design/morning-data-digest/spec.md)・[plan.md](../design/morning-data-digest/plan.md)。マイグレーション案: [098](../db-migration/098_morning_data_digest.sql)。
 
 ## 背景
 

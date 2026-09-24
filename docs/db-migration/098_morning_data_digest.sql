@@ -1,14 +1,15 @@
--- 097: 「本日のデータ一覧」ページ（BOA-402）の事前集計テーブル3表＋実行記録1表
+-- 098: 「本日のデータ一覧」ページ（BOA-402）の事前集計テーブル3表＋実行記録1表＋集計RPC2本
 --
 -- 対応チケット: BOA-402（「本日のデータ一覧」ページとSNS毎朝展開）
 -- 対応設計: docs/design/morning-data-digest/plan.md、docs/design/morning-data-digest/spec.md
 -- 関連ADR: docs/adr/0070-morning-digest-precomputed-rows.md（日次の抽出結果を行として持つ）
 --           docs/adr/0071-venue-adjusted-skill-delta.md（会場構成を調整した「地力」指標）
 --
--- ⚠️ この案は「本番へ未適用」。適用はユーザーの承認後に、ユーザーが実行する。
+-- ✅ 2026-09-24 にユーザーがSupabase Dashboardで適用済み（適用後の確認結果は APPLIED.md 参照）。
 --
--- 番号の根拠: origin/master の docs/db-migration/ の最大は 096（2026-09-24時点）。
---   094/095/096 は適用済み。`npm run verify:migration-numbers` で確認すること。
+-- 番号の根拠: 着手時は097を取ったが、別セッションが先に 097_limit_trg_update_predictions_columns.sql を
+--   masterへマージしたため衝突し、PR作成前の `npm run verify:migration-numbers` で検知して098にリネームした。
+--   本ファイルの内容は 2026-09-24 に「097」という名前で本番適用済み（ファイル名は台帳上のラベルで、DBには記録されない）。
 --
 -- 設計の要点:
 --   * 集計窓は「利用可能な全期間」の移動窓。365 等の固定値を書かず、window_start / window_end /

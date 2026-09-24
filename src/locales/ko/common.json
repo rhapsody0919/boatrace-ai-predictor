@@ -220,6 +220,7 @@
     "popularity": "인기 {{rank}}위",
     "fastestStartTag": "최속",
     "courseNote": "※진입 코스는 현재 표시하지 않습니다(데이터 정확도 확인 중입니다)",
+    "missingRanksNote": "※이 레이스는 4착 이하의 착순 데이터가 수집되지 않아 일부 착순을 표시하지 않습니다",
     "cancelledTitle": "이 레이스는 중지되었습니다",
     "cancelledBody": "날씨나 수면 상태 등으로 인해 레이스가 중지되어 결과 데이터가 없습니다.",
     "noRaceTitle": "이 레이스는 불성립되었습니다",
@@ -238,7 +239,9 @@
     "volatilityOutcomeDetailFavorite": "（1번 보트가 1착）",
     "volatilityCaveat": "※단일 레이스 결과만으로는 예측의 정확 여부를 판단할 수 없습니다.",
     "volatilityCaveatLink": "실측 정확도 보기 ›",
-    "payout": "배당금: ¥{{amount}}"
+    "payout": "배당금: ¥{{amount}}",
+    "notFinishedTitle": "결과가 아직 확정되지 않았습니다",
+    "notFinishedBody": "레이스 종료 후 이 탭에 착순・배당금・결정수가 표시됩니다."
   },
   "raceHistoryTable": {
     "date": "날짜",
@@ -453,13 +456,16 @@
     "resultTitleDeadline": "（마감 {{time}}）"
   },
   "raceTabs": {
+    "basic": "기본 정보",
     "waku": "번호별 정보",
     "aiPrediction": "AI 예상",
+    "motor": "모터 정보",
     "beforeInfo": "직전 정보",
-    "oddsList": "오즈 일람"
+    "oddsList": "오즈 일람",
+    "result": "결과"
   },
   "wakuInfo": {
-    "note": "선수를 선택하면 해당 선수의 번호(1〜6)별 성적을 비교할 수 있습니다. 막대를 누르면 최근 10경기 착순이 열립니다",
+    "note": "선수를 선택하면 그 선수가 오늘 들어갈 예상 코스의 성적을 기간·조건별로 비교할 수 있습니다. 왼쪽의 기간 이름을 누르면 해당 코스의 최근 10주 착순이 열립니다. 전체 6개 코스 비교는 표 아래 접힌 영역에서 열 수 있습니다.",
     "boatLabel": "선수(번호)",
     "metricLabel": "지표",
     "metrics": {
@@ -467,20 +473,37 @@
       "top2Rate": "2연대율",
       "top3Rate": "3연대율"
     },
-    "courseTitle": "번호별 성적",
-    "courseSubtitle": "전국・전 기간 실적(출주 시 번호 기준)",
-    "courseCaveat": "※실제 진입 코스 변화(전진 배치)는 구분할 수 없어 출주 시의 번호로 집계했습니다. 성적은 예상 생성 시점의 집계값, 최근 10경기는 최신 데이터라 건수가 다소 다를 수 있습니다",
     "loading": "불러오는 중...",
     "sampleCount": "(n={{n}})",
     "outOfPlace": "착외",
     "todayBadge": "이번 경주 번호",
     "noData": "데이터가 없습니다",
-    "noRacerId": "선수 정보를 가져오지 못했습니다",
     "noRecentFinishes": "이 번호로 출주한 이력이 없습니다",
     "fetchError": "최근 10경기를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요",
-    "recentFinishesNote": "{{course}}번 출주 시 최근 10경기 착순(왼쪽이 가장 오래됨, 오른쪽이 최신)",
+    "recentFinishesNote": "{{course}}코스(실제로 진입한 코스)에서 출주한 최근 10경기",
     "kimariteTitle": "결정수 경향(전 선수・최근 90일)",
-    "kimariteCaveat": "※이 경기장의 모든 경주・모든 선수를 합산한 결정수 비율입니다(선수 개인의 실적이 아닙니다)"
+    "kimariteCaveat": "※이 경기장의 모든 경주・모든 선수를 합산한 결정수 비율입니다(선수 개인의 실적이 아닙니다)",
+    "gridTitle": "코스별 성적",
+    "gridSubtitle": "실제 진입 코스 기준. 셀을 누르면 해당 코스의 최근 10주가 열립니다",
+    "gridCaveat": "코스는 실제로 진입한 코스이며 정번호가 아닙니다. 데이터가 없는 경주는 제외했습니다",
+    "gridRows": {
+      "current": "이번 기",
+      "last3m": "최근 3개월",
+      "last1m": "최근 1개월",
+      "local": "당지",
+      "ippan": "일반전",
+      "sgg1": "SG・G1"
+    },
+    "smallSampleTitle": "표본이 적어 참고값입니다",
+    "gridTitleWithMetric": "코스별 성적: {{metric}}",
+    "todayMark": "오늘",
+    "todayCourseHeading": "오늘의 예상 진입: {{course}}코스",
+    "wakuNariAssumption": "※정해진 레인대로 진입할 경우",
+    "wakuNariRate": "이 선수가 정해진 레인대로 진입한 비율은 {{rate}}%입니다(최근 {{n}}주)",
+    "periodHeader": "기간·조건",
+    "nHeader": "주수",
+    "allCoursesFold": "전체 6개 코스 성적 보기",
+    "periodCaveat": "※'이번 기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다."
   },
   "aiPredictionTab": {
     "unavailableTitle": "AI 예상 데이터가 없습니다",
@@ -537,15 +560,7 @@
     "top2RateAbbrev": "2연대",
     "top3RateAbbrev": "3연대",
     "prevAbbrev": "직전",
-    "avgAbbrev": "평균",
-    "todaySummaryTitle": "오늘의 성적 요약",
-    "todaySummaryNote": "오늘 이 경기장에서 확정된 {{n}}경주의 집계입니다",
-    "avgPayoutLabel": "평균 배당(삼련단)",
-    "manshuRateLabel": "만슈率(고배당률)",
-    "nigeRateLabel": "인빠지기 승률",
-    "techniqueBreakdownLabel": "결정수별 횟수",
-    "entryCourseWinLabel": "진입 코스별 1착 횟수",
-    "courseN": "{{n}}코스"
+    "avgAbbrev": "평균"
   },
   "pitReport": {
     "title": "피트 리포트(선수 코멘트)",
@@ -583,6 +598,47 @@
     "emptyTitle": "오즈 데이터가 아직 없습니다",
     "emptyBody": "발주 시간이 가까워지면 오즈가 수집되어 이 탭에 표시됩니다."
   },
+  "basicInfo": {
+    "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 5경기・강세 경기장)가 열립니다",
+    "metricLabel": "지표",
+    "scopeLabel": "경기장",
+    "gradeLabel": "등급",
+    "metrics": {
+      "winRate": "승률",
+      "top2Rate": "2연대율",
+      "top3Rate": "3연대율",
+      "avgSt": "평균 ST"
+    },
+    "scopes": {
+      "local": "현지",
+      "national": "전국"
+    },
+    "grades": {
+      "all": "전체 레이스",
+      "ippan": "일반",
+      "sgg1": "SG・G1"
+    },
+    "presetLabel": "{{scope}} {{grade}}",
+    "periods": {
+      "current": "이번 기",
+      "last3m": "최근 3개월",
+      "last1m": "최근 1개월"
+    },
+    "periodSummary": "▸ 기간으로 좁히기",
+    "periodCaveat": "※등급 조건과 조합한 「이번 기」는 공식 기 구분이 아니라, 당사 데이터로 확인할 수 있는 전체 기간(최근 2년)을 대상으로 합니다",
+    "winRateSwitchCaveat": "※등급・기간을 좁힌 「승률」은 공식 승률 점수가 아니라, 해당 조건에서 실제로 1착이 된 비율(%)을 표시합니다",
+    "sampleCount": "(n={{n}})",
+    "noData": "(데이터 없음)",
+    "viewTrend": "최근 5경기",
+    "viewVenue": "강세 경기장",
+    "loading": "불러오는 중...",
+    "noHistory": "출주 이력 데이터가 없습니다",
+    "noVenueData": "경기장별 성적 데이터가 없습니다(규정 경기 수 미만)",
+    "trendNote": "최근 5경기(등급・기간 조건과 무관하게 항상 최신 5경기를 표시. 날짜를 누르면 레이스 상세로 이동)",
+    "finishUnknown": "착외(순위 불명)",
+    "venueRankingFor": "{{metric}} 랭킹",
+    "currentVenueRank": "이번 시리즈의 {{venue}}는 전체 {{total}}개 경기장 중 {{rank}}위"
+  },
   "dataTable": {
     "title": "데이터 출주표",
     "subtitle": "출주 6명의 분석 데이터를 한눈에 비교. 행 라벨을 탭하면 상세 분석 페이지로 이동합니다",
@@ -603,6 +659,7 @@
     "noWins": "승리 없음",
     "winCount": "{{n}}승",
     "note": "분석 데이터는 최근 90일（회수율은 180일）의 실적 집계입니다. 하이라이트는 이 레이스에서 가장 좋은 값. 참고용이며 결과를 보장하지 않습니다",
+    "guideLink": "데이터 출주표 사용법 자세히 보기",
     "rowLocalWinRate": "당지 승률",
     "rowTwoRate": "전국 연대율",
     "rowAvgSt": "평균 ST",
@@ -1382,5 +1439,70 @@
     "tipsHeading": "💡 활용 포인트",
     "articleHeading": "📖 자세한 해설 기사",
     "noticeHeading": "⚠️ 주의사항"
+  },
+  "stConsideration": {
+    "title": "ST 고찰",
+    "subtitle": "아래는 같은 코스·같은 급별 평균과의 차이",
+    "window": "집계 기간 {{start}}〜{{end}}",
+    "gradeRow": "급별",
+    "runsRow": "출주수",
+    "stable": "안정률",
+    "breakout": "추출",
+    "late": "출발지연률",
+    "times": "{{n}}회",
+    "expectedTimes": "평균{{n}}",
+    "noInnerBoat": "안쪽 없음",
+    "flyingTitle": "이번 기의 플라잉 {{n}}회. 기가 바뀌면 0으로 돌아갑니다",
+    "caveat": "초록은 같은 코스·같은 급별 평균보다 좋음, 빨강은 나쁨. 추출은 바깥 코스일수록 발생 횟수가 적어 비율로 하면 0.0%만 나열되므로 횟수로 표시합니다. 1코스는 안쪽에 艇이 없어 표시하지 않습니다. 플라잉 경주는 모수에서 제외하고 배지로 따로 표시합니다. 본 서비스의 독자 집계입니다.",
+    "histogramTitle": "ST 분포",
+    "historyTitle": "ST 이력",
+    "histogramNote": "{{grade}}로 {{course}}코스에서의 {{n}}주／연한 막대＝같은 코스·같은 급별 평균({{baselineN}}주)",
+    "histogramLegend": "가로축은 ST(0.05 단위). 진한 막대가 이 선수, 연한 막대가 같은 코스·같은 급별 평균입니다. 둘 다 비율로 환산해 겹쳤습니다(모수 차이가 커서 횟수로는 비교할 수 없습니다)",
+    "histogramOwnTitle": "이 선수 {{pct}}%({{n}}주)",
+    "histogramBaseTitle": "같은 코스·같은 급별 평균 {{pct}}%",
+    "historyNote": "{{course}}코스에서 출주한 전체 {{n}}주(최신순)",
+    "histDate": "날짜",
+    "histVenue": "경기장",
+    "histSt": "ST",
+    "histStRank": "ST순위",
+    "histRank": "착순",
+    "average": "평균{{value}}"
+  },
+  "nigeSimulation": {
+    "title": "1코스가 도망쳤을 때",
+    "sample": "이 경기장의 1코스 도주 {{nige}}경주／결과 확정 {{total}}경주",
+    "secondCourse": "2착에 들어온 코스",
+    "exacta": "쌍승 {{value}}%",
+    "showDetail": "자세히 보기(산출 방법·모수)",
+    "hideDetail": "닫기",
+    "detailMethod": "「1코스가 도망쳤다」는 결정타가 도주이고 1착 艇이 실제로 진입한 코스가 1인 경우입니다. 2착 코스도 실제 진입 코스입니다.",
+    "detailWindow": "집계 기간: {{start}}〜{{end}}({{days}}일)",
+    "detailNotPrediction": "이 경기장의 과거 실적을 집계한 것이며, 이번 경주의 예상이 아닙니다."
+  },
+  "recentRuns": {
+    "older": "오래됨",
+    "newer": "최근",
+    "flying": "F",
+    "stRank": "({{n}}위)",
+    "legend": "위는 실제 진입 코스, 가운데는 착순, 아래는 ST와 그 경주에서의 ST 순위"
+  },
+  "venueDaySummary": {
+    "title": "이날의 수면 경향",
+    "note": "{{date}} {{venue}}에서 확정된 {{n}}경주의 집계입니다",
+    "ledeDay": "확정된 {{n}}경주의 결정타는 {{techniques}}입니다.",
+    "ledeNige": "1호정의 도주율 {{rate}}%.",
+    "ledeThisRaceWithCourse": "이 경주는 {{course}}코스에서 {{technique}}로 승리해, 이날 {{ordinal}}번째 {{technique}}였습니다.",
+    "ledeThisRace": "이 경주는 {{technique}}로 승리해, 이날 {{ordinal}}번째 {{technique}}였습니다.",
+    "countUnit": "{{n}}",
+    "techniqueSeparator": "·",
+    "avgPayoutLabel": "평균 배당",
+    "manshuRateLabel": "만슈율",
+    "nigeRateLabel": "1호정의 도주율",
+    "breakdownToggle": "결정타별·진입 코스별 내역",
+    "techniqueBreakdownLabel": "결정타별",
+    "entryCourseWinLabel": "진입 코스별 1착 횟수",
+    "courseN": "{{n}}코스",
+    "ledeDayPartial": "확정 {{n}}경주 중 결정타가 확인된 {{m}}경주는 {{techniques}}입니다.",
+    "loading": "불러오는 중..."
   }
 }
