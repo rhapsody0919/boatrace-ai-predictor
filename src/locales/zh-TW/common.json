@@ -220,6 +220,7 @@
     "popularity": "人氣第{{rank}}名",
     "fastestStartTag": "最快",
     "courseNote": "※目前未顯示進入航線（資料準確度確認中）",
+    "missingRanksNote": "※本場比賽第4名以後的名次資料尚未取得，因此部分名次未顯示",
     "cancelledTitle": "本場比賽已中止",
     "cancelledBody": "因天候或水面狀況等因素，本場比賽已中止，因此沒有結果資料。",
     "noRaceTitle": "本場比賽未成立",
@@ -238,7 +239,9 @@
     "volatilityOutcomeDetailFavorite": "（1號艇獲得第1名）",
     "volatilityCaveat": "※單一場次的結果無法證明預測的準確與否。",
     "volatilityCaveatLink": "查看實測準確率 ›",
-    "payout": "派彩：¥{{amount}}"
+    "payout": "派彩：¥{{amount}}",
+    "notFinishedTitle": "結果尚未確定",
+    "notFinishedBody": "比賽結束後，本分頁將顯示名次・派彩・獲勝方式。"
   },
   "raceHistoryTable": {
     "date": "日期",
@@ -453,10 +456,13 @@
     "resultTitleDeadline": "（截止 {{time}}）"
   },
   "raceTabs": {
+    "basic": "基本資訊",
     "waku": "艇號別資訊",
     "aiPrediction": "AI預測",
+    "motor": "馬達資訊",
     "beforeInfo": "臨場資訊",
-    "oddsList": "賠率一覽"
+    "oddsList": "賠率一覽",
+    "result": "結果"
   },
   "wakuInfo": {
     "note": "選擇選手後，可依期間與條件比較該選手在本日預想航道的成績。點擊左側的期間名稱，可展開該航道最近10次的名次。全部6條航道的比較請從表格下方的摺疊區開啟。",
@@ -600,6 +606,47 @@
     "emptyTitle": "尚無賠率資料",
     "emptyBody": "接近發航時間後，賠率資料將顯示於此分頁。"
   },
+  "basicInfo": {
+    "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近5場・擅長賽場）",
+    "metricLabel": "指標",
+    "scopeLabel": "賽場",
+    "gradeLabel": "等級",
+    "metrics": {
+      "winRate": "勝率",
+      "top2Rate": "連對率",
+      "top3Rate": "前三名率",
+      "avgSt": "平均ST"
+    },
+    "scopes": {
+      "local": "當地",
+      "national": "全國"
+    },
+    "grades": {
+      "all": "全部比賽",
+      "ippan": "一般",
+      "sgg1": "SG・G1"
+    },
+    "presetLabel": "{{scope}}{{grade}}",
+    "periods": {
+      "current": "本期",
+      "last3m": "最近3個月",
+      "last1m": "最近1個月"
+    },
+    "periodSummary": "▸ 依期間篩選",
+    "periodCaveat": "※與等級條件組合時的「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（過去2年）",
+    "winRateSwitchCaveat": "※套用等級・期間篩選後的「勝率」並非官方的勝率點數，而是該條件下實際取得第1名的比例（%）",
+    "sampleCount": "(n={{n}})",
+    "noData": "（無資料）",
+    "viewTrend": "最近5場",
+    "viewVenue": "擅長賽場",
+    "loading": "載入中...",
+    "noHistory": "沒有出賽紀錄資料",
+    "noVenueData": "沒有各賽場的成績資料（未達規定場次）",
+    "trendNote": "最近5場（不受等級・期間條件影響，一律顯示最新5場。點選日期可前往比賽詳情）",
+    "finishUnknown": "名次外（名次不明）",
+    "venueRankingFor": "{{metric}}排行",
+    "currentVenueRank": "本節的{{venue}}在全{{total}}個賽場中排名第{{rank}}"
+  },
   "dataTable": {
     "title": "數據出賽表",
     "subtitle": "一覽比較6位選手的分析數據。點擊列標籤可前往詳細分析頁面",
@@ -620,6 +667,7 @@
     "noWins": "無勝場",
     "winCount": "{{n}}勝",
     "note": "分析數據為過去90天（回收率為180天）的實績統計。醒目標示為本場最佳值。僅供參考，不保證結果",
+    "guideLink": "詳細了解數據出賽表的使用方式",
     "rowLocalWinRate": "當地勝率",
     "rowTwoRate": "全國2連率",
     "rowAvgSt": "平均ST",

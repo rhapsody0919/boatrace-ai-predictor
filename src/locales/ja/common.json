@@ -373,6 +373,7 @@
       "ippan": "一般戦",
       "sgg1": "SG・G1"
     },
+    "presetLabel": "{{scope}}{{grade}}",
     "periods": {
       "current": "今期",
       "last3m": "直近3ヶ月",

@@ -220,6 +220,7 @@
     "popularity": "인기 {{rank}}위",
     "fastestStartTag": "최속",
     "courseNote": "※진입 코스는 현재 표시하지 않습니다(데이터 정확도 확인 중입니다)",
+    "missingRanksNote": "※이 레이스는 4착 이하의 착순 데이터가 수집되지 않아 일부 착순을 표시하지 않습니다",
     "cancelledTitle": "이 레이스는 중지되었습니다",
     "cancelledBody": "날씨나 수면 상태 등으로 인해 레이스가 중지되어 결과 데이터가 없습니다.",
     "noRaceTitle": "이 레이스는 불성립되었습니다",
@@ -238,7 +239,9 @@
     "volatilityOutcomeDetailFavorite": "（1번 보트가 1착）",
     "volatilityCaveat": "※단일 레이스 결과만으로는 예측의 정확 여부를 판단할 수 없습니다.",
     "volatilityCaveatLink": "실측 정확도 보기 ›",
-    "payout": "배당금: ¥{{amount}}"
+    "payout": "배당금: ¥{{amount}}",
+    "notFinishedTitle": "결과가 아직 확정되지 않았습니다",
+    "notFinishedBody": "레이스 종료 후 이 탭에 착순・배당금・결정수가 표시됩니다."
   },
   "raceHistoryTable": {
     "date": "날짜",
@@ -453,10 +456,13 @@
     "resultTitleDeadline": "（마감 {{time}}）"
   },
   "raceTabs": {
+    "basic": "기본 정보",
     "waku": "번호별 정보",
     "aiPrediction": "AI 예상",
+    "motor": "모터 정보",
     "beforeInfo": "직전 정보",
-    "oddsList": "오즈 일람"
+    "oddsList": "오즈 일람",
+    "result": "결과"
   },
   "wakuInfo": {
     "note": "선수를 선택하면 그 선수가 오늘 들어갈 예상 코스의 성적을 기간·조건별로 비교할 수 있습니다. 왼쪽의 기간 이름을 누르면 해당 코스의 최근 10주 착순이 열립니다. 전체 6개 코스 비교는 표 아래 접힌 영역에서 열 수 있습니다.",
@@ -497,7 +503,7 @@
     "periodHeader": "기간·조건",
     "nHeader": "주수",
     "allCoursesFold": "전체 6개 코스 성적 보기",
-    "periodCaveat": "※'금기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다."
+    "periodCaveat": "※'이번 기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다."
   },
   "aiPredictionTab": {
     "unavailableTitle": "AI 예상 데이터가 없습니다",
@@ -600,6 +606,47 @@
     "emptyTitle": "오즈 데이터가 아직 없습니다",
     "emptyBody": "발주 시간이 가까워지면 오즈가 수집되어 이 탭에 표시됩니다."
   },
+  "basicInfo": {
+    "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 5경기・강세 경기장)가 열립니다",
+    "metricLabel": "지표",
+    "scopeLabel": "경기장",
+    "gradeLabel": "등급",
+    "metrics": {
+      "winRate": "승률",
+      "top2Rate": "2연대율",
+      "top3Rate": "3연대율",
+      "avgSt": "평균 ST"
+    },
+    "scopes": {
+      "local": "현지",
+      "national": "전국"
+    },
+    "grades": {
+      "all": "전체 레이스",
+      "ippan": "일반",
+      "sgg1": "SG・G1"
+    },
+    "presetLabel": "{{scope}} {{grade}}",
+    "periods": {
+      "current": "이번 기",
+      "last3m": "최근 3개월",
+      "last1m": "최근 1개월"
+    },
+    "periodSummary": "▸ 기간으로 좁히기",
+    "periodCaveat": "※등급 조건과 조합한 「이번 기」는 공식 기 구분이 아니라, 당사 데이터로 확인할 수 있는 전체 기간(최근 2년)을 대상으로 합니다",
+    "winRateSwitchCaveat": "※등급・기간을 좁힌 「승률」은 공식 승률 점수가 아니라, 해당 조건에서 실제로 1착이 된 비율(%)을 표시합니다",
+    "sampleCount": "(n={{n}})",
+    "noData": "(데이터 없음)",
+    "viewTrend": "최근 5경기",
+    "viewVenue": "강세 경기장",
+    "loading": "불러오는 중...",
+    "noHistory": "출주 이력 데이터가 없습니다",
+    "noVenueData": "경기장별 성적 데이터가 없습니다(규정 경기 수 미만)",
+    "trendNote": "최근 5경기(등급・기간 조건과 무관하게 항상 최신 5경기를 표시. 날짜를 누르면 레이스 상세로 이동)",
+    "finishUnknown": "착외(순위 불명)",
+    "venueRankingFor": "{{metric}} 랭킹",
+    "currentVenueRank": "이번 시리즈의 {{venue}}는 전체 {{total}}개 경기장 중 {{rank}}위"
+  },
   "dataTable": {
     "title": "데이터 출주표",
     "subtitle": "출주 6명의 분석 데이터를 한눈에 비교. 행 라벨을 탭하면 상세 분석 페이지로 이동합니다",
@@ -620,6 +667,7 @@
     "noWins": "승리 없음",
     "winCount": "{{n}}승",
     "note": "분석 데이터는 최근 90일（회수율은 180일）의 실적 집계입니다. 하이라이트는 이 레이스에서 가장 좋은 값. 참고용이며 결과를 보장하지 않습니다",
+    "guideLink": "데이터 출주표 사용법 자세히 보기",
     "rowLocalWinRate": "당지 승률",
     "rowTwoRate": "전국 연대율",
     "rowAvgSt": "평균 ST",

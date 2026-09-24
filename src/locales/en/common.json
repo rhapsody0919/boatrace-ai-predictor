@@ -221,6 +221,7 @@
     "popularity": "#{{rank}} favorite",
     "fastestStartTag": "Fastest",
     "courseNote": "※Approach course is not shown yet (data accuracy under review).",
+    "missingRanksNote": "* Finishing positions from 4th down have not been collected for this race, so some placings are not shown",
     "cancelledTitle": "This race was cancelled",
     "cancelledBody": "The race was cancelled due to weather or water conditions, so no result data is available.",
     "noRaceTitle": "This race did not take place",
@@ -239,7 +240,9 @@
     "volatilityOutcomeDetailFavorite": " (Lane 1 finished 1st)",
     "volatilityCaveat": "A single race result can't confirm or disprove the prediction.",
     "volatilityCaveatLink": "See measured accuracy ›",
-    "payout": "Payout: ¥{{amount}}"
+    "payout": "Payout: ¥{{amount}}",
+    "notFinishedTitle": "The result is not final yet",
+    "notFinishedBody": "Once the race is over, the placings, payouts and winning technique will appear on this tab."
   },
   "raceHistoryTable": {
     "date": "Date",
@@ -455,10 +458,13 @@
     "resultTitleDeadline": "(Deadline {{time}})"
   },
   "raceTabs": {
+    "basic": "Basic Info",
     "waku": "Lane Stats",
     "aiPrediction": "AI Prediction",
+    "motor": "Motor Info",
     "beforeInfo": "Just Before",
-    "oddsList": "Odds List"
+    "oddsList": "Odds List",
+    "result": "Result"
   },
   "wakuInfo": {
     "note": "Pick a racer to compare their record in today's expected course across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses.",
@@ -602,6 +608,47 @@
     "emptyTitle": "No odds data yet",
     "emptyBody": "Odds will appear here as the start time approaches."
   },
+  "basicInfo": {
+    "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 5 races and best venues)",
+    "metricLabel": "Metric",
+    "scopeLabel": "Venue",
+    "gradeLabel": "Grade",
+    "metrics": {
+      "winRate": "Win rate",
+      "top2Rate": "Top-2 rate",
+      "top3Rate": "Top-3 rate",
+      "avgSt": "Avg. ST"
+    },
+    "scopes": {
+      "local": "Local",
+      "national": "National"
+    },
+    "grades": {
+      "all": "All races",
+      "ippan": "General",
+      "sgg1": "SG・G1"
+    },
+    "presetLabel": "{{scope}} {{grade}}",
+    "periods": {
+      "current": "Current term",
+      "last3m": "Last 3 months",
+      "last1m": "Last month"
+    },
+    "periodSummary": "▸ Filter by period",
+    "periodCaveat": "* When combined with a grade filter, \"Current term\" is not the official term division: it covers every period we have data for (up to the past two years)",
+    "winRateSwitchCaveat": "* When a grade or period filter is applied, \"Win rate\" is not the official win-rate points but the actual share of 1st-place finishes (%) under those conditions",
+    "sampleCount": "(n={{n}})",
+    "noData": "(No data)",
+    "viewTrend": "Last 5 races",
+    "viewVenue": "Best venues",
+    "loading": "Loading...",
+    "noHistory": "No race history available",
+    "noVenueData": "No record by venue available (below the minimum number of races)",
+    "trendNote": "The last 5 races (always the latest 5, regardless of the grade or period filter. Tap a date to open that race)",
+    "finishUnknown": "Unplaced (rank unknown)",
+    "venueRankingFor": "{{metric}} ranking",
+    "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}"
+  },
   "dataTable": {
     "title": "Data Race Card",
     "subtitle": "Compare analytics for all six racers at a glance. Tap a row label for the full analysis",
@@ -622,6 +669,7 @@
     "noWins": "No wins",
     "winCount": "{{n}}W",
     "note": "Analytics cover the last 90 days (return rate: 180 days). Highlights mark the best value in this race. For reference only — results are not guaranteed",
+    "guideLink": "Read the full guide to the Data Race Card",
     "rowLocalWinRate": "Local win rate",
     "rowTwoRate": "National top-2 rate",
     "rowAvgSt": "Avg ST",
