@@ -13,17 +13,32 @@ import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import "./FeaturedRaceCard.css";
 
+/** 何を分母に何を数えた割合か、文で書く（RateWithBaseline と同じ方針） */
 const SECTION_LABEL = {
-  nige: "逃げ率",
-  makuri: "まくり率",
-  nigashi: "逃がし率",
+  nige: (course) => `${course}コースに入ったときに逃げ切った割合`,
+  makuri: (course) => `${course}コースに入ったときにまくりで1着になった割合`,
+  nigashi: (course) => `${course}コースに入ったときに1号艇に逃げ切られた割合`,
+};
+
+/** venue_course_technique_baseline.race_grade の表示名 */
+const BASELINE_GRADE_LABEL = {
+  ALL: "全グレード",
+  ippan: "一般戦",
+  SG: "SG",
+  G1: "G1",
+  G2: "G2",
+  G3: "G3",
 };
 
 function FeaturedRaceCard({ row }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
   const venueName = t(`venues.${row.venue_code}`);
-  const metricLabel = SECTION_LABEL[row.detail?.from] ?? "指標";
+  const metricLabel = (SECTION_LABEL[row.detail?.from] ?? (() => "指標"))(
+    row.course,
+  );
+  // 過去に書き込んだ行には detail.baselineGrade が無い。その場合はグレードを書かない
+  const gradeLabel = BASELINE_GRADE_LABEL[row.detail?.baselineGrade] ?? null;
 
   return (
     <section className="featured-race" aria-labelledby="featured-race-title">
@@ -66,17 +81,17 @@ function FeaturedRaceCard({ row }) {
             {/* 出すのは集計した事実だけ。「この会場での見込み」は計算で作った推定値
                 なので載せない（2026-09-24、RateWithBaseline と同じ改訂）。
                 対象範囲（全国／この会場）は必ずラベルに書く */}
-            <span className="featured-race__stat-label">
-              {metricLabel}（{row.course}コース）
-            </span>
+            <span className="featured-race__stat-label">{metricLabel}</span>
             <span className="featured-race__stat-value">
               {Number(row.metric_value).toFixed(1)}
               <span className="featured-race__stat-unit">%</span>
             </span>
             <span className="featured-race__stat-sub">
-              全国{row.sample_size}走の実績
+              全国{row.sample_size}走ぶん
               {row.metric_venue_baseline !== null &&
-                `／${venueName}の平均 ${Number(row.metric_venue_baseline).toFixed(1)}%`}
+                `／${venueName}の平均${gradeLabel ? `（${gradeLabel}）` : ""} ${Number(
+                  row.metric_venue_baseline,
+                ).toFixed(1)}%`}
             </span>
           </div>
           {row.volatility_percentile !== null && (

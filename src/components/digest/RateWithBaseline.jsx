@@ -19,6 +19,20 @@
  * 補正した差分（`skill_delta`）自体は、逃がしの抽出条件と注目レースの並び替えという
  * 内部処理には引き続き使う。表示だけを事実に寄せる。
  *
+ * ## 専門用語を使わない（2026-09-24、ユーザー指摘で改訂）
+ *
+ * ボートレースファンに通じない語を3つ使っていた。
+ *   - **「本日の級別」**: `venue_course_technique_baseline.race_grade` は
+ *     SG/G1/G2/G3/ippan という**レースのグレード**で、A1/A2/B1/B2 の級別ではない。
+ *     さらにグレードのセルが100走未満のときは `ALL`（全グレード）へフォールバックする
+ *     （実測で110行中31行＝28.2%）。「本日の級別」は二重に誤り。実際に使ったセルを
+ *     `detail.baselineGrade` に保存し、そのまま表示する
+ *   - **「信頼下限」**: 統計の語。「控えめに見て」に言い換える
+ *   - **「◯◯率」だけの見出し**: 何を分母に何を数えた率か分からない。
+ *     「1コースに入ったときに逃げ切った割合」のように文で書く。
+ *     とくに**「勝率」という語は使えない**（ボートレースの勝率は着順点の平均であって
+ *     1着率ではないため、意味がまったく変わる）
+ *
  * ## 対象範囲は必ずラベルに書く
  *
  * 「逃げ率88.2%」と「この選手90.1%」が何故違うのか分からない、という指摘を受けた。
@@ -54,6 +68,16 @@ function RateBar({ label, value, emphasis = false }) {
   );
 }
 
+/** venue_course_technique_baseline.race_grade の表示名 */
+const BASELINE_GRADE_LABEL = {
+  ALL: "全グレード",
+  ippan: "一般戦",
+  SG: "SG",
+  G1: "G1",
+  G2: "G2",
+  G3: "G3",
+};
+
 function RateWithBaseline({
   label,
   rate,
@@ -65,8 +89,11 @@ function RateWithBaseline({
   rate90d = null,
   sampleSize90d = null,
   venueBaseline = null,
+  baselineGrade = null,
   expanded = true,
 }) {
+  // 過去に書き込んだ行には detail.baselineGrade が無い。その場合はグレードを書かない
+  const gradeLabel = BASELINE_GRADE_LABEL[baselineGrade] ?? null;
   // その選手が走ってきた会場・級別の平均。差分ではなく水準そのものを出す
   const ownVenueMix =
     skillDelta === null || skillDelta === undefined
@@ -86,8 +113,9 @@ function RateWithBaseline({
 
       {/* 各値が何を指すかを必ず書く。書かないと「2つの%が何故違うのか」になる */}
       <p className="rate-baseline__source">
-        全国{sampleSize}走の実績
-        {venueBaseline !== null && `／${venueName}の平均は本日の級別`}
+        この選手＝全国{sampleSize}走ぶん
+        {venueBaseline !== null &&
+          `／${venueName}の平均＝${gradeLabel ? `${gradeLabel}・` : ""}全選手`}
         {isSmallSample && (
           <span className="rate-baseline__small-sample">
             ⚠ 母数が少なく振れ幅が大きい
@@ -99,18 +127,18 @@ function RateWithBaseline({
         <div className="rate-baseline__meta">
           {ownVenueMix !== null && (
             <span
-              title="この選手が実際に走った会場・級別の構成で、全選手を平均した率。この選手の実績率と比べると、走ってきた条件が楽だったかどうかが分かる"
+              title="この選手が実際に走った会場・レースグレードの構成で、全選手を平均した割合。この選手の割合と見比べると、走ってきた条件が楽だったかどうかが分かる"
               className="rate-baseline__wilson"
             >
-              走ってきた会場の平均 {ownVenueMix.toFixed(1)}%
+              この選手が走ってきた会場の平均 {ownVenueMix.toFixed(1)}%
             </span>
           )}
           {wilsonLower !== null && (
             <span
-              title="この母数だと、真の率は95%の確からしさでこの値以上と言える"
+              title="母数が少ないほど割合は振れる。この母数なら、95%の確からしさで最低でもこの値はある、という下限（Wilson信頼区間の下限）"
               className="rate-baseline__wilson"
             >
-              信頼下限 {Number(wilsonLower).toFixed(1)}%
+              控えめに見て {Number(wilsonLower).toFixed(1)}%
             </span>
           )}
           {sampleSize90d !== null &&

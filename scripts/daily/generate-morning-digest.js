@@ -287,7 +287,10 @@ function lookupBaseline(baselineMap, venueCode, grade, course, metric) {
         `（race_grade=${chosen.race_grade}）`,
     );
   }
-  return Number(v);
+  // どのセルを使ったかを返す。画面のラベルが「本日のグレード」なのか
+  // 「全グレード」なのかを、実際に使った値と一致させるため
+  // （実測で 110行中31行＝28.2% がALLへフォールバックしていた）
+  return { rate: Number(v), grade: chosen.race_grade };
 }
 
 function buildMetricRow({
@@ -300,6 +303,7 @@ function buildMetricRow({
   expected,
   count,
   venueBaseline,
+  baselineGrade = null,
   volatility,
   rate90d,
   runs90d,
@@ -332,7 +336,11 @@ function buildMetricRow({
     sample_size_90d: runs90d,
     motor_2rate: entry.motor_2rate === null ? null : Number(entry.motor_2rate),
     volatility_percentile: volatility ?? null,
-    detail: { clampedPredicted: predicted ? predicted.clamped : false },
+    detail: {
+      clampedPredicted: predicted ? predicted.clamped : false,
+      // 会場平均に使ったセル（'ippan'/'G1'/…/'ALL'）。画面のラベルに出す
+      baselineGrade,
+    },
   };
 }
 
@@ -359,7 +367,7 @@ function buildSections({
     const course = entry.boat_number;
 
     if (course === 1 && Number(stat.nige_rate) >= EXTRACTION_THRESHOLDS.nige) {
-      const venueBaseline = lookupBaseline(
+      const baseline = lookupBaseline(
         baselineMap,
         race.venue_code,
         race.race_grade,
@@ -376,7 +384,8 @@ function buildSections({
           rate: Number(stat.nige_rate),
           expected: Number(stat.nige_expected),
           count: stat.nige_count,
-          venueBaseline,
+          venueBaseline: baseline.rate,
+          baselineGrade: baseline.grade,
           volatility,
           rate90d:
             stat.nige_rate_90d === null ? null : Number(stat.nige_rate_90d),
@@ -386,7 +395,7 @@ function buildSections({
     }
 
     if (Number(stat.makuri_rate) >= EXTRACTION_THRESHOLDS.makuri) {
-      const venueBaseline = lookupBaseline(
+      const baseline = lookupBaseline(
         baselineMap,
         race.venue_code,
         race.race_grade,
@@ -403,7 +412,8 @@ function buildSections({
           rate: Number(stat.makuri_rate),
           expected: Number(stat.makuri_expected),
           count: stat.makuri_count,
-          venueBaseline,
+          venueBaseline: baseline.rate,
+          baselineGrade: baseline.grade,
           volatility,
           rate90d:
             stat.makuri_rate_90d === null ? null : Number(stat.makuri_rate_90d),
@@ -415,7 +425,7 @@ function buildSections({
     if (course >= 2 && stat.nigashi_rate !== null) {
       const delta = Number(stat.nigashi_rate) - Number(stat.nigashi_expected);
       if (delta >= EXTRACTION_THRESHOLDS.nigashi) {
-        const venueBaseline = lookupBaseline(
+        const baseline = lookupBaseline(
           baselineMap,
           race.venue_code,
           race.race_grade,
@@ -432,7 +442,8 @@ function buildSections({
             rate: Number(stat.nigashi_rate),
             expected: Number(stat.nigashi_expected),
             count: stat.nigashi_count,
-            venueBaseline,
+            venueBaseline: baseline.rate,
+            baselineGrade: baseline.grade,
             volatility,
             rate90d:
               stat.nigashi_rate_90d === null
@@ -491,17 +502,18 @@ function pickFeatured(sections) {
   const best = candidates[0];
 
   const metricLabel = {
-    nige: "逃げ率",
-    makuri: "まくり率",
-    nigashi: "逃がし率",
+    nige: "逃げ切った割合",
+    makuri: "まくりで1着になった割合",
+    nigashi: "1号艇に逃げ切られた割合",
   }[best.row.section];
   const direction =
     best.row.section === "nige" ? "イン有利" : "イン不利（1号艇が崩れる）";
   // 集計した事実だけで書く。推定値（metric_predicted）は文にも出さない
   // （2026-09-24、UIと同じ改訂。予想を提示している体裁を避ける）
   const reason =
-    `この選手の${metricLabel}は全国${best.row.sample_size}走で${best.row.metric_value}%、` +
-    `この会場・級別の平均は${best.row.metric_venue_baseline}%です。` +
+    `この選手が${best.row.course}コースに入ったとき${metricLabel}は、` +
+    `全国${best.row.sample_size}走で${best.row.metric_value}%。` +
+    `この会場の平均は${best.row.metric_venue_baseline}%です。` +
     `AIが当日条件から算出したイン崩れ指数は${best.row.volatility_percentile}%で、` +
     `過去の実績と当日条件がどちらも「${direction}」方向を向いています。`;
 
@@ -871,9 +883,20 @@ async function main() {
     for (const r of rows.slice(0, 5)) {
       console.log(
         `  ${r.section}#${r.rank} ${r.race_id ?? "-"} ${r.racer_name} ` +
-          `${r.metric_value ?? "-"}% 地力${r.metric_skill_delta ?? "-"}pt n=${r.sample_size ?? "-"}`,
+          `${r.metric_value ?? "-"}% 地力${r.metric_skill_delta ?? "-"}pt n=${r.sample_size ?? "-"}` +
+          ` 会場平均${r.metric_venue_baseline ?? "-"}%(${r.detail?.baselineGrade ?? "-"})`,
       );
     }
+    // 会場平均にどのセルを使ったかの内訳。画面のラベルがこれと一致している必要がある
+    const byGrade = new Map();
+    for (const r of rows) {
+      if (!r.detail?.baselineGrade) continue;
+      const k = r.detail.baselineGrade;
+      byGrade.set(k, (byGrade.get(k) ?? 0) + 1);
+    }
+    console.log(
+      `  会場平均に使ったセル: ${[...byGrade].map(([k, v]) => `${k}=${v}`).join(" / ")}`,
+    );
     console.log("\n完了しました（dry-run のため書き込んでいません）");
     return;
   }

@@ -186,9 +186,10 @@ function MorningDataDigest() {
                     {(expanded) => (
                       <RateWithBaseline
                         expanded={expanded}
-                        label="逃げ率（1コース）"
+                        label="1コースに入ったときに逃げ切った割合"
                         rate={row.metric_value}
                         skillDelta={row.metric_skill_delta}
+                        baselineGrade={row.detail?.baselineGrade ?? null}
                         venueName={t(`venues.${row.venue_code}`)}
                         venueBaseline={row.metric_venue_baseline}
                         sampleSize={row.sample_size}
@@ -219,9 +220,10 @@ function MorningDataDigest() {
                     {(expanded) => (
                       <RateWithBaseline
                         expanded={expanded}
-                        label={`まくり率（${row.course}コース）`}
+                        label={`${row.course}コースに入ったときにまくりで1着になった割合`}
                         rate={row.metric_value}
                         skillDelta={row.metric_skill_delta}
+                        baselineGrade={row.detail?.baselineGrade ?? null}
                         venueName={t(`venues.${row.venue_code}`)}
                         venueBaseline={row.metric_venue_baseline}
                         sampleSize={row.sample_size}
@@ -251,9 +253,10 @@ function MorningDataDigest() {
                     {(expanded) => (
                       <RateWithBaseline
                         expanded={expanded}
-                        label={`逃がし率（${row.course}コース）`}
+                        label={`${row.course}コースに入ったときに1号艇に逃げ切られた割合`}
                         rate={row.metric_value}
                         skillDelta={row.metric_skill_delta}
+                        baselineGrade={row.detail?.baselineGrade ?? null}
                         venueName={t(`venues.${row.venue_code}`)}
                         venueBaseline={row.metric_venue_baseline}
                         sampleSize={row.sample_size}
@@ -310,21 +313,26 @@ function MorningDataDigest() {
                 </dd>
                 <dt>◯◯の平均</dt>
                 <dd>
-                  本日の会場・グレードで、全選手を通した実際の率。
-                  会場によって逃げ率は20ポイント、グレードによって11ポイント違うため、
+                  その会場で、全選手を通した実際の割合。会場によって逃げ率は20ポイント違うため、
                   この基準線と並べないと「戸田での70%」と「尼崎での70%」が同じに見えてしまいます。
                   たとえば戸田は1コースの平均が39.5%と全国で最も低く、大村は約73%あります。
+                  <br />
+                  「一般戦・全選手」「G1・全選手」とあるのは、
+                  <strong>そのレースのグレードに絞った平均</strong>です
+                  （A1・A2といった選手の級別ではありません）。そのグレードの母数が100走に満たない
+                  会場・コースでは、「全グレード・全選手」と書いて全グレードをまとめた平均を使います。
                 </dd>
-                <dt>走ってきた会場の平均</dt>
+                <dt>この選手が走ってきた会場の平均</dt>
                 <dd>
-                  その選手が実際に走った会場・グレードの構成で、全選手を平均した率。
-                  この選手の実績率と比べると、走ってきた条件が楽だったかどうかが分かります。
+                  その選手が実際に走った会場・レースグレードの構成で、全選手を平均した割合。
+                  この選手の割合と見比べると、走ってきた条件が楽だったかどうかが分かります。
                   ▼で開くと出ます。
                 </dd>
-                <dt>信頼下限</dt>
+                <dt>控えめに見て◯%</dt>
                 <dd>
-                  この母数だと、真の率は95%の確からしさでこの値以上と言える、という下限。
-                  母数が少ないほど下限は低くなります。
+                  母数が少ないほど割合は振れます。この母数なら95%の確からしさで最低でも
+                  この値はある、という下限です（統計のWilson信頼区間の下限）。
+                  たとえば38走で84.2%なら「控えめに見て69.6%」になります。▼で開くと出ます。
                 </dd>
                 <dt>イン崩れ指数</dt>
                 <dd>
