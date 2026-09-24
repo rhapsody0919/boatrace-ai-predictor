@@ -1,0 +1,84 @@
+name: Generate Morning Digest
+
+# 「本日のデータ一覧」（BOA-402）の1日ぶんの抽出結果を
+# morning_digest_rows / morning_digest_days に書き込む。
+# ページ（/today）もSNS下書き生成もこの2表だけを読む（ADR-0070）。
+#
+# 実行基盤がVercelではなくGitHub Actionsなのは、ADR-0066が
+# 「取得済みデータのDB内集計・統計更新」を対象外としているため。
+# 外部サイトへの通信は一切しない。
+#
+# ## 実行時刻（JST 05:30 と 06:30）
+#
+# 当日の race_entries と predictions の投入時刻の実測（JST）:
+#   09-20 01:06 / 09-21 01:57 / 09-22 00:58 / 09-23 00:05 / 09-24 05:01〜05:09
+# 最も遅かった実測が 05:09 のため 05:30 を1回目とし、さらに遅れた日のために
+# 06:30 の2回目を置く。
+#
+# ⚠️ この根拠は n=1 である（race_entries.created_at は 2026-09-20 より前が全件NULL、
+# predictions は predicted_at が日中の再生成で上書きされるため、事後に「最初に
+# 投入された時刻」を測れるのは 2026-09-24 の1日だけ）。ADR-0066 が morning-init の
+# Vercel移行を予定しているため投入時刻は今後変わる。2回目の実行と、
+# predictions を必須条件にしない設計（plan.md §3.2）で、ずれても壊れないようにしてある。
+#
+# ## 夜間バッチとの順序
+#
+# aggregate-racer-course-technique-stats.yml（JST 01:10）が先に走る必要がある。
+# このジョブの完全性チェックが racer_course_technique_stats.window_end を見て、
+# 前日より古ければ書き込まずに終了する。
+#
+# ## 失敗の扱い
+#
+# 完全性チェックを満たさない場合、スクリプトは**書き込まずに終了コード0で終わる**
+# （次回の実行で再試行させるため）。2回目（06:30）でも満たせない場合に
+# ジョブを失敗させたいので、2回目のステップだけ「書けたかどうか」を検証する。
+# continue-on-error は付けない。
+on:
+  schedule:
+    - cron: "30 20 * * *" # JST 05:30 (UTC 20:30)
+    - cron: "30 21 * * *" # JST 06:30 (UTC 21:30)
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "対象日（YYYY-MM-DD、JST）。空なら当日"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+
+      - name: Generate digest
+        run: |
+          if [ -n "${{ inputs.date }}" ]; then
+            node scripts/daily/generate-morning-digest.js --date="${{ inputs.date }}"
+          else
+            node scripts/daily/generate-morning-digest.js
+          fi
+        env:
+          TZ: "Asia/Tokyo"
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      # 2回目（JST 06:30）でも当日ぶんが書けていなければ失敗させる。
+      # 「データが無い日」として黙って空のまま放置しない。
+      - name: Verify the digest exists (second run only)
+        if: github.event.schedule == '30 21 * * *'
+        run: node scripts/maintenance/verify-morning-digest.js
+        env:
+          TZ: "Asia/Tokyo"
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
