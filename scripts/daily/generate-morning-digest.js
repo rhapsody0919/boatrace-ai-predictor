@@ -497,13 +497,13 @@ function pickFeatured(sections) {
   }[best.row.section];
   const direction =
     best.row.section === "nige" ? "イン有利" : "イン不利（1号艇が崩れる）";
-  // 「地力+33.2pt」は通じないため、会場平均→この選手の2点で書く（2026-09-24、UIと同じ改訂）
+  // 集計した事実だけで書く。推定値（metric_predicted）は文にも出さない
+  // （2026-09-24、UIと同じ改訂。予想を提示している体裁を避ける）
   const reason =
-    `この会場・級別の平均${metricLabel}が${best.row.metric_venue_baseline}%なのに対し、` +
-    `この選手は${best.row.metric_predicted}%と見込まれます` +
-    `（過去実績${best.row.metric_value}%・${best.row.sample_size}走）。` +
+    `この選手の${metricLabel}は全国${best.row.sample_size}走で${best.row.metric_value}%、` +
+    `この会場・級別の平均は${best.row.metric_venue_baseline}%です。` +
     `AIが当日条件から算出したイン崩れ指数は${best.row.volatility_percentile}%で、` +
-    `実績と当日条件がどちらも「${direction}」方向で一致しています。`;
+    `過去の実績と当日条件がどちらも「${direction}」方向を向いています。`;
 
   return {
     ...best.row,

@@ -63,25 +63,20 @@ function FeaturedRaceCard({ row }) {
 
         <div className="featured-race__stats">
           <div className="featured-race__stat">
-            {/* 大きく出すのは「この会場での見込み」。全国での実績はその根拠として下に置く
-                （2026-09-24、RateWithBaseline と同じ改訂。「2つの%が何故違うのか
-                分からない」という指摘への対応で、対象範囲をラベルに明示する） */}
+            {/* 出すのは集計した事実だけ。「この会場での見込み」は計算で作った推定値
+                なので載せない（2026-09-24、RateWithBaseline と同じ改訂）。
+                対象範囲（全国／この会場）は必ずラベルに書く */}
             <span className="featured-race__stat-label">
-              {venueName}での{metricLabel}（{row.course}コース）
+              {metricLabel}（{row.course}コース）
             </span>
             <span className="featured-race__stat-value">
-              {Number(row.metric_predicted ?? row.metric_value).toFixed(1)}
+              {Number(row.metric_value).toFixed(1)}
               <span className="featured-race__stat-unit">%</span>
             </span>
             <span className="featured-race__stat-sub">
-              {row.metric_venue_baseline !== null && (
-                <>
-                  {venueName}の平均{" "}
-                  {Number(row.metric_venue_baseline).toFixed(1)}%／
-                </>
-              )}
-              全国{row.sample_size}走の実績{" "}
-              {Number(row.metric_value).toFixed(1)}%
+              全国{row.sample_size}走の実績
+              {row.metric_venue_baseline !== null &&
+                `／${venueName}の平均 ${Number(row.metric_venue_baseline).toFixed(1)}%`}
             </span>
           </div>
           {row.volatility_percentile !== null && (

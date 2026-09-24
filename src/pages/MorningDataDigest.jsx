@@ -172,7 +172,7 @@ function MorningDataDigest() {
 
             <DigestSection
               title="逃げが堅い選手"
-              description="全国での実績で、1号艇の選手が1コースに入ったときに逃げ切った割合が70%以上。会場ごとの見込みは、その会場・級別の平均をもとに算出しています（実績より低くなることもあります）"
+              description="全国での実績で、1号艇の選手が1コースに入ったときに逃げ切った割合が70%以上。本日の会場の平均を並べているので、その会場が逃げやすいかどうかと合わせて見てください"
               count={sections.nige?.length ?? 0}
               total={day?.notes?.sectionCounts?.nigeCandidates ?? null}
             >
@@ -188,7 +188,7 @@ function MorningDataDigest() {
                         expanded={expanded}
                         label="逃げ率（1コース）"
                         rate={row.metric_value}
-                        predicted={row.metric_predicted}
+                        skillDelta={row.metric_skill_delta}
                         venueName={t(`venues.${row.venue_code}`)}
                         venueBaseline={row.metric_venue_baseline}
                         sampleSize={row.sample_size}
@@ -221,7 +221,7 @@ function MorningDataDigest() {
                         expanded={expanded}
                         label={`まくり率（${row.course}コース）`}
                         rate={row.metric_value}
-                        predicted={row.metric_predicted}
+                        skillDelta={row.metric_skill_delta}
                         venueName={t(`venues.${row.venue_code}`)}
                         venueBaseline={row.metric_venue_baseline}
                         sampleSize={row.sample_size}
@@ -253,7 +253,7 @@ function MorningDataDigest() {
                         expanded={expanded}
                         label={`逃がし率（${row.course}コース）`}
                         rate={row.metric_value}
-                        predicted={row.metric_predicted}
+                        skillDelta={row.metric_skill_delta}
                         venueName={t(`venues.${row.venue_code}`)}
                         venueBaseline={row.metric_venue_baseline}
                         sampleSize={row.sample_size}
@@ -295,26 +295,31 @@ function MorningDataDigest() {
             <section className="morning-digest__notes">
               <h2 className="morning-digest__notes-title">このページの見方</h2>
               <dl className="morning-digest__notes-list">
-                <dt>全国◯走の実績</dt>
+                <dt>このページに出る数値について</dt>
+                <dd>
+                  <strong>
+                    すべて過去のレース結果を集計した実際の数値で、AIによる予測値ではありません。
+                  </strong>
+                  「このレースで何%になる」という予想は出していません（AIの予測はイン崩れ指数だけで、
+                  その旨を明記しています）。
+                </dd>
+                <dt>この選手</dt>
                 <dd>
                   その選手が全国のどの会場で走ったぶんも合わせた、実際の率。
-                  競合サイトが出しているのはこの数値です。ただし会場によって逃げ率は20ポイント、
-                  グレードによって11ポイント違うため、この数値だけでは
-                  「戸田での70%」と「尼崎での70%」が同じに見えてしまいます。
+                  競合サイトが出しているのもこの数値です。
                 </dd>
                 <dt>◯◯の平均</dt>
                 <dd>
-                  本日の会場・グレードで、全選手を通した平均の率。比べるときの基準線です。
+                  本日の会場・グレードで、全選手を通した実際の率。
+                  会場によって逃げ率は20ポイント、グレードによって11ポイント違うため、
+                  この基準線と並べないと「戸田での70%」と「尼崎での70%」が同じに見えてしまいます。
+                  たとえば戸田は1コースの平均が39.5%と全国で最も低く、大村は約73%あります。
                 </dd>
-                <dt>この選手（バーの下段）</dt>
+                <dt>走ってきた会場の平均</dt>
                 <dd>
-                  全国での実績から「その選手が走ってきた会場・グレードなら普通このくらい」という
-                  水準を引き、本日の会場・グレードの平均に足し直した値。
-                  <strong>
-                    全国での実績と違う数値になるのは、本日の会場が平均より逃げやすい（逃げにくい）ためです。
-                  </strong>
-                  たとえば戸田は1コースの平均が39.5%と全国で最も低いため、全国実績78.9%の選手でも
-                  戸田での見込みは63.7%になります。
+                  その選手が実際に走った会場・グレードの構成で、全選手を平均した率。
+                  この選手の実績率と比べると、走ってきた条件が楽だったかどうかが分かります。
+                  ▼で開くと出ます。
                 </dd>
                 <dt>信頼下限</dt>
                 <dd>
