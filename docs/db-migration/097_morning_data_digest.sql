@@ -232,7 +232,15 @@ CREATE TABLE IF NOT EXISTS morning_digest_rows (
   metric_venue_baseline NUMERIC(5,2),             -- 本日の会場×グレード×コースのベースライン(%)
   metric_predicted NUMERIC(5,2),                  -- 本日の会場での予測(%) = baseline + skill_delta
   sample_size      INTEGER,                       -- 地力窓の母数
-  is_small_sample  BOOLEAN      NOT NULL DEFAULT false,  -- Wilson95%下限がベースレートを下回る
+  is_small_sample  BOOLEAN      NOT NULL DEFAULT false,  -- 母数が20未満（sample_size < 20）。
+                                                  -- ⚠️ 信頼区間検定ではない。当初は「Wilson95%下限 <
+                                                  -- ベースレート」、次に「< 抽出閾値」としたが、実測で
+                                                  -- まくり100%・逃げ89.4%の行に立ち判別力が無かった
+                                                  -- （まくりはWilson95%下限の最大が24.6%で1行も閾値25%を
+                                                  -- 超えられない）。確からしさは metric_wilson_lower で見せる
+  metric_wilson_lower NUMERIC(5,2),               -- 主指標のWilson95%信頼下限(%)。
+                                                  -- 実測の分布: 逃げ 46.9〜78.0（中央値59.8）、
+                                                  -- まくり 10.2〜24.6（中央値14.2）
   rate_90d         NUMERIC(5,2),                  -- 調子窓の率(%)
   sample_size_90d  INTEGER,                       -- 調子窓の母数
   motor_2rate      NUMERIC(5,2),                  -- race_entries.motor_2rate のコピー

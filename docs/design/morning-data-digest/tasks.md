@@ -52,20 +52,21 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
 
 ## Phase 1: 純関数と実測の再確認（DBへの変更なし）
 
-- [ ] **T1-1** spec §1 の実測値を再測し、ずれていれば spec・plan を更新する
-  - 対象: データ期間（`min(race_date)` と日数）／1コース進入の母数分布（30・60・90・120・180・全期間）／逃げのベースレート／会場別逃げ率の最大最小／`finish_mark` の100%運用開始日／`race_special_notes` の件数
-  - **受入基準**: 再測したクエリと結果を spec §1 に反映し、変化があった箇所を明示する。窓の日数が変わっていても**固定値をコードに書かない**方針は変えない
+- [x] **T1-1** spec §1 の実測値を再測し、ずれていれば spec・plan を更新する
+  - **完了（2026-09-24）**: 逃げベースレート52.98%・コース別まくり率（3.76/5.08/4.92/1.25/0.62）・1コース1着の逃げ一致率95.47%・グレード別逃げ率（G1 62.2/SG 61.3/G2 54.4/ippan 52.5/G3 51.1）・racer×course セル9,471・本日156レース13会場 は**すべて再現**
+  - 期間だけ「2025-12-04〜2026-09-23（暦日294・開催292）」に動いた（前回は暦日295・開催293）。移動窓なので当然で、**固定値を書かない設計の正しさを裏付ける結果**。specの数値は測定日を明記したまま据え置く
 
-- [ ] **T1-2** `src/utils/wilson.js`（純関数）を新規作成する
-  - `wilsonLowerBound(successes, n, z = 1.96)` → 下限（0〜1）。`n === 0` は `null`
-  - `isSmallSample(successes, n, baseRate)` → Wilson95%下限が `baseRate` 未満なら true
-  - **受入基準**: p̂=0.70 のとき n=8→0.366 / n=20→0.481 / n=30→0.521 / n=35→0.535 を**小数第3位まで**再現する（spec §1.2 の表と一致）。`n=0` で例外を投げずに `null` を返す
+- [x] **T1-2** `src/utils/wilson.js`（純関数）を新規作成する
+  - `wilsonLowerBound(successes, n, z = 1.96)` → 下限（0〜1）。`n <= 0` は `null`。**successes は整数でなくてよい**（率から逆算した値を渡すため。整数に丸めると n=8・率70% が p̂=0.75 にずれる）
+  - `wilsonLowerBoundFromRate(rate, n, z)` → 率（0〜1）から直接
+  - `isSmallSample(successes, n, referenceRate, z)` → 下限が基準未満なら true
+  - **完了（2026-09-24）**: p̂=0.70 で n=8→0.366 / 10→0.397 / 15→0.448 / 20→0.481 / 26→0.508 / 30→0.521 / 35→0.535 を小数第3位まで再現。`n=0` は null、`successes>n` は例外
+  - ⚠️ **実装中に小標本フラグの基準を変更した**（plan §2.3.1）。「Wilson下限 < 抽出閾値」は実データで逃げ89.4%・まくり100%の行に立ち判別力が無かったため、`runs < 20` に変更し、確からしさは下限値の併記で見せる
 
-- [ ] **T1-3** `src/utils/digestMetrics.js`（純関数）を新規作成する
-  - `computeSkillDelta({ rate, expected })` → `rate - expected`
-  - `computePredicted({ venueBaseline, skillDelta })` → `[0, 100]` にクランプし、クランプしたかを `{ value, clamped }` で返す（plan.md §2.2）
-  - 指標ごとのベースレート定数（逃げ・まくり・逃がし）をここに1箇所だけ置く。**他所に第2の定義を作らない**
-  - **受入基準**: ADR-0071 の表の4件（山本光雄 course2 +22.4pt / 横川聖志 course3 −14.0pt / 柘植政浩 course2 +6.4pt / 松尾拓 course4 −0.8pt）を**小数第1位まで**再現する。`clamped` が金子賢志（91.5%）・吉田裕平（92.4%）では false になる
+- [x] **T1-3** `src/utils/digestMetrics.js`（純関数）を新規作成する
+  - `computeSkillDelta` / `computePredicted`（クランプの有無を返す）/ `computeZScore` / `computeConsistency` / `computeFeaturedScore` / `isSmallSampleByRuns` / `clearsThresholdWithConfidence` / `wilsonLowerPercent` / `normalizeRacerName`
+  - 閾値・ベースレート・母数の定数をここに1箇所だけ置く（`EXTRACTION_THRESHOLDS` / `NATIONAL_BASE_RATES` / `MIN_RUNS` / `MIN_BASELINE_RUNS` / `MIN_RUNS_90D` / `MIN_RELIABLE_RUNS`）
+  - **完了（2026-09-24）**: ADR-0071 の4件（山本光雄 +22.4 / 横川聖志 −14.0 / 柘植政浩 +6.4 / 松尾拓 −0.8）を小数第1位まで再現。予測値 金子91.5% / 吉田92.4% でクランプ無し、超過時は100にクランプ。zスコアで **戸田4R（笠置 score 6.33）が 吉田3.92・茅原3.98 を上回り1位**になることを確認（当初案の生ptスコアでは3位だった）
 
 ---
 
@@ -86,7 +87,7 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
 - [ ] **T2-3** `scripts/lib/unchangedRows.js` の `NUMERIC_SCALES` に097の4表を追加する
   - `venue_course_technique_baseline`: `nige_rate` 2 / `makuri_rate` 2 / `nigashi_rate` 2
   - `racer_course_technique_stats`: `nige_rate` `nige_expected` `makuri_rate` `makuri_expected` `nigashi_rate` `nigashi_expected` `nige_rate_90d` `makuri_rate_90d` `nigashi_rate_90d` 各2
-  - `morning_digest_rows`: `metric_value` `metric_expected` `metric_skill_delta` `metric_venue_baseline` `metric_predicted` `rate_90d` `motor_2rate` `volatility_percentile` 各2
+  - `morning_digest_rows`: `metric_value` `metric_expected` `metric_skill_delta` `metric_venue_baseline` `metric_predicted` `metric_wilson_lower` `rate_90d` `motor_2rate` `volatility_percentile` 各2
   - **受入基準**: 未登録のままだと毎日全行が「変更あり」になることを、登録前後の書き込み行数の差で確認する（T2-4の2回目実行で検証）
 
 - [ ] **T2-4** `scripts/daily/update-racer-course-technique-stats.js` と `.github/workflows/aggregate-racer-course-technique-stats.yml`（JST 01:10）を作成する
