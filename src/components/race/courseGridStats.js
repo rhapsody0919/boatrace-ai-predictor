@@ -72,8 +72,9 @@ export function buildCourseGrid(records, { venueCode, metric }) {
  * セルをタップしたときに出す「そのコースの直近N走」を、取得済みのrecordsから取り出す。
  *
  * 追加のSupabaseクエリは要らない（`getRacerScopedRaceStats` が既に全走を持っている）。
- * 従来は `getRacerCourseRecentFinishes` を別に叩いていたが、あちらは艇番基準で
- * 母集団が違うため、グリッドを実進入コース基準にした時点で使えなくなった。
+ * 従来は race_entries.boat_number（艇番）基準で直近走を別クエリしていたが、
+ * 母集団が違うため、グリッドを実進入コース基準にした時点で使えなくなった
+ * （旧メソッドは呼び出し元が無くなったため削除済み）。
  *
  * @param {Array<Object>} records `getRacerScopedRaceStats` の戻り値
  * @param {{venueCode: number|null, rowKey: string, course: number, count?: number}} options
