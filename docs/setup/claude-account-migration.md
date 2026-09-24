@@ -28,40 +28,46 @@
 
 ### 3-1. Routine
 
-`RemoteTrigger`ツールの`get`で確認した稼働状態。
+claude.ai UI（`claude.ai/code/routines`）と`RemoteTrigger get`で全15件を実測。機械可読な一覧は[`claude-routines/index.json`](./claude-routines/index.json)、プロンプト本文は同ディレクトリの`*.prompt.md`にある。
 
-| Routine名 | trigger ID | cron (UTC) | JST | enabled | 備考 |
+移送対象（9件）:
+
+| Routine名 | trigger ID | cron (UTC) | JST | enabled | APIトリガー発火用の環境変数prefix |
 |---|---|---|---|---|---|
-| `sns-hub-content-generation` | `trig_01WW4Kc6vd7WtV9SXWJcFGis` | `0 0 * * *` | 9:00 | **false**（2026-09-15更新時点で無効） | APIトークン付き（2026-08-28作成、値はclaude.ai側のみ）。sns-hub管理画面の承認/修正指摘/作り直し/手動生成の発火先 |
-| `sns-hub-video-compaction` | `trig_01JXV2cDnzEBHxS2zvrCbLLy` | `0 18 * * *` | 3:00 | **true**（2026-09-23実行成功） | APIトークン無し。Storage上の動画を不可逆に上書きする |
-| `sns-hub`（旧版） | `trig_01NZZ2ZfA34krpHFHeSz7hhG` | — | — | false（無効化済み残置） | `docs/operation/sns-marketing-strategy.md`に記録あり |
+| `sns-hub-video-compaction` | `trig_01JXV2cDnzEBHxS2zvrCbLLy` | `0 18 * * *` | 毎日3:00 | **true** | （なし） |
+| `sns-hub-content-generation` | `trig_01WW4Kc6vd7WtV9SXWJcFGis` | `0 0 * * *` | 毎日9:00 | false | `SNS_HUB_ROUTINE` |
+| `sns-topic-proposer-weekly` | `trig_01NNE7jviPWqqgjctimGzJF5` | `0 18 * * *` | 毎日3:00（月曜のみ実行） | false | `TOPIC_PROPOSER_WEEKLY_ROUTINE` |
+| `sns-topic-proposer-daily-auto` | `trig_01B155yYLeutCbMzhMAh8n5j` | `0 18 * * *` | 毎日3:00 | false | `TOPIC_PROPOSER_DAILY_AUTO_ROUTINE` |
+| `sns-pipeline-x` | `trig_01F33qUruzoQnTmyu2mySqvq` | `38 * * * *` | 毎時38分 | false | `SNS_X_ROUTINE` |
+| `sns-pipeline-tiktok` | `trig_01JHCnHuuVYWgRUNh1tw4m7H` | `15 * * * *` | 毎時15分 | false | `SNS_TIKTOK_ROUTINE` |
+| `sns-pipeline-blog` | `trig_01MBJ5YYkkULbsDTgesTJ9tc` | `55 * * * *` | 毎時55分 | false | `SNS_BLOG_ROUTINE` |
+| `sns-pipeline-note` | `trig_01YRpmbVvnoMXA4qkVciyQov` | `10 * * * *` | 毎時10分 | false | `SNS_NOTE_ROUTINE` |
+| `sns-pipeline-youtube` | `trig_01SaVkryqNWbxNAHxZ11LK9t` | `1 * * * *` | 毎時1分 | false | `SNS_YOUTUBE_ROUTINE` |
 
-共通設定（両Routineとも同一）:
+`sns-hub-video-compaction`以外が無効なのは、週次上限を開発に回すための意図的な一時停止（2026-09-15）。
+
+移送対象外（6件、one-off検証・旧設計の残置）:
+
+| Routine名 | trigger ID | enabled |
+|---|---|---|
+| ネタ駆動マルチチャネルパイプライン（旧設計、sns-topic-gateに置換済み） | `trig_01BAymvDLFw9ZbFUBXk6h8Nq` | true |
+| `sns-hub-diagnostic-external-research` | `trig_01NZZ2ZfA34krpHFHeSz7hhG` | false |
+| `sns-hub-chromium-proxy-diagnosis(one-off)` | `trig_01MB9exsp9po7pV7DX3GXULv` | true |
+| フローAスクリーンショット取得技術検証(one-off) | `trig_01SNd3cBHabNWXEeviQKP6c4` | true |
+| フローA ブログ記事執筆Routine技術検証(one-off) | `trig_01JdMoaazYM5XeiHYzpRCe3a` | true |
+| CLAUDE.md自動読み込み検証(one-off) | `trig_018eqrizF46XaRnDjnegwX7N` | false |
+
+共通設定（移送対象9件で共通）:
 
 - `environment_id`: `env_017w737AHTxf72HtiRe99La3`（クラウド環境「**sns-hub-v3**」）
 - `model`: `claude-sonnet-5`
 - `sources`: `https://github.com/rhapsody0919/boatrace-ai-predictor`
-- `environment_variables`: 空（＝シークレットはRoutineではなく環境側に置かれている）
-- `mcp_connections`: `Claude_Code_Remote`（`https://api.anthropic.com/v1/code/mcp/meta`、自動付与）
+- `environment_variables`: 空（＝シークレットはRoutineではなく環境側）
+- `mcp_connections`: `Claude_Code_Remote`（自動付与）。sns-topic-gate系7件はこれに加えて**Linearコネクタ**が付いている
+- `allowed_tools`: `Bash,Read,Write,Edit,Glob,Grep,WebFetch`（`sns-hub-video-compaction`のみ`Bash,Read`）
 - `persist_session: false`、通知（email/push/slack）すべてoff
-- `allowed_tools`: content-generationは`Bash,Read,Write,Edit,Glob,Grep,WebFetch`、video-compactionは`Bash,Read`
 
-**sns-topic-gate体系（現行の本流）のRoutine群**は`docs/operation/`にプロンプト本文が存在するため、本文の再作成は不要（trigger IDだけがアカウント側にある）。対応表:
-
-| 運用ドキュメント | 役割 |
-|---|---|
-| `docs/operation/sns-topic-proposer-weekly.md` | 週次ネタ提案（要承認、venue-characteristic / feature-intro / trivia） |
-| `docs/operation/sns-topic-proposer-daily-auto.md` | 日次ネタ自動提案（承認レス） |
-| `docs/operation/sns-pipeline-x.md` | Xチャネル別パイプライン |
-| `docs/operation/sns-pipeline-tiktok.md` | TikTokチャネル別パイプライン |
-| `docs/operation/sns-pipeline-blog.md` | ブログチャネル別パイプライン |
-| `docs/operation/sns-pipeline-note.md` | noteチャネル別パイプライン |
-| `docs/operation/sns-pipeline-youtube.md` | YouTubeチャネル別パイプライン |
-
-**リポジトリに本文が無い2本**は本ディレクトリに退避済み:
-
-- [`claude-routines/sns-hub-content-generation.prompt.md`](./claude-routines/sns-hub-content-generation.prompt.md)
-- [`claude-routines/sns-hub-video-compaction.prompt.md`](./claude-routines/sns-hub-video-compaction.prompt.md)
+プロンプト本文は、`docs/operation/sns-topic-proposer-*.md`・`sns-pipeline-*.md`を読ませる薄いラッパー。ラッパー自体はリポジトリに無かったため`claude-routines/*.prompt.md`に退避した。
 
 ### 3-2. クラウド環境「sns-hub-v3」（`env_017w737AHTxf72HtiRe99La3`）
 
@@ -116,7 +122,8 @@ Aを採る場合の注意:
 ## 4. 切替前にやること
 
 - [ ] このランブックが最新か確認（Routineを追加・変更したら3-1の表を更新する）
-- [ ] claude.aiのRoutine一覧画面（`claude.ai/code/routines`）を開き、**全Routineの名前とtrigger IDをスクリーンショットまたはコピー**しておく。`RemoteTrigger list`は新しい20件しか返さず、`cursor`パラメータでのページングが効かない（2026-09-24検証済み）ため、ツール経由では全件列挙できない
+- [ ] 3-1の表がclaude.aiのRoutine一覧と一致するか確認する（2026-09-24に全15件を棚卸し済み。以後Routineを追加・変更したら表と`claude-routines/index.json`を更新する）
+  - `RemoteTrigger list`は新しい20件しか返さず`cursor`でのページングが効かない（2026-09-24検証済み）。全件列挙はclaude.ai UIを読む必要がある。Claude Code側からはブラウザツール（ログイン済みのChrome）で`claude.ai/code/routines`を開き、`read_page`のリンクhrefからtrigger IDを拾える
 - [ ] 参照したいArtifactを`Artifact` → `action: read`でローカル保存
 - [ ] 3-5のA/Bどちらを採るか決める。Aなら以下「5. 切替後の再構築手順」のステップ3〜6は不要。Bなら旧アカウント側のRoutineを必ずオフにする（Supabase Storageを不可逆に上書きするRoutineがあるため、新旧で二重に動かさない）
 
@@ -126,8 +133,8 @@ Aを採る場合の注意:
 2. **コネクタ再接続**: claude.aiのコネクタ設定でLinear・Claude Docs・Google Driveを再認証。`/mcp`で状態確認。Linearが未認証なら`scripts/linear-cli.js`で代替しつつ後回しにしてよい
 3. **クラウド環境を作る**: 名前`sns-hub-v3`で新規作成し、3-2のネットワーク許可リストと環境変数3つを設定。払い出された`env_...` IDを控える
 4. **Routineを作る**: `RemoteTrigger`の`create`を使う。本文は3-1の対応表にあるドキュメント、または`claude-routines/*.prompt.md`をそのまま`events[0].data.message.content`に入れる。bodyの形は下記
-5. **APIトリガーを追加**（`sns-hub-content-generation`相当のみ）: claude.aiのRoutine画面で「Add trigger」→「API」→トークン生成。**この操作はCLI/API経由ではできない**（`docs/design/sns-marketing-hub/tasks.md`に既知の制約として記録済み）
-6. **Vercel環境変数を更新**: 5で得たURL・トークンを`SNS_HUB_ROUTINE_FIRE_URL` / `SNS_HUB_ROUTINE_FIRE_TOKEN`に設定。`vercel env add`は改行混入を避けるため`echo`ではなく`printf`でパイプする
+5. **APIトリガーを追加**: `sns-hub-video-compaction`を除く**8件すべて**に必要。claude.aiのRoutine画面で「Add trigger」→「API」→トークン生成。**この操作はCLI/API経由ではできない**（トークンの発行・失効とも不可）。トークンは1回しか表示されない
+6. **Vercel環境変数を更新**: 3-1の表の各prefixについて`<prefix>_FIRE_URL`・`<prefix>_FIRE_TOKEN`の2本ずつ、計16本を差し替える（`api/_lib/snsHubHelpers.js`の`fireRoutine()`・`PLATFORM_ROUTINE_ENV_PREFIX`が参照）。未設定だと`{fired: false, reason: "not_configured"}`を返して**エラーにならず黙ってスキップされる**ため、設定漏れに気づきにくい。`vercel env add`は改行混入を避けるため`echo`ではなく`printf`でパイプする。旧アカウント側の8トークンはRevokeする
 7. **メモリを更新**: `sns_marketing_hub_operational_state.md`のtrigger ID・環境IDを新しい値に置き換える（古いIDが残っていると次のセッションが存在しないRoutineを触ろうとする）
 
 ### `RemoteTrigger create` のbody
