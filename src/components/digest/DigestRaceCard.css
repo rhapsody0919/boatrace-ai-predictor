@@ -93,3 +93,45 @@
     padding: 0.7rem;
   }
 }
+
+/* 折りたたみ（collapsible）
+ *
+ * ▼ はアンカーの外に置くため、カードを position: relative の基準にして
+ * 右上に重ねる。アンカー側は同じ幅だけ padding-right を空け、
+ * 締切の文字と ▼ が重ならないようにする。 */
+.digest-card--collapsible {
+  position: relative;
+}
+
+.digest-card--collapsible .digest-card__link {
+  padding-right: 2.6rem;
+}
+
+.digest-card__toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  /* 44px 未満にしない（モバイルのタップ目標） */
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.digest-card__toggle:hover {
+  color: var(--text-primary);
+}
+
+.digest-card__toggle:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: -2px;
+  border-radius: 8px;
+}

@@ -27,16 +27,26 @@ name: Generate Morning Digest
 # このジョブの完全性チェックが racer_course_technique_stats.window_end を見て、
 # 前日より古ければ書き込まずに終了する。
 #
+# ## race_entries を書く側（Vercel の races-init）との関係
+#
+# races-init（vercel.json の `*/2 20-23,0-14`）は JST 05:00 に始まり、24会場でも
+# 約15分で終わる（api/cron/races-init.js のヘッダー）。1回目の 05:30 はこの直後。
+# ただし races-init が全滅した日は、GitHub側のフェイルセーフが **JST 07:00** に
+# なってから初期化する（scripts/lib/racesInit/ghaSkip.js の FALLBACK_FROM_JST_HOUR）。
+# 06:30 が最終試行だとこの日は永久に未生成のまま失敗通知だけが出るので、
+# フェイルセーフの完了を待つ 3回目（08:00）を置き、検証はそこで行う。
+#
 # ## 失敗の扱い
 #
 # 完全性チェックを満たさない場合、スクリプトは**書き込まずに終了コード0で終わる**
-# （次回の実行で再試行させるため）。2回目（06:30）でも満たせない場合に
-# ジョブを失敗させたいので、2回目のステップだけ「書けたかどうか」を検証する。
+# （次回の実行で再試行させるため）。最終回（08:00）でも満たせない場合に
+# ジョブを失敗させたいので、最終回のステップだけ「書けたかどうか」を検証する。
 # continue-on-error は付けない。
 on:
   schedule:
     - cron: "30 20 * * *" # JST 05:30 (UTC 20:30)
     - cron: "30 21 * * *" # JST 06:30 (UTC 21:30)
+    - cron: "0 23 * * *" # JST 08:00 (UTC 23:00) GHAフェイルセーフ（07:00開始）の後
   workflow_dispatch:
     inputs:
       date:
@@ -73,10 +83,10 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
-      # 2回目（JST 06:30）でも当日ぶんが書けていなければ失敗させる。
+      # 最終回（JST 08:00）でも当日ぶんが書けていなければ失敗させる。
       # 「データが無い日」として黙って空のまま放置しない。
-      - name: Verify the digest exists (second run only)
-        if: github.event.schedule == '30 21 * * *'
+      - name: Verify the digest exists (last run only)
+        if: github.event.schedule == '0 23 * * *'
         run: node scripts/maintenance/verify-morning-digest.js
         env:
           TZ: "Asia/Tokyo"

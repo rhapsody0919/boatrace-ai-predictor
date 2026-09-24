@@ -46,6 +46,7 @@ function RateWithBaseline({
   rate90d = null,
   sampleSize90d = null,
   venueBaseline = null,
+  expanded = true,
 }) {
   return (
     <div className="rate-baseline">
@@ -65,41 +66,44 @@ function RateWithBaseline({
               <strong>{Number(predicted).toFixed(1)}%</strong>
             </span>
           )}
+          {/* 小標本の注意は折りたたみ中も残す（根拠の弱い数値が無警告で並ぶのを防ぐ） */}
+          {isSmallSample && (
+            <span className="rate-baseline__small-sample">
+              ⚠ 母数が少なく振れ幅が大きい
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="rate-baseline__meta">
-        <span>母数 {sampleSize}走</span>
-        {wilsonLower !== null && (
-          <span
-            title="この母数だと、真の率は95%の確からしさでこの値以上と言える"
-            className="rate-baseline__wilson"
-          >
-            信頼下限 {Number(wilsonLower).toFixed(1)}%
-          </span>
-        )}
-        {venueBaseline !== null && (
-          <span>
-            {venueName}の平均 {Number(venueBaseline).toFixed(1)}%
-          </span>
-        )}
-        {sampleSize90d !== null &&
-          (rate90d !== null ? (
-            <span>
-              直近90日 <strong>{Number(rate90d).toFixed(1)}%</strong>（
-              {sampleSize90d}走）
+      {expanded && (
+        <div className="rate-baseline__meta">
+          <span>母数 {sampleSize}走</span>
+          {wilsonLower !== null && (
+            <span
+              title="この母数だと、真の率は95%の確からしさでこの値以上と言える"
+              className="rate-baseline__wilson"
+            >
+              信頼下限 {Number(wilsonLower).toFixed(1)}%
             </span>
-          ) : (
+          )}
+          {venueBaseline !== null && (
             <span>
-              直近90日 {sampleSize90d}走（母数が少なく率は出しません）
+              {venueName}の平均 {Number(venueBaseline).toFixed(1)}%
             </span>
-          ))}
-        {isSmallSample && (
-          <span className="rate-baseline__small-sample">
-            ⚠ 母数が少なく振れ幅が大きい
-          </span>
-        )}
-      </div>
+          )}
+          {sampleSize90d !== null &&
+            (rate90d !== null ? (
+              <span>
+                直近90日 <strong>{Number(rate90d).toFixed(1)}%</strong>（
+                {sampleSize90d}走）
+              </span>
+            ) : (
+              <span>
+                直近90日 {sampleSize90d}走（母数が少なく率は出しません）
+              </span>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

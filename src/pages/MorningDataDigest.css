@@ -62,12 +62,6 @@
 }
 
 /* カードのグリッド。表ではなくカードにすることで320pxでも横スクロールを出さない */
-.morning-digest__grid {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
 .morning-digest__notes {
   margin-top: 1.5rem;
   padding: 0.9rem;
@@ -114,9 +108,6 @@
 }
 
 @media (min-width: 768px) {
-  .morning-digest__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 480px) {

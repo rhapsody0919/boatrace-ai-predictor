@@ -29,6 +29,7 @@ import LoadingScreen from "../components/LoadingScreen";
 import InlineFetchError from "../components/InlineFetchError";
 import {
   DigestSection,
+  DigestCardGrid,
   DigestRaceCard,
   RateWithBaseline,
   FeaturedRaceCard,
@@ -175,25 +176,32 @@ function MorningDataDigest() {
               count={sections.nige?.length ?? 0}
               total={day?.notes?.sectionCounts?.nigeCandidates ?? null}
             >
-              <div className="morning-digest__grid">
-                {(sections.nige ?? []).map((row) => (
-                  <DigestRaceCard key={`nige-${row.rank}`} row={row}>
-                    <RateWithBaseline
-                      label="逃げ率"
-                      rate={row.metric_value}
-                      skillDelta={row.metric_skill_delta}
-                      predicted={row.metric_predicted}
-                      venueName={t(`venues.${row.venue_code}`)}
-                      venueBaseline={row.metric_venue_baseline}
-                      sampleSize={row.sample_size}
-                      isSmallSample={row.is_small_sample}
-                      wilsonLower={row.metric_wilson_lower}
-                      rate90d={row.rate_90d}
-                      sampleSize90d={row.sample_size_90d}
-                    />
+              <DigestCardGrid rows={sections.nige ?? []}>
+                {(row) => (
+                  <DigestRaceCard
+                    key={`nige-${row.rank}`}
+                    row={row}
+                    collapsible
+                  >
+                    {(expanded) => (
+                      <RateWithBaseline
+                        expanded={expanded}
+                        label="逃げ率"
+                        rate={row.metric_value}
+                        skillDelta={row.metric_skill_delta}
+                        predicted={row.metric_predicted}
+                        venueName={t(`venues.${row.venue_code}`)}
+                        venueBaseline={row.metric_venue_baseline}
+                        sampleSize={row.sample_size}
+                        isSmallSample={row.is_small_sample}
+                        wilsonLower={row.metric_wilson_lower}
+                        rate90d={row.rate_90d}
+                        sampleSize90d={row.sample_size_90d}
+                      />
+                    )}
                   </DigestRaceCard>
-                ))}
-              </div>
+                )}
+              </DigestCardGrid>
             </DigestSection>
 
             <DigestSection
@@ -202,25 +210,32 @@ function MorningDataDigest() {
               count={sections.makuri?.length ?? 0}
               notice="まくりは全国平均が4〜5%とまれな決まり手のため、該当が0件の日もあります。"
             >
-              <div className="morning-digest__grid">
-                {(sections.makuri ?? []).map((row) => (
-                  <DigestRaceCard key={`makuri-${row.rank}`} row={row}>
-                    <RateWithBaseline
-                      label={`まくり率（${row.course}コース）`}
-                      rate={row.metric_value}
-                      skillDelta={row.metric_skill_delta}
-                      predicted={row.metric_predicted}
-                      venueName={t(`venues.${row.venue_code}`)}
-                      venueBaseline={row.metric_venue_baseline}
-                      sampleSize={row.sample_size}
-                      isSmallSample={row.is_small_sample}
-                      wilsonLower={row.metric_wilson_lower}
-                      rate90d={row.rate_90d}
-                      sampleSize90d={row.sample_size_90d}
-                    />
+              <DigestCardGrid rows={sections.makuri ?? []}>
+                {(row) => (
+                  <DigestRaceCard
+                    key={`makuri-${row.rank}`}
+                    row={row}
+                    collapsible
+                  >
+                    {(expanded) => (
+                      <RateWithBaseline
+                        expanded={expanded}
+                        label={`まくり率（${row.course}コース）`}
+                        rate={row.metric_value}
+                        skillDelta={row.metric_skill_delta}
+                        predicted={row.metric_predicted}
+                        venueName={t(`venues.${row.venue_code}`)}
+                        venueBaseline={row.metric_venue_baseline}
+                        sampleSize={row.sample_size}
+                        isSmallSample={row.is_small_sample}
+                        wilsonLower={row.metric_wilson_lower}
+                        rate90d={row.rate_90d}
+                        sampleSize90d={row.sample_size_90d}
+                      />
+                    )}
                   </DigestRaceCard>
-                ))}
-              </div>
+                )}
+              </DigestCardGrid>
             </DigestSection>
 
             <DigestSection
@@ -228,25 +243,32 @@ function MorningDataDigest() {
               description="1号艇に逃げ切られる割合が、会場と級別の構成から期待される水準を22ポイント以上上回る"
               count={sections.nigashi?.length ?? 0}
             >
-              <div className="morning-digest__grid">
-                {(sections.nigashi ?? []).map((row) => (
-                  <DigestRaceCard key={`nigashi-${row.rank}`} row={row}>
-                    <RateWithBaseline
-                      label={`逃がし率（${row.course}コース）`}
-                      rate={row.metric_value}
-                      skillDelta={row.metric_skill_delta}
-                      predicted={row.metric_predicted}
-                      venueName={t(`venues.${row.venue_code}`)}
-                      venueBaseline={row.metric_venue_baseline}
-                      sampleSize={row.sample_size}
-                      isSmallSample={row.is_small_sample}
-                      wilsonLower={row.metric_wilson_lower}
-                      rate90d={row.rate_90d}
-                      sampleSize90d={row.sample_size_90d}
-                    />
+              <DigestCardGrid rows={sections.nigashi ?? []}>
+                {(row) => (
+                  <DigestRaceCard
+                    key={`nigashi-${row.rank}`}
+                    row={row}
+                    collapsible
+                  >
+                    {(expanded) => (
+                      <RateWithBaseline
+                        expanded={expanded}
+                        label={`逃がし率（${row.course}コース）`}
+                        rate={row.metric_value}
+                        skillDelta={row.metric_skill_delta}
+                        predicted={row.metric_predicted}
+                        venueName={t(`venues.${row.venue_code}`)}
+                        venueBaseline={row.metric_venue_baseline}
+                        sampleSize={row.sample_size}
+                        isSmallSample={row.is_small_sample}
+                        wilsonLower={row.metric_wilson_lower}
+                        rate90d={row.rate_90d}
+                        sampleSize90d={row.sample_size_90d}
+                      />
+                    )}
                   </DigestRaceCard>
-                ))}
-              </div>
+                )}
+              </DigestCardGrid>
             </DigestSection>
 
             <DigestSection
