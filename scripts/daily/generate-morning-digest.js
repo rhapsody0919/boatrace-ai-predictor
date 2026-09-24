@@ -77,6 +77,13 @@ function addDays(dateStr, days) {
   return d.toISOString().split("T")[0];
 }
 
+/**
+ * `.range()` によるページ分割取得。
+ *
+ * ⚠️ 呼び出し側は必ず `.order()` を付けること。ORDER BY の無い LIMIT/OFFSET は
+ * 行順が保証されず、ページ間で同じ行が重複したり抜けたりしうる。
+ * 1チャンク200レース × 6艇 = 1200行のように、2ページ以上になるクエリが実際にある。
+ */
 async function fetchAll(buildQuery) {
   const all = [];
   for (let from = 0; ; from += PAGE_SIZE) {
@@ -99,6 +106,7 @@ async function fetchRaces(date) {
       .from("races")
       .select("race_id, venue_code, race_number, start_time, race_grade")
       .eq("race_date", date)
+      .order("race_id", { ascending: true })
       .range(from, to),
   );
 }
@@ -122,6 +130,8 @@ async function fetchEntries(raceIds, { includeAbsent = false } = {}) {
           "race_id, boat_number, racer_id, player_name, grade, motor_2rate, is_absent",
         )
         .in("race_id", chunk)
+        .order("race_id", { ascending: true })
+        .order("boat_number", { ascending: true })
         .range(from, to),
     );
     all.push(...rows);
@@ -141,6 +151,8 @@ async function fetchRacerStats(racerIds) {
         .from("racer_course_technique_stats")
         .select("*")
         .in("racer_id", chunk)
+        .order("racer_id", { ascending: true })
+        .order("course", { ascending: true })
         .range(from, to),
     );
     all.push(...rows);
@@ -172,6 +184,7 @@ async function fetchVolatility(raceIds) {
         .select("race_id, feature_contributions")
         .eq("model_id", "unified")
         .in("race_id", chunk)
+        .order("race_id", { ascending: true })
         .range(from, to),
     );
     for (const r of rows) {
@@ -257,9 +270,24 @@ function lookupBaseline(baselineMap, venueCode, grade, course, metric) {
     baselineMap.get(baselineKey(venueCode, "ALL", course));
   const fallback = baselineMap.get(baselineKey(venueCode, "ALL", course));
   const chosen = cell && cell.runs >= 100 ? cell : fallback;
-  if (!chosen) return null;
+  // ベースラインが引けない行は metric_venue_baseline / metric_predicted が NULL になり、
+  // morning_digest_rows の CHECK 制約 mdr_metric_fields_by_section で弾かれる。
+  // DBの制約名だけのエラーになると原因が分からないので、ここで会場・コースを添えて落とす
+  if (!chosen) {
+    throw new Error(
+      `会場${venueCode} ${course}コースのベースラインが見つかりません` +
+        `（race_grade='ALL' のフォールバック行も無い）。夜間バッチ` +
+        ` update-racer-course-technique-stats.js が走っているか確認してください`,
+    );
+  }
   const v = chosen[`${metric}_rate`];
-  return v === null || v === undefined ? null : Number(v);
+  if (v === null || v === undefined) {
+    throw new Error(
+      `会場${venueCode} ${course}コースの ${metric}_rate が NULL です` +
+        `（race_grade=${chosen.race_grade}）`,
+    );
+  }
+  return Number(v);
 }
 
 function buildMetricRow({
@@ -421,8 +449,14 @@ function buildSections({
     b.metric_skill_delta - a.metric_skill_delta ||
     a.race_id.localeCompare(b.race_id);
 
+  const nigeSorted = nige.sort(bySkill);
   return {
-    nige: nige.sort(bySkill).slice(0, NIGE_LIMIT),
+    nige: nigeSorted.slice(0, NIGE_LIMIT),
+    // 注目レースの選定は「表示上限で切る前」の全候補から行う。
+    // featured のスコアは z × 方向一致度で、skill_delta の順位とは別物のため、
+    // 26位以降の行が勝つケースがありうる（逃げは実測で平均32.3件/日出るため
+    // 上限25件は常に効いており、切ってから選ぶと取りこぼす）
+    nigeAll: nigeSorted,
     nigeTotal: nige.length,
     makuri: makuri.sort(bySkill),
     nigashi: nigashi.sort(bySkill),
@@ -496,6 +530,8 @@ async function buildFlying(date, prevDate) {
         .select("race_id, boat_number, start_timing, finish_mark")
         .in("race_id", chunk)
         .eq("finish_mark", "F")
+        .order("race_id", { ascending: true })
+        .order("boat_number", { ascending: true })
         .range(from, to),
     );
     timings.push(...rows);

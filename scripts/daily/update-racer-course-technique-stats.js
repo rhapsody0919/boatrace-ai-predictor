@@ -61,15 +61,28 @@ function todayJST() {
  * 同じ罠が集計RPCにもある（plan.md §3.1 は「RPCにしない場合はページネーション必須」と
  * 書いていたが、RPCでも必須だった）。
  *
+ * 上限はサーバー側（PostgRESTの db-max-rows）で、`.range(0, 19999)` のように1回で
+ * 広い範囲を要求しても1000行しか返らないことを実測で確認済み。ページ分割は避けられない。
+ *
+ * ⚠️ **ページごとに関数が再評価される**（9,471行なら約26万行の基礎スキャンが10回走る）。
+ * バッチ全体で約22秒なので現状は許容するが、データ量が増えたら
+ * 「RPCが1行のJSONB配列を返す形」に変えて1回の評価で済ませる（要マイグレーション）。
+ *
+ * ⚠️ **`.order()` は必須**。ORDER BY の無い LIMIT/OFFSET は行順が保証されず、
+ * ページ間で同じ行が重複したり抜けたりしうる（主キー順で並べて決定的にする）。
+ *
  * 「集計結果が0行」は異常（対象データが必ずあるはずのため）。
  * これと「変更が無くて書き込みが0行」は別物なので取り違えない（plan.md §3.1）。
+ *
+ * @param {string} fnName
+ * @param {string[]} orderBy ページ順を決定的にする列（その関数の主キー相当）
  */
-async function callAggregate(fnName) {
+async function callAggregate(fnName, orderBy) {
   const all = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await supabase
-      .rpc(fnName)
-      .range(from, from + PAGE_SIZE - 1);
+    let q = supabase.rpc(fnName);
+    for (const col of orderBy) q = q.order(col, { ascending: true });
+    const { data, error } = await q.range(from, from + PAGE_SIZE - 1);
     if (error) {
       throw new Error(`${fnName} の実行に失敗しました: ${error.message}`);
     }
@@ -203,6 +216,7 @@ async function main() {
   // --- 1. 会場 × グレード × コースのベースライン ---
   const baselineRows = await callAggregate(
     "compute_venue_course_technique_baseline",
+    ["venue_code", "race_grade", "course"],
   );
   const gradeCells = baselineRows.filter((r) => r.race_grade !== "ALL").length;
   const allCells = baselineRows.length - gradeCells;
@@ -278,7 +292,10 @@ async function main() {
     );
   }
 
-  const racerRows = await callAggregate("compute_racer_course_technique_stats");
+  const racerRows = await callAggregate("compute_racer_course_technique_stats", [
+    "racer_id",
+    "course",
+  ]);
   console.log(
     `\n[racer_course_technique_stats] 集計結果 ${racerRows.length} 行（${
       new Set(racerRows.map((r) => r.racer_id)).size

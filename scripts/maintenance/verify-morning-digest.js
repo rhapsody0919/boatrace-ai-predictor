@@ -61,7 +61,8 @@ async function main() {
     if (cntErr) throw cntErr;
     if (!count) {
       problems.push(`${date} の morning_digest_rows が0行です`);
-    } else {
+    } else if (problems.length === 0) {
+      // 問題が1件でもあるときに "OK:" を出すと、CIのログを見た人が成功と誤読する
       console.log(
         `OK: ${date} は ${count} 行（${day.venue_count}会場 ${day.race_count}レース）` +
           ` generated_at=${day.generated_at}`,

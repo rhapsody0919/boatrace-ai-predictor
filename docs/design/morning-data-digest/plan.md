@@ -258,7 +258,10 @@ ADR-0066 が「取得済みデータのDB内集計・統計更新（`aggregate-s
 - 実行: **JST 01:10**（`cron: '10 16 * * *'`）。`update-nige-outcome-distribution`（00:42）・`aggregate-course-baseline-stats`（00:50）の後ろに置き、重い全期間スキャンが同時に走らないようずらす
 - 更新対象: `venue_course_technique_baseline`（約612行＝実在セル468＋フォールバック用 ALL 144）→ `racer_course_technique_stats`（実測9,471行）の順。後者は前者を参照する
 - **集計本体はRPC（SQL関数）側に寄せる**。基礎CTEは全期間で約56万行を読むため、Node側に生データを持たない。`compute_venue_course_technique_baseline()` と `compute_racer_course_technique_stats()` を098で定義し、Nodeは結果の約612行＋9,471行だけを受け取る（094 の `compute_st_course_baseline()` と同じ形）
-- RPCにしない場合は `.range(from, from + 999)` のページネーション必須（Supabaseのデフォルト上限は1000行）。9,000行は確実に超える
+- **RPCの戻り値にも1000行の上限がかかる**。`.range()` によるページ分割が必須（実装時に実測して発見。plan §7 #5）
+  - 上限は**サーバー側**（PostgRESTの `db-max-rows`）。`.range(0, 19999)` のように1回で広い範囲を要求しても1000行しか返らないことを実測で確認済み
+  - **ページごとに関数が再評価される**。9,471行なら約26万行の基礎スキャンが10回走る（バッチ全体で約22秒）。現状は許容するが、データ量が増えたら「RPCが1行のJSONB配列を返す形」に変えて1回の評価で済ませる（要マイグレーション。セルフレビューでの指摘）
+  - **`.order()` は必須**。ORDER BY の無い LIMIT/OFFSET は行順が保証されず、ページ間で行の重複・欠落が起きうる。主キー相当の列で並べて決定的にする
 - `window_start` / `window_end` / `window_days` は**実測値**を書く（365等の固定値を書かない）
 - `upsertChangedRows`（`scripts/lib/unchangedRows.js`）で変更のある行だけ書く。**そのために `NUMERIC_SCALES` に 098 の4表分のエントリを追加する**（未登録だと `NUMERIC_SCALES[table] ?? {}` が空になり、NUMERIC列が毎日「変更あり」と判定される）
 - 「集計結果が0行」はエラー、「変更が無くて書き込み0行」は正常、として区別する（`aggregate-course-baseline-stats.yml` と同じ扱い）
