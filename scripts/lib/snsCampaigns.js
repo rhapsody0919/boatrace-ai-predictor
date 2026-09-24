@@ -134,11 +134,14 @@ export async function findQualifyingRaces(date, criteria) {
   const PAGE_SIZE = 1000;
   const rows = [];
   for (let page = 0; ; page++) {
-    // model_idでの絞り込みは付けない（standard/safeBet/upsetFocus/unifiedの
-    // 各行とも同じfeature_contributions.turnPrediction/volatilityPercentileを
-    // 共有しており後段でrace_id単位に重複排除するため不要な上、
-    // .eq('model_id',...)を足すとクエリプランが悪化しstatement timeoutになる
-    // 実測結果があった）
+    // model_idでの絞り込みは付けない（.eq('model_id',...)を足すとクエリプランが
+    // 悪化しstatement timeoutになる実測結果があったため）。BOA-408（predictions
+    // の3モデル重複解消）以降、feature_contributionsを持つのはstandard・unified
+    // のみ（safeBet・upsetFocusはNULL）。下の.not("feature_contributions","is",null)
+    // により、NULLになったsafeBet・upsetFocus行は自然に除外されるため、
+    // 後段のrace_id単位の重複排除（latestByRaceId）はstandard・unifiedの中から
+    // 最新1件を選ぶ形になる。turnPrediction/volatilityPercentileはstandard・
+    // unifiedそれぞれの本来の値のままで、この変更による値の変化は無い
     const { data, error } = await supabase
       .from("predictions")
       .select("race_id, predicted_at, feature_contributions")

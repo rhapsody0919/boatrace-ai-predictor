@@ -803,6 +803,12 @@ async function judgeAndUpdateHits(client, resultsToJudge) {
 
       // 展開予測的中（unifiedモデルのみ。feature_contributions.turnPrediction
       // が無い旧モデルはnullのまま＝「対象外」として区別する。ADR 0013）
+      // ここではmodel_idを見ておらず、standard/safeBet/upsetFocusにturnPrediction
+      // が入っていた期間はそれらにもis_hit_turnを計算・書き込んでいた（下流の
+      // update-race-history-cache.jsはmodel_id='unified'限定で読むため実害は無い）。
+      // BOA-408（predictions.feature_contributionsの3モデル重複解消）以降、
+      // safeBet・upsetFocusのfeature_contributionsはNULLになるため、この2モデルは
+      // 自然にhasTurnPrediction=falseへ戻る（ADR 0013の設計意図どおりに近づく）
       const turnPatterns = pred.feature_contributions?.turnPrediction?.patterns;
       const hasTurnPrediction =
         Array.isArray(turnPatterns) && turnPatterns.length > 0;
@@ -1459,7 +1465,9 @@ export async function fixMissingHitFlags(
       }
     }
 
-    // 展開予測的中（unifiedモデルのみ。ADR 0013）
+    // 展開予測的中（unifiedモデルのみ。ADR 0013。judgeAndUpdateHits関数の同名の
+    // 判定と同じくmodel_idを見ていない点・BOA-408後の挙動については同関数の
+    // コメント参照）
     const turnPatterns = pred.feature_contributions?.turnPrediction?.patterns;
     const hasTurnPrediction =
       Array.isArray(turnPatterns) && turnPatterns.length > 0;

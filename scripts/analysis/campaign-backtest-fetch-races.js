@@ -59,8 +59,11 @@ async function main() {
   }
   console.log(`取得したpredictions行数: ${predictions.length}`);
 
-  // 同一race_idに複数のpredictions行が存在する（再計算等）ため、
-  // predicted_atが最新の1件だけを残す（重複カウント防止）
+  // 同一race_idに複数のpredictions行が存在する（standard/safeBet/upsetFocus/
+  // unifiedの4モデル分＋再計算等）ため、predicted_atが最新の1件だけを残す
+  // （重複カウント防止）。volatilityPercentileはunified行にのみ存在するため、
+  // 実質的にunified行が選ばれた場合のみ以降の抽出が成立する（BOA-408でstandard
+  // 以外の重複feature_contributionsをNULL化した後も、この前提・挙動は変わらない）
   const latestByRaceId = new Map();
   for (const p of predictions) {
     const existing = latestByRaceId.get(p.race_id);

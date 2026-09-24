@@ -45,6 +45,7 @@
 - [ ] **T0-02** BOA-349（過去日の進入コース再同期が毎回全件UPDATE）の修正（PR #716でマージ済み）の効果を、`pg_stat_user_tables`の`n_tup_upd`（`race_results`）で確認する。Phase 2の前提（結果取得をVercelへ移しても、不具合が引き継がれるため）
 - [ ] **T0-03** 修正後の展示欠落率モニター（BOA-350）で、土日を跨ぐ変動（9/19・9/20分は9/20・9/21朝に確定）を確認し、Phase 2着手のゲート（BOA-313 Step 4）を満たすことを、ユーザーに報告する
 - [ ] **T0-04** BOA-352（Supabase障害の対応）・BOA-354（結果7レースの欠損）の状況を確認し、Phase 2の前に必要な対応を洗い出す
+- [x] **T0-05** BOA-408（WS8(c)-1、predictions.feature_contributionsの3モデル重複解消）: `generate-predictions.js`の`writeToSupabase`・`mainRefresh`両方で、standard行にのみ`feature_contributions`を書き、safeBet・upsetFocusはNULLにする（3モデルで内容が完全重複、フロントエンドもstandard行しか読まないため。BOA-405の対策0）。他の読み手（Moriarty・全RPC・分析スクリプト）を再確認し、`calibration-report.js`・`expected-value-report.js`のデフォルトモデルを`safeBet`→`standard`に修正、`turnprediction-guided-outcome-distribution.js`はmodel_id別の内訳を維持するようフィルタ・フォールバックを調整。検証: `scripts/maintenance/verify-feature-contributions-dedup.js`（新規）。**本番DB書き込み・DDL適用・切替は無し**（コード実装のみ、マージ待ち） — 完了（コード実装。本番実測で該当2モデル分（約66%）の削減見込み、詳細はorchestration.md 2026-09-24の決定事項参照）
 
 ## Phase 1: 共通基盤（WS4a、トラックA）
 
