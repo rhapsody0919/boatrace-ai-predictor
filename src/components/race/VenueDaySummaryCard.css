@@ -1,0 +1,136 @@
+/* VenueDaySummaryCard - 「この日の水面傾向」カード（phase a FR-5 / BOA-222）
+ *
+ * 直前情報タブのインライン実装（rbi-stat-* / rbi-breakdown / rbi-badge-*）から
+ * 移設したもの。結果タブと会場ページの2箇所で使うため、別コンポーネントのCSS
+ * ファイル（RaceBeforeInfoTab.css）への暗黙依存を作らないよう vds-* で自己完結
+ * させている。実ビルドはCSS単一バンドルなので rbi-* でも現状は効くが、将来
+ * lazy化したときに壊れる依存を残さない。
+ *
+ * 色は意味トークンのみを使う（[data-theme="dark"]で反転する。生パレット値は
+ * 自前の固定背景を持つ要素にしか使わない。.claude/rules/component-reuse.md）
+ */
+
+.vds-card {
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  /* 会場ページでは直上の .venue-characteristics-card と縦に並ぶため、
+     そちらと同じ下余白を持たせる */
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.vds-heading {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.vds-note {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* 1行要約（この日の決まり手の回数 ＋ このレースの位置づけ）。
+   カードの主役なので本文サイズで出す */
+.vds-lede {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-sm);
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.vds-lede-accent {
+  font-weight: var(--font-weight-bold);
+  color: var(--brand-accent-primary);
+}
+
+.vds-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: var(--spacing-2);
+}
+
+.vds-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface-page);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2);
+  text-align: center;
+}
+
+.vds-stat-value {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.vds-stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* 内訳の折りたたみ。実装済みの先例 NigeSimulationCard の
+   nsc-detail-toggle / nsc-detail に揃える（設計文書の .lede-* は未実装） */
+.vds-detail-toggle {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  width: 100%;
+  margin-top: var(--spacing-2);
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--brand-accent-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.vds-detail {
+  padding-top: var(--spacing-1);
+}
+
+.vds-breakdown {
+  margin-top: var(--spacing-3);
+}
+
+.vds-subheading {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-1);
+}
+
+.vds-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.vds-badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  background: var(--surface-page);
+  border: var(--border-width-1) solid var(--border-hairline);
+  padding: 2px var(--spacing-2);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .vds-card {
+    padding: var(--spacing-3);
+  }
+
+  .vds-stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  }
+}

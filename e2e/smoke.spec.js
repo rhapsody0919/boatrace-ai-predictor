@@ -1062,6 +1062,55 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });
 
+  test("この日の水面傾向が結果タブ（払戻の下）と会場ページに出て、直前情報タブからは消えている（BOA-222 / phase a T4-1〜T4-4）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+
+    // 結果確定済みレースは「結果」タブが既定で開く
+    await expect(page.locator(".vds-card")).toBeVisible({ timeout: 25000 });
+    // 見出し・注記は開催日基準（過去日のレースで「本日」と書かない）
+    await expect(page.locator(".vds-heading")).not.toContainText("本日");
+    await expect(page.locator(".vds-note")).not.toContainText("本日");
+    // ラベルは実装（艇番基準）に合わせた「1号艇の逃げ率」。「イン逃げ率」ではない
+    await expect(page.locator(".vds-stat-label")).toHaveCount(3);
+    await expect(page.locator(".vds-card")).toContainText("1号艇の逃げ率");
+    await expect(page.locator(".vds-card")).not.toContainText("イン逃げ率");
+
+    // 払戻より後ろ（結果タブの最下部）に置かれている
+    const cardAfterPayout = await page.evaluate(() => {
+      const root = document.querySelector(".race-result");
+      const payout = root?.querySelector(".rr-payout-table");
+      const card = root?.querySelector(".vds-card");
+      if (!payout || !card) return null;
+      return Boolean(
+        payout.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
+    expect(cardAfterPayout).toBe(true);
+
+    // 内訳は折りたたみ。開くと決まり手別・進入コース別が出る
+    await expect(page.locator(".vds-detail")).toHaveCount(0);
+    await page.locator(".vds-detail-toggle").click();
+    await expect(page.locator(".vds-detail")).toBeVisible();
+    expect(await page.locator(".vds-badge").count()).toBeGreaterThan(0);
+
+    // 直前情報タブからは消えている（移設元のクラスも残っていない）
+    await page.locator(".race-tabs-btn", { hasText: "直前情報" }).click();
+    await expect(page.locator(".rbi-card").first()).toBeVisible({
+      timeout: 25000,
+    });
+    await expect(page.locator(".vds-card")).toHaveCount(0);
+    await expect(page.locator(".rbi-stat-grid")).toHaveCount(0);
+
+    // 会場ページ（過去日）にも出る。こちらは「このレース」の節を出さない
+    await page.goto("/races/2026-08-11/5");
+    await expect(page.locator(".vds-card")).toBeVisible({ timeout: 25000 });
+    await expect(page.locator(".vds-lede")).not.toContainText("このレース");
+  });
+
   test("枠別情報タブの既定ビューが今日の想定コース×3指標で、全コース比較は折りたたみから開ける（BOA-307 / phase a T3-1）", async ({
     page,
   }) => {

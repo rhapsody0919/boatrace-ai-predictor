@@ -560,15 +560,7 @@
     "top2RateAbbrev": "2연대",
     "top3RateAbbrev": "3연대",
     "prevAbbrev": "직전",
-    "avgAbbrev": "평균",
-    "todaySummaryTitle": "오늘의 성적 요약",
-    "todaySummaryNote": "오늘 이 경기장에서 확정된 {{n}}경주의 집계입니다",
-    "avgPayoutLabel": "평균 배당(삼련단)",
-    "manshuRateLabel": "만슈率(고배당률)",
-    "nigeRateLabel": "인빠지기 승률",
-    "techniqueBreakdownLabel": "결정수별 횟수",
-    "entryCourseWinLabel": "진입 코스별 1착 횟수",
-    "courseN": "{{n}}코스"
+    "avgAbbrev": "평균"
   },
   "pitReport": {
     "title": "피트 리포트(선수 코멘트)",
@@ -1493,5 +1485,24 @@
     "flying": "F",
     "stRank": "({{n}}위)",
     "legend": "위는 실제 진입 코스, 가운데는 착순, 아래는 ST와 그 경주에서의 ST 순위"
+  },
+  "venueDaySummary": {
+    "title": "이날의 수면 경향",
+    "note": "{{date}} {{venue}}에서 확정된 {{n}}경주의 집계입니다",
+    "ledeDay": "확정된 {{n}}경주의 결정타는 {{techniques}}입니다.",
+    "ledeNige": "1호정의 도주율 {{rate}}%.",
+    "ledeThisRaceWithCourse": "이 경주는 {{course}}코스에서 {{technique}}로 승리해, 이날 {{ordinal}}번째 {{technique}}였습니다.",
+    "ledeThisRace": "이 경주는 {{technique}}로 승리해, 이날 {{ordinal}}번째 {{technique}}였습니다.",
+    "countUnit": "{{n}}",
+    "techniqueSeparator": "·",
+    "avgPayoutLabel": "평균 배당",
+    "manshuRateLabel": "만슈율",
+    "nigeRateLabel": "1호정의 도주율",
+    "breakdownToggle": "결정타별·진입 코스별 내역",
+    "techniqueBreakdownLabel": "결정타별",
+    "entryCourseWinLabel": "진입 코스별 1착 횟수",
+    "courseN": "{{n}}코스",
+    "ledeDayPartial": "확정 {{n}}경주 중 결정타가 확인된 {{m}}경주는 {{techniques}}입니다.",
+    "loading": "불러오는 중..."
   }
 }
