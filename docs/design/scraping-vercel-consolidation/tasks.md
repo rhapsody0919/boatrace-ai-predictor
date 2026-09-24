@@ -111,7 +111,7 @@
 
 - [x] **T4b-05-1**（コード実装済み。LZH展開の動作確認（U15）は、`?probeDate=`の手動リクエスト。runbook §G） Kファイル同期を、独立のジョブ（`api/cron/kfile-sync.js`、日次07:00・12:00 JST）へ切り出す。進入コース（`syncActualCourseFromKFile`）とrank4〜6（`syncRank456FromKFile`）が、同じ日のKファイルを別々にダウンロードしている重複（D4）を解消し、1回のダウンロードで両方を処理する。BOA-349の修正（変更のある行のみ書く）を維持する。`@kirinsaninc/lhats`（LZH展開）が関数内で動くか、Previewの手動リクエストで確認する（plan.md U15）
 - [x] **T4b-05-2**（コード実装済み。cronは23:50と翌00:30の2回） `api/cron/result-catchup.js`（日次23:50 JST）: 当日`expired`になった`result`のスロットを再取得し、補填する。完了の定義Aを守るための後追い（Bの計測は、expiredの記録が残る）
-- [ ] **T4b-05-3**（`SKIP_KFILE_ON_GHA`のコードは実装済み。既定はfalse。手順はrunbook §G） `shadow`→`live`→`SKIP_KFILE_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-results.js`から、Kファイル同期（`syncRecentActualCourse`・`syncRecentRank456`）の呼び出しを外す変数を追加する。2026-09-23確認: `scrape_job_state.kfile_sync.mode=live`（shadow・live切替は完了）。`SKIP_KFILE_ON_GHA`は未設定のため、GitHub側停止のみ未実施
+- [x] **T4b-05-3**（`SKIP_KFILE_ON_GHA`のコードは実装済み。既定はfalse。手順はrunbook §G） `shadow`→`live`→`SKIP_KFILE_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-results.js`から、Kファイル同期（`syncRecentActualCourse`・`syncRecentRank456`）の呼び出しを外す変数を追加する。**2026-09-24実測（9/14〜23の10日、BOA-395）**: 実進入(`actual_course_1`)99.7%（1,593/1,597）、rank4〜6が99.8%（1,594/1,597）、`last_report.problems`・`unpublished`とも0件。GHA・Vercelとも同じ`kfileParser.js`で静的なKファイルを解析するため、取得タイミング差による値の食い違いリスクは構造的に低い。**GHA停止(`SKIP_KFILE_ON_GHA`)の準備は整った**（設定はユーザー作業）
 
 データ項目: `race_results.actual_course_1〜6`・`rank4〜6`（Kファイル）。
 
