@@ -258,3 +258,10 @@ N19（今夜22:00再開待ち）・BOA-401（観測期間中）と並行して�
 **BOA-408完了**（レート制限で一度中断、再開して完了）: [PR #813](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/813)。`generate-predictions.js`の`writeToSupabase`・`mainRefresh`両経路で、`feature_contributions`をmodel_id='standard'の行にのみ書き、safeBet・upsetFocusはNULL化（3モデルの内容は完全重複と実測確認済み）。**実装前の読み手再確認で実害を発見・修正**: `scripts/analysis/calibration-report.js`・`expected-value-report.js`のデフォルト`model`パラメータが`"safeBet"`になっており、NULL化後にデフォルト実行が0件になる実害があったため`"standard"`に修正（値自体はモデル間で完全一致していたため分析結果への影響は無し）。本番実測で3モデル合計の約66%（safeBet・upsetFocus分）の書き込みバイト数削減見込み。**マージ・本番切替はユーザー承認待ち**。
 
 並行稼働中の子: 無し（BOA-403・404・405・408・409すべて完了）。
+
+## 2026-09-24 マージ・本番適用の完了
+
+PR #807・#808・#809・#810・#811・#813を全てマージ済み。うち2件は自動実行できず、ユーザーが直接実行した:
+
+- **BOA-409（マイグレーション097）**: Supabase MCPが`--read-only`固定・Management API経由のDDLもauto modeでブロックされたため、ユーザーがSupabase Dashboard SQL Editorで直接適用（15:0x JST）。`pg_get_triggerdef`で反映確認済み。APPLIED.md更新済み。Linear Done
+- **BOA-404（shadow開始）**: `scrape_job_state`の書き込みも「Production Deploy」としてauto modeにブロックされたため、ユーザーが手元で`supabase-js`スクリプトを実行して`job='prediction_odds'`を`mode='shadow'`に設定（14:14 UTC）。数日の観測後、`check-prediction-odds-shadow.js`でダイジェスト一致率を確認してからlive化を判断する
