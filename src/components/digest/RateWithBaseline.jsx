@@ -33,11 +33,15 @@
  *     とくに**「勝率」という語は使えない**（ボートレースの勝率は着順点の平均であって
  *     1着率ではないため、意味がまったく変わる）
  *
- * ## 対象範囲は必ずラベルに書く
+ * ## 対象範囲はバーのラベルに書く
  *
  * 「逃げ率88.2%」と「この選手90.1%」が何故違うのか分からない、という指摘を受けた。
  * 原因はどちらも「率」としか書いておらず、対象範囲（全国なのか、この会場なのか）が
- * 示されていないことだった。バーの下に、各値が何を指すかの注記を必ず出す。
+ * 示されていないことだった。当初はバーの下に注記行
+ * （`この選手＝全国38走ぶん／若松の平均＝全選手`）を置いたが冗長だったため、
+ * **ラベル自体に `この選手（全国38走）` `若松の平均（一般戦）` と書き、注記行を無くした**。
+ * ラベルが長くなるので、ラベルと値を1行目、バーを2行目に置いて**バーを全幅**にしている
+ * （横に並べるとラベルに幅を取られてバーが短くなり、長さの比較ができなくなる）。
  *
  * ## 母数は折りたたんでも隠さない
  *
@@ -47,22 +51,24 @@
  */
 import "./RateWithBaseline.css";
 
-/** 0〜100%の横バー1本 */
+/** 0〜100%の横バー1本。ラベル＋値が1行目、バーが2行目（バーを全幅で使うため） */
 function RateBar({ label, value, emphasis = false }) {
   const pct = Math.max(0, Math.min(100, Number(value)));
   return (
     <div className="rate-baseline__bar-row">
-      <span className="rate-baseline__bar-label">{label}</span>
+      <span className="rate-baseline__bar-head">
+        <span className="rate-baseline__bar-label">{label}</span>
+        <span
+          className={`rate-baseline__bar-value${emphasis ? " rate-baseline__bar-value--emphasis" : ""}`}
+        >
+          {pct.toFixed(1)}%
+        </span>
+      </span>
       <span className="rate-baseline__bar-track">
         <span
           className={`rate-baseline__bar-fill${emphasis ? " rate-baseline__bar-fill--emphasis" : ""}`}
           style={{ width: `${pct}%` }}
         />
-      </span>
-      <span
-        className={`rate-baseline__bar-value${emphasis ? " rate-baseline__bar-value--emphasis" : ""}`}
-      >
-        {pct.toFixed(1)}%
       </span>
     </div>
   );
@@ -105,23 +111,27 @@ function RateWithBaseline({
       <p className="rate-baseline__label">{label}</p>
 
       <div className="rate-baseline__bars">
-        <RateBar label="この選手" value={rate} emphasis />
+        {/* 対象範囲はラベルに書く。別行の注記にすると冗長になる */}
+        <RateBar
+          label={`この選手（全国${sampleSize}走）`}
+          value={rate}
+          emphasis
+        />
         {venueBaseline !== null && (
-          <RateBar label={`${venueName}の平均`} value={venueBaseline} />
+          <RateBar
+            label={`${venueName}の平均${gradeLabel ? `（${gradeLabel}）` : ""}`}
+            value={venueBaseline}
+          />
         )}
       </div>
 
-      {/* 各値が何を指すかを必ず書く。書かないと「2つの%が何故違うのか」になる */}
-      <p className="rate-baseline__source">
-        この選手＝全国{sampleSize}走ぶん
-        {venueBaseline !== null &&
-          `／${venueName}の平均＝${gradeLabel ? `${gradeLabel}・` : ""}全選手`}
-        {isSmallSample && (
+      {isSmallSample && (
+        <p className="rate-baseline__source">
           <span className="rate-baseline__small-sample">
             ⚠ 母数が少なく振れ幅が大きい
           </span>
-        )}
-      </p>
+        </p>
+      )}
 
       {expanded && (
         <div className="rate-baseline__meta">
