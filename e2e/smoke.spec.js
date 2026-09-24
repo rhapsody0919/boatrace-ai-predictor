@@ -1100,19 +1100,83 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
     expect(docOverflow).toBeLessThanOrEqual(1);
 
-    // セルをタップすると直近10走の着順ドリルダウンが開く
+    // セルをタップすると直近10走の帯（RecentRunsBar）が開く
     await page.locator(".rwit-grid-cell-button").first().click();
     await expect(page.locator(".rwit-expanded")).toBeVisible();
-    await expect(page.locator(".rwit-streak-dot").first()).toBeVisible({
+    await expect(page.locator(".rrb-item").first()).toBeVisible({
       timeout: 20000,
     });
-    expect(await page.locator(".rwit-streak-dot").count()).toBeLessThanOrEqual(
-      10,
-    );
+    expect(await page.locator(".rrb-item").count()).toBeLessThanOrEqual(10);
+    // ST順位を「(N位)」形式で併記する（phase a T3-4）
+    await expect(page.locator(".rrb-st-rank").first()).toBeVisible();
 
     // もう一度タップすると閉じる
     await page.locator(".rwit-grid-cell-button").first().click();
     await expect(page.locator(".rwit-expanded")).toHaveCount(0);
+  });
+
+  test("枠別情報タブのST考察カードが、同コース・同級別の平均との差つきで表示される（phase a T3-2）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+
+    // 094（st_course_baseline）が未適用の環境ではセクションごと出さない設計なので、
+    // カードが出ない場合はこのテストをスキップする（本番・CIは適用済み）
+    const card = page.locator(".rsc-card");
+    await card.waitFor({ state: "visible", timeout: 25000 });
+
+    // 5行（級別/走数/安定率/抜出/出遅率）× 6艇
+    await expect(page.locator(".rsc-grid tbody tr")).toHaveCount(5);
+    await expect(page.locator(".rsc-grid thead th.rsc-boat-th")).toHaveCount(6);
+
+    // 集計期間が実測値で表示される（「直近1年」のような固定文言にしない）
+    await expect(page.locator(".rsc-window")).toContainText(/\d{4}-\d{2}-\d{2}/);
+
+    // 差が表示され、方向（良い/悪い）で色分けされる。
+    // どちらの向きが何件出るかは対象レースの選手次第なので、件数の内訳は問わない
+    // （本番Supabase直結でDB状態に左右されるため）
+    const diffCount = await page.locator(".rsc-diff").count();
+    expect(diffCount).toBeGreaterThan(0);
+    const colored =
+      (await page.locator(".rsc-diff.is-better").count()) +
+      (await page.locator(".rsc-diff.is-worse").count());
+    expect(colored).toBeGreaterThan(0);
+
+    // 抜出は実回数で出し、率（%）は画面に出さない。1コースは「—」
+    const breakoutRow = page.locator(".rsc-grid tbody tr").nth(3);
+    await expect(breakoutRow).toContainText("回");
+    await expect(breakoutRow).not.toContainText("%");
+    await expect(breakoutRow.locator("td").first()).toContainText("内側なし");
+  });
+
+  test("枠別情報タブの逃げシミュレーションで2着率の合計が100%になり、予想ではない旨が出る（phase a T3-5）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+
+    const card = page.locator(".nsc-card");
+    await card.waitFor({ state: "visible", timeout: 25000 });
+
+    // 2〜6コースの5行
+    await expect(page.locator(".nsc-row")).toHaveCount(5);
+
+    // 2着率の合計が100%（2着は必ず1艇。丸め誤差のみ許容）
+    const rates = await page.locator(".nsc-rate").allInnerTexts();
+    const sum = rates.reduce((a, r) => a + parseFloat(r), 0);
+    expect(Math.abs(sum - 100)).toBeLessThan(0.6);
+
+    // 母数が明記される
+    await expect(page.locator(".nsc-sub")).toContainText("レース");
+
+    // 「くわしく見る」で算出方法と「予想ではない」旨が出る
+    await page.locator(".nsc-detail-toggle").click();
+    await expect(page.locator(".nsc-detail")).toContainText("予想ではありません");
   });
 
   test("オッズ一覧タブで券種切替・全通り常時表示・推移ドリルダウン・免責文言が表示される（BOA-311）", async ({

@@ -54,18 +54,12 @@ import {
   buildCourseGrid,
   getCourseRecentRuns,
 } from "./courseGridStats";
-import { finishPositionOf } from "./basicInfoStats";
+import RaceStConsiderationCard from "./RaceStConsiderationCard";
+import NigeSimulationCard from "./NigeSimulationCard";
+import RecentRunsBar from "./RecentRunsBar";
 import "./RaceWakuInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate"];
-
-function rankDotClass(rank) {
-  // 着外（欠場・失格・転覆等でrank1〜6のどこにも入らない）は最下位扱い
-  if (rank === null) return "rwit-dot-bad";
-  if (rank <= 2) return "rwit-dot-good";
-  if (rank <= 4) return "rwit-dot-mid";
-  return "rwit-dot-bad";
-}
 
 // 会場全体の決まり手傾向（全艇合算）。venueTendency.technique.dataは
 // { [boatNumber]: { total_races, techniques: [{technique, count, percentage}] } }
@@ -100,6 +94,49 @@ function RaceWakuInfoTab({ venueCode, players }) {
   // 選択中の選手の出走履歴（実進入コース付き）。undefined=取得中、null=取得失敗
   const [scopedByRacer, setScopedByRacer] = useState({});
   const [techniqueStats, setTechniqueStats] = useState(undefined);
+  // ST考察のベースライン（コース×級別の24行）と逃げシミュレーション（会場別5行）。
+  // どちらも094の事前集計テーブルを単純SELECTで読む（画面では集計しない）
+  const [baseline, setBaseline] = useState(undefined);
+  const [nigeRows, setNigeRows] = useState(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabaseDataService
+      .getStCourseBaseline()
+      .then((data) => {
+        if (!cancelled) setBaseline(data);
+      })
+      .catch((err) => {
+        console.error(
+          "ST考察ベースライン取得エラー:",
+          err?.message ?? String(err),
+        );
+        if (!cancelled) setBaseline(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!venueCode) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getNigeSimulation(venueCode)
+      .then((data) => {
+        if (!cancelled) setNigeRows(data);
+      })
+      .catch((err) => {
+        console.error(
+          "逃げシミュレーション取得エラー:",
+          err?.message ?? String(err),
+        );
+        if (!cancelled) setNigeRows(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [venueCode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,30 +171,38 @@ function RaceWakuInfoTab({ venueCode, players }) {
 
   // 選手を選ぶたびに、その選手の出走履歴を取得する（withCacheで基本情報タブ・
   // 直前情報タブと共有されるため、同じ選手なら再フェッチは起きない）
+  // ST考察は6艇分を並べるため、選択中の1人だけでなく全選手の履歴を取得する。
+  // withCacheで基本情報タブ・直前情報タブと共有されるため、同じ選手なら再フェッチは起きない
+  const racerIdsKey = sortedPlayers
+    .map((p) => p.racerId ?? "")
+    .join(",");
+
   useEffect(() => {
-    if (!selectedRacerId) return undefined;
+    const ids = racerIdsKey.split(",").filter(Boolean);
+    if (ids.length === 0) return undefined;
     let cancelled = false;
-    // 未取得の間はキー自体が無い（= undefined）ので、ここで明示的に
-    // undefined を入れる必要はない（effect内の同期setStateを避ける）
-    supabaseDataService
-      .getRacerScopedRaceStats(selectedRacerId)
-      .then((data) => {
-        if (!cancelled)
-          setScopedByRacer((prev) => ({ ...prev, [selectedRacerId]: data }));
-      })
-      .catch((err) => {
-        // 取得失敗を「データなし」に化けさせない（BOA-359）
-        console.error(
-          "枠別情報（選手の出走履歴）取得エラー:",
-          err?.message ?? String(err),
-        );
-        if (!cancelled)
-          setScopedByRacer((prev) => ({ ...prev, [selectedRacerId]: null }));
-      });
+    ids.forEach((id) => {
+      const racerId = Number(id);
+      supabaseDataService
+        .getRacerScopedRaceStats(racerId)
+        .then((data) => {
+          if (!cancelled)
+            setScopedByRacer((prev) => ({ ...prev, [racerId]: data }));
+        })
+        .catch((err) => {
+          // 取得失敗を「データなし」に化けさせない（BOA-359）
+          console.error(
+            "枠別情報（選手の出走履歴）取得エラー:",
+            err?.message ?? String(err),
+          );
+          if (!cancelled)
+            setScopedByRacer((prev) => ({ ...prev, [racerId]: null }));
+        });
+    });
     return () => {
       cancelled = true;
     };
-  }, [selectedRacerId]);
+  }, [racerIdsKey]);
 
   if (sortedPlayers.length === 0) return null;
 
@@ -344,27 +389,28 @@ function RaceWakuInfoTab({ venueCode, players }) {
               {t("wakuInfo.noRecentFinishes")}
             </p>
           ) : (
-            <div className="rwit-streak">
-              {recentRuns.map((r) => {
-                const rank = finishPositionOf(r);
-                return (
-                  <span
-                    key={r.raceId}
-                    className={`rwit-streak-dot ${rankDotClass(rank)}`}
-                    title={r.raceId}
-                  >
-                    {rank ?? t("wakuInfo.outOfPlace")}
-                  </span>
-                );
-              })}
-            </div>
+            <RecentRunsBar runs={recentRuns} />
           )}
         </div>
       )}
     </>
   )}
   <p className="rwit-caveat">{t("wakuInfo.gridCaveat")}</p>
-</div>;
+</div>
+
+      {/* ST考察（FR-1）。6艇分を並べるため選択中の選手に依存しない。
+          今日の進入コースはレース前には確定しないため、枠なり進入を想定して
+          艇番をそのままコースとして使う（日和のST考察も1号艇の抜出率が「-」で
+          あることからコース別＝枠なり進入想定の集計と判断した。spec.md FR-1） */}
+      <RaceStConsiderationCard
+        players={sortedPlayers}
+        scopedByRacer={scopedByRacer}
+        baseline={baseline}
+        entryCourseOf={(p) => p.number}
+      />
+
+      {/* 逃げシミュレーション（FR-6）。会場のコース単位の指標で、選手の選択とは独立 */}
+      <NigeSimulationCard rows={nigeRows} />
 
       <div className="rwit-card">
         <h3 className="rwit-card-title">{t("wakuInfo.kimariteTitle")}</h3>

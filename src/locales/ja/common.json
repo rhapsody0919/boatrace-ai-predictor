@@ -413,7 +413,7 @@
     "noRacerId": "選手情報が取得できませんでした",
     "noRecentFinishes": "この枠番での出走履歴がありません",
     "fetchError": "直近10走を取得できませんでした。時間をおいて再度お試しください",
-    "recentFinishesNote": "{{course}}号艇（枠番）で出走した直近10走の着順（左が最も古い、右が最新）",
+    "recentFinishesNote": "{{course}}コース（実際に進入したコース）から出走した直近10走",
     "kimariteTitle": "決まり手傾向（全艇・直近90日）",
     "kimariteCaveat": "※この会場での全レース・全艇を合算した決まり手の発生割合です（選手個人の実績ではありません）",
     "gridTitle": "コース別成績",
@@ -1442,5 +1442,38 @@
     "tipsHeading": "💡 活用のポイント",
     "articleHeading": "📖 詳しい解説記事",
     "noticeHeading": "⚠️ 注意事項"
+  },
+  "stConsideration": {
+    "title": "ST考察",
+    "subtitle": "下段は同じコース・同じ級別の平均との差",
+    "window": "集計期間 {{start}}〜{{end}}",
+    "gradeRow": "級別",
+    "runsRow": "走数",
+    "stable": "安定率",
+    "breakout": "抜出",
+    "late": "出遅率",
+    "times": "{{n}}回",
+    "expectedTimes": "平均{{n}}",
+    "noInnerBoat": "内側なし",
+    "flyingTitle": "今期のフライング{{n}}本。期が変わると0に戻ります",
+    "caveat": "緑は同コース・同級別の平均より良い、赤は悪い。抜出は外のコースほど起きる回数が少なく、率にすると0.0%が並ぶため回数で出しています。1コースは内側に艇がないため出しません。フライングの走は母数から外し、F数はバッジで別に出しています。当サービスの独自集計です"
+  },
+  "nigeSimulation": {
+    "title": "1コースが逃げたとき",
+    "sample": "この会場の1コース逃げ {{nige}}レース／結果確定 {{total}}レース",
+    "secondCourse": "2着に来たコース",
+    "exacta": "2連単 {{value}}%",
+    "showDetail": "▸ くわしく見る（算出方法・母数）",
+    "hideDetail": "▾ 閉じる",
+    "detailMethod": "「1コースが逃げた」= 決まり手が「逃げ」かつ1着艇の実際の進入コースが1、という条件で集計しています。2着のコースも実際に進入したコースです。",
+    "detailWindow": "集計期間: {{start}}〜{{end}}（{{days}}日）",
+    "detailNotPrediction": "この会場の過去の実績を数えたものであり、今回のレースの予想ではありません。"
+  },
+  "recentRuns": {
+    "older": "古い",
+    "newer": "新しい",
+    "flying": "F",
+    "stRank": "({{n}}位)",
+    "legend": "上段は実際に進入したコース、中段は着順、下段はSTとそのレース内でのST順位"
   }
 }

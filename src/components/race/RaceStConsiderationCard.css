@@ -1,0 +1,179 @@
+/* RaceStConsiderationCard - ST考察（phase a FR-1、screens.md §3.1.2）
+   色は意味トークンを使う（ページ背景に直接乗るテキストがあるため。
+   .claude/rules/component-reuse.md「文字色・背景色は意味トークンを使う」） */
+
+.rsc-card {
+  box-sizing: border-box;
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+  margin-top: var(--spacing-3);
+}
+
+.rsc-title {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rsc-sub {
+  margin: 0 0 2px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.rsc-window {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rsc-loading {
+  margin: var(--spacing-2) 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* 横スクロールはこのラッパの中だけに閉じる */
+.rsc-grid-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rsc-grid {
+  width: 100%;
+  min-width: 320px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.rsc-label-th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface-card);
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  padding: var(--spacing-1) var(--spacing-1) var(--spacing-1) 0;
+  white-space: nowrap;
+  /* ラベルと ? ボタンを横に並べる */
+  vertical-align: middle;
+}
+
+.rsc-label-th > span {
+  margin-right: 2px;
+}
+
+.rsc-label-sub {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+}
+
+.rsc-boat-th {
+  padding: var(--spacing-1) 0;
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  min-width: 42px;
+}
+
+.rsc-cell {
+  padding: var(--spacing-1) 1px;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 1.15;
+}
+
+.rsc-cell-meta {
+  padding: 2px 1px;
+}
+
+.rsc-value {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rsc-value.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+.rsc-muted {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+}
+
+/* 差の色。安定率・抜出は高いほど良い、出遅率は低いほど良いので
+   コンポーネント側で向きを判定してから is-better / is-worse を付ける */
+.rsc-diff {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rsc-diff.is-better {
+  color: var(--color-success-text);
+}
+
+.rsc-diff.is-worse {
+  color: var(--color-error-text);
+}
+
+.rsc-note-small {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  transform: scale(0.92);
+}
+
+.rsc-grade {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
+.rsc-runs {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* Fバッジ。F1は金、F2は赤（F2は合計90日のあっせん停止で意味が違う）。
+   級別セルの中に置く（艇番ヘッダは枠色で塗られておりコントラストが取れないため） */
+.rsc-flying {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 0 3px;
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-black);
+  background: var(--color-warning);
+  border-radius: var(--radius-sm);
+}
+
+.rsc-flying.is-f2 {
+  color: var(--color-white);
+  background: var(--color-error);
+}
+
+.rsc-caveat {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .rsc-card {
+    padding: var(--spacing-2);
+  }
+
+  .rsc-boat-th {
+    min-width: 38px;
+  }
+}

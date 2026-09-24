@@ -1,0 +1,130 @@
+/* NigeSimulationCard - 逃げシミュレーション（phase a FR-6、screens.md §3.1.4） */
+
+.nsc-card {
+  box-sizing: border-box;
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+  margin-top: var(--spacing-3);
+}
+
+.nsc-title {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.nsc-sub {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.nsc-section-label {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.nsc-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.nsc-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.nsc-course {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.nsc-track {
+  flex-grow: 1;
+  height: 16px;
+  background: var(--surface-page);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: block;
+  min-width: 40px;
+}
+
+.nsc-fill {
+  display: block;
+  height: 16px;
+  background: var(--brand-accent-primary);
+}
+
+.nsc-rate {
+  flex-shrink: 0;
+  width: 42px;
+  text-align: right;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.nsc-exacta {
+  flex-shrink: 0;
+  width: 70px;
+  text-align: right;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.nsc-detail-toggle {
+  margin-top: var(--spacing-2);
+  min-height: 44px;
+  padding: var(--spacing-1) 0;
+  background: none;
+  border: none;
+  color: var(--brand-accent-primary);
+  font-size: var(--font-size-xs);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nsc-detail {
+  margin-top: var(--spacing-1);
+  padding: var(--spacing-2);
+  background: var(--surface-page);
+  border-radius: var(--radius-sm);
+}
+
+.nsc-detail p {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.nsc-detail p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 480px) {
+  .nsc-card {
+    padding: var(--spacing-2);
+  }
+
+  .nsc-exacta {
+    width: 62px;
+  }
+}

@@ -480,7 +480,7 @@
     "noRacerId": "Racer information could not be loaded",
     "noRecentFinishes": "No race history from this lane",
     "fetchError": "Couldn't load the last 10 finishes. Please try again later",
-    "recentFinishesNote": "Finishes from the last 10 races in lane {{course}} (oldest on the left, newest on the right)",
+    "recentFinishesNote": "Last 10 starts from course {{course}} (the course actually taken)",
     "kimariteTitle": "Winning techniques (all boats, last 90 days)",
     "kimariteCaveat": "* Share of each winning technique across all races and boats at this venue (not an individual racer's record)",
     "gridTitle": "Record by course",
@@ -1400,5 +1400,38 @@
     "tipsHeading": "💡 How to Use This",
     "articleHeading": "📖 Related Article",
     "noticeHeading": "⚠️ Notes"
+  },
+  "stConsideration": {
+    "title": "Start timing",
+    "subtitle": "Lower figure is the gap from the average for the same course and class",
+    "window": "Period {{start}}-{{end}}",
+    "gradeRow": "Class",
+    "runsRow": "Starts",
+    "stable": "Consistent",
+    "breakout": "Break",
+    "late": "Slow",
+    "times": "{{n}}x",
+    "expectedTimes": "avg {{n}}",
+    "noInnerBoat": "no inner boat",
+    "flyingTitle": "{{n}} false start(s) this term. Resets when the term changes",
+    "caveat": "Green is better than the average for the same course and class, red is worse. Breaks are shown as a count, not a rate: they are rare from outer courses, so a rate would just show 0.0%. Course 1 has no inner boat, so it is not shown. False-start races are excluded from the denominator and shown as a badge instead. This is our own calculation."
+  },
+  "nigeSimulation": {
+    "title": "When course 1 leads from the start",
+    "sample": "{{nige}} wire-to-wire wins out of {{total}} finished races at this venue",
+    "secondCourse": "Course that finished 2nd",
+    "exacta": "Exacta {{value}}%",
+    "showDetail": "See how this is calculated",
+    "hideDetail": "Close",
+    "detailMethod": "A wire-to-wire win means the winning technique was nige and the winner actually started from course 1. The 2nd-place course is also the course actually taken.",
+    "detailWindow": "Period: {{start}}-{{end}} ({{days}} days)",
+    "detailNotPrediction": "This counts past results at this venue. It is not a prediction for this race."
+  },
+  "recentRuns": {
+    "older": "Older",
+    "newer": "Newer",
+    "flying": "F",
+    "stRank": "(#{{n}})",
+    "legend": "Top: course actually taken. Middle: finish. Bottom: start timing and its rank in that race"
   }
 }

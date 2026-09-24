@@ -478,7 +478,7 @@
     "noRacerId": "無法取得選手資訊",
     "noRecentFinishes": "沒有此艇號的出賽紀錄",
     "fetchError": "無法取得最近10場資料，請稍後再試",
-    "recentFinishesNote": "{{course}}號艇（艇號）最近10場的名次（左為最舊、右為最新）",
+    "recentFinishesNote": "從第{{course}}航道（實際進入的航道）出賽的最近10場",
     "kimariteTitle": "獲勝方式傾向（全艇・最近90天）",
     "kimariteCaveat": "※本場館所有比賽・所有艇合計的獲勝方式比例（非選手個人實績）",
     "gridTitle": "各航道成績",
@@ -1395,5 +1395,38 @@
     "tipsHeading": "💡 活用要點",
     "articleHeading": "📖 詳細解說文章",
     "noticeHeading": "⚠️ 注意事項"
+  },
+  "stConsideration": {
+    "title": "起跑分析",
+    "subtitle": "下方為與相同航道、相同級別平均值的差距",
+    "window": "統計期間 {{start}}〜{{end}}",
+    "gradeRow": "級別",
+    "runsRow": "出賽數",
+    "stable": "穩定率",
+    "breakout": "搶出率",
+    "late": "慢出率",
+    "times": "{{n}}次",
+    "expectedTimes": "平均{{n}}",
+    "noInnerBoat": "無內側艇",
+    "flyingTitle": "本期起步犯規{{n}}次。換期後歸零",
+    "caveat": "綠色表示優於相同航道、相同級別的平均，紅色表示較差。搶出在外側航道發生次數極少，以比例顯示會全是0.0%，因此改以次數呈現。第1航道無內側艇故不顯示。起步犯規的出賽已從分母排除，另以徽章標示。此為本服務的獨自統計。"
+  },
+  "nigeSimulation": {
+    "title": "第1航道逃脫時",
+    "sample": "本場地第1航道逃脫 {{nige}}場／已完賽 {{total}}場",
+    "secondCourse": "第2名的航道",
+    "exacta": "二連單 {{value}}%",
+    "showDetail": "查看詳細（計算方式・樣本數）",
+    "hideDetail": "關閉",
+    "detailMethod": "「第1航道逃脫」指決勝方式為逃且冠軍艇實際進入的航道為第1。第2名的航道同樣為實際進入的航道。",
+    "detailWindow": "統計期間：{{start}}〜{{end}}（{{days}}天）",
+    "detailNotPrediction": "此為本場地過往實績的統計，並非本場比賽的預測。"
+  },
+  "recentRuns": {
+    "older": "較舊",
+    "newer": "較新",
+    "flying": "F",
+    "stRank": "(第{{n}})",
+    "legend": "上排為實際進入的航道，中排為名次，下排為起跑時間與該場的起跑順位"
   }
 }
