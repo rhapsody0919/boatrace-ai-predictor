@@ -211,16 +211,16 @@ data-catalog.mdでは「必須・未対応」のままだったが、PR #751（�
 
 `scrape_job_state`でVercel側は`live`だが、GitHub Actions側の`SKIP_*_ON_GHA`が未設定で並走が続いているジョブについて、優先度順にLinearチケットを起票した（tasks.mdの該当タスクIDに対応。実際の停止操作＝GitHub側のリポジトリ変数設定は、外部サービスの設定変更のためユーザー自身が行う）。
 
-| 優先度 | チケット | ジョブ | tasks.md |
-|---|---|---|---|
-| 最高 | [BOA-394](https://linear.app/boat-ai/issue/BOA-394) | result | T4b-02-5 |
-| 高 | [BOA-395](https://linear.app/boat-ai/issue/BOA-395) | kfile_sync | T4b-05-3 |
-| 高 | [BOA-396](https://linear.app/boat-ai/issue/BOA-396) | races_init・pcexpect | T4b-07-8・T4b-08-4 |
-| 中 | [BOA-397](https://linear.app/boat-ai/issue/BOA-397) | point_rank | T4b-12-3 |
-| 中 | [BOA-401](https://linear.app/boat-ai/issue/BOA-401) | race_info（2026-09-24、shadow検証(一致率99.70%)を経てliveへ切替済み。残るはGHA停止のみ） | T4b-09-3 |
-| 中 | [BOA-399](https://linear.app/boat-ai/issue/BOA-399) | venue_motor_stats | T4b-14-2 |
-| 中 | [BOA-398](https://linear.app/boat-ai/issue/BOA-398) | entry_course_stats（2026-09-24、FR-3実施予定によりデータ取得は継続決定。他と同じGHA停止トラックへ合流） | T4b-13-3 |
-| 低 | [BOA-400](https://linear.app/boat-ai/issue/BOA-400) | racer_news | T4b-15-2 |
+| 優先度 | チケット | ジョブ | tasks.md | 状態（2026-09-24） |
+|---|---|---|---|---|
+| 最高 | [BOA-394](https://linear.app/boat-ai/issue/BOA-394) | result | T4b-02-5 | ✅ `SKIP_RESULTS_ON_GHA`設定済み |
+| 高 | [BOA-395](https://linear.app/boat-ai/issue/BOA-395) | kfile_sync | T4b-05-3 | ✅ `SKIP_KFILE_ON_GHA`設定済み |
+| 高 | [BOA-396](https://linear.app/boat-ai/issue/BOA-396) | races_init・pcexpect | T4b-07-8・T4b-08-4 | ✅ `SKIP_MORNING_INIT_ON_GHA`・`SKIP_PCEXPECT_ON_GHA`設定済み |
+| 中 | [BOA-397](https://linear.app/boat-ai/issue/BOA-397) | point_rank | T4b-12-3 | ✅ `SKIP_POINT_RANK_ON_GHA`設定済み |
+| 中 | [BOA-399](https://linear.app/boat-ai/issue/BOA-399) | venue_motor_stats | T4b-14-2 | ✅ `SKIP_MOTOR_STATS_ON_GHA`設定済み |
+| 中 | [BOA-400](https://linear.app/boat-ai/issue/BOA-400) | racer_news | T4b-15-2 | ✅ `SKIP_RACER_NEWS_ON_GHA`設定済み |
+| 中 | [BOA-398](https://linear.app/boat-ai/issue/BOA-398) | entry_course_stats（FR-3実施予定によりデータ取得は継続決定） | T4b-13-3 | 検証完了、`SKIP_ENTRY_COURSE_ON_GHA`設定待ち |
+| 中 | [BOA-401](https://linear.app/boat-ai/issue/BOA-401) | race_info（shadow検証(一致率99.70%)を経てliveへ切替済み） | T4b-09-3 | live直後のため様子見中、GHA停止は保留 |
 
 `pit_reports`・`boatcast_oriten`・`boatcast_motor_start`・`motor_pretest`は、旧GitHub Actions基盤に対応するジョブが元々無い新規データ項目のため、この一覧には含めない。
 
