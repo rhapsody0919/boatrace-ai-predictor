@@ -1,38 +1,31 @@
-/* RateWithBaseline - 率＋会場平均との比較バー（BOA-402）
+/* RateWithBaseline - 会場平均とこの選手の見込みの比較バー（BOA-402）
  *
  * 色は design-tokens.css の**意味トークン**を使う。バーの塗りだけは
  * 自前の背景（トラック）と組み合わせて常に読める配色にしているため、
  * ブランドのアクセント色をそのまま使ってよい（rules/component-reuse.md）。
  */
 
-.rate-baseline__headline {
+.rate-baseline__label {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 全国での実績。見込みの根拠なので、バーより一段弱い扱いにする */
+.rate-baseline__source {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 0.15rem 0.4rem;
-}
-
-.rate-baseline__label {
-  font-size: var(--font-size-2xs);
-  color: var(--text-secondary);
-  /* 見出しの率より先に読ませたいので、幅いっぱいで改行させる */
-  flex-basis: 100%;
-}
-
-.rate-baseline__value {
-  font-size: var(--font-size-6xl);
-  font-weight: 700;
-  line-height: 1.05;
-  color: var(--brand-accent-primary);
-}
-
-.rate-baseline__unit {
-  font-size: var(--font-size-lg);
-}
-
-.rate-baseline__runs {
+  margin: 0.4rem 0 0;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
+}
+
+.rate-baseline__source strong {
+  font-size: var(--font-size-lg);
+  color: var(--text-primary);
 }
 
 .rate-baseline__small-sample {
@@ -40,7 +33,6 @@
   border-radius: 4px;
   background: var(--surface-page);
   color: var(--text-primary);
-  font-size: var(--font-size-xs);
 }
 
 /* 比較バー（案2）
@@ -56,7 +48,7 @@
 
 .rate-baseline__bar-row {
   display: grid;
-  grid-template-columns: 5.5rem 1fr 3.2rem;
+  grid-template-columns: 4.8rem 1fr 4.4rem;
   align-items: center;
   gap: 0.4rem;
 }
@@ -75,6 +67,8 @@
   height: 0.55rem;
   border-radius: 999px;
   background: var(--surface-page);
+  /* トラックの外延をライト・ダーク両方で見せる。border だと行高が変わるので inset 影 */
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
   overflow: hidden;
 }
 
@@ -82,7 +76,9 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--ryujin-silver-300);
+  /* 会場平均側は意味トークン。生パレット（--ryujin-silver-300）だと
+     ライトモードで淡すぎて見えなかった（rules/component-reuse.md） */
+  background: var(--text-secondary);
 }
 
 .rate-baseline__bar-fill--emphasis {
@@ -97,8 +93,9 @@
 }
 
 .rate-baseline__bar-value--emphasis {
-  color: var(--text-primary);
+  font-size: var(--font-size-2xl);
   font-weight: 700;
+  color: var(--brand-accent-primary);
 }
 
 .rate-baseline__meta {
@@ -120,11 +117,7 @@
 }
 
 @media (max-width: 480px) {
-  .rate-baseline__value {
-    font-size: var(--font-size-5xl);
-  }
-
   .rate-baseline__bar-row {
-    grid-template-columns: 4.6rem 1fr 3rem;
+    grid-template-columns: 4.4rem 1fr 4.2rem;
   }
 }

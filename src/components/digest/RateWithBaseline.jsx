@@ -1,31 +1,35 @@
 /**
- * RateWithBaseline - 率＋会場平均との比較バー（BOA-402、screens.md C-4）
+ * RateWithBaseline - 会場平均とこの選手の見込みの比較バー（BOA-402、screens.md C-4）
  *
  * 逃げ／まくり／逃がしの3セクションで使い回す。
  *
- * ## なぜ「率」だけを出さないか（ADR-0071）
+ * ## なぜ数値が2つ要るか（ADR-0071）
  *
- * 会場によって逃げ率は20.3pt、グレードによって11.1pt開く。率をそのまま出すと
- * 「戸田での70%」と「尼崎での70%」が同じに見えてしまう。そこで会場・級別で
- * 補正した差分を求め、本日の会場・グレードのベースラインに足した「この選手」の
- * 見込みを併記する。
+ * 会場によって逃げ率は20.3pt、グレードによって11.1pt開く。実績率をそのまま出すと
+ * 「戸田での70%」と「尼崎での70%」が同じに見える。そこで
+ *   - 全国での実績率（その選手が走った全会場ぶん）
+ *   - 本日の会場・級別での見込み（会場・級別の平均 + 会場構成で補正した差分）
+ * の2つを出す。実測（`morning_digest_rows` 3日分の逃げ75行）で両者の差は平均4.3pt・
+ * 最大15.3pt あり、**戸田1Rの上野真之介は全国実績78.9%（57走）に対し戸田での見込み
+ * 63.7%**（戸田の平均が39.5%しかないため）。競合は前者しか出さないので、この差が
+ * このページの価値そのものであり、片方だけにはできない。
  *
- * ## 差分を数値で出さない（2026-09-24、ユーザー指摘で改訂）
+ * ## 「88.2%と90.1%は何が違うのか」への対処（2026-09-24、ユーザー指摘で再改訂）
  *
- * 当初は「地力 +36.6pt ▲」「津での予測 90.1%」と数値を2つ足していたが、
- * 実物を見て次の指摘を受けた。
- *   - 「地力」はボートレースでは普通「勝率・実力」の意味で、この指標名として通じない
- *   - 「pt」は得点率のポイントと読まれる
- *   - 同じ%の数字が2つ（実績88.2%／予測90.1%）並び、どちらを見ればよいか分からない
- * そこで**差分の数値と「地力」という語をUIから消し**、「会場の平均」→「この選手」の
- * 2本のバーで見せる（案2）。差分そのものは抽出・並び替えの内部計算には引き続き使う。
- * 「数値の羅列ではなくグラフ化することが本質」という既存の方針にも沿う。
+ * 当初は「地力 +36.6pt」というバッジで差分を数値で出し、指摘を受けて会場平均との
+ * 比較バーに替えた。それでもなお「逃げ率88.2%」と「この選手90.1%」が何故違うのか
+ * 分からない、という指摘が残った。原因は**どちらも「率」としか書いておらず、対象範囲
+ * （全国なのか、この会場なのか）が示されていない**こと。そこで
+ *   - 見出しを「◯◯での逃げ率（1コース）」とし、**バー2本が会場の話だと明示する**
+ *   - バーは「◯◯の平均」と「この選手」の2本だけにする（同じ土俵の2値）
+ *   - 全国での実績率は**バーから外し、根拠の1行**として下に置く
+ * とした。「全国では88.2%、津なら90.1%」と読める形にするのが狙い。
  *
  * ## 母数は折りたたんでも隠さない
  *
- * 34走の88%と9走の88%は別物で、母数が見えない率は信用度を判断できない。
- * 母数と小標本の注意は `expanded=false` でも常に出す。確からしさの下限
- * （Wilson95%下限、plan.md §2.3.1）と直近90日だけを畳む。
+ * 34走の88%と9走の88%は別物で、母数の見えない率は信用度を判断できない。
+ * 母数は根拠行に常に出す。畳むのは確からしさの下限（Wilson95%下限、plan.md §2.3.1）と
+ * 直近90日だけ。
  */
 import "./RateWithBaseline.css";
 
@@ -63,39 +67,41 @@ function RateWithBaseline({
   venueBaseline = null,
   expanded = true,
 }) {
+  const hasPredicted = predicted !== null && predicted !== undefined;
+
   return (
     <div className="rate-baseline">
-      <div className="rate-baseline__headline">
-        <span className="rate-baseline__label">{label}</span>
-        <span className="rate-baseline__value">
-          {Number(rate).toFixed(1)}
-          <span className="rate-baseline__unit">%</span>
-        </span>
-        {/* 母数は畳まない（率の信用度を判断できなくなるため） */}
-        <span className="rate-baseline__runs">（{sampleSize}走）</span>
-        {isSmallSample && (
-          <span className="rate-baseline__small-sample">
-            ⚠ 母数が少なく振れ幅が大きい
-          </span>
-        )}
-      </div>
+      {/* 「◯◯での」を見出しに出すことで、下のバー2本が会場の話だと分かるようにする */}
+      <p className="rate-baseline__label">
+        {venueName}での{label}
+      </p>
 
-      {(venueBaseline !== null || predicted !== null) && (
+      {(venueBaseline !== null || hasPredicted) && (
         <div className="rate-baseline__bars">
           {venueBaseline !== null && (
             <RateBar label={`${venueName}の平均`} value={venueBaseline} />
           )}
-          {predicted !== null && predicted !== undefined && (
+          {hasPredicted && (
             <RateBar label="この選手" value={predicted} emphasis />
           )}
         </div>
       )}
 
+      {/* 全国での実績は「見込みの根拠」。バーに混ぜると同じ土俵の値に見えてしまう */}
+      <p className="rate-baseline__source">
+        全国{sampleSize}走の実績は <strong>{Number(rate).toFixed(1)}%</strong>
+        {isSmallSample && (
+          <span className="rate-baseline__small-sample">
+            ⚠ 母数が少なく振れ幅が大きい
+          </span>
+        )}
+      </p>
+
       {expanded && (
         <div className="rate-baseline__meta">
           {wilsonLower !== null && (
             <span
-              title="この母数だと、真の率は95%の確からしさでこの値以上と言える"
+              title="この母数だと、全国での実績の真の率は95%の確からしさでこの値以上と言える"
               className="rate-baseline__wilson"
             >
               信頼下限 {Number(wilsonLower).toFixed(1)}%

@@ -172,7 +172,7 @@ function MorningDataDigest() {
 
             <DigestSection
               title="逃げが堅い選手"
-              description="1号艇の選手が、1コースに入ったときに逃げ切った割合が70%以上"
+              description="全国での実績で、1号艇の選手が1コースに入ったときに逃げ切った割合が70%以上。会場ごとの見込みは、その会場・級別の平均をもとに算出しています（実績より低くなることもあります）"
               count={sections.nige?.length ?? 0}
               total={day?.notes?.sectionCounts?.nigeCandidates ?? null}
             >
@@ -205,7 +205,7 @@ function MorningDataDigest() {
 
             <DigestSection
               title="まくりが利く選手"
-              description="その選手がそのコースに入ったときに、まくりで1着になった割合が25%以上"
+              description="全国での実績で、その選手がそのコースに入ったときに、まくりで1着になった割合が25%以上"
               count={sections.makuri?.length ?? 0}
               notice="まくりは全国平均が4〜5%とまれな決まり手のため、該当が0件の日もあります。"
             >
@@ -238,7 +238,7 @@ function MorningDataDigest() {
 
             <DigestSection
               title="逃がしやすい選手"
-              description="1号艇に逃げ切られる割合が、会場と級別の構成から期待される水準を22ポイント以上上回る"
+              description="全国での実績で、1号艇に逃げ切られる割合が、会場と級別の構成から期待される水準を22ポイント以上上回る"
               count={sections.nigashi?.length ?? 0}
             >
               <DigestCardGrid rows={sections.nigashi ?? []}>
@@ -295,17 +295,26 @@ function MorningDataDigest() {
             <section className="morning-digest__notes">
               <h2 className="morning-digest__notes-title">このページの見方</h2>
               <dl className="morning-digest__notes-list">
+                <dt>全国◯走の実績</dt>
+                <dd>
+                  その選手が全国のどの会場で走ったぶんも合わせた、実際の率。
+                  競合サイトが出しているのはこの数値です。ただし会場によって逃げ率は20ポイント、
+                  グレードによって11ポイント違うため、この数値だけでは
+                  「戸田での70%」と「尼崎での70%」が同じに見えてしまいます。
+                </dd>
                 <dt>◯◯の平均</dt>
                 <dd>
                   本日の会場・グレードで、全選手を通した平均の率。比べるときの基準線です。
-                  会場によって逃げ率は20ポイント、グレードによって11ポイント違うため、
-                  率をそのまま並べても比べられません。
                 </dd>
-                <dt>この選手</dt>
+                <dt>この選手（バーの下段）</dt>
                 <dd>
-                  選手の実績率から「その選手が走ってきた会場・グレードなら普通このくらい」という
+                  全国での実績から「その選手が走ってきた会場・グレードなら普通このくらい」という
                   水準を引き、本日の会場・グレードの平均に足し直した値。
-                  会場の有利不利を除いたうえで、このレースで起きやすいことの目安です。
+                  <strong>
+                    全国での実績と違う数値になるのは、本日の会場が平均より逃げやすい（逃げにくい）ためです。
+                  </strong>
+                  たとえば戸田は1コースの平均が39.5%と全国で最も低いため、全国実績78.9%の選手でも
+                  戸田での見込みは63.7%になります。
                 </dd>
                 <dt>信頼下限</dt>
                 <dd>

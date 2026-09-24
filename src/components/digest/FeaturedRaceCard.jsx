@@ -63,23 +63,26 @@ function FeaturedRaceCard({ row }) {
 
         <div className="featured-race__stats">
           <div className="featured-race__stat">
+            {/* 大きく出すのは「この会場での見込み」。全国での実績はその根拠として下に置く
+                （2026-09-24、RateWithBaseline と同じ改訂。「2つの%が何故違うのか
+                分からない」という指摘への対応で、対象範囲をラベルに明示する） */}
             <span className="featured-race__stat-label">
-              {metricLabel}（{row.course}コース・{row.sample_size}走）
+              {venueName}での{metricLabel}（{row.course}コース）
             </span>
             <span className="featured-race__stat-value">
-              {Number(row.metric_value).toFixed(1)}
+              {Number(row.metric_predicted ?? row.metric_value).toFixed(1)}
               <span className="featured-race__stat-unit">%</span>
             </span>
-            {/* 「地力 +33.2pt」は通じないため、会場平均→この選手の2点で見せる
-                （2026-09-24、RateWithBaseline と同じ改訂） */}
-            {row.metric_venue_baseline !== null &&
-              row.metric_predicted !== null && (
-                <span className="featured-race__stat-sub">
+            <span className="featured-race__stat-sub">
+              {row.metric_venue_baseline !== null && (
+                <>
                   {venueName}の平均{" "}
-                  {Number(row.metric_venue_baseline).toFixed(1)}% → この選手{" "}
-                  <strong>{Number(row.metric_predicted).toFixed(1)}%</strong>
-                </span>
+                  {Number(row.metric_venue_baseline).toFixed(1)}%／
+                </>
               )}
+              全国{row.sample_size}走の実績{" "}
+              {Number(row.metric_value).toFixed(1)}%
+            </span>
           </div>
           {row.volatility_percentile !== null && (
             <div className="featured-race__stat">
