@@ -27,3 +27,6 @@ export { default as RacePitReportSection } from "./RacePitReportSection";
 export { default as RaceAiPredictionTab } from "./RaceAiPredictionTab";
 export { default as RaceHistoryTable } from "./RaceHistoryTable";
 export { GRADE_LABELS } from "./raceGradeLabels";
+export { default as RaceStConsiderationCard } from "./RaceStConsiderationCard";
+export { default as NigeSimulationCard } from "./NigeSimulationCard";
+export { default as RecentRunsBar } from "./RecentRunsBar";

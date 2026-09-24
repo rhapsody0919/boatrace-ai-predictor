@@ -275,3 +275,288 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* --- コース別成績グリッド（phase a FR-1 / T3-1、screens.md §3.1.1） ---
+   行＝期間・条件、列＝実進入コース1〜6。共通コンポーネントには切り出していない
+   （使う箇所が1つのため。spec.md FR-0）。
+   横スクロールはこのラッパの中だけに閉じ、ページ全体は横スクロールさせない。 */
+.rwit-grid-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 calc(var(--spacing-1) * -1);
+  padding: 0 var(--spacing-1);
+}
+
+.rwit-grid {
+  width: 100%;
+  min-width: 320px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* 行ラベル列は横スクロールしても残す */
+.rwit-grid-label-th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface-card);
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding: var(--spacing-1) var(--spacing-2) var(--spacing-1) 0;
+  white-space: nowrap;
+}
+
+.rwit-grid-course-th {
+  padding: var(--spacing-1) 0;
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  min-width: 42px;
+}
+
+.rwit-grid-cell {
+  padding: 1px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.rwit-grid-cell-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--spacing-1) 2px;
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.rwit-grid-cell.is-open .rwit-grid-cell-button {
+  border-color: var(--brand-accent-primary);
+}
+
+/* 今日その選手が入る枠のコース。金の細い縁で示す（強調は1段階だけ） */
+.rwit-grid-cell.is-own-course .rwit-grid-cell-button {
+  box-shadow: inset 0 0 0 1px var(--brand-accent-primary);
+}
+
+.rwit-grid-value {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.rwit-grid-value.is-small-sample,
+.rwit-grid-n.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+.rwit-grid-warn {
+  margin-right: 1px;
+  font-size: var(--font-size-xs);
+}
+
+.rwit-grid-n {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.1;
+}
+
+.rwit-grid-empty {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .rwit-grid-course-th {
+    min-width: 38px;
+  }
+
+  .rwit-grid-cell-button {
+    padding: var(--spacing-1) 1px;
+  }
+}
+
+/* 指標チップはカード内に置く（この選択はこのグリッドだけに効く。2026-09-24） */
+.rwit-metric-row {
+  margin-top: var(--spacing-1);
+  margin-bottom: var(--spacing-2);
+}
+
+/* 今日その選手が入る枠の列を明示する。艇番の下に小さく印を出す */
+.rwit-grid-course-th.is-today {
+  box-shadow: inset 0 0 0 2px var(--brand-accent-primary);
+}
+
+.rwit-today-mark {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  line-height: 1.1;
+  opacity: 0.85;
+}
+
+/* ---- 既定ビュー：今日の想定進入コース1本 × 3指標（2026-09-24再設計） ----
+   6コース×1指標の表を折りたたみに追いやり、既定はこちらにした。列が1本に
+   なって横幅が余るので1着率・2連対率・3連対率を同時に出せる。横スクロールも
+   要らなくなるため .rwit-grid-wrapper のようなラッパは使わない */
+.rwit-today-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1);
+  margin: var(--spacing-1) 0 0;
+}
+
+.rwit-today-course {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}
+
+.rwit-today-assumption,
+.rwit-waku-nari {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rwit-waku-nari {
+  margin: 2px 0 var(--spacing-2);
+}
+
+.rwit-today-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rwit-today-label-th {
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  padding: 0;
+}
+
+/* 見出し行だけは上下に余白を持たせる（.rwit-today-label-th は本文側の
+   行ラベルと共用で padding:0 のため、見出しの「期間・条件」が詰まる） */
+thead .rwit-today-label-th {
+  padding: var(--spacing-1) 0;
+}
+
+/* 見出しは折り返させる。nowrapにすると英語（"1st-place rate" 等）で表が
+   390pxを超え、ページ全体が21px横スクロールした（レビュー指摘の「未確認」
+   項目を実測して確認、2026-09-24）。数値セル側は nowrap のままにする */
+.rwit-today-metric-th,
+.rwit-today-n-th {
+  text-align: right;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  padding: var(--spacing-1) 0 var(--spacing-1) var(--spacing-2);
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+
+.rwit-today-row + .rwit-today-row .rwit-today-label-th,
+.rwit-today-row + .rwit-today-row .rwit-today-metric-td,
+.rwit-today-row + .rwit-today-row .rwit-today-n-td {
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+/* 行ごと押せる見た目にはせず、行ラベルだけをボタンにする。表の数字の上に
+   ボタンの枠が重なると数字が読みにくくなるため（モバイル390px） */
+.rwit-today-label-button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--spacing-1) var(--spacing-1) var(--spacing-1) 0;
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
+  color: var(--brand-accent-primary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.rwit-today-label-static {
+  display: block;
+  min-height: 44px;
+  line-height: 44px;
+  color: var(--text-secondary);
+}
+
+.rwit-today-row.is-open .rwit-today-label-button {
+  font-weight: var(--font-weight-bold);
+  text-decoration-style: solid;
+}
+
+.rwit-today-metric-td,
+.rwit-today-n-td {
+  text-align: right;
+  padding: var(--spacing-1) 0 var(--spacing-1) var(--spacing-2);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.rwit-today-value {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rwit-today-value.is-small-sample,
+.rwit-today-n-td.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+.rwit-today-n-td {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rwit-today-empty {
+  color: var(--text-secondary);
+}
+
+/* 全コース比較の折りたたみ。既定で開かないのは、今日のコースが埋もれるのを
+   防ぐため（進入変化を気にする層は確実に自分で開く） */
+.rwit-fold {
+  margin-top: var(--spacing-3);
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  padding-top: var(--spacing-2);
+}
+
+/* native <summary> ではなく <button>。<details> は取得待ちの分岐の中にあり、
+   選手切替で再マウントされて開閉状態が失われるため（ST考察カードの
+   .rsc-fold-toggle と同じ制御方式に揃えた） */
+.rwit-fold-summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--brand-accent-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.rwit-fold-body {
+  padding-top: var(--spacing-1);
+}

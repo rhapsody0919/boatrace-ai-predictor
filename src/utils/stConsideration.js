@@ -201,3 +201,61 @@ export function computeStConsideration(rows, { course }) {
     flyingCount,
   };
 }
+
+/**
+ * `st_course_baseline.st_histogram` と同じビン（0.05刻み）のキー。
+ * ベースラインと選手の分布を同じ軸で重ねるため、ビンの定義を1箇所に持つ。
+ */
+export const ST_HISTOGRAM_BINS = [
+  "0.00",
+  "0.05",
+  "0.10",
+  "0.15",
+  "0.20",
+  "0.25",
+  "0.30+",
+];
+
+/** STがどのビンに入るかを返す（ベースラインのSQLと同じ境界） */
+function binOf(st) {
+  if (st < 0.05) return "0.00";
+  if (st < 0.1) return "0.05";
+  if (st < 0.15) return "0.10";
+  if (st < 0.2) return "0.15";
+  if (st < 0.25) return "0.20";
+  if (st < 0.3) return "0.25";
+  return "0.30+";
+}
+
+/**
+ * 選手の指定コースでのST分布を、ベースラインと同じビンで数える（純関数）。
+ *
+ * Fの走は数えない（`stForRank` が null になっているため自然に落ちる）。
+ * ビンの合計は `computeStConsideration` の `n` と一致する。
+ *
+ * @param {Array<Object>} rows `getRacerScopedRaceStats` の戻り値
+ * @param {{course: number}} options
+ * @returns {{total: number, bins: Record<string, number>}}
+ */
+export function computeStHistogram(rows, { course }) {
+  const bins = Object.fromEntries(ST_HISTOGRAM_BINS.map((b) => [b, 0]));
+  let total = 0;
+  for (const r of Array.isArray(rows) ? rows : []) {
+    if (r.actualCourse !== course) continue;
+    if (r.stForRank === null || r.stForRank === undefined) continue;
+    bins[binOf(Number(r.stForRank))] += 1;
+    total += 1;
+  }
+  return { total, bins };
+}
+
+/**
+ * 選手の指定コースでの全走を、新しい順に返す（ST履歴の一覧用）。
+ * Fの走も含める（`isFlying` で画面が「F」と出す）。
+ */
+export function getStHistory(rows, { course }) {
+  return (Array.isArray(rows) ? rows : [])
+    .filter((r) => r.actualCourse === course)
+    .slice()
+    .reverse();
+}

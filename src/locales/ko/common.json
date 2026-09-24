@@ -459,7 +459,7 @@
     "oddsList": "오즈 일람"
   },
   "wakuInfo": {
-    "note": "선수를 선택하면 해당 선수의 번호(1〜6)별 성적을 비교할 수 있습니다. 막대를 누르면 최근 10경기 착순이 열립니다",
+    "note": "선수를 선택하면 그 선수가 오늘 들어갈 예상 코스의 성적을 기간·조건별로 비교할 수 있습니다. 왼쪽의 기간 이름을 누르면 해당 코스의 최근 10주 착순이 열립니다. 전체 6개 코스 비교는 표 아래 접힌 영역에서 열 수 있습니다.",
     "boatLabel": "선수(번호)",
     "metricLabel": "지표",
     "metrics": {
@@ -467,20 +467,37 @@
       "top2Rate": "2연대율",
       "top3Rate": "3연대율"
     },
-    "courseTitle": "번호별 성적",
-    "courseSubtitle": "전국・전 기간 실적(출주 시 번호 기준)",
-    "courseCaveat": "※실제 진입 코스 변화(전진 배치)는 구분할 수 없어 출주 시의 번호로 집계했습니다. 성적은 예상 생성 시점의 집계값, 최근 10경기는 최신 데이터라 건수가 다소 다를 수 있습니다",
     "loading": "불러오는 중...",
     "sampleCount": "(n={{n}})",
     "outOfPlace": "착외",
     "todayBadge": "이번 경주 번호",
     "noData": "데이터가 없습니다",
-    "noRacerId": "선수 정보를 가져오지 못했습니다",
     "noRecentFinishes": "이 번호로 출주한 이력이 없습니다",
     "fetchError": "최근 10경기를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요",
-    "recentFinishesNote": "{{course}}번 출주 시 최근 10경기 착순(왼쪽이 가장 오래됨, 오른쪽이 최신)",
+    "recentFinishesNote": "{{course}}코스(실제로 진입한 코스)에서 출주한 최근 10경기",
     "kimariteTitle": "결정수 경향(전 선수・최근 90일)",
-    "kimariteCaveat": "※이 경기장의 모든 경주・모든 선수를 합산한 결정수 비율입니다(선수 개인의 실적이 아닙니다)"
+    "kimariteCaveat": "※이 경기장의 모든 경주・모든 선수를 합산한 결정수 비율입니다(선수 개인의 실적이 아닙니다)",
+    "gridTitle": "코스별 성적",
+    "gridSubtitle": "실제 진입 코스 기준. 셀을 누르면 해당 코스의 최근 10주가 열립니다",
+    "gridCaveat": "코스는 실제로 진입한 코스이며 정번호가 아닙니다. 데이터가 없는 경주는 제외했습니다",
+    "gridRows": {
+      "current": "이번 기",
+      "last3m": "최근 3개월",
+      "last1m": "최근 1개월",
+      "local": "당지",
+      "ippan": "일반전",
+      "sgg1": "SG・G1"
+    },
+    "smallSampleTitle": "표본이 적어 참고값입니다",
+    "gridTitleWithMetric": "코스별 성적: {{metric}}",
+    "todayMark": "오늘",
+    "todayCourseHeading": "오늘의 예상 진입: {{course}}코스",
+    "wakuNariAssumption": "※정해진 레인대로 진입할 경우",
+    "wakuNariRate": "이 선수가 정해진 레인대로 진입한 비율은 {{rate}}%입니다(최근 {{n}}주)",
+    "periodHeader": "기간·조건",
+    "nHeader": "주수",
+    "allCoursesFold": "전체 6개 코스 성적 보기",
+    "periodCaveat": "※'금기'는 공식 기 구분이 아니라 당사 데이터로 확인할 수 있는 전체 기간(최대 과거 2년)을 대상으로 합니다. 공식 사이트의 승률과는 모집단이 다릅니다."
   },
   "aiPredictionTab": {
     "unavailableTitle": "AI 예상 데이터가 없습니다",
@@ -1382,5 +1399,51 @@
     "tipsHeading": "💡 활용 포인트",
     "articleHeading": "📖 자세한 해설 기사",
     "noticeHeading": "⚠️ 주의사항"
+  },
+  "stConsideration": {
+    "title": "ST 고찰",
+    "subtitle": "아래는 같은 코스·같은 급별 평균과의 차이",
+    "window": "집계 기간 {{start}}〜{{end}}",
+    "gradeRow": "급별",
+    "runsRow": "출주수",
+    "stable": "안정률",
+    "breakout": "추출",
+    "late": "출발지연률",
+    "times": "{{n}}회",
+    "expectedTimes": "평균{{n}}",
+    "noInnerBoat": "안쪽 없음",
+    "flyingTitle": "이번 기의 플라잉 {{n}}회. 기가 바뀌면 0으로 돌아갑니다",
+    "caveat": "초록은 같은 코스·같은 급별 평균보다 좋음, 빨강은 나쁨. 추출은 바깥 코스일수록 발생 횟수가 적어 비율로 하면 0.0%만 나열되므로 횟수로 표시합니다. 1코스는 안쪽에 艇이 없어 표시하지 않습니다. 플라잉 경주는 모수에서 제외하고 배지로 따로 표시합니다. 본 서비스의 독자 집계입니다.",
+    "histogramTitle": "ST 분포",
+    "historyTitle": "ST 이력",
+    "histogramNote": "{{grade}}로 {{course}}코스에서의 {{n}}주／연한 막대＝같은 코스·같은 급별 평균({{baselineN}}주)",
+    "histogramLegend": "가로축은 ST(0.05 단위). 진한 막대가 이 선수, 연한 막대가 같은 코스·같은 급별 평균입니다. 둘 다 비율로 환산해 겹쳤습니다(모수 차이가 커서 횟수로는 비교할 수 없습니다)",
+    "histogramOwnTitle": "이 선수 {{pct}}%({{n}}주)",
+    "histogramBaseTitle": "같은 코스·같은 급별 평균 {{pct}}%",
+    "historyNote": "{{course}}코스에서 출주한 전체 {{n}}주(최신순)",
+    "histDate": "날짜",
+    "histVenue": "경기장",
+    "histSt": "ST",
+    "histStRank": "ST순위",
+    "histRank": "착순",
+    "average": "평균{{value}}"
+  },
+  "nigeSimulation": {
+    "title": "1코스가 도망쳤을 때",
+    "sample": "이 경기장의 1코스 도주 {{nige}}경주／결과 확정 {{total}}경주",
+    "secondCourse": "2착에 들어온 코스",
+    "exacta": "쌍승 {{value}}%",
+    "showDetail": "자세히 보기(산출 방법·모수)",
+    "hideDetail": "닫기",
+    "detailMethod": "「1코스가 도망쳤다」는 결정타가 도주이고 1착 艇이 실제로 진입한 코스가 1인 경우입니다. 2착 코스도 실제 진입 코스입니다.",
+    "detailWindow": "집계 기간: {{start}}〜{{end}}({{days}}일)",
+    "detailNotPrediction": "이 경기장의 과거 실적을 집계한 것이며, 이번 경주의 예상이 아닙니다."
+  },
+  "recentRuns": {
+    "older": "오래됨",
+    "newer": "최근",
+    "flying": "F",
+    "stRank": "({{n}}위)",
+    "legend": "위는 실제 진입 코스, 가운데는 착순, 아래는 ST와 그 경주에서의 ST 순위"
   }
 }
