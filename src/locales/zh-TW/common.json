@@ -465,7 +465,7 @@
     "result": "結果"
   },
   "wakuInfo": {
-    "note": "選擇選手後，可比較該選手各艇號（1〜6）的成績。點選長條即可展開最近10場的名次",
+    "note": "選擇選手後，可依期間與條件比較該選手在本日預想航道的成績。點擊左側的期間名稱，可展開該航道最近10次的名次。全部6條航道的比較請從表格下方的摺疊區開啟。",
     "boatLabel": "選手（艇號）",
     "metricLabel": "指標",
     "metrics": {
@@ -473,20 +473,37 @@
       "top2Rate": "連對率",
       "top3Rate": "前三名率"
     },
-    "courseTitle": "各艇號成績",
-    "courseSubtitle": "全國・全期間實績（以出賽時的艇號為準）",
-    "courseCaveat": "※無法區分實際進場航道的變化（前置），因此以出賽時的艇號統計。成績為產生預測當下的統計值，最近10場則為最新資料，場次可能略有出入",
     "loading": "載入中...",
     "sampleCount": "(n={{n}})",
     "outOfPlace": "外",
     "todayBadge": "本場艇號",
     "noData": "沒有資料",
-    "noRacerId": "無法取得選手資訊",
     "noRecentFinishes": "沒有此艇號的出賽紀錄",
     "fetchError": "無法取得最近10場資料，請稍後再試",
-    "recentFinishesNote": "{{course}}號艇（艇號）最近10場的名次（左為最舊、右為最新）",
+    "recentFinishesNote": "從第{{course}}航道（實際進入的航道）出賽的最近10場",
     "kimariteTitle": "獲勝方式傾向（全艇・最近90天）",
-    "kimariteCaveat": "※本場館所有比賽・所有艇合計的獲勝方式比例（非選手個人實績）"
+    "kimariteCaveat": "※本場館所有比賽・所有艇合計的獲勝方式比例（非選手個人實績）",
+    "gridTitle": "各航道成績",
+    "gridSubtitle": "以實際進入的航道為準。點擊儲存格可查看該航道最近10次出賽",
+    "gridCaveat": "航道指起跑時實際進入的航道，而非艇號。未取得資料的賽事已排除",
+    "gridRows": {
+      "current": "本期",
+      "last3m": "近3個月",
+      "last1m": "近1個月",
+      "local": "本場地",
+      "ippan": "一般賽",
+      "sgg1": "SG・G1"
+    },
+    "smallSampleTitle": "樣本數少，僅供參考",
+    "gridTitleWithMetric": "各航道成績：{{metric}}",
+    "todayMark": "本場",
+    "todayCourseHeading": "本日預想進入：{{course}}航道",
+    "wakuNariAssumption": "※以依艇號進入為前提",
+    "wakuNariRate": "此選手依艇號進入的比率為{{rate}}％（最近{{n}}次出賽）",
+    "periodHeader": "期間・條件",
+    "nHeader": "出賽數",
+    "allCoursesFold": "查看全部6條航道的成績",
+    "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（最多過去2年）。與官方網站的勝率母體不同。"
   },
   "aiPredictionTab": {
     "unavailableTitle": "尚無AI預測資料",
@@ -1430,5 +1447,51 @@
     "tipsHeading": "💡 活用要點",
     "articleHeading": "📖 詳細解說文章",
     "noticeHeading": "⚠️ 注意事項"
+  },
+  "stConsideration": {
+    "title": "起跑分析",
+    "subtitle": "下方為與相同航道、相同級別平均值的差距",
+    "window": "統計期間 {{start}}〜{{end}}",
+    "gradeRow": "級別",
+    "runsRow": "出賽數",
+    "stable": "穩定率",
+    "breakout": "搶出率",
+    "late": "慢出率",
+    "times": "{{n}}次",
+    "expectedTimes": "平均{{n}}",
+    "noInnerBoat": "無內側艇",
+    "flyingTitle": "本期起步犯規{{n}}次。換期後歸零",
+    "caveat": "綠色表示優於相同航道、相同級別的平均，紅色表示較差。搶出在外側航道發生次數極少，以比例顯示會全是0.0%，因此改以次數呈現。第1航道無內側艇故不顯示。起步犯規的出賽已從分母排除，另以徽章標示。此為本服務的獨自統計。",
+    "histogramTitle": "ST分布",
+    "historyTitle": "ST歷史",
+    "histogramNote": "以{{grade}}在第{{course}}航道的{{n}}場／淺色長條＝相同航道、相同級別的平均（{{baselineN}}場）",
+    "histogramLegend": "橫軸為起跑時間（0.05為一級）。深色為本選手，淺色為相同航道、相同級別的平均。兩者皆換算為比例後疊合（樣本數差距過大，無法以場次直接比較）",
+    "histogramOwnTitle": "本選手 {{pct}}%（{{n}}場）",
+    "histogramBaseTitle": "相同航道、相同級別的平均 {{pct}}%",
+    "historyNote": "從第{{course}}航道出賽的全部{{n}}場（由新至舊）",
+    "histDate": "日期",
+    "histVenue": "場地",
+    "histSt": "ST",
+    "histStRank": "ST順位",
+    "histRank": "名次",
+    "average": "平均{{value}}"
+  },
+  "nigeSimulation": {
+    "title": "第1航道逃脫時",
+    "sample": "本場地第1航道逃脫 {{nige}}場／已完賽 {{total}}場",
+    "secondCourse": "第2名的航道",
+    "exacta": "二連單 {{value}}%",
+    "showDetail": "查看詳細（計算方式・樣本數）",
+    "hideDetail": "關閉",
+    "detailMethod": "「第1航道逃脫」指決勝方式為逃且冠軍艇實際進入的航道為第1。第2名的航道同樣為實際進入的航道。",
+    "detailWindow": "統計期間：{{start}}〜{{end}}（{{days}}天）",
+    "detailNotPrediction": "此為本場地過往實績的統計，並非本場比賽的預測。"
+  },
+  "recentRuns": {
+    "older": "較舊",
+    "newer": "較新",
+    "flying": "F",
+    "stRank": "(第{{n}})",
+    "legend": "上排為實際進入的航道，中排為名次，下排為起跑時間與該場的起跑順位"
   }
 }

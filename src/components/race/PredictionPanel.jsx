@@ -335,7 +335,6 @@ function PredictionPanel({
               label: t("raceTabs.waku"),
               content: (
                 <RaceWakuInfoTab
-                  raceId={analysisRaceId}
                   venueCode={venueCode}
                   players={prediction.allPlayers}
                 />

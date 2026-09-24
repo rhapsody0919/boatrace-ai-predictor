@@ -467,7 +467,7 @@
     "result": "Result"
   },
   "wakuInfo": {
-    "note": "Pick a racer to compare their record by starting lane (1-6). Tap a bar to see their last 10 finishes from that lane",
+    "note": "Pick a racer to compare their record in today's expected course across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses.",
     "boatLabel": "Racer (boat #)",
     "metricLabel": "Metric",
     "metrics": {
@@ -475,20 +475,37 @@
       "top2Rate": "Top-2 rate",
       "top3Rate": "Top-3 rate"
     },
-    "courseTitle": "Record by lane",
-    "courseSubtitle": "All venues, all periods (by boat number at race time)",
-    "courseCaveat": "* Actual entry-course changes can't be distinguished, so results are grouped by the boat number the racer had in each race. Rates are a snapshot from when the prediction was generated while the last 10 finishes use the latest data, so counts may differ slightly",
     "loading": "Loading...",
     "sampleCount": "(n={{n}})",
     "outOfPlace": "DNF",
     "todayBadge": "This race's lane",
     "noData": "No data available",
-    "noRacerId": "Racer information could not be loaded",
     "noRecentFinishes": "No race history from this lane",
     "fetchError": "Couldn't load the last 10 finishes. Please try again later",
-    "recentFinishesNote": "Finishes from the last 10 races in lane {{course}} (oldest on the left, newest on the right)",
+    "recentFinishesNote": "Last 10 starts from course {{course}} (the course actually taken)",
     "kimariteTitle": "Winning techniques (all boats, last 90 days)",
-    "kimariteCaveat": "* Share of each winning technique across all races and boats at this venue (not an individual racer's record)"
+    "kimariteCaveat": "* Share of each winning technique across all races and boats at this venue (not an individual racer's record)",
+    "gridTitle": "Record by course",
+    "gridSubtitle": "Based on the course actually taken. Tap a cell to see the last 10 starts from that course",
+    "gridCaveat": "Course means the lane actually taken at the start, not the boat number. Races without this data are excluded",
+    "gridRows": {
+      "current": "This term",
+      "last3m": "Last 3 months",
+      "last1m": "Last month",
+      "local": "This venue",
+      "ippan": "General",
+      "sgg1": "SG/G1"
+    },
+    "smallSampleTitle": "Small sample; treat as a rough guide",
+    "gridTitleWithMetric": "Record by course: {{metric}}",
+    "todayMark": "today",
+    "todayCourseHeading": "Today's expected start: course {{course}}",
+    "wakuNariAssumption": "assuming a straight start from the assigned lane",
+    "wakuNariRate": "This racer starts from the assigned lane {{rate}}% of the time (last {{n}} races)",
+    "periodHeader": "Period / condition",
+    "nHeader": "Races",
+    "allCoursesFold": "Show the record for all six courses",
+    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (up to the past two years), so the population differs from the win rate on the official site."
   },
   "aiPredictionTab": {
     "unavailableTitle": "No AI prediction data",
@@ -1435,5 +1452,51 @@
     "tipsHeading": "💡 How to Use This",
     "articleHeading": "📖 Related Article",
     "noticeHeading": "⚠️ Notes"
+  },
+  "stConsideration": {
+    "title": "Start timing",
+    "subtitle": "Lower figure is the gap from the average for the same course and class",
+    "window": "Period {{start}}-{{end}}",
+    "gradeRow": "Class",
+    "runsRow": "Starts",
+    "stable": "Consistent",
+    "breakout": "Break",
+    "late": "Slow",
+    "times": "{{n}}x",
+    "expectedTimes": "avg {{n}}",
+    "noInnerBoat": "no inner boat",
+    "flyingTitle": "{{n}} false start(s) this term. Resets when the term changes",
+    "caveat": "Green is better than the average for the same course and class, red is worse. Breaks are shown as a count, not a rate: they are rare from outer courses, so a rate would just show 0.0%. Course 1 has no inner boat, so it is not shown. False-start races are excluded from the denominator and shown as a badge instead. This is our own calculation.",
+    "histogramTitle": "ST distribution",
+    "historyTitle": "ST history",
+    "histogramNote": "{{n}} starts from course {{course}} as {{grade}} / pale bars = average for the same course and class ({{baselineN}} starts)",
+    "histogramLegend": "The x-axis is start timing in 0.05 steps. Solid bars are this racer, pale bars the average for the same course and class. Both are normalised to percentages (the sample sizes differ by orders of magnitude, so raw counts are not comparable)",
+    "histogramOwnTitle": "This racer {{pct}}% ({{n}} starts)",
+    "histogramBaseTitle": "Same course and class average {{pct}}%",
+    "historyNote": "All {{n}} starts from course {{course}} (newest first)",
+    "histDate": "Date",
+    "histVenue": "Venue",
+    "histSt": "ST",
+    "histStRank": "ST rank",
+    "histRank": "Finish",
+    "average": "avg {{value}}"
+  },
+  "nigeSimulation": {
+    "title": "When course 1 leads from the start",
+    "sample": "{{nige}} wire-to-wire wins out of {{total}} finished races at this venue",
+    "secondCourse": "Course that finished 2nd",
+    "exacta": "Exacta {{value}}%",
+    "showDetail": "See how this is calculated",
+    "hideDetail": "Close",
+    "detailMethod": "A wire-to-wire win means the winning technique was nige and the winner actually started from course 1. The 2nd-place course is also the course actually taken.",
+    "detailWindow": "Period: {{start}}-{{end}} ({{days}} days)",
+    "detailNotPrediction": "This counts past results at this venue. It is not a prediction for this race."
+  },
+  "recentRuns": {
+    "older": "Older",
+    "newer": "Newer",
+    "flying": "F",
+    "stRank": "(#{{n}})",
+    "legend": "Top: course actually taken. Middle: finish. Bottom: start timing and its rank in that race"
   }
 }

@@ -6098,6 +6098,76 @@ export const supabaseDataService = {
   },
 
   /**
+   * ST考察の「同コース・同級別の平均」ベースラインを取得する（phase a FR-1、ADR-0068）。
+   *
+   * `st_course_baseline` はコース(1〜6) × 級別(A1/A2/B1/B2) の24行だけの
+   * 事前集計テーブル（日次バッチ update-course-baseline-stats.js が更新する）。
+   * レース詳細を開くたびに約56万行を集計するのは非機能要件（Disk IO予算・
+   * +3クエリ以内）に反するため、画面は単純なSELECTで読む。
+   *
+   * 取得エラーは例外になる（supabaseClient.js が .throwOnError() を既定適用）。
+   * 094未適用の環境では権限エラーになるので、呼び出し側は
+   * 「セクションを出さない」に倒す（ピットレポートと同じ扱い）。
+   *
+   * キーにスキーマ版（-v1）を含める: 094をロールバックした場合、成功レスポンスが
+   * クライアントのlocalStorageに残りうるため、キーを変えて無効化できるようにする
+   */
+  getStCourseBaseline() {
+    return withCache("st-course-baseline-v1", async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      try {
+        const { data } = await supabase
+          .from("st_course_baseline")
+          .select(
+            "course, grade, window_start, window_end, window_days, runs, avg_st, stable_rate, late_rate, breakout_count, breakout_rate, st_histogram",
+          )
+          .order("course")
+          .order("grade");
+        return data ?? [];
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          // 094（匿名へのSELECT公開）が未適用の間はここを通る。
+          // withCacheに保存させないためfetchFailedを付ける
+          return { state: "forbidden", rows: [], fetchFailed: true };
+        }
+        throw error;
+      }
+    });
+  },
+
+  /**
+   * 逃げシミュレーション（この会場で1コースが逃げたときの2着コース分布）を
+   * 取得する（phase a FR-6、ADR-0068）。会場別・5行だけ。
+   *
+   * 既存の getNigeOutcomeDistribution（027、艇番基準・90日・3連単粒度）とは
+   * 粒度も期間も違う別物（あちらはBOA-158の「逃げ成功時分布」タブが使用中）。
+   */
+  getNigeSimulation(venueCode) {
+    return withCache(`nige-simulation-v1-${venueCode}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      try {
+        const { data } = await supabase
+          .from("nige_second_by_course")
+          .select(
+            "venue_code, second_course, window_start, window_end, window_days, total_races, nige_races, second_count, second_rate, exacta_rate",
+          )
+          .eq("venue_code", venueCode)
+          .order("second_course");
+        return data ?? [];
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          return { state: "forbidden", rows: [], fetchFailed: true };
+        }
+        throw error;
+      }
+    });
+  },
+
+  /**
    * 逃げ成功時（winning_technique='逃げ'）の複勝分布を取得する（BOA-158）
    * 既存のgetOutcomeDistributionと対になるが、テーブル・集計とも分離されている
    */
