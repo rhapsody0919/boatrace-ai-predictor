@@ -111,10 +111,15 @@ function validateOptions(opts) {
  *   race_number: number, cancellation_status: string|null}>>}
  */
 export async function findMissingResultRaces(client, { from, to }) {
+  // 本番は並行稼働の他ジョブ・セッションで races が常時更新されている。fetchAll の
+  // .range() ページングは明示的な順序が無いと、ページ間で行の物理位置がずれて重複・欠落を
+  // 引き起こしうる（実際に 2026-09-24、この関数の呼び出し順で race_id の重複が発生し、
+  // ON CONFLICT DO UPDATE がバッチ内の同一行を2回対象にしてエラーになった）。race_id で
+  // 明示的にソートしてページングを安定させる。念のため、返却直前にも race_id で重複排除する
   const races = await fetchAll(
     "races",
     "race_id, race_date, venue_code, race_number, cancellation_status",
-    (q) => q.gte("race_date", from).lte("race_date", to),
+    (q) => q.gte("race_date", from).lte("race_date", to).order("race_id"),
     { throwOnError: true, client },
   );
   const results = await fetchAll(
@@ -124,8 +129,14 @@ export async function findMissingResultRaces(client, { from, to }) {
     { throwOnError: true, client },
   );
   const existing = new Set(results.map((r) => r.race_id));
+  const seen = new Set();
   return races
     .filter((r) => !existing.has(r.race_id))
+    .filter((r) => {
+      if (seen.has(r.race_id)) return false;
+      seen.add(r.race_id);
+      return true;
+    })
     .sort((a, b) => (a.race_id < b.race_id ? -1 : 1));
 }
 
