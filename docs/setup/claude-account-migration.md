@@ -18,11 +18,11 @@
 |---|---|
 | `~/.claude/CLAUDE.MD`・`settings.json`・permissions | 使用上限の枠そのもの（切替の目的） |
 | リポジトリ内の`.claude/`（CLAUDE.md・rules・commands・skills） | claude.ai由来のMCPコネクタ（Linear公式リモートMCP・Claude Docs・Google Drive等）。これらは`~/.claude.json`に定義が無く、アカウント側管理 |
-| `~/.claude/projects/<path>/memory/`・全セッションtranscript・`history.jsonl`・`file-history/`・`plans/` | claude.ai側のRoutine（下記インベントリ）とクラウド環境 |
+| `~/.claude/projects/<path>/memory/`・全セッションtranscript・`history.jsonl`・`file-history/`・`plans/` | Routineとクラウド環境。ただし**消えるのではなく旧アカウントに残り、有効なものは旧アカウントの枠で動き続ける**（3-5参照） |
 | `.mcp.json`のsupabase/vercel/linear（認証は`SUPABASE_ACCESS_TOKEN`・Vercel OAuth・`LINEAR_API_KEY`でClaudeアカウントと無関係） | 公開済みArtifact（設計モック類、2026-09時点で25件以上） |
 | git/gh認証・`.env.local`・direnv・plugins | クラウドセッション・Remote Control・他デバイスとのセッション共有 |
 
-つまり**再構築が必要なのは「Routine」「クラウド環境」「コネクタ」「Artifact」の4種だけ**。
+つまり**新アカウント側で手当てが必要なのは「Routine」「クラウド環境」「コネクタ」「Artifact」の4種だけ**。うちRoutineとクラウド環境は「新アカウントへ移設する」以外に「旧アカウントに残したまま動かし続ける」選択肢があり、どちらを採るかで作業量が大きく変わる（3-5参照）。
 
 ## 3. claude.ai側インベントリ（2026-09-24時点の実測）
 
@@ -85,14 +85,42 @@ Linear MCPが未認証の場合は`scripts/linear-cli.js`にフォールバッ�
 
 設計モック・比較案が25件以上、すべて現行アカウントの私物として存在する（`docs/design/`から参照しているものを含む）。**アカウント間の移行手段は無い**。切替後も参照したいものは、切替前に`Artifact`ツールの`read`でHTMLをローカル保存しておく。
 
+### 3-5. アカウント切替時にRoutineがどうなるか
+
+[公式ドキュメント](https://code.claude.com/docs/en/routines)で確認できる仕様。
+
+- **Routineは個人のclaude.aiアカウントに属し、実行はそのアカウントの利用枠を消費する**（"Routines belong to your individual claude.ai account ... they count against your account's daily run allowance"）
+- **クラウド実行なのでローカルのログイン状態と無関係に動く**（マシンの起動もセッションの開いた状態も不要）。ローカルで`/logout`→別アカウントで`/login`しても、旧アカウントのRoutineは止まらず、有効/無効の状態も変わらない
+- 新アカウントから見えるのは新アカウントのRoutineだけ（`RemoteTrigger list`・`/schedule list`・claude.ai UIのいずれも同じクラウドアカウントを見る）。旧アカウントのtrigger IDを指定しても操作できない
+- **sns-hub管理画面からのAPI発火は切替後も旧アカウントのRoutineを叩き続ける**。`SNS_HUB_ROUTINE_FIRE_TOKEN`はRoutine固有のbearerトークンで、ローカルのログインとは独立。つまり管理画面経由の生成は旧アカウントの枠を消費する
+- **旧アカウントのサブスクを解約・一時停止するとRoutineはon holdになり、再開後も手動でオンに戻す必要がある**（自動復帰しない）
+- 旧アカウントのGitHub接続が切れると最大72時間スキップし、その後Routine自体がオフになる
+
+これを踏まえた選択肢:
+
+| | A. 旧アカウントに残して動かす | B. 新アカウントへ移設する |
+|---|---|---|
+| 作業量 | ゼロ（無効化しているものを旧アカウント側でオンに戻すだけ） | クラウド環境の再作成＋Routine再作成＋APIトリガー再発行＋Vercel環境変数更新 |
+| 枠の使い分け | 対話開発＝新アカウント、SNS運用＝旧アカウントで完全に分離できる | 両方が同じ枠を食い合う（現状と同じ） |
+| 実行結果の確認 | 旧アカウントでclaude.aiを開く必要がある | 新アカウントで完結 |
+| 前提 | 旧アカウントのサブスクが有効であること | — |
+
+**週次上限を開発に回すためにRoutineを無効化している場合、Aを採れば無効化そのものが不要になる**（開発が新アカウントの枠を使い、Routineは旧アカウントの枠を使う）。
+
+Aを採る場合の注意:
+
+- `sns-hub-video-compaction`はSupabase Storageを不可逆に上書きするため、**新旧どちらか一方でのみ動かす**。新アカウントにも同じRoutineを作ってはいけない
+- 旧アカウント側にもdaily routine run capがある（残数は`claude.ai/code/routines`で確認）
+- 旧アカウントの請求経路が業務用のままである点は、運用として妥当かを別途判断する
+
 ## 4. 切替前にやること
 
 - [ ] このランブックが最新か確認（Routineを追加・変更したら3-1の表を更新する）
 - [ ] claude.aiのRoutine一覧画面（`claude.ai/code/routines`）を開き、**全Routineの名前とtrigger IDをスクリーンショットまたはコピー**しておく。`RemoteTrigger list`は新しい20件しか返さず、`cursor`パラメータでのページングが効かない（2026-09-24検証済み）ため、ツール経由では全件列挙できない
 - [ ] 参照したいArtifactを`Artifact` → `action: read`でローカル保存
-- [ ] 稼働中Routine（現状は`sns-hub-video-compaction`のみ）を止めるか、旧アカウント側で動かし続けるかを決める。旧アカウントのサブスクが生きている限りRoutineは動き続ける点に注意（Supabase Storageを不可逆に上書きするRoutineなので、新旧アカウントで二重に動かさない）
+- [ ] 3-5のA/Bどちらを採るか決める。Aなら以下「5. 切替後の再構築手順」のステップ3〜6は不要。Bなら旧アカウント側のRoutineを必ずオフにする（Supabase Storageを不可逆に上書きするRoutineがあるため、新旧で二重に動かさない）
 
-## 5. 切替後の再構築手順
+## 5. 切替後の再構築手順（3-5のBを選んだ場合）
 
 1. **ログイン確認**: `/status`でアカウントを確認。ローカルの`~/.claude/`はそのまま引き継がれているので、CLAUDE.md・メモリ・過去セッションは何もしなくても読める
 2. **コネクタ再接続**: claude.aiのコネクタ設定でLinear・Claude Docs・Google Driveを再認証。`/mcp`で状態確認。Linearが未認証なら`scripts/linear-cli.js`で代替しつつ後回しにしてよい
@@ -144,6 +172,7 @@ Linear MCPが未認証の場合は`scripts/linear-cli.js`にフォールバッ�
 - `sns-hub-video-compaction`: 対象0件の日は「何もしない」が正常。ログに変換前後のファイルサイズが出ているか確認
 - sns-hub管理画面（`/admin/sns-hub`）の修正指摘・作り直しボタンを押し、`fireRoutine()`が`{fired: false}`で黙って落ちていないか確認（環境変数未設定時は`{fired: false}`を返して処理継続する設計）
 
-## 7. 未解決事項
+## 7. 補足
 
-- `sns-hub-content-generation`が**2026-09-15時点で無効化されている**。sns-topic-gate体系への移行で生成側の役割は終えているが、管理画面の`translate`/`revise`/`redo`/`generate-daily`/`generate-evergreen`の発火先がこのRoutineのままであれば、それらのボタンが機能していない可能性がある。無効化が意図的なものか、移行時の取り残しかは要確認
+- `sns-hub-content-generation`の無効化（2026-09-15〜）は**意図的**。週次上限を開発に回すため。副作用として、管理画面の`translate`/`revise`/`redo`/`generate-daily`/`generate-evergreen`は無効化されている間は機能しない（`fireRoutine()`が無効なRoutineを叩く形になる）
+- 3-5のAを採れば、この無効化を続ける必要はなくなる
