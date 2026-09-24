@@ -245,4 +245,12 @@ N19（今夜22:00再開待ち）・BOA-401（観測期間中）と並行して�
 - [BOA-404](https://linear.app/boat-ai/issue/BOA-404): T4b-10-3（買い目オッズ`prediction_odds`の`race_odds`からの導出化）。設計判断は2026-09-20に確定済み（Q8）で、未着手だっただけの実装タスク。live化・GHA停止はユーザー承認後
 - [BOA-405](https://linear.app/boat-ai/issue/BOA-405): WS8(c)（predictions再生成の書き込み量削減）の調査・設計提案。DELETE+INSERT→差分更新、`feature_contributions`の分離・圧縮、トリガー`trg_update_predictions`の限定DDL案の3点を比較する。**このチケットは提案のみ、実装・DDL適用は別途承認後**
 
-これで並行稼働中の子は3件（BOA-403・404・405）。
+## 2026-09-24 完了・追加起票のまとめ
+
+**BOA-403（K/B本体テーブル補填）**: 実装完了・[PR #807](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/807)。実行時、`fetchAll`の`.range()`ページングに明示的な`.order()`が無く、並行稼働の他セッションによる`races`更新中にrace_idが重複してPostgresエラー（`ON CONFLICT DO UPDATE cannot affect row a second time`、書き込み0件・データ破損なし）になるバグを発見・修正（[PR #810](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/810)）。修正後、本番へ435件を書き込み完了（2025-12: 91.0%→99.1%、2026-01: 94.5%→94.6%、2026-02: 98.9%→99.0%、2026-03: 91.0%→93.9%）。残る欠損（中止疑い269件・日付ズレ疑い408件、変動あり）は[BOA-406](https://linear.app/boat-ai/issue/BOA-406)・[BOA-407](https://linear.app/boat-ai/issue/BOA-407)として起票。N16ツール（`backfill-race-series-meta.js`）も再実行し、race_grade 276件・series_day/is_final_day 233件を追加補完。
+
+**BOA-404（買い目オッズ導出）**: 実装完了・[PR #809](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/809)。A3（オッズ取得）成功後のフックで`prediction_odds`を導出・upsertする方式。shadow→live切替・GHA側（A4）停止はユーザー承認後。
+
+**BOA-405（WS8(c)設計提案）を受けての実装着手**: [BOA-408](https://linear.app/boat-ai/issue/BOA-408)（feature_contributions 3モデル重複解消、最優先）・[BOA-409](https://linear.app/boat-ai/issue/BOA-409)（トリガーのUPDATE OF列限定DDLドラフト）を子エージェントへ割当。[BOA-410](https://linear.app/boat-ai/issue/BOA-410)（差分更新、本命）はBOA-408の効果測定後に着手する方針でBacklogのまま。
+
+並行稼働中の子: BOA-408・BOA-409（2件）。
