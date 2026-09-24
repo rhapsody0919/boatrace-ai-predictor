@@ -328,7 +328,7 @@
 ### T4b-14 会場別モーター成績（B3）: `venue_motor_stats`
 
 - [x] **T4b-14-1**（コード実装済み。`scripts/lib/venueMotorStatsJob.js`・`api/cron/venue-motor-stats.js`。負荷の見積りと同時数の上限はrunbook §L-6。切り替えはrunbook §L-3） `scrape-venue-motor-stats.js`を、`api/cron/venue-motor-stats.js`へ（`0 21 * * *`、`0 23 * * *`）。会場間の待機なしで、22会場を取得する現状の負荷を見積もり、並列度の上限・待機を追加する。成否履歴（`venue-motor-stats-health.json`のgit push）を`last_report`へ（BOA-360の`git push`競合の恒久解消）
-- [ ] **T4b-14-2**（`SKIP_MOTOR_STATS_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-3） `live`→`SKIP_MOTOR_STATS_ON_GHA=true`。2026-09-23確認: `scrape_job_state.venue_motor_stats.mode=live`。`SKIP_MOTOR_STATS_ON_GHA`は未設定
+- [x] **T4b-14-2**（`SKIP_MOTOR_STATS_ON_GHA`のコードは実装済み。既定は未設定＝従来どおり。手順はrunbook §L-3） `live`→`SKIP_MOTOR_STATS_ON_GHA=true`。**2026-09-24実測（BOA-399）**: `last_report`で対象22会場（戸田・平和島は対象外、仕様通り）全て成功、46〜70行取得、0行の会場なし。`alerts: []`・`venuesNotAttempted: []`・全会場`consecutiveFailDays: 0`（直近の失敗ゼロが継続）。旧基盤で発生していたgit push競合（BOA-360）はGHA固有の問題でVercelには該当しない。**GHA停止の準備は整った**
 
 データ項目: `venue_motor_stats`。
 
