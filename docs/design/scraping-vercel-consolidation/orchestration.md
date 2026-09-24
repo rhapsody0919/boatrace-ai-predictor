@@ -255,4 +255,6 @@ N19（今夜22:00再開待ち）・BOA-401（観測期間中）と並行して�
 
 **BOA-409完了**: [PR #811](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/811)。`docs/db-migration/097_limit_trg_update_predictions_columns.sql`（未適用）で`trg_update_predictions`を`rank1〜3`・payout系8列限定に絞るDDLドラフトを提出。対象8列の再確認で新たに`backfill-race-data.js`の`winning_technique`更新経路を発見したが8列に含まれないため見落とし無しと確認。**本番DDL適用は未実施、ユーザー承認待ち**。
 
-並行稼働中の子: BOA-408（1件）。
+**BOA-408完了**（レート制限で一度中断、再開して完了）: [PR #813](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/813)。`generate-predictions.js`の`writeToSupabase`・`mainRefresh`両経路で、`feature_contributions`をmodel_id='standard'の行にのみ書き、safeBet・upsetFocusはNULL化（3モデルの内容は完全重複と実測確認済み）。**実装前の読み手再確認で実害を発見・修正**: `scripts/analysis/calibration-report.js`・`expected-value-report.js`のデフォルト`model`パラメータが`"safeBet"`になっており、NULL化後にデフォルト実行が0件になる実害があったため`"standard"`に修正（値自体はモデル間で完全一致していたため分析結果への影響は無し）。本番実測で3モデル合計の約66%（safeBet・upsetFocus分）の書き込みバイト数削減見込み。**マージ・本番切替はユーザー承認待ち**。
+
+並行稼働中の子: 無し（BOA-403・404・405・408・409すべて完了）。
