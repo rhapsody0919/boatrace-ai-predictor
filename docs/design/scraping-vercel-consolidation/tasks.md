@@ -93,7 +93,7 @@
 - [x] **T4b-02-2**（コード実装済み。cron窓は翌00:59まで延長、中止・順延の確定は毎分の`onTick`。マージ後も`mode`が`off`の間は何もしない） `api/cron/result.js`: 共通ラッパ・レジストリの`result`定義（`+5`分から`+90`分、再試行300秒、リース180秒、40件×4並列）で、スロットを消化する。`+90`分での未完了は、既存の中止・順延の確定処理（`confirmOverdueCancellations`）へ
 - [x] **T4b-02-3** `scrape_job_state`に`result`を`shadow`で登録する（DBの更新。ユーザーの承認）。`shadow`で3日（土日のいずれか1日を含む）: 一致率（`result_digest`と、GitHub側が書いた`race_results`の値）、窓内取得率、1回の呼び出しの所要時間（plan.md U13）、取得先の拒否率（U3）、Vercelの使用量（U5）を計測する。2026-09-23確認: `scrape_job_state.result.mode=live`（実質完了。個別の一致率等の数値は棚卸し時点では未回収）
 - [x] **T4b-02-4**（`SKIP_RESULTS_ON_GHA`のコードは実装済み。既定はfalse。手順は[verification-runbook.md](./verification-runbook.md) §F） `live`にして3日並走する（二重書き込みは上書き型で無害）。GitHub側の結果取得を止めるリポジトリ変数`SKIP_RESULTS_ON_GHA`を、`scrape-scheduled.js`・`scrape-scheduled.yml`に追加する（コードは削除しない。展示の`SKIP_EXHIBITION_ON_GHA`と同じ方式）。2026-09-23確認: `mode=live`
-- [ ] **T4b-02-5** (ユーザー承認) `SKIP_RESULTS_ON_GHA=true`にして、切り替え後7日（土日を含む）の実測を行う。GitHub Actionsの1回の実行時間（379秒→約262秒の見込み）、キャンセル率を再測定する。2026-09-23確認: `SKIP_RESULTS_ON_GHA`は未設定（`gh variable list`）。GitHub側の結果取得はまだ止まっていない（Vercel・GitHub両方が書いている段階）
+- [x] **T4b-02-5** (ユーザー承認) `SKIP_RESULTS_ON_GHA=true`にして、切り替え後7日（土日を含む）の実測を行う。GitHub Actionsの1回の実行時間（379秒→約262秒の見込み）、キャンセル率を再測定する。**2026-09-24 09:17 JST、ユーザーが`SKIP_RESULTS_ON_GHA=true`を設定（BOA-394）**。事前検証はshadowダイジェスト一致率100%（151/151）。切り替え後7日間の実行時間・キャンセル率の再測定は今後実施
 
 データ項目: `race_results`。
 
@@ -268,7 +268,7 @@
 - [x] **T4b-07-5** 予測ロジックの変更検知による再生成（`git log`依存）を、内容ハッシュ（ビルド時に計算し、`scrape_job_state`の`predict-code-hash`と比較）へ置き換える（plan.md §11(g)の判断に従う。廃止する場合は、手動のCLI再生成の手順をドキュメントに残す）。→ **ビルド時の計算ではなく、デプロイされた予測ロジックのソース（`generate-predictions.js`・`turnPrediction.js`・`venueParameters.js`・`winningTechniques.js`）を、実行時に読んでハッシュを計算する**（import されたファイルは関数のバンドルに含まれる。ビルド時の生成物は、bundling の順序に依存するため避けた）。`races_init`の`onTick`（liveのみ、起動のたび）で比較し、変わっていたら当日の発走前のレースだけ`mainRefresh`（upsert）で再生成する。**範囲の限界: cronの時間帯（05:00〜09:58 JST）のみ。終日にするならcronを広げる（ユーザー判断。runbook N-3）**
 - [x] **T4b-07-6** 24会場の日の所要時間を、プローブで実測する（plan.md U12。会場数を変えて）。結果から、チャンクの会場数・`maxDuration`を調整する。→ 1会場（12レース、25リクエスト、同時12）を実サイトで実測: **29.0秒**（全て200）。24会場で約12〜14分の見積り。公式サイトへのアクセスは合計33回（上限40回）。24会場の日・Vercel上の書き込みを含む所要時間は、shadow・live初日に実測（runbook N-0・N-7）。1回の会場数8・`maxDuration` 800秒は据え置き
 - [x] **T4b-07-7** `shadow`（05:00 JSTに取得・解析のみ。会場・レース数・出走表のダイジェストを記録）で3日、GitHub Actionsが07:00に書いた値と比較する。一致を確認して`live`にし、3日並走する。GitHub側の`morning-init`は、初期化済みとして、既存の確認処理のみを行う（plan.md §4.6）。切り戻しは、Vercelを`off`にするのみ。→ 手順・成功基準（数値）・短縮手順（shadow 1日→live化とGitHub側停止を同時）: verification-runbook.md N。確認は`scripts/maintenance/check-morning-init-shadow.js`。GitHub側の停止は`SKIP_MORNING_INIT_ON_GHA`（JST 07:00になっても当日のracesが無ければ従来どおり初期化するフェイルセーフつき）。2026-09-23確認: `scrape_job_state.races_init.mode=live`
-- [ ] **T4b-07-8** (ユーザー承認) 7日（土日を含む）の実測後、`morning-init`を`scrape-scheduled.yml`から外す（G3の条件の一部。WS7）。2026-09-23確認: `SKIP_MORNING_INIT_ON_GHA`は未設定。GitHub側はまだ止まっていない
+- [x] **T4b-07-8** (ユーザー承認) 7日（土日を含む）の実測後、`morning-init`を`scrape-scheduled.yml`から外す（G3の条件の一部。WS7）。**2026-09-24 09:18 JST、ユーザーが`SKIP_MORNING_INIT_ON_GHA=true`を設定（BOA-396）**。事前検証は9/18〜24の7日間で存在充足率100%・タイミング要求クリア
 
 データ項目: `races`。
 
@@ -287,7 +287,7 @@
 - [x] **T4b-08-1**（基盤を待たず着手可） `scrape-pcexpect.js`の`main()`を、CLIガード付きの関数に分け、レース単位の入口（`runForRaces`）を追加する。→ CLIの`main()`も`runForRaces`を使う。payloadのダイジェスト（`computePcexpectDigest`）を追加
 - [x] **T4b-08-2** `api/cron/pcexpect.js`（5分間隔。cronは`*/5 20-23,0-14 * * *`＝JST 05:00〜23:59。朝の初期化の直後から消化するため、設計の`22-23`から広げた）: レジストリの`pcexpect`定義（`-720`、許容幅690分、再試行600秒、リース300秒、20件×3並列）。1レース約10.6秒（実測）のため、1回で約75秒。180レースで約10回の呼び出し。1リクエストが約9秒かかる原因（plan.md U7）の切り分け（取得先の応答か、制限か）を、プローブで確認する。→ 1ページ約9.2秒は、取得先の応答時間（リージョン・実行元によらない。plan.md §8）
 - [x] **T4b-08-3** 公式コンピュータ予想が、朝の1回の取得で足りるか（発走前に更新されるか）を確認する（U7）。足りない場合は、窓型（発走前の複数窓）への変更を、ユーザーに提示する。→ 朝の1回で足りる見込み: 02:25に保存したpayloadと、8.5時間後の再取得が、未発走の3レースで完全一致（3/3）。2026-09-10〜21の全レースで保存は朝の1回のみ。発走30分前以内の更新の有無は、shadowの一致率で間接的に確認（runbook N-0）
-- [ ] **T4b-08-4** `shadow`→`live`→（`races-init`の切り替え（T4b-07-8）と同時に）GitHub側の`morning-init`から外す。→ runbook N-4。GitHub側は`SKIP_PCEXPECT_ON_GHA`（初期化の中のpcexpectの段だけ）。2026-09-23確認: `scrape_job_state.pcexpect.mode=live`（shadow・live切替は完了）。`SKIP_PCEXPECT_ON_GHA`は未設定のため、GitHub側停止のみ未実施
+- [x] **T4b-08-4** `shadow`→`live`→（`races-init`の切り替え（T4b-07-8）と同時に）GitHub側の`morning-init`から外す。→ runbook N-4。GitHub側は`SKIP_PCEXPECT_ON_GHA`（初期化の中のpcexpectの段だけ）。**2026-09-24 09:18 JST、ユーザーが`SKIP_PCEXPECT_ON_GHA=true`を設定（BOA-396）**。事前検証は9/18〜24の7日間で存在充足率100%
 
 データ項目: `external_predictions`。
 
