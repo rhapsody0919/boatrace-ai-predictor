@@ -223,3 +223,7 @@ data-catalog.mdでは「必須・未対応」のままだったが、PR #751（�
 | 低 | [BOA-400](https://linear.app/boat-ai/issue/BOA-400) | racer_news | T4b-15-2 |
 
 `pit_reports`・`boatcast_oriten`・`boatcast_motor_start`・`motor_pretest`は、旧GitHub Actions基盤に対応するジョブが元々無い新規データ項目のため、この一覧には含めない。
+
+## N28「解決済み」の訂正（2026-09-24、他セッションからの指摘）
+
+「本日のデータ一覧」ページ・SNS展開セッション（BOA-402）から、9/24時点で競合サイトが載せる帰郷選手6名（戸田・津・三国・徳山・福岡）が`race_special_notes`に1件も無いという報告を受けた。直接検証したところ、該当5会場の`race/information`ページは実際に「現在、お知らせはありません」と応答しており、自社の別経路（`race_entries.is_absent`）も同時に0件だった。誤読・取得先の取り違えではないが、**「解決済み」という結論は取り下げ、「一部解決（情報源の一致性が未確認）」に訂正した**（data-catalog.md N28）。競合の情報源が自社と同じかどうかが次の論点で、BOA-402セッションへ調査結果を送信済み（`msg_id: ac6d5e76-f710-40b4-927c-91722f74dc10`）。
