@@ -64,17 +64,22 @@ function FeaturedRaceCard({ row }) {
         <div className="featured-race__stats">
           <div className="featured-race__stat">
             <span className="featured-race__stat-label">
-              {metricLabel}（{row.course}コース）
+              {metricLabel}（{row.course}コース・{row.sample_size}走）
             </span>
             <span className="featured-race__stat-value">
               {Number(row.metric_value).toFixed(1)}
               <span className="featured-race__stat-unit">%</span>
             </span>
-            <span className="featured-race__stat-sub">
-              地力 {Number(row.metric_skill_delta) >= 0 ? "+" : ""}
-              {Number(row.metric_skill_delta).toFixed(1)}pt{" "}
-              {Number(row.metric_skill_delta) >= 0 ? "▲" : "▼"}
-            </span>
+            {/* 「地力 +33.2pt」は通じないため、会場平均→この選手の2点で見せる
+                （2026-09-24、RateWithBaseline と同じ改訂） */}
+            {row.metric_venue_baseline !== null &&
+              row.metric_predicted !== null && (
+                <span className="featured-race__stat-sub">
+                  {venueName}の平均{" "}
+                  {Number(row.metric_venue_baseline).toFixed(1)}% → この選手{" "}
+                  <strong>{Number(row.metric_predicted).toFixed(1)}%</strong>
+                </span>
+              )}
           </div>
           {row.volatility_percentile !== null && (
             <div className="featured-race__stat">

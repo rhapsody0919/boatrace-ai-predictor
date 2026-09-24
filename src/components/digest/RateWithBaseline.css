@@ -1,16 +1,22 @@
-/* RateWithBaseline - 率＋地力＋予測の表示（BOA-402） */
+/* RateWithBaseline - 率＋会場平均との比較バー（BOA-402）
+ *
+ * 色は design-tokens.css の**意味トークン**を使う。バーの塗りだけは
+ * 自前の背景（トラック）と組み合わせて常に読める配色にしているため、
+ * ブランドのアクセント色をそのまま使ってよい（rules/component-reuse.md）。
+ */
 
-.rate-baseline__main {
+.rate-baseline__headline {
   display: flex;
-  align-items: flex-end;
-  gap: 0.6rem;
+  align-items: baseline;
   flex-wrap: wrap;
+  gap: 0.15rem 0.4rem;
 }
 
 .rate-baseline__label {
-  display: block;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
+  /* 見出しの率より先に読ませたいので、幅いっぱいで改行させる */
+  flex-basis: 100%;
 }
 
 .rate-baseline__value {
@@ -24,39 +30,75 @@
   font-size: var(--font-size-lg);
 }
 
-.rate-baseline__side {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding-bottom: 0.15rem;
-}
-
-/* 差分バッジ。正負を色だけで区別せず ▲▼ の記号も併記する（screens.md §5） */
-.rate-baseline__delta {
-  font-size: var(--font-size-xs);
-  font-weight: 700;
-  padding: 0.1rem 0.45rem;
-  border-radius: 10px;
-  white-space: nowrap;
-}
-
-.rate-baseline__delta--up {
-  background: var(--ryujin-gold-300);
-  color: var(--ryujin-navy-600);
-}
-
-.rate-baseline__delta--down {
-  background: var(--ryujin-silver-300);
-  color: var(--ryujin-navy-600);
-}
-
-.rate-baseline__predicted {
+.rate-baseline__runs {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }
 
-.rate-baseline__predicted strong {
+.rate-baseline__small-sample {
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: var(--surface-page);
   color: var(--text-primary);
+  font-size: var(--font-size-xs);
+}
+
+/* 比較バー（案2）
+ *
+ * ラベル・トラック・数値の3列。ラベル幅を固定して2本の左端を揃えないと、
+ * 会場名の字数（「津」と「びわこ」）でバーの開始位置がずれて比較できない。 */
+.rate-baseline__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.45rem;
+}
+
+.rate-baseline__bar-row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr 3.2rem;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rate-baseline__bar-label {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rate-baseline__bar-track {
+  position: relative;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-page);
+  overflow: hidden;
+}
+
+.rate-baseline__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ryujin-silver-300);
+}
+
+.rate-baseline__bar-fill--emphasis {
+  background: var(--brand-accent-primary);
+}
+
+.rate-baseline__bar-value {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rate-baseline__bar-value--emphasis {
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 .rate-baseline__meta {
@@ -77,15 +119,12 @@
   cursor: help;
 }
 
-.rate-baseline__small-sample {
-  padding: 0.05rem 0.4rem;
-  border-radius: 4px;
-  background: var(--surface-page);
-  color: var(--text-primary);
-}
-
 @media (max-width: 480px) {
   .rate-baseline__value {
     font-size: var(--font-size-5xl);
+  }
+
+  .rate-baseline__bar-row {
+    grid-template-columns: 4.6rem 1fr 3rem;
   }
 }

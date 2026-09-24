@@ -44,7 +44,7 @@ import "./MorningDataDigest.css";
 
 const TITLE = "本日のデータ一覧 | 逃げ・まくりが利く選手と昨日のフライング";
 const DESCRIPTION =
-  "本日の全レースから、逃げが堅い選手・まくりが利く選手・1号艇に逃げられやすい選手を抽出しました。会場と級別の有利不利を除いた「地力」で比較し、AIのイン崩れ指数と突き合わせて今日の注目レースを1つ選んでいます。昨日のフライングと帰郷選手も掲載。";
+  "本日の全レースから、逃げが堅い選手・まくりが利く選手・1号艇に逃げられやすい選手を抽出しました。会場と級別の有利不利を除いて比較し、AIのイン崩れ指数と突き合わせて今日の注目レースを1つ選んでいます。昨日のフライングと帰郷選手も掲載。";
 const CANONICAL = "https://www.boat-ai.jp/today";
 
 /** YYYY-MM-DD かどうか（?date= の値をそのままクエリに流さない） */
@@ -186,9 +186,8 @@ function MorningDataDigest() {
                     {(expanded) => (
                       <RateWithBaseline
                         expanded={expanded}
-                        label="逃げ率"
+                        label="逃げ率（1コース）"
                         rate={row.metric_value}
-                        skillDelta={row.metric_skill_delta}
                         predicted={row.metric_predicted}
                         venueName={t(`venues.${row.venue_code}`)}
                         venueBaseline={row.metric_venue_baseline}
@@ -222,7 +221,6 @@ function MorningDataDigest() {
                         expanded={expanded}
                         label={`まくり率（${row.course}コース）`}
                         rate={row.metric_value}
-                        skillDelta={row.metric_skill_delta}
                         predicted={row.metric_predicted}
                         venueName={t(`venues.${row.venue_code}`)}
                         venueBaseline={row.metric_venue_baseline}
@@ -255,7 +253,6 @@ function MorningDataDigest() {
                         expanded={expanded}
                         label={`逃がし率（${row.course}コース）`}
                         rate={row.metric_value}
-                        skillDelta={row.metric_skill_delta}
                         predicted={row.metric_predicted}
                         venueName={t(`venues.${row.venue_code}`)}
                         venueBaseline={row.metric_venue_baseline}
@@ -298,15 +295,17 @@ function MorningDataDigest() {
             <section className="morning-digest__notes">
               <h2 className="morning-digest__notes-title">このページの見方</h2>
               <dl className="morning-digest__notes-list">
-                <dt>地力</dt>
+                <dt>◯◯の平均</dt>
                 <dd>
-                  選手の実績率から、その選手が走った会場とグレードの構成で期待される水準を引いた値。
-                  会場の有利不利を除いた選手自身の傾向を表します（会場によって逃げ率は20ポイント、
-                  グレードによって11ポイント違います）。
+                  本日の会場・グレードで、全選手を通した平均の率。比べるときの基準線です。
+                  会場によって逃げ率は20ポイント、グレードによって11ポイント違うため、
+                  率をそのまま並べても比べられません。
                 </dd>
-                <dt>◯◯での予測</dt>
+                <dt>この選手</dt>
                 <dd>
-                  本日の会場・グレードの平均に地力を足した値。このレースで起きやすいことの目安です。
+                  選手の実績率から「その選手が走ってきた会場・グレードなら普通このくらい」という
+                  水準を引き、本日の会場・グレードの平均に足し直した値。
+                  会場の有利不利を除いたうえで、このレースで起きやすいことの目安です。
                 </dd>
                 <dt>信頼下限</dt>
                 <dd>
