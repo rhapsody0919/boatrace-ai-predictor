@@ -109,7 +109,7 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
 
   - **3位と4位が score 3.65 で同点**。plan §3.3 の「同点は `race_id` 昇順」が実際に必要になるケースなので、T3-4 の実装で必ず検証する
 
-- [ ] **T2-3** `scripts/lib/unchangedRows.js` の `NUMERIC_SCALES` に097の4表を追加する
+- [x] **T2-3** `scripts/lib/unchangedRows.js` の `NUMERIC_SCALES` に097の表を追加する（**完了 2026-09-24**。`morning_digest_days` はNUMERIC列を持たないため3表）
   - `venue_course_technique_baseline`: `nige_rate` 2 / `makuri_rate` 2 / `nigashi_rate` 2
   - `racer_course_technique_stats`: `nige_rate` `nige_expected` `makuri_rate` `makuri_expected` `nigashi_rate` `nigashi_expected` `nige_rate_90d` `makuri_rate_90d` `nigashi_rate_90d` 各2
   - `morning_digest_rows`: `metric_value` `metric_expected` `metric_skill_delta` `metric_venue_baseline` `metric_predicted` `metric_wilson_lower` `rate_90d` `motor_2rate` `volatility_percentile` 各2
