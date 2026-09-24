@@ -177,7 +177,7 @@
 - [x] **T4b-09-2** `api/cron/race-info.js`: レジストリの`race_info`定義（`-60`、許容幅3分、再試行60秒、リース90秒）。成功して変更を書いたときに、案1の予測リフレッシュ（T4b-03）を呼ぶ
   - 実装: `api/cron/race-info.js`・`scripts/lib/scrapeJobs/preRaceHandlers.js`。変更を書いたレースは、全スロットの完了後に日付ごとに1回だけ`mainRefresh`（upsert）を呼ぶ（`REFRESH_ON_VERCEL`）。`maxDuration`は再計算の余裕を含めて180秒。`vercel.json`に毎分のcronを追加。検証: `npm run verify:scrape-pre-race-job`
 - [ ] **T4b-09-3** `shadow`→`live`→`SKIP_RACE_INFO_ON_GHA=true`の手順で切り替える。GitHub側の`scrape-scheduled.js`の`updatedRaceIds`から、レース情報由来を外す（この時点でGitHub側の再計算は不要になる）
-  - **コード側は完了**（`SKIP_RACE_INFO_ON_GHA`を`scrape-scheduled.js`・`scrape-scheduled.yml`に追加。既定は未設定＝従来どおり。#760のフェイルセーフ付きSKIP（`GHA_SKIP_TARGETS.SKIP_RACE_INFO_ON_GHA`）に対応）。切り替え（shadow→live→変数）の実施は未。手順・確認SQL・成功基準・切り戻しは[verification-runbook.md](./verification-runbook.md) Q-5
+  - **コード側は完了**（`SKIP_RACE_INFO_ON_GHA`を`scrape-scheduled.js`・`scrape-scheduled.yml`に追加。既定は未設定＝従来どおり。#760のフェイルセーフ付きSKIP（`GHA_SKIP_TARGETS.SKIP_RACE_INFO_ON_GHA`）に対応）。手順・確認SQL・成功基準・切り戻しは[verification-runbook.md](./verification-runbook.md) Q-5。**2026-09-24: shadow検証(`check-pre-race-shadow.js --job=race_info`、9/22〜24の336スロット)でダイジェスト一致率99.70%(335/336、不一致1件は`2026-09-22-17-05`でGHA側の値が更新されず古いままだった可能性が高い)、遅延p50 0.4分・全件初回成功を確認し、`live`へ切り替え済み（BOA-401）。残るは`SKIP_RACE_INFO_ON_GHA`の設定（ユーザー作業）のみ
 
 データ項目: `race_entries`（レース情報更新分）。
 

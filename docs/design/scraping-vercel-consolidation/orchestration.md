@@ -217,7 +217,7 @@ data-catalog.mdでは「必須・未対応」のままだったが、PR #751（�
 | 高 | [BOA-395](https://linear.app/boat-ai/issue/BOA-395) | kfile_sync | T4b-05-3 |
 | 高 | [BOA-396](https://linear.app/boat-ai/issue/BOA-396) | races_init・pcexpect | T4b-07-8・T4b-08-4 |
 | 中 | [BOA-397](https://linear.app/boat-ai/issue/BOA-397) | point_rank | T4b-12-3 |
-| 中 | [BOA-401](https://linear.app/boat-ai/issue/BOA-401) | race_info（shadow→live→停止） | T4b-09-3 |
+| 中 | [BOA-401](https://linear.app/boat-ai/issue/BOA-401) | race_info（2026-09-24、shadow検証(一致率99.70%)を経てliveへ切替済み。残るはGHA停止のみ） | T4b-09-3 |
 | 中 | [BOA-399](https://linear.app/boat-ai/issue/BOA-399) | venue_motor_stats | T4b-14-2 |
 | 中 | [BOA-398](https://linear.app/boat-ai/issue/BOA-398) | entry_course_stats（2026-09-24、FR-3実施予定によりデータ取得は継続決定。他と同じGHA停止トラックへ合流） | T4b-13-3 |
 | 低 | [BOA-400](https://linear.app/boat-ai/issue/BOA-400) | racer_news | T4b-15-2 |
