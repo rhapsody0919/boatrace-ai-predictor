@@ -253,4 +253,6 @@ N19（今夜22:00再開待ち）・BOA-401（観測期間中）と並行して�
 
 **BOA-405（WS8(c)設計提案）を受けての実装着手**: [BOA-408](https://linear.app/boat-ai/issue/BOA-408)（feature_contributions 3モデル重複解消、最優先）・[BOA-409](https://linear.app/boat-ai/issue/BOA-409)（トリガーのUPDATE OF列限定DDLドラフト）を子エージェントへ割当。[BOA-410](https://linear.app/boat-ai/issue/BOA-410)（差分更新、本命）はBOA-408の効果測定後に着手する方針でBacklogのまま。
 
-並行稼働中の子: BOA-408・BOA-409（2件）。
+**BOA-409完了**: [PR #811](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/811)。`docs/db-migration/097_limit_trg_update_predictions_columns.sql`（未適用）で`trg_update_predictions`を`rank1〜3`・payout系8列限定に絞るDDLドラフトを提出。対象8列の再確認で新たに`backfill-race-data.js`の`winning_technique`更新経路を発見したが8列に含まれないため見落とし無しと確認。**本番DDL適用は未実施、ユーザー承認待ち**。
+
+並行稼働中の子: BOA-408（1件）。
