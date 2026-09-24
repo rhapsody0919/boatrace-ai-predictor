@@ -119,6 +119,15 @@
 - [ ] タイミング実測: 可変データは、土日を含む直近7日で窓内取得率（窓の中心±3分以内）を実測する（欠落率2%以内）。Kファイルは開催日の夜〜翌日に公開されるため、窓型ではなく、「公開から取得までの遅延」（当日分の実進入コースは、当日中に取得できない仕様。plan.md・job-inventory.md G10）を実測する
 - [ ] 継続監視: 上記指標が日次で自動計測され、閾値超過でSlack通知されることを確認する
 
+### WS8(c)-2 `trg_update_predictions`のUPDATE OF列限定（BOA-409）
+
+BOA-405（[predictions-write-optimization.md](./predictions-write-optimization.md) 4節、PR #808）の推奨案2をDDLドラフトとして提出。`race_results`のトリガー`trg_update_predictions`が、`update_prediction_results()`が実際に参照する8列（`rank1〜3`・`payout_win`・`payout_place_1`・`payout_place_2`・`payout_trifecta`・`payout_trio`）以外の更新でも無条件に発火し、`predictions`・`bet_recommendations`の該当レース全行を再UPDATEしている問題への対処。
+
+- [x] **WS8(c)-2-1**（BOA-409、本タスク）DDLドラフトを`docs/db-migration/097_limit_trg_update_predictions_columns.sql`として作成し、PRを提出（適用はしない）。既存のトリガー関数`update_prediction_results()`は無変更、`CREATE TRIGGER`の`UPDATE OF`列リストのみ絞る（`DROP TRIGGER`→`CREATE TRIGGER`）
+- [x] **WS8(c)-2-2**（同PR）8列の特定が正しいか、`scripts/`・`api/`配下の`race_results`書き込み経路を再確認した。設計提案（4.1・4.2節）に記載済みの経路に加え、`scripts/maintenance/backfill-race-data.js`の`updateRaceResult()`（`winning_technique`のみ更新）を新たに確認したが、いずれも8列以外のみを更新する経路であり、8列の特定に見落としは無かった（詳細はPR本文）
+- [ ] **WS8(c)-2-3** (ユーザー承認) 開催時間帯を避けて本番へDDLを適用する（`npm run verify:migration-numbers`で番号確認済み、`docs/db-migration/APPLIED.md`に行を追加済み）
+- [ ] **WS8(c)-2-4** 適用後、`pg_stat_user_tables`の`predictions`・`bet_recommendations`の`n_tup_upd`を適用前後で比較し、削減効果を実測する（5節の見積りの検証）
+
 ---
 
 ## Phase 3: オッズ（トラックA）
