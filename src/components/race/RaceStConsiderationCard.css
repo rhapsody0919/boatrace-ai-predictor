@@ -308,7 +308,7 @@
 }
 
 .rsc-hist-label {
-  font-size: 0.6rem;
+  font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   white-space: nowrap;
 }
@@ -353,7 +353,7 @@
    自力で確かめられるようにする（2026-09-24ユーザー指摘） */
 .rsc-baseline {
   display: block;
-  font-size: 0.6rem;
+  font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   line-height: 1.1;
 }

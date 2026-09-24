@@ -459,7 +459,7 @@
     "oddsList": "賠率一覽"
   },
   "wakuInfo": {
-    "note": "選擇選手後，可依期間與條件比較該選手在本日預想航道的成績。點擊列可展開該航道最近10次的名次。全部6條航道的比較請從表格下方的摺疊區開啟。",
+    "note": "選擇選手後，可依期間與條件比較該選手在本日預想航道的成績。點擊左側的期間名稱，可展開該航道最近10次的名次。全部6條航道的比較請從表格下方的摺疊區開啟。",
     "boatLabel": "選手（艇號）",
     "metricLabel": "指標",
     "metrics": {
@@ -467,15 +467,11 @@
       "top2Rate": "連對率",
       "top3Rate": "前三名率"
     },
-    "courseTitle": "各艇號成績",
-    "courseSubtitle": "全國・全期間實績（以出賽時的艇號為準）",
-    "courseCaveat": "※無法區分實際進場航道的變化（前置），因此以出賽時的艇號統計。成績為產生預測當下的統計值，最近10場則為最新資料，場次可能略有出入",
     "loading": "載入中...",
     "sampleCount": "(n={{n}})",
     "outOfPlace": "外",
     "todayBadge": "本場艇號",
     "noData": "沒有資料",
-    "noRacerId": "無法取得選手資訊",
     "noRecentFinishes": "沒有此艇號的出賽紀錄",
     "fetchError": "無法取得最近10場資料，請稍後再試",
     "recentFinishesNote": "從第{{course}}航道（實際進入的航道）出賽的最近10場",
@@ -484,7 +480,6 @@
     "gridTitle": "各航道成績",
     "gridSubtitle": "以實際進入的航道為準。點擊儲存格可查看該航道最近10次出賽",
     "gridCaveat": "航道指起跑時實際進入的航道，而非艇號。未取得資料的賽事已排除",
-    "gridCourseHeader": "第{{n}}航道",
     "gridRows": {
       "current": "本期",
       "last3m": "近3個月",
@@ -501,7 +496,8 @@
     "wakuNariRate": "此選手依艇號進入的比率為{{rate}}％（最近{{n}}次出賽）",
     "periodHeader": "期間・條件",
     "nHeader": "出賽數",
-    "allCoursesFold": "查看全部6條航道的成績"
+    "allCoursesFold": "查看全部6條航道的成績",
+    "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（最多過去2年）。與官方網站的勝率母體不同。"
   },
   "aiPredictionTab": {
     "unavailableTitle": "尚無AI預測資料",

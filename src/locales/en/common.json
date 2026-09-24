@@ -461,7 +461,7 @@
     "oddsList": "Odds List"
   },
   "wakuInfo": {
-    "note": "Pick a racer to compare their record in today's expected course across periods and conditions. Tap a row to see the last 10 finishes from that course. Use the fold below the table to compare all six courses.",
+    "note": "Pick a racer to compare their record in today's expected course across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses.",
     "boatLabel": "Racer (boat #)",
     "metricLabel": "Metric",
     "metrics": {
@@ -469,15 +469,11 @@
       "top2Rate": "Top-2 rate",
       "top3Rate": "Top-3 rate"
     },
-    "courseTitle": "Record by lane",
-    "courseSubtitle": "All venues, all periods (by boat number at race time)",
-    "courseCaveat": "* Actual entry-course changes can't be distinguished, so results are grouped by the boat number the racer had in each race. Rates are a snapshot from when the prediction was generated while the last 10 finishes use the latest data, so counts may differ slightly",
     "loading": "Loading...",
     "sampleCount": "(n={{n}})",
     "outOfPlace": "DNF",
     "todayBadge": "This race's lane",
     "noData": "No data available",
-    "noRacerId": "Racer information could not be loaded",
     "noRecentFinishes": "No race history from this lane",
     "fetchError": "Couldn't load the last 10 finishes. Please try again later",
     "recentFinishesNote": "Last 10 starts from course {{course}} (the course actually taken)",
@@ -486,7 +482,6 @@
     "gridTitle": "Record by course",
     "gridSubtitle": "Based on the course actually taken. Tap a cell to see the last 10 starts from that course",
     "gridCaveat": "Course means the lane actually taken at the start, not the boat number. Races without this data are excluded",
-    "gridCourseHeader": "Course {{n}}",
     "gridRows": {
       "current": "This term",
       "last3m": "Last 3 months",
@@ -503,7 +498,8 @@
     "wakuNariRate": "This racer starts from the assigned lane {{rate}}% of the time (last {{n}} races)",
     "periodHeader": "Period / condition",
     "nHeader": "Races",
-    "allCoursesFold": "Show the record for all six courses"
+    "allCoursesFold": "Show the record for all six courses",
+    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (up to the past two years), so the population differs from the win rate on the official site."
   },
   "aiPredictionTab": {
     "unavailableTitle": "No AI prediction data",

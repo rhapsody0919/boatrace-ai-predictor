@@ -1087,7 +1087,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
       "枠なり",
     );
 
-    // 指標チップは既定では出さない（既定ビューは3指標を同時に出すため不要）
+    // 指標チップは既定では出さない（既定ビューは3指標を同時に出すため不要）。
+    // toBeHidden()は要素が存在しない場合も通るため、存在することも確かめる
+    await expect(page.locator(".rwit-metric-row")).toHaveCount(1);
     await expect(page.locator(".rwit-metric-row")).toBeHidden();
 
     // 行をタップすると直近10走の帯（RecentRunsBar）が開く
@@ -1109,10 +1111,17 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rwit-today-course")).toContainText("3コース", {
       timeout: 20000,
     });
+    // 履歴の取得を待つ（新人等で0件だと以降のセレクタが消え、原因の分からない
+    // タイムアウトになるため、ここで表の存在を確かめて切り分けを効かせる）
+    await expect(page.locator(".rwit-today-table")).toBeVisible({
+      timeout: 20000,
+    });
 
     // 全コース比較は既定で閉じており、折りたたみを開くと6×6のグリッドが出る
+    await expect(page.locator(".rwit-grid")).toHaveCount(1);
     await expect(page.locator(".rwit-grid")).toBeHidden();
     await page.locator(".rwit-fold-summary").click();
+    await expect(page.locator(".rwit-grid")).toBeVisible();
     await expect(page.locator(".rwit-grid tbody tr")).toHaveCount(6);
     await expect(
       page.locator(".rwit-grid thead th.rwit-grid-course-th"),

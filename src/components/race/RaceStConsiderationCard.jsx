@@ -234,7 +234,11 @@ function RaceStConsiderationCard({
                           {formatDiff(diff)}
                         </span>
                       )}
-                      {cell?.stable_rate !== null &&
+                      {/* 選手側の値が「—」のとき（その条件での走が無い）は平均も
+                          出さない。「— 平均5.2」だけが並ぶと比較対象の無い数字が
+                          独り歩きする（レビュー指摘、2026-09-24） */}
+                      {value !== null &&
+                        cell?.stable_rate !== null &&
                         cell?.stable_rate !== undefined && (
                           <span className="rsc-baseline">
                             {t("stConsideration.average", {
@@ -316,7 +320,11 @@ function RaceStConsiderationCard({
                           {formatDiff(diff)}
                         </span>
                       )}
-                      {cell?.late_rate !== null &&
+                      {/* 選手側の値が「—」のとき（その条件での走が無い）は平均も
+                          出さない。「— 平均5.2」だけが並ぶと比較対象の無い数字が
+                          独り歩きする（レビュー指摘、2026-09-24） */}
+                      {value !== null &&
+                        cell?.late_rate !== null &&
                         cell?.late_rate !== undefined && (
                           <span className="rsc-baseline">
                             {t("stConsideration.average", {

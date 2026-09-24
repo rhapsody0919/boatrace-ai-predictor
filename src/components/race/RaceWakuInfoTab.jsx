@@ -19,28 +19,26 @@
  *   全艇合算の単純集計で、艇別の攻守分布を見せるAttackDefenseAnalysisとは
  *   異なる粒度・目的の情報
  *
- * データソース:
- * - コース別成績: getRaceRacerStatsが返すracerStats
- *   （predictions.feature_contributions.racerStats、DataRaceTableの
- *   「枠番勝率」行・AttackDefenseTableと同じ出所）のcourseRaceCounts
- *   （racer_aggregated_stats由来、全国合算・全期間、艇番＝コース前提。
- *   実際の進入コース変化はBOA-257の制約により区別できない）
- * - コースドリルダウン直近10走: supabaseDataService.getRacerCourseRecentFinishes
- *   （本チケットで新規追加）。courseRaceCountsと母集団の定義を揃えるため、
- *   実進入コース（actual_course_N）ではなくrace_entries.boat_numberで判定する
+ * データソース（phase aのT3-1で差し替え済み。旧記述は下の「廃止した出所」参照）:
+ * - コース別成績・直近10走: supabaseDataService.getRacerScopedRaceStats
+ *   （選手単位の全走。実進入コースは race_results.actual_course_N）。
+ *   集計は courseGridStats.js の純関数に閉じ込め、追加クエリは発行しない
+ * - ST考察のベースライン: getStCourseBaseline（st_course_baseline、コース×級別24行）
+ * - 逃げシミュレーション: getNigeSimulation（nige_second_by_course、会場別）
  * - 決まり手傾向（全艇）: getWinningTechniqueStatsのデータ
  *   （winning_technique_stats、直近90日）を6艇合算して技法別シェアに変換する。
  *   VenueTendencyPanelは艇別の最頻値1件のみ表示するが、本カードは
  *   技法5種類の全体シェアを見せる別の切り口
  *
- * 調査結果（チケット項目3、対象外）: 「逃げシミュレーション」「ST考察
- * （安定率/抜出率/出遅率）」に相当する集計・カラムは自社DBに存在しない
- * （grep調査済み、2026-09-16）。無理にダミーで埋めず対象外とする
+ * 廃止した出所: racerStats.courseRaceCounts（racer_aggregated_stats由来、
+ * 艇番＝コース前提）と getRacerCourseRecentFinishes（同じく艇番基準）は、
+ * グリッドを実進入コース基準にした時点で母集団が合わなくなり使わなくなった。
+ * 同じサイト内で艇番基準と実進入コース基準が混在する点はBOA-302が横断課題
+ * として起票済み（courseGridStats.js のモジュールコメント参照）。
  *
  * 調査結果（チケット項目4）: モーター情報タブのMotorWakuStatsGrid（BOA-283/301）は
  * テーブル形式で、承認済みモックのバーチャート＋インライン展開とは見た目が
- * 合わないため直接流用はしない。UIパターンとしては基本情報タブ
- * （RaceBasicInfoTab）のバー＋タップ展開パターンを踏襲する
+ * 合わないため直接流用はしない
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -165,8 +163,14 @@ function RaceWakuInfoTab({ venueCode, players }) {
     () => sortedPlayers[0]?.number ?? null,
   );
   const [metric, setMetric] = useState("winRate");
-  // グリッドのどのセルを開いているか（行キー × コース）
+  // グリッドのどのセルを開いているか（行キー × コース × どちらの表か）
   const [openCell, setOpenCell] = useState(null);
+  // 全コース比較の折りたたみ。native <details> ではなくReactの状態で持つ。
+  // <details> は取得待ちの分岐（scopedRecords === undefined）の中にあるため、
+  // 履歴が未取得の選手に切り替えるとサブツリーが差し替わって再マウントされ、
+  // 開いていた折りたたみが勝手に閉じる（レビュー指摘、2026-09-24）。
+  // ST考察カードの openSection と同じ制御方式に揃える
+  const [foldOpen, setFoldOpen] = useState(false);
 
   const selectedPlayer =
     sortedPlayers.find((p) => p.number === selectedBoat) ?? sortedPlayers[0];
@@ -235,12 +239,19 @@ function RaceWakuInfoTab({ venueCode, players }) {
     setOpenCell(null);
   };
 
-  // from は展開パネルをどちらの表の下に出すかを決めるだけのもの。
-  // 既定ビューと折りたたみの全コース表は同じ (rowKey, course) を指しうるため、
-  // これが無いと折りたたみで開いたのに上の表の下にパネルが出てしまう
+  // from は展開パネルをどちらの表の下に出すかを決める。既定ビューと折りたたみの
+  // 全コース表は同じ (rowKey, course) を指しうるため、これが無いと折りたたみで
+  // 開いたのに上の表の下にパネルが出てしまう。
+  // **同一判定にも from を含める**: 既定ビューの行は必ず course=todayCourse を指し、
+  // 全コース表の「今日」列セルも同じ (rowKey, course) を指すため、from を判定に
+  // 入れないと両者が常に衝突し、片方を開いた状態でもう片方を押すと「閉じるだけ」
+  // になって無反応に見える（レビュー指摘、2026-09-24）
   const toggleCell = (rowKey, course, from) => {
     setOpenCell((prev) =>
-      prev && prev.rowKey === rowKey && prev.course === course
+      prev &&
+      prev.rowKey === rowKey &&
+      prev.course === course &&
+      prev.from === from
         ? null
         : { rowKey, course, from },
     );
@@ -411,11 +422,17 @@ function RaceWakuInfoTab({ venueCode, players }) {
 
             {/* 全コースの比較は畳んでおく。見たい人（前づけ・進入変化を気にする層）は
                 確実に開くが、既定で見せると今日のコースが埋もれる */}
-            <details className="rwit-fold">
-              <summary className="rwit-fold-summary">
+            <div className="rwit-fold">
+              <button
+                type="button"
+                className={`rwit-fold-summary${foldOpen ? " is-open" : ""}`}
+                onClick={() => setFoldOpen((prev) => !prev)}
+                aria-expanded={foldOpen}
+              >
+                {foldOpen ? "▾ " : "▸ "}
                 {t("wakuInfo.allCoursesFold")}
-              </summary>
-              <div className="rwit-fold-body">
+              </button>
+              <div className="rwit-fold-body" hidden={!foldOpen}>
                 {/* 指標チップは全コース表の中だけに効く。カード見出しの外に置くと
                     ST考察・逃げシミュレーションにも効くように見えてしまう */}
                 <div
@@ -559,9 +576,10 @@ function RaceWakuInfoTab({ venueCode, players }) {
                 )}
                 <p className="rwit-card-sub">{t("wakuInfo.gridSubtitle")}</p>
               </div>
-            </details>
+            </div>
           </>
         )}
+        <p className="rwit-caveat">{t("wakuInfo.periodCaveat")}</p>
         <p className="rwit-caveat">{t("wakuInfo.gridCaveat")}</p>
       </div>
 

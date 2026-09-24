@@ -401,7 +401,7 @@
 
 .rwit-today-mark {
   display: block;
-  font-size: 0.6rem;
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-normal);
   line-height: 1.1;
   opacity: 0.85;
@@ -445,9 +445,17 @@
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   padding: 0;
-  white-space: nowrap;
 }
 
+/* 見出し行だけは上下に余白を持たせる（.rwit-today-label-th は本文側の
+   行ラベルと共用で padding:0 のため、見出しの「期間・条件」が詰まる） */
+thead .rwit-today-label-th {
+  padding: var(--spacing-1) 0;
+}
+
+/* 見出しは折り返させる。nowrapにすると英語（"1st-place rate" 等）で表が
+   390pxを超え、ページ全体が21px横スクロールした（レビュー指摘の「未確認」
+   項目を実測して確認、2026-09-24）。数値セル側は nowrap のままにする */
 .rwit-today-metric-th,
 .rwit-today-n-th {
   text-align: right;
@@ -455,7 +463,8 @@
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   padding: var(--spacing-1) 0 var(--spacing-1) var(--spacing-2);
-  white-space: nowrap;
+  line-height: 1.2;
+  overflow-wrap: break-word;
 }
 
 .rwit-today-row + .rwit-today-row .rwit-today-label-th,
@@ -499,6 +508,7 @@
   text-align: right;
   padding: var(--spacing-1) 0 var(--spacing-1) var(--spacing-2);
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .rwit-today-value {
@@ -529,13 +539,22 @@
   padding-top: var(--spacing-2);
 }
 
+/* native <summary> ではなく <button>。<details> は取得待ちの分岐の中にあり、
+   選手切替で再マウントされて開閉状態が失われるため（ST考察カードの
+   .rsc-fold-toggle と同じ制御方式に揃えた） */
 .rwit-fold-summary {
   min-height: 44px;
   display: flex;
   align-items: center;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
   font-size: var(--font-size-sm);
   color: var(--brand-accent-primary);
   cursor: pointer;
+  text-align: left;
 }
 
 .rwit-fold-body {

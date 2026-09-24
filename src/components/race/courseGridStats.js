@@ -113,7 +113,9 @@ export const TODAY_METRICS = ["winRate", "top2Rate", "top3Rate"];
  * @returns {Array<{key: string, metrics: Record<string, number|null>, n: number}>}
  */
 export function buildTodayCourseRows(records, { venueCode, course }) {
-  const all = Array.isArray(records) ? records : [];
+  // course が数値でないときに素通りさせると、`actualCourse === null` の走
+  // （実進入コースが取れていないレース）を「今日のコース」として数えてしまう
+  const all = Number.isInteger(course) && Array.isArray(records) ? records : [];
   return GRID_ROWS.map((row) => {
     const filtered = filterRecords(all, {
       venueCode,
