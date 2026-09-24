@@ -194,7 +194,6 @@ function MorningDataDigest() {
                         venueBaseline={row.metric_venue_baseline}
                         sampleSize={row.sample_size}
                         isSmallSample={row.is_small_sample}
-                        wilsonLower={row.metric_wilson_lower}
                         rate90d={row.rate_90d}
                         sampleSize90d={row.sample_size_90d}
                       />
@@ -228,7 +227,6 @@ function MorningDataDigest() {
                         venueBaseline={row.metric_venue_baseline}
                         sampleSize={row.sample_size}
                         isSmallSample={row.is_small_sample}
-                        wilsonLower={row.metric_wilson_lower}
                         rate90d={row.rate_90d}
                         sampleSize90d={row.sample_size_90d}
                       />
@@ -261,7 +259,6 @@ function MorningDataDigest() {
                         venueBaseline={row.metric_venue_baseline}
                         sampleSize={row.sample_size}
                         isSmallSample={row.is_small_sample}
-                        wilsonLower={row.metric_wilson_lower}
                         rate90d={row.rate_90d}
                         sampleSize90d={row.sample_size_90d}
                       />
@@ -327,12 +324,6 @@ function MorningDataDigest() {
                   その選手が実際に走った会場・レースグレードの構成で、全選手を平均した割合。
                   この選手の割合と見比べると、走ってきた条件が楽だったかどうかが分かります。
                   ▼で開くと出ます。
-                </dd>
-                <dt>控えめに見て◯%</dt>
-                <dd>
-                  母数が少ないほど割合は振れます。この母数なら95%の確からしさで最低でも
-                  この値はある、という下限です（統計のWilson信頼区間の下限）。
-                  たとえば38走で84.2%なら「控えめに見て69.6%」になります。▼で開くと出ます。
                 </dd>
                 <dt>イン崩れ指数</dt>
                 <dd>

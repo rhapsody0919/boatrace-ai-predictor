@@ -110,7 +110,7 @@
   color: var(--text-primary);
 }
 
-.rate-baseline__wilson {
+.rate-baseline__hint {
   border-bottom: 1px dotted var(--border-hairline);
   cursor: help;
 }

@@ -27,7 +27,11 @@
  *     さらにグレードのセルが100走未満のときは `ALL`（全グレード）へフォールバックする
  *     （実測で110行中31行＝28.2%）。「本日の級別」は二重に誤り。実際に使ったセルを
  *     `detail.baselineGrade` に保存し、そのまま表示する
- *   - **「信頼下限」**: 統計の語。「控えめに見て」に言い換える
+ *   - **「信頼下限」**: 統計の語。「控えめに見て」と言い換えたが、それでも
+ *     **表示そのものが不要**という判断になり削除した（2026-09-24）。
+ *     同じカードに%の数値が増えるほど「どれを見ればいいのか」が分からなくなるため。
+ *     母数の少なさは「⚠ 母数が少なく振れ幅が大きい」という文だけで伝える。
+ *     値自体は `morning_digest_rows.metric_wilson_lower` に引き続き保存する
  *   - **「◯◯率」だけの見出し**: 何を分母に何を数えた率か分からない。
  *     「1コースに入ったときに逃げ切った割合」のように文で書く。
  *     とくに**「勝率」という語は使えない**（ボートレースの勝率は着順点の平均であって
@@ -46,8 +50,7 @@
  * ## 母数は折りたたんでも隠さない
  *
  * 34走の88%と9走の88%は別物で、母数の見えない率は信用度を判断できない。
- * 畳むのは確からしさの下限（Wilson95%下限、plan.md §2.3.1）・直近90日・
- * 走ってきた会場の平均だけ。
+ * 畳むのは「この選手が走ってきた会場の平均」と「直近90日」だけ。
  */
 import "./RateWithBaseline.css";
 
@@ -91,7 +94,6 @@ function RateWithBaseline({
   venueName,
   sampleSize,
   isSmallSample = false,
-  wilsonLower = null,
   rate90d = null,
   sampleSize90d = null,
   venueBaseline = null,
@@ -138,17 +140,9 @@ function RateWithBaseline({
           {ownVenueMix !== null && (
             <span
               title="この選手が実際に走った会場・レースグレードの構成で、全選手を平均した割合。この選手の割合と見比べると、走ってきた条件が楽だったかどうかが分かる"
-              className="rate-baseline__wilson"
+              className="rate-baseline__hint"
             >
               この選手が走ってきた会場の平均 {ownVenueMix.toFixed(1)}%
-            </span>
-          )}
-          {wilsonLower !== null && (
-            <span
-              title="母数が少ないほど割合は振れる。この母数なら、95%の確からしさで最低でもこの値はある、という下限（Wilson信頼区間の下限）"
-              className="rate-baseline__wilson"
-            >
-              控えめに見て {Number(wilsonLower).toFixed(1)}%
             </span>
           )}
           {sampleSize90d !== null &&
