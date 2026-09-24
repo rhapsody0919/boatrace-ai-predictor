@@ -291,3 +291,226 @@ GRANT SELECT ON public.morning_digest_rows TO anon, authenticated;
 
 COMMENT ON TABLE morning_digest_rows IS
   '「本日のデータ一覧」の1日ぶんの抽出結果（BOA-402）。ページとSNS下書きがこの1表だけを読むことで、Web/SNS間で値が食い違わないことを構造的に保証する（ADR-0070）。日付ごとに残すため ?date= の過去日参照がその日の集計値で再現される';
+
+-- ---------------------------------------------------------------------------
+-- 5) 集計RPC（日次バッチが呼ぶ。service_role専用・匿名はREVOKE）
+--
+--    設計: plan.md §3.1。基礎CTEは全期間で約26万行（43,643レース×6艇）を読むため、
+--    Node側に生データを持たず、結果の約612行＋約9,471行だけを返す。
+--
+--    ⚠️ CTEには MATERIALIZED を付ける。094で「付けないと base が複数回参照されて
+--       その都度スキャンされ statement timeout になる」ことを実測済み。
+--
+--    GRANT EXECUTE しない（094と同じ）。画面は集計済みのテーブルを単純SELECTで読む。
+-- ---------------------------------------------------------------------------
+
+-- 5-1. 会場 × グレード × 実進入コースのベースライン
+--
+-- race_grade='ALL' の行（グレードを問わない集計）も同時に返す。
+-- セルの母数が閾値未満のとき、5-2 のフォールバック先になる。
+CREATE OR REPLACE FUNCTION compute_venue_course_technique_baseline()
+RETURNS TABLE (
+  venue_code   SMALLINT,
+  race_grade   TEXT,
+  course       SMALLINT,
+  window_start DATE,
+  window_end   DATE,
+  window_days  SMALLINT,
+  runs         INTEGER,
+  nige_rate    NUMERIC,
+  makuri_rate  NUMERIC,
+  nigashi_rate NUMERIC
+)
+LANGUAGE sql
+STABLE
+AS $$
+WITH base AS MATERIALIZED (
+  SELECT
+    ra.race_date,
+    ra.venue_code,
+    COALESCE(ra.race_grade, 'ippan') AS grade,
+    rr.winning_technique,
+    (rr.rank1 = e.boat_number)       AS is_self_win,
+    CASE e.boat_number
+      WHEN 1 THEN rr.actual_course_1 WHEN 2 THEN rr.actual_course_2
+      WHEN 3 THEN rr.actual_course_3 WHEN 4 THEN rr.actual_course_4
+      WHEN 5 THEN rr.actual_course_5 WHEN 6 THEN rr.actual_course_6
+    END AS course
+  FROM races ra
+  JOIN race_results rr ON rr.race_id = ra.race_id
+  JOIN race_entries e  ON e.race_id  = ra.race_id
+  WHERE rr.actual_course_1 IS NOT NULL
+    AND rr.winning_technique IS NOT NULL AND rr.winning_technique <> ''
+    AND COALESCE(rr.is_cancelled, false) = false
+    AND COALESCE(rr.is_no_race, false)   = false
+    AND COALESCE(e.is_absent, false)     = false
+    AND e.racer_id IS NOT NULL
+),
+win AS (SELECT MIN(race_date) AS ws, MAX(race_date) AS we FROM base),
+agg AS (
+  -- グレード別のセル
+  SELECT b.venue_code, b.grade AS race_grade, b.course,
+         COUNT(*) AS runs,
+         COUNT(*) FILTER (WHERE b.winning_technique = '逃げ'   AND b.is_self_win) AS nige,
+         COUNT(*) FILTER (WHERE b.winning_technique = 'まくり' AND b.is_self_win) AS makuri,
+         COUNT(*) FILTER (WHERE b.winning_technique = '逃げ')                     AS nigashi
+  FROM base b
+  WHERE b.course BETWEEN 1 AND 6
+  GROUP BY b.venue_code, b.grade, b.course
+  UNION ALL
+  -- グレードを問わないフォールバック行
+  SELECT b.venue_code, 'ALL', b.course,
+         COUNT(*),
+         COUNT(*) FILTER (WHERE b.winning_technique = '逃げ'   AND b.is_self_win),
+         COUNT(*) FILTER (WHERE b.winning_technique = 'まくり' AND b.is_self_win),
+         COUNT(*) FILTER (WHERE b.winning_technique = '逃げ')
+  FROM base b
+  WHERE b.course BETWEEN 1 AND 6
+  GROUP BY b.venue_code, b.course
+)
+SELECT
+  a.venue_code::SMALLINT,
+  a.race_grade::TEXT,
+  a.course::SMALLINT,
+  w.ws,
+  w.we,
+  (w.we - w.ws + 1)::SMALLINT,
+  a.runs::INTEGER,
+  -- 1コースのみ逃げ率を持つ（CHECK制約 vctb_rate_by_course に合わせる）
+  CASE WHEN a.course = 1 THEN ROUND(a.nige::numeric / a.runs * 100, 2) END,
+  ROUND(a.makuri::numeric / a.runs * 100, 2),
+  -- 2〜6コースのみ逃がし率を持つ。値は定義上そのセルの逃げ率と一致する
+  CASE WHEN a.course > 1 THEN ROUND(a.nigashi::numeric / a.runs * 100, 2) END
+FROM agg a CROSS JOIN win w;
+$$;
+
+REVOKE ALL ON FUNCTION compute_venue_course_technique_baseline() FROM PUBLIC;
+REVOKE ALL ON FUNCTION compute_venue_course_technique_baseline() FROM anon, authenticated;
+
+COMMENT ON FUNCTION compute_venue_course_technique_baseline() IS
+  'venue_course_technique_baseline の全行を算出して返す（BOA-402）。race_grade=''ALL'' のフォールバック行も含む。日次バッチ scripts/daily/update-racer-course-technique-stats.js が呼ぶ';
+
+-- 5-2. 選手 × 実進入コースの決まり手実績
+--
+-- 期待値（expected）は「その選手の各走の、会場×グレード×コースのベースライン率」の平均。
+-- **venue_course_technique_baseline を読む**ため、5-1 の結果を書き込んだ後に呼ぶこと。
+-- セルの母数が MIN_BASELINE_RUNS(100) 未満のときは race_grade='ALL' 行へフォールバックする。
+--
+-- 調子窓（直近90日）の基準日は **JSTの当日**。データの最終日ではない
+-- （「直近90日」は利用者から見た今日を起点にするのが自然なため）。
+CREATE OR REPLACE FUNCTION compute_racer_course_technique_stats()
+RETURNS TABLE (
+  racer_id         INTEGER,
+  course           SMALLINT,
+  window_start     DATE,
+  window_end       DATE,
+  window_days      SMALLINT,
+  runs             INTEGER,
+  nige_count       INTEGER,
+  nige_rate        NUMERIC,
+  nige_expected    NUMERIC,
+  makuri_count     INTEGER,
+  makuri_rate      NUMERIC,
+  makuri_expected  NUMERIC,
+  nigashi_count    INTEGER,
+  nigashi_rate     NUMERIC,
+  nigashi_expected NUMERIC,
+  runs_90d         INTEGER,
+  nige_rate_90d    NUMERIC,
+  makuri_rate_90d  NUMERIC,
+  nigashi_rate_90d NUMERIC
+)
+LANGUAGE sql
+STABLE
+AS $$
+WITH base AS MATERIALIZED (
+  SELECT
+    ra.race_date,
+    ra.venue_code,
+    COALESCE(ra.race_grade, 'ippan') AS grade,
+    e.racer_id,
+    rr.winning_technique,
+    (rr.rank1 = e.boat_number)       AS is_self_win,
+    CASE e.boat_number
+      WHEN 1 THEN rr.actual_course_1 WHEN 2 THEN rr.actual_course_2
+      WHEN 3 THEN rr.actual_course_3 WHEN 4 THEN rr.actual_course_4
+      WHEN 5 THEN rr.actual_course_5 WHEN 6 THEN rr.actual_course_6
+    END AS course
+  FROM races ra
+  JOIN race_results rr ON rr.race_id = ra.race_id
+  JOIN race_entries e  ON e.race_id  = ra.race_id
+  WHERE rr.actual_course_1 IS NOT NULL
+    AND rr.winning_technique IS NOT NULL AND rr.winning_technique <> ''
+    AND COALESCE(rr.is_cancelled, false) = false
+    AND COALESCE(rr.is_no_race, false)   = false
+    AND COALESCE(e.is_absent, false)     = false
+    AND e.racer_id IS NOT NULL
+),
+win AS (SELECT MIN(race_date) AS ws, MAX(race_date) AS we FROM base),
+-- 各走に、その走の会場×グレード×コースのベースラインを付ける（母数不足はALLへフォールバック）
+withbase AS MATERIALIZED (
+  SELECT
+    b.*,
+    COALESCE(
+      CASE WHEN g.runs >= 100 THEN g.nige_rate    END, al.nige_rate)    AS bl_nige,
+    COALESCE(
+      CASE WHEN g.runs >= 100 THEN g.makuri_rate  END, al.makuri_rate)  AS bl_makuri,
+    COALESCE(
+      CASE WHEN g.runs >= 100 THEN g.nigashi_rate END, al.nigashi_rate) AS bl_nigashi
+  FROM base b
+  LEFT JOIN venue_course_technique_baseline g
+    ON g.venue_code = b.venue_code AND g.race_grade = b.grade AND g.course = b.course
+  LEFT JOIN venue_course_technique_baseline al
+    ON al.venue_code = b.venue_code AND al.race_grade = 'ALL' AND al.course = b.course
+  WHERE b.course BETWEEN 1 AND 6
+),
+cutoff AS (SELECT ((now() AT TIME ZONE 'Asia/Tokyo')::date - 90) AS d90)
+SELECT
+  w2.racer_id::INTEGER,
+  w2.course::SMALLINT,
+  win.ws,
+  win.we,
+  (win.we - win.ws + 1)::SMALLINT,
+  COUNT(*)::INTEGER,
+  -- 1コースのみ逃げの3列を持つ（CHECK制約 rcts_rate_by_course に合わせる）
+  CASE WHEN w2.course = 1
+       THEN COUNT(*) FILTER (WHERE w2.winning_technique = '逃げ' AND w2.is_self_win)::INTEGER END,
+  CASE WHEN w2.course = 1
+       THEN ROUND(COUNT(*) FILTER (WHERE w2.winning_technique = '逃げ' AND w2.is_self_win)::numeric
+                  / COUNT(*) * 100, 2) END,
+  CASE WHEN w2.course = 1 THEN ROUND(AVG(w2.bl_nige), 2) END,
+  -- まくりは全コース共通（1コースは実測で常に0）
+  COUNT(*) FILTER (WHERE w2.winning_technique = 'まくり' AND w2.is_self_win)::INTEGER,
+  ROUND(COUNT(*) FILTER (WHERE w2.winning_technique = 'まくり' AND w2.is_self_win)::numeric
+        / COUNT(*) * 100, 2),
+  ROUND(AVG(w2.bl_makuri), 2),
+  -- 2〜6コースのみ逃がしの3列を持つ
+  CASE WHEN w2.course > 1
+       THEN COUNT(*) FILTER (WHERE w2.winning_technique = '逃げ')::INTEGER END,
+  CASE WHEN w2.course > 1
+       THEN ROUND(COUNT(*) FILTER (WHERE w2.winning_technique = '逃げ')::numeric
+                  / COUNT(*) * 100, 2) END,
+  CASE WHEN w2.course > 1 THEN ROUND(AVG(w2.bl_nigashi), 2) END,
+  -- 調子窓（直近90日）。母数0のときは率をNULLにする（CHECK制約 rcts_90d_rates_null_when_no_runs）
+  COUNT(*) FILTER (WHERE w2.race_date >= c.d90)::INTEGER,
+  CASE WHEN w2.course = 1 AND COUNT(*) FILTER (WHERE w2.race_date >= c.d90) > 0
+       THEN ROUND(COUNT(*) FILTER (WHERE w2.race_date >= c.d90
+                                     AND w2.winning_technique = '逃げ' AND w2.is_self_win)::numeric
+                  / COUNT(*) FILTER (WHERE w2.race_date >= c.d90) * 100, 2) END,
+  CASE WHEN COUNT(*) FILTER (WHERE w2.race_date >= c.d90) > 0
+       THEN ROUND(COUNT(*) FILTER (WHERE w2.race_date >= c.d90
+                                     AND w2.winning_technique = 'まくり' AND w2.is_self_win)::numeric
+                  / COUNT(*) FILTER (WHERE w2.race_date >= c.d90) * 100, 2) END,
+  CASE WHEN w2.course > 1 AND COUNT(*) FILTER (WHERE w2.race_date >= c.d90) > 0
+       THEN ROUND(COUNT(*) FILTER (WHERE w2.race_date >= c.d90
+                                     AND w2.winning_technique = '逃げ')::numeric
+                  / COUNT(*) FILTER (WHERE w2.race_date >= c.d90) * 100, 2) END
+FROM withbase w2 CROSS JOIN win CROSS JOIN cutoff c
+GROUP BY w2.racer_id, w2.course, win.ws, win.we;
+$$;
+
+REVOKE ALL ON FUNCTION compute_racer_course_technique_stats() FROM PUBLIC;
+REVOKE ALL ON FUNCTION compute_racer_course_technique_stats() FROM anon, authenticated;
+
+COMMENT ON FUNCTION compute_racer_course_technique_stats() IS
+  'racer_course_technique_stats の全行を算出して返す（BOA-402）。venue_course_technique_baseline を読むため、compute_venue_course_technique_baseline() の結果を書き込んだ後に呼ぶこと';

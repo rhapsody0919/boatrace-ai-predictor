@@ -77,12 +77,37 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
   - 適用後の確認（読み取りのみ）: 4表が存在・RLS有効・`has_table_privilege('anon', …, 'SELECT')=true` かつ `'INSERT'=false`・公開読み取りポリシー各1件・`morning_digest_rows` のFKが `morning_digest_days` を指す
   - **受入基準**: 上記がすべて満たされ、`scripts/maintenance/check-anon-access.js --expect-applied` が通る
 
-- [ ] **T2-2** 集計RPC 2本を097に追加する（`compute_venue_course_technique_baseline` / `compute_racer_course_technique_stats`）
-  - 094 の `compute_st_course_baseline()` と同じ形（`SECURITY INVOKER`・`STABLE`・service_role のみ EXECUTE、anon/authenticated は REVOKE）
-  - `window_start` / `window_end` / `window_days` は**実測値**を返す。365等の固定値を書かない
-  - 除外条件は plan.md §2.2 の共通条件どおり。**`race_results.course_1〜6` を使わない**
-  - **受入基準**: RPCの戻り値と、同じ定義を `node -e` で書いた独立のSQLの結果が**全行一致**する。`venue_course_technique_baseline` が約612行（実在セル468＋`ALL` 144）、`racer_course_technique_stats` が実測9,471行と一致する
-  - **注**: T2-1で097を適用済みの場合、RPCの追加は別マイグレーション（098）に切り出す。T2-1着手前にこのタスクを終えて1ファイルにまとめるのが望ましい
+- [x] **T2-2** 集計RPC 2本を097に追加する（`compute_venue_course_technique_baseline` / `compute_racer_course_technique_stats`）
+  - 094 の `compute_st_course_baseline()` と同じ形（`LANGUAGE sql`・`STABLE`・PUBLIC/anon/authenticated から REVOKE、GRANT EXECUTE しない）
+  - **CTEに `MATERIALIZED` を付けた**（094が「付けないと base が複数回スキャンされ statement timeout」と実測済み）
+  - `window_start` / `window_end` / `window_days` は実測値。`race_results.course_1〜6` は使わない
+  - `compute_racer_course_technique_stats` は `venue_course_technique_baseline` を読む。**5-1の結果を書いた後に呼ぶ**。セルの `runs < 100` なら `race_grade='ALL'` 行へフォールバック
+  - 調子窓（90日）の基準日は**JSTの当日**（データ最終日ではない）
+  - **完了（2026-09-24）**: 本番へのDDL適用前に、**関数本体のSQLを読み取り専用のSELECTとしてそのまま実行して検証**した
+    - ベースライン: **612行（ALL 144 ＋ グレード別 468）**、window_days 294、**CHECK制約違反0件**（`vctb_rate_by_course` / `vctb_grade_values` / `vctb_venue_range` / makuri非NULL）。戸田の全期間逃げ率 40.24%・尼崎 58.91% が180日窓の実測（40.2 / 59.2）と整合
+    - 選手別: **9,471行**（見積り通り）、**CHECK制約違反0件**（`rcts_rate_by_course` / `rcts_runs_positive` / expected の NULL 0件）
+
+- [x] **T2-2b** グレード補正後の値で T3-2 / T3-4 の受入基準を測り直す（T2-2 の前提）
+  - グレード補正による期待値の変化（実測）:
+
+    | 選手 | 実績率 | 期待値（会場のみ） | 期待値（会場×グレード） | 地力（旧→新） |
+    |---|---|---|---|---|
+    | 金子賢志 4539 c1 | 88.24% | 51.7 | **51.57** | +36.6 → **+36.7** |
+    | 吉田裕平 4914 c1 | 90.32% | 54.7 | **55.31** | +35.6 → **+35.0** |
+    | 笠置博之 4538 c4（まくり） | 38.46% | 5.30 | **5.30** | +33.2 → **+33.2** |
+    | 横川聖志 4359 c4（逃がし） | 73.91% | 52.0 | **51.50** | +21.9 → **+22.4** |
+
+  - 注目レースの順位（グレード補正後、2026-09-24）。**戸田4Rが1位を維持**:
+
+    | 順位 | section | レース | 選手 | n | 地力 | z | イン崩れ | score |
+    |---|---|---|---|---|---|---|---|---|
+    | **1** | **makuri** | **戸田4R** | **笠置博之 4538** | 26 | +33.2 | **7.54** | 83.7% | **6.32** |
+    | 2 | nige | 若松12R | 吉田裕平 4914 | 31 | +35.0 | 3.92 | 1.4% | 3.87 |
+    | 3 | nige | 若松8R | 飛田江己 5191 | 43 | +28.4 | 3.73 | 2.1% | 3.65 |
+    | 4 | nige | 三国12R | 茅原悠紀 4418 | 46 | +27.2 | 3.71 | 1.7% | 3.65 |
+    | 5 | makuri | 戸田9R | 笠置博之 4538 | 16 | +19.6 | 3.46 | 97.6% | 3.38 |
+
+  - **3位と4位が score 3.65 で同点**。plan §3.3 の「同点は `race_id` 昇順」が実際に必要になるケースなので、T3-4 の実装で必ず検証する
 
 - [ ] **T2-3** `scripts/lib/unchangedRows.js` の `NUMERIC_SCALES` に097の4表を追加する
   - `venue_course_technique_baseline`: `nige_rate` 2 / `makuri_rate` 2 / `nigashi_rate` 2
@@ -124,8 +149,7 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
   - 並びは `skill_delta` 降順。`nige` は最大25件
   - `makuri` は `detail.entryCourseTendency` に枠→進入コース分布を入れる（FR-9）
   - `is_small_sample` は `src/utils/wilson.js` で指標ごとのベースレートと比較して立てる
-  - **受入基準**: 2026-09-24 を対象に実行したとき、`nige` に **金子賢志（racer_id=4539、津1R・88.2%・地力+36.6pt・予測91.5%）** と **吉田裕平（racer_id=4914、若松12R・90.3%・地力+35.6pt・予測92.4%）** が含まれ、値が**小数第1位まで**一致する。`makuri` に **笠置博之（racer_id=4538、戸田4R・38.5%・地力+33.2pt・予測40.6%）** が含まれる。同じ定義のSQLを `node -e` で独立実行した結果と全行一致する
-  - ⚠️ 期待値は**グレード補正なし**で測った値。T2-2でグレード軸を入れた後は**測り直す**（実測で表示行の平均1.29pt・最大8.00pt動く）
+  - **受入基準**: 2026-09-24 を対象に実行したとき、`nige` に **金子賢志（racer_id=4539、津1R・88.24%・期待51.57%・地力+36.7pt）** と **吉田裕平（racer_id=4914、若松12R・90.32%・期待55.31%・地力+35.0pt）** が含まれ、値が**小数第2位まで**一致する。`makuri` に **笠置博之（racer_id=4538、戸田4R・38.46%・期待5.30%・地力+33.2pt）** が含まれる。`nigashi` に **横川聖志（racer_id=4359、戸田8R・73.91%・期待51.50%・地力+22.4pt）** が含まれる。同じ定義のSQLを独立実行した結果と全行一致する（T2-2bで測定済みの値）
   - ⚠️ **選手は氏名でなく `racer_id` で照合する**。同姓同名が実在する（山本幸也 = 5268 と 5385、松尾拓 = 4808 と 4828）。レビュー指摘L-3
   - `race_entries.player_name` は全角スペース詰め（`"山本　　幸也"`）。`morning_digest_rows.racer_name` に入れる際に**連続空白を1つに正規化する**（そのままだと表示とSNS本文が崩れる）
 
@@ -144,8 +168,8 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
   - `volatility_percentile` が NULL（`isFallback`、または `predictions` 未生成）の行は候補から除外。全候補がNULLなら `featured` を書かない
   - 選定理由の文を `detail.reason` にテンプレートで組み立てる（**数値の根拠を必ず含める**）
   - 候補0件の日は `featured` を書かない
-  - **受入基準**: 同じ入力で10回実行して常に同じ `race_id` が選ばれる。2026-09-24 では **戸田4R（`2026-09-24-02-04`、笠置博之 racer_id=4538、まくり地力+33.2pt・z=7.57・イン崩れ指数83.7%・score 6.34）** が選ばれる。**当初案（生ptスコア）では若松12Rが1位で戸田4Rは3位だった**ので、実装が旧式に戻っていないことの検証になる
-  - ⚠️ 期待値は**グレード補正なし**で測った値。T2-2 の後に測り直す
+  - **受入基準**: 同じ入力で10回実行して常に同じ `race_id` が選ばれる。2026-09-24 では **戸田4R（`2026-09-24-02-04`、笠置博之 racer_id=4538、まくり地力+33.2pt・z=7.54・イン崩れ指数83.7%・score 6.32）** が選ばれる（T2-2bで測定済み）。**当初案（生ptスコア）では若松12Rが1位で戸田4Rは3位だった**ので、実装が旧式に戻っていないことの検証になる
+  - **同点解決を必ず検証する**。同日の3位（若松8R 飛田江己）と4位（三国12R 茅原悠紀）が score 3.65 で同点になるため、`race_id` 昇順で `2026-09-24-10-12`（三国）が `2026-09-24-20-08`（若松）より先に来ることを確認する
 
 - [ ] **T3-5** `.github/workflows/generate-morning-digest.yml`（JST 05:30 と 06:30）を作成する
   - 2回目は1回目が完全な結果を書けていれば何もしない
