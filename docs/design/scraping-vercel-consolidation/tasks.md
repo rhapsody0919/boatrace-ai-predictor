@@ -470,3 +470,34 @@
 - [ ] 本番実測: 期待件数（算出根拠: 前日Dの`races`のレース数から、確定中止を除いたもの。**照合できた（`compared`）**レース数と、照合不能・同期待ちの件数を、`last_report.history`に日次で残す。除外した件数も報告）に対し、照合できた割合99%以上であることを、日次照合の稼働日について実測クエリで確認する（未達は、理由（Kの会場が未展開等）を件数付きで説明）。**日次の照合は、稼働開始日以降のみ**（過去日の突合は、既存のCLI`scripts/maintenance/audit-race-result-anomalies.js`（`--k-dir`）で行う。過去分を遡る照合は範囲外）とし、ユーザーの承認を得る
 - [ ] タイミング実測（**B基準は提案。ユーザーの承認前**）: 「D+1の12:30 JSTまでに、Dの照合が完了（`last_target_date`がD+1）している」割合を、土日を含む直近5日で実測する（欠落率2%以内）。08:00 JSTの起動で、Kファイル同期（07:00）の後に照合する。12:30（`kfile_sync`の12:00の後）・17:30（最後の照合。同期待ちを不一致に数え、照合不能を通知）が補足。SQLはrunbook T-7
 - [ ] 継続監視: 照合の結果が日次で自動計測され（`last_report.history`、直近14日）、不一致・照合不能（最後の照合）が`alerts`→Slackに出ること、照合自体の未実行が日次の未処理（3時間）として検知されることを確認する（runbook T-7）
+
+---
+
+## N32: K/Bアーカイブによる直近欠損月の本体テーブル補填（BOA-403）
+
+背景: 独立レビュー（2026-09-21）で「K/Bの取り込み後の、結果欠損の本体テーブルへの補填（昇格）と、race_gradeのNULL補完は、タスクが無かったため、追加する」と指摘され追加。対象期間2025-12-03〜2026-03-31は本体テーブルの範囲（K/Bアーカイブ表`kb_archive_*`には入れない設計）だが、K/Bの中間JSON（`data/kb-archive/parsed/`、`kb-backfill.js parse`で取得済み）は再利用できる。新規の公式サイトアクセスは無い（DB読み取り+ローカルの中間JSON読み取りのみ）。
+
+### T4b-25 race_results の欠損補填（N32）: `scripts/maintenance/backfill-kb-recent-results.js`
+
+- [x] **T4b-25-1**（コード実装済み。`scripts/lib/kbResultsBackfillRows.js`（`classifyMissingResult`・`buildRaceFactsForDay`・`buildRaceResultRow`）・`scripts/maintenance/backfill-kb-recent-results.js`（`status`/`plan`/`load`、既定はDRY-RUN）。着順・進入コース・払戻金額の抽出は独自実装せず、日次照合ジョブ（N29・`dailyReconcile.js`）と同じ`scripts/lib/raceResultAudit.js`の`kVenuesToRaceFacts`・`PAYOUT_COLUMNS_BY_KIND`を再利用する（本体テーブルの列名の逆転＝`payout_trifecta`=3連複・`payout_trio`=3連単の再現を含め二重実装しない）。検証: `npm run verify:kb-results-backfill`）
+- [ ] **T4b-25-2** (ユーザー承認) `load --apply`で本番へ書き込む。dry-runの結果件数はPR本文・完了報告に添付済み（本番DBは他ジョブ・並行セッションの作業で日々変動するため、実行直前に`plan`を再実行し件数を確認してから実行する）
+
+【重要・スコープ限定】実データ調査の結果、欠損のうち機械的に埋められるのは一部のみ（`plan`のfound）。残りは対象外とし、理由を件数付きで報告する（本CLIでは書かない）:
+  - **race_not_in_k_venue**: `races.race_number`が、その日その会場のK-file内の実際の最大レース番号を超えている（K-fileが「そのレースは開催されなかった」ことを示している）。中止・打ち切りの疑いが強く、`races.cancellation_status`未設定が真因の可能性が高い。是正は別チケット（`races.cancellation_status`の遡及設定）で検討する
+  - **venue_not_in_k**: 該当日のK-fileにその会場のブロック自体が無い。前日・翌日のK-fileに同じ会場・レース番号のレースが見つかるケースが約半数あり、`race_id`の日付ズレの疑いがある（BOA-325・BOA-402で扱った既存の日付ズレ問題と同系統の可能性があるが、本チケットの調査時点でこれと同一原因であることまでは確認できていない）。`race_id`自体の訂正が必要でありK/B単純投入では直せないため、別途の原因調査チケットとして切り出す
+  - **race_entries**: 対象期間で欠損行が0件（既に埋まっている）ため書き込み対象に含めない。列単位の欠落（`branch`等）は`racelist-backfill.js`（N19）が別の一次情報源（racelist再取得）で対応中の別スコープ。K/Bの値を混ぜると`kbArchiveRows.js`の既知の注意点（情報源が違うと同じレースでも値が食い違いうる）を持ち込むため意図的に対象外とする
+  - **race_payouts**: 2026-09-20新設のテーブルで対象期間の履歴自体が無い（過去分の全件投入は「欠損の穴埋め」の定義から外れる別判断のため対象外とする）
+
+データ項目: `race_results`（欠損行の新規挿入のみ。既存行の列は一切上書きしない）。
+
+- [ ] 本番実測: 期待件数（算出根拠: 対象期間の`races`のうち`race_results`が無い件数から、K/Bで確認できないもの＝上記race_not_in_k_venue・venue_not_in_kを除外し、除外件数を報告）に対し、`load --apply`後にfound件数の充足率100%であることを実測クエリで確認する。対象期間全体の充足率は、除外分（中止疑い・日付ズレ疑い）が残るため99%には届かない可能性が高く、その場合は除外件数の内訳で説明する
+- [ ] タイミング実測: 該当なし（過去の確定済みレースの一括バックフィルであり、可変データの窓型ではない）
+- [ ] 継続監視: 既存の`data-health-report.js`（完了の定義C、T7-06）の対象月に本期間を含め、再発（同じ月が再び充足率を下回る）が無いかを日次監視でカバーする
+
+### race_grade のNULL補完（K-fileでは実装しない）
+
+race_series方式（N16、`backfill-race-series-meta.js`）で埋まらなかった`races.race_grade`のNULLについて、K-fileの各レース行にある`stage`/`stage_raw`（例:「一般」「予選」「準優」「優勝」）が使えるか調査した。結論: **使えない（実装しない）**。
+
+- `stage`/`stage_raw`は、節（シリーズ）内の組別・ラウンド区分（一般戦/予選/準優勝戦/優勝戦）を表す値であり、大会そのもののグレード（SG/G1/G2/G3/ippan）とは無関係。実データ確認（2025-12-16の第40回グランプリ＝SG、住之江）でも、個々のレースの`stage_raw`は「予選」であり「SG」等のグレード情報は含まれていなかった
+- `races.race_grade`がNULLになっている行を再調査した結果（2026-09-24実測、内訳は変動しうる）、大半は`race_series.grade`自体が意図的にNULLの行（オールレディース・ルーキーシリーズ等、N16が意図的に埋めない区分）と一致しており、K-fileのタイトル文字列（例:「AL三遠ネオフェニックス杯」「ルーキーシリーズ第22戦」）からもこれらの区分であることが確認できた。この区分は`race_series`テーブル自体が採用済みの既存の設計判断（オールレディース等は`race_grade`の値域＝SG/G1/G2/G3/ippanに含めない）であり、K-fileから新しい値を作ることは本チケットのスコープを超える製品判断になるため行わない
+- 一部（`race_series.grade`が非NULLなのに`races.race_grade`が未反映）は、既存のN16ツール（`backfill-race-series-meta.js grade`）を対象期間全体（`--to=2026-03-31`）で再実行するだけで直る可能性が高い（K/Bは不要）。実行はユーザー承認後に別途行う
