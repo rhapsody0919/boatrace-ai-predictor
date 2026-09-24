@@ -235,38 +235,62 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
 
 ## Phase 4: サービス層と画面（案A）
 
-- [ ] **T4-1** `getMorningDigest(date)` を `src/services/supabaseDataService.js` に追加する
+- [x] **T4-1** `getMorningDigest(date)` を `src/services/supabaseDataService.js` に追加する
   - `morning_digest_days` と `morning_digest_rows` を `digest_date` で引き、セクション別に整形して返す
   - `withCache`。TTLは当日30分・過去日7日を**明示的に渡す**。既存の `inferTtlFromKey`（`supabaseDataService.js:99`）は race_id 形式の末尾を要求する正規表現のため、`morning-digest-2026-09-20` のようなキーではマッチせず過去日でも30分になる（レビュー指摘L-1）
   - **`if (error) return []` を書かない**。失敗は例外として伝播させる
   - `morning_digest_days.generated_at` が NULL の日は「未生成」として返す（「該当0件」と区別する）
   - **受入基準**: `npm run verify:query-errors` が通る。存在しない日付で空の結果（例外ではない）を返し、DB障害では例外を投げる。過去日のキャッシュTTLが7日になっていることをテストで確認する
 
-- [ ] **T4-2** 共通コンポーネント3点を作る（`DigestSection` / `DigestRaceCard` / `RateWithBaseline`）
+- [x] **T4-2** 共通コンポーネント3点を作る（`DigestSection` / `DigestRaceCard` / `RateWithBaseline`）
   - `src/components/digest/` に新設し、`index.js` の barrel export を作る
   - `DigestRaceCard` の指標部分は **props の分岐ではなく `children` で差し替える**
   - 色は `design-tokens.css` の変数のみ。**ページ背景に直接乗るテキストは意味トークン（`--text-primary` / `--text-secondary`）必須**
   - 差分バッジは**色だけに頼らず ▲▼ の記号も付ける**
   - **受入基準**: 3コンポーネントが `nige`/`makuri`/`nigashi` の3セクションで再利用されている。モバイル320pxでページ全体の横スクロールが出ない
 
-- [ ] **T4-3** `MorningDataDigest.jsx` とルーティング・SEOを実装する（T4-2と1PRにまとめてよい）
+- [x] **T4-3** `MorningDataDigest.jsx` とルーティング・SEOを実装する（T4-2と1PRにまとめてよい）
   - `src/AppRouter.jsx` に `<Route path="today" …>`。`TRANSLATED_PATHS` には**登録しない**（ja専用）
   - `useSocialMeta` の canonical は `?date=` の有無にかかわらず常に `/today`
   - 4状態（ローディング／取得失敗／該当0件／データ不完全）をすべて実装する（screens.md §6）。**セクションを消さない**
   - 選手名・会場名に `translate="no"`
   - **受入基準**: Playwrightで `/today` と `/today?date=2026-09-23` を開き、ライト／ダークの両方でスクリーンショットを撮って目視確認する。`document.querySelector('link[rel=canonical]')` が `?date=` 付きでも `/today` を指す
 
-- [ ] **T4-4** 残りのコンポーネント4点（`FeaturedRaceCard` / `PeriodTrendSparkline` / `EntryCourseTendencyBar` / `FlyingRacerList` / `ReturnedRacerList`）を実装する
+- [x] **T4-4** 残りのコンポーネント4点（`FeaturedRaceCard` / `PeriodTrendSparkline` / `EntryCourseTendencyBar` / `FlyingRacerList` / `ReturnedRacerList`）を実装する
   - スパークラインはインラインSVG（Rechartsを使わない）
   - `PeriodTrendSparkline` は `racer_period_stats` 由来。**最新期が2026年2期であり「今期のデータは期終了後に反映される」旨をUIに出す**（spec FR-8）
   - **受入基準**: 推移が3期未満の選手でスパークラインが破綻しない。ダークモードでSVGのstrokeがページ背景に埋もれない
 
-- [ ] **T4-5** ホーム（`VenueGridPage.jsx`）に `/today` への導線を1つ追加する
+- [x] **T4-5** ホーム（`VenueGridPage.jsx`）に `/today` への導線を1つ追加する
   - `TodaysVolatilityHighlights` の近傍
   - **受入基準**: 追加によってホームのCLSが悪化しない（要素の高さを確保する）。`npm run test:e2e` が通る
 
-- [ ] **T4-6** `scripts/generate-sitemap.js` の `staticPages` に `/today` を追加する（**T4-3と同一PRで必須**）
+- [x] **T4-6** `scripts/generate-sitemap.js` の `staticPages` に `/today` を追加する（**T4-3と同一PRで必須**）
   - **受入基準**: `npm run verify:sitemap` が通る
+
+---
+
+### Phase 4 の完了記録（2026-09-24）
+
+`/today` を実装し、Playwrightで自己検証した（dev サーバーは検証後に停止済み）。
+
+**検証結果**:
+- 5セクションすべて描画。件数は「上位25件 / 29件」「2件」「5件」「2件」「7件」で、バッチの出力と一致
+- **注目レースは戸田4R（笠置博之）**、理由の文が数値の根拠つきで表示される
+- `document.documentElement.scrollWidth === window.innerWidth`（375px）で**横スクロールなし**
+- canonical は `?date=` の有無にかかわらず `https://www.boat-ai.jp/today`
+- **ライト／ダークの両方をスクリーンショットで目視確認**。意味トークンが正しく反転し、見出し・注記が不可視にならない
+- `?date=2026-09-22`: 「9月22日（火） 14会場 168レース」＋「過去日」バッジ。その日の件数（34候補/25、2、14、0、2）が出る
+- **「未生成」と「該当0件」が区別されている**: 2026-09-01（未生成）はセクション0件＋「この日のデータは生成されていません」、2026-09-22（フライング0件）はセクションを残したまま「前日のフライングはありませんでした」
+- ホームの導線: `href="/today"`、高さ69pxで固定（CLS対策）
+- `npm run verify:sitemap` OK（静的ルート25件）、`npm run verify:query-errors` OK
+- **`npm run test:e2e` 919件パス・デグレなし**
+
+**実装中に直したもの**:
+1. ESLint が effect 内の同期 `setState` を指摘（カスケードレンダリング）。`RacePitReportSection` と同じ型（結果を「どの日付・何回目の試行か」とセットで持ち、loading を導出する）に書き直した（`.claude/rules/frontend-data-fetch.md` §3）
+2. worktree に `VITE_SUPABASE_*` が無く `supabase` が null になっていた。`.env.local`（gitignore対象）に公開用の2変数だけを置いた
+
+**付随して判明**: モックの日付表記「9月24日（水）」は誤りで、2026-09-24 は**木曜**（Nodeで検証）。実装側の `formatJaDate` が正しい。
 
 ---
 

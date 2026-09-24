@@ -29,6 +29,7 @@ import RacersPage from "./pages/RacersPage";
 import Profile from "./pages/Profile";
 import AccuracyHistory from "./pages/AccuracyHistory";
 import WinningTechniqueAnalysis from "./pages/WinningTechniqueAnalysis";
+import MorningDataDigest from "./pages/MorningDataDigest";
 import Holmes from "./pages/Holmes";
 import ContentHub from "./pages/ContentHub";
 import EnglishGuide from "./pages/EnglishGuide";
@@ -177,6 +178,8 @@ function LocalizedRoutes({ lng = "ja" }) {
         element={<OutcomeDistributionRedirect />}
       />
       <Route path="winning-technique" element={<WinningTechniqueAnalysis />} />
+      {/* 本日のデータ一覧（BOA-402）。ja専用のためTRANSLATED_PATHSには登録しない */}
+      <Route path="today" element={<MorningDataDigest />} />
       <Route path="privacy" element={<App tab="privacy" />} />
       <Route path="terms" element={<App tab="terms" />} />
       <Route path="contact" element={<App tab="contact" />} />

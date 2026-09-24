@@ -1,0 +1,70 @@
+/* RacerPlainList - フライング・帰郷の選手一覧に共通のスタイル（BOA-402） */
+
+.racer-plain-list {
+  margin: 0;
+  padding: 0 0.75rem;
+  list-style: none;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+}
+
+.racer-plain-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.racer-plain-list__item:last-child {
+  border-bottom: none;
+}
+
+.racer-plain-list__item--stacked {
+  align-items: baseline;
+}
+
+.racer-plain-list__name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.racer-plain-list__id {
+  font-size: var(--font-size-2xs);
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.racer-plain-list__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.racer-plain-list__accent {
+  font-size: var(--font-size-md);
+  color: var(--brand-accent-primary);
+}
+
+.racer-plain-list__reason {
+  flex-basis: 100%;
+  margin-top: 0.15rem;
+  font-size: var(--font-size-xs);
+  color: var(--brand-accent-primary);
+}
+
+.racer-plain-list__warning {
+  margin: 0.5rem 0 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}

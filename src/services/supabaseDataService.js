@@ -6418,6 +6418,73 @@ export const supabaseDataService = {
       };
     });
   },
+
+  /**
+   * 「本日のデータ一覧」（BOA-402）の1日ぶんを取得する。
+   *
+   * ページは morning_digest_days / morning_digest_rows の **2表だけ**を読む
+   * （ADR-0070）。抽出ロジックは早朝バッチ generate-morning-digest.js の
+   * 1箇所にしか存在しないため、ここでは整形しかしない。
+   *
+   * 戻り値の `state`:
+   *   - "generated": 生成済み（rows がある）
+   *   - "not_generated": その日の行が無い、または generated_at が NULL（生成途中で落ちた）
+   *     → 画面は「該当0件」と**区別して**表示する（spec §6）
+   *
+   * TTLは呼び出し側で明示的に渡す。`inferTtlFromKey` は race_id 形式の末尾
+   * （YYYY-MM-DD-VV-RR）を要求する正規表現のため、`morning-digest-YYYY-MM-DD`
+   * ではマッチせず、過去日でも当日TTL（30分）になってしまう。
+   *
+   * @param {string} date YYYY-MM-DD（JST）
+   */
+  getMorningDigest(date) {
+    const jstToday = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    const ttl =
+      date < jstToday ? PAST_RACE_CACHE_TTL : /* 当日は30分 */ CACHE_TTL;
+
+    return withCache(
+      `morning-digest-${date}`,
+      async () => {
+        const [{ data: day }, { data: rows }] = await Promise.all([
+          supabase
+            .from("morning_digest_days")
+            .select("*")
+            .eq("digest_date", date)
+            .maybeSingle(),
+          supabase
+            .from("morning_digest_rows")
+            .select("*")
+            .eq("digest_date", date)
+            .order("section")
+            .order("rank"),
+        ]);
+
+        // generated_at は書き込み完了のマーク（ADR-0070）。NULLなら生成途中で
+        // 落ちた状態なので「未生成」として扱い、「該当0件」と混同しない
+        if (!day || !day.generated_at) {
+          return { state: "not_generated", day: day ?? null, sections: {} };
+        }
+
+        const sections = {
+          featured: [],
+          nige: [],
+          makuri: [],
+          nigashi: [],
+          flying: [],
+          returned: [],
+        };
+        for (const row of rows ?? []) {
+          if (!sections[row.section]) sections[row.section] = [];
+          sections[row.section].push(row);
+        }
+
+        return { state: "generated", day, sections };
+      },
+      ttl,
+    );
+  },
 };
 
 /**

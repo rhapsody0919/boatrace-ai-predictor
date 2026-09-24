@@ -1,0 +1,91 @@
+/* RateWithBaseline - 率＋地力＋予測の表示（BOA-402） */
+
+.rate-baseline__main {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.rate-baseline__label {
+  display: block;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.rate-baseline__value {
+  font-size: var(--font-size-6xl);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--brand-accent-primary);
+}
+
+.rate-baseline__unit {
+  font-size: var(--font-size-lg);
+}
+
+.rate-baseline__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-bottom: 0.15rem;
+}
+
+/* 差分バッジ。正負を色だけで区別せず ▲▼ の記号も併記する（screens.md §5） */
+.rate-baseline__delta {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.rate-baseline__delta--up {
+  background: var(--ryujin-gold-300);
+  color: var(--ryujin-navy-600);
+}
+
+.rate-baseline__delta--down {
+  background: var(--ryujin-silver-300);
+  color: var(--ryujin-navy-600);
+}
+
+.rate-baseline__predicted {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rate-baseline__predicted strong {
+  color: var(--text-primary);
+}
+
+.rate-baseline__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.5rem;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rate-baseline__meta strong {
+  color: var(--text-primary);
+}
+
+.rate-baseline__wilson {
+  border-bottom: 1px dotted var(--border-hairline);
+  cursor: help;
+}
+
+.rate-baseline__small-sample {
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: var(--surface-page);
+  color: var(--text-primary);
+}
+
+@media (max-width: 480px) {
+  .rate-baseline__value {
+    font-size: var(--font-size-5xl);
+  }
+}
