@@ -219,7 +219,7 @@ n併記・小標本フラグ（`rbit-n.is-small-sample`、`--color-warning-text`
 
 - **ST分布**: 選んだ選手のSTのヒストグラム（0.05刻み）。同コース平均の分布を薄く重ねると「この選手は平均より右に寄っている（遅い）」が一目で分かる。ST考察の3指標が「なぜその値なのか」を裏付ける層になる
 - **ST履歴**: 全走のST一覧（直近10走より長い期間）。直近10走の帯を「もっと見る」で伸ばす形にして、別カードを作らない
-- 配置: ST考察カードの中に折りたたみで入れる（`.lede-detail` パターン）。カード数を増やさない
+- 配置: ST考察カードの中に折りたたみで入れる（実装は `rsc-fold-toggle` ＋ `openSection` の排他アコーディオン）。カード数を増やさない
 - モバイルでは10本が横に並ばないため、**5本×2段**に折り返す
 
 #### 3.1.4 逃げシミュレーション（FR-6）
@@ -243,7 +243,7 @@ n併記・小標本フラグ（`rbit-n.is-small-sample`、`--color-warning-text`
 
 - 横棒グラフ。2着率の合計は100%になる（検算済み）ため、**積み上げ1本ではなく個別の棒**にする（合計100%を暗示しない見せ方は誤読を招く）
 - 「2連単」は無条件確率（P(1コース逃げ) × P(2着=X | 逃げ)）
-- 1行要約＋「くわしく見る」で算出方法と母数を開く（`.lede-simple` / `.lede-detail` パターン）
+- 1行要約＋「くわしく見る」で算出方法と母数を開く（実装は `nsc-detail-toggle` / `nsc-detail`）
 - 会場別の母数が小さい場合（節が少ない会場）は全国値にフォールバックし、その旨を明記する。閾値は[§8の論点5](#8-モックで確認したい論点)
 
 ### 3.2 基本情報タブ（FR-2・FR-4c）
@@ -403,7 +403,7 @@ F持ちの選手は、次にFを切ると長期の出場停止になるため、
 |---|---|---|
 | `src/components/race/RaceStConsiderationCard.jsx` + `.css` | ST考察（安定率・出遅率＋同コース・同級別の平均との差、抜出は実回数） | 枠別情報タブに置く。差の符号で色を分ける。見出しに集計期間を出す |
 | `src/components/race/RecentRunsBar.jsx` + `.css` | 直近10走の帯（進入コース・着順・ST） | 着順の色は `RaceResult` の既存表現を流用 |
-| `src/components/race/NigeSimulationCard.jsx` + `.css` | 逃げシミュレーション（2着率・2連単確率の横棒） | `.lede-simple` / `.lede-detail` パターン |
+| `src/components/race/NigeSimulationCard.jsx` + `.css` | 逃げシミュレーション（2着率・2連単確率の横棒） | `nsc-detail-toggle` / `nsc-detail`（1行要約＋折りたたみの実装済み先例） |
 | `src/components/race/VenueDaySummaryCard.jsx` + `.css` | 本日の成績サマリー（結果タブ・会場ページで共用） | **直前情報タブ内のインライン実装を切り出す**。2箇所で使うため共通化が必須（component-reuse.mdのチェックリスト） |
 | `src/utils/stConsideration.js` | 安定率・出遅率・抜出回数の算出（純関数） | **Fの除外規則をサービス層に閉じ込め、この関数は派生フィールドを読むだけにする**（符号反転はしない。ADR-0068 却下5）。取得側の集計と定義がずれないよう、単体で検証できる純関数にする |
 | `src/utils/courseBaseline.js` | 同コース・同級別のベースライン（24セル） | `st_course_baseline` から読む（ADR-0068で確定。定数で持つ案は却下3）。`window_start`/`window_end` も同じテーブルから読み、選手側の集計窓と揃える |

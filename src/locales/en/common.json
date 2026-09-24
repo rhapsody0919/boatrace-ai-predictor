@@ -556,15 +556,7 @@
     "top2RateAbbrev": "Top-2",
     "top3RateAbbrev": "Top-3",
     "prevAbbrev": "Prev",
-    "avgAbbrev": "Avg",
-    "todaySummaryTitle": "Today's results summary",
-    "todaySummaryNote": "Based on {{n}} finished races at this venue today",
-    "avgPayoutLabel": "Avg. payout (trifecta)",
-    "manshuRateLabel": "Big-payout rate",
-    "nigeRateLabel": "Inside-escape win rate",
-    "techniqueBreakdownLabel": "Winning style breakdown",
-    "entryCourseWinLabel": "1st place by entry course",
-    "courseN": "Course {{n}}"
+    "avgAbbrev": "Avg"
   },
   "pitReport": {
     "title": "Pit Report (racer comments)",
@@ -1450,5 +1442,23 @@
     "flying": "F",
     "stRank": "(#{{n}})",
     "legend": "Top: course actually taken. Middle: finish. Bottom: start timing and its rank in that race"
+  },
+  "venueDaySummary": {
+    "title": "Water tendencies on this day",
+    "note": "Based on {{n}} races settled at {{venue}} on {{date}}",
+    "ledeDay": "Across the {{n}} settled races: {{techniques}}.",
+    "ledeNige": "Boat 1 led from the start in {{rate}}% of them.",
+    "ledeThisRaceWithCourse": "This race was won from course {{course}} by {{technique}} — {{technique}} #{{ordinal}} of the day.",
+    "ledeThisRace": "This race was won by {{technique}} — {{technique}} #{{ordinal}} of the day.",
+    "countUnit": " {{n}}",
+    "techniqueSeparator": ", ",
+    "avgPayoutLabel": "Avg. trio payout",
+    "manshuRateLabel": "10,000+ yen rate",
+    "nigeRateLabel": "Boat 1 wire-to-wire",
+    "breakdownToggle": "Breakdown by winning move and starting course",
+    "techniqueBreakdownLabel": "By winning move",
+    "entryCourseWinLabel": "Wins by starting course",
+    "courseN": "Course {{n}}",
+    "ledeDayPartial": "Of the {{n}} settled races, the {{m}} with a recorded winning move: {{techniques}}."
   }
 }

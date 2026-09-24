@@ -307,15 +307,7 @@
     "top2RateAbbrev": "2連対",
     "top3RateAbbrev": "3連対",
     "prevAbbrev": "前走",
-    "avgAbbrev": "平均",
-    "todaySummaryTitle": "本日の成績サマリー",
-    "todaySummaryNote": "本日この会場で確定した{{n}}レースの集計です",
-    "avgPayoutLabel": "平均配当(3連単)",
-    "manshuRateLabel": "万舟率",
-    "nigeRateLabel": "イン逃げ率",
-    "techniqueBreakdownLabel": "決まり手別回数",
-    "entryCourseWinLabel": "進入コース別1着回数",
-    "courseN": "{{n}}コース"
+    "avgAbbrev": "平均"
   },
   "pitReport": {
     "title": "ピットレポート（選手コメント）",
@@ -1492,5 +1484,23 @@
     "flying": "F",
     "stRank": "({{n}}位)",
     "legend": "上段は実際に進入したコース、中段は着順、下段はSTとそのレース内でのST順位"
+  },
+  "venueDaySummary": {
+    "title": "この日の水面傾向",
+    "note": "{{date}}に{{venue}}で確定した{{n}}レースの集計です",
+    "ledeDay": "確定{{n}}Rの決まり手は {{techniques}}。",
+    "ledeNige": "1号艇の逃げ率{{rate}}%。",
+    "ledeThisRaceWithCourse": "このレースは{{course}}コース{{technique}}で、この日{{ordinal}}本目の{{technique}}でした。",
+    "ledeThisRace": "このレースは{{technique}}で、この日{{ordinal}}本目の{{technique}}でした。",
+    "countUnit": "{{n}}",
+    "techniqueSeparator": "・",
+    "avgPayoutLabel": "平均配当",
+    "manshuRateLabel": "万舟率",
+    "nigeRateLabel": "1号艇の逃げ率",
+    "breakdownToggle": "決まり手別・進入コース別の内訳",
+    "techniqueBreakdownLabel": "決まり手別",
+    "entryCourseWinLabel": "進入コース別1着回数",
+    "courseN": "{{n}}コース",
+    "ledeDayPartial": "確定{{n}}Rのうち決まり手が判明した{{m}}Rは {{techniques}}。"
   }
 }

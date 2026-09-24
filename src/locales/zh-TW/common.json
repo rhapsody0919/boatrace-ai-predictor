@@ -554,15 +554,7 @@
     "top2RateAbbrev": "2連對",
     "top3RateAbbrev": "3連對",
     "prevAbbrev": "前一場",
-    "avgAbbrev": "平均",
-    "todaySummaryTitle": "本日成績摘要",
-    "todaySummaryNote": "本日此會場已確定的{{n}}場比賽統計",
-    "avgPayoutLabel": "平均配當(3連單)",
-    "manshuRateLabel": "萬舟率",
-    "nigeRateLabel": "內線逃走率",
-    "techniqueBreakdownLabel": "決勝方式次數",
-    "entryCourseWinLabel": "各進入航道第1名次數",
-    "courseN": "{{n}}航道"
+    "avgAbbrev": "平均"
   },
   "pitReport": {
     "title": "維修區報告（選手留言）",
@@ -1445,5 +1437,23 @@
     "flying": "F",
     "stRank": "(第{{n}})",
     "legend": "上排為實際進入的航道，中排為名次，下排為起跑時間與該場的起跑順位"
+  },
+  "venueDaySummary": {
+    "title": "這一天的水面傾向",
+    "note": "{{date}}在{{venue}}已確定的{{n}}場比賽統計",
+    "ledeDay": "已確定{{n}}場的決勝手法為 {{techniques}}。",
+    "ledeNige": "1號艇的逃げ率{{rate}}%。",
+    "ledeThisRaceWithCourse": "本場由{{course}}航道以{{technique}}獲勝，是這一天第{{ordinal}}次的{{technique}}。",
+    "ledeThisRace": "本場以{{technique}}獲勝，是這一天第{{ordinal}}次的{{technique}}。",
+    "countUnit": "{{n}}",
+    "techniqueSeparator": "、",
+    "avgPayoutLabel": "平均配當",
+    "manshuRateLabel": "萬舟率",
+    "nigeRateLabel": "1號艇的逃げ率",
+    "breakdownToggle": "依決勝手法・進入航道的明細",
+    "techniqueBreakdownLabel": "依決勝手法",
+    "entryCourseWinLabel": "各進入航道的第1名次數",
+    "courseN": "{{n}}航道",
+    "ledeDayPartial": "已確定{{n}}場中，已知決勝手法的{{m}}場為 {{techniques}}。"
   }
 }

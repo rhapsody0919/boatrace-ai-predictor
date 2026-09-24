@@ -228,7 +228,7 @@ computeStConsideration(rows, { course })
 |---|---|---|
 | `src/components/race/RaceStConsiderationCard.jsx` + `.css` | ST考察（3指標 × 6艇、値＋**同コース・同級別の平均**との差。抜出は実回数が主表示）。ST分布・ST履歴を折りたたみで内包 | `getRacerScopedRaceStats` ＋ `computeStConsideration` ＋ `getStCourseBaseline` |
 | `src/components/race/RecentRunsBar.jsx` + `.css` | 直近10走の帯（進入コース／着順／ST＋`(1位)`） | `getRacerScopedRaceStats`（`stRank` を使う） |
-| `src/components/race/NigeSimulationCard.jsx` + `.css` | 逃げシミュレーション（横棒＋2連単確率）。`.lede-simple` / `.lede-detail` | `getNigeSimulation(venueCode)` |
+| `src/components/race/NigeSimulationCard.jsx` + `.css` | 逃げシミュレーション（横棒＋2連単確率）。1行要約＋折りたたみは `nsc-detail-toggle` / `nsc-detail` | `getNigeSimulation(venueCode)` |
 | `src/components/race/VenueDaySummaryCard.jsx` + `.css` | 本日の成績サマリー（結果タブ・会場ページで共用）＋「この日の傾向 vs このレース」の一文 | `getVenueDaySummary(venueCode, date)`（既存）＋ `race_results.winning_technique` / `actual_course_N` |
 | `src/utils/stConsideration.js` | 3指標の算出（純関数。[§3.2](#32-新規の純関数-srcutilsstconsiderationjs)） | — |
 | `src/utils/courseBaseline.js` | ベースラインの整形・差分計算（純関数）。`(course, grade)` でセルを引く。指標ごとに「高いほど良い／低いほど良い」の向きを持つ（安定率は高いほど良い、出遅率は低いほど良い、抜出回数は高いほど良い） | — |
@@ -315,6 +315,18 @@ computeStConsideration(rows, { course })
   - **ただし「+0本」は既存のキャッシュが温まっている前提**。冷えている状態でレース詳細を開くと、`getRacerScopedRaceStats` は選手6人分で約48リクエストを出す。**これは本specが増やすものではなく既存の挙動**だが、「ST考察はタダ」と読める書き方は誤解を招くため明記する
 - `RaceTabs` が非アクティブなタブをアンマウントするため、**同時に増えるのは最大+2本**（枠別情報タブまたは基本情報タブ）。要件内
 - 全タブを順に開いた場合の累計は+7本だが、すべて `withCache` を通り、読み取り行数は合計120行未満
+
+**FR-5（本日の成績サマリーの移設）の収支**（2026-09-24追記。実装前の独立レビューで「予算表に入っていない」と指摘を受けたもの）
+
+| 画面 | 差分 | 読み取り行数 |
+|---|---|---|
+| レース詳細・直前情報タブ | `getVenueDaySummary` を外して **−2本** | −（`races` ≤12 + `race_results` ≤12） |
+| レース詳細・結果タブ | 同じ2本を移す **+2本** | `races` ≤12 + `race_results` ≤12 |
+| 会場ページ（`/venue/:code`・`/races/:date/:code`） | **+2本** | 同上 |
+
+- レース詳細の中では差し引き0本（`RaceTabs` が非アクティブタブをアンマウントするため、直前情報と結果が同時に発火することはない）。むしろ**結果確定済みレースは結果タブが既定で開く**ため、直前情報タブを開かない閲覧では実質変わらない
+- 純増は**会場ページの+2本**。会場ページはタブ操作を挟まず全訪問で発火するが、`withCache`（5分TTL）を通り読み取りは最大24行なので要件内
+- 傾向コメント（T4-4）の `byRace` は `getVenueDaySummary` の既存の select から組み立てるため **+0本**
 
 ### 6.2 バッチ側（日次1回）
 

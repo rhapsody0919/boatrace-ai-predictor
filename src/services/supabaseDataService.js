@@ -5654,9 +5654,24 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定会場・指定日の結果確定済みレースを集計し、平均配当・万舟率・イン逃げ率・
-   * 決まり手別回数・進入コース別1着回数を返す（BOA-304、直前情報タブ
-   * 「本日成績サマリー」）。
+   * 指定会場・指定日の結果確定済みレースを集計し、平均配当・万舟率・1号艇の逃げ率・
+   * 決まり手別回数・進入コース別1着回数を返す（BOA-304。2026-09-24のFR-5で
+   * 直前情報タブから結果タブ・会場ページへ移設、`VenueDaySummaryCard`が使う）。
+   *
+   * nigeRateは `rank1 === 1 && winning_technique === "逃げ"` の**艇番基準**で、
+   * 「1コース逃げ」ではない。決まり手が逃げの有効23,892レースのうち
+   * rank1 !== 1（前づけで他艇が1コースを取って逃げた）が238件＝1.0%あり、
+   * これを分子から落としている（2026-09-24実測。逆にrank1===1かつ逃げで
+   * 実進入コースが1でない例は0件）。実進入コース基準に寄せると、当日の
+   * レースはactual_course_*が100%NULLのため算出できなくなるため据え置き、
+   * 画面のラベルを「1号艇の逃げ率」にして実装に合わせている
+   *
+   * byRaceは「この日の傾向 vs このレース」の比較文（FR-5 / T4-4）のために
+   * レース単位の決まり手・1着艇の実進入コースを返す。actual_course_1〜6は
+   * 既にselectしているので**追加クエリは0本**。当日のレースはバックフィルが
+   * 未了でwinnerCourseがnullになる（会場×日単位でオール・オア・ナッシングに
+   * 入るため、当日は必ずnull）。courseOfBoat()は使わない——未バックフィルの
+   * 艇番を暫定コースとみなすと、当日レースで「3コースまくり」と断定してしまう
    *
    * 平均配当/万舟率/イン逃げ率の定義・除外条件（is_cancelled/is_no_race/
    * rank1===null除外、3連単配当はpayout_trio列を使う歴史的経緯）は
@@ -5674,6 +5689,7 @@ export const supabaseDataService = {
         nigeRate: null,
         techniqueCounts: {},
         entryCourseWinCounts: {},
+        byRace: {},
       });
     }
 
@@ -5688,10 +5704,13 @@ export const supabaseDataService = {
           nigeRate: null,
           techniqueCounts: {},
           entryCourseWinCounts: {},
+          byRace: {},
         };
         if (!supabase) {
           console.error("Supabase client not initialized");
-          return empty;
+          // 環境変数の未設定は「その日は0レース」ではないため、キャッシュに
+          // 焼き付けない（.claude/rules/frontend-data-fetch.md §4）
+          return { ...empty, fetchFailed: true };
         }
 
         const { data: races, error: racesError } = await supabase
@@ -5720,10 +5739,17 @@ export const supabaseDataService = {
         let nigeCount = 0;
         const techniqueCounts = {};
         const entryCourseWinCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        const byRace = {};
 
         results.forEach((r) => {
           if (r.is_cancelled || r.is_no_race || r.rank1 === null) return;
           raceCount += 1;
+          byRace[r.race_id] = {
+            rank1: r.rank1,
+            winningTechnique: r.winning_technique ?? null,
+            // 1着艇が実際に進入したコース。当日・未バックフィル日はnull
+            winnerCourse: r[`actual_course_${r.rank1}`] ?? null,
+          };
           if (r.payout_trio !== null) {
             payoutCount += 1;
             payoutSum += r.payout_trio;
@@ -5755,6 +5781,7 @@ export const supabaseDataService = {
           nigeRate: raceCount > 0 ? (nigeCount / raceCount) * 100 : null,
           techniqueCounts,
           entryCourseWinCounts,
+          byRace,
         };
       },
       5 * 60 * 1000, // 当日分は結果反映のたびに変わりうるため短めのTTL
