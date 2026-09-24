@@ -45,26 +45,46 @@
 SET LOCAL lock_timeout = '10s';
 
 -- ---------------------------------------------------------------------------
--- 1) venue_course_technique_baseline: 会場 × 実進入コースの決まり手ベースライン
+-- 1) venue_course_technique_baseline: 会場 × グレード × 実進入コースの決まり手ベースライン
 --    「地力」の算出（実績率 − 会場構成から期待される率）と、本日の会場での予測値に使う。
---    24会場 × 6コース = 最大144行。
+--
+--    ⚠️ グレード軸は2026-09-24の独立レビュー（tasks.md G-0）の指摘H-2で追加した。
+--       実測: グレード別の逃げ率は G1 62.2% / SG 61.3% / G2 54.4% / ippan 52.5% / G3 51.1%
+--       （11.1ptの開き）。会場差20.3ptと同型の交絡で、会場だけ補正して「会場構成で説明できる
+--       分を取り除いた」と称するのは overclaim だった。
+--       ただし影響は会場交絡より1桁小さい。実際に表示される行（逃げ率70%以上・n>=10、216名）
+--       での実測は 平均シフト1.29pt・最大8.00pt・3pt以上動く行が29/216（13.4%）。
+--
+--    行数: 会場×グレード×コースの実在セルは468（実測。median n=136、n<30 は6セルのみ）。
+--          加えてフォールバック用に race_grade='ALL'（グレードを問わない集計）の 24×6=144 行を持つ。
+--          合計 約612行。
+--    フォールバック: 該当セルの runs が閾値（100）未満のときは 'ALL' 行を使う。
+--          実測で n<100 のセルは180/468（38%）あるため、フォールバックは必須。
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS venue_course_technique_baseline (
   venue_code   SMALLINT     NOT NULL,             -- 会場コード（1〜24。races.venue_code）
+  race_grade   TEXT         NOT NULL,             -- races.race_grade（SG/G1/G2/G3/ippan）。NULLは'ippan'に寄せる。
+                                                  -- 'ALL' はグレードを問わない集計（セルが小さいときのフォールバック）
   course       SMALLINT     NOT NULL,             -- 実進入コース（1〜6。race_results.actual_course_N 由来）
   window_start DATE         NOT NULL,             -- 集計窓の開始日（実測。固定値を書かない）
   window_end   DATE         NOT NULL,             -- 集計窓の終了日（実測。鮮度の監視はこの列で行う）
-  window_days  SMALLINT     NOT NULL,             -- window_end - window_start + 1（実測値）
-  runs         INTEGER      NOT NULL,             -- 母数。その会場でそのコースに進入した延べ走数
+  window_days  SMALLINT     NOT NULL,             -- window_end - window_start + 1（実測値。2026-09-24時点で295。
+                                                  -- 開催日数293とは別物なので混同しない）
+  runs         INTEGER      NOT NULL,             -- 母数。そのセルでそのコースに進入した延べ走数
   nige_rate    NUMERIC(5,2),                      -- 逃げ率(%)。course=1 のみ。2〜6はNULL
   makuri_rate  NUMERIC(5,2) NOT NULL,             -- まくり率(%)。そのコースから まくり で1着になった割合
-  nigashi_rate NUMERIC(5,2),                      -- 逃がし率(%)。course>=2 のみ。そのコース進入走のうち逃げ決着の割合
+  nigashi_rate NUMERIC(5,2),                      -- 逃がし率(%)。course>=2 のみ。そのコース進入走のうち逃げ決着の割合。
+                                                  -- ⚠️ 各レースに各コースがちょうど1艇ずつ存在するため、この値は
+                                                  -- 定義上そのセルの逃げ率と一致する（実測: コース1〜6で52.98/52.98/
+                                                  -- 52.98/52.98/52.98/52.95）。コース軸は情報を持たない。
+                                                  -- 列として持つのは読み取り側の結合を単純にするためだけ（レビュー指摘H-5）
   last_updated DATE         NOT NULL,             -- 値が実際に変わった日（毎日書き換えない）
   created_at   TIMESTAMPTZ  DEFAULT NOW(),
   updated_at   TIMESTAMPTZ,
-  PRIMARY KEY (venue_code, course),
+  PRIMARY KEY (venue_code, race_grade, course),
   CONSTRAINT vctb_venue_range  CHECK (venue_code BETWEEN 1 AND 24),
   CONSTRAINT vctb_course_range CHECK (course BETWEEN 1 AND 6),
+  CONSTRAINT vctb_grade_values CHECK (race_grade IN ('SG','G1','G2','G3','ippan','ALL')),
   CONSTRAINT vctb_window_order CHECK (window_end >= window_start),
   -- 1コースは「逃げ率」を持ち「逃がし率」を持たない。2〜6コースはその逆
   CONSTRAINT vctb_rate_by_course CHECK (
@@ -80,7 +100,7 @@ CREATE POLICY venue_course_technique_baseline_public_read ON public.venue_course
 GRANT SELECT ON public.venue_course_technique_baseline TO anon, authenticated;
 
 COMMENT ON TABLE venue_course_technique_baseline IS
-  '会場×実進入コースの決まり手ベースライン（BOA-402）。地力＝選手の実績率−会場構成から期待される率、の期待値算出と、本日の会場での予測値に使う。日次バッチ scripts/daily/update-racer-course-technique-stats.js が更新する';
+  '会場×グレード×実進入コースの決まり手ベースライン（BOA-402）。地力＝選手の実績率−会場・グレード構成から期待される率、の期待値算出と、本日の予測値に使う。race_grade=''ALL'' はセルの母数が閾値未満のときのフォールバック。日次バッチ scripts/daily/update-racer-course-technique-stats.js が更新する';
 
 -- ---------------------------------------------------------------------------
 -- 2) racer_course_technique_stats: 選手 × 実進入コースの決まり手実績
@@ -157,7 +177,12 @@ COMMENT ON TABLE racer_course_technique_stats IS
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS morning_digest_days (
   digest_date        DATE        NOT NULL,        -- 対象日（JST）
-  generated_at       TIMESTAMPTZ NOT NULL,        -- 生成時刻
+  generated_at       TIMESTAMPTZ,                 -- 生成完了時刻。**NULL可**（完了マーク）。
+                                                  -- morning_digest_rows がこの表をFK参照するため、バッチは
+                                                  -- (1)この行をNULLでINSERT →(2)rowsを投入 →(3)generated_atをUPDATE
+                                                  -- の順で書く。途中でクラッシュするとNULLのまま残り、ページは
+                                                  -- 「未生成」として扱える。逆順だと「該当0件」と混同される
+                                                  -- （レビュー指摘M-8、ADR-0070の影響節）
   venue_count        SMALLINT    NOT NULL,        -- その日の開催会場数
   race_count         SMALLINT    NOT NULL,        -- その日の総レース数
   window_start       DATE        NOT NULL,        -- 生成時点の地力窓（実測）
@@ -204,14 +229,18 @@ CREATE TABLE IF NOT EXISTS morning_digest_rows (
   metric_value     NUMERIC(5,2),                  -- その行の主指標(%)。逃げ率・まくり率・逃がし率
   metric_expected  NUMERIC(5,2),                  -- 会場構成から期待される率(%)
   metric_skill_delta NUMERIC(5,2),                -- 地力(pt) = metric_value - metric_expected
-  metric_venue_baseline NUMERIC(5,2),             -- 本日の会場×コースのベースライン(%)
+  metric_venue_baseline NUMERIC(5,2),             -- 本日の会場×グレード×コースのベースライン(%)
   metric_predicted NUMERIC(5,2),                  -- 本日の会場での予測(%) = baseline + skill_delta
   sample_size      INTEGER,                       -- 地力窓の母数
   is_small_sample  BOOLEAN      NOT NULL DEFAULT false,  -- Wilson95%下限がベースレートを下回る
   rate_90d         NUMERIC(5,2),                  -- 調子窓の率(%)
   sample_size_90d  INTEGER,                       -- 調子窓の母数
   motor_2rate      NUMERIC(5,2),                  -- race_entries.motor_2rate のコピー
-  volatility_percentile NUMERIC(5,2),             -- イン崩れ指数(%)。isFallback の行はNULL
+  volatility_percentile NUMERIC(5,2),             -- イン崩れ指数。**0〜100 に正規化して保存する**。
+                                                  -- ⚠️ 情報源の predictions.feature_contributions.volatilityPercentile は
+                                                  -- 0〜1（実測: 戸田4R=0.8373、最大0.9921）。×100 せずに入れると
+                                                  -- NUMERIC(5,2) で 0.84 に丸められ情報が失われる（レビュー指摘H-1）。
+                                                  -- isFallback（会場内サンプル不足のプレースホルダ0.5）の行はNULL
 
   detail           JSONB,                         -- 可変部分。期別推移・枠→進入コース傾向・
                                                   -- フライングのST・帰郷の理由・注目レースの選定理由

@@ -33,10 +33,10 @@ flowchart TB
     end
 
     subgraph tbl["事前集計テーブル（マイグレーション097）"]
-        VB[(venue_course_technique_baseline<br/>144行)]
-        RCT[(racer_course_technique_stats<br/>約9,000行)]
+        VB[(venue_course_technique_baseline<br/>約612行)]
+        RCT[(racer_course_technique_stats<br/>9,471行)]
         MDD[(morning_digest_days<br/>1行/日)]
-        MDR[(morning_digest_rows<br/>40〜60行/日)]
+        MDR[(morning_digest_rows<br/>約50行/日)]
     end
 
     subgraph out["出力"]
@@ -81,6 +81,7 @@ erDiagram
     morning_digest_rows }o--|| morning_digest_days : "digest_date"
     venue_course_technique_baseline {
         SMALLINT venue_code PK
+        TEXT race_grade PK
         SMALLINT course PK
         DATE window_start
         DATE window_end
@@ -183,15 +184,24 @@ WHERE race_results.actual_course_1 IS NOT NULL      -- 進入コース不明の�
 | まくり率 | 1〜6 | 同上 | `winning_technique='まくり' AND rank1 = boat_number` |
 | 逃がし率 | 2〜6 | 同上 | `winning_technique='逃げ'`（勝者が誰かは問わない） |
 
+**逃がし率にはコース軸が無い**（2026-09-24のレビュー指摘H-5、実測で確認）。各レースに各コースがちょうど1艇ずつ存在するため、会場×コースで集計した逃がし率は必ずその会場の逃げ率と一致する（実測: コース1〜6で 52.98 / 52.98 / 52.98 / 52.98 / 52.98 / 52.95）。`venue_course_technique_baseline.nigashi_rate` を列として持つのは読み取り側の結合を単純にするためだけで、**UIに「このコースの平均より」とは書かない**（「この会場の平均より」が正しい）。選手側の `skill_delta` は選手ごとに異なるので指標としては有効。
+
 期待値・地力・予測:
 
 ```
-expected      = その選手の各走の「venue_course_technique_baseline(その走の会場, コース)」の平均
+expected      = その選手の各走の「venue_course_technique_baseline(その走の会場, その走のグレード, コース)」の平均
+                （セルの runs < 100 のときは race_grade='ALL' の行へフォールバック）
 skill_delta   = rate - expected                              （保存しない。読み取り側で引く）
-predicted     = venue_course_technique_baseline(本日の会場, コース) + skill_delta
+predicted     = venue_course_technique_baseline(本日の会場, 本日のグレード, コース) + skill_delta
 ```
 
-`predicted` は加法モデルのため理論上0〜100を外れうる。**初版は [0, 100] にクランプし、クランプが発生した行を `morning_digest_days.notes` に記録する**（実際にどれだけ発生するかを本番で観測してから、ロジット尺度への変更を判断する。ADR-0071 の影響節）。
+**グレード軸は2026-09-24のレビュー指摘H-2で追加した。** グレード別の逃げ率は G1 62.2% / SG 61.3% / G2 54.4% / ippan 52.5% / G3 51.1%（11.1ptの開き）で、補正した会場差20.3ptと同型の交絡。ただし影響は1桁小さく、実際に表示される行（逃げ率70%以上・n≥10、216名）での実測は**平均シフト1.29pt・最大8.00pt・3pt以上動く行が29/216（13.4%）**。「会場構成で説明できる分を取り除いた」と称する以上は残してはいけない残差なので補正するが、会場交絡ほどの致命性は無い。
+
+`predicted` は加法モデルのため理論上0〜100を外れうる。**初版は [0, 100] にクランプし、クランプが発生した行を `morning_digest_days.notes` に記録する**（本日分の実測ではクランプ0件・最大92.4%。実際の発生率を本番で観測してからロジット尺度への変更を判断する。ADR-0071 の影響節）。
+
+### イン崩れ指数の単位（実装時に必ず守る）
+
+`predictions.feature_contributions.volatilityPercentile` は **0〜1**（実測: 戸田4R=0.8373、全体の最大0.9921）。表示側は `TodaysVolatilityHighlights.jsx:76` で `Math.round(race.percentile * 100)` している。`morning_digest_rows.volatility_percentile` には **×100 して 0〜100 で保存する**。×100 せずに `NUMERIC(5,2)` に入れると 0.84 に丸められて情報が失われる（レビュー指摘H-1）。
 
 ### 2.3 母数と小標本の扱い
 
@@ -199,10 +209,11 @@ spec §5.3 の初期方針を、実測（spec §1.2）に基づいて確定す�
 
 | 項目 | 値 | 根拠 |
 |---|---|---|
-| 抽出の最低母数 | `runs >= 10` | 地力窓（293日）で1コースの n≥10 は選手の95.7%を占める。これ未満は率として意味を成さない |
-| 小標本フラグ | Wilson95%下限 < その指標の全国ベースレート | 逃げ率（ベースレート52.7%・p̂=70%）では n<35 が該当。まくり率（ベースレート3.7〜5.1%）では実質ほぼ全件が該当するため、**指標ごとにベースレートを変えて判定する** |
+| 抽出の最低母数 | `runs >= 10` | 地力窓（295日）で1コースの n≥10 は、その窓で1走以上した選手の95.7%を占める |
+| **小標本フラグ** | **Wilson95%下限 < その指標の抽出閾値** | 2026-09-24のレビュー指摘H-3で修正。当初案「Wilson下限 < 全国ベースレート」は**まくりで数学的に逆に働く**（p̂=0.25・n=10 の Wilson 下限は 8.1% で、まくりのベースレート 3.8〜5.1% を上回るため最小構成の行ですらフラグが立たない）。抽出閾値と比べれば n=10 で 8.1% < 25% となり正しくフラグが立つ |
 | 並び順 | `skill_delta` の降順（生の率ではない） | 生の率で並べると小標本が上位を占める |
-| ベースラインの最低母数 | `venue_course_technique_baseline.runs >= 100` | これ未満の会場×コースは期待値が不安定なため抽出対象から外す |
+| ベースラインの最低母数 | `runs >= 100`、未満なら `race_grade='ALL'` 行へフォールバック | 会場×グレード×コースの実在セルは468・median n=136 だが、**n<100 が180セル（38%）ある**ため、閾値だけだと3割以上が落ちる。フォールバックが必須（当初の「抽出対象から外す」は会場×コース144セルが全て1,520走以上でデッドコードだった。レビュー指摘M-9） |
+| 調子窓の小標本 | `runs_90d < 5` は率を出さず「走数のみ」表示 | `(racer, course)` セル9,471のうち `runs_90d=0` が241（2.5%）、1〜4走が878（9.3%）。n=1〜4 の率を出すと誤解を招く（レビュー指摘M-11） |
 
 Wilson95%下限の実装は `src/utils/wilson.js`（新規・純関数）に置き、バッチとフロントの両方から使う。
 
@@ -220,8 +231,8 @@ ADR-0066 が「取得済みデータのDB内集計・統計更新（`aggregate-s
 
 - ワークフロー: `.github/workflows/aggregate-racer-course-technique-stats.yml`
 - 実行: **JST 01:10**（`cron: '10 16 * * *'`）。`update-nige-outcome-distribution`（00:42）・`aggregate-course-baseline-stats`（00:50）の後ろに置き、重い全期間スキャンが同時に走らないようずらす
-- 更新対象: `venue_course_technique_baseline`（144行）→ `racer_course_technique_stats`（約9,000行）の順。後者は前者を参照する
-- **集計本体はRPC（SQL関数）側に寄せる**。基礎CTEは全期間で約56万行を読むため、Node側に生データを持たない。`compute_venue_course_technique_baseline()` と `compute_racer_course_technique_stats()` を097で定義し、Nodeは結果の144行＋約9,000行だけを受け取る（094 の `compute_st_course_baseline()` と同じ形）
+- 更新対象: `venue_course_technique_baseline`（約612行＝実在セル468＋フォールバック用 ALL 144）→ `racer_course_technique_stats`（実測9,471行）の順。後者は前者を参照する
+- **集計本体はRPC（SQL関数）側に寄せる**。基礎CTEは全期間で約56万行を読むため、Node側に生データを持たない。`compute_venue_course_technique_baseline()` と `compute_racer_course_technique_stats()` を097で定義し、Nodeは結果の約612行＋9,471行だけを受け取る（094 の `compute_st_course_baseline()` と同じ形）
 - RPCにしない場合は `.range(from, from + 999)` のページネーション必須（Supabaseのデフォルト上限は1000行）。9,000行は確実に超える
 - `window_start` / `window_end` / `window_days` は**実測値**を書く（365等の固定値を書かない）
 - `upsertChangedRows`（`scripts/lib/unchangedRows.js`）で変更のある行だけ書く。**そのために `NUMERIC_SCALES` に 097 の4表分のエントリを追加する**（未登録だと `NUMERIC_SCALES[table] ?? {}` が空になり、NUMERIC列が毎日「変更あり」と判定される）
@@ -253,10 +264,31 @@ ADR-0066 が「取得済みデータのDB内集計・統計更新（`aggregate-s
 
 1. 対象日の `races` が1行以上ある
 2. 対象日のすべての `race_id` に `race_entries` が存在する
-3. 対象日の `predictions`（`model_id='unified'`）が全レースぶん存在する
+3. **対象日の会場数が、前日の会場数の70%以上**（レビュー指摘H-6で追加）。1〜2は `races` に入っている行だけを基準にしているため、`races-init` が13会場中10会場ぶんしか投入できていない時点で走ると3条件とも通過し、**10会場ぶんを「完全な結果」として確定させてしまう**。とくに `returned`（帰郷）は、当日の会場集合に含まれない会場の選手が全員「翌日の開催なし」として除外され、節境界ガード（検出数が閾値を超えたときだけ働く）にも掛からず**偽陰性のまま通過する**
 4. `racer_course_technique_stats.window_end` が前日以降（B1が当日ぶん走っている）
 
 2回目でも満たせなければ**ジョブを失敗させる**（`continue-on-error` は付けない）。「データが無い日」として黙って空の行を書かない。
+
+#### `predictions` は必須条件にしない（レビュー指摘H-7を受けて変更）
+
+当初は「`predictions`（unified）が全レースぶん存在する」を完全性チェックに含めていたが、**実測で成立しない日がある**。`predicted_at` の分布（JST）:
+
+| 日 | min | max | 時間帯の数 |
+|---|---|---|---|
+| 09-19 | 22:52 | 22:52 | 1 |
+| **09-20** | **08:36** | 22:51 | 15 |
+| **09-21** | 01:57 | 20:51 | 14 |
+| 09-22 | 00:58 | 00:58 | 1 |
+| 09-23 | 00:05 | 00:05 | 1 |
+| 09-24 | 05:09 | 05:09 | 1 |
+
+09-20 は最も早い行でも 08:36 で、06:30 の2回目でも間に合わない。必須にするとジョブが失敗する。
+
+そこで **`predictions` は任意**とし、欠けている場合は `volatility_percentile` を NULL にしてダイジェストを生成する。`featured`（イン崩れ指数との方向一致で選ぶ）だけは生成せず、`morning_digest_days.notes` に理由を記録する。逃げ・まくり・逃がし・フライング・帰郷の5セクションは `predictions` に依存しない。
+
+#### 実行時刻の根拠の限界
+
+`race_entries.created_at` は **2026-09-20 より前が全件NULL**、`predictions` には `created_at` が無く `predicted_at` は日中の再生成で上書きされる。したがって「最初に投入された時刻」を事後に測れるのは **2026-09-24 の1日だけ**（entries 05:01〜05:09、unified 05:09）。**05:30 という値の根拠は n=1 である**ことを明記しておく。ADR-0066 が `morning-init` の Vercel 移行を予定しているため投入時刻は今後変わる。2回目（06:30）と `predictions` の任意化で、ずれても壊れないようにしてある。
 
 #### セクションごとの生成
 
@@ -264,7 +296,7 @@ ADR-0066 が「取得済みデータのDB内集計・統計更新（`aggregate-s
 |---|---|
 | `nige` | 当日の1号艇の選手を `racer_course_technique_stats(racer_id, course=1)` と結合し、`nige_rate >= 70` かつ `runs >= 10` を抽出。`skill_delta` 降順で最大25件 |
 | `makuri` | 当日の全艇を `(racer_id, course=枠番)` で結合し、`makuri_rate >= 25` かつ `runs >= 10` を抽出。**進入コース別の指標を枠番で引く**ため、`detail.entryCourseTendency` に枠→進入コース分布を併記する（FR-9） |
-| `nigashi` | 当日の2〜6号艇を結合し、`nigashi_rate - nigashi_expected >= 15`（初期値）かつ `runs >= 10` を抽出 |
+| `nigashi` | 当日の2〜6号艇を結合し、**`nigashi_rate - nigashi_expected >= 20`** かつ `runs >= 10` を抽出（閾値は実測で確定。+15ptだと43件で目標の3倍） |
 | `featured` | 上記3セクションの全候補から、`skill_delta` が最大の行のうち**イン崩れ指数が実績の方向と一致するもの**を1件選ぶ（詳細は §3.3） |
 | `flying` | 前日（JST）の `race_start_timings.finish_mark = 'F'` を抽出。対象日が 2026-09-21 より前なら `morning_digest_days.flying_data_complete = false` を立てる |
 | `returned` | 前日の出走表にいたが、当日も同一会場の開催が続いているのに当日の出走表にいない選手（FR-14）。**節境界ガード**: 1会場あたりの検出数が20件を超えたらその会場を除外し、`morning_digest_days.suppressed_venues` に記録する。`race_special_notes`（`category='absence'`）に該当行があれば `detail.reason` に理由を入れる |
@@ -277,14 +309,49 @@ ADR-0066 が「取得済みデータのDB内集計・統計更新（`aggregate-s
 
 決定的であること（同じ入力に対し常に同じレースが選ばれる）が受入基準。
 
+#### ⚠️ 当初案（`score = skill_delta × consistency`）は破綻していた（レビュー指摘C-1、実測で再現）
+
+`skill_delta` を pt 単位のまま指標横断で比較すると、**ベースレートの違いを無視することになる**。逃げ（ベースレート53%）の +33pt と、まくり（ベースレート4%）の +33pt は統計的にまったく別物で、後者のほうがはるかに大きな逸脱。
+
+当初案を 2026-09-24 にそのまま適用した実測:
+
+| 順位 | section | レース | 選手 | delta | イン崩れ | score |
+|---|---|---|---|---|---|---|
+| 1 | nige | 若松12R | 吉田裕平 | +35.6 | 1.4% | **35.10** |
+| 2 | nige | 三国12R | 茅原悠紀 | +29.8 | 1.7% | 29.29 |
+| 3 | makuri | 戸田4R | 笠置博之 | +33.2 | 83.7% | 27.78 |
+| 4 | nige | 若松8R | 飛田江己 | +28.3 | 2.1% | 27.71 |
+| 5 | nige | 津1R | 金子賢志 | +36.6 | 24.7% | 27.55 |
+
+**上位5件中4件が `nige`**。承認済みモックの戸田4Rは3位で、「実績と当日条件が同じ方向を向いている」という差別化の核（screens.md 論点6）が機能しない。
+
+#### 採用する案: 逸脱をzスコアに標準化してから比較する
+
 1. `nige` / `makuri` / `nigashi` の全候補行を集める
-2. 各行に**方向一致スコア**を付ける
-   - `nige` は「イン有利」方向。イン崩れ指数が低いほど一致（`consistency = 100 - volatility_percentile`）
-   - `makuri` / `nigashi` は「イン不利」方向。イン崩れ指数が高いほど一致（`consistency = volatility_percentile`）
-3. `score = skill_delta × (consistency / 100)` で並べ、最大の1件を選ぶ
-4. 同点は `race_id` の昇順で決定的に解決する
-5. `volatility_percentile` が NULL（`isFallback` の行）は候補から除外する
-6. 候補が0件の日は `featured` を書かない（ページ側は「本日は該当なし」を出す）
+2. 各行の逸脱を**指標のベースレートで標準化**する
+
+   ```
+   z = (rate - expected) / sqrt(expected × (1 - expected) / n)
+   ```
+
+   （`rate`・`expected` は0〜1、`n` は地力窓の母数。「平均から何σ離れているか」なのでユーザーにも説明できる）
+3. 各行に**方向一致度**を付ける（`volatility` は0〜1。§2.2の単位に注意）
+   - `nige` は「イン有利」方向。イン崩れ指数が低いほど一致: `consistency = 1 - volatility`
+   - `makuri` / `nigashi` は「イン不利」方向: `consistency = volatility`
+4. `score = z × consistency` で並べ、最大の1件を選ぶ
+5. 同点は `race_id` の昇順で決定的に解決する
+6. `volatility_percentile` が NULL（`isFallback`、または `predictions` 未生成）の行は候補から除外する。全候補が NULL なら `featured` を書かない
+7. 候補が0件の日は `featured` を書かない（ページ側は「本日は該当なし」を出す）
+
+zスコア版を 2026-09-24 に適用した実測（**戸田4Rが1位になり、モック・設計意図と一致する**）:
+
+| 順位 | section | レース | 選手 | n | delta | z | イン崩れ | score |
+|---|---|---|---|---|---|---|---|---|
+| **1** | **makuri** | **戸田4R** | **笠置博之** | 26 | +33.2 | **7.57** | 83.7% | **6.34** |
+| 2 | nige | 三国12R | 茅原悠紀 | 46 | +29.8 | 4.05 | 1.7% | 3.98 |
+| 3 | nige | 若松12R | 吉田裕平 | 31 | +35.6 | 3.98 | 1.4% | 3.92 |
+| 4 | nige | 若松8R | 飛田江己 | 43 | +28.3 | 3.71 | 2.1% | 3.63 |
+| 5 | makuri | 戸田9R | 笠置博之 | 16 | +19.8 | 3.55 | 97.6% | 3.46 |
 
 選定理由の文は `detail.reason` にテンプレートで組み立てて保存する（数値の根拠を必ず含める。spec FR-6 の受入基準）。
 
@@ -301,7 +368,7 @@ getMorningDigest(date)   // → { day: {...}, sections: { featured, nige, makuri
 ```
 
 - `morning_digest_days` と `morning_digest_rows` を `digest_date` で引く（2クエリ、いずれも小さい）
-- `withCache` を使う。TTLは**当日は30分・過去日は7日**（既存の `getCacheTTL` が `race_id` の日付で判定する仕組みと同じ考え方。日付文字列から判定するヘルパーを流用する）
+- `withCache` を使う。TTLは**当日は30分・過去日は7日**。ただし**既存の `inferTtlFromKey`（`supabaseDataService.js:99`）はそのままでは使えない**（レビュー指摘L-1）。同関数の正規表現 `/(\d{4}-\d{2}-\d{2})-\d{2}-\d{2}(?::.*)?$/` は race_id 形式（日付＋会場＋レース番号）の末尾を要求するため、`morning-digest-2026-09-20` のようなキーはマッチせず過去日でも当日TTL（30分）になる。**`withCache` にTTLを明示的に渡す**（キー命名に依存させない）
 - `supabaseClient.js` は `.throwOnError()` 既定適用のため、**`if (error) return []` を書かない**（`.claude/rules/frontend-data-fetch.md`、[ADR-0069](../../adr/0069-query-error-propagation.md)）。失敗は例外として呼び出し元に伝える
 - `src/` 配下で `createClient()` を直接呼ばない・`@supabase/supabase-js` を直接importしない（`npm run verify:query-errors` とCIで検査される）
 
@@ -375,12 +442,13 @@ getMorningDigest(date)   // → { day: {...}, sections: { featured, nige, makuri
 
 | # | 項目 | 決め方 |
 |---|---|---|
-| 1 | `nigashi` の地力閾値（暫定 +15pt） | 実データで日次の該当件数を測り、5〜15件/日に収まる値にする |
-| 2 | 小標本フラグの指標別ベースレート | まくり率はベースレートが3.7〜5.1%と低く、Wilson下限がこれを上回るのは容易。指標ごとに適切な比較対象を決める |
-| 3 | `predicted` のクランプ vs ロジット尺度 | 初版はクランプ。本番でクランプ発生行数を観測してから判断 |
-| 4 | `makuri` セクションが成立するか | 進入コース別・n≥10 だと本日2件しか出ない。閾値を下げるか、セクションを「まくり・まくり差しを含む」に広げるかを実データで判断 |
+| 1 | ~~`nigashi` の地力閾値~~ | **確定: +20pt**（2026-09-24のレビュー指摘H-4を受けて実測。+10pt→115件 / +15pt→43件 / **+20pt→12件（9会場、戸田1件）** / +25pt→3件。当初の+15ptは目標5〜15件の約3倍だった） |
+| 2 | ~~小標本フラグの基準~~ | **確定: Wilson95%下限 < その指標の抽出閾値**（§2.3。当初案は数学的に逆だった） |
+| 3 | `predicted` のクランプ vs ロジット尺度 | 初版はクランプ。本番でクランプ発生行数を観測してから判断（本日分の実測では0件） |
+| 4 | `makuri` セクションが成立するか | 全DBで候補セルは27/9,471（`course>1`・n≥10・rate≥25%）。閾値20%で81、15%で235。**25%のままだと0〜4件/日**で、セクションとして薄い。閾値を20%に下げるか「まくり差し」を含めるかを T2-5 と同じタイミングで実データで判断する |
 | 5 | RPCにするかNode側集計か | 56万行スキャンの実行時間を計測して決める。RPCにしない場合はページネーション必須 |
 | 6 | `session-start-check.js` への鮮度チェック追加 | `/step3` |
+| 7 | JST 00:00〜05:30 の `/today` の挙動 | 当日ぶんが未生成の時間帯（1日の23%）。前日ぶんにフォールバックして「9/23のデータを表示中」と出すか、「本日ぶんは05:30頃に公開されます」と出すかを決める（レビュー指摘L-5） |
 
 ---
 
