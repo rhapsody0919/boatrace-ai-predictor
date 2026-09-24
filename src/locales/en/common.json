@@ -1452,13 +1452,14 @@
     "ledeThisRace": "This race was won by {{technique}} — {{technique}} #{{ordinal}} of the day.",
     "countUnit": " {{n}}",
     "techniqueSeparator": ", ",
-    "avgPayoutLabel": "Avg. trio payout",
+    "avgPayoutLabel": "Avg. payout (trifecta)",
     "manshuRateLabel": "10,000+ yen rate",
     "nigeRateLabel": "Boat 1 wire-to-wire",
     "breakdownToggle": "Breakdown by winning move and starting course",
     "techniqueBreakdownLabel": "By winning move",
     "entryCourseWinLabel": "Wins by starting course",
     "courseN": "Course {{n}}",
-    "ledeDayPartial": "Of the {{n}} settled races, the {{m}} with a recorded winning move: {{techniques}}."
+    "ledeDayPartial": "Of the {{n}} settled races, the {{m}} with a recorded winning move: {{techniques}}.",
+    "loading": "Loading..."
   }
 }

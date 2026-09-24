@@ -1454,6 +1454,7 @@
     "techniqueBreakdownLabel": "결정타별",
     "entryCourseWinLabel": "진입 코스별 1착 횟수",
     "courseN": "{{n}}코스",
-    "ledeDayPartial": "확정 {{n}}경주 중 결정타가 확인된 {{m}}경주는 {{techniques}}입니다."
+    "ledeDayPartial": "확정 {{n}}경주 중 결정타가 확인된 {{m}}경주는 {{techniques}}입니다.",
+    "loading": "불러오는 중..."
   }
 }

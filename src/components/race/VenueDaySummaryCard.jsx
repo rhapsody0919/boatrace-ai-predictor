@@ -26,7 +26,7 @@ import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "./raceIndicators";
 import { formatDateLocalized } from "../../utils/formatters";
 import InlineFetchError from "../InlineFetchError";
-import { buildDayTrend } from "./venueDayTrend";
+import { buildDayTrend, sortTechniqueCounts } from "./venueDayTrend";
 import "./VenueDaySummaryCard.css";
 
 const COURSES = [1, 2, 3, 4, 5, 6];
@@ -50,7 +50,13 @@ function VenueDaySummaryCard({ venueCode, date, raceId = null }) {
     supabaseDataService
       .getVenueDaySummary(venueCode, date)
       .then((data) => {
-        if (!cancelled) setLoaded({ key: thisKey, data });
+        if (cancelled) return;
+        setLoaded({ key: thisKey, data });
+        // 一度失敗したキーへ戻ってきて今度は成功した場合に、エラー表示が
+        // 残らないようにする（`RacePitReportSection` と同じ。これが無いと
+        // レース詳細のボトムバーで会場をまたいで戻ったとき、裏で取得が
+        // 成功していてもリトライを押すまでエラーUIが出たままになる）
+        setFailedKey((prev) => (prev === thisKey ? null : prev));
       })
       .catch((err) => {
         // 取得失敗を「この日は0レース」に化けさせない（BOA-359）
@@ -66,18 +72,28 @@ function VenueDaySummaryCard({ venueCode, date, raceId = null }) {
   }, [venueCode, date, reloadKey]);
 
   const summary = loaded?.key === key ? loaded.data : undefined;
-  const failed = failedKey === key;
+  // 例外だけでなく、サービス層が戻り値で返す失敗（`fetchFailed`）もエラーに倒す。
+  // これを見ないと、環境変数の未設定時に「この日は0レース」として静かに消える
+  // （.claude/rules/frontend-data-fetch.md §4 / BOA-359）
+  const failed = failedKey === key || summary?.fetchFailed === true;
+  // リトライ中は前の表示を捨てて取得待ちになる。カードごと消えると押した瞬間に
+  // 何も無くなるため、見出しだけ残して読み込み中と分かるようにする
+  const retrying = reloadKey > 0 && summary === undefined && !failed;
 
-  if (failed) {
+  if (failed || retrying) {
     return (
       <section className="vds-card">
         <h3 className="vds-heading">{t("venueDaySummary.title")}</h3>
-        <InlineFetchError
-          onRetry={() => {
-            setFailedKey(null);
-            setReloadKey((k) => k + 1);
-          }}
-        />
+        {failed ? (
+          <InlineFetchError
+            onRetry={() => {
+              setFailedKey(null);
+              setReloadKey((k) => k + 1);
+            }}
+          />
+        ) : (
+          <p className="vds-note">{t("venueDaySummary.loading")}</p>
+        )}
       </section>
     );
   }
@@ -206,13 +222,15 @@ function VenueDaySummaryCard({ venueCode, date, raceId = null }) {
                     {t("venueDaySummary.techniqueBreakdownLabel")}
                   </div>
                   <div className="vds-badge-row">
-                    {Object.entries(summary.techniqueCounts)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([technique, count]) => (
+                    {/* 1行要約と同じ並びにする（素の sort だと同数のときの
+                        順序が挿入順に依存し、上の文と食い違って見える） */}
+                    {sortTechniqueCounts(summary.techniqueCounts).map(
+                      ({ technique, count }) => (
                         <span className="vds-badge" key={technique}>
                           {translateTechnique(t, technique)} {count}
                         </span>
-                      ))}
+                      ),
+                    )}
                   </div>
                 </div>
               )}

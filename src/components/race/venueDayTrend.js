@@ -29,8 +29,18 @@
  * 暫定コースとみなす代替はしない（「3コースまくり」と誤って断定する）。
  */
 
-/** 1行要約に並べる決まり手の上限。全5種類だと1行に収まらない */
-const MAX_TECHNIQUES = 3;
+/**
+ * 1行要約には**その日に出た決まり手をすべて**並べる。
+ *
+ * 当初は上位3件で打ち切っていたが、実測（直近90日1,201 venue-day）で
+ * **4種類以上の日が76.2%**（種類数の分布: 1種類1日 / 2種類37 / 3種類248 /
+ * 4種類535 / 5種類356 / 6種類24）あり、平均1.63レース分・最大4レース分が
+ * 黙って落ちて「確定12Rの決まり手は 逃げ4・差し3・まくり2」＝合計9 という
+ * 不整合になっていた（しかも折りたたみを開くと全種類のバッジが出るので、
+ * 同じカードの中で数字が食い違って見える）。決まり手は全6種類
+ * （逃げ / 差し / まくり / まくり差し / 抜き / 恵まれ）しか無く、
+ * 並べても1〜2行に収まるため打ち切らない。
+ */
 
 /**
  * 決まり手別回数を多い順に並べる。
@@ -82,10 +92,7 @@ export function techniqueOrdinal(byRace, raceId) {
  */
 export function buildDayTrend(summary, raceId = null) {
   const raceCount = summary?.raceCount ?? 0;
-  const techniques = sortTechniqueCounts(summary?.techniqueCounts).slice(
-    0,
-    MAX_TECHNIQUES,
-  );
+  const techniques = sortTechniqueCounts(summary?.techniqueCounts);
 
   let thisRace = null;
   if (raceId) {
