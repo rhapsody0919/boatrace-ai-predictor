@@ -387,3 +387,157 @@
     padding: var(--spacing-1) 1px;
   }
 }
+
+/* 指標チップはカード内に置く（この選択はこのグリッドだけに効く。2026-09-24） */
+.rwit-metric-row {
+  margin-top: var(--spacing-1);
+  margin-bottom: var(--spacing-2);
+}
+
+/* 今日その選手が入る枠の列を明示する。艇番の下に小さく印を出す */
+.rwit-grid-course-th.is-today {
+  box-shadow: inset 0 0 0 2px var(--brand-accent-primary);
+}
+
+.rwit-today-mark {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: var(--font-weight-normal);
+  line-height: 1.1;
+  opacity: 0.85;
+}
+
+/* ---- 既定ビュー：今日の想定進入コース1本 × 3指標（2026-09-24再設計） ----
+   6コース×1指標の表を折りたたみに追いやり、既定はこちらにした。列が1本に
+   なって横幅が余るので1着率・2連対率・3連対率を同時に出せる。横スクロールも
+   要らなくなるため .rwit-grid-wrapper のようなラッパは使わない */
+.rwit-today-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1);
+  margin: var(--spacing-1) 0 0;
+}
+
+.rwit-today-course {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}
+
+.rwit-today-assumption,
+.rwit-waku-nari {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rwit-waku-nari {
+  margin: 2px 0 var(--spacing-2);
+}
+
+.rwit-today-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rwit-today-label-th {
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  padding: 0;
+  white-space: nowrap;
+}
+
+.rwit-today-metric-th,
+.rwit-today-n-th {
+  text-align: right;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  padding: var(--spacing-1) 0 var(--spacing-1) var(--spacing-2);
+  white-space: nowrap;
+}
+
+.rwit-today-row + .rwit-today-row .rwit-today-label-th,
+.rwit-today-row + .rwit-today-row .rwit-today-metric-td,
+.rwit-today-row + .rwit-today-row .rwit-today-n-td {
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+/* 行ごと押せる見た目にはせず、行ラベルだけをボタンにする。表の数字の上に
+   ボタンの枠が重なると数字が読みにくくなるため（モバイル390px） */
+.rwit-today-label-button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--spacing-1) var(--spacing-1) var(--spacing-1) 0;
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
+  color: var(--brand-accent-primary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.rwit-today-label-static {
+  display: block;
+  min-height: 44px;
+  line-height: 44px;
+  color: var(--text-secondary);
+}
+
+.rwit-today-row.is-open .rwit-today-label-button {
+  font-weight: var(--font-weight-bold);
+  text-decoration-style: solid;
+}
+
+.rwit-today-metric-td,
+.rwit-today-n-td {
+  text-align: right;
+  padding: var(--spacing-1) 0 var(--spacing-1) var(--spacing-2);
+  vertical-align: middle;
+}
+
+.rwit-today-value {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rwit-today-value.is-small-sample,
+.rwit-today-n-td.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+.rwit-today-n-td {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rwit-today-empty {
+  color: var(--text-secondary);
+}
+
+/* 全コース比較の折りたたみ。既定で開かないのは、今日のコースが埋もれるのを
+   防ぐため（進入変化を気にする層は確実に自分で開く） */
+.rwit-fold {
+  margin-top: var(--spacing-3);
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  padding-top: var(--spacing-2);
+}
+
+.rwit-fold-summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  color: var(--brand-accent-primary);
+  cursor: pointer;
+}
+
+.rwit-fold-body {
+  padding-top: var(--spacing-1);
+}

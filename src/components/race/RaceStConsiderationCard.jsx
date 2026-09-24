@@ -234,6 +234,14 @@ function RaceStConsiderationCard({
                           {formatDiff(diff)}
                         </span>
                       )}
+                      {cell?.stable_rate !== null &&
+                        cell?.stable_rate !== undefined && (
+                          <span className="rsc-baseline">
+                            {t("stConsideration.average", {
+                              value: Number(cell.stable_rate).toFixed(1),
+                            })}
+                          </span>
+                        )}
                     </td>
                   );
                 })}
@@ -308,6 +316,14 @@ function RaceStConsiderationCard({
                           {formatDiff(diff)}
                         </span>
                       )}
+                      {cell?.late_rate !== null &&
+                        cell?.late_rate !== undefined && (
+                          <span className="rsc-baseline">
+                            {t("stConsideration.average", {
+                              value: Number(cell.late_rate).toFixed(1),
+                            })}
+                          </span>
+                        )}
                     </td>
                   );
                 })}

@@ -459,7 +459,7 @@
     "oddsList": "오즈 일람"
   },
   "wakuInfo": {
-    "note": "선수를 선택하면 해당 선수가 실제로 진입한 코스(1〜6)별 성적을 기간·조건별로 비교할 수 있습니다. 셀을 누르면 그 코스의 최근 10경기 착순이 열립니다",
+    "note": "선수를 선택하면 그 선수가 오늘 들어갈 예상 코스의 성적을 기간·조건별로 비교할 수 있습니다. 행을 누르면 해당 코스의 최근 10주 착순이 열립니다. 전체 6개 코스 비교는 표 아래 접힌 영역에서 열 수 있습니다.",
     "boatLabel": "선수(번호)",
     "metricLabel": "지표",
     "metrics": {
@@ -493,7 +493,15 @@
       "ippan": "일반전",
       "sgg1": "SG・G1"
     },
-    "smallSampleTitle": "표본이 적어 참고값입니다"
+    "smallSampleTitle": "표본이 적어 참고값입니다",
+    "gridTitleWithMetric": "코스별 성적: {{metric}}",
+    "todayMark": "오늘",
+    "todayCourseHeading": "오늘의 예상 진입: {{course}}코스",
+    "wakuNariAssumption": "※정해진 레인대로 진입할 경우",
+    "wakuNariRate": "이 선수가 정해진 레인대로 진입한 비율은 {{rate}}%입니다(최근 {{n}}주)",
+    "periodHeader": "기간·조건",
+    "nHeader": "주수",
+    "allCoursesFold": "전체 6개 코스 성적 보기"
   },
   "aiPredictionTab": {
     "unavailableTitle": "AI 예상 데이터가 없습니다",
@@ -1421,7 +1429,8 @@
     "histVenue": "경기장",
     "histSt": "ST",
     "histStRank": "ST순위",
-    "histRank": "착순"
+    "histRank": "착순",
+    "average": "평균{{value}}"
   },
   "nigeSimulation": {
     "title": "1코스가 도망쳤을 때",

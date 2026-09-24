@@ -459,7 +459,7 @@
     "oddsList": "賠率一覽"
   },
   "wakuInfo": {
-    "note": "選擇選手後，可依期間與條件比較該選手實際進入各航道（1〜6）的成績。點選儲存格即可展開該航道最近10場的名次",
+    "note": "選擇選手後，可依期間與條件比較該選手在本日預想航道的成績。點擊列可展開該航道最近10次的名次。全部6條航道的比較請從表格下方的摺疊區開啟。",
     "boatLabel": "選手（艇號）",
     "metricLabel": "指標",
     "metrics": {
@@ -493,7 +493,15 @@
       "ippan": "一般賽",
       "sgg1": "SG・G1"
     },
-    "smallSampleTitle": "樣本數少，僅供參考"
+    "smallSampleTitle": "樣本數少，僅供參考",
+    "gridTitleWithMetric": "各航道成績：{{metric}}",
+    "todayMark": "本場",
+    "todayCourseHeading": "本日預想進入：{{course}}航道",
+    "wakuNariAssumption": "※以依艇號進入為前提",
+    "wakuNariRate": "此選手依艇號進入的比率為{{rate}}％（最近{{n}}次出賽）",
+    "periodHeader": "期間・條件",
+    "nHeader": "出賽數",
+    "allCoursesFold": "查看全部6條航道的成績"
   },
   "aiPredictionTab": {
     "unavailableTitle": "尚無AI預測資料",
@@ -1421,7 +1429,8 @@
     "histVenue": "場地",
     "histSt": "ST",
     "histStRank": "ST順位",
-    "histRank": "名次"
+    "histRank": "名次",
+    "average": "平均{{value}}"
   },
   "nigeSimulation": {
     "title": "第1航道逃脫時",

@@ -9,6 +9,9 @@
   border-radius: var(--radius-md);
   padding: var(--spacing-3);
   margin-top: var(--spacing-3);
+  /* 次のカード（決まり手傾向）との間の余白。rwit-card 側は margin-bottom しか
+     持たないため、こちら側で下方向も確保する */
+  margin-bottom: var(--spacing-3);
 }
 
 .rsc-title {
@@ -343,4 +346,14 @@
 .rsc-history td:nth-child(2),
 .rsc-history th:nth-child(2) {
   text-align: left;
+}
+
+/* 比較対象のベースライン値。差（±pt）の符号だけでは良し悪しが分からない
+   （安定率は+が良い、出遅率は−が良い）ため、比べている相手の値も出して
+   自力で確かめられるようにする（2026-09-24ユーザー指摘） */
+.rsc-baseline {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  line-height: 1.1;
 }

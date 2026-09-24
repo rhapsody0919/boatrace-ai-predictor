@@ -394,7 +394,7 @@
     "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位"
   },
   "wakuInfo": {
-    "note": "選手を選ぶと、その選手の実進入コース別（1〜6）の成績を期間・条件ごとに比較できます。セルをタップするとそのコースの直近10走の着順が開きます",
+    "note": "選手を選ぶと、その選手が本日入る想定コースでの成績を期間・条件ごとに比較できます。行をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",
     "boatLabel": "選手（艇番）",
     "metricLabel": "指標",
     "metrics": {
@@ -428,7 +428,15 @@
       "ippan": "一般戦",
       "sgg1": "SG・G1"
     },
-    "smallSampleTitle": "サンプルが少ないため参考値です"
+    "smallSampleTitle": "サンプルが少ないため参考値です",
+    "gridTitleWithMetric": "コース別成績：{{metric}}",
+    "todayMark": "今日",
+    "todayCourseHeading": "本日の想定進入：{{course}}コース",
+    "wakuNariAssumption": "※枠なり進入時",
+    "wakuNariRate": "この選手の枠なり進入率は{{rate}}％（直近{{n}}走）",
+    "periodHeader": "期間・条件",
+    "nHeader": "走数",
+    "allCoursesFold": "全コース（1〜6）の成績を見る"
   },
   "raceHistoryTable": {
     "date": "日付",
@@ -1468,7 +1476,8 @@
     "histVenue": "会場",
     "histSt": "ST",
     "histStRank": "ST順",
-    "histRank": "着順"
+    "histRank": "着順",
+    "average": "平均{{value}}"
   },
   "nigeSimulation": {
     "title": "1コースが逃げたとき",

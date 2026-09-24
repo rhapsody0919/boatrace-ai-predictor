@@ -1062,7 +1062,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });
 
-  test("枠別情報タブで実進入コース別成績グリッドと決まり手傾向が表示され、セルタップで直近10走が開く（BOA-307 / phase a T3-1）", async ({
+  test("枠別情報タブの既定ビューが今日の想定コース×3指標で、全コース比較は折りたたみから開ける（BOA-307 / phase a T3-1）", async ({
     page,
   }) => {
     await page.goto("/races/2026-08-11");
@@ -1074,16 +1074,51 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 他のタブ同様、枠別情報タブ表示中はデータ出走表等の分析ツール群を隠す
     await expect(page.locator(".data-race-table")).toHaveCount(0);
 
-    // 選手チップ6人・行6（今期/3ヶ月/1ヶ月/当地/一般戦/SG・G1）× 列6（コース1〜6）
     await expect(page.locator(".rwit-boat-chip")).toHaveCount(6);
-    await expect(page.locator(".rwit-grid tbody tr")).toHaveCount(6, {
+
+    // 既定ビュー: 今日の想定コース1本 × 1着率/2連対率/3連対率 + 走数
+    await expect(page.locator(".rwit-today-row")).toHaveCount(6, {
       timeout: 20000,
     });
+    await expect(page.locator(".rwit-today-metric-th")).toHaveCount(3);
+    await expect(page.locator(".rwit-today-course")).toContainText("1コース");
+    // 枠なり進入の仮定であることを明記する（進入は本番まで確定しない）
+    await expect(page.locator(".rwit-today-assumption")).toContainText(
+      "枠なり",
+    );
+
+    // 指標チップは既定では出さない（既定ビューは3指標を同時に出すため不要）
+    await expect(page.locator(".rwit-metric-row")).toBeHidden();
+
+    // 行をタップすると直近10走の帯（RecentRunsBar）が開く
+    await page.locator(".rwit-today-label-button").first().click();
+    await expect(page.locator(".rwit-expanded")).toBeVisible();
+    await expect(page.locator(".rrb-item").first()).toBeVisible({
+      timeout: 20000,
+    });
+    expect(await page.locator(".rrb-item").count()).toBeLessThanOrEqual(10);
+    // ST順位を「(N位)」形式で併記する（phase a T3-4）
+    await expect(page.locator(".rrb-st-rank").first()).toBeVisible();
+
+    // もう一度タップすると閉じる
+    await page.locator(".rwit-today-label-button").first().click();
+    await expect(page.locator(".rwit-expanded")).toHaveCount(0);
+
+    // 選手を切り替えると想定コースも移る
+    await page.locator(".rwit-boat-chip").nth(2).click();
+    await expect(page.locator(".rwit-today-course")).toContainText("3コース", {
+      timeout: 20000,
+    });
+
+    // 全コース比較は既定で閉じており、折りたたみを開くと6×6のグリッドが出る
+    await expect(page.locator(".rwit-grid")).toBeHidden();
+    await page.locator(".rwit-fold-summary").click();
+    await expect(page.locator(".rwit-grid tbody tr")).toHaveCount(6);
     await expect(
       page.locator(".rwit-grid thead th.rwit-grid-course-th"),
     ).toHaveCount(6);
-
-    // 指標を切り替えてもグリッドの形は維持される
+    // 指標チップは折りたたみの中にあり、切り替えてもグリッドの形は維持される
+    await expect(page.locator(".rwit-metric-row")).toBeVisible();
     await page.locator(".rwit-chip", { hasText: "3連対率" }).click();
     await expect(page.locator(".rwit-grid tbody tr")).toHaveCount(6);
 
@@ -1099,20 +1134,6 @@ test.describe("レースページ再設計（BOA-168）", () => {
         document.documentElement.clientWidth,
     );
     expect(docOverflow).toBeLessThanOrEqual(1);
-
-    // セルをタップすると直近10走の帯（RecentRunsBar）が開く
-    await page.locator(".rwit-grid-cell-button").first().click();
-    await expect(page.locator(".rwit-expanded")).toBeVisible();
-    await expect(page.locator(".rrb-item").first()).toBeVisible({
-      timeout: 20000,
-    });
-    expect(await page.locator(".rrb-item").count()).toBeLessThanOrEqual(10);
-    // ST順位を「(N位)」形式で併記する（phase a T3-4）
-    await expect(page.locator(".rrb-st-rank").first()).toBeVisible();
-
-    // もう一度タップすると閉じる
-    await page.locator(".rwit-grid-cell-button").first().click();
-    await expect(page.locator(".rwit-expanded")).toHaveCount(0);
   });
 
   test("枠別情報タブのST考察カードが、同コース・同級別の平均との差つきで表示される（phase a T3-2）", async ({
@@ -1133,7 +1154,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rsc-grid thead th.rsc-boat-th")).toHaveCount(6);
 
     // 集計期間が実測値で表示される（「直近1年」のような固定文言にしない）
-    await expect(page.locator(".rsc-window")).toContainText(/\d{4}-\d{2}-\d{2}/);
+    await expect(page.locator(".rsc-window")).toContainText(
+      /\d{4}-\d{2}-\d{2}/,
+    );
 
     // 差が表示され、方向（良い/悪い）で色分けされる。
     // どちらの向きが何件出るかは対象レースの選手次第なので、件数の内訳は問わない
@@ -1160,7 +1183,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.locator(".race-card .predict-btn").first().click();
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
 
-    await page.locator(".rsc-card").waitFor({ state: "visible", timeout: 25000 });
+    await page
+      .locator(".rsc-card")
+      .waitFor({ state: "visible", timeout: 25000 });
 
     // 折りたたみは2つ。初期は閉じている
     await expect(page.locator(".rsc-fold-toggle")).toHaveCount(2);
@@ -1227,7 +1252,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     // 「くわしく見る」で算出方法と「予想ではない」旨が出る
     await page.locator(".nsc-detail-toggle").click();
-    await expect(page.locator(".nsc-detail")).toContainText("予想ではありません");
+    await expect(page.locator(".nsc-detail")).toContainText(
+      "予想ではありません",
+    );
   });
 
   test("オッズ一覧タブで券種切替・全通り常時表示・推移ドリルダウン・免責文言が表示される（BOA-311）", async ({

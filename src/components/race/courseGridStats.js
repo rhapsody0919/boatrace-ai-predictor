@@ -95,3 +95,59 @@ export function getCourseRecentRuns(
     .slice(-count)
     .reverse();
 }
+
+/** 既定ビュー（今日の想定コース）で同時に出す3指標 */
+export const TODAY_METRICS = ["winRate", "top2Rate", "top3Rate"];
+
+/**
+ * 今日の想定コース1本に絞って、行（期間・条件）× 3指標 + n を組み立てる（純関数）。
+ *
+ * 2026-09-24のユーザー判断で既定ビューをこれに変えた。6コース×1指標の表は
+ * モバイル390pxで横スクロールが要り、ライト層に読まれていなかった（ファン4名の
+ * 検討結果）。列を1本に絞ると横幅が余るので、**1着率・2連対率・3連対率を
+ * 同時に出せる**（従来は3つから1つを選ばせていた）。最も見られる部分では
+ * 情報が減るどころか増える。
+ *
+ * @param {Array<Object>} records `getRacerScopedRaceStats` の戻り値
+ * @param {{venueCode: number|null, course: number}} options
+ * @returns {Array<{key: string, metrics: Record<string, number|null>, n: number}>}
+ */
+export function buildTodayCourseRows(records, { venueCode, course }) {
+  const all = Array.isArray(records) ? records : [];
+  return GRID_ROWS.map((row) => {
+    const filtered = filterRecords(all, {
+      venueCode,
+      scope: row.scope,
+      grade: row.grade,
+      period: row.period,
+    }).filter((r) => r.actualCourse === course);
+    const rates = computeRates(filtered);
+    return {
+      key: row.key,
+      n: rates.n,
+      metrics: Object.fromEntries(
+        TODAY_METRICS.map((m) => [m, rates.n > 0 ? rates[m] : null]),
+      ),
+    };
+  });
+}
+
+/**
+ * 枠なり進入率（枠番どおりのコースに入った割合）を求める（純関数）。
+ *
+ * 「本日の想定進入」が枠なり進入の仮定であることを断るために出す。
+ * 実測（全261,528走）では枠番どおりが90.90%、1つずれが7.06%、
+ * 2つ以上ずれが2.04%。選手1,610人（50走以上）の平均は90.5%で、
+ * **枠なり率100%の選手は1人もいない**（最小31.5%、80%未満が107人）。
+ *
+ * @param {Array<Object>} records `getRacerScopedRaceStats` の戻り値
+ * @returns {{rate: number|null, n: number}}
+ */
+export function computeWakuNariRate(records) {
+  const withCourse = (Array.isArray(records) ? records : []).filter(
+    (r) => r.actualCourse !== null && r.actualCourse !== undefined,
+  );
+  if (withCourse.length === 0) return { rate: null, n: 0 };
+  const same = withCourse.filter((r) => r.actualCourse === r.boatNumber).length;
+  return { rate: (same / withCourse.length) * 100, n: withCourse.length };
+}

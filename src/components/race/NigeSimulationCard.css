@@ -7,6 +7,9 @@
   border-radius: var(--radius-md);
   padding: var(--spacing-3);
   margin-top: var(--spacing-3);
+  /* 次のカード（決まり手傾向）との間の余白。rwit-card 側は margin-bottom しか
+     持たないため、こちら側で下方向も確保する */
+  margin-bottom: var(--spacing-3);
 }
 
 .nsc-title {

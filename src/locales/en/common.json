@@ -461,7 +461,7 @@
     "oddsList": "Odds List"
   },
   "wakuInfo": {
-    "note": "Pick a racer to compare their record by the course they actually took (1-6), across periods and conditions. Tap a cell to see their last 10 finishes from that course",
+    "note": "Pick a racer to compare their record in today's expected course across periods and conditions. Tap a row to see the last 10 finishes from that course. Use the fold below the table to compare all six courses.",
     "boatLabel": "Racer (boat #)",
     "metricLabel": "Metric",
     "metrics": {
@@ -495,7 +495,15 @@
       "ippan": "General",
       "sgg1": "SG/G1"
     },
-    "smallSampleTitle": "Small sample; treat as a rough guide"
+    "smallSampleTitle": "Small sample; treat as a rough guide",
+    "gridTitleWithMetric": "Record by course: {{metric}}",
+    "todayMark": "today",
+    "todayCourseHeading": "Today's expected start: course {{course}}",
+    "wakuNariAssumption": "assuming a straight start from the assigned lane",
+    "wakuNariRate": "This racer starts from the assigned lane {{rate}}% of the time (last {{n}} races)",
+    "periodHeader": "Period / condition",
+    "nHeader": "Races",
+    "allCoursesFold": "Show the record for all six courses"
   },
   "aiPredictionTab": {
     "unavailableTitle": "No AI prediction data",
@@ -1426,7 +1434,8 @@
     "histVenue": "Venue",
     "histSt": "ST",
     "histStRank": "ST rank",
-    "histRank": "Finish"
+    "histRank": "Finish",
+    "average": "avg {{value}}"
   },
   "nigeSimulation": {
     "title": "When course 1 leads from the start",
