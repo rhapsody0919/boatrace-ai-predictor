@@ -317,6 +317,11 @@
       "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）がソースと一致していること"
     },
     {
+      "script": "verify-e2e-skips.js",
+      "tier": "ci",
+      "guards": "E2Eのskip判定（check-e2e-skips.js）。無言でskipされ続けるテストの検知が壊れないこと"
+    },
+    {
       "script": "verify-format-column-migration.js",
       "tier": "manual",
       "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",

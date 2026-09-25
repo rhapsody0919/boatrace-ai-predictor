@@ -27,7 +27,13 @@ export default defineConfig({
   // コールドスタートで1回目だけ遅れることで、2回目はキャッシュが温まり通る。
   // 2回続けて落ちるものは本物の不具合として失敗のまま残る
   retries: process.env.CI ? 1 : 0,
-  reporter: [["list"]],
+  // JSONも出すのは、skipされたテストを機械的に数えるため。
+  // データ依存の test.skip() が常に真になると、そのテストは無言で無効化され、
+  // 「テストがある」まま何も検証しない状態が続く。実際に320px横スクロールの
+  // テスト7個が、selectUpcomingRace が常に false を返すせいで長期間skipされ、
+  // 誰も気づいていなかった（3b6ef2ce）。
+  // scripts/maintenance/check-e2e-skips.js がこのJSONを読む。
+  reporter: [["list"], ["json", { outputFile: "e2e-results.json" }]],
   use: {
     baseURL: `http://localhost:${port}`,
     trace: "retain-on-failure",
