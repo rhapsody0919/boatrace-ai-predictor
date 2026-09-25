@@ -311,7 +311,11 @@ npm run dev          # 開発サーバー起動
 npm run build        # プロダクションビルド
 npm run test:e2e     # E2E全件（スモーク＋レイアウト5軸、Playwright）
 npm run test:layout  # レイアウトのみ（375/768/1024/1440/1920pxの5軸）
+npm run check:worktrees  # worktreeの棚卸し（片付けてよい/触らない/作業中に分類。削除はしない）
 ```
+
+マージ前のチェック（verifyが緑か、`--delete-branch` でworktreeごと消えるデータが無いか）は
+`gh pr merge` を叩いた時点でフックが自動で止める（ADR-0075）。手元で先に確認する必要はない。
 
 ### 日次スクリプト
 ```bash
