@@ -19,6 +19,10 @@ function flattenRaces(venuesData) {
   const races = [];
   for (const venue of venuesData || []) {
     for (const race of venue.races || []) {
+      // 開催中止・打ち切り確定のレースは注目レースとして提示しない
+      // （BOA-411調査中に発見。isCancelledの判定基準はPredictionPanel.jsx/
+      // RaceCard.jsxと同じくconfirmedのみ。tentativeは暫定検知でまだ確定していないため対象外）
+      if (race.cancellationStatus === "confirmed") continue;
       // isFallbackは会場内サンプル数不足によるプレースホルダ値（0.5）のため、
       // 「注意度が高い/低い」の根拠として提示すると誤解を招く。除外する
       if (!race.volatility || race.volatility.isFallback) continue;
