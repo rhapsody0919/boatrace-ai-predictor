@@ -874,7 +874,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     });
   });
 
-  test("分析ツール7コンポーネントの埋め込みセクションがデフォルト閉で並び、開くと会場/レース選択プルダウン無しで実データが表示される（race-detail-analysis-integration FR-3〜9）", async ({
+  test("分析ツール6コンポーネントの埋め込みセクションがデフォルト閉で並び、開くと会場/レース選択プルダウン無しで実データが表示される（race-detail-analysis-integration FR-3〜9）", async ({
     page,
   }) => {
     await page.addInitScript(() =>
@@ -886,11 +886,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
       "本日開催中の未終了レースが見つからないため検証をスキップ",
     );
 
+    // 「モーター調子」はBOA-308でアコーディオンからモータ情報タブへ昇格し、
+    // 重複表示を避けてアコーディオン版が撤去された（PredictionPanel.jsx冒頭の
+    // コメント参照）。テストが7個のまま取り残されていたが、selectUpcomingRaceが
+    // 常にfalseを返して無言でskipしていたため検知できていなかった
     const sections = page.locator(".embedded-analysis-section");
-    await expect(sections).toHaveCount(7);
+    await expect(sections).toHaveCount(6);
 
     const expectedTitles = [
-      "モーター調子",
       "選手調子",
       "STのズレ",
       "展示タイム推移",
