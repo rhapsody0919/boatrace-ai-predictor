@@ -81,6 +81,12 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 
 1日目（新規記事作成）のみ`renderCampaignEntryCard()`（`scripts/lib/contentChannels/renderCampaignCard.js`）でカバー画像を生成する。2日目以降の追記では既存のカバー画像をそのまま使う（差し替えない）。
 
+## 3''. 「本日のデータ一覧」型（morning-digest）のネタ
+
+型が `morning-digest` のネタは、本文中の数値を `morning_digest_days` / `morning_digest_rows` の2表だけから取る（再計算禁止）。共通の規則は [`sns-pipeline-morning-digest.md`](sns-pipeline-morning-digest.md) を読む。
+
+ブログでは**その日の一覧をそのまま転記しない**。「会場によって逃げ率は20ポイント違うので、率だけ並べても比較にならない」という主題の解説記事にし、その週に実際に出た行を実例として使う。**毎日1本は書かない**（同じ主題の薄い記事を量産しないため、週1本程度）。0.5節の重複防止チェックに加えて、直近1週間に `morning-digest` 由来の記事を出していないかも確認する。
+
 ## 4. カバー画像の生成
 
 **企画由来のネタで2日目以降の追記（3'.参照）の場合はこのセクションをスキップする**（1日目の新規記事作成時のみ実施、3'.末尾の「カバー画像」参照）。

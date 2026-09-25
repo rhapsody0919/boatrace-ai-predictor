@@ -40,6 +40,11 @@ async function main() {
       pathName: "/winning-technique",
       expectedText: "データ分析ツール",
     },
+    {
+      // 日替わりの中身ではなく、静的な指標の定義が入っていることを見る（BOA-402）
+      pathName: "/today",
+      expectedText: "逃げが堅い選手",
+    },
     ...blogPosts.slice(0, 5).map((post) => ({
       pathName: `/blog/${post.id}`,
       expectedText: post.title,

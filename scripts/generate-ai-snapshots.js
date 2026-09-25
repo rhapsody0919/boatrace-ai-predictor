@@ -6,6 +6,8 @@
  *   レンダリング済みHTMLをそのまま保存する
  * - /winning-technique: 実データ依存の分析タブを除外し、静的な機能説明部分のみを
  *   i18n JSONから直接HTMLテンプレートとして生成する（ライブAPI非依存、ビルドの決定性を保つ）
+ * - /today（BOA-402）: 同じ方式。日替わりの選手・レースは入れず、ページの目的と
+ *   各指標の定義だけを src/data/morningDigestCopy.js（画面と共有）から生成する
  */
 import { createServer } from "node:http";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
@@ -13,6 +15,14 @@ import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { blogPosts } from "../src/data/blogPosts.js";
+import {
+  MORNING_DIGEST_DISCLAIMER,
+  MORNING_DIGEST_GLOSSARY,
+  MORNING_DIGEST_GLOSSARY_TITLE,
+  MORNING_DIGEST_META,
+  MORNING_DIGEST_SECTIONS,
+  glossaryBodyToText,
+} from "../src/data/morningDigestCopy.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -250,13 +260,70 @@ ${sections}
   console.log("✓ /winning-technique スナップショット生成完了");
 }
 
+/**
+ * /today（「本日のデータ一覧」、BOA-402）のスナップショット。
+ *
+ * **ビルド時生成なので日替わりの中身は入れない。** 載せるのはページの目的と各指標の定義だけ
+ * （plan.md §5、/winning-technique と同じ方針）。文言は画面と共有の
+ * src/data/morningDigestCopy.js から取るため、片方だけ古くなることがない。
+ */
+function generateTodaySnapshot() {
+  const sections = MORNING_DIGEST_SECTIONS.map(
+    (section) => `
+    <section>
+      <h2>${escapeHtml(section.title)}</h2>
+      <p>${escapeHtml(section.description)}</p>${
+        section.notice ? `\n      <p>${escapeHtml(section.notice)}</p>` : ""
+      }
+    </section>`,
+  ).join("\n");
+
+  const glossary = MORNING_DIGEST_GLOSSARY.map(
+    (entry) => `
+      <dt>${escapeHtml(entry.term)}</dt>
+      <dd>${escapeHtml(glossaryBodyToText(entry.body))}</dd>`,
+  ).join("");
+
+  const html = `<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(MORNING_DIGEST_META.title)}</title>
+  <meta name="description" content="${escapeHtml(MORNING_DIGEST_META.description)}" />
+  <link rel="canonical" href="${MORNING_DIGEST_META.canonical}" />
+  <meta name="robots" content="index, follow" />
+</head>
+<body>
+  <main>
+    <h1>${escapeHtml(MORNING_DIGEST_META.h1)}</h1>
+    <p>${escapeHtml(MORNING_DIGEST_META.description)}</p>
+    <p>掲載している選手・レースは毎朝入れ替わります。最新の内容は ${MORNING_DIGEST_META.canonical} を参照してください。</p>
+${sections}
+    <section>
+      <h2>${escapeHtml(MORNING_DIGEST_GLOSSARY_TITLE)}</h2>
+      <dl>${glossary}
+      </dl>
+      <p>${escapeHtml(MORNING_DIGEST_DISCLAIMER)}</p>
+    </section>
+  </main>
+</body>
+</html>
+`;
+
+  mkdirSync(SNAPSHOT_DIR, { recursive: true });
+  writeFileSync(path.join(SNAPSHOT_DIR, "today.html"), html, "utf-8");
+  console.log("✓ /today スナップショット生成完了");
+}
+
 async function main() {
   console.log("AIクローラー向けスナップショット生成を開始します...");
 
   generateWinningTechniqueSnapshot();
+  generateTodaySnapshot();
 
   // ブログ記事スナップショット生成が万一失敗しても、ビルド全体は成功させ
-  // /winning-technique分だけは配信を継続する（2026-09-11〜09-12インシデントの
+  // /winning-technique・/today分だけは配信を継続する（2026-09-11〜09-12インシデントの
   // 再発防止、詳細はPR#624参照）。
   let server;
   try {
@@ -277,7 +344,7 @@ async function main() {
     }
   } catch (err) {
     console.error(
-      "⚠️ ブログ記事スナップショットの生成に失敗しましたが、ビルドは継続します（/winning-technique分は生成済み）:",
+      "⚠️ ブログ記事スナップショットの生成に失敗しましたが、ビルドは継続します（/winning-technique・/today分は生成済み）:",
       err.message,
     );
   } finally {
@@ -288,7 +355,7 @@ async function main() {
 }
 
 main().catch((err) => {
-  // ここに到達するのはgenerateWinningTechniqueSnapshot()自体の失敗のみ
+  // ここに到達するのはgenerateWinningTechniqueSnapshot()・generateTodaySnapshot()自体の失敗のみ
   // （ブログ側のエラーは上のtry-catchで既に吸収済み）。同期的なテンプレート
   // 生成なので、失敗する場合は環境差異ではなく実際のバグの可能性が高く、
   // ビルドを失敗させて気づけるようにする。

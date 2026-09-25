@@ -84,15 +84,13 @@ export async function getTopicCategories({ activeOnly = false } = {}) {
 }
 
 /**
- * 指定した型（カテゴリ）で有効なチャネル（platform）一覧を取得する。
- * 提案Routineが「このネタはどのチャネルに配るか」を判断する入口として使う
- * （2026-09-03新設、以前のchannelMatrix.js + isGamblingRelevantフラグに代わる
- * データ駆動の仕組み。型の追加・チャネル可否の変更はsns-hub管理画面から行い、
- * コード・複数ドキュメントの同時修正を不要にする）。
+ * 型（カテゴリ）を1件、チャネル設定つきで取得する。存在しない・廃止済みなら例外。
+ * `getEnabledChannelsForCategory` と、ネタ登録側が `content_type_id` を得るための共通の入口
+ * （型の対応づけをコードに直書きせず、sns_topic_categories を唯一の出所にする）。
  * @param {string} categoryKey - 例: 'racer-condition'
- * @returns {Promise<string[]>} enabled=trueのplatform名の配列
+ * @returns {Promise<object>} sns_topic_categories の行（sns_topic_category_channels を含む）
  */
-export async function getEnabledChannelsForCategory(categoryKey) {
+export async function getActiveTopicCategoryByKey(categoryKey) {
   assertSupabaseEnabled();
   const { data: category, error: categoryError } = await supabase
     .from(TOPIC_CATEGORIES_TABLE)
@@ -114,9 +112,27 @@ export async function getEnabledChannelsForCategory(categoryKey) {
       `ネタの型 "${categoryKey}"（${category.label}）は廃止済み（active=false）です。使用禁止: ${category.notes || "理由未記録"}`,
     );
   }
+  return category;
+}
+
+/** 型（カテゴリ）の行から、enabled=true のチャネル名を取り出す（純関数） */
+export function enabledChannelsOf(category) {
   return (category[TOPIC_CATEGORY_CHANNELS_TABLE] || [])
     .filter((c) => c.enabled)
     .map((c) => c.platform);
+}
+
+/**
+ * 指定した型（カテゴリ）で有効なチャネル（platform）一覧を取得する。
+ * 提案Routineが「このネタはどのチャネルに配るか」を判断する入口として使う
+ * （2026-09-03新設、以前のchannelMatrix.js + isGamblingRelevantフラグに代わる
+ * データ駆動の仕組み。型の追加・チャネル可否の変更はsns-hub管理画面から行い、
+ * コード・複数ドキュメントの同時修正を不要にする）。
+ * @param {string} categoryKey - 例: 'racer-condition'
+ * @returns {Promise<string[]>} enabled=trueのplatform名の配列
+ */
+export async function getEnabledChannelsForCategory(categoryKey) {
+  return enabledChannelsOf(await getActiveTopicCategoryByKey(categoryKey));
 }
 
 /** 型×チャネルのON/OFFを更新する（sns-hub管理画面用） */
@@ -239,6 +255,28 @@ export async function createTopicWithTargets({
   }
 
   return { topic, targets: targets || [] };
+}
+
+/**
+ * `topic_text` に指定の目印を含むネタが既にあるかを返す。
+ * 日次バッチが「同じ対象日のネタを二重に作らない」ためだけに使う軽い重複チェック
+ * （sns_topics に外部キー相当の列が無いため、目印は本文そのものに置く。
+ * 例: 「【本日のデータ一覧 2026-09-26】」）。
+ * @param {string} marker - topic_text に必ず含まれる一意な文字列
+ * @returns {Promise<object|null>} 見つかった1件、または null
+ */
+export async function findTopicByTextMarker(marker) {
+  assertSupabaseEnabled();
+  const { data, error } = await supabase
+    .from(TOPICS_TABLE)
+    .select("id, topic_text, status, created_at")
+    .like("topic_text", `%${marker}%`)
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`${TOPICS_TABLE}重複確認エラー(${marker}): ${error.message}`);
+  }
+  return data ?? null;
 }
 
 /** ネタを承認する（sns-hub「ネタ承認」タブからの操作用） */
