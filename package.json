@@ -27,6 +27,8 @@
     "verify:point-rank": "node scripts/maintenance/verify-point-rank-parser.js",
     "verify:venue-entry-course-stats": "node scripts/maintenance/verify-venue-entry-course-stats-parser.js",
     "verify:er-diagram": "node scripts/maintenance/verify-plan-erd.js",
+    "verify:lib-index": "node scripts/maintenance/verify-lib-index.js",
+    "generate:lib-index": "node scripts/maintenance/generate-lib-index.js",
     "verify:actual-course-kfile": "node scripts/maintenance/verify-actual-course-kfile-parser.js",
     "verify:kb-backfill": "node scripts/maintenance/verify-kb-file-parser.js",
     "verify:fan-period": "node scripts/maintenance/verify-fan-period.js",
