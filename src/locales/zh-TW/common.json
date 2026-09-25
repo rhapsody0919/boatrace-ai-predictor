@@ -656,7 +656,7 @@
     "smallSampleTitle": "樣本較少，僅供參考",
     "periodTitle": "前期（{{from}}〜{{to}}・官方期別成績）",
     "periodWinRate": "勝率 {{value}}",
-    "periodTop2Rate": "2連對率 {{value}}%",
+    "periodTop2Rate": "2連對率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
     "periodFetchError": "無法取得前期成績"
   },

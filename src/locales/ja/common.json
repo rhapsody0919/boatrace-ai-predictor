@@ -403,7 +403,7 @@
     "smallSampleTitle": "サンプルが少ないため参考値です",
     "periodTitle": "前期（{{from}}〜{{to}}・公式の期別成績）",
     "periodWinRate": "勝率 {{value}}",
-    "periodTop2Rate": "2連対率 {{value}}%",
+    "periodTop2Rate": "2連対率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
     "periodFetchError": "前期成績を取得できませんでした"
   },

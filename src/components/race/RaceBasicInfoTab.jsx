@@ -91,6 +91,10 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
   // undefined=未取得、配列=取得済み、それ以外（{state:"forbidden"}）＝095未適用
   const [periodStats, setPeriodStats] = useState(undefined);
   const [periodFailed, setPeriodFailed] = useState(false);
+  // 再読み込みボタン用。これを増やさないと取得effectの依存
+  // （racerIdsKey / raceDate）が変わらず、再取得が起きないまま
+  // 枠もエラーも消えて「失敗がデータなしに化ける」状態になる
+  const [periodRetryToken, setPeriodRetryToken] = useState(0);
 
   const sortedPlayers = [...(players ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -144,7 +148,7 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
     return () => {
       cancelled = true;
     };
-  }, [racerIdsKey, raceDate]);
+  }, [racerIdsKey, raceDate, periodRetryToken]);
 
   const ensureScopedStats = useCallback((racerId) => {
     if (!racerId) return;
@@ -680,6 +684,7 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                               onRetry={() => {
                                 setPeriodFailed(false);
                                 setPeriodStats(undefined);
+                                setPeriodRetryToken((v) => v + 1);
                               }}
                             />
                           )}
@@ -703,11 +708,14 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                   })}
                                 </span>
                                 <span>
+                                  {/* 単位は値側に付ける。i18n側に「%」を残すと
+                                      出走0の新人（top2_rateがNULL）で
+                                      「2連対率 —%」になる */}
                                   {t("basicInfo.periodTop2Rate", {
                                     value:
                                       period.top2Rate === null
                                         ? "—"
-                                        : period.top2Rate.toFixed(1),
+                                        : `${period.top2Rate.toFixed(1)}%`,
                                   })}
                                 </span>
                                 <span>

@@ -658,7 +658,7 @@
     "smallSampleTitle": "Small sample — treat as a rough guide",
     "periodTitle": "Previous term ({{from}} – {{to}}, official term record)",
     "periodWinRate": "Win pts {{value}}",
-    "periodTop2Rate": "Top-2 rate {{value}}%",
+    "periodTop2Rate": "Top-2 rate {{value}}",
     "periodAvgSt": "Avg. ST {{value}}",
     "periodFetchError": "Could not load the previous term record"
   },

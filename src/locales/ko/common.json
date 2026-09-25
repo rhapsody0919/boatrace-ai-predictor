@@ -656,7 +656,7 @@
     "smallSampleTitle": "표본이 적어 참고값입니다",
     "periodTitle": "전기({{from}}〜{{to}}·공식 기별 성적)",
     "periodWinRate": "승률 {{value}}",
-    "periodTop2Rate": "2연대율 {{value}}%",
+    "periodTop2Rate": "2연대율 {{value}}",
     "periodAvgSt": "평균 ST {{value}}",
     "periodFetchError": "전기 성적을 가져오지 못했습니다"
   },

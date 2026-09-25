@@ -324,11 +324,17 @@ function isUnavailable(records, field) {
  * @param {{venueCode: number|null, metric: string}} options
  * @returns {Array<{key: string, value: number|null, n: number, unavailable: boolean, baseN: number|null}>}
  *   `unavailable` が true の行は呼び出し側で描画しない。
+ *   `n` は metric が `avgSt` のときだけ ST を計測できた走数（avgStN）になる。
  *   `baseN` は波・F持ち時・F無し時の行だけ非null（その条件を判定できた走数。
  *   他行と母数が違うことを示すので、画面はこれを添えて「他行と比べない」と読ませる）
  */
 export function buildConditionRows(records, { venueCode, metric }) {
   const all = Array.isArray(records) ? records : [];
+
+  // 平均STはフライング・未計測の走を除いた avgStN が母数（computeRatesの
+  // コメント参照）。他の指標の n と混ぜると、上のバーが n=158 で出している
+  // 同じ値をこの表が n=171 と書くことになる（会場ランキング側は既に出し分け済み）
+  const sampleOf = (rates) => (metric === "avgSt" ? rates.avgStN : rates.n);
 
   return CONDITION_ROWS.map((row) => {
     if (row.kind === "filter") {
@@ -342,8 +348,8 @@ export function buildConditionRows(records, { venueCode, metric }) {
       );
       return {
         key: row.key,
-        value: rates.n > 0 ? rates[metric] : null,
-        n: rates.n,
+        value: sampleOf(rates) > 0 ? rates[metric] : null,
+        n: sampleOf(rates),
         unavailable: false,
         baseN: null,
       };
@@ -366,8 +372,8 @@ export function buildConditionRows(records, { venueCode, metric }) {
       const rates = computeRates(hit);
       return {
         key: row.key,
-        value: rates.n > 0 ? rates[metric] : null,
-        n: rates.n,
+        value: sampleOf(rates) > 0 ? rates[metric] : null,
+        n: sampleOf(rates),
         unavailable: false,
         baseN: null,
       };
@@ -383,8 +389,8 @@ export function buildConditionRows(records, { venueCode, metric }) {
       const rates = computeRates(hit);
       return {
         key: row.key,
-        value: rates.n > 0 ? rates[metric] : null,
-        n: rates.n,
+        value: sampleOf(rates) > 0 ? rates[metric] : null,
+        n: sampleOf(rates),
         unavailable: false,
         baseN: known.length,
       };
@@ -407,8 +413,8 @@ export function buildConditionRows(records, { venueCode, metric }) {
     const rates = computeRates(rough);
     return {
       key: row.key,
-      value: rates.n > 0 ? rates[metric] : null,
-      n: rates.n,
+      value: sampleOf(rates) > 0 ? rates[metric] : null,
+      n: sampleOf(rates),
       unavailable: false,
       baseN: known.length,
     };
