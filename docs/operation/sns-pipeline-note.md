@@ -44,6 +44,10 @@ claimしたターゲットの`topic_id`と同じ`sns_topics.id`（`sns_drafts.co
 3. カバー画像は、ブログ側の`sns_drafts.cover_image_path`と同じ画像を使う（同一ネタのため使い回してよい、`docs/reference/brand-kit.md`のトーン統一目的とも合致）
 4. **ハッシュタグは2〜4個、ジャンル大タグ（`#ボートレース` `#ボートレース予想`等）と龍神レーダー独自タグを組み合わせる**（2026-09-05追加、`note-algorithm-and-growth-notes.md`より。「競艇」表記はハッシュタグでも使わない、TikTokと同じ理由）
 
+## 3'. 「本日のデータ一覧」型（morning-digest）のネタ
+
+型が `morning-digest` のネタは、共通の規則を [`sns-pipeline-morning-digest.md`](sns-pipeline-morning-digest.md) で確認する。数値の出所は `morning_digest_days` / `morning_digest_rows` の2表だけ（再計算禁止）。note は通常どおりブログ本文からの変換を基本とし、ブログ側が未生成なら2節の依存関係チェックに従って待つ。
+
 ## 4. 下書きの永続化
 
 `sns_drafts`テーブルにINSERTする。`content_group_id`はブログ行・claimしたネタの`sns_topics.id`と同じ値を使う。列: `platform`（'note'）・`format`（ブログ行と同じ、'screenshot'または'data-card'）・`title`・`caption_text`（note本文）・`cover_image_path`・`status`（'pending_review'）・`routine_run_id`
