@@ -93,23 +93,48 @@ function createVirtualClock() {
   let t = 0;
   const timers = [];
   const drain = () => new Promise((resolve) => setImmediate(resolve));
+  /** 積まれた sleep を起床時刻の順に消化する（消化の途中で積まれた分も拾う） */
+  async function runAll() {
+    await drain();
+    for (let guard = 0; timers.length > 0; guard++) {
+      if (guard > 1000) throw new Error("仮想の時計: sleep が終わらない");
+      timers.sort((a, b) => a.at - b.at);
+      const next = timers.shift();
+      t = Math.max(t, next.at);
+      next.resolve();
+      await drain();
+    }
+  }
   return {
     now: () => t,
     sleep: (ms) =>
       new Promise((resolve) => {
         timers.push({ at: t + ms, resolve });
       }),
-    /** 積まれた sleep を起床時刻の順に消化する（消化の途中で積まれた分も拾う） */
-    async runAll() {
-      await drain();
-      for (let guard = 0; timers.length > 0; guard++) {
-        if (guard > 1000) throw new Error("仮想の時計: sleep が終わらない");
-        timers.sort((a, b) => a.at - b.at);
-        const next = timers.shift();
-        t = Math.max(t, next.at);
-        next.resolve();
-        await drain();
+    /**
+     * promise が終わるまで sleep を消化し続ける。消化するものが無いのに終わらない場合は、待ち合わせが噛み合って
+     * いない（このまま待つと固まる）ので落とす — CIを何時間も占有させないため
+     */
+    async runUntil(promise) {
+      let pending = true;
+      const settled = promise.then(
+        (v) => {
+          pending = false;
+          return v;
+        },
+        (e) => {
+          pending = false;
+          throw e;
+        },
+      );
+      settled.catch(() => {}); // 例外は呼び出し側の await で受ける
+      while (pending) {
+        await runAll();
+        if (pending && timers.length === 0) {
+          throw new Error("仮想の時計: 消化する sleep が無いのに終わらない");
+        }
       }
+      return settled;
     },
   };
 }
@@ -1164,14 +1189,14 @@ async function runWrapped({
     sleep: clock.sleep,
   });
   const starts = [];
-  const concurrent = Promise.all(
-    [0, 1, 2].map(async () => {
-      await p2.wait();
-      starts.push(clock.now());
-    }),
+  await clock.runUntil(
+    Promise.all(
+      [0, 1, 2].map(async () => {
+        await p2.wait();
+        starts.push(clock.now());
+      }),
+    ),
   );
-  await clock.runAll();
-  await concurrent;
   check(
     "(d) 並行して呼んでも、全て間隔以上ずつ空く（順番に通す）",
     starts.length === 3 && starts.slice(1).every((x, k) => x - starts[k] >= 30),
@@ -2192,23 +2217,23 @@ for (const [label, replacements] of jobMutants) {
         sleep: clock.sleep,
       });
       const s = [];
-      const concurrent = Promise.all(
-        [0, 1, 2].map(async () => {
-          await p.wait();
-          s.push(clock.now());
-        }),
+      await clock.runUntil(
+        Promise.all(
+          [0, 1, 2].map(async () => {
+            await p.wait();
+            s.push(clock.now());
+          }),
+        ),
       );
-      await clock.runAll();
-      await concurrent;
       const sequential = [];
-      const inOrder = (async () => {
-        for (let i = 0; i < 3; i++) {
-          await p.wait();
-          sequential.push(clock.now());
-        }
-      })();
-      await clock.runAll();
-      await inOrder;
+      await clock.runUntil(
+        (async () => {
+          for (let i = 0; i < 3; i++) {
+            await p.wait();
+            sequential.push(clock.now());
+          }
+        })(),
+      );
       const spaced = (xs) => xs.slice(1).every((x, i) => x - xs[i] >= 30);
       return [
         ...(spaced(s) ? [] : ["並行の呼び出しで間隔が空かない"]),
