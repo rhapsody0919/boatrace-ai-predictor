@@ -86,7 +86,9 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": ["--base=origin/master"],
+      "args": [
+        "--base=origin/master"
+      ],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
@@ -282,6 +284,12 @@
       "runner": "bash",
       "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
       "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
+    },
+    {
+      "script": "verify-rpc-key-regression.js",
+      "tier": "ci",
+      "guards": "CREATE OR REPLACE FUNCTION が、それ以前の定義にあったキーを取りこぼしていないか（BOA-363・BOA-431と同型の回帰）",
+      "note": "本番接続が要る verify-rpc-output-keys.js（tier=manual）と違い、SQLファイル同士の比較だけで完結するためPRごとに走らせられる。BOA-431の欠落を実際に検知することを確認済み"
     },
     {
       "script": "verify-format-column-migration.js",
