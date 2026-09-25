@@ -1214,13 +1214,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 20000,
     });
 
-    // タブストリップ・データ出走表は自前のoverflow-x:autoの中で横スクロールする
+    // タブストリップ・データ出走表は自前のスクロールコンテナの中で横スクロールする
     for (const selector of [".race-tabs-bar", ".drt-table-wrapper"]) {
       const overflowX = await page
         .locator(selector)
         .first()
         .evaluate((el) => getComputedStyle(el).overflowX);
-      expect(overflowX).toBe("auto");
+      expect(["auto", "scroll"]).toContain(overflowX);
     }
 
     const docOverflow = await page.evaluate(
@@ -1239,39 +1239,38 @@ test.describe("レースページ再設計（BOA-168）", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 900 });
-    await page.addInitScript(() => {
-      localStorage.setItem("boatai-language", "ja");
-      localStorage.setItem("boatai:cookie-consent", "accepted");
+    // バナー背後のpingリングはCSS transformでスクロール可能領域に寄与するため、
+    // 任意のアニメーションフレームで計測しないよう止める
+    // （AiCopyBannerはuseReducedMotionを見てリング自体を描画しない）
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    // 320px幅ではCookie同意バナーが画面下部の操作を遮るため、同意済みで開始する
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai:cookie-consent", "accepted"),
+    );
+
+    const found = await selectUpcomingRace(page);
+    test.skip(
+      !found,
+      "本日開催中の未終了レースが見つからないため検証をスキップ",
+    );
+
+    // 未終了レースを開けた以上バナーは必ず出る。出ない場合は退行なので
+    // スキップにせず失敗させる（バナーが消えると本検証が無言で骨抜きになるため）
+    await expect(page.locator(".ai-copy-banner")).toBeVisible({
+      timeout: 20000,
     });
-
-    await page.goto("/");
-    await page.locator(".venue-grid").waitFor({ timeout: 20000 });
-    const venue = page.locator(".venue-grid-card--open").first();
-    test.skip(
-      (await venue.count()) === 0,
-      "本日開催中の会場が無いため検証をスキップ",
-    );
-    await venue.click();
-
-    // 未終了が保証される側の最終レースを開く
-    const lastRace = page.locator(".race-card .predict-btn").last();
-    await lastRace.waitFor({ timeout: 20000 });
-    await lastRace.click();
-
-    // バナーは結果未確定レースにだけ出る。全レース終了後の時間帯は対象が無い
-    const banner = page.locator(".ai-copy-banner");
-    const hasBanner = await banner
-      .waitFor({ timeout: 20000 })
-      .then(() => true)
-      .catch(() => false);
-    test.skip(
-      !hasBanner,
-      "本日の未終了レースが見つからないため検証をスキップ",
-    );
-
     await expect(page.locator(".race-tabs-btn.is-active")).toHaveText(
       "基本情報",
     );
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 20000,
+    });
+
+    // バナー自身が親からあふれていないこと（この修正が効いていることの直接確認）
+    const bannerOverflow = await page
+      .locator(".ai-copy-banner")
+      .evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(bannerOverflow).toBeLessThanOrEqual(1);
 
     const docOverflow = await page.evaluate(
       () =>
@@ -1656,11 +1655,16 @@ async function selectUpcomingRace(page) {
     return false;
   }
 
+  // 「次 XR」表示は会場カードの描画より後に入るため、.venue-gridの描画直後に
+  // countすると開催中でも常に0件になり、このヘルパーを使うテストが無言で
+  // skipし続けていた。表示の出現自体を待ってから絞り込む
   const upcomingVenue = page
     .locator(".venue-grid-card--open")
     .filter({ has: page.locator(".venue-grid-card__next-race") })
     .first();
-  if ((await upcomingVenue.count()) === 0) {
+  try {
+    await upcomingVenue.waitFor({ timeout: 15000 });
+  } catch {
     return false;
   }
 

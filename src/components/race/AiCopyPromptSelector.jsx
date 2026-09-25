@@ -14,6 +14,9 @@ export default function AiCopyPromptSelector({
       role="radiogroup"
       style={{
         display: "inline-flex",
+        // イン崩れ注意度highのレースは選択肢が4個になり、320px幅では横一列に
+        // 収まらない。折り返しを許さないとチップ内で語中改行する（「イン崩れ/狙い」）
+        flexWrap: "wrap",
         gap: "4px",
         background: "var(--color-primary-alpha-10)",
         borderRadius: "var(--radius-md)",
@@ -38,6 +41,8 @@ export default function AiCopyPromptSelector({
               fontWeight: 600,
               background: selected ? "var(--color-primary-500)" : "transparent",
               color: selected ? "#ffffff" : "var(--color-primary-600)",
+              // 折り返しはチップ単位で行う（ラベルの語中改行を避ける）
+              whiteSpace: "nowrap",
             }}
           >
             {option.label}
