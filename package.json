@@ -14,6 +14,7 @@
     "verify:migration-numbers": "node scripts/maintenance/verify-migration-numbers.js --base=origin/master",
     "verify:content-index": "node scripts/maintenance/verify-content-index-coverage.js",
     "check:session-start": "node scripts/maintenance/session-start-check.js",
+    "check:worktrees": "node scripts/maintenance/check-worktrees.js",
     "check:deprecated-terms": "node scripts/maintenance/check-deprecated-terms.js",
     "verify:routine-routing": "node scripts/maintenance/verify-routine-routing.js",
     "verify:topic-target-claim": "node scripts/maintenance/verify-topic-target-claim.js",

@@ -19,3 +19,10 @@ if [ -n "$status" ]; then
   echo "未コミットの変更があります（他セッションの作業中の可能性があるため、内容を確認せずに変更・削除しないこと）:"
   echo "$status"
 fi
+
+# origin との乖離・worktree衛生。判定は scripts/maintenance/check-git-hygiene.js
+# （問題が無ければ何も出力しない）。node が使えない場合は黙って飛ばす。
+hygiene="$CLAUDE_PROJECT_DIR/scripts/maintenance/check-git-hygiene.js"
+if command -v node >/dev/null 2>&1 && [ -f "$hygiene" ]; then
+  node "$hygiene" 2>/dev/null || true
+fi
