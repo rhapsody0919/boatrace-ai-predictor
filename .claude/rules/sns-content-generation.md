@@ -1,6 +1,19 @@
+---
+paths:
+  - "sns-video-studio/**"
+  - "note-articles/**"
+  - "public/blog/**"
+  - "src/pages/admin/SnsHubAdmin*"
+  - "scripts/lib/contentChannels/**"
+  - "scripts/lib/contentTopics/**"
+  - "scripts/lib/snsStrategyInsights.js"
+  - "scripts/lib/contentRevisionHistory.js"
+  - "docs/operation/sns-*"
+---
+
 # SNSコンテンツ生成パイプライン 横断ルール
 
-SNS投稿コンテンツ（ブログ/note/X/TikTok/YouTube）を生成するすべてのClaude Code Routineが対象。このファイルはフロントマターを持たないため、対象パス・実行環境に関わらず全Routineセッションに自動的に読み込まれる。
+SNS投稿コンテンツ（ブログ/note/X/TikTok/YouTube）を生成するすべてのClaude Code Routineが対象。SNS向けの生成物を触るときに読み込まれる（上の`paths`）。
 
 **このファイルに書くのはチャネル横断で常に適用される技術ルールのみ**。特定チャネル固有のルール（TikTokのガンブル関連ポリシー等）はここに書かず、各チャネル専用のプロンプトファイル（`docs/operation/`配下）に書く。ここに混在させると、無関係なチャネルへの誤適用を招く。
 

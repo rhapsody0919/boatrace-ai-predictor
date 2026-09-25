@@ -1,6 +1,23 @@
+---
+paths:
+  - "public/blog/**"
+  - "note-articles/**"
+  - "sns-video-studio/**"
+  - "src/data/blogPosts*.js"
+  - "src/pages/admin/SnsHubAdmin*"
+  - "scripts/lib/contentChannels/**"
+  - "scripts/lib/contentTopics/**"
+  - "data/analysis/x-posts/**"
+  - "data/analysis/tiktok-posts/**"
+  - "docs/design/content-ops-flow/**"
+  - "docs/operation/sns-*"
+---
+
 # コンテンツ運用フロー（新機能展開・SNS運用・品質維持）
 
-このファイルはフロントマターを持たないため、対象パス・実行環境に関わらず全セッションに自動的に読み込まれる（`.claude/rules/sns-content-generation.md`と同じ扱い）。フローC-0〜C-11がセッション開始時の能動チェックに依存し、特定のファイル編集を伴わないため、パス条件では正しく発火しない（2026-09-16、プロジェクトCLAUDE.mdの肥大化対策[BOA-317]でこのファイルに分離した際の判断）。
+コンテンツ・SNSまわりを触るときに読み込まれる（上の`paths`）。**セッション開始時の確認だけは常時発火する必要がある**ため、[`session-start-checks.md`](./session-start-checks.md)に分離してある（そちらはフロントマターを持たない＝常時読み込み）。
+
+2026-09-16に本ファイルへ分離した時点では全体を常時読み込みにしていたが、2026-09-25に常時読み込みが613行・84.5KBへ膨らみ、Anthropicの公式ガイダンス（CLAUDE.mdは目安200行、参照資料は必要なときだけ読む場所へ）を大きく超えていたため、確認の発火部分だけを残して本体を条件付きに移した。
 
 ## フローA: 新機能マルチチャネル展開
 

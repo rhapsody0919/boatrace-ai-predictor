@@ -8,49 +8,6 @@
 
 ---
 
-## ディレクトリ構造
-
-```
-boatrace-ai-predictor/
-├── .claude/
-│   ├── CLAUDE.md
-│   ├── commands/          # スラッシュコマンド
-│   ├── rules/             # 自動読み込みルール
-│   └── templates/         # テンプレート集
-├── .github/               # GitHub Actions
-├── src/
-│   ├── components/
-│   ├── services/
-│   └── pages/
-│       └── admin/         # 管理画面
-├── scripts/
-│   ├── daily/             # 日次実行
-│   ├── analysis/          # 分析用
-│   ├── maintenance/       # メンテナンス
-│   ├── db/                # DBスキーマ
-│   └── lib/               # 共通ライブラリ（supabaseClient.js等）
-├── data/
-│   ├── analysis/          # 分析結果JSON（venue-XX/）
-│   ├── venue-params/      # 会場別パラメータ
-│   └── predictions/       # 予測データ
-├── docs/
-│   ├── db-migration/      # DBマイグレーション
-│   ├── reference/         # リファレンス資料
-│   ├── design/            # 設計・実装資料（採用済み）
-│   ├── operation/         # 運用ガイド
-│   ├── issues/            # 既知の問題
-│   ├── proposal/          # 提案・検討（未採用）
-│   ├── setup/             # セットアップガイド
-│   └── archive/           # 廃案・不要になった資料
-├── public/
-│   └── blog/              # ブログ記事（Markdown）
-├── note-articles/         # note.com記事
-├── archive/               # 古いファイル（参照用）
-└── api/                   # Vercel Edge Functions
-```
-
----
-
 ## 分析・調査アプローチの優先順位
 
 **Node.jsスクリプトを優先して使用する。SQLの手動実行は最終手段。**
@@ -249,7 +206,7 @@ DB設計時のER図生成規律・長時間実装時の再開規律は`.claude/r
 
 ## コンテンツ運用フロー（新機能マルチチャネル展開・sns-hub運用・品質維持）
 
-新機能ローンチ時のブログ・SNS展開（フローA）、sns-hub日常運用（フローB）、既存コンテンツの品質・鮮度維持（フローC）、ブログ記事公開前品質チェックの詳細は`.claude/rules/content-ops.md`参照（フロントマターを持たないため常時読み込み、`.claude/rules/sns-content-generation.md`と同じ扱い。2026-09-16に本ファイルの肥大化対策[BOA-317]で分離）。
+新機能ローンチ時のブログ・SNS展開（フローA）、sns-hub日常運用（フローB）、既存コンテンツの品質・鮮度維持（フローC）、ブログ記事公開前品質チェックの詳細は`.claude/rules/content-ops.md`参照（`public/blog/**`・`note-articles/**`・`sns-video-studio/**`等を触るときに読み込まれる）。**セッション開始時の確認は常時発火する必要があるため`.claude/rules/session-start-checks.md`に分離してある**。
 
 ### 新機能・新ページ追加時の多言語化の3区分（必須）
 新しいページ・機能を実装する際は、必ず以下の3区分のどれに該当するかを決めてから着手する（2026-08-09合意、i18n監査で「未翻訳ページを全言語URLで配信しlang=enを宣言する」構造欠陥が発覚したため）。
@@ -322,62 +279,4 @@ npm run check:worktrees  # worktreeの棚卸し（片付けてよい/触らな�
 node scripts/daily/generate-predictions.js
 node scripts/daily/scrape-results.js
 node scripts/daily/calculate-accuracy.js
-```
-
-### スラッシュコマンド
-
-#### 開発フロー
-| コマンド | 用途 |
-|---------|------|
-| `/create-pr {ブランチ名}` | featureブランチ作成 → PR作成 |
-| `/review-pr {PR番号}` | PRレビュー（ルール準拠チェック） |
-| `/merge-pr {PR番号}` | マージ承認後の実行 → 本番ビルド完了待ち → 実機検証 → 報告 |
-| `/deploy-preview {PR番号}` | Vercel Preview URL確認 |
-| `/implement {Linearチケット}` | Linearチケット自動実装 |
-| `/implement-batch {チケットIDのカンマ区切り}` | Linearチケット一括実装 |
-| `/brushup {Linearチケット}` | Linearチケットのブラッシュアップ |
-| `/codex-review [base]` | Codex (OpenAI) セカンドオピニオンレビュー |
-| `/step1-spec {slug} [チケット番号]` | SDD Step1: 仕様書作成 |
-| `/step1-screens {slug}` | SDD Step1: 画面洗い出し（UI機能） |
-| `/step2 {slug}` | SDD Step2: システム設計 |
-| `/step3 {slug}` | SDD Step3: タスク分解 |
-| `/step4 {slug}` | SDD Step4: 次タスク実装 |
-
-#### 分析・運用
-| コマンド | 用途 |
-|---------|------|
-| `/analyze-venue {コード}` | 会場別詳細分析 |
-| `/collect-stats` | 24会場の統計一括収集 |
-| `/daily-report` | 本日の予測結果レポート |
-| `/calibration-report` | 展開予測の確率キャリブレーション精度を分析 |
-| `/analyze-vup-features` | ボートレース日和の全バージョンアップ機能を一覧表示 |
-| `/analyze-vup-feature {機能名}` | ボートレース日和の指定機能をboatAI向けに詳細分析 |
-| `/create-vup-ticket {機能名}` | ボートレース日和の機能をLinearチケット化 |
-| `/refine-creative {作り込む対象}` | デザイン・音楽の反復作り込み（複数案提示→フィードバック→再生成） |
-| `/check-env` | 環境変数確認 |
-| `/onboarding` | 環境セットアップ確認 |
-| `/publish-blog {slug}` | ブログ記事の公開前品質チェック一括実行（note/X展開はsns-hubパイプラインが別途担当） |
-
-#### 集客分析（観測 → チャネル別PDCA → 統合サマリーの3階層）
-| コマンド | 用途 |
-|---------|------|
-| `/growth-report` | **観測**: SEO（Search Console先行指標）の定点観測レポートのみ。施策立案はしない |
-| `/i18n-growth-report` | **観測**: 多言語版のSEO定点観測（GA4需要+Search Console言語パス） |
-| `/x-growth-report` | **チャネル別PDCA**: X自体の実績（自アカウント投稿＋競合定点観測）を分析し施策立案 |
-| `/tiktok-growth-report` | **チャネル別PDCA**: TikTok自体の実績（自アカウント投稿＋競合定点観測）を分析し施策立案 |
-| `/note-growth-report` | **チャネル別PDCA**: note自体の実績（自アカウント記事）を分析し施策立案 |
-| `/x-reply-drafts` | X返信下書き生成（リプライ戦略の半自動化、1件ずつ承認） |
-| `/channel-algorithm-research {youtube\|tiktok\|note}` | プラットフォーム側のアルゴリズム・成長戦術そのものを調査（自アカウント実績を見る上記PDCA系とは別役割） |
-| `/growth-pdca` | **横断PDCA**: `/growth-report`の観測結果に加えGA4・競合・キーワード需要を横断分析→施策立案→小施策は即実行。「集客を分析して」等の自然言語でも起動 |
-| `/growth-monthly-summary` | **統合サマリー**: SEO（`/growth-pdca`）+X+TikTokの各PDCA結果を月次で1枚に集約、事業ゴールへの進捗確認 |
-
----
-
-## 会場コード一覧
-
-```
-1:桐生, 2:戸田, 3:江戸川, 4:平和島, 5:多摩川, 6:浜名湖,
-7:蒲郡, 8:常滑, 9:津, 10:三国, 11:びわこ, 12:住之江,
-13:尼崎, 14:鳴門, 15:丸亀, 16:児島, 17:宮島, 18:徳山,
-19:下関, 20:若松, 21:芦屋, 22:福岡, 23:唐津, 24:大村
 ```
