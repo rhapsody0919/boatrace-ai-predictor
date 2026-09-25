@@ -337,6 +337,7 @@ function PredictionPanel({
                 <RaceWakuInfoTab
                   venueCode={venueCode}
                   players={prediction.allPlayers}
+                  raceId={analysisRaceId}
                 />
               ),
             },

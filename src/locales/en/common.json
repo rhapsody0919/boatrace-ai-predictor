@@ -654,6 +654,7 @@
       "fClean": "No F"
     },
     "conditionsBaseNote": "* {{rows}} count only the races where that condition could be determined, so their denominators differ from the other rows.",
+    "conditionsBaseNoteSeparator": ", ",
     "smallSampleTitle": "Small sample — treat as a rough guide",
     "periodTitle": "Previous term ({{from}} – {{to}}, official term record)",
     "periodWinRate": "Win pts {{value}}",
@@ -1465,6 +1466,9 @@
     "articleHeading": "📖 Related Article",
     "noticeHeading": "⚠️ Notes"
   },
+  "flyingBadge": {
+    "title": "{{n}} false start(s) this term, as printed on the race card. Resets when the term changes (May 1 / Nov 1)"
+  },
   "stConsideration": {
     "title": "Start timing",
     "subtitle": "Lower figure is the gap from the average for the same course and class",
@@ -1477,7 +1481,6 @@
     "times": "{{n}}x",
     "expectedTimes": "avg {{n}}",
     "noInnerBoat": "no inner boat",
-    "flyingTitle": "{{n}} false start(s) this term. Resets when the term changes",
     "caveat": "Green is better than the average for the same course and class, red is worse. Breaks are shown as a count, not a rate: they are rare from outer courses, so a rate would just show 0.0%. Course 1 has no inner boat, so it is not shown. False-start races are excluded from the denominator and shown as a badge instead. This is our own calculation.",
     "histogramTitle": "ST distribution",
     "historyTitle": "ST history",

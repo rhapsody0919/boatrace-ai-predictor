@@ -146,24 +146,6 @@
   color: var(--text-secondary);
 }
 
-/* Fバッジ。F1は金、F2は赤（F2は合計90日のあっせん停止で意味が違う）。
-   級別セルの中に置く（艇番ヘッダは枠色で塗られておりコントラストが取れないため） */
-.rsc-flying {
-  display: inline-block;
-  margin-left: 2px;
-  padding: 0 3px;
-  font-size: 0.65rem;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-black);
-  background: var(--color-warning);
-  border-radius: var(--radius-sm);
-}
-
-.rsc-flying.is-f2 {
-  color: var(--color-white);
-  background: var(--color-error);
-}
-
 .rsc-caveat {
   margin: var(--spacing-2) 0 0;
   font-size: var(--font-size-xs);

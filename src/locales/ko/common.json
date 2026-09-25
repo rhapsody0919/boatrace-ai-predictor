@@ -599,7 +599,7 @@
     "emptyBody": "발주 시간이 가까워지면 오즈가 수집되어 이 탭에 표시됩니다."
   },
   "basicInfo": {
-    "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 5경기・강세 경기장・조건별)가 열립니다",
+    "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 5경기·강세 경기장·조건별)가 열립니다",
     "metricLabel": "지표",
     "scopeLabel": "경기장",
     "gradeLabel": "등급",
@@ -651,7 +651,8 @@
       "fHolding": "F 보유 시",
       "fClean": "F 없음"
     },
-    "conditionsBaseNote": "※{{rows}} 는 해당 조건을 판정할 수 있었던 출주만 모수입니다(다른 행과 모수가 다릅니다).",
+    "conditionsBaseNote": "※{{rows}} 항목은 해당 조건을 판정할 수 있었던 출주만 모수입니다(다른 행과 모수가 다릅니다).",
+    "conditionsBaseNoteSeparator": "·",
     "smallSampleTitle": "표본이 적어 참고값입니다",
     "periodTitle": "전기({{from}}〜{{to}}·공식 기별 성적)",
     "periodWinRate": "승률 {{value}}",
@@ -1460,6 +1461,9 @@
     "articleHeading": "📖 자세한 해설 기사",
     "noticeHeading": "⚠️ 주의사항"
   },
+  "flyingBadge": {
+    "title": "출주표에 실린 이번 기 플라잉 {{n}}회. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다"
+  },
   "stConsideration": {
     "title": "ST 고찰",
     "subtitle": "아래는 같은 코스·같은 급별 평균과의 차이",
@@ -1472,7 +1476,6 @@
     "times": "{{n}}회",
     "expectedTimes": "평균{{n}}",
     "noInnerBoat": "안쪽 없음",
-    "flyingTitle": "이번 기의 플라잉 {{n}}회. 기가 바뀌면 0으로 돌아갑니다",
     "caveat": "초록은 같은 코스·같은 급별 평균보다 좋음, 빨강은 나쁨. 추출은 바깥 코스일수록 발생 횟수가 적어 비율로 하면 0.0%만 나열되므로 횟수로 표시합니다. 1코스는 안쪽에 艇이 없어 표시하지 않습니다. 플라잉 경주는 모수에서 제외하고 배지로 따로 표시합니다. 본 서비스의 독자 집계입니다.",
     "histogramTitle": "ST 분포",
     "historyTitle": "ST 이력",

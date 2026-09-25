@@ -125,11 +125,23 @@
   flex-shrink: 0;
 }
 
+/* 選手名（+Fバッジ）でgridの1列。長い名前でバッジを押し出さない */
+.rbit-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
 .rbit-name {
   font-size: var(--font-size-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.rbit-name-cell .flying-badge {
+  flex-shrink: 0;
 }
 
 .rbit-bar-track {

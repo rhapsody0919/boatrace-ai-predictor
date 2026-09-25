@@ -1233,6 +1233,87 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(breakoutRow.locator("td").first()).toContainText("内側なし");
   });
 
+  test("基本情報タブのバー展開に「条件別」タブと前期成績が出る（phase a T5-2/T5-2b）", async ({
+    page,
+  }) => {
+    // f_count が埋まっている日（2026-09-21以降）の確定レースを直接開く。
+    // 「F持ち時」「F無し時」の行は過去の走のF数に依存するため、
+    // 行そのものの存在（9行）だけを見て値は問わない
+    await page.goto("/race/2026-09-21-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+
+    // バーをタップすると詳細が開き、タブは3つ（直近5走/得意会場/条件別）
+    await page.locator(".rbit-bar-row").first().click();
+    await expect(page.locator(".rbit-expanded-tab")).toHaveCount(3);
+
+    await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
+
+    // 9行（全国/当地/一般戦/SG・G1/初日/最終日/波5cm以上/F持ち時/F無し時）。
+    // ナイターの行は出さない（開催時間帯を取得していないため）
+    const rows = page.locator(".rbit-conditions-table tbody tr");
+    await expect(rows).toHaveCount(9, { timeout: 25000 });
+    await expect(rows.nth(0)).toContainText("全国");
+    await expect(rows.nth(4)).toContainText("初日");
+    await expect(rows.nth(6)).toContainText("波5cm以上");
+    await expect(rows.nth(7)).toContainText("F持ち時");
+    await expect(rows.nth(8)).toContainText("F無し時");
+
+    // 上のバー（公式値）と数字が一致しないことを明記する
+    await expect(page.locator(".rbit-conditions-note")).toContainText(
+      "一致しません",
+    );
+    // 母数が他行と違う行には、その旨の注記を出す
+    await expect(page.locator(".rbit-conditions-caveat")).toContainText(
+      "母数が違います",
+    );
+
+    // 「前期」は指標の列に混ぜず、算出期間つきの別枠で出す（単位が点のため）
+    await expect(page.locator(".rbit-period-heading")).toContainText(
+      /\d{4}-\d{2}-\d{2}/,
+    );
+    await expect(page.locator(".rbit-period-values")).toContainText("勝率");
+  });
+
+  test("F数バッジが基本情報タブとST考察カードで同じ値になり、f_countが無い過去レースでは出ない（phase a T5-3）", async ({
+    page,
+  }) => {
+    // 2026-09-21 戸田5R: f_count は 1号艇2本・5号艇1本・6号艇1本で固定
+    await page.goto("/race/2026-09-21-02-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+
+    const basicBadges = page.locator(".rbit-bar-row .flying-badge");
+    await expect(basicBadges).toHaveCount(3);
+    // F2は赤（90日のあっせん停止で意味が違う）、F1は金
+    await expect(basicBadges.nth(0)).toHaveText("F2");
+    await expect(basicBadges.nth(0)).toHaveClass(/is-f2/);
+    await expect(basicBadges.nth(1)).toHaveText("F1");
+    await expect(basicBadges.nth(1)).not.toHaveClass(/is-f2/);
+
+    // ST考察カードのバッジも同じ出所（race_entries.f_count）に統一した
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+    await page
+      .locator(".rsc-card")
+      .waitFor({ state: "visible", timeout: 25000 });
+    const stBadges = page.locator(".rsc-grid .flying-badge");
+    await expect(stBadges).toHaveCount(3);
+    await expect(stBadges.nth(0)).toHaveText("F2");
+    await expect(stBadges.nth(1)).toHaveText("F1");
+
+    // f_count が無い期間（2026-09-20以前）はバッジも空欄も出さない
+    await page.goto("/race/2026-09-10-01-01");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+    await expect(page.locator(".flying-badge")).toHaveCount(0);
+  });
+
   test("枠別情報タブのST分布・ST履歴が折りたたみで開き、平均と重ねて表示される（phase a T3-3）", async ({
     page,
   }) => {

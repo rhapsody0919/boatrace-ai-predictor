@@ -87,7 +87,7 @@ function aggregateTechniqueDistribution(techniqueByBoat) {
 
 // raceId は受け取らない: コース別成績を racer_aggregated_stats（レース単位の
 // getRaceRacerStats）から getRacerScopedRaceStats（選手単位）に切り替えたため不要になった
-function RaceWakuInfoTab({ venueCode, players }) {
+function RaceWakuInfoTab({ venueCode, players, raceId }) {
   const { t } = useTranslation();
   // このタブで使うのはracerStatsと決まり手統計の2種類だけのため、8+4クエリを
   // まとめて発火するuseRaceAnalysisData/useVenueTendencyStatsは使わず個別に取得する
@@ -100,6 +100,34 @@ function RaceWakuInfoTab({ venueCode, players }) {
   // どちらも094の事前集計テーブルを単純SELECTで読む（画面では集計しない）
   const [baseline, setBaseline] = useState(undefined);
   const [nigeRows, setNigeRows] = useState(undefined);
+  // 出走表の今期F数（艇番→f_count）。基本情報タブが既定タブで同じキーを
+  // 先に取るため、実質キャッシュヒットで追加クエリは増えない（T5-3）
+  const [fCountByBoat, setFCountByBoat] = useState(null);
+
+  useEffect(() => {
+    if (!raceId) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRaceEntryOfficialRatesBreakdown(raceId)
+      .then((rows) => {
+        if (cancelled) return;
+        setFCountByBoat(
+          new Map(
+            (rows ?? [])
+              .filter((r) => r.f_count !== null && r.f_count !== undefined)
+              .map((r) => [r.boat_number, r.f_count]),
+          ),
+        );
+      })
+      .catch((err) => {
+        // バッジは補助表示。取れなければ出さない（カードごと消さない）
+        console.error("F数取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setFCountByBoat(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [raceId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -593,6 +621,7 @@ function RaceWakuInfoTab({ venueCode, players }) {
         scopedByRacer={scopedByRacer}
         baseline={baseline}
         entryCourseOf={(p) => p.number}
+        fCountByBoat={fCountByBoat}
       />
 
       {/* 逃げシミュレーション（FR-6）。会場のコース単位の指標で、選手の選択とは独立 */}

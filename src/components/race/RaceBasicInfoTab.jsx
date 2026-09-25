@@ -40,6 +40,7 @@ import {
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
+import FlyingBadge from "./FlyingBadge";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -401,8 +402,17 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                 >
                   {boat}
                 </span>
-                <span className="rbit-name" translate="no">
-                  {player?.name}
+                {/* 名前とFバッジでgridの1列。バッジを直の子にすると
+                    grid-template-columns（5列）がずれ、バーの上に重なる */}
+                <span className="rbit-name-cell">
+                  <span className="rbit-name" translate="no">
+                    {player?.name}
+                  </span>
+                  {/* 出走表の今期F数（T5-3）。ST考察カードのバッジと同じ出所
+                      （race_entries.f_count）にしてある。この行は <button> なので
+                      TermHintButton（入れ子の <button> になる）は置けず、
+                      説明は title 属性で出す */}
+                  <FlyingBadge count={officialRowFor(boat)?.f_count} />
                 </span>
                 <span className="rbit-bar-track">
                   {!loading && (
@@ -657,7 +667,7 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                     (r) =>
                                       `${t(`basicInfo.conditions.${r.key}`)}(${r.baseN})`,
                                   )
-                                  .join("・"),
+                                  .join(t("basicInfo.conditionsBaseNoteSeparator")),
                               })}
                             </p>
                           )}

@@ -652,6 +652,7 @@
       "fClean": "無F時"
     },
     "conditionsBaseNote": "※{{rows}} 僅以能判定該條件的出賽為母數（與其他列的母數不同）。",
+    "conditionsBaseNoteSeparator": "・",
     "smallSampleTitle": "樣本較少，僅供參考",
     "periodTitle": "前期（{{from}}〜{{to}}・官方期別成績）",
     "periodWinRate": "勝率 {{value}}",
@@ -1460,6 +1461,9 @@
     "articleHeading": "📖 詳細解說文章",
     "noticeHeading": "⚠️ 注意事項"
   },
+  "flyingBadge": {
+    "title": "出賽表所載本期起步犯規{{n}}次。換期（5月1日・11月1日）後歸零"
+  },
   "stConsideration": {
     "title": "起跑分析",
     "subtitle": "下方為與相同航道、相同級別平均值的差距",
@@ -1472,7 +1476,6 @@
     "times": "{{n}}次",
     "expectedTimes": "平均{{n}}",
     "noInnerBoat": "無內側艇",
-    "flyingTitle": "本期起步犯規{{n}}次。換期後歸零",
     "caveat": "綠色表示優於相同航道、相同級別的平均，紅色表示較差。搶出在外側航道發生次數極少，以比例顯示會全是0.0%，因此改以次數呈現。第1航道無內側艇故不顯示。起步犯規的出賽已從分母排除，另以徽章標示。此為本服務的獨自統計。",
     "histogramTitle": "ST分布",
     "historyTitle": "ST歷史",

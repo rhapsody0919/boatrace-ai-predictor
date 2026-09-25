@@ -399,6 +399,7 @@
       "fClean": "F無し時"
     },
     "conditionsBaseNote": "※{{rows}} は、その条件を判定できた走だけが母数です（他の行とは母数が違います）",
+    "conditionsBaseNoteSeparator": "・",
     "smallSampleTitle": "サンプルが少ないため参考値です",
     "periodTitle": "前期（{{from}}〜{{to}}・公式の期別成績）",
     "periodWinRate": "勝率 {{value}}",
@@ -1460,6 +1461,9 @@
     "articleHeading": "📖 詳しい解説記事",
     "noticeHeading": "⚠️ 注意事項"
   },
+  "flyingBadge": {
+    "title": "出走表に載っている今期のフライング{{n}}本。期（5月1日・11月1日）が変わると0に戻ります"
+  },
   "stConsideration": {
     "title": "ST考察",
     "subtitle": "下段は同じコース・同じ級別の平均との差",
@@ -1472,7 +1476,6 @@
     "times": "{{n}}回",
     "expectedTimes": "平均{{n}}",
     "noInnerBoat": "内側なし",
-    "flyingTitle": "今期のフライング{{n}}本。期が変わると0に戻ります",
     "caveat": "緑は同コース・同級別の平均より良い、赤は悪い。抜出は外のコースほど起きる回数が少なく、率にすると0.0%が並ぶため回数で出しています。1コースは内側に艇がないため出しません。フライングの走は母数から外し、F数はバッジで別に出しています。当サービスの独自集計です",
     "histogramTitle": "ST分布",
     "historyTitle": "ST履歴",
