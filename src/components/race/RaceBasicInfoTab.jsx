@@ -42,10 +42,12 @@ import {
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
-import RecentRunsBar from "./RecentRunsBar";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
+// 「直近◯走」の件数。今節タブ（FR-3）と内容が重なりすぎたため5→10にした
+// （2026-09-26ユーザーフィードバック。今節は節の区切りで、こちらは節をまたぐ流れを見る）
+const RECENT_RACES_COUNT = 10;
 const GRADES = ["all", "ippan", "sgg1"];
 // 「初日」「最終日」は当初検討したが、判定に使うrace_conditions.series_day/
 // is_final_dayが実データで常にnull（generate-predictions.jsが未実装のまま
@@ -504,7 +506,7 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                           </p>
                         );
                       }
-                      const recent = getRecentRaces(records, 5);
+                      const recent = getRecentRaces(records, RECENT_RACES_COUNT);
                       if (recent.length === 0) {
                         return (
                           <p className="rbit-expanded-empty">
@@ -626,9 +628,25 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                           <p className="rbit-trend-note">
                             {t("basicInfo.meetNote")}
                           </p>
-                          {/* 直近10走（枠別情報タブ）と同じ帯を使う。
-                              今節は「各日」を見せるので日付ラベルを出す */}
-                          <RecentRunsBar runs={meet} showDateLabel />
+                          {/* 「直近10走」と同じ表にする（2026-09-26
+                              ユーザーフィードバック）。今節は進入コースが要るので
+                              `showEntryCourse` で列を1つ足す */}
+                          <RaceHistoryTable
+                            rows={getRecentRaces(meet, meet.length)}
+                            showEntryCourse
+                            // 同じ節の走しか並ばないので会場・レース名・
+                            // グレード・種別は全行同じ値になる。モバイルで
+                            // 進入・ST・着順が画面外へ押し出されるため省く
+                            omitColumns={[
+                              "venue",
+                              "raceTitle",
+                              "grade",
+                              "stage",
+                            ]}
+                            buildRaceHref={(id) =>
+                              localize(`/race/${id}`)
+                            }
+                          />
                         </div>
                       );
                     })()}

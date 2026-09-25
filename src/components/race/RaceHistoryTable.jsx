@@ -50,11 +50,25 @@ import "./RaceHistoryTable.css";
  * ため中クリック・新規タブで開く・スクリーンリーダー対応も自然に保たれる。
  * ネイティブaタグのクリック判定はブラウザが行うため、スワイプ誤爆の懸念もない
  */
+/**
+ * @param {string[]} [omitColumns] 出さない列（"venue" / "raceTitle" / "grade" /
+ *   "stage"）。今節タブ（FR-3）は同じ節の走しか並ばず、この4列が全行同じ値に
+ *   なる。モバイルでは表が1000px超になり、肝心の進入・ST・着順が初期表示の
+ *   外へ押し出されるため省く
+ * @param {boolean} [showEntryCourse] 「進入」列（実際に進入したコース）を
+ *   枠番の隣に足す。今節タブ（phase a FR-3）は「日別・進入・着順・ST」を
+ *   見せるのが目的で進入が要る。直近10走・選手ページでは出さない
+ *   （`actual_course_*` は2025-12-04以降のレースにしか無く、
+ *   古い行では「-」が並ぶだけになるため）
+ */
 function RaceHistoryTable({
   rows,
   buildRaceHref = (raceId) => `/race/${raceId}`,
+  showEntryCourse = false,
+  omitColumns = [],
 }) {
   const { t } = useTranslation();
+  const shows = (key) => !omitColumns.includes(key);
 
   return (
     <div className="race-history-table-wrapper">
@@ -62,12 +76,17 @@ function RaceHistoryTable({
         <thead>
           <tr>
             <th>{t("raceHistoryTable.date")}</th>
-            <th>{t("raceHistoryTable.venue")}</th>
+            {shows("venue") && <th>{t("raceHistoryTable.venue")}</th>}
             <th>{t("raceHistoryTable.raceNo")}</th>
-            <th>{t("raceHistoryTable.raceTitle")}</th>
-            <th>{t("raceHistoryTable.grade")}</th>
-            <th>{t("raceHistoryTable.stage")}</th>
+            {shows("raceTitle") && (
+              <th>{t("raceHistoryTable.raceTitle")}</th>
+            )}
+            {shows("grade") && <th>{t("raceHistoryTable.grade")}</th>}
+            {shows("stage") && <th>{t("raceHistoryTable.stage")}</th>}
             <th>{t("raceHistoryTable.boatNumber")}</th>
+            {showEntryCourse && (
+              <th>{t("raceHistoryTable.entryCourse")}</th>
+            )}
             <th>{t("raceHistoryTable.startTiming")}</th>
             <th>{t("raceHistoryTable.finish")}</th>
             <th>{t("raceHistoryTable.technique")}</th>
@@ -85,19 +104,24 @@ function RaceHistoryTable({
                   {race.date}
                 </Link>
               </td>
-              <td>{t(`venues.${race.venueCode}`, race.venueCode)}</td>
+              {shows("venue") && (
+                <td>{t(`venues.${race.venueCode}`, race.venueCode)}</td>
+              )}
               <td>{race.raceNo !== null ? `${race.raceNo}R` : "-"}</td>
-              <td>{race.raceTitle ?? "-"}</td>
-              <td>
-                {race.raceGrade
-                  ? t(
-                      `raceHistoryTable.grades.${race.raceGrade}`,
-                      GRADE_LABELS[race.raceGrade] ?? race.raceGrade,
-                    )
-                  : "-"}
-              </td>
-              <td>{race.raceStage ?? "-"}</td>
+              {shows("raceTitle") && <td>{race.raceTitle ?? "-"}</td>}
+              {shows("grade") && (
+                <td>
+                  {race.raceGrade
+                    ? t(
+                        `raceHistoryTable.grades.${race.raceGrade}`,
+                        GRADE_LABELS[race.raceGrade] ?? race.raceGrade,
+                      )
+                    : "-"}
+                </td>
+              )}
+              {shows("stage") && <td>{race.raceStage ?? "-"}</td>}
               <td>{race.boatNumber}</td>
+              {showEntryCourse && <td>{race.entryCourse ?? "-"}</td>}
               <td>
                 {race.startTiming !== null
                   ? Number(race.startTiming).toFixed(2)
