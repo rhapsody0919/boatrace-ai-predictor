@@ -5,7 +5,16 @@
 function VenueStatsTable({ venueStats }) {
   if (venueStats.length === 0) {
     return (
-      <div style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>
+      // 空状態メッセージはページ背景に直接乗るので、生パレット値（#64748b）ではなく
+      // 意味トークンを使う。ダークテーマで背景が #142842 になったとき、
+      // 固定色のままだとコントラスト3.12でWCAG AA（4.5:1）を割る（BOA-449）
+      <div
+        style={{
+          padding: "2rem",
+          textAlign: "center",
+          color: "var(--text-secondary)",
+        }}
+      >
         <p>選択期間に展開予測の的中レースがありません</p>
       </div>
     );
