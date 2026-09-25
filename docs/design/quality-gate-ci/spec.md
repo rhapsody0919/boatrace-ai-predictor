@@ -13,11 +13,13 @@
 | 指標 | 実測値 |
 |---|---|
 | verify-*.js の本数 | 57本 |
-| そのうちCIワークフローから実行されているもの | **1本**（`verify-query-errors.js`、パス限定の専用ワークフロー） |
+| そのうちCIワークフローから実行されているもの | **2本**。`verify-query-errors.js`（`verify-query-errors.yml`、PR時・パス限定）と `verify-morning-digest.js`（`generate-morning-digest.yml`、日次の生成直後）。**PRごとに走るのは1本だけ** |
 | 環境変数なしで実行して成功 | 49本（逐次合計 151.8秒） |
 | 失敗・タイムアウト | 8本 |
 
-PRごとに自動実行されるのは `e2e-smoke-test.yml`（Playwright）と `verify-query-errors.yml` の2本のみ。残り56本は「PRのたびに検証スクリプトを新規に書き、手元で1回実行し、以後誰も実行しない」という運用になっている。
+PRごとに自動実行される検証ワークフローは `e2e-smoke-test.yml`（Playwright）・`verify-query-errors.yml`・`verify-cache-config.yml`（`scripts/verification/verify-cache-config.js`、パス限定）の3本。このうち `scripts/maintenance/verify-*.js` を呼ぶのは `verify-query-errors.yml` だけで、残り56本のうち55本は「PRのたびに検証スクリプトを新規に書き、手元で1回実行し、以後誰も実行しない」という運用になっている（例外は `verify-morning-digest.js` で、`generate-morning-digest.yml` が日次で実行している）。
+
+なお `scripts/verification/` にも2本の verify スクリプトがある（`verify-cache-config.js`・`verify-ai-snapshots.js`）。本件のレジストリは `scripts/maintenance/` 配下を対象とし、`scripts/verification/` は対象外とする（`verify-cache-config.js` は専用ワークフローで既にPRゲートとして機能しているため）。
 
 ### 失敗8本の内訳（CI未接続の実害）
 
@@ -60,7 +62,7 @@ PRごとに自動実行されるのは `e2e-smoke-test.yml`（Playwright）と `
 - `verify-*.js` 57本の2層分類とレジストリ化
 - 集約ランナー（`npm run verify:ci`）とGitHub Actionsワークフローの新設
 - 失敗8本の決着（修正 / `manual`化）
-- マイグレーション番号063重複の解消（後発の `063_add_cancellation_status_to_today_races_rpc.sql` を `100_` にリネームし、`APPLIED.md` に行を追加）。当初は別チケットに切る想定だったが、これを解消しないと `npm run verify:ci` がmasterでグリーンにならず F6 を満たせないため、本件に含める。本番DBには適用済み（2026-09-25にRPC定義を確認）でファイル名変更はDBに影響しない
+- マイグレーション番号063重複の解消（後発の `063_add_cancellation_status_to_today_races_rpc.sql` を `101_` にリネームし、`APPLIED.md` に行を追加）。当初は別チケットに切る想定だったが、これを解消しないと `npm run verify:ci` がmasterでグリーンにならず F6 を満たせないため、本件に含める。本番DBには適用済み（2026-09-25にRPC定義を確認）でファイル名変更はDBに影響しない
 - `verify-query-errors.yml` の統合
 
 ### やらないこと

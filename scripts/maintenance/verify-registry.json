@@ -1,9 +1,11 @@
 {
   "$comment": [
-    "scripts/maintenance/verify-*.js の分類台帳。docs/design/quality-gate-ci/spec.md。",
+    "scripts/maintenance/ 直下の verify-* の分類台帳。docs/design/quality-gate-ci/spec.md。",
     "tier=ci   : PRごとにGitHub Actionsで毎回実行する。外部ネットワーク・実DB・実時刻に依存せず、同じコミットなら常に同じ結果を返すものだけを置く。",
     "tier=manual: 実Supabase等への接続が要るため自動実行しない。reason（なぜCIに載せないか）と command（どう実行するか）を必ず書く。",
-    "新しい verify-*.js を追加したら、ここに1エントリ足すこと。未登録だと `npm run verify:ci` が失敗する。"
+    "runner    : 省略時は node。bash スクリプトは \"bash\" を指定する。",
+    "新しい verify-* を追加したら、ここに1エントリ足すこと。未登録だと `npm run verify:ci` が失敗する（.js / .mjs / .cjs / .sh を検知する）。",
+    "対象外: サブディレクトリ（content-ops-checks/ の check-*.js）、scripts/analysis/verify-*.js、scripts/verification/（verify-cache-config.js は専用ワークフローで既にPRゲートとして動いている）。"
   ],
   "entries": [
     {
@@ -84,9 +86,11 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": ["--base=origin/master"],
+      "args": [
+        "--base=origin/master"
+      ],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
-      "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（100へリネームして解消）。本件の発端"
+      "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（101へリネームして解消）。本件の発端"
     },
     {
       "script": "verify-migration-rls.js",
@@ -270,6 +274,13 @@
       "guards": "水面気象情報の解析と race_conditions への反映（BOA-358）"
     },
     {
+      "script": "verify-push-with-retry.sh",
+      "tier": "ci",
+      "runner": "bash",
+      "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
+      "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
+    },
+    {
       "script": "verify-format-column-migration.js",
       "tier": "manual",
       "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
@@ -280,7 +291,7 @@
       "script": "verify-morning-digest.js",
       "tier": "manual",
       "guards": "「本日のデータ一覧」（BOA-402）の集計",
-      "reason": "実Supabaseの morning_digest_rows を読むため",
+      "reason": "実Supabaseの morning_digest_rows を読むためPRでは実行できない（secretsが要る）。ただし generate-morning-digest.yml が生成直後に毎日実行しており、manual 5本のうちこれだけは定期的に動いている",
       "command": "node --env-file=.env.local scripts/maintenance/verify-morning-digest.js"
     },
     {

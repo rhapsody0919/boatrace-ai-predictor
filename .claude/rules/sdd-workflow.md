@@ -12,7 +12,7 @@ paths: ["docs/design/**"]
 **天才エンジニア視点レビュー（2026-09-15）で確認した経緯**: 当初「実装前にER図を手で描く」ルールを検討したが、このプロジェクトが既に何度も学んでいる「散文ルールはコンテキスト圧迫下で読み飛ばされる」パターンを再生産するリスクが高いと判明。正の情報源である実際のDDL（`docs/db-migration/`）から逆算する機械生成方式に変更した。
 
 - `/step2`で`docs/design/{slug}/plan.md`のデータ設計に新規テーブル、または既存テーブルとの新規リレーション（外部キー）を1つでも書いたら、対応する`docs/db-migration/`のマイグレーション案作成後に`node scripts/maintenance/generate-er-diagram.js {slug}`を実行し、出力されたmermaid `erDiagram`ブロックをplan.mdに貼り付ける（マイグレーションファイルのヘッダーコメントに`docs/design/{slug}/plan.md`等の参照を書く既存慣習に依存して該当DDLを自動検出する）
-- `npm run verify:er-diagram`（`scripts/maintenance/verify-plan-erd.js`）が、新規テーブル・新規リレーションを導入するDDLを持つのにER図が無いplan.mdを横断検知する。**新規マイグレーション（`docs/db-migration/`への新規.sqlファイル追加）を含む変更では実装完了後の自動レビューでこれも実行する**（プロジェクトCLAUDE.md「実装完了後の自動レビュー」参照）
+- `npm run verify:er-diagram`（`scripts/maintenance/verify-plan-erd.js`）が、新規テーブル・新規リレーションを導入するDDLを持つのにER図が無いplan.mdを横断検知する。**PR時にQuality Gates CI（`npm run verify:ci`）が自動実行する**（ADR-0072）。手元で先に確かめたい場合は `npm run verify:er-diagram`
 - DB全体の俯瞰図は個別機能単位ではなく`docs/reference/database-design.md`の「テーブル関係図」を参照（`mcp__supabase__list_tables`で本番稼働中スキーマから機械生成、2026-09-15作成）。生きたスキーマから生成する方式を採用しているのは、DDL履歴の積み上げではDROP TABLE・RENAME等を正しく追えないため
 
 ## データ取得を含む機能は「完了の定義」を必ず適用する（2026-09-19〜）

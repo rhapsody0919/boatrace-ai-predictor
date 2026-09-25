@@ -2,8 +2,10 @@
 /**
  * run-verify-registry.js - scripts/maintenance/verify-*.js の集約ランナー。
  *
- * 背景: 2026-09-25時点で verify-*.js は57本あったが、CIワークフローから実行されて
- * いたのは1本だけだった（verify-query-errors.js）。「PRのたびに検証スクリプトを書き、
+ * 背景: 2026-09-25時点で verify-* は58本あったが、CIワークフローから実行されて
+ * いたのは2本だけだった（verify-query-errors.js＝PR時・パス限定、
+ * verify-morning-digest.js＝generate-morning-digest.yml が日次で実行。
+ * PRごとに走るのは前者1本のみ）。「PRのたびに検証スクリプトを書き、
  * 手元で1回走らせて以後誰も実行しない」状態が積み上がり、実際に
  * マイグレーション番号063の重複がmasterに入ったまま誰にも検知されなかった。
  * 設計: docs/design/quality-gate-ci/spec.md
@@ -30,6 +32,11 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
 const REGISTRY_PATH = path.join(HERE, "verify-registry.json");
+// 1本あたりの上限。CI実測の最遅は15.4秒だが、負荷の高いローカルマシンでは
+// 同じスクリプトが120秒かかった実績があるため余裕を持たせる。
+// 全件がこの上限に張り付くと 52本÷並列4×180秒 ≒ 39分になるので、
+// quality-gates.yml の timeout-minutes はそれを上回る値にしてある
+// （ジョブごと殺されると、どれが遅いかの一覧すら出ないため）
 const TIMEOUT_MS = 180_000;
 
 const args = process.argv.slice(2);
@@ -53,8 +60,13 @@ if (jobsArg) {
 /** レジストリと実ファイルを突き合わせ、問題の一覧を返す */
 async function checkRegistry(entries) {
   const problems = [];
+  // .js だけを見ていると、verify-push-with-retry.sh のような別形式が
+  // 未登録のまま素通りする（実際に1本あった）。
+  // 対象は scripts/maintenance/ 直下のみ。サブディレクトリの check-*.js と
+  // scripts/analysis/ ・ scripts/verification/ は本レジストリの対象外
+  // （verify-registry.json の $comment 参照）。
   const files = (await fs.readdir(HERE))
-    .filter((f) => f.startsWith("verify-") && f.endsWith(".js"))
+    .filter((f) => /^verify-.*\.(js|mjs|cjs|sh)$/.test(f))
     .sort();
   const registered = new Set(entries.map((e) => e.script));
 
@@ -81,6 +93,11 @@ async function checkRegistry(entries) {
         `guardsなし: ${e.script} に「何を守るか」の1行がありません`,
       );
     }
+    if (e.runner && !["node", "bash"].includes(e.runner)) {
+      problems.push(
+        `runnerが不正: ${e.script} の runner="${e.runner}"（node / bash。省略時は node）`,
+      );
+    }
     if (e.tier === "manual" && (!e.reason || !e.command)) {
       problems.push(
         `manualの説明不足: ${e.script} には reason（なぜCIに載せないか）と command（実行方法）が要ります`,
@@ -96,20 +113,45 @@ async function checkRegistry(entries) {
   return problems;
 }
 
+/** 暴走出力でランナーがメモリを食い潰さないための上限 */
+const MAX_CAPTURE_BYTES = 256 * 1024;
+const capped = (buf, chunk) =>
+  buf.length >= MAX_CAPTURE_BYTES ? buf : buf + chunk;
+const indent = (text) =>
+  text
+    .trimEnd()
+    .split("\n")
+    .map((l) => `    ${l}`)
+    .join("\n");
+const tailLines = (text, n) => text.trimEnd().split("\n").slice(-n).join("\n");
+
 function runScript(entry) {
   return new Promise((resolve) => {
     const started = Date.now();
     const child = spawn(
-      "node",
+      entry.runner ?? "node",
       [path.join(HERE, entry.script), ...(entry.args ?? [])],
       {
         cwd: ROOT,
+        // プロセスグループを作り、タイムアウト時に孫プロセスごと落とす
+        // （spawnSync で別プロセスを起こす検証スクリプトがあるため）
+        detached: true,
       },
     );
-    let output = "";
-    child.stdout.on("data", (d) => (output += d));
-    child.stderr.on("data", (d) => (output += d));
-    const timer = setTimeout(() => child.kill("SIGKILL"), TIMEOUT_MS);
+    // 検証スクリプトは ✅ を stdout、❌ を stderr に逐次出す。連結すると
+    // 2つのパイプの到着順が保証されず、末尾を切り出したときに ❌ 行が
+    // 落ちる。失敗の原因が分からなくなるので、別々に持つ。
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (d) => (stdout = capped(stdout, d)));
+    child.stderr.on("data", (d) => (stderr = capped(stderr, d)));
+    const timer = setTimeout(() => {
+      try {
+        process.kill(-child.pid, "SIGKILL");
+      } catch {
+        child.kill("SIGKILL");
+      }
+    }, TIMEOUT_MS);
     child.on("close", (code, signal) => {
       clearTimeout(timer);
       resolve({
@@ -117,7 +159,8 @@ function runScript(entry) {
         timedOut: signal === "SIGKILL",
         ok: signal !== "SIGKILL" && code === 0,
         ms: Date.now() - started,
-        output,
+        stdout,
+        stderr,
       });
     });
     child.on("error", (err) => {
@@ -127,7 +170,8 @@ function runScript(entry) {
         timedOut: false,
         ok: false,
         ms: Date.now() - started,
-        output: `起動に失敗しました: ${err.message}`,
+        stdout: "",
+        stderr: `起動に失敗しました: ${err.message}`,
       });
     });
   });
@@ -230,17 +274,37 @@ if (failed.length > 0) {
       `--- ${r.entry.script}${r.timedOut ? "（タイムアウト）" : ""}`,
     );
     console.error(`    守っているもの: ${r.entry.guards}`);
+    // 失敗の内容（❌ 行）は stderr に出るので全文を出す。stdout は
+    // 成功した ✅ の羅列なので末尾だけでよい
+    if (r.stderr.trim()) {
+      console.error("    [stderr]");
+      console.error(indent(r.stderr));
+    }
+    if (r.stdout.trim()) {
+      console.error("    [stdout 末尾20行]");
+      console.error(indent(tailLines(r.stdout, 20)));
+    }
     console.error(
-      r.output
-        .trimEnd()
-        .split("\n")
-        .slice(-15)
-        .map((l) => `    ${l}`)
-        .join("\n"),
+      `    単独で再実行: ${r.entry.runner ?? "node"} scripts/maintenance/${r.entry.script}${(r.entry.args ?? []).map((a) => ` ${a}`).join("")}\n`,
     );
-    console.error("");
   }
   process.exit(1);
+}
+
+// 成功したスクリプトの警告は、1行サマリーだけだとCIログから完全に消える。
+// verify-migration-numbers は base の ref を解決できないと「比較をスキップ」
+// して0終了する設計なので、静かな空振りに気づけなくなる
+const warnings = results.flatMap((r) =>
+  `${r.stdout}\n${r.stderr}`
+    .split("\n")
+    // 行頭の WARN:（各検証スクリプトの共通の警告形式）だけを拾う。
+    // 「スキップ」等は通常の検証ログにも頻出するため対象にしない
+    .filter((l) => /^\s*(WARN|警告)[:：]/.test(l))
+    .map((l) => `  ${r.entry.script}: ${l.trim()}`),
+);
+if (warnings.length > 0) {
+  console.log(`\n=== 警告（失敗ではない、${warnings.length}件）===`);
+  for (const w of warnings) console.log(w);
 }
 
 const slowest = [...results].sort((a, b) => b.ms - a.ms).slice(0, 3);

@@ -14,11 +14,19 @@ on:
   pull_request:
     branches:
       - master
+  # masterへのマージ後にも1回走らせる。masterにブランチ保護が無く
+  # "Require branches to be up to date" も効かないため、2つのPRが同じ
+  # 時点のmasterに対して緑になり、片方がマージされた後にもう片方が
+  # 再検証されずマージされうる（063の番号重複はこの経路で入った）。
+  # マージ後に走らせることで、少なくとも検知はできる状態にする。
+  push:
+    branches:
+      - master
 
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:

@@ -198,9 +198,10 @@ DB設計時のER図生成規律・長時間実装時の再開規律は`.claude/r
 
    **`scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに `Quality Gates` ワークフロー（`.github/workflows/quality-gates.yml`）が `npm run verify:ci` でまとめて自動実行する**ため、該当する個別コマンドを手元で1本ずつ実行する必要はない。以前はこの項に7本以上のコマンドを列挙して「CI連携はせず、毎回Claude自身が手元で実行する」としていたが、実際には57本中56本がCI未接続で、マイグレーション番号の重複がmasterに入るまで誰も気づかなかった（ADR-0072、`docs/design/quality-gate-ci/spec.md`）。手元で先に確かめたい場合は `npm run verify:ci`（全件、数分かかる）か、該当する個別の `npm run verify:*` を使う。
 
-   ただし次の2点は機械検出の対象外なので、引き続き人（Claude自身）が判断して行う:
+   ただし次の3点は機械検出の対象外（実Supabaseへの接続が要る、または判断が要る）なので、引き続き人（Claude自身）が実行・判断する:
    - 新機能（ユーザー向けの新しいページ・分析タブ・主要機能）を実装した変更では、対応する `docs/design/{slug}/content-index.json` を**作成する**（または `not_applicable: true` で対象外を明記する）。`verify:content-index` が検証するのは既存ファイルの形式だけで、「本来必要なのに存在しない」は検出しない（`.claude/rules/content-ops.md` フローA-2）
    - `docs/db-migration/` に新規マイグレーションを追加したら、`docs/db-migration/APPLIED.md`（適用状況の台帳）に行を追加する
+   - **RPC（`CREATE OR REPLACE FUNCTION`）を変更するマイグレーションを含む変更では、本番適用後に `node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js` を実行する**。`CREATE OR REPLACE` は古い定義を土台に書くと、後のマイグレーションが足したキーを黙って消す。これはCIでは検知できず（本番RPCへの接続が要る）、E2Eでも検知できない（フォールバック経路が同じキーを返すため画面が壊れない）。BOA-363で数日間の欠落、[BOA-431](https://linear.app/boat-ai/issue/BOA-431)で同型の再発が起きている
 
    新しい検証スクリプト（`verify-*.js`）を書いたら、`scripts/maintenance/verify-registry.json` に分類（`ci` / `manual`）と「何を守るか」を登録する。未登録のまま置くとCIが失敗する。
 5. `/codex-review`（Codexセカンドオピニオンレビュー）は**2026-07時点で見送り中**。ChatGPT契約のコストに見合わないと判断（詳細は `docs/operation/sdd-and-codex-review.md`）。仕組み自体は用意済みなので、将来必要になったら有効化する

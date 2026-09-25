@@ -40,7 +40,7 @@
 
 sitemap変更は`.github/workflows/update-sitemap.yml`で毎日自動反映され、変更があった場合はSearch Consoleへの再送信（`scripts/submit-sitemap.js`）も自動実行される。ただし個々のページの即時インデックス登録を保証するものではない（詳細は`docs/operation/search-console-report.md`）。
 
-登録漏れは`npm run verify:sitemap`（`scripts/maintenance/verify-sitemap-coverage.js`）で機械的に検知できる。AppRouter.jsxの静的ルートとgenerate-sitemap.jsのstaticPagesを突き合わせ、未登録があれば失敗する。新規ルート追加を含むPRでは実装完了後の自動レビュー（`npm run build`実行時）にこのコマンドも合わせて実行する。意図的にsitemap非対象とするルート（リダイレクト専用・管理画面・非公開ページ等）は、スクリプト内の`EXPECTED_EXCLUSIONS`に理由付きで登録する。
+登録漏れは`npm run verify:sitemap`（`scripts/maintenance/verify-sitemap-coverage.js`）で機械的に検知できる。AppRouter.jsxの静的ルートとgenerate-sitemap.jsのstaticPagesを突き合わせ、未登録があれば失敗する。新規ルート追加を含むPRでは、Quality Gates CI（`npm run verify:ci`）が自動実行する（ADR-0072）。意図的にsitemap非対象とするルート（リダイレクト専用・管理画面・非公開ページ等）は、スクリプト内の`EXPECTED_EXCLUSIONS`に理由付きで登録する。
 
 ---
 

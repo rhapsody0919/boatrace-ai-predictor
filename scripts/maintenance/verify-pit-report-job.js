@@ -1340,7 +1340,10 @@ async function runWrapped({ mode, rows, client, fetched }) {
     // 適用状況（適用済み/未適用）は本番の進行に伴って変わるため、行の存在だけを見る。
     // 086の「未適用」を期待値に固定していたため、2026-09-23に適用された時点で壊れていた。
     "(f) 台帳: 085と086の行が載っている",
-    /\| 085 \|[^\n]*\|/.test(applied) && /\| 086 \|[^\n]*\|/.test(applied),
+    /\| 085 \|[^\n]*085_race_pit_reports\.sql[^\n]*\|/.test(applied) &&
+      /\| 086 \|[^\n]*086_race_pit_reports_public_read\.sql[^\n]*\|/.test(
+        applied,
+      ),
   );
 }
 

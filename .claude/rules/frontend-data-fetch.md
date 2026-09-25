@@ -31,7 +31,7 @@ paths:
 - **`src/` 配下で `createClient()` を呼ばない。`@supabase/supabase-js` を直接importしない。** 必ず `src/services/supabaseClient.js` の `supabase` を使う
 - このクライアントは `.from()` / `.rpc()` の結果に supabase-js 標準の **`.throwOnError()` を既定で適用する**ため、クエリが失敗すると戻り値ではなく例外（`PostgrestError`）になる
 - **成功時の戻り値の形は変わらない。** `const { data, error } = await supabase.from(...)` はそのまま動く（`error` が非nullになる前に例外が出る）
-- `npm run verify:query-errors` が機械検査する（`.github/workflows/verify-query-errors.yml` でPR時に自動実行）
+- `npm run verify:query-errors` が機械検査する（PR時にQuality Gates CI＝`.github/workflows/quality-gates.yml` が `npm run verify:ci` の一部として自動実行する。ADR-0072。専用ワークフロー `verify-query-errors.yml` は統合して廃止）
 
 ## 2. エラーの内容で分岐したいときだけ try/catch する
 

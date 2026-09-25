@@ -6,8 +6,8 @@
  * 本番DBには触れず、インメモリのPostgreSQL（PGlite）に最小の races・race_odds を作ってマイグレーションを適用し、
  * RPCの意味論（期限・許容幅・リース・奪取・冪等・確定中止・日付またぎ・limit・順序）を、時刻を p_now で固定して確認する。
  *
- * 実行: PGlite は devDependencies に入れていない（この検証のためだけの重い依存のため）。
- *   npm i --no-save @electric-sql/pglite && node scripts/maintenance/verify-scrape-slots-sql.js
+ * 実行: npm run verify:scrape-slots-sql（PGlite は devDependencies に入っており npm ci で入る）。
+ *   PRごとの Quality Gates CI（npm run verify:ci）でも実行される
  *
  * 確認できないこと: FOR UPDATE SKIP LOCKED の並行実行（PGliteは単一接続）。二重claimの並行検証は、
  * DDLの本番適用後に、tasks.md T4a-10 の手順（別途）で行う。
