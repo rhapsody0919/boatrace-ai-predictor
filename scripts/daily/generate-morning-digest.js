@@ -780,7 +780,7 @@ async function write(date, dayRow, rows) {
   if (stampErr) throw stampErr;
 }
 
-/** SNSのネタの型（sns_topic_categories.category_key）。マイグレーション100で作る */
+/** SNSのネタの型（sns_topic_categories.category_key）。マイグレーション101で作る */
 const SNS_TOPIC_CATEGORY_KEY = "morning-digest";
 
 /** ネタ本文の先頭に置く目印。同じ対象日で二重に登録しないための鍵も兼ねる */

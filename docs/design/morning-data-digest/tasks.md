@@ -300,11 +300,11 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
   - **受入基準**: 生成後に sns-hub 管理画面（`/admin/sns-hub`）にネタが現れる
 
   **実装済み・本番確認待ち（2026-09-25）。** `runMorningDigest()` が2表への書き込み後に `registerSnsTopic()` を呼ぶ。
-  - 型・チャネルは `sns_topic_categories` / `sns_topic_category_channels` のデータで決まる（マイグレーション **100**、**未適用**）。型は `daily-auto`（ネタ承認を省略し下書き承認だけ人間が行う）、チャネルは x/blog/note/youtube、TikTokは対象外
+  - 型・チャネルは `sns_topic_categories` / `sns_topic_category_channels` のデータで決まる（マイグレーション **101**、2026-09-25 適用済み）。型は `daily-auto`（ネタ承認を省略し下書き承認だけ人間が行う）、チャネルは x/blog/note/youtube、TikTokは対象外
   - 二重登録は本文先頭の目印「【本日のデータ一覧 YYYY-MM-DD】」で防ぐ（`findTopicByTextMarker`）。**過去日の再生成・バックフィルでは登録しない**（`date === todayJST()` のときだけ）
   - 登録に失敗してもダイジェスト生成は成功で返し、`report.alerts` に載せて `scrape-monitor` の `report:morning_digest:sns_topic_register_failed` として Slack に流す（例外にすると共通ラッパが対象日を未処理に戻し、全行を書き直してしまうため）
   - **データ精度検証**: `npm run verify:morning-digest-sns-topic`（読み取りのみ）。本日分の実データで13項目すべて一致。この検証中に**イン崩れ指数を生値（1.28%）で書いており、画面表示（`Math.round` で1%）と食い違う**ことを発見し、画面と同じ丸めに修正した
-  - 残り: マイグレーション100の適用 → 翌朝の定時実行で `/admin/sns-hub` にネタが出ることの確認
+  - 残り: 翌朝の定時実行で `/admin/sns-hub` にネタが出ることの確認（マイグレーションは **101**（当初100。master側の`100_data_health_entries_duplicates.sql`と番号が衝突したため繰り下げ）として 2026-09-25 適用済み）
 
 - [ ] **T5-2** チャネル別の生成プロンプトに `morning_digest` を追加する（X / ブログ / note / YouTube）
   - `docs/operation/sns-pipeline-{x,blog,note,youtube}.md` に型を追記

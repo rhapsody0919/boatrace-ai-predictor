@@ -4,7 +4,7 @@
  *
  * 確認すること:
  *   (a) 登録表の整合性（関数の実在・閾値・除外の宣言・空テーブルの扱い）
- *   (b) マイグレーション089: functions.js から生成したDDLとの一致（二重実装のずれの検知）、REVOKE・GRANT の内容、
+ *   (b) マイグレーション089・100: functions.js から生成したDDLとの一致（二重実装のずれの検知）、REVOKE・GRANT の内容、
  *       関数の本体に書き込み・DDL・動的SQLが無いこと
  *   (c) DB関数の意味論（PGlite。実際にPostgreSQLで、最小のスキーマ・固定のデータに適用して実行する）:
  *       存在充足率の分母（中止の除外・rank4〜6の分類）、出走表の拡張列、ピットレポートの対象レース、節・期別成績、
@@ -164,34 +164,52 @@ check(
 }
 
 // ---------------------------------------------------------------------------
-// (b) マイグレーション089
+// (b) マイグレーション089・100（data_health の関数を含むマイグレーション）
 // ---------------------------------------------------------------------------
-const MIGRATION_FILE = "089_data_health_functions.sql";
-const migrationSql = fs.readFileSync(
-  path.join(ROOT, "docs/db-migration", MIGRATION_FILE),
-  "utf8",
+// data_health の関数を含むマイグレーション。新しい関数を別のファイルで足したら、ここに追記する
+// （登録表 functions.js の migration と突き合わせ、取りこぼしを機械検査する）
+const MIGRATION_FILES = Object.freeze([
+  "089_data_health_functions.sql",
+  "100_data_health_entries_duplicates.sql",
+]);
+const MIGRATION_FILE = MIGRATION_FILES[0];
+const migrationSqlByFile = new Map(
+  MIGRATION_FILES.map((f) => [
+    f,
+    fs.readFileSync(path.join(ROOT, "docs/db-migration", f), "utf8"),
+  ]),
+);
+/** PGliteへの適用・GRANTの規律・変異検証は、全ファイルをまとめて見る */
+const migrationSql = MIGRATION_FILES.map((f) => migrationSqlByFile.get(f)).join(
+  "\n",
 );
 const stripSqlComments = (sql) => sql.replace(/--[^\n]*/g, "");
-for (const fn of DATA_HEALTH_FUNCTIONS.filter(
-  (f) => f.migration === MIGRATION_FILE,
-)) {
+check(
+  "マイグレーション: functions.js の migration が、全て MIGRATION_FILES に載っている（検証から漏れたファイルが無い）",
+  DATA_HEALTH_FUNCTIONS.every((f) => MIGRATION_FILES.includes(f.migration)),
+);
+for (const file of MIGRATION_FILES) {
+  const sql = migrationSqlByFile.get(file);
+  const num = file.slice(0, 3);
+  for (const fn of DATA_HEALTH_FUNCTIONS.filter((f) => f.migration === file)) {
+    check(
+      `マイグレーション${num}: ${fn.name} のDDLが、functions.js から生成したものと一字一句一致する（手で書き写していない）`,
+      sql.includes(renderFunctionDdl(fn)),
+    );
+  }
   check(
-    `マイグレーション089: ${fn.name} のDDLが、functions.js から生成したものと一字一句一致する（手で書き写していない）`,
-    migrationSql.includes(renderFunctionDdl(fn)),
+    `マイグレーション${num}: functions.js の migration がこのファイルの関数は、全てファイルに入る（ファイルにあって登録表に無い関数も無い）`,
+    (() => {
+      const inFile = [
+        ...sql.matchAll(/CREATE OR REPLACE FUNCTION (\w+)\(/g),
+      ].map((m) => m[1]);
+      const registered = DATA_HEALTH_FUNCTIONS.filter(
+        (f) => f.migration === file,
+      ).map((f) => f.name);
+      return show([...inFile].sort()) === show([...registered].sort());
+    })(),
   );
 }
-check(
-  "マイグレーション089: functions.js の migration が089の関数は、全てファイルに入る（ファイルにあって登録表に無い関数も無い）",
-  (() => {
-    const inFile = [
-      ...migrationSql.matchAll(/CREATE OR REPLACE FUNCTION (\w+)\(/g),
-    ].map((m) => m[1]);
-    const registered = DATA_HEALTH_FUNCTIONS.filter(
-      (f) => f.migration === MIGRATION_FILE,
-    ).map((f) => f.name);
-    return show([...inFile].sort()) === show([...registered].sort());
-  })(),
-);
 for (const fn of DATA_HEALTH_FUNCTIONS) {
   const sig = signatureOf(fn);
   const ddl = renderFunctionDdl(fn);
@@ -234,7 +252,7 @@ for (const fn of DATA_HEALTH_FUNCTIONS) {
   );
 }
 check(
-  "マイグレーション089: verify:migration-rls と同じ規律（anon・authenticated・PUBLIC への GRANT なし）",
+  "マイグレーション(089・100): verify:migration-rls と同じ規律（anon・authenticated・PUBLIC への GRANT なし）",
   !/GRANT[^;]*\b(anon|authenticated|PUBLIC)\b/i.test(
     stripSqlComments(migrationSql).replace(/REVOKE[^;]*;/g, ""),
   ),
@@ -298,7 +316,7 @@ CREATE TABLE race_special_notes (race_id varchar(20));
 
 const db = await buildDb();
 check(
-  "PGlite: マイグレーション089を適用でき、再適用しても失敗しない（冪等）",
+  "PGlite: マイグレーション089・100を適用でき、再適用しても失敗しない（冪等）",
   true,
 );
 const q = async (sql, params) => (await db.query(sql, params)).rows;
@@ -1792,7 +1810,12 @@ const evalMutants = [
   ],
   [
     "毎回通知する（状態を見ない）",
-    [["if (prev === undefined || worsened || remind || undelivered) {", "if (true) {"]],
+    [
+      [
+        "if (prev === undefined || worsened || remind || undelivered) {",
+        "if (true) {",
+      ],
+    ],
   ],
   [
     "継続中の再通知をしない",
@@ -1946,6 +1969,139 @@ INSERT INTO race_series VALUES (1,'2026-09-16','2026-09-21');
     return true; // 壊した版が例外で落ちるのも「検証が失敗した」とみなす
   }
 }
+// 出走表の複製検知（entries.duplicates）は、独立したPGliteで確かめる
+// （複製のための日をまたぐ実データが要り、他の項目の期待件数を乱さないため）。
+// 仕込み: 会場1 = 2レースが前日と完全一致（汚染）／会場2 = 1レースだけ一致（同じ節の偶然。正常）／
+//         会場3 = 3レース一致だが、複製元の日が確定中止（順延。正常）
+async function runEntriesDuplicates(sql) {
+  const mdb = new PGlite();
+  await mdb.exec(`
+CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+CREATE TABLE races (race_id varchar(20) primary key, race_date date not null, venue_code smallint not null, race_number smallint not null, race_grade text, cancellation_status text, start_time time);
+CREATE TABLE race_results (race_id varchar(20) primary key, rank1 smallint, rank2 smallint, rank3 smallint, rank4 smallint, rank5 smallint, rank6 smallint, actual_course_1 smallint, winning_technique text);
+CREATE TABLE race_entries (race_id varchar(20), boat_number smallint, racer_id integer, weight_kg numeric, branch text, f_count smallint, l_count smallint, is_absent boolean, primary key (race_id, boat_number));
+`);
+  // 会場ごとに3レース×2日。racer_id の並びで「一致／不一致」を作る
+  const rows = [];
+  const entries = [];
+  const results = [];
+  const add = (date, venue, race, status, seed, withResult = true) => {
+    const id = `${date}-${String(venue).padStart(2, "0")}-${String(race).padStart(2, "0")}`;
+    rows.push(
+      `('${id}','${date}',${venue},${race},'ippan',${status ? `'${status}'` : "NULL"},'10:00')`,
+    );
+    for (let b = 1; b <= 6; b++)
+      entries.push(`('${id}',${b},${seed * 10 + b},52.0,'東京',0,0,false)`);
+    if (withResult) results.push(`('${id}',1,2,3,4,5,6,1,'逃げ')`);
+  };
+  // 会場1: 05-01 の R1〜R3（seed 11,12,13）→ 05-02 は R1・R2 が同じ seed（汚染）、R3 は別
+  for (const [race, seed] of [
+    [1, 11],
+    [2, 12],
+    [3, 13],
+  ])
+    add("2026-05-01", 1, race, null, seed);
+  for (const [race, seed] of [
+    [1, 11],
+    [2, 12],
+    [3, 93],
+  ])
+    add("2026-05-02", 1, race, null, seed);
+  // 会場2: R1 だけ同じ seed（1レースの偶然の一致。汚染ではない）
+  for (const [race, seed] of [
+    [1, 21],
+    [2, 22],
+    [3, 23],
+  ])
+    add("2026-05-01", 2, race, null, seed);
+  for (const [race, seed] of [
+    [1, 21],
+    [2, 82],
+    [3, 83],
+  ])
+    add("2026-05-02", 2, race, null, seed);
+  // 会場3: 05-01 が確定中止（順延）→ 05-02 が同じ出走表でも正常。結果はあえて入れ、
+  //        確定中止の除外だけが効いていることを確かめる
+  for (const [race, seed] of [
+    [1, 31],
+    [2, 32],
+    [3, 33],
+  ])
+    add("2026-05-01", 3, race, "confirmed", seed);
+  for (const [race, seed] of [
+    [1, 31],
+    [2, 32],
+    [3, 33],
+  ])
+    add("2026-05-02", 3, race, null, seed);
+  // 会場4: 05-01 が未確定の順延スタブ（結果なし・cancellation_status も未設定。BOA-421の古い7件と同じ状態）
+  //        → 05-02 が同じ出走表でも正常。結果の有無の除外だけが効いていることを確かめる
+  for (const [race, seed] of [
+    [1, 41],
+    [2, 42],
+    [3, 43],
+  ])
+    add("2026-05-01", 4, race, null, seed, false);
+  for (const [race, seed] of [
+    [1, 41],
+    [2, 42],
+    [3, 43],
+  ])
+    add("2026-05-02", 4, race, null, seed);
+  await mdb.exec(`INSERT INTO races VALUES ${rows.join(",")};`);
+  await mdb.exec(`INSERT INTO race_entries VALUES ${entries.join(",")};`);
+  await mdb.exec(`INSERT INTO race_results VALUES ${results.join(",")};`);
+  await mdb.exec("BEGIN;\n" + sql + "\nCOMMIT;");
+  const r = (
+    await mdb.query(
+      `select data_health_entries_duplicates('2026-05-02'::date,'2026-05-02'::date) as r`,
+    )
+  ).rows[0].r;
+  return r.find((x) => x.d === "2026-05-02");
+}
+{
+  const d = await runEntriesDuplicates(migrationSql);
+  check(
+    "data_health_entries_duplicates: 2レース以上が過去日と完全一致する会場×日だけを汚染と数える（1レースの偶然の一致・確定中止の複製元・結果の無い複製元は数えない）",
+    d.venue_days === 4 && d.clean_venue_days === 3,
+    show(d),
+  );
+}
+for (const [label, mutate] of [
+  [
+    "出走表の複製検知: 1レースの一致でも汚染として数える",
+    (x) => x.replace("having count(*) >= 2", "having count(*) >= 1"),
+  ],
+  [
+    "出走表の複製検知: 複製元の確定中止（順延）を除外しない",
+    (x) =>
+      x.replace(
+        "where r.race_date between (p_from - 21) and p_to\n    and r.cancellation_status is distinct from 'confirmed'",
+        "where r.race_date between (p_from - 21) and p_to",
+      ),
+  ],
+  [
+    "出走表の複製検知: 複製元に結果があることを求めない",
+    (x) => x.replace("and b.sig = a.sig and b.has_result", "and b.sig = a.sig"),
+  ],
+]) {
+  const mutated = mutate(migrationSql);
+  if (mutated === migrationSql)
+    throw new Error(`SQLの変異の対象が見つかりません: ${label}`);
+  let detected = false;
+  try {
+    const d = await runEntriesDuplicates(mutated);
+    detected = !(d.venue_days === 4 && d.clean_venue_days === 3);
+  } catch {
+    detected = true;
+  }
+  check(
+    `変異検証（SQL）: ${label}`,
+    detected,
+    "この変異を検知できない（検証が通ってしまう）",
+  );
+}
+
 const sqlMutants = [
   [
     "確定中止の除外を外す（分母）",

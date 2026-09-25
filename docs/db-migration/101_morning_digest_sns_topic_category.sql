@@ -1,4 +1,4 @@
--- 100_morning_digest_sns_topic_category.sql
+-- 101_morning_digest_sns_topic_category.sql
 --
 -- 「本日のデータ一覧」（BOA-402、/today）を SNS のネタゲート（sns-topic-gate）に
 -- 新しいネタ種別として登録する。tasks.md T5-1 / plan.md §5。
@@ -34,6 +34,12 @@
 --      `report:morning_digest:sns_topic_register_failed` を **毎朝 Slack に通知する**
 --      （再通知間隔6時間）。適用するまで鳴り続ける。逆順にしても本番は壊れないが、
 --      誤報が続くので順序を守ること。
+--
+--   ✅ **2026-09-25 に適用済み**（適用時のファイル名は `100_...`。同番号の
+--      `100_data_health_entries_duplicates.sql`（BOA-423、PR #830）が先に master へ
+--      入ったため 101 へ繰り下げた。DBに入った行の内容は変わらないので再実行は不要）。
+--      適用後の実測: category_key='morning-digest' / active=true / 型 daily-auto /
+--      有効チャネル {blog,note,x,youtube}。
 --
 -- 切り戻し:
 --   UPDATE sns_topic_categories SET active = false WHERE category_key = 'morning-digest';
