@@ -357,9 +357,29 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
   - 満たさない場合は Vercel のログ（関数 `api/cron/morning-digest`・`api/cron/racer-course-technique-stats`）と `scrape_job_state.last_error` / `last_report` を見る。手動復旧は「集計 → ダイジェスト」の順に GitHub Actions を `workflow_dispatch`（両ワークフローとも手動実行用に残してある）
   - **この確認が済むまで BOA-402 を Done にしない**
 
-- [ ] **T7-2** 監視が実際に鳴ることを確認する
+  **中間結果（2026-09-25 14:40 JST 実測、4件中2件が充足）**
+
+  | # | 受入基準 | 判定 | 実測値 |
+  |---|---|---|---|
+  | 1 | 集計の `last_success_at` が JST 13:00台 | **充足** | `2026-09-25 13:00:51 JST`（旧 GitHub Actions の 01:10 ではない） |
+  | 2 | `morning_digest.last_target_date` が当日・`last_success_at` が JST 05:30台 | **未測定** | `last_target_date` / `last_success_at` とも NULL。9/25 の 05:30 JST は PR #827 のデプロイ（11:39 JST）より前で、修正後のコードはまだ一度も 05:30 枠を通っていない |
+  | 3 | `max(window_end)` が前日 | **充足** | `2026-09-24`。13:00 の cron 自身の `last_report` が `{windowStart: 2025-12-03, windowEnd: 2026-09-24, racerRows: 9471, baselineRows: 612}` を返しており、kfile_sync（07:00 JST 成功・156行）の後に走った証拠になる |
+  | 4 | `morning_digest_days` に当日行・`generated_at` が JST 05:30台 | **未充足（既知）** | 当日行はあるが `generated_at` は `2026-09-25 10:26 JST`＝障害対応の手動生成。定時実行の成果ではない |
+
+  - `last_rows_written = 0` は異常ではない。同じ window_end で朝に手動実行済みのため `upsertChangedRows` の差分が 0 件だった（コード側も「変更なしで書き込み0件は正常」と明記し `rowsExpected=1` で判定している）
+  - **残り（基準2・4）は 2026-09-26 05:30 JST 以降に再測する。** それまで T7-1 は未完のまま
+
+- [x] **T7-2** 監視が実際に鳴ることを確認する
   - `scrape-monitor`（`scripts/lib/scrapeJobs/monitor.js` の `evaluateJobStates`）の `daily_overdue` は、`kind: "daily"` かつ `mode='live'` のジョブが `targetTimeJst` から3時間以上たっても当日分を処理していなければ Slack へ通知する。`morning_digest` は `targetTimeJst=05:30` なので **JST 08:30以降**に鳴るはず
   - **受入基準**: T7-1 が満たされている日は通知が来ない／意図的に未処理の状態を作った場合に通知が来る、のどちらかを確認できる
+
+  **完了（2026-09-25）。「未処理の状態で鳴る」側が、狙わずに実地で確認できた。** マイグレーション099が `morning_digest` を `mode='live'` にしたのが 11:02 JST。その時点で当日分は未処理（`last_target_date` が NULL）で、指定時刻 05:30 から3時間以上たっていたため、直後の監視で鳴った。`scrape_job_state`（`job='scrape-monitor'`）の `last_report.notified` に記録が残っている:
+
+    - `daily_overdue:morning_digest:2026-09-25` → `2026-09-25T02:40:24Z`（**11:40 JST**、mode を live にした38分後）
+    - `daily_overdue:racer_course_technique_stats:2026-09-24` → 同時刻
+
+  - 集計側が対象日「2026-09-24」で鳴ったのは誤報ではない。`resolveTargetDate`（`scripts/lib/scrapeJobs/dailyJob.js`）は指定時刻より前だと前日を返すため、11:40 JST 時点の対象日は 9/24 であり、状態を持たない（NULL）新規ジョブはそれを未処理と判定する。**live 化の初回だけ出る一過性のもの**で、13:00 の成功以降は `last_target_date=2026-09-25` となり、翌日 13:00 前の対象日 9/25 と一致して鳴らない
+  - 残る「T7-1 が満たされている日は鳴らない」側は、T7-1 の再測（9/26）と同時に確認する
 
 ---
 
