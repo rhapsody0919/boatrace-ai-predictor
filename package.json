@@ -62,6 +62,7 @@
     "verify:weather": "node scripts/maintenance/verify-weather-parsing.js",
     "verify:course-entry-tendency": "node scripts/maintenance/verify-course-entry-tendency.js",
     "verify:rpc-output-keys": "node scripts/maintenance/verify-rpc-output-keys.js",
+    "verify:rpc-key-regression": "node scripts/maintenance/verify-rpc-key-regression.js",
     "verify:rls-migration": "node scripts/maintenance/verify-rls-migration.js",
     "verify:migration-rls": "node scripts/maintenance/verify-migration-rls.js",
     "verify:query-errors": "node scripts/maintenance/verify-query-errors.js",

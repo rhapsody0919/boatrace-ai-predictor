@@ -69,13 +69,6 @@
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
     },
     {
-      "script": "verify-format-column-migration.js",
-      "tier": "manual",
-      "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
-      "reason": "実Supabaseの sns_drafts を読むため。環境変数が無いと検証をスキップできず失敗する",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
-    },
-    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
@@ -108,13 +101,6 @@
       "script": "verify-monthly-schedule.js",
       "tier": "ci",
       "guards": "月間スケジュール（節メタ N16）のパーサー・節の確定・行変換・CLI"
-    },
-    {
-      "script": "verify-morning-digest.js",
-      "tier": "manual",
-      "guards": "「本日のデータ一覧」（BOA-402）の集計",
-      "reason": "実Supabaseの morning_digest_rows を読むためPRでは実行できない（secretsが要る）。ただし generate-morning-digest.yml が生成直後に毎日実行しており、manual 5本のうちこれだけは定期的に動いている",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-morning-digest.js"
     },
     {
       "script": "verify-morning-init-jobs.js",
@@ -167,27 +153,10 @@
       "guards": "予測リフレッシュ（BOA-353 T4b-03）"
     },
     {
-      "script": "verify-push-with-retry.sh",
-      "tier": "ci",
-      "runner": "bash",
-      "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
-      "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
-    },
-    {
       "script": "verify-query-errors.js",
       "tier": "ci",
       "guards": "フロントのSupabaseクエリで、取得失敗が「データなし」に化ける書き方（BOA-359）",
       "note": "本件以前から専用ワークフロー verify-query-errors.yml で実行していた唯一のverify。統合してワークフローは削除した"
-    },
-    {
-      "script": "verify-race-cancellation-usage.js",
-      "tier": "ci",
-      "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）"
-    },
-    {
-      "script": "verify-race-entries-restore.js",
-      "tier": "ci",
-      "guards": "出走表の複製汚染の復元（BOA-422）の列ごとの方針。とくに weight_kg（Bファイルの登録体重を書かずNULLにする）と ai_score_*（触らない）"
     },
     {
       "script": "verify-race-notices-job.js",
@@ -215,6 +184,11 @@
       "guards": "中止・順延の早期確定（race_status）"
     },
     {
+      "script": "verify-race-entries-restore.js",
+      "tier": "ci",
+      "guards": "出走表の複製汚染の復元（BOA-422）の列ごとの方針。とくに weight_kg（Bファイルの登録体重を書かずNULLにする）と ai_score_*（触らない）"
+    },
+    {
       "script": "verify-racelist-backfill.js",
       "tier": "ci",
       "guards": "出走表（racelist）の過去分バックフィルCLI"
@@ -233,13 +207,6 @@
       "script": "verify-routine-routing.js",
       "tier": "ci",
       "guards": "revise/redoの発火先ルーティング（ADR 0038）"
-    },
-    {
-      "script": "verify-rpc-output-keys.js",
-      "tier": "manual",
-      "guards": "本番RPC（get_predictions_by_date / _light / get_today_races）の出力キーとフロントの参照の整合（BOA-363の再発防止）",
-      "reason": "本番RPCを実際に呼んで出力キーを見る検証のため、モックでは代替できない",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js"
     },
     {
       "script": "verify-scrape-daily-jobs.js",
@@ -272,13 +239,6 @@
       "guards": "結果取得（A6）・Kファイル同期・結果のcatch-upのVercel Cron実装"
     },
     {
-      "script": "verify-scrape-slots-on-db.js",
-      "tier": "manual",
-      "guards": "予定表のRPC（claim_scrape_slots・ensure_scrape_slots）の実DB上での挙動",
-      "reason": "実DBに検証用スロットを作って同時claim・リース奪取・expiredを試す。--execute を付けないとdry-run表示だけで成功終了するため、CIに載せてもゲートにならない",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-scrape-slots-on-db.js --execute"
-    },
-    {
       "script": "verify-scrape-slots-sql.js",
       "tier": "ci",
       "guards": "マイグレーション075・092（予定表 scrape_slots・claim_scrape_slots）をPGlite上で検証"
@@ -292,13 +252,6 @@
       "script": "verify-sitemap-coverage.js",
       "tier": "ci",
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"
-    },
-    {
-      "script": "verify-topic-target-claim.js",
-      "tier": "manual",
-      "guards": "sns_topic_targetsのclaim機構（ADR 0036）の並行実行時の排他",
-      "reason": "実Supabaseに対する並行実行テストのため",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-topic-target-claim.js"
     },
     {
       "script": "verify-unchanged-rows.js",
@@ -324,6 +277,59 @@
       "script": "verify-weather-parsing.js",
       "tier": "ci",
       "guards": "水面気象情報の解析と race_conditions への反映（BOA-358）"
+    },
+    {
+      "script": "verify-push-with-retry.sh",
+      "tier": "ci",
+      "runner": "bash",
+      "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
+      "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
+    },
+    {
+      "script": "verify-rpc-key-regression.js",
+      "tier": "ci",
+      "guards": "CREATE OR REPLACE FUNCTION が、それ以前の定義にあったキーを取りこぼしていないか（BOA-363・BOA-431と同型の回帰）",
+      "note": "本番接続が要る verify-rpc-output-keys.js（tier=manual）と違い、SQLファイル同士の比較だけで完結するためPRごとに走らせられる。BOA-431の欠落を実際に検知することを確認済み"
+    },
+    {
+      "script": "verify-race-cancellation-usage.js",
+      "tier": "ci",
+      "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）"
+    },
+    {
+      "script": "verify-format-column-migration.js",
+      "tier": "manual",
+      "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
+      "reason": "実Supabaseの sns_drafts を読むため。環境変数が無いと検証をスキップできず失敗する",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
+    },
+    {
+      "script": "verify-morning-digest.js",
+      "tier": "manual",
+      "guards": "「本日のデータ一覧」（BOA-402）の集計",
+      "reason": "実Supabaseの morning_digest_rows を読むためPRでは実行できない（secretsが要る）。ただし generate-morning-digest.yml が生成直後に毎日実行しており、manual 5本のうちこれだけは定期的に動いている",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-morning-digest.js"
+    },
+    {
+      "script": "verify-rpc-output-keys.js",
+      "tier": "manual",
+      "guards": "本番RPC（get_predictions_by_date / _light / get_today_races）の出力キーとフロントの参照の整合（BOA-363の再発防止）",
+      "reason": "本番RPCを実際に呼んで出力キーを見る検証のため、モックでは代替できない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js"
+    },
+    {
+      "script": "verify-scrape-slots-on-db.js",
+      "tier": "manual",
+      "guards": "予定表のRPC（claim_scrape_slots・ensure_scrape_slots）の実DB上での挙動",
+      "reason": "実DBに検証用スロットを作って同時claim・リース奪取・expiredを試す。--execute を付けないとdry-run表示だけで成功終了するため、CIに載せてもゲートにならない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-scrape-slots-on-db.js --execute"
+    },
+    {
+      "script": "verify-topic-target-claim.js",
+      "tier": "manual",
+      "guards": "sns_topic_targetsのclaim機構（ADR 0036）の並行実行時の排他",
+      "reason": "実Supabaseに対する並行実行テストのため",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-topic-target-claim.js"
     }
   ]
 }
