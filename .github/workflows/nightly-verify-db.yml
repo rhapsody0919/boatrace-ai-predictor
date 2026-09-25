@@ -1,0 +1,94 @@
+name: Nightly DB Verify
+
+# 本番Supabaseへの接続が要るため Quality Gates（PRごと）に載せられない検証を、
+# 毎晩1回だけ実行する。
+#
+# 背景: verify-registry.json の tier=manual 5本は「手元で実行する」という前提だったが、
+# 実際には誰も実行していなかった。そのうち verify-rpc-output-keys.js は
+# CREATE OR REPLACE FUNCTION が古い定義を土台にして後のマイグレーションが足した
+# キーを黙って消す事故（BOA-363）の再発防止として書かれたもので、定期実行が無いまま
+# BOA-431 で同型の再発が起きている。この欠陥はCIでもE2Eでも検知できない
+# （CIは本番RPCに繋げず、E2Eはフォールバック経路が同じキーを返すため画面が壊れない）。
+#
+# 実行するのは読み取りだけの2本。残る3本は載せない:
+#   verify-morning-digest.js       generate-morning-digest.yml が生成直後に毎日実行済み
+#   verify-scrape-slots-on-db.js   検証用スロットを実DBに作る（--execute が要る）
+#   verify-topic-target-claim.js   実Supabaseへの並行実行テストで書き込みを伴う
+# 後2者を毎晩走らせると本番DBに検証用データが積もるため、手元実行のままにする。
+
+on:
+  schedule:
+    # JST 深夜3:00 = UTC 18:00（日次の取得ジョブが一通り終わったあと）
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-verify-db
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: 実DBが要る検証を実行
+        id: checks
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set +e
+          OUTPUT=""
+          EXIT_CODE=0
+          for script in verify-rpc-output-keys verify-format-column-migration; do
+            echo "--- $script"
+            RESULT=$(node "scripts/maintenance/$script.js" 2>&1)
+            CODE=$?
+            echo "$RESULT"
+            if [ "$CODE" -ne 0 ]; then
+              EXIT_CODE=1
+              OUTPUT="${OUTPUT}[$script]\n${RESULT}\n\n"
+            fi
+          done
+          {
+            echo "summary<<SUMMARY_EOF"
+            printf '%b' "$OUTPUT"
+            echo "SUMMARY_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          # 失敗はSlackに流してから明示的に落とす
+          exit 0
+
+      - name: Notify Slack (失敗時のみ)
+        if: steps.checks.outputs.exit_code == '1'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SUMMARY: ${{ steps.checks.outputs.summary }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"#c0392b\",
+                \"blocks\": [
+                  {
+                    \"type\": \"section\",
+                    \"text\": {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \":rotating_light: *本番DBの検証が失敗しました*\n\`\`\`${SUMMARY}\`\`\`\nRPCの出力キーが欠けている場合、画面はフォールバック経路で壊れずに動くため気づけません（BOA-363 / BOA-431）。マイグレーションの CREATE OR REPLACE で古い定義を土台にしていないか確認してください。\"
+                    }
+                  }
+                ]
+              }]
+            }"
+
+      - name: 検証の失敗をジョブの失敗として扱う
+        if: steps.checks.outputs.exit_code == '1'
+        run: exit 1
