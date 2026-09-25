@@ -656,7 +656,8 @@
       "fHolding": "Carrying an F",
       "fClean": "No F"
     },
-    "conditionsBaseNote": "* {{rows}} count only the races where that condition could be determined, so their denominators differ from the other rows.",
+    "conditionsBaseNote": "* These rows use a different denominator from the others — {{rows}} — counting only the races where the condition could be determined.",
+    "conditionsBaseNoteRow": "{{label}}: {{n}} races",
     "conditionsBaseNoteSeparator": ", ",
     "conditionsCourseCaveat": "* These figures cover every starting position; only {{n}} of those starts were from lane {{boat}}, today's lane. For lane- and course-specific records, see the \"Lane Stats\" tab",
     "conditionsFinalDayCaveat": "* The final day includes the championship race, where the racers who came through the series take the inside lane. Read it as much a sign of a good draw as of the racer's own strength",

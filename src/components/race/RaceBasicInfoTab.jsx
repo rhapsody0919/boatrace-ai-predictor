@@ -653,7 +653,24 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                       const condRows = buildConditionRows(records, {
                         venueCode,
                         metric,
-                      }).filter((r) => !r.unavailable);
+                      })
+                        .filter((r) => !r.unavailable)
+                        // n=0 の行は畳む（BOA-432）。B級中心の選手では
+                        // 「SG・G1 — (n=0)」が毎回並ぶだけで読む値が無い
+                        // （ナイターの行を出さないのと同じ理屈）。
+                        // ただし **F持ち/Fなしは対で意味を持つ**（同じ「F数が
+                        // 取れている走」を分け合う設計）ので、片方だけ消さず
+                        // 両方0のときだけ両方畳む
+                        .filter((r, _i, rows) => {
+                          if (r.key === "fHolding" || r.key === "fClean") {
+                            return rows.some(
+                              (x) =>
+                                (x.key === "fHolding" || x.key === "fClean") &&
+                                x.n > 0,
+                            );
+                          }
+                          return r.n > 0;
+                        });
                       const period = pickPeriodStats(
                         periodStats,
                         player?.racerId,
@@ -795,9 +812,13 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                 {t("basicInfo.conditionsBaseNote", {
                                   rows: condRows
                                     .filter((r) => r.baseN !== null)
-                                    .map(
-                                      (r) =>
-                                        `${t(`basicInfo.conditions.${r.key}`)}(${r.baseN})`,
+                                    .map((r) =>
+                                      t("basicInfo.conditionsBaseNoteRow", {
+                                        label: t(
+                                          `basicInfo.conditions.${r.key}`,
+                                        ),
+                                        n: r.baseN,
+                                      }),
                                     )
                                     .join(
                                       t(
