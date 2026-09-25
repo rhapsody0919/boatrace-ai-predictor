@@ -43,26 +43,27 @@ fi
 
 target=$(TZ=Asia/Tokyo date -j -f "%Y-%m-%d %H:%M" "$1" +%s) || exit 1
 
-# 待ち時間と、そのあとの実行窓の終わり（既定 06:00 JST）までをまとめてスリープ抑止する。
-# 【2026-09-25の実測】旧版は `caffeinate -i -t $((wait_sec + 30))` で**待ち時間しか**抑止して
-# おらず、取得が始まった直後に失効した。実際にMacが 00:45〜05:28 のあいだ Idle Sleep に入り、
-# 8時間の窓のうち約4.7時間を失った（取得できたのは896リクエストで、2.7時間分）。
-WINDOW_END_HOUR="${WINDOW_END_HOUR:-6}"
-window_end=$(TZ=Asia/Tokyo date -j -f "%Y-%m-%d %H:%M" \
-  "$(TZ=Asia/Tokyo date -j -f %s "$target" +%Y-%m-%d) $(printf '%02d:00' "$WINDOW_END_HOUR")" +%s)
-# 窓の終わりが開始時刻より前なら、日をまたぐ（22:00開始 → 翌06:00終了）
-[ "$window_end" -le "$target" ] && window_end=$(( window_end + 86400 ))
-caffeinate_sec=$(( window_end - $(date +%s) + 300 ))
-if [ "$caffeinate_sec" -gt 0 ]; then
-  caffeinate -i -t "$caffeinate_sec" &
-  caffeinate_pid=$!
-  trap 'kill "$caffeinate_pid" 2>/dev/null' EXIT
-  log "スリープ抑止を開始（$(( caffeinate_sec / 60 ))分間、実行窓の終わり $(printf '%02d:00' "$WINDOW_END_HOUR") JST まで）"
-fi
-
 while [ "$(date +%s)" -lt "$target" ]; do sleep 30; done
 
+# 【2026-09-25の実測】旧版は `caffeinate -i -t $((wait_sec + 30))` で**待ち時間しか**抑止して
+# おらず、取得が始まった直後に失効した。実際にMacが 00:45〜05:28 のあいだ Idle Sleep に入り、
+# 22-06 の8時間の窓のうち約4.7時間を失った（取得できたのは896リクエストで、2.7時間分）。
+#
+# 抑止は、**待ち時間ではなく作業時間**に掛ける（開始時刻から実行窓の終わりまで）。待ち時間まで
+# 覆うと、日中ずっとMacを起こし続けることになる（バッテリー運用では無視できない）。待っている
+# あいだにMacがスリープすると起動は遅れるが、窓の終わりで安全に止まるだけなので許容する。
+WINDOW_END_HOUR="${WINDOW_END_HOUR:-6}"
+window_end=$(TZ=Asia/Tokyo date -j -f "%Y-%m-%d %H:%M" \
+  "$(TZ=Asia/Tokyo date -j -f %s "$(date +%s)" +%Y-%m-%d) $(printf '%02d:00' "$WINDOW_END_HOUR")" +%s)
+# 窓の終わりが現在より前なら、翌日（22:00開始 → 翌06:00終了）
+[ "$window_end" -le "$(date +%s)" ] && window_end=$(( window_end + 86400 ))
+caffeinate_sec=$(( window_end - $(date +%s) + 300 ))
+caffeinate -i -t "$caffeinate_sec" &
+caffeinate_pid=$!
+trap 'kill "$caffeinate_pid" 2>/dev/null' EXIT
+
 log "起動（runner=${RUNNER_DIR}）"
+log "スリープ抑止: $(( caffeinate_sec / 60 ))分間（実行窓の終わり $(printf '%02d:00' "$WINDOW_END_HOUR") JST まで）"
 
 if [ ! -d "$RUNNER_DIR/.git" ] && [ ! -f "$RUNNER_DIR/.git" ]; then
   log "中断: RUNNER_DIR が作業ツリーではありません: $RUNNER_DIR"
