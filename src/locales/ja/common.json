@@ -346,7 +346,7 @@
     "emptyBody": "発走が近づくとオッズが取得され、このタブに表示されます。"
   },
   "basicInfo": {
-    "note": "選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細（直近5走・得意会場）が開きます",
+    "note": "選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細（直近5走・得意会場・条件別）が開きます",
     "metricLabel": "指標",
     "scopeLabel": "会場",
     "gradeLabel": "グレード",
@@ -384,7 +384,27 @@
     "trendNote": "直近5走（グレード・期間の条件によらず、常に最新5走を表示。日付をタップでレース詳細へ）",
     "finishUnknown": "着外(順位不明)",
     "venueRankingFor": "{{metric}}のランキング",
-    "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位"
+    "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位",
+    "viewConditions": "条件別",
+    "conditionsNote": "条件ごとの{{metric}}（当社集計・取得できる全期間）。上のバーの公式値とは集計方法が違うため数字が一致しません",
+    "conditions": {
+      "national": "全国",
+      "local": "当地",
+      "ippan": "一般戦",
+      "sgg1": "SG・G1",
+      "firstDay": "初日",
+      "finalDay": "最終日",
+      "wave5": "波5cm以上",
+      "fHolding": "F持ち時",
+      "fClean": "F無し時"
+    },
+    "conditionsBaseNote": "※{{rows}} は、その条件を判定できた走だけが母数です（他の行とは母数が違います）",
+    "smallSampleTitle": "サンプルが少ないため参考値です",
+    "periodTitle": "前期（{{from}}〜{{to}}・公式の期別成績）",
+    "periodWinRate": "勝率 {{value}}",
+    "periodTop2Rate": "2連対率 {{value}}%",
+    "periodAvgSt": "平均ST {{value}}",
+    "periodFetchError": "前期成績を取得できませんでした"
   },
   "wakuInfo": {
     "note": "選手を選ぶと、その選手が本日入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",

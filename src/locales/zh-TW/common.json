@@ -599,7 +599,7 @@
     "emptyBody": "接近發航時間後，賠率資料將顯示於此分頁。"
   },
   "basicInfo": {
-    "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近5場・擅長賽場）",
+    "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近5場・擅長賽場・依條件）",
     "metricLabel": "指標",
     "scopeLabel": "賽場",
     "gradeLabel": "等級",
@@ -637,7 +637,27 @@
     "trendNote": "最近5場（不受等級・期間條件影響，一律顯示最新5場。點選日期可前往比賽詳情）",
     "finishUnknown": "名次外（名次不明）",
     "venueRankingFor": "{{metric}}排行",
-    "currentVenueRank": "本節的{{venue}}在全{{total}}個賽場中排名第{{rank}}"
+    "currentVenueRank": "本節的{{venue}}在全{{total}}個賽場中排名第{{rank}}",
+    "viewConditions": "依條件",
+    "conditionsNote": "各條件下的{{metric}}（本站統計・可取得的全部期間）。與上方長條圖的官方數值計算方式不同，因此數字不會一致。",
+    "conditions": {
+      "national": "全國",
+      "local": "當地",
+      "ippan": "一般賽",
+      "sgg1": "SG・G1",
+      "firstDay": "首日",
+      "finalDay": "最終日",
+      "wave5": "浪高5cm以上",
+      "fHolding": "有F時",
+      "fClean": "無F時"
+    },
+    "conditionsBaseNote": "※{{rows}} 僅以能判定該條件的出賽為母數（與其他列的母數不同）。",
+    "smallSampleTitle": "樣本較少，僅供參考",
+    "periodTitle": "前期（{{from}}〜{{to}}・官方期別成績）",
+    "periodWinRate": "勝率 {{value}}",
+    "periodTop2Rate": "2連對率 {{value}}%",
+    "periodAvgSt": "平均ST {{value}}",
+    "periodFetchError": "無法取得前期成績"
   },
   "dataTable": {
     "title": "數據出賽表",

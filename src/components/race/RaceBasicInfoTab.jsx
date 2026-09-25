@@ -28,14 +28,18 @@ import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { parseRaceId } from "../../utils/raceId";
 import RaceHistoryTable from "./RaceHistoryTable";
 import {
   filterRecords,
   computeRates,
   getRecentRaces,
   computeVenueRanking,
+  buildConditionRows,
+  pickPeriodStats,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
+import InlineFetchError from "../InlineFetchError";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -82,6 +86,10 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
   const [expandedView, setExpandedView] = useState("trend");
   const [officialRates, setOfficialRates] = useState(null);
   const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
+  // 「前期」（racer_period_stats、phase a FR-4c）。6人分を1クエリで取る。
+  // undefined=未取得、配列=取得済み、それ以外（{state:"forbidden"}）＝095未適用
+  const [periodStats, setPeriodStats] = useState(undefined);
+  const [periodFailed, setPeriodFailed] = useState(false);
 
   const sortedPlayers = [...(players ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -106,6 +114,36 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
       cancelled = true;
     };
   }, [raceId]);
+
+  // 「前期」は条件別タブを開いたときだけ要る値だが、6人分まとめて1クエリで済み
+  // （racer_period_stats を period_year/period_no で絞って .in() する）、
+  // タブを開くたびに待たせない方が読み手の体験が良いのでレース単位で先に取る。
+  // racerIdsKey は「6人の登録番号の並び」で、同じレース内では変わらない
+  const racerIdsKey = sortedPlayers.map((p) => p.racerId ?? "").join(",");
+  const raceDate = parseRaceId(raceId)?.date ?? null;
+  useEffect(() => {
+    const ids = racerIdsKey.split(",").filter(Boolean).map(Number);
+    if (ids.length === 0 || !raceDate) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRacerPeriodStats(ids, raceDate)
+      .then((data) => {
+        if (!cancelled) setPeriodStats(data);
+      })
+      .catch((err) => {
+        // 権限エラー（095未適用）はサービス層が {state:"forbidden"} で返すので
+        // ここには来ない。ここに来るのはネットワーク断・タイムアウト等で、
+        // 「データが無い」と区別して扱う（.claude/rules/frontend-data-fetch.md §3）
+        console.error("前期成績取得エラー:", err?.message ?? String(err));
+        if (!cancelled) {
+          setPeriodStats(null);
+          setPeriodFailed(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [racerIdsKey, raceDate]);
 
   const ensureScopedStats = useCallback((racerId) => {
     if (!racerId) return;
@@ -424,6 +462,13 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                     >
                       {t("basicInfo.viewVenue")}
                     </button>
+                    <button
+                      type="button"
+                      className={`rbit-expanded-tab${expandedView === "conditions" ? " is-active" : ""}`}
+                      onClick={() => setExpandedView("conditions")}
+                    >
+                      {t("basicInfo.viewConditions")}
+                    </button>
                   </div>
 
                   {expandedView === "trend" &&
@@ -526,6 +571,146 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                               );
                             })}
                           </ol>
+                        </div>
+                      );
+                    })()}
+
+                  {expandedView === "conditions" &&
+                    (() => {
+                      const records = scopedStatsByRacer[player?.racerId];
+                      if (records === undefined || records === null) {
+                        return (
+                          <p className="rbit-expanded-loading">
+                            {t("basicInfo.loading")}
+                          </p>
+                        );
+                      }
+                      if (records.length === 0) {
+                        return (
+                          <p className="rbit-expanded-empty">
+                            {t("basicInfo.noHistory")}
+                          </p>
+                        );
+                      }
+                      const condRows = buildConditionRows(records, {
+                        venueCode,
+                        metric,
+                      }).filter((r) => !r.unavailable);
+                      const period = pickPeriodStats(
+                        periodStats,
+                        player?.racerId,
+                      );
+                      return (
+                        <div className="rbit-conditions">
+                          {/* 値は全行とも自社集計。既定状態（勝率・全レース・今期）では
+                              上のバーが公式値を出すため、同じ「全国」でも数字が違う */}
+                          <p className="rbit-conditions-note">
+                            {t("basicInfo.conditionsNote", {
+                              metric: t(`basicInfo.metrics.${metric}`),
+                            })}
+                          </p>
+                          <table className="rbit-conditions-table">
+                            <tbody>
+                              {condRows.map((row) => {
+                                const small =
+                                  row.n > 0 && row.n < SMALL_SAMPLE_THRESHOLD;
+                                return (
+                                  <tr key={row.key}>
+                                    <th scope="row">
+                                      {t(`basicInfo.conditions.${row.key}`)}
+                                    </th>
+                                    <td
+                                      className={`rbit-conditions-value${small ? " is-small-sample" : ""}`}
+                                    >
+                                      {row.value === null
+                                        ? "—"
+                                        : formatMetricValue(metric, row.value)}
+                                    </td>
+                                    <td
+                                      className={`rbit-conditions-n${small ? " is-small-sample" : ""}`}
+                                    >
+                                      {small && (
+                                        <span
+                                          className="rbit-conditions-warn"
+                                          title={t(
+                                            "basicInfo.smallSampleTitle",
+                                          )}
+                                        >
+                                          ⚠
+                                        </span>
+                                      )}
+                                      {t("basicInfo.sampleCount", { n: row.n })}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                          {/* 母数が他行と違う行（波・F持ち時・F無し時）は、
+                              条件を判定できた走数を添えて「他行と比べない」と読ませる */}
+                          {condRows.some((r) => r.baseN !== null) && (
+                            <p className="rbit-conditions-caveat">
+                              {t("basicInfo.conditionsBaseNote", {
+                                rows: condRows
+                                  .filter((r) => r.baseN !== null)
+                                  .map(
+                                    (r) =>
+                                      `${t(`basicInfo.conditions.${r.key}`)}(${r.baseN})`,
+                                  )
+                                  .join("・"),
+                              })}
+                            </p>
+                          )}
+                          {/* 取得失敗を「前期のデータが無い」に化けさせない。
+                              095未適用（forbidden）のときは枠ごと出さないのが
+                              正しいので、ここでは出さない */}
+                          {periodFailed && (
+                            <InlineFetchError
+                              message={t("basicInfo.periodFetchError")}
+                              onRetry={() => {
+                                setPeriodFailed(false);
+                                setPeriodStats(undefined);
+                              }}
+                            />
+                          )}
+                          {/* 「前期」は公式の期別成績で、単位が点。自社集計の
+                              1着率%と同じ列に混ぜられないため別枠にする */}
+                          {period && (
+                            <div className="rbit-period">
+                              <div className="rbit-period-heading">
+                                {t("basicInfo.periodTitle", {
+                                  from: period.calcFrom,
+                                  to: period.calcTo,
+                                })}
+                              </div>
+                              <div className="rbit-period-values">
+                                <span>
+                                  {t("basicInfo.periodWinRate", {
+                                    value:
+                                      period.winRate === null
+                                        ? "—"
+                                        : period.winRate.toFixed(2),
+                                  })}
+                                </span>
+                                <span>
+                                  {t("basicInfo.periodTop2Rate", {
+                                    value:
+                                      period.top2Rate === null
+                                        ? "—"
+                                        : period.top2Rate.toFixed(1),
+                                  })}
+                                </span>
+                                <span>
+                                  {t("basicInfo.periodAvgSt", {
+                                    value:
+                                      period.avgSt === null
+                                        ? "—"
+                                        : period.avgSt.toFixed(2),
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })()}

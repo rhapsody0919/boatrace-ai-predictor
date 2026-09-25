@@ -601,7 +601,7 @@
     "emptyBody": "Odds will appear here as the start time approaches."
   },
   "basicInfo": {
-    "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 5 races and best venues)",
+    "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 5 races, best venues, and a by-condition breakdown)",
     "metricLabel": "Metric",
     "scopeLabel": "Venue",
     "gradeLabel": "Grade",
@@ -639,7 +639,27 @@
     "trendNote": "The last 5 races (always the latest 5, regardless of the grade or period filter. Tap a date to open that race)",
     "finishUnknown": "Unplaced (rank unknown)",
     "venueRankingFor": "{{metric}} ranking",
-    "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}"
+    "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}",
+    "viewConditions": "By condition",
+    "conditionsNote": "{{metric}} by condition (our own tally, all available data). It will not match the official figures in the bars above, which are calculated differently.",
+    "conditions": {
+      "national": "All venues",
+      "local": "This venue",
+      "ippan": "General races",
+      "sgg1": "SG / G1",
+      "firstDay": "Series day 1",
+      "finalDay": "Final day",
+      "wave5": "Waves 5cm+",
+      "fHolding": "Carrying an F",
+      "fClean": "No F"
+    },
+    "conditionsBaseNote": "* {{rows}} count only the races where that condition could be determined, so their denominators differ from the other rows.",
+    "smallSampleTitle": "Small sample — treat as a rough guide",
+    "periodTitle": "Previous term ({{from}} – {{to}}, official term record)",
+    "periodWinRate": "Win pts {{value}}",
+    "periodTop2Rate": "Top-2 rate {{value}}%",
+    "periodAvgSt": "Avg. ST {{value}}",
+    "periodFetchError": "Could not load the previous term record"
   },
   "dataTable": {
     "title": "Data Race Card",

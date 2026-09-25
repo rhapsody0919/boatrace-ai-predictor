@@ -279,3 +279,90 @@
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
 }
+
+/* ---- バー展開の3つ目のタブ「条件別」（phase a FR-2 / T5-2） ----
+   行＝条件、列＝値とn の1次元テーブル。グリッドにはしない（データ出走表が
+   既に「指標×艇番」のグリッドで、同じタブにグリッドを2つ並べないため。
+   screens.md §3.2）。色は意味トークンのみを使う */
+
+.rbit-conditions-note {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.rbit-conditions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rbit-conditions-table th {
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  padding: var(--spacing-1) 0;
+  white-space: nowrap;
+}
+
+.rbit-conditions-table tr + tr th,
+.rbit-conditions-table tr + tr td {
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rbit-conditions-value {
+  text-align: right;
+  padding: var(--spacing-1) 0 var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.rbit-conditions-n {
+  text-align: right;
+  padding: var(--spacing-1) 0 var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.rbit-conditions-value.is-small-sample,
+.rbit-conditions-n.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+.rbit-conditions-warn {
+  margin-right: 2px;
+}
+
+.rbit-conditions-caveat {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* 「前期」は公式の期別成績で単位が点。自社集計の%と同じ列に混ぜられないため
+   別枠にする（数字だけ見て取り違えないよう、枠と見出しで切り分ける） */
+.rbit-period {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-2);
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rbit-period-heading {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-1);
+}
+
+.rbit-period-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
