@@ -1,0 +1,20 @@
+# Claude Code が worktree を作るときに、作成元から複製するファイル。
+# 書式は .gitignore と同じ。
+# https://code.claude.com/docs/en/worktrees
+#
+# worktree は新しいチェックアウトなので、.env.local のような追跡外のファイルは
+# 存在しない。このプロジェクトは「新規タスクは必ず worktree で隔離する」運用のため
+# worktree は日常的に作られ、そのたびに
+#   node --env-file=.env.local scripts/linear-cli.js ...
+# が "not found" で落ちて、メインリポジトリの絶対パスを指す回避策を取っていた
+# （2026-09-25 実例）。
+#
+# 仕様上、**バージョン管理の対象外のファイルだけ**が複製される。
+# 追跡されているファイルはパターンに一致しても複製されないので、
+# ここに書いたせいでファイルが二重になることはない。
+#
+# 取り直しの効かないデータ（data/kb-archive 等）はここに書かない。
+# 複製すると worktree が消えたときに一緒に消えるため、リポジトリの外に置く
+# （scripts/lib/preciousPaths.js を参照）。
+
+.env.local
