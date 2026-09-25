@@ -23,6 +23,13 @@ export function resolveSnapshotPath(pathname, userAgent) {
     return "/ai-snapshots/winning-technique.html";
   }
 
+  // /today（BOA-402）。スナップショットはビルド時生成なので、日替わりの中身は入らず
+  // ページの目的と各指標の定義だけ（plan.md §5）。?date= 付きは対象にしない
+  // （canonicalが常に /today で、日付別URLを検索対象にしない設計と揃える）
+  if (pathname === "/today") {
+    return "/ai-snapshots/today.html";
+  }
+
   const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
   if (blogMatch) {
     return `/ai-snapshots/blog/${blogMatch[1]}.html`;

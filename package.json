@@ -52,6 +52,7 @@
     "verify:boatcast-job": "node scripts/maintenance/verify-boatcast-job.js",
     "verify:motor-pretest": "node scripts/maintenance/verify-motor-pretest.js",
     "verify:daily-reconcile": "node scripts/maintenance/verify-daily-reconcile.js",
+    "verify:morning-digest-sns-topic": "node scripts/verification/verify-morning-digest-sns-topic.js",
     "verify:morning-init-refactor": "node scripts/maintenance/verify-morning-init-refactor.js",
     "verify:morning-init-jobs": "node scripts/maintenance/verify-morning-init-jobs.js",
     "verify:scrape-slots-sql": "node scripts/maintenance/verify-scrape-slots-sql.js",

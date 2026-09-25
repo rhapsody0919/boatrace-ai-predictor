@@ -12,7 +12,8 @@
  *
  * ## 前提
  *
- * 夜間バッチ update-racer-course-technique-stats.js（JST 01:10）が
+ * 集計バッチ update-racer-course-technique-stats.js（Vercel Cron、JST 13:00 / 17:00。
+ * 2026-09-25 に GitHub Actions の JST 01:10 から移行。ADR-0066 §改訂1）が、前日までの
  * venue_course_technique_baseline / racer_course_technique_stats を更新済みであること。
  * 完全性チェックで window_end を見て、古すぎれば書かない。
  *
@@ -34,8 +35,19 @@
  *   node scripts/daily/generate-morning-digest.js --dry-run          # 書き込まずに結果を出す
  */
 
-import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import {
+  supabase,
+  isSupabaseEnabled,
+  VENUE_NAMES,
+} from "../lib/supabaseClient.js";
 import { isDirectRun } from "../lib/isDirectRun.js";
+import {
+  createTopicWithTargets,
+  enabledChannelsOf,
+  findTopicByTextMarker,
+  getActiveTopicCategoryByKey,
+  getTargetAccounts,
+} from "../lib/snsTopics.js";
 import {
   EXTRACTION_THRESHOLDS,
   MIN_RUNS,
@@ -768,6 +780,87 @@ async function write(date, dayRow, rows) {
   if (stampErr) throw stampErr;
 }
 
+/** SNSのネタの型（sns_topic_categories.category_key）。マイグレーション100で作る */
+const SNS_TOPIC_CATEGORY_KEY = "morning-digest";
+
+/** ネタ本文の先頭に置く目印。同じ対象日で二重に登録しないための鍵も兼ねる */
+export function snsTopicMarker(date) {
+  return `【本日のデータ一覧 ${date}】`;
+}
+
+/** ネタ本文を組み立てる（数値は書き込んだ dayRow / rows からだけ取る）。検証スクリプトからも読む */
+export function buildSnsTopicText(date, dayRow, rows) {
+  const c = dayRow.notes?.sectionCounts ?? {};
+  const featured = rows.find((r) => r.section === "featured");
+  const featuredText = featured
+    ? `注目は${VENUE_NAMES[featured.venue_code] ?? `${featured.venue_code}`}` +
+      `${featured.race_number}R ${featured.racer_name}選手` +
+      // イン崩れ指数は**画面と同じ丸め**で出す（FeaturedRaceCard.jsx は Math.round）。
+      // 生値のまま書くと「ページは1%、SNSは1.28%」となり、ADR-0070 が防ごうとしている
+      // Web/SNS間の食い違いが本文側で起きる
+      `（${featured.course}コース、イン崩れ指数${Math.round(Number(featured.volatility_percentile))}%）。`
+    : "注目レースは該当なし。";
+
+  return (
+    `${snsTopicMarker(date)}` +
+    `${dayRow.venue_count}会場${dayRow.race_count}レース。` +
+    `逃げ${c.nige ?? 0}件・まくり${c.makuri ?? 0}件・逃がし${c.nigashi ?? 0}件、` +
+    `前日のフライング${c.flying ?? 0}件・帰郷${c.returned ?? 0}件。` +
+    `${featuredText}\n\n` +
+    "本文の数値は morning_digest_rows / morning_digest_days の " +
+    `digest_date='${date}' の行**だけ**から取る（ADR-0070。ページと値を食い違わせないため、` +
+    "ここ以外のテーブルを引いて計算し直さない)。" +
+    "リンクは常に https://www.boat-ai.jp/today（`?date=` は付けない）。" +
+    "書いてよい数値・禁止表現・チャネル別の切り口は " +
+    "docs/operation/sns-pipeline-morning-digest.md にまとめてある。"
+  );
+}
+
+/**
+ * 書き込み後に sns_topics へネタを1件登録する（tasks.md T5-1 / plan.md §5）。
+ *
+ * チャネルの割り当ては sns_topic_categories / sns_topic_category_channels に委ねる
+ * （sns-hub 管理画面「ネタ型設定」から増減でき、コード変更を要さない）。
+ * 型は daily-auto（ネタ承認は省略、下書き承認だけ人間が行う）なので autoApprove で作る。
+ *
+ * **失敗してもダイジェスト生成自体は成功として扱う**（2表への書き込みは既に終わっており、
+ * ここで例外にすると共通ラッパが対象日を未処理のままにし、再実行で全行を書き直してしまう）。
+ * ただし握りつぶさず、呼び出し側が report.alerts に載せて監視（scrape-monitor の
+ * `report:{job}:{key}`）へ流す。
+ *
+ * @returns {Promise<{registered: boolean, reason?: string, topicId?: string, channels?: string[]}>}
+ */
+async function registerSnsTopic({ date, dayRow, rows }) {
+  const marker = snsTopicMarker(date);
+  const existing = await findTopicByTextMarker(marker);
+  if (existing) {
+    return { registered: false, reason: "already-registered", topicId: existing.id };
+  }
+
+  const category = await getActiveTopicCategoryByKey(SNS_TOPIC_CATEGORY_KEY);
+  const channels = enabledChannelsOf(category);
+  if (channels.length === 0) {
+    return { registered: false, reason: "no-enabled-channels" };
+  }
+
+  const accounts = await getTargetAccounts();
+  const targetAccountIds = accounts
+    .filter((a) => channels.includes(a.platform))
+    .map((a) => a.id);
+  if (targetAccountIds.length === 0) {
+    return { registered: false, reason: "no-target-accounts" };
+  }
+
+  const { topic } = await createTopicWithTargets({
+    topicText: buildSnsTopicText(date, dayRow, rows),
+    contentTypeId: category.content_type_id,
+    autoApprove: true,
+    targetAccountIds,
+    skipReason: "「本日のデータ一覧」型の既定でチャネル対象外",
+  });
+  return { registered: true, topicId: topic.id, channels };
+}
+
 // ---------------------------------------------------------------------------
 
 /**
@@ -950,6 +1043,30 @@ export async function runMorningDigest({
 
   await write(date, dayRow, rows);
   console.log(`\n完了しました（${rows.length} 行を書き込みました）`);
+
+  // SNS展開（T5-1）。過去日の再生成・バックフィルではネタを作らない
+  // （朝のその日のためのネタなので、後から遡って投稿する対象ではない）
+  const alerts = [];
+  let snsTopic = { registered: false, reason: "backfill" };
+  if (date === todayJST()) {
+    try {
+      snsTopic = await registerSnsTopic({ date, dayRow, rows });
+      console.log(
+        snsTopic.registered
+          ? `SNSのネタを登録しました（${snsTopic.topicId} / ${snsTopic.channels.join("・")}）`
+          : `SNSのネタは登録しませんでした（${snsTopic.reason}）`,
+      );
+    } catch (error) {
+      // ダイジェスト自体は書けているため成功で返すが、黙って捨てずSlackへ流す
+      snsTopic = { registered: false, reason: "error", error: error.message };
+      console.error(`SNSのネタ登録に失敗しました: ${error.message}`);
+      alerts.push({
+        key: "sns_topic_register_failed",
+        text: `SNSのネタ登録に失敗（対象日 ${date}）: ${error.message}。ダイジェスト本体は書き込み済み`,
+      });
+    }
+  }
+
   return {
     outcome: "ok",
     rowsWritten: rows.length,
@@ -959,7 +1076,7 @@ export async function runMorningDigest({
     // 1行も出ないのは異常として扱う（verify-morning-digest.js の判定とも揃う）
     rowsExpected: 1,
     rowsParsed: rows.length,
-    report,
+    report: { ...report, snsTopic, ...(alerts.length > 0 ? { alerts } : {}) },
   };
 }
 

@@ -34,6 +34,12 @@
 - `sns-video-studio/remotion/risk-rules.json`を照合し、該当があれば`risk_flags`に記録する
 - `sns-video-producer-prompt.md`の「セルフレビュー チェックリスト」で自己採点する。**尺の基準（12〜15秒）はTikTok/X向けの目安であり、YouTube Shorts側は完視聴率を最大化する目的の範囲内で15〜30秒まで許容する**（尺そのものをPass/Fail項目として絶対視しない。詳細は`sns-video-producer-prompt.md`の該当セクション参照）
 
+## 3'. 「本日のデータ一覧」型（morning-digest）のネタ
+
+型が `morning-digest` のネタは、映像の材料を `morning_digest_days` / `morning_digest_rows` の2表だけから取る（再計算禁止）。共通の規則は [`sns-pipeline-morning-digest.md`](sns-pipeline-morning-digest.md) を読む。
+
+YouTube向けは `section='featured'` の1レースに絞り、「この選手の割合」と「その会場・グレードの平均」を並べる構成にする。`metric_predicted`（推定値）には触れない。
+
 ## 4. カバー画像の生成
 
 **Shorts化に伴い、専用サムネイル（Remotion別コンポジション）の生成ステップを廃止する**（2026-09-05）。TikTok/Xと同様、`ffmpeg -vf "select='eq(n\,0)'" -vframes 1`で動画のframe=0を書き出し、それを`cover_image_path`として使う（`sns-video-producer-prompt.md`セルフレビューチェックリスト「frame=0で主要テキスト・マスコットが完全に見えているか」を参照、3.の映像設計時点で確認済みであること）。旧`COMPOSITION_IDS.youtubeThumbnail`（1280×720、16:9）は新しいShorts比率と合わなくなったため、このRoutineでは使用しない。
