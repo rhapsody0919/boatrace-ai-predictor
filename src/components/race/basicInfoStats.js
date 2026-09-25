@@ -325,6 +325,8 @@ function isUnavailable(records, field) {
  * @returns {Array<{key: string, value: number|null, n: number, unavailable: boolean, baseN: number|null}>}
  *   `unavailable` が true の行は呼び出し側で描画しない。
  *   `n` は metric が `avgSt` のときだけ ST を計測できた走数（avgStN）になる。
+ *   F持ち時・F無し時の2行だけ `avgSt` / `avgStN` も返す（画面は指標が勝率等でも
+ *   STを併記する。Fを持った選手の見どころはスタートの踏み方のため）。
  *   `baseN` は波・F持ち時・F無し時の行だけ非null（その条件を判定できた走数。
  *   他行と母数が違うことを示すので、画面はこれを添えて「他行と比べない」と読ませる）
  */
@@ -393,6 +395,13 @@ export function buildConditionRows(records, { venueCode, metric }) {
         n: sampleOf(rates),
         unavailable: false,
         baseN: known.length,
+        // Fの2行だけは平均STも返す。Fを持っている選手を見る目的は
+        // 「スタートを踏めなくなるか」で、勝率ではそれが読めない
+        // （screens.md §3.7 の元の設計も「F持ち時の平均ST vs 通常時」）。
+        // 実例: 勝率だけだと F持ち時27.3% vs F無し時11.1% となり
+        // 「Fを持っている方が走る」という逆のメッセージになる
+        avgSt: rates.avgSt,
+        avgStN: rates.avgStN,
       };
     }
 

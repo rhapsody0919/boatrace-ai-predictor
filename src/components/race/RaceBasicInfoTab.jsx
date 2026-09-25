@@ -660,21 +660,110 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                               })}
                             </tbody>
                           </table>
-                          {/* 母数が他行と違う行（波・F持ち時・F無し時）は、
-                              条件を判定できた走数を添えて「他行と比べない」と読ませる */}
-                          {condRows.some((r) => r.baseN !== null) && (
-                            <p className="rbit-conditions-caveat">
-                              {t("basicInfo.conditionsBaseNote", {
-                                rows: condRows
-                                  .filter((r) => r.baseN !== null)
-                                  .map(
-                                    (r) =>
-                                      `${t(`basicInfo.conditions.${r.key}`)}(${r.baseN})`,
-                                  )
-                                  .join(t("basicInfo.conditionsBaseNoteSeparator")),
-                              })}
-                            </p>
-                          )}
+                          {/* A: この表は全コース込み。今日の枠と母集団が違う。
+                              実例（2026-09-25 桐生1R）: 4号艇の選手は過去2年183走中
+                              5・6枠が178走で全国1着率0.5%、6号艇の選手は枠がほぼ均等で
+                              13.9%。素直に読むと今日の枠と逆方向に評価してしまう */}
+                          <p className="rbit-conditions-caveat">
+                            {t("basicInfo.conditionsCourseCaveat", {
+                              boat,
+                              n: records.filter((r) => r.boatNumber === boat)
+                                .length,
+                            })}
+                          </p>
+                          {/* C: Fを持った選手の見どころはスタートの踏み方なので、
+                              指標が勝率等でも平均STを併記する。勝率だけだと
+                              「F持ち時27.3% vs F無し時11.1%」のように
+                              「Fを持っている方が走る」と読めてしまう */}
+                          {metric !== "avgSt" &&
+                            (() => {
+                              const holding = condRows.find(
+                                (r) => r.key === "fHolding",
+                              );
+                              const clean = condRows.find(
+                                (r) => r.key === "fClean",
+                              );
+                              if (!holding?.avgStN && !clean?.avgStN)
+                                return null;
+                              const fmt = (row) =>
+                                row?.avgSt === null || row?.avgSt === undefined
+                                  ? "—"
+                                  : row.avgSt.toFixed(2);
+                              return (
+                                <p className="rbit-conditions-caveat">
+                                  {t("basicInfo.conditionsFStNote", {
+                                    holding: fmt(holding),
+                                    holdingN: holding?.avgStN ?? 0,
+                                    clean: fmt(clean),
+                                    cleanN: clean?.avgStN ?? 0,
+                                  })}
+                                </p>
+                              );
+                            })()}
+                          {/* D: 外枠中心の選手は勝率だと全行0.0%に潰れて情報がゼロになる。
+                              実例（同レース4号艇）: 勝率は全行0.0%だが、3連対率にすると
+                              全国41.5%・最終日50.0%・波5cm以上50.0%と差が出る。
+                              ただし3連対率も全部0の選手（1着も3着も無い新人）はいるので、
+                              **切り替えて実際に差が出る場合だけ**誘導する */}
+                          {metric !== "top3Rate" &&
+                            metric !== "avgSt" &&
+                            condRows.some((r) => r.n > 0) &&
+                            // 厳密に0で判定すると「全国0.5%・一般戦0.6%」のような
+                            // 実質潰れている選手を拾えない。1%未満＝100走に1回未満で
+                            // 行間の差が読めない状態とみなす
+                            condRows.every(
+                              (r) => r.value === null || r.value < 1,
+                            ) &&
+                            buildConditionRows(records, {
+                              venueCode,
+                              metric: "top3Rate",
+                            }).some((r) => r.value !== null && r.value >= 1) && (
+                              <p className="rbit-conditions-zero">
+                                {t("basicInfo.conditionsAllZeroHint")}
+                                <button
+                                  type="button"
+                                  className="rbit-conditions-zero-action"
+                                  onClick={() => setMetric("top3Rate")}
+                                >
+                                  {t("basicInfo.conditionsAllZeroAction")}
+                                </button>
+                              </p>
+                            )}
+                          {/* 注記を4本並べるとグレーの壁になって誰も読まないので、
+                              毎回は要らない2本（最終日の構造差・母数が違う行）は
+                              折りたたむ。常時出すのはコース混在の1本とFのSTだけ */}
+                          <details className="rbit-conditions-how">
+                            <summary>
+                              {t("basicInfo.conditionsHowToRead")}
+                            </summary>
+                            {/* B: 最終日は優勝戦を含み、勝ち上がった選手が1号艇に入る。
+                                全36,221レースの実測で1号艇1着率は初日52.1%・中日54.0%・
+                                最終日60.1%と構造的に差がある（選手の力ではなく枠の差） */}
+                            {condRows.some((r) => r.key === "finalDay") && (
+                              <p className="rbit-conditions-caveat">
+                                {t("basicInfo.conditionsFinalDayCaveat")}
+                              </p>
+                            )}
+                            {/* 母数が他行と違う行（波・F持ち時・F無し時）は、
+                                条件を判定できた走数を添えて「他行と比べない」と読ませる */}
+                            {condRows.some((r) => r.baseN !== null) && (
+                              <p className="rbit-conditions-caveat">
+                                {t("basicInfo.conditionsBaseNote", {
+                                  rows: condRows
+                                    .filter((r) => r.baseN !== null)
+                                    .map(
+                                      (r) =>
+                                        `${t(`basicInfo.conditions.${r.key}`)}(${r.baseN})`,
+                                    )
+                                    .join(
+                                      t(
+                                        "basicInfo.conditionsBaseNoteSeparator",
+                                      ),
+                                    ),
+                                })}
+                              </p>
+                            )}
+                          </details>
                           {/* 取得失敗を「前期のデータが無い」に化けさせない。
                               095未適用（forbidden）のときは枠ごと出さないのが
                               正しいので、ここでは出さない */}
