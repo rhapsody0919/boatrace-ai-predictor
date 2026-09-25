@@ -16,6 +16,7 @@
     "verify:i18n": "node scripts/maintenance/verify-i18n-consistency.js",
     "check:session-start": "node scripts/maintenance/session-start-check.js",
     "check:worktrees": "node scripts/maintenance/check-worktrees.js",
+    "report:bug-cause": "node scripts/maintenance/bug-cause-report.js",
     "check:deprecated-terms": "node scripts/maintenance/check-deprecated-terms.js",
     "verify:routine-routing": "node scripts/maintenance/verify-routine-routing.js",
     "verify:topic-target-claim": "node scripts/maintenance/verify-topic-target-claim.js",
