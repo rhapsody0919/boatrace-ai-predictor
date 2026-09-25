@@ -22,6 +22,9 @@
  *   4. ドキュメント中のエージェント参照が実在すること
  *      - `<name>` サブエージェント という書き方
  *      - .claude/agents/<name>.md というパス参照
+ *   5. 定義ファイルが「手順の正本」として指すリポジトリ内パスが実在すること
+ *      （content-qa → publish-blog.md、design-reviewer → sdd-workflow.md のように、
+ *      手順を書き写さず外出ししているため、正本が移動すると黙って読めなくなる）
  *
  * 既存の乖離は ALLOWED_* に理由付きで凍結し、新規だけを止める
  * （verify-migration-numbers.js の ALLOWED_DUPLICATES と同じ方式）。
@@ -73,6 +76,14 @@ const AGENT_NAME_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/;
  * 定義として扱うとフロントマター必須の検査に引っかかる。
  */
 const NON_DEFINITION_FILES = new Set(["README.md"]);
+
+/**
+ * 定義ファイルが指すリポジトリ内パスのうち、実在しなくても許すもの。
+ * 新しく足す場合は理由を書くこと。
+ */
+const ALLOWED_MISSING_PATHS = [
+  // 例: { file: "foo.md", target: "docs/bar.md", reason: "..." }
+];
 
 /** ドキュメント中の参照を探す対象。サブディレクトリも辿る */
 const SCAN_DIRS = [path.join(ROOT, ".claude"), path.join(ROOT, "docs")];
@@ -257,6 +268,44 @@ for (const dir of SCAN_DIRS) {
   }
 }
 
+// ---- 5. 定義ファイルが指すリポジトリ内パスが実在するか ----
+// 複数の定義が「手順の正本は別ファイルにある」と書いて外出ししている
+// （design-reviewer → .claude/rules/sdd-workflow.md、
+//   content-qa → .claude/commands/publish-blog.md）。その正本が
+// リネーム・移動されると、エージェントは読むべきものを読めないまま
+// レビューを始めるが、名前の検査だけでは検知できない。
+const allowedMissing = new Set(
+  ALLOWED_MISSING_PATHS.map((a) => `${a.file} ${a.target}`),
+);
+// バッククォートで囲まれた、スラッシュを含む拡張子付きのパスだけを対象にする。
+// `spec.md` のような総称や `docs/design/{slug}/` のようなプレースホルダは拾わない
+const REPO_PATH_REF = /`((?:\.\/)?[\w.-]+(?:\/[\w.-]+)+\.[a-z]{2,4})`/g;
+let pathRefCount = 0;
+for (const file of agentFiles) {
+  const text = await fs.readFile(path.join(AGENTS_DIR, file), "utf8");
+  const lines = text.split("\n");
+  for (const [i, line] of lines.entries()) {
+    REPO_PATH_REF.lastIndex = 0;
+    let m;
+    while ((m = REPO_PATH_REF.exec(line)) !== null) {
+      const target = m[1].replace(/^\.\//, "");
+      if (target.includes("{") || target.includes("*")) continue;
+      pathRefCount += 1;
+      if (allowedMissing.has(`${file} ${target}`)) {
+        notes.push(`.claude/agents/${file}:${i + 1} の ${target} は凍結済み`);
+        continue;
+      }
+      try {
+        await fs.access(path.join(ROOT, target));
+      } catch {
+        problems.push(
+          `.claude/agents/${file}:${i + 1} が参照する ${target} が存在しません。正本がリネーム・移動されると、このエージェントは読むべき手順を読めないままレビューを始めます`,
+        );
+      }
+    }
+  }
+}
+
 // ---- 結果 ----
 if (problems.length > 0) {
   console.error(
@@ -271,5 +320,5 @@ if (problems.length > 0) {
 
 for (const n of notes) console.log(`WARN: ${n}`);
 console.log(
-  `OK: サブエージェント定義${definedNames.size}件が台帳と一致し、参照${refCount}件がすべて実在します（${[...definedNames].sort().join(", ")}）`,
+  `OK: サブエージェント定義${definedNames.size}件が台帳と一致し、エージェント参照${refCount}件・定義内のパス参照${pathRefCount}件がすべて実在します（${[...definedNames].sort().join(", ")}）`,
 );
