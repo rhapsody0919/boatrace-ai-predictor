@@ -212,7 +212,9 @@ DB設計時のER図生成規律・長時間実装時の再開規律は`.claude/r
 1. `/code-review` でセルフレビューを実行
 2. **新規のデータ集計・分析機能（新しい統計・ランキング・傾向表示等）を含む場合は、データの正確性を複数の視点で検証する**（詳細は `.claude/rules/analysis.md` の「データ精度の検証」を参照）。コードレビューとは別に「集計結果が実データと一致しているか」だけを見る検証を必ず行う。実データの見た目・コードスタイルが正しくても、集計ロジックの誤り（スケール不一致、JOIN漏れ、期間ズレ等）は見た目だけのレビューでは発見できないため、独立した検証ステップとして扱う
 3. 指摘事項を修正してコミット・push（判断が分かれる指摘は修正せず報告に含める）
-4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（`e2e/smoke.spec.js`、Playwright）も実行し、デグレが無いことを確認する。新しい主要導線を追加した場合はスモークテストにも追記する。
+4. `npm run build` を実行し、ビルドエラーが無いことを確認する。既存のページ挙動・共通コンポーネント（Header、LanguageSwitcher、`src/components/race/` 等）・ルーティングに影響しうる変更の場合は `npm run test:e2e`（Playwright）も実行し、デグレが無いことを確認する。新しい主要導線を追加した場合はスモークテストにも追記する。
+
+   **CSS・レイアウトを変更した場合は `npm run test:layout`（`e2e/layout.spec.js`）を実行する**。モバイル375px・デスクトップ1440px・ワイド1920pxの3軸で、横スクロールの発生とグリッドの空トラック（アイテム数より列数が多く、右側に空白ができる状態）を検知する。既存の `smoke.spec.js` は従来どおり既定ビューポート1軸のみで、2026-09-25まで全87テストが1280px幅でしか走っておらず、トップページのブログ一覧が1440px以上で右側に334〜726pxの空白を作る状態が放置されていた（ADR-0073）。
 
    **`scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに `Quality Gates` ワークフロー（`.github/workflows/quality-gates.yml`）が `npm run verify:ci` でまとめて自動実行する**ため、該当する個別コマンドを手元で1本ずつ実行する必要はない。以前はこの項に7本以上のコマンドを列挙して「CI連携はせず、毎回Claude自身が手元で実行する」としていたが、実際には57本中56本がCI未接続で、マイグレーション番号の重複がmasterに入るまで誰も気づかなかった（ADR-0072、`docs/design/quality-gate-ci/spec.md`）。手元で先に確かめたい場合は `npm run verify:ci`（全件、数分かかる）か、該当する個別の `npm run verify:*` を使う。
 
@@ -306,7 +308,8 @@ SEO・集客施策を検討・実装する際は、その施策が「JS実行後
 ```bash
 npm run dev          # 開発サーバー起動
 npm run build        # プロダクションビルド
-npm run test:e2e     # E2Eスモークテスト（Playwright、e2e/smoke.spec.js）
+npm run test:e2e     # E2E全件（スモーク＋レイアウト3軸、Playwright）
+npm run test:layout  # レイアウトのみ（モバイル375/デスクトップ1440/ワイド1920の3軸）
 ```
 
 ### 日次スクリプト

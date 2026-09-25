@@ -1112,6 +1112,9 @@ input:focus-visible,
    ブログプレビューセクション
    ===================================================== */
 .blog-preview-section {
+  /* カード3枚分の幅（カード上限360px × 3 + gap 1.5rem × 2）。
+     小見出しとカードのグリッドがこの幅を共有することで左端が揃う */
+  --blog-preview-row-width: calc(360px * 3 + 1.5rem * 2);
   margin-top: 3rem;
   padding: 2.5rem;
   background: var(--surface-card);
@@ -1139,14 +1142,25 @@ input:focus-visible,
 .blog-preview-subheading {
   color: var(--text-primary);
   font-size: 1.1rem;
-  margin: 0 0 1rem;
+  /* 下のグリッドと同じ幅・同じ中央位置にして、小見出しとカードの左端を揃える。
+     揃えないと、広い画面でカードだけが中央に寄って小見出しが左に取り残される */
+  max-width: var(--blog-preview-row-width);
+  margin: 0 auto 1rem;
 }
 
 .blog-preview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* auto-fill だとアイテムが足りなくても列の枠が作られるため、カード3枚に対して
+     1440pxで4列・1920pxで5列分の枠ができ、右側に334〜726pxの空白が残っていた
+     （中央寄せの見出し・リード文・CTAボタンと揃わずズレて見える）。
+     auto-fit は空トラックを潰す。1fr のままだと今度はカードが1枚570px超に
+     間延びするため上限を360pxに固定し、余った幅は左右に均等配分する。
+     カードは VenueGridPage.jsx が .slice(0, 3) で常に3枚に固定している */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
+  justify-content: center;
+  max-width: var(--blog-preview-row-width);
   gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin: 0 auto 2rem;
 }
 
 .blog-preview-card {

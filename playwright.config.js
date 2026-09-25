@@ -32,6 +32,40 @@ export default defineConfig({
     baseURL: `http://localhost:${port}`,
     trace: "retain-on-failure",
   },
+  // 2026-09-25まで、全87テストが既定ビューポート（1280x720）だけで走っており、
+  // モバイル幅も広いPC幅も一度も検証されていなかった。モバイルファーストのPWAを
+  // 標榜しながら主戦場が未検証で、実際にトップページのブログ一覧が1440px以上で
+  // 右側に大きく空白を作る状態が放置されていた（ADR-0073）。
+  //
+  // 既存の smoke.spec.js は従来どおり1回だけ走らせ（ビューポートも変えない。
+  // レスポンシブ分岐の前提が変わって既存テストが揺れるのを避ける）、
+  // 幅を横断するのは layout.spec.js だけにする。全テストを3軸で回すと
+  // E2Eが9分から30分近くに伸びるため、費用対効果が見合わない。
+  projects: [
+    {
+      name: "smoke",
+      testIgnore: /layout\.spec\.js/,
+    },
+    {
+      name: "layout-mobile",
+      testMatch: /layout\.spec\.js/,
+      use: {
+        viewport: { width: 375, height: 812 },
+        isMobile: true,
+        hasTouch: true,
+      },
+    },
+    {
+      name: "layout-desktop",
+      testMatch: /layout\.spec\.js/,
+      use: { viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: "layout-wide",
+      testMatch: /layout\.spec\.js/,
+      use: { viewport: { width: 1920, height: 1080 } },
+    },
+  ],
   webServer: {
     command: `npm run dev -- --port ${port} --strictPort`,
     url: `http://localhost:${port}`,
