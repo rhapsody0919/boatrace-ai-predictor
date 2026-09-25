@@ -14,7 +14,8 @@
  *      （teammateはworktree分離されないため、「新規タスクはworktreeで隔離」という
  *      Git安全策と両立しない。ADR外だが CLAUDE.md「サブエージェントの使い分け」に理由あり）
  *   2. .claude/agents/*.md のフロントマターが name / description を持ち、
- *      name がファイル名と一致すること
+ *      name がファイル名と一致し、ハイフン区切りであること
+ *      （ハイフン必須の理由は AGENT_NAME_PATTERN のコメント参照）
  *   3. .claude/CLAUDE.md の「サブエージェントの使い分け」表と、実ファイルが一致すること
  *      （verify-registry.json と同じ台帳方式。定義を足して表に書き忘れる／
  *      表にあるが定義が無い、の双方を止める）
@@ -56,6 +57,22 @@ const FORBIDDEN_ENV_KEYS = [
 const ALLOWED_UNDEFINED_AGENTS = [
   // 例: { name: "foo-reviewer", reason: "..." }
 ];
+
+/**
+ * エージェント名に許す形。ハイフン区切りを必須にしている。
+ * 検証4の参照検査は「`名前` サブエージェント」という書き方を正規表現で拾うが、
+ * 単語1つの名前まで拾おうとすると「`grep` エージェント」のような普通の文に
+ * 誤反応する。名前の側をハイフン必須に寄せることで、参照検査が全ての定義を
+ * 漏れなく対象にできる（ハイフン無しの名前を許すと、その名前だけ参照切れを
+ * 検知できない死角になる）。
+ */
+const AGENT_NAME_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/;
+
+/**
+ * .claude/agents/ に置いてよい、エージェント定義ではないファイル。
+ * 定義として扱うとフロントマター必須の検査に引っかかる。
+ */
+const NON_DEFINITION_FILES = new Set(["README.md"]);
 
 /** ドキュメント中の参照を探す対象。サブディレクトリも辿る */
 const SCAN_DIRS = [path.join(ROOT, ".claude"), path.join(ROOT, "docs")];
@@ -120,7 +137,7 @@ for (const { key, why } of FORBIDDEN_ENV_KEYS) {
 let agentFiles = [];
 try {
   agentFiles = (await fs.readdir(AGENTS_DIR))
-    .filter((f) => f.endsWith(".md"))
+    .filter((f) => f.endsWith(".md") && !NON_DEFINITION_FILES.has(f))
     .sort();
 } catch {
   problems.push(
@@ -144,6 +161,10 @@ for (const file of agentFiles) {
   } else if (fm.name !== expected) {
     problems.push(
       `.claude/agents/${file}: name="${fm.name}" がファイル名（${expected}）と一致しません。Agent toolはファイル名ではなく name で解決するため、食い違うと呼び出せません`,
+    );
+  } else if (!AGENT_NAME_PATTERN.test(fm.name)) {
+    problems.push(
+      `.claude/agents/${file}: name="${fm.name}" はハイフン区切りの小文字（例: code-reviewer）にしてください。ハイフンの無い名前は、このスクリプトの参照切れ検査（検証4）の対象外になり、削除・改名しても気づけなくなります`,
     );
   } else {
     definedNames.add(fm.name);
