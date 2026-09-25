@@ -42,11 +42,11 @@ name: Generate Morning Digest
 # （次回の実行で再試行させるため）。最終回（08:00）でも満たせない場合に
 # ジョブを失敗させたいので、最終回のステップだけ「書けたかどうか」を検証する。
 # continue-on-error は付けない。
+# ⚠️ 定時実行は Vercel Cron（api/cron/morning-digest.js、vercel.json）へ移した（ADR-0066 §改訂1）。
+# GitHub Actions の定時実行は実測で2.5〜4.5時間遅れるのが常態で、朝に出ることが価値の中心の
+# このページでは前提が成立しなかった（plan.md §2.4）。ここに schedule を復活させないこと。
+# このワークフローは、障害時の手動復旧・任意日のバックフィル用に残している。
 on:
-  schedule:
-    - cron: "30 20 * * *" # JST 05:30 (UTC 20:30)
-    - cron: "30 21 * * *" # JST 06:30 (UTC 21:30)
-    - cron: "0 23 * * *" # JST 08:00 (UTC 23:00) GHAフェイルセーフ（07:00開始）の後
   workflow_dispatch:
     inputs:
       date:
@@ -83,10 +83,16 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
-      # 最終回（JST 08:00）でも当日ぶんが書けていなければ失敗させる。
-      # 「データが無い日」として黙って空のまま放置しない。
-      - name: Verify the digest exists (last run only)
-        if: github.event.schedule == '0 23 * * *'
+      # 生成後に、当日ぶんが実際に書けたかを検証する（手動実行なので毎回走らせる）。
+      #
+      # 定時実行の「黙って未生成のまま」の検知は、Vercel 側の監視が担う。
+      # api/cron/scrape-monitor.js が scrape_job_state を見て、日次ジョブが
+      # targetTimeJst から3時間以上たっても当日の対象日を処理していなければ
+      # daily_overdue として SLACK_WEBHOOK_URL へ通知する
+      # （scripts/lib/scrapeJobs/monitor.js の evaluateJobStates）。
+      # morning_digest は targetTimeJst=05:30 なので JST 08:30 以降に鳴る。
+      - name: Verify the digest exists
+        id: verify
         run: node scripts/maintenance/verify-morning-digest.js
         env:
           TZ: "Asia/Tokyo"

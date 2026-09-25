@@ -161,7 +161,7 @@ function MorningDataDigest() {
         {digest?.state === "not_generated" && (
           <p className="morning-digest__not-generated">
             {isToday
-              ? "本日ぶんはまだ公開されていません（毎朝5時半ごろに更新します）。"
+              ? "本日ぶんはまだ公開されていません（毎朝更新しています。しばらくしてからお試しください）。"
               : "この日のデータは生成されていません。"}
           </p>
         )}

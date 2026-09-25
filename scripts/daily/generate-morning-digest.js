@@ -14,7 +14,14 @@
  *
  * 夜間バッチ update-racer-course-technique-stats.js（JST 01:10）が
  * venue_course_technique_baseline / racer_course_technique_stats を更新済みであること。
- * 完全性チェックで window_end を見て、古ければ書かない。
+ * 完全性チェックで window_end を見て、古すぎれば書かない。
+ *
+ * ⚠️ **window_end は構造上「前々日」までしか進まない**（2026-09-25 に本番で発覚）。
+ * 集計の材料である `race_results.actual_course_1〜6` は Kファイル同期（`api/cron/kfile-sync.js`、
+ * Vercel Cron の **JST 07:00 / 12:00**）が書き、Kファイル自体が「開催日の夜〜翌日」公開のため、
+ * **前日ぶんの進入コースが埋まるのは当日 JST 07:00**。夜間集計は JST 01:10 で6時間早く、
+ * 前日ぶんを取り込めない。したがって完全性チェックの許容は「前々日以降」でなければならない
+ * （当初は「前日以降」を要求しており、定時実行が3回とも書けずに永久に未生成だった）。
  *
  * ## 日付の扱い
  *
@@ -28,6 +35,7 @@
  */
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import { isDirectRun } from "../lib/isDirectRun.js";
 import {
   EXTRACTION_THRESHOLDS,
   MIN_RUNS,
@@ -39,14 +47,6 @@ import {
   wilsonLowerPercentFromCount,
   normalizeRacerName,
 } from "../../src/utils/digestMetrics.js";
-
-const args = Object.fromEntries(
-  process.argv.slice(2).map((a) => {
-    const [k, v] = a.replace(/^--/, "").split("=");
-    return [k, v ?? true];
-  }),
-);
-const DRY_RUN = Boolean(args["dry-run"]);
 
 /** PostgRESTの1ページあたりの行数 */
 const PAGE_SIZE = 1000;
@@ -66,6 +66,19 @@ const FLYING_DATA_COMPLETE_FROM = "2026-09-21";
 
 /** 当日の会場数が前日のこの割合を下回ったら、出走表の投入が途中とみなして書かない */
 const VENUE_COUNT_MIN_RATIO = 0.7;
+
+/**
+ * 選手集計（racer_course_technique_stats.window_end）に許容する遅れの日数。
+ *
+ * 2 なのは構造上の下限。前日ぶんの進入コースが埋まるのは Kファイル同期の当日 JST 07:00 で、
+ * 夜間集計（JST 01:10）はそれより前に走るため、window_end は必ず「前々日」までになる。
+ * 1 にすると永久に満たせない（2026-09-25 に本番で発生）。
+ * 3 以上にすると「集計が止まっている」という本来検知したい異常を見逃す。
+ *
+ * 影響: 朝の時点の選手集計には前日のレースが入っていない。集計窓は約295日・
+ * 1選手1コースあたり中央値26走なので、1日ぶん（最大1〜2走）の欠落は実質的に無視できる。
+ */
+const STATS_MAX_LAG_DAYS = 2;
 
 function todayJST() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -234,7 +247,8 @@ async function checkCompleteness(date, races, entries) {
     );
   }
 
-  // 夜間バッチが当日ぶん走っているか
+  // 夜間バッチが動いているか。許容は「前々日以降」（STATS_MAX_LAG_DAYS）。
+  // 「前日以降」にすると構造上ぜったいに満たせない（冒頭の⚠️参照）
   const { data: stat, error } = await supabase
     .from("racer_course_technique_stats")
     .select("window_end")
@@ -242,13 +256,14 @@ async function checkCompleteness(date, races, entries) {
     .limit(1)
     .maybeSingle();
   if (error) throw error;
+  const minWindowEnd = addDays(date, -STATS_MAX_LAG_DAYS);
   if (!stat) {
     problems.push(
       "racer_course_technique_stats が空です（夜間バッチが未実行）",
     );
-  } else if (stat.window_end < addDays(date, -1)) {
+  } else if (stat.window_end < minWindowEnd) {
     problems.push(
-      `racer_course_technique_stats.window_end が ${stat.window_end} で古すぎます（${addDays(date, -1)} 以降が必要）`,
+      `racer_course_technique_stats.window_end が ${stat.window_end} で古すぎます（${minWindowEnd} 以降が必要）`,
     );
   }
 
@@ -755,17 +770,32 @@ async function write(date, dayRow, rows) {
 
 // ---------------------------------------------------------------------------
 
-async function main() {
+/**
+ * 1日ぶんを生成して書き込む。Vercel Cron（api/cron/morning-digest.js）と CLI の
+ * 両方から呼ぶ（ADR-0066 §改訂1）。
+ *
+ * 戻り値は共通ラッパ（scripts/lib/scrapeJobs/cronWrapper.js）の run() の契約に合わせる。
+ * **完全性チェックを満たさないときは `incomplete: true` を返す**。ラッパはこのとき
+ * 対象日を処理済みにしないため、後続のスロット（06:30 / 08:00）がもう一度処理する。
+ *
+ * @param {{date?: string|null, dryRun?: boolean}} [opts]
+ * @returns {Promise<{outcome: "ok", rowsWritten: number, rowsExpected?: number,
+ *   rowsParsed?: number, incomplete?: boolean, report: object}>}
+ */
+export async function runMorningDigest({
+  date: dateArg = null,
+  dryRun = false,
+} = {}) {
   if (!isSupabaseEnabled()) {
     throw new Error(
       "Supabaseの環境変数が未設定です（SUPABASE_URL / SUPABASE_SERVICE_KEY）",
     );
   }
 
-  const date = typeof args.date === "string" ? args.date : todayJST();
+  const date = typeof dateArg === "string" && dateArg ? dateArg : todayJST();
   const prevDate = addDays(date, -1);
   console.log(
-    `本日のデータ一覧を生成します（対象 ${date} JST / 前日 ${prevDate}${DRY_RUN ? " / dry-run" : ""}）`,
+    `本日のデータ一覧を生成します（対象 ${date} JST / 前日 ${prevDate}${dryRun ? " / dry-run" : ""}）`,
   );
 
   const races = await fetchRaces(date);
@@ -777,10 +807,14 @@ async function main() {
     console.log("\n完全性チェックを満たさないため、書き込まずに終了します:");
     for (const p of problems) console.log(`  - ${p}`);
     console.log(
-      "\n（次回の実行で再試行されます。2回目でも満たせない場合はジョブを失敗させてください）",
+      "\n（次回の実行で再試行されます。最終回でも満たせない場合はジョブを失敗させてください）",
     );
-    process.exitCode = 0;
-    return;
+    return {
+      outcome: "ok",
+      incomplete: true,
+      rowsWritten: 0,
+      report: { targetDate: date, problems },
+    };
   }
   console.log(
     `  完全性チェック: OK（${new Set(races.map((r) => r.venue_code)).size}会場 ${races.length}レース ${entries.length}艇）`,
@@ -878,7 +912,20 @@ async function main() {
     },
   };
 
-  if (DRY_RUN) {
+  const byGradeReport = {};
+  for (const r of rows) {
+    const k = r.detail?.baselineGrade;
+    if (k) byGradeReport[k] = (byGradeReport[k] ?? 0) + 1;
+  }
+  const report = {
+    targetDate: date,
+    venueCount: dayRow.venue_count,
+    raceCount: dayRow.race_count,
+    sectionCounts: dayRow.notes?.sectionCounts,
+    baselineGrades: byGradeReport,
+  };
+
+  if (dryRun) {
     console.log("\n[dry-run] 書き込みません。先頭5行:");
     for (const r of rows.slice(0, 5)) {
       console.log(
@@ -888,24 +935,47 @@ async function main() {
       );
     }
     // 会場平均にどのセルを使ったかの内訳。画面のラベルがこれと一致している必要がある
-    const byGrade = new Map();
-    for (const r of rows) {
-      if (!r.detail?.baselineGrade) continue;
-      const k = r.detail.baselineGrade;
-      byGrade.set(k, (byGrade.get(k) ?? 0) + 1);
-    }
     console.log(
-      `  会場平均に使ったセル: ${[...byGrade].map(([k, v]) => `${k}=${v}`).join(" / ")}`,
+      `  会場平均に使ったセル: ${Object.entries(byGradeReport)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(" / ")}`,
     );
     console.log("\n完了しました（dry-run のため書き込んでいません）");
-    return;
+    return {
+      outcome: "ok",
+      rowsWritten: 0,
+      report: { ...report, dryRun: true },
+    };
   }
 
   await write(date, dayRow, rows);
   console.log(`\n完了しました（${rows.length} 行を書き込みました）`);
+  return {
+    outcome: "ok",
+    rowsWritten: rows.length,
+    // 0行を成功にしない（applyZeroRowGuard は `rowsExpected > 0 && rowsParsed === 0`
+    // のときだけ error にする）。両方に rows.length を入れると、0件のとき
+    // rowsExpected も0になり判定が働かない。完全性チェックを通った＝開催日なので、
+    // 1行も出ないのは異常として扱う（verify-morning-digest.js の判定とも揃う）
+    rowsExpected: 1,
+    rowsParsed: rows.length,
+    report,
+  };
 }
 
-main().catch((error) => {
-  console.error("\n失敗しました:", error.message);
-  process.exit(1);
-});
+// --- CLI（node scripts/daily/generate-morning-digest.js [--date=…] [--dry-run]） ---
+if (isDirectRun(import.meta.url)) {
+  const args = Object.fromEntries(
+    process.argv.slice(2).map((a) => {
+      const [k, v] = a.replace(/^--/, "").split("=");
+      return [k, v ?? true];
+    }),
+  );
+  runMorningDigest({
+    date: typeof args.date === "string" ? args.date : null,
+    dryRun: Boolean(args["dry-run"]),
+  }).catch((error) => {
+    console.error("\n失敗しました:", error.message);
+    process.exit(1);
+  });
+}

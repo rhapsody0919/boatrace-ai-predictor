@@ -37,8 +37,7 @@
 
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
 import { upsertChangedRows, formatSkipSummary } from "../lib/unchangedRows.js";
-
-const DRY_RUN = process.argv.includes("--dry-run");
+import { isDirectRun } from "../lib/isDirectRun.js";
 
 /** ベースラインのセルを採用する最低母数。未満なら race_grade='ALL' へフォールバックする */
 const MIN_BASELINE_RUNS = 100;
@@ -201,7 +200,13 @@ function checkRacerStats(rows) {
   return problems;
 }
 
-async function main() {
+/**
+ * 集計を実行して2表へ書き込む。Vercel Cron（api/cron/racer-course-technique-stats.js）と
+ * CLI の両方から呼ぶ（ADR-0066 §改訂1）。戻り値は共通ラッパの run() の契約に合わせる。
+ *
+ * @param {{dryRun?: boolean}} [opts]
+ */
+export async function runRacerCourseTechniqueStats({ dryRun = false } = {}) {
   if (!isSupabaseEnabled()) {
     throw new Error(
       "Supabaseの環境変数が未設定です（SUPABASE_URL / SUPABASE_SERVICE_KEY）",
@@ -210,7 +215,7 @@ async function main() {
 
   const today = todayJST();
   console.log(
-    `選手×コース別の決まり手集計を開始します（${today} JST${DRY_RUN ? " / dry-run" : ""}）`,
+    `選手×コース別の決まり手集計を開始します（${today} JST${dryRun ? " / dry-run" : ""}）`,
   );
 
   // --- 1. 会場 × グレード × コースのベースライン ---
@@ -257,7 +262,7 @@ async function main() {
       ignoreColumns: ["last_updated"],
       chunkColumn: "venue_code",
       label: "venue_course_technique_baseline",
-      dryRun: DRY_RUN,
+      dryRun,
       stampUpdatedAt: true,
     },
   );
@@ -273,7 +278,7 @@ async function main() {
   // racer 側のRPCは venue_course_technique_baseline を読むため、1の書き込み後に呼ぶ。
   // dry-run では1が書かれていないので、表がまだ空なら選手側の期待値は全てNULLになる。
   // それを「整合チェックの失敗」として報告すると原因が分かりにくいため、先に区別する。
-  if (DRY_RUN) {
+  if (dryRun) {
     const { count, error } = await supabase
       .from("venue_course_technique_baseline")
       .select("*", { count: "exact", head: true });
@@ -285,17 +290,21 @@ async function main() {
           "\n         本番実行（--dry-run なし）でベースラインを投入してから、もう一度 dry-run してください。",
       );
       console.log("\n完了しました（dry-run のため書き込んでいません）");
-      return;
+      return {
+        outcome: "ok",
+        rowsWritten: 0,
+        report: { dryRun: true, skipped: "baseline_empty" },
+      };
     }
     console.log(
       `\n[dry-run] ベースラインを書き込んでいないため、選手側の期待値は既存の ${count} 行を参照します`,
     );
   }
 
-  const racerRows = await callAggregate("compute_racer_course_technique_stats", [
-    "racer_id",
-    "course",
-  ]);
+  const racerRows = await callAggregate(
+    "compute_racer_course_technique_stats",
+    ["racer_id", "course"],
+  );
   console.log(
     `\n[racer_course_technique_stats] 集計結果 ${racerRows.length} 行（${
       new Set(racerRows.map((r) => r.racer_id)).size
@@ -328,7 +337,7 @@ async function main() {
       ignoreColumns: ["last_updated"],
       chunkColumn: "racer_id",
       label: "racer_course_technique_stats",
-      dryRun: DRY_RUN,
+      dryRun,
       stampUpdatedAt: true,
     },
   );
@@ -340,11 +349,33 @@ async function main() {
   );
 
   console.log(
-    `\n完了しました${DRY_RUN ? "（dry-run のため書き込んでいません）" : ""}`,
+    `\n完了しました${dryRun ? "（dry-run のため書き込んでいません）" : ""}`,
   );
+  return {
+    outcome: "ok",
+    // upsertChangedRows は written を**トップレベル**で返す（stats.written ではない）
+    rowsWritten: (baselineResult.written ?? 0) + (racerResult.written ?? 0),
+    // 「変更なしで書き込み0件」は正常なので rowsWritten では判定しない。
+    // applyZeroRowGuard は `rowsExpected > 0 && rowsParsed === 0` のときだけ error にするため、
+    // rowsExpected には定数 1（＝集計結果が1行以上あるはず）を渡す。
+    // 両方に同じ集計行数を入れると、0件のとき rowsExpected も0になり判定が働かない
+    rowsExpected: 1,
+    rowsParsed: baselineRows.length + racerRows.length,
+    report: {
+      windowStart: baselineRows[0]?.window_start ?? null,
+      windowEnd: baselineRows[0]?.window_end ?? null,
+      baselineRows: baselineRows.length,
+      racerRows: racerRows.length,
+    },
+  };
 }
 
-main().catch((error) => {
-  console.error("\n失敗しました:", error.message);
-  process.exit(1);
-});
+// --- CLI（node scripts/daily/update-racer-course-technique-stats.js [--dry-run]） ---
+if (isDirectRun(import.meta.url)) {
+  runRacerCourseTechniqueStats({
+    dryRun: process.argv.includes("--dry-run"),
+  }).catch((error) => {
+    console.error("\n失敗しました:", error.message);
+    process.exit(1);
+  });
+}

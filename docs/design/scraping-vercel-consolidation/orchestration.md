@@ -21,6 +21,7 @@
 | オッズの窓内取得率（±3分、9/17・9/18の360レース） | 60分前84.7% / 30分前86.7% / 15分前88.1% / 10分前87.8% / 5分前89.4% / 0分前87.2%（欠落率2%基準に未達。「存在判定」ではほぼ100%だった） |
 | WS1の実測レポート（PR #714、`scripts/analysis/data-health-report.js`、ベースライン`data/analysis/data-health/2026-09-19.json`。直近7日） | 窓内取得率: 60分前89.6% / 30分前92.3% / 15分前92.5% / 10分前92.6% / 5分前93.0% / 0分前43.4%（全て98%未達。0分前は9/16から保存が始まった。9/16 18:04〜21:58 JSTの障害を除いても90.4〜94.1%）。展示: 行の有無99.5%、展示タイム非NULL基準98.2%（未達）。全券種オッズ: 21.7%（9/16から保存、9/17・9/18は100%）。rank4〜6: 96.4%（欠場・失格を含み構造的に100%にならない可能性、原因未調査）。月別の結果充足率: 2025-12が93.0%、2026-01が94.5%、2026-03が91.0%（欠落は全て`race_results`に行が無いもの）。ジョブ: `scrape-racer-season-stats`は実行履歴0件、`scrape-venue-motor-stats`は最終実行が失敗（原因は`git push`のmasterとの競合、BOA-360。データは書き込み済み） |
 | GitHub Actionsのスケジュール起動の遅延（実行履歴の`createdAt`、2026-09-14〜18） | `scrape-point-rank`は22:00 JST指定に対し、実際の起動は翌01:51〜02:24 JST（約4時間遅れ）。`scrape-venue-motor-stats`は6:00 JST指定に対し、約08:04〜08:42 JST起動（約2〜2.7時間遅れ）。`schedule`起動は定刻を保証せず、日付やレースの生成タイミングに依存するジョブが、日付を取り違える原因になった（`racer_series_points`が0件だった直接原因。BOA-291、PR #715）。Vercel Cronへの一本化（ADR-0066）を裏づける実測。BOA-343のジョブ一覧（PR #722）の実測: GitHub自身のフォールバックcronは、約46時間で9件しか起動せず（理論値は約184回）、ほぼ機能していない。cron-job.orgの5分間隔の`workflow_dispatch`は391件すべて定刻。`scrape-scheduled`は400件中47件（11.8%）がキャンセルされ、成功した実行の所要時間は中央値5.1分、90パーセンタイル10分 |
+| GitHub Actionsのスケジュール起動の遅延（追加実測、2026-09-24〜25。BOA-402） | `aggregate-racer-course-technique-stats`は16:10 UTC指定に対し実際19:57 UTC（+3h47m）。`generate-morning-digest`は20:30/21:30/23:00 UTC指定に対し23:18/23:57/翌01:11 UTC（+2h11m〜+2h48m）。`update-winning-technique-stats`は15:35 UTC指定に対し18:16〜20:05 UTC（5日連続、+2h41m〜+4h30m）。**2026-09-19のベースラインと同じ傾向が3ヶ月近く経っても続いている**。対照的にVercel Cronの`kfile_sync`は07:00 JST指定に対し07:00:20 JSTに成功しており定刻 |
 | 取得時刻列 | `race_odds.captured_at`のみ。`exhibition_data`・`race_entries`・`race_start_timings`・`predictions`に無い（`race_conditions`は`created_at`のみ。`race_results`は`created_at`と`result_at`、`predictions`は`predicted_at`を持つが、いずれも最終書き込み時刻で、買い目オッズ更新などでも更新される。`race_results.result_at`は9/15〜9/19の全742行で非NULL。訂正: 当初「`predictions`に無い」「`race_results`は`created_at`のみ」と書いたのは、列名の確認漏れ）。展示のタイミングは現状、計測不能 |
 | 空テーブル | `racer_series_points` 0件、`racer_profiles.ability_index` 0/1,627件、`race_special_notes` 0件（正常か不明） |
 | 履歴 | `races`は2025-12-03〜。結果の充足率は2025-12が93%、2026-03が91%（他月は98〜99.7%） |
@@ -92,6 +93,7 @@
 | 日付 | 決定 | 根拠・詳細 |
 |---|---|---|
 | 2026-09-19 | データ取得基盤をVercel Functions + Vercel Cronに一本化する | [ADR-0066](../../adr/0066-scraping-execution-consolidation-to-vercel.md) |
+| 2026-09-25 | **ADR-0066の「対象外（GitHub Actionsのまま）」の線引きを、カテゴリから「実測の実行時間」に変える**。外部サイトを取得せず、関数の `maxDuration`（最大300秒）に十分な余裕をもって収まるジョブは、DB内集計であってもVercel Cronへ移してよい。Node側で実際に長時間CPUを使うもの（`train-*` 等）は引き続き対象外 | [ADR-0066 §改訂1](../../adr/0066-scraping-execution-consolidation-to-vercel.md)。BOA-402 の2ジョブ（集計27.0秒・生成5.5秒、重い処理はPostgres側のRPC）を移した。**このWSでGitHub Actions側の集計ジョブを触る際は、同じ基準で移行可否を判断してよい** |
 | 2026-09-19 | 完了の定義: (A)過去のバックフィルを含む期待件数、(B)可変データの窓内取得率、(C)自動の継続監視 | `.claude/rules/data-acquisition.md` |
 | 2026-09-19 | Supabaseの計算リソースをSmallへ変更（済） | BOA-357 |
 | 2026-09-19 | 公式サイトのコンテンツの再表示: リスクを認識したうえで、現状の方針を維持する（弁護士等への確認は行わない） | [ADR-0067](../../adr/0067-official-site-content-redisplay-policy.md) |

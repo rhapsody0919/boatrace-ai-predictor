@@ -21,9 +21,12 @@ name: Aggregate Racer Course Technique Stats
 # continue-on-error は付けない（ジョブ全体を成功に見せない）。
 # スクリプト側は「集計結果が0行」と「変更が無くて書き込みが0行」を区別し、
 # 前者だけをエラーにする。
+# ⚠️ 定時実行は Vercel Cron（api/cron/racer-course-technique-stats.js、vercel.json の
+# `0 4 * * *` = JST 13:00）へ移した（ADR-0066 §改訂1）。
+# 旧 JST 01:10 は、材料である race_results.actual_course_* を書く kfile_sync（07:00 JST）より
+# 6時間早く、前日ぶんを取り込めなかった（plan.md §2.4）。ここに schedule を復活させないこと。
+# このワークフローは、障害時の手動復旧用に残している。
 on:
-  schedule:
-    - cron: "10 16 * * *" # JST 01:10 (UTC 16:10)
   workflow_dispatch:
 
 permissions:

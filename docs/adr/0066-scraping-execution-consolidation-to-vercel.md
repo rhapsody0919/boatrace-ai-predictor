@@ -29,7 +29,7 @@
 
 - **新規**: GitHub Actions・cron-job.orgに、新規の取得ジョブを追加しない
 - **既存**: 段階的にVercelへ移行し、移行完了後にcron-job.orgのジョブと取得系GitHub Actionsワークフローを廃止する。移行の順序・粒度は別途specで確定する（`scrape-scheduled`は結果・オッズ・レース情報が同居しているため、分割が前提）。旧基盤の廃止条件は「`morning-init`を含む全取得処理の移行完了」とする
-- **対象外（GitHub Actionsのまま）**: 取得済みデータのDB内集計・統計更新（`aggregate-stats`・`update-*-stats`等）、モデル学習・予測生成（`train-*`・`generate-*`）、SNS・コンテンツ・sitemap系。外部サイトを取得せず、長時間のCPU処理を含むため。ただし「展示取得→予測リフレッシュ」のような取得との連動は、移行specで扱いを決める
+- **対象外（GitHub Actionsのまま）**: 取得済みデータのDB内集計・統計更新（`aggregate-stats`・`update-*-stats`等）、モデル学習・予測生成（`train-*`・`generate-*`）、SNS・コンテンツ・sitemap系。外部サイトを取得せず、長時間のCPU処理を含むため。**→ この区分は §改訂1（2026-09-25）で「実測の実行時間」基準に改めた。**ただし「展示取得→予測リフレッシュ」のような取得との連動は、移行specで扱いを決める
 - **移行対象に含める（対象外としない）**: 取得系である`morning-init.js`（レース・出走表の初期化。`scrape-to-json.js`→`races.json`、`execSync`・`git log`に依存）。全Vercel関数が`getRaceSchedule`経由で`races`に依存するため、`races`の初期化がGitHub Actionsに残ると、取得系GitHub Actionsを廃止できない
 - **関数のリージョン**: DBはap-southeast-2（シドニー）。関数のリージョンはsyd1・hnd1を、DBへの往復とboatrace.jpの取得の遅延を実測して決める
 - **バックフィル・過去分の一括取得**: Cronではなく手動実行のCLI（`scripts/maintenance/`）で行う。ただし取得ロジックは定期実行と同じ共有関数を使い、二重実装しない
@@ -58,3 +58,47 @@
 - 展示取得のGitHub Actionsスキップ（2026-09-16〜）以降、展示更新が予測リフレッシュの起動条件（`scrape-scheduled.js`の`anyUpdated`）に入らなくなっている。実害は未検証（`predictions.predicted_at`は買い目オッズ更新でも更新されるため判別不能）。移行specで、展示→予測リフレッシュの連動を扱う
 - Supabaseでdisk IO budget枯渇の警告が出ている（2026-09-19）。移行後の書き込み量を増やさない設計にする（条件付きupsert、変更の無い行を書かない、Cron頻度の見直し）。移行はDisk IO対策（orchestration.mdのWS8）と並行して進める
 - 移行specは、既存の`docs/design/scraping-full-coverage/`と`docs/design/scraping-serverless-migration/`を統合改訂する（新規に三重管理しない）。体制の正本は`docs/design/scraping-vercel-consolidation/orchestration.md`
+
+---
+
+## 改訂1（2026-09-25）: 対象外の線引きを「カテゴリ」から「実測の実行時間」に変える
+
+### 何が起きたか
+
+「本日のデータ一覧」（`/today`、BOA-402）が、定時実行では**一度も生成できていなかった**。原因は2つあり、どちらも本ADRの「対象外（GitHub Actionsのまま）」という区分に由来する。
+
+1. **実行順序の破綻**: 集計（GitHub Actions、JST 01:10）が、材料である `race_results.actual_course_*` を書く `kfile-sync`（Vercel Cron、JST 07:00）より6時間早く、前日ぶんを取り込めなかった。基盤が分かれていたため、依存関係が時刻でしか表現できず、しかも噛み合っていなかった
+2. **定刻性**: GitHub Actions の定時実行は、このリポジトリの実測で **2.5〜4.5時間遅れるのが常態**だった（5日連続で観測）。朝に出ることが価値の中心のページで、JST 05:30 を狙っても実際の公開は 08:00〜12:30 になる
+
+| ワークフロー | 予定(UTC) | 実際(UTC) | 遅れ |
+|---|---|---|---|
+| `aggregate-racer-course-technique-stats` | 16:10 | 19:57 | +3h47m |
+| `generate-morning-digest`（3スロット） | 20:30 / 21:30 / 23:00 | 23:18 / 23:57 / 翌01:11 | +2h11m〜+2h48m |
+| `update-winning-technique-stats` | 15:35 | 18:16〜20:05（5日連続） | +2h41m〜+4h30m |
+
+対照的に、Vercel Cron の `kfile_sync` は JST 07:00:20 に成功しており、定刻に起動している。
+
+### 決定
+
+**「取得済みデータのDB内集計」を一律に対象外とするのをやめ、実測の実行時間で線を引く。**
+
+- 本ADR本文が対象外の理由に挙げた「**長時間のCPU処理を含むため**」は、集計ジョブ一般に当てはまるわけではない。重い処理がSQL（Postgres側）にあるジョブは、Node側の実行時間が短く、Vercel Functionsの制約に収まる
+- **関数の `maxDuration`（このプロジェクトでは最大300秒）に十分な余裕をもって収まり、外部サイトを取得しないジョブは、Vercel Cron へ移してよい**
+- モデル学習・予測生成（`train-*`）のように、Node側で実際に長時間CPUを使うものは引き続き対象外
+
+### 今回移したジョブ（実測）
+
+| ジョブ | 実測の実行時間 | 重い処理の場所 | 移行後の時刻(JST) |
+|---|---|---|---|
+| `racer_course_technique_stats`（旧 `aggregate-racer-course-technique-stats.yml`） | **27.0秒** | 2つのSQL RPC（Postgres側）。Node側は9,471行のページングと upsert のみ | **13:00** / 17:00（補足） |
+| `morning_digest`（旧 `generate-morning-digest.yml`） | **5.5秒** | 同じくDBの読み書きのみ | **05:30** / 06:30 / 08:00（補足） |
+
+集計を 01:10 → **13:00** にしたのは、`kfile_sync`（07:00 / 12:00）より後にして前日ぶんの進入コースを取り込むため。これで翌朝 05:30 の生成まで約16時間の余裕ができる。
+
+### 影響
+
+- 依存関係（`kfile_sync` → 集計 → ダイジェスト）が1つの基盤の中で完結し、時刻の前後関係を1箇所（`vercel.json`）で読めるようになった
+- 共通ラッパ（`scripts/lib/scrapeJobs/cronWrapper.js`）に乗ったため、CRON_SECRET認証・リース（二重起動防止）・`off`/`shadow`/`live` のモード切替・`scrape_job_state` への実行記録・既存の監視（`evaluateJobStates` の連続失敗アラート）が自動で付いた
+- 旧ワークフローは **`workflow_dispatch` のみ残した**（`schedule` を削除）。障害時の手動復旧・任意日のバックフィルに使う
+- **ジョブの有効化には `scrape_job_state` への行の投入が要る**（マイグレーション 099）。行が無い間は `off` 扱いで何も書かない
+- GitHub Actions のログ保持と比べ、Vercel の関数ログは保持が短い。実行の記録は `scrape_job_state.last_report` に残す設計で補う
