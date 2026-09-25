@@ -14,6 +14,9 @@
  *   (f) 展示取得（scrape-exhibition-data.js）が、実際に書き込んだレースを changedRaceIds で返す
  *   (g) 併走の排他: 案1の状態（GitHub は upsert・Vercel も upsert）で、同じレースを同時に再計算しても、
  *       予測が空にならず、書き込みが衝突して失敗しない。従来の replace 同士の併走では失敗しうる（現行の弱点）
+ *   (i) cancellation_status の除外（BOA-411）: races.cancellation_status が非NULL（tentative/confirmed）の
+ *       レースは、race_entries が事前スクレイピング済みでも予測を生成しない。開催されなかったレースに
+ *       predictions が誤生成される不具合の再発防止（is_hit_win 等が永遠に未確定のまま残存する）
  *
  * 実行: node scripts/maintenance/verify-prediction-refresh.js
  */
@@ -1080,6 +1083,54 @@ async function quiet(fn) {
         !/generate-predictions/.test(entry.replace(/\/\*[\s\S]*?\*\//g, "")),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// (i) cancellation_status の除外（BOA-411）
+// ---------------------------------------------------------------------------
+{
+  const ids = raceIdsOf(3);
+  const tables = raceTables(ids);
+  // 3レース中、末尾2件を中止・順延検知済みにする（race_entries は3件とも存在＝
+  // 事前スクレイピング済みでも、cancellation_status を見て除外できるかを検証する）
+  tables.races = [
+    { race_id: ids[0], race_grade: "一般", cancellation_status: null },
+    { race_id: ids[1], race_grade: "一般", cancellation_status: "tentative" },
+    { race_id: ids[2], race_grade: "一般", cancellation_status: "confirmed" },
+  ];
+  const fake = createFakeClient({ tables });
+  const result = await quiet(() =>
+    mainRefresh({
+      isDryRun: false,
+      specificRaceIds: ids,
+      client: fake,
+      writeMode: "upsert",
+      now: () => NOW,
+    }),
+  );
+  const predictedRaceIds = new Set(
+    fake.state.predictions.map((p) => p.race_id),
+  );
+  check(
+    "mainRefresh: cancellation_status が非NULL（tentative/confirmed）のレースは予測を生成しない（通常レースの1件のみ3行=standard/safeBet/upsetFocus生成）",
+    !result.error &&
+      predictedRaceIds.has(ids[0]) &&
+      !predictedRaceIds.has(ids[1]) &&
+      !predictedRaceIds.has(ids[2]) &&
+      fake.state.predictions.length === 3,
+    `予測のあるレース: ${show([...predictedRaceIds])} / ${fake.state.predictions.length}行 / ${result.error?.message ?? ""}`,
+  );
+  check(
+    "mainRefresh: 除外したレースをログに出力する（race_id と cancellation_status の値を含む）",
+    result.lines.some(
+      (l) => l.includes(ids[1]) && l.includes("cancellation_status=tentative"),
+    ) &&
+      result.lines.some(
+        (l) =>
+          l.includes(ids[2]) && l.includes("cancellation_status=confirmed"),
+      ),
+    show(result.lines.filter((l) => l.includes("スキップ"))),
+  );
 }
 
 if (failures > 0) {
