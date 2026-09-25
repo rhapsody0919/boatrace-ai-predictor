@@ -510,8 +510,15 @@ export function buildMeetResults(records, { raceId, venueCode }) {
 
 /** 今節の平均STが通常値とこれだけ違えば「踏んでいる／慎重」と言い切る閾値（秒） */
 export const MEET_ST_DIFF_THRESHOLD = 0.01;
-/** 今節の展示タイムがこれだけ動けば「上向き／下向き」と言い切る閾値（秒） */
-export const MEET_EXHIBITION_DIFF_THRESHOLD = 0.03;
+/**
+ * 今節の展示**順位**がこれだけ動けば「上向き／下向き」と言い切る閾値（位）。
+ *
+ * 当初は展示タイムの絶対値（±0.03秒）で判定していたが、**水面の影響を拾って
+ * しまう**ことが実測で分かった（桐生の会場平均は2026-09-20〜25で
+ * 6.763〜6.865と日によって0.10秒動き、水面が重い日に6艇中5艇へ
+ * 「下向き」が出た）。同じレース内の順位なら、その日の水面は相殺される
+ */
+export const MEET_EXHIBITION_DIFF_THRESHOLD = 1;
 
 /**
  * 今節の「変化」を出す（phase a FR-3 Phase A、純関数）。
@@ -546,9 +553,16 @@ export function buildMeetTrend(meet, allRecords) {
       ? meetRates.avgSt - baseRates.avgSt
       : null;
 
-  const exhibitions = meetRows
-    .filter((r) => typeof r.exhibitionTime === "number")
-    .map((r) => r.exhibitionTime);
+  // 展示は**順位**で見る。絶対値の推移は水面の影響を拾ってしまう
+  // （桐生の会場平均は2026-09-20〜25で6.763〜6.865と日によって0.10秒動く。
+  //  実際、閾値±0.03では水面が重い日に6艇中5艇へ「下向き」が出た）
+  const exhibitionRows = meetRows.filter(
+    (r) => typeof r.exhibitionRank === "number",
+  );
+  const exhibitions = exhibitionRows.map((r) => r.exhibitionRank);
+  const times = exhibitionRows.map((r) =>
+    typeof r.exhibitionTime === "number" ? r.exhibitionTime : null,
+  );
   const first = exhibitions.length > 0 ? exhibitions[0] : null;
   const last =
     exhibitions.length > 0 ? exhibitions[exhibitions.length - 1] : null;
@@ -562,9 +576,14 @@ export function buildMeetTrend(meet, allRecords) {
       diff: stDiff,
     },
     exhibition: {
+      // 展示順位（1が最速）。時計も併記できるよう生値を持たせる
       first,
       last,
-      // 1走しか無ければ「推移」ではないので差は出さない
+      firstTime: times.length > 0 ? times[0] : null,
+      lastTime: times.length > 0 ? times[times.length - 1] : null,
+      // 1走しか無ければ「推移」ではないので差は出さない。
+      // 順位は小さいほど良いので、負なら上向き（速くなった）で符号の向きは
+      // STと揃う
       diff: exhibitions.length >= 2 ? last - first : null,
       n: exhibitions.length,
     },

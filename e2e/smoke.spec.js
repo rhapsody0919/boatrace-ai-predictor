@@ -1458,6 +1458,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(score).toContainText("今節の得点率 3.67（6走・当社計算）");
     await expect(score).toContainText("1着 4.57");
     await expect(score).toContainText("6着 3.29");
+    // 得点率は単独では読めないので、節の中での位置と準優の枠までの距離を添える。
+    // この節は48名・準優4個レース=24枠で、この選手は33位（DB実測）
+    await expect(score).toContainText("節内 33位 / 48人");
+    await expect(score).toContainText("準優の目安（24位）");
 
     // 生データの前に「通常値との差」を出す（FR-3 Phase A）。
     // 登番4872のこの節は 今節ST 0.202 / 通常 0.184（154走）、
@@ -1465,8 +1469,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const trend = page.locator(".rbit-meet-trend");
     await expect(trend).toContainText("今節の平均ST 0.20（6走）／通常 0.18");
     await expect(trend).toContainText("慎重");
-    await expect(trend).toContainText("展示タイム 6.81 → 6.69（6走）");
-    await expect(trend).toContainText("上向き");
+    // 展示は**順位**で見る（絶対値だと水面の影響を拾う）。この選手は
+    // タイムは 6.81→6.69 と速くなっているのに順位は1位→3位で落ちている
+    await expect(trend).toContainText("展示順位 1位 → 3位（6走・6.81→6.69）");
+    await expect(trend).toContainText("2つ下向き");
 
     // 同じ節の走しか並ばない列（会場・レース名・グレード・種別）は省くので、
     // 日付/R/枠番/進入/ST/着順/決まり手/単勝配当 の8列になる

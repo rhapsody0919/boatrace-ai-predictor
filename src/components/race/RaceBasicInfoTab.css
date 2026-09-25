@@ -462,3 +462,18 @@
   color: var(--text-secondary);
   line-height: 1.6;
 }
+
+/* 節内順位と準優の枠までの距離。得点率の右に続けて出す */
+.rbit-meet-rank {
+  margin-left: var(--spacing-2);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.rbit-meet-border {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}

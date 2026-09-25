@@ -95,3 +95,58 @@ export function forecastSeriesScore(current) {
     rate: (points + SCORE_POINTS[rank]) / (runs + 1),
   }));
 }
+
+/**
+ * 準優勝戦の既定の枠数。直近2ヶ月の実測では129節中118節が3個レース＝18名
+ * （4個=24名が3節、2個=12名が7節、1個=6名が1節）。節の準優が既に組まれていれば
+ * 実数を使い、予選中で未定のときだけこの既定値を目安として使う
+ */
+export const SEMIFINAL_DEFAULT_SLOTS = 18;
+
+/**
+ * 節の全選手の得点率を計算して順位を付ける（純関数）。
+ *
+ * 得点率は**単独では読めない**（「3.67」だけでは準優に乗るか分からない）。
+ * 節の中での位置と、準優の枠に対する距離を出して初めて判断材料になる。
+ *
+ * @param {{entries: Array<Object>}|null} scoreboard `getMeetScoreboard` の戻り値
+ * @returns {Array<{racerId: number, playerName: string, points: number,
+ *   runs: number, rate: number, rank: number}>} 得点率の降順。同率は同順位
+ */
+export function buildMeetRanking(scoreboard) {
+  const entries = scoreboard?.entries;
+  if (!Array.isArray(entries) || entries.length === 0) return [];
+
+  const byRacer = new Map();
+  entries.forEach((e) => {
+    if (!byRacer.has(e.racerId))
+      byRacer.set(e.racerId, { playerName: e.playerName, rows: [] });
+    byRacer.get(e.racerId).rows.push(e);
+  });
+
+  const rows = [...byRacer.entries()]
+    .map(([racerId, { playerName, rows: runs }]) => {
+      const score = computeSeriesScore(runs);
+      return { racerId, playerName, ...score };
+    })
+    .filter((r) => r.rate !== null)
+    .sort((a, b) => b.rate - a.rate);
+
+  // 同率は同順位（1,2,2,4…）。公式の得点率一覧と同じ付け方
+  let rank = 0;
+  let prev = null;
+  return rows.map((r, i) => {
+    if (prev === null || Math.abs(r.rate - prev) > 0.0001) rank = i + 1;
+    prev = r.rate;
+    return { ...r, rank };
+  });
+}
+
+/**
+ * 得点率に小標本の印を付ける走数の下限。
+ *
+ * 節の予選は6走前後で、2走以下だと1走の着順で得点率が2点近く動く
+ * （2走2勝なら10.00、そこから6着を1つ挟むと7.00）。条件別タブの
+ * `SMALL_SAMPLE_THRESHOLD`（n<6）は全期間の集計向けで、節には大きすぎるため別に持つ
+ */
+export const MEET_SMALL_SAMPLE_RUNS = 3;

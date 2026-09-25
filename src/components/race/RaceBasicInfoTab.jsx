@@ -48,6 +48,9 @@ import FlyingBadge from "./FlyingBadge";
 import {
   computeSeriesScore,
   forecastSeriesScore,
+  buildMeetRanking,
+  SEMIFINAL_DEFAULT_SLOTS,
+  MEET_SMALL_SAMPLE_RUNS,
 } from "./seriesPoints";
 import "./RaceBasicInfoTab.css";
 
@@ -106,6 +109,11 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
   // （racerIdsKey / raceDate）が変わらず、再取得が起きないまま
   // 枠もエラーも消えて「失敗がデータなしに化ける」状態になる
   const [periodRetryToken, setPeriodRetryToken] = useState(0);
+  // 節の全選手の得点率（FR-3 Phase B）。得点率は単独では読めないので、
+  // 節の中での順位と準優の枠までの距離を出すために節全体を取る。
+  // **今節タブを開いたときだけ**取得する（+3本・約700行。キーはレース単位で
+  // キャッシュされ、6艇のどれを開いても使い回される）
+  const [meetBoard, setMeetBoard] = useState(undefined);
 
   const sortedPlayers = [...(players ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -160,6 +168,25 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
       cancelled = true;
     };
   }, [racerIdsKey, raceDate, periodRetryToken]);
+
+  useEffect(() => {
+    if (expandedView !== "meet" || !raceId || venueCode === null)
+      return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getMeetScoreboard(raceId, venueCode)
+      .then((data) => {
+        if (!cancelled) setMeetBoard(data);
+      })
+      .catch((err) => {
+        // 節内順位は補助情報。取れなければ得点率だけを出す（カードは消さない）
+        console.error("今節の順位取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setMeetBoard(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [expandedView, raceId, venueCode]);
 
   const ensureScopedStats = useCallback((racerId) => {
     if (!racerId) return;
@@ -657,11 +684,11 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                           ? null
                           : ex.diff <= -MEET_EXHIBITION_DIFF_THRESHOLD
                             ? t("basicInfo.meetTrendExhibitionUp", {
-                                diff: Math.abs(ex.diff).toFixed(2),
+                                diff: Math.abs(ex.diff),
                               })
                             : ex.diff >= MEET_EXHIBITION_DIFF_THRESHOLD
                               ? t("basicInfo.meetTrendExhibitionDown", {
-                                  diff: ex.diff.toFixed(2),
+                                  diff: ex.diff,
                                 })
                               : t("basicInfo.meetTrendExhibitionFlat");
                       return (
@@ -669,16 +696,71 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                           {score.rate !== null && (
                             <div className="rbit-meet-score">
                               <p className="rbit-meet-score-main">
+                                {/* 節の序盤は1走の着順で大きく動く。条件別タブの
+                                    小標本⚠と基準を揃える（あちらは n<6、
+                                    こちらは節が6走前後なので n<3） */}
+                                {score.runs < MEET_SMALL_SAMPLE_RUNS && (
+                                  <span
+                                    className="rbit-conditions-warn"
+                                    title={t("basicInfo.smallSampleTitle")}
+                                  >
+                                    ⚠
+                                  </span>
+                                )}
                                 {t("basicInfo.meetScore", {
                                   rate: score.rate.toFixed(2),
                                   n: score.runs,
                                 })}
+                                {/* 得点率は単独では読めない。節の中での位置と
+                                    準優の枠までの距離を添えて初めて判断材料になる */}
+                                {(() => {
+                                  const ranking = buildMeetRanking(meetBoard);
+                                  const me = ranking.find(
+                                    (r) => r.racerId === player?.racerId,
+                                  );
+                                  if (!me) return null;
+                                  const slots =
+                                    meetBoard?.semifinalSlots ??
+                                    SEMIFINAL_DEFAULT_SLOTS;
+                                  const border = ranking[slots - 1]?.rate;
+                                  return (
+                                    <>
+                                      <span className="rbit-meet-rank">
+                                        {t("basicInfo.meetRank", {
+                                          rank: me.rank,
+                                          total: ranking.length,
+                                        })}
+                                      </span>
+                                      {border !== undefined && (
+                                        <span className="rbit-meet-border">
+                                          {me.rank <= slots
+                                            ? t("basicInfo.meetBorderIn", {
+                                                slots,
+                                              })
+                                            : t("basicInfo.meetBorder", {
+                                                slots,
+                                                rate: border.toFixed(2),
+                                                diff: (
+                                                  border - me.rate
+                                                ).toFixed(2),
+                                              })}
+                                        </span>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                               </p>
                               {/* 「今日この着順なら得点率はこうなる」。勝負駆けの
                                   判断材料そのもので、公式もレースごとに
                                   「得点率早見表」として出している */}
                               <p className="rbit-meet-score-forecast">
-                                {t("basicInfo.meetScoreForecast", {
+                                {meetBoard?.currentStage &&
+                                (meetBoard.currentStage.includes("準優") ||
+                                  meetBoard.currentStage.includes("優勝戦"))
+                                  ? t("basicInfo.meetScoreNoForecast", {
+                                      stage: meetBoard.currentStage,
+                                    })
+                                  : t("basicInfo.meetScoreForecast", {
                                   list: forecastSeriesScore(score)
                                     .map((f) =>
                                       t("basicInfo.meetScoreForecastItem", {
@@ -686,8 +768,8 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                         rate: f.rate.toFixed(2),
                                       }),
                                     )
-                                    .join(" / "),
-                                })}
+                                      .join(" / "),
+                                    })}
                               </p>
                             </div>
                           )}
@@ -722,8 +804,16 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                 <p className="rbit-meet-trend-line">
                                   <span>
                                     {t("basicInfo.meetTrendExhibition", {
-                                      first: ex.first.toFixed(2),
-                                      last: ex.last.toFixed(2),
+                                      first: ex.first,
+                                      last: ex.last,
+                                      firstTime:
+                                        ex.firstTime === null
+                                          ? "—"
+                                          : ex.firstTime.toFixed(2),
+                                      lastTime:
+                                        ex.lastTime === null
+                                          ? "—"
+                                          : ex.lastTime.toFixed(2),
                                       n: ex.n,
                                     })}
                                   </span>
