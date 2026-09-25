@@ -35,6 +35,7 @@
  */
 import { SCRAPE_JOBS, graceMinFor } from "./registry.js";
 import { slotDeadline, slotWindowEnd } from "./time.js";
+import { isCancellationConfirmed } from "../cancellationStatus.js";
 
 export const EXPECTED_UNPUBLISHED = Object.freeze({
   job: "odds",
@@ -104,7 +105,7 @@ export function slotDeadlineOf(slot) {
 
 const isCancelledRace = (slot) =>
   slot.outcome === "cancelled_race" ||
-  slot.races?.cancellation_status === "confirmed";
+  isCancellationConfirmed(slot.races?.cancellation_status);
 
 export const slotKeyOf = (slot) =>
   `${slot.job}:${slot.race_id}:${slot.offset_min}`;

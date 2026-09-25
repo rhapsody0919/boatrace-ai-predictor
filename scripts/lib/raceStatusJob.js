@@ -20,6 +20,7 @@
  * 次の起動が自然に補う。書き込むのは、未確定のレースのみ。
  */
 import { toJstDateString } from "./scrapeJobs/time.js";
+import { isCancellationConfirmed } from "./cancellationStatus.js";
 import { mapWithConcurrency } from "./scrapeJobs/concurrency.js";
 import { BreakerOpenError } from "./scrapeJobs/circuitBreaker.js";
 import {
@@ -115,7 +116,7 @@ export async function runRaceStatusJob(
   const candidates = (racesQuery.data ?? []).filter(
     (r) =>
       r.race_number >= fromRaceByVenue.get(r.venue_code) &&
-      r.cancellation_status !== "confirmed",
+      !isCancellationConfirmed(r.cancellation_status),
   );
   if (candidates.length === 0) return done({ ...base, candidates: 0 });
 

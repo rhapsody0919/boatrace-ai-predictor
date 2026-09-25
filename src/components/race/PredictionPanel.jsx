@@ -69,6 +69,7 @@ import { useRaceData } from "../../hooks/useRaceData";
 import { SocialShareButtons } from "../SocialShareButtons";
 import { generatePredictionShareText } from "../../utils/share";
 import { getVenueGuidePath } from "../../utils/venueUtils";
+import { isRaceCancelled } from "../../utils/raceCancellation";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
 import VenueTendencyPanel from "./VenueTendencyPanel";
@@ -148,7 +149,7 @@ function PredictionPanel({
   const isAwaitingResult = status === RACE_STATUS.AWAITING_RESULT;
   // 中止・順延の確定検知（BOA-254）。暫定検知（"tentative"）はまだ誤検出の
   // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
-  const isCancelled = prediction?.cancellationStatus === "confirmed";
+  const isCancelled = isRaceCancelled(prediction);
 
   // データ出走表・枠番傾向・分析ツール群（レース前の予想材料）を表示するか。
   // 結果/直前情報/モータ情報/AI予想の各タブは、それぞれのタブ内で同種の情報を
