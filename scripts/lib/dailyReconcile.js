@@ -27,6 +27,7 @@ import {
   kVenuesToRaceFacts,
 } from "./raceResultAudit.js";
 import { parseKText } from "./kbFileParser.js";
+import { isCancellationConfirmed } from "./cancellationStatus.js";
 
 /** 不一致の種類。SYNC_PENDING_KINDS は「同期待ち」（最終の照合まで、不一致に数えない） */
 export const SYNC_PENDING_KINDS = Object.freeze([
@@ -250,7 +251,7 @@ export function reconcileDay({
 
   for (const race of races) {
     const fact = kDay.facts.get(race.race_id);
-    if (race.cancellation_status === "confirmed") {
+    if (isCancellationConfirmed(race.cancellation_status)) {
       excludedCancelled.push(race.race_id);
       // 中止と確定しているのに、Kに結果がある（走ったのに中止と判定した）ものは、不整合
       if (fact?.hasRows && fact.finisherBoats.length > 0) {

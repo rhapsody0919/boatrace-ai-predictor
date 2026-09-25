@@ -24,6 +24,7 @@ import {
 } from "../../daily/scrape-results.js";
 import { fetchKFileText, parseKFileRankings } from "../kfileParser.js";
 import { raceStartInstant } from "./time.js";
+import { isCancellationConfirmed } from "../cancellationStatus.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const RACE_ID_RE = /^(\d{4}-\d{2}-\d{2})-(\d{2})-(\d{2})$/;
@@ -209,7 +210,7 @@ export function createResultCatchupRun({
     }
     const isConfirmedCancel = (row) => {
       const race = Array.isArray(row.races) ? row.races[0] : row.races;
-      return race?.cancellation_status === "confirmed";
+      return isCancellationConfirmed(race?.cancellation_status);
     };
     const candidateIds = [
       ...new Set(
@@ -345,7 +346,9 @@ export function createKFileSyncRun({
     const probeDate = ctx.query?.probeDate;
     if (probeDate !== undefined) {
       if (!DATE_RE.test(String(probeDate))) {
-        throw new Error(`probeDate の形式が不正です（YYYY-MM-DD）: ${String(probeDate)}`);
+        throw new Error(
+          `probeDate の形式が不正です（YYYY-MM-DD）: ${String(probeDate)}`,
+        );
       }
       const text = await fetchText(probeDate, { fetchImpl: ctx.politeFetch });
       const probe = {

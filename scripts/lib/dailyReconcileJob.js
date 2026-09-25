@@ -30,6 +30,7 @@
 import { fetchAll } from "./supabaseClient.js";
 import { fetchKFileText } from "./kfileParser.js";
 import { reconcileDay, parseKDay } from "./dailyReconcile.js";
+import { isCancellationConfirmed } from "./cancellationStatus.js";
 import { jstMinutesOfDay } from "./scrapeJobs/time.js";
 
 /** この時刻（JST、分）以降の起動は、最後の照合（cron の 17:30） */
@@ -188,7 +189,7 @@ export async function runDailyReconcileJob(
 
   const inputs = await load(ctx.client, date);
   const candidates = inputs.races.filter(
-    (r) => r.cancellation_status !== "confirmed",
+    (r) => !isCancellationConfirmed(r.cancellation_status),
   );
   if (inputs.races.length === 0) {
     // その日にレースが無い（全会場の休催）。照合するものが無い

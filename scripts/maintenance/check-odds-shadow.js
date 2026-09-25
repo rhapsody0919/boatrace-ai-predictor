@@ -27,6 +27,7 @@ import {
   computeOddsDigest,
 } from "../lib/scrapeJobs/oddsDigest.js";
 import { slotDeadline } from "../lib/scrapeJobs/time.js";
+import { isCancellationConfirmed } from "../lib/cancellationStatus.js";
 import { percentile } from "../lib/scrapeJobs/monitor.js";
 
 const PAGE = 1000;
@@ -171,7 +172,8 @@ async function main() {
   // 窓別の shadow の完了率
   const shadowSlots = slots.filter(
     (s) =>
-      s.run_mode === "shadow" && s.races?.cancellation_status !== "confirmed",
+      s.run_mode === "shadow" &&
+      !isCancellationConfirmed(s.races?.cancellation_status),
   );
   console.log("\n窓別の shadow の完了率（done かつ ok / 着手したスロット）:");
   const windows = [...new Set(shadowSlots.map((s) => s.offset_min))].sort(
