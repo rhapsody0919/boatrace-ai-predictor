@@ -32,6 +32,55 @@ export default defineConfig({
     baseURL: `http://localhost:${port}`,
     trace: "retain-on-failure",
   },
+  // 2026-09-25まで、E2Eは既定ビューポート（1280x720）だけで走っており、
+  // モバイル幅も広いPC幅も一度も検証されていなかった。モバイルファーストのPWAを
+  // 標榜しながら主戦場が未検証で、実際にトップページのブログ一覧が1440px以上で
+  // 右側に大きく空白を作る状態が放置されていた（ADR-0073）。
+  //
+  // 既存の smoke 側は従来どおり1回だけ走らせ（ビューポートも変えない。
+  // レスポンシブ分岐の前提が変わって既存テストが揺れるのを避ける）、
+  // 幅を横断するのは layout.spec.js だけにする。smoke の934件のうち792件は
+  // venue-guide-data.spec.js のデータ検証でブラウザを使わないため多軸化しても
+  // 意味が無く、対象になるのは smoke.spec.js の142件だけ。それを3軸に広げても
+  // 得られるのは主に「モバイルでも同じ要素が見えるか」で、レイアウト崩れの
+  // 検知は専用テストのほうが直接的かつ具体的に失敗理由を出せる。
+  projects: [
+    {
+      name: "smoke",
+      testIgnore: /layout\.spec\.js/,
+    },
+    {
+      name: "layout-mobile",
+      testMatch: /layout\.spec\.js/,
+      use: {
+        viewport: { width: 375, height: 812 },
+        isMobile: true,
+        hasTouch: true,
+      },
+    },
+    // 768 / 1024 は App.css のメディアクエリの境界。ここを飛ばすと、
+    // 「3列に必要な幅に届かず列が落ちる」帯の崩れを見逃す（実際に見逃した）
+    {
+      name: "layout-tablet",
+      testMatch: /layout\.spec\.js/,
+      use: { viewport: { width: 768, height: 1024 } },
+    },
+    {
+      name: "layout-laptop",
+      testMatch: /layout\.spec\.js/,
+      use: { viewport: { width: 1024, height: 768 } },
+    },
+    {
+      name: "layout-desktop",
+      testMatch: /layout\.spec\.js/,
+      use: { viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: "layout-wide",
+      testMatch: /layout\.spec\.js/,
+      use: { viewport: { width: 1920, height: 1080 } },
+    },
+  ],
   webServer: {
     command: `npm run dev -- --port ${port} --strictPort`,
     url: `http://localhost:${port}`,

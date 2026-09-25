@@ -1112,6 +1112,9 @@ input:focus-visible,
    ブログプレビューセクション
    ===================================================== */
 .blog-preview-section {
+  /* カード3枚分の幅（カード上限360px × 3 + gap 1.5rem × 2）。
+     小見出しとカードのグリッドがこの幅を共有することで左端が揃う */
+  --blog-preview-row-width: calc(360px * 3 + 1.5rem * 2);
   margin-top: 3rem;
   padding: 2.5rem;
   background: var(--surface-card);
@@ -1139,14 +1142,32 @@ input:focus-visible,
 .blog-preview-subheading {
   color: var(--text-primary);
   font-size: 1.1rem;
-  margin: 0 0 1rem;
+  /* 下のグリッドと同じ幅・同じ中央位置にして、小見出しとカードの左端を揃える。
+     揃えないと、広い画面でカードだけが中央に寄って小見出しが左に取り残される */
+  max-width: var(--blog-preview-row-width);
+  margin: 0 auto 1rem;
 }
 
 .blog-preview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* auto-fill だとアイテムが足りなくても列の枠が作られるため、カード3枚に対して
+     1440pxで4列・1920pxで5列分の枠ができ、右側に334〜726pxの空白が残っていた
+     （中央寄せの見出し・リード文・CTAボタンと揃わずズレて見える）。
+     auto-fit は余った枠を0pxに潰すので、枚数が減っても空白が残らない。
+
+     カード幅の上限は max-width で箱ごと制限する。トラック側を
+     minmax(280px, 360px) のように固定pxで抑えると列数の刻みが384px単位になり、
+     3列に必要な1128pxに届かない中間幅（約769〜1255px）で列が落ちて
+     800pxで328px・1024pxで168pxの空白が出る（実測。修正前より悪化していた）。
+     1fr のままにして、箱の幅だけを絞るのが正しい。
+
+     中央寄せは justify-content ではなく max-width + margin:auto で行う。
+     justify-content: center はカードが3枚のときしか小見出しと左端が揃わず、
+     2枚で192px・1枚で384pxずれる（実測） */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  max-width: var(--blog-preview-row-width);
   gap: 1.5rem;
-  margin-bottom: 2rem;
+  margin: 0 auto 2rem;
 }
 
 .blog-preview-card {
