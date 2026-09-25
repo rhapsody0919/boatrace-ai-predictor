@@ -13,6 +13,7 @@ import {
   flattenTests,
   groupByReason,
   judge,
+  reportProblems,
   skipReasonOf,
 } from "./check-e2e-skips.js";
 
@@ -77,6 +78,25 @@ check(
 check("statusを拾う", tests.filter((t) => t.status === "skipped").length, 2);
 check("空のレポート", flattenTests({}).length, 0);
 check("suitesがnull", flattenTests({ suites: null }).length, 0);
+// プロジェクト名を拾えないと「プロジェクトが丸ごと欠けた」を検知できない
+check(
+  "projectNameを拾う",
+  flattenTests({
+    suites: [
+      {
+        title: "layout.spec.js",
+        specs: [
+          {
+            title: "横スクロールしない",
+            tests: [{ status: "expected", projectName: "layout-wide" }],
+          },
+        ],
+      },
+    ],
+  })[0].project,
+  "layout-wide",
+);
+check("projectNameが無ければ空文字", tests[0].project, "");
 
 // --- skipの理由 ---
 check(
@@ -111,9 +131,122 @@ check("閾値ちょうどは通す", judge(mk(100, 15), 0.15).ok, true);
 check("閾値を1件超えたら落とす", judge(mk(100, 16), 0.15).ok, false);
 check("率を出す", Number(judge(mk(100, 16), 0.15).rate.toFixed(2)), 0.16);
 check("skipの一覧を返す", judge(mk(10, 3), 0.15).skipped.length, 3);
-check("1件も無いレポートは落とさない", judge([], 0.15).ok, true);
+// judge は率だけを見る。1件も無いときの率は0になるが、それは「合格」ではなく
+// 「率では何も言えない」という意味。落とすのは reportProblems の仕事（下記）。
+check("1件も無いときの率は0", judge([], 0.15).rate, 0);
 check("全部skipなら落とす", judge(mk(10, 10), 0.15).ok, false);
 check("上限1.0なら全skipでも通す", judge(mk(10, 10), 1).ok, true);
+
+// --- 採点できるレポートか（率を見る前の門） ---
+// 率は「走った分」の分数なので、走った数が減れば率も下がる。
+// 「そもそも走っていない」を率で捕まえることは原理的にできないため、
+// ここが緩むと検査は緑のまま何も守らなくなる。落ちる側を必ず確かめる。
+const NOW = Date.parse("2026-09-26T00:00:00Z");
+const freshAt = new Date(NOW - 60_000).toISOString();
+const hoursAgo = (h) => new Date(NOW - h * 3600_000).toISOString();
+
+const mkReport = (over = {}) => ({
+  config: { projects: [{ name: "smoke" }, { name: "layout-wide" }] },
+  errors: [],
+  stats: { startTime: freshAt },
+  ...over,
+});
+const mkRan = (projects) =>
+  projects.map((p, i) => ({
+    title: `t${i}`,
+    status: "expected",
+    project: p,
+    annotations: [],
+  }));
+const bothRan = mkRan(["smoke", "layout-wide"]);
+const probs = (report, tests, opts = {}) =>
+  reportProblems(report, tests, { now: NOW, ...opts });
+
+check("揃っていれば問題なし", probs(mkReport(), bothRan), []);
+
+// 中断した実行は「空」ではなく新鮮なレポートを書く（webServer起動失敗の実測）
+const aborted = mkReport({
+  errors: [{ message: "Error: Process from config.webServer...\n2行目" }],
+  suites: [],
+});
+check("errorsがあれば落とす", probs(aborted, []).length, 2);
+check(
+  "errorsの1行目を出す",
+  probs(aborted, []).some((p) => p.includes("config.webServer")),
+  true,
+);
+check(
+  "errorsの2行目は出さない",
+  probs(aborted, []).some((p) => p.includes("2行目")),
+  false,
+);
+check("テストが0件なら落とす", probs(mkReport(), []).length, 1);
+
+// 設定にある6プロジェクトのうち1つが0件になっても、率はほとんど動かない。
+// 実測: layout-* は各30件で、全体1086件に対し2.8%にすぎない
+check(
+  "プロジェクトが丸ごと欠けたら落とす",
+  probs(mkReport(), mkRan(["smoke"])).length,
+  1,
+);
+check(
+  "欠けたプロジェクト名を出す",
+  probs(mkReport(), mkRan(["smoke"]))[0].includes("layout-wide"),
+  true,
+);
+// `config.projects` は --project で絞っても設定上の全件が載る（実測）ため、
+// 一部だけ走らせた場合は呼び出し側が期待する集合を明示する
+check(
+  "期待する集合を絞れば通す",
+  probs(mkReport(), mkRan(["smoke"]), { expectProjects: ["smoke"] }),
+  [],
+);
+check(
+  "絞った集合にも欠けていれば落とす",
+  probs(mkReport(), mkRan(["smoke"]), {
+    expectProjects: ["smoke", "layout-wide"],
+  }).length,
+  1,
+);
+check(
+  "config.projectsが無ければプロジェクトは見ない",
+  probs(mkReport({ config: {} }), mkRan(["smoke"])),
+  [],
+);
+
+// 直下の e2e-results.json は実行開始時に消えないので、走らせずに採点しかけられる
+check(
+  "古いレポートは落とす",
+  probs(mkReport({ stats: { startTime: hoursAgo(25) } }), bothRan).length,
+  1,
+);
+check(
+  "24時間ちょうどは通す",
+  probs(mkReport({ stats: { startTime: hoursAgo(24) } }), bothRan),
+  [],
+);
+check(
+  "上限を延ばせば通す",
+  probs(mkReport({ stats: { startTime: hoursAgo(25) } }), bothRan, {
+    maxAgeHours: 48,
+  }),
+  [],
+);
+check(
+  "上限を縮めれば落とす",
+  probs(mkReport(), bothRan, { maxAgeHours: 0.001 }).length,
+  1,
+);
+check(
+  "実行時刻が無ければ落とす",
+  probs(mkReport({ stats: {} }), bothRan).length,
+  1,
+);
+check(
+  "実行時刻が壊れていれば落とす",
+  probs(mkReport({ stats: { startTime: "きのう" } }), bothRan).length,
+  1,
+);
 
 // --- 理由ごとの集約とクラスタの検知 ---
 // 率では薄まる。実測（2026-09-25）でも1086件中8件=0.7%と低いのに、
