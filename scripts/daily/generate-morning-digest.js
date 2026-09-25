@@ -14,7 +14,14 @@
  *
  * 夜間バッチ update-racer-course-technique-stats.js（JST 01:10）が
  * venue_course_technique_baseline / racer_course_technique_stats を更新済みであること。
- * 完全性チェックで window_end を見て、古ければ書かない。
+ * 完全性チェックで window_end を見て、古すぎれば書かない。
+ *
+ * ⚠️ **window_end は構造上「前々日」までしか進まない**（2026-09-25 に本番で発覚）。
+ * 集計の材料である `race_results.actual_course_1〜6` は Kファイル同期（`api/cron/kfile-sync.js`、
+ * Vercel Cron の **JST 07:00 / 12:00**）が書き、Kファイル自体が「開催日の夜〜翌日」公開のため、
+ * **前日ぶんの進入コースが埋まるのは当日 JST 07:00**。夜間集計は JST 01:10 で6時間早く、
+ * 前日ぶんを取り込めない。したがって完全性チェックの許容は「前々日以降」でなければならない
+ * （当初は「前日以降」を要求しており、定時実行が3回とも書けずに永久に未生成だった）。
  *
  * ## 日付の扱い
  *
@@ -66,6 +73,19 @@ const FLYING_DATA_COMPLETE_FROM = "2026-09-21";
 
 /** 当日の会場数が前日のこの割合を下回ったら、出走表の投入が途中とみなして書かない */
 const VENUE_COUNT_MIN_RATIO = 0.7;
+
+/**
+ * 選手集計（racer_course_technique_stats.window_end）に許容する遅れの日数。
+ *
+ * 2 なのは構造上の下限。前日ぶんの進入コースが埋まるのは Kファイル同期の当日 JST 07:00 で、
+ * 夜間集計（JST 01:10）はそれより前に走るため、window_end は必ず「前々日」までになる。
+ * 1 にすると永久に満たせない（2026-09-25 に本番で発生）。
+ * 3 以上にすると「集計が止まっている」という本来検知したい異常を見逃す。
+ *
+ * 影響: 朝の時点の選手集計には前日のレースが入っていない。集計窓は約295日・
+ * 1選手1コースあたり中央値26走なので、1日ぶん（最大1〜2走）の欠落は実質的に無視できる。
+ */
+const STATS_MAX_LAG_DAYS = 2;
 
 function todayJST() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -234,7 +254,8 @@ async function checkCompleteness(date, races, entries) {
     );
   }
 
-  // 夜間バッチが当日ぶん走っているか
+  // 夜間バッチが動いているか。許容は「前々日以降」（STATS_MAX_LAG_DAYS）。
+  // 「前日以降」にすると構造上ぜったいに満たせない（冒頭の⚠️参照）
   const { data: stat, error } = await supabase
     .from("racer_course_technique_stats")
     .select("window_end")
@@ -242,13 +263,14 @@ async function checkCompleteness(date, races, entries) {
     .limit(1)
     .maybeSingle();
   if (error) throw error;
+  const minWindowEnd = addDays(date, -STATS_MAX_LAG_DAYS);
   if (!stat) {
     problems.push(
       "racer_course_technique_stats が空です（夜間バッチが未実行）",
     );
-  } else if (stat.window_end < addDays(date, -1)) {
+  } else if (stat.window_end < minWindowEnd) {
     problems.push(
-      `racer_course_technique_stats.window_end が ${stat.window_end} で古すぎます（${addDays(date, -1)} 以降が必要）`,
+      `racer_course_technique_stats.window_end が ${stat.window_end} で古すぎます（${minWindowEnd} 以降が必要）`,
     );
   }
 
