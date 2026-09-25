@@ -36,9 +36,19 @@ const args = process.argv.slice(2);
 const listOnly = args.includes("--list");
 const checkOnly = args.includes("--check");
 const jobsArg = args.find((a) => a.startsWith("--jobs="));
-const jobs = jobsArg
-  ? Math.max(1, Number(jobsArg.split("=")[1]))
-  : Math.min(4, Math.max(1, cpus().length));
+let jobs = Math.min(4, Math.max(1, cpus().length));
+if (jobsArg) {
+  const parsed = Number(jobsArg.split("=")[1]);
+  // 不正な値を黙って受けると並列度がNaNになり、1本も実行しないまま
+  // 「全て成功」と報告してしまう（ゲートの空振り）。必ず明示的に落とす。
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    console.error(
+      `NG: --jobs には1以上の整数を指定してください（受け取った値: "${jobsArg.split("=")[1]}"）`,
+    );
+    process.exit(2);
+  }
+  jobs = parsed;
+}
 
 /** レジストリと実ファイルを突き合わせ、問題の一覧を返す */
 async function checkRegistry(entries) {
@@ -142,8 +152,20 @@ async function runAll(entries) {
   return results;
 }
 
-const registry = JSON.parse(await fs.readFile(REGISTRY_PATH, "utf8"));
-const entries = registry.entries ?? [];
+let registry;
+try {
+  registry = JSON.parse(await fs.readFile(REGISTRY_PATH, "utf8"));
+} catch (err) {
+  console.error(
+    `NG: ${REGISTRY_PATH} を読めません（JSONの構文エラーか、ファイルがありません）: ${err.message}`,
+  );
+  process.exit(2);
+}
+const entries = Array.isArray(registry.entries) ? registry.entries : null;
+if (!entries) {
+  console.error(`NG: ${REGISTRY_PATH} に entries 配列がありません`);
+  process.exit(2);
+}
 const ciEntries = entries.filter((e) => e.tier === "ci");
 const manualEntries = entries.filter((e) => e.tier === "manual");
 
@@ -174,11 +196,30 @@ console.log(
 
 if (checkOnly) process.exit(0);
 
+// tier=ci が空 = ゲートが何も守っていない。全てを manual に移して
+// CIを黙らせる抜け道を塞ぐ
+if (ciEntries.length === 0) {
+  console.error(
+    "NG: tier=ci のスクリプトが1本もありません。このままではCIが何も検証しません",
+  );
+  process.exit(1);
+}
+
 console.log(`tier=ci の ${ciEntries.length}本を並列度${jobs}で実行します\n`);
 const started = Date.now();
 const results = await runAll(ciEntries);
-const failed = results.filter((r) => !r.ok);
 const totalSec = ((Date.now() - started) / 1000).toFixed(1);
+
+// 実行件数が台帳と食い違う = ランナー自身の不具合で取りこぼしている。
+// 「1本も実行していないのに全て成功」と報告する事故を防ぐ
+if (results.length !== ciEntries.length) {
+  console.error(
+    `NG: tier=ci は ${ciEntries.length}本ですが ${results.length}本しか実行されていません（ランナーの不具合）`,
+  );
+  process.exit(1);
+}
+
+const failed = results.filter((r) => !r.ok);
 
 if (failed.length > 0) {
   console.error(

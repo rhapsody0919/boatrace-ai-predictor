@@ -109,6 +109,21 @@ PRごとに自動実行されるのは `e2e-smoke-test.yml`（Playwright）と `
 | `tier=ci` | 52本（全件成功） |
 | `tier=manual` | 5本 |
 | ローカル実行時間 | 257.7秒（並列度4）※計測時のマシンが load average 169 の高負荷状態だったため参考値 |
-| CI実行時間 | PR作成後にGitHub Actions上で実測する |
+| **CI実行時間（GitHub Actions、PR #833）** | **27.2秒**（52本、並列度4）。ジョブ全体は1分19秒（`npm ci` 等を含む） |
+| CI上の最遅3本 | verify-data-health-job 15.4s / verify-pre-race-parsers 9.9s / verify-gha-skip-gate 9.3s |
 
-非機能要件の「90秒以内」は、CI上の実測をもって判定する。超過する場合は並列度の調整（GitHub Actionsのコア数に合わせる）または最遅の3本（`verify-data-health-job` / `verify-rls-migration` / `verify-pre-race-parsers`、いずれもPGliteまたは大量フィクスチャ）の見直しで対応する。
+非機能要件の「90秒以内」は **27.2秒で達成**。ローカルの257.7秒はマシン負荷によるもので、CI上では逐次実測（151.8秒）よりも速い。ランナーのタイムアウト180秒に対して最遅でも15.4秒と十分な余裕がある。
+
+### 受入基準の検証結果
+
+| # | 受入基準 | 結果 |
+|---|---|---|
+| F1 | 57本すべてが分類済み | OK（ci 52 / manual 5） |
+| F2 | 未登録スクリプトがあると失敗する | OK（`verify-zzz-temp-probe.js` を置いて exit 1 とファイル名の明示を確認） |
+| F3 | 台帳にあってファイルが無いと失敗する | OK（存在しないエントリを足して exit 1 を確認） |
+| F4 | `npm run verify:ci` が全件実行し失敗で非ゼロ終了 | OK |
+| F5 | PRごとにCIで自動実行される | OK（PR #833 で `verify` ジョブがpass） |
+| F6 | 失敗8本の決着、masterでグリーン | OK（52本すべて成功） |
+| F7 | manual に reason と command | OK（5本すべてに記載、ランナーが欠落を検知する） |
+| F8 | 90秒以内 | OK（27.2秒） |
+| F9 | 旧ワークフローの統合 | OK（`verify-query-errors.yml` 削除） |
