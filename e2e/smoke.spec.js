@@ -1194,6 +1194,93 @@ test.describe("レースページ再設計（BOA-168）", () => {
     expect(docOverflow).toBeLessThanOrEqual(1);
   });
 
+  // 枠別情報タブはデータ出走表を隠すため、上のテストだけでは
+  // 「タブ切替ストリップ・データ出走表がページ全体をはみ出させない」ことを
+  // 検証できていなかった。最小幅の320pxで基本情報タブも押さえる
+  test("基本情報タブでも320px幅でページ全体が横スクロールしない（横スクロールはコンテナ内に閉じる）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    // 320px幅ではCookie同意バナーが画面下部の操作を遮るため、同意済みで開始する
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai:cookie-consent", "accepted"),
+    );
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 20000,
+    });
+
+    // タブストリップ・データ出走表は自前のoverflow-x:autoの中で横スクロールする
+    for (const selector of [".race-tabs-bar", ".drt-table-wrapper"]) {
+      const overflowX = await page
+        .locator(selector)
+        .first()
+        .evaluate((el) => getComputedStyle(el).overflowX);
+      expect(overflowX).toBe("auto");
+    }
+
+    const docOverflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(docOverflow).toBeLessThanOrEqual(1);
+  });
+
+  // 結果未確定レースだけに出るAI用コピーバナーは、320px幅で
+  // 「コピーボタン + キャッチコピーバッジ」が横一列に収まらずページ全体を
+  // 16pxはみ出させていた（AiCopyBanner.jsx）。上の確定済みレースのテストでは
+  // バナーが描画されないため、未確定レース側も押さえる
+  test("基本情報タブの結果未確定レース（AI用コピーバナーあり）でも320px幅でページ全体が横スクロールしない", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.addInitScript(() => {
+      localStorage.setItem("boatai-language", "ja");
+      localStorage.setItem("boatai:cookie-consent", "accepted");
+    });
+
+    await page.goto("/");
+    await page.locator(".venue-grid").waitFor({ timeout: 20000 });
+    const venue = page.locator(".venue-grid-card--open").first();
+    test.skip(
+      (await venue.count()) === 0,
+      "本日開催中の会場が無いため検証をスキップ",
+    );
+    await venue.click();
+
+    // 未終了が保証される側の最終レースを開く
+    const lastRace = page.locator(".race-card .predict-btn").last();
+    await lastRace.waitFor({ timeout: 20000 });
+    await lastRace.click();
+
+    // バナーは結果未確定レースにだけ出る。全レース終了後の時間帯は対象が無い
+    const banner = page.locator(".ai-copy-banner");
+    const hasBanner = await banner
+      .waitFor({ timeout: 20000 })
+      .then(() => true)
+      .catch(() => false);
+    test.skip(
+      !hasBanner,
+      "本日の未終了レースが見つからないため検証をスキップ",
+    );
+
+    await expect(page.locator(".race-tabs-btn.is-active")).toHaveText(
+      "基本情報",
+    );
+
+    const docOverflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(docOverflow).toBeLessThanOrEqual(1);
+  });
+
   test("枠別情報タブのST考察カードが、同コース・同級別の平均との差つきで表示される（phase a T3-2）", async ({
     page,
   }) => {
