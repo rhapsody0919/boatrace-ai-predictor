@@ -1742,9 +1742,13 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
       ),
   );
   const applied = readRoot("docs/db-migration/APPLIED.md");
+  // 適用状況（適用済み/未適用）は本番の進行に伴って変わるため、ここでは
+  // 「台帳に091の行があること」だけを見る。適用状況そのものを期待値に
+  // 固定すると、適用が進んだ時点でこの検証が壊れる（2026-09-25、実際に
+  // 091が適用済みになって失敗した）。
   check(
-    "(h) 台帳: 091が載っている（未適用）",
-    /\| 091 \|[^\n]*091_boatcast_original_exhibition\.sql[^\n]*未適用/.test(
+    "(h) 台帳: 091の行が載っている",
+    /\| 091 \|[^\n]*091_boatcast_original_exhibition\.sql[^\n]*\|/.test(
       applied,
     ),
   );
