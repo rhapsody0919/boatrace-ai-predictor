@@ -19,6 +19,11 @@
       "guards": "docs/adr/ のADR番号の重複（並行セッションで繰り返し発生）"
     },
     {
+      "script": "verify-agent-definitions.js",
+      "tier": "ci",
+      "guards": ".claude/agents/ のサブエージェント定義とCLAUDE.mdの台帳・参照の整合、およびAgent Teams設定の再混入（PR #829）"
+    },
+    {
       "script": "verify-blog-draft-quality.js",
       "tier": "ci",
       "guards": "ブログ下書きDraft PRを人手承認なしで自動マージしてよいかの品質判定"
