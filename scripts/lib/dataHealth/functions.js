@@ -164,6 +164,56 @@ ${TABLE_ROWS_TABLES.map((t) => `  '${t}', exists (select 1 from ${t})`).join(",\
 ) as o`;
 
 /**
+ * 出走表の複製検知（BOA-422・BOA-423）。同じ会場・同じレース番号で、直近21日以内の別の日と
+ * 「艇番→登録番号」の組み合わせが完全一致するレースを、出走表が過去日のデータで汚染された疑いとして数える。
+ *
+ * 除外（誤検知を避ける）:
+ *   - 開催中止(confirmed)のレースは、複製元・複製先のどちらからも外す（順延は、前日の出走表がそのまま
+ *     翌日の同じ節で使われるため、正常に完全一致する）
+ *   - 結果(race_results)が無いレースも、両側から外す（順延の空スタブ・未確定）
+ *   - 1レースだけの一致は数えない（同じ節の別日に、同じ6人が同じ枠で再度組まれることが実際にある。
+ *     2026-01-22 常滑 R6 が実例で、公式Bファイルでも一致が正しい）。汚染は必ず複数レースにまたがる
+ *
+ * 期待件数（分母）= その日の会場×日、clean（分子）= 複製の疑いが無い会場×日。
+ */
+const entriesDuplicatesSql = ({ fromDate, toDate }) => `
+with win as (
+  select r.race_id, r.race_date, r.venue_code, r.race_number,
+      exists (select 1 from race_results rr where rr.race_id = r.race_id) as has_result,
+      md5(string_agg(e.boat_number::text || ':' || coalesce(e.racer_id::text, '-'), ',' order by e.boat_number)) as sig
+  from races r
+  join race_entries e on e.race_id = r.race_id
+  where r.race_date between (${fromDate} - 21) and ${toDate}
+    and r.cancellation_status is distinct from 'confirmed'
+  group by r.race_id, r.race_date, r.venue_code, r.race_number
+), dup as (
+  select a.race_date, a.venue_code, a.race_number
+  from win a
+  join win b on b.venue_code = a.venue_code and b.race_number = a.race_number
+    and b.race_date < a.race_date and a.race_date - b.race_date <= 21
+    and b.sig = a.sig and b.has_result
+  where a.race_date between ${fromDate} and ${toDate} and a.has_result
+  group by a.race_date, a.venue_code, a.race_number
+), flagged as (
+  select race_date, venue_code
+  from dup group by race_date, venue_code having count(*) >= 2
+), base as (
+  select r.race_date, r.venue_code
+  from races r
+  join race_entries e on e.race_id = r.race_id
+  where r.race_date between ${fromDate} and ${toDate}
+    and r.cancellation_status is distinct from 'confirmed'
+  group by r.race_date, r.venue_code
+)
+select b.race_date::text as d,
+    count(*) as venue_days,
+    count(*) filter (where f.venue_code is null) as clean_venue_days
+from base b
+left join flagged f on f.race_date = b.race_date and f.venue_code = b.venue_code
+group by b.race_date
+order by 1`;
+
+/**
  * @typedef {Object} DataHealthFunction
  * @property {string} name 関数名（public スキーマ）
  * @property {Array<{name: string, type: "date"}>} args 引数
@@ -236,6 +286,15 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
     orderColumn: "month",
     // 月別は p_to だけを使う（期間の下端なし）
     body: ({ toDate }) => buildMonthlySql({ toDate }),
+  },
+  {
+    name: "data_health_entries_duplicates",
+    args: FROM_TO,
+    shape: "rows",
+    description:
+      "データ健全性の日次監視: 出走表が過去日のデータで汚染された疑い（同一会場・同一レース番号で、直近21日以内の別の日と艇番→登録番号が完全一致するレースが2つ以上ある会場×日）。BOA-422・BOA-423",
+    migration: "100_data_health_entries_duplicates.sql",
+    body: entriesDuplicatesSql,
   },
   {
     name: "data_health_table_rows",

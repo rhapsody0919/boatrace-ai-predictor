@@ -2,7 +2,7 @@
 
 spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / 引き継ぎ: [handoff-memo.md](./handoff-memo.md)
 
-Linear: [BOA-402](https://linear.app/boat-ai/issue/BOA-402)　モック（承認済み、2026-09-24・案A）: https://claude.ai/artifact/7Dytu5kJjB82f7xLngAoHP
+Linear: [BOA-402](https://linear.app/boat-ai/issue/BOA-402)　モック（承認済み、2026-09-24・案A）: [mockup/](mockup/README.md)（旧Artifactはアカウント切替で参照不可）
 
 ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md)（日次の抽出結果を行として持つ）／[ADR-0071](../../adr/0071-venue-adjusted-skill-delta.md)（会場構成を調整した地力指標）
 
