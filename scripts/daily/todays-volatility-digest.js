@@ -71,18 +71,23 @@ async function main() {
   // 開催中止のレースは予想が残っていても投稿の対象にしない。
   // 画面側は PR #824 で除外したが、このダイジェストは除外しておらず
   // 中止レースを「本日のイン崩れ警戒レース」として出しうる状態だった（BOA-418）。
+  // 日付は race_id の前方一致ではなく race_date で引く。race_id の日付部分が
+  // race_date と食い違っていた初日120件の実績があるため（BOA-325、修正済み）。
   const cancelledRaceIds = new Set(
     (
       await fetchAll((from, to) =>
         supabase
           .from("races")
           .select("race_id")
-          .like("race_id", `${TARGET_DATE}-%`)
+          .eq("race_date", TARGET_DATE)
           .eq("cancellation_status", CANCELLATION_CONFIRMED)
           .range(from, to),
       )
     ).map((r) => r.race_id),
   );
+  const excludedCount = predictions.filter((p) =>
+    cancelledRaceIds.has(p.race_id),
+  ).length;
 
   const races = predictions
     .map((p) => {
@@ -111,6 +116,13 @@ async function main() {
     );
 
   const top = races.slice(0, TOP_N);
+
+  // 除外は黙って行わない（何件が対象から外れたかを必ず出す）
+  if (excludedCount > 0) {
+    console.log(
+      `\n開催中止が確定した ${excludedCount} レースを対象から除外しました。`,
+    );
+  }
 
   console.log(
     `\n${TARGET_DATE} イン崩れ警戒レース TOP${TOP_N}（全${races.length}レース中）:\n`,

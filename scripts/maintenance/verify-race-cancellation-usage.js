@@ -73,7 +73,7 @@ function isVerificationScript(relative) {
 
 /** `cancellationStatus === "confirmed"` のような、生の等価比較。 */
 const RAW_COMPARISON =
-  /cancellation[_s]?[sS]tatus\s*[!=]==\s*["'`]|["'`](?:confirmed|tentative)["'`]\s*[!=]==\s*\w*[cC]ancellation/;
+  /cancellation[_s]?[sS]tatus\s*[!=]==\s*["'`]|["'`](?:confirmed|tentative)["'`]\s*[!=]==\s*[\w.?[\]]*[cC]ancellation/;
 
 function collectFiles(dir, acc) {
   let entries;
