@@ -4,7 +4,10 @@ spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.m
 
 ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
 
-モック（承認済み、2026-09-23）: https://claude.ai/artifact/N3e6TSHmoPXzLNX1SSSLZK
+モック（承認済み、2026-09-23）: **[`mock/`](./mock/) がこちらが正**（全6アートボードのHTMLをリポジトリに退避済み）。
+元のArtifact <https://claude.ai/artifact/N3e6TSHmoPXzLNX1SSSLZK> は旧Claudeアカウント側に残るため、
+2026-09-25のアカウント切替以降は開けない。**モックより実装が新しい箇所がある**ので、
+食い違いの一覧は [`mock/README.md`](./mock/README.md) を読むこと。
 
 マイグレーション案（すべて未適用）: [094](../../db-migration/094_course_baselines.sql) / [095](../../db-migration/095_phase_a_numeric_public_read.sql) / [096](../../db-migration/096_original_exhibition_public_read.sql)
 

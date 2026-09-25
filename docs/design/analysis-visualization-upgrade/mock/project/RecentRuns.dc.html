@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>直近10走 進入・着順・ST（順位を括弧で併記）</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0d1b2e;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Sans",sans-serif;-webkit-font-smoothing:antialiased}
+</style>
+</helmet>
+<div style="width: 620px; height: 340px; box-sizing: border-box; background: #0d1b2e; color: #f8fafc; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+
+  <div style="box-sizing: border-box; background: #142842; border: 2px solid #c9a227; border-radius: 12px; padding: 14px;">
+    <p style="margin: 0 0 2px; font-size: 13px; font-weight: 700;">直近10走 ① 下條雄太郎</p>
+    <p style="margin: 0 0 12px; font-size: 11.5px; color: #cbd5e1;">進入コース・着順・ST。STは括弧内がそのレースでのST順位</p>
+    <div style="display: flex; gap: 6px;">
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 100%; height: 22px; border-radius: 4px; background: #e53935;"></span><span style="font-size: 12px; font-weight: 700;">3着</span><span style="font-size: 11.5px; color: #cbd5e1;">.12<span style="color: #c9a227; font-weight: 700;">(1位)</span></span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 100%; height: 22px; border-radius: 4px; background: #fdd835;"></span><span style="font-size: 12px; font-weight: 700;">1着</span><span style="font-size: 11.5px; color: #cbd5e1;">.18<span style="color: #97a3b5;">(4位)</span></span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 100%; height: 22px; border-radius: 4px; background: #000000; box-shadow: inset 0 0 0 1px #556172;"></span><span style="font-size: 12px; font-weight: 700;">2着</span><span style="font-size: 11.5px; color: #cbd5e1;">.15<span style="color: #97a3b5;">(3位)</span></span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 100%; height: 22px; border-radius: 4px; background: #1e88e5;"></span><span style="font-size: 12px; font-weight: 700;">6着</span><span style="font-size: 11.5px; color: #cbd5e1;">.25<span style="color: #f26b6b;">(6位)</span></span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 100%; height: 22px; border-radius: 4px; background: #ffffff;"></span><span style="font-size: 12px; font-weight: 700;">1着</span><span style="font-size: 11.5px; color: #cbd5e1;">.09<span style="color: #c9a227; font-weight: 700;">(1位)</span></span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 100%; height: 22px; border-radius: 4px; background: #e53935;"></span><span style="font-size: 12px; font-weight: 700;">2着</span><span style="font-size: 11.5px; color: #cbd5e1;">.14<span style="color: #97a3b5;">(2位)</span></span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 100%; height: 22px; border-radius: 4px; background: #fdd835;"></span><span style="font-size: 12px; font-weight: 700;">4着</span><span style="font-size: 11.5px; color: #cbd5e1;">.21<span style="color: #97a3b5;">(5位)</span></span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 100%; height: 22px; border-radius: 4px; background: #000000; box-shadow: inset 0 0 0 1px #556172;"></span><span style="font-size: 12px; font-weight: 700;">1着</span><span style="font-size: 11.5px; color: #cbd5e1;">.11<span style="color: #c9a227; font-weight: 700;">(1位)</span></span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 100%; height: 22px; border-radius: 4px; background: #43a047;"></span><span style="font-size: 12px; font-weight: 700;">3着</span><span style="font-size: 11.5px; color: #cbd5e1;">.19<span style="color: #97a3b5;">(4位)</span></span></div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;"><span style="width: 100%; height: 22px; border-radius: 4px; background: #ffffff;"></span><span style="font-size: 12px; font-weight: 700;">1着</span><span style="font-size: 11.5px; color: #cbd5e1;">.10<span style="color: #c9a227; font-weight: 700;">(1位)</span></span></div>
+    </div>
+    <p style="margin: 12px 0 0; font-size: 11px; line-height: 1.6; color: #cbd5e1;">上段の色＝進入コース（枠色）。左が古い順。括弧内のST順位は1位を金、最下位を赤で示す。0.14が速いかはその日の水面とメンバーで変わるため、同じレースでの相対位置を併記する</p>
+  </div>
+
+  <div style="box-sizing: border-box; padding: 12px 14px; border: 1px dashed #32425c; border-radius: 12px; font-size: 11.5px; line-height: 1.6; color: #97a3b5;">モーター2連対率は入れない（日和は入れている）。機材の軸で「この選手の最近の走り」とは別で、モータ情報タブが既に担っている。会場（当地かどうか）は帯をタップしたときに出す。モバイル390pxでは5本×2段に折り返す</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":620,"height":340}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

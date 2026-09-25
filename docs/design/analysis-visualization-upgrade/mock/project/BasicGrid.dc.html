@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>基本情報タブ 条件別タブとFバッジ（現状維持＋展開）</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0d1b2e;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Sans",sans-serif;-webkit-font-smoothing:antialiased}
+</style>
+</helmet>
+<div style="width: 390px; height: 800px; box-sizing: border-box; background: #0d1b2e; color: #f8fafc; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+
+  <p style="margin: 0; font-size: 11.5px; line-height: 1.5; color: #cbd5e1;">選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細が開きます</p>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+    <span style="padding: 5px 11px; font-size: 12px; font-weight: 700; color: #0d1b2e; background: #c9a227; border-radius: 999px;">勝率</span>
+    <span style="padding: 5px 11px; font-size: 12px; color: #cbd5e1; background: #142842; border: 1px solid #24344d; border-radius: 999px;">2連対率</span>
+    <span style="padding: 5px 11px; font-size: 12px; color: #cbd5e1; background: #142842; border: 1px solid #24344d; border-radius: 999px;">3連対率</span>
+    <span style="padding: 5px 11px; font-size: 12px; color: #cbd5e1; background: #142842; border: 1px solid #24344d; border-radius: 999px;">平均ST</span>
+  </div>
+  <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+    <span style="padding: 5px 11px; font-size: 12px; font-weight: 700; color: #0d1b2e; background: #c9a227; border-radius: 999px;">全国</span>
+    <span style="padding: 5px 11px; font-size: 12px; color: #cbd5e1; background: #142842; border: 1px solid #24344d; border-radius: 999px;">当地</span>
+    <span style="padding: 5px 11px; font-size: 12px; font-weight: 700; color: #0d1b2e; background: #c9a227; border-radius: 999px;">全レース</span>
+    <span style="padding: 5px 11px; font-size: 12px; color: #cbd5e1; background: #142842; border: 1px solid #24344d; border-radius: 999px;">一般戦</span>
+    <span style="padding: 5px 11px; font-size: 12px; color: #cbd5e1; background: #142842; border: 1px solid #24344d; border-radius: 999px;">SG・G1</span>
+  </div>
+  <p style="margin: 0; font-size: 12px; color: #c9a227;">▸ 期間で絞り込む</p>
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div style="box-sizing: border-box; background: #142842; border: 2px solid #c9a227; border-radius: 10px; padding: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: #ffffff; color: #000000; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">1</span>
+        <span translate="no" style="flex-shrink: 0; font-size: 12.5px; font-weight: 700;">下條雄太郎</span>
+        <span style="flex-grow: 1; height: 12px; background: #0f2036; border-radius: 6px; overflow: hidden; display: block;"><span style="display: block; width: 92%; height: 12px; background: #ffffff;"></span></span>
+        <span style="flex-shrink: 0; font-size: 13px; font-weight: 700;">7.34</span>
+        <span style="flex-shrink: 0; font-size: 12px; color: #c9a227;">▾</span>
+      </div>
+
+      <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #24344d;">
+        <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+          <span style="padding: 4px 10px; font-size: 11.5px; color: #cbd5e1; background: #0f2036; border: 1px solid #24344d; border-radius: 999px;">直近5走</span>
+          <span style="padding: 4px 10px; font-size: 11.5px; color: #cbd5e1; background: #0f2036; border: 1px solid #24344d; border-radius: 999px;">得意会場</span>
+          <span style="padding: 4px 10px; font-size: 11.5px; font-weight: 700; color: #0d1b2e; background: #c9a227; border-radius: 999px;">条件別</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="width: 62px; flex-shrink: 0; font-size: 11.5px; color: #cbd5e1;">全国</span><span style="font-size: 13px; font-weight: 700;">7.34</span><span style="margin-left: auto; font-size: 11px; color: #97a3b5;">n=128</span></div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="width: 62px; flex-shrink: 0; font-size: 11.5px; color: #cbd5e1;">当地</span><span style="font-size: 13px;">6.95</span><span style="margin-left: auto; font-size: 11px; color: #97a3b5;">n=42</span></div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="width: 62px; flex-shrink: 0; font-size: 11.5px; color: #cbd5e1;">一般戦</span><span style="font-size: 13px;">7.40</span><span style="margin-left: auto; font-size: 11px; color: #97a3b5;">n=120</span></div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="width: 62px; flex-shrink: 0; font-size: 11.5px; color: #cbd5e1;">SG・G1</span><span style="font-size: 13px; color: #97a3b5;">—</span><span style="margin-left: auto; font-size: 11px; color: #97a3b5;">n=0</span></div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="width: 62px; flex-shrink: 0; font-size: 11.5px; color: #cbd5e1;">初日</span><span style="font-size: 13px;">6.88</span><span style="margin-left: auto; font-size: 11px; color: #e0a800;">⚠n=17</span></div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="width: 62px; flex-shrink: 0; font-size: 11.5px; color: #cbd5e1;">最終日</span><span style="font-size: 13px;">7.90</span><span style="margin-left: auto; font-size: 11px; color: #e0a800;">⚠n=12</span></div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="width: 62px; flex-shrink: 0; font-size: 11.5px; color: #cbd5e1;">波5cm超</span><span style="font-size: 13px;">7.02</span><span style="margin-left: auto; font-size: 11px; color: #97a3b5;">n=52</span></div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="width: 62px; flex-shrink: 0; font-size: 11.5px; color: #cbd5e1;">前期</span><span style="font-size: 13px;">7.21</span><span style="margin-left: auto; font-size: 11px; color: #97a3b5;">期別成績</span></div>
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="width: 62px; flex-shrink: 0; font-size: 11.5px; color: #97a3b5;">F持ち時</span><span style="font-size: 13px; color: #97a3b5;">—</span><span style="margin-left: auto; font-size: 11px; color: #97a3b5;">バックフィル後</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="box-sizing: border-box; background: #142842; border: 1px solid #24344d; border-radius: 10px; padding: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: #e53935; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">3</span>
+        <span translate="no" style="flex-shrink: 0; font-size: 12.5px; font-weight: 700;">西野翔太</span>
+        <span style="flex-shrink: 0; font-size: 10.5px; font-weight: 700; color: #f26b6b; border: 1px solid #f26b6b; border-radius: 4px; padding: 0 4px;">F1</span>
+        <span style="flex-grow: 1; height: 12px; background: #0f2036; border-radius: 6px; overflow: hidden; display: block;"><span style="display: block; width: 78%; height: 12px; background: #e53935;"></span></span>
+        <span style="flex-shrink: 0; font-size: 13px; font-weight: 700;">6.66</span>
+        <span style="flex-shrink: 0; font-size: 12px; color: #97a3b5;">▸</span>
+      </div>
+    </div>
+
+    <div style="box-sizing: border-box; background: #142842; border: 1px solid #24344d; border-radius: 10px; padding: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: #fdd835; color: #000000; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;">5</span>
+        <span translate="no" style="flex-shrink: 0; font-size: 12.5px; font-weight: 700;">吉田翔悟</span>
+        <span style="flex-grow: 1; height: 12px; background: #0f2036; border-radius: 6px; overflow: hidden; display: block;"><span style="display: block; width: 44%; height: 12px; background: #fdd835;"></span></span>
+        <span style="flex-shrink: 0; font-size: 13px; font-weight: 700;">3.88</span>
+        <span style="flex-shrink: 0; font-size: 12px; color: #97a3b5;">▸</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="box-sizing: border-box; padding: 12px 14px; border: 1px dashed #32425c; border-radius: 12px; font-size: 11.5px; line-height: 1.6; color: #97a3b5;">データ出走表（既存・変更なし）。行＝指標 × 列＝艇番のグリッドは既にここが担っているため、条件×艇番のグリッドは足さない</div>
+
+  <div style="box-sizing: border-box; padding: 12px 14px; border: 1px dashed #32425c; border-radius: 12px; font-size: 11.5px; line-height: 1.6; color: #97a3b5;">確認観点: 条件の比較を「展開の3つ目のタブ」に置く案。カードは1枚も増えない。Fバッジは選手名の隣（③西野翔太）。体重・支部は別の場所（データ出走表・選手名の近く）に置き、F数と同じカードにまとめない</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

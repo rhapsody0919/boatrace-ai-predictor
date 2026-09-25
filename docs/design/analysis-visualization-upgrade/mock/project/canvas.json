@@ -1,0 +1,76 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "BasicGrid.dc.html": {
+      "h": 800,
+      "title": "基本情報タブ 条件別タブとFバッジ",
+      "w": 390,
+      "x": 404,
+      "y": 0
+    },
+    "Highlight.dc.html": {
+      "h": 470,
+      "title": "強調の2段階 ライト／ダーク（採用）",
+      "w": 620,
+      "x": 1410,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 2000,
+      "title": "枠別情報タブ 全体（統合案b・再設計版）",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "RecentRuns.dc.html": {
+      "h": 340,
+      "title": "直近10走 ST順位を括弧で併記",
+      "w": 620,
+      "x": 1410,
+      "y": 590
+    },
+    "ResultTab.dc.html": {
+      "h": 700,
+      "title": "結果タブ この日の水面傾向",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "T33Options.dc.html": {
+      "h": 1180,
+      "title": "T3-3 ST分布・ST履歴の3案（判断用）",
+      "w": 1280,
+      "x": 0,
+      "y": 2120
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-23T01:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "n1": {
+      "kind": "title1",
+      "maxW": 2030,
+      "text": "レース詳細の可視化強化（phase a）",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "BasicGrid.dc.html",
+    "ResultTab.dc.html",
+    "Highlight.dc.html",
+    "RecentRuns.dc.html",
+    "T33Options.dc.html"
+  ],
+  "pages": [],
+  "title": "枠別情報タブ 可視化モック"
+}
