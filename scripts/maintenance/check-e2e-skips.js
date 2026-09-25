@@ -218,9 +218,23 @@ export function clusteredReasons(skipped, threshold = CLUSTER_WARN_COUNT) {
   );
 }
 
-/** `--name=値` を取り出す。無ければ undefined。 */
+/**
+ * `--name=値` を取り出す。指定が無ければ undefined。
+ *
+ * 値が空（`--projects=` のような書き方）のときは黙って既定値に戻さず落とす。
+ * 戻すと「指定したつもりが効いていない」状態になり、`--projects=` を指定したのに
+ * 「--projects= で指定してください」と言われる、といった噛み合わない案内が出る。
+ */
 function argOf(name) {
-  return process.argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
+  const prefix = `--${name}=`;
+  const hit = process.argv.find((a) => a.startsWith(prefix));
+  if (hit === undefined) return undefined;
+  const value = hit.slice(prefix.length);
+  if (value.trim() === "") {
+    console.error(`NG: --${name} に値がありません。`);
+    process.exit(1);
+  }
+  return value;
 }
 
 function main() {
