@@ -31,6 +31,14 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run test:e2e
 
+      # skipされたテストを数える。データ依存の test.skip() が常に真になると
+      # そのテストは無言で無効化され、緑のまま何も検証しない状態が続く。
+      # 実際に320px横スクロールのテスト7個が長期間skipされていた（3b6ef2ce）。
+      # テストが落ちても skip の状況は見たいので always() で動かす。
+      - name: Check skipped tests
+        if: always()
+        run: node scripts/maintenance/check-e2e-skips.js
+
       - name: Upload Playwright trace on failure
         if: failure()
         uses: actions/upload-artifact@v4
