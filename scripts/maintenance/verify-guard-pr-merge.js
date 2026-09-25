@@ -37,10 +37,27 @@ function check(label, actual, expected) {
 // --- PR番号の抽出 ---
 check("番号を明示", extractExplicitPrNumber("gh pr merge 123 --merge"), "123");
 check("番号なし", extractExplicitPrNumber("gh pr merge --merge"), null);
+// ghは位置引数の位置を問わない。先頭だけ見ると番号を取り逃がし、カレントブランチの
+// 別のPRのチェック結果で判定してしまう。
 check(
   "オプションが先",
   extractExplicitPrNumber("gh pr merge --merge 123"),
-  null,
+  "123",
+);
+check(
+  "値を取るオプションの値を位置引数と読まない",
+  extractExplicitPrNumber('gh pr merge -b "fix 42" 123 --merge'),
+  "123",
+);
+check(
+  "値をイコールで渡す形",
+  extractExplicitPrNumber("gh pr merge --body=text 123"),
+  "123",
+);
+check(
+  "値を取らないオプションは飛ばすだけ",
+  extractExplicitPrNumber("gh pr merge --admin --squash 77"),
+  "77",
 );
 check("別コマンド", extractExplicitPrNumber("gh pr view 123"), null);
 check(
@@ -78,6 +95,15 @@ check("長い形式", deletesBranch("gh pr merge 1 --merge --delete-branch"), tr
 check("短い形式", deletesBranch("gh pr merge 1 --merge -d"), true);
 check("末尾の短い形式", deletesBranch("gh pr merge 1 -d"), true);
 check("指定なし", deletesBranch("gh pr merge 1 --merge"), false);
+// pflag はショートハンドの結合を許す。-d 単独だけを見ると取りこぼす。
+check("結合ショートハンド(-md)", deletesBranch("gh pr merge 1 -md"), true);
+check("結合ショートハンド(-dm)", deletesBranch("gh pr merge 1 -dm"), true);
+check("dを含まない結合は対象外", deletesBranch("gh pr merge 1 -sa"), false);
+check(
+  "長いオプションを誤検出しない",
+  deletesBranch("gh pr merge 1 --squash"),
+  false,
+);
 check(
   "-dで始まる別オプション",
   deletesBranch("gh pr merge 1 --dry-run"),
@@ -151,10 +177,28 @@ check(
   "ask",
 );
 check(
-  "e2eが実行中なら何もしない",
+  "e2eが実行中なら何もしない(PENDING)",
   judgeChecks("1", [
     { name: "verify", state: "SUCCESS" },
     { name: "e2e", state: "PENDING" },
+  ]),
+  null,
+);
+// 実際のPR #843 が e2e=IN_PROGRESS で、PENDINGしか除外していなかったため
+// 「e2eが赤い」扱いで確認を求めてしまった（2026-09-25、実データで発覚）
+check(
+  "e2eが実行中なら何もしない(IN_PROGRESS)",
+  judgeChecks("1", [
+    { name: "verify", state: "SUCCESS" },
+    { name: "e2e", state: "IN_PROGRESS" },
+  ]),
+  null,
+);
+check(
+  "e2eが実行中なら何もしない(QUEUED)",
+  judgeChecks("1", [
+    { name: "verify", state: "SUCCESS" },
+    { name: "e2e", state: "QUEUED" },
   ]),
   null,
 );

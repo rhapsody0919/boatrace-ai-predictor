@@ -42,11 +42,32 @@ const RUNNING_STATES = new Set([
   "REQUESTED",
 ]);
 const SUBPROCESS_TIMEOUT_MS = 15000;
+/** 値を取るオプション。次のトークンは値であって位置引数ではない。 */
+const VALUE_OPTIONS = new Set([
+  "-b",
+  "--body",
+  "-F",
+  "--body-file",
+  "-t",
+  "--subject",
+  "--match-head-commit",
+  "--author-email",
+]);
+
+/**
+ * このスクリプトが置かれているリポジトリのルート。
+ * フックのカレントディレクトリは保証されない（$CLAUDE_PROJECT_DIR が渡されるのはそのため）。
+ * cwd を指定しないと gh も git もリポジトリ外で走って失敗し、ゲートが静かに素通しになる。
+ */
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 
 /**
  * 外部コマンドを1回だけ実行する。失敗・タイムアウトは null を返す（呼び出し側で素通しする）。
  */
-function run(file, args, cwd) {
+function run(file, args, cwd = repoRoot) {
   try {
     return execFileSync(file, args, {
       encoding: "utf8",
@@ -62,21 +83,46 @@ function run(file, args, cwd) {
 const gh = (args) => run("gh", args);
 const gitIn = (args, cwd) => run("git", args, cwd);
 
-/** `gh pr merge 123 --merge` の 123。番号が無ければ現在のブランチのPRを引く。 */
+/**
+ * `gh pr merge 123 --merge` の 123。番号が無ければ null（呼び出し側が現在のブランチのPRを引く）。
+ *
+ * gh は位置引数の位置を問わないので `gh pr merge --merge 123` も有効。先頭だけ見ると
+ * 番号を取り逃がし、カレントブランチの別のPRのチェック結果で判定してしまう。
+ * 番号・PRのURL・ブランチ名のいずれも来るので、番号かURLのときだけ返す。
+ */
 export function extractExplicitPrNumber(command) {
   const m = command.match(/\bgh\s+pr\s+merge\b([^\n;&|]*)/);
   if (!m) return null;
-  const rest = m[1].trim();
-  const byNumber = rest.match(/^(\d+)(?=\s|$)/);
-  if (byNumber) return byNumber[1];
-  // ghはPRのURLも受け付ける。番号を取り違えると別のPRのチェック結果を見てしまう。
-  const byUrl = rest.match(/^https?:\/\/\S*?\/pull\/(\d+)(?=[\s/]|$)/);
-  return byUrl ? byUrl[1] : null;
+  // 引用符で囲まれた値は中に空白を含む（`-b "fix 42"`）。そのまま空白で割ると
+  // 値の断片を位置引数と読んでしまうので、1トークンに潰してから割る。
+  const tokens = m[1]
+    .replace(/"[^"]*"|'[^']*'/g, "__quoted__")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (token.startsWith("-")) {
+      const [name] = token.split("=");
+      // `-b text` のように値が次のトークンに来る場合、その値を位置引数と読まない
+      if (VALUE_OPTIONS.has(name) && !token.includes("=")) i += 1;
+      continue;
+    }
+    const byNumber = token.match(/^(\d+)$/);
+    if (byNumber) return byNumber[1];
+    const byUrl = token.match(/^https?:\/\/\S*?\/pull\/(\d+)\/?$/);
+    if (byUrl) return byUrl[1];
+    return null; // ブランチ名など、番号に解決できない位置引数
+  }
+  return null;
 }
 
 /** コマンドが worktree ごと消す形の `--delete-branch` / `-d` を含むか。 */
 export function deletesBranch(command) {
-  return /--delete-branch\b/.test(command) || /\s-d(?=\s|$)/.test(command);
+  if (/--delete-branch\b/.test(command)) return true;
+  // pflag はショートハンドの結合を許す（-md は -m -d と同じ）。`-d` 単独だけを見ると
+  // 取りこぼし、worktree ごと消えるのを防げない。d を含むショートハンドは -d だけ。
+  return /(?:^|\s)-[a-zA-Z]*d[a-zA-Z]*(?=\s|$)/.test(command);
 }
 
 /** `git worktree list --porcelain` の出力から、そのブランチの作業ツリーのパスを探す。 */
@@ -141,7 +187,7 @@ export function judgeChecks(pr, checks) {
     };
   }
   const e2e = checks.find((c) => c.name === "e2e");
-  if (e2e && e2e.state !== "SUCCESS" && e2e.state !== "PENDING") {
+  if (e2e && e2e.state !== "SUCCESS" && !RUNNING_STATES.has(e2e.state)) {
     return {
       decision: "ask",
       reason:
