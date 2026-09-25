@@ -90,6 +90,12 @@ claim対象が0件の場合はここで終了する（正常系、失敗では�
 3. 2枚とも`sns_drafts.video_storage_path`ではなく、画像2枚のパスを別途保存する必要がある（現状`sns_drafts`は単一の`cover_image_path`しか持たないため、1枚目を`cover_image_path`、2枚目は`source_data`にパスを記録する運用とする）
 4. リスクルール照合・セルフレビューは通常フローと同じ（`sns-video-studio/remotion/risk-rules.json`、該当があれば`risk_flags`に記録）
 
+## 3''. 「本日のデータ一覧」型（morning-digest）のネタ
+
+`sns_topics` の型が `morning-digest` のネタは、**動画・画像の材料を `morning_digest_days` / `morning_digest_rows` の2表だけから取る**（再計算禁止）。書いてよい数値・禁止表現・リンクの規則は [`sns-pipeline-morning-digest.md`](sns-pipeline-morning-digest.md) にまとめてあるので、着手前にそれを読む。
+
+X向けの切り口は「その日の朝に、今日どこを見るかを渡す」。`section='featured'` の1件を主役にし、`detail.reason` の文を素材として数値2〜3個に絞る。9:16は通常フローと同じ。**`?date=` を付けずに `https://www.boat-ai.jp/today` へリンクする**。
+
 ## 4. キャプション・ハッシュタグ
 
 `docs/operation/x-operations-playbook.md`「投稿設計の優先順位」に従う。公式告知単体にせず、推し活・体験談・データの体系整理のいずれかの切り口を必ず添える。本文には視聴者が反応したくなる「問いかけ」を1つ入れる。

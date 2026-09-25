@@ -62,7 +62,7 @@ PRごとに自動実行される検証ワークフローは `e2e-smoke-test.yml`
 - `verify-*.js` 57本の2層分類とレジストリ化
 - 集約ランナー（`npm run verify:ci`）とGitHub Actionsワークフローの新設
 - 失敗8本の決着（修正 / `manual`化）
-- マイグレーション番号063重複の解消（後発の `063_add_cancellation_status_to_today_races_rpc.sql` を `101_` にリネームし、`APPLIED.md` に行を追加）。当初は別チケットに切る想定だったが、これを解消しないと `npm run verify:ci` がmasterでグリーンにならず F6 を満たせないため、本件に含める。本番DBには適用済み（2026-09-25にRPC定義を確認）でファイル名変更はDBに影響しない
+- マイグレーション番号063重複の解消（後発の `063_add_cancellation_status_to_today_races_rpc.sql` を `102_` にリネームし、`APPLIED.md` に行を追加）。当初は別チケットに切る想定だったが、これを解消しないと `npm run verify:ci` がmasterでグリーンにならず F6 を満たせないため、本件に含める。本番DBには適用済み（2026-09-25にRPC定義を確認）でファイル名変更はDBに影響しない
 - `verify-query-errors.yml` の統合
 
 ### やらないこと

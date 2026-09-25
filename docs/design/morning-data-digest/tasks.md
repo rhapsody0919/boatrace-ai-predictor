@@ -299,6 +299,13 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
 - [ ] **T5-1** `generate-morning-digest.js` から `sns_topics` にネタを登録する（種別 `morning_digest`）
   - **受入基準**: 生成後に sns-hub 管理画面（`/admin/sns-hub`）にネタが現れる
 
+  **実装済み・本番確認待ち（2026-09-25）。** `runMorningDigest()` が2表への書き込み後に `registerSnsTopic()` を呼ぶ。
+  - 型・チャネルは `sns_topic_categories` / `sns_topic_category_channels` のデータで決まる（マイグレーション **101**、2026-09-25 適用済み）。型は `daily-auto`（ネタ承認を省略し下書き承認だけ人間が行う）、チャネルは x/blog/note/youtube、TikTokは対象外
+  - 二重登録は本文先頭の目印「【本日のデータ一覧 YYYY-MM-DD】」で防ぐ（`findTopicByTextMarker`）。**過去日の再生成・バックフィルでは登録しない**（`date === todayJST()` のときだけ）
+  - 登録に失敗してもダイジェスト生成は成功で返し、`report.alerts` に載せて `scrape-monitor` の `report:morning_digest:sns_topic_register_failed` として Slack に流す（例外にすると共通ラッパが対象日を未処理に戻し、全行を書き直してしまうため）
+  - **データ精度検証**: `npm run verify:morning-digest-sns-topic`（読み取りのみ）。本日分の実データで13項目すべて一致。この検証中に**イン崩れ指数を生値（1.28%）で書いており、画面表示（`Math.round` で1%）と食い違う**ことを発見し、画面と同じ丸めに修正した
+  - 残り: 翌朝の定時実行で `/admin/sns-hub` にネタが出ることの確認（マイグレーションは **101**（当初100。master側の`100_data_health_entries_duplicates.sql`と番号が衝突したため繰り下げ）として 2026-09-25 適用済み）
+
 - [ ] **T5-2** チャネル別の生成プロンプトに `morning_digest` を追加する（X / ブログ / note / YouTube）
   - `docs/operation/sns-pipeline-{x,blog,note,youtube}.md` に型を追記
   - 生成前に `getRecentRevisions()` と `getActiveInsights({platform, format, language})` を確認する（`.claude/rules/sns-content-generation.md`）
@@ -307,10 +314,22 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
   - 「競艇」使用禁止
   - **受入基準**: 4チャネルぶんの下書きが sns-hub の承認待ちに現れ、本文の数値が `morning_digest_rows` と一致する。**投稿の最終送信は行わない**（1件ごとにユーザーの明示承認）
 
+  **ドキュメント整備済み・本番確認待ち（2026-09-25）。** 4つの文書に同じ内容を4回書くのを避け、型の共通仕様を [`docs/operation/sns-pipeline-morning-digest.md`](../../operation/sns-pipeline-morning-digest.md) に1枚で置き、各チャネル文書（`sns-pipeline-{x,blog,note,youtube}.md`）からは切り口だけを書いて参照させた。
+  - 共通仕様に入れたもの: 材料は2表だけ（再計算禁止）・`section` の一覧・「予測」と書かない・`metric_predicted` を出さない・**「勝率」を使わない**・`detail.baselineGrade` はレースのグレードであって選手の級別ではない・小標本の扱い・`?date=` なしのリンク・「競艇」禁止・`getRecentRevisions()` / `getActiveInsights()` / `checkRiskRules()`・最終送信は自動化しない
+  - 残り: 実際に4チャネルぶんの下書きが承認待ちに現れることの確認（T5-1 の本番確認と同時）
+
 - [ ] **T5-3** `/today` をAIスナップショットの対象に追加する
   - `scripts/generate-ai-snapshots.js` と `src/config/aiCrawlerBots.js` の `resolveSnapshotPath`
   - **静的な説明部分（ページの目的・各指標の定義）だけ**を生成する（`/winning-technique` と同じ方式。日替わりの中身は入らない）
   - **受入基準**: `npm run build` 後に `dist/ai-snapshots/today.html` が生成され、`scripts/verification/verify-ai-snapshots.js` が通る。**本番URLでの検証まで行う**（ローカルビルド成功は偽陽性になる実績あり）
+
+  **実装済み・本番URL検証待ち（2026-09-25）。**
+  - 文言は画面と共有の `src/data/morningDigestCopy.js` から生成する。**同じ文言を画面に直書きしない**ようにしたので、片方だけ古くなることがない（この切り出しに伴い `MorningDataDigest.jsx` の見出し・説明・用語集も同モジュール参照へ置き換え、Playwrightで `strong`×2・`br`×1・全dt/dd本文が従来どおりであること、ダークモードでも読めることを確認済み）
+  - `resolveSnapshotPath` は `/today` のみ対象（`?date=` 付きは対象外）。`verify-ai-snapshots.js` の検証対象にも `/today`（期待文字列「逃げが堅い選手」）を追加
+  - `npm run build` で `dist/ai-snapshots/today.html` が生成されることを確認済み
+  - **`middleware.js` の `config.matcher` にも `/today` を足す必要があった**（セルフレビューで発見）。Vercel は matcher に一致したパスでしか middleware を起動しないため、`resolveSnapshotPath()` への追加だけでは生成したスナップショットが永久に配信されない。ローカルのビルド成功では絶対に気づけない類の漏れ
+  - **Vercel Preview（実デプロイ）で検証済み**: `node scripts/verification/verify-ai-snapshots.js <preview-url>` が `/today` を含む全7項目で成功。GPTBot にはスナップショット、通常UAには SPA シェルが返ることを curl でも確認
+  - 残り: マージ後に `node scripts/verification/verify-ai-snapshots.js https://www.boat-ai.jp` が通ること
 
 ---
 

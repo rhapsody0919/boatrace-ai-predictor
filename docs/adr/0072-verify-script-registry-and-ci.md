@@ -58,11 +58,11 @@ PRごとに走る検証ワークフローは他に `e2e-smoke-test.yml` と `ver
 ## 結果
 
 - `npm run verify:ci` が52本を実行し、全件成功する状態にした（`manual` は5本）。
-- 失敗していた4本（番号重複・台帳期待値のハードコード2本・PGliteのclose漏れ）を修正した。番号重複は `101_add_cancellation_status_to_today_races_rpc.sql` へのリネームと `APPLIED.md` への追記で解消した。
+- 失敗していた4本（番号重複・台帳期待値のハードコード2本・PGliteのclose漏れ）を修正した。番号重複は `102_add_cancellation_status_to_today_races_rpc.sql` へのリネームと `APPLIED.md` への追記で解消した。
   - `verify-migration-numbers.js` は「既存の重複は `ALLOWED_DUPLICATES` に凍結」と「新規の重複は後発をリネーム」の2つの方針を持ち、今回のファイルは**新規かつ本番適用済み**で両方に当たる。リネームを選んだのは、凍結の理由である「リネームすると docs/design・ADR・コード内コメント・PR履歴からの参照が壊れる」が当てはまらないため（旧ファイル名をリポジトリ全体に grep したところ、参照は1件も無かった）。
   - このリネーム作業中に、当該マイグレーションが068の入れた4フィールド（`seriesDay`・`isFinalDay`・`raceTitle`・`raceStage`）と `LEFT JOIN race_conditions` を落としていることが判明した（本番実測で欠落を確認）。BOA-363と同型の回帰で、復旧は [BOA-431](https://linear.app/boat-ai/issue/BOA-431) で別途対応する。**当初この「適用済み」の判定を `cancellationStatus` の有無で行ったが、068も同じキーを入れるためこの観測では両者を区別できず、根拠として無効だった**（識別力のある `raceStage` を見ていれば、適用確認と同時に回帰も見えていた）。
 - 新しい検証スクリプトを書いたら、レジストリに1エントリ足すことが強制される。足さなければCIが落ちる。
-- **導入したその日に、この仕組みが実際に番号衝突を1件止めた。** PR #833 のレビュー中、並行して進んでいた PR #830 が `100_data_health_entries_duplicates.sql` をmasterに入れ、本PRの `100_add_cancellation_status_to_today_races_rpc.sql` と衝突した。`npm run verify:ci` がこれを検知して失敗したため、101へリネームして解消した。CI未接続のままなら、#824 と同じ経路でもう1件の重複がmasterに入っていた。
+- **導入したその日に、この仕組みが実際に番号衝突を1件止めた。** PR #833 のレビュー中、並行して進んでいた PR #830 が `100_data_health_entries_duplicates.sql` をmasterに入れ、本PRの `100_add_cancellation_status_to_today_races_rpc.sql` と衝突した。`npm run verify:ci` がこれを検知して失敗したため、102へリネームして解消した。CI未接続のままなら、#824 と同じ経路でもう1件の重複がmasterに入っていた。**さらにその後、PR #832 が101番を入れたため102へ再度ずらしている。同日中に2回衝突した**ことになり、並行作業の密度に対してこの検査が常時動いている必要性を裏づけている。
 - CLAUDE.md の「実装完了後の自動レビュー」4番が大幅に短くなり、AIが読むべき散文ルールが減った。
 
 ## 検討したが採らなかった案

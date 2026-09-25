@@ -16,11 +16,20 @@ export function isTargetBot(userAgent) {
 }
 
 // pathname + User-Agentから、配信すべきスナップショットの相対パスを返す（対象外はnull）
+// ⚠️ ここに対象を足したら middleware.js の config.matcher にも同じパスを足すこと。
+//    Vercel は matcher に一致したパスでしか middleware を起動しないため、片方だけでは配信されない
 export function resolveSnapshotPath(pathname, userAgent) {
   if (!isTargetBot(userAgent)) return null;
 
   if (pathname === "/winning-technique") {
     return "/ai-snapshots/winning-technique.html";
+  }
+
+  // /today（BOA-402）。スナップショットはビルド時生成なので、日替わりの中身は入らず
+  // ページの目的と各指標の定義だけ（plan.md §5）。?date= 付きは対象にしない
+  // （canonicalが常に /today で、日付別URLを検索対象にしない設計と揃える）
+  if (pathname === "/today") {
+    return "/ai-snapshots/today.html";
   }
 
   const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);

@@ -90,7 +90,7 @@
         "--base=origin/master"
       ],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
-      "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（101へリネームして解消）。本件の発端"
+      "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
     {
       "script": "verify-migration-rls.js",
