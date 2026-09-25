@@ -42,11 +42,25 @@ if [ $# -lt 1 ]; then
 fi
 
 target=$(TZ=Asia/Tokyo date -j -f "%Y-%m-%d %H:%M" "$1" +%s) || exit 1
-wait_sec=$(( target - $(date +%s) ))
-if [ "$wait_sec" -gt 0 ]; then
-  caffeinate -i -t $(( wait_sec + 30 )) &
-  while [ "$(date +%s)" -lt "$target" ]; do sleep 30; done
+
+# 待ち時間と、そのあとの実行窓の終わり（既定 06:00 JST）までをまとめてスリープ抑止する。
+# 【2026-09-25の実測】旧版は `caffeinate -i -t $((wait_sec + 30))` で**待ち時間しか**抑止して
+# おらず、取得が始まった直後に失効した。実際にMacが 00:45〜05:28 のあいだ Idle Sleep に入り、
+# 8時間の窓のうち約4.7時間を失った（取得できたのは896リクエストで、2.7時間分）。
+WINDOW_END_HOUR="${WINDOW_END_HOUR:-6}"
+window_end=$(TZ=Asia/Tokyo date -j -f "%Y-%m-%d %H:%M" \
+  "$(TZ=Asia/Tokyo date -j -f %s "$target" +%Y-%m-%d) $(printf '%02d:00' "$WINDOW_END_HOUR")" +%s)
+# 窓の終わりが開始時刻より前なら、日をまたぐ（22:00開始 → 翌06:00終了）
+[ "$window_end" -le "$target" ] && window_end=$(( window_end + 86400 ))
+caffeinate_sec=$(( window_end - $(date +%s) + 300 ))
+if [ "$caffeinate_sec" -gt 0 ]; then
+  caffeinate -i -t "$caffeinate_sec" &
+  caffeinate_pid=$!
+  trap 'kill "$caffeinate_pid" 2>/dev/null' EXIT
+  log "スリープ抑止を開始（$(( caffeinate_sec / 60 ))分間、実行窓の終わり $(printf '%02d:00' "$WINDOW_END_HOUR") JST まで）"
 fi
+
+while [ "$(date +%s)" -lt "$target" ]; do sleep 30; done
 
 log "起動（runner=${RUNNER_DIR}）"
 
@@ -81,15 +95,20 @@ run_step() {
   return 0
 }
 
-# 1) K/Bアーカイブの取り直し（www1.mbrace.or.jp）
-run_step "K/Bアーカイブ download" \
-  "$RUNNER_DIR/scripts/maintenance/kb-backfill.js" download \
-  --from="$KB_FROM" --to="$KB_TO" --archive-dir="$KB_ARCHIVE" --daily-limit="$DAILY_LIMIT" || exit 1
-
-# 2) N19 出走表バックフィル（boatrace.jp）。公式サイトへの同時アクセスを避け、必ず逐次で行う
+# 公式サイトへの同時アクセスを避けるため、必ず逐次で行う。
+#
+# 【順序の理由】1夜（22-06）で取れるのは実測で約2,500リクエスト。K/B（残り約3,400）と
+# N19（4,302）を合わせると3夜近くかかり、**先に走らせた方が後続を飢えさせる**。
+# 2026-09-25の初回は K/B を先にしたため、N19 は0件のまま窓が閉じた。
+# N19 は本番の欠損（3連率）を埋める＝ユーザーに見える価値があるのに対し、K/B は
+# DBに投入済みのデータのローカル控えを作り直すだけなので、**N19 を先にする**。
 run_step "N19 racelist download" \
   "$RUNNER_DIR/scripts/maintenance/racelist-backfill.js" download \
   --archive-dir="$RACELIST_ARCHIVE" --daily-limit="$DAILY_LIMIT" || exit 1
+
+run_step "K/Bアーカイブ download" \
+  "$RUNNER_DIR/scripts/maintenance/kb-backfill.js" download \
+  --from="$KB_FROM" --to="$KB_TO" --archive-dir="$KB_ARCHIVE" --daily-limit="$DAILY_LIMIT" || exit 1
 
 log "=== 状況 ==="
 node --env-file="$RUNNER_DIR/.env.local" "$RUNNER_DIR/scripts/maintenance/kb-backfill.js" status \
