@@ -327,7 +327,9 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
   - 文言は画面と共有の `src/data/morningDigestCopy.js` から生成する。**同じ文言を画面に直書きしない**ようにしたので、片方だけ古くなることがない（この切り出しに伴い `MorningDataDigest.jsx` の見出し・説明・用語集も同モジュール参照へ置き換え、Playwrightで `strong`×2・`br`×1・全dt/dd本文が従来どおりであること、ダークモードでも読めることを確認済み）
   - `resolveSnapshotPath` は `/today` のみ対象（`?date=` 付きは対象外）。`verify-ai-snapshots.js` の検証対象にも `/today`（期待文字列「逃げが堅い選手」）を追加
   - `npm run build` で `dist/ai-snapshots/today.html` が生成されることを確認済み
-  - 残り: 本番デプロイ後に `node scripts/verification/verify-ai-snapshots.js https://www.boat-ai.jp` が通ること（**ローカルビルド成功だけで完了としない**）
+  - **`middleware.js` の `config.matcher` にも `/today` を足す必要があった**（セルフレビューで発見）。Vercel は matcher に一致したパスでしか middleware を起動しないため、`resolveSnapshotPath()` への追加だけでは生成したスナップショットが永久に配信されない。ローカルのビルド成功では絶対に気づけない類の漏れ
+  - **Vercel Preview（実デプロイ）で検証済み**: `node scripts/verification/verify-ai-snapshots.js <preview-url>` が `/today` を含む全7項目で成功。GPTBot にはスナップショット、通常UAには SPA シェルが返ることを curl でも確認
+  - 残り: マージ後に `node scripts/verification/verify-ai-snapshots.js https://www.boat-ai.jp` が通ること
 
 ---
 
