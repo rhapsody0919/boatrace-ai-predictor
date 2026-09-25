@@ -874,7 +874,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     });
   });
 
-  test("分析ツール7コンポーネントの埋め込みセクションがデフォルト閉で並び、開くと会場/レース選択プルダウン無しで実データが表示される（race-detail-analysis-integration FR-3〜9）", async ({
+  test("分析ツール6コンポーネントの埋め込みセクションがデフォルト閉で並び、開くと会場/レース選択プルダウン無しで実データが表示される（race-detail-analysis-integration FR-3〜9）", async ({
     page,
   }) => {
     await page.addInitScript(() =>
@@ -886,11 +886,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
       "本日開催中の未終了レースが見つからないため検証をスキップ",
     );
 
+    // 「モーター調子」はBOA-308でアコーディオンからモータ情報タブへ昇格し、
+    // 重複表示を避けてアコーディオン版が撤去された（PredictionPanel.jsx冒頭の
+    // コメント参照）。テストが7個のまま取り残されていたが、selectUpcomingRaceが
+    // 常にfalseを返して無言でskipしていたため検知できていなかった
     const sections = page.locator(".embedded-analysis-section");
-    await expect(sections).toHaveCount(7);
+    await expect(sections).toHaveCount(6);
 
     const expectedTitles = [
-      "モーター調子",
       "選手調子",
       "STのズレ",
       "展示タイム推移",
@@ -1186,6 +1189,92 @@ test.describe("レースページ再設計（BOA-168）", () => {
     });
 
     // ページ全体は横スクロールしない（横スクロールはグリッド内だけに閉じる）
+    const docOverflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(docOverflow).toBeLessThanOrEqual(1);
+  });
+
+  // 枠別情報タブはデータ出走表を隠すため、上のテストだけでは
+  // 「タブ切替ストリップ・データ出走表がページ全体をはみ出させない」ことを
+  // 検証できていなかった。最小幅の320pxで基本情報タブも押さえる
+  test("基本情報タブでも320px幅でページ全体が横スクロールしない（横スクロールはコンテナ内に閉じる）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    // 320px幅ではCookie同意バナーが画面下部の操作を遮るため、同意済みで開始する
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai:cookie-consent", "accepted"),
+    );
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 20000,
+    });
+
+    // タブストリップ・データ出走表は自前のスクロールコンテナの中で横スクロールする
+    for (const selector of [".race-tabs-bar", ".drt-table-wrapper"]) {
+      const overflowX = await page
+        .locator(selector)
+        .first()
+        .evaluate((el) => getComputedStyle(el).overflowX);
+      expect(["auto", "scroll"]).toContain(overflowX);
+    }
+
+    const docOverflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(docOverflow).toBeLessThanOrEqual(1);
+  });
+
+  // 結果未確定レースだけに出るAI用コピーバナーは、320px幅で
+  // 「コピーボタン + キャッチコピーバッジ」が横一列に収まらずページ全体を
+  // 16pxはみ出させていた（AiCopyBanner.jsx）。上の確定済みレースのテストでは
+  // バナーが描画されないため、未確定レース側も押さえる
+  test("基本情報タブの結果未確定レース（AI用コピーバナーあり）でも320px幅でページ全体が横スクロールしない", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    // バナー背後のpingリングはCSS transformでスクロール可能領域に寄与するため、
+    // 任意のアニメーションフレームで計測しないよう止める
+    // （AiCopyBannerはuseReducedMotionを見てリング自体を描画しない）
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    // 320px幅ではCookie同意バナーが画面下部の操作を遮るため、同意済みで開始する
+    await page.addInitScript(() =>
+      localStorage.setItem("boatai:cookie-consent", "accepted"),
+    );
+
+    const found = await selectUpcomingRace(page);
+    test.skip(
+      !found,
+      "本日開催中の未終了レースが見つからないため検証をスキップ",
+    );
+
+    // 未終了レースを開けた以上バナーは必ず出る。出ない場合は退行なので
+    // スキップにせず失敗させる（バナーが消えると本検証が無言で骨抜きになるため）
+    await expect(page.locator(".ai-copy-banner")).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.locator(".race-tabs-btn.is-active")).toHaveText(
+      "基本情報",
+    );
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 20000,
+    });
+
+    // バナー自身が親からあふれていないこと（この修正が効いていることの直接確認）
+    const bannerOverflow = await page
+      .locator(".ai-copy-banner")
+      .evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(bannerOverflow).toBeLessThanOrEqual(1);
+
     const docOverflow = await page.evaluate(
       () =>
         document.documentElement.scrollWidth -
@@ -1705,11 +1794,16 @@ async function selectUpcomingRace(page) {
     return false;
   }
 
+  // 「次 XR」表示は会場カードの描画より後に入るため、.venue-gridの描画直後に
+  // countすると開催中でも常に0件になり、このヘルパーを使うテストが無言で
+  // skipし続けていた。表示の出現自体を待ってから絞り込む
   const upcomingVenue = page
     .locator(".venue-grid-card--open")
     .filter({ has: page.locator(".venue-grid-card__next-race") })
     .first();
-  if ((await upcomingVenue.count()) === 0) {
+  try {
+    await upcomingVenue.waitFor({ timeout: 15000 });
+  } catch {
     return false;
   }
 

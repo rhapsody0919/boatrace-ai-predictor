@@ -56,6 +56,13 @@ export default function AiCopyBanner({
           display: "inline-flex",
           alignItems: "center",
           gap: "8px",
+          // 320px幅では「コピーボタン + キャッチコピーバッジ」（どちらもnowrapで
+          // 縮まない）が横一列に収まらず、このラッパーが親（.ai-copy-banner、
+          // 内容幅262px）からあふれてページ全体を横スクロールさせていた。
+          // 折り返しを許すと必要幅が max(ボタン, バッジ) まで落ちて収まる。
+          // min-width:0は付けない（自動最小サイズが外れ、バッジ単体すら入らない
+          // 極端な狭さ〈viewport 200px未満〉で再びあふれるため）
+          flexWrap: "wrap",
         }}
       >
         {/* ボタン自体は静止させ、背後にping通知風の脈動リングだけを重ねる
