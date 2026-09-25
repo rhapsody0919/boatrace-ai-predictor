@@ -275,3 +275,7 @@ N19バックフィルの今夜22:00再開待ちと並行し、BOA-403のfollow-u
 **BOA-407完了・本番反映済み**: [PR #818](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/818)（調査）・[PR #819](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/819)（削除スクリプト、ユーザー実行）。当初の仮説（race_idの日付ズレ）は誤りと判明。実際は「過去の実在開催日のrace_entriesが複製され、開催終了後の別日付に誤保存された**幻の開催日**」。34会場日408件中**33会場日396件**は自社DB内の過去日と完全一致（12レース×6艇=72値のracer_id一致）で確定、複製の連鎖（例: 03-05実データ→03-06複製→03-08がさらに複製）も確認。残り1件（2025-12-03の津12件）はBOA-325（Done）の一部と判明、前提再検証は[BOA-413](https://linear.app/boat-ai/issue/BOA-413)へ切り出し。**本番から396レースを削除済み**（2026-09-24、CASCADE連動でrace_entries・race_conditions・predictions等も削除。実測でvenue_not_in_kが408件→12件＝津の除外分のみに減少したことを確認）。範囲拡大確認・現行パイプラインでの再現性調査は[BOA-414](https://linear.app/boat-ai/issue/BOA-414)へ切り出し。
 
 **検出アルゴリズムの教訓**: 初回実装は「直近の過去データと不一致ならそこで探索を打ち切る」ロジックで、33件中25件しか検出できなかった。三国(10)の実例（複製元は2日前だが1日前に無関係な別大会のデータがあり誤判定）を踏まえ、「途中の日に無関係なデータがあっても遡り続け、14日以内で完全一致する日を探す」方式に修正して33/396に一致した。
+
+## 2026-09-25 follow-upチケット着手
+
+N19の今夜再開待ちと並行し、BOA-410（差分更新）はBOA-408マージから約1日しか経っておらず効果測定に時期尚早と判断し保留。[BOA-411](https://linear.app/boat-ai/issue/BOA-411)（predictions誤生成の修正）・[BOA-413](https://linear.app/boat-ai/issue/BOA-413)（BOA-325前提の再検証）・[BOA-414](https://linear.app/boat-ai/issue/BOA-414)（幻の開催日パターンの範囲拡大・再現性調査）を子エージェント（worktree隔離）へ割当。[BOA-412](https://linear.app/boat-ai/issue/BOA-412)（K-fileパーサー拡張）は上記3件の結果を見てから着手する。
