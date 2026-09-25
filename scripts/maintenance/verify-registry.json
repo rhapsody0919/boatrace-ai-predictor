@@ -312,6 +312,11 @@
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
     },
     {
+      "script": "verify-lib-index.js",
+      "tier": "ci",
+      "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）がソースと一致していること"
+    },
+    {
       "script": "verify-format-column-migration.js",
       "tier": "manual",
       "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",

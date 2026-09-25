@@ -12,6 +12,8 @@ paths:
 
 複数のセッションが並行してデータ取得を実装した結果、「コードはマージ済みだが本番DBが空」「成功扱いだが0件書き込み」「一度も実行されていない月次ジョブ」が見逃された（2026-09-19の実測）。コードのマージを完了とせず、**本番データの実測で完了を判定する**。
 
+**共通ロジックを書く前に [`docs/reference/shared-logic-index.md`](../../docs/reference/shared-logic-index.md) を引く。** `scripts/lib` の163ファイル・321関数の索引で、ソースから機械生成しCIで最新性を担保している。実測で「既存実装を知らず再実装した」fixが26件あった。
+
 ## 1. 実行基盤（[ADR-0066](../../docs/adr/0066-scraping-execution-consolidation-to-vercel.md)）
 
 - 新規のデータ取得は**Vercel Functions + Vercel Cron**で実装する。新規にGitHub Actions・cron-job.orgへ取得ジョブを追加しない（既存の旧基盤ジョブは、移行が完了するまでの暫定）
