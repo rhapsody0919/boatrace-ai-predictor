@@ -17,6 +17,8 @@
  * オプション:
  *   --dates=2026-01-09,2026-04-11,...  対象日（既定: 監査で汚染を確認した4日）
  *   --archive=<dir>                    K/Bアーカイブ（既定: data/kb-archive）
+ *   --max-match=<n>                    汚染とみなす一致艇数の上限（既定1）。
+ *                                      欠場による差し替え（6艇中5艇一致）を汚染と取り違えないための安全弁
  *   --json=<file>                      計画の詳細をJSONで書き出す
  */
 import fs from "node:fs";
@@ -30,6 +32,7 @@ import {
   COLUMNS_FROM_B,
   COLUMNS_FROM_PROFILE,
   COLUMNS_TO_NULL,
+  DEFAULT_MAX_MATCH_FOR_CONTAMINATED,
   buildRestorePlan,
   indexBEntriesByRace,
 } from "../lib/raceEntriesKbRestore.js";
@@ -52,6 +55,9 @@ const DATES = arg("dates", DEFAULT_DATES.join(","))
   .map((s) => s.trim());
 const ARCHIVE = path.resolve(REPO_ROOT, arg("archive", "data/kb-archive"));
 const JSON_OUT = arg("json", null);
+const MAX_MATCH = Number(
+  arg("max-match", String(DEFAULT_MAX_MATCH_FOR_CONTAMINATED)),
+);
 const APPLY = has("apply") && command === "apply";
 
 if (!["plan", "apply"].includes(command)) {
@@ -63,6 +69,8 @@ if (!["plan", "apply"].includes(command)) {
 for (const d of DATES)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d))
     throw new Error(`--dates は YYYY-MM-DD です: ${d}`);
+if (!Number.isInteger(MAX_MATCH) || MAX_MATCH < 0 || MAX_MATCH > 5)
+  throw new Error(`--max-match は 0〜5 の整数です: ${MAX_MATCH}`);
 if (!fs.existsSync(ARCHIVE))
   throw new Error(
     `K/Bアーカイブが見つかりません: ${ARCHIVE}（--archive= で指定してください）`,
@@ -105,6 +113,7 @@ async function main() {
   const perDate = [];
   const allRows = [];
   const allRaces = [];
+  const allNearMisses = [];
   const allMissingProfiles = new Set();
 
   for (const date of DATES) {
@@ -113,6 +122,12 @@ async function main() {
       perDate.push({ date, skipped: "Bファイルが無い（未取得）" });
       continue;
     }
+    // アーカイブの中身が、本当にその日のものか確かめる（取り違えたまま書くと、
+    // 別の日の出走表で「復元」してしまう）
+    if (day.date !== date)
+      throw new Error(
+        `アーカイブの日付が一致しません（要求 ${date} / 中身 ${day.date}）: ${ARCHIVE}`,
+      );
     const bIndex = indexBEntriesByRace(day);
     const dbIndex = await loadDbIndex(date);
     if (dbIndex.size === 0) {
@@ -124,28 +139,39 @@ async function main() {
       bIndex,
       dbIndex,
       profiles: new Map(),
+      maxMatch: MAX_MATCH,
     });
     const racerIds = new Set();
     for (const { race_id } of dryRaces)
       for (const e of bIndex.get(race_id).values()) racerIds.add(e.racer_id);
     const profiles = await loadProfiles(racerIds);
 
-    const { rows, races, missingProfiles } = buildRestorePlan({
+    const { rows, races, nearMisses, missingProfiles } = buildRestorePlan({
       bIndex,
       dbIndex,
       profiles,
+      maxMatch: MAX_MATCH,
     });
     for (const id of missingProfiles) allMissingProfiles.add(id);
     allRows.push(...rows);
     allRaces.push(...races);
-    perDate.push({ date, races: races.length, rows: rows.length });
+    allNearMisses.push(...nearMisses);
+    perDate.push({
+      date,
+      races: races.length,
+      rows: rows.length,
+      nearMisses: nearMisses.length,
+    });
   }
 
   const summary = {
     dates: DATES,
     archive: ARCHIVE,
+    maxMatchForContaminated: MAX_MATCH,
     contaminatedRaces: allRaces.length,
     rowsToRestore: allRows.length,
+    // 一致しないが上限を超えるため対象外にしたレース（欠場の差し替え等）。0でないときは中身を確認する
+    nearMissRaces: allNearMisses.length,
     columnsFromB: Object.keys(COLUMNS_FROM_B),
     columnsFromProfile: Object.keys(COLUMNS_FROM_PROFILE),
     columnsSetToNull: COLUMNS_TO_NULL,
@@ -157,7 +183,11 @@ async function main() {
   if (JSON_OUT) {
     fs.writeFileSync(
       path.resolve(JSON_OUT),
-      JSON.stringify({ summary, races: allRaces, rows: allRows }, null, 2),
+      JSON.stringify(
+        { summary, races: allRaces, nearMisses: allNearMisses, rows: allRows },
+        null,
+        2,
+      ),
     );
     console.log(`計画をJSONで書き出しました: ${path.resolve(JSON_OUT)}`);
   }

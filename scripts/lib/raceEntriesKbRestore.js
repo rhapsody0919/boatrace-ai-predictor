@@ -13,7 +13,7 @@
  *
  *   racer_profiles から復元する（復元後の racer_id で引く）
  *     player_name / branch / hometown
- *     ※ Bファイルの name は詰めた表記（「荒井輝年」）で、DBの表記（「荒井　　輝年」）と異なる。
+ *     ※ Bファイルの name は姓名を詰めた表記で、DBの表記（姓と名の間に全角空白が入る）と異なる。
  *       DB内の正本である racer_profiles.name を使い、既存の他レースと表記を揃える
  *
  *   NULLにする（Bファイルから導けず、今入っている値は別の選手のもの）
@@ -95,12 +95,24 @@ export function indexBEntriesByRace(day) {
 }
 
 /**
+ * 汚染とみなす「一致してよい艇数」の上限（既定）。
+ *
+ * 実測した汚染レース219件は、Bファイルとの一致が**すべて0艇または1艇**だった（別の日の出走表が
+ * まるごと入っているため）。一方、**欠場による選手の差し替え**は、6艇中5艇が一致したまま1艇だけ
+ * 変わる。「一致しない＝汚染」にすると、番組表の公開後に差し替えが起きた正常なレースを、
+ * 公開時点の古い出走表で上書きしてしまう。この上限で、その取り違えを防ぐ。
+ */
+export const DEFAULT_MAX_MATCH_FOR_CONTAMINATED = 1;
+
+/**
  * 1レース分の汚染判定。Bファイルとの「艇番→登録番号」の一致数を数える。
- * 6艇そろって一致していなければ汚染とみなす（部分一致は、欠場の差し替え等ではなく
- * 「別の日の出走表が入っている」ことの現れであることを、監査で確認済み）。
+ * @param {Map<number, object>} dbRowsByBoat
+ * @param {Map<number, object>} bEntriesByBoat
+ * @param {{maxMatch?: number}} [options] maxMatch: 汚染とみなす一致艇数の上限（既定1）
  * @returns {{match: number, total: number, contaminated: boolean}}
  */
-export function compareRace(dbRowsByBoat, bEntriesByBoat) {
+export function compareRace(dbRowsByBoat, bEntriesByBoat, options = {}) {
+  const maxMatch = options.maxMatch ?? DEFAULT_MAX_MATCH_FOR_CONTAMINATED;
   let match = 0;
   let total = 0;
   for (const [boatNumber, bEntry] of bEntriesByBoat) {
@@ -109,7 +121,11 @@ export function compareRace(dbRowsByBoat, bEntriesByBoat) {
     total++;
     if (db.racer_id === bEntry.racer_id) match++;
   }
-  return { match, total, contaminated: total > 0 && match < total };
+  return {
+    match,
+    total,
+    contaminated: total > 0 && match < total && match <= maxMatch,
+  };
 }
 
 /**
@@ -138,23 +154,33 @@ export function buildRestoredRow(existing, bEntry, profile) {
  * @param {Map<string, Map<number, object>>} params.dbIndex race_id → (艇番 → 現在の行)
  * @param {Map<number, object>} params.profiles racer_id → racer_profiles の行
  * @param {Set<string>} [params.limitToRaceIds] 指定すると、このレースだけを対象にする
- * @returns {{rows: object[], races: Array<{race_id: string, match: number, total: number}>, missingProfiles: number[]}}
+ * @param {number} [params.maxMatch] 汚染とみなす一致艇数の上限（既定1。DEFAULT_MAX_MATCH_FOR_CONTAMINATED）
+ * @returns {{rows: object[], races: Array<{race_id: string, match: number, total: number}>, missingProfiles: number[], nearMisses: Array<{race_id: string, match: number, total: number}>}}
+ *   nearMisses: 一致しないが上限を超えるため対象外にしたレース（欠場の差し替え等。件数を報告に出す）
  */
 export function buildRestorePlan({
   bIndex,
   dbIndex,
   profiles,
   limitToRaceIds,
+  maxMatch = DEFAULT_MAX_MATCH_FOR_CONTAMINATED,
 }) {
   const rows = [];
   const races = [];
+  const nearMisses = [];
   const missingProfiles = new Set();
   for (const [raceId, bEntries] of bIndex) {
     if (limitToRaceIds && !limitToRaceIds.has(raceId)) continue;
     const dbRows = dbIndex.get(raceId);
     if (!dbRows) continue;
-    const { match, total, contaminated } = compareRace(dbRows, bEntries);
-    if (!contaminated) continue;
+    const { match, total, contaminated } = compareRace(dbRows, bEntries, {
+      maxMatch,
+    });
+    if (!contaminated) {
+      if (total > 0 && match < total)
+        nearMisses.push({ race_id: raceId, match, total });
+      continue;
+    }
     races.push({ race_id: raceId, match, total });
     for (const [boatNumber, bEntry] of bEntries) {
       const existing = dbRows.get(boatNumber);
@@ -165,9 +191,11 @@ export function buildRestorePlan({
     }
   }
   races.sort((a, b) => a.race_id.localeCompare(b.race_id));
+  nearMisses.sort((a, b) => a.race_id.localeCompare(b.race_id));
   return {
     rows,
     races,
+    nearMisses,
     missingProfiles: [...missingProfiles].sort((a, b) => a - b),
   };
 }

@@ -8,7 +8,9 @@
  *     とくに weight_kg は「Bファイルの登録体重（整数）」と「この列の発走前体重（小数あり）」が
  *     別の量のため、**書かずにNULLにする**。ここが崩れると、系統的に誤った体重が入る
  *   - ai_score_* を書かないこと（当時のモデル出力であり、選手の属性ではない）
- *   - 汚染の判定（艇番→登録番号がBファイルと1つでも食い違えば汚染）
+ *   - 汚染の判定と、その安全弁。一致が「上限（既定1艇）以下」のときだけ汚染とみなす。
+ *     ここを「1つでも食い違えば汚染」に戻すと、番組表の公開後に**欠場で差し替えが起きた
+ *     正常なレース**（6艇中5艇一致）まで、公開時点の古い出走表で上書きしてしまう
  *   - race_id の組み立て（会場・レース番号とも2桁ゼロ埋め。padStartを外すと、
  *     R1〜R9が別IDになり、12レース中3レースしか照合できなくなる）
  */
@@ -81,9 +83,26 @@ check(
     .contaminated === false,
 );
 check(
-  "1艇でも食い違えば汚染",
+  "1艇だけ違う（欠場による差し替え相当）は汚染としない — 既定の上限は一致1艇まで",
   compareRace(boats([1, 2, 3, 4, 5, 9]), bBoats([1, 2, 3, 4, 5, 6]))
+    .contaminated === false,
+  "汚染扱いにすると、番組表の公開後に差し替えが起きた正常なレースを、古い出走表で上書きしてしまう",
+);
+check(
+  "1艇しか一致しない（別の日の出走表が入っている）は汚染",
+  compareRace(boats([1, 91, 92, 93, 94, 95]), bBoats([1, 2, 3, 4, 5, 6]))
     .contaminated === true,
+);
+check(
+  "全艇違うのも汚染",
+  compareRace(boats([91, 92, 93, 94, 95, 96]), bBoats([1, 2, 3, 4, 5, 6]))
+    .contaminated === true,
+);
+check(
+  "maxMatch で上限を緩められる（5艇一致でも汚染扱いにできる）",
+  compareRace(boats([1, 2, 3, 4, 5, 9]), bBoats([1, 2, 3, 4, 5, 6]), {
+    maxMatch: 5,
+  }).contaminated === true,
 );
 check(
   "DBに無い艇は分母に数えない",
@@ -253,6 +272,34 @@ const day = {
       dbIndex,
       profiles: new Map(),
     }).missingProfiles.includes(3505),
+  );
+  // 欠場の差し替え（5艇一致）は対象外にし、nearMisses に残して件数を報告できるようにする
+  const dbIndexNearMiss = new Map([
+    [
+      "2026-01-09-04-01",
+      new Map([
+        [1, { race_id: "2026-01-09-04-01", boat_number: 1, racer_id: 3505 }],
+      ]),
+    ],
+  ]);
+  const bIndexNearMiss = new Map([
+    [
+      "2026-01-09-04-01",
+      new Map([
+        [1, { boat_number: 1, racer_id: 3505 }],
+        [2, { boat_number: 2, racer_id: 9999 }],
+      ]),
+    ],
+  ]);
+  const nm = buildRestorePlan({
+    bIndex: bIndexNearMiss,
+    dbIndex: dbIndexNearMiss,
+    profiles: new Map(),
+  });
+  check(
+    "計画: DBに無い艇は分母に入らないため、1艇のみDBにあり一致していれば対象外",
+    nm.rows.length === 0 && nm.races.length === 0 && nm.nearMisses.length === 0,
+    show(nm),
   );
 }
 
