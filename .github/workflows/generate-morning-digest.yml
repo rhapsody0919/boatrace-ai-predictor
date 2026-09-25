@@ -42,11 +42,11 @@ name: Generate Morning Digest
 # （次回の実行で再試行させるため）。最終回（08:00）でも満たせない場合に
 # ジョブを失敗させたいので、最終回のステップだけ「書けたかどうか」を検証する。
 # continue-on-error は付けない。
+# ⚠️ 定時実行は Vercel Cron（api/cron/morning-digest.js、vercel.json）へ移した（ADR-0066 §改訂1）。
+# GitHub Actions の定時実行は実測で2.5〜4.5時間遅れるのが常態で、朝に出ることが価値の中心の
+# このページでは前提が成立しなかった（plan.md §2.4）。ここに schedule を復活させないこと。
+# このワークフローは、障害時の手動復旧・任意日のバックフィル用に残している。
 on:
-  schedule:
-    - cron: "30 20 * * *" # JST 05:30 (UTC 20:30)
-    - cron: "30 21 * * *" # JST 06:30 (UTC 21:30)
-    - cron: "0 23 * * *" # JST 08:00 (UTC 23:00) GHAフェイルセーフ（07:00開始）の後
   workflow_dispatch:
     inputs:
       date:
@@ -89,34 +89,10 @@ jobs:
       # ⚠️ ジョブを失敗させるだけでは足りない。2026-09-25 に実際に失敗したとき、
       # 誰も気づかず10時間放置され、ユーザーが画面を見て初めて発覚した。
       # 失敗したら Slack へ通知する（既存の SLACK_WEBHOOK_URL、slack-notify-pr.yml と同経路）。
-      - name: Verify the digest exists (last run only)
+      - name: Verify the digest exists
         id: verify
-        if: github.event.schedule == '0 23 * * *'
         run: node scripts/maintenance/verify-morning-digest.js
         env:
           TZ: "Asia/Tokyo"
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-
-      - name: Notify Slack (当日ぶんが生成できていない場合のみ)
-        if: failure() && steps.verify.conclusion == 'failure'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          curl -s -X POST "$SLACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"attachments\": [{
-                \"color\": \"#c9a227\",
-                \"blocks\": [
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \":warning: *「本日のデータ一覧」(/today) が本日ぶん未生成のまま最終回を終えました（BOA-402）*\n最終回（JST 08:00 予定）でも morning_digest_rows に当日の行が書けていません。/today は「本日ぶんはまだ公開されていません」と表示されたままになります。\n実行ログ: ${RUN_URL}\n復旧手順: 先に aggregate-racer-course-technique-stats.yml を workflow_dispatch し、window_end が前々日以降になったことを確認してから generate-morning-digest.yml を workflow_dispatch する\"
-                    }
-                  }
-                ]
-              }]
-            }"
