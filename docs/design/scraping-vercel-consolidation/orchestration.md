@@ -93,7 +93,7 @@
 | 日付 | 決定 | 根拠・詳細 |
 |---|---|---|
 | 2026-09-19 | データ取得基盤をVercel Functions + Vercel Cronに一本化する | [ADR-0066](../../adr/0066-scraping-execution-consolidation-to-vercel.md) |
-| 2026-09-25 | **ADR-0066の「対象外（GitHub Actionsのまま）」の線引きを、カテゴリから「実測の実行時間」に変える**。外部サイトを取得せず、関数の `maxDuration`（最大300秒）に十分な余裕をもって収まるジョブは、DB内集計であってもVercel Cronへ移してよい。Node側で実際に長時間CPUを使うもの（`train-*` 等）は引き続き対象外 | [ADR-0066 §改訂1](../../adr/0066-scraping-execution-consolidation-to-vercel.md)。BOA-402 の2ジョブ（集計27.0秒・生成5.5秒、重い処理はPostgres側のRPC）を移した。**このWSでGitHub Actions側の集計ジョブを触る際は、同じ基準で移行可否を判断してよい** |
+| 2026-09-25 | **ADR-0066の「対象外（GitHub Actionsのまま）」の線引きを、カテゴリから「実測の実行時間」に変える**。外部サイトを取得せず、関数の `maxDuration`（最大300秒）に十分な余裕をもって収まるジョブは、DB内集計であってもVercel Cronへ移してよい。Node側で実際に長時間CPUを使うもの（`train-*` 等）は引き続き対象外 | [ADR-0066 §改訂1](../../adr/0066-scraping-execution-consolidation-to-vercel.md)。BOA-402 の2ジョブ（集計27.0秒・生成5.5秒、重い処理はPostgres側のRPC）を移した。**このWSでGitHub Actions側の集計ジョブを触る際は、同じ基準で移行可否を判断してよい**。なお、この決定をWSの担当セッション（`FR-3 scraping-full-coverage tasks` / `公式サイトデータ取得の最適化`）へセッション間メッセージでも送ったが、**両方オフラインでキュー待ちのまま Claude アカウントを切り替えたため、届かない可能性が高い**。この表が正本 |
 | 2026-09-19 | 完了の定義: (A)過去のバックフィルを含む期待件数、(B)可変データの窓内取得率、(C)自動の継続監視 | `.claude/rules/data-acquisition.md` |
 | 2026-09-19 | Supabaseの計算リソースをSmallへ変更（済） | BOA-357 |
 | 2026-09-19 | 公式サイトのコンテンツの再表示: リスクを認識したうえで、現状の方針を維持する（弁護士等への確認は行わない） | [ADR-0067](../../adr/0067-official-site-content-redisplay-policy.md) |

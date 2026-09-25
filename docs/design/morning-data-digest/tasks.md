@@ -2,7 +2,7 @@
 
 spec: [spec.md](./spec.md) / screens: [screens.md](./screens.md) / plan: [plan.md](./plan.md)
 
-Linear: [BOA-402](https://linear.app/boat-ai/issue/BOA-402)　モック（承認済み、2026-09-24・案A）: https://claude.ai/artifact/7Dytu5kJjB82f7xLngAoHP
+Linear: [BOA-402](https://linear.app/boat-ai/issue/BOA-402)　モック（承認済み、2026-09-24・案A）: [mockup/](mockup/README.md)（旧Artifactはアカウント切替で参照不可。**実装は4回の改訂でモックから大きく離れている**ので、現在の仕様は screens.md §7 と本番 <https://www.boat-ai.jp/today> を見る）
 
 ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](../../adr/0071-venue-adjusted-skill-delta.md)
 
@@ -72,7 +72,7 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
 
 ## Phase 2: マイグレーションと夜間バッチ（B1）
 
-- [ ] **T2-1** (ユーザー承認) マイグレーション098を適用し、`APPLIED.md` を「適用済み」に更新する
+- [x] **T2-1** (ユーザー承認) マイグレーション098を適用し、`APPLIED.md` を「適用済み」に更新する ← **2026-09-24 適用済み**（`APPLIED.md` の098行に実測結果を記録）
   - 適用前に長時間クエリが0件であることを確認する
   - 適用後の確認（読み取りのみ）: 4表が存在・RLS有効・`has_table_privilege('anon', …, 'SELECT')=true` かつ `'INSERT'=false`・公開読み取りポリシー各1件・`morning_digest_rows` のFKが `morning_digest_days` を指す
   - **受入基準**: 上記がすべて満たされ、`scripts/maintenance/check-anon-access.js --expect-applied` が通る
@@ -316,7 +316,7 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
 
 ## Phase 6: 仕上げ
 
-- [ ] **T6-1** `docs/design/morning-data-digest/content-index.json` を作成する（フローA-2）
+- [x] **T6-1** `docs/design/morning-data-digest/content-index.json` を作成する（フローA-2） ← **作成済み**（コミット 52f77d57）
   - テンプレート: `docs/design/_template/content-index.json`
   - **受入基準**: `npm run verify:content-index` が通る
 
@@ -332,6 +332,34 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
   - `npm run build` / `npm run test:e2e` / `npm run verify:sitemap` / `npm run verify:content-index` / `npm run verify:er-diagram` / `npm run verify:adr-numbers` / `npm run verify:migration-numbers` / `npm run verify:query-errors`
   - **新規のデータ集計機能なのでデータ精度の検証を独立ステップとして行う**（`.claude/rules/analysis.md`）。コードレビューとは別に「集計結果が実データと一致しているか」だけを見る
   - **受入基準**: 全コマンドが通り、データ精度検証の結果を完了報告に含める
+
+---
+
+## Phase 7: 定時実行の実測（2026-09-25 の障害を受けて追加）
+
+`/today` が9/25の朝10時を過ぎても未生成だった障害の後処理。**コードはマージ済みだが「完了の定義」（`.claude/rules/data-acquisition.md`）のC（継続監視）が未達**で、定時実行での成功をまだ一度も観測していない。詳細な経緯は [plan.md §2.4](plan.md)、[ADR-0066 §改訂1](../../adr/0066-scraping-execution-consolidation-to-vercel.md)。
+
+- [ ] **T7-1** Vercel Cron の定時実行が成功したことを実測する（**2026-09-26 以降に実施**）
+  - 前提: PR #827 マージ済み（本番デプロイ `76883297e`、2026-09-25 JST 11:39）、マイグレーション099適用済み（両ジョブ `mode='live'`）
+  - 実測クエリ:
+    ```sql
+    select job, mode, last_target_date, last_success_at, last_rows_written, last_error, consecutive_failures
+      from scrape_job_state
+     where job in ('racer_course_technique_stats','morning_digest');
+    select max(window_end) from racer_course_technique_stats;
+    select digest_date, generated_at from morning_digest_days order by digest_date desc limit 3;
+    ```
+  - **受入基準**（4つすべて）
+    1. `racer_course_technique_stats.last_success_at` が **JST 13:00台**（旧 GitHub Actions の 01:10 ではない）
+    2. `morning_digest.last_target_date` が当日、`last_success_at` が **JST 05:30台**
+    3. `max(window_end)` が**前日**（13:00 の集計が kfile_sync の後に走っている証拠）
+    4. `morning_digest_days` に当日の行があり、`generated_at` が当日 JST 05:30台
+  - 満たさない場合は Vercel のログ（関数 `api/cron/morning-digest`・`api/cron/racer-course-technique-stats`）と `scrape_job_state.last_error` / `last_report` を見る。手動復旧は「集計 → ダイジェスト」の順に GitHub Actions を `workflow_dispatch`（両ワークフローとも手動実行用に残してある）
+  - **この確認が済むまで BOA-402 を Done にしない**
+
+- [ ] **T7-2** 監視が実際に鳴ることを確認する
+  - `scrape-monitor`（`scripts/lib/scrapeJobs/monitor.js` の `evaluateJobStates`）の `daily_overdue` は、`kind: "daily"` かつ `mode='live'` のジョブが `targetTimeJst` から3時間以上たっても当日分を処理していなければ Slack へ通知する。`morning_digest` は `targetTimeJst=05:30` なので **JST 08:30以降**に鳴るはず
+  - **受入基準**: T7-1 が満たされている日は通知が来ない／意図的に未処理の状態を作った場合に通知が来る、のどちらかを確認できる
 
 ---
 

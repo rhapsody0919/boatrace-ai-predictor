@@ -363,7 +363,9 @@ phase a が `src/components/analysis/CrossTabGrid.jsx`（行軸×列軸のクロ
 
 `.claude/CLAUDE.md`「大規模な新機能はモック承認を実装前に必須化」に従い、`/step2` の前にモックを作成した。
 
-**モック: https://claude.ai/artifact/7Dytu5kJjB82f7xLngAoHP**
+**モック（ローカルに保存済み）: [mockup/](mockup/README.md)**
+
+元は claude.ai の Artifact（`https://claude.ai/artifact/7Dytu5kJjB82f7xLngAoHP`）だったが、**Claudeアカウントの切替で旧アカウント側に残り参照できなくなる**ため、2026-09-25 に `project/` 配下のファイルを `mockup/` へ保存した。**実装は下記 §7 の4回の改訂でモックから大きく離れている**ので、現在の仕様はこのモックではなく §7 と本番 <https://www.boat-ai.jp/today> を見ること。
 
 | アートボード | 内容 |
 |---|---|
