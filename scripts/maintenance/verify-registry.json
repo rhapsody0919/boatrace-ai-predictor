@@ -295,7 +295,7 @@
       "script": "verify-format-column-migration.js",
       "tier": "manual",
       "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
-      "reason": "実Supabaseの sns_drafts を読むため。環境変数が無いと検証をスキップできず失敗する",
+      "reason": "実Supabaseの sns_drafts を読むため。環境変数が無いと検証をスキップできず失敗する nightly-verify-db.yml が毎晩JST3:00に実行する（読み取りのみ）。",
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
     },
     {
@@ -309,7 +309,7 @@
       "script": "verify-rpc-output-keys.js",
       "tier": "manual",
       "guards": "本番RPC（get_predictions_by_date / _light / get_today_races）の出力キーとフロントの参照の整合（BOA-363の再発防止）",
-      "reason": "本番RPCを実際に呼んで出力キーを見る検証のため、モックでは代替できない",
+      "reason": "本番RPCを実際に呼んで出力キーを見る検証のため、モックでは代替できない nightly-verify-db.yml が毎晩JST3:00に実行する（読み取りのみ）。",
       "command": "node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js"
     },
     {
