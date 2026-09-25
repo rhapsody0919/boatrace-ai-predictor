@@ -37,6 +37,9 @@ import {
   computeVenueRanking,
   buildConditionRows,
   buildMeetResults,
+  buildMeetTrend,
+  MEET_ST_DIFF_THRESHOLD,
+  MEET_EXHIBITION_DIFF_THRESHOLD,
   pickPeriodStats,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
@@ -623,8 +626,89 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                           </p>
                         );
                       }
+                      // 生データだけでは「で、今日はどうなのか」が読めない。
+                      // ST考察（FR-1）と同じ発想で、その選手自身の通常値との
+                      // 差を先に出す（2026-09-26ユーザー合意のPhase A）
+                      const trend = buildMeetTrend(meet, records);
+                      const st = trend.st;
+                      const ex = trend.exhibition;
+                      const stVerdict =
+                        st.diff === null
+                          ? null
+                          : st.diff <= -MEET_ST_DIFF_THRESHOLD
+                            ? t("basicInfo.meetTrendStPush", {
+                                diff: Math.abs(st.diff).toFixed(2),
+                              })
+                            : st.diff >= MEET_ST_DIFF_THRESHOLD
+                              ? t("basicInfo.meetTrendStCareful", {
+                                  diff: st.diff.toFixed(2),
+                                })
+                              : t("basicInfo.meetTrendStFlat");
+                      const exVerdict =
+                        ex.diff === null
+                          ? null
+                          : ex.diff <= -MEET_EXHIBITION_DIFF_THRESHOLD
+                            ? t("basicInfo.meetTrendExhibitionUp", {
+                                diff: Math.abs(ex.diff).toFixed(2),
+                              })
+                            : ex.diff >= MEET_EXHIBITION_DIFF_THRESHOLD
+                              ? t("basicInfo.meetTrendExhibitionDown", {
+                                  diff: ex.diff.toFixed(2),
+                                })
+                              : t("basicInfo.meetTrendExhibitionFlat");
                       return (
                         <div className="rbit-meet">
+                          {(stVerdict || exVerdict) && (
+                            <div className="rbit-meet-trend">
+                              {stVerdict && (
+                                <p className="rbit-meet-trend-line">
+                                  <span>
+                                    {t("basicInfo.meetTrendSt", {
+                                      meet: st.meetAvg.toFixed(2),
+                                      n: st.meetN,
+                                      base:
+                                        st.baseAvg === null
+                                          ? "—"
+                                          : st.baseAvg.toFixed(2),
+                                    })}
+                                  </span>
+                                  <span
+                                    className={`rbit-meet-verdict${
+                                      st.diff !== null &&
+                                      Math.abs(st.diff) >=
+                                        MEET_ST_DIFF_THRESHOLD
+                                        ? " is-changed"
+                                        : ""
+                                    }`}
+                                  >
+                                    {stVerdict}
+                                  </span>
+                                </p>
+                              )}
+                              {exVerdict && (
+                                <p className="rbit-meet-trend-line">
+                                  <span>
+                                    {t("basicInfo.meetTrendExhibition", {
+                                      first: ex.first.toFixed(2),
+                                      last: ex.last.toFixed(2),
+                                      n: ex.n,
+                                    })}
+                                  </span>
+                                  <span
+                                    className={`rbit-meet-verdict${
+                                      ex.diff !== null &&
+                                      Math.abs(ex.diff) >=
+                                        MEET_EXHIBITION_DIFF_THRESHOLD
+                                        ? " is-changed"
+                                        : ""
+                                    }`}
+                                  >
+                                    {exVerdict}
+                                  </span>
+                                </p>
+                              )}
+                            </div>
+                          )}
                           <p className="rbit-trend-note">
                             {t("basicInfo.meetNote")}
                           </p>

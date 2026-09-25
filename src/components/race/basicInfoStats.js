@@ -507,3 +507,66 @@ export function buildMeetResults(records, { raceId, venueCode }) {
     .filter((m) => m.record !== null)
     .map((m) => m.record);
 }
+
+/** 今節の平均STが通常値とこれだけ違えば「踏んでいる／慎重」と言い切る閾値（秒） */
+export const MEET_ST_DIFF_THRESHOLD = 0.01;
+/** 今節の展示タイムがこれだけ動けば「上向き／下向き」と言い切る閾値（秒） */
+export const MEET_EXHIBITION_DIFF_THRESHOLD = 0.03;
+
+/**
+ * 今節の「変化」を出す（phase a FR-3 Phase A、純関数）。
+ *
+ * 日別の生データ（`buildMeetResults`）だけでは「で、今日はどうなのか」が読めない。
+ * ファンが今節を見る理由は主に「スタートを詰めてきたか」「機力が上向きか」の2つで、
+ * どちらも**単独の数値ではなく変化**を見ている。ST考察（FR-1）が同コース・同級別の
+ * 平均との差を出しているのと同じ発想で、ここでは**その選手自身の通常値との差**を出す。
+ *
+ * - **ST**: 今節の平均ST vs 今節を除く全期間の平均ST。負なら踏んでいる
+ * - **展示**: 今節の最初の展示タイム vs 直近の展示タイム。負なら上向き（速くなった）
+ *
+ * 追加クエリは0本（`getRacerScopedRaceStats` が既に持っている値だけを使う）。
+ *
+ * @param {Array<Object>} meet `buildMeetResults` の戻り値（日付昇順）
+ * @param {Array<Object>} allRecords 同じ選手の全走（通常値の母数）
+ * @returns {{st: {meetAvg: number|null, meetN: number, baseAvg: number|null,
+ *   baseN: number, diff: number|null}, exhibition: {first: number|null,
+ *   last: number|null, diff: number|null, n: number}}}
+ */
+export function buildMeetTrend(meet, allRecords) {
+  const meetRows = Array.isArray(meet) ? meet : [];
+  const all = Array.isArray(allRecords) ? allRecords : [];
+  const meetIds = new Set(meetRows.map((r) => r.raceId));
+  // 通常値からは今節を除く。含めると「今節が通常値を押し上げて差が縮む」ため
+  const baseRows = all.filter((r) => !meetIds.has(r.raceId));
+
+  const meetRates = computeRates(meetRows);
+  const baseRates = computeRates(baseRows);
+  const stDiff =
+    meetRates.avgSt !== null && baseRates.avgSt !== null
+      ? meetRates.avgSt - baseRates.avgSt
+      : null;
+
+  const exhibitions = meetRows
+    .filter((r) => typeof r.exhibitionTime === "number")
+    .map((r) => r.exhibitionTime);
+  const first = exhibitions.length > 0 ? exhibitions[0] : null;
+  const last =
+    exhibitions.length > 0 ? exhibitions[exhibitions.length - 1] : null;
+
+  return {
+    st: {
+      meetAvg: meetRates.avgSt,
+      meetN: meetRates.avgStN,
+      baseAvg: baseRates.avgSt,
+      baseN: baseRates.avgStN,
+      diff: stDiff,
+    },
+    exhibition: {
+      first,
+      last,
+      // 1走しか無ければ「推移」ではないので差は出さない
+      diff: exhibitions.length >= 2 ? last - first : null,
+      n: exhibitions.length,
+    },
+  };
+}

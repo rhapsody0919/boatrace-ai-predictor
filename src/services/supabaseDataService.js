@@ -3782,7 +3782,9 @@ export const supabaseDataService = {
     // 足したので版を上げる。古い形のキャッシュが返ると、これらが undefined になって
     // 「波5cm以上 n=0」のような誤った値が出る。このキーは inferTtlFromKey に
     // マッチせず30分TTLなので、旧エントリが残る窓は最大30分
-    return withCache(`racer-scoped-race-stats-v2-${racerId}`, async () => {
+    // v3: 今節タブの展示タイム推移（phase a FR-3のPhase A）のために
+    // exhibitionTime を足した。同じ理由で版を上げる
+    return withCache(`racer-scoped-race-stats-v3-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -3976,6 +3978,14 @@ export const supabaseDataService = {
             actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
             // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
             grade: entry.grade ?? null,
+            // 自艇の展示タイム。展示1位判定のために同レース全艇分を既に
+            // 取得しているので、そこから拾うだけ（追加クエリ0本）。
+            // 今節タブの「展示タイムの推移」（FR-3 Phase A）で使う
+            exhibitionTime:
+              exhibitionRowsByRace
+                .get(entry.race_id)
+                ?.find((r) => r.boat_number === entry.boat_number)
+                ?.exhibition_time ?? null,
             // そのレース時点の出走表に載っていた今期のF数（phase a FR-2の
             // 「F持ち時」「F無し時」の行）。null の走は母数から落ちる。
             // 充足の内訳（2026-09-25実測）:

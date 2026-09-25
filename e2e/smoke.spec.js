@@ -1451,6 +1451,15 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const meetRows = page.locator(".rbit-meet tbody tr");
     await expect(meetRows).toHaveCount(6, { timeout: 25000 });
     await expect(page.locator(".rbit-meet thead")).toContainText("進入");
+    // 生データの前に「通常値との差」を出す（FR-3 Phase A）。
+    // 登番4872のこの節は 今節ST 0.202 / 通常 0.184（154走）、
+    // 展示 6.81 → 6.69 で、いずれもDB実値と一致することを確認済み
+    const trend = page.locator(".rbit-meet-trend");
+    await expect(trend).toContainText("今節の平均ST 0.20（6走）／通常 0.18");
+    await expect(trend).toContainText("慎重");
+    await expect(trend).toContainText("展示タイム 6.81 → 6.69（6走）");
+    await expect(trend).toContainText("上向き");
+
     // 同じ節の走しか並ばない列（会場・レース名・グレード・種別）は省くので、
     // 日付/R/枠番/進入/ST/着順/決まり手/単勝配当 の8列になる
     await expect(page.locator(".rbit-meet thead th")).toHaveCount(8);
