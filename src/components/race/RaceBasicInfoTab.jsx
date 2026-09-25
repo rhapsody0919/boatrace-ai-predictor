@@ -36,11 +36,13 @@ import {
   getRecentRaces,
   computeVenueRanking,
   buildConditionRows,
+  buildMeetResults,
   pickPeriodStats,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
+import RecentRunsBar from "./RecentRunsBar";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -483,6 +485,13 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                     >
                       {t("basicInfo.viewConditions")}
                     </button>
+                    <button
+                      type="button"
+                      className={`rbit-expanded-tab${expandedView === "meet" ? " is-active" : ""}`}
+                      onClick={() => setExpandedView("meet")}
+                    >
+                      {t("basicInfo.viewMeet")}
+                    </button>
                   </div>
 
                   {expandedView === "trend" &&
@@ -585,6 +594,41 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                               );
                             })}
                           </ol>
+                        </div>
+                      );
+                    })()}
+
+                  {expandedView === "meet" &&
+                    (() => {
+                      const records = scopedStatsByRacer[player?.racerId];
+                      if (records === undefined || records === null) {
+                        return (
+                          <p className="rbit-expanded-loading">
+                            {t("basicInfo.loading")}
+                          </p>
+                        );
+                      }
+                      // 節の切り出しは meetGrouping に委ねる（直前情報タブの
+                      // 今節展示情報と同じ判定）。追加クエリは0本
+                      const meet = buildMeetResults(records, {
+                        raceId,
+                        venueCode,
+                      });
+                      if (meet.length === 0) {
+                        return (
+                          <p className="rbit-expanded-empty">
+                            {t("basicInfo.meetEmpty")}
+                          </p>
+                        );
+                      }
+                      return (
+                        <div className="rbit-meet">
+                          <p className="rbit-trend-note">
+                            {t("basicInfo.meetNote")}
+                          </p>
+                          {/* 直近10走（枠別情報タブ）と同じ帯を使う。
+                              今節は「各日」を見せるので日付ラベルを出す */}
+                          <RecentRunsBar runs={meet} showDateLabel />
                         </div>
                       );
                     })()}

@@ -639,6 +639,9 @@
     "venueRankingFor": "{{metric}} 랭킹",
     "currentVenueRank": "이번 시리즈의 {{venue}}는 전체 {{total}}개 경기장 중 {{rank}}위",
     "viewConditions": "조건별",
+    "viewMeet": "이번 시리즈",
+    "meetNote": "이번 시리즈(이번 개최)의 지금까지의 출주. 진입 코스·착순·ST(괄호 안은 그 경주의 ST 순위)",
+    "meetEmpty": "이번 시리즈에서는 아직 출주하지 않았습니다(이 경주가 첫 출주입니다)",
     "conditionsNote": "조건별 {{metric}}(당사 집계·확보 가능한 전체 기간). 위 막대의 공식 수치와는 산출 방식이 달라 숫자가 일치하지 않습니다.",
     "conditions": {
       "national": "전국",
@@ -1509,6 +1512,7 @@
     "detailNotPrediction": "이 경기장의 과거 실적을 집계한 것이며, 이번 경주의 예상이 아닙니다."
   },
   "recentRuns": {
+    "dateLabel": "{{month}}/{{day}} {{race}}R",
     "older": "오래됨",
     "newer": "최근",
     "flying": "F",

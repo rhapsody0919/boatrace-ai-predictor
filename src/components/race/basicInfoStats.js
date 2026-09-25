@@ -32,6 +32,7 @@
  */
 import { isPlaceHit, isShowHit } from "../../../scripts/lib/hitCalculator.js";
 import { parseRaceId } from "../../utils/raceId.js";
+import { groupIntoCurrentMeet } from "../../utils/meetGrouping.js";
 
 export const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
 export const SCOPES = ["local", "national"];
@@ -456,4 +457,50 @@ export function pickPeriodStats(rows, racerId) {
     calcFrom: row.calc_from ?? null,
     calcTo: row.calc_to ?? null,
   };
+}
+
+/**
+ * 「今節」のタブ（phase a FR-3 / T6-1）に出す走を切り出す（純関数）。
+ *
+ * **新規取得は0本**。`getRacerScopedRaceStats` が既に持っている走から、
+ * 表示中のレースと同じ節のものだけを抜く（plan.md §6.1「FR-3は+0本」）。
+ *
+ * ## 節の判定
+ *
+ * 既存の `groupIntoCurrentMeet`（`src/utils/meetGrouping.js`、直前情報タブの
+ * 今節展示情報と同じ）に委ねる。日付の間隔が2日以内で連続する区間を1節とみなす。
+ *
+ * ただしそのままでは2つずれる。
+ *
+ * 1. **会場で絞る**。`groupIntoCurrentMeet` は日付の連続性しか見ないため、
+ *    別会場の節が地続きだと1つの節として繋がる。節は会場単位なので先に絞る
+ * 2. **表示中のレースを終端の目印として足してから切り出す**。この関数の呼び出し元は
+ *    過去のレースも開く。最新の走から遡る実装なので、目印を足さずに呼ぶと
+ *    「表示中のレースより後の節」を今節として返してしまう。初日の朝（その節の
+ *    結果がまだ1走も無い）に、前節が今節として出るのも同じ理由で防げる
+ *
+ * 表示中のレース自体は返さない（結果タブで見られる。ここは「今節のこれまで」）。
+ *
+ * @param {Array<Object>} records `getRacerScopedRaceStats` の戻り値
+ * @param {{raceId: string, venueCode: number|null}} options 表示中のレース
+ * @returns {Array<Object>} 日付昇順。`RecentRunsBar` がそのまま描ける形（生のrecord）
+ */
+export function buildMeetResults(records, { raceId, venueCode }) {
+  const all = Array.isArray(records) ? records : [];
+  const date = (raceId ?? "").slice(0, 10);
+  if (!date || venueCode === null || venueCode === undefined) return [];
+
+  const upto = all
+    .filter(
+      (r) => r.venueCode === venueCode && r.date <= date && r.raceId !== raceId,
+    )
+    .sort((a, b) => a.raceId.localeCompare(b.raceId));
+
+  const anchored = [
+    ...upto.map((r) => ({ race_id: r.raceId, record: r })),
+    { race_id: raceId, record: null },
+  ];
+  return groupIntoCurrentMeet(anchored)
+    .filter((m) => m.record !== null)
+    .map((m) => m.record);
 }

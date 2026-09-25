@@ -20,7 +20,10 @@
 }
 
 .rrb-item {
-  flex: 1 1 calc(20% - 3px);
+  /* 伸ばさない（grow: 0）。今節タブ（FR-3）は走数が節の進み具合で変わり、
+     6走だと「5走＋伸びた1走」になって最後の1本だけ極端に太く見える。
+     直近10走はちょうど5×2行なので見た目は変わらない */
+  flex: 0 1 calc(20% - 3px);
   min-width: 46px;
   display: flex;
   flex-direction: column;
@@ -86,4 +89,11 @@
   .rrb-item {
     flex: 1 1 calc(10% - 3px);
   }
+}
+
+/* 今節タブ（FR-3）で各走の上に出す「9/23 5R」。直近10走では出さない */
+.rrb-date {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
 }

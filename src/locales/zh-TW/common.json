@@ -639,6 +639,9 @@
     "venueRankingFor": "{{metric}}排行",
     "currentVenueRank": "本節的{{venue}}在全{{total}}個賽場中排名第{{rank}}",
     "viewConditions": "依條件",
+    "viewMeet": "本梯次",
+    "meetNote": "本梯次（本次開催）至今的出賽。進入航道・名次・ST（括號內為該場的ST排名）",
+    "meetEmpty": "本梯次尚未出賽（本場為第一戰）",
     "conditionsNote": "各條件下的{{metric}}（本站統計・可取得的全部期間）。與上方長條圖的官方數值計算方式不同，因此數字不會一致。",
     "conditions": {
       "national": "全國",
@@ -1509,6 +1512,7 @@
     "detailNotPrediction": "此為本場地過往實績的統計，並非本場比賽的預測。"
   },
   "recentRuns": {
+    "dateLabel": "{{month}}/{{day}} 第{{race}}場",
     "older": "較舊",
     "newer": "較新",
     "flying": "F",

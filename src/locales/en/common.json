@@ -641,6 +641,9 @@
     "venueRankingFor": "{{metric}} ranking",
     "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}",
     "viewConditions": "By condition",
+    "viewMeet": "This series",
+    "meetNote": "Races so far in this series: starting course, finish and ST (the bracket shows the ST rank in that race)",
+    "meetEmpty": "No races yet in this series (this is the racer's first one)",
     "conditionsNote": "{{metric}} by condition (our own tally, all available data). It will not match the official figures in the bars above, which are calculated differently.",
     "conditions": {
       "national": "All venues",
@@ -1514,6 +1517,7 @@
     "detailNotPrediction": "This counts past results at this venue. It is not a prediction for this race."
   },
   "recentRuns": {
+    "dateLabel": "{{month}}/{{day}} R{{race}}",
     "older": "Older",
     "newer": "Newer",
     "flying": "F",

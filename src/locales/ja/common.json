@@ -386,6 +386,9 @@
     "venueRankingFor": "{{metric}}のランキング",
     "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位",
     "viewConditions": "条件別",
+    "viewMeet": "今節",
+    "meetNote": "今節（この開催）のこれまでの走り。進入コース・着順・ST（括弧内はそのレースでのST順位）",
+    "meetEmpty": "今節はまだ走っていません（このレースが初戦です）",
     "conditionsNote": "条件ごとの{{metric}}（当社集計・取得できる全期間）。上のバーの公式値とは集計方法が違うため数字が一致しません",
     "conditions": {
       "national": "全国",
@@ -1509,6 +1512,7 @@
     "detailNotPrediction": "この会場の過去の実績を数えたものであり、今回のレースの予想ではありません。"
   },
   "recentRuns": {
+    "dateLabel": "{{month}}/{{day}} {{race}}R",
     "older": "古い",
     "newer": "新しい",
     "flying": "F",
