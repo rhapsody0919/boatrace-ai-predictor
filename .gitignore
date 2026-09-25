@@ -15,6 +15,7 @@ dist-ssr
 test-results/
 playwright-report/
 e2e-results.json
+.claude/session-state/
 blob-report/
 playwright/.cache/
 
