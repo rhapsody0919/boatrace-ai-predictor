@@ -279,3 +279,15 @@ N19バックフィルの今夜22:00再開待ちと並行し、BOA-403のfollow-u
 ## 2026-09-25 follow-upチケット着手
 
 N19の今夜再開待ちと並行し、BOA-410（差分更新）はBOA-408マージから約1日しか経っておらず効果測定に時期尚早と判断し保留。[BOA-411](https://linear.app/boat-ai/issue/BOA-411)（predictions誤生成の修正）・[BOA-413](https://linear.app/boat-ai/issue/BOA-413)（BOA-325前提の再検証）・[BOA-414](https://linear.app/boat-ai/issue/BOA-414)（幻の開催日パターンの範囲拡大・再現性調査）を子エージェント（worktree隔離）へ割当。[BOA-412](https://linear.app/boat-ai/issue/BOA-412)（K-fileパーサー拡張）は上記3件の結果を見てから着手する。
+
+### BOA-411完了（重大: 現在進行形のバグと判明）
+
+[PR #822](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/822)。当初想定269件・779行ではなく、**330レース・1023行**が対象と判明。過去分だけでなく**2026-09-09/12/21/22にも再発**しており現在進行形。原因は予測生成と中止確定の間の構造的なタイムラグ。既存行は的中率集計には混入していないことを実測確認済み。`generate-predictions.js`に中止レース除外ロジックを追加、クリーンアップスクリプトも用意（本番書き込みはユーザー承認待ち）。副次発見のUI不具合2件は別セッションへ切り出し済み。
+
+### BOA-413完了
+
+[PR #821](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/821)。BOA-325の120レース中、9会場108レースはrace_date側が正しく対応も正しかった。**津(09)の12レースのみ誤り**（race_id側=2025-12-02が正解）。的中率集計への実害は無いが選手ページの一部表示に影響。副次発見（鳴門2025-12-03のR11/R12がBOA-406の是正漏れの疑い）は[BOA-419](https://linear.app/boat-ai/issue/BOA-419)へ切り出し。
+
+### BOA-414完了
+
+[PR #823](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/823)。2026-04-01以降の全期間を調査。(A)2026-04-11に4会場日で同型の幻の開催日が再発（[BOA-420](https://linear.app/boat-ai/issue/BOA-420)）、(B)順延スタブの古い7件がcancellation_status未確定（[BOA-421](https://linear.app/boat-ai/issue/BOA-421)）、(C)**新規発見**: びわこ・唐津の3会場日で、開催実在・race_results正常なのにrace_entriesだけ最大15日前の別データで汚染される、既存の欠損ベース検知では発見不可能なバグ（[BOA-422](https://linear.app/boat-ai/issue/BOA-422)）。日次自動検知の追加は[BOA-423](https://linear.app/boat-ai/issue/BOA-423)。
