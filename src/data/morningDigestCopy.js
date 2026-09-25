@@ -71,11 +71,15 @@ export const MORNING_DIGEST_SECTION_BY_KEY = Object.freeze(
  * 「このページの見方」の用語集。
  * `body` は行内の断片の配列で、画面は `strong`/`br` を反映して描き、
  * スナップショットは text を連結する（同じ文言から両方を作るための表現）。
+ *
+ * `key` は画面側の分岐に使う安定した識別子。**`term`（表示文言）で分岐しない**
+ * （文言をここで変えたときに、画面側の分岐が無言で外れるのを防ぐ）。
  */
 export const MORNING_DIGEST_GLOSSARY_TITLE = "このページの見方";
 
 export const MORNING_DIGEST_GLOSSARY = Object.freeze([
   Object.freeze({
+    key: "figures",
     term: "このページに出る数値について",
     body: Object.freeze([
       Object.freeze({
@@ -88,6 +92,7 @@ export const MORNING_DIGEST_GLOSSARY = Object.freeze([
     ]),
   }),
   Object.freeze({
+    key: "racer",
     term: "この選手",
     body: Object.freeze([
       Object.freeze({
@@ -96,6 +101,7 @@ export const MORNING_DIGEST_GLOSSARY = Object.freeze([
     ]),
   }),
   Object.freeze({
+    key: "venueBaseline",
     term: "◯◯の平均",
     body: Object.freeze([
       Object.freeze({
@@ -110,6 +116,7 @@ export const MORNING_DIGEST_GLOSSARY = Object.freeze([
     ]),
   }),
   Object.freeze({
+    key: "expected",
     term: "この選手が走ってきた会場の平均",
     body: Object.freeze([
       Object.freeze({
@@ -118,16 +125,20 @@ export const MORNING_DIGEST_GLOSSARY = Object.freeze([
     ]),
   }),
   Object.freeze({
+    key: "volatility",
     term: "イン崩れ指数",
     body: Object.freeze([
       Object.freeze({
         text: "当日の条件からAIが算出した「1号艇が崩れやすさ」。過去実績とは独立した指標です。",
       }),
     ]),
-    // 画面はこの後に「この数値は M/D HH:MM 時点のものです。」を足す（日替わりのため
-    // スナップショットには入れない）
+    // 画面は key === GLOSSARY_KEY_VOLATILITY のとき、この後に
+    // 「この数値は M/D HH:MM 時点のものです。」を足す（日替わりのためスナップショットには入れない）
   }),
 ]);
+
+/** 画面が算出時刻を追記する用語集の項目（`term` の文字列一致で分岐しないための鍵） */
+export const GLOSSARY_KEY_VOLATILITY = "volatility";
 
 export const MORNING_DIGEST_DISCLAIMER =
   "統計値・AI予測は結果を保証するものではありません。舟券の購入はご自身の判断でお願いします。";

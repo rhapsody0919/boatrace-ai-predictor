@@ -41,6 +41,7 @@ import { getTodayJST } from "../utils/dateUtils";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { useTranslation } from "react-i18next";
 import {
+  GLOSSARY_KEY_VOLATILITY,
   MORNING_DIGEST_DISCLAIMER,
   MORNING_DIGEST_GLOSSARY,
   MORNING_DIGEST_GLOSSARY_TITLE,
@@ -325,13 +326,15 @@ function MorningDataDigest() {
               </h2>
               <dl className="morning-digest__notes-list">
                 {MORNING_DIGEST_GLOSSARY.map((entry) => (
-                  <Fragment key={entry.term}>
+                  <Fragment key={entry.key}>
                     <dt>{entry.term}</dt>
                     <dd>
                       <GlossaryBody body={entry.body} />
                       {/* イン崩れ指数だけは、算出時刻（日替わり）を足す。
-                          スナップショットには入らない静的でない情報 */}
-                      {entry.term === "イン崩れ指数" && day?.generated_at && (
+                          スナップショットには入らない静的でない情報。
+                          表示文言（term）ではなく安定した key で分岐する */}
+                      {entry.key === GLOSSARY_KEY_VOLATILITY &&
+                        day?.generated_at && (
                         <>
                           {"この数値は "}
                           {new Date(day.generated_at).toLocaleString("ja-JP", {

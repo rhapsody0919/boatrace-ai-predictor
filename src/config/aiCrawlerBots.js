@@ -16,6 +16,8 @@ export function isTargetBot(userAgent) {
 }
 
 // pathname + User-Agentから、配信すべきスナップショットの相対パスを返す（対象外はnull）
+// ⚠️ ここに対象を足したら middleware.js の config.matcher にも同じパスを足すこと。
+//    Vercel は matcher に一致したパスでしか middleware を起動しないため、片方だけでは配信されない
 export function resolveSnapshotPath(pathname, userAgent) {
   if (!isTargetBot(userAgent)) return null;
 

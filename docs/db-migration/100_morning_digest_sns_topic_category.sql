@@ -27,8 +27,13 @@
 -- 適用手順（ユーザーが実行する）:
 --   Supabase Dashboard > SQL Editor で以下を実行する。DDLは無く、行のINSERTのみ
 --   （新規テーブル・ビューなし＝RLSの追加規律は対象外）。
---   **コードのデプロイ前に適用してよい**（登録側は行が無ければ登録をスキップし、
---   ジョブ自体は失敗しない）。
+--
+--   ⚠️ **コードのデプロイ（＝このPRのマージ）より先に適用する。** 行が無い状態で
+--      日次バッチが走ると、ダイジェスト生成自体は成功するがネタ登録だけが失敗し、
+--      report.alerts 経由で scrape-monitor が
+--      `report:morning_digest:sns_topic_register_failed` を **毎朝 Slack に通知する**
+--      （再通知間隔6時間）。適用するまで鳴り続ける。逆順にしても本番は壊れないが、
+--      誤報が続くので順序を守ること。
 --
 -- 切り戻し:
 --   UPDATE sns_topic_categories SET active = false WHERE category_key = 'morning-digest';

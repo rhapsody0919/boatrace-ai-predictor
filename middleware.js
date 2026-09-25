@@ -20,6 +20,9 @@ export const config = {
     "/api/admin/sns-hub/:path*",
     "/blog/:path*",
     "/winning-technique",
+    // resolveSnapshotPath に対象を足すだけでは配信されない。Vercel は
+    // matcher に一致したパスでしか middleware を起動しないため、必ず両方に足す
+    "/today",
   ],
 };
 
