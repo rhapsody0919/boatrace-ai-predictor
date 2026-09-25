@@ -31,6 +31,18 @@ const repoRoot = path.resolve(
   "../..",
 );
 
+/**
+ * gitが追跡しないが、残っていると `git worktree remove` が
+ * "Directory not empty" で失敗するもの。消して困らない（作り直せる）。
+ * 取り直しの効かないデータは preciousPaths.js 側で別に扱う。
+ */
+const UNTRACKED_LEFTOVERS = [
+  "node_modules",
+  "dist",
+  ".vite",
+  "playwright-report",
+];
+
 function git(args, cwd = repoRoot) {
   try {
     return execFileSync("git", args, {
@@ -67,7 +79,11 @@ function isMerged(branch) {
  * - removable: マージ済みで中身も空。消してよい
  * - active  : 未マージ。作業中
  */
-export function classify({ merged, dirtyCount, precious }) {
+export function classify({ merged, dirtyCount, precious, locked }) {
+  // ロックは他のセッションが今そこで作業している印。マージ済みでも触らない。
+  // 2026-09-25、この判定が無かったため「片付けてよい」に他セッションの
+  // 作業ツリーが2本並び、git 側のロックだけが削除を止めた。
+  if (locked) return "locked";
   if (precious.length > 0 || dirtyCount > 0) return "blocked";
   return merged ? "removable" : "active";
 }
@@ -90,23 +106,44 @@ function main() {
       existsSync(path.join(e.path, p)),
     );
     const merged = e.branch ? isMerged(e.branch) : false;
+    // gitが追跡しないもの（node_modules 等）が残っていると
+    // `git worktree remove` は "Directory not empty" で失敗する。
+    // 消してよいものではあるので削除対象からは外さず、--force が要ると示す。
+    const needsForce = UNTRACKED_LEFTOVERS.some((d) =>
+      existsSync(path.join(e.path, d)),
+    );
     return {
       ...e,
       dirtyCount,
       precious,
       merged,
-      kind: classify({ merged, dirtyCount, precious }),
+      needsForce,
+      kind: classify({ merged, dirtyCount, precious, locked: e.locked }),
     };
   });
 
   const removable = rows.filter((r) => r.kind === "removable");
   const blocked = rows.filter((r) => r.kind === "blocked");
   const active = rows.filter((r) => r.kind === "active");
+  const locked = rows.filter((r) => r.kind === "locked");
 
   console.log(`worktree ${rows.length}本（メインの作業ツリーを除く）`);
   console.log(
-    `  片付けてよい: ${removable.length} / 触らない: ${blocked.length} / 作業中: ${active.length}`,
+    `  片付けてよい: ${removable.length} / 使用中: ${locked.length} / 触らない: ${blocked.length} / 作業中: ${active.length}`,
   );
+
+  if (locked.length > 0) {
+    console.log("");
+    console.log("## 使用中（他のセッションがロックしている。触らない）");
+    for (const r of locked) {
+      console.log(`  ${path.basename(r.path)}  [${r.branch ?? "detached"}]`);
+      console.log(`    ${r.locked}`);
+    }
+    console.log("");
+    console.log(
+      "  そのセッションが終わるまで待つ。ロックは git 側の安全装置なので -f で外さない。",
+    );
+  }
 
   if (blocked.length > 0) {
     console.log("");
@@ -145,7 +182,11 @@ function main() {
     console.log("");
     console.log("## 片付けてよい（マージ済み・未コミットなし・データなし）");
     for (const r of removable) {
-      console.log(`  git worktree remove ${r.path}`);
+      // node_modules 等が残っているものは --force が無いと
+      // "Directory not empty" で失敗する
+      console.log(
+        `  git worktree remove ${r.needsForce ? "--force " : ""}${r.path}`,
+      );
     }
     console.log("");
     console.log(
