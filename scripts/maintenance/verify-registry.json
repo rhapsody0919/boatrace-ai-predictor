@@ -86,9 +86,7 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": [
-        "--base=origin/master"
-      ],
+      "args": ["--base=origin/master"],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
@@ -182,6 +180,11 @@
       "script": "verify-race-status-job.js",
       "tier": "ci",
       "guards": "中止・順延の早期確定（race_status）"
+    },
+    {
+      "script": "verify-race-entries-restore.js",
+      "tier": "ci",
+      "guards": "出走表の複製汚染の復元（BOA-422）の列ごとの方針。とくに weight_kg（Bファイルの登録体重を書かずNULLにする）と ai_score_*（触らない）"
     },
     {
       "script": "verify-racelist-backfill.js",
