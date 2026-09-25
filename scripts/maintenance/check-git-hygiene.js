@@ -57,10 +57,19 @@ export function parseWorktrees(porcelain) {
   let current = null;
   for (const line of porcelain.split("\n")) {
     if (line.startsWith("worktree ")) {
-      current = { path: line.slice("worktree ".length), branch: null };
+      current = {
+        path: line.slice("worktree ".length),
+        branch: null,
+        locked: null,
+      };
       result.push(current);
     } else if (line.startsWith("branch ") && current) {
       current.branch = line.slice("branch refs/heads/".length);
+    } else if (line.startsWith("locked") && current) {
+      // Claude Code は作業中の worktree をロックする。
+      // 理由の文字列（"claude session <名前> (pid ...)"）まで拾って、
+      // どのセッションが使っているかを人に見せる。理由なしでロックされることもある。
+      current.locked = line.slice("locked".length).trim() || "(理由の記載なし)";
     }
   }
   return result;

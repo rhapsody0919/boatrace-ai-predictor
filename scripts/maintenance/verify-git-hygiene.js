@@ -53,6 +53,7 @@ check("本数", parseWorktrees(porcelain).length, 3);
 check("メイン", parseWorktrees(porcelain)[0], {
   path: "/repo",
   branch: "master",
+  locked: null,
 });
 check(
   "スラッシュを含むブランチ名",
@@ -85,6 +86,38 @@ check(
   [],
 );
 
+// --- ロックの読み取り ---
+// Claude Code は作業中の worktree をロックする。2026-09-25、この判定が無かったため
+// 「片付けてよい」に他セッションの作業ツリーが2本並び、git側のロックだけが削除を止めた。
+const lockedPorcelain = [
+  "worktree /repo",
+  "HEAD aaa",
+  "branch refs/heads/master",
+  "",
+  "worktree /repo/.claude/worktrees/in-use",
+  "HEAD bbb",
+  "branch refs/heads/fix/x",
+  "locked claude session in-use (pid 69628 start Fri Sep 25 05:52:06 2026)",
+  "",
+  "worktree /repo/.claude/worktrees/locked-no-reason",
+  "HEAD ccc",
+  "branch refs/heads/fix/y",
+  "locked",
+  "",
+  "worktree /repo/.claude/worktrees/free",
+  "HEAD ddd",
+  "branch refs/heads/fix/z",
+].join("\n");
+const lockedList = parseWorktrees(lockedPorcelain);
+check(
+  "ロックの理由を拾う",
+  lockedList[1].locked,
+  "claude session in-use (pid 69628 start Fri Sep 25 05:52:06 2026)",
+);
+check("理由なしのロック", lockedList[2].locked, "(理由の記載なし)");
+check("ロックされていない", lockedList[3].locked, null);
+check("ロック行でブランチを壊さない", lockedList[1].branch, "fix/x");
+
 // --- worktree の分類 ---
 check(
   "マージ済みで空なら片付けてよい",
@@ -110,6 +143,32 @@ check(
   "未マージ＋データも触らない",
   classify({ merged: false, dirtyCount: 0, precious: ["data/ml"] }),
   "blocked",
+);
+// ロックは他セッションが使用中の印なので、マージ済みで空でも片付け対象にしない
+check(
+  "ロック中はマージ済みでも片付けない",
+  classify({
+    merged: true,
+    dirtyCount: 0,
+    precious: [],
+    locked: "claude session x (pid 1)",
+  }),
+  "locked",
+);
+check(
+  "ロックは未コミットより優先して表示する",
+  classify({
+    merged: true,
+    dirtyCount: 5,
+    precious: ["data/ml"],
+    locked: "claude session y (pid 2)",
+  }),
+  "locked",
+);
+check(
+  "lockedがnullなら従来通り",
+  classify({ merged: true, dirtyCount: 0, precious: [], locked: null }),
+  "removable",
 );
 
 if (failures.length > 0) {
