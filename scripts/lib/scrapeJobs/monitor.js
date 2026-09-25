@@ -29,6 +29,7 @@
 import { SCRAPE_JOBS, isCatchupOffset, isScheduledDate } from "./registry.js";
 import { jstMinutesOfDay, slotWindowEnd, toJstDateString } from "./time.js";
 import { resolveTargetDate } from "./dailyJob.js";
+import { isCancellationConfirmed } from "../cancellationStatus.js";
 import { isScrapeSchemaMissingError } from "./schemaErrors.js";
 import {
   DETECTION_LAG,
@@ -99,7 +100,7 @@ export const deadlineOf = slotDeadlineOf;
 
 const isCancelledRace = (slot) =>
   slot.outcome === "cancelled_race" ||
-  slot.races?.cancellation_status === "confirmed";
+  isCancellationConfirmed(slot.races?.cancellation_status);
 
 const slotKey = slotKeyOf;
 

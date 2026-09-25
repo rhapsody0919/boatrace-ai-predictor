@@ -9,6 +9,7 @@
  * （その日に走らない選手を含む）が載るため、期待の選手はページの部分集合になる。
  */
 import { upsertChangedRows } from "./unchangedRows.js";
+import { isCancellationConfirmed } from "./cancellationStatus.js";
 
 export const MOTOR_PRETEST_TABLE = Object.freeze({
   table: "motor_pretest_stats",
@@ -120,7 +121,9 @@ export async function loadExpectedRacers(client, date) {
   const venueCodes = [...new Set(rows.map((r) => r.venue_code))].sort(
     (a, b) => a - b,
   );
-  const live = rows.filter((r) => r.cancellation_status !== "confirmed");
+  const live = rows.filter(
+    (r) => !isCancellationConfirmed(r.cancellation_status),
+  );
   const venueByRace = new Map(rows.map((r) => [r.race_id, r.venue_code]));
   const expectedByVenue = new Map(venueCodes.map((v) => [v, new Set()]));
 

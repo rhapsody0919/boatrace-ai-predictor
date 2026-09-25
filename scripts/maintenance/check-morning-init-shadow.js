@@ -22,6 +22,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { compareRaceDigests } from "../lib/racesInit/digest.js";
 import { computePcexpectDigest } from "../daily/scrape-pcexpect.js";
+import { isCancellationConfirmed } from "../lib/cancellationStatus.js";
 import { percentile } from "../lib/scrapeJobs/monitor.js";
 import { slotDeadline } from "../lib/scrapeJobs/time.js";
 
@@ -160,7 +161,7 @@ async function main() {
     // 中止・順延が確定したレースは、公式の発走予定時刻が仮の値に置き換わるため、比較しない
     const cmp = compareRaceDigests(cursor.digests ?? {}, raceRows, entryRows, {
       excludeRaceIds: raceRows
-        .filter((r) => r.cancellation_status === "confirmed")
+        .filter((r) => isCancellationConfirmed(r.cancellation_status))
         .map((r) => r.race_id),
     });
     const denominator = cmp.matched + cmp.mismatched.length;

@@ -13,6 +13,7 @@ import {
   parseDateArg,
 } from "../lib/dateUtils.js";
 import { calculateHits, isTurnHit } from "../lib/hitCalculator.js";
+import { isCancellationConfirmed } from "../lib/cancellationStatus.js";
 import {
   getRaceSchedule,
   getRacesAfterStart,
@@ -692,7 +693,7 @@ export async function confirmCancellationsForRaceIds(
   const hasResult = new Set((results.data || []).map((r) => r.race_id));
   const alreadyConfirmed = new Set(
     (races.data || [])
-      .filter((r) => r.cancellation_status === "confirmed")
+      .filter((r) => isCancellationConfirmed(r.cancellation_status))
       .map((r) => r.race_id),
   );
 

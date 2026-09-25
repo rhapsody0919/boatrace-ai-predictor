@@ -17,6 +17,7 @@
  */
 import { supabase, VENUE_NAMES } from "../lib/supabaseClient.js";
 import { getTodayDateJST } from "../lib/dateUtils.js";
+import { CANCELLATION_CONFIRMED } from "../lib/cancellationStatus.js";
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((arg) => {
@@ -67,8 +68,25 @@ async function main() {
     return;
   }
 
+  // 開催中止のレースは予想が残っていても投稿の対象にしない。
+  // 画面側は PR #824 で除外したが、このダイジェストは除外しておらず
+  // 中止レースを「本日のイン崩れ警戒レース」として出しうる状態だった（BOA-418）。
+  const cancelledRaceIds = new Set(
+    (
+      await fetchAll((from, to) =>
+        supabase
+          .from("races")
+          .select("race_id")
+          .like("race_id", `${TARGET_DATE}-%`)
+          .eq("cancellation_status", CANCELLATION_CONFIRMED)
+          .range(from, to),
+      )
+    ).map((r) => r.race_id),
+  );
+
   const races = predictions
     .map((p) => {
+      if (cancelledRaceIds.has(p.race_id)) return null;
       const fc = p.feature_contributions;
       const volatilityPercentile = fc?.volatilityPercentile;
       if (typeof volatilityPercentile !== "number") return null;

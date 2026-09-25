@@ -9,6 +9,26 @@
 
 export const CONFIRM_STREAK_THRESHOLD = 3;
 
+/** 開催中止が確定した。結果も出ない。 */
+export const CANCELLATION_CONFIRMED = "confirmed";
+/** 中止の疑い（発走前の暫定検知）。誤検出からの復帰もありうるので確定ではない。 */
+export const CANCELLATION_TENTATIVE = "tentative";
+
+/**
+ * races.cancellation_status が「中止確定」を表すか。
+ *
+ * 集計・ダイジェストの対象からレースを除くときは必ずこれを使う。生の文字列比較が
+ * 散らばると、除外を書き忘れた箇所が中止レースを混ぜたまま出し続ける
+ * （2026-09-25、イン崩れダイジェストがまさにこの状態だった。BOA-418）。
+ * 画面側は src/utils/raceCancellation.js の isRaceCancelled を使う。
+ *
+ * @param {string|null|undefined} status
+ * @returns {boolean}
+ */
+export function isCancellationConfirmed(status) {
+  return status === CANCELLATION_CONFIRMED;
+}
+
 /**
  * 発走前の暫定検知（選手情報0人）の結果を受けて、次の状態を計算する。
  * 発走後の確定（FR2）はこの関数の対象外（scrape-results.js側で直接
@@ -26,7 +46,7 @@ export function computeCancellationTransition({
   racersFound,
 }) {
   // 確定済みは上書きしない（FR2の結果を尊重する）
-  if (currentStatus === "confirmed") {
+  if (isCancellationConfirmed(currentStatus)) {
     return {
       nextStatus: currentStatus,
       nextStreak: currentStreak,
@@ -45,6 +65,8 @@ export function computeCancellationTransition({
   // 選手情報0人を検知
   const nextStreak = currentStreak + 1;
   const nextStatus =
-    nextStreak >= CONFIRM_STREAK_THRESHOLD ? "tentative" : currentStatus;
+    nextStreak >= CONFIRM_STREAK_THRESHOLD
+      ? CANCELLATION_TENTATIVE
+      : currentStatus;
   return { nextStatus, nextStreak, changed: true };
 }
