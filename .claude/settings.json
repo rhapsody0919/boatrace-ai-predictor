@@ -91,6 +91,16 @@
                         "timeout": 30
                     }
                 ]
+            },
+            {
+                "matcher": "Edit|Write",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/track-session-progress.sh\"",
+                        "timeout": 10
+                    }
+                ]
             }
         ]
     }
