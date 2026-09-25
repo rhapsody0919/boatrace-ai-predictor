@@ -102,6 +102,11 @@ function PredictionPanel({
   // 中止・順延の確定検知（BOA-254）。暫定検知（"tentative"）はまだ誤検出の
   // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
   const isCancelled = prediction?.cancellationStatus === "confirmed";
+  // 中止確定レースはrace_entriesが残っていてもレースが実施されないため、
+  // 「AIが勝敗を予想する」系のUI（AI用にコピー/展開予測・トップピック）は
+  // 中止バナーと矛盾するので出さない。データ出走表・分析ツール埋め込みは
+  // 選手の客観データ表示のため対象外（isFinishedでも従来から隠していない）
+  const showAiPrediction = !isFinished && !isCancelled;
 
   // ローディング中
   if (isAnalyzing) {
@@ -223,8 +228,8 @@ function PredictionPanel({
         )
       )}
 
-      {/* AI用にコピー（BOA-194）: 結果未確定レースのみ、外部AIツールで独自分析したいユーザー向け */}
-      {!isFinished && (
+      {/* AI用にコピー（BOA-194）: 結果未確定・中止未確定レースのみ、外部AIツールで独自分析したいユーザー向け */}
+      {showAiPrediction && (
         <AiCopyBanner
           raceId={analysisRaceId}
           prediction={prediction}
@@ -334,7 +339,7 @@ function PredictionPanel({
         </EmbeddedAnalysisSection>
       )}
 
-      {!isFinished && (
+      {showAiPrediction && (
         <AiCopyButton
           variant="inline"
           raceId={analysisRaceId}
@@ -345,7 +350,7 @@ function PredictionPanel({
           onCopy={showAiCopyToast}
         />
       )}
-      {!isFinished && (
+      {showAiPrediction && (
         <Toast
           message={aiCopyToast.message}
           type={aiCopyToast.type}
@@ -354,8 +359,9 @@ function PredictionPanel({
       )}
 
       {/* AIデータ分析（折りたたみ）: 展開予測パネル/イン崩れ指数バッジの2ブロック。
-          未来志向のUIのため結果確定済みレースでは表示しない（データで振り返るが代わりに担う） */}
-      {!isFinished && (
+          未来志向のUIのため結果確定済み・中止確定レースでは表示しない
+          （データで振り返るが代わりに担う。中止確定は開催自体がされないため） */}
+      {showAiPrediction && (
         <AiAnalysisSection topPick={prediction.topPick} confidence={null}>
           <AnimatePresence mode="wait">
             <motion.div

@@ -318,6 +318,12 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
 
   // analysisは複数クエリの並列取得（30分TTLキャッシュ）で、DataRaceTableと
   // 同じソースを共有する。読み込み未完了のままコピーすると本来値が有る行まで
-  // 「—」として出力されうるため、読み込み完了までボタン自体を出さない
-  return { buildText, isReady: players.length > 0 && !analysis.loading };
+  // 「—」として出力されうるため、読み込み完了までボタン自体を出さない。
+  // 中止確定レースはrace_entriesが残っていてもレースが実施されないため、
+  // 呼び出し元のガード漏れがあっても保険としてここでも除外する
+  const isCancelled = prediction?.cancellationStatus === "confirmed";
+  return {
+    buildText,
+    isReady: players.length > 0 && !analysis.loading && !isCancelled,
+  };
 }
