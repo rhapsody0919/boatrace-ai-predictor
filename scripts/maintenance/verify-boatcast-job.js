@@ -81,6 +81,64 @@ function check(label, pass, detail = "") {
 const show = (v) => JSON.stringify(v);
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+/**
+ * 仮想の時計。now/sleep を差し替えて、実時間・実タイマーに依存せずに「並行して呼んでも順番に間隔を空けて通るか」を
+ * 検証するために使う。実タイマーで測ると、CIランナーの負荷で発火が前後した分だけ観測上の間隔が縮み、コードが正しくても
+ * 落ちる（2026-09-25、30ms間隔の検証が「31ms・27ms」で失敗。PR #839のCI run 36109118255）。
+ *
+ * runAll() は、積まれた sleep を起床時刻の早い順に消化し、その都度 setImmediate で待っていた側の続きを流す
+ * （進むのは仮想の時刻だけで、実時間は待たない）。
+ */
+function createVirtualClock() {
+  let t = 0;
+  const timers = [];
+  const drain = () => new Promise((resolve) => setImmediate(resolve));
+  /** 積まれた sleep を起床時刻の順に消化する（消化の途中で積まれた分も拾う） */
+  async function runAll() {
+    await drain();
+    for (let guard = 0; timers.length > 0; guard++) {
+      if (guard > 1000) throw new Error("仮想の時計: sleep が終わらない");
+      timers.sort((a, b) => a.at - b.at);
+      const next = timers.shift();
+      t = Math.max(t, next.at);
+      next.resolve();
+      await drain();
+    }
+  }
+  return {
+    now: () => t,
+    sleep: (ms) =>
+      new Promise((resolve) => {
+        timers.push({ at: t + ms, resolve });
+      }),
+    /**
+     * promise が終わるまで sleep を消化し続ける。消化するものが無いのに終わらない場合は、待ち合わせが噛み合って
+     * いない（このまま待つと固まる）ので落とす — CIを何時間も占有させないため
+     */
+    async runUntil(promise) {
+      let pending = true;
+      const settled = promise.then(
+        (v) => {
+          pending = false;
+          return v;
+        },
+        (e) => {
+          pending = false;
+          throw e;
+        },
+      );
+      settled.catch(() => {}); // 例外は呼び出し側の await で受ける
+      while (pending) {
+        await runAll();
+        if (pending && timers.length === 0) {
+          throw new Error("仮想の時計: 消化する sleep が無いのに終わらない");
+        }
+      }
+      return settled;
+    },
+  };
+}
+
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const FIXTURES = path.join(ROOT, "scripts/lib/__fixtures__/boatcast");
 const readFixture = (name) =>
@@ -1123,18 +1181,25 @@ async function runWrapped({
     BOATCAST_MIN_INTERVAL_MS >= 2200 && gaps.every((g) => g >= 2200),
     show(gaps),
   );
-  // 並行して呼んでも、順番に間隔を空ける（実際のタイマーで、間隔30msのペーサーを使う）
-  const p2 = createPacer({ minIntervalMs: 30 });
+  // 並行して呼んでも、順番に間隔を空ける（仮想の時計。実時間・実タイマーには依存しない → 負荷でぶれない）
+  const clock = createVirtualClock();
+  const p2 = createPacer({
+    minIntervalMs: 30,
+    now: clock.now,
+    sleep: clock.sleep,
+  });
   const starts = [];
-  await Promise.all(
-    [0, 1, 2].map(async () => {
-      await p2.wait();
-      starts.push(Date.now());
-    }),
+  await clock.runUntil(
+    Promise.all(
+      [0, 1, 2].map(async () => {
+        await p2.wait();
+        starts.push(clock.now());
+      }),
+    ),
   );
   check(
     "(d) 並行して呼んでも、全て間隔以上ずつ空く（順番に通す）",
-    starts.length === 3 && starts.slice(1).every((x, k) => x - starts[k] >= 28),
+    starts.length === 3 && starts.slice(1).every((x, k) => x - starts[k] >= 30),
     show(starts),
   );
   check(
@@ -2129,6 +2194,57 @@ for (const [label, replacements] of jobMutants) {
   check(
     `(i) 変異検証（間隔）: 間隔を空けないと検証が失敗する（${failedPacer.length}項目）`,
     failedPacer.length > 0,
+  );
+}
+{
+  // 待ってから次の時刻を予約する版は、逐次の呼び出しでは間隔が空くが、並行の呼び出しでは同じ nextAllowedAt を
+  // 読んで全員が同時に通る。仮想の時計にしても並行の検証が効いていることの担保
+  const failedConcurrentPacer = await withMutant(
+    "boatcastClient.js",
+    [
+      [
+        `      nextAllowedAt = startAt + minIntervalMs;
+      if (startAt > t) await sleep(startAt - t);`,
+        `      if (startAt > t) await sleep(startAt - t);
+      nextAllowedAt = now() + minIntervalMs;`,
+      ],
+    ],
+    async (m) => {
+      const clock = createVirtualClock();
+      const p = m.createPacer({
+        minIntervalMs: 30,
+        now: clock.now,
+        sleep: clock.sleep,
+      });
+      const s = [];
+      await clock.runUntil(
+        Promise.all(
+          [0, 1, 2].map(async () => {
+            await p.wait();
+            s.push(clock.now());
+          }),
+        ),
+      );
+      const sequential = [];
+      await clock.runUntil(
+        (async () => {
+          for (let i = 0; i < 3; i++) {
+            await p.wait();
+            sequential.push(clock.now());
+          }
+        })(),
+      );
+      const spaced = (xs) => xs.slice(1).every((x, i) => x - xs[i] >= 30);
+      return [
+        ...(spaced(s) ? [] : ["並行の呼び出しで間隔が空かない"]),
+        ...(spaced(sequential) ? ["逐次では間隔が空いてしまう（見逃す）"] : []),
+      ];
+    },
+  );
+  check(
+    `(i) 変異検証（間隔・並行）: 待ってから次の時刻を予約すると、並行の呼び出しが同時に通る → 検証が失敗する（逐次だけでは見逃す）（${failedConcurrentPacer.length}項目）`,
+    failedConcurrentPacer.length === 2,
+    show(failedConcurrentPacer),
   );
 }
 
