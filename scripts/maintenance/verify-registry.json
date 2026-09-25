@@ -327,6 +327,11 @@
       "guards": "E2Eのskip判定（check-e2e-skips.js）。無言でskipされ続けるテストの検知が壊れないこと"
     },
     {
+      "script": "verify-session-progress.js",
+      "tier": "ci",
+      "guards": "セッション長の検知（session-progress.js）。長くなっても黙るようになっていないこと"
+    },
+    {
       "script": "verify-format-column-migration.js",
       "tier": "manual",
       "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
