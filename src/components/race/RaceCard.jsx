@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { GRADE_CONFIG } from "../../constants/gradeConfig";
 import { getRaceStageBadge } from "../../constants/raceStageConfig";
 import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
+import { isRaceCancelled } from "../../utils/raceCancellation";
 import {
   getDeadlineStatus,
   DEADLINE_STATUS,
@@ -24,7 +25,7 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
   const isAwaitingResult = status === RACE_STATUS.AWAITING_RESULT;
   // 中止・順延の確定検知（BOA-254）。暫定検知（"tentative"）はまだ誤検出の
   // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
-  const isCancelled = racePrediction?.cancellationStatus === "confirmed";
+  const isCancelled = isRaceCancelled(racePrediction);
   // 締切ステータスのライブ表示（BOA-243）。中止確定レースは既存の中止表示を
   // 優先し、この新バッジ・カウントダウンは出さない（FR3）
   const deadlineStatus = isCancelled

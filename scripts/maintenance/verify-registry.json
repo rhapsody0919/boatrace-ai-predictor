@@ -302,6 +302,11 @@
       "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
     },
     {
+      "script": "verify-race-cancellation-usage.js",
+      "tier": "ci",
+      "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）"
+    },
+    {
       "script": "verify-format-column-migration.js",
       "tier": "manual",
       "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",

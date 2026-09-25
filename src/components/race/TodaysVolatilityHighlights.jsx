@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { getRaceId } from "../../utils/raceId";
+import { isRaceCancelled } from "../../utils/raceCancellation";
 import "./TodaysVolatilityHighlights.css";
 
 const HIGHLIGHT_COUNT = 5;
@@ -22,7 +23,7 @@ function flattenRaces(venuesData) {
       // 開催中止・打ち切り確定のレースは注目レースとして提示しない
       // （BOA-411調査中に発見。isCancelledの判定基準はPredictionPanel.jsx/
       // RaceCard.jsxと同じくconfirmedのみ。tentativeは暫定検知でまだ確定していないため対象外）
-      if (race.cancellationStatus === "confirmed") continue;
+      if (isRaceCancelled(race)) continue;
       // isFallbackは会場内サンプル数不足によるプレースホルダ値（0.5）のため、
       // 「注意度が高い/低い」の根拠として提示すると誤解を招く。除外する
       if (!race.volatility || race.volatility.isFallback) continue;
