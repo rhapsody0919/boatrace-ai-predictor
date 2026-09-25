@@ -323,8 +323,21 @@ async function addComment(identifier, body) {
   return result?.commentCreate;
 }
 
+/** Linear APIが1リクエストで返せる上限 */
+const PAGE_SIZE = 100;
+
 /**
- * タスク一覧を取得
+ * タスク一覧を取得する。
+ *
+ * limit が PAGE_SIZE を超える場合はページネーションで繋いで取る。
+ * 以前は `first: limit` を1回投げるだけで、Linear APIの上限（250）を
+ * 超える指定は Argument Validation Error になり、上限ちょうどの指定は
+ * 「それ以上あっても黙って切り捨てられた」。重複チェックや棚卸しのように
+ * 「全件見たつもり」で判断する用途では、取りこぼしが結論を誤らせる。
+ *
+ * なお Linear の issues クエリは既定でアーカイブ済みを含めない。
+ * Done/Canceled は一定期間後に自動アーカイブされるため、ここで返るのは
+ * 実質「アクティブなIssue」である（2026-09-25時点で204件）。
  */
 async function listIssues(limit = 20, stateFilter = null) {
   const team = await getTeamId();
@@ -338,8 +351,12 @@ async function listIssues(limit = 20, stateFilter = null) {
   }
 
   const query = `
-    query ListIssues($filter: IssueFilter, $first: Int!) {
-      issues(filter: $filter, first: $first, orderBy: updatedAt) {
+    query ListIssues($filter: IssueFilter, $first: Int!, $after: String) {
+      issues(filter: $filter, first: $first, after: $after, orderBy: updatedAt) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           id
           identifier
@@ -354,8 +371,17 @@ async function listIssues(limit = 20, stateFilter = null) {
     }
   `;
 
-  const result = await graphqlRequest(query, { filter, first: limit });
-  return result?.issues?.nodes || [];
+  const nodes = [];
+  let after = null;
+  while (nodes.length < limit) {
+    const first = Math.min(PAGE_SIZE, limit - nodes.length);
+    const result = await graphqlRequest(query, { filter, first, after });
+    const page = result?.issues?.nodes ?? [];
+    nodes.push(...page);
+    if (!result?.issues?.pageInfo?.hasNextPage) break;
+    after = result.issues.pageInfo.endCursor;
+  }
+  return nodes;
 }
 
 /**

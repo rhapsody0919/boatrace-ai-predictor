@@ -90,6 +90,44 @@ async function getLabelId(apiKey, teamId, labelName) {
   return label?.id ?? null;
 }
 
+/** 起票するIssueのタイトル。件数は含めない（件数が変わると別タイトルになり重複判定をすり抜けるため） */
+function escalationTitle(platform, reasonCode) {
+  return `[content-quality] ${platform}下書きで「${reasonCode}」による修正依頼が累積`;
+}
+
+/**
+ * 同じ platform:reasonCode で未完了のIssueが既にあるかを Linear に問い合わせる。
+ *
+ * 以前は escalations.json（ローカルファイル）だけで二重起票を防いでいたが、
+ * このスクリプトを実行する content-ops-nightly-check.yml はそのファイルを
+ * コミットしない。GitHub Actionsのランナーは毎回新しいのでファイルは残らず、
+ * readEscalations() が常に空を返して「未起票」と判断していた。
+ * 結果、2026-09-20から5日連続で同じIssueを起票し、12件の重複が生まれた。
+ *
+ * 判定の正はLinear側に置く。ファイルのコミット漏れにも並行実行にも強い。
+ * タイトルは前方一致で見るので、件数入りの旧タイトル
+ * （「…修正依頼が4件累積」）も既存として拾える。
+ */
+async function findOpenEscalation(apiKey, teamId, platform, reasonCode) {
+  const data = await graphqlRequest(
+    apiKey,
+    `query OpenEscalations($filter: IssueFilter) {
+      issues(filter: $filter, first: 100) {
+        nodes { identifier title url }
+      }
+    }`,
+    {
+      filter: {
+        team: { id: { eq: teamId } },
+        labels: { name: { eq: CONTENT_QUALITY_LABEL } },
+        state: { type: { nin: ["completed", "canceled"] } },
+      },
+    },
+  );
+  const prefix = `[content-quality] ${platform}下書きで「${reasonCode}」による修正依頼が`;
+  return data.issues.nodes.find((i) => i.title.startsWith(prefix)) ?? null;
+}
+
 async function createEscalationIssue(
   apiKey,
   { teamId, labelId, title, description },
@@ -141,6 +179,31 @@ export async function checkRevisionEscalation({
 
     const [platform, reasonCode] = key.split(":");
     const teamId = await resolveTeamId(apiKey);
+
+    // ローカルの記録より先にLinearを見る（上記 findOpenEscalation のコメント参照）
+    const existing = await findOpenEscalation(
+      apiKey,
+      teamId,
+      platform,
+      reasonCode,
+    );
+    if (existing) {
+      // 記録が消えていただけの場合に備え、ファイル側も復元しておく
+      history.escalated[key] = {
+        escalatedAt:
+          history.escalated[key]?.escalatedAt ?? new Date().toISOString(),
+        issueUrl: existing.url,
+        count,
+      };
+      newlyEscalated.push({
+        key,
+        count,
+        issueUrl: existing.url,
+        alreadyOpen: existing.identifier,
+      });
+      continue;
+    }
+
     const labelId = await getLabelId(apiKey, teamId, CONTENT_QUALITY_LABEL);
     const examples = revisions
       .filter(
@@ -157,8 +220,8 @@ export async function checkRevisionEscalation({
     const issue = await createEscalationIssue(apiKey, {
       teamId,
       labelId,
-      title: `[content-quality] ${platform}下書きで「${reasonCode}」による修正依頼が${count}件累積`,
-      description: `content-multi-channel-pipelineの却下フィードバック閾値エスカレーション（自動起票、check-revision-escalation.js）。\n\n直近${windowDays}日で同一理由による修正依頼が${threshold}件以上溜まりました。生成プロンプト・品質採点基準の見直しを検討してください。\n\n直近の該当下書き（最大5件）:\n${examples}`,
+      title: escalationTitle(platform, reasonCode),
+      description: `content-multi-channel-pipelineの却下フィードバック閾値エスカレーション（自動起票、check-revision-escalation.js）。\n\n直近${windowDays}日で同一理由による修正依頼が**${count}件**溜まりました（閾値${threshold}件）。生成プロンプト・品質採点基準の見直しを検討してください。\n\n件数はこの本文にのみ書いています。タイトルに入れると件数が変わるたびに別タイトルになり、重複起票の判定をすり抜けるためです。\n\n直近の該当下書き（最大5件）:\n${examples}`,
     });
 
     history.escalated[key] = {

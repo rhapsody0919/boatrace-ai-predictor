@@ -48,6 +48,9 @@ data/ml/
 data/kb-archive/
 data/fan-archive/
 data/monthly-schedule-archive/
+# 自動起票の重複判定はLinear側の状態で行う（ADR-0076）。このファイルは
+# ローカル実行時の記録にすぎず、判定には使わないためコミットしない
+data/analysis/content-quality-audit/escalations.json
 data/motor-pretest-archive/
 data/racelist-backfill-archive/
 scripts/ml/.venv/
