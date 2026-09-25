@@ -290,4 +290,12 @@ N19の今夜再開待ちと並行し、BOA-410（差分更新）はBOA-408マー
 
 ### BOA-414完了
 
-[PR #823](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/823)。2026-04-01以降の全期間を調査。(A)2026-04-11に4会場日で同型の幻の開催日が再発（[BOA-420](https://linear.app/boat-ai/issue/BOA-420)）、(B)順延スタブの古い7件がcancellation_status未確定（[BOA-421](https://linear.app/boat-ai/issue/BOA-421)）、(C)**新規発見**: びわこ・唐津の3会場日で、開催実在・race_results正常なのにrace_entriesだけ最大15日前の別データで汚染される、既存の欠損ベース検知では発見不可能なバグ（[BOA-422](https://linear.app/boat-ai/issue/BOA-422)）。日次自動検知の追加は[BOA-423](https://linear.app/boat-ai/issue/BOA-423)。
+[PR #823](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/823)（マージ済み）。2026-04-01以降の全期間を調査。(A)2026-04-11に4会場日で同型の幻の開催日が再発（[BOA-420](https://linear.app/boat-ai/issue/BOA-420)）、(B)順延スタブの古い7件がcancellation_status未確定（[BOA-421](https://linear.app/boat-ai/issue/BOA-421)）、(C)**新規発見**: びわこ・唐津の3会場日で、開催実在・race_results正常なのにrace_entriesだけ最大15日前の別データで汚染される、既存の欠損ベース検知では発見不可能なバグ（[BOA-422](https://linear.app/boat-ai/issue/BOA-422)）。日次自動検知の追加は[BOA-423](https://linear.app/boat-ai/issue/BOA-423)。
+
+### 2026-09-25 本番反映まとめ
+
+- **BOA-411**: PR #821・#822マージ済み。既存の孤児predictions**1023行を削除**（実測0件確認）
+- **BOA-413**: PR #821（調査）マージ済み。津(09)の12レースを`race_id`/`race_date`とも2025-12-02へ**是正済み**（[PR #825](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/825)、実測で反映確認済み）
+- **BOA-414**: PR #823マージ済み
+
+BOA-411〜414が全て完了し、副次的に[BOA-419](https://linear.app/boat-ai/issue/BOA-419)〜[BOA-423](https://linear.app/boat-ai/issue/BOA-423)（5件）が新規Backlogとして残っている。
