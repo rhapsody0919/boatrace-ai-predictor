@@ -599,7 +599,7 @@
     "emptyBody": "接近發航時間後，賠率資料將顯示於此分頁。"
   },
   "basicInfo": {
-    "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近5場・擅長賽場）",
+    "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近5場・擅長賽場・依條件）",
     "metricLabel": "指標",
     "scopeLabel": "賽場",
     "gradeLabel": "等級",
@@ -637,7 +637,34 @@
     "trendNote": "最近5場（不受等級・期間條件影響，一律顯示最新5場。點選日期可前往比賽詳情）",
     "finishUnknown": "名次外（名次不明）",
     "venueRankingFor": "{{metric}}排行",
-    "currentVenueRank": "本節的{{venue}}在全{{total}}個賽場中排名第{{rank}}"
+    "currentVenueRank": "本節的{{venue}}在全{{total}}個賽場中排名第{{rank}}",
+    "viewConditions": "依條件",
+    "conditionsNote": "各條件下的{{metric}}（本站統計・可取得的全部期間）。與上方長條圖的官方數值計算方式不同，因此數字不會一致。",
+    "conditions": {
+      "national": "全國",
+      "local": "當地",
+      "ippan": "一般賽",
+      "sgg1": "SG・G1",
+      "firstDay": "首日",
+      "finalDay": "最終日",
+      "wave5": "浪高5cm以上",
+      "fHolding": "有F時",
+      "fClean": "無F時"
+    },
+    "conditionsBaseNote": "※{{rows}} 僅以能判定該條件的出賽為母數（與其他列的母數不同）。",
+    "conditionsBaseNoteSeparator": "・",
+    "conditionsCourseCaveat": "※本表為不分航道的合計（該選手從今日的{{boat}}號艇出賽過{{n}}場）。各艇號・航道的成績請見「艇號別資訊」分頁",
+    "conditionsFinalDayCaveat": "※最終日包含優勝戰，晉級的選手會進入1號艇。請注意這同時反映了艇號的優勢，而不只是選手實力",
+    "conditionsFStNote": "有F時的平均ST {{holding}}（n={{holdingN}}）／無F時 {{clean}}（n={{cleanN}}）。有F的選手起步方式會改變，因此看ST比看勝率更貼切",
+    "conditionsAllZeroHint": "此指標各條件皆低於1%，看不出各列的差異。以外側航道為主的選手勝負在於能否搶進前三，改看前三名率較能看出差異",
+    "conditionsAllZeroAction": "改看前三名率",
+    "conditionsHowToRead": "本表的閱讀方式",
+    "smallSampleTitle": "樣本較少，僅供參考",
+    "periodTitle": "前期（{{from}}〜{{to}}・官方期別成績）",
+    "periodWinRate": "勝率 {{value}}",
+    "periodTop2Rate": "2連對率 {{value}}",
+    "periodAvgSt": "平均ST {{value}}",
+    "periodFetchError": "無法取得前期成績"
   },
   "dataTable": {
     "title": "數據出賽表",
@@ -1440,6 +1467,9 @@
     "articleHeading": "📖 詳細解說文章",
     "noticeHeading": "⚠️ 注意事項"
   },
+  "flyingBadge": {
+    "title": "出賽表所載本期起步犯規{{n}}次。換期（5月1日・11月1日）後歸零"
+  },
   "stConsideration": {
     "title": "起跑分析",
     "subtitle": "下方為與相同航道、相同級別平均值的差距",
@@ -1452,7 +1482,6 @@
     "times": "{{n}}次",
     "expectedTimes": "平均{{n}}",
     "noInnerBoat": "無內側艇",
-    "flyingTitle": "本期起步犯規{{n}}次。換期後歸零",
     "caveat": "綠色表示優於相同航道、相同級別的平均，紅色表示較差。搶出在外側航道發生次數極少，以比例顯示會全是0.0%，因此改以次數呈現。第1航道無內側艇故不顯示。起步犯規的出賽已從分母排除，另以徽章標示。此為本服務的獨自統計。",
     "histogramTitle": "ST分布",
     "historyTitle": "ST歷史",

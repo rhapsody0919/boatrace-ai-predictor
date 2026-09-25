@@ -144,7 +144,10 @@ export function computeStConsideration(rows, { course }) {
   const all = Array.isArray(rows) ? rows : [];
   const inCourse = all.filter((r) => r.actualCourse === course);
 
-  // Fは母数に入れない。別途 flyingCount として返す
+  // Fは母数に入れない。別途 flyingCount として返すが、**これは画面の「Fバッジ」ではない**。
+  // バッジは出走表の今期F数（race_entries.f_count）を使う（phase a T5-3）。
+  // こちらは窓（約296日）×そのコースの回数なので期のリセットが効かず、
+  // 同じ選手でも出走表のF数と一致しない
   const flyingCount = inCourse.filter((r) => r.isFlying === true).length;
   const target = inCourse.filter(
     (r) => r.stForRank !== null && r.stForRank !== undefined,

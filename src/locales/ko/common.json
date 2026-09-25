@@ -599,7 +599,7 @@
     "emptyBody": "발주 시간이 가까워지면 오즈가 수집되어 이 탭에 표시됩니다."
   },
   "basicInfo": {
-    "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 5경기・강세 경기장)가 열립니다",
+    "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 5경기·강세 경기장·조건별)가 열립니다",
     "metricLabel": "지표",
     "scopeLabel": "경기장",
     "gradeLabel": "등급",
@@ -637,7 +637,34 @@
     "trendNote": "최근 5경기(등급・기간 조건과 무관하게 항상 최신 5경기를 표시. 날짜를 누르면 레이스 상세로 이동)",
     "finishUnknown": "착외(순위 불명)",
     "venueRankingFor": "{{metric}} 랭킹",
-    "currentVenueRank": "이번 시리즈의 {{venue}}는 전체 {{total}}개 경기장 중 {{rank}}위"
+    "currentVenueRank": "이번 시리즈의 {{venue}}는 전체 {{total}}개 경기장 중 {{rank}}위",
+    "viewConditions": "조건별",
+    "conditionsNote": "조건별 {{metric}}(당사 집계·확보 가능한 전체 기간). 위 막대의 공식 수치와는 산출 방식이 달라 숫자가 일치하지 않습니다.",
+    "conditions": {
+      "national": "전국",
+      "local": "당지",
+      "ippan": "일반전",
+      "sgg1": "SG·G1",
+      "firstDay": "첫날",
+      "finalDay": "최종일",
+      "wave5": "파고 5cm 이상",
+      "fHolding": "F 보유 시",
+      "fClean": "F 없음"
+    },
+    "conditionsBaseNote": "※{{rows}} 항목은 해당 조건을 판정할 수 있었던 출주만 모수입니다(다른 행과 모수가 다릅니다).",
+    "conditionsBaseNoteSeparator": "·",
+    "conditionsCourseCaveat": "※이 표는 모든 코스를 합친 집계입니다(오늘과 같은 {{boat}}번 보트로 출주한 것은 과거 {{n}}회). 번호별·코스별 성적은 「번호별 정보」 탭에서 볼 수 있습니다",
+    "conditionsFinalDayCaveat": "※최종일에는 우승전이 포함되어, 올라온 선수가 1번 보트에 들어갑니다. 선수의 힘뿐 아니라 좋은 번호를 받은 결과도 반영된 수치라는 점에 유의하세요",
+    "conditionsFStNote": "F 보유 시 평균 ST {{holding}}(n={{holdingN}}) / F 없음 {{clean}}(n={{cleanN}}). F를 가진 선수는 스타트를 밟는 방식이 달라지므로, 승률보다 ST로 보는 편이 맞습니다",
+    "conditionsAllZeroHint": "이 지표는 모든 조건이 1% 미만이라 행 사이의 차이를 읽을 수 없습니다. 바깥 코스 중심의 선수는 3착 안에 드는지가 승부이므로, 3연대율로 보면 차이가 드러납니다",
+    "conditionsAllZeroAction": "3연대율로 보기",
+    "conditionsHowToRead": "이 표를 읽는 법",
+    "smallSampleTitle": "표본이 적어 참고값입니다",
+    "periodTitle": "전기({{from}}〜{{to}}·공식 기별 성적)",
+    "periodWinRate": "승률 {{value}}",
+    "periodTop2Rate": "2연대율 {{value}}",
+    "periodAvgSt": "평균 ST {{value}}",
+    "periodFetchError": "전기 성적을 가져오지 못했습니다"
   },
   "dataTable": {
     "title": "데이터 출주표",
@@ -1440,6 +1467,9 @@
     "articleHeading": "📖 자세한 해설 기사",
     "noticeHeading": "⚠️ 주의사항"
   },
+  "flyingBadge": {
+    "title": "출주표에 실린 이번 기 플라잉 {{n}}회. 기(5월 1일·11월 1일)가 바뀌면 0으로 돌아갑니다"
+  },
   "stConsideration": {
     "title": "ST 고찰",
     "subtitle": "아래는 같은 코스·같은 급별 평균과의 차이",
@@ -1452,7 +1482,6 @@
     "times": "{{n}}회",
     "expectedTimes": "평균{{n}}",
     "noInnerBoat": "안쪽 없음",
-    "flyingTitle": "이번 기의 플라잉 {{n}}회. 기가 바뀌면 0으로 돌아갑니다",
     "caveat": "초록은 같은 코스·같은 급별 평균보다 좋음, 빨강은 나쁨. 추출은 바깥 코스일수록 발생 횟수가 적어 비율로 하면 0.0%만 나열되므로 횟수로 표시합니다. 1코스는 안쪽에 艇이 없어 표시하지 않습니다. 플라잉 경주는 모수에서 제외하고 배지로 따로 표시합니다. 본 서비스의 독자 집계입니다.",
     "histogramTitle": "ST 분포",
     "historyTitle": "ST 이력",

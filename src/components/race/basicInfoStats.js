@@ -13,16 +13,15 @@
  * （日和のグレード区分に対応する自社データが無いため、判断が割れやすいG2/G3を
  * あいまいに寄せるより、明確な2区分＋全体の3択に留める判断）。
  *
- * 期間「初日」「最終日」は当初モックで想定していたが実装せず削除した
- * （2026-09-15判明: race_conditions.series_day/is_final_dayは
- * scripts/daily/generate-predictions.jsで常にnullを書き込む未実装カラムで、
- * 実データも33,411行全件がnull。「取れないものは正直にモックから削って良い」
- * というBOA-306本文の指示に従い削除した。2026-09-16追記: BOA-226
- * （scripts/daily/update-race-info.jsのscrapeSeriesDay()）でracelistページの
- * 日程タブから実際に値を取得・書き込むようになったため、今後発生するレースは
- * 順次値が入る見込み。ただし本モジュールが対象とする過去2年分のうち大部分は
- * BOA-226以前のバックフィル済みnullデータのままのため、この期間フィルタ自体を
- * 復活させる判断は改めて行う）
+ * 「初日」「最終日」は2026-09-15時点で「race_conditions.series_day /
+ * is_final_day は実データ全件null」として一度削除したが、**この前提は現在
+ * 成り立たない**。BOA-226（update-race-info.jsのscrapeSeriesDay()、racelist
+ * ページの日程タブ由来）のバックフィルが効いて、2026-09-24の実測で
+ * **35,992 / 36,353行＝99.01%が埋まっている**（2026-02-03以降）。
+ * さらにrace_series（月間スケジュール）との全件照合で、3,014 venue-day の
+ * 初日・最終日がどちらも100%一致（不一致0件）。
+ * したがってphase a FR-2の「条件別」タブ（buildConditionRows）では、
+ * race_seriesを引かずにこの2列で初日・最終日を判定する（追加クエリ0本）。
  *
  * 期間「今期」は自社データに公式の期区分（前期/後期）の境界を持たないため
  * （racer_profiles.period_labelは2026-09-15時点で未取得、BOA-321参照）、
@@ -252,4 +251,209 @@ export function computeExhibitionTopRates(records) {
     (r) => r.isFastestExhibition === true,
   );
   return computeRates(fastestRecords);
+}
+
+/**
+ * 「条件別」タブ（phase a FR-2）の行。行＝条件、列＝値とn。選んだ1選手のみ。
+ *
+ * screens.md §3.2 の決定どおり、基本情報タブはグリッド化せず、既存のバー展開の
+ * 3つ目のタブとしてこの1次元テーブルを足す。
+ *
+ * ## F持ち時 / F無し時（2026-09-25にユーザー判断で追加）
+ *
+ * 当初は「過去の `f_count` 充足率が低く母数が残らない」として出さない方針だったが、
+ * **充足率が低くても出す**ことにした（過去分のバックフィルは BOA-365 / BOA-353配下で
+ * 別途進む見込み）。実測（本日の出走選手12人、`f_count` が取れている走は16〜35走）では
+ * 4人が n=8〜22 で成立し、8人は n=0 で「—」になる。
+ *
+ * **2行を対にする**。screens.md §3.7 が「F持ち時の平均ST vs 通常時」と対比で
+ * 設計しているとおり、単独では「全国」と比べることになるが、全国は母集団
+ * （`f_count` が取れていない走も含む全走）が違うため比較が成立しない。
+ * 同じ「F数が取れている走」の中で F>0 と F=0 を並べて初めて読める。
+ *
+ * ## 出さない条件
+ *
+ * - **ナイター**: 開催時間帯を取得していない（`race_series.kind` はシリーズ種別で
+ *   時間帯を含まない。screens.md §3.2 で実測済み）。「—」の行を並べず行ごと出さない
+ */
+export const CONDITION_ROWS = [
+  { key: "national", kind: "filter", scope: "national", grade: "all" },
+  { key: "local", kind: "filter", scope: "local", grade: "all" },
+  { key: "ippan", kind: "filter", scope: "national", grade: "ippan" },
+  { key: "sgg1", kind: "filter", scope: "national", grade: "sgg1" },
+  { key: "firstDay", kind: "seriesDay" },
+  { key: "finalDay", kind: "isFinalDay" },
+  { key: "wave5", kind: "wave" },
+  { key: "fHolding", kind: "fCount", holding: true },
+  { key: "fClean", kind: "fCount", holding: false },
+];
+
+/**
+ * 「荒れ」とみなす波高の下限（cm）。
+ *
+ * screens.md は「波5cm超」と書いていたが、実測で `> 5` は全レースの4.0%しかなく、
+ * 選手あたりの母数が3〜9走（SMALL_SAMPLE_THRESHOLD=6を下回る選手が出る）になる。
+ * `>= 5` なら11.4%で母数8〜33走。**既存の予想モデル `scripts/lib/turnPrediction.js`
+ * が `waveHeight >= 5` を「荒れ」の閾値に使っている**ため、プロジェクト内の
+ * 既存慣習に合わせる（screens.mdのモックの n=52 は `>= 3cm`＝41.0%相当で、
+ * ラベルと数値が食い違っていた）。
+ */
+export const ROUGH_WAVE_CM = 5;
+
+// 条件別タブが使う派生フィールドが「未取得」か（取得失敗でundefinedのまま）。
+// 欠測（null）とは区別する。区別しないと、取得に失敗しただけなのに
+// 「初日 n=0」のような誤った値を出してしまう（.claude/rules/frontend-data-fetch.md）
+function isUnavailable(records, field) {
+  const rows = records ?? [];
+  if (rows.length === 0) return false;
+  return rows.every((r) => r[field] === undefined);
+}
+
+/**
+ * 条件別タブの各行を組み立てる（純関数）。
+ *
+ * **値は全行とも自社集計**にする。既定状態（勝率・全レース・今期）では
+ * バー側が公式値（`race_entries.win_rate`、点）を出すため、同じ「全国」という
+ * ラベルで別の数字が同一画面に並ぶ。呼び出し側は既存の
+ * `basicInfo.winRateSwitchCaveat` と同趣旨の注記を出すこと。
+ *
+ * 期間は全行「今期」（＝取得できる全期間）で固定する。期間の切り替えは
+ * 既存のチップが担っており、この表は「条件の比較」に役割を絞る。
+ *
+ * @param {Array<Object>} records `getRacerScopedRaceStats` の戻り値
+ * @param {{venueCode: number|null, metric: string}} options
+ * @returns {Array<{key: string, value: number|null, n: number, unavailable: boolean, baseN: number|null}>}
+ *   `unavailable` が true の行は呼び出し側で描画しない。
+ *   `n` は metric が `avgSt` のときだけ ST を計測できた走数（avgStN）になる。
+ *   F持ち時・F無し時の2行だけ `avgSt` / `avgStN` も返す（画面は指標が勝率等でも
+ *   STを併記する。Fを持った選手の見どころはスタートの踏み方のため）。
+ *   `baseN` は波・F持ち時・F無し時の行だけ非null（その条件を判定できた走数。
+ *   他行と母数が違うことを示すので、画面はこれを添えて「他行と比べない」と読ませる）
+ */
+export function buildConditionRows(records, { venueCode, metric }) {
+  const all = Array.isArray(records) ? records : [];
+
+  // 平均STはフライング・未計測の走を除いた avgStN が母数（computeRatesの
+  // コメント参照）。他の指標の n と混ぜると、上のバーが n=158 で出している
+  // 同じ値をこの表が n=171 と書くことになる（会場ランキング側は既に出し分け済み）
+  const sampleOf = (rates) => (metric === "avgSt" ? rates.avgStN : rates.n);
+
+  return CONDITION_ROWS.map((row) => {
+    if (row.kind === "filter") {
+      const rates = computeRates(
+        filterRecords(all, {
+          venueCode,
+          scope: row.scope,
+          grade: row.grade,
+          period: "current",
+        }),
+      );
+      return {
+        key: row.key,
+        value: sampleOf(rates) > 0 ? rates[metric] : null,
+        n: sampleOf(rates),
+        unavailable: false,
+        baseN: null,
+      };
+    }
+
+    if (row.kind === "seriesDay" || row.kind === "isFinalDay") {
+      const field = row.kind === "seriesDay" ? "seriesDay" : "isFinalDay";
+      if (isUnavailable(all, field)) {
+        return {
+          key: row.key,
+          value: null,
+          n: 0,
+          unavailable: true,
+          baseN: null,
+        };
+      }
+      const hit = all.filter((r) =>
+        field === "seriesDay" ? r.seriesDay === 1 : r.isFinalDay === true,
+      );
+      const rates = computeRates(hit);
+      return {
+        key: row.key,
+        value: sampleOf(rates) > 0 ? rates[metric] : null,
+        n: sampleOf(rates),
+        unavailable: false,
+        baseN: null,
+      };
+    }
+
+    if (row.kind === "fCount") {
+      // F数が取れている走だけを母集団にする。取れていない走（null）は
+      // 「F0だった」とは限らないので、F無し時に混ぜてはいけない
+      const known = all.filter((r) => typeof r.fCount === "number");
+      const hit = known.filter((r) =>
+        row.holding ? r.fCount > 0 : r.fCount === 0,
+      );
+      const rates = computeRates(hit);
+      return {
+        key: row.key,
+        value: sampleOf(rates) > 0 ? rates[metric] : null,
+        n: sampleOf(rates),
+        unavailable: false,
+        baseN: known.length,
+        // Fの2行だけは平均STも返す。Fを持っている選手を見る目的は
+        // 「スタートを踏めなくなるか」で、勝率ではそれが読めない
+        // （screens.md §3.7 の元の設計も「F持ち時の平均ST vs 通常時」）。
+        // 実例: 勝率だけだと F持ち時27.3% vs F無し時11.1% となり
+        // 「Fを持っている方が走る」という逆のメッセージになる
+        avgSt: rates.avgSt,
+        avgStN: rates.avgStN,
+      };
+    }
+
+    // 波高。母数が他行と違う（波高が取れていない走がある）ので baseN を返す
+    if (isUnavailable(all, "waveHeight")) {
+      return {
+        key: row.key,
+        value: null,
+        n: 0,
+        unavailable: true,
+        baseN: null,
+      };
+    }
+    const known = all.filter(
+      (r) => typeof r.waveHeight === "number" && Number.isFinite(r.waveHeight),
+    );
+    const rough = known.filter((r) => r.waveHeight >= ROUGH_WAVE_CM);
+    const rates = computeRates(rough);
+    return {
+      key: row.key,
+      value: sampleOf(rates) > 0 ? rates[metric] : null,
+      n: sampleOf(rates),
+      unavailable: false,
+      baseN: known.length,
+    };
+  });
+}
+
+/**
+ * 「前期」（`racer_period_stats`）の1選手分を表示用に整える（純関数）。
+ *
+ * **指標の列に混ぜない**。`win_rate` は公式勝率（点、実測1.07〜8.24）で、
+ * `computeRates` の `winRate`（1着率、%）とは単位が違う。`top3_rate` に
+ * 相当する列も無い。呼び出し側は固定3値＋算出期間の別枠として描画する。
+ *
+ * @param {Array<Object>|{state: string}} rows `getRacerPeriodStats` の戻り値
+ * @param {number|null} racerId
+ * @returns {{winRate: number|null, top2Rate: number|null, avgSt: number|null,
+ *            starts: number|null, calcFrom: string|null, calcTo: string|null}|null}
+ *   該当が無ければ null（呼び出し側は枠ごと出さない）
+ */
+export function pickPeriodStats(rows, racerId) {
+  if (!Array.isArray(rows) || !racerId) return null;
+  const row = rows.find((r) => r.racer_id === racerId);
+  if (!row) return null;
+  return {
+    // 出走0の新人は win_rate が NULL（実測2.6%）。呼び出し側は「—」を出す
+    winRate: row.win_rate ?? null,
+    top2Rate: row.top2_rate ?? null,
+    avgSt: row.avg_st ?? null,
+    starts: row.starts ?? null,
+    calcFrom: row.calc_from ?? null,
+    calcTo: row.calc_to ?? null,
+  };
 }

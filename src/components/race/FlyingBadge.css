@@ -1,0 +1,17 @@
+/* Fバッジ。F1は金、F2は赤（F2は合計90日のあっせん停止で意味が違う）。
+   艇番ヘッダ・枠色チップの中には置かない（枠色に重ねるとコントラストが取れない） */
+.flying-badge {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 0 3px;
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-black);
+  background: var(--color-warning);
+  border-radius: var(--radius-sm);
+}
+
+.flying-badge.is-f2 {
+  color: var(--color-white);
+  background: var(--color-error);
+}

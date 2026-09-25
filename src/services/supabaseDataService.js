@@ -2464,7 +2464,11 @@ export const supabaseDataService = {
    * グレード・期間で絞り込む場合は別途getRacerScopedRaceStatsで自社集計する
    */
   getRaceEntryOfficialRatesBreakdown(raceId) {
-    return withCache(`race-entry-official-rates-${raceId}`, async () => {
+    // v2: F数バッジ（phase a T5-3）のために f_count / l_count を足したので版を上げる。
+    // **v2 は raceId より前に置く**。後ろに付けると inferTtlFromKey の
+    // 「末尾がYYYY-MM-DD-VV-RR」パターンにマッチしなくなり、過去レースの
+    // 7日TTLが30分に落ちる
+    return withCache(`race-entry-official-rates-v2-${raceId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -2473,7 +2477,7 @@ export const supabaseDataService = {
       const { data, error } = await supabase
         .from("race_entries")
         .select(
-          "boat_number, win_rate, local_win_rate, global_2rate, local_2rate, global_3rate, local_3rate",
+          "boat_number, win_rate, local_win_rate, global_2rate, local_2rate, global_3rate, local_3rate, f_count, l_count",
         )
         .eq("race_id", raceId)
         .order("boat_number");
@@ -3774,7 +3778,11 @@ export const supabaseDataService = {
    * 使っておらず不要だった）
    */
   getRacerScopedRaceStats(racerId) {
-    return withCache(`racer-scoped-race-stats-${racerId}`, async () => {
+    // v2: 条件別タブ（phase a FR-2）のために waveHeight / seriesDay / isFinalDay を
+    // 足したので版を上げる。古い形のキャッシュが返ると、これらが undefined になって
+    // 「波5cm以上 n=0」のような誤った値が出る。このキーは inferTtlFromKey に
+    // マッチせず30分TTLなので、旧エントリが残る窓は最大30分
+    return withCache(`racer-scoped-race-stats-v2-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -3788,7 +3796,7 @@ export const supabaseDataService = {
       // 引くのに使う（phase a FR-1）。race_entries.gradeは実測でnull 0件・4値（A1/A2/B1/B2）
       const { data: entries, error: entriesError } = await supabase
         .from("race_entries")
-        .select("race_id, boat_number, grade")
+        .select("race_id, boat_number, grade, f_count")
         .eq("racer_id", racerId)
         .gte("race_id", cutoffStr);
 
@@ -3847,7 +3855,7 @@ export const supabaseDataService = {
         // 既存機能まで空にしないよう、個別にcatchしてフォールバックする
         fetchAllByIn(
           "race_conditions",
-          "race_id, race_stage, race_title",
+          "race_id, race_stage, race_title, wave_height, series_day, is_final_day",
           "race_id",
           raceIds,
         ).catch((err) => {
@@ -3855,7 +3863,11 @@ export const supabaseDataService = {
             "race_conditions取得エラー（レース名・種別は「-」表示にフォールバック）:",
             err?.message ?? String(err),
           );
-          return [];
+          // [] ではなく null を返す。[] だと「取得できなかった」と「その期間は
+          // race_conditions の行が無い」が区別できず、条件別タブ（FR-2）が
+          // 波・初日・最終日の行に誤った n=0 を出してしまう（.claude/rules/
+          // frontend-data-fetch.md §2）。null のときは該当行ごと出さない
+          return null;
         }),
       ]);
 
@@ -3880,7 +3892,12 @@ export const supabaseDataService = {
           deriveRaceStContext(rows, resultById.get(raceId)),
         );
       });
-      const conditionById = new Map(conditionRows.map((r) => [r.race_id, r]));
+      // conditionRows が null＝取得失敗。Mapを作らず、各行の派生値を
+      // undefined のままにして「未取得」を下流へ伝える
+      const conditionsUnavailable = conditionRows === null;
+      const conditionById = new Map(
+        (conditionRows ?? []).map((r) => [r.race_id, r]),
+      );
       const exhibitionRowsByRace = new Map();
       exhibitionRows.forEach((r) => {
         if (r.exhibition_time === null || r.exhibition_time === undefined)
@@ -3924,6 +3941,20 @@ export const supabaseDataService = {
             raceGrade: race.race_grade ?? null,
             raceTitle: condition?.race_title ?? null,
             raceStage: condition?.race_stage ?? null,
+            // 条件別タブ（phase a FR-2）。取得失敗時は undefined のままにして
+            // 「未取得」を伝え、欠測（null）と区別する
+            waveHeight: conditionsUnavailable
+              ? undefined
+              : (condition?.wave_height ?? null),
+            // 節の何日目か／最終日か。公式サイトの日程タブ由来（BOA-226）で
+            // 2026-02-03以降99.0%が埋まっている。race_series（月間スケジュール）
+            // とは3,014 venue-dayで100%一致することを実装前に確認済み
+            seriesDay: conditionsUnavailable
+              ? undefined
+              : (condition?.series_day ?? null),
+            isFinalDay: conditionsUnavailable
+              ? undefined
+              : (condition?.is_final_day ?? null),
             rank1: result.rank1,
             rank2: result.rank2,
             rank3: result.rank3,
@@ -3945,6 +3976,16 @@ export const supabaseDataService = {
             actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
             // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
             grade: entry.grade ?? null,
+            // そのレース時点の出走表に載っていた今期のF数（phase a FR-2の
+            // 「F持ち時」「F無し時」の行）。null の走は母数から落ちる。
+            // 充足の内訳（2026-09-25実測）:
+            //   2025-12-03〜2026-02-14 … N19（racelist-backfill.js）が夜間に実行中
+            //   2026-02-15〜2026-09-20 … **埋める計画が無い**（BOA-417で起票）
+            //   2026-09-21〜           … 日次の生取得でほぼ100%
+            // K/Bアーカイブからは埋められない（Kファイルは今期F数のような累積を
+            // 持たず、レース限りのF/Lフラグだけ。導出を試して完全一致率約5%で
+            // 不採用になっている。pre-race-full-fields/plan.md §6.1）
+            fCount: entry.f_count ?? null,
             // ST考察（FR-1）の派生値。Fは stForRank を null にし、raceBestSt /
             // innerMinSt / stRank の算出からも外す（符号反転はしない。ADR-0068 却下5）
             isFlying: st?.is_flying === true,
@@ -6093,6 +6134,82 @@ export const supabaseDataService = {
         throw error;
       }
     });
+  },
+
+  /**
+   * 選手の「前期」の期別成績を取得する（phase a FR-4c、マイグレーション095）。
+   *
+   * `racer_period_stats` は公式の期別成績ファイル（fan）由来で、期ごとに
+   * 1選手1行。**集計はしない**——取得した値をそのまま表示する。
+   *
+   * ## as-of で引く（最新期で決め打ちしない）
+   *
+   * 083_racer_period_stats.sql:218-219 のCOMMENTどおり「レース日 > `calc_to` の
+   * 最新の期」を使う。最新期で決め打ちすると、過去日のレースを開いたときに
+   * **そのレースより未来の成績**を「前期」として出してしまう（2026-01-15の
+   * レースに、算出期間が2026-04-30までの期を出すことになる）。
+   *
+   * 期の境界は 5/1 と 11/1（`period_no` 1 = 5/1〜10/31、2 = 11/1〜4/30、
+   * `period_year` は算出期間の終了が4月の年）。クライアントで計算できるので、
+   * `.eq()` 2つで6行に絞る（絞らないと1選手あたり約12期分が返る）。
+   *
+   * ## 単位に注意
+   *
+   * `win_rate` は**公式勝率（点、実測1.07〜8.24）**で、自社集計の1着率（%）とは
+   * 別物。同じ列に並べてはいけない（画面では別枠の固定3値として出す）。
+   * `top3_rate` に相当する列は無い。
+   *
+   * 095未適用の環境では権限エラーになるので、呼び出し側は「枠ごと出さない」に
+   * 倒す（getStCourseBaseline と同じ扱い）。
+   *
+   * @param {Array<number>} racerIds 登録番号
+   * @param {string} raceDate `YYYY-MM-DD`。この日より前に終わった期を引く
+   */
+  getRacerPeriodStats(racerIds, raceDate) {
+    const ids = [...new Set((racerIds ?? []).filter(Boolean))].sort(
+      (a, b) => a - b,
+    );
+    if (ids.length === 0 || !raceDate) return Promise.resolve([]);
+
+    // レース日から見て「直前に**終わった**期」を求める。
+    // `period_year` Y は「5月〜翌4月の年度」を指し、その中が2つに割れる
+    // （本番DBの全15期を実測して確認した。083のCOMMENTの言い換え）:
+    //   (Y,1) = (Y-1)-05-01 〜 (Y-1)-10-31
+    //   (Y,2) = (Y-1)-11-01 〜     Y-04-30
+    // 例: (2026,1)=2025-05-01〜2025-10-31、(2026,2)=2025-11-01〜2026-04-30
+    // したがって直前に終わった期は
+    //   5〜10月  → (Y,2)   … Y-04-30 に終わった期
+    //   11〜12月 → (Y+1,1) … Y-10-31 に終わった期
+    //   1〜4月   → (Y,1)   … (Y-1)-10-31 に終わった期
+    const [y, m] = raceDate.split("-").map(Number);
+    const periodYear = m >= 5 && m <= 10 ? y : m >= 11 ? y + 1 : y;
+    const periodNo = m >= 5 && m <= 10 ? 2 : 1;
+
+    return withCache(
+      `racer-period-stats-v1-${periodYear}-${periodNo}-${ids.join(",")}`,
+      async () => {
+        if (!supabase) {
+          throw new Error("Supabase client not initialized");
+        }
+        try {
+          const { data } = await supabase
+            .from("racer_period_stats")
+            .select(
+              "racer_id, period_year, period_no, calc_from, calc_to, win_rate, top2_rate, avg_st, starts",
+            )
+            .eq("period_year", periodYear)
+            .eq("period_no", periodNo)
+            .in("racer_id", ids);
+          return data ?? [];
+        } catch (error) {
+          if (isPermissionDeniedError(error)) {
+            // 095（匿名へのSELECT公開）が未適用の間はここを通る
+            return { state: "forbidden", rows: [], fetchFailed: true };
+          }
+          throw error;
+        }
+      },
+    );
   },
 
   /**

@@ -28,14 +28,19 @@ import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { parseRaceId } from "../../utils/raceId";
 import RaceHistoryTable from "./RaceHistoryTable";
 import {
   filterRecords,
   computeRates,
   getRecentRaces,
   computeVenueRanking,
+  buildConditionRows,
+  pickPeriodStats,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
+import InlineFetchError from "../InlineFetchError";
+import FlyingBadge from "./FlyingBadge";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -82,6 +87,14 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
   const [expandedView, setExpandedView] = useState("trend");
   const [officialRates, setOfficialRates] = useState(null);
   const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
+  // 「前期」（racer_period_stats、phase a FR-4c）。6人分を1クエリで取る。
+  // undefined=未取得、配列=取得済み、それ以外（{state:"forbidden"}）＝095未適用
+  const [periodStats, setPeriodStats] = useState(undefined);
+  const [periodFailed, setPeriodFailed] = useState(false);
+  // 再読み込みボタン用。これを増やさないと取得effectの依存
+  // （racerIdsKey / raceDate）が変わらず、再取得が起きないまま
+  // 枠もエラーも消えて「失敗がデータなしに化ける」状態になる
+  const [periodRetryToken, setPeriodRetryToken] = useState(0);
 
   const sortedPlayers = [...(players ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -106,6 +119,36 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
       cancelled = true;
     };
   }, [raceId]);
+
+  // 「前期」は条件別タブを開いたときだけ要る値だが、6人分まとめて1クエリで済み
+  // （racer_period_stats を period_year/period_no で絞って .in() する）、
+  // タブを開くたびに待たせない方が読み手の体験が良いのでレース単位で先に取る。
+  // racerIdsKey は「6人の登録番号の並び」で、同じレース内では変わらない
+  const racerIdsKey = sortedPlayers.map((p) => p.racerId ?? "").join(",");
+  const raceDate = parseRaceId(raceId)?.date ?? null;
+  useEffect(() => {
+    const ids = racerIdsKey.split(",").filter(Boolean).map(Number);
+    if (ids.length === 0 || !raceDate) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRacerPeriodStats(ids, raceDate)
+      .then((data) => {
+        if (!cancelled) setPeriodStats(data);
+      })
+      .catch((err) => {
+        // 権限エラー（095未適用）はサービス層が {state:"forbidden"} で返すので
+        // ここには来ない。ここに来るのはネットワーク断・タイムアウト等で、
+        // 「データが無い」と区別して扱う（.claude/rules/frontend-data-fetch.md §3）
+        console.error("前期成績取得エラー:", err?.message ?? String(err));
+        if (!cancelled) {
+          setPeriodStats(null);
+          setPeriodFailed(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [racerIdsKey, raceDate, periodRetryToken]);
 
   const ensureScopedStats = useCallback((racerId) => {
     if (!racerId) return;
@@ -363,8 +406,17 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                 >
                   {boat}
                 </span>
-                <span className="rbit-name" translate="no">
-                  {player?.name}
+                {/* 名前とFバッジでgridの1列。バッジを直の子にすると
+                    grid-template-columns（5列）がずれ、バーの上に重なる */}
+                <span className="rbit-name-cell">
+                  <span className="rbit-name" translate="no">
+                    {player?.name}
+                  </span>
+                  {/* 出走表の今期F数（T5-3）。ST考察カードのバッジと同じ出所
+                      （race_entries.f_count）にしてある。この行は <button> なので
+                      TermHintButton（入れ子の <button> になる）は置けず、
+                      説明は title 属性で出す */}
+                  <FlyingBadge count={officialRowFor(boat)?.f_count} />
                 </span>
                 <span className="rbit-bar-track">
                   {!loading && (
@@ -423,6 +475,13 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                       onClick={() => setExpandedView("venue")}
                     >
                       {t("basicInfo.viewVenue")}
+                    </button>
+                    <button
+                      type="button"
+                      className={`rbit-expanded-tab${expandedView === "conditions" ? " is-active" : ""}`}
+                      onClick={() => setExpandedView("conditions")}
+                    >
+                      {t("basicInfo.viewConditions")}
                     </button>
                   </div>
 
@@ -526,6 +585,239 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                               );
                             })}
                           </ol>
+                        </div>
+                      );
+                    })()}
+
+                  {expandedView === "conditions" &&
+                    (() => {
+                      const records = scopedStatsByRacer[player?.racerId];
+                      if (records === undefined || records === null) {
+                        return (
+                          <p className="rbit-expanded-loading">
+                            {t("basicInfo.loading")}
+                          </p>
+                        );
+                      }
+                      if (records.length === 0) {
+                        return (
+                          <p className="rbit-expanded-empty">
+                            {t("basicInfo.noHistory")}
+                          </p>
+                        );
+                      }
+                      const condRows = buildConditionRows(records, {
+                        venueCode,
+                        metric,
+                      }).filter((r) => !r.unavailable);
+                      const period = pickPeriodStats(
+                        periodStats,
+                        player?.racerId,
+                      );
+                      return (
+                        <div className="rbit-conditions">
+                          {/* 値は全行とも自社集計。既定状態（勝率・全レース・今期）では
+                              上のバーが公式値を出すため、同じ「全国」でも数字が違う */}
+                          <p className="rbit-conditions-note">
+                            {t("basicInfo.conditionsNote", {
+                              metric: t(`basicInfo.metrics.${metric}`),
+                            })}
+                          </p>
+                          <table className="rbit-conditions-table">
+                            <tbody>
+                              {condRows.map((row) => {
+                                const small =
+                                  row.n > 0 && row.n < SMALL_SAMPLE_THRESHOLD;
+                                return (
+                                  <tr key={row.key}>
+                                    <th scope="row">
+                                      {t(`basicInfo.conditions.${row.key}`)}
+                                    </th>
+                                    <td
+                                      className={`rbit-conditions-value${small ? " is-small-sample" : ""}`}
+                                    >
+                                      {row.value === null
+                                        ? "—"
+                                        : formatMetricValue(metric, row.value)}
+                                    </td>
+                                    <td
+                                      className={`rbit-conditions-n${small ? " is-small-sample" : ""}`}
+                                    >
+                                      {small && (
+                                        <span
+                                          className="rbit-conditions-warn"
+                                          title={t(
+                                            "basicInfo.smallSampleTitle",
+                                          )}
+                                        >
+                                          ⚠
+                                        </span>
+                                      )}
+                                      {t("basicInfo.sampleCount", { n: row.n })}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                          {/* A: この表は全コース込み。今日の枠と母集団が違う。
+                              実例（2026-09-25 桐生1R）: 4号艇の選手は過去2年183走中
+                              5・6枠が178走で全国1着率0.5%、6号艇の選手は枠がほぼ均等で
+                              13.9%。素直に読むと今日の枠と逆方向に評価してしまう */}
+                          <p className="rbit-conditions-caveat">
+                            {t("basicInfo.conditionsCourseCaveat", {
+                              boat,
+                              n: records.filter((r) => r.boatNumber === boat)
+                                .length,
+                            })}
+                          </p>
+                          {/* C: Fを持った選手の見どころはスタートの踏み方なので、
+                              指標が勝率等でも平均STを併記する。勝率だけだと
+                              「F持ち時27.3% vs F無し時11.1%」のように
+                              「Fを持っている方が走る」と読めてしまう */}
+                          {metric !== "avgSt" &&
+                            (() => {
+                              const holding = condRows.find(
+                                (r) => r.key === "fHolding",
+                              );
+                              const clean = condRows.find(
+                                (r) => r.key === "fClean",
+                              );
+                              if (!holding?.avgStN && !clean?.avgStN)
+                                return null;
+                              const fmt = (row) =>
+                                row?.avgSt === null || row?.avgSt === undefined
+                                  ? "—"
+                                  : row.avgSt.toFixed(2);
+                              return (
+                                <p className="rbit-conditions-caveat">
+                                  {t("basicInfo.conditionsFStNote", {
+                                    holding: fmt(holding),
+                                    holdingN: holding?.avgStN ?? 0,
+                                    clean: fmt(clean),
+                                    cleanN: clean?.avgStN ?? 0,
+                                  })}
+                                </p>
+                              );
+                            })()}
+                          {/* D: 外枠中心の選手は勝率だと全行0.0%に潰れて情報がゼロになる。
+                              実例（同レース4号艇）: 勝率は全行0.0%だが、3連対率にすると
+                              全国41.5%・最終日50.0%・波5cm以上50.0%と差が出る。
+                              ただし3連対率も全部0の選手（1着も3着も無い新人）はいるので、
+                              **切り替えて実際に差が出る場合だけ**誘導する */}
+                          {metric !== "top3Rate" &&
+                            metric !== "avgSt" &&
+                            condRows.some((r) => r.n > 0) &&
+                            // 厳密に0で判定すると「全国0.5%・一般戦0.6%」のような
+                            // 実質潰れている選手を拾えない。1%未満＝100走に1回未満で
+                            // 行間の差が読めない状態とみなす
+                            condRows.every(
+                              (r) => r.value === null || r.value < 1,
+                            ) &&
+                            buildConditionRows(records, {
+                              venueCode,
+                              metric: "top3Rate",
+                            }).some((r) => r.value !== null && r.value >= 1) && (
+                              <p className="rbit-conditions-zero">
+                                {t("basicInfo.conditionsAllZeroHint")}
+                                <button
+                                  type="button"
+                                  className="rbit-conditions-zero-action"
+                                  onClick={() => setMetric("top3Rate")}
+                                >
+                                  {t("basicInfo.conditionsAllZeroAction")}
+                                </button>
+                              </p>
+                            )}
+                          {/* 注記を4本並べるとグレーの壁になって誰も読まないので、
+                              毎回は要らない2本（最終日の構造差・母数が違う行）は
+                              折りたたむ。常時出すのはコース混在の1本とFのSTだけ */}
+                          <details className="rbit-conditions-how">
+                            <summary>
+                              {t("basicInfo.conditionsHowToRead")}
+                            </summary>
+                            {/* B: 最終日は優勝戦を含み、勝ち上がった選手が1号艇に入る。
+                                全36,221レースの実測で1号艇1着率は初日52.1%・中日54.0%・
+                                最終日60.1%と構造的に差がある（選手の力ではなく枠の差） */}
+                            {condRows.some((r) => r.key === "finalDay") && (
+                              <p className="rbit-conditions-caveat">
+                                {t("basicInfo.conditionsFinalDayCaveat")}
+                              </p>
+                            )}
+                            {/* 母数が他行と違う行（波・F持ち時・F無し時）は、
+                                条件を判定できた走数を添えて「他行と比べない」と読ませる */}
+                            {condRows.some((r) => r.baseN !== null) && (
+                              <p className="rbit-conditions-caveat">
+                                {t("basicInfo.conditionsBaseNote", {
+                                  rows: condRows
+                                    .filter((r) => r.baseN !== null)
+                                    .map(
+                                      (r) =>
+                                        `${t(`basicInfo.conditions.${r.key}`)}(${r.baseN})`,
+                                    )
+                                    .join(
+                                      t(
+                                        "basicInfo.conditionsBaseNoteSeparator",
+                                      ),
+                                    ),
+                                })}
+                              </p>
+                            )}
+                          </details>
+                          {/* 取得失敗を「前期のデータが無い」に化けさせない。
+                              095未適用（forbidden）のときは枠ごと出さないのが
+                              正しいので、ここでは出さない */}
+                          {periodFailed && (
+                            <InlineFetchError
+                              message={t("basicInfo.periodFetchError")}
+                              onRetry={() => {
+                                setPeriodFailed(false);
+                                setPeriodStats(undefined);
+                                setPeriodRetryToken((v) => v + 1);
+                              }}
+                            />
+                          )}
+                          {/* 「前期」は公式の期別成績で、単位が点。自社集計の
+                              1着率%と同じ列に混ぜられないため別枠にする */}
+                          {period && (
+                            <div className="rbit-period">
+                              <div className="rbit-period-heading">
+                                {t("basicInfo.periodTitle", {
+                                  from: period.calcFrom,
+                                  to: period.calcTo,
+                                })}
+                              </div>
+                              <div className="rbit-period-values">
+                                <span>
+                                  {t("basicInfo.periodWinRate", {
+                                    value:
+                                      period.winRate === null
+                                        ? "—"
+                                        : period.winRate.toFixed(2),
+                                  })}
+                                </span>
+                                <span>
+                                  {/* 単位は値側に付ける。i18n側に「%」を残すと
+                                      出走0の新人（top2_rateがNULL）で
+                                      「2連対率 —%」になる */}
+                                  {t("basicInfo.periodTop2Rate", {
+                                    value:
+                                      period.top2Rate === null
+                                        ? "—"
+                                        : `${period.top2Rate.toFixed(1)}%`,
+                                  })}
+                                </span>
+                                <span>
+                                  {t("basicInfo.periodAvgSt", {
+                                    value:
+                                      period.avgSt === null
+                                        ? "—"
+                                        : period.avgSt.toFixed(2),
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })()}

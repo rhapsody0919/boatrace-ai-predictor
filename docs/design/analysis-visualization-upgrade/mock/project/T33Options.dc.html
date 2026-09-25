@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>T3-3 ST分布・ST履歴の3案</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#0d1b2e;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Sans",sans-serif;-webkit-font-smoothing:antialiased}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1180px; box-sizing: border-box; background: #0d1b2e; color: #f8fafc; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+
+  <div>
+    <h1 style="margin: 0 0 4px; font-size: 20px; font-weight: 700;">T3-3「ST分布・ST履歴」をどうするか — 3案</h1>
+    <p style="margin: 0; font-size: 12.5px; color: #cbd5e1;">ST考察カードは<strong style="color: #f8fafc;">すでに実装済み・本番相当</strong>です（下の各案の上部に同じものを縮小して置いています）。3案の違いは「そのカードの下に何を足すか」だけです。数値はすべて本番DBの実データ。</p>
+  </div>
+
+  <div style="display: flex; gap: 14px; flex: 1; min-height: 0;">
+
+    <!-- ============ 案1: 予定どおり（ST分布＋ST履歴の両方） ============ -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+      <div style="padding: 7px 10px; background: #142842; border: 1px solid #24344d; border-left: 3px solid #e0a800; border-radius: 6px;">
+        <p style="margin: 0 0 2px; font-size: 13px; font-weight: 700; color: #e0a800;">案1 予定どおり（ST分布＋ST履歴）</p>
+        <p style="margin: 0; font-size: 11px; line-height: 1.5; color: #cbd5e1;">screens.md の設計に忠実。折りたたみが2つ増える</p>
+      </div>
+
+      <div style="flex: 1; box-sizing: border-box; background: #142842; border: 1px solid #24344d; border-radius: 10px; padding: 10px; overflow: hidden; display: flex; flex-direction: column; gap: 7px;">
+        <!-- 実装済みのST考察カード（縮小表示） -->
+        <div style="opacity: 0.55; border: 1px dashed #32425c; border-radius: 6px; padding: 7px;">
+          <p style="margin: 0 0 4px; font-size: 10px; color: #97a3b5;">↓ ここまでは実装済み</p>
+          <p style="margin: 0 0 4px; font-size: 12px; font-weight: 700;">ST考察</p>
+          <div style="display: grid; grid-template-columns: 40px repeat(6, 1fr); gap: 1px; font-size: 9px;">
+            <div></div><div style="background:#fff;color:#000;text-align:center;font-weight:700;">1</div><div style="background:#000;color:#fff;text-align:center;font-weight:700;">2</div><div style="background:#e53935;color:#fff;text-align:center;font-weight:700;">3</div><div style="background:#1e88e5;color:#fff;text-align:center;font-weight:700;">4</div><div style="background:#fdd835;color:#000;text-align:center;font-weight:700;">5</div><div style="background:#43a047;color:#fff;text-align:center;font-weight:700;">6</div>
+            <div style="color:#97a3b5;">級別</div><div style="text-align:center;color:#cbd5e1;">B1</div><div style="text-align:center;color:#cbd5e1;">A2</div><div style="text-align:center;color:#cbd5e1;">B1</div><div style="text-align:center;color:#cbd5e1;">B1</div><div style="text-align:center;color:#cbd5e1;">A2</div><div style="text-align:center;color:#cbd5e1;">B1</div>
+            <div style="color:#97a3b5;">安定率</div><div style="text-align:center;">84.2</div><div style="text-align:center;">63.0</div><div style="text-align:center;">58.8</div><div style="text-align:center;">69.2</div><div style="text-align:center;">58.1</div><div style="text-align:center;">50.6</div>
+            <div style="color:#97a3b5;">出遅率</div><div style="text-align:center;">5.3</div><div style="text-align:center;">14.8</div><div style="text-align:center;">17.6</div><div style="text-align:center;">11.5</div><div style="text-align:center;">16.1</div><div style="text-align:center;">29.4</div>
+          </div>
+        </div>
+
+        <!-- 折りたたみ1: ST分布（開いた状態） -->
+        <div style="border: 1px solid #c9a227; border-radius: 6px; padding: 8px; background: #0f2036;">
+          <p style="margin: 0 0 6px; font-size: 11.5px; font-weight: 700; color: #c9a227;">▾ ST分布（開いた状態）</p>
+          <div style="display: flex; gap: 4px; margin-bottom: 7px;">
+            <span style="padding: 2px 6px; font-size: 9.5px; background: #43a047; color: #fff; border-radius: 3px;">⑥ 眞鳥康太</span>
+            <span style="padding: 2px 6px; font-size: 9.5px; color: #97a3b5; border: 1px solid #24344d; border-radius: 3px;">①</span>
+            <span style="padding: 2px 6px; font-size: 9.5px; color: #97a3b5; border: 1px solid #24344d; border-radius: 3px;">②</span>
+            <span style="padding: 2px 6px; font-size: 9.5px; color: #97a3b5; border: 1px solid #24344d; border-radius: 3px;">③</span>
+            <span style="padding: 2px 6px; font-size: 9.5px; color: #97a3b5; border: 1px solid #24344d; border-radius: 3px;">④</span>
+            <span style="padding: 2px 6px; font-size: 9.5px; color: #97a3b5; border: 1px solid #24344d; border-radius: 3px;">⑤</span>
+          </div>
+          <p style="margin: 0 0 5px; font-size: 9.5px; color: #97a3b5;">⑥ 6コース・B1（44走）／薄い棒＝B1・6コースの平均（16,640走）</p>
+          <!-- ヒストグラム: 本人(濃い) vs ベースライン(薄い) -->
+          <div style="display: flex; align-items: flex-end; gap: 3px; height: 86px;">
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+              <div style="width:100%; height:64px; display:flex; align-items:flex-end; gap:1px;">
+                <span style="flex:1; height:0%; background:#43a047;"></span>
+                <span style="flex:1; height:7%; background:rgba(148,163,184,0.45);"></span>
+              </div>
+              <span style="font-size:8px; color:#97a3b5;">.00</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+              <div style="width:100%; height:64px; display:flex; align-items:flex-end; gap:1px;">
+                <span style="flex:1; height:23%; background:#43a047;"></span>
+                <span style="flex:1; height:31%; background:rgba(148,163,184,0.45);"></span>
+              </div>
+              <span style="font-size:8px; color:#97a3b5;">.05</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+              <div style="width:100%; height:64px; display:flex; align-items:flex-end; gap:1px;">
+                <span style="flex:1; height:46%; background:#43a047;"></span>
+                <span style="flex:1; height:69%; background:rgba(148,163,184,0.45);"></span>
+              </div>
+              <span style="font-size:8px; color:#97a3b5;">.10</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+              <div style="width:100%; height:64px; display:flex; align-items:flex-end; gap:1px;">
+                <span style="flex:1; height:100%; background:#43a047;"></span>
+                <span style="flex:1; height:93%; background:rgba(148,163,184,0.45);"></span>
+              </div>
+              <span style="font-size:8px; color:#97a3b5;">.15</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+              <div style="width:100%; height:64px; display:flex; align-items:flex-end; gap:1px;">
+                <span style="flex:1; height:69%; background:#43a047;"></span>
+                <span style="flex:1; height:70%; background:rgba(148,163,184,0.45);"></span>
+              </div>
+              <span style="font-size:8px; color:#97a3b5;">.20</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+              <div style="width:100%; height:64px; display:flex; align-items:flex-end; gap:1px;">
+                <span style="flex:1; height:54%; background:#43a047;"></span>
+                <span style="flex:1; height:42%; background:rgba(148,163,184,0.45);"></span>
+              </div>
+              <span style="font-size:8px; color:#97a3b5;">.25</span>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+              <div style="width:100%; height:64px; display:flex; align-items:flex-end; gap:1px;">
+                <span style="flex:1; height:46%; background:#43a047;"></span>
+                <span style="flex:1; height:29%; background:rgba(148,163,184,0.45);"></span>
+              </div>
+              <span style="font-size:8px; color:#97a3b5;">.30+</span>
+            </div>
+          </div>
+          <p style="margin: 5px 0 0; font-size: 9.5px; line-height: 1.5; color: #cbd5e1;">この選手は .25以上が29.5%（平均20.8%）で、平均より遅い側に寄っています</p>
+        </div>
+
+        <!-- 折りたたみ2: ST履歴 -->
+        <div style="border: 1px solid #24344d; border-radius: 6px; padding: 8px; background: #0f2036;">
+          <p style="margin: 0 0 5px; font-size: 11.5px; color: #cbd5e1;">▸ ST履歴（全44走の一覧）</p>
+          <p style="margin: 0; font-size: 9.5px; color: #97a3b5;">閉じた状態。開くと日付・会場・コース・ST・ST順位の表が44行</p>
+        </div>
+
+        <div style="margin-top: auto; padding: 7px; background: #1a1206; border: 1px solid #5c4a1a; border-radius: 6px;">
+          <p style="margin: 0; font-size: 10px; line-height: 1.6; color: #e0a800;">▲ 艇を選ぶチップが<strong>もう1組</strong>増える（カード上部の選手チップとは別物）。1枚のカードに「6艇を横並びで比べる」と「1艇を深く見る」が同居する</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 案2: ST履歴だけ ============ -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+      <div style="padding: 7px 10px; background: #142842; border: 1px solid #24344d; border-left: 3px solid #10b981; border-radius: 6px;">
+        <p style="margin: 0 0 2px; font-size: 13px; font-weight: 700; color: #10b981;">案2 ST履歴だけ（推奨）</p>
+        <p style="margin: 0; font-size: 11px; line-height: 1.5; color: #cbd5e1;">実装済みの直近10走に「もっと見る」を足すだけ。新しいUIは増えない</p>
+      </div>
+
+      <div style="flex: 1; box-sizing: border-box; background: #142842; border: 1px solid #24344d; border-radius: 10px; padding: 10px; overflow: hidden; display: flex; flex-direction: column; gap: 7px;">
+        <div style="opacity: 0.55; border: 1px dashed #32425c; border-radius: 6px; padding: 7px;">
+          <p style="margin: 0 0 4px; font-size: 10px; color: #97a3b5;">↓ ここまでは実装済み</p>
+          <p style="margin: 0 0 4px; font-size: 12px; font-weight: 700;">ST考察</p>
+          <div style="display: grid; grid-template-columns: 40px repeat(6, 1fr); gap: 1px; font-size: 9px;">
+            <div></div><div style="background:#fff;color:#000;text-align:center;font-weight:700;">1</div><div style="background:#000;color:#fff;text-align:center;font-weight:700;">2</div><div style="background:#e53935;color:#fff;text-align:center;font-weight:700;">3</div><div style="background:#1e88e5;color:#fff;text-align:center;font-weight:700;">4</div><div style="background:#fdd835;color:#000;text-align:center;font-weight:700;">5</div><div style="background:#43a047;color:#fff;text-align:center;font-weight:700;">6</div>
+            <div style="color:#97a3b5;">級別</div><div style="text-align:center;color:#cbd5e1;">B1</div><div style="text-align:center;color:#cbd5e1;">A2</div><div style="text-align:center;color:#cbd5e1;">B1</div><div style="text-align:center;color:#cbd5e1;">B1</div><div style="text-align:center;color:#cbd5e1;">A2</div><div style="text-align:center;color:#cbd5e1;">B1</div>
+            <div style="color:#97a3b5;">安定率</div><div style="text-align:center;">84.2</div><div style="text-align:center;">63.0</div><div style="text-align:center;">58.8</div><div style="text-align:center;">69.2</div><div style="text-align:center;">58.1</div><div style="text-align:center;">50.6</div>
+            <div style="color:#97a3b5;">出遅率</div><div style="text-align:center;">5.3</div><div style="text-align:center;">14.8</div><div style="text-align:center;">17.6</div><div style="text-align:center;">11.5</div><div style="text-align:center;">16.1</div><div style="text-align:center;">29.4</div>
+          </div>
+        </div>
+
+        <!-- 実装済みの直近10走の帯 -->
+        <div style="border: 1px dashed #32425c; border-radius: 6px; padding: 8px; opacity: 0.55;">
+          <p style="margin: 0 0 5px; font-size: 10px; color: #97a3b5;">↓ グリッドのセルをタップすると出る（実装済み）</p>
+          <p style="margin: 0 0 5px; font-size: 10.5px; color: #cbd5e1;">6コースから出走した直近10走</p>
+          <div style="display: flex; gap: 2px;">
+            <div style="flex:1; background:#0f2036; border-radius:3px; padding:2px 0; text-align:center;"><div style="font-size:8px; color:#97a3b5;">6</div><div style="font-size:11px; font-weight:700; color:#f26b6b;">5</div><div style="font-size:8px; color:#cbd5e1;">.21</div><div style="font-size:7.5px; color:#97a3b5;">(4位)</div></div>
+            <div style="flex:1; background:#0f2036; border-radius:3px; padding:2px 0; text-align:center;"><div style="font-size:8px; color:#97a3b5;">6</div><div style="font-size:11px; font-weight:700; color:#cbd5e1;">3</div><div style="font-size:8px; color:#cbd5e1;">.16</div><div style="font-size:7.5px; color:#97a3b5;">(2位)</div></div>
+            <div style="flex:1; background:#0f2036; border-radius:3px; padding:2px 0; text-align:center;"><div style="font-size:8px; color:#97a3b5;">6</div><div style="font-size:11px; font-weight:700; color:#f26b6b;">6</div><div style="font-size:8px; color:#cbd5e1;">.29</div><div style="font-size:7.5px; color:#97a3b5;">(6位)</div></div>
+            <div style="flex:1; background:#0f2036; border-radius:3px; padding:2px 0; text-align:center;"><div style="font-size:8px; color:#97a3b5;">6</div><div style="font-size:11px; font-weight:700; color:#c9a227;">1</div><div style="font-size:8px; color:#cbd5e1;">.11</div><div style="font-size:7.5px; color:#97a3b5;">(1位)</div></div>
+            <div style="flex:1; background:#0f2036; border-radius:3px; padding:2px 0; text-align:center;"><div style="font-size:8px; color:#97a3b5;">6</div><div style="font-size:11px; font-weight:700; color:#cbd5e1;">4</div><div style="font-size:8px; color:#cbd5e1;">.19</div><div style="font-size:7.5px; color:#97a3b5;">(3位)</div></div>
+          </div>
+          <p style="margin: 3px 0 0; font-size: 8px; color: #97a3b5;">（実際は10本。ここは5本だけ表示）</p>
+        </div>
+
+        <!-- 追加分: もっと見る -->
+        <div style="border: 1px solid #10b981; border-radius: 6px; padding: 8px; background: #0f2036;">
+          <p style="margin: 0 0 6px; font-size: 11.5px; font-weight: 700; color: #10b981;">＋ ここだけ追加</p>
+          <button type="button" style="width: 100%; min-height: 44px; padding: 8px; font-family: inherit; font-size: 11.5px; color: #c9a227; background: none; border: 1px solid #24344d; border-radius: 6px; cursor: pointer;">もっと見る（このコースの全44走）</button>
+          <p style="margin: 6px 0 0; font-size: 9.5px; line-height: 1.6; color: #cbd5e1;">押すと同じ帯が44本に伸びる（5本×9段に折り返し）。<strong style="color: #f8fafc;">新しい部品もチップも増えない</strong></p>
+        </div>
+
+        <div style="margin-top: auto; padding: 7px; background: #06140f; border: 1px solid #1a5c42; border-radius: 6px;">
+          <p style="margin: 0; font-size: 10px; line-height: 1.6; color: #10b981;">▲ 追加コストがほぼゼロ。ST分布（st_histogram）はDBに入ったまま将来使える。「平均と比べて速いか遅いか」は<strong>ST考察カードの差（±pt）が既に答えている</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 案3: 何も足さない ============ -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+      <div style="padding: 7px 10px; background: #142842; border: 1px solid #24344d; border-left: 3px solid #97a3b5; border-radius: 6px;">
+        <p style="margin: 0 0 2px; font-size: 13px; font-weight: 700; color: #cbd5e1;">案3 何も足さない（phase b/c へ送る）</p>
+        <p style="margin: 0; font-size: 11px; line-height: 1.5; color: #cbd5e1;">今の完成度で止める</p>
+      </div>
+
+      <div style="flex: 1; box-sizing: border-box; background: #142842; border: 1px solid #24344d; border-radius: 10px; padding: 10px; overflow: hidden; display: flex; flex-direction: column; gap: 7px;">
+        <div style="border: 1px solid #24344d; border-radius: 6px; padding: 7px;">
+          <p style="margin: 0 0 4px; font-size: 12px; font-weight: 700;">ST考察</p>
+          <div style="display: grid; grid-template-columns: 40px repeat(6, 1fr); gap: 1px; font-size: 9px;">
+            <div></div><div style="background:#fff;color:#000;text-align:center;font-weight:700;">1</div><div style="background:#000;color:#fff;text-align:center;font-weight:700;">2</div><div style="background:#e53935;color:#fff;text-align:center;font-weight:700;">3</div><div style="background:#1e88e5;color:#fff;text-align:center;font-weight:700;">4</div><div style="background:#fdd835;color:#000;text-align:center;font-weight:700;">5</div><div style="background:#43a047;color:#fff;text-align:center;font-weight:700;">6</div>
+            <div style="color:#97a3b5;">級別</div><div style="text-align:center;color:#cbd5e1;">B1</div><div style="text-align:center;color:#cbd5e1;">A2</div><div style="text-align:center;color:#cbd5e1;">B1</div><div style="text-align:center;color:#cbd5e1;">B1</div><div style="text-align:center;color:#cbd5e1;">A2</div><div style="text-align:center;color:#cbd5e1;">B1</div>
+            <div style="color:#97a3b5;">走数</div><div style="text-align:center;color:#97a3b5;">19</div><div style="text-align:center;color:#97a3b5;">27</div><div style="text-align:center;color:#97a3b5;">17</div><div style="text-align:center;color:#97a3b5;">26</div><div style="text-align:center;color:#97a3b5;">31</div><div style="text-align:center;color:#97a3b5;">44</div>
+            <div style="color:#97a3b5;">安定率</div>
+            <div style="text-align:center;">84.2<br><span style="font-size:8px;color:#10b981;">+21.9</span></div>
+            <div style="text-align:center;">63.0<br><span style="font-size:8px;color:#f26b6b;">−0.1</span></div>
+            <div style="text-align:center;">58.8<br><span style="font-size:8px;color:#f26b6b;">−0.9</span></div>
+            <div style="text-align:center;">69.2<br><span style="font-size:8px;color:#10b981;">+12.0</span></div>
+            <div style="text-align:center;">58.1<br><span style="font-size:8px;color:#f26b6b;">−1.9</span></div>
+            <div style="text-align:center;">50.6<br><span style="font-size:8px;color:#10b981;">+8.2</span></div>
+            <div style="color:#97a3b5;">抜出</div>
+            <div style="text-align:center;color:#97a3b5;">—<br><span style="font-size:7.5px;">内側なし</span></div>
+            <div style="text-align:center;">0回<br><span style="font-size:7.5px;color:#97a3b5;">平均2.1</span></div>
+            <div style="text-align:center;">0回<br><span style="font-size:7.5px;color:#97a3b5;">平均0.5</span></div>
+            <div style="text-align:center;">0回<br><span style="font-size:7.5px;color:#97a3b5;">平均1.0</span></div>
+            <div style="text-align:center;">0回<br><span style="font-size:7.5px;color:#97a3b5;">平均0.4</span></div>
+            <div style="text-align:center;">1回<br><span style="font-size:7.5px;color:#97a3b5;">平均0.9</span></div>
+            <div style="color:#97a3b5;">出遅率</div>
+            <div style="text-align:center;">5.3<br><span style="font-size:8px;color:#10b981;">−13.4</span></div>
+            <div style="text-align:center;">14.8<br><span style="font-size:8px;color:#f26b6b;">+0.1</span></div>
+            <div style="text-align:center;">17.6<br><span style="font-size:8px;color:#f26b6b;">+0.8</span></div>
+            <div style="text-align:center;">11.5<br><span style="font-size:8px;color:#10b981;">−3.3</span></div>
+            <div style="text-align:center;">16.1<br><span style="font-size:8px;color:#10b981;">−1.3</span></div>
+            <div style="text-align:center;">29.4<br><span style="font-size:8px;color:#10b981;">−3.7</span></div>
+          </div>
+          <p style="margin: 6px 0 0; font-size: 9px; line-height: 1.5; color: #97a3b5;">緑は同コース・同級別の平均より良い、赤は悪い</p>
+        </div>
+
+        <div style="border: 1px solid #24344d; border-radius: 6px; padding: 8px; background: #0f2036;">
+          <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; color: #cbd5e1;">1コースが逃げたとき</p>
+          <p style="margin: 0 0 6px; font-size: 9px; color: #97a3b5;">この会場の1コース逃げ 908レース／結果確定 1,851レース</p>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <div style="display:flex; align-items:center; gap:4px;"><span style="width:16px;height:16px;background:#000;color:#fff;border-radius:3px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;">2</span><span style="flex:1;height:11px;background:#0d1b2e;border-radius:3px;overflow:hidden;"><span style="display:block;width:100%;height:11px;background:#c9a227;"></span></span><span style="width:34px;text-align:right;font-size:10px;font-weight:700;">34.4%</span></div>
+            <div style="display:flex; align-items:center; gap:4px;"><span style="width:16px;height:16px;background:#e53935;color:#fff;border-radius:3px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;">3</span><span style="flex:1;height:11px;background:#0d1b2e;border-radius:3px;overflow:hidden;"><span style="display:block;width:93%;height:11px;background:#c9a227;"></span></span><span style="width:34px;text-align:right;font-size:10px;font-weight:700;">32.0%</span></div>
+            <div style="display:flex; align-items:center; gap:4px;"><span style="width:16px;height:16px;background:#1e88e5;color:#fff;border-radius:3px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;">4</span><span style="flex:1;height:11px;background:#0d1b2e;border-radius:3px;overflow:hidden;"><span style="display:block;width:46%;height:11px;background:#c9a227;"></span></span><span style="width:34px;text-align:right;font-size:10px;font-weight:700;">15.8%</span></div>
+            <div style="display:flex; align-items:center; gap:4px;"><span style="width:16px;height:16px;background:#fdd835;color:#000;border-radius:3px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;">5</span><span style="flex:1;height:11px;background:#0d1b2e;border-radius:3px;overflow:hidden;"><span style="display:block;width:35%;height:11px;background:#c9a227;"></span></span><span style="width:34px;text-align:right;font-size:10px;font-weight:700;">12.0%</span></div>
+            <div style="display:flex; align-items:center; gap:4px;"><span style="width:16px;height:16px;background:#43a047;color:#fff;border-radius:3px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;">6</span><span style="flex:1;height:11px;background:#0d1b2e;border-radius:3px;overflow:hidden;"><span style="display:block;width:17%;height:11px;background:#c9a227;"></span></span><span style="width:34px;text-align:right;font-size:10px;font-weight:700;">5.8%</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top: auto; padding: 7px; background: #0f2036; border: 1px solid #32425c; border-radius: 6px;">
+          <p style="margin: 0; font-size: 10px; line-height: 1.6; color: #cbd5e1;">▲ 追加作業ゼロ。ただし <code style="color:#c9a227;">st_histogram</code> は集計済みなのに<strong style="color:#f8fafc;">どこからも使われない</strong>状態が残る</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 9px 12px; background: #142842; border: 1px solid #24344d; border-radius: 8px;">
+    <p style="margin: 0; font-size: 11.5px; line-height: 1.7; color: #cbd5e1;">
+      <strong style="color: #f8fafc;">判断の分かれ目</strong>：ST分布（ヒストグラム）は「この選手のSTが平均と比べて速い側か遅い側か」を見せるものですが、<strong style="color: #f8fafc;">それはST考察カードの「差（±pt）」が既に数字で答えています</strong>。ヒストグラムが足すのは「分布の形（ばらつき方）」の情報だけで、その代わりに艇を選ぶチップが1組増えます。数値はすべて実データ（眞鳥康太・6コース・B1・44走 vs B1・6コースの平均16,640走）。
+    </p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

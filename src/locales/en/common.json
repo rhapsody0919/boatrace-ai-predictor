@@ -601,7 +601,7 @@
     "emptyBody": "Odds will appear here as the start time approaches."
   },
   "basicInfo": {
-    "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 5 races and best venues)",
+    "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 5 races, best venues, and a by-condition breakdown)",
     "metricLabel": "Metric",
     "scopeLabel": "Venue",
     "gradeLabel": "Grade",
@@ -639,7 +639,34 @@
     "trendNote": "The last 5 races (always the latest 5, regardless of the grade or period filter. Tap a date to open that race)",
     "finishUnknown": "Unplaced (rank unknown)",
     "venueRankingFor": "{{metric}} ranking",
-    "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}"
+    "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}",
+    "viewConditions": "By condition",
+    "conditionsNote": "{{metric}} by condition (our own tally, all available data). It will not match the official figures in the bars above, which are calculated differently.",
+    "conditions": {
+      "national": "All venues",
+      "local": "This venue",
+      "ippan": "General races",
+      "sgg1": "SG / G1",
+      "firstDay": "Series day 1",
+      "finalDay": "Final day",
+      "wave5": "Waves 5cm+",
+      "fHolding": "Carrying an F",
+      "fClean": "No F"
+    },
+    "conditionsBaseNote": "* {{rows}} count only the races where that condition could be determined, so their denominators differ from the other rows.",
+    "conditionsBaseNoteSeparator": ", ",
+    "conditionsCourseCaveat": "* These figures cover every starting position; only {{n}} of those starts were from lane {{boat}}, today's lane. For lane- and course-specific records, see the \"Lane Stats\" tab",
+    "conditionsFinalDayCaveat": "* The final day includes the championship race, where the racers who came through the series take the inside lane. Read it as much a sign of a good draw as of the racer's own strength",
+    "conditionsFStNote": "Average ST carrying an F: {{holding}} (n={{holdingN}}) / with no F: {{clean}} (n={{cleanN}}). A racer with an F changes how hard they push the start, so ST reads better than win rate here",
+    "conditionsAllZeroHint": "Every row of this metric is under 1%, so the conditions cannot be told apart. For racers who mostly start from the outside lanes, the top-3 rate shows the differences that matter",
+    "conditionsAllZeroAction": "Show top-3 rate",
+    "conditionsHowToRead": "How to read this table",
+    "smallSampleTitle": "Small sample — treat as a rough guide",
+    "periodTitle": "Previous term ({{from}} – {{to}}, official term record)",
+    "periodWinRate": "Win pts {{value}}",
+    "periodTop2Rate": "Top-2 rate {{value}}",
+    "periodAvgSt": "Avg. ST {{value}}",
+    "periodFetchError": "Could not load the previous term record"
   },
   "dataTable": {
     "title": "Data Race Card",
@@ -1445,6 +1472,9 @@
     "articleHeading": "📖 Related Article",
     "noticeHeading": "⚠️ Notes"
   },
+  "flyingBadge": {
+    "title": "{{n}} false start(s) this term, as printed on the race card. Resets when the term changes (May 1 / Nov 1)"
+  },
   "stConsideration": {
     "title": "Start timing",
     "subtitle": "Lower figure is the gap from the average for the same course and class",
@@ -1457,7 +1487,6 @@
     "times": "{{n}}x",
     "expectedTimes": "avg {{n}}",
     "noInnerBoat": "no inner boat",
-    "flyingTitle": "{{n}} false start(s) this term. Resets when the term changes",
     "caveat": "Green is better than the average for the same course and class, red is worse. Breaks are shown as a count, not a rate: they are rare from outer courses, so a rate would just show 0.0%. Course 1 has no inner boat, so it is not shown. False-start races are excluded from the denominator and shown as a badge instead. This is our own calculation.",
     "histogramTitle": "ST distribution",
     "historyTitle": "ST history",

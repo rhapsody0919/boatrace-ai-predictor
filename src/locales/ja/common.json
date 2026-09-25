@@ -346,7 +346,7 @@
     "emptyBody": "発走が近づくとオッズが取得され、このタブに表示されます。"
   },
   "basicInfo": {
-    "note": "選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細（直近5走・得意会場）が開きます",
+    "note": "選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細（直近5走・得意会場・条件別）が開きます",
     "metricLabel": "指標",
     "scopeLabel": "会場",
     "gradeLabel": "グレード",
@@ -384,7 +384,34 @@
     "trendNote": "直近5走（グレード・期間の条件によらず、常に最新5走を表示。日付をタップでレース詳細へ）",
     "finishUnknown": "着外(順位不明)",
     "venueRankingFor": "{{metric}}のランキング",
-    "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位"
+    "currentVenueRank": "今節の{{venue}}は全{{total}}会場中{{rank}}位",
+    "viewConditions": "条件別",
+    "conditionsNote": "条件ごとの{{metric}}（当社集計・取得できる全期間）。上のバーの公式値とは集計方法が違うため数字が一致しません",
+    "conditions": {
+      "national": "全国",
+      "local": "当地",
+      "ippan": "一般戦",
+      "sgg1": "SG・G1",
+      "firstDay": "初日",
+      "finalDay": "最終日",
+      "wave5": "波5cm以上",
+      "fHolding": "F持ち時",
+      "fClean": "F無し時"
+    },
+    "conditionsBaseNote": "※{{rows}} は、その条件を判定できた走だけが母数です（他の行とは母数が違います）",
+    "conditionsBaseNoteSeparator": "・",
+    "conditionsCourseCaveat": "※この表は全コース込みの集計です（今日と同じ{{boat}}枠での出走は過去{{n}}走）。枠・コース別の成績は「枠別情報」タブで見られます",
+    "conditionsFinalDayCaveat": "※最終日は優勝戦を含み、勝ち上がった選手が1号艇に入ります。選手の力だけでなく枠の良さを拾っている点に注意してください",
+    "conditionsFStNote": "F持ち時の平均ST {{holding}}（n={{holdingN}}）／F無し時 {{clean}}（n={{cleanN}}）。Fを持った選手はスタートの踏み方が変わるため、勝率よりSTで見るのが本筋です",
+    "conditionsAllZeroHint": "この指標はどの条件も1%未満で、行ごとの差が読めません。外枠中心の選手は3着に絡めるかが勝負のため、3連対率で見ると差が出ます",
+    "conditionsAllZeroAction": "3連対率で見る",
+    "conditionsHowToRead": "この表の読み方",
+    "smallSampleTitle": "サンプルが少ないため参考値です",
+    "periodTitle": "前期（{{from}}〜{{to}}・公式の期別成績）",
+    "periodWinRate": "勝率 {{value}}",
+    "periodTop2Rate": "2連対率 {{value}}",
+    "periodAvgSt": "平均ST {{value}}",
+    "periodFetchError": "前期成績を取得できませんでした"
   },
   "wakuInfo": {
     "note": "選手を選ぶと、その選手が本日入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",
@@ -1440,6 +1467,9 @@
     "articleHeading": "📖 詳しい解説記事",
     "noticeHeading": "⚠️ 注意事項"
   },
+  "flyingBadge": {
+    "title": "出走表に載っている今期のフライング{{n}}本。期（5月1日・11月1日）が変わると0に戻ります"
+  },
   "stConsideration": {
     "title": "ST考察",
     "subtitle": "下段は同じコース・同じ級別の平均との差",
@@ -1452,7 +1482,6 @@
     "times": "{{n}}回",
     "expectedTimes": "平均{{n}}",
     "noInnerBoat": "内側なし",
-    "flyingTitle": "今期のフライング{{n}}本。期が変わると0に戻ります",
     "caveat": "緑は同コース・同級別の平均より良い、赤は悪い。抜出は外のコースほど起きる回数が少なく、率にすると0.0%が並ぶため回数で出しています。1コースは内側に艇がないため出しません。フライングの走は母数から外し、F数はバッジで別に出しています。当サービスの独自集計です",
     "histogramTitle": "ST分布",
     "historyTitle": "ST履歴",
