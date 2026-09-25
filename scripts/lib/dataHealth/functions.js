@@ -213,7 +213,7 @@ left join flagged f on f.race_date = b.race_date and f.venue_code = b.venue_code
 group by b.race_date
 order by 1`;
 
-/***
+/**
  * @typedef {Object} DataHealthFunction
  * @property {string} name 関数名（public スキーマ）
  * @property {Array<{name: string, type: "date"}>} args 引数

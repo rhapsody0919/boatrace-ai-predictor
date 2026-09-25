@@ -4,7 +4,7 @@
  *
  * 確認すること:
  *   (a) 登録表の整合性（関数の実在・閾値・除外の宣言・空テーブルの扱い）
- *   (b) マイグレーション089: functions.js から生成したDDLとの一致（二重実装のずれの検知）、REVOKE・GRANT の内容、
+ *   (b) マイグレーション089・100: functions.js から生成したDDLとの一致（二重実装のずれの検知）、REVOKE・GRANT の内容、
  *       関数の本体に書き込み・DDL・動的SQLが無いこと
  *   (c) DB関数の意味論（PGlite。実際にPostgreSQLで、最小のスキーマ・固定のデータに適用して実行する）:
  *       存在充足率の分母（中止の除外・rank4〜6の分類）、出走表の拡張列、ピットレポートの対象レース、節・期別成績、
@@ -164,7 +164,7 @@ check(
 }
 
 // ---------------------------------------------------------------------------
-// (b) マイグレーション089
+// (b) マイグレーション089・100（data_health の関数を含むマイグレーション）
 // ---------------------------------------------------------------------------
 // data_health の関数を含むマイグレーション。新しい関数を別のファイルで足したら、ここに追記する
 // （登録表 functions.js の migration と突き合わせ、取りこぼしを機械検査する）
@@ -1810,7 +1810,12 @@ const evalMutants = [
   ],
   [
     "毎回通知する（状態を見ない）",
-    [["if (prev === undefined || worsened || remind || undelivered) {", "if (true) {"]],
+    [
+      [
+        "if (prev === undefined || worsened || remind || undelivered) {",
+        "if (true) {",
+      ],
+    ],
   ],
   [
     "継続中の再通知をしない",
@@ -1982,27 +1987,67 @@ CREATE TABLE race_entries (race_id varchar(20), boat_number smallint, racer_id i
   const results = [];
   const add = (date, venue, race, status, seed, withResult = true) => {
     const id = `${date}-${String(venue).padStart(2, "0")}-${String(race).padStart(2, "0")}`;
-    rows.push(`('${id}','${date}',${venue},${race},'ippan',${status ? `'${status}'` : "NULL"},'10:00')`);
+    rows.push(
+      `('${id}','${date}',${venue},${race},'ippan',${status ? `'${status}'` : "NULL"},'10:00')`,
+    );
     for (let b = 1; b <= 6; b++)
       entries.push(`('${id}',${b},${seed * 10 + b},52.0,'東京',0,0,false)`);
     if (withResult) results.push(`('${id}',1,2,3,4,5,6,1,'逃げ')`);
   };
   // 会場1: 05-01 の R1〜R3（seed 11,12,13）→ 05-02 は R1・R2 が同じ seed（汚染）、R3 は別
-  for (const [race, seed] of [[1, 11], [2, 12], [3, 13]]) add("2026-05-01", 1, race, null, seed);
-  for (const [race, seed] of [[1, 11], [2, 12], [3, 93]]) add("2026-05-02", 1, race, null, seed);
+  for (const [race, seed] of [
+    [1, 11],
+    [2, 12],
+    [3, 13],
+  ])
+    add("2026-05-01", 1, race, null, seed);
+  for (const [race, seed] of [
+    [1, 11],
+    [2, 12],
+    [3, 93],
+  ])
+    add("2026-05-02", 1, race, null, seed);
   // 会場2: R1 だけ同じ seed（1レースの偶然の一致。汚染ではない）
-  for (const [race, seed] of [[1, 21], [2, 22], [3, 23]]) add("2026-05-01", 2, race, null, seed);
-  for (const [race, seed] of [[1, 21], [2, 82], [3, 83]]) add("2026-05-02", 2, race, null, seed);
+  for (const [race, seed] of [
+    [1, 21],
+    [2, 22],
+    [3, 23],
+  ])
+    add("2026-05-01", 2, race, null, seed);
+  for (const [race, seed] of [
+    [1, 21],
+    [2, 82],
+    [3, 83],
+  ])
+    add("2026-05-02", 2, race, null, seed);
   // 会場3: 05-01 が確定中止（順延）→ 05-02 が同じ出走表でも正常。結果はあえて入れ、
   //        確定中止の除外だけが効いていることを確かめる
-  for (const [race, seed] of [[1, 31], [2, 32], [3, 33]])
+  for (const [race, seed] of [
+    [1, 31],
+    [2, 32],
+    [3, 33],
+  ])
     add("2026-05-01", 3, race, "confirmed", seed);
-  for (const [race, seed] of [[1, 31], [2, 32], [3, 33]]) add("2026-05-02", 3, race, null, seed);
+  for (const [race, seed] of [
+    [1, 31],
+    [2, 32],
+    [3, 33],
+  ])
+    add("2026-05-02", 3, race, null, seed);
   // 会場4: 05-01 が未確定の順延スタブ（結果なし・cancellation_status も未設定。BOA-421の古い7件と同じ状態）
   //        → 05-02 が同じ出走表でも正常。結果の有無の除外だけが効いていることを確かめる
-  for (const [race, seed] of [[1, 41], [2, 42], [3, 43]])
+  for (const [race, seed] of [
+    [1, 41],
+    [2, 42],
+    [3, 43],
+  ])
     add("2026-05-01", 4, race, null, seed, false);
-  for (const [race, seed] of [[1, 41], [2, 42], [3, 43]]) add("2026-05-02", 4, race, null, seed);
+  for (const [race, seed] of [
+    [1, 41],
+    [2, 42],
+    [3, 43],
+  ])
+    add("2026-05-02", 4, race, null, seed);
   await mdb.exec(`INSERT INTO races VALUES ${rows.join(",")};`);
   await mdb.exec(`INSERT INTO race_entries VALUES ${entries.join(",")};`);
   await mdb.exec(`INSERT INTO race_results VALUES ${results.join(",")};`);
