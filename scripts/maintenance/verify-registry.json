@@ -327,6 +327,11 @@
       "guards": "E2Eのskip判定（check-e2e-skips.js）。無言でskipされ続けるテストの検知が壊れないこと"
     },
     {
+      "script": "verify-bug-cause-report.js",
+      "tier": "ci",
+      "guards": "バグ原因の定点観測の集計基準（bug-cause-report.js）。基準が変わると第1期と比較できなくなる"
+    },
+    {
       "script": "verify-format-column-migration.js",
       "tier": "manual",
       "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
