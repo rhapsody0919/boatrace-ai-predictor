@@ -96,13 +96,13 @@ https://www.boat-ai.jp/today
 |---|---|---|
 | X | ON | **テンプレート承認済み**（§3）。投稿は1件ごとに承認を得る |
 | YouTube | ON | 生成物の確認待ち |
-| note | ON | 生成物の確認待ち。**下の依存関係に注意** |
+| note | **OFF** | ブログ本文からの変換を前提にした設計のため、ブログを落とすと材料が無い。ブログを書く日に両方ONにする（2026-09-25ユーザー判断） |
 | ブログ | **OFF** | このネタは毎朝出るが**ブログは毎日は書かない**（同じ主題の薄い記事を量産するとSEO上むしろ不利）。週1本程度、書きたい日に一時的に有効化する（2026-09-25ユーザー判断） |
 | TikTok | 対象外 | ギャンブル関連ポリシーとシャドウバンの経緯 |
 
 **ユーザーのOKが出るまで投稿しない**（`.claude/rules/content-ops.md` フローB-1）。下書きの生成自体は続けてよい（確認の材料になるため）。
 
-⚠️ **note はブログ本文からの変換を前提にしている**（`sns-pipeline-note.md` の依存関係チェック）。ブログを OFF にしたまま note を ON のままにすると、note 側は材料が無く毎朝待ち続ける。**note を「ブログ非依存で書く」形に変えるか、note も OFF にするかを決める必要がある**（2026-09-25時点で未決）。
+**note とブログはセットで切り替える。** note はブログ本文からの変換を前提にしている（`sns-pipeline-note.md` の依存関係チェック）ため、ブログだけ OFF にすると note は毎朝材料が無いまま待ち続ける。週1本ブログを書く日に、管理画面で両方 ON にする。
 
 ## 5. チャネルの増減
 
@@ -117,7 +117,7 @@ update sns_topic_category_channels ch
   from sns_topic_categories c
  where c.id = ch.category_id
    and c.category_key = 'morning-digest'
-   and ch.platform = 'blog';
+   and ch.platform in ('blog', 'note');
 ```
 
 `docs/db-migration/101_morning_digest_sns_topic_category.sql` は「適用時にどの状態にしたか」の記録であり、**再実行すると管理画面での変更を上書きする**。

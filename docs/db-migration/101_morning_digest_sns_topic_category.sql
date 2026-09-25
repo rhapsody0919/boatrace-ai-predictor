@@ -17,7 +17,7 @@
 --   登録側（generate-morning-digest.js）は createTopicWithTargets({autoApprove: true}) で作る。
 --
 -- チャネル:
---   x / note / youtube を enabled=true、**blog は enabled=false** にする。
+--   x / youtube を enabled=true、**blog と note は enabled=false** にする。
 --   tiktok は行ごと作らない。ギャンブル関連ポリシーとシャドウバンの経緯があり、
 --   本ネタ（選手名・レース単位の数値）は TikTok 向きではないため。
 --
@@ -25,9 +25,9 @@
 --     このネタは毎朝出るが、**ブログは毎日は書かない**（同じ主題の薄い記事を量産すると
 --     SEO上むしろ不利になる）。週1本程度で書きたくなった日に、管理画面から一時的に
 --     有効化するか、対話セッションで直接書く。
---   ⚠️ note はブログ本文からの変換を前提にしている（docs/operation/sns-pipeline-note.md
---      の依存関係チェック）。blog を落としたまま note だけ有効だと、note 側は材料が無く
---      待ち続ける。**note の扱いは別途決めること。**
+--   note も false にしているのは、note がブログ本文からの変換を前提にした設計
+--   （docs/operation/sns-pipeline-note.md の依存関係チェック）で、blog を落とすと
+--   材料が無く毎朝待ち続けるため。**blog と note はセットで切り替える。**
 --
 --   ⚠️ **チャネルの増減はこのSQLを書き直さず、sns-hub 管理画面「ネタ型設定」から
 --      enabled を切り替える**（sns_topic_category_channels はそのためのデータ駆動の表）。
@@ -81,10 +81,11 @@ SELECT c.id, p.platform, p.enabled
   FROM sns_topic_categories c
   CROSS JOIN (VALUES
       ('x',       true),
-      ('note',    true),
       ('youtube', true),
-      -- 毎日は書かないため既定でOFF（上記「blog を false にしている理由」参照）
-      ('blog',    false)
+      -- 毎日は書かないため既定でOFF（上記「blog を false にしている理由」参照）。
+      -- note は blog からの変換前提なのでセットでOFF
+      ('blog',    false),
+      ('note',    false)
     ) AS p(platform, enabled)
  WHERE c.category_key = 'morning-digest'
 ON CONFLICT (category_id, platform) DO UPDATE
@@ -100,4 +101,4 @@ COMMIT;
 --     LEFT JOIN sns_topic_category_channels ch ON ch.category_id = c.id
 --    WHERE c.category_key = 'morning-digest'
 --    GROUP BY 1,2,3,4;
---   -- 期待: daily-auto / active=true / {note,x,youtube}（blog は enabled=false）
+--   -- 期待: daily-auto / active=true / {x,youtube}（blog・note は enabled=false）
