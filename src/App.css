@@ -1154,10 +1154,12 @@ input:focus-visible,
      1440pxで4列・1920pxで5列分の枠ができ、右側に334〜726pxの空白が残っていた
      （中央寄せの見出し・リード文・CTAボタンと揃わずズレて見える）。
      auto-fit は空トラックを潰す。1fr のままだと今度はカードが1枚570px超に
-     間延びするため上限を360pxに固定し、余った幅は左右に均等配分する。
-     カードは VenueGridPage.jsx が .slice(0, 3) で常に3枚に固定している */
+     間延びするため上限を360pxに固定する。
+     中央寄せは justify-content ではなく max-width + margin:auto で行う。
+     justify-content: center だとカードが3枚のときしか小見出しと左端が揃わず、
+     記事が2枚に減ると192px、1枚だと384pxずれる（実測）。
+     グリッド自体を中央に置いてカードを左詰めにすれば、枚数が変わっても揃う */
   grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
-  justify-content: center;
   max-width: var(--blog-preview-row-width);
   gap: 1.5rem;
   margin: 0 auto 2rem;

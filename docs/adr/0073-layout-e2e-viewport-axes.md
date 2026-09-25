@@ -59,7 +59,8 @@ E2E（`e2e/smoke.spec.js`）は87テストあるが、**すべてPlaywrightの�
 ## 結果
 
 - 修正前の `layout.spec.js` は**4件失敗した**（`/` と `/venues` × 1440px・1920px）。検知できることを確認してから `.blog-preview-grid` を直した。
-- 修正は `repeat(auto-fit, minmax(280px, 360px))` ＋ `justify-content: center` ＋ `max-width`。`auto-fit` は空トラックを0pxに潰す。`1fr` のままだと1920pxでカード1枚が570px超に間延びするため上限を360pxに固定した。
+- 修正は `repeat(auto-fit, minmax(280px, 360px))` ＋ `max-width` ＋ `margin: 0 auto`。`auto-fit` は空トラックを0pxに潰す。`1fr` のままだと1920pxでカード1枚が570px超に間延びするため上限を360pxに固定した。
+- **中央寄せに `justify-content: center` を使わない。** 最初はこれで実装したが、セルフレビューでカード枚数を変えて測ったところ、**3枚のときしか小見出しと左端が揃わない**ことが分かった（1920pxでカード2枚だと192px、1枚だと384pxずれる）。現在は `.slice(0, 3)` で3枚固定だが、featured記事が減れば崩れる。グリッド自体を `max-width` + `margin: 0 auto` で中央に置き、カードは左詰めにすれば、枚数が変わっても小見出しと揃う（1920/1440/1280/375px × 1〜3枚のすべてで揃うことを実測）。
 - カードを中央に寄せると、今度は小見出し「注目記事」「新着記事」が左端に取り残されたため、小見出しとグリッドで `--blog-preview-row-width` を共有して左端を揃えた。修正後は全幅で `subheadingLeft === gridLeft === firstCardLeft`。
 - 修正後は72テスト全通過（3軸 × 12ページ × 2種類）。
 
