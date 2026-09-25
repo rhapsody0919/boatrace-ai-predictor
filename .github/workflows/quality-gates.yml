@@ -1,0 +1,48 @@
+name: Quality Gates
+
+# scripts/maintenance/verify-*.js のうち tier=ci のものを、PRごとにまとめて実行する。
+#
+# 背景: 2026-09-25時点で verify-*.js は57本あったが、CIから実行されていたのは
+# 1本だけで、残りは「書いた時に手元で1回走らせて以後誰も実行しない」状態だった。
+# 実際にマイグレーション番号063の重複がmasterに入ったまま検知されなかった。
+# 分類台帳は scripts/maintenance/verify-registry.json、設計は
+# docs/design/quality-gate-ci/spec.md を参照。
+#
+# 旧 verify-query-errors.yml はこのワークフローに統合して削除した。
+
+on:
+  pull_request:
+    branches:
+      - master
+  # masterへのマージ後にも1回走らせる。masterにブランチ保護が無く
+  # "Require branches to be up to date" も効かないため、2つのPRが同じ
+  # 時点のmasterに対して緑になり、片方がマージされた後にもう片方が
+  # 再検証されずマージされうる（063の番号重複はこの経路で入った）。
+  # マージ後に走らせることで、少なくとも検知はできる状態にする。
+  push:
+    branches:
+      - master
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # verify-migration-numbers.js が --base=origin/master で
+          # base の最大マイグレーション番号を git ls-tree で読むため、
+          # master の参照が要る
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run CI-tier verifications
+        run: npm run verify:ci

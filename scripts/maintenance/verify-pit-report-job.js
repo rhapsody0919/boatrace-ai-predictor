@@ -989,7 +989,13 @@ async function runWrapped({ mode, rows, client, fetched }) {
     // 未公開のレース: 発走まで150分。再試行は10分間隔（claim した時刻から590秒後）で、共通ラッパの既定（300秒）を上書きする
     const claimedAt = "2026-09-18T13:59:30+09:00";
     const store = createMemoryStore({
-      rows: { [PIT_REPORT_JOB]: { job: PIT_REPORT_JOB, mode: "live", consecutive_failures: 0 } },
+      rows: {
+        [PIT_REPORT_JOB]: {
+          job: PIT_REPORT_JOB,
+          mode: "live",
+          consecutive_failures: 0,
+        },
+      },
       slots: [{ ...SLOT, last_attempt_at: claimedAt }],
     });
     await runScrapeJob({
@@ -1001,8 +1007,13 @@ async function runWrapped({ mode, rows, client, fetched }) {
         throw new Error("使わない");
       },
       handleSlot: createPitReportSlotHandler({
-        load: async () => ({ ...G1_RACE, race_date: "2026-09-18", start_time: "16:30:00" }),
-        process: (p) => processPitReportRace({ ...p, fetchHtml: async () => PENDING }),
+        load: async () => ({
+          ...G1_RACE,
+          race_date: "2026-09-18",
+          start_time: "16:30:00",
+        }),
+        process: (p) =>
+          processPitReportRace({ ...p, fetchHtml: async () => PENDING }),
       }),
     });
     const retried = store.retried[0];
@@ -1010,7 +1021,8 @@ async function runWrapped({ mode, rows, client, fetched }) {
       "(d) 未公開: 発走までの時間に応じた間隔（150分前→10分）で再試行する",
       store.retried.length === 1 &&
         retried.outcome === "no_values" &&
-        new Date(retried.retryAt).getTime() === new Date(claimedAt).getTime() + 590 * 1000,
+        new Date(retried.retryAt).getTime() ===
+          new Date(claimedAt).getTime() + 590 * 1000,
       show(retried?.retryAt),
     );
   }
@@ -1150,9 +1162,7 @@ async function runWrapped({ mode, rows, client, fetched }) {
   );
   check(
     "(e) 予定表: G3・一般戦・発走時刻なしのスロットは作らない",
-    !ids.some(
-      (id) => ["17", "03", "09"].includes(id.split("-")[3]),
-    ),
+    !ids.some((id) => ["17", "03", "09"].includes(id.split("-")[3])),
   );
   check(
     "(e) 予定表: G1の1R〜6Rは作らない・SGの1Rは作る",
@@ -1327,9 +1337,13 @@ async function runWrapped({ mode, rows, client, fetched }) {
     "utf8",
   );
   check(
-    "(f) 台帳: 085（適用済み。2026-09-21適用）と086（画面の実装後に適用するため未適用）が載っている",
-    /\| 085 \|[^\n]*(適用済み|未適用)/.test(applied) &&
-      /\| 086 \|[^\n]*未適用/.test(applied),
+    // 適用状況（適用済み/未適用）は本番の進行に伴って変わるため、行の存在だけを見る。
+    // 086の「未適用」を期待値に固定していたため、2026-09-23に適用された時点で壊れていた。
+    "(f) 台帳: 085と086の行が載っている",
+    /\| 085 \|[^\n]*085_race_pit_reports\.sql[^\n]*\|/.test(applied) &&
+      /\| 086 \|[^\n]*086_race_pit_reports_public_read\.sql[^\n]*\|/.test(
+        applied,
+      ),
   );
 }
 
@@ -1477,15 +1491,27 @@ const rowsMutants = [
 for (const [label, replacements] of [
   [
     "窓の開始を発走60分前に戻す（実測した公開時刻より遅い）",
-    [["offsets: [-240],\n    graceMin: 420,", "offsets: [-60],\n    graceMin: 420,"]],
+    [
+      [
+        "offsets: [-240],\n    graceMin: 420,",
+        "offsets: [-60],\n    graceMin: 420,",
+      ],
+    ],
   ],
   [
     "窓の終わりを発走前に縮める",
-    [["offsets: [-240],\n    graceMin: 420,", "offsets: [-240],\n    graceMin: 200,"]],
+    [
+      [
+        "offsets: [-240],\n    graceMin: 420,",
+        "offsets: [-240],\n    graceMin: 200,",
+      ],
+    ],
   ],
 ]) {
-  const failed = await withMutant("scrapeJobs/registry.js", replacements, async (m) =>
-    safeEval(() => evaluateWindow(m.SCRAPE_JOBS)),
+  const failed = await withMutant(
+    "scrapeJobs/registry.js",
+    replacements,
+    async (m) => safeEval(() => evaluateWindow(m.SCRAPE_JOBS)),
   );
   check(
     `(g) 変異検証（窓）: ${label} → 検証が失敗する（${failed.length}項目）`,
@@ -1567,13 +1593,11 @@ for (const [label, replacements] of jobMutants) {
           scrape_slots: [],
         },
       });
-      await m
-        .createPitReportStore(client, { base: {} })
-        .ensureSlots({
-          date: "2026-09-21",
-          jobs: ["pit_reports"],
-          now: new Date("2026-09-21T07:00:00+09:00"),
-        });
+      await m.createPitReportStore(client, { base: {} }).ensureSlots({
+        date: "2026-09-21",
+        jobs: ["pit_reports"],
+        now: new Date("2026-09-21T07:00:00+09:00"),
+      });
       return client.state.scrape_slots.length === 1
         ? []
         : ["1R（対象外）にもスロットができた"];

@@ -1967,6 +1967,10 @@ INSERT INTO race_series VALUES (1,'2026-09-16','2026-09-21');
     return !correct;
   } catch {
     return true; // 壊した版が例外で落ちるのも「検証が失敗した」とみなす
+  } finally {
+    // close しないとPGliteのハンドルが残り、検証が全て成功してもプロセスが
+    // 終了しない（CIではタイムアウト扱いになる）
+    await mdb.close();
   }
 }
 // 出走表の複製検知（entries.duplicates）は、独立したPGliteで確かめる
@@ -2139,6 +2143,8 @@ for (const [label, mutate] of sqlMutants) {
     "この変異を検知できない（検証が通ってしまう）",
   );
 }
+
+await db.close();
 
 if (failures > 0) {
   printErr(`\n${failures}件の検証に失敗しました`);

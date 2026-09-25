@@ -1,0 +1,319 @@
+{
+  "$comment": [
+    "scripts/maintenance/ 直下の verify-* の分類台帳。docs/design/quality-gate-ci/spec.md。",
+    "tier=ci   : PRごとにGitHub Actionsで毎回実行する。外部ネットワーク・実DB・実時刻に依存せず、同じコミットなら常に同じ結果を返すものだけを置く。",
+    "tier=manual: 実Supabase等への接続が要るため自動実行しない。reason（なぜCIに載せないか）と command（どう実行するか）を必ず書く。",
+    "runner    : 省略時は node。bash スクリプトは \"bash\" を指定する。",
+    "新しい verify-* を追加したら、ここに1エントリ足すこと。未登録だと `npm run verify:ci` が失敗する（.js / .mjs / .cjs / .sh を検知する）。",
+    "対象外: サブディレクトリ（content-ops-checks/ の check-*.js）、scripts/analysis/verify-*.js、scripts/verification/（verify-cache-config.js は専用ワークフローで既にPRゲートとして動いている）。"
+  ],
+  "entries": [
+    {
+      "script": "verify-actual-course-kfile-parser.js",
+      "tier": "ci",
+      "guards": "Kファイル方式の進入コースパーサー（scripts/lib/kfileParser.js、BOA-257）"
+    },
+    {
+      "script": "verify-adr-numbers.js",
+      "tier": "ci",
+      "guards": "docs/adr/ のADR番号の重複（並行セッションで繰り返し発生）"
+    },
+    {
+      "script": "verify-blog-draft-quality.js",
+      "tier": "ci",
+      "guards": "ブログ下書きDraft PRを人手承認なしで自動マージしてよいかの品質判定"
+    },
+    {
+      "script": "verify-boatcast-job.js",
+      "tier": "ci",
+      "guards": "BOATCASTのオリジナル展示・モーター使用開始日（N25・N26）のパーサー・取得ジョブ・403の扱い"
+    },
+    {
+      "script": "verify-content-index-coverage.js",
+      "tier": "ci",
+      "guards": "docs/design/{slug}/content-index.json の形式（フローA-2のトレーサビリティ索引）"
+    },
+    {
+      "script": "verify-course-entry-tendency.js",
+      "tier": "ci",
+      "guards": "進入コース傾向の集計ロジック（scripts/lib/courseEntryTendency.js、BOA-284）"
+    },
+    {
+      "script": "verify-daily-reconcile.js",
+      "tier": "ci",
+      "guards": "日次の照合（N29、daily_reconcile）"
+    },
+    {
+      "script": "verify-data-health-job.js",
+      "tier": "ci",
+      "guards": "汎用の日次監視 data_health（完了の定義C、マイグレーション089）。PGliteでDB関数の意味論まで検証する"
+    },
+    {
+      "script": "verify-data-health-report.js",
+      "tier": "ci",
+      "guards": "data-health-report.js の存在充足率の分母の定義（BOA-381）"
+    },
+    {
+      "script": "verify-deploy-hook-policy.js",
+      "tier": "ci",
+      "guards": "Deploy Hookを叩く条件の判定（scripts/lib/deployHookPolicy.js、BOA-361）"
+    },
+    {
+      "script": "verify-fan-period.js",
+      "tier": "ci",
+      "guards": "期別成績ファイル（fan）のパーサー・行変換・取得〜投入CLI"
+    },
+    {
+      "script": "verify-feature-contributions-dedup.js",
+      "tier": "ci",
+      "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
+    },
+    {
+      "script": "verify-gha-skip-gate.js",
+      "tier": "ci",
+      "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
+    },
+    {
+      "script": "verify-kb-file-parser.js",
+      "tier": "ci",
+      "guards": "K/Bファイルの全項目パーサー・アーカイブ行変換・バックフィルCLI"
+    },
+    {
+      "script": "verify-kb-results-backfill.js",
+      "tier": "ci",
+      "guards": "K/Bアーカイブによる race_results 欠損補填CLI（BOA-403）"
+    },
+    {
+      "script": "verify-migration-numbers.js",
+      "tier": "ci",
+      "args": [
+        "--base=origin/master"
+      ],
+      "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
+      "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
+    },
+    {
+      "script": "verify-migration-rls.js",
+      "tier": "ci",
+      "guards": "新規マイグレーションが公開スキーマのテーブルをRLSなし・匿名書き込み可のまま作っていないか（BOA-370の再発防止）"
+    },
+    {
+      "script": "verify-monthly-schedule.js",
+      "tier": "ci",
+      "guards": "月間スケジュール（節メタ N16）のパーサー・節の確定・行変換・CLI"
+    },
+    {
+      "script": "verify-morning-init-jobs.js",
+      "tier": "ci",
+      "guards": "朝の初期化（A8 races-init）と公式コンピュータ予想（B1 pcexpect）のVercel Cron実装"
+    },
+    {
+      "script": "verify-morning-init-refactor.js",
+      "tier": "ci",
+      "guards": "朝の初期化・公式予想を、ファイル・execSync・process.exit に依存しない関数へ分けた構造"
+    },
+    {
+      "script": "verify-motor-pretest.js",
+      "tier": "ci",
+      "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
+    },
+    {
+      "script": "verify-opening-day-backfill.js",
+      "tier": "ci",
+      "guards": "節の初日バックフィル（scripts/lib/openingDayBackfill.js）"
+    },
+    {
+      "script": "verify-pit-report-job.js",
+      "tier": "ci",
+      "guards": "ピットレポート（選手コメント。N24、BOA-379）のパーサー・取得ジョブ"
+    },
+    {
+      "script": "verify-plan-erd.js",
+      "tier": "ci",
+      "guards": "新規テーブル・外部キーを導入する設計書（plan.md）のER図欠落"
+    },
+    {
+      "script": "verify-point-rank-parser.js",
+      "tier": "ci",
+      "guards": "今節得点率のパーサー（scripts/lib/pointRankParser.js、BOA-220/BOA-291）"
+    },
+    {
+      "script": "verify-pre-race-parsers.js",
+      "tier": "ci",
+      "guards": "出走表・直前情報の全項目パーサー・行の組み立て・書き込み経路"
+    },
+    {
+      "script": "verify-prediction-odds-derive.js",
+      "tier": "ci",
+      "guards": "買い目オッズの導出（BOA-404）"
+    },
+    {
+      "script": "verify-prediction-refresh.js",
+      "tier": "ci",
+      "guards": "予測リフレッシュ（BOA-353 T4b-03）"
+    },
+    {
+      "script": "verify-query-errors.js",
+      "tier": "ci",
+      "guards": "フロントのSupabaseクエリで、取得失敗が「データなし」に化ける書き方（BOA-359）",
+      "note": "本件以前から専用ワークフロー verify-query-errors.yml で実行していた唯一のverify。統合してワークフローは削除した"
+    },
+    {
+      "script": "verify-race-notices-job.js",
+      "tier": "ci",
+      "guards": "レース特記事項（A5）の共通ラッパ対応"
+    },
+    {
+      "script": "verify-race-notices-parser.js",
+      "tier": "ci",
+      "guards": "レース特記事項のパーサー（BOA-318/319/320）"
+    },
+    {
+      "script": "verify-race-result-parser.js",
+      "tier": "ci",
+      "guards": "結果ページの全項目パーサー・艇別/払戻明細の行・書き込み経路"
+    },
+    {
+      "script": "verify-race-stage-parsing.js",
+      "tier": "ci",
+      "guards": "レースステージ抽出（update-race-info.js の scrapeRaceStage、BOA-226）"
+    },
+    {
+      "script": "verify-race-status-job.js",
+      "tier": "ci",
+      "guards": "中止・順延の早期確定（race_status）"
+    },
+    {
+      "script": "verify-racelist-backfill.js",
+      "tier": "ci",
+      "guards": "出走表（racelist）の過去分バックフィルCLI"
+    },
+    {
+      "script": "verify-racer-profile-sync.js",
+      "tier": "ci",
+      "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
+    },
+    {
+      "script": "verify-rls-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション076（RLS無効テーブルの匿名書き込みの是正、BOA-370）をPGlite上で実際に適用して検証"
+    },
+    {
+      "script": "verify-routine-routing.js",
+      "tier": "ci",
+      "guards": "revise/redoの発火先ルーティング（ADR 0038）"
+    },
+    {
+      "script": "verify-scrape-daily-jobs.js",
+      "tier": "ci",
+      "guards": "日次・低頻度ジョブ（B2〜B6）のVercel Cron実装"
+    },
+    {
+      "script": "verify-scrape-jobs.js",
+      "tier": "ci",
+      "guards": "データ取得基盤の共通ライブラリ（scripts/lib/scrapeJobs/、WS4a）"
+    },
+    {
+      "script": "verify-scrape-monitor.js",
+      "tier": "ci",
+      "guards": "データ取得の監視・保守（monitor.js・cleanup.js・vercel.json の crons）"
+    },
+    {
+      "script": "verify-scrape-odds-job.js",
+      "tier": "ci",
+      "guards": "オッズ取得（A3）のVercel Cron実装"
+    },
+    {
+      "script": "verify-scrape-pre-race-job.js",
+      "tier": "ci",
+      "guards": "レース情報（A1）・展示（A2）のVercel Cron実装"
+    },
+    {
+      "script": "verify-scrape-result-job.js",
+      "tier": "ci",
+      "guards": "結果取得（A6）・Kファイル同期・結果のcatch-upのVercel Cron実装"
+    },
+    {
+      "script": "verify-scrape-slots-sql.js",
+      "tier": "ci",
+      "guards": "マイグレーション075・092（予定表 scrape_slots・claim_scrape_slots）をPGlite上で検証"
+    },
+    {
+      "script": "verify-scraped-timestamps.js",
+      "tier": "ci",
+      "guards": "取得時刻の列（created_at・updated_at、マイグレーション071）を使う書き込みと計測"
+    },
+    {
+      "script": "verify-sitemap-coverage.js",
+      "tier": "ci",
+      "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"
+    },
+    {
+      "script": "verify-unchanged-rows.js",
+      "tier": "ci",
+      "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）"
+    },
+    {
+      "script": "verify-venue-entry-course-stats-parser.js",
+      "tier": "ci",
+      "guards": "進入コース別選手成績パーサー（BOA-293）"
+    },
+    {
+      "script": "verify-venue-motor-stats-drift-detection.js",
+      "tier": "ci",
+      "guards": "会場別モーター成績の構造変化検知（scripts/lib/venueMotorStats/driftHealth.js、BOA-285）"
+    },
+    {
+      "script": "verify-venue-motor-stats-parsers.js",
+      "tier": "ci",
+      "guards": "会場別モーター成績パーサー（BOA-264）"
+    },
+    {
+      "script": "verify-weather-parsing.js",
+      "tier": "ci",
+      "guards": "水面気象情報の解析と race_conditions への反映（BOA-358）"
+    },
+    {
+      "script": "verify-push-with-retry.sh",
+      "tier": "ci",
+      "runner": "bash",
+      "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
+      "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
+    },
+    {
+      "script": "verify-format-column-migration.js",
+      "tier": "manual",
+      "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
+      "reason": "実Supabaseの sns_drafts を読むため。環境変数が無いと検証をスキップできず失敗する",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
+    },
+    {
+      "script": "verify-morning-digest.js",
+      "tier": "manual",
+      "guards": "「本日のデータ一覧」（BOA-402）の集計",
+      "reason": "実Supabaseの morning_digest_rows を読むためPRでは実行できない（secretsが要る）。ただし generate-morning-digest.yml が生成直後に毎日実行しており、manual 5本のうちこれだけは定期的に動いている",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-morning-digest.js"
+    },
+    {
+      "script": "verify-rpc-output-keys.js",
+      "tier": "manual",
+      "guards": "本番RPC（get_predictions_by_date / _light / get_today_races）の出力キーとフロントの参照の整合（BOA-363の再発防止）",
+      "reason": "本番RPCを実際に呼んで出力キーを見る検証のため、モックでは代替できない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js"
+    },
+    {
+      "script": "verify-scrape-slots-on-db.js",
+      "tier": "manual",
+      "guards": "予定表のRPC（claim_scrape_slots・ensure_scrape_slots）の実DB上での挙動",
+      "reason": "実DBに検証用スロットを作って同時claim・リース奪取・expiredを試す。--execute を付けないとdry-run表示だけで成功終了するため、CIに載せてもゲートにならない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-scrape-slots-on-db.js --execute"
+    },
+    {
+      "script": "verify-topic-target-claim.js",
+      "tier": "manual",
+      "guards": "sns_topic_targetsのclaim機構（ADR 0036）の並行実行時の排他",
+      "reason": "実Supabaseに対する並行実行テストのため",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-topic-target-claim.js"
+    }
+  ]
+}

@@ -740,7 +740,10 @@ async function suite(mod, record) {
       "DBの読み取りが応答しない（タイムアウト） → 実行（クライアントがタイムアウトを持たなくても待たされない）",
       d3.skip === false &&
         d3.reason === "read_failed" &&
-        Date.now() - started < 2000,
+        // 意図は「readTimeoutMs=50 が効いていて数十秒待たされない」ことの確認で、
+        // 具体的な閾値は本質ではない。Quality Gates CI が並列度4で走らせるため、
+        // 負荷の高いランナーでの誤検知を避けて余裕を持たせる（ADR-0072）
+        Date.now() - started < 5000,
       show(d3),
     );
     for (const [label, rows] of [
