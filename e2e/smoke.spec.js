@@ -1451,6 +1451,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const meetRows = page.locator(".rbit-meet tbody tr");
     await expect(meetRows).toHaveCount(6, { timeout: 25000 });
     await expect(page.locator(".rbit-meet thead")).toContainText("進入");
+    // 今節の得点率（FR-3 Phase B）。この節の着順は 4/4/5/6/1/6 なので
+    // 得点22・6走・得点率3.67、今日1着なら (22+10)/7 = 4.57。
+    // 計算式は公式の得点率一覧（若松G1・49名）と全件照合済み
+    const score = page.locator(".rbit-meet-score");
+    await expect(score).toContainText("今節の得点率 3.67（6走・当社計算）");
+    await expect(score).toContainText("1着 4.57");
+    await expect(score).toContainText("6着 3.29");
+
     // 生データの前に「通常値との差」を出す（FR-3 Phase A）。
     // 登番4872のこの節は 今節ST 0.202 / 通常 0.184（154走）、
     // 展示 6.81 → 6.69 で、いずれもDB実値と一致することを確認済み

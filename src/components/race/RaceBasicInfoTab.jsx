@@ -45,6 +45,10 @@ import {
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
+import {
+  computeSeriesScore,
+  forecastSeriesScore,
+} from "./seriesPoints";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -630,6 +634,10 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                       // ST考察（FR-1）と同じ発想で、その選手自身の通常値との
                       // 差を先に出す（2026-09-26ユーザー合意のPhase A）
                       const trend = buildMeetTrend(meet, records);
+                      // 今節の得点率（FR-3 Phase B）。公式はSG/G1の4日目以降しか
+                      // 出さないので当社で計算する。計算式は公式の得点率一覧と
+                      // 全選手（若松G1・49名）で照合して一致を確認済み
+                      const score = computeSeriesScore(meet);
                       const st = trend.st;
                       const ex = trend.exhibition;
                       const stVerdict =
@@ -658,6 +666,31 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                               : t("basicInfo.meetTrendExhibitionFlat");
                       return (
                         <div className="rbit-meet">
+                          {score.rate !== null && (
+                            <div className="rbit-meet-score">
+                              <p className="rbit-meet-score-main">
+                                {t("basicInfo.meetScore", {
+                                  rate: score.rate.toFixed(2),
+                                  n: score.runs,
+                                })}
+                              </p>
+                              {/* 「今日この着順なら得点率はこうなる」。勝負駆けの
+                                  判断材料そのもので、公式もレースごとに
+                                  「得点率早見表」として出している */}
+                              <p className="rbit-meet-score-forecast">
+                                {t("basicInfo.meetScoreForecast", {
+                                  list: forecastSeriesScore(score)
+                                    .map((f) =>
+                                      t("basicInfo.meetScoreForecastItem", {
+                                        rank: f.rank,
+                                        rate: f.rate.toFixed(2),
+                                      }),
+                                    )
+                                    .join(" / "),
+                                })}
+                              </p>
+                            </div>
+                          )}
                           {(stVerdict || exVerdict) && (
                             <div className="rbit-meet-trend">
                               {stVerdict && (
@@ -731,6 +764,18 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                               localize(`/race/${id}`)
                             }
                           />
+                          {/* 得点率が当社計算であることと、配点・対象レースの
+                              前提。毎回読む必要は無いので畳んでおく */}
+                          {score.rate !== null && (
+                            <details className="rbit-conditions-how">
+                              <summary>
+                                {t("basicInfo.conditionsHowToRead")}
+                              </summary>
+                              <p className="rbit-conditions-caveat">
+                                {t("basicInfo.meetScoreNote")}
+                              </p>
+                            </details>
+                          )}
                         </div>
                       );
                     })()}
