@@ -90,10 +90,34 @@ https://www.boat-ai.jp/today
 
 ---
 
-## 4. 実運用の状態
+## 4. 実運用の状態（2026-09-25時点）
 
-**2026-09-25時点: 品質確認中。** X のテンプレートはユーザー承認済み（§3）。ブログ・note・YouTube は生成物の確認待ちで、**ユーザーのOKが出るまで投稿しない**（`.claude/rules/content-ops.md` フローB-1）。下書きの生成自体は続けてよい。
+| チャネル | 既定 | 状態 |
+|---|---|---|
+| X | ON | **テンプレート承認済み**（§3）。投稿は1件ごとに承認を得る |
+| YouTube | ON | 生成物の確認待ち |
+| note | ON | 生成物の確認待ち。**下の依存関係に注意** |
+| ブログ | **OFF** | このネタは毎朝出るが**ブログは毎日は書かない**（同じ主題の薄い記事を量産するとSEO上むしろ不利）。週1本程度、書きたい日に一時的に有効化する（2026-09-25ユーザー判断） |
+| TikTok | 対象外 | ギャンブル関連ポリシーとシャドウバンの経緯 |
+
+**ユーザーのOKが出るまで投稿しない**（`.claude/rules/content-ops.md` フローB-1）。下書きの生成自体は続けてよい（確認の材料になるため）。
+
+⚠️ **note はブログ本文からの変換を前提にしている**（`sns-pipeline-note.md` の依存関係チェック）。ブログを OFF にしたまま note を ON のままにすると、note 側は材料が無く毎朝待ち続ける。**note を「ブログ非依存で書く」形に変えるか、note も OFF にするかを決める必要がある**（2026-09-25時点で未決）。
 
 ## 5. チャネルの増減
 
-対象チャネルは `sns_topic_category_channels`（`category_key='morning-digest'`）のデータで決まる。初期値は x / blog / note / youtube の4つ、TikTok は対象外。**増減はコードを触らず sns-hub 管理画面「ネタ型設定」から `enabled` を切り替える**（毎朝4チャネルぶんの下書きが出る運用が重い場合も同じ画面で減らせる）。
+対象チャネルは `sns_topic_category_channels`（`category_key='morning-digest'`）のデータで決まる。**増減はコードを触らず切り替える**。
+
+- **通常の経路**: sns-hub 管理画面（`/admin/sns-hub`）の「⚙️ ネタ型設定」でトグルする
+- **SQLで直接変える場合**（Supabase Dashboard > SQL Editor）:
+
+```sql
+update sns_topic_category_channels ch
+   set enabled = false, updated_at = now()
+  from sns_topic_categories c
+ where c.id = ch.category_id
+   and c.category_key = 'morning-digest'
+   and ch.platform = 'blog';
+```
+
+`docs/db-migration/101_morning_digest_sns_topic_category.sql` は「適用時にどの状態にしたか」の記録であり、**再実行すると管理画面での変更を上書きする**。

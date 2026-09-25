@@ -17,12 +17,22 @@
 --   登録側（generate-morning-digest.js）は createTopicWithTargets({autoApprove: true}) で作る。
 --
 -- チャネル:
---   x / blog / note / youtube を enabled=true にする（tasks.md T5-2 の受入基準）。
---   tiktok は入れない。ギャンブル関連ポリシーとシャドウバンの経緯があり、
+--   x / note / youtube を enabled=true、**blog は enabled=false** にする。
+--   tiktok は行ごと作らない。ギャンブル関連ポリシーとシャドウバンの経緯があり、
 --   本ネタ（選手名・レース単位の数値）は TikTok 向きではないため。
+--
+--   blog を false にしている理由（2026-09-25 ユーザー判断）:
+--     このネタは毎朝出るが、**ブログは毎日は書かない**（同じ主題の薄い記事を量産すると
+--     SEO上むしろ不利になる）。週1本程度で書きたくなった日に、管理画面から一時的に
+--     有効化するか、対話セッションで直接書く。
+--   ⚠️ note はブログ本文からの変換を前提にしている（docs/operation/sns-pipeline-note.md
+--      の依存関係チェック）。blog を落としたまま note だけ有効だと、note 側は材料が無く
+--      待ち続ける。**note の扱いは別途決めること。**
+--
 --   ⚠️ **チャネルの増減はこのSQLを書き直さず、sns-hub 管理画面「ネタ型設定」から
 --      enabled を切り替える**（sns_topic_category_channels はそのためのデータ駆動の表）。
---      毎朝4チャネルぶんの下書きが出る運用が重いと分かった場合も、同じ画面で減らせる。
+--      このファイルは「適用時にどの状態にしたか」の記録であり、再実行すると
+--      **管理画面での変更を上書きする**点に注意する。
 --
 -- 適用手順（ユーザーが実行する）:
 --   Supabase Dashboard > SQL Editor で以下を実行する。DDLは無く、行のINSERTのみ
@@ -67,9 +77,15 @@ ON CONFLICT (category_key) DO UPDATE
       notes = EXCLUDED.notes;
 
 INSERT INTO sns_topic_category_channels (category_id, platform, enabled)
-SELECT c.id, p.platform, true
+SELECT c.id, p.platform, p.enabled
   FROM sns_topic_categories c
-  CROSS JOIN (VALUES ('x'), ('blog'), ('note'), ('youtube')) AS p(platform)
+  CROSS JOIN (VALUES
+      ('x',       true),
+      ('note',    true),
+      ('youtube', true),
+      -- 毎日は書かないため既定でOFF（上記「blog を false にしている理由」参照）
+      ('blog',    false)
+    ) AS p(platform, enabled)
  WHERE c.category_key = 'morning-digest'
 ON CONFLICT (category_id, platform) DO UPDATE
   SET enabled = EXCLUDED.enabled, updated_at = now();
@@ -84,4 +100,4 @@ COMMIT;
 --     LEFT JOIN sns_topic_category_channels ch ON ch.category_id = c.id
 --    WHERE c.category_key = 'morning-digest'
 --    GROUP BY 1,2,3,4;
---   -- 期待: daily-auto / active=true / {blog,note,x,youtube}
+--   -- 期待: daily-auto / active=true / {note,x,youtube}（blog は enabled=false）
