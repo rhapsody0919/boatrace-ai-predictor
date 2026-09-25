@@ -953,8 +953,11 @@ export async function runMorningDigest({
   return {
     outcome: "ok",
     rowsWritten: rows.length,
-    // 0行を成功にしない（applyZeroRowGuard）。開催日なら必ず1行以上出る
-    rowsExpected: rows.length,
+    // 0行を成功にしない（applyZeroRowGuard は `rowsExpected > 0 && rowsParsed === 0`
+    // のときだけ error にする）。両方に rows.length を入れると、0件のとき
+    // rowsExpected も0になり判定が働かない。完全性チェックを通った＝開催日なので、
+    // 1行も出ないのは異常として扱う（verify-morning-digest.js の判定とも揃う）
+    rowsExpected: 1,
     rowsParsed: rows.length,
     report,
   };

@@ -353,11 +353,13 @@ export async function runRacerCourseTechniqueStats({ dryRun = false } = {}) {
   );
   return {
     outcome: "ok",
-    // 「変更なしで書き込み0件」は正常。0行を error にしたいのは集計結果そのものが
-    // 0件だった場合なので、rowsExpected/rowsParsed には集計行数を渡す
-    rowsWritten:
-      (baselineResult.stats?.written ?? 0) + (racerResult.stats?.written ?? 0),
-    rowsExpected: baselineRows.length + racerRows.length,
+    // upsertChangedRows は written を**トップレベル**で返す（stats.written ではない）
+    rowsWritten: (baselineResult.written ?? 0) + (racerResult.written ?? 0),
+    // 「変更なしで書き込み0件」は正常なので rowsWritten では判定しない。
+    // applyZeroRowGuard は `rowsExpected > 0 && rowsParsed === 0` のときだけ error にするため、
+    // rowsExpected には定数 1（＝集計結果が1行以上あるはず）を渡す。
+    // 両方に同じ集計行数を入れると、0件のとき rowsExpected も0になり判定が働かない
+    rowsExpected: 1,
     rowsParsed: baselineRows.length + racerRows.length,
     report: {
       windowStart: baselineRows[0]?.window_start ?? null,
