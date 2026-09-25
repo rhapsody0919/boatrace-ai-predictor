@@ -8,7 +8,7 @@
 
 - **9会場（桐生01・戸田02・多摩川05・蒲郡07・住之江12・尼崎13・鳴門14・宮島17・芦屋21）は`race_date`列（2025-12-03）が正しい**。公式K-file（2025-12-03分）の出走表と、自社DBの`race_entries`（艇番1〜6の`racer_id`）が12レース中12レース（鳴門のみ10レース、後述）で完全一致した。BOA-325がこれらの`race_id`日付部分を2025-12-02→2025-12-03に訂正したのは正しい対応だった
 - **津(09)の12レースのみ`race_id`側（2025-12-02）が正しく、`race_date`列（2025-12-03）が誤り**。公式K-file 2025-12-03分には津(09)のブロック自体が存在せず、2025-12-02分に同一レース番号（R1〜R12）が存在し、自社DBの出走表と完全一致した。BOA-325はこの1会場については逆方向の誤った訂正をしてしまっていた（BOA-407が既に指摘した内容の再確認）
-- 影響範囲は限定的：津の12レースは`race_results`が0件（=公式結果と紐付いておらず、的中率・回収率集計には一切混入していない）。ただし選手個人ページ（`src/services/racerService.js`）は`race_id`の日付部分をそのまま対戦日として表示する設計のため、現状（`race_id`=2025-12-03）は表示上も誤っている
+- 影響範囲は限定的：津の12レースは`race_results`が0件（=公式結果と紐付いておらず、的中率・回収率集計には一切混入していない）。ただし`racerService.js`・`supabaseDataService.js`の一部関数（展示タイム推移・勝率推移等、§4参照）は`race_id`の日付部分をそのまま出走日として使う設計のため、現状（`race_id`=2025-12-03）は表示上も誤っている
 
 ## 2. 調査方法
 
@@ -80,7 +80,15 @@ BOA-325の修正スクリプト`scripts/maintenance/fix-opening-day-race-id-date
 
 **的中率・回収率集計への影響は無い**: `race_results`が0件のため、`race_results!inner`で結合する的中率集計（`calculate-accuracy.js`系）にはそもそも含まれない。`predictions`の12行も`is_hit_*`が全て`NULL`のため、確定済み集計には混入していない（BOA-407 PR #818 §5の推定と一致）。
 
-**選手個人ページの対戦日表示には影響がある**: `src/services/racerService.js`は選手の対戦履歴の日付を`race_id.slice(0, 10)`（`race_id`の先頭10文字）から直接復元しており、`race_date`列は参照していない（`getRacerRaceHistory`等）。現状（`race_id`=2025-12-03）のままでは、津の12レースに出走していた選手の個人ページで対戦日が実際より1日遅く（2025-12-03と）表示され続ける。この画面は選手個別ページのみで表示件数・影響選手数は限定的（1会場・1日・最大72出走枠）。
+**選手個人ページの一部の推移表示には影響がある**: 以下の関数は`race_entries`のみを取得し、`race_id.slice(0, 10)`（`race_id`の先頭10文字）で日付を復元しており、`race_results`の有無（＝そのレースが実際に成立したか）を一切チェックしていない。津の12レースはこれらの関数では「出走日」データ点としてそのまま含まれてしまう（現状は2025-12-03、本来は2025-12-02）。
+
+- `src/services/racerService.js`の`getCurrentMeetRaceEntries`・`getRacerCurrentMotorStatus`（節間の展示タイム推移`meetTrend`・最新パーツ交換日`latestPartsEvent`を構築）
+- `src/services/supabaseDataService.js`の`getRacerFormTrend`（勝率・当地勝率の推移）
+- `src/services/supabaseDataService.js`の`getExhibitionTimeTrend`（展示タイム推移、`exhibition_data`とのみJOIN）
+
+一方、同じ`supabaseDataService.js`の`getRacerRaceHistory`・`getRacerVenueStats`・`getRacerBoatReturnRate`は`race_results`をJOINし共通ヘルパー`isUsableRaceResult`（`!result.is_cancelled && !result.is_no_race && result.rank1 !== null`）で除外する安全な設計であり、津の12レース（`race_results`0件）が対戦成績として表示されることはない。
+
+影響は「対戦成績」ではなく「出走日・推移グラフの日付点」に限られ、表示件数・影響選手数も限定的（1会場・1日・最大72出走枠）。なお`scripts/analysis/aggregate-racer-stats.js`（分析用スクリプト、本番非公開）の`total_races`は`race_entries`と`race_start_timings`のJOINで算出しており`race_results`を見ないため同種の懸念があるが、津の12レースは`race_start_timings`も0件のため今回のケースでは実害が無いことを確認済み。
 
 選手の「期別成績」（出走回数・勝率等）は`scripts/lib/racerSeasonStats.js`が公式サイト（boatrace.jp）を直接スクレイピングして取得しており、自社DBの`race_entries`/`race_date`から算出していないため、この日付の食い違いによる影響を受けない。
 
@@ -132,5 +140,5 @@ BOA-325の修正スクリプト`scripts/maintenance/fix-opening-day-race-id-date
 - BOA-406（Done）/ PR #817: 中止・打ち切りレースの`cancellation_status`是正（269件）
 - `scripts/maintenance/fix-opening-day-race-id-date.js`: BOA-325の修正スクリプト（子テーブル付け替え・UNIQUE制約回避の実装）
 - `scripts/maintenance/kb-backfill.js`: K/Bアーカイブの取得・解析CLI（`MAIN_TABLES_START`定数）
-- `src/services/racerService.js`: 選手個人ページの対戦履歴取得（`race_id`から日付復元）
+- `src/services/racerService.js`・`src/services/supabaseDataService.js`: 選手個人ページの対戦履歴・推移データ取得（一部関数が`race_id`から日付復元、§4参照）
 - `scripts/lib/racerSeasonStats.js`: 選手の期別成績（公式サイト直接スクレイピング、本件の影響を受けない）
