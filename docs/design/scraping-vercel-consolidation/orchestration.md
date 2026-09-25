@@ -138,7 +138,6 @@ data-catalog.mdでは「必須・未対応」のままだったが、PR #751（�
 | 日付 | 決定 | 根拠・詳細 |
 |---|---|---|
 | 2026-09-19 | データ取得基盤をVercel Functions + Vercel Cronに一本化する | [ADR-0066](../../adr/0066-scraping-execution-consolidation-to-vercel.md) |
-| 2026-09-25 | **ADR-0066の「対象外（GitHub Actionsのまま）」の線引きを、カテゴリから「実測の実行時間」に変える**。外部サイトを取得せず、関数の `maxDuration`（最大300秒）に十分な余裕をもって収まるジョブは、DB内集計であってもVercel Cronへ移してよい。Node側で実際に長時間CPUを使うもの（`train-*` 等）は引き続き対象外 | [ADR-0066 §改訂1](../../adr/0066-scraping-execution-consolidation-to-vercel.md)。BOA-402 の2ジョブ（集計27.0秒・生成5.5秒、重い処理はPostgres側のRPC）を移した。**このWSでGitHub Actions側の集計ジョブを触る際は、同じ基準で移行可否を判断してよい**。なお、この決定をWSの担当セッション（`FR-3 scraping-full-coverage tasks` / `公式サイトデータ取得の最適化`）へセッション間メッセージでも送ったが、**両方オフラインでキュー待ちのまま Claude アカウントを切り替えたため、届かない可能性が高い**。この表が正本 |
 | 2026-09-19 | 完了の定義: (A)過去のバックフィルを含む期待件数、(B)可変データの窓内取得率、(C)自動の継続監視 | `.claude/rules/data-acquisition.md` |
 | 2026-09-19 | Supabaseの計算リソースをSmallへ変更（済） | BOA-357 |
 | 2026-09-19 | 公式サイトのコンテンツの再表示: リスクを認識したうえで、現状の方針を維持する（弁護士等への確認は行わない） | [ADR-0067](../../adr/0067-official-site-content-redisplay-policy.md) |
@@ -173,7 +172,10 @@ data-catalog.mdでは「必須・未対応」のままだったが、PR #751（�
 | 2026-09-20 | `scrape-racer-season-stats`の初回実行を、少数から段階的に進める | 5選手dry-run（成功）→30選手の本番書き込み→全件 |
 | 2026-09-22 | **完了の定義Bの、オッズの発走60分前の窓（-60）の基準を見直した**（ユーザー承認）: 発売開始が窓より遅いレース（直近8日で、各会場の第1レースの約18%、朝の開催会場の第2レースにも及ぶ。旧基盤も同じ。-60全体の窓内取得率は、除外後でも90.4%）は、-60の窓内取得率の分母から除外し（後続の窓の取得で「後で発売が始まった」ことを確認できたものだけ。除外件数は必ず別に出す）、別の指標『発売開始の検知の遅れ（発売開始後の最初の取得と、直前の未公開の試行の差）≦5分の割合98%以上』で評価する。この指標のため、-60の窓は、未公開の間、-30の窓が始まるまで、1分間隔で再試行を続ける（子に割り当て）。ルールの正本は`.claude/rules/data-acquisition.md`のB。監視の想定内化はPR #778（第1レースのみ。この見直しで第2レース以降にも広げる） |
 | 2026-09-24 | BOA-408（predictions.feature_contributionsの3モデル重複解消、WS8(c)-1）をコード実装した（本番DB書き込み・DDL適用・切替は無し、マージ待ち） | `scripts/daily/generate-predictions.js`の`writeToSupabase`（朝の初期化経路）・`mainRefresh`（発走前リフレッシュ経路）両方で、`feature_contributions`をstandard行にのみ書き、safeBet・upsetFocusはNULLにした（3モデルの内容は完全重複、フロントエンドもstandard行しか読まないためBOA-405で確認済み）。実装前に他の読み手（Moriarty・全RPC・分析スクリプト等）を再確認し、`scripts/analysis/calibration-report.js`・`expected-value-report.js`がデフォルトで`model_id='safeBet'`のfeature_contributionsに依存していた実害を発見、両スクリプトのデフォルトを`standard`に修正。`turnprediction-guided-outcome-distribution.js`（model_id別の内訳が主目的）はフィルタ・フォールバックを調整し内訳を維持。`snsCampaigns.js`・`campaign-backtest-fetch-races.js`はコメントのみ更新（機能的な変更は不要と確認済み）。検証は`scripts/maintenance/verify-feature-contributions-dedup.js`（新規、DB非接続）。本番実測（読み取り専用）: 現在standard/safeBet/upsetFocusの`feature_contributions`は平均約2,000バイト/行でほぼ同一、3モデル合計から2モデル分（約66%）が削減される見込み |
-| 2026-09-25 | **ADR-0066の「対象外（GitHub Actionsのまま）」の線引きを、カテゴリから「実測の実行時間」に変える**。外部サイトを取得せず、関数の`maxDuration`（最大300秒）に十分な余裕をもって収まるジョブは、DB内集計であってもVercel Cronへ移してよい。Node側で実際に長時間CPUを使うもの（`train-*`等）は引き続き対象外 | [ADR-0066 §改訂1](../../adr/0066-scraping-execution-consolidation-to-vercel.md)（別セッション、BOA-402、[PR #827](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/827)でマージ済み）。BOA-402の2ジョブ（集計27.0秒・生成5.5秒、重い処理はPostgres側のRPC）を移した。**このWSでGitHub Actions側の集計ジョブを触る際は、同じ基準で移行可否を判断してよい**。マイグレーション`099_morning_digest_vercel_cron_jobs.sql`は適用済みと確認（2026-09-25、`scrape_job_state`で`racer_course_technique_stats`・`morning_digest`とも`mode=live`） |
+| 2026-09-25 | **ADR-0066の「対象外（GitHub Actionsのまま）」の線引きを、カテゴリから「実測の実行時間」に変える**。外部サイトを取得せず、関数の`maxDuration`（最大300秒）に十分な余裕をもって収まるジョブは、DB内集計であってもVercel Cronへ移してよい。Node側で実際に長時間CPUを使うもの（`train-*`等）は引き続き対象外 | [ADR-0066 §改訂1](../../adr/0066-scraping-execution-consolidation-to-vercel.md)（別セッション、BOA-402、[PR #827](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/827)でマージ済み）。BOA-402の2ジョブ（集計27.0秒・生成5.5秒、重い処理はPostgres側のRPC）を移した。**このWSでGitHub Actions側の集計ジョブを触る際は、同じ基準で移行可否を判断してよい**。マイグレーション`099_morning_digest_vercel_cron_jobs.sql`は適用済みと確認（2026-09-25、`scrape_job_state`で`racer_course_technique_stats`・`morning_digest`とも`mode=live`）。なお、この決定をWSの担当セッション（`FR-3 scraping-full-coverage tasks` / `公式サイトデータ取得の最適化`）へセッション間メッセージでも送ったが、**両方オフラインでキュー待ちのまま Claude アカウントを切り替えたため、届かない可能性が高い**。この表が正本 |
+| 2026-09-25 | **出走表の複製汚染（BOA-422）の規模を全期間監査で確定し、日次の自動検知（BOA-423）を入れた** | 公式K/Bファイルと本番DBを3,810会場×日で突き合わせ、汚染は既知の3会場日ではなく**22会場日・219レース**と判明（2026-01-09の9会場108レースはどのチケットにも無かった）。結果(`race_results`)は正常に入るため、BOA-403・BOA-406・BOA-407が使った欠損ベースの抽出では原理的に見つからない。[PR #830](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/830)で、突き合わせCLI（`scripts/maintenance/audit-race-entries-vs-kb.js`）と、DBだけで同じ汚染を拾う日次検知（`data_health_entries_duplicates`、マイグレーション100）を追加。検知は22会場日を取りこぼし0・誤検知0で拾う。詳細は [docs/issues/race-entries-duplicate-contamination-audit.md](../../issues/race-entries-duplicate-contamination-audit.md) |
+| 2026-09-25 | **`prediction_odds`・`data_health` をliveに切り替えた**（ユーザー実行） | `prediction_odds`: shadowの基準（買い目一致率99%以上・3連単p90差32%以下）に対し、実測で一致率100.00%・p90 20.2%（BOA-404）。`data_health`: マイグレーション100の適用と同時。live直前のshadow実績は26項目・breaches 0・wouldAlert 0のため、live化による警告の洪水は無い。次回06:30 JSTの実行から`entries.duplicates`を含む27項目になる |
+| 2026-09-25 | **本番Supabaseへの書き込みは、Claude Code側からは実行できないと確定した** | 2経路とも実地で確認: (1) Supabase MCPは`.mcp.json`で`--read-only`固定（`ERROR: 25006: cannot execute UPDATE in a read-only transaction`）、(2) `supabase-js`＋`SUPABASE_SERVICE_KEY`のスクリプトはauto mode分類器が[Modify Shared Resources]で拒否。`settings.json`の自己編集も[Self-Modification]で拒否されるため、Claude側から解除もできない。**本番DB操作は、貼れるSQLを用意してユーザーが実行する運用を前提にする**（迂回はしない） |
 
 ## 設計判断(a)〜(d)の経緯（2026-09-20に、すべて推奨案で承認済み）
 
@@ -225,9 +227,9 @@ data-catalog.mdでは「必須・未対応」のままだったが、PR #751（�
 | 中 | [BOA-399](https://linear.app/boat-ai/issue/BOA-399) | venue_motor_stats | T4b-14-2 | ✅ `SKIP_MOTOR_STATS_ON_GHA`設定済み |
 | 中 | [BOA-400](https://linear.app/boat-ai/issue/BOA-400) | racer_news | T4b-15-2 | ✅ `SKIP_RACER_NEWS_ON_GHA`設定済み |
 | 中 | [BOA-398](https://linear.app/boat-ai/issue/BOA-398) | entry_course_stats（FR-3実施予定によりデータ取得は継続決定） | T4b-13-3 | ✅ `SKIP_ENTRY_COURSE_ON_GHA`設定済み |
-| 中 | [BOA-401](https://linear.app/boat-ai/issue/BOA-401) | race_info（shadow検証(一致率99.70%)を経てliveへ切替済み） | T4b-09-3 | live直後のため様子見中、GHA停止は保留 |
+| 中 | [BOA-401](https://linear.app/boat-ai/issue/BOA-401) | race_info（shadow検証(一致率99.70%)を経てliveへ切替済み） | T4b-09-3 | ✅ `SKIP_RACE_INFO_ON_GHA`設定済み（2026-09-25 15:40 JST） |
 
-8件中7件が完了（2026-09-24）。残るBOA-401（race_info）はlive切替直後のため観測期間を置き、GHA側の`SKIP_RACE_INFO_ON_GHA`相当の設定は別途判断する。
+**8件すべて完了（2026-09-25 15:40 JST）**。最後まで保留していたBOA-401（race_info）は、liveの実測（2026-09-24が144/144スロット・窓内取得率100.00%、9/25も98/102＝96.08%、エラー・expired 0件）と`REFRESH_ON_VERCEL`の登録を確認したうえで、`SKIP_RACE_INFO_ON_GHA=true`を設定した。設定直後の`scrape-scheduled`（run 36103923212）のログで、runbook Q-5手順5の期待どおりフェイルセーフが働くことを確認している（`[gha-skip] SKIP_RACE_INFO_ON_GHA: スキップ: Vercelが健全（race_info: live・最終起動2分前・最終成功4分前）` → `⏭️ レース情報更新をスキップ`）。
 
 `pit_reports`・`boatcast_oriten`・`boatcast_motor_start`・`motor_pretest`は、旧GitHub Actions基盤に対応するジョブが元々無い新規データ項目のため、この一覧には含めない。
 
@@ -245,7 +247,7 @@ K/Bの生LZHダウンロード（2019-04-01〜2026-09-24、2,730/2,734日）・�
 
 ## 待ち時間の並行タスク追加起票（2026-09-24）
 
-N19（今夜22:00再開待ち）・BOA-401（観測期間中）と並行して進められる、既に方向性の決まった項目を追加で起票・子エージェントへ割り当てた。
+N19（今夜22:00再開待ち）・BOA-401（当時は観測期間中。2026-09-25に完了）と並行して進められる、既に方向性の決まった項目を追加で起票・子エージェントへ割り当てた。
 
 - [BOA-404](https://linear.app/boat-ai/issue/BOA-404): T4b-10-3（買い目オッズ`prediction_odds`の`race_odds`からの導出化）。設計判断は2026-09-20に確定済み（Q8）で、未着手だっただけの実装タスク。live化・GHA停止はユーザー承認後
 - [BOA-405](https://linear.app/boat-ai/issue/BOA-405): WS8(c)（predictions再生成の書き込み量削減）の調査・設計提案。DELETE+INSERT→差分更新、`feature_contributions`の分離・圧縮、トリガー`trg_update_predictions`の限定DDL案の3点を比較する。**このチケットは提案のみ、実装・DDL適用は別途承認後**
