@@ -6,8 +6,11 @@
  *
  * 使い方:
  *   node scripts/analysis/expected-value-report.js
- *   node scripts/analysis/expected-value-report.js --model=safeBet
+ *   node scripts/analysis/expected-value-report.js --model=unified
  *   node scripts/analysis/expected-value-report.js --from=2026-03-01 --to=2026-04-01
+ *
+ * --model は既定 standard。BOA-408以降、feature_contributions を持つのは
+ * standard・unified のみ（safeBet・upsetFocus は重複のためNULL）
  */
 
 import {
@@ -26,9 +29,13 @@ const TECHNIQUE_MAP_REV = Object.fromEntries(
   Object.entries(TECHNIQUE_MAP).map(([k, v]) => [v, k]),
 );
 
+// 既定モデルは standard（BOA-408以降、feature_contributionsを実際に持つのは
+// standard・unifiedのみ。safeBet・upsetFocusはstandardと内容が完全重複していた
+// ためNULLに変更済み。値そのものは従来もモデル間で完全一致していたため、
+// 既定をstandardに変えても分析結果は変わらない）
 function parseArgs() {
   const args = process.argv.slice(2);
-  const opts = { model: "safeBet", from: null, to: null };
+  const opts = { model: "standard", from: null, to: null };
   for (const arg of args) {
     if (arg.startsWith("--model=")) opts.model = arg.split("=")[1];
     if (arg.startsWith("--from=")) opts.from = arg.split("=")[1];
@@ -36,7 +43,6 @@ function parseArgs() {
   }
   return opts;
 }
-
 
 function fmt(v, digits = 1) {
   return v.toFixed(digits);

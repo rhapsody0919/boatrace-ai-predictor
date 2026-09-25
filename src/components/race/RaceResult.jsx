@@ -11,6 +11,8 @@ import { useTranslation } from "react-i18next";
 import { translateTechnique } from "./raceIndicators";
 import { BOAT_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { parseRaceId } from "../../utils/raceId";
+import VenueDaySummaryCard from "./VenueDaySummaryCard";
 
 // スタートのダイナミック演出（全艇が号砲と同時に走り出し、実ST比例の位置×時間で到達）の調整定数。
 // 到達位置は0〜0.15秒の固定レンジで正規化する（レースが違っても位置の見た目の意味を揃えるため）。
@@ -235,6 +237,8 @@ function PayoutRow({
 }
 
 function RaceResult({ prediction, raceId }) {
+  // 会場コードと開催日は raceId から導出する（propsを増やさない）
+  const parsedRaceId = parseRaceId(raceId);
   const { t } = useTranslation();
   const [startTimings, setStartTimings] = useState(null);
   const reducedMotion = useMemo(
@@ -255,9 +259,18 @@ function RaceResult({ prediction, raceId }) {
       return undefined;
     }
     let cancelled = false;
-    supabaseDataService.getRaceStartTimings(raceId).then((data) => {
-      if (!cancelled) setStartTimings(data);
-    });
+    supabaseDataService
+      .getRaceStartTimings(raceId)
+      .then((data) => {
+        if (!cancelled) setStartTimings(data);
+      })
+      .catch((err) => {
+        // 取得失敗時はST列を空欄にする（レイアウトは維持）。未処理のPromise拒否にしない
+        console.error(
+          "スタートタイミング取得エラー:",
+          err?.message ?? String(err),
+        );
+      });
     return () => {
       cancelled = true;
     };
@@ -489,6 +502,16 @@ function RaceResult({ prediction, raceId }) {
             ))}
           </div>
         </>
+      )}
+
+      {/* この日の水面傾向（phase a FR-5 / BOA-222）。払戻の下＝結果タブの最下部。
+          払戻が無い過去データでも出すため、払戻の条件ブロックの外に置く */}
+      {parsedRaceId && (
+        <VenueDaySummaryCard
+          venueCode={parsedRaceId.venueCode}
+          date={parsedRaceId.date}
+          raceId={raceId}
+        />
       )}
     </div>
   );

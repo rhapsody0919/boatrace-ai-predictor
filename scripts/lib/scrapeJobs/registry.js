@@ -366,6 +366,33 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 120,
     hosts: ["mbrace.or.jp"],
   },
+
+  // BOA-402 選手×コース別の決まり手集計（venue_course_technique_baseline /
+  // racer_course_technique_stats）。外部サイトへの通信は無く、重い処理はSQL側（RPC）。
+  // 実測の実行時間は約27秒。実装: scripts/daily/update-racer-course-technique-stats.js
+  //
+  // 13:00 JST なのは、材料である race_results.actual_course_* を書く kfile_sync
+  // （07:00 / 12:00）より後にするため。これより前に走らせると、前日ぶんの進入コースを
+  // 取り込めず window_end が「前々日」までしか進まない（plan.md §2.4 の障害）。
+  racer_course_technique_stats: {
+    kind: "daily",
+    targetTimeJst: "13:00",
+    leaseSec: 300,
+    maxDurationSec: 300,
+  },
+
+  // BOA-402 「本日のデータ一覧」（/today）の抽出結果。外部サイトへの通信は無い。
+  // 実測の実行時間は約5秒。実装: scripts/daily/generate-morning-digest.js
+  //
+  // 当日の出走表（races_init が 05:00 JST 開始・約15分）が揃った後の 05:30 JST。
+  // 完全性チェックを満たさないときは incomplete を返して対象日を済みにしないため、
+  // vercel.json の補足のスロット（06:30 / 08:00）が同じ対象日をもう一度処理する。
+  morning_digest: {
+    kind: "daily",
+    targetTimeJst: "05:30",
+    leaseSec: 300,
+    maxDurationSec: 120,
+  },
 });
 
 /**

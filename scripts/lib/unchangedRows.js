@@ -98,6 +98,59 @@ export const NUMERIC_SCALES = {
   race_original_exhibition_values: {
     value: 2,
   },
+  // コース×級別のベースライン（docs/db-migration/094_course_baselines.sql、phase a FR-1）。
+  // ここに登録しないと NUMERIC_SCALES[table] ?? {} で空になり、NUMERIC列が
+  // 文字列と数値で比較されて毎日全行が「変更あり」と判定される（plan.md §5.1）
+  st_course_baseline: {
+    avg_st: 3,
+    stable_rate: 2,
+    late_rate: 2,
+    breakout_rate: 2,
+  },
+  // 逃げシミュレーション（同上、phase a FR-6）
+  nige_second_by_course: {
+    second_rate: 2,
+    exacta_rate: 2,
+  },
+  // 「本日のデータ一覧」の事前集計（docs/db-migration/098_morning_data_digest.sql、BOA-402）
+  venue_course_technique_baseline: {
+    nige_rate: 2,
+    makuri_rate: 2,
+    nigashi_rate: 2,
+  },
+  racer_course_technique_stats: {
+    nige_rate: 2,
+    nige_expected: 2,
+    makuri_rate: 2,
+    makuri_expected: 2,
+    nigashi_rate: 2,
+    nigashi_expected: 2,
+    nige_rate_90d: 2,
+    makuri_rate_90d: 2,
+    nigashi_rate_90d: 2,
+  },
+  // morning_digest_rows は日付ごとに delete→insert する設計のため upsertChangedRows を
+  // 使わないが、将来差分更新に変えたときに登録漏れで毎日全行更新になるのを防ぐため先に入れておく
+  morning_digest_rows: {
+    metric_value: 2,
+    metric_expected: 2,
+    metric_skill_delta: 2,
+    metric_venue_baseline: 2,
+    metric_predicted: 2,
+    metric_wilson_lower: 2,
+    rate_90d: 2,
+    motor_2rate: 2,
+    volatility_percentile: 2,
+  },
+  // 買い目オッズ（BOA-404、docs/db-migration/011_prediction_odds.sql）。DECIMAL(8,1)
+  prediction_odds: {
+    trifecta_odds_standard: 1,
+    trio_odds_standard: 1,
+    trifecta_odds_safe_bet: 1,
+    trio_odds_safe_bet: 1,
+    trifecta_odds_upset_focus: 1,
+    trio_odds_upset_focus: 1,
+  },
 };
 
 /**

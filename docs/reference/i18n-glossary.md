@@ -82,6 +82,11 @@ boatAI 多言語化における対訳の基準表。翻訳キー追加時はこ�
 | 全国勝率 | National win rate | 全國勝率 | 전국 승률 | |
 | 全国2連率 | National top-2 rate | 全國2連率 | 전국 연대율 | 2着以内率。연대율は韓国公営競技の公式用語 |
 | 当地勝率 | Local win rate | 當地勝率 | 현지 승률 | その会場での勝率 |
+| 2連対率 | Top-2 rate | 連對率 | 2연대율 | 基本情報／枠別情報タブの指標チップ（`basicInfo.metrics` / `wakuInfo.metrics`）。表ヘッダ用の略記は別途 `top2RateAbbrev`（2連對 / 2연대） |
+| 3連対率 | Top-3 rate | 前三名率 | 3연대율 | 同上。繁體中文のみ「3連對率」ではなく「前三名率」（既存 `wakuInfo.metrics` に合わせた） |
+| 今期 | Current term | 本期 | 이번 기 | 選手成績の期間絞り込み（`basicInfo.periods.current`）。**韓国語に「금기」を使わない** — 韓国語の금기は禁忌（taboo）の意味で通り、期間の意味では読まれない。韓国 경정（KSPO）の公式な期区分は반기/상반기/하반기・등급심사 기간 |
+| 得意会場 | Best venues | 擅長賽場 | 강세 경기장 | その選手が好成績を残している会場（`basicInfo.viewVenue`） |
+| 着外 | Unplaced | 名次外 | 착외 | 3着までに入らなかったこと。バッジ等の短縮表記は `wakuInfo.outOfPlace`（DNF / 外 / 착외） |
 | 1号艇勝率 | Boat 1 win rate | 1號艇勝率 | 1번 보트 승률 | 会場別ランキング（BOA-267）。直近90日集計 |
 | モーター2率 | Motor top-2 rate | 馬達2連率 | 모터 연대율 | |
 | 節（開催） | Meet | 節 | 절 | ボートレースの4〜7日間の開催単位 |

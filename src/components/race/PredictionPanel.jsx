@@ -335,7 +335,6 @@ function PredictionPanel({
               label: t("raceTabs.waku"),
               content: (
                 <RaceWakuInfoTab
-                  raceId={analysisRaceId}
                   venueCode={venueCode}
                   players={prediction.allPlayers}
                 />
@@ -361,6 +360,11 @@ function PredictionPanel({
                   venueCode={venueCode}
                   players={prediction.allPlayers}
                   weather={prediction.weather}
+                  raceGrade={
+                    selectedRace?.rawData?.raceGrade ??
+                    selectedRace?.raceGrade ??
+                    null
+                  }
                 />
               ),
             },

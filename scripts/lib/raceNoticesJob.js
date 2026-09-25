@@ -81,6 +81,10 @@ export async function runRaceNoticesJob(
     healthWritten: result.healthWritten,
     healthSkipped: result.healthSkipped,
     digest: result.digest,
+    // N28調査用の暫定計測（2026-09-23）。通知を検出した会場×日と生HTMLの保管先を
+    // last_report に残す。race_special_notesが稼働開始から0件のままで、パーサーの
+    // 不具合か通知自体が無いのかを実例が出るまで判別できなかったため
+    capturedPages: result.capturedPages,
   };
   return {
     rowsWritten: result.notesInserted + result.healthWritten,

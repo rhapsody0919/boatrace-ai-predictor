@@ -149,6 +149,26 @@
     {
       "path": "/api/cron/data-health",
       "schedule": "35 21-23 * * *"
+    },
+    {
+      "path": "/api/cron/racer-course-technique-stats",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/racer-course-technique-stats",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/morning-digest",
+      "schedule": "30 20 * * *"
+    },
+    {
+      "path": "/api/cron/morning-digest",
+      "schedule": "30 21 * * *"
+    },
+    {
+      "path": "/api/cron/morning-digest",
+      "schedule": "0 23 * * *"
     }
   ],
   "functions": {

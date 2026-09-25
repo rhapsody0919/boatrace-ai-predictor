@@ -1488,10 +1488,21 @@ async function runOdds({ rows, slots, available, db, fetcher, run }) {
     `${md?.[1]} / ${def.maxDurationSec}`,
   );
   check(
-    "api/cron/odds.js: 共通ラッパ経由で job='odds'・handleSlot（waitUntil は使わない）",
-    /createScrapeCronHandler\(\{\s*job: "odds",\s*handleSlot: createOddsSlotHandler\(\)/.test(
-      apiSource,
-    ) && !/waitUntil/.test(apiSource.replace(/\/\*[\s\S]*?\*\//g, "")),
+    // BOA-404（T4b-10-3）: prediction_odds の導出フックを足すため、createScrapeCronHandler の直接呼び出しから
+    // createOddsCronHandlerWithPredictionOdds（内部で runScrapeJob に job="odds"・
+    // createOddsSlotHandler を渡す。waitUntilは使わない）に変わった
+    "api/cron/odds.js: prediction_odds の導出フック込みのハンドラー経由で job='odds'・handleSlot（waitUntil は使わない）",
+    /createOddsCronHandlerWithPredictionOdds\(\)/.test(apiSource) &&
+      !/waitUntil/.test(apiSource.replace(/\/\*[\s\S]*?\*\//g, "")),
+  );
+  const predictionOddsHandlersSource = fs.readFileSync(
+    path.join(ROOT, "scripts/lib/scrapeJobs/predictionOddsHandlers.js"),
+    "utf8",
+  );
+  check(
+    "predictionOddsHandlers.js: createOddsCronHandlerWithPredictionOdds は job='odds'・createOddsSlotHandler を runScrapeJob に渡す",
+    /job:\s*"odds"/.test(predictionOddsHandlersSource) &&
+      /createOddsSlotHandler\(/.test(predictionOddsHandlersSource),
   );
   const vercel = JSON.parse(
     fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),

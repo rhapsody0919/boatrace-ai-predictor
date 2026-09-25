@@ -13,6 +13,7 @@ import {
   addDaysToDateString,
 } from "../../scripts/lib/dateUtils.js";
 import { groupIntoCurrentMeet } from "../utils/meetGrouping";
+import { deriveRaceStContext } from "../utils/stConsideration";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
 
 // 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
@@ -511,14 +512,33 @@ const VENUE_NAMES = {
   24: "大村",
 };
 
+/**
+ * 会場別1コース勝率（イン崩れ指数バッジの補助値）を取得する。
+ *
+ * ここは**意図的に失敗を飲む数少ない例外**（.claude/rules/frontend-data-fetch.md §2）。
+ * レース一覧そのものはEdge API/predictionsから取得済みで、この値は
+ * バッジに添える参考値でしかない。例外を上流に流すと、補助値の失敗で
+ * レース一覧全体が表示できなくなる（2026-09-23、BOA-359の対応中に
+ * E2E「失敗はキャッシュされず、再読み込みで取得がやり直されて一覧が表示される」
+ * が実際にこれを検知した）。
+ * 失敗時は空マップを返し、バッジ側が値なしとして扱う。
+ */
 async function fetchVenueWinRateMap() {
   if (!supabase) return {};
-  const { data } = await supabase
-    .from("venues")
-    .select("code, avg_first_win_rate");
-  return Object.fromEntries(
-    (data || []).map((v) => [v.code, v.avg_first_win_rate]),
-  );
+  try {
+    const { data } = await supabase
+      .from("venues")
+      .select("code, avg_first_win_rate");
+    return Object.fromEntries(
+      (data || []).map((v) => [v.code, v.avg_first_win_rate]),
+    );
+  } catch (error) {
+    console.error(
+      "会場別1コース勝率(補助値)取得エラー:",
+      error?.message ?? String(error),
+    );
+    return {};
+  }
 }
 
 /**
@@ -3764,9 +3784,11 @@ export const supabaseDataService = {
       cutoffDate.setDate(cutoffDate.getDate() - 730);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
+      // gradeはST考察のベースライン（st_course_baselineの(course, grade)セル）を
+      // 引くのに使う（phase a FR-1）。race_entries.gradeは実測でnull 0件・4値（A1/A2/B1/B2）
       const { data: entries, error: entriesError } = await supabase
         .from("race_entries")
-        .select("race_id, boat_number")
+        .select("race_id, boat_number, grade")
         .eq("racer_id", racerId)
         .gte("race_id", cutoffStr);
 
@@ -3842,6 +3864,22 @@ export const supabaseDataService = {
       const startTimingByKey = new Map(
         startTimingRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
       );
+      // ST考察（FR-1）用: レース単位で全艇分のSTをまとめ、Fを除いた
+      // 「ST順1位」「ST順位」「内側艇の最速ST」を求める。生の6艇分の配列は
+      // 返り値に出さず、派生値だけを各行に載せる（返り値のサイズを増やさないため。
+      // Fの除外規則は src/utils/stConsideration.js に閉じ込める）
+      const stRowsByRace = new Map();
+      startTimingRows.forEach((r) => {
+        if (!stRowsByRace.has(r.race_id)) stRowsByRace.set(r.race_id, []);
+        stRowsByRace.get(r.race_id).push(r);
+      });
+      const stContextByRace = new Map();
+      stRowsByRace.forEach((rows, raceId) => {
+        stContextByRace.set(
+          raceId,
+          deriveRaceStContext(rows, resultById.get(raceId)),
+        );
+      });
       const conditionById = new Map(conditionRows.map((r) => [r.race_id, r]));
       const exhibitionRowsByRace = new Map();
       exhibitionRows.forEach((r) => {
@@ -3874,6 +3912,8 @@ export const supabaseDataService = {
           const hasExhibitionData = exhibitionRowsByRace.has(entry.race_id);
           const soleFastestBoat = soleFastestBoatByRace.get(entry.race_id);
           const condition = conditionById.get(entry.race_id);
+          const stContext = stContextByRace.get(entry.race_id);
+          const stDerived = stContext?.byBoat.get(entry.boat_number);
           return {
             raceId: entry.race_id,
             date: race.race_date,
@@ -3903,6 +3943,15 @@ export const supabaseDataService = {
                 : null,
             // 実進入コース（BOA-257）。2025-12-04より前のレースや欠場艇はnull
             actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
+            // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
+            grade: entry.grade ?? null,
+            // ST考察（FR-1）の派生値。Fは stForRank を null にし、raceBestSt /
+            // innerMinSt / stRank の算出からも外す（符号反転はしない。ADR-0068 却下5）
+            isFlying: st?.is_flying === true,
+            stForRank: stDerived?.stForRank ?? null,
+            raceBestSt: stContext?.raceBestSt ?? null,
+            innerMinSt: stDerived?.innerMinSt ?? null,
+            stRank: stDerived?.stRank ?? null,
             // 当該レースで自艇の展示タイムが単独最速だったか。同着・データ欠落は
             // nullにし、集計時に分母から除外する（isFastestExhibition===trueの
             // 件数のみで「展示1位だった時の1着率」等を計算する）
@@ -4634,39 +4683,31 @@ export const supabaseDataService = {
         return [];
       }
 
-      const { data, error } = await supabase
-        .from("exhibition_data")
-        .select(
-          "boat_number, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank",
-        )
-        .eq("race_id", raceId);
-
-      if (error) {
-        if (/column .* does not exist/i.test(error.message)) {
-          console.warn(
-            "exhibition_data: BOA-289の新列が未適用のため旧列のみで再取得します（マイグレーション059未適用の可能性）:",
-            error.message,
-          );
-          const { data: legacyData, error: legacyError } = await supabase
-            .from("exhibition_data")
-            .select(
-              "boat_number, tilt, adjustment_weight, propeller_change, parts_changed",
-            )
-            .eq("race_id", raceId);
-          if (legacyError) {
-            console.error(
-              "exhibition_data(チルト/調整重量/部品交換)取得エラー:",
-              legacyError.message,
-            );
-            return [];
-          }
-          return legacyData ?? [];
-        }
-        console.error(
-          "exhibition_data(チルト/調整重量/当日体重/前走成績/部品交換)取得エラー:",
+      // supabaseClient.js が .throwOnError() を既定で適用するため、取得エラーは例外になる。
+      // 「新列が未適用」だけは旧列での再取得に倒したいので、ここで捕まえて分岐する
+      // （それ以外のエラーはそのまま投げて、空配列＝「データなし」に化けさせない）
+      let data;
+      try {
+        ({ data } = await supabase
+          .from("exhibition_data")
+          .select(
+            "boat_number, tilt, adjustment_weight, propeller_change, parts_changed, today_weight, prev_race_no, prev_entry_course, prev_start_timing, prev_finish_rank",
+          )
+          .eq("race_id", raceId));
+      } catch (error) {
+        if (!/column .* does not exist/i.test(error?.message ?? ""))
+          throw error;
+        console.warn(
+          "exhibition_data: BOA-289の新列が未適用のため旧列のみで再取得します（マイグレーション059未適用の可能性）:",
           error.message,
         );
-        return [];
+        const { data: legacyData } = await supabase
+          .from("exhibition_data")
+          .select(
+            "boat_number, tilt, adjustment_weight, propeller_change, parts_changed",
+          )
+          .eq("race_id", raceId);
+        return legacyData ?? [];
       }
 
       return data ?? [];
@@ -4925,75 +4966,6 @@ export const supabaseDataService = {
       }
       return data?.[0]?.feature_contributions?.racerStats ?? null;
     });
-  },
-
-  /**
-   * 指定選手が指定の枠番（艇番）で出走した直近10走の着順を取得する
-   * （BOA-307、枠別情報タブのコース別成績ドリルダウン）。
-   * 上のracerStats.courseRaceCounts（racer_aggregated_stats由来、艇番＝コース
-   * 前提で集計済み）と母集団の定義を揃えるため、ここでも実進入コース
-   * （actual_course_N、courseOfBoat）ではなくrace_entries.boat_numberで
-   * 「そのコース」を判定する。揃えないとコース別成績の分母（n）と
-   * ドリルダウンの母集団が食い違い、矛盾した表示になってしまうため
-   * （実際の進入コース変化は区別できない制約は他の枠番系機能と同じ、BOA-257）
-   */
-  getRacerCourseRecentFinishes(racerId, course) {
-    return withCache(
-      `racer-course-recent-finishes-${racerId}-${course}`,
-      async () => {
-        if (!supabase || !racerId || !course) return [];
-
-        // 中止・不成立レースを除いても10件確保できるよう多めに取得する
-        const { data: entries, error } = await supabase
-          .from("race_entries")
-          .select("race_id")
-          .eq("racer_id", racerId)
-          .eq("boat_number", course)
-          .order("race_id", { ascending: false })
-          .limit(40);
-
-        // 取得失敗を[]で返すとwithCacheが「履歴なし」として30分キャッシュしてしまう
-        // （DB高負荷時のstatement timeoutで実際に発生）。例外を投げてキャッシュを避け、
-        // 呼び出し側で「取得失敗」と「履歴なし」を区別できるようにする
-        if (error) {
-          throw new Error(
-            `race_entries（枠別直近走）取得エラー: ${error.message}`,
-          );
-        }
-        if (!entries || entries.length === 0) return [];
-
-        const raceIds = entries.map((e) => e.race_id);
-        // 最大40件のIN句1回で足りるため、エラーを握りつぶすfetchAllByInは使わず
-        // 直接クエリする（取得失敗と「結果未確定のみ」を区別するため）。
-        // 結果が未確定の出走（今日以降のレース等）はresultsが0件でも正常
-        const { data: results, error: resultsError } = await supabase
-          .from("race_results")
-          .select(
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, is_cancelled, is_no_race",
-          )
-          .in("race_id", raceIds);
-        if (resultsError) {
-          throw new Error(
-            `race_results（枠別直近走）取得エラー: ${resultsError.message}`,
-          );
-        }
-        const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
-
-        const finishes = [];
-        for (const raceId of raceIds) {
-          const result = resultById.get(raceId);
-          if (!isUsableRaceResult(result)) continue;
-          // rank1〜6のどこにも艇番が無い場合（欠場・失格・転覆等、またはrank4〜6が
-          // 未バックフィルの過去データでの4着以下）は着外としてrank=nullで返す。
-          // courseRaceCountsの母数（結果確定済みの全出走）と揃えるため除外しない
-          const rank = findBoatColumnIndex(result, "rank", course);
-          finishes.push({ race_id: raceId, rank });
-          if (finishes.length >= 10) break;
-        }
-        // raceIdsは新しい順のため、finishesも新しい順のまま返す
-        return finishes;
-      },
-    );
   },
 
   /**
@@ -5613,9 +5585,24 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定会場・指定日の結果確定済みレースを集計し、平均配当・万舟率・イン逃げ率・
-   * 決まり手別回数・進入コース別1着回数を返す（BOA-304、直前情報タブ
-   * 「本日成績サマリー」）。
+   * 指定会場・指定日の結果確定済みレースを集計し、平均配当・万舟率・1号艇の逃げ率・
+   * 決まり手別回数・進入コース別1着回数を返す（BOA-304。2026-09-24のFR-5で
+   * 直前情報タブから結果タブ・会場ページへ移設、`VenueDaySummaryCard`が使う）。
+   *
+   * nigeRateは `rank1 === 1 && winning_technique === "逃げ"` の**艇番基準**で、
+   * 「1コース逃げ」ではない。決まり手が逃げの有効23,892レースのうち
+   * rank1 !== 1（前づけで他艇が1コースを取って逃げた）が238件＝1.0%あり、
+   * これを分子から落としている（2026-09-24実測。逆にrank1===1かつ逃げで
+   * 実進入コースが1でない例は0件）。実進入コース基準に寄せると、当日の
+   * レースはactual_course_*が100%NULLのため算出できなくなるため据え置き、
+   * 画面のラベルを「1号艇の逃げ率」にして実装に合わせている
+   *
+   * byRaceは「この日の傾向 vs このレース」の比較文（FR-5 / T4-4）のために
+   * レース単位の決まり手・1着艇の実進入コースを返す。actual_course_1〜6は
+   * 既にselectしているので**追加クエリは0本**。当日のレースはバックフィルが
+   * 未了でwinnerCourseがnullになる（会場×日単位でオール・オア・ナッシングに
+   * 入るため、当日は必ずnull）。courseOfBoat()は使わない——未バックフィルの
+   * 艇番を暫定コースとみなすと、当日レースで「3コースまくり」と断定してしまう
    *
    * 平均配当/万舟率/イン逃げ率の定義・除外条件（is_cancelled/is_no_race/
    * rank1===null除外、3連単配当はpayout_trio列を使う歴史的経緯）は
@@ -5633,6 +5620,7 @@ export const supabaseDataService = {
         nigeRate: null,
         techniqueCounts: {},
         entryCourseWinCounts: {},
+        byRace: {},
       });
     }
 
@@ -5647,10 +5635,13 @@ export const supabaseDataService = {
           nigeRate: null,
           techniqueCounts: {},
           entryCourseWinCounts: {},
+          byRace: {},
         };
         if (!supabase) {
           console.error("Supabase client not initialized");
-          return empty;
+          // 環境変数の未設定は「その日は0レース」ではないため、キャッシュに
+          // 焼き付けない（.claude/rules/frontend-data-fetch.md §4）
+          return { ...empty, fetchFailed: true };
         }
 
         const { data: races, error: racesError } = await supabase
@@ -5679,10 +5670,17 @@ export const supabaseDataService = {
         let nigeCount = 0;
         const techniqueCounts = {};
         const entryCourseWinCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        const byRace = {};
 
         results.forEach((r) => {
           if (r.is_cancelled || r.is_no_race || r.rank1 === null) return;
           raceCount += 1;
+          byRace[r.race_id] = {
+            rank1: r.rank1,
+            winningTechnique: r.winning_technique ?? null,
+            // 1着艇が実際に進入したコース。当日・未バックフィル日はnull
+            winnerCourse: r[`actual_course_${r.rank1}`] ?? null,
+          };
           if (r.payout_trio !== null) {
             payoutCount += 1;
             payoutSum += r.payout_trio;
@@ -5714,6 +5712,7 @@ export const supabaseDataService = {
           nigeRate: raceCount > 0 ? (nigeCount / raceCount) * 100 : null,
           techniqueCounts,
           entryCourseWinCounts,
+          byRace,
         };
       },
       5 * 60 * 1000, // 当日分は結果反映のたびに変わりうるため短めのTTL
@@ -6057,6 +6056,76 @@ export const supabaseDataService = {
   },
 
   /**
+   * ST考察の「同コース・同級別の平均」ベースラインを取得する（phase a FR-1、ADR-0068）。
+   *
+   * `st_course_baseline` はコース(1〜6) × 級別(A1/A2/B1/B2) の24行だけの
+   * 事前集計テーブル（日次バッチ update-course-baseline-stats.js が更新する）。
+   * レース詳細を開くたびに約56万行を集計するのは非機能要件（Disk IO予算・
+   * +3クエリ以内）に反するため、画面は単純なSELECTで読む。
+   *
+   * 取得エラーは例外になる（supabaseClient.js が .throwOnError() を既定適用）。
+   * 094未適用の環境では権限エラーになるので、呼び出し側は
+   * 「セクションを出さない」に倒す（ピットレポートと同じ扱い）。
+   *
+   * キーにスキーマ版（-v1）を含める: 094をロールバックした場合、成功レスポンスが
+   * クライアントのlocalStorageに残りうるため、キーを変えて無効化できるようにする
+   */
+  getStCourseBaseline() {
+    return withCache("st-course-baseline-v1", async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      try {
+        const { data } = await supabase
+          .from("st_course_baseline")
+          .select(
+            "course, grade, window_start, window_end, window_days, runs, avg_st, stable_rate, late_rate, breakout_count, breakout_rate, st_histogram",
+          )
+          .order("course")
+          .order("grade");
+        return data ?? [];
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          // 094（匿名へのSELECT公開）が未適用の間はここを通る。
+          // withCacheに保存させないためfetchFailedを付ける
+          return { state: "forbidden", rows: [], fetchFailed: true };
+        }
+        throw error;
+      }
+    });
+  },
+
+  /**
+   * 逃げシミュレーション（この会場で1コースが逃げたときの2着コース分布）を
+   * 取得する（phase a FR-6、ADR-0068）。会場別・5行だけ。
+   *
+   * 既存の getNigeOutcomeDistribution（027、艇番基準・90日・3連単粒度）とは
+   * 粒度も期間も違う別物（あちらはBOA-158の「逃げ成功時分布」タブが使用中）。
+   */
+  getNigeSimulation(venueCode) {
+    return withCache(`nige-simulation-v1-${venueCode}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+      try {
+        const { data } = await supabase
+          .from("nige_second_by_course")
+          .select(
+            "venue_code, second_course, window_start, window_end, window_days, total_races, nige_races, second_count, second_rate, exacta_rate",
+          )
+          .eq("venue_code", venueCode)
+          .order("second_course");
+        return data ?? [];
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          return { state: "forbidden", rows: [], fetchFailed: true };
+        }
+        throw error;
+      }
+    });
+  },
+
+  /**
    * 逃げ成功時（winning_technique='逃げ'）の複勝分布を取得する（BOA-158）
    * 既存のgetOutcomeDistributionと対になるが、テーブル・集計とも分離されている
    */
@@ -6299,7 +6368,183 @@ export const supabaseDataService = {
       );
     });
   },
+
+  /**
+   * レースのピットレポート（選手コメント）を取得する（BOA-379）
+   * 設計: docs/design/pit-comments/screens.md §9（データの契約）
+   *
+   * RPCを増やさず、race_id単位の単独SELECTを2本（レース単位・艇単位）で読む。
+   * 呼ぶ前に、画面側で isPitReportCandidate（src/utils/pitReportUrl.js）を必ず通すこと
+   * （G3・一般戦・G1/G2の1R〜6Rでは呼ばない）。
+   *
+   * 戻り値の state:
+   *   "published"  コメントあり
+   *   "not_target" 公式ページが「対象外」と答えたレース（行はあるがコメント0件）
+   *   "pending"    行が無い＝まだ公開されていない（または対象外の判定もまだ）
+   *   "forbidden"  匿名にSELECT権限が無い（マイグレーション086が未適用）。
+   *                画面はセクションごと出さない。「対象外」「未公開」に化けさせない
+   * 取得失敗（ネットワーク等）は例外を投げる（BOA-359。空・対象外に化けさせない）
+   */
+  getRacePitReport(raceId) {
+    return withCache(`pit-report-${raceId}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+
+      // supabaseClient.js が .throwOnError() を既定で適用するため、取得エラーは
+      // ここに到達する前に例外になる。権限エラー（086未適用）だけは例外にせず
+      // 「セクションを出さない」に倒したいので、ここで捕まえて分岐する
+      let reportRes;
+      let commentsRes;
+      try {
+        [reportRes, commentsRes] = await Promise.all([
+          supabase
+            .from("race_pit_reports")
+            .select(
+              "status, target_from, target_to, reporter_name, comment_count, created_at, updated_at",
+            )
+            .eq("race_id", raceId)
+            .maybeSingle(),
+          supabase
+            .from("race_pit_comments")
+            .select(
+              "boat_number, racer_id, comment_text, confidence_stars, previous_race_number",
+            )
+            .eq("race_id", raceId)
+            .order("boat_number", { ascending: true }),
+        ]);
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          // 086（匿名へのSELECT公開）が未適用の間は、ここを通る。本番の公開順序の保険で、
+          // エラー表示ではなく「セクションを出さない」に倒す
+          return { ...NON_TERMINAL_PIT_REPORT, state: "forbidden" };
+        }
+        throw error;
+      }
+
+      const report = reportRes.data;
+      if (!report) return { ...NON_TERMINAL_PIT_REPORT, state: "pending" };
+      const comments = (commentsRes.data ?? []).map((row) => ({
+        boatNumber: row.boat_number,
+        racerId: row.racer_id ?? null,
+        text: row.comment_text,
+        stars: row.confidence_stars ?? null,
+        previousRaceNumber: row.previous_race_number ?? null,
+      }));
+
+      return {
+        // 行はあるがコメントが0件なら、公式が「対象外」と答えたレース
+        state: comments.length > 0 ? "published" : "not_target",
+        reporterName: report.reporter_name ?? null,
+        capturedAt: report.created_at ?? null,
+        updatedAt: report.updated_at ?? null,
+        targetRange:
+          report.target_from != null && report.target_to != null
+            ? { from: report.target_from, to: report.target_to }
+            : null,
+        comments,
+      };
+    });
+  },
+
+  /**
+   * 「本日のデータ一覧」（BOA-402）の1日ぶんを取得する。
+   *
+   * ページは morning_digest_days / morning_digest_rows の **2表だけ**を読む
+   * （ADR-0070）。抽出ロジックは早朝バッチ generate-morning-digest.js の
+   * 1箇所にしか存在しないため、ここでは整形しかしない。
+   *
+   * 戻り値の `state`:
+   *   - "generated": 生成済み（rows がある）
+   *   - "not_generated": その日の行が無い、または generated_at が NULL（生成途中で落ちた）
+   *     → 画面は「該当0件」と**区別して**表示する（spec §6）
+   *
+   * TTLは呼び出し側で明示的に渡す。`inferTtlFromKey` は race_id 形式の末尾
+   * （YYYY-MM-DD-VV-RR）を要求する正規表現のため、`morning-digest-YYYY-MM-DD`
+   * ではマッチせず、過去日でも当日TTL（30分）になってしまう。
+   *
+   * @param {string} date YYYY-MM-DD（JST）
+   */
+  getMorningDigest(date) {
+    const jstToday = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    const ttl =
+      date < jstToday ? PAST_RACE_CACHE_TTL : /* 当日は30分 */ CACHE_TTL;
+
+    return withCache(
+      `morning-digest-${date}`,
+      async () => {
+        const [{ data: day }, { data: rows }] = await Promise.all([
+          supabase
+            .from("morning_digest_days")
+            .select("*")
+            .eq("digest_date", date)
+            .maybeSingle(),
+          supabase
+            .from("morning_digest_rows")
+            .select("*")
+            .eq("digest_date", date)
+            .order("section")
+            .order("rank"),
+        ]);
+
+        // generated_at は書き込み完了のマーク（ADR-0070）。NULLなら生成途中で
+        // 落ちた状態なので「未生成」として扱い、「該当0件」と混同しない
+        if (!day || !day.generated_at) {
+          return { state: "not_generated", day: day ?? null, sections: {} };
+        }
+
+        const sections = {
+          featured: [],
+          nige: [],
+          makuri: [],
+          nigashi: [],
+          flying: [],
+          returned: [],
+        };
+        for (const row of rows ?? []) {
+          if (!sections[row.section]) sections[row.section] = [];
+          sections[row.section].push(row);
+        }
+
+        return { state: "generated", day, sections };
+      },
+      ttl,
+    );
+  },
 };
+
+/**
+ * 終端でない状態（pending・forbidden）の戻り値のひな形。
+ *
+ * `fetchFailed: true` は withCache に「この結果を保存するな」と伝えるためのもので、
+ * 取得自体は成功している（画面は state だけを見る）。保存してしまうと、
+ * (1) 公開待ちのレースでコメントが公開されても、再読み込みでキャッシュ（本日分30分・
+ *     過去分7日）が返り続けて表示が更新されない、
+ * (2) マイグレーション086の適用後も、適用前に見たレースが最大7日間「権限なし＝非表示」
+ *     のままになる、という不具合になる。
+ */
+const NON_TERMINAL_PIT_REPORT = Object.freeze({
+  state: "pending",
+  reporterName: null,
+  capturedAt: null,
+  updatedAt: null,
+  targetRange: null,
+  comments: [],
+  fetchFailed: true,
+});
+
+/**
+ * PostgRESTが返す「権限が無い」エラーか。
+ * PostgreSQLの insufficient_privilege（42501）のほか、GRANTが無いテーブルへの
+ * アクセスは PostgREST が 401/42501 や "permission denied for table ..." で返す
+ */
+function isPermissionDeniedError(error) {
+  if (!error) return false;
+  if (error.code === "42501") return true;
+  return /permission denied/i.test(error.message ?? "");
+}
 
 /**
  * 1走分の勝敗を{win, top2, top3}アキュムレータに加算する共通ロジック。

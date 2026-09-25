@@ -1,0 +1,64 @@
+/* DigestSection - 「本日のデータ一覧」のセクション共通枠（BOA-402）
+ *
+ * 色は design-tokens.css の**意味トークン**のみを使う。見出し・説明・空状態は
+ * ページ背景に直接乗るテキストなので、生パレット値（--color-gray-900 等）だと
+ * ダークモードで不可視になる（2026-08-25に選手ページで実際に起きたバグ）。
+ */
+
+.digest-section {
+  margin-bottom: 1.5rem;
+}
+
+.digest-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.digest-section__title {
+  margin: 0;
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.digest-section__count {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.digest-section__description,
+.digest-section__notice,
+.digest-section__empty {
+  margin: 0 0 0.6rem;
+  font-size: var(--font-size-xs);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.digest-section__notice {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+  background: var(--surface-card);
+}
+
+.digest-section__empty {
+  padding: 1rem;
+  border: 1px dashed var(--border-hairline);
+  border-radius: 10px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .digest-section {
+    margin-bottom: 1rem;
+  }
+
+  .digest-section__title {
+    font-size: var(--font-size-2xl);
+  }
+}

@@ -94,6 +94,13 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
       .getRaceEntryOfficialRatesBreakdown(raceId)
       .then((data) => {
         if (!cancelled) setOfficialRates(data);
+      })
+      .catch((err) => {
+        // catchしないとofficialRatesがnullのまま残り、loading判定
+        // （officialRates === null）が永久にtrueになって勝率・連対率のセルが
+        // スケルトンのまま固まる。下のensureScopedStatsと同じ扱いに揃える
+        console.error("公式勝率取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setOfficialRates([]);
       });
     return () => {
       cancelled = true;
@@ -309,8 +316,12 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
               setGrade(preset.grade);
             }}
           >
-            {t(`basicInfo.scopes.${preset.scope}`)}
-            {t(`basicInfo.grades.${preset.grade}`)}
+            {/* 日本語は「当地一般戦」と続けて書くが、英語・韓国語は語間に
+                スペースが要るため区切りをロケール側に持たせる */}
+            {t("basicInfo.presetLabel", {
+              scope: t(`basicInfo.scopes.${preset.scope}`),
+              grade: t(`basicInfo.grades.${preset.grade}`),
+            })}
           </button>
         ))}
       </div>

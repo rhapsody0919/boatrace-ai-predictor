@@ -1,0 +1,166 @@
+/* FeaturedRaceCard - 今日の注目レース（BOA-402） */
+
+.featured-race {
+  margin-bottom: 1.5rem;
+  background: var(--surface-card);
+  border: 2px solid var(--brand-accent-primary);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.featured-race__bar {
+  height: 4px;
+  background: var(--brand-accent-primary);
+}
+
+.featured-race__body {
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.featured-race__eyebrow {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--brand-accent-primary);
+}
+
+.featured-race__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.featured-race__race {
+  font-size: var(--font-size-4xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.featured-race__deadline {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.featured-race__racer {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.featured-race__racer-id {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.featured-race__racer-name {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.featured-race__grade {
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  /* バッジは自前の固定背景を持つため生パレット値でよい */
+  background: var(--ryujin-navy-600);
+  color: var(--ryujin-gold-300);
+}
+
+.featured-race__boat {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.featured-race__stats {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.featured-race__stat {
+  flex-grow: 1;
+  flex-basis: 0;
+  min-width: 0;
+  padding: 0.6rem;
+  background: var(--surface-page);
+  border-radius: 8px;
+}
+
+.featured-race__stat-label {
+  display: block;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  margin-bottom: 0.2rem;
+}
+
+.featured-race__stat-value {
+  display: block;
+  font-size: var(--font-size-6xl);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--brand-accent-primary);
+}
+
+.featured-race__stat-value--plain {
+  color: var(--text-primary);
+}
+
+.featured-race__stat-unit {
+  font-size: var(--font-size-lg);
+}
+
+.featured-race__stat-sub {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+.featured-race__reason {
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  background: var(--surface-page);
+  border-left: 3px solid var(--brand-accent-primary);
+  border-radius: 0 8px 8px 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+.featured-race__cta {
+  display: block;
+  padding: 0.7rem;
+  border-radius: 8px;
+  background: var(--ryujin-navy-600);
+  color: var(--ryujin-gold-300);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.featured-race__cta:hover {
+  background: var(--ryujin-navy-100);
+}
+
+@media (max-width: 480px) {
+  .featured-race__body {
+    padding: 0.75rem;
+  }
+
+  .featured-race__race {
+    font-size: var(--font-size-3xl);
+  }
+
+  .featured-race__stat-value {
+    font-size: var(--font-size-5xl);
+  }
+}

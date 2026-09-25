@@ -27,7 +27,7 @@
  *       4案（3% / 5% / 10% / 除外なし）を同時評価する。
  *
  * ■ 戦略
- *   対象レース: feature_contributions あり & race_results.rank1 = top_pick。
+ *   対象レース: race_results.rank1 = top_pick。
  *   買い目: outcome_distribution(first_boat=top_pick) のうち
  *           probability >= 閾値 のパターンを全買い（100円/点）。
  *   各案について coverage_rate（除外前の出現率合計に対し残った割合）を測定。
@@ -39,6 +39,11 @@
  * ■ 注意
  *   - outcome_distribution は現スナップショットのみ → 現分布を全期間に適用する近似。
  *   - 対象期間は feature_contributions が存在する 2026-03-06 以降がデフォルト。
+ *   - BOA-408（predictions.feature_contributions の3モデル重複解消）以降、
+ *     safeBet・upsetFocus行自身の feature_contributions はNULL。nige_probability
+ *     （メタ情報）は同一race_idのstandard行の値で補う（値は従来から3モデルで
+ *     完全一致していたため、この代替で分析結果自体は変わらない）。model_idでの
+ *     絞り込みは行わない（by_modelの内訳がこのスクリプトの主目的のため）。
  *
  * 使い方:
  *   node scripts/analysis/turnprediction-guided-outcome-distribution.js [--period 90] [--from 2026-03-06] [--format json,csv]
@@ -155,19 +160,30 @@ async function fetchRaceResults(from, to) {
 }
 
 async function fetchPredictions(from, to) {
+  // model_id・feature_contributionsどちらでも絞り込まない。BOA-408（standard行にのみ
+  // feature_contributionsを書き、safeBet・upsetFocusはNULLにする変更）以降、
+  // ここでfeature_contributions非NULLを条件にすると、standard以外のモデル行が
+  // 丸ごと除外されbyModelの内訳（本分析の主目的）が壊れる。top_pickはスキーマ上
+  // 常にNOT NULLのため、この条件を外しても対象レース数自体は変わらない
   return fetchAll(
     "predictions",
     "race_id, model_id, top_pick, top_2nd, top_3rd, feature_contributions, payout_trifecta",
     (q) =>
       q
         .eq("is_shadow", false)
-        .not("feature_contributions", "is", null)
         .gte("race_id", from)
         .lte("race_id", `${to}-99-99`),
   );
 }
 
-/** 1レース1モデルを評価。各案の買い目・的中・投資・払戻を算出。 */
+/**
+ * 1レース1モデルを評価。各案の買い目・的中・投資・払戻を算出。
+ *
+ * @param {Map<string, object>} standardFcByRaceId - race_id → standard行のfeature_contributions。
+ *   BOA-408以降safeBet・upsetFocusのfeature_contributionsはNULLになるため、
+ *   nige_probability（メタ情報）はstandard行から補う（turnPredictionは3モデルで
+ *   常に同一内容だったため、この代替で値は変わらない）
+ */
 function evaluateRace({
   raceId,
   venueCode,
@@ -175,6 +191,7 @@ function evaluateRace({
   result,
   pred,
   distByVenueFirst,
+  standardFcByRaceId,
 }) {
   const topPick = pred.top_pick;
   const actualPattern = `${result.rank1}-${result.rank2}-${result.rank3}`;
@@ -187,8 +204,11 @@ function evaluateRace({
     0,
   );
 
-  // 展開予測メタ情報（逃げ確率）
-  const tp = pred.feature_contributions?.turnPrediction;
+  // 展開予測メタ情報（逃げ確率）。BOA-408以降safeBet・upsetFocus行自身の
+  // feature_contributionsはNULLのため、standard行（同一race_id）の値で補う
+  const fc =
+    pred.feature_contributions ?? standardFcByRaceId?.get(raceId) ?? null;
+  const tp = fc?.turnPrediction;
   const nigeProbability = tp?.distribution?.nige ?? tp?.probability ?? null;
 
   // AI 単独（1点: top_pick-top_2nd-top_3rd）
@@ -342,9 +362,7 @@ async function main() {
     "  - feature_contributions は 2026-03-06 以降のみ存在 → それ以前は遡れない。",
   );
   console.log("");
-  console.log(
-    "対象レース: feature_contributions あり & race_results.rank1 = top_pick。",
-  );
+  console.log("対象レース: race_results.rank1 = top_pick。");
   console.log(
     "買い目: outcome_distribution(first_boat=top_pick) で probability>=閾値 を全買い（100円/点）。",
   );
@@ -359,19 +377,22 @@ async function main() {
   const distByVenueFirst = await fetchOutcomeDistribution();
   const resultMap = await fetchRaceResults(args.from, args.to);
   const predictions = await fetchPredictions(args.from, args.to);
+  // BOA-408以降、standard以外（safeBet・upsetFocus）行のfeature_contributionsは
+  // NULLのため、nige_probability（メタ情報）算出時にstandard行の値で補う
+  const standardFcByRaceId = new Map(
+    predictions
+      .filter((p) => p.model_id === "standard" && p.feature_contributions)
+      .map((p) => [p.race_id, p.feature_contributions]),
+  );
   console.log(
     `  outcome_distribution: ${distByVenueFirst.size} 個の(venue,first)キー`,
   );
   console.log(`  race_results: ${resultMap.size}件`);
-  console.log(
-    `  predictions(feature_contributions あり): ${predictions.length}件`,
-  );
+  console.log(`  predictions: ${predictions.length}件`);
   console.log("");
 
   if (predictions.length === 0) {
-    console.log(
-      "❌ feature_contributions を持つ predictions が0件。--from を調整してください。",
-    );
+    console.log("❌ predictions が0件。--from を調整してください。");
     return;
   }
 
@@ -401,13 +422,14 @@ async function main() {
       result,
       pred,
       distByVenueFirst,
+      standardFcByRaceId,
     });
     if (!row.distAvailable) continue;
     cntDistAvailable++;
     matched.push(row);
   }
 
-  console.log(`  feature_contributions あり予測: ${cntPred}件`);
+  console.log(`  predictions: ${cntPred}件`);
   console.log(`  + 結果あり: ${cntWithResult}件`);
   console.log(`  + rank1=top_pick（AI予測1着的中）: ${cntTopPickWon}件`);
   console.log(`  + 出目分布データあり（最終対象）: ${cntDistAvailable}件`);
@@ -527,8 +549,9 @@ async function main() {
     "そのため『展開予測から top_pick を導出』『予測下位N艇を除外』は実装不能。",
     "本分析は top_pick（predictions.top_pick）をそのまま使用し、出目分布の出現率で低確率パターンを除外する。",
     "turnPrediction.distribution.nige（逃げ確率）は各レースの信頼度メタ情報として nige_probability に記録。",
-    "feature_contributions は 2026-03-06 以降のみ存在 → 対象期間はそれ以降。",
-    "対象レース: feature_contributions あり & race_results.rank1 = top_pick（AI予測1着が的中）。",
+    "feature_contributions は 2026-03-06 以降のみ存在 → 対象期間はそれ以降。BOA-408以降standard以外" +
+      "（safeBet・upsetFocus）行自身はNULLのため、同一race_idのstandard行の値で補っている。",
+    "対象レース: race_results.rank1 = top_pick（AI予測1着が的中）。",
     "買い目: outcome_distribution(first_boat=top_pick) で probability>=閾値 を全買い（100円/点）。",
     "coverage_rate: 残ったパターンの出現率合計 / 除外前の出現率合計（低確率パターン除外による損失の逆指標）。",
     "outcome_distribution は現スナップショットのみ → 現分布を全期間に適用する近似値。",

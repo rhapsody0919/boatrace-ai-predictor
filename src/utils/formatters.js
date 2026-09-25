@@ -46,6 +46,11 @@ export const formatDateLocalized = (dateStr, lang) => {
   const date = new Date(dateStr + "T00:00:00+09:00");
   const locale = INTL_LOCALE_BY_LANG[lang] || INTL_LOCALE_BY_LANG.ja;
   return new Intl.DateTimeFormat(locale, {
+    // timeZoneを渡さないとIntlは閲覧者のローカルTZで整形するため、負のオフセットの
+    // 地域（America/Los_Angeles等）で開催日が1日前にずれる。渡すのは常にJSTの
+    // 開催日（YYYY-MM-DD）なので、整形もJST固定にする（2026-09-24、FR-5の
+    // 実装前レビューで発覚。既存の正しい先例はRacePitReportSection.jsx）
+    timeZone: "Asia/Tokyo",
     year: "numeric",
     month: "long",
     day: "numeric",

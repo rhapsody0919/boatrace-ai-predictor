@@ -1,0 +1,185 @@
+{
+  "_comment": "claude.aiのRoutine棚卸し（2026-09-24実測）。アカウント切替時に新アカウントで再作成するための元データ。APIトークンの値は含まない（claude.ai側にのみ存在し、再発行が必要）。",
+  "source_account_uuid": "1a149883-471a-4472-a508-1ca142d19696",
+  "environment": {
+    "id": "env_017w737AHTxf72HtiRe99La3",
+    "name": "sns-hub-v3",
+    "network_access": "custom",
+    "allowed_domains": ["*.supabase.co", "hooks.slack.com", "*.boat-ai.jp"],
+    "include_default_package_manager_list": true,
+    "environment_variable_names": ["SUPABASE_URL", "SUPABASE_SERVICE_KEY", "SLACK_WEBHOOK_URL"],
+    "note": "旧環境sns-hub・sns-hub-v2は未使用。Remotionレンダリングは/opt/pw-browsers配下のPlaywright headless_shellを--browser-executableで明示指定、ffmpegはapt-getで都度導入"
+  },
+  "defaults": {
+    "model": "claude-sonnet-5",
+    "sources": [{ "git_repository": { "url": "https://github.com/rhapsody0919/boatrace-ai-predictor" } }],
+    "persist_session": false,
+    "worktree": false,
+    "notifications": { "email": false, "push": false, "slack": false }
+  },
+  "routines": [
+    {
+      "name": "sns-hub-video-compaction",
+      "trigger_id": "trig_01JXV2cDnzEBHxS2zvrCbLLy",
+      "migrate": true,
+      "enabled": true,
+      "cron_expression_utc": "0 18 * * *",
+      "schedule_jst": "毎日3:00",
+      "allowed_tools": ["Bash", "Read"],
+      "connectors": ["Claude_Code_Remote"],
+      "api_trigger": false,
+      "fire_env_prefix": null,
+      "prompt_file": "sns-hub-video-compaction.prompt.md",
+      "note": "Supabase Storageを不可逆に上書きする。新旧どちらか一方でのみ動かすこと"
+    },
+    {
+      "name": "sns-hub-content-generation",
+      "trigger_id": "trig_01WW4Kc6vd7WtV9SXWJcFGis",
+      "migrate": true,
+      "enabled": false,
+      "cron_expression_utc": "0 0 * * *",
+      "schedule_jst": "毎日9:00",
+      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
+      "connectors": ["Claude_Code_Remote"],
+      "api_trigger": true,
+      "fire_env_prefix": "SNS_HUB_ROUTINE",
+      "prompt_file": "sns-hub-content-generation.prompt.md",
+      "note": "チャネル別パイプライン未整備プラットフォームのフォールバック発火先。生成側の主役はsns-topic-gate体系に移行済み"
+    },
+    {
+      "name": "sns-topic-proposer-weekly",
+      "trigger_id": "trig_01NNE7jviPWqqgjctimGzJF5",
+      "migrate": true,
+      "enabled": false,
+      "cron_expression_utc": "0 18 * * *",
+      "schedule_jst": "毎日3:00（プロンプト内で月曜のみ実行と判定）",
+      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
+      "connectors": ["Linear", "Claude_Code_Remote"],
+      "api_trigger": true,
+      "fire_env_prefix": "TOPIC_PROPOSER_WEEKLY_ROUTINE",
+      "prompt_file": "sns-topic-proposer-weekly.prompt.md"
+    },
+    {
+      "name": "sns-topic-proposer-daily-auto",
+      "trigger_id": "trig_01B155yYLeutCbMzhMAh8n5j",
+      "migrate": true,
+      "enabled": false,
+      "cron_expression_utc": "0 18 * * *",
+      "schedule_jst": "毎日3:00",
+      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
+      "connectors": ["Linear", "Claude_Code_Remote"],
+      "api_trigger": true,
+      "fire_env_prefix": "TOPIC_PROPOSER_DAILY_AUTO_ROUTINE",
+      "prompt_file": "sns-topic-proposer-daily-auto.prompt.md"
+    },
+    {
+      "name": "sns-pipeline-x",
+      "trigger_id": "trig_01F33qUruzoQnTmyu2mySqvq",
+      "migrate": true,
+      "enabled": false,
+      "cron_expression_utc": "38 * * * *",
+      "schedule_jst": "毎時38分",
+      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
+      "connectors": ["Linear", "Claude_Code_Remote"],
+      "api_trigger": true,
+      "fire_env_prefix": "SNS_X_ROUTINE",
+      "prompt_file": "sns-pipeline-x.prompt.md"
+    },
+    {
+      "name": "sns-pipeline-tiktok",
+      "trigger_id": "trig_01JHCnHuuVYWgRUNh1tw4m7H",
+      "migrate": true,
+      "enabled": false,
+      "cron_expression_utc": "15 * * * *",
+      "schedule_jst": "毎時15分",
+      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
+      "connectors": ["Linear", "Claude_Code_Remote"],
+      "api_trigger": true,
+      "fire_env_prefix": "SNS_TIKTOK_ROUTINE",
+      "prompt_file": "sns-pipeline-tiktok.prompt.md"
+    },
+    {
+      "name": "sns-pipeline-blog",
+      "trigger_id": "trig_01MBJ5YYkkULbsDTgesTJ9tc",
+      "migrate": true,
+      "enabled": false,
+      "cron_expression_utc": "55 * * * *",
+      "schedule_jst": "毎時55分",
+      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
+      "connectors": ["Linear", "Claude_Code_Remote"],
+      "api_trigger": true,
+      "fire_env_prefix": "SNS_BLOG_ROUTINE",
+      "prompt_file": "sns-pipeline-blog.prompt.md"
+    },
+    {
+      "name": "sns-pipeline-note",
+      "trigger_id": "trig_01YRpmbVvnoMXA4qkVciyQov",
+      "migrate": true,
+      "enabled": false,
+      "cron_expression_utc": "10 * * * *",
+      "schedule_jst": "毎時10分",
+      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
+      "connectors": ["Linear", "Claude_Code_Remote"],
+      "api_trigger": true,
+      "fire_env_prefix": "SNS_NOTE_ROUTINE",
+      "prompt_file": "sns-pipeline-note.prompt.md"
+    },
+    {
+      "name": "sns-pipeline-youtube",
+      "trigger_id": "trig_01SaVkryqNWbxNAHxZ11LK9t",
+      "migrate": true,
+      "enabled": false,
+      "cron_expression_utc": "1 * * * *",
+      "schedule_jst": "毎時1分",
+      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
+      "connectors": ["Linear", "Claude_Code_Remote"],
+      "api_trigger": true,
+      "fire_env_prefix": "SNS_YOUTUBE_ROUTINE",
+      "prompt_file": "sns-pipeline-youtube.prompt.md"
+    },
+    {
+      "name": "ネタ駆動マルチチャネルパイプライン",
+      "trigger_id": "trig_01BAymvDLFw9ZbFUBXk6h8Nq",
+      "migrate": false,
+      "enabled": true,
+      "cron_expression_utc": null,
+      "schedule_jst": "API経由のみ",
+      "note": "2026-09-01の旧設計。sns-topic-gate体系（ADR 0036〜0038）に置き換え済みで、設計文書はdocs/archive/へ移動済み。移送対象外（削除候補）"
+    },
+    {
+      "name": "sns-hub-diagnostic-external-research",
+      "trigger_id": "trig_01NZZ2ZfA34krpHFHeSz7hhG",
+      "migrate": false,
+      "enabled": false,
+      "note": "2026-08-29のネットワーク到達性診断。結論はsns_marketing_hub_operational_stateメモリとdocs/design/sns-hub-phase2-pdca-loop/spec.mdに記録済み。移送対象外"
+    },
+    {
+      "name": "sns-hub-chromium-proxy-diagnosis(one-off)",
+      "trigger_id": "trig_01MB9exsp9po7pV7DX3GXULv",
+      "migrate": false,
+      "enabled": true,
+      "note": "one-off技術検証。結論は記録済み。移送対象外（削除候補）"
+    },
+    {
+      "name": "フローAスクリーンショット取得技術検証(one-off)",
+      "trigger_id": "trig_01SNd3cBHabNWXEeviQKP6c4",
+      "migrate": false,
+      "enabled": true,
+      "note": "one-off技術検証。移送対象外（削除候補）"
+    },
+    {
+      "name": "フローA ブログ記事執筆Routine技術検証(one-off)",
+      "trigger_id": "trig_01JdMoaazYM5XeiHYzpRCe3a",
+      "migrate": false,
+      "enabled": true,
+      "note": "one-off技術検証。移送対象外（削除候補）"
+    },
+    {
+      "name": "CLAUDE.md自動読み込み検証(one-off)",
+      "trigger_id": "trig_018eqrizF46XaRnDjnegwX7N",
+      "migrate": false,
+      "enabled": false,
+      "note": "one-off診断。移送対象外（削除候補）"
+    }
+  ]
+}

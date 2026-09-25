@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
 import { BOAT_COLORS } from "../../utils/colors";
+import InlineFetchError from "../InlineFetchError";
 import "./VenueCharacteristicsCard.css";
 
 // このサンプル数を下回る会場は表示しない（ノイズが大きいため）
@@ -29,12 +30,16 @@ export default function VenueCharacteristicsCard({ venueCode }) {
   const [venueInfo, setVenueInfo] = useState(null);
   const [nationalAverage, setNationalAverage] = useState(null);
   const [loading, setLoading] = useState(true);
+  // 取得失敗を「開催実績が少ない会場」と同じ非表示に化けさせない（BOA-359）
+  const [failed, setFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     const loadData = async () => {
       setLoading(true);
+      setFailed(false);
       try {
         const [outcome, technique, info, national] = await Promise.all([
           supabaseDataService.getOutcomeDistribution(venueCode),
@@ -50,7 +55,8 @@ export default function VenueCharacteristicsCard({ venueCode }) {
         setLoading(false);
       } catch (err) {
         if (cancelled) return;
-        console.error("会場特性データ取得エラー:", err.message);
+        console.error("会場特性データ取得エラー:", err?.message ?? String(err));
+        setFailed(true);
         setLoading(false);
       }
     };
@@ -59,7 +65,16 @@ export default function VenueCharacteristicsCard({ venueCode }) {
     return () => {
       cancelled = true;
     };
-  }, [venueCode]);
+  }, [venueCode, reloadKey]);
+
+  if (failed) {
+    return (
+      <InlineFetchError
+        message={t("venueCharacteristics.fetchError")}
+        onRetry={() => setReloadKey((n) => n + 1)}
+      />
+    );
+  }
 
   if (loading || !outcomeData || outcomeData.total_races < MIN_TOTAL_RACES) {
     return null;

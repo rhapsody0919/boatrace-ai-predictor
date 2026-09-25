@@ -1,0 +1,53 @@
+name: Aggregate Racer Course Technique Stats
+
+# 「本日のデータ一覧」（BOA-402）が使う2つの事前集計テーブルを日次で更新する。
+#   - venue_course_technique_baseline（会場 × グレード × 実進入コース、612行）
+#   - racer_course_technique_stats（選手 × 実進入コース、9,471行）
+#
+# 実行基盤がVercelではなくGitHub Actionsなのは、ADR-0066が
+# 「取得済みデータのDB内集計・統計更新（aggregate-stats・update-*-stats等）」を
+# 明示的に対象外（GitHub Actionsのまま）としているため。本ジョブは外部サイトへの
+# 通信を一切せず、自社DBの集計結果を同じDBに書くだけ。
+#
+# 実行時刻は JST 01:10。重い全期間スキャン（約26万行）が他の集計と同時に走らないよう、
+# update-nige-outcome-distribution（JST 00:42）・aggregate-course-baseline-stats（JST 00:50）
+# の後ろに置く。集計は「利用可能な全期間」の移動窓なので、起動が数時間ずれても
+# 対象範囲はほぼ変わらない。
+#
+# 朝のダイジェスト生成（generate-morning-digest.yml、JST 05:30）はこの結果を読むため、
+# 必ずこちらが先に走る必要がある。ダイジェスト側の完全性チェックが
+# racer_course_technique_stats.window_end を見て、古ければ書き込まない。
+#
+# continue-on-error は付けない（ジョブ全体を成功に見せない）。
+# スクリプト側は「集計結果が0行」と「変更が無くて書き込みが0行」を区別し、
+# 前者だけをエラーにする。
+# ⚠️ 定時実行は Vercel Cron（api/cron/racer-course-technique-stats.js、vercel.json の
+# `0 4 * * *` = JST 13:00）へ移した（ADR-0066 §改訂1）。
+# 旧 JST 01:10 は、材料である race_results.actual_course_* を書く kfile_sync（07:00 JST）より
+# 6時間早く、前日ぶんを取り込めなかった（plan.md §2.4）。ここに schedule を復活させないこと。
+# このワークフローは、障害時の手動復旧用に残している。
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - name: Run aggregation script
+        run: node scripts/daily/update-racer-course-technique-stats.js
+        env:
+          TZ: "Asia/Tokyo"
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

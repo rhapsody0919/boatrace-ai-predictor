@@ -1,0 +1,41 @@
+/* DataFetchError.css と同じく、check-token-contrast.js で検証済みの組み合わせ
+   （--surface-card × --color-warning-dark-text）のみ使う。
+   セクション内に置く前提なので、DataFetchError より余白と文字を小さくする */
+.inline-fetch-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  margin: 0.5rem 0;
+  background: var(--surface-card);
+  border: 1px solid var(--color-warning);
+  border-radius: 6px;
+  color: var(--color-warning-dark-text);
+  font-size: 0.85rem;
+}
+
+.inline-fetch-error__text {
+  font-weight: 600;
+}
+
+.inline-fetch-error__retry {
+  min-height: 44px;
+  padding: 0.4rem 0.9rem;
+  background: var(--color-warning);
+  color: var(--color-black);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+@media (max-width: 480px) {
+  .inline-fetch-error {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}

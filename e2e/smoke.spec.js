@@ -1062,7 +1062,56 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });
 
-  test("枠別情報タブで選手×枠番別成績の棒グラフと決まり手傾向が表示され、枠番タップで直近10走が開く（BOA-307）", async ({
+  test("この日の水面傾向が結果タブ（払戻の下）と会場ページに出て、直前情報タブからは消えている（BOA-222 / phase a T4-1〜T4-4）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+
+    // 結果確定済みレースは「結果」タブが既定で開く
+    await expect(page.locator(".vds-card")).toBeVisible({ timeout: 25000 });
+    // 見出し・注記は開催日基準（過去日のレースで「本日」と書かない）
+    await expect(page.locator(".vds-heading")).not.toContainText("本日");
+    await expect(page.locator(".vds-note")).not.toContainText("本日");
+    // ラベルは実装（艇番基準）に合わせた「1号艇の逃げ率」。「イン逃げ率」ではない
+    await expect(page.locator(".vds-stat-label")).toHaveCount(3);
+    await expect(page.locator(".vds-card")).toContainText("1号艇の逃げ率");
+    await expect(page.locator(".vds-card")).not.toContainText("イン逃げ率");
+
+    // 払戻より後ろ（結果タブの最下部）に置かれている
+    const cardAfterPayout = await page.evaluate(() => {
+      const root = document.querySelector(".race-result");
+      const payout = root?.querySelector(".rr-payout-table");
+      const card = root?.querySelector(".vds-card");
+      if (!payout || !card) return null;
+      return Boolean(
+        payout.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
+    expect(cardAfterPayout).toBe(true);
+
+    // 内訳は折りたたみ。開くと決まり手別・進入コース別が出る
+    await expect(page.locator(".vds-detail")).toHaveCount(0);
+    await page.locator(".vds-detail-toggle").click();
+    await expect(page.locator(".vds-detail")).toBeVisible();
+    expect(await page.locator(".vds-badge").count()).toBeGreaterThan(0);
+
+    // 直前情報タブからは消えている（移設元のクラスも残っていない）
+    await page.locator(".race-tabs-btn", { hasText: "直前情報" }).click();
+    await expect(page.locator(".rbi-card").first()).toBeVisible({
+      timeout: 25000,
+    });
+    await expect(page.locator(".vds-card")).toHaveCount(0);
+    await expect(page.locator(".rbi-stat-grid")).toHaveCount(0);
+
+    // 会場ページ（過去日）にも出る。こちらは「このレース」の節を出さない
+    await page.goto("/races/2026-08-11/5");
+    await expect(page.locator(".vds-card")).toBeVisible({ timeout: 25000 });
+    await expect(page.locator(".vds-lede")).not.toContainText("このレース");
+  });
+
+  test("枠別情報タブの既定ビューが今日の想定コース×3指標で、全コース比較は折りたたみから開ける（BOA-307 / phase a T3-1）", async ({
     page,
   }) => {
     await page.goto("/races/2026-08-11");
@@ -1074,29 +1123,195 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 他のタブ同様、枠別情報タブ表示中はデータ出走表等の分析ツール群を隠す
     await expect(page.locator(".data-race-table")).toHaveCount(0);
 
-    // 選手チップ6人・枠番1〜6の棒グラフが表示される
     await expect(page.locator(".rwit-boat-chip")).toHaveCount(6);
-    await expect(page.locator(".rwit-bar-row")).toHaveCount(6, {
+
+    // 既定ビュー: 今日の想定コース1本 × 1着率/2連対率/3連対率 + 走数
+    await expect(page.locator(".rwit-today-row")).toHaveCount(6, {
+      timeout: 20000,
+    });
+    await expect(page.locator(".rwit-today-metric-th")).toHaveCount(3);
+    await expect(page.locator(".rwit-today-course")).toContainText("1コース");
+    // 枠なり進入の仮定であることを明記する（進入は本番まで確定しない）
+    await expect(page.locator(".rwit-today-assumption")).toContainText(
+      "枠なり",
+    );
+
+    // 指標チップは既定では出さない（既定ビューは3指標を同時に出すため不要）。
+    // toBeHidden()は要素が存在しない場合も通るため、存在することも確かめる
+    await expect(page.locator(".rwit-metric-row")).toHaveCount(1);
+    await expect(page.locator(".rwit-metric-row")).toBeHidden();
+
+    // 行をタップすると直近10走の帯（RecentRunsBar）が開く
+    await page.locator(".rwit-today-label-button").first().click();
+    await expect(page.locator(".rwit-expanded")).toBeVisible();
+    await expect(page.locator(".rrb-item").first()).toBeVisible({
+      timeout: 20000,
+    });
+    expect(await page.locator(".rrb-item").count()).toBeLessThanOrEqual(10);
+    // ST順位を「(N位)」形式で併記する（phase a T3-4）
+    await expect(page.locator(".rrb-st-rank").first()).toBeVisible();
+
+    // もう一度タップすると閉じる
+    await page.locator(".rwit-today-label-button").first().click();
+    await expect(page.locator(".rwit-expanded")).toHaveCount(0);
+
+    // 選手を切り替えると想定コースも移る
+    await page.locator(".rwit-boat-chip").nth(2).click();
+    await expect(page.locator(".rwit-today-course")).toContainText("3コース", {
+      timeout: 20000,
+    });
+    // 履歴の取得を待つ（新人等で0件だと以降のセレクタが消え、原因の分からない
+    // タイムアウトになるため、ここで表の存在を確かめて切り分けを効かせる）
+    await expect(page.locator(".rwit-today-table")).toBeVisible({
       timeout: 20000,
     });
 
-    // 指標を切り替えても6本の棒が維持される
+    // 全コース比較は既定で閉じており、折りたたみを開くと6×6のグリッドが出る
+    await expect(page.locator(".rwit-grid")).toHaveCount(1);
+    await expect(page.locator(".rwit-grid")).toBeHidden();
+    await page.locator(".rwit-fold-summary").click();
+    await expect(page.locator(".rwit-grid")).toBeVisible();
+    await expect(page.locator(".rwit-grid tbody tr")).toHaveCount(6);
+    await expect(
+      page.locator(".rwit-grid thead th.rwit-grid-course-th"),
+    ).toHaveCount(6);
+    // 指標チップは折りたたみの中にあり、切り替えてもグリッドの形は維持される
+    await expect(page.locator(".rwit-metric-row")).toBeVisible();
     await page.locator(".rwit-chip", { hasText: "3連対率" }).click();
-    await expect(page.locator(".rwit-bar-row")).toHaveCount(6);
+    await expect(page.locator(".rwit-grid tbody tr")).toHaveCount(6);
 
     // 決まり手傾向カード（会場全体の全艇合算）が表示される
     await expect(page.locator(".rwit-tech-row").first()).toBeVisible({
       timeout: 20000,
     });
 
-    // 枠番の棒をタップすると直近10走の着順ドリルダウンが開く
-    await page.locator(".rwit-bar-row").first().click();
-    await expect(page.locator(".rwit-expanded")).toBeVisible();
-    await expect(page.locator(".rwit-streak-dot").first()).toBeVisible({
-      timeout: 20000,
-    });
-    expect(await page.locator(".rwit-streak-dot").count()).toBeLessThanOrEqual(
-      10,
+    // ページ全体は横スクロールしない（横スクロールはグリッド内だけに閉じる）
+    const docOverflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    );
+    expect(docOverflow).toBeLessThanOrEqual(1);
+  });
+
+  test("枠別情報タブのST考察カードが、同コース・同級別の平均との差つきで表示される（phase a T3-2）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+
+    // 094（st_course_baseline）が未適用の環境ではセクションごと出さない設計なので、
+    // カードが出ない場合はこのテストをスキップする（本番・CIは適用済み）
+    const card = page.locator(".rsc-card");
+    await card.waitFor({ state: "visible", timeout: 25000 });
+
+    // 5行（級別/走数/安定率/抜出/出遅率）× 6艇
+    await expect(page.locator(".rsc-grid tbody tr")).toHaveCount(5);
+    await expect(page.locator(".rsc-grid thead th.rsc-boat-th")).toHaveCount(6);
+
+    // 集計期間が実測値で表示される（「直近1年」のような固定文言にしない）
+    await expect(page.locator(".rsc-window")).toContainText(
+      /\d{4}-\d{2}-\d{2}/,
+    );
+
+    // 差が表示され、方向（良い/悪い）で色分けされる。
+    // どちらの向きが何件出るかは対象レースの選手次第なので、件数の内訳は問わない
+    // （本番Supabase直結でDB状態に左右されるため）
+    const diffCount = await page.locator(".rsc-diff").count();
+    expect(diffCount).toBeGreaterThan(0);
+    const colored =
+      (await page.locator(".rsc-diff.is-better").count()) +
+      (await page.locator(".rsc-diff.is-worse").count());
+    expect(colored).toBeGreaterThan(0);
+
+    // 抜出は実回数で出し、率（%）は画面に出さない。1コースは「—」
+    const breakoutRow = page.locator(".rsc-grid tbody tr").nth(3);
+    await expect(breakoutRow).toContainText("回");
+    await expect(breakoutRow).not.toContainText("%");
+    await expect(breakoutRow.locator("td").first()).toContainText("内側なし");
+  });
+
+  test("枠別情報タブのST分布・ST履歴が折りたたみで開き、平均と重ねて表示される（phase a T3-3）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+
+    await page
+      .locator(".rsc-card")
+      .waitFor({ state: "visible", timeout: 25000 });
+
+    // 折りたたみは2つ。初期は閉じている
+    await expect(page.locator(".rsc-fold-toggle")).toHaveCount(2);
+    await expect(page.locator(".rsc-fold-body")).toHaveCount(0);
+
+    // ST分布: ベースラインと同じ7ビン、選手の棒と平均の棒が各7本
+    await page.locator(".rsc-fold-toggle").first().click();
+    await expect(page.locator(".rsc-histogram")).toBeVisible();
+    await expect(page.locator(".rsc-hist-col")).toHaveCount(7);
+    await expect(page.locator(".rsc-hist-own")).toHaveCount(7);
+    await expect(page.locator(".rsc-hist-base")).toHaveCount(7);
+
+    // 母数が桁違いなので割合に正規化する（最大が100%になる）
+    const maxHeight = await page.evaluate(() =>
+      Math.max(
+        ...[...document.querySelectorAll(".rsc-hist-own, .rsc-hist-base")].map(
+          (el) => parseFloat(el.style.height),
+        ),
+      ),
+    );
+    expect(Math.abs(maxHeight - 100)).toBeLessThan(0.01);
+
+    // 艇を選ぶチップが6つあり、切り替えると内容が変わる
+    await expect(page.locator(".rsc-detail-chip")).toHaveCount(6);
+    const noteBefore = await page.locator(".rsc-fold-note").innerText();
+    await page.locator(".rsc-detail-chip").nth(5).click();
+    await expect(page.locator(".rsc-fold-note")).not.toHaveText(noteBefore);
+
+    // ST履歴を開くとST分布は閉じる（同時には開かない）
+    await page.locator(".rsc-fold-toggle").nth(1).click();
+    await expect(page.locator(".rsc-history")).toBeVisible();
+    await expect(page.locator(".rsc-histogram")).toHaveCount(0);
+
+    // 列が 日付/会場/ST/ST順/着順 で、新しい順に並ぶ
+    await expect(page.locator(".rsc-history thead th")).toHaveCount(5);
+    const dates = await page
+      .locator(".rsc-history tbody tr td:first-child")
+      .allInnerTexts();
+    expect(dates.length).toBeGreaterThan(0);
+    expect(dates).toEqual([...dates].sort().reverse());
+  });
+
+  test("枠別情報タブの逃げシミュレーションで2着率の合計が100%になり、予想ではない旨が出る（phase a T3-5）", async ({
+    page,
+  }) => {
+    await page.goto("/races/2026-08-11");
+    await page.locator(".venue-grid-card--open").first().click();
+    await page.locator(".race-card .predict-btn").first().click();
+    await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
+
+    const card = page.locator(".nsc-card");
+    await card.waitFor({ state: "visible", timeout: 25000 });
+
+    // 2〜6コースの5行
+    await expect(page.locator(".nsc-row")).toHaveCount(5);
+
+    // 2着率の合計が100%（2着は必ず1艇。丸め誤差のみ許容）
+    const rates = await page.locator(".nsc-rate").allInnerTexts();
+    const sum = rates.reduce((a, r) => a + parseFloat(r), 0);
+    expect(Math.abs(sum - 100)).toBeLessThan(0.6);
+
+    // 母数が明記される
+    await expect(page.locator(".nsc-sub")).toContainText("レース");
+
+    // 「くわしく見る」で算出方法と「予想ではない」旨が出る
+    await page.locator(".nsc-detail-toggle").click();
+    await expect(page.locator(".nsc-detail")).toContainText(
+      "予想ではありません",
     );
   });
 
@@ -1718,4 +1933,178 @@ test.describe("龍神レーダー Holmesページの全タブでcolor-contrast�
       });
     }
   }
+});
+// ピットレポート（選手コメント）セクション（BOA-379）
+// 本番の匿名公開（マイグレーション086）は画面実装の後に適用するため、DBの状態に
+// 依存しないよう race_pit_reports / race_pit_comments の2エンドポイントだけを
+// page.routeで差し替える（他のリクエストはそのまま通す）
+test.describe("レース詳細の直前情報タブ: ピットレポート", () => {
+  const G1_RACE = "/race/2026-09-21-05-12"; // 多摩川G1 12R（対象レース）
+  const IPPAN_RACE = "/race/2026-08-11-01-01"; // 桐生 一般戦 1R（対象外）
+
+  const routePitReport = async (page, { report, comments }) => {
+    await page.route("**/rest/v1/race_pit_reports*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(report),
+      }),
+    );
+    await page.route("**/rest/v1/race_pit_comments*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(comments),
+      }),
+    );
+  };
+
+  const openBeforeInfoTab = async (page, path) => {
+    await page.goto(path);
+    await page.click('[role="tab"]:has-text("直前情報")');
+  };
+
+  test("コメントがあるレースで、出典・公式リンク・コメント・★が表示される", async ({
+    page,
+  }) => {
+    await routePitReport(page, {
+      report: [
+        {
+          status: "published",
+          target_from: 7,
+          target_to: 12,
+          reporter_name: "テスト レポーター",
+          comment_count: 2,
+          created_at: "2026-09-21T06:42:00Z",
+          updated_at: null,
+        },
+      ],
+      comments: [
+        {
+          boat_number: 1,
+          racer_id: 4371,
+          comment_text: "整備をしたけど、前半レースは良くなかった。",
+          confidence_stars: 1,
+          previous_race_number: 7,
+        },
+        {
+          boat_number: 3,
+          racer_id: 4573,
+          comment_text: "【取材者寸評】連日の部品交換で少しずつ上向き。",
+          confidence_stars: null,
+          previous_race_number: null,
+        },
+      ],
+    });
+    await openBeforeInfoTab(page, G1_RACE);
+
+    const section = page.locator(".rpr-card");
+    await expect(section).toBeVisible({ timeout: 20000 });
+    await expect(section).toContainText(
+      "出典: BOAT RACE オフィシャルウェブサイト ピットレポート",
+    );
+    // レポーター名は表示しない（2026-09-23のモック承認で決定）
+    await expect(section).not.toContainText("テスト レポーター");
+    await expect(section.locator(".rpr-source-link")).toHaveAttribute(
+      "href",
+      "https://www.boatrace.jp/owpc/pc/race/pitreport?rno=12&jcd=05&hd=20260921",
+    );
+    await expect(section).toContainText("取得: 9/21 15:42");
+
+    // コメントのある艇だけが並ぶ（2号艇等は行ごと出さない）
+    await expect(section.locator(".rpr-comment")).toHaveCount(2);
+    await expect(section).toContainText(
+      "整備をしたけど、前半レースは良くなかった。",
+    );
+    // 自信度が付かないコメント（【取材者寸評】）では★の行を出さない
+    await expect(section.locator(".rpr-confidence")).toHaveCount(1);
+    await expect(section.locator(".rpr-stars-filled").first()).toHaveText("★");
+    await expect(section.locator(".rpr-stars-empty").first()).toHaveText("☆☆");
+  });
+
+  test("行が無いレースでは「公開待ち」カードを出す", async ({ page }) => {
+    await routePitReport(page, { report: [], comments: [] });
+    await openBeforeInfoTab(page, G1_RACE);
+
+    const section = page.locator(".rpr-card");
+    await expect(section).toBeVisible({ timeout: 20000 });
+    await expect(section).toContainText("まだ公開されていません");
+    await expect(section.locator(".rpr-comment")).toHaveCount(0);
+  });
+
+  test("匿名に権限が無い場合（086未適用）はセクションごと出さない", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_pit_reports*", (route) =>
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({
+          code: "42501",
+          message: "permission denied for table race_pit_reports",
+        }),
+      }),
+    );
+    await page.route("**/rest/v1/race_pit_comments*", (route) =>
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({
+          code: "42501",
+          message: "permission denied for table race_pit_comments",
+        }),
+      }),
+    );
+    await openBeforeInfoTab(page, G1_RACE);
+
+    // 直前情報タブ自体は表示されたうえで、ピットレポートだけが出ない
+    await expect(page.locator(".race-before-info-tab")).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.locator(".rpr-card")).toHaveCount(0);
+  });
+
+  test("取得エラーは「未公開」「対象外」に化けさせず再読み込みを出す", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_pit_reports*", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message: "canceling statement due to statement timeout",
+        }),
+      }),
+    );
+    await page.route("**/rest/v1/race_pit_comments*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: "[]",
+      }),
+    );
+    await openBeforeInfoTab(page, G1_RACE);
+
+    const section = page.locator(".rpr-card");
+    await expect(section).toBeVisible({ timeout: 20000 });
+    await expect(section).toContainText("ピットレポートを読み込めませんでした");
+    await expect(section.locator(".rpr-retry")).toBeVisible();
+    await expect(section).not.toContainText("まだ公開されていません");
+  });
+
+  test("対象外のグレード（一般戦）では取得もセクションの描画もしない", async ({
+    page,
+  }) => {
+    const pitRequests = [];
+    page.on("request", (req) => {
+      if (req.url().includes("race_pit_")) pitRequests.push(req.url());
+    });
+    await openBeforeInfoTab(page, IPPAN_RACE);
+
+    await expect(page.locator(".race-before-info-tab")).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.locator(".rpr-card")).toHaveCount(0);
+    expect(pitRequests).toEqual([]);
+  });
 });

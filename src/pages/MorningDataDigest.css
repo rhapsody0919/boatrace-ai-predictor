@@ -1,0 +1,125 @@
+/* MorningDataDigest - 「本日のデータ一覧」ページ（BOA-402、/today）
+ *
+ * 色は design-tokens.css の意味トークンのみ。ページ背景に直接乗るテキスト
+ * （h1・日付・注記）は生パレット値を使うとダークモードで不可視になる。
+ */
+
+.morning-digest {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  box-sizing: border-box;
+  color: var(--text-primary);
+}
+
+.morning-digest__header {
+  margin: 0.75rem 0 1rem;
+}
+
+.morning-digest__title {
+  margin: 0 0 0.3rem;
+  font-size: var(--font-size-6xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.morning-digest__date {
+  margin: 0 0 0.5rem;
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+}
+
+.morning-digest__past-badge {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-hairline);
+  font-size: var(--font-size-2xs);
+}
+
+.morning-digest__window {
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.morning-digest__window strong {
+  color: var(--brand-accent-primary);
+}
+
+.morning-digest__not-generated {
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--border-hairline);
+  border-radius: 10px;
+  text-align: center;
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+}
+
+/* カードのグリッド。表ではなくカードにすることで320pxでも横スクロールを出さない */
+.morning-digest__notes {
+  margin-top: 1.5rem;
+  padding: 0.9rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+}
+
+.morning-digest__notes-title {
+  margin: 0 0 0.6rem;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.morning-digest__notes-list {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.morning-digest__notes-list dt {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.morning-digest__notes-list dd {
+  margin: 0 0 0.5rem;
+}
+
+.morning-digest__disclaimer,
+.morning-digest__back {
+  margin: 0.75rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border-hairline);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.morning-digest__back {
+  border-top: none;
+  padding-top: 0;
+}
+
+@media (min-width: 768px) {
+}
+
+@media (max-width: 480px) {
+  .morning-digest {
+    padding: 0 0.75rem 1.5rem;
+  }
+
+  .morning-digest__title {
+    font-size: var(--font-size-5xl);
+  }
+
+  .morning-digest__header {
+    margin: 0.5rem 0 0.75rem;
+  }
+}

@@ -5,11 +5,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import {
-  supabase,
-  VENUE_CODES,
-  VENUE_NAMES,
-} from "../lib/supabaseClient.js";
+import { supabase, VENUE_CODES, VENUE_NAMES } from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import { getRaceSchedule, getRacesInWindow } from "../lib/raceSchedule.js";
 import { decideDeployHook } from "../lib/deployHookPolicy.js";
@@ -1107,8 +1103,22 @@ async function writeToSupabase(
     }
 
     // 3. predictionsテーブルにupsert
+    //
+    // feature_contributions（turnPrediction・racerStats）は standard/safeBet/upsetFocus の
+    // 3モデルで内容が完全に同一（turnPrediction・racerStatsはモデルに依存しない値のため）。
+    // フロントエンド（supabaseDataService.js）もstandard行のみを読むため、standard行にのみ
+    // 書き、safeBet・upsetFocusはNULLにする（BOA-408、書き込み量を約2/3削減。
+    // docs/design/scraping-vercel-consolidation/predictions-write-optimization.md 対策0）
     const predictionsData = [];
     for (const race of allPredictions) {
+      const featureContrib =
+        race.turnPrediction || race.racerStats
+          ? {
+              turnPrediction: race.turnPrediction || null,
+              racerStats: race.racerStats || null,
+            }
+          : null;
+
       // Standard model (turnPredictionはstandard行に格納)
       const std = race.predictions.standard;
       predictionsData.push({
@@ -1119,16 +1129,10 @@ async function writeToSupabase(
         top_3rd: std.top3[2] || null,
         confidence: std.confidence,
         is_shadow: false,
-        feature_contributions:
-          race.turnPrediction || race.racerStats
-            ? {
-                turnPrediction: race.turnPrediction || null,
-                racerStats: race.racerStats || null,
-              }
-            : null,
+        feature_contributions: featureContrib,
       });
 
-      // SafeBet model
+      // SafeBet model（feature_contributionsはstandard行と重複するためNULL。BOA-408）
       const safe = race.predictions.safeBet;
       predictionsData.push({
         race_id: race.raceId,
@@ -1138,16 +1142,10 @@ async function writeToSupabase(
         top_3rd: safe.top3[2] || null,
         confidence: safe.confidence,
         is_shadow: false,
-        feature_contributions:
-          race.turnPrediction || race.racerStats
-            ? {
-                turnPrediction: race.turnPrediction || null,
-                racerStats: race.racerStats || null,
-              }
-            : null,
+        feature_contributions: null,
       });
 
-      // UpsetFocus model
+      // UpsetFocus model（safeBetと同じ理由でNULL。BOA-408）
       const upset = race.predictions.upsetFocus;
       predictionsData.push({
         race_id: race.raceId,
@@ -1157,13 +1155,7 @@ async function writeToSupabase(
         top_3rd: upset.top3[2] || null,
         confidence: upset.confidence,
         is_shadow: false,
-        feature_contributions:
-          race.turnPrediction || race.racerStats
-            ? {
-                turnPrediction: race.turnPrediction || null,
-                racerStats: race.racerStats || null,
-              }
-            : null,
+        feature_contributions: null,
       });
     }
 
@@ -1330,7 +1322,12 @@ async function fetchRaceDataFromSupabase(raceIds, client = supabase) {
     selectByRaceIds(client, "race_entries", "*", raceIds),
     selectByRaceIds(client, "race_conditions", "*", raceIds),
     selectByRaceIds(client, "exhibition_data", "*", raceIds),
-    selectByRaceIds(client, "races", "race_id, race_grade", raceIds),
+    selectByRaceIds(
+      client,
+      "races",
+      "race_id, race_grade, cancellation_status",
+      raceIds,
+    ),
   ]);
 
   // race_id ごとにグループ化
@@ -1352,12 +1349,23 @@ async function fetchRaceDataFromSupabase(raceIds, client = supabase) {
     const entries = entriesByRace.get(raceId);
     if (!entries || entries.length === 0) continue;
 
+    const race = racesByRace.get(raceId) || {};
+    // 中止・順延が確定/暫定検知済み（cancellation_status が非NULL）のレースは、
+    // race_entries が事前スクレイピング済みでも予測を生成しない（BOA-411）。
+    // 開催されなかったレースにpredictionsが生成され、is_hit_win等の的中判定が
+    // 永遠に未確定のまま残存する不具合の再発防止
+    if (race.cancellation_status) {
+      console.log(
+        `  ⏭️  ${raceId} — 中止・順延検知済み（cancellation_status=${race.cancellation_status}）のため予測生成をスキップ`,
+      );
+      continue;
+    }
+
     // race_id から venue_code と race_number を復元（YYYY-MM-DD-VV-RR）
     const parts = raceId.split("-");
     const venueCode = parseInt(parts[3], 10);
     const raceNo = parseInt(parts[4], 10);
     const cond = conditionsByRace.get(raceId) || {};
-    const race = racesByRace.get(raceId) || {};
 
     // race_entries → racers 配列（generateRacePrediction が期待する形式）
     const racers = entries
@@ -1594,6 +1602,8 @@ export async function mainRefresh({
           }
         : null;
 
+    // feature_contributionsはstandard行にのみ書く。safeBet・upsetFocusは内容が
+    // standardと完全重複するためNULLにする（BOA-408、書き込み量を約2/3削減）
     predictionsData.push(
       {
         race_id: race.raceId,
@@ -1613,7 +1623,7 @@ export async function mainRefresh({
         top_3rd: safe.top3[2] || null,
         confidence: safe.confidence,
         is_shadow: false,
-        feature_contributions: featureContrib,
+        feature_contributions: null,
       },
       {
         race_id: race.raceId,
@@ -1623,7 +1633,7 @@ export async function mainRefresh({
         top_3rd: upset.top3[2] || null,
         confidence: upset.confidence,
         is_shadow: false,
-        feature_contributions: featureContrib,
+        feature_contributions: null,
       },
     );
   }

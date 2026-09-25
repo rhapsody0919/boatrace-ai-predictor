@@ -10,6 +10,7 @@ import Breadcrumb from "../components/Breadcrumb";
 import LoadingScreen from "../components/LoadingScreen";
 import { RaceCard } from "../components/race";
 import VenueCharacteristicsCard from "../components/venue/VenueCharacteristicsCard";
+import VenueDaySummaryCard from "../components/race/VenueDaySummaryCard";
 import DataFetchError from "../components/DataFetchError";
 import {
   useDatePredictions,
@@ -109,6 +110,11 @@ function VenueRaceListPage() {
           </header>
 
           <VenueCharacteristicsCard venueCode={venueCode} />
+
+          {/* この日の水面傾向（phase a FR-5 / BOA-222）。直上の
+              VenueCharacteristicsCard は過去90日のベースラインで、
+              こちらはこの日1日分。カードの注記で日付とレース数を明示する */}
+          <VenueDaySummaryCard venueCode={venueCode} date={date} />
 
           {loading ? (
             <LoadingScreen

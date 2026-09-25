@@ -1,0 +1,359 @@
+/* RaceStConsiderationCard - ST考察（phase a FR-1、screens.md §3.1.2）
+   色は意味トークンを使う（ページ背景に直接乗るテキストがあるため。
+   .claude/rules/component-reuse.md「文字色・背景色は意味トークンを使う」） */
+
+.rsc-card {
+  box-sizing: border-box;
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+  margin-top: var(--spacing-3);
+  /* 次のカード（決まり手傾向）との間の余白。rwit-card 側は margin-bottom しか
+     持たないため、こちら側で下方向も確保する */
+  margin-bottom: var(--spacing-3);
+}
+
+.rsc-title {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rsc-sub {
+  margin: 0 0 2px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.rsc-window {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rsc-loading {
+  margin: var(--spacing-2) 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* 横スクロールはこのラッパの中だけに閉じる */
+.rsc-grid-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rsc-grid {
+  width: 100%;
+  min-width: 320px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.rsc-label-th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface-card);
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  padding: var(--spacing-1) var(--spacing-1) var(--spacing-1) 0;
+  white-space: nowrap;
+  /* ラベルと ? ボタンを横に並べる */
+  vertical-align: middle;
+}
+
+.rsc-label-th > span {
+  margin-right: 2px;
+}
+
+.rsc-label-sub {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+}
+
+.rsc-boat-th {
+  padding: var(--spacing-1) 0;
+  text-align: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xs);
+  border-radius: var(--radius-sm);
+  min-width: 42px;
+}
+
+.rsc-cell {
+  padding: var(--spacing-1) 1px;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 1.15;
+}
+
+.rsc-cell-meta {
+  padding: 2px 1px;
+}
+
+.rsc-value {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rsc-value.is-small-sample {
+  color: var(--color-warning-text);
+}
+
+.rsc-muted {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+}
+
+/* 差の色。安定率・抜出は高いほど良い、出遅率は低いほど良いので
+   コンポーネント側で向きを判定してから is-better / is-worse を付ける */
+.rsc-diff {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rsc-diff.is-better {
+  color: var(--color-success-text);
+}
+
+.rsc-diff.is-worse {
+  color: var(--color-error-text);
+}
+
+.rsc-note-small {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  transform: scale(0.92);
+}
+
+.rsc-grade {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
+.rsc-runs {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* Fバッジ。F1は金、F2は赤（F2は合計90日のあっせん停止で意味が違う）。
+   級別セルの中に置く（艇番ヘッダは枠色で塗られておりコントラストが取れないため） */
+.rsc-flying {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 0 3px;
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-black);
+  background: var(--color-warning);
+  border-radius: var(--radius-sm);
+}
+
+.rsc-flying.is-f2 {
+  color: var(--color-white);
+  background: var(--color-error);
+}
+
+.rsc-caveat {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .rsc-card {
+    padding: var(--spacing-2);
+  }
+
+  .rsc-boat-th {
+    min-width: 38px;
+  }
+}
+
+/* --- 折りたたみ: ST分布 / ST履歴（T3-3、案1） --- */
+.rsc-folds {
+  margin-top: var(--spacing-2);
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  padding-top: var(--spacing-2);
+}
+
+.rsc-fold-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+}
+
+.rsc-fold-toggle {
+  min-height: 44px;
+  padding: var(--spacing-1) var(--spacing-2);
+  background: none;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.rsc-fold-toggle.is-open {
+  border-color: var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
+}
+
+.rsc-fold-body {
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2);
+  background: var(--surface-page);
+  border-radius: var(--radius-sm);
+}
+
+/* ヒストグラム・履歴は1艇ずつしか描けないため、艇を選ぶチップを別に持つ */
+.rsc-detail-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: var(--spacing-2);
+}
+
+.rsc-detail-chip {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 2px 6px;
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.rsc-detail-chip.is-active {
+  border-color: transparent;
+}
+
+.rsc-detail-name {
+  margin-left: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rsc-fold-note,
+.rsc-fold-legend,
+.rsc-fold-empty {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.rsc-fold-legend {
+  margin: var(--spacing-1) 0 0;
+}
+
+/* 濃い棒＝その選手、薄い棒＝同コース・同級別の平均。
+   母数が桁違い（44走 vs 16,640走）なので割合に正規化してから重ねる */
+.rsc-histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 96px;
+}
+
+.rsc-hist-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rsc-hist-bars {
+  width: 100%;
+  height: 76px;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.rsc-hist-own {
+  flex: 1;
+  min-height: 1px;
+  background: var(--brand-accent-primary);
+  border-radius: 2px 2px 0 0;
+}
+
+.rsc-hist-base {
+  flex: 1;
+  min-height: 1px;
+  /* border-hairline はダークで背景に沈んで見えないため、補助テキスト色を使う。
+     文字ではなくグラフの棒なのでコントラスト比の対象外だが、視認性は要る */
+  background: var(--text-secondary);
+  opacity: 0.55;
+  border-radius: 2px 2px 0 0;
+}
+
+.rsc-hist-label {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.rsc-history-wrapper {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.rsc-history {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+}
+
+.rsc-history th,
+.rsc-history td {
+  padding: 3px var(--spacing-1);
+  text-align: right;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.rsc-history th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-page);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.rsc-history td:first-child,
+.rsc-history th:first-child,
+.rsc-history td:nth-child(2),
+.rsc-history th:nth-child(2) {
+  text-align: left;
+}
+
+/* 比較対象のベースライン値。差（±pt）の符号だけでは良し悪しが分からない
+   （安定率は+が良い、出遅率は−が良い）ため、比べている相手の値も出して
+   自力で確かめられるようにする（2026-09-24ユーザー指摘） */
+.rsc-baseline {
+  display: block;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.1;
+}
