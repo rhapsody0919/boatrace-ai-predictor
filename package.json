@@ -69,7 +69,7 @@
     "verify:registry": "node scripts/maintenance/run-verify-registry.js --check",
     "verify:list": "node scripts/maintenance/run-verify-registry.js --list",
     "test:e2e": "playwright test",
-    "test:layout": "playwright test --project=layout-mobile --project=layout-desktop --project=layout-wide",
+    "test:layout": "playwright test --project=layout-mobile --project=layout-tablet --project=layout-laptop --project=layout-desktop --project=layout-wide",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
     "linear": "node scripts/linear-cli.js",

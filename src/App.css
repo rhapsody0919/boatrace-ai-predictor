@@ -1153,13 +1153,18 @@ input:focus-visible,
   /* auto-fill だとアイテムが足りなくても列の枠が作られるため、カード3枚に対して
      1440pxで4列・1920pxで5列分の枠ができ、右側に334〜726pxの空白が残っていた
      （中央寄せの見出し・リード文・CTAボタンと揃わずズレて見える）。
-     auto-fit は空トラックを潰す。1fr のままだと今度はカードが1枚570px超に
-     間延びするため上限を360pxに固定する。
+     auto-fit は余った枠を0pxに潰すので、枚数が減っても空白が残らない。
+
+     カード幅の上限は max-width で箱ごと制限する。トラック側を
+     minmax(280px, 360px) のように固定pxで抑えると列数の刻みが384px単位になり、
+     3列に必要な1128pxに届かない中間幅（約769〜1255px）で列が落ちて
+     800pxで328px・1024pxで168pxの空白が出る（実測。修正前より悪化していた）。
+     1fr のままにして、箱の幅だけを絞るのが正しい。
+
      中央寄せは justify-content ではなく max-width + margin:auto で行う。
-     justify-content: center だとカードが3枚のときしか小見出しと左端が揃わず、
-     記事が2枚に減ると192px、1枚だと384pxずれる（実測）。
-     グリッド自体を中央に置いてカードを左詰めにすれば、枚数が変わっても揃う */
-  grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
+     justify-content: center はカードが3枚のときしか小見出しと左端が揃わず、
+     2枚で192px・1枚で384pxずれる（実測） */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   max-width: var(--blog-preview-row-width);
   gap: 1.5rem;
   margin: 0 auto 2rem;
