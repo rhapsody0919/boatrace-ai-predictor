@@ -177,6 +177,9 @@ export function getRecentRaces(records, count = 5) {
     raceGrade: r.raceGrade ?? null,
     raceStage: r.raceStage,
     boatNumber: r.boatNumber,
+    // 実際に進入したコース。今節タブ（FR-3）が「進入」列で使う。
+    // 2025-12-04より前のレースと当日のレースはnull（BOA-257）
+    entryCourse: r.actualCourse ?? null,
     startTiming: r.startTiming ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）

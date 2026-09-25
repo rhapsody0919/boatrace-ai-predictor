@@ -18,7 +18,6 @@
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { finishPositionOf } from "./basicInfoStats";
-import { parseRaceId } from "../../utils/raceId";
 import "./RecentRunsBar.css";
 
 function rankClass(rank) {
@@ -29,14 +28,7 @@ function rankClass(rank) {
   return "rrb-rank-bad";
 }
 
-/**
- * @param {Object} props
- * @param {Array<Object>} props.runs 走（`getRacerScopedRaceStats` の生record）
- * @param {boolean} [props.showDateLabel] 各走の上に「9/23 5R」を出す。
- *   今節タブ（FR-3）は「その節の**各日**」を見せるのが目的で日付が要る。
- *   直近10走（FR-1）は流れだけを見るので既定は出さない
- */
-function RecentRunsBar({ runs, showDateLabel = false }) {
+function RecentRunsBar({ runs }) {
   const { t } = useTranslation();
   const list = Array.isArray(runs) ? runs : [];
   if (list.length === 0) return null;
@@ -54,15 +46,6 @@ function RecentRunsBar({ runs, showDateLabel = false }) {
           const color = course ? BOAT_COLORS[course] || {} : {};
           return (
             <div key={r.raceId} className="rrb-item" title={r.raceId}>
-              {showDateLabel && (
-                <span className="rrb-date">
-                  {t("recentRuns.dateLabel", {
-                    month: Number(r.date.slice(5, 7)),
-                    day: Number(r.date.slice(8, 10)),
-                    race: parseRaceId(r.raceId)?.raceNo ?? "-",
-                  })}
-                </span>
-              )}
               <span
                 className="rrb-course"
                 style={

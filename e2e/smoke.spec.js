@@ -1334,7 +1334,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 25000,
     });
 
-    // バーをタップすると詳細が開き、タブは4つ（直近5走/得意会場/条件別/今節）
+    // バーをタップすると詳細が開き、タブは4つ（直近10走/得意会場/条件別/今節）
     await page.locator(".rbit-bar-row").first().click();
     await expect(page.locator(".rbit-expanded-tab")).toHaveCount(4);
 
@@ -1447,15 +1447,21 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.locator(".rbit-bar-row").nth(3).click();
     await page.locator(".rbit-expanded-tab", { hasText: "今節" }).click();
 
-    const items = page.locator(".rbit-meet .rrb-item");
-    await expect(items).toHaveCount(6, { timeout: 25000 });
-    // 「各日」を見せるのが目的なので日付ラベルを出す（直近10走には出さない）
-    await expect(items.first()).toContainText("9/20");
-    await expect(items.first()).toContainText("5R");
-    // 進入・着順・STの3つが並ぶ
-    await expect(items.first().locator(".rrb-course")).toHaveText("5");
-    await expect(items.first().locator(".rrb-rank")).toHaveText("4");
-    await expect(items.first().locator(".rrb-st")).toHaveText(".09");
+    // 表示は「直近10走」と同じ表。今節は進入コースの列を足す
+    const meetRows = page.locator(".rbit-meet tbody tr");
+    await expect(meetRows).toHaveCount(6, { timeout: 25000 });
+    await expect(page.locator(".rbit-meet thead")).toContainText("進入");
+    // 同じ節の走しか並ばない列（会場・レース名・グレード・種別）は省くので、
+    // 日付/R/枠番/進入/ST/着順/決まり手/単勝配当 の8列になる
+    await expect(page.locator(".rbit-meet thead th")).toHaveCount(8);
+    const firstCells = meetRows.first().locator("td");
+    await expect(firstCells.nth(0)).toContainText("2026-09-20");
+    await expect(firstCells.nth(1)).toContainText("5R");
+    // 枠番5・進入5・ST 0.09・着4（DB実値と一致）
+    await expect(firstCells.nth(2)).toHaveText("5");
+    await expect(firstCells.nth(3)).toHaveText("5");
+    await expect(firstCells.nth(4)).toHaveText("0.09");
+    await expect(firstCells.nth(5)).toHaveText("4");
 
     // 節の初戦では前節が混ざらず、空状態になる
     await page.goto("/race/2026-09-20-01-05");
@@ -1468,7 +1474,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rbit-expanded-empty")).toContainText(
       "今節はまだ走っていません",
     );
-    await expect(page.locator(".rbit-meet .rrb-item")).toHaveCount(0);
+    await expect(page.locator(".rbit-meet tbody tr")).toHaveCount(0);
   });
 
   test("F数バッジが基本情報タブとST考察カードで同じ値になり、f_countが無い過去レースでは出ない（phase a T5-3）", async ({
