@@ -4,12 +4,73 @@
   margin: var(--spacing-4) 0;
 }
 
+/* 8タブだと390pxの画面で完全に見えるのは4つだけ。右にまだあることを
+   フェードで示す（スクロールしきったら消す）。ラップ側に置くのは、
+   フェードがバーと一緒に流れないようにするため */
+.race-tabs-bar-wrap {
+  position: relative;
+}
+
+.race-tabs-bar-wrap.has-more::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: var(--border-width-1);
+  width: 40px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--surface-page) 70%
+  );
+}
+
+/* フェードだけでは伝わらない（最後に見えるタブと右端の間に余白ができ、
+   グラデーションが何にも掛からないことがある）ので「›」を重ねる。
+   押すと0.8画面分だけ右へ送る（スワイプできると気づかない人向け） */
+.race-tabs-more {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: var(--border-width-1);
+  width: 28px;
+  /* ::after のフェードは文書順で後に描かれるため、指定しないと隠れる */
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
 .race-tabs-bar {
   display: flex;
   gap: var(--spacing-1);
   border-bottom: var(--border-width-1) solid var(--border-hairline);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  /* 横スクロールバーは出さない（続きはフェードで示す） */
+  scrollbar-width: none;
+  /* `scroll-behavior: smooth` は入れない。動きを減らす設定の環境では
+     スムーズスクロール自体が無効化され、**プログラムからのスクロールが
+     一切効かなくなる**（このプロジェクトのブラウザ検証環境で実際に発生し、
+     アクティブタブを画面内に送れなかった）。タブ切替は離散的な操作なので
+     即時スクロールで十分 */
+}
+
+/* 横スクロールバーは出さない（フェードで続きを示す） */
+.race-tabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.race-tabs-bar {
+  scrollbar-width: none;
 }
 
 .race-tabs-btn {
