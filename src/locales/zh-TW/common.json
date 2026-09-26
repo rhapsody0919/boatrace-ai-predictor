@@ -461,6 +461,7 @@
     "waku": "艇號別資訊",
     "aiPrediction": "AI預測",
     "motor": "馬達資訊",
+    "meet": "本梯次",
     "beforeInfo": "臨場資訊",
     "oddsList": "賠率一覽",
     "result": "結果"
@@ -599,8 +600,21 @@
     "emptyTitle": "尚無賠率資料",
     "emptyBody": "接近發航時間後，賠率資料將顯示於此分頁。"
   },
+  "meetTab": {
+    "note": "本梯次6艇的勝負關鍵，以及所選艇的出賽狀況",
+    "compareTitle": "6艇的本梯次（依得分率）",
+    "colBoat": "艇・選手",
+    "colScore": "得分率",
+    "colRank": "梯次名次",
+    "colPretest": "前檢",
+    "rankTied": "第{{rank}}名（{{tied}}人同分）",
+    "rankPlain": "第{{rank}}名",
+    "pretestRank": "第{{rank}}名",
+    "compareSub": "本梯次共{{total}}人。",
+    "borderLine": "準優門檻為第{{slots}}名（{{rate}}）。"
+  },
   "basicInfo": {
-    "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場・擅長賽場・依條件・本梯次）",
+    "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場・擅長賽場・依條件）",
     "metricLabel": "指標",
     "scopeLabel": "賽場",
     "gradeLabel": "等級",

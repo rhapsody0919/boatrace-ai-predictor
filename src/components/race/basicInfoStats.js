@@ -493,10 +493,11 @@ export function buildMeetResults(records, { raceId, venueCode }) {
   const date = (raceId ?? "").slice(0, 10);
   if (!date || venueCode === null || venueCode === undefined) return [];
 
+  // **表示中のレースより前**だけ。`date <= date` だと同じ日の後のレースまで入り、
+  // 5Rを見ているのに同じ日の9Rが「今節のこれまでの走り」に出る（2026-09-20 桐生5Rで発生）。
+  // race_id は `YYYY-MM-DD-VV-RR` の固定長なので文字列比較でレース単位に切れる
   const upto = all
-    .filter(
-      (r) => r.venueCode === venueCode && r.date <= date && r.raceId !== raceId,
-    )
+    .filter((r) => r.venueCode === venueCode && r.raceId < raceId)
     .sort((a, b) => a.raceId.localeCompare(b.raceId));
 
   const anchored = [
@@ -548,10 +549,13 @@ export function buildMeetTrend(meet, allRecords) {
 
   const meetRates = computeRates(meetRows);
   const baseRates = computeRates(baseRows);
+  // **画面に出す桁で差を取る**。生値で引くと「0.13 と 0.15 なのに −0.01」のように
+  // 表示と差が噛み合わない（0.1325 − 0.1475 = −0.015 → 四捨五入で −0.01）
+  const round2 = (v) => (v === null ? null : Math.round(v * 100) / 100);
+  const meetSt = round2(meetRates.avgSt);
+  const baseSt = round2(baseRates.avgSt);
   const stDiff =
-    meetRates.avgSt !== null && baseRates.avgSt !== null
-      ? meetRates.avgSt - baseRates.avgSt
-      : null;
+    meetSt !== null && baseSt !== null ? round2(meetSt - baseSt) : null;
 
   // 展示は**順位**で見る。絶対値の推移は水面の影響を拾ってしまう
   // （桐生の会場平均は2026-09-20〜25で6.763〜6.865と日によって0.10秒動く。
@@ -569,9 +573,9 @@ export function buildMeetTrend(meet, allRecords) {
 
   return {
     st: {
-      meetAvg: meetRates.avgSt,
+      meetAvg: meetSt,
       meetN: meetRates.avgStN,
-      baseAvg: baseRates.avgSt,
+      baseAvg: baseSt,
       baseN: baseRates.avgStN,
       diff: stDiff,
     },

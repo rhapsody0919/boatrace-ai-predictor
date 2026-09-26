@@ -463,6 +463,7 @@
     "waku": "Lane Stats",
     "aiPrediction": "AI Prediction",
     "motor": "Motor Info",
+    "meet": "This Series",
     "beforeInfo": "Just Before",
     "oddsList": "Odds List",
     "result": "Result"
@@ -601,8 +602,21 @@
     "emptyTitle": "No odds data yet",
     "emptyBody": "Odds will appear here as the start time approaches."
   },
+  "meetTab": {
+    "note": "Who needs a result in this series, and how the boat you pick has been running",
+    "compareTitle": "The six in this series (by score rate)",
+    "colBoat": "Boat / racer",
+    "colScore": "Score rate",
+    "colRank": "Series rank",
+    "colPretest": "Trial",
+    "rankTied": "{{rank}} ({{tied}} tied)",
+    "rankPlain": "{{rank}}",
+    "pretestRank": "{{rank}}",
+    "compareSub": "{{total}} racers in this series.",
+    "borderLine": "The semi-final line is {{slots}}th ({{rate}})."
+  },
   "basicInfo": {
-    "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues, by-condition breakdown and this series)",
+    "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
     "metricLabel": "Metric",
     "scopeLabel": "Venue",
     "gradeLabel": "Grade",

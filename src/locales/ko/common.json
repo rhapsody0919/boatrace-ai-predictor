@@ -461,6 +461,7 @@
     "waku": "번호별 정보",
     "aiPrediction": "AI 예상",
     "motor": "모터 정보",
+    "meet": "이번 시리즈",
     "beforeInfo": "직전 정보",
     "oddsList": "오즈 일람",
     "result": "결과"
@@ -599,8 +600,21 @@
     "emptyTitle": "오즈 데이터가 아직 없습니다",
     "emptyBody": "발주 시간이 가까워지면 오즈가 수집되어 이 탭에 표시됩니다."
   },
+  "meetTab": {
+    "note": "이번 시리즈 6정의 승부처와, 선택한 정의 주행을 봅니다",
+    "compareTitle": "6정의 이번 시리즈(득점률 순)",
+    "colBoat": "정·선수",
+    "colScore": "득점률",
+    "colRank": "시리즈 순위",
+    "colPretest": "전검",
+    "rankTied": "{{rank}}위({{tied}}명 동률)",
+    "rankPlain": "{{rank}}위",
+    "pretestRank": "{{rank}}위",
+    "compareSub": "이번 시리즈 출전 {{total}}명.",
+    "borderLine": "준우승전 기준은 {{slots}}위({{rate}})."
+  },
   "basicInfo": {
-    "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 10경기·강세 경기장·조건별·이번 시리즈)가 열립니다",
+    "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 10경기·강세 경기장·조건별)가 열립니다",
     "metricLabel": "지표",
     "scopeLabel": "경기장",
     "gradeLabel": "등급",

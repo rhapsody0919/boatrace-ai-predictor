@@ -1334,9 +1334,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 25000,
     });
 
-    // バーをタップすると詳細が開き、タブは4つ（直近10走/得意会場/条件別/今節）
+    // バーをタップすると詳細が開き、タブは3つ（直近10走/得意会場/条件別）。
+    // 「今節」は6艇横断が主役になったのでレース単位の独立タブへ移した
     await page.locator(".rbit-bar-row").first().click();
-    await expect(page.locator(".rbit-expanded-tab")).toHaveCount(4);
+    await expect(page.locator(".rbit-expanded-tab")).toHaveCount(3);
 
     await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
 
@@ -1433,81 +1434,62 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ).not.toContainText("0.0%");
   });
 
-  test("基本情報タブの「今節」に節内の日別の進入・着順・STが出て、節をまたがない（phase a T6-1）", async ({
+  test("「今節」タブで6艇の勝負駆けと選んだ1艇の走りが出て、節をまたがない（phase a T6-1）", async ({
     page,
   }) => {
-    // 2026-09-24 桐生3R の4号艇（登番4872）は、この節を9/20から走っている。
-    // 表示中のレースは含めず、9/20〜9/23の6走が出るのが正解（DB実値で確認済み）
+    // 2026-09-24 桐生3R。この節は9/20から、登番4872は9/20〜9/23の6走
     await page.goto("/race/2026-09-24-01-03");
-    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
-    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
-      timeout: 25000,
-    });
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
 
-    await page.locator(".rbit-bar-row").nth(3).click();
-    await page.locator(".rbit-expanded-tab", { hasText: "今節" }).click();
-
-    // 6艇を得点率順に並べる（勝負駆けは「この中で誰が一番欲しがっているか」）。
-    // 1艇開くだけで6艇の位置が分かる
-    const compare = page.locator(".rbit-meet-compare");
-    await expect(compare).toContainText("この6艇の今節（得点率順）");
-    await expect(compare.locator(".rbit-meet-compare-item")).toHaveCount(6);
-    // 表示は「直近10走」と同じ表。今節は進入コースの列を足す
-    const meetRows = page.locator(".rbit-meet tbody tr");
-    await expect(meetRows).toHaveCount(6, { timeout: 25000 });
-    await expect(page.locator(".rbit-meet thead")).toContainText("進入");
-    // 今節の得点率（FR-3 Phase B）。この節の着順は 4/4/5/6/1/6 なので
-    // 得点22・6走・得点率3.67、今日1着なら (22+10)/7 = 4.57。
-    // 計算式は公式の得点率一覧（若松G1・49名）と全件照合済み
-    const score = page.locator(".rbit-meet-score");
-    await expect(score).toContainText("今節の得点率 3.67（6走・当社計算）");
-    await expect(score).toContainText("1着 4.57");
-    await expect(score).toContainText("6着 3.29");
-    // 得点率は単独では読めないので、節の中での位置と準優の枠までの距離を添える。
-    // この節は48名・準優4個レース=24枠で、この選手は33位（DB実測）
-    await expect(score).toContainText("節内 33位 / 48人");
-    await expect(score).toContainText("準優の目安（24位）");
-
-    // 生データの前に「通常値との差」を出す（FR-3 Phase A）。
-    // 登番4872のこの節は 今節ST 0.202 / 通常 0.184（154走）、
-    // 展示 6.81 → 6.69 で、いずれもDB実値と一致することを確認済み
-    const trend = page.locator(".rbit-meet-trend");
-    await expect(trend).toContainText("今節の平均ST 0.20（6走）／通常 0.18");
-    await expect(trend).toContainText("慎重");
-    // 展示は**順位**で見る（絶対値だと水面の影響を拾う）。この選手は
-    // タイムは 6.81→6.69 と速くなっているのに順位は1位→3位で落ちている
-    await expect(trend).toContainText("展示順位 1位 → 3位（6走・6.81→6.69）");
-    await expect(trend).toContainText("2つ下向き");
-    // 機力の起点（前検タイム）。公式サイト由来なので出典を添える（ADR-0067）
-    await expect(trend).toContainText("前検タイム");
-    await expect(trend).toContainText(
+    // 1. 6艇横断（レース単位）。勝負駆けは相対でしか読めないので先に出す
+    const compare = page.locator(".rmt-compare");
+    await expect(compare).toBeVisible({ timeout: 25000 });
+    await expect(compare.locator("tbody tr")).toHaveCount(6);
+    // 得点率・節内順位・前検順位の3列
+    await expect(page.locator(".rmt-compare thead")).toContainText("得点率");
+    await expect(page.locator(".rmt-compare thead")).toContainText("節内順位");
+    await expect(page.locator(".rmt-compare thead")).toContainText("前検");
+    // 得点率の降順に並ぶ
+    const rates = await page.locator(".rmt-rate").allInnerTexts();
+    const nums = rates.map((v) => Number(v.replace(/[^0-9.]/g, "")));
+    expect(nums).toEqual([...nums].sort((a, b) => b - a));
+    // 節の規模と準優の目安、公式値の出典
+    await expect(page.locator(".rmt-sub")).toContainText("節の出場は48人");
+    await expect(page.locator(".rmt-source")).toContainText(
       "前検タイムの出典: BOAT RACE オフィシャルウェブサイト",
     );
 
-    // 同じ節の走しか並ばない列（会場・レース名・グレード・種別）は省くので、
-    // 日付/R/枠番/進入/ST/着順/決まり手/単勝配当 の8列になる
-    await expect(page.locator(".rbit-meet thead th")).toHaveCount(8);
-    const firstCells = meetRows.first().locator("td");
-    await expect(firstCells.nth(0)).toContainText("2026-09-20");
-    await expect(firstCells.nth(1)).toContainText("5R");
-    // 枠番5・進入5・ST 0.09・着4（DB実値と一致）
-    await expect(firstCells.nth(2)).toHaveText("5");
-    await expect(firstCells.nth(3)).toHaveText("5");
-    await expect(firstCells.nth(4)).toHaveText("0.09");
-    await expect(firstCells.nth(5)).toHaveText("4");
+    // 2. 選んだ1艇の詳細。既定は1号艇なので4号艇（登番4872）に切り替える
+    await page.locator(".rmt-select-chip").nth(3).click();
+    await expect(page.locator(".rmt-detail-score")).toContainText(
+      "今節の得点率",
+      { timeout: 25000 },
+    );
+    const trend = page.locator(".rmt-trend");
+    await expect(trend).toContainText("今節の平均ST");
+    await expect(trend).toContainText("前検タイム");
+    // 展示は順位で見る（絶対値だと水面の影響を拾う）
+    await expect(trend).toContainText("展示順位");
+
+    // 日別の走り。同じ節の走しか並ばない列は省くので8列
+    const rows = page.locator(".race-meet-tab .race-history-table tbody tr");
+    await expect(rows).toHaveCount(6, { timeout: 25000 });
+    await expect(
+      page.locator(".race-meet-tab .race-history-table thead th"),
+    ).toHaveCount(8);
+    const cells = rows.first().locator("td");
+    await expect(cells.nth(0)).toContainText("2026-09-20");
+    await expect(cells.nth(1)).toContainText("5R");
+    await expect(cells.nth(3)).toHaveText("5");
+    await expect(cells.nth(4)).toHaveText("0.09");
 
     // 節の初戦では前節が混ざらず、空状態になる
     await page.goto("/race/2026-09-20-01-05");
-    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
-    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
-      timeout: 25000,
-    });
-    await page.locator(".rbit-bar-row").nth(4).click();
-    await page.locator(".rbit-expanded-tab", { hasText: "今節" }).click();
-    await expect(page.locator(".rbit-expanded-empty")).toContainText(
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    await expect(page.locator(".rmt-empty").first()).toContainText(
       "今節はまだ走っていません",
+      { timeout: 25000 },
     );
-    await expect(page.locator(".rbit-meet tbody tr")).toHaveCount(0);
   });
 
   test("F数バッジが基本情報タブとST考察カードで同じ値になり、f_countが無い過去レースでは出ない（phase a T5-3）", async ({

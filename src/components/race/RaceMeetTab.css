@@ -1,0 +1,183 @@
+/* RaceMeetTab - 「今節」タブ（phase a FR-3）。
+   6艇横断を先、選んだ1艇の詳細を後に置く（勝負駆けは相対でしか読めないため） */
+
+.race-meet-tab {
+  padding: var(--spacing-2) 0;
+}
+
+.rmt-note {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.rmt-card {
+  background: var(--surface-card);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
+}
+
+.rmt-card-title {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rmt-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.rmt-compare th,
+.rmt-compare td {
+  padding: var(--spacing-1) 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rmt-compare thead th {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rmt-compare tbody th {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  min-width: 0;
+}
+
+.rmt-compare tbody tr + tr th,
+.rmt-compare tbody tr + tr td {
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rmt-compare tbody tr.is-current {
+  background: var(--color-primary-alpha-10);
+  font-weight: var(--font-weight-bold);
+}
+
+.rmt-boat-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: var(--radius-full);
+  border: var(--border-width-1) solid var(--border-hairline);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.rmt-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rmt-rate {
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.rmt-warn {
+  color: var(--color-warning-text);
+  margin-right: 2px;
+}
+
+.rmt-rank,
+.rmt-pretest {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rmt-sub,
+.rmt-source,
+.rmt-caveat {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.rmt-source {
+  color: var(--text-muted);
+}
+
+.rmt-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-2);
+}
+
+.rmt-select-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.rmt-select-chip.is-active {
+  font-weight: var(--font-weight-bold);
+  border-color: var(--brand-accent-primary);
+}
+
+.rmt-detail-score {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rmt-detail-border {
+  margin-left: var(--spacing-2);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.rmt-forecast,
+.rmt-trend {
+  margin: var(--spacing-1) 0 var(--spacing-2);
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.rmt-trend span {
+  display: block;
+}
+
+.rmt-verdict {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.rmt-loading,
+.rmt-empty {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.rmt-how summary {
+  cursor: pointer;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  padding: var(--spacing-1) 0;
+}
