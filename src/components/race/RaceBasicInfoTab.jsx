@@ -731,6 +731,14 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                     meetBoard?.semifinalSlots ??
                                     SEMIFINAL_DEFAULT_SLOTS;
                                   const border = ranking[slots - 1]?.rate;
+                                  // A: 準優・優勝戦のレースでは全員が勝ち上がり済みで
+                                  //    「準優の目安の中」が6艇すべてに出て意味が無い
+                                  // C: 節の序盤（3走未満）は順位もボーダーも動きすぎる
+                                  const stage = meetBoard?.currentStage ?? "";
+                                  const showBorder =
+                                    !stage.includes("準優") &&
+                                    !stage.includes("優勝戦") &&
+                                    me.runs >= MEET_SMALL_SAMPLE_RUNS;
                                   return (
                                     <>
                                       <span className="rbit-meet-rank">
@@ -739,7 +747,7 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                           total: ranking.length,
                                         })}
                                       </span>
-                                      {border !== undefined && (
+                                      {showBorder && border !== undefined && (
                                         <span className="rbit-meet-border">
                                           {me.rank <= slots
                                             ? t("basicInfo.meetBorderIn", {
@@ -808,6 +816,30 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                   </span>
                                 </p>
                               )}
+                              {/* D: 機力の起点。展示順位の推移だけでは
+                                  「元から悪い舟」か「調整が進んだ」かが読めない。
+                                  公式サイト由来の値なので出典を添える（ADR-0067） */}
+                              {(() => {
+                                const pre =
+                                  meetBoard?.pretestByRacer?.[player?.racerId];
+                                if (!pre || pre.pretest_time === null)
+                                  return null;
+                                return (
+                                  <p className="rbit-meet-trend-line">
+                                    <span>
+                                      {t("basicInfo.meetPretest", {
+                                        time: Number(pre.pretest_time).toFixed(
+                                          2,
+                                        ),
+                                        rank: pre.pretest_rank ?? "—",
+                                      })}
+                                    </span>
+                                    <span className="rbit-meet-pretest-source">
+                                      {t("basicInfo.meetPretestSource")}
+                                    </span>
+                                  </p>
+                                );
+                              })()}
                               {exVerdict && (
                                 <p className="rbit-meet-trend-line">
                                   <span>
@@ -862,6 +894,67 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                               localize(`/race/${id}`)
                             }
                           />
+                          {/* B: 勝負駆けは「この6人の中で誰が一番欲しがっているか」で
+                              決まる。1艇ずつ開かないと比べられないのが最大の不便
+                              だったので、同じ節データ（追加クエリ0本）から6艇を
+                              得点率順に並べる */}
+                          {ranking.length > 0 && (
+                            <div className="rbit-meet-compare">
+                              <p className="rbit-meet-compare-title">
+                                {t("basicInfo.meetCompareTitle")}
+                              </p>
+                              <ul className="rbit-meet-compare-list">
+                                {sortedPlayers
+                                  .map((p) => ({
+                                    player: p,
+                                    row: ranking.find(
+                                      (r) => r.racerId === p.racerId,
+                                    ),
+                                  }))
+                                  .filter((x) => x.row)
+                                  .sort((a, b) => b.row.rate - a.row.rate)
+                                  .map(({ player: p, row }) => {
+                                    const color = BOAT_COLORS[p.number] || {};
+                                    return (
+                                      <li
+                                        key={p.number}
+                                        className={`rbit-meet-compare-item${
+                                          p.number === boat ? " is-current" : ""
+                                        }`}
+                                      >
+                                        <span
+                                          className="rbit-boat-chip"
+                                          style={{
+                                            background: color.bg,
+                                            color: color.text,
+                                          }}
+                                        >
+                                          {p.number}
+                                        </span>
+                                        <span
+                                          className="rbit-meet-compare-name"
+                                          translate="no"
+                                        >
+                                          {p.name}
+                                        </span>
+                                        <span className="rbit-meet-compare-rate">
+                                          {row.rate.toFixed(2)}
+                                        </span>
+                                        <span className="rbit-meet-compare-rank">
+                                          {t("basicInfo.meetRank", {
+                                            rank: row.rank,
+                                            total: ranking.length,
+                                          })}
+                                        </span>
+                                      </li>
+                                    );
+                                  })}
+                              </ul>
+                              <p className="rbit-meet-compare-note">
+                                {t("basicInfo.meetCompareNote")}
+                              </p>
+                            </div>
+                          )}
                           {/* 得点率が当社計算であることと、配点・対象レースの
                               前提。毎回読む必要は無いので畳んでおく */}
                           {score.rate !== null && (

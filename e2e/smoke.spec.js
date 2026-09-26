@@ -1447,6 +1447,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.locator(".rbit-bar-row").nth(3).click();
     await page.locator(".rbit-expanded-tab", { hasText: "今節" }).click();
 
+    // 6艇を得点率順に並べる（勝負駆けは「この中で誰が一番欲しがっているか」）。
+    // 1艇開くだけで6艇の位置が分かる
+    const compare = page.locator(".rbit-meet-compare");
+    await expect(compare).toContainText("この6艇の今節（得点率順）");
+    await expect(compare.locator(".rbit-meet-compare-item")).toHaveCount(6);
     // 表示は「直近10走」と同じ表。今節は進入コースの列を足す
     const meetRows = page.locator(".rbit-meet tbody tr");
     await expect(meetRows).toHaveCount(6, { timeout: 25000 });
@@ -1473,6 +1478,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // タイムは 6.81→6.69 と速くなっているのに順位は1位→3位で落ちている
     await expect(trend).toContainText("展示順位 1位 → 3位（6走・6.81→6.69）");
     await expect(trend).toContainText("2つ下向き");
+    // 機力の起点（前検タイム）。公式サイト由来なので出典を添える（ADR-0067）
+    await expect(trend).toContainText("前検タイム");
+    await expect(trend).toContainText(
+      "前検タイムの出典: BOAT RACE オフィシャルウェブサイト",
+    );
 
     // 同じ節の走しか並ばない列（会場・レース名・グレード・種別）は省くので、
     // 日付/R/枠番/進入/ST/着順/決まり手/単勝配当 の8列になる

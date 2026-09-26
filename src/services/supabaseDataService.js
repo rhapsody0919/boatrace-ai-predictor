@@ -6191,7 +6191,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v2-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v3-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6222,7 +6222,7 @@ export const supabaseDataService = {
       const meetRows = rows.filter((r) => r.race_id.slice(0, 10) >= meetStart);
       const raceIds = [...new Set(meetRows.map((r) => r.race_id))];
 
-      const [results, conditions] = await Promise.all([
+      const [results, conditions, pretest] = await Promise.all([
         fetchAllByIn(
           "race_results",
           "race_id, rank1, rank2, rank3, rank4, rank5, rank6",
@@ -6239,6 +6239,16 @@ export const supabaseDataService = {
           .gte("race_id", meetStart)
           .lte("race_id", `${date}-zz`)
           .like("race_id", `__________-${vv}-__`)
+          .then(({ data }) => data ?? []),
+        // 前検タイム（FR-4a、`motor_pretest_stats`。095で匿名SELECTを公開済み）。
+        // 機力の**起点**。今節の展示順位の推移だけでは「元から悪い舟」なのか
+        // 「調整が進んだ」のかが読めない。節の全選手分を1クエリで引く
+        supabase
+          .from("motor_pretest_stats")
+          .select("racer_id, race_date, motor_number, pretest_time, pretest_rank")
+          .eq("venue_code", venueCode)
+          .gte("race_date", meetStart)
+          .lte("race_date", date)
           .then(({ data }) => data ?? []),
       ]);
       const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
@@ -6257,6 +6267,16 @@ export const supabaseDataService = {
             .length * 6 || null,
         // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
         stagesKnown: stageById.size > 0,
+        // 選手ごとの前検（節の最初の行＝前検日のもの）。
+        // 直近は節の中の複数日に行があるため、最も古い日付を採る
+        pretestByRacer: Object.fromEntries(
+          [...(pretest ?? [])]
+            .sort((a, b) => a.race_date.localeCompare(b.race_date))
+            .reduce((map, r) => {
+              if (!map.has(r.racer_id)) map.set(r.racer_id, r);
+              return map;
+            }, new Map()),
+        ),
         // 得点率の計算は画面側の純関数（seriesPoints.js）と同じ規則。
         // ここでは素材（着順と種別）だけ渡し、集計は呼び出し側に任せる
         entries: meetRows.map((e) => ({
