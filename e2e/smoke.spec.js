@@ -1499,7 +1499,8 @@ test.describe("レースページ再設計（BOA-168）", () => {
       page.locator(".race-meet-tab .race-history-table thead th"),
     ).toHaveCount(8);
     const cells = rows.first().locator("td");
-    await expect(cells.nth(0)).toContainText("2026-09-20");
+    // 同じ節の走しか並ばないので日付は月日だけ（年は毎行同じで幅を食う）
+    await expect(cells.nth(0)).toHaveText("9/20");
     await expect(cells.nth(1)).toContainText("5R");
     await expect(cells.nth(3)).toHaveText("5");
     await expect(cells.nth(4)).toHaveText("0.09");
