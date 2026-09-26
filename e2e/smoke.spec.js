@@ -1337,7 +1337,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // バーをタップすると詳細が開き、タブは3つ（直近10走/得意会場/条件別）。
     // 「今節」は6艇横断が主役になったのでレース単位の独立タブへ移した
     await page.locator(".rbit-bar-row").first().click();
-    await expect(page.locator(".rbit-expanded-tab")).toHaveCount(4);
+    await expect(page.locator(".rbit-expanded-tab")).toHaveCount(3);
 
     await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
 
