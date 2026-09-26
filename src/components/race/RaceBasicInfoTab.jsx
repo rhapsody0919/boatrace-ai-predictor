@@ -36,6 +36,7 @@ import {
   getRecentRaces,
   computeVenueRanking,
   buildConditionRows,
+  buildMeetResults,
   pickPeriodStats,
   SMALL_SAMPLE_THRESHOLD,
 } from "./basicInfoStats";
@@ -486,6 +487,13 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                     >
                       {t("basicInfo.viewConditions")}
                     </button>
+                    <button
+                      type="button"
+                      className={`rbit-expanded-tab${expandedView === "meet" ? " is-active" : ""}`}
+                      onClick={() => setExpandedView("meet")}
+                    >
+                      {t("basicInfo.viewMeet")}
+                    </button>
                   </div>
 
                   {expandedView === "trend" &&
@@ -588,6 +596,57 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                               );
                             })}
                           </ol>
+                        </div>
+                      );
+                    })()}
+
+                  {expandedView === "meet" &&
+                    (() => {
+                      const records = scopedStatsByRacer[player?.racerId];
+                      if (records === undefined || records === null) {
+                        return (
+                          <p className="rbit-expanded-loading">
+                            {t("basicInfo.loading")}
+                          </p>
+                        );
+                      }
+                      // 節の切り出しは meetGrouping に委ねる（直前情報タブの
+                      // 今節展示情報と同じ判定）。追加クエリは0本
+                      const meet = buildMeetResults(records, {
+                        raceId,
+                        venueCode,
+                      });
+                      if (meet.length === 0) {
+                        return (
+                          <p className="rbit-expanded-empty">
+                            {t("basicInfo.meetEmpty")}
+                          </p>
+                        );
+                      }
+                      return (
+                        <div className="rbit-meet">
+                          <p className="rbit-trend-note">
+                            {t("basicInfo.meetNote")}
+                          </p>
+                          {/* 「直近10走」と同じ表にする（2026-09-26
+                              ユーザーフィードバック）。今節は進入コースが要るので
+                              `showEntryCourse` で列を1つ足す */}
+                          <RaceHistoryTable
+                            rows={getRecentRaces(meet, meet.length)}
+                            showEntryCourse
+                            // 同じ節の走しか並ばないので会場・レース名・
+                            // グレード・種別は全行同じ値になる。モバイルで
+                            // 進入・ST・着順が画面外へ押し出されるため省く
+                            omitColumns={[
+                              "venue",
+                              "raceTitle",
+                              "grade",
+                              "stage",
+                            ]}
+                            buildRaceHref={(id) =>
+                              localize(`/race/${id}`)
+                            }
+                          />
                         </div>
                       );
                     })()}

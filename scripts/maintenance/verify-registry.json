@@ -19,6 +19,11 @@
       "guards": "docs/adr/ のADR番号の重複（並行セッションで繰り返し発生）"
     },
     {
+      "script": "verify-agent-definitions.js",
+      "tier": "ci",
+      "guards": ".claude/agents/ のサブエージェント定義とCLAUDE.mdの台帳・参照の整合、およびAgent Teams設定の再混入（PR #829）"
+    },
+    {
       "script": "verify-blog-draft-quality.js",
       "tier": "ci",
       "guards": "ブログ下書きDraft PRを人手承認なしで自動マージしてよいかの品質判定"
@@ -310,6 +315,26 @@
       "script": "verify-i18n-consistency.js",
       "tier": "ci",
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
+    },
+    {
+      "script": "verify-lib-index.js",
+      "tier": "ci",
+      "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）がソースと一致していること"
+    },
+    {
+      "script": "verify-e2e-skips.js",
+      "tier": "ci",
+      "guards": "E2Eのskip判定（check-e2e-skips.js）。無言でskipされ続けるテストの検知が壊れないこと"
+    },
+    {
+      "script": "verify-session-progress.js",
+      "tier": "ci",
+      "guards": "セッション長の検知（session-progress.js）。長くなっても黙るようになっていないこと"
+    },
+    {
+      "script": "verify-bug-cause-report.js",
+      "tier": "ci",
+      "guards": "バグ原因の定点観測の集計基準（bug-cause-report.js）。基準が変わると第1期と比較できなくなる"
     },
     {
       "script": "verify-format-column-migration.js",
