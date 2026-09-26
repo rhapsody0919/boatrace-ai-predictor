@@ -3782,7 +3782,11 @@ export const supabaseDataService = {
     // 足したので版を上げる。古い形のキャッシュが返ると、これらが undefined になって
     // 「波5cm以上 n=0」のような誤った値が出る。このキーは inferTtlFromKey に
     // マッチせず30分TTLなので、旧エントリが残る窓は最大30分
-    return withCache(`racer-scoped-race-stats-v2-${racerId}`, async () => {
+    // v3: 今節タブの展示タイム推移（phase a FR-3のPhase A）のために
+    // exhibitionTime を足した。同じ理由で版を上げる
+    // v4: 展示は絶対値でなく同レース内の順位で見ることにしたので
+    // exhibitionRank を足した（水面の影響を相殺するため）
+    return withCache(`racer-scoped-race-stats-v4-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -3976,6 +3980,28 @@ export const supabaseDataService = {
             actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
             // 級別（そのレース時点の値）。ST考察のベースラインを(course, grade)で引く
             grade: entry.grade ?? null,
+            // 自艇の展示タイム。展示1位判定のために同レース全艇分を既に
+            // 取得しているので、そこから拾うだけ（追加クエリ0本）。
+            // 今節タブの「展示タイムの推移」（FR-3 Phase A）で使う
+            exhibitionTime:
+              exhibitionRowsByRace
+                .get(entry.race_id)
+                ?.find((r) => r.boat_number === entry.boat_number)
+                ?.exhibition_time ?? null,
+            // 同じレースの中での展示タイム順位（1が最速）。
+            // **絶対値の推移は水面の影響を拾う**——桐生の会場平均は
+            // 2026-09-20〜25で 6.763〜6.865 と日によって0.10秒動いており、
+            // 「+0.03で下向き」のような判定は水面が重い日に全艇へ出てしまう。
+            // 同じレース内の順位なら、その日の水面の影響が相殺される
+            exhibitionRank: (() => {
+              const rows = exhibitionRowsByRace.get(entry.race_id);
+              const mine = rows?.find(
+                (r) => r.boat_number === entry.boat_number,
+              )?.exhibition_time;
+              if (!rows || mine === null || mine === undefined) return null;
+              // 同着は同順位（1,1,3…）。展示は小数2桁で同着が起きる
+              return rows.filter((r) => r.exhibition_time < mine).length + 1;
+            })(),
             // そのレース時点の出走表に載っていた今期のF数（phase a FR-2の
             // 「F持ち時」「F無し時」の行）。null の走は母数から落ちる。
             // 充足の内訳（2026-09-25実測）:
@@ -6133,6 +6159,139 @@ export const supabaseDataService = {
         }
         throw error;
       }
+    });
+  },
+
+  /**
+   * 節の全選手の今節得点率と順位を取得する（phase a FR-3 Phase B、BOA-291）。
+   *
+   * ## なぜ節の全選手が要るのか
+   *
+   * 得点率は**単独では読めない**。「3.67」と出しても、準優に乗るのかが分からない。
+   * ファンが見たいのは「この節の中で今どこにいるか」「準優の枠まであと何点か」で、
+   * それには節の全選手（約48名）の得点率が要る。
+   *
+   * ## 取得は3本
+   *
+   * `race_id` が `YYYY-MM-DD-VV-RR` の固定長なので、`like("__________-VV-__")` で
+   * 会場を厳密に絞れる（実測: 桐生の1節=432行を1クエリ・550ms）。
+   * 節の切り出しは日付の連続性（間隔2日以内）で行う。`race_series` は引かない。
+   *
+   * **1レース詳細あたり+3本**。ただしキーは節単位なので、6艇のどれを開いても
+   * 使い回され、同じ節の他のレースを開いても再取得しない。
+   *
+   * @param {string} raceId 表示中のレース
+   * @param {number} venueCode
+   * @returns {Promise<{rows: Array, currentStage: string|null,
+   *   meetStart: string, meetEnd: string, semifinalSlots: number|null}>}
+   */
+  getMeetScoreboard(raceId, venueCode) {
+    const date = (raceId ?? "").slice(0, 10);
+    if (!date || venueCode === null || venueCode === undefined) {
+      return Promise.resolve(null);
+    }
+    const vv = String(venueCode).padStart(2, "0");
+    return withCache(`meet-scoreboard-v4-${raceId}`, async () => {
+      if (!supabase) throw new Error("Supabase client not initialized");
+
+      // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
+      const from = new Date(date);
+      from.setDate(from.getDate() - 9);
+      const { data: entries } = await supabase
+        .from("race_entries")
+        .select("race_id, boat_number, racer_id, player_name")
+        .gte("race_id", from.toISOString().slice(0, 10))
+        // **表示中のレースより前まで**。`${date}-zz` にすると同じ日の後のレースまで
+        // 入り、まだ行われていないレースの結果で順位を出すことになる
+        .lt("race_id", raceId)
+        .like("race_id", `__________-${vv}-__`);
+
+      const rows = entries ?? [];
+      if (rows.length === 0) return null;
+
+      // 日付の連続性で節を切る（表示日を含む区間だけ残す）
+      const dates = [...new Set(rows.map((r) => r.race_id.slice(0, 10)))].sort();
+      // 表示日のレースが1つも無い場合（初日の第1レース等）は直近の日から遡る
+      let meetStart = dates.includes(date) ? date : dates[dates.length - 1];
+      for (let i = dates.indexOf(meetStart); i > 0; i--) {
+        const gap =
+          (new Date(dates[i]) - new Date(dates[i - 1])) / (1000 * 60 * 60 * 24);
+        if (gap > 2) break;
+        meetStart = dates[i - 1];
+      }
+      const meetRows = rows.filter((r) => r.race_id.slice(0, 10) >= meetStart);
+      const raceIds = [...new Set(meetRows.map((r) => r.race_id))];
+
+      const [results, conditions, pretest] = await Promise.all([
+        fetchAllByIn(
+          "race_results",
+          "race_id, rank1, rank2, rank3, rank4, rank5, rank6",
+          "race_id",
+          raceIds,
+        ),
+        // 種別だけは**節の全レース**を引く（表示中レースより後も含む）。
+        // 番組は事前に決まっているので未来の情報ではなく、これが無いと
+        // 「準優が何個組まれているか（＝枠が18名か24名か）」が分からない。
+        // 表示中レース自体の種別（早見の出し分け）もここから取る
+        supabase
+          .from("race_conditions")
+          .select("race_id, race_stage")
+          .gte("race_id", meetStart)
+          .lte("race_id", `${date}-zz`)
+          .like("race_id", `__________-${vv}-__`)
+          .then(({ data }) => data ?? []),
+        // 前検タイム（FR-4a、`motor_pretest_stats`。095で匿名SELECTを公開済み）。
+        // 機力の**起点**。今節の展示順位の推移だけでは「元から悪い舟」なのか
+        // 「調整が進んだ」のかが読めない。節の全選手分を1クエリで引く
+        supabase
+          .from("motor_pretest_stats")
+          // `racer_class` も一緒に取る（追加クエリ0本）。級別は「44人中43位」が
+          // B2の順当なのかA1の不調なのかを分ける情報で、勝負駆けの読みが変わる
+          .select(
+            "racer_id, race_date, motor_number, pretest_time, pretest_rank, racer_class",
+          )
+          .eq("venue_code", venueCode)
+          .gte("race_date", meetStart)
+          .lte("race_date", date)
+          .then(({ data }) => data ?? []),
+      ]);
+      const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
+      const stageById = new Map(
+        (conditions ?? []).map((c) => [c.race_id, c.race_stage]),
+      );
+
+      return {
+        meetStart,
+        meetEnd: date,
+        // 表示中レースの種別。早見（得点率がどう動くか）の出し分けに使う
+        currentStage: stageById.get(raceId) ?? null,
+        // この節に組まれた準優勝戦の枠数（予選中はまだ0）。慣例は3個レース=18名
+        semifinalSlots:
+          [...stageById.entries()].filter(([, st]) => st?.includes("準優"))
+            .length * 6 || null,
+        // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
+        stagesKnown: stageById.size > 0,
+        // 選手ごとの前検（節の最初の行＝前検日のもの）。
+        // 直近は節の中の複数日に行があるため、最も古い日付を採る
+        pretestByRacer: Object.fromEntries(
+          [...(pretest ?? [])]
+            .sort((a, b) => a.race_date.localeCompare(b.race_date))
+            .reduce((map, r) => {
+              if (!map.has(r.racer_id)) map.set(r.racer_id, r);
+              return map;
+            }, new Map()),
+        ),
+        // 得点率の計算は画面側の純関数（seriesPoints.js）と同じ規則。
+        // ここでは素材（着順と種別）だけ渡し、集計は呼び出し側に任せる
+        entries: meetRows.map((e) => ({
+          raceId: e.race_id,
+          boatNumber: e.boat_number,
+          racerId: e.racer_id,
+          playerName: e.player_name,
+          raceStage: stageById.get(e.race_id) ?? null,
+          ...(resultById.get(e.race_id) ?? {}),
+        })),
+      };
     });
   },
 

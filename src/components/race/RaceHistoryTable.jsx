@@ -55,6 +55,8 @@ import "./RaceHistoryTable.css";
  *   "stage"）。今節タブ（FR-3）は同じ節の走しか並ばず、この4列が全行同じ値に
  *   なる。モバイルでは表が1000px超になり、肝心の進入・ST・着順が初期表示の
  *   外へ押し出されるため省く
+ * @param {boolean} [compactDate] 日付を月日だけにする（`9/24`）。同じ節の走
+ *   しか並ばない今節タブ向け。選手ページ・直近10走は年をまたぐので既定のまま
  * @param {boolean} [showEntryCourse] 「進入」列（実際に進入したコース）を
  *   枠番の隣に足す。今節タブ（phase a FR-3）は「日別・進入・着順・ST」を
  *   見せるのが目的で進入が要る。直近10走・選手ページでは出さない
@@ -66,9 +68,16 @@ function RaceHistoryTable({
   buildRaceHref = (raceId) => `/race/${raceId}`,
   showEntryCourse = false,
   omitColumns = [],
+  compactDate = false,
 }) {
   const { t } = useTranslation();
   const shows = (key) => !omitColumns.includes(key);
+  // 同じ節の走だけが並ぶ表（今節タブ）では年は毎行同じで、390pxの幅を
+  // 進入・ST・着順から奪うだけになる。月日だけに縮める
+  const formatDate = (date) =>
+    compactDate && typeof date === "string" && date.length === 10
+      ? `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`
+      : date;
 
   return (
     <div className="race-history-table-wrapper">
@@ -101,7 +110,7 @@ function RaceHistoryTable({
                   className="race-history-table-link"
                   to={buildRaceHref(race.raceId)}
                 >
-                  {race.date}
+                  {formatDate(race.date)}
                 </Link>
               </td>
               {shows("venue") && (

@@ -87,6 +87,7 @@ import Toast, { useToast } from "../Toast";
 import RaceTabs from "./RaceTabs";
 import RaceBasicInfoTab from "./RaceBasicInfoTab";
 import RaceWakuInfoTab from "./RaceWakuInfoTab";
+import RaceMeetTab from "./RaceMeetTab";
 import RaceBeforeInfoTab from "./RaceBeforeInfoTab";
 import RaceAiPredictionTab from "./RaceAiPredictionTab";
 import RaceOddsListTab from "./RaceOddsListTab";
@@ -350,6 +351,20 @@ function PredictionPanel({
                   embedded
                   initialVenueCode={venueCode}
                   initialRaceId={analysisRaceId}
+                />
+              ),
+            },
+            {
+              // 日和と同じくモータ情報の隣に置く（2026-09-26、ファン視点の議論）。
+              // 勝負駆けは6艇を横断して見るものなので、選手を選んでから開く
+              // 基本情報タブの中ではなく、レース単位のタブにした
+              id: "meet",
+              label: t("raceTabs.meet"),
+              content: (
+                <RaceMeetTab
+                  raceId={analysisRaceId}
+                  venueCode={venueCode}
+                  players={prediction.allPlayers}
                 />
               ),
             },

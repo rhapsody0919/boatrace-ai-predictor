@@ -493,10 +493,11 @@ export function buildMeetResults(records, { raceId, venueCode }) {
   const date = (raceId ?? "").slice(0, 10);
   if (!date || venueCode === null || venueCode === undefined) return [];
 
+  // **表示中のレースより前**だけ。`date <= date` だと同じ日の後のレースまで入り、
+  // 5Rを見ているのに同じ日の9Rが「今節のこれまでの走り」に出る（2026-09-20 桐生5Rで発生）。
+  // race_id は `YYYY-MM-DD-VV-RR` の固定長なので文字列比較でレース単位に切れる
   const upto = all
-    .filter(
-      (r) => r.venueCode === venueCode && r.date <= date && r.raceId !== raceId,
-    )
+    .filter((r) => r.venueCode === venueCode && r.raceId < raceId)
     .sort((a, b) => a.raceId.localeCompare(b.raceId));
 
   const anchored = [
@@ -506,4 +507,89 @@ export function buildMeetResults(records, { raceId, venueCode }) {
   return groupIntoCurrentMeet(anchored)
     .filter((m) => m.record !== null)
     .map((m) => m.record);
+}
+
+/** 今節の平均STが通常値とこれだけ違えば「踏んでいる／慎重」と言い切る閾値（秒） */
+export const MEET_ST_DIFF_THRESHOLD = 0.01;
+/**
+ * 今節の展示**順位**がこれだけ動けば「上向き／下向き」と言い切る閾値（位）。
+ *
+ * 当初は展示タイムの絶対値（±0.03秒）で判定していたが、**水面の影響を拾って
+ * しまう**ことが実測で分かった（桐生の会場平均は2026-09-20〜25で
+ * 6.763〜6.865と日によって0.10秒動き、水面が重い日に6艇中5艇へ
+ * 「下向き」が出た）。同じレース内の順位なら、その日の水面は相殺される
+ */
+export const MEET_EXHIBITION_DIFF_THRESHOLD = 1;
+
+/**
+ * 今節の「変化」を出す（phase a FR-3 Phase A、純関数）。
+ *
+ * 日別の生データ（`buildMeetResults`）だけでは「で、今日はどうなのか」が読めない。
+ * ファンが今節を見る理由は主に「スタートを詰めてきたか」「機力が上向きか」の2つで、
+ * どちらも**単独の数値ではなく変化**を見ている。ST考察（FR-1）が同コース・同級別の
+ * 平均との差を出しているのと同じ発想で、ここでは**その選手自身の通常値との差**を出す。
+ *
+ * - **ST**: 今節の平均ST vs 今節を除く全期間の平均ST。負なら踏んでいる
+ * - **展示**: 今節の最初の展示タイム vs 直近の展示タイム。負なら上向き（速くなった）
+ *
+ * 追加クエリは0本（`getRacerScopedRaceStats` が既に持っている値だけを使う）。
+ *
+ * @param {Array<Object>} meet `buildMeetResults` の戻り値（日付昇順）
+ * @param {Array<Object>} allRecords 同じ選手の全走（通常値の母数）
+ * @returns {{st: {meetAvg: number|null, meetN: number, baseAvg: number|null,
+ *   baseN: number, diff: number|null}, exhibition: {first: number|null,
+ *   last: number|null, diff: number|null, n: number}}}
+ */
+export function buildMeetTrend(meet, allRecords) {
+  const meetRows = Array.isArray(meet) ? meet : [];
+  const all = Array.isArray(allRecords) ? allRecords : [];
+  const meetIds = new Set(meetRows.map((r) => r.raceId));
+  // 通常値からは今節を除く。含めると「今節が通常値を押し上げて差が縮む」ため
+  const baseRows = all.filter((r) => !meetIds.has(r.raceId));
+
+  const meetRates = computeRates(meetRows);
+  const baseRates = computeRates(baseRows);
+  // **画面に出す桁で差を取る**。生値で引くと「0.13 と 0.15 なのに −0.01」のように
+  // 表示と差が噛み合わない（0.1325 − 0.1475 = −0.015 → 四捨五入で −0.01）
+  const round2 = (v) => (v === null ? null : Math.round(v * 100) / 100);
+  const meetSt = round2(meetRates.avgSt);
+  const baseSt = round2(baseRates.avgSt);
+  const stDiff =
+    meetSt !== null && baseSt !== null ? round2(meetSt - baseSt) : null;
+
+  // 展示は**順位**で見る。絶対値の推移は水面の影響を拾ってしまう
+  // （桐生の会場平均は2026-09-20〜25で6.763〜6.865と日によって0.10秒動く。
+  //  実際、閾値±0.03では水面が重い日に6艇中5艇へ「下向き」が出た）
+  const exhibitionRows = meetRows.filter(
+    (r) => typeof r.exhibitionRank === "number",
+  );
+  const exhibitions = exhibitionRows.map((r) => r.exhibitionRank);
+  const times = exhibitionRows.map((r) =>
+    typeof r.exhibitionTime === "number" ? r.exhibitionTime : null,
+  );
+  const first = exhibitions.length > 0 ? exhibitions[0] : null;
+  const last =
+    exhibitions.length > 0 ? exhibitions[exhibitions.length - 1] : null;
+
+  return {
+    st: {
+      meetAvg: meetSt,
+      meetN: meetRates.avgStN,
+      baseAvg: baseSt,
+      baseN: baseRates.avgStN,
+      diff: stDiff,
+    },
+    exhibition: {
+      // 展示順位（1が最速）。時計も併記できるよう生値を持たせる
+      first,
+      last,
+      firstTime: times.length > 0 ? times[0] : null,
+      lastTime: times.length > 0 ? times[times.length - 1] : null,
+      // 1走しか無ければ「推移」ではないので差は出さない。
+      // 順位は小さいほど良いので、負なら上向き（速くなった）で符号の向きは
+      // STと揃う
+      diff: exhibitions.length >= 2 ? last - first : null,
+      n: exhibitions.length,
+    },
+  };
 }
