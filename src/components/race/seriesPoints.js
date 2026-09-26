@@ -66,6 +66,13 @@ export function computeSeriesScore(meetRecords) {
   let runs = 0;
   rows.forEach((r) => {
     if (isExcludedStage(r.raceStage)) return;
+    // **結果がまだ無いレースは分母に入れない**。節の全選手を引く経路では
+    // その日のこれから走るレースも `race_entries` に入っており、数えると
+    // 「得点率4.00（4走）なのに日別の表は3行」という食い違いが出る
+    // （2026-09-26 尼崎10Rで実際に発生）。
+    // 失格・落水は結果行そのものはあり `rank1` に他艇が入るので、
+    // `rank1` の有無で「実施されたか」を判定できる
+    if (r.rank1 === null || r.rank1 === undefined) return;
     runs += 1;
     const rank = finishPositionOf(r);
     if (rank === null) return; // 失格・落水・転覆は0点（分母には入れる）

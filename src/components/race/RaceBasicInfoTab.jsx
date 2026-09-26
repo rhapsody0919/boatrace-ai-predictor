@@ -663,8 +663,19 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                       const trend = buildMeetTrend(meet, records);
                       // 今節の得点率（FR-3 Phase B）。公式はSG/G1の4日目以降しか
                       // 出さないので当社で計算する。計算式は公式の得点率一覧と
-                      // 全選手（若松G1・49名）で照合して一致を確認済み
-                      const score = computeSeriesScore(meet);
+                      // 全選手（若松G1・49名）で照合して一致を確認済み。
+                      //
+                      // **節の全選手を取れているときはそちらを正とする**。
+                      // 選手単位の records（`getRacerScopedRaceStats`）と
+                      // 節単位の取得は母数が1走ずれることがあり、
+                      // 「得点率5.33（3走）なのに22位・ボーダー4.50まであと0.50」
+                      // という矛盾した表示が実際に出た（2026-09-26 尼崎10R）。
+                      // 順位と同じ母数で出さないと読み手が混乱する
+                      const ranking = buildMeetRanking(meetBoard);
+                      const mine = ranking.find(
+                        (r) => r.racerId === player?.racerId,
+                      );
+                      const score = mine ?? computeSeriesScore(meet);
                       const st = trend.st;
                       const ex = trend.exhibition;
                       const stVerdict =
@@ -714,10 +725,7 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                                 {/* 得点率は単独では読めない。節の中での位置と
                                     準優の枠までの距離を添えて初めて判断材料になる */}
                                 {(() => {
-                                  const ranking = buildMeetRanking(meetBoard);
-                                  const me = ranking.find(
-                                    (r) => r.racerId === player?.racerId,
-                                  );
+                                  const me = mine;
                                   if (!me) return null;
                                   const slots =
                                     meetBoard?.semifinalSlots ??
