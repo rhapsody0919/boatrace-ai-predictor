@@ -22,9 +22,28 @@
  * 閾値は「ある日いきなり増えたことに気づく」ためのもので、
  * skipを0にするための基準ではない（データ依存のskipは正常に起こる）。
  *
+ * ## 採点する前に、採点できるレポートかを確かめる
+ *
+ * 率は「走った分」の分数なので、走った数が減ると率は下がる。つまり率だけを見ると、
+ * この検査は**一本も動いていない実行を満点にする**。実測で確認した例:
+ *
+ *   - `webServer` が起動に失敗して中断した実行は、空ではなく新鮮なレポートを書く。
+ *     `suites: []` / `stats.expected: 0` / `errors: [中断の理由]` という中身で、
+ *     率は 0/0 として 0% と出る
+ *   - 設定にある6プロジェクトのうち1つ（例: layout-wide の30件）が testMatch の
+ *     変化で0件になっても、全体1086件に対する率はほとんど動かない。元の事件
+ *     （7件が長期間skip、3b6ef2ce）と同じ「緑のまま何も検証しない」が一段上で起きる
+ *
+ * なので率を見る前に、レポートが採点に足るかを見る（`reportProblems`）。
+ * 判断材料はすべてレポート自身の中にある（`errors` / `config.projects` /
+ * `stats.startTime`）ので、別に台帳を持つ必要がない。
+ *
  * 使い方:
  *   npm run test:e2e && node scripts/maintenance/check-e2e-skips.js
  *   node scripts/maintenance/check-e2e-skips.js --max-rate=0.2
+ *   # 一部のプロジェクトだけ走らせた後（例: npm run test:layout）は、
+ *   # 揃っているべきプロジェクトを明示する
+ *   node scripts/maintenance/check-e2e-skips.js --projects=layout-mobile,layout-wide
  *
  * 検証: scripts/maintenance/verify-e2e-skips.js
  */
@@ -45,6 +64,17 @@ const repoRoot = path.resolve(
 const DEFAULT_MAX_SKIP_RATE = 0.15;
 
 /**
+ * レポートがこれより古かったら採点しない。
+ *
+ * リポジトリ直下の `e2e-results.json` は（Playwright の outputDir と違って）
+ * 実行開始時に消えないので、一度書かれると次に走らせるまで残り続ける。
+ * テストを走らせずに `npm run check:e2e-skips` だけ叩くと、何日前の結果でも
+ * 「OK」と出てしまう。いつの結果かはレポート自身（`stats.startTime`）が
+ * 持っているので、それを見る。
+ */
+const DEFAULT_MAX_AGE_HOURS = 24;
+
+/**
  * Playwright の JSON レポートから、テストの結果を平らに取り出す。
  * suites は入れ子になるので再帰で潰す。
  */
@@ -59,6 +89,7 @@ export function flattenTests(report) {
             title: [...title, spec.title].join(" › "),
             file: suite.file ?? spec.file ?? "",
             status: test.status ?? test.results?.[0]?.status ?? "unknown",
+            project: test.projectName ?? "",
             annotations: test.annotations ?? spec.annotations ?? [],
           });
         }
@@ -83,7 +114,80 @@ export function skipReasonOf(test) {
  */
 const CLUSTER_WARN_COUNT = 5;
 
-/** 判定。閾値を超えたら fail、そうでなければ ok。 */
+/**
+ * 採点できるレポートかを確かめる。問題を人が読める文で並べて返す（空なら採点可）。
+ *
+ * 率を見る前にこれを通す。「走った数が減れば率も下がる」ので、率は
+ * 「そもそも走っていない」を検知できない。ここで見るのは次の3点。
+ *
+ *   1. `errors` が空か — 中断した実行は新鮮なレポートを書くが中身が空になる
+ *   2. 揃っているべきプロジェクトが全部1件以上あるか — 1つ丸ごと消えても率は動かない
+ *   3. いつの結果か — 古いレポートを採点すると、走らせていないのに緑になる
+ *
+ * `expectProjects` を渡さない場合は、レポートの `config.projects` に載っている
+ * 全プロジェクトが揃っていることを求める。`config.projects` は `--project` で
+ * 絞って実行しても設定上の全件が載る（実測）ため、一部だけ走らせた場合は
+ * 呼び出し側が期待する集合を明示する必要がある。既定を厳しい側に置くのは、
+ * 新しい呼び出し元が指定を忘れたときに緩くなるのを避けるため。
+ */
+export function reportProblems(report, tests, options = {}) {
+  const {
+    now = Date.now(),
+    maxAgeHours = DEFAULT_MAX_AGE_HOURS,
+    expectProjects = null,
+  } = options;
+  const problems = [];
+
+  const errors = report?.errors ?? [];
+  if (errors.length > 0) {
+    const first = errors[0]?.message?.split("\n")[0] ?? "(内容不明)";
+    problems.push(
+      `実行が正常に完了していません（Playwrightのerrorsが${errors.length}件）。先頭: ${first}`,
+    );
+  }
+
+  if (tests.length === 0) {
+    problems.push(
+      "レポートにテストが1件も入っていません。採点する対象がありません。",
+    );
+  } else {
+    const declared = (report?.config?.projects ?? [])
+      .map((p) => p?.name)
+      .filter(Boolean);
+    const expected = expectProjects ?? declared;
+    const ran = new Set(tests.map((t) => t.project).filter(Boolean));
+    const missing = expected.filter((name) => !ran.has(name));
+    if (missing.length > 0) {
+      problems.push(
+        `設定にあるのに1件も走っていないプロジェクトがあります: ${missing.join(", ")}`,
+      );
+    }
+  }
+
+  const started = Date.parse(report?.stats?.startTime ?? "");
+  if (!Number.isFinite(started)) {
+    problems.push(
+      "レポートに実行時刻（stats.startTime）がありません。いつの結果か分からないため採点しません。",
+    );
+  } else {
+    const ageHours = (now - started) / 3600000;
+    if (ageHours > maxAgeHours) {
+      problems.push(
+        `レポートが古すぎます（${ageHours.toFixed(1)}時間前、上限${maxAgeHours}時間）。テストを走らせずに採点しかけています。`,
+      );
+    }
+  }
+
+  return problems;
+}
+
+/**
+ * 率の判定。閾値を超えたら fail、そうでなければ ok。
+ *
+ * 1件も無い場合の率は0になるが、それを「合格」と読んではいけない。
+ * 「走っていない」は率の問題ではなくレポートの問題なので、`reportProblems` が
+ * 先に落とす。ここは採点対象が揃っている前提で率だけを見る。
+ */
 export function judge(tests, maxRate) {
   const total = tests.length;
   const skipped = tests.filter((t) => t.status === "skipped");
@@ -92,7 +196,7 @@ export function judge(tests, maxRate) {
     total,
     skipped,
     rate,
-    ok: total === 0 || rate <= maxRate,
+    ok: rate <= maxRate,
   };
 }
 
@@ -114,14 +218,54 @@ export function clusteredReasons(skipped, threshold = CLUSTER_WARN_COUNT) {
   );
 }
 
+/**
+ * `--name=値` を取り出す。指定が無ければ undefined。
+ *
+ * 値が空（`--projects=` のような書き方）のときは黙って既定値に戻さず落とす。
+ * 戻すと「指定したつもりが効いていない」状態になり、`--projects=` を指定したのに
+ * 「--projects= で指定してください」と言われる、といった噛み合わない案内が出る。
+ */
+function argOf(name) {
+  const prefix = `--${name}=`;
+  const hit = process.argv.find((a) => a.startsWith(prefix));
+  if (hit === undefined) return undefined;
+  const value = hit.slice(prefix.length);
+  if (value.trim() === "") {
+    console.error(`NG: --${name} に値がありません。`);
+    process.exit(1);
+  }
+  return value;
+}
+
 function main() {
-  const rateArg = process.argv
-    .find((a) => a.startsWith("--max-rate="))
-    ?.split("=")[1];
+  const rateArg = argOf("max-rate");
   const maxRate = rateArg ? Number(rateArg) : DEFAULT_MAX_SKIP_RATE;
   if (!Number.isFinite(maxRate) || maxRate < 0 || maxRate > 1) {
     console.error(
       `NG: --max-rate は0〜1で指定してください（受け取った値: ${rateArg}）`,
+    );
+    process.exit(1);
+  }
+
+  const ageArg = argOf("max-age-hours");
+  const maxAgeHours = ageArg ? Number(ageArg) : DEFAULT_MAX_AGE_HOURS;
+  if (!Number.isFinite(maxAgeHours) || maxAgeHours <= 0) {
+    console.error(
+      `NG: --max-age-hours は正の数で指定してください（受け取った値: ${ageArg}）`,
+    );
+    process.exit(1);
+  }
+
+  const projectsArg = argOf("projects");
+  const expectProjects = projectsArg
+    ? projectsArg
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : null;
+  if (expectProjects && expectProjects.length === 0) {
+    console.error(
+      "NG: --projects が空です。カンマ区切りで1つ以上指定してください。",
     );
     process.exit(1);
   }
@@ -137,6 +281,32 @@ function main() {
   }
 
   const tests = flattenTests(report);
+
+  // 率を見る前に、このレポートが採点に足るかを見る。
+  // 「走った数が減れば率も下がる」ので、率だけでは「走っていない」を検知できない。
+  const problems = reportProblems(report, tests, {
+    maxAgeHours,
+    expectProjects,
+  });
+  if (problems.length > 0) {
+    console.error("NG: このレポートは採点できません。");
+    for (const p of problems) console.error(`  - ${p}`);
+    console.error("");
+    console.error(
+      "  skipの率が低いことは「テストが動いている」ことを意味しません。",
+    );
+    console.error(
+      "  採点対象が揃っていないレポートを通すと、この検査が防ぎたい",
+    );
+    console.error("  「緑のまま何も検証していない」状態そのものになります。");
+    console.error("");
+    console.error("  先に npm run test:e2e を実行してください。");
+    console.error(
+      "  一部のプロジェクトだけ走らせた場合は --projects= で期待する集合を指定してください。",
+    );
+    process.exit(1);
+  }
+
   const { total, skipped, rate, ok } = judge(tests, maxRate);
 
   console.log(
