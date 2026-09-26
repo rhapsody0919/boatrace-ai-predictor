@@ -177,6 +177,17 @@
       "postedAt": null,
       "metrics": null,
       "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、火曜のため当日ネタ生成日）。09:04時点で現在時刻確認、締切10:31まで約82分の余裕を確認（60分基準を満たす）。イン崩れ注意度89パーセンタイル（70以上を優先する基準に合致）。turnPrediction.patternsの艇番が[1,2,3]で重複無し（2026-08-25発覚の重複表示問題を回避、常滑2R volPercentile=97.5は艇番[1,2,1]の重複ありだったため見送り候補から除外）。直近3投稿（trivia→venue-ranking→live-prediction-hook）と型重複なし。既存LivePredictionHookCM.jsxのLivePredictionHookTemplateを再利用し、一時的に新規export（LivePredictionHookCM_Live20260915）とAudio loop（soundtrack-hitcheck.wav 13.06秒<動画尺16.90秒で末尾無音になる既知バグの回避）を追加してレンダリング。レンダリング後にgit checkoutで元に戻した（コード変更は残していない、package-lock.jsonの差分も復元済み）。sns_template_variantsにid=0e038540-b9f9-4bd3-9d75-8e6b853e404cで新規登録。getRecentRevisions/getActiveInsights確認、該当フィードバック・active insightなし（venue-ranking系の過去指摘のみ、今回のformatとは無関係）。risk-rules.json照合（キャプション・動画内テキスト双方）、risk_flags無し。frame=0・展開予測シーン（1位候補まで表示・2位表示時点・3位表示時点）・イン崩れ注意度シーン・CTAシーンをffmpegで書き出し目視確認済み（安全マージン・中央寄せ問題なし）。TikTok向けは絶対厳守13（賭けの結果に影響する統計・インサイトを扱うコンテンツ禁止）により本日も新規生成を見送った（2026-09-12の前回判断を参照、backlog未整理のため据え置き。詳細はtiktok-posts/history.json参照）。sns_drafts承認待ち。"
+    },
+    {
+      "date": "2026-09-25",
+      "character": null,
+      "format": null,
+      "content": null,
+      "videoFile": null,
+      "status": "skipped",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "セッション開始時に投稿可否を確認したが、ユーザーが離席のため反応なし。フローC-2/C-3のルール通りその日は見送り（skipped）として記録。"
     }
   ]
 }

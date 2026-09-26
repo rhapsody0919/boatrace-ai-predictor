@@ -99,6 +99,17 @@
       "postedAt": null,
       "metrics": null,
       "notes": "当日ネタ生成枠（sns-hub-content-generation Routine定期実行、火曜）。今回もTikTok向け新規動画を生成しなかった（Routine自身の判断、ユーザーへの事前確認は無し）。2026-09-12の前回判断からの状況変化を確認したが、標準（archiveが進んだ、または新しい非ギャンブル系コンポジションを試作した）のいずれも未達成だったため据え置いた: sns_drafts platform=tiktokのpending_review件数は2026-09-15時点で9件（trivia×4〈うち2件は2026-09-14の週次バッチで新規生成、未レビューのまま積み増し〉、service-scale×1、絶対厳守13により投稿不可の可能性が高い旧型〈venue-ranking×2・answer-check×1・live-prediction-hook×1、いずれも2026-09-01作成〉が9週間近く未整理のまま残存）。前回セッションが指摘した非準拠9件のアーカイブ判断は行われておらず、逆に週次バッチでtrivia×2が積み増され未レビュー分が増えている状態。本セッションでは新規の非ギャンブル系コンポジション試作も行わなかった（X向け予想数値フック型〈びわこ1R〉の実データ取得・レンダリング・Supabase登録を優先したため、詳細はx-posts/history.json参照）。次回セッションでは、上記backlogの人間レビュー状況を再確認し、進展があれば生成を再開する。"
+    },
+    {
+      "date": "2026-09-25",
+      "format": null,
+      "axis": null,
+      "content": null,
+      "videoFile": null,
+      "status": "skipped",
+      "postedAt": null,
+      "metrics": null,
+      "notes": "セッション開始時に投稿可否を確認したが、ユーザーが離席のため反応なし。フローC-2/C-3のルール通りその日は見送り（skipped）として記録。"
     }
   ]
 }
