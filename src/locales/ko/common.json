@@ -655,7 +655,8 @@
       "fHolding": "F 보유 시",
       "fClean": "F 없음"
     },
-    "conditionsBaseNote": "※{{rows}} 항목은 해당 조건을 판정할 수 있었던 출주만 모수입니다(다른 행과 모수가 다릅니다).",
+    "conditionsBaseNote": "※이 행들은 다른 행과 모수가 다릅니다. {{rows}}이며, 해당 조건을 판정할 수 있었던 출주만 센 값입니다.",
+    "conditionsBaseNoteRow": "{{label}}은 {{n}}주",
     "conditionsBaseNoteSeparator": "·",
     "conditionsCourseCaveat": "※이 표는 모든 코스를 합친 집계입니다(오늘과 같은 {{boat}}번 보트로 출주한 것은 과거 {{n}}회). 번호별·코스별 성적은 「번호별 정보」 탭에서 볼 수 있습니다",
     "conditionsFinalDayCaveat": "※최종일에는 우승전이 포함되어, 올라온 선수가 1번 보트에 들어갑니다. 선수의 힘뿐 아니라 좋은 번호를 받은 결과도 반영된 수치라는 점에 유의하세요",

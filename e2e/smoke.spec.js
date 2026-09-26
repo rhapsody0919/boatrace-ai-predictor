@@ -1340,15 +1340,27 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
 
-    // 9行（全国/当地/一般戦/SG・G1/初日/最終日/波5cm以上/F持ち時/F無し時）。
-    // ナイターの行は出さない（開催時間帯を取得していないため）
+    // 行は条件ごと（全国/当地/一般戦/SG・G1/初日/最終日/波5cm以上/F持ち/Fなし）。
+    // ナイターの行は出さない（開催時間帯を取得していないため）。
+    // n=0 の行は畳むので（BOA-432）、この選手は SG・G1 が消えて8行になる。
+    // 行数を直に固定するとn=0の有無で壊れるため、ラベルの有無で確かめる
     const rows = page.locator(".rbit-conditions-table tbody tr");
-    await expect(rows).toHaveCount(9, { timeout: 25000 });
-    await expect(rows.nth(0)).toContainText("全国");
-    await expect(rows.nth(4)).toContainText("初日");
-    await expect(rows.nth(6)).toContainText("波5cm以上");
-    await expect(rows.nth(7)).toContainText("F持ち時");
-    await expect(rows.nth(8)).toContainText("F無し時");
+    await expect(rows.first()).toContainText("全国", { timeout: 25000 });
+    const table = page.locator(".rbit-conditions-table");
+    for (const label of [
+      "全国",
+      "当地",
+      "一般戦",
+      "初日",
+      "最終日",
+      "波5cm以上",
+      "F持ち",
+      "Fなし",
+    ]) {
+      await expect(table).toContainText(label);
+    }
+    // 出走のある条件しか出さない（この選手はSG・G1を走っていない）
+    await expect(table).not.toContainText("SG・G1");
 
     // 上のバー（公式値）と数字が一致しないことを明記する
     await expect(page.locator(".rbit-conditions-note")).toContainText(
@@ -1373,7 +1385,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // F持ち時・F無し時は勝率だけだと「Fを持っている方が走る」と読めるため、
     // 指標が勝率でも平均STを併記する（同レビュー指摘C）
     await expect(page.locator(".rbit-conditions")).toContainText(
-      /F持ち時の平均ST .+／F無し時/,
+      /F持ちの平均ST .+／Fなし/,
     );
 
     // 毎回は要らない注記（最終日の構造差・母数が違う行）は折りたたむ。
@@ -1386,7 +1398,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await how.locator("summary").click();
     await expect(how.locator("p").first()).toBeVisible();
     await expect(how).toContainText("最終日は優勝戦を含み");
-    await expect(how).toContainText("母数が違います");
+    await expect(how).toContainText("母数が他の行と違います");
   });
 
   test("勝率が全行1%未満に潰れる選手には3連対率への導線を出す（phase a T5-2、ファン視点レビュー指摘D）", async ({
@@ -1402,10 +1414,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     await page.locator(".rbit-bar-row").nth(4).click();
     await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
-    await expect(page.locator(".rbit-conditions-table tbody tr")).toHaveCount(
-      9,
-      { timeout: 25000 },
-    );
+    // n=0 の行は畳むため行数は選手により変わる（BOA-432）。表が出ることだけ確かめる
+    await expect(
+      page.locator(".rbit-conditions-table tbody tr").first(),
+    ).toContainText("全国", { timeout: 25000 });
 
     const zero = page.locator(".rbit-conditions-zero");
     await expect(zero).toContainText("1%未満");
