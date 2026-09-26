@@ -607,11 +607,20 @@
     "colScore": "득점률",
     "colRank": "시리즈 순위",
     "colPretest": "전검",
-    "rankTied": "{{rank}}위({{tied}}명 동률)",
+    "rankTied": "{{rank}}위 타이",
     "rankPlain": "{{rank}}위",
     "pretestRank": "{{rank}}위",
     "compareSub": "이번 시리즈 출전 {{total}}명.",
-    "borderLine": "준우승전 기준은 {{slots}}위({{rate}})."
+    "borderLine": "준우승전 기준은 {{slots}}위({{rate}}).",
+    "rankTiedTitle": "동률 {{tied}}명",
+    "pretestCell": "{{time}}（{{rank}}위）",
+    "rowHint": "행을 누르면 아래 상세가 그 선수로 바뀝니다.",
+    "classTitle": "급별",
+    "finishSeparator": "・",
+    "finishDq": "실격",
+    "smallSampleLegend": "⚠ 는 3주 미만(득점률이 아직 거칠다).",
+    "finishLabel": "착순",
+    "borderNote": "점선 위가 준우승전 기준 안입니다(편성이 확정되지 않아 확정은 아닙니다)."
   },
   "basicInfo": {
     "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 10경기·강세 경기장·조건별)가 열립니다",
@@ -703,7 +712,10 @@
     "periodWinRate": "승률 {{value}}",
     "periodTop2Rate": "2연대율 {{value}}",
     "periodAvgSt": "평균 ST {{value}}",
-    "periodFetchError": "전기 성적을 가져오지 못했습니다"
+    "periodFetchError": "전기 성적을 가져오지 못했습니다",
+    "meetScoreForecastTitle": "오늘 착순에 따른 득점률 변화",
+    "meetTrendExhibitionDownSameTime": "타임은 그대로, 주위가 빨라져 {{diff}}계단 하락",
+    "meetTrendExhibitionUpSameTime": "타임은 그대로, 주위가 느려져 {{diff}}계단 상승"
   },
   "dataTable": {
     "title": "데이터 출주표",

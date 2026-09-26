@@ -39,6 +39,25 @@
   white-space: nowrap;
 }
 
+/* 列の間を空ける。0だと「43位6.72（21位）」のように順位と前検が
+   地続きに見えて、どこまでが1つの数字か読めない */
+.rmt-compare th + th,
+.rmt-compare th + td,
+.rmt-compare td + td {
+  padding-left: var(--spacing-2);
+}
+
+/* 名前の列に余りを吸わせる（そうしないと見出しが中央付近に固まり、
+   どの見出しがどの数字に掛かっているか読み取りにくい） */
+.rmt-compare thead th:first-child,
+.rmt-compare tbody th {
+  width: 99%;
+}
+
+.rmt-compare thead th:first-child {
+  text-align: left;
+}
+
 .rmt-compare thead th {
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
@@ -47,12 +66,62 @@
 }
 
 .rmt-compare tbody th {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-1);
   text-align: left;
   font-weight: var(--font-weight-medium);
   min-width: 0;
+}
+
+/* 行＝選手。行タップで下の詳細が切り替わる。キーボードでも辿れるよう、
+   名前のセルは実体をボタンにする（行の onClick は指で押したときの都合） */
+.rmt-compare tbody tr {
+  cursor: pointer;
+}
+
+.rmt-row-select {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+/* 名前の下の着順の並び。得点率（平均）では潰れる情報 */
+.rmt-finishes {
+  display: block;
+  /* 7走の節では「着順 2・2・3・4・1・2・5」が長く、親の nowrap のままだと
+     名前の列が広がって前検の列が card の外へ押し出される（実際に切れた）。
+     ここだけ折り返しを許す */
+  white-space: normal;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rmt-finishes-label {
+  margin-right: 3px;
+}
+
+.rmt-finishes .is-win {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.rmt-class {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 0 3px;
+  flex-shrink: 0;
 }
 
 .rmt-compare tbody tr + tr th,
@@ -63,6 +132,18 @@
 .rmt-compare tbody tr.is-current {
   background: var(--color-primary-alpha-10);
   font-weight: var(--font-weight-bold);
+}
+
+/* 準優の目安の「線」。どこが境目かは数字を突き合わせないと読めなかった */
+.rmt-compare tbody tr.is-border-edge th,
+.rmt-compare tbody tr.is-border-edge td {
+  border-bottom: 2px dashed var(--brand-accent-primary);
+}
+
+/* 目安内の行は左に帯を引く（セル内のバッジは列幅を食って前検を切る） */
+.rmt-compare tbody tr.is-in-border th {
+  box-shadow: inset 3px 0 0 0 var(--brand-accent-primary);
+  padding-left: 6px;
 }
 
 .rmt-boat-chip {
@@ -109,7 +190,7 @@
 }
 
 .rmt-source {
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .rmt-chip-row {
@@ -144,11 +225,43 @@
   color: var(--text-primary);
 }
 
+/* 同じ行に置くと「準優の目安」だけが右端に残り、続きの
+   「（18位）5.50 まで あと 4.17」が次行へ折れて読み順が壊れる */
 .rmt-detail-border {
-  margin-left: var(--spacing-2);
+  display: block;
+  margin-top: 2px;
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   color: var(--text-secondary);
+}
+
+.rmt-hint {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+/* 着順ごとの得点率。1行に並べると390pxで折り返し、縦に比べられない */
+.rmt-forecast-title {
+  display: block;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rmt-forecast-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px var(--spacing-2);
+  margin: var(--spacing-1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 480px) {
+  .rmt-forecast-list {
+    grid-template-columns: repeat(6, 1fr);
+  }
 }
 
 .rmt-forecast,

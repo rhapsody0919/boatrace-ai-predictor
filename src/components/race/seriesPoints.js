@@ -111,6 +111,26 @@ export function forecastSeriesScore(current) {
 export const SEMIFINAL_DEFAULT_SLOTS = 18;
 
 /**
+ * 今節の着順の並びを古い順に返す（純関数）。
+ *
+ * 得点率は「平均」なので、**同じ5.00でも「1着→6着」と「3着→3着」では
+ * 次のレースの見方が変わる**。勝負駆けを読むファンは並びを見るため、
+ * 得点率とは別に素の着順を出す。
+ *
+ * 未実施のレース（`rank1` が無い）は含めない。失格・落水は `null` で返し、
+ * 呼び出し側が「失」等に落とす（0点だが走ったことに変わりはない）。
+ *
+ * @param {Array<Object>} meetRecords 節内の走
+ * @returns {Array<number|null>} 着順（古い順）
+ */
+export function listSeriesFinishes(meetRecords) {
+  return (Array.isArray(meetRecords) ? [...meetRecords] : [])
+    .filter((r) => r.rank1 !== null && r.rank1 !== undefined)
+    .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
+    .map((r) => finishPositionOf(r));
+}
+
+/**
  * 節の全選手の得点率を計算して順位を付ける（純関数）。
  *
  * 得点率は**単独では読めない**（「3.67」だけでは準優に乗るか分からない）。
@@ -134,7 +154,12 @@ export function buildMeetRanking(scoreboard) {
   const rows = [...byRacer.entries()]
     .map(([racerId, { playerName, rows: runs }]) => {
       const score = computeSeriesScore(runs);
-      return { racerId, playerName, ...score };
+      return {
+        racerId,
+        playerName,
+        ...score,
+        finishes: listSeriesFinishes(runs),
+      };
     })
     .filter((r) => r.rate !== null)
     .sort((a, b) => b.rate - a.rate);

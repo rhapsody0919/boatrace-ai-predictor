@@ -6191,7 +6191,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v3-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v4-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6245,7 +6245,11 @@ export const supabaseDataService = {
         // 「調整が進んだ」のかが読めない。節の全選手分を1クエリで引く
         supabase
           .from("motor_pretest_stats")
-          .select("racer_id, race_date, motor_number, pretest_time, pretest_rank")
+          // `racer_class` も一緒に取る（追加クエリ0本）。級別は「44人中43位」が
+          // B2の順当なのかA1の不調なのかを分ける情報で、勝負駆けの読みが変わる
+          .select(
+            "racer_id, race_date, motor_number, pretest_time, pretest_rank, racer_class",
+          )
           .eq("venue_code", venueCode)
           .gte("race_date", meetStart)
           .lte("race_date", date)

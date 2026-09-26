@@ -109,6 +109,8 @@ function RaceMeetTab({ raceId, venueCode, players }) {
 
   const mine = ranking.find((r) => r.racerId === selectedPlayer?.racerId);
   const border = ranking[slots - 1]?.rate;
+  // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
+  const showBorderBadge = !isAfterPrelim && border !== undefined;
   const showBorder =
     !isAfterPrelim && mine && mine.runs >= MEET_SMALL_SAMPLE_RUNS;
 
@@ -117,6 +119,12 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   const st = trend.st;
   const ex = trend.exhibition;
   const pre = pretestOf(selectedPlayer?.racerId);
+  // 展示タイムが同じなのに順位が動いた場合（6.78→6.78で「1つ下向き」）は、
+  // 数字だけ見ると誤植に見える。周りが動いた結果だと書き分ける
+  const exSameTime =
+    ex.firstTime !== null &&
+    ex.lastTime !== null &&
+    Math.abs(ex.firstTime - ex.lastTime) < 0.005;
 
   return (
     <div className="race-meet-tab">
@@ -140,25 +148,78 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                 .map((p) => ({ player: p, row: ranking.find((r) => r.racerId === p.racerId) }))
                 .filter((x) => x.row)
                 .sort((a, b) => b.row.rate - a.row.rate)
-                .map(({ player: p, row }) => {
+                .map(({ player: p, row }, i, arr) => {
                   const color = BOAT_COLORS[p.number] || {};
                   const tied = tiedCount(row.rank);
                   const pt = pretestOf(p.racerId);
+                  const inBorder = showBorderBadge && row.rank <= slots;
+                  // 目安内の最後の行に太い罫線を引く。「誰が線の上か」は
+                  // 数字を突き合わせないと分からず、実際に読み落とされた
+                  const borderEdge =
+                    inBorder &&
+                    !(arr[i + 1] && arr[i + 1].row.rank <= slots);
                   return (
                     <tr
                       key={p.number}
-                      className={p.number === selectedBoat ? "is-current" : ""}
+                      className={[
+                        p.number === selectedBoat ? "is-current" : "",
+                        // 「目安内」をセル内のバッジで出すと、390pxで
+                        // 前検の列が card の外へ押し出されて切れた。
+                        // 行の左帯＋点線＋注記に置き換える
+                        inBorder ? "is-in-border" : "",
+                        borderEdge ? "is-border-edge" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      // 行＝選手なので、行をタップしたら下の詳細が切り替わる。
+                      // 下のチップまで指を動かさせない（表は横スクロールしない
+                      // ためスワイプ誤爆の懸念も無い）
+                      onClick={() => setSelectedBoat(p.number)}
                     >
                       <th scope="row">
-                        <span
-                          className="rmt-boat-chip"
-                          style={{ background: color.bg, color: color.text }}
+                        <button
+                          type="button"
+                          className="rmt-row-select"
+                          onClick={() => setSelectedBoat(p.number)}
+                          aria-pressed={p.number === selectedBoat}
                         >
-                          {p.number}
-                        </span>
-                        <span className="rmt-name" translate="no">
-                          {p.name?.replace(/\s+/g, "")}
-                        </span>
+                          <span
+                            className="rmt-boat-chip"
+                            style={{ background: color.bg, color: color.text }}
+                          >
+                            {p.number}
+                          </span>
+                          <span className="rmt-name" translate="no">
+                            {p.name?.replace(/\s+/g, "")}
+                          </span>
+                          {pt?.racer_class && (
+                            <span
+                              className="rmt-class"
+                              title={t("meetTab.classTitle")}
+                            >
+                              {pt.racer_class}
+                            </span>
+                          )}
+                        </button>
+                        {/* 得点率は平均なので「1着→6着」と「3着→3着」が
+                            同じ5.00になる。次をどう見るかは並びで変わる */}
+                        {row.finishes.length > 0 && (
+                          <span className="rmt-finishes">
+                            <span className="rmt-finishes-label">
+                              {t("meetTab.finishLabel")}
+                            </span>
+                            {row.finishes.map((f, i2) => (
+                              <span key={i2}>
+                                {i2 > 0 && t("meetTab.finishSeparator")}
+                                {/* 1着だけ強く出す。勝負駆けは「勝ちがあるか」で
+                                    見え方が変わり、並びの中で一番探される数字 */}
+                                <span className={f === 1 ? "is-win" : undefined}>
+                                  {f ?? t("meetTab.finishDq")}
+                                </span>
+                              </span>
+                            ))}
+                          </span>
+                        )}
                       </th>
                       <td className="rmt-rate">
                         {row.runs < MEET_SMALL_SAMPLE_RUNS && (
@@ -172,24 +233,47 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                         {row.rate.toFixed(2)}
                       </td>
                       <td className="rmt-rank">
-                        {tied > 1
-                          ? t("meetTab.rankTied", { rank: row.rank, tied })
-                          : t("meetTab.rankPlain", { rank: row.rank })}
+                        {tied > 1 ? (
+                          <span title={t("meetTab.rankTiedTitle", { tied })}>
+                            {t("meetTab.rankTied", { rank: row.rank })}
+                          </span>
+                        ) : (
+                          t("meetTab.rankPlain", { rank: row.rank })
+                        )}
                       </td>
+                      {/* 前検は「何位か」より「何秒か」で水面を読む数字。
+                          順位だけでは会場の出方が分からない */}
                       <td className="rmt-pretest">
-                        {pt?.pretest_rank
-                          ? t("meetTab.pretestRank", { rank: pt.pretest_rank })
-                          : "—"}
+                        {pt?.pretest_time !== null &&
+                        pt?.pretest_time !== undefined
+                          ? pt.pretest_rank
+                            ? t("meetTab.pretestCell", {
+                                time: Number(pt.pretest_time).toFixed(2),
+                                rank: pt.pretest_rank,
+                              })
+                            : Number(pt.pretest_time).toFixed(2)
+                          : pt?.pretest_rank
+                            ? t("meetTab.pretestRank", { rank: pt.pretest_rank })
+                            : "—"}
                       </td>
                     </tr>
                   );
                 })}
             </tbody>
           </table>
+          <p className="rmt-hint">{t("meetTab.rowHint")}</p>
           <p className="rmt-sub">
+            {ranking.some((r) => r.runs < MEET_SMALL_SAMPLE_RUNS) && (
+              <>{t("meetTab.smallSampleLegend")} </>
+            )}
             {t("meetTab.compareSub", { total: ranking.length })}
-            {!isAfterPrelim && border !== undefined && (
-              <> {t("meetTab.borderLine", { slots, rate: border.toFixed(2) })}</>
+            {showBorderBadge && (
+              <>
+                {" "}
+                {t("meetTab.borderLine", { slots, rate: border.toFixed(2) })}
+                {" "}
+                {t("meetTab.borderNote")}
+              </>
             )}
           </p>
           <p className="rmt-source">{t("basicInfo.meetPretestSource")}</p>
@@ -246,22 +330,30 @@ function RaceMeetTab({ raceId, venueCode, players }) {
             )}
           </p>
         )}
-        {mine && (
-          <p className="rmt-forecast">
-            {isAfterPrelim
-              ? t("basicInfo.meetScoreNoForecast", { stage })
-              : t("basicInfo.meetScoreForecast", {
-                  list: forecastSeriesScore(mine)
-                    .map((f) =>
-                      t("basicInfo.meetScoreForecastItem", {
-                        rank: f.rank,
-                        rate: f.rate.toFixed(2),
-                      }),
-                    )
-                    .join(" / "),
-                })}
-          </p>
-        )}
+        {mine &&
+          (isAfterPrelim ? (
+            <p className="rmt-forecast">
+              {t("basicInfo.meetScoreNoForecast", { stage })}
+            </p>
+          ) : (
+            // 1行に「1着 3.50 / 2着 3.00 / …」と並べると390pxで折り返し、
+            // 着順ごとに縦へ比べられない。着順を列にして畳む
+            <div className="rmt-forecast">
+              <span className="rmt-forecast-title">
+                {t("basicInfo.meetScoreForecastTitle")}
+              </span>
+              <ul className="rmt-forecast-list">
+                {forecastSeriesScore(mine).map((f) => (
+                  <li key={f.rank}>
+                    {t("basicInfo.meetScoreForecastItem", {
+                      rank: f.rank,
+                      rate: f.rate.toFixed(2),
+                    })}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
         {records === undefined ? (
           <p className="rmt-loading">{t("basicInfo.loading")}</p>
@@ -309,11 +401,19 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                   })}{" "}
                   <span className="rmt-verdict">
                     {ex.diff <= -MEET_EXHIBITION_DIFF_THRESHOLD
-                      ? t("basicInfo.meetTrendExhibitionUp", {
-                          diff: Math.abs(ex.diff),
-                        })
+                      ? t(
+                          exSameTime
+                            ? "basicInfo.meetTrendExhibitionUpSameTime"
+                            : "basicInfo.meetTrendExhibitionUp",
+                          { diff: Math.abs(ex.diff) },
+                        )
                       : ex.diff >= MEET_EXHIBITION_DIFF_THRESHOLD
-                        ? t("basicInfo.meetTrendExhibitionDown", { diff: ex.diff })
+                        ? t(
+                            exSameTime
+                              ? "basicInfo.meetTrendExhibitionDownSameTime"
+                              : "basicInfo.meetTrendExhibitionDown",
+                            { diff: ex.diff },
+                          )
                         : t("basicInfo.meetTrendExhibitionFlat")}
                   </span>
                 </span>
@@ -322,6 +422,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
             <RaceHistoryTable
               rows={getRecentRaces(meet, meet.length)}
               showEntryCourse
+              compactDate
               omitColumns={["venue", "raceTitle", "grade", "stage"]}
               buildRaceHref={(id) => localize(`/race/${id}`)}
             />

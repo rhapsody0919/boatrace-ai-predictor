@@ -609,11 +609,20 @@
     "colScore": "Score rate",
     "colRank": "Series rank",
     "colPretest": "Trial",
-    "rankTied": "{{rank}} ({{tied}} tied)",
+    "rankTied": "{{rank}} (tied)",
     "rankPlain": "{{rank}}",
     "pretestRank": "{{rank}}",
     "compareSub": "{{total}} racers in this series.",
-    "borderLine": "The semi-final line is {{slots}}th ({{rate}})."
+    "borderLine": "The semi-final line is {{slots}}th ({{rate}}).",
+    "rankTiedTitle": "{{tied}} racers tied",
+    "pretestCell": "{{time}} (#{{rank}})",
+    "rowHint": "Tap a row to switch the details below to that racer.",
+    "classTitle": "Class",
+    "finishSeparator": "-",
+    "finishDq": "DQ",
+    "smallSampleLegend": "⚠ = fewer than three runs (the score rate still swings).",
+    "finishLabel": "Finishes",
+    "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final)."
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
@@ -705,7 +714,10 @@
     "periodWinRate": "Win pts {{value}}",
     "periodTop2Rate": "Top-2 rate {{value}}",
     "periodAvgSt": "Avg. ST {{value}}",
-    "periodFetchError": "Could not load the previous term record"
+    "periodFetchError": "Could not load the previous term record",
+    "meetScoreForecastTitle": "How today's finish moves the score rate",
+    "meetTrendExhibitionDownSameTime": "Same time; the others improved, {{diff}} place(s) down",
+    "meetTrendExhibitionUpSameTime": "Same time; the others slowed, {{diff}} place(s) up"
   },
   "dataTable": {
     "title": "Data Race Card",

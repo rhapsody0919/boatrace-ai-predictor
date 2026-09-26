@@ -1459,12 +1459,33 @@ test.describe("レースページ再設計（BOA-168）", () => {
       "前検タイムの出典: BOAT RACE オフィシャルウェブサイト",
     );
 
+    // 級別は前検の行から取る（追加クエリなし）。前検は順位だけでなくタイムを出す
+    await expect(compare.locator(".rmt-class").first()).toHaveText(
+      /^(A1|A2|B1|B2)$/,
+    );
+    await expect(compare.locator(".rmt-pretest").first()).toHaveText(
+      /^\d\.\d{2}（\d+位）$|^\d\.\d{2}$|^—$/,
+    );
+
+    // 行タップで下の詳細がその選手に変わる（チップまで指を動かさせない）
+    const scoreLine = page.locator(".rmt-detail-score");
+    await expect(scoreLine).toBeVisible({ timeout: 25000 });
+    const firstScore = await scoreLine.innerText();
+    await compare.locator("tbody tr").nth(2).click();
+    await expect(scoreLine).not.toHaveText(firstScore, { timeout: 25000 });
+
     // 2. 選んだ1艇の詳細。既定は1号艇なので4号艇（登番4872）に切り替える
     await page.locator(".rmt-select-chip").nth(3).click();
     await expect(page.locator(".rmt-detail-score")).toContainText(
       "今節の得点率",
       { timeout: 25000 },
     );
+    // 早見は1行のベタ書きではなく着順ごとに割る（390pxで折り返して読めなくなる）
+    await expect(page.locator(".rmt-forecast-list li")).toHaveCount(6);
+    await expect(page.locator(".rmt-forecast-list li").first()).toContainText(
+      "1着",
+    );
+
     const trend = page.locator(".rmt-trend");
     await expect(trend).toContainText("今節の平均ST");
     await expect(trend).toContainText("前検タイム");

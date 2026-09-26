@@ -353,11 +353,20 @@
     "colScore": "得点率",
     "colRank": "節内順位",
     "colPretest": "前検",
-    "rankTied": "{{rank}}位（{{tied}}人同率）",
+    "rankTied": "{{rank}}位タイ",
     "rankPlain": "{{rank}}位",
     "pretestRank": "{{rank}}位",
     "compareSub": "節の出場は{{total}}人。",
-    "borderLine": "準優の目安は{{slots}}位（{{rate}}）。"
+    "borderLine": "準優の目安は{{slots}}位（{{rate}}）。",
+    "rankTiedTitle": "同率{{tied}}人",
+    "pretestCell": "{{time}}（{{rank}}位）",
+    "rowHint": "行をタップすると、下の詳細がその選手に変わります",
+    "classTitle": "級別",
+    "finishSeparator": "・",
+    "finishDq": "失",
+    "smallSampleLegend": "⚠ は3走未満（得点率がまだ荒い）。",
+    "finishLabel": "着順",
+    "borderNote": "点線より上が準優の目安内（番組は未定のため確定ではありません）。"
   },
   "basicInfo": {
     "note": "選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細（直近10走・得意会場・条件別）が開きます",
@@ -449,7 +458,10 @@
     "periodWinRate": "勝率 {{value}}",
     "periodTop2Rate": "2連対率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
-    "periodFetchError": "前期成績を取得できませんでした"
+    "periodFetchError": "前期成績を取得できませんでした",
+    "meetScoreForecastTitle": "今日の着順で得点率はこう動く",
+    "meetTrendExhibitionDownSameTime": "タイムは横ばい、周りが上がって{{diff}}つ下",
+    "meetTrendExhibitionUpSameTime": "タイムは横ばい、周りが落ちて{{diff}}つ上"
   },
   "wakuInfo": {
     "note": "選手を選ぶと、その選手が本日入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",

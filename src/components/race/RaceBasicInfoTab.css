@@ -539,5 +539,5 @@
 /* 前検タイムの出典（ADR-0067。公式サイト由来の値には出典を添える） */
 .rbit-meet-pretest-source {
   font-size: var(--font-size-2xs);
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }

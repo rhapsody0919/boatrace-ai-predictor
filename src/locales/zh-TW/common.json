@@ -607,11 +607,20 @@
     "colScore": "得分率",
     "colRank": "梯次名次",
     "colPretest": "前檢",
-    "rankTied": "第{{rank}}名（{{tied}}人同分）",
+    "rankTied": "第{{rank}}名並列",
     "rankPlain": "第{{rank}}名",
     "pretestRank": "第{{rank}}名",
     "compareSub": "本梯次共{{total}}人。",
-    "borderLine": "準優門檻為第{{slots}}名（{{rate}}）。"
+    "borderLine": "準優門檻為第{{slots}}名（{{rate}}）。",
+    "rankTiedTitle": "同分{{tied}}人",
+    "pretestCell": "{{time}}（第{{rank}}名）",
+    "rowHint": "點選該列，下方詳情會切換為該選手。",
+    "classTitle": "級別",
+    "finishSeparator": "・",
+    "finishDq": "失格",
+    "smallSampleLegend": "⚠ 表示未滿3場（得分率仍不穩定）。",
+    "finishLabel": "名次",
+    "borderNote": "虛線以上為準優門檻之內（賽程尚未排定，並非確定）。"
   },
   "basicInfo": {
     "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場・擅長賽場・依條件）",
@@ -703,7 +712,10 @@
     "periodWinRate": "勝率 {{value}}",
     "periodTop2Rate": "2連對率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
-    "periodFetchError": "無法取得前期成績"
+    "periodFetchError": "無法取得前期成績",
+    "meetScoreForecastTitle": "今日名次會讓得分率這樣變動",
+    "meetTrendExhibitionDownSameTime": "時間持平，其他艇變快，名次下降{{diff}}位",
+    "meetTrendExhibitionUpSameTime": "時間持平，其他艇變慢，名次上升{{diff}}位"
   },
   "dataTable": {
     "title": "數據出賽表",
