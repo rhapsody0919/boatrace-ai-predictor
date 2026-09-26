@@ -1334,9 +1334,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 25000,
     });
 
-    // バーをタップすると詳細が開き、タブは3つ（直近5走/得意会場/条件別）
+    // バーをタップすると詳細が開き、タブは4つ（直近10走/得意会場/条件別/今節）
     await page.locator(".rbit-bar-row").first().click();
-    await expect(page.locator(".rbit-expanded-tab")).toHaveCount(3);
+    await expect(page.locator(".rbit-expanded-tab")).toHaveCount(4);
 
     await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
 
@@ -1419,6 +1419,50 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(
       page.locator(".rbit-conditions-table tbody tr").first(),
     ).not.toContainText("0.0%");
+  });
+
+  test("基本情報タブの「今節」に節内の日別の進入・着順・STが出て、節をまたがない（phase a T6-1）", async ({
+    page,
+  }) => {
+    // 2026-09-24 桐生3R の4号艇（登番4872）は、この節を9/20から走っている。
+    // 表示中のレースは含めず、9/20〜9/23の6走が出るのが正解（DB実値で確認済み）
+    await page.goto("/race/2026-09-24-01-03");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+
+    await page.locator(".rbit-bar-row").nth(3).click();
+    await page.locator(".rbit-expanded-tab", { hasText: "今節" }).click();
+
+    // 表示は「直近10走」と同じ表。今節は進入コースの列を足す
+    const meetRows = page.locator(".rbit-meet tbody tr");
+    await expect(meetRows).toHaveCount(6, { timeout: 25000 });
+    await expect(page.locator(".rbit-meet thead")).toContainText("進入");
+    // 同じ節の走しか並ばない列（会場・レース名・グレード・種別）は省くので、
+    // 日付/R/枠番/進入/ST/着順/決まり手/単勝配当 の8列になる
+    await expect(page.locator(".rbit-meet thead th")).toHaveCount(8);
+    const firstCells = meetRows.first().locator("td");
+    await expect(firstCells.nth(0)).toContainText("2026-09-20");
+    await expect(firstCells.nth(1)).toContainText("5R");
+    // 枠番5・進入5・ST 0.09・着4（DB実値と一致）
+    await expect(firstCells.nth(2)).toHaveText("5");
+    await expect(firstCells.nth(3)).toHaveText("5");
+    await expect(firstCells.nth(4)).toHaveText("0.09");
+    await expect(firstCells.nth(5)).toHaveText("4");
+
+    // 節の初戦では前節が混ざらず、空状態になる
+    await page.goto("/race/2026-09-20-01-05");
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+    await expect(page.locator(".rbit-bar-row")).toHaveCount(6, {
+      timeout: 25000,
+    });
+    await page.locator(".rbit-bar-row").nth(4).click();
+    await page.locator(".rbit-expanded-tab", { hasText: "今節" }).click();
+    await expect(page.locator(".rbit-expanded-empty")).toContainText(
+      "今節はまだ走っていません",
+    );
+    await expect(page.locator(".rbit-meet tbody tr")).toHaveCount(0);
   });
 
   test("F数バッジが基本情報タブとST考察カードで同じ値になり、f_countが無い過去レースでは出ない（phase a T5-3）", async ({

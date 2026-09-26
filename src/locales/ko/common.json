@@ -251,6 +251,7 @@
     "grade": "그레이드",
     "stage": "경주 종류",
     "boatNumber": "코스",
+    "entryCourse": "진입",
     "startTiming": "ST",
     "finish": "착순",
     "technique": "결정수",
@@ -599,7 +600,7 @@
     "emptyBody": "발주 시간이 가까워지면 오즈가 수집되어 이 탭에 표시됩니다."
   },
   "basicInfo": {
-    "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 5경기·강세 경기장·조건별)가 열립니다",
+    "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 10경기·강세 경기장·조건별·이번 시리즈)가 열립니다",
     "metricLabel": "지표",
     "scopeLabel": "경기장",
     "gradeLabel": "등급",
@@ -629,16 +630,19 @@
     "winRateSwitchCaveat": "※등급・기간을 좁힌 「승률」은 공식 승률 점수가 아니라, 해당 조건에서 실제로 1착이 된 비율(%)을 표시합니다",
     "sampleCount": "(n={{n}})",
     "noData": "(데이터 없음)",
-    "viewTrend": "최근 5경기",
+    "viewTrend": "최근 10경기",
     "viewVenue": "강세 경기장",
     "loading": "불러오는 중...",
     "noHistory": "출주 이력 데이터가 없습니다",
     "noVenueData": "경기장별 성적 데이터가 없습니다(규정 경기 수 미만)",
-    "trendNote": "최근 5경기(등급・기간 조건과 무관하게 항상 최신 5경기를 표시. 날짜를 누르면 레이스 상세로 이동)",
+    "trendNote": "최근 10경기(위의 등급·기간 조건과 관계없이 항상 최신 10경기를 표시. 날짜를 누르면 해당 경주 상세로 이동)",
     "finishUnknown": "착외(순위 불명)",
     "venueRankingFor": "{{metric}} 랭킹",
     "currentVenueRank": "이번 시리즈의 {{venue}}는 전체 {{total}}개 경기장 중 {{rank}}위",
     "viewConditions": "조건별",
+    "viewMeet": "이번 시리즈",
+    "meetNote": "이번 시리즈(이번 개최)의 지금까지의 출주. 날짜를 누르면 해당 경주 상세로 이동",
+    "meetEmpty": "이번 시리즈에서는 아직 출주하지 않았습니다(이 경주가 첫 출주입니다)",
     "conditionsNote": "조건별 {{metric}}(당사 집계·확보 가능한 전체 기간). 위 막대의 공식 수치와는 산출 방식이 달라 숫자가 일치하지 않습니다.",
     "conditions": {
       "national": "전국",
@@ -1509,6 +1513,7 @@
     "detailNotPrediction": "이 경기장의 과거 실적을 집계한 것이며, 이번 경주의 예상이 아닙니다."
   },
   "recentRuns": {
+    "dateLabel": "{{month}}/{{day}} {{race}}R",
     "older": "오래됨",
     "newer": "최근",
     "flying": "F",

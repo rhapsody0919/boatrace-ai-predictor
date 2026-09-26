@@ -252,6 +252,7 @@
     "grade": "Grade",
     "stage": "Race Type",
     "boatNumber": "Lane",
+    "entryCourse": "Course",
     "startTiming": "ST",
     "finish": "Finish",
     "technique": "Winning technique",
@@ -601,7 +602,7 @@
     "emptyBody": "Odds will appear here as the start time approaches."
   },
   "basicInfo": {
-    "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 5 races, best venues, and a by-condition breakdown)",
+    "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues, by-condition breakdown and this series)",
     "metricLabel": "Metric",
     "scopeLabel": "Venue",
     "gradeLabel": "Grade",
@@ -631,16 +632,19 @@
     "winRateSwitchCaveat": "* When a grade or period filter is applied, \"Win rate\" is not the official win-rate points but the actual share of 1st-place finishes (%) under those conditions",
     "sampleCount": "(n={{n}})",
     "noData": "(No data)",
-    "viewTrend": "Last 5 races",
+    "viewTrend": "Last 10 races",
     "viewVenue": "Best venues",
     "loading": "Loading...",
     "noHistory": "No race history available",
     "noVenueData": "No record by venue available (below the minimum number of races)",
-    "trendNote": "The last 5 races (always the latest 5, regardless of the grade or period filter. Tap a date to open that race)",
+    "trendNote": "The last 10 races, regardless of the grade and period filters above. Tap a date to open that race",
     "finishUnknown": "Unplaced (rank unknown)",
     "venueRankingFor": "{{metric}} ranking",
     "currentVenueRank": "{{venue}}, this meet's venue, ranks {{rank}} of {{total}}",
     "viewConditions": "By condition",
+    "viewMeet": "This series",
+    "meetNote": "Races so far in this series. Tap a date to open that race",
+    "meetEmpty": "No races yet in this series (this is the racer's first one)",
     "conditionsNote": "{{metric}} by condition (our own tally, all available data). It will not match the official figures in the bars above, which are calculated differently.",
     "conditions": {
       "national": "All venues",
@@ -1514,6 +1518,7 @@
     "detailNotPrediction": "This counts past results at this venue. It is not a prediction for this race."
   },
   "recentRuns": {
+    "dateLabel": "{{month}}/{{day}} R{{race}}",
     "older": "Older",
     "newer": "Newer",
     "flying": "F",
