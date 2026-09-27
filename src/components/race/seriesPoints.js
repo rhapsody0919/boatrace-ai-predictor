@@ -69,12 +69,13 @@ export function computeSeriesScore(meetRecords, options = {}) {
   let runs = 0;
   rows.forEach((r) => {
     if (isExcludedStage(r.raceStage)) return;
-    // **予選が終わったらそこで確定**。準優が組まれた日以降の一般戦・
-    // 特別選抜戦・パイナップル抜等は公式の得点率に算入されない。
-    // 公式の得点率一覧も「4日目12R終了時点」と予選終了時点で止まる
-    // （2026-09-27、若松G1の最終日に公式ページで確認）。
-    // 算入していた頃は52人中43人が公式とズレていた
-    if (prelimEndRaceId && String(r.raceId) >= prelimEndRaceId) return;
+    // **予選が終わったらそこで確定**。予選終了後の一般戦・特別選抜戦・
+    // 準優・優勝戦は公式の得点率に算入されない。公式の得点率一覧も
+    // 「4日目12R終了時点」と予選終了時点で止まる（2026-09-27、若松G1の
+    // 最終日に公式ページで確認）。`prelimEndRaceId` は**予選の最後の
+    // レース**なので、それより後（>）を落とす（>= だと予選最終レース自体が
+    // 落ちる）
+    if (prelimEndRaceId && String(r.raceId) > prelimEndRaceId) return;
     // **結果がまだ無いレースは分母に入れない**。節の全選手を引く経路では
     // その日のこれから走るレースも `race_entries` に入っており、数えると
     // 「得点率4.00（4走）なのに日別の表は3行」という食い違いが出る

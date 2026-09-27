@@ -111,10 +111,12 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   // 止まる）。表示中レースの種別だけを見ていると、最終日の「特別選抜戦」で
   // 「今日の着順で得点率はこう動く」「準優の目安」を出してしまう
   const prelimEndRaceId = board?.prelimEndRaceId ?? null;
-  const prelimOver = Boolean(prelimEndRaceId && raceId >= prelimEndRaceId);
+  // `prelimEndRaceId` は**予選の最後のレース**。それより後なら予選は終了
+  const prelimOver = Boolean(prelimEndRaceId && raceId > prelimEndRaceId);
   const prelimEndDate = prelimEndRaceId
     ? `${Number(prelimEndRaceId.slice(5, 7))}/${Number(prelimEndRaceId.slice(8, 10))}`
     : null;
+  const prelimEndDay = board?.prelimEndDay ?? null;
   const pretestOf = (racerId) => board?.pretestByRacer?.[racerId] ?? null;
   // 同率が何人いるか。節の序盤は得点率の刻みが粗く（3走なら0.33刻み）
   // 「11位」が3人並ぶ。順位だけ見せると分解能を過信させる
@@ -367,6 +369,14 @@ function RaceMeetTab({ raceId, venueCode, players }) {
               ))}
             </div>
           </div>
+          {/* 右端の数値が何か分からない、という指摘（2026-09-27）。列見出しを出す */}
+          <div className="rmt-trend-head">
+            <span />
+            <span />
+            <span className="rmt-trend-last">
+              {t("meetTab.trendLastHeader")}
+            </span>
+          </div>
           <ul className="rmt-trend-rows">
             {trendRows.map(({ player: p, runs }) => {
               const color = BOAT_COLORS[p.number] || {};
@@ -472,7 +482,12 @@ function RaceMeetTab({ raceId, venueCode, players }) {
             <p className="rmt-forecast">
               {isAfterPrelim
                 ? t("basicInfo.meetScoreNoForecast", { stage })
-                : t("meetTab.prelimOverNote", { date: prelimEndDate ?? "" })}
+                : t(
+                    prelimEndDay
+                      ? "meetTab.prelimOverNoteDay"
+                      : "meetTab.prelimOverNote",
+                    { date: prelimEndDate ?? "", day: prelimEndDay ?? "" },
+                  )}
             </p>
           ) : (
             // 1行に「1着 3.50 / 2着 3.00 / …」と並べると390pxで折り返し、

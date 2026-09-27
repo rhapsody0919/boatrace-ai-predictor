@@ -624,7 +624,7 @@
     "smallSampleLegend": "⚠ 表示未滿3場（得分率仍不穩定）。",
     "finishLabel": "名次",
     "borderNote": "虛線以上為準優門檻之內（賽程尚未排定，並非確定）。",
-    "prelimOverNote": "預賽已於{{date}}的準優勝戰結束。得分率就此確定，今日名次不會再改變。",
+    "prelimOverNote": "預賽已於{{date}}結束。得分率就此確定，今日名次不會再改變。",
     "rankSourceNote": "梯次名次為本站計算。官方名次表會排除中途歸鄉・獎典除外的選手，因此名次越後面越可能相差數位。",
     "sparkStTitle": "本梯次的ST",
     "sparkExTitle": "本梯次的展示",
@@ -638,7 +638,9 @@
     "compareTrendSt": "ST",
     "compareTrendEx": "展示",
     "compareTrendNote": "6艇跑的是同一梯次、同一水面，因此用同一把尺（6艇的最小～最大）並排，可以跨列直接比較線的高度。虛線是6艇的平均。越上面越快，大點為前一場。",
-    "compareTrendEmpty": "尚無足夠場次可繪製走勢"
+    "compareTrendEmpty": "尚無足夠場次可繪製走勢",
+    "prelimOverNoteDay": "預賽已於第{{day}}天（{{date}}）結束。得分率就此確定，今日名次不會再改變。",
+    "trendLastHeader": "前一場"
   },
   "basicInfo": {
     "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場・擅長賽場・依條件）",

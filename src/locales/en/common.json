@@ -626,7 +626,7 @@
     "smallSampleLegend": "⚠ = fewer than three runs (the score rate still swings).",
     "finishLabel": "Finishes",
     "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final).",
-    "prelimOverNote": "The preliminaries ended with the semi-finals on {{date}}. The score rate is final and today's finish will not change it.",
+    "prelimOverNote": "The preliminaries ended on {{date}}. The score rate is final and today's finish will not change it.",
     "rankSourceNote": "The series rank is our own calculation. The official table leaves out racers who withdrew mid-series or were excluded from prizes, so the lower ranks can differ by a few places.",
     "sparkStTitle": "Start timing this series",
     "sparkExTitle": "Trial time this series",
@@ -640,7 +640,9 @@
     "compareTrendSt": "ST",
     "compareTrendEx": "Trial",
     "compareTrendNote": "All six ran the same series on the same water, so they share one scale (the min-max across the six) and you can compare the heights of the lines across rows directly. The dashed line is the average of the six. Higher is faster; the large dot is the latest run.",
-    "compareTrendEmpty": "Not enough runs yet to draw a trend"
+    "compareTrendEmpty": "Not enough runs yet to draw a trend",
+    "prelimOverNoteDay": "The preliminaries ended on day {{day}} ({{date}}). The score rate is final and today's finish will not change it.",
+    "trendLastHeader": "Last"
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",

@@ -6191,7 +6191,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v6-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v7-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6287,15 +6287,36 @@ export const supabaseDataService = {
         meetEnd: date,
         // 表示中レースの種別。早見（得点率がどう動くか）の出し分けに使う
         currentStage: stageById.get(raceId) ?? null,
-        // **予選の終わり**＝節で最初に組まれた準優勝戦の race_id。
-        // 得点率はここで確定し、以降の一般戦・特別選抜戦は算入されない
-        // （公式の得点率一覧も「4日目12R終了時点」で止まる。2026-09-27に
-        // 若松G1の最終日で確認）。無い（予選中）なら null
+        // **予選の終わり**＝種別が「予選」の最後のレースの race_id。
+        // 得点率はここで確定し、以降は算入されない。公式の得点率一覧も
+        // 「4日目12R終了時点」で止まる（2026-09-27に若松G1で確認）。
+        //
+        // 最初の準優を境にすると**予選終了後の一般戦を算入してしまう**。
+        // 若松は9/25(4日目)で予選が終わり、9/26は1R〜8Rが一般戦・9R〜11Rが
+        // 準優だった。「最初の準優より前」で切ると9/26の一般戦が入り、
+        // 52人中32人の得点率が公式とズレた（公式と照合して5/5で確認）。
+        // 無い（予選中でまだ予選が終わっていない）なら null
         prelimEndRaceId:
           [...stageById.entries()]
-            .filter(([, st]) => st?.includes("準優"))
+            .filter(([, st]) => st?.includes("予選"))
             .map(([id]) => id)
-            .sort()[0] ?? null,
+            .sort()
+            .pop() ?? null,
+        // 予選が終わった日が節の何日目か（公式の「4日目12R終了時点」に合わせる）
+        prelimEndDay: (() => {
+          const last =
+            [...stageById.entries()]
+              .filter(([, st]) => st?.includes("予選"))
+              .map(([id]) => id)
+              .sort()
+              .pop() ?? null;
+          if (!last) return null;
+          // `dates` は9日窓ぶん（前節を含む）なので、節の日付だけで数える
+          const meetDates = [
+            ...new Set(meetRows.map((r) => r.race_id.slice(0, 10))),
+          ].sort();
+          return meetDates.indexOf(last.slice(0, 10)) + 1 || null;
+        })(),
         // この節に組まれた準優勝戦の枠数（予選中はまだ0）。慣例は3個レース=18名
         semifinalSlots:
           [...stageById.entries()].filter(([, st]) => st?.includes("準優"))
