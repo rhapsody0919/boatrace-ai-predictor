@@ -150,9 +150,17 @@ function RaceHistoryTable({
                     : "-"}
                 </td>
               )}
+              {/* 「毎回ちゃんと届いているか」は平均STより、そのレースで
+                  何番目だったかの方が直接的（日和の「安定率」が答えようと
+                  している問いに、%より読みやすい形で答える） */}
               <td>
                 {race.startTiming !== null
-                  ? Number(race.startTiming).toFixed(2)
+                  ? race.startTimingRank
+                    ? t("raceHistoryTable.startTimingCell", {
+                        time: Number(race.startTiming).toFixed(2),
+                        rank: race.startTimingRank,
+                      })
+                    : Number(race.startTiming).toFixed(2)
                   : "-"}
               </td>
               <td>{race.finishRank ?? t("basicInfo.finishUnknown")}</td>

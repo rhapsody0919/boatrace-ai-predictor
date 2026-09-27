@@ -265,7 +265,8 @@
       "SG": "SG"
     },
     "exhibition": "Trial",
-    "exhibitionCell": "{{time}}({{rank}})"
+    "exhibitionCell": "{{time}}({{rank}})",
+    "startTimingCell": "{{time}}({{rank}})"
   },
   "panel": {
     "noData": "Prediction data is not available",

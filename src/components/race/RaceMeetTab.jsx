@@ -168,6 +168,13 @@ function RaceMeetTab({ raceId, venueCode, players }) {
     trendValues.length >= 2
       ? trendValues.reduce((a, b) => a + b, 0) / trendValues.length
       : null;
+  // 今節の各走の「そのレース内でのST順位」（節の全レースぶんのSTから算出済み）
+  const stRankByRace = Object.fromEntries(
+    (meetRunsByRacer[selectedPlayer?.racerId] ?? []).map((r) => [
+      r.raceId,
+      r.stRank,
+    ]),
+  );
   const lastSt = lastOf("startTiming");
   const lastExhibition = lastOf("exhibitionTime");
 
@@ -609,7 +616,10 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                 「1つ下向き」と出るが、今節ベスト級は間にある）。
                 判定はやめ、走ごとの生の数字を表に並べて読み手に委ねる */}
             <RaceHistoryTable
-              rows={getRecentRaces(meet, meet.length)}
+              rows={getRecentRaces(meet, meet.length).map((r) => ({
+                ...r,
+                startTimingRank: stRankByRace[r.raceId] ?? null,
+              }))}
               showEntryCourse
               showExhibition
               compactDate

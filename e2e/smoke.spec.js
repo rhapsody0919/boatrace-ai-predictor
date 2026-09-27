@@ -1476,15 +1476,16 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     // 2. 選んだ1艇の詳細。既定は1号艇なので4号艇（登番4872）に切り替える
     await page.locator(".rmt-select-chip").nth(3).click();
+    // 予選中は「今節の得点率」、予選終了後は「予選の得点率（確定）」。
+    // このレース（2026-09-24 桐生3R）は9/23で予選が終わった後の一般戦
     await expect(page.locator(".rmt-detail-score")).toContainText(
-      "今節の得点率",
+      "の得点率",
       { timeout: 25000 },
     );
-    // 早見は1行のベタ書きではなく着順ごとに割る（390pxで折り返して読めなくなる）
-    await expect(page.locator(".rmt-forecast-list li")).toHaveCount(6);
-    await expect(page.locator(".rmt-forecast-list li").first()).toContainText(
-      "1着",
-    );
+    // 予選が終わった後のレースでは、早見（今日の着順で得点率がどう動くか）は
+    // 出さない。準優はもう終わっていて得点率で争うものが無いため
+    await expect(page.locator(".rmt-forecast-list li")).toHaveCount(0);
+    await expect(page.locator(".rmt-forecast")).toContainText("予選は");
 
     // ST・展示は走順の折れ線で見せる（数字の羅列はやめた）。
     // 平均・通常値・前検タイムはグラフの見出しに寄せてある
@@ -1516,9 +1517,24 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(cells.nth(3)).toHaveText("5");
     // 展示は「タイム(同レース内の順位)」。上向き/下向きの断定はしない
     await expect(cells.nth(4)).toHaveText(/^\d\.\d{2}\(\d\)$|^\d\.\d{2}$|^-$/);
-    await expect(cells.nth(5)).toHaveText("0.09");
+    // STは「タイム(そのレース内のST順位)」。平均STだけでは「毎回相手に
+    // 先んじているか」が読めないため順位を併記する
+    await expect(cells.nth(5)).toHaveText(/^0\.09(\(\d\))?$/);
     // 展示の推移を「初日→直近」で断定する文言は出さない
     await expect(page.locator(".race-meet-tab")).not.toContainText("展示順位");
+
+    // 予選中のレース（2026-09-22 桐生3R「予選男子」）では、早見を着順ごとに
+    // 割って出す（1行のベタ書きだと390pxで折り返して読めない）
+    await page.goto("/race/2026-09-22-01-03");
+    await page.locator(".race-tabs-btn", { hasText: "今節" }).click();
+    await expect(page.locator(".rmt-detail-score")).toContainText(
+      "今節の得点率",
+      { timeout: 25000 },
+    );
+    await expect(page.locator(".rmt-forecast-list li")).toHaveCount(6);
+    await expect(page.locator(".rmt-forecast-list li").first()).toContainText(
+      "1着",
+    );
 
     // 節の初戦では前節が混ざらず、空状態になる
     await page.goto("/race/2026-09-20-01-05");

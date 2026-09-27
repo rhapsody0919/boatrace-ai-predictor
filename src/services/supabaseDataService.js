@@ -6191,7 +6191,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v7-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v8-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6357,15 +6357,27 @@ export const supabaseDataService = {
           for (const e of meetRows) {
             const ex = exByRace.get(e.race_id)?.get(e.boat_number) ?? null;
             const stRow = stByRace.get(e.race_id)?.get(e.boat_number) ?? null;
+            const st =
+              stRow && !stRow.is_flying && stRow.start_timing != null
+                ? Number(stRow.start_timing)
+                : null;
+            // そのレースの中で何番目のSTだったか（1が最速、同着は同順位）。
+            // 「毎回ちゃんと届いているか」は平均STより順位の方が直接的で、
+            // 日和の「安定率」（当社定義は最速STとの差0.05以内の割合）が
+            // 答えようとしている問いに、%より読みやすい形で答えられる。
+            // Fの艇は順位から外す（異常値のため）
+            const sameRace = [...(stByRace.get(e.race_id)?.values() ?? [])]
+              .filter((r) => !r.is_flying && r.start_timing != null)
+              .map((r) => Number(r.start_timing));
             (byRacer[e.racer_id] ??= []).push({
               raceId: e.race_id,
               date: e.race_id.slice(0, 10),
               exhibition: ex === null ? null : Number(ex),
-              // フライングは平均・推移から落とす（RaceResult等と同じ扱い）
-              st:
-                stRow && !stRow.is_flying && stRow.start_timing != null
-                  ? Number(stRow.start_timing)
-                  : null,
+              st,
+              stRank:
+                st === null
+                  ? null
+                  : sameRace.filter((v) => v < st).length + 1,
             });
           }
           for (const id of Object.keys(byRacer)) {

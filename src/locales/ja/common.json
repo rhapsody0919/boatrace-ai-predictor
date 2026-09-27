@@ -538,7 +538,8 @@
       "SG": "SG"
     },
     "exhibition": "展示",
-    "exhibitionCell": "{{time}}({{rank}})"
+    "exhibitionCell": "{{time}}({{rank}})",
+    "startTimingCell": "{{time}}({{rank}})"
   },
   "panel": {
     "noData": "予想データが利用できません",

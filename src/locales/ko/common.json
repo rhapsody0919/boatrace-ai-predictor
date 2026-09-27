@@ -264,7 +264,8 @@
       "SG": "SG"
     },
     "exhibition": "전시",
-    "exhibitionCell": "{{time}}({{rank}})"
+    "exhibitionCell": "{{time}}({{rank}})",
+    "startTimingCell": "{{time}}({{rank}})"
   },
   "panel": {
     "noData": "예측 데이터가 없습니다",
