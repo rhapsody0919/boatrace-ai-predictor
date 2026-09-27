@@ -9,20 +9,33 @@
  * 列が無い場合の判定: PostgRESTは、UPSERTの本文に未知の列があると
  * 「Could not find the 'x' column of 'y' in the schema cache」（PGRST204）を、SELECTに未知の列が
  * あると「column y.x does not exist」（42703）を返す。両方に対応する。
+ *
+ * 【2026-09-27の実害】判定はもともと、エラーコードに加えて**メッセージの正規表現**
+ * （/does not exist|Could not find the .* column|schema cache/）でも成立していた。この網が広く、
+ * 列の不在と無関係なエラー（一時的なスキーマキャッシュの不整合等）を拾うと、そのグループの列を
+ * **実行の最後まで落とし続ける**。N19のloadで race_entries の6列（マイグレーション081のグループ）が
+ * 一斉に書かれず、しかも書き込みは「成功」として終わった。**コードだけで判定する**ことにし、
+ * メッセージは「どの列の話か」の絞り込みにのみ使う。
  */
 
-const MISSING_COLUMN_MESSAGE =
-  /does not exist|Could not find the .* column|schema cache/i;
+/** 列が無いことを示すエラーコード。これに当てはまらないものは、列の不在として扱わない */
 const MISSING_COLUMN_CODES = new Set(["42703", "PGRST204"]);
 
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * DBのエラーが「指定した列のいずれかが存在しない」を示すか。
- * エラーメッセージに列名が含まれていることを必須にする（無関係な列の不在や、
- * 別の原因の書き込みエラーを、この列の不在と取り違えて列を落とさないため）。
+ *
+ * 次の2つを**両方**満たすときだけ真にする:
+ *   1. エラーコードが 42703（SELECT）か PGRST204（UPSERT）である
+ *   2. エラーメッセージに、対象の列名が単語として含まれている
+ *
+ * コードを必須にしているのは、メッセージだけで判定すると無関係なエラーを拾い、列を落としたまま
+ * 走り続けるため（上の「2026-09-27の実害」）。列名を必須にしているのは、別の列の不在を
+ * このグループの不在と取り違えないため。
  *
  * @param {{message?: string, code?: string}|string|null|undefined} errorOrMessage
+ *   文字列だけを渡した場合はコードが分からないため、常に false（列の不在と断定しない）
  * @param {string[]} columns
  */
 export function isColumnMissingError(errorOrMessage, columns) {
@@ -39,7 +52,7 @@ export function isColumnMissingError(errorOrMessage, columns) {
     ),
   );
   if (!mentionsColumn) return false;
-  return MISSING_COLUMN_CODES.has(code) || MISSING_COLUMN_MESSAGE.test(message);
+  return MISSING_COLUMN_CODES.has(code);
 }
 
 /** 行から指定した列を除く（元の配列・行は変更しない） */

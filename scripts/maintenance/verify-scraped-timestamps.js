@@ -453,9 +453,13 @@ for (const errorStyle of ["postgrest", "pg"]) {
 }
 {
   check(
-    "isColumnMissingError: PGRST204/42703のメッセージ・コードを判定し、列名の部分一致では誤判定しない",
+    "isColumnMissingError: エラーコード(PGRST204/42703)＋列名の両方がそろったときだけ真",
     isColumnMissingError(
-      "Could not find the 'updated_at' column of 'race_entries' in the schema cache",
+      {
+        code: "PGRST204",
+        message:
+          "Could not find the 'updated_at' column of 'race_entries' in the schema cache",
+      },
       ["updated_at"],
     ) === true &&
       isColumnMissingError(
@@ -464,15 +468,53 @@ for (const errorStyle of ["postgrest", "pg"]) {
           message: 'column "updated_at" of relation "x" does not exist',
         },
         ["updated_at"],
-      ) === true &&
+      ) === true,
+  );
+  check(
+    "isColumnMissingError: 列名が別（部分一致）なら偽",
+    isColumnMissingError(
+      {
+        code: "PGRST204",
+        message:
+          "Could not find the 'prev_updated_at' column of 'x' in the schema cache",
+      },
+      ["updated_at"],
+    ) === false,
+  );
+  // 【2026-09-27の実害】メッセージだけで判定していたため、列の不在と無関係なエラーを拾い、
+  // そのグループの列を実行の最後まで落とし続けた。コードを必須にして塞ぐ
+  check(
+    "isColumnMissingError: コードが無ければ偽（メッセージだけでは列の不在と断定しない）",
+    isColumnMissingError(
+      "Could not find the 'updated_at' column of 'race_entries' in the schema cache",
+      ["updated_at"],
+    ) === false &&
       isColumnMissingError(
-        "Could not find the 'prev_updated_at' column of 'x' in the schema cache",
+        {
+          message: "schema cache reload in progress for updated_at",
+        },
         ["updated_at"],
-      ) === false &&
-      isColumnMissingError("duplicate key value violates unique constraint", [
-        "updated_at",
-      ]) === false &&
-      isColumnMissingError(null, ["updated_at"]) === false,
+      ) === false,
+  );
+  check(
+    "isColumnMissingError: 列の不在を示さないコードなら偽（メッセージが紛らわしくても）",
+    isColumnMissingError(
+      {
+        code: "PGRST301",
+        message: "relation updated_at does not exist in the schema cache",
+      },
+      ["updated_at"],
+    ) === false,
+  );
+  check(
+    "isColumnMissingError: その他のエラー・nullは偽",
+    isColumnMissingError(
+      {
+        code: "23505",
+        message: "duplicate key value violates unique constraint",
+      },
+      ["updated_at"],
+    ) === false && isColumnMissingError(null, ["updated_at"]) === false,
   );
 }
 

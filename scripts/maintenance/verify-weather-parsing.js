@@ -550,20 +550,34 @@ check(
 // 5. マイグレーション069が未適用でも壊れない
 // ---------------------------------------------------------------------------
 check(
-  "列なしエラーの判定: PostgREST（PGRST204）と PostgreSQL（42703）の両方のメッセージを認識し、別の列・別のエラーは認識しない",
-  isObservedAtColumnMissing(
-    "Could not find the 'weather_observed_at' column of 'race_conditions' in the schema cache",
-  ) &&
-    isObservedAtColumnMissing(
-      "column race_conditions.weather_observed_at does not exist",
-    ) &&
-    !isObservedAtColumnMissing(
-      "Could not find the 'race_stage' column of 'race_conditions' in the schema cache",
-    ) &&
-    !isObservedAtColumnMissing(
-      "duplicate key value violates unique constraint",
-    ) &&
+  "列なしエラーの判定: PostgREST（PGRST204）と PostgreSQL（42703）の両方を認識し、別の列・別のエラーは認識しない",
+  isObservedAtColumnMissing({
+    code: "PGRST204",
+    message:
+      "Could not find the 'weather_observed_at' column of 'race_conditions' in the schema cache",
+  }) &&
+    isObservedAtColumnMissing({
+      code: "42703",
+      message: "column race_conditions.weather_observed_at does not exist",
+    }) &&
+    !isObservedAtColumnMissing({
+      code: "PGRST204",
+      message:
+        "Could not find the 'race_stage' column of 'race_conditions' in the schema cache",
+    }) &&
+    !isObservedAtColumnMissing({
+      code: "23505",
+      message: "duplicate key value violates unique constraint",
+    }) &&
     !isObservedAtColumnMissing(undefined),
+);
+// コードを落とすとフォールバックが効かなくなる（2026-09-27、upsertChangedRows がエラーを
+// 包み直す際にコードを落としていたため、この経路が壊れかけた）
+check(
+  "列なしエラーの判定: メッセージだけ（コード無し）では、列の不在と断定しない",
+  !isObservedAtColumnMissing(
+    "Could not find the 'weather_observed_at' column of 'race_conditions' in the schema cache",
+  ),
 );
 
 /** race_conditions だけを持つ疑似クライアント。columnExists=false なら069未適用のDBの挙動を再現する */
@@ -577,7 +591,10 @@ function fakeClient({ columnExists, existing = [] }) {
           !columnExists && cols.includes("weather_observed_at")
             ? {
                 data: null,
+                // 実際のPostgRESTはコードを返す。コードの無い偽エラーで検証すると、
+                // 本番では起きない経路を通してしまう（2026-09-27）
                 error: {
+                  code: "42703",
                   message:
                     "column race_conditions.weather_observed_at does not exist",
                 },
@@ -589,6 +606,7 @@ function fakeClient({ columnExists, existing = [] }) {
       if (!columnExists && rows.some((r) => "weather_observed_at" in r)) {
         return {
           error: {
+            code: "PGRST204",
             message:
               "Could not find the 'weather_observed_at' column of 'race_conditions' in the schema cache",
           },
