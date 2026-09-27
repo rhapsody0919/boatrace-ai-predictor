@@ -23,15 +23,22 @@ import "./MeetSparkline.css";
  * 読み手に委ねる。
  *
  * @param {Array<{value: number|null, label?: string}>} points 走順（古い→新しい）
- * @param {number|null} [baseline] 破線で引く基準（STはその選手の通常平均、
- *   展示はこの節の前検タイム）
+ * @param {number|null} [baseline] 破線の水平線で引く基準（STはその選手の
+ *   通常平均）
+ * @param {Array<number|null>} [referenceSeries] 破線の**折れ線**で引く基準。
+ *   走ごとに動く基準（展示の「その日の会場平均」）に使う。水面は日ごとに
+ *   0.08秒動くため、水平線1本では重い日と軽い日を同じ物差しで比べてしまう
  * @param {string} [color] 線の色（CSS値）
+ * @param {[number, number]|null} [domain] 縦の物差しを外から固定する
+ *   （6艇を同じ尺で並べるとき）。省略すると自分の最小〜最大に伸びる
  * @param {boolean} [upIsBetter] 値が小さいほど上に描く（既定 true）
  * @param {number} [height] 高さ（px）
  */
 function MeetSparkline({
   points,
   baseline = null,
+  referenceSeries = null,
+  domain = null,
   color = "var(--brand-accent-primary)",
   upIsBetter = true,
   height = 56,
@@ -40,9 +47,18 @@ function MeetSparkline({
   const numeric = values.filter((v) => typeof v === "number");
   if (numeric.length < 2) return null;
 
-  const candidates = baseline === null ? numeric : [...numeric, baseline];
-  const min = Math.min(...candidates);
-  const max = Math.max(...candidates);
+  const refNumeric = (referenceSeries ?? []).filter(
+    (v) => typeof v === "number",
+  );
+  const candidates = [
+    ...numeric,
+    ...refNumeric,
+    ...(baseline === null ? [] : [baseline]),
+  ];
+  // domain を渡すと縦の物差しを外から固定できる。6艇を並べるときは
+  // 全艇共通にしないと、各艇が自分の最小〜最大に伸びて比較にならない
+  const min = domain ? domain[0] : Math.min(...candidates);
+  const max = domain ? domain[1] : Math.max(...candidates);
   // 全点が同値でも線が潰れないように最小の幅を持たせる
   const span = max - min < 0.005 ? 0.005 : max - min;
 
@@ -81,6 +97,23 @@ function MeetSparkline({
       role="presentation"
       style={{ height }}
     >
+      {refNumeric.length >= 2 && (
+        // 基準が日ごとに動く場合（展示のその日の会場平均）は折れ線で引く。
+        // 1本の水平線にすると、水面が重い日と軽い日を同じ物差しで比べてしまう
+        <polyline
+          className="meet-sparkline-baseline"
+          fill="none"
+          points={(referenceSeries ?? [])
+            .map((v, i) =>
+              typeof v === "number"
+                ? `${x(i).toFixed(2)},${y(v).toFixed(2)}`
+                : null,
+            )
+            .filter(Boolean)
+            .join(" ")}
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
       {baseline !== null && (
         <line
           className="meet-sparkline-baseline"

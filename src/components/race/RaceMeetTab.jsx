@@ -24,7 +24,7 @@
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BOAT_COLORS } from "../../utils/colors";
+import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import {
@@ -52,6 +52,8 @@ function RaceMeetTab({ raceId, venueCode, players }) {
 
   const [board, setBoard] = useState(undefined);
   const [records, setRecords] = useState(undefined);
+  // 6艇比較の推移で見る指標（ST / 展示）
+  const [trendMetric, setTrendMetric] = useState("st");
   const [selectedBoat, setSelectedBoat] = useState(
     () => sortedPlayers[0]?.number ?? null,
   );
@@ -141,6 +143,29 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   const firstMeetDate = meet[0]?.date
     ? `${Number(meet[0].date.slice(5, 7))}/${Number(meet[0].date.slice(8, 10))}`
     : "";
+  const venueDailyExhibitionAvg = board?.venueDailyExhibitionAvg ?? {};
+  // 6艇の今節の推移（追加クエリ0本。節の全レースぶんをサービス層で2本
+  // 引いて畳んである）。**同じ節・同じ水面を走った6艇**なので、
+  // 縦の物差しを共通にして初めて比較になる
+  const meetRunsByRacer = board?.meetRunsByRacer ?? {};
+  const trendKey = trendMetric === "st" ? "st" : "exhibition";
+  const trendRows = sortedPlayers.map((p) => ({
+    player: p,
+    runs: meetRunsByRacer[p.racerId] ?? [],
+  }));
+  const trendValues = trendRows
+    .flatMap((r) => r.runs.map((x) => x[trendKey]))
+    .filter((v) => typeof v === "number");
+  const trendDomain =
+    trendValues.length >= 2
+      ? [Math.min(...trendValues), Math.max(...trendValues)]
+      : null;
+  // 6艇の平均。各行の同じ高さに破線で引くと、行をまたいだ比較の手がかりになる
+  // （行が分かれていると「同じ物差し」と書いても伝わりにくい）
+  const trendMean =
+    trendValues.length >= 2
+      ? trendValues.reduce((a, b) => a + b, 0) / trendValues.length
+      : null;
   const lastSt = lastOf("startTiming");
   const lastExhibition = lastOf("exhibitionTime");
 
@@ -318,6 +343,76 @@ function RaceMeetTab({ raceId, venueCode, players }) {
         <p className="rmt-empty">{t("basicInfo.meetEmpty")}</p>
       )}
 
+      {/* 1b. 6艇の推移（レース単位）。表の数字だけでは「誰が仕上がってきたか」
+          が読めない。同じ節・同じ水面を走った6艇なので、縦の物差しを
+          共通にして並べる（1艇ずつ切り替えて見比べる手間を無くす） */}
+      {trendDomain && (
+        <div className="rmt-card">
+          <div className="rmt-card-head">
+            <h3 className="rmt-card-title">{t("meetTab.compareTrendTitle")}</h3>
+            <div className="rmt-metric-chips" role="group">
+              {[
+                { key: "st", label: t("meetTab.compareTrendSt") },
+                { key: "exhibition", label: t("meetTab.compareTrendEx") },
+              ].map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  className={`rmt-metric-chip${trendMetric === m.key ? " is-active" : ""}`}
+                  onClick={() => setTrendMetric(m.key)}
+                  aria-pressed={trendMetric === m.key}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ul className="rmt-trend-rows">
+            {trendRows.map(({ player: p, runs }) => {
+              const color = BOAT_COLORS[p.number] || {};
+              const vals = runs.map((r) => r[trendKey]);
+              const last = [...vals]
+                .reverse()
+                .find((v) => typeof v === "number");
+              return (
+                <li key={p.number} className="rmt-trend-row">
+                  <button
+                    type="button"
+                    className="rmt-trend-label"
+                    onClick={() => setSelectedBoat(p.number)}
+                    aria-pressed={p.number === selectedBoat}
+                  >
+                    <span
+                      className="rmt-boat-chip"
+                      style={{ background: color.bg, color: color.text }}
+                    >
+                      {p.number}
+                    </span>
+                    <span className="rmt-name" translate="no">
+                      {p.name?.replace(/\s+/g, "")}
+                    </span>
+                  </button>
+                  <MeetSparkline
+                    points={vals.map((v) => ({ value: v }))}
+                    domain={trendDomain}
+                    baseline={trendMean}
+                    // 線は公式の艇色そのままだと1号艇（白）が背景に溶ける
+                    color={
+                      BOAT_LINE_COLORS[p.number] || "var(--brand-accent-primary)"
+                    }
+                    height={34}
+                  />
+                  <span className="rmt-trend-last">
+                    {typeof last === "number" ? last.toFixed(2) : "—"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="rmt-spark-note">{t("meetTab.compareTrendNote")}</p>
+        </div>
+      )}
+
       {/* 2. 選んだ1艇の詳細 */}
       <div
         className="rmt-chip-row"
@@ -471,11 +566,12 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                 </div>
                 <MeetSparkline
                   points={meet.map((r) => ({ value: r.exhibitionTime ?? null }))}
-                  baseline={
-                    pre?.pretest_time !== null && pre?.pretest_time !== undefined
-                      ? Number(pre.pretest_time)
-                      : null
-                  }
+                  // 基準は「その日の会場全体の展示平均」。水面は日ごとに
+                  // 0.08秒動くため（若松2026-09-22〜27の実測で6.829〜6.907）、
+                  // 生タイムだけでは重い日の6.90と軽い日の6.90を同じに読む
+                  referenceSeries={meet.map(
+                    (r) => venueDailyExhibitionAvg[r.date] ?? null,
+                  )}
                   color="var(--color-info-text, #2a7fbf)"
                 />
                 <div className="rmt-spark-foot">

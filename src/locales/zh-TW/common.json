@@ -631,9 +631,14 @@
     "sparkBaselineSt": "平常 {{value}}",
     "sparkBaselinePretest": "前檢 {{value}}",
     "sparkLast": "前一場 {{value}}",
-    "sparkNote": "虛線為基準（ST是該選手平常的平均，展示是本梯次的前檢時間）。越上面越快。大點為前一場。縱軸依該選手本梯次的最小～最大拉伸，因此起伏大小無法與其他選手比較。不做上升／下降的判定。",
+    "sparkNote": "ST的虛線是該選手平常的平均，展示的虛線是**當日全場的展示平均**（水面輕重，每天可差近0.1秒）。越上面越快，在虛線之上代表在當天水面中算快。大點為前一場。縱軸依該選手本梯次的最小～最大拉伸，因此起伏大小無法與其他選手比較。不做上升／下降的判定。",
     "sparkStMeta": "平均 {{avg}}（{{n}}場）／平常 {{base}}",
-    "sparkExMetaRank": "前檢 {{value}}（第{{rank}}名）"
+    "sparkExMetaRank": "前檢 {{value}}（第{{rank}}名）",
+    "compareTrendTitle": "6艇的本梯次走勢",
+    "compareTrendSt": "ST",
+    "compareTrendEx": "展示",
+    "compareTrendNote": "6艇跑的是同一梯次、同一水面，因此用同一把尺（6艇的最小～最大）並排，可以跨列直接比較線的高度。虛線是6艇的平均。越上面越快，大點為前一場。",
+    "compareTrendEmpty": "尚無足夠場次可繪製走勢"
   },
   "basicInfo": {
     "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場・擅長賽場・依條件）",

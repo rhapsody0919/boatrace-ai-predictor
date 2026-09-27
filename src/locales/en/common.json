@@ -633,9 +633,14 @@
     "sparkBaselineSt": "Usual {{value}}",
     "sparkBaselinePretest": "Pre-test {{value}}",
     "sparkLast": "Last {{value}}",
-    "sparkNote": "The dashed line is the reference (the racer's usual average for ST, this series' pre-test time for the trial). Higher is faster. The large dot is the latest run. The vertical scale is stretched to this racer's own min-max for the series, so the size of the peaks cannot be compared between racers. We do not label it as improving or declining.",
+    "sparkNote": "For ST the dashed line is the racer's usual average; for the trial it is the venue-wide average trial time for that day (how heavy the water was; it can move by nearly 0.1s). Higher is faster, and above the dashed line means fast for that day's water. The large dot is the latest run. The vertical scale is stretched to this racer's own min-max for the series, so the size of the peaks cannot be compared between racers. We do not label it as improving or declining.",
     "sparkStMeta": "Avg {{avg}} ({{n}} runs) / usual {{base}}",
-    "sparkExMetaRank": "Pre-test {{value}} (#{{rank}})"
+    "sparkExMetaRank": "Pre-test {{value}} (#{{rank}})",
+    "compareTrendTitle": "How the six have moved this series",
+    "compareTrendSt": "ST",
+    "compareTrendEx": "Trial",
+    "compareTrendNote": "All six ran the same series on the same water, so they share one scale (the min-max across the six) and you can compare the heights of the lines across rows directly. The dashed line is the average of the six. Higher is faster; the large dot is the latest run.",
+    "compareTrendEmpty": "Not enough runs yet to draw a trend"
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",

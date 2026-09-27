@@ -282,6 +282,79 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 6艇の推移（同じ縦の物差しで6行並べる） */
+.rmt-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-2);
+}
+
+.rmt-card-head .rmt-card-title {
+  margin: 0;
+}
+
+.rmt-metric-chips {
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.rmt-metric-chip {
+  padding: 2px var(--spacing-2);
+  font-size: var(--font-size-2xs);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.rmt-metric-chip.is-active {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  border-color: var(--brand-accent-primary);
+}
+
+.rmt-trend-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.rmt-trend-row {
+  display: grid;
+  /* 名前・線・前走値。名前は固定幅にして6行の線の左端を揃える */
+  grid-template-columns: 7.5em 1fr 3em;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.rmt-trend-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-2xs);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rmt-trend-last {
+  font-size: var(--font-size-2xs);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
 /* 今節のST・展示のスパークライン（MeetSparkline）。390pxでは2本を縦に積む */
 .rmt-sparks {
   display: grid;

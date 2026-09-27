@@ -6191,7 +6191,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v5-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v6-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6222,7 +6222,8 @@ export const supabaseDataService = {
       const meetRows = rows.filter((r) => r.race_id.slice(0, 10) >= meetStart);
       const raceIds = [...new Set(meetRows.map((r) => r.race_id))];
 
-      const [results, conditions, pretest] = await Promise.all([
+      const [results, conditions, pretest, meetExhibition, meetStarts] =
+        await Promise.all([
         fetchAllByIn(
           "race_results",
           "race_id, rank1, rank2, rank3, rank4, rank5, rank6",
@@ -6254,6 +6255,27 @@ export const supabaseDataService = {
           .gte("race_date", meetStart)
           .lte("race_date", date)
           .then(({ data }) => data ?? []),
+        // **節の全レース・全艇**の展示タイム（2026-09-27追加、+1本）。
+        // 2つの用途を1クエリで賄う:
+        //   1. その日の会場平均（水面の重さ。同じ6.90でも日によって意味が違う）
+        //   2. 6艇それぞれの今節の展示の推移（選手単位で引くと6本増える）
+        // 節は最長7日 × 12R × 6艇 = 504行で、Supabaseの既定上限1000行に収まる
+        supabase
+          .from("exhibition_data")
+          .select("race_id, boat_number, exhibition_time")
+          .gte("race_id", meetStart)
+          .lt("race_id", raceId)
+          .like("race_id", `__________-${vv}-__`)
+          .then(({ data }) => data ?? []),
+        // 同じく節の全レース・全艇の本番ST（+1本）。6艇のST推移に使う。
+        // フライングは異常値なので呼び出し側で落とす
+        supabase
+          .from("race_start_timings")
+          .select("race_id, boat_number, start_timing, is_flying")
+          .gte("race_id", meetStart)
+          .lt("race_id", raceId)
+          .like("race_id", `__________-${vv}-__`)
+          .then(({ data }) => data ?? []),
       ]);
       const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
       const stageById = new Map(
@@ -6280,6 +6302,56 @@ export const supabaseDataService = {
             .length * 6 || null,
         // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
         stagesKnown: stageById.size > 0,
+        // その日の会場の展示タイム平均（水面の重さ）。同じ6.90でも日によって
+        // 意味が変わるため、選手個人の推移を読むときの補正に使う。
+        // 実測（若松2026-09-22〜27）で日ごとに 6.829〜6.907 と0.08秒動く
+        venueDailyExhibitionAvg: Object.fromEntries(
+          [
+            ...(meetExhibition ?? [])
+              .filter((r) => r.exhibition_time != null)
+              .reduce((map, r) => {
+                const d = r.race_id.slice(0, 10);
+                const cur = map.get(d) ?? { sum: 0, n: 0 };
+                cur.sum += Number(r.exhibition_time);
+                cur.n += 1;
+                map.set(d, cur);
+                return map;
+              }, new Map()),
+          ].map(([d, v]) => [d, v.sum / v.n]),
+        ),
+        // 6艇それぞれの今節の走（ST・展示）。選手単位で引くと6本増えるため、
+        // 節の全レースぶんを2クエリで取って画面側で選手ごとに畳む
+        meetRunsByRacer: (() => {
+          const exByRace = new Map();
+          for (const r of meetExhibition ?? []) {
+            if (!exByRace.has(r.race_id)) exByRace.set(r.race_id, new Map());
+            exByRace.get(r.race_id).set(r.boat_number, r.exhibition_time);
+          }
+          const stByRace = new Map();
+          for (const r of meetStarts ?? []) {
+            if (!stByRace.has(r.race_id)) stByRace.set(r.race_id, new Map());
+            stByRace.get(r.race_id).set(r.boat_number, r);
+          }
+          const byRacer = {};
+          for (const e of meetRows) {
+            const ex = exByRace.get(e.race_id)?.get(e.boat_number) ?? null;
+            const stRow = stByRace.get(e.race_id)?.get(e.boat_number) ?? null;
+            (byRacer[e.racer_id] ??= []).push({
+              raceId: e.race_id,
+              date: e.race_id.slice(0, 10),
+              exhibition: ex === null ? null : Number(ex),
+              // フライングは平均・推移から落とす（RaceResult等と同じ扱い）
+              st:
+                stRow && !stRow.is_flying && stRow.start_timing != null
+                  ? Number(stRow.start_timing)
+                  : null,
+            });
+          }
+          for (const id of Object.keys(byRacer)) {
+            byRacer[id].sort((a, b) => a.raceId.localeCompare(b.raceId));
+          }
+          return byRacer;
+        })(),
         // 選手ごとの前検（節の最初の行＝前検日のもの）。
         // 直近は節の中の複数日に行があるため、最も古い日付を採る
         pretestByRacer: Object.fromEntries(
