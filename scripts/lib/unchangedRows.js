@@ -484,8 +484,11 @@ export function formatSkipSummary(label, stats, { fallback = false } = {}) {
  * 全行に updated_at を設定する（「書き込んだ時刻」になる）。取得失敗は例外的な状態のため許容する
  * （stats・ログに fallback が出る）。
  *
- * @returns {Promise<{written: number, skipped: number, error: Error|null, stats: Object, toWrite: Object[]}>}
- *   toWrite は書き込み対象（dry-runでも「書くはずの行」を返す）。呼び出し側が後続処理を絞る用途に使う
+ * @returns {Promise<{written: number, skipped: number, error: Error|null, stats: Object, toWrite: Object[], droppedGroups: string[]}>}
+ *   toWrite は書き込み対象（dry-runでも「書くはずの行」を返す）。呼び出し側が後続処理を絞る用途に使う。
+ *   droppedGroups は「列が無い」と判定して除いたまま書いた optionalColumnGroups の名前。空でなければ、
+ *   その列は今回の実行で書き込まれていない（error は null のまま＝成功扱いになるため、呼び出し元が
+ *   完了を判定するときはこちらも見る）
  */
 export async function upsertChangedRows(
   client,
@@ -541,18 +544,47 @@ export async function upsertChangedRows(
       );
       if (batchError) {
         error = new Error(`${table}書き込みエラー: ${batchError.message}`);
+        // 包み直しでPostgRESTのコードを落とさない（呼び出し元が「列が無い」等を判定できるように）。
+        // 2026-09-27、raceConditionsWriter が message だけを見ていたため、コードでの判定に
+        // 切り替えた際に weather_observed_at のフォールバックが効かなくなりかけた
+        error.code = batchError.code;
+        error.cause = batchError;
         console.error(`❌ ${error.message}`);
       } else {
         written += batch.length;
       }
     }
   }
+  // 列を落としたまま「成功」として終わらせない。落としたグループは、呼び出し元が戻り値を
+  // 見ていなくても必ず目に入るよう、書き込みの要約と同じ行に出す
+  // （2026-09-27、N19のloadで race_entries の6列が一斉に書かれないまま成功扱いになった）
+  const droppedGroups = [...columnState.missingGroups];
+  const droppedNote =
+    droppedGroups.length === 0
+      ? ""
+      : ` / ⚠️ 列を除いて書いたグループ: ${droppedGroups
+          .map((name) => `${name}（${(groups[name] ?? []).join(", ")}）`)
+          .join(" / ")}`;
   // 書き込みの成否が分かってから出力する（失敗した行を「書き込んだ」と誤読させない）
   console.log(
     `  ${dryRun ? "[DRY-RUN] " : ""}${formatSkipSummary(label, stats, { fallback })}` +
       (dryRun || written === toWrite.length
         ? ""
-        : ` / 実際に書き込めたのは${written}件`),
+        : ` / 実際に書き込めたのは${written}件`) +
+      droppedNote,
   );
-  return { written, skipped: stats.unchanged, error, stats, toWrite };
+  if (droppedGroups.length > 0) {
+    console.warn(
+      `⚠️ ${table}: 上記の列は今回の実行で書き込まれていません。` +
+        `マイグレーションが未適用なら適用し、適用済みならエラーの原因を確認してから書き直してください`,
+    );
+  }
+  return {
+    written,
+    skipped: stats.unchanged,
+    error,
+    stats,
+    toWrite,
+    droppedGroups,
+  };
 }

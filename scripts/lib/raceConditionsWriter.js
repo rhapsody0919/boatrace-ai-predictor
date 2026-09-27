@@ -13,9 +13,17 @@ import { upsertChangedRows } from "./unchangedRows.js";
 
 export const OBSERVED_AT_COLUMN = "weather_observed_at";
 
-/** DBのエラーメッセージが「列が存在しない」を示すか（weather_observed_at に関するものに限る） */
-export function isObservedAtColumnMissing(message) {
-  return isColumnMissingError(message, [OBSERVED_AT_COLUMN]);
+/**
+ * DBのエラーが「列が存在しない」を示すか（weather_observed_at に関するものに限る）。
+ *
+ * **エラーオブジェクトを渡す**（メッセージ文字列だけでは、コードが分からず判定できない）。
+ * 2026-09-27、`isColumnMissingError` をコードでの判定に厳格化した際、ここが `error.message`
+ * だけを渡していたためフォールバックが効かなくなりかけた。
+ *
+ * @param {{message?: string, code?: string}|null|undefined} error
+ */
+export function isObservedAtColumnMissing(error) {
+  return isColumnMissingError(error, [OBSERVED_AT_COLUMN]);
 }
 
 /**
@@ -43,7 +51,7 @@ export async function upsertRaceConditions(
     });
 
   const first = await write(rows, label);
-  if (first.error && isObservedAtColumnMissing(first.error.message)) {
+  if (first.error && isObservedAtColumnMissing(first.error)) {
     console.warn(
       `⚠️ race_conditions.${OBSERVED_AT_COLUMN} が未適用のため、この列を除いて書き直します（マイグレーション069）`,
     );
