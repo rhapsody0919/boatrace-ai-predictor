@@ -307,7 +307,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
               当社は全員で順位を振るため下位ほどズレる（2026-09-27に若松G1で
               実測: 得点率は6/6一致、順位は最大4つ差）。除外の判定材料が
               自社データに無いので、合わせにいかずに違いを書く */}
-          <p className="rmt-sub">{t("meetTab.rankSourceNote")}</p>
+          <p className="rmt-rank-note">{t("meetTab.rankSourceNote")}</p>
           <p className="rmt-source">{t("basicInfo.meetPretestSource")}</p>
         </div>
       )}
