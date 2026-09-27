@@ -6191,7 +6191,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v4-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v5-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6265,6 +6265,15 @@ export const supabaseDataService = {
         meetEnd: date,
         // 表示中レースの種別。早見（得点率がどう動くか）の出し分けに使う
         currentStage: stageById.get(raceId) ?? null,
+        // **予選の終わり**＝節で最初に組まれた準優勝戦の race_id。
+        // 得点率はここで確定し、以降の一般戦・特別選抜戦は算入されない
+        // （公式の得点率一覧も「4日目12R終了時点」で止まる。2026-09-27に
+        // 若松G1の最終日で確認）。無い（予選中）なら null
+        prelimEndRaceId:
+          [...stageById.entries()]
+            .filter(([, st]) => st?.includes("準優"))
+            .map(([id]) => id)
+            .sort()[0] ?? null,
         // この節に組まれた準優勝戦の枠数（予選中はまだ0）。慣例は3個レース=18名
         semifinalSlots:
           [...stageById.entries()].filter(([, st]) => st?.includes("準優"))

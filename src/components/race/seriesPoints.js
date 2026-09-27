@@ -58,14 +58,23 @@ export function isSpecialStage(stage) {
  * 今節の得点・走数・得点率を計算する（純関数）。
  *
  * @param {Array<Object>} meetRecords `buildMeetResults` の戻り値（節内の走）
+ * @param {{prelimEndRaceId?: string|null}} [options] `prelimEndRaceId` は
+ *   節で最初に組まれた準優勝戦の `race_id`。**これ以降のレースは算入しない**
  * @returns {{points: number, runs: number, rate: number|null}}
  */
-export function computeSeriesScore(meetRecords) {
+export function computeSeriesScore(meetRecords, options = {}) {
+  const { prelimEndRaceId = null } = options;
   const rows = Array.isArray(meetRecords) ? meetRecords : [];
   let points = 0;
   let runs = 0;
   rows.forEach((r) => {
     if (isExcludedStage(r.raceStage)) return;
+    // **予選が終わったらそこで確定**。準優が組まれた日以降の一般戦・
+    // 特別選抜戦・パイナップル抜等は公式の得点率に算入されない。
+    // 公式の得点率一覧も「4日目12R終了時点」と予選終了時点で止まる
+    // （2026-09-27、若松G1の最終日に公式ページで確認）。
+    // 算入していた頃は52人中43人が公式とズレていた
+    if (prelimEndRaceId && String(r.raceId) >= prelimEndRaceId) return;
     // **結果がまだ無いレースは分母に入れない**。節の全選手を引く経路では
     // その日のこれから走るレースも `race_entries` に入っており、数えると
     // 「得点率4.00（4走）なのに日別の表は3行」という食い違いが出る
@@ -143,6 +152,7 @@ export function listSeriesFinishes(meetRecords) {
 export function buildMeetRanking(scoreboard) {
   const entries = scoreboard?.entries;
   if (!Array.isArray(entries) || entries.length === 0) return [];
+  const prelimEndRaceId = scoreboard?.prelimEndRaceId ?? null;
 
   const byRacer = new Map();
   entries.forEach((e) => {
@@ -153,7 +163,7 @@ export function buildMeetRanking(scoreboard) {
 
   const rows = [...byRacer.entries()]
     .map(([racerId, { playerName, rows: runs }]) => {
-      const score = computeSeriesScore(runs);
+      const score = computeSeriesScore(runs, { prelimEndRaceId });
       return {
         racerId,
         playerName,

@@ -367,7 +367,9 @@
     "finishDq": "失",
     "smallSampleLegend": "⚠ は3走未満（得点率がまだ荒い）。",
     "finishLabel": "着順",
-    "borderNote": "点線より上が準優の目安内（番組は未定のため確定ではありません）。"
+    "borderNote": "点線より上が準優の目安内（番組は未定のため確定ではありません）。",
+    "prelimOverNote": "予選は{{date}}の準優勝戦で終了。得点率はここで確定していて、今日の着順では動きません",
+    "rankSourceNote": "節内順位は当社計算です。公式の順位表は途中帰郷・賞典除外の選手を順位から外すため、下位ほど数位ずれることがあります。"
   },
   "basicInfo": {
     "note": "選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細（直近10走・得意会場・条件別）が開きます",
@@ -462,7 +464,10 @@
     "periodFetchError": "前期成績を取得できませんでした",
     "meetScoreForecastTitle": "今日の着順で得点率はこう動く",
     "meetTrendExhibitionDownSameTime": "タイムは横ばい、周りが上がって{{diff}}つ下",
-    "meetTrendExhibitionUpSameTime": "タイムは横ばい、周りが落ちて{{diff}}つ上"
+    "meetTrendExhibitionUpSameTime": "タイムは横ばい、周りが落ちて{{diff}}つ上",
+    "meetScorePrelimOver": "予選の得点率 {{rate}}（{{n}}走・当社計算・確定）",
+    "meetTrendExhibitionUpSlower": "タイムは{{gap}}落ちたが、周りがそれ以上に落ちて{{diff}}つ上",
+    "meetTrendExhibitionDownFaster": "タイムは{{gap}}上がったが、周りがそれ以上に上がって{{diff}}つ下"
   },
   "wakuInfo": {
     "note": "選手を選ぶと、その選手が本日入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",

@@ -621,7 +621,9 @@
     "finishDq": "실격",
     "smallSampleLegend": "⚠ 는 3주 미만(득점률이 아직 거칠다).",
     "finishLabel": "착순",
-    "borderNote": "점선 위가 준우승전 기준 안입니다(편성이 확정되지 않아 확정은 아닙니다)."
+    "borderNote": "점선 위가 준우승전 기준 안입니다(편성이 확정되지 않아 확정은 아닙니다).",
+    "prelimOverNote": "예선은 {{date}}의 준우승전으로 끝났습니다. 득점률은 여기서 확정되어 오늘 착순으로는 바뀌지 않습니다.",
+    "rankSourceNote": "시리즈 순위는 당사 계산입니다. 공식 순위표는 중도 귀향·상전 제외 선수를 순위에서 빼기 때문에, 하위일수록 몇 계단 차이가 날 수 있습니다."
   },
   "basicInfo": {
     "note": "조건을 바꿔가며 선수별 성적을 비교할 수 있습니다. 막대를 누르면 상세 정보(최근 10경기·강세 경기장·조건별)가 열립니다",
@@ -716,7 +718,10 @@
     "periodFetchError": "전기 성적을 가져오지 못했습니다",
     "meetScoreForecastTitle": "오늘 착순에 따른 득점률 변화",
     "meetTrendExhibitionDownSameTime": "타임은 그대로, 주위가 빨라져 {{diff}}계단 하락",
-    "meetTrendExhibitionUpSameTime": "타임은 그대로, 주위가 느려져 {{diff}}계단 상승"
+    "meetTrendExhibitionUpSameTime": "타임은 그대로, 주위가 느려져 {{diff}}계단 상승",
+    "meetScorePrelimOver": "예선 득점률 {{rate}}（{{n}}주・당사 계산・확정）",
+    "meetTrendExhibitionUpSlower": "타임은 {{gap}} 느려졌지만 주위가 더 느려져 {{diff}}계단 상승",
+    "meetTrendExhibitionDownFaster": "타임은 {{gap}} 빨라졌지만 주위가 더 빨라져 {{diff}}계단 하락"
   },
   "dataTable": {
     "title": "데이터 출주표",

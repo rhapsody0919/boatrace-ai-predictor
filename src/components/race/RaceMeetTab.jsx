@@ -46,7 +46,9 @@ import "./RaceMeetTab.css";
 function RaceMeetTab({ raceId, venueCode, players }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
-  const sortedPlayers = [...(players ?? [])].sort((a, b) => a.number - b.number);
+  const sortedPlayers = [...(players ?? [])].sort(
+    (a, b) => a.number - b.number,
+  );
 
   const [board, setBoard] = useState(undefined);
   const [records, setRecords] = useState(undefined);
@@ -102,6 +104,15 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   const slots = board?.semifinalSlots ?? SEMIFINAL_DEFAULT_SLOTS;
   const stage = board?.currentStage ?? "";
   const isAfterPrelim = stage.includes("準優") || stage.includes("優勝戦");
+  // **予選が終わっているか**。節で最初の準優が組まれた時点で得点率は確定し、
+  // 以降の一般戦・特別選抜戦では動かない（公式の得点率一覧も予選終了時点で
+  // 止まる）。表示中レースの種別だけを見ていると、最終日の「特別選抜戦」で
+  // 「今日の着順で得点率はこう動く」「準優の目安」を出してしまう
+  const prelimEndRaceId = board?.prelimEndRaceId ?? null;
+  const prelimOver = Boolean(prelimEndRaceId && raceId >= prelimEndRaceId);
+  const prelimEndDate = prelimEndRaceId
+    ? `${Number(prelimEndRaceId.slice(5, 7))}/${Number(prelimEndRaceId.slice(8, 10))}`
+    : null;
   const pretestOf = (racerId) => board?.pretestByRacer?.[racerId] ?? null;
   // 同率が何人いるか。節の序盤は得点率の刻みが粗く（3走なら0.33刻み）
   // 「11位」が3人並ぶ。順位だけ見せると分解能を過信させる
@@ -110,9 +121,12 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   const mine = ranking.find((r) => r.racerId === selectedPlayer?.racerId);
   const border = ranking[slots - 1]?.rate;
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
-  const showBorderBadge = !isAfterPrelim && border !== undefined;
+  const showBorderBadge = !isAfterPrelim && !prelimOver && border !== undefined;
   const showBorder =
-    !isAfterPrelim && mine && mine.runs >= MEET_SMALL_SAMPLE_RUNS;
+    !isAfterPrelim &&
+    !prelimOver &&
+    mine &&
+    mine.runs >= MEET_SMALL_SAMPLE_RUNS;
 
   const meet = buildMeetResults(records ?? [], { raceId, venueCode });
   const trend = buildMeetTrend(meet, records ?? []);
@@ -121,6 +135,11 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   const pre = pretestOf(selectedPlayer?.racerId);
   // 展示タイムが同じなのに順位が動いた場合（6.78→6.78で「1つ下向き」）は、
   // 数字だけ見ると誤植に見える。周りが動いた結果だと書き分ける
+  // 展示タイムの差（正なら遅くなった）。順位と逆方向に動いたときに説明が要る
+  const exTimeDelta =
+    ex.firstTime !== null && ex.lastTime !== null
+      ? ex.lastTime - ex.firstTime
+      : null;
   const exSameTime =
     ex.firstTime !== null &&
     ex.lastTime !== null &&
@@ -145,7 +164,10 @@ function RaceMeetTab({ raceId, venueCode, players }) {
             </thead>
             <tbody>
               {sortedPlayers
-                .map((p) => ({ player: p, row: ranking.find((r) => r.racerId === p.racerId) }))
+                .map((p) => ({
+                  player: p,
+                  row: ranking.find((r) => r.racerId === p.racerId),
+                }))
                 .filter((x) => x.row)
                 .sort((a, b) => b.row.rate - a.row.rate)
                 .map(({ player: p, row }, i, arr) => {
@@ -156,8 +178,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                   // 目安内の最後の行に太い罫線を引く。「誰が線の上か」は
                   // 数字を突き合わせないと分からず、実際に読み落とされた
                   const borderEdge =
-                    inBorder &&
-                    !(arr[i + 1] && arr[i + 1].row.rank <= slots);
+                    inBorder && !(arr[i + 1] && arr[i + 1].row.rank <= slots);
                   return (
                     <tr
                       key={p.number}
@@ -213,7 +234,9 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                                 {i2 > 0 && t("meetTab.finishSeparator")}
                                 {/* 1着だけ強く出す。勝負駆けは「勝ちがあるか」で
                                     見え方が変わり、並びの中で一番探される数字 */}
-                                <span className={f === 1 ? "is-win" : undefined}>
+                                <span
+                                  className={f === 1 ? "is-win" : undefined}
+                                >
                                   {f ?? t("meetTab.finishDq")}
                                 </span>
                               </span>
@@ -253,7 +276,9 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                               })
                             : Number(pt.pretest_time).toFixed(2)
                           : pt?.pretest_rank
-                            ? t("meetTab.pretestRank", { rank: pt.pretest_rank })
+                            ? t("meetTab.pretestRank", {
+                                rank: pt.pretest_rank,
+                              })
                             : "—"}
                       </td>
                     </tr>
@@ -270,17 +295,26 @@ function RaceMeetTab({ raceId, venueCode, players }) {
             {showBorderBadge && (
               <>
                 {" "}
-                {t("meetTab.borderLine", { slots, rate: border.toFixed(2) })}
-                {" "}
+                {t("meetTab.borderLine", {
+                  slots,
+                  rate: border.toFixed(2),
+                })}{" "}
                 {t("meetTab.borderNote")}
               </>
             )}
           </p>
+          {/* 公式の順位表は52名中3名（賞典除外1・途中帰郷2）を順位から外す。
+              当社は全員で順位を振るため下位ほどズレる（2026-09-27に若松G1で
+              実測: 得点率は6/6一致、順位は最大4つ差）。除外の判定材料が
+              自社データに無いので、合わせにいかずに違いを書く */}
+          <p className="rmt-sub">{t("meetTab.rankSourceNote")}</p>
           <p className="rmt-source">{t("basicInfo.meetPretestSource")}</p>
         </div>
       )}
 
-      {board === undefined && <p className="rmt-loading">{t("basicInfo.loading")}</p>}
+      {board === undefined && (
+        <p className="rmt-loading">{t("basicInfo.loading")}</p>
+      )}
       {board !== undefined && ranking.length === 0 && (
         <p className="rmt-empty">{t("basicInfo.meetEmpty")}</p>
       )}
@@ -299,7 +333,9 @@ function RaceMeetTab({ raceId, venueCode, players }) {
               key={p.number}
               type="button"
               className={`rmt-select-chip${active ? " is-active" : ""}`}
-              style={active ? { background: color.bg, color: color.text } : undefined}
+              style={
+                active ? { background: color.bg, color: color.text } : undefined
+              }
               onClick={() => setSelectedBoat(p.number)}
               aria-pressed={active}
             >
@@ -313,10 +349,15 @@ function RaceMeetTab({ raceId, venueCode, players }) {
       <div className="rmt-card">
         {mine && (
           <p className="rmt-detail-score">
-            {t("basicInfo.meetScore", {
-              rate: mine.rate.toFixed(2),
-              n: mine.runs,
-            })}
+            {t(
+              prelimOver
+                ? "basicInfo.meetScorePrelimOver"
+                : "basicInfo.meetScore",
+              {
+                rate: mine.rate.toFixed(2),
+                n: mine.runs,
+              },
+            )}
             {showBorder && border !== undefined && (
               <span className="rmt-detail-border">
                 {mine.rank <= slots
@@ -331,9 +372,13 @@ function RaceMeetTab({ raceId, venueCode, players }) {
           </p>
         )}
         {mine &&
-          (isAfterPrelim ? (
+          (prelimOver ? (
+            // 予選終了後は「今日の着順で得点率はこう動く」を出さない。
+            // 得点率で争うもの（準優進出）が既に決着しているため
             <p className="rmt-forecast">
-              {t("basicInfo.meetScoreNoForecast", { stage })}
+              {isAfterPrelim
+                ? t("basicInfo.meetScoreNoForecast", { stage })
+                : t("meetTab.prelimOverNote", { date: prelimEndDate ?? "" })}
             </p>
           ) : (
             // 1行に「1着 3.50 / 2着 3.00 / …」と並べると390pxで折り返し、
@@ -382,38 +427,57 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                   </span>
                 </span>
               )}
-              {pre?.pretest_time !== null && pre?.pretest_time !== undefined && (
-                <span>
-                  {t("basicInfo.meetPretest", {
-                    time: Number(pre.pretest_time).toFixed(2),
-                    rank: pre.pretest_rank ?? "—",
-                  })}
-                </span>
-              )}
+              {pre?.pretest_time !== null &&
+                pre?.pretest_time !== undefined && (
+                  <span>
+                    {t("basicInfo.meetPretest", {
+                      time: Number(pre.pretest_time).toFixed(2),
+                      rank: pre.pretest_rank ?? "—",
+                    })}
+                  </span>
+                )}
               {ex.diff !== null && (
                 <span>
                   {t("basicInfo.meetTrendExhibition", {
                     first: ex.first,
                     last: ex.last,
-                    firstTime: ex.firstTime === null ? "—" : ex.firstTime.toFixed(2),
-                    lastTime: ex.lastTime === null ? "—" : ex.lastTime.toFixed(2),
+                    firstTime:
+                      ex.firstTime === null ? "—" : ex.firstTime.toFixed(2),
+                    lastTime:
+                      ex.lastTime === null ? "—" : ex.lastTime.toFixed(2),
                     n: ex.n,
                   })}{" "}
                   <span className="rmt-verdict">
                     {ex.diff <= -MEET_EXHIBITION_DIFF_THRESHOLD
-                      ? t(
-                          exSameTime
-                            ? "basicInfo.meetTrendExhibitionUpSameTime"
-                            : "basicInfo.meetTrendExhibitionUp",
-                          { diff: Math.abs(ex.diff) },
-                        )
+                      ? // 順位は上がった
+                        exSameTime
+                        ? t("basicInfo.meetTrendExhibitionUpSameTime", {
+                            diff: Math.abs(ex.diff),
+                          })
+                        : exTimeDelta !== null && exTimeDelta > 0
+                          ? // タイムは落ちたのに順位が上がった＝周りがそれ以上に落ちた。
+                            // 説明が無いと「6.87→6.88で1つ上向き」が誤植に見える
+                            t("basicInfo.meetTrendExhibitionUpSlower", {
+                              diff: Math.abs(ex.diff),
+                              gap: Math.abs(exTimeDelta).toFixed(2),
+                            })
+                          : t("basicInfo.meetTrendExhibitionUp", {
+                              diff: Math.abs(ex.diff),
+                            })
                       : ex.diff >= MEET_EXHIBITION_DIFF_THRESHOLD
-                        ? t(
-                            exSameTime
-                              ? "basicInfo.meetTrendExhibitionDownSameTime"
-                              : "basicInfo.meetTrendExhibitionDown",
-                            { diff: ex.diff },
-                          )
+                        ? // 順位は下がった
+                          exSameTime
+                          ? t("basicInfo.meetTrendExhibitionDownSameTime", {
+                              diff: ex.diff,
+                            })
+                          : exTimeDelta !== null && exTimeDelta < 0
+                            ? t("basicInfo.meetTrendExhibitionDownFaster", {
+                                diff: ex.diff,
+                                gap: Math.abs(exTimeDelta).toFixed(2),
+                              })
+                            : t("basicInfo.meetTrendExhibitionDown", {
+                                diff: ex.diff,
+                              })
                         : t("basicInfo.meetTrendExhibitionFlat")}
                   </span>
                 </span>

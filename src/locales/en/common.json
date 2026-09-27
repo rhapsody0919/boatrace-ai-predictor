@@ -623,7 +623,9 @@
     "finishDq": "DQ",
     "smallSampleLegend": "⚠ = fewer than three runs (the score rate still swings).",
     "finishLabel": "Finishes",
-    "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final)."
+    "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final).",
+    "prelimOverNote": "The preliminaries ended with the semi-finals on {{date}}. The score rate is final and today's finish will not change it.",
+    "rankSourceNote": "The series rank is our own calculation. The official table leaves out racers who withdrew mid-series or were excluded from prizes, so the lower ranks can differ by a few places."
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
@@ -718,7 +720,10 @@
     "periodFetchError": "Could not load the previous term record",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
     "meetTrendExhibitionDownSameTime": "Same time; the others improved, {{diff}} place(s) down",
-    "meetTrendExhibitionUpSameTime": "Same time; the others slowed, {{diff}} place(s) up"
+    "meetTrendExhibitionUpSameTime": "Same time; the others slowed, {{diff}} place(s) up",
+    "meetScorePrelimOver": "Preliminary score rate {{rate}} ({{n}} runs, our calculation, final)",
+    "meetTrendExhibitionUpSlower": "{{gap}} slower, but the others slowed more, so {{diff}} place(s) up",
+    "meetTrendExhibitionDownFaster": "{{gap}} faster, but the others improved more, so {{diff}} place(s) down"
   },
   "dataTable": {
     "title": "Data Race Card",
