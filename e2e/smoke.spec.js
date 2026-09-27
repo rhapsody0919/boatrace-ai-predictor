@@ -1486,9 +1486,22 @@ test.describe("レースページ再設計（BOA-168）", () => {
       "1着",
     );
 
-    const trend = page.locator(".rmt-trend");
-    await expect(trend).toContainText("今節の平均ST");
-    await expect(trend).toContainText("前検タイム");
+    // ST・展示は走順の折れ線で見せる（数字の羅列はやめた）。
+    // 平均・通常値・前検タイムはグラフの見出しに寄せてある
+    const sparkHeads = page.locator(".rmt-spark-head");
+    await expect(sparkHeads).toHaveCount(2);
+    await expect(sparkHeads.first()).toContainText("今節のST");
+    await expect(sparkHeads.first()).toContainText("通常");
+    await expect(sparkHeads.nth(1)).toContainText("今節の展示");
+    await expect(sparkHeads.nth(1)).toContainText("前検");
+    await expect(page.locator(".rmt-sparks .meet-sparkline")).toHaveCount(2);
+
+    // 6艇の推移（同じ縦の物差しで並べる）。ST/展示を切り替えられる
+    await expect(page.locator(".rmt-trend-row")).toHaveCount(6);
+    await page.locator(".rmt-metric-chip", { hasText: "展示" }).click();
+    await expect(
+      page.locator(".rmt-metric-chip", { hasText: "展示" }),
+    ).toHaveAttribute("aria-pressed", "true");
 
     // 日別の走り。同じ節の走しか並ばない列は省き、展示の列を足すので9列
     const rows = page.locator(".race-meet-tab .race-history-table tbody tr");
@@ -1505,7 +1518,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(cells.nth(4)).toHaveText(/^\d\.\d{2}\(\d\)$|^\d\.\d{2}$|^-$/);
     await expect(cells.nth(5)).toHaveText("0.09");
     // 展示の推移を「初日→直近」で断定する文言は出さない
-    await expect(page.locator(".rmt-trend")).not.toContainText("展示順位");
+    await expect(page.locator(".race-meet-tab")).not.toContainText("展示順位");
 
     // 節の初戦では前節が混ざらず、空状態になる
     await page.goto("/race/2026-09-20-01-05");
