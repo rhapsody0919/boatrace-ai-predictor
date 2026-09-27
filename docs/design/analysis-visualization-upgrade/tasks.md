@@ -51,7 +51,7 @@ ADR: [ADR-0068](../../adr/0068-course-baseline-precomputation.md)
   - `.github/workflows/verify-query-errors.yml`: PR時に自動実行（既存の `verify-cache-config.yml` と同じ形）
   - `.claude/rules/frontend-data-fetch.md`: 読み取り側のルールを明文化（書き込み側の `data-acquisition.md` に対応するものが無かった）
   - **受入基準**: 違反ファイルを一時的に置くと exit 1 になり、消すと exit 0 に戻ることを確認済み
-- [ ] **T0-6** バッチ側（`scripts/`）は別チケットにする
+- [ ] **T0-6** バッチ側（`scripts/`）は別チケットにする → **[BOA-391](https://linear.app/boat-ai/issue/BOA-391) で起票済み**（2026-09-27の監査で確認）
   - `scripts/lib/supabaseClient.js` の `fetchAll` は `throwOnError = false` が既定のまま（呼び出し121箇所）。`getRaceSchedule` ほか8関数が同じ escape hatch を持つ
   - 121箇所への影響確認が要るため本PRには含めない。BOA-359 のバッチ側として起票し、`verify-query-errors.js` の `BATCH_TODO` に記録済み
 
@@ -313,6 +313,9 @@ Linearのこの上限は**アーカイブしていない課題数**で数える�
 
 ## Phase 7: モータ情報タブ（FR-4a。T5-1の後）
 
+> **2026-09-26、ユーザー判断で後回し**。ボートレース日和の同種タブと突合してから設計する。
+> [BOA-451](https://linear.app/boat-ai/issue/BOA-451) に引き継いだ。
+
 - [ ] **T7-1** `MotorWakuStatsGrid` に前検タイム・節時点の2連対率の列を追加する
   - ~~データは2026-09-22以降のみ（604行）~~ → **2026-09-25に測り直したら 31,908行・700 venue-day・2025-12-03〜2026-09-25 まで毎月3,000行前後**に増えていた（別セッションのバックフィルが効いている）。「取れていない節では列ごと出さない」という設計自体は残すが、**実際にはほぼ全節で出る**前提で作ってよい
   - **ただし行の意味が時期で変わる**。古い期間は節に1日（前検日）だけだが、直近は**節の中の複数日に行がある**（例: 桐生の9月は 09-05 / 09-20 / 09-23 / 09-24 / 09-25）。「節時点の2連対率」をどの行から取るかを決める必要がある（節の最初の行を使う／表示中のレース日以前の最新を使う 等）。実装前に実データで確認すること
@@ -322,6 +325,9 @@ Linearのこの上限は**アーカイブしていない課題数**で数える�
 ## Phase 8: オリジナル展示（FR-4b。他と独立。ADR-0067の判断が挟まる）
 
 他のFRを待たせないため独立させる（plan.md §7の#9）。
+
+> **2026-09-26、ユーザー判断で後回し**。Phase 7と同じく日和と突合してから設計する。
+> [BOA-452](https://linear.app/boat-ai/issue/BOA-452) に引き継いだ。
 
 - [ ] **T8-1** 出典表記の設計とモックの提示（ユーザー承認）
   - 「出典: BOATCAST」・取得時刻・再配布しない旨。ピットレポートの出典表記（`RacePitReportSection`）を先例にする
@@ -333,15 +339,16 @@ Linearのこの上限は**アーカイブしていない課題数**で数える�
 
 ## Phase 9: 仕上げ
 
-- [ ] **T9-1** `docs/design/analysis-visualization-upgrade/content-index.json` を作成する（フローA-2）
-  - 新機能のトレーサビリティ。ブログ・SNSへの展開の要否はフローA参照。対象が無ければ `not_applicable: true` ＋理由
-  - `npm run verify:content-index` を通す
-- [ ] **T9-2** `RaceWakuInfoTab.jsx` の冒頭コメントを更新する（screens.md §1の訂正2件）
-  - 「ST考察・逃げシミュレーションに相当する集計・カラムは自社DBに存在しない」→ 生データから算出できる（本specで実証）
-  - 「艇番＝コース前提。BOA-257の制約により区別できない」→ BOA-257はDoneで `actual_course_N` は99.7〜99.9%
-- [ ] **T9-3** 完了監査（`/create-pr` の前）
-  - このファイルの全チェックボックスと、実際のコミット・コードを突き合わせる。「会話でやった記憶がある」ではなくファイルと実コードの対応で判定する
-  - `npm run build` / `npm run test:e2e` / `verify:content-index` / `verify:er-diagram` / `verify:adr-numbers` / `verify:migration-numbers` / `verify:migration-rls`
+- [x] **T9-1** `docs/design/analysis-visualization-upgrade/content-index.json` を作成する（フローA-2、2026-09-27）
+  - **この機能に言及する既存コンテンツは1件も無い**ことを実測して確認した（`public/blog/` 全記事・`x-posts/history.json`・`tiktok-posts/history.json` を「今節」「ST考察」「逃げシミュ」でgrep → 0件。`HowToUse.jsx`・`About.jsx`・`FAQ.jsx` はレース詳細の「結果」タブにしか触れていない）。索引は既存コンテンツの記録なので `not_applicable: true` ＋理由を書いた
+  - ブログ展開の要否と、`HowToUse.jsx` が8タブ構成に追随していない件は [BOA-456](https://linear.app/boat-ai/issue/BOA-456) に分離した。着手したら実物を追記して `not_applicable` を false に戻す
+  - `npm run verify:content-index` → OK（24件）
+- [x] **T9-2** `RaceWakuInfoTab.jsx` の冒頭コメントを更新する（screens.md §1の訂正2件、2026-09-27に確認）
+  - **T3-1の差し替え時に解消済みだった**。「相当する集計・カラムは自社DBに存在しない」は `src/` に0件、艇番基準の話は `courseGridStats.js` に「BOA-257はDoneで `actual_course_N` は99.7〜99.9%」として正しい形で残っている
+- [x] **T9-3** 完了監査（2026-09-27）
+  - チェック済み項目の成果物をファイル実体で突き合わせ、**欠落なし**を確認した: `stConsideration.js` / `courseBaseline.js` / `RaceStConsiderationCard` / `NigeSimulationCard` / `RecentRunsBar` / `VenueDaySummaryCard` / `FlyingBadge` / `RaceMeetTab` / `seriesPoints` / `courseGridStats` / `update-course-baseline-stats.js` / `094_course_baselines.sql` / `095_phase_a_numeric_public_read.sql`（094・095とも `APPLIED.md` に適用済みの記録あり）
+  - 未チェックで残るのは T0-6（[BOA-391](https://linear.app/boat-ai/issue/BOA-391)）・Phase 7（[BOA-451](https://linear.app/boat-ai/issue/BOA-451)）・Phase 8（[BOA-452](https://linear.app/boat-ai/issue/BOA-452)）で、いずれも起票済み
+  - 検証コマンドの結果は本PRの説明に記載
 
 ---
 
@@ -349,10 +356,11 @@ Linearのこの上限は**アーカイブしていない課題数**で数える�
 
 本機能のバッチ（T2-2）は**外部サイトを取得しない**（自社DBの集計のみ）ため、同ルールの「完了の定義」A（期待件数）・B（タイミング実測）はそのままは当てはまらない。plan.md §5.2で読み替えた3点で判定する。
 
-- [ ] **件数**: `st_course_baseline` が**24行**（コース6 × 級別4）、`nige_second_by_course` が「1コース逃げが1件以上あった会場 × 2〜6コース」の行数（24会場開催なら120行）であることを実測クエリで確認する
-- [ ] **整合1**: `nige_second_by_course.second_rate` を会場ごとに合計して100%±0.5に収まることを実測クエリで確認する（2着は必ず1艇）
-- [ ] **整合2**: `exacta_rate` の会場ごとの合計が `nige_races / total_races * 100` と±0.5pt以内で一致することを実測クエリで確認する（分母の取り違えの検知）
-- [ ] **継続監視**: **`last_updated` ではなく `window_end`** が2日以上古い場合を日次で検知してSlack通知することを確認する。**既存の `scrape-monitor` の `daily_overdue` は使えない**（行数が固定のテーブルでは空振りする）。バッチ自身が整合チェックに失敗したら非0終了して既存のSlack経路に流す形にする（plan.md §5.2）
+- [x] **件数**（2026-09-27実測）: `st_course_baseline` = **24行**（1A1〜6B2の24組がすべて揃い、n は最小1,099〜最大19,877）、`nige_second_by_course` = **120行**（24会場 × 2〜6コースの5行）。期待どおり
+- [x] **整合1**（2026-09-27実測）: `second_rate` の会場ごとの合計が100%±0.5から外れる会場は **0件**
+- [x] **整合2**（2026-09-27実測）: `exacta_rate` の会場ごとの合計と `nige_races / total_races * 100` の差が±0.5ptを超える会場は **0件**
+- [x] **継続監視**（2026-09-27）: バッチ側は整合チェック失敗で throw → 非0終了する実装になっていたが、**`aggregate-course-baseline-stats.yml` に Slack通知ステップが無く、失敗しても赤いジョブが残るだけだった**。他の日次ジョブと同じ `SLACK_WEBHOOK_URL` へ流す `if: failure()` のステップを足した。集計が止まれば `window_end` が古いまま残るため、この通知が「window_end が2日以上古い」の実質的な検知になる（行数が固定の表では `scrape-monitor` の `daily_overdue` が空振りするため、そちらは使えない）
+  - 実測値: `st_course_baseline` / `nige_second_by_course` とも `window_end` = 2026-09-25、`last_updated` = 2026-09-27
 
 ---
 
