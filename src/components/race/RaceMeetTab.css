@@ -282,6 +282,53 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 今節のST・展示のスパークライン（MeetSparkline）。390pxでは2本を縦に積む */
+.rmt-sparks {
+  display: grid;
+  gap: var(--spacing-3);
+  margin: var(--spacing-2) 0 var(--spacing-3);
+}
+
+@media (min-width: 560px) {
+  .rmt-sparks {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rmt-spark-note {
+    grid-column: 1 / -1;
+  }
+}
+
+.rmt-spark-head,
+.rmt-spark-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  /* 390pxだと「平均 0.16（8走）／通常 0.14 +0.02 慎重」が右端に張り付く */
+  flex-wrap: wrap;
+}
+
+.rmt-spark-title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rmt-spark-base,
+.rmt-spark-foot {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rmt-spark-note {
+  margin: 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
 .rmt-loading,
 .rmt-empty {
   margin: 0;

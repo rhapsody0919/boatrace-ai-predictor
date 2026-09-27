@@ -627,7 +627,15 @@
     "finishLabel": "Finishes",
     "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final).",
     "prelimOverNote": "The preliminaries ended with the semi-finals on {{date}}. The score rate is final and today's finish will not change it.",
-    "rankSourceNote": "The series rank is our own calculation. The official table leaves out racers who withdrew mid-series or were excluded from prizes, so the lower ranks can differ by a few places."
+    "rankSourceNote": "The series rank is our own calculation. The official table leaves out racers who withdrew mid-series or were excluded from prizes, so the lower ranks can differ by a few places.",
+    "sparkStTitle": "Start timing this series",
+    "sparkExTitle": "Trial time this series",
+    "sparkBaselineSt": "Usual {{value}}",
+    "sparkBaselinePretest": "Pre-test {{value}}",
+    "sparkLast": "Last {{value}}",
+    "sparkNote": "The dashed line is the reference (the racer's usual average for ST, this series' pre-test time for the trial). Higher is faster. The large dot is the latest run. The vertical scale is stretched to this racer's own min-max for the series, so the size of the peaks cannot be compared between racers. We do not label it as improving or declining.",
+    "sparkStMeta": "Avg {{avg}} ({{n}} runs) / usual {{base}}",
+    "sparkExMetaRank": "Pre-test {{value}} (#{{rank}})"
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",

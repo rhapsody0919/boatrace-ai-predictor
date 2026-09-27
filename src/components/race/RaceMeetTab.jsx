@@ -40,6 +40,7 @@ import {
   MEET_SMALL_SAMPLE_RUNS,
 } from "./seriesPoints";
 import RaceHistoryTable from "./RaceHistoryTable";
+import MeetSparkline from "./MeetSparkline";
 import "./RaceMeetTab.css";
 
 function RaceMeetTab({ raceId, venueCode, players }) {
@@ -131,6 +132,17 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   const trend = buildMeetTrend(meet, records ?? []);
   const st = trend.st;
   const pre = pretestOf(selectedPlayer?.racerId);
+  // スパークラインの右端に出す「前走」の値（欠測は飛ばして最後の実測を採る）
+  const lastOf = (key) => {
+    const vals = meet.map((r) => r[key]).filter((v) => typeof v === "number");
+    return vals.length > 0 ? vals[vals.length - 1] : null;
+  };
+  // 表の日付（9/22）と揃える。`slice` だけだと「09/22」でゼロ埋めが残る
+  const firstMeetDate = meet[0]?.date
+    ? `${Number(meet[0].date.slice(5, 7))}/${Number(meet[0].date.slice(8, 10))}`
+    : "";
+  const lastSt = lastOf("startTiming");
+  const lastExhibition = lastOf("exhibitionTime");
 
   return (
     <div className="race-meet-tab">
@@ -393,37 +405,93 @@ function RaceMeetTab({ raceId, venueCode, players }) {
           <p className="rmt-empty">{t("basicInfo.meetEmpty")}</p>
         ) : (
           <>
-            <p className="rmt-trend">
-              {st.diff !== null && (
-                <span>
-                  {t("basicInfo.meetTrendSt", {
-                    meet: st.meetAvg.toFixed(2),
-                    n: st.meetN,
-                    base: st.baseAvg === null ? "—" : st.baseAvg.toFixed(2),
-                  })}{" "}
-                  <span className="rmt-verdict">
-                    {st.diff <= -MEET_ST_DIFF_THRESHOLD
-                      ? t("basicInfo.meetTrendStPush", {
-                          diff: Math.abs(st.diff).toFixed(2),
-                        })
-                      : st.diff >= MEET_ST_DIFF_THRESHOLD
-                        ? t("basicInfo.meetTrendStCareful", {
-                            diff: st.diff.toFixed(2),
-                          })
-                        : t("basicInfo.meetTrendStFlat")}
+            {/* 今節の走順に並べた小さな線。数字の羅列だと8走ぶんの上下を
+                頭の中で組み立てることになる（2026-09-27、ファン視点の議論）。
+                判定文は出さず、形と基準線を見せて読み手に委ねる */}
+            <div className="rmt-sparks">
+              <div className="rmt-spark">
+                <div className="rmt-spark-head">
+                  <span className="rmt-spark-title">
+                    {t("meetTab.sparkStTitle")}
                   </span>
-                </span>
-              )}
-              {pre?.pretest_time !== null &&
-                pre?.pretest_time !== undefined && (
+                  {st.diff !== null && (
+                    <span className="rmt-spark-base">
+                      {t("meetTab.sparkStMeta", {
+                        avg: st.meetAvg.toFixed(2),
+                        n: st.meetN,
+                        base: st.baseAvg === null ? "—" : st.baseAvg.toFixed(2),
+                      })}{" "}
+                      <span className="rmt-verdict">
+                        {st.diff <= -MEET_ST_DIFF_THRESHOLD
+                          ? t("basicInfo.meetTrendStPush", {
+                              diff: Math.abs(st.diff).toFixed(2),
+                            })
+                          : st.diff >= MEET_ST_DIFF_THRESHOLD
+                            ? t("basicInfo.meetTrendStCareful", {
+                                diff: st.diff.toFixed(2),
+                              })
+                            : t("basicInfo.meetTrendStFlat")}
+                      </span>
+                    </span>
+                  )}
+                </div>
+                <MeetSparkline
+                  points={meet.map((r) => ({ value: r.startTiming ?? null }))}
+                  baseline={st.baseAvg}
+                  color="var(--brand-accent-primary)"
+                />
+                <div className="rmt-spark-foot">
+                  <span>{firstMeetDate}</span>
                   <span>
-                    {t("basicInfo.meetPretest", {
-                      time: Number(pre.pretest_time).toFixed(2),
-                      rank: pre.pretest_rank ?? "—",
-                    })}
+                    {lastSt === null
+                      ? "—"
+                      : t("meetTab.sparkLast", { value: lastSt.toFixed(2) })}
                   </span>
-                )}
-            </p>
+                </div>
+              </div>
+
+              <div className="rmt-spark">
+                <div className="rmt-spark-head">
+                  <span className="rmt-spark-title">
+                    {t("meetTab.sparkExTitle")}
+                  </span>
+                  {pre?.pretest_time !== null &&
+                    pre?.pretest_time !== undefined && (
+                      <span className="rmt-spark-base">
+                        {pre.pretest_rank
+                          ? t("meetTab.sparkExMetaRank", {
+                              value: Number(pre.pretest_time).toFixed(2),
+                              rank: pre.pretest_rank,
+                            })
+                          : t("meetTab.sparkBaselinePretest", {
+                              value: Number(pre.pretest_time).toFixed(2),
+                            })}
+                      </span>
+                    )}
+                </div>
+                <MeetSparkline
+                  points={meet.map((r) => ({ value: r.exhibitionTime ?? null }))}
+                  baseline={
+                    pre?.pretest_time !== null && pre?.pretest_time !== undefined
+                      ? Number(pre.pretest_time)
+                      : null
+                  }
+                  color="var(--color-info-text, #2a7fbf)"
+                />
+                <div className="rmt-spark-foot">
+                  <span>{firstMeetDate}</span>
+                  <span>
+                    {lastExhibition === null
+                      ? "—"
+                      : t("meetTab.sparkLast", {
+                          value: lastExhibition.toFixed(2),
+                        })}
+                  </span>
+                </div>
+              </div>
+              <p className="rmt-spark-note">{t("meetTab.sparkNote")}</p>
+            </div>
+
             {/* 展示は「初日→直近」の2点比較で上向き/下向きと断定していたが、
                 間の走を捨てるため実態と逆の結論になっていた（2026-09-27の
                 実測: 6.86→6.89→6.77→6.78→6.88→6.81→6.76→6.87 で

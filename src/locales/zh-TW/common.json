@@ -625,7 +625,15 @@
     "finishLabel": "名次",
     "borderNote": "虛線以上為準優門檻之內（賽程尚未排定，並非確定）。",
     "prelimOverNote": "預賽已於{{date}}的準優勝戰結束。得分率就此確定，今日名次不會再改變。",
-    "rankSourceNote": "梯次名次為本站計算。官方名次表會排除中途歸鄉・獎典除外的選手，因此名次越後面越可能相差數位。"
+    "rankSourceNote": "梯次名次為本站計算。官方名次表會排除中途歸鄉・獎典除外的選手，因此名次越後面越可能相差數位。",
+    "sparkStTitle": "本梯次的ST",
+    "sparkExTitle": "本梯次的展示",
+    "sparkBaselineSt": "平常 {{value}}",
+    "sparkBaselinePretest": "前檢 {{value}}",
+    "sparkLast": "前一場 {{value}}",
+    "sparkNote": "虛線為基準（ST是該選手平常的平均，展示是本梯次的前檢時間）。越上面越快。大點為前一場。縱軸依該選手本梯次的最小～最大拉伸，因此起伏大小無法與其他選手比較。不做上升／下降的判定。",
+    "sparkStMeta": "平均 {{avg}}（{{n}}場）／平常 {{base}}",
+    "sparkExMetaRank": "前檢 {{value}}（第{{rank}}名）"
   },
   "basicInfo": {
     "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場・擅長賽場・依條件）",
