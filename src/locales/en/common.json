@@ -263,7 +263,9 @@
       "G2": "G2",
       "G3": "G3",
       "SG": "SG"
-    }
+    },
+    "exhibition": "Trial",
+    "exhibitionCell": "{{time}}({{rank}})"
   },
   "panel": {
     "noData": "Prediction data is not available",
@@ -686,10 +688,6 @@
     "meetTrendStPush": "−{{diff}}, pushing harder",
     "meetTrendStCareful": "+{{diff}}, holding back",
     "meetTrendStFlat": "same as usual",
-    "meetTrendExhibition": "Exhibition rank {{first}} → {{last}} ({{n}} races, {{firstTime}}→{{lastTime}})",
-    "meetTrendExhibitionUp": "up {{diff}} place(s)",
-    "meetTrendExhibitionDown": "down {{diff}} place(s)",
-    "meetTrendExhibitionFlat": "unchanged",
     "meetEmpty": "No races yet in this series (this is the racer's first one)",
     "conditionsNote": "{{metric}} by condition (our own tally, all available data). It will not match the official figures in the bars above, which are calculated differently.",
     "conditions": {
@@ -719,11 +717,7 @@
     "periodAvgSt": "Avg. ST {{value}}",
     "periodFetchError": "Could not load the previous term record",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
-    "meetTrendExhibitionDownSameTime": "Same time; the others improved, {{diff}} place(s) down",
-    "meetTrendExhibitionUpSameTime": "Same time; the others slowed, {{diff}} place(s) up",
-    "meetScorePrelimOver": "Preliminary score rate {{rate}} ({{n}} runs, our calculation, final)",
-    "meetTrendExhibitionUpSlower": "{{gap}} slower, but the others slowed more, so {{diff}} place(s) up",
-    "meetTrendExhibitionDownFaster": "{{gap}} faster, but the others improved more, so {{diff}} place(s) down"
+    "meetScorePrelimOver": "Preliminary score rate {{rate}} ({{n}} runs, our calculation, final)"
   },
   "dataTable": {
     "title": "Data Race Card",

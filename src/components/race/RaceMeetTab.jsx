@@ -32,7 +32,6 @@ import {
   buildMeetTrend,
   getRecentRaces,
   MEET_ST_DIFF_THRESHOLD,
-  MEET_EXHIBITION_DIFF_THRESHOLD,
 } from "./basicInfoStats";
 import {
   buildMeetRanking,
@@ -131,19 +130,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   const meet = buildMeetResults(records ?? [], { raceId, venueCode });
   const trend = buildMeetTrend(meet, records ?? []);
   const st = trend.st;
-  const ex = trend.exhibition;
   const pre = pretestOf(selectedPlayer?.racerId);
-  // 展示タイムが同じなのに順位が動いた場合（6.78→6.78で「1つ下向き」）は、
-  // 数字だけ見ると誤植に見える。周りが動いた結果だと書き分ける
-  // 展示タイムの差（正なら遅くなった）。順位と逆方向に動いたときに説明が要る
-  const exTimeDelta =
-    ex.firstTime !== null && ex.lastTime !== null
-      ? ex.lastTime - ex.firstTime
-      : null;
-  const exSameTime =
-    ex.firstTime !== null &&
-    ex.lastTime !== null &&
-    Math.abs(ex.firstTime - ex.lastTime) < 0.005;
 
   return (
     <div className="race-meet-tab">
@@ -436,56 +423,16 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                     })}
                   </span>
                 )}
-              {ex.diff !== null && (
-                <span>
-                  {t("basicInfo.meetTrendExhibition", {
-                    first: ex.first,
-                    last: ex.last,
-                    firstTime:
-                      ex.firstTime === null ? "—" : ex.firstTime.toFixed(2),
-                    lastTime:
-                      ex.lastTime === null ? "—" : ex.lastTime.toFixed(2),
-                    n: ex.n,
-                  })}{" "}
-                  <span className="rmt-verdict">
-                    {ex.diff <= -MEET_EXHIBITION_DIFF_THRESHOLD
-                      ? // 順位は上がった
-                        exSameTime
-                        ? t("basicInfo.meetTrendExhibitionUpSameTime", {
-                            diff: Math.abs(ex.diff),
-                          })
-                        : exTimeDelta !== null && exTimeDelta > 0
-                          ? // タイムは落ちたのに順位が上がった＝周りがそれ以上に落ちた。
-                            // 説明が無いと「6.87→6.88で1つ上向き」が誤植に見える
-                            t("basicInfo.meetTrendExhibitionUpSlower", {
-                              diff: Math.abs(ex.diff),
-                              gap: Math.abs(exTimeDelta).toFixed(2),
-                            })
-                          : t("basicInfo.meetTrendExhibitionUp", {
-                              diff: Math.abs(ex.diff),
-                            })
-                      : ex.diff >= MEET_EXHIBITION_DIFF_THRESHOLD
-                        ? // 順位は下がった
-                          exSameTime
-                          ? t("basicInfo.meetTrendExhibitionDownSameTime", {
-                              diff: ex.diff,
-                            })
-                          : exTimeDelta !== null && exTimeDelta < 0
-                            ? t("basicInfo.meetTrendExhibitionDownFaster", {
-                                diff: ex.diff,
-                                gap: Math.abs(exTimeDelta).toFixed(2),
-                              })
-                            : t("basicInfo.meetTrendExhibitionDown", {
-                                diff: ex.diff,
-                              })
-                        : t("basicInfo.meetTrendExhibitionFlat")}
-                  </span>
-                </span>
-              )}
             </p>
+            {/* 展示は「初日→直近」の2点比較で上向き/下向きと断定していたが、
+                間の走を捨てるため実態と逆の結論になっていた（2026-09-27の
+                実測: 6.86→6.89→6.77→6.78→6.88→6.81→6.76→6.87 で
+                「1つ下向き」と出るが、今節ベスト級は間にある）。
+                判定はやめ、走ごとの生の数字を表に並べて読み手に委ねる */}
             <RaceHistoryTable
               rows={getRecentRaces(meet, meet.length)}
               showEntryCourse
+              showExhibition
               compactDate
               omitColumns={["venue", "raceTitle", "grade", "stage"]}
               buildRaceHref={(id) => localize(`/race/${id}`)}

@@ -262,7 +262,9 @@
       "G2": "G2",
       "G3": "G3",
       "SG": "SG"
-    }
+    },
+    "exhibition": "展示",
+    "exhibitionCell": "{{time}}({{rank}})"
   },
   "panel": {
     "noData": "尚無預測資料",
@@ -684,10 +686,6 @@
     "meetTrendStPush": "−{{diff}} 起步更積極",
     "meetTrendStCareful": "+{{diff}} 較保守",
     "meetTrendStFlat": "與平常相同",
-    "meetTrendExhibition": "展示排名 第{{first}} → 第{{last}}（{{n}}場・{{firstTime}}→{{lastTime}}）",
-    "meetTrendExhibitionUp": "上升{{diff}}名",
-    "meetTrendExhibitionDown": "下滑{{diff}}名",
-    "meetTrendExhibitionFlat": "持平",
     "meetEmpty": "本梯次尚未出賽（本場為第一戰）",
     "conditionsNote": "各條件下的{{metric}}（本站統計・可取得的全部期間）。與上方長條圖的官方數值計算方式不同，因此數字不會一致。",
     "conditions": {
@@ -717,11 +715,7 @@
     "periodAvgSt": "平均ST {{value}}",
     "periodFetchError": "無法取得前期成績",
     "meetScoreForecastTitle": "今日名次會讓得分率這樣變動",
-    "meetTrendExhibitionDownSameTime": "時間持平，其他艇變快，名次下降{{diff}}位",
-    "meetTrendExhibitionUpSameTime": "時間持平，其他艇變慢，名次上升{{diff}}位",
-    "meetScorePrelimOver": "預賽得分率 {{rate}}（{{n}}場・本站計算・已確定）",
-    "meetTrendExhibitionUpSlower": "時間慢了{{gap}}，但其他艇慢更多，名次上升{{diff}}位",
-    "meetTrendExhibitionDownFaster": "時間快了{{gap}}，但其他艇快更多，名次下降{{diff}}位"
+    "meetScorePrelimOver": "預賽得分率 {{rate}}（{{n}}場・本站計算・已確定）"
   },
   "dataTable": {
     "title": "數據出賽表",

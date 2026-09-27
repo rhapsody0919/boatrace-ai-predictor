@@ -1489,21 +1489,23 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const trend = page.locator(".rmt-trend");
     await expect(trend).toContainText("今節の平均ST");
     await expect(trend).toContainText("前検タイム");
-    // 展示は順位で見る（絶対値だと水面の影響を拾う）
-    await expect(trend).toContainText("展示順位");
 
-    // 日別の走り。同じ節の走しか並ばない列は省くので8列
+    // 日別の走り。同じ節の走しか並ばない列は省き、展示の列を足すので9列
     const rows = page.locator(".race-meet-tab .race-history-table tbody tr");
     await expect(rows).toHaveCount(6, { timeout: 25000 });
     await expect(
       page.locator(".race-meet-tab .race-history-table thead th"),
-    ).toHaveCount(8);
+    ).toHaveCount(9);
     const cells = rows.first().locator("td");
     // 同じ節の走しか並ばないので日付は月日だけ（年は毎行同じで幅を食う）
     await expect(cells.nth(0)).toHaveText("9/20");
     await expect(cells.nth(1)).toContainText("5R");
     await expect(cells.nth(3)).toHaveText("5");
-    await expect(cells.nth(4)).toHaveText("0.09");
+    // 展示は「タイム(同レース内の順位)」。上向き/下向きの断定はしない
+    await expect(cells.nth(4)).toHaveText(/^\d\.\d{2}\(\d\)$|^\d\.\d{2}$|^-$/);
+    await expect(cells.nth(5)).toHaveText("0.09");
+    // 展示の推移を「初日→直近」で断定する文言は出さない
+    await expect(page.locator(".rmt-trend")).not.toContainText("展示順位");
 
     // 節の初戦では前節が混ざらず、空状態になる
     await page.goto("/race/2026-09-20-01-05");

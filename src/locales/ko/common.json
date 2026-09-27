@@ -262,7 +262,9 @@
       "G2": "G2",
       "G3": "G3",
       "SG": "SG"
-    }
+    },
+    "exhibition": "전시",
+    "exhibitionCell": "{{time}}({{rank}})"
   },
   "panel": {
     "noData": "예측 데이터가 없습니다",
@@ -684,10 +686,6 @@
     "meetTrendStPush": "−{{diff}} 더 밟고 있음",
     "meetTrendStCareful": "+{{diff}} 신중",
     "meetTrendStFlat": "평소와 같음",
-    "meetTrendExhibition": "전시 순위 {{first}}위 → {{last}}위({{n}}주·{{firstTime}}→{{lastTime}})",
-    "meetTrendExhibitionUp": "{{diff}}단계 상승",
-    "meetTrendExhibitionDown": "{{diff}}단계 하락",
-    "meetTrendExhibitionFlat": "보합",
     "meetEmpty": "이번 시리즈에서는 아직 출주하지 않았습니다(이 경주가 첫 출주입니다)",
     "conditionsNote": "조건별 {{metric}}(당사 집계·확보 가능한 전체 기간). 위 막대의 공식 수치와는 산출 방식이 달라 숫자가 일치하지 않습니다.",
     "conditions": {
@@ -717,11 +715,7 @@
     "periodAvgSt": "평균 ST {{value}}",
     "periodFetchError": "전기 성적을 가져오지 못했습니다",
     "meetScoreForecastTitle": "오늘 착순에 따른 득점률 변화",
-    "meetTrendExhibitionDownSameTime": "타임은 그대로, 주위가 빨라져 {{diff}}계단 하락",
-    "meetTrendExhibitionUpSameTime": "타임은 그대로, 주위가 느려져 {{diff}}계단 상승",
-    "meetScorePrelimOver": "예선 득점률 {{rate}}（{{n}}주・당사 계산・확정）",
-    "meetTrendExhibitionUpSlower": "타임은 {{gap}} 느려졌지만 주위가 더 느려져 {{diff}}계단 상승",
-    "meetTrendExhibitionDownFaster": "타임은 {{gap}} 빨라졌지만 주위가 더 빨라져 {{diff}}계단 하락"
+    "meetScorePrelimOver": "예선 득점률 {{rate}}（{{n}}주・당사 계산・확정）"
   },
   "dataTable": {
     "title": "데이터 출주표",

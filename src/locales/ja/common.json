@@ -430,10 +430,6 @@
     "meetTrendStPush": "−{{diff}} 踏んでいる",
     "meetTrendStCareful": "+{{diff}} 慎重",
     "meetTrendStFlat": "通常どおり",
-    "meetTrendExhibition": "展示順位 {{first}}位 → {{last}}位（{{n}}走・{{firstTime}}→{{lastTime}}）",
-    "meetTrendExhibitionUp": "{{diff}}つ上向き",
-    "meetTrendExhibitionDown": "{{diff}}つ下向き",
-    "meetTrendExhibitionFlat": "横ばい",
     "meetEmpty": "今節はまだ走っていません（このレースが初戦です）",
     "conditionsNote": "条件ごとの{{metric}}（当社集計・取得できる全期間）。上のバーの公式値とは集計方法が違うため数字が一致しません",
     "conditions": {
@@ -463,11 +459,7 @@
     "periodAvgSt": "平均ST {{value}}",
     "periodFetchError": "前期成績を取得できませんでした",
     "meetScoreForecastTitle": "今日の着順で得点率はこう動く",
-    "meetTrendExhibitionDownSameTime": "タイムは横ばい、周りが上がって{{diff}}つ下",
-    "meetTrendExhibitionUpSameTime": "タイムは横ばい、周りが落ちて{{diff}}つ上",
-    "meetScorePrelimOver": "予選の得点率 {{rate}}（{{n}}走・当社計算・確定）",
-    "meetTrendExhibitionUpSlower": "タイムは{{gap}}落ちたが、周りがそれ以上に落ちて{{diff}}つ上",
-    "meetTrendExhibitionDownFaster": "タイムは{{gap}}上がったが、周りがそれ以上に上がって{{diff}}つ下"
+    "meetScorePrelimOver": "予選の得点率 {{rate}}（{{n}}走・当社計算・確定）"
   },
   "wakuInfo": {
     "note": "選手を選ぶと、その選手が本日入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",
@@ -529,7 +521,9 @@
       "G2": "G2",
       "G3": "G3",
       "SG": "SG"
-    }
+    },
+    "exhibition": "展示",
+    "exhibitionCell": "{{time}}({{rank}})"
   },
   "panel": {
     "noData": "予想データが利用できません",
