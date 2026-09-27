@@ -91,9 +91,7 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": [
-        "--base=origin/master"
-      ],
+      "args": ["--base=origin/master"],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
@@ -261,7 +259,7 @@
     {
       "script": "verify-unchanged-rows.js",
       "tier": "ci",
-      "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）"
+      "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）と、バルクupsertのpayload列そろえ（キーの集合が違う行を混ぜると、持たない行にNULLが書かれる。2026-09-27にrace_entriesのbranch・hometownを1,729行消した）"
     },
     {
       "script": "verify-venue-entry-course-stats-parser.js",

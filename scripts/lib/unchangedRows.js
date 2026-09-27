@@ -244,6 +244,13 @@ function buildKey(row, keyColumns) {
  *   変更ありと判定された行は、ignoreColumns も含めて従来どおりそのまま書く。
  * - 既存行が無い行は「新規」。writeMissing=true（upsert）なら書き、false（update）なら
  *   対象行が存在せず UPDATE しても0件のため書かない。
+ * - **書き込む行は、書き込み予定の行全体で現れる列の集合にそろえる**（欠けている列は既存値で補う）。
+ *   PostgREST のバルク upsert は、1回のリクエストの行でカラムを揃える必要があるため、キーの集合が
+ *   異なる行を混ぜると、**持っていない行の当該列に NULL が書き込まれる**。呼び出し元が「この行の
+ *   この列は触らない」つもりで列を省いても、同じバッチの別の行がその列を持っていれば消える。
+ *   2026-09-27、N19（racelist-backfill の buildFillRow は「既存値がNULLの列だけ」を行に入れる）で
+ *   実際に起き、race_entries の branch・hometown が 1,729行でNULLに上書きされた。
+ *
  *
  * @param {Array<Object>} existingRows
  * @param {Array<Object>} incomingRows
@@ -267,6 +274,27 @@ export function diffRows(existingRows, incomingRows, options) {
   const existingByKey = new Map(
     existingRows.map((row) => [buildKey(row, keyColumns), row]),
   );
+
+  // 書き込み予定の行全体に現れる列（PostgREST が1リクエスト内でそろえる必要がある集合）
+  const payloadColumns = [
+    ...new Set(
+      incomingRows.flatMap((row) =>
+        Object.keys(row).filter((c) => row[c] !== undefined),
+      ),
+    ),
+  ];
+  /** 行に無い列を、既存値で補ってそろえる（既存値が分からない新規行はそのまま） */
+  const alignToPayloadColumns = (row, existing) => {
+    if (!existing) return row;
+    let aligned = null;
+    for (const column of payloadColumns) {
+      if (row[column] !== undefined) continue;
+      if (!(column in existing)) continue;
+      aligned ??= { ...row };
+      aligned[column] = existing[column];
+    }
+    return aligned ?? row;
+  };
 
   const toWrite = [];
   let unchanged = 0;
@@ -293,7 +321,7 @@ export function diffRows(existingRows, incomingRows, options) {
     });
     if (differingColumns.length > 0) {
       changed++;
-      toWrite.push(incoming);
+      toWrite.push(alignToPayloadColumns(incoming, existing));
       // どの列の変化で書き込みが発生しているかを集計する（効果の確認・想定外の列による
       // 常時「変更あり」の検知用）
       for (const column of differingColumns) {

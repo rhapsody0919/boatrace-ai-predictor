@@ -895,6 +895,68 @@ function fakeClient({ existingByTable = {}, selectError = null } = {}) {
   );
 }
 
+{
+  // 【2026-09-27の実害】PostgREST のバルク upsert は1リクエスト内でカラムを揃える必要があるため、
+  // キーの集合が異なる行を混ぜると、その列を持たない行に NULL が書かれる。N19（racelist-backfill の
+  // buildFillRow は「既存値がNULLの列だけ」を行に入れる）で実際に起き、race_entries の
+  // branch・hometown が 1,729行で消えた。書き込む行は、payload 全体の列にそろえる（欠けた列は既存値）。
+  const existing = [
+    { race_id: "R1", boat_number: 1, global_3rate: null, branch: "東京" },
+    { race_id: "R1", boat_number: 2, global_3rate: null, branch: null },
+  ];
+  // 1号艇は branch を持たない（既存が非NULLなので呼び出し元が意図的に省いた）、2号艇は持つ
+  const incoming = [
+    { race_id: "R1", boat_number: 1, global_3rate: 50 },
+    { race_id: "R1", boat_number: 2, global_3rate: 60, branch: "大阪" },
+  ];
+  const r = diffRows(existing, incoming, {
+    keyColumns: ["race_id", "boat_number"],
+  });
+  const boat1 = r.toWrite.find((row) => row.boat_number === 1);
+  const boat2 = r.toWrite.find((row) => row.boat_number === 2);
+  check(
+    "payloadの列そろえ: 列を省いた行にも、既存値を入れて列をそろえる（NULLで潰さない）",
+    boat1?.branch === "東京",
+    JSON.stringify(boat1),
+  );
+  check(
+    "payloadの列そろえ: 値を持つ行はその値のまま",
+    boat2?.branch === "大阪",
+    JSON.stringify(boat2),
+  );
+  check(
+    "payloadの列そろえ: 書き込む全行のキー集合が一致する",
+    r.toWrite.every(
+      (row) =>
+        JSON.stringify(Object.keys(row).sort()) ===
+        JSON.stringify(Object.keys(r.toWrite[0]).sort()),
+    ),
+    JSON.stringify(r.toWrite.map((row) => Object.keys(row).sort())),
+  );
+  check(
+    "payloadの列そろえ: そろえるために足した列は「変更のあった列」に数えない",
+    (r.stats.changedColumns?.branch ?? 0) === 1,
+    JSON.stringify(r.stats.changedColumns),
+  );
+}
+{
+  // 既存行が無い行（新規）は、そろえる相手が無いのでそのまま書く
+  const r = diffRows(
+    [{ race_id: "R1", boat_number: 1, branch: "東京" }],
+    [
+      { race_id: "R1", boat_number: 1, global_3rate: 50 },
+      { race_id: "R1", boat_number: 9, global_3rate: 60 },
+    ],
+    { keyColumns: ["race_id", "boat_number"] },
+  );
+  const added = r.toWrite.find((row) => row.boat_number === 9);
+  check(
+    "payloadの列そろえ: 新規行は既存値が無いのでそのまま（例外にしない）",
+    r.stats.missing === 1 && added?.global_3rate === 60,
+    JSON.stringify(added),
+  );
+}
+
 if (failures > 0) {
   console.error(`\n❌ ${failures}件の検証に失敗`);
   process.exit(1);
