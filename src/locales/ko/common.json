@@ -562,7 +562,8 @@
     "top2RateAbbrev": "2연대",
     "top3RateAbbrev": "3연대",
     "prevAbbrev": "직전",
-    "avgAbbrev": "평균"
+    "avgAbbrev": "평균",
+    "exhibitionChartNote": "막대가 길수록 전시가 빠릅니다(가장 느린 정과의 차). 숫자는 실제 전시 타임(초)"
   },
   "pitReport": {
     "title": "피트 리포트(선수 코멘트)",

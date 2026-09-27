@@ -308,7 +308,8 @@
     "top2RateAbbrev": "2連対",
     "top3RateAbbrev": "3連対",
     "prevAbbrev": "前走",
-    "avgAbbrev": "平均"
+    "avgAbbrev": "平均",
+    "exhibitionChartNote": "棒が長いほど速い（最も遅い艇との差）。数字は実際の展示タイム（秒）"
   },
   "pitReport": {
     "title": "ピットレポート（選手コメント）",

@@ -562,7 +562,8 @@
     "top2RateAbbrev": "2連對",
     "top3RateAbbrev": "3連對",
     "prevAbbrev": "前一場",
-    "avgAbbrev": "平均"
+    "avgAbbrev": "平均",
+    "exhibitionChartNote": "長條越長代表展示越快（與最慢艇的差）。數字為實際展示時間（秒）"
   },
   "pitReport": {
     "title": "維修區報告（選手留言）",

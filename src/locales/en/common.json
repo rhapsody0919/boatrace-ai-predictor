@@ -564,7 +564,8 @@
     "top2RateAbbrev": "Top-2",
     "top3RateAbbrev": "Top-3",
     "prevAbbrev": "Prev",
-    "avgAbbrev": "Avg"
+    "avgAbbrev": "Avg",
+    "exhibitionChartNote": "A longer bar means a faster trial (gap to the slowest boat). The number is the actual exhibition time in seconds."
   },
   "pitReport": {
     "title": "Pit Report (racer comments)",

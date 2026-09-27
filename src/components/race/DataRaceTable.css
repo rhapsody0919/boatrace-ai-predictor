@@ -140,7 +140,13 @@ thead tr:first-child .drt-label-th {
   top: 0;
 }
 
-thead tr:last-child .drt-label-th {
+/* 見出しが2行ある表（出走表データ: 艇番の行＋選手名の行）だけ、2行目を
+   1行目の高さぶん下げて貼り付ける。`:not(:first-child)` が無いと、
+   **見出しが1行しかない表**（直前情報の展示情報）で first-child と last-child が
+   同じ要素になり、32px下にずれた見出しセルが1行目のラベル（展示ST）を
+   z-index 4 で覆い隠す（2026-09-27にファン視点のレビューで発覚。
+   以前はラベルが2行に折り返して下にはみ出た分だけ見えていた） */
+thead tr:last-child:not(:first-child) .drt-label-th {
   top: 32px;
 }
 
@@ -332,7 +338,11 @@ thead tr:last-child .drt-label-th {
 
   .drt-label-cell {
     font-size: var(--font-size-xs);
-    white-space: normal;
+    /* `normal` にすると幅35pxのラベル列で「展 示 T」「チル ト」と
+       1文字ずつ改行され、行の高さが82pxまで伸びていた（2026-09-27、
+       ファン視点のレビューで実測）。短縮ラベル（.drt-label-short）は
+       元々短いので折り返さない */
+    white-space: nowrap;
   }
 
   .drt-label-full {

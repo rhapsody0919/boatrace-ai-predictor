@@ -69,6 +69,15 @@
   color: var(--text-secondary);
 }
 
+/* 展示タイムのグラフは「棒が長いほど速い」という読み方の明示が要る
+   （素の値で立てると一番高い棒が一番遅い艇になり、逆に読まれる） */
+.rbi-chart-note {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
 .rbi-empty {
   margin: 0;
   padding: var(--spacing-4) 0;
