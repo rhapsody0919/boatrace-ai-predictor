@@ -341,6 +341,11 @@
   font-weight: var(--font-weight-bold);
 }
 
+.rmt-forecast-table td.rmt-needed {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
 /* 得点率の列は「今の値」で、早見のセル（仮定の値）とは意味が違う。
    公式も得点率は文字色、早見はセルの塗りで区別している */
 .rmt-forecast-table td.rmt-rate.is-in-border {

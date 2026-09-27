@@ -186,6 +186,34 @@ export function buildMeetRanking(scoreboard) {
 }
 
 /**
+ * ボーダーに届くのに必要な得点（純関数）。
+ *
+ * 公式の「必要得点」＝「準優ボーダーをクリアするために必要な得点」を、
+ * 公式の実データから逆算した式で再現する
+ * （https://www.boatrace.jp/static_extra/pc/guide/guide-7.html の図:
+ *  篠崎 得点率5.75・4走・残り2走 → 13点、池田 7.00・5走・残り1走 → 1点。
+ *  どちらも `ボーダー × (走数 + 残り走数) − 得点` で一致する）。
+ *
+ * @param {{points: number, runs: number}} current `computeSeriesScore` の戻り値
+ * @param {number|null} border ボーダー（準優の目安）の得点率
+ * @param {number} remaining 残りの予選走数（表示中のレースを含む）
+ * @returns {{needed: number, max: number, reachable: boolean}|null}
+ *   `needed` は必要得点（0未満は0に丸める）、`max` は残り走で取りうる最大得点、
+ *   `reachable` は届く見込みがあるか。残り0走・ボーダー不明なら null
+ */
+export function pointsNeededForBorder(current, border, remaining) {
+  if (border === null || border === undefined) return null;
+  if (!remaining || remaining <= 0) return null;
+  const points = current?.points ?? 0;
+  const runs = current?.runs ?? 0;
+  const raw = border * (runs + remaining) - points;
+  // 得点は整数なので切り上げる。既に足りている場合は0
+  const needed = Math.max(0, Math.ceil(raw - 1e-9));
+  const max = SCORE_POINTS[1] * remaining;
+  return { needed, max, reachable: needed <= max };
+}
+
+/**
  * 得点率に小標本の印を付ける走数の下限。
  *
  * 節の予選は6走前後で、2走以下だと1走の着順で得点率が2点近く動く

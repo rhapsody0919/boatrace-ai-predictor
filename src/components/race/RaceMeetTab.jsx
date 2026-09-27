@@ -37,6 +37,7 @@ import {
 import {
   buildMeetRanking,
   forecastSeriesScore,
+  pointsNeededForBorder,
   SEMIFINAL_DEFAULT_SLOTS,
   MEET_SMALL_SAMPLE_RUNS,
 } from "./seriesPoints";
@@ -62,7 +63,8 @@ function RaceMeetTab({ raceId, venueCode, players }) {
     hasMore: forecastHasMore,
     update: forecastUpdate,
     scrollRight: forecastScrollRight,
-  } = useHorizontalScrollHint([]);
+    // 行数が決まってから測り直す（マウント直後は取得前で幅が無い）
+  } = useHorizontalScrollHint([sortedPlayers.length, board?.meetStart]);
   const [selectedBoat, setSelectedBoat] = useState(
     () => sortedPlayers[0]?.number ?? null,
   );
@@ -189,6 +191,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   // （https://www.boatrace.jp/static_extra/pc/guide/guide-7.html）。
   // 1艇ぶんだけ出していたときは「他の艇はどうなるのか」が読めなかった。
   // 追加クエリ0本（既に持っている得点・走数から純関数で出す）
+  const remainingPrelimRuns = board?.remainingPrelimRunsByRacer ?? {};
   const forecastRows =
     !prelimOver && !isAfterPrelim
       ? sortedPlayers
@@ -201,8 +204,19 @@ function RaceMeetTab({ raceId, venueCode, players }) {
             player,
             row,
             cells: forecastSeriesScore(row),
+            // 公式の「必要得点」＝準優ボーダーをクリアするのに要る得点。
+            // 残り走数は**当日の番組が出ている予選レース**から数える
+            // （翌日以降の出走表は未取得のことが多い）
+            needed: pointsNeededForBorder(
+              row,
+              showBorderBadge && border !== undefined ? border : null,
+              remainingPrelimRuns[player.racerId] ?? 0,
+            ),
+            remaining: remainingPrelimRuns[player.racerId] ?? 0,
           }))
       : [];
+  // 必要得点の列を出せるか（誰か1人でも残りの予選走が分かっていれば出す）
+  const hasNeeded = forecastRows.some((r) => r.needed !== null);
   const lastSt = lastOf("startTiming");
   const lastExhibition = lastOf("exhibitionTime");
 
@@ -410,6 +424,12 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                   <tr>
                     <th scope="col">{t("meetTab.colBoat")}</th>
                     <th scope="col">{t("meetTab.colScore")}</th>
+                    {/* 公式（PC横長）は必要得点を右端に置くが、390pxでは
+                        右端の列が画面外になる。「今の得点率」と「あと何点要るか」
+                        が一番見たい2つなので前に出す */}
+                    {hasNeeded && (
+                      <th scope="col">{t("meetTab.colNeeded")}</th>
+                    )}
                     {[1, 2, 3, 4, 5, 6].map((n) => (
                       <th key={n} scope="col">
                         {t("meetTab.forecastRankHeader", { rank: n })}
@@ -418,7 +438,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {forecastRows.map(({ player: p, row, cells }) => {
+                  {forecastRows.map(({ player: p, row, cells, needed }) => {
                     const color = BOAT_COLORS[p.number] || {};
                     return (
                       <tr
@@ -453,6 +473,17 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                         >
                           {row.rate.toFixed(2)}
                         </td>
+                        {hasNeeded && (
+                          <td className="rmt-needed">
+                            {needed === null
+                              ? "—"
+                              : needed.reachable
+                                ? t("meetTab.neededPoints", {
+                                    points: needed.needed,
+                                  })
+                                : t("meetTab.neededUnreachable")}
+                          </td>
+                        )}
                         {cells.map((f) => (
                           <td
                             key={f.rank}

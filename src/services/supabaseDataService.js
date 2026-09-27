@@ -6191,7 +6191,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v8-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v9-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6201,9 +6201,11 @@ export const supabaseDataService = {
         .from("race_entries")
         .select("race_id, boat_number, racer_id, player_name")
         .gte("race_id", from.toISOString().slice(0, 10))
-        // **表示中のレースより前まで**。`${date}-zz` にすると同じ日の後のレースまで
-        // 入り、まだ行われていないレースの結果で順位を出すことになる
-        .lt("race_id", raceId)
+        // **これから走るレースも含めて**取る（2026-09-28）。得点率の集計は
+        // 「結果がまだ無いレースは分母に入れない」で弾いているので混ざらない。
+        // 必要得点（ボーダーに届くのに要る点）には**残り何走あるか**が要り、
+        // それは番組が出ている予選レースの数から数えるしかない
+        .lte("race_id", `${date}-zz`)
         .like("race_id", `__________-${vv}-__`);
 
       const rows = entries ?? [];
@@ -6302,6 +6304,23 @@ export const supabaseDataService = {
             .map(([id]) => id)
             .sort()
             .pop() ?? null,
+        // **残りの予選走数**（表示中のレースを含む）。公式の「必要得点」は
+        // 「準優ボーダーをクリアするために必要な得点」で、実データから
+        // 逆算すると `ボーダー × (今の走数 + 残り走数) − 今の得点` だった
+        // （公式の図: 篠崎 得点率5.75・残り2走 → 13点／池田 7.00・残り1走 → 1点）。
+        // 残り走数は**番組が出ている予選レース**からしか数えられないので、
+        // 当社は当日ぶんまでで数える（翌日以降の出走表は未取得のことが多い）。
+        // 画面側はその旨を注記する
+        remainingPrelimRunsByRacer: (() => {
+          const byRacer = {};
+          for (const e of meetRows) {
+            if (e.race_id < raceId) continue;
+            const st = stageById.get(e.race_id) ?? "";
+            if (!st.includes("予選")) continue;
+            byRacer[e.racer_id] = (byRacer[e.racer_id] ?? 0) + 1;
+          }
+          return byRacer;
+        })(),
         // 予選が終わった日が節の何日目か（公式の「4日目12R終了時点」に合わせる）
         prelimEndDay: (() => {
           const last =
@@ -6355,6 +6374,10 @@ export const supabaseDataService = {
           }
           const byRacer = {};
           for (const e of meetRows) {
+            // 推移も**表示中のレースより前**だけ（未実施のレースは
+            // 展示もSTも無いので実害は無いが、過去日を開いたときに
+            // 同じ日の後のレースを拾わないよう明示的に切る）
+            if (e.race_id >= raceId) continue;
             const ex = exByRace.get(e.race_id)?.get(e.boat_number) ?? null;
             const stRow = stByRace.get(e.race_id)?.get(e.boat_number) ?? null;
             const st =
@@ -6396,15 +6419,21 @@ export const supabaseDataService = {
             }, new Map()),
         ),
         // 得点率の計算は画面側の純関数（seriesPoints.js）と同じ規則。
-        // ここでは素材（着順と種別）だけ渡し、集計は呼び出し側に任せる
-        entries: meetRows.map((e) => ({
-          raceId: e.race_id,
-          boatNumber: e.boat_number,
-          racerId: e.racer_id,
-          playerName: e.player_name,
-          raceStage: stageById.get(e.race_id) ?? null,
-          ...(resultById.get(e.race_id) ?? {}),
-        })),
+        // ここでは素材（着順と種別）だけ渡し、集計は呼び出し側に任せる。
+        // **表示中のレースより前だけ**を渡す。過去日を開いているときは
+        // 同じ日の後のレースにも結果があるため、範囲を広げたまま渡すと
+        // 「5Rを見ているのに9Rの結果まで得点率に入る」状態に戻る
+        // （2026-09-28、必要得点のために取得範囲を広げた際に一度再発させた）
+        entries: meetRows
+          .filter((e) => e.race_id < raceId)
+          .map((e) => ({
+            raceId: e.race_id,
+            boatNumber: e.boat_number,
+            racerId: e.racer_id,
+            playerName: e.player_name,
+            raceStage: stageById.get(e.race_id) ?? null,
+            ...(resultById.get(e.race_id) ?? {}),
+          })),
       };
     });
   },

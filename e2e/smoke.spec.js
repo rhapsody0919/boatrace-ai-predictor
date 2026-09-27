@@ -1535,14 +1535,16 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // ボーダーの目安に届くセルに色が付く
     const forecast = page.locator(".rmt-forecast-table");
     await expect(forecast).toBeVisible();
-    await expect(forecast.locator("thead th")).toHaveCount(8);
+    // 艇・選手 / 得点率 / 必要得点 / 1着〜6着 の9列
+    await expect(forecast.locator("thead th")).toHaveCount(9);
     await expect(forecast.locator("thead")).toContainText("1着");
     await expect(forecast.locator("thead")).toContainText("6着");
+    await expect(forecast.locator("thead")).toContainText("必要得点");
     await expect(forecast.locator("tbody tr")).toHaveCount(6);
     // 1着の得点率は6着より必ず高い（同じ艇の行の中で単調に下がる）
     const firstRow = forecast.locator("tbody tr").first();
     const forecastTexts = await firstRow.locator("td").allInnerTexts();
-    const forecastCells = forecastTexts.slice(1).map(Number);
+    const forecastCells = forecastTexts.slice(2).map(Number);
     expect(forecastCells).toHaveLength(6);
     expect(forecastCells[0]).toBeGreaterThan(forecastCells[5]);
 

@@ -646,8 +646,11 @@
     "trendLastHeader": "Last",
     "forecastTitle": "Score-rate outlook (how today's finish moves it)",
     "forecastRankHeader": "{{rank}}",
-    "forecastNote": "A highlighted cell means that finish should reach the semi-final line ({{slots}}th = {{rate}}). The card is not set yet and the line itself moves, so we do not call it a lock. Assumes a clean finish.",
-    "forecastNoteNoBorder": "The score rate you would have after that finish. Assumes a clean finish."
+    "forecastNote": "A highlighted cell means that finish should reach the semi-final line ({{slots}}th = {{rate}}). \"Points needed\" is the total needed to reach that line across the racer's remaining carded preliminary races today (some race twice, so it differs per racer). The card is not set yet and the line itself moves, so we do not call it a lock. Assumes a clean finish.",
+    "forecastNoteNoBorder": "The score rate you would have after that finish. Assumes a clean finish.",
+    "colNeeded": "Points needed",
+    "neededPoints": "{{points}}",
+    "neededUnreachable": "Out of reach"
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
