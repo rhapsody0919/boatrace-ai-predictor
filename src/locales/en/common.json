@@ -643,7 +643,11 @@
     "compareTrendNote": "All six ran the same series on the same water, so they share one scale (the min-max across the six) and you can compare the heights of the lines across rows directly. The dashed line is the average of the six. Higher is faster; the large dot is the latest run.",
     "compareTrendEmpty": "Not enough runs yet to draw a trend",
     "prelimOverNoteDay": "The preliminaries ended on day {{day}} ({{date}}). The score rate is final and today's finish will not change it.",
-    "trendLastHeader": "Last"
+    "trendLastHeader": "Last",
+    "forecastTitle": "Score-rate outlook (how today's finish moves it)",
+    "forecastRankHeader": "{{rank}}",
+    "forecastNote": "A highlighted cell means that finish should reach the semi-final line ({{slots}}th = {{rate}}). The card is not set yet and the line itself moves, so we do not call it a lock. Assumes a clean finish.",
+    "forecastNoteNoBorder": "The score rate you would have after that finish. Assumes a clean finish."
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",

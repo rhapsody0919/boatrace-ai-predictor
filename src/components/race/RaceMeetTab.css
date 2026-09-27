@@ -282,6 +282,72 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 得点率早見（6艇×着順）。公式の「得点率早見」と同じ行列 */
+.rmt-forecast-scroll {
+  overflow-x: auto;
+}
+
+.rmt-forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.rmt-forecast-table th,
+.rmt-forecast-table td {
+  padding: var(--spacing-1) 3px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rmt-forecast-table thead th {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rmt-forecast-table thead th:first-child,
+.rmt-forecast-table tbody th {
+  text-align: left;
+  width: 99%;
+}
+
+.rmt-forecast-table tbody tr {
+  cursor: pointer;
+}
+
+.rmt-forecast-table tbody tr + tr th,
+.rmt-forecast-table tbody tr + tr td {
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+/* 選択中の行は背景で塗らない。塗ると「目安に届くセルの色」と混ざり、
+   届いていない艇の行まで色付きに見える（実際に1号艇で起きた） */
+.rmt-forecast-table tbody tr.is-current th {
+  box-shadow: inset 3px 0 0 0 var(--brand-accent-primary);
+  padding-left: 6px;
+}
+
+.rmt-forecast-table tbody tr.is-current {
+  font-weight: var(--font-weight-bold);
+}
+
+/* 準優の目安に届くセル。公式は「当確」を赤で塗るが、こちらは目安が推定な
+   ので断定はせず、届く見込みという意味の色にとどめる */
+.rmt-forecast-table td.is-in-border {
+  background: var(--color-success-bg, rgba(67, 160, 71, 0.16));
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 得点率の列は「今の値」で、早見のセル（仮定の値）とは意味が違う。
+   公式も得点率は文字色、早見はセルの塗りで区別している */
+.rmt-forecast-table td.rmt-rate.is-in-border {
+  background: none;
+  color: var(--brand-accent-primary);
+}
+
 /* 6艇の推移（同じ縦の物差しで6行並べる） */
 .rmt-card-head {
   display: flex;

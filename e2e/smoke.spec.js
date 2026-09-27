@@ -1484,7 +1484,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
     // 予選が終わった後のレースでは、早見（今日の着順で得点率がどう動くか）は
     // 出さない。準優はもう終わっていて得点率で争うものが無いため
-    await expect(page.locator(".rmt-forecast-list li")).toHaveCount(0);
+    await expect(page.locator(".rmt-forecast-table")).toHaveCount(0);
     await expect(page.locator(".rmt-forecast")).toContainText("予選は");
 
     // ST・展示は走順の折れ線で見せる（数字の羅列はやめた）。
@@ -1531,10 +1531,20 @@ test.describe("レースページ再設計（BOA-168）", () => {
       "今節の得点率",
       { timeout: 25000 },
     );
-    await expect(page.locator(".rmt-forecast-list li")).toHaveCount(6);
-    await expect(page.locator(".rmt-forecast-list li").first()).toContainText(
-      "1着",
-    );
+    // 得点率早見は公式と同じ行列（行＝艇・列＝1着〜6着）。
+    // ボーダーの目安に届くセルに色が付く
+    const forecast = page.locator(".rmt-forecast-table");
+    await expect(forecast).toBeVisible();
+    await expect(forecast.locator("thead th")).toHaveCount(8);
+    await expect(forecast.locator("thead")).toContainText("1着");
+    await expect(forecast.locator("thead")).toContainText("6着");
+    await expect(forecast.locator("tbody tr")).toHaveCount(6);
+    // 1着の得点率は6着より必ず高い（同じ艇の行の中で単調に下がる）
+    const firstRow = forecast.locator("tbody tr").first();
+    const forecastTexts = await firstRow.locator("td").allInnerTexts();
+    const forecastCells = forecastTexts.slice(1).map(Number);
+    expect(forecastCells).toHaveLength(6);
+    expect(forecastCells[0]).toBeGreaterThan(forecastCells[5]);
 
     // 節の初戦では前節が混ざらず、空状態になる
     await page.goto("/race/2026-09-20-01-05");

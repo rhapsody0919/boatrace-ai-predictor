@@ -27,6 +27,7 @@ import { useTranslation } from "react-i18next";
 import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
+import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import {
   buildMeetResults,
   buildMeetTrend,
@@ -42,6 +43,7 @@ import {
 import RaceHistoryTable from "./RaceHistoryTable";
 import MeetSparkline from "./MeetSparkline";
 import "./RaceMeetTab.css";
+import "../common/HorizontalScrollHint.css";
 
 function RaceMeetTab({ raceId, venueCode, players }) {
   const { t } = useTranslation();
@@ -54,6 +56,13 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   const [records, setRecords] = useState(undefined);
   // 6艇比較の推移で見る指標（ST / 展示）
   const [trendMetric, setTrendMetric] = useState("st");
+  // 早見の表（6艇×着順）は390pxで右が切れるため手がかりを出す
+  const {
+    ref: forecastRef,
+    hasMore: forecastHasMore,
+    update: forecastUpdate,
+    scrollRight: forecastScrollRight,
+  } = useHorizontalScrollHint([]);
   const [selectedBoat, setSelectedBoat] = useState(
     () => sortedPlayers[0]?.number ?? null,
   );
@@ -175,6 +184,25 @@ function RaceMeetTab({ raceId, venueCode, players }) {
       r.stRank,
     ]),
   );
+  // 得点率早見（6艇×1着〜6着）。公式の「得点率早見」は**6艇を1つの表**にして
+  // 行＝艇・列＝着順で並べ、ボーダーとの関係を色で示す
+  // （https://www.boatrace.jp/static_extra/pc/guide/guide-7.html）。
+  // 1艇ぶんだけ出していたときは「他の艇はどうなるのか」が読めなかった。
+  // 追加クエリ0本（既に持っている得点・走数から純関数で出す）
+  const forecastRows =
+    !prelimOver && !isAfterPrelim
+      ? sortedPlayers
+          .map((p) => ({
+            player: p,
+            row: ranking.find((r) => r.racerId === p.racerId),
+          }))
+          .filter((x) => x.row)
+          .map(({ player, row }) => ({
+            player,
+            row,
+            cells: forecastSeriesScore(row),
+          }))
+      : [];
   const lastSt = lastOf("startTiming");
   const lastExhibition = lastOf("exhibitionTime");
 
@@ -352,6 +380,111 @@ function RaceMeetTab({ raceId, venueCode, players }) {
         <p className="rmt-empty">{t("basicInfo.meetEmpty")}</p>
       )}
 
+      {/* 1a. 得点率早見（6艇×着順）。公式と同じ行列で、ボーダーの目安との
+          関係を色で示す。「当確」という断定はしない（番組が未確定で
+          ボーダー自体が推定のため。公式も「毎日変動します」と注記している） */}
+      {forecastRows.length > 0 && (
+        <div className="rmt-card">
+          <h3 className="rmt-card-title">{t("meetTab.forecastTitle")}</h3>
+          <div
+            className={`hscroll-hint${forecastHasMore ? " has-more" : ""}`}
+          >
+            {forecastHasMore && (
+              <button
+                type="button"
+                className="hscroll-more"
+                onClick={forecastScrollRight}
+                aria-hidden="true"
+                tabIndex={-1}
+              >
+                ›
+              </button>
+            )}
+            <div
+              className="rmt-forecast-scroll"
+              ref={forecastRef}
+              onScroll={forecastUpdate}
+            >
+              <table className="rmt-forecast-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{t("meetTab.colBoat")}</th>
+                    <th scope="col">{t("meetTab.colScore")}</th>
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <th key={n} scope="col">
+                        {t("meetTab.forecastRankHeader", { rank: n })}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {forecastRows.map(({ player: p, row, cells }) => {
+                    const color = BOAT_COLORS[p.number] || {};
+                    return (
+                      <tr
+                        key={p.number}
+                        className={p.number === selectedBoat ? "is-current" : ""}
+                        onClick={() => setSelectedBoat(p.number)}
+                      >
+                        <th scope="row">
+                          <button
+                            type="button"
+                            className="rmt-row-select"
+                            onClick={() => setSelectedBoat(p.number)}
+                            aria-pressed={p.number === selectedBoat}
+                          >
+                            <span
+                              className="rmt-boat-chip"
+                              style={{ background: color.bg, color: color.text }}
+                            >
+                              {p.number}
+                            </span>
+                            <span className="rmt-name" translate="no">
+                              {p.name?.replace(/\s+/g, "")}
+                            </span>
+                          </button>
+                        </th>
+                        <td
+                          className={`rmt-rate${
+                            showBorderBadge && border !== undefined && row.rate >= border
+                              ? " is-in-border"
+                              : ""
+                          }`}
+                        >
+                          {row.rate.toFixed(2)}
+                        </td>
+                        {cells.map((f) => (
+                          <td
+                            key={f.rank}
+                            className={
+                              showBorderBadge &&
+                              border !== undefined &&
+                              f.rate >= border
+                                ? "is-in-border"
+                                : undefined
+                            }
+                          >
+                            {f.rate.toFixed(2)}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p className="rmt-sub">
+            {showBorderBadge && border !== undefined
+              ? t("meetTab.forecastNote", {
+                  slots,
+                  rate: border.toFixed(2),
+                })
+              : t("meetTab.forecastNoteNoBorder")}
+          </p>
+        </div>
+      )}
+
       {/* 1b. 6艇の推移（レース単位）。表の数字だけでは「誰が仕上がってきたか」
           が読めない。同じ節・同じ水面を走った6艇なので、縦の物差しを
           共通にして並べる（1艇ずつ切り替えて見比べる手間を無くす） */}
@@ -482,39 +615,19 @@ function RaceMeetTab({ raceId, venueCode, players }) {
             )}
           </p>
         )}
-        {mine &&
-          (prelimOver ? (
-            // 予選終了後は「今日の着順で得点率はこう動く」を出さない。
-            // 得点率で争うもの（準優進出）が既に決着しているため
-            <p className="rmt-forecast">
-              {isAfterPrelim
-                ? t("basicInfo.meetScoreNoForecast", { stage })
-                : t(
-                    prelimEndDay
-                      ? "meetTab.prelimOverNoteDay"
-                      : "meetTab.prelimOverNote",
-                    { date: prelimEndDate ?? "", day: prelimEndDay ?? "" },
-                  )}
-            </p>
-          ) : (
-            // 1行に「1着 3.50 / 2着 3.00 / …」と並べると390pxで折り返し、
-            // 着順ごとに縦へ比べられない。着順を列にして畳む
-            <div className="rmt-forecast">
-              <span className="rmt-forecast-title">
-                {t("basicInfo.meetScoreForecastTitle")}
-              </span>
-              <ul className="rmt-forecast-list">
-                {forecastSeriesScore(mine).map((f) => (
-                  <li key={f.rank}>
-                    {t("basicInfo.meetScoreForecastItem", {
-                      rank: f.rank,
-                      rate: f.rate.toFixed(2),
-                    })}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        {mine && prelimOver && (
+          // 早見（6艇分）は予選中しか出さないので、終わっている理由をここに出す
+          <p className="rmt-forecast">
+            {isAfterPrelim
+              ? t("basicInfo.meetScoreNoForecast", { stage })
+              : t(
+                  prelimEndDay
+                    ? "meetTab.prelimOverNoteDay"
+                    : "meetTab.prelimOverNote",
+                  { date: prelimEndDate ?? "", day: prelimEndDay ?? "" },
+                )}
+          </p>
+        )}
 
         {records === undefined ? (
           <p className="rmt-loading">{t("basicInfo.loading")}</p>
