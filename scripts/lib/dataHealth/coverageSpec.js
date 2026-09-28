@@ -141,7 +141,11 @@ with o as (
       coalesce(f.n_st_value, 0) as n_st_value,
       coalesce(f.n_rows = ${BOATS_PER_RACE} and f.n_mark = ${BOATS_PER_RACE}, false) as fin_known,
       f.n_fin,
-      exists(select 1 from exhibition_data x where x.race_id = r.race_id) as has_exhibition_row,
+      -- 「行の有無」ではなく「展示の値がある行の有無」で数える（BOA-500）。展示航走の前でも当日体重・
+      -- 調整重量が公開されていれば行を書くようになったため、行の有無だと常に100%近くになり指標として意味を失う。
+      -- 展示タイムより先に展示STだけが公開される会場がある（BOA-356）ので、どちらかがあれば「行あり」とする
+      exists(select 1 from exhibition_data x where x.race_id = r.race_id
+        and (x.exhibition_time is not null or x.start_timing is not null)) as has_exhibition_row,
       -- check-exhibition-gap-rate.js（BOA-356）と同じ基準: 1艇でも展示タイムが入っていれば取得済み
       (select count(*) from exhibition_data x where x.race_id = r.race_id and x.exhibition_time is not null) as n_exh_time,
       (o.race_id is not null) as has_odds,

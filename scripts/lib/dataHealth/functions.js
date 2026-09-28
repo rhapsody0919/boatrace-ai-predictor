@@ -257,7 +257,7 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
     shape: "rows",
     description:
       "データ健全性の日次監視: 存在充足率（結果・着順・実進入・決まり手・レース種別・ST・展示・オッズ・全券種オッズ）の日別集計。定義は scripts/lib/dataHealth/coverageSpec.js",
-    migration: "089_data_health_functions.sql",
+    migration: "105_data_health_coverage_exhibition_row.sql",
     body: buildCoverageSql,
   },
   {

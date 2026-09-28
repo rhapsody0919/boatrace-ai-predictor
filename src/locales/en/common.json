@@ -116,7 +116,7 @@
     "invalidUrl": "We couldn't find that race. Please check the URL.",
     "backToHome": "← Back to home",
     "seriesDayFirst": "Opening day",
-    "seriesDayFinal": "Final day",
+    "seriesDayFinal": "Last day",
     "seriesDayNth": "Day {{day}}"
   },
   "volatility": {
@@ -433,7 +433,17 @@
   },
   "raceStage": {
     "final": "Final",
-    "semifinal": "Semifinal"
+    "semifinal": "Semifinal",
+    "semifinalQualifier": "Semifinal qualifier",
+    "dream": "Dream race",
+    "special": "Special race",
+    "qualifier": "Qualifying",
+    "general": "Consolation race",
+    "officialName": "Official name: {{name}}",
+    "selection": "Selection race",
+    "qualifierSpecial": "Qualifying special",
+    "generalSpecial": "Consolation special",
+    "venueOriginal": "Venue's own race name"
   },
   "raceCard": {
     "awaitingResult": "Awaiting result",
@@ -1028,7 +1038,8 @@
       "venueRankBadge": "#{{rank}} of {{total}} motors",
       "sampleCount": "(n={{n}})",
       "wakuStatsHeading": "Results by lane",
-      "wakuStatsWindowNote": "💡 Window: last 180 days",
+      "wakuStatsWindowNote": "💡 Window: since the current motor went into service (the previous motor with the same number is excluded). Values in orange come from fewer than {{n}} starts and are for reference only.",
+      "wakuStatsUnknownGeneration": "Not shown because the start date of the current motor is unavailable (to avoid mixing in results from the previous motor with the same number).",
       "courseHeader": "Lane",
       "exhibitionTrendHeader": "Trial run time trend",
       "wakuStatsExpand": "Show all 6 lanes",
@@ -1036,7 +1047,7 @@
       "racerWakuBackLabel": "← Back to lane results",
       "racerWakuHeading": "Racers in lane {{course}}",
       "racerWakuEmpty": "No racers found for this motor/lane combination",
-      "racerWakuNote": "💡 Per-racer results limited to races in the last 180 days where this motor was used in this lane. Treat racers with a small n as reference only."
+      "racerWakuNote": "💡 Counts only races since the current motor went into service where this motor was used in this lane. Values in orange come from fewer than {{n}} starts and are for reference only."
     },
     "racerForm": {
       "title": "📈 Racer Form",

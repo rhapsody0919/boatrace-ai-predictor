@@ -57,8 +57,15 @@ function MotorConditionChart({
   });
   // BOA-301: 会場内順位(FR-1)・枠番別成績(FR-2/3)・選手×枠成績(FR-4)
   const [venueMotorRanking, setVenueMotorRanking] = useState(null);
-  const [motorWakuStats, setMotorWakuStats] = useState([]);
-  const [motorRacerWakuStats, setMotorRacerWakuStats] = useState([]);
+  // FR-2〜4は現行モーターの世代で集計する。generationStart: 使用開始日（不明ならnull）
+  const [motorWakuStats, setMotorWakuStats] = useState({
+    generationStart: null,
+    rows: [],
+  });
+  const [motorRacerWakuStats, setMotorRacerWakuStats] = useState({
+    generationStart: null,
+    rows: [],
+  });
   const [selectedWakuCourse, setSelectedWakuCourse] = useState(null);
   const [periodDays, setPeriodDays] = useState(90);
   const pendingInitialMotorNumber = useRef(initialMotorNumber);
@@ -160,9 +167,9 @@ function MotorConditionChart({
             selectedVenue,
             drillDownMotor,
           ),
-          // BOA-301 FR-1〜4: 会場内順位・枠番別成績・選手×枠成績は
-          // periodDays（既存の2連率/3連率推移トグル）とは独立した集計窓
-          // （固定180日、plan.md参照）のためperiodDaysを渡さない
+          // BOA-301 FR-1〜4: 会場内順位（公式の最新スナップショット）・
+          // 枠番別成績・選手×枠成績（現行モーターの世代）は、periodDays
+          // （既存の2連率/3連率推移トグル）とは独立した集計窓のため渡さない
           supabaseDataService.getVenueMotorRanking(
             selectedVenue,
             drillDownMotor,
@@ -612,14 +619,16 @@ function MotorConditionChart({
           {selectedWakuCourse !== null ? (
             <MotorRacerWakuDrillDown
               course={selectedWakuCourse}
-              rows={motorRacerWakuStats.filter(
+              rows={motorRacerWakuStats.rows.filter(
                 (r) => r.course === selectedWakuCourse,
               )}
               onBack={() => setSelectedWakuCourse(null)}
             />
           ) : (
             <MotorWakuStatsGrid
-              rows={motorWakuStats}
+              rows={motorWakuStats.rows}
+              generationStart={motorWakuStats.generationStart}
+              fetchFailed={motorWakuStats.fetchFailed}
               embedded={embedded}
               highlightCourse={todayHighlightCourse}
               onSelectCourse={setSelectedWakuCourse}

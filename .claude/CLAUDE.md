@@ -40,6 +40,7 @@
 | `acceptance-test-writer` | UI機能の受け入れE2Eを spec.md・screens.md だけから書く（plan/tasks/src は読まない） | `/step3`完了後、`/step4`着手前（UI機能のみ。`.claude/rules/sdd-workflow.md`） |
 | `data-accuracy-verifier` | 集計結果が実データと一致するかだけの検証 | 実装完了後の自動レビュー2番（新規の集計・分析機能を含む場合） |
 | `content-qa` | ブログ記事の公開前品質チェック6観点 | 記事の新規公開・改稿前 |
+| `boatrace-fan-reviewer` | 変更画面をファン視点の固定7観点でPreview URL上から評価（P0〜P3） | 「ファン評価あり」の作業で、CI緑の後に周ごと新規起動（`.claude/rules/review-fix-cycle.md`） |
 
 いずれも読み取り専用（`acceptance-test-writer` のみ `e2e/acceptance/` に書く）で、修正は親セッションが行う。定義に無い一回限りの調査は、従来通りAgent toolへ直接プロンプトを渡す。
 

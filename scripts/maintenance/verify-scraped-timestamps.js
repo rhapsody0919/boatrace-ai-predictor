@@ -707,6 +707,7 @@ async function runReport({ timingColumns, scrapedRows }) {
     lead_min_p10: "8.4",
     lead_min_p50: "17.26",
     lead_min_p90: "26.0",
+    hit_60: "5",
     hit_30: "20",
     hit_15: "120",
     hit_10: "196",
@@ -749,7 +750,7 @@ async function runReport({ timingColumns, scrapedRows }) {
       exhibition.leadMinutes.p50 === 17.3 &&
       exhibition.savedBy
         .map((w) => `${w.minutesBefore}:${w.hit}/${w.denominator}`)
-        .join() === "30:20/200,15:120/200,10:196/200" &&
+        .join() === "60:5/200,30:20/200,15:120/200,10:196/200" &&
       markdown.includes("10分前: 98.0% (196/200)") &&
       markdown.includes("8.4 / 17.3 / 26") &&
       markdown.includes("値が揃った時刻"),

@@ -467,7 +467,8 @@ export async function scrapeAndUpsertRaces(
  * beforeinfo は、そのレースの発走前ではなく、その日の最新の観測を表示するため）。書き込みは live のみ（shadow は書かない）。
  *
  * outcome:
- *   ok                展示タイムが非NULLの行を書けた（変更なしも含む）＝完了
+ *   ok                展示タイムが非NULLの行を書けた（変更なしも含む）＝完了。体重だけの窓（weightOnly）では、
+ *                     当日体重・調整重量が非NULLの行を書けたときも完了
  *   skipped_have_data 展示タイムが取得済み（live のみ）＝完了
  *   partial           展示STだけが公開され、展示タイムが未公開（一部の会場で、STが先に出る）。再試行
  *   no_values         展示が未公開（表が空）。再試行
@@ -485,6 +486,8 @@ export async function scrapeAndUpsertRaces(
  *   getRaceSchedule() の返り値（気象の観測時刻の解決用）。updateWeather のとき、無ければ読み込む
  * @param {boolean} [options.updateWeather] 気象も race_conditions へ反映するか（既定 true。shadow では書かない）
  * @param {boolean} [options.catchup] 窓の外の補完（発走の後のスロット）か。取得済みのスキップを shadow にも効かせ、気象を書かない
+ * @param {boolean} [options.weightOnly] 体重だけの窓（発走60分前。BOA-500）か。当日体重・調整重量が1艇でも取れたら ok（完了）にする。
+ *   展示タイムの有無では判定しない（展示前のため）。気象の要否は updateWeather で別に指定する
  * @returns {Promise<Array<{race_id: string, outcome: string, rowsWritten: number, rowsParsed: number, rowsExpected: number, changed: boolean, resultDigest?: string, error?: string, retryAt?: Date}>>}
  *   changed: 今回、展示データまたは気象を実際に書き換えた（予測の再計算の対象になる）
  */
@@ -499,6 +502,7 @@ export async function runForRaces(
     schedule = null,
     updateWeather = true,
     catchup = false,
+    weightOnly = false,
   } = {},
 ) {
   if (mode !== "live" && mode !== "shadow") {
@@ -594,7 +598,13 @@ export async function runForRaces(
         conditions: detail.conditions,
       });
     }
-    if (!detail.data) {
+    // 展示が未公開（detail.data が null）でも、当日体重・調整重量だけは公開されていることがある（BOA-500）。
+    // その場合 buildExhibitionRows（extended）が展示前の行を返すので、書いて残す。展示タイム・チルトは
+    // 後の窓（-33）で同じ行に埋まる。1行も作れないときだけ no_values（従来どおり再試行）
+    const rows = buildExhibitionRows(race.race_id, detail.page.boats, {
+      extended,
+    });
+    if (rows.length === 0) {
       outcomes.set(race.race_id, {
         ...base,
         outcome: "no_values",
@@ -602,10 +612,7 @@ export async function runForRaces(
       });
       continue;
     }
-    rowsByRace.set(
-      race.race_id,
-      buildExhibitionRows(race.race_id, detail.page.boats, { extended }),
-    );
+    rowsByRace.set(race.race_id, rows);
   }
 
   // 4) 書き込み（shadow は書かない）
@@ -636,12 +643,29 @@ export async function runForRaces(
       });
     } else if (rows.some((row) => row.exhibition_time != null)) {
       outcomes.set(raceId, { ...common, outcome: "ok" });
+    } else if (
+      weightOnly &&
+      rows.some(
+        (row) => row.today_weight != null || row.adjustment_weight != null,
+      )
+    ) {
+      // 体重だけの窓: 展示前に取れるもの（当日体重・調整重量）が取れたので完了。展示タイムは -33 の窓が取る
+      outcomes.set(raceId, { ...common, outcome: "ok" });
     } else {
-      // 展示STだけが公開されている（展示タイム未公開）。書いた行は残し、展示タイムが入るまで再試行する
+      // 展示タイムが未公開。書いた行（展示STだけ、または展示前の当日体重・調整重量だけ）は残し、
+      // 展示タイムが入るまで再試行する
+      const hasSt = rows.some((row) => row.start_timing != null);
+      const hasWeight = rows.some(
+        (row) => row.today_weight != null || row.adjustment_weight != null,
+      );
       outcomes.set(raceId, {
         ...common,
         outcome: "partial",
-        error: "展示タイムが未公開です（展示STのみ）",
+        error: hasSt
+          ? "展示タイムが未公開です（展示STのみ）"
+          : hasWeight
+            ? "展示タイムが未公開です（展示前の当日体重・調整重量のみ）"
+            : "展示タイム・当日体重が未公開です（欠場艇の行のみ）",
       });
     }
   }

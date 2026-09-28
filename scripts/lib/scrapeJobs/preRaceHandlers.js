@@ -4,7 +4,8 @@
  *
  *   createRaceInfoSlotHandler     api/cron/race-info.js   レース情報のスロット（発走60分前から許容幅3分）を1件ずつ処理する
  *   createExhibitionSlotHandler   api/cron/exhibition.js  展示のスロット（発走33分前〜7分前）と、窓の外の補完のスロット
- *                                 （発走の10分後〜36分後。BOA-382）を1件ずつ処理する
+ *                                 （発走の10分後〜36分後。BOA-382）、体重だけのスロット（発走60分前〜34分前。BOA-500）を
+ *                                 1件ずつ処理する
  *   createRefreshingCronHandler   api/cron/race-info.js   スロットの処理後に、変更を書いたレースの予測を再計算する（案1）
  *   createExhibitionCronHandler   api/cron/exhibition.js  mode（off・shadow・live）で、従来の経路とスロットの経路を切り替える
  *
@@ -26,7 +27,11 @@ import {
 import { getRaceSchedule } from "../raceSchedule.js";
 import { loadSeriesDayByVenue } from "../raceSeriesLookup.js";
 import { refreshAfterChange } from "../predictionRefresh.js";
-import { SCRAPE_JOBS, isCatchupOffset } from "./registry.js";
+import {
+  SCRAPE_JOBS,
+  isCatchupOffset,
+  isWeightOnlyOffset,
+} from "./registry.js";
 import { isAuthorized, runScrapeJob } from "./cronWrapper.js";
 import { computeRetryAt, isFinalOutcome } from "./outcomes.js";
 import { createSupabaseStore } from "./store.js";
@@ -100,14 +105,27 @@ export function createSeriesDayLoader({
  * @param {(date: string, raceId: string) => void} [options.onChanged]
  * @param {{isCatchup: (offsetMin: number) => boolean, retrySec: number}} [options.catchup]
  *   窓の外の補完（発走の後のスロット）の判定と再試行の間隔。展示だけが持つ（BOA-382）
+ * @param {{isWeightOnly: (offsetMin: number) => boolean, retrySec: number}} [options.weightOnly]
+ *   体重だけの窓（発走60分前のスロット）の判定と再試行の間隔。展示だけが持つ（BOA-500）
  * @param {ReturnType<typeof createSeriesDayLoader>} [options.loadSeriesDays]
  *   レース情報だけが持つ（展示は race_conditions.series_day を書かない）
  */
-function slotHandler({ run, loadSchedule, loadSeriesDays, onChanged, catchup }) {
+function slotHandler({
+  run,
+  loadSchedule,
+  loadSeriesDays,
+  onChanged,
+  catchup,
+  weightOnly,
+}) {
   const scheduleFor = loadSchedule ?? createScheduleLoader();
   return async function handleSlot(slot, ctx) {
     const race = parsePreRaceId(slot.race_id);
     const isCatchup = catchup?.isCatchup(slot.offset_min) ?? false;
+    const isWeightOnly =
+      !isCatchup && (weightOnly?.isWeightOnly(slot.offset_min) ?? false);
+    // 補完・体重だけの窓は、気象を書かず、予測の再計算の対象にせず、再試行の間隔を窓ごとに変える
+    const special = isCatchup ? catchup : isWeightOnly ? weightOnly : null;
     const [result] = await run(
       [
         {
@@ -122,30 +140,33 @@ function slotHandler({ run, loadSchedule, loadSeriesDays, onChanged, catchup }) 
         fetchFn: (url) => ctx.politeFetch(url),
         client: ctx.client,
         concurrency: 1,
-        // 補完は、気象を書かないため、スケジュール（気象の観測時刻の解決用）を読まない
+        // 補完・体重だけの窓は、気象を書かないため、スケジュール（気象の観測時刻の解決用）を読まない
         ...(isCatchup
           ? { catchup: true, updateWeather: false }
-          : {
-              schedule: await scheduleFor(ctx, race.date),
-              ...(loadSeriesDays
-                ? { seriesDayByVenue: await loadSeriesDays(ctx, race.date) }
-                : {}),
-            }),
+          : isWeightOnly
+            ? { weightOnly: true, updateWeather: false }
+            : {
+                schedule: await scheduleFor(ctx, race.date),
+                ...(loadSeriesDays
+                  ? { seriesDayByVenue: await loadSeriesDays(ctx, race.date) }
+                  : {}),
+              }),
       },
     );
     if (!result) {
       return { outcome: "error", error: "処理結果が空でした" };
     }
     const { race_id: _raceId, changed, ...slotResult } = result;
-    if (isCatchup) {
+    if (special) {
       // 発走の後の補完は、予測の再計算の対象にしない（onChanged を呼ばない）。発走後に予測を作り直すと、発走前の予測と
       // 結果の突き合わせ（的中率の集計）を汚す。発走前に取れた分は、-33 のスロットが再計算する。
-      // 未完了の再試行は、-33 のスロットより長い間隔（catchup.retrySec）にする（ブレーカーの retryAt は、そのまま使う）
+      // 体重だけの窓も呼ばない（予測は当日体重・調整重量を使わない。気象も書かない）。
+      // 未完了の再試行は、-33 のスロットより長い間隔（窓ごとの retrySec）にする（ブレーカーの retryAt は、そのまま使う）
       if (!isFinalOutcome(slotResult.outcome) && !slotResult.retryAt) {
         slotResult.retryAt = computeRetryAt({
           now: ctx.now?.() ?? new Date(),
           claimedAt: slot.last_attempt_at,
-          retrySec: catchup.retrySec,
+          retrySec: special.retrySec,
         });
       }
       return slotResult;
@@ -191,10 +212,17 @@ export function createRaceInfoSlotHandler({
  *   - 未完了の再試行は、catchupRetrySec（600秒）おき
  *   - shadow は書かない（取得・解析のみ。未公開・取得済み以外のレースだけ取得する）
  *
+ * 体重だけのスロット（レジストリの weightOnlyOffsets。発走60分前〜34分前。BOA-500）は、同じ取得・解析・書き込みだが、
+ *   - 当日体重・調整重量が取れたら完了（ok）。展示タイムの有無では判定しない（展示前のため。展示タイムは -33 が取る）
+ *   - 気象は書かない（-33 の窓が、より発走に近い観測で書く）。予測の再計算の対象にしない（予測は体重を使わない）
+ *   - 未完了（体重も未公開）の再試行は、weightOnlyRetrySec（300秒）おき
+ *
  * @param {Object} [options]
  * @param {typeof runExhibitionForRaces} [options.run]
  * @param {{isCatchup: (offsetMin: number) => boolean, retrySec: number}} [options.catchup]
  *   既定はレジストリの exhibition の catchupOffsets・catchupRetrySec（テスト用の差し替え）
+ * @param {{isWeightOnly: (offsetMin: number) => boolean, retrySec: number}} [options.weightOnly]
+ *   既定はレジストリの exhibition の weightOnlyOffsets・weightOnlyRetrySec（テスト用の差し替え）
  */
 export function createExhibitionSlotHandler({
   run = runExhibitionForRaces,
@@ -205,8 +233,13 @@ export function createExhibitionSlotHandler({
       isCatchupOffset(SCRAPE_JOBS.exhibition, offsetMin),
     retrySec: SCRAPE_JOBS.exhibition.catchupRetrySec,
   },
+  weightOnly = {
+    isWeightOnly: (offsetMin) =>
+      isWeightOnlyOffset(SCRAPE_JOBS.exhibition, offsetMin),
+    retrySec: SCRAPE_JOBS.exhibition.weightOnlyRetrySec,
+  },
 } = {}) {
-  return slotHandler({ run, loadSchedule, onChanged, catchup });
+  return slotHandler({ run, loadSchedule, onChanged, catchup, weightOnly });
 }
 
 /** mainRefresh を、必要なときだけ読み込む（無効なときは、従来と完全に同じ動作にする） */

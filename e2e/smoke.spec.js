@@ -3638,6 +3638,98 @@ test.describe("レース詳細の見出し: 開催の何日目か（BOA-488）",
     await page.goto("/en/race/2026-09-24-02-02");
     await expect(
       page.locator(".page-header h1 .race-detail-series-day"),
-    ).toHaveText("Final day", { timeout: 25000 });
+    ).toHaveText("Last day", { timeout: 25000 });
+  });
+});
+
+test.describe("レース詳細の見出し: グレードとレース種別（BOA-509）", () => {
+  // 実データ（確定済みの過去レース）。2026-09-27 若松12RはG1ヤングダービーの優勝戦、
+  // 戸田は一般（ippan）の「ＴＡＭＲＯＮＣＵＰ」で、2Rが予選・5Rが企画レース「ウインウイン５」
+  const h1 = (page) => page.locator(".page-header h1");
+  const kicker = (page) => page.locator(".race-detail-kicker");
+
+  test("G1優勝戦: グレードバッジ・節タイトル・優勝戦チップが出る", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-27-20-12");
+    await expect(h1(page).locator(".race-detail-stage")).toHaveText(/優勝戦/, {
+      timeout: 25000,
+    });
+    await expect(h1(page).locator(".race-detail-stage--final")).toBeVisible();
+    await expect(kicker(page).locator(".race-detail-grade")).toHaveText("G1");
+    // 全角英数は NFKC で半角にする（DBは「第１３回ヤングダービー」）
+    await expect(kicker(page)).toContainText("第13回ヤングダービー");
+    // 種別チップは h1 のアクセシブルネームに含まれる
+    await expect(
+      page.getByRole("heading", { level: 1, name: /若松 12R.*優勝戦/ }),
+    ).toBeVisible();
+  });
+
+  test("分類できない企画レース名は公式表記のまま出す", async ({ page }) => {
+    await page.goto("/race/2026-09-27-02-05");
+    const chip = h1(page).locator(".race-detail-stage");
+    await expect(chip).toHaveText("ウインウイン5", { timeout: 25000 });
+    await expect(chip).toHaveClass(/race-detail-stage--raw/);
+    await expect(chip).toHaveAttribute("translate", "no");
+    // 種別名と見分けがつかないため、何の名前かをツールチップで補う（ファン評価 P2）
+    await expect(chip).toHaveAttribute("title", "会場独自のレース名");
+  });
+
+  // ファン評価 P1: 予選期間の「予選特賞」と予選落ち組の「一般特選」を
+  // 同じ「特別戦」にまとめない（得点率に入るかどうかが逆になるため）
+  for (const [raceId, label, official] of [
+    ["2026-09-20-03-09", "予選特別戦", "予選特賞"],
+    ["2026-09-25-10-09", "一般特選", null],
+    ["2026-09-20-14-10", "選抜戦", null],
+    // ファン評価3周目: 予選期間の「予選選抜」は最終日の選抜戦と分ける
+    ["2026-09-17-15-11", "予選特別戦", "予選選抜"],
+  ]) {
+    test(`${raceId} の種別は「${label}」`, async ({ page }) => {
+      await page.goto(`/race/${raceId}`);
+      const chip = h1(page).locator(".race-detail-stage");
+      await expect(chip).toHaveText(label, { timeout: 25000 });
+      if (official) {
+        await expect(chip).toHaveAttribute("title", `公式表記: ${official}`);
+      }
+    });
+  }
+
+  test("一般（ippan）はグレードバッジを出さず、節タイトルだけ出す", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-09-27-02-02");
+    await expect(h1(page).locator(".race-detail-stage")).toHaveText("予選", {
+      timeout: 25000,
+    });
+    await expect(kicker(page)).toContainText("TAMRONCUP");
+    await expect(kicker(page).locator(".race-detail-grade")).toHaveCount(0);
+  });
+
+  test("race_conditions 欠損レースは節タイトルを同会場の他レースで補い、種別は出さない", async ({
+    page,
+  }) => {
+    // 2026-09-04 浜名湖9R は race_conditions に series_day=6 だけが入り、
+    // is_final_day・race_title・race_stage が null（BOA-347）。同じ日の他レースは最終日
+    await page.goto("/race/2026-09-04-06-09");
+    await expect(kicker(page)).toContainText("クラウンメロン杯", {
+      timeout: 25000,
+    });
+    await expect(h1(page).locator(".race-detail-stage")).toHaveCount(0);
+    // is_final_day も項目ごとに補う（ファン評価2周目 P1、「6日目」と出ていた）
+    await expect(h1(page).locator(".race-detail-series-day")).toHaveText(
+      "最終日",
+    );
+  });
+
+  test("英語版は分類名を訳し、公式表記はツールチップに残す", async ({
+    page,
+  }) => {
+    await page.goto("/en/race/2026-09-27-20-12");
+    const chip = h1(page).locator(".race-detail-stage");
+    await expect(chip).toHaveText(/Final/, { timeout: 25000 });
+    await expect(chip).toHaveAttribute("title", /優勝戦/);
+    await expect(
+      kicker(page).locator(".race-detail-kicker__title"),
+    ).toHaveAttribute("translate", "no");
   });
 });

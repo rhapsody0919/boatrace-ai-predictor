@@ -153,10 +153,16 @@ async function main() {
   const ninetyDaysAgo = getNinetyDaysAgoJST();
   console.log(`過去90日（${ninetyDaysAgo}以降）のデータを取得中...`);
 
+  // 展示タイムが入っている行だけを集計の対象にする。
+  // exhibition_data には展示タイムが NULL の行がある（展示STが展示タイムより先に公開される会場=BOA-356、
+  // 展示航走の前に当日体重・調整重量だけを書いた行=BOA-500、展示が行われずに終わったレース）。
+  // aggregateExhibitionTimeTop は raceCount を全行で数える一方、Math.min に NULL が混ざると
+  // 最速艇を1艇に決められず fastestCount をスキップするため、分母だけが増えて「展示1位率」が薄まる。
+  // 2026-09-28 時点の実測で、直近90日に展示タイムが NULL の行が 2,044 行（355レース）ある
   const exhibitionRows = await fetchAll(
     "exhibition_data",
     "race_id, boat_number, exhibition_time",
-    (q) => q.gte("race_id", ninetyDaysAgo),
+    (q) => q.gte("race_id", ninetyDaysAgo).not("exhibition_time", "is", null),
   );
   console.log(`exhibition_data取得完了: ${exhibitionRows.length}件`);
 

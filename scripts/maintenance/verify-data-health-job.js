@@ -168,9 +168,11 @@ check(
 // ---------------------------------------------------------------------------
 // data_health の関数を含むマイグレーション。新しい関数を別のファイルで足したら、ここに追記する
 // （登録表 functions.js の migration と突き合わせ、取りこぼしを機械検査する）
+// 適用の順に並べる（後ろのファイルが、前のファイルの CREATE OR REPLACE を上書きする。PGliteへもこの順で流す）
 const MIGRATION_FILES = Object.freeze([
   "089_data_health_functions.sql",
   "100_data_health_entries_duplicates.sql",
+  "105_data_health_coverage_exhibition_row.sql",
   "107_data_health_cancellation_with_result.sql",
 ]);
 const MIGRATION_FILE = MIGRATION_FILES[0];
@@ -207,7 +209,17 @@ for (const file of MIGRATION_FILES) {
       const registered = DATA_HEALTH_FUNCTIONS.filter(
         (f) => f.migration === file,
       ).map((f) => f.name);
-      return show([...inFile].sort()) === show([...registered].sort());
+      // 後のマイグレーションが CREATE OR REPLACE で置き換えた関数は、古いファイルにも残る（適用済みの履歴は
+      // 書き換えない）。登録表は「今のDDLがあるファイル」を指すので、古い側では「置き換え済み」として除く
+      // （例: data_health_coverage は089にもあるが、今のDDLは105。BOA-500）
+      const superseded = DATA_HEALTH_FUNCTIONS.filter(
+        (f) =>
+          f.migration !== file &&
+          inFile.includes(f.name) &&
+          f.migration.slice(0, 3) > num,
+      ).map((f) => f.name);
+      const remaining = inFile.filter((n) => !superseded.includes(n));
+      return show([...remaining].sort()) === show([...registered].sort());
     })(),
   );
 }
@@ -295,7 +307,7 @@ CREATE TABLE races (race_id varchar(20) primary key, race_date date not null, ve
 CREATE TABLE race_results (race_id varchar(20) primary key, rank1 smallint, rank2 smallint, rank3 smallint, rank4 smallint, rank5 smallint, rank6 smallint, actual_course_1 smallint, winning_technique text);
 CREATE TABLE race_conditions (race_id varchar(20) primary key, race_stage text, race_distance_m smallint, race_labels text[]);
 CREATE TABLE race_start_timings (race_id varchar(20), boat_number smallint, start_timing numeric, finish_mark text, finish_rank smallint, primary key (race_id, boat_number));
-CREATE TABLE exhibition_data (race_id varchar(20), boat_number smallint, exhibition_time numeric, primary key (race_id, boat_number));
+CREATE TABLE exhibition_data (race_id varchar(20), boat_number smallint, exhibition_time numeric, start_timing numeric, today_weight numeric, primary key (race_id, boat_number));
 CREATE TABLE race_odds (race_id varchar(20), captured_at timestamptz, trifecta_all jsonb, trio_all jsonb, exacta_all jsonb, quinella_all jsonb, wide_all jsonb, primary key (race_id, captured_at));
 CREATE TABLE race_entries (race_id varchar(20), boat_number smallint, racer_id integer, weight_kg numeric, branch text, f_count smallint, l_count smallint, is_absent boolean, primary key (race_id, boat_number));
 CREATE TABLE race_pit_reports (race_id varchar(20) primary key, status text);
@@ -342,7 +354,7 @@ INSERT INTO races VALUES
 INSERT INTO race_results VALUES ('2026-09-18-01-01',1,2,3,4,5,6,1,'逃げ');
 INSERT INTO race_conditions VALUES ('2026-09-18-01-01','予選',1800,'{}');
 INSERT INTO race_start_timings SELECT '2026-09-18-01-01', g, 0.15, g::text, g FROM generate_series(1,6) g;
-INSERT INTO exhibition_data SELECT '2026-09-18-01-01', g, 6.70 FROM generate_series(1,6) g;
+INSERT INTO exhibition_data (race_id, boat_number, exhibition_time) SELECT '2026-09-18-01-01', g, 6.70 FROM generate_series(1,6) g;
 INSERT INTO race_odds VALUES ('2026-09-18-01-01', now(), '{"1-2-3":1}', '{"1=2=3":1}', '{"1-2":1}', '{"1=2":1}', '{"1=2":1}');
 -- 2レース目（確定中止）: 結果・オッズが入っていても、分母・分子に含めない
 INSERT INTO race_results VALUES ('2026-09-18-01-02',1,2,3,4,5,6,1,'逃げ');
@@ -1937,8 +1949,19 @@ for (const [label, reps] of jobMutants) {
 }
 
 // SQL（PGliteの意味論）の変異: 関数の本体を壊すと、(c)の検証が失敗する
+/**
+ * 変異は、ファイルごとに当ててから繋ぎ直す。後のマイグレーションが CREATE OR REPLACE で置き換えた関数は、
+ * 繋いだSQLの中に同じ本体が複数回現れる（例: data_health_coverage は089と105）。繋いだ文字列に
+ * String.replace を1回当てると最初の1つ（＝古い方）しか壊れず、後から適用される正しい定義に上書きされて、
+ * 変異を検知できなくなる。ファイル単位なら、各ファイルの1つ目＝そのファイルの唯一の定義に当たる（BOA-500）
+ */
+function mutateEachFile(mutate) {
+  return MIGRATION_FILES.map((f) => mutate(migrationSqlByFile.get(f))).join(
+    "\n",
+  );
+}
 async function sqlMutantFails(label, mutate) {
-  const mutated = mutate(migrationSql);
+  const mutated = mutateEachFile(mutate);
   if (mutated === migrationSql)
     throw new Error(`SQLの変異の対象が見つかりません: ${label}`);
   const mdb = new PGlite();
@@ -1948,7 +1971,7 @@ CREATE TABLE races (race_id varchar(20) primary key, race_date date not null, ve
 CREATE TABLE race_results (race_id varchar(20) primary key, rank1 smallint, rank2 smallint, rank3 smallint, rank4 smallint, rank5 smallint, rank6 smallint, actual_course_1 smallint, winning_technique text);
 CREATE TABLE race_conditions (race_id varchar(20) primary key, race_stage text, race_distance_m smallint, race_labels text[]);
 CREATE TABLE race_start_timings (race_id varchar(20), boat_number smallint, start_timing numeric, finish_mark text, finish_rank smallint, primary key (race_id, boat_number));
-CREATE TABLE exhibition_data (race_id varchar(20), boat_number smallint, exhibition_time numeric, primary key (race_id, boat_number));
+CREATE TABLE exhibition_data (race_id varchar(20), boat_number smallint, exhibition_time numeric, start_timing numeric, today_weight numeric, primary key (race_id, boat_number));
 CREATE TABLE race_odds (race_id varchar(20), captured_at timestamptz, trifecta_all jsonb, trio_all jsonb, exacta_all jsonb, quinella_all jsonb, wide_all jsonb, primary key (race_id, captured_at));
 CREATE TABLE race_entries (race_id varchar(20), boat_number smallint, racer_id integer, weight_kg numeric, branch text, f_count smallint, l_count smallint, is_absent boolean, primary key (race_id, boat_number));
 CREATE TABLE race_pit_reports (race_id varchar(20) primary key, status text);
@@ -2114,7 +2137,7 @@ for (const [label, mutate] of [
     (x) => x.replace("and b.sig = a.sig and b.has_result", "and b.sig = a.sig"),
   ],
 ]) {
-  const mutated = mutate(migrationSql);
+  const mutated = mutateEachFile(mutate);
   if (mutated === migrationSql)
     throw new Error(`SQLの変異の対象が見つかりません: ${label}`);
   let detected = false;

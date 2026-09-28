@@ -28,6 +28,10 @@
  *       解析して書く、取得済みのレースは shadow でも取得しない（公式ページへのリクエスト0）、shadow は書かない、気象を書かない、
  *       予測の再計算の対象にしない、未完了の再試行は -33 のスロットより長い、-33 のスロットの挙動は変えない。
  *       変異検証: 取得済みを再取得する・shadow で書く・気象を書く・再計算の対象にする・再試行の間隔が同じ、で失敗する
+ *   (k) 体重だけの窓（BOA-500。展示の発走60分前のスロット）: 展示航走前のページから当日体重・調整重量を書いて完了（ok）する、
+ *       表が無ければ no_values で300秒後に再試行、気象を書かない・スケジュールを読まない・予測の再計算の対象にしない、
+ *       -33 のスロットは従来どおり（展示タイムが入るまで partial）。1レースあたりの取得は最大6回。
+ *       変異検証: 体重だけの窓として扱わない・再試行が120秒・気象を書く、で失敗する
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -54,6 +58,7 @@ import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
 import {
   SCRAPE_JOBS,
   isCatchupOffset,
+  isWeightOnlyOffset,
   slotDefsFor,
   validateRegistry,
 } from "../lib/scrapeJobs/registry.js";
@@ -656,11 +661,33 @@ async function exhibitionShadowWritesNothing(run) {
     { mode: "live" },
     createFetcher(pagesHandler({ before: BEFORE_UNPUBLISHED_HTML })),
   );
+  const unRows = upsertsOf(dbUn, "exhibition_data").flatMap((u) => u.rows);
   check(
-    "A2 展示が未公開（展示航走前の空の表）: outcome=no_values（再試行）。展示データは書かない",
-    un.result.outcome === "no_values" &&
-      upsertsOf(dbUn, "exhibition_data").length === 0,
-    show(un.result),
+    // BOA-500: 展示航走前でも、当日体重・調整重量は公開されている。捨てずに書き、展示タイムが入るまで再試行する
+    "A2 展示航走前（当日体重・調整重量だけ公開）: その行を書き、outcome=partial（再試行。展示タイムが入るまで完了にしない）",
+    un.result.outcome === "partial" &&
+      unRows.length === 6 &&
+      unRows.every(
+        (row) =>
+          row.today_weight != null &&
+          row.adjustment_weight != null &&
+          row.exhibition_time === null &&
+          row.start_timing === null,
+      ),
+    show({ outcome: un.result.outcome, rows: unRows.length, row0: unRows[0] }),
+  );
+  const dbNone = freshDb();
+  const none = await runExhibition(
+    realExhibitionRun,
+    dbNone,
+    { mode: "live" },
+    createFetcher(pagesHandler({ before: "<html></html>" })),
+  );
+  check(
+    "A2 直前情報の表が無い（中止・未公開）: outcome=no_values（再試行）。1行も書かない",
+    none.result.outcome === "no_values" &&
+      upsertsOf(dbNone, "exhibition_data").length === 0,
+    show(none.result),
   );
   const dbSt = freshDb();
   const st = await runExhibition(
@@ -1098,9 +1125,11 @@ for (const [job, createHandleSlot, offset] of [
     fetcher: createFetcher(pagesHandler({ before: BEFORE_UNPUBLISHED_HTML })),
   });
   check(
-    "ラッパ A2: 展示が未公開（no_values）は、完了にせず、再試行に戻す",
+    // BOA-500 以降、展示航走前のページは当日体重・調整重量を書くため partial になる。
+    // 完了にせず再試行に戻す、という予定表の扱いは変わらない
+    "ラッパ A2: 展示タイムが未公開（partial）は、完了にせず、再試行に戻す",
     unpublished.store.completed.length === 0 &&
-      unpublished.store.retried[0]?.outcome === "no_values",
+      unpublished.store.retried[0]?.outcome === "partial",
     show(unpublished.store.retried),
   );
   const already = await runViaWrapper({
@@ -1207,8 +1236,7 @@ for (const [job, createHandleSlot, offset] of [
   });
   check(
     "日目: ページの日程タブが無いとき、節（race_series）の開始日から導いた値で補う（2026-09-16 は 2026-09-14 開始の3日目）",
-    seriesDayOf(noTabs.db) === 3 &&
-      noTabs.store.completed[0]?.outcome === "ok",
+    seriesDayOf(noTabs.db) === 3 && noTabs.store.completed[0]?.outcome === "ok",
     show({
       seriesDay: seriesDayOf(noTabs.db),
       outcome: noTabs.store.completed[0]?.outcome,
@@ -1736,30 +1764,30 @@ async function routingIsCorrect(handlerFactory) {
   check(
     "レジストリ exhibition: 窓 -33（〜-7分。許容幅26分）・再試行120秒・リース90秒（-33 のスロットは、承認済みの判断(e)のまま）",
     ex.kind === "window" &&
-      ex.offsets[0] === -33 &&
+      ex.offsets.includes(-33) &&
       ex.graceMin === 26 &&
-      ex.offsets[0] + ex.graceMin === -7 &&
+      -33 + ex.graceMin === -7 &&
       ex.retrySec === 120 &&
       ex.leaseSec === 90,
     show(ex),
   );
   check(
     "レジストリ exhibition: 窓の外の補完（BOA-382）は、offsets の 10（発走の10分後〜36分後。許容幅は -33 と同じ26分）。補完の再試行は600秒（-33 の120秒より長く、許容幅より短い）。catchupOffsets は offsets に含まれる",
-    ex.offsets.length === 2 &&
-      ex.offsets[1] === 10 &&
+    ex.offsets.includes(10) &&
       ex.catchupOffsets.length === 1 &&
       ex.catchupOffsets[0] === 10 &&
       ex.offsets.includes(ex.catchupOffsets[0]) &&
-      ex.offsets[1] + ex.graceMin === 36 &&
+      10 + ex.graceMin === 36 &&
       ex.catchupRetrySec === 600 &&
       ex.catchupRetrySec > ex.retrySec &&
       ex.catchupRetrySec < ex.graceMin * 60,
     show(ex),
   );
   check(
-    "レジストリ: 予定表の定義（slotDefsFor）は、exhibition に -33 と 10 の2本（許容幅は同じ26分）。補完の判定（isCatchupOffset）は 10 だけ。他のジョブは補完を持たない",
+    "レジストリ: 予定表の定義（slotDefsFor）は、exhibition に -60・-33・10 の3本（許容幅は同じ26分）。補完の判定（isCatchupOffset）は 10 だけ。他のジョブは補完を持たない",
     show(slotDefsFor(["exhibition"])) ===
       show([
+        { job: "exhibition", offset_min: -60, grace_min: 26 },
         { job: "exhibition", offset_min: -33, grace_min: 26 },
         { job: "exhibition", offset_min: 10, grace_min: 26 },
       ]) &&
@@ -1780,6 +1808,51 @@ async function routingIsCorrect(handlerFactory) {
         bad({ catchupOffsets: [0] }) &&
         bad({ catchupOffsets: [] }) &&
         bad({ catchupOffsets: [10.5] }) &&
+        !bad({}),
+    );
+  }
+  check(
+    "レジストリ exhibition: 体重だけの窓（BOA-500）は offsets の -60（発走60分前〜34分前。-33 の窓と重ならない）。再試行は300秒（-33 の120秒より長く、許容幅より短い）。判定（isWeightOnlyOffset）は -60 だけ",
+    ex.offsets.includes(-60) &&
+      show(ex.weightOnlyOffsets) === show([-60]) &&
+      -60 + ex.graceMin < -33 &&
+      ex.weightOnlyRetrySec === 300 &&
+      ex.weightOnlyRetrySec > ex.retrySec &&
+      ex.weightOnlyRetrySec < ex.graceMin * 60 &&
+      isWeightOnlyOffset(ex, -60) &&
+      !isWeightOnlyOffset(ex, -33) &&
+      !isWeightOnlyOffset(ex, 10) &&
+      !isCatchupOffset(ex, -60) &&
+      !isWeightOnlyOffset(SCRAPE_JOBS.race_info, -60) &&
+      !isWeightOnlyOffset(SCRAPE_JOBS.odds, -60),
+    show(ex),
+  );
+  {
+    // 1レースあたりの取得の上限: 体重が窓の最後まで未公開でも、claim の時刻（-60）から許容幅（26分）の間に、
+    // 再試行の間隔（300秒 − ゆらぎ10秒）おきに試す回数。-33 と同じ120秒のままだと13回（BOA-500 の見積りの13倍の原因）
+    const attemptsIn = (retrySec) =>
+      Math.floor((ex.graceMin * 60) / (retrySec - 10)) + 1;
+    check(
+      "レジストリ exhibition: 体重だけの窓の取得は、1レースあたり最大6回（-33 と同じ再試行120秒なら15回）",
+      attemptsIn(ex.weightOnlyRetrySec) === 6 && attemptsIn(ex.retrySec) === 15,
+      show({
+        weightOnly: attemptsIn(ex.weightOnlyRetrySec),
+        primary: attemptsIn(ex.retrySec),
+      }),
+    );
+  }
+  {
+    const bad = (patch) =>
+      validateRegistry({ exhibition: { ...ex, ...patch } }).length > 0;
+    check(
+      "レジストリの検査: 体重だけの窓が offsets に無い・発走後・補完と同じ・次の窓と重なる（許容幅が長い）、再試行が許容幅以上・0、は不正（validateRegistry）",
+      bad({ weightOnlyOffsets: [-45] }) &&
+        bad({ weightOnlyOffsets: [10] }) &&
+        bad({ weightOnlyOffsets: [] }) &&
+        bad({ offsets: [-50, -33, 10], weightOnlyOffsets: [-50] }) &&
+        bad({ weightOnlyRetrySec: 26 * 60 }) &&
+        bad({ weightOnlyRetrySec: 0 }) &&
+        bad({ weightOnlyRetrySec: undefined }) &&
         !bad({}),
     );
   }
@@ -1922,7 +1995,7 @@ async function routingIsCorrect(handlerFactory) {
 // (j) 窓の外の補完（BOA-382。展示の発走の後のスロット。レジストリの exhibition の offsets の 10）
 // ---------------------------------------------------------------------------
 const CATCHUP_OFFSET = SCRAPE_JOBS.exhibition.catchupOffsets[0];
-const PRIMARY_OFFSET = SCRAPE_JOBS.exhibition.offsets[0];
+const PRIMARY_OFFSET = -33;
 const SUMI_URL = "/beforeinfo?rno=5&jcd=12&hd=20260921";
 const sumiFetcher = (html = BEFORE_AFTER_START_HTML) =>
   createFetcher(pagesHandler({ before: html }));
@@ -1947,6 +2020,7 @@ async function exhibitionSlot({
   fetcher = sumiFetcher(),
   run = realExhibitionRun,
   catchup,
+  weightOnly,
 } = {}) {
   const changed = [];
   const r = await runViaWrapper({
@@ -1957,6 +2031,7 @@ async function exhibitionSlot({
         loadSchedule: async () => [],
         onChanged: (date, id) => changed.push(id),
         ...(catchup ? { catchup } : {}),
+        ...(weightOnly ? { weightOnly } : {}),
       }),
     rows: { exhibition: { job: "exhibition", mode, consecutive_failures: 0 } },
     slots: [slotOf("exhibition", raceId, offset)],
@@ -2022,7 +2097,8 @@ async function catchupRetriesSlowly(catchup) {
   const retryAfterSec = (x) =>
     (new Date(x.store.retried[0]?.retryAt).getTime() - NOW.getTime()) / 1000;
   return (
-    r.store.retried[0]?.outcome === "no_values" &&
+    // BOA-500 以降、展示航走前のページは当日体重・調整重量を書くため partial（未完了なのは変わらない）
+    r.store.retried[0]?.outcome === "partial" &&
     retryAfterSec(r) === 590 &&
     retryAfterSec(primary) === 110
   );
@@ -2204,6 +2280,7 @@ async function catchupRetriesSlowly(catchup) {
     [
       { offset_min: -33, race_id: "a" },
       { offset_min: 10, race_id: "b" },
+      { offset_min: -60, race_id: "w" },
     ],
     SCRAPE_JOBS.exhibition,
   );
@@ -2212,11 +2289,14 @@ async function catchupRetriesSlowly(catchup) {
     SCRAPE_JOBS.result,
   );
   check(
-    "check-pre-race-shadow: スロットを、通常の窓と、窓の外の補完（catchupOffsets）に分ける。補完を持たないジョブは、全て通常の窓",
+    "check-pre-race-shadow: スロットを、通常の窓と、窓の外の補完（catchupOffsets）と、体重だけの窓（weightOnlyOffsets）に分ける。どちらも持たないジョブは、全て通常の窓",
     split.primary.length === 1 &&
       split.primary[0].race_id === "a" &&
       split.catchup.length === 1 &&
       split.catchup[0].race_id === "b" &&
+      // 体重だけの窓（BOA-500）も、通常の窓の一致率に混ぜない（展示前のページのダイジェストは、展示後の行と一致しない）
+      split.weightOnly.length === 1 &&
+      split.weightOnly[0].race_id === "w" &&
       splitOther.primary.length === 1 &&
       splitOther.catchup.length === 0,
   );
@@ -2325,6 +2405,153 @@ async function catchupRetriesSlowly(catchup) {
   check(
     "変異検証: 「ダイジェストが選手を無視する」版では、選手が違っても同じになり（検証が失敗する）、正しい実装では違う値になる",
     a === b && c !== d,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (k) 体重だけの窓（BOA-500。展示の発走60分前のスロット。レジストリの exhibition の weightOnlyOffsets）
+// ---------------------------------------------------------------------------
+const WEIGHT_OFFSET = SCRAPE_JOBS.exhibition.weightOnlyOffsets[0];
+const preExhibitionFetcher = () => sumiFetcher(BEFORE_UNPUBLISHED_HTML);
+
+/** 体重だけの窓は、展示航走前のページ（当日体重・調整重量だけ公開）で、6行を書いて完了（ok）する。気象・再計算は無し */
+async function weightOnlyCompletes({
+  run = realExhibitionRun,
+  weightOnly,
+} = {}) {
+  const r = await exhibitionSlot({
+    mode: "live",
+    offset: WEIGHT_OFFSET,
+    fetcher: preExhibitionFetcher(),
+    run,
+    weightOnly,
+  });
+  const rows = upsertsOf(r.db, "exhibition_data").flatMap((u) => u.rows);
+  return (
+    r.store.completed[0]?.outcome === "ok" &&
+    r.store.completed[0]?.rowsWritten === 6 &&
+    r.store.retried.length === 0 &&
+    r.fetcher.calls.length === 1 &&
+    rows.length === 6 &&
+    rows.every(
+      (row) => row.today_weight != null && row.exhibition_time === null,
+    ) &&
+    r.changed.length === 0
+  );
+}
+/** 体重だけの窓は、気象（race_conditions）を書かず、スケジュール（races）を読まない */
+async function weightOnlyWritesNoWeather(run = realExhibitionRun) {
+  const r = await exhibitionSlot({
+    mode: "live",
+    offset: WEIGHT_OFFSET,
+    fetcher: preExhibitionFetcher(),
+    run,
+  });
+  return (
+    upsertedTables(r.db).includes("exhibition_data") &&
+    !upsertedTables(r.db).includes("race_conditions") &&
+    !r.db.state.selects.some((sel) => sel.table === "races")
+  );
+}
+/** 体重も未公開（直前情報の表が無い）なら no_values で、300秒おき（ゆらぎ10秒を引いて290秒後）に再試行する */
+async function weightOnlyRetriesSlowly(weightOnly) {
+  const r = await exhibitionSlot({
+    mode: "live",
+    offset: WEIGHT_OFFSET,
+    fetcher: sumiFetcher("<html></html>"),
+    weightOnly,
+  });
+  const retryAfterSec =
+    (new Date(r.store.retried[0]?.retryAt).getTime() - NOW.getTime()) / 1000;
+  return (
+    r.store.completed.length === 0 &&
+    r.store.retried[0]?.outcome === "no_values" &&
+    retryAfterSec === 290 &&
+    upsertsOf(r.db, "exhibition_data").length === 0
+  );
+}
+
+{
+  check(
+    "体重だけの窓 live（展示航走前のページ）: beforeinfo を1回だけ取得し、当日体重・調整重量の6行を書いて outcome=ok で完了する（partial で26分間再試行し続けない）。予測の再計算の対象にしない",
+    await weightOnlyCompletes(),
+  );
+  check(
+    "体重だけの窓: 気象（race_conditions）を書かず、スケジュール（races）を読まない（気象は -33 の窓が、発走に近い観測で書く）",
+    await weightOnlyWritesNoWeather(),
+  );
+  check(
+    "体重だけの窓: 体重も未公開（表が無い）なら no_values・書き込み0で、300秒おき（290秒後）に再試行する",
+    await weightOnlyRetriesSlowly(),
+  );
+  const done = await exhibitionSlot({
+    mode: "live",
+    offset: WEIGHT_OFFSET,
+    db: sumiDbWithData(),
+  });
+  check(
+    "体重だけの窓: 展示タイムが取得済みなら取得しない（skipped_have_data。公式ページへのリクエスト0）",
+    done.fetcher.calls.length === 0 &&
+      done.store.completed[0]?.outcome === "skipped_have_data",
+    show(done.store.completed),
+  );
+  const primary = await exhibitionSlot({
+    mode: "live",
+    offset: PRIMARY_OFFSET,
+    fetcher: preExhibitionFetcher(),
+  });
+  check(
+    "-33 のスロットは従来どおり: 展示航走前のページでは、体重を書いても partial（展示タイムが入るまで完了にしない）で、120秒おき（110秒後）に再試行する",
+    primary.store.completed.length === 0 &&
+      primary.store.retried[0]?.outcome === "partial" &&
+      new Date(primary.store.retried[0].retryAt).getTime() ===
+        NOW.getTime() + 110000,
+    show(primary.store.retried),
+  );
+  const exhibited = await exhibitionSlot({
+    mode: "live",
+    offset: WEIGHT_OFFSET,
+  });
+  check(
+    "体重だけの窓: 展示タイムまで公開済みのページなら、展示タイムも書いて ok（-33 のスロットは skipped_have_data で済む）",
+    exhibited.store.completed[0]?.outcome === "ok" &&
+      upsertsOf(exhibited.db, "exhibition_data")
+        .flatMap((u) => u.rows)
+        .some((row) => row.exhibition_time != null),
+    show(exhibited.store.completed),
+  );
+
+  // 変異検証
+  const dropWeightOnly = (run) => (races, options) =>
+    run(races, { ...options, weightOnly: false });
+  const withWeatherRun = (run) => (races, options) =>
+    run(races, { ...options, updateWeather: true, schedule: [] });
+  check(
+    "変異検証の前提: 正しい実装は、体重だけの窓の各検証（完了・気象なし・再試行の間隔）に合格する",
+    (await weightOnlyCompletes()) &&
+      (await weightOnlyWritesNoWeather()) &&
+      (await weightOnlyRetriesSlowly()),
+  );
+  check(
+    "変異検証: 「体重だけの窓でも、展示タイムが入るまで完了にしない（runForRaces に weightOnly を渡さない）」版では、『完了する』検証が失敗する",
+    !(await weightOnlyCompletes({ run: dropWeightOnly(realExhibitionRun) })),
+  );
+  check(
+    "変異検証: 「-60 を通常のスロットとして扱う」版では、『完了する』検証が失敗する（partial・再計算の対象になる）",
+    !(await weightOnlyCompletes({
+      weightOnly: { isWeightOnly: () => false, retrySec: 300 },
+    })),
+  );
+  check(
+    "変異検証: 「体重だけの窓の再試行が、-33 と同じ120秒」版では、『300秒おき』検証が失敗する",
+    !(await weightOnlyRetriesSlowly({
+      isWeightOnly: (offset) => offset === WEIGHT_OFFSET,
+      retrySec: SCRAPE_JOBS.exhibition.retrySec,
+    })),
+  );
+  check(
+    "変異検証: 「体重だけの窓が、気象を書く」版では、『気象を書かない』検証が失敗する",
+    !(await weightOnlyWritesNoWeather(withWeatherRun(realExhibitionRun))),
   );
 }
 
