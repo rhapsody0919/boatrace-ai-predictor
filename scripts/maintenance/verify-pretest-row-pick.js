@@ -20,8 +20,11 @@
  *
  *   A. 節の中で `pretest_time` / `pretest_rank` が変動する区間が無いこと
  *      → あると2つのタブが食い違う
- *   B. 6日ルックバックで**前の節の行**を拾わないこと
- *      → 拾うと、今節と無関係な前検タイムをモータ情報タブが出す
+ *   B. その日に走る選手について、6日ルックバックが**前の節の行**を引かないこと
+ *      → 引くと、今節と無関係な前検タイムをモータ情報タブが出す。
+ *        節の初日は `races`（番組）の開催日の連続性から決める。前検側の
+ *        `series_title` を遡って決めると、その日の前検が1件も取れていないときに
+ *        前の節を「今の節」と誤判定して見逃す
  *   C. カバー率が大きく落ちていないこと（目安 90%以上。2026-09-28 実測 94.6%）
  *      → 取得ジョブが止まると列が消えるが、画面は「列ごと出さない」ので気づけない
  *
@@ -109,6 +112,55 @@ async function fetchEntries(fromDate, toDate) {
   return rows;
 }
 
+/**
+ * 会場ごとの開催日を集める（節の境目の判定に使う）。
+ *
+ * **`motor_pretest_stats` の `series_title` からは節を決めない。** 取得ジョブが
+ * 落ちてその日の行が1件も無いと、遡って前の節の `series_title` を「その日の節」と
+ * 判定してしまい、本当に前節の値を出していても合格になる（偽陰性）。節は番組
+ * （`races`）の側にしかない情報なので、そちらを正とする
+ * （2026-09-28、独立したデータ精度検証の指摘）
+ */
+async function fetchVenueOpenDates(fromDate, toDate) {
+  const byVenue = new Map();
+  for (let date = fromDate; date <= toDate; date = shiftDate(date, 1)) {
+    const { data, error } = await supabase
+      .from("races")
+      .select("venue_code")
+      .eq("race_date", date);
+    if (error) {
+      throw new Error(
+        `races（開催日）の取得に失敗（${date}）: ${error.message}`,
+      );
+    }
+    new Set((data ?? []).map((r) => r.venue_code)).forEach((venueCode) => {
+      if (!byVenue.has(venueCode)) byVenue.set(venueCode, []);
+      byVenue.get(venueCode).push(date);
+    });
+  }
+  return byVenue;
+}
+
+/**
+ * 会場×日付 → その日が属する節の初日。日付の連続性で切る
+ * （`getMeetScoreboard` と同じ「2日以上空いたら別の節」）
+ */
+function buildMeetStartLookup(openDatesByVenue) {
+  const lookup = new Map();
+  openDatesByVenue.forEach((dates, venueCode) => {
+    const sorted = [...dates].sort();
+    let start = sorted[0];
+    sorted.forEach((date, i) => {
+      if (i > 0) {
+        const gap = (new Date(date) - new Date(sorted[i - 1])) / 86_400_000;
+        if (gap > 2) start = date;
+      }
+      lookup.set(`${venueCode}|${date}`, start);
+    });
+  });
+  return lookup;
+}
+
 /** 会場×選手×series_title を日付の連続性で区間に切る（= 節） */
 function groupIntoRuns(rows) {
   const byKey = new Map();
@@ -146,10 +198,13 @@ async function main() {
 
   console.log(`前検タイムの行の選び方を検査します（${from} 〜 ${today}）`);
 
-  const [pretestRows, entryRows] = await Promise.all([
+  // 節の初日を決めるため、開催日は検査期間より前（最長の節＋余裕で9日）まで見る
+  const [pretestRows, entryRows, openDatesByVenue] = await Promise.all([
     fetchPretestRows(pretestFrom, today),
     fetchEntries(from, today),
+    fetchVenueOpenDates(shiftDate(from, -9), today),
   ]);
+  const meetStartLookup = buildMeetStartLookup(openDatesByVenue);
   console.log(
     `  motor_pretest_stats: ${pretestRows.length}行 / 出走: ${entryRows.length}件`,
   );
@@ -196,21 +251,8 @@ async function main() {
     list.sort((a, b) => b.race_date.localeCompare(a.race_date)),
   );
 
-  // その会場・その日の「今の節」の series_title（最新の行のもの）
-  const seriesByVenueDate = new Map();
-  pretestRows.forEach((row) => {
-    const key = `${row.venue_code}|${row.race_date}`;
-    seriesByVenueDate.set(key, row.series_title ?? "");
-  });
-  const currentSeries = (venueCode, date) => {
-    for (let i = 0; i <= LOOKBACK_DAYS; i += 1) {
-      const key = `${venueCode}|${shiftDate(date, -i)}`;
-      if (seriesByVenueDate.has(key)) return seriesByVenueDate.get(key);
-    }
-    return null;
-  };
-
   let matched = 0;
+  let unknownMeetStart = 0;
   const crossMeet = [];
   entryRows.forEach((entry) => {
     const list =
@@ -221,26 +263,40 @@ async function main() {
     );
     if (!picked) return;
     matched += 1;
-    const expected = currentSeries(entry.venue_code, entry.race_date);
-    if (expected !== null && (picked.series_title ?? "") !== expected) {
-      crossMeet.push({ entry, picked, expected });
+    // 節の初日は `races`（番組）から決める。前検側の series_title を遡って
+    // 決めると、その日の前検が取れていないときに前の節を「今の節」と誤判定し、
+    // 本当に前節の値を出していても合格になる
+    const meetStart = meetStartLookup.get(
+      `${entry.venue_code}|${entry.race_date}`,
+    );
+    if (!meetStart) {
+      unknownMeetStart += 1;
+      return;
+    }
+    if (picked.race_date < meetStart) {
+      crossMeet.push({ entry, picked, meetStart });
     }
   });
 
   if (crossMeet.length > 0) {
     failures.push(
-      `[B] 6日ルックバックで前の節の行を拾う例が ${crossMeet.length} 件あります。\n` +
+      `[B] その日に走る選手について、前の節の前検を引く例が ${crossMeet.length} 件あります。\n` +
         crossMeet
           .slice(0, 5)
           .map(
-            ({ entry, picked, expected }) =>
+            ({ entry, picked, meetStart }) =>
               `    - 会場${entry.venue_code} 登番${entry.racer_id} ${entry.race_date}: ` +
-              `採った行=${picked.race_date}「${picked.series_title}」/ その日の節=「${expected}」`,
+              `採った行=${picked.race_date}「${picked.series_title}」/ この節の初日=${meetStart}`,
           )
           .join("\n"),
     );
   } else {
-    console.log("  [B] OK: 前の節の行を拾う例は0件");
+    console.log(
+      `  [B] OK: その日に走る選手が前の節の前検を引く例は0件` +
+        (unknownMeetStart > 0
+          ? `（節の初日を決められず未検査: ${unknownMeetStart}件）`
+          : ""),
+    );
   }
 
   const coverage =

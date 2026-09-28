@@ -192,9 +192,10 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/courseBaseline.js` | ST考察の「同コース・同級別の平均との差」の算出（phase a FR-1） | indexBaseline, getBaselineCell, diffFromBaseline, expectedBreakoutCount, METRIC_DIRECTION |
 | `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getJSTNow, getNowHHMMJST, getTodayJST, getYesterdayJST, getDaysAgoJST ほか9件 |
 | `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか11件 |
-| `src/utils/formatters.js` | フォーマット関数 | formatPercent, formatDate, formatDateLocalized, formatDateShort, formatDateObject ほか2件 |
+| `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatPercent, formatDate, formatDateLocalized, formatDateShort ほか3件 |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet |
 | `src/utils/pitReportUrl.js` | ピットレポート（選手コメント）の公式URL導出と、取得対象レースの判定（BOA-379） | buildPitReportUrl, isPitReportCandidate, PIT_REPORT_GRADES, PIT_REPORT_MIN_RACE_NUMBER_NON_SG |
+| `src/utils/pretestRows.js` | 前検タイム（`motor_pretest_stats`）の行の選び方（BOA-451 / phase a FR-4a） | shiftDate, pickFirstPretestByRacer, pickLatestPretestByRacer, PRETEST_LOOKBACK_DAYS |
 | `src/utils/raceCancellation.js` | 開催中止・順延の判定を1箇所に集める。 | isRaceCancelled, isCancellationSuspected, CANCELLATION_CONFIRMED, CANCELLATION_TENTATIVE |
 | `src/utils/raceDeadlineStatus.js` | — | getDeadlineDate, getDeadlineStatus, DEADLINE_STATUS |
 | `src/utils/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
@@ -233,4 +234,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 198 ファイル / export 986 件。
+対象 199 ファイル / export 991 件。
