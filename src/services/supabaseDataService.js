@@ -20,11 +20,12 @@ import {
 } from "../utils/motorGeneration";
 import { isFinalStage } from "../constants/raceStageConfig";
 import { finishPositionOf } from "../components/race/basicInfoStats.js";
+import { isRaceCancelled } from "../utils/raceCancellation.js";
 import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
   prelimEndRaceIdOf,
-  semifinalRaceIdsOf,
+  semifinalSlotsOf,
   scoreTableFor,
 } from "../components/race/seriesPoints.js";
 import {
@@ -6478,67 +6479,92 @@ export const supabaseDataService = {
         (c) => c.race_id.slice(0, 10) >= meetStart,
       );
 
-      const [results, pretest, meetExhibition, meetStarts, officialSeries] =
-        await Promise.all([
-          fetchAllByIn(
-            "race_results",
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6",
-            "race_id",
-            raceIds,
-          ),
-          // 前検タイム（FR-4a、`motor_pretest_stats`。095で匿名SELECTを公開済み）。
-          // 機力の**起点**。今節の展示順位の推移だけでは「元から悪い舟」なのか
-          // 「調整が進んだ」のかが読めない。節の全選手分を1クエリで引く
-          supabase
-            .from("motor_pretest_stats")
-            // `racer_class` も一緒に取る（追加クエリ0本）。級別は「44人中43位」が
-            // B2の順当なのかA1の不調なのかを分ける情報で、勝負駆けの読みが変わる
-            .select(
-              "racer_id, race_date, motor_number, pretest_time, pretest_rank, racer_class",
-            )
-            .eq("venue_code", venueCode)
-            .gte("race_date", meetStart)
-            .lte("race_date", date)
-            .then(({ data }) => data ?? []),
-          // **節の全レース・全艇**の展示タイム（2026-09-27追加、+1本）。
-          // 2つの用途を1クエリで賄う:
-          //   1. その日の会場平均（水面の重さ。同じ6.90でも日によって意味が違う）
-          //   2. 6艇それぞれの今節の展示の推移（選手単位で引くと6本増える）
-          // 節は最長7日 × 12R × 6艇 = 504行で、Supabaseの既定上限1000行に収まる
-          supabase
-            .from("exhibition_data")
-            .select("race_id, boat_number, exhibition_time")
-            .gte("race_id", meetStart)
-            .lt("race_id", raceId)
-            .like("race_id", `__________-${vv}-__`)
-            .then(({ data }) => data ?? []),
-          // 同じく節の全レース・全艇の本番ST（+1本）。6艇のST推移に使う。
-          // フライングは異常値なので呼び出し側で落とす
-          supabase
-            .from("race_start_timings")
-            .select("race_id, boat_number, start_timing, is_flying")
-            .gte("race_id", meetStart)
-            .lt("race_id", raceId)
-            .like("race_id", `__________-${vv}-__`)
-            .then(({ data }) => data ?? []),
-          // 公式の得点率一覧のスクレイプ（064）。**備考がそのまま入っている**ので、
-          // 「賞典除外」「途中帰郷」で順位の対象外を直接判定できる（推定が要らない）。
-          // ただし収録はSG/G1の一部のみ（2026-09-28時点で2開催101行）なので、
-          // 無い開催では出走の有無からの推定にフォールバックする
-          supabase
-            .from("racer_series_points")
-            // 備考（賞典除外・途中帰郷）に加えて、**得点率そのもの**も使う。
-            // 公式の得点率は `(着順点 − 減点) ÷ 走数` で、当社は減点を持って
-            // いないため、減点のある選手とその下の全員の順位がズレる（BOA-475）。
-            // 走数の列は無いが `placements` の文字数から出せる
-            .select(
-              "racer_id, remarks, placements, total_points, penalty_points",
-            )
-            .eq("venue_code", venueCode)
-            .eq("meet_start_date", meetStart)
-            .then(({ data }) => data ?? []),
-        ]);
+      const [
+        results,
+        cancellations,
+        pretest,
+        meetExhibition,
+        meetStarts,
+        officialSeries,
+      ] = await Promise.all([
+        fetchAllByIn(
+          "race_results",
+          "race_id, rank1, rank2, rank3, rank4, rank5, rank6",
+          "race_id",
+          raceIds,
+        ),
+        // **中止・順延**（047、BOA-254）。番組に残っているだけで行われなかった
+        // レースを、準優の枠数から外すのに使う（BOA-490）。並列の束に入るので
+        // 往復は増えず、行数も節の全レース（最大約84行）×2列で済む
+        fetchAllByIn(
+          "races",
+          "race_id, cancellation_status",
+          "race_id",
+          raceIds,
+        ),
+        // 前検タイム（FR-4a、`motor_pretest_stats`。095で匿名SELECTを公開済み）。
+        // 機力の**起点**。今節の展示順位の推移だけでは「元から悪い舟」なのか
+        // 「調整が進んだ」のかが読めない。節の全選手分を1クエリで引く
+        supabase
+          .from("motor_pretest_stats")
+          // `racer_class` も一緒に取る（追加クエリ0本）。級別は「44人中43位」が
+          // B2の順当なのかA1の不調なのかを分ける情報で、勝負駆けの読みが変わる
+          .select(
+            "racer_id, race_date, motor_number, pretest_time, pretest_rank, racer_class",
+          )
+          .eq("venue_code", venueCode)
+          .gte("race_date", meetStart)
+          .lte("race_date", date)
+          .then(({ data }) => data ?? []),
+        // **節の全レース・全艇**の展示タイム（2026-09-27追加、+1本）。
+        // 2つの用途を1クエリで賄う:
+        //   1. その日の会場平均（水面の重さ。同じ6.90でも日によって意味が違う）
+        //   2. 6艇それぞれの今節の展示の推移（選手単位で引くと6本増える）
+        // 節は最長7日 × 12R × 6艇 = 504行で、Supabaseの既定上限1000行に収まる
+        supabase
+          .from("exhibition_data")
+          .select("race_id, boat_number, exhibition_time")
+          .gte("race_id", meetStart)
+          .lt("race_id", raceId)
+          .like("race_id", `__________-${vv}-__`)
+          .then(({ data }) => data ?? []),
+        // 同じく節の全レース・全艇の本番ST（+1本）。6艇のST推移に使う。
+        // フライングは異常値なので呼び出し側で落とす
+        supabase
+          .from("race_start_timings")
+          .select("race_id, boat_number, start_timing, is_flying")
+          .gte("race_id", meetStart)
+          .lt("race_id", raceId)
+          .like("race_id", `__________-${vv}-__`)
+          .then(({ data }) => data ?? []),
+        // 公式の得点率一覧のスクレイプ（064）。**備考がそのまま入っている**ので、
+        // 「賞典除外」「途中帰郷」で順位の対象外を直接判定できる（推定が要らない）。
+        // ただし収録はSG/G1の一部のみ（2026-09-28時点で2開催101行）なので、
+        // 無い開催では出走の有無からの推定にフォールバックする
+        supabase
+          .from("racer_series_points")
+          // 備考（賞典除外・途中帰郷）に加えて、**得点率そのもの**も使う。
+          // 公式の得点率は `(着順点 − 減点) ÷ 走数` で、当社は減点を持って
+          // いないため、減点のある選手とその下の全員の順位がズレる（BOA-475）。
+          // 走数の列は無いが `placements` の文字数から出せる
+          .select("racer_id, remarks, placements, total_points, penalty_points")
+          .eq("venue_code", venueCode)
+          .eq("meet_start_date", meetStart)
+          .then(({ data }) => data ?? []),
+      ]);
       const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
+      // 中止が**確定**したレース。判定は `isRaceCancelled` に集めてあるので
+      // ここで文字列を比べない（`src/utils/raceCancellation.js`。疑いの段階と
+      // 確定を各所で書き分けると必ずズレる、というのがあの関数の由来）。
+      // 中止の疑い（tentative）は含まれない——疑いで枠数を減らすと、実際は
+      // 行われたときにボーダーが狂う。列名だけスネーク→キャメルに合わせる
+      const cancelledRaceIds = new Set(
+        (cancellations ?? [])
+          .filter((r) =>
+            isRaceCancelled({ cancellationStatus: r.cancellation_status }),
+          )
+          .map((r) => r.race_id),
+      );
       const stageById = new Map(
         (conditions ?? []).map((c) => [c.race_id, c.race_stage]),
       );
@@ -6675,9 +6701,16 @@ export const supabaseDataService = {
           ].sort();
           return meetDates.indexOf(last.slice(0, 10)) + 1 || null;
         })(),
-        // この節に組まれた準優勝戦の枠数（予選中はまだ0）。慣例は3個レース=18名。
-        // 「準優進出戦」は準優の1つ前の勝ち上がり戦なので数えない（BOA-457）
-        semifinalSlots: semifinalRaceIdsOf(conditions ?? []).length * 6 || null,
+        // **この節に組まれた準優勝戦の枠数**。慣例は3個レース=18名で、決められない
+        // とき（予選中で準優がまだ番組に出ていない等）は **null**（0ではない）。
+        // 画面は `?? SEMIFINAL_DEFAULT_SLOTS` で既定の18枠に落とす。
+        // 「準優進出戦」は準優の1つ前の勝ち上がり戦なので数えない（BOA-457）。
+        // 中止で流れた準優も数えない。番組に2日ぶん残る中止順延で枠数が倍になり、
+        // ボーダー・必要得点・「届かず」まで狂う（BOA-490）
+        semifinalSlots: semifinalSlotsOf(conditions ?? [], {
+          cancelledRaceIds,
+          ranRaceIds: new Set(resultById.keys()),
+        }),
         // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
         stagesKnown: stageById.size > 0,
         // その日の会場の展示タイム平均（水面の重さ）。同じ6.90でも日によって
