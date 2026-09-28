@@ -628,7 +628,7 @@
     "finishLabel": "Finishes",
     "borderNote": "Rows above the dashed line are within the semi-final line (the card is not set yet, so this is not final).",
     "prelimOverNote": "The preliminaries ended on {{date}}. The score rate is final and today's finish will not change it.",
-    "rankSourceNote": "The series rank is our own calculation. Racers who withdrew mid-series (no start on the final day) are excluded from the ranking as the official table does, but racers excluded from prizes cannot be identified in our data and are still included.",
+    "rankSourceNote": "The series rank is our own calculation. Where the official score-rate list is available we use its remarks (excluded from prizes, withdrew mid-series) to drop racers from the ranking; otherwise we infer a withdrawal from having no start on the final day of the series.",
     "sparkStTitle": "Start timing this series",
     "sparkExTitle": "Trial time this series",
     "sparkBaselineSt": "Usual {{value}}",

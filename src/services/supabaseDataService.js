@@ -6191,7 +6191,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v10-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v11-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る
@@ -6224,8 +6224,14 @@ export const supabaseDataService = {
       const meetRows = rows.filter((r) => r.race_id.slice(0, 10) >= meetStart);
       const raceIds = [...new Set(meetRows.map((r) => r.race_id))];
 
-      const [results, conditions, pretest, meetExhibition, meetStarts] =
-        await Promise.all([
+      const [
+        results,
+        conditions,
+        pretest,
+        meetExhibition,
+        meetStarts,
+        officialSeries,
+      ] = await Promise.all([
         fetchAllByIn(
           "race_results",
           "race_id, rank1, rank2, rank3, rank4, rank5, rank6",
@@ -6278,6 +6284,16 @@ export const supabaseDataService = {
           .lt("race_id", raceId)
           .like("race_id", `__________-${vv}-__`)
           .then(({ data }) => data ?? []),
+        // 公式の得点率一覧のスクレイプ（064）。**備考がそのまま入っている**ので、
+        // 「賞典除外」「途中帰郷」で順位の対象外を直接判定できる（推定が要らない）。
+        // ただし収録はSG/G1の一部のみ（2026-09-28時点で2開催101行）なので、
+        // 無い開催では出走の有無からの推定にフォールバックする
+        supabase
+          .from("racer_series_points")
+          .select("racer_id, remarks")
+          .eq("venue_code", venueCode)
+          .eq("meet_start_date", meetStart)
+          .then(({ data }) => data ?? []),
       ]);
       const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
       const stageById = new Map(
@@ -6317,6 +6333,13 @@ export const supabaseDataService = {
         // `is_final_day` が取れていて、その日を過ぎている場合だけ有効にする。
         // 賞典除外は判定できない（該当選手は最終日まで普通に走っている）
         withdrawnRacerIds: (() => {
+          // 公式の備考が取れていればそれが正（推定より確実）。
+          // 「賞典除外」「途中帰郷」など、公式が順位を付けていない選手
+          // （rank/score_rate が NULL）を除く
+          const official = (officialSeries ?? []).filter((r) => r.remarks);
+          if (official.length > 0) return official.map((r) => r.racer_id);
+
+          // 収録が無い開催（一般戦など）は出走の有無から推定する
           const finalDayRow = (conditions ?? []).find((c) => c.is_final_day);
           const finalDay = finalDayRow?.race_id.slice(0, 10) ?? null;
           if (!finalDay || date < finalDay) return [];
