@@ -176,11 +176,21 @@ function RaceDetailPage() {
     ? buildPrediction(racePrediction, t("errors.noPredictionData"))
     : null;
   // 取得失敗時は racePrediction が null になり、ページ全体が DataFetchError を出す。
-  // ここでの null は「取得できたが値が無い」だけなので、何も出さない
-  const seriesDayLabel = racePrediction
+  // ここでの null は「取得できたが値が無い」だけなので、何も出さない。
+  // series_day はレース単位で出走表の取得時に書き込まれるため、当日はまだ
+  // 埋まっていないレースが残る（2026-09-28昼の実測で144R中52Rがnull。
+  // 丸亀は1Rだけ3日目で2〜12Rがnull）。日目は会場・日付単位で
+  // 同じ値なので、自レースに無ければ同じ会場の他レースの値を使う（追加クエリなし）
+  const seriesDaySource = racePrediction
+    ? racePrediction.seriesDay != null
+      ? racePrediction
+      : (venueRaces.find((r) => r.rawData.seriesDay != null)?.rawData ??
+        racePrediction)
+    : null;
+  const seriesDayLabel = seriesDaySource
     ? getSeriesDayLabel(
-        racePrediction.seriesDay,
-        racePrediction.isFinalDay,
+        seriesDaySource.seriesDay,
+        seriesDaySource.isFinalDay,
         t,
       )
     : null;
@@ -247,7 +257,12 @@ function RaceDetailPage() {
             <h1>
               🚤 {venueName} {parsed.raceNo}R
               {seriesDayLabel && (
-                <span className="race-detail-series-day">{seriesDayLabel}</span>
+                <>
+                  {" "}
+                  <span className="race-detail-series-day">
+                    {seriesDayLabel}
+                  </span>
+                </>
               )}
               {!isToday &&
                 ` (${formatDateLocalized(date, i18n.resolvedLanguage)})`}

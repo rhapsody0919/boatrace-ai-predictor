@@ -21,7 +21,7 @@
 /* BOA-488: 見出しの「初日」「N日目」「最終日」。レース番号の直後に小さく添える */
 .race-detail-series-day {
   display: inline-block;
-  margin-left: 0.5em;
+  margin-left: 0.15em;
   padding: 0.1em 0.5em;
   border-radius: 999px;
   font-size: 0.6em;
