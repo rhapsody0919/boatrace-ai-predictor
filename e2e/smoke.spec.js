@@ -3158,6 +3158,13 @@ test.describe("レース詳細の直前情報タブ: 展示前の体重", () => 
     await page.route("**/rest/v1/rpc/get_predictions*", handler);
   };
 
+  // routeUnfinished の route.fetch は本物の応答を待つため、アサーションが先に終わると
+  // テスト終了時にまだ応答待ちのリクエストが残り、「page closed」でテストが失敗扱いになる
+  // （2026-09-28実測。アサーションは全て通っていた）。終了時に待ちを捨てる
+  test.afterEach(async ({ page }) => {
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+  });
+
   test("展示前（exhibition_data が空）は出走表の体重を出し、チルトは展示後に公開される旨を添える", async ({
     page,
   }) => {
