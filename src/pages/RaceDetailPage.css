@@ -118,6 +118,13 @@
   border-color: #c2410c;
 }
 
+/* 予選・一般・準優進出戦。日目バッジ（塗り＋薄い枠）と見分けるため、
+   塗らずに濃い枠にする（ファン評価2周目 P2、ダークで同じ塊に見えた） */
+.race-detail-stage--plain {
+  background: transparent;
+  border-color: var(--text-secondary);
+}
+
 .race-detail-stage--special {
   color: var(--brand-accent-primary);
   border-color: var(--brand-accent-primary);

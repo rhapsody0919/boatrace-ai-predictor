@@ -230,27 +230,20 @@ function RaceDetailPage() {
   // series_day はレース単位で出走表の取得時に書き込まれるため、当日はまだ
   // 埋まっていないレースが残る（2026-09-28昼の実測で144R中52Rがnull。
   // 丸亀は1Rだけ3日目で2〜12Rがnull）。日目は会場・日付単位で
-  // 同じ値なので、自レースに無ければ同じ会場の他レースの値を使う（追加クエリなし）
-  const seriesDaySource = racePrediction
-    ? racePrediction.seriesDay != null
-      ? racePrediction
-      : (venueRaces.find((r) => r.rawData.seriesDay != null)?.rawData ??
-        racePrediction)
+  // 同じ値なので、自レースに無ければ同じ会場の他レースの値を使う（追加クエリなし）。
+  // series_day・is_final_day・race_title はそれぞれ単独で欠けることがあるため
+  // 項目ごとに補う。2026-09-04 浜名湖9R・11R は series_day=6 だけ入り
+  // is_final_day・race_title・race_stage が null で、レースごとにまとめて補うと
+  // 同じ日の12Rが「最終日」なのに「6日目」と出た（BOA-509 ファン評価 P1）
+  const venueValue = (key) =>
+    racePrediction?.[key] ??
+    venueRaces.find((r) => r.rawData[key] != null)?.rawData[key] ??
+    null;
+  const seriesDayLabel = racePrediction
+    ? getSeriesDayLabel(venueValue("seriesDay"), venueValue("isFinalDay"), t)
     : null;
-  const seriesDayLabel = seriesDaySource
-    ? getSeriesDayLabel(
-        seriesDaySource.seriesDay,
-        seriesDaySource.isFinalDay,
-        t,
-      )
-    : null;
-  // 節タイトル（BOA-509）。race_title は会場・日付単位で同じ値なので、日目と同様に
-  // race_conditions が欠損したレース（BOA-347）は同じ会場の他レースの値で補う
-  const rawSeriesTitle = racePrediction
-    ? (racePrediction.raceTitle ??
-      venueRaces.find((r) => r.rawData.raceTitle)?.rawData.raceTitle ??
-      null)
-    : null;
+  // 節タイトル（BOA-509）
+  const rawSeriesTitle = racePrediction ? venueValue("raceTitle") : null;
   const seriesTitle = rawSeriesTitle ? rawSeriesTitle.normalize("NFKC") : null;
   // 一般（ippan）は GRADE_CONFIG に無いのでバッジを出さない（BOA-96 と同じ）
   const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];

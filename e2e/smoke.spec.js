@@ -3706,12 +3706,17 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
   test("race_conditions 欠損レースは節タイトルを同会場の他レースで補い、種別は出さない", async ({
     page,
   }) => {
-    // 2026-09-04 浜名湖9R は race_conditions の行が無い（BOA-347）
+    // 2026-09-04 浜名湖9R は race_conditions に series_day=6 だけが入り、
+    // is_final_day・race_title・race_stage が null（BOA-347）。同じ日の他レースは最終日
     await page.goto("/race/2026-09-04-06-09");
     await expect(kicker(page)).toContainText("クラウンメロン杯", {
       timeout: 25000,
     });
     await expect(h1(page).locator(".race-detail-stage")).toHaveCount(0);
+    // is_final_day も項目ごとに補う（ファン評価2周目 P1、「6日目」と出ていた）
+    await expect(h1(page).locator(".race-detail-series-day")).toHaveText(
+      "最終日",
+    );
   });
 
   test("英語版は分類名を訳し、公式表記はツールチップに残す", async ({
