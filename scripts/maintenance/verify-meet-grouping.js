@@ -136,6 +136,13 @@ const median = (nums) => {
   const sorted = [...nums].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)];
 };
+/**
+ * 「今日」をJSTで返す。`race_id` の日付はJSTなので、UTCで求めると
+ * JSTの午前0〜9時に1日前の日付を「今日」と判定し、前日の本当の取得漏れを
+ * 「当日だから当然」として除外してしまう。
+ */
+const todayJst = () =>
+  new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
 /**
  * 取得失敗を「該当0件」と混同しないため、全クエリで throwOnError を立てる
@@ -249,6 +256,9 @@ async function loadMeetSegments(client, since) {
           venue,
           index,
           dates: seg.dates,
+          // 渡し忘れると 317 行の除外が永久に発火せず、`race_conditions` の
+          // 被覆が会場ごとにずれた瞬間に大量の偽の不一致が出る
+          truncated: seg.truncated,
         }),
       ),
     );
@@ -276,8 +286,14 @@ async function checkRacerScopedAgreement(
     "racer_id, race_id",
     (q) => q.gte("race_id", since).not("racer_id", "is", null),
   );
-  const racers = [...new Set(recent.map((r) => r.racer_id))]
-    .sort((a, b) => a - b)
+  // 昇順の先頭から取ると登録期の古いベテランに偏り、若手・B級側で起きる崩れを
+  // 構造的に検査できない。決定性は保ったまま、ID全域から等間隔で抜く
+  const allRacers = [...new Set(recent.map((r) => r.racer_id))].sort(
+    (a, b) => a - b,
+  );
+  const stride = Math.max(1, Math.floor(allRacers.length / racerCount));
+  const racers = allRacers
+    .filter((_, i) => i % stride === 0)
     .slice(0, racerCount);
   const entries = await fetchByIn(
     client,
@@ -302,7 +318,7 @@ async function checkRacerScopedAgreement(
   let skippedToday = 0;
   let skippedTruncated = 0;
   let skippedOther = 0;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayJst();
   const mismatches = [];
   for (const [racerId, ids] of byRacer) {
     const uniq = [...new Set(ids)].sort();
@@ -428,8 +444,29 @@ async function checkRiskyBoundaries(client, segmentsByVenue) {
       if (leftDates.has(d)) inLeft.add(e.racer_id);
       if (rightDates.has(d)) inRight.add(e.racer_id);
     }
+    // 節の在籍だけで判定すると偽陽性になる。推定が実際に誤るのは
+    // **その選手自身の**「左側の最後の出走」と「右側の最初の出走」の間隔が
+    // 2日以内（＝推定が境目と見ない）ときに限る。前の節の途中で帰郷した、
+    // 次の節の初日を欠場した、といった選手は推定でも正しく分かれる
+    const lastLeft = new Map();
+    const firstRight = new Map();
+    for (const e of entries) {
+      const d = dateOf(e.race_id);
+      if (leftDates.has(d)) {
+        const cur = lastLeft.get(e.racer_id);
+        if (!cur || d > cur) lastLeft.set(e.racer_id, d);
+      }
+      if (rightDates.has(d)) {
+        const cur = firstRight.get(e.racer_id);
+        if (!cur || d < cur) firstRight.set(e.racer_id, d);
+      }
+    }
     const both = [...inLeft].filter((r) => inRight.has(r));
-    if (both.length > 0) violations.push({ ...b, racers: both });
+    const merged = both.filter(
+      (r) => dayDiff(firstRight.get(r), lastLeft.get(r)) <= 2,
+    );
+    if (merged.length > 0)
+      violations.push({ ...b, racers: merged, straddling: both.length });
   }
   return { risky, violations };
 }
@@ -447,10 +484,7 @@ async function main() {
 
   const { segmentsByVenue, segmentOfDay, postponed, totalDays, coverageStart } =
     await loadMeetSegments(client, since);
-  const windowDays = Math.max(
-    1,
-    dayDiff(new Date().toISOString().slice(0, 10), since),
-  );
+  const windowDays = Math.max(1, dayDiff(todayJst(), since));
   const minVenueDays = Math.round(windowDays * MIN_VENUE_DAYS_PER_WINDOW_DAY);
   const meets = [...segmentsByVenue.values()].reduce((a, s) => a + s.length, 0);
   console.log(
@@ -524,7 +558,7 @@ async function main() {
     .forEach((v) =>
       console.log(
         `      ${VENUE_NAMES[Number(v.venue)] ?? v.venue} ${v.label}` +
-          `(${v.gap}日, ${v.kind}) ${v.note ?? `両側に出走 ${v.racers.length}人: ${v.racers.slice(0, 5).join(",")}`}`,
+          `(${v.gap}日, ${v.kind}) ${v.note ?? `推定が混ぜる ${v.racers.length}人（両節に在籍 ${v.straddling}人）: ${v.racers.slice(0, 5).join(",")}`}`,
       ),
     );
   if (b.risky.length === 0) {
