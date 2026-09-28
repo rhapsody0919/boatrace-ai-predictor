@@ -45,7 +45,10 @@ function EntryCourseDistributionCard({
         {players.map((p) => {
           const color = BOAT_COLORS[p.number] || {};
           const records = p.racerId ? statsByRacer[p.racerId] : null;
-          const loading = p.racerId && records === undefined && !failed;
+          // 艇ごとの状態だけで決める（undefined＝取得中 / null＝失敗 / 配列＝取得済み）。
+          // レース単位の failed を混ぜると、1艇が先に失敗しただけで取得中の他艇まで
+          // 「—」になり、失敗・データなしと見分けがつかなくなる（/code-review 指摘）
+          const loading = Boolean(p.racerId) && records === undefined;
           const dist = records
             ? computeFrameEntryDistribution(records, p.number, raceId)
             : null;

@@ -2931,6 +2931,40 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
     await expect(card).not.toContainText("この枠での出走なし");
     await expect(card.locator(".ecd-seg")).toHaveCount(0);
   });
+
+  // /code-review の指摘の再現テスト（2026-09-28）。読み込み中の判定に
+  // レース単位の failed を混ぜていたため、1艇が先に失敗すると、まだ取得中の
+  // 他艇まで「—」になり、失敗・データなしと見分けがつかなかった
+  test("1艇だけ取得に失敗しても、まだ取得中の他艇は読み込み中のまま表示する", async ({
+    page,
+  }) => {
+    // 1号艇（登番3833）の出走履歴だけ即失敗、他の艇は応答を遅らせる
+    await page.route("**/rest/v1/race_entries?*", async (route) => {
+      const url = decodeURIComponent(route.request().url());
+      if (!url.includes("f_count")) return route.continue();
+      if (url.includes("racer_id=eq.3833"))
+        return route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "stub failure" }),
+        });
+      await new Promise((resolve) => setTimeout(resolve, 15000));
+      return route.continue().catch(() => {});
+    });
+    await openBeforeInfoTab(page);
+
+    const card = page.getByTestId("entry-course-dist");
+    await expect(card.locator(".inline-fetch-error")).toBeVisible({
+      timeout: 30000,
+    });
+    // 失敗した1号艇は「—」、取得中の2号艇はスケルトン
+    await expect(
+      page.getByTestId("entry-course-dist-1").locator(".ecd-bar-empty"),
+    ).toHaveText("—");
+    await expect(
+      page.getByTestId("entry-course-dist-2").locator(".drt-skeleton"),
+    ).toBeVisible();
+  });
 });
 
 // 前検タイム・公式2連率（節時点）をモータ情報タブに出す（BOA-451 / phase a FR-4a）
