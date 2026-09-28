@@ -46,7 +46,7 @@ import MeetSparkline from "./MeetSparkline";
 import "./RaceMeetTab.css";
 import "../common/HorizontalScrollHint.css";
 
-function RaceMeetTab({ raceId, venueCode, players }) {
+function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
   const sortedPlayers = [...(players ?? [])].sort(
@@ -65,9 +65,9 @@ function RaceMeetTab({ raceId, venueCode, players }) {
     scrollRight: forecastScrollRight,
     // 行数が決まってから測り直す（マウント直後は取得前で幅が無い）
   } = useHorizontalScrollHint([sortedPlayers.length, board?.meetStart]);
-  const [selectedBoat, setSelectedBoat] = useState(
-    () => sortedPlayers[0]?.number ?? null,
-  );
+  // 選んでいる艇はタブをまたいで共有する（BOA-492）。共有値が null（＝まだ
+  // どの艇も選んでいない）のときは従来どおり1号艇を見せる
+  const selectedBoat = focusedBoat ?? sortedPlayers[0]?.number ?? null;
 
   useEffect(() => {
     if (!raceId || venueCode === null || venueCode === undefined)
@@ -275,13 +275,13 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                       // 行＝選手なので、行をタップしたら下の詳細が切り替わる。
                       // 下のチップまで指を動かさせない（表は横スクロールしない
                       // ためスワイプ誤爆の懸念も無い）
-                      onClick={() => setSelectedBoat(p.number)}
+                      onClick={() => onFocusBoat(p.number)}
                     >
                       <th scope="row">
                         <button
                           type="button"
                           className="rmt-row-select"
-                          onClick={() => setSelectedBoat(p.number)}
+                          onClick={() => onFocusBoat(p.number)}
                           aria-pressed={p.number === selectedBoat}
                         >
                           <span
@@ -454,13 +454,13 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                       <tr
                         key={p.number}
                         className={p.number === selectedBoat ? "is-current" : ""}
-                        onClick={() => setSelectedBoat(p.number)}
+                        onClick={() => onFocusBoat(p.number)}
                       >
                         <th scope="row">
                           <button
                             type="button"
                             className="rmt-row-select"
-                            onClick={() => setSelectedBoat(p.number)}
+                            onClick={() => onFocusBoat(p.number)}
                             aria-pressed={p.number === selectedBoat}
                           >
                             <span
@@ -581,7 +581,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                   <button
                     type="button"
                     className="rmt-trend-label"
-                    onClick={() => setSelectedBoat(p.number)}
+                    onClick={() => onFocusBoat(p.number)}
                     aria-pressed={p.number === selectedBoat}
                   >
                     <span
@@ -632,7 +632,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
               style={
                 active ? { background: color.bg, color: color.text } : undefined
               }
-              onClick={() => setSelectedBoat(p.number)}
+              onClick={() => onFocusBoat(p.number)}
               aria-pressed={active}
             >
               <span>{p.number}</span>

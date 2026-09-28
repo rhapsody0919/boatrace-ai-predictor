@@ -87,7 +87,7 @@ function aggregateTechniqueDistribution(techniqueByBoat) {
 
 // raceId は受け取らない: コース別成績を racer_aggregated_stats（レース単位の
 // getRaceRacerStats）から getRacerScopedRaceStats（選手単位）に切り替えたため不要になった
-function RaceWakuInfoTab({ venueCode, players, raceId }) {
+function RaceWakuInfoTab({ venueCode, players, raceId, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
   // このタブで使うのはracerStatsと決まり手統計の2種類だけのため、8+4クエリを
   // まとめて発火するuseRaceAnalysisData/useVenueTendencyStatsは使わず個別に取得する
@@ -188,12 +188,16 @@ function RaceWakuInfoTab({ venueCode, players, raceId }) {
     (a, b) => a.number - b.number,
   );
 
-  const [selectedBoat, setSelectedBoat] = useState(
-    () => sortedPlayers[0]?.number ?? null,
-  );
+  // 選んでいる艇はタブをまたいで共有する（BOA-492）。共有値が null（＝まだ
+  // どの艇も選んでいない）のときは従来どおり1号艇を見せる
+  const selectedBoat = focusedBoat ?? sortedPlayers[0]?.number ?? null;
   const [metric, setMetric] = useState("winRate");
-  // グリッドのどのセルを開いているか（行キー × コース × どちらの表か）
-  const [openCell, setOpenCell] = useState(null);
+  // グリッドのどのセルを開いているか（行キー × コース × どちらの表か）。
+  // どの艇のセルかも一緒に持ち、艇が変わったら開いていない扱いにする（前の選手の
+  // 行を指したままになるため）。艇の選択はタブ間共有（BOA-492）でこのタブの操作
+  // 以外でも変わるので、selectBoatの中で閉じるのではなくここで判定する
+  const [openCellState, setOpenCell] = useState(null);
+  const openCell = openCellState?.boat === selectedBoat ? openCellState : null;
   // 全コース比較の折りたたみ。native <details> ではなくReactの状態で持つ。
   // <details> は取得待ちの分岐（scopedRecords === undefined）の中にあるため、
   // 履歴が未取得の選手に切り替えるとサブツリーが差し替わって再マウントされ、
@@ -264,8 +268,7 @@ function RaceWakuInfoTab({ venueCode, players, raceId }) {
       : [];
 
   const selectBoat = (boatNumber) => {
-    setSelectedBoat(boatNumber);
-    setOpenCell(null);
+    onFocusBoat(boatNumber);
   };
 
   // from は展開パネルをどちらの表の下に出すかを決める。既定ビューと折りたたみの
@@ -278,11 +281,12 @@ function RaceWakuInfoTab({ venueCode, players, raceId }) {
   const toggleCell = (rowKey, course, from) => {
     setOpenCell((prev) =>
       prev &&
+      prev.boat === selectedBoat &&
       prev.rowKey === rowKey &&
       prev.course === course &&
       prev.from === from
         ? null
-        : { rowKey, course, from },
+        : { boat: selectedBoat, rowKey, course, from },
     );
   };
 

@@ -79,15 +79,28 @@ function formatMetricValue(metric, value) {
   return metric === "avgSt" ? value.toFixed(2) : `${value.toFixed(1)}%`;
 }
 
-function RaceBasicInfoTab({ raceId, venueCode, players }) {
+function RaceBasicInfoTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
   const [metric, setMetric] = useState("winRate");
   const [scope, setScope] = useState("national");
   const [grade, setGrade] = useState("all");
   const [period, setPeriod] = useState("current");
-  const [expandedBoat, setExpandedBoat] = useState(null);
-  const [expandedView, setExpandedView] = useState("trend");
+  // 展開中の艇はタブをまたいで共有する（BOA-492）。null は「誰も展開していない」で、
+  // 従来のタブ内stateと同じ初期値。枠別・今節タブで艇を選んでからこのタブへ来ると、
+  // その艇が展開済みで開く
+  const expandedBoat = focusedBoat ?? null;
+  // 展開パネルの内訳（トレンド/当地/条件別）。どの艇のものかを一緒に持ち、
+  // 艇が変わったら "trend" に戻す。艇の選択はタブ間共有（BOA-492）で
+  // このタブの操作以外でも変わるため、押した瞬間に戻すのでは足りない
+  const [expandedViewState, setExpandedViewState] = useState({
+    boat: null,
+    view: "trend",
+  });
+  const expandedView =
+    expandedViewState.boat === expandedBoat ? expandedViewState.view : "trend";
+  const setExpandedView = (view) =>
+    setExpandedViewState({ boat: expandedBoat, view });
   const [officialRates, setOfficialRates] = useState(null);
   const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
   // 「前期」（racer_period_stats、phase a FR-4c）。6人分を1クエリで取る。
@@ -189,6 +202,19 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsOwnAggregation, raceId]);
 
+  // 展開中の艇が変わったら、その選手の履歴を取りに行く（withCacheで他タブと
+  // 共有されるため、枠別タブが先に取っていれば再フェッチは起きない）。
+  // 以前は toggleExpanded の中で呼んでいたが、共有state化（BOA-492）で
+  // 枠別・今節タブからも expandedBoat が変わるようになったため、
+  // 「押したとき」ではなく「変わったとき」に寄せる
+  useEffect(() => {
+    if (expandedBoat === null) return;
+    ensureScopedStats(
+      sortedPlayers.find((p) => p.number === expandedBoat)?.racerId,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedBoat, raceId]);
+
   const officialRowFor = (boatNumber) =>
     (officialRates ?? []).find((r) => r.boat_number === boatNumber) ?? null;
 
@@ -280,14 +306,8 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
   const isPresetActive = (preset) =>
     preset.scope === scope && preset.grade === grade;
 
-  const toggleExpanded = (boatNumber, racerId) => {
-    if (expandedBoat === boatNumber) {
-      setExpandedBoat(null);
-      return;
-    }
-    setExpandedBoat(boatNumber);
-    setExpandedView("trend");
-    ensureScopedStats(racerId);
+  const toggleExpanded = (boatNumber) => {
+    onFocusBoat(expandedBoat === boatNumber ? null : boatNumber);
   };
 
   return (
@@ -400,7 +420,7 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
               <button
                 type="button"
                 className="rbit-bar-row"
-                onClick={() => toggleExpanded(boat, player?.racerId)}
+                onClick={() => toggleExpanded(boat)}
                 aria-expanded={expandedBoat === boat}
               >
                 <span
