@@ -185,6 +185,7 @@
 
 .rmt-sub,
 .rmt-rank-note,
+.rmt-series-note,
 .rmt-source,
 .rmt-caveat {
   margin: var(--spacing-2) 0 0;

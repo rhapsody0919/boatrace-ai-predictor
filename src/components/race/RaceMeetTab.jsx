@@ -433,7 +433,7 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               6節）。何も言わずに人数だけ半分にすると「なぜ減ったのか」になるので、
               混ぜていないことを1行で断る（BOA-511） */}
           {seriesSplit && (
-            <p className="rmt-rank-note">
+            <p className="rmt-series-note">
               {t("meetTab.seriesSplitNote", { total: rankedOnly.length })}
             </p>
           )}
