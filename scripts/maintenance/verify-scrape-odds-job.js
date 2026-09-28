@@ -35,6 +35,7 @@ import {
   fetchOddsDetailed,
   fullOddsPatchOf,
   isOddsRowComplete,
+  isWinOddsUnpublished,
   pickFallbackPatches,
   runForRaces,
   scrapeTrifectaOdds,
@@ -87,6 +88,18 @@ const PAGES = {
   oddsk: FIX("oddsk-2026-09-19-05-01.html"),
 };
 const HTML_UNPUBLISHED = FIX("oddstf-unpublished-2026-09-25-05-01.html");
+// 発売済みだが票がまだ0の艇がある実ページ（江戸川8R、2026-09-28 13:55取得）。
+// 単勝は ["1.0","14.2","14.2","0.0","14.2","14.2"]、複勝は4艇が "0.0-0.0"。
+// HTML_UNPUBLISHED（.oddsPoint が0件）と並べて、2つが別の結果になることを固定する（BOA-486）
+const HTML_ZERO_VOTES = FIX("oddstf-zero-votes-2026-09-28-03-08.html");
+// 上のページの単勝6艇を全て 0.0 にしたもの（朝の1R〜4Rで実際に起きる「全艇0.0」。BOA-486の再現）
+const HTML_ALL_ZERO_VOTES = (() => {
+  const $ = cheerio.load(HTML_ZERO_VOTES);
+  $(".oddsPoint").each((i, el) => {
+    if (i < 6) $(el).text("0.0");
+  });
+  return $.html();
+})();
 
 const DATE = "2026-09-19";
 const RACE_A = "2026-09-19-05-01"; // 桐生1R
@@ -405,6 +418,61 @@ const fullRow = (patch = {}) => ({
   check(
     "解析: 未公開ページ（.oddsPoint なし）は no_values（例外にしない）",
     r.status === "no_values" && r.data === null,
+  );
+}
+// BOA-486: 発売済み・票0（.oddsPoint があって値が 0.0）を、未公開（.oddsPoint が0件）と区別する。
+// 以前は「有効な単勝オッズが1件も無い」で no_values にしていたため、全艇0.0のレースで
+// 解析済みの3連単120通り等まで捨てて、オッズ一覧タブが発走20分前でも空になっていた
+{
+  const rZero = await fetchOddsDetailed(DATE, 5, 1, {
+    wantFull: true,
+    fetchFn: createFetcher({ oddstf: HTML_ZERO_VOTES }),
+  });
+  check(
+    "解析: 発売済み・一部の艇が票0（0.0）なら、その艇だけ null で ok（捨てない）",
+    rZero.status === "ok" &&
+      same(rZero.data.winOdds, [1.0, 14.2, 14.2, null, 14.2, 14.2]) &&
+      Object.keys(rZero.data.trifectaAll ?? {}).length === 120,
+    show(rZero.status) + " " + show(rZero.data?.winOdds),
+  );
+  check(
+    "解析: 複勝も票0（0.0-0.0）の艇だけ null になり、他の艇の値は残る",
+    same(rZero.data.placeOdds, [
+      { low: 1.0, high: 1.5 },
+      { low: 1.0, high: 1.5 },
+      null,
+      null,
+      null,
+      null,
+    ]),
+    show(rZero.data?.placeOdds),
+  );
+
+  const rAllZero = await fetchOddsDetailed(DATE, 5, 1, {
+    wantFull: true,
+    fetchFn: createFetcher({ oddstf: HTML_ALL_ZERO_VOTES }),
+  });
+  check(
+    "解析: 全艇が票0（0.0）でも no_values にせず、単勝は全て null のまま全通り系5券種を返す（BOA-486の回帰）",
+    rAllZero.status === "ok" &&
+      same(rAllZero.data.winOdds, [null, null, null, null, null, null]) &&
+      FULL_ODDS_KEYS.every((k) => fullOddsPatchOf(rAllZero.data)[k]),
+    show(rAllZero.status) + " " + show(rAllZero.data?.winOdds),
+  );
+  check(
+    "解析: 未公開（.oddsPoint が0件）と全艇票0（0.0）は別の結果になる（件数で区別している）",
+    (
+      await fetchOddsDetailed(DATE, 5, 1, {
+        wantFull: true,
+        fetchFn: createFetcher({ oddstf: HTML_UNPUBLISHED }),
+      })
+    ).status === "no_values" && rAllZero.status === "ok",
+  );
+  check(
+    "isWinOddsUnpublished: 空配列だけが未公開（全て null は発売済み）",
+    isWinOddsUnpublished([]) === true &&
+      isWinOddsUnpublished([null, null, null, null, null, null]) === false &&
+      isWinOddsUnpublished([1.0, null, null, null, null, null]) === false,
   );
 }
 {
@@ -784,6 +852,42 @@ const opts = (db, fetchFn, extra = {}) => ({
     "未公開: no_values（書き込みなし・再試行される outcome）",
     r.outcome === "no_values" && db.writes.length === 0 && r.rowsParsed === 0,
     show(r),
+  );
+}
+// BOA-486: 全艇が票0（0.0）でも、解析できた全通り系を捨てずに行を書く。
+// 以前は no_values になって行が1つも組み立てられず、画面のオッズ一覧タブが発走20分前でも空だった
+{
+  const db = createFakeDb();
+  const f = createFetcher({ oddstf: HTML_ALL_ZERO_VOTES });
+  const [r] = await runForRaces([raceOf(RACE_A, -60)], opts(db, f));
+  // 修正前は行が1つも書かれない（これが BOA-486 の症状）。その状態でも例外ではなく ❌ として出るよう {} にする
+  const written = db.rows[0] ?? {};
+  check(
+    "全艇票0: no_values にせず ok で書き込む（単勝は null・全通り系5券種は入る）",
+    r.outcome === "ok" &&
+      r.rowsWritten === 1 &&
+      db.rows.length === 1 &&
+      [1, 2, 3, 4, 5, 6].every((b) => written[`odds_win_${b}`] === null) &&
+      FULL_ODDS_KEYS.every((k) => written[k]) &&
+      Object.keys(written.trifecta_all).length === 120,
+    show(r),
+  );
+  check(
+    "全艇票0: 3連単の人気上位3件は、単勝が無くても odds3t から求まる",
+    // != null（undefined も落とす）。修正前は written が {} で、!== null だと undefined でも通ってしまう
+    written.trifecta_popular_1 != null && written.trifecta_odds_1 != null,
+    show([written.trifecta_popular_1, written.trifecta_odds_1]),
+  );
+  // winFirst（-60 の延長中の再試行）でも、票0は「公開済み」として扱い、残りの4ページを取る
+  const f2 = createFetcher({ oddstf: HTML_ALL_ZERO_VOTES });
+  const [r2] = await runForRaces(
+    [{ ...raceOf(RACE_B, -60, 4), winFirst: true }],
+    opts(createFakeDb(), f2),
+  );
+  check(
+    "winFirst: 全艇票0は未公開として打ち切らず、5ページ取って ok にする",
+    r2.outcome === "ok" && f2.calls.length === 5,
+    show([r2.outcome, f2.calls.length]),
   );
 }
 {
