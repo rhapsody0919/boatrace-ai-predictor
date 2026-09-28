@@ -30,6 +30,7 @@ import {
   TOKUSEN_SCORE_POINTS,
 } from "../../src/components/race/seriesPoints.js";
 import { getRaceStageKey } from "../../src/constants/raceStageConfig.js";
+import { fetchAllByRaceId } from "../lib/meetBoundaries.js";
 
 let failures = 0;
 function check(label, actual, expected) {
@@ -371,6 +372,66 @@ check("バッジ: 準優勝戦", getRaceStageKey("準優勝戦"), "semifinal");
 check("バッジ: 準々優勝戦は山場でない", getRaceStageKey("準々優勝戦"), null);
 check("バッジ: 準優進出戦は準優でない", getRaceStageKey("準優進出戦"), null);
 check("バッジ: 予選", getRaceStageKey("予選"), null);
+
+// ---- 5. 全件取得のページング -----------------------------------------------
+// `race_entries` は1レース6行で `race_id` が一意でない。ページの境目が同じ
+// `race_id` の途中に落ちたときに行を取りこぼさないこと（BOA-457のレビュー指摘）
+{
+  // 1レース6行 × 10レースの擬似テーブル。ページサイズ8（6の倍数でない）だと
+  // 必ず境目がレースの途中に落ちる。本番も1000行 ÷ 6行/レース で同じことが起きる
+  const rows = [];
+  for (let r = 1; r <= 10; r += 1) {
+    for (let b = 1; b <= 6; b += 1) {
+      rows.push({ race_id: `2026-01-01-01-${String(r).padStart(2, "0")}`, boat_number: b });
+    }
+  }
+  const fake = {
+    from: () => {
+      let cursor = "";
+      let limit = Infinity;
+      const chain = {
+        select: () => chain,
+        gt: (_col, v) => {
+          cursor = v;
+          return chain;
+        },
+        order: () => chain,
+        limit: (n) => {
+          limit = n;
+          return chain;
+        },
+        then: (res) =>
+          Promise.resolve({
+            data: rows.filter((r) => r.race_id > cursor).slice(0, limit),
+            error: null,
+          }).then(res),
+      };
+      return chain;
+    },
+  };
+  const fetched = await fetchAllByRaceId(fake, "race_entries", "race_id", {
+    pageSize: 8,
+  });
+  check("ページの境目がレースの途中でも全行取れる", fetched.length, rows.length);
+  check(
+    "取りこぼしたレースが無い",
+    new Set(fetched.map((r) => r.race_id)).size,
+    10,
+  );
+  check(
+    "重複して取っていない",
+    new Set(fetched.map((r) => `${r.race_id}-${r.boat_number}`)).size,
+    rows.length,
+  );
+  // 1レースが1ページに収まらないときは、黙って取りこぼさず落とす
+  let threw = null;
+  try {
+    await fetchAllByRaceId(fake, "race_entries", "race_id", { pageSize: 4 });
+  } catch (e) {
+    threw = e.message.includes("ページングできない");
+  }
+  check("1レースがページに収まらないときは例外で落とす", threw, true);
+}
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
 process.exit(failures === 0 ? 0 : 1);

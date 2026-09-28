@@ -79,17 +79,24 @@ export function buildMeets(conds) {
  *
  * `supabaseClient.js` の `fetchAll` は `range(offset, …)` で送るため、
  * `race_conditions`（3.6万行）や `race_entries`（28万行）を全件引くと後半の
- * ページで15秒のfetchタイムアウトに当たる。`race_id` は主キーなので、
- * 最後に読んだIDより大きいものを1000行ずつ取る形にするとオフセットが伸びず
- * 一定時間で返る。
+ * ページで15秒のfetchタイムアウトに当たる。最後に読んだ `race_id` より大きい
+ * ものを1000行ずつ取る形にするとオフセットが伸びず一定時間で返る。
+ *
+ * **`race_id` は一意とは限らない**（`race_entries` は1レース6行）。ページの
+ * 境目が同じ `race_id` の途中に落ちると、単純に「最後の行のIDより大きいもの」
+ * を次のページの起点にした時点で**残りの行が黙って捨てられる**。1000は6の
+ * 倍数でないので毎ページ起きる（実測: `race_entries` 281,664行に対し274行の
+ * 欠落。1レースが4行しか取れず、その節の選手2名の走数が1つ減っていた）。
+ * そのため**末尾の `race_id` のぶんは丸ごと捨てて次のページで取り直す**。
  *
  * @param {import("@supabase/supabase-js").SupabaseClient} client
  * @param {string} table
  * @param {string} select `race_id` を必ず含めること
+ * @param {{pageSize?: number}} [options] `pageSize` はテスト用
  * @returns {Promise<Array<Object>>} `race_id` 昇順
  */
-export async function fetchAllByRaceId(client, table, select) {
-  const pageSize = 1000;
+export async function fetchAllByRaceId(client, table, select, options = {}) {
+  const pageSize = options.pageSize ?? 1000;
   const all = [];
   let cursor = "";
   for (;;) {
@@ -114,9 +121,24 @@ export async function fetchAllByRaceId(client, table, select) {
     }
     if (lastError) throw new Error(`${table}取得エラー: ${lastError.message}`);
     if (!data || data.length === 0) break;
-    all.push(...data);
-    cursor = data[data.length - 1].race_id;
-    if (data.length < pageSize) break;
+    if (data.length < pageSize) {
+      // 最後のページ。途中で切れていないのでそのまま足す
+      all.push(...data);
+      break;
+    }
+    // 満杯のページは末尾の `race_id` が途中で切れている可能性がある。
+    // その `race_id` の行は捨てて、次のページで最初から取り直す
+    const lastId = data[data.length - 1].race_id;
+    const complete = data.filter((r) => r.race_id !== lastId);
+    if (complete.length === 0) {
+      // 1つの `race_id` が1ページに収まらない。この方式では進めないので、
+      // 黙って取りこぼすのではなく落とす
+      throw new Error(
+        `${table}: race_id=${lastId} の行が ${pageSize} 件を超えるためページングできない`,
+      );
+    }
+    all.push(...complete);
+    cursor = complete[complete.length - 1].race_id;
   }
   return all;
 }

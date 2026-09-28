@@ -26,6 +26,7 @@ import {
   normalizeStage,
   isExcludedStage,
   countsForSeriesScore,
+  semifinalRaceIdsOf,
 } from "../../src/components/race/seriesPoints.js";
 
 /** PR #871 時点の「レース単位」の締め判定（候補比較のために残す） */
@@ -328,9 +329,8 @@ function scoreMeet(meet, hypothesis, cut = SHIPPED_CUT) {
 
 /** 節で実際に準優に乗った選手と、枠数 */
 function semifinalOf(meet) {
-  const ids = meet.rows
-    .filter((r) => (r.race_stage ?? "").includes("準優"))
-    .map((r) => r.race_id);
+  // 出荷コードと同じ判定を使う（「準優進出戦」を準優に数えない）
+  const ids = semifinalRaceIdsOf(meet.rows);
   const racers = new Set();
   for (const id of ids) {
     for (const e of entriesByRace.get(id) ?? []) racers.add(e.racer_id);
@@ -338,7 +338,14 @@ function semifinalOf(meet) {
   return { slots: ids.length * 6, racers, raceCount: ids.length };
 }
 
-/** 節の最終日に出走が無い選手（途中帰郷の推定） */
+/**
+ * 節の最終日に出走が無い選手（途中帰郷の推定）。
+ *
+ * **この推定は外れることがある**。実測では離脱と判定した629名のうち39名
+ * （31節）が実際には準優に乗っており、その分は構造的に当てられない
+ * （候補から外れるのに正解集合には入る）。物差しBの絶対値は0.8pt程度
+ * これで目減りするが、全候補に同じ条件がかかるので相対比較には使える。
+ */
 function withdrawnOf(meet) {
   const lastDay = meet.dates.at(-1);
   const ran = new Set();
