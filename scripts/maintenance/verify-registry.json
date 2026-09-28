@@ -34,6 +34,11 @@
       "guards": "BOATCASTのオリジナル展示・モーター使用開始日（N25・N26）のパーサー・取得ジョブ・403の扱い"
     },
     {
+      "script": "verify-bug-cause-report.js",
+      "tier": "ci",
+      "guards": "バグ原因の定点観測の集計基準（bug-cause-report.js）。基準が変わると第1期と比較できなくなる"
+    },
+    {
       "script": "verify-content-index-coverage.js",
       "tier": "ci",
       "guards": "docs/design/{slug}/content-index.json の形式（フローA-2のトレーサビリティ索引）"
@@ -54,11 +59,6 @@
       "guards": "汎用の日次監視 data_health（完了の定義C、マイグレーション089）。PGliteでDB関数の意味論まで検証する"
     },
     {
-      "script": "verify-display-coverage.js",
-      "tier": "ci",
-      "guards": "表示カバレッジ台帳（docs/reference/display-coverage.md）の最新性と抽出ロジック。取得したデータが画面に繋がっているかを、マイグレーションと src/・api/ の静的突合で追う"
-    },
-    {
       "script": "verify-data-health-report.js",
       "tier": "ci",
       "guards": "data-health-report.js の存在充足率の分母の定義（BOA-381）"
@@ -67,6 +67,16 @@
       "script": "verify-deploy-hook-policy.js",
       "tier": "ci",
       "guards": "Deploy Hookを叩く条件の判定（scripts/lib/deployHookPolicy.js、BOA-361）"
+    },
+    {
+      "script": "verify-display-coverage.js",
+      "tier": "ci",
+      "guards": "表示カバレッジ台帳（docs/reference/display-coverage.md）の最新性と抽出ロジック。取得したデータが画面に繋がっているかを、マイグレーションと src/・api/ の静的突合で追う"
+    },
+    {
+      "script": "verify-e2e-skips.js",
+      "tier": "ci",
+      "guards": "E2Eのskip判定（check-e2e-skips.js）。無言でskipされ続けるテストの検知が壊れないこと"
     },
     {
       "script": "verify-fan-period.js",
@@ -79,9 +89,36 @@
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
     },
     {
+      "script": "verify-format-column-migration.js",
+      "tier": "manual",
+      "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
+      "reason": "実Supabaseの sns_drafts を読むため。環境変数が無いと検証をスキップできず失敗する nightly-verify-db.yml が毎晩JST3:00に実行する（読み取りのみ）。",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
+    },
+    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
+    },
+    {
+      "script": "verify-git-hygiene.js",
+      "tier": "ci",
+      "guards": "セッション開始時のorigin乖離・worktree衛生の判定（check-git-hygiene.js / check-worktrees.js）"
+    },
+    {
+      "script": "verify-guard-pr-merge.js",
+      "tier": "ci",
+      "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
+    },
+    {
+      "script": "verify-hit-verification-guidance.js",
+      "tier": "ci",
+      "guards": "「毎回の的中/不的中はどこで見られるか」の案内（About・FAQ・使い方ガイド）が、実際に判定を描くタブと食い違うこと（BOA-346の移設で3か所が取り残された）"
+    },
+    {
+      "script": "verify-i18n-consistency.js",
+      "tier": "ci",
+      "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
     },
     {
       "script": "verify-kb-file-parser.js",
@@ -92,6 +129,11 @@
       "script": "verify-kb-results-backfill.js",
       "tier": "ci",
       "guards": "K/Bアーカイブによる race_results 欠損補填CLI（BOA-403）"
+    },
+    {
+      "script": "verify-lib-index.js",
+      "tier": "ci",
+      "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）がソースと一致していること"
     },
     {
       "script": "verify-migration-numbers.js",
@@ -111,6 +153,13 @@
       "script": "verify-monthly-schedule.js",
       "tier": "ci",
       "guards": "月間スケジュール（節メタ N16）のパーサー・節の確定・行変換・CLI"
+    },
+    {
+      "script": "verify-morning-digest.js",
+      "tier": "manual",
+      "guards": "「本日のデータ一覧」（BOA-402）の集計",
+      "reason": "実Supabaseの morning_digest_rows を読むためPRでは実行できない（secretsが要る）。ただし generate-morning-digest.yml が生成直後に毎日実行しており、manual 5本のうちこれだけは定期的に動いている",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-morning-digest.js"
     },
     {
       "script": "verify-morning-init-jobs.js",
@@ -163,10 +212,34 @@
       "guards": "予測リフレッシュ（BOA-353 T4b-03）"
     },
     {
+      "script": "verify-pretest-row-pick.js",
+      "tier": "manual",
+      "guards": "前検タイム（motor_pretest_stats）の行の選び方の前提。節の中で値が変わらないこと・6日ルックバックが前の節を拾わないこと・カバー率（BOA-451）",
+      "reason": "実Supabaseの全期間データを読む必要があり、日々のデータ投入結果に依存するためCIでは決定的にならない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-pretest-row-pick.js"
+    },
+    {
+      "script": "verify-push-with-retry.sh",
+      "tier": "ci",
+      "runner": "bash",
+      "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
+      "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
+    },
+    {
       "script": "verify-query-errors.js",
       "tier": "ci",
       "guards": "フロントのSupabaseクエリで、取得失敗が「データなし」に化ける書き方（BOA-359）",
       "note": "本件以前から専用ワークフロー verify-query-errors.yml で実行していた唯一のverify。統合してワークフローは削除した"
+    },
+    {
+      "script": "verify-race-cancellation-usage.js",
+      "tier": "ci",
+      "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）"
+    },
+    {
+      "script": "verify-race-entries-restore.js",
+      "tier": "ci",
+      "guards": "出走表の複製汚染の復元（BOA-422）の列ごとの方針。とくに weight_kg（Bファイルの登録体重を書かずNULLにする）と ai_score_*（触らない）"
     },
     {
       "script": "verify-race-notices-job.js",
@@ -194,11 +267,6 @@
       "guards": "中止・順延の早期確定（race_status）"
     },
     {
-      "script": "verify-race-entries-restore.js",
-      "tier": "ci",
-      "guards": "出走表の複製汚染の復元（BOA-422）の列ごとの方針。とくに weight_kg（Bファイルの登録体重を書かずNULLにする）と ai_score_*（触らない）"
-    },
-    {
       "script": "verify-racelist-backfill.js",
       "tier": "ci",
       "guards": "出走表（racelist）の過去分バックフィルCLI"
@@ -217,6 +285,19 @@
       "script": "verify-routine-routing.js",
       "tier": "ci",
       "guards": "revise/redoの発火先ルーティング（ADR 0038）"
+    },
+    {
+      "script": "verify-rpc-key-regression.js",
+      "tier": "ci",
+      "guards": "CREATE OR REPLACE FUNCTION が、それ以前の定義にあったキーを取りこぼしていないか（BOA-363・BOA-431と同型の回帰）",
+      "note": "本番接続が要る verify-rpc-output-keys.js（tier=manual）と違い、SQLファイル同士の比較だけで完結するためPRごとに走らせられる。BOA-431の欠落を実際に検知することを確認済み"
+    },
+    {
+      "script": "verify-rpc-output-keys.js",
+      "tier": "manual",
+      "guards": "本番RPC（get_predictions_by_date / _light / get_today_races）の出力キーとフロントの参照の整合（BOA-363の再発防止）",
+      "reason": "本番RPCを実際に呼んで出力キーを見る検証のため、モックでは代替できない nightly-verify-db.yml が毎晩JST3:00に実行する（読み取りのみ）。",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js"
     },
     {
       "script": "verify-scrape-daily-jobs.js",
@@ -249,9 +330,21 @@
       "guards": "結果取得（A6）・Kファイル同期・結果のcatch-upのVercel Cron実装"
     },
     {
+      "script": "verify-scrape-slots-on-db.js",
+      "tier": "manual",
+      "guards": "予定表のRPC（claim_scrape_slots・ensure_scrape_slots）の実DB上での挙動",
+      "reason": "実DBに検証用スロットを作って同時claim・リース奪取・expiredを試す。--execute を付けないとdry-run表示だけで成功終了するため、CIに載せてもゲートにならない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-scrape-slots-on-db.js --execute"
+    },
+    {
       "script": "verify-scrape-slots-sql.js",
       "tier": "ci",
       "guards": "マイグレーション075・092（予定表 scrape_slots・claim_scrape_slots）をPGlite上で検証"
+    },
+    {
+      "script": "verify-scraped-at-on-update.js",
+      "tier": "ci",
+      "guards": "scraped_at を持つテーブルへの upsert/update が scraped_at を載せること（DEFAULT now() は INSERT でしか効かず、載せないと初回挿入時の値が残り、鮮度の指標が壊れる。BOA-463）"
     },
     {
       "script": "verify-scraped-timestamps.js",
@@ -264,9 +357,21 @@
       "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
     },
     {
+      "script": "verify-session-progress.js",
+      "tier": "ci",
+      "guards": "セッション長の検知（session-progress.js）。長くなっても黙るようになっていないこと"
+    },
+    {
       "script": "verify-sitemap-coverage.js",
       "tier": "ci",
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"
+    },
+    {
+      "script": "verify-topic-target-claim.js",
+      "tier": "manual",
+      "guards": "sns_topic_targetsのclaim機構（ADR 0036）の並行実行時の排他",
+      "reason": "実Supabaseに対する並行実行テストのため",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-topic-target-claim.js"
     },
     {
       "script": "verify-unchanged-rows.js",
@@ -294,109 +399,9 @@
       "guards": "水面気象情報の解析と race_conditions への反映（BOA-358）"
     },
     {
-      "script": "verify-push-with-retry.sh",
-      "tier": "ci",
-      "runner": "bash",
-      "guards": "push-with-retry.sh のrebase＋リトライ・コンフリクト時の失敗・force push不使用（BOA-360）",
-      "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
-    },
-    {
-      "script": "verify-rpc-key-regression.js",
-      "tier": "ci",
-      "guards": "CREATE OR REPLACE FUNCTION が、それ以前の定義にあったキーを取りこぼしていないか（BOA-363・BOA-431と同型の回帰）",
-      "note": "本番接続が要る verify-rpc-output-keys.js（tier=manual）と違い、SQLファイル同士の比較だけで完結するためPRごとに走らせられる。BOA-431の欠落を実際に検知することを確認済み"
-    },
-    {
-      "script": "verify-git-hygiene.js",
-      "tier": "ci",
-      "guards": "セッション開始時のorigin乖離・worktree衛生の判定（check-git-hygiene.js / check-worktrees.js）"
-    },
-    {
       "script": "verify-worktree-in-use.js",
       "tier": "ci",
       "guards": "稼働中セッションの worktree（作業開始直後・ロックなしのデスクトップアプリ）を「片付けてよい」に分類しないこと（check-worktrees.js）"
-    },
-    {
-      "script": "verify-guard-pr-merge.js",
-      "tier": "ci",
-      "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
-    },
-    {
-      "script": "verify-hit-verification-guidance.js",
-      "tier": "ci",
-      "guards": "「毎回の的中/不的中はどこで見られるか」の案内（About・FAQ・使い方ガイド）が、実際に判定を描くタブと食い違うこと（BOA-346の移設で3か所が取り残された）"
-    },
-    {
-      "script": "verify-race-cancellation-usage.js",
-      "tier": "ci",
-      "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）"
-    },
-    {
-      "script": "verify-i18n-consistency.js",
-      "tier": "ci",
-      "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
-    },
-    {
-      "script": "verify-lib-index.js",
-      "tier": "ci",
-      "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）がソースと一致していること"
-    },
-    {
-      "script": "verify-e2e-skips.js",
-      "tier": "ci",
-      "guards": "E2Eのskip判定（check-e2e-skips.js）。無言でskipされ続けるテストの検知が壊れないこと"
-    },
-    {
-      "script": "verify-session-progress.js",
-      "tier": "ci",
-      "guards": "セッション長の検知（session-progress.js）。長くなっても黙るようになっていないこと"
-    },
-    {
-      "script": "verify-bug-cause-report.js",
-      "tier": "ci",
-      "guards": "バグ原因の定点観測の集計基準（bug-cause-report.js）。基準が変わると第1期と比較できなくなる"
-    },
-    {
-      "script": "verify-format-column-migration.js",
-      "tier": "manual",
-      "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
-      "reason": "実Supabaseの sns_drafts を読むため。環境変数が無いと検証をスキップできず失敗する nightly-verify-db.yml が毎晩JST3:00に実行する（読み取りのみ）。",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
-    },
-    {
-      "script": "verify-morning-digest.js",
-      "tier": "manual",
-      "guards": "「本日のデータ一覧」（BOA-402）の集計",
-      "reason": "実Supabaseの morning_digest_rows を読むためPRでは実行できない（secretsが要る）。ただし generate-morning-digest.yml が生成直後に毎日実行しており、manual 5本のうちこれだけは定期的に動いている",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-morning-digest.js"
-    },
-    {
-      "script": "verify-pretest-row-pick.js",
-      "tier": "manual",
-      "guards": "前検タイム（motor_pretest_stats）の行の選び方の前提。節の中で値が変わらないこと・6日ルックバックが前の節を拾わないこと・カバー率（BOA-451）",
-      "reason": "実Supabaseの全期間データを読む必要があり、日々のデータ投入結果に依存するためCIでは決定的にならない",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-pretest-row-pick.js"
-    },
-    {
-      "script": "verify-rpc-output-keys.js",
-      "tier": "manual",
-      "guards": "本番RPC（get_predictions_by_date / _light / get_today_races）の出力キーとフロントの参照の整合（BOA-363の再発防止）",
-      "reason": "本番RPCを実際に呼んで出力キーを見る検証のため、モックでは代替できない nightly-verify-db.yml が毎晩JST3:00に実行する（読み取りのみ）。",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js"
-    },
-    {
-      "script": "verify-scrape-slots-on-db.js",
-      "tier": "manual",
-      "guards": "予定表のRPC（claim_scrape_slots・ensure_scrape_slots）の実DB上での挙動",
-      "reason": "実DBに検証用スロットを作って同時claim・リース奪取・expiredを試す。--execute を付けないとdry-run表示だけで成功終了するため、CIに載せてもゲートにならない",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-scrape-slots-on-db.js --execute"
-    },
-    {
-      "script": "verify-topic-target-claim.js",
-      "tier": "manual",
-      "guards": "sns_topic_targetsのclaim機構（ADR 0036）の並行実行時の排他",
-      "reason": "実Supabaseに対する並行実行テストのため",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-topic-target-claim.js"
     }
   ]
 }

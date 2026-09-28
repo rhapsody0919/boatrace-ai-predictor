@@ -251,10 +251,19 @@ export function isSeasonRowUnchanged(existing, row) {
 
 // 既存行の期別成績カラムだけを更新する。氏名・級別・支部・生年月日等は触らない。
 // 更新された行数を確認する（update は対象行が無くてもエラーにならないため）
+//
+// scraped_at をここで打つ理由: 列は DEFAULT now() だが、DEFAULT は INSERT のときしか効かない。
+// 載せないと、新規登録時（saveNewProfile）の値が更新後も残り続ける（BOA-463）。
+// 呼び出し元は値が変わった選手だけをここへ渡すため、書き込みは増えない。
+// なお期別成績の更新時刻は official_updated_at が別に持っている（toSeasonStatsRow）。
+// scraped_at も打つのは、他の scraped_at 持ちテーブル（racer_series_points 等）と意味をそろえ、
+// 「この列は初回挿入時のまま」という例外を残さないため。
+// 値は official_updated_at を使い回す。このファイルは時計を now() で注入する作りなので、
+// ここで new Date() を読むとその約束を破り、同じ更新の中で2つの時刻ができる。
 export async function saveSeasonStats(client, racerId, row) {
   const { data, error } = await client
     .from("racer_profiles")
-    .update(row)
+    .update({ ...row, scraped_at: row.official_updated_at })
     .eq("racer_id", racerId)
     .select("racer_id");
   if (error) return { error: new Error(error.message) };
