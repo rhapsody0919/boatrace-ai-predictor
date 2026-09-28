@@ -14,8 +14,8 @@
 | テーブル・ビューの定義 | 79 |
 | 読んでいる（テーブルを直接） | 48 |
 | 読んでいる（RPC経由のみ） | 0 |
-| 画面から読んでいない（例外登録あり） | 24 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **7** |
+| 画面から読んでいない（例外登録あり） | 23 |
+| **画面から読んでいない（例外登録なし＝要判断）** | **8** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 0 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,11 +24,12 @@
 
 画面が呼んでいるRPC: `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_today_races`
 
-## 要判断: 画面から読んでいない（例外登録なし）（7件）
+## 要判断: 画面から読んでいない（例外登録なし）（8件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
 | `external_predictions` | 表 | 021_external_predictions.sql | なし | GRANT（021_external_predictions.sql） |  |
+| `prediction_odds` | 表 | 011_prediction_odds.sql | なし | ポリシー（011_prediction_odds.sql） |  |
 | `race_original_exhibition` | 表 | 091_boatcast_original_exhibition.sql | なし | GRANT（096_original_exhibition_public_read.sql） |  |
 | `race_original_exhibition_values` | 表 | 091_boatcast_original_exhibition.sql | なし | GRANT（096_original_exhibition_public_read.sql） |  |
 | `race_payouts` | 表 | 079_race_payouts.sql | なし | 記述なし |  |
@@ -36,7 +37,7 @@
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
 | `venue_motor_start_dates` | 表 | 091_boatcast_original_exhibition.sql | なし | 記述なし |  |
 
-## 画面から読んでいない（例外登録あり）（24件）
+## 画面から読んでいない（例外登録あり）（23件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -47,7 +48,6 @@
 | `kb_archive_venue_days` | 表 | 074_kb_archive_tables.sql | なし | 記述なし | K/Bファイルの生アーカイブ（074）。上と同じ |
 | `model_bet_candidates` | 表 | 030_ai_model_redesign_schema.sql | なし | ポリシー（030_ai_model_redesign_schema.sql） | 030（AI予想モデル刷新）の中間テーブル。読み手は scripts/ のみ |
 | `model_experiments` | 表 | 001_schema.sql | なし | 記述なし | 001_schema.sql の初期設計に由来するモデル実験用。読み手は scripts/ のみ |
-| `prediction_odds` | 表 | 011_prediction_odds.sql | なし | ポリシー（011_prediction_odds.sql） | 2026-08-14のAI予想モデル刷新で画面の買い目オッズ表示を削除済み。BOA-404 で race_odds からの導出に置き換え中 |
 | `race_notices_health` | 表 | 060_race_special_notes.sql | なし | 記述なし | 取得監視の健全性指標（060）。画面ではなく data_health とSlack通知が使う |
 | `race_outcome_frequencies` | 表 | 030_ai_model_redesign_schema.sql | なし | ポリシー（030_ai_model_redesign_schema.sql） | 030（AI予想モデル刷新）の中間テーブル。読み手は scripts/ のみ |
 | `racer_course_technique_stats` | 表 | 098_morning_data_digest.sql | なし | GRANT（098_morning_data_digest.sql） | /today（morning digest）の集計の中間テーブル（098）。画面は集計結果の morning_digest_rows を読む |
