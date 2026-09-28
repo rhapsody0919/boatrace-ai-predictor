@@ -137,6 +137,28 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   );
 }
 
+// 小標本の色（--color-warning-text、n<SMALL_SAMPLE_THRESHOLD）は凡例が無いと
+// 「不調」の色に読める（2026-09-28 ファン評価 P2）。入れ替え直後はほぼ全行が該当する
+for (const [file, key] of [
+  ["src/components/analysis/MotorWakuStatsGrid.jsx", "wakuStatsWindowNote"],
+  ["src/components/analysis/MotorRacerWakuDrillDown.jsx", "racerWakuNote"],
+]) {
+  const jsx = read(file);
+  check(
+    `${key}: 注記に小標本の閾値（SMALL_SAMPLE_THRESHOLD）を渡している`,
+    new RegExp(`${key}",\\s*\\{\\s*n: SMALL_SAMPLE_THRESHOLD`).test(jsx),
+  );
+}
+for (const lang of ["ja", "en", "zh-TW", "ko"]) {
+  const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
+    .motor;
+  check(
+    `${lang}: 注記が小標本の色の意味と閾値（{{n}}）を説明している`,
+    motor.wakuStatsWindowNote.includes("{{n}}") &&
+      motor.racerWakuNote.includes("{{n}}"),
+  );
+}
+
 if (failures.length > 0) {
   console.error(`\n${failures.length}件失敗`);
   process.exit(1);

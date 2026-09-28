@@ -58,7 +58,9 @@ function MotorRacerWakuDrillDown({ course, rows, onBack }) {
       ) : (
         <div className="empty-state">{t("analysis.motor.racerWakuEmpty")}</div>
       )}
-      <p className="table-note">{t("analysis.motor.racerWakuNote")}</p>
+      <p className="table-note">
+        {t("analysis.motor.racerWakuNote", { n: SMALL_SAMPLE_THRESHOLD })}
+      </p>
     </div>
   );
 }

@@ -134,7 +134,11 @@ function MotorWakuStatsGrid({
       <h3 className="selected-motor-heading">
         {t("analysis.motor.wakuStatsHeading")}
       </h3>
-      <p className="table-note">{t("analysis.motor.wakuStatsWindowNote")}</p>
+      <p className="table-note">
+        {t("analysis.motor.wakuStatsWindowNote", {
+          n: SMALL_SAMPLE_THRESHOLD,
+        })}
+      </p>
       <div className="table-wrapper">
         <table className="motor-ranking-table motor-waku-table">
           <thead>

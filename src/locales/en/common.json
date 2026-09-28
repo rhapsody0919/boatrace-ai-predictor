@@ -1028,7 +1028,7 @@
       "venueRankBadge": "#{{rank}} of {{total}} motors",
       "sampleCount": "(n={{n}})",
       "wakuStatsHeading": "Results by lane",
-      "wakuStatsWindowNote": "💡 Window: since the current motor went into service. Right after a motor changeover the sample (n) is small, so treat small-n values as reference only.",
+      "wakuStatsWindowNote": "💡 Window: since the current motor went into service (the previous motor with the same number is excluded). Values in amber come from fewer than {{n}} starts and are for reference only; right after a changeover most rows are like this.",
       "wakuStatsUnknownGeneration": "Not shown because the start date of the current motor is unavailable (to avoid mixing in results from the previous motor with the same number).",
       "courseHeader": "Lane",
       "exhibitionTrendHeader": "Trial run time trend",
@@ -1037,7 +1037,7 @@
       "racerWakuBackLabel": "← Back to lane results",
       "racerWakuHeading": "Racers in lane {{course}}",
       "racerWakuEmpty": "No racers found for this motor/lane combination",
-      "racerWakuNote": "💡 Per-racer results limited to races since the current motor went into service where this motor was used in this lane. Treat racers with a small n as reference only."
+      "racerWakuNote": "💡 Per-racer results limited to races since the current motor went into service where this motor was used in this lane. An n in amber means fewer than {{n}} starts (reference only)."
     },
     "racerForm": {
       "title": "📈 Racer Form",
