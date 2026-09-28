@@ -431,11 +431,19 @@ live化の前提にしない。
 
 次の起動は **2026-10-01 18:00 UTC（＝10/2 03:00 JST）**。月次のため、shadowで1周見てからliveにすると次の機会は11月になる。
 
+**2026-09-28 10:07 JST に `shadow` の行を作った（ユーザー操作）**。`last_tick_at` はnull（Cronの起動日がJST毎月2日のみのため、正常）。
+[verification-runbook.md](./verification-runbook.md) §L-5 の順に進める:
+
+1. `CRON_SECRET` で `?chunk=5` を手動で数回叩き、`processed`・`afterRacerId`・`durationSeconds` を確認する（shadowなので書き込まない）
+2. `cursor` を消して `live` にする（10/2 03:00 JST の前に）
+3. **10/2の回は `SKIP_RACER_SEASON_ON_GHA` を立てない**。GHAと並走させ、同じ値が入ることを確認する（上書き型のupsertなので二重でも壊れない）
+4. 確認できたら変数を立て、11/2の回をVercelのみで通す
+
 ### G3の残り
 
 | 条件（plan.md §4.8） | 状態 |
 |---|---|
-| 1. 全取得処理がVercelへ移行済み | **残1つ**（`racer_profiles`）。`race_status` はshadowだが、旧基盤の90分ルールが担っているため移行の穴ではない |
+| 1. 全取得処理がVercelへ移行済み | **残1つ**（`racer_profiles`。2026-09-28 10:07 JSTに `shadow` で登録済みで、手動の `?chunk=5` 確認 → live → `SKIP_RACER_SEASON_ON_GHA` の順に進める）。`race_status` は2026-09-28にlive化して稼働中 |
 | 2. 全データセットが完了の定義A・B・Cを実測で満たす | **B: 6窓中5窓が達成**。-60は判定基準の見直し待ち（BOA-465）。**A: 全データセットの網羅確認が未**（BOA-365）。C: 達成 |
 | 3. 旧基盤を止めた状態で、土日を含む7日間、本番データが欠けない | **未着手**（1・2が片付いてから） |
 | 4. 取得系ワークフロー・`continue-on-error`・ドキュメント・cron-job.orgの削除 | 未着手 |
