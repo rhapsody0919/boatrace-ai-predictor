@@ -338,15 +338,19 @@ export async function run(date, options = {}) {
   };
 
   const venueCodes = [...venueGrades.keys()].sort((a, b) => a - b);
-  const results = await mapWithConcurrency(venueCodes, concurrency, async (venueCode) => {
-    if (shouldStop()) return { venueCode, notAttempted: true, rows: [] };
-    const result = await processVenue(venueCode);
-    // 会場間の待機（サーバー負荷配慮）
-    if (venueDelayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, venueDelayMs));
-    }
-    return result;
-  });
+  const results = await mapWithConcurrency(
+    venueCodes,
+    concurrency,
+    async (venueCode) => {
+      if (shouldStop()) return { venueCode, notAttempted: true, rows: [] };
+      const result = await processVenue(venueCode);
+      // 会場間の待機（サーバー負荷配慮）
+      if (venueDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, venueDelayMs));
+      }
+      return result;
+    },
+  );
 
   const rows = [];
   const venues = [];
@@ -394,13 +398,19 @@ export async function run(date, options = {}) {
   }
 
   if (dryRun) {
-    console.log(`🧪 dry-run: racer_series_points ${rows.length}件（書き込みなし）`);
+    console.log(
+      `🧪 dry-run: racer_series_points ${rows.length}件（書き込みなし）`,
+    );
     return { updated: false, count: 0, ...summary };
   }
 
-  const { error } = await client
-    .from("racer_series_points")
-    .upsert(rows, { onConflict: "venue_code,meet_start_date,racer_id" });
+  // scraped_at は DEFAULT now() だが、DEFAULT は INSERT のときしか効かない。開催期間中は同じ行を
+  // 毎日更新するため、載せないと初回挿入時の値が残り続ける（BOA-463）
+  const scrapedAt = new Date().toISOString();
+  const { error } = await client.from("racer_series_points").upsert(
+    rows.map((row) => ({ ...row, scraped_at: scrapedAt })),
+    { onConflict: "venue_code,meet_start_date,racer_id" },
+  );
   if (error) {
     failures.push(`racer_series_points 書き込みエラー: ${error.message}`);
     return { updated: false, count: 0, ...summary };

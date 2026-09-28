@@ -83,8 +83,12 @@ async function getFinishedRaceIds(date) {
  * 単勝オッズページをスクレイプ
  * セレクタ: .oddsPoint（艇1〜6の順）
  *
+ * 返る配列の長さ = ページ上の単勝セルの数（未公開のページは0件）。値が無いこと（0.0）と
+ * 行そのものが無いこと（未公開）を呼び出し側が区別できるようにするため、
+ * 値が null の艇も詰めずにそのまま並べる（isWinOddsUnpublished 参照。BOA-486）
+ *
  * @param {CheerioAPI} $ - cheerio インスタンス
- * @returns {Array<number|null>} 艇1〜6の単勝オッズ（取得失敗は null）
+ * @returns {Array<number|null>} 艇1〜6の単勝オッズ（取得失敗・票0は null）
  */
 function scrapeWinOdds($) {
   const winOdds = [];
@@ -92,10 +96,29 @@ function scrapeWinOdds($) {
     if (i >= 6) return false;
     const text = $(el).text().trim();
     const val = parseFloat(text);
-    // 0 以下は未公開・無効値として null に変換（有効な単勝オッズは必ず 1.0 以上）
+    // 0 以下はオッズ未確定として null に変換（有効な単勝オッズは必ず 1.0 以上）。
+    // 公式ページは票がまだ0の艇を「0.0」と表示するため、null は「未公開」を意味しない
     winOdds.push(!isNaN(val) && val > 0 ? val : null);
   });
   return winOdds;
+}
+
+/**
+ * 単勝が未公開か（発売前・中止・順延）。scrapeWinOdds の返り値で判定する。
+ *
+ * | 状態 | .oddsPoint |
+ * |---|---|
+ * | 未公開 | 0件（scrapeWinOdds が空配列を返す） |
+ * | 発売済み・票0 | あって値が「0.0」（scrapeWinOdds が [null, ...] を返す） |
+ *
+ * 「有効な値が1件も無いこと」で未公開を判定すると、朝の1R〜4R等で単勝の票が極端に少ない
+ * （全艇0.0）レースを未公開とみなし、同時に解析できていた3連単等まで捨ててしまう（BOA-486）。
+ *
+ * @param {Array<number|null>} winOdds
+ * @returns {boolean}
+ */
+export function isWinOddsUnpublished(winOdds) {
+  return winOdds.length === 0;
 }
 
 /**
@@ -282,9 +305,10 @@ export function buildBaseRow(raceId, capturedAt, data) {
  * rejectで全体がrejectする）
  *
  * status（Vercel Cron のスロットの outcome と対応）:
- *   ok            単勝が解析でき、wantFull なら全通り系5列も全て取得できた
- *   partial       単勝は解析できたが、全通り系のいずれかが取得・解析できなかった（missing に列名）
- *   no_values     単勝ページは取得できたが、有効な単勝オッズが1件も無い（未公開・中止・順延の可能性）
+ *   ok            単勝ページが発売済みで、wantFull なら全通り系5列も全て取得できた
+ *                 （単勝の値は票0で全て null のことがある。BOA-486）
+ *   partial       単勝ページは発売済みだが、全通り系のいずれかが取得・解析できなかった（missing に列名）
+ *   no_values     単勝ページは取得できたが、単勝の行そのものが無い（未公開・中止・順延の可能性）
  *   error         単勝ページの取得に失敗した（HTTP非200・通信エラー）、または解析中の想定外の例外
  *   breaker_open  サーキットブレーカーが開いていて取得しなかった（retryAt まで待つ）
  *
@@ -293,7 +317,7 @@ export function buildBaseRow(raceId, capturedAt, data) {
  * @param {number} raceNo - レース番号 (1-12)
  * @param {Object} [options]
  * @param {boolean} [options.wantFull] - true なら3連単・3連複・2連単・2連複・拡連複の全通りもパースして返す（ADR-0057）
- * @param {boolean} [options.winFirst] - true なら、単勝ページだけを先に取得し、未公開（有効な単勝オッズが無い）なら、
+ * @param {boolean} [options.winFirst] - true なら、単勝ページだけを先に取得し、未公開（単勝の行が無い）なら、
  *   他のページを取得せずに no_values を返す。公開されていれば、続けて他のページを（並列に）取得する。
  *   未公開の間の再試行で、取得先へのリクエストを1ページに絞るため（オッズの発走60分前の窓の延長。registry.js の odds）。
  *   既定は false（従来どおり、全ページを並列に取得する。公開済みの通常の取得の所要時間を変えない）
@@ -338,7 +362,7 @@ export async function fetchOddsDetailed(
       let winProbe = winSettled;
       if (winSettled.status === "fulfilled" && winSettled.value.ok) {
         const winText = await winSettled.value.text();
-        if (!scrapeWinOdds(cheerio.load(winText)).some((o) => o !== null)) {
+        if (isWinOddsUnpublished(scrapeWinOdds(cheerio.load(winText)))) {
           return { status: "no_values", data: null, missing: [] };
         }
         winProbe = {
@@ -429,8 +453,9 @@ export async function fetchOddsDetailed(
       }
     }
 
-    // 有効な単勝オッズが1件もなければ、未公開（null）
-    if (!winOdds.some((o) => o !== null)) {
+    // 単勝の行そのものが無ければ、未公開（null）。値が全て 0.0（票0）のときは発売済みなので、
+    // 単勝は null のまま、他券種を保存する（BOA-486）
+    if (isWinOddsUnpublished(winOdds)) {
       return { status: "no_values", data: null, missing: [] };
     }
 
@@ -663,10 +688,11 @@ export async function run(schedule, date) {
         patch: fullOddsPatchOf(data),
       });
 
-      const winStr = winOdds
-        .map((o, i) => (o !== null ? `${i + 1}号艇:${o}` : null))
-        .filter(Boolean)
-        .join(", ");
+      const winStr =
+        winOdds
+          .map((o, i) => (o !== null ? `${i + 1}号艇:${o}` : null))
+          .filter(Boolean)
+          .join(", ") || "単勝は票0（他券種のみ）";
       console.log(`  ✅ ${venueName} ${r.race_no}R — ${winStr}`);
     }
 
@@ -750,7 +776,13 @@ export const ODDS_SOURCE_VERCEL = "vercel";
 /** window_min の一意索引（マイグレーション075）。窓内の再試行が、同じ行を更新する */
 const ODDS_WINDOW_CONFLICT = "race_id,window_min";
 
-/** race_odds の行が、この窓の取得として完了しているか（単勝が1つ以上あり、全通り系5列がそろう） */
+/**
+ * race_odds の行が、この窓の取得として完了しているか（単勝が1つ以上あり、全通り系5列がそろう）。
+ *
+ * 単勝が全て null（票0。BOA-486）の行は「未完了」のままにしてある。この窓の中の再試行で、票が入って
+ * 実際の単勝オッズが取れる余地を残すため（outcome は ok なので再試行そのものは起きず、他の理由で
+ * 再試行するときだけ再取得する）。行は既に書かれているので、画面が空になることはない
+ */
 export function isOddsRowComplete(row) {
   if (!row) return false;
   const hasWin = [1, 2, 3, 4, 5, 6].some(
@@ -791,9 +823,10 @@ function coalesceRow(fresh, existing) {
  *     再試行の既存行も読まない）
  *
  * 各レースの outcome（scrape_slots.outcome と同じ語彙）:
- *   ok                完了（単勝と全通り系5券種がそろった。0分窓は直近のスナップショットからの補完を含む）
- *   partial           単勝は取れたが、全通り系の一部が未取得（live では、取れた分を書き込み済み）。再試行する
- *   no_values         単勝が未公開・解析不能（中止・順延の可能性）。再試行する
+ *   ok                完了（単勝ページが発売済みで、全通り系5券種がそろった。0分窓は直近のスナップショットからの補完を含む。
+ *                     単勝の値は票0で全て null のことがある。BOA-486）
+ *   partial           単勝ページは発売済みだが、全通り系の一部が未取得（live では、取れた分を書き込み済み）。再試行する
+ *   no_values         単勝の行そのものが無い（未公開・中止・順延の可能性）。再試行する
  *   skipped_have_data （live のみ）この窓の行が既に完了している
  *   error             取得（HTTP・ネットワーク）・書き込みの失敗。再試行する
  *   breaker_open      サーキットブレーカーが開いていた。retryAt まで再試行を遅らせる

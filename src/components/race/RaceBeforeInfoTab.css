@@ -137,3 +137,25 @@
   line-height: 1.5;
   color: var(--text-secondary);
 }
+
+/* 展示進入（BOA-485）: 枠番と違うコースに入った艇。前づけの予兆なので
+   「枠なりでない」ことが一目で分かるようにする。drt-best（最良値、金の
+   実線枠）と色味が近いので、枠を破線にして形でも区別する（375pxの実画面で
+   同じ表に並ぶと、実線同士では「一番良い値」の印と見分けにくかった） */
+.race-before-info-tab .drt-cell.drt-entry-moved {
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  outline: 1px dashed var(--color-warning);
+  outline-offset: -3px;
+  font-weight: var(--font-weight-bold);
+}
+
+.race-before-info-tab .drt-entry-moved-label {
+  color: var(--color-warning-text);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 「1コース」が375pxのセル幅で「1コー／ス」と折れて読みにくかった
+   （2026-09-28、実画面のスクショで確認）。コース表記は折り返さない */
+.race-before-info-tab .drt-entry-course {
+  white-space: nowrap;
+}

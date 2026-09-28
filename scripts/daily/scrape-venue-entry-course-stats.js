@@ -210,14 +210,22 @@ export async function writeEntryCourseRows(
   { throwOnError = false } = {},
 ) {
   let written = 0;
+  // scraped_at は DEFAULT now() だが、DEFAULT は INSERT のときしか効かない。同じキーの行を
+  // 繰り返し更新するため、載せないと初回挿入時の値が残り続ける（BOA-463）。
+  // 差分判定を使わず毎回全行を書いているので、載せても書き込み量は増えない
+  const scrapedAt = new Date().toISOString();
   for (let i = 0; i < rows.length; i += 1000) {
-    const batch = rows.slice(i, i + 1000);
+    const batch = rows
+      .slice(i, i + 1000)
+      .map((row) => ({ ...row, scraped_at: scrapedAt }));
     const { error } = await client
       .from("venue_entry_course_stats")
       .upsert(batch, { onConflict: "race_id,waku,entry_course" });
     if (error) {
       if (throwOnError) {
-        throw new Error(`venue_entry_course_stats 書き込みエラー: ${error.message}`);
+        throw new Error(
+          `venue_entry_course_stats 書き込みエラー: ${error.message}`,
+        );
       }
       console.error(
         `❌ venue_entry_course_stats 書き込みエラー:`,

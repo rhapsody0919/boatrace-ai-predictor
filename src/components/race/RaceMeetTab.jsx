@@ -38,6 +38,8 @@ import {
   buildMeetRanking,
   forecastSeriesScore,
   pointsNeededForBorder,
+  countsForSeriesScore,
+  isExcludedStage,
   SEMIFINAL_DEFAULT_SLOTS,
   MEET_SMALL_SAMPLE_RUNS,
 } from "./seriesPoints";
@@ -46,7 +48,7 @@ import MeetSparkline from "./MeetSparkline";
 import "./RaceMeetTab.css";
 import "../common/HorizontalScrollHint.css";
 
-function RaceMeetTab({ raceId, venueCode, players }) {
+function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
   const sortedPlayers = [...(players ?? [])].sort(
@@ -65,9 +67,9 @@ function RaceMeetTab({ raceId, venueCode, players }) {
     scrollRight: forecastScrollRight,
     // 行数が決まってから測り直す（マウント直後は取得前で幅が無い）
   } = useHorizontalScrollHint([sortedPlayers.length, board?.meetStart]);
-  const [selectedBoat, setSelectedBoat] = useState(
-    () => sortedPlayers[0]?.number ?? null,
-  );
+  // 選んでいる艇はタブをまたいで共有する（BOA-492）。共有値が null（＝まだ
+  // どの艇も選んでいない）のときは従来どおり1号艇を見せる
+  const selectedBoat = focusedBoat ?? sortedPlayers[0]?.number ?? null;
 
   useEffect(() => {
     if (!raceId || venueCode === null || venueCode === undefined)
@@ -116,14 +118,14 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   const ranking = buildMeetRanking(board);
   const slots = board?.semifinalSlots ?? SEMIFINAL_DEFAULT_SLOTS;
   const stage = board?.currentStage ?? "";
-  const isAfterPrelim = stage.includes("準優") || stage.includes("優勝戦");
-  // **予選が終わっているか**。節で最初の準優が組まれた時点で得点率は確定し、
-  // 以降の一般戦・特別選抜戦では動かない（公式の得点率一覧も予選終了時点で
-  // 止まる）。表示中レースの種別だけを見ていると、最終日の「特別選抜戦」で
-  // 「今日の着順で得点率はこう動く」「準優の目安」を出してしまう
+  const isAfterPrelim = isExcludedStage(stage);
+  // **表示中のレースが得点率を動かすか**。予選が締まった後の一般戦・特別選抜戦・
+  // 準優・優勝戦では動かない（公式の得点率一覧も予選終了時点で止まる）。
+  // 表示中レースの種別だけを見ていると、最終日の「特別選抜戦」で
+  // 「今日の着順で得点率はこう動く」「準優の目安」を出してしまう。
+  // 判定は得点率の集計と同じ `countsForSeriesScore` を使う（BOA-457）
   const prelimEndRaceId = board?.prelimEndRaceId ?? null;
-  // `prelimEndRaceId` は**予選の最後のレース**。それより後なら予選は終了
-  const prelimOver = Boolean(prelimEndRaceId && raceId > prelimEndRaceId);
+  const prelimOver = !countsForSeriesScore(stage, raceId, prelimEndRaceId);
   const prelimEndDate = prelimEndRaceId
     ? `${Number(prelimEndRaceId.slice(5, 7))}/${Number(prelimEndRaceId.slice(8, 10))}`
     : null;
@@ -133,6 +135,10 @@ function RaceMeetTab({ raceId, venueCode, players }) {
   // 「11位」が3人並ぶ。順位だけ見せると分解能を過信させる
   const tiedCount = (rank) =>
     ranking.filter((r) => r.rank !== null && r.rank === rank).length;
+
+  // 節内順位の表が公式の得点率一覧の値でできているか（出典の注記の出し分け）。
+  // サービス層が「予選終了後の表示」のときだけ公式行を渡す（BOA-475）
+  const usesOfficialScore = ranking.some((r) => r.fromOfficial);
 
   const mine = ranking.find((r) => r.racerId === selectedPlayer?.racerId);
   // ボーダーは**順位の対象になっている選手だけ**から取る。途中で離脱した
@@ -191,12 +197,43 @@ function RaceMeetTab({ raceId, venueCode, players }) {
       r.stRank,
     ]),
   );
+  // 線の点に合わせたときに出す文字列（BOA-454の確認中に出たユーザー要望）。
+  // 文言の組み立て（i18n）は呼び出し側の責任にし、MeetSparkline は受け取った
+  // 文字列を出すだけにしてある。日付は月日だけ（同じ節しか並ばないので年は要らない）。
+  //
+  // **下の「日別の走り」表と同じ行（getRecentRaces の正規化後）から作る。**
+  // 生の `meet` の行はレース番号を持たず（race_id から導出する）、着順も
+  // `finishPositionOf` を通して初めて決まるため、生の行から組み立てると
+  // 表には「11R・4着」と出ているのに吹き出しだけ「—R・着外」になる
+  const meetRows = getRecentRaces(meet, meet.length);
+  const sparkLabel = (row, metricKey, value, rank) => {
+    if (value === null || value === undefined) return null;
+    const shown = Number(value).toFixed(2);
+    return t("meetTab.sparkTip", {
+      date:
+        typeof row.date === "string" && row.date.length === 10
+          ? `${Number(row.date.slice(5, 7))}/${Number(row.date.slice(8, 10))}`
+          : (row.date ?? "—"),
+      no: row.raceNo ?? "—",
+      metric: t(metricKey),
+      value: rank
+        ? t("raceHistoryTable.startTimingCell", { time: shown, rank })
+        : shown,
+      finish:
+        row.finishRank == null
+          ? t("basicInfo.finishUnknown")
+          : t("meetTab.sparkTipFinish", { finish: row.finishRank }),
+    });
+  };
+
   // 得点率早見（6艇×1着〜6着）。公式の「得点率早見」は**6艇を1つの表**にして
   // 行＝艇・列＝着順で並べ、ボーダーとの関係を色で示す
   // （https://www.boatrace.jp/static_extra/pc/guide/guide-7.html）。
   // 1艇ぶんだけ出していたときは「他の艇はどうなるのか」が読めなかった。
   // 追加クエリ0本（既に持っている得点・走数から純関数で出す）
   const remainingPrelimRuns = board?.remainingPrelimRunsByRacer ?? {};
+  // 残り走で取りうる最大得点（ドリーム戦の1着は12点）。無ければ予選配点で代用
+  const remainingPrelimMaxPoints = board?.remainingPrelimMaxPointsByRacer ?? {};
   const forecastRows =
     !prelimOver && !isAfterPrelim
       ? sortedPlayers
@@ -208,7 +245,8 @@ function RaceMeetTab({ raceId, venueCode, players }) {
           .map(({ player, row }) => ({
             player,
             row,
-            cells: forecastSeriesScore(row),
+            // 表示中レースの種別で配点を切り替える（ドリーム戦は1着+12）
+            cells: forecastSeriesScore(row, stage),
             // 公式の「必要得点」＝準優ボーダーをクリアするのに要る得点。
             // 残り走数は**当日の番組が出ている予選レース**から数える
             // （翌日以降の出走表は未取得のことが多い）
@@ -216,6 +254,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
               row,
               showBorderBadge && border !== undefined ? border : null,
               remainingPrelimRuns[player.racerId] ?? 0,
+              remainingPrelimMaxPoints[player.racerId] ?? null,
             ),
             remaining: remainingPrelimRuns[player.racerId] ?? 0,
           }))
@@ -275,13 +314,13 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                       // 行＝選手なので、行をタップしたら下の詳細が切り替わる。
                       // 下のチップまで指を動かさせない（表は横スクロールしない
                       // ためスワイプ誤爆の懸念も無い）
-                      onClick={() => setSelectedBoat(p.number)}
+                      onClick={() => onFocusBoat(p.number)}
                     >
                       <th scope="row">
                         <button
                           type="button"
                           className="rmt-row-select"
-                          onClick={() => setSelectedBoat(p.number)}
+                          onClick={() => onFocusBoat(p.number)}
                           aria-pressed={p.number === selectedBoat}
                         >
                           <span
@@ -392,7 +431,13 @@ function RaceMeetTab({ raceId, venueCode, players }) {
               当社は全員で順位を振るため下位ほどズレる（2026-09-27に若松G1で
               実測: 得点率は6/6一致、順位は最大4つ差）。除外の判定材料が
               自社データに無いので、合わせにいかずに違いを書く */}
-          <p className="rmt-rank-note">{t("meetTab.rankSourceNote")}</p>
+          <p className="rmt-rank-note">
+            {t(
+              usesOfficialScore
+                ? "meetTab.rankSourceNoteOfficial"
+                : "meetTab.rankSourceNote",
+            )}
+          </p>
           <p className="rmt-source">{t("basicInfo.meetPretestSource")}</p>
         </div>
       )}
@@ -410,9 +455,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
       {forecastRows.length > 0 && (
         <div className="rmt-card">
           <h3 className="rmt-card-title">{t("meetTab.forecastTitle")}</h3>
-          <div
-            className={`hscroll-hint${forecastHasMore ? " has-more" : ""}`}
-          >
+          <div className={`hscroll-hint${forecastHasMore ? " has-more" : ""}`}>
             {forecastHasMore && (
               <button
                 type="button"
@@ -437,9 +480,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                     {/* 公式（PC横長）は必要得点を右端に置くが、390pxでは
                         右端の列が画面外になる。「今の得点率」と「あと何点要るか」
                         が一番見たい2つなので前に出す */}
-                    {hasNeeded && (
-                      <th scope="col">{t("meetTab.colNeeded")}</th>
-                    )}
+                    {hasNeeded && <th scope="col">{t("meetTab.colNeeded")}</th>}
                     {[1, 2, 3, 4, 5, 6].map((n) => (
                       <th key={n} scope="col">
                         {t("meetTab.forecastRankHeader", { rank: n })}
@@ -453,19 +494,24 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                     return (
                       <tr
                         key={p.number}
-                        className={p.number === selectedBoat ? "is-current" : ""}
-                        onClick={() => setSelectedBoat(p.number)}
+                        className={
+                          p.number === selectedBoat ? "is-current" : ""
+                        }
+                        onClick={() => onFocusBoat(p.number)}
                       >
                         <th scope="row">
                           <button
                             type="button"
                             className="rmt-row-select"
-                            onClick={() => setSelectedBoat(p.number)}
+                            onClick={() => onFocusBoat(p.number)}
                             aria-pressed={p.number === selectedBoat}
                           >
                             <span
                               className="rmt-boat-chip"
-                              style={{ background: color.bg, color: color.text }}
+                              style={{
+                                background: color.bg,
+                                color: color.text,
+                              }}
                             >
                               {p.number}
                             </span>
@@ -476,7 +522,9 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                         </th>
                         <td
                           className={`rmt-rate${
-                            showBorderBadge && border !== undefined && row.rate >= border
+                            showBorderBadge &&
+                            border !== undefined &&
+                            row.rate >= border
                               ? " is-in-border"
                               : ""
                           }`}
@@ -581,7 +629,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                   <button
                     type="button"
                     className="rmt-trend-label"
-                    onClick={() => setSelectedBoat(p.number)}
+                    onClick={() => onFocusBoat(p.number)}
                     aria-pressed={p.number === selectedBoat}
                   >
                     <span
@@ -600,7 +648,8 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                     baseline={trendMean}
                     // 線は公式の艇色そのままだと1号艇（白）が背景に溶ける
                     color={
-                      BOAT_LINE_COLORS[p.number] || "var(--brand-accent-primary)"
+                      BOAT_LINE_COLORS[p.number] ||
+                      "var(--brand-accent-primary)"
                     }
                     height={34}
                   />
@@ -632,7 +681,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
               style={
                 active ? { background: color.bg, color: color.text } : undefined
               }
-              onClick={() => setSelectedBoat(p.number)}
+              onClick={() => onFocusBoat(p.number)}
               aria-pressed={active}
             >
               <span>{p.number}</span>
@@ -652,6 +701,13 @@ function RaceMeetTab({ raceId, venueCode, players }) {
               {
                 rate: mine.rate.toFixed(2),
                 n: mine.runs,
+                // 公式の得点率一覧がある開催では公式の値をそのまま出している。
+                // 出典を「当社計算」と書いたままにすると嘘になる（BOA-475）
+                source: t(
+                  mine.fromOfficial
+                    ? "meetTab.sourceOfficial"
+                    : "meetTab.sourceOwn",
+                ),
               },
             )}
             {showBorder && border !== undefined && (
@@ -718,7 +774,15 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                   )}
                 </div>
                 <MeetSparkline
-                  points={meet.map((r) => ({ value: r.startTiming ?? null }))}
+                  points={meetRows.map((r) => ({
+                    value: r.startTiming ?? null,
+                    label: sparkLabel(
+                      r,
+                      "meetTab.compareTrendSt",
+                      r.startTiming,
+                      stRankByRace[r.raceId] ?? null,
+                    ),
+                  }))}
                   baseline={st.baseAvg}
                   color="var(--brand-accent-primary)"
                 />
@@ -752,11 +816,19 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                     )}
                 </div>
                 <MeetSparkline
-                  points={meet.map((r) => ({ value: r.exhibitionTime ?? null }))}
+                  points={meetRows.map((r) => ({
+                    value: r.exhibitionTime ?? null,
+                    label: sparkLabel(
+                      r,
+                      "meetTab.compareTrendEx",
+                      r.exhibitionTime,
+                      r.exhibitionRank ?? null,
+                    ),
+                  }))}
                   // 基準は「その日の会場全体の展示平均」。水面は日ごとに
                   // 0.08秒動くため（若松2026-09-22〜27の実測で6.829〜6.907）、
                   // 生タイムだけでは重い日の6.90と軽い日の6.90を同じに読む
-                  referenceSeries={meet.map(
+                  referenceSeries={meetRows.map(
                     (r) => venueDailyExhibitionAvg[r.date] ?? null,
                   )}
                   color="var(--color-info-text, #2a7fbf)"
@@ -781,7 +853,7 @@ function RaceMeetTab({ raceId, venueCode, players }) {
                 「1つ下向き」と出るが、今節ベスト級は間にある）。
                 判定はやめ、走ごとの生の数字を表に並べて読み手に委ねる */}
             <RaceHistoryTable
-              rows={getRecentRaces(meet, meet.length).map((r) => ({
+              rows={meetRows.map((r) => ({
                 ...r,
                 startTimingRank: stRankByRace[r.raceId] ?? null,
               }))}

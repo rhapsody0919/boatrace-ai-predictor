@@ -37,7 +37,11 @@ const REGISTRY_PATH = path.join(HERE, "verify-registry.json");
 // 全件がこの上限に張り付くと 52本÷並列4×180秒 ≒ 39分になるので、
 // quality-gates.yml の timeout-minutes はそれを上回る値にしてある
 // （ジョブごと殺されると、どれが遅いかの一覧すら出ないため）
+// 個別に重いもの（PGliteの変異検証等）は、レジストリの timeoutSec で延ばす。
+// 全体を延ばさないのは、ハングを検知するまでの時間を他の全件で伸ばさないため
 const TIMEOUT_MS = 180_000;
+const timeoutOf = (entry) =>
+  entry.timeoutSec ? entry.timeoutSec * 1000 : TIMEOUT_MS;
 
 const args = process.argv.slice(2);
 const listOnly = args.includes("--list");
@@ -98,6 +102,14 @@ async function checkRegistry(entries) {
         `runnerが不正: ${e.script} の runner="${e.runner}"（node / bash。省略時は node）`,
       );
     }
+    if (
+      e.timeoutSec !== undefined &&
+      !(Number.isInteger(e.timeoutSec) && e.timeoutSec > 0)
+    ) {
+      problems.push(
+        `timeoutSecが不正: ${e.script} の timeoutSec=${JSON.stringify(e.timeoutSec)}（1以上の整数・秒）`,
+      );
+    }
     if (e.tier === "manual" && (!e.reason || !e.command)) {
       problems.push(
         `manualの説明不足: ${e.script} には reason（なぜCIに載せないか）と command（実行方法）が要ります`,
@@ -151,7 +163,7 @@ function runScript(entry) {
       } catch {
         child.kill("SIGKILL");
       }
-    }, TIMEOUT_MS);
+    }, timeoutOf(entry));
     child.on("close", (code, signal) => {
       clearTimeout(timer);
       resolve({
@@ -271,7 +283,7 @@ if (failed.length > 0) {
   );
   for (const r of failed) {
     console.error(
-      `--- ${r.entry.script}${r.timedOut ? "（タイムアウト）" : ""}`,
+      `--- ${r.entry.script}${r.timedOut ? `（タイムアウト: 上限${timeoutOf(r.entry) / 1000}秒）` : ""}`,
     );
     console.error(`    守っているもの: ${r.entry.guards}`);
     // 失敗の内容（❌ 行）は stderr に出るので全文を出す。stdout は

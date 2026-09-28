@@ -291,3 +291,47 @@ test.describe("レイアウト: /today はカードが列数より少なくて�
     });
   }
 });
+
+/**
+ * 直前情報タブ（BOA-485）。上の PAGES はレース詳細を既定タブのまま測るため、
+ * 直前情報タブの「この枠からの進入コース」カード（艇番・横棒・要約の3列グリッド）と
+ * 展示進入の行を含む表は検査の対象外だった。タブを開いた状態で同じ2つの検査を通す。
+ * 横棒が要約列に押されて潰れていないか（幅が残っているか）も見る
+ */
+test.describe("レイアウト: 直前情報タブ（この枠からの進入コース）", () => {
+  const RACE = "/race/2026-09-26-08-02";
+
+  test("横スクロールが出ず、グリッドの幅も無駄にならず、横棒が潰れない", async ({
+    page,
+  }) => {
+    await gotoAndSettle(page, RACE);
+    await page.click('[role="tab"]:has-text("直前情報")');
+    const card = page.getByTestId("entry-course-dist");
+    await expect(card.locator(".ecd-seg").first()).toBeVisible({
+      timeout: 30000,
+    });
+    // 6艇ぶんの取得が出揃ってから測る（1艇目の棒が出た時点では他艇が
+    // 読み込み中のことがある。CIで実際にそのタイミングを踏んだ）
+    await expect(card.locator(".drt-skeleton")).toHaveCount(0, {
+      timeout: 30000,
+    });
+
+    const layout = await page.evaluate(() => {
+      const de = document.documentElement;
+      return {
+        overflow: de.scrollWidth - de.clientWidth,
+        bars: [...document.querySelectorAll(".ecd-row .ecd-bar")].map((bar) =>
+          Math.round(bar.getBoundingClientRect().width),
+        ),
+      };
+    });
+    expect(layout.overflow, JSON.stringify(layout)).toBeLessThanOrEqual(
+      OVERFLOW_TOLERANCE_PX,
+    );
+    expect(layout.bars).toHaveLength(6);
+    // 375pxでも棒として読める幅がある（艇番28px＋要約104pxを除いた残り）
+    for (const width of layout.bars) expect(width).toBeGreaterThan(120);
+
+    expectNoWastedGrids(await inspectGrids(page));
+  });
+});
