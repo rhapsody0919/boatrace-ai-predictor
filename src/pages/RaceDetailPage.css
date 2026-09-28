@@ -123,6 +123,9 @@
   border-color: var(--brand-accent-primary);
 }
 
+/* 会場の企画レース名。種別名・日目バッジと見分けるため破線にする（ファン評価 P2） */
 .race-detail-stage--raw {
   font-weight: 500;
+  border-style: dashed;
+  border-color: var(--text-secondary);
 }

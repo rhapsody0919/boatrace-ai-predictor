@@ -48,18 +48,32 @@ function getSeriesDayLabel(seriesDay, isFinalDay, t) {
 // 見出しの種別チップ（BOA-509）。分類できたものは分類名、できないもの
 // （会場の企画レース名）は公式表記のまま出す。race_stage はレースごとの値なので
 // 他レースで補わない（無ければ出さない）
+const SPECIAL_STAGE_KEYS = new Set([
+  "dream",
+  "selection",
+  "qualifierSpecial",
+  "generalSpecial",
+  "special",
+]);
+
 function getStageChip(raceStage, t) {
   if (!raceStage) return null;
   const official = raceStage.normalize("NFKC");
   const category = getRaceStageCategory(raceStage);
   if (!category) {
-    return { variant: "raw", label: official, official, isOfficial: true };
+    // 企画レース名は種別名と見分けがつかないので、何の名前かをツールチップで補う
+    return {
+      variant: "raw",
+      label: official,
+      title: t("raceStage.venueOriginal"),
+      isOfficial: true,
+    };
   }
   const label = t(category.i18nKey);
   const variant =
     category.key === "final" || category.key === "semifinal"
       ? category.key
-      : category.key === "dream" || category.key === "special"
+      : SPECIAL_STAGE_KEYS.has(category.key)
         ? "special"
         : "plain";
   return {
@@ -68,7 +82,10 @@ function getStageChip(raceStage, t) {
     // 優勝戦・準優勝戦は RaceCard のバッジと同じ絵文字を添える
     emoji: getRaceStageBadge(raceStage)?.emoji,
     // 分類名と公式表記が同じ（「予選」「優勝戦」等）ならツールチップは出さない
-    official: label === official ? null : official,
+    title:
+      label === official
+        ? undefined
+        : t("raceStage.officialName", { name: official }),
     isOfficial: false,
   };
 }
@@ -329,13 +346,7 @@ function RaceDetailPage() {
                   {" "}
                   <span
                     className={`race-detail-stage race-detail-stage--${stageChip.variant}`}
-                    title={
-                      stageChip.official && !stageChip.isOfficial
-                        ? t("raceStage.officialName", {
-                            name: stageChip.official,
-                          })
-                        : undefined
-                    }
+                    title={stageChip.title}
                     translate={stageChip.isOfficial ? "no" : undefined}
                   >
                     {stageChip.emoji && (

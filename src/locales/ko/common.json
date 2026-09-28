@@ -437,7 +437,11 @@
     "special": "특별전",
     "qualifier": "예선",
     "general": "일반전",
-    "officialName": "공식 명칭: {{name}}"
+    "officialName": "공식 명칭: {{name}}",
+    "selection": "선발전",
+    "qualifierSpecial": "예선 특별전",
+    "generalSpecial": "일반 특선전",
+    "venueOriginal": "경주장 고유의 레이스명"
   },
   "raceCard": {
     "awaitingResult": "결과 반영 대기중",

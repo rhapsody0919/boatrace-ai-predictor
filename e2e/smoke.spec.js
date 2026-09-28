@@ -3638,7 +3638,7 @@ test.describe("レース詳細の見出し: 開催の何日目か（BOA-488）",
     await page.goto("/en/race/2026-09-24-02-02");
     await expect(
       page.locator(".page-header h1 .race-detail-series-day"),
-    ).toHaveText("Final day", { timeout: 25000 });
+    ).toHaveText("Last day", { timeout: 25000 });
   });
 });
 
@@ -3671,7 +3671,26 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
     await expect(chip).toHaveText("ウインウイン5", { timeout: 25000 });
     await expect(chip).toHaveClass(/race-detail-stage--raw/);
     await expect(chip).toHaveAttribute("translate", "no");
+    // 種別名と見分けがつかないため、何の名前かをツールチップで補う（ファン評価 P2）
+    await expect(chip).toHaveAttribute("title", "会場独自のレース名");
   });
+
+  // ファン評価 P1: 予選期間の「予選特賞」と予選落ち組の「一般特選」を
+  // 同じ「特別戦」にまとめない（得点率に入るかどうかが逆になるため）
+  for (const [raceId, label, official] of [
+    ["2026-09-20-03-09", "予選特別戦", "予選特賞"],
+    ["2026-09-25-10-09", "一般特選", null],
+    ["2026-09-20-14-10", "選抜戦", null],
+  ]) {
+    test(`${raceId} の種別は「${label}」`, async ({ page }) => {
+      await page.goto(`/race/${raceId}`);
+      const chip = h1(page).locator(".race-detail-stage");
+      await expect(chip).toHaveText(label, { timeout: 25000 });
+      if (official) {
+        await expect(chip).toHaveAttribute("title", `公式表記: ${official}`);
+      }
+    });
+  }
 
   test("一般（ippan）はグレードバッジを出さず、節タイトルだけ出す", async ({
     page,
