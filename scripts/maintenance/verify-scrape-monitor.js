@@ -358,9 +358,14 @@ const doneOdds = (delayMin, over = {}) =>
   ];
   const alerts = evaluateExpired(expired, { activeJobs: active });
   check(
-    "体重だけの窓: 期限切れ・未実行を通知しない（体重の公開が窓より遅くても、-33 の窓が同じ行を埋める）。-33 の期限切れは従来どおり通知する",
-    show(alerts.map((a) => a.key)) ===
-      show(["expired:exhibition:2026-09-19-02-03:-33"]),
+    "体重だけの窓: 期限切れは通知しない（体重の公開が窓より遅くても、-33 の窓が同じ行を埋める）。未実行（attempts=0。claim・Cronの不具合）は通知する。-33 の期限切れは従来どおり通知する",
+    show(alerts.map((a) => a.key).sort()) ===
+      show(
+        [
+          "expired:exhibition:2026-09-19-02-03:-33",
+          "unexecuted:exhibition:2026-09-19-02-02:-60",
+        ].sort(),
+      ),
     show(alerts.map((a) => a.key)),
   );
   const mutantAlerts = evaluateExpired(expired, {
@@ -369,7 +374,9 @@ const doneOdds = (delayMin, over = {}) =>
   });
   check(
     "変異検証: 「体重だけの窓の期限切れも通知する」版では、-60 が通知され、上の検証が失敗する",
-    mutantAlerts.some((a) => a.key.endsWith(":-60")),
+    mutantAlerts.some(
+      (a) => a.key === "expired:exhibition:2026-09-19-02-01:-60",
+    ),
     show(mutantAlerts.map((a) => a.key)),
   );
 }

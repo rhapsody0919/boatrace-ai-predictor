@@ -2280,6 +2280,7 @@ async function catchupRetriesSlowly(catchup) {
     [
       { offset_min: -33, race_id: "a" },
       { offset_min: 10, race_id: "b" },
+      { offset_min: -60, race_id: "w" },
     ],
     SCRAPE_JOBS.exhibition,
   );
@@ -2288,11 +2289,14 @@ async function catchupRetriesSlowly(catchup) {
     SCRAPE_JOBS.result,
   );
   check(
-    "check-pre-race-shadow: スロットを、通常の窓と、窓の外の補完（catchupOffsets）に分ける。補完を持たないジョブは、全て通常の窓",
+    "check-pre-race-shadow: スロットを、通常の窓と、窓の外の補完（catchupOffsets）と、体重だけの窓（weightOnlyOffsets）に分ける。どちらも持たないジョブは、全て通常の窓",
     split.primary.length === 1 &&
       split.primary[0].race_id === "a" &&
       split.catchup.length === 1 &&
       split.catchup[0].race_id === "b" &&
+      // 体重だけの窓（BOA-500）も、通常の窓の一致率に混ぜない（展示前のページのダイジェストは、展示後の行と一致しない）
+      split.weightOnly.length === 1 &&
+      split.weightOnly[0].race_id === "w" &&
       splitOther.primary.length === 1 &&
       splitOther.catchup.length === 0,
   );

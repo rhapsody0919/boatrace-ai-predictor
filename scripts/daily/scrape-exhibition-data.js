@@ -655,12 +655,17 @@ export async function runForRaces(
       // 展示タイムが未公開。書いた行（展示STだけ、または展示前の当日体重・調整重量だけ）は残し、
       // 展示タイムが入るまで再試行する
       const hasSt = rows.some((row) => row.start_timing != null);
+      const hasWeight = rows.some(
+        (row) => row.today_weight != null || row.adjustment_weight != null,
+      );
       outcomes.set(raceId, {
         ...common,
         outcome: "partial",
         error: hasSt
           ? "展示タイムが未公開です（展示STのみ）"
-          : "展示タイムが未公開です（展示前の当日体重・調整重量のみ）",
+          : hasWeight
+            ? "展示タイムが未公開です（展示前の当日体重・調整重量のみ）"
+            : "展示タイム・当日体重が未公開です（欠場艇の行のみ）",
       });
     }
   }

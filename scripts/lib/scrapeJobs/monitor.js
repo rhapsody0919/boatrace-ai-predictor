@@ -24,7 +24,8 @@
  *
  * 体重だけの窓（レジストリの weightOnlyOffsets。展示の発走60分前。BOA-500）は、当日体重・調整重量の前倒しの取得
  * （best effort）で、取れなくても -33 の窓が同じ行を埋める。展示の窓内取得率（ジョブ別）の分母に入れず（窓別の集計には残す）、
- * 期限切れを通知しない（体重の公開が窓より遅いだけのレースを、取得の失敗として通知しない）
+ * 期限切れを通知しない（体重の公開が窓より遅いだけのレースを、取得の失敗として通知しない）。未実行（attempts=0）は通知する
+ * （claim・Cronの不具合の兆候で、公開の遅れでは起きない）
  *
  * 「予定表・ジョブ状態のテーブルが無い」（075未適用）、および全ジョブが off の間は、何も通知しない（誤報なし）。
  *
@@ -273,8 +274,14 @@ export function evaluateExpired(
     ) {
       continue;
     }
-    // 体重だけの窓（発走60分前）は通知しない。体重の公開が窓より遅くても、-33 の窓が同じ行を埋める（ファイル冒頭の説明）
-    if (isWeightOnlyOffset(registry[slot.job], slot.offset_min)) continue;
+    // 体重だけの窓（発走60分前）の期限切れは通知しない。体重の公開が窓より遅くても、-33 の窓が同じ行を埋める
+    // （ファイル冒頭の説明）。未実行（attempts=0）は、公開の遅れでは起きないため通知する
+    if (
+      isWeightOnlyOffset(registry[slot.job], slot.offset_min) &&
+      (slot.attempts ?? 0) > 0
+    ) {
+      continue;
+    }
     const deadline = deadlineOf(slot);
     if (!isPastWindow(slot, now, registry)) continue;
     // 想定内の未公開（後続の窓で公開が確認できた・確認待ち）は通知しない。後続の窓も取れなかったものは、ここに来る
