@@ -341,15 +341,39 @@ function suiteBasicInfoStats(m, check) {
     [12, 4],
   );
 
-  // --- computeAvgEntryCourse / computeExhibitionTopRates（BOA-304）
+  // --- computeFrameEntryDistribution（BOA-485、旧 computeAvgEntryCourse の置き換え）
+  // / computeExhibitionTopRates（BOA-304）
+  // 旧実装は全枠のレースを混ぜて平均し、1号艇でも 3.16 のような値になった。
+  // 今回と同じ枠番の走だけ・表示中のレースより前だけ・actualCourse=null は母数外、を固定する
+  const frameEntryRecords = [
+    rec({ raceId: "2026-09-10-04-01", boatNumber: 2, actualCourse: 2 }),
+    rec({ raceId: "2026-09-10-04-02", boatNumber: 2, actualCourse: 1 }),
+    rec({ raceId: "2026-09-10-04-03", boatNumber: 2, actualCourse: 3 }),
+    rec({ raceId: "2026-09-10-04-04", boatNumber: 2, actualCourse: null }), // 欠場
+    rec({ raceId: "2026-09-10-04-05", boatNumber: 1, actualCourse: 1 }), // 別の枠
+    rec({ raceId: "2026-09-10-04-09", boatNumber: 2, actualCourse: 2 }), // 表示中より後
+  ];
   check(
-    "computeAvgEntryCourse: 実進入コースが null の走（欠場・2025-12-04以前）は母数に入れない",
-    m.computeAvgEntryCourse([
-      rec({ raceId: "2026-09-10-04-01", boatNumber: 1, actualCourse: 1 }),
-      rec({ raceId: "2026-09-10-04-02", boatNumber: 2, actualCourse: 3 }),
-      rec({ raceId: "2026-09-10-04-03", boatNumber: 3, actualCourse: null }),
-    ]),
-    { n: 2, avgCourse: 2 },
+    "computeFrameEntryDistribution: 同じ枠番・表示中より前の走だけ、actualCourse=null は母数外（BOA-485）",
+    m.computeFrameEntryDistribution(frameEntryRecords, 2, "2026-09-10-04-08"),
+    {
+      n: 3,
+      counts: [1, 1, 1, 0, 0, 0],
+      wakuRate: (1 / 3) * 100,
+      inwardRate: (1 / 3) * 100,
+      outwardRate: (1 / 3) * 100,
+    },
+  );
+  check(
+    "computeFrameEntryDistribution: 対象0件なら率は null（0% と区別する）",
+    m.computeFrameEntryDistribution(frameEntryRecords, 6, null),
+    {
+      n: 0,
+      counts: [0, 0, 0, 0, 0, 0],
+      wakuRate: null,
+      inwardRate: null,
+      outwardRate: null,
+    },
   );
   check(
     "computeExhibitionTopRates: 展示単独最速の走だけで率を出す（同着最速=null は除く）",
