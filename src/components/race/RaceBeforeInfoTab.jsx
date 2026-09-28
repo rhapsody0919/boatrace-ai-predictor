@@ -64,6 +64,7 @@ import RacePitReportSection from "./RacePitReportSection";
 import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
 import "../common/HorizontalScrollHint.css";
+import { formatCapturedAtJst } from "../../utils/formatters";
 
 function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   const { t } = useTranslation();
@@ -126,6 +127,28 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [raceId]);
+
+  // オリジナル展示（一周/半周ラップ/まわり足/直線、BOA-452 / FR-4b）。
+  // BOATCAST由来の生値なので、表示するときは必ず出典を添える（ADR-0067）。
+  // 096が未適用の間は state==="forbidden" が返り、行も出典も出さない
+  const [originalExhibition, setOriginalExhibition] = useState(null);
+  useEffect(() => {
+    if (!raceId) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRaceOriginalExhibition(raceId)
+      .then((data) => {
+        if (!cancelled) setOriginalExhibition(data);
+      })
+      .catch((err) => {
+        // 取得失敗でこのタブの他の行まで巻き込まない。行が出ないだけにする
+        console.error("オリジナル展示取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setOriginalExhibition(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [raceId]);
 
   // 展示情報の表は390pxで5号艇までしか入らない。**早期returnより前**に
@@ -238,6 +261,7 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
       players: sortedPlayers,
       analysis,
       pending: analysis.pending,
+      originalExhibition,
     }),
     ...extraRows,
   ];
@@ -507,6 +531,27 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
           </div>
         </div>
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
+        {/* オリジナル展示（BOA-452 / ADR-0067）の出典。値を出したときだけ、
+            表のすぐ下に1回。ピットレポート（RacePitReportSection）と同じ形で、
+            出典・取得時刻・再配布しない旨の3点を書く */}
+        {originalExhibition?.state === "published" && (
+          <div className="rbi-source">
+            <p className="rbi-source-text">
+              {t("beforeInfo.originalExhibitionSource")}
+            </p>
+            {formatCapturedAtJst(originalExhibition.capturedAt) && (
+              <p className="rbi-source-text">
+                {t("beforeInfo.originalExhibitionCapturedAt", {
+                  time: formatCapturedAtJst(originalExhibition.capturedAt),
+                })}
+                {t("home.jstNote")}
+              </p>
+            )}
+            <p className="rbi-source-text">
+              {t("beforeInfo.originalExhibitionNote")}
+            </p>
+          </div>
+        )}
       </section>
 
       <RacePitReportSection
