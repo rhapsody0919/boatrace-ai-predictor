@@ -25,6 +25,11 @@
  *   （`race_special_notes` がこれ。新規の特記事項だけを挿入する）
  * - **新規行の挿入だけを行う関数**: 同じく DEFAULT が効く。関数名かコメントに「新規」を含むものを許す
  *   （`racerProfileSync.js` の `saveNewProfile` がこれ）
+ * - **`scraped_at-intentionally-not-set` を書いた箇所**: 更新しないと決めたもの。**理由を必ず添える**。
+ *   実例は `racerProfileSync.js` の `saveSeasonStats` で、`racer_profiles` の1行はプロフィールと
+ *   期別成績の2つの取得元が混ざっており、プロフィールは既存選手では再取得されないため、
+ *   `scraped_at`＝プロフィールの取得時刻は初回挿入時のままで正しい（期別成績側は
+ *   `official_updated_at` が別に持つ）
  * - `scripts/analysis/` ・ `scripts/maintenance/`: 調査・保守の一回限りのコードは対象にしない
  *
  * ## 限界
@@ -39,14 +44,57 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
 
-/** 呼び出し位置から前後この行数を「周辺」とみなす */
-const CONTEXT_LINES = 25;
+/**
+ * 呼び出し位置から後ろへ見る行数（payload がこの範囲に入る）。
+ * 前方向は行数ではなく「囲っている関数の先頭まで」で切る（下記 enclosingStart）。
+ * 固定行数で前を見ると**隣の関数のコメントまで拾い**、別の関数のマーカーで免除されてしまう
+ * （実際に `saveSeasonStats` のマーカーが、隣接する `saveNewProfile` を免除していた）
+ */
+const FORWARD_LINES = 25;
+
+/** 関数の先頭とみなす書き方 */
+const FUNCTION_START =
+  /^\s*(?:export\s+)?(?:async\s+)?function\s+\w+|^\s*(?:export\s+)?const\s+\w+\s*=\s*(?:async\s*)?\(/;
+
+/** コメント行か（関数の直前の説明を窓に含めるために使う） */
+const COMMENT_LINE = /^\s*(?:\/\/|\/\*|\*)/;
+
+/**
+ * 呼び出し行から後ろへたどり、囲っている関数の先頭の行番号（0始まり）を返す。
+ * 関数の**直前に続くコメント行も含める**（マーカーと理由はJSDocに書くのが自然なため）。
+ * ただし空行で止めるので、さらに手前の別の関数のコメントまでは遡らない
+ */
+export function enclosingStart(lines, callLineIndex) {
+  for (let i = callLineIndex; i >= 0; i -= 1) {
+    if (!FUNCTION_START.test(lines[i])) continue;
+    let start = i;
+    while (start > 0 && COMMENT_LINE.test(lines[start - 1])) start -= 1;
+    return start;
+  }
+  return 0;
+}
 
 /** 一回限りの調査・保守コードは対象にしない */
 const EXCLUDED_DIRS = ["scripts/analysis/", "scripts/maintenance/"];
 
-/** 新規挿入だけを行うと分かる書き方（DEFAULT が正しく効くので対象外） */
-const INSERT_ONLY_HINTS = [/ignoreDuplicates:\s*true/, /新規/];
+/**
+ * 既存行を更新しないことがコードから読み取れる書き方（DEFAULT が正しく効くので対象外）。
+ *
+ * **「新規」等の語の有無では判定しない。** 周辺25行のどこかに語があれば通ってしまい、
+ * 「更新しないと決めた」箇所と「書き忘れ」を区別できない（実際に、理由を説明するコメントに
+ * 含まれる「新規選手」が免除として働き、検査が空振りした）。コードの形で判定できるものだけを置く
+ */
+const INSERT_ONLY_HINTS = [/ignoreDuplicates:\s*true/];
+
+/**
+ * 「更新しないと決めた」ことを明示するマーカー。**理由をコメントで添えたうえで**書く。
+ * 語が周辺にあるだけで通す作りだと、意図的な非設定と書き忘れを区別できないため、
+ * 専用のマーカーを要求する（`racer_profiles` の `saveSeasonStats` が実例）
+ */
+const OPT_OUT_MARKER = /scraped_at-intentionally-not-set/;
+
+/** 実際に値を設定している書き方（`scraped_at: ...`）。単なる言及と区別する */
+const ASSIGNS_SCRAPED_AT = /\bscraped_at\s*:/;
 
 const listFiles = (dir, ext, acc = []) => {
   for (const name of fs.readdirSync(dir)) {
@@ -94,10 +142,12 @@ export function findUnstampedWrites(text, tables) {
     let m;
     while ((m = callRe.exec(text)) !== null) {
       const line = text.slice(0, m.index).split("\n").length;
-      const from = Math.max(0, line - 1 - CONTEXT_LINES);
-      const to = Math.min(lines.length, line + CONTEXT_LINES);
+      // 前は「囲っている関数の先頭」まで（隣の関数のコメントを拾わない）、後ろは固定行数
+      const from = enclosingStart(lines, line - 1);
+      const to = Math.min(lines.length, line + FORWARD_LINES);
       const context = lines.slice(from, to).join("\n");
-      if (/\bscraped_at\b/.test(context)) continue;
+      if (ASSIGNS_SCRAPED_AT.test(context)) continue;
+      if (OPT_OUT_MARKER.test(context)) continue;
       if (INSERT_ONLY_HINTS.some((re) => re.test(context))) continue;
       problems.push({
         line,
