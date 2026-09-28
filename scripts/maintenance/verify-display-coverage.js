@@ -180,6 +180,38 @@ check(
   extractCodeReferences('const sql = `select * from("a")`').tables,
   [],
 );
+// 2026-09-28: PostgREST の nested select を取り逃していた。`prediction_odds` は
+// supabaseDataService.js:1328 で `prediction_odds ( updated_at, … )` として読み、
+// :1404 で値を使っているのに、`.from()` だけを見ていたため「読んでいない」と誤判定した。
+const nestedCode = `
+    .select(\`
+      race_id,
+      exhibition_data (
+        boat_number
+      ),
+      prediction_odds (
+        updated_at
+      )
+    \`)`;
+check(
+  "nested select の子テーブルを拾う（既知の関係名を渡したとき）",
+  extractCodeReferences(
+    nestedCode,
+    new Set(["exhibition_data", "prediction_odds"]),
+  ).tables.sort(),
+  ["exhibition_data", "prediction_odds"],
+);
+check(
+  "既知の関係名を渡さなければ nested select は拾わない（後方互換）",
+  extractCodeReferences(nestedCode).tables,
+  [],
+);
+check(
+  "nested select と同じ形の return ( ・if ( は拾わない（既知の関係名で絞るため）",
+  extractCodeReferences("  return (\n  if (\n  races (\n", new Set(["races"]))
+    .tables,
+  ["races"],
+);
 
 // --- 関数本体の切り出し ---
 // セルフレビューの指摘（2026-09-28）: ドル引用符のタグは $$ だけでなく名前付きもありうる
