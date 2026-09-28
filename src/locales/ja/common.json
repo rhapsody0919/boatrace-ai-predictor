@@ -239,9 +239,7 @@
     "volatilityOutcomeDetailFavorite": "（1号艇が1着）",
     "volatilityCaveat": "※1回のレース結果だけでは予測の正誤は判断できません。",
     "volatilityCaveatLink": "実測精度を見る ›",
-    "payout": "配当: {{amount}}円",
-    "notFinishedTitle": "結果はまだ確定していません",
-    "notFinishedBody": "レース終了後、このタブに着順・配当・決まり手が表示されます。"
+    "payout": "配当: {{amount}}円"
   },
   "raceTabs": {
     "basic": "基本情報",
@@ -295,6 +293,9 @@
     "secondsUnit": "秒",
     "detailTableTitle": "展示情報",
     "detailTableNote": "平均進入順・展示タイム1位勝率は過去2年間の集計、今節展示情報はモーター使用開始後（今節）の推移です",
+    "originalExhibitionSource": "出典: BOATCAST（一般財団法人BOATRACE振興会）— {{items}}",
+    "originalExhibitionCapturedAt": "取得: {{time}}",
+    "originalExhibitionNote": "※ 取得した値をそのまま表示しています（要約・改変・再配布はしていません）。最新の内容はBOATCASTでご確認ください。",
     "motorHistoryLink": "モーター調子で部品交換・プロペラ交換の履歴を見る",
     "rowAvgEntryCourse": "平均進入順",
     "rowAvgEntryCourseShort": "進入順",
@@ -309,7 +310,8 @@
     "top3RateAbbrev": "3連対",
     "prevAbbrev": "前走",
     "avgAbbrev": "平均",
-    "exhibitionChartNote": "棒が長いほど速い（最も遅い艇との差）。数字は実際の展示タイム（秒）"
+    "exhibitionChartNote": "棒が長いほど速い（最も遅い艇との差）。数字は実際の展示タイム（秒）",
+    "originalExhibitionItemSeparator": "・"
   },
   "pitReport": {
     "title": "ピットレポート（選手コメント）",
@@ -752,6 +754,10 @@
     "rowForm": "調子（勝率Δ）",
     "rowSt": "ST安定度",
     "rowExhibition": "展示タイム",
+    "rowOriLap": "一周",
+    "rowOriHalfLap": "半周ラップ",
+    "rowOriTurn": "まわり足",
+    "rowOriStraight": "直線",
     "rowTodayWeight": "当日体重",
     "rowTilt": "チルト",
     "rowAdjustmentWeight": "調整重量",
@@ -939,6 +945,10 @@
       "description": "本日開催中のレースを選ぶと、各艇のモーターの2連率/3連率が一覧でわかります。気になるモーターをクリックすると、節（開催）をまたいだ推移が見られます。",
       "motorNumberHeader": "モーター番号",
       "motorUnit": "{{n}}号機",
+      "pretestTimeHeader": "前検",
+      "pretestRank": "{{rank}}位",
+      "officialRate2Header": "公式2連率（節時点）",
+      "officialSourceNote": "※ 「前検」と「公式2連率（節時点）」は BOAT RACE オフィシャルウェブサイトの値をそのまま表示しています（節の開始時点で確定し、節の途中では変わりません）。「2連率」「3連率」「機力指数」は当社が選択中の期間で再計算した値です。",
       "rate2Header": "2連率 (%)",
       "rate3Header": "3連率 (%)",
       "powerIndexHeader": "機力指数",

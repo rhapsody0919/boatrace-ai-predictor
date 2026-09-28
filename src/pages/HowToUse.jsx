@@ -6,7 +6,7 @@ import "./HowToUse.css";
 
 const TITLE = "使い方ガイド | 龍神レーダー - 初心者でもわかる利用方法";
 const DESCRIPTION =
-  "龍神レーダーの使い方を5つのステップで解説。レース場の選び方、データ出走表・展開予測・イン崩れ指数の見方まで、初心者にもわかりやすく説明します。";
+  "龍神レーダーの使い方を6つのステップで解説。レース場の選び方、データ出走表の見方、レース詳細のタブ（基本情報・AI予想・今節・直前情報ほか）の使い分けまで、初心者にもわかりやすく説明します。";
 
 export default function HowToUse() {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export default function HowToUse() {
     description: DESCRIPTION,
     url: "https://www.boat-ai.jp/how-to-use",
     keywords:
-      "龍神レーダー使い方,ボートレース分析方法,初心者ガイド,データ出走表,展開予測,イン崩れ指数",
+      "龍神レーダー使い方,ボートレース分析方法,初心者ガイド,データ出走表,展開予測,イン崩れ指数,レース詳細タブ,今節,ST考察",
   });
 
   const steps = [
@@ -28,29 +28,28 @@ export default function HowToUse() {
         <>
           <p>
             <strong>トップページ</strong>にアクセスすると、
-            <strong>「今日のレース」</strong>
-            タブに、本日開催中のレース場が表示されます。
+            <strong>全24場のレース場カード</strong>
+            が一覧で並びます。本日開催中の場には次のレースの発走時刻が表示され、開催のない場は「本日開催なし」と表示されます。
           </p>
           <div className="step-detail">
             <h4>💡 レース場の選び方</h4>
             <ul>
               <li>
-                <strong>ドロップダウンメニュー</strong>
-                から、気になるレース場を選択
+                <strong>気になるレース場のカードをタップ</strong>
+                すると、その場のレース一覧に移動します
               </li>
               <li>全24場（桐生、戸田、江戸川、平和島...など）に対応</li>
               <li>
-                迷ったら、<strong>最初に表示されているレース場</strong>
-                から始めましょう
+                カードには<strong>グレード（G1・G3など）</strong>・
+                <strong>ナイター/ミッドナイトのアイコン</strong>・
+                <strong>準優勝戦・優勝戦の表示</strong>
+                が出るので、節の進み具合もここで分かります
               </li>
             </ul>
           </div>
           <div className="example-box">
             <p className="example-title">📌 例</p>
-            <p>
-              「今日は平和島で舟券を買いたい」→
-              ドロップダウンから「平和島」を選択
-            </p>
+            <p>「今日は平和島で舟券を買いたい」→ 「平和島」のカードをタップ</p>
           </div>
         </>
       ),
@@ -89,16 +88,18 @@ export default function HowToUse() {
                 </ul>
               </li>
               <li>
-                <strong>「データ分析を見る」</strong>ボタンをクリック
+                各レースのカードには
+                <strong>6艇の勝率・当地勝率・モーター2連率</strong>
+                の要約も出るので、一覧のまま当たりを付けられます
+              </li>
+              <li>
+                <strong>「詳細を見る」</strong>ボタンをタップ
               </li>
             </ul>
           </div>
           <div className="example-box">
             <p className="example-title">📌 例</p>
-            <p>
-              「平和島
-              10R（14:30締切）🎯本命有利」→「データ分析を見る」をクリック
-            </p>
+            <p>「平和島 10R（14:30締切）🎯本命有利」→「詳細を見る」をタップ</p>
           </div>
         </>
       ),
@@ -109,9 +110,9 @@ export default function HowToUse() {
       content: (
         <>
           <p>
-            レースを選ぶと、まず
+            発走前のレースを選ぶと、まず
             <strong>データ出走表</strong>
-            （出走6選手×客観的なデータの一覧表）が表示されます。龍神レーダーは
+            （出走6選手×客観的なデータの一覧表）が表示されます（結果が確定したレースでは「結果」タブが開くため表示されません）。龍神レーダーは
             <strong>「予想モデルを選ぶ」機能は提供していません</strong>
             。誰が見ても同じ客観的なデータをもとに、自分で予想を組み立てる形です。
           </p>
@@ -149,14 +150,79 @@ export default function HowToUse() {
       ),
     },
     {
-      title: "ステップ4: 展開予測とイン崩れ指数を見る",
+      title: "ステップ4: タブを切り替えて深掘りする",
+      icon: "🗂️",
+      content: (
+        <>
+          <p>
+            データ出走表の上にタブが並んでいます。見たい切り口に合わせて切り替えてください。発走前は
+            <strong>7つ</strong>、レースが確定すると「結果」が加わって
+            <strong>8つ</strong>
+            になります。スマホでは4つほどしか画面に入らないため、
+            <strong>タブの並びを横にスワイプ</strong>
+            すると残りが出てきます（右端の「›」でも送れます）。
+          </p>
+          <div className="step-detail">
+            <h4>💡 タブの内容（左から順）</h4>
+            <p className="step-note">
+              前半の4つは<strong>6艇をまとめて見る</strong>
+              タブ、後半は<strong>艇を1つ選んで掘る</strong>タブです。
+            </p>
+            <ul>
+              <li>
+                <strong>基本情報</strong>:
+                選手ごとの勝率・2連対率・3連対率・平均STを、会場（全国/当地）・グレード（全レース/一般戦/SG・G1）・期間（今期/直近3ヶ月/直近1ヶ月）で切り替えて比較。走数（n）も併記
+              </li>
+              <li>
+                <strong>AI予想</strong>: 展開予測とイン崩れ注意度（ステップ5）
+              </li>
+              <li>
+                <strong>今節</strong>:
+                出走6選手の今節の得点率・節内順位・準優の目安までの必要得点。
+                <strong>勝負駆け</strong>がかかっているのが誰かを読む場所です
+              </li>
+              <li>
+                <strong>直前情報</strong>: 展示タイム・気象・ピットレポート
+              </li>
+              <li>
+                <strong>枠別情報</strong>: 本日入る想定コースでの成績に加え、
+                <strong>ST考察</strong>
+                （安定率・抜出・出遅率を同じコース・同じ級別の平均との差つきで表示）と
+                <strong>逃げシミュレーション</strong>
+                （1コースが逃げたとき2着に来たコースの割合と2連単の出現率）
+              </li>
+              <li>
+                <strong>モータ情報</strong>: この会場のモーターの成績・調子
+              </li>
+              <li>
+                <strong>オッズ一覧</strong>: 発売中のオッズ
+              </li>
+              <li>
+                <strong>結果</strong>:
+                レース確定後の着順と配当。確定するまでこのタブは出ません
+              </li>
+            </ul>
+          </div>
+          <div className="tip-box">
+            <h4>📝 見方のコツ</h4>
+            <p>
+              レース確定後に開くと
+              <strong>「結果」タブが最初に選ばれます</strong>
+              。発走前は「基本情報」から始まります。まず基本情報で6艇の力関係を掴み、節の後半なら「今節」で勝負駆けを確認、締切が近ければ「直前情報」で展示タイムを見る、という順番がおすすめです。
+            </p>
+          </div>
+        </>
+      ),
+    },
+    {
+      title: "ステップ5: 展開予測とイン崩れ指数を見る",
       icon: "🌊",
       content: (
         <>
           <p>
-            データ出走表の下にある
-            <strong>「AIデータ分析」</strong>
-            （折りたたみ表示）を開くと、AIによる2種類の分析結果が確認できます。
+            タブの
+            <strong>「AI予想」</strong>
+            を開くと、AIによる2種類の分析結果が確認できます。
           </p>
           <div className="step-detail">
             <h4>💡 展開予測</h4>
@@ -196,7 +262,7 @@ export default function HowToUse() {
       ),
     },
     {
-      title: "ステップ5: 予測実績を確認する",
+      title: "ステップ6: 予測実績を確認する",
       icon: "📈",
       content: (
         <>
@@ -205,8 +271,8 @@ export default function HowToUse() {
             <h4>💡 実績の確認方法</h4>
             <ul>
               <li>
-                <strong>各レースの「レース結果」パネル</strong>:
-                そのレースの展開予測が的中したかを表示
+                <strong>各レースの「AI予想」タブ</strong>:
+                そのレースの展開予測が的中したかを表示（結果が確定したレースを開くと出ます）
               </li>
               <li>
                 <strong>「的中」タブ</strong>（/hit-races）:
@@ -263,7 +329,7 @@ export default function HowToUse() {
           "@context": "https://schema.org",
           "@type": "HowTo",
           name: "龍神レーダー（AIボートレース分析サービス）の使い方",
-          description: "龍神レーダーの使い方を5つのステップで解説",
+          description: "龍神レーダーの使い方を6つのステップで解説",
           step: steps.map((step, index) => ({
             "@type": "HowToStep",
             position: index + 1,

@@ -54,6 +54,11 @@
       "guards": "汎用の日次監視 data_health（完了の定義C、マイグレーション089）。PGliteでDB関数の意味論まで検証する"
     },
     {
+      "script": "verify-display-coverage.js",
+      "tier": "ci",
+      "guards": "表示カバレッジ台帳（docs/reference/display-coverage.md）の最新性と抽出ロジック。取得したデータが画面に繋がっているかを、マイグレーションと src/・api/ の静的突合で追う"
+    },
+    {
       "script": "verify-data-health-report.js",
       "tier": "ci",
       "guards": "data-health-report.js の存在充足率の分母の定義（BOA-381）"
@@ -91,7 +96,9 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": ["--base=origin/master"],
+      "args": [
+        "--base=origin/master"
+      ],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
@@ -310,6 +317,11 @@
       "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
     },
     {
+      "script": "verify-hit-verification-guidance.js",
+      "tier": "ci",
+      "guards": "「毎回の的中/不的中はどこで見られるか」の案内（About・FAQ・使い方ガイド）が、実際に判定を描くタブと食い違うこと（BOA-346の移設で3か所が取り残された）"
+    },
+    {
       "script": "verify-race-cancellation-usage.js",
       "tier": "ci",
       "guards": "開催中止の判定が共通関数を通らず生の文字列比較で書かれること（BOA-418）"
@@ -352,6 +364,13 @@
       "guards": "「本日のデータ一覧」（BOA-402）の集計",
       "reason": "実Supabaseの morning_digest_rows を読むためPRでは実行できない（secretsが要る）。ただし generate-morning-digest.yml が生成直後に毎日実行しており、manual 5本のうちこれだけは定期的に動いている",
       "command": "node --env-file=.env.local scripts/maintenance/verify-morning-digest.js"
+    },
+    {
+      "script": "verify-pretest-row-pick.js",
+      "tier": "manual",
+      "guards": "前検タイム（motor_pretest_stats）の行の選び方の前提。節の中で値が変わらないこと・6日ルックバックが前の節を拾わないこと・カバー率（BOA-451）",
+      "reason": "実Supabaseの全期間データを読む必要があり、日々のデータ投入結果に依存するためCIでは決定的にならない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-pretest-row-pick.js"
     },
     {
       "script": "verify-rpc-output-keys.js",

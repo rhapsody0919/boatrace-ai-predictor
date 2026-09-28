@@ -22,6 +22,12 @@ import {
   semifinalRaceIdsOf,
   scoreTableFor,
 } from "../components/race/seriesPoints.js";
+import {
+  PRETEST_LOOKBACK_DAYS,
+  pickFirstPretestByRacer,
+  pickLatestPretestByRacer,
+  shiftDate,
+} from "../utils/pretestRows";
 
 // 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
 // getRacerBoatReturnRate/getRaceRacerBoatReturnRate/aggregateRacerVenueBoatStats
@@ -2504,6 +2510,33 @@ export const supabaseDataService = {
    * 指定レースの枠番別モーター調子（2連率/3連率）を取得する（BOA-151）
    * 「このレースのどの艇のモーターが調子いいか」を直接示す
    * venueCodeを渡すと各艇のモーターの機力指数（BOA-265）も合わせて取得する
+   *
+   * ## 前検タイムと「節時点の公式2連率」（BOA-451 / FR-4a）
+   *
+   * この関数が返す `motor_2rate` は**選択期間（過去90日・直近1ヶ月）で再計算した値**に
+   * 差し替えている（下の注記）。一方、出走表に印刷され他サイトにも載っている
+   * 「モーター2連対率」は**節の開始時点（前検日）の公式値**で、両者は別物。
+   * 同じタブの中で見比べられないと「なぜ基本情報タブと数字が違うのか」になるため、
+   * 差し替え前の公式値を `official_2rate` として残す（**追加クエリ0本**。
+   * `race_entries` から既に取っている値をそのまま持ち回るだけ）。
+   *
+   * 前検タイム（`pretest_time` / `pretest_rank`）は機力の**起点**で、
+   * `motor_pretest_stats` から**1クエリ**で節の全選手分を引く。
+   *
+   * 行の選び方（実測で決めた。2026-09-28）:
+   *   同じ会場・同じ選手で `race_date <= 表示レースの日付` かつ `>= 日付 - 6日` の
+   *   **最新の行**を採る。理由は3つとも実データで確かめた。
+   *     1. 節の中で `pretest_time` / `pretest_rank` が変わる例は **0件**
+   *        （31,268の連続区間すべてで単一値）。どの行を採っても値は同じ
+   *     2. 6日ルックバックで、**その日に走る選手について前の節の行を引く例は0件**
+   *        （2026年1月〜9月の出走241,427件。採った行のモーター番号が
+   *        `race_entries.motor_number` と食い違う例も9月の24,842件で0件）。
+   *        返るMap自体には「前の節にしか出ていない選手」の行が残ることはあるが、
+   *        引き当てには使われない（詳細は `src/utils/pretestRows.js`）
+   *     3. 日付完全一致だけだと当たるのは30.9%（節の中の一部の日にしか行が無い）。
+   *        6日ルックバックで94.6%に上がる
+   *   今節タブ（`getMeetScoreboard`）は「節の最も古い行」を採るが、1の理由で
+   *   両者は必ず同じ値になる。`npm run verify:pretest-row-pick` がこの不変条件を守る
    */
   getRaceMotorBreakdown(raceId, venueCode = null, days = 90) {
     return withCache(
@@ -2513,8 +2546,10 @@ export const supabaseDataService = {
       // 格下げされてしまうため、raceIdより前に置く。
       // v2: motor_2rate/3rateを選択期間に応じた値に差し替えるよう変更(BOA-283)。
       // v3: 優出回数・優勝回数・1着率を追加(BOA-264追加調査、日和比較)。
+      // v4: 前検タイム・前検順位・公式2連率（節時点）を追加(BOA-451)。
       // 旧キーのままだと古いキャッシュが新フィールド無しの形状のまま返る
-      `race-motor-breakdown-v3-${venueCode}-${days}-${raceId}`,
+      // （過去レースは7日TTLなので、上げ忘れると1週間「前検」列が出ない）
+      `race-motor-breakdown-v4-${venueCode}-${days}-${raceId}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -2524,7 +2559,7 @@ export const supabaseDataService = {
         const { data, error } = await supabase
           .from("race_entries")
           .select(
-            "boat_number, player_name, motor_number, motor_2rate, motor_3rate",
+            "boat_number, player_name, racer_id, motor_number, motor_2rate, motor_3rate",
           )
           .eq("race_id", raceId)
           .order("boat_number");
@@ -2536,32 +2571,42 @@ export const supabaseDataService = {
         const rows = data ?? [];
         if (venueCode === null) return rows;
 
-        const [powerIndexes, venueMotorStatsList] = await Promise.all([
-          Promise.all(
-            rows.map((row) =>
-              this.getMotorPowerIndex(venueCode, row.motor_number, days),
+        const [powerIndexes, venueMotorStatsList, pretestByRacer] =
+          await Promise.all([
+            Promise.all(
+              rows.map((row) =>
+                this.getMotorPowerIndex(venueCode, row.motor_number, days),
+              ),
             ),
-          ),
-          Promise.all(
-            rows.map((row) =>
-              this.getVenueMotorStats(venueCode, row.motor_number),
+            Promise.all(
+              rows.map((row) =>
+                this.getVenueMotorStats(venueCode, row.motor_number),
+              ),
             ),
-          ),
-        ]);
+            fetchPretestByRacer(venueCode, raceId.slice(0, 10)),
+          ]);
         // 2連率/3連率も選択中の期間（過去90日/直近1ヶ月）に応じた値に差し替える。
         // race_entries.motor_2rate/3rateは公式サイトの「モーター抽選日からの通算」
         // 値でperiod非依存のため、そのまま使うと機力指数だけ期間が変わり
         // 2連率/3連率が変わらないという不整合が生じる（ユーザー指摘、2026-09-13）
-        return rows.map((row, i) => ({
-          ...row,
-          motor_2rate: powerIndexes[i]?.actual_rate2 ?? row.motor_2rate,
-          motor_3rate: powerIndexes[i]?.actual_rate3 ?? row.motor_3rate,
-          power_index: powerIndexes[i]?.power_index ?? null,
-          final_count: venueMotorStatsList[i]?.finalCount ?? null,
-          championship_count: venueMotorStatsList[i]?.championshipCount ?? null,
-          first_place_count: venueMotorStatsList[i]?.firstPlaceCount ?? null,
-          race_count: venueMotorStatsList[i]?.raceCount ?? null,
-        }));
+        return rows.map((row, i) => {
+          const pretest = pretestByRacer.get(row.racer_id) ?? null;
+          return {
+            ...row,
+            motor_2rate: powerIndexes[i]?.actual_rate2 ?? row.motor_2rate,
+            motor_3rate: powerIndexes[i]?.actual_rate3 ?? row.motor_3rate,
+            // 期間で差し替える前の公式値（節の開始時点）。追加クエリ0本
+            official_2rate: row.motor_2rate ?? null,
+            pretest_time: pretest?.pretest_time ?? null,
+            pretest_rank: pretest?.pretest_rank ?? null,
+            power_index: powerIndexes[i]?.power_index ?? null,
+            final_count: venueMotorStatsList[i]?.finalCount ?? null,
+            championship_count:
+              venueMotorStatsList[i]?.championshipCount ?? null,
+            first_place_count: venueMotorStatsList[i]?.firstPlaceCount ?? null,
+            race_count: venueMotorStatsList[i]?.raceCount ?? null,
+          };
+        });
       },
     );
   },
@@ -6492,15 +6537,10 @@ export const supabaseDataService = {
           return byRacer;
         })(),
         // 選手ごとの前検（節の最初の行＝前検日のもの）。
-        // 直近は節の中の複数日に行があるため、最も古い日付を採る
-        pretestByRacer: Object.fromEntries(
-          [...(pretest ?? [])]
-            .sort((a, b) => a.race_date.localeCompare(b.race_date))
-            .reduce((map, r) => {
-              if (!map.has(r.racer_id)) map.set(r.racer_id, r);
-              return map;
-            }, new Map()),
-        ),
+        // 直近は節の中の複数日に行があるため、最も古い日付を採る。
+        // 採り方の根拠と、モータ情報タブ（最新の行を採る）と必ず一致することの
+        // 実測は src/utils/pretestRows.js を読むこと
+        pretestByRacer: Object.fromEntries(pickFirstPretestByRacer(pretest)),
         // 得点率の計算は画面側の純関数（seriesPoints.js）と同じ規則。
         // ここでは素材（着順と種別）だけ渡し、集計は呼び出し側に任せる。
         // **表示中のレースより前だけ**を渡す。過去日を開いているときは
@@ -6954,6 +6994,111 @@ export const supabaseDataService = {
   },
 
   /**
+   * オリジナル展示（一周・半周ラップ・まわり足・直線）を1レース分取得する
+   * （phase a FR-4b / [BOA-452](https://linear.app/boat-ai/issue/BOA-452)）。
+   *
+   * 出所はBOATCAST（`race.boatcast.jp`、BOATRACE振興会の公式Web映像サービス）。
+   * [ADR-0067](docs/adr/0067-official-site-content-redisplay-policy.md) が
+   * 「取得した値は保存のみ。画面に再表示するには別途ユーザーの承認と出典表記の
+   * 設計が要る」としている区分なので、画面側は必ず出典を添えて出す。
+   *
+   * 戻り値の `state`:
+   *   "published" 値がある
+   *   "empty"     まだ取得できていない（計測前・未公開）→ 行を出さない
+   *   "forbidden" 匿名にSELECT権限が無い（マイグレーション096が未適用）→ 行を出さない
+   * 取得失敗（ネットワーク等）は例外を投げる（BOA-359。空に化けさせない）
+   *
+   * クエリは**2本**（ヘッダ1・値1）。値は6艇 × 最大4項目 = 最大24行。
+   * 直前情報タブを開いたときだけ走る（RaceTabs は非アクティブタブを
+   * アンマウントする）。
+   */
+  getRaceOriginalExhibition(raceId) {
+    return withCache(`original-exhibition-${raceId}`, async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not initialized");
+      }
+
+      let headerRes;
+      let valueRes;
+      try {
+        [headerRes, valueRes] = await Promise.all([
+          supabase
+            .from("race_original_exhibition")
+            .select("item_labels, updated_at")
+            .eq("race_id", raceId)
+            .maybeSingle(),
+          supabase
+            .from("race_original_exhibition_values")
+            .select("boat_number, kind, value")
+            .eq("race_id", raceId),
+        ]);
+      } catch (error) {
+        if (isPermissionDeniedError(error)) {
+          // 096（匿名へのSELECT公開）が未適用の間はここを通る。
+          // 「データ無し」ではなく forbidden として返し、画面は行ごと出さない
+          // fetchFailed を付けて withCache に保存させない。付け忘れると、
+          // 096の適用前に開いた過去レースが7日間ずっと forbidden のまま固着する
+          return {
+            state: "forbidden",
+            capturedAt: null,
+            kinds: [],
+            byBoat: {},
+            fetchFailed: true,
+          };
+        }
+        throw error;
+      }
+
+      const values = valueRes.data ?? [];
+
+      // `value` は nullable で、欠測（BOATCASTのファイルの `--.--`。津・三国の
+      // 一周など。091のコメント）は NULL で入る。**値がある行だけ**を数えて
+      // 「出せるかどうか」を決める。行数だけで見ると、全艇が欠測の項目まで
+      // 出典に名前が並んだり、1行も出ないのに出典ブロックだけ残ったりする
+      const measured = values.filter(
+        (row) => row.value !== null && row.value !== undefined,
+      );
+      if (measured.length === 0) {
+        // まだ計測されていない（または全艇欠測）。発走の30分前あたりに値が
+        // 入るので、この状態をキャッシュすると出た後もリロードまで出ない
+        return {
+          state: "empty",
+          capturedAt: null,
+          kinds: [],
+          byBoat: {},
+          fetchFailed: true,
+        };
+      }
+
+      const byBoat = {};
+      measured.forEach((row) => {
+        byBoat[row.boat_number] = {
+          ...(byBoat[row.boat_number] ?? {}),
+          [row.kind]: Number(row.value),
+        };
+      });
+
+      // 会場によって項目が違う（例: 児島は「一周|まわり足」の2項目だけ）。
+      // ヘッダの item_labels（"一周|まわり足|直線"）を正として順番を決め、
+      // 実際に値がある種別だけ残す。ヘッダが無ければ既定の順に落とす
+      const present = new Set(measured.map((row) => row.kind));
+      const declared = (headerRes.data?.item_labels ?? "")
+        .split("|")
+        .map((label) => label.trim())
+        .filter(Boolean);
+      const order = declared.length > 0 ? declared : ORIGINAL_EXHIBITION_KINDS;
+      const kinds = order.filter((kind) => present.has(kind));
+
+      return {
+        state: "published",
+        capturedAt: headerRes.data?.updated_at ?? null,
+        kinds,
+        byBoat,
+      };
+    });
+  },
+
+  /**
    * 「本日のデータ一覧」（BOA-402）の1日ぶんを取得する。
    *
    * ページは morning_digest_days / morning_digest_rows の **2表だけ**を読む
@@ -7040,6 +7185,38 @@ const NON_TERMINAL_PIT_REPORT = Object.freeze({
   comments: [],
   fetchFailed: true,
 });
+
+/**
+ * オリジナル展示の項目の既定の並び（BOATCASTのTSVの並びに合わせる）。
+ * 会場ごとに項目数が違うため、実際の並びは `item_labels` を正とする
+ */
+const ORIGINAL_EXHIBITION_KINDS = ["一周", "半周ラップ", "まわり足", "直線"];
+
+/**
+ * モータ情報タブ向けに、節の前検タイムを選手ごとに1クエリで引く（BOA-451）。
+ * 採る行は「同じ会場・`race_date <= 当日` かつ `>= 当日 - 6日` の最新」。
+ * 根拠と、今節タブ（節の最初の行）と必ず一致することの実測は
+ * `src/utils/pretestRows.js` に書いてある。
+ *
+ * 取得に失敗しても前検の列が出ないだけで他の列は読めるため、ここは
+ * 例外を投げずに空のMapへ倒す（`.throwOnError()` の例外はここで捕まえる）。
+ * @returns {Promise<Map<number, object>>}
+ */
+async function fetchPretestByRacer(venueCode, date) {
+  if (!supabase || !date) return new Map();
+  try {
+    const { data } = await supabase
+      .from("motor_pretest_stats")
+      .select("racer_id, race_date, pretest_time, pretest_rank")
+      .eq("venue_code", venueCode)
+      .gte("race_date", shiftDate(date, -PRETEST_LOOKBACK_DAYS))
+      .lte("race_date", date);
+    return pickLatestPretestByRacer(data ?? []);
+  } catch (error) {
+    console.error("前検タイム取得エラー:", error?.message ?? String(error));
+    return new Map();
+  }
+}
 
 /**
  * PostgRESTが返す「権限が無い」エラーか。
