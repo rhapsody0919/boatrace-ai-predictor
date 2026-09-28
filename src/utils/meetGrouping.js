@@ -113,7 +113,9 @@ export function groupIntoCurrentMeet(sortedAscEntries, maxGapDays = 2) {
  *
  *   - `series_day === 1`      … 節の初日
  *   - `series_day < 直前の値`  … 初日の行が無いだけ（`series_day=2` から始まる実例がある）
- *   - 前の開催日から**2日以上空いた** … `series_day` が無い期間（2026-02より前）の保険
+ *   - 前の開催日から**2日以上空いた** … `series_day` で決められないときだけの保険
+ *     （`series_day` が両側にあるなら、そちらの判断を優先する。出走表が1日ぶん
+ *     未取得なだけで偽の「空き」ができ、節の途中で切れてしまうのを避けるため）
  *
  * 逆に**同じ値の連続（4→4）と飛び（5→7）は同じ節の続き**として扱う。中止順延で
  * 実際に起きる（2026-09に同値3箇所・飛びの実例あり）。ここを厳しくすると節の
@@ -147,11 +149,17 @@ export function findMeetStartDate(days, targetDate) {
         ? 0
         : (new Date(`${d.date}T00:00:00Z`) - new Date(`${prevDate}T00:00:00Z`)) /
           86400000;
-    const startsByGap = prevDate !== null && gapDays >= 2;
+    // `series_day` で決められるなら**そちらを優先する**。日付の空きを優先すると、
+    // 出走表が1日ぶん未取得なだけで偽の「空き」ができ、`series_day` が「同じ節の
+    // 続き」と言っていても節を切ってしまう（旧実装は間が2日まで許容していたので、
+    // ここを空き優先にすると許容がむしろ狭くなる）
+    const canDecideBySeriesDay = d.seriesDay != null && prevSeriesDay != null;
     const startsBySeriesDay =
       d.seriesDay != null &&
       (d.seriesDay === 1 ||
         (prevSeriesDay != null && d.seriesDay < prevSeriesDay));
+    const startsByGap =
+      !canDecideBySeriesDay && prevDate !== null && gapDays >= 2;
     if (startsByGap || startsBySeriesDay) meetStart = d.date;
     // 表示日以前で最後に見た節の初日が答え。表示日の行が無くても遡れる
     if (d.date <= targetDate) answer = meetStart;
