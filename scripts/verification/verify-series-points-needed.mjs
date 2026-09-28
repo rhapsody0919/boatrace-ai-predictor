@@ -19,34 +19,72 @@ import {
 const vv = "20";
 const MEET_FROM = "2026-09-22";
 
-const { data: entries } = await supabase
-  .from("race_entries")
-  .select("race_id, boat_number, racer_id, player_name")
-  .gte("race_id", MEET_FROM)
-  .lte("race_id", "2026-09-27-zz")
-  .like("race_id", `__________-${vv}-__`);
-const raceIds = [...new Set((entries ?? []).map((e) => e.race_id))];
-const { data: results } = await supabase
-  .from("race_results")
-  .select("race_id, rank1, rank2, rank3, rank4, rank5, rank6")
-  .in("race_id", raceIds);
-const { data: conds } = await supabase
-  .from("race_conditions")
-  .select("race_id, race_stage")
-  .gte("race_id", MEET_FROM)
-  .lte("race_id", "2026-09-27-zz")
-  .like("race_id", `__________-${vv}-__`);
+// 取得失敗を「データなし」に化けさせない。`scripts/lib/supabaseClient.js` は
+// 15秒でfetchを中断する（undiciが無期限にハングする既知の不具合への対策）ため、
+// エラーを見ないと**空の結果で検証が緑になる**（2026-09-28、若松の出走表が
+// 空で返り「検証した組: 0／不整合: 0」と出たのに成功扱いになっていた）
+async function must(label, run) {
+  let last = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data, error } = await run();
+    if (!error) {
+      if (!data || data.length === 0) throw new Error(`${label}が0件`);
+      return data;
+    }
+    last = error;
+  }
+  throw new Error(`${label}の取得に失敗: ${last.message}`);
+}
 
-const stage = new Map((conds ?? []).map((c) => [c.race_id, c.race_stage ?? ""]));
-const res = new Map((results ?? []).map((r) => [r.race_id, r]));
-const prelimEnd = prelimEndRaceIdOf(conds ?? []);
+const entries = await must("出走表", () =>
+  supabase
+    .from("race_entries")
+    .select("race_id, boat_number, racer_id, player_name")
+    .gte("race_id", MEET_FROM)
+    .lte("race_id", "2026-09-27-zz")
+    .like("race_id", `__________-${vv}-__`),
+);
+const raceIds = [...new Set(entries.map((e) => e.race_id))];
+const results = await must("結果", () =>
+  supabase
+    .from("race_results")
+    .select("race_id, rank1, rank2, rank3, rank4, rank5, rank6")
+    .in("race_id", raceIds),
+);
+// 本番STの記録。欠場（走っていない）を走数から外すために要る（BOA-489）。
+// STが1行も無いレースは取得漏れの可能性があるので全艇を出走扱いに倒す
+const startRows = await must("ST", () =>
+  supabase
+    .from("race_start_timings")
+    .select("race_id, boat_number")
+    .in("race_id", raceIds),
+);
+const startedKeys = new Set(
+  startRows.map((r) => `${r.race_id}|${r.boat_number}`),
+);
+const racesWithSt = new Set(startRows.map((r) => r.race_id));
+const didStart = (raceId, boatNumber) =>
+  !racesWithSt.has(raceId) || startedKeys.has(`${raceId}|${boatNumber}`);
+
+const conds = await must("種別", () =>
+  supabase
+    .from("race_conditions")
+    .select("race_id, race_stage")
+    .gte("race_id", MEET_FROM)
+    .lte("race_id", "2026-09-27-zz")
+    .like("race_id", `__________-${vv}-__`),
+);
+
+const stage = new Map(conds.map((c) => [c.race_id, c.race_stage ?? ""]));
+const res = new Map(results.map((r) => [r.race_id, r]));
+const prelimEnd = prelimEndRaceIdOf(conds);
 
 let checked = 0;
 const bad = [];
 
 // 予選期間の各レースを「表示中のレース」に見立てて検証する
 for (const displayed of raceIds.filter((id) => id <= prelimEnd).sort()) {
-  const past = (entries ?? []).filter((e) => e.race_id < displayed);
+  const past = entries.filter((e) => e.race_id < displayed);
   if (past.length === 0) continue;
 
   const board = {
@@ -57,6 +95,7 @@ for (const displayed of raceIds.filter((id) => id <= prelimEnd).sort()) {
       racerId: e.racer_id,
       playerName: e.player_name,
       raceStage: stage.get(e.race_id) ?? null,
+      started: didStart(e.race_id, e.boat_number),
       ...(res.get(e.race_id) ?? {}),
     })),
   };
@@ -67,7 +106,7 @@ for (const displayed of raceIds.filter((id) => id <= prelimEnd).sort()) {
 
   // 残りの予選走数（表示中レースを含む）。算入判定はサービス層と同じ共通関数
   const remaining = new Map();
-  for (const e of entries ?? []) {
+  for (const e of entries) {
     if (e.race_id < displayed) continue;
     if (!countsForSeriesScore(stage.get(e.race_id) ?? "", e.race_id, prelimEnd))
       continue;

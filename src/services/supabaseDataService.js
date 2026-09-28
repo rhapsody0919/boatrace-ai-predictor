@@ -6313,6 +6313,19 @@ export const supabaseDataService = {
       const stageById = new Map(
         (conditions ?? []).map((c) => [c.race_id, c.race_stage]),
       );
+      // **本番スタートの記録があるか**（欠場の判定。BOA-489）。
+      // 着順に載らない走には「失格・落水（走ったが着順が付かない。0点だが
+      // 走数に入れる）」と「欠場（走っていない。走数にも入れない）」があり、
+      // 区別にはST記録の有無を使う。`meetStarts` は得点率に使う範囲
+      // （節の頭〜表示中レースの直前）と同じ窓を引いているので追加クエリ0本。
+      //
+      // STが1行も無いレースは**取得漏れ**の可能性があるため、全艇を出走扱いに
+      // 倒す（欠場扱いにするとレースが丸ごと得点率から消えて、いま直そうと
+      // している誤差より大きく狂う）
+      const startedKeys = new Set(
+        (meetStarts ?? []).map((r) => `${r.race_id}|${r.boat_number}`),
+      );
+      const racesWithSt = new Set((meetStarts ?? []).map((r) => r.race_id));
 
       return {
         meetStart,
@@ -6502,6 +6515,10 @@ export const supabaseDataService = {
             racerId: e.racer_id,
             playerName: e.player_name,
             raceStage: stageById.get(e.race_id) ?? null,
+            // 欠場を走数から外すための材料（BOA-489）
+            started:
+              !racesWithSt.has(e.race_id) ||
+              startedKeys.has(`${e.race_id}|${e.boat_number}`),
             ...(resultById.get(e.race_id) ?? {}),
           })),
       };

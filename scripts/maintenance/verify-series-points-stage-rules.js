@@ -339,6 +339,70 @@ check(
   [1, 2, 1],
 );
 
+// ---- 3b. 欠場（不出走）と失格・落水の区別（BOA-489） --------------------------
+// 着順に載らない走は2種類ある。失格・落水は「0点だが1走」、欠場は「走数にも
+// 入れない」。区別は `started`（本番STの記録があるか）で行う
+{
+  const base = {
+    raceStage: "予選",
+    rank1: 1,
+    rank2: 2,
+    rank3: 3,
+    rank4: 4,
+    rank5: 5,
+    rank6: null, // 6艇目が着順に載っていない（失格・落水 or 欠場）
+  };
+  const withPrelim = { prelimEndRaceId: "2026-09-25-20-12" };
+  // 走ったが着順が付かない（STの記録がある）: 0点・1走
+  const disqualified = computeSeriesScore(
+    [{ ...base, raceId: "2026-09-23-20-01", boatNumber: 6, started: true }],
+    withPrelim,
+  );
+  check("失格・落水は0点だが1走に数える", disqualified, {
+    points: 0,
+    runs: 1,
+    rate: 0,
+  });
+  // 走っていない（STの記録が無い）: 走数にも入れない
+  const absent = computeSeriesScore(
+    [{ ...base, raceId: "2026-09-23-20-01", boatNumber: 6, started: false }],
+    withPrelim,
+  );
+  check("欠場は走数にも入れない", absent, { points: 0, runs: 0, rate: null });
+  check(
+    "欠場は着順の並びにも出さない",
+    listSeriesFinishes(
+      [{ ...base, raceId: "2026-09-23-20-01", boatNumber: 6, started: false }],
+      withPrelim,
+    ),
+    [],
+  );
+  check(
+    "失格・落水は着順の並びに null で出す",
+    listSeriesFinishes(
+      [{ ...base, raceId: "2026-09-23-20-01", boatNumber: 6, started: true }],
+      withPrelim,
+    ),
+    [null],
+  );
+  // `started` が付いていない行は従来どおり数える（旧来の呼び出し・ST未取得）
+  const unknown = computeSeriesScore(
+    [{ ...base, raceId: "2026-09-23-20-01", boatNumber: 6 }],
+    withPrelim,
+  );
+  check("started が無い行は従来どおり1走に数える", unknown.runs, 1);
+  // 着順が付いている走は `started` を見ない（着順に載る＝走っている）
+  const finished = computeSeriesScore(
+    [{ ...base, raceId: "2026-09-23-20-01", boatNumber: 1, started: false }],
+    withPrelim,
+  );
+  check("着順が付いていれば started=false でも数える", finished, {
+    points: 10,
+    runs: 1,
+    rate: 10,
+  });
+}
+
 // 「届かず」の判定に使う上限は、残りレースの種別ごとの1着の点で出す。
 // 予選配点の10点で決め打ちすると、ドリーム戦が残っている選手を取りこぼす
 check(

@@ -16,6 +16,23 @@ import {
   semifinalRaceIdsOf,
   SEMIFINAL_DEFAULT_SLOTS,
 } from "../../src/components/race/seriesPoints.js";
+// 取得失敗を「データなし」に化けさせない。`scripts/lib/supabaseClient.js` は
+// 15秒でfetchを中断する（undiciが無期限にハングする既知の不具合への対策）ため、
+// エラーを見ないと**空の結果で検証が緑になる**（2026-09-28、若松の出走表が
+// 空で返り「準優に乗った人数: 0」と出たのに成功扱いになっていた）
+async function must(label, run) {
+  let last = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data, error } = await run();
+    if (!error) {
+      if (!data || data.length === 0) throw new Error(`${label}が0件`);
+      return data;
+    }
+    last = error;
+  }
+  throw new Error(`${label}の取得に失敗: ${last.message}`);
+}
+
 
 // 必要得点はボーダー（準優の目安）を前提にしている。その推定が妥当かを
 // 「実際に準優に乗った選手の最低得点率」と突き合わせて検証する。
@@ -25,23 +42,43 @@ const MEETS = [
 ];
 
 for (const m of MEETS) {
-  const { data: entries } = await supabase
-    .from("race_entries")
+  const entries = await must(`${m.name}の出走表`, () =>
+    supabase
+      .from("race_entries")
     .select("race_id, boat_number, racer_id, player_name")
     .gte("race_id", m.from)
     .lte("race_id", `${m.to}-zz`)
-    .like("race_id", `__________-${m.vv}-__`);
-  const raceIds = [...new Set((entries ?? []).map((e) => e.race_id))];
-  const { data: results } = await supabase
-    .from("race_results")
-    .select("race_id, rank1, rank2, rank3, rank4, rank5, rank6")
-    .in("race_id", raceIds);
-  const { data: conds } = await supabase
-    .from("race_conditions")
-    .select("race_id, race_stage")
-    .gte("race_id", m.from)
-    .lte("race_id", `${m.to}-zz`)
-    .like("race_id", `__________-${m.vv}-__`);
+      .like("race_id", `__________-${m.vv}-__`),
+  );
+  const raceIds = [...new Set(entries.map((e) => e.race_id))];
+  const results = await must(`${m.name}の結果`, () =>
+    supabase
+      .from("race_results")
+      .select("race_id, rank1, rank2, rank3, rank4, rank5, rank6")
+      .in("race_id", raceIds),
+  );
+  // 本番STの記録。欠場（走っていない）を走数から外すために要る（BOA-489）。
+  // STが1行も無いレースは取得漏れの可能性があるので全艇を出走扱いに倒す
+  const startRows = await must(`${m.name}のST`, () =>
+    supabase
+      .from("race_start_timings")
+      .select("race_id, boat_number")
+      .in("race_id", raceIds),
+  );
+  const startedKeys = new Set(
+    (startRows ?? []).map((r) => `${r.race_id}|${r.boat_number}`),
+  );
+  const racesWithSt = new Set((startRows ?? []).map((r) => r.race_id));
+  const didStart = (raceId, boatNumber) =>
+    !racesWithSt.has(raceId) || startedKeys.has(`${raceId}|${boatNumber}`);
+  const conds = await must(`${m.name}の種別`, () =>
+    supabase
+      .from("race_conditions")
+      .select("race_id, race_stage")
+      .gte("race_id", m.from)
+      .lte("race_id", `${m.to}-zz`)
+      .like("race_id", `__________-${m.vv}-__`),
+  );
 
   const stage = new Map((conds ?? []).map((c) => [c.race_id, c.race_stage ?? ""]));
   const res = new Map((results ?? []).map((r) => [r.race_id, r]));
@@ -59,6 +96,7 @@ for (const m of MEETS) {
       racerId: e.racer_id,
       playerName: e.player_name,
       raceStage: stage.get(e.race_id) ?? null,
+      started: didStart(e.race_id, e.boat_number),
       ...(res.get(e.race_id) ?? {}),
     })),
   });

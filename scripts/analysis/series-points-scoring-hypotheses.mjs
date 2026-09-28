@@ -192,20 +192,37 @@ async function load() {
     "race_results",
     "race_id, rank1, rank2, rank3, rank4, rank5, rank6",
   );
+  // 本番STの記録。欠場（走っていない）と失格・落水（走ったが着順が付かない）を
+  // 区別するために要る（BOA-489）
+  const starts = await fetchAllByRaceId(
+    supabase,
+    "race_start_timings",
+    "race_id, boat_number",
+  );
   const { data: official, error } = await supabase
     .from("racer_series_points")
     .select(
       "venue_code, meet_start_date, racer_id, rank, score_rate, total_points, penalty_points, remarks",
     );
   if (error) throw new Error(`racer_series_points: ${error.message}`);
-  const payload = { conds, entries, results, official: official ?? [] };
+  const payload = { conds, entries, results, starts, official: official ?? [] };
   if (CACHE) fs.writeFileSync(CACHE, JSON.stringify(payload));
   return payload;
 }
 
-const { conds, entries, results, official } = await load();
+const { conds, entries, results, starts, official } = await load();
 
 const resultById = new Map(results.map((r) => [r.race_id, r]));
+// 欠場の判定（BOA-489）。出荷コードの `getMeetScoreboard` と同じ組み立て:
+// STが1行も無いレースは取得漏れの可能性があるので全艇を出走扱いに倒す
+const startedKeys = new Set(
+  (starts ?? []).map((r) => `${r.race_id}|${r.boat_number}`),
+);
+const racesWithSt = new Set((starts ?? []).map((r) => r.race_id));
+function didStart(raceId, boatNumber) {
+  if (!racesWithSt.has(raceId)) return true;
+  return startedKeys.has(`${raceId}|${boatNumber}`);
+}
 const entriesByRace = new Map();
 for (const e of entries) {
   if (!entriesByRace.has(e.race_id)) entriesByRace.set(e.race_id, []);
@@ -314,9 +331,11 @@ function scoreMeet(meet, hypothesis, cut = SHIPPED_CUT) {
         points: 0,
         runs: 0,
       };
-      cur.runs += 1;
-      // 失格・落水・転覆は0点だが分母には入れる
       const rank = rankOf(result, e.boat_number);
+      // 欠場（着順に載らず、本番STの記録も無い）は走数にも入れない。
+      // 失格・落水（走ったが着順が付かない）は0点だが分母には入れる
+      if (rank === null && !didStart(row.race_id, e.boat_number)) continue;
+      cur.runs += 1;
       if (rank !== null) cur.points += table[rank] ?? 0;
       byRacer.set(e.racer_id, cur);
     }

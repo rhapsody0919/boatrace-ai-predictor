@@ -223,9 +223,34 @@ export function countsForSeriesScore(stage, raceId, prelimEndRaceId) {
 }
 
 /**
+ * その走を**走数に数えるか**（純関数）。
+ *
+ * 着順に載らない走には2種類ある。
+ *
+ * - **失格・落水・転覆**: 走ったが着順が付かない。**0点だが走数には入れる**
+ * - **欠場（不出走）**: そもそも走っていない。**走数にも入れない**
+ *
+ * 旧実装はこの2つを区別せず、欠場も「0点で1走」と数えていた。得点率が過小に
+ * なり、全走が欠場だった選手は**得点率0.00で順位表に並び、着順欄に「失」が
+ * 並ぶ**（2026-06-13 浜名湖5R・12Rの選手3849で実際に出ていた）。実測では
+ * 2026-06-01以降の298節のうち77節（26%）・96組（節×選手）に影響し、
+ * 得点率のズレは中央0.70・最大6.67だった（BOA-489）。
+ *
+ * 区別は `started`（本番スタートの記録があるか）で行う。呼び出し側が
+ * `race_start_timings` から入れる。**`started` が付いていない行は数える**
+ * （旧来の呼び出し・STが未取得のレースで走を落とさないための既定）。
+ * 着順が付いている走は `started` を見ない——着順に載っている以上は走っている。
+ */
+function countsAsRun(row) {
+  if (finishPositionOf(row) !== null) return true;
+  return row.started !== false;
+}
+
+/**
  * 今節の得点・走数・得点率を計算する（純関数）。
  *
- * @param {Array<Object>} meetRecords `buildMeetResults` の戻り値（節内の走）
+ * @param {Array<Object>} meetRecords `buildMeetResults` の戻り値（節内の走）。
+ *   `started`（本番STの記録があるか）が入っていれば欠場を走数から外す
  * @param {{prelimEndRaceId?: string|null}} [options] `prelimEndRaceId` は
  *   節で最初に組まれた準優勝戦の `race_id`。**これ以降のレースは算入しない**
  * @returns {{points: number, runs: number, rate: number|null}}
@@ -248,6 +273,8 @@ export function computeSeriesScore(meetRecords, options = {}) {
     // 失格・落水は結果行そのものはあり `rank1` に他艇が入るので、
     // `rank1` の有無で「実施されたか」を判定できる
     if (r.rank1 === null || r.rank1 === undefined) return;
+    // 欠場（そもそも走っていない）は走数にも入れない
+    if (!countsAsRun(r)) return;
     runs += 1;
     const rank = finishPositionOf(r);
     if (rank === null) return; // 失格・落水・転覆は0点（分母には入れる）
@@ -293,6 +320,8 @@ export const SEMIFINAL_DEFAULT_SLOTS = 18;
  *
  * 未実施のレース（`rank1` が無い）は含めない。失格・落水は `null` で返し、
  * 呼び出し側が「失」等に落とす（0点だが走ったことに変わりはない）。
+ * **欠場（走っていない）は並びからも外す**（`countsAsRun`。走っていない走に
+ * 「失」を出していた。BOA-489）。
  *
  * **得点率に算入したレースだけを並べる**。並びは得点率の隣に出すので、
  * 算入していない走（予選終了後の一般戦・準優等）を混ぜると
@@ -309,6 +338,7 @@ export function listSeriesFinishes(meetRecords, options = {}) {
   return (Array.isArray(meetRecords) ? [...meetRecords] : [])
     .filter((r) => r.rank1 !== null && r.rank1 !== undefined)
     .filter((r) => countsForSeriesScore(r.raceStage, r.raceId, prelimEndRaceId))
+    .filter((r) => countsAsRun(r))
     .sort((a, b) => String(a.raceId).localeCompare(String(b.raceId)))
     .map((r) => finishPositionOf(r));
 }
