@@ -60,7 +60,9 @@ if (command === "list") {
   const [pr, ...opts] = rest;
   if (!pr) fail("add には PR番号が要ります（add 901 --after 902）");
   const afterIdx = opts.indexOf("--after");
-  if (afterIdx === -1 && opts.length > 0) fail(`不明な引数: ${opts.join(" ")}`);
+  // --after より前の引数（add 901 902 --after 903 等）を黙って捨てない
+  const stray = afterIdx === -1 ? opts : opts.slice(0, afterIdx);
+  if (stray.length > 0) fail(`不明な引数: ${stray.join(" ")}`);
   const after = afterIdx === -1 ? [] : opts.slice(afterIdx + 1).map(toPr);
   if (afterIdx !== -1 && after.length === 0)
     fail("--after の後に PR番号が要ります");

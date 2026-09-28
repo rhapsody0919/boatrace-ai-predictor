@@ -14,6 +14,7 @@
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -49,7 +50,7 @@ process.on("exit", () => rmSync(work, { recursive: true, force: true }));
 
 // 偽の gh: pr checks は品質ゲート緑、pr view --json state は FAKE_GH_STATES（"902=OPEN,903=MERGED"）から返す
 const bin = path.join(work, "bin");
-spawnSync("mkdir", ["-p", bin]);
+mkdirSync(bin);
 writeFileSync(
   path.join(bin, "gh"),
   `#!/usr/bin/env bash
@@ -259,6 +260,10 @@ check(
 );
 check("(d) 不正: PR番号でない", cli("add", "abc").status === 1);
 check("(d) 不正: --after の後が空", cli("add", "901", "--after").status === 1);
+check(
+  "(d) 不正: --after より前の余分な引数を黙って捨てない",
+  cli("add", "901", "902", "--after", "903").status === 1,
+);
 check(
   "(d) 不正: 自分自身の後",
   cli("add", "901", "--after", "901").status === 1,
