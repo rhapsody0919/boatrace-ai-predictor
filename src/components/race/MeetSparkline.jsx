@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import "./MeetSparkline.css";
 
 /**
@@ -16,13 +17,30 @@ import "./MeetSparkline.css";
  * 逆になる。「上がり調子」という日常語とも合わないので、**値を反転して
  * 上ほど速い**に統一する。`upIsBetter` を false にすると素の向きになる。
  *
+ * ## 点に合わせると、その走が何だったかを出す（2026-09-28）
+ *
+ * 線の形は「上がってきたか」を読むためのもので、そこまでは軸が無くても読める。
+ * ただし「この山は何走目の、どのレースだったのか」は線だけでは分からず、
+ * 下の「日別の走り」表と目で突き合わせることになっていた。
+ * 点に合わせたら日付・R・その点の値・着順を出す。
+ *
+ * **ホバーだけにしない。** 390px幅が主戦場で、そこにホバーは無い。
+ * タップでも出し、外側をタップすると消える。指を横に滑らせている間は
+ * 追従するが、縦のスクロールは奪わない（`touch-action: pan-y`）。
+ *
+ * **点そのものを狙わせない。** 点は半径2px（前走だけ3.2px）で、指でも
+ * 細いポインタでも直接は当たらない。横方向で最も近い点を選ぶので、
+ * グラフのどこに合わせても必ず1つ選ばれる。
+ *
  * ## 断定はしない
  *
  * 「上向き/下向き」の判定文は出さない。初日と直近の2点だけで断定して
  * 実態と逆の結論を出していた反省（同PR）から、形と基準線を見せて
  * 読み手に委ねる。
  *
- * @param {Array<{value: number|null, label?: string}>} points 走順（古い→新しい）
+ * @param {Array<{value: number|null, label?: string}>} points 走順（古い→新しい）。
+ *   `label` を渡すと、その点に合わせたときに出す文字列として使う。
+ *   文言の組み立て（i18n）は呼び出し側の責任で、この部品は表示するだけ
  * @param {number|null} [baseline] 破線の水平線で引く基準（STはその選手の
  *   通常平均）
  * @param {Array<number|null>} [referenceSeries] 破線の**折れ線**で引く基準。
@@ -43,6 +61,21 @@ function MeetSparkline({
   upIsBetter = true,
   height = 56,
 }) {
+  // どの点に合わせているか。null は「どこにも合わせていない」
+  const [activeIndex, setActiveIndex] = useState(null);
+  const wrapRef = useRef(null);
+
+  // タップで出した吹き出しは、外側をタップするまで消さない（読ませるため）。
+  // マウスは onPointerLeave で消えるので、この後始末は主にタッチ向け
+  useEffect(() => {
+    if (activeIndex === null) return undefined;
+    const onDocDown = (event) => {
+      if (!wrapRef.current?.contains(event.target)) setActiveIndex(null);
+    };
+    document.addEventListener("pointerdown", onDocDown);
+    return () => document.removeEventListener("pointerdown", onDocDown);
+  }, [activeIndex]);
+
   const values = (points ?? []).map((p) => p.value);
   const numeric = values.filter((v) => typeof v === "number");
   if (numeric.length < 2) return null;
@@ -73,9 +106,7 @@ function MeetSparkline({
   const innerH = height - padY * 2;
   const innerW = W - padX * 2;
   const x = (i) =>
-    values.length === 1
-      ? W / 2
-      : padX + (i / (values.length - 1)) * innerW;
+    values.length === 1 ? W / 2 : padX + (i / (values.length - 1)) * innerW;
   const y = (v) => {
     const ratio = (v - min) / span;
     // upIsBetter: 小さい値（速い）を上に
@@ -89,59 +120,129 @@ function MeetSparkline({
   const path = drawn.map((d) => `${x(d.i).toFixed(2)},${y(d.v).toFixed(2)}`);
   const lastIndex = drawn.length - 1;
 
+  // 値のある点のうち、ポインタの横位置に最も近いものを選ぶ。
+  // viewBox は `preserveAspectRatio="none"` で横に引き伸ばされるため、
+  // SVG座標ではなく**実表示幅に対する割合**で比べる
+  const pickNearest = (event) => {
+    const el = wrapRef.current;
+    if (!el || drawn.length === 0) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const ratio = (event.clientX - rect.left) / rect.width;
+    let best = drawn[0];
+    let bestDist = Infinity;
+    for (const d of drawn) {
+      const dist = Math.abs(x(d.i) / W - ratio);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = d;
+      }
+    }
+    setActiveIndex(best.i);
+  };
+
+  const active =
+    activeIndex === null
+      ? null
+      : (drawn.find((d) => d.i === activeIndex) ?? null);
+  const activeLabel = active ? (points[active.i]?.label ?? null) : null;
+  const activeRatio = active ? x(active.i) / W : 0;
+  // 端の点では吹き出しが箱からはみ出す。中央寄せをやめて端に寄せる
+  const tipAlign =
+    activeRatio < 0.15 ? "start" : activeRatio > 0.85 ? "end" : "center";
+  // 吹き出しは**線の箱の中**に置く。上に出すと見出し（平均・通常値・前検）に、
+  // 下に出すと「9/26 / 前走 0.09」の行に重なる。箱は56pxあり、1行の
+  // 吹き出し（約22px）なら収まる。合わせている点と反対側の半分に置けば、
+  // 見ている点そのものを隠さない
+  const tipSide = active && y(active.v) > height / 2 ? "top" : "bottom";
+
   return (
-    <svg
-      className="meet-sparkline"
-      viewBox={`0 0 ${W} ${height}`}
-      preserveAspectRatio="none"
-      role="presentation"
+    <div
+      className="meet-sparkline-wrap"
+      ref={wrapRef}
       style={{ height }}
+      onPointerMove={pickNearest}
+      onPointerDown={pickNearest}
+      onPointerLeave={() => setActiveIndex(null)}
+      onPointerCancel={() => setActiveIndex(null)}
     >
-      {refNumeric.length >= 2 && (
-        // 基準が日ごとに動く場合（展示のその日の会場平均）は折れ線で引く。
-        // 1本の水平線にすると、水面が重い日と軽い日を同じ物差しで比べてしまう
+      <svg
+        className="meet-sparkline"
+        viewBox={`0 0 ${W} ${height}`}
+        preserveAspectRatio="none"
+        /* 同じ内容は下の「日別の走り」表にあるので、支援技術には出さない。
+           ここは形を読むための絵で、点の値は表が正になる */
+        role="presentation"
+        style={{ height }}
+      >
+        {refNumeric.length >= 2 && (
+          // 基準が日ごとに動く場合（展示のその日の会場平均）は折れ線で引く。
+          // 1本の水平線にすると、水面が重い日と軽い日を同じ物差しで比べてしまう
+          <polyline
+            className="meet-sparkline-baseline"
+            fill="none"
+            points={(referenceSeries ?? [])
+              .map((v, i) =>
+                typeof v === "number"
+                  ? `${x(i).toFixed(2)},${y(v).toFixed(2)}`
+                  : null,
+              )
+              .filter(Boolean)
+              .join(" ")}
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+        {baseline !== null && (
+          <line
+            className="meet-sparkline-baseline"
+            x1={padX}
+            x2={W - padX}
+            y1={y(baseline)}
+            y2={y(baseline)}
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
         <polyline
-          className="meet-sparkline-baseline"
-          fill="none"
-          points={(referenceSeries ?? [])
-            .map((v, i) =>
-              typeof v === "number"
-                ? `${x(i).toFixed(2)},${y(v).toFixed(2)}`
-                : null,
-            )
-            .filter(Boolean)
-            .join(" ")}
+          className="meet-sparkline-line"
+          points={path.join(" ")}
+          stroke={color}
           vectorEffect="non-scaling-stroke"
         />
+        {drawn.map((d, idx) => (
+          <circle
+            key={d.i}
+            cx={x(d.i)}
+            cy={y(d.v)}
+            // 前走だけ大きくする（「今どこにいるか」が一番知りたい点）
+            r={idx === lastIndex ? 3.2 : 2}
+            fill={color}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+        {active && (
+          // 合わせている点を囲う。点そのものを大きくすると「前走だけ大きい」の
+          // 意味が壊れるので、外側に輪を足す
+          <circle
+            className="meet-sparkline-active"
+            cx={x(active.i)}
+            cy={y(active.v)}
+            r={5}
+            fill="none"
+            stroke={color}
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+      </svg>
+      {activeLabel && (
+        <span
+          className={`meet-sparkline-tip is-${tipAlign} at-${tipSide}`}
+          style={{ left: `${(activeRatio * 100).toFixed(2)}%` }}
+          aria-hidden="true"
+        >
+          {activeLabel}
+        </span>
       )}
-      {baseline !== null && (
-        <line
-          className="meet-sparkline-baseline"
-          x1={padX}
-          x2={W - padX}
-          y1={y(baseline)}
-          y2={y(baseline)}
-          vectorEffect="non-scaling-stroke"
-        />
-      )}
-      <polyline
-        className="meet-sparkline-line"
-        points={path.join(" ")}
-        stroke={color}
-        vectorEffect="non-scaling-stroke"
-      />
-      {drawn.map((d, idx) => (
-        <circle
-          key={d.i}
-          cx={x(d.i)}
-          cy={y(d.v)}
-          // 前走だけ大きくする（「今どこにいるか」が一番知りたい点）
-          r={idx === lastIndex ? 3.2 : 2}
-          fill={color}
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-    </svg>
+    </div>
   );
 }
 
