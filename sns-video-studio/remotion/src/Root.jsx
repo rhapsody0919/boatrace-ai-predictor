@@ -38,6 +38,10 @@ import { AnswerCheckHookCM_Demo } from "./AnswerCheckHookCM.jsx";
 import { AccuracyProofCM_C } from "./AccuracyProofCM.jsx";
 import { LivePredictionCM_C } from "./LivePredictionCM3.jsx";
 import { TodaysRacerFormCM } from "./TodaysRacerFormCM.jsx";
+import {
+  MorningDigestCM,
+  MorningDigestXCard,
+} from "./MorningDigestCM.jsx";
 import { TodaysMotorFormCM } from "./TodaysMotorFormCM.jsx";
 import { OutcomeDistributionCM } from "./OutcomeDistributionCM.jsx";
 import { ReturnRateCM } from "./ReturnRateCM.jsx";
@@ -359,6 +363,22 @@ export function RemotionRoot() {
         fps={30}
         width={1080}
         height={1920}
+      />
+      <Composition
+        id="MorningDigestCM"
+        component={MorningDigestCM}
+        durationInFrames={630}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="MorningDigestXCard"
+        component={MorningDigestXCard}
+        durationInFrames={1}
+        fps={30}
+        width={1080}
+        height={1350}
       />
       <Composition
         id="TodaysRacerFormCM"

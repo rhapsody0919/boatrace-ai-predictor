@@ -13,6 +13,9 @@
 
 .rmt-card {
   background: var(--surface-card);
+  /* カードの中の横スクロール（早見の表・日別の走り）のフェードを、
+     ページ背景ではなくこのカード面に合わせる */
+  --hscroll-fade-color: var(--surface-card);
   border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-lg);
   padding: var(--spacing-3);

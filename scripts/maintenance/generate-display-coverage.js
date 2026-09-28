@@ -186,12 +186,25 @@ export function collectRelations(migrations) {
 /**
  * 1ファイル分のコードから、参照しているテーブル名とRPC名を取り出す（純関数）。
  * verify-display-coverage.js が固定入力で検証する。
+ *
+ * `knownRelations` を渡すと、PostgREST の **nested select**（親テーブルの `.select()` の中に
+ * `子テーブル ( 列, 列 )` と書いて join する形）も拾う。この形は `.from()` に子テーブル名が
+ * 現れないため、`.from()` だけを見ていると**読んでいるのに「読んでいない」と誤判定する**。
+ * 2026-09-28に `prediction_odds` で実際に起きた（`supabaseDataService.js:1328` で
+ * `prediction_odds ( updated_at, … )` として読み、:1404 で値を使っている）。
+ * 既知の関係名に限って拾うことで、`return (`・`if (` のような同じ形の行を除ける。
  */
-export function extractCodeReferences(code) {
+export function extractCodeReferences(code, knownRelations = null) {
   const tables = new Set();
   const rpcs = new Set();
   for (const m of code.matchAll(/\.from\(\s*["'`]([a-z0-9_]+)["'`]/g)) {
     tables.add(m[1]);
+  }
+  if (knownRelations) {
+    // 行頭のインデント + テーブル名 + "(" で終わる行（select文字列の中の子テーブル）
+    for (const m of code.matchAll(/^[ \t]+([a-z][a-z0-9_]*)\s*\(\s*$/gm)) {
+      if (knownRelations.has(m[1])) tables.add(m[1]);
+    }
   }
   // `.rpc(` の直後に改行が入る書き方が実在するため、空白・改行をまたいで拾う
   for (const m of code.matchAll(/\.rpc\(\s*["'`]([a-z0-9_]+)["'`]/g)) {
@@ -226,7 +239,7 @@ async function listFiles(dir, exts) {
  *   - REST直叩き: `rest/v1/t` / `rest/v1/rpc/f`（api/ のEdge Functionsが使う。
  *     Supabaseクライアントを持ち込まず fetch している）
  */
-async function collectCodeReferences() {
+async function collectCodeReferences(knownRelations) {
   const surfaces = [
     { dir: SRC_DIR, label: "画面" },
     { dir: API_DIR, label: "API" },
@@ -248,7 +261,7 @@ async function collectCodeReferences() {
     }
     for (const file of files) {
       const code = await fs.readFile(file, "utf8");
-      const found = extractCodeReferences(code);
+      const found = extractCodeReferences(code, knownRelations);
       for (const t of found.tables) add(tables, t, label);
       for (const f of found.rpcs) add(rpcs, f, label);
     }
@@ -418,7 +431,7 @@ async function main() {
   const migrations = await readMigrations();
   const relations = collectRelations(migrations);
   const relationNames = new Set(relations.map((r) => r.name));
-  const { tables: codeTables, rpcs } = await collectCodeReferences();
+  const { tables: codeTables, rpcs } = await collectCodeReferences(relationNames);
   const rpcNames = [...rpcs.keys()].sort();
   const rpcReads = collectRpcTableReads(migrations, rpcNames, relationNames);
   const exceptions = JSON.parse(
