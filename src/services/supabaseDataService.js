@@ -26,6 +26,7 @@ import {
   shouldUseOfficialSeries,
   prelimEndRaceIdOf,
   semifinalSlotsOf,
+  splitMeetSeries,
   scoreTableFor,
 } from "../components/race/seriesPoints.js";
 import {
@@ -3181,7 +3182,11 @@ export const supabaseDataService = {
 
         if (!supabase) {
           console.error("Supabase client not initialized");
-          return { generationStart: null, rows: emptyRows(), fetchFailed: true };
+          return {
+            generationStart: null,
+            rows: emptyRows(),
+            fetchFailed: true,
+          };
         }
 
         let generationStart;
@@ -3189,7 +3194,11 @@ export const supabaseDataService = {
           generationStart = await getMotorGenerationStart(venueCode);
         } catch (err) {
           console.error("モーター使用開始日取得エラー:", err.message);
-          return { generationStart: null, rows: emptyRows(), fetchFailed: true };
+          return {
+            generationStart: null,
+            rows: emptyRows(),
+            fetchFailed: true,
+          };
         }
         if (generationStart === null) {
           return { generationStart, rows: emptyRows() };
@@ -6454,7 +6463,7 @@ export const supabaseDataService = {
       return Promise.resolve(null);
     }
     const vv = String(venueCode).padStart(2, "0");
-    return withCache(`meet-scoreboard-v12-${raceId}`, async () => {
+    return withCache(`meet-scoreboard-v13-${raceId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
       // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る。
@@ -6481,7 +6490,9 @@ export const supabaseDataService = {
           .like("race_id", `__________-${vv}-__`),
         supabase
           .from("race_conditions")
-          .select("race_id, race_stage, is_final_day, series_day")
+          // `race_title` も取る（追加クエリ0本）。男女Ｗ優勝戦＝1つの節に2シリーズが
+          // 同居する開催の検出に使う（BOA-511）。判定材料はこの列だけで足りる
+          .select("race_id, race_stage, is_final_day, series_day, race_title")
           .gte("race_id", windowStart)
           .lte("race_id", `${date}-zz`)
           .like("race_id", `__________-${vv}-__`),
@@ -6625,6 +6636,28 @@ export const supabaseDataService = {
       const stageById = new Map(
         (conditions ?? []).map((c) => [c.race_id, c.race_stage]),
       );
+      // **男女Ｗ優勝戦の節を2シリーズに分ける**（BOA-511）。同じレースを走った
+      // 選手を辿った連結成分がシリーズになる。該当しなければ null。
+      // 出走表は節ぶんを既に持っているので追加クエリ0本
+      const racersByRace = new Map();
+      for (const e of meetRows) {
+        if (!racersByRace.has(e.race_id)) racersByRace.set(e.race_id, []);
+        if (e.racer_id != null) racersByRace.get(e.race_id).push(e.racer_id);
+      }
+      const meetSeries = splitMeetSeries(conditions ?? [], racersByRace);
+      // 表示中のレースの6艇が属するシリーズ。1レースに両シリーズは混ざらない
+      const currentRacers = racersByRace.get(raceId) ?? [];
+      const currentSeries =
+        meetSeries?.find((set) => currentRacers.some((r) => set.has(r))) ??
+        null;
+      // 枠数はシリーズの準優だけから出す。節全体で数えると2シリーズ合計になる
+      const seriesConditions = currentSeries
+        ? (conditions ?? []).filter((c) =>
+            (racersByRace.get(c.race_id) ?? []).some((r) =>
+              currentSeries.has(r),
+            ),
+          )
+        : (conditions ?? []);
       // **本番スタートの記録があるか**（欠場の判定。BOA-489）。
       // 着順に載らない走には「失格・落水（走ったが着順が付かない。0点だが
       // 走数に入れる）」と「欠場（走っていない。走数にも入れない）」があり、
@@ -6764,10 +6797,17 @@ export const supabaseDataService = {
         // 「準優進出戦」は準優の1つ前の勝ち上がり戦なので数えない（BOA-457）。
         // 中止で流れた準優も数えない。番組に2日ぶん残る中止順延で枠数が倍になり、
         // ボーダー・必要得点・「届かず」まで狂う（BOA-490）
-        semifinalSlots: semifinalSlotsOf(conditions ?? [], {
+        semifinalSlots: semifinalSlotsOf(seriesConditions, {
           cancelledRaceIds,
           ranRaceIds: new Set(resultById.keys()),
         }),
+        // **男女Ｗ優勝戦の節で、表示中の6艇が属するシリーズの選手**（BOA-511）。
+        // null なら通常の節で、画面はこれまでどおり節全体を母集団にする。
+        // 2シリーズを混ぜて順位を振ると、節内順位・出場人数・準優の目安が
+        // すべて実際の勝ち上がり争いとズレる
+        seriesRacerIds: currentSeries ? [...currentSeries] : null,
+        // 節全体の人数（注記で「◯人中」を出すときに、混ぜていないことを示す）
+        seriesCount: meetSeries ? meetSeries.length : null,
         // 節の全レースの種別が取れているか（取れていなければ枠数は目安のまま）
         stagesKnown: stageById.size > 0,
         // その日の会場の展示タイム平均（水面の重さ）。同じ6.90でも日によって

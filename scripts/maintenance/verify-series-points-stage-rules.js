@@ -21,6 +21,7 @@ import {
   prelimEndRaceIdOf,
   semifinalRaceIdsOf,
   semifinalSlotsOf,
+  splitMeetSeries,
   computeSeriesScore,
   forecastSeriesScore,
   listSeriesFinishes,
@@ -845,6 +846,192 @@ check(
     { cancelledRaceIds: [], ranRaceIds: ["2026-05-30-03-11"] },
   ),
   12,
+);
+
+// ---- 男女Ｗ優勝戦の節を2シリーズに分ける（BOA-511／BOA-476） -------------------
+// 1つの節に独立した2シリーズが同居する開催が全期間で6節ある。混ぜて順位を振ると
+// 節内順位・出場人数・準優の目安が実際の勝ち上がり争いとズレる。
+//
+// 検出は `race_title` の「Ｗ優勝戦」、切り分けは「同じレースを走った選手」の
+// 連結成分。**繋ぐのは得点率に算入するレースだけ**で、これが無いと多摩川が割れない。
+//
+// 下の並びは**桐生 2026-09-20開催の実データを縮めたもの**。桐生は6節で唯一
+// `race_stage` に男女の接尾を持ち、切り分けの正解として使える。実測では
+// 男24人/女0人 と 男0人/女24人 に分かれてラベルと完全一致した。
+const W_TITLE = "第２０回マンスリーＢＯＡＴＲＡＣＥ杯　男女Ｗ優勝戦";
+const KIRYU_W = [
+  { race_id: "2026-09-20-01-01", race_stage: "予選男子", race_title: W_TITLE },
+  { race_id: "2026-09-20-01-02", race_stage: "予選女子", race_title: W_TITLE },
+  { race_id: "2026-09-21-01-01", race_stage: "予選男子", race_title: W_TITLE },
+  { race_id: "2026-09-21-01-02", race_stage: "予選女子", race_title: W_TITLE },
+  { race_id: "2026-09-24-01-08", race_stage: "準優勝戦", race_title: W_TITLE },
+  { race_id: "2026-09-24-01-10", race_stage: "準優勝戦", race_title: W_TITLE },
+  { race_id: "2026-09-25-01-11", race_stage: "優勝戦", race_title: W_TITLE },
+  { race_id: "2026-09-25-01-12", race_stage: "優勝戦", race_title: W_TITLE },
+];
+const KIRYU_RACERS = new Map([
+  // 男子（予選男子・準優08・優勝11）
+  ["2026-09-20-01-01", [1001, 1002, 1003, 1004, 1005, 1006]],
+  ["2026-09-21-01-01", [1001, 1002, 1003, 1007, 1008, 1009]],
+  ["2026-09-24-01-08", [1001, 1002, 1003, 1004, 1005, 1006]],
+  ["2026-09-25-01-11", [1001, 1002, 1003, 1004, 1005, 1006]],
+  // 女子（予選女子・準優10・優勝12）
+  ["2026-09-20-01-02", [2001, 2002, 2003, 2004, 2005, 2006]],
+  ["2026-09-21-01-02", [2001, 2002, 2003, 2007, 2008, 2009]],
+  ["2026-09-24-01-10", [2001, 2002, 2003, 2004, 2005, 2006]],
+  ["2026-09-25-01-12", [2001, 2002, 2003, 2004, 2005, 2006]],
+]);
+const kiryuSplit = splitMeetSeries(KIRYU_W, KIRYU_RACERS);
+check(
+  "Ｗ優勝戦の節は2つに割れる（桐生 2026-09-20開催）",
+  kiryuSplit?.length,
+  2,
+);
+check(
+  "分かれた人数（男子9人・女子9人）",
+  kiryuSplit?.map((s) => s.size),
+  [9, 9],
+);
+check(
+  "男女が混ざらない（男子側に女子の登録番号が無い）",
+  kiryuSplit?.some((s) => [...s].every((r) => r < 2000)),
+  true,
+);
+check(
+  "男女が混ざらない（女子側に男子の登録番号が無い）",
+  kiryuSplit?.some((s) => [...s].every((r) => r >= 2000)),
+  true,
+);
+
+// **予選終了後の消化レースで繋がない**。多摩川 2026-03-20開催の最終日1R・2R
+// 「一般」は両シリーズの選手が同じレースに入っており、算入レースに含めると
+// 節全体が1つに繋がって割れなくなる（実測で再現した唯一の節）
+const TAMA_TITLE = "男女Ｗ優勝戦第２回ファイティングボートガイド杯";
+const TAMAGAWA_W = [
+  { race_id: "2026-03-20-05-01", race_stage: "予選", race_title: TAMA_TITLE },
+  { race_id: "2026-03-20-05-02", race_stage: "予選", race_title: TAMA_TITLE },
+  { race_id: "2026-03-20-05-03", race_stage: "予選", race_title: TAMA_TITLE },
+  { race_id: "2026-03-20-05-04", race_stage: "予選", race_title: TAMA_TITLE },
+  {
+    race_id: "2026-03-24-05-03",
+    race_stage: "Ｗ準優戦前半",
+    race_title: TAMA_TITLE,
+  },
+  {
+    race_id: "2026-03-24-05-11",
+    race_stage: "Ｗ準優戦後半",
+    race_title: TAMA_TITLE,
+  },
+  { race_id: "2026-03-25-05-01", race_stage: "一般", race_title: TAMA_TITLE },
+  { race_id: "2026-03-25-05-12", race_stage: "優勝戦", race_title: TAMA_TITLE },
+];
+const TAMAGAWA_RACERS = new Map([
+  ["2026-03-20-05-01", [1001, 1002, 1003, 1004, 1005, 1006]],
+  ["2026-03-20-05-02", [2001, 2002, 2003, 2004, 2005, 2006]],
+  ["2026-03-20-05-03", [1001, 1002, 1003, 1004, 1005, 1006]],
+  ["2026-03-20-05-04", [2001, 2002, 2003, 2004, 2005, 2006]],
+  ["2026-03-24-05-03", [1001, 1002, 1003, 1004, 1005, 1006]],
+  ["2026-03-24-05-11", [2001, 2002, 2003, 2004, 2005, 2006]],
+  // 最終日の消化レース。**両シリーズが同居する**（実データと同じ形）
+  ["2026-03-25-05-01", [1001, 2001, 1002, 2002, 1003, 2003]],
+  ["2026-03-25-05-12", [1001, 1002, 1003, 1004, 1005, 1006]],
+]);
+check(
+  "予選終了後の消化レースで繋がないので割れる（多摩川 2026-03-20開催）",
+  splitMeetSeries(TAMAGAWA_W, TAMAGAWA_RACERS)?.length,
+  2,
+);
+
+// ---- 適用しない場合（安全弁） ---------------------------------------------------
+// `race_title` が該当しなければ、成分がいくつあっても分けない。
+// 2025-12〜2026-01は `race_stage` が全て null で、データの欠測により連結が
+// 切れて2成分に見える節が**7節**ある。成分の数だけを根拠にすると誤適用する
+check(
+  "Ｗ優勝戦でなければ分けない（2つに割れて見えても）",
+  splitMeetSeries(
+    [
+      { race_id: "2025-12-03-21-01", race_stage: null, race_title: "一般" },
+      { race_id: "2025-12-03-21-02", race_stage: null, race_title: "一般" },
+    ],
+    new Map([
+      ["2025-12-03-21-01", [1001, 1002, 1003]],
+      ["2025-12-03-21-02", [2001, 2002, 2003]],
+    ]),
+  ),
+  null,
+);
+check(
+  "Ｗ優勝戦でも3つ以上に割れたら分けない（安全弁）",
+  splitMeetSeries(
+    [
+      { race_id: "2026-09-20-01-01", race_stage: "予選", race_title: W_TITLE },
+      { race_id: "2026-09-20-01-02", race_stage: "予選", race_title: W_TITLE },
+      { race_id: "2026-09-20-01-03", race_stage: "予選", race_title: W_TITLE },
+    ],
+    new Map([
+      ["2026-09-20-01-01", [1001, 1002]],
+      ["2026-09-20-01-02", [2001, 2002]],
+      ["2026-09-20-01-03", [3001, 3002]],
+    ]),
+  ),
+  null,
+);
+check("Ｗ開催の判定: 空の入力は null", splitMeetSeries([], new Map()), null);
+check(
+  "Ｗ開催の判定: 配列でなければ null",
+  splitMeetSeries(null, new Map()),
+  null,
+);
+// 出走表が素のオブジェクトでも受ける（呼び出し側の形に合わせない）
+check(
+  "racersByRace が素のオブジェクトでも動く",
+  splitMeetSeries(KIRYU_W, Object.fromEntries(KIRYU_RACERS))?.length,
+  2,
+);
+
+// ---- 順位はシリーズの中だけで振る ------------------------------------------------
+// `seriesRacerIds` を渡すと、その選手だけを母集団にする。渡さなければ従来どおり
+const W_ENTRIES = [
+  {
+    raceId: "2026-09-20-01-01",
+    racerId: 1001,
+    playerName: "男A",
+    raceStage: "予選男子",
+    rank1: 1,
+  },
+  {
+    raceId: "2026-09-20-01-01",
+    racerId: 1002,
+    playerName: "男B",
+    raceStage: "予選男子",
+    rank1: 1,
+  },
+  {
+    raceId: "2026-09-20-01-02",
+    racerId: 2001,
+    playerName: "女A",
+    raceStage: "予選女子",
+    rank1: 2,
+  },
+  {
+    raceId: "2026-09-20-01-02",
+    racerId: 2002,
+    playerName: "女B",
+    raceStage: "予選女子",
+    rank1: 2,
+  },
+];
+check(
+  "seriesRacerIds を渡さなければ節全体で順位を振る（従来どおり）",
+  buildMeetRanking({ entries: W_ENTRIES }).length,
+  4,
+);
+check(
+  "seriesRacerIds を渡すとそのシリーズだけになる",
+  buildMeetRanking({ entries: W_ENTRIES, seriesRacerIds: [1001, 1002] }).map(
+    (r) => r.racerId,
+  ),
+  [1001, 1002],
 );
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);

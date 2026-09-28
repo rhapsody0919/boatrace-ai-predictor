@@ -145,6 +145,8 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
   // 選手を混ぜると公式とズレる（若松G1の実測で 5.67 → 除外すると 5.60 で
   // 実ボーダーと完全一致）
   const rankedOnly = ranking.filter((r) => !r.withdrawn);
+  // 男女Ｗ優勝戦の節か（サービス層が同じシリーズの選手だけを渡してくる）
+  const seriesSplit = Boolean(board?.seriesRacerIds);
   const border = rankedOnly[slots - 1]?.rate;
   // 表のボーダー表示は「節全体の順位」なので、選んだ選手の走数に依存しない
   const showBorderBadge = !isAfterPrelim && !prelimOver && border !== undefined;
@@ -427,6 +429,14 @@ function RaceMeetTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
               </>
             )}
           </p>
+          {/* **男女Ｗ優勝戦の節**は1つの節に独立した2シリーズが同居する（全期間で
+              6節）。何も言わずに人数だけ半分にすると「なぜ減ったのか」になるので、
+              混ぜていないことを1行で断る（BOA-511） */}
+          {seriesSplit && (
+            <p className="rmt-rank-note">
+              {t("meetTab.seriesSplitNote", { total: rankedOnly.length })}
+            </p>
+          )}
           {/* 公式の順位表は52名中3名（賞典除外1・途中帰郷2）を順位から外す。
               当社は全員で順位を振るため下位ほどズレる（2026-09-27に若松G1で
               実測: 得点率は6/6一致、順位は最大4つ差）。除外の判定材料が

@@ -234,6 +234,98 @@ function toSet(v) {
 }
 
 /**
+ * **男女Ｗ優勝戦の節**を、2つのシリーズに分ける（純関数、BOA-511/BOA-476）。
+ *
+ * 1つの「節」の中に独立した2シリーズが同居する開催がある（優勝戦が2本組まれる）。
+ * 節を1つの母集団として扱うと、**別シリーズの選手と混ぜて節内順位を振り、
+ * 準優の枠数も2シリーズ合計になる**。ボーダー（準優の目安）と必要得点は
+ * そこに乗っているので、まとめて狂う。
+ *
+ * ## 分け方: 同じレースを走った選手を辿る
+ *
+ * Ｗ開催では1つのレースに両シリーズが混ざらない。だから「同じレースに出た」で
+ * 選手を繋いでいくと、連結成分がそのままシリーズになる。
+ *
+ * **繋ぐのは得点率に算入するレースだけ**（`countsForSeriesScore`）。全レースで
+ * 繋ぐと多摩川 2026-03-20開催が割れない——優勝戦の日の1R・2R「一般」が
+ * 両シリーズの選手を混ぜた消化レースで、そこが橋になる。予選終了後なので
+ * 算入対象外であり、既存の判定をそのまま通せば落ちる。
+ *
+ * ## 適用は2つの条件が揃ったときだけ
+ *
+ * 1. `race_title` に「Ｗ優勝戦」が入っている（全期間で6節。準優が4本以上ある
+ *    節の一覧と完全に一致し、取りこぼしは無い）
+ * 2. 連結成分がちょうど2個
+ *
+ * 2だけを根拠にすると、**Ｗ優勝戦でないのに割れる節が7節**出る（2025-12〜
+ * 2026-01の `race_stage` が全て null の期間で、データの欠測で連結が切れている）。
+ * どちらか欠ければ分けない。
+ *
+ * ## 検算
+ *
+ * 桐生 2026-09-20開催だけは `race_stage` に「予選男子」「予選女子」の接尾があり、
+ * 正解として使える。この分け方の結果は**男24人/女0人 と 男0人/女24人**で
+ * ラベルと完全に一致した（6節で唯一の正解データ）。他の5節は接尾がばらばら
+ * （「Ｗ準優戦前半/後半」「ツッキー/ツッピー優勝戦」、または区別なし）で、
+ * 接尾での判定は一般解にならない。
+ *
+ * @param {Array<{race_id?: string, raceId?: string, race_stage?: string|null,
+ *   raceStage?: string|null, race_title?: string|null,
+ *   raceTitle?: string|null}>} rows 節の全レース（種別）
+ * @param {Map<string, Array<number>>|Object} racersByRace `race_id` → 出走選手ID
+ * @returns {Array<Set<number>>|null} シリーズごとの選手ID。該当しなければ null
+ */
+export function splitMeetSeries(rows, racersByRace) {
+  const list = Array.isArray(rows) ? rows : [];
+  if (list.length === 0) return null;
+  const isW = list.some((r) =>
+    /[ＷW]優勝戦/u.test(r.raceTitle ?? r.race_title ?? ""),
+  );
+  if (!isW) return null;
+
+  const get = (raceId) => {
+    if (racersByRace instanceof Map) return racersByRace.get(raceId) ?? [];
+    return racersByRace?.[raceId] ?? [];
+  };
+  const prelimEnd = prelimEndRaceIdOf(list);
+  const parent = new Map();
+  const find = (x) => {
+    if (!parent.has(x)) parent.set(x, x);
+    let root = x;
+    while (parent.get(root) !== root) root = parent.get(root);
+    // 経路圧縮
+    while (parent.get(x) !== root) {
+      const next = parent.get(x);
+      parent.set(x, root);
+      x = next;
+    }
+    return root;
+  };
+  for (const r of list) {
+    const raceId = r.raceId ?? r.race_id;
+    const stage = r.raceStage ?? r.race_stage ?? "";
+    if (!countsForSeriesScore(stage, raceId, prelimEnd)) continue;
+    const racers = get(raceId).filter((v) => v !== null && v !== undefined);
+    for (let i = 1; i < racers.length; i += 1) {
+      const a = find(racers[0]);
+      const b = find(racers[i]);
+      if (a !== b) parent.set(a, b);
+    }
+  }
+  const groups = new Map();
+  for (const racer of [...parent.keys()]) {
+    const g = find(racer);
+    if (!groups.has(g)) groups.set(g, new Set());
+    groups.get(g).add(racer);
+  }
+  const comps = [...groups.values()];
+  // ちょうど2つに割れたときだけ採用する（安全弁）
+  if (comps.length !== 2) return null;
+  // 大きいほうを先に返す（表示の並びを安定させる）
+  return comps.sort((a, b) => b.size - a.size);
+}
+
+/**
  * そのレースが**予選最終日より後の日**かどうか。
  *
  * 公式の得点率一覧は「◯日目12R終了時点」＝**日単位**で止まる。PR #871 は
@@ -501,14 +593,24 @@ export function parseOfficialPlacements(placements) {
  * 得点率は**単独では読めない**（「3.67」だけでは準優に乗るか分からない）。
  * 節の中での位置と、準優の枠に対する距離を出して初めて判断材料になる。
  *
- * @param {{entries: Array<Object>}|null} scoreboard `getMeetScoreboard` の戻り値
+ * @param {{entries: Array<Object>, seriesRacerIds?: Array<number>|null}|null}
+ *   scoreboard `getMeetScoreboard` の戻り値。`seriesRacerIds` があれば
+ *   その選手だけを母集団にする（男女Ｗ優勝戦の節）
  * @returns {Array<{racerId: number, playerName: string, points: number,
  *   runs: number, rate: number, rank: number|null, withdrawn: boolean}>}
  *   得点率の降順。同率は同順位。途中で節を離脱した選手は `rank: null`
  */
 export function buildMeetRanking(scoreboard) {
-  const entries = scoreboard?.entries;
-  if (!Array.isArray(entries) || entries.length === 0) return [];
+  const all = scoreboard?.entries;
+  if (!Array.isArray(all) || all.length === 0) return [];
+  // **男女Ｗ優勝戦の節では、同じシリーズの選手だけを母集団にする**（BOA-511）。
+  // 1つの節に独立した2シリーズが同居する開催があり、混ぜて順位を振ると
+  // 節内順位・出場人数・準優の目安が実際の勝ち上がり争いとズレる。
+  // どのシリーズを見せるかはサービス層が決める（表示中の6艇が属するほう）
+  const seriesRacerIds = scoreboard?.seriesRacerIds ?? null;
+  const inSeries = seriesRacerIds ? new Set(seriesRacerIds) : null;
+  const entries = inSeries ? all.filter((e) => inSeries.has(e.racerId)) : all;
+  if (entries.length === 0) return [];
   const prelimEndRaceId = scoreboard?.prelimEndRaceId ?? null;
   // 途中で節を離脱した選手（途中帰郷）は順位の対象から外す。公式の順位表と
   // 同じ扱い。得点率自体は出すので、行が消えることはない（rank が null になる）
