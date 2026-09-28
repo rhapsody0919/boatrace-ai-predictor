@@ -25,6 +25,15 @@ const RACE_PATH = "/race/2026-09-21-02-05";
 
 test.use({ viewport: { width: 390, height: 844 } });
 
+// Cookie同意バナーは画面下部に固定で出て、下の方の要素へのクリック・ポインタ操作を
+// 遮る（BOA-502）。このファイルは表の幅とグラフの当たり判定を測るので、
+// 出たままだと測っているものが変わる
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem("boatai:cookie-consent", "accepted"),
+  );
+});
+
 test("レース詳細 今節タブの日別表は、右に続くことが分かり、着順までは初期表示に収まる（390px）", async ({
   page,
 }) => {
@@ -92,4 +101,89 @@ test("レース詳細 今節タブの日別表は、右に続くことが分か�
       page.locator(".race-history-hscroll .hscroll-more"),
     ).toHaveCount(0);
   });
+});
+
+test("今節タブの折れ線は、点に合わせるとその走の日付・R・値・着順を出す", async ({
+  page,
+}) => {
+  // 上と同じ理由（本番Supabaseを2段で引く）
+  test.slow();
+
+  await page.goto(RACE_PATH, { waitUntil: "domcontentloaded" });
+  const meetTab = page.getByRole("tab", { name: "今節" });
+  await expect(meetTab).toBeVisible({ timeout: 30000 });
+  await meetTab.click();
+
+  const spark = page.locator(".rmt-sparks .meet-sparkline-wrap").first();
+  await expect(spark).toBeVisible({ timeout: 60000 });
+  const tip = page.locator(".meet-sparkline-tip");
+
+  // 合わせるまでは出ていない
+  await expect(tip).toHaveCount(0);
+
+  // `toBeVisible` は画面内にあることまでは保証しない。グラフはページの
+  // 下の方にあり、スクロールせずにマウスを動かしても当たらない
+  await spark.scrollIntoViewIfNeeded();
+  const box = await spark.boundingBox();
+  // 中央ではなく左寄りの点に合わせる。中央の点だと、吹き出しを点に追従させる
+  // 実装（左右中央寄せ）でもたまたま箱に収まってしまい、はみ出しの検査が
+  // 素通りする（実測: 箱308pxに対して英語の最長302pxは、中央なら3px〜305px）
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2);
+  await expect(tip).toHaveCount(1);
+
+  await test.step("中身が下の「日別の走り」表と食い違わない", async () => {
+    // 実装中に実際に踏んだ: 生の meet 行はレース番号を持たず、着順も
+    // finishPositionOf を通して初めて決まるため、生の行から組み立てると
+    // 表には「11R・4着」と出ているのに吹き出しだけ「—R・着外」になる
+    const text = await tip.innerText();
+    expect(text).not.toContain("—R");
+    expect(text).toMatch(/\d+R/);
+
+    // 表の同じ走（吹き出しの日付とRで引く）と、値・着順が一致する
+    const [, date, raceNo] = text.match(/^(\d+\/\d+)\s+(\d+)R/);
+    const row = page
+      .locator(".race-history-table-row")
+      .filter({ hasText: `${raceNo}R` })
+      .filter({ hasText: date })
+      .first();
+    const cells = await row.locator("td").allInnerTexts();
+    // 表の列は 日付/R/枠番/進入/展示/ST/着順/決まり手/単勝配当
+    const st = cells[5];
+    const finish = cells[6];
+    expect(text).toContain(st);
+    expect(text).toContain(finish);
+  });
+
+  await test.step("吹き出しはグラフの箱からはみ出さない", async () => {
+    // 縦: 上に出すと見出し（平均・通常値）に、下に出すと「前走 0.09」の行に重なる
+    const tipBox = await tip.boundingBox();
+    expect(tipBox.y).toBeGreaterThanOrEqual(box.y - 1);
+    expect(tipBox.y + tipBox.height).toBeLessThanOrEqual(
+      box.y + box.height + 1,
+    );
+    // 横: 点に追従させると長い文言（英語の「Unplaced (rank unknown)」は
+    // 390pxで302px、箱は308px）でカードの外へ出る。近い方の端に寄せている
+    expect(tipBox.x).toBeGreaterThanOrEqual(box.x - 1);
+    expect(tipBox.x + tipBox.width).toBeLessThanOrEqual(box.x + box.width + 1);
+  });
+
+  await test.step("長い文言でも箱の幅を超えない（英語）", async () => {
+    // 文言の長さに一番効くのは着順不明のとき。日本語より英語が長い
+    await page.evaluate(() => {
+      const el = document.querySelector(".meet-sparkline-tip");
+      if (el)
+        el.textContent = "9/26 R11 · Trial 6.69(3) · Unplaced (rank unknown)";
+    });
+    const tipBox = await tip.boundingBox();
+    expect(tipBox.x).toBeGreaterThanOrEqual(box.x - 1);
+    expect(tipBox.x + tipBox.width).toBeLessThanOrEqual(box.x + box.width + 1);
+    expect(tipBox.y).toBeGreaterThanOrEqual(box.y - 1);
+    expect(tipBox.y + tipBox.height).toBeLessThanOrEqual(
+      box.y + box.height + 1,
+    );
+  });
+
+  // 離れたら消える（出しっぱなしにしない）
+  await page.mouse.move(box.x + box.width / 2, box.y - 120);
+  await expect(tip).toHaveCount(0);
 });

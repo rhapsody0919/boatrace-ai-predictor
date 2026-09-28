@@ -640,6 +640,8 @@
     "sparkBaselineSt": "Usual {{value}}",
     "sparkBaselinePretest": "Pre-test {{value}}",
     "sparkLast": "Last {{value}}",
+    "sparkTip": "{{date}} R{{no}} · {{metric}} {{value}} · {{finish}}",
+    "sparkTipFinish": "Finish {{finish}}",
     "sparkNote": "For ST the dashed line is the racer's usual average; for the trial it is the venue-wide average trial time for that day (how heavy the water was; it can move by nearly 0.1s). Higher is faster, and above the dashed line means fast for that day's water. The large dot is the latest run. The vertical scale is stretched to this racer's own min-max for the series, so the size of the peaks cannot be compared between racers. We do not label it as improving or declining.",
     "sparkStMeta": "Avg {{avg}} ({{n}} runs) / usual {{base}}",
     "sparkExMetaRank": "Pre-test {{value}} (#{{rank}})",
