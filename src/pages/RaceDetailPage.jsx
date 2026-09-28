@@ -29,6 +29,17 @@ import { getRaceStatus } from "../utils/raceStatus";
 import { formatDateLocalized } from "../utils/formatters";
 import "./RaceDetailPage.css";
 
+// 開催の何日目かの表示ラベル（BOA-488）。値が無ければnull（「—」も出さない）。
+// 初日と最終日が同時に立つ1日開催は実在しないため、判定順は仕様の記載順に従う
+function getSeriesDayLabel(seriesDay, isFinalDay, t) {
+  if (seriesDay === 1) return t("raceDetailPage.seriesDayFirst");
+  if (isFinalDay === true) return t("raceDetailPage.seriesDayFinal");
+  if (Number.isInteger(seriesDay) && seriesDay > 1) {
+    return t("raceDetailPage.seriesDayNth", { day: seriesDay });
+  }
+  return null;
+}
+
 // rawData（getPredictionsのrace）からPredictionSection用のprediction objectを構築
 // （RaceDetail.jsxのprocessRacePredictionと同じロジック）
 function buildPrediction(racePrediction, notFoundMessage) {
@@ -164,6 +175,15 @@ function RaceDetailPage() {
   const prediction = racePrediction
     ? buildPrediction(racePrediction, t("errors.noPredictionData"))
     : null;
+  // 取得失敗時は racePrediction が null になり、ページ全体が DataFetchError を出す。
+  // ここでの null は「取得できたが値が無い」だけなので、何も出さない
+  const seriesDayLabel = racePrediction
+    ? getSeriesDayLabel(
+        racePrediction.seriesDay,
+        racePrediction.isFinalDay,
+        t,
+      )
+    : null;
   const status = getRaceStatus(
     { startTime: racePrediction?.startTime, result: racePrediction?.result },
     nowHHMM,
@@ -226,6 +246,9 @@ function RaceDetailPage() {
           <header className="page-header">
             <h1>
               🚤 {venueName} {parsed.raceNo}R
+              {seriesDayLabel && (
+                <span className="race-detail-series-day">{seriesDayLabel}</span>
+              )}
               {!isToday &&
                 ` (${formatDateLocalized(date, i18n.resolvedLanguage)})`}
             </h1>

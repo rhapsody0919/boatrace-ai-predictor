@@ -113,7 +113,10 @@
     "pastPredictionsBreadcrumb": "過往預測",
     "noDataForDate": "此日期尚無預測資料",
     "invalidUrl": "找不到指定的比賽，請確認網址是否正確",
-    "backToHome": "← 返回首頁"
+    "backToHome": "← 返回首頁",
+    "seriesDayFirst": "首日",
+    "seriesDayFinal": "最終日",
+    "seriesDayNth": "第{{day}}天"
   },
   "volatility": {
     "levelHigh": "冷門機率高",

@@ -2812,3 +2812,26 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
     await expect(table).not.toContainText("旧キャッシュ1");
   });
 });
+
+test.describe("レース詳細の見出し: 開催の何日目か（BOA-488）", () => {
+  // race_conditions.series_day / is_final_day の実データ（確定済みの過去レース）。
+  // 2026-09-22 常滑は節の初日、2026-09-26 常滑は5日目、2026-09-24 戸田は7日目で最終日
+  for (const [raceId, label] of [
+    ["2026-09-22-08-02", "初日"],
+    ["2026-09-26-08-02", "5日目"],
+    ["2026-09-24-02-02", "最終日"],
+  ]) {
+    test(`${raceId} の見出しに「${label}」が出る`, async ({ page }) => {
+      await page.goto(`/race/${raceId}`);
+      const badge = page.locator(".page-header h1 .race-detail-series-day");
+      await expect(badge).toHaveText(label, { timeout: 25000 });
+    });
+  }
+
+  test("英語版では訳語で出る", async ({ page }) => {
+    await page.goto("/en/race/2026-09-24-02-02");
+    await expect(
+      page.locator(".page-header h1 .race-detail-series-day"),
+    ).toHaveText("Final day", { timeout: 25000 });
+  });
+});

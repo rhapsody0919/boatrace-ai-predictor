@@ -18,6 +18,20 @@
   color: var(--text-primary);
 }
 
+/* BOA-488: 見出しの「初日」「N日目」「最終日」。レース番号の直後に小さく添える */
+.race-detail-series-day {
+  display: inline-block;
+  margin-left: 0.5em;
+  padding: 0.1em 0.5em;
+  border-radius: 999px;
+  font-size: 0.6em;
+  font-weight: 600;
+  vertical-align: middle;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+}
+
 /* BOA-334: 見出しの締切時刻表示。h2本体より一段小さく・控えめな色にする */
 .prediction-section-deadline {
   margin-left: 0.5em;

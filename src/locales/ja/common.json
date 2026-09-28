@@ -113,7 +113,10 @@
     "pastPredictionsBreadcrumb": "過去の予想",
     "noDataForDate": "この日付の予測データはまだありません",
     "invalidUrl": "指定されたレースが見つかりませんでした。URLをご確認ください",
-    "backToHome": "← ホームに戻る"
+    "backToHome": "← ホームに戻る",
+    "seriesDayFirst": "初日",
+    "seriesDayFinal": "最終日",
+    "seriesDayNth": "{{day}}日目"
   },
   "volatility": {
     "levelHigh": "イン崩れ確率高",

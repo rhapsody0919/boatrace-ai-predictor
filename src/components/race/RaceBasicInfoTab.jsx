@@ -48,9 +48,9 @@ const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
 // （2026-09-26ユーザーフィードバック。今節は節の区切りで、こちらは節をまたぐ流れを見る）
 const RECENT_RACES_COUNT = 10;
 const GRADES = ["all", "ippan", "sgg1"];
-// 「初日」「最終日」は当初検討したが、判定に使うrace_conditions.series_day/
-// is_final_dayが実データで常にnull（generate-predictions.jsが未実装のまま
-// null固定で書き込む、2026-09-15確認）のため削除した（basicInfoStats.js参照）
+// 期間フィルタに「初日」「最終日」は含めない。2026-09-15時点では判定に使う
+// race_conditions.series_day/is_final_dayが全件nullだったため削除した。現在は
+// 2列とも埋まっており、「条件別」タブの初日・最終日行で使っている（basicInfoStats.js参照）
 const PERIODS = ["current", "last3m", "last1m"];
 const PRESETS = [
   { scope: "local", grade: "ippan" },

@@ -114,7 +114,10 @@
     "pastPredictionsBreadcrumb": "Past Predictions",
     "noDataForDate": "No prediction data is available for this date yet.",
     "invalidUrl": "We couldn't find that race. Please check the URL.",
-    "backToHome": "← Back to home"
+    "backToHome": "← Back to home",
+    "seriesDayFirst": "Opening day",
+    "seriesDayFinal": "Final day",
+    "seriesDayNth": "Day {{day}}"
   },
   "volatility": {
     "levelHigh": "High upset chance",
