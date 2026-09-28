@@ -28,7 +28,7 @@
  * 他の項目とずれていたため。移設先は結果タブ（払戻の下）と会場ページで、
  * 実装は VenueDaySummaryCard。getVenueDaySummary の呼び出しもそちらへ移した
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -69,6 +69,30 @@ import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
 import "../common/HorizontalScrollHint.css";
 import { formatCapturedAtJst } from "../../utils/formatters";
+
+/**
+ * 今節展示情報に出すオリジナル展示の種別（BOA-473）。
+ * 「展示情報」表の行（`raceIndicators.jsx` の `ORIGINAL_EXHIBITION_ROW_META`）と
+ * 同じ4種で、ラベルだけ「今節◯◯」に変える
+ */
+const MEET_ORIGINAL_KINDS = Object.freeze([
+  { kind: "一周", key: "meetOriLap", labelKey: "beforeInfo.rowMeetOriLap" },
+  {
+    kind: "半周ラップ",
+    key: "meetOriHalfLap",
+    labelKey: "beforeInfo.rowMeetOriHalfLap",
+  },
+  {
+    kind: "まわり足",
+    key: "meetOriTurn",
+    labelKey: "beforeInfo.rowMeetOriTurn",
+  },
+  {
+    kind: "直線",
+    key: "meetOriStraight",
+    labelKey: "beforeInfo.rowMeetOriStraight",
+  },
+]);
 
 function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   const { t } = useTranslation();
@@ -162,6 +186,59 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   const originalExhibition =
     fetchedExhibition?.raceId === raceId ? fetchedExhibition.data : null;
 
+  // 今節のオリジナル展示（BOA-473）。6選手の今節はほぼ同じレース集合なので、
+  // 選手ごとではなく**IDを束ねて1クエリ**で引く（選手ごとにすると+6本になる）。
+  // meetTrendByRacer が揃ってから走るので、直前情報タブを開いたときだけ+1本
+  // **6選手ぶんが出揃うまで発火させない**。meetTrendByRacer は選手ごとに
+  // 非同期で埋まるので、揃う前に投げるとIDの集合が育つたびに別のキャッシュキーで
+  // 投げ直し、**1本のはずが6本**になる（2026-09-28に実測して気づいた）
+  const meetRaceKeys = useMemo(() => {
+    const targets = sortedPlayers.filter((p) => p.racerId && p.motorNumber);
+    if (targets.length === 0) return [];
+    const allResolved = targets.every(
+      (p) => meetTrendByRacer[p.racerId] !== undefined,
+    );
+    if (!allResolved) return [];
+    const ids = new Set();
+    targets.forEach((p) => {
+      (meetTrendByRacer[p.racerId] ?? []).forEach((e) => {
+        if (e?.raceId) ids.add(e.raceId);
+      });
+    });
+    return [...ids].sort();
+    // sortedPlayers は毎レンダー新しい配列になるため raceId で代表させる
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meetTrendByRacer, raceId]);
+  const meetRaceKeysSignature = meetRaceKeys.join(",");
+
+  const [fetchedMeetOriginal, setFetchedMeetOriginal] = useState(null);
+  useEffect(() => {
+    if (meetRaceKeys.length === 0) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getMeetOriginalExhibitionByRaceBoat(meetRaceKeys)
+      .then((data) => {
+        if (!cancelled) setFetchedMeetOriginal({ raceId, data });
+      })
+      .catch((err) => {
+        // 失敗しても今節展示情報の展示タイム行は出る。行が増えないだけにする
+        console.error(
+          "今節オリジナル展示取得エラー:",
+          err?.message ?? String(err),
+        );
+        if (!cancelled) setFetchedMeetOriginal({ raceId, data: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+    // meetRaceKeys は毎回新しい配列になるため、中身を文字列化した signature で見る
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [raceId, meetRaceKeysSignature]);
+  // raceId とセットで持つ（RacePitReportSection と同じ。レース遷移で前のレースの
+  // 値が残らないようにする）
+  const meetOriginal =
+    fetchedMeetOriginal?.raceId === raceId ? fetchedMeetOriginal.data : null;
+
   // 展示情報の表は390pxで5号艇までしか入らない。**早期returnより前**に
   // 置く（フックの呼び出し順は毎回同じでなければならない）
   const detailScroll = useHorizontalScrollHint([sortedPlayers.length]);
@@ -172,6 +249,58 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
     n !== null && n > 0 && n < SMALL_SAMPLE_THRESHOLD
       ? "drt-n-small-sample"
       : "";
+
+  // 今節のオリジナル展示から、種別ごとに「前走」「節平均」を作る（BOA-473）。
+  // 値が1つも無い種別は行を作らない（「—」を6つ並べない）
+  const meetOriginalRows =
+    meetOriginal?.state === "published"
+      ? MEET_ORIGINAL_KINDS.map((kind) => {
+          const valueFor = (p) => {
+            const trend = meetTrendByRacer[p.racerId];
+            if (!Array.isArray(trend)) return null;
+            const series = trend
+              .map((e) => meetOriginal.byKey?.[`${e.raceId}-${e.boatNumber}`])
+              .map((v) => toNumber(v?.[kind.kind]))
+              .filter((v) => v !== null);
+            if (series.length === 0) return null;
+            return {
+              prev: series[series.length - 1],
+              avg: series.reduce((sum, v) => sum + v, 0) / series.length,
+            };
+          };
+          const anyValue = sortedPlayers.some((p) => valueFor(p) !== null);
+          if (!anyValue) return null;
+          return {
+            key: kind.key,
+            label: t(kind.labelKey),
+            shortLabel: t(kind.labelKey),
+            tab: null,
+            best: null,
+            render: (p) => {
+              if (!p.racerId || !p.motorNumber) return "—";
+              if (meetTrendByRacer[p.racerId] === undefined)
+                return <span className="drt-skeleton" aria-hidden="true" />;
+              const v = valueFor(p);
+              if (!v)
+                return (
+                  <span className="drt-sub">
+                    {t("dataTable.prevResultNoRace")}
+                  </span>
+                );
+              return (
+                <span className="drt-value">
+                  <span className="drt-sub">
+                    {t("beforeInfo.prevAbbrev")} {v.prev.toFixed(2)}
+                  </span>
+                  <span className="drt-sub">
+                    {t("beforeInfo.avgAbbrev")} {v.avg.toFixed(2)}
+                  </span>
+                </span>
+              );
+            },
+          };
+        }).filter(Boolean)
+      : [];
 
   const extraRows = [
     {
@@ -264,6 +393,11 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
         );
       },
     },
+    // 今節のオリジナル展示（BOA-473）。展示タイムの前走・平均と同じ形で、
+    // 一周・半周ラップ・まわり足・直線も出す。**そのレースの展示が発表される前でも
+    // 読める**のがこの行の役割（「展示情報」表のオリジナル展示は発走30〜10分前まで出ない）。
+    // 取れた種別のぶんだけ行を作り、096未適用・未取得のときは行ごと出さない
+    ...meetOriginalRows,
   ];
 
   const rows = [
