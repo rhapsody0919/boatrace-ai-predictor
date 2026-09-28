@@ -129,9 +129,11 @@ function PredictionPanel({
   // レースが変われば選択は無効（次のレースの4号艇は別人）。RaceTabsはkeyで作り直される
   // が、PredictionPanel自体は再マウントされないため、どのレースの選択かを一緒に持って
   // 描画時に判定する
-  const [focus, setFocus] = useState({ raceId: null, boat: null });
-  const focusedBoat = focus.raceId === analysisRaceId ? focus.boat : null;
-  const handleFocusBoat = (boat) => setFocus({ raceId: analysisRaceId, boat });
+  const [boatFocus, setBoatFocus] = useState({ raceId: null, boat: null });
+  const focusedBoat =
+    boatFocus.raceId === analysisRaceId ? boatFocus.boat : null;
+  const handleFocusBoat = (boat) =>
+    setBoatFocus({ raceId: analysisRaceId, boat });
   const { toast: aiCopyToast, showToast: showAiCopyToast } = useToast();
 
   if (!prediction && !isAnalyzing) return null;

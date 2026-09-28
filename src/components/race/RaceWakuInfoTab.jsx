@@ -87,7 +87,13 @@ function aggregateTechniqueDistribution(techniqueByBoat) {
 
 // raceId は受け取らない: コース別成績を racer_aggregated_stats（レース単位の
 // getRaceRacerStats）から getRacerScopedRaceStats（選手単位）に切り替えたため不要になった
-function RaceWakuInfoTab({ venueCode, players, raceId, focusedBoat, onFocusBoat }) {
+function RaceWakuInfoTab({
+  venueCode,
+  players,
+  raceId,
+  focusedBoat,
+  onFocusBoat,
+}) {
   const { t } = useTranslation();
   // このタブで使うのはracerStatsと決まり手統計の2種類だけのため、8+4クエリを
   // まとめて発火するuseRaceAnalysisData/useVenueTendencyStatsは使わず個別に取得する
@@ -195,7 +201,9 @@ function RaceWakuInfoTab({ venueCode, players, raceId, focusedBoat, onFocusBoat 
   // グリッドのどのセルを開いているか（行キー × コース × どちらの表か）。
   // どの艇のセルかも一緒に持ち、艇が変わったら開いていない扱いにする（前の選手の
   // 行を指したままになるため）。艇の選択はタブ間共有（BOA-492）でこのタブの操作
-  // 以外でも変わるので、selectBoatの中で閉じるのではなくここで判定する
+  // 以外でも変わるので、selectBoatの中で閉じるのではなくここで判定する。
+  // 副作用として、1→4→1と艇を戻すと1で開いていたセルが再び開く（従来は閉じた
+  // まま）。同じ選手の同じセルに戻るだけなのでそのままにしている
   const [openCellState, setOpenCell] = useState(null);
   const openCell = openCellState?.boat === selectedBoat ? openCellState : null;
   // 全コース比較の折りたたみ。native <details> ではなくReactの状態で持つ。

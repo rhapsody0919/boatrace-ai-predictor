@@ -79,7 +79,13 @@ function formatMetricValue(metric, value) {
   return metric === "avgSt" ? value.toFixed(2) : `${value.toFixed(1)}%`;
 }
 
-function RaceBasicInfoTab({ raceId, venueCode, players, focusedBoat, onFocusBoat }) {
+function RaceBasicInfoTab({
+  raceId,
+  venueCode,
+  players,
+  focusedBoat,
+  onFocusBoat,
+}) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
   const [metric, setMetric] = useState("winRate");
@@ -92,7 +98,10 @@ function RaceBasicInfoTab({ raceId, venueCode, players, focusedBoat, onFocusBoat
   const expandedBoat = focusedBoat ?? null;
   // 展開パネルの内訳（トレンド/当地/条件別）。どの艇のものかを一緒に持ち、
   // 艇が変わったら "trend" に戻す。艇の選択はタブ間共有（BOA-492）で
-  // このタブの操作以外でも変わるため、押した瞬間に戻すのでは足りない
+  // このタブの操作以外でも変わるため、押した瞬間に戻すのでは足りない。
+  // 副作用として、同じ艇を閉じて開き直したときは前の内訳が復元される
+  // （従来は毎回 "trend" に戻っていた）。同じ選手の同じ切り口に戻るだけなので
+  // そのままにしている
   const [expandedViewState, setExpandedViewState] = useState({
     boat: null,
     view: "trend",
