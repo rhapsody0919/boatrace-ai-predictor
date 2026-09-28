@@ -24,6 +24,11 @@ gh pr view {pr} --json number,state,mergeable,mergeStateStatus
 gh pr merge {pr} --squash
 ```
 
+続けて、メインの作業ツリーの master を取り込む（SessionStartフックと同じ判定。master・追跡ファイル無変更・独自コミット無しのときだけ fast-forward し、それ以外は警告だけ出す）。
+```bash
+node scripts/maintenance/check-git-hygiene.js
+```
+
 ### 3. 本番ビルド完了まで待つ
 ```bash
 gh api repos/{owner}/{repo}/commits/master/status --jq '.state'
