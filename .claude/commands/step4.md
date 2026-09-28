@@ -9,7 +9,7 @@ argument-hint: "<機能slug（kebab-case）>"
 
 `docs/design/{slug}/tasks.md` の次の未完タスクを実装する。
 
-まず計画を提示し、承認後に着手する。実装前に検証方法を決める（boatai には単体テストフレームワークが無いため、Playwright での動作確認手順、または `/verify` スキルでの実機確認を想定する。DBスキーマ変更なら `docs/db-migration/` の手順検証も含める）。
+まず計画を提示し、承認後に着手する。実装前に検証方法を決める。boatai は単体テストフレームワーク（Vitest 等）を入れていないが、**DB・ネットワーク・DOMに依存しない純関数（集計・判定・パーサー）は `scripts/maintenance/verify-*.js` パターンで検証する**（自前の `check()`＋ロジックを壊したコピーで検証が落ちることを確かめる変異検証、`verify-registry.json` に `tier: "ci"` で登録すると PR ごとに `npm run verify:ci` が実行する。例: `verify-frontend-pure-functions.js`）。`src/` の純関数は Node から直接 import できるよう、相対 import に拡張子（`.js`）を付け、`import.meta.env` 等の Vite 依存を持ち込まない。UI の挙動は Playwright（`e2e/`）での動作確認、または `/verify` スキルでの実機確認を想定する。DBスキーマ変更なら `docs/db-migration/` の手順検証も含める。
 
 `docs/design/{slug}/spec.md`・`plan.md`・`screens.md`（あれば）から逸脱しない。プロジェクト CLAUDE.md・`.claude/rules/` のルールを厳守する。
 
