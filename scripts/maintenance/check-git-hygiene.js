@@ -33,6 +33,11 @@ import { PRECIOUS_PATHS } from "../lib/preciousPaths.js";
 const DEFAULT_BRANCH = "master";
 const FETCH_TIMEOUT_MS = 10000;
 const GIT_TIMEOUT_MS = 5000;
+/**
+ * checkout 途中で kill すると作業ツリーが HEAD と食い違ったまま残るため、
+ * fetch 等より大幅に長く取る（大きな差分の取り込みでも止めない）。
+ */
+const MERGE_TIMEOUT_MS = 120000;
 /** これを超えたら棚卸しを促す。並行セッション分（数本）は通常運転。 */
 const WORKTREE_WARN_THRESHOLD = 12;
 
@@ -156,7 +161,7 @@ function main() {
     if (
       decision &&
       mainGit(["merge", "--ff-only", "--quiet", `origin/${DEFAULT_BRANCH}`], {
-        timeout: FETCH_TIMEOUT_MS,
+        timeout: MERGE_TIMEOUT_MS,
       }) !== null
     ) {
       lines.push(
