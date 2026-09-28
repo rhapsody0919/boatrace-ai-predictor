@@ -2875,17 +2875,32 @@ test.describe("静的ガイドがレース詳細の8タブに追随している�
 
   test("旧UIの文言が /faq に残っていない", async ({ page }) => {
     await page.goto("/faq");
-    // 全問を開いて回答本文まで検査する（アコーディオンは1問ずつしか開かない）
-    const buttons = await page.locator(".faq-question").all();
-    const texts = [];
-    for (const button of buttons) {
-      await button.click();
-      texts.push(await page.locator(".faq-item.open .faq-answer").innerText());
-      await button.click();
-    }
-    const body = texts.join("\n");
+    // 全問の回答を集める。アコーディオンは1問ずつしか開かないため、当初は
+    // 25問を順にクリックして開閉していたが、アニメーションぶんの待ちが積もって
+    // 60秒のテストtimeoutに掛かった（実測38秒→質問追加で超過）。
+    // FAQPage の JSON-LD は FAQ.jsx の faqs 配列から機械生成されており
+    // 全回答の原文を持っているので、そちらを読めば同じことを決定的に検査できる
+    const answers = await page.evaluate(() => {
+      const schema = [
+        ...document.querySelectorAll('script[type="application/ld+json"]'),
+      ]
+        .map((node) => {
+          try {
+            return JSON.parse(node.textContent);
+          } catch {
+            return null;
+          }
+        })
+        .find((parsed) => parsed && parsed["@type"] === "FAQPage");
+      return schema
+        ? schema.mainEntity.map((q) => q.acceptedAnswer.text).join("\n")
+        : null;
+    });
+    // schemaが取れないと「文言が無い」を無条件に満たしてしまうので先に押さえる
+    expect(answers).not.toBeNull();
+    expect(answers).toContain("詳細を見る");
     // ボタンは raceCard.view =「詳細を見る」、的中はヘッダーナビ nav.hits
-    expect(body).not.toContain("データ分析を見る");
-    expect(body).not.toContain("トップページの「的中レース」タブ");
+    expect(answers).not.toContain("データ分析を見る");
+    expect(answers).not.toContain("トップページの「的中レース」タブ");
   });
 });
