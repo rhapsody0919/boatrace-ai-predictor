@@ -12,10 +12,10 @@
 | 区分 | 件数 |
 |---|---|
 | テーブル・ビューの定義 | 79 |
-| 読んでいる（テーブルを直接） | 49 |
+| 読んでいる（テーブルを直接） | 51 |
 | 読んでいる（RPC経由のみ） | 0 |
 | 画面から読んでいない（例外登録あり） | 23 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **7** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **5** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 0 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,13 +24,11 @@
 
 画面が呼んでいるRPC: `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_today_races`
 
-## 要判断: 画面から読んでいない（例外登録なし）（7件）
+## 要判断: 画面から読んでいない（例外登録なし）（5件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
 | `external_predictions` | 表 | 021_external_predictions.sql | なし | GRANT（021_external_predictions.sql） |  |
-| `race_original_exhibition` | 表 | 091_boatcast_original_exhibition.sql | なし | GRANT（096_original_exhibition_public_read.sql） |  |
-| `race_original_exhibition_values` | 表 | 091_boatcast_original_exhibition.sql | なし | GRANT（096_original_exhibition_public_read.sql） |  |
 | `race_payouts` | 表 | 079_race_payouts.sql | なし | 記述なし |  |
 | `race_series` | 表 | 084_race_series.sql | なし | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
@@ -64,7 +62,7 @@
 | `venue_course_technique_baseline` | 表 | 098_morning_data_digest.sql | なし | GRANT（098_morning_data_digest.sql） | 会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル |
 | `venue_entry_course_stats` | 表 | 064_venue_entry_course_stats.sql | なし | 記述なし | 「表示には使わず、自前計算の全国値の検証にのみ使う」とユーザー判断済み（BOA-293、orchestration.md）。読み手が無いことは既知 |
 
-## 画面から読んでいる（49件）
+## 画面から読んでいる（51件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -89,6 +87,8 @@
 | `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_today_races(API) | ポリシー（001_schema.sql） |  |
 | `race_history_cache` | 表 | 020_race_history_cache.sql | API・画面が直接 | GRANT（020_race_history_cache.sql） |  |
 | `race_odds` | 表 | 001_schema.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
+| `race_original_exhibition` | 表 | 091_boatcast_original_exhibition.sql | 画面が直接 | GRANT（096_original_exhibition_public_read.sql） |  |
+| `race_original_exhibition_values` | 表 | 091_boatcast_original_exhibition.sql | 画面が直接 | GRANT（096_original_exhibition_public_read.sql） |  |
 | `race_pit_comments` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_pit_reports` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_results` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_return_rate(画面), get_race_technique_profile(画面) | ポリシー（001_schema.sql） |  |
