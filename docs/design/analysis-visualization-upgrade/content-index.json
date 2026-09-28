@@ -1,0 +1,16 @@
+{
+  "feature": "BOA-305 レース詳細の分析可視化アップグレード（phase a: 枠別情報のST考察・逃げシミュレーション、基本情報の条件別・前期・F数バッジ、今節タブ、本日の成績サマリー移設）",
+  "released": "2026-09-26",
+  "content": {
+    "static_pages": ["src/pages/HowToUse.jsx"],
+    "note_articles": [],
+    "blog_posts": [
+      "public/blog/meet-score-rate-guide.md",
+      "public/blog/st-consideration-guide.md",
+      "public/blog/nige-simulation-guide.md"
+    ],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

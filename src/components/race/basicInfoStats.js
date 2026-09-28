@@ -180,6 +180,14 @@ export function getRecentRaces(records, count = 5) {
     // 実際に進入したコース。今節タブ（FR-3）が「進入」列で使う。
     // 2025-12-04より前のレースと当日のレースはnull（BOA-257）
     entryCourse: r.actualCourse ?? null,
+    // 展示タイムと、その走の同レース内での展示順位。今節タブ（FR-3）が
+    // 「展示」列で使う。**推移の判定文（上向き/下向き）は出さない**——
+    // 初日と直近の2点だけを比べると、間の走を捨てて実態と逆の結論になる
+    // （2026-09-27の実測: 宮田龍馬は 6.86→6.89→6.77→6.78→6.88→6.81→
+    // 6.76→6.87 と動いており、最初と最後だけ見ると「下向き」だが
+    // 今節ベスト級は間にある）
+    exhibitionTime: typeof r.exhibitionTime === "number" ? r.exhibitionTime : null,
+    exhibitionRank: typeof r.exhibitionRank === "number" ? r.exhibitionRank : null,
     startTiming: r.startTiming ?? null,
     // 4〜6着はBOA-238以降のみ保存されているため、rank4〜6が未バックフィルの
     // 過去レースではnullになる（"unknown"として表示側が「着外」等に読み替える）

@@ -13,6 +13,9 @@
 
 .rmt-card {
   background: var(--surface-card);
+  /* カードの中の横スクロール（早見の表・日別の走り）のフェードを、
+     ページ背景ではなくこのカード面に合わせる */
+  --hscroll-fade-color: var(--surface-card);
   border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-lg);
   padding: var(--spacing-3);
@@ -181,6 +184,7 @@
 }
 
 .rmt-sub,
+.rmt-rank-note,
 .rmt-source,
 .rmt-caveat {
   margin: var(--spacing-2) 0 0;
@@ -279,6 +283,204 @@
 .rmt-verdict {
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);
+}
+
+/* 得点率早見（6艇×着順）。公式の「得点率早見」と同じ行列 */
+.rmt-forecast-scroll {
+  overflow-x: auto;
+}
+
+.rmt-forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.rmt-forecast-table th,
+.rmt-forecast-table td {
+  padding: var(--spacing-1) 3px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rmt-forecast-table thead th {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rmt-forecast-table thead th:first-child,
+.rmt-forecast-table tbody th {
+  text-align: left;
+  width: 99%;
+}
+
+.rmt-forecast-table tbody tr {
+  cursor: pointer;
+}
+
+.rmt-forecast-table tbody tr + tr th,
+.rmt-forecast-table tbody tr + tr td {
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+/* 選択中の行は背景で塗らない。塗ると「目安に届くセルの色」と混ざり、
+   届いていない艇の行まで色付きに見える（実際に1号艇で起きた） */
+.rmt-forecast-table tbody tr.is-current th {
+  box-shadow: inset 3px 0 0 0 var(--brand-accent-primary);
+  padding-left: 6px;
+}
+
+.rmt-forecast-table tbody tr.is-current {
+  font-weight: var(--font-weight-bold);
+}
+
+/* 準優の目安に届くセル。公式は「当確」を赤で塗るが、こちらは目安が推定な
+   ので断定はせず、届く見込みという意味の色にとどめる */
+.rmt-forecast-table td.is-in-border {
+  background: var(--color-success-bg, rgba(67, 160, 71, 0.16));
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.rmt-forecast-table td.rmt-needed {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+/* 得点率の列は「今の値」で、早見のセル（仮定の値）とは意味が違う。
+   公式も得点率は文字色、早見はセルの塗りで区別している */
+.rmt-forecast-table td.rmt-rate.is-in-border {
+  background: none;
+  color: var(--brand-accent-primary);
+}
+
+/* 6艇の推移（同じ縦の物差しで6行並べる） */
+.rmt-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-2);
+}
+
+.rmt-card-head .rmt-card-title {
+  margin: 0;
+}
+
+.rmt-metric-chips {
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.rmt-metric-chip {
+  padding: 2px var(--spacing-2);
+  font-size: var(--font-size-2xs);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.rmt-metric-chip.is-active {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  border-color: var(--brand-accent-primary);
+}
+
+.rmt-trend-head {
+  display: grid;
+  grid-template-columns: 7.5em 1fr 3em;
+  gap: var(--spacing-2);
+  margin-bottom: 2px;
+}
+
+.rmt-trend-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.rmt-trend-row {
+  display: grid;
+  /* 名前・線・前走値。名前は固定幅にして6行の線の左端を揃える */
+  grid-template-columns: 7.5em 1fr 3em;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.rmt-trend-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-2xs);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rmt-trend-last {
+  font-size: var(--font-size-2xs);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+/* 今節のST・展示のスパークライン（MeetSparkline）。390pxでは2本を縦に積む */
+.rmt-sparks {
+  display: grid;
+  gap: var(--spacing-3);
+  margin: var(--spacing-2) 0 var(--spacing-3);
+}
+
+@media (min-width: 560px) {
+  .rmt-sparks {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rmt-spark-note {
+    grid-column: 1 / -1;
+  }
+}
+
+.rmt-spark-head,
+.rmt-spark-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  /* 390pxだと「平均 0.16（8走）／通常 0.14 +0.02 慎重」が右端に張り付く */
+  flex-wrap: wrap;
+}
+
+.rmt-spark-title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rmt-spark-base,
+.rmt-spark-foot {
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rmt-spark-note {
+  margin: 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 
 .rmt-loading,

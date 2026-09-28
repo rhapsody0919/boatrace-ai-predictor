@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
+import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import RacerGradeBadge from "../racer/RacerGradeBadge";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import MotorRecordStatCards from "../MotorRecordStatCards";
@@ -18,6 +19,7 @@ import DrillDownHeader from "./DrillDownHeader";
 import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
 import "./MotorConditionChart.css";
+import "../common/HorizontalScrollHint.css";
 
 function MotorConditionChart({
   initialVenueCode = null,
@@ -252,6 +254,18 @@ function MotorConditionChart({
       return "";
     };
   };
+  // 全艇が null（その会場・その節で1着率が取れていない）の列は出さない。
+  // 「-」だけが6行並んで横幅を50px食い、肝心の2連率・機力指数を画面外へ
+  // 押し出していた（2026-09-27、ファン視点のレビュー。条件別タブで
+  // n=0の行を畳んだBOA-432と同じ考え方）
+  const showFirstPlaceRate = firstPlaceRates.some((v) => v !== null);
+  // 前検タイムも同じ扱い（BOA-451）。節に前検の行が無い開催では列ごと出さない
+  // （ADR-0067 の 2026-09-26 追記「節に前検の行が無い場合は行ごと出さない」と同じ）
+  const hasPretest = breakdown.some(
+    (r) => r.pretest_time !== null && r.pretest_time !== undefined,
+  );
+  // 9列の表は390pxでは右が切れる。切れていることに気づけるようにする
+  const rankingScroll = useHorizontalScrollHint([breakdown.length]);
   const finalCountRankClass = rankClassFor(breakdown.map((r) => r.final_count));
   const championshipCountRankClass = rankClassFor(
     breakdown.map((r) => r.championship_count),
@@ -343,71 +357,138 @@ function MotorConditionChart({
         !error &&
         drillDownMotor === null &&
         breakdown.length > 0 && (
-          <div className="table-wrapper">
-            <table className="motor-ranking-table">
-              <thead>
-                <tr>
-                  <th>{t("analysis.laneHeader")}</th>
-                  <th>{t("table.playerName")}</th>
-                  <th>{t("analysis.motor.motorNumberHeader")}</th>
-                  <th>{t("analysis.motor.rate2Header")}</th>
-                  <th>{t("analysis.motor.rate3Header")}</th>
-                  <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
-                  <th>{t("analysis.motor.powerIndexHeader")}</th>
-                  <th>{t("analysis.motor.finalCountHeader")}</th>
-                  <th>{t("analysis.motor.championshipCountHeader")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {breakdown.map((row, i) => (
-                  <tr
-                    key={row.boat_number}
-                    className={`motor-ranking-row ${row.motor_2rate === bestMotor2Rate ? "best-motor" : ""}`}
-                    onClick={() => setDrillDownMotor(row.motor_number)}
-                  >
-                    <td className="rank">{row.boat_number}</td>
-                    <td translate="no">
-                      {row.player_name?.replace(/\s+/g, "")}
-                    </td>
-                    <td className="motor-num">
-                      {t("analysis.motor.motorUnit", { n: row.motor_number })}
-                    </td>
-                    <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
-                    <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
-                    <td
-                      className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
-                    >
-                      {firstPlaceRates[i] !== null
-                        ? `${firstPlaceRates[i].toFixed(1)}%`
-                        : "-"}
-                    </td>
-                    <td
-                      className={`rate power-index ${
-                        row.power_index > 0
-                          ? "power-index-good"
-                          : row.power_index < 0
-                            ? "power-index-bad"
-                            : ""
-                      }`}
-                    >
-                      {row.power_index !== null && row.power_index !== undefined
-                        ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
-                        : "-"}
-                    </td>
-                    <td
-                      className={`rate ${finalCountRankClass(row.final_count)}`}
-                    >
-                      {row.final_count ?? "-"}
-                    </td>
-                    <td
-                      className={`rate ${championshipCountRankClass(row.championship_count)}`}
-                    >
-                      {row.championship_count ?? "-"}
-                    </td>
+          <div
+            className={`table-wrapper hscroll-hint${rankingScroll.hasMore ? " has-more" : ""}`}
+          >
+            {rankingScroll.hasMore && (
+              <button
+                type="button"
+                className="hscroll-more"
+                onClick={rankingScroll.scrollRight}
+                /* 装飾兼ショートカット。表自体は指でスワイプできるので
+                   支援技術には出さない */
+                aria-hidden="true"
+                tabIndex={-1}
+              >
+                ›
+              </button>
+            )}
+            <div
+              className="table-scroll"
+              ref={rankingScroll.ref}
+              onScroll={rankingScroll.update}
+            >
+              <table className="motor-ranking-table">
+                <thead>
+                  <tr>
+                    <th>{t("analysis.laneHeader")}</th>
+                    <th>{t("table.playerName")}</th>
+                    <th>{t("analysis.motor.motorNumberHeader")}</th>
+                    {/* BOA-451: 「公式2連率（節時点）」は再計算した2連率の**すぐ右**に
+                      置く。この2つを見比べられることが追加の目的なので隣り合わせる。
+                      前検は「起点」なので3連率の右（機力指数の手前）。
+                      **2連率より左に列を足さない**のが肝心で、390pxでは左から3列で
+                      画面が埋まるため、手前に足すと肝心の2連率・機力指数が画面外へ
+                      押し出される（1着率の列を条件表示にしたのと同じ理由、2026-09-27） */}
+                    <th>{t("analysis.motor.rate2Header")}</th>
+                    <th>{t("analysis.motor.officialRate2Header")}</th>
+                    <th>{t("analysis.motor.rate3Header")}</th>
+                    {hasPretest && (
+                      <th>{t("analysis.motor.pretestTimeHeader")}</th>
+                    )}
+                    {showFirstPlaceRate && (
+                      <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
+                    )}
+                    <th>{t("analysis.motor.powerIndexHeader")}</th>
+                    <th>{t("analysis.motor.finalCountHeader")}</th>
+                    <th>{t("analysis.motor.championshipCountHeader")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {breakdown.map((row, i) => (
+                    <tr
+                      key={row.boat_number}
+                      className={`motor-ranking-row ${row.motor_2rate === bestMotor2Rate ? "best-motor" : ""}`}
+                      onClick={() => setDrillDownMotor(row.motor_number)}
+                    >
+                      <td className="rank">{row.boat_number}</td>
+                      <td translate="no">
+                        {row.player_name?.replace(/\s+/g, "")}
+                      </td>
+                      <td className="motor-num">
+                        {t("analysis.motor.motorUnit", { n: row.motor_number })}
+                      </td>
+                      <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
+                      <td className="rate">
+                        {row.official_2rate !== null &&
+                        row.official_2rate !== undefined
+                          ? Number(row.official_2rate).toFixed(2)
+                          : "-"}
+                      </td>
+                      <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
+                      {hasPretest && (
+                        <td className="rate motor-pretest-cell">
+                          {row.pretest_time !== null &&
+                          row.pretest_time !== undefined ? (
+                            <>
+                              {Number(row.pretest_time).toFixed(2)}
+                              {row.pretest_rank ? (
+                                <span className="motor-waku-n">
+                                  {t("analysis.motor.pretestRank", {
+                                    rank: row.pretest_rank,
+                                  })}
+                                </span>
+                              ) : null}
+                            </>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                      )}
+                      {showFirstPlaceRate && (
+                        <td
+                          className={`rate ${firstPlaceRateRankClass(firstPlaceRates[i])}`}
+                        >
+                          {firstPlaceRates[i] !== null
+                            ? `${firstPlaceRates[i].toFixed(1)}%`
+                            : "-"}
+                        </td>
+                      )}
+                      <td
+                        className={`rate power-index ${
+                          row.power_index > 0
+                            ? "power-index-good"
+                            : row.power_index < 0
+                              ? "power-index-bad"
+                              : ""
+                        }`}
+                      >
+                        {row.power_index !== null &&
+                        row.power_index !== undefined
+                          ? `${row.power_index > 0 ? "+" : ""}${row.power_index.toFixed(1)}`
+                          : "-"}
+                      </td>
+                      <td
+                        className={`rate ${finalCountRankClass(row.final_count)}`}
+                      >
+                        {row.final_count ?? "-"}
+                      </td>
+                      <td
+                        className={`rate ${championshipCountRankClass(row.championship_count)}`}
+                      >
+                        {row.championship_count ?? "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* BOA-451 / ADR-0067: 生値をそのまま出す列（前検タイム・公式2連率）
+                の出典を表のすぐ下に1回だけ置く。集計・加工した列（期間別の
+                2連率/3連率・機力指数）は当社の計算なので出典の対象外 */}
+            <p className="table-note motor-official-source-note">
+              {t("analysis.motor.officialSourceNote")}
+            </p>
           </div>
         )}
 

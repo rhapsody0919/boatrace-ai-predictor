@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { GRADE_LABELS } from "./raceGradeLabels";
 import { translateTechnique } from "./raceIndicators";
 import { formatPayout } from "../../utils/formatters";
+import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
+import "../common/HorizontalScrollHint.css";
 import "./RaceHistoryTable.css";
 
 /**
@@ -51,12 +53,32 @@ import "./RaceHistoryTable.css";
  * ネイティブaタグのクリック判定はブラウザが行うため、スワイプ誤爆の懸念もない
  */
 /**
+ * ## 横スクロール（BOA-455、2026-09-28）
+ *
+ * 390px幅では、列を削っても削っても収まらない（今節タブで実測: 表480px /
+ * 可視308px。最大限omitColumnsした状態で、着順が半分切れ、決まり手・単勝配当は
+ * 画面外）。**列を消して収める方針は採らない**。同じ表を選手個別ページ
+ * （`/racer/:id`）でも使っており、そちらは会場・レース名まで含めてさらに長い。
+ * 呼び出し側の都合で情報を落とすと、選手ページ側の要件まで巻き添えになる。
+ *
+ * 代わりに2つやる。
+ * 1. 右に続くことを知らせる（`useHorizontalScrollHint`。モータ情報タブ・
+ *    直前情報タブ・タブバーと同じ手がかり）。黙って切れるのが実害であり、
+ *    スクロールすること自体は実害ではない
+ * 2. 狭い画面ではセルの左右余白を詰め、**着順までは初期表示に収める**
+ *    （`RaceHistoryTable.css` のメディアクエリ）。着順はこの表で最も読まれる列で、
+ *    半分切れているのと最初から右にあるのとでは意味が違う
+ *
  * @param {string[]} [omitColumns] 出さない列（"venue" / "raceTitle" / "grade" /
  *   "stage"）。今節タブ（FR-3）は同じ節の走しか並ばず、この4列が全行同じ値に
  *   なる。モバイルでは表が1000px超になり、肝心の進入・ST・着順が初期表示の
  *   外へ押し出されるため省く
  * @param {boolean} [compactDate] 日付を月日だけにする（`9/24`）。同じ節の走
  *   しか並ばない今節タブ向け。選手ページ・直近10走は年をまたぐので既定のまま
+ * @param {boolean} [showExhibition] 「展示」列（展示タイムと同レース内の
+ *   展示順位）を足す。今節タブが使う。**「初日→直近」の2点比較で
+ *   上向き/下向きと断定する表示をやめた代わり**に、走ごとの生の数字を
+ *   並べて読み手に委ねる（2026-09-27）
  * @param {boolean} [showEntryCourse] 「進入」列（実際に進入したコース）を
  *   枠番の隣に足す。今節タブ（phase a FR-3）は「日別・進入・着順・ST」を
  *   見せるのが目的で進入が要る。直近10走・選手ページでは出さない
@@ -67,11 +89,22 @@ function RaceHistoryTable({
   rows,
   buildRaceHref = (raceId) => `/race/${raceId}`,
   showEntryCourse = false,
+  showExhibition = false,
   omitColumns = [],
   compactDate = false,
 }) {
   const { t } = useTranslation();
   const shows = (key) => !omitColumns.includes(key);
+  // 列数・行数が決まってから測り直す（取得前は幅が無く、右に続くと分からない）。
+  // 表の幅を変えるプロップは漏れなく並べる。1つでも抜けると、溢れが解消しても
+  // 「›」が残る／溢れているのに出ない、という取り残しが起きる
+  const { ref, hasMore, update, scrollRight } = useHorizontalScrollHint([
+    rows.length,
+    omitColumns.join(","),
+    showEntryCourse,
+    showExhibition,
+    compactDate,
+  ]);
   // 同じ節の走だけが並ぶ表（今節タブ）では年は毎行同じで、390pxの幅を
   // 進入・ST・着順から奪うだけになる。月日だけに縮める
   const formatDate = (date) =>
@@ -80,77 +113,112 @@ function RaceHistoryTable({
       : date;
 
   return (
-    <div className="race-history-table-wrapper">
-      <table className="race-history-table">
-        <thead>
-          <tr>
-            <th>{t("raceHistoryTable.date")}</th>
-            {shows("venue") && <th>{t("raceHistoryTable.venue")}</th>}
-            <th>{t("raceHistoryTable.raceNo")}</th>
-            {shows("raceTitle") && (
-              <th>{t("raceHistoryTable.raceTitle")}</th>
-            )}
-            {shows("grade") && <th>{t("raceHistoryTable.grade")}</th>}
-            {shows("stage") && <th>{t("raceHistoryTable.stage")}</th>}
-            <th>{t("raceHistoryTable.boatNumber")}</th>
-            {showEntryCourse && (
-              <th>{t("raceHistoryTable.entryCourse")}</th>
-            )}
-            <th>{t("raceHistoryTable.startTiming")}</th>
-            <th>{t("raceHistoryTable.finish")}</th>
-            <th>{t("raceHistoryTable.technique")}</th>
-            <th>{t("raceHistoryTable.payout")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((race) => (
-            <tr key={race.raceId} className="race-history-table-row">
-              <td>
-                <Link
-                  className="race-history-table-link"
-                  to={buildRaceHref(race.raceId)}
-                >
-                  {formatDate(race.date)}
-                </Link>
-              </td>
-              {shows("venue") && (
-                <td>{t(`venues.${race.venueCode}`, race.venueCode)}</td>
-              )}
-              <td>{race.raceNo !== null ? `${race.raceNo}R` : "-"}</td>
-              {shows("raceTitle") && <td>{race.raceTitle ?? "-"}</td>}
-              {shows("grade") && (
+    <div
+      className={`race-history-hscroll hscroll-hint${hasMore ? " has-more" : ""}`}
+    >
+      {hasMore && (
+        <button
+          type="button"
+          className="hscroll-more"
+          onClick={scrollRight}
+          /* 装飾兼ショートカット。表の中身はキーボード・支援技術からは
+             スクロールせずに辿れるため、支援技術には出さない */
+          aria-hidden="true"
+          tabIndex={-1}
+        >
+          ›
+        </button>
+      )}
+      <div className="race-history-table-wrapper" ref={ref} onScroll={update}>
+        <table className="race-history-table">
+          <thead>
+            <tr>
+              <th>{t("raceHistoryTable.date")}</th>
+              {shows("venue") && <th>{t("raceHistoryTable.venue")}</th>}
+              <th>{t("raceHistoryTable.raceNo")}</th>
+              {shows("raceTitle") && <th>{t("raceHistoryTable.raceTitle")}</th>}
+              {shows("grade") && <th>{t("raceHistoryTable.grade")}</th>}
+              {shows("stage") && <th>{t("raceHistoryTable.stage")}</th>}
+              <th>{t("raceHistoryTable.boatNumber")}</th>
+              {showEntryCourse && <th>{t("raceHistoryTable.entryCourse")}</th>}
+              {showExhibition && <th>{t("raceHistoryTable.exhibition")}</th>}
+              <th>{t("raceHistoryTable.startTiming")}</th>
+              <th>{t("raceHistoryTable.finish")}</th>
+              <th>{t("raceHistoryTable.technique")}</th>
+              <th>{t("raceHistoryTable.payout")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((race) => (
+              <tr key={race.raceId} className="race-history-table-row">
                 <td>
-                  {race.raceGrade
-                    ? t(
-                        `raceHistoryTable.grades.${race.raceGrade}`,
-                        GRADE_LABELS[race.raceGrade] ?? race.raceGrade,
-                      )
+                  <Link
+                    className="race-history-table-link"
+                    to={buildRaceHref(race.raceId)}
+                  >
+                    {formatDate(race.date)}
+                  </Link>
+                </td>
+                {shows("venue") && (
+                  <td>{t(`venues.${race.venueCode}`, race.venueCode)}</td>
+                )}
+                <td>{race.raceNo !== null ? `${race.raceNo}R` : "-"}</td>
+                {shows("raceTitle") && <td>{race.raceTitle ?? "-"}</td>}
+                {shows("grade") && (
+                  <td>
+                    {race.raceGrade
+                      ? t(
+                          `raceHistoryTable.grades.${race.raceGrade}`,
+                          GRADE_LABELS[race.raceGrade] ?? race.raceGrade,
+                        )
+                      : "-"}
+                  </td>
+                )}
+                {shows("stage") && <td>{race.raceStage ?? "-"}</td>}
+                <td>{race.boatNumber}</td>
+                {showEntryCourse && <td>{race.entryCourse ?? "-"}</td>}
+                {showExhibition && (
+                  <td>
+                    {race.exhibitionTime !== null &&
+                    race.exhibitionTime !== undefined
+                      ? race.exhibitionRank
+                        ? t("raceHistoryTable.exhibitionCell", {
+                            time: Number(race.exhibitionTime).toFixed(2),
+                            rank: race.exhibitionRank,
+                          })
+                        : Number(race.exhibitionTime).toFixed(2)
+                      : "-"}
+                  </td>
+                )}
+                {/* 「毎回ちゃんと届いているか」は平均STより、そのレースで
+                  何番目だったかの方が直接的（日和の「安定率」が答えようと
+                  している問いに、%より読みやすい形で答える） */}
+                <td>
+                  {race.startTiming !== null
+                    ? race.startTimingRank
+                      ? t("raceHistoryTable.startTimingCell", {
+                          time: Number(race.startTiming).toFixed(2),
+                          rank: race.startTimingRank,
+                        })
+                      : Number(race.startTiming).toFixed(2)
                     : "-"}
                 </td>
-              )}
-              {shows("stage") && <td>{race.raceStage ?? "-"}</td>}
-              <td>{race.boatNumber}</td>
-              {showEntryCourse && <td>{race.entryCourse ?? "-"}</td>}
-              <td>
-                {race.startTiming !== null
-                  ? Number(race.startTiming).toFixed(2)
-                  : "-"}
-              </td>
-              <td>{race.finishRank ?? t("basicInfo.finishUnknown")}</td>
-              <td>
-                {race.finishRank === 1 && race.winningTechnique != null
-                  ? translateTechnique(t, race.winningTechnique)
-                  : "-"}
-              </td>
-              <td>
-                {race.finishRank === 1 && race.payoutWin != null
-                  ? formatPayout(race.payoutWin)
-                  : "-"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                <td>{race.finishRank ?? t("basicInfo.finishUnknown")}</td>
+                <td>
+                  {race.finishRank === 1 && race.winningTechnique != null
+                    ? translateTechnique(t, race.winningTechnique)
+                    : "-"}
+                </td>
+                <td>
+                  {race.finishRank === 1 && race.payoutWin != null
+                    ? formatPayout(race.payoutWin)
+                    : "-"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

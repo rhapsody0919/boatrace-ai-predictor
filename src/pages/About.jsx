@@ -263,7 +263,7 @@ export default function About() {
           </div>
           <p className="stats-note">
             ※
-            実測値。各レースの詳細ページ「結果」タブで、毎回の的中/不的中を確認できます
+            実測値。各レースの詳細ページ「AI予想」タブで、毎回の的中/不的中を確認できます
           </p>
         </section>
 

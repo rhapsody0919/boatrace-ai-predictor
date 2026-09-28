@@ -107,3 +107,36 @@ export const formatPayout = (amount) => amount.toLocaleString() + "円";
  * @returns {string} パーセント文字列 (例: "125.5%")
  */
 export const formatRecoveryRate = (rate) => (rate * 100).toFixed(1) + "%";
+
+// ロケールによる並び順・桁揃えの差を受けないよう、部品で取り出してから組み立てる
+// （month/dayに"numeric"を指定しても、hourと組み合わせると2桁に揃うロケールがある）
+const JST_CAPTURED_AT_FORMAT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Tokyo",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/**
+ * 外部サイトからの取得時刻（ISO文字列）を「9/18 15:42」（JST）にする。
+ * 読めなければ null（時刻の行ごと出さない）。
+ *
+ * ADR-0067 が求める「取得時刻の表記」に使う共通部品。ピットレポート
+ * （RacePitReportSection）とオリジナル展示（RaceBeforeInfoTab）の2箇所が使う。
+ * 日付まで出すのは、過去のレースを開いたときに「いつ取った値か」が時刻だけでは
+ * 分からないため（気象の観測時刻 `formatObservedTime` は当日のレース中しか
+ * 意味を持たないので時刻のみ、と使い分けている）
+ */
+export function formatCapturedAtJst(capturedAt) {
+  if (!capturedAt) return null;
+  const date = new Date(capturedAt);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = JST_CAPTURED_AT_FORMAT.formatToParts(date);
+  const pick = (type) => parts.find((p) => p.type === type)?.value ?? "";
+  const month = Number(pick("month"));
+  const day = Number(pick("day"));
+  if (!month || !day) return null;
+  return `${month}/${day} ${pick("hour")}:${pick("minute")}`;
+}

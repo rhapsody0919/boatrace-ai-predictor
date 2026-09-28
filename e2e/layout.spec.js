@@ -106,93 +106,183 @@ test.describe("レイアウト: 横スクロールが発生しない", () => {
   }
 });
 
+/**
+ * 開いているページの全グリッドを見て「箱の幅に対して中身が足りていない」ものを返す。
+ *
+ * 2種類の無駄を見る。どちらも「箱の幅に対して中身が足りていない」という
+ * 構造的な事実で、見た目の好みの判定ではない。
+ *
+ *   (a) 空トラック: 幅を持つ列の数 > 実アイテム数。
+ *       repeat(auto-fill, ...) はアイテムが足りなくても列の枠を作るため、
+ *       カード3枚に対して5列分の枠ができて右に空白が残る。
+ *       repeat(3, ...) のような固定列数でも、アイテムが列数を下回れば同じことが
+ *       起きる（BOA-460）。
+ *
+ *   (b) 使い残し（slack）: グリッドの箱の幅 −（トラック合計 + gap合計）。
+ *       トラックの上限を固定pxにすると列数の刻みが粗くなり、
+ *       「列は余っていないのに箱の中に大きな空きが残る」状態になる。
+ *       (a)だけでは検知できない（列数 ≤ アイテム数なら素通りするため）。
+ */
+async function inspectGrids(page) {
+  return page.evaluate((threshold) => {
+    const found = [];
+    let gridsChecked = 0;
+
+    for (const el of document.querySelectorAll("*")) {
+      const cs = getComputedStyle(el);
+      if (cs.display !== "grid" && cs.display !== "inline-grid") continue;
+
+      // レイアウトされていない要素では gridTemplateColumns が解決前の
+      // 指定値（"repeat(auto-fit, minmax(280px, 1fr))" 等）のまま返る。
+      // px値に解決されているものだけを対象にする
+      const raw = cs.gridTemplateColumns.split(" ").filter(Boolean);
+      if (raw.some((t) => !/^-?[\d.]+px$/.test(t))) continue;
+
+      // repeat(auto-fit, ...) が潰したトラックは 0px として残るが、
+      // 場所を取らないので列としては数えない
+      const tracks = raw.map(parseFloat).filter((n) => n > 0);
+      if (tracks.length < 2) continue;
+
+      const items = [...el.children].filter((c) => {
+        const r = c.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      });
+      if (items.length === 0) continue;
+
+      gridsChecked += 1;
+
+      const gridRect = el.getBoundingClientRect();
+      const gap = parseFloat(cs.columnGap) || 0;
+      const used =
+        tracks.reduce((a, b) => a + b, 0) + gap * (tracks.length - 1);
+      const slack = Math.round(gridRect.width - used);
+      const emptyTracks = tracks.length - items.length;
+
+      const cls = (typeof el.className === "string" ? el.className : "").slice(
+        0,
+        60,
+      );
+      const base = {
+        cls,
+        columns: tracks.length,
+        items: items.length,
+        gridWidth: Math.round(gridRect.width),
+      };
+
+      if (emptyTracks > 0) {
+        const lastRight = Math.max(
+          ...items.map((c) => c.getBoundingClientRect().right),
+        );
+        const trailingGap = Math.round(gridRect.right - lastRight);
+        if (trailingGap >= threshold) {
+          found.push({ ...base, kind: "空トラック", trailingGap });
+          continue;
+        }
+      }
+
+      if (slack >= threshold) {
+        found.push({ ...base, kind: "使い残し", slack });
+      }
+    }
+    return { found, gridsChecked };
+  }, TRAILING_GAP_THRESHOLD_PX);
+}
+
+function expectNoWastedGrids(result) {
+  expect(
+    result.found,
+    `グリッドの箱の幅に対して中身が足りていません` +
+      `（このページで検査したグリッド: ${result.gridsChecked}個）。\n` +
+      `「空トラック」なら、アイテム数より多い列を作らない\n` +
+      `（repeat(auto-fill, ...) は auto-fit に。固定列数 repeat(N, ...) は、\n` +
+      `列数の上限を保ったまま余った列を潰す形にする。実例:\n` +
+      `src/components/digest/DigestCardGrid.css の\n` +
+      `repeat(auto-fit, minmax(calc((100% - gap * (N-1)) / N), 1fr))）、\n` +
+      `「使い残し」ならトラックの上限を固定pxで抑えるのをやめて\n` +
+      `minmax(..., 1fr) に戻し、箱の幅は max-width で絞ってください:\n` +
+      JSON.stringify(result.found, null, 2),
+  ).toEqual([]);
+}
+
 test.describe("レイアウト: グリッドの幅が無駄になっていない", () => {
-  // 2種類の無駄を見る。どちらも「箱の幅に対して中身が足りていない」という
-  // 構造的な事実で、見た目の好みの判定ではない。
-  //
-  //   (a) 空トラック: 幅を持つ列の数 > 実アイテム数。
-  //       repeat(auto-fill, ...) はアイテムが足りなくても列の枠を作るため、
-  //       カード3枚に対して5列分の枠ができて右に空白が残る。
-  //
-  //   (b) 使い残し（slack）: グリッドの箱の幅 −（トラック合計 + gap合計）。
-  //       トラックの上限を固定pxにすると列数の刻みが粗くなり、
-  //       「列は余っていないのに箱の中に大きな空きが残る」状態になる。
-  //       (a)だけでは検知できない（列数 ≤ アイテム数なら素通りするため）。
   for (const path of PAGES) {
     test(`${path} のグリッドに使われていない幅が無い`, async ({ page }) => {
       await gotoAndSettle(page, path);
+      expectNoWastedGrids(await inspectGrids(page));
+    });
+  }
+});
 
-      const result = await page.evaluate((threshold) => {
-        const found = [];
-        let gridsChecked = 0;
+/**
+ * BOA-460 の再現テスト。
+ *
+ * `/today` のカードは固定列数（480px以上で2列・1024px以上で3列）で並ぶため、
+ * 枚数が列数を下回るセクションでは右側に空の列が残っていた
+ * （1440pxで718px分の空白）。「まくりが利く選手」は該当が0〜数件の日があり、
+ * 実データがたまたま1〜2件になった日だけ上の検査が落ちるため、`src/` を
+ * 一切触っていないPRが赤くなった。
+ *
+ * CSS側は be62d3e3（PR #876）で直っている（auto-fit + 上限列数で割った最小幅）。
+ * このテストはその振る舞いを固定するためのもので、実装方法には依存しない
+ * （「カードが列数を下回っても右側に幅が余らない」だけを見る）。
+ *
+ * 再発の検知を実データの巡り合わせに任せないよう、応答をセクションごとに
+ * 絞って枚数を固定する。日付も生成済みの過去日に固定する（当日は早朝バッチの
+ * 前だと未生成で、ページがカードを出さないため検査が空振りする）。過去日の行は
+ * 消えない（generate-morning-digest.js の delete は同じ digest_date だけを消す）。
+ */
+const DIGEST_FIXED_DATE = "2026-09-22";
 
-        for (const el of document.querySelectorAll("*")) {
-          const cs = getComputedStyle(el);
-          if (cs.display !== "grid" && cs.display !== "inline-grid") continue;
+/** morning_digest_rows の応答を、セクションごとに先頭 `perSection` 行だけに絞る */
+async function capDigestRowsPerSection(page, perSection) {
+  await page.route(/\/rest\/v1\/morning_digest_rows/, async (route) => {
+    const response = await route.fetch();
+    const rows = await response.json();
+    const kept = [];
+    const counts = new Map();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const seen = counts.get(row.section) ?? 0;
+      if (seen >= perSection) continue;
+      counts.set(row.section, seen + 1);
+      kept.push(row);
+    }
+    await route.fulfill({ response, json: kept });
+  });
+}
 
-          // レイアウトされていない要素では gridTemplateColumns が解決前の
-          // 指定値（"repeat(auto-fit, minmax(280px, 1fr))" 等）のまま返る。
-          // px値に解決されているものだけを対象にする
-          const raw = cs.gridTemplateColumns.split(" ").filter(Boolean);
-          if (raw.some((t) => !/^-?[\d.]+px$/.test(t))) continue;
+test.describe("レイアウト: /today はカードが列数より少なくても幅を余らせない（BOA-460）", () => {
+  for (const perSection of [1, 2]) {
+    test(`セクションのカードが${perSection}枚のとき空トラックが出ない`, async ({
+      page,
+    }) => {
+      await capDigestRowsPerSection(page, perSection);
+      await gotoAndSettle(page, `/today?date=${DIGEST_FIXED_DATE}`);
 
-          // repeat(auto-fit, ...) が潰したトラックは 0px として残るが、
-          // 場所を取らないので列としては数えない
-          const tracks = raw.map(parseFloat).filter((n) => n > 0);
-          if (tracks.length < 2) continue;
-
-          const items = [...el.children].filter((c) => {
-            const r = c.getBoundingClientRect();
-            return r.width > 0 && r.height > 0;
-          });
-          if (items.length === 0) continue;
-
-          gridsChecked += 1;
-
-          const gridRect = el.getBoundingClientRect();
-          const gap = parseFloat(cs.columnGap) || 0;
-          const used =
-            tracks.reduce((a, b) => a + b, 0) + gap * (tracks.length - 1);
-          const slack = Math.round(gridRect.width - used);
-          const emptyTracks = tracks.length - items.length;
-
-          const cls = (
-            typeof el.className === "string" ? el.className : ""
-          ).slice(0, 60);
-          const base = {
-            cls,
-            columns: tracks.length,
-            items: items.length,
-            gridWidth: Math.round(gridRect.width),
-          };
-
-          if (emptyTracks > 0) {
-            const lastRight = Math.max(
-              ...items.map((c) => c.getBoundingClientRect().right),
-            );
-            const trailingGap = Math.round(gridRect.right - lastRight);
-            if (trailingGap >= threshold) {
-              found.push({ ...base, kind: "空トラック", trailingGap });
-              continue;
-            }
-          }
-
-          if (slack >= threshold) {
-            found.push({ ...base, kind: "使い残し", slack });
-          }
-        }
-        return { found, gridsChecked };
-      }, TRAILING_GAP_THRESHOLD_PX);
-
+      // 絞り込みが効いていない・カードが1枚も出ていない状態で
+      // 「空トラックが無い」と判定してしまうのを防ぐ（無言の空振り対策）
+      const itemCounts = await page.evaluate(() =>
+        [...document.querySelectorAll(".digest-grid")].map(
+          (grid) =>
+            [...grid.children].filter((child) => {
+              const rect = child.getBoundingClientRect();
+              return rect.width > 0 && rect.height > 0;
+            }).length,
+        ),
+      );
       expect(
-        result.found,
-        `グリッドの箱の幅に対して中身が足りていません` +
-          `（このページで検査したグリッド: ${result.gridsChecked}個）。\n` +
-          `「空トラック」なら repeat(auto-fill, ...) を auto-fit にする、\n` +
-          `「使い残し」ならトラックの上限を固定pxで抑えるのをやめて\n` +
-          `minmax(..., 1fr) に戻し、箱の幅は max-width で絞ってください:\n` +
-          JSON.stringify(result.found, null, 2),
-      ).toEqual([]);
+        itemCounts.length,
+        `.digest-grid が描画されていません（${DIGEST_FIXED_DATE} のダイジェストが読めていない可能性）`,
+      ).toBeGreaterThan(0);
+      expect(
+        Math.max(...itemCounts),
+        `カード枚数が${perSection}枚に絞れていません: ${JSON.stringify(itemCounts)}`,
+      ).toBeLessThanOrEqual(perSection);
+      expect(
+        itemCounts,
+        `${perSection}枚のセクションが1つも無く、検査が空振りしています: ${JSON.stringify(itemCounts)}`,
+      ).toContain(perSection);
+
+      expectNoWastedGrids(await inspectGrids(page));
     });
   }
 });

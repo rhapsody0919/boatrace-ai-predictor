@@ -14,6 +14,9 @@
  * （worktree は使い捨てを前提にした場所で、実際に `gh pr merge --delete-branch` で
  * ディレクトリごと消えて数夜分の取得データを失っている。scripts/lib/preciousPaths.js 参照）。
  *
+ * 遅れていても、メインの作業ツリーが master・追跡ファイル無変更・独自コミット無しなら
+ * 警告ではなく fast-forward で自動取り込みする（shouldAutoFastForward）。
+ *
  * 問題が無ければ何も出力しない（セッション冒頭のノイズを増やさないため）。
  * 依存はNode標準のみ。node_modules が壊れていても動く必要がある
  * （2026-09-25に node_modules が空で session-start-check.js が起動できなかった実例がある）。
@@ -30,6 +33,11 @@ import { PRECIOUS_PATHS } from "../lib/preciousPaths.js";
 const DEFAULT_BRANCH = "master";
 const FETCH_TIMEOUT_MS = 10000;
 const GIT_TIMEOUT_MS = 5000;
+/**
+ * checkout 途中で kill すると作業ツリーが HEAD と食い違ったまま残るため、
+ * fetch 等より大幅に長く取る（大きな差分の取り込みでも止めない）。
+ */
+const MERGE_TIMEOUT_MS = 120000;
 /** これを超えたら棚卸しを促す。並行セッション分（数本）は通常運転。 */
 const WORKTREE_WARN_THRESHOLD = 12;
 
@@ -93,6 +101,34 @@ export function parseBehindCount(revListOutput) {
   return m ? Number(m[2]) : null;
 }
 
+/** 同じ出力から ahead 側（ローカルにしか無いコミット数）を取る。 */
+export function parseAheadCount(revListOutput) {
+  const m = revListOutput?.match(/^(\d+)\s+(\d+)$/);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * メインの作業ツリーの master を自動で fast-forward してよいか。
+ *
+ * 並行セッションは worktree で作業し、PR は GitHub 上でマージされるため、
+ * メインの作業ツリーのローカル master は誰かが取り込まない限り遅れ続ける
+ * （警告を出すだけでは、2026-09-28 時点でも7コミット遅れていた）。
+ * 他セッションの作業を壊さない条件に限って自動で取り込む:
+ *   - メインが master にいる（別ブランチで作業中なら触らない）
+ *   - 追跡ファイルに未コミットの変更が無い（untracked は merge --ff-only 自身が
+ *     上書きになる場合だけ拒否するので、条件に含めない）
+ *   - ローカルにしか無いコミットが無い（ff-only で失敗するが、事前に弾いて警告に回す）
+ */
+export function shouldAutoFastForward({ branch, trackedDirty, ahead, behind }) {
+  return (
+    branch === DEFAULT_BRANCH &&
+    trackedDirty === false &&
+    ahead === 0 &&
+    typeof behind === "number" &&
+    behind > 0
+  );
+}
+
 function main() {
   const lines = [];
 
@@ -101,14 +137,40 @@ function main() {
     timeout: FETCH_TIMEOUT_MS,
   });
 
-  const behind = parseBehindCount(
-    git([
-      "rev-list",
-      "--left-right",
-      "--count",
-      `${DEFAULT_BRANCH}...origin/${DEFAULT_BRANCH}`,
-    ]),
-  );
+  const counts = git([
+    "rev-list",
+    "--left-right",
+    "--count",
+    `${DEFAULT_BRANCH}...origin/${DEFAULT_BRANCH}`,
+  ]);
+  let behind = parseBehindCount(counts);
+  const ahead = parseAheadCount(counts);
+
+  // worktree から起動しても、取り込む対象はメインの作業ツリー（一覧の先頭）。
+  const porcelain = git(["worktree", "list", "--porcelain"]);
+  const mainPath = porcelain ? parseWorktrees(porcelain)[0]?.path : null;
+  if (mainPath) {
+    const mainGit = (args, opts) => git(["-C", mainPath, ...args], opts);
+    const tracked = mainGit(["status", "--porcelain", "--untracked-files=no"]);
+    const decision = shouldAutoFastForward({
+      branch: mainGit(["branch", "--show-current"]),
+      trackedDirty: tracked === null ? null : tracked !== "",
+      ahead,
+      behind,
+    });
+    if (
+      decision &&
+      mainGit(["merge", "--ff-only", "--quiet", `origin/${DEFAULT_BRANCH}`], {
+        timeout: MERGE_TIMEOUT_MS,
+      }) !== null
+    ) {
+      lines.push(
+        `メインの作業ツリー（${mainPath}）の ${DEFAULT_BRANCH} を origin/${DEFAULT_BRANCH} へ自動で取り込みました（${behind} コミット、fast-forward）。`,
+      );
+      behind = 0;
+    }
+  }
+
   if (behind && behind > 0) {
     lines.push(
       `${DEFAULT_BRANCH} が origin/${DEFAULT_BRANCH} より ${behind} コミット遅れています。`,
@@ -122,7 +184,6 @@ function main() {
     );
   }
 
-  const porcelain = git(["worktree", "list", "--porcelain"]);
   if (porcelain) {
     const extra = selectManagedWorktrees(parseWorktrees(porcelain), repoRoot);
     if (extra.length > WORKTREE_WARN_THRESHOLD) {

@@ -297,6 +297,9 @@ tr.racer-vc-row-highlight td:first-child {
 
 .racer-vc-race-list {
   background: var(--surface-card);
+  /* 中のレース一覧は390pxで大きく横に溢れる（実測766px / 可視332px）。
+     手がかりのフェードをこのカード面の色に合わせる */
+  --hscroll-fade-color: var(--surface-card);
   border: 1px solid var(--border-hairline);
   border-radius: var(--radius-md);
   padding: var(--spacing-4);

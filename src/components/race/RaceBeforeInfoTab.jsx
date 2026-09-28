@@ -35,6 +35,7 @@ import {
   BarChart,
   Bar,
   Cell,
+  LabelList,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -43,8 +44,13 @@ import {
 } from "recharts";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
+import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import { supabaseDataService } from "../../services/supabaseDataService";
-import { buildBeforeInfoRows, toNumber } from "./raceIndicators";
+import {
+  buildBeforeInfoRows,
+  originalExhibitionKindLabels,
+  toNumber,
+} from "./raceIndicators";
 import {
   computeAvgEntryCourse,
   computeExhibitionTopRates,
@@ -61,6 +67,8 @@ import TermHintButton from "./TermHintButton";
 import RacePitReportSection from "./RacePitReportSection";
 import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
+import "../common/HorizontalScrollHint.css";
+import { formatCapturedAtJst } from "../../utils/formatters";
 
 function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   const { t } = useTranslation();
@@ -124,6 +132,39 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raceId]);
+
+  // オリジナル展示（一周/半周ラップ/まわり足/直線、BOA-452 / FR-4b）。
+  // BOATCAST由来の生値なので、表示するときは必ず出典を添える（ADR-0067）。
+  // 096が未適用の間は state==="forbidden" が返り、行も出典も出さない
+  // **raceIdとセットで持つ**（RacePitReportSection と同じ）。レース詳細は
+  // ボトムナビで次のレースへ移ってもこのコンポーネントが再マウントされず、
+  // raceId プロップだけが変わる。値だけを持つと、新しい取得が返るまでの間、
+  // 展示ST・展示タイムは新レース・一周/まわり足/直線は前レース、という
+  // 1つの表の中で別レースの数字が混ざった状態になる
+  const [fetchedExhibition, setFetchedExhibition] = useState(null);
+  useEffect(() => {
+    if (!raceId) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRaceOriginalExhibition(raceId)
+      .then((data) => {
+        if (!cancelled) setFetchedExhibition({ raceId, data });
+      })
+      .catch((err) => {
+        // 取得失敗でこのタブの他の行まで巻き込まない。行が出ないだけにする
+        console.error("オリジナル展示取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setFetchedExhibition({ raceId, data: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [raceId]);
+  const originalExhibition =
+    fetchedExhibition?.raceId === raceId ? fetchedExhibition.data : null;
+
+  // 展示情報の表は390pxで5号艇までしか入らない。**早期returnより前**に
+  // 置く（フックの呼び出し順は毎回同じでなければならない）
+  const detailScroll = useHorizontalScrollHint([sortedPlayers.length]);
 
   if (sortedPlayers.length === 0) return null;
 
@@ -231,6 +272,7 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
       players: sortedPlayers,
       analysis,
       pending: analysis.pending,
+      originalExhibition,
     }),
     ...extraRows,
   ];
@@ -264,6 +306,26 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
   const hasExhibitionChartData = exhibitionChartData.some(
     (d) => d.time !== null,
   );
+  // 展示タイムは**小さいほど速い**のに、素の値で棒を立てると
+  // 「棒が高い＝いい」と読まれる（一番高い棒が実は一番遅い艇）。
+  // 2026-09-27のファン視点レビューで実害として挙がったので、
+  // 棒の長さを「最も遅い艇との差」にして**長いほど速い**に直した。
+  // 数字は各棒の上に実タイムを出すので、読み取れる情報は減らない。
+  const exhibitionTimes = exhibitionChartData
+    .map((d) => d.time)
+    .filter((v) => v !== null);
+  const slowestExhibition =
+    exhibitionTimes.length > 0 ? Math.max(...exhibitionTimes) : null;
+  const fastestExhibition =
+    exhibitionTimes.length > 0 ? Math.min(...exhibitionTimes) : null;
+  const exhibitionLeadData = exhibitionChartData.map((d) => ({
+    ...d,
+    // 最も遅い艇は差が0で棒が消えるため、最小の下駄（0.01秒相当）を履かせる。
+    // ラベルは実タイムなので数字は歪まない
+    lead: d.time === null ? null : slowestExhibition - d.time + 0.01,
+    timeLabel: d.time === null ? "" : d.time.toFixed(2),
+    isFastest: d.time !== null && d.time === fastestExhibition,
+  }));
 
   const weatherItems = weather
     ? [
@@ -353,39 +415,45 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
           )}
         </h3>
         {hasExhibitionChartData ? (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart
-              data={exhibitionChartData}
-              margin={{ top: 5, right: 16, left: 0, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis
-                domain={["dataMin - 0.1", "dataMax + 0.1"]}
-                tick={{ fontSize: 11 }}
-                // dataMin/dataMax指定はrecharts内部の浮動小数点演算により
-                // 6.630000000000001のような誤差が目盛りに出るため、表示直前に丸める
-                tickFormatter={(value) => value.toFixed(2)}
-              />
-              <Tooltip
-                formatter={(value) =>
-                  value != null
-                    ? `${value.toFixed(2)}${t("beforeInfo.secondsUnit")}`
-                    : "—"
-                }
-              />
-              <Bar dataKey="time" radius={[4, 4, 0, 0]}>
-                {exhibitionChartData.map((d) => (
-                  <Cell
-                    key={d.boat}
-                    fill={
-                      BOAT_COLORS[d.boat]?.bg || "var(--brand-accent-primary)"
-                    }
+          <>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={exhibitionLeadData}
+                margin={{ top: 20, right: 16, left: 0, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                {/* 縦軸は「最も遅い艇との差」で、目盛りの数字そのものに
+                    意味が無いので出さない。実タイムは棒の上に出す */}
+                <YAxis hide domain={[0, "dataMax + 0.02"]} />
+                <Tooltip
+                  formatter={(value, _name, item) =>
+                    item?.payload?.time != null
+                      ? `${item.payload.time.toFixed(2)}${t("beforeInfo.secondsUnit")}`
+                      : "—"
+                  }
+                />
+                <Bar dataKey="lead" radius={[4, 4, 0, 0]}>
+                  <LabelList
+                    dataKey="timeLabel"
+                    position="top"
+                    style={{ fontSize: 11, fill: "var(--text-primary)" }}
                   />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                  {exhibitionLeadData.map((d) => (
+                    <Cell
+                      key={d.boat}
+                      fill={
+                        BOAT_COLORS[d.boat]?.bg || "var(--brand-accent-primary)"
+                      }
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <p className="rbi-chart-note">
+              {t("beforeInfo.exhibitionChartNote")}
+            </p>
+          </>
         ) : (
           <p className="rbi-empty">{t("beforeInfo.exhibitionChartEmpty")}</p>
         )}
@@ -393,65 +461,113 @@ function RaceBeforeInfoTab({ raceId, venueCode, players, weather, raceGrade }) {
 
       <section className="rbi-card">
         <h3 className="rbi-heading">{t("beforeInfo.detailTableTitle")}</h3>
-        <div className="drt-table-wrapper">
-          <table className="drt-table">
-            <thead>
-              <tr>
-                <th className="drt-label-th"></th>
-                {sortedPlayers.map((p) => {
-                  const color = BOAT_COLORS[p.number] || {};
-                  return (
-                    <th
-                      key={p.number}
-                      className="drt-boat-th"
-                      style={{ background: color.bg, color: color.text }}
-                    >
-                      {p.number}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.key}>
-                  <td className="drt-label-cell">
-                    {row.tab ? (
-                      <Link
-                        to={deepLink(row.tab)}
-                        className="drt-label-link"
-                        onClick={onLinkClick(row.tab)}
+        {/* 6艇×多指標の表は390pxだと5号艇までで切れ、**6号艇が存在しない
+            ように見える**（2026-09-27、ファン視点のレビューで実測）。
+            切れていることが分かる手がかりを出す */}
+        <div
+          className={`hscroll-hint${detailScroll.hasMore ? " has-more" : ""}`}
+        >
+          {detailScroll.hasMore && (
+            <button
+              type="button"
+              className="hscroll-more"
+              onClick={detailScroll.scrollRight}
+              aria-hidden="true"
+              tabIndex={-1}
+            >
+              ›
+            </button>
+          )}
+          <div
+            className="drt-table-wrapper"
+            ref={detailScroll.ref}
+            onScroll={detailScroll.update}
+          >
+            <table className="drt-table">
+              <thead>
+                <tr>
+                  <th className="drt-label-th"></th>
+                  {sortedPlayers.map((p) => {
+                    const color = BOAT_COLORS[p.number] || {};
+                    return (
+                      <th
+                        key={p.number}
+                        className="drt-boat-th"
+                        style={{ background: color.bg, color: color.text }}
                       >
-                        <span className="drt-label-full">{row.label}</span>
-                        <span className="drt-label-short">
-                          {row.shortLabel}
-                        </span>
-                        <span className="drt-link-arrow">›</span>
-                      </Link>
-                    ) : (
-                      <>
-                        <span className="drt-label-full">{row.label}</span>
-                        <span className="drt-label-short">
-                          {row.shortLabel}
-                        </span>
-                      </>
-                    )}
-                    <TermHintButton termKey={row.key} />
-                  </td>
-                  {sortedPlayers.map((p) => (
-                    <td
-                      key={p.number}
-                      className={cellClass(p.number, row.best)}
-                    >
-                      {row.render(p)}
-                    </td>
-                  ))}
+                        {p.number}
+                      </th>
+                    );
+                  })}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.key}>
+                    <td className="drt-label-cell">
+                      {row.tab ? (
+                        <Link
+                          to={deepLink(row.tab)}
+                          className="drt-label-link"
+                          onClick={onLinkClick(row.tab)}
+                        >
+                          <span className="drt-label-full">{row.label}</span>
+                          <span className="drt-label-short">
+                            {row.shortLabel}
+                          </span>
+                          <span className="drt-link-arrow">›</span>
+                        </Link>
+                      ) : (
+                        <>
+                          <span className="drt-label-full">{row.label}</span>
+                          <span className="drt-label-short">
+                            {row.shortLabel}
+                          </span>
+                        </>
+                      )}
+                      <TermHintButton termKey={row.key} />
+                    </td>
+                    {sortedPlayers.map((p) => (
+                      <td
+                        key={p.number}
+                        className={cellClass(p.number, row.best)}
+                      >
+                        {row.render(p)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
+        {/* オリジナル展示（BOA-452 / ADR-0067）の出典。値を出したときだけ、
+            表のすぐ下に1回。ピットレポート（RacePitReportSection）と同じ形で、
+            出典・取得時刻・再配布しない旨の3点を書く */}
+        {originalExhibition?.state === "published" && (
+          <div className="rbi-source">
+            <p className="rbi-source-text">
+              {t("beforeInfo.originalExhibitionSource", {
+                items: originalExhibitionKindLabels(
+                  t,
+                  originalExhibition.kinds,
+                ).join(t("beforeInfo.originalExhibitionItemSeparator")),
+              })}
+            </p>
+            {formatCapturedAtJst(originalExhibition.capturedAt) && (
+              <p className="rbi-source-text">
+                {t("beforeInfo.originalExhibitionCapturedAt", {
+                  time: formatCapturedAtJst(originalExhibition.capturedAt),
+                })}
+                {t("home.jstNote")}
+              </p>
+            )}
+            <p className="rbi-source-text">
+              {t("beforeInfo.originalExhibitionNote")}
+            </p>
+          </div>
+        )}
       </section>
 
       <RacePitReportSection

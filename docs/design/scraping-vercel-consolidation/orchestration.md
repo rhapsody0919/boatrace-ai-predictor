@@ -118,12 +118,12 @@ data-catalog.mdでは「必須・未対応」のままだったが、PR #751（�
 | WS2 | 取得時刻列の追加（`exhibition_data`・`race_entries`・`race_start_timings`）。**前倒しで着手**（ユーザー承認、2026-09-19。Vercel一本化の設計・移行と並行）。方針: NULL可の`created_at`（`DEFAULT now()`は追加後に設定し、既存行はNULLのまま）と`updated_at`（書き込み側が、変更のある行を書くときに設定。トリガーは使わない）を追加する。マイグレーション適用前でもコードが壊れない設計（列が無いエラーで、その列を除いて書き直す） | Agent | WS1 | マイグレーション適用、以降の行で取得時刻が入る。実測レポートで、取得時刻の分布を計測できる | マイグレーション071を適用済み（2026-09-19）。コードはPR #727。適用後は、データ健全性レポートの3-2で、取得時刻の分布が溜まる（土日を含む7日分が溜まるまで、完了の定義Bの根拠にはならない） |
 | WS3 | 既存spec（`scraping-full-coverage`・`scraping-serverless-migration`）の統合改訂とADR-0066の補正。`morning-init`・`races`初期化、展示→予測リフレッシュの連動、`scrape-scheduled`の分割、`scrape-results`の所要時間実測、リージョン（syd1とhnd1の遅延実測による比較）、並走方式を決める。入力として、BOA-313の再設計検討メモ（予定表方式）、BOA-342（取得タイミングの意味論を『期限＋許容幅』へ変える案。ADR-0057の更新対象）、BOA-343（取得元・間隔の一覧化。成果物は`job-inventory.md`（PR #722）。取得系14ジョブ、重複D1〜D9、取得漏れG1〜G13。起票済み: BOA-364・365・366）を取り込み、統合する。BOA-344はBOA-342へ統合した（2026-09-20、BOA-344はCanceled） | 親＋ユーザー（設計判断） | WS1 | 統合specの承認（G1） | 統合設計（[plan.md](./plan.md)・[tasks.md](./tasks.md)、PR #728）は、2026-09-20に設計判断(a)〜(j)を承認済み（G1のうち統合specの承認は満たした）。バックフィル計画は[backfill-plan.md](./backfill-plan.md)（PR #729）。既存spec（`scraping-full-coverage`・`scraping-serverless-migration`）へのsupersede注記は、別PRで行う |
 | WS4a | スケジューラと共通Cronラッパ: 毎分のVercel Cron + DB上の予定表（期限＋許容幅、pending/running/done/expired、試行回数、エラー、取得元（source））、認証、排他（lease<許容幅）、冪等、0件エラー、catch-up、リージョン、監視フック。予定表は『期限・実行時刻・成否』を記録するため、取得時刻列が無いテーブルでも、窓内取得率を予定表から計測できる。各データセットの移行より先に、1つの子で作る | Agent | WS3 | ラッパが1データセットで動く | 完了（2026-09-20）。PR #733（マイグレーション075）・#737（共通ライブラリ）・#738（監視・クリーンアップ・crons）をマージ。075は本番に適用済み（実測はAPPLIED.md）。実DB検証`verify-scrape-slots-on-db.js --execute`が全通過（ensure冪等、8本同時claimで二重claimなし、リース奪取、expired）。本番で`scrape-monitor`のCronが5分ごとに200を返すことを確認（全ジョブoffのため何もしない・通知なし）。リージョンプローブ: 関数は現在iad1でDB(シドニー)まで約250ms、syd1なら約28〜46ms、boatrace.jpの応答は約8〜10秒でリージョン差なし。**syd1への変更はユーザー承認待ち**（既存の`exhibition`・`race-notices`にも影響）。設計との食い違い: `race_odds`の一意索引は、PostgRESTのupsertの制約で部分索引にできず通常の一意索引（NULLは重複扱いにならない）／1スロットの処理時間が想定の約10倍でclaimLimit・リースを調整／`result`のcron窓は翌00:59 JSTまで延ばす必要（T4b-02で判断） |
-| WS4b | データセット別の移行（展示・特記事項→純正Cron、`morning-init`、結果、オッズ、レース情報、低頻度ジョブ）。1データセット=1子 | Agent（2〜3並列） | WS4a | 各データセットが完了の定義A/B/Cを満たす（G2） | 未着手 |
-| WS5 | 空データ・欠損の解消とバックフィル: `ability_index`初回実行、`racer_series_points`の0件原因、`race_special_notes`の判別、結果欠損（2025-12・2026-03）の原因と補填、`today_weight`のNULL、`series_day`の過去分、期別成績40〜55%の原因調査 | Agent | WS1 | 完了の定義Aを満たす | 進行中。`racer_series_points`が0件だった原因（GitHub Actionsの起動遅延で対象日が翌日にずれる、0件を成功扱い）はPR #715で修正済み。`scrape-racer-season-stats`は、PR #721で修正済み（マージ済み）。2026-09-20に段階実行を開始（5選手のdry-run成功→30選手の本番書き込み→全件）。RPCが中止レースの情報を返していない回帰（BOA-363）は、PR #720で修正し、マイグレーション068は適用済み |
+| WS4b | データセット別の移行（展示・特記事項→純正Cron、`morning-init`、結果、オッズ、レース情報、低頻度ジョブ）。1データセット=1子 | Agent（2〜3並列） | WS4a | 各データセットが完了の定義A/B/Cを満たす（G2） | **大部分が完了（2026-09-28時点の実測）**。`scrape_job_state` の21ジョブが live（odds・result・result_catchup・race_info・exhibition・pcexpect・races_init・race_notices・pit_reports・kfile_sync・point_rank・entry_course_stats・venue_motor_stats・racer_news・motor_pretest・boatcast_oriten・boatcast_motor_start・prediction_odds・morning_digest・racer_course_technique_stats・data_health）。GHA側の停止フラグは12本。**残**: (1) `race_status` が shadow のまま（live化の判断が要る）、(2) `racer_profiles` は `scrape_job_state` に行が無く（＝off）、`SKIP_RACER_SEASON_ON_GHA` も未設定で、**唯一GHAが本番を担っている取得**。この2つが片付けばWS7（G3）の前提が揃う |
+| WS5 | 空データ・欠損の解消とバックフィル: `ability_index`初回実行、`racer_series_points`の0件原因、`race_special_notes`の判別、結果欠損（2025-12・2026-03）の原因と補填、`today_weight`のNULL、`series_day`の過去分、期別成績40〜55%の原因調査 | Agent | WS1 | 完了の定義Aを満たす | **進行中**。`racer_series_points`（PR #715）・`scrape-racer-season-stats`（PR #721）は修正済み。2026-09-25〜28に、N19（出走表の3連率ほか）を取得〜投入まで完走した。**ただし範囲は racelist アーカイブがある4か月（2025-12・2026-01・2026-02・2026-04）の4,302レースに限られる**（2026-09-28の訂正。下記「N19の範囲の訂正」）。K/Bアーカイブ（2019-04〜2025-12、2,132日分）も再取得し全量復旧。**残**: 081グループの列が、テーブル全体では24.3%しか埋まっていない（[BOA-468](https://linear.app/boat-ai/issue/BOA-468)とは別の残件）。全データの洗い出し（BOA-365）も未確認で、「取得すべきものが全部挙がっているか」は未決 |
 | WS6 | マイグレーション台帳と番号衝突のCI検査（実スキーマとの突合、適用状況の記録） | Agent | なし | CIで重複を検知、台帳が実スキーマと一致 | 完了（PR #719。CIには組み込まず、手元で`npm run verify:migration-numbers`を実行する運用。実際の重複は15番号。台帳の突合で、048（RPCへのcancellationStatus追加）が未適用と判明し、BOA-363として起票） |
-| WS8 | Supabase Disk IO対策: (a)計算リソース増強（**完了**: 2026-09-19 10:51 JST、Small（約15ドル/月、ベースライン4倍、メモリ2GB）へ変更。効果は上記の実測） (b)変更の無い行を書かない（条件付きupsert。race_entries・races・race_conditions・race_results・prediction_odds・bet_recommendations・exhibition_data。BOA-349を含む。原因調査（滞留2レースがactual_course_1=NULLのまま）、取得不能レースが同期対象判定を永久に真にする構造の解消、`syncRecentRank456()`の確認） (c)predictionsの再生成方式の見直し（DELETE+INSERTを差分更新へ、feature_contributionsの分離・圧縮） (d)重い読み取りRPCの見直しとキャッシュ（get_predictions_by_dateは平均686ms×4.8万回、predictionsの大きなスキャンは1回あたり30〜43MBを読む） (e)CI/e2e・エージェントの本番DBへの負荷の見積りと抑制 | 親＋ユーザー(a)、Agent(b〜e) | なし（WS1と並行） | ダッシュボードのDisk IO消費が予算内に収まり、e2eのタイムアウトが解消する | 進行中（(a)完了、(b)はPR #716でマージ済み。マージ後に`pg_stat_user_tables`の`n_tup_upd`で効果を測る）。**WS8(c)への入力**: `race_results`のトリガー`trg_update_predictions`（`AFTER INSERT OR UPDATE FOR EACH ROW`）は、どの列が更新されても、該当レースの`predictions`と`bet_recommendations`の全行を再UPDATEする。BOA-349の空UPDATE（16.7万回）は、この連鎖の起点だった。#716の効果を測り、残る場合はトリガーを`UPDATE OF rank1〜3・payout列`に限定するDDL（要ユーザー承認）を検討する。**WS8(c)の進捗**: BOA-405（PR #808、調査・設計提案のみ）で対策0（predictions.feature_contributionsの3モデル重複解消）を最優先の即効策として提案、BOA-408（PR #813、マージ済み）で実装。standard行にのみ書き、safeBet・upsetFocusはNULLにする（本番実測で約66%減の見込み）。差分更新（"diff" writeMode）・トリガー限定DDL（BOA-409で適用済み）・別テーブル分離はBOA-405の提案どおり別チケット（BOA-410）で検討 |
+| WS8 | Supabase Disk IO対策: (a)計算リソース増強（**完了**: 2026-09-19 10:51 JST、Small（約15ドル/月、ベースライン4倍、メモリ2GB）へ変更。効果は上記の実測） (b)変更の無い行を書かない（条件付きupsert。race_entries・races・race_conditions・race_results・prediction_odds・bet_recommendations・exhibition_data。BOA-349を含む。原因調査（滞留2レースがactual_course_1=NULLのまま）、取得不能レースが同期対象判定を永久に真にする構造の解消、`syncRecentRank456()`の確認） (c)predictionsの再生成方式の見直し（DELETE+INSERTを差分更新へ、feature_contributionsの分離・圧縮） (d)重い読み取りRPCの見直しとキャッシュ（get_predictions_by_dateは平均686ms×4.8万回、predictionsの大きなスキャンは1回あたり30〜43MBを読む） (e)CI/e2e・エージェントの本番DBへの負荷の見積りと抑制 | 親＋ユーザー(a)、Agent(b〜e) | なし（WS1と並行） | ダッシュボードのDisk IO消費が予算内に収まり、e2eのタイムアウトが解消する | 進行中（(a)完了、(b)はPR #716でマージ済み）。**残は(c)の効果測定＝[BOA-410](https://linear.app/boat-ai/issue/BOA-410)**で、BOA-408（feature_contributionsの3モデル重複解消、本番適用済み）の効果を数日分の `pg_stat_user_tables` で測る。2026-09-28時点で日数が足りず未実施。(d)重い読み取りRPCのキャッシュ・(e)CI/e2eの負荷見積りも未着手 |
 | WS9 | 気象データの鮮度（BOA-358）: 展示取得（`api/cron/exhibition.js`）で気象も解析し変化があった場合のみ更新、観測時刻カラム（`weather_observed_at`等）の追加、結果ページの確定値の採用、過去分のバックフィル方針（優先範囲・取得先への負荷）、画面の観測時刻表示 | Agent | WS8(b)（`update-race-info.js`・`scrape-results.js`の変更が重なるため、完了後に着手） | 完了の定義B: 発走直前の観測を取得できている割合を、土日を含む直近7日で実測。公式との一致率をサンプル100レースで確認 | 実装済み（PR #724・#725、マージ済み）。マイグレーション069・070は適用済み（画面の観測時刻表示まで）。展示取得（`scrape-exhibition-data.js`）と結果取得（`scrape-results.js`）で気象を更新し、`beforeinfoWeather.js`に解析を共通化。**公式の仕様**: beforeinfoの気象は、Nレース目のページに「(N-1)R時点」の値が載る（1Rのみ「HH:MM現在」）。発走前に取れる気象は、公式が更新するまで前のレースの値で、レース時点の確定値はraceresultにある。ベースライン（2026-09-19、確定済み30レース、DB対raceresult）: いずれかの項目が不一致 29/30（天候30%・気温77%・風速73%・風向73%・水温7%・波高43%）。後続: RPCへ`observedAt`を足すマイグレーション（画面表示）、発走10分前の気象のみの再取得の要否（マージ後の実測で判断） |
-| WS7 | 最終検証と旧基盤（cron-job.org・取得系GitHub Actions）の廃止（G3）。`continue-on-error`の見直しを含む | 親＋Agent | WS4b・WS5 | 全データセットが完了の定義を満たし、旧基盤が停止 | 未着手 |
+| WS7 | 最終検証と旧基盤（cron-job.org・取得系GitHub Actions）の廃止（G3）。`continue-on-error`の見直しを含む | 親＋Agent | WS4b・WS5 | 全データセットが完了の定義を満たし、旧基盤が停止 | **着手（2026-09-28）**。実測は下記「WS7（G3）の実測（2026-09-28）」。**完了の定義Bを移行後に測り直し、6窓中5窓が閾値に達した**（0分前は 43.4%→100.0%）。`race_status` は過去日の再生で47レース・誤り0件を確認しlive化可。残る作業は、(1) `race_status` の live化（DB更新・ユーザー操作）、(2) `racer_profiles` のVercel移行と `SKIP_RACER_SEASON_ON_GHA` 設定、(3) -60の判定基準の見直し（[BOA-465](https://linear.app/boat-ai/issue/BOA-465)）、(4) cron-job.org の停止、(5) 停止後に本番データが欠けないことの7日間の実測（G3条件3） |
 
 推奨する着手順: WS1とWS8(a)(b)を最優先で並行 → WS2・WS6・WS5の一部を並列 → WS3 → WS4a → WS4b。
 
@@ -282,6 +282,277 @@ N19バックフィルの今夜22:00再開待ちと並行し、BOA-403のfollow-u
 **BOA-407完了・本番反映済み**: [PR #818](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/818)（調査）・[PR #819](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/819)（削除スクリプト、ユーザー実行）。当初の仮説（race_idの日付ズレ）は誤りと判明。実際は「過去の実在開催日のrace_entriesが複製され、開催終了後の別日付に誤保存された**幻の開催日**」。34会場日408件中**33会場日396件**は自社DB内の過去日と完全一致（12レース×6艇=72値のracer_id一致）で確定、複製の連鎖（例: 03-05実データ→03-06複製→03-08がさらに複製）も確認。残り1件（2025-12-03の津12件）はBOA-325（Done）の一部と判明、前提再検証は[BOA-413](https://linear.app/boat-ai/issue/BOA-413)へ切り出し。**本番から396レースを削除済み**（2026-09-24、CASCADE連動でrace_entries・race_conditions・predictions等も削除。実測でvenue_not_in_kが408件→12件＝津の除外分のみに減少したことを確認）。範囲拡大確認・現行パイプラインでの再現性調査は[BOA-414](https://linear.app/boat-ai/issue/BOA-414)へ切り出し。
 
 **検出アルゴリズムの教訓**: 初回実装は「直近の過去データと不一致ならそこで探索を打ち切る」ロジックで、33件中25件しか検出できなかった。三国(10)の実例（複製元は2日前だが1日前に無関係な別大会のデータがあり誤判定）を踏まえ、「途中の日に無関係なデータがあっても遡り続け、14日以内で完全一致する日を探す」方式に修正して33/396に一致した。
+
+## 正本と実態の同期（2026-09-28）
+
+本ファイルのワークストリームの状態が実態から遅れていた（WS4bが「未着手」のままだが、実際には21ジョブがliveで稼働していた）。
+2026-09-28に本番を実測して同期した。**この乖離自体が、オーケストレーションの記録として直すべき点**だったため、
+以下に実測の根拠を残す。
+
+### 取得ジョブの現況（`scrape_job_state`、2026-09-28 09:20 JST）
+
+| mode | 数 | ジョブ |
+|---|---:|---|
+| live | 21 | boatcast_motor_start, boatcast_oriten, data_health, entry_course_stats, exhibition, kfile_sync, morning_digest, motor_pretest, odds, pcexpect, pit_reports, point_rank, prediction_odds, race_info, race_notices, racer_course_technique_stats, racer_news, races_init, result, result_catchup, venue_motor_stats |
+| shadow | 1 | race_status |
+| off | 4 | daily_reconcile, predict-code-hash, scrape-cleanup, scrape-monitor |
+
+**`off` の4つのうち `scrape-monitor`・`scrape-cleanup` は `kind: "monitor"` で、レジストリ上モードのゲートが無い**（`registry.js`）。
+実測でも `scrape-monitor` は5分ごとに動いている（最終 2026-09-28 09:20 JST、連続失敗0）。
+**`mode` の表示だけを見て「止まっている」と判断しない。**
+
+### GHA側の停止フラグ（12本、すべて `true`）
+
+`SKIP_ENTRY_COURSE_ON_GHA` / `SKIP_EXHIBITION_ON_GHA` / `SKIP_KFILE_ON_GHA` / `SKIP_MORNING_INIT_ON_GHA` /
+`SKIP_MOTOR_STATS_ON_GHA` / `SKIP_ODDS_ON_GHA` / `SKIP_ODDS_REFRESH_ON_GHA` / `SKIP_PCEXPECT_ON_GHA` /
+`SKIP_POINT_RANK_ON_GHA` / `SKIP_RACER_NEWS_ON_GHA` / `SKIP_RACE_INFO_ON_GHA` / `SKIP_RESULTS_ON_GHA`
+
+**未設定は `SKIP_RACER_SEASON_ON_GHA`（`racer_profiles`）だけ**。`racer_profiles` は `scrape_job_state` に行が無く（＝off）、
+Vercel Cron（`*/10 18-20 1 * *` ほか）は存在するが担っていない。**現時点で、GHAが本番を担っている唯一の取得**。
+
+### 完了の定義の現況
+
+| 定義 | 状態 |
+|---|---|
+| A（件数） | 主要データは充足（WS5参照）。**全データセットでの網羅確認は未**（BOA-365） |
+| B（タイミング） | **未達のまま**。WS1のベースライン（2026-09-19）で全窓98%未満（-60: 89.6% / -30: 92.3% / -15: 92.5% / -10: 92.6% / -5: 93.0% / 0: 43.4%）。**Vercel移行後の再測定をしていない**ため、現在値は不明 |
+| C（継続監視） | **達成**。`data_health` が2026-09-26にlive化し、毎朝06:35 JSTに稼働。2026-09-28は28項目・alerts 0件・連続失敗0。通知経路（`scrape-monitor` → Slack）も稼働中。**28項目のうち `result.monthly` だけが `breach`** だが、これは `severity: "info"`（意図的に通知しない）で、Cの穴ではない。未達の内実は[BOA-468](https://linear.app/boat-ai/issue/BOA-468)（Aの残件） |
+
+### このセッション（2026-09-25〜28）で、計画外に発生・対応した不具合
+
+いずれも取得基盤の信頼性に直結するため、記録として残す。
+
+| 内容 | 対応 |
+|---|---|
+| 出走表の複製汚染が、既知の3会場日ではなく**22会場日・219レース**だった（2026-01-09の9会場108レースは未検知だった） | 公式Bファイルから復元（[PR #840](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/840)）。日次検知を `data_health` に追加（[PR #830](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/830)、マイグレーション100） |
+| `gh pr merge --delete-branch` をworktreeの外から実行し、worktreeごと削除。gitignore対象のK/B生アーカイブ（2020-02〜2026-09）を失った | 全量再取得。アーカイブと夜間ジョブの実行場所をリポジトリ外へ移した（[PR #863](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/863)・[PR #868](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/868)） |
+| PostgRESTのバルクupsertで、キーの集合が違う行を混ぜると持たない行にNULLが書かれ、`branch`・`hometown` を1,729行で消した | `diffRows` で payload の列にそろえる（[PR #870](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/870)）。1,729行を `racer_profiles` から復旧 |
+| 「列が無い」の判定がメッセージの正規表現でも成立し、誤検知で6列を実行の最後まで落とし続けた（書き込みは成功扱い） | 判定をエラーコードのみに厳格化し、落としたグループを必ず報告（[PR #872](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/872)）。1,019行を再投入 |
+
+
+### N19の範囲の訂正（2026-09-28）
+
+上の WS5 に「`race_entries` の…欠損を**すべて0件**にした」と書いたが、**範囲の限定が抜けていた**。
+並行セッション（表示カバレッジ担当）から「`f_count` 等の充足率は全期間で低い」と指摘され、実測して確認した。
+
+**正しくは「N19が対象にした4,302レースの範囲内では0件」。** テーブル全体では埋まっていない。
+
+| 期間 | `race_entries` 行数 | `f_count` 充足 | `weight_kg` 充足 | `branch` 充足 |
+|---|---:|---:|---:|---:|
+| 2025-12〜2026-06 | 196,560 | 29.3% | 29.1% | 29.3% |
+| 2026-07以降 | 85,392 | 13.0% | 13.0% | 13.0% |
+| **合計** | **281,952** | **24.3%** | 24.3% | 24.3% |
+
+#### なぜそうなるか（日別の実測）
+
+| 日 | `f_count` 充足 | `global_3rate` 充足 |
+|---|---:|---:|
+| 2026-09-18〜20 | **0.0%** | 100.0% |
+| 2026-09-21 | 61.5% | 100.0% |
+| 2026-09-22 | 99.4% | 100.0% |
+| 2026-09-23〜27 | **100.0%** | 100.0% |
+
+**081グループの列（`f_count`・`l_count`・`weight_kg`・`branch`・`hometown`・`is_absent`）は、2026-09-21に本番取得が始まった**
+（マイグレーション081と書き込み側が入った日）。それ以前は1行も取れていない。`global_3rate` は取得元が別で全期間100%。
+
+したがって過去分は、**racelist を取り直す以外に埋める方法が無い**。アーカイブは4か月（4,302レース）しか無く、
+N19はその全量を投入しきった。**「N19が終わった」は「持っているアーカイブを全部入れた」であって、
+「過去分の欠損が解消した」ではない。**
+
+#### 完了の定義Aへの影響
+
+081グループの列は、**2026-09-21以降のみ充足**という扱いになる。
+`.claude/rules/data-acquisition.md` の A は「過去分を遡って取得できないデータは、『取得開始日以降のみ』と明記してユーザーの承認を得る」
+としており、この列は**遡って取得できる**（racelist は過去日も返る）ため、「取得開始日以降のみ」で閉じる前に、
+どこまで遡るかの判断が要る。2025-12-01まで遡ると約4.3万レース＝約26万行、1ページ約8〜10秒の取得になる。
+
+#### 記録の教訓
+
+**範囲を持つ作業の完了を「0件にした」と書くときは、必ず分母を併記する。**
+「N19の対象4,302レースのうち0件」と「`race_entries` 全体で0件」は桁が3つ違い、
+後者と読まれると、以降の判断（BOA-365の網羅確認、表示側の充足率評価）が全部ずれる。
+実際に並行セッションが別の数字を出してきて初めて気づいた。
+
+## WS7（G3）の実測（2026-09-28）
+
+G3の条件（[plan.md](./plan.md) §4.8）のうち、条件2「全データセットが完了の定義A・B・Cを、本番DBの実測で満たしている」を、
+Vercel移行後の本番データで測り直した。ベースライン（2026-09-19、本ファイル冒頭）以来、**一度も再測定していなかった**。
+
+### 完了の定義B（窓内取得率）の再測定
+
+`node --env-file=.env.local scripts/analysis/data-health-report.js`（読み取りのみ）。
+期間は **2026-09-22〜27の6日（土日2日を含む）**。2026-09-21を外したのは、その日はオッズの予定表が日中から始まり
+（121レース中88レースに `-60` のスロットが無い）、移行の途中で混ざった日のため。
+
+| 窓 | ベースライン（2026-09-19） | 2026-09-22〜27 | 閾値98% |
+|---|---:|---:|---|
+| -60分 | 89.6% | **94.7%**（875/924） | 未達 |
+| -30分 | 92.3% | **98.1%**（906/924） | 達成 |
+| -15分 | 92.5% | **100.0%**（924/924） | 達成 |
+| -10分 | 92.6% | **100.0%**（924/924） | 達成 |
+| -5分 | 93.0% | **100.0%**（924/924） | 達成 |
+| 0分 | 43.4% | **100.0%**（924/924） | 達成 |
+
+**6窓中5窓が閾値に達した。** 特に0分前（締切直前）は43.4%→100.0%で、旧基盤の最大の穴が埋まっている。
+
+### 残る未達（-60）の内訳と、それが取得の欠陥でないこと
+
+`scrape_slots`（`job='odds'`・`offset_min=-60'`、2026-09-21〜27、中止・結果未確定を除く1,045レース）を分類した。
+
+| 区分 | 件数 | 試行回数の平均 |
+|---|---:|---:|
+| 窓内（-57分以内）に取れた | 907 | 1 |
+| 取れたが窓の外（3.6〜29.8分の遅れ） | 26 | 17.5 |
+| 期限切れ（`-30` の窓が始まるまでに公開されず） | 24 | 24.4 |
+| スロットが無い（2026-09-21のみ） | 88 | - |
+
+BOA-386で決めた「未公開の間は1分間隔で再試行する」は、実測で正確に機能している（`last_attempt_at − first_attempt_at` が
+全バケットで `attempts − 1` 分ちょうど）。
+
+> **【訂正 2026-09-28】** ここに当初「取れなかったものは、すべて『公式がまだ売り出していなかった』。取得側にできることは無い」
+> と書き、**-60の未達は判定基準の側の問題だけ**と結論した。**この結論は実測で支持されない。** 別セッションが起票した
+> [BOA-486](https://linear.app/boat-ai/issue/BOA-486) を受けて確認した内容:
+>
+> - 期限切れ（`no_values`）の135スロットは、**全件が `last_error` に「単勝オッズを解析できませんでした（未公開・中止・順延の可能性）」を持つ**。
+>   他の失敗理由は1件も記録されていない。つまり `no_values` は常に**単勝の解析失敗**を意味し、
+>   **「何も発売されていなかった」と「単勝だけ解析できなかった」を記録から区別できない**
+> - `scrape-odds.js:433` は、5ページを取得した**あと**に単勝の値が1件も無ければ `no_values` を返し、
+>   **既に解析できていた3連単等（`trifecta_all`）を捨てて何も書かない**
+> - 単勝先読み（`shouldProbeWinFirst`）は「前回が `no_values` かつ窓が延長付き」のときだけ＝**-60の2回目以降**。
+>   **1回目は必ず5ページ取得する**ため、3連単が取れていて単勝だけ未公開なら、その回で捨てている
+> - 実例（[BOA-486](https://linear.app/boat-ai/issue/BOA-486)、常滑 2026-09-26 R2）: `-15` の行は `odds_win_1` がNULLなのに
+>   `trifecta_all` が入っている＝**単勝だけが遅れて解析できない状態が実在する**
+>
+> したがって **-60・-30の未達には取得側の欠陥が混ざっている可能性があり、BOA-486を直すまで「判定基準の問題だけ」とは言えない。**
+> 部分成功（単勝が無くても他券種を保存する）にすれば、その回で行が書かれ**窓内取得として数えられる**ため、
+> 窓内取得率そのものが変わりうる。BOA-486の修正後に再測定する。
+>
+> なお発走0分前の `no_values` 18件は、**全件が中止確定レース**（オッズが一切無い）で、これは正当な失敗だった。
+
+判定基準の側にも問題はある（BOA-386の除外条件が「その日の第1レースで、-60が窓内に無く、後続の窓のどれかで取れている」と
+狭く、同じ現象のうち19件しか分母から外れない）。→ [BOA-465](https://linear.app/boat-ai/issue/BOA-465)。
+**ただし基準の問題と取得の欠陥の切り分けは、BOA-486の修正後でないとできない。**
+
+### レポートの偽の未達（[BOA-465](https://linear.app/boat-ai/issue/BOA-465)）
+
+同じレポートが「発売開始の検知の遅れ **0.0%**（0/59、p50 27.6分）」を閾値未達として出すが、これは**測っているものが違う**。
+レポートは「窓が閉じた時刻」を起点にするため、**発売開始そのものの遅れ**を出している。指標の定義（未公開だった直前の
+試行から、最初に取れた試行までの差）で測れば、試行間隔が1分ちょうどなので**1分＝基準の5分以内**。
+
+**この1件が未達のまま残ると、G3の条件2を満たしたと言えない。** 完了の定義Bの判定から外すか、`scrape_slots` から
+正しく計算し直す必要がある。
+
+### `race_status` の live化の判断（過去日の再生による検証）
+
+[postponed-day-early-detection.md](./postponed-day-early-detection.md) §6の展開手順は「順延・中止が起きた日に `last_report` を確認する」
+としているが、**`last_report` は10分ごとに上書きされる**ため、イベントの起きた日に人が見ていないと証拠が残らない。
+shadow中に起きた順延日（9/21・9/22）の記録はすでに失われており、このまま待つと次のイベントまで無期限にG3が止まる。
+
+代わりに、**過去日の公式ページに対して同じパーサを再生**した（書き込み無し。`raceIndexUrl` → `parseVenueStatuses` →
+`classifyStatusText`、および各レースの結果ページに対する `isRaceCancelledPage`）。
+
+| 日 | 告知（開催場一覧の状態欄） | パーサが確定させるレース | DBの `cancellation_status='confirmed'` | 一致 |
+|---|---|---:|---:|---|
+| 2026-09-09 | 03「中止順延」 | 12 | 03: R1〜12（12） | ✅ |
+| 2026-09-21 | 02「中止順延」・03「中止順延」・09「5R以降中止順延」・10「10R以降中止」 | 35 | 02: R1〜12、03: R1〜12、09: R5〜12、10: R10〜12（35） | ✅ |
+| 2026-09-22 | 09「中止」 | 12 | 09: R1〜12（12） | ✅ |
+| 2026-09-12 | 告知なし | 0 | 10会場・34レース | ー（下記） |
+
+- **未知の文言（`unrecognized`）は4日とも0件**。3つの形（「中止順延」「N R以降中止順延」「N R以降中止」）がすべて既知の分類に入った
+- **矛盾（`contradictions`）も0件**。告知のあった全47レースの結果ページが、例外なく「レース中止」を表示していた
+- 過不足ゼロで、**誤って確定させるレースは1件も出なかった**
+
+**判断: live化してよい。** 確定には告知（S2）と結果ページの「レース中止」（S3）の両方が要るため、S3の反映が遅れても
+**確定が遅れるだけで、誤った確定にはならない**。展開手順3（告知から反映までの時間の実測）は、この安全性の非対称性から、
+live化の前提にしない。
+
+**2026-09-12の扱い**: この日は「先頭のNレースだけ中止（R1〜3等）で、その後は開催」という形で、過去日の開催場一覧に
+告知が残らない（設計の既知の制約）。本ジョブの対象は「N R**以降**の中止」だけなので、**この形は早期確定の対象外**で、
+従来どおり90分ルールが確定する。退行ではないが、**カバー範囲の穴として記録する**。
+
+**live化を実施した（2026-09-28 10:06 JST、ユーザー操作）**。10:10の起動で稼働を確認:
+
+| 項目 | 値 |
+|---|---|
+| `mode` | `live` |
+| `last_tick_at` / `last_success_at` | 10:10:17 / 10:10:28 JST |
+| `last_report.mode` | `live`（10:00の`shadow`から切り替わった） |
+| `venuesParsed` | 12 |
+| `candidates` / `unrecognized` | 0 / 0 |
+| `consecutive_failures` / `last_error` | 0 / なし |
+
+本日は順延・中止の告知が無いため候補0が正しい挙動。**次の順延日に、`races.cancellation_status` が90分ルールより早く
+`confirmed` になることを確認する**（`scrape-monitor` の通知経路も稼働中）。
+
+### `racer_profiles` — GHAが本番を担っている唯一の取得
+
+`api/cron/racer-profiles.js` とVercel Cron（`*/10 18-20 1 * *` ほか＝JST 毎月2日 03:00〜05:50）は存在するが、
+`scrape_job_state` に行が無い（＝off）ため動かず、`.github/workflows/scrape-racer-season-stats.yml`（月次）が担っている。
+
+`SKIP_RACER_SEASON_ON_GHA` はフェイルセーフ付きで、**`racer_profiles` が live で健全なときだけ** GitHub Actions が止まる
+（[`ghaSkipGate.js`](../../../scripts/lib/ghaSkipGate.js)）。したがって変数を先に立てても、live になるまで挙動は変わらない。
+
+次の起動は **2026-10-01 18:00 UTC（＝10/2 03:00 JST）**。月次のため、shadowで1周見てからliveにすると次の機会は11月になる。
+
+**2026-09-28 10:07 JST に `shadow` の行を作った（ユーザー操作）**。`last_tick_at` はnull（Cronの起動日がJST毎月2日のみのため、正常）。
+[verification-runbook.md](./verification-runbook.md) §L-5 の順に進める:
+
+1. `CRON_SECRET` で `?chunk=5` を手動で数回叩き、`processed`・`afterRacerId`・`durationSeconds` を確認する（shadowなので書き込まない）
+   → **実施済み（2026-09-28 10:14 JST）。合格**。下記「手動確認の結果」
+2. `cursor` を消して `live` にする（10/2 03:00 JST の前に）
+   → **実施済み（2026-09-28 10:26 JST、ユーザー操作）。`mode=live` / `cursor=NULL` / `last_target_date=NULL` を確認**。
+   Vercel Cron の起動は 10/1 18:00 UTC のため、この時点では自動実行されない
+3. **10/2の回は `SKIP_RACER_SEASON_ON_GHA` を立てない**。GHAと並走させ、同じ値が入ることを確認する（上書き型のupsertなので二重でも壊れない）
+4. 確認できたら変数を立て、11/2の回をVercelのみで通す
+
+#### 手動確認の結果（2026-09-28 10:14 JST、`?chunk=5`）
+
+| 項目 | 値 | 評価 |
+|---|---|---|
+| `success` / `mode` / `rowsWritten` | true / `shadow` / **0** | shadowは書かない。正しい |
+| `processed` / `remaining` | 5 / **1,623** | runbookの期待「約1,620」と一致 |
+| `afterRacerId` | 3070 | `cursor` に保存された |
+| `chunk.durationSeconds` | **22秒 / 5人**（同時4） | **U9の実測**（tasks.md T4b-16-2で未実施だった項目） |
+| `season.unchanged` | **5 / 5** | ★下記 |
+| `season.failed` / `profile.failed` / `alerts` | 0 / 0 / なし | 異常なし |
+| `deadlineStopped` / `aborted` | false / false | ソフトデッドラインに当たっていない |
+
+**`season.unchanged` が 5/5 であることが、shadowで見たかった比較そのもの。** shadowは取得・解析したうえで
+DBの既存値と突き合わせており、差分ゼロ＝**Vercel実装の解析結果が、GHA実装が2026-09-19に書いた値と一致している**。
+月次ジョブのため「shadowで1周見てからlive」だと11月までかかるが、この手動確認で同じ根拠が取れた。
+
+22秒には開始時のDB読み取り（選手一覧・直近の出走）の固定費が含まれるため、5人での単価（4.4秒/人）は過大に出る。
+続けて `?chunk=30` を実行し、差分で単価を分離した。
+
+#### 所要時間の実測（U9、2026-09-28 10:23 JST）
+
+| 実行 | 人数 | `durationSeconds` |
+|---|---:|---:|
+| 1回目 | 5 | 22秒 |
+| 2回目 | 30 | 80秒 |
+
+差分から **限界単価 2.32秒/人**（同時4）、**固定費 10.4秒/回**。
+plan.md の見積り（1ページ約8〜10秒を同時4で約2〜2.5秒/人）と一致し、**U9は実測で裏づけられた**。
+
+| 項目 | 見積り（実測に基づく） |
+|---|---|
+| 正味の処理時間 | 1,628人 × 2.32秒 = **63分** |
+| 1回あたり | `RACER_PROFILES_CHUNK` 上限300人 → 300×2.32+10.4 = **706秒**（`maxDurationSec` 800に収まる） |
+| 必要な起動回数 | **6回**（runbook §L-5 の「約6回・約1時間」と一致） |
+| 窓の余裕 | 3時間＝18起動のため、**12回分の余裕** |
+
+2回目も `afterRacerId` 3070→**3297**・`remaining` 1623→1593・`deadlineStopped: false`・`failed: 0`・`alerts: []` で、
+**累計 `seasonUnchanged: 35/35`**（35人全員がDBの既存値と一致）。`maxDurationSec` を800のままにしてよいことも、これで確認できた。
+
+### G3の残り
+
+| 条件（plan.md §4.8） | 状態 |
+|---|---|
+| 1. 全取得処理がVercelへ移行済み | **達成（2026-09-28）**。`race_status`（10:06 JST）・`racer_profiles`（10:26 JST）をlive化し、shadowでの手動確認（`seasonUnchanged` 35/35）と所要時間の実測（U9）も取れた。残るのは `SKIP_RACER_SEASON_ON_GHA` で、**10/2の回はGHAと並走させ、突合後に11/2へ向けて立てる** |
+| 2. 全データセットが完了の定義A・B・Cを実測で満たす | **B: 6窓中5窓が達成**。-60は判定基準の見直し待ち（[BOA-465](https://linear.app/boat-ai/issue/BOA-465)）。**A: 2026-04〜06の結果充足率が99%未達（231レース。[BOA-468](https://linear.app/boat-ai/issue/BOA-468)）** ＋ 全データセットの網羅確認が未（[BOA-365](https://linear.app/boat-ai/issue/BOA-365)）。C: 達成 |
+| 3. 旧基盤を止めた状態で、土日を含む7日間、本番データが欠けない | **未着手**（1・2が片付いてから） |
+| 4. 取得系ワークフロー・`continue-on-error`・ドキュメント・cron-job.orgの削除 | 未着手 |
+
 
 ## 2026-09-25 follow-upチケット着手
 
