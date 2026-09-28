@@ -17,7 +17,14 @@
   /* sticky な見出し行（z-index: 4）より上に出す。既定のままだと
      表の見出しの裏に隠れて「›」もフェードも見えなかった */
   z-index: 5;
-  background: linear-gradient(to right, transparent, var(--surface-page) 70%);
+  /* フェードの行き先は「この表が載っている面の色」でなければ段差が出る。
+     カード（--surface-card）の上に載る表もあるため、呼び出し側が
+     --hscroll-fade-color で上書きできるようにし、既定はページ背景にする */
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--hscroll-fade-color, var(--surface-page)) 70%
+  );
 }
 
 .hscroll-more {

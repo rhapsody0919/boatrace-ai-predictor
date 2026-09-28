@@ -418,14 +418,27 @@ function MotorConditionChart({
                       <td className="motor-num">
                         {t("analysis.motor.motorUnit", { n: row.motor_number })}
                       </td>
-                      <td className="rate">{row.motor_2rate?.toFixed(2)}</td>
+                      {/* 連対率は**小数1桁**で出す（BOA-474、2026-09-28）。
+                          `official_2rate`（`race_entries.motor_2rate`）は、同じ節・同じ
+                          モーターでもレースによって桁数が違う。出走表の行は二段階で埋まり、
+                          前夜の初期投入（番組表＝Bファイル由来）は**1桁**、発走60分前ごろの
+                          出走表更新が**2桁**に上書きするため、当日のまだ更新が走っていない
+                          レースだけが1桁のまま残る（実測: 2026-09-28 戸田の12R=54.8 /
+                          6R=54.84、同じ21号機・同じ節・同じ瞬間）。2桁で出すと同じモーターが
+                          レースによって 54.80 と 54.84 に見える。1桁に揃えると
+                          **9月の節内不一致748件のうち691件（92.4%）が消える**
+                          （残りは連続開催の節境界で、桁の問題ではない）。
+                          基本情報タブのデータ出走表も同じ値を `toFixed(1)` で出しており、
+                          ボートレース日和も1桁。再計算した2連率/3連率も、母数が数十走で
+                          2桁目に意味が無いため揃える */}
+                      <td className="rate">{row.motor_2rate?.toFixed(1)}</td>
                       <td className="rate">
                         {row.official_2rate !== null &&
                         row.official_2rate !== undefined
-                          ? Number(row.official_2rate).toFixed(2)
+                          ? Number(row.official_2rate).toFixed(1)
                           : "-"}
                       </td>
-                      <td className="rate">{row.motor_3rate?.toFixed(2)}</td>
+                      <td className="rate">{row.motor_3rate?.toFixed(1)}</td>
                       {hasPretest && (
                         <td className="rate motor-pretest-cell">
                           {row.pretest_time !== null &&

@@ -281,6 +281,23 @@
   margin-top: 2rem;
 }
 
+/* レース詳細の8タブ一覧。グリッドにすると幅によって空トラックが出るため
+   （e2e/layout.spec.js の「空トラック」検知）、素直な縦積みのリストにする */
+.about-tab-list {
+  margin: 1.5rem 0 0;
+  padding-left: 1.5rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.about-tab-list li {
+  margin: 0.75rem 0;
+}
+
+.about-tab-list strong {
+  color: var(--text-primary);
+}
+
 /* Stats Grid */
 .stats-grid {
   display: grid;
