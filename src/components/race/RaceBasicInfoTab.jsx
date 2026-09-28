@@ -413,7 +413,11 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                     grid-template-columns（5列）がずれ、バーの上に重なる */}
                 <span className="rbit-name-cell">
                   <span className="rbit-name" translate="no">
-                    {player?.name}
+                    {/* 出走表の名前は姓と名の間を全角スペースで詰め物して
+                        字数を揃えてある。今節タブ・モータ情報タブ・オッズ一覧は
+                        詰めて出しており、ここだけ空きが残ると同じ画面で
+                        表記が揺れる */}
+                    {player?.name?.replace(/\s+/g, "")}
                   </span>
                   {/* 出走表の今期F数（T5-3）。ST考察カードのバッジと同じ出所
                       （race_entries.f_count）にしてある。この行は <button> なので
@@ -498,7 +502,10 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                           </p>
                         );
                       }
-                      const recent = getRecentRaces(records, RECENT_RACES_COUNT);
+                      const recent = getRecentRaces(
+                        records,
+                        RECENT_RACES_COUNT,
+                      );
                       if (recent.length === 0) {
                         return (
                           <p className="rbit-expanded-empty">
@@ -737,7 +744,9 @@ function RaceBasicInfoTab({ raceId, venueCode, players }) {
                             buildConditionRows(records, {
                               venueCode,
                               metric: "top3Rate",
-                            }).some((r) => r.value !== null && r.value >= 1) && (
+                            }).some(
+                              (r) => r.value !== null && r.value >= 1,
+                            ) && (
                               <p className="rbit-conditions-zero">
                                 {t("basicInfo.conditionsAllZeroHint")}
                                 <button

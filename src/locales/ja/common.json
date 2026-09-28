@@ -308,7 +308,8 @@
     "top2RateAbbrev": "2連対",
     "top3RateAbbrev": "3連対",
     "prevAbbrev": "前走",
-    "avgAbbrev": "平均"
+    "avgAbbrev": "平均",
+    "exhibitionChartNote": "棒が長いほど速い（最も遅い艇との差）。数字は実際の展示タイム（秒）"
   },
   "pitReport": {
     "title": "ピットレポート（選手コメント）",
@@ -366,7 +367,35 @@
     "finishDq": "失",
     "smallSampleLegend": "⚠ は3走未満（得点率がまだ荒い）。",
     "finishLabel": "着順",
-    "borderNote": "点線より上が準優の目安内（番組は未定のため確定ではありません）。"
+    "borderNote": "点線より上が準優の目安内（番組は未定のため確定ではありません）。",
+    "prelimOverNote": "予選は{{date}}で終了。得点率はここで確定していて、今日の着順では動きません",
+    "rankSourceNote": "節内順位は当社計算です。公式の得点率一覧が取れている開催では、公式の備考（賞典除外・途中帰郷）で順位の対象外を判定しています。取れていない開催では「節の最終日に出走が無い選手」を離脱として推定します。",
+    "sparkStTitle": "今節のST",
+    "sparkExTitle": "今節の展示",
+    "sparkBaselineSt": "通常 {{value}}",
+    "sparkBaselinePretest": "前検 {{value}}",
+    "sparkLast": "前走 {{value}}",
+    "sparkNote": "STの破線はこの選手の通常の平均、展示の破線はその日の会場全体の展示平均（水面の重さ。日によって0.1秒近く動く）。上ほど速く、破線より上ならその日の水面の中で速い。大きい点が前走。縦の幅はこの選手の今節の最小〜最大に合わせて伸ばしているので、山の大きさは他の選手とは比べられません。上向き・下向きの判定はしません",
+    "sparkStMeta": "平均 {{avg}}（{{n}}走）／通常 {{base}}",
+    "sparkExMetaRank": "前検 {{value}}（{{rank}}位）",
+    "compareTrendTitle": "6艇の今節の推移",
+    "compareTrendSt": "ST",
+    "compareTrendEx": "展示",
+    "compareTrendNote": "同じ節・同じ水面を走った6艇を同じ物差し（6艇の最小〜最大）で並べています。行をまたいで線の高さをそのまま見比べられます。破線は6艇の平均。上ほど速い。大きい点が前走",
+    "compareTrendEmpty": "推移を出せる走がまだありません",
+    "prelimOverNoteDay": "予選は{{day}}日目（{{date}}）で終了。得点率はここで確定していて、今日の着順では動きません",
+    "trendLastHeader": "前走",
+    "forecastTitle": "得点率早見（今日の着順でこう動く）",
+    "forecastRankHeader": "{{rank}}着",
+    "forecastNote": "色が付いたセルは、その着順なら準優の目安（{{slots}}位＝{{rate}}）に届く見込みという意味です。必要得点は目安に届くのに要る得点です。",
+    "forecastNoteNoBorder": "その着順を取った場合の得点率です。無事故完走が前提です",
+    "colNeeded": "必要得点",
+    "neededPoints": "{{points}}",
+    "neededUnreachable": "届かず",
+    "forecastDetailSummary": "目安と必要得点の出し方",
+    "forecastDetail": "目安は予選終了時点の{{slots}}位の得点率です。実際のボーダーとは数位ずれることがあります（実測: 若松G1では0.07差、桐生の一般戦では0.83差。途中帰郷・賞典除外の選手を当社データで除けないことと、一般戦は得点率順だけで準優が決まらないことがあるため）。必要得点は「目安×(今の走数+残り走数)−今の得点」で、残り走数は当日の番組が出ている予選ぶんです（1日2走ある選手もいるので人により異なります）。無事故完走が前提で、当確という言い方はしません。",
+    "withdrawn": "対象外",
+    "withdrawnTitle": "節の最終日に出走が無く、途中で離脱した扱い（公式の順位表も途中帰郷の選手を順位から外します）"
   },
   "basicInfo": {
     "note": "選手ごとの成績を条件を変えて比較できます。バーをタップすると詳細（直近10走・得意会場・条件別）が開きます",
@@ -427,10 +456,6 @@
     "meetTrendStPush": "−{{diff}} 踏んでいる",
     "meetTrendStCareful": "+{{diff}} 慎重",
     "meetTrendStFlat": "通常どおり",
-    "meetTrendExhibition": "展示順位 {{first}}位 → {{last}}位（{{n}}走・{{firstTime}}→{{lastTime}}）",
-    "meetTrendExhibitionUp": "{{diff}}つ上向き",
-    "meetTrendExhibitionDown": "{{diff}}つ下向き",
-    "meetTrendExhibitionFlat": "横ばい",
     "meetEmpty": "今節はまだ走っていません（このレースが初戦です）",
     "conditionsNote": "条件ごとの{{metric}}（当社集計・取得できる全期間）。上のバーの公式値とは集計方法が違うため数字が一致しません",
     "conditions": {
@@ -460,8 +485,7 @@
     "periodAvgSt": "平均ST {{value}}",
     "periodFetchError": "前期成績を取得できませんでした",
     "meetScoreForecastTitle": "今日の着順で得点率はこう動く",
-    "meetTrendExhibitionDownSameTime": "タイムは横ばい、周りが上がって{{diff}}つ下",
-    "meetTrendExhibitionUpSameTime": "タイムは横ばい、周りが落ちて{{diff}}つ上"
+    "meetScorePrelimOver": "予選の得点率 {{rate}}（{{n}}走・当社計算・確定）"
   },
   "wakuInfo": {
     "note": "選手を選ぶと、その選手が本日入る想定コースでの成績を期間・条件ごとに比較できます。左端の期間名をタップするとそのコースの直近10走の着順が開きます。全コース（1〜6）の比較は表の下の折りたたみから開けます",
@@ -523,7 +547,10 @@
       "G2": "G2",
       "G3": "G3",
       "SG": "SG"
-    }
+    },
+    "exhibition": "展示",
+    "exhibitionCell": "{{time}}({{rank}})",
+    "startTimingCell": "{{time}}({{rank}})"
   },
   "panel": {
     "noData": "予想データが利用できません",

@@ -1,0 +1,23 @@
+/* 今節の走順に並べた小さな折れ線（軸なし）。MeetSparkline.jsx と対。
+   preserveAspectRatio="none" で横に伸ばすため、線の太さは
+   vector-effect: non-scaling-stroke に頼る（CSSの stroke-width は
+   横方向だけ引き伸ばされる） */
+.meet-sparkline {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.meet-sparkline-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.meet-sparkline-baseline {
+  stroke: var(--text-secondary);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.7;
+}

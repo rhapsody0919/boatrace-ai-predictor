@@ -165,7 +165,11 @@ function PredictionPanel({
     activeMainTab !== "motor" &&
     activeMainTab !== "waku" &&
     activeMainTab !== "aiPrediction" &&
-    activeMainTab !== "oddsList";
+    activeMainTab !== "oddsList" &&
+    // 今節タブも同じ扱い（2026-09-27ユーザー指摘）。6艇の得点率・着順・前検と
+    // 選んだ1艇の走りを出しており、下にデータ出走表・枠番傾向が続くと
+    // 同じ6艇の数字が二重に並ぶ
+    activeMainTab !== "meet";
 
   // ローディング中
   if (isAnalyzing) {

@@ -1,0 +1,44 @@
+/* 横スクロールする箱の「まだ右に続く」手がかり（useHorizontalScrollHint と対）。
+   右端のフェードだけだと、最後に見える列と右端の間に余白ができたときに
+   グラデーションが何にも掛からず意味を持たないため「›」を重ねる
+   （2026-09-27、タブバーで同じことが起きた）。 */
+.hscroll-hint {
+  position: relative;
+}
+
+.hscroll-hint.has-more::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  pointer-events: none;
+  /* sticky な見出し行（z-index: 4）より上に出す。既定のままだと
+     表の見出しの裏に隠れて「›」もフェードも見えなかった */
+  z-index: 5;
+  background: linear-gradient(to right, transparent, var(--surface-page) 70%);
+}
+
+.hscroll-more {
+  position: absolute;
+  /* 上端に寄せる。箱の高さいっぱいに置くと、縦に長い表では「›」が
+     表の中央＝画面外に来て見えない（実測で y=872px / 画面844px） */
+  top: 0;
+  right: 0;
+  height: 40px;
+  width: 28px;
+  /* ::after のフェード（z-index: 5）と sticky な見出し行より上に出す */
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  cursor: pointer;
+}
