@@ -271,8 +271,8 @@ export default function HowToUse() {
             <h4>💡 実績の確認方法</h4>
             <ul>
               <li>
-                <strong>各レースの「結果」タブ</strong>:
-                そのレースの展開予測が的中したかを表示
+                <strong>各レースの「AI予想」タブ</strong>:
+                そのレースの展開予測が的中したかを表示（結果が確定したレースを開くと出ます）
               </li>
               <li>
                 <strong>「的中」タブ</strong>（/hit-races）:
