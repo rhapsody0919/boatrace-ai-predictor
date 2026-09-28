@@ -304,9 +304,22 @@ function PredictionPanel({
         />
       )}
 
-      {/* レース詳細ページのタブ構成（BOA-305〜307/312）: 日和スタイルの8タブのうち
-          データが揃っている5タブを実装。DataRaceTable（主役の生データ一覧）とは
-          別の切り口（条件フィルタ×棒グラフ）のため両方残す */}
+      {/* レース詳細ページのタブ構成（BOA-305〜307/312、並び順はBOA-454）。
+
+          並びは「粒度」で揃える。**6艇を横断して見るタブを前に → 選手1人を掘る
+          タブを後ろに → 買い目・結果を最後に**。390pxでは完全に見えるタブが4つ
+          しか無い（実測: 可視334px / 全体613px）ため、先頭4枠に何を置くかが
+          そのまま「開いて最初に何を見るか」になる。以前は
+          基本情報→AI予想→枠別情報→モータ情報の順で、先頭4つが全部「過去の集計」
+          になっており、当日の情報（今節・直前情報）が両方とも画面外にあった。
+
+          狭い「今節」(51px)を3番目に置いたことで、5番目の枠別情報が
+          288〜366pxと半分見える位置に来る（実測、可視334px）。半分見えているタブ自体が
+          「右に続く」の手がかりになる（フェードや「›」より強い）。
+
+          タブの統合（枠別情報＋モータ情報など）はしない。8→6にしても334pxに
+          入るのは4つのままで、可視数が1つも増えないのに、統合後のタブが縦に
+          長くなる（タブを跨ぐのは1タップだが、縦スクロールは何回もスワイプする）。 */}
       {venueCode && analysisRaceId && (
         <RaceTabs
           key={analysisRaceId}
@@ -325,6 +338,8 @@ function PredictionPanel({
               ),
             },
             {
+              // 日和には無い龍神レーダー独自の差別化要素。6艇横断で読むものでも
+              // あるため前半に置く
               id: "aiPrediction",
               label: t("raceTabs.aiPrediction"),
               content: (
@@ -337,6 +352,41 @@ function PredictionPanel({
               ),
             },
             {
+              // 勝負駆けは「この6人の中で誰が一番欲しがっているか」でしか読めない。
+              // レースを開いたら最初に見るものなので前半に置く（日和はモータ情報の
+              // 隣に置いているが、日和に位置を合わせるより粒度で揃える方を採った）
+              id: "meet",
+              label: t("raceTabs.meet"),
+              content: (
+                <RaceMeetTab
+                  raceId={analysisRaceId}
+                  venueCode={venueCode}
+                  players={prediction.allPlayers}
+                />
+              ),
+            },
+            {
+              // 展示タイムは締切前に最も判断へ効く。レースの状況（朝は未確定、
+              // 直前で埋まる）で並びを動かすと位置が覚えられなくなるため、
+              // 順番は固定したまま4番目に置く
+              id: "beforeInfo",
+              label: t("raceTabs.beforeInfo"),
+              content: (
+                <RaceBeforeInfoTab
+                  raceId={analysisRaceId}
+                  venueCode={venueCode}
+                  players={prediction.allPlayers}
+                  weather={prediction.weather}
+                  raceGrade={
+                    selectedRace?.rawData?.raceGrade ??
+                    selectedRace?.raceGrade ??
+                    null
+                  }
+                />
+              ),
+            },
+            {
+              // ここから下は「艇を1つ選んで掘る」タブ
               id: "waku",
               label: t("raceTabs.waku"),
               content: (
@@ -359,37 +409,6 @@ function PredictionPanel({
               ),
             },
             {
-              // 日和と同じくモータ情報の隣に置く（2026-09-26、ファン視点の議論）。
-              // 勝負駆けは6艇を横断して見るものなので、選手を選んでから開く
-              // 基本情報タブの中ではなく、レース単位のタブにした
-              id: "meet",
-              label: t("raceTabs.meet"),
-              content: (
-                <RaceMeetTab
-                  raceId={analysisRaceId}
-                  venueCode={venueCode}
-                  players={prediction.allPlayers}
-                />
-              ),
-            },
-            {
-              id: "beforeInfo",
-              label: t("raceTabs.beforeInfo"),
-              content: (
-                <RaceBeforeInfoTab
-                  raceId={analysisRaceId}
-                  venueCode={venueCode}
-                  players={prediction.allPlayers}
-                  weather={prediction.weather}
-                  raceGrade={
-                    selectedRace?.rawData?.raceGrade ??
-                    selectedRace?.raceGrade ??
-                    null
-                  }
-                />
-              ),
-            },
-            {
               id: "oddsList",
               label: t("raceTabs.oddsList"),
               content: (
@@ -400,20 +419,24 @@ function PredictionPanel({
                 />
               ),
             },
-            {
-              id: "result",
-              label: t("raceTabs.result"),
-              content: isFinished ? (
-                <RaceResult prediction={prediction} raceId={analysisRaceId} />
-              ) : (
-                <div className="race-tabs-empty">
-                  <p>{t("result.notFinishedTitle")}</p>
-                  <p className="race-tabs-empty-body">
-                    {t("result.notFinishedBody")}
-                  </p>
-                </div>
-              ),
-            },
+            // 結果タブは決着後にしか中身が無い。未確定レースでは
+            // 「まだ確定していません」という空タブを出すだけで、押した人にとっては
+            // 何も得るものが無いうえ、狭いタブバーの枠を1つ占める。確定したら
+            // 現れ、そのまま既定タブになる（defaultTabId）
+            ...(isFinished
+              ? [
+                  {
+                    id: "result",
+                    label: t("raceTabs.result"),
+                    content: (
+                      <RaceResult
+                        prediction={prediction}
+                        raceId={analysisRaceId}
+                      />
+                    ),
+                  },
+                ]
+              : []),
           ]}
         />
       )}

@@ -1207,27 +1207,51 @@ async function scenariosForJob(jobMod) {
       show(out.alerts.map((a) => a.key)),
     );
   }
-  // info の項目（月別の結果充足率）: 閾値未満でも通知しない（last_report に載せるだけ）
+  // info の項目: 閾値未満でも通知しない（last_report に載せるだけ）
+  //
+  // 題材は合成の項目にする。以前は実在の result.monthly を使っていたが、BOA-468で解消して
+  // severity を info → alert に上げたところ、**実在の info 項目が0件になり、この検証が
+  // 題材ごと消えた**（2026-09-28）。検証したいのは severity の挙動であって特定の項目ではないので、
+  // checks を差し替えて、同じ項目の info 版と alert 版を突き合わせる形にした。
   {
-    const out = await run({
+    const monthlyCheck = COUNT_CHECKS.find((c) => c.id === "result.monthly");
+    const overrides = {
+      data_health_monthly_result: [
+        { month: "2026-01", denom: 1000, with_result: 800 },
+      ],
+    };
+    const asInfo = await run({
       targetDate: "2026-09-28",
       now: NOW,
       mode: "live",
-      callFunction: makeCaller({
-        overrides: {
-          data_health_monthly_result: [
-            { month: "2026-01", denom: 1000, with_result: 800 },
-          ],
-        },
-      }),
+      checks: [{ ...monthlyCheck, id: "synthetic.info", severity: "info" }],
+      callFunction: makeCaller({ overrides }),
     });
-    const monthly = out.report.checks.find((c) => c.id === "result.monthly");
+    const infoCheck = asInfo.report.checks.find(
+      (c) => c.id === "synthetic.info",
+    );
     t(
       "info の項目: 閾値未満でも通知しない（last_report に status=breach として載せる）",
-      out.alerts.length === 0 &&
-        monthly.status === "breach" &&
-        monthly.below.length === 1,
-      show(out.report.checks.filter((c) => c.id === "result.monthly")),
+      asInfo.alerts.length === 0 &&
+        infoCheck.status === "breach" &&
+        infoCheck.below.length === 1,
+      show(asInfo.report.checks),
+    );
+
+    // 対照: 同じ項目・同じデータでも alert なら通知する（info の抑制が「常に通知しない」ではないことの歯）
+    const asAlert = await run({
+      targetDate: "2026-09-28",
+      now: NOW,
+      mode: "live",
+      checks: [{ ...monthlyCheck, id: "synthetic.alert", severity: "alert" }],
+      callFunction: makeCaller({ overrides }),
+    });
+    t(
+      "対照: 同じ未達でも severity が alert なら通知する",
+      asAlert.alerts.length === 1 &&
+        asAlert.report.checks.find((c) => c.id === "synthetic.alert")
+          ?.status === "breach",
+      show(asAlert.alerts.map((a) => a.key)),
     );
   }
   // shadow

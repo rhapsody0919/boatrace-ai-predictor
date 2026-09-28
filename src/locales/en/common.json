@@ -240,9 +240,7 @@
     "volatilityOutcomeDetailFavorite": " (Lane 1 finished 1st)",
     "volatilityCaveat": "A single race result can't confirm or disprove the prediction.",
     "volatilityCaveatLink": "See measured accuracy ›",
-    "payout": "Payout: ¥{{amount}}",
-    "notFinishedTitle": "The result is not final yet",
-    "notFinishedBody": "Once the race is over, the placings, payouts and winning technique will appear on this tab."
+    "payout": "Payout: ¥{{amount}}"
   },
   "raceHistoryTable": {
     "date": "Date",
