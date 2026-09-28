@@ -99,3 +99,86 @@ export function groupIntoCurrentMeet(sortedAscEntries, maxGapDays = 2) {
   }
   return meet;
 }
+
+/**
+ * `series_day` から「表示中の日を含む節の初日」を求める（純関数、BOA-508）。
+ *
+ * 上の `groupIntoCurrentMeet` は**1選手分**に絞って使う前提のヒューリスティックで、
+ * **会場の全日付に当てると壊れる**（中1日の開催休みで前の節が丸ごと混ざる）。
+ * 会場単位で節を切るときはこちらを使う。
+ *
+ * ## 切り方（`verify-meet-grouping.js` が「正解」としているものと同じ規則）
+ *
+ * 開催日を昇順に見て、次のどれかで新しい節が始まったとみなす。
+ *
+ *   - **前の日が `is_final_day`** … いちばん強い根拠。`series_day` の増減にも
+ *     日付の空きにも左右されない
+ *   - `series_day === 1`      … 節の初日
+ *   - `series_day < 直前の値`  … 初日の行が無いだけ（`series_day=2` から始まる実例がある）
+ *   - 前の開催日から**2日以上空いた** … 実測で537箇所すべてが節の境目だった
+ *     （「節の続きなのに空いている」は0件）。`series_day` が無い期間でも効く
+ *
+ * @param {Array<{date: string, seriesDay: number|null, isFinalDay?: boolean|null}>} days
+ *
+ * 逆に**同じ値の連続（4→4）と飛び（5→7）は同じ節の続き**として扱う。中止順延で
+ * 実際に起きる（2026-09に同値3箇所・飛びの実例あり）。ここを厳しくすると節の
+ * 途中で切れる。
+ *
+ * ## 日付だけで切ってはいけない
+ *
+ * 節と節の間が中1日空くと、連続する開催日の差が2日になる。旧実装は
+ * 「2日を**超えたら**別の節」だったため1日の休みを跨いでしまい、前の節が丸ごと
+ * 混ざっていた（BOA-491: 2026-09-28 戸田8Rで節内順位が6艇とも「対象外」になり、
+ * 出場人数・準優の目安・必要得点が前の節の値になった）。
+ * 実測では中1日の休み12箇所が**すべて**節の境目（前日が `is_final_day`）で、
+ * 節の中に休みが入る例は0件だった。
+ *
+ *   会場の開催日。`isFinalDay` は種別が取れていない日では null
+ * @param {string} targetDate 表示中のレースの日（`YYYY-MM-DD`）
+ * @returns {string|null} 節の初日。`days` が空なら null
+ */
+export function findMeetStartDate(days, targetDate) {
+  if (!Array.isArray(days) || days.length === 0) return null;
+  const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
+
+  let meetStart = sorted[0].date;
+  let prevSeriesDay = null;
+  let prevDate = null;
+  let answer = null;
+
+  let prevIsFinalDay = null;
+
+  for (const d of sorted) {
+    const gapDays =
+      prevDate === null
+        ? 0
+        : (new Date(`${d.date}T00:00:00Z`) -
+            new Date(`${prevDate}T00:00:00Z`)) /
+          86400000;
+    // **前の日が節の最終日なら、そこが境目**。これがいちばん強い根拠で、
+    // `series_day` の増減にも日付の空きにも左右されない
+    const startsByFinalDay = prevIsFinalDay === true;
+    const startsBySeriesDay =
+      d.seriesDay != null &&
+      (d.seriesDay === 1 ||
+        (prevSeriesDay != null && d.seriesDay < prevSeriesDay));
+    // 前の開催日から2日以上空いた。**他の2つと並べて、条件を絞らずに使う**。
+    // 本番の `race_conditions` 全件（36,641行）で空き2日以上は537箇所あり、
+    // **537箇所すべてが節の境目**だった（「節の続きなのに空いている」は0件）。
+    // うち3箇所は前の日に `is_final_day` が立っておらず、空きか `series_day=1`
+    // でしか切れない。逆に「種別が取れているときは空きを見ない」と絞ると、
+    // その3箇所で節を跨ぐ（`is_final_day: false` は「最終日でない」ではなく
+    // 「印が付いていない」のこともある、が根拠）
+    const startsByGap = prevDate !== null && gapDays >= 2;
+    if (startsByFinalDay || startsBySeriesDay || startsByGap)
+      meetStart = d.date;
+    // 表示日以前で最後に見た節の初日が答え。表示日の行が無くても遡れる
+    if (d.date <= targetDate) answer = meetStart;
+    // 当日の `series_day` / `is_final_day` は取得前で null のことがある。
+    // null は「分からない」であって「続き」ではないので、直前の値は上書きしない
+    if (d.seriesDay != null) prevSeriesDay = d.seriesDay;
+    prevIsFinalDay = d.isFinalDay ?? null;
+    prevDate = d.date;
+  }
+  return answer ?? meetStart;
+}
