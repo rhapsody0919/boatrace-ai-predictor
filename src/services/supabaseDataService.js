@@ -6696,10 +6696,12 @@ export const supabaseDataService = {
           ].sort();
           return meetDates.indexOf(last.slice(0, 10)) + 1 || null;
         })(),
-        // この節に組まれた準優勝戦の枠数（予選中はまだ0）。慣例は3個レース=18名。
-        // 「準優進出戦」は準優の1つ前の勝ち上がり戦なので数えない（BOA-457）
-        // **準優の枠数**。中止で流れた準優は数えない（BOA-490）。番組に2日ぶん
-        // 残る中止順延で枠数が倍になり、ボーダー・必要得点・「届かず」まで狂う
+        // **この節に組まれた準優勝戦の枠数**。慣例は3個レース=18名で、決められない
+        // とき（予選中で準優がまだ番組に出ていない等）は **null**（0ではない）。
+        // 画面は `?? SEMIFINAL_DEFAULT_SLOTS` で既定の18枠に落とす。
+        // 「準優進出戦」は準優の1つ前の勝ち上がり戦なので数えない（BOA-457）。
+        // 中止で流れた準優も数えない。番組に2日ぶん残る中止順延で枠数が倍になり、
+        // ボーダー・必要得点・「届かず」まで狂う（BOA-490）
         semifinalSlots: semifinalSlotsOf(conditions ?? [], {
           cancelledRaceIds,
           ranRaceIds: new Set(resultById.keys()),
