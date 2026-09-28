@@ -495,8 +495,8 @@ check(
   JSON.stringify(s),
 );
 
-// --- 展示の窓の外の補完のスロット（BOA-382）: レジストリの実際の定義（slotDefsFor）で、-33 と +10 の2本を作り、
-//     窓（+10〜+36）・再試行の待ち・確定中止・期限切れを、RPCで確認する（RPC自体は変えていない）
+// --- 展示の窓の外の補完のスロット（BOA-382）・体重だけの窓（BOA-500）: レジストリの実際の定義（slotDefsFor）で、-60・-33・+10 の3本を作り、
+//     窓（-60〜-34、+10〜+36）・再試行の待ち・確定中止・期限切れを、RPCで確認する（RPC自体は変えていない）
 {
   const { slotDefsFor, SCRAPE_JOBS } =
     await import("../lib/scrapeJobs/registry.js");
@@ -530,19 +530,54 @@ check(
     )
   )[0].n;
   check(
-    "展示: ensure は、3レース×2本（-33 と 10）＝6スロットを作る",
-    made === 6,
+    "展示: ensure は、3レース×3本（体重だけの -60、-33、補完の 10）＝9スロットを作る",
+    made === 9,
     `n=${made}`,
   );
 
-  let got = await claimEx("17:11");
+  // 体重だけの窓（-60。BOA-500）: 5R（17:02発走）の -60 の窓は 16:02〜16:28。-33 の窓（16:29〜）と重ならない
+  let got = await claimEx("16:03");
   check(
-    "展示: 発走の9分後（17:11）は、5R の -33（許容幅の26分を超え expired）も、補完（+10）も取らない。確定中止の6Rは cancelled_race で終端し、取らない",
-    got.length === 0 &&
+    "展示: 発走の59分前（16:03）に、5R の体重だけの窓（-60）を取る。-33 はまだ取らない。確定中止の6Rは取らない",
+    got.length === 1 &&
+      got[0].race_id === "2026-09-22-12-05" &&
+      got[0].offset_min === -60 &&
+      got[0].attempts === 1,
+    JSON.stringify(got),
+  );
+  // 体重が未公開のまま窓の終わりまで再試行した状態（pending）で、-33 の窓が始まる
+  await q(
+    `UPDATE scrape_slots SET status='pending', lease_until=NULL, next_attempt_at=NULL WHERE job='exhibition' AND race_id='2026-09-22-12-05' AND offset_min=-60`,
+  );
+  got = await claimEx("16:29");
+  check(
+    "展示: 発走の33分前（16:29）は、5R の -33 を取り、-60（期限+許容幅26分＝16:28 を過ぎた）は取らずに expired にする（1レースで2つの窓が同時に動かない）",
+    got.length === 1 &&
+      got[0].race_id === "2026-09-22-12-05" &&
+      got[0].offset_min === -33 &&
+      (await slotOf("2026-09-22-12-05", -60)).status === "expired",
+    JSON.stringify(got),
+  );
+  // 以降の補完（+10）の検証のため、5R の -33 を未処理に戻す
+  await q(
+    `UPDATE scrape_slots SET status='pending', lease_until=NULL, next_attempt_at=NULL, attempts=0 WHERE job='exhibition' AND race_id='2026-09-22-12-05' AND offset_min=-33`,
+  );
+
+  got = await claimEx("17:11");
+  check(
+    "展示: 発走の9分後（17:11）は、5R の -33（許容幅の26分を超え expired）も、補完（+10）も取らない。確定中止の6Rは cancelled_race で終端し、取らない。7R（18:00発走）の体重だけの窓（-60。17:00〜17:26）は取る",
+    got.length === 1 &&
+      got[0].race_id === "2026-09-22-12-07" &&
+      got[0].offset_min === -60 &&
       (await slotOf("2026-09-22-12-05", -33)).status === "expired" &&
       (await slotOf("2026-09-22-12-06", -33)).outcome === "cancelled_race" &&
-      (await slotOf("2026-09-22-12-06", 10)).outcome === "cancelled_race",
+      (await slotOf("2026-09-22-12-06", 10)).outcome === "cancelled_race" &&
+      (await slotOf("2026-09-22-12-06", -60)).outcome === "cancelled_race",
     JSON.stringify(got),
+  );
+  // 7R の体重だけの窓は、体重を取れて完了したとする（以降の補完の検証に混ざらないように）
+  await q(
+    `UPDATE scrape_slots SET status='done', lease_until=NULL WHERE job='exhibition' AND race_id='2026-09-22-12-07' AND offset_min=-60`,
   );
   got = await claimEx("17:12");
   check(

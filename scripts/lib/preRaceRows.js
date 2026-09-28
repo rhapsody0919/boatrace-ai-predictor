@@ -94,7 +94,14 @@ export function buildRaceConditionRow(
 
 /**
  * exhibition_data の行。展示タイム・スタート展示のSTがある艇の行を書く（旧実装と同じ）。extended では、
- * 欠場艇（体重だけがある）の行も書く（is_absent=true。他の列はNULL）。
+ * 欠場艇（体重だけがある）の行と、**展示前の行（当日体重・調整重量だけがある）** も書く（BOA-500）。
+ *
+ * 展示前の行を書く理由: 当日体重・調整重量は、展示航走より前（発走60分前の時点で全会場）に公開される。
+ * 展示タイムが出るまで捨てていると、ファンが早い時点で見られない（BOA-484の取得側）。
+ * 展示タイム・チルト・プロペラは、後の窓（-33）で同じ行に埋まる。
+ *
+ * 展示前の行を書くのを extended に限るのは、旧実装（凍結。__fixtures__/beforeinfo/legacyExhibitionParser.js）との
+ * 行の一致を保つため（欠場艇の行と同じ扱い。verify-pre-race-parsers.js が比べている）。
  *
  * @param {string} raceId
  * @param {ReturnType<import("./beforeInfoParser.js").parseBeforeInfoPage>["boats"]} boats
@@ -106,7 +113,8 @@ export function buildExhibitionRows(raceId, boats, { extended = false } = {}) {
       (b) =>
         b.exhibition_time != null ||
         b.start_timing != null ||
-        (extended && b.is_absent),
+        (extended && b.is_absent) ||
+        (extended && (b.weight_kg != null || b.adjustment_weight != null)),
     )
     .map((b) => ({
       race_id: raceId,

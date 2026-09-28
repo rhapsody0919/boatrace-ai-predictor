@@ -56,11 +56,23 @@ export const SCRAPE_JOBS = Object.freeze({
   // preRaceHandlers.js）。監視は、補完のスロットを窓内取得率の分母に入れず、中止・順延の疑い（cancellation_status）の
   // レースの期限切れを通知しない（monitor.js）。切り戻し: offsets を [-33] にする（新しい補完のスロットを作らない）。
   // catchupOffsets は残す（DBに残った offset 10 のスロットは、claim されても、補完として扱われる＝気象・再計算をしない）
+  //
+  // 展示前の当日体重・調整重量（BOA-500）: offsets の -60（発走60分前〜34分前。許容幅26分で -33 の窓と重ならない）が、
+  // 体重だけの窓（weightOnlyOffsets）。当日体重・調整重量は発走60分前には公開済みで、展示タイム・チルトは後
+  // （2026-09-28の実測、9会場とも）。この窓は「体重・調整重量が取れたら完了」にする。-33 と同じ「展示タイムが取れたら完了」
+  // のままだと、体重を書けても partial で26分間120秒おきに再試行し続け、1レース最大13回・1日約2,300リクエストになる。
+  // 体重が未公開の間の再試行は weightOnlyRetrySec（300秒）おき（1レース最大6回）。気象は書かず、予測の再計算の対象に
+  // しない（予測は体重を使わない。気象は -33 の窓が、より発走に近い観測で書く）。監視は、この窓を窓内取得率（ジョブ別）の
+  // 分母に入れず、期限切れを通知しない（体重の公開が遅れても -33 の窓が同じ行を埋める。best effort の前倒し。monitor.js）。
+  // スロットは翌朝の予定表の生成（ensure_scrape_slots）から作られる。切り戻し: offsets から -60 を消す
+  // （weightOnlyOffsets は残す。DBに残った offset -60 のスロットは、claim されても体重だけの窓として扱われる）
   exhibition: {
     kind: "window",
-    offsets: [-33, 10],
+    offsets: [-60, -33, 10],
     catchupOffsets: [10],
     catchupRetrySec: 600,
+    weightOnlyOffsets: [-60],
+    weightOnlyRetrySec: 300,
     graceMin: 26,
     retrySec: 120,
     leaseSec: 90,
@@ -425,6 +437,19 @@ export function isCatchupOffset(def, offsetMin) {
 }
 
 /**
+ * 体重だけの窓（発走前の、当日体重・調整重量が取れたら完了とするスロット。展示 BOA-500）の offset か。
+ * ハンドラー（完了の判定を変える・気象・再計算をしない）と監視（窓内取得率の分母に入れない、期限切れを通知しない）が使う。
+ *
+ * @param {{weightOnlyOffsets?: number[]}|undefined} def
+ * @param {number} offsetMin
+ */
+export function isWeightOnlyOffset(def, offsetMin) {
+  return Array.isArray(def?.weightOnlyOffsets)
+    ? def.weightOnlyOffsets.includes(offsetMin)
+    : false;
+}
+
+/**
  * 窓（offset_min）ごとの許容幅（分）。graceMinByOffset に指定があればその値、なければジョブの graceMin
  * （odds の -60 だけ、未公開の間の延長で30分。ファイル内の odds の説明）
  *
@@ -584,6 +609,47 @@ export function validateRegistry(registry = SCRAPE_JOBS) {
         ) {
           problems.push(
             `${name}: catchupRetrySec(${def.catchupRetrySec}) は、許容幅(${graceSec}秒)より短い正の整数にしてください`,
+          );
+        }
+      }
+      // 体重だけの窓（weightOnlyOffsets）: 発走の前（負の整数）で offsets に含まれ、補完の窓と重ならない。
+      // 次の窓の開始を超えない（超えると、同じレースの2つの窓が同じ時間帯に重なる）。再試行の間隔は許容幅より短い
+      if (def.weightOnlyOffsets !== undefined) {
+        const sortedOffsets = [...(def.offsets ?? [])].sort((a, b) => a - b);
+        if (
+          !Array.isArray(def.weightOnlyOffsets) ||
+          def.weightOnlyOffsets.length === 0 ||
+          def.weightOnlyOffsets.some(
+            (o) =>
+              !Number.isInteger(o) ||
+              o >= 0 ||
+              !(def.offsets ?? []).includes(o) ||
+              isCatchupOffset(def, o),
+          )
+        ) {
+          problems.push(
+            `${name}: weightOnlyOffsets が不正です（offsets に含まれる、発走の前の分を表す負の整数の配列。補完の窓とは別）: ${JSON.stringify(def.weightOnlyOffsets)}`,
+          );
+        } else {
+          for (const offset of def.weightOnlyOffsets) {
+            const next = sortedOffsets.find((o) => o > offset);
+            if (
+              next !== undefined &&
+              offset + graceMinFor(def, offset) > next
+            ) {
+              problems.push(
+                `${name}: 体重だけの窓(${offset})の許容幅(${graceMinFor(def, offset)}分)が、次の窓(${next})の開始を超えています（窓が重なります）`,
+              );
+            }
+          }
+        }
+        if (
+          !Number.isInteger(def.weightOnlyRetrySec) ||
+          def.weightOnlyRetrySec < 1 ||
+          def.weightOnlyRetrySec >= graceSec
+        ) {
+          problems.push(
+            `${name}: weightOnlyRetrySec(${def.weightOnlyRetrySec}) は、許容幅(${graceSec}秒)より短い正の整数にしてください`,
           );
         }
       }

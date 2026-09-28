@@ -149,7 +149,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/preRaceDigest.js` | レース情報（A1）・展示（A2）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | computeRaceInfoDigest, computeExhibitionDigest, RACE_ENTRY_DIGEST_COLUMNS, RACE_CONDITION_DIGEST_COLUMNS, EXHIBITION_DIGEST_COLUMNS |
 | `scripts/lib/scrapeJobs/preRaceHandlers.js` | レース情報（A1）・展示（A2）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parsePreRaceId, createScheduleLoader, createSeriesDayLoader, createRaceInfoSlotHandler, createExhibitionSlotHandler ほか6件 |
 | `scripts/lib/scrapeJobs/predictionOddsHandlers.js` | 買い目オッズ（A4、prediction_odds）を、A3（オッズ取得、race_odds）の成功フックから導出する（BOA-404、 | fetchPredictionsByModel, fetchLatestRaceOdds, deriveRowsForRaces, buildShadowDigest, deriveAndUpsertPredictionOdds ほか3件 |
-| `scripts/lib/scrapeJobs/registry.js` | ジョブレジストリ: 窓・許容幅・再試行・リース・並列度・実行時間の定義（plan.md §3.6・§4.3・§4.4）。 | isScheduledDate, isCatchupOffset, graceMinFor, graceOverridesOf, windowJobNames ほか5件 |
+| `scripts/lib/scrapeJobs/registry.js` | ジョブレジストリ: 窓・許容幅・再試行・リース・並列度・実行時間の定義（plan.md §3.6・§4.3・§4.4）。 | isScheduledDate, isCatchupOffset, isWeightOnlyOffset, graceMinFor, graceOverridesOf ほか6件 |
 | `scripts/lib/scrapeJobs/resultDigest.js` | 結果取得（A6）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | pickResultColumns, pickStartTimingColumns, computeResultDigest, RESULT_DIGEST_COLUMNS, START_TIMING_DIGEST_COLUMNS |
 | `scripts/lib/scrapeJobs/resultHandlers.js` | 結果取得（A6）まわりの Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parseRaceId, addDays, overdueWindows, createResultSlotHandler, createResultOnTick ほか4件 |
 | `scripts/lib/scrapeJobs/schemaErrors.js` | 「予定表のテーブル・関数がDBに無い」エラーの判定。 | isScrapeSchemaMissingError, isClaimByOffsetMissingError, SCRAPE_SCHEMA_OBJECTS |
@@ -238,4 +238,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 203 ファイル / export 1011 件。
+対象 203 ファイル / export 1012 件。

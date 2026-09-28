@@ -33,7 +33,11 @@ import {
 } from "../lib/scrapeJobs/preRaceDigest.js";
 import { raceStartInstant, slotDeadline } from "../lib/scrapeJobs/time.js";
 import { percentile } from "../lib/scrapeJobs/monitor.js";
-import { SCRAPE_JOBS, isCatchupOffset } from "../lib/scrapeJobs/registry.js";
+import {
+  SCRAPE_JOBS,
+  isCatchupOffset,
+  isWeightOnlyOffset,
+} from "../lib/scrapeJobs/registry.js";
 
 const PAGE = 1000;
 const CHUNK = 100;
@@ -116,18 +120,23 @@ export function compareExhibitionShadowDigests(slots, exhibitionRows) {
 }
 
 /**
- * 予定表のスロットを、通常の窓（primary）と、窓の外の補完（catchup。レジストリの catchupOffsets）に分ける（純粋関数）。
+ * 予定表のスロットを、通常の窓（primary）と、窓の外の補完（catchup。レジストリの catchupOffsets）と、
+ * 体重だけの窓（weightOnly。レジストリの weightOnlyOffsets。BOA-500）に分ける（純粋関数）。
+ * 体重だけの窓は展示前のページのダイジェストで、既存の経路の行（展示後）とは一致しないため、通常の窓の一致率に混ぜない
  *
  * @param {Array<{offset_min: number}>} slots
- * @param {{catchupOffsets?: number[]}} [def] レジストリのジョブ定義
+ * @param {{catchupOffsets?: number[], weightOnlyOffsets?: number[]}} [def] レジストリのジョブ定義
  */
 export function splitCatchupSlots(slots, def) {
   const primary = [];
   const catchup = [];
+  const weightOnly = [];
   for (const slot of slots) {
-    (isCatchupOffset(def, slot.offset_min) ? catchup : primary).push(slot);
+    if (isCatchupOffset(def, slot.offset_min)) catchup.push(slot);
+    else if (isWeightOnlyOffset(def, slot.offset_min)) weightOnly.push(slot);
+    else primary.push(slot);
   }
-  return { primary, catchup };
+  return { primary, catchup, weightOnly };
 }
 
 async function fetchAll(buildQuery) {
@@ -253,12 +262,13 @@ async function main() {
       .order("race_date")
       .order("race_id"),
   );
-  const { primary: slots, catchup: catchupSlots } = splitCatchupSlots(
-    allSlots,
-    SCRAPE_JOBS[job],
-  );
+  const {
+    primary: slots,
+    catchup: catchupSlots,
+    weightOnly: weightOnlySlots,
+  } = splitCatchupSlots(allSlots, SCRAPE_JOBS[job]);
   console.log(
-    `${job} のスロット ${from}〜${to}: ${slots.length}件${catchupSlots.length > 0 ? `（別に、窓の外の補完 ${catchupSlots.length}件）` : ""}\n`,
+    `${job} のスロット ${from}〜${to}: ${slots.length}件${catchupSlots.length > 0 ? `（別に、窓の外の補完 ${catchupSlots.length}件）` : ""}${weightOnlySlots.length > 0 ? `（別に、体重だけの窓 ${weightOnlySlots.length}件。一致率の比較の対象外）` : ""}\n`,
   );
 
   // 日付×run_mode×状態・outcome
